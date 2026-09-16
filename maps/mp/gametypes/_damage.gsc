@@ -574,6 +574,21 @@ PlayerKilled_internal( eInflictor, attacker, victim, iDamage, sMeansOfDeath, sWe
 	
 	if ( isDefined( attacker ) )
 	{
+		// CoDOL: T5 _globallogic_player::updateAttacker. A dog's bite credits
+		// the player who called the dogs in (unless he switched teams); the
+		// dog itself is told so _dogs.gsc can count it. An ownerless dog is a
+		// world kill: no stat/streak line below may run on an actor.
+		if ( isai( attacker ) )
+		{
+			attacker notify( "killed", victim );
+			if ( isDefined( attacker.script_owner ) && ( !level.teamBased || attacker.script_owner.team != victim.team ) )
+				attacker = attacker.script_owner;
+			else
+				attacker = undefined;
+		}
+	}
+	if ( isDefined( attacker ) )
+	{
 		// override attacker if it's a vehicle	
 		if ( attacker.code_classname == "script_vehicle" && isDefined( attacker.owner ) )
 			attacker = attacker.owner;
