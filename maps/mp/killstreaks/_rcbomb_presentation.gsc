@@ -212,3 +212,71 @@ treadFx()
             playFXOnTag( level._effect["rcbomb_tread_" + surface + "_trail"], self, "tag_origin" );
     }
 }
+
+// T5 _rcbomb.gsc:32-54 fade dvar defaults, read here so _rcbomb.gsc only
+// needs the two thread lines T5 has (:107 call-in, :355/:378 ride end).
+rcFadeValue( name, default_value )
+{
+    if ( getDvar( name ) == "" )
+        return default_value;
+    return getDvarFloat( name );
+}
+
+// T5 _rcbomb.gsc:107 — threaded on the player before useRCBomb so the black
+// covers the 0.9 s freeze and the view swap to the car.
+fadeIn()
+{
+    self thread fadeToBlackForXSec( rcFadeValue( "scr_rcbomb_fadeIn_delay", 0.25 ), rcFadeValue( "scr_rcbomb_fadeIn_timeIn", 0.5 ), rcFadeValue( "scr_rcbomb_fadeIn_timeBlack", 0.5 ), rcFadeValue( "scr_rcbomb_fadeIn_timeOut", 0.5 ) );
+}
+
+// T5 _rcbomb.gsc:355/:378 — threaded on the player when the ride ends so the
+// return to the player's view is hidden.
+fadeOut()
+{
+    self thread fadeToBlackForXSec( rcFadeValue( "scr_rcbomb_fadeOut_delay", 0.5 ), rcFadeValue( "scr_rcbomb_fadeOut_timeIn", 0.5 ), rcFadeValue( "scr_rcbomb_fadeOut_timeBlack", 0.25 ), rcFadeValue( "scr_rcbomb_fadeOut_timeOut", 0.5 ) );
+}
+
+// T5 maps/mp/gametypes/_hud.gsc:240-286 fadeToBlackForXSec, verbatim port
+// (same positional contract as the T5 caller). The "black" material ships in
+// C1 code_post_gfx_mp and is precached by _gamelogic. Self is the player.
+fadeToBlackForXSec( startwait, blackscreenwait, fadeintime, fadeouttime )
+{
+    self endon( "disconnect" );
+    wait( startwait );
+
+    if ( !isDefined( self.blackscreen ) )
+        self.blackscreen = newClientHudElem( self );
+
+    self.blackscreen.x = 0;
+    self.blackscreen.y = 0;
+    self.blackscreen.horzAlign = "fullscreen";
+    self.blackscreen.vertAlign = "fullscreen";
+    self.blackscreen.foreground = false;
+    self.blackscreen.hidewhendead = false;
+    self.blackscreen.hidewheninmenu = true;
+    self.blackscreen.sort = 50;
+    self.blackscreen setShader( "black", 640, 480 );
+    self.blackscreen.alpha = 0;
+
+    if ( fadeintime > 0 )
+        self.blackscreen fadeOverTime( fadeintime );
+    self.blackscreen.alpha = 1;
+    wait( fadeintime );
+    if ( !isDefined( self.blackscreen ) )
+        return;
+
+    wait( blackscreenwait );
+    if ( !isDefined( self.blackscreen ) )
+        return;
+
+    if ( fadeouttime > 0 )
+        self.blackscreen fadeOverTime( fadeouttime );
+    self.blackscreen.alpha = 0;
+    wait( fadeouttime );
+
+    if ( isDefined( self.blackscreen ) )
+    {
+        self.blackscreen destroy();
+        self.blackscreen = undefined;
+    }
+}

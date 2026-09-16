@@ -90,8 +90,8 @@ useKillstreakRCBomb( lifeId )
         return false;
     }
 
-    // T5 fades the screen through _hud::fadeToBlackForXSec here; the mounted
-    // IW4 _hud has no such helper and none is invented.
+    // T5 _rcbomb.gsc:107 _hud::fadeToBlackForXSec, ported in _rcbomb_presentation.
+    self thread maps\mp\killstreaks\_rcbomb_presentation::fadeIn();
 
     ret = self useRCBomb( placement );
 
@@ -187,6 +187,7 @@ givePlayerControlOfRCBomb()
     self.rcbomb thread maps\mp\killstreaks\_rcbomb_presentation::monitor();
 
     self waittill( "rcbomb_done" );
+    self thread maps\mp\killstreaks\_rcbomb_presentation::fadeOut();
     self restoreWeaponAfterRide();
 }
 
