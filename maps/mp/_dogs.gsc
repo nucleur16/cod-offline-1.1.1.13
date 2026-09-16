@@ -148,7 +148,47 @@ init()
 
 	thread init_all_preexisting_dogs();
 
+	// CoDOL dev trigger: `rcon set codol_dogsTest 1` calls the dogs in for the
+	// first live player (bots cannot earn a killstreak). Default 0, one-shot.
+	if ( getDvar( "codol_dogsTest" ) == "" )
+		setDvar( "codol_dogsTest", "0" );
+	thread dog_test_watcher();
+
 //	create_dogs();
+}
+
+dog_test_watcher()
+{
+	level endon( "game_ended" );
+
+	for ( ;; )
+	{
+		wait 1;
+
+		if ( getDvarInt( "codol_dogsTest" ) <= 0 )
+			continue;
+
+		setDvar( "codol_dogsTest", "0" );
+
+		caller = undefined;
+		foreach ( player in level.players )
+		{
+			if ( isDefined( player.team ) && player.team != "spectator" && isAlive( player ) )
+			{
+				caller = player;
+				break;
+			}
+		}
+
+		if ( !isDefined( caller ) )
+		{
+			print( "CoDOL dogs: codol_dogsTest: no live player to call the dogs for\n" );
+			continue;
+		}
+
+		print( "CoDOL dogs: codol_dogsTest: calling dogs for " + caller.name + " (" + caller.team + ")\n" );
+		caller thread useKillstreakDogs( 0 );
+	}
 }
 
 useKillstreakDogs(lifeId)
@@ -769,7 +809,33 @@ dog_clean_up()
 dog_notify_level_on_death()
 {
 	self endon("leaving");
-	self waittill("death");
+	self waittill("death", attacker);
+
+	// T5 maps\mp\gametypes\_globallogic_actor::Callback_ActorKilled, which
+	// this IW4-shaped callback set never had a hook for: the engine's death
+	// notify carries the attacker, so the killer's credit is settled here
+	// while self is still the live actor (the corpse handoff comes later).
+	// T5 gives XP ("dogkill", 30 in the T5 rank table) and the destroyed
+	// killstreak stat; explicitly no kill/score ("Dogs no longer give team
+	// or player score").
+	aiteam = self.aiteam;
+
+	if ( isDefined( attacker ) && isai( attacker ) && isDefined( attacker.script_owner ) )
+	{
+		// a dog killed by another team's dog credits that dog's owner
+		if ( attacker.script_owner.team != aiteam )
+			attacker = attacker.script_owner;
+	}
+
+	if ( isDefined( attacker ) && isPlayer( attacker ) )
+	{
+		if ( !level.teamBased || aiteam != attacker.pers["team"] )
+		{
+			attacker thread maps\mp\gametypes\_rank::giveRankXP( "dogkill", 30 );
+			if ( isDefined( level.globalKillstreaksDestroyed ) )
+				level.globalKillstreaksDestroyed++;
+		}
+	}
 
 	// do not access self past this point as its not valid
 
