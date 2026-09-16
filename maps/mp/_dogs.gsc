@@ -168,7 +168,29 @@ dog_test_watcher()
 		if ( getDvarInt( "codol_dogsTest" ) <= 0 )
 			continue;
 
+		test = getDvarInt( "codol_dogsTest" );
 		setDvar( "codol_dogsTest", "0" );
+
+		// `rcon set codol_dogsTest 2` reproduces the mp_nuked defect on any map:
+		// it plants a script_model whose targetname is "dog_spawner" so that
+		// dog_manager_spawn_dogs' getent() finds a NON-spawner, then calls the
+		// dogs in. The native isactorspawner()/spawnactor() must both refuse it
+		// with a named "CoDOL dogs:" warning and return undefined, the manager
+		// must fall back to spawnactorspawner(), and no script error may raise.
+		if ( test >= 2 )
+		{
+			decoy = spawn( "script_model", (0,0,0) );
+			decoy.targetname = "dog_spawner";
+			decoy setmodel( "tag_origin" );
+			print( "CoDOL dogs: codol_dogsTest 2: planted a non-spawner entity with targetname \"dog_spawner\"\n" );
+			probe = decoy isactorspawner();
+			print( "CoDOL dogs: codol_dogsTest 2: isactorspawner() returned " + probe + "\n" );
+			nodog = decoy spawnactor();
+			if ( isdefined( nodog ) )
+				print( "CoDOL dogs: codol_dogsTest 2: FAIL - spawnactor() on a non-spawner returned an entity\n" );
+			else
+				print( "CoDOL dogs: codol_dogsTest 2: spawnactor() on a non-spawner returned undefined, as required\n" );
+		}
 
 		caller = undefined;
 		foreach ( player in level.players )
@@ -633,10 +655,31 @@ dog_manager_spawn_dogs( team, enemyTeam, deathCount )
 
 	requiredDeathCount = deathCount;
 
-	level.dog_spawner = getent("dog_spawner","targetname" );
+	// getent() raises "used with more than one entity" when several entities
+	// carry the targetname, and an entity named "dog_spawner" need not be an
+	// actor spawner at all: mp_nuked authors classname "actor_enemy_dog_so"
+	// with spawnflags 1, which the MP entity spawn path never builds as a
+	// spawner, and spawnactor() then refused it and killed the match. Scan the
+	// whole set and take the first entity the native spawnactor() accepts;
+	// isactorspawner() is that exact test and dumps every entity it rejects.
+	level.dog_spawner = undefined;
+	candidates = getentarray( "dog_spawner", "targetname" );
+	rejected = 0;
+	foreach ( candidate in candidates )
+	{
+		usable = candidate isactorspawner();
+		if ( isdefined( usable ) && usable )
+		{
+			level.dog_spawner = candidate;
+			break;
+		}
+		rejected++;
+	}
 
 	if ( isdefined( level.dog_spawner ) )
-		print( "CoDOL dogs: using the map's dog_spawner entity\n" );
+		print( "CoDOL dogs: using a map dog_spawner entity (" + candidates.size + " candidates, " + rejected + " rejected)\n" );
+	else if ( candidates.size > 0 )
+		print( "CoDOL dogs: none of the " + candidates.size + " map \"dog_spawner\" entities is an actor spawner (the CoDOL dogs warnings above dump them); building one with spawnactorspawner( \"actor_enemy_dog_mp\" )\n" );
 	else
 		print( "CoDOL dogs: no map dog_spawner entity; building one with spawnactorspawner( \"actor_enemy_dog_mp\" )\n" );
 

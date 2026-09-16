@@ -1,23 +1,16 @@
+// sh1x: the SP arm's percent-sign animation reference is a compile-time animtree
+// reference. The compiler registers it whether or not the branch runs, so
+// the animtree load then demands an xanim that only the SP zones carry and
+// the map dies (mp_storm_spring / foliage_tree_oak_1_sway). MP registers the
+// animation by name, which PrecacheMpAnim/ScriptModelPlayAnim resolve inside
+// the zone actually mounted, so the name form is the only one kept here.
 #include common_scripts\utility;
 
-#using_animtree( "animated_props" );
 main()
 {
 		if( !isdefined ( level.anim_prop_models ) )
 			level.anim_prop_models = [];
 			
-	// Would use isSP() but this runs before we can
-	mapname = tolower( getdvar( "mapname" ) );
-	SP = true;
-	if ( string_starts_with( mapname, "mp_" ) )
-		SP = false;
-	
 	model = "foliage_tree_palm_med_2";
-	if ( SP )
-	{
-		level.anim_prop_models[ model ][ "still" ] = %palmtree_med2_still;
-		level.anim_prop_models[ model ][ "strong" ] = %palmtree_med2_sway;
-	}
-	else
-		level.anim_prop_models[ model ][ "strong" ] = "palmtree_mp_med2_sway";
+	level.anim_prop_models[ model ][ "strong" ] = "palmtree_mp_med2_sway";
 }
