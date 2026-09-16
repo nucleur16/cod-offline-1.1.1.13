@@ -76,5 +76,19 @@ watchSpawns()
     {
         self waittill( "spawned_player" );
         self enableCombatBot( true );
+        self thread watchWedged();
     }
+}
+
+// Native movement reports a player that nudge, repath and regoal could not
+// move one unit (spawned in solid, or on unwalkable collision). A bot standing
+// inside a wall forever is worse than one death: respawn it elsewhere.
+watchWedged()
+{
+    self endon( "disconnect" );
+    self endon( "death" );
+    level endon( "game_ended" );
+    self waittill( "bot_wedged" );
+    if ( isAlive( self ) )
+        self suicide();
 }

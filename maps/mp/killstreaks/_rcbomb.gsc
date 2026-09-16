@@ -174,6 +174,21 @@ givePlayerControlOfRCBomb()
         return;
     }
 
+    // T5 _hardpoints::useKillstreak awards stat/XP/inbound dialog when the
+    // ride ACTIVATES; the C1 dispatcher only sees the use function return,
+    // which for this T5 contract is the end of the ride. Award here, once.
+    self maps\mp\killstreaks\_killstreaks::awardRideKillstreakActivation();
+
+    // T5 rule: the owner's death does not end the ride (carDeathWaiter is
+    // commented out in T5 too; _globallogic_player skips the killcam while
+    // IsRemoteControlling and _globallogic_ui does not spawnClient). On this
+    // IW4-derived framework the same three gates key off self.usingRemote:
+    // _damage.gsc:800 no killcam, _damage.gsc:1587 straight PlayerKilled,
+    // _playerlogic waitAndSpawnClient waits "stopped_using_remote". Without
+    // it the killcam/respawn ran, "spawned_player" fired the explosives
+    // watcher and the car was deleted. Cleared on "rcbomb_done".
+    self.usingRemote = "rcbomb";
+
     self thread playerDisconnectWaiter( self.rcbomb );
     self thread carDetonateWaiter( self.rcbomb );
     //self thread carDeathWaiter( self.rcbomb );
@@ -189,6 +204,10 @@ givePlayerControlOfRCBomb()
     self waittill( "rcbomb_done" );
     self thread maps\mp\killstreaks\_rcbomb_presentation::fadeOut();
     self restoreWeaponAfterRide();
+    // Releases the death/respawn gates; a player killed during the ride
+    // now proceeds through waitAndSpawnClient ("stopped_using_remote").
+    if ( isDefined( self.usingRemote ) && self.usingRemote == "rcbomb" )
+        self maps\mp\_utility::clearUsingRemote();
 }
 
 // T5 _hardpoints::removeKillstreakWhenDone (takeWeapon) and
@@ -508,8 +527,11 @@ blowup( attacker )
     // the generic rcbomb quake parameters are used.
     earthquake( 0.5, 0.5, origin, 512 );
 
-    // T5 plays "mpl_sab_exp_suitcase_bomb_main" here; that alias is not in
-    // the C1 asset inventory and no substitute is guessed.
+    // T5 plays "mpl_sab_exp_suitcase_bomb_main" here. CoDOL ships the same
+    // T5-lineage alias without the mpl_sab_ prefix: exp_suitcase_bomb_main in
+    // common_gametype_mp (docs/zone_assets/ALL_sound.txt:3431). Played at the
+    // explosion origin, not on the car, which is hidden and deleted below.
+    playSoundAtPosition( "exp_suitcase_bomb_main", explosionOrigin );
 
     playFX( level._effect["rcbombexplosion"], explosionOrigin );
 

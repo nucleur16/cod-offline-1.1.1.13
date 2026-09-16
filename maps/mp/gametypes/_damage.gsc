@@ -370,6 +370,20 @@ isPlayerWeapon( weaponName )
 	return false;
 }
 
+// CoDOL: T5 _globallogic_player::updateMeansOfDeath. C1's obituary producer
+// (54E6F8) replaces every MOD_MELEE kill by the knife code unless the weapon
+// is a riot shield, so a dog bite reported as MOD_MELEE draws the knife icon;
+// T5 reports it as a pistol bullet so the weapon's own kill icon is used. In
+// C1 the dog kill icon (hud_obit_dogs) is the killIcon of the killstreak
+// weapon dogs_mp - dog_bite itself has none - so the caller also swaps the
+// weapon for the obituary/killcam/log lines.
+updateMeansOfDeath( sWeapon, sMeansOfDeath )
+{
+	if ( isDefined( level.dogBiteWeapon ) && sWeapon == level.dogBiteWeapon )
+		return "MOD_PISTOL_BULLET";
+	return sMeansOfDeath;
+}
+
 Callback_PlayerKilled( eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, psOffsetTime, deathAnimDuration )
 {
 	// Kills are otherwise invisible in the console: the vendor obituary goes
@@ -587,6 +601,9 @@ PlayerKilled_internal( eInflictor, attacker, victim, iDamage, sMeansOfDeath, sWe
 				attacker = undefined;
 		}
 	}
+	sMeansOfDeath = updateMeansOfDeath( sWeapon, sMeansOfDeath );
+	if ( isDefined( level.dogBiteWeapon ) && sWeapon == level.dogBiteWeapon )
+		sWeapon = "dogs_mp";
 	if ( isDefined( attacker ) )
 	{
 		// override attacker if it's a vehicle	

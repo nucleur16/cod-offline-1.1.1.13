@@ -436,16 +436,28 @@ killstreakUsePressed( selectedID )
 	if ( !self isWeaponEnabled() )
 		return killstreakRefused( streakName, "weapon is disabled" );
 
+	// T5 _hardpoints::useKillstreak awards XP/stat/dialog on activation. A
+	// ride's use function (T5 useRCBomb) only returns when the ride is over,
+	// so it awards itself through awardRideKillstreakActivation() as soon as
+	// the vehicle is taken; the post-return award below then skips.
+	activation = undefined;
+	if ( isRideKillstreak( streakName ) )
+	{
+		activation = spawnStruct();
+		activation.streakName = streakName;
+		activation.awardXp = awardXp;
+		activation.awarded = false;
+	}
+	self.codolRideActivation = activation;
+
 	if ( streakName == "airdrop" || streakName == "airdrop_sentry_minigun" || streakName == "airdrop_mega" || streakName == "mortar_mp" )
-	{
-		if ( !self [[ level.killstreakFuncs[ streakName ] ]]( lifeId, kID ) )
-			return killstreakRefused( streakName, "the reward's own use function returned false" );
-	}
+		used = self [[ level.killstreakFuncs[ streakName ] ]]( lifeId, kID );
 	else
-	{
-		  if ( !self [[ level.killstreakFuncs[ streakName ] ]]( lifeId ) )
-			  return killstreakRefused( streakName, "the reward's own use function returned false" );
-	}
+		used = self [[ level.killstreakFuncs[ streakName ] ]]( lifeId );
+
+	self.codolRideActivation = undefined;
+	if ( !isDefined( used ) || !used )
+		return killstreakRefused( streakName, "the reward's own use function returned false" );
 	
 	// Placement/remote callbacks may yield. A team change can revoke this
 	// reward meanwhile; newly earned rewards may only move it within the queue.
@@ -458,7 +470,8 @@ killstreakUsePressed( selectedID )
 	if ( !stillOwned )
 		return killstreakRefused( streakName, "ownership was revoked while the use function ran" );
 
-	self usedKillstreak( streakName, awardXp );
+	if ( !isDefined( activation ) || !activation.awarded )
+		self usedKillstreak( streakName, awardXp );
 	self shuffleKillStreaksFILO( streakName, kID );	
 	self giveOwnedKillstreakItem();		
 	if ( streakName == "mortar_mp" )
@@ -503,6 +516,18 @@ shuffleKillStreaksFILO( streakName, kID )
 	}
 }
 
+
+// Called by a ride killstreak's use function at the moment the ride starts
+// (RC-XD: _rcbomb::givePlayerControlOfRCBomb after usevehicle succeeds).
+// Awards exactly once; killstreakUsePressed then skips its own award.
+awardRideKillstreakActivation()
+{
+	activation = self.codolRideActivation;
+	if ( !isDefined( activation ) || activation.awarded )
+		return;
+	activation.awarded = true;
+	self usedKillstreak( activation.streakName, activation.awardXp );
+}
 
 usedKillstreak( streakName, awardXp )
 {
