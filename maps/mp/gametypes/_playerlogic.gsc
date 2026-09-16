@@ -510,6 +510,13 @@ spawnPlayer()
 	self endon( "joined_spectators" );
 	self notify( "spawned" );
 	self notify( "end_respawn" );
+
+	// CoDOL 2026-09-16: hud_drawHud is a client-archived dvar; _tabun.gsc sets
+	// it to 0 while gassed and its restore thread can end early (disconnect /
+	// game_ended), leaving the whole HUD hidden across reconnects. Restore it
+	// unconditionally on every spawn (see CODOL_SNAPSHOT_BITMASK_AUDIT_20260916).
+	self setClientDvar( "hud_drawHud", 1 );
+	self.codolGasHUD = false;
 	
     if ( isDefined( self.setSpawnPoint ) && self tiValidationCheck() )
 	{
