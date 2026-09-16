@@ -1,0 +1,54 @@
+sh1x GSC collation conflicts
+generated 2026-09-16T01:25:14
+precedence (high to low): native(scripts/codol) > overlay(gsc_overlay) > vendor(vendor/iw4) > existing codol_rawfiles
+
+43 of 1239 collated paths exist in more than one root.
+
+common_scripts/_destructible.gsc                             WON: native   overrode: vendor, overlay
+maps/createfx/mp_afghan_fx.gsc                               WON: overlay  overrode: vendor
+maps/createfx/mp_overgrown_fx.gsc                            WON: overlay  overrode: vendor (identical)
+maps/createfx/mp_rust_fx.gsc                                 WON: overlay  overrode: vendor
+maps/createfx/mp_underpass_fx.gsc                            WON: overlay  overrode: vendor
+maps/mp/_animatedmodels.gsc                                  WON: native   overrode: vendor
+maps/mp/_awards.gsc                                          WON: native   overrode: vendor
+maps/mp/_entityheadicons.gsc                                 WON: native   overrode: vendor
+maps/mp/_flashgrenades.gsc                                   WON: native   overrode: vendor
+maps/mp/_load.gsc                                            WON: native   overrode: vendor
+maps/mp/_scoreboard.gsc                                      WON: native   overrode: vendor
+maps/mp/_utility.gsc                                         WON: native   overrode: vendor
+maps/mp/gametypes/_class.gsc                                 WON: native   overrode: vendor
+maps/mp/gametypes/_damage.gsc                                WON: native   overrode: vendor
+maps/mp/gametypes/_gamelogic.gsc                             WON: native   overrode: vendor
+maps/mp/gametypes/_hud_message.gsc                           WON: native   overrode: vendor
+maps/mp/gametypes/_menus.gsc                                 WON: native   overrode: vendor
+maps/mp/gametypes/_missions.gsc                              WON: native   overrode: vendor
+maps/mp/gametypes/_music_and_dialog.gsc                      WON: native   overrode: vendor
+maps/mp/gametypes/_persistence.gsc                           WON: native   overrode: vendor
+maps/mp/gametypes/_playercards.gsc                           WON: native   overrode: vendor
+maps/mp/gametypes/_playerlogic.gsc                           WON: native   overrode: vendor
+maps/mp/gametypes/_rank.gsc                                  WON: native   overrode: vendor
+maps/mp/gametypes/_spawnlogic.gsc                            WON: native   overrode: vendor
+maps/mp/gametypes/_teams.gsc                                 WON: native   overrode: vendor
+maps/mp/gametypes/_weapons.gsc                               WON: native   overrode: vendor
+maps/mp/gametypes/war.gsc                                    WON: native   overrode: vendor
+maps/mp/killstreaks/_ac130.gsc                               WON: native   overrode: vendor
+maps/mp/killstreaks/_airstrike.gsc                           WON: native   overrode: vendor
+maps/mp/killstreaks/_autosentry.gsc                          WON: native   overrode: vendor
+maps/mp/killstreaks/_emp.gsc                                 WON: native   overrode: vendor
+maps/mp/killstreaks/_harrier.gsc                             WON: native   overrode: vendor
+maps/mp/killstreaks/_helicopter.gsc                          WON: native   overrode: vendor
+maps/mp/killstreaks/_killstreaks.gsc                         WON: native   overrode: vendor, overlay
+maps/mp/killstreaks/_uav.gsc                                 WON: native   overrode: vendor
+maps/mp/mp_afghan_fx.gsc                                     WON: overlay  overrode: vendor
+maps/mp/mp_fav_tropical.gsc                                  WON: native   overrode: overlay
+maps/mp/mp_killhouse_sh.gsc                                  WON: native   overrode: overlay
+maps/mp/mp_overgrown_fx.gsc                                  WON: overlay  overrode: vendor
+maps/mp/mp_rust_fx.gsc                                       WON: overlay  overrode: vendor
+maps/mp/mp_underpass_fx.gsc                                  WON: overlay  overrode: vendor
+maps/mp/perks/_perkfunctions.gsc                             WON: native   overrode: vendor, overlay
+maps/mp/perks/_perks.gsc                                     WON: native   overrode: vendor, overlay
+
+Warnings:
+  maps/mp/_menus.gsc contains an embedded NUL; the loader rejects it with ERR_DROP when requested
+  maps/mp/gametypes/_clientids.gsc contains an embedded NUL; the loader rejects it with ERR_DROP when requested
+  maps/mp/gametypes/_hardpoints.gsc contains an embedded NUL; the loader rejects it with ERR_DROP when requested
