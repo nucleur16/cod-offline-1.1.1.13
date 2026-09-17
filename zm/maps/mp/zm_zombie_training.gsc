@@ -47,7 +47,11 @@ main()
 	// common_scripts\utility::isSP() derives singleplayer from an "mp_" map
 	// name prefix, and zm_* maps are not mp_*.  The level script runs before
 	// CodeCallback_StartGameType, so the earliest entry point needs it too.
-	level.isSP = false;
+	// Routed through the shared entry point so all three zm maps take the
+	// same path.  undefined is deliberate: zm_zombie_training.ff ships no
+	// vision and no sun rawfile, unlike zm_prototype_sh and zm_asylum_sh,
+	// so nothing is asked for.  levelMain() sets level.isSP = false.
+	maps\mp\gametypes\_zombiemode::levelMain( undefined );
 
 	// The three actor_zombie_* spawner classnames the map ships
 	// (actor_zombie_ger, actor_zombie_juggernaut, actor_zombie_dog), its 51

@@ -105,6 +105,39 @@ init()
 	level.round_number = 1;
 }
 
+// --------------------------------------------------------------------------
+// Level-script entry point.
+//
+// GScr_LoadScripts asks for exactly one module, maps/mp/<mapname>, for every
+// asset category (src/scr_vm_main.c).  All three zm maps therefore need a file
+// under zm/maps/mp/, and each of them calls this.
+//
+// The VISION NAME is passed in rather than taken from getDvar( "mapname" )
+// because the three zm zones disagree.  MEASURED from the shipped fastfiles:
+//
+//   zm_prototype_sh.ff    sun/zm_prototype_sh.sun    vision/zm_prototype_sh.vision
+//   zm_asylum_sh.ff       sun/zm_asylum_sh.sun       vision/zm_asylum_sh.vision
+//   zm_zombie_training.ff (neither)
+//
+// zm_zombie_training is the one map with no vision or sun rawfile in any
+// mounted zone -- audit row 18 of docs/CODOL_ZOMBIES_STARTUP_20260915.md -- so
+// it passes undefined and nothing is asked for.  The other two can have the
+// vision the multiplayer maps/mp/_load.gsc:93,97 would have given them, without
+// compiling a single multiplayer script to get it.
+// --------------------------------------------------------------------------
+
+levelMain( visionName )
+{
+	level.isSP = false;
+
+	if ( isDefined( visionName ) && visionName != "" )
+	{
+		level.zm_vision = visionName;
+		VisionSetNaked( visionName, 0 );
+		VisionSetPain( visionName );
+	}
+}
+
 // The mode's weapon set is named in mp/zombiemode.csv, and CoDOL publishes zm
 // weapon configstrings natively before any script runs
 // (CODOL_InitializeServerWeaponConfigstrings, src/sv_main.c).  Ask the table
