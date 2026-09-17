@@ -128,7 +128,7 @@ killcam(
 
 	if ( isDefined( attacker ) && level.showingFinalKillcam ) // attacker may have disconnected
 	{
-		self openMenu( "killedby_card_display" );
+		self maps\mp\gametypes\_playerlogic::pulseScriptMenu( "killedby_card_display" );
 		self SetCardDisplaySlot( attacker, 7 );
 	}
 	

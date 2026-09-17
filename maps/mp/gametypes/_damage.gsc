@@ -112,7 +112,7 @@ handleWorldDeath( attacker, lifeId, sMeansOfDeath, sHitLoc )
 handleSuicideDeath( sMeansOfDeath, sHitLoc )
 {
 	self SetCardDisplaySlot( self, 7 );
-	self openMenu( "killedby_card_display" );
+	self maps\mp\gametypes\_playerlogic::pulseScriptMenu( "killedby_card_display" );
 
 	self thread [[ level.onXPEvent ]]( "suicide" );
 	self incPersStat( "suicides", 1 );
@@ -136,10 +136,10 @@ handleSuicideDeath( sMeansOfDeath, sHitLoc )
 handleFriendlyFireDeath( attacker )
 {
 	attacker SetCardDisplaySlot( self, 8 );
-	attacker openMenu( "youkilled_card_display" );
+	attacker maps\mp\gametypes\_playerlogic::pulseScriptMenu( "youkilled_card_display" );
 
 	self SetCardDisplaySlot( attacker, 7 );
-	self openMenu( "killedby_card_display" );
+	self maps\mp\gametypes\_playerlogic::pulseScriptMenu( "killedby_card_display" );
 
 	attacker thread [[ level.onXPEvent ]]( "teamkill" );
 	attacker.pers[ "teamkills" ] += 1.0;
@@ -186,10 +186,10 @@ handleNormalDeath( lifeId, attacker, eInflictor, sWeapon, sMeansOfDeath )
 	//	attacker.pers["teamkills"] = max( attacker.pers["teamkills"] - 1, 0 );
 
 	attacker SetCardDisplaySlot( self, 8 );
-	attacker openMenu( "youkilled_card_display" );
+	attacker maps\mp\gametypes\_playerlogic::pulseScriptMenu( "youkilled_card_display" );
 
 	self SetCardDisplaySlot( attacker, 7 );
-	self openMenu( "killedby_card_display" );
+	self maps\mp\gametypes\_playerlogic::pulseScriptMenu( "killedby_card_display" );
 
 	if ( sMeansOfDeath == "MOD_HEAD_SHOT" )
 	{
@@ -829,7 +829,11 @@ PlayerKilled_internal( eInflictor, attacker, victim, iDamage, sMeansOfDeath, sWe
 	//prof_end( " PlayerKilled_6" );
 	//prof_begin( " PlayerKilled_7" );
 	
-	//self openMenu( "killedby_card_hide" );
+	// The killedby card is dismissed by killedby_card_hide in
+	// maps\mp\gametypes\_playerlogic::spawnPlayer, which is the only place the
+	// ui_show_killedBy dvar may be cleared: clearing it here would take the
+	// card down on the same frame it went up.  The menu itself is no longer
+	// left open across the killcam -- see pulseScriptMenu.
 
 	if ( game[ "state" ] != "playing" )
 	{

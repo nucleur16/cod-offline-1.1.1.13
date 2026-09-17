@@ -569,7 +569,7 @@ spawnPlayer()
 	self updateSessionState( "playing", "" );
 	self ClearKillcamState();
 	self.cancelkillcam = 1;
-	self openMenu( "killedby_card_hide" );
+	self pulseScriptMenu( "killedby_card_hide" );
 
 	self.maxhealth = maps\mp\gametypes\_tweakables::getTweakableValue( "player", "maxhealth" );
 
@@ -683,7 +683,7 @@ spawnPlayer()
 
 	if ( !level.splitscreen && getIntProperty( "scr_showperksonspawn", 1 ) == 1 && game["state"] != "postgame" )
 	{
-		self openMenu( "perk_display" );
+		self pulseScriptMenu( "perk_display" );
 		self thread hidePerksAfterTime( 5.0 );
 		self thread hidePerksOnDeath();
 	}
@@ -708,6 +708,38 @@ spawnPlayer()
 	}	
 }
 
+
+/*
+	CoDOL: C1 leaves the UI grabbed for as long as a script menu is open.
+
+	The card/perk scriptmenus are side-effect only.  Their compiled form in the
+	shipped common_mp.ff is one windowDef with no itemDefs plus a setdvar chain
+	(killedby_card_display: ui_show_killedBy <on>, ui_show_youKilled <off> and a
+	specialty_copycat conditional on ui_show_copyCat; perk_display:
+	ui_show_perks <on>; the *_hide menus write the <off> value back).  The card
+	and the perk icons are drawn by the always-open HUD from those dvars, not by
+	these menus, so the dvars are the whole payload and they survive the close.
+
+	Menus_OpenByName (C1 0x005F4FB0) sets keyCatchers |= KEYCATCH_UI at
+	0x005F509B unconditionally for any menu outside C1's eight-entry Scaleform
+	whitelist -- these five are all outside it -- and only a close or a key event
+	releases it.  While it is set, UI_Refresh draws the mouse cursor over the
+	game (0x005ECE96..0x005ECEF7) and C1's open-menu HUD predicate
+	(ShouldDrawHud 0x00453A10 -> HudFade 0x005E0D20) keeps the compass and the
+	other HUD groups suppressed.  killedby_card_display was opened on death and
+	not dismissed until killedby_card_hide at respawn, so both lasted the whole
+	death-to-respawn window.
+
+	Opening and immediately closing performs every dvar write the menu makes and
+	leaves no menu open.  closeMenu() is C1's two-pass teardown (see
+	src/codol/script/codol_script_menu.c).
+*/
+pulseScriptMenu( menuName )
+{
+	self openMenu( menuName );
+	self closeMenu();
+}
+
 hidePerksAfterTime( delay )
 {
 	self endon("disconnect");
@@ -715,7 +747,7 @@ hidePerksAfterTime( delay )
 	
 	wait delay;
 
-	self openMenu( "perk_hide" );
+	self pulseScriptMenu( "perk_hide" );
 	self notify("perks_hidden");
 }
 
@@ -726,7 +758,7 @@ hidePerksOnDeath()
 
 	self waittill("death");
 	
-	self openMenu( "perk_hide" );
+	self pulseScriptMenu( "perk_hide" );
 	self notify("perks_hidden");
 }
 
@@ -738,7 +770,7 @@ hidePerksOnKill()
 
 	self waittill( "killed_player" );
 	
-	self openMenu( "perk_hide" );
+	self pulseScriptMenu( "perk_hide" );
 	self notify("perks_hidden");
 }
 
