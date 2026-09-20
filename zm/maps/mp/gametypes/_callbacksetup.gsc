@@ -133,3 +133,35 @@ SetDefaultCallbacks()
 callbackVoid()
 {
 }
+
+/*================
+Called when a gametype is not supported.
+
+REQUIRED, not optional.  maps\mp\gametypes\_callbacksetup::AbortLevel() is
+called from nine sites in the SHARED script tree (_spawnlogic, _teams and
+others).  A category _callbacksetup REPLACES the shared one wholesale, so
+omitting this makes any shared module that reaches it a fatal COMPILE error --
+"unknown function", Sys_Error, dead server -- not a runtime no-op.  MEASURED
+2026-09-20: a zombies match died exactly that way at Game Initialization once
+the dog aitype preload dragged _spawnlogic in.
+
+Divergence from the multiplayer version, deliberately: it does NOT
+setdvar("g_gametype","dm").  Under this category the gametype script is forced
+by codol_gametype_policy (src/scr_vm_main.c), and rewriting the dvar to a
+multiplayer gametype here would only make the abort disagree with the mounted
+zones and with what the client was told.
+================*/
+AbortLevel()
+{
+	println( "Aborting level - gametype is not supported (zm)" );
+
+	level.callbackStartGameType		= ::callbackVoid;
+	level.callbackPlayerConnect		= ::callbackVoid;
+	level.callbackPlayerDisconnect	= ::callbackVoid;
+	level.callbackPlayerDamage		= ::callbackVoid;
+	level.callbackPlayerKilled		= ::callbackVoid;
+	level.callbackPlayerLastStand	= ::callbackVoid;
+	level.callbackCodeEndGame		= ::callbackVoid;
+
+	exitLevel( false );
+}
