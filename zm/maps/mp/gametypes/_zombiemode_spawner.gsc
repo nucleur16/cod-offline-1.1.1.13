@@ -749,6 +749,27 @@ zombie_think()
 	self endon( "death" );
 	self endon( "zombie_delete" );
 
+	// T5 zombie_think :415-:568 and zombie_goto_entrance :572, restored
+	// 2026-09-21 (docs/CODOL_ZOMBIE_SPAWN_20260921.md part 2).  A zombie is
+	// spawned OUTSIDE the playable area (the 42 zombie_spawner structs on
+	// zm_prototype_sh all are) and T5 never sends it at the player from
+	// there: it first walks to an entrance -- one of the closest exterior_goal
+	// structs (3 candidates, dropping any more than max_dist farther than
+	// the previous, random among the rest) at goalradius 128 -- tears the
+	// boards there, and only then seeks flesh.  The old loop went straight for
+	// the player, so with the entrance 100+ units to the side the zombie
+	// walked into the outer wall next to the window and stood there.
+	node = self pick_entrance_node();
+	if ( isDefined( node ) )
+	{
+		self.first_node = node;
+		self.goalradius = 128;
+		self setGoalPos( node.origin );
+		self zombie_wait_goal( 20 );
+		self.goalradius = 64;
+		self tear_into_building( node );
+	}
+
 	for ( ;; )
 	{
 		// T5 find_flesh :3922 hands off to tear_into_building when a barrier
@@ -782,6 +803,78 @@ zombie_think()
 
 		wait( 1 );
 	}
+}
+
+// T5 zombie_think :448-:556: the entrance choice.
+pick_entrance_node()
+{
+	if ( !isDefined( level.exterior_goals ) || level.exterior_goals.size < 1 )
+		return undefined;
+
+	max_dist = 500;
+	if ( isDefined( level.max_barrier_search_dist_override ) )
+		max_dist = level.max_barrier_search_dist_override;
+
+	nodes = closest_exterior_goals( self.origin, 3 );
+	if ( nodes.size < 1 )
+		return undefined;
+
+	desired = [];
+	desired[ 0 ] = nodes[ 0 ];
+	prev_dist = distance( self.origin, nodes[ 0 ].origin );
+	for ( i = 1; i < nodes.size; i++ )
+	{
+		dist = distance( self.origin, nodes[ i ].origin );
+		if ( ( dist - prev_dist ) > max_dist )
+			break;
+		prev_dist = dist;
+		desired[ i ] = nodes[ i ];
+	}
+
+	self.entrance_nodes = desired;
+	return desired[ randomInt( desired.size ) ];
+}
+
+// T5 maps\_utility::get_array_of_closest, for the exterior_goal structs.
+closest_exterior_goals( origin, n )
+{
+	pool = [];
+	for ( i = 0; i < level.exterior_goals.size; i++ )
+		pool[ pool.size ] = level.exterior_goals[ i ];
+
+	result = [];
+	while ( pool.size > 0 && result.size < n )
+	{
+		best = 0;
+		best_dist = distanceSquared( origin, pool[ 0 ].origin );
+		for ( i = 1; i < pool.size; i++ )
+		{
+			d = distanceSquared( origin, pool[ i ].origin );
+			if ( d < best_dist )
+			{
+				best = i;
+				best_dist = d;
+			}
+		}
+		result[ result.size ] = pool[ best ];
+		rest = [];
+		for ( i = 0; i < pool.size; i++ )
+		{
+			if ( i != best )
+				rest[ rest.size ] = pool[ i ];
+		}
+		pool = rest;
+	}
+	return result;
+}
+
+// T5 waits on "goal" alone; zombie_assure_node gives up after 20 s.  The
+// native mover also notifies "bad_path" when no route exists.
+zombie_wait_goal( timeout )
+{
+	self endon( "goal" );
+	self endon( "bad_path" );
+	wait( timeout );
 }
 
 closest_valid_player( origin )
