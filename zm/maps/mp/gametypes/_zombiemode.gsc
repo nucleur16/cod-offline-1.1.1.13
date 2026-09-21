@@ -51,9 +51,10 @@
 // SetShaders "hud_chalk_1".."hud_chalk_5", which are WaW/T5 materials that no
 // CoDOL zone carries, and C1 already has a round widget that works.
 
-#using_animtree ("generic_human");
 
 #include maps\mp\gametypes\_zombiemode_utility;
+
+#using_animtree ("generic_human");
 
 // --------------------------------------------------------------------------
 // Gametype init.  Runs from zm.gsc::main(), i.e. at gametype-script load,

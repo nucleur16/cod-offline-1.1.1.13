@@ -21,10 +21,11 @@
 // self.traverseAnim, and the alignment half is absent and named.  Nothing
 // here pretends the traversal works.
 
-#using_animtree ("generic_human");
 
 #include maps\mp\gametypes\_zombiemode_utility;
 #include maps\mp\animscripts\zombie_shared;
+
+#using_animtree ("generic_human");
 
 main()
 {

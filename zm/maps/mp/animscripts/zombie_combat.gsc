@@ -57,10 +57,11 @@
 // tree's single top-level node is body), so %root would not compile.  %body is
 // used everywhere T5 writes %root.
 
-#using_animtree ("generic_human");
 
 #include maps\mp\gametypes\_zombiemode_utility;
 #include maps\mp\animscripts\zombie_shared;
+
+#using_animtree ("generic_human");
 
 main()
 {

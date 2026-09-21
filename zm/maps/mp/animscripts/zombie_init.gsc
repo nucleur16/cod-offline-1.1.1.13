@@ -47,10 +47,11 @@
 // is CoDOL's, NOT the vendor IW4 copy in bin/home/codol_rawfiles/animtrees/
 // (which carries zero ai_zombie nodes and is never consulted in a zm match).
 
-#using_animtree ("generic_human");
 
 #include maps\mp\gametypes\_zombiemode_utility;
 #include maps\mp\animscripts\zombie_shared;
+
+#using_animtree ("generic_human");
 
 // T5 animscripts\zombie_init.gsc:63 firstInit(), reduced to the level state
 // the ported modules read.  Called from main() under a level guard because

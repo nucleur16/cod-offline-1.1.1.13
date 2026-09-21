@@ -34,10 +34,11 @@
 // only used as a loop-completion counter and nothing here reads the count, so
 // the call is kept for parity but its result is not acted on.
 
-#using_animtree ("generic_human");
 
 #include maps\mp\gametypes\_zombiemode_utility;
 #include maps\mp\animscripts\zombie_shared;
+
+#using_animtree ("generic_human");
 
 main()
 {

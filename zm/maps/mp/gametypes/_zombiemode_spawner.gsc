@@ -54,9 +54,10 @@
 //   zombie_death_event          _zombiemode_spawner.gsc:3795
 //   find_flesh                  _zombiemode_spawner.gsc:3922
 //
-#using_animtree ("generic_human");
 
 #include maps\mp\gametypes\_zombiemode_utility;
+
+#using_animtree ("generic_human");
 
 // --------------------------------------------------------------------------
 // Init.  T5 _zombiemode_spawner.gsc:9 init() reads the map's spawner

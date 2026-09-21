@@ -45,10 +45,11 @@
 // server (docs/CODOL_SCRIPTED_ANIMATION_20260920.md section 4.2 refuses a
 // root anim that has a parent).  %body is used.
 
-#using_animtree ("generic_human");
 
 #include maps\mp\gametypes\_zombiemode_utility;
 #include maps\mp\animscripts\zombie_shared;
+
+#using_animtree ("generic_human");
 
 main()
 {
