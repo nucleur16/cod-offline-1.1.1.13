@@ -332,16 +332,22 @@ revive_trigger_think()
 
 		players = getPlayers();
 
-		hint = "";
+		hint = undefined;
 		for ( i = 0; i < players.size; i++ )
 		{
 			if ( players[ i ] can_revive( self ) )
 			{
-				hint = "Hold ^3[{+activate}]^7 to Revive";
+				// CoDOL's own revive key, not a T5 ZOMBIE_* one: the shipped mp
+				// tree uses it for exactly this prompt (MEASURED,
+				// maps/mp/gametypes/_damage.gsc:1875).
+				hint = &"PLATFORM_REVIVE";
 				break;
 			}
 		}
-		self.revivetrigger setHintString( hint );
+		if ( isDefined( hint ) )
+			self.revivetrigger setHintString( hint );
+		else
+			self.revivetrigger setHintString( "" );
 
 		for ( i = 0; i < players.size; i++ )
 		{

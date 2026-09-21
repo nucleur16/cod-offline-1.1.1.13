@@ -81,6 +81,130 @@ init()
 
 	init_levelvars();
 	init_anims();
+	init_hints();
+}
+
+// --------------------------------------------------------------------------
+// T5 _zombiemode.gsc:530 precache_zombie_hints, retargeted at CoDOL's keys.
+//
+// MEASURED, docs/zone_assets/ALL_localize.txt: CoDOL ships the T5 ZOMBIE_*
+// localize set verbatim -- every key below is present in
+// localized_code_post_gfx_mp (always mounted) AND again in the zm_prototype_sh
+// and zm_zombie_training map zones.  The one T5 key that is NOT shipped is
+// &"ZOMBIE_UNDEFINED", T5's fallback, so get_zombie_hint() returns undefined
+// instead and each caller names a shipped generic as its fallback ref.
+//
+// The cost-suffixed keys already contain their own cost, which is why T5
+// builds the ref at runtime as "default_buy_door_" + cost rather than passing
+// the number as a format argument.  CoDOL additionally ships the _2500 door
+// and area steps that T5 never registered; they are registered here.
+//
+// This must run before any wait: precacheString shares the precache window
+// with precacheItem ("precacheItem must be called before any wait statements
+// in the gametype or level script"), and init() is called from the level
+// script's first frame.
+// --------------------------------------------------------------------------
+
+init_hints()
+{
+	level.zombie_hints = [];
+
+	// Generic forms, used as the fallback when a map's cost has no shipped
+	// cost-suffixed key of its own.
+	add_zombie_hint( "generic_open_door",    &"ZOMBIE_OPEN_DOOR" );
+	add_zombie_hint( "generic_clear_debris", &"ZOMBIE_CLEAR_DEBRIS" );
+	add_zombie_hint( "generic_buy_weapon",   &"ZOMBIE_BUY_WEAPON" );
+
+	// Barrier rebuild.  T5 :552-557.
+	add_zombie_hint( "default_reward_barrier_piece",    &"ZOMBIE_BUTTON_REWARD_BARRIER" );
+	add_zombie_hint( "default_reward_barrier_piece_10", &"ZOMBIE_BUTTON_REWARD_BARRIER_10" );
+	add_zombie_hint( "default_reward_barrier_piece_20", &"ZOMBIE_BUTTON_REWARD_BARRIER_20" );
+	add_zombie_hint( "default_reward_barrier_piece_30", &"ZOMBIE_BUTTON_REWARD_BARRIER_30" );
+	add_zombie_hint( "default_reward_barrier_piece_40", &"ZOMBIE_BUTTON_REWARD_BARRIER_40" );
+	add_zombie_hint( "default_reward_barrier_piece_50", &"ZOMBIE_BUTTON_REWARD_BARRIER_50" );
+
+	// Barrier buy-back.  T5 :546-549.
+	add_zombie_hint( "default_buy_barrier_piece_10", &"ZOMBIE_BUTTON_BUY_BACK_BARRIER_10" );
+	add_zombie_hint( "default_buy_barrier_piece_20", &"ZOMBIE_BUTTON_BUY_BACK_BARRIER_20" );
+	add_zombie_hint( "default_buy_barrier_piece_50", &"ZOMBIE_BUTTON_BUY_BACK_BARRIER_50" );
+	add_zombie_hint( "default_buy_barrier_piece_100", &"ZOMBIE_BUTTON_BUY_BACK_BARRIER_100" );
+
+	// Debris.  T5 :560-569.
+	add_zombie_hint( "default_buy_debris_100", &"ZOMBIE_BUTTON_BUY_CLEAR_DEBRIS_100" );
+	add_zombie_hint( "default_buy_debris_200", &"ZOMBIE_BUTTON_BUY_CLEAR_DEBRIS_200" );
+	add_zombie_hint( "default_buy_debris_250", &"ZOMBIE_BUTTON_BUY_CLEAR_DEBRIS_250" );
+	add_zombie_hint( "default_buy_debris_500", &"ZOMBIE_BUTTON_BUY_CLEAR_DEBRIS_500" );
+	add_zombie_hint( "default_buy_debris_750", &"ZOMBIE_BUTTON_BUY_CLEAR_DEBRIS_750" );
+	add_zombie_hint( "default_buy_debris_1000", &"ZOMBIE_BUTTON_BUY_CLEAR_DEBRIS_1000" );
+	add_zombie_hint( "default_buy_debris_1250", &"ZOMBIE_BUTTON_BUY_CLEAR_DEBRIS_1250" );
+	add_zombie_hint( "default_buy_debris_1500", &"ZOMBIE_BUTTON_BUY_CLEAR_DEBRIS_1500" );
+	add_zombie_hint( "default_buy_debris_1750", &"ZOMBIE_BUTTON_BUY_CLEAR_DEBRIS_1750" );
+	add_zombie_hint( "default_buy_debris_2000", &"ZOMBIE_BUTTON_BUY_CLEAR_DEBRIS_2000" );
+
+	// Doors.  T5 :572-581, plus CoDOL's _2500.
+	add_zombie_hint( "default_buy_door_100", &"ZOMBIE_BUTTON_BUY_OPEN_DOOR_100" );
+	add_zombie_hint( "default_buy_door_200", &"ZOMBIE_BUTTON_BUY_OPEN_DOOR_200" );
+	add_zombie_hint( "default_buy_door_250", &"ZOMBIE_BUTTON_BUY_OPEN_DOOR_250" );
+	add_zombie_hint( "default_buy_door_500", &"ZOMBIE_BUTTON_BUY_OPEN_DOOR_500" );
+	add_zombie_hint( "default_buy_door_750", &"ZOMBIE_BUTTON_BUY_OPEN_DOOR_750" );
+	add_zombie_hint( "default_buy_door_1000", &"ZOMBIE_BUTTON_BUY_OPEN_DOOR_1000" );
+	add_zombie_hint( "default_buy_door_1250", &"ZOMBIE_BUTTON_BUY_OPEN_DOOR_1250" );
+	add_zombie_hint( "default_buy_door_1500", &"ZOMBIE_BUTTON_BUY_OPEN_DOOR_1500" );
+	add_zombie_hint( "default_buy_door_1750", &"ZOMBIE_BUTTON_BUY_OPEN_DOOR_1750" );
+	add_zombie_hint( "default_buy_door_2000", &"ZOMBIE_BUTTON_BUY_OPEN_DOOR_2000" );
+	add_zombie_hint( "default_buy_door_2500", &"ZOMBIE_BUTTON_BUY_OPEN_DOOR_2500" );
+
+	// Areas.  T5 :584-593, plus CoDOL's _2500.
+	add_zombie_hint( "default_buy_area_100", &"ZOMBIE_BUTTON_BUY_OPEN_AREA_100" );
+	add_zombie_hint( "default_buy_area_200", &"ZOMBIE_BUTTON_BUY_OPEN_AREA_200" );
+	add_zombie_hint( "default_buy_area_250", &"ZOMBIE_BUTTON_BUY_OPEN_AREA_250" );
+	add_zombie_hint( "default_buy_area_500", &"ZOMBIE_BUTTON_BUY_OPEN_AREA_500" );
+	add_zombie_hint( "default_buy_area_750", &"ZOMBIE_BUTTON_BUY_OPEN_AREA_750" );
+	add_zombie_hint( "default_buy_area_1000", &"ZOMBIE_BUTTON_BUY_OPEN_AREA_1000" );
+	add_zombie_hint( "default_buy_area_1250", &"ZOMBIE_BUTTON_BUY_OPEN_AREA_1250" );
+	add_zombie_hint( "default_buy_area_1500", &"ZOMBIE_BUTTON_BUY_OPEN_AREA_1500" );
+	add_zombie_hint( "default_buy_area_1750", &"ZOMBIE_BUTTON_BUY_OPEN_AREA_1750" );
+	add_zombie_hint( "default_buy_area_2000", &"ZOMBIE_BUTTON_BUY_OPEN_AREA_2000" );
+	add_zombie_hint( "default_buy_area_2500", &"ZOMBIE_BUTTON_BUY_OPEN_AREA_2500" );
+
+	// The mystery box.  T5 :543 registers only the 950 step; CoDOL ships four.
+	add_zombie_hint( "default_treasure_chest_650", &"ZOMBIE_RANDOM_WEAPON_650" );
+	add_zombie_hint( "default_treasure_chest_750", &"ZOMBIE_RANDOM_WEAPON_750" );
+	add_zombie_hint( "default_treasure_chest_850", &"ZOMBIE_RANDOM_WEAPON_850" );
+	add_zombie_hint( "default_treasure_chest_950", &"ZOMBIE_RANDOM_WEAPON_950" );
+	// treasure_chest_cost() returns 10 while a fire sale is up.
+	add_zombie_hint( "default_treasure_chest_10",  &"ZOMBIE_FIRE_SALE_COST" );
+
+	// Strings the zm tree hands straight to setHintString rather than through
+	// the ref table.  MEASURED (src/asmsource/_g_scr_main_mp.asm, the
+	// GScr_SetHintString body): the builtin calls Scr_GetNumParam and passes
+	// numParam-1 to Scr_ConstructMessageString, so &&1 format arguments ARE
+	// supported and the cost can be an argument for these.
+	precacheString( &"ZOMBIE_NEED_POWER" );
+	precacheString( &"ZOMBIE_ELECTRIC_SWITCH" );
+	precacheString( &"ZOMBIE_PERK_PACKAPUNCH" );
+	precacheString( &"ZOMBIE_GET_UPGRADED" );
+	precacheString( &"ZOMBIE_WEAPONCOSTAMMO" );
+	precacheString( &"ZOMBIE_WEAPONCOSTAMMO_UPGRADE" );
+	precacheString( &"ZOMBIE_PERK_JUGGERNAUT" );
+	precacheString( &"ZOMBIE_PERK_QUICKREVIVE" );
+	precacheString( &"ZOMBIE_PERK_QUICKREVIVE_SOLO" );
+	precacheString( &"ZOMBIE_PERK_FASTRELOAD" );
+	precacheString( &"ZOMBIE_PERK_DOUBLETAP" );
+	precacheString( &"ZOMBIE_PERK_MARATHON" );
+	precacheString( &"ZOMBIE_PERK_DIVETONUKE" );
+	precacheString( &"ZOMBIE_PERK_DEADSHOT" );
+	precacheString( &"ZOMBIE_PERK_ADDITIONALPRIMARYWEAPON" );
+	precacheString( &"ZOMBIE_PERK_GENERIC" );
+
+	// The downed-teammate prompt is CoDOL's own, not a T5 key: the shipped mp
+	// tree uses it for exactly this (MEASURED,
+	// bin/home/codol_rawfiles/maps/mp/gametypes/_damage.gsc:1875 and :1905,
+	// the dieHardMode revive entity).  Per the C1-is-source-of-truth mandate
+	// the in-repo working idiom wins over T5's zombies-specific key.
+	precacheString( &"PLATFORM_REVIVE" );
+
+	maps\mp\gametypes\_zombiemode_perks::precache_perk_bottles();
 }
 
 // T5 _zombiemode.gsc:649 init_levelvars.  The comment T5 puts above its table

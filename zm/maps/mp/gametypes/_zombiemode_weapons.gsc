@@ -246,9 +246,103 @@ has_weapon_or_upgrade( weapon_name )
 	return self has_upgrade( weapon_name );
 }
 
+// T5 :2370-2385.  THE WEAPON LIMIT.
+//
+// The base limit is two primaries; Mule Kick
+// ("specialty_additionalprimaryweapon") raises it to three.  T5 applies this
+// in weapon_give() itself, so every purchase path -- wall buy, ammo top-up and
+// the mystery box alike -- goes through it.
+//
+// BUG FIXED 2026-09-20: this server's weapon_give() had NO limit at all, so
+// wall buys stacked without bound.  That is the reported "3 guns without Mule
+// Kick": the box path swapped correctly but the wall path never took anything
+// away, so start pistol + wall buy + box pull = three.
+//
+// Mule Kick in CoDOL: the localized name DOES ship
+// (&"ZOMBIE_PERK_ADDITIONALPRIMARYWEAPON", MEASURED in
+// docs/zone_assets/ALL_localize.txt), and this tree already sells the machine
+// through _zombiemode_perks::perk_cost/perk_bottle.  The specialty STRING
+// "specialty_additionalprimaryweapon" appears nowhere in src/** or in the
+// shipped mp rawfiles (MEASURED), so if this server's setPerk does not know
+// it, hasPerk returns false and the limit stays at the base two -- which is
+// the correct conservative behaviour and still fixes the reported bug.
+player_weapon_limit()
+{
+	if ( self hasPerk( "specialty_additionalprimaryweapon" ) )
+		return 3;
+
+	return 2;
+}
+
+// T5 :2389-2412.  Returns after making room, if room was needed.
+//
+// getWeaponsListPrimaries() covers only the primary slots, so placeable mines,
+// grenades and other offhands are excluded by the engine rather than by the
+// is_placeable_mine()/is_equipment()/is_offhand_weapon() guards T5 needs --
+// none of which exist in this tree (MEASURED).
+enforce_weapon_limit( new_weapon )
+{
+	primaries = self getWeaponsListPrimaries();
+
+	if ( !isDefined( primaries ) )
+		return;
+
+	// Buying a weapon already held is a re-buy, not a new slot.
+	for ( i = 0; i < primaries.size; i++ )
+	{
+		if ( primaries[ i ] == new_weapon )
+			return;
+	}
+
+	if ( primaries.size < self player_weapon_limit() )
+		return;
+
+	// T5 drops whatever is in hand.  It does NOT spare the starting pistol:
+	// T5 :2404 records last_pistol_swap for m1911_zm and takes it anyway, and
+	// sparing it unconditionally would reintroduce the stacking bug whenever
+	// the pistol is the held weapon.
+	current = self getCurrentWeapon();
+
+	if ( isDefined( current ) && ( current == "none" || current == new_weapon ) )
+		current = undefined;
+
+	// The held weapon can be an offhand mid-throw, in which case it is not in
+	// the primaries list and taking it would free no slot.  Fall back to the
+	// first primary that is not the weapon being bought.
+	if ( isDefined( current ) )
+	{
+		held_is_primary = false;
+		for ( i = 0; i < primaries.size; i++ )
+		{
+			if ( primaries[ i ] == current )
+				held_is_primary = true;
+		}
+
+		if ( !held_is_primary )
+			current = undefined;
+	}
+
+	if ( !isDefined( current ) )
+	{
+		for ( i = 0; i < primaries.size; i++ )
+		{
+			if ( primaries[ i ] == new_weapon )
+				continue;
+
+			current = primaries[ i ];
+			break;
+		}
+	}
+
+	if ( isDefined( current ) )
+		self takeWeapon( current );
+}
+
 // T5 :2365, plus the ammo top-up branch of :2649.
 weapon_give( weapon_name )
 {
+	self enforce_weapon_limit( weapon_name );
+
 	self giveWeapon( weapon_name );
 	self giveMaxAmmo( weapon_name );
 	self switchToWeapon( weapon_name );
@@ -304,7 +398,7 @@ weapon_spawn_think()
 	ammo_cost = get_ammo_cost( weapon_name );
 
 	self setCursorHint( "HINT_NOICON" );
-	self setHintString( "Hold ^3[{+activate}]^7 to Buy " + get_weapon_hint( weapon_name ) + " [Cost: " + cost + "]" );
+	self setHintString( &"ZOMBIE_WEAPONCOSTAMMO", cost, get_ammo_cost( weapon_name ) );
 
 	self.first_time_triggered = false;
 
@@ -342,8 +436,7 @@ weapon_spawn_think()
 				if ( isDefined( model ) )
 					model thread weapon_show();
 				self.first_time_triggered = true;
-				self setHintString( "Hold ^3[{+activate}]^7 to Buy " + get_weapon_hint( weapon_name ) +
-					" Ammo [Cost: " + ammo_cost + "]" );
+				self setHintString( &"ZOMBIE_WEAPONCOSTAMMO", cost, ammo_cost );
 			}
 
 			player maps\mp\gametypes\_zombiemode_score::minus_to_player_score( cost );
@@ -527,7 +620,7 @@ treasure_chest_cost_hint()
 		if ( cost != shown )
 		{
 			shown = cost;
-			self setHintString( "Hold ^3[{+activate}]^7 for Mystery Box [Cost: " + cost + "]" );
+			self set_hint_string( undefined, "default_treasure_chest_" + cost, "generic_buy_weapon" );
 		}
 
 		wait( 0.5 );
@@ -609,7 +702,7 @@ treasure_chest_think()
 		}
 
 		self.grabbed_weapon = weapon;
-		self setHintString( "Hold ^3[{+activate}]^7 to Swap for " + get_weapon_hint( weapon ) );
+		self setHintString( &"ZOMBIE_SWITCH_WEAPON" );
 		self enable_trigger();
 		self thread treasure_chest_timeout();
 
@@ -649,7 +742,7 @@ treasure_chest_think()
 		if ( isDefined( self.chest_lid ) )
 			self.chest_lid thread treasure_chest_lid_close();
 
-		self setHintString( "Hold ^3[{+activate}]^7 for Mystery Box [Cost: " + self.zombie_cost + "]" );
+		self set_hint_string( undefined, "default_treasure_chest_" + self.zombie_cost, "generic_buy_weapon" );
 
 		wait( 3 );
 		self enable_trigger();
@@ -706,20 +799,12 @@ treasure_chest_weapon_spawn( player )
 	return rand;
 }
 
-// T5 :2365.  The box replaces the held primary rather than stacking.
+// T5 :2365.  The box goes through the SAME limit rule as a wall buy -- in T5
+// both call weapon_give().  The previous version open-coded a different rule
+// here (always swap the held weapon, but never the starting pistol), which is
+// why the two paths disagreed; with the wall path unbounded, that disagreement
+// is what let three primaries accumulate.
 treasure_chest_give_weapon( weapon_name )
 {
-	current = self getCurrentWeapon();
-
-	if ( isDefined( current ) && current != "none" && current != weapon_name )
-	{
-		// Never take the starting pistol away: T5 keeps it as the last-stand
-		// weapon (level.laststandpistol, _zombiemode.gsc:653).
-		if ( !isDefined( level.zombie_start_weapon ) || current != level.zombie_start_weapon )
-			self takeWeapon( current );
-	}
-
-	self giveWeapon( weapon_name );
-	self giveMaxAmmo( weapon_name );
-	self switchToWeapon( weapon_name );
+	self weapon_give( weapon_name );
 }

@@ -57,6 +57,19 @@ main()
 
 	self setModel( bodies[ index ] );
 	heads = zombie_heads();
+
+	// MEASURED, and the root cause of the live
+	// "tag 'tag_eye' does not exist on entity with model 'c_zom_ger_body1'"
+	// error: a bone dump of the shipped zm fastfiles shows every c_zom_*_body
+	// model carries 73 bones with NO tag_eye, while every c_zom_*_head carries
+	// 29 bones that DO include tag_eye (and j_eyeball_le/ri).  Setting
+	// .headModel alone is inert bookkeeping -- the engine never reads that
+	// field (zero hits for "headmodel" across src/**).  attach() is what puts
+	// the head's bones into the entity's DObj, and it is registered
+	// (src/scr_vm_main.c:739).  This mirrors the shipped stock helper
+	// codescripts/character.gsc:32-33.  Without it the zombies were being
+	// spawned with no head model at all.
+	self attach( heads[ index ], "", true );
 	self.headModel = heads[ index ];
 	self.voice = "zombie";
 	self.skeleton = "base";

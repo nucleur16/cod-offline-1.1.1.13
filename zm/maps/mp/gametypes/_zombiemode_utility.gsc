@@ -451,8 +451,8 @@ create_counter_hud( x )
 	hud = create_simple_hud();
 	hud.alignX = "left";
 	hud.alignY = "top";
-	hud.horzAlign = "user_left";
-	hud.vertAlign = "user_top";
+	hud.horzAlign = "left";
+	hud.vertAlign = "top";
 	hud.color = ( 1, 1, 1 );
 	/* C1 scale; see _zombiemode_score.gsc. T5's 32 is its largest
 	 * announcement size, so this takes the largest the mp tree uses. */
@@ -507,18 +507,82 @@ play_sound_on_ent( ref )
 }
 
 // --------------------------------------------------------------------------
-// Hint strings.  T5 _zombiemode_utility.gsc:2483 set_hint_string() resolves a
-// hint REF through a localized-string table; C1 has no such table for zm and
-// setHintString takes a plain string here, so the refs are formatted directly.
+// Hint strings.  T5 _zombiemode_utility.gsc:2457 add_zombie_hint / :2468
+// get_zombie_hint / :2483 set_hint_string, ported as-is.
+//
+// CORRECTED 2026-09-20.  The previous pass asserted "C1 has no such table for
+// zm ... so the refs are formatted directly" and passed English literals to
+// setHintString.  That is WRONG and it is why every zm prompt rendered as raw
+// English on a Chinese client.  MEASURED: CoDOL ships the whole T5 ZOMBIE_*
+// localize key set -- 458 keys in localized_code_post_gfx_mp alone, and the
+// same keys again in zm_prototype_sh and zm_zombie_training
+// (docs/zone_assets/ALL_localize.txt).  So T5's ref table ports verbatim; only
+// the registrations move to maps\mp\gametypes\_zombiemode::init_hints().
+//
 // self is the trigger, ent is the entity whose script_hint may override.
+// fallback_ref is this server's addition: T5 falls through to
+// &"ZOMBIE_UNDEFINED", which is the ONE key of the set CoDOL does not ship
+// (MEASURED), so a caller names a shipped generic instead.
 // --------------------------------------------------------------------------
 
-set_hint_string( ent, default_string )
+// --------------------------------------------------------------------------
+// Diagnostics.  Safe stringifiers: concatenating an undefined value is a
+// script runtime error, so every diagnostic println goes through these.
+// --------------------------------------------------------------------------
+
+diag_val( v )
 {
+	if ( !isDefined( v ) )
+		return "<undef>";
+
+	return "" + v;
+}
+
+diag_ent( e )
+{
+	if ( !isDefined( e ) )
+		return "<undef>";
+
+	if ( isPlayer( e ) )
+		return "PLAYER";
+
+	if ( isDefined( e.classname ) )
+		return "ent(" + e.classname + ")";
+
+	return "ent";
+}
+
+add_zombie_hint( ref, text )
+{
+	if ( !isDefined( level.zombie_hints ) )
+		level.zombie_hints = [];
+
+	precacheString( text );
+	level.zombie_hints[ ref ] = text;
+}
+
+get_zombie_hint( ref )
+{
+	if ( isDefined( level.zombie_hints ) && isDefined( level.zombie_hints[ ref ] ) )
+		return level.zombie_hints[ ref ];
+
+	println( "CoDOL zm: no hint string registered for ref " + ref );
+	return undefined;
+}
+
+set_hint_string( ent, default_ref, fallback_ref )
+{
+	ref = default_ref;
 	if ( isDefined( ent ) && isDefined( ent.script_hint ) )
-		self setHintString( ent.script_hint );
-	else
-		self setHintString( default_string );
+		ref = ent.script_hint;
+
+	text = get_zombie_hint( ref );
+
+	if ( !isDefined( text ) && isDefined( fallback_ref ) )
+		text = get_zombie_hint( fallback_ref );
+
+	if ( isDefined( text ) )
+		self setHintString( text );
 }
 
 // --------------------------------------------------------------------------

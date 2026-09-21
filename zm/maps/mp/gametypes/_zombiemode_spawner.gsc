@@ -358,11 +358,11 @@ spawn_zombie( spawn_point )
 
 	// T5 :3690 set_zombie_run_cycle picks BOTH halves: the animation and, via
 	// set_run_speed, the walk/run/sprint bucket.  The scalar half -- how fast
-	// the actor actually travels -- is setMoveSpeedScale, which the cycle now
-	// derives from the bucket it chose rather than from the raw round speed,
+	// the actor actually travels -- is apply_move_speed_scale(), which derives
+	// it from the bucket the cycle chose rather than from the raw round speed,
 	// so the clip and the translation agree.
 	ai set_zombie_run_cycle();
-	ai setMoveSpeedScale( ai move_speed_scale() );
+	ai apply_move_speed_scale();
 	ai.needs_run_update = false;
 
 	// T5 :3840.  zombie_death.gsc runs this after the death clip.
@@ -484,6 +484,37 @@ set_run_speed()
 // The translation that matches the cycle the actor is playing.  T5 gets this
 // for free because its AI moves at the animation's own root-motion speed;
 // this server's mover is scalar, so the bucket picks the scalar.
+// MEASURED (qconsole.log, 6 per spawn wave): `ai setMoveSpeedScale(...)` threw
+// "only valid on players; called on entity N ... classname
+// actor_enemy_zombie_zm".  setmovespeedscale IS registered
+// (src/scr_vm_main.c:867) but its handler calls GetPlayerEntity first and
+// writes client->sess.moveSpeedScaleMultiplier, so it rejects any entity
+// without a client.  There is no actor speed-scale builtin on this server.
+//
+// The lever that DOES move an actor here is the animation playback rate:
+// actor translation is pure root motion (CODOL_ActorAdvanceGoalAnimation ->
+// XAnimCalcDelta, no speed multiplier anywhere in the actor sources), and
+// `animplaybackrate` is a registered actor class field
+// (src/codol/player/codol_actor_lifecycle.cpp:194).  The zm tree already
+// drives the move cycle off self.moveplaybackrate
+// (zm/maps/mp/animscripts/zombie_move.gsc:105,:122), so scaling that is the
+// faithful equivalent of T5's call.
+//
+// 0.9 is the "run" value of move_speed_scale() and the centre of the
+// per-zombie jitter zombie_init.gsc:137 assigns, so it is the normalisation
+// point: a "run" zombie keeps exactly the rate it was given.
+apply_move_speed_scale( scale )
+{
+	if ( !isDefined( scale ) )
+		scale = move_speed_scale();
+
+	base = 1;
+	if ( isDefined( self.animplaybackrate ) )
+		base = self.animplaybackrate;
+
+	self.moveplaybackrate = base * ( scale / 0.9 );
+}
+
 move_speed_scale()
 {
 	if ( !isDefined( self.zombie_move_speed ) )
@@ -599,7 +630,11 @@ make_crawler()
 	self.a.pose = "prone";
 
 	self set_zombie_run_cycle( "walk" );
-	self setMoveSpeedScale( 0.35 );
+	// setMoveSpeedScale is player-only on this engine; see
+	// apply_move_speed_scale() below.  0.35 is T5's crawler scalar, which is
+	// lower than any bucket move_speed_scale() returns, so it is passed
+	// explicitly rather than derived.
+	self apply_move_speed_scale( 0.35 );
 
 	// Re-pick immediately rather than at the next cycle boundary.
 	self notify( "killanimscript" );
@@ -631,6 +666,31 @@ zombie_damage_watch()
 	for ( ;; )
 	{
 		self waittill( "damage", amount, attacker, direction, point, mod, modelName, tagName, partName, flags, weapon );
+
+		// DIAGNOSTIC 2026-09-20.  The parameter list of the actor "damage"
+		// notify was INFERRED by the porting pass, never measured, and the
+		// live log says the economy only ever SPENDS: every score change in
+		// bin/home/main/qconsole.log reaches set_player_score_hud through
+		// minus_to_player_score (:231, 5 changes), and add_to_player_score
+		// (:218) appears in ZERO stacks.  If `attacker` is not in fact the
+		// 2nd argument of this notify, that is the reason.  Report the first
+		// few so the next live test answers it outright instead of guessing.
+		if ( !isDefined( level.zm_diag_damage ) )
+			level.zm_diag_damage = 0;
+
+		if ( level.zm_diag_damage < 5 )
+		{
+			level.zm_diag_damage++;
+			println( "CoDOL zm DIAG damage notify #" + level.zm_diag_damage +
+				": amount=" + diag_val( amount ) +
+				" attacker=" + diag_ent( attacker ) +
+				" direction=" + diag_val( direction ) +
+				" point=" + diag_val( point ) +
+				" mod=" + diag_val( mod ) +
+				" modelName=" + diag_val( modelName ) +
+				" tagName=" + diag_val( tagName ) +
+				" partName=" + diag_val( partName ) );
+		}
 
 		if ( !isDefined( attacker ) || !isPlayer( attacker ) )
 			continue;
@@ -691,7 +751,7 @@ zombie_think()
 		if ( is_true( self.needs_run_update ) && isDefined( self.a ) )
 		{
 			self set_zombie_run_cycle();
-			self setMoveSpeedScale( self move_speed_scale() );
+			self apply_move_speed_scale();
 			// set_zombie_run_cycle raises the flag again (T5 :3699 does the
 			// same), so it is cleared after the call, not before.
 			self.needs_run_update = false;
@@ -731,7 +791,31 @@ zombie_death_event( zombie )
 
 	level.total_zombies_killed++;
 
-	if ( !isDefined( attacker ) && isDefined( zombie ) )
+	// DIAGNOSTIC 2026-09-20, same reason as the "damage" probe above: whether
+	// the actor "death" notify carries an attacker at all is INFERRED.
+	if ( !isDefined( level.zm_diag_death ) )
+		level.zm_diag_death = 0;
+
+	if ( level.zm_diag_death < 5 )
+	{
+		level.zm_diag_death++;
+		cached = undefined;
+		if ( isDefined( zombie ) )
+			cached = zombie.attacker;
+
+		println( "CoDOL zm DIAG death notify #" + level.zm_diag_death +
+			": arg attacker=" + diag_ent( attacker ) +
+			" cached .attacker=" + diag_ent( cached ) +
+			" total killed=" + level.total_zombies_killed );
+	}
+
+	// MEASURED (src/asmsource/_g_combat_mp.asm, G_Damage): a NULL attacker is
+	// replaced by g_entities[2046], the world entity, BEFORE the notify is
+	// pushed -- so `attacker` is never undefined here and the old
+	// !isDefined() fallback was dead code.  A world kill (the stuck-actor
+	// cull and the between-round sweep both doDamage with no attacker)
+	// arrives as a defined non-player entity, which is what this must catch.
+	if ( !isPlayer( attacker ) && isDefined( zombie ) && isDefined( zombie.attacker ) )
 		attacker = zombie.attacker;
 
 	mod = undefined;
@@ -832,7 +916,7 @@ zombie_speed_up()
 			// sprinting rather than re-rolling into a walk.
 			level.zombies[ i ] set_zombie_run_cycle( "sprint" );
 			level.zombies[ i ].needs_run_update = false;
-			level.zombies[ i ] setMoveSpeedScale( 1.4 );
+			level.zombies[ i ] apply_move_speed_scale();
 		}
 		return;
 	}

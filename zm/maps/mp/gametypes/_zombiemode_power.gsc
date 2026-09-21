@@ -51,7 +51,7 @@ electric_switch()
 
 	for ( i = 0; i < trigs.size; i++ )
 	{
-		trigs[ i ] setHintString( "Hold ^3[{+activate}]^7 to Turn On Power" );
+		trigs[ i ] setHintString( &"ZOMBIE_ELECTRIC_SWITCH" );
 		trigs[ i ] setCursorHint( "HINT_NOICON" );
 	}
 

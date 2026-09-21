@@ -105,6 +105,26 @@ player_add_points( event, mod, hit_location )
 
 	player_points = multiplier * round_up_score( player_points, 5 );
 
+	// DIAGNOSTIC 2026-09-20.  A running ledger of what the economy actually
+	// pays out, so "is the score tracked?" is answerable from one live log
+	// line instead of inferred from hudelem error stacks.  The first award of
+	// each event type prints, then every 25th.
+	if ( !isDefined( level.zm_award_count ) )
+		level.zm_award_count = [];
+
+	if ( !isDefined( level.zm_award_count[ event ] ) )
+		level.zm_award_count[ event ] = 0;
+
+	level.zm_award_count[ event ]++;
+
+	if ( level.zm_award_count[ event ] == 1 || level.zm_award_count[ event ] % 25 == 0 )
+	{
+		println( "CoDOL zm DIAG award: event=" + event +
+			" points=" + player_points +
+			" count=" + level.zm_award_count[ event ] +
+			" purse=" + self.score );
+	}
+
 	self add_to_player_score( player_points );
 }
 
@@ -143,17 +163,42 @@ player_add_points_kill_bonus( mod, hit_location )
 	if ( !isDefined( hit_location ) )
 		return score;
 
+	// CORRECTED 2026-09-20.  T5 gets a hitLocation_t name ("head", "neck",
+	// "torso_upper") because its Callback_ActorDamage is handed sHitLoc.
+	// This server has no actor damage callback; the award is driven off the
+	// "damage" notify, whose 8th argument is partName -- the BONE const
+	// string from the bullet trace, not the hit location
+	// (MEASURED: src/asmsource/_g_combat_mp.asm pushes
+	// Scr_AddConstString([ebp+0x34]) for partName, and src/asmsource/_bullet.asm
+	// fills that slot from the trace's bone index; hitLoc itself is never
+	// pushed).  So the cases that actually fire are the zombie skeleton's
+	// bone names -- MEASURED from a bone dump of the shipped zm fastfiles:
+	// every c_zom_*_body carries j_head, j_neck, j_spine4, j_spineupper,
+	// j_spinelower, j_helmet among its 73 bones.
+	//
+	// The T5 hitLocation names are kept as accepted aliases so that a caller
+	// which does supply one still scores; they simply never arrive today.
 	switch( hit_location )
 	{
+	case "j_head":
+	case "j_head_end":
+	case "j_helmet":
 	case "head":
 	case "helmet":
 		score = level.zombie_vars[ "zombie_score_bonus_head" ];
 		break;
 
+	case "j_neck":
 	case "neck":
 		score = level.zombie_vars[ "zombie_score_bonus_neck" ];
 		break;
 
+	case "j_spine4":
+	case "j_spineupper":
+	case "j_spinelower":
+	case "j_clavicle_le":
+	case "j_clavicle_ri":
+	case "j_mainroot":
 	case "torso_upper":
 	case "torso_lower":
 		score = level.zombie_vars[ "zombie_score_bonus_torso" ];
@@ -264,8 +309,8 @@ score_hud_init()
 	self.score_hud = create_simple_hud( self );
 	self.score_hud.alignX = "right";
 	self.score_hud.alignY = "middle";
-	self.score_hud.horzAlign = "user_right";
-	self.score_hud.vertAlign = "user_bottom";
+	self.score_hud.horzAlign = "right";
+	self.score_hud.vertAlign = "bottom";
 	self.score_hud.x = -103;
 	self.score_hud.y = -71;
 	/* C1 SCALE, not T5's. MEASURED: hudelem fontScale is wire field 16,
@@ -313,8 +358,8 @@ create_highlight_hud( x, y, value )
 	hud.fontScale = 1.5;
 	hud.alignX = "right";
 	hud.alignY = "middle";
-	hud.horzAlign = "user_right";
-	hud.vertAlign = "user_bottom";
+	hud.horzAlign = "right";
+	hud.vertAlign = "bottom";
 	hud.hidewheninmenu = false;
 
 	if ( value < 1 )

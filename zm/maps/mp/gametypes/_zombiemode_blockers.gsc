@@ -99,9 +99,13 @@ init()
 
 	add_sound( "rebuild_barrier_piece", "zmb_cha_ching" );
 	add_sound( "purchase", "zmb_cha_ching" );
-	add_sound( "no_purchase", "zmb_no_purchase" );
+	// CoDOL alias, not T5's.  MEASURED: T5's name is absent from
+	// docs/zone_assets/ALL_sound.txt and the engine logged
+	// "unknown sound alias"; the name below is the shipped CoDOL
+	// equivalent, in common_gametype_zm, which a zm match mounts.
+	add_sound( "no_purchase", "zmb_no_cha_ching" );
 	add_sound( "door_slide_open", "zmb_door_slide_open" );
-	add_sound( "debris_move", "zmb_debris_move" );
+	add_sound( "debris_move", "zmb_debris_clear" );
 
 	// T5 maps\_zombiemode_fx.gsc loads this as level._effect["wood_chunk_destory"]
 	// (T5's own typo).  MEASURED, docs/zone_assets/ALL_fx.txt:
@@ -266,7 +270,7 @@ blocker_trigger_think()
 	trigger = spawn( "trigger_radius", trigger_pos, 0, radius, height );
 	trigger thread trigger_delete_on_repair();
 
-	trigger set_hint_string( self, "Hold ^3[{+activate}]^7 to Rebuild Barrier" );
+	trigger set_hint_string( self, "default_reward_barrier_piece" );
 	trigger setCursorHint( "HINT_NOICON" );
 
 	for ( ;; )
@@ -500,11 +504,11 @@ door_init()
 
 	if ( self.script_noteworthy == "electric_door" || self.script_noteworthy == "electric_buyable_door" )
 	{
-		self setHintString( "Requires Power" );
+		self setHintString( &"ZOMBIE_NEED_POWER" );
 		return;
 	}
 
-	self set_hint_string( self, "Hold ^3[{+activate}]^7 to Open Door [Cost: " + cost + "]" );
+	self set_hint_string( self, "default_buy_door_" + cost, "generic_open_door" );
 }
 
 // T5 :171.  self is a door element, parent_trig the zombie_door trigger.
@@ -578,7 +582,7 @@ door_think()
 		{
 			flag_wait( "power_on" );
 
-			self set_hint_string( self, "Hold ^3[{+activate}]^7 to Open Door [Cost: " + cost + "]" );
+			self set_hint_string( self, "default_buy_door_" + cost, "generic_open_door" );
 
 			if ( !self door_buy() )
 				continue;
@@ -592,6 +596,12 @@ door_think()
 		self door_opened();
 		break;
 	}
+
+	// MEASURED (qconsole.log, "cannot set field of removed entity"): the
+	// door trigger can be deleted by door_opened() while this thread is
+	// still between its waittill and this assignment.
+	if ( !isDefined( self ) )
+		return;
 
 	self._door_open = true;
 	self notify( "door_opened" );
@@ -688,7 +698,7 @@ debris_init()
 	if ( isDefined( self.zombie_cost ) )
 		cost = self.zombie_cost;
 
-	self set_hint_string( self, "Hold ^3[{+activate}]^7 to Remove Debris [Cost: " + cost + "]" );
+	self set_hint_string( self, "default_buy_debris_" + cost, "generic_clear_debris" );
 	self setCursorHint( "HINT_NOICON" );
 
 	if ( isDefined( self.script_flag ) )

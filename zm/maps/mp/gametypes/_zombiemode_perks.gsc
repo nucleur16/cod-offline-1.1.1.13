@@ -77,8 +77,10 @@ init()
 	// common_gametype_zm.  third_person_weapon_upgrade guards the lookup.
 	level._effect[ "packapunch_fx" ] = loadfx( "maps/zombie/fx_zombie_packapunch" );
 
-	add_sound( "perk_deny", "zmb_perks_deny" );
-	add_sound( "bottle_dispense", "zmb_perks_bottle_dispense" );
+	// CoDOL aliases, not T5 names.  MEASURED: the T5 names are absent from
+	// docs/zone_assets/ALL_sound.txt; these ship in common_gametype_zm.
+	add_sound( "perk_deny", "evt_perk_deny" );
+	add_sound( "bottle_dispense", "evt_bottle_dispense" );
 
 	vending_triggers = getEntArray( "zombie_vending", "targetname" );
 	// The perks this MAP carries, for _zombiemode_powerups::free_perk_powerup:
@@ -160,6 +162,74 @@ perk_name( perk )
 }
 
 // T5 :1811.
+// MEASURED (qconsole.log, 2 occurrences): "precacheItem must be called before
+// any wait statements in the gametype or level script", thrown at the
+// precacheItem( bottle ) that used to sit after `level waittill(
+// perk + "_power_on" )` in vending().  Every bottle is precached here instead,
+// from init, which is inside the precache window.
+precache_perk_bottles()
+{
+	perks = perk_list();
+	for ( i = 0; i < perks.size; i++ )
+	{
+		bottle = perk_bottle( perks[ i ] );
+		if ( isDefined( bottle ) )
+			precacheItem( bottle );
+	}
+}
+
+// array() is NOT a registered builtin on this server (MEASURED; the same note
+// is already on zm/character/character_zm_zombie.gsc:31), so the list is built
+// by assignment.
+perk_list()
+{
+	list = [];
+	list[ list.size ] = "specialty_armorvest";
+	list[ list.size ] = "specialty_quickrevive";
+	list[ list.size ] = "specialty_fastreload";
+	list[ list.size ] = "specialty_rof";
+	list[ list.size ] = "specialty_longersprint";
+	list[ list.size ] = "specialty_flakjacket";
+	list[ list.size ] = "specialty_deadshot";
+	list[ list.size ] = "specialty_additionalprimaryweapon";
+	return list;
+}
+
+// The localized buy prompt for a perk machine.  Every key below is MEASURED
+// present in CoDOL's shipped localize set (docs/zone_assets/ALL_localize.txt,
+// localized_code_post_gfx_mp + zm_prototype_sh + zm_zombie_training), and each
+// takes the cost as an &&1 format argument -- the same shape T5 uses at
+// _zombiemode_perks.gsc:1202-1244.  Mule Kick DOES ship, as
+// ZOMBIE_PERK_ADDITIONALPRIMARYWEAPON.
+perk_hint( perk, solo )
+{
+	switch( perk )
+	{
+	case "specialty_armorvest":
+		return &"ZOMBIE_PERK_JUGGERNAUT";
+	case "specialty_quickrevive":
+		if ( is_true( solo ) )
+			return &"ZOMBIE_PERK_QUICKREVIVE_SOLO";
+		return &"ZOMBIE_PERK_QUICKREVIVE";
+	case "specialty_fastreload":
+		return &"ZOMBIE_PERK_FASTRELOAD";
+	case "specialty_rof":
+		return &"ZOMBIE_PERK_DOUBLETAP";
+	case "specialty_longersprint":
+		return &"ZOMBIE_PERK_MARATHON";
+	case "specialty_flakjacket":
+		return &"ZOMBIE_PERK_DIVETONUKE";
+	case "specialty_deadshot":
+		return &"ZOMBIE_PERK_DEADSHOT";
+	case "specialty_additionalprimaryweapon":
+		return &"ZOMBIE_PERK_ADDITIONALPRIMARYWEAPON";
+	}
+
+	// CoDOL ships a generic "buy a perk" line for anything unmapped rather
+	// than T5's &"ZOMBIE_UNDEFINED", which CoDOL does not ship.
+	return &"ZOMBIE_PERK_GENERIC";
+}
+
 perk_bottle( perk )
 {
 	switch( perk )
@@ -205,17 +275,13 @@ vending_trigger_think()
 
 	self setCursorHint( "HINT_NOICON" );
 	self useTriggerRequireLookAt();
-	self setHintString( "Requires Power" );
+	self setHintString( &"ZOMBIE_NEED_POWER" );
 
 	// T5 gates every machine but solo quick-revive behind the power switch.
 	if ( !( solo && perk == "specialty_quickrevive" ) )
 		level waittill( perk + "_power_on" );
 
-	self setHintString( "Hold ^3[{+activate}]^7 to Buy " + perk_name( perk ) + " [Cost: " + cost + "]" );
-
-	bottle = perk_bottle( perk );
-	if ( isDefined( bottle ) )
-		precacheItem( bottle );
+	self setHintString( perk_hint( perk, solo ), cost );
 
 	for ( ;; )
 	{
@@ -426,11 +492,11 @@ vending_weapon_upgrade()
 
 	self setCursorHint( "HINT_NOICON" );
 	self useTriggerRequireLookAt();
-	self setHintString( "Requires Power" );
+	self setHintString( &"ZOMBIE_NEED_POWER" );
 
 	level waittill( "Pack_A_Punch_on" );
 
-	self setHintString( "Hold ^3[{+activate}]^7 to Pack-a-Punch [Cost: " + cost + "]" );
+	self setHintString( &"ZOMBIE_PERK_PACKAPUNCH", cost );
 
 	for ( ;; )
 	{
@@ -497,7 +563,7 @@ vending_weapon_upgrade()
 			player play_sound_on_ent( "purchase" );
 		}
 
-		self setHintString( "Hold ^3[{+activate}]^7 to Pack-a-Punch [Cost: " + cost + "]" );
+		self setHintString( &"ZOMBIE_PERK_PACKAPUNCH", cost );
 		flag_clear( "pack_machine_in_use" );
 	}
 }
