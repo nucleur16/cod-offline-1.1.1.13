@@ -331,12 +331,12 @@ resolveStartWeapon()
 		precacheItem( name );
 		if ( getWeaponIndexFromName( name ) > 0 )
 		{
-			println( "CoDOL zm: starting weapon " + name );
+			codolprintln( "CoDOL zm: starting weapon " + name );
 			return name;
 		}
 	}
 
-	println( "CoDOL zm: no starting weapon is present in the mounted zm zones" );
+	codolprintln( "CoDOL zm: no starting weapon is present in the mounted zm zones" );
 	return undefined;
 }
 
@@ -366,6 +366,12 @@ resolveLethalGrenade()
 
 Callback_StartGameType()
 {
+	// Stage reporting for the zm gameplay chain.  codolprintln, not println:
+	// println is a DEVELOPER builtin and production runs developer 0, so every
+	// println in this tree is compiled out and the chain was invisible in the
+	// log for weeks.  See docs/CODOL_ZOMBIE_SPAWN_20260921.md.
+	codolprintln( "CoDOL zm: Callback_StartGameType entered on " + getDvar( "mapname" ) );
+
 	level.isSP = false;
 
 	if ( !isDefined( level.players ) )
@@ -397,6 +403,8 @@ Callback_StartGameType()
 	// barrier is damaged and the perks module which machines this map has,
 	// so both have to have run.
 	maps\mp\gametypes\_zombiemode_powerups::init();
+
+	codolprintln( "CoDOL zm: subsystems initialised; starting the round loop" );
 
 	level thread end_game_watcher();
 	level thread start_round_loop();
@@ -561,7 +569,7 @@ spawnPlayer()
 	spawnpoint = getSpawnPoint();
 	if ( !isDefined( spawnpoint ) )
 	{
-		println( "CoDOL zm: no usable spawn point on " + getDvar( "mapname" ) );
+		codolprintln( "CoDOL zm: no usable spawn point on " + getDvar( "mapname" ) );
 		return;
 	}
 
@@ -755,7 +763,7 @@ round_think()
 
 		level thread award_grenades_for_survivors();
 
-		println( "CoDOL zm: round " + level.round_number + " begins with " + players.size + " player(s)\n" );
+		codolprintln( "CoDOL zm: round " + level.round_number + " begins with " + players.size + " player(s)" );
 
 		level.round_start_time = getTime();
 		level thread [[ level.round_spawn_func ]]();

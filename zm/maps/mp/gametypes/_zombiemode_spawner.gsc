@@ -109,12 +109,12 @@ resolve_melee_weapon()
 		precacheItem( candidates[ i ] );
 		if ( getWeaponIndexFromName( candidates[ i ] ) > 0 )
 		{
-			println( "CoDOL zm: zombie melee weapon " + candidates[ i ] );
+			codolprintln( "CoDOL zm: zombie melee weapon " + candidates[ i ] );
 			return candidates[ i ];
 		}
 	}
 
-	println( "CoDOL zm: no zombie melee WeaponDef is present; zombies cannot damage anyone" );
+	codolprintln( "CoDOL zm: no zombie melee WeaponDef is present; zombies cannot damage anyone" );
 	return undefined;
 }
 
@@ -153,7 +153,7 @@ init_spawn_points()
 		}
 	}
 
-	println( "CoDOL zm: " + level.enemy_spawns.size + " zombie spawn points on " + getDvar( "mapname" ) );
+	codolprintln( "CoDOL zm: spawn points found: " + level.enemy_spawns.size + " on " + getDvar( "mapname" ) );
 }
 
 // The template every zombie is duplicated from.  Same two-step the dogs
@@ -183,7 +183,7 @@ init_spawner()
 		{
 			// The native side has already printed a "CoDOL actor:" line naming
 			// the cause.  The round loop reads this and stops asking.
-			println( "CoDOL zm: spawnactorspawner produced no zombie spawner; no enemies this match\n" );
+			codolprintln( "CoDOL zm: spawnactorspawner produced no zombie spawner; no enemies this match" );
 			level.no_zombies = true;
 			return;
 		}
@@ -191,7 +191,7 @@ init_spawner()
 		level.zombie_spawner.targetname = "zombie_spawner";
 	}
 
-	println( "CoDOL zm: zombie spawner ready\n" );
+	codolprintln( "CoDOL zm: zombie spawner ready" );
 }
 
 // --------------------------------------------------------------------------
@@ -251,7 +251,7 @@ round_spawning()
 		// and the round number are honest about what round it is, and
 		// round_wait's own end_round_wait escape closes the round out.
 		level.zombie_total = 0;
-		println( "CoDOL zm: round " + level.round_number + " has no spawners; nothing to spawn\n" );
+		codolprintln( "CoDOL zm: round " + level.round_number + " has no spawners; nothing to spawn" );
 		return;
 	}
 
@@ -276,8 +276,8 @@ round_spawning()
 
 	level.zombie_total = [[ level.max_zombie_func ]]( max );
 
-	println( "CoDOL zm: round " + level.round_number + " budget " + level.zombie_total +
-		" zombies at " + level.zombie_health + " health\n" );
+	codolprintln( "CoDOL zm: round " + level.round_number + " budget " + level.zombie_total +
+		" zombies at " + level.zombie_health + " health" );
 
 	old_spawn = undefined;
 
@@ -301,6 +301,20 @@ round_spawning()
 		{
 			level.zombie_total--;
 			ai thread round_spawn_failsafe();
+			// One line per round, not per zombie: enough to prove the chain
+			// reached a live actor and where it was put.
+			if ( !isDefined( level.zm_spawn_reported ) || level.zm_spawn_reported != level.round_number )
+			{
+				level.zm_spawn_reported = level.round_number;
+				codolprintln( "CoDOL zm: round " + level.round_number + " first zombie spawned at " +
+					ai.origin + " (ent " + ai getEntityNumber() + ", " + ai.health + " hp)" );
+			}
+		}
+		else if ( !isDefined( level.zm_spawn_fail_reported ) || level.zm_spawn_fail_reported != level.round_number )
+		{
+			level.zm_spawn_fail_reported = level.round_number;
+			codolprintln( "CoDOL zm: round " + level.round_number + " spawn attempt FAILED: " +
+				level.zm_spawn_fail_reason );
 		}
 
 		wait( level.zombie_vars[ "zombie_spawn_delay" ] );
@@ -314,12 +328,21 @@ round_spawning()
 
 spawn_zombie( spawn_point )
 {
+	level.zm_spawn_fail_reason = "unknown";
+
 	if ( !isDefined( level.zombie_spawner ) )
+	{
+		level.zm_spawn_fail_reason = "no zombie spawner (init_spawner produced none)";
 		return undefined;
+	}
 
 	ai = level.zombie_spawner spawnActor();
 	if ( !isDefined( ai ) )
+	{
+		// The native actor layer prints its own "CoDOL actor:" stage warning.
+		level.zm_spawn_fail_reason = "spawnactor returned nothing (actor budget, aitype or animscripts)";
 		return undefined;
+	}
 
 	origin = spawn_point.origin;
 	angles = spawn_point.angles;
