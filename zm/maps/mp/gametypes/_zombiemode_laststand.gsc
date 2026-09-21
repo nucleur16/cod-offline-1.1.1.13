@@ -153,7 +153,14 @@ player_laststand()
 	self setStance( "prone" );
 
 	// T5 :149 -- the AI stops caring about a downed player.
+	// self.ignoreme is a plain SCRIPT variable here: no native field reads
+	// it, so on its own zombies keep mobbing a downed player. setDontTarget
+	// is the registered sentient method (codol_sentient.cpp:845) and
+	// dontTarget IS honoured by the native acquisition pass, so the two are
+	// paired. T5 gets the same effect through is_player_valid(p, true),
+	// which drops last-stand players inside find_flesh.
 	self.ignoreme = true;
+	self setDontTarget( true );
 
 	self laststand_disable_player_weapons();
 	self laststand_give_pistol();
@@ -282,6 +289,7 @@ laststand_die()
 	self maps\mp\gametypes\_zombiemode_score::player_died_penalty();
 
 	self.ignoreme = false;
+	self setDontTarget( false );
 	self suicide();
 
 	level notify( "player_bled_out", self );
@@ -423,6 +431,7 @@ revive_success( reviver )
 {
 	self.laststand = false;
 	self.ignoreme = false;
+	self setDontTarget( false );
 
 	// See the header: a no-op when the native flag was never latched, the
 	// correct teardown when it was.

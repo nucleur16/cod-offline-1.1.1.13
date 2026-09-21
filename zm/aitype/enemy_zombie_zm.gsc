@@ -50,6 +50,16 @@ main()
 	self setEngagementMinDist( 0.000000, 0.000000 );
 	self setEngagementMaxDist( 64.000000, 128.000000 );
 
+	// Without this a zombie chases but NEVER SWINGS. MEASURED:
+	// CODOL_DogCombatGoal (codol_dog_combat.c:104) returns all-zero when
+	// attackDistance <= 0, so inAttackRange is never true, so the native
+	// frame never switches to the combat animscript and zombie_combat.gsc
+	// never runs -- while zombie_combat.gsc:205/:221 reads this very field.
+	// Nothing else in the zm tree sets it, so it was 0.
+	// 64 is this file's own authored engagement max on the line above, not
+	// an invented number; revisit it against the swing animations' reach.
+	self.meleeattackdist = 64;
+
 	character\character_zm_zombie::main();
 }
 
