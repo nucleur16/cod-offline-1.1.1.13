@@ -376,8 +376,15 @@ spawn_zombie( spawn_point )
 	if ( isDefined( level.zombie_melee_weapon ) )
 		ai.aiweapon = level.zombie_melee_weapon;
 
-	// T5 :3899, restored.
-	ai zombie_setup_attack_properties();
+	// T5 :159-:160.  A freshly spawned zombie ignores every sentient until it
+	// has walked to its entrance and torn the boards; zombie_think hands it
+	// zombie_setup_attack_properties (ignoreall = false) only then, exactly
+	// where T5 zombie_goto_entrance :620 does.  Calling that at spawn, as
+	// this file did until 2026-09-21, let the native chase override the
+	// entrance goal with the player's position on the very next frame
+	// (docs/CODOL_ZOMBIE_ROUTE_20260921.md).
+	ai.ignoreall = true;
+	ai.ignoreme = true;
 
 	// T5 :3690 set_zombie_run_cycle picks BOTH halves: the animation and, via
 	// set_run_speed, the walk/run/sprint bucket.  The scalar half -- how fast
@@ -769,6 +776,11 @@ zombie_think()
 		self.goalradius = 64;
 		self tear_into_building( node );
 	}
+
+	// T5 zombie_goto_entrance :620 and find_flesh :3934: attack mode and
+	// visibility to other AI begin once the entrance has been dealt with.
+	self zombie_setup_attack_properties();
+	self.ignoreme = false;
 
 	for ( ;; )
 	{
