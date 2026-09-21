@@ -13,6 +13,8 @@ CH_RES1_COL		= 4;
 CH_RES2_COL		= 5;
 CH_TARGET_COL	= 6;
 CH_REWARD_COL	= 7;
+CH_ID_COL		= 4;		// CoDOL: the numeric id into challenges[1000]
+CH_CO_REWARD_COL = 24;		// CoDOL: per-tier rewards, parallel to the targets
 
 
 TIER_FILE_COL	= 4;
@@ -50,27 +52,84 @@ createPerkMap()
 	level.perkMap["specialty_pistoldeath"] = "specialty_laststand";
 }
 
-ch_getProgress( refString )
+/*
+	CoDOL stores challenge progress the way C1 does: ONE cumulative float per
+	challenge in the secure profile's challenges[1000] array, indexed by the
+	NUMERIC id in column 4 of mp/allChallengesTable.csv.  There is no
+	ref-string namespace and no stored tier.
+
+	IW4's "challengeProgress" / "challengeState" roots do not exist in CoDOL at
+	all -- neither string occurs anywhere in C1.exe, and neither is declared by
+	mp/playerdata.def or mp/playersecuredata.def, so the native accessor
+	diverts them to a scratch map that is never persisted and never read back
+	by anything that decides an unlock.  Writing them was a no-op with extra
+	steps.
+
+	The numeric array is the same storage the client itself reads (C1 0x590ca0
+	-> 0x590670) and that mp/challengeWeight.csv conditions on as
+	`private.challenges[<id>]`, so a tier completed here is visible to the
+	front end, to the unlock evaluator and to the challenge-rotation picker.
+*/
+ch_challengeId( refString )
 {
-	return self getPlayerData( "challengeProgress", refString );
+	if ( !isDefined( level.challengeIds ) || !isDefined( level.challengeIds[refString] ) )
+		return -1;
+
+	return level.challengeIds[refString];
 }
 
 
+ch_getProgress( refString )
+{
+	id = ch_challengeId( refString );
+	if ( id < 0 )
+		return 0;
+
+	return self getPlayerData( "challenges", id );
+}
+
+
+/*
+	DERIVED, never stored.  The tier is one plus the number of thresholds the
+	progress has reached -- C1's own convention (CODOL_ProfileChallengeState
+	counts columns 6, 8, ... the same way).  Storing a separate state is what
+	let IW4's copy drift from its own progress.
+*/
 ch_getState( refString )
 {
-	return self getPlayerData( "challengeState", refString );
+	if ( !isDefined( level.challengeInfo[refString] ) )
+		return 0;
+
+	progress = self ch_getProgress( refString );
+	targets = level.challengeInfo[refString]["targetval"];
+
+	state = 1;
+	for ( tier = 1; isDefined( targets[tier] ); tier++ )
+	{
+		if ( progress >= targets[tier] )
+			state++;
+	}
+
+	return state;
 }
 
 
 ch_setProgress( refString, value )
 {
-	self setPlayerData( "challengeProgress", refString, value );
+	id = ch_challengeId( refString );
+	if ( id < 0 )
+		return;
+
+	self setPlayerData( "challenges", id, value );
 }
 
 
+/*
+	Kept so the vendor call sites still compile, but deliberately inert: the
+	tier is derived from the progress this module just wrote.  See ch_getState.
+*/
 ch_setState( refString, value )
 {
-	self setPlayerData( "challengeState", refString, value );
 }
 
 
@@ -113,10 +172,10 @@ onPlayerConnect()
 			continue;
 		if ( isDefined( level.patientZeroName ) && isSubStr( player.name, level.patientZeroName ) )
 		{
-			player setPlayerData( "challengeState", "ch_infected", 2 );
-			player setPlayerData( "challengeProgress", "ch_infected", 1 );
-			player setPlayerData( "challengeState", "ch_plague", 2 );
-			player setPlayerData( "challengeProgress", "ch_plague", 1 );
+			// Through the accessors: the tier follows the progress, so setting
+			// the progress to the tier-1 target is the whole write.
+			player ch_setProgress( "ch_infected", challenge_targetVal( "ch_infected", 1 ) );
+			player ch_setProgress( "ch_plague", challenge_targetVal( "ch_plague", 1 ) );
 		}	
 
 		// CoDOL stores cardTitle as a marketplace item id (short), not IW4's
@@ -2028,11 +2087,13 @@ processChallenge( baseName, progressInc, forceSetProgress )
 		// Identify the awarded tier when investigating repeated completion UI.
 		// This runs only on an actual progression transition, not every event.
 		println( "CoDOL challenge award: client " + ( self getEntityNumber() ) + " ref " + baseName + " tier " + missionStatus + " progress " + progress );
-		self ch_setProgress( baseName, level.challengeInfo[baseName]["targetval"][missionStatus] );
+		// CUMULATIVE, not clamped to the tier target.  ch_getState derives the
+		// tier by counting the thresholds the progress has passed, so writing
+		// the target back would pin the challenge at this tier for good.
+		self ch_setProgress( baseName, progress );
 		self thread giveRankXpAfterWait( baseName, missionStatus );
 		
 		missionStatus++;		
-		self ch_setState( baseName, missionStatus );
 		self.challengeData[baseName] = missionStatus;
 		
 		self thread maps\mp\gametypes\_hud_message::challengeSplashNotify( baseName );
@@ -2124,12 +2185,11 @@ updateChallenges()
 		if ( isDefined( challengeData["requirement"] ) && !self isItemUnlocked( challengeData["requirement"] ) )
 			continue;
 			
-		status = ch_getState( challengeRef );
+		// Derived from the stored progress; nothing to seed and nothing to
+		// write back.  A challenge with no progress yet reports tier 1.
+		status = self ch_getState( challengeRef );
 		if ( status == 0 )
-		{
-			ch_setState( challengeRef, 1 );
 			status = 1;
-		}
 		
 		self.challengeData[challengeRef] = status;
 	}
@@ -2145,9 +2205,16 @@ challenge_targetVal( refString, tierId )
 }
 
 
+/*
+	CoDOL's per-tier reward series is columns 24..32, running PARALLEL to the
+	targets in 6, 8, ... -- not IW4's interleaved 7, 9, 11, ...  Reading the
+	IW4 columns against CoDOL's table returns 0 for 1349 of the 2330 authored
+	tiers (58%), because CoDOL populates only the first two of those cells and
+	leaves the rest blank.
+*/
 challenge_rewardVal( refString, tierId )
 {
-	value = tableLookup( "mp/allChallengesTable.csv", CH_REF_COL, refString, CH_REWARD_COL + ((tierId-1)*2) );
+	value = tableLookup( "mp/allChallengesTable.csv", CH_REF_COL, refString, CH_CO_REWARD_COL + (tierId-1) );
 	return int( value );
 }
 
@@ -2155,6 +2222,7 @@ challenge_rewardVal( refString, tierId )
 buildChallegeInfo()
 {
 	level.challengeInfo = [];
+	level.challengeIds = [];
 
 	tableName = "mp/allchallengesTable.csv";
 
@@ -2169,6 +2237,12 @@ buildChallegeInfo()
 		level.challengeInfo[refString] = [];
 		level.challengeInfo[refString]["targetval"] = [];
 		level.challengeInfo[refString]["reward"] = [];
+
+		// The numeric id IS the storage address; a row without one cannot be
+		// progressed at all, so record it here rather than looking it up per
+		// event.  Mounted CoDOL rows all carry one; an IW4 export leaves the
+		// column blank, which is caught by the assert below.
+		level.challengeIds[refString] = int( tableLookup( tableName, CH_REF_COL, refString, CH_ID_COL ) );
 
 		for ( tierId = 1; tierId < 11; tierId++ )
 		{
@@ -2243,8 +2317,9 @@ completeAllChallenges( percentage )
 
 		if ( self isItemUnlocked( challengeRef ) || percentage == 1.0 )
 		{		
-			self setPlayerData( "challengeProgress", challengeRef, finalTarget );
-			self setPlayerData( "challengeState", challengeRef, finalTier );
+			// The tier is derived from the progress, so only the progress is
+			// written; finalTier is left for the log/UI above.
+			self ch_setProgress( challengeRef, finalTarget );
 		}
 		
 		wait ( 0.05 );

@@ -440,7 +440,9 @@ challengeSplashNotify( challengeRef )
 	wait ( 0.05 );
 
 	//subtracting one from state becase state was incremented after completing challenge
-	challengeState = ( self getPlayerData( "challengeState", challengeRef )  - 1 );
+	// Derived from the stored progress, like everywhere else -- CoDOL has no
+	// "challengeState" root (the string is absent from C1 entirely).
+	challengeState = ( self maps\mp\gametypes\_missions::ch_getState( challengeRef ) - 1 );
 	challengeTarget = int( tableLookup( "mp/allChallengesTable.csv", 0, challengeRef, 6 + ((challengeState-1)*2) ) );
 	
 	if( challengeTarget == 0 )
