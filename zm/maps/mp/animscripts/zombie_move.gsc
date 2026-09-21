@@ -93,8 +93,8 @@ MoveRun()
 // debug push/pop.
 MoveStandRun()
 {
-	anim = current_run_anim();
-	if ( !isDefined( anim ) )
+	runAnim = current_run_anim();
+	if ( !isDefined( runAnim ) )
 	{
 		// set_zombie_run_cycle has not run yet (the actor is one frame old).
 		// Hold the init pose rather than blending to nothing.
@@ -102,7 +102,7 @@ MoveStandRun()
 		return;
 	}
 
-	self setFlaggedAnimKnobAll( "runanim", anim, %body, 1, 0.2, self.moveplaybackrate );
+	self setFlaggedAnimKnobAll( "runanim", runAnim, %body, 1, 0.2, self.moveplaybackrate );
 	DoNoteTracksForTime( level.zombie_run_anim_update_time, "runanim" );
 }
 
@@ -112,14 +112,14 @@ MoveStandRun()
 // runs the same knob-all.
 MoveCrawl()
 {
-	anim = self.crawl_anim;
-	if ( !isDefined( anim ) )
+	crawlAnim = self.crawl_anim;
+	if ( !isDefined( crawlAnim ) )
 	{
 		wait( 0.05 );
 		return;
 	}
 
-	self setFlaggedAnimKnobAll( "runanim", anim, %body, 1, 0.2, self.moveplaybackrate );
+	self setFlaggedAnimKnobAll( "runanim", crawlAnim, %body, 1, 0.2, self.moveplaybackrate );
 	DoNoteTracksForTime( level.zombie_run_anim_update_time, "runanim" );
 }
 

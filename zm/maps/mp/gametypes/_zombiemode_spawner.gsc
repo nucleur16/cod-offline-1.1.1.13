@@ -456,15 +456,15 @@ set_run_anim( anime )
 	if ( !isDefined( self.animname ) )
 		return;
 
-	anim = level.scr_anim[ self.animname ][ anime ];
-	if ( !isDefined( anim ) )
+	animRef = level.scr_anim[ self.animname ][ anime ];
+	if ( !isDefined( animRef ) )
 		return;
 
-	self.a.combatrunanim = anim;
-	self.run_combatanim = anim;
-	self.run_noncombatanim = anim;
-	self.walk_combatanim = anim;
-	self.walk_noncombatanim = anim;
+	self.a.combatrunanim = animRef;
+	self.run_combatanim = animRef;
+	self.run_noncombatanim = animRef;
+	self.walk_combatanim = animRef;
+	self.walk_noncombatanim = animRef;
 }
 
 // T5 :3671 set_run_speed.  level.zombie_move_speed is the round's 0..100 dial
