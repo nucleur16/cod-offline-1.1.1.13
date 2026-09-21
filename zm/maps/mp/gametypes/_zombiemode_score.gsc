@@ -268,7 +268,13 @@ score_hud_init()
 	self.score_hud.vertAlign = "user_bottom";
 	self.score_hud.x = -103;
 	self.score_hud.y = -71;
-	self.score_hud.fontScale = 12;
+	/* C1 SCALE, not T5's. MEASURED: hudelem fontScale is wire field 16,
+	 * codec -86 -- six bits carrying value*10, so the whole representable
+	 * range is 0.0..6.3. T5's 12 cannot be encoded, and an unrepresentable
+	 * field refused the ENTIRE snapshot: the client stuck on "waiting for
+	 * player data" because no snapshot ever reached it. The shipped mp tree
+	 * uses 0.5..3 (most often 1.0-2.5); 2 is its common prominent size. */
+	self.score_hud.fontScale = 2;
 	self.score_hud.color = ( 0.9, 0.9, 0.0 );
 	self.score_hud.alpha = 1;
 	self.score_hud.sort = 10;
@@ -302,7 +308,9 @@ create_highlight_hud( x, y, value )
 	hud.sort = 0;
 	hud.x = x;
 	hud.y = y;
-	hud.fontScale = 8;
+	/* C1 scale; see the note on score_hud.fontScale above. T5's 8 is a
+	 * secondary size, so this takes the step below the main readout. */
+	hud.fontScale = 1.5;
 	hud.alignX = "right";
 	hud.alignY = "middle";
 	hud.horzAlign = "user_right";

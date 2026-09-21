@@ -454,7 +454,9 @@ create_counter_hud( x )
 	hud.horzAlign = "user_left";
 	hud.vertAlign = "user_top";
 	hud.color = ( 1, 1, 1 );
-	hud.fontscale = 32;
+	/* C1 scale; see _zombiemode_score.gsc. T5's 32 is its largest
+	 * announcement size, so this takes the largest the mp tree uses. */
+	hud.fontscale = 3;
 	hud.x = x;
 	hud.alpha = 0;
 
