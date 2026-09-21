@@ -180,6 +180,15 @@ blocker_init()
 	if ( self.barrier_chunks.size < 1 )
 		return;
 
+	// T5: the clip is a script_brushmodel with spawnflag 1, DISCONNECT_PATHS,
+	// so the window's node_negotiation link is cut from spawn until
+	// zombie_goto_entrance's `clip connectpaths()` after the tear.  Cutting
+	// it here (native Path_DisconnectPaths over the map graph) is what keeps
+	// a zombie chasing the player from planning THROUGH untorn boards --
+	// it must route to the exterior_goal and tear first.
+	if ( isDefined( self.clip ) )
+		self.clip disconnectpaths();
+
 	self blocker_attack_spots();
 
 	// T5 asserts self.clip here.  A barrier with no clip brush still repairs;
@@ -313,7 +322,11 @@ blocker_trigger_think()
 			self replace_chunk( chunk );
 
 			if ( isDefined( self.clip ) )
+			{
 				self.clip enable_trigger();
+				self.clip disconnectpaths();
+				self.clip.paths_open = false;
+			}
 
 			// T5 waits one second per board unless the barrier carries a
 			// script_delay.

@@ -772,9 +772,17 @@ zombie_think()
 		self.first_node = node;
 		self.goalradius = 128;
 		self setGoalPos( node.origin );
-		self zombie_wait_goal( 20 );
+		// T5 waits on "goal" alone (:585), with zombie_assure_node moving
+		// the goal to the next closest entrance on "bad_path".  The 20 s
+		// give-up this port had here fired on every zombie -- a walk cycle
+		// covers the 700-1100 units from a yard spawner to its window in
+		// 45-70 s -- and sent it into the chase with the boards still up
+		// (docs/CODOL_ZOMBIE_WINDOW_20260921.md).
+		self zombie_wait_entrance();
+		node = self.first_node;
 		self.goalradius = 64;
 		self tear_into_building( node );
+		self open_barrier_paths( node );
 	}
 
 	// T5 zombie_goto_entrance :620 and find_flesh :3934: attack mode and
@@ -791,6 +799,7 @@ zombie_think()
 		if ( isDefined( barrier ) )
 		{
 			self tear_into_building( barrier );
+			self open_barrier_paths( barrier );
 			self.goalradius = 64;
 			continue;
 		}
@@ -815,6 +824,28 @@ zombie_think()
 
 		wait( 1 );
 	}
+}
+
+// T5 zombie_goto_entrance :601-:607: once the barrier's chunks are all gone
+// the clip is dropped out of the way (disable_trigger) and the window's
+// negotiation link is reconnected (native Path_ConnectPaths), so the
+// interior route can cross it; the native mover then plays the traversal at
+// the begin node (maps\mp\animscripts\zombie_jump).  Idempotent.
+open_barrier_paths( node )
+{
+	if ( !isDefined( node ) || !isDefined( node.clip ) )
+		return;
+
+	if ( isDefined( node.barrier_chunks ) && !all_chunks_destroyed( node.barrier_chunks ) )
+		return;
+
+	if ( is_true( node.clip.paths_open ) )
+		return;
+
+	node.clip.paths_open = true;
+	node.clip disable_trigger();
+	node.clip connectpaths();
+	codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " opened the window at " + node.origin + " (clip dropped, paths connected)" );
 }
 
 // T5 zombie_think :448-:556: the entrance choice.
@@ -880,13 +911,78 @@ closest_exterior_goals( origin, n )
 	return result;
 }
 
-// T5 waits on "goal" alone; zombie_assure_node gives up after 20 s.  The
-// native mover also notifies "bad_path" when no route exists.
-zombie_wait_goal( timeout )
+// T5 zombie_goto_entrance :585 `self waittill( "goal" )` plus
+// zombie_assure_node :636: on "bad_path" (the native mover found no route,
+// or was wedged twice) the goal moves to the next closest entrance in
+// self.entrance_nodes, then to the 20 closest, and only when every one of
+// those is unreachable does the zombie give up (T5 kills it; here it falls
+// through to the chase, which the cut window links keep honest).
+zombie_wait_entrance()
 {
-	self endon( "goal" );
-	self endon( "bad_path" );
-	wait( timeout );
+	self endon( "death" );
+
+	for ( ;; )
+	{
+		result = self zombie_wait_goal_or_bad_path();
+		if ( result == "goal" )
+			return;
+
+		next = self next_entrance_node();
+		if ( !isDefined( next ) )
+		{
+			codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " found no reachable entrance from " + self.origin + "; giving up on the entrance walk" );
+			return;
+		}
+
+		codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " bad_path to entrance " + self.first_node.origin + "; trying " + next.origin );
+		self.first_node = next;
+		self setGoalPos( next.origin );
+	}
+}
+
+zombie_wait_goal_or_bad_path()
+{
+	self endon( "death" );
+
+	self thread notify_on( "goal", "entrance_result" );
+	self thread notify_on( "bad_path", "entrance_result" );
+	self waittill( "entrance_result", which );
+	self notify( "entrance_result_done" );
+	return which;
+}
+
+notify_on( event, forward )
+{
+	self endon( "death" );
+	self endon( "entrance_result_done" );
+	self waittill( event );
+	self notify( forward, event );
+}
+
+// The next entrance to try: the rest of self.entrance_nodes, then (T5 :672)
+// the 20 closest exterior_goals, each once.
+next_entrance_node()
+{
+	if ( !isDefined( self.entrance_tried ) )
+		self.entrance_tried = [];
+	self.entrance_tried[ self.entrance_tried.size ] = self.first_node;
+
+	pool = self.entrance_nodes;
+	if ( !isDefined( pool ) || self.entrance_tried.size >= pool.size )
+		pool = closest_exterior_goals( self.origin, 20 );
+
+	for ( i = 0; i < pool.size; i++ )
+	{
+		tried = false;
+		for ( j = 0; j < self.entrance_tried.size; j++ )
+		{
+			if ( self.entrance_tried[ j ] == pool[ i ] )
+				tried = true;
+		}
+		if ( !tried )
+			return pool[ i ];
+	}
+	return undefined;
 }
 
 closest_valid_player( origin )
@@ -1205,7 +1301,19 @@ zombie_tear_notetracks( msg, chunk, node )
 			return;
 
 		if ( notetrack == "end" || notetrack == "finish" )
+		{
+			// MEASURED (obj/claude-workers/xanim_probe.py): every CoDOL
+			// boardtear clip carries a "board" note at t 0.55-0.60, so this
+			// arm only fires if notetrack delivery dropped it.  The tear
+			// still happened on screen; remove the board and say so.
+			if ( isDefined( chunk ) && !is_true( chunk.destroyed ) )
+			{
+				codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " tear clip ended without its board notetrack; removing board " + chunk.script_noteworthy + " at the end instead" );
+				self.lastchunk_destroy_time = getTime();
+				maps\mp\gametypes\_zombiemode_blockers::remove_chunk( chunk );
+			}
 			return;
+		}
 
 		if ( notetrack == "board" )
 		{
@@ -1213,9 +1321,6 @@ zombie_tear_notetracks( msg, chunk, node )
 			{
 				self.lastchunk_destroy_time = getTime();
 				maps\mp\gametypes\_zombiemode_blockers::remove_chunk( chunk );
-
-				if ( isDefined( node ) && isDefined( node.clip ) )
-					node.clip disable_trigger();
 			}
 			continue;
 		}
@@ -1225,7 +1330,28 @@ zombie_tear_notetracks( msg, chunk, node )
 }
 
 // T5 :760 tear_into_building.
+//
+// Wrapped: while the zombie walks to its attack spot and tears, the native
+// perception pass must not own the goal.  MEASURED 2026-09-21: with
+// ignoreall false the native chase re-targets the goal at the enemy every
+// frame (CODOL_ActorRunFrame), so the script's setGoalPos( attacking_spot )
+// held for one frame and wait_until_at_spot timed out on every zombie; the
+// tear animation was never played in a whole session (no boardtear clip in
+// the log).  T5 has no native chase -- find_flesh sets the goal -- so
+// ignoreall = true here IS the T5 contract: the script owns the goal.
 tear_into_building( node )
+{
+	self endon( "death" );
+	self endon( "zombie_delete" );
+
+	restore = !is_true( self.ignoreall );
+	self.ignoreall = true;
+	self tear_into_building_inner( node );
+	if ( restore )
+		self.ignoreall = false;
+}
+
+tear_into_building_inner( node )
 {
 	self endon( "death" );
 	self endon( "zombie_delete" );
@@ -1249,11 +1375,13 @@ tear_into_building( node )
 	self.goalradius = 2;
 	self setGoalPos( self.attacking_spot );
 
-	// T5 waits on "goal" and then on "orientdone" with a timeout.  This
-	// server's native mover publishes neither, so the walk is bounded by
-	// distance-or-timeout, which is the same contract T5's timeout expresses.
-	if ( !wait_until_at_spot( self.attacking_spot, 6 ) )
+	// T5 waits on "goal" and then on "orientdone" with a timeout.  The
+	// native mover notifies "goal" inside goalradius; arrival is also
+	// accepted within 32 units, and the wait is bounded (the spot is at most
+	// ~130 units from the entrance goal: 15 s covers it at walk speed).
+	if ( !wait_until_at_spot( self.attacking_spot, 15 ) )
 	{
+		codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " did not reach attack spot " + self.attacking_spot + " from " + self.origin + " in 15 s" );
 		self reset_attack_spot();
 		return;
 	}
@@ -1284,6 +1412,8 @@ tear_into_building( node )
 
 		chunk update_states( "target_by_zombie" );
 
+		codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " tearing board " + chunk.script_noteworthy + " at " + chunk.origin + " (barrier " + node.origin + ")" );
+
 		self thread do_zombies_playvocals( "teardown" );
 
 		// T5 uses AnimScripted here -- see the header for why this does not.
@@ -1297,6 +1427,7 @@ tear_into_building( node )
 
 		if ( all_chunks_destroyed( node.barrier_chunks ) )
 		{
+			codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " barrier " + node.origin + " is open" );
 			self reset_attack_spot();
 			return;
 		}
@@ -1317,16 +1448,33 @@ wait_until_at_spot( spot, timeout )
 {
 	deadline = getTime() + int( timeout * 1000 );
 
+	self.at_spot_goal = false;
+	self thread flag_on_goal();
+
 	for ( ;; )
 	{
-		if ( distanceSquared( self.origin, spot ) < 1024 )
+		if ( self.at_spot_goal || distanceSquared( self.origin, spot ) < 1024 )
+		{
+			self notify( "at_spot_done" );
 			return true;
+		}
 
 		if ( getTime() > deadline )
+		{
+			self notify( "at_spot_done" );
 			return false;
+		}
 
 		wait( 0.1 );
 	}
+}
+
+flag_on_goal()
+{
+	self endon( "death" );
+	self endon( "at_spot_done" );
+	self waittill( "goal" );
+	self.at_spot_goal = true;
 }
 
 // T5 _zombiemode_utility.gsc get_closest_non_destroyed_chunk.
