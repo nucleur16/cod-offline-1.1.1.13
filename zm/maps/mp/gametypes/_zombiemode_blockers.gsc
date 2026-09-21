@@ -43,9 +43,23 @@
 //   remove_chunk_rotate_grate :2083) -- board geometry variants that need the
 //   per-piece anim_grate_index bookkeeping and the tear FX.
 //   quantum_bomb_* (:3356,:3391) -- that power-up is not ported.
-//   Every zombie_boardtear_* / zombie_bartear_* audio-plus-FX offset function
-//   (:2105,:2155,:2605,:2642,:2680,:2737,:2792) -- FX-only, and they are the
-//   functions T5 drives from animation notetracks.
+//   zombie_bartear_* (:2155 and the bar_bend family) -- C1-vs-T5, C1 WINS:
+//   MEASURED, %ai_zombie_bartear_* and %ai_zombie_bar_bend_* ARE declared in
+//   CoDOL's generic_human.atr but ship NO xanim in any zone a zm match mounts
+//   (docs/zone_assets/ALL_xanim.txt), so the metal-bar barricade variant does
+//   not exist in CoDOL.  The wood-board variant, which does ship all 36
+//   clips, is ported in full.
+//   The "anim" door style (door_classify :195, door_activate case "anim",
+//   door_solid_thread_anim :890).  The reason changed on 2026-09-20 and is
+//   now sharper than "no animation builtins": there ARE twenty of them, but
+//   MEASURED, src/codol/script/codol_script_anim.c:143 anim_receiver refuses
+//   any entity for which CODOL_ActorOwnedTree returns NULL, and its own error
+//   text says so -- "only actors own one on this server".  A zombie_door is a
+//   script_brushmodel, not an actor, so NONE of the twenty can drive it, and
+//   T5's level.blocker_anim_func additionally wants animscripted.  A door
+//   authored script_string "anim" is still skipped with one println.  Making
+//   this work is a native change (give a script model a server animtree), not
+//   a script one.
 //
 // TWO BUILTINS T5 USES THAT THIS SERVER DOES NOT REGISTER (MEASURED
 // 2026-09-20): ConnectPaths and DisconnectPaths.  T5 calls them on every door
@@ -55,16 +69,26 @@
 // setGoalPos is recomputed every second (_zombiemode_spawner::zombie_think),
 // so a newly opened room becomes reachable as soon as a player stands in it.
 //
-// ONE ADAPTATION, flagged loudly.  In T5 a zombie tears a board off a window
-// from an ANIMATION NOTETRACK (the animscript calls remove_chunk).  This
-// server has no notetracks, so nothing would ever remove a board and the
-// repair economy -- the classic early-round income, and the reason this module
-// is priority 3 -- could never pay out.  blocker_zombie_tear_watch() below
-// removes one chunk per zombie_board_tear_delay seconds while a zombie stands
-// in the barrier's attack spots.  It is the TRIGGER that is invented, not the
-// effect: remove_chunk is T5's.  When the animation workstream lands its
-// notetracks, delete blocker_zombie_tear_watch and call remove_chunk from the
-// notetrack instead; nothing else in this file changes.
+// THE INVENTED TEAR TIMER IS GONE.  2026-09-20.  The previous pass shipped
+// blocker_zombie_tear_watch(), a barrier-side poll that removed one chunk
+// every zombie_board_tear_delay seconds while a zombie stood in an attack
+// spot, because with no notetracks nothing would ever remove a board and the
+// repair economy could not pay out.  Its own header said to delete it the
+// moment notetracks landed.  They landed (commit d4548385,
+// docs/CODOL_SCRIPTED_ANIMATION_20260920.md section 3), so it is deleted.
+//
+// What replaces it is T5's own mechanism, in T5's own two halves:
+//   * _zombiemode_spawner::tear_into_building (T5 :800) claims an attack
+//     spot, plays the tear CLIP for that barrier slot, and runs
+//     _zombiemode_spawner::zombie_tear_notetracks (T5 :1150), which waits on
+//     the clip's "board" notetrack;
+//   * on that note it calls remove_chunk() below -- unchanged, still T5's --
+//     together with the tear audio and FX offset functions, which are now
+//     ported here (T5 :2105 zombie_boardtear_audio_offset, :1428/:1493
+//     zombie_boardtear_offset_fx_horizontle / _verticle, which T5 keeps in
+//     its spawner and which this module keeps next to the chunks they act
+//     on).
+// Nothing polls, and no board is removed except by an animation.
 
 #include maps\mp\gametypes\_zombiemode_utility;
 
@@ -78,6 +102,18 @@ init()
 	add_sound( "no_purchase", "zmb_no_purchase" );
 	add_sound( "door_slide_open", "zmb_door_slide_open" );
 	add_sound( "debris_move", "zmb_debris_move" );
+
+	// T5 maps\_zombiemode_fx.gsc loads this as level._effect["wood_chunk_destory"]
+	// (T5's own typo).  MEASURED, docs/zone_assets/ALL_fx.txt:
+	// C1-vs-T5 CONFLICT, C1 WINS, and this one is a SUBSTITUTION rather than
+	// a port -- called out so anyone who identifies a better match can
+	// correct it.  MEASURED, docs/zone_assets/ALL_fx.txt: CoDOL ships no
+	// wood-chunk destruction effect at all (no fx_wood_chunk*, no
+	// destructibles/*board*, no splinter effect).  The nearest shipped wood
+	// debris burst that a zm match mounts is "impacts/fx_large_woodhit"
+	// (common_gametype_zm).  Every use is guarded, so deleting this line
+	// degrades the tear to silent geometry rather than breaking it.
+	level._effect[ "wood_chunk_destroy" ] = loadfx( "impacts/fx_large_woodhit" );
 
 	init_blockers();
 }
@@ -147,12 +183,12 @@ blocker_init()
 	self.trigger_location = get_struct( self.target, "targetname" );
 
 	self thread blocker_think();
-	self thread blocker_zombie_tear_watch();
 }
 
 // T5 :1313.  Three positions in front of the barrier that a zombie stands in
-// to attack it.  T5 hands these to the AI's claim system; here they are the
-// proximity test blocker_zombie_tear_watch uses.
+// to attack it.  These are T5's claim system, used as T5 uses them:
+// _zombiemode_spawner::get_attack_spot reserves one and walks the zombie to
+// it before the tear animation plays.
 blocker_attack_spots()
 {
 	chunk = get_closest( self.origin, self.barrier_chunks );
@@ -174,6 +210,13 @@ blocker_attack_spots()
 	spots[ spots.size ] = groundpos( spots[ 0 ] + ( anglesToRight( angles ) * -28 ) + ( 0, 0, 60 ) );
 
 	self.attack_spots = spots;
+
+	// T5 :1327.  One reservation per spot, so two zombies do not tear the
+	// same board from the same place.  _zombiemode_spawner::get_attack_spot
+	// claims one and reset_attack_spot releases it.
+	self.attack_spots_taken = [];
+	for ( i = 0; i < spots.size; i++ )
+		self.attack_spots_taken[ i ] = false;
 }
 
 // T5 :1350.  Poll the barrier; when a chunk is missing, run the repair loop.
@@ -316,16 +359,94 @@ rebuild_barrier_reward_reset()
 	self.rebuild_barrier_reward = 0;
 }
 
-// T5 :1729 remove_chunk, state half.  Everything T5 does around these three
-// lines is tear audio, tear FX, the grate rotation and the per-piece
-// anim_grate_index -- see the header.
+// T5 :1729 remove_chunk.  The state half is unchanged from the previous
+// pass; the audio and FX halves below it are new, and are what the "board"
+// notetrack now drives (T5 _zombiemode_spawner.gsc:1163-:1183 threads exactly
+// these two off the same note).
+//
+// STILL NOT TAKEN: the grate rotation and the per-piece anim_grate_index
+// (remove_chunk_rotate_grate :2083) -- board geometry variants.
 remove_chunk( chunk )
 {
+	if ( !isDefined( chunk ) || is_true( chunk.destroyed ) )
+		return;
+
 	chunk update_states( "destroyed" );
 	chunk.destroyed = true;
 	chunk hide();
 	chunk notSolid();
 	chunk notify( "destroyed" );
+
+	chunk thread zombie_boardtear_audio_offset();
+	chunk thread zombie_boardtear_offset_fx();
+}
+
+// T5 _zombiemode_spawner.gsc:2105 zombie_boardtear_audio_offset.  T5's own
+// comment: "I added an audio offset to give more length and depth to the
+// tearing off feeling".
+//
+// T5 branches on chunk.material over glass / metal / rock / metal_vent /
+// default.  MEASURED, docs/zone_assets/ALL_sound.txt: of T5's five aliases
+// CoDOL ships only the wood-board pair, as zmb_break_board and zmb_board_slam
+// (there is a zmb_break_glass_barrier too, and it is used).  The metal,
+// rock and vent arms are dropped rather than pointed at a substitute alias,
+// because a rock barricade would then sound like wood.
+zombie_boardtear_audio_offset()
+{
+	if ( is_true( self.already_broken ) )
+		return;
+	self.already_broken = true;
+
+	if ( isDefined( self.material ) && self.material == "glass" )
+	{
+		self playSound( "zmb_break_glass_barrier" );
+		wait( randomFloatRange( 0.3, 0.6 ) );
+		self playSound( "zmb_break_glass_barrier" );
+		return;
+	}
+
+	self play_sound_on_ent( "break_barrier_piece" );
+	wait( randomFloatRange( 0.3, 0.6 ) );
+	self play_sound_on_ent( "board_slam" );
+}
+
+// T5 _zombiemode_spawner.gsc:1428 zombie_boardtear_offset_fx_horizontle and
+// :1493 _verticle, merged.
+//
+// T5 picks between them on the chunk's script_noteworthy slot ("4","6","5","1"
+// horizontal, the rest vertical) and the only difference between the two
+// bodies is the sign of the two wood-chunk FX offsets.  That is reproduced.
+//
+// T5's clientside variants (setclientflag with
+// level._ZOMBIE_SCRIPTMOVER_FLAG_BOARD_HORIZONTAL_FX) are NOT used: those
+// flag bits are T5 client-script numbers and this server publishes no
+// equivalent, so the FX is played server-side, which is the branch T5 itself
+// takes when level.use_clientside_board_fx is unset.
+zombie_boardtear_offset_fx()
+{
+	fx = level._effect[ "wood_chunk_destroy" ];
+	if ( !isDefined( fx ) )
+		return;
+
+	horizontal = false;
+	if ( isDefined( self.script_noteworthy ) )
+	{
+		n = self.script_noteworthy;
+		if ( n == "1" || n == "4" || n == "5" || n == "6" )
+			horizontal = true;
+	}
+
+	if ( horizontal )
+	{
+		playFx( fx, self.origin + ( 0, 0, 30 ) );
+		wait( randomFloatRange( 0.2, 0.4 ) );
+		playFx( fx, self.origin + ( 0, 0, -30 ) );
+		return;
+	}
+
+	playFx( fx, self.origin + ( 0, 30, 0 ) );
+	wait( randomFloatRange( 0.2, 0.4 ) );
+	playFx( fx, self.origin + ( 0, -30, 0 ) );
 }
 
 // T5 :2174 replace_chunk, state half.
@@ -340,65 +461,6 @@ replace_chunk( chunk )
 	chunk show();
 	chunk solid();
 	chunk play_sound_on_ent( "rebuild_barrier_piece" );
-}
-
-// ADAPTATION -- see the header.  This replaces an animation notetrack, and
-// only the notetrack: remove_chunk is T5's.
-blocker_zombie_tear_watch()
-{
-	if ( !isDefined( self.attack_spots ) || self.attack_spots.size < 1 )
-		return;
-
-	for ( ;; )
-	{
-		wait( 1 );
-
-		if ( all_chunks_destroyed( self.barrier_chunks ) )
-			continue;
-
-		if ( !isDefined( level.zombies ) )
-			continue;
-
-		attacker = undefined;
-		for ( i = 0; i < level.zombies.size; i++ )
-		{
-			z = level.zombies[ i ];
-			if ( !isDefined( z ) )
-				continue;
-
-			for ( s = 0; s < self.attack_spots.size; s++ )
-			{
-				if ( distanceSquared( z.origin, self.attack_spots[ s ] ) < 4096 )
-				{
-					attacker = z;
-					break;
-				}
-			}
-
-			if ( isDefined( attacker ) )
-				break;
-		}
-
-		if ( !isDefined( attacker ) )
-			continue;
-
-		intact = [];
-		for ( i = 0; i < self.barrier_chunks.size; i++ )
-		{
-			if ( self.barrier_chunks[ i ] get_chunk_state() == "repaired" )
-				intact[ intact.size ] = self.barrier_chunks[ i ];
-		}
-
-		if ( intact.size < 1 )
-			continue;
-
-		remove_chunk( intact[ randomInt( intact.size ) ] );
-
-		if ( isDefined( self.clip ) )
-			self.clip disable_trigger();
-
-		wait( level.zombie_vars[ "zombie_board_tear_delay" ] );
-	}
 }
 
 // ==========================================================================

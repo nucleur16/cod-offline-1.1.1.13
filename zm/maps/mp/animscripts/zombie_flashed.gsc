@@ -1,37 +1,44 @@
 // zm zombie animscript: zombie_flashed.
 //
-// The native actor path (src/codol/player/codol_actor_scripts.cpp) loads nine
-// modules per species -- <animscript>_init/_stop/_move/_combat/_death/_pain/
-// _flashed/_turn/_jump -- and refuses the species outright if any one of them
-// is missing, so all nine exist.  The species row names the prefix
-// "maps/mp/animscripts/zombie"; these resolve out of the zm CATEGORY root and
-// are never compiled into an mp or coop match.
+// Ported from T5 animscripts\flashed.gsc (T5 has no zombie_flashed; the
+// zombie species falls through to the shared one) plus the zombie's own
+// flash reaction clips.
 //
-// WHY THESE ARE NOT PORTS OF T5's ZOMBIE ANIMSCRIPTS.  T5 animates humanoid AI
-// (maps/_zombiemode*.gsc, animscripts/*) entirely from GSC, by referencing
-// %anim tokens out of #using_animtree("generic_human") and handing them to
-// setflaggedanimknoball / animscripted / DoNoteTracks.  MEASURED 2026-09-20:
-// this server registers none of those builtins (no "setanim", "setanimknob"
-// or "animscripted" in src/), and OpenBLOPS contains a native clip-state
-// machine for the DOG only (Game/Shared/bgame/bg_dog_animations_mp.cpp) --
-// there is no native humanoid equivalent to port.  So the zombie species row
-// carries a NULL animation-state backend, setanimstate() refuses for it by
-// name, and these modules keep the actor alive and oriented without claiming
-// to animate it.  Filling them in is the scripted-animation workstream, not
-// this one; see docs/CODOL_ACTOR_SPECIES_20260920.md section 5.
+// The native path reaches this module through setFlashBanged
+// (src/codol/player/codol_actor_lifecycle.cpp:1323).  Like pain, the frame
+// keeps it selected only while this thread lives, so it returns.
 //
-// Flashbang reaction. Zombies have no eyes to flash; T5 ignores it too.
+// C1-vs-T5: CoDOL ships %ai_zombie_flash_react_01 and _02 -- MEASURED,
+// common_gametype_zm, both declared in generic_human.atr.  T5's shared
+// flashed.gsc plays a human cower set instead; the zombie-specific clips are
+// obviously the intended ones and CoDOL shipping them is the evidence.
+//
+// NOT TAKEN: T5's flashed.gsc blindfire, the flash_end transition and
+// animscripts\shared::DoNoteTracksForever -- the first two need weapon
+// firing the zombie does not have.
+
+#using_animtree ("generic_human");
+
+#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\mp\animscripts\zombie_shared;
 
 main()
 {
 	self endon( "killanimscript" );
+	self endon( "death" );
 
-	// No orientation override for this state.
+	if ( !is_true( self.has_legs ) )
+		return;
 
-	// Park until the native AI switches this actor to another animscript.
-	// Returning immediately would leave CODOL_ActorSwitchScript holding a dead
-	// thread handle for the state it just entered.
-	for ( ;; )
-		wait( 0.05 );
+	if ( randomInt( 2 ) == 0 )
+		react = %ai_zombie_flash_react_01;
+	else
+		react = %ai_zombie_flash_react_02;
+
+	self animmode( "gravity" );
+	self setFlaggedAnimKnobAllRestart( "flashanim", react, %body, 1, 0.2, self.animplaybackrate );
+
+	DoNoteTracksForTime( getAnimLength( react ), "flashanim" );
+
+	self animmode( "normal" );
 }
-

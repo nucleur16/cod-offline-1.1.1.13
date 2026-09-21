@@ -501,12 +501,45 @@ treasure_chest_ChooseWeightedRandomWeapon( player )
 }
 
 // T5 :1057.  Pay, roll, grab or time out, close.  self is the use trigger.
+// T5 _zombiemode_powerups.gsc:2062 toggle_fire_sale_on drops every box to 10
+// for the duration of the power-up.  The cost is read per purchase rather
+// than latched at init so a sale that starts while a player is standing at
+// the box applies to them.
+treasure_chest_cost()
+{
+	if ( isDefined( level.zombie_vars[ "zombie_powerup_fire_sale_on" ] ) &&
+	     level.zombie_vars[ "zombie_powerup_fire_sale_on" ] )
+		return 10;
+
+	return self.zombie_cost;
+}
+
+// The hint has to follow the sale, or a box on sale still advertises 950.
+treasure_chest_cost_hint()
+{
+	self endon( "kill_chest_think" );
+
+	shown = -1;
+
+	for ( ;; )
+	{
+		cost = self treasure_chest_cost();
+		if ( cost != shown )
+		{
+			shown = cost;
+			self setHintString( "Hold ^3[{+activate}]^7 for Mystery Box [Cost: " + cost + "]" );
+		}
+
+		wait( 0.5 );
+	}
+}
+
 treasure_chest_think()
 {
 	self endon( "kill_chest_think" );
 
 	self setCursorHint( "HINT_NOICON" );
-	self setHintString( "Hold ^3[{+activate}]^7 for Mystery Box [Cost: " + self.zombie_cost + "]" );
+	self thread treasure_chest_cost_hint();
 
 	for ( ;; )
 	{
@@ -540,14 +573,16 @@ treasure_chest_think()
 				continue;
 			}
 
-			if ( who.score < self.zombie_cost )
+			cost = self treasure_chest_cost();
+
+			if ( who.score < cost )
 			{
 				self play_sound_on_ent( "no_purchase" );
 				wait( 0.5 );
 				continue;
 			}
 
-			who maps\mp\gametypes\_zombiemode_score::minus_to_player_score( self.zombie_cost );
+			who maps\mp\gametypes\_zombiemode_score::minus_to_player_score( cost );
 			user = who;
 			break;
 		}

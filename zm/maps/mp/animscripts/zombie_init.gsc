@@ -1,39 +1,128 @@
 // zm zombie animscript: zombie_init.
 //
-// The native actor path (src/codol/player/codol_actor_scripts.cpp) loads nine
-// modules per species -- <animscript>_init/_stop/_move/_combat/_death/_pain/
-// _flashed/_turn/_jump -- and refuses the species outright if any one of them
-// is missing, so all nine exist.  The species row names the prefix
+// The native actor path (src/codol/player/codol_actor_scripts.cpp:136) loads
+// nine modules per species -- <animscript>_init/_stop/_move/_combat/_death/
+// _pain/_flashed/_turn/_jump -- and refuses the species outright if any one of
+// them is missing, so all nine exist.  The species row names the prefix
 // "maps/mp/animscripts/zombie"; these resolve out of the zm CATEGORY root and
 // are never compiled into an mp or coop match.
 //
-// WHY THESE ARE NOT PORTS OF T5's ZOMBIE ANIMSCRIPTS.  T5 animates humanoid AI
-// (maps/_zombiemode*.gsc, animscripts/*) entirely from GSC, by referencing
-// %anim tokens out of #using_animtree("generic_human") and handing them to
-// setflaggedanimknoball / animscripted / DoNoteTracks.  MEASURED 2026-09-20:
-// this server registers none of those builtins (no "setanim", "setanimknob"
-// or "animscripted" in src/), and OpenBLOPS contains a native clip-state
-// machine for the DOG only (Game/Shared/bgame/bg_dog_animations_mp.cpp) --
-// there is no native humanoid equivalent to port.  So the zombie species row
-// carries a NULL animation-state backend, setanimstate() refuses for it by
-// name, and these modules keep the actor alive and oriented without claiming
-// to animate it.  Filling them in is the scripted-animation workstream, not
-// this one; see docs/CODOL_ACTOR_SPECIES_20260920.md section 5.
+// 2026-09-20: THESE ARE NOW REAL PORTS OF T5's ZOMBIE ANIMSCRIPTS.  The
+// previous pass shipped nine parked stubs because this server registered no
+// animation builtins.  Commit d4548385 registered twenty
+// (docs/CODOL_SCRIPTED_ANIMATION_20260920.md section 8) and MEASURED that the
+// %anim reference system and the notetrack producer were already complete, so
+// the set below animates through setflaggedanimknoball / setflaggedanim and
+// reads notetracks back through maps\mp\animscripts\zombie_shared.
+//
+// STILL ABSENT, and therefore ported AROUND rather than with, by name:
+// animscripted / animscriptedskiprestart / stopanimscripted /
+// startscriptedanim (T5's scripted root-motion alignment), useanimtree,
+// animcustom, setproneanimnodes, setidleanimoverride, setaiminganims.  Every
+// place a T5 path wanted one is called out in the file that wanted it.
+//
+// ANIMATION NAMES ARE CoDOL's, NOT T5's.  Per the standing mandate, C1 wins
+// every conflict.  MEASURED 2026-09-20 by extracting the rawfile
+// animtrees/generic_human.atr out of patch_common_mp (5,345 lines, 386
+// distinct ai_zombie_* nodes) and intersecting it with the xanim assets the
+// zm zone set actually mounts (common_mp, patch_common_mp,
+// common_gametype_zm, patch_common_gametype_zm and the three zm map zones;
+// docs/zone_assets/ALL_xanim.txt): 225 of the 386 ai_zombie_* tree nodes have
+// a shipped xanim behind them in a zm match.  Only those 225 are referenced.
+// The two T5 names that lose: %ai_zombie_run_v4 and %ai_zombie_idle_v1_delta
+// are declared in CoDOL's tree but ship no xanim, so they are replaced by
+// %ai_zombie_run_v1 and %ai_zombie_idle_v1, which do.  See
+// docs/CODOL_ZOMBIE_ANIMSCRIPTS_20260920.md section 3.
 //
 // This module also carries the species' #using_animtree declaration, which is
-// the ONLY thing that registers "generic_human" in the server animtree
-// registry; without it CODOL_ActorPrepareAnimation cannot find the tree and
-// refuses every spawn (that is exactly how the dog failed before 2026-09-20).
+// what registers "generic_human" in the server animtree registry; without it
+// CODOL_ActorPrepareAnimation cannot find the tree and refuses every spawn.
 // maps/mp/_dogs.gsc:97 plays the same role for "dog".
+//
+// NOTE ON WHICH generic_human.atr IS LIVE.  MEASURED, src/cscr_parser.cpp:567:
+// Scr_ReadFile intercepts any "animtrees/" path and returns the MOUNTED CoDOL
+// archive's copy, falling back to the script roots only when no archive has
+// one.  docs/zone_assets/ALL_animtree.txt records generic_human.atr in
+// common_mp and patch_common_mp, so the tree that resolves every %anim below
+// is CoDOL's, NOT the vendor IW4 copy in bin/home/codol_rawfiles/animtrees/
+// (which carries zero ai_zombie nodes and is never consulted in a zm match).
 
 #using_animtree ("generic_human");
 
+#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\mp\animscripts\zombie_shared;
+
+// T5 animscripts\zombie_init.gsc:63 firstInit(), reduced to the level state
+// the ported modules read.  Called from main() under a level guard because
+// this server has no separate first-frame hook for a species.
+firstInit()
+{
+	if ( isDefined( level.zombie_animscripts_ready ) )
+		return;
+
+	level.zombie_animscripts_ready = true;
+
+	init_notetracks();
+
+	// T5 zombie_init.gsc:112.  How long a looping cycle plays before the move
+	// script re-picks one.
+	level.zombie_run_anim_update_time = 0.4;
+
+	// T5 zombie_melee.gsc:60 resetGiveUpTime(): a zombie that has been in
+	// melee this long without landing a hit gives the attack up and re-paths.
+	level.zombie_melee_give_up_time = 3;
+
+	// T5 zombie_pain.gsc:31.  Minimum gap between two pain reactions.
+	level.zombie_pain_interval = 1.5;
+
+	init_zombie_sounds();
+}
+
+// The aliases the animscripts and the spawner drive by hand, as opposed to
+// the ones the client plays off "sndnt#" notetracks on its own.
+//
+// MEASURED, docs/zone_assets/ALL_sound.txt: every alias below ships in
+// common_gametype_zm.  An alias that did not would be a silent return, not an
+// error (_zombiemode_utility::play_sound_on_ent), so this list is safe to
+// extend as more of the zm sound bank is identified.
+init_zombie_sounds()
+{
+	add_sound( "zombie_spawn",        "zmb_zombie_spawn" );
+	add_sound( "zombie_ambient",      "zmb_zombie_amb" );
+	add_sound( "crawler_ambient",     "zmb_crawler_vocals_amb" );
+	add_sound( "zombie_attack",       "zmb_zombie_nt_vocals_attack" );
+	add_sound( "zombie_swing",        "zmb_zombie_nt_vocals_swing" );
+	add_sound( "zombie_taunt",        "zmb_zombie_nt_vocals_taunt" );
+	add_sound( "zombie_crawl",        "zmb_zombie_nt_vocals_crawl" );
+	add_sound( "zombie_step",         "zmb_zombie_nt_vocals_step" );
+	add_sound( "zombie_bodyfall",     "zmb_zombie_nt_vocals_land" );
+	add_sound( "zombie_death",        "zmb_death_vox" );
+	add_sound( "zombie_death_mvmt",   "zmb_death_mvmt" );
+	add_sound( "zombie_death_gibs",   "zmb_death_gibs" );
+	add_sound( "zombie_behind",       "zmb_zombie_behind" );
+
+	// Barricade tear, driven from the "board" notetrack -- see
+	// _zombiemode_blockers.gsc.
+	add_sound( "break_barrier_piece", "zmb_break_board" );
+	add_sound( "board_slam",          "zmb_board_slam" );
+}
+
 main()
 {
+	firstInit();
+
+	// T5 zombie_init.gsc:170.  self.a is the per-actor animation state block
+	// every module in this directory reads.
 	self.a = spawnStruct();
 	self.a.pose = "stand";
 	self.a.movement = "walk";
 	self.a.nextStandingHitDying = false;
+	self.a.nodeath = false;
+	self.a.meleeState = "right";
+	self.a.painTime = 0;
+
+	self.allowpain = true;
+	self.has_legs = true;
 
 	self.ignoreSuppression = true;
 	self.suppressionThreshold = 1;
@@ -41,14 +130,29 @@ main()
 	self.noDodgeMove = true;
 	self.disableArrivals = true;
 
-	// Native fields (Scr_AddClassField, codol_actor_lifecycle.cpp).
-	self.animplaybackrate = 1;
-	self.moveplaybackrate = 1;
+	// Native fields (Scr_AddClassField, codol_actor_lifecycle.cpp:190-199).
+	// T5 zombie_init.gsc:196 randomises both so a pack of zombies does not
+	// move in lockstep.
+	self.animplaybackrate = 0.9 + randomFloat( 0.2 );
+	self.moveplaybackrate = self.animplaybackrate;
 
 	// T5 zombies claw at contact range; the dog's 102 units is a lunge.
+	// T5 _zombiemode_spawner.gsc:3908 zombie_setup_attack_properties sets 64
+	// once the zombie is in attack mode; this is the pre-attack value.
 	self.meleeAttackDist = 48;
 	self.stopAnimDistSq = 1024;
 	self.pathEnemyFightDist = 64;
 
 	self setTalkToSpecies( "zombie" );
+
+	// NOT DONE HERE: the bootstrap idle pose.  MEASURED,
+	// src/codol/player/codol_actor_scripts.cpp:341-361: this function runs
+	// inside CODOL_ActorScriptsInitialize, BETWEEN CODOL_ActorPrepareAnimation
+	// and CODOL_ActorFinishInitialization -- and it is FinishInitialization
+	// that establishes the server DObj owning the tree, which is exactly the
+	// precondition anim_receiver() tests (codol_script_anim.c:143-150).  An
+	// animation call from here would be refused with "requires an entity with
+	// a server animtree".  _zombiemode_spawner::spawn_zombie plays the
+	// bootstrap pose instead, after spawnActor() has returned a fully
+	// initialised actor.
 }

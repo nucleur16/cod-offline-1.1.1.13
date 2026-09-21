@@ -1,37 +1,139 @@
-// zm zombie animscript: zombie_move.
+// zm zombie animscript: zombie_move.  The walk/run/sprint cycle.
 //
-// The native actor path (src/codol/player/codol_actor_scripts.cpp) loads nine
-// modules per species -- <animscript>_init/_stop/_move/_combat/_death/_pain/
-// _flashed/_turn/_jump -- and refuses the species outright if any one of them
-// is missing, so all nine exist.  The species row names the prefix
-// "maps/mp/animscripts/zombie"; these resolve out of the zm CATEGORY root and
-// are never compiled into an mp or coop match.
+// Ported from T5 animscripts\zombie_move.gsc (575 lines) MoveMainLoop :60 and
+// animscripts\zombie_run.gsc (508 lines) MoveRun :8 /
+// MoveStandNoncombatOverride :228 / MoveCrouchRunOverride :283.
 //
-// WHY THESE ARE NOT PORTS OF T5's ZOMBIE ANIMSCRIPTS.  T5 animates humanoid AI
-// (maps/_zombiemode*.gsc, animscripts/*) entirely from GSC, by referencing
-// %anim tokens out of #using_animtree("generic_human") and handing them to
-// setflaggedanimknoball / animscripted / DoNoteTracks.  MEASURED 2026-09-20:
-// this server registers none of those builtins (no "setanim", "setanimknob"
-// or "animscripted" in src/), and OpenBLOPS contains a native clip-state
-// machine for the DOG only (Game/Shared/bgame/bg_dog_animations_mp.cpp) --
-// there is no native humanoid equivalent to port.  So the zombie species row
-// carries a NULL animation-state backend, setanimstate() refuses for it by
-// name, and these modules keep the actor alive and oriented without claiming
-// to animate it.  Filling them in is the scripted-animation workstream, not
-// this one; see docs/CODOL_ACTOR_SPECIES_20260920.md section 5.
+// The native path drives this module: CODOL_ActorRunFrame
+// (src/codol/player/codol_actor_lifecycle.cpp:866) selects <animscript>_move
+// whenever the actor has a route and is not attacking or in pain, and the
+// native mover owns TRANSLATION.  This module owns only the pose on top of
+// that translation, which is precisely the split T5 has.
 //
-// Path-following state; the native mover owns translation.
+// TAKEN, by T5 function:
+//   MoveMainLoop            zombie_move.gsc:60  -- the re-pick loop, its
+//                           getAnimTime(%walk_and_run_loops) loop counter and
+//                           the "closer than 64 units, walk instead" rule.
+//   MoveRun                 zombie_run.gsc:8    -- the pose switch.
+//   MoveStandNoncombatOverride zombie_run.gsc:228 -- the knob-all itself,
+//                           unchanged: SetFlaggedAnimKnobAll onto %body at
+//                           weight 1 / 0.2 s / self.moveplaybackrate, then
+//                           DoNoteTracksForTime.
+//
+// NOT TAKEN, and why:
+//   sideStepInit / trySideStep (zombie_move.gsc:117) -- T5's Spetsnaz-zombie
+//     sidestep.  It calls AnimScripted to translate the actor sideways along
+//     the clip's root motion; animscripted is not a registered builtin, and
+//     faking the translation with a teleport would be invented movement.
+//   animscripts\face::SetIdleFaceDelayed, battleChatter_ai::evaluateMoveEvent,
+//     animscripts\debug -- no counterpart module in this tree.
+//   self.exception["move"] -- T5's per-level exception table; zm has none.
+//
+// CoDOL-vs-T5: %walk_and_run_loops.  MEASURED, the extracted CoDOL
+// generic_human.atr carries the node, so getAnimTime on it is legal.  It is
+// only used as a loop-completion counter and nothing here reads the count, so
+// the call is kept for parity but its result is not acted on.
+
+#using_animtree ("generic_human");
+
+#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\mp\animscripts\zombie_shared;
 
 main()
 {
 	self endon( "killanimscript" );
 
 	self orientmode( "face motion" );
+	self animmode( "normal" );
 
-	// Park until the native AI switches this actor to another animscript.
-	// Returning immediately would leave CODOL_ActorSwitchScript holding a dead
-	// thread handle for the state it just entered.
-	for ( ;; )
-		wait( 0.05 );
+	MoveMainLoop();
 }
 
+MoveMainLoop()
+{
+	self endon( "killanimscript" );
+
+	self.a.runLoopCount = randomInt( 10000 );
+	prevLoopTime = 0;
+
+	// T5 :66.  A destination inside 64 units is walked to, whatever the
+	// round's speed says.
+	if ( isDefined( self.zombie_move_speed ) && self.zombie_move_speed != "walk" )
+	{
+		if ( isDefined( self.pathGoalPos ) && distanceSquared( self.origin, self.pathGoalPos ) < 4096 )
+			self.a.movement = "walk";
+	}
+
+	for ( ;; )
+	{
+		loopTime = self getAnimTime( %walk_and_run_loops );
+		if ( loopTime < prevLoopTime )
+			self.a.runLoopCount++;
+		prevLoopTime = loopTime;
+
+		MoveRun();
+	}
+}
+
+// T5 zombie_run.gsc:8.  Two poses reach this server: a zombie with legs runs
+// its stand cycle, a crawler runs its prone cycle.  T5's "crouch" arm has no
+// zombie caller (choosePose only ever answers "stand" for animname "zombie").
+MoveRun()
+{
+	self endon( "killanimscript" );
+
+	if ( is_true( self.has_legs ) )
+		MoveStandRun();
+	else
+		MoveCrawl();
+}
+
+// T5 zombie_run.gsc:228 MoveStandNoncombatOverride, verbatim apart from the
+// debug push/pop.
+MoveStandRun()
+{
+	anim = current_run_anim();
+	if ( !isDefined( anim ) )
+	{
+		// set_zombie_run_cycle has not run yet (the actor is one frame old).
+		// Hold the init pose rather than blending to nothing.
+		wait( 0.05 );
+		return;
+	}
+
+	self setFlaggedAnimKnobAll( "runanim", anim, %body, 1, 0.2, self.moveplaybackrate );
+	DoNoteTracksForTime( level.zombie_run_anim_update_time, "runanim" );
+}
+
+// T5 zombie_run.gsc:283 MoveCrouchRunOverride, retargeted at the crawl set --
+// T5 reaches the same clips through maps\_zombiemode_spawner::make_crawler,
+// which swaps self.run_combatanim for a level._zombie_crawl entry and then
+// runs the same knob-all.
+MoveCrawl()
+{
+	anim = self.crawl_anim;
+	if ( !isDefined( anim ) )
+	{
+		wait( 0.05 );
+		return;
+	}
+
+	self setFlaggedAnimKnobAll( "runanim", anim, %body, 1, 0.2, self.moveplaybackrate );
+	DoNoteTracksForTime( level.zombie_run_anim_update_time, "runanim" );
+}
+
+// The cycle _zombiemode_spawner::set_zombie_run_cycle chose for this actor.
+// T5 keeps two (run_combatanim for a zombie that can see its enemy and
+// run_noncombatanim otherwise); the zombie set assigns the same clip to both,
+// so one accessor covers it and the second field is honoured if a level
+// script sets it.
+current_run_anim()
+{
+	if ( isDefined( self.enemy ) && isDefined( self.run_combatanim ) )
+		return self.run_combatanim;
+
+	if ( isDefined( self.run_noncombatanim ) )
+		return self.run_noncombatanim;
+
+	return self.run_combatanim;
+}

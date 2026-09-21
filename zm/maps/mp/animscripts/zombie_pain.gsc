@@ -1,37 +1,107 @@
-// zm zombie animscript: zombie_pain.
+// zm zombie animscript: zombie_pain.  The flinch.
 //
-// The native actor path (src/codol/player/codol_actor_scripts.cpp) loads nine
-// modules per species -- <animscript>_init/_stop/_move/_combat/_death/_pain/
-// _flashed/_turn/_jump -- and refuses the species outright if any one of them
-// is missing, so all nine exist.  The species row names the prefix
-// "maps/mp/animscripts/zombie"; these resolve out of the zm CATEGORY root and
-// are never compiled into an mp or coop match.
+// Ported from T5 animscripts\zombie_pain.gsc:9 main (618 lines), the ordinary
+// (non-thundergun, non-special) arm.
 //
-// WHY THESE ARE NOT PORTS OF T5's ZOMBIE ANIMSCRIPTS.  T5 animates humanoid AI
-// (maps/_zombiemode*.gsc, animscripts/*) entirely from GSC, by referencing
-// %anim tokens out of #using_animtree("generic_human") and handing them to
-// setflaggedanimknoball / animscripted / DoNoteTracks.  MEASURED 2026-09-20:
-// this server registers none of those builtins (no "setanim", "setanimknob"
-// or "animscripted" in src/), and OpenBLOPS contains a native clip-state
-// machine for the DOG only (Game/Shared/bgame/bg_dog_animations_mp.cpp) --
-// there is no native humanoid equivalent to port.  So the zombie species row
-// carries a NULL animation-state backend, setanimstate() refuses for it by
-// name, and these modules keep the actor alive and oriented without claiming
-// to animate it.  Filling them in is the scripted-animation workstream, not
-// this one; see docs/CODOL_ACTOR_SPECIES_20260920.md section 5.
+// CONTRACT WITH THE NATIVE PATH.  MEASURED,
+// src/codol/player/codol_actor_lifecycle.cpp:863-869: the frame keeps
+// <animscript>_pain selected for as long as THIS THREAD IS ALIVE
+// (painRunning), and only then re-evaluates move/combat/stop.  So the flinch
+// ends when this function returns, and the function must always return.
+// Every wait below is therefore bounded by the clip's own length rather than
+// by waiting for an "end" that a missing notetrack would never deliver.
 //
-// Hit reaction.
+// TAKEN, by T5 line:
+//   :11  SetFlashBanged(false)
+//   :36  the self.a.disablePain gate
+//   :44  self.a.painTime = GetTime()
+//   :51  the nextStandingHitDying rule (the next standing hit kills)
+//   :71  AnimMode("gravity")
+//   :90  getPainAnim, reduced to the two pools CoDOL ships
+//   the SetFlaggedAnim + notetrack wait
+//
+// NOT TAKEN, and why:
+//   playThundergunPainAnim (:22, :28) -- the thundergun knockdown/getup set.
+//     MEASURED: %ai_zombie_thundergun_* IS shipped, but T5 drives the
+//     knockdown through AnimScripted (root-motion alignment onto a landing
+//     spot), which is not a registered builtin.  Left for whoever ports the
+//     thundergun weapon script; this file's hook is self.pain_override.
+//   anim.pain_test, self.a.flamepainTime, specialPain, helmetPop -- SP
+//     systems with no zm caller.
+//   animscripts\face::SayGenericDialogue -- no face tree.
+//   the location-specific additive "hit" pose (T5's second animation) --
+//     it is played with SetFlaggedAnimLimited onto an additive node chosen
+//     from self.damageLocation.  CoDOL's shipped ai_zombie set has exactly
+//     two arm-hit clips and no per-bone additive, so the single reaction
+//     clip is all there is to play.
+//
+// C1-vs-T5 CONFLICT, C1 WINS: T5's pain pool for animname "zombie" is
+// level.scr_anim["zombie"]["pain*"], fed from clips CoDOL does not ship.
+// The clips CoDOL DOES ship for a zombie reacting to a hit are
+// %ai_zombie_shot_arm_left / %ai_zombie_shot_arm_right (standing) and
+// %ai_zombie_walk_on_hands_shot_a / _b (crawling) -- MEASURED present in
+// common_gametype_zm and declared in generic_human.atr.  Those are the pool.
+
+#using_animtree ("generic_human");
+
+#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\mp\animscripts\zombie_shared;
 
 main()
 {
 	self endon( "killanimscript" );
+	self endon( "death" );
 
-	// No orientation override for this state.
+	self setFlashBanged( false );
 
-	// Park until the native AI switches this actor to another animscript.
-	// Returning immediately would leave CODOL_ActorSwitchScript holding a dead
-	// thread handle for the state it just entered.
-	for ( ;; )
-		wait( 0.05 );
+	if ( is_true( self.a.disablePain ) || !is_true( self.allowpain ) )
+		return;
+
+	// T5 :51.  A zombie marked by the previous hit dies on this one.
+	if ( is_true( self.a.nextStandingHitDying ) )
+		self.health = 1;
+
+	// T5 :44, plus the rate limit T5 gets from anim.pain_test.
+	now = getTime();
+	if ( isDefined( self.a.painTime ) && now - self.a.painTime < level.zombie_pain_interval * 1000 )
+		return;
+	self.a.painTime = now;
+
+	if ( isDefined( self.pain_override ) )
+	{
+		self [[ self.pain_override ]]();
+		return;
+	}
+
+	self animmode( "gravity" );
+
+	painAnim = getPainAnim();
+	if ( !isDefined( painAnim ) )
+		return;
+
+	// T5 plays the flinch as an ADDITIVE over the current cycle so the zombie
+	// keeps walking through it.  setflaggedanimlimited is the registered
+	// builtin for "set this animation's weight without completing its
+	// ancestors", which is that same operation.
+	self setFlaggedAnimLimited( "painanim", painAnim, 1, 0.1, self.animplaybackrate );
+
+	DoNoteTracksForTime( getAnimLength( painAnim ), "painanim" );
+
+	self clearAnim( painAnim, 0.2 );
+	self animmode( "normal" );
 }
 
+// T5 zombie_pain.gsc:90 getPainAnim, retargeted -- see the header.
+getPainAnim()
+{
+	if ( is_true( self.has_legs ) )
+	{
+		if ( randomInt( 2 ) == 0 )
+			return %ai_zombie_shot_arm_left;
+		return %ai_zombie_shot_arm_right;
+	}
+
+	if ( randomInt( 2 ) == 0 )
+		return %ai_zombie_walk_on_hands_shot_a;
+	return %ai_zombie_walk_on_hands_shot_b;
+}

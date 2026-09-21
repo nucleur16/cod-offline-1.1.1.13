@@ -27,12 +27,21 @@
 //                                           _zombiemode_power.gsc sends.
 //
 // NOT TAKEN, and why:
-//   third_person_weapon_upgrade (:283) and do_knuckle_crack /
+//   2026-09-20: third_person_weapon_upgrade (:283) and do_knuckle_crack /
 //   upgrade_knuckle_crack_begin / _end (:611,:624,:663) -- the Pack-a-Punch
-//   presentation is a scripted animation on a rig of "packa_rollers" plus a
-//   viewmodel knuckle-crack; both are animscripted() and neither builtin
-//   exists here.  The machine still takes the gun, waits packapunch_timeout,
-//   and hands back the upgrade.
+//   presentation rig -- are now PORTED, and the reason they could be is that
+//   neither actually needed a scripted animation.  Re-reading T5:
+//     * third_person_weapon_upgrade is a script_model rig driven by setModel
+//       / rotateto / moveto / delete.  Every one of those is registered.
+//     * the knuckle crack is a WEAPON SWAP: T5 takes the held gun, gives
+//       "zombie_knuckle_crack" and switches to it, and the animation is the
+//       weapon's own viewmodel anim, played by the CLIENT.  MEASURED,
+//       docs/zone_assets/ALL_weapon.txt: "zombie_knuckle_crack" ships in
+//       common_gametype_zm, so the client has the viewmodel and its anims.
+//   The two calls T5 makes that are genuinely unavailable are named at their
+//   call sites below: useweaponhidetags (the world-gun tag cull) and the
+//   AllowLean / AllowCrouch / AllowProne / AllowMelee quartet (of T5's six
+//   movement locks only AllowAds and AllowSprint are registered here).
 //   perk_hud_create / _destroy / _flash / perk_flash_audio (:1632-:1809) --
 //   they SetShader the perk icons; none of those shaders is precached under a
 //   zm zone and precaching a shader that is in no mounted zone is not
@@ -63,12 +72,25 @@ init()
 	if ( !isDefined( level.packapunch_timeout ) )
 		level.packapunch_timeout = 15;
 
+	// MEASURED, docs/zone_assets/ALL_fx.txt: CoDOL ships T5's own
+	// Pack-a-Punch effect as "maps/zombie/fx_zombie_packapunch" in
+	// common_gametype_zm.  third_person_weapon_upgrade guards the lookup.
+	level._effect[ "packapunch_fx" ] = loadfx( "maps/zombie/fx_zombie_packapunch" );
+
 	add_sound( "perk_deny", "zmb_perks_deny" );
 	add_sound( "bottle_dispense", "zmb_perks_bottle_dispense" );
 
 	vending_triggers = getEntArray( "zombie_vending", "targetname" );
+	// The perks this MAP carries, for _zombiemode_powerups::free_perk_powerup:
+	// T5 :2293 draws the free perk from the machines that exist, so a player
+	// cannot be handed a perk the map has no machine for.
+	level.zombie_perk_machines = [];
 	for ( i = 0; i < vending_triggers.size; i++ )
+	{
+		if ( isDefined( vending_triggers[ i ].script_noteworthy ) )
+			level.zombie_perk_machines[ level.zombie_perk_machines.size ] = vending_triggers[ i ].script_noteworthy;
 		vending_triggers[ i ] thread vending_trigger_think();
+	}
 
 	upgrade_triggers = getEntArray( "zombie_vending_upgrade", "targetname" );
 	for ( i = 0; i < upgrade_triggers.size; i++ )
@@ -454,14 +476,18 @@ vending_weapon_upgrade()
 		flag_set( "pack_machine_in_use" );
 		player maps\mp\gametypes\_zombiemode_score::minus_to_player_score( cost );
 
-		// T5 takes the gun, plays the machine's animation, then offers the
-		// upgraded gun back on a trigger for packapunch_timeout seconds.  The
-		// animation is not ported (see the header); the take, the wait and
-		// the hand-back are.
-		player takeWeapon( current );
+		// T5 :450.  Take the gun, run the machine's presentation, hand the
+		// upgrade back.  All three are ported now.
 		self setHintString( "" );
 
+		// The knuckle crack takes the held weapon itself (T5 :641), so the
+		// take is not repeated here.
+		player thread do_knuckle_crack();
+		player thread third_person_weapon_upgrade( current, upgrade, self );
+
 		wait( level.packapunch_timeout );
+
+		player notify( "weapon_change_complete" );
 
 		if ( is_player_valid( player ) )
 		{
@@ -474,4 +500,193 @@ vending_weapon_upgrade()
 		self setHintString( "Hold ^3[{+activate}]^7 to Pack-a-Punch [Cost: " + cost + "]" );
 		flag_clear( "pack_machine_in_use" );
 	}
+}
+
+// ==========================================================================
+// THE PACK-A-PUNCH PRESENTATION.  T5 _zombiemode_perks.gsc:283
+// third_person_weapon_upgrade, :611 do_knuckle_crack, :624
+// upgrade_knuckle_crack_begin, :663 upgrade_knuckle_crack_end.
+//
+// Listed as deferred by the previous pass on the grounds that both were
+// animscripted().  Neither is -- see the header.  Ported.
+// ==========================================================================
+
+// T5 :611.  Self is the player.  Swap to the knuckles for the duration of
+// the upgrade, then swap back.
+//
+// waittill_any is not a registered builtin and _zombiemode_utility has only
+// the two-message waittill_either; the four T5 messages are covered by a
+// notify-relay thread per message onto one struct, which is what waittill_any
+// is.
+do_knuckle_crack()
+{
+	self endon( "disconnect" );
+
+	gun = self upgrade_knuckle_crack_begin();
+	if ( !isDefined( gun ) )
+		return;
+
+	waiter = spawnStruct();
+	self thread knuckle_crack_relay( waiter, "death" );
+	self thread knuckle_crack_relay( waiter, "fake_death" );
+	self thread knuckle_crack_relay( waiter, "player_downed" );
+	self thread knuckle_crack_relay( waiter, "weapon_change_complete" );
+
+	waiter waittill( "done" );
+
+	self upgrade_knuckle_crack_end( gun );
+}
+
+knuckle_crack_relay( waiter, message )
+{
+	self endon( "disconnect" );
+	waiter endon( "done" );
+
+	self waittill( message );
+
+	waiter notify( "done" );
+}
+
+// T5 :624.
+//
+// T5 locks six movement modes.  MEASURED: of AllowLean / AllowAds /
+// AllowSprint / AllowCrouch / AllowProne / AllowMelee, only AllowAds and
+// AllowSprint are registered on this server, so those two are set and the
+// other four are not faked.  T5's "if prone, stand up to crouch" is done with
+// getStance / setStance, which ARE registered.
+upgrade_knuckle_crack_begin()
+{
+	weapon = "zombie_knuckle_crack";
+
+	// MEASURED, docs/zone_assets/ALL_weapon.txt: zombie_knuckle_crack ships
+	// in common_gametype_zm.  Validated the same way every other zm weapon
+	// is, so a zone without it degrades to "no presentation" rather than to
+	// a player left holding nothing.
+	precacheItem( weapon );
+	if ( getWeaponIndexFromName( weapon ) <= 0 )
+		return undefined;
+
+	gun = self getCurrentWeapon();
+	if ( !isDefined( gun ) || gun == "none" )
+		return undefined;
+
+	self allowAds( false );
+	self allowSprint( false );
+
+	if ( self getStance() == "prone" )
+		self setStance( "crouch" );
+
+	self notify( "zmb_lost_knife" );
+	self takeWeapon( gun );
+
+	self giveWeapon( weapon );
+	self switchToWeapon( weapon );
+
+	return gun;
+}
+
+// T5 :663.
+upgrade_knuckle_crack_end( gun )
+{
+	weapon = "zombie_knuckle_crack";
+
+	self allowAds( true );
+	self allowSprint( true );
+
+	self takeWeapon( weapon );
+
+	if ( self maps\mp\gametypes\_zombiemode_laststand::player_is_in_laststand() )
+		return;
+
+	// The caller gives and switches to the upgraded weapon straight after
+	// this returns; falling back to a primary only matters when it did not
+	// (the player went down, or the machine timed out).
+	primaries = self getWeaponsListPrimaries();
+	if ( isDefined( primaries ) && primaries.size > 0 )
+		self switchToWeapon( primaries[ 0 ] );
+}
+
+// T5 :283 third_person_weapon_upgrade.  Self is the player, machine is the
+// Pack-a-Punch trigger.
+//
+// T5 takes (current_weapon, origin, angles, packa_rollers, perk_machine) off
+// the machine's own authored struct.  CoDOL's zm maps author the machine as a
+// single trigger with no rollers child (docs/CODOL_ZOMBIES_STARTUP_20260915.md
+// lists no packa_rollers entity on any of the three zm maps), so the rig is
+// built off the trigger's own origin and angles and the roller rotation is
+// dropped -- there is nothing to rotate.
+//
+// ONE T5 CALL IS UNAVAILABLE: worldgun useweaponhidetags( weapon ), which
+// culls the attachment tags the world model should not draw.  MEASURED, it is
+// not a registered builtin.  The world gun therefore draws with every tag
+// visible.  That is a cosmetic difference on a model shown for four seconds,
+// and it is NOT stubbed -- the call is simply absent and named here.
+//
+// The dual-wield branch (T5 :296) is dropped with it: it needs
+// weapon_is_dual_wield and get_left_hand_weapon_model_name, neither of which
+// this port's _zombiemode_weapons carries.
+third_person_weapon_upgrade( current_weapon, upgrade_name, machine )
+{
+	self endon( "disconnect" );
+
+	if ( !isDefined( machine ) )
+		return;
+
+	origin = machine.origin;
+	angles = machine.angles;
+	if ( !isDefined( angles ) )
+		angles = ( 0, 0, 0 );
+
+	forward = anglesToForward( angles );
+	interact_pos = origin + ( forward * -25 );
+
+	if ( isDefined( level._effect[ "packapunch_fx" ] ) )
+		playFx( level._effect[ "packapunch_fx" ], origin + ( 0, 1, -34 ), forward );
+
+	// The gun goes in.
+	model = getWeaponModel( current_weapon );
+	worldgun = undefined;
+	if ( isDefined( model ) && model != "" )
+	{
+		worldgun = spawn( "script_model", interact_pos );
+		worldgun.angles = self.angles;
+		worldgun setModel( model );
+		worldgun rotateto( angles + ( 0, 90, 0 ), 0.35, 0, 0 );
+	}
+
+	wait( 0.5 );
+
+	if ( isDefined( worldgun ) )
+		worldgun moveto( origin, 0.5, 0, 0 );
+
+	self playSound( "zmb_perks_packa_upgrade" );
+
+	wait( 0.35 );
+
+	if ( isDefined( worldgun ) )
+		worldgun delete();
+
+	// T5 waits 3 s here; this port waits out whatever is left of
+	// level.packapunch_timeout so the presentation and the hand-back finish
+	// together however the machine is tuned.
+	remaining = level.packapunch_timeout - 1.5;
+	if ( remaining < 0.5 )
+		remaining = 0.5;
+	wait( remaining );
+
+	self playSound( "zmb_perks_packa_ready" );
+
+	// The upgraded gun comes out.
+	upgrade_model = getWeaponModel( upgrade_name );
+	if ( !isDefined( upgrade_model ) || upgrade_model == "" )
+		return;
+
+	worldgun = spawn( "script_model", origin );
+	worldgun.angles = angles + ( 0, 90, 0 );
+	worldgun setModel( upgrade_model );
+	worldgun moveto( interact_pos, 0.5, 0, 0 );
+
+	wait( 1 );
+
+	worldgun delete();
 }

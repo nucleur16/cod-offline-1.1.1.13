@@ -1,37 +1,36 @@
 // zm zombie animscript: zombie_turn.
 //
-// The native actor path (src/codol/player/codol_actor_scripts.cpp) loads nine
-// modules per species -- <animscript>_init/_stop/_move/_combat/_death/_pain/
-// _flashed/_turn/_jump -- and refuses the species outright if any one of them
-// is missing, so all nine exist.  The species row names the prefix
-// "maps/mp/animscripts/zombie"; these resolve out of the zm CATEGORY root and
-// are never compiled into an mp or coop match.
+// T5 HAS NO zombie_turn.  MEASURED: animscripts\ carries zombie_dog_turn.gsc
+// but no humanoid zombie turn module, because T5's humanoid zombies turn by
+// steering inside the walk cycle rather than by playing a turn-in-place clip.
+// This server's native path still demands nine modules per species
+// (src/codol/player/codol_actor_scripts.cpp:136) and will refuse the species
+// if one is missing, so this module exists and expresses T5's behaviour:
+// keep the current cycle running and let the orient mode do the turning.
 //
-// WHY THESE ARE NOT PORTS OF T5's ZOMBIE ANIMSCRIPTS.  T5 animates humanoid AI
-// (maps/_zombiemode*.gsc, animscripts/*) entirely from GSC, by referencing
-// %anim tokens out of #using_animtree("generic_human") and handing them to
-// setflaggedanimknoball / animscripted / DoNoteTracks.  MEASURED 2026-09-20:
-// this server registers none of those builtins (no "setanim", "setanimknob"
-// or "animscripted" in src/), and OpenBLOPS contains a native clip-state
-// machine for the DOG only (Game/Shared/bgame/bg_dog_animations_mp.cpp) --
-// there is no native humanoid equivalent to port.  So the zombie species row
-// carries a NULL animation-state backend, setanimstate() refuses for it by
-// name, and these modules keep the actor alive and oriented without claiming
-// to animate it.  Filling them in is the scripted-animation workstream, not
-// this one; see docs/CODOL_ACTOR_SPECIES_20260920.md section 5.
+// MEASURED, the shipped ai_zombie set contains no turn-in-place clip of any
+// kind (no ai_zombie_turn_*, no ai_zombie_180_*), which is the shipped data
+// agreeing with T5 that the humanoid zombie has no turn animation.  Inventing
+// one out of another family's clips is exactly what the mandate forbids, so
+// nothing is played here.
 //
-// Turn in place.
+// getdeltaturnyaw is a registered method (codol_actor_lifecycle.cpp:1320) and
+// is read so a level script can see how far the turn was, matching what T5's
+// dog turn module does with the same value.
+
+#include maps\mp\gametypes\_zombiemode_utility;
 
 main()
 {
 	self endon( "killanimscript" );
 
-	// No orientation override for this state.
+	self orientmode( "face motion" );
 
-	// Park until the native AI switches this actor to another animscript.
-	// Returning immediately would leave CODOL_ActorSwitchScript holding a dead
-	// thread handle for the state it just entered.
+	self.a.lastTurnYaw = self getDeltaTurnYaw();
+
+	// Hold the pose the previous script left running; the native orient does
+	// the turning.  Returning immediately would leave CODOL_ActorSwitchScript
+	// holding a dead thread handle for the state it just entered.
 	for ( ;; )
 		wait( 0.05 );
 }
-

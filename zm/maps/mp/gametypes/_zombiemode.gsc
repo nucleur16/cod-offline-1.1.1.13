@@ -51,6 +51,8 @@
 // SetShaders "hud_chalk_1".."hud_chalk_5", which are WaW/T5 materials that no
 // CoDOL zone carries, and C1 already has a round widget that works.
 
+#using_animtree ("generic_human");
+
 #include maps\mp\gametypes\_zombiemode_utility;
 
 // --------------------------------------------------------------------------
@@ -77,6 +79,7 @@ init()
 	level.flag = [];
 
 	init_levelvars();
+	init_anims();
 }
 
 // T5 _zombiemode.gsc:649 init_levelvars.  The comment T5 puts above its table
@@ -265,6 +268,10 @@ Callback_StartGameType()
 	// immediately, so every machine has to be waiting before it runs.
 	maps\mp\gametypes\_zombiemode_power::init();
 	maps\mp\gametypes\_zombiemode_spawner::init();
+	// Power-ups LAST: get_valid_powerup asks the blockers module whether any
+	// barrier is damaged and the perks module which machines this map has,
+	// so both have to have run.
+	maps\mp\gametypes\_zombiemode_powerups::init();
 
 	level thread end_game_watcher();
 	level thread start_round_loop();
@@ -348,11 +355,23 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 	if ( self maps\mp\gametypes\_zombiemode_laststand::player_is_in_laststand() )
 		return;
 
-	if ( iDamage >= self.health && sMeansOfDeath != "MOD_SUICIDE" )
-	{
-		self maps\mp\gametypes\_zombiemode_laststand::player_laststand();
-		return;
-	}
+	// THE LETHAL-HIT VETO USED TO BE HERE, and is deliberately gone.
+	//
+	// 2026-09-20, docs/CODOL_ZOMBIES_LOOP_20260920.md section 8a: the engine
+	// now publishes C1 ability bit 23 for a zm player at spawn, so
+	// CODOL_LastStand_CanEnter (src/codol/script/codol_script_laststand.c:100)
+	// passes and the ENGINE owns the down -- it gives the correct ps.pm_type 7
+	// movement mode, the correct 500 ms damage grace window and the correct
+	// wire state, none of which the script approximation could reproduce.  It
+	// enters last stand by calling Callback_PlayerLastStand, which already
+	// routes to the same player_laststand(), so re-vetoing the hit here would
+	// down the player twice: once from this callback and once from the
+	// engine.  The already-down guard above stays, because it is the one
+	// clause the engine's own grace window does not cover (a second attacker
+	// inside the same frame).
+	//
+	// T5 keeps its player_damage_override (:4544) only because T5's engine
+	// has no equivalent gate.  C1 does.  Per the standing mandate, C1 wins.
 
 	self finishPlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, timeOffset );
 }
@@ -720,4 +739,234 @@ end_game_watcher()
 	wait( level.zombie_vars[ "zombie_intermission_time" ] );
 
 	exitLevel( false );
+}
+
+// ==========================================================================
+// THE ANIMATION TABLES
+//
+// Port of T5 maps\_zombiemode.gsc:1057 init_standard_zombie_anims, :1366
+// init_anims and :1372 init_animscripts -- the three functions the previous
+// pass listed as deferred because no animation builtin was registered.
+//
+// EVERY NAME BELOW IS VALIDATED AGAINST CoDOL, NOT TAKEN ON TRUST FROM T5.
+// MEASURED 2026-09-20, two sources intersected:
+//   1. the rawfile animtrees/generic_human.atr extracted from
+//      patch_common_mp (5,345 lines; 386 distinct ai_zombie_* nodes).  This
+//      is the tree the SERVER parses: src/cscr_parser.cpp:567 makes
+//      Scr_ReadFile return the mounted archive's copy for any "animtrees/"
+//      path, so the vendor IW4 file in bin/home/codol_rawfiles/animtrees/
+//      (which has no ai_zombie node at all) is never consulted in zm.  A
+//      %name that is not in this tree is a COMPILE error.
+//   2. docs/zone_assets/ALL_xanim.txt restricted to the zones a zm match
+//      mounts (common_mp, patch_common_mp, common_gametype_zm,
+//      patch_common_gametype_zm, zm_asylum_sh, zm_prototype_sh,
+//      zm_zombie_training).  225 of the 386 tree nodes have a shipped xanim
+//      behind them; a %name in the tree with no xanim compiles and then
+//      animates nothing.
+//
+// The intersection is the palette.  T5 names that lose, C1 winning both:
+//   %ai_zombie_run_v4        -> %ai_zombie_run_v1     (v4 ships no xanim;
+//                               v1 does, and T5's own source has v1 in this
+//                               slot commented out immediately above it)
+//   %ai_zombie_idle_v1_delta -> %ai_zombie_idle_v1    (see zombie_stop.gsc)
+//   %ai_zombie_taunts_1/_3/_6/_8 -- dropped from the board-taunt pool; T5
+//                               already had 1 commented out and the other
+//                               three ship no xanim.  The eight that remain
+//                               are T5's own board-taunt list.
+//
+// NOT TAKEN from init_standard_zombie_anims, and why: the tesla, freezegun,
+// blackhole, microwave, humangun and thundergun tables (:1165-:1250) and the
+// ground-rise / traverse tables (:1290-:1330).  Every one of them belongs to
+// a weapon script or a traversal system that is not ported, and the traverse
+// set additionally needs animscripted.  They are not silently absent: the
+// clips exist and the tables can be pasted back the day their consumer does.
+// ==========================================================================
+
+init_anims()
+{
+	init_standard_zombie_anims();
+}
+
+init_standard_zombie_anims()
+{
+	level.scr_anim = [];
+	level.scr_anim[ "zombie" ] = [];
+
+	// Deaths.  T5 :1059.
+	level.scr_anim[ "zombie" ][ "death1" ] = %ai_zombie_death_v1;
+	level.scr_anim[ "zombie" ][ "death2" ] = %ai_zombie_death_v2;
+	level.scr_anim[ "zombie" ][ "death3" ] = %ai_zombie_crawl_death_v1;
+	level.scr_anim[ "zombie" ][ "death4" ] = %ai_zombie_crawl_death_v2;
+
+	// Walk cycles.  T5 :1066.  T5's own comment on walk7: "was goose step
+	// walk - overridden in theatre only (v8)".
+	level.scr_anim[ "zombie" ][ "walk1" ] = %ai_zombie_walk_v1;
+	level.scr_anim[ "zombie" ][ "walk2" ] = %ai_zombie_walk_v2;
+	level.scr_anim[ "zombie" ][ "walk3" ] = %ai_zombie_walk_v3;
+	level.scr_anim[ "zombie" ][ "walk4" ] = %ai_zombie_walk_v4;
+	level.scr_anim[ "zombie" ][ "walk5" ] = %ai_zombie_walk_v6;
+	level.scr_anim[ "zombie" ][ "walk6" ] = %ai_zombie_walk_v7;
+	level.scr_anim[ "zombie" ][ "walk7" ] = %ai_zombie_walk_v9;
+	level.scr_anim[ "zombie" ][ "walk8" ] = %ai_zombie_walk_v9;
+
+	// Run cycles.  T5 :1075; run5 is T5's %ai_zombie_run_v4, see the header.
+	level.scr_anim[ "zombie" ][ "run1" ] = %ai_zombie_walk_fast_v1;
+	level.scr_anim[ "zombie" ][ "run2" ] = %ai_zombie_walk_fast_v2;
+	level.scr_anim[ "zombie" ][ "run3" ] = %ai_zombie_walk_fast_v3;
+	level.scr_anim[ "zombie" ][ "run4" ] = %ai_zombie_run_v2;
+	level.scr_anim[ "zombie" ][ "run5" ] = %ai_zombie_run_v1;
+	level.scr_anim[ "zombie" ][ "run6" ] = %ai_zombie_run_v3;
+
+	// Sprint cycles.  T5 :1084, including its own two-clip repeat.
+	level.scr_anim[ "zombie" ][ "sprint1" ] = %ai_zombie_sprint_v1;
+	level.scr_anim[ "zombie" ][ "sprint2" ] = %ai_zombie_sprint_v2;
+	level.scr_anim[ "zombie" ][ "sprint3" ] = %ai_zombie_sprint_v1;
+	level.scr_anim[ "zombie" ][ "sprint4" ] = %ai_zombie_sprint_v2;
+
+	// Crawl cycles.  T5 :1093.
+	level.scr_anim[ "zombie" ][ "crawl1" ] = %ai_zombie_crawl;
+	level.scr_anim[ "zombie" ][ "crawl2" ] = %ai_zombie_crawl_v1;
+	level.scr_anim[ "zombie" ][ "crawl3" ] = %ai_zombie_crawl_v2;
+	level.scr_anim[ "zombie" ][ "crawl4" ] = %ai_zombie_crawl_v3;
+	level.scr_anim[ "zombie" ][ "crawl5" ] = %ai_zombie_crawl_v4;
+	level.scr_anim[ "zombie" ][ "crawl6" ] = %ai_zombie_crawl_v5;
+	level.scr_anim[ "zombie" ][ "crawl_hand_1" ] = %ai_zombie_walk_on_hands_a;
+	level.scr_anim[ "zombie" ][ "crawl_hand_2" ] = %ai_zombie_walk_on_hands_b;
+
+	level.scr_anim[ "zombie" ][ "crawl_sprint1" ] = %ai_zombie_crawl_sprint;
+	level.scr_anim[ "zombie" ][ "crawl_sprint2" ] = %ai_zombie_crawl_sprint_1;
+	level.scr_anim[ "zombie" ][ "crawl_sprint3" ] = %ai_zombie_crawl_sprint_2;
+
+	// Idles.  T5 puts these in init_animscripts (:1372) as a weighted
+	// anim.idleAnimArray; see zombie_stop.gsc for why the delta idle loses.
+	level.scr_anim[ "zombie" ][ "idle" ] = %ai_zombie_idle_v1;
+	level.scr_anim[ "zombie" ][ "idle_crawl" ] = %ai_zombie_idle_crawl;
+
+	// Melee.  T5 :1117, comments preserved.
+	level._zombie_melee = [];
+	level._zombie_melee[ "zombie" ] = [];
+	level._zombie_melee[ "zombie" ][ 0 ] = %ai_zombie_attack_v2;          // slow swipes
+	level._zombie_melee[ "zombie" ][ 1 ] = %ai_zombie_attack_v4;          // single left swipe
+	level._zombie_melee[ "zombie" ][ 2 ] = %ai_zombie_attack_v6;          // weird single
+	level._zombie_melee[ "zombie" ][ 3 ] = %ai_zombie_attack_v1;          // double swipe
+	level._zombie_melee[ "zombie" ][ 4 ] = %ai_zombie_attack_forward_v1;  // double swipe
+	level._zombie_melee[ "zombie" ][ 5 ] = %ai_zombie_attack_forward_v2;  // slow double swipe
+
+	level._zombie_run_melee = [];
+	level._zombie_run_melee[ "zombie" ] = [];
+	level._zombie_run_melee[ "zombie" ][ 0 ] = %ai_zombie_run_attack_v1;  // fast single right
+	level._zombie_run_melee[ "zombie" ][ 1 ] = %ai_zombie_run_attack_v2;  // fast double swipe
+	level._zombie_run_melee[ "zombie" ][ 2 ] = %ai_zombie_run_attack_v3;  // fast swipe
+
+	level._zombie_walk_melee = [];
+	level._zombie_walk_melee[ "zombie" ] = [];
+	level._zombie_walk_melee[ "zombie" ][ 0 ] = %ai_zombie_walk_attack_v1;
+	level._zombie_walk_melee[ "zombie" ][ 1 ] = %ai_zombie_walk_attack_v2;
+	level._zombie_walk_melee[ "zombie" ][ 2 ] = %ai_zombie_walk_attack_v3;
+	level._zombie_walk_melee[ "zombie" ][ 3 ] = %ai_zombie_walk_attack_v4;
+
+	level._zombie_melee_crawl = [];
+	level._zombie_melee_crawl[ "zombie" ] = [];
+	level._zombie_melee_crawl[ "zombie" ][ 0 ] = %ai_zombie_attack_crawl;
+	level._zombie_melee_crawl[ "zombie" ][ 1 ] = %ai_zombie_attack_crawl_lunge;
+
+	level._zombie_stumpy_melee = [];
+	level._zombie_stumpy_melee[ "zombie" ] = [];
+	level._zombie_stumpy_melee[ "zombie" ][ 0 ] = %ai_zombie_walk_on_hands_shot_a;
+	level._zombie_stumpy_melee[ "zombie" ][ 1 ] = %ai_zombie_walk_on_hands_shot_b;
+
+	// The self.deathanim pool.  T5 :1270.
+	level._zombie_deaths = [];
+	level._zombie_deaths[ "zombie" ] = [];
+	level._zombie_deaths[ "zombie" ][ 0 ] = %ch_dazed_a_death;
+	level._zombie_deaths[ "zombie" ][ 1 ] = %ch_dazed_b_death;
+	level._zombie_deaths[ "zombie" ][ 2 ] = %ch_dazed_c_death;
+	level._zombie_deaths[ "zombie" ][ 3 ] = %ch_dazed_d_death;
+
+	level._zombie_crawl_deaths = [];
+	level._zombie_crawl_deaths[ "zombie" ] = [];
+	level._zombie_crawl_deaths[ "zombie" ][ 0 ] = %ai_zombie_crawl_death_v1;
+	level._zombie_crawl_deaths[ "zombie" ][ 1 ] = %ai_zombie_crawl_death_v2;
+
+	// Barricade taunts.  T5 :1340.
+	level._zombie_board_taunt = [];
+	level._zombie_board_taunt[ "zombie" ] = [];
+	level._zombie_board_taunt[ "zombie" ][ 0 ] = %ai_zombie_taunts_4;
+	level._zombie_board_taunt[ "zombie" ][ 1 ] = %ai_zombie_taunts_7;
+	level._zombie_board_taunt[ "zombie" ][ 2 ] = %ai_zombie_taunts_9;
+	level._zombie_board_taunt[ "zombie" ][ 3 ] = %ai_zombie_taunts_5b;
+	level._zombie_board_taunt[ "zombie" ][ 4 ] = %ai_zombie_taunts_5c;
+	level._zombie_board_taunt[ "zombie" ][ 5 ] = %ai_zombie_taunts_5d;
+	level._zombie_board_taunt[ "zombie" ][ 6 ] = %ai_zombie_taunts_5e;
+	level._zombie_board_taunt[ "zombie" ][ 7 ] = %ai_zombie_taunts_5f;
+
+	// Barricade tear.  T5 keeps these in _zombiemode_spawner::get_tear_anim
+	// (:1790-:2000) as a long switch on the chunk's script_noteworthy slot
+	// number; the pools are the same six clips per side.  _zombiemode_blockers
+	// picks from them by slot.
+	level._zombie_boardtear = [];
+	level._zombie_boardtear[ "m" ] = [];
+	level._zombie_boardtear[ "m" ][ 0 ] = %ai_zombie_boardtear_m_1;
+	level._zombie_boardtear[ "m" ][ 1 ] = %ai_zombie_boardtear_m_2;
+	level._zombie_boardtear[ "m" ][ 2 ] = %ai_zombie_boardtear_m_3;
+	level._zombie_boardtear[ "m" ][ 3 ] = %ai_zombie_boardtear_m_4;
+	level._zombie_boardtear[ "m" ][ 4 ] = %ai_zombie_boardtear_m_5;
+	level._zombie_boardtear[ "m" ][ 5 ] = %ai_zombie_boardtear_m_6;
+
+	level._zombie_boardtear[ "l" ] = [];
+	level._zombie_boardtear[ "l" ][ 0 ] = %ai_zombie_boardtear_l_1;
+	level._zombie_boardtear[ "l" ][ 1 ] = %ai_zombie_boardtear_l_2;
+	level._zombie_boardtear[ "l" ][ 2 ] = %ai_zombie_boardtear_l_3;
+	level._zombie_boardtear[ "l" ][ 3 ] = %ai_zombie_boardtear_l_4;
+	level._zombie_boardtear[ "l" ][ 4 ] = %ai_zombie_boardtear_l_5;
+	level._zombie_boardtear[ "l" ][ 5 ] = %ai_zombie_boardtear_l_6;
+
+	level._zombie_boardtear[ "r" ] = [];
+	level._zombie_boardtear[ "r" ][ 0 ] = %ai_zombie_boardtear_r_1;
+	level._zombie_boardtear[ "r" ][ 1 ] = %ai_zombie_boardtear_r_2;
+	level._zombie_boardtear[ "r" ][ 2 ] = %ai_zombie_boardtear_r_3;
+	level._zombie_boardtear[ "r" ][ 3 ] = %ai_zombie_boardtear_r_4;
+	level._zombie_boardtear[ "r" ][ 4 ] = %ai_zombie_boardtear_r_5;
+	level._zombie_boardtear[ "r" ][ 5 ] = %ai_zombie_boardtear_r_6;
+
+	level._zombie_boardtear_crawl = [];
+	level._zombie_boardtear_crawl[ "m" ] = [];
+	level._zombie_boardtear_crawl[ "m" ][ 0 ] = %ai_zombie_boardtear_crawl_m_1;
+	level._zombie_boardtear_crawl[ "m" ][ 1 ] = %ai_zombie_boardtear_crawl_m_2;
+	level._zombie_boardtear_crawl[ "m" ][ 2 ] = %ai_zombie_boardtear_crawl_m_3;
+	level._zombie_boardtear_crawl[ "m" ][ 3 ] = %ai_zombie_boardtear_crawl_m_4;
+	level._zombie_boardtear_crawl[ "m" ][ 4 ] = %ai_zombie_boardtear_crawl_m_5;
+	level._zombie_boardtear_crawl[ "m" ][ 5 ] = %ai_zombie_boardtear_crawl_m_6;
+
+	level._zombie_boardtear_crawl[ "l" ] = [];
+	level._zombie_boardtear_crawl[ "l" ][ 0 ] = %ai_zombie_boardtear_crawl_l_1;
+	level._zombie_boardtear_crawl[ "l" ][ 1 ] = %ai_zombie_boardtear_crawl_l_2;
+	level._zombie_boardtear_crawl[ "l" ][ 2 ] = %ai_zombie_boardtear_crawl_l_3;
+	level._zombie_boardtear_crawl[ "l" ][ 3 ] = %ai_zombie_boardtear_crawl_l_4;
+	level._zombie_boardtear_crawl[ "l" ][ 4 ] = %ai_zombie_boardtear_crawl_l_5;
+	level._zombie_boardtear_crawl[ "l" ][ 5 ] = %ai_zombie_boardtear_crawl_l_6;
+
+	level._zombie_boardtear_crawl[ "r" ] = [];
+	level._zombie_boardtear_crawl[ "r" ][ 0 ] = %ai_zombie_boardtear_crawl_r_1;
+	level._zombie_boardtear_crawl[ "r" ][ 1 ] = %ai_zombie_boardtear_crawl_r_2;
+	level._zombie_boardtear_crawl[ "r" ][ 2 ] = %ai_zombie_boardtear_crawl_r_3;
+	level._zombie_boardtear_crawl[ "r" ][ 3 ] = %ai_zombie_boardtear_crawl_r_4;
+	level._zombie_boardtear_crawl[ "r" ][ 4 ] = %ai_zombie_boardtear_crawl_r_5;
+	level._zombie_boardtear_crawl[ "r" ][ 5 ] = %ai_zombie_boardtear_crawl_r_6;
+
+	// Barricade bash, for a barrier slot with no tear clip.  T5
+	// get_tear_anim falls back to these.
+	level._zombie_boardbash = [];
+	level._zombie_boardbash[ 0 ] = %ai_zombie_boardbash_l;
+	level._zombie_boardbash[ 1 ] = %ai_zombie_boardbash_m;
+	level._zombie_boardbash[ 2 ] = %ai_zombie_boardbash_r;
+
+	// Reaching through a torn barricade at a player.  T5 spawner :917
+	// should_attack_player_thru_boards.
+	level._zombie_window_attack = [];
+	level._zombie_window_attack[ 0 ] = %ai_zombie_window_attack_arm_L_out;
+	level._zombie_window_attack[ 1 ] = %ai_zombie_window_attack_arm_R_out;
+
+	if ( isDefined( level.zombie_anim_override ) )
+		[[ level.zombie_anim_override ]]();
 }
