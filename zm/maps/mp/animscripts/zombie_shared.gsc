@@ -31,12 +31,10 @@
 //       maps\mp\animscripts\dog_shared, which is the MULTIPLAYER tree and may
 //       not be named from zm (a file::function reference is a compile-time
 //       dependency, see _zombiemode.gsc's header).  No zm actor is a dog.
-//     - "stop anim" -> anim_stopanimscripted().  MEASURED: stopanimscripted
-//       is deliberately NOT a registered builtin
-//       (docs/CODOL_SCRIPTED_ANIMATION_20260920.md section 5) and stubbing it
-//       is forbidden.  The note is consumed and returned so the caller's loop
-//       still terminates on it, which is the half that does not need the
-//       builtin; the scripted-alignment half is genuinely absent.
+//     - "stop anim" -> anim_stopanimscripted().  Taken as of 2026-09-21:
+//       animscripted/stopanimscripted are native (T5 AIS_SCRIPTEDANIM,
+//       docs/CODOL_ZOMBIE_WINDOW_20260921.md part 2); the note pops the
+//       state and is returned so the caller's loop terminates on it.
 //     - "swap taghelmet to tagleft" -- the zombie bodies carry no hatModel.
 //     - the /# showNoteTrack #/ developer block.
 //
@@ -105,10 +103,11 @@ HandleNoteTrack( note, flagName, customFunction, var1 )
 	case "undefined":
 		return note;
 
-	// T5 :199 noteTrackStopAnim.  See the header: the scripted-alignment half
-	// of this needs stopanimscripted, which does not exist.  Ending the
-	// caller's loop is the half that does.
+	// T5 :199 noteTrackStopAnim: anim_stopanimscripted().  stopanimscripted
+	// is native as of 2026-09-21 (codol_script_anim.c: pops the scripted
+	// state animscripted() pushed, so the animscript selection resumes).
 	case "stop anim":
+		self stopanimscripted();
 		return note;
 
 	// T5 :203 noteTrackStartRagdoll.

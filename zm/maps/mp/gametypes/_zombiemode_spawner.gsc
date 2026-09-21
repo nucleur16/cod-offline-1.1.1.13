@@ -1056,7 +1056,11 @@ zombie_death_event( zombie )
 
 		if ( !isDefined( attacker.kills ) )
 			attacker.kills = 0;
-		attacker.kills++;
+		// MEASURED 2026-09-21: the player's kills field arrives as a float
+		// from the stats layer and ++ is int-only ("++ must be applied to an
+		// int", seven runtime errors in one session, each killing this
+		// thread before the drop roll and zom_kill notify below).
+		attacker.kills = attacker.kills + 1;
 
 		attacker notify( "zom_kill", zombie );
 	}
@@ -1174,17 +1178,18 @@ clear_zombies()
 // notetrack fires, which is T5's own mechanism, and remove_chunk on the other
 // side of it is still T5's.
 //
-// ONE THING T5 HAS THAT THIS DOES NOT, named rather than faked.  T5 plays the
-// tear clip with AnimScripted( "tear_anim", attacking_spot, node.angles,
-// tear_anim, ... ), which LERPS the actor onto the attack spot and aligns the
-// clip's root motion to it.  MEASURED: animscripted is deliberately not a
-// registered builtin (docs/CODOL_SCRIPTED_ANIMATION_20260920.md section 5)
-// and stubbing it is forbidden.  Ported around: the zombie is walked to the
-// attack spot by the native mover first (setGoalPos with T5's own goalradius
-// 2 and the node's angles), and the clip is then played in place with
-// setFlaggedAnimKnobAllRestart.  The notetracks -- the half that removes the
-// board -- are identical.  What is lost is sub-inch alignment of the hands to
-// the board, not the mechanic.
+// T5 plays the tear clip with AnimScripted( "tear_anim", attacking_spot,
+// node.angles, tear_anim, ... ).  As of 2026-09-21 that is what this does
+// too: animscripted() is native (codol_script_anim.c publishes the clip,
+// codol_actor_lifecycle.cpp kills the animscript and holds the actor in T5's
+// AIS_SCRIPTEDANIM state, aligned to the spot and facing the window, until
+// stopanimscripted() or the clip's length).  MEASURED in the 6f2b8e29 log:
+// the previous in-place setFlaggedAnimKnobAllRestart lost to the move
+// animscript's own knob-all loop, which re-applied the walk cycle every
+// 0.2 s over the tear -- "tearing board 6" printed, then the actor stood in
+// ai_zombie_walk_fast_v3 at weight 1 until it died, no "board" note, no
+// board removed, all session.  The zombie still walks to the attack spot
+// first (setGoalPos, goalradius 2); animscripted closes the remainder.
 //
 // ALSO NOT TAKEN: zombie_history (T5's per-actor debug ring),
 // priority_board_bar_selection and get_linear_destroyed_chunk (T5 has both
@@ -1290,8 +1295,11 @@ get_tear_anim( chunk, node )
 // xanim, so no clip this server can play ever emits that note.
 zombie_tear_notetracks( msg, chunk, node )
 {
+	// T5 :1150 ends on "death" only.  The "killanimscript" endon this port
+	// carried here attached to the CALLING thread (zombie_think) for the rest
+	// of its life, and animscripted() now fires that notify to kill the move
+	// animscript -- it would have ended the zombie's think loop instead.
 	self endon( "death" );
-	self endon( "killanimscript" );
 
 	for ( ;; )
 	{
@@ -1399,6 +1407,7 @@ tear_into_building_inner( node )
 
 		if ( !isDefined( chunk ) )
 		{
+			self stopanimscripted();
 			self reset_attack_spot();
 			return;
 		}
@@ -1406,6 +1415,7 @@ tear_into_building_inner( node )
 		tear_anim = self get_tear_anim( chunk, node );
 		if ( !isDefined( tear_anim ) )
 		{
+			self stopanimscripted();
 			self reset_attack_spot();
 			return;
 		}
@@ -1416,18 +1426,22 @@ tear_into_building_inner( node )
 
 		self thread do_zombies_playvocals( "teardown" );
 
-		// T5 uses AnimScripted here -- see the header for why this does not.
-		self.safeToChangeScript = false;
-		self orientmode( "face angle", node.angles[ 1 ] );
-		self setFlaggedAnimKnobAllRestart( "tear_anim", tear_anim, %body, 1, 0.3, self.animplaybackrate );
+		// T5 :405 AnimScripted( "tear_anim", attacking_spot, node.angles,
+		// tear_anim, "normal", undefined, 1, 0.3 ): the animscript dies, the
+		// clip owns the tree, the actor is aligned to the spot facing the
+		// window.  MEASURED 2026-09-21 part 2: played with the knob-all from
+		// this thread instead, the move animscript's own knob loop drove the
+		// walk cycle back over the tear every 0.2 s and no "board" note ever
+		// fired -- no board came down all session.  animscripted is native
+		// now (codol_script_anim.c / codol_actor_lifecycle.cpp).
+		self animscripted( "tear_anim", self.attacking_spot, node.angles, tear_anim, "normal", %body, self.animplaybackrate, 0.3 );
 
 		self zombie_tear_notetracks( "tear_anim", chunk, node );
-
-		self.safeToChangeScript = true;
 
 		if ( all_chunks_destroyed( node.barrier_chunks ) )
 		{
 			codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " barrier " + node.origin + " is open" );
+			self stopanimscripted();
 			self reset_attack_spot();
 			return;
 		}
@@ -1520,7 +1534,8 @@ should_attack_player_thru_boards()
 			if ( isDefined( level._zombie_window_attack ) && level._zombie_window_attack.size > 0 )
 			{
 				reach = level._zombie_window_attack[ randomInt( level._zombie_window_attack.size ) ];
-				self setFlaggedAnimKnobAllRestart( "windowattack", reach, %body, 1, 0.2, self.animplaybackrate );
+				// T5 :471 animScripted( "window_melee", self.origin, self.angles, reach, "normal", undefined, 1, 0.3 ).
+				self animscripted( "windowattack", self.origin, self.angles, reach, "normal", %body, self.animplaybackrate, 0.3 );
 				self maps\mp\animscripts\zombie_shared::DoNoteTracksForTime( getAnimLength( reach ), "windowattack" );
 			}
 			return true;
@@ -1533,8 +1548,8 @@ should_attack_player_thru_boards()
 // T5 :960 do_a_taunt.
 do_a_taunt()
 {
+	// T5 :424 ends on "death" only; see zombie_tear_notetracks.
 	self endon( "death" );
-	self endon( "killanimscript" );
 
 	if ( !is_true( self.has_legs ) )
 		return;
@@ -1546,8 +1561,10 @@ do_a_taunt()
 	taunt = pool[ randomInt( pool.size ) ];
 
 	self play_sound_on_ent( "zombie_taunt" );
-	self setFlaggedAnimKnobAllRestart( "tauntanim", taunt, %body, 1, 0.2, self.animplaybackrate );
+	// T5 :437 animScripted( "zombie_taunt", self.origin, self.angles, anime, "normal", undefined, 1, 0.4 ).
+	self animscripted( "tauntanim", self.origin, self.angles, taunt, "normal", %body, self.animplaybackrate, 0.4 );
 	self maps\mp\animscripts\zombie_shared::DoNoteTracksForTime( getAnimLength( taunt ), "tauntanim" );
+	self stopanimscripted();
 }
 
 // The seeker's barrier test.  T5 reaches tear_into_building from find_flesh
