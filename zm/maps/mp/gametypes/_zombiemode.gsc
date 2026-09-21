@@ -573,6 +573,18 @@ spawnPlayer()
 		return;
 	}
 
+	// IW4 _playerlogic::spawnPlayer (closepopupMenu + closeInGameMenu) and T5
+	// _globallogic_player::spawnPlayer (closeMenu + closeInGameMenu) both tear
+	// the client's menu stack down on every spawn.  On C1 that is the two-pass
+	// legacy teardown ('r','r' -> 0x005F4F20: close the focused menus, then
+	// release KEYCATCH_UI) plus 'H' (0x005F5160: cpp_closePauseMenu).  This is
+	// the one place the multiplayer tree guaranteed a stuck key-catcher -- the
+	// sf_pausemenu_minimap panel C1 leaves focused after the first ESC out of
+	// the pause menu -- got released; zm never sent it.  See
+	// docs/CODOL_CL_PAUSED_20260920.md, 2026-09-21 section.
+	self closeMenu();
+	self closeInGameMenu();
+
 	self.sessionteam = "allies";
 	self.sessionstate = "playing";
 	self.statusicon = "";
@@ -865,9 +877,15 @@ end_game_watcher()
 
 	maps\mp\gametypes\_zombiemode_spawner::clear_zombies();
 
+	// T5 _zombiemode::player_intermission opens with closeMenu +
+	// closeInGameMenu before parking the player for the intermission.
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
+	{
+		players[ i ] closeMenu();
+		players[ i ] closeInGameMenu();
 		players[ i ] freezeControls( true );
+	}
 
 	wait( level.zombie_vars[ "zombie_intermission_time" ] );
 
