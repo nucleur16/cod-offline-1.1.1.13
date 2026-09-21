@@ -50,11 +50,18 @@
 // same "<base>_zm" / "<base>_upgraded_zm" pairing convention T5 uses.  So the
 // contract (add_zombie_weapon, the cost tiers by class, the upgrade suffix) is
 // T5's and the names are the ones the client can actually build.  Every entry
-// is then validated at init: precacheItem is a silent no-op for a weapon in no
-// mounted zone (src/codol/script/codol_script_precache.c:24-27) and
-// getWeaponIndexFromName only answers non-zero afterwards for a name the zones
-// really carry, so a weapon that is not present drops out of the pool instead
-// of producing a box roll the client cannot render.
+// is then validated at init with codol_isWeaponMounted, which runs the same
+// find-only zone probe precacheItem uses internally and registers nothing.
+//
+// It must NOT be getWeaponIndexFromName: that is the registering path
+// (BG_GetWeaponIndexForName -> BG_LoadWeaponDef_FastFile, a bare
+// DB_FindXAssetHeaderReal with no default-asset check), which increments
+// bg_lastParsedWeaponIndex and returns NON-ZERO even for a name in no mounted
+// zone, because db_load.cpp:3499 hands back the defaultweapon_mp definition.
+// Gating on it therefore passed every absent weapon, burned a native weapon
+// slot plus a publish/republish cycle per probe, and put an _mp definition
+// body into a zm match under a zm name -- thundergun_zm sat in the mystery
+// box backed by that clone on every map that does not ship it.
 
 #include maps\mp\gametypes\_zombiemode_utility;
 
@@ -78,13 +85,13 @@ add_zombie_weapon( weapon_name, upgrade_name, hint, cost, ammo_cost, in_box )
 		in_box = true;
 
 	precacheItem( weapon_name );
-	if ( getWeaponIndexFromName( weapon_name ) <= 0 )
+	if ( !codol_isWeaponMounted( weapon_name ) )
 		return;
 
 	if ( isDefined( upgrade_name ) )
 	{
 		precacheItem( upgrade_name );
-		if ( getWeaponIndexFromName( upgrade_name ) <= 0 )
+		if ( !codol_isWeaponMounted( upgrade_name ) )
 			upgrade_name = undefined;
 	}
 
