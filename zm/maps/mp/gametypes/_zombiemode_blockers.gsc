@@ -15,7 +15,8 @@
 //                                            one chunk per second,
 //                                            rebuild_barrier_reward cap.
 //   rebuild_barrier_reward_reset:1724
-//   remove_chunk                :1729     -- state + Hide + notSolid only.
+//   remove_chunk                :1729     -- state + notSolid, then the T5
+//                                            board flight (remove_chunk_fly).
 //   replace_chunk               :2174     -- state + Show + Solid only.
 //   trigger_delete_on_repair    :1689
 //   door_init / door_classify   :92,:171
@@ -376,26 +377,132 @@ rebuild_barrier_reward_reset()
 	self.rebuild_barrier_reward = 0;
 }
 
-// T5 :1729 remove_chunk.  The state half is unchanged from the previous
-// pass; the audio and FX halves below it are new, and are what the "board"
-// notetrack now drives (T5 _zombiemode_spawner.gsc:1163-:1183 threads exactly
-// these two off the same note).
+// T5 :1729 remove_chunk, the "board" arm (:1900-:1990), which is the only
+// arm this map needs: all 72 chunks of zm_prototype_sh are script_brushmodel
+// with script_parameters "board" and script_move_dist 125 (MEASURED,
+// obj/zm-mapents/zm_prototype_sh-mapents.txt).
 //
-// STILL NOT TAKEN: the grate rotation and the per-piece anim_grate_index
-// (remove_chunk_rotate_grate :2083) -- board geometry variants.
-remove_chunk( chunk )
+// THE BOARD NOW FLIES.  2026-09-22.  User report: "they tear down the windows
+// but the animation for the boards flying off isn't working."  The previous
+// pass stopped at "state + Hide + notSolid" (its own header said so), so on
+// the "board" note the chunk simply vanished.  T5 does not hide the chunk on
+// the note; it launches it.  Verbatim from T5 :1900-:1990:
+//
+//   ent = Spawn( "script_origin", chunk.origin )      -- a launcher
+//   ent.angles = node.angles + ( 0, 180, 0 )          -- away from the room,
+//                                                        toward the zombie
+//   dist = 100 + RandomInt( script_move_dist - 100 )  -- 100..124 here
+//   dest = forward * dist, BulletTrace'd 200 down     -- land on the floor
+//   chunk LinkTo( ent )
+//   time = ent fake_physicslaunch( dest, 200 + RandomInt( 100 ) )
+//                                                     -- MoveGravity arc
+//   ent RotatePitch( 180, time*0.5 ) 60% / RotatePitch( 90, time, time*0.5 )
+//   wait( time ); chunk Hide(); wait( 0.1 ); ent Delete()
+//   chunk update_states( "destroyed" ); chunk notify( "destroyed" )
+//
+// Every builtin on that path is native and non-stub here (audited,
+// docs/CODOL_ZOMBIE_BOARDS_20260922.md): spawn, linkto, movegravity
+// (ScriptEntCmd_GravityMove writes TR_GRAVITY = C1 wire mode 5 and accepts
+// script_origin/script_model/script_brushmodel), rotatepitch, bullettrace,
+// hide, delete; G_RunFrame runs both the launcher and the linked brushmodel
+// through G_RunMover, which follows the tagInfo link every frame.
+//
+// Two deliberate differences from T5, both about the state, not the visual:
+//   * T5 sets "mid_tear" here and "destroyed" only after the flight, and is
+//     threaded off level by the note handler.  This port's tear loop and
+//     open_barrier_paths gate on all_chunks_destroyed(), verified live on the
+//     synchronous state, so the state and the .destroyed flag are still set
+//     synchronously and only the flight is the threaded part
+//     (remove_chunk_fly).  The zombie mantles as soon as the last note fires,
+//     as before; the last board is still in the air when it does, as in T5.
+//   * chunk.in_flight guards a repair that lands inside the ~1 s flight:
+//     replace_chunk unlinks the board from its launcher first, and the flight
+//     thread does not hide a board that has been repaired under it.
+//
+// STILL NOT TAKEN: the bar / grate arms (:1770-:1900, :1995-:2060) and the
+// per-piece anim_grate_index (remove_chunk_rotate_grate :2083) -- no chunk of
+// this map is a bar or a grate.
+remove_chunk( chunk, node, destroy_immediately, zomb )
 {
 	if ( !isDefined( chunk ) || is_true( chunk.destroyed ) )
 		return;
 
 	chunk update_states( "destroyed" );
 	chunk.destroyed = true;
-	chunk hide();
 	chunk notSolid();
 	chunk notify( "destroyed" );
 
 	chunk thread zombie_boardtear_audio_offset();
 	chunk thread zombie_boardtear_offset_fx();
+
+	// T5 needs the barrier's facing for the launch direction; the "end
+	// without notetrack" fallback in the spawner passes it too.  With no node
+	// there is nothing to aim along, so the board just goes (the old
+	// behaviour), and the log says so.
+	if ( !isDefined( node ) || !isDefined( node.angles ) )
+	{
+		chunk hide();
+		codolprintln( "CoDOL zm board: chunk " + chunk.script_noteworthy + " at " + chunk.origin + " hidden without a launch (no barrier node)" );
+		return;
+	}
+
+	level thread remove_chunk_fly( chunk, node );
+}
+
+// The T5 :1900-:1990 flight, threaded off level so the zombie's notetrack
+// loop is not held for the ~1 s of air time (T5 :1183 threads remove_chunk
+// itself off level for the same reason).
+remove_chunk_fly( chunk, node )
+{
+	chunk.in_flight = true;
+
+	ent = spawn( "script_origin", chunk.origin );
+	ent.angles = node.angles + ( 0, 180, 0 );
+
+	// T5 "DCS 030711": script_move_dist caps the flight for boards in
+	// shallow closets.  The map carries 125 on every chunk.
+	dist = 100;
+	if ( isDefined( chunk.script_move_dist ) && int( chunk.script_move_dist ) > 100 )
+		dist = 100 + randomInt( int( chunk.script_move_dist ) - 100 );
+	else
+		dist = 100 + randomInt( 100 );
+
+	dest = ent.origin + ( anglesToForward( ent.angles ) * dist );
+	trace = bulletTrace( dest + ( 0, 0, 16 ), dest + ( 0, 0, -200 ), false, undefined );
+	if ( trace[ "fraction" ] == 1 )
+		dest = dest + ( 0, 0, -200 );
+	else
+		dest = trace[ "position" ];
+
+	chunk linkTo( ent );
+
+	time = ent fake_physicslaunch( dest, 200 + randomInt( 100 ) );
+
+	spin = "pitch 180 over " + ( time * 0.5 );
+	if ( randomInt( 100 ) > 40 )
+	{
+		ent rotatePitch( 180, time * 0.5 );
+	}
+	else
+	{
+		spin = "pitch 90 over " + time + " accel " + ( time * 0.5 );
+		ent rotatePitch( 90, time, time * 0.5 );
+	}
+
+	codolprintln( "CoDOL zm board: chunk " + chunk.script_noteworthy + " at " + chunk.origin + " linked to launcher, movegravity vel " + ent.launch_velocity + " for " + time + " s to " + dest + " (dist " + dist + " along yaw " + ent.angles[ 1 ] + "), spin " + spin + ", fx impacts/fx_large_woodhit, snd zmb_break_board + zmb_board_slam" );
+
+	wait( time );
+
+	// A repair inside the flight has already unlinked and shown the board.
+	if ( is_true( chunk.destroyed ) )
+		chunk hide();
+
+	wait( 0.1 );
+
+	if ( chunk islinked() )
+		chunk unlink();
+	chunk.in_flight = false;
+	ent delete();
 }
 
 // T5 _zombiemode_spawner.gsc:2105 zombie_boardtear_audio_offset.  T5's own
@@ -471,6 +578,10 @@ replace_chunk( chunk )
 {
 	chunk update_states( "repaired" );
 	chunk.destroyed = false;
+	// Repaired while still in the air: take it off the launcher first, or the
+	// origin/angles set below would be overwritten by the link next frame.
+	if ( is_true( chunk.in_flight ) && chunk islinked() )
+		chunk unlink();
 	if ( isDefined( chunk.og_origin ) )
 		chunk.origin = chunk.og_origin;
 	if ( isDefined( chunk.og_angles ) )

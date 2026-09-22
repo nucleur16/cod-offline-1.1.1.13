@@ -1318,7 +1318,7 @@ zombie_tear_notetracks( msg, chunk, node )
 			{
 				codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " tear clip ended without its board notetrack; removing board " + chunk.script_noteworthy + " at the end instead" );
 				self.lastchunk_destroy_time = getTime();
-				maps\mp\gametypes\_zombiemode_blockers::remove_chunk( chunk );
+				maps\mp\gametypes\_zombiemode_blockers::remove_chunk( chunk, node, true, self );
 			}
 			return;
 		}
@@ -1328,7 +1328,11 @@ zombie_tear_notetracks( msg, chunk, node )
 			if ( isDefined( chunk ) && !is_true( chunk.destroyed ) )
 			{
 				self.lastchunk_destroy_time = getTime();
-				maps\mp\gametypes\_zombiemode_blockers::remove_chunk( chunk );
+				// T5 :1183 remove_chunk( chunk, node, true, zomb ): node is
+				// the barrier, whose facing aims the board's flight
+				// (2026-09-22, the boards fly now).  remove_chunk marks the
+				// chunk synchronously and threads the flight itself.
+				maps\mp\gametypes\_zombiemode_blockers::remove_chunk( chunk, node, true, self );
 			}
 			continue;
 		}

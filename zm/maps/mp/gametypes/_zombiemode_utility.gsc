@@ -611,6 +611,40 @@ enable_trigger()
 }
 
 // --------------------------------------------------------------------------
+// T5 _zombiemode_utility.gsc:2381 fake_physicslaunch.  Self is the mover
+// (the board's script_origin launcher in _zombiemode_blockers::remove_chunk_fly).
+// Solves the ballistic velocity that carries self from its origin to
+// target_pos in dist/power seconds under gravity, then MoveGravity's it.
+//
+// T5 reads GetDvarInt( #"bg_gravity" ).  MEASURED here: the retained
+// BG_EvaluateTrajectory (_bg_misc.asm:1476, TR_GRAVITY arm) evaluates
+// -400 * t^2, i.e. gravity fixed at 800, and C1's evaluator (0x40CA40) does
+// the same (src/codol/snapshot/codol_engine_state.c trajectory()).  A dvar
+// read would only make the solved arc miss its landing point when g_gravity
+// is not 800, so the evaluator's constant is used.  T5's debug
+// draw_line_ent_to_pos is dropped.  self.launch_velocity is this port's
+// addition, for the one diagnostic line per torn board.
+// --------------------------------------------------------------------------
+fake_physicslaunch( target_pos, power )
+{
+	start_pos = self.origin;
+
+	gravity = -800;
+
+	dist = distance( start_pos, target_pos );
+
+	time = dist / power;
+	delta = target_pos - start_pos;
+	drop = 0.5 * gravity * ( time * time );
+
+	velocity = ( ( delta[ 0 ] / time ), ( delta[ 1 ] / time ), ( delta[ 2 ] - drop ) / time );
+
+	self.launch_velocity = velocity;
+	self moveGravity( velocity, time );
+	return time;
+}
+
+// --------------------------------------------------------------------------
 // Barrier chunk state.  T5 _zombiemode_utility.gsc:139,154,1906 plus
 // _zombiemode_blockers.gsc:2920 update_states().
 //
