@@ -44,6 +44,43 @@ watchKillstreakTestDvar()
             reportKillstreakRows();
             continue;
         }
+        hurtTokens = strTok( request, " " );
+        if ( hurtTokens[0] == "hurt" && hurtTokens.size > 1 )
+        {
+            foreach ( player in level.players )
+                if ( player getEntityNumber() == int( hurtTokens[1] ) && isAlive( player ) )
+                {
+                    codolPrintLn( "CoDOL killstreak test: hurt " + player.name );
+                    player thread reportNextSpawn();
+                    player doDamage( 1000, player.origin + ( 0, 0, 40 ), level.players[0] );
+                    player codol_deathGates();
+                }
+            continue;
+        }
+        if ( request == "gates" )
+        {
+            foreach ( player in level.players )
+                player codol_deathGates();
+            continue;
+        }
+        tiTokens = strTok( request, " " );
+        if ( tiTokens[0] == "suicide" && tiTokens.size > 1 )
+        {
+            foreach ( player in level.players )
+                if ( player getEntityNumber() == int( tiTokens[1] ) )
+                    player thread testSuicide();
+            continue;
+        }
+        if ( tiTokens[0] == "ti" && tiTokens.size > 1 )
+        {
+            tiPlayer = undefined;
+            foreach ( player in level.players )
+                if ( player getEntityNumber() == int( tiTokens[1] ) )
+                    tiPlayer = player;
+            if ( isDefined( tiPlayer ) )
+                tiPlayer thread testTacticalInsertion();
+            continue;
+        }
         tokens = strTok( request, " " );
         if ( tokens.size < 2 )
             continue;
@@ -119,6 +156,88 @@ reportKillstreakRows()
         for ( col = 0; col < 24; col++ )
             line = line + tableLookupByRow( table, row, col ) + "|";
         codolPrintLn( "CoDOL killstreak row " + row + ": " + line );
+    }
+}
+
+// set scr_codol_usekillstreak "ti <clientnum>": give the tactical insertion
+// perk, throw its flare_mp through the real tactical button, then kill the
+// player and report whether the respawn used the beacon.
+testTacticalInsertion()
+{
+    self endon( "disconnect" );
+    for ( tries = 0; !isAlive( self ) && tries < 30; tries++ )
+        wait 0.5;
+    if ( !isAlive( self ) )
+        return;
+    // As _class::codol_giveEquipment does for a class carrying it: the perk,
+    // then flare_mp with its start ammo. flare_mp is offhand class 5, so it is
+    // equipment (slot 2, button 0x10000), like the betty.
+    // NOTE: C1 ships flare_mp with shared ammo cap WEAPON_FRAGGRENADE, so a
+    // player already holding a frag gets 0 flares from giveStartAmmo (the cap
+    // is full) and the flare leaves the inventory; codol_dumpOwnedAmmo() shows
+    // the pools. Open question for C1's own cap routine, 2026-09-24.
+    self maps\mp\perks\_perks::givePerk( "specialty_tacticalinsertion" );
+    self giveWeapon( "flare_mp" );
+    self giveStartAmmo( "flare_mp" );
+    if ( !self hasWeapon( "flare_mp" ) )
+    {
+        codolPrintLn( "CoDOL killstreak test: TI for " + self.name + ": flare_mp was not kept (shared frag ammo cap)" );
+        return;
+    }
+    slots = [];
+    for ( i = 0; i < 3; i++ )
+        slots[i] = self getOffhandEquipment( i );
+    slots[2] = "flare_mp";
+    self setOffhandEquipment( slots[0], slots[1], slots[2] );
+    codolPrintLn( "CoDOL killstreak test: TI slots for " + self.name + ": " + self getOffhandEquipment( 0 ) + " / " +
+        self getOffhandEquipment( 1 ) + " / " + self getOffhandEquipment( 2 ) + ", flare ammo " + self getAmmoCount( "flare_mp" ) );
+    wait 1.0;
+    self maps\mp\gametypes\_codol_equiptest::pressUntilThrown( 65536, "flare_mp" );
+    wait 1.0;
+    if ( !isDefined( self.setSpawnPoint ) )
+    {
+        codolPrintLn( "CoDOL killstreak test: TI for " + self.name + " placed no beacon (TISpawnPosition " + isDefined( self.TISpawnPosition ) + ")" );
+        return;
+    }
+    beacon = self.setSpawnPoint.origin;
+    codolPrintLn( "CoDOL killstreak test: TI beacon for " + self.name + " at " + beacon );
+    self suicide();
+    self waittill( "spawned_player" );
+    codolPrintLn( "CoDOL killstreak test: TI respawn for " + self.name + " at " + self.origin + ", " + distance( self.origin, beacon ) + " from the beacon" );
+}
+
+testSuicide()
+{
+    self endon( "disconnect" );
+    for ( tries = 0; !isAlive( self ) && tries < 30; tries++ )
+        wait 0.5;
+    if ( !isAlive( self ) )
+    {
+        codolPrintLn( "CoDOL killstreak test: " + self.name + " never came back alive" );
+        return;
+    }
+    codolPrintLn( "CoDOL killstreak test: suicide " + self.name );
+    self codol_deathGates();
+    self thread reportNextSpawn();
+    self suicide();
+    self codol_deathGates();
+}
+
+reportNextSpawn()
+{
+    self endon( "disconnect" );
+    self thread reportAliveAfterSuicide();
+    self waittill( "spawned_player" );
+    codolPrintLn( "CoDOL killstreak test: " + self.name + " respawned at " + self.origin );
+}
+
+reportAliveAfterSuicide()
+{
+    self endon( "disconnect" );
+    for ( i = 0; i < 8; i++ )
+    {
+        wait 1.0;
+        codolPrintLn( "CoDOL killstreak test: " + self.name + " t+" + ( i + 1 ) + "s alive " + isAlive( self ) + " health " + self.health + " session " + self.sessionstate );
     }
 }
 

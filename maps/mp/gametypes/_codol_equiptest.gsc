@@ -102,7 +102,26 @@ throwEquipment( slot, weapon )
     codolPrintLn( "CoDOL equiptest: " + self.name + " throws " + weapon + " from slot " + slot +
         " (ammo " + self getAmmoCount( weapon ) + ")" );
     wait 0.5;
-    self codol_botPressButtons( slotButton( slot ), 0.4 );
+    self pressUntilThrown( slotButton( slot ), weapon );
+}
+
+// The engine refuses an offhand while the weapon is busy (firing, reloading,
+// switching, sprinting), exactly as it would a player's press; keep pressing
+// until it throws, as a player would.
+pressUntilThrown( button, weapon )
+{
+    self endon( "disconnect" );
+    self endon( "death" );
+    for ( attempt = 1; attempt <= 6; attempt++ )
+    {
+        self.codolLastThrown = undefined;
+        self codol_botPressButtons( button, 0.4 );
+        wait 1.5;
+        if ( isDefined( self.codolLastThrown ) && self.codolLastThrown == weapon )
+            return true;
+    }
+    codolPrintLn( "CoDOL equiptest: " + self.name + " never threw " + weapon );
+    return false;
 }
 
 logGrenadeFire()
@@ -121,6 +140,7 @@ logPlayerGrenadeFire()
     for ( ;; )
     {
         self waittill( "grenade_fire", grenade, weapon );
+        self.codolLastThrown = weapon;
         where = "(no entity)";
         if ( isDefined( grenade ) )
             where = "" + grenade.origin;
