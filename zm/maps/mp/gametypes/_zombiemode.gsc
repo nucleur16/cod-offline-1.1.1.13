@@ -387,6 +387,14 @@ Callback_StartGameType()
 	level.zombie_start_weapon = resolveStartWeapon();
 	level.zombie_lethal_grenade = resolveLethalGrenade();
 
+	// Equipment test hooks (idle unless scr_codol_equiptest is set).
+	maps\mp\gametypes\_codol_equiptest::init();
+
+	// Each Cyborg's pistol/lethal/special/trap (mp/cyborgclasstable.csv) and
+	// the grenade_fire registry the item modules below hook into.  Before
+	// them, so their register_equipment calls find the registry.
+	maps\mp\gametypes\_zombiemode_equipment::init();
+
 	// Subsystem order matters: last stand first because it reads
 	// level.zombie_start_weapon, then the weapon table, then anything that
 	// spawns triggers, then the spawner, then the loop.
@@ -480,6 +488,11 @@ Callback_PlayerDisconnect()
 Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, timeOffset )
 {
 	if ( level.gameEnded )
+		return;
+
+	// Test clients added by _codol_equiptest (scr_codol_equiptest "addbots")
+	// stand still next to the equipment under test; nothing else sets this.
+	if ( isDefined( self.codolTestInvulnerable ) )
 		return;
 
 	// Already down: T5 lets a downed player be finished only by the bleedout,
@@ -646,18 +659,31 @@ giveStartingLoadout()
 {
 	self takeAllWeapons();
 
-	if ( !isDefined( level.zombie_start_weapon ) )
+	// C1's roster gives each character its own pistol (column 5: m1911_zm, or
+	// m1911dw_zm for Danby); the level default covers a character whose pistol
+	// did not resolve.
+	start_weapon = self maps\mp\gametypes\_zombiemode_equipment::character_pistol();
+	if ( !isDefined( start_weapon ) )
+		start_weapon = level.zombie_start_weapon;
+	if ( !isDefined( start_weapon ) )
 		return;
+	self.zombie_start_weapon = start_weapon;
 
-	self giveWeapon( level.zombie_start_weapon );
-	self giveMaxAmmo( level.zombie_start_weapon );
-	self switchToWeapon( level.zombie_start_weapon );
+	self giveWeapon( start_weapon );
+	self giveMaxAmmo( start_weapon );
+	self switchToWeapon( start_weapon );
+
+	// Lethal / special / trap in C1's three offhand slots.
+	self maps\mp\gametypes\_zombiemode_equipment::give_character_loadout();
 
 	// C1 keeps a separate zmCharacterIndex and mp/cyborgclasstable.csv is the
 	// whole zm roster; the native selector already forces the zm faction when a
 	// zm zone is mounted (CODOL_SelectClientCharacter -> zone_faction,
 	// src/codol/player/codol_player_appearance.c:184-188).
-	self codol_applyProfileCharacter( "zm", level.zombie_start_weapon );
+	// A test client has no uploaded profile to compose, and the builtin raises
+	// for one - a runtime error that would end the match.
+	if ( !self.isbot )
+		self codol_applyProfileCharacter( "zm", start_weapon );
 }
 
 // C1 draws the ZOMBIE_ROUND HUD from the client dvar ui_hud_round (renderer at
@@ -698,10 +724,13 @@ round_start()
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 	{
-		if ( isDefined( level.zombie_lethal_grenade ) )
+		// The character's own lethal (give_character_loadout armed it in slot
+		// 0); the level default only for a character without one.
+		lethal = players[ i ] maps\mp\gametypes\_zombiemode_equipment::lethal_grenade();
+		if ( isDefined( lethal ) && !players[ i ] hasWeapon( lethal ) )
 		{
-			players[ i ] giveWeapon( level.zombie_lethal_grenade );
-			players[ i ] setWeaponAmmoClip( level.zombie_lethal_grenade, 0 );
+			players[ i ] giveWeapon( lethal );
+			players[ i ] setWeaponAmmoClip( lethal, 0 );
 		}
 
 		players[ i ] setClientDvars( "ammoCounterHide", "0", "miniscoreboardhide", "0" );
@@ -833,15 +862,16 @@ round_wait()
 // T5 :3986.
 award_grenades_for_survivors()
 {
-	if ( !isDefined( level.zombie_lethal_grenade ) )
-		return;
-
-	grenade = level.zombie_lethal_grenade;
 	players = getPlayers();
 
 	for ( i = 0; i < players.size; i++ )
 	{
 		p = players[ i ];
+
+		// Each character tops up its own lethal (semtex, money ball, betty).
+		grenade = p maps\mp\gametypes\_zombiemode_equipment::lethal_grenade();
+		if ( !isDefined( grenade ) )
+			continue;
 
 		if ( !p hasWeapon( grenade ) )
 		{

@@ -10,6 +10,7 @@ init()
         setDvar( "scr_codol_bots", 0 );
     // Independent of bots: it also drives a human client by number.
     level thread watchKillstreakTestDvar();
+    maps\mp\gametypes\_codol_equiptest::init();
     graph = "waypoints/" + getDvar( "mapname" ) + "_wp.csv";
     if ( loadBotWaypoints( graph ) <= 0 )
         return;
@@ -33,6 +34,16 @@ watchKillstreakTestDvar()
         if ( request == "" )
             continue;
         setDvar( "scr_codol_usekillstreak", "" );
+        if ( request == "list" )
+        {
+            reportKillstreakCoverage();
+            continue;
+        }
+        if ( request == "rows" )
+        {
+            reportKillstreakRows();
+            continue;
+        }
         tokens = strTok( request, " " );
         if ( tokens.size < 2 )
             continue;
@@ -69,6 +80,45 @@ watchKillstreakTestDvar()
         target thread maps\mp\killstreaks\_killstreaks::killstreakUsePressed();
         if ( tokens.size > 2 && tokens[2] == "place" )
             target thread placeCarriedKillstreak();
+    }
+}
+
+// set scr_codol_usekillstreak list: every catalogue row, whether a use
+// handler is registered for it, and its activation weapon.
+reportKillstreakCoverage()
+{
+    table = "mp/coKillstreakStatsTable.csv";
+    missing = 0;
+    for ( row = 0; true; row++ )
+    {
+        ref = tableLookupByRow( table, row, 1 );
+        if ( !isDefined( ref ) || ref == "" )
+            break;
+        if ( ref == "none" )
+            continue;
+        handled = isDefined( level.killstreakFuncs[ref] );
+        if ( !handled )
+            missing++;
+        codolPrintLn( "CoDOL killstreak coverage: row " + row + " id " + tableLookupByRow( table, row, 0 ) +
+            " " + ref + " weapon " + tableLookupByRow( table, row, 13 ) + " base " + tableLookupByRow( table, row, 22 ) +
+            " handler " + handled );
+    }
+    codolPrintLn( "CoDOL killstreak coverage: " + missing + " catalogue row(s) without a handler" );
+}
+
+// set scr_codol_usekillstreak rows: every column of every catalogue row.
+reportKillstreakRows()
+{
+    table = "mp/coKillstreakStatsTable.csv";
+    for ( row = 0; true; row++ )
+    {
+        ref = tableLookupByRow( table, row, 1 );
+        if ( !isDefined( ref ) || ref == "" )
+            break;
+        line = "";
+        for ( col = 0; col < 24; col++ )
+            line = line + tableLookupByRow( table, row, col ) + "|";
+        codolPrintLn( "CoDOL killstreak row " + row + ": " + line );
     }
 }
 
