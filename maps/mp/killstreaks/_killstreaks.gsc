@@ -329,12 +329,37 @@ isRideKillstreak( streakName )
 	}
 }
 
+// Use functions whose second parameter is the reward's kID: every airdrop
+// variant validates it against pers["kIDs_valid"] (tryUseAirdrop) and raises
+// a runtime error - which shuts the server down - when it is missing. Keyed
+// by the BASE reward so the pro rows, which alias the base handler, get it
+// too; the literal-name list this replaced missed airdrop_sam_turret and every
+// *_pro airdrop.
+killstreakTakesKID( streakName )
+{
+	switch( getKillstreakBaseRef( streakName ) )
+	{
+		case "airdrop":
+		case "airdrop_mega":
+		case "airdrop_sentry_minigun":
+		case "airdrop_sam_turret":
+		case "airdrop_predator_missile":
+		case "mortar_mp":
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+
 isCarryKillstreak( streakName )
 {
 	switch( getKillstreakBaseRef( streakName ) )
 	{
 		case "sentry":
 		case "sentry_gl":
+		case "sam_turret":	// IW5 isCarryKillstreak
 			return true;
 
 		default:
@@ -450,7 +475,7 @@ killstreakUsePressed( selectedID )
 	}
 	self.codolRideActivation = activation;
 
-	if ( streakName == "airdrop" || streakName == "airdrop_sentry_minigun" || streakName == "airdrop_mega" || streakName == "mortar_mp" )
+	if ( killstreakTakesKID( streakName ) )
 		used = self [[ level.killstreakFuncs[ streakName ] ]]( lifeId, kID );
 	else
 		used = self [[ level.killstreakFuncs[ streakName ] ]]( lifeId );

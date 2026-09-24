@@ -77,6 +77,10 @@ init()
 
 	level.killStreakFuncs["airdrop_predator_missile"] = ::tryUseAirdropPredatorMissile;
 	level.killStreakFuncs["airdrop_sentry_minigun"] = ::tryUseAirdropSentryMinigun;
+	// C1 catalogue ID 22: a care package that carries the SAM turret
+	// (maps/mp/killstreaks/_autosentry.gsc "sam_turret"), thrown with
+	// airdrop_sam_marker_mp. Same shape as airdrop_sentry_minigun.
+	level.killStreakFuncs["airdrop_sam_turret"] = ::tryUseAirdropSamTurret;
 	level.killStreakFuncs["airdrop_mega"] = ::tryUseMegaAirdrop;
 	
 	level.littleBirds = 0;
@@ -116,6 +120,7 @@ init()
 	addCrateType( "airdrop_mega",	"nuke", 					getDvarInt( "scr_airdrop_mega_nuke", 0 ),				::killstreakCrateThink );
 
 	addCrateType( "airdrop_sentry_minigun",	"sentry", 			0,			::killstreakCrateThink );
+	addCrateType( "airdrop_sam_turret",	"sam_turret", 			0,			::killstreakCrateThink );
 	
 	addCrateType( "nuke_drop",		"nuke", 					100,		::nukeCrateThink );
 
@@ -181,6 +186,8 @@ getCrateTypeForDropType( dropType )
 	{
 		case "airdrop_sentry_minigun":
 			return "sentry";
+		case "airdrop_sam_turret":
+			return "sam_turret";
 		case "airdrop_predator_missile":
 			return "predator_missile";
 		case "airdrop":
@@ -222,6 +229,11 @@ tryUseAirdropPredatorMissile( lifeId, kID )
 tryUseAirdropSentryMinigun(  lifeId, kID )
 {
 	return ( self tryUseAirdrop(  lifeId, kID, "airdrop_sentry_minigun" ) );
+}
+
+tryUseAirdropSamTurret( lifeId, kID )
+{
+	return ( self tryUseAirdrop( lifeId, kID, "airdrop_sam_turret" ) );
 }
 
 tryUseMegaAirdrop( lifeId, kID )
@@ -1523,6 +1535,7 @@ isAirdropMarker( weaponName )
 		case "airdrop_marker_mp":
 		case "airdrop_mega_marker_mp":
 		case "airdrop_sentry_marker_mp":
+		case "airdrop_sam_marker_mp":
 			return true;
 		default:
 			return false;

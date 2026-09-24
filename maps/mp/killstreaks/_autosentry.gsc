@@ -15,6 +15,17 @@ init()
 	level.sentryType[ "sentry_minigun" ] 	= "sentry";
 	
 	level.killStreakFuncs[ level.sentryType[ "sentry_minigun" ] ] 	= ::tryUseAutoSentry;
+
+	// SAM turret (catalogue ID 21 "sam_turret", activation weapon auto_tow_mp).
+	// Adapted from IW5 maps/mp/killstreaks/_autosentry.gsc (plutoniummod
+	// iw5-scripts 42f3db22: tryusesam, sam_attacktargets, sam_acquiretarget,
+	// sam_fireontarget, sam_watch*). C1 ships the T5 turret, not IW5's:
+	// weapon tow_turret_mp (projectile turret, 1000 damage), models
+	// t5_weapon_sam_turret{,_yellow,_red}. That skeleton has tag_aim and
+	// tag_flash but none of IW5's tag_laser / tag_le_missile* tags
+	// (codol_checkmodel, 2026-09-24), so sight and launch use those two.
+	level.sentryType[ "sam_turret" ] = "sam_turret";
+	level.killStreakFuncs[ level.sentryType[ "sam_turret" ] ] = ::tryUseSAM;
 	
 	level.sentrySettings = [];
 	
@@ -28,6 +39,13 @@ init()
 	level.sentrySettings[ "sentry_minigun" ].modelPlacement = "sentry_minigun_obj";
 	level.sentrySettings[ "sentry_minigun" ].modelPlacementFailed = "sentry_minigun_obj_red";
 	level.sentrySettings[ "sentry_minigun" ].modelDestroyed = "sentry_minigun_destroyed";
+
+	level.sentrySettings[ "sam_turret" ] = spawnStruct();
+	level.sentrySettings[ "sam_turret" ].weaponInfo = "tow_turret_mp";
+	level.sentrySettings[ "sam_turret" ].modelBase = "t5_weapon_sam_turret";
+	level.sentrySettings[ "sam_turret" ].modelPlacement = "t5_weapon_sam_turret_yellow";
+	level.sentrySettings[ "sam_turret" ].modelPlacementFailed = "t5_weapon_sam_turret_red";
+	level.sentrySettings[ "sam_turret" ].modelDestroyed = "t5_weapon_sam_turret";
 
 	foreach ( sentryInfo in level.sentrySettings )
 	{
@@ -53,6 +71,16 @@ tryUseAutoSentry( lifeId )
 	if ( result )
 		self maps\mp\_matchdata::logKillstreakEvent( "sentry", self.origin );
 	
+	return ( result );
+}
+
+
+tryUseSAM( lifeId )
+{
+	result = self giveSentry( "sam_turret" );
+	if ( result )
+		self maps\mp\_matchdata::logKillstreakEvent( "sam_turret", self.origin );
+
 	return ( result );
 }
 
@@ -159,6 +187,14 @@ sentry_initSentry( sentryType, owner )
 //	self setConvergenceTime( .25, "yaw" );
 	self sentry_setInactive();
 	self setDefaultDropPitch( -89.0 );	// setting this mainly prevents Turret_RestoreDefaultDropPitch() from running
+
+	if ( self.sentryType == "sam_turret" )
+	{
+		// IW5 sentry_initsentry "sam_turret": full yaw, steep top arc.
+		self setLeftArc( 180 );
+		self setRightArc( 180 );
+		self setTopArc( 80 );
+	}
 	
 	self sentry_setOwner( owner );
 	self thread sentry_handleOwner();
@@ -166,7 +202,10 @@ sentry_initSentry( sentryType, owner )
 	self thread sentry_handleDeath();
 	self thread sentry_handleUse();
 	self thread sentry_timeOut();
-	self thread sentry_attackTargets();
+	// The SAM never auto-engages ground targets; sam_attackTargets drives it
+	// from sentry_setActive once it is placed.
+	if ( self.sentryType != "sam_turret" )
+		self thread sentry_attackTargets();
 	self thread sentry_beepSounds();
 }
 
@@ -457,7 +496,13 @@ sentry_onGameEnded( carrier )
 
 sentry_setActive()
 {
-	self setMode( SENTRY_MODE_ON );
+	// A SAM stays in sentry_offline: that mode carries no auto-acquire bit,
+	// so the native think only follows the scripted target (setTargetEntity)
+	// and never engages ground players with the TOW launcher.
+	if ( self.sentryType == "sam_turret" )
+		self setMode( SENTRY_MODE_OFF );
+	else
+		self setMode( SENTRY_MODE_ON );
 
 	self setCursorHint( "HINT_NOICON" );
 	self setHintString( &"SENTRY_PICKUP" );
@@ -476,6 +521,9 @@ sentry_setActive()
 		self maps\mp\_entityheadicons::setTeamHeadIcon( self.team, (0,0,65) );
 	else
 		self maps\mp\_entityheadicons::setPlayerHeadIcon( self.owner, (0,0,65) );
+
+	if ( self.sentryType == "sam_turret" )
+		self thread sam_attackTargets();
 }
 
 
@@ -708,4 +756,271 @@ sentry_beepSounds()
 }
 
 
+/* ============================
+	SAM Turret Logic
+	Adapted from IW5 _autosentry.gsc sam_* (see init). Targets are this
+	tree's aircraft: UAV / counter-UAV models, level.helis (attack and
+	support helicopters, pave low, harriers) and the manned AC-130.
+   ============================ */
 
+sam_attackTargets()
+{
+	self endon( "carried" );
+	self endon( "death" );
+	level endon( "game_ended" );
+
+	self.samTargetEnt = undefined;
+	codolPrintLn( "CoDOL killstreak: sam_turret active at " + self.origin );
+
+	for ( ;; )
+	{
+		self.samTargetEnt = self sam_acquireTarget();
+		self sam_fireOnTarget();
+		wait ( 0.05 );
+	}
+}
+
+
+sam_isEnemyAircraft( aircraft )
+{
+	if ( !isDefined( aircraft ) )
+		return false;
+
+	if ( level.teamBased )
+	{
+		if ( isDefined( aircraft.team ) && isDefined( self.team ) && aircraft.team == self.team )
+			return false;
+	}
+	else if ( isDefined( aircraft.owner ) && isDefined( self.owner ) && aircraft.owner == self.owner )
+	{
+		return false;
+	}
+
+	return true;
+}
+
+
+// IW5 calls sightTracePassed( start, end, false, self, aircraft ) so the
+// aircraft's own collision is not an obstruction. This VM's sightTracePassed
+// is the retained IW3 four-argument builtin, which cannot ignore a second
+// entity; a vehicle target then blocks its own sight line and the lock never
+// survives the lock-on time (measured: 14 locks, 0 salvos against a helicopter).
+// bulletTrace reports what it hit, so "reached the end or hit the aircraft"
+// is the same test.
+sam_canSee( aircraft )
+{
+	trace = bulletTrace( self getTagOrigin( "tag_aim" ), aircraft.origin, false, self );
+	if ( trace["fraction"] >= 1.0 )
+		return true;
+
+	return ( isDefined( trace["entity"] ) && trace["entity"] == aircraft );
+}
+
+
+sam_acquireTarget()
+{
+	if ( isDefined( self.samTargetEnt ) )
+	{
+		if ( self sam_canSee( self.samTargetEnt ) )
+			return self.samTargetEnt;
+
+		self clearTargetEntity();
+		return undefined;
+	}
+
+	if ( level.teamBased )
+		uavs = level.uavModels[ level.otherTeam[ self.team ] ];
+	else
+		uavs = level.uavModels;
+
+	if ( isDefined( uavs ) )
+	{
+		foreach ( uav in uavs )
+		{
+			if ( !self sam_isEnemyAircraft( uav ) )
+				continue;
+			if ( self sam_canSee( uav ) )
+				return uav;
+		}
+	}
+
+	if ( isDefined( level.helis ) )
+	{
+		foreach ( heli in level.helis )
+		{
+			if ( !self sam_isEnemyAircraft( heli ) )
+				continue;
+			if ( self sam_canSee( heli ) )
+				return heli;
+		}
+	}
+
+	if ( self sam_ac130IsTarget() && self sam_canSee( level.ac130.planeModel ) )
+		return level.ac130.planeModel;
+
+	self clearTargetEntity();
+	return undefined;
+}
+
+
+// IW5 only engages the gunship while someone is flying it.
+sam_ac130IsTarget()
+{
+	if ( !isDefined( level.ac130InUse ) || !level.ac130InUse )
+		return false;
+	if ( !isDefined( level.ac130 ) || !isDefined( level.ac130.planeModel ) || !isDefined( level.ac130player ) )
+		return false;
+	if ( isDefined( self.owner ) && level.ac130player == self.owner )
+		return false;
+	if ( level.teamBased && isDefined( level.ac130player.team ) && level.ac130player.team == self.team )
+		return false;
+
+	return true;
+}
+
+
+sam_targetStillValid()
+{
+	if ( !isDefined( self.samTargetEnt ) )
+		return false;
+
+	if ( isDefined( level.ac130 ) && isDefined( level.ac130.planeModel ) &&
+		self.samTargetEnt == level.ac130.planeModel && !self sam_ac130IsTarget() )
+	{
+		self.samTargetEnt = undefined;
+		self clearTargetEntity();
+		return false;
+	}
+
+	return true;
+}
+
+
+sam_fireOnTarget()
+{
+	if ( !self sam_targetStillValid() )
+		return;
+
+	self setTargetEntity( self.samTargetEnt );
+
+	// IW5 blocks on "turret_on_target". Bound it: a target outside the
+	// launcher's reach never produces the notify.
+	self waittill_notify_or_timeout( "turret_on_target", 3.0 );
+
+	if ( !self sam_targetStillValid() )
+		return;
+
+	// Work from a local copy from here on. The watchers below run
+	// synchronously until their first wait and may clear samTargetEnt at any
+	// point; an undefined field read is a script runtime error, and a runtime
+	// error shuts the whole server down.
+	target = self.samTargetEnt;
+
+	self thread sam_watchLineOfSight();
+	self thread sam_watchCrashing();
+	self thread sam_watchLeaving();
+
+	// Lock-on time before the salvo (IW5).
+	wait ( 2.0 );
+
+	for ( i = 0; i < 4; i++ )
+	{
+		if ( !self sam_targetStillValid() || !isDefined( target ) || self.samTargetEnt != target )
+			return;
+
+		if ( isDefined( self.carriedBy ) )
+			return;
+
+		missile = magicBullet( level.sentrySettings[ self.sentryType ].weaponInfo,
+			self getTagOrigin( "tag_flash" ), target.origin, self.owner );
+
+		if ( isDefined( missile ) )
+		{
+			missile Missile_SetTargetEnt( target );
+			missile Missile_SetFlightmodeDirect();
+			missile.samTurret = self;
+
+			// IW4's aircraft react to this: UAVs proximity-detonate the
+			// missile (_uav::handleIncomingStinger), helicopters with flares
+			// decoy it (_helicopter::heli_flares_monitor).
+			level notify ( "stinger_fired", self.owner, missile, target );
+		}
+		else
+		{
+			codolPrintLn( "CoDOL killstreak: sam_turret magicBullet returned no missile" );
+		}
+
+		if ( i == 3 )
+			break;
+
+		wait ( 0.25 );
+	}
+
+	// The salvo may already have destroyed the target.
+	if ( isDefined( target ) )
+		codolPrintLn( "CoDOL killstreak: sam_turret fired a salvo at " + target.classname + " " + target getEntityNumber() );
+	else
+		codolPrintLn( "CoDOL killstreak: sam_turret fired a salvo; target already gone" );
+
+	wait ( 3.0 );
+}
+
+
+sam_watchLineOfSight()
+{
+	level endon( "game_ended" );
+	self endon( "death" );
+	self endon( "carried" );
+
+	while ( isDefined( self.samTargetEnt ) )
+	{
+		if ( !self sam_canSee( self.samTargetEnt ) )
+		{
+			self clearTargetEntity();
+			self.samTargetEnt = undefined;
+			break;
+		}
+
+		wait ( 0.05 );
+	}
+}
+
+
+sam_watchCrashing()
+{
+	self endon( "death" );
+	self endon( "carried" );
+
+	target = self.samTargetEnt;
+	if ( !isDefined( target ) )
+		return;
+	target endon( "death" );
+
+	target waittill( "crashing" );
+
+	if ( isDefined( self.samTargetEnt ) && self.samTargetEnt == target )
+	{
+		self clearTargetEntity();
+		self.samTargetEnt = undefined;
+	}
+}
+
+
+sam_watchLeaving()
+{
+	self endon( "death" );
+	self endon( "carried" );
+
+	target = self.samTargetEnt;
+	if ( !isDefined( target ) )
+		return;
+	target endon( "death" );
+
+	target waittill( "leaving" );
+
+	if ( isDefined( self.samTargetEnt ) && self.samTargetEnt == target )
+	{
+		self clearTargetEntity();
+		self.samTargetEnt = undefined;
+	}
+}
