@@ -828,10 +828,16 @@ zombie_think()
 			continue;
 		}
 
-		player = closest_valid_player( self.origin );
+		// T5 find_flesh :3989 / zombie_follow_enemy :4305: a point of interest
+		// (cymbal monkey, black hole bomb) outranks flesh and owns the goal
+		// for this pass; _zombiemode_poi hands the zombie back when it ends.
+		if ( !self maps\mp\gametypes\_zombiemode_poi::zombie_follow_poi() )
+		{
+			player = closest_valid_player( self.origin );
 
-		if ( isDefined( player ) )
-			self setGoalPos( player.origin );
+			if ( isDefined( player ) )
+				self setGoalPos( player.origin );
+		}
 
 		// T5 :455.  The round raised level.zombie_move_speed since this actor
 		// picked its cycle: re-roll the bucket, re-pick the clip and re-scale

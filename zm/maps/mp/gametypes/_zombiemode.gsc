@@ -406,6 +406,12 @@ Callback_StartGameType()
 	// the equipment module, which reads the roster that names them.
 	maps\mp\gametypes\_zombiemode_perkpops::init();
 
+	// Points of interest, and the specials that lure with them (zm2's cymbal
+	// monkey, zm3's black hole bomb).  After the registry they hook into.
+	maps\mp\gametypes\_zombiemode_poi::init();
+	maps\mp\gametypes\_zombiemode_weap_cymbal_monkey::init();
+	maps\mp\gametypes\_zombiemode_weap_black_hole_bomb::init();
+
 	// Subsystem order matters: last stand first because it reads
 	// level.zombie_start_weapon, then the weapon table, then anything that
 	// spawns triggers, then the spawner, then the loop.
