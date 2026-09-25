@@ -816,6 +816,17 @@ zombie_think()
 
 	for ( ;; )
 	{
+		// ---- zm placeable traps hook (_zombiemode_traps_placeable.gsc) ----
+		// A zombie held by a freeze trap stays in the native scripted state;
+		// neither the chase nor a board tear (whose animscripted would
+		// replace the freeze) may run until it thaws.
+		if ( is_true( self.trap_frozen ) )
+		{
+			wait( 0.1 );
+			continue;
+		}
+		// ---- end traps hook ----
+
 		// T5 find_flesh :3922 hands off to tear_into_building when a barrier
 		// stands between the zombie and the flesh.  Restored 2026-09-20; this
 		// is what removes a board now that the invented timer is gone.

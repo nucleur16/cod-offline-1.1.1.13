@@ -394,6 +394,9 @@ Callback_StartGameType()
 	// the grenade_fire registry the item modules below hook into.  Before
 	// them, so their register_equipment calls find the registry.
 	maps\mp\gametypes\_zombiemode_equipment::init();
+	// The four placeable traps (equipment slot): register with the registry
+	// above and precache their models and FX in this window.
+	maps\mp\gametypes\_zombiemode_traps_placeable::init();
 
 	// C1-original zombies items (docs/CODOL_ZM_EQUIPMENT_EVIDENCE_20260924.md):
 	// the money grenade's kill bonus, the rescue throwing knife and the random
