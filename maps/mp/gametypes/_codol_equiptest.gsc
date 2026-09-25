@@ -180,7 +180,7 @@ logPlayerGrenadeFire()
     }
 }
 
-// set scr_codol_equiptest "table <name>": every row of a mounted string table.
+// set scr_codol_equiptest "table <name>": every row (first 24 columns) of a mounted string table.
 dumpTable( table )
 {
     for ( row = 0; row < 256; row++ )
@@ -189,7 +189,7 @@ dumpTable( table )
         if ( !isDefined( first ) || first == "" )
             break;
         line = "";
-        for ( col = 0; col < 16; col++ )
+        for ( col = 0; col < 24; col++ )
             line = line + tableLookupByRow( table, row, col ) + "|";
         codolPrintLn( "CoDOL equiptest: " + table + " row " + row + ": " + line );
     }
