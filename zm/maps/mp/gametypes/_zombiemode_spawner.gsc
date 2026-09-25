@@ -742,6 +742,17 @@ zombie_damage_watch()
 		// read by zombie_death_event for level.zombie_kill_weapon_callbacks.
 		self.damageweapon = weapon;
 
+		// BEGIN tesla hook -- T5 _zombiemode_spawner.gsc:3548 zombie_damage:
+		// a tesla projectile hit starts the chain lightning (the weapon's
+		// real damage) and pays no damage points.  Threaded on level because
+		// this watcher ends with this zombie, the chain's first kill.
+		if ( maps\mp\gametypes\_zombiemode_weap_tesla::is_tesla_damage( weapon, mod ) )
+		{
+			level thread maps\mp\gametypes\_zombiemode_weap_tesla::tesla_damage_init( self, partName, point, attacker );
+			continue;
+		}
+		// END tesla hook
+
 		if ( self.health <= 0 )
 			continue;
 
