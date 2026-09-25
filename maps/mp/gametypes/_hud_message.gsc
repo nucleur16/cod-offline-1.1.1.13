@@ -215,6 +215,18 @@ dispatchNotify( slot )
 }
 
 
+// C1 answers every ShowHudSplash by opening its own legacy "splash" menu and
+// keeps it visible for the row's column-4 lifetime, whatever the server does
+// afterwards: resetNotify() on death clears doingSplash, not the client's slot.
+// _playerlogic::pulseScriptMenu reads this to stay clear of that window.
+codolNoteClientSplash( duration )
+{
+	until = getTime() + int( duration * 1000 );
+	if ( !isDefined( self.codolClientSplashUntil ) || self.codolClientSplashUntil < until )
+		self.codolClientSplashUntil = until;
+}
+
+
 codolFinishNotify( slot )
 {
 	self.doingSplash[slot] = undefined;
@@ -591,6 +603,7 @@ actionNotifyMessage( actionData )
 		self.doingSplash[ slot ] = actionData;
 	
 		duration = stringToFloat( tableLookup( "mp/splashTable.csv", 0, actionData.name, 4 ) );
+		self codolNoteClientSplash( duration );
 		
 		if ( isDefined( actionData.sound ) )
 			self playLocalSound( actionData.sound );

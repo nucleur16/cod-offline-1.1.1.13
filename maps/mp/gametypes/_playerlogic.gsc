@@ -752,8 +752,67 @@ spawnPlayer()
 */
 pulseScriptMenu( menuName )
 {
-	self openMenu( menuName );
-	self closeMenu();
+	if ( !isDefined( self.codolMenuPulses ) )
+		self.codolMenuPulses = [];
+
+	if ( !self.codolMenuPulses.size && !self codolClientSplashVisible() )
+	{
+		self openMenu( menuName );
+		self closeMenu();
+		return;
+	}
+
+	// Keep order (display before hide); a runaway queue drops its oldest.
+	if ( self.codolMenuPulses.size >= 16 )
+	{
+		for ( i = 1; i < self.codolMenuPulses.size; i++ )
+			self.codolMenuPulses[i-1] = self.codolMenuPulses[i];
+		self.codolMenuPulses[i-1] = undefined;
+	}
+	self.codolMenuPulses[self.codolMenuPulses.size] = menuName;
+	if ( self.codolMenuPulses.size == 1 )
+		self thread codolDrainMenuPulses();
+}
+
+/*
+	The q,r,r pulse is only atomic when C1 opens the menu at once.  Its 'q'
+	handler (0x00467D80) parks the name in the pending slot 0x016EC420 when
+	Menus_OpenByName (0x005F4FB0) refuses, and CG (0x0046C8BF) retries it every
+	frame AFTER the command batch -- so both closes have already run and the
+	card opens later with KEYCATCH_UI set: the mouse cursor until a key press.
+	Menus_OpenByName refuses while a legacy menu is visible (0x00606E00) and
+	the UI menu mode (0x0283464C) is not 6 or 7; UI_SetActiveMenu sets it to 3
+	for the Scaleform team/class popups and to 0 when they or 'v' close, and
+	only a successful legacy open puts it back to 6.  In a match the visible
+	legacy menu is the client's own "splash" (every ShowHudSplash), so a card
+	pulsed during a splash after a class change stuck the cursor.  Hold the
+	pulses until the recipient's splash window has passed.
+*/
+codolDrainMenuPulses()
+{
+	self endon( "disconnect" );
+
+	while ( self.codolMenuPulses.size )
+	{
+		while ( self codolClientSplashVisible() )
+			wait ( 0.05 );
+
+		menuName = self.codolMenuPulses[0];
+		for ( i = 1; i < self.codolMenuPulses.size; i++ )
+			self.codolMenuPulses[i-1] = self.codolMenuPulses[i];
+		self.codolMenuPulses[i-1] = undefined;
+
+		self openMenu( menuName );
+		self closeMenu();
+	}
+}
+
+// codolClientSplashUntil is the server time the client's last splash slot
+// expires (_hud_message::codolNoteClientSplash); the margin covers the 'w'
+// command's delivery latency.
+codolClientSplashVisible()
+{
+	return isDefined( self.codolClientSplashUntil ) && getTime() < self.codolClientSplashUntil + 300;
 }
 
 hidePerksAfterTime( delay )
