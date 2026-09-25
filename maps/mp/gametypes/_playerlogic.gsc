@@ -822,7 +822,11 @@ hidePerksAfterTime( delay )
 	
 	wait delay;
 
-	self pulseScriptMenu( "perk_hide" );
+	// The HUD fades the perk icons by itself once milliseconds() passes
+	// ui_show_perks + 4500..5000 (hud perk itemDefs' forecolor a), so at 5 s
+	// there is nothing left to hide.  The pulse only flashed C1's loadsprite
+	// layer and its cursor for a frame, 5 s after every spawn.  perk_hide is
+	// still sent when a death or kill cuts the display short.
 	self notify("perks_hidden");
 }
 
