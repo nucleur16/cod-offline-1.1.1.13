@@ -1069,3 +1069,59 @@ unsetC4Death()
 {
 
 }
+
+
+// Recon (specialty_paint / specialty_paint_pro): a victim hit by a painter is
+// marked on the painter's minimap for a while.
+// PROVENANCE: IW5 maps/mp/perks/_perkfunctions.gsc setPainted / unsetPainted /
+// watchPaintedDeath / isPainted (alpha0022 vendor/iw5), adapted to C1 abilities.
+//  * IW5 marks with setPerk("specialty_radararrow"). C1 carries the mark as
+//    ability 24 modRadarArrow: its compass (C1 0x4348c2..0x43492b) draws an
+//    enemy that has ability 24 for a viewer that has 37 modExplosivePaint or
+//    38 modBulletPaint, and its value slot 13 selects the viewer - 0 is any
+//    such viewer, N only client N-1. The table clamps the value to 0..20,
+//    one above C1's 19 client slots, so the producer writes the painter's
+//    client number plus one: the mark belongs to whoever painted last, as
+//    IW5's "painted_again" restart already implies.
+//  * Duration: IW5 uses 10 seconds, halved for a victim with
+//    specialty_quieter. C1 moved that halving into the table: the quieter
+//    row (Ninja Pro, PERKS_DESC_NINJA_PRO "reduces the time you are marked by
+//    enemy Recon") selects modAntiPaint -0.5 on a default of 1, so the
+//    victim's selected modAntiPaint value is the multiplier. The 10 s base is
+//    IW5's; no C1 script or binary value for it has been recovered.
+//  * Script-owned abilities persist across lives here (IW5's setPerk was
+//    wiped by the next spawn's clearPerks), so death clears the mark as well.
+setPainted( painter )
+{
+	if ( !isPlayer( self ) || !isPlayer( painter ) )
+		return;
+
+	duration = 10.0;
+	antiPaint = self getSelectedPerkModifierValue( "modAntiPaint" );
+	if ( isDefined( antiPaint ) )
+		duration *= antiPaint;
+
+	self.painted = true;
+	self setAbilityModifier( "modRadarArrow" );
+	self setAbilityModifierValue( "modRadarArrow", painter getEntityNumber() + 1 );
+	codolPrintLn( "CoDOL paint: " + painter.name + " painted " + self.name + " for " + duration + "s" );
+	self thread unsetPaintedAfter( duration );
+}
+
+unsetPaintedAfter( duration )
+{
+	self notify( "painted_again" );
+	self endon( "painted_again" );
+	self endon( "disconnect" );
+
+	self waittill_any_timeout( duration, "death" );
+
+	self.painted = false;
+	self unsetAbilityModifier( "modRadarArrow" );
+	codolPrintLn( "CoDOL paint: cleared " + self.name );
+}
+
+isPainted()
+{
+	return isDefined( self.painted ) && self.painted;
+}

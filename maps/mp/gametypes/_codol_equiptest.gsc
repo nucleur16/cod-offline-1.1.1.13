@@ -64,6 +64,20 @@ watchDvar()
             positionVerb( tokens );
             continue;
         }
+        if ( tokens[0] == "perk" && tokens.size > 2 )
+        {
+            player = playerByNumber( int( tokens[1] ) );
+            if ( isDefined( player ) )
+                player thread keepPerk( tokens[2] );
+            else
+                codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
+            continue;
+        }
+        if ( tokens[0] == "turretwatch" && tokens.size > 1 )
+        {
+            level thread turretWatch( float( tokens[1] ) );
+            continue;
+        }
         // "perkpop <client> <verb> ...": zombies perk-pop hooks, reached
         // through a pointer so this shared file names no zombies module.
         if ( tokens[0] == "perkpop" && tokens.size > 2 )
@@ -84,6 +98,56 @@ watchDvar()
             continue;
         }
         player thread throwEquipment( int( tokens[1] ), tokens[2] );
+    }
+}
+
+// "perk <client> <perkName>": the native C1 setPerk on that client now and
+// after each later spawn (the loadout clears perks on every spawn), so an
+// effect of that perk can be observed across a bot's lives.
+keepPerk( perkName )
+{
+    self endon( "disconnect" );
+    self notify( "codol_equiptest_keepperk_" + perkName );
+    self endon( "codol_equiptest_keepperk_" + perkName );
+    for ( ;; )
+    {
+        if ( isAlive( self ) )
+        {
+            self setPerk( perkName );
+            codolPrintLn( "CoDOL equiptest: " + self.name + " (" + self getEntityNumber() + ", " + self.team +
+                ") perk " + perkName + " hasPerk " + self hasPerk( perkName ) +
+                " noSentry " + self hasAbilityModifier( "modNoSentryGuns" ) +
+                " bulletPaint " + self hasAbilityModifier( "modBulletPaint" ) +
+                " explosivePaint " + self hasAbilityModifier( "modExplosivePaint" ) );
+        }
+        self waittill( "spawned_player" );
+        wait 0.1;
+    }
+}
+
+// "turretwatch <seconds>": twice a second, every live turret in level.turrets
+// and the target it is tracking, with that target's modNoSentryGuns bit.
+turretWatch( seconds )
+{
+    level endon( "game_ended" );
+    for ( elapsed = 0; elapsed < seconds; elapsed += 0.5 )
+    {
+        if ( isDefined( level.turrets ) )
+        {
+            foreach ( turret in level.turrets )
+            {
+                if ( !isDefined( turret ) )
+                    continue;
+                target = turret getTurretTarget( false );
+                if ( !isDefined( target ) )
+                    continue;
+                report = "CoDOL equiptest: turret " + turret getEntityNumber() + " targets ent " + target getEntityNumber();
+                if ( isPlayer( target ) )
+                    report += " " + target.name + " (" + target.team + ") noSentry " + target hasAbilityModifier( "modNoSentryGuns" );
+                codolPrintLn( report );
+            }
+        }
+        wait 0.5;
     }
 }
 

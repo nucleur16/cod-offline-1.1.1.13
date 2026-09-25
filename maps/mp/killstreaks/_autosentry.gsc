@@ -47,13 +47,22 @@ init()
 	level.sentrySettings[ "sam_turret" ].modelPlacementFailed = "t5_weapon_sam_turret_red";
 	level.sentrySettings[ "sam_turret" ].modelDestroyed = "t5_weapon_sam_turret";
 
+	// Sitrep's modDetectTurrets (PERKS_DESC_SITREP: "detects enemy explosives,
+	// turrets and tactical equipment"). C1's common_gametype_mp ships a bomb
+	// squad model for both turrets, sentry_minigun_bombsquad and
+	// t5_weapon_sam_turret_bombsquad, next to the explosive ones IW4 already
+	// uses; they are shown to enemy detectors like the IW4 explosive models.
+	level.sentrySettings[ "sentry_minigun" ].modelBombSquad = "sentry_minigun_bombsquad";
+	level.sentrySettings[ "sam_turret" ].modelBombSquad = "t5_weapon_sam_turret_bombsquad";
+
 	foreach ( sentryInfo in level.sentrySettings )
 	{
 		precacheItem( sentryInfo.weaponInfo );
-		precacheModel( sentryInfo.modelBase );		
-		precacheModel( sentryInfo.modelPlacement );		
-		precacheModel( sentryInfo.modelPlacementFailed );		
-		precacheModel( sentryInfo.modelDestroyed );		
+		precacheModel( sentryInfo.modelBase );
+		precacheModel( sentryInfo.modelPlacement );
+		precacheModel( sentryInfo.modelPlacementFailed );
+		precacheModel( sentryInfo.modelDestroyed );
+		precacheModel( sentryInfo.modelBombSquad );
 	}
 
 	level._effect[ "sentry_overheat_mp" ]	= loadfx( "smoke/sentry_turret_overheat_smoke" );
@@ -197,6 +206,12 @@ sentry_initSentry( sentryType, owner )
 	}
 	
 	self sentry_setOwner( owner );
+
+	bombSquadTeam = undefined;
+	if ( level.teamBased )
+		bombSquadTeam = level.otherTeam[ self.team ];
+	self thread maps\mp\gametypes\_weapons::createBombSquadModel( level.sentrySettings[ self.sentryType ].modelBombSquad, undefined, bombSquadTeam, owner, "modDetectTurrets" );
+
 	self thread sentry_handleOwner();
 	self thread sentry_handleDamage();
 	self thread sentry_handleDeath();

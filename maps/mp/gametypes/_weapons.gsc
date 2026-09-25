@@ -316,73 +316,119 @@ bombSquadWaiter()
 }
 
 
-createBombSquadModel( modelName, tagName, teamName, owner )
+// sh1x adaptation: the optional detectAbility names the C1 ability that sees
+// this model. Sitrep (specialty_detectexplosive, PERKS_DESC_SITREP "detects
+// enemy explosives, turrets and tactical equipment") selects both
+// modDetectExplosive and modDetectTurrets, so explosives and tactical
+// insertions keep the default and turrets pass "modDetectTurrets". An
+// undefined tagName links to the entity origin.
+createBombSquadModel( modelName, tagName, teamName, owner, detectAbility )
 {
+	if ( !isDefined( detectAbility ) )
+		detectAbility = "modDetectExplosive";
+
 	bombSquadModel = spawn( "script_model", (0,0,0) );
 	bombSquadModel hide();
 	wait ( 0.05 );
-	
+
 	if (!isDefined( self ) ) //grenade model may not be around if picked up
+	{
+		bombSquadModel delete();
 		return;
-		
-	bombSquadModel thread bombSquadVisibilityUpdater( teamName, owner );
+	}
+
+	bombSquadModel thread bombSquadVisibilityUpdater( teamName, owner, detectAbility );
 	bombSquadModel setModel( modelName );
-	bombSquadModel linkTo( self, tagName, (0,0,0), (0,0,0) );
+	if ( isDefined( tagName ) )
+		bombSquadModel linkTo( self, tagName, (0,0,0), (0,0,0) );
+	else
+		bombSquadModel linkTo( self );
 	bombSquadModel SetContents( 0 );
-	
+
 	self waittill ( "death" );
-	
+
 	bombSquadModel delete();
 }
 
 
-bombSquadVisibilityUpdater( teamName, owner )
+// Sitrep Pro (specialty_selectivehearing) selects modAlliesShareDetectionRange
+// 500; PERKS_DESC_SITREP_PRO: "detects enemy equipment and shares the intel
+// with nearby teammates". A living teammate who has both the detection
+// ability and the share range lends that detection to players within the
+// range (world units, the table value). The range moves with the players, so
+// visibility is refreshed on the IW4 events and at least every half second.
+bombSquadDetects( player, detectAbility, sharers )
 {
-	self endon ( "death" );
+	if ( player HasAbilityModifier( detectAbility ) )
+		return true;
+
+	foreach ( ally in sharers )
+	{
+		if ( ally == player || ally.team != player.team )
+			continue;
+
+		if ( distanceSquared( ally.origin, player.origin ) <= ally.bombSquadShareRangeSq )
+			return true;
+	}
+
+	return false;
+}
+
+
+bombSquadShowToDetectors( teamName, owner, detectAbility )
+{
+	// Living detectors that share with teammates, gathered once per refresh.
+	sharers = [];
+	if ( level.teamBased )
+	{
+		foreach ( ally in level.players )
+		{
+			if ( ally.team != teamName || !isAlive( ally ) || !ally HasAbilityModifier( detectAbility ) )
+				continue;
+
+			shareRange = ally getSelectedPerkModifierValue( "modAlliesShareDetectionRange" );
+			if ( !isDefined( shareRange ) || shareRange <= 0 )
+				continue;
+
+			ally.bombSquadShareRangeSq = shareRange * shareRange;
+			sharers[ sharers.size ] = ally;
+		}
+	}
 
 	foreach ( player in level.players )
 	{
 		if ( level.teamBased )
 		{
-			if ( player.team == teamName && player _hasPerk( "specialty_detectexplosive" ) )
-				self showToPlayer( player );
+			if ( player.team != teamName )
+				continue;
 		}
-		else
+		else if ( isDefined( owner ) && player == owner )
 		{
-			if ( isDefined( owner ) && player == owner )
-				continue;
-			
-			if ( !player _hasPerk( "specialty_detectexplosive" ) )
-				continue;
-				
+			continue;
+		}
+
+		if ( bombSquadDetects( player, detectAbility, sharers ) )
 			self showToPlayer( player );
-		}		
 	}
-	
+}
+
+
+bombSquadVisibilityUpdater( teamName, owner, detectAbility )
+{
+	self endon ( "death" );
+
+	if ( !isDefined( detectAbility ) )
+		detectAbility = "modDetectExplosive";
+
+	self bombSquadShowToDetectors( teamName, owner, detectAbility );
+
 	for ( ;; )
 	{
-		level waittill_any( "joined_team", "player_spawned", "changed_kit" );
-		
+		level waittill_any_timeout( 0.5, "joined_team", "player_spawned", "changed_kit" );
+
 		self hide();
 
-		foreach ( player in level.players )
-		{
-			if ( level.teamBased )
-			{
-				if ( player.team == teamName && player _hasPerk( "specialty_detectexplosive" ) )
-					self showToPlayer( player );
-			}
-			else
-			{
-				if ( isDefined( owner ) && player == owner )
-					continue;
-				
-				if ( !player _hasPerk( "specialty_detectexplosive" ) )
-					continue;
-					
-				self showToPlayer( player );
-			}		
-		}
+		self bombSquadShowToDetectors( teamName, owner, detectAbility );
 	}
 }
 

@@ -1096,7 +1096,14 @@ isTarget( potentialTarget )
 	if ( isdefined( potentialTarget.spawntime ) && ( gettime() - potentialTarget.spawntime )/1000 <= 5 )
 		return false;
 
-	if ( potentialTarget _hasPerk( "specialty_coldblooded" ) )
+	// sh1x adaptation: IW4 gated this on specialty_coldblooded, whose IW4 role
+	// (undetectable by air support and sentries) C1 split. C1 coldblooded is
+	// modNoRadar only (PERKS_DESC_COLDBLOODED: "not detected by enemy UAV");
+	// Ninja/heartbreaker (PERKS_DESC_NINJA: "not detected by heartbeat sensors,
+	// attack helicopters, hover gunships and sentry guns") carries the
+	// automated-weapon immunities. The tank is an automated ground gun, so it
+	// uses the sentry-gun modifier C1's own turret filter tests (0x57c126).
+	if ( isPlayer( potentialTarget ) && potentialTarget HasAbilityModifier( "modNoSentryGuns" ) )
 		return false;
 	
 	return self Vehicle_CanTurretTargetPoint( potentialTarget.origin, 1, self );
