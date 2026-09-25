@@ -712,13 +712,24 @@ spawnPlayer()
 /*
 	CoDOL: C1 leaves the UI grabbed for as long as a script menu is open.
 
-	The card/perk scriptmenus are side-effect only.  Their compiled form in the
-	shipped common_mp.ff is one windowDef with no itemDefs plus a setdvar chain
-	(killedby_card_display: ui_show_killedBy <on>, ui_show_youKilled <off> and a
-	specialty_copycat conditional on ui_show_copyCat; perk_display:
-	ui_show_perks <on>; the *_hide menus write the <off> value back).  The card
-	and the perk icons are drawn by the always-open HUD from those dvars, not by
-	these menus, so the dvars are the whole payload and they survive the close.
+	The card/perk scriptmenus are side-effect only: no itemDefs, just onOpen
+	handlers (common_mp.ff, back-references resolved by replaying the zone
+	through src/codol/assets/codol_load_blocks.c).  Every write is a C1
+	setLocalVarInt (event type 4), a UI LOCAL variable, not a dvar:
+	  perk_display            ui_show_perks = milliseconds()
+	  perk_hide               ui_show_perks = 0
+	  killedby_card_display   ui_show_killedBy = milliseconds();
+	                          ui_show_youKilled = 0;
+	                          ui_show_copyCat = ( getperk( "perk4" ) ==
+	                              "specialty_copycat" ) ? 1 : 0
+	  killedby_card_hide      ui_show_killedBy = 0
+	  youkilled_card_display  ui_show_youKilled = milliseconds()
+	each followed by "close" "self".  patch_common_mp's hud_fullscreen draws
+	the cards from them, e.g. milliseconds() - localvarint( "ui_show_killedBy" )
+	< 4000.  C1's localvarint (0x005DE300) reads only the UI local-variable
+	table at 0x02833A28, and the 's' setClientDvar handler (0x00468A00) only
+	reaches Dvar_SetFromServer, so the server has no way to write these except
+	by opening the menu; the values are also the client's own UI clock.
 
 	Menus_OpenByName (C1 0x005F4FB0) sets keyCatchers |= KEYCATCH_UI at
 	0x005F509B unconditionally for any menu outside C1's eight-entry Scaleform
@@ -730,9 +741,14 @@ spawnPlayer()
 	not dismissed until killedby_card_hide at respawn, so both lasted the whole
 	death-to-respawn window.
 
-	Opening and immediately closing performs every dvar write the menu makes and
+	Opening and immediately closing performs every write the menu makes and
 	leaves no menu open.  closeMenu() is C1's two-pass teardown (see
-	src/codol/script/codol_script_menu.c).
+	src/codol/script/codol_script_menu.c); q,r,r leave in one reliable batch
+	that C1 executes in one CG_ExecuteNewServerCommands loop (0x0046A1A0), so
+	no frame is rendered with the UI key-catcher set.  (These menus close
+	themselves in onOpen, so the first r already takes pass two; the second
+	covers a menu that stays open, and sv_main.c sub_530FC0 no longer folds it
+	into the first.)
 */
 pulseScriptMenu( menuName )
 {

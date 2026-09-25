@@ -414,7 +414,11 @@ setAC130Player( player )
 	objModel thread deleteOnAC130PlayerRemoved();
 	
 	player startAC130();
-	player openMenu( "ac130timer" );
+	// CoDOL: ac130timer is side-effect only -- no itemDefs, onOpen is
+	// setLocalVarInt ui_ac130timer = milliseconds() + dvarint("ui_ac130usetime")
+	// * 1000 + 500, then "close" "self" (common_mp.ff).  Left open it held C1's
+	// UI key-catcher, and with it the mouse cursor, for the whole AC130 ride.
+	player maps\mp\gametypes\_playerlogic::pulseScriptMenu( "ac130timer" );
 
 	level.ac130.numFlares = level.ac130_num_flares;
 
