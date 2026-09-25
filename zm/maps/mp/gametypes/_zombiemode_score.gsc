@@ -274,6 +274,9 @@ minus_to_player_score( points )
 		self.score = 0;
 
 	self set_player_score_hud();
+
+	// Every caller is a purchase; the discount perk pop refunds from this.
+	self notify( "zm_spent_points", points );
 }
 
 // T5 :412.  Everyone who did not revive the dead player pays.

@@ -691,7 +691,16 @@ zombie_death_animscript()
 // and "death" for the kill, with T5's hit-location bonus.
 zombie_damage_watch()
 {
-	self endon( "death" );
+	// NO endon( "death" ).  MEASURED 2026-09-24 (probe w3, temporary log of
+	// both notifies): on an actor the killing hit's "damage" notify reaches
+	// this thread only AFTER "death" has been delivered, in the same frame.
+	// With endon( "death" ) the killing hit was therefore never seen, and
+	// zombie_death_event read the mod, hit location and weapon of the
+	// PREVIOUS hit (a revive-knife kill after a money-ball hit was paid as a
+	// money-ball kill).  Without it this thread records the killing hit, and
+	// zombie_death_event waits for the end of the frame before reading it.
+	// The health <= 0 test below keeps the killing hit from also paying
+	// "damage" points.  The thread ends when the corpse entity is freed.
 
 	for ( ;; )
 	{
@@ -728,6 +737,10 @@ zombie_damage_watch()
 		self.attacker = attacker;
 		self.damagemod = mod;
 		self.damagelocation = partName;
+		// CoDOL equipment kill hook: the killing hit's weapon (10th notify
+		// argument, codol_equipment_lifecycle.c CODOL_AddDamageWeaponArgument),
+		// read by zombie_death_event for level.zombie_kill_weapon_callbacks.
+		self.damageweapon = weapon;
 
 		if ( self.health <= 0 )
 			continue;
@@ -1039,15 +1052,24 @@ zombie_death_event( zombie )
 	// !isDefined() fallback was dead code.  A world kill (the stuck-actor
 	// cull and the between-round sweep both doDamage with no attacker)
 	// arrives as a defined non-player entity, which is what this must catch.
+	// MEASURED 2026-09-24 (probe w3): on an actor the killing hit's "damage"
+	// notify reaches zombie_damage_watch AFTER this "death" waiter resumes, in
+	// the same frame.  Wait for the frame's other threads so .attacker,
+	// .damagemod, .damagelocation and .damageweapon describe the killing hit,
+	// not the one before it.
+	waittillframeend;
+
 	if ( !isPlayer( attacker ) && isDefined( zombie ) && isDefined( zombie.attacker ) )
 		attacker = zombie.attacker;
 
 	mod = undefined;
 	hit_location = undefined;
+	kill_weapon = undefined;
 	if ( isDefined( zombie ) )
 	{
 		mod = zombie.damagemod;
 		hit_location = zombie.damagelocation;
+		kill_weapon = zombie.damageweapon;
 	}
 
 	if ( isDefined( attacker ) && isPlayer( attacker ) )
@@ -1063,6 +1085,12 @@ zombie_death_event( zombie )
 		attacker.kills = attacker.kills + 1;
 
 		attacker notify( "zom_kill", zombie );
+
+		// CoDOL equipment kill hook: a per-weapon kill callback (money_ball_zm's
+		// +100, _zombiemode_weap_money_ball.gsc), run on the attacker.
+		if ( isDefined( kill_weapon ) && isDefined( level.zombie_kill_weapon_callbacks ) &&
+			isDefined( level.zombie_kill_weapon_callbacks[ kill_weapon ] ) )
+			attacker thread [[ level.zombie_kill_weapon_callbacks[ kill_weapon ] ]]( zombie, kill_weapon );
 	}
 
 	// T5 :3818.  The kill is what rolls for a power-up drop.

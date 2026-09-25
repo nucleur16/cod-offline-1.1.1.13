@@ -395,6 +395,17 @@ Callback_StartGameType()
 	// them, so their register_equipment calls find the registry.
 	maps\mp\gametypes\_zombiemode_equipment::init();
 
+	// C1-original zombies items (docs/CODOL_ZM_EQUIPMENT_EVIDENCE_20260924.md):
+	// the money grenade's kill bonus, the rescue throwing knife and the random
+	// teleporter.  After the registry, which their register_equipment calls use.
+	maps\mp\gametypes\_zombiemode_weap_money_ball::init();
+	maps\mp\gametypes\_zombiemode_weap_revive_knife::init();
+	maps\mp\gametypes\_zombiemode_weap_teleporter::init();
+
+	// Each character's two perk pops: C1's survival-streak rewards.  After
+	// the equipment module, which reads the roster that names them.
+	maps\mp\gametypes\_zombiemode_perkpops::init();
+
 	// Subsystem order matters: last stand first because it reads
 	// level.zombie_start_weapon, then the weapon table, then anything that
 	// spawns triggers, then the spawner, then the loop.
@@ -488,6 +499,13 @@ Callback_PlayerDisconnect()
 Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, timeOffset )
 {
 	if ( level.gameEnded )
+		return;
+
+	// Perk-pop damage rules: flak jacket immunity and dive explosion, the
+	// electro counter-shock.  Before the test-client guard so the rules also
+	// run for invulnerable test clients.
+	iDamage = self maps\mp\gametypes\_zombiemode_perkpops::player_damage_override( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon );
+	if ( iDamage <= 0 )
 		return;
 
 	// Test clients added by _codol_equiptest (scr_codol_equiptest "addbots")
@@ -675,6 +693,10 @@ giveStartingLoadout()
 
 	// Lethal / special / trap in C1's three offhand slots.
 	self maps\mp\gametypes\_zombiemode_equipment::give_character_loadout();
+
+	// Perk-pop charges, HUD previews and action slots after the native spawn
+	// cleared them.
+	self maps\mp\gametypes\_zombiemode_perkpops::on_spawned();
 
 	// C1 keeps a separate zmCharacterIndex and mp/cyborgclasstable.csv is the
 	// whole zm roster; the native selector already forces the zm faction when a

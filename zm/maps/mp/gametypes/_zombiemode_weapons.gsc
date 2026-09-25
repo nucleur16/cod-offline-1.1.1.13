@@ -278,6 +278,10 @@ player_weapon_limit()
 	if ( self hasPerk( "specialty_additionalprimaryweapon" ) )
 		return 3;
 
+	// The additional-primary perk pop (modAdditionalPrimary).
+	if ( is_true( self.perkpop_extra_primary ) )
+		return 3;
+
 	return 2;
 }
 

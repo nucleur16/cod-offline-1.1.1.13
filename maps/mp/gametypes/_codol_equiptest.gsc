@@ -10,6 +10,19 @@
 //       in that slot with the other two kept, then holds the slot's button.
 //   set scr_codol_equiptest "addbots <n>"
 //       adds n test clients (zombies only; multiplayer has scr_codol_bots).
+//   set scr_codol_equiptest "down <clientnum>"
+//       puts a client into last stand through level.codolEquipTestDown
+//       (zombies sets it; idle elsewhere).
+//   set scr_codol_equiptest "place <clientnum> <anchor clientnum> <dist>"
+//       moves a client <dist> units in front of the anchor client, on the
+//       ground (a target for thrown equipment).
+//   set scr_codol_equiptest "warp <clientnum> <x> <y> <z>"
+//       moves a client to a position.
+//   set scr_codol_equiptest "togrenade <clientnum>"
+//       moves a client to where the last thrown grenade is (or came to rest).
+//   set scr_codol_equiptest "tozombie <clientnum> <dist>"
+//       stands a client <dist> units west of the nearest live zombie in
+//       level.zombies, facing it (a target for a thrown lethal).
 //
 // Deliberately free of maps\mp\killstreaks and maps\mp\gametypes\_class so
 // the zombies chain can include it without compiling the multiplayer one.
@@ -43,6 +56,23 @@ watchDvar()
         if ( tokens[0] == "table" && tokens.size > 1 )
         {
             dumpTable( tokens[1] );
+            continue;
+        }
+        if ( tokens[0] == "down" || tokens[0] == "place" || tokens[0] == "warp" || tokens[0] == "togrenade" ||
+            tokens[0] == "tozombie" )
+        {
+            positionVerb( tokens );
+            continue;
+        }
+        // "perkpop <client> <verb> ...": zombies perk-pop hooks, reached
+        // through a pointer so this shared file names no zombies module.
+        if ( tokens[0] == "perkpop" && tokens.size > 2 )
+        {
+            player = playerByNumber( int( tokens[1] ) );
+            if ( isDefined( player ) && isDefined( level.codolEquipTestPerkpop ) )
+                level thread [[ level.codolEquipTestPerkpop ]]( player, tokens );
+            else
+                codolPrintLn( "CoDOL equiptest: perkpop needs a zombies match and client " + tokens[1] );
             continue;
         }
         if ( tokens.size < 3 )
@@ -144,6 +174,8 @@ logPlayerGrenadeFire()
         where = "(no entity)";
         if ( isDefined( grenade ) )
             where = "" + grenade.origin;
+        if ( isDefined( grenade ) )
+            level thread trackLastGrenade( grenade );
         codolPrintLn( "CoDOL equiptest: grenade_fire " + weapon + " by " + self.name + " at " + where );
     }
 }
@@ -180,4 +212,94 @@ addTestBots( count )
         codolPrintLn( "CoDOL equiptest: added test client " + bot getEntityNumber() );
         wait 0.5;
     }
+}
+
+// The last thrown grenade's position, kept after the engine removes it.
+trackLastGrenade( grenade )
+{
+    level notify( "codol_equiptest_new_grenade" );
+    level endon( "codol_equiptest_new_grenade" );
+    while ( isDefined( grenade ) )
+    {
+        level.codolEquipTestGrenadePos = grenade.origin;
+        wait 0.05;
+    }
+}
+
+positionVerb( tokens )
+{
+    if ( tokens.size < 2 )
+        return;
+    player = playerByNumber( int( tokens[1] ) );
+    if ( !isDefined( player ) || !isAlive( player ) )
+    {
+        codolPrintLn( "CoDOL equiptest: no live client " + tokens[1] );
+        return;
+    }
+    if ( tokens[0] == "down" )
+    {
+        if ( !isDefined( level.codolEquipTestDown ) )
+        {
+            codolPrintLn( "CoDOL equiptest: this gametype has no down hook" );
+            return;
+        }
+        codolPrintLn( "CoDOL equiptest: " + player.name + " goes down at " + player.origin );
+        player thread [[ level.codolEquipTestDown ]]();
+        return;
+    }
+    target = undefined;
+    if ( tokens[0] == "warp" && tokens.size > 4 )
+        target = ( float( tokens[2] ), float( tokens[3] ), float( tokens[4] ) );
+    else if ( tokens[0] == "togrenade" )
+        target = level.codolEquipTestGrenadePos;
+    else if ( tokens[0] == "tozombie" && tokens.size > 2 )
+    {
+        zombie = nearestZombie( player.origin );
+        if ( isDefined( zombie ) )
+        {
+            target = zombie.origin - ( float( tokens[2] ), 0, 0 );
+            player setPlayerAngles( ( 20, 0, 0 ) );
+            codolPrintLn( "CoDOL equiptest: nearest zombie ent " + zombie getEntityNumber() + " at " + zombie.origin +
+                " health " + zombie.health );
+        }
+    }
+    else if ( tokens[0] == "place" && tokens.size > 3 )
+    {
+        anchor = playerByNumber( int( tokens[2] ) );
+        if ( isDefined( anchor ) )
+        {
+            forward = anglesToForward( ( 0, anchor.angles[1], 0 ) );
+            spot = anchor.origin + ( forward[0] * float( tokens[3] ), forward[1] * float( tokens[3] ), 0 );
+            trace = bulletTrace( spot + ( 0, 0, 48 ), spot - ( 0, 0, 256 ), false, player );
+            target = trace["position"];
+        }
+    }
+    if ( !isDefined( target ) )
+    {
+        codolPrintLn( "CoDOL equiptest: " + tokens[0] + " has no target position" );
+        return;
+    }
+    codolPrintLn( "CoDOL equiptest: " + player.name + " moved from " + player.origin + " to " + target );
+    player setOrigin( target );
+}
+
+nearestZombie( origin )
+{
+    if ( !isDefined( level.zombies ) )
+        return undefined;
+    best = undefined;
+    bestDsq = 0;
+    for ( i = 0; i < level.zombies.size; i++ )
+    {
+        z = level.zombies[i];
+        if ( !isDefined( z ) || !isAlive( z ) )
+            continue;
+        dsq = distanceSquared( origin, z.origin );
+        if ( !isDefined( best ) || dsq < bestDsq )
+        {
+            best = z;
+            bestDsq = dsq;
+        }
+    }
+    return best;
 }

@@ -330,11 +330,11 @@ blocker_trigger_think()
 			}
 
 			// T5 waits one second per board unless the barrier carries a
-			// script_delay.
+			// script_delay.  The carpenter perk pop shortens it.
+			delay = 1;
 			if ( isDefined( self.script_delay ) )
-				wait( self.script_delay );
-			else
-				wait( 1 );
+				delay = self.script_delay;
+			wait( player maps\mp\gametypes\_zombiemode_perkpops::board_repair_delay( delay ) );
 
 			if ( !is_player_valid( player ) )
 				break;
@@ -351,6 +351,8 @@ blocker_trigger_think()
 
 			if ( all_chunks_intact( self.barrier_chunks ) )
 			{
+				// The carpenter perk pop plants its C4 behind a finished window.
+				player thread maps\mp\gametypes\_zombiemode_perkpops::barrier_repaired( self );
 				trigger notify( "all_boards_repaired" );
 				return;
 			}
