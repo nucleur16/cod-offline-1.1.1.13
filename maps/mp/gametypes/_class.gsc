@@ -633,8 +633,8 @@ giveLoadout( team, class, allowCopycat )
 	self _clearPerks();
 	self _detachAll();
 	// updateMoveSpeedScale multiplies the weapon-class scale by this value.
-	// A first spawn has no previous perk callback to initialize it; Lightweight
-	// replaces this with 1.07 while the loadout perks are applied below.
+	// A first spawn has no previous perk callback to initialize it. Lightweight
+	// leaves it at 1: its modMoveSpeedScale is applied natively.
 	self.moveSpeedScaler = 1;
 	
 	// these special case giving pistol death have to come before
@@ -647,8 +647,11 @@ giveLoadout( team, class, allowCopycat )
 	{
 		deathVal = int( tableLookup( "mp/coPerkStatsTable.csv", 1, loadoutDeathStreak, 6 ) );
 				
-		if ( self getPerkUpgrade( loadoutPerk1 ) == "specialty_rollover" || self getPerkUpgrade( loadoutPerk2 ) == "specialty_rollover" || self getPerkUpgrade( loadoutPerk3 ) == "specialty_rollover" )
-			deathVal -= 1;
+		// Hardline Pro's modDeathstreakShift (PERKS_DESC_ROLLOVER: deaths
+		// needed for a deathstreak -1). Perks are cleared above and granted
+		// below, so the selected aggregate does not exist yet; the rows the
+		// loadout will grant supply the shift from the table instead.
+		deathVal += self loadoutModifierDelta( "modDeathstreakShift", loadoutPerk1, loadoutPerk2, loadoutPerk3 );
 		
 		if ( self.pers["cur_death_streak"] == deathVal )
 		{
@@ -668,6 +671,19 @@ giveLoadout( team, class, allowCopycat )
 		
 	self setKillstreaks( loadoutKillstreak1, loadoutKillstreak2, loadoutKillstreak3 );
 		
+	// Hacker/Engineer modObjectiveUseTimeScale (1 + 0.5). The C1 texts
+	// (PERKS_DESC_HACKER, PERKS_DESC_ENGINEER) say it makes planting,
+	// defusing and capturing faster, so the value is the rate multiplier
+	// _gameobjects applies (useRate *= objectiveScaler), as IW4 Saboteur's
+	// 1.2 was.
+	self.objectiveScaler = 1;
+	objectiveScale = self getSelectedPerkModifierValue( "modObjectiveUseTimeScale" );
+	if ( isDefined( objectiveScale ) && objectiveScale > 0 )
+	{
+		self.objectiveScaler = objectiveScale;
+		codolPrintLn( "CoDOL perks: " + self.name + " objectiveScaler " + objectiveScale );
+	}
+
 	if ( self hasPerk( "specialty_extraammo", true ) && getWeaponClass( secondaryName ) != "weapon_projectile" )
 		self giveMaxAmmo( secondaryName );
 
@@ -762,10 +778,47 @@ isPerkUpgraded( perkName )
 	if ( perkUpgrade == "" || perkUpgrade == "specialty_null" )
 		return false;
 		
-	if ( !self isItemUnlocked( perkUpgrade ) )
+	if ( !self upgradeUnlocked( perkUpgrade ) )
 		return false;
 		
 	return true;
+}
+
+// Pro perks unlock through the challenge named in coPerkStatsTable column 13
+// (tier in column 14), resolved by the native isItemUnlocked over
+// mp/unlocktable.csv and the secure profile. A row whose requirement cannot
+// be established must not stop the VM in the middle of a spawn, so this asks
+// the non-fatal form and treats "cannot tell" as locked.
+upgradeUnlocked( upgrade )
+{
+	unlocked = self codol_tryIsItemUnlocked( upgrade );
+	if ( !isDefined( unlocked ) )
+	{
+		codolPrintLn( "CoDOL perks: " + self.name + " cannot resolve the unlock of " + upgrade + "; not granted" );
+		return false;
+	}
+	return unlocked != 0;
+}
+
+// Sum of one modifier's deltas over the rows a loadout grants: each selected
+// perk and, as loadoutAllPerks does, its unlocked upgrade.
+loadoutModifierDelta( modifier, loadoutPerk1, loadoutPerk2, loadoutPerk3 )
+{
+	perks = [];
+	perks[0] = loadoutPerk1;
+	perks[1] = loadoutPerk2;
+	perks[2] = loadoutPerk3;
+	total = 0;
+	foreach ( perk in perks )
+	{
+		if ( !isDefined( perk ) || perk == "" || perk == "specialty_null" )
+			continue;
+		total += maps\mp\perks\_perks::perkTableModifierDelta( perk, modifier );
+		upgrade = self getPerkUpgrade( perk );
+		if ( upgrade != "specialty_null" )
+			total += maps\mp\perks\_perks::perkTableModifierDelta( upgrade, modifier );
+	}
+	return total;
 }
 
 getPerkUpgrade( perkName )
@@ -777,7 +830,7 @@ getPerkUpgrade( perkName )
 	if ( perkUpgrade == "" || perkUpgrade == "specialty_null" )
 		return "specialty_null";
 		
-	if ( !self isItemUnlocked( perkUpgrade ) )
+	if ( !self upgradeUnlocked( perkUpgrade ) )
 		return "specialty_null";
 		
 	return ( perkUpgrade );
@@ -807,7 +860,7 @@ loadoutAllPerks( loadoutEquipment, loadoutPerk1, loadoutPerk2, loadoutPerk3 )
 		if ( upgrade == "" || upgrade == "specialty_null" )
 			continue;
 			
-		if ( self isItemUnlocked( upgrade ) )
+		if ( self upgradeUnlocked( upgrade ) )
 			self maps\mp\perks\_perks::givePerk( upgrade );
 	}
 

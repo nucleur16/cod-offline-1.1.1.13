@@ -1913,7 +1913,10 @@ shouldShowCompassDueToRadar( team )
 	if ( !isdefined( self.carrier ) )
 		return false;
 	
-	if ( self.carrier hasPerk( "specialty_gpsjammer", true ) )
+	// IW4 hid a specialty_gpsjammer carrier from enemy UAV; C1's loadout never
+	// sets that name. Its UAV immunity is Cold-Blooded's modNoRadar
+	// (PERKS_DESC_COLDBLOODED: not detected by enemy UAV).
+	if ( isPlayer( self.carrier ) && self.carrier hasAbilityModifier( "modNoRadar" ) )
 		return false;
 	
 	return getTeamRadar( team );

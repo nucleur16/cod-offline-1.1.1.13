@@ -224,6 +224,26 @@ givePerk( perkName )
 }
 
 
+// The delta one coPerkStatsTable row gives a modifier: modifier names sit in
+// columns 15/17/19/21, and those in 15/17/19 carry a value one column to the
+// right (the layout CODOL_BuildPerkEffects reads; 21 is flag-only). 0 when
+// the row does not name the modifier or names it as a flag. Lets script separate one row's share of an aggregated
+// value without restating the table's number.
+perkTableModifierDelta( perkName, modifier )
+{
+	for ( column = 15; column <= 19; column += 2 )
+	{
+		if ( tableLookup( "mp/coPerkStatsTable.csv", 1, perkName, column ) != modifier )
+			continue;
+		value = tableLookup( "mp/coPerkStatsTable.csv", 1, perkName, column + 1 );
+		if ( value == "" )
+			return 0;
+		return float( value );
+	}
+	return 0;
+}
+
+
 validatePerk( perkIndex, perkName )
 {	
 	if ( getDvarInt ( "scr_game_perks" ) == 0 )

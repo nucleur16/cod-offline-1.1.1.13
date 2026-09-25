@@ -384,6 +384,45 @@ processAssist( killedplayer )
 	self thread giveAdrenaline( "assist" );
 	
 	self thread maps\mp\gametypes\_missions::playerAssist();
+
+	self creditKillstreakAssist();
+}
+
+// Hardline Pro, modKillstreakAssists (2). PERKS_DESC_HARDLINE_PRO: "every two
+// assists count as one kill" towards the point-reward (killstreak) count.
+// Like a kill, only assists earned this life advance the streak, and the
+// credited kill goes through the same reward check a kill does.
+creditKillstreakAssist()
+{
+	if ( !isAlive( self ) )
+		return;
+	assistsPerKill = self getSelectedPerkModifierValue( "modKillstreakAssists" );
+	if ( !isDefined( assistsPerKill ) || assistsPerKill < 1 )
+		return;
+	if ( !isDefined( self.pers["cur_kill_streak"] ) )
+		return;
+
+	lifeId = self.pers["deaths"];
+	if ( !isDefined( self.codolStreakAssistLife ) || self.codolStreakAssistLife != lifeId )
+	{
+		self.codolStreakAssistLife = lifeId;
+		self.codolStreakAssists = 0;
+	}
+	self.codolStreakAssists++;
+	codolPrintLn( "CoDOL perks: " + self.name + " killstreak assist " + self.codolStreakAssists + "/" + assistsPerKill );
+	if ( self.codolStreakAssists < assistsPerKill )
+		return;
+
+	self.codolStreakAssists = 0;
+	self.pers["cur_kill_streak"]++;
+	codolPrintLn( "CoDOL perks: " + self.name + " assists credit a kill, streak " + self.pers["cur_kill_streak"] );
+
+	self setPlayerStatIfGreater( "killstreak", self.pers["cur_kill_streak"] );
+	if ( self.pers["cur_kill_streak"] > self getPersStat( "longestStreak" ) )
+		self setPersStat( "longestStreak", self.pers["cur_kill_streak"] );
+
+	level notify ( "player_got_killstreak_" + self.pers["cur_kill_streak"], self );
+	self thread maps\mp\killstreaks\_killstreaks::checkKillstreakReward( self.pers["cur_kill_streak"] );
 }
 
 processShieldAssist( killedPlayer )

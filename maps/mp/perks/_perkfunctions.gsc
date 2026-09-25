@@ -698,9 +698,20 @@ omaUseBar( duration )
 }
 
 
+// sh1x adaptation: C1's blast shield is worn, not toggled. IW4 switched it on
+// and off with the "empty_offhand" notify of a frag press on an empty primary
+// offhand. C1's PM_Weapon_CheckForOffHand (0x41cba8..0x41cbc7) returns
+// silently for a selected slot with no ammo, with no event, and its only
+// EV_EMPTY_OFFHAND_PRIMARY producer (0x41c7dd..0x41c809) follows the use of
+// an offhand that had no ammo left. C1 has no blast-shield offhand weapon, so
+// a C1 player can never raise that notify. PERKS_DESC_BLASTSHIELD
+// ("increased defence against explosive damage") describes a standing
+// effect. Holding the equipment therefore keeps the IW4 blast-shield state
+// (_specialty_blastshield) on, which feeds the existing damage, feedback and
+// ch_masterblaster consumers.
 setBlastShield()
 {
-	self thread blastshieldUseTracker( "specialty_blastshield", ::toggleBlastShield );
+	self _setPerk( "_specialty_blastshield" );
 	self SetWeaponHudIconOverride( "primaryoffhand", "specialty_blastshield" );
 }
 
@@ -708,6 +719,8 @@ setBlastShield()
 unsetBlastShield()
 {
 	self notify ( "end_perkUseTracker" );
+	if ( self _hasPerk( "_specialty_blastshield" ) )
+		self _unsetPerk( "_specialty_blastshield" );
 	self SetWeaponHudIconOverride( "primaryoffhand", "none" );
 }
 

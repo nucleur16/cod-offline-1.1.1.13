@@ -63,6 +63,38 @@ watchKillstreakTestDvar()
                 player codol_deathGates();
             continue;
         }
+        // "perk <client> <perk>": grant a perk row for this life and report
+        // the selected modifiers it drives. "assist <client> <victim>...": run
+        // the real assist award per victim. "perkdmg <client> <mod> <damage>": report
+        // what cac_modified_damage leaves of that damage.
+        perkTokens = strTok( request, " " );
+        if ( ( perkTokens[0] == "perk" || perkTokens[0] == "assist" || perkTokens[0] == "perkdmg" ) && perkTokens.size > 2 )
+        {
+            perkPlayer = undefined;
+            foreach ( player in level.players )
+                if ( player getEntityNumber() == int( perkTokens[1] ) )
+                    perkPlayer = player;
+            if ( !isDefined( perkPlayer ) || !isAlive( perkPlayer ) )
+            {
+                codolPrintLn( "CoDOL perk test: client " + perkTokens[1] + " is not alive" );
+                continue;
+            }
+            if ( perkTokens[0] == "perk" )
+                perkPlayer thread testPerk( perkTokens[2] );
+            else if ( perkTokens[0] == "perkdmg" && perkTokens.size > 3 )
+            {
+                left = maps\mp\perks\_perks::cac_modified_damage( perkPlayer, level.players[0], int( perkTokens[3] ), perkTokens[2], "frag_grenade_mp", perkPlayer.origin, ( 0, 0, 1 ), "none" );
+                codolPrintLn( "CoDOL perk test: " + perkPlayer.name + " takes " + left + " of " + perkTokens[3] + " " + perkTokens[2] );
+            }
+            else if ( perkTokens[0] == "assist" )
+            {
+                for ( victimToken = 2; victimToken < perkTokens.size; victimToken++ )
+                    foreach ( player in level.players )
+                        if ( player getEntityNumber() == int( perkTokens[victimToken] ) )
+                            perkPlayer thread maps\mp\gametypes\_gamescore::processAssist( player );
+            }
+            continue;
+        }
         tiTokens = strTok( request, " " );
         if ( tiTokens[0] == "suicide" && tiTokens.size > 1 )
         {
@@ -204,6 +236,32 @@ testTacticalInsertion()
     self suicide();
     self waittill( "spawned_player" );
     codolPrintLn( "CoDOL killstreak test: TI respawn for " + self.name + " at " + self.origin + ", " + distance( self.origin, beacon ) + " from the beacon" );
+}
+
+testPerk( perk )
+{
+    self endon( "disconnect" );
+    maps\mp\perks\_perks::givePerk( perk );
+    // Perk set callbacks run as threads.
+    wait 0.1;
+    names = strTok( "modFinalStandTime modPistolDeath modKillstreakAssists modDeathstreakShift modObjectiveUseTimeScale", " " );
+    report = "CoDOL perk test: " + self.name + " +" + perk;
+    foreach ( name in names )
+    {
+        value = self getSelectedPerkModifierValue( name );
+        if ( isDefined( value ) )
+            report += " " + name + "=" + value;
+    }
+    report += " rowDeathstreakShift=" + maps\mp\perks\_perks::perkTableModifierDelta( perk, "modDeathstreakShift" );
+    report += " modBlastShield=" + self hasAbilityModifier( "modBlastShield" );
+    report += " modNoRadar=" + self hasAbilityModifier( "modNoRadar" );
+    report += " _specialty_blastshield=" + maps\mp\_utility::_hasPerk( "_specialty_blastshield" );
+    unlocked = self codol_tryIsItemUnlocked( perk );
+    if ( isDefined( unlocked ) )
+        report += " unlocked=" + unlocked;
+    else
+        report += " unlocked=unresolved";
+    codolPrintLn( report );
 }
 
 testSuicide()

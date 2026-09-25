@@ -1720,7 +1720,7 @@ Callback_PlayerLastStand( eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon,
 		self _disableUsability();
 
 		self thread enableLastStandWeapons();
-		standDuration = self selectedLastStandDuration( "modFinalStandTime", 20 );
+		standDuration = self finalStandDuration();
 		self thread lastStandTimer( standDuration, true );		
 	}
 	/*
@@ -1770,14 +1770,38 @@ Callback_PlayerLastStand( eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon,
 		self DisableWeaponSwitch();
 		self _disableUsability();
 		
+		// Last Stand Pro (PERKS_DESC_LAST_STAND_OFFHAND): equipment stays
+		// usable in Last Stand.
 		if ( !self _hasPerk("specialty_laststandoffhand") )
 			self DisableOffhandWeapons();
+		else
+			codolPrintLn( "CoDOL perks: " + self.name + " last stand keeps offhands (Last Stand Pro)" );
 				
 		self switchToWeapon( pistolWeapon );
 		
 		standDuration = self selectedLastStandDuration( "modPistolDeath", 10 );
 		self thread lastStandTimer( standDuration, false );
 	}
+}
+
+// Final Stand's lifetime is its own row's modFinalStandTime. The Last Stand
+// Pro row (specialty_laststandoffhand) also names modFinalStandTime (10), so
+// the aggregate reads 30 when both are selected. C1's text for that row,
+// PERKS_DESC_LAST_STAND_OFFHAND, is only "use equipment during Last Stand"
+// (consumed by the pistol path above), so its share is taken back out here
+// rather than lengthening Final Stand.
+finalStandDuration()
+{
+	duration = self getSelectedPerkModifierValue( "modFinalStandTime" );
+	if ( !isDefined( duration ) )
+		return 20;
+	if ( self _hasPerk( "specialty_laststandoffhand" ) )
+	{
+		lastStandProShare = maps\mp\perks\_perks::perkTableModifierDelta( "specialty_laststandoffhand", "modFinalStandTime" );
+		codolPrintLn( "CoDOL perks: " + self.name + " final stand " + duration + " s less Last Stand Pro share " + lastStandProShare );
+		duration -= lastStandProShare;
+	}
+	return max( 0, duration );
 }
 
 selectedLastStandDuration( modifier, fallback )
@@ -2305,10 +2329,9 @@ reviveTriggerThink( team )
 			self.owner.lastStand = undefined;
 			self.owner clearLowerMessage( "last_stand" );
 			
-			if ( self.owner _hasPerk( "specialty_lightweight" ) )
-				self.owner.moveSpeedScaler = 1.07;
-			else
-				self.owner.moveSpeedScaler = 1;
+			// The native coPerkStatsTable producer applies Lightweight's
+			// modMoveSpeedScale on top of this; a scripted 1.07 would stack.
+			self.owner.moveSpeedScaler = 1;
 			
 			self.owner.maxHealth = 100;
 			
