@@ -10,6 +10,8 @@ waitForPickup( trigger, owner, weapon, hint )
     self endon( "mine_destroyed" );
     self endon( "exploding" );
     self endon( "codol_pickup_closed" );
+    // An enemy took the device over (perks/_codol_equipperks.gsc takeOver).
+    self endon( "codol_hacked" );
     self.codolPickupTrigger = trigger;
     trigger setCursorHint( "HINT_NOICON" );
     trigger setHintString( hint );
@@ -46,6 +48,7 @@ close()
 missilePickup( owner, weapon, hint )
 {
     self endon( "death" );
+    self endon( "codol_hacked" );
     if ( isDefined( self.codolPickupClosed ) ) return;
     trigger = spawn( "script_origin", self.origin + (0,0,20) );
     trigger linkTo( self );

@@ -173,8 +173,11 @@ proximity()
     if ( isDefined( self.pickup ) ) self.pickup delete();
     self.pickup = undefined;
     self playSound( "mine_betty_click" );
-    if ( player _hasPerk( "specialty_delaymine" ) )
+    // C1 Engineer's modDelayTriggeredExplosive on the triggering player (the
+    // IW4/IW5 name specialty_delaymine is C1 Stalker Pro). IW5 delay: 3 s.
+    if ( player HasAbilityModifier( "modDelayTriggeredExplosive" ) )
     {
+        maps\mp\perks\_codol_equipperks::perkLog( "betty " + self getEntityNumber() + " triggered by " + player.name + " (modDelayTriggeredExplosive): 3s delay" );
         player notify( "triggered_mine" );
         wait 3;
     }

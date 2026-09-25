@@ -1209,7 +1209,8 @@ crateOtherCaptureThink()
 			continue;
 
 		useEnt = self createUseEnt();
-		result = useEnt useHoldThink( player );
+		// Hacker Pro (modOpenCrateAsOwner): an enemy crate opens in the owner's time.
+		result = useEnt useHoldThink( player, self maps\mp\perks\_codol_equipperks::crateStealTime( player ) );
 		
 		if ( isDefined( useEnt ) )
 			useEnt delete();
@@ -1217,6 +1218,11 @@ crateOtherCaptureThink()
 		if ( !result )
 			continue;
 			
+		if ( isDefined( self.codolTrapper ) )
+		{
+			self thread maps\mp\perks\_codol_equipperks::springCrateTrap( player );
+			return;
+		}
 		self notify ( "captured", player );
 	}
 }
@@ -1236,6 +1242,11 @@ crateOwnerCaptureThink()
 		if ( !useHoldThink( player, 500 ) )
 			continue;
 		
+		if ( isDefined( self.codolTrapper ) )
+		{
+			self thread maps\mp\perks\_codol_equipperks::springCrateTrap( player );
+			return;
+		}
 		self notify ( "captured", player );
 	}
 }
@@ -1287,6 +1298,9 @@ killstreakCrateThink( dropType )
 
 		player maps\mp\gametypes\_hud_message::killstreakSplashNotify( self.crateType, undefined, "pickup" );
 		
+		// Hacker (modCrateTrap): an enemy crate stays behind booby-trapped.
+		if ( self maps\mp\perks\_codol_equipperks::crateTrapArmed( player ) )
+			continue;
 		self deleteCrate();
 	}
 }
@@ -1348,6 +1362,9 @@ sentryCrateThink( dropType )
 		player playLocalSound( "ammo_crate_use" );
 		player thread sentryUseTracker();
 		
+		// Hacker (modCrateTrap): an enemy crate stays behind booby-trapped.
+		if ( self maps\mp\perks\_codol_equipperks::crateTrapArmed( player ) )
+			continue;
 		self deleteCrate();
 	}
 }
@@ -1400,6 +1417,9 @@ ammoCrateThink( dropType )
 		
 		player playLocalSound( "ammo_crate_use" );
 		player refillAmmo();
+		// Hacker (modCrateTrap): an enemy crate stays behind booby-trapped.
+		if ( self maps\mp\perks\_codol_equipperks::crateTrapArmed( player ) )
+			continue;
 		self deleteCrate();
 	}
 }

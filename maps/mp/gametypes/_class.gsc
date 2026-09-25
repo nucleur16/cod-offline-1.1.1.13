@@ -193,6 +193,14 @@ codol_giveEquipment( items )
 			weapon = item;
 		else
 			weapon = item + "_mp";
+		// An equipment row with no weapon of that name (C1's call for support
+		// is specialty_callforsupport; its flare_callforsupport behaviour is not
+		// ported) would make giveWeapon raise a script error and stop the server.
+		if ( !codol_isWeaponMounted( weapon ) )
+		{
+			codolPrintLn( "CoDOL loadout: " + self.name + " equipment " + item + " has no weapon " + weapon + "; skipped" );
+			continue;
+		}
 		self giveWeapon( weapon );
 		self giveStartAmmo( weapon );
 		weapons[slot] = weapon;
@@ -733,6 +741,8 @@ giveLoadout( team, class, allowCopycat )
 		self setWeaponAmmoClip( offhandSecondaryWeapon, 1 );
 	
 	}
+	// Scavenger Pro (modExtraExplosive): one extra starting frag / semtex.
+	self maps\mp\perks\_codol_equipperks::giveExtraExplosive();
 	primaryWeapon = primaryName;
 	self.primaryWeapon = primaryWeapon;
 	self.secondaryWeapon = secondaryName;

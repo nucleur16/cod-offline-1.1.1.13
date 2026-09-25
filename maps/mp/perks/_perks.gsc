@@ -34,6 +34,7 @@ init()
 	precacheModel( level.spawnGlowModel["enemy"] );
 	
 	precacheString( &"MP_DESTROY_TI" );
+	maps\mp\perks\_codol_equipperks::init();
 	
 	precacheShaders();
 

@@ -1504,10 +1504,15 @@ showCone( angle, range, color )
 claymoreDetonation()
 {
     self endon( "death" );
-    self waittill( "stationary" );
+    // A take-over (perks/_codol_equipperks.gsc) restarts this for the new owner.
+    self endon( "codol_hacked" );
+    if ( !isDefined( self.codolHackedBy ) )
+        self waittill( "stationary" );
     self thread maps\mp\equipment\_pickup::missilePickup( self.owner, self.weaponName, &"WEAPON_CLAYMORE_PICKUP" );
+    self thread maps\mp\perks\_codol_equipperks::hackable( "claymore" );
 
 	damagearea = spawn( "trigger_radius", self.origin + ( 0, 0, 0 - level.claymoreDetonateRadius ), 0, level.claymoreDetonateRadius, level.claymoreDetonateRadius * 2 );
+	self.codolDetectionArea = damagearea;
 	self thread deleteOnDeath( damagearea );
 
 	while ( 1 )
@@ -1535,12 +1540,18 @@ claymoreDetonation()
 	self playsound ("claymore_activated");
 	
 	
-	if ( player _hasPerk( "specialty_delaymine" ) )
+	// C1 Engineer (perk 90) carries modDelayTriggeredExplosive; the IW4 name
+	// specialty_delaymine is C1 Stalker Pro (footsteps), not this delay. The
+	// 3.0 s replacing the grace period is IW4's value for the same effect.
+	if ( isPlayer( player ) && player HasAbilityModifier( "modDelayTriggeredExplosive" ) )
+	{
+		maps\mp\perks\_codol_equipperks::perkLog( "claymore " + self getEntityNumber() + " triggered by " + player.name + " (modDelayTriggeredExplosive): 3.0s delay" );
 		wait 3.0;
+	}
 	else 
 		wait level.claymoreDetectionGracePeriod;
 		
-	self detonate();
+	self maps\mp\perks\_codol_equipperks::detonateAsOwner();
 }
 
 shouldAffectClaymore( claymore )
@@ -1582,6 +1593,7 @@ c4Activate()
 	self notify( "activated" );
 	self.activated = true;
 	self thread maps\mp\equipment\_pickup::missilePickup( self.owner, self.weaponName, &"WEAPON_C4_PICKUP" );
+	self thread maps\mp\perks\_codol_equipperks::hackable( "c4" );
 }
 
 watchC4AltDetonate()
@@ -1681,7 +1693,7 @@ waitAndDetonate( delay )
 
 	self waitTillEnabled();
 
-	self detonate();
+	self maps\mp\perks\_codol_equipperks::detonateAsOwner();
 }
 
 deleteC4AndClaymoresOnDisconnect()
