@@ -1273,6 +1273,11 @@ Callback_StartGameType()
 	makeDvarServerInfo( "cg_thirdPersonAngle", 356 );
 
 	makeDvarServerInfo( "scr_gameended", 0 );
+	// CoDOL: makeDvarServerInfo only flags an existing dvar and keeps its value
+	// (GScr_MakeDvarServerInfo -> Cvar_AddFlags), so from the second match on it
+	// no longer resets what the last match left.  Reset explicitly: a stale 1/2 hides every HUD menu
+	// gated on dvarint( "scr_gameended" ) (compass, ammo, score).
+	setDvar( "scr_gameended", 0 );
 
 	if ( !isDefined( game["gamestarted"] ) )
 	{

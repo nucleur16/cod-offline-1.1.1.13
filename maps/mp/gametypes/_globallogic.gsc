@@ -129,6 +129,11 @@ registerDvars()
 {
 	makeDvarServerInfo( "ui_bomb_timer", 0 );
 	makeDvarServerInfo( "ui_danger_team", "" );	
+	// CoDOL: makeDvarServerInfo only flags an existing dvar and keeps its value
+	// (GScr_MakeDvarServerInfo -> Cvar_AddFlags), so from the second match on it
+	// no longer resets what the last match left.  Reset explicitly.
+	setDvar( "ui_bomb_timer", 0 );
+	setDvar( "ui_danger_team", "" );
 	
 	makeDvarServerInfo( "camera_thirdPerson", getDvarInt( "scr_thirdPerson" ) );
 }
