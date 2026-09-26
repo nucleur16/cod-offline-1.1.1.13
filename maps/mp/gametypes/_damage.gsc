@@ -178,6 +178,17 @@ handleFriendlyFireDeath( attacker )
 }
 
 
+// giveRankXP's team gates, mirrored: no weapon XP while a team is empty
+// (team modes) or with fewer than two players (free-for-all).
+codolKillEarnsWeaponXP()
+{
+	if ( level.teamBased )
+		return ( level.teamCount["allies"] && level.teamCount["axis"] );
+
+	return ( level.teamCount["allies"] + level.teamCount["axis"] >= 2 );
+}
+
+
 handleNormalDeath( lifeId, attacker, eInflictor, sWeapon, sMeansOfDeath )
 {
 	attacker thread maps\mp\_events::killedPlayer( lifeId, self, sWeapon, sMeansOfDeath );
@@ -213,6 +224,15 @@ handleNormalDeath( lifeId, attacker, eInflictor, sWeapon, sMeansOfDeath )
 	}
 
 	attacker thread maps\mp\gametypes\_rank::giveRankXP( "kill", value );
+
+	// CoDOL weapon levelling: the killing weapon earns the gametype's flat
+	// "kill" score value - not `value` above, which carries the last-stand
+	// doubling, and not giveRankXP's xpScaler, headshot, streak or challenge
+	// rewards.  The match report carries it to the lobby as
+	// progression.weapons; see codol_match_report.c.  Same gates as the rank
+	// award, so a kill that earns no rank XP earns no weapon XP either.
+	if ( attacker rankingEnabled() && codolKillEarnsWeaponXP() )
+		attacker codol_creditWeaponXP( sWeapon, maps\mp\gametypes\_rank::getScoreInfoValue( "kill" ) );
 
 	attacker incPersStat( "kills", 1 );
 	attacker.kills = attacker getPersStat( "kills" );
