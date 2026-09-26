@@ -323,25 +323,75 @@ placeCarriedKillstreak()
     }
 }
 
+// Two modes:
+//   scr_codol_botfill 0 (default): keep scr_codol_bots bots (training); lowering
+//       the count stops replenishment and never kicks.
+//   scr_codol_botfill N > 0: fill around the real players. With no real player
+//       there are no bots; otherwise N - humans bots, never more than
+//       scr_codol_botmax (default 11), adding and kicking as players come and go.
 maintainBots()
 {
     level endon( "game_ended" );
+    if ( getDvar( "scr_codol_botfill" ) == "" )
+        setDvar( "scr_codol_botfill", 0 );
+    if ( getDvar( "scr_codol_botmax" ) == "" )
+        setDvar( "scr_codol_botmax", 11 );
     for ( ;; )
     {
-        desired = getDvarInt( "scr_codol_bots" );
-        if ( desired > 16 )
-            desired = 16;
-        existing = 0;
+        bots = [];
+        humans = 0;
         players = getEntArray( "player", "classname" );
         foreach ( player in players )
         {
             if ( isDefined( player.codolCombatBot ) && player.codolCombatBot )
-                existing++;
+                bots[bots.size] = player;
+            else if ( !player.isbot )
+                humans++;
         }
-        if ( desired > existing )
-            spawnBots( desired - existing );
-        // Lowering the target stops replenishment; it does not kick players.
+        // Test hook, idle unless set: pretend this many more real players are on.
+        humans += getDvarInt( "scr_codol_botfill_testhumans" );
+        fill = getDvarInt( "scr_codol_botfill" );
+        if ( fill > 0 )
+        {
+            desired = 0;
+            if ( humans > 0 )
+                desired = fill - humans;
+            botMax = getDvarInt( "scr_codol_botmax" );
+            if ( desired > botMax )
+                desired = botMax;
+            if ( desired < 0 )
+                desired = 0;
+            if ( desired > bots.size )
+                spawnBots( desired - bots.size );
+            else if ( desired < bots.size )
+                removeBots( bots, bots.size - desired );
+        }
+        else
+        {
+            desired = getDvarInt( "scr_codol_bots" );
+            if ( desired > 16 )
+                desired = 16;
+            if ( desired > bots.size )
+                spawnBots( desired - bots.size );
+        }
         wait 1;
+    }
+}
+
+// Kick `count` bots, dead ones first (nobody is watching them), newest first.
+removeBots( bots, count )
+{
+    for ( pass = 0; pass < 2 && count > 0; pass++ )
+    {
+        for ( i = bots.size - 1; i >= 0 && count > 0; i-- )
+        {
+            bot = bots[i];
+            if ( !isDefined( bot ) || ( pass == 0 && isAlive( bot ) ) )
+                continue;
+            kick( bot getEntityNumber() );
+            bots[i] = undefined;
+            count--;
+        }
     }
 }
 
