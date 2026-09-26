@@ -92,7 +92,7 @@ grenadeTracking()
 	{
 		self waittill ( "grenade_fire", grenade, weaponName );
 		
-		if ( weaponName == "frag_grenade_mp" )
+		if ( weaponName == "frag_grenade_mp" || weaponName == "white_phosphorus_grenade_mp" )
 			level thread sayLocalSound( self, "frag_out" );
 		else if ( weaponName == "flash_grenade_mp" )
 			level thread sayLocalSound( self, "flash_out" );

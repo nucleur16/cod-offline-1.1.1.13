@@ -767,8 +767,10 @@ setTacticalInsertion()
 
 unsetTacticalInsertion()
 {
+	// IW4 only stops the monitor. A planted beacon outlives a mid-life class
+	// change; spawnPlayer consumes it and clearPreviousTISpawnpoint removes it
+	// on disconnect or team change.
 	self notify( "end_monitorTIUse" );
-	if ( isDefined( self.setSpawnPoint ) ) self deleteTI( self.setSpawnPoint );
 }
 
 clearPreviousTISpawnpoint()

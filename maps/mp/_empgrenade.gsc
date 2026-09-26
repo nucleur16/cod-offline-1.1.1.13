@@ -78,8 +78,25 @@ applyEMP()
     self.empEndTime = getTime() + 10000;
     self setEMPJammed( true );
     self shellshock( "flashbang_mp", 1 );
+    self thread rumble( 0.75 );
     wait 10;
     self clearPersonalEMP();
+}
+
+// IW5 emprumbleloop: heavy damage rumble for the first 0.75 s.
+// rumble/damage_heavy ships in C1 common_gametype_mp; _gamelogic precaches it.
+rumble( duration )
+{
+    self notify( "codol_emp_rumble" );
+    self endon( "codol_emp_rumble" );
+    self endon( "death" );
+    self endon( "disconnect" );
+    endTime = getTime() + duration * 1000;
+    while ( getTime() < endTime )
+    {
+        self playRumbleOnEntity( "damage_heavy" );
+        wait 0.05;
+    }
 }
 
 deathCleanup( generation )

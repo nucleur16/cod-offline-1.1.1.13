@@ -77,7 +77,12 @@ detonation( owner )
     cloud.origin = position;
     cloud.killcam = spawn( "script_model", position + (0,0,60) );
     cloud.killcam.startTime = getTime();
+    // _damage reads birthtime as the killcam entity's start (T5 killcam).
+    cloud.killcam.birthtime = cloud.killcam.startTime;
     buildAreas( cloud, position + (0,0,12) );
+    // T5 _tabun.gsc:111-112 stuns dogs caught in the cloud when it forms.
+    foreach ( area in cloud.areas )
+        owner thread maps\mp\_dogs::flash_dogs( area );
     cloud.fx=spawnFx( level.codolGasFX, position );
     triggerFx( cloud.fx );
     level.codolGasClouds[level.codolGasClouds.size] = cloud;

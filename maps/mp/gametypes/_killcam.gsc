@@ -47,7 +47,7 @@ killcam(
 			camtime = 5;
 		else if ( !timeUntilRespawn || timeUntilRespawn > 5.0 ) // if we're not going to respawn, we can take more time to watch what happened
 			camtime = 5.0;
-		else if ( sWeapon == "frag_grenade_mp" || sWeapon == "frag_grenade_short_mp" || sWeapon == "semtex_mp" )
+		else if ( sWeapon == "frag_grenade_mp" || sWeapon == "frag_grenade_short_mp" || sWeapon == "semtex_mp" || sWeapon == "white_phosphorus_grenade_mp" )
 			camtime = 4.25; // show long enough to see grenade thrown
 		else
 			camtime = 2.5;

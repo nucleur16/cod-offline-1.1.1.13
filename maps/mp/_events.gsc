@@ -374,6 +374,10 @@ checkMatchDataEquipmentKills( victim, weapon, meansOfDeath )
 			attacker incPlayerStat( "grenadekills", 1 );
 			isEquipment = true;
 			break;	
+		case "white_phosphorus_grenade_mp":
+			attacker incPlayerStat( "grenadekills", 1 );
+			isEquipment = true;
+			break;
 		case "c4_mp":
 			attacker incPlayerStat( "c4kills", 1 );
 			isEquipment = true;

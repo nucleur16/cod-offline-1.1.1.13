@@ -23,6 +23,8 @@
 //   set scr_codol_equiptest "tozombie <clientnum> <dist>"
 //       stands a client <dist> units west of the nearest live zombie in
 //       level.zombies, facing it (a target for a thrown lethal).
+//   set scr_codol_equiptest "state <clientnum>"
+//       prints a client's alive flag, session state, health and team.
 //
 // Deliberately free of maps\mp\killstreaks and maps\mp\gametypes\_class so
 // the zombies chain can include it without compiling the multiplayer one.
@@ -71,6 +73,14 @@ watchDvar()
                 player thread keepPerk( tokens[2] );
             else
                 codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
+            continue;
+        }
+        if ( tokens[0] == "state" && tokens.size > 1 )
+        {
+            player = playerByNumber( int( tokens[1] ) );
+            if ( isDefined( player ) )
+                codolPrintLn( "CoDOL equiptest: state " + player.name + " alive " + isAlive( player ) + " session " +
+                    player.sessionstate + " health " + player.health + " maxhealth " + player.maxhealth + " team " + player.team );
             continue;
         }
         if ( tokens[0] == "turretwatch" && tokens.size > 1 )
@@ -225,6 +235,23 @@ logGrenadeFire()
     {
         level waittill( "connected", player );
         player thread logPlayerGrenadeFire();
+        player thread logPlayerFlashbang();
+    }
+}
+
+// The native flash blast (C1 522580) notifies (origin, distance, angle,
+// attacker, team); log it so a thrown flash can be checked end to end.
+logPlayerFlashbang()
+{
+    self endon( "disconnect" );
+    for ( ;; )
+    {
+        self waittill( "flashbang", origin, amountDistance, amountAngle, attacker, team );
+        who = "undefined";
+        if ( isDefined( attacker ) && isPlayer( attacker ) )
+            who = attacker.name;
+        codolPrintLn( "CoDOL equiptest: flashbang on " + self.name + " origin " + origin + " distance " +
+            amountDistance + " angle " + amountAngle + " attacker " + who );
     }
 }
 

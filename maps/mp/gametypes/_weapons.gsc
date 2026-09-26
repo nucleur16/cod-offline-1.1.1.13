@@ -1174,12 +1174,14 @@ beginGrenadeTracking()
 
 	self waittill( "grenade_fire", grenade, weaponName );
 
-	if ( ( getTime() - startTime > 1000 ) && weaponName == "frag_grenade_mp" )
+	// C1 white_phosphorus_grenade_mp is a frag-class offhand (class 1,
+	// cookable, timed; docs/CODOL_GRENADE_RECLAIM_AUDIT_20260915.md).
+	if ( ( getTime() - startTime > 1000 ) && ( weaponName == "frag_grenade_mp" || weaponName == "white_phosphorus_grenade_mp" ) )
 		grenade.isCooked = true;
 
 	self.changingWeapon = undefined;
 
-	if ( weaponName == "frag_grenade_mp" || weaponName == "semtex_mp" )
+	if ( weaponName == "frag_grenade_mp" || weaponName == "semtex_mp" || weaponName == "white_phosphorus_grenade_mp" )
 	{
 		grenade thread maps\mp\gametypes\_shellshock::grenade_earthQuake();
 		grenade.originalOwner = self;
@@ -1310,7 +1312,7 @@ watchForThrowbacks()
 			self.gotPullbackNotify = false;
 			continue;
 		}
-		if ( !isSubStr( weapname, "frag_" ) && !isSubStr( weapname, "semtex_" ) )
+		if ( !isSubStr( weapname, "frag_" ) && !isSubStr( weapname, "semtex_" ) && weapname != "white_phosphorus_grenade_mp" )
 			continue;
 
 		// no grenade_pullback notify! we must have picked it up off the ground.

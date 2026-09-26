@@ -1004,6 +1004,11 @@ getKillcamEntity( attacker, eInflictor, sWeapon )
 	if ( isDefined( eInflictor.script_gameobjectname ) && eInflictor.script_gameobjectname == "bombzone" )
 		return eInflictor.killCamEnt;
 	
+	// Tabun damages through its cloud's script_model; T5 returns the
+	// inflictor itself (_globallogic_player.gsc:2595-2614).
+	if ( sWeapon == "tabun_gas_mp" )
+		return eInflictor;
+	
 	if ( eInflictor.classname == "script_origin" || eInflictor.classname == "script_model" || eInflictor.classname == "script_brushmodel" )
 		return undefined; // probably a barrel or a car... code does airstrike cam for these things which looks bad
 	
@@ -1315,10 +1320,10 @@ Callback_PlayerDamage_internal( eInflictor, eAttacker, victim, iDamage, iDFlags,
 			return;
 		}
 
-		if ( ( isSubStr( sMeansOfDeath, "MOD_GRENADE" ) || isSubStr( sMeansOfDeath, "MOD_EXPLOSIVE" ) || isSubStr( sMeansOfDeath, "MOD_PROJECTILE" ) ) && isDefined( eInflictor ) && isDefined( eAttacker ) )
+		if ( ( isSubStr( sMeansOfDeath, "MOD_GRENADE" ) || isSubStr( sMeansOfDeath, "MOD_EXPLOSIVE" ) || isSubStr( sMeansOfDeath, "MOD_PROJECTILE" ) || isSubStr( sMeansOfDeath, "MOD_GAS" ) ) && isDefined( eInflictor ) && isDefined( eAttacker ) )
 		{
-			// protect players from spawnkill grenades
-			if ( eInflictor.classname == "grenade" && ( victim.lastSpawnTime + 3500 ) > getTime() && isDefined( victim.lastSpawnPoint ) && distance( eInflictor.origin, victim.lastSpawnPoint.origin ) < 250 )
+			// protect players from spawnkill grenades and tabun (T5 _globallogic_player.gsc:890-893)
+			if ( ( eInflictor.classname == "grenade" || sWeapon == "tabun_gas_mp" ) && ( victim.lastSpawnTime + 3500 ) > getTime() && isDefined( victim.lastSpawnPoint ) && distance( eInflictor.origin, victim.lastSpawnPoint.origin ) < 250 )
 			{
 				prof_end( "PlayerDamage player" );
 				return;
@@ -1335,7 +1340,7 @@ Callback_PlayerDamage_internal( eInflictor, eAttacker, victim, iDamage, iDFlags,
 			victim.explosiveInfo[ "suicideGrenadeKill" ] = false;
 			victim.explosiveInfo[ "weapon" ] = sWeapon;
 
-			isFrag = isSubStr( sWeapon, "frag_" );
+			isFrag = isSubStr( sWeapon, "frag_" ) || sWeapon == "white_phosphorus_grenade_mp";
 
 			if ( eAttacker != victim )
 			{
