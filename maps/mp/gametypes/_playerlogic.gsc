@@ -624,7 +624,8 @@ spawnPlayer()
 	
 	self setClientDvar( "cg_thirdPerson", "0" );
 	self setDepthOfField( 0, 0, 512, 512, 4, 0 );
-	self setClientDvar( "cg_fov", "65" );
+	// CoDOL: the player's own cg_fov is left alone (IW4 forced 65 on every
+	// spawn, overriding the FOV the player chose in C1's options).
 
 	// Don't do this stuff for TI spawn points	
 	if ( isDefined( spawnPoint ) )
@@ -1150,8 +1151,7 @@ initClientDvars()
 							"cg_hudGrenadeIconOffset", "75", 
 							"cg_hudGrenadePointerHeight", "18", 
 							"cg_hudGrenadePointerWidth", "37.5", 
-							"cg_hudGrenadePointerPivot", "18 40.5", 
-							"cg_fovscale", "0.75" );
+							"cg_hudGrenadePointerPivot", "18 40.5" );
 	}
 	else
 	{
@@ -1160,8 +1160,9 @@ initClientDvars()
 							"cg_hudGrenadeIconOffset", "50", 
 							"cg_hudGrenadePointerHeight", "12", 
 							"cg_hudGrenadePointerWidth", "25", 
-							"cg_hudGrenadePointerPivot", "12 27", 
-							"cg_fovscale", "1");
+							"cg_hudGrenadePointerPivot", "12 27" );
+	// CoDOL: cg_fovscale is the player's own setting; IW4 reset it on
+	// every connect (splitscreen 0.75, otherwise 1).
 	}
 
 	if ( getGametypeNumLives() )

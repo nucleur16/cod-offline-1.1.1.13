@@ -2140,9 +2140,10 @@ endGame( winner, endReasonText, nukeDetonated )
 		player freeGameplayHudElems();
 
 		player setClientDvars( "cg_everyoneHearsEveryone", 1 );
+		// CoDOL: cg_fovScale is left as the player set it (IW4 reset it to 1
+		// at every match end).
 		player setClientDvars( "cg_drawSpectatorMessages", 0,
-							   "g_compassShowEnemies", 0,
-							   "cg_fovScale", 1 );
+							   "g_compassShowEnemies", 0 );
 							   
 		if ( player.pers["team"] == "spectator" )
 			player thread maps\mp\gametypes\_playerlogic::spawnIntermission();
