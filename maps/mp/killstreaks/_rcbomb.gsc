@@ -19,6 +19,15 @@
 #include maps\mp\_utility;
 #include common_scripts\utility;
 
+// CoDOL: C1 spins the RC-XD's wheel meshes only through server animation
+// commands on the car (rccar_{front,back}_driving_{forward,backward}, the
+// "=vehicles" block of animlists/common.animlist). The native producer
+// (src/codol/vehicle/codol_vehicle_wheel_anim.c) drives them from the car's
+// speed, but it can only find the "vehicles" tree in the script animtree
+// registry, which holds trees a compiled script declared -- as _dogs.gsc does
+// for "dog". This line is that declaration.
+#using_animtree("vehicles");
+
 init()
 {
     precacheModel( "t5_veh_rcbomb_allies" );
