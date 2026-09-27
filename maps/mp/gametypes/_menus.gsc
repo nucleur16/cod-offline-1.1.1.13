@@ -453,8 +453,15 @@ menuClass( response )
 	}
 
 	// this should probably be an assert
+	// CoDOL: C1's Escape menu offers the class list to a player who closed
+	// the team popup and is still on the spectator team, and a pick arrives
+	// here as "changeclass" (see codolJoinTeamForClass).  IW4 returned,
+	// leaving that player spectating for good; join a team for them instead.
 	if(!isDefined(self.pers["team"]) || (self.pers["team"] != "allies" && self.pers["team"] != "axis"))
-		return;
+	{
+		if ( !self codolJoinTeamForClass() )
+			return;
+	}
 
 	class = self maps\mp\gametypes\_class::getClassChoice( response );
 	primary = self maps\mp\gametypes\_class::getWeaponChoice( response );
@@ -506,6 +513,45 @@ menuClass( response )
 	self thread maps\mp\gametypes\_spectating::setSpectatePermissions();
 }
 
+
+
+/*
+	CoDOL: put a spectator who picked a class onto a team, as autoassign would.
+
+	A player who dismisses the team popup (u team_marinesopfor) at connect
+	stays on the "spectator" team and can follow other players.  C1's Escape
+	menu still lists the classes, and choosing one sends
+	"mr <serverId> <changeclass slot> customN", which reaches menuClass.  IW4
+	never offers a spectator the class menu, so its menuClass just returned:
+	the menus closed and the player was left spectating with no way in short
+	of reopening the team menu.  Join them the way menuAutoAssign does (without
+	reopening the class popup; the class is already chosen) and let menuClass
+	apply the choice and spawn.  Returns false, with the team menu reopened,
+	when there is no team to join.
+*/
+codolJoinTeamForClass()
+{
+	if ( game["state"] == "postgame" )
+		return false;
+
+	assignment = getTeamAssignment();
+
+	if ( level.teamBased && !maps\mp\gametypes\_teams::getJoinTeamPermissions( assignment ) )
+	{
+		self beginTeamChoice();
+		return false;
+	}
+
+	self addToTeam( assignment );
+	self.pers["class"] = undefined;
+	self.class = undefined;
+
+	if ( !isAlive( self ) )
+		self.statusicon = "hud_status_dead";
+
+	self notify( "end_respawn" );
+	return true;
+}
 
 
 addToTeam( team, firstConnect )
