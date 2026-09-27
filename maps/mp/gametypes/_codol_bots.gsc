@@ -15,8 +15,34 @@ init()
     graph = "waypoints/" + getDvar( "mapname" ) + "_wp.csv";
     if ( loadBotWaypoints( graph ) <= 0 )
         return;
-    level.codolBotSerial = 0;
+    // The serial names bots and picks their class. It lives in game[] so a
+    // round restart does not name a new bot after one that is still on.
+    if ( !isDefined( game["codolBotSerial"] ) )
+        game["codolBotSerial"] = 0;
     level thread maintainBots();
+}
+
+// Round-based modes (sd, sab, ...) end each round with map_restart: pers[]
+// survives, entity fields do not. A returning training bot would otherwise
+// connect as a human (no codolCombatBot): giveLoadout reads its class0 as a
+// profile class, the profile getters raise (a bot has no profile upload) and
+// the undefined killstreak kills the match; watchSpawns would not run either,
+// and maintainBots would add a second set of bots. Called from
+// Callback_PlayerConnect before anything reads those fields.
+restoreCombatBot()
+{
+    if ( !isDefined( self.pers["codolCombatBot"] ) || !self.pers["codolCombatBot"] )
+        return;
+    self.codolCombatBot = true;
+    self.codolBotClass = self.pers["codolBotClass"];
+    self thread watchSpawns();
+}
+
+isCombatBot( player )
+{
+    if ( isDefined( player.codolCombatBot ) && player.codolCombatBot )
+        return true;
+    return isDefined( player.pers ) && isDefined( player.pers["codolCombatBot"] ) && player.pers["codolCombatBot"];
 }
 
 // Test hook for rewards bots never earn on their own:
@@ -336,6 +362,10 @@ maintainBots()
         setDvar( "scr_codol_botfill", 0 );
     if ( getDvar( "scr_codol_botmax" ) == "" )
         setDvar( "scr_codol_botmax", 11 );
+    // After a round restart, let the previous round's clients reconnect
+    // before counting them.
+    if ( game["codolBotSerial"] > 0 )
+        wait 2;
     for ( ;; )
     {
         bots = [];
@@ -343,7 +373,7 @@ maintainBots()
         players = getEntArray( "player", "classname" );
         foreach ( player in players )
         {
-            if ( isDefined( player.codolCombatBot ) && player.codolCombatBot )
+            if ( isCombatBot( player ) )
                 bots[bots.size] = player;
             else if ( !player.isbot )
                 humans++;
@@ -402,12 +432,14 @@ spawnBots( count )
         wait 0.05;
     for ( i = 0; i < count; i++ )
     {
-        bot = addTestClient( "Training " + ( level.codolBotSerial + 1 ) );
+        bot = addTestClient( "Training " + ( game["codolBotSerial"] + 1 ) );
         if ( !isDefined( bot ) )
             return;
         bot.codolCombatBot = true;
-        bot.codolBotClass = level.codolBotSerial % 9;
-        level.codolBotSerial++;
+        bot.codolBotClass = game["codolBotSerial"] % 9;
+        bot.pers["codolCombatBot"] = true;
+        bot.pers["codolBotClass"] = bot.codolBotClass;
+        game["codolBotSerial"]++;
         bot thread enterGame();
         wait 0.25;
     }

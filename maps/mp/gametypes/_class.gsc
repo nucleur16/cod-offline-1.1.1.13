@@ -1090,8 +1090,32 @@ makeLettersToNumbers()
 	return array;
 }
 
+// A selection that is undefined (a getter that raised), empty or has no
+// mp/coKillstreakStatsTable.csv row is no selection: a bad profile value must
+// cost that slot, not the match (int( tableLookup( ..., undefined, ... ) )
+// is a fatal script error inside spawnClient).
+codol_validKillstreak( streak, slot )
+{
+	if ( !isDefined( streak ) )
+	{
+		codolPrintLn( "CoDOL loadout: " + self.name + " killstreak slot " + slot + " is undefined; using none" );
+		return "none";
+	}
+	if ( streak == "none" || streak == "" || streak == "specialty_null" )
+		return "none";
+	if ( tableLookup( "mp/coKillstreakStatsTable.csv", 1, streak, 4 ) == "" )
+	{
+		codolPrintLn( "CoDOL loadout: " + self.name + " killstreak " + streak + " has no mp/coKillstreakStatsTable.csv row; using none" );
+		return "none";
+	}
+	return streak;
+}
+
 setKillstreaks( streak1, streak2, streak3 )
 {
+	streak1 = self codol_validKillstreak( streak1, 0 );
+	streak2 = self codol_validKillstreak( streak2, 1 );
+	streak3 = self codol_validKillstreak( streak3, 2 );
 	self.killStreaks = [];
 	// Keep the actual selected class order for account challenge consumers.
 	// CoDOL has no IW4 global playerdata("killstreaks") selection array.

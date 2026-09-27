@@ -1197,6 +1197,9 @@ initClientDvars()
 
 Callback_PlayerConnect()
 {
+	// A training bot returning from a round restart gets its entity fields
+	// back before any connect/spawn code reads them.
+	self maps\mp\gametypes\_codol_bots::restoreCombatBot();
 	thread notifyConnecting();
 
 	self.statusicon = "hud_status_connecting";
