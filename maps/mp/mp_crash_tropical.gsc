@@ -6,9 +6,10 @@
 // Changes from the vendor file, and nothing else:
 //   * fx module: mp_crash_fx -> mp_crash_tropical_fx (the zone-shipped one in
 //     this overlay; extracted verbatim from mp_crash_tropical.ff).
-//   * compass material: compass_map_mp_crash_dlc -> compass_map_mp_crash_tropical
-//     (INFERRED from CODOL's per-map asset naming convention; server-side this
-//     only names the minimap material, it is not read back).
+//   * compass material: kept as vendor's compass_map_mp_crash_dlc. No
+//     compass_map_mp_crash_tropical ships (docs/zone_assets); patch_common_mp
+//     adds the compass_map_mp_crash_dlc image for this map, and a name C1
+//     cannot resolve leaves the minimap blank.
 //   * precache/art stay the vendor mp_crash modules -- same base geometry and
 //     props; precache calls are host-recorded on this server, not fatal.
 //   * ambientPlay alias kept as vendor's ambient_mp_crash (host-recorded).
@@ -19,7 +20,7 @@ main()
 	maps\createart\mp_crash_art::main();
 	maps\mp\_load::main();
 
-	maps\mp\_compass::setupMiniMap( "compass_map_mp_crash_tropical" );
+	maps\mp\_compass::setupMiniMap( "compass_map_mp_crash_dlc" );
 
 	AmbientPlay( "ambient_mp_crash" );
 
