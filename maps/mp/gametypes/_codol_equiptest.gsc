@@ -83,6 +83,21 @@ watchDvar()
                     player.sessionstate + " health " + player.health + " maxhealth " + player.maxhealth + " team " + player.team );
             continue;
         }
+        // "akimbo <client> <C1 button mask> <seconds> <weapon ...>": arm the
+        // weapon (a composed name may contain spaces), hold the buttons and
+        // log each hand's magazine every server frame. See akimboTrial.
+        if ( tokens[0] == "akimbo" && tokens.size > 4 )
+        {
+            player = playerByNumber( int( tokens[1] ) );
+            weapon = tokens[4];
+            for ( i = 5; i < tokens.size; i++ )
+                weapon = weapon + " " + tokens[i];
+            if ( isDefined( player ) )
+                player thread akimboTrial( weapon, int( tokens[2] ), float( tokens[3] ) );
+            else
+                codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
+            continue;
+        }
         if ( tokens[0] == "turretwatch" && tokens.size > 1 )
         {
             level thread turretWatch( float( tokens[1] ) );
@@ -393,4 +408,76 @@ nearestZombie( origin )
         }
     }
     return best;
+}
+
+// "akimbo" trial: the held weapon's per-hand magazines ("right" is hand 0, the
+// retained machine; "left" is hand 1) sampled every frame while a test client
+// holds <mask>. C1 fires an akimbo hand 0 on 0x100000 and hand 1 on 0x1
+// (0x41b1f0), and never aims down the sights while dual wielding (0x418140),
+// so a trial shows which hand each trigger fires, whether a semi-automatic hand
+// pins after one round, and whether ADS was entered.
+akimboTrial( weapon, mask, seconds )
+{
+    self endon( "disconnect" );
+    for ( tries = 0; !isAlive( self ) && tries < 30; tries++ )
+        wait 0.5;
+    if ( !isAlive( self ) )
+        return;
+    if ( weapon == "held" )
+    {
+        // Whichever owned weapon dual wields (a loadout akimbo secondary).
+        foreach ( candidate in self getWeaponsListPrimaries() )
+        {
+            if ( self isDualWielding() )
+                break;
+            codolPrintLn( "CoDOL akimbo: candidate '" + candidate + "'" );
+            self switchToWeapon( candidate );
+            for ( tries = 0; self getCurrentWeapon() != candidate && tries < 40; tries++ )
+                wait 0.1;
+            wait 1.5;
+        }
+        weapon = self getCurrentWeapon();
+        self giveMaxAmmo( weapon );
+    }
+    // A test client that is not a combat bot only runs commands while a
+    // scripted hold is active; hold the stance-held bit (0x1000, no weapon
+    // or movement effect) so the switch below is actually executed.
+    self codol_botPressButtons( 4096, 4 );
+    if ( self getCurrentWeapon() != weapon )
+    {
+        self giveWeapon( weapon );
+        self giveMaxAmmo( weapon );
+        // setSpawnWeapon raises it directly: a test client's own command names
+        // no weapon until the server has published one for it.
+        self setSpawnWeapon( weapon );
+        self switchToWeapon( weapon );
+        codolPrintLn( "CoDOL akimbo: gave '" + weapon + "' has " + self hasWeapon( weapon ) + " current '" +
+            self getCurrentWeapon() + "'" );
+        for ( tries = 0; self getCurrentWeapon() != weapon && tries < 40; tries++ )
+            wait 0.1;
+        wait 1.5;
+    }
+    codolPrintLn( "CoDOL akimbo: " + self.name + " weapon '" + self getCurrentWeapon() + "' dual " +
+        self isDualWielding() + " right " + self getCurrentWeaponClipAmmo( "right" ) + " left " +
+        self getCurrentWeaponClipAmmo( "left" ) + " mask " + mask + " for " + seconds );
+    self codol_botPressButtons( mask, seconds );
+    start = getTime();
+    lastRight = -1;
+    lastLeft = -1;
+    lastAds = -1;
+    while ( getTime() - start < seconds * 1000 + 500 )
+    {
+        right = self getCurrentWeaponClipAmmo( "right" );
+        left = self getCurrentWeaponClipAmmo( "left" );
+        ads = self playerADS();
+        if ( right != lastRight || left != lastLeft || ads != lastAds )
+            codolPrintLn( "CoDOL akimbo: t " + ( getTime() - start ) + " right " + right + " left " + left +
+                " ads " + ads );
+        lastRight = right;
+        lastLeft = left;
+        lastAds = ads;
+        wait 0.05;
+    }
+    codolPrintLn( "CoDOL akimbo: done right " + self getCurrentWeaponClipAmmo( "right" ) + " left " +
+        self getCurrentWeaponClipAmmo( "left" ) );
 }
