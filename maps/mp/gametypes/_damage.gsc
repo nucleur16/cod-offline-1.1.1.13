@@ -404,6 +404,26 @@ updateMeansOfDeath( sWeapon, sMeansOfDeath )
 	return sMeansOfDeath;
 }
 
+// CoDOL: the killcam silencer. Marketplace item muz_silencerkillcam loads
+// weaponattach silencer_kcam, whose only gameplay override writes "nokillcam"
+// into the composed weapon's script-mod string (C1 weapon +a24, the string
+// C1's GetWeaponScriptMods 0x535c10 returns). A kill with such a weapon does
+// not show the victim his killcam; the final killcam, which every player
+// watches once the match is decided, is left alone.
+weaponSuppressesKillcam( sWeapon )
+{
+	if ( !isDefined( sWeapon ) || sWeapon == "" || sWeapon == "none" )
+		return false;
+
+	mods = strTok( getWeaponScriptMods( sWeapon ), " ,;" );
+	for ( i = 0; i < mods.size; i++ )
+	{
+		if ( mods[i] == "nokillcam" )
+			return true;
+	}
+	return false;
+}
+
 Callback_PlayerKilled( eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, psOffsetTime, deathAnimDuration )
 {
 	// Kills are otherwise invisible in the console: the vendor obituary goes
@@ -679,6 +699,7 @@ PlayerKilled_internal( eInflictor, attacker, victim, iDamage, sMeansOfDeath, sWe
 	obituary( victim, attacker, sWeapon, sMeansOfDeath );
 
 	doKillcam = false;
+	killcamSilenced = false;
 
 	lifeId = getNextLifeId();
 	
@@ -727,6 +748,9 @@ PlayerKilled_internal( eInflictor, attacker, victim, iDamage, sMeansOfDeath, sWe
 			addAttacker( victim, attacker, eInflictor, sWeapon, iDamage, (0,0,0), vDir, sHitLoc, psOffsetTime, sMeansOfDeath );
 
 		doKillcam = true;
+		killcamSilenced = weaponSuppressesKillcam( sWeapon );
+		if ( killcamSilenced )
+			println( "kill: killcam silenced for " + victim.name + " (" + sWeapon + ")" );
 		handleNormalDeath( lifeId, attacker, eInflictor, sWeapon, sMeansOfDeath );
 		victim thread maps\mp\gametypes\_missions::playerKilled( eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, sPrimaryWeapon, sHitLoc, attacker.modifiers );
 		
@@ -837,7 +861,7 @@ PlayerKilled_internal( eInflictor, attacker, victim, iDamage, sMeansOfDeath, sWe
 	postDeathDelay = ( getTime() - victim.deathTime ) / 1000;
 	self.respawnTimerStartTime = gettime();
 
-	if ( !(isDefined( victim.cancelKillcam) && victim.cancelKillcam) && doKillcam && level.killcam && game[ "state" ] == "playing" && !victim isUsingRemote() && !level.showingFinalKillcam )
+	if ( !(isDefined( victim.cancelKillcam) && victim.cancelKillcam) && doKillcam && !killcamSilenced && level.killcam && game[ "state" ] == "playing" && !victim isUsingRemote() && !level.showingFinalKillcam )
 	{
 		livesLeft = !( getGametypeNumLives() && !victim.pers[ "lives" ] );
 		timeUntilSpawn = maps\mp\gametypes\_playerlogic::TimeUntilSpawn( true );
