@@ -22,9 +22,15 @@
 	  - maps\mp\_killstreakrules::isKillstreakAllowed / killstreakStart /
 	    killstreakStop are dropped: _killstreakrules does not exist here and
 	    the one local port of it (maps\mp\killstreaks\_rcbomb_rules) asserts
-	    name == "rcbomb_mp", so it is not a dog counterpart.  The concurrent
-	    dog-set limit is still enforced by level.dog_count_max_at_once and the
-	    "dogs done"/"dogs leaving" notifies.
+	    name == "rcbomb_mp", so it is not a dog counterpart.  T5's "dog" rule
+	    (createRule( "dog", 1, 1 ): one dog set in the whole match at a time)
+	    is kept in useKillstreakDogs as the level.dogs check: level.dogs is
+	    defined exactly from dog_manager_spawn_dogs until the alive tracker's
+	    dog_manager_delete_dogs, which is where T5 calls killstreakStop.
+	    Without it a second call reset level.dogs under the first set and
+	    started a second alive tracker; whichever deleted first left
+	    level.dogs undefined and the other died at "size cannot be applied to
+	    undefined" in dog_manager_delete_dogs.
 	  - maps\mp\gametypes\_battlechatter_mp::onKillstreakUsed and
 	    maps\mp\gametypes\_hardpoints::playKillstreakStartDialog are dropped:
 	    no counterpart, and _killstreaks::usedKillstreak already plays the
@@ -215,6 +221,13 @@ dog_test_watcher()
 
 useKillstreakDogs(lifeId)
 {
+	// T5 _killstreakrules "dog" rule: one set at a time (see header).
+	if ( isdefined( level.dogs ) )
+	{
+		self iPrintLnBold( &"KILLSTREAKS_DOGS_NOT_AVAILABLE" );
+		return false;
+	}
+
 	self notify( "called_in_the_dogs" );
 	level notify( "called_in_the_dogs" );
 	team = self.team;
