@@ -33,7 +33,11 @@ init()
 	maps\mp\equipment\_tabun::init();
 	level.scavenger_altmode = true;
 	level.scavenger_secondary = true;
-	
+	// _codol_equiptest's "gpstrack" verb, which is shared with zombies and
+	// so cannot name this module.
+	level.codolEquipTestGpsTrack = ::codolGpsTrackPickup;
+	level.codolEquipTestDropWeapon = ::dropWeaponForDeath;
+
 	// 0 is not valid
 	level.maxPerPlayerExplosives = max( getIntProperty( "scr_maxPerPlayerExplosives", 2 ), 1 );
 	level.riotShieldXPBullets = getIntProperty( "scr_riotShieldXPBullets", 15 );
@@ -850,6 +854,68 @@ watchPickup()
 	{
 		player.tookWeaponFrom[ weapname ] = undefined;
 	}
+
+	// CoDOL: a GPS/tracker weapon shows its new holder to its owner.
+	if ( isdefined( self.owner ) )
+		player thread codolGpsTrackPickup( self.owner, weapname );
+}
+
+// CoDOL: the GPS attachments. Weaponattach gps_base (marketplace items
+// gps_default and sra_tracker) sets definition byte +0xbf4, which C1 reads
+// only from a script query (0x542140; codol_weaponHasGPS here). The items
+// promise: SF_WEAPON_GPS_DEFAULT_DESC "an enemy player who picks this weapon
+// up is shown on your radar"; SF_WEAPON_SRA_TRACKER_DESC "after you respawn
+// you can see on the radar where the enemy who picked this weapon up is,
+// unaffected by any perk".
+// The mark is C1's own compass mechanism (0x4348c2..0x43492b): an enemy with
+// ability 24 modRadarArrow is drawn when the viewer has a paint perk (37/38)
+// OR the enemy has ability 40 modOwnerTrack, and modRadarArrow's value N
+// restricts it to client N-1. modOwnerTrack is the "unaffected by any perk"
+// half: the owner needs no perk of his own. Recon paint writes the same
+// value slot, so while the holder is painted the painter's mark wins and the
+// track resumes when it lapses. The track ends when the holder dies, no
+// longer has the weapon, or the owner leaves.
+codolGpsTrackPickup( owner, weapon )
+{
+	if ( !isPlayer( self ) || !isPlayer( owner ) || owner == self )
+		return;
+	if ( level.teamBased && isDefined( owner.team ) && isDefined( self.team ) && owner.team == self.team )
+		return;
+	if ( !codol_weaponHasGPS( weapon ) )
+		return;
+
+	self notify( "codol_gps_track" );
+	self endon( "codol_gps_track" );
+	self endon( "disconnect" );
+
+	self.codolGpsTrackOwner = owner;
+	self setAbilityModifier( "modOwnerTrack" );
+	codolPrintLn( "CoDOL gps: " + owner.name + " tracks " + self.name + " (" + weapon + ")" );
+
+	reason = undefined;
+	for ( ;; )
+	{
+		if ( !isDefined( owner ) )
+			reason = "owner left";
+		else if ( !isReallyAlive( self ) )
+			reason = "holder died";
+		else if ( !self hasWeapon( weapon ) )
+			reason = "weapon gone";
+		if ( isDefined( reason ) )
+			break;
+		if ( !self maps\mp\perks\_perkfunctions::isPainted() )
+		{
+			self setAbilityModifier( "modRadarArrow" );
+			self setAbilityModifierValue( "modRadarArrow", owner getEntityNumber() + 1 );
+		}
+		self waittill_any_timeout( 0.25, "death" );
+	}
+
+	self.codolGpsTrackOwner = undefined;
+	self unsetAbilityModifier( "modOwnerTrack" );
+	if ( !self maps\mp\perks\_perkfunctions::isPainted() )
+		self unsetAbilityModifier( "modRadarArrow" );
+	codolPrintLn( "CoDOL gps: track of " + self.name + " ended (" + reason + ")" );
 }
 
 itemRemoveAmmoFromAltModes()

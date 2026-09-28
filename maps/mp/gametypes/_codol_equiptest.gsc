@@ -25,6 +25,14 @@
 //       level.zombies, facing it (a target for a thrown lethal).
 //   set scr_codol_equiptest "state <clientnum>"
 //       prints a client's alive flag, session state, health and team.
+//   set scr_codol_equiptest "weapflags <clientnum>" | "weapflags name <weapon>"
+//       prints the C1 attachment flags (thermal, gps, idlock, hpbt) and
+//       script mods of each held weapon, or of one weapon name.
+//   set scr_codol_equiptest "gpsdrop <owner> <picker> <weapon>"
+//       <owner> drops <weapon> through the death-drop path and <picker>
+//       picks it up with the use button (multiplayer only).
+//   set scr_codol_equiptest "gpstrack <holder> [<owner> <weapon>]"
+//       starts a GPS track directly, or reports a holder's track abilities.
 //
 // Deliberately free of maps\mp\killstreaks and maps\mp\gametypes\_class so
 // the zombies chain can include it without compiling the multiplayer one.
@@ -98,6 +106,71 @@ watchDvar()
                 codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
             continue;
         }
+        // "weapflags <client>": each held weapon with the C1 script-only
+        // definition flags and script mods.
+        // "weapflags name <weapon ...>": the same for one weapon name.
+        if ( tokens[0] == "weapflags" && tokens.size > 2 && tokens[1] == "name" )
+        {
+            weapon = tokens[2];
+            for ( i = 3; i < tokens.size; i++ )
+                weapon = weapon + " " + tokens[i];
+            weaponFlagsLine( "name", weapon );
+            continue;
+        }
+        if ( tokens[0] == "weapflags" && tokens.size > 1 )
+        {
+            player = playerByNumber( int( tokens[1] ) );
+            if ( isDefined( player ) )
+                player weaponFlagsReport();
+            else
+                codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
+            continue;
+        }
+        // "gpstrack <holder> <owner> <weapon ...>": give <holder> the weapon
+        // (a composed name may contain spaces) and start the GPS track that a
+        // pickup of <owner>'s dropped weapon starts; "gpstrack <holder>" alone
+        // reports the holder's two compass abilities.
+        if ( tokens[0] == "gpstrack" && tokens.size > 1 )
+        {
+            holder = playerByNumber( int( tokens[1] ) );
+            if ( !isDefined( holder ) )
+            {
+                codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
+                continue;
+            }
+            if ( tokens.size > 3 && isDefined( level.codolEquipTestGpsTrack ) )
+            {
+                owner = playerByNumber( int( tokens[2] ) );
+                weapon = tokens[3];
+                for ( i = 4; i < tokens.size; i++ )
+                    weapon = weapon + " " + tokens[i];
+                if ( isDefined( owner ) )
+                {
+                    holder giveWeapon( weapon );
+                    holder switchToWeapon( weapon );
+                    holder thread [[ level.codolEquipTestGpsTrack ]]( owner, weapon );
+                }
+            }
+            wait 0.3;
+            codolPrintLn( "CoDOL equiptest: gpstrack " + holder.name + " (" + holder getEntityNumber() + ", " + holder.team +
+                ") alive " + isAlive( holder ) + " ownerTrack " + holder hasAbilityModifier( "modOwnerTrack" ) +
+                " radarArrow " + holder hasAbilityModifier( "modRadarArrow" ) );
+            continue;
+        }
+        // "gpsdrop <owner> <picker> <weapon ...>": <owner> drops <weapon>
+        // through the death-drop path, then <picker> stands on it and holds
+        // use, so the real pickup notify drives the GPS track.
+        if ( tokens[0] == "gpsdrop" && tokens.size > 3 && isDefined( level.codolEquipTestDropWeapon ) )
+        {
+            owner = playerByNumber( int( tokens[1] ) );
+            picker = playerByNumber( int( tokens[2] ) );
+            weapon = tokens[3];
+            for ( i = 4; i < tokens.size; i++ )
+                weapon = weapon + " " + tokens[i];
+            if ( isDefined( owner ) && isDefined( picker ) )
+                level thread gpsDropTrial( owner, picker, weapon );
+            continue;
+        }
         if ( tokens[0] == "turretwatch" && tokens.size > 1 )
         {
             level thread turretWatch( float( tokens[1] ) );
@@ -148,6 +221,46 @@ keepPerk( perkName )
         self waittill( "spawned_player" );
         wait 0.1;
     }
+}
+
+gpsDropTrial( owner, picker, weapon )
+{
+    owner giveWeapon( weapon );
+    owner giveMaxAmmo( weapon );
+    owner switchToWeapon( weapon );
+    wait 1.0;
+    owner.lastDroppableWeapon = weapon;
+    owner.droppedDeathWeapon = undefined;
+    owner [[ level.codolEquipTestDropWeapon ]]( undefined );
+    wait 0.5;
+    items = getEntArray( "weapon_" + weapon, "classname" );
+    codolPrintLn( "CoDOL equiptest: gpsdrop " + owner.name + " dropped '" + weapon + "' items " + items.size );
+    if ( !items.size )
+        return;
+    for ( i = 0; i < 12; i++ )
+    {
+        if ( !isDefined( items[0] ) || !isAlive( picker ) )
+            break;
+        picker setOrigin( items[0].origin );
+        picker codol_botPressButtons( 40, 0.5 );   // 0x08 activate | 0x20 use-reload
+        wait 0.25;
+    }
+    codolPrintLn( "CoDOL equiptest: gpsdrop " + picker.name + " has it " + picker hasWeapon( weapon ) +
+        " ownerTrack " + picker hasAbilityModifier( "modOwnerTrack" ) +
+        " radarArrow " + picker hasAbilityModifier( "modRadarArrow" ) );
+}
+
+weaponFlagsReport()
+{
+    foreach ( weapon in self GetWeaponsListAll() )
+        weaponFlagsLine( self.name, weapon );
+}
+
+weaponFlagsLine( label, weapon )
+{
+    codolPrintLn( "CoDOL equiptest: weapflags " + label + " '" + weapon + "' thermal " + weaponHasThermalScope( weapon ) +
+        " gps " + codol_weaponHasGPS( weapon ) + " idlock " + codol_weaponHasIDLock( weapon ) +
+        " hpbt " + codol_weaponHasHPBT( weapon ) + " mods '" + getWeaponScriptMods( weapon ) + "'" );
 }
 
 // "turretwatch <seconds>": twice a second, every live turret in level.turrets
