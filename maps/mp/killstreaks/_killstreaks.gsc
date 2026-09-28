@@ -497,9 +497,15 @@ killstreakUsePressed( selectedID )
 
 	if ( !isDefined( activation ) || !activation.awarded )
 		self usedKillstreak( streakName, awardXp );
-	self shuffleKillStreaksFILO( streakName, kID );	
-	self giveOwnedKillstreakItem();		
-	if ( streakName == "mortar_mp" )
+	self shuffleKillStreaksFILO( streakName, kID );
+	// A use can finish after its owner died (codolActivateReward); the spawn
+	// re-grants the remaining rewards, so do not hand weapons to a corpse.
+	if ( isAlive( self ) )
+		self giveOwnedKillstreakItem();
+	// mortar_pro_mp runs the base handler (catalogue column22), so it must be
+	// committed too; the literal name left a pro mortar's three confirmed
+	// targets consumed without a single shell.
+	if ( getKillstreakBaseRef( streakName ) == "mortar_mp" )
 		self maps\mp\killstreaks\_mortar::commitMortar( lifeId, kID );
 
 	return ( true );
@@ -652,6 +658,9 @@ killstreakUseWaiter()
 		self.pers["lastEarnedStreak"] = undefined;
 		
     self.codolPendingRewardID = undefined;
+    // Identity of this waiter's life. A reward use that outlives it (see
+    // codolActivateReward) must not release a later life's lock or weapon.
+    self.codolRewardLife = spawnStruct();
     self.codolRewardActivationBusy = false;
     self.codolRewardSuppressWeapon = undefined;
     for ( action = 1; action <= 5; action++ )
@@ -697,43 +706,93 @@ killstreakUseWaiter()
 
 // Both routes share one lock acquired before yielding: native weapon_change
 // and pressing another slot whose activation weapon is already equipped.
+//
+// The reward's use function runs on its own thread, not on this waiter's.
+// Both callers end on "finish_death", and a use can outlive its owner's life:
+// the RC-XD ride continues after its driver is killed (T5 rule, see
+// _rcbomb::givePlayerControlOfRCBomb) and returns only at "rcbomb_done", and
+// a ride's laptop wait (initRideKillstreak) or a location selection yields
+// across the death. Run on this stack, "finish_death" killed the use midway:
+// the RC-XD never released its _rcbomb_rules claim (updateRulesOnEnd), so the
+// reward stayed owned but was refused for the rest of the match, and the
+// global/team slot leaked for everyone; an AC-130 or ride could leave its
+// level lock or disabled usability behind the same way. T5 has the same
+// shape: _hardpoints::useKillstreak threads triggerKillstreak with no death
+// endon and settles ownership in removeKillstreakWhenDone (disconnect only).
+// This waiter still waits for the use, so the lock keeps its meaning.
 codolActivateReward( selectedID )
 {
     if ( isDefined( self.codolRewardActivationBusy ) && self.codolRewardActivationBusy )
         return;
     self.codolRewardActivationBusy = true;
-        waittillframeend;
-        reward = self codolRewardByID( selectedID );
-        if ( !isAlive( self ) || !isDefined( reward ) )
-        {
-            self.codolRewardActivationBusy = false;
-            return;
-        }
+    use = spawnStruct();
+    use.done = false;
+    self thread codolRunRewardUse( selectedID, self.codolRewardLife, use );
+    // A use killed by its own endon (the airdrop marker's "grenade_fire" or
+    // "death") never finishes; killstreakUseWaiterMarkerRestart and
+    // "finish_death" end this waiter and the next one resets the lock.
+    while ( !use.done )
+        self waittill( "codol_reward_use_done" );
+}
+
+codolRunRewardUse( selectedID, life, use )
+{
+    self endon( "disconnect" );
+
+    waittillframeend;
+    reward = self codolRewardByID( selectedID );
+    if ( isAlive( self ) && isDefined( reward ) )
+    {
         streakName = reward.streakName;
         self.codolRewardSuppressWeapon = getKillstreakWeapon( streakName );
         result = self killstreakUsePressed( selectedID );
 
-		//no force switching weapon for ridable killstreaks
-		if ( !isRideKillstreak( streakName ) || !result )
-		{
-			if ( !self hasWeapon( self getLastWeapon() ) )
-				self switchToWeapon( self getFirstPrimaryWeapon() );			
-			else
-				self switchToWeapon( self getLastWeapon() );
-		}
+        // The weapon belongs to the life that raised the reward weapon. After
+        // a death (or a respawn during a ride) the spawn loadout owns it.
+        if ( isAlive( self ) && self codolIsRewardLife( life ) )
+        {
+            //no force switching weapon for ridable killstreaks
+            // Put away only the reward's own weapon: a player who already
+            // switched (which cancels a mortar selection) keeps that choice,
+            // and a reward weapon is never the one switched back to - that
+            // raised the tablet again and re-entered the selection.
+            current = self getCurrentWeapon();
+            if ( ( !isRideKillstreak( streakName ) || !result ) &&
+                 ( current == "none" || current == getKillstreakWeapon( streakName ) ) )
+            {
+                lastWeapon = self getLastWeapon();
+                if ( !self hasWeapon( lastWeapon ) || isDefined( level.killstreakWeapons[lastWeapon] ) )
+                    self switchToWeapon( self getFirstPrimaryWeapon() );
+                else
+                    self switchToWeapon( lastWeapon );
+            }
 
-		// give time to switch to the near weapon; when the weapon is none (such as during a "disableWeapon()" period
-		// re-enabling the weapon immediately does a "weapon_change" to the killstreak weapon we just used.  In the case that 
-		// we have two of that killstreak, it immediately uses the second one
-		if ( self getCurrentWeapon() == "none" )
-		{
-			while ( self getCurrentWeapon() == "none" )
-				wait ( 0.05 );
+            // give time to switch to the near weapon; when the weapon is none (such as during a "disableWeapon()" period
+            // re-enabling the weapon immediately does a "weapon_change" to the killstreak weapon we just used.  In the case that
+            // we have two of that killstreak, it immediately uses the second one
+            if ( self getCurrentWeapon() == "none" )
+            {
+                while ( isAlive( self ) && self getCurrentWeapon() == "none" )
+                    wait ( 0.05 );
 
-			waittillframeend;
-		}
-    self codolCleanupRewardWeapons();
-    self.codolRewardActivationBusy = false;
+                waittillframeend;
+            }
+            self codolCleanupRewardWeapons();
+        }
+    }
+
+    // Release only this life's lock; a new life's waiter has already reset it.
+    if ( self codolIsRewardLife( life ) )
+        self.codolRewardActivationBusy = false;
+    use.done = true;
+    self notify( "codol_reward_use_done" );
+}
+
+codolIsRewardLife( life )
+{
+    if ( !isDefined( life ) || !isDefined( self.codolRewardLife ) )
+        return !isDefined( life ) && !isDefined( self.codolRewardLife );
+    return self.codolRewardLife == life;
 }
 
 

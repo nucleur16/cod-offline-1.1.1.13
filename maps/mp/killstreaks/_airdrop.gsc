@@ -285,6 +285,7 @@ tryUseAirdrop( lifeId, kID, dropType )
 	{
 		level.littleBirds++;
 		self thread watchDisconnect();
+		self thread watchMarkerDeath();
 	}
 	
 	result = self beginAirdropViaMarker( lifeId, kID, dropType );
@@ -313,6 +314,24 @@ watchDisconnect()
 	self waittill( "disconnect" );
 	decrementLittleBirdCount();
 	return;
+}
+
+// beginAirdropViaMarker ends on "death", which also ends tryUseAirdrop before
+// it can give back the little bird it reserved above. The reward is kept (it
+// was never thrown), but each death with the marker in hand leaked one bird;
+// after three, every airdrop was refused with MP_AIR_SPACE_TOO_CROWDED for the
+// rest of the match. A marker thrown as its holder dies raises "grenade_fire"
+// in the same frame; that drop then owns the bird, so wait out the frame.
+watchMarkerDeath()
+{
+	self endon( "markerDetermined" );
+	self endon( "grenade_fire" );
+	self endon( "disconnect" );
+
+	self waittill( "death" );
+	waittillframeend;
+	self notify( "markerDetermined" );
+	decrementLittleBirdCount();
 }
 
 

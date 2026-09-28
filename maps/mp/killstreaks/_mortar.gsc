@@ -40,6 +40,7 @@ tryUseMortar( lifeId, kID )
     self thread cancelOn( selection, "joined_spectators" );
     self thread cancelOnGameEnd( selection );
     self thread cancelOnEMP( selection );
+    self thread cancelOnWeaponChange( selection );
     // Keep all endons off the persistent killstreak-use waiter's call stack.
     self thread selectTargets( selection );
     self waittill( "codol_mortar_selection_done" );
@@ -88,6 +89,25 @@ cancelOnGameEnd( selection )
     self endon( "codol_mortar_selection_done" );
     level waittill( "game_ended" );
     level thread finishSelection( self, selection, false );
+}
+
+// T5 _airsupport::endSelectionThink also ends the selection on
+// "weapon_change": a player who puts the tablet away without confirming
+// three targets must not keep an open selection, which refused every other
+// reward ("a location selection is already open") and held the dispatcher's
+// activation lock until the next death.
+cancelOnWeaponChange( selection )
+{
+    self endon( "codol_mortar_selection_done" );
+    tablet = maps\mp\killstreaks\_killstreaks::getKillstreakWeapon( "mortar_mp" );
+    for ( ;; )
+    {
+        self waittill( "weapon_change", newWeapon );
+        if ( isDefined( newWeapon ) && newWeapon == tablet )
+            continue;
+        level thread finishSelection( self, selection, false );
+        return;
+    }
 }
 
 cancelOnEMP( selection )

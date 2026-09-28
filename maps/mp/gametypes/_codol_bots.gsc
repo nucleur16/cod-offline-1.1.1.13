@@ -180,6 +180,54 @@ watchKillstreakTestDvar()
                     player thread testSuicide();
             continue;
         }
+        // "state <client>": the reward dispatcher's per-player state, for
+        // death-cleanup checks. "confirm <client>": one map-selector
+        // confirmation 600 units ahead, as the C1 selector sends it.
+        // "give <client> <streak>": own a reward without using it; switch to
+        // its weapon ("switch") to use it through the real dispatcher.
+        // "activate <client>": raise the newest reward's weapon and deliver
+        // its weapon_change to the player's own use waiter, as a C1 client's
+        // weapon selection does (bots never name the weapon in a usercmd).
+        if ( ( tiTokens[0] == "state" || tiTokens[0] == "confirm" || tiTokens[0] == "give" || tiTokens[0] == "activate" || tiTokens[0] == "kill" || tiTokens[0] == "freeze" ) && tiTokens.size > 1 )
+        {
+            foreach ( player in level.players )
+                if ( player getEntityNumber() == int( tiTokens[1] ) )
+                {
+                    if ( tiTokens[0] == "give" && tiTokens.size > 2 )
+                        player maps\mp\killstreaks\_killstreaks::giveKillstreak( tiTokens[2] );
+                    if ( tiTokens[0] == "state" || tiTokens[0] == "give" )
+                        player reportRewardState();
+                    if ( tiTokens[0] == "activate" )
+                        player thread activateTopReward( tiTokens[2], tiTokens[3] );
+                    if ( tiTokens[0] == "freeze" )
+                        player freezeControls( int( tiTokens[2] ) != 0 );
+                    if ( tiTokens[0] == "kill" && isAlive( player ) )
+                    {
+                        // "kill <client>": end an "activate"d subject's
+                        // protection and kill it through the damage callback.
+                        codolPrintLn( "CoDOL killstreak test: kill " + player.name );
+                        player.maxhealth = 100;
+                        player.health = 100;
+                        player doDamage( 1000, player.origin + ( 0, 0, 40 ), level.players[0] );
+                    }
+                    if ( tiTokens[0] == "confirm" )
+                    {
+                        location = player.origin + anglesToForward( ( 0, player.angles[1], 0 ) ) * 600;
+                        codolPrintLn( "CoDOL killstreak test: " + player.name + " confirms " + location + " (selecting " + isDefined( player.selectingLocation ) + ")" );
+                        player notify( "confirm_location", location, player.angles[1] );
+                    }
+                }
+            continue;
+        }
+        // "rcsafe <0|1>": 1 stops an RC-XD driver's trigger detonating the
+        // car (T5 level.disableRCBombTrigger), so a bot's ride lasts until
+        // its timer; bots hold attack.
+        if ( tiTokens[0] == "rcsafe" && tiTokens.size > 1 )
+        {
+            level.disableRCBombTrigger = int( tiTokens[1] ) != 0;
+            codolPrintLn( "CoDOL killstreak test: rcsafe " + level.disableRCBombTrigger );
+            continue;
+        }
         if ( tiTokens[0] == "ti" && tiTokens.size > 1 )
         {
             tiPlayer = undefined;
@@ -246,6 +294,51 @@ watchKillstreakTestDvar()
         if ( tokens.size > 2 && tokens[2] == "place" )
             target thread placeCarriedKillstreak();
     }
+}
+
+activateTopReward( streakName, hold )
+{
+    self endon( "disconnect" );
+    reward = self.pers["killstreaks"][0];
+    foreach ( candidate in self.pers["killstreaks"] )
+        if ( isDefined( streakName ) && candidate.streakName == streakName )
+            reward = candidate;
+    if ( !isDefined( reward ) )
+        return;
+    weapon = maps\mp\killstreaks\_killstreaks::getKillstreakWeapon( reward.streakName );
+    // Bots fight; keep the subject alive until "kill".
+    self.maxhealth = 100000;
+    self.health = 100000;
+    // Rides and placements refuse an airborne user; bots jump.
+    self freezeControls( true );
+    for ( tries = 0; tries < 60 && !self isOnGround(); tries++ )
+        wait 0.1;
+    // setSpawnWeapon raises the native weapon_change the use waiter consumes.
+    self setSpawnWeapon( weapon );
+    wait 0.1;
+    // "hold": stay frozen (no fire, no movement) until "freeze <client> 0";
+    // a bot otherwise fires the tablet it was just handed.
+    if ( !isDefined( hold ) )
+        self freezeControls( false );
+    codolPrintLn( "CoDOL killstreak test: " + self.name + " activated " + reward.streakName + " holding " + self getCurrentWeapon() );
+}
+
+reportRewardState()
+{
+    owned = "";
+    foreach ( reward in self.pers["killstreaks"] )
+        owned = owned + reward.streakName + "#" + reward.kID + " ";
+    claim = "none";
+    if ( isDefined( self.codolRCClaim ) )
+        claim = "released " + self.codolRCClaim.released;
+    rule = "";
+    if ( isDefined( level.codolRCRule ) )
+        rule = " rcRule " + level.codolRCRule.cur + "/" + level.codolRCRule.max;
+    codolPrintLn( "CoDOL killstreak test: state " + self.name + " alive " + isAlive( self ) +
+        " weapon " + self getCurrentWeapon() + " busy " + ( isDefined( self.codolRewardActivationBusy ) && self.codolRewardActivationBusy ) +
+        " usingRemote " + isDefined( self.usingRemote ) + " selecting " + isDefined( self.selectingLocation ) +
+        " remoteCtl " + self isRemoteControlling() + " rcClaim " + claim + rule +
+        " littleBirds " + level.littleBirds + " owned [" + owned + "]" );
 }
 
 confirmTestLocation()

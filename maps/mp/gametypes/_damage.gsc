@@ -1667,6 +1667,13 @@ finishPlayerDamageWrapper( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeat
 			eAttacker = self;
 			eInflictor = eAttacker;
 		}
+		// IW4's native damage always supplies an inflictor (the attacker for
+		// bullets). Script doDamage and some CoDOL damage sources pass only an
+		// attacker; PlayerKilled_internal then read eInflictor.primaryWeapon
+		// on undefined, the faux death of a player on a remote (RC-XD,
+		// predator, AC-130) aborted before "death", and the player lived on.
+		if ( !isDefined( eInflictor ) )
+			eInflictor = eAttacker;
 		
 		assert( isDefined( eAttacker ) );
 		assert( isDefined( eInflictor ) );
