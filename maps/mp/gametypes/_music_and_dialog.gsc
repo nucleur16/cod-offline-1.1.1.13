@@ -425,11 +425,16 @@ musicController()
 
 					if ( !level.hardcoreMode )
 					{
-						winningPlayer playLocalSound( game["music"]["winning_" + winningPlayer.pers["team"] ] );
+						// A player still connecting or spectating has no allies/axis
+						// pers["team"]; the undefined cast killed this thread in FFA.
+						if ( isDefined( winningPlayer ) && isDefined( winningPlayer.pers["team"] ) && isDefined( game["music"]["winning_" + winningPlayer.pers["team"]] ) )
+							winningPlayer playLocalSound( game["music"]["winning_" + winningPlayer.pers["team"] ] );
 						
 						foreach ( otherPlayer in level.players )
 						{
 							if ( otherPlayer == winningPlayer )
+								continue;
+							if ( !isDefined( otherPlayer.pers["team"] ) || !isDefined( game["music"]["losing_" + otherPlayer.pers["team"]] ) )
 								continue;
 								
 							otherPlayer playLocalSound( game["music"]["losing_" + otherPlayer.pers["team"] ] );							

@@ -1540,6 +1540,10 @@ Callback_StartGameType()
 	level.activePlayers = [];
 
 	makeDvarServerInfo( "ui_scorelimit", 0 );
+	// C1 scorebar_hd reads this; see updateUIDMKillScore(). makeDvarServerInfo
+	// never resets an existing dvar, so set it explicitly as well.
+	makeDvarServerInfo( "ui_DMKillScore", 1 );
+	setDvar( "ui_DMKillScore", 1 );
 	makeDvarServerInfo( "ui_allow_classchange", getDvar( "ui_allow_classchange" ) );
 	makeDvarServerInfo( "ui_allow_teamchange", 1 );
 	setDvar( "ui_allow_teamchange", 1 );
@@ -1586,6 +1590,8 @@ Callback_StartGameType()
 
 	
 	[[level.onStartGameType]]();
+	// Gametypes register their kill value in onStartGameType (dm: 50).
+	updateUIDMKillScore();
 	
 	// this must be after onstartgametype for scr_showspawns to work when set at start of game
 	/#
@@ -1648,7 +1654,35 @@ updateUIScoreLimit()
 		{
 			setDvar( "ui_scorelimit", getWatchedDvar( "winlimit" ) );
 		}
+		updateUIDMKillScore();
 	}
+}
+
+
+// C1's scorebar (patch_common_mp scorebar_hd, hud_scorebar_topbar and the
+// statements the other scorebar items share with it) shows a free-for-all
+// player int( player( "score" ) / dvarint( "ui_DMKillScore" ) ) and divides
+// that by dvarint( "ui_scorelimit" ): FFA progress is counted in kills, team
+// modes use team( "score" ) and multiply the kill term by zero. IW4 never
+// had ui_DMKillScore, so it was never set, the division was by zero and the
+// FFA score and bar read 0 all match while the match itself ran normally.
+updateUIDMKillScore()
+{
+	killScore = 0;
+	if ( isDefined( level.scoreInfo ) && isDefined( level.scoreInfo["kill"] ) )
+		killScore = int( maps\mp\gametypes\_rank::getScoreInfoValue( "kill" ) );
+	if ( killScore <= 0 )
+		killScore = 1;
+	setDvar( "ui_DMKillScore", killScore );
+
+	if ( level.teamBased )
+		return;
+
+	// The same bar needs the limit in kills too; round up so the bar is full
+	// exactly when the score limit ends the match.
+	scoreLimit = getWatchedDvar( "scorelimit" );
+	if ( scoreLimit > 0 )
+		setDvar( "ui_scorelimit", int( ( scoreLimit + killScore - 1 ) / killScore ) );
 }
 
 
