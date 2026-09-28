@@ -724,8 +724,16 @@ ac130_spawn()
 
 	ac130CameraModel linkTo( level.ac130, "tag_player", ( 0, 0, 32 ), ( -25, 0, 0 ) );
 	level.ac130.cameraModel = ac130CameraModel;
-	
-	level.ac130player = level.players[0];
+
+	// CoDOL: IW4 ends this with "level.ac130player = level.players[0];", a
+	// leftover that was harmless there because no player exists 0.05 s into
+	// a fresh map. Here players and bots persist across map changes and
+	// restarts, so it named a player as the gunner of an AC-130 nobody had
+	// called, and tryUseAC130 (isDefined( level.ac130player )) refused every
+	// AC-130 for the rest of the match with MP_AIR_SPACE_TOO_CROWDED.
+	// MEASURED 2026-09-27: isDefined( level.ac130player ) was already true
+	// before any reward was used, and "ac130" was refused. The gunner is
+	// assigned by setAC130Player() when a player actually calls it in.
 }
 
 

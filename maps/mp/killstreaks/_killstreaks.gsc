@@ -395,7 +395,7 @@ deadlyKillstreak( streakName )
 // already expect, so no control flow changes.
 killstreakRefused( streakName, reason )
 {
-	println( "CoDOL killstreak: " + streakName + " refused: " + reason );
+	codolPrintLn( "CoDOL killstreak: " + streakName + " refused: " + reason );
 	return false;
 }
 

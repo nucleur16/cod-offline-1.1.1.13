@@ -46,10 +46,14 @@ isCombatBot( player )
 }
 
 // Test hook for rewards bots never earn on their own:
-//   set scr_codol_usekillstreak "<clientnum> <streakRef> [place]"
+//   set scr_codol_usekillstreak "<clientnum> <streakRef> [place|throw|locate]"
 // runs level.killstreakFuncs[streakRef] on that player, exactly as a use
 // would. "place" also sends the carry-placement notify a second later, for
-// carried rewards (sentry, sam_turret) that wait on +attack. Empty = off.
+// carried rewards (sentry, sam_turret) that wait on +attack. "throw" throws
+// an airdrop marker, "locate" answers a map location selection. Other verbs:
+// "capture <clientnum>" picks up the nearest landed care package, "crates"
+// prints the care-package weight table, "ents" the live reward entities,
+// "switch <clientnum> [weapon]" reports a scripted weapon switch. Empty = off.
 watchKillstreakTestDvar()
 {
     level endon( "game_ended" );
@@ -123,6 +127,52 @@ watchKillstreakTestDvar()
             continue;
         }
         tiTokens = strTok( request, " " );
+        // "switch <client> [weapon]": report the inventory, then switch to
+        // the named weapon (default: the first other weapon owned).
+        if ( tiTokens[0] == "switch" && tiTokens.size > 1 )
+        {
+            foreach ( player in level.players )
+                if ( player getEntityNumber() == int( tiTokens[1] ) )
+                {
+                    list = player getWeaponsListAll();
+                    names = "";
+                    foreach ( w in list )
+                        names = names + w + ", ";
+                    want = undefined;
+                    if ( tiTokens.size > 2 )
+                        want = tiTokens[2];
+                    else
+                        foreach ( w in list )
+                            if ( w != player getCurrentWeapon() && !isDefined( want ) )
+                                want = w;
+                    codolPrintLn( "CoDOL killstreak test: " + player.name + " holds " + player getCurrentWeapon() + " owns " + names );
+                    player thread logWeaponChanges( 5 );
+                    ok = player switchToWeapon( want );
+                    codolPrintLn( "CoDOL killstreak test: switchToWeapon( " + want + " ) returned " + ok );
+                }
+            continue;
+        }
+        // "crates": the care-package weight table and ten draws from it.
+        if ( tiTokens[0] == "crates" )
+        {
+            thread testCrateTable();
+            continue;
+        }
+        // "ents": what killstreak entities exist right now.
+        if ( tiTokens[0] == "ents" )
+        {
+            thread reportStreakEntities();
+            continue;
+        }
+        // "capture <client>": walk that player to the nearest landed care
+        // package and hold use on it, as a player picking it up would.
+        if ( tiTokens[0] == "capture" && tiTokens.size > 1 )
+        {
+            foreach ( player in level.players )
+                if ( player getEntityNumber() == int( tiTokens[1] ) )
+                    player thread testCaptureCrate();
+            continue;
+        }
         if ( tiTokens[0] == "suicide" && tiTokens.size > 1 )
         {
             foreach ( player in level.players )
@@ -165,6 +215,13 @@ watchKillstreakTestDvar()
             codolPrintLn( "CoDOL killstreak test: client " + clientNum + " is not alive" );
             continue;
         }
+        // Rides and carried rewards refuse an airborne user; bots jump.
+        target freezeControls( true );
+        for ( tries = 0; tries < 60 && !target isOnGround(); tries++ )
+            wait 0.1;
+        target freezeControls( false );
+        target.maxhealth = 100000;
+        target.health = 100000;
         codolPrintLn( "CoDOL killstreak test: " + target.name + " (" + target.team + ") uses " + streakRef );
         // Own it first, as a real use does: several rewards (the helicopter
         // queue, for one) reshuffle the owner's pers["killstreaks"] list and
@@ -173,9 +230,177 @@ watchKillstreakTestDvar()
         // reward record and passes its lifeId and kID (airdrops validate the
         // kID) instead of calling the handler bare.
         target maps\mp\killstreaks\_killstreaks::giveKillstreak( streakRef );
+        // "throw": use a thrown-marker reward (the airdrops) the way a player
+        // does - switch to the activation weapon, which the real use waiter
+        // turns into the use, then pull the trigger until it is thrown.
+        if ( tokens.size > 2 && tokens[2] == "throw" )
+        {
+            target thread throwKillstreakMarker( streakRef );
+            continue;
+        }
         target thread maps\mp\killstreaks\_killstreaks::killstreakUsePressed();
+        // "locate": answer a location selection (airstrikes, mortar) the way
+        // the C1 map selector does, 600 units ahead of the player.
+        if ( tokens.size > 2 && tokens[2] == "locate" )
+            target thread confirmTestLocation();
         if ( tokens.size > 2 && tokens[2] == "place" )
             target thread placeCarriedKillstreak();
+    }
+}
+
+confirmTestLocation()
+{
+    self endon( "disconnect" );
+    self.maxhealth = 100000;
+    self.health = 100000;
+    for ( i = 0; i < 10 && !isDefined( self.selectingLocation ); i++ )
+        wait 0.3;
+    wait 1.0;
+    location = self.origin + anglesToForward( ( 0, self.angles[1], 0 ) ) * 600;
+    codolPrintLn( "CoDOL killstreak test: " + self.name + " confirms location " + location + " (selecting " + isDefined( self.selectingLocation ) + ")" );
+    self notify( "confirm_location", location, self.angles[1] );
+}
+
+reportStreakEntities()
+{
+    classes = [];
+    classes[classes.size] = "script_vehicle";
+    classes[classes.size] = "misc_turret";
+    classes[classes.size] = "script_model";
+    classes[classes.size] = "grenade";
+    classes[classes.size] = "rocket";
+    line = "";
+    foreach ( c in classes )
+        line = line + c + "=" + getEntArray( c, "classname" ).size + " ";
+    line = line + "helis=" + isDefined( level.chopper ) + " ac130player=" + isDefined( level.ac130player ) + " empTeam allies/axis " + level.teamEMPed["allies"] + "/" + level.teamEMPed["axis"] + " nukeIncoming " + isDefined( level.nukeIncoming ) + " sr71 allies/axis " + isDefined( level.sr71TeamUntil["allies"] ) + "/" + isDefined( level.sr71TeamUntil["axis"] ) + " uav allies/axis " + level.activeUAVs["allies"] + "/" + level.activeUAVs["axis"] + " counter " + level.activeCounterUAVs["allies"] + "/" + level.activeCounterUAVs["axis"];
+    codolPrintLn( "CoDOL killstreak test: entities " + line );
+}
+
+testCrateTable()
+{
+    foreach ( dropType, crateTypes in level.crateTypes )
+    {
+        line = "";
+        foreach ( crateType, crateWeight in crateTypes )
+            line = line + crateType + "=" + crateWeight + " ";
+        codolPrintLn( "CoDOL killstreak test: crate table " + dropType + " max " + level.crateMaxVal[dropType] + ": " + line );
+    }
+    draws = "";
+    for ( i = 0; i < 10; i++ )
+        draws = draws + randomInt( 125 ) + ":" + maps\mp\killstreaks\_airdrop::getRandomCrateType( "airdrop" ) + " ";
+    codolPrintLn( "CoDOL killstreak test: crate draws " + draws );
+}
+
+testCaptureCrate()
+{
+    self endon( "disconnect" );
+    self endon( "death" );
+    best = undefined;
+    foreach ( crate in getEntArray( "care_package", "targetname" ) )
+    {
+        if ( !isDefined( crate.crateType ) )
+            continue;
+        if ( !isDefined( best ) || distance( crate.origin, self.origin ) < distance( best.origin, self.origin ) )
+            best = crate;
+    }
+    if ( !isDefined( best ) )
+    {
+        codolPrintLn( "CoDOL killstreak test: no landed care package to capture" );
+        return;
+    }
+    self.maxhealth = 100000;
+    self.health = 100000;
+    crateType = best.crateType;
+    self setOrigin( best.origin + ( 48, 0, 0 ) );
+    self setPlayerAngles( vectorToAngles( best.origin - ( self.origin + ( 0, 0, 60 ) ) ) );
+    codolPrintLn( "CoDOL killstreak test: " + self.name + " (" + self.team + ") captures " + crateType + " crate at " + best.origin + " owner " + best.owner.name );
+    for ( i = 0; i < 12 && isDefined( best ); i++ )
+    {
+        self codol_botPressButtons( 40, 1.0 );
+        wait 1.0;
+    }
+    codolPrintLn( "CoDOL killstreak test: capture by " + self.name + " done, crate gone " + !isDefined( best ) );
+}
+
+throwKillstreakMarker( streakRef )
+{
+    self endon( "disconnect" );
+    self endon( "death" );
+    weapon = maps\mp\killstreaks\_killstreaks::getKillstreakWeapon( streakRef );
+    // Keep the test subject alive through the throw; bots fight each other.
+    self.maxhealth = 100000;
+    self.health = 100000;
+    wait 0.5;
+    codolPrintLn( "CoDOL killstreak test: " + self.name + " before switch holds " + self getCurrentWeapon() + ", has " + weapon + " " + self hasWeapon( weapon ) + " ammo " + self getAmmoCount( weapon ) );
+    self thread logWeaponChanges( 8 );
+    self switchToWeapon( weapon );
+    for ( i = 0; i < 20 && self getCurrentWeapon() != weapon; i++ )
+        wait 0.05;
+    // A test client's scripted switch does not always complete (no client
+    // names the weapon in its usercmd); raise it directly and run the same
+    // activation the use waiter runs on a weapon_change to it.
+    if ( self getCurrentWeapon() != weapon )
+    {
+        self setSpawnWeapon( weapon );
+        wait 0.1;
+        if ( isDefined( self.pers["killstreaks"][0] ) )
+            self thread maps\mp\killstreaks\_killstreaks::codolActivateReward( self.pers["killstreaks"][0].kID );
+        wait 0.3;
+    }
+    codolPrintLn( "CoDOL killstreak test: " + self.name + " holds " + self getCurrentWeapon() + " for " + streakRef + " (wants " + weapon + ")" );
+    self thread logMarkerThrow( weapon );
+    for ( attempt = 1; attempt <= 6; attempt++ )
+    {
+        if ( isDefined( self.codolMarkerThrown ) )
+            return;
+        self codol_botPressButtons( 1, 0.4 );
+        wait 1.5;
+    }
+    if ( !isDefined( self.codolMarkerThrown ) )
+        codolPrintLn( "CoDOL killstreak test: " + self.name + " never threw " + weapon + " (holding " + self getCurrentWeapon() + ")" );
+}
+
+logWeaponChanges( seconds )
+{
+    self endon( "disconnect" );
+    self endon( "death" );
+    self notify( "logWeaponChanges" );
+    self endon( "logWeaponChanges" );
+    endTime = getTime() + seconds * 1000;
+    while ( getTime() < endTime )
+    {
+        self waittill( "weapon_change", newWeapon );
+        codolPrintLn( "CoDOL killstreak test: " + self.name + " weapon_change " + newWeapon + " at " + getTime() );
+    }
+}
+
+trackMarker( weapname )
+{
+    self endon( "death" );
+    self endon( "explode" );
+    start = getTime();
+    for ( i = 0; i < 40; i++ )
+    {
+        codolPrintLn( "CoDOL killstreak test: " + weapname + " t+" + ( getTime() - start ) + " at " + self.origin );
+        self common_scripts\utility::waittill_any_timeout( 2.5, "stationary", "missile_stuck" );
+    }
+}
+
+logMarkerThrow( weapon )
+{
+    self endon( "disconnect" );
+    self.codolMarkerThrown = undefined;
+    for ( ;; )
+    {
+        self waittill( "grenade_fire", grenade, weapname );
+        if ( weapname != weapon )
+            continue;
+        self.codolMarkerThrown = true;
+        codolPrintLn( "CoDOL killstreak test: " + self.name + " threw " + weapname + " from " + self.origin );
+        grenade thread trackMarker( weapname );
+        grenade waittill( "explode", position );
+        codolPrintLn( "CoDOL killstreak test: " + weapname + " exploded at " + position );
+        return;
     }
 }
 

@@ -164,18 +164,30 @@ getRandomCrateType( dropType )
 {
 	value = randomInt( level.crateMaxVal[dropType] );
 
+	// CoDOL: pick the SMALLEST cumulative weight above the draw instead of
+	// the first one met. init() accumulates the weights while it rewrites
+	// the array it iterates, and that write copies the array (copy-on-write,
+	// cscr_variable.cpp CopyArray re-links the entries in reverse), so this
+	// loop walks the entries in the opposite order to the one the running
+	// totals were built in. MEASURED 2026-09-27 (scr_codol_usekillstreak
+	// "crates"): the table iterated nuke=0 emp=115 ac130=114 ... ammo=17,
+	// and the first-above-draw rule returned "emp" for every draw, "ac130"
+	// for every emergency airdrop. The smallest total above the draw is the
+	// same interval whatever the iteration order.
 	selectedCrateType = undefined;
+	selectedWeight = undefined;
 	foreach ( crateType, crateWeight in level.crateTypes[dropType] )
 	{
-		if ( !crateWeight )
+		if ( !crateWeight || crateWeight <= value )
 			continue;
 
-		selectedCrateType = crateType;
-		
-		if ( crateWeight > value )
-			break;			
+		if ( !isDefined( selectedWeight ) || crateWeight < selectedWeight )
+		{
+			selectedCrateType = crateType;
+			selectedWeight = crateWeight;
+		}
 	}
-	
+
 	return( selectedCrateType );
 }
 
@@ -319,7 +331,7 @@ beginAirdropViaMarker( lifeId, kID, dropType )
 		wait ( 0.05 );	
 
 	currentWeapon = self getCurrentWeapon();
-	
+
 	if ( isAirdropMarker( currentWeapon ) )
 		airdropMarkerWeapon = currentWeapon;
 	else
@@ -382,9 +394,11 @@ watchAirDropMarker( dropType, kID )
 	
 		if ( !isDefined( self.pers["kIDs_valid"][kID] ) )
 		{
+			codolPrintLn( "CoDOL airdrop: " + dropType + " marker from " + self.name + " discarded, reward " + kID + " already consumed" );
 			airDropWeapon delete();
 			continue;
 		}
+		codolPrintLn( "CoDOL airdrop: " + dropType + " marker thrown by " + self.name );
 			
 		self.pers["kIDs_valid"][kID] = undefined;
 
@@ -415,6 +429,7 @@ airDropMarkerActivate( dropType )
 	self endon( "airDropMarkerActivate" );
 	self waittill( "explode", position );
 	owner = self.owner;
+	codolPrintLn( "CoDOL airdrop: " + dropType + " marker exploded at " + position );
 
 	if ( !isDefined( owner ) )
 		return;
@@ -515,6 +530,13 @@ createAirDropCrate( owner, dropType, crateType, startPos )
 	dropCrate.friendlyModel setModel( "com_plasticcase_friendly" );
 	dropCrate.enemyModel = spawn( "script_model", startPos );
 	dropCrate.enemyModel setModel( "com_plasticcase_enemy" );
+	// CoDOL: these two only colour the crate per team; its collision is the
+	// cloned brush below. Left solid (contents 0x2080 from the xmodel), they
+	// sit exactly inside the falling crate once deleteOnOwnerDeath links
+	// them, and the server's item physics frees a crate whose move starts
+	// solid - every emergency-airdrop crate vanished 234 ms into its fall.
+	dropCrate.friendlyModel notSolid();
+	dropCrate.enemyModel notSolid();
 
 	dropCrate.friendlyModel thread deleteOnOwnerDeath( dropCrate );
 	dropCrate.friendlyModel thread crateModelTeamUpdater( dropCrate.team );
@@ -690,6 +712,7 @@ dropTheCrate( dropPoint, dropType, lbHeight, dropImmediately, crateOverride, sta
 	self waittill ( "drop_crate" );
 	
 	dropCrate Unlink();
+	codolPrintLn( "CoDOL airdrop: " + dropType + " crate (" + crateType + ") released at " + dropCrate.origin );
 	dropCrate PhysicsLaunchServer( (0,0,0), (randomInt(5),randomInt(5),randomInt(5)) );		
 	dropCrate thread physicsWaiter( dropType, crateType );	
 }
@@ -698,6 +721,7 @@ dropTheCrate( dropPoint, dropType, lbHeight, dropImmediately, crateOverride, sta
 physicsWaiter( dropType, crateType )
 {
 	self waittill( "physics_finished" );
+	codolPrintLn( "CoDOL airdrop: " + dropType + " crate (" + crateType + ") landed at " + self.origin );
 
 	self thread [[ level.crateFuncs[ dropType ][ crateType ] ]]( dropType );
 	level thread dropTimeOut( self, self.owner );
@@ -821,7 +845,13 @@ doFlyBy( owner, dropSite, dropYaw, dropType, heightAdjustment )
 	pathGoal = pathGoal + vector_multiply( anglestoforward( (0,dropYaw,0) ), -50 );
 
 	chopper = heliSetup( owner, pathStart, pathGoal );
-	
+	codolPrintLn( "CoDOL airdrop: " + dropType + " helicopter spawned=" + isDefined( chopper ) + " start " + pathStart + " goal " + pathGoal );
+	if ( !isDefined( chopper ) )
+	{
+		decrementLittleBirdCount();
+		return;
+	}
+
 	chopper endon( "death" );
 	
 	chopper.dropType = dropType;
@@ -837,12 +867,14 @@ doFlyBy( owner, dropSite, dropYaw, dropType, heightAdjustment )
 	chopper SetYawSpeed( 180, 180, 180, .3 );
 	
 	chopper waittill ( "goal" );
+	codolPrintLn( "CoDOL airdrop: " + dropType + " helicopter reached drop point " + chopper.origin );
 	wait( .10 );
 	chopper notify( "drop_crate" );
 	chopper setvehgoalpos( pathEnd, 1 );
 	chopper Vehicle_SetSpeed( 300, 75 );
 	chopper.leaving = true;
 	chopper waittill ( "goal" );
+	codolPrintLn( "CoDOL airdrop: " + dropType + " helicopter left at " + chopper.origin );
 	chopper notify( "leaving" );
 	chopper trimActiveBirdList();
 	decrementLittleBirdCount();
@@ -1293,6 +1325,7 @@ killstreakCrateThink( dropType )
 			}
 		}		
 	
+		codolPrintLn( "CoDOL airdrop: crate (" + self.crateType + ") captured by " + player.name );
 		player playLocalSound( "ammo_crate_use" );
 		player thread maps\mp\killstreaks\_killstreaks::giveKillstreak( self.crateType, false, false, self.owner );
 
@@ -1556,6 +1589,14 @@ isAirdropMarker( weaponName )
 		case "airdrop_mega_marker_mp":
 		case "airdrop_sentry_marker_mp":
 		case "airdrop_sam_marker_mp":
+		// The pro rewards run the base airdrop callbacks but are thrown with
+		// their own catalogue activation weapons (mp/coKillstreakStatsTable.csv
+		// column 13); without these the pro marker was never recognised and
+		// beginAirdropViaMarker refused the use.
+		case "killstreak_pro_airdrop_marker_mp":
+		case "killstreak_pro_airdrop_mega_marker_mp":
+		case "killstreak_pro_airdrop_sentry_marker_mp":
+		case "killstreak_pro_airdrop_sam_marker_mp":
 			return true;
 		default:
 			return false;
@@ -1590,9 +1631,25 @@ deleteUseEnt( owner )
 airdropDetonateOnStuck()
 {
 	self endon ( "death" );
-	
-	self waittill( "missile_stuck" );
-	
+	self endon ( "explode" );
+
+	// CoDOL: C1 ships every airdrop marker (airdrop_marker_mp,
+	// airdrop_mega_marker_mp, airdrop_sentry_marker_mp,
+	// airdrop_sam_marker_mp and the killstreak_pro_* twins) as a NON-timed
+	// grenade: WeaponDef +0xbe2 timedDetonation 0, +0x7b4 projExplosion 0
+	// (grenade), +0x7c8 stickiness 0 (smoke_grenade_mp has 1 / 5). C1
+	// G_FireGrenade 0x53094b..0x53095b arms no fuse for a non-timed grenade
+	// thrown by a client; it comes to rest with only the native
+	// "stationary" notify. MEASURED 2026-09-27: a thrown airdrop_marker_mp
+	// settled 0.9 s after the throw and was still lying there 50 s later,
+	// so IW4's wait for "explode" never ended and no helicopter was called. T5 _supplydrop.gsc (doSupplyDrop /
+	// waitTillNotMoving) starts the delivery when the marker settles; do
+	// the same, and detonate it so the engine's own grenade explosion event
+	// makes C1 play the marker's projExplosionEffect
+	// (smoke/signal_smoke_airdrop, the red smoke) and airDropMarkerActivate
+	// receives "explode" with the resting position.
+	self waittill_any( "missile_stuck", "stationary" );
+
 	self detonate();
 }
 
