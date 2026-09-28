@@ -754,15 +754,18 @@ PlayerKilled_internal( eInflictor, attacker, victim, iDamage, sMeansOfDeath, sWe
 		deathAnimDuration = (victim PlayerForceDeathAnim( eInflictor, sMeansOfDeath, sWeapon, sHitLoc, vDir ));
 	}
 
+	// CoDOL: clonePlayer returns undefined for a player with no model (no
+	// server DObj; PlayerCmd_ClonePlayer skips the clone instead of crashing
+	// in DObjGetTree), so every consumer of the body checks for it.
 	victim.body = victim clonePlayer( deathAnimDuration );
 
 	if ( isFauxDeath )
 		victim PlayerHide();
 
-	if ( victim isOnLadder() || victim isMantling() || !victim isOnGround() || isDefined( victim.nuked ) )
+	if ( isDefined( victim.body ) && ( victim isOnLadder() || victim isMantling() || !victim isOnGround() || isDefined( victim.nuked ) ) )
 		victim.body startRagDoll();
 
-	if ( !isDefined( victim.switching_teams ) )
+	if ( isDefined( victim.body ) && !isDefined( victim.switching_teams ) )
 		thread maps\mp\gametypes\_deathicons::addDeathicon( victim.body, victim, victim.team, 5.0 );
 
 	thread delayStartRagdoll( victim.body, sHitLoc, vDir, sWeapon, eInflictor, sMeansOfDeath );
