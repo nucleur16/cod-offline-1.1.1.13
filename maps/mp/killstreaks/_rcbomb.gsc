@@ -212,11 +212,19 @@ givePlayerControlOfRCBomb()
 
     self waittill( "rcbomb_done" );
     self thread maps\mp\killstreaks\_rcbomb_presentation::fadeOut();
-    self restoreWeaponAfterRide();
     // Releases the death/respawn gates; a player killed during the ride
     // now proceeds through waitAndSpawnClient ("stopped_using_remote").
+    // Clear BEFORE restoring the weapon: IW4 clearUsingRemote switches to
+    // getLastWeapon() when the current weapon is "none" or a killstreak
+    // weapon. Run after restoreWeaponAfterRide it found the switch back in
+    // progress (current "none"), and with no last weapon it called
+    // switchToWeapon( "none" ): "unknown weapon 'none'" on this line at the
+    // end of every ride, or it overrode the T5 switch back to the previous
+    // weapon. restoreWeaponAfterRide (T5 changeWeaponAfterKillstreak) must
+    // be the last word on the weapon.
     if ( isDefined( self.usingRemote ) && self.usingRemote == "rcbomb" )
         self maps\mp\_utility::clearUsingRemote();
+    self restoreWeaponAfterRide();
 }
 
 // T5 _hardpoints::removeKillstreakWhenDone (takeWeapon) and

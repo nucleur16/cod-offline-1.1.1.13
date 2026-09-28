@@ -1754,8 +1754,17 @@ clearUsingRemote()
 	
 	curWeapon = self getCurrentWeapon();
 	
+	// CoDOL: a ride that already took its killstreak weapon and started the
+	// switch back (_rcbomb::restoreWeaponAfterRide) reaches here with the
+	// current weapon "none" AND getLastWeapon() "none"; IW4's unconditional
+	// switchToWeapon( "none" ) then raised "unknown weapon 'none'" at the end
+	// of every RC-XD ride. Only switch to a last weapon the player still has.
 	if( curWeapon == "none" || isKillstreakWeapon( curWeapon ) )
-		self switchToWeapon( self Getlastweapon() );
+	{
+		lastWeapon = self Getlastweapon();
+		if ( isDefined( lastWeapon ) && lastWeapon != "none" && self hasWeapon( lastWeapon ) )
+			self switchToWeapon( lastWeapon );
+	}
 	
 	self freezeControlsWrapper( false );
 	
