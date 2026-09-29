@@ -873,12 +873,12 @@ checkKillstreakReward( streakCount )
 		if ( isDefined( self.pers["lastEarnedStreak"] ) && killStreaks[streakName] <= killStreaks[self.pers["lastEarnedStreak"]] )
 			continue;
 
+		// As in IW4, a reward is earned once per life: the rollover entries
+		// setKillstreaks lists past the top threshold are never awarded, so a
+		// count past the last reward does not start the rewards over.
 		if ( isSubStr( streakName, "-rollover" ) )
-			useStreakName = strTok( streakName, "-" )[0];
-		else
-		{
-			useStreakName = streakName;
-		}
+			continue;
+		useStreakName = streakName;
 		
 		if ( self tryGiveKillstreak( useStreakName, int(max( actualVal, streakCount )) ) )
 		{
@@ -1095,20 +1095,15 @@ codolRewardForSlot( slot )
     return undefined;
 }
 
-// The award list advances through base thresholds again at each rollover,
-// while C1's preview targets remain the base thresholds from setKillstreaks.
-// Publish progress within that span; keep the unbounded count in pers for
-// awarding and duplicate ownership. An exact threshold stays filled while
-// its reward awaits use and clears as soon as that reward is consumed.
+// Rewards are earned once per life (no rollover), so C1's streak bar shows
+// the life's kill count and stays full past the top threshold instead of
+// wrapping back to 0. rewardConsumed is kept for callers; using a reward
+// does not reset the count.
 codolPublishStreakHudCount( streakCount, rewardConsumed )
 {
 	hudCount = streakCount;
-	if ( isDefined( self.codolStreakSpan ) && self.codolStreakSpan > 0 && streakCount > 0 )
-	{
-		hudCount = streakCount % self.codolStreakSpan;
-		if ( hudCount == 0 && ( !isDefined( rewardConsumed ) || !rewardConsumed ) )
-			hudCount = self.codolStreakSpan;
-	}
+	if ( isDefined( self.codolStreakSpan ) && self.codolStreakSpan > 0 && hudCount > self.codolStreakSpan )
+		hudCount = self.codolStreakSpan;
 	self setKillstreak( hudCount );
 }
 
