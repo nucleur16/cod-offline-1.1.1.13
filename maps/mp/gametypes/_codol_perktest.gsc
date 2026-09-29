@@ -29,6 +29,10 @@ init()
 
 watchDvar()
 {
+	// Test hooks (they can set health, freeze players and grant rewards) only run
+	// on a developer server; the live server runs developer 0.
+	if ( getDvarInt( "developer" ) <= 0 )
+		return;
     level endon( "game_ended" );
     for ( ;; )
     {

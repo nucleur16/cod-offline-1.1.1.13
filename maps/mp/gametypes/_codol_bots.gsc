@@ -56,6 +56,10 @@ isCombatBot( player )
 // "switch <clientnum> [weapon]" reports a scripted weapon switch. Empty = off.
 watchKillstreakTestDvar()
 {
+	// Test hooks (they can set health, freeze players and grant rewards) only run
+	// on a developer server; the live server runs developer 0.
+	if ( getDvarInt( "developer" ) <= 0 )
+		return;
     level endon( "game_ended" );
     setDvar( "scr_codol_usekillstreak", "" );
     for ( ;; )
