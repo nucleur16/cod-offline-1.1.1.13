@@ -92,6 +92,23 @@ watchKillstreakTestDvar()
                 }
             continue;
         }
+        // "xp <clientnum> <amount>" exercises the ordinary human rank path
+        // without relying on bot kills or the retired _dev.gsc switches.
+        if ( hurtTokens[0] == "xp" && hurtTokens.size > 2 )
+        {
+            xpAmount = int( hurtTokens[2] );
+            if ( xpAmount > 0 && xpAmount <= 50000 )
+                foreach ( player in level.players )
+                    if ( player getEntityNumber() == int( hurtTokens[1] ) &&
+                         ( !isDefined( player.isbot ) || !player.isbot ) )
+                    {
+                        oldXP = player maps\mp\gametypes\_rank::getRankXP();
+                        player maps\mp\gametypes\_rank::giveRankXP( "challenge", xpAmount );
+                        codolPrintLn( "CoDOL rank test: " + player.name + " requested " + xpAmount +
+                            " XP, stored " + oldXP + " -> " + player maps\mp\gametypes\_rank::getRankXP() );
+                    }
+            continue;
+        }
         if ( request == "gates" )
         {
             foreach ( player in level.players )
