@@ -68,10 +68,22 @@ selectTargets( selection )
         // following IW4 airstrike altitude and T5 mortar ground tracing.
         sky = bulletTrace( level.mapCenter + (0,0,1000000), level.mapCenter, false, undefined );
         top = (position[0], position[1], sky["position"][2] - 514);
-        ground = bulletTrace( top, top - (0,0,100000), false, undefined );
+        // Trace to well below the lowest spawn, not a fixed distance: on maps
+        // whose outer sky brush sits near z=105000 (mp_underpass: 104986) a
+        // 100000-unit trace ended ~4000 units above the ground, every
+        // confirmation was dropped and the selector stayed open until ESC.
+        floor = level.spawnMins[2];
+        if ( level.mapCenter[2] < floor )
+            floor = level.mapCenter[2];
+        ground = bulletTrace( top, (top[0], top[1], floor - 20000), false, undefined );
+        // Every confirmation the player sees accepted counts, as in T5
+        // selectMortarLocation. A point with no ground below it (off the
+        // playable area) is still a target, at the map-centre height.
         if ( ground["fraction"] >= 1 )
-            continue;
-        selection.targets[selection.targets.size] = ground["position"];
+            target = (position[0], position[1], level.mapCenter[2]);
+        else
+            target = ground["position"];
+        selection.targets[selection.targets.size] = target;
     }
     level thread finishSelection( self, selection, true );
 }
