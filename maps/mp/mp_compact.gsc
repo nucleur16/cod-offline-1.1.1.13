@@ -6,7 +6,7 @@ main()
 	maps\createart\mp_compact_art::main();
 	maps\mp\mp_compact_fx::main();
 
-	maps\mp\_destructible_dlc::main(); // call before _load
+	// _load initializes the supported whole-entity destructible handler.
 	maps\mp\_load::main();
 	
 	maps\mp\_compass::setupMiniMap( "compass_map_mp_compact" );
