@@ -6,8 +6,7 @@ main()
 	maps\createart\mp_abandon_art::main();
 	maps\mp\mp_abandon_fx::main();
 
-	maps\mp\_destructible_dlc2::main(); // call before _load
-	maps\mp\_destructible_dlc::main(); // call before _load
+	// _load initializes the supported whole-entity destructible handler.
 	maps\mp\_load::main();
 
 	maps\mp\_compass::setupMiniMap( "compass_map_mp_abandon" );

@@ -5,8 +5,7 @@ main()
 	maps\createart\mp_trailerpark_art::main();
 	maps\mp\mp_trailerpark_fx::main();
 
-	maps\mp\_destructible_dlc2::main(); // call before _load
-	maps\mp\_destructible_dlc::main(); // call before _load
+	// _load initializes the supported whole-entity destructible handler.
 
 	maps\mp\_load::main();
 	
