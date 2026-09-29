@@ -418,11 +418,21 @@ giveRankXP( type, value )
 		println( "rank: " + self.name + " " + type + " +" + value + " XP (xpScale " + level.xpScale
 			+ ", total " + oldxp + " -> " + self getRankXP() + ")" );
 
+	oldRankId = self.pers["rank"];
 	if ( self rankingEnabled() && updateRank( oldxp ) )
 		self thread updateRankAnnounceHUD();
 
-	// Set the XP stat after any unlocks, so that if the final stat set gets lost the unlocks won't be gone for good.
+	// Publish the XP stat before refreshing C1's live unlock flags.
 	self syncXPStat();
+	if ( self.pers["rank"] > oldRankId )
+	{
+		// Task 30 only copies flags at first login. Repair the live C1 flag set
+		// after the XP write, including every rank crossed by this award.
+		unlockFlags = "1";
+		for ( rankId = 2; rankId <= self.pers["rank"] + 1; rankId++ )
+			unlockFlags += "|" + rankId;
+		self setClientDvar( "cg_unlockFlagSet", unlockFlags );
+	}
 
 	if ( !level.hardcoreMode )
 	{
