@@ -1648,7 +1648,16 @@ updateUIScoreLimit()
 		if ( !isRoundBased() || !isObjectiveBased() )
 		{
 			setDvar( "ui_scorelimit", getWatchedDvar( "scorelimit" ) );
-			thread checkScoreLimit();
+			if ( level.teamBased )
+				thread checkScoreLimit();
+			else
+			{
+				// FFA score checks require a player receiver. This thread runs on
+				// level, so a lowered limit otherwise waits for the next score.
+				leader = maps\mp\gametypes\_gamescore::getHighestScoringPlayer();
+				if ( isDefined( leader ) )
+					leader thread checkScoreLimit();
+			}
 		}
 		else
 		{
