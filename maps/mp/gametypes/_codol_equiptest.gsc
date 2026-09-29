@@ -91,8 +91,13 @@ watchDvar()
         {
             player = playerByNumber( int( tokens[1] ) );
             if ( isDefined( player ) )
+            {
+                team = "none";
+                if ( isDefined( player.team ) )
+                    team = player.team;
                 codolPrintLn( "CoDOL equiptest: state " + player.name + " alive " + isAlive( player ) + " session " +
-                    player.sessionstate + " health " + player.health + " maxhealth " + player.maxhealth + " team " + player.team );
+                    player.sessionstate + " health " + player.health + " maxhealth " + player.maxhealth + " team " + team );
+            }
             continue;
         }
         // "akimbo <client> <C1 button mask> <seconds> <weapon ...>": arm the
