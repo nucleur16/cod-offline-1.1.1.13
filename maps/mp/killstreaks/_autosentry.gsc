@@ -474,7 +474,7 @@ sentry_setCancelled()
 {
 	self.carriedBy forceUseHintOff();
 
-	self delete();
+	self sentry_delete();
 }
 
 
@@ -551,7 +551,7 @@ sentry_onCarrierDeath( carrier )
 	if ( self.canBePlaced )
 		self sentry_setPlaced();
 	else
-		self delete();
+		self sentry_delete();
 }
 
 
@@ -562,7 +562,7 @@ sentry_onCarrierDisconnect( carrier )
 
 	carrier waittill ( "disconnect" );
 	
-	self delete();
+	self sentry_delete();
 }
 
 sentry_onGameEnded( carrier )
@@ -572,7 +572,7 @@ sentry_onGameEnded( carrier )
 
 	level waittill ( "game_ended" );
 	
-	self delete();
+	self sentry_delete();
 }
 
 
@@ -651,6 +651,18 @@ addToTurretList( entNum )
 removeFromTurretList( entNum )
 {
 	level.turrets[entNum] = undefined;
+}
+
+
+// CoDOL: a turret deleted while carried (cancelled, dropped where it cannot
+// stand, owner gone, game over) never reaches sentry_handleDeath, whose
+// "death" wait dies with the entity, so its level.turrets slot kept a freed
+// entity that EMP and spawn-logic iterators then touched. Leave the list
+// first, without the destroyed-turret effects a "death" notify would play.
+sentry_delete()
+{
+	self removeFromTurretList( self getEntityNumber() );
+	self delete();
 }
 
 /* ============================
