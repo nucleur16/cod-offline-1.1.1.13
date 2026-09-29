@@ -132,12 +132,30 @@ setCarryingSentry( sentryGun, allowCancel )
 	
 	assert( isReallyAlive( self ) );
 	
+	// CoDOL: a placed turret picked up again (allowCancel false) is put back
+	// where it stood on cancel, instead of IW4's no-cancel carry.
+	restoreOrigin = undefined;
+	restoreAngles = undefined;
+	if ( !allowCancel )
+	{
+		restoreOrigin = sentryGun.origin;
+		restoreAngles = sentryGun.angles;
+	}
+
 	sentryGun sentry_setCarried( self );
 	
 	self _disableWeapon();
 
 	self notifyOnPlayerCommand( "place_sentry", "+attack" );
 	self notifyOnPlayerCommand( "cancel_sentry", "+actionslot 4" );
+	// C1 binds +actionslot 4 to key 7, a killstreak key, so IW4's cancel is
+	// undiscoverable there. The weapon-switch commands (keys 1/2/3 and the
+	// mouse wheel: weapnext, weapprev, weapalt) also cancel; with the weapon
+	// disabled they have nothing else to do.
+	self notifyOnPlayerCommand( "cancel_sentry", "weapnext" );
+	self notifyOnPlayerCommand( "cancel_sentry", "weapprev" );
+	self notifyOnPlayerCommand( "cancel_sentry", "weapalt" );
+	self thread sentry_carryHint( allowCancel );
 	
 	for ( ;; )
 	{
@@ -146,10 +164,21 @@ setCarryingSentry( sentryGun, allowCancel )
 		if ( result == "cancel_sentry" )
 		{
 			if ( !allowCancel )
-				continue;
+			{
+				// Put it back only where nobody now stands in it.
+				if ( !sentry_canRestore( restoreOrigin ) )
+					continue;
+				sentryGun.origin = restoreOrigin;
+				sentryGun.angles = restoreAngles;
+				sentryGun sentry_setPlaced();
+				self _enableWeapon();
+				self notify( "codol_sentry_carry_done" );
+				return true;
+			}
 				
 			sentryGun sentry_setCancelled();
 			self _enableWeapon();
+			self notify( "codol_sentry_carry_done" );
 			return false;
 		}
 
@@ -158,9 +187,47 @@ setCarryingSentry( sentryGun, allowCancel )
 			
 		sentryGun sentry_setPlaced();
 		self _enableWeapon();
+		self notify( "codol_sentry_carry_done" );
 
 		return true;
 	}
+}
+
+
+// The cancel hint, repeated while the carry lasts (placed, cancelled, put
+// back, death, game end). C1 ships no localized string naming these keys and
+// a HUD text element takes only localize keys, so this is a plain bold print;
+// C1 replaces [{command}] with the player's own binding when it draws it.
+sentry_carryHint( allowCancel )
+{
+	self endon( "disconnect" );
+	self endon( "death" );
+	self endon( "codol_sentry_carry_done" );
+	level endon( "game_ended" );
+
+	for ( ;; )
+	{
+		if ( allowCancel )
+			self iPrintLnBold( "Press ^3[{+actionslot 4}]^7 or ^3[{weapnext}]^7 to cancel" );
+		else
+			self iPrintLnBold( "Press ^3[{+actionslot 4}]^7 or ^3[{weapnext}]^7 to put the turret back" );
+		wait ( 4.0 );
+	}
+}
+
+
+sentry_canRestore( origin )
+{
+	if ( !isDefined( origin ) )
+		return false;
+	foreach ( player in level.players )
+	{
+		if ( player == self || !isReallyAlive( player ) )
+			continue;
+		if ( distance2D( player.origin, origin ) < 40 && abs( player.origin[2] - origin[2] ) < 72 )
+			return false;
+	}
+	return true;
 }
 
 
