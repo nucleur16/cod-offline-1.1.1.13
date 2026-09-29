@@ -650,9 +650,17 @@ giveLoadout( team, class, allowCopycat )
 	if ( level.dieHardMode )
 		self maps\mp\perks\_perks::givePerk( "specialty_pistoldeath" );
 	
+	// C1's class tables spell an empty deathstreak "none" (mp/classtable.csv
+	// classes 11+, mp/botclasstable.csv); without this it read as a streak of
+	// 0 deaths and every spawn gave perk "none" and queued a "none" splash.
+	if ( !isDefined( loadoutDeathStreak ) || loadoutDeathStreak == "none" || loadoutDeathStreak == "" )
+		loadoutDeathStreak = "specialty_null";
+
 	// only give the deathstreak for the initial spawn for this life.
 	if ( loadoutDeathStreak != "specialty_null" && getTime() == self.spawnTime )
 	{
+		// coPerkStatsTable column 6: deaths in a row that earn it (4 for all
+		// four C1 deathstreaks: Copycat, Painkiller, Martyrdom, Final Stand).
 		deathVal = int( tableLookup( "mp/coPerkStatsTable.csv", 1, loadoutDeathStreak, 6 ) );
 				
 		// Hardline Pro's modDeathstreakShift (PERKS_DESC_ROLLOVER: deaths
@@ -661,7 +669,9 @@ giveLoadout( team, class, allowCopycat )
 		// loadout will grant supply the shift from the table instead.
 		deathVal += self loadoutModifierDelta( "modDeathstreakShift", loadoutPerk1, loadoutPerk2, loadoutPerk3 );
 		
-		if ( self.pers["cur_death_streak"] == deathVal )
+		if ( deathVal <= 0 )
+			codolPrintLn( "CoDOL deathstreak: " + self.name + " " + loadoutDeathStreak + " has no death count in mp/coPerkStatsTable.csv; not granted" );
+		else if ( self.pers["cur_death_streak"] == deathVal )
 		{
 			self thread maps\mp\perks\_perks::givePerk( loadoutDeathStreak );
 			self thread maps\mp\gametypes\_hud_message::splashNotify( loadoutDeathStreak );
@@ -858,12 +868,32 @@ getPerkUpgrade( perkName )
 	return ( perkUpgrade );
 }
 
+// Last Stand (specialty_pistoldeath, item 3018) and its Pro
+// (specialty_laststandoffhand, 3036) have coPerkStatsTable rows 14/29, but C1's
+// mp/coMarketplaceItems.csv (patch_code_post_gfx_mp) marks both not offered
+// (column 6 = 0, as for the zm-only perks and Hacker; the other MP perks
+// have 1), and the user confirms CoDOL MP has no Last Stand perk.
+// Going down in CoDOL MP is only the Final Stand deathstreak.
+codolOfferedPerk( perkName )
+{
+	if ( perkName != "specialty_pistoldeath" && perkName != "specialty_laststandoffhand" )
+		return perkName;
+	codolPrintLn( "CoDOL perks: " + self.name + " loadout names " + perkName + ", which CoDOL MP does not offer; no perk" );
+	return "specialty_null";
+}
+
 loadoutAllPerks( loadoutEquipment, loadoutPerk1, loadoutPerk2, loadoutPerk3 )
 {
 	loadoutEquipment = maps\mp\perks\_perks::validatePerk( 1, loadoutEquipment );
 	loadoutPerk1 = maps\mp\perks\_perks::validatePerk( 1, loadoutPerk1 );
 	loadoutPerk2 = maps\mp\perks\_perks::validatePerk( 2, loadoutPerk2 );
 	loadoutPerk3 = maps\mp\perks\_perks::validatePerk( 3, loadoutPerk3 );
+
+	// A profile, class table or copied (Copycat) class can still name a perk
+	// C1 does not offer in multiplayer; it is replaced by no perk.
+	loadoutPerk1 = self codolOfferedPerk( loadoutPerk1 );
+	loadoutPerk2 = self codolOfferedPerk( loadoutPerk2 );
+	loadoutPerk3 = self codolOfferedPerk( loadoutPerk3 );
 
 	self maps\mp\perks\_perks::givePerk( loadoutEquipment );
 	self maps\mp\perks\_perks::givePerk( loadoutPerk1 );
@@ -1502,7 +1532,6 @@ isValidPerk3( refString )
 		case "specialty_localjammer":
 		case "specialty_heartbreaker":
 		case "specialty_detectexplosive":
-		case "specialty_pistoldeath":
 			return true;
 		default:
 			assertMsg( "Replacing invalid perk3: " + refString );

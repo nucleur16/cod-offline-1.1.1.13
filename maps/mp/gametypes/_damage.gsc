@@ -1728,6 +1728,22 @@ Callback_PlayerLastStand( eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon,
 	if ( level.teamBased && isDefined( attacker.team ) && attacker.team == self.team )
 		mayDoLastStand = false;
 
+	// CoDOL MP has no Last Stand perk: coMarketplaceItems.csv (patch_code_post_gfx_mp)
+	// marks specialty_pistoldeath 3018 and specialty_laststandoffhand 3036 as
+	// not offered (column 6 = 0), so _class.gsc never grants them. The only
+	// MP way down is the Final Stand deathstreak (4103, perk4 row 41), whose
+	// setFinalStand owns modPistolDeath, the ability the engine gates this
+	// callback on. Anything else that reaches here (a stale script ability)
+	// dies instead of taking IW4's pistol Last Stand, and the stray ability
+	// is dropped so the next life is not downed again.
+	if ( !self _hasPerk( "specialty_finalstand" ) && !level.dieHardMode )
+	{
+		codolPrintLn( "CoDOL laststand: " + self.name + " downed without Final Stand (pistoldeath " + self _hasPerk( "specialty_pistoldeath" ) + "); no Last Stand in CoDOL MP" );
+		if ( self hasAbilityModifier( "modPistolDeath" ) && !self _hasPerk( "specialty_pistoldeath" ) )
+			self unsetAbilityModifier( "modPistolDeath" );
+		mayDoLastStand = false;
+	}
+
 	 /#
 	if ( getdvar( "scr_forcelaststand" ) == "1" )
 		mayDoLastStand = true;

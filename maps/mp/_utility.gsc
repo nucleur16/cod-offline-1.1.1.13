@@ -958,6 +958,8 @@ playLeaderDialogOnPlayer( dialog, team )
 	{
 		self.leaderDialogActive = game[ "voice" ][ team ] + game[ "dialog" ][ dialog ];
 		self playLocalSound( game[ "voice" ][ team ] + game[ "dialog" ][ dialog ] );
+		// CoDOL: C1 captions every announcer line top right (announcer_line).
+		self maps\mp\gametypes\_hud_message::codolAnnouncerLine( game[ "voice" ][ team ] + game[ "dialog" ][ dialog ] );
 		wait( 3.0 );
 	}
 	self.leaderDialogLocalSound = "";

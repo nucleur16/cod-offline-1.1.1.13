@@ -234,6 +234,35 @@ codolFinishNotify( slot )
 }
 
 
+// CoDOL announcer caption.  C1 draws every announcer (1mc) voice line in the
+// top-right corner: splashTable row "announcer_line" (row 204, menu
+// announcer_line, 2.5 s) is an MP_ANNOUNCER speaker label ("Captain") over an
+// ITEM_TYPE_GAME_MESSAGE_WINDOW (type 19) bound to message window 2, the
+// subtitle window, and it slides in from the right like playercard_splash,
+// which it closes and is closed by.  The client prints the subtitle of the
+// alias variant it is playing into that window itself, so the server only
+// opens the menu while the line plays; sending the timed-subtitle command ']'
+// as well printed a second (often different-variant) line underneath.
+// The official tutorial videos show exactly this for streak-ready, inbound and
+// objective lines ("Captain" / "Counter-UAV standing by").  Aliases without a
+// subtitle get no caption.
+codolAnnouncerLine( alias )
+{
+	if ( self.isbot )
+		return;
+
+	if ( !isDefined( soundAliasSubtitle( alias ) ) )
+		return;
+
+	// No C1 menu reads a splash record for this row. Slot 3 is the one no
+	// other C1 splash menu uses (0 splash/killstreak, 1 challenge, 2 card)
+	// that C1 still expires: its per-frame splash timer 0x44e390 walks slots
+	// 0..3 only and closes each slot's column-11 menu when start + duration
+	// passes, so a slot-4 announcer_line menu would never close.
+	self ShowHudSplash( "announcer_line", 3 );
+}
+
+
 promotionSplashNotify()
 {
 	self endon ( "disconnect" );
@@ -248,6 +277,26 @@ promotionSplashNotify()
 	self thread actionNotify( actionData );
 }
 
+
+// IW5 _hud_message::weaponPromotionSplashNotify (plutoniummod iw5-scripts),
+// C1 splashTable row 1 "promotion_weapon" (RANK_WEAPON_INCREASED, sound
+// new_weapon_unlocks in C1's row, menu promotion_weapon).  Not yet produced
+// in a match: a weapon's level is the lobby's inventory "xp" field (task 10,
+// resources/lobby.sqlite), which this server never reads, so it cannot tell
+// when a kill crosses a coWeapon*RankTable threshold.
+weaponPromotionSplashNotify()
+{
+	self endon ( "disconnect" );
+
+	actionData = spawnStruct();
+
+	actionData.name = "promotion_weapon";
+	actionData.type = "weaponRank";
+	actionData.sound = tableLookup( "mp/splashTable.csv", 0, actionData.name, 9 );
+	actionData.slot = 0;
+
+	self thread actionNotify( actionData );
+}
 
 showNotifyMessage( notifyData )
 {
@@ -423,8 +472,28 @@ killstreakSplashNotify( streakName, streakVal, appendString )
 	actionData.leaderSound = streakName;
 	actionData.leaderSoundGroup = "killstreak_earned";
 	actionData.slot = 0;
+	actionData.actionSlot = self codolKillstreakActionSlot( streakName );
 
 	self thread actionNotify( actionData );
+}
+
+
+// The action slot the reward named streakName was given (giveKillstreak's
+// record, newest first): 1 for care-package and other extra rewards, 2..4 for
+// the class's three selected streaks.  C1's MP_EARNED_* descriptions name
+// that slot's key through [{ACTION_SLOT_HELP}].
+codolKillstreakActionSlot( streakName )
+{
+	if ( !isDefined( self.pers["killstreaks"] ) )
+		return undefined;
+
+	for ( i = 0; i < self.pers["killstreaks"].size; i++ )
+	{
+		reward = self.pers["killstreaks"][i];
+		if ( isDefined( reward ) && isDefined( reward.streakName ) && reward.streakName == streakName && isDefined( reward.actionSlot ) )
+			return reward.actionSlot;
+	}
+	return undefined;
 }
 
 
@@ -468,7 +537,9 @@ challengeSplashNotify( challengeRef )
 	actionData.optionalNumber = challengeTarget;
 	actionData.name = challengeRef;
 	actionData.sound = tableLookup( "mp/splashTable.csv", 0, actionData.name, 9 );
-	actionData.slot = 0;
+	// C1's challenge and perk_challenge menus read splash slot 1
+	// (getsplashdescription(1), splashrownum(1)); IW4 sent challenges in 0.
+	actionData.slot = 1;
 
 	self thread actionNotify( actionData );
 }
@@ -528,7 +599,9 @@ playerCardSplashNotify( splashRef, player, optionalNumber )
 	actionData.optionalNumber = optionalNumber;
 	actionData.sound = tableLookup( "mp/splashTable.csv", 0, actionData.name, 9 );
 	actionData.playerCardPlayer = player;
-	actionData.slot = 1;
+	// C1's patched playercard_splash (top right, slides in from x 600) reads
+	// its text from splash slot 2 (getsplashdescription(2)); IW4 used 1.
+	actionData.slot = 2;
 
 	self thread actionNotify( actionData );
 }
@@ -572,7 +645,7 @@ actionNotifyMessage( actionData )
 		// added to prevent potential stack overflow
 		wait ( 0 );
 
-		if ( isDefined( actionData.type ) && actionData.type == "rank" )
+		if ( isDefined( actionData.type ) && ( actionData.type == "rank" || actionData.type == "weaponRank" ) )
 		{
 			self setClientDvar( "ui_promotion", 1 );
 			self.postGamePromotion = true;
@@ -594,6 +667,11 @@ actionNotifyMessage( actionData )
 	{
 		if ( isDefined( actionData.playerCardPlayer ) )
 			self SetCardDisplaySlot( actionData.playerCardPlayer, 5 );
+
+		// C1 reads the key for [{ACTION_SLOT_HELP}] from this player's
+		// clientState while the splash is up; publish it with the splash.
+		if ( isDefined( actionData.actionSlot ) )
+			self setActionSlotHelp( actionData.actionSlot );
 		
 		if ( isDefined( actionData.optionalNumber ) )
 			self ShowHudSplash( actionData.name, actionData.slot, actionData.optionalNumber );
