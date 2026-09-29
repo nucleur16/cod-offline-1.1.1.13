@@ -995,6 +995,9 @@ heli_targeting()
 		if ( targets.size )
 		{
 			targetPlayer = getBestPrimaryTarget( targets );
+			if ( !isDefined( self.codolLastTarget ) || self.codolLastTarget != targetPlayer )
+				heliLog( "target " + targetPlayer.name + " (" + targetPlayer.pers["team"] + ") of " + targets.size + " at " + int( distance( targetPlayer.origin, self.origin ) ) );
+			self.codolLastTarget = targetPlayer;
 			self.primaryTarget = targetPlayer;
 			self notify( "primary acquired" );
 		}
@@ -1045,7 +1048,10 @@ canTarget_turret( player )
 		return false;
 
 	if ( player HasAbilityModifier( "modNoHelicopter" ) )
+	{
+		heliLog( "ignores " + player.name + ": modNoHelicopter" );
 		return false;
+	}
 		
 	heli_centroid = self.origin + ( 0, 0, -160 );
 	heli_forward_norm = anglestoforward( self.angles );
@@ -1642,9 +1648,13 @@ attack_primary()
 		self waitOnTargetOrDeath( currentTarget, 3.0 );
 		
 		if ( !isAlive( currentTarget ) || !self Vehicle_CanTurretTargetPoint( currentTarget.origin+(0,0,40) ) )
+		{
+			heliLog( "no bearing on " + currentTarget.name );
 			continue;
+		}
 		
 		weaponShootTime = weaponFireTime( "cobra_20mm_mp" );
+		heliLog( "burst at " + currentTarget.name + " health " + currentTarget.health );
 		
 		convergenceMod = 1;
 		shotsSinceLastSighting = 0;
@@ -1679,6 +1689,8 @@ attack_primary()
 			self setTurretTargetEnt( currentTarget, targetPos );
 		}
 		self stopLoopSound();
+		if ( isDefined( currentTarget ) )
+			heliLog( "burst end " + currentTarget.name + " alive " + isAlive( currentTarget ) + " health " + currentTarget.health );
 
 		// lower the target's threat since already assaulted on
 		if ( isAlive( currentTarget ) )
@@ -1687,6 +1699,15 @@ attack_primary()
 		wait ( randomFloatRange( 0.5, 2.0 ) );
 	}
 }
+
+// Diagnostics for the attack helicopter's target/fire loop; off unless
+// scr_codol_helilog is set.
+heliLog( msg )
+{
+	if ( getDvarInt( "scr_codol_helilog" ) )
+		codolPrintLn( "CoDOL heli: " + msg );
+}
+
 
 waitOnTargetOrDeath( target, timeOut )
 {
