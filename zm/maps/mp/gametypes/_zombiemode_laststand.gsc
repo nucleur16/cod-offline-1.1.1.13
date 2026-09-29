@@ -73,6 +73,7 @@
 init()
 {
 	set_zombie_var( "zombie_bleedout_time", 45 );
+	set_zombie_var( "zombie_solo_revive_time", 8 );
 	set_zombie_var( "zombie_revive_time", 4 );
 	set_zombie_var( "zombie_revive_trigger_radius", 72 );
 
@@ -130,15 +131,13 @@ player_laststand()
 	self.laststand = true;
 	self.health = 1;
 
-	// T5 :117 ends the game the instant the last player up goes down, because
-	// nobody is left to revive.  That is NOT done here, deliberately: T5's
-	// solo rules live in a module this port does not take (T5 routes solo
-	// through maps\_zombiemode_solo and zombiemode_solo_last_stand_pistol,
-	// _zombiemode.gsc:2728), and with only that check a one-player match would
-	// end on the first down, before the quick-revive life could ever be spent.
-	// The wipe is resolved by the bleedout instead: it burns a life if there
-	// is one, otherwise laststand_die() kills the player and
-	// checkForAllDead() ends the game from Callback_PlayerKilled.
+	// T5's solo path has no teammate revive prompt.  Without a spare life,
+	// a solo down is a wipe; Quick Revive supplies one spare life.  The old
+	// path left every solo player in pistol last stand for 45 seconds and
+	// awarded a free revive because starting_lives included the current life.
+	players = getPlayers();
+	solo = players.size == 1;
+	spare_life = isDefined( self.pers ) && isDefined( self.pers[ "lives" ] ) && self.pers[ "lives" ] > 0;
 
 	// _zombiemode.gsc:2172 -- the downed player pays penalty_downed.
 	self maps\mp\gametypes\_zombiemode_score::player_downed_penalty();
@@ -164,9 +163,15 @@ player_laststand()
 
 	self laststand_disable_player_weapons();
 	self laststand_give_pistol();
-	self revive_trigger_spawn();
+	if ( !solo )
+		self revive_trigger_spawn();
 
-	self thread laststand_bleedout( level.zombie_vars[ "zombie_bleedout_time" ] );
+	if ( solo && !spare_life )
+		self thread laststand_bleedout( 0 );
+	else if ( solo )
+		self thread laststand_bleedout( level.zombie_vars[ "zombie_solo_revive_time" ] );
+	else
+		self thread laststand_bleedout( level.zombie_vars[ "zombie_bleedout_time" ] );
 
 	// Every perk_think and every drink is waiting on this.
 	self notify( "player_downed" );
@@ -244,6 +249,10 @@ laststand_bleedout( delay )
 {
 	self endon( "player_revived" );
 	self endon( "disconnect" );
+	// The no-spare-life solo case starts inside the native lethal-hit
+	// callback.  Let that callback unwind before forcing the death transition.
+	if ( delay <= 0 )
+		wait( 0.05 );
 
 	self.bleedout_time = delay;
 
@@ -277,6 +286,7 @@ laststand_bleedout( delay )
 laststand_die()
 {
 	self.laststand = false;
+	self laststandrevive();
 
 	if ( isDefined( self.revivetrigger ) )
 	{

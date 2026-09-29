@@ -273,6 +273,7 @@ init_levelvars()
 
 	// Player
 	set_zombie_var( "player_starting_health",            100 );
+	set_zombie_var( "player_health_regen_delay",          5000 );
 
 	flag_init( "all_players_connected" );
 	flag_init( "begin_spawning" );
@@ -473,7 +474,12 @@ Callback_PlayerConnect()
 
 	if ( !isDefined( self.pers ) )
 		self.pers = [];
-	self.pers[ "lives" ] = level.zombie_vars[ "starting_lives" ];
+	// The difficulty table counts the life currently being played.  The
+	// last-stand code stores only spare lives; otherwise a solo player gets
+	// a free self-revive without buying Quick Revive.
+	self.pers[ "lives" ] = level.zombie_vars[ "starting_lives" ] - 1;
+	if ( self.pers[ "lives" ] < 0 )
+		self.pers[ "lives" ] = 0;
 
 	level notify( "connected", self );
 
@@ -527,6 +533,8 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 	// 500 ms grace window (src/codol/script/codol_script_laststand.c:41-48).
 	if ( self maps\mp\gametypes\_zombiemode_laststand::player_is_in_laststand() )
 		return;
+
+	self.zmLastDamageTime = getTime();
 
 	// THE LETHAL-HIT VETO USED TO BE HERE, and is deliberately gone.
 	//
@@ -656,12 +664,42 @@ spawnPlayer()
 	self enableOffhandWeapons();
 
 	self giveStartingLoadout();
+	self.zmLastDamageTime = getTime();
+	self notify( "zm_regen_restart" );
+	self thread zm_player_health_regen();
 
 	// C1 already draws the player's purse in its Zombies HUD.  Reset the
 	// floating award delta at spawn without creating a second score readout.
 	self.old_score = self.score;
 
 	self updateRoundHud();
+}
+
+// The multiplayer tree runs _healthoverlay::playerHealthRegen on each spawn.
+// Zombies has its own gametype root and never starts that thread, leaving
+// every nonlethal claw hit permanently subtracted.  Keep this health-only
+// variant local to zm; the client already owns its damage overlay.
+zm_player_health_regen()
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	self endon( "player_downed" );
+	self endon( "zm_regen_restart" );
+
+	for ( ;; )
+	{
+		wait( 0.1 );
+		if ( self.health <= 0 || self.laststand || self.health >= self.maxhealth )
+			continue;
+		if ( getTime() - self.zmLastDamageTime < level.zombie_vars[ "player_health_regen_delay" ] )
+			continue;
+
+		// Match the multiplayer thread's rapid recovery after its five-second
+		// quiet window; avoid writing through the native damage callback.
+		self.health += 10;
+		if ( self.health > self.maxhealth )
+			self.health = self.maxhealth;
+	}
 }
 
 // zm_zombie_training's MapEnts carry the ordinary multiplayer spawn classnames

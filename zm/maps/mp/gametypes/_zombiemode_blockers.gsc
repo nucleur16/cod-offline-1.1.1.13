@@ -282,6 +282,11 @@ blocker_trigger_think()
 
 	trigger set_hint_string( self, "default_reward_barrier_piece" );
 	trigger setCursorHint( "HINT_NOICON" );
+	// C1's cursor-hint scan ignores trigger_radius (its contents are a touch
+	// volume, not a usable trigger), although its touch event still lets the
+	// player repair boards.  Publish the same hint to the touching player
+	// while they can repair; clear it before leaving or deleting the trigger.
+	repair_hint = get_zombie_hint( "default_reward_barrier_piece" );
 
 	for ( ;; )
 	{
@@ -299,10 +304,17 @@ blocker_trigger_think()
 			return;
 		}
 
+		if ( isDefined( repair_hint ) && is_player_valid( player ) )
+			player forceUseHintOn( repair_hint );
+
 		for ( ;; )
 		{
 			if ( !isDefined( trigger ) )
+			{
+				if ( is_player_valid( player ) )
+					player forceUseHintOff();
 				return;
+			}
 
 			if ( !player isTouching( trigger ) )
 				break;
@@ -314,7 +326,10 @@ blocker_trigger_think()
 				break;
 
 			if ( !player use_button_held() )
-				break;
+			{
+				wait( 0.05 );
+				continue;
+			}
 
 			chunk = get_random_destroyed_chunk( self.barrier_chunks );
 			if ( !isDefined( chunk ) )
@@ -353,16 +368,21 @@ blocker_trigger_think()
 			{
 				// The carpenter perk pop plants its C4 behind a finished window.
 				player thread maps\mp\gametypes\_zombiemode_perkpops::barrier_repaired( self );
+				player forceUseHintOff();
 				trigger notify( "all_boards_repaired" );
 				return;
 			}
 
 			if ( no_valid_repairable_boards( self.barrier_chunks ) )
 			{
+				player forceUseHintOff();
 				trigger notify( "no valid boards" );
 				return;
 			}
 		}
+
+		if ( is_player_valid( player ) )
+			player forceUseHintOff();
 	}
 }
 

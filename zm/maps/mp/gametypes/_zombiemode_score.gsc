@@ -19,8 +19,6 @@
 //   player_died_penalty            :412
 //   player_downed_penalty          :430
 //   set_player_score_hud           :447
-//   create_highlight_hud           :497
-//   score_highlight                :540
 //
 // NOT TAKEN, and why:
 //   team_score_init / add_to_team_score / minus_to_team_score / set_team_score
@@ -36,8 +34,8 @@
 //   "ballistic_knife_death" / "thundergun_fling" / "hacker_transfer" /
 //   "carpenter_powerup" events -- those weapons and power-ups are not ported.
 //
-// C1's live Zombies HUD displays the purse beside the player name.  Keep the
-// T5 floating score delta here, but do not add a duplicate persistent value.
+// C1's live Zombies HUD displays the purse and point changes beside the player
+// name.  T5's floating delta hudelem is intentionally omitted here.
 
 #include maps\mp\gametypes\_zombiemode_utility;
 
@@ -295,80 +293,11 @@ player_downed_penalty()
 }
 
 // --------------------------------------------------------------------------
-// HUD.  T5 :447 set_player_score_hud / :497 create_highlight_hud /
-// :540 score_highlight.
-//
-// C1 draws the persistent purse in its own Zombies HUD.  This script only
-// creates the short floating delta when points change.
+// C1 draws the purse and point changes in its own Zombies HUD.  Keep this
+// callable for score paths, but do not create a second floating number.
 // --------------------------------------------------------------------------
 
 set_player_score_hud( init )
 {
-	if ( !isDefined( self.old_score ) )
-		self.old_score = self.score;
-
-	score_diff = self.score - self.old_score;
-
-	if ( score_diff != 0 && !is_true( init ) )
-		self thread score_highlight( score_diff );
-
 	self.old_score = self.score;
-}
-
-// T5 :497.  Yellow "+50" for a gain, dark red for a loss.
-create_highlight_hud( x, y, value )
-{
-	hud = create_simple_hud( self );
-
-	hud.foreground = true;
-	hud.sort = 0;
-	hud.x = x;
-	hud.y = y;
-	/* C1 scale; see the note on score_hud.fontScale above. T5's 8 is a
-	 * secondary size, so this takes the step below the main readout. */
-	hud.fontScale = 1.5;
-	hud.alignX = "right";
-	hud.alignY = "middle";
-	hud.horzAlign = "right";
-	hud.vertAlign = "bottom";
-	hud.hidewheninmenu = false;
-
-	if ( value < 1 )
-		hud.color = ( 0.21, 0, 0 );
-	else
-		hud.color = ( 0.9, 0.9, 0.0 );
-
-	hud setValue( value );
-
-	return hud;
-}
-
-// T5 :540, minus the splitscreen row arithmetic.
-score_highlight( value )
-{
-	self endon( "disconnect" );
-
-	// T5 lets the hudelem budget run free; this server shares one budget with
-	// everything else the match draws, so a burst of hits does not get to
-	// starve the round counter.
-	if ( isDefined( level.hudelem_count ) && level.hudelem_count > 24 )
-		return;
-
-	time = 0.5;
-	half_time = time * 0.5;
-
-	hud = self create_highlight_hud( -103, -100, value );
-
-	hud moveOverTime( time );
-	hud.x -= 20 + randomInt( 40 );
-	hud.y -= ( -15 + randomInt( 30 ) );
-
-	wait( half_time );
-
-	hud fadeOverTime( half_time );
-	hud.alpha = 0;
-
-	wait( half_time );
-
-	hud destroy_hud();
 }

@@ -32,8 +32,8 @@
 //   the location-specific additive "hit" pose (T5's second animation) --
 //     it is played with SetFlaggedAnimLimited onto an additive node chosen
 //     from self.damageLocation.  CoDOL's shipped ai_zombie set has exactly
-//     two arm-hit clips and no per-bone additive, so the single reaction
-//     clip is all there is to play.
+//     two arm-hit clips and no per-bone additive, so one reaction clip is
+//     overlaid on an idle base while the native pain state holds the actor.
 //
 // C1-vs-T5 CONFLICT, C1 WINS: T5's pain pool for animname "zombie" is
 // level.scr_anim["zombie"]["pain*"], fed from clips CoDOL does not ship.
@@ -80,10 +80,20 @@ main()
 	if ( !isDefined( painAnim ) )
 		return;
 
-	// T5 plays the flinch as an ADDITIVE over the current cycle so the zombie
-	// keeps walking through it.  setflaggedanimlimited is the registered
-	// builtin for "set this animation's weight without completing its
-	// ancestors", which is that same operation.
+	// The native pain state replaces the movement/combat animscript.  A
+	// completed melee clip otherwise stays at weight 1 on its last frame
+	// while the limited arm reaction plays.  Keep a full-body pose beneath
+	// the reaction for the entire pain state.  Both idle clips are shipped in
+	// CoDOL's generic_human tree and already used by zombie_stop.
+	if ( is_true( self.has_legs ) )
+		baseAnim = %ai_zombie_idle_v1;
+	else
+		baseAnim = %ai_zombie_idle_crawl;
+	self setFlaggedAnimKnobAll( "painbase", baseAnim, %body, 1, 0.1, self.animplaybackrate );
+
+	// T5 plays the flinch as an ADDITIVE over its full-body cycle.
+	// setflaggedanimlimited sets this animation's weight without completing
+	// its ancestors, so the idle base continues beneath the reaction.
 	self setFlaggedAnimLimited( "painanim", painAnim, 1, 0.1, self.animplaybackrate );
 
 	DoNoteTracksForTime( getAnimLength( painAnim ), "painanim" );
