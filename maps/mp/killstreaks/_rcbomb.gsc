@@ -217,7 +217,9 @@ givePlayerControlOfRCBomb()
     self.rcbomb thread maps\mp\killstreaks\_rcbomb_presentation::monitor();
 
     self waittill( "rcbomb_done" );
-    self thread maps\mp\killstreaks\_rcbomb_presentation::fadeOut();
+    // Native remote exit has already switched C1 away from the RC view before
+    // exit_vehicle/rcbomb_done reaches this thread. A delayed server HUD fade
+    // here blackens the restored player view a second time.
     // Releases the death/respawn gates; a player killed during the ride
     // now proceeds through waitAndSpawnClient ("stopped_using_remote").
     // Clear BEFORE restoring the weapon: IW4 clearUsingRemote switches to
