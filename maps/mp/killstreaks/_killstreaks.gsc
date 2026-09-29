@@ -691,6 +691,8 @@ killstreakUseWaiter()
             reward = undefined;
             foreach ( candidate in self.pers["killstreaks"] )
             {
+                // Native foreach keeps sibling insertion order, so the first
+                // matching record is the oldest earned copy.
                 if ( newWeapon == getKillstreakWeapon( candidate.streakName ) &&
                      !isDefined( reward ) )
                     reward = candidate;
@@ -840,18 +842,7 @@ checkKillstreakReward( streakCount )
 			continue;
 
 		if ( isSubStr( streakName, "-rollover" ) )
-		{
-			continue;
-			/*
-			if ( game["defcon"] > 2 )
-			{
-				self.pers["lastEarnedStreak"] = streakName;
-				continue;
-			}
-			
 			useStreakName = strTok( streakName, "-" )[0];
-			*/
-		}
 		else
 		{
 			useStreakName = streakName;

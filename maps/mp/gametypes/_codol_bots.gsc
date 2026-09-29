@@ -131,6 +131,49 @@ watchKillstreakTestDvar()
             continue;
         }
         tiTokens = strTok( request, " " );
+        // Keep spatial placement tests repeatable after a bot respawns at a
+        // wall-facing point. This developer-only hook moves the test subject;
+        // the reward still runs its normal placement and ownership checks.
+        if ( tiTokens[0] == "relocate" && tiTokens.size > 5 )
+        {
+            foreach ( player in level.players )
+                if ( player getEntityNumber() == int( tiTokens[1] ) )
+                {
+                    player setOrigin( ( float( tiTokens[2] ), float( tiTokens[3] ), float( tiTokens[4] ) ) );
+                    player setPlayerAngles( ( 0, float( tiTokens[5] ), 0 ) );
+                    codolPrintLn( "CoDOL killstreak test: relocated " + player.name + " to " + player.origin );
+                }
+            continue;
+        }
+        // Exercise the real award path without relying on bot combat timing.
+        // "streak <client> <count>" logs thresholds and owned reward IDs.
+        if ( tiTokens[0] == "streak" && tiTokens.size > 2 )
+        {
+            foreach ( player in level.players )
+                if ( player getEntityNumber() == int( tiTokens[1] ) && isAlive( player ) )
+                {
+                    count = int( tiTokens[2] );
+                    player.pers["cur_kill_streak"] = count;
+                    player maps\mp\killstreaks\_killstreaks::checkKillstreakReward( count );
+                    thresholds = "";
+                    foreach ( cost, name in player.killStreaks )
+                        if ( cost <= count )
+                            thresholds = thresholds + cost + ":" + name + " ";
+                    owned = "";
+                    foreach ( reward in player.pers["killstreaks"] )
+                        owned = owned + reward.streakName + "#" + reward.kID + " ";
+                    selected = "";
+                    for ( slot = 2; slot <= 4; slot++ )
+                    {
+                        reward = player maps\mp\killstreaks\_killstreaks::codolRewardForSlot( slot );
+                        if ( isDefined( reward ) )
+                            selected = selected + slot + ":" + reward.streakName + "#" + reward.kID + " ";
+                    }
+                    codolPrintLn( "CoDOL killstreak cycle test: " + player.name + " count " + count +
+                        " thresholds [" + thresholds + "] owned [" + owned + "] selected [" + selected + "]" );
+                }
+            continue;
+        }
         // "switch <client> [weapon]": report the inventory, then switch to
         // the named weapon (default: the first other weapon owned).
         if ( tiTokens[0] == "switch" && tiTokens.size > 1 )
@@ -369,6 +412,7 @@ reportRewardState()
     if ( isDefined( level.codolRCRule ) )
         rule = " rcRule " + level.codolRCRule.cur + "/" + level.codolRCRule.max;
     codolPrintLn( "CoDOL killstreak test: state " + self.name + " alive " + isAlive( self ) +
+        " origin " + self.origin + " angles " + self.angles + " onGround " + self isOnGround() +
         " weapon " + self getCurrentWeapon() + " busy " + ( isDefined( self.codolRewardActivationBusy ) && self.codolRewardActivationBusy ) +
         " usingRemote " + isDefined( self.usingRemote ) + " selecting " + isDefined( self.selectingLocation ) +
         " remoteCtl " + self isRemoteControlling() + " rcClaim " + claim + rule +
@@ -803,13 +847,28 @@ spawnBots( count )
         if ( !isDefined( bot ) )
             return;
         bot.codolCombatBot = true;
-        bot.codolBotClass = game["codolBotSerial"] % 9;
+        bot.codolBotClass = classForDifficulty( game["codolBotSerial"] );
+        codolPrintLn( "CoDOL bot difficulty: " + getDvar( "sv_botDifficulty" ) + " class " + bot.codolBotClass + " for " + bot.name );
         bot.pers["codolCombatBot"] = true;
         bot.pers["codolBotClass"] = bot.codolBotClass;
         game["codolBotSerial"]++;
         bot thread enterGame();
         wait 0.25;
     }
+}
+
+classForDifficulty( serial )
+{
+    eligible = [];
+    tier = getDvar( "sv_botDifficulty" );
+    for ( classIndex = 0; classIndex < 9; classIndex++ )
+        if ( codol_botclassallowsdifficulty( classIndex, tier ) )
+            eligible[eligible.size] = classIndex;
+    // A missing or malformed table row must not prevent the match from
+    // spawning; the native loadout checker will report the actual class data.
+    if ( eligible.size == 0 )
+        return serial % 9;
+    return eligible[serial % eligible.size];
 }
 
 enterGame()
