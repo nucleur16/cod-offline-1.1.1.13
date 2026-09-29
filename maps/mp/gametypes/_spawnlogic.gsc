@@ -257,7 +257,7 @@ getSpawnpoint_Final( spawnpoints, useweights )
 			if ( carePackages.size && !canSpawn( spawnpoints[i].origin ) )
 				continue;
 			
-			artilleryWeight = codol_artillerySpawnWeight( spawnpoints[i].origin ) + codol_rcSpawnWeight( spawnpoints[i].origin, self.team );
+			artilleryWeight = codol_artillerySpawnWeight( spawnpoints[i].origin ) + self codolRCSpawnWeightForPlayer( spawnpoints[i].origin );
 			if ( !isDefined( bestspawnpoint ) || artilleryWeight > bestArtilleryWeight )
 			{
 				bestspawnpoint = spawnpoints[i];
@@ -314,6 +314,17 @@ finalizeSpawnpointChoice( spawnpoint )
 
 maxSightTracedSpawnpoints = 3;
 
+codolRCSpawnWeightForPlayer( origin )
+{
+	// Spectator spawn selection has no combat team. The native RC influencer
+	// expects a combat team; applying its weight here can abort the map when
+	// the player is still joining or returning to spectator mode.
+	if ( isDefined( self.sessionstate ) && self.sessionstate == "spectator" )
+		return 0;
+
+	return codol_rcSpawnWeight( origin, self.team );
+}
+
 getBestWeightedSpawnpoint( spawnpoints )
 {
 	otherteam = getOtherTeam( self.team );
@@ -324,7 +335,7 @@ getBestWeightedSpawnpoint( spawnpoints )
 	// candidates. Keep it local: repeated prediction/selection must not compound.
 	artilleryWeights = [];
 	for ( i = 0; i < spawnpoints.size; i++ )
-		artilleryWeights[i] = codol_artillerySpawnWeight( spawnpoints[i].origin ) + codol_rcSpawnWeight( spawnpoints[i].origin, self.team );
+		artilleryWeights[i] = codol_artillerySpawnWeight( spawnpoints[i].origin ) + self codolRCSpawnWeightForPlayer( spawnpoints[i].origin );
 
 	for ( try = 0; ; try++ )
 	{
