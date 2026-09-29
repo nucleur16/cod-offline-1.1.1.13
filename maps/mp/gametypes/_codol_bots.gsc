@@ -339,6 +339,15 @@ reportRewardState()
         " usingRemote " + isDefined( self.usingRemote ) + " selecting " + isDefined( self.selectingLocation ) +
         " remoteCtl " + self isRemoteControlling() + " rcClaim " + claim + rule +
         " littleBirds " + level.littleBirds + " owned [" + owned + "]" );
+    // Offhand hold counter (_disableOffhandWeapons) and each offhand's ammo:
+    // every remote must return the counter to 0 when it ends.
+    hold = "undefined";
+    if ( isDefined( self.disabledOffhandWeapons ) )
+        hold = "" + self.disabledOffhandWeapons;
+    offhands = "";
+    foreach ( offhand in self getWeaponsListOffhands() )
+        offhands = offhands + offhand + ":" + self getWeaponAmmoClip( offhand ) + " ";
+    codolPrintLn( "CoDOL killstreak test: offhands " + self.name + " hold " + hold + " [" + offhands + "]" );
 }
 
 confirmTestLocation()
@@ -796,7 +805,13 @@ watchWedged()
     self endon( "disconnect" );
     self endon( "death" );
     level endon( "game_ended" );
-    self waittill( "bot_wedged" );
+    // A bot driving a remote (RC-XD, predator) stands still on purpose.
+    for ( ;; )
+    {
+        self waittill( "bot_wedged" );
+        if ( !isDefined( self.usingRemote ) )
+            break;
+    }
     if ( isAlive( self ) )
         self suicide();
 }

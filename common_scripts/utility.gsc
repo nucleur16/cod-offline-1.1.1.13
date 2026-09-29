@@ -2706,6 +2706,16 @@ _disableOffhandWeapons()
 
 _enableOffhandWeapons()
 {
+	// CoDOL: never below 0. An unmatched enable used to leave the counter
+	// negative, so the next balanced disable/enable pair ended at -1 and the
+	// offhands stayed disabled for the rest of the life.
+	if ( !isDefined( self.disabledOffhandWeapons ) || self.disabledOffhandWeapons <= 0 )
+	{
+		self.disabledOffhandWeapons = 0;
+		self EnableOffhandWeapons();
+		return;
+	}
+
 	self.disabledOffhandWeapons--;
 	
 	assert( self.disabledOffhandWeapons >= 0 );

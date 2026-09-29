@@ -197,6 +197,12 @@ givePlayerControlOfRCBomb()
     // it the killcam/respawn ran, "spawned_player" fired the explosives
     // watcher and the car was deleted. Cleared on "rcbomb_done".
     self.usingRemote = "rcbomb";
+    // Hold the offhands through the shared counter like setUsingRemote.
+    // The ride set usingRemote by hand but ended with clearUsingRemote,
+    // whose _enableOffhandWeapons drove the counter to -1; the next remote
+    // (predator, AC-130) then disabled at 0 and "re-enabled" at -1, which
+    // never reaches 0: no equipment or tactical for the rest of that life.
+    self _disableOffhandWeapons();
 
     self thread playerDisconnectWaiter( self.rcbomb );
     self thread carDetonateWaiter( self.rcbomb );
