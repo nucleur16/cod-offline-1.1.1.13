@@ -1248,6 +1248,13 @@ setKillstreaks( streak1, streak2, streak3 )
 
 	// defcon rollover
 	maxRollOvers = 10;
+	// Keep the three original thresholds separate. GSC array assignment aliases
+	// storage, so the award path must not grow this source while iterating it.
+	self.codolStreakBase = [];
+	foreach ( streakVal, streakName in self.killStreaks )
+		self.codolStreakBase[streakVal] = streakName;
+	self.codolStreakSpan = maxVal;
+	self.codolStreakRollover = maxRollOvers;
 	// GSC arrays share storage on assignment. Build a separate destination so
 	// later cycles never enumerate the rollover entries added by earlier ones.
 	newKillstreaks = [];

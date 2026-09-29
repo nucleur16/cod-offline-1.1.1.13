@@ -824,6 +824,26 @@ checkKillstreakReward( streakCount )
 		if ( streakVal > maxVal )
 			maxVal = streakVal;
 	}
+	// The authored rollover list covers ten cycles. Extend it only when a
+	// living player's count passes that list, preserving the existing ordered
+	// award path and duplicate ownership without imposing an eleventh-cycle cap.
+	if ( isDefined( self.codolStreakBase ) && isDefined( self.codolStreakSpan ) &&
+	     self.codolStreakSpan > 0 && isDefined( self.codolStreakRollover ) )
+	{
+		while ( maxVal < streakCount - level.killStreakMod )
+		{
+			self.codolStreakRollover++;
+			foreach ( baseCost, baseName in self.codolStreakBase )
+			{
+				rolloverCost = baseCost + self.codolStreakSpan * self.codolStreakRollover;
+				rolloverName = baseName + "-rollover" + self.codolStreakRollover;
+				self.killStreaks[rolloverCost] = rolloverName;
+				killStreaks[rolloverName] = rolloverCost;
+				if ( rolloverCost > maxVal )
+					maxVal = rolloverCost;
+			}
+		}
+	}
 
 	// Native getarraykeys walks sibling insertion order, not numeric cost.
 	// Process costs explicitly so later rollover keys cannot hide earned rewards
