@@ -243,7 +243,7 @@ onPlayerSpawned()
 		self waittill( "spawned_player" );
 		// Publish script progression after the native spawn clears playerState.
 		if ( isDefined( self.pers["cur_kill_streak"] ) )
-			self setKillstreak( self.pers["cur_kill_streak"] );
+			self codolPublishStreakHudCount( self.pers["cur_kill_streak"] );
 		else
 			self setKillstreak( 0 );
 		self thread killstreakUseWaiter();
@@ -813,7 +813,7 @@ finishDeathWaiter()
 
 checkKillstreakReward( streakCount )
 {
-	self setKillstreak( streakCount );
+	self codolPublishStreakHudCount( streakCount );
 	self notify( "got_killstreak", streakCount );
 
 	maxVal = 0;
@@ -1081,6 +1081,23 @@ codolRewardForSlot( slot )
         if ( isDefined( reward.actionSlot ) && reward.actionSlot == slot )
             return reward;
     return undefined;
+}
+
+// The award list advances through base thresholds again at each rollover,
+// while C1's preview targets remain the base thresholds from setKillstreaks.
+// Publish progress within that span; keep the unbounded count in pers for
+// awarding and duplicate ownership. At an exact threshold show the filled
+// bar until the next kill starts the next pass.
+codolPublishStreakHudCount( streakCount )
+{
+	hudCount = streakCount;
+	if ( isDefined( self.codolStreakSpan ) && self.codolStreakSpan > 0 && streakCount > 0 )
+	{
+		hudCount = streakCount % self.codolStreakSpan;
+		if ( hudCount == 0 )
+			hudCount = self.codolStreakSpan;
+	}
+	self setKillstreak( hudCount );
 }
 
 codolRewardActionWaiter( slot )
