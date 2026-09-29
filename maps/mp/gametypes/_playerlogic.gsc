@@ -295,6 +295,15 @@ lastStandRespawnPlayer()
 	
 	self.health = self.maxHealth;
 	self _enableUsability();
+
+	// Give back what the pistol last stand held (_damage.gsc
+	// Callback_PlayerLastStand); Final Stand and Die Hard hold neither.
+	if ( isDefined( self.lastStandHeldWeaponSwitch ) && self.lastStandHeldWeaponSwitch )
+		self _enableWeaponSwitch();
+	if ( isDefined( self.lastStandHeldOffhands ) && self.lastStandHeldOffhands )
+		self _enableOffhandWeapons();
+	self.lastStandHeldWeaponSwitch = undefined;
+	self.lastStandHeldOffhands = undefined;
 	
 	if ( game["state"] == "postgame" )
 	{
@@ -597,6 +606,9 @@ spawnPlayer()
 	self.disabledWeapon = 0;
 	self.disabledWeaponSwitch = 0;
 	self.disabledOffhandWeapons = 0;
+	// Spawn clears the native flags these would give back.
+	self.lastStandHeldWeaponSwitch = undefined;
+	self.lastStandHeldOffhands = undefined;
 	self resetUsability();
 
 	if ( self.pers["lives"] == getGametypeNumLives() )

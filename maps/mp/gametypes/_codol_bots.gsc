@@ -173,6 +173,36 @@ watchKillstreakTestDvar()
                     player thread testCaptureCrate();
             continue;
         }
+        // "downed <client>": a lethal hit from an enemy, which a player with
+        // a last-stand perk survives into last stand. "revive <client>": the
+        // teammate revive's own completion (_damage.gsc reviveTriggerThink).
+        if ( ( tiTokens[0] == "downed" || tiTokens[0] == "revive" ) && tiTokens.size > 1 )
+        {
+            foreach ( player in level.players )
+                if ( player getEntityNumber() == int( tiTokens[1] ) && isAlive( player ) )
+                {
+                    if ( tiTokens[0] == "downed" )
+                    {
+                        enemy = undefined;
+                        foreach ( other in level.players )
+                            if ( other != player && isAlive( other ) && ( !level.teamBased || other.team != player.team ) )
+                                enemy = other;
+                        codolPrintLn( "CoDOL killstreak test: downed " + player.name + " by " + enemy.name );
+                        player.maxhealth = 100;
+                        player.health = 100;
+                        player doDamage( 1000, player.origin + ( 0, 0, 40 ), enemy, enemy, 0, "MOD_RIFLE_BULLET" );
+                    }
+                    else if ( isDefined( player.lastStand ) )
+                    {
+                        codolPrintLn( "CoDOL killstreak test: revive " + player.name );
+                        player.lastStand = undefined;
+                        player maps\mp\_utility::clearLowerMessage( "last_stand" );
+                        player maps\mp\gametypes\_playerlogic::lastStandRespawnPlayer();
+                    }
+                    player reportRewardState();
+                }
+            continue;
+        }
         if ( tiTokens[0] == "suicide" && tiTokens.size > 1 )
         {
             foreach ( player in level.players )
@@ -347,7 +377,13 @@ reportRewardState()
     offhands = "";
     foreach ( offhand in self getWeaponsListOffhands() )
         offhands = offhands + offhand + ":" + self getWeaponAmmoClip( offhand ) + " ";
-    codolPrintLn( "CoDOL killstreak test: offhands " + self.name + " hold " + hold + " [" + offhands + "]" );
+    switchHold = "undefined";
+    if ( isDefined( self.disabledWeaponSwitch ) )
+        switchHold = "" + self.disabledWeaponSwitch;
+    codolPrintLn( "CoDOL killstreak test: offhands " + self.name + " hold " + hold + " switchHold " + switchHold +
+        " lastStand " + isDefined( self.lastStand ) + " [" + offhands + "]" );
+    // weapFlags 0x800 weapon switch held, 0x1000 offhands held (native).
+    self codol_deathGates();
 }
 
 confirmTestLocation()

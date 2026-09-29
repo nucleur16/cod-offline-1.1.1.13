@@ -1826,13 +1826,22 @@ Callback_PlayerLastStand( eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon,
 		}
 	
 		self giveMaxAmmo( pistolWeapon );
-		self DisableWeaponSwitch();
+		// CoDOL: through the counters, and remembered, so a revive
+		// (_playerlogic::lastStandRespawnPlayer) gives back exactly what
+		// last stand took. IW4 called the raw builtins here and nothing
+		// re-enabled them: its LastStandRevive (0x5df3b0) only clears the
+		// gclient last-stand fields, never the weapon flags.
+		self _disableWeaponSwitch();
+		self.lastStandHeldWeaponSwitch = true;
 		self _disableUsability();
 		
 		// Last Stand Pro (PERKS_DESC_LAST_STAND_OFFHAND): equipment stays
 		// usable in Last Stand.
 		if ( !self _hasPerk("specialty_laststandoffhand") )
-			self DisableOffhandWeapons();
+		{
+			self _disableOffhandWeapons();
+			self.lastStandHeldOffhands = true;
+		}
 		else
 			codolPrintLn( "CoDOL perks: " + self.name + " last stand keeps offhands (Last Stand Pro)" );
 				
