@@ -204,6 +204,7 @@ killcam(
 		self notify ( "showing_final_killcam" );
 	
 	self thread endKillcamIfNothingToShow();
+	self thread endKillcamIfTargetChanges( attackerNum );
 	
 	self waittillKillcamOver();
 	
@@ -384,6 +385,30 @@ endKillcamIfNothingToShow()
 	}
 	
 	self notify("abort_killcam");
+}
+
+endKillcamIfTargetChanges( attackerNum )
+{
+	self endon("disconnect");
+	self endon("killcam_ended");
+
+	// SpectatorClientEndFrame may leave forced follow when the archived killer
+	// becomes unavailable.  A replay must not continue on an ordinary follow
+	// target: end it through the same path used when there is no archive to show.
+	// The first frame gives the native follow path time to set spectatorclient.
+	wait .05;
+	while ( 1 )
+	{
+		followTarget = self.spectatorclient;
+		if ( followTarget >= 0 && followTarget != attackerNum )
+		{
+			victimNum = self getEntityNumber();
+			println( "Killcam target changed: victim " + victimNum + " attacker " + attackerNum + " follow " + followTarget );
+			self notify("abort_killcam");
+			return;
+		}
+		wait .05;
+	}
 }
 
 spawnedKillcamCleanup()
