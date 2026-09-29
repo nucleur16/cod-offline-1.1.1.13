@@ -501,7 +501,19 @@ killstreakUsePressed( selectedID )
 	// A use can finish after its owner died (codolActivateReward); the spawn
 	// re-grants the remaining rewards, so do not hand weapons to a corpse.
 	if ( isAlive( self ) )
+	{
+		// A threshold remains full while its reward is waiting to be used.
+		// Once consumed, publish the next cycle's progress immediately rather
+		// than leaving C1's HUD stuck at the completed threshold until a kill.
+		if ( isDefined( self.pers["cur_kill_streak"] ) )
+		{
+			self codolPublishStreakHudCount( self.pers["cur_kill_streak"], true );
+			if ( getDvarInt( "developer" ) > 0 )
+				codolPrintLn( "CoDOL streak HUD after use: " + self.name + " " + streakName +
+					" raw " + self.pers["cur_kill_streak"] + " hud " + self getKillstreak() );
+		}
 		self giveOwnedKillstreakItem();
+	}
 	// mortar_pro_mp runs the base handler (catalogue column22), so it must be
 	// committed too; the literal name left a pro mortar's three confirmed
 	// targets consumed without a single shell.
@@ -1086,15 +1098,15 @@ codolRewardForSlot( slot )
 // The award list advances through base thresholds again at each rollover,
 // while C1's preview targets remain the base thresholds from setKillstreaks.
 // Publish progress within that span; keep the unbounded count in pers for
-// awarding and duplicate ownership. At an exact threshold show the filled
-// bar until the next kill starts the next pass.
-codolPublishStreakHudCount( streakCount )
+// awarding and duplicate ownership. An exact threshold stays filled while
+// its reward awaits use and clears as soon as that reward is consumed.
+codolPublishStreakHudCount( streakCount, rewardConsumed )
 {
 	hudCount = streakCount;
 	if ( isDefined( self.codolStreakSpan ) && self.codolStreakSpan > 0 && streakCount > 0 )
 	{
 		hudCount = streakCount % self.codolStreakSpan;
-		if ( hudCount == 0 )
+		if ( hudCount == 0 && ( !isDefined( rewardConsumed ) || !rewardConsumed ) )
 			hudCount = self.codolStreakSpan;
 	}
 	self setKillstreak( hudCount );
