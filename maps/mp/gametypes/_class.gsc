@@ -780,34 +780,43 @@ _detachAll()
 
 isPerkUpgraded( perkName )
 {
-	// CSV bot classes grant selected perks, not account-earned upgrades.
-	if ( self.isbot )
-		return false;
-	perkUpgrade = tablelookup( "mp/coPerkStatsTable.csv", 1, perkName, 8 );
-	
-	if ( perkUpgrade == "" || perkUpgrade == "specialty_null" )
-		return false;
-		
-	if ( !self upgradeUnlocked( perkUpgrade ) )
-		return false;
-		
-	return true;
+	return self getPerkUpgrade( perkName ) != "specialty_null";
 }
 
-// Pro perks unlock through the challenge named in coPerkStatsTable column 13
-// (tier in column 14), resolved by the native isItemUnlocked over
-// mp/unlocktable.csv and the secure profile. A row whose requirement cannot
-// be established must not stop the VM in the middle of a spawn, so this asks
-// the non-fatal form and treats "cannot tell" as locked.
-upgradeUnlocked( upgrade )
+/*
+	CoDOL: a Pro perk is earned, never assumed.  C1 names the gate of every
+	upgradable perk on the base perk's own mp/coPerkStatsTable.csv row: the
+	challenge in column 13 and the tier in column 14 (ch_flakjacket_pro, 4).
+	The client's unlock flags say the same thing (uf_specialty_flakjacket_pro =
+	ch_flakjacket_pro tier 4), and the lobby grants a challenge-gated flag when
+	the derived challenge state exceeds the tier -- IW4's strictly-greater
+	rule.  The upgrade row itself (column 8) carries no gate.
+
+	IW4's mp/unlocktable.csv cannot answer this: it has no row at all for
+	flakjacket_pro, fastoffhand, engineerpro, quickswap, paint_pro, hackerpro
+	or marksmanpro, and isItemUnlocked answers an unlisted item "unlocked", so
+	every Flak Jacket, Quickdraw and Engineer (all perk 2) came out Pro and the
+	spawn perk card, which draws getperk( "upgrade2" ), showed it.  The rows it
+	does have name IW4 challenges (Stalker Pro on ch_scrambler_pro).
+
+	A row with no challenge (Hacker) has no C1 unlock flag either, so nothing
+	can earn it; a player without a bound profile, or a challenge that cannot
+	be resolved, is locked too (codol_tryChallengeState says why).
+*/
+perkUpgradeUnlocked( perkName )
 {
-	unlocked = self codol_tryIsItemUnlocked( upgrade );
-	if ( !isDefined( unlocked ) )
+	challenge = tablelookup( "mp/coPerkStatsTable.csv", 1, perkName, 13 );
+	tier = int( tablelookup( "mp/coPerkStatsTable.csv", 1, perkName, 14 ) );
+	if ( challenge == "" || tier <= 0 )
+		return false;
+
+	state = self codol_tryChallengeState( challenge );
+	if ( !isDefined( state ) )
 	{
-		codolPrintLn( "CoDOL perks: " + self.name + " cannot resolve the unlock of " + upgrade + "; not granted" );
+		codolPrintLn( "CoDOL perks: " + self.name + " cannot resolve " + challenge + " for " + perkName + " Pro; not granted" );
 		return false;
 	}
-	return unlocked != 0;
+	return state > tier;
 }
 
 // Sum of one modifier's deltas over the rows a loadout grants: each selected
@@ -833,14 +842,17 @@ loadoutModifierDelta( modifier, loadoutPerk1, loadoutPerk2, loadoutPerk3 )
 
 getPerkUpgrade( perkName )
 {
+	// CSV bot classes grant selected perks, not account-earned upgrades.
 	if ( self.isbot )
+		return "specialty_null";
+	if ( !isDefined( perkName ) || perkName == "" || perkName == "specialty_null" )
 		return "specialty_null";
 	perkUpgrade = tablelookup( "mp/coPerkStatsTable.csv", 1, perkName, 8 );
 	
 	if ( perkUpgrade == "" || perkUpgrade == "specialty_null" )
 		return "specialty_null";
 		
-	if ( !self upgradeUnlocked( perkUpgrade ) )
+	if ( !self perkUpgradeUnlocked( perkName ) )
 		return "specialty_null";
 		
 	return ( perkUpgrade );
@@ -861,16 +873,13 @@ loadoutAllPerks( loadoutEquipment, loadoutPerk1, loadoutPerk2, loadoutPerk3 )
 	// Bot perks come entirely from the class CSV.
 	if ( self.isbot )
 		return;
-	perkUpgrd[0] = tablelookup( "mp/coPerkStatsTable.csv", 1, loadoutPerk1, 8 );
-	perkUpgrd[1] = tablelookup( "mp/coPerkStatsTable.csv", 1, loadoutPerk2, 8 );
-	perkUpgrd[2] = tablelookup( "mp/coPerkStatsTable.csv", 1, loadoutPerk3, 8 );
+	perkUpgrd[0] = self getPerkUpgrade( loadoutPerk1 );
+	perkUpgrd[1] = self getPerkUpgrade( loadoutPerk2 );
+	perkUpgrd[2] = self getPerkUpgrade( loadoutPerk3 );
 	
 	foreach( upgrade in perkUpgrd )
 	{
-		if ( upgrade == "" || upgrade == "specialty_null" )
-			continue;
-			
-		if ( self upgradeUnlocked( upgrade ) )
+		if ( upgrade != "specialty_null" )
 			self maps\mp\perks\_perks::givePerk( upgrade );
 	}
 
