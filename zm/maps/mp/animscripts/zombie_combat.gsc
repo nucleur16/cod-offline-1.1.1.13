@@ -67,20 +67,21 @@ main()
 {
 	self endon( "killanimscript" );
 
-	self orientmode( "face enemy" );
-	self animmode( "zonly_physics" );
-
-	MeleeCombat();
-
-	// Out of melee: hand the pose back and let the native frame pick move or
-	// stop on its own.  T5 re-threads zombie_combat::main here; this server's
-	// CODOL_ActorRunFrame is the one that re-selects, and re-threading would
-	// fight it.
-	self.safeToChangeScript = true;
-	self animmode( "normal" );
-
 	for ( ;; )
+	{
+		self orientmode( "face enemy" );
+		self animmode( "zonly_physics" );
+		MeleeCombat();
+
+		// Native re-selection leaves the current animscript running when its
+		// function is still combat.  Parking here after a missed/given-up swing
+		// could therefore strand a zombie in range with no further attacks.
+		// Release the script so move/stop can replace it, and retry on the
+		// next frame if the enemy remains in range.
+		self.safeToChangeScript = true;
+		self animmode( "normal" );
 		wait( 0.05 );
+	}
 }
 
 // T5 zombie_melee.gsc:13.

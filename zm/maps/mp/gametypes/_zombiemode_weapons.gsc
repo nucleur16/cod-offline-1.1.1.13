@@ -805,6 +805,14 @@ treasure_chest_weapon_spawn( player )
 		modelname = getWeaponModel( rand );
 		if ( isDefined( modelname ) && modelname != "" )
 			self.weapon_model setModel( modelname );
+
+		if ( i + 1 == number_cycles )
+		{
+			modeltext = "<none>";
+			if ( isDefined( modelname ) && modelname != "" )
+				modeltext = modelname;
+			println( "CoDOL zm box final weapon=" + rand + " model=" + modeltext + "\n" );
+		}
 	}
 
 	return rand;

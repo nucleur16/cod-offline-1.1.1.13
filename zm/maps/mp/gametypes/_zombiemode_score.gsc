@@ -36,11 +36,8 @@
 //   "ballistic_knife_death" / "thundergun_fling" / "hacker_transfer" /
 //   "carpenter_powerup" events -- those weapons and power-ups are not ported.
 //
-// The scoring HUD is a server hudelem, not a client dvar.  MEASURED: C1's only
-// zombies HUD element is ZOMBIE_ROUND (dvar ui_hud_round, renderer
-// 0x00461A71); an exhaustive sweep of all 23,124 C1 strings found no points
-// widget at all (alpha0022/docs/zombies_mode.md:1088-1148).  So the score
-// readout and T5's floating "+50" both have to be drawn from here.
+// C1's live Zombies HUD displays the purse beside the player name.  Keep the
+// T5 floating score delta here, but do not add a duplicate persistent value.
 
 #include maps\mp\gametypes\_zombiemode_utility;
 
@@ -301,35 +298,9 @@ player_downed_penalty()
 // HUD.  T5 :447 set_player_score_hud / :497 create_highlight_hud /
 // :540 score_highlight.
 //
-// T5 draws every player's purse in every viewport (a lobby of four shares one
-// screen in splitscreen).  This server has no splitscreen and C1's zm HUD has
-// no points widget, so each player gets their own persistent readout plus the
-// floating delta, both as client hudelems owned by that player.
+// C1 draws the persistent purse in its own Zombies HUD.  This script only
+// creates the short floating delta when points change.
 // --------------------------------------------------------------------------
-
-score_hud_init()
-{
-	self.score_hud = create_simple_hud( self );
-	self.score_hud.alignX = "right";
-	self.score_hud.alignY = "middle";
-	self.score_hud.horzAlign = "right";
-	self.score_hud.vertAlign = "bottom";
-	self.score_hud.x = -103;
-	self.score_hud.y = -71;
-	/* C1 SCALE, not T5's. MEASURED: hudelem fontScale is wire field 16,
-	 * codec -86 -- six bits carrying value*10, so the whole representable
-	 * range is 0.0..6.3. T5's 12 cannot be encoded, and an unrepresentable
-	 * field refused the ENTIRE snapshot: the client stuck on "waiting for
-	 * player data" because no snapshot ever reached it. The shipped mp tree
-	 * uses 0.5..3 (most often 1.0-2.5); 2 is its common prominent size. */
-	self.score_hud.fontScale = 2;
-	self.score_hud.color = ( 0.9, 0.9, 0.0 );
-	self.score_hud.alpha = 1;
-	self.score_hud.sort = 10;
-	self.score_hud setValue( self.score );
-
-	self.old_score = self.score;
-}
 
 set_player_score_hud( init )
 {
@@ -337,9 +308,6 @@ set_player_score_hud( init )
 		self.old_score = self.score;
 
 	score_diff = self.score - self.old_score;
-
-	if ( isDefined( self.score_hud ) )
-		self.score_hud setValue( self.score );
 
 	if ( score_diff != 0 && !is_true( init ) )
 		self thread score_highlight( score_diff );

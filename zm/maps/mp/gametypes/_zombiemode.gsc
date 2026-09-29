@@ -642,6 +642,13 @@ spawnPlayer()
 
 	self spawn( spawnpoint.origin, spawnpoint.angles );
 
+	// ClientSpawn clears the playerState extension's abilities_known flag.
+	// Commit the freshly empty script ability set so the native Zombies
+	// category floor republishes modPistolDeath before the first zombie hit.
+	// Without this, CODOL_LastStand_CanEnter rejects a lethal claw hit and
+	// the player dies outright instead of entering the engine's down state.
+	self clearAbilityModifiers();
+
 	self allowSprint( true );
 	self allowJump( true );
 	self allowAds( true );
@@ -650,10 +657,9 @@ spawnPlayer()
 
 	self giveStartingLoadout();
 
-	if ( !isDefined( self.score_hud ) )
-		self maps\mp\gametypes\_zombiemode_score::score_hud_init();
-	else
-		self maps\mp\gametypes\_zombiemode_score::set_player_score_hud( true );
+	// C1 already draws the player's purse in its Zombies HUD.  Reset the
+	// floating award delta at spawn without creating a second score readout.
+	self.old_score = self.score;
 
 	self updateRoundHud();
 }
@@ -843,6 +849,10 @@ round_think()
 		level notify( "start_of_round" );
 
 		[[ level.round_wait_func ]]();
+		if ( isDefined( level.zm_round_budget ) && isDefined( level.zm_round_spawned ) )
+			codolprintln( "CoDOL zm: round " + level.round_number + " accounting: budget " +
+				level.zm_round_budget + " spawned " + level.zm_round_spawned +
+				" remaining " + level.zombie_total + " alive " + get_enemy_count() );
 
 		level.first_round = false;
 		level notify( "end_of_round" );

@@ -385,9 +385,15 @@ powerup_round_watcher()
 // calls this with the dead zombie's origin.
 // --------------------------------------------------------------------------
 
-powerup_drop( drop_point )
+powerup_drop( drop_point, outside_playable_area )
 {
 	if ( !isDefined( level.zombie_powerup_array ) || level.zombie_powerup_array.size < 1 )
+		return;
+
+	// Zombies spawn outside the playable area and keep ignoreme until
+	// zombie_think finishes their first entrance.  A kill there must not
+	// consume the armed drop or round quota for an unreachable pickup.
+	if ( is_true( outside_playable_area ) )
 		return;
 
 	if ( level.powerup_drop_count >= level.zombie_vars[ "zombie_powerup_drop_max_per_round" ] )

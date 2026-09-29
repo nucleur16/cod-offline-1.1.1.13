@@ -119,39 +119,9 @@ resolve_melee_weapon()
 }
 
 // T5 keys the spawn list off the active zone (maps\_zombiemode_zone_manager).
-// Zones are not ported -- they gate which spawners a round may use, which only
-// matters once doors divide the map, and the door flags that would drive it
-// are the blockers module's.  Every authored spawn point is live instead, in
-// the order the map declares them.
 init_spawn_points()
 {
-	level.enemy_spawns = [];
-
-	structs = get_struct_array( "zombie_spawner", "script_noteworthy" );
-	for ( i = 0; i < structs.size; i++ )
-		level.enemy_spawns[ level.enemy_spawns.size ] = structs[ i ];
-
-	// zm_zombie_training also names its spawner groups by targetname
-	// (start_zone_spawners, upstairs_zone_spawners, box_zone_spawners,
-	// window_spawners).  Those are the same structs under a second key on that
-	// map, but zm_asylum_sh and zm_prototype_sh need not agree, so the
-	// noteworthy scan above is the primary and this is a fallback only.
-	if ( level.enemy_spawns.size < 1 )
-	{
-		names = [];
-		names[ 0 ] = "start_zone_spawners";
-		names[ 1 ] = "upstairs_zone_spawners";
-		names[ 2 ] = "box_zone_spawners";
-		names[ 3 ] = "window_spawners";
-		names[ 4 ] = "main_zombie_spawner";
-
-		for ( i = 0; i < names.size; i++ )
-		{
-			structs = get_struct_array( names[ i ], "targetname" );
-			for ( j = 0; j < structs.size; j++ )
-				level.enemy_spawns[ level.enemy_spawns.size ] = structs[ j ];
-		}
-	}
+	maps\mp\gametypes\_zombiemode_zone_manager::init();
 
 	codolprintln( "CoDOL zm: spawn points found: " + level.enemy_spawns.size + " on " + getDvar( "mapname" ) );
 }
@@ -244,6 +214,16 @@ round_spawning()
 
 	ai_calculate_health( level.round_number );
 
+	// The split-start Asylum map has no single hardcoded initial room.  The
+	// player_volume may not have been polled yet when round one begins.
+	for ( zone_wait = 0; zone_wait < 100 && level.enemy_spawns.size < 1; zone_wait++ )
+	{
+		maps\mp\gametypes\_zombiemode_zone_manager::refresh_spawners();
+		if ( level.enemy_spawns.size > 0 )
+			break;
+		wait( 0.1 );
+	}
+
 	if ( is_true( level.no_zombies ) || level.enemy_spawns.size < 1 )
 	{
 		// T5 ASSERTMSGs here ("No active spawners in the map").  An assert
@@ -275,6 +255,8 @@ round_spawning()
 		level.max_zombie_func = ::default_max_zombie_func;
 
 	level.zombie_total = [[ level.max_zombie_func ]]( max );
+	level.zm_round_budget = level.zombie_total;
+	level.zm_round_spawned = 0;
 
 	codolprintln( "CoDOL zm: round " + level.round_number + " budget " + level.zombie_total +
 		" zombies at " + level.zombie_health + " health" );
@@ -300,6 +282,7 @@ round_spawning()
 		if ( isDefined( ai ) )
 		{
 			level.zombie_total--;
+			level.zm_round_spawned++;
 			ai thread round_spawn_failsafe();
 			// One line per round, not per zombie: enough to prove the chain
 			// reached a live actor and where it was put.
@@ -1129,7 +1112,7 @@ zombie_death_event( zombie )
 	// clear_zombies' between-round sweep, neither of which T5 has at all.
 	// Both set .no_powerup_drop.
 	if ( isDefined( zombie ) && !is_true( zombie.nuked ) && !is_true( zombie.no_powerup_drop ) )
-		level thread maps\mp\gametypes\_zombiemode_powerups::powerup_drop( zombie.origin );
+		level thread maps\mp\gametypes\_zombiemode_powerups::powerup_drop( zombie.origin, is_true( zombie.ignoreme ) );
 
 	zombie_list_compact();
 
