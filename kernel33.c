@@ -1,0 +1,841 @@
+/*
+ * Kernel33.dll - runs the packed codoMP_client_shipRetail.exe (1.1.1.13) the way C1.exe runs,
+ * with TenProtect never executing a single instruction.
+ *
+ * How the packed exe starts, measured with this DLL:
+ *   1. The packer stub (VMProtect) maps an embedded TenProtect module ("TenPlat", 0x261000
+ *      bytes, headerless) into one RWX VirtualAlloc and resolves its imports.
+ *   2. It calls TenPlat's DllMain (entry +0xBAA61), then jumps to TenPlat's start routine
+ *      (+0x20DD7) with (hExe, param block, hTen) and a fake return address of hExe.
+ *   3. The start routine runs the protection (TenSafe_1.exe, driver, OS no newer than 8.1),
+ *      decompresses the game code into the packer section (VA 0x08849000-0x09A10000), fills
+ *      the game's imports and jumps to the game entry (RVA 0x6DFAFA from the param block).
+ *
+ * C1.exe is that process dumped at the game entry, plus C1.dll which fills the imports. This DLL
+ * reproduces the dump instead of letting TenPlat run:
+ *   - TenPlat's allocation is kept non-executable, so every jump into it faults (DEP);
+ *   - DllMain gets TRUE back without running;
+ *   - the start routine is replaced by TakeOver(): inflate C1.exe's copy of the decompressed
+ *     range (embedded in this DLL as a resource by build.sh from make_exe.py's unpacked.z), fill the 424 import slots C1.dll
+ *     fills (c1_tables.h), patch the render gate, and call the game entry.
+ *
+ * Render gate: C1.exe carries a one-byte patch in CG_DrawActiveFrame,
+ *        test byte [eax+3368h], 0Ah ; jnz <skip all rendering>   (0x0A -> 0x00 @ 0x4787D1)
+ * Our snapshots set snapFlags 0x08, inside that mask, so without it the world renders black.
+ *
+ * Loading: the packer's only import is Kernel32.dll!LoadLibraryA/GetProcAddress. make_exe.py
+ * renames it to Kernel33.dll (same length), so this DLL loads first and sees every lookup the
+ * stub makes; that is how VirtualAlloc/VirtualProtect are intercepted.
+ */
+#include <windows.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <zlib.h>
+
+#include "c1_tables.h"
+
+#define BUILD_TIMESTAMP 0x5314DEF0u /* 1.1.1.13, identical to C1.exe */
+#define GAME_ENTRY_VA   0x00ADFAFAu /* C1.exe AddressOfEntryPoint 0x6DFAFA + image base */
+#define RENDER_GATE_VA  0x004787CBu
+#define UNPACKED_VA     0x08849000u /* must match make_exe.py */
+#define UNPACKED_SIZE   0x011C7000u
+
+static const BYTE kGate[] = { 0xF6, 0x80, 0x68, 0x33, 0x00, 0x00, 0x0A, 0x0F, 0x85 };
+#define GATE_IMM_OFFSET 6
+
+static HINSTANCE g_self;
+static FARPROC g_loadLibraryA;
+static FARPROC g_getProcAddress;
+static FARPROC g_virtualAlloc;
+static FARPROC g_virtualProtect;
+static BOOL g_supportedBuild;
+static BYTE *volatile g_tenBase;
+static SIZE_T g_tenSize;
+
+static void Log(const char *fmt, ...)
+{
+    char path[MAX_PATH], line[512];
+    DWORD n = GetModuleFileNameA(NULL, path, MAX_PATH);
+    while (n && path[n - 1] != '\\') n--;
+    lstrcpyA(path + n, "Kernel33.log");
+
+    va_list ap;
+    va_start(ap, fmt);
+    int len = _vsnprintf(line, sizeof(line) - 2, fmt, ap);
+    va_end(ap);
+    if (len < 0) len = (int)sizeof(line) - 2;
+    line[len++] = '\r';
+    line[len++] = '\n';
+
+    HANDLE h = CreateFileA(path, FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                           OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (h == INVALID_HANDLE_VALUE) return;
+    DWORD w;
+    WriteFile(h, line, (DWORD)len, &w, NULL);
+    CloseHandle(h);
+}
+
+static void Fatal(const char *msg)
+{
+    Log("FATAL: %s", msg);
+    MessageBoxA(NULL, msg, "Kernel33", MB_ICONERROR);
+    ExitProcess(1);
+}
+
+static BOOL Readable(const void *p, SIZE_T n)
+{
+    MEMORY_BASIC_INFORMATION mbi;
+    if (!VirtualQuery(p, &mbi, sizeof(mbi)) || mbi.State != MEM_COMMIT ||
+        (mbi.Protect & (PAGE_NOACCESS | PAGE_GUARD)))
+        return FALSE;
+    return (const BYTE *)p + n <= (const BYTE *)mbi.BaseAddress + mbi.RegionSize;
+}
+
+static void WriteCode(void *dst, const void *src, SIZE_T n)
+{
+    DWORD old;
+    VirtualProtect(dst, n, PAGE_EXECUTE_READWRITE, &old);
+    memcpy(dst, src, n);
+    VirtualProtect(dst, n, old, &old);
+    FlushInstructionCache(GetCurrentProcess(), dst, n);
+}
+
+/* ---- the C1.exe reproduction ------------------------------------------------------------ */
+
+/* The image travels inside this DLL as RCDATA 1 ("unpacked.z": 16-byte header, then zlib). */
+static void LoadUnpackedImage(void)
+{
+    HRSRC res = FindResourceA(g_self, MAKEINTRESOURCEA(1), (LPCSTR)RT_RCDATA);
+    HGLOBAL mem = res ? LoadResource(g_self, res) : NULL;
+    const DWORD *hdr = mem ? (const DWORD *)LockResource(mem) : NULL;
+    DWORD len = res ? SizeofResource(g_self, res) : 0;
+    if (!hdr || len < 16)
+        Fatal("Kernel33.dll has no embedded game image; rebuild it with build.sh.");
+    if (hdr[0] != 0x5A33334Bu /* "K33Z" */ || hdr[1] != BUILD_TIMESTAMP ||
+        hdr[2] != UNPACKED_VA || hdr[3] != UNPACKED_SIZE)
+        Fatal("Kernel33.dll's embedded image does not match this 1.1.1.13 build.");
+
+    BYTE *dst = (BYTE *)(DWORD_PTR)UNPACKED_VA;
+    DWORD old;
+    if (!VirtualProtect(dst, UNPACKED_SIZE, PAGE_EXECUTE_READWRITE, &old))
+        Fatal("could not unprotect the packer section");
+    uLongf outLen = UNPACKED_SIZE;
+    int rc = uncompress(dst, &outLen, (const Bytef *)(hdr + 4), len - 16);
+    if (rc != Z_OK || outLen != UNPACKED_SIZE)
+        Fatal("Kernel33.dll's embedded game image is corrupt.");
+    FlushInstructionCache(GetCurrentProcess(), dst, UNPACKED_SIZE);
+    Log("unpacked image: 0x%lX bytes inflated over 0x%08X", (unsigned long)UNPACKED_SIZE, UNPACKED_VA);
+}
+
+static void FillImports(void)
+{
+    int failed = 0;
+    for (unsigned i = 0; i < sizeof(kC1Imports) / sizeof(kC1Imports[0]); i++) {
+        const C1Import *imp = &kC1Imports[i];
+        HMODULE m = ((HMODULE(WINAPI *)(LPCSTR))g_loadLibraryA)(imp->dll);
+        FARPROC f = m ? ((FARPROC(WINAPI *)(HMODULE, LPCSTR))g_getProcAddress)(m, imp->name) : NULL;
+        if (!f) {
+            Log("import %s!%s unresolved (slot 0x%08lX)", imp->dll, imp->name, (unsigned long)imp->slot);
+            failed++;
+            continue;
+        }
+        WriteCode((void *)(DWORD_PTR)imp->slot, &f, sizeof(f));
+    }
+    Log("imports: %d slots filled, %d unresolved",
+        (int)(sizeof(kC1Imports) / sizeof(kC1Imports[0])) - failed, failed);
+}
+
+static void PatchRenderGate(void)
+{
+    BYTE *gate = (BYTE *)RENDER_GATE_VA;
+    if (!Readable(gate, sizeof(kGate)) || memcmp(gate, kGate, sizeof(kGate)) != 0) {
+        Log("render gate: bytes at 0x%08X do not match, not patched", RENDER_GATE_VA);
+        return;
+    }
+    BYTE zero = 0;
+    WriteCode(gate + GATE_IMM_OFFSET, &zero, 1);
+    Log("render gate: patched 0x%08X 0x0A -> 0x00", RENDER_GATE_VA + GATE_IMM_OFFSET);
+}
+
+/* The packer marks every section RWX in the PE header. The MSVC CRT reads those headers
+ * (__IsNonwritableInCurrentImage) and skips floating-point init when _FPinit lies in a writable
+ * section, which ends in R6002 "floating point support not loaded". Give the in-memory headers
+ * C1.exe's flags: .text, .rdata, .data, .tls, .rsrc, then the three packer sections (C1's .tvm0).
+ * Only the header changes; page protections stay as they are. */
+static void MatchC1SectionFlags(void)
+{
+    static const DWORD kC1Flags[8] = {
+        0x60000020, 0x40000040, 0xC0000040, 0xC0000040, 0x40000040, 0x60000020, 0x60000020, 0x60000020,
+    };
+    BYTE *base = (BYTE *)GetModuleHandleA(NULL);
+    IMAGE_NT_HEADERS *nt = (IMAGE_NT_HEADERS *)(base + ((IMAGE_DOS_HEADER *)base)->e_lfanew);
+    IMAGE_SECTION_HEADER *sec = IMAGE_FIRST_SECTION(nt);
+    if (nt->FileHeader.NumberOfSections < 8) return;
+    DWORD old;
+    VirtualProtect(sec, 8 * sizeof(*sec), PAGE_READWRITE, &old);
+    for (int i = 0; i < 8; i++) sec[i].Characteristics = kC1Flags[i];
+    VirtualProtect(sec, 8 * sizeof(*sec), old, &old);
+    Log("section flags: set to C1.exe's");
+}
+
+/* Frame cap and FPS counter. The shipping client strips these names to numeric IDs and
+ * registers both with flags 0, so a value from the command line, console or config is refused
+ * (only archive dvars pass). Re-register them as archive (flag 0x1) with the defaults we want;
+ * they then behave like any saved setting and can still be changed.
+ *   1848 = com_maxfps: Dvar_RegisterInt(name, default 85, min 0, max 100, flags, desc)  @ 0x597E21
+ *   591  = cg_drawFPS: Dvar_RegisterEnum(name, {Off, Simple, SimpleRanges, Verbose,
+ *                      Verbose+Viewpos}, default 0, flags, desc)                        @ 0x44C631
+ * Pushes are in reverse argument order: desc, flags, ..., name. */
+typedef struct {
+    const char *what;
+    DWORD va;
+    BYTE expect[18];
+    BYTE len, flagsOff, defOff, newDefault;
+} DvarRegPatch;
+
+static const DvarRegPatch kDvarPatches[] = {
+    { "1848 (com_maxfps) default 85 -> 0 (uncapped)", 0x00597E21,
+      { 0x68, 0xAD, 0xFE, 0xC2, 0x00, 0x6A, 0x00, 0x6A, 0x64, 0x6A, 0x00, 0x6A, 0x55, 0x68, 0xDC, 0x18, 0xC6, 0x00 },
+      18, 6, 12, 0 },
+    { "591 (cg_drawFPS) default 0 -> 1 (Simple)", 0x0044C631,
+      { 0x68, 0xAD, 0xFE, 0xC2, 0x00, 0x6A, 0x00, 0x6A, 0x00, 0x68, 0x8C, 0x6D, 0xCD, 0x00, 0x68, 0xC4, 0x2B, 0xC4 },
+      18, 6, 8, 1 },
+};
+
+static void PatchDvarRegistrations(void)
+{
+    for (unsigned i = 0; i < sizeof(kDvarPatches) / sizeof(kDvarPatches[0]); i++) {
+        const DvarRegPatch *d = &kDvarPatches[i];
+        BYTE *reg = (BYTE *)(DWORD_PTR)d->va;
+        if (!Readable(reg, d->len) || memcmp(reg, d->expect, d->len) != 0) {
+            Log("dvar %s: bytes at 0x%08lX do not match, not patched", d->what, (unsigned long)d->va);
+            continue;
+        }
+        BYTE archive = 0x01;
+        WriteCode(reg + d->flagsOff, &archive, 1);
+        WriteCode(reg + d->defOff, &d->newDefault, 1);
+        Log("dvar %s, archive", d->what);
+    }
+}
+
+/* players/config_mp.cfg in plaintext, so settings can be edited with the game closed.
+ * Writer, Com_WriteConfigToFile @ 0x5991B0: writes the text, then only for "config_mp.cfg"
+ * reads it back, AES-192-CTR encrypts it (0x59DD40, IV from crc32(name, len)) and rewrites it.
+ *     0x599257  jne 0x5992E8   (name != config_mp.cfg: skip the encryption)  -> jmp
+ * Loader @ 0x58C060: for config_mp.cfg it decrypts (call 0x59DDE0 @ 0x58C0CD; esi = buffer,
+ * ebx = length, 4 dwords of args) and then requires a leading '/', else "%s is corrupted!".
+ * The call goes through CfgDecryptHook instead: a file with no control bytes is plaintext and
+ * goes straight to the exec path at 0x58C100 (no "//" header required); anything else, i.e. a
+ * config written before this patch, is decrypted as before and becomes plaintext on next save. */
+#define CFG_WRITE_JNE_VA   0x00599257u
+#define CFG_DECRYPT_CALL_VA 0x0058C0CDu
+#define CFG_DECRYPT_VA     0x0059DDE0u
+
+__attribute__((used)) DWORD g_cfgDecrypt = CFG_DECRYPT_VA;
+
+__attribute__((used)) int __cdecl CfgLooksPlain(const BYTE *p, DWORD n)
+{
+    for (DWORD i = 0; i < n; i++)
+        if (p[i] < 0x20 ? !(p[i] == '\t' || p[i] == '\n' || p[i] == '\r') : p[i] == 0x7F)
+            return 0;
+    return 1;
+}
+
+void CfgDecryptHook(void);
+__asm__(
+    ".text\n"
+    ".globl _CfgDecryptHook\n"
+    "_CfgDecryptHook:\n"
+    "    pushal\n"
+    "    pushl %ebx\n"
+    "    pushl %esi\n"
+    "    call _CfgLooksPlain\n"
+    "    addl $8, %esp\n"
+    "    testl %eax, %eax\n"
+    "    popal\n"
+    "    jnz 1f\n"
+    "    jmp *_g_cfgDecrypt\n"
+    "1:  addl $0x14, %esp\n"          /* our return address + the caller's 4 argument dwords */
+    "    movb $0, (%esi,%ebx)\n"
+    "    pushl $0x0058C100\n"
+    "    ret\n");
+
+static void PatchPlainConfig(void)
+{
+    static const BYTE kJne[] = { 0x0F, 0x85, 0x8B, 0x00, 0x00, 0x00 };
+    BYTE *jne = (BYTE *)(DWORD_PTR)CFG_WRITE_JNE_VA;
+    BYTE *call = (BYTE *)(DWORD_PTR)CFG_DECRYPT_CALL_VA;
+    LONG rel = (LONG)(CFG_DECRYPT_VA - (CFG_DECRYPT_CALL_VA + 5));
+    if (!Readable(jne, sizeof(kJne)) || memcmp(jne, kJne, sizeof(kJne)) != 0 ||
+        !Readable(call, 5) || call[0] != 0xE8 || memcmp(call + 1, &rel, 4) != 0) {
+        Log("config_mp.cfg: bytes at 0x%08X / 0x%08X do not match, left encrypted",
+            CFG_WRITE_JNE_VA, CFG_DECRYPT_CALL_VA);
+        return;
+    }
+    static const BYTE kJmp[] = { 0x90, 0xE9 }; /* same rel32: the jmp ends where the jne did */
+    WriteCode(jne, kJmp, sizeof(kJmp));
+    rel = (LONG)((DWORD_PTR)CfgDecryptHook - (CFG_DECRYPT_CALL_VA + 5));
+    WriteCode(call + 1, &rel, 4);
+    Log("config_mp.cfg: saved as plaintext, plaintext or encrypted accepted on load");
+}
+
+/* Alt+Tab. The client installs a WH_KEYBOARD_LL hook (0x6331E0) whose "hotkey block mode"
+ * (0x633270, logged as "New hotkey block mode: %d") is 2 whenever the window is active and
+ * 0x726B60 returns false, i.e. in-game. Mode 2 eats Ctrl+Esc, Alt+Tab, Alt+Enter and both Win
+ * keys, so players cannot switch away. Only Alt+Tab is released:
+ *     0x63322B  cmp eax, 9 ; jne 0x633235 ; test [esi+8], 20h (LLKHF_ALTDOWN) ; jne <eat>
+ * The jne becomes jmp, so Tab never reaches the eat branch; the other blocks are untouched. */
+#define ALTTAB_CHECK_VA 0x0063322Bu
+
+static void PatchAltTab(void)
+{
+    static const BYTE kCheck[] = { 0x83, 0xF8, 0x09, 0x75, 0x05, 0x84, 0x56, 0x08, 0x75, 0xEB };
+    BYTE *check = (BYTE *)(DWORD_PTR)ALTTAB_CHECK_VA;
+    if (!Readable(check, sizeof(kCheck)) || memcmp(check, kCheck, sizeof(kCheck)) != 0) {
+        Log("alt+tab: bytes at 0x%08X do not match, still blocked in-game", ALTTAB_CHECK_VA);
+        return;
+    }
+    BYTE jmp = 0xEB;
+    WriteCode(check + 3, &jmp, 1);
+    Log("alt+tab: keyboard hook no longer eats Alt+Tab");
+}
+
+/* Raw mouse input. IN_MouseMove (0x62D990) reads the Windows cursor every frame: GetCursorPos,
+ * delta against the last position, recenter. That delta has the Windows pointer curve
+ * ("Enhance pointer precision") baked in, and a flick that reaches the window edge before the
+ * next recenter is clipped. The client never touches the mouse SPI settings, so both land on aim.
+ *     0x62D9FF  push edi (dy) ; push esi (dx) ; push ecx (y) ; push edx (x) ; call 0x48FD40
+ * 0x48FD40 feeds dx/dy to the view angles in-game (menus use only x/y) and returns 1 when the
+ * caller should recenter. The call goes through MouseEventHook instead: until raw input is
+ * registered it passes all four arguments through; after that dx/dy are the relative WM_INPUT
+ * counts since the last frame, (0, 0) when there were none. The cursor deltas are never used
+ * again, or the pointer curve leaks back in. Absolute packets (remote desktop, tablets, some
+ * overlays) are ignored rather than switching back. Recentering still follows the cursor, so the
+ * cursor stays inside the window. The game's own curve, cl_mouseAccel ("972", default 0, in
+ * CL_GetMouseMovement 0x48FF40), still applies on top when a player has set it. */
+#define MOUSEMOVE_CALL_VA  0x0062DA03u
+#define MOUSE_EVENT_VA     0x0048FD40u
+#define MAIN_HWND_VA       0x02B68104u
+
+typedef int (__cdecl *MouseEventFn)(int x, int y, int dx, int dy);
+
+static HWND g_rawHwnd;
+static WNDPROC g_rawPrevProc;
+static BOOL g_rawActive;
+static volatile LONG g_rawDx, g_rawDy;
+static LONG g_rawPackets, g_rawAbsPackets;
+
+static LRESULT CALLBACK RawWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    if (msg == WM_INPUT) {
+        RAWINPUT ri;
+        UINT size = sizeof(ri);
+        if (GetRawInputData((HRAWINPUT)lp, RID_INPUT, &ri, &size, sizeof(RAWINPUTHEADER)) != (UINT)-1 &&
+            ri.header.dwType == RIM_TYPEMOUSE) {
+            if (ri.data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE) {
+                if (g_rawAbsPackets++ == 0) Log("raw mouse: ignoring absolute-position packets");
+            } else {
+                if (g_rawPackets++ == 0) Log("raw mouse: first relative packet received");
+                InterlockedExchangeAdd(&g_rawDx, ri.data.mouse.lLastX);
+                InterlockedExchangeAdd(&g_rawDy, ri.data.mouse.lLastY);
+            }
+        }
+    }
+    return CallWindowProcA(g_rawPrevProc, hwnd, msg, wp, lp);
+}
+
+/* Put the previous window's procedure back, if that window still exists and still has ours. */
+static void DetachRawMouse(void)
+{
+    if (g_rawHwnd && g_rawPrevProc && IsWindow(g_rawHwnd) &&
+        (WNDPROC)GetWindowLongPtrA(g_rawHwnd, GWLP_WNDPROC) == RawWndProc) {
+        SetWindowLongPtrA(g_rawHwnd, GWLP_WNDPROC, (LONG_PTR)g_rawPrevProc);
+        Log("raw mouse: detached from window %p", g_rawHwnd);
+    }
+    g_rawHwnd = NULL;
+    g_rawPrevProc = NULL;
+    g_rawActive = FALSE;
+}
+
+/* The main window can be recreated (vid_restart, fullscreen toggle): attach to whichever is current. */
+static void AttachRawMouse(HWND hwnd)
+{
+    DetachRawMouse();
+    g_rawHwnd = hwnd;
+    InterlockedExchange(&g_rawDx, 0);
+    InterlockedExchange(&g_rawDy, 0);
+    WNDPROC prev = (WNDPROC)SetWindowLongPtrA(hwnd, GWLP_WNDPROC, (LONG_PTR)RawWndProc);
+    if (!prev) {
+        Log("raw mouse: could not subclass window %p (%lu), cursor deltas kept", hwnd, GetLastError());
+        return;
+    }
+    g_rawPrevProc = prev;
+    RAWINPUTDEVICE rid = { 0x01 /* generic desktop */, 0x02 /* mouse */, 0, hwnd };
+    if (!RegisterRawInputDevices(&rid, 1, sizeof(rid))) {
+        Log("raw mouse: RegisterRawInputDevices failed (%lu), cursor deltas kept", GetLastError());
+        return; /* stays subclassed, forwarding everything; no WM_INPUT arrives */
+    }
+    g_rawActive = TRUE;
+    Log("raw mouse: attached to window %p", hwnd);
+}
+
+static int __cdecl MouseEventHook(int x, int y, int dx, int dy)
+{
+    HWND hwnd = *(HWND *)(DWORD_PTR)MAIN_HWND_VA;
+    if (hwnd && hwnd != g_rawHwnd) AttachRawMouse(hwnd);
+    if (g_rawActive) {
+        dx = InterlockedExchange(&g_rawDx, 0);
+        dy = InterlockedExchange(&g_rawDy, 0);
+    }
+    return ((MouseEventFn)(DWORD_PTR)MOUSE_EVENT_VA)(x, y, dx, dy);
+}
+
+static void PatchRawMouse(void)
+{
+    static const BYTE kPushes[] = { 0x57, 0x56, 0x51, 0x52 };
+    BYTE *call = (BYTE *)(DWORD_PTR)MOUSEMOVE_CALL_VA;
+    LONG rel = (LONG)(MOUSE_EVENT_VA - (MOUSEMOVE_CALL_VA + 5));
+    if (!Readable(call - 4, 9) || memcmp(call - 4, kPushes, 4) != 0 || call[0] != 0xE8 ||
+        memcmp(call + 1, &rel, 4) != 0) {
+        Log("raw mouse: bytes at 0x%08X do not match, cursor deltas kept", MOUSEMOVE_CALL_VA);
+        return;
+    }
+    rel = (LONG)((DWORD_PTR)MouseEventHook - (MOUSEMOVE_CALL_VA + 5));
+    WriteCode(call + 1, &rel, 4);
+    Log("raw mouse: view deltas come from WM_INPUT");
+}
+
+/* Scoreboard after focus loss while loading. The scoreboard is a function of the Scaleform HUD
+ * movie scaleform/default/codohud.gfx, which is loaded exactly once per map, when the client
+ * enters the game: 0x5EC8EF calls the UI mode switch 0x83DA993(local, 12), whose Scaleform half
+ * (0x6B77A0, case 12 -> 0x6B55D0) loads the movie into 0x810C4F4/0x810C50C. 0x6B77A0 refuses
+ * every open while the D3D device is lost (0xA7A6C0: no device, or lost flag 0xCEF828) or
+ * Scaleform is off (0x6C44D5C). Alt+Tab out of a fullscreen client during the load screen keeps
+ * the device lost until the player comes back, so the one open is refused, codohud never loads,
+ * and for the rest of the map TAB (CG_ScoresDown 0x436EE0 -> 0x83DA993(local, 7) ->
+ * cpp_showScoreboard on the missing movie) shows nothing, although "s" is sent and answered.
+ * The next map loads it again.
+ * CG_ScoresDown's open call now goes through ScoresOpenHook, which first repeats the enter-game
+ * open when the movie is missing and Scaleform is usable again. Nothing else changes: with the
+ * movie present the hook is the original call. */
+#define SCORES_OPEN_CALL_VA 0x00436F90u /* call 0x83DA993 ; push 7 / push local precede it */
+#define UI_MODE_VA          0x083DA993u
+#define HUD_MOVIE_VA        0x0810C4F4u
+#define HUD_MOVIE_DEF_VA    0x0810C50Cu
+#define SCALEFORM_ON_VA     0x06C44D5Cu
+#define GFX_UNUSABLE_VA     0x00A7A6C0u
+#define UI_MODE_HUD         12
+
+typedef void (__cdecl *UiModeFn)(int localClient, int mode);
+typedef unsigned char (__cdecl *GfxUnusableFn)(void);
+
+static void __cdecl ScoresOpenHook(int localClient, int mode)
+{
+    static LONG reloads;
+    if (!*(volatile DWORD *)(DWORD_PTR)HUD_MOVIE_VA && !*(volatile DWORD *)(DWORD_PTR)HUD_MOVIE_DEF_VA &&
+        *(volatile DWORD *)(DWORD_PTR)SCALEFORM_ON_VA && !((GfxUnusableFn)(DWORD_PTR)GFX_UNUSABLE_VA)()) {
+        ((UiModeFn)(DWORD_PTR)UI_MODE_VA)(localClient, UI_MODE_HUD);
+        if (InterlockedIncrement(&reloads) <= 8)
+            Log("scoreboard: HUD movie was not loaded (focus lost while loading?), reloaded it: %s",
+                *(volatile DWORD *)(DWORD_PTR)HUD_MOVIE_VA ? "ok" : "still missing");
+    }
+    ((UiModeFn)(DWORD_PTR)UI_MODE_VA)(localClient, mode);
+}
+
+static void PatchScoresOpen(void)
+{
+    static const BYTE kPushes[] = { 0x6A, 0x07, 0x51 }; /* push 7 ; push ecx */
+    BYTE *call = (BYTE *)(DWORD_PTR)SCORES_OPEN_CALL_VA;
+    LONG rel = (LONG)(UI_MODE_VA - (SCORES_OPEN_CALL_VA + 5));
+    if (!Readable(call - 3, 8) || memcmp(call - 3, kPushes, 3) != 0 || call[0] != 0xE8 ||
+        memcmp(call + 1, &rel, 4) != 0) {
+        Log("scoreboard: bytes at 0x%08X do not match, HUD reload on TAB not installed", SCORES_OPEN_CALL_VA);
+        return;
+    }
+    rel = (LONG)((DWORD_PTR)ScoresOpenHook - (SCORES_OPEN_CALL_VA + 5));
+    WriteCode(call + 1, &rel, 4);
+    Log("scoreboard: TAB reloads the HUD movie when a lost device skipped it");
+}
+
+/* Patch folder: client_shipRetail\patch\*.ff loaded from memory ahead of the stock zones.
+ * A zone read from disk must be RSA-signed: DB_LoadXFile (0x4B5D50) sends an unsigned IWffu100
+ * zone whose stream is a file handle to the error path (0x4B5EEA-0x4B5F02). The only unsigned
+ * zone C1 takes is the lobby's fastfile of the day, which DB_TryLoadXFileInternal (0x4CD260,
+ * called per queued zone by the DB thread at 0x4CD8E5) serves from memory:
+ *     0x4CD27F  strcmp(name, "ffotd_client") ; 0x4CD2AF jne 0x4CD3E3 (disk: CreateFile "%s.ff")
+ *     ffotd: [ebp-0x214] = size, [ebp-0x210] = buffer, esi = -1 (no handle) -> 0x4CD55E
+ * 0x4CD55E fills the zone entry {handle, remaining, cursor, name[64], ..., allocFlags @+0x4C},
+ * and the stream reader (0x4B6790) memcpys from the cursor when the handle is -1, so the buffer
+ * is only read. Only "ffotd_client" also sets the entry's FFOTD byte (+0xA4).
+ * Two changes, both byte-checked:
+ *   - the jne at 0x4CD2AF goes to PatchDirOpenHook: a name that is one of the patch files takes
+ *     the ffotd memory path with that file's buffer, any other name continues to 0x4CD3E3
+ *     exactly as before. Disk zones keep their signature check; "ffotd_client" never gets here.
+ *   - the code_pre_gfx list's DB_LoadXAssets call (0x59841C, 4 zones, alloc flags 1) goes to
+ *     PreGfxLoadHook, which prepends the patch zones (same alloc flags) to the list. C1 keeps the
+ *     first entry it links under a name, so their assets win over every stock zone.
+ * Files are taken in alphabetical order; each must be IWffu100 version 0x14E and at most 32 MiB.
+ * C1 decrypts only the first 0x40000-byte read chunk of an unsigned zone (0x4B5B7D, over the
+ * z_stream input after the header) and inflates every later chunk as read (0x4B69E0 skips the
+ * decrypt when the zone is unsigned), so a file over 256 KiB must carry its body in plain after
+ * the first chunk; tools/codol_english/build_font_ff.py writes it that way.
+ * A file named like a stock zone (or ffotd_client) is skipped, so it can never replace one.
+ * "+set codol_patchdir 0" on the command line turns the folder off. */
+#define PATCHDIR_OPEN_JNE_VA   0x004CD2AFu
+#define PATCHDIR_DISK_PATH_VA  0x004CD3E3u
+#define PATCHDIR_MEM_PATH_VA   0x004CD55Eu
+#define PREGFX_LOAD_CALL_VA    0x0059841Cu
+#define DB_LOAD_XASSETS_VA     0x08465768u
+#define ZONE_OVERRIDE_FLAG_VA  0x019A2F6Cu
+#define PATCHDIR_MAX_FILES     16
+#define PATCHDIR_MAX_BYTES     0x2000000u /* 32 MiB; the English font zone is ~7.4 MB */
+
+typedef struct { const char *name; int allocFlags; int freeFlags; } XZoneInfo;
+typedef void (__cdecl *LoadXAssetsFn)(XZoneInfo *info, unsigned count, int sync);
+
+typedef struct { DWORD size; const BYTE *data; char name[64]; } PatchZone; /* size, data: read by asm */
+
+static PatchZone g_patchZones[PATCHDIR_MAX_FILES];
+static int g_patchZoneCount;
+__attribute__((used)) DWORD g_patchDirDiskPath = PATCHDIR_DISK_PATH_VA;
+__attribute__((used)) DWORD g_patchDirMemPath = PATCHDIR_MEM_PATH_VA;
+
+/* "+set codol_patchdir 0" anywhere on the command line; the last setting wins. */
+static BOOL PatchDirEnabled(void)
+{
+    const char *p = GetCommandLineA();
+    BOOL on = TRUE;
+    while ((p = strstr(p, "codol_patchdir")) != NULL) {
+        p += 14;
+        if (*p != ' ' && *p != '\t' && *p != '"') continue;
+        while (*p == ' ' || *p == '\t' || *p == '"') p++;
+        on = !(p[0] == '0' && (p[1] == '\0' || p[1] == ' ' || p[1] == '\t' || p[1] == '"'));
+    }
+    return on;
+}
+
+/* True when client_shipRetail\<any folder but patch>\<file> exists, i.e. the name is a stock zone. */
+static BOOL StockZoneExists(const char *dir, const char *file)
+{
+    char pattern[MAX_PATH];
+    WIN32_FIND_DATAA fd;
+    _snprintf(pattern, sizeof(pattern), "%s*", dir);
+    pattern[sizeof(pattern) - 1] = 0;
+    HANDLE h = FindFirstFileA(pattern, &fd);
+    BOOL found = FALSE;
+    if (h == INVALID_HANDLE_VALUE) return FALSE;
+    do {
+        if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) || fd.cFileName[0] == '.' ||
+            lstrcmpiA(fd.cFileName, "patch") == 0)
+            continue;
+        char path[MAX_PATH];
+        _snprintf(path, sizeof(path), "%s%s\\%s", dir, fd.cFileName, file);
+        path[sizeof(path) - 1] = 0;
+        if (GetFileAttributesA(path) != INVALID_FILE_ATTRIBUTES) found = TRUE;
+    } while (!found && FindNextFileA(h, &fd));
+    FindClose(h);
+    return found;
+}
+
+static int CompareNames(const void *a, const void *b)
+{
+    return lstrcmpiA((const char *)a, (const char *)b);
+}
+
+static void LoadPatchDir(void)
+{
+    char dir[MAX_PATH], pattern[MAX_PATH];
+    DWORD n = GetModuleFileNameA(NULL, dir, MAX_PATH);
+    while (n && dir[n - 1] != '\\') n--;
+    lstrcpynA(dir + n, "client_shipRetail\\", MAX_PATH - n);
+    _snprintf(pattern, sizeof(pattern), "%spatch\\*.ff", dir);
+    pattern[sizeof(pattern) - 1] = 0;
+
+    static char files[64][MAX_PATH];
+    int count = 0;
+    WIN32_FIND_DATAA fd;
+    HANDLE h = FindFirstFileA(pattern, &fd);
+    if (h == INVALID_HANDLE_VALUE) {
+        Log("patch folder: no .ff files in %spatch\\", dir);
+        return;
+    }
+    do {
+        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
+        if (count == 64) { Log("patch folder: more than 64 files, the rest are ignored"); break; }
+        lstrcpynA(files[count++], fd.cFileName, MAX_PATH);
+    } while (FindNextFileA(h, &fd));
+    FindClose(h);
+    qsort(files, count, sizeof(files[0]), CompareNames);
+
+    for (int i = 0; i < count; i++) {
+        const char *file = files[i];
+        size_t len = strlen(file);
+        if (len < 4 || lstrcmpiA(file + len - 3, ".ff") != 0) continue; /* "*.ff" also matches "*.ffx" */
+        if (g_patchZoneCount == PATCHDIR_MAX_FILES) {
+            Log("patch folder: skipped %s: only %d files are loaded", file, PATCHDIR_MAX_FILES);
+            continue;
+        }
+        PatchZone *z = &g_patchZones[g_patchZoneCount];
+        if (len - 3 >= sizeof(z->name)) { Log("patch folder: skipped %s: name too long", file); continue; }
+        memcpy(z->name, file, len - 3);
+        z->name[len - 3] = 0;
+        if (lstrcmpiA(z->name, "ffotd_client") == 0) {
+            Log("patch folder: skipped %s: the name belongs to the lobby's FFOTD", file);
+            continue;
+        }
+        BOOL dup = FALSE;
+        for (int j = 0; j < g_patchZoneCount; j++) dup |= lstrcmpiA(g_patchZones[j].name, z->name) == 0;
+        if (dup || StockZoneExists(dir, file)) {
+            Log("patch folder: skipped %s: a %s zone of that name exists", file, dup ? "patch" : "stock");
+            continue;
+        }
+
+        char path[MAX_PATH];
+        _snprintf(path, sizeof(path), "%spatch\\%s", dir, file);
+        path[sizeof(path) - 1] = 0;
+        HANDLE f = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+        if (f == INVALID_HANDLE_VALUE) {
+            Log("patch folder: skipped %s: open failed (%lu)", file, GetLastError());
+            continue;
+        }
+        DWORD size = GetFileSize(f, NULL), got = 0;
+        if (size == INVALID_FILE_SIZE || size > PATCHDIR_MAX_BYTES || size < 16) {
+            CloseHandle(f);
+            Log("patch folder: skipped %s: %lu bytes (an unsigned zone must be 16..%u bytes)", file,
+                (unsigned long)size, PATCHDIR_MAX_BYTES);
+            continue;
+        }
+        BYTE *data = (BYTE *)HeapAlloc(GetProcessHeap(), 0, size); /* kept: C1 reads it on every load */
+        BOOL ok = data && ReadFile(f, data, size, &got, NULL) && got == size;
+        CloseHandle(f);
+        if (!ok) {
+            Log("patch folder: skipped %s: read failed", file);
+            if (data) HeapFree(GetProcessHeap(), 0, data);
+            continue;
+        }
+        if (memcmp(data, "IWffu100", 8) != 0 || *(DWORD *)(data + 8) != 0x14E) {
+            Log("patch folder: skipped %s: not an IWffu100 version 0x14E zone", file);
+            HeapFree(GetProcessHeap(), 0, data);
+            continue;
+        }
+        z->size = size;
+        z->data = data;
+        g_patchZoneCount++;
+        Log("patch folder: %s (%lu bytes) queued as zone \"%s\"", file, (unsigned long)size, z->name);
+    }
+}
+
+/* Called on the DB thread with the name DB_TryLoadXFileInternal is about to open from disk. */
+__attribute__((used)) const PatchZone *__cdecl PatchDirFind(const char *name)
+{
+    for (int i = 0; i < g_patchZoneCount; i++) {
+        if (lstrcmpiA(g_patchZones[i].name, name) == 0) {
+            Log("patch folder: zone \"%s\" loading from memory (%lu bytes, override flag %lu)", name,
+                (unsigned long)g_patchZones[i].size, *(volatile DWORD *)(DWORD_PTR)ZONE_OVERRIDE_FLAG_VA);
+            return &g_patchZones[i];
+        }
+    }
+    return NULL;
+}
+
+void PatchDirOpenHook(void);
+__asm__(
+    ".text\n"
+    ".globl _PatchDirOpenHook\n"
+    "_PatchDirOpenHook:\n"            /* ebx = zone name, edi = 0, ebp = the caller's frame */
+    "    pushl %ebx\n"
+    "    call _PatchDirFind\n"
+    "    addl $4, %esp\n"
+    "    testl %eax, %eax\n"
+    "    jz 1f\n"
+    "    movl (%eax), %ecx\n"
+    "    movl %ecx, -0x214(%ebp)\n"    /* size */
+    "    movl 4(%eax), %ecx\n"
+    "    movl %ecx, -0x210(%ebp)\n"    /* buffer */
+    "    orl $-1, %esi\n"              /* no file handle */
+    "    movl %esi, -0x218(%ebp)\n"
+    "    jmp *_g_patchDirMemPath\n"
+    "1:  jmp *_g_patchDirDiskPath\n");
+
+static void __cdecl PreGfxLoadHook(XZoneInfo *info, unsigned count, int sync)
+{
+    XZoneInfo all[PATCHDIR_MAX_FILES + 8];
+    unsigned n = 0;
+    for (int i = 0; i < g_patchZoneCount; i++) {
+        all[n].name = g_patchZones[i].name;
+        all[n].allocFlags = info[0].allocFlags;
+        all[n].freeFlags = 0;
+        n++;
+    }
+    for (unsigned i = 0; i < count && n < sizeof(all) / sizeof(all[0]); i++) all[n++] = info[i];
+    Log("patch folder: code_pre_gfx list: %d patch zone(s) ahead of %u stock", g_patchZoneCount, count);
+    ((LoadXAssetsFn)(DWORD_PTR)DB_LOAD_XASSETS_VA)(all, n, sync);
+}
+
+static void PatchPatchDir(void)
+{
+    if (!PatchDirEnabled()) {
+        Log("patch folder: off (codol_patchdir 0)");
+        return;
+    }
+    static const BYTE kCmpJne[] = { 0x33, 0xFF, 0x3B, 0xC7, 0x0F, 0x85, 0x2E, 0x01, 0x00, 0x00 };
+    static const BYTE kList[] = { 0x89, 0x8D, 0x88, 0xFE, 0xFF, 0xFF }; /* the list's last store */
+    BYTE *jne = (BYTE *)(DWORD_PTR)PATCHDIR_OPEN_JNE_VA;
+    BYTE *call = (BYTE *)(DWORD_PTR)PREGFX_LOAD_CALL_VA;
+    LONG rel = (LONG)(DB_LOAD_XASSETS_VA - (PREGFX_LOAD_CALL_VA + 5));
+    if (!Readable(jne - 4, sizeof(kCmpJne)) || memcmp(jne - 4, kCmpJne, sizeof(kCmpJne)) != 0 ||
+        !Readable(call - 6, 11) || memcmp(call - 6, kList, 6) != 0 || call[0] != 0xE8 ||
+        memcmp(call + 1, &rel, 4) != 0) {
+        Log("patch folder: bytes at 0x%08X / 0x%08X do not match, not installed",
+            PATCHDIR_OPEN_JNE_VA, PREGFX_LOAD_CALL_VA);
+        return;
+    }
+    LoadPatchDir();
+    if (!g_patchZoneCount) return;
+    rel = (LONG)((DWORD_PTR)PatchDirOpenHook - (PATCHDIR_OPEN_JNE_VA + 6));
+    WriteCode(jne + 2, &rel, 4);
+    rel = (LONG)((DWORD_PTR)PreGfxLoadHook - (PREGFX_LOAD_CALL_VA + 5));
+    WriteCode(call + 1, &rel, 4);
+    Log("patch folder: %d zone(s) load from memory ahead of code_pre_gfx", g_patchZoneCount);
+}
+
+/* Runs in place of TenPlat's start routine (the fault handler redirects there). */
+static void __cdecl TakeOver(void)
+{
+    LoadUnpackedImage();
+    MatchC1SectionFlags();
+    FillImports();
+    PatchRenderGate();
+    PatchDvarRegistrations();
+    PatchPlainConfig();
+    PatchAltTab();
+    PatchRawMouse();
+    PatchScoresOpen();
+    PatchPatchDir();
+    Log("entering game at 0x%08X", GAME_ENTRY_VA);
+    ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
+    ExitProcess(0); /* the CRT entry ends in exit(); not reached */
+}
+
+/* ---- TenProtect quarantine -------------------------------------------------------------- */
+
+static BOOL InTen(DWORD_PTR a)
+{
+    return g_tenBase && a >= (DWORD_PTR)g_tenBase && a < (DWORD_PTR)g_tenBase + g_tenSize;
+}
+
+static DWORD NoExec(DWORD prot)
+{
+    switch (prot & 0xFF) {
+    case PAGE_EXECUTE:
+    case PAGE_EXECUTE_READ:      return (prot & ~0xFF) | PAGE_READONLY;
+    case PAGE_EXECUTE_READWRITE: return (prot & ~0xFF) | PAGE_READWRITE;
+    case PAGE_EXECUTE_WRITECOPY: return (prot & ~0xFF) | PAGE_WRITECOPY;
+    }
+    return prot;
+}
+
+static LPVOID WINAPI Hook_VirtualAlloc(LPVOID a, SIZE_T n, DWORD t, DWORD p)
+{
+    BOOL ten = g_supportedBuild && !g_tenBase && n >= 0x100000 && p == PAGE_EXECUTE_READWRITE;
+    LPVOID r = ((LPVOID(WINAPI *)(LPVOID, SIZE_T, DWORD, DWORD))g_virtualAlloc)(a, n, t, ten ? NoExec(p) : p);
+    if (ten && r) {
+        g_tenSize = n;
+        g_tenBase = (BYTE *)r;
+        Log("tenprotect: image allocation %p size 0x%lX held non-executable", r, (unsigned long)n);
+    }
+    return r;
+}
+
+static BOOL WINAPI Hook_VirtualProtect(LPVOID a, SIZE_T n, DWORD p, PDWORD old)
+{
+    if (InTen((DWORD_PTR)a)) p = NoExec(p);
+    return ((BOOL(WINAPI *)(LPVOID, SIZE_T, DWORD, PDWORD))g_virtualProtect)(a, n, p, old);
+}
+
+static LONG CALLBACK FaultHandler(EXCEPTION_POINTERS *ep)
+{
+    static volatile LONG logged;
+    EXCEPTION_RECORD *er = ep->ExceptionRecord;
+    CONTEXT *c = ep->ContextRecord;
+    if (er->ExceptionCode != EXCEPTION_ACCESS_VIOLATION) return EXCEPTION_CONTINUE_SEARCH;
+
+    DWORD *sp = (DWORD *)c->Esp;
+    if (er->ExceptionInformation[0] == 8 && InTen(c->Eip) && Readable(sp, 16)) {
+        DWORD exe = (DWORD)(DWORD_PTR)GetModuleHandleA(NULL);
+        DWORD ten = (DWORD)(DWORD_PTR)g_tenBase;
+        DWORD off = c->Eip - ten;
+        if (sp[1] == ten && sp[2] == DLL_PROCESS_ATTACH) {
+            /* DllMain(hTen, DLL_PROCESS_ATTACH, 0): report success. */
+            Log("tenprotect: DllMain (+0x%lX) skipped", (unsigned long)off);
+            c->Eax = TRUE;
+            c->Eip = sp[0];
+            c->Esp += 16;
+            return EXCEPTION_CONTINUE_EXECUTION;
+        }
+        if (sp[0] == exe && sp[1] == exe && sp[3] == ten) {
+            /* Start routine (hExe, param block, hTen): do its job ourselves. */
+            Log("tenprotect: start routine (+0x%lX) replaced; param block at 0x%08lX",
+                (unsigned long)off, (unsigned long)sp[2]);
+            c->Eip = (DWORD)(DWORD_PTR)TakeOver;
+            c->Esp = (c->Esp + 16) & ~0xFu;
+            return EXCEPTION_CONTINUE_EXECUTION;
+        }
+        Log("tenprotect: unexpected call +0x%lX from 0x%08lX (%08lX %08lX %08lX)", (unsigned long)off,
+            (unsigned long)sp[0], (unsigned long)sp[1], (unsigned long)sp[2], (unsigned long)sp[3]);
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+
+    if (InterlockedIncrement(&logged) <= 4) {
+        DWORD ret = Readable(sp, 4) ? sp[0] : 0;
+        Log("AV %s 0x%08lX at eip=0x%08lX [esp]=0x%08lX",
+            er->ExceptionInformation[0] == 8 ? "exec" : er->ExceptionInformation[0] ? "write" : "read",
+            (unsigned long)er->ExceptionInformation[1], (unsigned long)c->Eip, (unsigned long)ret);
+    }
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
+/* ---- the Kernel32.dll stand-in ---------------------------------------------------------- */
+
+HMODULE WINAPI K33_LoadLibraryA(LPCSTR name)
+{
+    HMODULE m = ((HMODULE(WINAPI *)(LPCSTR))g_loadLibraryA)(name);
+    if (!m) Log("LoadLibraryA(\"%s\") FAILED (%lu)", name ? name : "(null)", GetLastError());
+    return m;
+}
+
+FARPROC WINAPI K33_GetProcAddress(HMODULE module, LPCSTR name)
+{
+    FARPROC p = ((FARPROC(WINAPI *)(HMODULE, LPCSTR))g_getProcAddress)(module, name);
+    if (p && g_supportedBuild && (DWORD_PTR)name >> 16) {
+        if (lstrcmpA(name, "VirtualAlloc") == 0) { g_virtualAlloc = p; return (FARPROC)Hook_VirtualAlloc; }
+        if (lstrcmpA(name, "VirtualProtect") == 0) { g_virtualProtect = p; return (FARPROC)Hook_VirtualProtect; }
+    }
+    return p;
+}
+
+BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved)
+{
+    (void)reserved;
+    if (reason == DLL_PROCESS_ATTACH) {
+        g_self = inst;
+        DisableThreadLibraryCalls(inst);
+        HMODULE k32 = GetModuleHandleA("kernel32.dll");
+        g_loadLibraryA = GetProcAddress(k32, "LoadLibraryA");
+        g_getProcAddress = GetProcAddress(k32, "GetProcAddress");
+        if (!g_loadLibraryA || !g_getProcAddress) return FALSE;
+
+        BYTE *base = (BYTE *)GetModuleHandleA(NULL);
+        IMAGE_NT_HEADERS *nt = (IMAGE_NT_HEADERS *)(base + ((IMAGE_DOS_HEADER *)base)->e_lfanew);
+        g_supportedBuild = base == (BYTE *)0x400000 && nt->FileHeader.TimeDateStamp == BUILD_TIMESTAMP;
+
+        char exe[MAX_PATH];
+        GetModuleFileNameA(NULL, exe, MAX_PATH);
+        Log("---- attach pid %lu %s (build %08lX%s)", GetCurrentProcessId(), exe,
+            (unsigned long)nt->FileHeader.TimeDateStamp,
+            g_supportedBuild ? "" : ", NOT 1.1.1.13: passing through untouched");
+        if (g_supportedBuild) AddVectoredExceptionHandler(1, FaultHandler);
+    }
+    return TRUE;
+}

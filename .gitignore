@@ -1,0 +1,7 @@
+# build intermediates
+*.o
+# local backups
+*.bak
+*.pre-*
+# old diagnostic build, no source here
+Kernel33_trace.dll

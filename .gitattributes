@@ -1,0 +1,2 @@
+# store every file byte-for-byte (kernel33.c is CRLF, build.sh must stay LF)
+* -text

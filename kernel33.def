@@ -1,0 +1,4 @@
+LIBRARY Kernel33.dll
+EXPORTS
+    LoadLibraryA=K33_LoadLibraryA@4
+    GetProcAddress=K33_GetProcAddress@8

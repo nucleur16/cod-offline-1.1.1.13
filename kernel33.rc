@@ -1,0 +1,2 @@
+// The unpacked packer section from C1.exe (see make_exe.py), inflated by kernel33.c at startup.
+1 RCDATA "unpacked.z"
