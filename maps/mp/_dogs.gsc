@@ -69,10 +69,8 @@
 	    local dog_get_closest_node() - the same body, carried in.
 	  - bbPrint( "mpdogspawnused: ..." ) is dropped: Blackbox telemetry has no
 	    counterpart in this server.
-	  - dog_create_spawn_influencer() called
-	    maps\mp\gametypes\_spawning::create_dog_influencers(); no _spawning
-	    module and no influencer system here, so the function and its call are
-	    dropped.
+	  - dog_create_spawn_influencer() is T5's _spawning::create_dog_influencers
+	    on the native attached-sphere influencer (see the function).
 	  - maps\mp\gametypes\_weapons::monitor_dog_special_grenades() has no
 	    counterpart in the local _weapons, so its T5 body is carried here
 	    (monitor_dog_special_grenades below) next to flash_dogs().
@@ -144,8 +142,9 @@ init()
 
 	init_node_arrays();
 
-	if ( level.no_pathnodes )
-		level.no_dogs = true;
+	// CoDOL: a map without path nodes no longer disables the dogs here; the
+	// first call-in builds substitute nodes from the bot waypoints or the
+	// spawn points (dog_ensure_nodes), and refuses only if neither exists.
 
 	regenTime = 5;
 	level.dogHealth_RegularRegenDelay = regenTime * 1000;
@@ -253,6 +252,12 @@ dog_test_watcher()
 //   "flash <who>"           a 1-point flash_grenade_mp splash from <who>,
 //                           then the dog's flash strength
 //   "nodes <team>"          the dog spawn nodes for a team
+//   "spawnweight"           the dog spawn influencer on each team's spawns
+//   "goto x y z gx gy gz"   place the first dog and send it somewhere
+//   "embed x y z"           put the first dog inside solid
+//   "where"                 the first dog's origin
+//   (codol_dogsNoPathNodes 1/2 before a map load: no path nodes, use bot
+//   waypoints / spawn points)
 //   "leave"                 make_all_dogs_leave()
 //   "endgame"               _gamelogic::forceEnd(), to watch the dogs leave
 dog_test_verb( tokens )
@@ -275,6 +280,78 @@ dog_test_verb( tokens )
 	{
 		print( "CoDOL dogs test: leave\n" );
 		make_all_dogs_leave();
+		return;
+	}
+
+	if ( verb == "spawnweight" )
+	{
+		// The dog influencer's weight on each team's spawn candidates: the
+		// point nearest a live dog, and the lowest weight of all spawn points.
+		if ( !isDefined( level.dogs ) )
+		{
+			print( "CoDOL dogs test: spawnweight: no dogs\n" );
+			return;
+		}
+		teams = [];
+		teams[0] = "allies";
+		teams[1] = "axis";
+		foreach ( t in teams )
+		{
+			worst = 0;
+			worstAt = "none";
+			foreach ( spawnpoint in level.spawnpoints )
+			{
+				w = codol_rcSpawnWeight( spawnpoint.origin, t );
+				if ( w < worst )
+				{
+					worst = w;
+					worstAt = "" + spawnpoint.origin;
+				}
+			}
+			atDog = "n/a";
+			foreach ( dog in level.dogs )
+				if ( isDefined( dog ) && isAlive( dog ) )
+				{
+					atDog = codol_rcSpawnWeight( dog.origin, t );
+					break;
+				}
+			print( "CoDOL dogs test: spawnweight " + t + ": at a dog " + atDog + ", worst spawn point " + worst + " at " + worstAt + "\n" );
+		}
+		return;
+	}
+
+	// "goto x y z gx gy gz": the first live dog, ignoring enemies, is placed
+	// at (x y z) and sent to (gx gy gz) -- the wall-hop check.
+	if ( verb == "goto" && tokens.size > 6 )
+	{
+		dog = dog_test_first_dog();
+		if ( !isDefined( dog ) )
+			return;
+		dog.ignoreall = true;
+		dog notify( "attacking" );	// ends dog_patrol without restarting it
+		dog forceteleport( ( float( tokens[1] ), float( tokens[2] ), float( tokens[3] ) ), ( 0, 90, 0 ) );
+		dog setgoalpos( ( float( tokens[4] ), float( tokens[5] ), float( tokens[6] ) ) );
+		print( "CoDOL dogs test: goto: dog " + dog getEntityNumber() + " at " + dog.origin + " -> (" + tokens[4] + " " + tokens[5] + " " + tokens[6] + ")\n" );
+		return;
+	}
+
+	// "embed x y z": the first live dog is put inside solid at (x y z)
+	// (teleport, unlike forceteleport, does not lift it out).
+	if ( verb == "embed" && tokens.size > 3 )
+	{
+		dog = dog_test_first_dog();
+		if ( !isDefined( dog ) )
+			return;
+		dog teleport( ( float( tokens[1] ), float( tokens[2] ), float( tokens[3] ) ) );
+		print( "CoDOL dogs test: embed: dog " + dog getEntityNumber() + " at " + dog.origin + "\n" );
+		return;
+	}
+
+	if ( verb == "where" )
+	{
+		dog = dog_test_first_dog();
+		if ( isDefined( dog ) )
+			print( "CoDOL dogs test: where: dog " + dog getEntityNumber() + " at " + dog.origin + "\n" );
 		return;
 	}
 
@@ -402,6 +479,16 @@ dog_test_verb( tokens )
 	print( "CoDOL dogs test: unknown request '" + verb + "'\n" );
 }
 
+dog_test_first_dog()
+{
+	if ( isDefined( level.dogs ) )
+		foreach ( dog in level.dogs )
+			if ( isDefined( dog ) && isAlive( dog ) )
+				return dog;
+	print( "CoDOL dogs test: no live dog\n" );
+	return undefined;
+}
+
 useKillstreakDogs(lifeId)
 {
 	// T5 _killstreakrules "dog" rule: one set at a time (see header).
@@ -415,7 +502,7 @@ useKillstreakDogs(lifeId)
 	// spawns nothing on a map without path nodes or a dog spawner, which spends
 	// the reward on no dogs.  Resolve the spawner now and refuse instead, so
 	// the player keeps the reward, as the one-set rule above does.
-	if ( level.no_dogs || !dog_acquire_spawner() )
+	if ( level.no_dogs || !dog_ensure_nodes() || !dog_acquire_spawner() )
 	{
 		self iPrintLnBold( &"KILLSTREAKS_DOGS_NOT_AVAILABLE" );
 		return false;
@@ -468,6 +555,11 @@ pick_random_nodes( from, count )
 init_node_arrays()
 {
 	nodes = getallnodes();
+
+	// Developer test hook: behave as on a map without path nodes
+	// (codol_dogsNoPathNodes 1: substitute bot waypoints; 2: spawn points).
+	if ( getDvarInt( "developer" ) > 0 && getDvarInt( "codol_dogsNoPathNodes" ) > 0 )
+		nodes = [];
 
 	pathnodes = [];
 
@@ -816,7 +908,7 @@ dog_manager_spawn_dog( owner, team, spawn_node, index, requiredDeathCount )
 		angles = ( 0, randomint( 360 ), 0 );
 
 	dog forceteleport( spawn_node.origin, angles );
-	dog setgoalnode( spawn_node );
+	dog dog_set_goal_node( spawn_node );
 	dog.spawnnode = spawn_node;
 	dog show();
 
@@ -831,8 +923,25 @@ dog_manager_spawn_dog( owner, team, spawn_node, index, requiredDeathCount )
 	dog thread dog_notify_level_on_death();
 	dog dog_thread_behavior_function();
 	dog thread monitor_dog_special_grenades();
+	dog dog_create_spawn_influencer();
 
 	return dog;
+}
+
+// T5 maps\mp\gametypes\_spawning::create_dog_influencers: a sphere of
+// scr_spawn_dog_influencer_radius (15 player heights; T5's player height is
+// 70, the value the RC-XD port uses) scoring scr_spawn_dog_influencer_score
+// (-150), steep curve, on the spawn points of the dog's enemies (everyone in
+// FFA).  It rides the native attached-sphere influencer the RC-XD uses
+// (codol_rc_spawn_influence.c), which getBestWeightedSpawnpoint already adds
+// to every candidate's weight, and it ends with the dog.
+dog_create_spawn_influencer()
+{
+	protectedTeam = self.aiteam;
+	if ( !level.teambased )
+		protectedTeam = "none";
+	self codol_setRCSpawnInfluencer( getFloatProperty( "scr_spawn_dog_influencer_radius", 15.0 * 70.0 ),
+		getFloatProperty( "scr_spawn_dog_influencer_score", -150 ), 2, protectedTeam );
 }
 
 get_debug_team( team )
@@ -886,6 +995,64 @@ dog_manager_spawn_dogs( team, enemyTeam, deathCount )
 	}
 
 	level thread dog_manager_spawn_more_dogs_on_death( self, level.dog_count - level.dog_count_max_at_once, team );
+}
+
+// CoDOL: T5 dogs need the map's path nodes to spawn, patrol and leave.  On a
+// map without them the dogs use substitute nodes (structs carrying .origin,
+// marked .dog_struct): the bot waypoint graph's standable waypoints, else
+// the gametype's spawn points.  Built once, at the first call-in, because the
+// waypoint graph and the spawn points are loaded after _dogs::init.  Returns
+// false only when there is nowhere a dog could stand.
+dog_ensure_nodes()
+{
+	if ( !level.no_pathnodes )
+		return true;
+
+	points = [];
+	source = "none";
+	if ( getDvarInt( "developer" ) <= 0 || getDvarInt( "codol_dogsNoPathNodes" ) < 2 )
+	{
+		points = codol_getWalkableWaypoints();
+		source = "bot waypoints";
+	}
+	if ( points.size == 0 )
+	{
+		source = "spawn points";
+		if ( isdefined( level.spawnpoints ) )
+			foreach ( spawnpoint in level.spawnpoints )
+				points[points.size] = spawnpoint.origin;
+	}
+
+	nodes = [];
+	foreach ( point in points )
+	{
+		node = spawnStruct();
+		node.origin = point;
+		node.dog_struct = true;
+		nodes[nodes.size] = node;
+	}
+
+	print( "CoDOL dogs: the map has no path nodes; " + nodes.size + " substitute nodes from the " + source + "\n" );
+	if ( nodes.size == 0 )
+		return false;
+
+	level.dog_pathnodes = nodes;
+	level.patrolnodes = pick_random_nodes( nodes, 200 );
+	level.dogspawnnodes = pick_random_nodes( nodes, 20 );
+	level.dog_spawn_nodes_authored = false;
+	level.dog_team_spawn_nodes = [];
+	level.dogexitnodes = pick_random_nodes( nodes, 20 );
+	level.no_pathnodes = false;
+	return true;
+}
+
+// setgoalnode() for a map path node, setgoalpos() for a substitute node.
+dog_set_goal_node( node )
+{
+	if ( isdefined( node.dog_struct ) )
+		self setgoalpos( node.origin );
+	else
+		self setgoalnode( node );
 }
 
 // The dog spawner, found or built once per map (level.dog_spawner).  Split out
@@ -1316,7 +1483,7 @@ dog_leave()
 	self clearentitytarget();
 	self.ignoreall = true;
 	self.goalradius = 30;
-	self setgoalnode( self dog_get_exit_node() );
+	self dog_set_goal_node( self dog_get_exit_node() );
 
 	self waittill("goal");
 	self delete();
@@ -1431,7 +1598,7 @@ dog_patrol()
 /#
 			self dog_debug_print("patroling to node at " + node.origin );
 #/
-			self setgoalnode( node );
+			self dog_set_goal_node( node );
 			self dog_patrol_path_waiter();
 		}
 	}
