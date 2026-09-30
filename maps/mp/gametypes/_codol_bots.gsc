@@ -12,6 +12,7 @@ init()
     level thread watchKillstreakTestDvar();
     maps\mp\gametypes\_codol_equiptest::init();
     maps\mp\gametypes\_codol_perktest::init();
+    maps\mp\gametypes\_codol_breathtest::init();
     graph = "waypoints/" + getDvar( "mapname" ) + "_wp.csv";
     if ( loadBotWaypoints( graph ) <= 0 )
         return;
