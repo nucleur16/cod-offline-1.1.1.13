@@ -703,7 +703,7 @@ zombie_damage_watch()
 		if ( level.zm_diag_damage < 5 )
 		{
 			level.zm_diag_damage++;
-			println( "CoDOL zm DIAG damage notify #" + level.zm_diag_damage +
+			codolprintln( "CoDOL zm DIAG damage notify #" + level.zm_diag_damage +
 				": amount=" + diag_val( amount ) +
 				" attacker=" + diag_ent( attacker ) +
 				" direction=" + diag_val( direction ) +
@@ -1051,7 +1051,7 @@ zombie_death_event( zombie )
 		if ( isDefined( zombie ) )
 			cached = zombie.attacker;
 
-		println( "CoDOL zm DIAG death notify #" + level.zm_diag_death +
+		codolprintln( "CoDOL zm DIAG death notify #" + level.zm_diag_death +
 			": arg attacker=" + diag_ent( attacker ) +
 			" cached .attacker=" + diag_ent( cached ) +
 			" total killed=" + level.total_zombies_killed );

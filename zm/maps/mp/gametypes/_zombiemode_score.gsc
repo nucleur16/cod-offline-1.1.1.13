@@ -100,10 +100,9 @@ player_add_points( event, mod, hit_location )
 
 	player_points = multiplier * round_up_score( player_points, 5 );
 
-	// DIAGNOSTIC 2026-09-20.  A running ledger of what the economy actually
-	// pays out, so "is the score tracked?" is answerable from one live log
-	// line instead of inferred from hudelem error stacks.  The first award of
-	// each event type prints, then every 25th.
+	// Production runs developer 0, which discards println calls at compile
+	// time.  Keep a bounded live ledger for the first and every 25th award;
+	// while Double Points is active, log each award to verify the multiplier.
 	if ( !isDefined( level.zm_award_count ) )
 		level.zm_award_count = [];
 
@@ -112,10 +111,12 @@ player_add_points( event, mod, hit_location )
 
 	level.zm_award_count[ event ]++;
 
-	if ( level.zm_award_count[ event ] == 1 || level.zm_award_count[ event ] % 25 == 0 )
+	if ( level.zm_award_count[ event ] == 1 || level.zm_award_count[ event ] % 25 == 0 ||
+		is_true( level.zombie_vars[ "zombie_powerup_point_doubler_on" ] ) )
 	{
-		println( "CoDOL zm DIAG award: event=" + event +
+		codolprintln( "CoDOL zm DIAG award: event=" + event +
 			" points=" + player_points +
+			" multiplier=" + multiplier +
 			" count=" + level.zm_award_count[ event ] +
 			" purse=" + self.score );
 	}

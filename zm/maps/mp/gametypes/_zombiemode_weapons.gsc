@@ -811,7 +811,7 @@ treasure_chest_weapon_spawn( player )
 			modeltext = "<none>";
 			if ( isDefined( modelname ) && modelname != "" )
 				modeltext = modelname;
-			println( "CoDOL zm box final weapon=" + rand + " model=" + modeltext + "\n" );
+			codolprintln( "CoDOL zm box final weapon=" + rand + " model=" + modeltext );
 		}
 	}
 
