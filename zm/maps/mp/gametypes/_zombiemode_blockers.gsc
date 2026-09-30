@@ -316,10 +316,9 @@ blocker_trigger_think()
 				return;
 			}
 
-			if ( !player isTouching( trigger ) )
-				break;
-
 			if ( !is_player_valid( player ) )
+				break;
+			if ( !player isTouching( trigger ) )
 				break;
 
 			if ( player in_revive_trigger() )
@@ -639,7 +638,11 @@ door_init()
 
 	self.doors = [];
 	for ( i = 0; i < targets.size; i++ )
+	{
 		targets[ i ] door_classify( self );
+		if ( targets[ i ].classname == "script_brushmodel" )
+			targets[ i ] disconnectpaths();
+	}
 
 	cost = 1000;
 	if ( isDefined( self.zombie_cost ) )
@@ -782,6 +785,8 @@ door_activate()
 		time = self.script_transition_time;
 
 	self notSolid();
+	if ( self.classname == "script_brushmodel" )
+		self connectpaths();
 
 	if ( isDefined( self.door_moving ) )
 		return;
@@ -849,6 +854,15 @@ debris_init()
 
 	if ( isDefined( self.script_flag ) )
 		flag_init( self.script_flag );
+	if ( isDefined( self.target ) )
+	{
+		blockers = getEntArray( self.target, "targetname" );
+		for ( i = 0; i < blockers.size; i++ )
+		{
+			if ( blockers[ i ].classname == "script_brushmodel" )
+				blockers[ i ] disconnectpaths();
+		}
+	}
 
 	self thread debris_think();
 }
@@ -916,7 +930,10 @@ debris_think()
 		}
 
 		if ( isDefined( clip ) )
+		{
+			clip connectpaths();
 			clip delete();
+		}
 
 		self delete();
 		return;

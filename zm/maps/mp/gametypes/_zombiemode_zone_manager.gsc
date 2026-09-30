@@ -71,6 +71,16 @@ init()
 	refresh_spawners();
 	level thread zone_watch();
 	codolprintln( "CoDOL zm zones: " + level.zm_spawn_zones.size + " map-authored player volumes/groups on " + level.zm_zone_mode );
+	if ( isDefined( level.exterior_goals ) )
+	{
+		available = 0;
+		for ( i = 0; i < level.exterior_goals.size; i++ )
+		{
+			if ( entrance_available( level.exterior_goals[ i ] ) )
+				available++;
+		}
+		codolprintln( "CoDOL zm zones: entrances in open zones " + available + "/" + level.exterior_goals.size );
+	}
 }
 
 zone_by_name( name )
@@ -133,7 +143,11 @@ refresh_spawners()
 				if ( players[ j ] isTouching( zone.volumes[ k ] ) )
 				{
 					occupied[ i ] = true;
-					zone.enabled = true;
+					// Prototype and Training have authored purchase flags.  A
+					// volume may overlap a closed doorway, so touching it alone
+					// must never unlock its spawners.
+					if ( level.zm_zone_mode != "zm_prototype_sh" && level.zm_zone_mode != "zm_zombie_training" )
+						zone.enabled = true;
 					break;
 				}
 			}
@@ -176,6 +190,38 @@ refresh_spawners()
 		level.zm_last_active_zone_names = active_names;
 		codolprintln( "CoDOL zm zones: active " + active_names + " spawners " + new_spawns.size );
 	}
+}
+
+entrance_available( node )
+{
+	if ( !isDefined( level.zm_spawn_zones ) || level.zm_spawn_zones.size < 1 )
+		return true;
+	if ( !isDefined( node.target ) )
+		return false;
+
+	// The exterior_goal targets a node_negotiation_end just inside its
+	// window.  Classify that endpoint against the authored player volumes,
+	// then allow only the groups opened by the matching purchase flags.
+	ends = getEntArray( node.target, "targetname" );
+	if ( !isDefined( ends ) || ends.size < 1 )
+		return false;
+	point = ends[ 0 ].origin;
+	for ( i = 0; i < level.zm_spawn_zones.size; i++ )
+	{
+		zone = level.zm_spawn_zones[ i ];
+		for ( j = 0; j < zone.volumes.size; j++ )
+		{
+			mins = zone.volumes[ j ] getAbsMins();
+			maxs = zone.volumes[ j ] getAbsMaxs();
+			if ( point[ 0 ] < mins[ 0 ] || point[ 0 ] > maxs[ 0 ] ||
+				point[ 1 ] < mins[ 1 ] || point[ 1 ] > maxs[ 1 ] ||
+				point[ 2 ] < mins[ 2 ] || point[ 2 ] > maxs[ 2 ] )
+				continue;
+			if ( zone.enabled )
+				return true;
+		}
+	}
+	return false;
 }
 
 occupied_adjacent_zone( name, occupied )

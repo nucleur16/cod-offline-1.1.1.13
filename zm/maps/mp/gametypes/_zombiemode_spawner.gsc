@@ -907,7 +907,10 @@ closest_exterior_goals( origin, n )
 {
 	pool = [];
 	for ( i = 0; i < level.exterior_goals.size; i++ )
-		pool[ pool.size ] = level.exterior_goals[ i ];
+	{
+		if ( maps\mp\gametypes\_zombiemode_zone_manager::entrance_available( level.exterior_goals[ i ] ) )
+			pool[ pool.size ] = level.exterior_goals[ i ];
+	}
 
 	result = [];
 	while ( pool.size > 0 && result.size < n )
@@ -1627,6 +1630,8 @@ nearest_blocking_barrier()
 	for ( i = 0; i < level.exterior_goals.size; i++ )
 	{
 		node = level.exterior_goals[ i ];
+		if ( !maps\mp\gametypes\_zombiemode_zone_manager::entrance_available( node ) )
+			continue;
 
 		if ( !isDefined( node.barrier_chunks ) || node.barrier_chunks.size < 1 )
 			continue;
@@ -1635,6 +1640,13 @@ nearest_blocking_barrier()
 			continue;
 
 		if ( all_chunks_destroyed( node.barrier_chunks ) )
+			continue;
+		// An upstairs window can be within 256 units in 3D of a zombie
+		// downstairs, yet none of its attack spots is reachable from this
+		// floor.  Prototype traces showed that selection leaves the actor
+		// stopped below the window with no path to its attack spot.
+		delta_z = node.origin[ 2 ] - self.origin[ 2 ];
+		if ( delta_z > 64 || delta_z < -64 )
 			continue;
 
 		d = distanceSquared( self.origin, node.origin );
