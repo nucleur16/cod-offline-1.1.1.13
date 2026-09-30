@@ -145,6 +145,10 @@ init_blockers()
 
 	println( "CoDOL zm: " + level.exterior_goals.size + " barriers, " + zombie_doors.size +
 		" doors, " + zombie_debris.size + " debris\n" );
+
+	// Developer-only test verbs (scr_codol_blockertest); returns at once on
+	// the live server, which runs developer 0.
+	level thread maps\mp\gametypes\_zombiemode_blockertest::init();
 }
 
 // ==========================================================================
@@ -774,7 +778,12 @@ door_opened()
 	if ( isDefined( self.clip ) )
 		self.clip delete();
 
-	self delete();
+	// T5 :816 -- "get all trigs for the door, we might want a trigger on both
+	// sides".  Every trigger that targets these door elements goes, not just
+	// the one that was bought (zm_asylum_sh authors two zombie_door triggers
+	// on target auto172).  T5 trigger_off()s them; this port deletes, as it
+	// always did for self.
+	self delete_blocker_triggers();
 }
 
 // T5 :584, minus ConnectPaths (not registered) and the "anim" style.
@@ -935,9 +944,33 @@ debris_think()
 			clip delete();
 		}
 
-		self delete();
+		// T5 :1068 -- "get all trigs, we might want a trigger on both sides
+		// of some junk sometimes".  MEASURED (zm_prototype_sh.ff entity
+		// string): the stairs debris has two zombie_debris triggers, at
+		// 167 42 144 (first floor) and 172 147 194 (second floor), both
+		// target "upstairs_blocker"; deleting only self left the other one
+		// buyable.  zm_asylum_sh's north/south_upstairs_blocker are pairs too.
+		self delete_blocker_triggers();
 		return;
 	}
+}
+
+// T5 :816 / :1068.  self is the bought door or debris trigger.  Deletes it
+// and every other entity whose target is the same blocker, i.e. the buy
+// triggers on the other side(s).  self goes last so the lookup still has it.
+delete_blocker_triggers()
+{
+	if ( isDefined( self.target ) )
+	{
+		all_trigs = getEntArray( self.target, "target" );
+		for ( i = 0; i < all_trigs.size; i++ )
+		{
+			if ( isDefined( all_trigs[ i ] ) && all_trigs[ i ] != self )
+				all_trigs[ i ] delete();
+		}
+	}
+
+	self delete();
 }
 
 // T5 :1104.
