@@ -34,13 +34,27 @@
 //   * Positions come from the actor origin plus a fixed height, not
 //     GetTagOrigin("j_head"/"J_SpineUpper"): the retained GScr_GetTagOrigin
 //     raises a script error for a tag the model lacks, and a script error
-//     shuts the server down.  No shipped data names the CoDOL zombie body's
-//     tags (the same gap _zombiemode_spawner's header records for gibs).
-//     The death FX is therefore playFx at the chest point, not playFxOnTag.
-//   * ARC FX: T5 moves fx_zombie_tesla_bolt_secondary on a tag_origin
-//     script_model from one enemy to the next.  Here the bolt is played at
-//     four points along that line over the same travel time, which needs no
-//     carrier model.
+//     shuts the server down.
+//   * EFFECT LIFETIMES decide how each effect may be played.  MEASURED from
+//     the FxEffectDef headers in common_gametype_zm (msecLoopingLife /
+//     looping elements):
+//         fx_zombie_tesla_bolt_secondary   0x7fffffff / 2  -- loops forever
+//         fx_zombie_tesla_shock                  8700 / 12
+//         fx_zombie_tesla_shock_secondary        3480 / 7
+//     playFx spawns an effect at a world point that no event can reach
+//     again (C1 0x444f10: spawn, then drop the only reference at 0x444fab),
+//     so an effect that loops forever must never be played that way.  Until
+//     2026-09-30 the arc was four playFx of the bolt along the source-target
+//     line, which left every arc hanging in the air for the rest of the map
+//     (the "zapped zombie FX gets stuck" report).  The bolt now rides a
+//     tag_origin carrier exactly as T5 :341 does; the carrier gets an explicit
+//     stopFxOnTag, one network frame, then delete, so both the stop event and
+//     the entity's removal reach every client.
+//   * Death FX: T5 :316 plays the shock on J_SpineUpper, so it follows the
+//     falling body and ends with the corpse.  MEASURED (codol_checkmodel,
+//     2026-09-30): every body in character_zm_zombie's rotation carries
+//     j_spineupper as bone 10; any other model falls back to playFx at the
+//     chest point, which is safe for these two finite effects.
 //   * T5 :305 pays "death" points itself after the kill.  Not taken: this
 //     port's _zombiemode_spawner::zombie_death_event already pays the player
 //     named as the attacker of the kill, which doDamage below supplies, so
@@ -61,6 +75,9 @@ init()
 	precacheItem( "tesla_gun_zm" );
 	if ( !codol_isWeaponMounted( "tesla_gun_zm" ) )
 		return;
+
+	// The arc carrier (T5 :376).
+	precacheModel( "tag_origin" );
 
 	// T5 :15.  All three ship in common_gametype_zm
 	// (docs/CODOL_ZM_EQUIPMENT_EVIDENCE_20260924.md section 4).
@@ -307,20 +324,40 @@ tesla_do_damage( source_enemy, arc_num, player )
 	self doDamage( self.health + 666, origin, player );
 }
 
-// T5 :316.  See the header for playFx at the chest instead of J_SpineUpper.
+// T5 :316.  On the body's J_SpineUpper, see the header.
 tesla_play_death_fx( arc_num )
 {
 	fx = "tesla_shock";
 	if ( arc_num > 1 )
 		fx = "tesla_shock_secondary";
 
-	playFx( level._effect[ fx ], tesla_chest_point( self ) );
+	if ( tesla_has_spine_tag( self ) )
+		playFxOnTag( level._effect[ fx ], self, "j_spineupper" );
+	else
+		playFx( level._effect[ fx ], tesla_chest_point( self ) );
 	self playSound( "wpn_imp_tesla" );
+}
+
+// playFxOnTag raises a fatal script error for a tag the model lacks, so the
+// tag is used only on the measured zombie bodies.
+tesla_has_spine_tag( ent )
+{
+	if ( !isDefined( ent.model ) )
+		return false;
+
+	bodies = character\character_zm_zombie::zombie_bodies();
+	for ( i = 0; i < bodies.size; i++ )
+	{
+		if ( ent.model == bodies[ i ] )
+			return true;
+	}
+	return false;
 }
 
 // T5 :341.  The bolt travels from the source to the target in
 // tesla_arc_travel_time; T5 skips it for enemies closer than
-// tesla_min_fx_distance.  Carrier-free form, see the header.
+// tesla_min_fx_distance.  The caller waits the travel time, as T5 waits for
+// "movedone".
 tesla_play_arc_fx( origin, target )
 {
 	if ( !isDefined( target ) )
@@ -335,15 +372,28 @@ tesla_play_arc_fx( origin, target )
 		return;
 
 	playSoundAtPosition( "wpn_tesla_bounce", origin );
+	level thread tesla_arc_bolt( origin, target_origin );
+	wait( level.zombie_vars[ "tesla_arc_travel_time" ] );
+}
 
-	dir = vectorNormalize( target_origin - origin );
-	steps = 4;
-	for ( i = 0; i < steps; i++ )
-	{
-		frac = ( i * 1.0 ) / ( steps - 1 );
-		playFx( level._effect[ "tesla_bolt" ], origin + vector_scale( target_origin - origin, frac ), dir );
-		wait( level.zombie_vars[ "tesla_arc_travel_time" ] / steps );
-	}
+// T5 :373-:382, the bolt on its carrier.  A level thread with no endon:
+// the caller's thread dies with the player's disconnect, and a carrier left
+// undeleted would keep the forever-looping bolt alive on every client.
+tesla_arc_bolt( origin, target_origin )
+{
+	travel = level.zombie_vars[ "tesla_arc_travel_time" ];
+
+	carrier = spawn( "script_model", origin );
+	carrier setModel( "tag_origin" );
+	playFxOnTag( level._effect[ "tesla_bolt" ], carrier, "tag_origin" );
+	carrier moveTo( target_origin, travel );
+	wait( travel );
+
+	// Stop first, and give the stop one frame to go out before the entity
+	// it rides on is freed: a stop queued on a freed entity is never sent.
+	stopFxOnTag( level._effect[ "tesla_bolt" ], carrier, "tag_origin" );
+	wait_network_frame();
+	carrier delete();
 }
 
 // Standing actor heights (the zombie aitype's 72-unit hull): the head test
