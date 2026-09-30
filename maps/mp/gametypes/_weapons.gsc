@@ -1096,6 +1096,11 @@ checkHitsThisMag( weaponName )
 
 checkHit( weaponName, victim )
 {
+	// A hit callback can be queued immediately before a client disconnects.
+	// Do not resume the frame-end stat writes on its removed player entity.
+	self endon ( "disconnect" );
+	level endon ( "game_ended" );
+
 	if ( !maps\mp\gametypes\_weapons::isPrimaryWeapon( weaponName ) && !maps\mp\gametypes\_weapons::isSideArm( weaponName ) )
 		return;
 
