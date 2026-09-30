@@ -384,9 +384,9 @@ spawn_zombie( spawn_point )
 	// The bootstrap pose.  See the note in zombie_init.gsc: the animscript's
 	// own main() runs too early in CODOL_ActorScriptsInitialize to animate,
 	// so the first pose is set here, where the actor is fully initialised.
-	// Without it the client draws the bind pose until the first cycle blends
-	// in one frame later.
-	ai setAnimKnobAll( %ai_zombie_idle_v1, %body, 1, 0.1, 1 );
+	// Use the mounted complete zombie pose; ai_zombie_idle_v1 is additive and
+	// cannot pose the model alone before the first movement cycle.
+	ai setAnimKnobAll( %zombie_stationary_idle_v7, %body, 1, 0.1, 1 );
 
 	level.zombies[ level.zombies.size ] = ai;
 

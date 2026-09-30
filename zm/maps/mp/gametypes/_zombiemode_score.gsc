@@ -128,6 +128,8 @@ get_points_multiplier()
 	multiplier = level.zombie_vars[ "zombie_point_scalar" ];
 	if ( !isDefined( multiplier ) )
 		multiplier = 1;
+	if ( is_true( level.zombie_vars[ "zombie_powerup_point_doubler_on" ] ) )
+		multiplier = multiplier * 2;
 	return multiplier;
 }
 
