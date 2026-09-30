@@ -880,10 +880,6 @@ round_think()
 		level thread award_grenades_for_survivors();
 
 		codolprintln( "CoDOL zm: round " + level.round_number + " begins with " + players.size + " player(s)" );
-		// Both music aliases ship in C1's common_gametype_zm zone.  Use a
-		// player-local event so every survivor hears the cue at full level.
-		for ( i = 0; i < players.size; i++ )
-			players[ i ] playLocalSound( "mus_zombie_round_start" );
 
 		level.round_start_time = getTime();
 		level thread [[ level.round_spawn_func ]]();
@@ -898,9 +894,6 @@ round_think()
 
 		level.first_round = false;
 		level notify( "end_of_round" );
-		players = getPlayers();
-		for ( i = 0; i < players.size; i++ )
-			players[ i ] playLocalSound( "mus_zombie_round_over" );
 
 		// T5 :3948 -- the spawn delay decays 5% per round, floored at 0.08s.
 		timer = level.zombie_vars[ "zombie_spawn_delay" ];
