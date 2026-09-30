@@ -849,6 +849,13 @@ makeGunShip()
 		self.mgTurretLeft setTurretTeam( self.team );
 		self.mgTurretRight setTurretTeam( self.team );
 	}
+	else
+	{
+		// CoDOL: a turret without a team acquires nothing in C1; "team3" is
+		// its free-for-all team and skips the sentry owner set below.
+		self.mgTurretLeft setTurretTeam( "team3" );
+		self.mgTurretRight setTurretTeam( "team3" );
+	}
 
  	self.mgTurretLeft setMode( "auto_nonai" );
  	self.mgTurretRight setMode( "auto_nonai" );

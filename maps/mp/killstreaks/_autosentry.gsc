@@ -452,6 +452,14 @@ sentry_setOwner( owner )
 		self.team = self.owner.team;
 		self setTurretTeam( self.team );
 	}
+	else
+	{
+		// CoDOL: C1 acquires nothing for a turret without a team (0x57cd16),
+		// where IW4's free-for-all sentry shot at anyone. C1's FFA turret is
+		// "team3": it takes every free-for-all player and skips its owner
+		// (setSentryOwner above, 0x57cde9).
+		self setTurretTeam( "team3" );
+	}
 	
 	self thread sentry_handleOwner();
 }
