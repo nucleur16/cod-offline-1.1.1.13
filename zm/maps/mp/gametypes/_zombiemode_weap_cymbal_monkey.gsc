@@ -14,15 +14,13 @@
 //
 // ADAPTED FOR C1 (each measured in docs/CODOL_ZM_EQUIPMENT_EVIDENCE_20260924.md
 // or docs/zone_assets/common_gametype_zm.txt):
-//   * The grenade itself stays visible.  T5 hides it and links an animated
-//     weapon_zombie_monkey_bomb script_model (:59-:63); C1's world model for
-//     zombie_cymbal_monkey IS the monkey (viewmodel_zombie_cymbal_monkey,
-//     codol_checkweapon), and o_monkey_bomb lives in the zombie_cymbal_monkey
-//     animtree, which this server declares no client correspondence for
-//     (codol_script_model_animation.c report_static_prop) -- a linked copy
-//     would be a second static monkey, so none is made.
-//   * The glow is spawnFx/triggerFx at the landing point, not PlayFxOnTag on
-//     "origin_animate_jnt" (a tag of T5's animated model).
+//   * The projectile is hidden and an animated weapon_zombie_monkey_bomb
+//     script_model is linked to it as T5 does (:59-:63).  C1's mounted model
+//     resolves all 16 bones, including origin_animate_jnt; o_monkey_bomb
+//     resolves with 15 animated bones.  Its common_zombie.animlist entry
+//     names the zombie_cymbal_monkey client tree, declared below.
+//   * The glow remains spawnFx/triggerFx at the landing point; tagged FX
+//     playback is independent of the script-model animation.
 //   * Sounds: zmb_monkey_song ships (common_gametype_zm:2743).
 //     zmb_vox_monkey_explode, zmb_vox_monkey_scream and zmb_vox_zombie_groan
 //     do not ship in any zm zone, so T5's delayed explode vox and the groans
@@ -40,6 +38,7 @@
 //     zombies walk to the monkey itself.
 
 #include maps\mp\gametypes\_zombiemode_utility;
+#using_animtree ("zombie_cymbal_monkey");
 
 // A function, not a file constant: this compiler substitutes a constant
 // for every identifier of the same name, case-insensitively (a parameter
@@ -56,6 +55,8 @@ init()
 		codolprintln( "CoDOL zm monkey: " + monkey_weapon() + " is not loaded on this map; not registered" );
 		return;
 	}
+	precacheModel( "weapon_zombie_monkey_bomb" );
+	precacheMpAnim( "o_monkey_bomb" );
 
 	if ( !isDefined( level._effect ) )
 		level._effect = [];
@@ -103,6 +104,10 @@ monkey_fired( player, weapon )
 	info.last_origin = grenade.origin;
 	info.player = player;
 	info.exploded = false;
+	info.model = spawn( "script_model", grenade.origin );
+	info.model setModel( "weapon_zombie_monkey_bomb" );
+	info.model linkTo( grenade );
+	grenade hide();
 
 	grenade thread watch_explode( info );
 
@@ -122,6 +127,7 @@ monkey_fired( player, weapon )
 	origin = grenade.origin;
 	info.land_origin = origin;
 	codolprintln( "CoDOL zm monkey: landed at " + origin + " after " + ( getTime() - info.thrown_time ) + " ms (" + landed + ")" );
+	info.model scriptModelPlayAnim( "o_monkey_bomb" );
 
 	// Glow.  T5 :96 PlayFxOnTag( monkey_glow, model, "origin_animate_jnt" ).
 	if ( isDefined( level._effect[ "monkey_glow" ] ) )
@@ -220,6 +226,8 @@ monkey_finish( info )
 
 	if ( isDefined( info.fx ) )
 		info.fx delete();
+	if ( isDefined( info.model ) )
+		info.model delete();
 
 	// The POI is already gone with the freed grenade; the next chase pass
 	// hands every lured zombie back to flesh.

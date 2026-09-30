@@ -501,7 +501,9 @@ freeze_zombie( trap_id, seconds )
 
 	codolprintln( "CoDOL zm trap: freeze #" + trap_id + " froze zombie " + who + " at " + self.origin + " for " + seconds + " s" );
 
-	self thread freeze_cleanup_fx( torso, legs );
+	// The zombie can be deleted as soon as a hit kills it.  A thread owned by
+	// that entity dies with it and leaves both persistent ice FX behind.
+	level thread freeze_cleanup_fx( self, torso, legs );
 	self thread freeze_watch_shatter( trap_id, who );
 
 	self freeze_wait( seconds );
@@ -523,10 +525,9 @@ freeze_wait( seconds )
 	wait( seconds );
 }
 
-// Not endon("death"): the ice must come off a zombie that died frozen too.
-freeze_cleanup_fx( torso, legs )
+// Level-owned so zombie deletion cannot cancel removal of the ice FX.
+freeze_cleanup_fx( zombie, torso, legs )
 {
-	zombie = self;
 	for ( t = 0; t < 200; t++ )
 	{
 		if ( !isDefined( zombie ) || !isAlive( zombie ) || !is_true( zombie.trap_frozen ) )

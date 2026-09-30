@@ -785,7 +785,15 @@ zombie_think()
 		// covers the 700-1100 units from a yard spawner to its window in
 		// 45-70 s -- and sent it into the chase with the boards still up
 		// (docs/CODOL_ZOMBIE_WINDOW_20260921.md).
-		self zombie_wait_entrance();
+		if ( !self zombie_wait_entrance() )
+		{
+			// T5's exhausted-entrance path kills the stranded actor.  Use
+			// the normal death notify so the round's live count advances,
+			// without paying a drop for a pathfinding failure.
+			self.no_powerup_drop = true;
+			self doDamage( self.health + 100, ( 0, 0, 0 ) );
+			return;
+		}
 		node = self.first_node;
 		self.goalradius = 64;
 		self tear_into_building( node );
@@ -942,8 +950,8 @@ closest_exterior_goals( origin, n )
 // zombie_assure_node :636: on "bad_path" (the native mover found no route,
 // or was wedged twice) the goal moves to the next closest entrance in
 // self.entrance_nodes, then to the 20 closest, and only when every one of
-// those is unreachable does the zombie give up (T5 kills it; here it falls
-// through to the chase, which the cut window links keep honest).
+// those is unreachable does the zombie give up (T5 kills it).  Report that
+// failure to zombie_think instead of tearing a window across the map.
 zombie_wait_entrance()
 {
 	self endon( "death" );
@@ -952,13 +960,13 @@ zombie_wait_entrance()
 	{
 		result = self zombie_wait_goal_or_bad_path();
 		if ( result == "goal" )
-			return;
+			return true;
 
 		next = self next_entrance_node();
 		if ( !isDefined( next ) )
 		{
-			codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " found no reachable entrance from " + self.origin + "; giving up on the entrance walk" );
-			return;
+			codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " found no reachable entrance from " + self.origin + "; culling stranded actor" );
+			return false;
 		}
 
 		codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " bad_path to entrance " + self.first_node.origin + "; trying " + next.origin );
