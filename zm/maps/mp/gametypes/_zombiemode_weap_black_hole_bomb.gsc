@@ -95,6 +95,8 @@ init()
 	level._effect[ "black_hole_bomb_event_horizon" ] = loadfx( "maps/zombie/fx_zmb_blackhole_implode" );
 	level._effect[ "black_hole_bomb_zombie_pull" ] = loadfx( "maps/zombie/fx_blackhole_zombie_breakup" );
 	level._effect[ "black_hole_bomb_marker_flare" ] = loadfx( "maps/zombie/fx_zmb_blackhole_flare_marker" );
+	// Carrier of the zombie-pull and exit-portal effects, see bhb_fx_carrier.
+	precacheModel( "tag_origin" );
 
 	// T5 :67-:84 defaults.
 	if ( !isDefined( level.num_black_hole_bomb_attractors ) )
@@ -491,8 +493,10 @@ black_hole_bomb_event_horizon_death( vec_black_hole_org, grenade )
 	self maps\mp\gametypes\_zombiemode_spawner::zombie_eye_glow_stop();
 	self playSound( "wpn_gersh_device_kill" );
 
+	// T5 csc :398 plays the pull on a tag_origin that is deleted with the
+	// zombie (:425 black_hole_bomb_pulled_in_fx_clean).
 	if ( isDefined( level._effect[ "black_hole_bomb_zombie_pull" ] ) )
-		playFx( level._effect[ "black_hole_bomb_zombie_pull" ], self.origin + ( 0, 0, 40 ) );
+		level thread bhb_fx_carrier( level._effect[ "black_hole_bomb_zombie_pull" ], self.origin + ( 0, 0, 40 ), 10, self );
 
 	// T5 :676-:680.  The pulled-in clip; "bhb_burst" is where it ends.
 	if ( is_true( self.has_legs ) )
@@ -679,10 +683,36 @@ black_hole_teleport( struct_dest )
 	self._bhb_teleporting = undefined;
 }
 
-// T5 :1186.
+// T5 :1186, with the T5 :1195 clean-up four seconds later.
 black_hole_bomb_create_exit_portal( pos )
 {
 	if ( isDefined( level._effect[ "black_hole_bomb_portal_exit" ] ) )
-		playFx( level._effect[ "black_hole_bomb_portal_exit" ], pos );
+		level thread bhb_fx_carrier( level._effect[ "black_hole_bomb_portal_exit" ], pos, 4, undefined );
 	playSoundAtPosition( "zmb_gersh_teleporter_go", pos );
+}
+
+// fx_blackhole_zombie_breakup and fx_zmb_blackhole_exit loop forever
+// (MEASURED, FxEffectDef msecLoopingLife 0x7fffffff in common_gametype_zm).
+// playFx at a point would leave them on every client for the rest of the map,
+// so each rides a tag_origin carrier that is stopped and deleted after
+// <seconds>, or earlier once <owner> (if given) is dead or gone.  A level
+// thread that polls: a thread waiting on the owner would die with it.
+bhb_fx_carrier( fx, pos, seconds, owner )
+{
+	carrier = spawn( "script_model", pos );
+	carrier setModel( "tag_origin" );
+	playFxOnTag( fx, carrier, "tag_origin" );
+
+	had_owner = isDefined( owner );
+	end_time = getTime() + int( seconds * 1000 );
+	while ( getTime() < end_time )
+	{
+		if ( had_owner && ( !isDefined( owner ) || !isAlive( owner ) ) )
+			break;
+		wait( 0.05 );
+	}
+
+	stopFxOnTag( fx, carrier, "tag_origin" );
+	wait_network_frame();
+	carrier delete();
 }

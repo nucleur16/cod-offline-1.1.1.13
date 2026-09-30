@@ -70,7 +70,7 @@ money_ball_fired( player, weapon )
 
 	last = grenade.origin;
 	still = 0;
-	blink_at = 0;
+	blinking = false;
 	for ( tick = 0; tick < 400; tick++ )
 	{
 		wait( 0.05 );
@@ -84,12 +84,14 @@ money_ball_fired( player, weapon )
 			still = 0;
 		last = pos;
 
-		// Stuck (or resting): blink the way C1's light_moneyball_blink does,
-		// twice a second until the engine detonates it.
-		if ( still >= 2 && tick >= blink_at )
+		// Stuck (or resting): C1's light_moneyball_blink.  It loops forever
+		// (MEASURED, FxEffectDef msecLoopingLife 0x7fffffff), so it is
+		// started once on the trail carrier and ends when that is deleted;
+		// a playFx at the resting point would never be removed.
+		if ( still >= 2 && !blinking && isDefined( trail ) )
 		{
-			playFx( level._effect[ "money_ball_blink" ], pos );
-			blink_at = tick + 10;
+			playFxOnTag( level._effect[ "money_ball_blink" ], trail, "tag_origin" );
+			blinking = true;
 		}
 	}
 
