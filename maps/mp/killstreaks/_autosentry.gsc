@@ -405,6 +405,12 @@ sentry_handleUse()
 		assert( player == self.owner );
 		assert( !isDefined( self.carriedBy ) );
 
+		// IW4 only asserts this: disablePlayerUse keeps everybody else off.
+		// A player who joined after the turret was placed was never
+		// disabled, so refuse anyone but the owner here as well.
+		if ( !isDefined( self.owner ) || player != self.owner || isDefined( self.carriedBy ) )
+			continue;
+
 		if ( !isReallyAlive( player ) )
 			continue;
 		

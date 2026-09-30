@@ -267,6 +267,20 @@ watchKillstreakTestDvar()
                 }
             continue;
         }
+        // Sentry checks. "sentryplace <client>": carry and place a sentry.
+        // "sentryuse <client> [yawOffset]": stand that bot 48 units from the
+        // nearest placed sentry or SAM (yawOffset degrees round from its
+        // facing, default 0 = in front) and hold use, as a player picking it
+        // up does. "sentryvictim <client> <distance> <yawOffset> <seconds>":
+        // stand a player frozen in front of it and report whether it killed
+        // him. "sentrystate": each player's team and each turret's mode,
+        // owner, carrier, target and gun pitch/yaw (tag_flash).
+        // (Own function: this one is at the VM's local variable limit.)
+        if ( tiTokens[0] == "sentryuse" || tiTokens[0] == "sentrystate" || tiTokens[0] == "sentryplace" || tiTokens[0] == "sentryvictim" )
+        {
+            testSentryVerb( tiTokens );
+            continue;
+        }
         if ( tiTokens[0] == "suicide" && tiTokens.size > 1 )
         {
             foreach ( player in level.players )
@@ -751,6 +765,210 @@ reportAliveAfterSuicide()
     {
         wait 1.0;
         codolPrintLn( "CoDOL killstreak test: " + self.name + " t+" + ( i + 1 ) + "s alive " + isAlive( self ) + " health " + self.health + " session " + self.sessionstate );
+    }
+}
+
+testSentryVerb( tokens )
+{
+    if ( tokens[0] == "sentrystate" )
+    {
+        reportSentries();
+        return;
+    }
+    if ( tokens.size < 2 )
+        return;
+    foreach ( player in level.players )
+        if ( player getEntityNumber() == int( tokens[1] ) && isAlive( player ) )
+        {
+            if ( tokens[0] == "sentryuse" )
+                player thread testSentryUse( tokens );
+            else if ( tokens[0] == "sentryplace" )
+                player thread testSentryPlace();
+            else if ( tokens[0] == "sentryvictim" )
+                player thread testSentryVictim( tokens );
+        }
+}
+
+// "sentryplace <client>": own and carry a sentry the real way, then turn
+// the frozen carrier until the spot in front of him is placeable and place
+// it there (bots rarely face open ground on their own).
+testSentryPlace()
+{
+    self endon( "disconnect" );
+    self endon( "death" );
+    self.maxhealth = 100000;
+    self.health = 100000;
+    self freezeControls( true );
+    for ( tries = 0; tries < 60 && !self isOnGround(); tries++ )
+        wait 0.1;
+    self maps\mp\killstreaks\_killstreaks::giveKillstreak( "sentry" );
+    self thread maps\mp\killstreaks\_killstreaks::killstreakUsePressed();
+    wait 1.0;
+    carried = undefined;
+    foreach ( turret in getEntArray( "misc_turret", "classname" ) )
+        if ( isDefined( turret.carriedBy ) && turret.carriedBy == self )
+            carried = turret;
+    if ( !isDefined( carried ) )
+    {
+        codolPrintLn( "CoDOL sentry test: " + self.name + " is not carrying a sentry" );
+        self freezeControls( false );
+        return;
+    }
+    for ( yaw = 0; yaw < 360 && isDefined( carried.carriedBy ); yaw += 30 )
+    {
+        self setPlayerAngles( ( 0, yaw, 0 ) );
+        wait 0.3;
+        if ( carried.canBePlaced )
+            self notify( "place_sentry" );
+        wait 0.1;
+    }
+    // Nowhere placeable (a bot's spot is often under cover): stand it at
+    // the carrier's feet, so the placed-sentry paths can still be tested.
+    if ( isDefined( carried.carriedBy ) )
+    {
+        carried.origin = self.origin;
+        carried.angles = ( 0, self.angles[1], 0 );
+        carried.canBePlaced = true;
+        self notify( "place_sentry" );
+        wait 0.1;
+        self setOrigin( self.origin + anglesToForward( ( 0, self.angles[1], 0 ) ) * -48 );
+    }
+    self freezeControls( false );
+    codolPrintLn( "CoDOL sentry test: " + self.name + " (" + self.team + ") placed " + !isDefined( carried.carriedBy ) + " at " + carried.origin + " yaw " + carried.angles[1] );
+}
+
+// "sentryvictim <client> <distance> <yawOffset> <seconds>": stand that
+// player frozen in front of the nearest placed sentry and report whether
+// he survived.
+testSentryVictim( tokens )
+{
+    self endon( "disconnect" );
+    self endon( "death" );
+    best = undefined;
+    foreach ( turret in getEntArray( "misc_turret", "classname" ) )
+        if ( isDefined( turret.sentryType ) && !isDefined( turret.carriedBy ) )
+            best = turret;
+    if ( !isDefined( best ) || tokens.size < 5 )
+        return;
+    self setOrigin( best.origin + anglesToForward( ( 0, best.angles[1] + float( tokens[3] ), 0 ) ) * float( tokens[2] ) + ( 0, 0, 8 ) );
+    self freezeControls( true );
+    self.maxhealth = 100;
+    self.health = 100;
+    codolPrintLn( "CoDOL sentry test: victim " + self.name + " (" + self.team + ") at " + self.origin + " in front of " + best getEntityNumber() );
+    self thread testSentryVictimDeath( best );
+    wait float( tokens[4] );
+    if ( isAlive( self ) )
+    {
+        self freezeControls( false );
+        codolPrintLn( "CoDOL sentry test: victim " + self.name + " (" + self.team + ") survived with health " + self.health );
+    }
+}
+
+testSentryVictimDeath( turret )
+{
+    self endon( "disconnect" );
+    self waittill( "death", attacker, meansOfDeath, weapon );
+    attackerName = "none";
+    if ( isDefined( attacker ) && isPlayer( attacker ) )
+        attackerName = attacker.name;
+    else if ( isDefined( attacker ) )
+        attackerName = attacker.classname;
+    if ( !isDefined( weapon ) )
+        weapon = "undefined";
+    if ( !isDefined( meansOfDeath ) )
+        meansOfDeath = "undefined";
+    codolPrintLn( "CoDOL sentry test: victim " + self.name + " (" + self.team + ") killed by " + attackerName + " with " + weapon + " " + meansOfDeath );
+}
+
+testSentryUse( tokens )
+{
+    self endon( "disconnect" );
+    self endon( "death" );
+    yawOffset = 0;
+    if ( tokens.size > 2 )
+        yawOffset = float( tokens[2] );
+    best = undefined;
+    foreach ( turret in getEntArray( "misc_turret", "classname" ) )
+    {
+        if ( !isDefined( turret.sentryType ) || isDefined( turret.carriedBy ) )
+            continue;
+        if ( !isDefined( best ) || distance( turret.origin, self.origin ) < distance( best.origin, self.origin ) )
+            best = turret;
+    }
+    if ( !isDefined( best ) )
+    {
+        codolPrintLn( "CoDOL sentry test: no placed turret to use" );
+        return;
+    }
+    self.maxhealth = 100000;
+    self.health = 100000;
+    // Land first: a frozen player does not re-find the ground after a
+    // setOrigin, and the use gates need a ground entity.
+    self freezeControls( false );
+    home = best.origin;
+    spot = best.origin + anglesToForward( ( 0, best.angles[1] + yawOffset, 0 ) ) * 48;
+    self setOrigin( spot + ( 0, 0, 8 ) );
+    for ( tries = 0; tries < 30 && !self isOnGround(); tries++ )
+        wait 0.05;
+    self setPlayerAngles( vectorToAngles( ( best.origin + ( 0, 0, 30 ) ) - self getEye() ) );
+    wait 0.2;
+    ownerName = "none";
+    if ( isDefined( best.owner ) )
+        ownerName = best.owner.name;
+    codolPrintLn( "CoDOL sentry test: " + self.name + " (" + self.team + ") uses " + best.sentryType + " " + best getEntityNumber() +
+        " owned by " + ownerName + " from yaw offset " + yawOffset + ", onGround " + self isOnGround() + " at " + self.origin + " turret at " + best.origin + " tries " + tries );
+    for ( i = 0; i < 4 && isDefined( best ) && !isDefined( best.carriedBy ); i++ )
+    {
+        // Not frozen: a frozen player gets no use hints at all (the
+        // retained Player_UpdateCursorHints returns early), so hold use
+        // through the bot controller, which also stops its movement.
+        self pressUseButton( 1.0 );
+        wait 1.5;
+    }
+    carrier = "nobody";
+    if ( isDefined( best ) && isDefined( best.carriedBy ) )
+        carrier = best.carriedBy.name;
+    codolPrintLn( "CoDOL sentry test: after use by " + self.name + " the turret is carried by " + carrier );
+    self freezeControls( false );
+    if ( isDefined( best ) && isDefined( best.carriedBy ) && best.carriedBy == self )
+    {
+        wait 1.0;
+        // Put it down where it was picked up (a bot's view is rarely on a
+        // placeable spot).
+        best.origin = home;
+        best.canBePlaced = true;
+        self notify( "place_sentry" );
+        wait 0.5;
+        codolPrintLn( "CoDOL sentry test: " + self.name + " placed it again, carried " + isDefined( best.carriedBy ) );
+    }
+}
+
+reportSentries()
+{
+    foreach ( player in level.players )
+        codolPrintLn( "CoDOL sentry test: player " + player getEntityNumber() + " " + player.name + " team " + player.team + " alive " + isAlive( player ) + " health " + player.health + " origin " + player.origin );
+    foreach ( turret in getEntArray( "misc_turret", "classname" ) )
+    {
+        if ( !isDefined( turret.sentryType ) )
+            continue;
+        ownerName = "none";
+        if ( isDefined( turret.owner ) )
+            ownerName = turret.owner.name;
+        carrier = "none";
+        if ( isDefined( turret.carriedBy ) )
+            carrier = turret.carriedBy.name;
+        teamName = "none";
+        if ( isDefined( turret.team ) )
+            teamName = turret.team;
+        target = turret getTurretTarget( false );
+        targetName = "none";
+        if ( isDefined( target ) && isPlayer( target ) )
+            targetName = target.name + "(" + target.team + ")";
+        else if ( isDefined( target ) )
+            targetName = target.classname;
+        codolPrintLn( "CoDOL sentry test: " + turret.sentryType + " " + turret getEntityNumber() + " mode " + turret getMode() +
+            " owner " + ownerName + " team " + teamName + " carriedBy " + carrier + " target " + targetName +
+            " firing " + turret isFiringTurret() + " angles " + turret.angles + " tag_flash " + turret getTagAngles( "tag_flash" ) );
     }
 }
 
