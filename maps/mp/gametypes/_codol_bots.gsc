@@ -13,6 +13,7 @@ init()
     maps\mp\gametypes\_codol_equiptest::init();
     maps\mp\gametypes\_codol_perktest::init();
     maps\mp\gametypes\_codol_breathtest::init();
+    maps\mp\gametypes\_codol_ridetest::init();
     graph = "waypoints/" + getDvar( "mapname" ) + "_wp.csv";
     if ( loadBotWaypoints( graph ) <= 0 )
         return;
