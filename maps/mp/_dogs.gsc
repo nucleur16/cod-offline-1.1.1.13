@@ -73,10 +73,13 @@
 	    maps\mp\gametypes\_spawning::create_dog_influencers(); no _spawning
 	    module and no influencer system here, so the function and its call are
 	    dropped.
-	  - maps\mp\gametypes\_weapons::monitor_dog_special_grenades() is dropped:
-	    no counterpart in the local maps\mp\gametypes\_weapons.  flash_dogs()
-	    below is the surviving half of that feature and is still callable by a
-	    flashbang script.
+	  - maps\mp\gametypes\_weapons::monitor_dog_special_grenades() has no
+	    counterpart in the local _weapons, so its T5 body is carried here
+	    (monitor_dog_special_grenades below) next to flash_dogs().
+	  - T5 maps\mp\gametypes\_globallogic_actor (Callback_ActorDamage /
+	    Callback_ActorKilled) is carried here too: dogs are the only MP actor.
+	    It is where friendly fire, the owner and same-owner dogs are refused,
+	    hit markers are drawn and the "dogkill" XP is given.
 	  - GetDvarFloat( #"name" ) rewritten to getFloatProperty( "name", default )
 	    - the T5 #"..." canonical-hash token does not exist in this VM, and
 	    these two spawn dvars are not registered here.
@@ -154,28 +157,50 @@ init()
 
 	thread init_all_preexisting_dogs();
 
-	// CoDOL dev trigger: `rcon set codol_dogsTest 1` calls the dogs in for the
-	// first live player (bots cannot earn a killstreak). Default 0, one-shot.
-	if ( getDvar( "codol_dogsTest" ) == "" )
-		setDvar( "codol_dogsTest", "0" );
+	// T5 _callbacksetup::SetDefaultCallbacks installs
+	// _globallogic_actor::Callback_ActorDamage / Callback_ActorKilled for every
+	// MP actor.  Dogs are the only MP actor, so the ported pair lives here and
+	// is installed with the dog subsystem (see Callback_ActorDamage below).
+	level.callbackActorDamage = ::Callback_ActorDamage;
+	level.callbackActorKilled = ::Callback_ActorKilled;
+
+	// CoDOL dev trigger (developer servers only; see dog_test_watcher).
 	thread dog_test_watcher();
 
 //	create_dogs();
 }
 
+// `rcon set codol_dogsTest 1` calls the dogs in for the first live player;
+// "2" also runs the mp_nuked decoy check below.  Other verbs are in
+// dog_test_verb().  Test hooks can damage and flash entities, so, like
+// _codol_bots::watchKillstreakTestDvar, they only run with developer 1.
 dog_test_watcher()
 {
-	level endon( "game_ended" );
+	if ( getDvarInt( "developer" ) <= 0 )
+		return;
+
+	// no game_ended endon: "state" must still answer while the dogs leave
+	// after the match ends.
+
+	setDvar( "codol_dogsTest", "0" );
 
 	for ( ;; )
 	{
 		wait 1;
 
-		if ( getDvarInt( "codol_dogsTest" ) <= 0 )
+		request = getDvar( "codol_dogsTest" );
+		if ( request == "" || request == "0" )
 			continue;
-
-		test = getDvarInt( "codol_dogsTest" );
 		setDvar( "codol_dogsTest", "0" );
+
+		tokens = strTok( request, " " );
+		if ( int( tokens[0] ) <= 0 )
+		{
+			dog_test_verb( tokens );
+			continue;
+		}
+
+		test = int( tokens[0] );
 
 		// `rcon set codol_dogsTest 2` reproduces the mp_nuked defect on any map:
 		// it plants a script_model whose targetname is "dog_spawner" so that
@@ -219,10 +244,178 @@ dog_test_watcher()
 	}
 }
 
+// Developer verbs for codol_dogsTest (dog_test_watcher gates developer 1):
+//   "call <client>"         useKillstreakDogs for that client number
+//   "state"                 every dog: health, team, owner, enemy, flash
+//   "hurt <who> <damage>"   the first live dog takes <damage> of rifle fire
+//                           from <who>: owner, mate (owner's teammate),
+//                           enemy or world; reports health before/after
+//   "flash <who>"           a 1-point flash_grenade_mp splash from <who>,
+//                           then the dog's flash strength
+//   "nodes <team>"          the dog spawn nodes for a team
+//   "leave"                 make_all_dogs_leave()
+//   "endgame"               _gamelogic::forceEnd(), to watch the dogs leave
+dog_test_verb( tokens )
+{
+	verb = tokens[0];
+
+	if ( verb == "call" && tokens.size > 1 )
+	{
+		foreach ( player in level.players )
+			if ( player getEntityNumber() == int( tokens[1] ) )
+			{
+				print( "CoDOL dogs test: call for " + player.name + " (" + player.team + ")\n" );
+				used = player useKillstreakDogs( 0 );
+				print( "CoDOL dogs test: useKillstreakDogs returned " + used + "\n" );
+			}
+		return;
+	}
+
+	if ( verb == "leave" )
+	{
+		print( "CoDOL dogs test: leave\n" );
+		make_all_dogs_leave();
+		return;
+	}
+
+	if ( verb == "nodes" && tokens.size > 1 )
+	{
+		nodes = dog_spawn_nodes_for_team( tokens[1] );
+		print( "CoDOL dogs test: " + nodes.size + " spawn nodes for " + tokens[1] + " (authored " + level.dog_spawn_nodes_authored + ")\n" );
+		foreach ( node in nodes )
+			print( "CoDOL dogs test:   node " + node.origin + "\n" );
+		print( "CoDOL dogs test: " + level.dogexitnodes.size + " exit nodes\n" );
+		return;
+	}
+
+	if ( verb == "endgame" )
+	{
+		print( "CoDOL dogs test: endgame (_gamelogic::forceEnd)\n" );
+		level thread maps\mp\gametypes\_gamelogic::forceEnd();
+		return;
+	}
+
+	if ( verb == "state" )
+	{
+		if ( !isDefined( level.dogs ) )
+		{
+			print( "CoDOL dogs test: state: no dogs (level.dogs undefined)\n" );
+			return;
+		}
+		print( "CoDOL dogs test: state: " + level.dogs.size + " dog slots\n" );
+		for ( i = 0; i < level.dogs.size; i++ )
+		{
+			dog = level.dogs[i];
+			if ( !isDefined( dog ) )
+			{
+				print( "CoDOL dogs test:   #" + i + " gone\n" );
+				continue;
+			}
+			owner = "none";
+			if ( isDefined( dog.script_owner ) )
+				owner = dog.script_owner.name + "/" + dog.script_owner.team + " (kills " + dog.script_owner.pers["kills"] + ", streak " + dog.script_owner.pers["cur_kill_streak"] + ")";
+			enemy = "none";
+			if ( isDefined( dog.enemy ) )
+			{
+				enemy = "ent " + dog.enemy getEntityNumber();
+				if ( isPlayer( dog.enemy ) )
+					enemy = dog.enemy.name + "/" + dog.enemy.team;
+			}
+			print( "CoDOL dogs test:   #" + i + " ent " + dog getEntityNumber() + " alive " + isAlive( dog ) + " health " + dog.health +
+				" team " + dog.aiteam + " owner " + owner + " enemy " + enemy + " flash " + dog getFlashBangedStrength() + " at " + dog.origin + "\n" );
+		}
+		return;
+	}
+
+	if ( ( verb == "hurt" || verb == "flash" ) && tokens.size > 1 )
+	{
+		dog = undefined;
+		if ( isDefined( level.dogs ) )
+			for ( i = 0; i < level.dogs.size && !isDefined( dog ); i++ )
+				if ( isDefined( level.dogs[i] ) && isAlive( level.dogs[i] ) )
+					dog = level.dogs[i];
+		if ( !isDefined( dog ) )
+		{
+			print( "CoDOL dogs test: " + verb + ": no live dog\n" );
+			return;
+		}
+
+		who = tokens[1];
+		attacker = undefined;
+		if ( who == "owner" )
+			attacker = dog.script_owner;
+		else if ( who != "world" )
+		{
+			foreach ( player in level.players )
+			{
+				if ( !isAlive( player ) || isDefined( attacker ) )
+					continue;
+				if ( isDefined( dog.script_owner ) && player == dog.script_owner )
+					continue;
+				if ( who == "mate" && level.teamBased && player.team == dog.aiteam )
+					attacker = player;
+				else if ( who == "enemy" && ( !level.teamBased || player.team != dog.aiteam ) )
+					attacker = player;
+			}
+		}
+		if ( who != "world" && !isDefined( attacker ) )
+		{
+			print( "CoDOL dogs test: " + verb + ": no live " + who + " attacker\n" );
+			return;
+		}
+
+		before = dog.health;
+		source = dog.origin + ( 0, 0, 30 );
+		name = "world";
+		if ( isDefined( attacker ) )
+		{
+			source = attacker.origin + ( 0, 0, 50 );
+			name = attacker.name + "/" + attacker.team;
+		}
+
+		if ( verb == "hurt" )
+		{
+			damage = 25;
+			if ( tokens.size > 2 )
+				damage = int( tokens[2] );
+			if ( isDefined( attacker ) )
+				dog doDamage( damage, source, attacker, attacker, 0, "MOD_RIFLE_BULLET" );
+			else
+				dog doDamage( damage, source );
+		}
+		else
+		{
+			dog doDamage( 1, source, attacker, attacker, 0, "MOD_GRENADE_SPLASH", 0, "flash_grenade_mp" );
+		}
+
+		wait 0.1;
+		after = "dead";
+		if ( isDefined( dog ) && isAlive( dog ) )
+			after = dog.health;
+		flash = "n/a";
+		if ( isDefined( dog ) && isAlive( dog ) )
+			flash = dog getFlashBangedStrength();
+		print( "CoDOL dogs test: " + verb + " by " + name + " (FF " + level.friendlyfire + ", hardcore " + level.hardcoreMode + "): health " + before + " -> " + after + ", flash " + flash + "\n" );
+		return;
+	}
+
+	print( "CoDOL dogs test: unknown request '" + verb + "'\n" );
+}
+
 useKillstreakDogs(lifeId)
 {
 	// T5 _killstreakrules "dog" rule: one set at a time (see header).
 	if ( isdefined( level.dogs ) )
+	{
+		self iPrintLnBold( &"KILLSTREAKS_DOGS_NOT_AVAILABLE" );
+		return false;
+	}
+
+	// CoDOL: T5 returns true here and dog_manager_spawn_dogs then quietly
+	// spawns nothing on a map without path nodes or a dog spawner, which spends
+	// the reward on no dogs.  Resolve the spawner now and refuse instead, so
+	// the player keeps the reward, as the one-set rule above does.
+	if ( level.no_dogs || !dog_acquire_spawner() )
 	{
 		self iPrintLnBold( &"KILLSTREAKS_DOGS_NOT_AVAILABLE" );
 		return false;
@@ -364,9 +557,13 @@ dog_dvar_update()
 
 	// CoDOL: T5 code owns these two turn thresholds; this engine does not
 	// register them, and maps\mp\animscripts\dog_turn reads them straight
-	// through GetDvarFloat.  Registering them here keeps the T5 values.
-	dog_get_dvar( "dog_turn90_angle", "0" );
-	dog_get_dvar( "dog_turn180_angle", "110" );
+	// through GetDvarFloat.  Registering them here keeps the T5 values
+	// (OpenBLOPS Game/Shared/bgame/bg_dog.cpp Dog_RegisterDvars: 70, 135 and
+	// dog_turn_min_goal_dist 40; the "0"/"110" this port first used were not
+	// T5's).
+	dog_get_dvar( "dog_turn90_angle", "70" );
+	dog_get_dvar( "dog_turn180_angle", "135" );
+	dog_get_dvar( "dog_turn_min_goal_dist", "40" );
 }
 
 dog_dvar_updater()
@@ -633,6 +830,7 @@ dog_manager_spawn_dog( owner, team, spawn_node, index, requiredDeathCount )
 	dog thread dog_clean_up();
 	dog thread dog_notify_level_on_death();
 	dog dog_thread_behavior_function();
+	dog thread monitor_dog_special_grenades();
 
 	return dog;
 }
@@ -667,6 +865,39 @@ dog_manager_spawn_dogs( team, enemyTeam, deathCount )
 	team = get_debug_team(team);
 
 	requiredDeathCount = deathCount;
+
+	if ( !dog_acquire_spawner() )
+		return;
+
+	level.dogs = [];
+
+	level thread dog_manager_game_ended();
+	level thread dog_manager_dog_alive_tracker( team );
+	level thread dog_manager_dog_time_limit();
+	level thread dog_usage_monitor();
+
+	for ( i = 0; i < level.dog_count_max_at_once; i++ )
+	{
+		node = self get_spawn_node( team );
+
+		level.dogs[i] = dog_manager_spawn_dog( self, team, node, i, requiredDeathCount );
+
+		wait ( randomfloat( level.spawnTimeWaitMin, level.spawnTimeWaitMax ) );
+	}
+
+	level thread dog_manager_spawn_more_dogs_on_death( self, level.dog_count - level.dog_count_max_at_once, team );
+}
+
+// The dog spawner, found or built once per map (level.dog_spawner).  Split out
+// of T5's dog_manager_spawn_dogs so useKillstreakDogs can refuse before the
+// reward is spent.  Returns false (and sets level.no_dogs) when none can exist.
+dog_acquire_spawner()
+{
+	if ( isdefined( level.dog_spawner ) )
+		return true;
+
+	if ( level.no_dogs )
+		return false;
 
 	// getent() raises "used with more than one entity" when several entities
 	// carry the targetname, and an entity named "dog_spawner" need not be an
@@ -712,29 +943,13 @@ dog_manager_spawn_dogs( team, enemyTeam, deathCount )
 		{
 			print( "CoDOL dogs: spawnactorspawner returned no spawner (the CoDOL dogs warning above names the cause); dogs are disabled for this map\n" );
 			level.no_dogs = true;
-			return;
+			return false;
 		}
 
 		level.dog_spawner.targetname = "dog_spawner";
 	}
 
-	level.dogs = [];
-
-	level thread dog_manager_game_ended();
-	level thread dog_manager_dog_alive_tracker( team );
-	level thread dog_manager_dog_time_limit();
-	level thread dog_usage_monitor();
-
-	for ( i = 0; i < level.dog_count_max_at_once; i++ )
-	{
-		node = self get_spawn_node( team );
-
-		level.dogs[i] = dog_manager_spawn_dog( self, team, node, i, requiredDeathCount );
-
-		wait ( randomfloat( level.spawnTimeWaitMin, level.spawnTimeWaitMax ) );
-	}
-
-	level thread dog_manager_spawn_more_dogs_on_death( self, level.dog_count - level.dog_count_max_at_once, team );
+	return true;
 }
 
 dog_manager_spawn_more_dogs_on_death( owner, count, team )
@@ -865,37 +1080,224 @@ dog_clean_up()
 dog_notify_level_on_death()
 {
 	self endon("leaving");
-	self waittill("death", attacker);
-
-	// T5 maps\mp\gametypes\_globallogic_actor::Callback_ActorKilled, which
-	// this IW4-shaped callback set never had a hook for: the engine's death
-	// notify carries the attacker, so the killer's credit is settled here
-	// while self is still the live actor (the corpse handoff comes later).
-	// T5 gives XP ("dogkill", 30 in the T5 rank table) and the destroyed
-	// killstreak stat; explicitly no kill/score ("Dogs no longer give team
-	// or player score").
-	aiteam = self.aiteam;
-
-	if ( isDefined( attacker ) && isai( attacker ) && isDefined( attacker.script_owner ) )
-	{
-		// a dog killed by another team's dog credits that dog's owner
-		if ( attacker.script_owner.team != aiteam )
-			attacker = attacker.script_owner;
-	}
-
-	if ( isDefined( attacker ) && isPlayer( attacker ) )
-	{
-		if ( !level.teamBased || aiteam != attacker.pers["team"] )
-		{
-			attacker thread maps\mp\gametypes\_rank::giveRankXP( "dogkill", 30 );
-			if ( isDefined( level.globalKillstreaksDestroyed ) )
-				level.globalKillstreaksDestroyed++;
-		}
-	}
+	self waittill("death");
 
 	// do not access self past this point as its not valid
 
 	level notify("dog died");
+}
+
+// ================================================
+// T5 maps\mp\gametypes\_globallogic_actor, the MP actor damage and death
+// callbacks (installed by init() as level.callbackActorDamage /
+// level.callbackActorKilled; the engine reaches them through
+// _callbacksetup::CodeCallback_ActorDamage / CodeCallback_ActorKilled).
+// CoDOL changes:
+//   - cac_modified_damage is not called: T5's returns the damage unchanged
+//     unless the victim is a player, and the local one is player-only.
+//   - the "onlyheadshots" tweakable, MOD_BURNED flame handling and the
+//     explodable barrel/car weapon names are dropped (no counterpart here).
+//   - hit markers go through the local _damagefeedback ("standard", the type
+//     _damage.gsc draws for an unarmoured hit).
+//   - "dogkill" XP: T5 registers 30 (team modes) / 20 (FFA) and scales it by
+//     level.xpScale inside giveRankXP.  Neither the local _rank table nor its
+//     giveRankXP knows "dogkill", so the value and the scale are applied here.
+//   - the "killstreak_dogs" destroyed item stat and
+//     level.globalKillstreaksDestroyed have no counterpart and are dropped.
+
+Callback_ActorDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime )
+{
+	self.iDFlags = iDFlags;
+	self.iDFlagsTime = getTime();
+
+	if ( game["state"] == "postgame" )
+		return;
+
+	if ( self.aiteam == "spectator" )
+		return;
+
+	if ( isDefined( eAttacker ) && isPlayer( eAttacker ) && isDefined( eAttacker.canDoCombat ) && !eAttacker.canDoCombat )
+		return;
+
+	eAttacker = dog_figure_out_attacker( eAttacker );
+
+	// Don't do knockback if the damage direction was not specified
+	if ( !isDefined( vDir ) )
+		iDFlags |= level.iDFLAGS_NO_KNOCKBACK;
+
+	// check for completely getting out of the damage
+	if ( !(iDFlags & level.iDFLAGS_NO_PROTECTION) )
+	{
+		if ( level.teamBased && isDefined( eAttacker ) && isPlayer( eAttacker ) && (self != eAttacker) && (self.aiteam == eAttacker.pers["team"]) )
+		{
+			if ( level.friendlyfire == 0 ) // no one takes damage
+			{
+				return;
+			}
+			else if ( level.friendlyfire == 1 ) // the friendly takes damage
+			{
+				// Make sure at least one point of damage is done
+				if ( iDamage < 1 )
+					iDamage = 1;
+
+				self.lastDamageWasFromEnemy = false;
+
+				self finishActorDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime );
+			}
+			else if ( level.friendlyfire == 2 ) // no one takes damage
+			{
+				return;
+			}
+			else if ( level.friendlyfire == 3 ) // both friendly and attacker take damage
+			{
+				iDamage = int( iDamage * .5 );
+
+				// Make sure at least one point of damage is done
+				if ( iDamage < 1 )
+					iDamage = 1;
+
+				self.lastDamageWasFromEnemy = false;
+
+				self finishActorDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime );
+			}
+		}
+		else
+		{
+			// no damage from the dogs owner unless in hardcore
+			if ( isDefined( eAttacker ) && isDefined( self.script_owner ) && eAttacker == self.script_owner && !level.hardcoreMode )
+				return;
+
+			// dogs with the same owner can not damage each other
+			if ( isDefined( eAttacker ) && isDefined( self.script_owner ) && isDefined( eAttacker.script_owner ) && eAttacker.script_owner == self.script_owner )
+				return;
+
+			// Make sure at least one point of damage is done
+			if ( iDamage < 1 )
+				iDamage = 1;
+
+			if ( isDefined( eAttacker ) && isPlayer( eAttacker ) && isDefined( sWeapon ) && !isSubStr( sMeansOfDeath, "MOD_MELEE" ) )
+				eAttacker thread maps\mp\gametypes\_weapons::checkHit( sWeapon, self );
+
+			if ( isSubStr( sMeansOfDeath, "MOD_GRENADE" ) && isDefined( eInflictor ) && isDefined( eInflictor.isCooked ) )
+				self.wasCooked = getTime();
+			else
+				self.wasCooked = undefined;
+
+			self.lastDamageWasFromEnemy = ( isDefined( eAttacker ) && (eAttacker != self) );
+
+			self finishActorDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime );
+		}
+
+		if ( isDefined( eAttacker ) && eAttacker != self && isPlayer( eAttacker ) )
+		{
+			if ( sWeapon != "artillery_mp" && ( !isDefined( eInflictor ) || !isai( eInflictor ) ) )
+			{
+				if ( iDamage > 0 )
+					eAttacker thread maps\mp\gametypes\_damagefeedback::updateDamageFeedback( "standard" );
+			}
+		}
+	}
+
+	// T5 logs every actor hit as an "AD;" line.
+	lpselfnum = self getEntityNumber();
+	lpselfteam = self.aiteam;
+	if ( isDefined( eAttacker ) && isPlayer( eAttacker ) )
+	{
+		lpattacknum = eAttacker getEntityNumber();
+		lpattackGuid = eAttacker getGuid();
+		lpattackname = eAttacker.name;
+		lpattackerteam = eAttacker.pers["team"];
+	}
+	else
+	{
+		lpattacknum = -1;
+		lpattackGuid = "";
+		lpattackname = "";
+		lpattackerteam = "world";
+	}
+	logPrint( "AD;" + lpselfnum + ";" + lpselfteam + ";" + lpattackGuid + ";" + lpattacknum + ";" + lpattackerteam + ";" + lpattackname + ";" + sWeapon + ";" + iDamage + ";" + sMeansOfDeath + ";" + sHitLoc + "\n" );
+}
+
+Callback_ActorKilled( eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, psOffsetTime )
+{
+	if ( game["state"] == "postgame" )
+		return;
+
+	if ( isDefined( attacker ) && isai( attacker ) && isDefined( attacker.script_owner ) )
+	{
+		// if the person who called the dogs in switched teams make sure they don't
+		// get penalized for the kill
+		if ( attacker.script_owner.team != self.aiteam )
+			attacker = attacker.script_owner;
+	}
+
+	if ( isDefined( attacker ) && attacker.classname == "script_vehicle" && isDefined( attacker.owner ) )
+		attacker = attacker.owner;
+
+	if ( isDefined( attacker ) && isPlayer( attacker ) )
+	{
+		if ( !level.teamBased || (self.aiteam != attacker.pers["team"]) )
+		{
+			// T5 _rank: 30 in team modes, 20 in FFA, unless the gametype
+			// overrides it (scr_<gametype>_score_dogkill).
+			value = 30;
+			if ( !level.teamBased )
+				value = 20;
+			if ( getDvar( "scr_" + level.gameType + "_score_dogkill" ) != "" )
+				value = getDvarInt( "scr_" + level.gameType + "_score_dogkill" );
+			attacker thread maps\mp\gametypes\_rank::giveRankXP( "dogkill", int( value * level.xpScale ) );
+			if ( getDvarInt( "developer" ) > 0 )
+				print( "CoDOL dogs: dog " + self getEntityNumber() + " killed by " + attacker.name + " (" + sWeapon + ", " + sMeansOfDeath + "): dogkill " + int( value * level.xpScale ) + " XP\n" );
+
+			// Dogs no longer give team or player score
+		}
+	}
+}
+
+// T5 _globallogic_player::figureOutAttacker: a dog hurt by another dog is hurt
+// by that dog's owner, unless the owner has since joined the victim's team; a
+// vehicle or turret attacker is its owner.
+dog_figure_out_attacker( eAttacker )
+{
+	if ( isDefined( eAttacker ) )
+	{
+		if ( isai( eAttacker ) && isDefined( eAttacker.script_owner ) )
+		{
+			if ( eAttacker.script_owner.team != self.aiteam )
+				eAttacker = eAttacker.script_owner;
+		}
+
+		if ( eAttacker.classname == "script_vehicle" && isDefined( eAttacker.owner ) )
+			eAttacker = eAttacker.owner;
+		else if ( ( eAttacker.classname == "auto_turret" || eAttacker.classname == "misc_turret" ) && isDefined( eAttacker.owner ) )
+			eAttacker = eAttacker.owner;
+	}
+
+	return eAttacker;
+}
+
+// T5 maps\mp\gametypes\_weapons::monitor_dog_special_grenades.  A flash or
+// concussion grenade reaches a dog as a tiny amount of splash damage; T5 turns
+// any hit under 5 into a flash of every dog within 128 units (smoke and tabun
+// handle themselves - see equipment\_tabun).
+monitor_dog_special_grenades() // self == dog
+{
+	// watch and see if the dog gets damage from a flash or concussion
+	//	smoke and tabun handle themselves
+	self endon("death");
+
+	while(1)
+	{
+		self waittill( "damage", damage, attacker );
+
+		if( damage < 5 && isDefined( attacker ) )
+		{
+			damage_area = Spawn( "trigger_radius", self.origin, 0, 128, 128 );
+			attacker thread maps\mp\_dogs::flash_dogs( damage_area );
+			wait(0.05);
+			damage_area delete();
+		}
+	}
 }
 
 dog_thread_behavior_function()

@@ -91,6 +91,33 @@ CodeCallback_VehicleDamage( inflictor, attacker, damage, dFlags, meansOfDeath, w
 
 
 /*================
+Called when an actor has taken damage (T5 CodeCallback_ActorDamage).
+self is the actor that took damage.  The actor loses health only when the
+callback answers with finishActorDamage.  maps\mp\_dogs::init installs the
+MP actor rules (T5 _globallogic_actor::Callback_ActorDamage); without them
+the damage is applied unchanged.
+================*/
+CodeCallback_ActorDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, timeOffset )
+{
+	if ( isDefined( level.callbackActorDamage ) )
+		self [[level.callbackActorDamage]]( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, timeOffset );
+	else
+		self finishActorDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, timeOffset );
+}
+
+
+/*================
+Called when an actor has been killed (T5 CodeCallback_ActorKilled).
+self is the actor that was killed.
+================*/
+CodeCallback_ActorKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset )
+{
+	if ( isDefined( level.callbackActorKilled ) )
+		self [[level.callbackActorKilled]]( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset );
+}
+
+
+/*================
 Called when code is forcibly ending the game.
 e.g. we suck as host.
 ================*/

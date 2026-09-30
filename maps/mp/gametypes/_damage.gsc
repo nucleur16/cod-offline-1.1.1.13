@@ -254,7 +254,15 @@ handleNormalDeath( lifeId, attacker, eInflictor, sWeapon, sMeansOfDeath )
 	if ( self _hasPerk( "specialty_copycat" ) )
 		self.pers["copyCatLoadout"] = attacker maps\mp\gametypes\_class::cloneLoadout();
 	
-	if ( isAlive( attacker ) )
+	// CoDOL: a kill by the owner's attack dogs (sWeapon was swapped to dogs_mp
+	// in Callback_PlayerKilled) does not advance his kill streak.  C1 has no
+	// rule for it; T5 _globallogic_player gates the streak on
+	// _hardpoints::shouldGiveKillstreak, which refuses every weapon tied to a
+	// killstreak (dog_bite_mp is the dogs' alt weapon) while
+	// scr_allow_killstreak_building is 0, its default.  The kill still scores.
+	advancesStreak = ( sWeapon != "dogs_mp" );
+	
+	if ( isAlive( attacker ) && advancesStreak )
 	{
 		// killstreaks only advance from kills earned this life
 		if ( isDefined( level.killStreakSpecialCaseWeapons[sWeapon] ) ) // this is an optimization
@@ -326,9 +334,10 @@ handleNormalDeath( lifeId, attacker, eInflictor, sWeapon, sMeansOfDeath )
 		level notify( "ai_killed", self );
 
 	//if ( lastKillStreak != attacker.pers["cur_kill_streak"] )
-	level notify ( "player_got_killstreak_" + attacker.pers["cur_kill_streak"], attacker );
+	if ( advancesStreak )
+		level notify ( "player_got_killstreak_" + attacker.pers["cur_kill_streak"], attacker );
 	
-	if ( isAlive( attacker ) )
+	if ( isAlive( attacker ) && advancesStreak )
 		attacker thread maps\mp\killstreaks\_killstreaks::checkKillstreakReward( attacker.pers["cur_kill_streak"] );
 
 	attacker notify ( "killed_enemy" );

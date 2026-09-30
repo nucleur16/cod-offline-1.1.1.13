@@ -8,12 +8,17 @@
 	  - #include maps\mp\animscripts\utility + ...\shared and every namespaced
 	    maps\mp\animscripts\shared::... call now point at the dog-local
 	    maps\mp\animscripts\dog_shared module.
-	  - setup_sound_variables(): T5's close-range alias "aml_dog_bark_close"
-	    has no counterpart in the C1 zones (obj/dog-asset-string-inventory.json
-	    lists "aml_dog_bark" and "anml_dog_bark" only), so the close set now
-	    names "anml_dog_bark".  The far set keeps the T5 name "aml_dog_bark",
-	    which the client does ship.
-	  - nothing else changed.
+	  - setup_sound_variables(): T5's "aml_dog_bark_close" / "aml_dog_bark"
+	    are not MP aliases in C1 (the aml_* dog sounds ship only in
+	    common_gametype_zm); C1's MP bark is "anml_dog_bark"
+	    (common_gametype_mp), so both sets name it.  As in T5 this table is
+	    not read by any MP script.
+	  - playMovementSounds(): T5 barks while a dog moves from its client
+	    script (clientscripts\mp\_dogs.csc playMovementSounds).  C1 runs no
+	    client script and its dog notetracks (mp/constconfigstrings_mp.csv
+	    6134-6149) only carry footsteps, run start, pain, death and attack
+	    sounds, so the running dog was silent.  The CSC state machine is
+	    ported to the server here; see the function for the adaptation.
 */
 
 #include maps\mp\animscripts\dog_shared;
@@ -37,12 +42,178 @@ setup_sound_variables()
 
 	level.dog_sounds["far"].minRange = 500;
 	level.dog_sounds["far"].maxRange = 0;   // zero meaning infinity
-	level.dog_sounds["far"].sound = "aml_dog_bark";
+	level.dog_sounds["far"].sound = "anml_dog_bark";
 	level.dog_sounds["far"].soundLengthPlaceholder = 0.2;
 	level.dog_sounds["far"].afterSoundWaitMin = 0.1;
 	level.dog_sounds["far"].afterSoundWaitMax = 0.3;
 	level.dog_sounds["far"].minRangeSqr = level.dog_sounds["far"].minRange * level.dog_sounds["far"].minRange;
 	level.dog_sounds["far"].maxRangeSqr = level.dog_sounds["far"].maxRange * level.dog_sounds["far"].maxRange;
+
+	setup_movement_sound_variables();
+}
+
+// T5 clientscripts\mp\_dogs.csc init(): the movement bark states.  T5's
+// aliases are aml_dog_bark (normal), aml_dog_bark_mid (both attack_mid
+// states) and aml_dog_bark_close; C1 MP ships one bark, anml_dog_bark, so
+// every state names it.  soundLength stands in for the CSC's soundplaying()
+// wait and keeps T5's cadence: it is the length of the T5 alias the state
+// played, as C1's own sound/soundlength.csv lists it (aml_dog_bark 170 ms,
+// aml_dog_bark_mid 170 ms, aml_dog_bark_close 640 ms).
+setup_movement_sound_variables()
+{
+	level.movementStateSound = [];
+
+	level.maxStateSoundDistance = 99999999;
+
+	level.movementStateSound["normal"] = spawnStruct();
+	level.movementStateSound["normal"].sound = "anml_dog_bark";
+	level.movementStateSound["normal"].waitMax = 4;
+	level.movementStateSound["normal"].waitMin = 1;
+	level.movementStateSound["normal"].enemyrange = level.maxStateSoundDistance;  // this has no range
+	level.movementStateSound["normal"].soundLength = 0.170;
+	level.movementStateSound["normal"].localenemyonly = false;
+
+	// this is for everyone other then the enemy
+	level.movementStateSound["attack_mid_everyone"] = spawnStruct();
+	level.movementStateSound["attack_mid_everyone"].sound = "anml_dog_bark";
+	level.movementStateSound["attack_mid_everyone"].waitMax = 2;
+	level.movementStateSound["attack_mid_everyone"].waitMin = 0.5;
+	level.movementStateSound["attack_mid_everyone"].enemyrange = 1500;
+	level.movementStateSound["attack_mid_everyone"].soundLength = 0.170;
+	level.movementStateSound["attack_mid_everyone"].localenemyonly = false;
+
+	// this is only for the enemy to hear
+	level.movementStateSound["attack_mid_enemy"] = spawnStruct();
+	level.movementStateSound["attack_mid_enemy"].sound = "anml_dog_bark";
+	level.movementStateSound["attack_mid_enemy"].waitMax = 0.5;
+	level.movementStateSound["attack_mid_enemy"].waitMin = 0.01;
+	level.movementStateSound["attack_mid_enemy"].enemyrange = 1500;
+	level.movementStateSound["attack_mid_enemy"].soundLength = 0.170;
+	level.movementStateSound["attack_mid_enemy"].localenemyonly = true;
+
+	// this is only for the enemy to hear
+	level.movementStateSound["attack_close_enemy"] = spawnStruct();
+	level.movementStateSound["attack_close_enemy"].sound = "anml_dog_bark";
+	level.movementStateSound["attack_close_enemy"].waitMax = 0.1;
+	level.movementStateSound["attack_close_enemy"].waitMin = 0.01;
+	level.movementStateSound["attack_close_enemy"].enemyrange = 1000;
+	level.movementStateSound["attack_close_enemy"].soundLength = 0.640;
+	level.movementStateSound["attack_close_enemy"].localenemyonly = true;
+}
+
+// T5 clientscripts\mp\_dogs.csc playMovementSounds / getMovementSoundState,
+// run on the server.  In T5 every client runs this loop for each dog while
+// the dog's anim category is "move" and picks the closest state it qualifies
+// for: the player the dog is hunting gets the *_enemy states (rapid barks
+// within 1500/1000 units), everyone else the everyone states.  The server
+// keeps one loop per listener class: the hunted player is sent his stream
+// with playSoundToPlayer, every other player the everyone stream.  The loop
+// lives as long as dog_move (killanimscript), as the CSC loop lives as long
+// as the "move" category.
+playMovementSounds()
+{
+	self endon( "killanimscript" );
+	self endon( "death" );
+
+	everyone = spawnStruct();
+	everyone.state = "normal";
+	everyone.next = 0;
+	everyone.wait_time = 0;
+
+	hunted = spawnStruct();
+	hunted.state = "normal";
+	hunted.next = 0;
+	hunted.wait_time = 0;
+	hunted.player = undefined;
+
+	while ( 1 )
+	{
+		enemy = undefined;
+		if ( isDefined( self.enemy ) && isPlayer( self.enemy ) )
+			enemy = self.enemy;
+
+		// a new quarry starts its own stream, as its client's loop would
+		if ( !isDefined( enemy ) || !isDefined( hunted.player ) || hunted.player != enemy )
+		{
+			hunted.player = enemy;
+			hunted.state = "normal";
+			hunted.next = 0;
+			hunted.wait_time = 0;
+		}
+
+		self movementSoundStream( everyone, getMovementSoundState( false ), enemy, false );
+
+		if ( isDefined( enemy ) )
+			self movementSoundStream( hunted, getMovementSoundState( true ), enemy, true );
+
+		wait( 0.05 );
+	}
+}
+
+movementSoundStream( stream, state, enemy, toEnemy )
+{
+	now = getTime();
+	next_sound = false;
+
+	// "New State forcing next sound".  T5 compares waitMax (seconds) with
+	// wait_time (milliseconds), so in practice any state change barks at once;
+	// kept as shipped.
+	if ( state != stream.state && level.movementStateSound[state].waitMax < stream.wait_time )
+		next_sound = true;
+
+	if ( !next_sound && now < stream.next )
+		return;
+
+	sound = level.movementStateSound[state].sound;
+	if ( toEnemy )
+	{
+		self playSoundToPlayer( sound, enemy );
+	}
+	else
+	{
+		foreach ( player in level.players )
+		{
+			if ( isDefined( enemy ) && player == enemy )
+				continue;
+			self playSoundToPlayer( sound, player );
+		}
+	}
+
+	stream.state = state;
+	stream.wait_time = 1000 * randomfloatrange( level.movementStateSound[state].waitMin, level.movementStateSound[state].waitMax );
+	stream.next = now + int( level.movementStateSound[state].soundLength * 1000 ) + stream.wait_time;
+}
+
+getMovementSoundState( localPlayer )
+{
+	closest_dist = level.maxStateSoundDistance * level.maxStateSoundDistance;
+	closest_key = "normal";
+
+	if ( !isDefined( self.enemy ) )
+		return "normal";
+
+	enemy_distance = distancesquared( self.origin, self.enemy.origin );
+
+	stateArray = getArrayKeys( level.movementStateSound );
+	for ( i = 0; i < stateArray.size; i++ )
+	{
+		if ( level.movementStateSound[stateArray[i]].localenemyonly && !localPlayer )
+			continue;
+
+		state_dist = level.movementStateSound[stateArray[i]].enemyrange;
+		state_dist *= state_dist;
+
+		if ( state_dist < enemy_distance )
+			continue;
+
+		if ( state_dist < closest_dist )
+		{
+			closest_dist = state_dist;
+			closest_key = stateArray[i];
+		}
+	}
+
+	return closest_key;
 }
 
 main()
@@ -96,6 +267,7 @@ main()
 	}
 
 	self thread maps\mp\animscripts\dog_stop::lookAtTarget( "normal" );
+	self thread playMovementSounds();
 
 	while ( 1 )
 	{
