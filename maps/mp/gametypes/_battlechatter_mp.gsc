@@ -127,7 +127,7 @@ sayLocalSound( player, soundType )
 		
 	if( player.team != "spectator" )
 	{	
-		prefix = maps\mp\gametypes\_teams::getTeamVoicePrefix( player.team ) + "1_";
+		prefix = maps\mp\gametypes\_teams::getPlayerVoicePrefix( player );
 		soundAlias = prefix + level.bcSounds[soundType];
 		player thread doSound( soundAlias );
 	}

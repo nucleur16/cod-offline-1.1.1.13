@@ -644,6 +644,32 @@ getTeamVoicePrefix( teamRef )
 	return ( tableLookup( "mp/factionTable.csv", FACTION_REF_COL, getFactionRef( teamRef ), FACTION_VOICE_PREFIX_COL ) );
 }
 
+// CoDOL: C1's player voice aliases carry the speaker's gender and voice
+// number after the faction voice: uk_m1_inform_reloading_generic,
+// ab_f1_mp_death. The team prefix alone ("UK_") names the 1mc announcer
+// only. codol_getVoicePrefix returns the cg_vo_prefix the server sent this
+// player's client for its character ("UK_M1_", "AB_F1_").
+getPlayerVoicePrefix( player )
+{
+	prefix = player codol_getVoicePrefix();
+	if ( isDefined( prefix ) )
+		return prefix;
+	prefix = getTeamVoicePrefix( player.team );
+	if ( !isDefined( prefix ) || prefix == "" )
+		prefix = "UK_";
+	return prefix + "M1_";
+}
+
+// "m" or "f": the gender of the player's voice. C1 ships the hurt breathing
+// per gender (m_breathing_hurt, f_breathing_better).
+getPlayerVoiceGender( player )
+{
+	prefix = getPlayerVoicePrefix( player );
+	if ( prefix.size < 4 )
+		return "m";
+	return tolower( getSubStr( prefix, 3, 4 ) );
+}
+
 getTeamSpawnMusic( teamRef )
 {
 	return ( tableLookup( "mp/factionTable.csv", FACTION_REF_COL, getFactionRef( teamRef ), FACTION_SPAWN_MUSIC_COL ) );

@@ -1941,10 +1941,10 @@ playDeathSound()
 {
 	// CoDOL's generic_death_* aliases belong to localized_common_gametype_coop.
 	// Multiplayer uses faction voice lists in localized_common_mp; each list
-	// already contains its sample variants. Use the male voice context currently
-	// supplied by playerModelForWeapon/codol_applyProfileCharacter.
-	prefix = maps\mp\gametypes\_teams::getTeamVoicePrefix( self.team );
-	self PlaySound( prefix + "m1_mp_death" );
+	// already contains its sample variants. The character's own voice
+	// (faction, gender, voice 1) names the list: uk_m1_mp_death, ab_f1_mp_death.
+	prefix = maps\mp\gametypes\_teams::getPlayerVoicePrefix( self );
+	self PlaySound( prefix + "mp_death" );
 }
 
 

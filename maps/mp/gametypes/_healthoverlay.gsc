@@ -148,7 +148,7 @@ playerHealthRegen()
 			{
 				lastSoundTime_Recover = curTime;
 				if ( !level.gameEnded )
-					self playLocalSound("breathing_better");
+					self playLocalSound( maps\mp\gametypes\_teams::getPlayerVoiceGender( self ) + "_breathing_better" );
 			}
 	
 			if ( veryHurt )
@@ -213,7 +213,8 @@ playerBreathingSound( healthcap )
 		if ( level.healthRegenDisabled && gettime() > self.breathingStopTime )
 			continue;
 			
-		self playLocalSound( "breathing_hurt" );
+		// CoDOL: C1 has m_/f_breathing_hurt, no ungendered alias.
+		self playLocalSound( maps\mp\gametypes\_teams::getPlayerVoiceGender( self ) + "_breathing_hurt" );
 
 		wait ( .784 );
 		wait ( 0.1 + randomfloat (0.8) );

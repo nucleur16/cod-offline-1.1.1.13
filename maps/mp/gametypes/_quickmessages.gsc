@@ -226,7 +226,7 @@ doQuickMessage( soundalias, saytext )
 	if(self.sessionstate != "playing")
 		return;
 
-	prefix = maps\mp\gametypes\_teams::getTeamVoicePrefix( self.team );
+	prefix = maps\mp\gametypes\_teams::getPlayerVoicePrefix( self );
 
 	if(isdefined(level.QuickMessageToAll) && level.QuickMessageToAll)
 	{
