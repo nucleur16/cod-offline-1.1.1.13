@@ -20,6 +20,9 @@
 //                             is removed.  Stuck = no progress for 10 s before
 //                             entering while not tearing or traversing.
 //   report                    print the running tallies
+//   botto <x> <y> <z>         move the first player (the test client) there
+//   zones                     print every zone's volumes and spawners, and the
+//                             zone each window opens into
 //   list                      print the soak's spawner list
 //   spawnat <x> <y> <z> <i>   one watched zombie at a point, walking to the
 //                             window of spawner <i> of the soak's list
@@ -85,6 +88,19 @@ pathtest_watch()
 
 		case "report":
 			pathtest_report();
+			break;
+
+		case "botto":
+			players = getPlayers();
+			if ( tokens.size >= 4 && players.size > 0 )
+			{
+				players[ 0 ] setOrigin( ( int( tokens[ 1 ] ), int( tokens[ 2 ] ), int( tokens[ 3 ] ) ) );
+				codolprintln( "CoDOL pathtest: client moved to " + players[ 0 ].origin );
+			}
+			break;
+
+		case "zones":
+			pathtest_dump_zones();
 			break;
 
 		case "list":
@@ -170,6 +186,43 @@ pathtest_open_all()
 // The spawners a match can use: every zone's group when the map authors
 // zones (Training also carries Prototype's leftover groups, which no zone
 // ever enables), else every authored zombie_spawner.
+pathtest_dump_zones()
+{
+	if ( !isDefined( level.zm_spawn_zones ) )
+		return;
+	for ( i = 0; i < level.zm_spawn_zones.size; i++ )
+	{
+		zone = level.zm_spawn_zones[ i ];
+		codolprintln( "CoDOL pathtest: zone " + zone.name + " enabled " + zone.enabled + " volumes " + zone.volumes.size + " spawners " + zone.spawners.size );
+		for ( j = 0; j < zone.volumes.size; j++ )
+			codolprintln( "CoDOL pathtest:   volume " + zone.volumes[ j ] getAbsMins() + " .. " + zone.volumes[ j ] getAbsMaxs() );
+		for ( j = 0; j < zone.spawners.size; j++ )
+		{
+			sp = zone.spawners[ j ];
+			target = "none";
+			if ( isDefined( sp.target ) )
+				target = sp.target;
+			codolprintln( "CoDOL pathtest:   spawner " + sp.origin + " targetname " + sp.targetname + " target " + target );
+		}
+	}
+	if ( !isDefined( level.exterior_goals ) )
+		return;
+	for ( i = 0; i < level.exterior_goals.size; i++ )
+	{
+		goal = level.exterior_goals[ i ];
+		inside = maps\mp\gametypes\_zombiemode_zone_manager::entrance_inside_point( goal );
+		zone = "none";
+		if ( isDefined( inside ) )
+		{
+			z = maps\mp\gametypes\_zombiemode_zone_manager::zone_at_point( inside );
+			if ( isDefined( z ) )
+				zone = z.name;
+		}
+		codolprintln( "CoDOL pathtest: window " + goal.origin + " inside " + inside + " zone " + zone + " available " +
+			maps\mp\gametypes\_zombiemode_zone_manager::entrance_available( goal ) );
+	}
+}
+
 pathtest_all_spawners()
 {
 	if ( isDefined( level.zm_spawn_zones ) && level.zm_spawn_zones.size > 0 )

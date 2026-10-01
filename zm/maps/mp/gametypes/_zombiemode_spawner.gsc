@@ -800,6 +800,7 @@ zombie_think()
 			self.goalradius = 64;
 			self tear_into_building( node );
 			self open_barrier_paths( node );
+			self zombie_climb_in( node );
 		}
 		else if ( !self zombie_can_reach_flesh() )
 		{
@@ -1115,6 +1116,36 @@ zombie_can_reach_flesh()
 	self waittill( "entrance_result", which );
 	self notify( "entrance_result_done" );
 	return which != "bad_path";
+}
+
+// T5 zombie_goto_entrance :624-:626: after the tear the zombie starts
+// find_flesh and waits for "zombie_start_traverse" / "zombie_end_traverse" --
+// every zombie climbs through its window, because the path to the player runs
+// through it.  When no path to a player exists from here (the player is
+// downed, or stands where this side of the map cannot reach --
+// zm_zombie_training's final room is its own graph component), the chase goal
+// fails and the zombie would stand outside an open window.  So the goal is
+// first the window's inside point (its node_negotiation_end); the native
+// mover takes the window's traversal on the way, and the chase starts inside.
+zombie_climb_in( node )
+{
+	self endon( "death" );
+
+	if ( !isDefined( node ) || !isDefined( node.barrier_chunks ) || !all_chunks_destroyed( node.barrier_chunks ) )
+		return;
+	inside = maps\mp\gametypes\_zombiemode_zone_manager::entrance_inside_point( node );
+	if ( !isDefined( inside ) )
+		return;
+
+	self.zm_path_phase = "climb";
+	self.goalradius = 32;
+	self setGoalPos( inside );
+	self thread notify_on( "zombie_end_traverse", "entrance_result" );
+	self thread notify_on( "goal", "entrance_result" );
+	self thread notify_on( "bad_path", "entrance_result" );
+	self thread notify_after( 15, "entrance_result", "timeout" );
+	self waittill( "entrance_result", which );
+	self notify( "entrance_result_done" );
 }
 
 notify_after( seconds, event, value )
