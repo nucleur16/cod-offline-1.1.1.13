@@ -27,12 +27,24 @@
 //     kis_free_perk_zm             kis_tesla_zm
 //     kis_full_ammo_zm
 //
-// So the world model comes from getWeaponModel( <the kis name> ), which is a
-// registered builtin, and the spinning script_model, the timeout blink and
-// the proximity grab are T5's unchanged.  A kis_* whose WeaponDef does not
-// resolve in the mounted zones is simply not registered, the same validation
-// _zombiemode_weapons::add_zombie_weapon and _zombiemode::resolveStartWeapon
-// already use.
+// The kis_* weapon is the pickup's identity and its registration gate (a
+// kis_* whose WeaponDef is not in a mounted zone is not registered, the
+// codol_isWeaponMounted test _zombiemode_weapons::add_zombie_weapon uses).
+//
+// THE MODEL IS T5's, NOT THE kis_* WORLD MODEL (fixed 2026-10-01, "power-ups
+// show a laptop").  The previous port drew getWeaponModel( <kis name> ), and
+// MEASURED on a zm_prototype_sh probe every kis_* world model is
+// weapon_uav_control_unit: the killstreak laptop.  C1 ships T5's pickup
+// models instead, and its own zm server precaches them:
+// mp/constConfigStrings_zm.csv (code_post_gfx_mp) names zombie_bomb,
+// zombie_skull, zombie_x2_icon, zombie_carpenter, zombie_ammocan,
+// zombie_revive, zombie_pandora, zombie_firesale, zombie_pickup_minigun,
+// zombie_pickup_perk_bottle, zombie_pickup_tesla and zombie_z_money_icon at
+// CS_MODELS 267-278, all in common_gametype_zm (docs/zone_assets).  Each
+// power-up below names T5's model for it (T5 :69-:120 add_zombie_powerup;
+// tesla gets C1's own zombie_pickup_tesla rather than T5's minigun stand-in).
+// Sentry and RC-XD have no T5 pickup; they show the thing they give
+// (sentry_minigun, t5_veh_rcbomb_allies, both in the same constant table).
 // ==========================================================================
 //
 // TAKEN, by T5 function:
@@ -154,43 +166,45 @@ init()
 // T5's switch and _zombiemode_score's events use.
 init_powerups()
 {
-	add_zombie_powerup( "insta_kill",          "kis_insta_kill_zm" );
-	add_zombie_powerup( "double_points",       "kis_double_points_zm" );
-	add_zombie_powerup( "full_ammo",           "kis_full_ammo_zm" );
-	add_zombie_powerup( "nuke",                "kis_nuke_zm" );
-	add_zombie_powerup( "carpenter",           "kis_carpenter_zm" );
-	add_zombie_powerup( "fire_sale",           "kis_fire_sale_zm" );
-	add_zombie_powerup( "free_perk",           "kis_free_perk_zm" );
-	add_zombie_powerup( "all_revive",          "kis_all_revive_zm" );
-	add_zombie_powerup( "bonus_points_player", "kis_bonus_points_player_zm" );
-	add_zombie_powerup( "bonus_points_team",   "kis_bonus_points_team_zm" );
+	add_zombie_powerup( "insta_kill",          "kis_insta_kill_zm",          "zombie_skull" );
+	add_zombie_powerup( "double_points",       "kis_double_points_zm",       "zombie_x2_icon" );
+	add_zombie_powerup( "full_ammo",           "kis_full_ammo_zm",           "zombie_ammocan" );
+	add_zombie_powerup( "nuke",                "kis_nuke_zm",                "zombie_bomb" );
+	add_zombie_powerup( "carpenter",           "kis_carpenter_zm",           "zombie_carpenter" );
+	add_zombie_powerup( "fire_sale",           "kis_fire_sale_zm",           "zombie_firesale" );
+	add_zombie_powerup( "free_perk",           "kis_free_perk_zm",           "zombie_pickup_perk_bottle" );
+	add_zombie_powerup( "all_revive",          "kis_all_revive_zm",          "zombie_revive" );
+	add_zombie_powerup( "bonus_points_player", "kis_bonus_points_player_zm", "zombie_z_money_icon" );
+	add_zombie_powerup( "bonus_points_team",   "kis_bonus_points_team_zm",   "zombie_z_money_icon" );
 
 	// The five weapon-backed pickups, each gated on its own content.
 	precacheItem( "minigun_zm" );
 	if ( codol_isWeaponMounted( "minigun_zm" ) )
-		add_zombie_powerup( "minigun", "kis_minigun_zm" );
+		add_zombie_powerup( "minigun", "kis_minigun_zm", "zombie_pickup_minigun" );
 
 	if ( is_true( level.zm_tesla_ok ) )
-		add_zombie_powerup( "tesla", "kis_tesla_zm" );
+		add_zombie_powerup( "tesla", "kis_tesla_zm", "zombie_pickup_tesla" );
 
 	if ( is_true( level.zm_sentry_ok ) )
-		add_zombie_powerup( "sentry", "kis_sentry_zm" );
+		add_zombie_powerup( "sentry", "kis_sentry_zm", "sentry_minigun" );
 
 	if ( is_true( level.zm_rcbomb_ok ) )
-		add_zombie_powerup( "rcbomb", "kis_rcbomb_zm" );
+		add_zombie_powerup( "rcbomb", "kis_rcbomb_zm", "t5_veh_rcbomb_allies" );
 
-	add_zombie_powerup( "pandora", "kis_pandora_zm" );
+	add_zombie_powerup( "pandora", "kis_pandora_zm", "zombie_pandora" );
 }
 
-// T5 :554 add_zombie_powerup.  See the header for why the model argument
-// became a weapon name.
-add_zombie_powerup( powerup_name, weapon_name )
+// T5 :554 add_zombie_powerup( name, model, ... ).  See the header: the kis_*
+// weapon is the identity and the gate, the model is T5's pickup model.
+add_zombie_powerup( powerup_name, weapon_name, model_name )
 {
+	// codol_isWeaponMounted, not getWeaponIndexFromName: the latter is the
+	// registering lookup, which returns non-zero even for a name in no
+	// mounted zone (see _zombiemode_weapons.gsc's header).
 	precacheItem( weapon_name );
-	if ( getWeaponIndexFromName( weapon_name ) <= 0 )
+	if ( !codol_isWeaponMounted( weapon_name ) )
 		return;
 
-	model_name = getWeaponModel( weapon_name );
 	if ( !isDefined( model_name ) || model_name == "" )
 		return;
 
@@ -407,15 +421,89 @@ powerup_drop( drop_point, outside_playable_area )
 			return;
 	}
 
+	// T5 :650.  Count the drop before anything that can wait, so two kills
+	// in one frame cannot both pass the per-round cap.
 	level.powerup_drop_count++;
-	level.zombie_vars[ "zombie_drop_item" ] = 0;
 
 	powerup = spawn( "script_model", drop_point + ( 0, 0, 40 ) );
+
+	// T5 :657-:680.  Never drop outside the playable area: the pickup must
+	// touch one of the map's player_volume info_volumes.  A kill outside the
+	// windows gives the drop (and this round's quota) back and leaves the
+	// armed score drop armed for the next kill inside.
+	if ( !powerup powerup_in_playable_area() )
+	{
+		level.powerup_drop_count--;
+		powerup delete();
+		return;
+	}
+
+	level.zombie_vars[ "zombie_drop_item" ] = 0;
 	powerup powerup_setup();
 
 	powerup thread powerup_timeout();
 	powerup thread powerup_wobble();
 	powerup thread powerup_grab();
+}
+
+// T5 :650 playable_area = getentarray( "player_volume", "script_noteworthy" ).
+// This VM's filtered getEntArray takes native ent fields only and
+// script_noteworthy is a dynamic key (the reason _zombiemode_zone_manager
+// walks every entity too), so the volumes are collected once per map.
+playable_area_volumes()
+{
+	if ( isDefined( level.zm_playable_area ) )
+		return level.zm_playable_area;
+
+	level.zm_playable_area = [];
+	ents = getEntArray();
+	for ( i = 0; i < ents.size; i++ )
+	{
+		if ( isDefined( ents[ i ].classname ) && ents[ i ].classname == "info_volume" &&
+			isDefined( ents[ i ].script_noteworthy ) && ents[ i ].script_noteworthy == "player_volume" )
+			level.zm_playable_area[ level.zm_playable_area.size ] = ents[ i ];
+	}
+
+	codolPrintLn( "CoDOL zm: " + level.zm_playable_area.size + " player_volume(s) bound the power-up drops" );
+	return level.zm_playable_area;
+}
+
+// self is the freshly spawned power-up, at its final drop height.  T5's rule:
+// it must touch a player_volume.
+powerup_in_playable_area()
+{
+	volumes = playable_area_volumes();
+
+	// A map with no player_volume at all (none ship that way) would never
+	// drop anything under T5's rule; keep drops on rather than silently off.
+	if ( volumes.size < 1 )
+		return true;
+
+	for ( i = 0; i < volumes.size; i++ )
+	{
+		if ( self isTouching( volumes[ i ] ) )
+			return true;
+	}
+
+	// The volumes only bound the playable area if the players are in them.
+	// MEASURED on zm_zombie_training: its six player_volumes (start_zone,
+	// upstairs_zone x3, box_zone, final_zone) do not contain the map's player
+	// spawn (mp_tdm_spawn_allies_start, 1482 -2746 233), so a strict test there
+	// would refuse every drop while the players fight at the start.  When no
+	// live player stands in any volume, fall back to the caller's own test
+	// (powerup_drop has already refused a zombie that never got inside).
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+	{
+		if ( !is_player_valid( players[ i ] ) )
+			continue;
+		for ( k = 0; k < volumes.size; k++ )
+		{
+			if ( players[ i ] isTouching( volumes[ k ] ) )
+				return false;
+		}
+	}
+	return true;
 }
 
 // T5 :709 specific_powerup_drop, for a level script that wants a named drop.
@@ -763,6 +851,9 @@ start_fire_sale()
 	level notify( "powerup_fire_sale" );
 
 	level.zombie_vars[ "zombie_powerup_fire_sale_on" ] = 1;
+
+	// T5 :1414 toggle_fire_sale_on: every hidden box spot opens for the sale.
+	level thread maps\mp\gametypes\_zombiemode_weapons::treasure_chest_fire_sale();
 
 	wait( level.zombie_vars[ "zombie_powerup_fire_sale_time" ] );
 

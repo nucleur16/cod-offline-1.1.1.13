@@ -14,14 +14,24 @@
 //   has_upgrade                    :734
 //   has_weapon_or_upgrade          :755
 //   treasure_chest_init            :793
+//   init_starting_chest_location   :850
+//   hide_rubble / show_rubble      :902,:921
 //   get_chest_pieces               :945
+//   show_chest / hide_chest        :984,:1005
 //   treasure_chest_think           :1057  -- pay, roll, grab-or-timeout, close.
 //   treasure_chest_lid_open/close  :1752,:1763
 //   treasure_chest_timeout         :1742
 //   treasure_chest_ChooseRandomWeapon         :1774
 //   treasure_chest_ChooseWeightedRandomWeapon :1784
-//   treasure_chest_weapon_spawn    :1951  -- the 40-cycle mario-kart roll and
-//                                            the floating weapon model.
+//   treasure_chest_weapon_spawn    :1951  -- the 40-cycle mario-kart roll,
+//                                            the floating weapon model and the
+//                                            teddy-bear (joker) roll :2042.
+//   default_box_move_logic         :1428
+//   treasure_chest_move            :1489  -- the teddy bear flies off, the
+//                                            box lifts, shakes and vanishes,
+//                                            and reappears at the next spot.
+//   toggle_fire_sale_on / remove_temp_chest (_zombiemode_powerups :1414,:1468)
+//                                          -- a fire sale opens every spot.
 //   treasure_chest_give_weapon     :2365
 //   weapon_spawn_think             :2649  -- the wall buy: first purchase,
 //                                            then ammo at ammo_cost.
@@ -31,17 +41,28 @@
 // NOT TAKEN, and why:
 //   The chest LID is a RotateRoll in T5, not an animation, so it ports; but
 //   default_pandora_show_func / default_pandora_fx_func / treasure_chest_glowfx
-//   (:1024,:1037,:2351) are playfx on level._effect entries that no zm effect
-//   table on this server defines, and are left out.
-//   treasure_chest_move / the teddy bear (:1443,:1489,:1673,:1700) -- the box
-//   relocation needs the teddy bear model plus the fly-away, which is a
-//   scripted move plus FX; the box stays where the map put it.
-//   init_weapon_toggle / init_pay_turret / weapon cabinet / hacker / fire sale
-//   / dual-wield left-hand models / limited tesla -- separate systems.
+//   and the box move's "poltergeist" puff (:1024,:1037,:2351,:1559) are playfx
+//   on effects no CoDOL zone ships (MEASURED, docs/zone_assets/ALL_fx.txt),
+//   and are left out; so are the move's zmb_whoosh / zmb_laugh_child /
+//   zmb_box_poof_land sounds, which no zone carries either (ALL_sound.txt).
+//   init_weapon_toggle / init_pay_turret / weapon cabinet / hacker /
+//   dual-wield left-hand models / limited tesla -- separate systems.
 //   useweaponhidetags() (:2026) -- MEASURED, not a registered builtin here;
 //   the floating box model is a plain setModel of getWeaponModel's answer.
 //   setclientflag(level._ZOMBIE_SCRIPTMOVER_FLAG_BOX_RANDOM) (:1972) -- there
 //   is no CSC VM and no zm client-flag table on this server.
+//
+// THE BOX LOCATIONS (fixed 2026-10-01, the "cabinet on top of the box"
+// report).  zm_asylum_sh authors FIVE treasure_chest_use spots, and each one
+// carries a codo_zm_treasure_box_rubble script_model (script_noteworthy
+// "<trigger noteworthy>_rubble") in the same place as the box: the junk pile
+// T5 shows where the box is NOT.  The previous port made every spot live and
+// never touched the rubble, so all five boxes rendered inside their rubble
+// piles.  Now, as T5 :793-:1005: one spot (the one marked start_chest) is
+// live, the rest are hidden with their rubble shown, the live spot hides its
+// rubble, and the teddy bear moves the box.  The single-box maps
+// (zm_prototype_sh, zm_zombie_training) author a tag_origin rubble and never
+// move, exactly as in T5.
 //
 // THE WEAPON TABLE IS CoDOL's, NOT T5's.  T5's init_weapons (:222) names
 // ak74u_zm / mp40_zm / ray_gun_zm and so on.  MEASURED 2026-09-20 from
@@ -518,16 +539,118 @@ treasure_chest_init()
 			level.chests[ i ].zombie_cost = 950;
 	}
 
-	// T5 randomizes which of several chests is live and moves it with the
-	// teddy bear.  The relocation is not ported (see the header), so every
-	// authored chest is live -- which is what a single-chest map does anyway,
-	// and is the only honest behaviour without the move.
+	flag_init( "moving_chest_enabled" );
+	flag_init( "moving_chest_now" );
+
+	level.chest_moves = 0;
 	level.chest_index = 0;
 	level.chest_accessed = 0;
 
+	// T5 :829.  More than one spot: one is live and the teddy bear moves it.
+	if ( level.chests.size > 1 )
+	{
+		precacheModel( "zombie_teddybear" );
+		flag_set( "moving_chest_enabled" );
+		level.chests = array_randomize( level.chests );
+		init_starting_chest_location();
+	}
+	else
+	{
+		// T5 leaves a single box alone; its rubble (a tag_origin on the
+		// shipped single-box maps) belongs hidden while the box is there.
+		level.chests[ 0 ] hide_rubble();
+		level.chests[ 0 ].hidden = false;
+	}
+
 	array_thread_1( level.chests, ::treasure_chest_think );
+	level thread maps\mp\gametypes\_zombiemode_boxtest::init();
 
 	println( "CoDOL zm: " + level.chests.size + " mystery box location(s)\n" );
+}
+
+// T5 :850, the semi-random branch: the list is already shuffled, the first
+// spot marked start_chest is live and every other spot is hidden.
+init_starting_chest_location()
+{
+	level.chest_index = -1;
+
+	for ( i = 0; i < level.chests.size; i++ )
+	{
+		chest = level.chests[ i ];
+		if ( level.chest_index < 0 && isDefined( chest.script_noteworthy ) && isSubStr( chest.script_noteworthy, "start_chest" ) )
+		{
+			level.chest_index = i;
+			continue;
+		}
+		chest hide_chest();
+		chest show_rubble();
+	}
+
+	// A map with no start_chest spot: T5 would leave every spot hidden.  Keep
+	// the box usable by opening the first (already shuffled) spot instead.
+	if ( level.chest_index < 0 )
+	{
+		level.chest_index = 0;
+		level.chests[ 0 ] show_chest();
+	}
+
+	level.chests[ level.chest_index ] hide_rubble();
+	level.chests[ level.chest_index ].hidden = false;
+}
+
+// T5 :902,:921.  Rubble is what is visible where the box is not.
+hide_rubble()
+{
+	if ( !isDefined( self.chest_rubble ) )
+		return;
+	for ( i = 0; i < self.chest_rubble.size; i++ )
+		self.chest_rubble[ i ] hide();
+}
+
+show_rubble()
+{
+	if ( !isDefined( self.chest_rubble ) )
+		return;
+	for ( i = 0; i < self.chest_rubble.size; i++ )
+		self.chest_rubble[ i ] show();
+}
+
+// T5 :984,:1005.  self is the use trigger.
+show_chest()
+{
+	if ( !is_true( self.hidden ) )
+		return;
+
+	self enable_trigger();
+	if ( isDefined( self.chest_lid ) )
+		self.chest_lid show();
+	if ( isDefined( self.chest_box ) )
+		self.chest_box show();
+
+	if ( isDefined( self.chest_lid ) )
+		playSoundAtPosition( "zmb_couch_slam", self.chest_lid.origin );
+
+	self.hidden = false;
+}
+
+hide_chest()
+{
+	self disable_trigger();
+	if ( isDefined( self.chest_lid ) )
+		self.chest_lid hide();
+	if ( isDefined( self.chest_box ) )
+		self.chest_box hide();
+
+	self.hidden = true;
+}
+
+// The spot a player may use right now: the live one, or one a fire sale
+// opened (T5 :1291 tests the same two cases before re-enabling).
+is_live_chest()
+{
+	if ( level.chests[ level.chest_index ] == self )
+		return true;
+	return is_true( self.fire_sale_temp );
 }
 
 // T5 :945.  use trigger -> chest_lid -> chest_origin -> chest_box.
@@ -541,6 +664,23 @@ get_chest_pieces()
 
 	if ( isDefined( self.chest_origin ) && isDefined( self.chest_origin.target ) )
 		self.chest_box = getEnt( self.chest_origin.target, "targetname" );
+
+	// T5 :955.  This VM's filtered getEntArray takes native ent fields only
+	// (script_noteworthy is a dynamic key), so walk the entities once.  The
+	// 100-unit radius is T5's "temp hax to separate multiple instances": two
+	// spots can share one noteworthy.
+	self.chest_rubble = [];
+	if ( !isDefined( self.script_noteworthy ) )
+		return;
+	rubble_name = self.script_noteworthy + "_rubble";
+	ents = getEntArray();
+	for ( i = 0; i < ents.size; i++ )
+	{
+		if ( !isDefined( ents[ i ].script_noteworthy ) || ents[ i ].script_noteworthy != rubble_name )
+			continue;
+		if ( distanceSquared( self.origin, ents[ i ].origin ) < 10000 )
+			self.chest_rubble[ self.chest_rubble.size ] = ents[ i ];
+	}
 }
 
 // T5 :1752,:1763.  RotateRoll, not an animation.
@@ -648,6 +788,8 @@ treasure_chest_think()
 	for ( ;; )
 	{
 		user = undefined;
+		user_cost = 0;
+		paid_by_fire_sale = false;
 
 		for ( ;; )
 		{
@@ -671,7 +813,9 @@ treasure_chest_think()
 				continue;
 			}
 
-			if ( who getCurrentWeapon() == "none" )
+			// codol_boxtest: a developer test client (_zombiemode_boxtest.gsc)
+			// carries no weapon in hand.
+			if ( who getCurrentWeapon() == "none" && !is_true( who.codol_boxtest ) )
 			{
 				wait( 0.1 );
 				continue;
@@ -688,10 +832,13 @@ treasure_chest_think()
 
 			who maps\mp\gametypes\_zombiemode_score::minus_to_player_score( cost );
 			user = who;
+			user_cost = cost;
+			paid_by_fire_sale = is_true( level.zombie_vars[ "zombie_powerup_fire_sale_on" ] );
 			break;
 		}
 
 		flag_set( "chest_has_been_used" );
+		self._box_open = true;
 
 		if ( isDefined( self.chest_lid ) )
 			self.chest_lid thread treasure_chest_lid_open();
@@ -700,15 +847,30 @@ treasure_chest_think()
 
 		weapon = self treasure_chest_weapon_spawn( user );
 
+		if ( is_true( self.chest_moving ) )
+		{
+			// The teddy bear.  T5 :1176 refunds the pull (add_to_player_score
+			// with add_to_total false) and :1182 moves the box; this spot is
+			// hidden when the move returns, so the loop below waits on a
+			// disabled trigger until a later move or a fire sale shows it.
+			if ( isDefined( user ) )
+				user maps\mp\gametypes\_zombiemode_score::add_to_player_score( user_cost, false );
+			self treasure_chest_move();
+			self._box_open = false;
+			continue;
+		}
+
 		if ( !isDefined( weapon ) )
 		{
 			// Nothing to give.  Refund, exactly as T5 refunds a teddy-bear
 			// pull (:1188 add_to_player_score( user_cost, false )): the spend
 			// comes back without crediting the lifetime total.
-			user maps\mp\gametypes\_zombiemode_score::add_to_player_score( self.zombie_cost, false );
+			user maps\mp\gametypes\_zombiemode_score::add_to_player_score( user_cost, false );
 			if ( isDefined( self.chest_lid ) )
 				self.chest_lid thread treasure_chest_lid_close();
-			self enable_trigger();
+			self._box_open = false;
+			if ( self is_live_chest() )
+				self enable_trigger();
 			continue;
 		}
 
@@ -738,9 +900,13 @@ treasure_chest_think()
 
 			self notify( "user_grabbed_weapon" );
 			user treasure_chest_give_weapon( weapon );
-			level.chest_accessed++;
 			break;
 		}
+
+		// T5 :1252: every finished pull counts toward the teddy bear, taken
+		// or timed out, except one a fire sale paid for.
+		if ( !is_true( paid_by_fire_sale ) )
+			level.chest_accessed++;
 
 		self disable_trigger();
 
@@ -755,8 +921,11 @@ treasure_chest_think()
 
 		self set_hint_string( undefined, "default_treasure_chest_" + self.zombie_cost, "generic_buy_weapon" );
 
+		// T5 :1291: only the live spot (or one a fire sale opened) comes back.
 		wait( 3 );
-		self enable_trigger();
+		if ( self is_live_chest() )
+			self enable_trigger();
+		self._box_open = false;
 	}
 }
 
@@ -815,7 +984,249 @@ treasure_chest_weapon_spawn( player )
 		}
 	}
 
+	if ( self treasure_chest_joker_roll() )
+	{
+		// T5 :2132.  The teddy bear replaces the weapon, facing the box.
+		self.weapon_model setModel( "zombie_teddybear" );
+		self.weapon_model.angles = angles;
+		self.chest_moving = true;
+		flag_set( "moving_chest_now" );
+		level.chest_accessed = 0;
+		level.chest_moves++;
+		codolprintln( "CoDOL zm box: teddy bear, the box moves (move " + level.chest_moves + ")" );
+		return undefined;
+	}
+
 	return rand;
+}
+
+// T5 :2042-:2128, the chance of the joker, on the box that was just rolled.
+// Never on a single-box map (T5: magic_chest_movable is not set there and
+// moving_chest_enabled is not set either), never during a fire sale.
+treasure_chest_joker_roll()
+{
+	if ( !flag( "moving_chest_enabled" ) || level.chests.size < 2 )
+		return false;
+
+	if ( is_true( level.zombie_vars[ "zombie_powerup_fire_sale_on" ] ) || is_true( self.fire_sale_temp ) )
+		return false;
+
+	random = randomInt( 100 );
+
+	if ( !isDefined( level.chest_min_move_usage ) )
+		level.chest_min_move_usage = 4;
+
+	if ( level.chest_accessed < level.chest_min_move_usage )
+		return false;
+
+	chance_of_joker = level.chest_accessed + 20;
+
+	// The 8th pull moves a box that has never moved.
+	if ( level.chest_moves == 0 && level.chest_accessed >= 8 )
+		chance_of_joker = 100;
+
+	// Pulls 4 through 7: 15%.
+	if ( level.chest_accessed >= 4 && level.chest_accessed < 8 )
+	{
+		if ( random < 15 )
+			chance_of_joker = 100;
+		else
+			chance_of_joker = -1;
+	}
+
+	// After the first move: 30% for pulls 8 through 12, then 50%.
+	if ( level.chest_moves > 0 )
+	{
+		if ( level.chest_accessed >= 8 && level.chest_accessed < 13 )
+		{
+			if ( random < 30 )
+				chance_of_joker = 100;
+			else
+				chance_of_joker = -1;
+		}
+
+		if ( level.chest_accessed >= 13 )
+		{
+			if ( random < 50 )
+				chance_of_joker = 100;
+			else
+				chance_of_joker = -1;
+		}
+	}
+
+	return chance_of_joker > random;
+}
+
+// T5 :1428.  A spot whose noteworthy names this move ("move<n>...") wins;
+// otherwise the next spot in the shuffled list, reshuffling at the end
+// without landing on the spot the box just left.
+default_box_move_logic()
+{
+	index = -1;
+	for ( i = 0; i < level.chests.size; i++ )
+	{
+		if ( isDefined( level.chests[ i ].script_noteworthy ) &&
+			isSubStr( level.chests[ i ].script_noteworthy, "move" + ( level.chest_moves + 1 ) ) &&
+			i != level.chest_index )
+		{
+			index = i;
+			break;
+		}
+	}
+
+	if ( index != -1 )
+		level.chest_index = index;
+	else
+		level.chest_index++;
+
+	if ( level.chest_index >= level.chests.size )
+	{
+		left = level.chests[ level.chest_index - 1 ];
+		level.chest_index = 0;
+		level.chests = array_randomize( level.chests );
+		if ( level.chests[ level.chest_index ] == left )
+			level.chest_index++;
+	}
+}
+
+// T5 :1489 treasure_chest_move, plus the fly-away half of :2140.  self is
+// the use trigger of the box that rolled the teddy bear.  Returns once the
+// box is live at its next spot.
+treasure_chest_move()
+{
+	// The bear rises out of the box and leaves (T5 :2143-:2150).
+	wait( 0.5 );
+	if ( isDefined( self.chest_origin ) )
+		playSoundAtPosition( "zmb_vox_ann_magicbox", self.chest_origin.origin );
+	wait( 2 );
+
+	if ( isDefined( self.weapon_model ) )
+	{
+		self.weapon_model moveZ( 500, 4, 3 );
+		self.weapon_model waittill( "movedone" );
+		self.weapon_model delete();
+		self.weapon_model = undefined;
+	}
+
+	if ( isDefined( self.chest_lid ) )
+		self.chest_lid thread treasure_chest_lid_close();
+
+	self hide_chest();
+
+	// The box itself lifts, shakes and vanishes: stand-in copies of the lid
+	// and the base, linked to one mover, exactly as T5 does it.
+	fake_pieces = [];
+	if ( isDefined( self.chest_lid ) && isDefined( self.chest_lid.model ) && self.chest_lid.model != "" )
+	{
+		piece = spawn( "script_model", self.chest_lid.origin );
+		piece.angles = self.chest_lid.angles;
+		piece setModel( self.chest_lid.model );
+		fake_pieces[ fake_pieces.size ] = piece;
+	}
+	if ( isDefined( self.chest_box ) && isDefined( self.chest_box.model ) && self.chest_box.model != "" )
+	{
+		piece = spawn( "script_model", self.chest_box.origin );
+		piece.angles = self.chest_box.angles;
+		piece setModel( self.chest_box.model );
+		fake_pieces[ fake_pieces.size ] = piece;
+	}
+
+	if ( fake_pieces.size > 0 )
+	{
+		anchor = spawn( "script_origin", fake_pieces[ 0 ].origin );
+		anchor playSound( "zmb_box_move" );
+		for ( i = 0; i < fake_pieces.size; i++ )
+			fake_pieces[ i ] linkTo( anchor );
+
+		anchor moveTo( anchor.origin + ( 0, 0, 50 ), 5 );
+
+		// T5 :1528: shake across the box, perpendicular to lid -> base.
+		direction = ( 0, 1, 0 );
+		if ( isDefined( self.chest_box ) && isDefined( self.chest_lid ) )
+		{
+			direction = self.chest_box.origin - self.chest_lid.origin;
+			direction = ( direction[ 1 ], direction[ 0 ], 0 );
+			if ( direction[ 1 ] < 0 || ( direction[ 0 ] > 0 && direction[ 1 ] > 0 ) )
+				direction = ( direction[ 0 ], direction[ 1 ] * -1, 0 );
+			else if ( direction[ 0 ] < 0 )
+				direction = ( direction[ 0 ] * -1, direction[ 1 ], 0 );
+			if ( lengthSquared( direction ) < 0.0001 )
+				direction = ( 0, 1, 0 );
+		}
+		anchor vibrate( direction, 10, 0.5, 5 );
+
+		anchor waittill( "movedone" );
+
+		playSoundAtPosition( "zmb_box_poof", anchor.origin );
+		for ( i = 0; i < fake_pieces.size; i++ )
+			fake_pieces[ i ] delete();
+		anchor delete();
+	}
+
+	self show_rubble();
+	self.chest_moving = undefined;
+
+	// T5 :1585: 7 seconds, plus 5 more when no fire sale is running.
+	post_selection_wait_duration = 7;
+	if ( !is_true( level.zombie_vars[ "zombie_powerup_fire_sale_on" ] ) )
+		post_selection_wait_duration += 5;
+
+	default_box_move_logic();
+
+	wait( post_selection_wait_duration );
+
+	next = level.chests[ level.chest_index ];
+	next.fire_sale_temp = undefined;
+	next show_chest();
+	next hide_rubble();
+	flag_clear( "moving_chest_now" );
+	codolprintln( "CoDOL zm box: the box is now at " + next.chest_lid.origin );
+}
+
+// _zombiemode_powerups (T5 :1414 toggle_fire_sale_on, :1468
+// remove_temp_chest).  Every hidden spot opens at the sale price for the
+// sale's duration; when it ends, each one closes (after its user is done)
+// and its rubble comes back.  A spot that became the live one while the sale
+// ran stays.
+treasure_chest_fire_sale()
+{
+	if ( !isDefined( level.chests ) || level.chests.size < 2 )
+		return;
+
+	for ( i = 0; i < level.chests.size; i++ )
+	{
+		chest = level.chests[ i ];
+		if ( i == level.chest_index || !is_true( chest.hidden ) || is_true( chest.chest_moving ) )
+			continue;
+		chest.fire_sale_temp = true;
+		chest show_chest();
+		chest hide_rubble();
+	}
+
+	level waittill( "fire_sale_off" );
+
+	for ( i = 0; i < level.chests.size; i++ )
+	{
+		chest = level.chests[ i ];
+		if ( !is_true( chest.fire_sale_temp ) )
+			continue;
+		chest thread treasure_chest_remove_temp();
+	}
+}
+
+treasure_chest_remove_temp()
+{
+	while ( is_true( self._box_open ) )
+		wait( 0.1 );
+
+	self.fire_sale_temp = undefined;
+	if ( level.chests[ level.chest_index ] == self )
+		return;
+
+	if ( isDefined( self.chest_lid ) )
+		playSoundAtPosition( "zmb_couch_slam", self.chest_lid.origin );
+	self hide_chest();
+	self show_rubble();
 }
 
 // T5 :2365.  The box goes through the SAME limit rule as a wall buy -- in T5
