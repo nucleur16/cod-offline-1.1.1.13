@@ -85,6 +85,20 @@ CodeCallback_PlayerLastStand( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWe
 }
 
 /*================
+Called when an actor has been killed.  self is the actor.
+T5 MP _callbacksetup.gsc CodeCallback_ActorKilled; the engine hands it the
+killing hit's means of death, weapon and HIT LOCATION
+(codol_actor_lifecycle.cpp ActorKilledCallback).  The actor "damage" notify
+carries no hit location (its partName is empty for actors), so this is where
+a zombie headshot is visible at all.  CodeCallback_ActorDamage is deliberately
+NOT defined: defining it would gate every actor's damage on finishActorDamage.
+================*/
+CodeCallback_ActorKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset )
+{
+	[[ level.callbackActorKilled ]]( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset );
+}
+
+/*================
 Called when code is forcibly ending the game.
 ================*/
 CodeCallback_CodeEndGame()
@@ -128,6 +142,7 @@ SetDefaultCallbacks()
 	level.callbackPlayerKilled		= maps\mp\gametypes\_zombiemode::Callback_PlayerKilled;
 	level.callbackPlayerLastStand	= maps\mp\gametypes\_zombiemode::Callback_PlayerLastStand;
 	level.callbackCodeEndGame		= maps\mp\gametypes\_zombiemode::Callback_CodeEndGame;
+	level.callbackActorKilled		= maps\mp\gametypes\_zombiemode_challenges::Callback_ActorKilled;
 }
 
 callbackVoid()

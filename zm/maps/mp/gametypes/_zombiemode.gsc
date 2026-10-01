@@ -437,6 +437,10 @@ Callback_StartGameType()
 	// so both have to have run.
 	maps\mp\gametypes\_zombiemode_powerups::init();
 
+	// Challenge progress, experience and the games log: listens for the
+	// notifies the subsystems above send.  Before the first player begins.
+	maps\mp\gametypes\_zombiemode_challenges::init();
+
 	codolprintln( "CoDOL zm: subsystems initialised; starting the round loop" );
 
 	level thread end_game_watcher();

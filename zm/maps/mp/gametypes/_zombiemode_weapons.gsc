@@ -473,6 +473,8 @@ weapon_spawn_think()
 
 			player maps\mp\gametypes\_zombiemode_score::minus_to_player_score( cost );
 			player weapon_give( weapon_name );
+			// CHALLENGE_ZM_WALLWEAPONS "buy &&1 wall weapons"; ammo is not one.
+			player maps\mp\gametypes\_zombiemode_challenges::zm_challenge_inc( "zm_wallweapons" );
 			player play_sound_on_ent( "purchase" );
 			wait( 0.5 );
 			continue;

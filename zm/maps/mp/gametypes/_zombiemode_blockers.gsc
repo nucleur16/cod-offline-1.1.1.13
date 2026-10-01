@@ -369,6 +369,10 @@ blocker_trigger_think()
 
 			if ( all_chunks_intact( self.barrier_chunks ) )
 			{
+				// CHALLENGE_ZM_WINDOWS "rebuild &&1 windows": the player who
+				// puts the last board back has rebuilt the window.
+				player maps\mp\gametypes\_zombiemode_challenges::zm_challenge_inc( "zm_windows" );
+
 				// The carpenter perk pop plants its C4 behind a finished window.
 				player thread maps\mp\gametypes\_zombiemode_perkpops::barrier_repaired( self );
 				player forceUseHintOff();
@@ -713,6 +717,8 @@ door_buy()
 	}
 
 	who maps\mp\gametypes\_zombiemode_score::minus_to_player_score( cost );
+	// CHALLENGE_ZM_DOORS "open &&1 doors".
+	who maps\mp\gametypes\_zombiemode_challenges::zm_challenge_inc( "zm_doors" );
 	return true;
 }
 
@@ -906,6 +912,9 @@ debris_think()
 		}
 
 		who maps\mp\gametypes\_zombiemode_score::minus_to_player_score( cost );
+		// CHALLENGE_ZM_DOORS counts debris too: it is the same bought
+		// blocker, and zm_prototype_sh has no other kind.
+		who maps\mp\gametypes\_zombiemode_challenges::zm_challenge_inc( "zm_doors" );
 
 		junk = getEntArray( self.target, "targetname" );
 
