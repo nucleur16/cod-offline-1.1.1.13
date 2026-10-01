@@ -675,29 +675,45 @@ killstreakUseWaiter()
     self.codolRewardLife = spawnStruct();
     self.codolRewardActivationBusy = false;
     self.codolRewardSuppressWeapon = undefined;
+    self.codolRewardUseWeapon = undefined;
     for ( action = 1; action <= 5; action++ )
         self thread codolRewardActionWaiter( action );
 	self thread finishDeathWaiter();
 
+	missedWeapon = undefined;
 	for ( ;; )
 	{
-		self waittill ( "weapon_change", newWeapon );
+		if ( isDefined( missedWeapon ) )
+		{
+			newWeapon = missedWeapon;
+			missedWeapon = undefined;
+		}
+		else
+			self waittill ( "weapon_change", newWeapon );
         self codolCleanupRewardWeapons();
 		
 		if ( !isAlive( self ) )
 			continue;
 
+        // The weapon a finished reward goes back to (see codolRunRewardUse).
+        if ( newWeapon != "none" && !isDefined( level.killstreakWeapons[newWeapon] ) )
+            self.codolRewardReturnWeapon = newWeapon;
+
         // A direct same-weapon use can still receive a delayed change edge.
         // Do not let that edge consume the next copy of the same reward.
+        // Only a press of a slot holding that same weapon asks for it; a
+        // press of another reward (cancelling a carried turret, whose weapon
+        // is raised again as the carry ends) does not. A "none" edge (the
+        // weapons put down) is no switch away from it either.
+        reward = self codolRewardByID( self.codolPendingRewardID );
         if ( isDefined( self.codolRewardSuppressWeapon ) )
         {
             if ( newWeapon == self.codolRewardSuppressWeapon &&
-                 !isDefined( self.codolPendingRewardID ) )
+                 ( !isDefined( reward ) || getKillstreakWeapon( reward.streakName ) != newWeapon ) )
                 continue;
-            if ( newWeapon != self.codolRewardSuppressWeapon )
+            if ( newWeapon != self.codolRewardSuppressWeapon && newWeapon != "none" )
                 self.codolRewardSuppressWeapon = undefined;
         }
-        reward = self codolRewardByID( self.codolPendingRewardID );
         if ( !isDefined( reward ) || newWeapon != getKillstreakWeapon( reward.streakName ) )
         {
             reward = undefined;
@@ -713,8 +729,43 @@ killstreakUseWaiter()
         self.codolPendingRewardID = undefined;
         if ( !isDefined( reward ) )
             continue;
+        // Switching to another reward's weapon while a reward is in use (an
+        // airdrop marker in hand, a ride's laptop coming out) cancels that
+        // use, and this change must then use the new reward. Its lock may
+        // be held by the use this change cancels: one started from an action
+        // slot whose weapon was already up (codolRewardActionWaiter), or one
+        // started by this waiter, which was then inside codolActivateReward
+        // when the change arrived. codolActivateReward refused the first and
+        // the second never saw it, so the new reward was never used and its
+        // weapon (the UAV's detonator, say) stayed in the player's hand.
+        // Wait for the cancelled use to end, then take the weapon the player
+        // holds as the change to act on.
+        if ( isDefined( self.codolRewardActivationBusy ) && self.codolRewardActivationBusy )
+        {
+            while ( isDefined( self.codolRewardActivationBusy ) && self.codolRewardActivationBusy )
+                self waittill( "codol_reward_use_done" );
+            missedWeapon = self codolSwitchedRewardWeapon( self.codolRewardLastUseWeapon );
+            if ( isDefined( missedWeapon ) && missedWeapon == newWeapon )
+                self.codolPendingRewardID = reward.kID;
+            continue;
+        }
         self codolActivateReward( reward.kID );
+        missedWeapon = self codolSwitchedRewardWeapon( newWeapon );
 	}
+}
+
+// The reward weapon the player switched to while the use of usedWeapon's
+// reward ran, or undefined. See killstreakUseWaiter.
+codolSwitchedRewardWeapon( usedWeapon )
+{
+    if ( !isAlive( self ) )
+        return undefined;
+    current = self getCurrentWeapon();
+    if ( isDefined( usedWeapon ) && current == usedWeapon )
+        return undefined;
+    if ( !isDefined( level.killstreakWeapons[current] ) )
+        return undefined;
+    return current;
 }
 
 
@@ -759,7 +810,17 @@ codolRunRewardUse( selectedID, life, use )
     {
         streakName = reward.streakName;
         self.codolRewardSuppressWeapon = getKillstreakWeapon( streakName );
+        self.codolRewardUseWeapon = self.codolRewardSuppressWeapon;
+        self.codolRewardLastUseWeapon = self.codolRewardSuppressWeapon;
         result = self killstreakUsePressed( selectedID );
+        // The press that ended this use (another slot's key cancels a carried
+        // turret) records itself in codolRewardActionWaiter; the threads one
+        // notify wakes do not run in a fixed order, so let it land.
+        waittillframeend;
+        self.codolRewardUseWeapon = undefined;
+        if ( getDvarInt( "developer" ) > 0 )
+            codolPrintLn( "CoDOL killstreak use: " + self.name + " " + streakName + "#" + selectedID +
+                " result " + ( isDefined( result ) && result ) + " holding " + self getCurrentWeapon() );
 
         // The weapon belongs to the life that raised the reward weapon. After
         // a death (or a respawn during a ride) the spawn loadout owns it.
@@ -774,11 +835,26 @@ codolRunRewardUse( selectedID, life, use )
             if ( ( !isRideKillstreak( streakName ) || !result ) &&
                  ( current == "none" || current == getKillstreakWeapon( streakName ) ) )
             {
+                // After switching between rewards the last weapon is the
+                // previous reward's; go back to the gun held before either.
                 lastWeapon = self getLastWeapon();
                 if ( !self hasWeapon( lastWeapon ) || isDefined( level.killstreakWeapons[lastWeapon] ) )
-                    self switchToWeapon( self getFirstPrimaryWeapon() );
-                else
-                    self switchToWeapon( lastWeapon );
+                    lastWeapon = self.codolRewardReturnWeapon;
+                if ( !isDefined( lastWeapon ) || !self hasWeapon( lastWeapon ) ||
+                     isDefined( level.killstreakWeapons[lastWeapon] ) )
+                    lastWeapon = self getFirstPrimaryWeapon();
+                // Another reward's slot pressed during a use that held the
+                // weapons down (a carried turret, which that press cancels)
+                // could not raise its weapon on C1; raise it now, and the use
+                // waiter uses it on its "weapon_change".
+                pressed = self codolRewardByID( self.codolPendingRewardID );
+                if ( !result && isDefined( pressed ) &&
+                     getKillstreakWeapon( pressed.streakName ) != getKillstreakWeapon( streakName ) &&
+                     self hasWeapon( getKillstreakWeapon( pressed.streakName ) ) )
+                    lastWeapon = getKillstreakWeapon( pressed.streakName );
+                self switchToWeapon( lastWeapon );
+                if ( getDvarInt( "developer" ) > 0 )
+                    codolPrintLn( "CoDOL killstreak use: " + self.name + " " + streakName + " returns to " + lastWeapon );
             }
 
             // give time to switch to the near weapon; when the weapon is none (such as during a "disableWeapon()" period
@@ -981,6 +1057,11 @@ giveKillstreakWeapon( weapon )
 {
     if ( !self hasWeapon( weapon ) )
         self _giveWeapon( weapon, 0 );
+    // A thrown marker leaves its weapon owned but empty. Another reward
+    // thrown with the same marker (an earned airdrop beside a crate's) was
+    // then left owned with nothing to throw; IW4 gave the weapon afresh.
+    else if ( self getAmmoCount( weapon ) == 0 )
+        self giveMaxAmmo( weapon );
 }
 
 
@@ -1118,9 +1199,18 @@ codolRewardActionWaiter( slot )
     for ( ;; )
     {
         self waittill( event );
-        if ( isDefined( self.codolRewardActivationBusy ) && self.codolRewardActivationBusy )
-            continue;
         reward = self codolRewardForSlot( slot );
+        if ( isDefined( self.codolRewardActivationBusy ) && self.codolRewardActivationBusy )
+        {
+            // Another reward is in use. This press switches away from it,
+            // and killstreakUseWaiter uses the reward whose weapon the player
+            // ends up holding; name the record so the copy in this slot is
+            // the one used, not merely the oldest one with that weapon.
+            if ( isDefined( reward ) && ( !isDefined( self.codolRewardUseWeapon ) ||
+                 getKillstreakWeapon( reward.streakName ) != self.codolRewardUseWeapon ) )
+                self.codolPendingRewardID = reward.kID;
+            continue;
+        }
         self.codolPendingRewardID = undefined;
         if ( isDefined( reward ) )
         {
@@ -1220,9 +1310,15 @@ initRideKillstreak()
 
 initRideKillstreak_internal()
 {
-	laptopWait = self waittill_any_timeout( 1.0, "disconnect", "death", "weapon_switch_started" );
+	// IW4's engine raises "weapon_switch_started" when the player switches
+	// away from the laptop; this one never does, so a switch to another
+	// weapon during the laptop (another reward's action slot, say) must
+	// cancel the ride here, or the ride started anyway with that weapon up.
+	self thread watchRideLaptopSwitch( self getCurrentWeapon() );
+	laptopWait = self waittill_any_timeout( 1.0, "disconnect", "death", "weapon_switch_started", "codol_ride_laptop_switched" );
+	self notify( "codol_ride_laptop_done" );
 	
-	if ( laptopWait == "weapon_switch_started" )
+	if ( laptopWait == "weapon_switch_started" || laptopWait == "codol_ride_laptop_switched" )
 		return ( "fail" );
 
 	if ( !isAlive( self ) )
@@ -1265,6 +1361,22 @@ initRideKillstreak_internal()
 		return ( "disconnect" );
 	else
 		return ( "success" );		
+}
+
+
+watchRideLaptopSwitch( laptop )
+{
+	self endon( "disconnect" );
+	self endon( "death" );
+	self endon( "codol_ride_laptop_done" );
+
+	for ( ;; )
+	{
+		self waittill( "weapon_change", newWeapon );
+		if ( isDefined( newWeapon ) && newWeapon != "none" && newWeapon != laptop )
+			break;
+	}
+	self notify( "codol_ride_laptop_switched" );
 }
 
 

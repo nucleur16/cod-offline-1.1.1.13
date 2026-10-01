@@ -155,6 +155,13 @@ setCarryingSentry( sentryGun, allowCancel )
 	self notifyOnPlayerCommand( "cancel_sentry", "weapnext" );
 	self notifyOnPlayerCommand( "cancel_sentry", "weapprev" );
 	self notifyOnPlayerCommand( "cancel_sentry", "weapalt" );
+	// So does every other reward's action slot, as IW4's killstreak key
+	// (+actionslot 4) does: C1 cannot raise that reward's weapon while this
+	// carry holds the weapons down, so the key would otherwise do nothing.
+	// The pressed reward is raised once the carry is cancelled
+	// (_killstreaks::codolRunRewardUse).
+	for ( slot = 1; slot <= 5; slot++ )
+		self notifyOnPlayerCommand( "cancel_sentry", "+actionslot " + slot );
 	self thread sentry_carryHint( allowCancel );
 	
 	for ( ;; )

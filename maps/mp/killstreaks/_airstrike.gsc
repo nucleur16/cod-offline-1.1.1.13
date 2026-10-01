@@ -1072,6 +1072,7 @@ selectAirstrikeLocation( lifeId, airStrikeType )
 	self thread endSelectionOn( "used" ); // so that this thread doesn't kill itself when we use an airstrike
 	self thread endSelectionOnGameEnd();
 	self thread endSelectionOnEMP();
+	self thread endSelectionOnWeaponChange( maps\mp\killstreaks\_killstreaks::getKillstreakWeapon( airStrikeType + "_airstrike" ) );
 
 	self endon( "stop_location_selection" );
 
@@ -1110,6 +1111,25 @@ endSelectionOn( waitfor )
 	self endon( "stop_location_selection" );
 	self waittill( waitfor );
 	self thread stopAirstrikeLocationSelection( (waitfor == "disconnect") );
+}
+
+
+// T5 _airsupport::endSelectionThink also ends a selection on "weapon_change"
+// (as _mortar::cancelOnWeaponChange does): a player who switches away from
+// the laptop - to another reward's action slot, say - must not keep an open
+// selection, which held the reward dispatcher's lock and left the other
+// reward's weapon in his hand unused. Cancelling keeps the airstrike.
+endSelectionOnWeaponChange( laptop )
+{
+	self endon( "stop_location_selection" );
+	for ( ;; )
+	{
+		self waittill( "weapon_change", newWeapon );
+		if ( !isDefined( newWeapon ) || newWeapon == "none" || newWeapon == laptop )
+			continue;
+		self notify( "cancel_location" );
+		return;
+	}
 }
 
 

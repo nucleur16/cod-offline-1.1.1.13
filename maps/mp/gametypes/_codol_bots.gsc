@@ -332,6 +332,13 @@ watchKillstreakTestDvar()
         // "rcsafe <0|1>": 1 stops an RC-XD driver's trigger detonating the
         // car (T5 level.disableRCBombTrigger), so a bot's ride lasts until
         // its timer; bots hold attack.
+        // "ksslot <client> <verb>": killstreak action-slot switching checks
+        // (own function: this one is at the VM's local variable limit).
+        if ( tiTokens[0] == "ksslot" && tiTokens.size > 2 )
+        {
+            testRewardSlotVerb( tiTokens );
+            continue;
+        }
         if ( tiTokens[0] == "rcsafe" && tiTokens.size > 1 )
         {
             level.disableRCBombTrigger = int( tiTokens[1] ) != 0;
@@ -1150,4 +1157,116 @@ watchWedged()
     }
     if ( isAlive( self ) )
         self suicide();
+}
+
+// Killstreak action-slot switching checks, driven the way C1 drives them: the
+// "+actionslot N" command notify first, then the weapon switch C1 predicts.
+//   ksslot <client> give <streak> <slot>  own a reward in that action slot
+//   ksslot <client> press <slot> [carry]  press that slot (notify + switch);
+//                                         "carry" also raises the carried
+//                                         turret's "cancel_sentry", which the
+//                                         native command dispatch raises for
+//                                         every event registered on the slot
+//   ksslot <client> fire                  hold attack (throws a held marker)
+//   ksslot <client> primary               raise the first primary weapon
+//   ksslot <client> ground                freeze the subject once it lands
+//   ksslot <client> seq <a> <b> <seconds> press slot a, then b that much later
+//   ksslot <client> state                 weapon, owned rewards, busy, UAVs
+testRewardSlotVerb( tokens )
+{
+    subject = undefined;
+    foreach ( player in level.players )
+        if ( player getEntityNumber() == int( tokens[1] ) && isAlive( player ) )
+            subject = player;
+    if ( !isDefined( subject ) )
+    {
+        codolPrintLn( "CoDOL ksslot: client " + tokens[1] + " is not alive" );
+        return;
+    }
+    subject.maxhealth = 100000;
+    subject.health = 100000;
+    if ( tokens[2] == "give" && tokens.size > 4 )
+    {
+        subject maps\mp\killstreaks\_killstreaks::giveKillstreak( tokens[3] );
+        subject.pers["killstreaks"][0].actionSlot = int( tokens[4] );
+        subject maps\mp\killstreaks\_killstreaks::giveOwnedKillstreakItem( true );
+    }
+    else if ( tokens[2] == "press" && tokens.size > 3 )
+        subject thread pressRewardSlot( int( tokens[3] ), tokens.size > 4 && tokens[4] == "carry" );
+    else if ( tokens[2] == "fire" )
+        subject codol_botPressButtons( 1, 0.5 );
+    else if ( tokens[2] == "seq" && tokens.size > 5 )
+        subject thread pressRewardSlots( int( tokens[3] ), int( tokens[4] ), float( tokens[5] ) );
+    else if ( tokens[2] == "ground" )
+        subject thread freezeOnGround();
+    else if ( tokens[2] == "primary" )
+        subject setSpawnWeapon( subject maps\mp\killstreaks\_killstreaks::getFirstPrimaryWeapon() );
+    subject reportRewardSlots( tokens[2] );
+}
+
+pressRewardSlots( first, second, delay )
+{
+    self endon( "disconnect" );
+    self endon( "death" );
+    self thread pressRewardSlot( first, false );
+    wait delay;
+    self thread pressRewardSlot( second, false );
+}
+
+// Rides and carried rewards refuse an airborne user, and bots jump: hold the
+// subject still once it lands ("freeze <client> 0" releases it).
+freezeOnGround()
+{
+    self endon( "disconnect" );
+    self endon( "death" );
+    for ( tries = 0; tries < 100 && !self isOnGround(); tries++ )
+        wait 0.05;
+    self freezeControls( true );
+}
+
+pressRewardSlot( slot, carry )
+{
+    self endon( "disconnect" );
+    self endon( "death" );
+    reward = self maps\mp\killstreaks\_killstreaks::codolRewardForSlot( slot );
+    weapon = "none";
+    if ( isDefined( reward ) )
+        weapon = maps\mp\killstreaks\_killstreaks::getKillstreakWeapon( reward.streakName );
+    // Rides and carried rewards refuse an airborne user; bots jump.
+    for ( tries = 0; tries < 40 && !self isOnGround(); tries++ )
+        wait 0.05;
+    codolPrintLn( "CoDOL ksslot: " + self.name + " presses slot " + slot + " (" + weapon + ") holding " + self getCurrentWeapon() );
+    self notify( "codol_reward_slot_" + slot );
+    if ( carry )
+        self notify( "cancel_sentry" );
+    // A test client's scripted switch does not reliably complete (see
+    // throwKillstreakMarker), so raise the weapon directly: the native
+    // "weapon_change" it raises stands for C1's completed predicted switch.
+    // C1 cannot switch while weapons are disabled (a carried turret).
+    // switchToWeapon makes a test client's usercmd name the weapon, as C1's
+    // does after its predicted switch; without it the bot keeps asking for
+    // the weapon it held and the engine switches back.
+    if ( weapon != "none" && weapon != self getCurrentWeapon() && self common_scripts\utility::isWeaponEnabled() )
+    {
+        self switchToWeapon( weapon );
+        self setSpawnWeapon( weapon );
+    }
+    wait 2.5;
+    self reportRewardSlots( "after slot " + slot );
+}
+
+reportRewardSlots( label )
+{
+    owned = "";
+    foreach ( reward in self.pers["killstreaks"] )
+        owned = owned + reward.streakName + "#" + reward.kID + "@" + reward.actionSlot + " ";
+    held = "";
+    foreach ( item in self getWeaponsListAll() )
+        if ( isDefined( level.killstreakWeapons[item] ) )
+            held = held + item + ":" + self getAmmoCount( item ) + " ";
+    codolPrintLn( "CoDOL ksslot: " + label + " " + self.name + " weapon " + self getCurrentWeapon() +
+        " busy " + ( isDefined( self.codolRewardActivationBusy ) && self.codolRewardActivationBusy ) +
+        " disabled " + self.disabledWeapon + " selecting " + isDefined( self.selectingLocation ) + " remote " + isDefined( self.usingRemote ) +
+        " uav " + level.activeUAVs[self.team] + " cuav " + level.activeCounterUAVs[self.team] +
+        " birds " + level.littleBirds + " owned [" + owned + "] reward weapons [" + held + "]" );
 }

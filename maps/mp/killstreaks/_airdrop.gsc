@@ -357,13 +357,13 @@ beginAirdropViaMarker( lifeId, kID, dropType )
 	else
 		airdropMarkerWeapon = undefined;
 		
-	while( isAirdropMarker( currentWeapon ) /*|| currentWeapon == "none"*/ )
-	{
+	// Hold only this reward's own marker. A switch to ANOTHER airdrop reward's
+	// marker (a second action slot) cancels this use like any other switch;
+	// staying here adopted that marker, so its throw was taken as this drop:
+	// the wrong reward was consumed, the wrong crate type called, and the
+	// other reward was left owned with an empty marker stuck in hand.
+	while( isDefined( airdropMarkerWeapon ) && currentWeapon == airdropMarkerWeapon )
 		self waittill( "weapon_change", currentWeapon );
-
-		if ( isAirdropMarker( currentWeapon ) )
-			airdropMarkerWeapon = currentWeapon;
-	}
 	
 	self notify ( "stopWatchingAirDropMarker" );
 	
