@@ -560,6 +560,9 @@ blowup( attacker )
 
     playFX( level._effect["rcbombexplosion"], explosionOrigin );
 
+    // CoDOL: the persistent RC light pair loops forever; stop it before the
+    // car is hidden rather than leaving it on a hidden entity until delete.
+    self maps\mp\killstreaks\_rcbomb_presentation::stopPersistentLight();
     self notify( "codol_rc_hidden" );
     self setModel( self.death_model );
     self hide();
@@ -579,8 +582,13 @@ blowup( attacker )
         return;
     }
 
-    self.owner unlink();
-    self.owner.killstreak_waitamount = undefined;
+    // An owner who disconnected during the second above must not stop the
+    // delete with a script error (the car and its effects would remain).
+    if ( isDefined( self.owner ) )
+    {
+        self.owner unlink();
+        self.owner.killstreak_waitamount = undefined;
+    }
     self delete();
 }
 
