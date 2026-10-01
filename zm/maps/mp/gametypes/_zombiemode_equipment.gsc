@@ -58,6 +58,7 @@ init()
 
 		info = spawnStruct();
 		info.key = key;
+		info.portrait = resolve_portrait( trim( tableLookupByRow( ROSTER_TABLE, row, 4 ) ) );
 		info.pistol = resolve_item( trim( tableLookupByRow( ROSTER_TABLE, row, 5 ) ) );
 		info.lethal = resolve_item( trim( tableLookupByRow( ROSTER_TABLE, row, 7 ) ) );
 		info.special = resolve_item( trim( tableLookupByRow( ROSTER_TABLE, row, 8 ) ) );
@@ -72,7 +73,8 @@ init()
 
 		level.zombie_roster[ key ] = info;
 		level.zombie_roster_order[ level.zombie_roster_order.size ] = key;
-		codolprintln( "CoDOL zm equipment: " + key + " pistol " + describe( info.pistol ) +
+		codolprintln( "CoDOL zm equipment: " + key + " portrait " + describe( info.portrait ) +
+			" pistol " + describe( info.pistol ) +
 			" lethal " + describe( info.lethal ) + " special " + describe( info.special ) +
 			" trap " + describe( info.trap ) );
 	}
@@ -93,6 +95,24 @@ trim( value )
 	if ( tokens.size == 0 )
 		return "";
 	return tokens[ 0 ];
+}
+
+// Column 4 is the character's HUD portrait (hud_character_lubu, _cowboy,
+// _punk, _sarge; common_gametype_zm).  C1's zombies player HUD (0x00460590)
+// draws the LOCAL player's portrait from playerState 0x540, which only
+// SetClientMaterial( "head_icon_self", ... ) writes, and every OTHER player's
+// from that player's entity head icon (es+0xa0, i.e. self.headicon).  With
+// neither set it falls back to its built-in hud_character_soldier - the one
+// generic icon every player had.  C1 skips the over-the-head draw of head
+// icons in a "zm" gametype (0x0045aeb6), so the head icon is only the portrait
+// here.  Both precaches belong to this precache window.
+resolve_portrait( name )
+{
+	if ( name == "" || name == "none" )
+		return undefined;
+	precacheShader( name );
+	precacheHeadIcon( name );
+	return name;
 }
 
 // A name that is not a loaded weapon on this map is left out of the kit
@@ -154,6 +174,7 @@ give_character_loadout()
 		return;
 
 	self.zombie_character = info.key;
+	self publish_portrait( info );
 	self.zombie_lethal = info.lethal;
 	self.zombie_special = info.special;
 	self.zombie_trap = info.trap;
@@ -184,6 +205,18 @@ give_character_loadout()
 	}
 
 	self setOffhandEquipment( slots[ 0 ], slots[ 1 ], slots[ 2 ] );
+}
+
+// self = player.  The character's HUD portrait: the local player's from
+// playerState 0x540, everyone else's from this player's head icon.  Both live
+// in state ClientSpawn clears, so this runs on every spawn.
+publish_portrait( info )
+{
+	if ( !isDefined( info.portrait ) )
+		return;
+	self.headicon = info.portrait;
+	self.headiconteam = "none";
+	self setClientMaterial( "head_icon_self", info.portrait );
 }
 
 // self = player.  This player's lethal, or the level default when the
