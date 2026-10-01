@@ -902,6 +902,9 @@ treasure_chest_think()
 
 			self notify( "user_grabbed_weapon" );
 			user treasure_chest_give_weapon( weapon );
+			// CHALLENGE_ZM_CRATEWEAPONS "buy &&1 items from the mystery box":
+			// counted when the bought item is taken.
+			user maps\mp\gametypes\_zombiemode_challenges::zm_challenge_inc( "zm_crateweapons" );
 			break;
 		}
 

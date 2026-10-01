@@ -618,6 +618,8 @@ powerup_grab()
 				continue;
 
 			self notify( "powerup_grabbed" );
+			// CHALLENGE_ZM_POWERUPS "pick up &&1 power-ups".
+			player maps\mp\gametypes\_zombiemode_challenges::zm_challenge_inc( "zm_powerups" );
 			codolPrintLn( "CoDOL zm powerup: " + self.powerup_name + " grabbed by " + player.name + " at " + self.origin );
 			player powerup_vo( self.powerup_name );
 			player play_sound_on_ent( "powerup_grabbed" );
