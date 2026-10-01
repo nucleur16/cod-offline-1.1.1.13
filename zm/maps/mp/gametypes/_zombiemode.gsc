@@ -391,6 +391,10 @@ Callback_StartGameType()
 	// Equipment test hooks (idle unless scr_codol_equiptest is set).
 	maps\mp\gametypes\_codol_equiptest::init();
 
+	// Player-damage rule test verbs (idle unless developer and
+	// scr_codol_fftest is set).
+	maps\mp\gametypes\_zombiemode_fftest::init();
+
 	// Each Cyborg's pistol/lethal/special/trap (mp/cyborgclasstable.csv) and
 	// the grenade_fire registry the item modules below hook into.  Before
 	// them, so their register_equipment calls find the registry.
@@ -516,12 +520,31 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 	if ( level.gameEnded )
 		return;
 
+	// Players never hurt each other.  T5 _callbackglobal.gsc:640
+	// Callback_PlayerDamage (with no friendly-fire mutator, which CoDOL lacks)
+	// drops all damage from another player and, from the player himself,
+	// everything but explosive, burn and suicide damage.  Before the perk-pop
+	// rules so a teammate's hit cannot trigger them either.
+	if ( self player_damage_blocked( eAttacker, sMeansOfDeath ) )
+		return;
+
+	// T5 _zombiemode.gsc:4636: placeable mines harm no player, their owner
+	// included.
+	if ( is_placeable_mine( sWeapon ) )
+		return;
+
 	// Perk-pop damage rules: flak jacket immunity and dive explosion, the
 	// electro counter-shock.  Before the test-client guard so the rules also
 	// run for invulnerable test clients.
 	iDamage = self maps\mp\gametypes\_zombiemode_perkpops::player_damage_override( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon );
 	if ( iDamage <= 0 )
 		return;
+
+	// T5 _zombiemode.gsc:4664: explosive damage to a player is capped at 75
+	// while he has more than 75 health (after the flak jacket, above, has
+	// had its say).  Only a player's own explosives reach this point.
+	if ( is_capped_explosive_mod( sMeansOfDeath ) && self.health > 75 && iDamage > 75 )
+		iDamage = 75;
 
 	// Test clients added by _codol_equiptest (scr_codol_equiptest "addbots")
 	// stand still next to the equipment under test; nothing else sets this.
@@ -555,6 +578,61 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 	// has no equivalent gate.  C1 does.  Per the standing mandate, C1 wins.
 
 	self finishPlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, timeOffset );
+}
+
+// T5 _callbackglobal.gsc:640.  T5 tests isPlayer( eAttacker ) only; the owner
+// of a player's sentry, RC car or trap stands in for it here, so their stray
+// hits are held to the same rule.
+player_damage_blocked( eAttacker, sMeansOfDeath )
+{
+	if ( !isDefined( eAttacker ) )
+		return false;
+
+	attacker = eAttacker;
+	if ( !isPlayer( attacker ) && isDefined( attacker.owner ) && isPlayer( attacker.owner ) )
+		attacker = attacker.owner;
+	if ( !isPlayer( attacker ) )
+		return false;
+
+	if ( attacker != self )
+		return true;
+
+	switch ( sMeansOfDeath )
+	{
+	case "MOD_GRENADE_SPLASH":
+	case "MOD_GRENADE":
+	case "MOD_EXPLOSIVE":
+	case "MOD_PROJECTILE":
+	case "MOD_PROJECTILE_SPLASH":
+	case "MOD_BURNED":
+	case "MOD_SUICIDE":
+		return false;
+	}
+	return true;
+}
+
+// T5 _zombiemode_utility.gsc:3595 is_placeable_mine over
+// level.zombie_placeable_mine_list (claymore_zm, mine_bouncing_betty); CoDOL's
+// betty is bouncingbetty_zm (mp/cyborgclasstable.csv, the zm3 lethal).
+is_placeable_mine( sWeapon )
+{
+	if ( !isDefined( sWeapon ) )
+		return false;
+	return sWeapon == "bouncingbetty_zm" || sWeapon == "claymore_zm";
+}
+
+// The means of death T5 _zombiemode.gsc:4664 caps (MOD_EXPLOSIVE is not one).
+is_capped_explosive_mod( sMeansOfDeath )
+{
+	switch ( sMeansOfDeath )
+	{
+	case "MOD_PROJECTILE":
+	case "MOD_PROJECTILE_SPLASH":
+	case "MOD_GRENADE":
+	case "MOD_GRENADE_SPLASH":
+		return true;
+	}
+	return false;
 }
 
 Callback_PlayerKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset, deathAnimDuration )
