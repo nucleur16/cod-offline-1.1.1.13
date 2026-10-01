@@ -308,7 +308,8 @@ blocker_trigger_think()
 			return;
 		}
 
-		if ( isDefined( repair_hint ) && is_player_valid( player ) )
+		// The revive prompt wins while the player also stands in a revive trigger.
+		if ( isDefined( repair_hint ) && is_player_valid( player ) && !player in_revive_trigger() )
 			player forceUseHintOn( repair_hint );
 
 		for ( ;; )
