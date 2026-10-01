@@ -1035,6 +1035,23 @@ maintainBots()
         }
         // Test hook, idle unless set: pretend this many more real players are on.
         humans += getDvarInt( "scr_codol_botfill_testhumans" );
+        // The local development panel owns an exact bot target only while this
+        // override is set. Keep normal playlist fill behavior otherwise.
+        devTarget = getDvar( "scr_codol_devbot_target" );
+        if ( devTarget != "" )
+        {
+            desired = getDvarInt( "scr_codol_devbot_target" );
+            if ( desired < 0 )
+                desired = 0;
+            if ( desired > 16 - humans )
+                desired = 16 - humans;
+            if ( desired > bots.size )
+                spawnBots( desired - bots.size );
+            else if ( desired < bots.size )
+                removeBots( bots, bots.size - desired );
+            wait 1;
+            continue;
+        }
         fill = getDvarInt( "scr_codol_botfill" );
         if ( fill > 0 )
         {
