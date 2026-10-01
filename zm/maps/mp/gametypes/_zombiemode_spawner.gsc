@@ -86,6 +86,10 @@ init()
 
 	init_spawn_points();
 	init_spawner();
+
+	// Developer-only entrance-walk soak (scr_codol_pathtest); returns at once
+	// on a production server.
+	level thread maps\mp\gametypes\_zombiemode_pathtest::init();
 }
 
 // The aiweapon every zombie needs before melee() will do anything.
@@ -337,6 +341,10 @@ spawn_zombie( spawn_point )
 
 	ai.targetname = "zombie";
 	ai.animname = "zombie";
+	// T5 spawns the zombie from a spawner entity and the AI inherits its
+	// .target; here the spawner is a struct, so the AI keeps the struct and
+	// pick_entrance_node reads the target from it (T5 zombie_think :461).
+	ai.zm_spawn_point = spawn_point;
 	ai.is_zombie = true;
 
 	ai.maxhealth = level.zombie_health;
@@ -777,6 +785,7 @@ zombie_think()
 	if ( isDefined( node ) )
 	{
 		self.first_node = node;
+		self.zm_path_phase = "entrance";
 		self.goalradius = 128;
 		self setGoalPos( node.origin );
 		// T5 waits on "goal" alone (:585), with zombie_assure_node moving
@@ -785,17 +794,39 @@ zombie_think()
 		// covers the 700-1100 units from a yard spawner to its window in
 		// 45-70 s -- and sent it into the chase with the boards still up
 		// (docs/CODOL_ZOMBIE_WINDOW_20260921.md).
-		self zombie_wait_entrance();
-		node = self.first_node;
-		self.goalradius = 64;
-		self tear_into_building( node );
-		self open_barrier_paths( node );
+		if ( self zombie_wait_entrance() )
+		{
+			node = self.first_node;
+			self.goalradius = 64;
+			self tear_into_building( node );
+			self open_barrier_paths( node );
+		}
+		else if ( !self zombie_can_reach_flesh() )
+		{
+			// T5 zombie_assure_node :688-:697: no entrance is reachable from
+			// here.  T5 leaves the zombie where it is for 20 s and then kills
+			// it ("Please fix pathing or Entity setup").  Sending it on to the
+			// boards of an unreachable window and then at the player, as this
+			// port did, walked it from the yard into the outer wall and left
+			// it there until the 30 s failsafe.
+			self.zm_path_phase = "gave_up";
+			wait( 20 );
+			self.no_powerup_drop = true;
+			self doDamage( self.health + 10, self.origin );
+			return;
+		}
+		// else: no entrance, but the route to a player exists -- the spawner
+		// is on the playable side already (zm_zombie_training's start-room
+		// spawner (125 -1246 272) has no target and no reachable window).
+		// T5 sends such zombies straight to find_flesh (should_skip_teardown,
+		// :478).
 	}
 
 	// T5 zombie_goto_entrance :620 and find_flesh :3934: attack mode and
 	// visibility to other AI begin once the entrance has been dealt with.
 	self zombie_setup_attack_properties();
 	self.ignoreme = false;
+	self.zm_path_phase = "hunt";
 
 	for ( ;; )
 	{
@@ -873,10 +904,36 @@ open_barrier_paths( node )
 }
 
 // T5 zombie_think :448-:556: the entrance choice.
+//
+// A spawner that targets something names its window.  T5 :461-:475: the
+// desired origin is the spawner's target (an ent, a struct or a node) and the
+// entrance is the exterior_goal closest to it, with no zone filter.  Every
+// zombie_spawner on zm_prototype_sh and 38 of 40 on zm_asylum_sh target the
+// path node just inside their own window.  This port picked the three
+// exterior_goals closest to the SPAWN point instead, which on Prototype are
+// often in another yard: the directed graph cannot reach them (negotiation
+// links run one way, yard -> interior), so each spawn burned bad_path on
+// every candidate, gave up the entrance walk and chased the player from the
+// yard into the outer wall (VPS 2026-10-01: ent 583 from the box-zone yard
+// (700 1360) tried 633 566, 277 -257, -265 -185, -265 -752, 177 -943, never
+// its own north window 457 1066, then wedged on the wall at 401 1035).
+// A spawner without a target keeps T5's closest-3 choice (:497-:536).
 pick_entrance_node()
 {
 	if ( !isDefined( level.exterior_goals ) || level.exterior_goals.size < 1 )
 		return undefined;
+
+	desired_origin = self zombie_desired_origin();
+	if ( isDefined( desired_origin ) )
+	{
+		node = get_closest( desired_origin, level.exterior_goals );
+		if ( isDefined( node ) )
+		{
+			self.entrance_nodes = [];
+			self.entrance_nodes[ 0 ] = node;
+			return node;
+		}
+	}
 
 	max_dist = 500;
 	if ( isDefined( level.max_barrier_search_dist_override ) )
@@ -902,6 +959,29 @@ pick_entrance_node()
 	return desired[ randomInt( desired.size ) ];
 }
 
+// T5 :549 get_desired_origin, for the spawner struct this zombie came from:
+// its target as an entity, a struct or a path node.
+zombie_desired_origin()
+{
+	spawn_point = self.zm_spawn_point;
+	if ( !isDefined( spawn_point ) || !isDefined( spawn_point.target ) || spawn_point.target == "" )
+		return undefined;
+
+	ent = getEnt( spawn_point.target, "targetname" );
+	if ( isDefined( ent ) )
+		return ent.origin;
+
+	s = get_struct( spawn_point.target, "targetname" );
+	if ( isDefined( s ) )
+		return s.origin;
+
+	node = getNode( spawn_point.target, "targetname" );
+	if ( isDefined( node ) )
+		return node.origin;
+
+	return undefined;
+}
+
 // T5 maps\_utility::get_array_of_closest, for the exterior_goal structs.
 closest_exterior_goals( origin, n )
 {
@@ -911,6 +991,12 @@ closest_exterior_goals( origin, n )
 		if ( maps\mp\gametypes\_zombiemode_zone_manager::entrance_available( level.exterior_goals[ i ] ) )
 			pool[ pool.size ] = level.exterior_goals[ i ];
 	}
+	// T5 :497 and zombie_assure_node :660 search every exterior_goal.  The
+	// zone filter is CoDOL's; when it leaves nothing (its board-point test
+	// finds 4 of Prototype's 12 windows inside a volume), an empty list sent
+	// the zombie straight into the chase from the yard.  Fall back to T5.
+	if ( pool.size < 1 )
+		pool = level.exterior_goals;
 
 	result = [];
 	while ( pool.size > 0 && result.size < n )
@@ -942,8 +1028,8 @@ closest_exterior_goals( origin, n )
 // zombie_assure_node :636: on "bad_path" (the native mover found no route,
 // or was wedged twice) the goal moves to the next closest entrance in
 // self.entrance_nodes, then to the 20 closest, and only when every one of
-// those is unreachable does the zombie give up (T5 kills it; here it falls
-// through to the chase, which the cut window links keep honest).
+// those is unreachable does the zombie give up (returns false; zombie_think
+// then does what T5 does: waits 20 s and kills it).
 zombie_wait_entrance()
 {
 	self endon( "death" );
@@ -952,13 +1038,13 @@ zombie_wait_entrance()
 	{
 		result = self zombie_wait_goal_or_bad_path();
 		if ( result == "goal" )
-			return;
+			return true;
 
 		next = self next_entrance_node();
 		if ( !isDefined( next ) )
 		{
 			codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " found no reachable entrance from " + self.origin + "; giving up on the entrance walk" );
-			return;
+			return false;
 		}
 
 		codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " bad_path to entrance " + self.first_node.origin + "; trying " + next.origin );
@@ -1010,6 +1096,33 @@ next_entrance_node()
 			return pool[ i ];
 	}
 	return undefined;
+}
+
+// T5 zombie_bad_path :706: set the goal and give the planner 2 s to say
+// "bad_path".  Here the goal is the closest valid player.
+zombie_can_reach_flesh()
+{
+	self endon( "death" );
+
+	player = closest_valid_player( self.origin );
+	if ( !isDefined( player ) )
+		return false;
+
+	self.goalradius = 64;
+	self setGoalPos( player.origin );
+	self thread notify_on( "bad_path", "entrance_result" );
+	self thread notify_after( 2, "entrance_result", "timeout" );
+	self waittill( "entrance_result", which );
+	self notify( "entrance_result_done" );
+	return which != "bad_path";
+}
+
+notify_after( seconds, event, value )
+{
+	self endon( "death" );
+	self endon( "entrance_result_done" );
+	wait( seconds );
+	self notify( event, value );
 }
 
 closest_valid_player( origin )
@@ -1141,6 +1254,11 @@ round_spawn_failsafe()
 			return;
 
 		wait( 30 );
+
+		// T5 :4081: a zombie that tore a board in the last 8 s is working its
+		// window, not stuck; check again in 30.
+		if ( isDefined( self.lastchunk_destroy_time ) && getTime() - self.lastchunk_destroy_time < 8000 )
+			continue;
 
 		if ( self.origin[ 2 ] < level.zombie_vars[ "below_world_check" ] )
 		{
@@ -1400,7 +1518,10 @@ tear_into_building( node )
 
 	restore = !is_true( self.ignoreall );
 	self.ignoreall = true;
+	phase = self.zm_path_phase;
+	self.zm_path_phase = "tear";
 	self tear_into_building_inner( node );
+	self.zm_path_phase = phase;
 	if ( restore )
 		self.ignoreall = false;
 }
