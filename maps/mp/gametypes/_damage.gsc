@@ -213,7 +213,9 @@ handleNormalDeath( lifeId, attacker, eInflictor, sWeapon, sMeansOfDeath )
 		else
 			value = undefined;
 
-		attacker playLocalSound( "bullet_impact_headshot_2" );
+		// CoDOL: C1 (common_mp) has bullet_impact_headshot only; IW4's _2
+		// variant is not an alias there.
+		attacker playLocalSound( "bullet_impact_headshot" );
 	}
 	else
 	{

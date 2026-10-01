@@ -181,8 +181,12 @@ onPlayerSpawned()
 			level.playedStartingMusic = true;
 	}
 
-	if ( isDefined( game["dialog"]["gametype"] ) && (!level.splitscreen || self == level.players[0]) )
-		self leaderDialogOnPlayer( "gametype" );
+	// CoDOL: C1 ships no game-mode announcer lines. Its 1mc lists
+	// (localized_common_gametype_mp: uk_1mc_*, ab_1mc_*) have no domination,
+	// tm_death, freeforall, captureflag, ... entry, so IW4's mode intro made
+	// every client report a missing alias when it first spawned. The objective
+	// line below (offense_obj/defense_obj) does exist and still plays.
+	// game["dialog"]["gametype"] is therefore not announced.
 
 	gameFlagWait( "prematch_done" );
 
