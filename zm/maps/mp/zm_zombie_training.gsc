@@ -20,22 +20,17 @@
 //    does need (spawn setup, vision) are either done by _zombiemode or listed
 //    below as unavailable.
 //
-//  * maps\mp\zm_zombie_training_fx::main().  The effects module does exist, as
-//    a rawfile inside zm_zombie_training.ff.  Whether Scr_ReadFile can reach a
-//    CoDOL zone rawfile is unproven: its fastfile fallback goes through the
-//    retained DB_FindXAssetHeader path, not the CoDOL archive registry, and the
-//    only rawfile category wired to the registry in Scr_ReadFile is
-//    animtrees/ (src/cscr_parser.cpp).  A `file::function` call is a
-//    compile-time dependency, so getting that wrong is a fatal load error, not
-//    a missing effect.  Effects are cosmetic; this is left for the pass that
-//    can verify the rawfile path live.
-//
-//  * VisionSetNaked / VisionSetPain.  zm_zombie_training.ff ships neither
-//    vision/zm_zombie_training.vision nor sun/zm_zombie_training.sun, where
-//    zm_prototype_sh.ff, zm_asylum_sh.ff and every mp zone ship both.  Asking
-//    for a vision name that is in no mounted zone is the open risk recorded as
-//    audit row 18 of the same document, and the multiplayer _load.gsc:70,74 is
-//    where it would have been asked.
+//  * maps\mp\zm_zombie_training_fx::main() and maps\createfx\...  The map's
+//    ambient effects (fog banks, fires, lamp glows, sparks, loop and interval
+//    sounds) are drawn by C1 itself: on every map load the client reads
+//    maps/mp/<mapname>_fx.gsc and maps/createfx/<mapname>_fx.gsc out of the
+//    map zone with its own parser and plays them locally (C1.exe 0x42df70,
+//    called unconditionally at 0x450f5e and 0x467cdf; formats 0xc41ca4 and
+//    0xc41cb8; frame update 0x42e1b0 while connected).  The zone's _fx.gsc
+//    runs the createfx module only inside a /# shouldRunServerSideEffects() #/
+//    developer block, so the vanilla server never placed them either.  Running
+//    it here would draw every effect twice and spend server fx entities on
+//    them; docs/CODOL_CLIENT_AMBIENT_EMITTERS_20260915.md has the details.
 //
 //  * setupMiniMap.  mp/basemaps.arena's zm_zombie_training entry carries only
 //    map/longname/gametype/description/mapimage "blank" -- there is no compass
@@ -48,10 +43,11 @@ main()
 	// name prefix, and zm_* maps are not mp_*.  The level script runs before
 	// CodeCallback_StartGameType, so the earliest entry point needs it too.
 	// Routed through the shared entry point so all three zm maps take the
-	// same path.  undefined is deliberate: zm_zombie_training.ff ships no
-	// vision and no sun rawfile, unlike zm_prototype_sh and zm_asylum_sh,
-	// so nothing is asked for.  levelMain() sets level.isSP = false.
-	maps\mp\gametypes\_zombiemode::levelMain( undefined );
+	// same path.  zm_zombie_training.ff ships no vision rawfile of its own,
+	// but C1's startup zone common_mp does: vision/zm_zombie_training.vision
+	// (with _interiors and _end beside it, docs/zone_assets/ALL_rawfile.txt),
+	// and every client mounts common_mp.  levelMain() sets level.isSP = false.
+	maps\mp\gametypes\_zombiemode::levelMain( "zm_zombie_training" );
 
 	// The three actor_zombie_* spawner classnames the map ships
 	// (actor_zombie_ger, actor_zombie_juggernaut, actor_zombie_dog), its 51

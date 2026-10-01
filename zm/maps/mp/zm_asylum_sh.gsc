@@ -18,10 +18,14 @@
 //
 //  * maps/mp/_load::main() -- the multiplayer level loader; naming it compiles
 //    the whole multiplayer chain (100 scripts) into a zm match.
-//  * maps/mp/zm_asylum_sh_fx::main() -- the effects module exists as a rawfile inside
-//    the map zone, but whether Scr_ReadFile can reach a CoDOL zone rawfile is
-//    unproven, and a file::function call is a compile-time dependency, so being
-//    wrong about it is a fatal load error rather than a missing effect.
+//  * maps/mp/zm_asylum_sh_fx::main() and maps/createfx/zm_asylum_sh_fx.gsc -- the map's
+//    ambient effects (fog banks, fires, light glows, sparks, loop and interval
+//    sounds) are drawn by C1 itself: on every map load the client reads both
+//    rawfiles out of the map zone with its own parser and plays them locally
+//    (C1.exe 0x42df70; see zm_zombie_training.gsc and
+//    docs/CODOL_CLIENT_AMBIENT_EMITTERS_20260915.md).  The zone's _fx.gsc runs
+//    the createfx module only inside a /# #/ developer block, so the vanilla
+//    server never placed them; running it here would draw everything twice.
 //  * maps/mp/_compass::setupMiniMap -- _compass is a multiplayer module, and the
 //    arena entry for every zm map carries mapimage "blank".
 
