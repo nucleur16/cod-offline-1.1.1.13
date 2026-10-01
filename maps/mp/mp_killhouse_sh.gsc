@@ -10,6 +10,10 @@
 main()
 {
 	maps\mp\mp_killhouse_sh_fx::main();
+	// toy_airconditioner destructibles spin their fan with ex_airconditioner_fan
+	// (shipped in this map's zone). IW4 registers destructible anims from the
+	// map's precache script before _load runs _destructible::init().
+	common_scripts\_destructible_types_anim_airconditioner::main();
 	maps\mp\_load::main();
 	// IW4x authored Killhouse correction; C1 numeric renderer publication.
 	codol_setmapsunsamplesize( 0.35 );

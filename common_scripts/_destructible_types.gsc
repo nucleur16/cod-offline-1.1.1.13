@@ -54,6 +54,9 @@ makeType( destructibleType )
 		case "toy_transformer_ratnest01":
 			toy_transformer_ratnest01( destructibleType );
 			break;
+		case "toy_transformer_ratnest02":
+			toy_transformer_ratnest02( destructibleType );
+			break;
 		case "toy_transformer_small01":
 			toy_transformer_small01( destructibleType );
 			break;
@@ -72,8 +75,14 @@ makeType( destructibleType )
 		case "toy_electricbox2":
 			toy_electricbox2( destructibleType );
 			break;
+		case "toy_electricbox2_tropical":
+			toy_electricbox2_tropical( destructibleType );
+			break;
 		case "toy_electricbox4":
 			toy_electricbox4( destructibleType );
+			break;
+		case "toy_electricbox4_tropical":
+			toy_electricbox4_tropical( destructibleType );
 			break;
 		case "toy_airconditioner":
 			toy_airconditioner( destructibleType );
@@ -194,6 +203,9 @@ makeType( destructibleType )
 			break;
 		case "vehicle_80s_sedan1_brn":
 			vehicle_80s_sedan1( "brn" );
+			break;
+		case "vehicle_80s_sedan1_nt":
+			vehicle_80s_sedan1( "nt" );
 			break;
 		case "vehicle_80s_hatch1_green":
 			vehicle_80s_hatch1( "green" );
@@ -447,7 +459,12 @@ makeType( destructibleType )
 
 		// Default means invalid type
 		default:
-			assertMsg( "Destructible object 'destructible_type' key/value of '" + destructibleType + "' is not valid" );
+			// CoDOL: C1 maps place a few types no IW4 table defines (toy_radio_r01,
+			// toy_tubetvsound_tv1, glass_small, t5_vehicle_ultimate_jeep_pristine).
+			// IW4 asserts here, which a retail VM ignores; this VM raises a script
+			// error that would end find_destructibles() for the rest of the map.
+			// Leave the object static instead (makeType returns -1).
+			PrintLn( "Destructible object 'destructible_type' key/value of '" + destructibleType + "' is not valid" );
 			break;
 	}
 
@@ -561,6 +578,38 @@ toy_transformer_ratnest01( destructibleType )
 				destructible_sound( "transformer01_explode" );
 				destructible_explode( 7000, 8000, 150, 256, 16, 100, undefined, 0 ); 	// force_min, force_max, rangeSP, rangeMP, mindamage, maxdamage
 			destructible_state( undefined, "utility_transformer_ratnest01_dest", undefined, undefined, "no_melee" );
+}
+
+// CoDOL: toy_transformer_ratnest02, toy_electricbox2_tropical and
+// toy_electricbox4_tropical are the C1 tropical-map variants, ported from the
+// IW4M/IW4x _destructible_types.gsc that carries them for these same maps;
+// their codo_*/_tropical models ship in the C1 map zones.
+toy_transformer_ratnest02( destructibleType )
+{
+	//---------------------------------------------------------------------
+	// Transformer w/ wires for mp_fav_tropical
+	//---------------------------------------------------------------------
+	destructible_create( destructibleType, "tag_origin", 75, undefined, 32, "no_melee" );
+		destructible_splash_damage_scaler( 15 );
+				destructible_loopfx( "tag_fx", "smoke/car_damage_whitesmoke", 0.4 );
+			destructible_state( undefined, undefined, 75, undefined, 32, "no_melee" );
+				destructible_loopfx( "tag_fx", "smoke/car_damage_blacksmoke", 0.4 );
+			destructible_state( undefined, undefined, 150, undefined, 32, "no_melee" );
+				destructible_loopfx( "tag_sparks", "explosions/transformer_spark_runner", .5 );
+				destructible_loopsound( "transformer_spark_loop" );
+				destructible_healthdrain( 24, 0.2 );
+			destructible_state( undefined, undefined, 250, undefined, 32, "no_melee" );
+				destructible_loopfx( "tag_sparks", "explosions/transformer_spark_runner", .5 );
+				destructible_loopfx( "tag_fx", "fire/transformer_blacksmoke_fire", .4 );
+				destructible_sound( "transformer01_flareup_med" );
+				destructible_loopsound( "transformer_spark_loop" );
+				destructible_healthdrain( 24, 0.2, 150, "allies" );
+			destructible_state( undefined, undefined, 400, undefined, 5, "no_melee" );
+				destructible_fx( "tag_fx", "explosions/transformer_explosion", false );
+				destructible_fx( "tag_fx", "fire/firelp_small_pm" );
+				destructible_sound( "transformer01_explode" );
+				destructible_explode( 7000, 8000, 150, 256, 16, 100, undefined, 0 ); 	// force_min, force_max, rangeSP, rangeMP, mindamage, maxdamage
+			destructible_state( undefined, "codo_utility_transformer_ratnest01_dest", undefined, undefined, "no_melee" );
 }
 
 toy_transformer_small01( destructibleType )
@@ -684,6 +733,40 @@ toy_electricbox2( destructibleType )
 		// door upper
 		destructible_part( "tag_door_upper", "me_electricbox2_door_upper", undefined, undefined, undefined, undefined, 1.0, 1.0 );
 
+}
+
+toy_electricbox2_tropical( destructibleType )
+{
+	//---------------------------------------------------------------------
+	// electric box large toy on mp_fav_tropical
+	//---------------------------------------------------------------------
+	destructible_create( destructibleType, "tag_origin", 150, undefined, 32, "no_melee" );
+		destructible_splash_damage_scaler( 15 );
+			destructible_fx( "tag_fx", "props/electricbox4_explode", undefined, undefined, undefined, 1 );
+			destructible_sound( "exp_fusebox_sparks" );
+			destructible_explode( 1000, 2000, 32, 32, 32, 48, undefined, 0 ); 	// force_min, force_max, rangeSP, rangeMP, mindamage, maxdamage, continue damage, originoffset
+		destructible_state( undefined, "me_electricbox2_dest_tropical", undefined, undefined, "no_melee" );
+		// door
+		destructible_part( "tag_fx", "me_electricbox2_door_tropical", undefined, undefined, undefined, undefined, 1.0, 1.0 );
+
+		// door upper
+		destructible_part( "tag_door_upper", "me_electricbox2_door_upper_tropical", undefined, undefined, undefined, undefined, 1.0, 1.0 );
+
+}
+
+toy_electricbox4_tropical( destructibleType )
+{
+	//---------------------------------------------------------------------
+	// electric box medium toy on mp_fav_tropical
+	//---------------------------------------------------------------------
+	destructible_create( destructibleType, "tag_origin", 150, undefined, 32, "no_melee" );
+		destructible_splash_damage_scaler( 15 );
+			destructible_fx( "tag_fx", "props/electricbox4_explode", undefined, undefined, undefined, 1 );
+			destructible_sound( "exp_fusebox_sparks" );
+			destructible_explode( 20, 2000, 32, 32, 32, 48, undefined, 0 ); 	// force_min, force_max, rangeSP, rangeMP, mindamage, maxdamage, continue damage, originoffset
+		destructible_state( undefined, "me_electricbox4_dest_tropical", undefined, undefined, "no_melee" );
+		// door
+		destructible_part( "tag_fx", "me_electricbox4_door_tropical", undefined, undefined, undefined, undefined, 1.0, 1.0 );
 }
 
 toy_electricbox4( destructibleType )
@@ -1561,10 +1644,16 @@ vehicle_80s_sedan1( color )
 		destructible_part( "tag_bumper_front", "vehicle_80s_sedan1_" + color + "_bumper_F", undefined, undefined, undefined, undefined, 1.0, 1.0 );
 		destructible_part( "tag_bumper_back", "vehicle_80s_sedan1_" + color + "_bumper_B", undefined, undefined, undefined, undefined, undefined, 1.0 );
 		// Side Mirrors
+		// CoDOL: mp_nuked ships no vehicle_80s_sedan1_nt_mirror_L/R; a C1 map
+		// zone carries every model its scripts precache, so the nt sedan has no
+		// mirror parts (launching them would send the client a model it lacks).
+		if ( color != "nt" )
+		{
 		destructible_part( "tag_mirror_left", "vehicle_80s_sedan1_" + color + "_mirror_L", 40, undefined, undefined, undefined, undefined, 1.0 );
 			destructible_physics();
 		destructible_part( "tag_mirror_right", "vehicle_80s_sedan1_" + color + "_mirror_R", 40, undefined, undefined, undefined, undefined, 1.0 );
 			destructible_physics();
+		}
 }
 
 vehicle_80s_hatch1( color )

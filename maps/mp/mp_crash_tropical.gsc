@@ -16,6 +16,10 @@
 main()
 {
 	maps\mp\mp_crash_precache::main();
+	// Destructible anims exactly as animlists/mp_crash_tropical.animlist lists
+	// them (see mp_crash_precache.gsc).
+	common_scripts\_destructible_types_anim_light_fluo_single::main();
+	common_scripts\_destructible_types_anim_me_fanceil1_spin::main();
 	maps\mp\mp_crash_tropical_fx::main();
 	maps\createart\mp_crash_art::main();
 	maps\mp\_load::main();

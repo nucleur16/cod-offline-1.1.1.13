@@ -9,6 +9,10 @@
 main()
 {
 	maps\mp\mp_bog_sh_fx::main();
+	// toy_airconditioner destructibles spin their fan with ex_airconditioner_fan
+	// (shipped in this map's zone). IW4 registers destructible anims from the
+	// map's precache script before _load runs _destructible::init().
+	common_scripts\_destructible_types_anim_airconditioner::main();
 	maps\mp\_load::main();
 
 	maps\mp\_compass::setupMiniMap( "compass_map_mp_bog_sh" );
