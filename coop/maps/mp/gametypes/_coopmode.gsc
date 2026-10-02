@@ -53,11 +53,28 @@
 // MEASURED, common_gametype_coop.ff: 16 columns x 43 rows, oriented rows =
 // property names (column 0), columns 1..15 = the fifteen coop loadouts whose
 // uniqueName row reads class0..class4, class0_up1..class4_up1,
-// class0_up2..class4_up2.  Rows seen include loadoutPrimary (m16_basic,
-// m16_grenadier_reddot), loadoutSecondary (barrett_zoom, usp_silencer_akimbo,
-// tmp_silencer_reflex), loadoutMeleeWpn (coop_mel_karambit, coop_mel_knife,
-// coop_mel_bonesaw, coop_mel_bowie, coop_mel_sog), loadoutPerk1..3
-// (specialty_coop_*), loadoutKillstreak1..4, loadoutLethal, loadoutTactical.
+// class0_up2..class4_up2.
+//
+// Decoded 2026-10-02 with tools/codol_stringtable_dump.py, the hash-only cells
+// resolved against every weapon name in docs/zone_assets/ALL_weapon.txt with
+// the table's own hash (h = tolower(c) + 31*h):
+//
+//   class            0                 1                 2      3    4
+//   loadoutPrimary   mp5_silencer      cheytac_silencer  ump45  rpd  m16_basic
+//   loadoutSecondary usp_silencer      tmp_silencer      aa12   rpg  barrett
+//   loadoutLethal    hatchet_so        throwingknife_so  semtex_grenade_so
+//                                                        fraggrenade_so ...
+//   loadoutTactical  c4_so / claymore_so
+//   loadoutSpecial   smoke_grenade_american_so / flash_grenade_so
+//   loadoutMeleeWpn  coop_mel_karambit, _knife, _bonesaw, _bowie, _sog
+//
+// THE _so SUFFIX.  The primary and secondary cells are BASE names; the coop
+// zones ship them only as <base>_so (mp5_silencer_so, usp_silencer_so,
+// m16_basic_so, ump45_so, rpd_so, aa12_so, rpg_so, barrett_so ... all in
+// common_gametype_coop), exactly as a multiplayer class cell is a base name the
+// multiplayer chain completes with _mp.  No zone ships any of them without the
+// suffix.  The three offhand rows already carry it.  coop_mel_* is in no zone
+// as a weapon at all: it is a melee cosmetic, not something giveWeapon takes.
 coop_class_table()
 {
 	return "mp/cocoopclasstable.csv";
@@ -79,8 +96,17 @@ coop_map_table()
 // loadout; level.coop_class_column selects which of the fifteen is in play.
 class_value( row )
 {
-	value = tableLookup( coop_class_table(), 0, row, level.coop_class_column );
-	if ( !isDefined( value ) )
+	// init() owns level.coop_class_column.  Callback_StartGameType re-runs
+	// init() when it finds it missing, but a lookup must not fault on it either:
+	// tableLookup takes an int column, and undefined is a script runtime error
+	// that kills the whole StartGameType thread (VPS codol-match-17733,
+	// 2026-10-02 15:49).
+	column = level.coop_class_column;
+	if ( !isDefined( column ) )
+		column = 1;
+
+	value = tableLookup( coop_class_table(), 0, row, column );
+	if ( !isDefined( value ) || value == "none" )
 		return "";
 
 	return value;
@@ -162,52 +188,87 @@ levelMain( visionName )
 
 // Probe a candidate list in order and return the first name the mounted coop
 // zones actually carry.  Never returns a name the client cannot resolve.
+//
+// codol_isWeaponMounted is the find-only probe; getWeaponIndexFromName is NOT
+// one.  For a name in no mounted zone the database hands back defaultweapon_mp
+// and getWeaponIndexFromName answers a non-zero index for that clone
+// (src/codol/script/codol_script_weapon_queries.c), so the old gate always
+// accepted the first candidate, mounted or not.  Only the winner is
+// precached, which is what registers its definition.
 resolveWeapon( candidates )
 {
 	for ( i = 0; i < candidates.size; i++ )
 	{
 		name = candidates[ i ];
-		if ( !isDefined( name ) || name == "" )
+		if ( !isDefined( name ) || name == "" || name == "none" )
+			continue;
+
+		if ( !codol_isWeaponMounted( name ) )
 			continue;
 
 		precacheItem( name );
-		if ( getWeaponIndexFromName( name ) > 0 )
-			return name;
+		return name;
 	}
 
 	return undefined;
 }
 
-// One class table row -> a usable weapon name, with the row's own value first.
+// One class table row -> a usable weapon name.  The row's own value is tried
+// with the coop _so suffix first (see the table comment above), then as
+// written, then the fallbacks.
 weaponFromRow( row, fallback1, fallback2 )
 {
+	value = class_value( row );
+
 	candidates = [];
-	candidates[ 0 ] = class_value( row );
-	candidates[ 1 ] = fallback1;
-	candidates[ 2 ] = fallback2;
+	if ( value != "" && !isSubStr( value, "_so" ) )
+		candidates[ candidates.size ] = value + "_so";
+	candidates[ candidates.size ] = value;
+	candidates[ candidates.size ] = fallback1;
+	candidates[ candidates.size ] = fallback2;
 
 	return resolveWeapon( candidates );
 }
 
 resolveLoadout()
 {
-	// MEASURED names out of mp/cocoopclasstable.csv.  The fallbacks are the
-	// literal cells that decoded to text in that table; a cell this decode could
-	// not resolve simply misses the probe and the next candidate is tried.
-	level.coop_primary = weaponFromRow( "loadoutPrimary", "m16_basic", "m16_grenadier_reddot" );
-	level.coop_secondary = weaponFromRow( "loadoutSecondary", "usp_silencer_akimbo", "tmp_silencer_reflex" );
-	level.coop_melee = weaponFromRow( "loadoutMeleeWpn", "coop_mel_knife", "coop_mel_karambit" );
+	// The class's own cells first (decoded above), then class4's primary and
+	// class0's secondary as fallbacks.  Every fallback is a common_gametype_coop
+	// weapon, so it is mounted for every coop map, whichever coop_<mode>_<map>
+	// session zone rides along.
+	level.coop_primary = weaponFromRow( "loadoutPrimary", "m16_basic_so", "mp5_silencer_so" );
+	level.coop_secondary = weaponFromRow( "loadoutSecondary", "usp_silencer_so", "usp_silencer_akimbo_so" );
 
-	if ( isDefined( level.coop_primary ) )
-		println( "CoDOL coop: primary " + level.coop_primary );
-	else
-		println( "CoDOL coop: no primary weapon from " + coop_class_table() + " is present in the mounted coop zones" );
+	// The three offhands, in C1's button order (+frag lethal, +smoke special,
+	// +tact tactical) -- the order setOffhandEquipment takes, as the
+	// multiplayer _class::codol_giveEquipment passes it.
+	level.coop_lethal = weaponFromRow( "loadoutLethal", "fraggrenade_so", undefined );
+	level.coop_special = weaponFromRow( "loadoutSpecial", "flash_grenade_so", undefined );
+	level.coop_tactical = weaponFromRow( "loadoutTactical", undefined, undefined );
 
-	if ( isDefined( level.coop_secondary ) )
-		println( "CoDOL coop: secondary " + level.coop_secondary );
+	// Not a weapon asset in any zone (see the table comment); recorded for the
+	// melee cosmetic, never given.
+	level.coop_melee_item = class_value( "loadoutMeleeWpn" );
 
-	if ( isDefined( level.coop_melee ) )
-		println( "CoDOL coop: melee " + level.coop_melee );
+	// codolprintln, not println: println is a developer builtin and production
+	// runs developer 0.
+	summary = "CoDOL coop: class column " + level.coop_class_column;
+	summary += " primary " + coop_name( level.coop_primary );
+	summary += " secondary " + coop_name( level.coop_secondary );
+	summary += " lethal " + coop_name( level.coop_lethal );
+	summary += " special " + coop_name( level.coop_special );
+	summary += " tactical " + coop_name( level.coop_tactical );
+	codolprintln( summary );
+
+	if ( !isDefined( level.coop_primary ) )
+		codolprintln( "CoDOL coop: no primary weapon from " + coop_class_table() + " is present in the mounted coop zones" );
+}
+
+coop_name( weapon )
+{
+	if ( !isDefined( weapon ) )
+		return "none";
+	return weapon;
 }
 
 giveStartingLoadout()
@@ -227,11 +288,31 @@ giveStartingLoadout()
 		self giveMaxAmmo( level.coop_secondary );
 	}
 
-	if ( isDefined( level.coop_melee ) )
-		self giveWeapon( level.coop_melee );
+	// Offhands as the multiplayer _class::codol_giveEquipment gives them:
+	// giveWeapon + giveStartAmmo per slot, then one setOffhandEquipment in
+	// button order.
+	offhands = [];
+	offhands[ 0 ] = level.coop_lethal;
+	offhands[ 1 ] = level.coop_special;
+	offhands[ 2 ] = level.coop_tactical;
+	for ( slot = 0; slot < 3; slot++ )
+	{
+		if ( !isDefined( offhands[ slot ] ) )
+		{
+			offhands[ slot ] = "none";
+			continue;
+		}
+
+		self giveWeapon( offhands[ slot ] );
+		self giveStartAmmo( offhands[ slot ] );
+	}
+	self setOffhandEquipment( offhands[ 0 ], offhands[ 1 ], offhands[ 2 ] );
 
 	if ( isDefined( primary ) )
+	{
+		self setSpawnWeapon( primary );
 		self switchToWeapon( primary );
+	}
 
 	// mp/basemaps.arena gives every coop_* entry allieschar "us_army" /
 	// axischar "opforce_composite", and every ally actor in the coop addon
@@ -240,7 +321,11 @@ giveStartingLoadout()
 	// through unchanged (src/codol/player/codol_player_appearance.c), so "tf"
 	// is what composes.  INFERRED from those two data points; C1's own coop
 	// character selector index has not been read out of the profile yet.
-	if ( isDefined( primary ) )
+	//
+	// A test client has no uploaded profile to compose, and the builtin raises
+	// for one -- a runtime error that ends the match (MEASURED 2026-10-02 with
+	// an addTestClient probe).  Same guard as zm's _zombiemode.
+	if ( isDefined( primary ) && !( isDefined( self.isbot ) && self.isbot ) )
 		self codol_applyProfileCharacter( "tf", primary );
 }
 
@@ -390,6 +475,18 @@ respawnPlayer()
 
 Callback_StartGameType()
 {
+	// coop.gsc::main() runs init() at gametype-script load.  If this callback
+	// is reached without it -- the engine pins the coop category to coop.gsc
+	// now (codol_gametype_policy, src/scr_vm_main.c), but on 2026-10-02 a coop
+	// load under g_gametype dm ran the multiplayer dm.gsc main() against this
+	// _callbacksetup instead -- run it here, before anything reads its state.
+	// No player has connected yet, so init()'s level.players = [] loses nothing.
+	if ( !isDefined( level.coop_class_column ) )
+	{
+		codolprintln( "CoDOL coop: gametype init() had not run (g_gametype " + getDvar( "g_gametype" ) + "); running it from Callback_StartGameType" );
+		init();
+	}
+
 	level.isSP = false;
 
 	if ( !isDefined( level.players ) )
