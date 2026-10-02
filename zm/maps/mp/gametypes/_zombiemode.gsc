@@ -427,6 +427,9 @@ Callback_StartGameType()
 	maps\mp\gametypes\_zombiemode_weapons::init();
 	maps\mp\gametypes\_zombiemode_blockers::init();
 	maps\mp\gametypes\_zombiemode_perks::init();
+	// The level's own electric traps (T5 _zombiemode_traps): they wait on
+	// flag "power_on", so before the power module that may set it at once.
+	maps\mp\gametypes\_zombiemode_traps::init();
 	// Power LAST of the trigger modules: it fans "<perk>_power_on" out by
 	// notify, and on a map with no use_elec_switch it sets the flag
 	// immediately, so every machine has to be waiting before it runs.
