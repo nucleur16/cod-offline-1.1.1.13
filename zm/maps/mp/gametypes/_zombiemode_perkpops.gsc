@@ -63,9 +63,11 @@
 // (43-57, specialty_zombie_*) are C1's own definition of every effect; their
 // modifier values are aggregated the way CODOL_BuildPerkEffects does (base
 // column 3 of the modifier row plus the perk's delta).  Those rows are
-// "no_slot" perks, which the native setPerk cannot hold (a C1 perk occupies
-// one of eight slots), so the modifiers are set directly with the registered
-// setAbilityModifier / setAbilityModifierValue, which ARE the native effect
+// "no_slot" perks.  The native setPerk now holds them in a server-side set
+// (the perk machines use that, by their T5 names), but a perk pop sets its
+// modifiers directly with the registered setAbilityModifier /
+// setAbilityModifierValue, so that its expiry never takes away a perk the
+// player bought from a machine.  Those ARE the native effect
 // path: modSprintTime is consumed by codol_sprint_state.c, modReloadSpeedScale
 // and modRateOfFire by codol_weapon_state.c weapon_frame_msec.  Effects that
 // are gameplay rules rather than movement/weapon timing are script rules here.

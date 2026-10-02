@@ -731,7 +731,6 @@ spawnPlayer()
 	// (src/g_client_mp.cpp:108); the script-side bookkeeping has to follow it
 	// or the four-perk cap would never open again.
 	self.num_perks = 0;
-	self.zm_perks = [];
 
 	self spawn( spawnpoint.origin, spawnpoint.angles );
 

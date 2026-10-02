@@ -563,11 +563,9 @@ player_elec_damage()
 	if ( isDefined( self.is_burning ) || self maps\mp\gametypes\_zombiemode_laststand::player_is_in_laststand() )
 		return;
 
-	// Juggernog by the perks module's own record: hasPerk reads C1's
-	// coPerkStatsTable, which has no specialty_armorvest row.
+	// Under zm the native perk lookup resolves the T5 name to C1's no_slot
+	// row specialty_zombie_armorvest (codol_script_perks.c read_definition).
 	jugg = self hasPerk( "specialty_armorvest" );
-	if ( isDefined( self.zm_perks ) && is_true( self.zm_perks[ "specialty_armorvest" ] ) )
-		jugg = true;
 
 	self.is_burning = 1;
 	self shellShock( "electrocution", 2.5 );

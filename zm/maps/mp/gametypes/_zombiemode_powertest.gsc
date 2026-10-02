@@ -8,10 +8,19 @@
 //   goto <client> <x> <y> <z>   move a client
 //   power <client>          stand the client at the power switch trigger and
 //                           hold USE for a second: the real trigger path
-//   perk <client>           the same at each zombie_vending machine in turn
-//                           (plus the trigger notify: the machines need a
-//                           look-at a test client cannot aim); reports the
-//                           perks the client then has
+//   perk <client> [perk]    the same at each zombie_vending machine in turn,
+//                           or only at the machines selling [perk] (plus the
+//                           trigger notify: the machines need a look-at a
+//                           test client cannot aim); reports the perks the
+//                           client then has
+//   perks <client>          hasPerk for every machine perk, the perk count
+//                           and the modifiers the perks publish
+//   lose <client>           notify player_downed as a down does, so the
+//                           perk lifetime threads take the perks away (a
+//                           test client has no DObj, so it cannot really go
+//                           down or die; its health regen also stops)
+//   weaponperks             weaponInheritsPerks for every zm weapon: Speed
+//                           Cola's reload scale only reaches those that do
 //   buy <client> <id>       the same at trap <id>'s handle (id = script_string)
 //   lure <id> <n>           forceTeleport up to n live zombies onto trap
 //                           <id>'s effect points and report what happens
@@ -104,6 +113,8 @@ powertest_watch()
 			machines = getEntArray( "zombie_vending", "targetname" );
 			for ( i = 0; i < machines.size; i++ )
 			{
+				if ( tokens.size > 2 && machines[ i ].script_noteworthy != tokens[ 2 ] )
+					continue;
 				p.score = 10000;
 				powertest_press( p, machines[ i ].origin );
 				// The machines require the user to look at them, which a
@@ -114,6 +125,24 @@ powertest_watch()
 				wait( 4 );
 				codolprintln( "CoDOL powertest: vending " + machines[ i ].script_noteworthy + ": client has it " + p hasPerk( machines[ i ].script_noteworthy ) + ", points " + p.score );
 			}
+			break;
+
+		case "perks":
+			p = powertest_player( tokens, 1 );
+			if ( isDefined( p ) )
+				powertest_perks( p );
+			break;
+
+		case "lose":
+			p = powertest_player( tokens, 1 );
+			if ( isDefined( p ) )
+				p notify( "player_downed" );
+			break;
+
+		case "weaponperks":
+			names = getArrayKeys( level.zombie_weapons );
+			for ( i = 0; i < names.size; i++ )
+				level thread powertest_weapon_inherits( names[ i ] );
 			break;
 
 		case "buy":
@@ -179,6 +208,55 @@ powertest_player( tokens, index )
 	}
 	codolprintln( "CoDOL powertest: no client " + n );
 	return undefined;
+}
+
+powertest_perks( p )
+{
+	perks = maps\mp\gametypes\_zombiemode_perks::perk_list();
+	line = "";
+	for ( i = 0; i < perks.size; i++ )
+		line = line + " " + perks[ i ] + "=" + p hasPerk( perks[ i ] );
+	count = 0;
+	if ( isDefined( p.num_perks ) )
+		count = p.num_perks;
+	codolprintln( "CoDOL powertest: client " + p getEntityNumber() + " perks" + line + ", num_perks " + count +
+		", health " + p.health + "/" + p.maxhealth + ", lives " + diag_lives( p ) );
+	mods = [];
+	mods[ mods.size ] = "modMaxHealth";
+	mods[ mods.size ] = "modReviveRate";
+	mods[ mods.size ] = "modReloadSpeedScale";
+	mods[ mods.size ] = "modRateOfFire";
+	mods[ mods.size ] = "modSprintTime";
+	line = "";
+	for ( i = 0; i < mods.size; i++ )
+	{
+		line = line + " " + mods[ i ] + "=" + p hasAbilityModifier( mods[ i ] );
+		value = p getSelectedPerkModifierValue( mods[ i ] );
+		if ( isDefined( value ) )
+			line = line + "(" + value + ")";
+	}
+	codolprintln( "CoDOL powertest: client " + p getEntityNumber() + " modifiers" + line );
+	p thread powertest_weapon_perks();
+}
+
+diag_lives( p )
+{
+	if ( isDefined( p.pers ) && isDefined( p.pers[ "lives" ] ) )
+		return p.pers[ "lives" ];
+	return "<none>";
+}
+
+// Its own thread: weaponInheritsPerks raises a script error for a weapon
+// with no native metadata, which must not end the verb loop.
+powertest_weapon_perks()
+{
+	weapon = self getCurrentWeapon();
+	codolprintln( "CoDOL powertest: client " + self getEntityNumber() + " weapon " + weapon + " inherits perks " + weaponInheritsPerks( weapon ) );
+}
+
+powertest_weapon_inherits( weapon )
+{
+	codolprintln( "CoDOL powertest: weapon " + weapon + " inherits perks " + weaponInheritsPerks( weapon ) );
 }
 
 powertest_trap( tokens, index )

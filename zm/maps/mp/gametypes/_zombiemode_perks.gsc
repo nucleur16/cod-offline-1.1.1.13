@@ -418,10 +418,6 @@ give_perk( perk )
 		self.num_perks = 0;
 	self.num_perks++;
 
-	if ( !isDefined( self.zm_perks ) )
-		self.zm_perks = [];
-	self.zm_perks[ perk ] = true;
-
 	if ( perk == "specialty_armorvest" )
 	{
 		// T5 SetMaxHealth( zombie_perk_juggernaut_health ); not registered
@@ -455,9 +451,6 @@ perk_think( perk )
 
 	if ( isDefined( self.num_perks ) && self.num_perks > 0 )
 		self.num_perks--;
-
-	if ( isDefined( self.zm_perks ) )
-		self.zm_perks[ perk ] = undefined;
 
 	if ( perk == "specialty_armorvest" )
 	{
