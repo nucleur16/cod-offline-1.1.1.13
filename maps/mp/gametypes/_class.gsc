@@ -842,12 +842,47 @@ loadoutModifierDelta( modifier, loadoutPerk1, loadoutPerk2, loadoutPerk3 )
 	{
 		if ( !isDefined( perk ) || perk == "" || perk == "specialty_null" )
 			continue;
-		total += maps\mp\perks\_perks::perkTableModifierDelta( perk, modifier );
-		upgrade = self getPerkUpgrade( perk );
+		base = codolPerkBase( perk );
+		total += maps\mp\perks\_perks::perkTableModifierDelta( base, modifier );
+		upgrade = self codolPerkUpgradeFor( perk, base );
 		if ( upgrade != "specialty_null" )
 			total += maps\mp\perks\_perks::perkTableModifierDelta( upgrade, modifier );
 	}
 	return total;
+}
+
+/*
+	CoDOL: C1 also offers every Pro as a perk item of its own, in the base
+	perk's group: mp/coMarketplaceItems.csv 3023 specialty_extraammo is "per",
+	"pk1" like 3003 specialty_scavenger, and resources/marketplace_catalogue.json
+	product 181 sells it behind unlock flag 93.  So a class can name the Pro
+	itself in its perk slot.  Its mp/coPerkStatsTable.csv row is only the
+	upgrade (row 19 "upgrade1": modExtraAmmo, modExtraExplosive) and lacks the
+	base modifier (row 4 modScavenger), which the bag drop, its visibility and
+	its pickup all require.  C1 describes the Pro as the base plus more
+	(PERKS_DESC_SCAVENGER_PRO "Resupply from dead enemies + more starting Frag
+	and Semtex grenades"), so a selected Pro grants the base row that names it
+	in column 8 as well as itself.
+*/
+codolPerkBase( perkName )
+{
+	if ( !isDefined( perkName ) || perkName == "" || perkName == "specialty_null" )
+		return perkName;
+	if ( !isSubStr( tablelookup( "mp/coPerkStatsTable.csv", 1, perkName, 5 ), "upgrade" ) )
+		return perkName;
+	base = tablelookup( "mp/coPerkStatsTable.csv", 8, perkName, 1 );
+	if ( base == "" || base == "specialty_null" )
+		return perkName;
+	return base;
+}
+
+// The upgrade a loadout slot grants: the Pro itself when the slot names it,
+// otherwise the base perk's earned upgrade.
+codolPerkUpgradeFor( selected, base )
+{
+	if ( isDefined( selected ) && isDefined( base ) && selected != base )
+		return selected;
+	return self getPerkUpgrade( base );
 }
 
 getPerkUpgrade( perkName )
@@ -895,17 +930,21 @@ loadoutAllPerks( loadoutEquipment, loadoutPerk1, loadoutPerk2, loadoutPerk3 )
 	loadoutPerk2 = self codolOfferedPerk( loadoutPerk2 );
 	loadoutPerk3 = self codolOfferedPerk( loadoutPerk3 );
 
+	// A slot that names a Pro gives its base perk as well (codolPerkBase).
+	basePerk1 = codolPerkBase( loadoutPerk1 );
+	basePerk2 = codolPerkBase( loadoutPerk2 );
+	basePerk3 = codolPerkBase( loadoutPerk3 );
+
 	self maps\mp\perks\_perks::givePerk( loadoutEquipment );
-	self maps\mp\perks\_perks::givePerk( loadoutPerk1 );
-	self maps\mp\perks\_perks::givePerk( loadoutPerk2 );
-	self maps\mp\perks\_perks::givePerk( loadoutPerk3 );
+	self maps\mp\perks\_perks::givePerk( basePerk1 );
+	self maps\mp\perks\_perks::givePerk( basePerk2 );
+	self maps\mp\perks\_perks::givePerk( basePerk3 );
 	
-	// Bot perks come entirely from the class CSV.
-	if ( self.isbot )
-		return;
-	perkUpgrd[0] = self getPerkUpgrade( loadoutPerk1 );
-	perkUpgrd[1] = self getPerkUpgrade( loadoutPerk2 );
-	perkUpgrd[2] = self getPerkUpgrade( loadoutPerk3 );
+	// Bot perks come entirely from the class CSV: getPerkUpgrade gives a bot
+	// no earned upgrade, only a Pro its class names.
+	perkUpgrd[0] = self codolPerkUpgradeFor( loadoutPerk1, basePerk1 );
+	perkUpgrd[1] = self codolPerkUpgradeFor( loadoutPerk2, basePerk2 );
+	perkUpgrd[2] = self codolPerkUpgradeFor( loadoutPerk3, basePerk3 );
 	
 	foreach( upgrade in perkUpgrd )
 	{
