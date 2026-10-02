@@ -67,7 +67,9 @@
 init()
 {
 	set_zombie_var( "zombie_perk_cost", 2000 );
-	set_zombie_var( "zombie_perk_juggernaut_health", 160 );
+	// CoDOL coPerkStatsTable row 43, specialty_zombie_armorvest: modMaxHealth
+	// +150 over the base 100 (T5 used 160).
+	set_zombie_var( "zombie_perk_juggernaut_health", 250 );
 
 	if ( !isDefined( level.packapunch_timeout ) )
 		level.packapunch_timeout = 15;
