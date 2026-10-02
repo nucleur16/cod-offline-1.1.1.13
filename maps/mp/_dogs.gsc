@@ -165,6 +165,7 @@ init()
 
 	// CoDOL dev trigger (developer servers only; see dog_test_watcher).
 	thread dog_test_watcher();
+	thread maps\mp\animscripts\dog_attack_log::test_watcher();
 
 //	create_dogs();
 }
@@ -913,6 +914,7 @@ dog_manager_spawn_dog( owner, team, spawn_node, index, requiredDeathCount )
 	dog show();
 
 	dog init_dog();
+	dog thread maps\mp\animscripts\dog_attack_log::watch();
 	dog dog_set_team(team);
 	dog dog_set_model();
 	dog thread dog_set_owner(owner, team, requiredDeathCount );

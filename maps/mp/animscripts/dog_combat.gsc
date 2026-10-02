@@ -145,6 +145,16 @@ meleeBiteAttackPlayer(player)
 		if ( !isalive( self.enemy ) )
 			break;
 
+		// CoDOL: the loop bites the player it was started for, but
+		// checkEndCombat and prepareAttackPlayer measure self.enemy.  When
+		// the native sight pass hands the dog a nearer enemy mid-loop, the
+		// two differ: MEASURED 2026-10-02 (mp_rust) a dog lunged in place
+		// every 1.3 s at a player 1617 units away while a new enemy stood
+		// beside it.  End the script; the native exposed think restarts
+		// dog_combat for the new enemy when it is in attack range.
+		if ( self.enemy != player )
+			break;
+
 		meleeRange = self.meleeAttackDist + attackRangeBuffer;
 
 		if ( ( isdefined( player.syncedMeleeTarget ) && player.syncedMeleeTarget != self ) )
@@ -193,9 +203,11 @@ meleeBiteAttackPlayer(player)
 				// ground based attack
 				self animMode("angle deltas");
 				self setanimstate( "combat_attack_player_close_range" );
+				self maps\mp\animscripts\dog_attack_log::anim_chosen( "close_range" );
 
 				doMeleeAfterWait( 0.1 );
 				self maps\mp\animscripts\dog_shared::DoNoteTracksForTime( 1.4, "done" );
+				self maps\mp\animscripts\dog_attack_log::end();
 
 				self animMode( "gravity" );
 			}
@@ -205,7 +217,9 @@ meleeBiteAttackPlayer(player)
 				attack_time = 1.2 + randomfloat( 0.4 );
 				debug_anim_print("dog_combat::meleeBiteAttackPlayer() - Setting  combat_run_attack" );
 				self setanimstate( "combat_attack_run" );
+				self maps\mp\animscripts\dog_attack_log::anim_chosen( "run" );
 				self maps\mp\animscripts\dog_shared::DoNoteTracksForTime( attack_time, "done", ::handleMeleeBiteAttackNoteTracks, player );
+				self maps\mp\animscripts\dog_attack_log::end();
 				debug_anim_print("dog_combat::meleeBiteAttackPlayer() - combat_attack_run notify done." );
 			}
 		}
@@ -241,7 +255,9 @@ doMeleeAfterWait( time )
 	wait(time);
 
 	// not useing angles on the melee hit so it will always hit
+	self maps\mp\animscripts\dog_attack_log::melee_before( self.enemy );
 	hitEnt = self melee( );
+	self maps\mp\animscripts\dog_attack_log::melee_after( self.enemy, hitEnt );
 	if ( isdefined( hitEnt ) )
 	{
 		if ( isplayer(hitEnt) )
@@ -249,8 +265,24 @@ doMeleeAfterWait( time )
 	}
 }
 
+// CoDOL: the bite trace of C1's dog.  C1's dog animtree and clips are the
+// IW4 dog's (codol_dog_states.cpp), and IW4 animscripts\dog\dog_combat
+// dogMelee() bites a target the lunge has carried the dog into (inside 32
+// units, bodies touching) straight at its eye instead of along the dog's
+// facing: from there the eye-height trace along the facing starts beside
+// or past the target and misses it (MEASURED 2026-10-02, mp_rust: bites
+// within 35 units landed 29 of 86).  Farther out the T5 trace is kept.
+dogMelee()
+{
+	if ( isDefined( self.enemy ) && distance2D( self.origin, self.enemy.origin ) < 32 )
+		return self melee();
+
+	return self melee( anglesToForward( self.angles ) );
+}
+
 handleMeleeBiteAttackNoteTracks( note, player )
 {
+	self maps\mp\animscripts\dog_attack_log::note( note );
 	switch ( note )
 	{
 		case "dog_melee":
@@ -261,7 +293,9 @@ handleMeleeBiteAttackNoteTracks( note, player )
 				level.dogMeleeBiteAttackTime += 50;
 			}
 
-			hitEnt = self melee( anglesToForward( self.angles ) );
+			self maps\mp\animscripts\dog_attack_log::melee_before( player );
+			hitEnt = self dogMelee();
+			self maps\mp\animscripts\dog_attack_log::melee_after( player, hitEnt );
 
 			if ( isdefined( hitEnt ) )
 			{
@@ -439,7 +473,16 @@ prepareAttackPlayer(player)
 		length = ( distanceToTarget - self.meleeAttackDist ) / distanceToTarget;
 		offset = ( offset[0] * length, offset[1] * length, offset[2] * length );
 
-		self thread attackTeleportThread( offset );
+		self thread attackTeleportThread( offset, player );
+	}
+
+	if ( maps\mp\animscripts\dog_attack_log::enabled() )
+	{
+		teleport = 0;
+		if ( distance_ok && !use_low_attack() )
+			teleport = distanceToTarget - self.meleeAttackDist;
+		traceClear = BulletTracePassed( ( self.origin[0], self.origin[1], self.origin[2] + 65 ), ( self.enemy.origin[0], self.enemy.origin[1], self.enemy.origin[2] + 32 ), false, self );
+		self maps\mp\animscripts\dog_attack_log::begin( player, use_low_attack(), traceClear, teleport );
 	}
 
 /#
@@ -458,17 +501,40 @@ prepareAttackPlayer(player)
 }
 
 // make up for error in intial attack jump position
-attackTeleportThread( offset )
+attackTeleportThread( offset, player )
 {
 	self endon ("death");
 	self endon ("killanimscript");
 	reps = 5;
 	increment = ( offset[0] / reps, offset[1] / reps, offset[2] / reps );
+
+	// CoDOL: T5 ActorCmd_Teleport (OpenBLOPS actor_script_cmd.cpp) refuses
+	// a move longer than 10 units when the player can see the actor or its
+	// destination, so in T5 this thread only closes gaps of up to 50 units
+	// (five 10-unit steps) on a dog its victim is watching.  The native
+	// teleport here is unconditional; without this check a dog that began
+	// its lunge 160 units out slid up to 80 units in a quarter second, and
+	// an approaching target then ended up under it (MEASURED 2026-10-02,
+	// mp_rust: 84 lunges begun beyond 117 units, 26 landed; the misses
+	// stood 3-22 units from the target).
+	longStep = ( increment[0] * increment[0] + increment[1] * increment[1] + increment[2] * increment[2] ) > 100;
+
 	for ( i = 0; i < reps; i++ )
 	{
-		self teleport (self.origin + increment);
+		applied = !longStep || !attackTeleportSeen( player, self.origin + increment );
+		if ( applied )
+			self teleport (self.origin + increment);
+		self maps\mp\animscripts\dog_attack_log::teleport_step( applied );
 		wait (0.05);
 	}
+}
+
+attackTeleportSeen( player, destination )
+{
+	if ( !isDefined( player ) || !isAlive( player ) )
+		return false;
+	eye = player getEye();
+	return sightTracePassed( eye, self.origin + ( 0, 0, 32 ), false, self ) || sightTracePassed( eye, destination + ( 0, 0, 32 ), false, self );
 }
 
 player_attacked()

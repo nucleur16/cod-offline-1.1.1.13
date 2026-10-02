@@ -2186,6 +2186,13 @@ isKillstreakWeapon( weapon )
 		case "remotemissile_projectile_mp":	// Hellfire
 		case "cobra_20mm_mp":			// Attack Helicopter
 		case "nuke_mp":					// Nuke			
+		// CoDOL: attack dogs.  _damage swaps a dog's bite to dogs_mp and
+		// credits the owner, who never damaged the victim himself; as a
+		// non-streak weapon, _events::killedPlayer then read
+		// victim.attackerData[owner.guid] (undefined) and the kill thread
+		// died with a script error whenever the victim had one other
+		// attacker (MEASURED 2026-10-02, mp_rust, _events.gsc:141).
+		case "dogs_mp":					// Attack Dogs
 			return true;
 		default:
 			return false;
