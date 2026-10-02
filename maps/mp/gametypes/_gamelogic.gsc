@@ -1454,6 +1454,11 @@ Callback_StartGameType()
 		setDvar( "scr_game_hardpoints", 1 );
 	level.killstreakRewards = getDvarInt( "scr_game_hardpoints" );
 
+	// Same file: explosive bullets (the chopper gunner) deal their damage
+	// times scr_explBulletMod in _damage.gsc, which reads 0 when unset.
+	if ( getDvar( "scr_explBulletMod" ) == "" )
+		setDvar( "scr_explBulletMod", 1 );
+
 	/#
 	printLn( "SESSION INFO" );
 	printLn( "=====================================" );
