@@ -270,6 +270,13 @@ dog_test_verb( tokens )
 		foreach ( player in level.players )
 			if ( player getEntityNumber() == int( tokens[1] ) )
 			{
+				// A spectator (or a client still choosing a team) has no team
+				// a dog can join: useKillstreakDogs refuses it, see there.
+				if ( !dog_caller_team_ok( player ) )
+				{
+					print( "CoDOL dogs test: call refused: " + player.name + " is not on a playing team (" + player.team + ")\n" );
+					continue;
+				}
 				print( "CoDOL dogs test: call for " + player.name + " (" + player.team + ")\n" );
 				used = player useKillstreakDogs( 0 );
 				print( "CoDOL dogs test: useKillstreakDogs returned " + used + "\n" );
@@ -509,6 +516,17 @@ useKillstreakDogs(lifeId)
 		return false;
 	}
 
+	// CoDOL: the dogs join the caller's team, and a spectator has none.
+	// Called for a spectator (the dev hook "call N" after a map restart),
+	// the spawn raised "actor team: unknown native sentient team" in
+	// dog_set_team, or earlier "undefined is not an array index" in
+	// dog_pick_node_near_team for level.otherTeam["spectator"] (MEASURED
+	// 2026-10-02, mp_rust).  The reward is only usable by a player who is
+	// playing; refuse anyone else and keep the reward.  Dogs already called
+	// keep the team captured here when their owner later spectates.
+	if ( !dog_caller_team_ok( self ) )
+		return false;
+
 	self notify( "called_in_the_dogs" );
 	level notify( "called_in_the_dogs" );
 	team = self.team;
@@ -522,6 +540,19 @@ useKillstreakDogs(lifeId)
 	self thread playerDisconnectWatcher();
 
 	return true;
+}
+
+// The caller's team can own dogs: allies or axis in a team game, anyone
+// playing (team "free" to the dogs) otherwise.  Not a spectator.
+dog_caller_team_ok( player )
+{
+	if ( !isDefined( player ) || !isDefined( player.team ) )
+		return false;
+
+	if ( level.teambased )
+		return player.team == "allies" || player.team == "axis";
+
+	return player.team != "spectator";
 }
 
 playerDisconnectWatcher()
@@ -1868,6 +1899,36 @@ selfDefenseChallenge()
 
 dog_get_exit_node()
 {
+	// CoDOL: T5 takes getclosest( self.origin, level.dogexitnodes ), and every
+	// T5 path node is a compiled, floor-dropped navmesh node, so the closest
+	// exit is one the dog can walk to.  Here the exit nodes are the map's
+	// authored node origins (or bot waypoints), and the closest can be one no
+	// path reaches: a dog sent to it wedged until dog_leave_failsafe deleted
+	// it (MEASURED 2026-10-02, mp_rust: 5 of 63 leaving dogs).  So the closest exit node
+	// findpath() can reach is taken, as T5 picks a reachable leave node, and
+	// the plain closest one only when none is reachable.
+	best = undefined;
+	bestdist = undefined;
+	for ( i = 0; i < level.dogexitnodes.size; i++ )
+	{
+		node = level.dogexitnodes[i];
+		if ( !isdefined( node ) )
+			continue;
+
+		dist = distanceSquared( self.origin, node.origin );
+		if ( isdefined( bestdist ) && dist >= bestdist )
+			continue;
+
+		if ( !findpath( self.origin, node.origin ) )
+			continue;
+
+		bestdist = dist;
+		best = node;
+	}
+
+	if ( isdefined( best ) )
+		return best;
+
 	return dog_get_closest_node( self.origin, level.dogexitnodes );
 }
 

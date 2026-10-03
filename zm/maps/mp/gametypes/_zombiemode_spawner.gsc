@@ -1776,6 +1776,17 @@ nearest_blocking_barrier()
 	if ( !isDefined( level.exterior_goals ) )
 		return undefined;
 
+	// A window stands between the zombie and the flesh only while the zombie
+	// is outside.  One already inside a player volume (it climbed in, or
+	// spawned inside) that passes within 256 of a window still boarded
+	// tried to tear it from the inside: its attack spots are outside the
+	// wall, so it stood against the wall until wait_until_at_spot gave up
+	// 15 s later, again and again (MEASURED 2026-10-02, zm_prototype_sh:
+	// "did not reach attack spot (-250 -157) from (-191 -156)").  T5 only
+	// tears from the exterior_goal side (zombie_goto_entrance).
+	if ( isDefined( maps\mp\gametypes\_zombiemode_zone_manager::zone_at_point( self.origin ) ) )
+		return undefined;
+
 	best = undefined;
 	best_dist = 0;
 
