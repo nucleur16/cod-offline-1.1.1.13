@@ -42,11 +42,12 @@
 //   call sites below: useweaponhidetags (the world-gun tag cull) and the
 //   AllowLean / AllowCrouch / AllowProne / AllowMelee quartet (of T5's six
 //   movement locks only AllowAds and AllowSprint are registered here).
-//   perk_hud_create / _destroy / _flash / perk_flash_audio (:1632-:1809) --
-//   they SetShader the perk icons; none of those shaders is precached under a
-//   zm zone and precaching a shader that is in no mounted zone is not
-//   something worth risking at map load for an icon.  Perk ownership is
-//   readable from hasPerk() and from the machine's own hint.
+//   2026-10-05: perk_hud_create / _destroy / _flash (:1632-:1738) are now
+//   PORTED as THE PERK HUD (see that section): C1's own zombies server
+//   precache list, mp/constConfigStrings_zm.csv, carries every T5 perk icon
+//   (specialty_juggernaut_zombies .. specialty_ads_zombies), their images
+//   ship in common_gametype_zm, and C1 has no native perk display a zombies
+//   perk could reach.  perk_flash_audio (:1740) is still not taken.
 //   check_player_has_perk (:1520) -- SetInvisibleToPlayer, not registered.
 //   revive_solo_fx / electric_perks_dialog / place_additionalprimaryweapon_
 //   machine / give_random_perk / lose_random_perk / quantum_bomb_* -- separate
@@ -99,6 +100,10 @@ init()
 	upgrade_triggers = getEntArray( "zombie_vending_upgrade", "targetname" );
 	for ( i = 0; i < upgrade_triggers.size; i++ )
 		upgrade_triggers[ i ] thread vending_weapon_upgrade();
+
+	perk_hud_precache();
+	level thread perk_hud_think();
+	level thread perk_hud_end_game();
 
 	println( "CoDOL zm: " + vending_triggers.size + " perk machines, " +
 		upgrade_triggers.size + " pack-a-punch\n" );
@@ -463,6 +468,284 @@ perk_think( perk )
 	}
 
 	self notify( "perk_lost", perk );
+}
+
+// ==========================================================================
+// THE PERK HUD.  T5 :1632 perk_hud_create, :1722 perk_hud_destroy and :1728
+// perk_hud_flash: one 24x24 icon per perk the player holds, left to right in
+// the order they were gained, destroyed when the perk is lost.
+//
+// WHY A HUDELEM AND NOT A NATIVE DISPLAY (C1 static analysis, 2026-10-05):
+//   * C1 SetPerk (518a10 -> 40f0b0) ends the game on a no_slot row, so a
+//     zombies perk (coPerkStatsTable 43-57, specialty_zombie_*) never enters
+//     the playerState perk slots; this server keeps them in its own set
+//     (codol_script_perks.c).  Their icon column is specialty_null anyway.
+//   * The zombies player HUD, ownerdraw 288 "playerscores" (common_mp menu
+//     zombiemodescores, C1 0x00460c50 -> 0x00460590), draws only portrait,
+//     name and score.  perk_display / perk_hide (common_mp) are the
+//     multiplayer spawn popups, not a zombies HUD.
+//   * C1's zombies server precache list mp/constConfigStrings_zm.csv
+//     (code_post_gfx_mp, ids 4364-4381) holds exactly T5's perk icons --
+//     specialty_juggernaut_zombies, _quickrevive_, _fastreload_, _doubletap_,
+//     _marathon_, _divetonuke_, _ads_, _extraprimaryweapon_ -- and the perk
+//     pop icons of coKillstreakStatsTable column 15 (_discount_, _bandolier_,
+//     _electro_, _carpenter_).  Their images are in common_gametype_zm.  So
+//     C1's server drew them as script hudelems, as T5 does.
+//
+// SOURCES.  Machine perks (and the free-perk power-up) by hasPerk on their T5
+// names; perk pops by _zombiemode_perkpops' self.perkpop_active, keyed by
+// effect.  A machine perk and a perk pop with the same icon (Deadshot,
+// Stamin-Up, PhD Flopper, Mule Kick) show one icon.  The state is polled, so
+// every path that gives or takes a perk -- the machines, give_perk from the
+// free-perk power-up and the test hooks, perk_think on a down or death, the
+// perk pops' award and remove_effects -- is covered without a hook in each.
+//
+// PLACEMENT.  The playerscores panel is left_adjustable / bottom_adjustable,
+// rect x 10, y -250 (MEASURED, the menu's windowDef in common_mp).  Other
+// players' entries start at the rect's y and step down 40 at scale 0.8 (C1
+// 0x00460e1e, double 40.0 at 0xc84a88), so with four players they end near
+// y -138.  The LOCAL entry is at y -55, scale 1.1 (0x00460db7), and the
+// active power-ups (_zombiemode_powerups POWERUP_HUD_X/Y) sit to its right
+// from x 134 at the same height.  The perks get their own row in the free
+// band between the two: bottom edge 4 units above the local entry, starting
+// at the panel's x -- T5's own place for them (y -70 above the score, x n*30).
+// ==========================================================================
+
+PERK_HUD_X = 10;
+PERK_HUD_Y = -59;
+PERK_HUD_SIZE = 24;
+PERK_HUD_FLASH_SIZE = 32;
+PERK_HUD_STEP = 30;
+
+perk_hud_precache()
+{
+	level.zm_perk_hud_machine = [];
+	level.zm_perk_hud_pop = [];
+
+	// T5 :1652 shader switch, by the T5 perk names the machines use.
+	perk_hud_machine( "specialty_armorvest",               "specialty_juggernaut_zombies" );
+	perk_hud_machine( "specialty_quickrevive",             "specialty_quickrevive_zombies" );
+	perk_hud_machine( "specialty_fastreload",              "specialty_fastreload_zombies" );
+	perk_hud_machine( "specialty_rof",                     "specialty_doubletap_zombies" );
+	perk_hud_machine( "specialty_longersprint",            "specialty_marathon_zombies" );
+	perk_hud_machine( "specialty_flakjacket",              "specialty_divetonuke_zombies" );
+	perk_hud_machine( "specialty_deadshot",                "specialty_ads_zombies" );
+	perk_hud_machine( "specialty_additionalprimaryweapon", "specialty_extraprimaryweapon_zombies" );
+
+	// The perk pops, by _zombiemode_perkpops::effect_key; the icons are
+	// column 15 of their mp/coKillstreakStatsTable.csv rows 59-67.
+	perk_hud_pop( "deadshot",          "specialty_ads_zombies" );
+	perk_hud_pop( "longersprint",      "specialty_marathon_zombies" );
+	perk_hud_pop( "flakjacket",        "specialty_divetonuke_zombies" );
+	perk_hud_pop( "additionalprimary", "specialty_extraprimaryweapon_zombies" );
+	perk_hud_pop( "discount",          "specialty_discount_zombies" );
+	perk_hud_pop( "scavenger",         "specialty_bandolier_zombies" );
+	perk_hud_pop( "electro",           "specialty_electro_zombies" );
+	perk_hud_pop( "carpenter",         "specialty_carpenter_zombies" );
+}
+
+perk_hud_machine( perk, shader )
+{
+	precacheShader( shader );
+	k = spawnStruct();
+	k.perk = perk;
+	k.shader = shader;
+	level.zm_perk_hud_machine[ level.zm_perk_hud_machine.size ] = k;
+}
+
+perk_hud_pop( key, shader )
+{
+	precacheShader( shader );
+	k = spawnStruct();
+	k.key = key;
+	k.shader = shader;
+	level.zm_perk_hud_pop[ level.zm_perk_hud_pop.size ] = k;
+}
+
+perk_hud_think()
+{
+	level endon( "end_game" );
+
+	for ( ;; )
+	{
+		wait( 0.1 );
+
+		// Test clients draw nothing -- except on a developer server, where
+		// the probes exercise this path through them (as the power-up HUD).
+		with_bots = getDvarInt( "developer" ) > 0;
+
+		players = getPlayers();
+		for ( i = 0; i < players.size; i++ )
+		{
+			if ( isDefined( players[ i ] ) && ( with_bots || !is_true( players[ i ].isbot ) ) )
+				players[ i ] perk_hud_update();
+		}
+	}
+}
+
+// The game is over: every perk icon goes.  perk_hud_think has stopped.
+perk_hud_end_game()
+{
+	level waittill( "end_game" );
+
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+	{
+		if ( isDefined( players[ i ] ) )
+			players[ i ] perk_hud_clear( "game over" );
+	}
+}
+
+// self = player.  The icons it should show, one per distinct shader.
+perk_hud_owned()
+{
+	owned = [];
+
+	for ( i = 0; i < level.zm_perk_hud_machine.size; i++ )
+	{
+		k = level.zm_perk_hud_machine[ i ];
+		if ( self hasPerk( k.perk ) )
+			owned = perk_hud_add_unique( owned, k.shader );
+	}
+
+	if ( isDefined( self.perkpop_active ) )
+	{
+		for ( i = 0; i < level.zm_perk_hud_pop.size; i++ )
+		{
+			k = level.zm_perk_hud_pop[ i ];
+			if ( is_true( self.perkpop_active[ k.key ] ) )
+				owned = perk_hud_add_unique( owned, k.shader );
+		}
+	}
+
+	return owned;
+}
+
+perk_hud_add_unique( list, shader )
+{
+	if ( !perk_hud_has( list, shader ) )
+		list[ list.size ] = shader;
+	return list;
+}
+
+perk_hud_has( list, shader )
+{
+	for ( i = 0; i < list.size; i++ )
+	{
+		if ( list[ i ] == shader )
+			return true;
+	}
+	return false;
+}
+
+perk_hud_list_has( list, shader )
+{
+	for ( i = 0; i < list.size; i++ )
+	{
+		if ( list[ i ].shader == shader )
+			return true;
+	}
+	return false;
+}
+
+// self = player.
+perk_hud_update()
+{
+	if ( !isDefined( self.zm_perk_hud ) )
+		self.zm_perk_hud = [];
+
+	owned = self perk_hud_owned();
+
+	// T5 :1722 perk_hud_destroy for every icon whose perk is gone.
+	kept = [];
+	changed = false;
+	for ( i = 0; i < self.zm_perk_hud.size; i++ )
+	{
+		h = self.zm_perk_hud[ i ];
+		if ( perk_hud_has( owned, h.shader ) )
+		{
+			kept[ kept.size ] = h;
+			continue;
+		}
+		if ( isDefined( h.elem ) )
+			h.elem destroy();
+		changed = true;
+		codolPrintLn( "CoDOL zm perk HUD: " + h.shader + " removed from " + self.name );
+	}
+
+	// T5 :1632 perk_hud_create for every new one, appended on the right.
+	for ( i = 0; i < owned.size; i++ )
+	{
+		if ( perk_hud_list_has( kept, owned[ i ] ) )
+			continue;
+		h = spawnStruct();
+		h.shader = owned[ i ];
+		h.elem = self perk_hud_elem( owned[ i ], PERK_HUD_X + kept.size * PERK_HUD_STEP );
+		kept[ kept.size ] = h;
+		changed = true;
+		h.elem thread perk_hud_flash();
+		codolPrintLn( "CoDOL zm perk HUD: " + h.shader + " shown to " + self.name + " in column " + ( kept.size - 1 ) );
+	}
+
+	self.zm_perk_hud = kept;
+	if ( !changed )
+		return;
+
+	// Close the gap a lost perk leaves.
+	for ( i = 0; i < kept.size; i++ )
+	{
+		x = PERK_HUD_X + i * PERK_HUD_STEP;
+		if ( isDefined( kept[ i ].elem ) && kept[ i ].elem.x != x )
+			kept[ i ].elem.x = x;
+	}
+}
+
+// self = player.
+perk_hud_elem( shader, x )
+{
+	elem = newClientHudElem( self );
+	elem.alignX = "left";
+	elem.alignY = "bottom";
+	elem.horzAlign = "left_adjustable";
+	elem.vertAlign = "bottom_adjustable";
+	elem.x = x;
+	elem.y = PERK_HUD_Y;
+	elem.foreground = true;
+	elem.hidewheninmenu = true;
+	elem.archived = false;
+	elem.sort = 1;
+	elem.alpha = 1;
+	elem setShader( shader, PERK_HUD_SIZE, PERK_HUD_SIZE );
+	return elem;
+}
+
+// T5 :1728 perk_hud_flash: a pulse to 32 and back when the perk is gained.
+// self = the icon; destroy() notifies "death" on it.
+perk_hud_flash()
+{
+	self endon( "death" );
+
+	self scaleOverTime( 0.05, PERK_HUD_FLASH_SIZE, PERK_HUD_FLASH_SIZE );
+	wait( 0.3 );
+	if ( !isDefined( self ) )
+		return;
+	self scaleOverTime( 0.05, PERK_HUD_SIZE, PERK_HUD_SIZE );
+}
+
+// self = player.
+perk_hud_clear( reason )
+{
+	if ( !isDefined( self.zm_perk_hud ) )
+		return;
+
+	for ( i = 0; i < self.zm_perk_hud.size; i++ )
+	{
+		if ( isDefined( self.zm_perk_hud[ i ].elem ) )
+			self.zm_perk_hud[ i ].elem destroy();
+	}
+	if ( self.zm_perk_hud.size > 0 )
+		codolPrintLn( "CoDOL zm perk HUD: " + self.zm_perk_hud.size + " icons cleared for " + self.name + " (" + reason + ")" );
+	self.zm_perk_hud = [];
 }
 
 // ==========================================================================
