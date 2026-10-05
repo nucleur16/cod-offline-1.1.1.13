@@ -425,6 +425,11 @@ Callback_StartGameType()
 	// spawns triggers, then the spawner, then the loop.
 	maps\mp\gametypes\_zombiemode_laststand::init();
 	maps\mp\gametypes\_zombiemode_weapons::init();
+	// The explosive crossbow and the Scavenger (T5 _zombiemode_weap_crossbow /
+	// _zombiemode_weap_sniper_explosive): after the weapon table, which says
+	// whether this map has them, and after the equipment registry their
+	// spawned bolt names register with.
+	maps\mp\gametypes\_zombiemode_weap_explosive_bolt::init();
 	maps\mp\gametypes\_zombiemode_blockers::init();
 	maps\mp\gametypes\_zombiemode_perks::init();
 	// The level's own electric traps (T5 _zombiemode_traps): they wait on

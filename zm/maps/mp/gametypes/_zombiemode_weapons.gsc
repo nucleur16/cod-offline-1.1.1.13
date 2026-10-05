@@ -39,7 +39,8 @@
 //   init_weapon_upgrade            :356   -- wall-buy discovery.
 //
 // NOT TAKEN, and why:
-//   The chest LID is a RotateRoll in T5, not an animation, so it ports; but
+//   The chest LID is a RotateRoll in T5, not an animation; it does NOT port
+//   (see THE LID below).  And
 //   default_pandora_show_func / default_pandora_fx_func / treasure_chest_glowfx
 //   and the box move's "poltergeist" puff (:1024,:1037,:2351,:1559) are playfx
 //   on effects no CoDOL zone ships (MEASURED, docs/zone_assets/ALL_fx.txt),
@@ -64,6 +65,27 @@
 // (zm_prototype_sh, zm_zombie_training) author a tag_origin rubble and never
 // move, exactly as in T5.
 //
+// THE LID (fixed 2026-10-04, the "broken server rack on top of the box"
+// report).  T5's lid (zombie_treasure_box_lid) pivots on its hinge, so T5
+// opens it with RotateRoll( 105 ).  C1's codo_treasure_chest_box2_lid is a
+// different asset: MEASURED in zm_prototype_sh / zm_asylum_sh /
+// zm_zombie_training, its bones are j_main, j_left, j_right, j_left_rotate,
+// j_right_rotate, j_left_move, j_right_move, j_left_down_move,
+// j_right_down_move (a split, sliding sci-fi lid with tag_bulb lights), and
+// its origin is the box's BASE (the map places lid and box at the same
+// origin; the lid's lighting origin sits 20 units above it).  Rolling that
+// model 105 degrees about its origin swung the whole lid round the bottom of
+// the box into a lit panel standing on edge through it, which is what the
+// report describes (inferred from the asset geometry; not yet seen on a C1
+// screen).
+// C1 opens it with its own xanims instead: patch_common_gametype_zm ships
+// animtrees/zm_magic_box.atr (codo_treasure_chest_box_open,
+// codo_treasure_chest_box_close, which animate exactly those bones), and
+// that zone's animlists/common_zombie.animlist registers the tree
+// "=zm_magic_box" with both, so the client knows it.  The lid now plays them
+// through PrecacheMpAnim / ScriptModelPlayAnim, the name-based animated-prop
+// path maps/mp/_animatedmodels.gsc uses.
+//
 // THE WEAPON TABLE IS CoDOL's, NOT T5's.  T5's init_weapons (:222) names
 // ak74u_zm / mp40_zm / ray_gun_zm and so on.  MEASURED 2026-09-20 from
 // docs/zone_assets/ALL_weapon.txt: CoDOL's zm zones carry a DIFFERENT set --
@@ -85,6 +107,11 @@
 // box backed by that clone on every map that does not ship it.
 
 #include maps\mp\gametypes\_zombiemode_utility;
+
+// C1's box lid animations (THE LID, above).  Declared so the server builds the
+// tree the client registers from common_zombie.animlist; the plays are by
+// name, so no %animation reference is compiled.
+#using_animtree( "zm_magic_box" );
 
 init()
 {
@@ -525,6 +552,10 @@ treasure_chest_init()
 {
 	flag_init( "chest_has_been_used" );
 
+	// THE LID: C1's open/close xanims, played by name on the lid model.
+	precacheMpAnim( "codo_treasure_chest_box_open" );
+	precacheMpAnim( "codo_treasure_chest_box_close" );
+
 	level.chests = getEntArray( "treasure_chest_use", "targetname" );
 
 	if ( level.chests.size < 1 )
@@ -685,16 +716,17 @@ get_chest_pieces()
 	}
 }
 
-// T5 :1752,:1763.  RotateRoll, not an animation.
+// T5 :1752,:1763, with C1's lid: T5 rolls its hinged lid 105 degrees; C1's
+// split lid is opened and closed by its own animations (THE LID, above).
 treasure_chest_lid_open()
 {
-	self rotateRoll( 105, 0.5, 0.25 );
+	self scriptModelPlayAnim( "codo_treasure_chest_box_open" );
 	play_sound_at_pos( "open_chest", self.origin );
 }
 
 treasure_chest_lid_close()
 {
-	self rotateRoll( -105, 0.5, 0.25 );
+	self scriptModelPlayAnim( "codo_treasure_chest_box_close" );
 	play_sound_at_pos( "close_chest", self.origin );
 }
 
