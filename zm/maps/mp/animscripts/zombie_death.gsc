@@ -27,13 +27,11 @@
 // NOT TAKEN, and why:
 //   :62 ClearAnim( %scripted_look_straight ) -- facial animation; the zombie
 //     heads are separate xmodels with no face tree.
-//   do_gib (:130 and _zombiemode_spawner::zombie_gib_on_damage) -- the gib
-//     set is 17 models per body family (docs/CODOL_ACTOR_SPECIES_20260920.md)
-//     and T5 drives it by DETACHING a tagged body part and attaching a
-//     stump.  That needs the per-family tag names, which no shipped CoDOL
-//     data names and which are not in the animtree; guessing them is the
-//     fabrication the mandate forbids.  The hook self.gib_func is kept so
-//     the module that learns the tags does not need this file changed.
+//   (do_gib is TAKEN since 2026-10-05: T5 :76 runs it when the death starts
+//     with self.a.gib_ref set.  The gib itself -- models, pieces, blood --
+//     lives in maps\mp\gametypes\_zombiemode_gib.gsc, whose damage watcher
+//     also gibs the killing hit; do_gib is idempotent, so this call is the
+//     backstop for a gib_ref set by any other script.)
 //   the non-deathanim arms (:112-:1774): explosive deaths, helmetPop, the
 //     long-death set, the bullet-shield set.  Every one selects from a T5
 //     anim table whose entries have no shipped xanim in a zm zone.
@@ -82,6 +80,10 @@ main()
 		else
 			self.deathanim = %ai_zombie_crawl_death_v1;
 	}
+
+	// T5 :76.
+	if ( isDefined( self.a ) && isDefined( self.a.gib_ref ) )
+		self thread maps\mp\gametypes\_zombiemode_gib::do_gib();
 
 	if ( isDefined( self.gib_func ) )
 		self thread [[ self.gib_func ]]();

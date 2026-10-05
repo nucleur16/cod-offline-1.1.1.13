@@ -23,15 +23,14 @@
 //                                   T5 _zombiemode_audio -- live
 //   make_crawler                    T5 :4416   -- live
 //
+//   zombie_gib_on_damage / zombie_head_gib (T5 :2819, :2605) -- live since
+//     2026-10-05 in _zombiemode_gib.gsc.  The 17 gib models per family were
+//     bone-dumped from a zm probe (codol_checkmodel): the torso models keep
+//     the full 73-bone skeleton, so T5's J_Elbow_* / J_Knee_* spawn tags
+//     resolve on them; character_zm_zombie::set_gib_models maps each CoDOL
+//     suffix to its T5 field.
+//
 // STILL OUT, with the reason, not as a silent gap:
-//   zombie_gib_on_damage / zombie_head_gib (T5 :2800, :3050).  T5 detaches a
-//     tagged limb and attaches a stump model.  MEASURED
-//     (docs/CODOL_ACTOR_SPECIES_20260920.md): CoDOL ships 17 gib models per
-//     body family under ITS OWN suffixes (_behead, _larmoff_1, not T5's
-//     _g_behead / _g_rarmspawn), and no shipped data names the TAGS they
-//     attach to.  Guessing the tag names is the fabrication the mandate
-//     forbids.  The hook self.gib_func is wired in zombie_death.gsc so the
-//     module that learns the tags changes nothing else.
 //   every maps\_zombiemode_ai_* variant (dogs, apes, monkeys, thieves,
 //     napalm, quads, astro, sonic, faller) -- each is a species of its own.
 //
@@ -82,7 +81,10 @@ init()
 	flag_init( "end_round_wait" );
 
 	level.zombie_melee_weapon = resolve_melee_weapon();
-	level._effect[ "zombie_eye_glow" ] = loadfx( "misc/fx_zombie_eye_single" );
+	level._effect[ "zombie_eye_glow" ] = loadfx( "maps/zombie/zm_eye_lensflare_blue" );
+
+	// Dismemberment and the blue blood (_zombiemode_gib.gsc).
+	maps\mp\gametypes\_zombiemode_gib::init();
 
 	init_spawn_points();
 	init_spawner();
@@ -405,6 +407,7 @@ spawn_zombie( spawn_point )
 	level thread zombie_death_event( ai );
 	ai thread zombie_think();
 	ai thread zombie_damage_watch();
+	ai thread maps\mp\gametypes\_zombiemode_gib::zombie_gib_on_damage();
 
 	return ai;
 }
@@ -557,37 +560,78 @@ move_speed_scale()
 // C1-vs-T5 CONFLICT, resolved by playing what CoDOL ships.  T5 calls
 // self haseyes(1), a native toggle that makes the engine attach
 // level._effect["eye_glow"] to the model.  MEASURED: haseyes is NOT a
-// registered builtin here, and stubbing it is forbidden.  The FX it toggles
-// IS shipped -- "misc/fx_zombie_eye_single" in common_gametype_zm, the exact
-// name T5 loads at maps\_zombiemode.gsc:1027 -- so the effect is played
-// directly on the actor's eye tag instead of via the toggle.
+// registered builtin here, and stubbing it is forbidden, so the effect is
+// played directly on the eye bones instead of via the toggle.
 //
-// tag_eye is the tag this server already resolves on an actor
-// (codol_actor_lifecycle.cpp:1024 ActorEye uses it and falls back to
-// origin+64 when the model has none), so it is the one eye tag known to work
-// on these bodies.  T5's two-eye variant needs per-body eyeball tag names
-// that no shipped CoDOL data states.
+// THE EFFECT is CoDOL's own blue one, not T5's misc/fx_zombie_eye_single
+// (which ships too, but is T5's generic fxt_light_glow tinted per element).
+// MEASURED 2026-10-05, strings of the inflated common_gametype_zm zone:
+// maps/zombie/zm_eye_lensflare_blue draws gfx_codo_zm_eye_lensflare_blue
+// (a CoDOL-authored "codo" texture) with the eyeOffset lens-flare technique,
+// and its sibling zm_eye_lensflare_blue_boss is the juggernaut's.
+//
+// THE TAGS.  MEASURED with codol_checkmodel: every c_zom_*_head carries
+// j_eyeball_le, j_eyeball_ri and tag_eye (the bodies carry none of them,
+// which is why character_zm_zombie attaches the head).  One flare per eye;
+// T5's clientscript plays its single glow on J_Eyeball_LE.
+zombie_eye_glow_tags()
+{
+	tags = [];
+	tags[ 0 ] = "j_eyeball_le";
+	tags[ 1 ] = "j_eyeball_ri";
+	return tags;
+}
+
 zombie_eye_glow()
 {
 	self endon( "death" );
 
-	if ( is_true( self.no_eye_glow ) )
+	if ( is_true( self.no_eye_glow ) || is_true( self.head_gibbed ) )
 		return;
 
 	if ( !isDefined( level._effect[ "zombie_eye_glow" ] ) )
 		return;
 
-	playFxOnTag( level._effect[ "zombie_eye_glow" ], self, "tag_eye" );
+	self.eye_glow_tags = zombie_eye_glow_tags();
+	for ( i = 0; i < self.eye_glow_tags.size; i++ )
+		playFxOnTag( level._effect[ "zombie_eye_glow" ], self, self.eye_glow_tags[ i ] );
 	self.eye_glow_on = true;
 }
 
+// Must run while the head is still attached: stopFxOnTag on a bone the DObj
+// no longer has is a script error (_zombiemode_gib::zombie_head_gib stops the
+// glow before it detaches the head).
 zombie_eye_glow_stop()
 {
 	if ( !is_true( self.eye_glow_on ) )
 		return;
 
-	stopFxOnTag( level._effect[ "zombie_eye_glow" ], self, "tag_eye" );
 	self.eye_glow_on = false;
+	if ( !isDefined( self.eye_glow_tags ) )
+		return;
+
+	for ( i = 0; i < self.eye_glow_tags.size; i++ )
+		stopFxOnTag( level._effect[ "zombie_eye_glow" ], self, self.eye_glow_tags[ i ] );
+}
+
+// The glow is an entity event (playFxOnTag -> G_AddEvent), so a client that
+// did not have the zombie in its snapshot when it spawned -- the spawners
+// stand outside the playable area -- never saw it start.  It is re-issued
+// once the zombie is through its window, where every player inside can see
+// it; a client that already shows it gets the stop first, so the glow is
+// replaced, not doubled.  The two halves are a server frame apart: an entity
+// carries four events per snapshot, and two stops plus two starts in one
+// frame would let any other event push a stop out.
+zombie_eye_glow_refresh()
+{
+	self endon( "death" );
+
+	if ( !is_true( self.eye_glow_on ) )
+		return;
+
+	self zombie_eye_glow_stop();
+	wait( 0.05 );
+	self zombie_eye_glow();
 }
 
 // T5 _zombiemode_ai_ape.gsc:236 uses this for a zombie that rises out of the
@@ -637,20 +681,34 @@ play_ambient_zombie_vocals()
 // ground: the cycle, the melee pool and the death clip all switch sets, and
 // the native mover is told to travel at a crawl.
 //
-// T5 reaches this from zombie_gib_on_damage, which is still out (see the
-// header).  It is exposed so the module that lands the gibs -- or a level
-// script, or the powerups module -- can call it, and so the crawl half of
-// every table above is reachable rather than decorative.
+// T5 reaches this from zombie_gib_on_damage (_zombiemode_gib.gsc), which
+// has already swapped the legs for the gib models and set self.a.gib_ref to
+// the leg that went.  A crawler made by any other script has no gib yet, so
+// it loses both legs here the same way (T5's "no_legs").
 make_crawler()
 {
 	if ( !is_true( self.has_legs ) )
 		return;
 
 	self.has_legs = false;
-	self.a.gib_ref = "no_legs";
+	if ( !isDefined( self.a.gib_ref ) )
+		self.a.gib_ref = "no_legs";
+	if ( !is_true( self.gibbed ) )
+		self maps\mp\gametypes\_zombiemode_gib::do_gib();
 	self.a.pose = "prone";
 
 	self set_zombie_run_cycle( "walk" );
+
+	// T5 :2925: with no legs at all the zombie walks on its hands.
+	if ( self.a.gib_ref == "no_legs" )
+	{
+		hands = "crawl_hand_" + randomIntRange( 1, 3 );
+		if ( isDefined( level.scr_anim[ self.animname ][ hands ] ) )
+		{
+			self set_run_anim( hands );
+			self.crawl_anim = self.run_noncombatanim;
+		}
+	}
 	// setMoveSpeedScale is player-only on this engine; see
 	// apply_move_speed_scale() below.  0.35 is T5's crawler scalar, which is
 	// lower than any bucket move_speed_scale() returns, so it is passed
@@ -747,6 +805,11 @@ zombie_damage_watch()
 		if ( self.health <= 0 )
 			continue;
 
+		// A beheaded zombie's bleed-out tick (_zombiemode_gib::damage_over_time)
+		// is not a hit the player landed.
+		if ( isDefined( self.zm_gib_dot_time ) && self.zm_gib_dot_time == getTime() )
+			continue;
+
 		// T5 pays damage_ads at 1.25x for a hit landed while aiming.
 		if ( attacker playerADS() > 0.9 )
 			attacker maps\mp\gametypes\_zombiemode_score::player_add_points( "damage_ads", mod, partName );
@@ -826,6 +889,7 @@ zombie_think()
 	// T5 zombie_goto_entrance :620 and find_flesh :3934: attack mode and
 	// visibility to other AI begin once the entrance has been dealt with.
 	self zombie_setup_attack_properties();
+	self thread zombie_eye_glow_refresh();
 	self.ignoreme = false;
 	self.zm_path_phase = "hunt";
 

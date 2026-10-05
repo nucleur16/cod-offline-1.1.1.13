@@ -50,6 +50,86 @@ zombie_heads()
 	return heads;
 }
 
+// The dismemberment set, T5's character-script fields (torsoDmg1-5,
+// legDmg1-4, gibSpawn1-4 + gibSpawnTag1-4, e.g. T5
+// character/c_zom_barechest.gsc), mapped onto CoDOL's own suffixes.
+//
+// MEASURED 2026-10-05 with codol_checkmodel on a zm_prototype_sh probe (the
+// c_zom_ger_body_* set; the other three families ship the same 17 suffixes,
+// docs/zone_assets/ALL_xmodel.txt):
+//   _upclean, _rarmoff_1/2, _larmoff_1/2, _torso_1  73 bones -- the full
+//       skeleton, i.e. the UPPER body a T5 torsoDmg model is (setModel)
+//   _behead       6 bones, tag_origin..j_neck -- T5's torsoDmg5 neck stump
+//                 (attached in place of the head)
+//   _lowclean    12 bones, hips/knees/ankles -- T5 legDmg1 (attached)
+//   _rlegoff_1/2, _llegoff_1/2  16 bones -- T5 legDmg2/legDmg3
+//   _legsoff_1   10 bones, hips/knees only -- T5 legDmg4
+//   _rarmspawn, _larmspawn, _rlegspawn, _llegspawn  2 bones, tag_origin and
+//       tag_fx -- the flying limb pieces (T5 gibSpawn1-4)
+// T5's spawn tags (J_Elbow_RI, J_Elbow_LE, J_Knee_RI, J_Knee_LE) are bones of
+// every c_zom_*_body (lower-case here, as the bone dump prints them).
+//
+// CoDOL ships two cuts of each single-limb model (_1 and _2) where T5 ships
+// one; nothing in the shipped data says which one a given wound uses, so
+// either is valid and a zombie picks one at spawn for variety.
+zombie_gib_prefixes()
+{
+	prefixes = [];
+	prefixes[ 0 ] = "c_zom_ger_body_";
+	prefixes[ 1 ] = "c_zom_garbageman_body_";
+	prefixes[ 2 ] = "c_zom_worker_body_";
+	prefixes[ 3 ] = "c_zom_secunityguard_body_";
+	return prefixes;
+}
+
+zombie_gib_suffixes()
+{
+	suffixes = [];
+	suffixes[ suffixes.size ] = "upclean";
+	suffixes[ suffixes.size ] = "rarmoff_1";
+	suffixes[ suffixes.size ] = "rarmoff_2";
+	suffixes[ suffixes.size ] = "larmoff_1";
+	suffixes[ suffixes.size ] = "larmoff_2";
+	suffixes[ suffixes.size ] = "torso_1";
+	suffixes[ suffixes.size ] = "behead";
+	suffixes[ suffixes.size ] = "lowclean";
+	suffixes[ suffixes.size ] = "rlegoff_1";
+	suffixes[ suffixes.size ] = "rlegoff_2";
+	suffixes[ suffixes.size ] = "llegoff_1";
+	suffixes[ suffixes.size ] = "llegoff_2";
+	suffixes[ suffixes.size ] = "legsoff_1";
+	suffixes[ suffixes.size ] = "rarmspawn";
+	suffixes[ suffixes.size ] = "larmspawn";
+	suffixes[ suffixes.size ] = "rlegspawn";
+	suffixes[ suffixes.size ] = "llegspawn";
+	return suffixes;
+}
+
+// T5 field names, so animscripts\zombie_death::get_limb_data reads them
+// unchanged.
+set_gib_models( prefix )
+{
+	cut = "_" + randomIntRange( 1, 3 );
+
+	self.torsoDmg1 = prefix + "upclean";
+	self.torsoDmg2 = prefix + "rarmoff" + cut;
+	self.torsoDmg3 = prefix + "larmoff" + cut;
+	self.torsoDmg4 = prefix + "torso_1";
+	self.torsoDmg5 = prefix + "behead";
+	self.legDmg1 = prefix + "lowclean";
+	self.legDmg2 = prefix + "rlegoff" + cut;
+	self.legDmg3 = prefix + "llegoff" + cut;
+	self.legDmg4 = prefix + "legsoff_1";
+	self.gibSpawn1 = prefix + "rarmspawn";
+	self.gibSpawnTag1 = "j_elbow_ri";
+	self.gibSpawn2 = prefix + "larmspawn";
+	self.gibSpawnTag2 = "j_elbow_le";
+	self.gibSpawn3 = prefix + "rlegspawn";
+	self.gibSpawnTag3 = "j_knee_ri";
+	self.gibSpawn4 = prefix + "llegspawn";
+	self.gibSpawnTag4 = "j_knee_le";
+}
+
 main()
 {
 	bodies = zombie_bodies();
@@ -73,6 +153,9 @@ main()
 	self.headModel = heads[ index ];
 	self.voice = "zombie";
 	self.skeleton = "base";
+
+	prefixes = zombie_gib_prefixes();
+	self set_gib_models( prefixes[ index ] );
 }
 
 precache()
@@ -83,4 +166,12 @@ precache()
 		precacheModel( bodies[ i ] );
 	for ( i = 0; i < heads.size; i++ )
 		precacheModel( heads[ i ] );
+
+	prefixes = zombie_gib_prefixes();
+	suffixes = zombie_gib_suffixes();
+	for ( i = 0; i < prefixes.size; i++ )
+	{
+		for ( j = 0; j < suffixes.size; j++ )
+			precacheModel( prefixes[ i ] + suffixes[ j ] );
+	}
 }
