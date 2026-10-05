@@ -95,17 +95,24 @@
 // T5's one-at-a-time rule instead.
 // Also not taken: bonfire_sale (no zm map authors the bonfire trigger),
 // random_weapon (needs treasure_chest_ChooseWeightedRandomWeapon plus
-// useweaponhidetags, which is not registered), the power-up HUD overlay and
-// its solo variant (:180,:257 -- they SetShader T5 materials no CoDOL zone
-// carries), the zombie-grabbable path (:1118, a power-up a zombie can steal;
+// useweaponhidetags, which is not registered), the zombie-grabbable path
+// (:1118, a power-up a zombie can steal;
 // no CoDOL pickup is marked for it), and maps\_zombiemode_net::
 // network_safe_spawn (this server has no net-throttle module, so the drop
-// spawns directly).
+// spawns directly).  T5's power-up HUD overlay and its solo variant (:180,
+// :257) ARE taken (2026-10-05): their materials do ship in
+// common_gametype_zm -- see THE ACTIVE POWER-UP HUD.
 //
 // NO ANIMATION IS USED IN THIS FILE.  It needs none: T5's power-ups wobble
 // with rotateto and blink with hide/show.
 
 #include maps\mp\gametypes\_zombiemode_utility;
+
+// THE ACTIVE POWER-UP HUD's layout (left_adjustable / bottom_adjustable).
+POWERUP_HUD_X = 134;
+POWERUP_HUD_Y = -56;
+POWERUP_HUD_SIZE = 32;
+POWERUP_HUD_STEP = 40;
 
 // --------------------------------------------------------------------------
 // Init
@@ -137,6 +144,20 @@ init()
 	add_sound( "powerup_grabbed", "zmb_powerup_grabbed" );
 	add_sound( "powerup_spawn",   "zmb_spawn_powerup" );
 
+	// T5 :39-:47.  The glow every dropped power-up wears and the burst it
+	// leaves when grabbed.  MEASURED, docs/zone_assets/ALL_fx.txt: all six ship
+	// in common_gametype_zm under T5's own names.  The red (zombie-grabbable)
+	// and caution sets also ship but no CoDOL pickup uses them (header).
+	level._effect[ "powerup_on" ]                = loadfx( "misc/fx_zombie_powerup_on" );
+	level._effect[ "powerup_grabbed" ]           = loadfx( "misc/fx_zombie_powerup_grab" );
+	level._effect[ "powerup_grabbed_wave" ]      = loadfx( "misc/fx_zombie_powerup_wave" );
+	level._effect[ "powerup_on_solo" ]           = loadfx( "misc/fx_zombie_powerup_solo_on" );
+	level._effect[ "powerup_grabbed_solo" ]      = loadfx( "misc/fx_zombie_powerup_solo_grab" );
+	level._effect[ "powerup_grabbed_wave_solo" ] = loadfx( "misc/fx_zombie_powerup_solo_wave" );
+	precacheModel( "tag_origin" );
+
+	powerup_hud_precache();
+
 	// The weapon-backed pickups' own modules, before the registry reads
 	// what they resolved.
 	maps\mp\gametypes\_zombiemode_weap_tesla::init();
@@ -160,6 +181,7 @@ init()
 
 	level thread watch_for_drop();
 	level thread powerup_round_watcher();
+	level thread powerup_hud_think();
 }
 
 // T5 :69.  The CoDOL pickup name is the identity; the short name is the one
@@ -214,9 +236,28 @@ add_zombie_powerup( powerup_name, weapon_name, model_name )
 	s.powerup_name = powerup_name;
 	s.weapon_name = weapon_name;
 	s.model_name = model_name;
+	s.solo = is_solo_powerup( powerup_name );
 
 	level.zombie_powerups[ powerup_name ] = s;
 	level.zombie_powerup_array[ level.zombie_powerup_array.size ] = powerup_name;
+}
+
+// T5 :69-:125 registers minigun, tesla, random_weapon and bonus_points_player
+// with solo = true: they reward the grabber alone and wear the solo glow.
+// CoDOL's sentry, RC-XD and pandora pickups go to the grabber alone too.
+is_solo_powerup( name )
+{
+	switch ( name )
+	{
+	case "minigun":
+	case "tesla":
+	case "bonus_points_player":
+	case "sentry":
+	case "rcbomb":
+	case "pandora":
+		return true;
+	}
+	return false;
 }
 
 // --------------------------------------------------------------------------
@@ -542,9 +583,52 @@ powerup_setup( powerup_override )
 
 	self.powerup_name = s.powerup_name;
 	self.weapon_name = s.weapon_name;
+	self.solo = s.solo;
 
 	play_sound_at_pos( "powerup_spawn", self.origin );
 	self playLoopSound( "zmb_spawn_powerup_loop" );
+}
+
+// T5 :1580-:1600: playfxontag( level._effect[ "powerup_on" ], self,
+// "tag_origin" ), the solo glow for a solo power-up.  The CoDOL pickup models
+// are not known to carry tag_origin (a missing tag is a script error), so the
+// looping glow rides a tag_origin carrier at the pickup's origin -- the pickup
+// only spins in place -- the same carrier _zombiemode_weap_black_hole_bomb uses
+// for its looping effects.  powerup_glow_off stops it on grab or timeout.
+powerup_glow_on()
+{
+	fx = level._effect[ "powerup_on" ];
+	if ( is_true( self.solo ) )
+		fx = level._effect[ "powerup_on_solo" ];
+
+	glow = spawn( "script_model", self.origin );
+	glow setModel( "tag_origin" );
+	self.glow = glow;
+	self.glow_fx = fx;
+
+	// One frame so the carrier is in a snapshot before the effect event.
+	wait( 0.05 );
+	if ( isDefined( self ) && isDefined( self.glow ) && self.glow == glow )
+		playFxOnTag( fx, glow, "tag_origin" );
+}
+
+powerup_glow_off()
+{
+	if ( !isDefined( self.glow ) )
+		return;
+
+	glow = self.glow;
+	self.glow = undefined;
+	stopFxOnTag( self.glow_fx, glow, "tag_origin" );
+	glow thread powerup_glow_delete();
+}
+
+// self = the carrier.  A frame after the stop, as the black hole bomb does.
+powerup_glow_delete()
+{
+	wait( 0.05 );
+	if ( isDefined( self ) )
+		self delete();
 }
 
 // T5 :1574 powerup_wobble.  A slow spin plus T5's own bob.
@@ -552,6 +636,8 @@ powerup_wobble()
 {
 	self endon( "powerup_timedout" );
 	self endon( "powerup_grabbed" );
+
+	self thread powerup_glow_on();
 
 	self.angles = ( 0, 0, 0 );
 
@@ -580,6 +666,7 @@ powerup_timeout()
 	}
 
 	self notify( "powerup_timedout" );
+	self powerup_glow_off();
 	self stopLoopSound( 0.05 );
 	self delete();
 }
@@ -618,6 +705,20 @@ powerup_grab()
 				continue;
 
 			self notify( "powerup_grabbed" );
+
+			// T5 :1335-:1346: the grab burst and its wave, solo or not.
+			self powerup_glow_off();
+			if ( is_true( self.solo ) )
+			{
+				playFx( level._effect[ "powerup_grabbed_solo" ], self.origin );
+				playFx( level._effect[ "powerup_grabbed_wave_solo" ], self.origin );
+			}
+			else
+			{
+				playFx( level._effect[ "powerup_grabbed" ], self.origin );
+				playFx( level._effect[ "powerup_grabbed_wave" ], self.origin );
+			}
+
 			// CHALLENGE_ZM_POWERUPS "pick up &&1 power-ups".
 			player maps\mp\gametypes\_zombiemode_challenges::zm_challenge_inc( "zm_powerups" );
 			codolPrintLn( "CoDOL zm powerup: " + self.powerup_name + " grabbed by " + player.name + " at " + self.origin );
@@ -762,31 +863,65 @@ nuke_kill_zombie()
 	self doDamage( self.health + 100, self.origin );
 }
 
-// T5 :1792 double_points_powerup.  _zombiemode_score::get_points_multiplier
-// reads the var.
+// T5 :1792 double_points_powerup + :1980 point_doubler_on_hud /
+// :2009 time_remaining_on_point_doubler_powerup.  _zombiemode_score::
+// get_points_multiplier reads the var.  A second grab while it runs resets the
+// time and keeps going (T5 :1987), instead of the first grab's wait switching
+// it off early.
 double_points_powerup()
 {
 	level notify( "powerup_double_points" );
 
-	level.zombie_vars[ "zombie_powerup_point_doubler_on" ] = 1;
+	if ( !timed_powerup_start( "double_points", "zombie_powerup_point_doubler_on", "zombie_powerup_point_doubler_time" ) )
+		return;
 
-	wait( level.zombie_vars[ "zombie_powerup_point_doubler_time" ] );
+	timed_powerup_wait( "double_points" );
 
 	level.zombie_vars[ "zombie_powerup_point_doubler_on" ] = 0;
 }
 
-// T5 :1836 insta_kill_powerup.  _zombiemode_score::player_add_points already
-// checks zombie_powerup_insta_kill_on, and the kill itself is landed here so
-// a hit while it is up is lethal.
+// T5 :1836 insta_kill_powerup + :1908 insta_kill_on_hud / :1935
+// time_remaning_on_insta_kill_powerup.  _zombiemode_score::player_add_points
+// already checks zombie_powerup_insta_kill_on, and the kill itself is landed
+// here so a hit while it is up is lethal.  Re-grabbing resets the time.
 insta_kill_powerup()
 {
 	level notify( "powerup_insta_kill" );
 
-	level.zombie_vars[ "zombie_powerup_insta_kill_on" ] = 1;
+	if ( !timed_powerup_start( "insta_kill", "zombie_powerup_insta_kill_on", "zombie_powerup_insta_kill_time" ) )
+		return;
 
-	wait( level.zombie_vars[ "zombie_powerup_insta_kill_time" ] );
+	timed_powerup_wait( "insta_kill" );
 
 	level.zombie_vars[ "zombie_powerup_insta_kill_on" ] = 0;
+}
+
+// The timed level power-ups' clock.  level.zm_powerup_end[ key ] is the
+// getTime() it runs out at; the HUD reads it.  Returns false when the
+// power-up was already running: its time has been reset and the running
+// thread keeps it on.
+timed_powerup_start( key, on_var, time_var )
+{
+	if ( !isDefined( level.zm_powerup_end ) )
+		level.zm_powerup_end = [];
+
+	level.zm_powerup_end[ key ] = getTime() + int( level.zombie_vars[ time_var ] * 1000 );
+
+	if ( is_true( level.zombie_vars[ on_var ] ) )
+	{
+		codolPrintLn( "CoDOL zm powerup: " + key + " grabbed again; time reset to " + level.zombie_vars[ time_var ] + " s" );
+		return false;
+	}
+
+	level.zombie_vars[ on_var ] = 1;
+	return true;
+}
+
+timed_powerup_wait( key )
+{
+	while ( getTime() < level.zm_powerup_end[ key ] )
+		wait( 0.1 );
+	level.zm_powerup_end[ key ] = undefined;
 }
 
 // T5 :1807 full_ammo_powerup.  T5 tops up every weapon every player holds.
@@ -852,12 +987,15 @@ start_fire_sale()
 {
 	level notify( "powerup_fire_sale" );
 
-	level.zombie_vars[ "zombie_powerup_fire_sale_on" ] = 1;
+	// T5 :1418 restarts the 30 s on a second grab; the boxes it opened stay
+	// open until the one fire_sale_off below.
+	if ( !timed_powerup_start( "fire_sale", "zombie_powerup_fire_sale_on", "zombie_powerup_fire_sale_time" ) )
+		return;
 
 	// T5 :1414 toggle_fire_sale_on: every hidden box spot opens for the sale.
 	level thread maps\mp\gametypes\_zombiemode_weapons::treasure_chest_fire_sale();
 
-	wait( level.zombie_vars[ "zombie_powerup_fire_sale_time" ] );
+	timed_powerup_wait( "fire_sale" );
 
 	level.zombie_vars[ "zombie_powerup_fire_sale_on" ] = 0;
 	level notify( "fire_sale_off" );
@@ -922,6 +1060,203 @@ bonus_points_team()
 }
 
 // ==========================================================================
+// THE ACTIVE POWER-UP HUD.  T5 :180 powerup_hud_overlay / Power_up_hud and
+// :257 solo_powerup_hud_overlay / solo_power_up_hud.
+//
+// MEASURED, C1's own zombies server precache list mp/constConfigStrings_zm.csv
+// (code_post_gfx_mp) holds T5's power-up HUD materials --
+// specialty_doublepoints_zombies, specialty_instakill_zombies,
+// specialty_firesale_zombies, zom_icon_minigun -- all four in
+// common_gametype_zm, and coKillstreakStatsTable column 15 names the first
+// three as the icons of double_points_zm / insta_kill_zm / fire_sale_zm.  No C1
+// menu, ownerdraw or playerState field shows an active power-up: the zombies
+// player HUD (ownerdraw 288 "playerscores" in common_mp's zombiemodescores
+// menu, drawn by C1 0x00460c50 / 0x00460590) draws only portrait, name and
+// score.  So, as on C1's server, it is a script hudelem per power-up.
+//
+// PLACEMENT (user, 2026-10-05: bottom left, next to the score, name and
+// portrait, with the duration).  The playerscores item is left_adjustable /
+// bottom_adjustable, and C1 draws the LOCAL player's entry at x 10, y -55,
+// scale 1.1 (0x00460db7: 40-unit portrait, name/score to x+100 scaled), so the
+// icons start just right of it at the same height, packed left to right in
+// T5's order, each with its remaining time under it (setTimer).  They blink
+// for the last 10 s as T5's do.  The minigun and tesla are the grabber's own
+// (T5's solo HUD); the tesla runs on ammunition, not time, so it has no timer.
+// ==========================================================================
+
+powerup_hud_precache()
+{
+	level.zm_powerup_hud_kinds = [];
+	powerup_hud_kind( "double_points", "specialty_doublepoints_zombies", true );
+	powerup_hud_kind( "insta_kill",    "specialty_instakill_zombies",    true );
+	powerup_hud_kind( "fire_sale",     "specialty_firesale_zombies",     true );
+	powerup_hud_kind( "minigun",       "zom_icon_minigun",               true );
+	powerup_hud_kind( "tesla",         "zom_icon_minigun",               false );
+}
+
+powerup_hud_kind( key, shader, timed )
+{
+	precacheShader( shader );
+	k = spawnStruct();
+	k.key = key;
+	k.shader = shader;
+	k.timed = timed;
+	level.zm_powerup_hud_kinds[ level.zm_powerup_hud_kinds.size ] = k;
+}
+
+// getTime() the power-up runs out at for this player, undefined when it is
+// not running, 0 for one that runs on something other than time.
+powerup_hud_end( key )
+{
+	switch ( key )
+	{
+	case "double_points":
+	case "insta_kill":
+	case "fire_sale":
+		if ( isDefined( level.zm_powerup_end ) && isDefined( level.zm_powerup_end[ key ] ) )
+			return level.zm_powerup_end[ key ];
+		return undefined;
+
+	case "minigun":
+		if ( !self powerup_state( "zombie_powerup_minigun_on" ) )
+			return undefined;
+		if ( !isDefined( self.zm_powerup_time ) || !isDefined( self.zm_powerup_time[ "minigun" ] ) )
+			return undefined;
+		return getTime() + self.zm_powerup_time[ "minigun" ] * 1000;
+
+	case "tesla":
+		if ( !self powerup_state( "zombie_powerup_tesla_on" ) )
+			return undefined;
+		return 0;
+	}
+	return undefined;
+}
+
+powerup_hud_think()
+{
+	level endon( "intermission" );
+	level endon( "end_game" );
+
+	for ( ;; )
+	{
+		wait( 0.1 );
+
+		// Test clients draw nothing, so they get no hudelems -- except on a
+		// developer server, where the probes exercise this path through them.
+		with_bots = getDvarInt( "developer" ) > 0;
+
+		players = getPlayers();
+		for ( i = 0; i < players.size; i++ )
+		{
+			if ( isDefined( players[ i ] ) && ( with_bots || !is_true( players[ i ].isbot ) ) )
+				players[ i ] powerup_hud_update();
+		}
+	}
+}
+
+powerup_hud_elem( align_x, x, y )
+{
+	elem = newClientHudElem( self );
+	elem.alignX = align_x;
+	elem.alignY = "top";
+	elem.horzAlign = "left_adjustable";
+	elem.vertAlign = "bottom_adjustable";
+	elem.x = x;
+	elem.y = y;
+	elem.foreground = true;
+	elem.hidewheninmenu = true;
+	elem.archived = false;
+	elem.sort = 2;
+	elem.alpha = 0;
+	return elem;
+}
+
+// self = player.
+powerup_hud_update()
+{
+	if ( !isDefined( self.zm_powerup_hud ) )
+		self.zm_powerup_hud = [];
+
+	now = getTime();
+	column = 0;
+
+	for ( k = 0; k < level.zm_powerup_hud_kinds.size; k++ )
+	{
+		kind = level.zm_powerup_hud_kinds[ k ];
+		end = self powerup_hud_end( kind.key );
+		h = self.zm_powerup_hud[ kind.key ];
+
+		if ( !isDefined( end ) || ( end > 0 && end <= now ) )
+		{
+			if ( isDefined( h ) && h.shown )
+			{
+				h.icon.alpha = 0;
+				if ( isDefined( h.timer ) )
+					h.timer.alpha = 0;
+				h.shown = false;
+				h.end = undefined;
+			}
+			continue;
+		}
+
+		x = POWERUP_HUD_X + column * POWERUP_HUD_STEP;
+		column++;
+
+		if ( !isDefined( h ) )
+		{
+			h = spawnStruct();
+			h.icon = self powerup_hud_elem( "left", x, POWERUP_HUD_Y );
+			h.icon setShader( kind.shader, POWERUP_HUD_SIZE, POWERUP_HUD_SIZE );
+			if ( kind.timed )
+			{
+				h.timer = self powerup_hud_elem( "center", x + int( POWERUP_HUD_SIZE / 2 ), POWERUP_HUD_Y + POWERUP_HUD_SIZE + 1 );
+				h.timer.font = "default";
+				h.timer.fontScale = 1.2;
+				h.timer.color = ( 1, 1, 1 );
+			}
+			h.shown = false;
+			self.zm_powerup_hud[ kind.key ] = h;
+		}
+
+		if ( h.icon.x != x )
+		{
+			h.icon.x = x;
+			if ( isDefined( h.timer ) )
+				h.timer.x = x + int( POWERUP_HUD_SIZE / 2 );
+		}
+
+		// (Re)start the client-side countdown only when the end moved: a
+		// fresh grab, a re-grab that reset it, or a minigun top-up.
+		if ( isDefined( h.timer ) && end > 0 && ( !isDefined( h.end ) || abs( end - h.end ) > 1500 ) )
+		{
+			h.timer setTimer( ( end - now ) / 1000 );
+			h.end = end;
+		}
+
+		if ( !h.shown )
+		{
+			h.shown = true;
+			codolPrintLn( "CoDOL zm powerup HUD: " + kind.key + " shown to " + self.name + " in column " + ( column - 1 ) );
+		}
+
+		// T5 Power_up_hud: fast blink under 5 s, slow under 10 s.
+		alpha = 1;
+		if ( end > 0 )
+		{
+			left = end - now;
+			if ( left < 5000 && ( int( now / 100 ) % 2 ) == 1 )
+				alpha = 0;
+			else if ( left < 10000 && ( int( now / 200 ) % 2 ) == 1 )
+				alpha = 0;
+		}
+		if ( h.icon.alpha != alpha )
+			h.icon.alpha = alpha;
+		if ( isDefined( h.timer ) && h.timer.alpha != 1 )
+			h.timer.alpha = 1;
+	}
+}
+
+// ==========================================================================
 // WEAPON POWER-UPS.  T5 :2459 minigun_weapon_powerup and :2643
 // tesla_weapon_powerup, with their countdown / replace / remove / downed
 // helpers folded into one pair shared by both weapons (T5's two copies differ
@@ -930,9 +1265,9 @@ bonus_points_team()
 // C1 interpretation, stated:
 //   * Per-player state lives in player.zm_powerup_state[] (see
 //     set_powerup_state) under T5's own zombie_vars key names.
-//   * T5's increment_is_drinking / _show_solo_hud and the solo HUD icon
-//     (:180/:257, zom_icon_minigun) are not taken: this port has no drinking
-//     counter and no power-up HUD overlay (header).
+//   * T5's increment_is_drinking / _show_solo_hud is not taken: this port has
+//     no drinking counter.  The solo HUD icon (zom_icon_minigun) is drawn by
+//     THE ACTIVE POWER-UP HUD below, from zm_powerup_time / zm_powerup_state.
 //   * THE DOWN.  T5 routes it through level._zombie_*_powerup_last_stand_func,
 //     called from _laststand before it stores the player's weapons.  This
 //     port's _zombiemode_laststand::player_laststand stores them FIRST
@@ -1675,8 +2010,9 @@ qb_zombie_fling_result( position )
 
 // ==========================================================================
 // TEST HOOK, idle unless the dvar is set.  No C1 client is needed:
-//   set scr_zm_powerup_test "drop <clientnum> <powerup>"
-//       drops <powerup> at the client's feet, where the proximity grab takes it.
+//   set scr_zm_powerup_test "drop <clientnum> <powerup> [dx]"
+//       drops <powerup> at the client's feet, where the proximity grab takes it
+//       (or dx units along +x, out of reach: the glow and the timeout).
 //   set scr_zm_powerup_test "pandora <clientnum> <result>"
 //       runs one named pandora result at the client, bypassing the roll.
 //   set scr_zm_powerup_test "fire <clientnum> <seconds> [weapon]"
@@ -1727,8 +2063,13 @@ powerup_test_watch()
 				codolPrintLn( "CoDOL zm powerup test: " + tokens[ 2 ] + " is not registered" );
 				break;
 			}
-			codolPrintLn( "CoDOL zm powerup test: dropping " + tokens[ 2 ] + " at " + player.name );
-			specific_powerup_drop( tokens[ 2 ], player.origin - ( 0, 0, 40 ) );
+			// Optional 4th token: drop that many units along +x instead, out
+			// of grab range, to watch the glow and the timeout.
+			offset = ( 0, 0, 0 );
+			if ( tokens.size > 3 )
+				offset = ( float( tokens[ 3 ] ), 0, 0 );
+			codolPrintLn( "CoDOL zm powerup test: dropping " + tokens[ 2 ] + " at " + player.name + " + " + offset );
+			specific_powerup_drop( tokens[ 2 ], player.origin + offset - ( 0, 0, 40 ) );
 			break;
 		case "pandora":
 			if ( !isDefined( level.quantum_bomb_results[ tokens[ 2 ] ] ) )

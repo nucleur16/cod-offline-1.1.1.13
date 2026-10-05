@@ -38,26 +38,36 @@
 // killstreaks do (_class.gsc "defcon rollover": streakVal + maxVal*n), so a
 // 3/6 character is rewarded at 3, 6, 9, 12, ...
 //
-// HOW IT IS DELIVERED.  The multiplayer killstreak HUD, which the zombies
-// chain must not compile (_killstreaks.gsc names multiplayer modules), is
-// reproduced here with the same native builtins:
+// HOW THE PROGRESS IS SHOWN.  The multiplayer killstreak HUD, which the
+// zombies chain must not compile (_killstreaks.gsc names multiplayer modules),
+// is reproduced here with the same native builtins:
 //   setKillstreak( count )            the streak progress
 //   setKillstreakID( row, hud )       coKillstreakStatsTable row id preview
 //   setKillstreakTarget( cost, hud )  the preview's target
-//   setActionSlot( n, "weapon", w )   the reward's activation weapon
-// Perk pop a is HUD entry 1 / action slot 2, perk pop b HUD entry 2 / action
-// slot 3 -- the layout the multiplayer tree gives the first two selected
-// rewards (_class.gsc setKillstreaks: HUD index0 is action slot1, selected
-// rewards occupy slots 2-4 / HUD 1-3).  The activation weapon is column 13 of
-// the row, the perkpop_*_zm item itself (MEASURED, codol_checkweapon:
-// inventory 2 = item, clip 1, fire time 2000 ms, view model codo_perk_can_ads).
+// Perk pop a is HUD entry 1, perk pop b HUD entry 2 -- the layout the
+// multiplayer tree gives the first two selected rewards (_class.gsc
+// setKillstreaks: HUD index0 is action slot1).
 //
-// HOW IT IS USED.  C1 switches to the action slot's weapon client-side; the
-// server sees the native "weapon_change" to that item, exactly as
-// _killstreaks.gsc killstreakUseWaiter does for a multiplayer reward.  The
-// drink then takes the item's 2000 ms fire time; the effect is applied when
-// it completes, one charge is spent, and the player is switched back.  Leaving
-// the item early, going down or dying cancels the drink without spending it.
+// HOW IT IS GIVEN (user, 2026-10-05: CoDOL-style, not a killstreak).  The
+// reward is applied the moment the round that reaches its streak ends -- no
+// item, no action slot, nothing to press.  (The previous port gave the
+// perkpop_*_zm item, column 13, on action slot 2/3 and applied the effect
+// only after a 2000 ms "drink"; that activation step is gone.)
+//
+// HOW IT IS ANNOUNCED.  MEASURED, C1's own zombies server precache list
+// mp/constConfigStrings_zm.csv (code_post_gfx_mp) carries exactly what the
+// reward notice needs and nothing a menu would: the localized strings
+// ZOMBIE_ROUNDSTREAK ("存活&&1轮奖励！", "survived &&1 rounds -- reward!") and
+// ZOMBIE_PERKPOP_DEADSHOT .. ZOMBIE_PERKPOP_PANDORA (the perk pop's name), and
+// the materials specialty_ads_zombies, specialty_marathon_zombies, ... -- the
+// icon in column 15 of every perk pop row of mp/coKillstreakStatsTable.csv.
+// C1's mp/splashTable.csv (919 rows, compared live against the client) has no
+// perk pop row, and its only perk splash menu (perk_gained) reads
+// mp/coPerkStatsTable.csv, whose zombies rows are all PERKS_NONE /
+// specialty_null.  So the notice is the server hudelem stack C1's server
+// precached for it: the icon on top, the perk pop's name as the header and
+// ZOMBIE_ROUNDSTREAK with the streak as the subheader.  Rewards earned in the
+// same round are shown one after the other.
 //
 // WHAT EACH ONE DOES.  The zombies perk rows of mp/coPerkStatsTable.csv
 // (43-57, specialty_zombie_*) are C1's own definition of every effect; their
@@ -103,6 +113,11 @@
 
 PERKPOP_TABLE = "mp/coKillstreakStatsTable.csv";
 
+// The reward notice: seconds on screen, icon size, top of the stack.
+NOTICE_TIME = 3.5;
+NOTICE_ICON_SIZE = 48;
+NOTICE_Y = 72;
+
 // --------------------------------------------------------------------------
 // Callback_StartGameType, inside the precache window, after
 // _zombiemode_equipment::init() has read the roster.
@@ -112,8 +127,7 @@ init()
 {
 	level.zombie_perkpop_info = [];
 
-	// Every perk pop any roster character carries.  Only those are precached:
-	// each precacheItem spends one entry of the finite weapon registry.
+	// Every perk pop any roster character carries.  Only those are precached.
 	names = [];
 	if ( isDefined( level.zombie_roster_order ) )
 	{
@@ -137,25 +151,27 @@ init()
 		pop.name = name;
 		pop.id = int( tableLookup( PERKPOP_TABLE, 1, name, 0 ) );
 		pop.cost = int( tableLookup( PERKPOP_TABLE, 1, name, 4 ) );
-		pop.weapon = tableLookup( PERKPOP_TABLE, 1, name, 13 );
 		pop.effect = effect_key( name );
-		pop.usable = false;
-
-		if ( isDefined( pop.weapon ) && pop.weapon != "" )
-		{
-			precacheItem( pop.weapon );
-			if ( getWeaponIndexFromName( pop.weapon ) > 0 )
-				pop.usable = true;
-		}
+		pop.title = perkpop_title( name );
+		// Column 15, the reward's HUD icon (specialty_ads_zombies, ...).
+		pop.icon = tableLookup( PERKPOP_TABLE, 1, name, 15 );
+		pop.usable = true;
 
 		if ( pop.id <= 0 || pop.cost <= 0 )
 			pop.usable = false;
 		if ( !isDefined( pop.effect ) )
 			pop.usable = false;
 
+		if ( isDefined( pop.title ) )
+			precacheString( pop.title );
+		if ( isDefined( pop.icon ) && pop.icon != "" )
+			precacheShader( pop.icon );
+		else
+			pop.icon = undefined;
+
 		level.zombie_perkpop_info[ name ] = pop;
 		codolprintln( "CoDOL zm perkpop: " + name + " row " + pop.id + " streak " + pop.cost +
-			" weapon " + pop.weapon + " effect " + describe( pop.effect ) + " usable " + pop.usable );
+			" icon " + describe( pop.icon ) + " effect " + describe( pop.effect ) + " usable " + pop.usable );
 	}
 
 	precacheString( &"ZOMBIE_ROUNDSTREAK" );
@@ -209,6 +225,32 @@ effect_key( name )
 	return undefined;
 }
 
+// The notice header: C1's server precaches ZOMBIE_PERKPOP_<name> for every
+// perk pop (mp/constConfigStrings_zm.csv rows 622-631).
+perkpop_title( name )
+{
+	switch ( name )
+	{
+	case "perkpop_deadshot_zm":
+		return &"ZOMBIE_PERKPOP_DEADSHOT";
+	case "perkpop_longersprint_zm":
+		return &"ZOMBIE_PERKPOP_LONGERSPRINT";
+	case "perkpop_flakjacket_zm":
+		return &"ZOMBIE_PERKPOP_FLAKJACKET";
+	case "perkpop_additionalprimary_zm":
+		return &"ZOMBIE_PERKPOP_ADDITIONALPRIMARY";
+	case "perkpop_discount_zm":
+		return &"ZOMBIE_PERKPOP_DISCOUNT";
+	case "perkpop_scavenger_zm":
+		return &"ZOMBIE_PERKPOP_SCAVENGER";
+	case "perkpop_electro_zm":
+		return &"ZOMBIE_PERKPOP_ELECTRO";
+	case "perkpop_carpenter_zm":
+		return &"ZOMBIE_PERKPOP_CARPENTER";
+	}
+	return undefined;
+}
+
 // --------------------------------------------------------------------------
 // Per-player state and watchers.
 // --------------------------------------------------------------------------
@@ -232,20 +274,18 @@ init_player()
 	self.perkpop_streak = 0;
 	self.perkpop_downed_this_round = false;
 	self.perkpop_active = [];
-	self.perkpop_busy = false;
 	self.perkpop_slots = [];
+	self.perkpop_notices = [];
 
 	self thread watch_down();
 	self thread watch_death();
-	self thread watch_weapon_change();
 	self thread watch_kills();
 	self thread watch_spent_points();
-	self thread watch_action_slots();
 }
 
 // self = player.  Called from _zombiemode::giveStartingLoadout after the
 // character's kit is armed, i.e. on every spawn.  The native spawn clears the
-// killstreak HUD and the action slots, and takeAllWeapons took the items.
+// killstreak HUD.
 on_spawned()
 {
 	self init_player();
@@ -254,8 +294,7 @@ on_spawned()
 	if ( !isDefined( names ) )
 		names = [];
 
-	// Rebuild the two slots when the character changed; keep owned charges
-	// otherwise (an earned reward survives death, as in multiplayer).
+	// Rebuild the two slots when the character changed.
 	for ( i = 0; i < 2; i++ )
 	{
 		name = undefined;
@@ -273,15 +312,12 @@ on_spawned()
 			slot = spawnStruct();
 			slot.name = name;
 			slot.pop = level.zombie_perkpop_info[ name ];
-			slot.count = 0;
+			slot.earned = 0;
 		}
 		self.perkpop_slots[ i ] = slot;
 	}
 
 	self publish_hud();
-
-	for ( i = 0; i < 2; i++ )
-		self publish_slot( i );
 }
 
 // The largest streak cost among this player's perk pops: the rollover period.
@@ -331,51 +367,6 @@ publish_hud()
 		self setKillstreakID( int( slot.pop.id ), i + 1 );
 		self setKillstreakTarget( int( target ), i + 1 );
 	}
-}
-
-// Give the item and publish its action slot while a charge is owned.
-publish_slot( index )
-{
-	slot = self.perkpop_slots[ index ];
-	action = index + 2;
-
-	if ( !isDefined( slot ) || slot.count <= 0 )
-	{
-		self setActionSlot( action, "" );
-		return;
-	}
-
-	weapon = slot.pop.weapon;
-	if ( !self hasWeapon( weapon ) )
-	{
-		self giveWeapon( weapon );
-		self setWeaponAmmoClip( weapon, 1 );
-	}
-
-	// The registry is finite: a weapon can resolve and still fail to be
-	// granted.  Never publish an action for an item the player does not hold.
-	if ( !self hasWeapon( weapon ) )
-	{
-		codolprintln( "CoDOL zm perkpop: " + self.name + " could not be given " + weapon +
-			"; action slot " + action + " left empty, charge kept" );
-		self setActionSlot( action, "" );
-		return;
-	}
-
-	self setActionSlot( action, "weapon", weapon );
-}
-
-slot_for_weapon( weapon )
-{
-	if ( !isDefined( weapon ) || !isDefined( self.perkpop_slots ) )
-		return -1;
-	for ( i = 0; i < 2; i++ )
-	{
-		slot = self.perkpop_slots[ i ];
-		if ( isDefined( slot ) && slot.pop.weapon == weapon )
-			return i;
-	}
-	return -1;
 }
 
 // --------------------------------------------------------------------------
@@ -431,14 +422,148 @@ survived_round()
 		if ( self.perkpop_streak < cost || ( self.perkpop_streak - cost ) % period != 0 )
 			continue;
 
-		slot.count++;
-		self publish_slot( i );
-		self iPrintLnBold( &"ZOMBIE_ROUNDSTREAK", self.perkpop_streak );
-		codolprintln( "CoDOL zm perkpop: " + self.name + " EARNED " + slot.name + " at streak " +
-			self.perkpop_streak + " (action slot " + ( i + 2 ) + ", charges " + slot.count + ")" );
+		self award_slot( i, self.perkpop_streak );
 	}
 
 	self publish_hud();
+}
+
+// self = player.  The reward is given the moment it is earned: no item, no
+// action slot.  An effect the player already has stays as it is (they do
+// not stack); the notice is shown either way.
+award_slot( index, streak )
+{
+	slot = self.perkpop_slots[ index ];
+	if ( !isDefined( slot ) )
+		return;
+
+	slot.earned++;
+	key = slot.pop.effect;
+	if ( is_true( self.perkpop_active[ key ] ) )
+		codolprintln( "CoDOL zm perkpop: " + self.name + " EARNED " + slot.name + " at streak " + streak +
+			"; " + key + " already active" );
+	else
+	{
+		codolprintln( "CoDOL zm perkpop: " + self.name + " EARNED " + slot.name + " at streak " + streak +
+			"; applied immediately" );
+		self apply_effect( key );
+	}
+
+	self thread queue_notice( slot.pop, streak );
+}
+
+// --------------------------------------------------------------------------
+// THE NOTICE.  Icon on top, the perk pop's name, then ZOMBIE_ROUNDSTREAK with
+// the streak.  Built on newClientHudElem directly: the multiplayer
+// _hud_util / _hud_message chain is kept out of a zm compile.
+// --------------------------------------------------------------------------
+
+queue_notice( pop, streak )
+{
+	self endon( "disconnect" );
+
+	n = spawnStruct();
+	n.pop = pop;
+	n.streak = streak;
+	self.perkpop_notices[ self.perkpop_notices.size ] = n;
+
+	if ( is_true( self.perkpop_notice_busy ) )
+		return;
+	self.perkpop_notice_busy = true;
+
+	while ( self.perkpop_notices.size > 0 )
+	{
+		next = self.perkpop_notices[ 0 ];
+		rest = [];
+		for ( i = 1; i < self.perkpop_notices.size; i++ )
+			rest[ rest.size ] = self.perkpop_notices[ i ];
+		self.perkpop_notices = rest;
+
+		self show_notice( next.pop, next.streak );
+	}
+
+	self.perkpop_notice_busy = undefined;
+}
+
+notice_elem( y )
+{
+	elem = newClientHudElem( self );
+	elem.alignX = "center";
+	elem.alignY = "top";
+	elem.horzAlign = "center_adjustable";
+	elem.vertAlign = "top_adjustable";
+	elem.x = 0;
+	elem.y = y;
+	elem.foreground = true;
+	elem.hidewheninmenu = true;
+	elem.archived = false;
+	elem.sort = 10;
+	elem.alpha = 0;
+	return elem;
+}
+
+show_notice( pop, streak )
+{
+	// Disconnect frees a client's hudelems; nothing to clean up after it.
+	self endon( "disconnect" );
+
+	elems = [];
+	y = NOTICE_Y;
+
+	if ( isDefined( pop.icon ) )
+	{
+		icon = self notice_elem( y );
+		icon setShader( pop.icon, NOTICE_ICON_SIZE, NOTICE_ICON_SIZE );
+		elems[ elems.size ] = icon;
+		y += NOTICE_ICON_SIZE + 4;
+	}
+
+	if ( isDefined( pop.title ) )
+	{
+		title = self notice_elem( y );
+		title.font = "objective";
+		title.fontScale = 2.0;
+		title.color = ( 1, 0.85, 0.3 );
+		title.glowColor = ( 0.6, 0.3, 0.05 );
+		title.glowAlpha = 0.6;
+		title setText( pop.title );
+		elems[ elems.size ] = title;
+		y += 26;
+	}
+
+	sub = self notice_elem( y );
+	sub.font = "objective";
+	sub.fontScale = 1.5;
+	sub.color = ( 1, 1, 1 );
+	sub.label = &"ZOMBIE_ROUNDSTREAK";
+	sub setValue( streak );
+	elems[ elems.size ] = sub;
+
+	for ( i = 0; i < elems.size; i++ )
+	{
+		elems[ i ] fadeOverTime( 0.25 );
+		elems[ i ].alpha = 1;
+	}
+
+	codolprintln( "CoDOL zm perkpop: " + self.name + " notice " + pop.name + " icon " + describe( pop.icon ) +
+		" streak " + streak );
+
+	wait( NOTICE_TIME );
+
+	for ( i = 0; i < elems.size; i++ )
+	{
+		if ( !isDefined( elems[ i ] ) )
+			continue;
+		elems[ i ] fadeOverTime( 0.5 );
+		elems[ i ].alpha = 0;
+	}
+	wait( 0.5 );
+
+	for ( i = 0; i < elems.size; i++ )
+	{
+		if ( isDefined( elems[ i ] ) )
+			elems[ i ] destroy();
+	}
 }
 
 // T5's perk lifetime: every drunk effect ends on a down.  The streak ends too,
@@ -492,141 +617,6 @@ reset_streak( reason )
 	self.perkpop_streak = 0;
 	if ( isDefined( self.perkpop_slots ) )
 		self publish_hud();
-}
-
-// --------------------------------------------------------------------------
-// USING ONE.  _killstreaks.gsc killstreakUseWaiter / codolRewardActionWaiter,
-// reduced to two fixed slots.
-// --------------------------------------------------------------------------
-
-watch_weapon_change()
-{
-	self endon( "disconnect" );
-	for ( ;; )
-	{
-		self waittill( "weapon_change", weapon );
-		if ( !isDefined( weapon ) )
-			continue;
-
-		index = self slot_for_weapon( weapon );
-		if ( index < 0 )
-		{
-			if ( weapon != "none" )
-				self.perkpop_last_weapon = weapon;
-			continue;
-		}
-		self thread drink( index, weapon );
-	}
-}
-
-// Selecting the weapon already held raises no weapon_change; the action
-// slot's own command does (C1 action ids 19/21, codol_script_notify.c).
-watch_action_slots()
-{
-	self endon( "disconnect" );
-	self notifyOnPlayerCommand( "perkpop_slot_2", "+actionslot 2" );
-	self notifyOnPlayerCommand( "perkpop_slot_3", "+actionslot 3" );
-	self thread watch_action_slot( 0, "perkpop_slot_2" );
-	self thread watch_action_slot( 1, "perkpop_slot_3" );
-}
-
-watch_action_slot( index, event )
-{
-	self endon( "disconnect" );
-	for ( ;; )
-	{
-		self waittill( event );
-		slot = self.perkpop_slots[ index ];
-		if ( !isDefined( slot ) || slot.count <= 0 )
-			continue;
-		if ( self getCurrentWeapon() == slot.pop.weapon )
-			self thread drink( index, slot.pop.weapon );
-	}
-}
-
-// forced: test verb only -- skips the held-weapon check, which a test client
-// cannot satisfy (it never raises a weapon; see test_verb "drink").
-drink( index, weapon, forced )
-{
-	self endon( "disconnect" );
-
-	if ( is_true( self.perkpop_busy ) )
-		return;
-
-	slot = self.perkpop_slots[ index ];
-	if ( !isDefined( slot ) || slot.count <= 0 || !is_player_valid( self ) )
-	{
-		self switch_back( weapon );
-		return;
-	}
-
-	key = slot.pop.effect;
-	if ( is_true( self.perkpop_active[ key ] ) )
-	{
-		// Already under this effect: refuse without spending the charge.
-		self play_sound_on_ent( "perkpop_deny" );
-		codolprintln( "CoDOL zm perkpop: " + self.name + " already has " + key + "; " + slot.name + " kept" );
-		self switch_back( weapon );
-		return;
-	}
-
-	self.perkpop_busy = true;
-	codolprintln( "CoDOL zm perkpop: " + self.name + " drinks " + slot.name );
-	self play_sound_on_ent( "perkpop_open" );
-
-	// The item's fire time (2000 ms, codol_checkweapon) is the drink.
-	finished = true;
-	for ( t = 0; t < 40; t++ )
-	{
-		wait( 0.05 );
-		if ( !is_player_valid( self ) || ( !is_true( forced ) && self getCurrentWeapon() != weapon ) )
-		{
-			finished = false;
-			break;
-		}
-	}
-
-	if ( !finished )
-	{
-		self.perkpop_busy = false;
-		codolprintln( "CoDOL zm perkpop: " + self.name + " stopped drinking " + slot.name + "; charge kept" );
-		return;
-	}
-
-	slot.count--;
-	self play_sound_on_ent( "perkpop_swallow" );
-	self apply_effect( key );
-
-	self switch_back( weapon );
-	if ( slot.count <= 0 )
-	{
-		self takeWeapon( weapon );
-		self setActionSlot( index + 2, "" );
-	}
-
-	self.perkpop_busy = false;
-}
-
-switch_back( weapon )
-{
-	if ( self getCurrentWeapon() != weapon )
-		return;
-
-	back = self.perkpop_last_weapon;
-	if ( isDefined( back ) && back != weapon && self hasWeapon( back ) )
-	{
-		self switchToWeapon( back );
-		return;
-	}
-
-	primaries = self getWeaponsListPrimaries();
-	for ( i = 0; i < primaries.size; i++ )
-	{
-		if ( self slot_for_weapon( primaries[ i ] ) >= 0 )
-			continue;
-		self switchToWeapon( primaries[ i ] );
-		return;
-	}
 }
 
 // --------------------------------------------------------------------------
@@ -888,8 +878,6 @@ scavenger_resupply()
 	for ( i = 0; i < primaries.size; i++ )
 	{
 		weapon = primaries[ i ];
-		if ( self slot_for_weapon( weapon ) >= 0 )
-			continue;
 		stock = self getWeaponAmmoStock( weapon );
 		room = weaponMaxAmmo( weapon ) - stock;
 		add = weaponClipSize( weapon );
@@ -1016,8 +1004,7 @@ carpenter_c4_think( owner, blocker )
 // Test verbs, reached from _codol_equiptest through level.codolEquipTestPerkpop:
 //   set scr_codol_equiptest "perkpop <client> character <zmN>" another roster row's pops
 //   set scr_codol_equiptest "perkpop <client> rounds <n>"   end n rounds for him
-//   set scr_codol_equiptest "perkpop <client> use <0|1>"    switch to the item (real path)
-//   set scr_codol_equiptest "perkpop <client> drink <0|1>"  drink, held-weapon check skipped
+//   set scr_codol_equiptest "perkpop <client> grant <0|1>"  award slot 0/1 now (notice + effect)
 //   set scr_codol_equiptest "perkpop <client> select <weapon>" switch + log current weapon
 //   set scr_codol_equiptest "perkpop <client> down"         last stand, revive 3 s later
 //   set scr_codol_equiptest "perkpop <client> keepperk"     give specialty_perkpop_zm
@@ -1063,7 +1050,8 @@ test_verb( player, tokens )
 		}
 		break;
 
-	case "use":
+	case "grant":
+		// The award the round end gives, without waiting for the streak.
 		index = 0;
 		if ( tokens.size > 3 )
 			index = int( tokens[ 3 ] );
@@ -1073,32 +1061,10 @@ test_verb( player, tokens )
 			codolprintln( "CoDOL zm perkpop test: " + player.name + " has no perk pop in slot " + index );
 			break;
 		}
-		codolprintln( "CoDOL zm perkpop test: " + player.name + " selects " + slot.pop.weapon +
-			" (has " + player hasWeapon( slot.pop.weapon ) + ", charges " + slot.count + ", current " +
-			player getCurrentWeapon() + ")" );
-		player switchToWeapon( slot.pop.weapon );
-		// A test client that is not a combat bot builds usercmds only while
-		// a scripted hold is active (codol_bot.c CODOL_BotBuildCommand), and
-		// the command is what carries the requested weapon into pmove.  Lean
-		// (0x40) is held because it changes nothing the drink depends on.
-		if ( is_true( player.isbot ) )
-			player codol_botPressButtons( 64, 4 );
-		player thread test_watch_weapon( 4 );
-		break;
-
-	case "drink":
-		// The real drink path with the held-weapon check skipped: a test
-		// client never raises any weapon (not even its pistol), so the
-		// weapon_change that starts a drink cannot happen on a probe.
-		index = 0;
-		if ( tokens.size > 3 )
-			index = int( tokens[ 3 ] );
-		slot = player.perkpop_slots[ index ];
-		if ( !isDefined( slot ) )
-			break;
-		player drink( index, slot.pop.weapon, true );
-		codolprintln( "CoDOL zm perkpop test: " + player.name + " after drink: " + slot.name + " charges " + slot.count +
-			", item held " + player hasWeapon( slot.pop.weapon ) );
+		streak = player.perkpop_streak;
+		if ( streak < slot.pop.cost )
+			streak = slot.pop.cost;
+		player award_slot( index, streak );
 		break;
 
 	case "select":
@@ -1218,13 +1184,13 @@ test_verb( player, tokens )
 		{
 			slot = player.perkpop_slots[ i ];
 			if ( isDefined( slot ) )
-				charges = charges + slot.name + "=" + slot.count + " ";
+				charges = charges + slot.name + "=" + slot.earned + " ";
 		}
 		primaries = player getWeaponsListPrimaries();
 		codolprintln( "CoDOL zm perkpop test: " + player.name + " streak " + player.perkpop_streak +
 			" hud " + player getKillstreak() + " ids " + player getKillstreakID( 1 ) + "/" + player getKillstreakID( 2 ) +
 			" targets " + player getKillstreakTarget( 1 ) + "/" + player getKillstreakTarget( 2 ) +
-			" charges " + charges + "active " + active + "current " + player getCurrentWeapon() +
+			" earned " + charges + "active " + active + "current " + player getCurrentWeapon() +
 			" primaries " + primaries.size + " limit " +
 			player maps\mp\gametypes\_zombiemode_weapons::player_weapon_limit() );
 		break;
