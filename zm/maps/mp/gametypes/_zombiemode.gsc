@@ -515,7 +515,47 @@ Callback_PlayerConnect()
 	// expected-player count, so the first player to reach "begin" opens it.
 	flag_set( "all_players_connected" );
 
+	self thread onMenuResponse();
 	self thread spawnPlayer();
+}
+
+// The one-Escape resume.  C1's Scaleform pause menu (common_mp
+// scaleform/default/codoingame.gfx, codo.controllers.PauseMenuController::
+// onESCPressedHandle) answers the closing Escape on its root page in every
+// category -- zm included -- with
+//
+//     ScriptMenuResponse( "class", "back" );   // -> "mr <id> <slot> back"
+//     closePauseMenu();                        // setdvar cl_paused 0
+//
+// but that only hides the movie.  The legacy sf_pausemenu_minimap panel it
+// opened stays up and focused with KEYCATCH_UI set, so the next key -- the
+// second Escape -- is what C1 spends closing it (UI_KeyEvent 0x005F3760).
+// Multiplayer never shows this because maps\mp\gametypes\_menus.gsc answers
+// "back" with closepopupMenu() + closeInGameMenu(); this script set does not
+// load _menus.gsc and had no menuresponse handler at all.  ("class" is not
+// precached here, so the menu argument arrives as "-1"; only the response
+// matters.)
+//
+// closeInGameMenu is C1 'H' (0x005F5160): with the pause menu mode still 2
+// it runs one pass of the two-pass legacy teardown 0x005F4F20.  The first
+// pass closes the panel, the second releases KEYCATCH_UI -- the same pair
+// closeMenu() sends as 'r','r' for script menus (mode 6 only, so 'r' does
+// nothing here).  closepopupMenu is skipped: a bare 'v' on an unprecached
+// slot 0 makes C1 print an error and send "mr 0 bad" back.
+onMenuResponse()
+{
+	self endon( "disconnect" );
+
+	for ( ;; )
+	{
+		self waittill( "menuresponse", menu, response );
+
+		if ( response != "back" )
+			continue;
+
+		self closeInGameMenu();
+		self closeInGameMenu();
+	}
 }
 
 Callback_PlayerDisconnect()
