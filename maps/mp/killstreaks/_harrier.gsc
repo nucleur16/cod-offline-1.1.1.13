@@ -170,7 +170,10 @@ harrierLeave()
 	self setVehGoalPos( pathEnd, 1 );
 	self waittill ( "goal" );
 	
-	level.airPlane[level.airPlane.size - 1] = undefined; 
+	// IW4 pops a plane it never pushed (level.airPlane is filled nowhere),
+	// which indexes -1 on an empty array.
+	if ( isDefined( level.airPlane ) && level.airPlane.size > 0 )
+		level.airPlane[level.airPlane.size - 1] = undefined;
 
 	self notify ( "harrier_gone" );
 	self thread harrierDelete();
@@ -990,7 +993,10 @@ harrierDestroyed()
 harrierExplode()
 {
 	self playSound( "harrier_jet_crash" );
-	level.airPlane[level.airPlane.size - 1] = undefined; 
+	// IW4 pops a plane it never pushed (level.airPlane is filled nowhere),
+	// which indexes -1 on an empty array.
+	if ( isDefined( level.airPlane ) && level.airPlane.size > 0 )
+		level.airPlane[level.airPlane.size - 1] = undefined;
 
 	deathAngles = self getTagAngles( "tag_deathfx" );		
 	playFx( level.harrier_deathfx, self getTagOrigin( "tag_deathfx" ), anglesToForward( deathAngles ), anglesToUp( deathAngles ) );
