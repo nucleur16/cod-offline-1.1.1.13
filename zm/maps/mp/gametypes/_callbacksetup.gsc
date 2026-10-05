@@ -88,10 +88,12 @@ CodeCallback_PlayerLastStand( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWe
 Called when an actor has been killed.  self is the actor.
 T5 MP _callbacksetup.gsc CodeCallback_ActorKilled; the engine hands it the
 killing hit's means of death, weapon and HIT LOCATION
-(codol_actor_lifecycle.cpp ActorKilledCallback).  The actor "damage" notify
-carries no hit location (its partName is empty for actors), so this is where
-a zombie headshot is visible at all.  CodeCallback_ActorDamage is deliberately
-NOT defined: defining it would gate every actor's damage on finishActorDamage.
+(codol_actor_lifecycle.cpp ActorKilledCallback).  Actors are traced through
+their hit boxes, so sHitLoc is the struck location ("head", "neck", ...); the
+actor "damage" notify carries the struck bone as partName, not sHitLoc.
+CodeCallback_ActorDamage is deliberately NOT defined: defining it would gate
+every actor's damage on finishActorDamage.  Without it the engine still
+scales each hit by its location multiplier once, as T5 G_DamageActor does.
 ================*/
 CodeCallback_ActorKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset )
 {

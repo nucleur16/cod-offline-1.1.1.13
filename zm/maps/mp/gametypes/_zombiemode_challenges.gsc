@@ -314,7 +314,7 @@ watch_kills()
 		if ( isDefined( zombie ) )
 		{
 			// The engine's own account of the killing hit first; the
-			// damage notify's fields (no hit location on an actor) after.
+			// damage notify's fields (a bone name, not a hit location) after.
 			mod = zombie.zm_kill_mod;
 			hit_location = zombie.zm_kill_hitloc;
 			weapon = zombie.zm_kill_weapon;

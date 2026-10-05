@@ -43,9 +43,11 @@
 //     impacts/flesh_hit_* set.  So every bullet hit on a zombie also plays
 //     the blue gush at the hit point, oriented back at the shooter.
 //   * damageLocation is not a field here.  The "damage" notify's 8th
-//     argument is the struck BONE (see _zombiemode_score.gsc), so the hit
-//     location is classified from the bone name; T5 hitLocation names are
-//     accepted as well.
+//     argument is the struck BONE (see _zombiemode_score.gsc): a bullet is
+//     traced through the zombie's hit boxes (codol_actor_spawn.cpp, svFlags
+//     bit 2), so partName is the bone the round met, and the hit location is
+//     classified from that bone name; T5 hitLocation names are accepted as
+//     well.  Only a hit that names no bone falls back to the shot line.
 //   * T5 refuses to gib heads AND limbs with the starting pistol.  Here the
 //     pistol may still pop a head on a killing headshot -- the round-1 weapon
 //     otherwise never shows the feature -- but limbs keep T5's rule.
@@ -102,9 +104,14 @@ zombie_gib_on_damage()
 		if ( !self zombie_should_gib( amount, mod ) )
 			continue;
 
+		// The struck bone first; the shot line only for a hit that names none.
 		location = gib_location( partName );
+		source = "bone";
 		if ( location == "none" && !is_explosive_mod( mod ) )
+		{
 			location = self gib_location_from_ray( point, direction );
+			source = "ray";
+		}
 
 		// scr_codol_gibtest (developer only) sets this.
 		if ( is_true( level.zm_gib_diag ) )
@@ -113,7 +120,8 @@ zombie_gib_on_damage()
 			if ( isDefined( weapon ) )
 				diag_weapon = weapon;
 			codolprintln( "CoDOL zm gib: zombie " + self getEntityNumber() + " " + mod + " " + amount +
-				" health " + self.health + " weapon " + diag_weapon + " part '" + partName + "' -> " + location );
+				" health " + self.health + " weapon " + diag_weapon + " model '" + modelName + "' tag '" + tagName +
+				"' part '" + partName + "' -> " + location + " (" + source + ")" );
 		}
 
 		if ( self head_should_gib( attacker, mod, point, location, weapon ) )
@@ -413,15 +421,16 @@ gib_location( part )
 	return "other";
 }
 
-// The location of a hit whose notify names no bone.  MEASURED on a zm probe
-// (2026-10-05, scr_codol_gibtest shoot): a bullet that strikes a zombie
-// reaches script with modelName, tagName and partName all EMPTY -- the actor
-// is traced as a capsule, not through its hit boxes -- while point is where
-// the round met the capsule and direction is the shot.  So the struck part is
-// the skeleton bone the shot's line passes closest to (T5 derive_damage_refs
-// does the same with the blast point), counting only bones at or past the
-// entry point.  A line that passes no bone within 16 units hit nothing that
-// comes off.
+// FALLBACK: the location of a hit whose notify names no bone.  Until
+// 2026-10-05 every bullet on a zombie arrived that way (the actor was traced
+// as a capsule, so modelName, tagName and partName were all empty); actors are
+// now traced through their hit boxes and a bullet names the struck bone.  What
+// still arrives without one -- a doDamage with a point and no trace, or a
+// zombie whose DObj the trace could not pose -- is placed here: the struck
+// part is the skeleton bone the shot's line passes closest to (T5
+// derive_damage_refs does the same with the blast point), counting only bones
+// at or past the entry point.  A line that passes no bone within 16 units hit
+// nothing that comes off.
 gib_location_from_ray( point, direction )
 {
 	if ( !isDefined( point ) || !isDefined( direction ) || lengthSquared( direction ) < 0.0001 )

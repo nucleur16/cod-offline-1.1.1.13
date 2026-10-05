@@ -174,8 +174,12 @@ player_add_points_kill_bonus( mod, hit_location )
 	// every c_zom_*_body carries j_head, j_neck, j_spine4, j_spineupper,
 	// j_spinelower, j_helmet among its 73 bones.
 	//
-	// The T5 hitLocation names are kept as accepted aliases so that a caller
-	// which does supply one still scores; they simply never arrive today.
+	// Since 2026-10-05 actors are traced through their hit boxes, so a
+	// bullet's partName is the bone the round met (it was empty while the
+	// actor was a capsule, and this bonus never paid).  A head-model hit
+	// names a bone of the attached head (j_head and the face bones), hence
+	// the head-word test after the switch.  The T5 hitLocation names are
+	// accepted aliases, for a caller holding sHitLoc (CodeCallback_ActorKilled).
 	switch( hit_location )
 	{
 	case "j_head":
@@ -200,6 +204,12 @@ player_add_points_kill_bonus( mod, hit_location )
 	case "torso_upper":
 	case "torso_lower":
 		score = level.zombie_vars[ "zombie_score_bonus_torso" ];
+		break;
+
+	default:
+		// Any other head bone (the attached head's face bones) is a headshot.
+		if ( maps\mp\gametypes\_zombiemode_gib::gib_location( hit_location ) == "head" )
+			score = level.zombie_vars[ "zombie_score_bonus_head" ];
 		break;
 	}
 
