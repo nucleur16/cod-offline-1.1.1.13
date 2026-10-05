@@ -700,6 +700,85 @@ static void PatchPatchDir(void)
     Log("patch folder: %d zone(s) load from memory ahead of code_pre_gfx", g_patchZoneCount);
 }
 
+/* GPU rating. Com_Init registers "2658" (the benchmark score) as Dvar_RegisterInt(default 0,
+ * min 0, max 20000, archive) @ 0x5988C8 and then calls 0x597DA0: when the saved score is 0, or
+ * the saved GPU name ("2289") differs from the detected one, it runs the 2014 GPU benchmark
+ 0xA7A1E0 (call @ 0x597DFD, logs "GPU rating: %d") and Dvar_SetInt()s the result.
+ * Any current card scores 30000-50000, outside the domain, so the set is refused
+ * ("'37087' is not a valid value for dvar '2658'") and the score stays 0. Autoconfigure
+ * (0x597AE0, configure_mp.csv; the gpu_rating rows @ 0x5976D0 apply the first row whose
+ * rating <= "2658") then falls off the bottom of the table: com_belowMinSpec 1 and the
+ * lowest preset, which saves r_picmip_limit 1, r_picmip_bump_limit 2, r_picmip_spec_limit 2
+ * (and r_specular 0, sm_enable 0, ...). R_PickPicmip (0xA92DF0) floors r_picmip/_bump/_spec
+ * at those *_limit dvars in automatic AND manual mode, so every texture loads one mip down,
+ * normal and specular maps two, and the menu cannot raise it. The score is never saved, so
+ * the benchmark runs again on every launch.
+ *   1. The benchmark result is clamped to the dvar's maximum, so it is stored and the
+ *      benchmark stops re-running.
+ *   2. Autoconfigure is re-run once in the launch where that happens: the "has the hardware
+ *      changed" check 0x596560 (called @ 0x597D31 when com_recommendedSet "1908" is already
+ *      set) also answers yes. That replaces the stored low preset (and its *_limit floors)
+ *      with the top-rated row. Later launches find a nonzero score and skip both. */
+#define GPU_RATING_MAX          20000
+#define BENCH_CALL_VA           0x00597DFDu
+#define BENCH_FUNC_VA           0x00A7A1E0u
+#define HWCHANGED_CALL_VA       0x00597D31u
+#define HWCHANGED_FUNC_VA       0x00596560u
+#define GPU_RATING_REG_VA       0x005988C8u
+
+static BOOL g_reconfigure;
+
+static int __cdecl BenchmarkHook(void)
+{
+    int rating = ((int(__cdecl *)(void))(DWORD_PTR)BENCH_FUNC_VA)();
+    if (rating > GPU_RATING_MAX) {
+        Log("gpu rating: benchmark scored %d, stored as %d; autoconfigure re-runs once",
+            rating, GPU_RATING_MAX);
+        rating = GPU_RATING_MAX;
+    }
+    if (rating > 0) g_reconfigure = TRUE; /* a failed benchmark (0) would re-run it forever */
+    return rating;
+}
+
+static int __cdecl HardwareChangedHook(void)
+{
+    int changed = ((unsigned char(__cdecl *)(void))(DWORD_PTR)HWCHANGED_FUNC_VA)();
+    return (changed & 0xFF) || g_reconfigure;
+}
+
+static BOOL CallsTarget(DWORD va, DWORD target)
+{
+    const BYTE *call = (const BYTE *)(DWORD_PTR)va;
+    LONG rel = (LONG)(target - (va + 5));
+    return Readable(call, 5) && call[0] == 0xE8 && memcmp(call + 1, &rel, 4) == 0;
+}
+
+static void RedirectCall(DWORD va, void *hook)
+{
+    LONG rel = (LONG)((DWORD_PTR)hook - (va + 5));
+    WriteCode((BYTE *)(DWORD_PTR)va + 1, &rel, 4);
+}
+
+static void PatchGpuRating(void)
+{
+    /* push desc ; push 1 (archive) ; push 20000 ; push ebx ; push ebx ; push "2658" */
+    static const BYTE kReg[] = { 0x68, 0xAD, 0xFE, 0xC2, 0x00, 0x6A, 0x01, 0x68, 0x20, 0x4E, 0x00, 0x00,
+                                 0x53, 0x53, 0x68, 0xD8, 0x1A, 0xC6, 0x00 };
+    const BYTE *reg = (const BYTE *)(DWORD_PTR)GPU_RATING_REG_VA;
+    if (!Readable(reg, sizeof(kReg)) || memcmp(reg, kReg, sizeof(kReg)) != 0) {
+        Log("gpu rating: bytes at 0x%08X do not match, not patched", GPU_RATING_REG_VA);
+        return;
+    }
+    if (!CallsTarget(BENCH_CALL_VA, BENCH_FUNC_VA) || !CallsTarget(HWCHANGED_CALL_VA, HWCHANGED_FUNC_VA)) {
+        Log("gpu rating: calls at 0x%08X / 0x%08X do not match, not patched",
+            BENCH_CALL_VA, HWCHANGED_CALL_VA);
+        return;
+    }
+    RedirectCall(BENCH_CALL_VA, (void *)BenchmarkHook);
+    RedirectCall(HWCHANGED_CALL_VA, (void *)HardwareChangedHook);
+    Log("gpu rating: benchmark clamped to %d, low-spec texture floors reset once", GPU_RATING_MAX);
+}
+
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 static void __cdecl TakeOver(void)
 {
@@ -709,6 +788,7 @@ static void __cdecl TakeOver(void)
     PatchRenderGate();
     PatchDvarRegistrations();
     PatchPlainConfig();
+    PatchGpuRating();
     PatchAltTab();
     PatchRawMouse();
     PatchScoresOpen();
