@@ -317,6 +317,7 @@ vending_trigger_think()
 		if ( player.score < cost )
 		{
 			self play_sound_on_ent( "perk_deny" );
+			player maps\mp\gametypes\_zombiemode_audio::no_cash_vox();
 			wait( 0.5 );
 			continue;
 		}
@@ -530,6 +531,7 @@ vending_weapon_upgrade()
 		if ( player.score < cost )
 		{
 			self play_sound_on_ent( "perk_deny" );
+			player maps\mp\gametypes\_zombiemode_audio::no_cash_vox();
 			wait( 0.5 );
 			continue;
 		}

@@ -36,8 +36,10 @@
 //   onPlayerSpawned  :1598
 //   player_damage_override :4544  -- the lethal-hit-becomes-a-down rule.
 //
-// NOT TAKEN from round_think, and why: change_zombie_music (no zm music
-// aliases are registered), powerup_round_start (the power-up drop system is a
+// change_zombie_music lives in _zombiemode_audio, driven by the
+// start_of_round / end_of_round / end_game notifies below.
+//
+// NOT TAKEN from round_think, and why: powerup_round_start (the power-up drop system is a
 // module of its own; the kis_*_zm pickups exist as weapons but nothing drops
 // them yet), UploadStats / bbPrint / update_leaderboards (no stats backend),
 // spectators_respawn (T5's spectator path needs spawnSpectator, and
@@ -449,6 +451,11 @@ Callback_StartGameType()
 	// Challenge progress, experience and the games log: listens for the
 	// notifies the subsystems above send.  Before the first player begins.
 	maps\mp\gametypes\_zombiemode_challenges::init();
+
+	// Character quotes, round music and level ambience (T5
+	// _zombiemode_audio).  Listens for the round and purchase notifies the
+	// subsystems above send.
+	maps\mp\gametypes\_zombiemode_audio::init();
 
 	codolprintln( "CoDOL zm: subsystems initialised; starting the round loop" );
 

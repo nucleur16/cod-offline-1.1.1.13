@@ -715,6 +715,7 @@ door_buy()
 	if ( who.score < cost )
 	{
 		play_sound_at_pos( "no_purchase", self.origin );
+		who maps\mp\gametypes\_zombiemode_audio::no_cash_vox();
 		return false;
 	}
 
@@ -911,6 +912,7 @@ debris_think()
 		if ( who.score < cost )
 		{
 			play_sound_at_pos( "no_purchase", self.origin );
+			who maps\mp\gametypes\_zombiemode_audio::no_cash_vox();
 			continue;
 		}
 

@@ -278,6 +278,7 @@ trap_use_think( trap )
 
 		if ( who.score < trap.zombie_cost )
 		{
+			who maps\mp\gametypes\_zombiemode_audio::no_cash_vox();
 			codolprintln( "CoDOL zm trap: " + trap._trap_id + " refused to " + who.name + " (" + who.score + " points, costs " + trap.zombie_cost + ")" );
 			continue;
 		}

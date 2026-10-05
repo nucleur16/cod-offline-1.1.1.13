@@ -485,6 +485,7 @@ weapon_spawn_think()
 			if ( player.score < cost )
 			{
 				self play_sound_on_ent( "no_purchase" );
+				player maps\mp\gametypes\_zombiemode_audio::no_cash_vox();
 				wait( 0.5 );
 				continue;
 			}
@@ -504,6 +505,7 @@ weapon_spawn_think()
 			// CHALLENGE_ZM_WALLWEAPONS "buy &&1 wall weapons"; ammo is not one.
 			player maps\mp\gametypes\_zombiemode_challenges::zm_challenge_inc( "zm_wallweapons" );
 			player play_sound_on_ent( "purchase" );
+			player maps\mp\gametypes\_zombiemode_audio::purchase_vox();
 			wait( 0.5 );
 			continue;
 		}
@@ -521,6 +523,7 @@ weapon_spawn_think()
 		if ( player.score < refill_cost )
 		{
 			self play_sound_on_ent( "no_purchase" );
+			player maps\mp\gametypes\_zombiemode_audio::no_cash_vox();
 			wait( 0.5 );
 			continue;
 		}
@@ -861,6 +864,7 @@ treasure_chest_think()
 			if ( who.score < cost )
 			{
 				self play_sound_on_ent( "no_purchase" );
+				who maps\mp\gametypes\_zombiemode_audio::no_cash_vox();
 				wait( 0.5 );
 				continue;
 			}
@@ -936,6 +940,7 @@ treasure_chest_think()
 			self notify( "user_grabbed_weapon" );
 			user treasure_chest_give_weapon( weapon );
 			level notify( "zm_cortex_event", "weapon" );   // _zombiemode_cortex reaction
+			user maps\mp\gametypes\_zombiemode_audio::box_weapon_vox( weapon );
 			// CHALLENGE_ZM_CRATEWEAPONS "buy &&1 items from the mystery box":
 			// counted when the bought item is taken.
 			user maps\mp\gametypes\_zombiemode_challenges::zm_challenge_inc( "zm_crateweapons" );
