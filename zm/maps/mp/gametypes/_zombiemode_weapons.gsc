@@ -82,9 +82,26 @@
 // animtrees/zm_magic_box.atr (codo_treasure_chest_box_open,
 // codo_treasure_chest_box_close, which animate exactly those bones), and
 // that zone's animlists/common_zombie.animlist registers the tree
-// "=zm_magic_box" with both, so the client knows it.  The lid now plays them
-// through PrecacheMpAnim / ScriptModelPlayAnim, the name-based animated-prop
-// path maps/mp/_animatedmodels.gsc uses.
+// "=zm_magic_box" with both, so the client knows it.
+//
+// THE LID, take two (fixed 2026-10-05, "the box doesn't animate properly").
+// The first fix played those clips through PrecacheMpAnim /
+// ScriptModelPlayAnim.  That is the IW4 animated-prop path, and C1 starts
+// every clip it carries at a RANDOM phase (MEASURED, C1 0x43fd9c: SetTime to
+// flrand(0, duration) / duration -- swaying trees start out of step), after a
+// one-second blend: the lid popped part-way (or all the way) open instead of
+// sliding.  The lid now plays them the T5 way, setAnimKnobRestart on a
+// script model, which this server delivers through the snapshot
+// animation-command channel (C1 0x443e90) from time 0, and re-sends from the
+// server's own pose to anyone who sees the box later
+// (src/codol/script/codol_script_model_tree.h).
+//
+// THE WEAPON (same fix).  T5's model rises out of the box: spawned at the
+// chest origin and moved up 40 units over 3 s (accel 2, decel 0.9) while it
+// cycles (T5 :1960, commented out there only because T5 moved the spin to
+// CSC, which C1 does not have), then sinks back over the 12 s the player has
+// to take it (T5 :2337 timer_til_despawn).  The previous port spawned it
+// already floating 40 units up and never moved it.
 //
 // THE WEAPON TABLE IS CoDOL's, NOT T5's.  T5's init_weapons (:222) names
 // ak74u_zm / mp40_zm / ray_gun_zm and so on.  MEASURED 2026-09-20 from
@@ -108,9 +125,9 @@
 
 #include maps\mp\gametypes\_zombiemode_utility;
 
-// C1's box lid animations (THE LID, above).  Declared so the server builds the
-// tree the client registers from common_zombie.animlist; the plays are by
-// name, so no %animation reference is compiled.
+// C1's box lid animations (THE LID, above): the tree the client registers from
+// common_zombie.animlist, and the one the lid's %anim references compile
+// against.
 #using_animtree( "zm_magic_box" );
 
 init()
@@ -556,10 +573,6 @@ treasure_chest_init()
 {
 	flag_init( "chest_has_been_used" );
 
-	// THE LID: C1's open/close xanims, played by name on the lid model.
-	precacheMpAnim( "codo_treasure_chest_box_open" );
-	precacheMpAnim( "codo_treasure_chest_box_close" );
-
 	level.chests = getEntArray( "treasure_chest_use", "targetname" );
 
 	if ( level.chests.size < 1 )
@@ -571,6 +584,14 @@ treasure_chest_init()
 	for ( i = 0; i < level.chests.size; i++ )
 	{
 		level.chests[ i ] get_chest_pieces();
+
+		// THE LID: give it its animtree now (clearing nothing), so C1 builds
+		// the lid's DObj with that tree from the first snapshot.  A tree that
+		// first appeared with the first open would reach the client in the
+		// same snapshot as the open command, before the DObj was rebuilt to
+		// take it.
+		if ( isDefined( level.chests[ i ].chest_lid ) )
+			level.chests[ i ].chest_lid clearAnim( %codo_treasure_chest_box_open, 0 );
 
 		if ( !isDefined( level.chests[ i ].zombie_cost ) )
 			level.chests[ i ].zombie_cost = 950;
@@ -722,15 +743,17 @@ get_chest_pieces()
 
 // T5 :1752,:1763, with C1's lid: T5 rolls its hinged lid 105 degrees; C1's
 // split lid is opened and closed by its own animations (THE LID, above).
+// Knob: the clip replaces the other one; restart: it plays from its start
+// every time (each clip ends holding its last frame, open or shut).
 treasure_chest_lid_open()
 {
-	self scriptModelPlayAnim( "codo_treasure_chest_box_open" );
+	self setAnimKnobRestart( %codo_treasure_chest_box_open, 1, 0.2, 1 );
 	play_sound_at_pos( "open_chest", self.origin );
 }
 
 treasure_chest_lid_close()
 {
-	self scriptModelPlayAnim( "codo_treasure_chest_box_close" );
+	self setAnimKnobRestart( %codo_treasure_chest_box_close, 1, 0.2, 1 );
 	play_sound_at_pos( "close_chest", self.origin );
 }
 
@@ -985,11 +1008,14 @@ treasure_chest_weapon_spawn( player )
 	if ( !isDefined( angles ) )
 		angles = ( 0, 0, 0 );
 
+	// THE WEAPON (above): it starts inside the box and rises while it cycles.
+	floatHeight = 40;
 	if ( !isDefined( self.weapon_model ) )
 	{
-		self.weapon_model = spawn( "script_model", origin + ( 0, 0, 40 ) );
+		self.weapon_model = spawn( "script_model", origin );
 		self.weapon_model.angles = angles + ( 0, 90, 0 );
 	}
+	self.weapon_model moveTo( origin + ( 0, 0, floatHeight ), 3, 2, 0.9 );
 
 	rand = undefined;
 	number_cycles = 40;
@@ -1040,6 +1066,11 @@ treasure_chest_weapon_spawn( player )
 		codolprintln( "CoDOL zm box: teddy bear, the box moves (move " + level.chest_moves + ")" );
 		return undefined;
 	}
+
+	// T5 :2337 timer_til_despawn: back down into the box over the 12 s the
+	// player has to take it (treasure_chest_timeout); the think loop deletes
+	// it on the grab or the timeout.
+	self.weapon_model moveTo( origin, 12, 6 );
 
 	return rand;
 }

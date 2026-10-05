@@ -8,6 +8,7 @@
 //                       trigger, then take the weapon (every 3rd pull lets the
 //                       box time out instead).  Waits out a teddy-bear move.
 //   dump                each spot's pieces, visibility and rubble.
+//   weapon              the live box's floating weapon model and its height.
 //   dropscan            run powerup_drop (armed) at every zombie_spawner and
 //                       exterior_goal struct (outside) and at every player
 //                       spawn, wall buy and box spot (inside); report which
@@ -55,6 +56,16 @@ boxtest_watch()
 
 		case "dump":
 			boxtest_dump();
+			break;
+
+		case "weapon":
+			// The live box's floating weapon: where it is right now (it rises
+			// out of the box while it cycles and sinks back while it waits).
+			chest = level.chests[ level.chest_index ];
+			if ( isDefined( chest.weapon_model ) )
+				codolprintln( "CoDOL boxtest: weapon model " + chest.weapon_model.model + " at " + chest.weapon_model.origin + ", " + ( chest.weapon_model.origin[ 2 ] - chest.chest_origin.origin[ 2 ] ) + " above the chest origin" );
+			else
+				codolprintln( "CoDOL boxtest: no weapon model" );
 			break;
 
 		case "dropscan":
@@ -150,6 +161,7 @@ boxtest_use( clientnum, n )
 		wait( 0.1 );
 		codolprintln( "CoDOL boxtest: pass " + pass + " valid " + is_player_valid( player ) + " use " + player useButtonPressed() + " holds " + player getCurrentWeapon() + " score " + player.score );
 		chest notify( "trigger", player );
+		level thread boxtest_weapon_track( chest, pass );
 
 		// The roll: 40 cycles, about 4.5 s.
 		wait( 5.5 );
@@ -184,6 +196,22 @@ boxtest_use( clientnum, n )
 
 		while ( is_true( chest._box_open ) )
 			wait( 0.25 );
+	}
+}
+
+// The floating weapon's height above the chest origin, once a second for the
+// pull: it rises 40 while it cycles and sinks back while it waits.
+boxtest_weapon_track( chest, pass )
+{
+	for ( t = 0; t < 18; t++ )
+	{
+		wait( 1 );
+		if ( !isDefined( chest.weapon_model ) || !isDefined( chest.chest_origin ) )
+		{
+			codolprintln( "CoDOL boxtest: pass " + pass + " t+" + ( t + 1 ) + " no weapon model" );
+			return;
+		}
+		codolprintln( "CoDOL boxtest: pass " + pass + " t+" + ( t + 1 ) + " weapon " + chest.weapon_model.model + " " + ( chest.weapon_model.origin[ 2 ] - chest.chest_origin.origin[ 2 ] ) + " above the chest origin" );
 	}
 }
 
