@@ -500,6 +500,7 @@ weapon_spawn_think()
 
 			player maps\mp\gametypes\_zombiemode_score::minus_to_player_score( cost );
 			player weapon_give( weapon_name );
+			level notify( "zm_cortex_event", "weapon" );   // _zombiemode_cortex reaction
 			// CHALLENGE_ZM_WALLWEAPONS "buy &&1 wall weapons"; ammo is not one.
 			player maps\mp\gametypes\_zombiemode_challenges::zm_challenge_inc( "zm_wallweapons" );
 			player play_sound_on_ent( "purchase" );
@@ -934,6 +935,7 @@ treasure_chest_think()
 
 			self notify( "user_grabbed_weapon" );
 			user treasure_chest_give_weapon( weapon );
+			level notify( "zm_cortex_event", "weapon" );   // _zombiemode_cortex reaction
 			// CHALLENGE_ZM_CRATEWEAPONS "buy &&1 items from the mystery box":
 			// counted when the bought item is taken.
 			user maps\mp\gametypes\_zombiemode_challenges::zm_challenge_inc( "zm_crateweapons" );

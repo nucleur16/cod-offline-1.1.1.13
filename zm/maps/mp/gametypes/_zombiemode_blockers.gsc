@@ -340,6 +340,7 @@ blocker_trigger_think()
 				break;
 
 			self replace_chunk( chunk );
+			level notify( "zm_cortex_event", "repair" );   // _zombiemode_cortex reaction
 
 			if ( isDefined( self.clip ) )
 			{
@@ -778,6 +779,7 @@ door_opened()
 	}
 
 	play_sound_at_pos( "purchase", self.origin );
+	level notify( "zm_cortex_event", "door" );   // _zombiemode_cortex reaction
 
 	for ( i = 0; i < self.doors.size; i++ )
 		self.doors[ i ] thread door_activate();

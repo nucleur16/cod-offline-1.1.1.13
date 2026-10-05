@@ -863,6 +863,13 @@ zombie_think()
 
 			if ( isDefined( player ) )
 				self setGoalPos( player.origin );
+
+			// CoDOL Cortex taunt: now and then the zombie stops, the voice
+			// that drives the horde speaks through it (red eyes, blue mouth)
+			// and it resumes the chase.  Run here, on the thread that owns
+			// the goal and the board tear, so the pause overlaps neither.
+			if ( self maps\mp\gametypes\_zombiemode_cortex::cortex_should_taunt( player ) )
+				self maps\mp\gametypes\_zombiemode_cortex::cortex_taunt( player );
 		}
 
 		// T5 :455.  The round raised level.zombie_move_speed since this actor

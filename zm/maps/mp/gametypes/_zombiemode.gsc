@@ -440,6 +440,7 @@ Callback_StartGameType()
 	// immediately, so every machine has to be waiting before it runs.
 	maps\mp\gametypes\_zombiemode_power::init();
 	maps\mp\gametypes\_zombiemode_spawner::init();
+	maps\mp\gametypes\_zombiemode_cortex::init();
 	// Power-ups LAST: get_valid_powerup asks the blockers module whether any
 	// barrier is damaged and the perks module which machines this map has,
 	// so both have to have run.

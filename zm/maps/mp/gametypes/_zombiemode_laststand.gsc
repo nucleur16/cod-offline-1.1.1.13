@@ -223,6 +223,7 @@ player_laststand()
 
 	// Every perk_think and every drink is waiting on this.
 	self notify( "player_downed" );
+	level notify( "zm_cortex_event", "death" );   // _zombiemode_cortex reaction
 
 	// _zombiemode.gsc:4700: when nobody is left standing the game is over at
 	// once -- unless this is the solo player's Quick Revive life.
