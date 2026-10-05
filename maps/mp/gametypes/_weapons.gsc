@@ -1390,6 +1390,11 @@ watchForThrowbacks()
 		grenade.threwBack = true;
 		self thread incPlayerStat( "throwbacks", 1 );
 
+		// CoDOL ch_engineer_pro (C1 mp/allChallengesTable.csv id 51): "Throw
+		// back &&1 enemy grenades with the Engineer perk".
+		if ( self _hasPerk( "specialty_engineer" ) )
+			self thread maps\mp\gametypes\_missions::processChallenge( "ch_engineer_pro" );
+
 		grenade thread maps\mp\gametypes\_shellshock::grenade_earthQuake();
 		grenade.originalOwner = self;
 	}

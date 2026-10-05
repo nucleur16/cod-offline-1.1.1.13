@@ -319,7 +319,10 @@ cac_modified_damage( victim, attacker, damage, meansofdeath, weapon, impactPoint
 		// Recon Pro, IW5 cac_modified_damage: bullet damage from a non-killstreak
 		// weapon paints the victim. C1 selects modBulletPaint for paint_pro.
 		if ( isPlayer( attacker ) && attacker HasAbilityModifier( "modBulletPaint" ) && isDefined( weapon ) && !isKillstreakWeapon( weapon ) )
+		{
+			attacker maps\mp\gametypes\_missions::paintChallenge( victim, true );
 			victim thread setPainted( attacker );
+		}
 
 		if ( isPlayer( attacker ) && weaponInheritsPerks( weapon ) && attacker _hasPerk( "specialty_bulletdamage" ) && victim _hasPerk( "specialty_armorvest" ) )
 			damageAdd += 0;
@@ -338,7 +341,10 @@ cac_modified_damage( victim, attacker, damage, meansofdeath, weapon, impactPoint
 		// Recon, IW5 cac_modified_damage: another player's non-killstreak
 		// explosive paints the victim. C1 selects modExplosivePaint for paint.
 		if ( isPlayer( attacker ) && attacker != victim && attacker HasAbilityModifier( "modExplosivePaint" ) && isDefined( weapon ) && !isKillstreakWeapon( weapon ) )
+		{
+			attacker maps\mp\gametypes\_missions::paintChallenge( victim, false );
 			victim thread setPainted( attacker );
+		}
 
 		if ( isPlayer( attacker ) && weaponInheritsPerks( weapon ) && attacker _hasPerk( "specialty_explosivedamage" ) && victim _hasPerk( "_specialty_blastshield" ) )
 			damageAdd += 0;

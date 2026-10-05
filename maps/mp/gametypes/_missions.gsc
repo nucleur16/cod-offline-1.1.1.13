@@ -161,6 +161,7 @@ onPlayerConnect()
 		player thread monitorStreakReward();
 		player thread monitorScavengerPickup();
 		player thread monitorBlastShieldSurvival();
+		player thread monitorFlakJacketSurvival();
 		player thread monitorTacInsertionsDestroyed();
 		player thread monitorProcessChallenge();
 		player thread monitorKillstreakProgress();
@@ -246,6 +247,49 @@ monitorBlastShieldSurvival()
 		
 		waitframe();
 	}	
+}
+
+/*
+	CoDOL ch_flakjacket_pro (C1 mp/allChallengesTable.csv id 50,
+	CHALLENGE_SURVIVE_N_EXPLOSIVE_DAMAGE "Survive &&1 explosions with the Flak
+	Jacket perk").  Flak Jacket is the gate of Flak Jacket Pro in C1's
+	mp/coPerkStatsTable.csv; IW4 has neither, so nothing counted it.  The
+	notify is _damage.gsc's, the one Blast Shield's ch_masterblaster uses; the
+	frame's wait lets a lethal blast finish killing before it is counted.
+*/
+monitorFlakJacketSurvival()
+{
+	self endon ( "disconnect" );
+
+	for( ;; )
+	{
+		self waittill( "survived_explosion" );
+
+		waitframe();
+		if ( isReallyAlive( self ) && self _hasperk( "specialty_flakjacket" ) )
+			self processChallenge( "ch_flakjacket_pro" );
+	}
+}
+
+/*
+	CoDOL Recon challenges (C1 mp/allChallengesTable.csv): ch_paint_pro, id 46,
+	"Mark &&1 enemies with the Recon perk", and ch_bulletpaint, id 47, "Mark &&1
+	enemies with bullet damage while using Recon Pro".  Called on the painter by
+	_perks.gsc::cac_modified_damage just before it paints, so only a fresh mark
+	counts, not every further hit on an enemy that is already marked.
+*/
+paintChallenge( victim, byBullet )
+{
+	if ( !isPlayer( victim ) || victim == self )
+		return;
+	if ( level.teamBased && isDefined( victim.team ) && isDefined( self.team ) && victim.team == self.team )
+		return;
+	if ( victim maps\mp\perks\_perkfunctions::isPainted() )
+		return;
+
+	self processChallenge( "ch_paint_pro" );
+	if ( byBullet )
+		self processChallenge( "ch_bulletpaint" );
 }
 
 monitorTacInsertionsDestroyed()
@@ -1255,6 +1299,35 @@ ch_kills( data, time )
 		
 		if ( player _hasPerk( "specialty_fastreload" ) )
 			player processChallenge( "ch_sleightofhand_pro" );
+
+		/*
+			CoDOL's own perk challenges (C1 mp/allChallengesTable.csv); IW4 has
+			none of them, so none was ever counted and their Pro perks could
+			not be earned.  Each is the gate of its perk's Pro in C1's
+			mp/coPerkStatsTable.csv (column 13, tier 4).
+			  ch_quickdraw_pro, id 48: "Kill &&1 enemies while aiming down
+			    sights with the Quickdraw perk" (CHALLENGE_GET_N_KILLS_WHILE_ADS_2)
+			  ch_stalker_pro, id 42: "Kill &&1 enemies while aiming down sights
+			    with the Stalker perk" (CHALLENGE_GET_N_KILLS_WHILE_ADS)
+			  ch_marksman_pro, id 49: "Kill &&1 enemies with the Marksman perk"
+			Aiming is the killer's ADS fraction when the kill happened (see
+			playerKilled), nonzero as for the reflex/acog challenges above and
+			the complement of Steady Aim's hipfire rule.
+		*/
+		if ( !isKillstreakWeapon( data.sWeapon ) )
+		{
+			if ( isDefined( data.attackerAds ) && data.attackerAds > 0 )
+			{
+				if ( player _hasPerk( "specialty_quickdraw" ) )
+					player processChallenge( "ch_quickdraw_pro" );
+
+				if ( player _hasPerk( "specialty_stalker" ) )
+					player processChallenge( "ch_stalker_pro" );
+			}
+
+			if ( player _hasPerk( "specialty_marksman" ) )
+				player processChallenge( "ch_marksman_pro" );
+		}
 		
 		if ( player _hasPerk( "specialty_bling" ) && weaponAttachments.size == 2 )
 			player processChallenge( "ch_bling_pro" );
@@ -1580,6 +1653,11 @@ playerKilled( eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, sPrimaryWea
 	data.sHitLoc = sHitLoc;
 	data.time = gettime();
 	data.modifiers = modifiers;
+	// Read at the kill, not after the callbacks' wait: the ADS perk
+	// challenges ask whether the killer was aiming when the kill landed.
+	data.attackerAds = 0;
+	if ( isPlayer( attacker ) )
+		data.attackerAds = attacker playerAds();
 	
 	data.victimOnGround = data.victim isOnGround();
 	
@@ -2048,7 +2126,9 @@ processChallenge( baseName, progressInc, forceSetProgress )
 	if ( level.players.size < 2 )
 		return;
 	
-	if ( !self rankingEnabled() )
+	// A test client is never ranked; _codol_chtest (developer servers only)
+	// admits one it has bound to a test profile.
+	if ( !self rankingEnabled() && !( self.isbot && isDefined( self.codolChTest ) ) )
 		return;
 	
 	if ( !isDefined( progressInc ) )
