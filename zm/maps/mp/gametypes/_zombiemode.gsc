@@ -456,6 +456,9 @@ Callback_StartGameType()
 	// _zombiemode_audio).  Listens for the round and purchase notifies the
 	// subsystems above send.
 	maps\mp\gametypes\_zombiemode_audio::init();
+	// Story intel: the secret pickups, the scoreboard intel list and the
+	// collectibles profile bits.  After challenges, before the first player.
+	maps\mp\gametypes\_zombiemode_intel::init();
 
 	codolprintln( "CoDOL zm: subsystems initialised; starting the round loop" );
 
