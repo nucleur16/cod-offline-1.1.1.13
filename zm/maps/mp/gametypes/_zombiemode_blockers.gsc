@@ -298,7 +298,15 @@ blocker_trigger_think()
 	// volume, not a usable trigger), although its touch event still lets the
 	// player repair boards.  Publish the same hint to the touching player
 	// while they can repair; clear it before leaving or deleting the trigger.
+	//
+	// The touch volume is not where T5 drew the prompt.  Black Ops' SP
+	// Player_GetUseList (BlackOps.exe 817db0) offers a trigger_radius like
+	// any other use entity: when the eye is within 72 units of the centre of
+	// its bounds (818235).  Repairing still only needs the touch and the held
+	// use button (T5 :1401), so a player at the edge of the 96-unit cylinder
+	// can repair without the prompt, exactly as in T5.
 	repair_hint = get_zombie_hint( "default_reward_barrier_piece" );
+	hint_centre = trigger.origin + ( 0, 0, height * 0.5 );
 
 	for ( ;; )
 	{
@@ -316,9 +324,7 @@ blocker_trigger_think()
 			return;
 		}
 
-		// The revive prompt wins while the player also stands in a revive trigger.
-		if ( isDefined( repair_hint ) && is_player_valid( player ) && !player in_revive_trigger() )
-			player forceUseHintOn( repair_hint );
+		hint_shown = false;
 
 		for ( ;; )
 		{
@@ -334,8 +340,19 @@ blocker_trigger_think()
 			if ( !player isTouching( trigger ) )
 				break;
 
+			// The revive prompt wins while the player also stands in a revive trigger.
 			if ( player in_revive_trigger() )
 				break;
+
+			if ( isDefined( repair_hint ) )
+			{
+				in_reach = distanceSquared( player getEye(), hint_centre ) <= 72 * 72;
+				if ( in_reach && !hint_shown )
+					player forceUseHintOn( repair_hint );
+				else if ( !in_reach && hint_shown )
+					player forceUseHintOff();
+				hint_shown = in_reach;
+			}
 
 			if ( !player use_button_held() )
 			{
