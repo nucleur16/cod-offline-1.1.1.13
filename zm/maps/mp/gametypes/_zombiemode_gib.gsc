@@ -671,6 +671,7 @@ zombie_head_gib( attacker, mod )
 	// The glow lives on the head's eye bones; stopFxOnTag on a bone that is
 	// gone is a script error, so it is stopped first (T5 :2643 does the same).
 	self maps\mp\gametypes\_zombiemode_spawner::zombie_eye_glow_stop();
+	self maps\mp\gametypes\_zombiemode_cortex::cortex_overlay_off();
 
 	self detach( head, "" );
 	if ( isDefined( self.torsoDmg5 ) )

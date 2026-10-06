@@ -1,6 +1,6 @@
-// zm Cortex taunts: a hunting zombie now and then stops, the voice that
-// drives the cyborg horde speaks through it, and its eyes burn red and its
-// mouth blue while it does.
+// zm Cortex taunts: now and then the voice that drives the cyborg horde
+// speaks through ALL of it at once -- every hunting zombie stops and plays a
+// taunt, and every zombie's eyes burn red and mouth blue for the line.
 //
 // CoDOL-ORIGINAL BEHAVIOUR.  T5 has no counterpart; every name below is read
 // from the C1 1.1.1.13 zones, not invented.  MEASURED 2026-10-05:
@@ -22,10 +22,10 @@
 //   (subtitle prefix SUBTITLE_ZOMBIE_CORTEX_CRTX_; every value starts with
 //   "^1<mysterious voice>: ^7" -- e.g. REACTION_REPAIR_02 is "What's the
 //   point of doing this?", the line players report seeing).  The
-//   aliases are 120/600 distance-falloff sounds, i.e. positional, so they are
-//   played on the zombie.  cortex_backstory and cortex_zm_<map>_0N (2.2-6.4 s,
-//   lab/zone intrusion announcements) are deliberately NOT in the taunt pool:
-//   they outlast the stop clip and are announcer lines, not reactions.
+//   aliases are 120/600 distance-falloff sounds, i.e. positional.
+//   cortex_backstory and cortex_zm_<map>_0N (2.2-6.4 s, lab/zone intrusion
+//   announcements) are deliberately NOT in the taunt pool: they outlast the
+//   stop clip and are announcer lines, not reactions.
 //
 //   ANIMATION.  animlists/common_zombie.animlist (common_gametype_zm, and its
 //   patch_common_gametype_zm replacement) lists ai_zombie_taunts_5 and
@@ -40,32 +40,49 @@
 //   looping layout) and zombie/mouth_glow_blue.  The c_zom_*_head models
 //   carry j_eyeball_le, j_eyeball_ri and tag_mouth.
 //
+// THE EVENT.  A level thread (cortex_horde_think) paces the events.  When
+// one fires it publishes level.cortex_event (id, alias, end time) and:
+//   - lays the overlay on every living zombie that still has its head;
+//   - wakes every zombie's hunt loop (notify "cortex_wake"), so the stops
+//     start together instead of within the next one-second poll;
+//   - plays the line ONCE per listener: for each player the nearest zombie
+//     within earshot (550) speaks it, and a speaker already in earshot of a
+//     player covers that player too, so nobody hears overlapping copies.  A
+//     player with no zombie in earshot gets it on their own entity, so every
+//     player hears the line exactly once.
+// Each zombie decides for itself, on its own zombie_think thread -- the
+// thread that owns the goal and the board tear -- whether it may stop
+// (cortex_should_join): hunting, legs, not trap-frozen, not ignoreall (a
+// window climb), and the native actor reports safeToChangeScript (false
+// during a traversal and a melee swing).  A zombie tearing boards or
+// following a point of interest never reaches the hunt-loop hook.  One that
+// may not stop just glows and keeps doing what it was doing.
+//
 // THE NORMAL EYES ARE NOT TOUCHED.  The red eyes and blue mouth are an
-// overlay: played on top of whatever eye glow the spawner keeps, and stopped
-// again (stopFxOnTag on the same effect and tags) when the stop ends or the
-// zombie dies.  Owners of the base eye glow can hide it for the duration:
-// self.cortex_taunting is true and "cortex_overlay_on" / "cortex_overlay_off"
-// are notified on the zombie around the overlay.
+// overlay: played on top of the spawner's eye glow and stopped again
+// (stopFxOnTag on the same effect and tags) when the event ends, when the
+// zombie dies, or -- before its head is detached -- by
+// _zombiemode_gib::zombie_head_gib.  Owners of the base eye glow can hide it
+// for the duration: self.cortex_taunting is true and "cortex_overlay_on" /
+// "cortex_overlay_off" are notified on the zombie around the overlay.
 //
 // THE PAUSE.  The stop is animscripted, i.e. the native T5 AIS_SCRIPTEDANIM
 // hold (codol_actor_lifecycle.cpp CODOL_ActorScriptedAnimBegin): the route
 // is dropped, velocity is zeroed and mode "normal" applies no route
 // translation, so the zombie stands where it is and turns to face the
-// player; stopanimscripted (or the clip's length) pops the state, clears the
-// route and the stuck detector, and the next frame's chase replans.  It is
-// started only from zombie_think's hunt loop -- the thread that owns the
-// actor's goal and the board tear -- so it can never overlap a tear, and only
-// while the native actor reports safeToChangeScript (false during a
-// traversal and during a melee swing).
+// player; stopanimscripted pops the state, clears the route and the stuck
+// detector, and the next frame's chase replans.  A player who walks up to a
+// stopped zombie (90 units) ends that zombie's stop early.
 //
-// PACING.  At most one zombie talks at a time; a round allows
-// scr_zm_cortex_per_round stops (default 3) spaced 20-40 s apart, the first
-// 12-25 s into the round; each zombie talks at most once.  A player's action
-// (board repair, door/debris, weapon, power, a player going down, a new round)
-// queues the matching reaction for the next stop and pulls it forward.
+// PACING.  scr_zm_cortex_per_round events per round (default 3), 20-40 s
+// apart, the first 12-25 s into the round, and only while some hunting
+// zombie is within 900 units of a player (someone is there to see it).  A
+// player's action (board repair, door/debris, weapon, power, a player going
+// down, a new round) queues the matching reaction for the next event and
+// pulls it forward.
 //
 // Dvars: scr_zm_cortex "0" turns it off.  scr_zm_cortex_test "1" (developer
-// servers only) removes the pacing for testing.
+// servers only) fires an event every 8 s with no round cap.
 
 #include maps\mp\gametypes\_zombiemode_utility;
 
@@ -101,13 +118,18 @@ init()
 	level.cortex_overlay_tags[ 0 ] = "j_eyeball_le";
 	level.cortex_overlay_tags[ 1 ] = "j_eyeball_ri";
 
+	// The overlay and the stops last as long as the longer taunt clip
+	// (taunts_5, 3.2 s); every reaction line is <= 2.2 s after a 0.3 s lead.
+	level.cortex_event_length = 3.2;
+	level.cortex_voice_range = 550;
+
 	level.cortex_round_count = 0;
 	level.cortex_next_time = 0;
 	level.cortex_last_time = 0;
-	level.cortex_active_time = 0;
-	level.cortex_active = false;
 	level.cortex_total = 0;
+	level.cortex_event_id = 0;
 
+	level thread cortex_horde_think();
 	level thread cortex_round_watch();
 	level thread cortex_event_watch();
 	level thread cortex_level_notify_watch( "master_switch_activated", "power" );
@@ -187,7 +209,7 @@ cortex_level_notify_watch( msg, category )
 	}
 }
 
-// Remember the reaction for the next stop.  pull: also bring the next stop
+// Remember the reaction for the next event.  pull: also bring the next event
 // forward (never closer than 6 s after the previous one).
 cortex_queue( category, life, pull )
 {
@@ -225,87 +247,243 @@ cortex_pick_category()
 	return category;
 }
 
-// --------------------------------------------------------------------------
-// Eligibility.  Called by zombie_think's hunt loop (about once a second per
-// zombie) with the player it is chasing.
-// --------------------------------------------------------------------------
-
-cortex_should_taunt( player )
+cortex_living_zombie( z )
 {
-	if ( !isDefined( level.cortex_lines ) || !cortex_enabled() )
+	if ( !isDefined( z ) || !isAlive( z ) )
+		return false;
+	return true;
+}
+
+// Is any hunting zombie close enough to a player for the stop to be seen?
+cortex_audience()
+{
+	if ( !isDefined( level.zombies ) )
 		return false;
 
+	players = getPlayers();
+	for ( i = 0; i < level.zombies.size; i++ )
+	{
+		z = level.zombies[ i ];
+		if ( !cortex_living_zombie( z ) )
+			continue;
+		if ( !isDefined( z.zm_path_phase ) || z.zm_path_phase != "hunt" )
+			continue;
+
+		for ( j = 0; j < players.size; j++ )
+		{
+			if ( is_player_valid( players[ j ] ) && distanceSquared( z.origin, players[ j ].origin ) < 900 * 900 )
+				return true;
+		}
+	}
+
+	return false;
+}
+
+cortex_horde_think()
+{
+	level endon( "end_game" );
+
+	for ( ;; )
+	{
+		wait( 0.5 );
+
+		if ( !cortex_enabled() )
+			continue;
+
+		now = getTime();
+		if ( cortex_test_mode() )
+		{
+			if ( now - level.cortex_last_time < 8000 )
+				continue;
+		}
+		else if ( now < level.cortex_next_time )
+			continue;
+
+		if ( level.cortex_round_count >= cortex_round_cap() )
+			continue;
+		if ( !cortex_audience() )
+			continue;
+
+		cortex_horde_event();
+	}
+}
+
+// --------------------------------------------------------------------------
+// One event: the overlay on the whole horde, every hunt loop woken so the
+// stops start together, and the line once per listener.
+// --------------------------------------------------------------------------
+
+cortex_horde_event()
+{
 	now = getTime();
-	test = cortex_test_mode();
+	level.cortex_round_count++;
+	level.cortex_total++;
+	level.cortex_last_time = now;
+	level.cortex_next_time = now + randomIntRange( 20000, 40000 );
 
-	// One voice at a time.  The time bound covers a talker that was removed
-	// without a death notify (zombie_delete): its cleanup never ran.
-	if ( level.cortex_active && now - level.cortex_active_time < 8000 )
+	category = cortex_pick_category();
+	level.cortex_last_category = category;
+
+	level.cortex_event_id++;
+	event = spawnStruct();
+	event.id = level.cortex_event_id;
+	event.category = category;
+	event.alias = level.cortex_lines[ category ];
+	event.end_time = now + int( level.cortex_event_length * 1000 );
+	level.cortex_event = event;
+
+	glowing = 0;
+	for ( i = 0; i < level.zombies.size; i++ )
+	{
+		z = level.zombies[ i ];
+		if ( !cortex_living_zombie( z ) )
+			continue;
+
+		if ( z cortex_overlay_on() )
+			glowing++;
+		z notify( "cortex_wake" );
+	}
+
+	// The voice starts once the stops have visibly begun.
+	wait( 0.3 );
+	speakers = cortex_speak( event.alias );
+
+	codolprintln( "CoDOL zm cortex: event " + event.id + " " + event.alias + " (" + category + ") round " +
+		diag_round() + " " + level.cortex_round_count + "/" + cortex_round_cap() + ": " + glowing +
+		" glowing, " + speakers + " speaker(s)" );
+
+	wait( level.cortex_event_length - 0.3 );
+
+	if ( isDefined( level.cortex_event ) && level.cortex_event.id == event.id )
+		level.cortex_event = undefined;
+	level notify( "cortex_event_over" );
+}
+
+// Play the alias once per listener; returns the number of speakers.
+cortex_speak( alias )
+{
+	speakers = [];
+	players = getPlayers();
+	range_sq = level.cortex_voice_range * level.cortex_voice_range;
+
+	for ( i = 0; i < players.size; i++ )
+	{
+		player = players[ i ];
+		if ( !isDefined( player ) )
+			continue;
+		if ( isDefined( player.sessionstate ) && player.sessionstate != "playing" )
+			continue;
+
+		// Already in earshot of a chosen speaker?
+		covered = false;
+		for ( j = 0; j < speakers.size; j++ )
+		{
+			if ( isDefined( speakers[ j ] ) && distanceSquared( speakers[ j ].origin, player.origin ) < range_sq )
+			{
+				covered = true;
+				break;
+			}
+		}
+		if ( covered )
+			continue;
+
+		best = undefined;
+		best_sq = range_sq;
+		for ( j = 0; j < level.zombies.size; j++ )
+		{
+			z = level.zombies[ j ];
+			if ( !cortex_living_zombie( z ) )
+				continue;
+			d = distanceSquared( z.origin, player.origin );
+			if ( d < best_sq )
+			{
+				best = z;
+				best_sq = d;
+			}
+		}
+
+		// No zombie in earshot: the player's own entity carries the line.
+		if ( !isDefined( best ) )
+			best = player;
+
+		speakers[ speakers.size ] = best;
+		best playSound( alias );
+	}
+
+	return speakers.size;
+}
+
+diag_round()
+{
+	if ( isDefined( level.round_number ) )
+		return level.round_number;
+	return 0;
+}
+
+// --------------------------------------------------------------------------
+// The stop.  Called by zombie_think's hunt loop with the player it chases;
+// runs on that thread and returns when the zombie is free to chase again.
+// --------------------------------------------------------------------------
+
+// The hunt loop's poll, cut short when an event starts.
+cortex_hunt_wait( seconds )
+{
+	if ( !isDefined( level.cortex_lines ) )
+	{
+		wait( seconds );
+		return;
+	}
+
+	self thread cortex_wake_timer( seconds );
+	self waittill( "cortex_wake" );
+}
+
+cortex_wake_timer( seconds )
+{
+	self endon( "death" );
+	self endon( "cortex_wake" );
+
+	wait( seconds );
+	self notify( "cortex_wake" );
+}
+
+cortex_should_join( player )
+{
+	if ( !isDefined( level.cortex_event ) )
 		return false;
-	if ( !test && now < level.cortex_next_time )
+	event = level.cortex_event;
+	// Too little of the line left for a stop to read as part of it.
+	if ( event.end_time - getTime() < 1500 )
 		return false;
-	if ( level.cortex_round_count >= cortex_round_cap() )
+	if ( isDefined( self.cortex_joined ) && self.cortex_joined == event.id )
 		return false;
 
-	if ( is_true( self.cortex_done ) || is_true( self.cortex_taunting ) )
-		return false;
 	if ( !is_true( self.has_legs ) || is_true( self.trap_frozen ) )
 		return false;
 	if ( !isDefined( self.zm_path_phase ) || self.zm_path_phase != "hunt" )
 		return false;
-	if ( !isDefined( self.headModel ) )
+	// A window climb holds ignoreall for its duration.
+	if ( is_true( self.ignoreall ) )
 		return false;
 	// The native actor clears this during a traversal and during a melee
 	// swing; animscripted would otherwise cut either one off.
 	if ( !is_true( self.safeToChangeScript ) )
 		return false;
-
-	if ( !isDefined( player ) || !is_player_valid( player ) )
+	// Already in reach: keep swinging rather than stand there.
+	if ( isDefined( player ) && distanceSquared( self.origin, player.origin ) < 90 * 90 )
 		return false;
-
-	// Far enough not to be about to swing, near enough that the player hears
-	// the line (the alias falls off at 600) and sees the stop.
-	dist_sq = distanceSquared( self.origin, player.origin );
-	if ( test )
-	{
-		if ( dist_sq > 1500 * 1500 )
-			return false;
-	}
-	else
-	{
-		if ( dist_sq < 220 * 220 || dist_sq > 650 * 650 )
-			return false;
-		if ( randomInt( 100 ) >= 35 )
-			return false;
-		if ( !bulletTracePassed( self.origin + ( 0, 0, 60 ), player.origin + ( 0, 0, 60 ), false, self ) )
-			return false;
-	}
 
 	return true;
 }
 
-// --------------------------------------------------------------------------
-// The stop.  Runs on zombie_think's own thread and returns when the zombie
-// is free to chase again.
-// --------------------------------------------------------------------------
-
-cortex_taunt( player )
+cortex_join( player )
 {
 	self endon( "death" );
 	self endon( "zombie_delete" );
 
-	now = getTime();
-	level.cortex_active = true;
-	level.cortex_active_time = now;
-	level.cortex_round_count++;
-	level.cortex_total++;
-	level.cortex_last_time = now;
-	level.cortex_next_time = now + randomIntRange( 20000, 40000 );
-	self.cortex_done = true;
+	event = level.cortex_event;
+	self.cortex_joined = event.id;
 
-	category = cortex_pick_category();
-	level.cortex_last_category = category;
-	alias = level.cortex_lines[ category ];
 	anime = level.cortex_taunt_anims[ randomInt( level.cortex_taunt_anims.size ) ];
 
 	yaw = self.angles[ 1 ];
@@ -315,35 +493,20 @@ cortex_taunt( player )
 		yaw = facing[ 1 ];
 	}
 
-	codolprintln( "CoDOL zm cortex: ent " + self getEntityNumber() + " stops for " + alias + " (" + category +
-		") round " + diag_round() + " stop " + level.cortex_round_count + "/" + cortex_round_cap() +
-		" total " + level.cortex_total );
-
 	self animscripted( "cortextaunt", self.origin, ( 0, yaw, 0 ), anime, "normal", %body, 1, 0.3 );
 
-	self thread cortex_taunt_cleanup();
-	self cortex_overlay_on();
-
-	// The voice starts once the stop has visibly begun.
-	wait( 0.3 );
-	self playSound( alias );
-
-	hold = getAnimLength( anime ) - 0.3;
+	hold = getAnimLength( anime );
+	left = ( event.end_time - getTime() ) / 1000;
+	if ( left < hold )
+		hold = left;
 	if ( hold < 0.5 )
 		hold = 0.5;
+
 	self thread cortex_hold_timer( hold );
 	self thread cortex_abort_watch();
 	self waittill( "cortex_hold_over" );
 
 	self stopanimscripted();
-	self notify( "cortex_taunt_end" );
-}
-
-diag_round()
-{
-	if ( isDefined( level.round_number ) )
-		return level.round_number;
-	return 0;
 }
 
 cortex_hold_timer( hold )
@@ -355,7 +518,7 @@ cortex_hold_timer( hold )
 	self notify( "cortex_hold_over" );
 }
 
-// A player who walks up to a talking zombie gets attacked, not ignored.
+// A player who walks up to a stopped zombie gets attacked, not ignored.
 cortex_abort_watch()
 {
 	self endon( "death" );
@@ -380,20 +543,29 @@ cortex_abort_watch()
 }
 
 // --------------------------------------------------------------------------
-// The red eyes / blue mouth overlay.
+// The red eyes / blue mouth overlay.  Returns true when it was laid.
 // --------------------------------------------------------------------------
 
 cortex_overlay_on()
 {
+	if ( is_true( self.cortex_overlay ) || is_true( self.head_gibbed ) || !isDefined( self.headModel ) )
+		return false;
+
 	self.cortex_taunting = true;
+	self.cortex_overlay = true;
 	self notify( "cortex_overlay_on" );
 
 	for ( i = 0; i < level.cortex_overlay_tags.size; i++ )
 		playFxOnTag( level._effect[ "cortex_eye_red" ], self, level.cortex_overlay_tags[ i ] );
 	playFxOnTag( level._effect[ "cortex_mouth_blue" ], self, "tag_mouth" );
-	self.cortex_overlay = true;
+
+	self thread cortex_overlay_cleanup();
+	return true;
 }
 
+// Must run while the head is still attached: stopFxOnTag on a bone the DObj
+// no longer has is a script error (zombie_head_gib calls this before it
+// detaches the head, as it does for the base eye glow).
 cortex_overlay_off()
 {
 	if ( !is_true( self.cortex_overlay ) )
@@ -408,28 +580,30 @@ cortex_overlay_off()
 	self notify( "cortex_overlay_off" );
 }
 
-// Ends the overlay and frees the voice slot however the stop ends: its own
+// Ends the overlay however the event ends for this zombie: the event's own
 // end, or death mid-line (the entity is still the dying actor on "death";
 // zombie_death_animscript stops the base eye glow on it the same way).
 // waittill_either is not used: its endon is thread-scoped on this VM, so a
 // "death" would end this whole thread before the overlay came off.
-cortex_taunt_cleanup()
+cortex_overlay_cleanup()
 {
-	self thread cortex_end_relay( "death" );
-	self thread cortex_end_relay( "cortex_taunt_end" );
+	self endon( "cortex_overlay_off" );
+
+	self thread cortex_end_relay( self, "death" );
+	self thread cortex_end_relay( level, "cortex_event_over" );
 
 	self waittill( "cortex_cleanup" );
-
-	level.cortex_active = false;
 
 	if ( isDefined( self ) )
 		self cortex_overlay_off();
 }
 
-cortex_end_relay( msg )
+cortex_end_relay( ent, msg )
 {
 	self endon( "cortex_cleanup" );
+	self endon( "cortex_overlay_off" );
 
-	self waittill( msg );
-	self notify( "cortex_cleanup" );
+	ent waittill( msg );
+	if ( isDefined( self ) )
+		self notify( "cortex_cleanup" );
 }
