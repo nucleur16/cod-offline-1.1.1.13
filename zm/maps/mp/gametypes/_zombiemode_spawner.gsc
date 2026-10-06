@@ -866,7 +866,7 @@ zombie_think()
 		{
 			node = self.first_node;
 			self.goalradius = 64;
-			self tear_into_building( node );
+			self zombie_tear_until_open( node );
 			self open_barrier_paths( node );
 			self zombie_climb_in( node );
 		}
@@ -919,7 +919,22 @@ zombie_think()
 		{
 			self tear_into_building( barrier );
 			self open_barrier_paths( barrier );
+			// Torn open from the hunt (a zombie that lost its spot, or one
+			// a repair sent back out): it climbs in through this window
+			// rather than chasing a player it may have no route to from
+			// outside, which left it against the outer wall.  The climb owns
+			// the goal (ignoreall), as the entrance climb does.
+			if ( all_chunks_destroyed( barrier.barrier_chunks ) )
+			{
+				self.ignoreall = true;
+				self zombie_climb_in( barrier );
+				self.ignoreall = false;
+				self.zm_path_phase = "hunt";
+			}
 			self.goalradius = 64;
+			// The tear can return at once (a crawler has no taunt to wait
+			// out); never spin this loop without yielding.
+			wait( 0.05 );
 			continue;
 		}
 
@@ -955,6 +970,46 @@ zombie_think()
 		}
 
 		wait( 1 );
+	}
+}
+
+// T5 tear_into_building :746 is one `while( 1 )` around the entrance window:
+// a zombie with no free attack spot taunts, waits 0.5 s and asks again; one
+// whose spot work ended with boards still up goes round again; it returns
+// only once every chunk is gone, and zombie_goto_entrance then opens the
+// window and the zombie climbs through.  This port's tear_into_building is
+// one pass (the hunt loop reuses it for the nearest barrier), so the
+// entrance walk loops it here.  Without the loop a zombie that found the
+// three spots taken (a crowd at one window) or did not reach its spot taunted
+// once and fell straight into the hunt from outside the building: it skipped
+// zombie_climb_in, and when the player was not reachable from the yard
+// (downed, upstairs behind closed debris, another graph component) its chase
+// ran it into the outer wall beside the window, where the crowd piled up.
+// Bounded where T5 is not: a zombie that fails to reach a spot four times
+// (geometry, not a crowd) is handed to the hunt as before.
+zombie_tear_until_open( node )
+{
+	self endon( "death" );
+	self endon( "zombie_delete" );
+
+	self.zm_spot_failures = 0;
+	for ( ;; )
+	{
+		if ( !isDefined( node ) || !isDefined( node.barrier_chunks ) || all_chunks_destroyed( node.barrier_chunks ) )
+			return;
+		if ( !isDefined( node.target ) || ( isDefined( node.script_noteworthy ) && node.script_noteworthy == "no_blocker" ) )
+			return;
+		if ( self.zm_spot_failures >= 4 )
+		{
+			codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " could not reach an attack spot at " + node.origin + " " + self.zm_spot_failures + " times; hunting instead" );
+			return;
+		}
+
+		self tear_into_building( node );
+
+		// T5 :793 wait( 0.5 ) between attack-spot requests.
+		if ( !all_chunks_destroyed( node.barrier_chunks ) )
+			wait( 0.5 );
 	}
 }
 
@@ -1664,6 +1719,8 @@ tear_into_building_inner( node )
 	if ( !wait_until_at_spot( self.attacking_spot, 15 ) )
 	{
 		codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " did not reach attack spot " + self.attacking_spot + " from " + self.origin + " in 15 s" );
+		if ( isDefined( self.zm_spot_failures ) )
+			self.zm_spot_failures++;
 		self reset_attack_spot();
 		return;
 	}
@@ -1739,9 +1796,26 @@ wait_until_at_spot( spot, timeout )
 	self.at_spot_goal = false;
 	self thread flag_on_goal();
 
+	// Arrival: the native "goal" (goalradius 2, floored at 4), or within 8
+	// units.  The old 32-unit acceptance stopped the walk up to 32 short and
+	// left the rest to the animscripted alignment slide, which has no step
+	// and stalled on the sill lip or the crowd in front of the window
+	// (MEASURED 2026-10-05: 5-8% of tears ran 10-32 units from their spot,
+	// the zombie clawing at the boards from behind the others).  32 units is
+	// still accepted once the walk has stopped getting closer for 1.5 s (a
+	// walk cycle's authored root-motion pause runs up to about a second).
+	best = distanceSquared( self.origin, spot );
+	best_time = getTime();
+
 	for ( ;; )
 	{
-		if ( self.at_spot_goal || distanceSquared( self.origin, spot ) < 1024 )
+		d = distanceSquared( self.origin, spot );
+		if ( d < best - 4 )
+		{
+			best = d;
+			best_time = getTime();
+		}
+		if ( self.at_spot_goal || d < 64 || ( d < 1024 && getTime() - best_time >= 1500 ) )
 		{
 			self notify( "at_spot_done" );
 			return true;
