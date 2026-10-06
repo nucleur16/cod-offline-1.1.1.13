@@ -152,10 +152,9 @@ change_zombie_music( state )
 	switch ( state )
 	{
 		case "game_start":
-			// C1's mus_zombie_start, the opening stinger T5's zm maps did not
-			// have (WaW's splash screen music had its slot).  Played in place
-			// of round 1's round-start stinger.
-			play_sound_2d_all( "mus_zombie_start" );
+			// Round 1 opens with the round-start stinger. mus_zombie_start is
+			// C1's longer menu track, not a match intro.
+			play_sound_2d_all( "mus_zombie_round_start" );
 			music_wave_start();
 			break;
 
