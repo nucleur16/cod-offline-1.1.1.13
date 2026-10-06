@@ -729,6 +729,8 @@ make_crawler()
 // actor becomes a corpse.
 zombie_death_animscript()
 {
+	// T5 :3353: a zombie killed at a window gives its attack spot back.
+	self reset_attack_spot();
 	self zombie_eye_glow_stop();
 	self do_zombies_playvocals( "death" );
 }
@@ -1525,14 +1527,32 @@ clear_zombies()
 // ==========================================================================
 
 // T5 :1114.  Reserve one of the barrier's three attack positions.
+//
+// Each reservation also records its holder (node.attack_spots_holder), and a
+// spot whose holder is gone, dead, or no longer reserving this window counts
+// as free.  MEASURED 2026-10-05 (VPS 17733, zm_asylum_sh, one match): 25
+// zombies were shot while holding a spot, and this port -- unlike T5, whose
+// zombie_death_animscript :3353 calls reset_attack_spot -- never released it.
+// Five windows, among them (125 -971 253) and (1119 -482.5 239.5), lost all
+// three spots that way; every later zombie sent there found none free and
+// taunted outside it for the rest of the match: the pile-ups the user saw
+// (up to 79 s motionless per zombie, 10+ zombies at one window).
 get_attack_spot( node )
 {
 	if ( !isDefined( node ) || !isDefined( node.attack_spots ) )
 		return false;
 
+	if ( !isDefined( node.attack_spots_holder ) )
+		node.attack_spots_holder = [];
+
 	indexes = [];
 	for ( i = 0; i < node.attack_spots.size; i++ )
 	{
+		if ( is_true( node.attack_spots_taken[ i ] ) && !attack_spot_holder_valid( node, i ) )
+		{
+			node.attack_spots_taken[ i ] = false;
+			node.attack_spots_holder[ i ] = undefined;
+		}
 		if ( !is_true( node.attack_spots_taken[ i ] ) )
 			indexes[ indexes.size ] = i;
 	}
@@ -1545,9 +1565,43 @@ get_attack_spot( node )
 	self.attacking_node = node;
 	self.attacking_spot_index = index;
 	node.attack_spots_taken[ index ] = true;
+	node.attack_spots_holder[ index ] = self;
 	self.attacking_spot = node.attack_spots[ index ];
 
 	return true;
+}
+
+// A reservation stands only while its zombie is alive and still holds this
+// window's spot.
+attack_spot_holder_valid( node, index )
+{
+	if ( !isDefined( node.attack_spots_holder ) )
+		return true;
+	holder = node.attack_spots_holder[ index ];
+	if ( !isDefined( holder ) )
+		return false;
+	if ( !isAlive( holder ) )
+		return false;
+	if ( !isDefined( holder.attacking_node ) || holder.attacking_node != node )
+		return false;
+	if ( !isDefined( holder.attacking_spot_index ) || holder.attacking_spot_index != index )
+		return false;
+	return true;
+}
+
+// T5 :815 / :858 / :920: once every board is down the window's reservations
+// are all dropped, so a zombie that arrives later is never turned away by a
+// stale claim.
+reset_all_attack_spots( node )
+{
+	if ( !isDefined( node ) || !isDefined( node.attack_spots_taken ) )
+		return;
+	for ( i = 0; i < node.attack_spots_taken.size; i++ )
+	{
+		node.attack_spots_taken[ i ] = false;
+		if ( isDefined( node.attack_spots_holder ) )
+			node.attack_spots_holder[ i ] = undefined;
+	}
 }
 
 // T5 :1100 reset_attack_spot.
@@ -1556,7 +1610,16 @@ reset_attack_spot()
 	if ( !isDefined( self.attacking_node ) || !isDefined( self.attacking_spot_index ) )
 		return;
 
-	self.attacking_node.attack_spots_taken[ self.attacking_spot_index ] = false;
+	node = self.attacking_node;
+	index = self.attacking_spot_index;
+	// Only this zombie's own claim: the spot may already have been freed as
+	// stale and handed to another zombie.
+	if ( !isDefined( node.attack_spots_holder ) || !isDefined( node.attack_spots_holder[ index ] ) || node.attack_spots_holder[ index ] == self )
+	{
+		node.attack_spots_taken[ index ] = false;
+		if ( isDefined( node.attack_spots_holder ) )
+			node.attack_spots_holder[ index ] = undefined;
+	}
 	self.attacking_node = undefined;
 	self.attacking_spot_index = undefined;
 	self.attacking_spot = undefined;
@@ -1731,6 +1794,7 @@ tear_into_building_inner( node )
 	if ( all_chunks_destroyed( node.barrier_chunks ) )
 	{
 		self reset_attack_spot();
+		reset_all_attack_spots( node );
 		return;
 	}
 
@@ -1777,6 +1841,7 @@ tear_into_building_inner( node )
 			codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " barrier " + node.origin + " is open" );
 			self stopanimscripted();
 			self reset_attack_spot();
+			reset_all_attack_spots( node );
 			return;
 		}
 

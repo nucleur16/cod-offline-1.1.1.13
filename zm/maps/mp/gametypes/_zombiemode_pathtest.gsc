@@ -90,6 +90,17 @@ pathtest_watch()
 			pathtest_report();
 			break;
 
+		case "shoottear":
+			percent = 25;
+			if ( tokens.size > 1 )
+				percent = int( tokens[ 1 ] );
+			level thread pathtest_shoot_tear( percent );
+			break;
+
+		case "repair":
+			level thread pathtest_repair( 6 );
+			break;
+
 		case "botto":
 			players = getPlayers();
 			if ( tokens.size >= 4 && players.size > 0 )
@@ -114,6 +125,68 @@ pathtest_watch()
 				break;
 			level thread pathtest_spawn_at( ( int( tokens[ 1 ] ), int( tokens[ 2 ] ), int( tokens[ 3 ] ) ), int( tokens[ 4 ] ) );
 			break;
+		}
+	}
+}
+
+// shoottear <percent>: what players do at a window, every 2 s each zombie
+// that is tearing boards (or waiting at its spot) dies with this chance.  A
+// zombie shot while it held an attack spot must give the spot back, or the
+// window starves (VPS 2026-10-05, zm_asylum_sh).
+pathtest_shoot_tear( percent )
+{
+	level notify( "pathtest_shoot_tear" );
+	level endon( "pathtest_shoot_tear" );
+	codolprintln( "CoDOL pathtest: shooting tearing zombies, " + percent + "% every 2 s" );
+	if ( percent <= 0 )
+		return;
+	for ( ;; )
+	{
+		wait( 2 );
+		if ( !isDefined( level.zombies ) )
+			continue;
+		zombies = level.zombies;
+		for ( i = 0; i < zombies.size; i++ )
+		{
+			z = zombies[ i ];
+			if ( !isDefined( z ) || !isAlive( z ) || !isDefined( z.attacking_spot ) )
+				continue;
+			if ( randomInt( 100 ) >= percent )
+				continue;
+			codolprintln( "CoDOL pathtest: shot ent " + z getEntityNumber() + " holding a spot at " + z.attacking_node.origin );
+			z.no_powerup_drop = true;
+			z doDamage( z.health + 100, z.origin );
+		}
+	}
+}
+
+// repair: every 6 s rebuild one torn board of every window (the player
+// repair loop's replace_chunk, flying board and mid_repair state included).
+pathtest_repair( seconds )
+{
+	level notify( "pathtest_repair" );
+	level endon( "pathtest_repair" );
+	codolprintln( "CoDOL pathtest: repairing a board per window every " + seconds + " s" );
+	for ( ;; )
+	{
+		wait( seconds );
+		if ( !isDefined( level.exterior_goals ) )
+			continue;
+		for ( i = 0; i < level.exterior_goals.size; i++ )
+		{
+			node = level.exterior_goals[ i ];
+			if ( !isDefined( node.barrier_chunks ) )
+				continue;
+			chunk = get_random_destroyed_chunk( node.barrier_chunks );
+			if ( !isDefined( chunk ) )
+				continue;
+			node thread maps\mp\gametypes\_zombiemode_blockers::replace_chunk( chunk, false );
+			if ( isDefined( node.clip ) )
+			{
+				node.clip enable_trigger();
+				node.clip disconnectpaths();
+				node.clip.paths_open = false;
+			}
 		}
 	}
 }
