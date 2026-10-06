@@ -131,6 +131,7 @@ init()
 
 	level.zombie_vars[ "zombie_drop_item" ] = 0;
 	level.zombie_vars[ "zombie_powerup_insta_kill_on" ] = 0;
+	level.zombie_vars[ "zombie_insta_kill" ] = 0;
 	level.zombie_vars[ "zombie_powerup_point_doubler_on" ] = 0;
 	level.zombie_vars[ "zombie_powerup_fire_sale_on" ] = 0;
 
@@ -881,9 +882,11 @@ double_points_powerup()
 }
 
 // T5 :1836 insta_kill_powerup + :1908 insta_kill_on_hud / :1935
-// time_remaning_on_insta_kill_powerup.  _zombiemode_score::player_add_points
-// already checks zombie_powerup_insta_kill_on, and the kill itself is landed
-// here so a hit while it is up is lethal.  Re-grabbing resets the time.
+// time_remaning_on_insta_kill_powerup.  zombie_insta_kill is T5's gate for
+// the kill itself (check_for_instakill below, run on every player hit by
+// _zombiemode_spawner::zombie_damage_watch); zombie_powerup_insta_kill_on
+// drives the HUD and _zombiemode_score's doubled kill bonus.  Re-grabbing
+// resets the time.
 insta_kill_powerup()
 {
 	level notify( "powerup_insta_kill" );
@@ -891,9 +894,61 @@ insta_kill_powerup()
 	if ( !timed_powerup_start( "insta_kill", "zombie_powerup_insta_kill_on", "zombie_powerup_insta_kill_time" ) )
 		return;
 
+	level.zombie_vars[ "zombie_insta_kill" ] = 1;
+
 	timed_powerup_wait( "insta_kill" );
 
+	level.zombie_vars[ "zombie_insta_kill" ] = 0;
 	level.zombie_vars[ "zombie_powerup_insta_kill_on" ] = 0;
+
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+		players[ i ] notify( "insta_kill_over" );
+}
+
+// T5 :1857 check_for_instakill.  self is the zombie a player just hit with
+// mod at hit_location (the struck bone on this server).  T5 kills it with
+// DoDamage( self.health * 10 ) under a stripped means-of-death name the
+// engine reads as MOD_UNKNOWN, so the death is scored as MOD_UNKNOWN at the
+// original hit location and _zombiemode_score doubles the location bonus.
+// Here doDamage takes only real means-of-death names, so MOD_UNKNOWN is passed
+// outright, and .damagemod / .damagelocation are set first: the caller is the
+// zombie's own "damage" watcher, which is not waiting while this runs and so
+// never sees the lethal hit's notify.
+check_for_instakill( player, mod, hit_location )
+{
+	if ( !isDefined( player ) || !isPlayer( player ) || !isAlive( player ) )
+		return;
+
+	if ( !is_true( level.zombie_vars[ "zombie_insta_kill" ] ) && !is_true( player.personal_instakill ) )
+		return;
+
+	if ( !isAlive( self ) || self.health <= 0 )
+		return;
+
+	if ( is_true( self.magic_bullet_shield ) )
+		return;
+
+	if ( isDefined( self.instakill_func ) )
+	{
+		self thread [[ self.instakill_func ]]();
+		return;
+	}
+
+	if ( isDefined( mod ) && mod == "MOD_MELEE" )
+		player.last_kill_method = "MOD_MELEE";
+	else
+		player.last_kill_method = "MOD_UNKNOWN";
+
+	if ( !is_true( self.no_gib ) )
+		self maps\mp\gametypes\_zombiemode_gib::zombie_head_gib( player, mod );
+
+	self.attacker = player;
+	self.damagemod = "MOD_UNKNOWN";
+	self.damagelocation = hit_location;
+
+	self doDamage( self.health * 10, self.origin, player, player, 0, "MOD_UNKNOWN" );
+	player notify( "zombie_killed" );
 }
 
 // The timed level power-ups' clock.  level.zm_powerup_end[ key ] is the

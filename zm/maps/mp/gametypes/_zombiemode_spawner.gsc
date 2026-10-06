@@ -822,6 +822,10 @@ zombie_damage_watch()
 			attacker maps\mp\gametypes\_zombiemode_score::player_add_points( "damage_ads", mod, partName );
 		else
 			attacker maps\mp\gametypes\_zombiemode_score::player_add_points( "damage", mod, partName );
+
+		// T5 zombie_damage :3654 / zombie_damage_ads :3712 end every hit with
+		// check_for_instakill: while Insta-Kill is up the hit is lethal.
+		self maps\mp\gametypes\_zombiemode_powerups::check_for_instakill( attacker, mod, partName );
 	}
 }
 
