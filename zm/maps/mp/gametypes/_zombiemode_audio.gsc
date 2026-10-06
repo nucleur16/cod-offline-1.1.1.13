@@ -25,7 +25,19 @@
 //  * Music: common_gametype_zm ships mus_zombie_start, mus_zombie_round_start,
 //    mus_zombie_round_over, mus_zombie_game_over and mus_zombie_wave_loop (the
 //    only looping one; all five are on C1's music channel 32), plus the perk
-//    machines' mus_perks_<perk>_jingle / _sting.
+//    machines' mus_perks_<perk>_jingle / _sting.  Their streamed files:
+//    mus_zombie_round_start.mp3, mus_zombie_round_over.mp3,
+//    mus_gameover_abracadavre.mp3, mus_zombie_start = hz_cliffhanger_escape_
+//    LR_1.mp3 and mus_zombie_wave_loop = makin_stealth.mp3 (T5's WAVE bed).
+//  * The match's ambient bed is NOT a zm-zone alias: CoDOL's zombie ambience
+//    track music/cyborg/cyborg_amb_scape_01.mp3 is referenced by exactly one
+//    alias in all of C1's zones, amb_mainmenu_zm in code_post_gfx_mp (and
+//    patch_code_post_gfx_mp), which every client and this server mount at
+//    startup: looping, streamed, 2D, channel 13 "menu", volume 0.678, 117.8 s
+//    (soundlength table in localized_code_post_gfx_mp).  There is no _02.. .
+//    Being a menu-channel alias rather than a music one, it plays as a looping
+//    2D local sound on every player (see AMBIENT BED below), under the
+//    stingers.
 //  * Ambience: amb_spooky_2d ships in all three zm map zones; zm_asylum_sh
 //    also ships the aliases its own sound structs name.  The prototype and
 //    training structs name amb_spooky / amb_zombies_*, which those zones do
@@ -130,10 +142,17 @@ alias_exists( alias )
 }
 
 // --------------------------------------------------------------------------
-// Music.  T5 change_zombie_music with C1's channels: the WAVE state's looping
-// bed is musicPlay'd, the alias stingers are 2D local sounds on every player
-// so they play over the bed, and the SILENCE state is musicStop.
+// Music.  T5 change_zombie_music with C1's assets: the WAVE state's looping
+// bed is CoDOL's cyborg_amb_scape_01 ambience (AMBIENT_BED), the alias
+// stingers are 2D local sounds on every player so they play over the bed, and
+// the SILENCE state stops the bed.
 // --------------------------------------------------------------------------
+
+// AMBIENT BED.  The alias that streams cyborg_amb_scape_01.mp3 (see the
+// header).  A looping menu-channel alias: playLocalSound starts it on one
+// client and stopLocalSound (C1 'h', by bank slot) ends it, so every player
+// carries it and a player who begins mid-round is started on "begin".
+AMBIENT_BED = "amb_mainmenu_zm";
 
 play_sound_2d_all( alias )
 {
@@ -183,10 +202,20 @@ change_zombie_music( state )
 
 music_wave_start()
 {
-	if ( is_true( level.zmb_wave_playing ) || !alias_exists( "mus_zombie_wave_loop" ) )
+	if ( is_true( level.zmb_wave_playing ) )
 		return;
+	if ( !alias_exists( AMBIENT_BED ) )
+	{
+		if ( getDvarInt( "developer" ) > 0 )
+			codolprintln( "CoDOL zm audio: ambient bed alias " + AMBIENT_BED + " is not loaded" );
+		return;
+	}
 	level.zmb_wave_playing = true;
-	musicPlay( "mus_zombie_wave_loop" );
+	if ( getDvarInt( "developer" ) > 0 )
+		codolprintln( "CoDOL zm audio: ambient bed " + AMBIENT_BED + " on" );
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+		players[ i ] ambient_bed_on();
 }
 
 music_wave_stop()
@@ -194,8 +223,37 @@ music_wave_stop()
 	if ( !is_true( level.zmb_wave_playing ) )
 		return;
 	level.zmb_wave_playing = false;
-	// T5's WAVE state fades out over 4 s (musicAliasloop( .., 0, 4 )).
-	musicStop( 4 );
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+		players[ i ] ambient_bed_off();
+}
+
+// self = player.  One loop per client: a second playLocalSound of a looping
+// alias would stack another copy, so the flag guards every start.
+ambient_bed_on()
+{
+	if ( is_true( self.zmb_bed_on ) )
+		return;
+	self.zmb_bed_on = true;
+	self playLocalSound( AMBIENT_BED );
+}
+
+ambient_bed_off()
+{
+	if ( !is_true( self.zmb_bed_on ) )
+		return;
+	self.zmb_bed_on = false;
+	self stopLocalSound( AMBIENT_BED );
+}
+
+// self = player.  A player who begins while the bed is playing joins it.
+ambient_bed_join()
+{
+	self endon( "disconnect" );
+	self waittill( "begin" );
+	wait( 0.05 );
+	if ( is_true( level.zmb_wave_playing ) )
+		self ambient_bed_on();
 }
 
 music_round_watch()
@@ -357,6 +415,7 @@ on_player_connect()
 	{
 		level waittill( "connected", player );
 		player thread player_vox_watchers();
+		player thread ambient_bed_join();
 	}
 }
 
