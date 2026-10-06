@@ -17,7 +17,9 @@
 //   rebuild_barrier_reward_reset:1724
 //   remove_chunk                :1729     -- state + notSolid, then the T5
 //                                            board flight (remove_chunk_fly).
-//   replace_chunk               :2174     -- state + Show + Solid only.
+//   replace_chunk               :2174     -- the "board" arm, animated: the
+//                                            board flies back from where it
+//                                            landed (see replace_chunk).
 //   trigger_delete_on_repair    :1689
 //   door_init / door_classify   :92,:171
 //   door_buy                    :240      -- solo purse branch (see the note in
@@ -98,7 +100,13 @@ init()
 	set_zombie_var( "rebuild_barrier_cap_per_round", 500 );
 	set_zombie_var( "zombie_board_tear_delay", 3 );
 
-	add_sound( "rebuild_barrier_piece", "zmb_cha_ching" );
+	// T5 _zombiemode.gsc:618-627.  All three ship in common_gametype_zm
+	// (docs/zone_assets/ALL_sound.txt).  rebuild_barrier_piece used to be
+	// zmb_cha_ching here, so a repair never made the hammer sound; the
+	// cha-ching is "purchase", played when the board pays out.
+	add_sound( "rebuild_barrier_piece", "zmb_repair_boards" );
+	add_sound( "rebuild_barrier_hover", "zmb_boards_float" );
+	add_sound( "barrier_rebuild_slam", "zmb_board_slam" );
 	add_sound( "purchase", "zmb_cha_ching" );
 	// CoDOL alias, not T5's.  MEASURED: T5's name is absent from
 	// docs/zone_assets/ALL_sound.txt and the engine logged
@@ -339,7 +347,14 @@ blocker_trigger_think()
 			if ( !isDefined( chunk ) )
 				break;
 
-			self replace_chunk( chunk );
+			// T5 :1545: the hammer sound on the board as the player starts it,
+			// then replace_chunk THREADED (T5 :1576) -- the board takes ~1.2 s
+			// to fly back, and only counts as repaired once it is in its slot.
+			fast = false;
+			if ( isDefined( player.perkpop_active ) )
+				fast = is_true( player.perkpop_active[ "carpenter" ] );
+			chunk play_sound_on_ent( "rebuild_barrier_piece" );
+			self thread replace_chunk( chunk, fast );
 			level notify( "zm_cortex_event", "repair" );   // _zombiemode_cortex reaction
 
 			if ( isDefined( self.clip ) )
@@ -368,6 +383,14 @@ blocker_trigger_think()
 				player maps\mp\gametypes\_zombiemode_score::player_add_points( "rebuild_board", cost );
 				player play_sound_on_ent( "purchase" );
 			}
+
+			// The board is still flying when the 1 s (or carpenter 0.25 s)
+			// delay ends.  When that was the last board, let it land before
+			// asking whether the window is whole, or the last board would end
+			// the loop through "no valid boards" and the window-rebuilt
+			// challenge and the carpenter C4 would never fire.
+			if ( !isDefined( get_random_destroyed_chunk( self.barrier_chunks ) ) )
+				wait_for_mid_repair( self.barrier_chunks, 3 );
 
 			if ( all_chunks_intact( self.barrier_chunks ) )
 			{
@@ -448,7 +471,8 @@ rebuild_barrier_reward_reset()
 //     as before; the last board is still in the air when it does, as in T5.
 //   * chunk.in_flight guards a repair that lands inside the ~1 s flight:
 //     replace_chunk unlinks the board from its launcher first, and the flight
-//     thread does not hide a board that has been repaired under it.
+//     thread does not hide a board whose repair has started under it (its
+//     state is no longer "destroyed").
 //
 // STILL NOT TAKEN: the bar / grate arms (:1770-:1900, :1995-:2060) and the
 // per-piece anim_grate_index (remove_chunk_rotate_grate :2083) -- no chunk of
@@ -524,8 +548,9 @@ remove_chunk_fly( chunk, node )
 
 	wait( time );
 
-	// A repair inside the flight has already unlinked and shown the board.
-	if ( is_true( chunk.destroyed ) )
+	// A repair inside the flight has already unlinked and shown the board
+	// and moved it to "mid_repair"; .destroyed stays true until it lands.
+	if ( chunk get_chunk_state() == "destroyed" )
 		chunk hide();
 
 	wait( 0.1 );
@@ -548,12 +573,14 @@ remove_chunk_fly( chunk, node )
 // because a rock barricade would then sound like wood.
 zombie_boardtear_audio_offset()
 {
-	if ( is_true( self.already_broken ) )
-		return;
-	self.already_broken = true;
-
+	// T5 gates only glass (and metal) on already_broken: a pane breaks once,
+	// a board sounds every time it is torn.  Gating every material made a
+	// board that had been repaired once tear off silently from then on.
 	if ( isDefined( self.material ) && self.material == "glass" )
 	{
+		if ( is_true( self.already_broken ) )
+			return;
+		self.already_broken = true;
 		self playSound( "zmb_break_glass_barrier" );
 		wait( randomFloatRange( 0.3, 0.6 ) );
 		self playSound( "zmb_break_glass_barrier" );
@@ -604,22 +631,178 @@ zombie_boardtear_offset_fx()
 	playFx( fx, self.origin + ( 0, -30, 0 ) );
 }
 
-// T5 :2174 replace_chunk, state half.
-replace_chunk( chunk )
+// T5 :2174 replace_chunk, the "board" arm, with its animation.
+//
+// THE BOARD FLIES BACK.  2026-10-05.  User report: rebuilding a window just
+// popped the board into its slot.  The previous pass set .origin/.angles to
+// og_origin/og_angles and showed the chunk in one frame.  T5 shows the board
+// where it LANDED after the tear (remove_chunk_fly leaves it hidden there,
+// outside the window on the floor) and flies it back.  T5 runs two blocks in
+// sequence for script_parameters "board" (:2208-:2240 then :2335-:2356):
+//
+//   Show(); hover sound "rebuild_barrier_hover" at the chunk
+//   RotateTo( angles + (0,-9,0), 0.1 ); RotateTo( angles + (0,18,0), 0.1 )
+//                                                  -- a wobble where it lies
+//   MoveTo( (x, y, og_z), 0.15 ); RotateTo( og_angles, 0.3 ); wait 0.2
+//                                                  -- rises to slot height,
+//                                                     turns square
+//   RotateTo( -9 ), RotateTo( +18 ), RotateTo( og_angles, 0.1 )
+//   MoveTo( og_origin, 0.1 ); waittill movedone    -- slams into the slot
+//   repair FX/quake thread, Solid(), update_states( "repaired" ),
+//   slam sound "barrier_rebuild_slam" at the chunk.
+//
+// The carpenter perk pop (T5's specialty_fastreload arm) skips the wobble:
+// RotateTo( og_angles, 0.15 ), wait 0.1, MoveTo( og_origin ).  T5 moves in
+// 0.05 s; that is shorter than one 20 Hz snapshot interval, so C1 could
+// receive the trajectory after it had already ended and only see the board
+// appear in its slot -- this uses 0.1 s.
+//
+// The waits are explicit rather than on "rotatedone"/"movedone", so a mover
+// notify that never comes cannot strand the board mid-air; after the last
+// move the origin and angles are written to the exact og values, which ends
+// the TR_LINEAR_STOP trajectory (C1 wire mode 3, interpolated by C1's
+// BG_EvaluateTrajectory) with a stationary one at the same spot.
+//
+// State while it flies (T5's "mid_repair"): not "destroyed", so the repair
+// loop does not pick it again and all_chunks_destroyed() is false (a zombie
+// does not mantle through a window whose board is coming back); not
+// "repaired", so all_chunks_intact() is false.  .destroyed stays TRUE until
+// the board lands, so get_closest_non_destroyed_chunk() does not hand a
+// zombie a board that is still in the air and remove_chunk() refuses it; a
+// second replace_chunk (the carpenter power-up) is refused by the state
+// check below.  The board is not solid until it is in its slot.
+replace_chunk( chunk, fast, via_powerup )
 {
-	chunk update_states( "repaired" );
-	chunk.destroyed = false;
+	if ( !isDefined( chunk ) )
+		return;
+	// Only a board that is down: not one already flying back, not one in
+	// its slot (or one a zombie is pulling on).
+	if ( chunk get_chunk_state() != "destroyed" )
+		return;
+
+	chunk update_states( "mid_repair" );
+	chunk notify( "mid_repair" );
+
 	// Repaired while still in the air: take it off the launcher first, or the
-	// origin/angles set below would be overwritten by the link next frame.
-	if ( is_true( chunk.in_flight ) && chunk islinked() )
+	// moves below would be overwritten by the link every frame.
+	if ( chunk islinked() )
 		chunk unlink();
-	if ( isDefined( chunk.og_origin ) )
-		chunk.origin = chunk.og_origin;
-	if ( isDefined( chunk.og_angles ) )
-		chunk.angles = chunk.og_angles;
+
+	og_origin = chunk.og_origin;
+	og_angles = chunk.og_angles;
+	if ( !isDefined( og_origin ) )
+		og_origin = chunk.origin;
+	if ( !isDefined( og_angles ) )
+		og_angles = chunk.angles;
+
+	how = "";
+	if ( is_true( fast ) )
+		how = " (carpenter)";
+	codolprintln( "CoDOL zm board: chunk " + chunk.script_noteworthy + " repair starts at " + chunk.origin + " angles " + chunk.angles +
+		" -> slot " + og_origin + " angles " + og_angles + how );
+
 	chunk show();
+	chunk notSolid();
+
+	if ( !is_true( via_powerup ) )
+		play_sound_at_pos( "rebuild_barrier_hover", chunk.origin );
+
+	if ( is_true( fast ) )
+	{
+		chunk rotateTo( og_angles, 0.15 );
+		wait( 0.15 );
+		wait( 0.1 );
+		chunk moveTo( og_origin, 0.1 );
+		wait( 0.1 );
+	}
+	else
+	{
+		only_z = ( chunk.origin[ 0 ], chunk.origin[ 1 ], og_origin[ 2 ] );
+
+		chunk rotateTo( chunk.angles + ( 0, -9, 0 ), 0.1 );
+		wait( 0.1 );
+		chunk rotateTo( chunk.angles + ( 0, 18, 0 ), 0.1 );
+		wait( 0.1 );
+		chunk moveTo( only_z, 0.15 );
+		chunk rotateTo( og_angles, 0.3 );
+		wait( 0.3 );
+		wait( 0.2 );
+
+		chunk rotateTo( chunk.angles + ( 0, -9, 0 ), 0.1 );
+		wait( 0.1 );
+		chunk rotateTo( chunk.angles + ( 0, 18, 0 ), 0.1 );
+		wait( 0.1 );
+		chunk rotateTo( og_angles, 0.1 );
+		wait( 0.1 );
+		chunk moveTo( og_origin, 0.1 );
+		wait( 0.1 );
+	}
+
+	// Let the last move's end time pass, then pin the board exactly (T5
+	// ensure_chunk_is_back_to_origin).
+	wait( 0.05 );
+	chunk.origin = og_origin;
+	chunk.angles = og_angles;
+
+	chunk thread zombie_boardtear_repair_fx();
+
 	chunk solid();
-	chunk play_sound_on_ent( "rebuild_barrier_piece" );
+	chunk.destroyed = false;
+	chunk update_states( "repaired" );
+	chunk notify( "repaired" );
+
+	play_sound_at_pos( "barrier_rebuild_slam", chunk.origin );
+
+	codolprintln( "CoDOL zm board: chunk " + chunk.script_noteworthy + " repaired in its slot at " + chunk.origin + " angles " + chunk.angles );
+}
+
+// T5 :2605 zombie_boardtear_audio_plus_fx_offset_repair_horizontal and :2642
+// _verticle, wood arm, merged as the tear pair is above.  The repair pair
+// takes slots "1","5","6" as horizontal (the tear pair also takes "4"; that
+// is T5's own inconsistency, kept).  The offsets are along z for a
+// horizontal board and along x for a vertical one, as in T5.
+zombie_boardtear_repair_fx()
+{
+	earthquake( randomFloatRange( 0.3, 0.4 ), randomFloatRange( 0.2, 0.4 ), self.origin, 150 );
+
+	fx = level._effect[ "wood_chunk_destroy" ];
+
+	horizontal = false;
+	if ( isDefined( self.script_noteworthy ) )
+	{
+		n = self.script_noteworthy;
+		if ( n == "1" || n == "5" || n == "6" )
+			horizontal = true;
+	}
+
+	offset = ( 30, 0, 0 );
+	if ( horizontal )
+		offset = ( 0, 0, 30 );
+
+	if ( isDefined( fx ) )
+		playFx( fx, self.origin + offset );
+	wait( randomFloatRange( 0.3, 0.6 ) );
+	self play_sound_on_ent( "break_barrier_piece" );
+	if ( isDefined( fx ) )
+		playFx( fx, self.origin - offset );
+}
+
+// The repair loop's wait for boards still flying back (state "mid_repair").
+wait_for_mid_repair( barrier_chunks, timeout )
+{
+	end = getTime() + int( timeout * 1000 );
+	for ( ;; )
+	{
+		flying = false;
+		for ( i = 0; i < barrier_chunks.size; i++ )
+		{
+			if ( barrier_chunks[ i ] get_chunk_state() == "mid_repair" )
+				flying = true;
+		}
+		if ( !flying || getTime() >= end )
+			return;
+		wait( 0.05 );
+	}
 }
 
 // ==========================================================================

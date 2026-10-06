@@ -11,6 +11,12 @@
 //                             the engine's own trigger_use activation path
 //   fire <client> <trig ent>  same, but also notify "trigger" from script,
 //                             for when the real activation cannot be reached
+//   board <barrier> [client]  tear every board of level.exterior_goals[barrier]
+//                             through remove_chunk (the real flight), then
+//                             repair them -- with a client (a bot) by standing
+//                             it in the repair trigger holding USE, else by
+//                             threading replace_chunk directly -- and log each
+//                             flying board's origin/angles/state every 50 ms
 //
 // Written for the stairs-debris report (zm_prototype_sh: the second-floor
 // trigger survived a first-floor buy).  See _zombiemode_blockers.gsc
@@ -47,6 +53,15 @@ blockertest_watch()
 
 		case "dump":
 			blockertest_dump();
+			break;
+
+		case "board":
+			if ( tokens.size < 2 )
+				break;
+			client = -1;
+			if ( tokens.size > 2 )
+				client = int( tokens[ 2 ] );
+			level thread blockertest_board( int( tokens[ 1 ] ), client );
 			break;
 
 		case "buy":
@@ -174,4 +189,87 @@ blockertest_buy( verb, clientnum, entnum )
 	codolprintln( "CoDOL blockertest: after " + verb + " client " + clientnum + " score " + player.score +
 		" (charged " + ( before - player.score ) + ")" );
 	blockertest_dump();
+}
+
+// Tear, then rebuild, one window; log the boards while they fly back.
+blockertest_board( index, clientnum )
+{
+	if ( !isDefined( level.exterior_goals ) || index < 0 || index >= level.exterior_goals.size )
+	{
+		codolprintln( "CoDOL blockertest: no barrier " + index );
+		return;
+	}
+	node = level.exterior_goals[ index ];
+	if ( !isDefined( node.barrier_chunks ) || node.barrier_chunks.size < 1 )
+	{
+		codolprintln( "CoDOL blockertest: barrier " + index + " has no chunks" );
+		return;
+	}
+	chunks = node.barrier_chunks;
+
+	codolprintln( "CoDOL blockertest: board barrier " + index + " at " + node.origin + ", " + chunks.size + " chunks" );
+	for ( i = 0; i < chunks.size; i++ )
+	{
+		maps\mp\gametypes\_zombiemode_blockers::remove_chunk( chunks[ i ], node, true );
+		wait( 0.1 );
+	}
+	wait( 2 );
+	for ( i = 0; i < chunks.size; i++ )
+		codolprintln( "CoDOL blockertest:   torn chunk " + chunks[ i ].script_noteworthy + " rests at " + chunks[ i ].origin +
+			" angles " + chunks[ i ].angles + " state " + chunks[ i ] get_chunk_state() + " hidden slot " + chunks[ i ].og_origin );
+
+	player = undefined;
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+	{
+		if ( players[ i ] getEntityNumber() == clientnum )
+			player = players[ i ];
+	}
+
+	if ( isDefined( player ) )
+	{
+		spot = node.origin;
+		if ( isDefined( node.trigger_location ) )
+			spot = node.trigger_location.origin;
+		player setOrigin( groundpos( spot ) + ( 0, 0, 4 ) );
+		codolprintln( "CoDOL blockertest: client " + clientnum + " holds USE in the repair trigger at " + player.origin + ", score " + player.score );
+		player codol_botPressButtons( 40, 15 );
+	}
+	else
+	{
+		for ( i = 0; i < chunks.size; i++ )
+		{
+			node thread maps\mp\gametypes\_zombiemode_blockers::replace_chunk( chunks[ i ] );
+			wait( 1 );
+		}
+	}
+
+	end = getTime() + 16000;
+	while ( getTime() < end )
+	{
+		flying = 0;
+		for ( i = 0; i < chunks.size; i++ )
+		{
+			c = chunks[ i ];
+			if ( c get_chunk_state() != "mid_repair" )
+				continue;
+			flying++;
+			codolprintln( "CoDOL blockertest:   t " + getTime() + " chunk " + c.script_noteworthy + " origin " + c.origin + " angles " + c.angles +
+				" destroyed " + c.destroyed );
+		}
+		if ( flying == 0 && all_chunks_intact( chunks ) )
+			break;
+		wait( 0.05 );
+	}
+
+	for ( i = 0; i < chunks.size; i++ )
+	{
+		ok = 0;
+		if ( distance( chunks[ i ].origin, chunks[ i ].og_origin ) < 0.1 )
+			ok = 1;
+		codolprintln( "CoDOL blockertest:   final chunk " + chunks[ i ].script_noteworthy + " at " + chunks[ i ].origin + " angles " + chunks[ i ].angles +
+			" state " + chunks[ i ] get_chunk_state() + " in slot " + ok );
+	}
+	if ( isDefined( player ) )
+		codolprintln( "CoDOL blockertest: client " + clientnum + " score now " + player.score + ", intact " + all_chunks_intact( chunks ) );
 }

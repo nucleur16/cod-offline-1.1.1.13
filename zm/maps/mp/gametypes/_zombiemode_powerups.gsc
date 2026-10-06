@@ -964,7 +964,9 @@ start_carpenter()
 			if ( !is_true( chunks[ j ].destroyed ) )
 				continue;
 
-			node maps\mp\gametypes\_zombiemode_blockers::replace_chunk( chunks[ j ] );
+			// T5 :1501 threads it with via_powerup: every board flies back
+			// at once (replace_chunk animates for ~1.2 s).
+			node thread maps\mp\gametypes\_zombiemode_blockers::replace_chunk( chunks[ j ], false, true );
 			wait( 0.05 );
 		}
 
