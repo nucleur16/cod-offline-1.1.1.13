@@ -384,16 +384,28 @@ sentry_handleDeath()
 	self playSound( "sentry_explode" );
 	playFxOnTag( getFx( "sentry_explode_mp" ), self, "tag_aim" );
 
-	// don't try to delete ourselves if we're deleted by other means
-	self endon ( "death" );
+	// A wreck takes no more damage. Every hit on it would otherwise notify
+	// "death" again natively once its health is at or below zero.
+	self setCanDamage( false );
 
+	// IW4 ended this thread on any further "death" to notice a deletion by
+	// other means. But "death" also comes again on its own: a melee or EMP
+	// kill sets health to 0 inside the damage notify, and the native damage
+	// path reads that health right after the notify and sends "death" a
+	// second time (G_Damage). That ended this thread before the delete, so
+	// a knifed sentry or SAM never went away. Check for the deletion
+	// instead, after every wait (IW5 dropped the endon too).
 	wait ( 1.5 );
-	
+	if ( !isDefined( self ) )
+		return;
+
 	self playSound( "sentry_explode_smoke" );
 	for ( smokeTime = 8; smokeTime > 0; smokeTime -= 0.4 )
 	{
 		playFxOnTag( getFx( "sentry_smoke_mp" ), self, "tag_aim" );
 		wait ( 0.4 );
+		if ( !isDefined( self ) )
+			return;
 	}
 
 	self delete();
@@ -454,7 +466,16 @@ sentry_setOwner( owner )
 	self SetSentryOwner( self.owner );
 	self SetTurretMinimapVisible( true );
 	
-	if ( level.teamBased )
+	// The SAM turret acquires nothing natively: in "sentry" mode a turret
+	// with no turret team never auto-targets (C1 0x57cd16), so it sweeps
+	// and follows only the aircraft sam_attackTargets hands it through
+	// setTargetEntity, and never swings its launcher at ground players.
+	if ( self.sentryType == "sam_turret" )
+	{
+		if ( level.teamBased )
+			self.team = self.owner.team;
+	}
+	else if ( level.teamBased )
 	{
 		self.team = self.owner.team;
 		self setTurretTeam( self.team );
@@ -599,13 +620,12 @@ sentry_onGameEnded( carrier )
 
 sentry_setActive()
 {
-	// A SAM stays in sentry_offline: that mode carries no auto-acquire bit,
-	// so the native think only follows the scripted target (setTargetEntity)
-	// and never engages ground players with the TOW launcher.
-	if ( self.sentryType == "sam_turret" )
-		self setMode( SENTRY_MODE_OFF );
-	else
-		self setMode( SENTRY_MODE_ON );
+	// IW5 runs the placed SAM in "sentry" mode too (sentrymodeon). Only
+	// that mode sweeps the launcher round while it has no target (C1
+	// 0x57d023: sentry and not offline); in sentry_offline the SAM sat
+	// motionless. It has no turret team (sentry_setOwner), so it still
+	// acquires no ground target of its own.
+	self setMode( SENTRY_MODE_ON );
 
 	self setCursorHint( "HINT_NOICON" );
 	self setHintString( &"SENTRY_PICKUP" );
