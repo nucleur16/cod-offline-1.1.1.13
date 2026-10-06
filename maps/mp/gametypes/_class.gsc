@@ -794,43 +794,36 @@ isPerkUpgraded( perkName )
 }
 
 /*
-	CoDOL: a Pro perk is earned, never assumed.  C1 names the gate of every
-	upgradable perk on the base perk's own mp/coPerkStatsTable.csv row: the
-	challenge in column 13 and the tier in column 14 (ch_flakjacket_pro, 4).
-	The client's unlock flags say the same thing (uf_specialty_flakjacket_pro =
-	ch_flakjacket_pro tier 4), and the lobby grants a challenge-gated flag when
-	the derived challenge state exceeds the tier -- IW4's strictly-greater
-	rule.  The upgrade row itself (column 8) carries no gate.
+	CoDOL: a Pro perk is bought, never earned or assumed (user, 2026-10-06:
+	"players only have pro perks if they buy them in the lobby").  The lobby
+	store sells every Pro as an item of its own: coPerkStatsTable column 8
+	names it on the base perk's row (specialty_scavenger ->
+	specialty_extraammo) and mp/coMarketplaceItems.csv sells it under that
+	name (3023, product 181).  The lobby only sells it to a player who already
+	owns the base perk (dw_marketplace_buy.py), and exports every purchase
+	beside the player's mpdata_s (owned_items.<uid>.txt, codol_owned_items.h).
+	So the upgrade applies exactly when that manifest says this player bought
+	the Pro item -- whether the class slot names the base perk or the Pro.
 
-	IW4's mp/unlocktable.csv cannot answer this: it has no row at all for
-	flakjacket_pro, fastoffhand, engineerpro, quickswap, paint_pro, hackerpro
-	or marksmanpro, and isItemUnlocked answers an unlisted item "unlocked", so
-	every Flak Jacket, Quickdraw and Engineer (all perk 2) came out Pro and the
-	spawn perk card, which draws getperk( "upgrade2" ), showed it.  The rows it
-	does have name IW4 challenges (Stalker Pro on ch_scrambler_pro).
-
-	A row with no challenge (Hacker) has no C1 unlock flag either, so nothing
-	can earn it; a player without a bound profile, or a challenge that cannot
-	be resolved, is locked too (codol_tryChallengeState says why).
+	Before this, the Pro challenge (column 13 / 14: ch_scavenger_pro, tier 4)
+	granted the upgrade here with no purchase, through codol_tryChallengeState.
+	It no longer grants anything on the server.  A player whose ownership
+	cannot be established (no codol_profilePath, no connect identity, an
+	unreadable manifest) gets no Pro; codol_tryOwnsItem says why.
 */
-perkUpgradeUnlocked( perkName )
+perkUpgradeOwned( upgradeName )
 {
-	challenge = tablelookup( "mp/coPerkStatsTable.csv", 1, perkName, 13 );
-	tier = int( tablelookup( "mp/coPerkStatsTable.csv", 1, perkName, 14 ) );
-	if ( challenge == "" || tier <= 0 )
-		return false;
-
-	state = self codol_tryChallengeState( challenge );
-	if ( !isDefined( state ) )
+	owned = self codol_tryOwnsItem( upgradeName );
+	if ( !isDefined( owned ) )
 	{
-		codolPrintLn( "CoDOL perks: " + self.name + " cannot resolve " + challenge + " for " + perkName + " Pro; not granted" );
+		codolPrintLn( "CoDOL perks: " + self.name + " cannot establish ownership of " + upgradeName + "; Pro not granted" );
 		return false;
 	}
-	return state > tier;
+	return owned != 0;
 }
 
 // Sum of one modifier's deltas over the rows a loadout grants: each selected
-// perk and, as loadoutAllPerks does, its unlocked upgrade.
+// perk and, as loadoutAllPerks does, its bought upgrade.
 loadoutModifierDelta( modifier, loadoutPerk1, loadoutPerk2, loadoutPerk3 )
 {
 	perks = [];
@@ -876,18 +869,24 @@ codolPerkBase( perkName )
 	return base;
 }
 
-// The upgrade a loadout slot grants: the Pro itself when the slot names it,
-// otherwise the base perk's earned upgrade.
+// The upgrade a loadout slot grants.  A player gets the base perk's Pro only
+// when the lobby says it was bought, whether the slot names the base perk or
+// the Pro itself (a slot naming an unbought Pro still gives its base perk,
+// codolPerkBase).  A bot does not shop: it gets the Pro its class CSV names.
 codolPerkUpgradeFor( selected, base )
 {
-	if ( isDefined( selected ) && isDefined( base ) && selected != base )
-		return selected;
+	if ( self.isbot )
+	{
+		if ( isDefined( selected ) && isDefined( base ) && selected != base )
+			return selected;
+		return "specialty_null";
+	}
 	return self getPerkUpgrade( base );
 }
 
 getPerkUpgrade( perkName )
 {
-	// CSV bot classes grant selected perks, not account-earned upgrades.
+	// CSV bot classes grant selected perks, not purchased upgrades.
 	if ( self.isbot )
 		return "specialty_null";
 	if ( !isDefined( perkName ) || perkName == "" || perkName == "specialty_null" )
@@ -897,7 +896,7 @@ getPerkUpgrade( perkName )
 	if ( perkUpgrade == "" || perkUpgrade == "specialty_null" )
 		return "specialty_null";
 		
-	if ( !self perkUpgradeUnlocked( perkName ) )
+	if ( !self perkUpgradeOwned( perkUpgrade ) )
 		return "specialty_null";
 		
 	return ( perkUpgrade );
@@ -940,8 +939,8 @@ loadoutAllPerks( loadoutEquipment, loadoutPerk1, loadoutPerk2, loadoutPerk3 )
 	self maps\mp\perks\_perks::givePerk( basePerk2 );
 	self maps\mp\perks\_perks::givePerk( basePerk3 );
 	
-	// Bot perks come entirely from the class CSV: getPerkUpgrade gives a bot
-	// no earned upgrade, only a Pro its class names.
+	// A player's Pro is the one bought in the lobby (getPerkUpgrade); bot perks
+	// come entirely from the class CSV, so a bot gets only a Pro it names.
 	perkUpgrd[0] = self codolPerkUpgradeFor( loadoutPerk1, basePerk1 );
 	perkUpgrd[1] = self codolPerkUpgradeFor( loadoutPerk2, basePerk2 );
 	perkUpgrd[2] = self codolPerkUpgradeFor( loadoutPerk3, basePerk3 );
