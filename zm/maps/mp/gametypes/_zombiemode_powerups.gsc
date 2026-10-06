@@ -108,11 +108,11 @@
 
 #include maps\mp\gametypes\_zombiemode_utility;
 
-// THE ACTIVE POWER-UP HUD's layout (left_adjustable / bottom_adjustable).
-POWERUP_HUD_X = 134;
-POWERUP_HUD_Y = -56;
-POWERUP_HUD_SIZE = 32;
-POWERUP_HUD_STEP = 40;
+// THE ACTIVE POWER-UP HUD's countdown, in the band under the shared icon row
+// (the row itself is _zombiemode_perks' zm_hud_row_*).  "default" at 0.9 is
+// about 9 units tall: from 1 unit under the icons to ~3 above the screen edge.
+POWERUP_HUD_TIMER_GAP = 1;
+POWERUP_HUD_TIMER_SCALE = 0.9;
 
 // --------------------------------------------------------------------------
 // Init
@@ -1076,14 +1076,16 @@ bonus_points_team()
 // menu, drawn by C1 0x00460c50 / 0x00460590) draws only portrait, name and
 // score.  So, as on C1's server, it is a script hudelem per power-up.
 //
-// PLACEMENT (user, 2026-10-05: bottom left, next to the score, name and
-// portrait, with the duration).  The playerscores item is left_adjustable /
-// bottom_adjustable, and C1 draws the LOCAL player's entry at x 10, y -55,
-// scale 1.1 (0x00460db7: 40-unit portrait, name/score to x+100 scaled), so the
-// icons start just right of it at the same height, packed left to right in
-// T5's order, each with its remaining time under it (setTimer).  They blink
-// for the last 10 s as T5's do.  The minigun and tesla are the grabber's own
-// (T5's solo HUD); the tesla runs on ammunition, not time, so it has no timer.
+// PLACEMENT (user, 2026-10-05, against the original 2014 CoDOL HUD): ONE row
+// of small icons right of the local player's panel, level with the score --
+// the owned perks first, then the active power-ups (the original shows its
+// x2 right after the perk icons).  The row's x, y and icon size come from
+// _zombiemode_perks (zm_hud_row_x / _y / _size; its PLACEMENT note has the
+// measurements), offset by the player's perk icon count, so a perk gained or
+// lost slides the power-ups along.  Each timed power-up keeps its remaining
+// time (setTimer) in small text under its icon, and blinks for the last 10 s
+// as T5's do.  The minigun and tesla are the grabber's own (T5's solo HUD);
+// the tesla runs on ammunition, not time, so it has no timer.
 // ==========================================================================
 
 powerup_hud_precache()
@@ -1156,11 +1158,11 @@ powerup_hud_think()
 	}
 }
 
-powerup_hud_elem( align_x, x, y )
+powerup_hud_elem( align_x, align_y, x, y )
 {
 	elem = newClientHudElem( self );
 	elem.alignX = align_x;
-	elem.alignY = "top";
+	elem.alignY = align_y;
 	elem.horzAlign = "left_adjustable";
 	elem.vertAlign = "bottom_adjustable";
 	elem.x = x;
@@ -1180,7 +1182,10 @@ powerup_hud_update()
 		self.zm_powerup_hud = [];
 
 	now = getTime();
-	column = 0;
+	size = maps\mp\gametypes\_zombiemode_perks::zm_hud_row_size();
+	row_y = maps\mp\gametypes\_zombiemode_perks::zm_hud_row_y();
+	// The power-ups follow the perk icons in the shared row.
+	column = self maps\mp\gametypes\_zombiemode_perks::zm_hud_perk_count();
 
 	for ( k = 0; k < level.zm_powerup_hud_kinds.size; k++ )
 	{
@@ -1201,19 +1206,19 @@ powerup_hud_update()
 			continue;
 		}
 
-		x = POWERUP_HUD_X + column * POWERUP_HUD_STEP;
+		x = maps\mp\gametypes\_zombiemode_perks::zm_hud_row_x( column );
 		column++;
 
 		if ( !isDefined( h ) )
 		{
 			h = spawnStruct();
-			h.icon = self powerup_hud_elem( "left", x, POWERUP_HUD_Y );
-			h.icon setShader( kind.shader, POWERUP_HUD_SIZE, POWERUP_HUD_SIZE );
+			h.icon = self powerup_hud_elem( "left", "middle", x, row_y );
+			h.icon setShader( kind.shader, size, size );
 			if ( kind.timed )
 			{
-				h.timer = self powerup_hud_elem( "center", x + int( POWERUP_HUD_SIZE / 2 ), POWERUP_HUD_Y + POWERUP_HUD_SIZE + 1 );
+				h.timer = self powerup_hud_elem( "center", "top", x + int( size / 2 ), row_y + int( size / 2 ) + POWERUP_HUD_TIMER_GAP );
 				h.timer.font = "default";
-				h.timer.fontScale = 1.2;
+				h.timer.fontScale = POWERUP_HUD_TIMER_SCALE;
 				h.timer.color = ( 1, 1, 1 );
 			}
 			h.shown = false;
@@ -1224,7 +1229,7 @@ powerup_hud_update()
 		{
 			h.icon.x = x;
 			if ( isDefined( h.timer ) )
-				h.timer.x = x + int( POWERUP_HUD_SIZE / 2 );
+				h.timer.x = x + int( size / 2 );
 		}
 
 		// (Re)start the client-side countdown only when the end moved: a

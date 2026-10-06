@@ -476,7 +476,7 @@ perk_think( perk )
 
 // ==========================================================================
 // THE PERK HUD.  T5 :1632 perk_hud_create, :1722 perk_hud_destroy and :1728
-// perk_hud_flash: one 24x24 icon per perk the player holds, left to right in
+// perk_hud_flash: one small icon per perk the player holds, left to right in
 // the order they were gained, destroyed when the perk is lost.
 //
 // WHY A HUDELEM AND NOT A NATIVE DISPLAY (C1 static analysis, 2026-10-05):
@@ -504,22 +504,60 @@ perk_think( perk )
 // free-perk power-up and the test hooks, perk_think on a down or death, the
 // perk pops' award and remove_effects -- is covered without a hook in each.
 //
-// PLACEMENT.  The playerscores panel is left_adjustable / bottom_adjustable,
-// rect x 10, y -250 (MEASURED, the menu's windowDef in common_mp).  Other
-// players' entries start at the rect's y and step down 40 at scale 0.8 (C1
-// 0x00460e1e, double 40.0 at 0xc84a88), so with four players they end near
-// y -138.  The LOCAL entry is at y -55, scale 1.1 (0x00460db7), and the
-// active power-ups (_zombiemode_powerups POWERUP_HUD_X/Y) sit to its right
-// from x 134 at the same height.  The perks get their own row in the free
-// band between the two: bottom edge 4 units above the local entry, starting
-// at the panel's x -- T5's own place for them (y -70 above the score, x n*30).
+// PLACEMENT (2026-10-05, against the original 2014 CoDOL zombies HUD).  The
+// original draws the owned perks, then the active power-ups, as ONE row of
+// small icons to the RIGHT of the local player's panel, level with the score
+// line under the name -- not above the portrait, where C1 draws the round
+// text ("final round" / round N) that the first version of this row covered.
+//
+// The local entry of ownerdraw 288 is left_adjustable / bottom_adjustable at
+// x 10, y -55, scale 1.1 (C1 0x00460db7): a 44-unit portrait from y -55 to
+// -11, the name from x ~57 on the top line (y -50..-40), the name bar's rule
+// at y ~-37 fading out by x ~160, and the score below it (y -28..-18, centre
+// -23).  MEASURED off a 1680x1050 C1 frame (2.1875 px/unit, perk icons of
+// the first version as the ruler) and the original frame (portrait = 44
+// units): the original's first icon starts 163 units right of the portrait's
+// left edge (x 173), the icons are ~0.45 of the portrait's height and step
+// ~29 units, centred a few units under the score's centre.
+//
+// So the row: x from 173, icons 20 units square every 26, vertically centred
+// on y -23 (top -33, bottom -13) -- under the name rule (-37) and above the
+// screen edge, never over the round text, the name or the score.  Both axes
+// are adjustable-aligned and the panel is too, so the row keeps its place
+// beside the panel at 4:3, 16:10 and 16:9.  The power-up HUD
+// (_zombiemode_powerups) calls zm_hud_row_x with the perk count added, so the
+// power-ups follow the perks, with their countdown in the band under the row.
 // ==========================================================================
 
-PERK_HUD_X = 10;
-PERK_HUD_Y = -59;
-PERK_HUD_SIZE = 24;
-PERK_HUD_FLASH_SIZE = 32;
-PERK_HUD_STEP = 30;
+ZM_HUD_ROW_X = 173;
+ZM_HUD_ROW_Y = -23;
+ZM_HUD_ROW_SIZE = 20;
+ZM_HUD_ROW_STEP = 26;
+PERK_HUD_FLASH_SIZE = 26;
+
+// The x of column n of the shared perk / power-up row.
+zm_hud_row_x( column )
+{
+	return ZM_HUD_ROW_X + column * ZM_HUD_ROW_STEP;
+}
+
+zm_hud_row_y()
+{
+	return ZM_HUD_ROW_Y;
+}
+
+zm_hud_row_size()
+{
+	return ZM_HUD_ROW_SIZE;
+}
+
+// self = player.  How many perk icons lead the row.
+zm_hud_perk_count()
+{
+	if ( !isDefined( self.zm_perk_hud ) )
+		return 0;
+	return self.zm_perk_hud.size;
+}
 
 perk_hud_precache()
 {
@@ -684,7 +722,7 @@ perk_hud_update()
 			continue;
 		h = spawnStruct();
 		h.shader = owned[ i ];
-		h.elem = self perk_hud_elem( owned[ i ], PERK_HUD_X + kept.size * PERK_HUD_STEP );
+		h.elem = self perk_hud_elem( owned[ i ], zm_hud_row_x( kept.size ) );
 		kept[ kept.size ] = h;
 		changed = true;
 		h.elem thread perk_hud_flash();
@@ -698,7 +736,7 @@ perk_hud_update()
 	// Close the gap a lost perk leaves.
 	for ( i = 0; i < kept.size; i++ )
 	{
-		x = PERK_HUD_X + i * PERK_HUD_STEP;
+		x = zm_hud_row_x( i );
 		if ( isDefined( kept[ i ].elem ) && kept[ i ].elem.x != x )
 			kept[ i ].elem.x = x;
 	}
@@ -709,21 +747,22 @@ perk_hud_elem( shader, x )
 {
 	elem = newClientHudElem( self );
 	elem.alignX = "left";
-	elem.alignY = "bottom";
+	elem.alignY = "middle";
 	elem.horzAlign = "left_adjustable";
 	elem.vertAlign = "bottom_adjustable";
 	elem.x = x;
-	elem.y = PERK_HUD_Y;
+	elem.y = ZM_HUD_ROW_Y;
 	elem.foreground = true;
 	elem.hidewheninmenu = true;
 	elem.archived = false;
 	elem.sort = 1;
 	elem.alpha = 1;
-	elem setShader( shader, PERK_HUD_SIZE, PERK_HUD_SIZE );
+	elem setShader( shader, ZM_HUD_ROW_SIZE, ZM_HUD_ROW_SIZE );
 	return elem;
 }
 
-// T5 :1728 perk_hud_flash: a pulse to 32 and back when the perk is gained.
+// T5 :1728 perk_hud_flash: a short pulse (T5 24 -> 32, here 20 -> 26) when
+// the perk is gained.
 // self = the icon; destroy() notifies "death" on it.
 perk_hud_flash()
 {
@@ -733,7 +772,7 @@ perk_hud_flash()
 	wait( 0.3 );
 	if ( !isDefined( self ) )
 		return;
-	self scaleOverTime( 0.05, PERK_HUD_SIZE, PERK_HUD_SIZE );
+	self scaleOverTime( 0.05, ZM_HUD_ROW_SIZE, ZM_HUD_ROW_SIZE );
 }
 
 // self = player.
