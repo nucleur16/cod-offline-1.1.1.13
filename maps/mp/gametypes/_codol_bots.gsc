@@ -1139,6 +1139,8 @@ watchSpawns()
         self waittill( "spawned_player" );
         self enableCombatBot( true );
         self thread watchWedged();
+        self thread maps\mp\gametypes\_codol_bot_equipment::onBotSpawned();
+        self thread maps\mp\gametypes\_codol_bot_killstreaks::onBotSpawned();
     }
 }
 
