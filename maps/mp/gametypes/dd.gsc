@@ -465,6 +465,29 @@ bombs()
 	{
 		trigger = bombZones[index];
 		visuals = getEntArray( bombZones[index].target, "targetname" );
+
+		// The maps carry a third dd_bombzone, "_c", between the two bases.
+		// IW5 dd.gsc bombs() uses it only in overtime and otherwise deletes
+		// its trigger, visual and clip; this mode has no overtime, so it is
+		// always removed and Demolition keeps its two sites, A and B.
+		if ( isDefined( trigger.script_label ) && trigger.script_label == "_c" )
+		{
+			clip = getEnt( "dd_bombzone_clip_c", "targetname" );
+			if ( isDefined( clip ) )
+				clip delete();
+			for ( i = 0; i < visuals.size; i++ )
+			{
+				if ( isDefined( visuals[i].target ) )
+				{
+					defuseTrig = getEnt( visuals[i].target, "targetname" );
+					if ( isDefined( defuseTrig ) )
+						defuseTrig delete();
+				}
+				visuals[i] delete();
+			}
+			trigger delete();
+			continue;
+		}
 		
 		bombZone = maps\mp\gametypes\_gameobjects::createUseObject( game["defenders"], trigger, visuals, (0,0,64) );
 		bombZone maps\mp\gametypes\_gameobjects::allowUse( "enemy" );
