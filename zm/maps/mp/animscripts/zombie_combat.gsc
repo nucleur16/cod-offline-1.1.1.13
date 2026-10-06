@@ -128,8 +128,16 @@ MeleeCombat()
 }
 
 // T5 zombie_melee.gsc:126-:166, the inner note loop.
+//
+// One swing animation lands at most one hit.  The double-swipe attacks carry
+// two "fire" notes spaced wider than the 0.4 s ignore window in
+// Callback_PlayerDamage, so both connected and a full-health player went down
+// from a single attack (two 60s against 100).  The second note now only
+// connects when the first one missed.
 swing_notetracks()
 {
+	landed = false;
+
 	for ( ;; )
 	{
 		self waittill( "meleeanim", note );
@@ -145,6 +153,9 @@ swing_notetracks()
 			if ( !isDefined( self.enemy ) )
 				return;
 
+			if ( landed )
+				continue;
+
 			oldhealth = self.enemy.health;
 			self land_melee_hit();
 
@@ -152,7 +163,10 @@ swing_notetracks()
 				return;
 
 			if ( self.enemy.health < oldhealth )
+			{
+				landed = true;
 				self resetGiveUpTime();
+			}
 			else if ( isDefined( level.melee_miss_func ) )
 				self [[ level.melee_miss_func ]]();
 

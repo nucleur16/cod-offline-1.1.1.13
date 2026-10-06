@@ -601,8 +601,9 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 	// whatever the native melee computed from its claw weapon (zombie_melee
 	// iMeleeDamage 50 plus Weapon_Melee_internal's 0-4 random), and the same
 	// zombie cannot hit the same player again for level.ignore_enemy_timer
-	// (0.4 s) -- the double-swipe attacks carry two "fire" notetracks, and
-	// without the window one swing could land twice.  60 a hit with 100
+	// (0.4 s).  The double-swipe attacks' two "fire" notes are further apart
+	// than that, so zombie_combat.gsc swing_notetracks lets one animation
+	// land only one hit.  60 a hit with 100
 	// health is a down on the second hit, and with Juggernog's 160 on the
 	// third; the regen thread below needs a 5 s quiet window in between.
 	if ( isDefined( eAttacker ) && is_true( eAttacker.is_zombie ) )
