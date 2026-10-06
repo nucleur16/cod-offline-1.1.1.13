@@ -171,6 +171,11 @@ dropTag( origin, dropTeam, attacker )
 
 	tag = spawn( "script_model", origin + ( 0, 0, 8 ) );
 	tag setModel( level.confTagModel );
+	// Training bots walk over live tags (_codol_bot_objective::addTagTasks).
+	tag.codolDropTeam = dropTeam;
+	if ( !isdefined( level.codolConfTags ) )
+		level.codolConfTags = [];
+	level.codolConfTags[level.codolConfTags.size] = tag;
 
 	confirmTeam = getOtherTeam( dropTeam );
 	expires = getTime() + ( level.confTagLifetime * 1000 );

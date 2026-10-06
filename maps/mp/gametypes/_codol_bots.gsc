@@ -1141,6 +1141,7 @@ watchSpawns()
         self thread watchWedged();
         self thread maps\mp\gametypes\_codol_bot_equipment::onBotSpawned();
         self thread maps\mp\gametypes\_codol_bot_killstreaks::onBotSpawned();
+        self thread maps\mp\gametypes\_codol_bot_objective::objectiveThink();
     }
 }
 
