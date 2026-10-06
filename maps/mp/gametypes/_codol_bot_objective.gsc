@@ -771,39 +771,6 @@ taskStillValid( task )
 	return true;
 }
 
-// _gameobjects::useHoldThink gives the bot the object's use weapon (the
-// briefcase) and switchToWeapon()s it, then counts progress only while it is
-// held. A bot has no client naming that weapon in its usercmd and the scripted
-// switch does not complete for it, so raise it the way _codol_bots
-// pressRewardSlot and _codol_bot_killstreaks do: setSpawnWeapon, once the
-// gameobject has claimed this bot (claimTrigger) and handed it the weapon.
-raiseUseWeapon( task )
-{
-	useWeapon = task.useWeapon;
-	if ( isDefined( task.obj ) && isDefined( task.obj.useWeapon ) )
-		useWeapon = task.obj.useWeapon;
-	if ( !isDefined( useWeapon ) || !isDefined( self.claimTrigger ) || !isDefined( task.trigger ) || self.claimTrigger != task.trigger )
-		return;
-	if ( self getCurrentWeapon() != useWeapon && self hasWeapon( useWeapon ) )
-		self setSpawnWeapon( useWeapon );
-}
-
-// The gameobject switches back to the weapon held before the use
-// (lastNonUseWeapon); for a bot that scripted switch does not complete either,
-// and _gameobjects::takeUseWeapon only removes the briefcase once it is no
-// longer held. Raise the previous weapon the same way.
-lowerUseWeapon()
-{
-	self endon( "death" );
-	self endon( "disconnect" );
-	wait 0.5;
-	current = self getCurrentWeapon();
-	if ( current != "briefcase_bomb_mp" && current != "briefcase_bomb_defuse_mp" )
-		return;
-	if ( isDefined( self.lastNonUseWeapon ) && self.lastNonUseWeapon != "none" && self hasWeapon( self.lastNonUseWeapon ) )
-		self setSpawnWeapon( self.lastNonUseWeapon );
-}
-
 // Developer trace of what the gameobject use loop gates on.
 debugUse( task )
 {
@@ -819,6 +786,10 @@ debugUse( task )
 
 // T5 bot_crate_think: hold use for the use time plus the weapon switch the
 // gameobject waits for (useHoldThinkLoop allows 1.5 s), standing still.
+// _gameobjects::useHoldThink gives the bot the object's use weapon (the
+// briefcase) and switchToWeapon()s it, and switches back to the weapon held
+// before once the use ends; the bot's usercmd names the requested weapon
+// (codol_bot.c), so the engine raises both as it does for a C1 client.
 doUse( task )
 {
 	if ( !task.forceUse && isDefined( self getThreat() ) )
@@ -839,7 +810,6 @@ doUse( task )
 	while ( getTime() < endTime )
 	{
 		wait 0.25;
-		self raiseUseWeapon( task );
 		self debugUse( task );
 		if ( !self taskStillValid( task ) )
 			break;
@@ -852,7 +822,6 @@ doUse( task )
 		}
 	}
 	self pressUseButton( 0 );
-	self thread lowerUseWeapon();
 	self debugTask( "released use on " + task.key + ", still open " + self taskStillValid( task ) + ", weapon " + self getCurrentWeapon() );
 	wait 0.3;
 }

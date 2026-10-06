@@ -142,15 +142,21 @@ activateReward( reward )
         return false;
     if ( isDefined( reward.actionSlot ) )
         self notify( "codol_reward_slot_" + reward.actionSlot );
-    // A bot's scripted switch does not always complete (no client names the
-    // weapon in its usercmd), so raise it as well; see _codol_bots
-    // pressRewardSlot.
+    // The bot's usercmd names the requested weapon (codol_bot.c), so the
+    // engine drops the held weapon and raises this one as it does for C1.
     if ( self getCurrentWeapon() != weapon )
-    {
         self switchToWeapon( weapon );
-        self setSpawnWeapon( weapon );
-    }
     return true;
+}
+
+// T5 bot_killstreak_location waits for "weapon_change" before it freezes
+// the bot: the engine (like C1 PM_Weapon_CheckForChange 0x41b119) starts no
+// weapon switch while the controls are frozen.
+waitForRewardWeapon( weapon, seconds )
+{
+    for ( i = 0; i < seconds * 20 && self getCurrentWeapon() != weapon; i++ )
+        wait 0.05;
+    return self getCurrentWeapon() == weapon;
 }
 
 rewardOwned( kID )
@@ -215,6 +221,9 @@ useLocationReward( reward, kind )
     if ( targets.size == 0 )
         return;
     if ( !self activateReward( reward ) )
+        return;
+    weapon = maps\mp\killstreaks\_killstreaks::getKillstreakWeapon( reward.streakName );
+    if ( !self waitForRewardWeapon( weapon, 3 ) )
         return;
     // T5 freezes the bot while it works the map.
     self freezeControls( true );
