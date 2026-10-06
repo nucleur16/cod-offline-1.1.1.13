@@ -18,6 +18,8 @@
 //   tozombie <client>                       stand the client by a zombie
 //   move <client> <dx> <dy> <dz>            shift the client
 //   heal <client>                           full health, out of last stand
+//   jug <client>                            buy Juggernog for the client
+//   invuln <client> <0|1>                   the client takes no damage
 //
 // <attacker> may equal <victim> for self damage.
 
@@ -86,6 +88,27 @@ fftest_watch()
 			{
 				p setOrigin( p.origin + ( int( tokens[ 2 ] ), int( tokens[ 3 ] ), int( tokens[ 4 ] ) ) );
 				codolprintln( "CoDOL fftest: " + p.name + " moved to " + p.origin );
+			}
+			break;
+
+		case "jug":
+			p = fftest_player( tokens, 1 );
+			if ( isDefined( p ) )
+			{
+				p maps\mp\gametypes\_zombiemode_perks::give_perk( "specialty_armorvest" );
+				codolprintln( "CoDOL fftest: " + p.name + " juggernog, health " + p.health + "/" + p.maxhealth );
+			}
+			break;
+
+		case "invuln":
+			p = fftest_player( tokens, 1 );
+			if ( isDefined( p ) && tokens.size > 2 )
+			{
+				if ( int( tokens[ 2 ] ) )
+					p.codolTestInvulnerable = true;
+				else
+					p.codolTestInvulnerable = undefined;
+				codolprintln( "CoDOL fftest: " + p.name + " invulnerable " + tokens[ 2 ] );
 			}
 			break;
 

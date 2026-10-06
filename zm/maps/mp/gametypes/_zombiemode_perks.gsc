@@ -68,9 +68,13 @@
 init()
 {
 	set_zombie_var( "zombie_perk_cost", 2000 );
-	// CoDOL coPerkStatsTable row 43, specialty_zombie_armorvest: modMaxHealth
-	// +150 over the base 100 (T5 used 160).
-	set_zombie_var( "zombie_perk_juggernaut_health", 250 );
+	// T5 _zombiemode_perks.gsc:60: 160.  CoDOL's coPerkStatsTable row 43
+	// (specialty_zombie_armorvest) lists modMaxHealth +150, i.e. 250, but
+	// with T5's 60-point zombie hit (_zombiemode_spawner.gsc meleeDamage)
+	// 250 survives four hits and goes down on the fifth.  Juggernog must go
+	// down on the third hit -- 160 -> 100 -> 40 -> down -- against the plain
+	// player's second (100 -> 40 -> down), so T5's value is kept.
+	set_zombie_var( "zombie_perk_juggernaut_health", 160 );
 
 	if ( !isDefined( level.packapunch_timeout ) )
 		level.packapunch_timeout = 15;

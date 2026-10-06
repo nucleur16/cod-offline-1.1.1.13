@@ -596,6 +596,31 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 	if ( is_placeable_mine( sWeapon ) )
 		return;
 
+	// T5 _zombiemode.gsc:4586-:4608, the zombie hit rule.  A zombie's hit is
+	// worth the zombie's own meleeDamage (60, _zombiemode_spawner.gsc), not
+	// whatever the native melee computed from its claw weapon (zombie_melee
+	// iMeleeDamage 50 plus Weapon_Melee_internal's 0-4 random), and the same
+	// zombie cannot hit the same player again for level.ignore_enemy_timer
+	// (0.4 s) -- the double-swipe attacks carry two "fire" notetracks, and
+	// without the window one swing could land twice.  60 a hit with 100
+	// health is a down on the second hit, and with Juggernog's 160 on the
+	// third; the regen thread below needs a 5 s quiet window in between.
+	if ( isDefined( eAttacker ) && is_true( eAttacker.is_zombie ) )
+	{
+		if ( isDefined( self.ignoreAttacker ) && self.ignoreAttacker == eAttacker )
+			return;
+
+		self.ignoreAttacker = eAttacker;
+		self thread remove_ignore_attacker();
+
+		if ( isDefined( eAttacker.custom_damage_func ) )
+			iDamage = eAttacker [[ eAttacker.custom_damage_func ]]( self );
+		else if ( isDefined( eAttacker.meleeDamage ) )
+			iDamage = eAttacker.meleeDamage;
+		else
+			iDamage = 50;
+	}
+
 	// Perk-pop damage rules: flak jacket immunity and dive explosion, the
 	// electro counter-shock.  Before the test-client guard so the rules also
 	// run for invulnerable test clients.
@@ -641,6 +666,21 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 	// has no equivalent gate.  C1 does.  Per the standing mandate, C1 wins.
 
 	self finishPlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, timeOffset );
+}
+
+// T5 _zombiemode.gsc:4514, unchanged.
+remove_ignore_attacker()
+{
+	self notify( "new_ignore_attacker" );
+	self endon( "new_ignore_attacker" );
+	self endon( "disconnect" );
+
+	if ( !isDefined( level.ignore_enemy_timer ) )
+		level.ignore_enemy_timer = 0.4;
+
+	wait( level.ignore_enemy_timer );
+
+	self.ignoreAttacker = undefined;
 }
 
 // T5 _callbackglobal.gsc:640.  T5 tests isPlayer( eAttacker ) only; the owner

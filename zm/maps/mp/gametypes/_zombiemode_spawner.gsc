@@ -364,6 +364,11 @@ spawn_zombie( spawn_point )
 	ai.dropweapon = false;
 	ai.allowdeath = true;
 
+	// T5 :244.  What one hit is worth to a player; applied by
+	// _zombiemode::Callback_PlayerDamage, which overrides the native melee
+	// damage the same way T5's player_damage_override does.
+	ai.meleeDamage = 60;
+
 	// Melee.  Without a real aiweapon the melee() method raises a script
 	// error instead of damaging anyone -- see zombie_combat.gsc.
 	if ( isDefined( level.zombie_melee_weapon ) )
