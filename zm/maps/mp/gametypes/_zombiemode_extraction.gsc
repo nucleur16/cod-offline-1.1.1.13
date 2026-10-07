@@ -408,6 +408,13 @@ extraction_horde()
 {
 	level endon( "end_game" );
 
+	// A level may run its own (zm_zombie_training's tutorial ends without one).
+	if ( isDefined( level.zm_extraction_horde_func ) )
+	{
+		level thread [[ level.zm_extraction_horde_func ]]();
+		return;
+	}
+
 	level.zm_extraction_horde = true;
 	level.max_zombie_func = ::extraction_max_zombies;
 	level.round_spawn_func = maps\mp\gametypes\_zombiemode_spawner::round_spawning;

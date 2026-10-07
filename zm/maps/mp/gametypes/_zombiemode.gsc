@@ -932,6 +932,15 @@ zm_player_health_regen()
 // is honest about that and works unchanged on the other two zm maps.
 getSpawnPoint()
 {
+	// A level that walks its players through stages (zm_zombie_training's
+	// tutorial) places them itself; self is the spawning player.
+	if ( isDefined( level.zm_spawn_point_func ) )
+	{
+		point = self [[ level.zm_spawn_point_func ]]();
+		if ( isDefined( point ) )
+			return point;
+	}
+
 	names = [];
 	names[ 0 ] = "mp_tdm_spawn_allies_start";
 	names[ 1 ] = "mp_dm_spawn";
