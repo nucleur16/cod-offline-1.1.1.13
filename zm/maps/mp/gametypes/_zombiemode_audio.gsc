@@ -167,6 +167,9 @@ change_zombie_music( state )
 {
 	if ( isDefined( level.zmb_music_state ) && level.zmb_music_state == "game_over" )
 		return;
+	// A rescue's victory owns the end: no game-over stinger after it.
+	if ( isDefined( level.zmb_music_state ) && level.zmb_music_state == "victory" && state == "game_over" )
+		return;
 
 	switch ( state )
 	{
@@ -194,6 +197,29 @@ change_zombie_music( state )
 			// T5: musicstate SILENCE + mus_zombie_game_over, and nothing after.
 			music_wave_stop();
 			play_sound_2d_all( "mus_zombie_game_over" );
+			break;
+
+		// T5 dog_round_start / dog_round_aftermath: the hound round's own
+		// stingers (common_gametype_zm ships both).
+		case "dog_start":
+			play_sound_2d_all( "mus_zombie_dog_start" );
+			music_wave_start();
+			break;
+
+		case "dog_end":
+			play_sound_2d_all( "mus_zombie_dog_end" );
+			break;
+
+		// _zombiemode_extraction: the rescue call and the escape.
+		// mus_zombie_rescue and mus_zombie_victory ship in common_gametype_zm.
+		case "rescue":
+			play_sound_2d_all( "mus_zombie_rescue" );
+			music_wave_start();
+			break;
+
+		case "victory":
+			music_wave_stop();
+			play_sound_2d_all( "mus_zombie_victory" );
 			break;
 	}
 
@@ -263,7 +289,9 @@ music_round_watch()
 	for ( ;; )
 	{
 		level waittill( "start_of_round" );
-		if ( level.round_number <= 1 )
+		if ( is_true( level.music_round_override ) )
+			level thread change_zombie_music( "dog_start" );
+		else if ( level.round_number <= 1 )
 			level thread change_zombie_music( "game_start" );
 		else
 			level thread change_zombie_music( "round_start" );

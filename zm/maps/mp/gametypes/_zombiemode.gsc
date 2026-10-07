@@ -44,7 +44,9 @@
 // them yet), UploadStats / bbPrint / update_leaderboards (no stats backend),
 // spectators_respawn (T5's spectator path needs spawnSpectator, and
 // allowSpectateTeam plus a spectator sessionstate is a separate port),
-// crawler_round_tracker and the dog rounds (both animation-first).
+// crawler_round_tracker (animation-first).  The hound rounds are
+// _zombiemode_ai_dogs (T5 _zombiemode_ai_dogs), installed through the same
+// level.round_spawn_func hook T5 uses.
 //
 // THE ROUND COUNTER is C1's own: dvar ui_hud_round, drawn at 0x00461A71, and
 // MEASURED rendering live under the previous server
@@ -52,6 +54,11 @@
 // (create_chalk_hud :3550, chalk_one_up :3641) is therefore NOT ported: it
 // SetShaders "hud_chalk_1".."hud_chalk_5", which are WaW/T5 materials that no
 // CoDOL zone carries, and C1 already has a round widget that works.
+//
+// THE ROUND CAP AND THE RESCUE.  CoDOL's zombies end in a helicopter rescue
+// after a fixed number of rounds (_zombiemode_extraction.gsc has the C1
+// evidence).  scr_zm_roundcap (default 13; 0 = T5's endless rounds) is the
+// cap; C1 draws the count as "Round n/cap" by itself -- see updateRoundHud.
 
 
 #include maps\mp\gametypes\_zombiemode_utility;
@@ -231,6 +238,13 @@ init_levelvars()
 	level.enemy_spawns = [];
 	level.zombies = [];
 	level.gameEnded = false;
+
+	// The rescue's round cap.  Read at gametype load, like every zombie_var.
+	level.zm_round_cap = 13;
+	if ( getDvar( "scr_zm_roundcap" ) != "" )
+		level.zm_round_cap = getDvarInt( "scr_zm_roundcap" );
+	if ( level.zm_round_cap < 0 )
+		level.zm_round_cap = 0;
 
 	column = 1;
 
@@ -442,6 +456,11 @@ Callback_StartGameType()
 	// immediately, so every machine has to be waiting before it runs.
 	maps\mp\gametypes\_zombiemode_power::init();
 	maps\mp\gametypes\_zombiemode_spawner::init();
+	// The hound rounds and the rescue: after the spawner, whose zone manager
+	// they read for the hound structs and the round flow.
+	maps\mp\gametypes\_zombiemode_ai_dogs::init();
+	maps\mp\gametypes\_zombiemode_extraction::init();
+	maps\mp\gametypes\_zombiemode_extractiontest::init();
 	maps\mp\gametypes\_zombiemode_cortex::init();
 	// The minigun Juggernaut boss: after the spawner, whose zombie template
 	// it spawns from.
@@ -584,6 +603,10 @@ Callback_PlayerDisconnect()
 Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, timeOffset )
 {
 	if ( level.gameEnded )
+		return;
+
+	// Aboard the rescue helicopter (_zombiemode_extraction::board).
+	if ( is_true( self.zm_extracted ) )
 		return;
 
 	// Players never hurt each other.  T5 _callbackglobal.gsc:640
@@ -963,9 +986,49 @@ giveStartingLoadout()
 // C1 draws the ZOMBIE_ROUND HUD from the client dvar ui_hud_round (renderer at
 // 0x00461A71); it rendered live under the previous server
 // (alpha0022/docs/zombies_gameplay_plan.md:312-321).
+//
+// THE n/cap FORMAT IS C1'S OWN.  MEASURED 2026-10-07 in common_mp.zone, C1's
+// zombies HUD menu "zombiemodescores" draws the round with four item
+// expressions (opcode 0x17 = dvarint, 0x52 = locString):
+//   visible  dvarint(ui_hud_round_goal) > 0 && dvarint(ui_hud_special_round)
+//            == 0 && dvarint(ui_hud_final_round) == 0
+//     text   locString("@MPUI_ROUND_XY", dvarint(ui_hud_round),
+//                      dvarint(ui_hud_round_goal))     "Round &&1/&&2"
+//   visible  all three == 0
+//     text   locString("@MPUI_ROUND_X", dvarint(ui_hud_round))  "Round &&1"
+//   visible  dvarint(ui_hud_special_round) == 1   "@MPUI_SPECIAL_ROUND"
+//   visible  dvarint(ui_hud_final_round) == 1     "@MPUI_FINAL_ROUND"
+// (localized_code_post_gfx_mp: Round &&1/&&2, Round &&1, Special round,
+// Final round.)  So the cap is ui_hud_round_goal, a hound round is the
+// special round, and the cap round is the final round.  All four are set on
+// every update: client dvars outlive the match, so a stale special/final
+// flag from the last game must never survive into this one.  (C1's
+// scoreboard header still prints its own "ZOMBIE_ROUND %d" from ui_hud_round,
+// C1 0x00461ACA.)
 updateRoundHud()
 {
-	self setClientDvar( "ui_hud_round", "" + level.round_number );
+	goal = 0;
+	if ( level.zm_round_cap > 0 )
+		goal = level.zm_round_cap;
+
+	special = 0;
+	if ( flag( "dog_round" ) )
+		special = 1;
+
+	final = 0;
+	if ( is_final_round() )
+		final = 1;
+
+	self setClientDvars( "ui_hud_round", "" + level.round_number,
+		"ui_hud_round_goal", "" + goal,
+		"ui_hud_special_round", "" + special,
+		"ui_hud_final_round", "" + final );
+}
+
+// The round the rescue comes after.
+is_final_round()
+{
+	return level.zm_round_cap > 0 && level.round_number >= level.zm_round_cap;
 }
 
 publishRoundHud()
@@ -1094,6 +1157,14 @@ round_think()
 		level.first_round = false;
 		level notify( "end_of_round" );
 
+		// The cap round survived: no next round, the rescue instead
+		// (_zombiemode_extraction).  It ends the match through "end_game".
+		if ( is_final_round() )
+		{
+			level thread maps\mp\gametypes\_zombiemode_extraction::extraction_start();
+			return;
+		}
+
 		// T5 :3948 -- the spawn delay decays 5% per round, floored at 0.08s.
 		timer = level.zombie_vars[ "zombie_spawn_delay" ];
 		if ( timer > 0.08 )
@@ -1193,11 +1264,68 @@ end_game_watcher()
 		players[ i ] closeMenu();
 		players[ i ] closeInGameMenu();
 		players[ i ] freezeControls( true );
+		players[ i ] thread end_game_text();
 	}
 
 	wait( level.zombie_vars[ "zombie_intermission_time" ] );
 
 	exitLevel( false );
+}
+
+// T5 end_game :5085-:5140: "GAME OVER" over "You survived N rounds", per
+// player.  T5 setText()s the count as a format argument; this VM's hud text
+// takes one value, so the count is the label's &&1 (the same idiom as the
+// perk-pop notice).  A rescue replaces the title: SCRIPT_MISSION_COMPLETE
+// for those aboard, ZOMBIE_DID_NOT_SURVIVE ("You didn't make it out...") for
+// those left behind (both C1 strings; _zombiemode_extraction).
+end_game_text()
+{
+	self endon( "disconnect" );
+
+	title = &"ZOMBIE_GAME_OVER";
+	if ( isDefined( level.zm_extraction_result ) && level.zm_extraction_result == "win" )
+	{
+		if ( is_true( self.zm_extracted ) )
+			title = &"SCRIPT_MISSION_COMPLETE";
+		else
+			title = &"ZOMBIE_DID_NOT_SURVIVE";
+	}
+
+	game_over = newClientHudElem( self );
+	game_over.alignX = "center";
+	game_over.alignY = "middle";
+	game_over.horzAlign = "center";
+	game_over.vertAlign = "middle";
+	game_over.y = -130;
+	game_over.foreground = true;
+	game_over.font = "objective";
+	game_over.fontScale = 2.4;
+	game_over.alpha = 0;
+	game_over.color = ( 1, 1, 1 );
+	game_over setText( title );
+	game_over fadeOverTime( 1 );
+	game_over.alpha = 1;
+
+	survived = newClientHudElem( self );
+	survived.alignX = "center";
+	survived.alignY = "middle";
+	survived.horzAlign = "center";
+	survived.vertAlign = "middle";
+	survived.y = -100;
+	survived.foreground = true;
+	survived.font = "objective";
+	survived.fontScale = 1.6;
+	survived.alpha = 0;
+	survived.color = ( 1, 1, 1 );
+	if ( level.round_number < 2 )
+		survived setText( &"ZOMBIE_SURVIVED_ROUND" );
+	else
+	{
+		survived.label = &"ZOMBIE_SURVIVED_ROUNDS";
+		survived setValue( level.round_number );
+	}
+	survived fadeOverTime( 1 );
+	survived.alpha = 1;
 }
 
 // ==========================================================================
