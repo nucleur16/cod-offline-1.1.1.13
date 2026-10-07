@@ -118,6 +118,18 @@ watch()
 		case "aimcheck":
 			level thread aim_check();
 			break;
+		case "colmap":
+			// colmap <x0> <y0> <x1> <y1> <z> <step>: a top-down map of what
+			// stops a player there (see col_map).
+			if ( tokens.size >= 7 )
+				level thread col_map( float( tokens[ 1 ] ), float( tokens[ 2 ] ), float( tokens[ 3 ] ), float( tokens[ 4 ] ),
+					float( tokens[ 5 ] ), float( tokens[ 6 ] ) );
+			break;
+		case "brushes":
+			// brushes <targetname>: each brush's measured extent (brush_extent).
+			if ( tokens.size >= 2 )
+				level thread brush_report( tokens[ 1 ] );
+			break;
 		case "walk":
 			// walk <x> <y> <z> [<x> <y> <z> ...]: player 0 walks the points.
 			level thread walk_points( tokens );
@@ -437,6 +449,22 @@ play_route()
 		switch ( s.kind )
 		{
 		case "flag":
+			if ( s.value == "obstacle_course_end" )
+			{
+				// Mac's course, station by station (the addon's
+				// obstacleTraining_* trigger boxes); a mantle the walker
+				// cannot jump is reported as STUCK with what stops it.
+				obstacle = [];
+				obstacle[ obstacle.size ] = ( 304, -2580, 4 );
+				obstacle[ obstacle.size ] = ( 306, -2659, 4 );
+				obstacle[ obstacle.size ] = ( 285, -3236, 4 );
+				obstacle[ obstacle.size ] = ( 367, -3569, 4 );
+				obstacle[ obstacle.size ] = ( -352, -4250, 4 );
+				obstacle[ obstacle.size ] = ( -1084, -4173, 4 );
+				obstacle[ obstacle.size ] = ( -1106, -2824, 4 );
+				for ( i = 0; i < obstacle.size; i++ )
+					walk_to( p, obstacle[ i ], "obstacle " + i );
+			}
 			t = flag_trigger( s.value );
 			if ( isDefined( t ) )
 				walk_to( p, t.origin, "flag " + s.value );
@@ -492,7 +520,7 @@ play_route()
 			}
 			break;
 		case "course":
-			run_course();
+			walk_course( p );
 			break;
 		case "ship":
 			for ( i = 0; i < s.value.size; i++ )
@@ -504,6 +532,62 @@ play_route()
 			break;
 		}
 	}
+}
+
+// The pit as a player runs it: from the hangar north through gate_cqb_out
+// into the corridor, west through gate_cqb_start into the start room, over
+// the start trigger, then each course trigger in the order the course runs
+// (script_linkTo pf1492_1..5, the stairs 14 and 6, back south by 12 and 13),
+// shooting every enemy target that is up, and out by the finish.
+walk_course( p )
+{
+	path = [];
+	if ( p.origin[ 1 ] < -989 )
+	{
+		path[ path.size ] = ( 140, -1100, 4 );
+		path[ path.size ] = ( 140, -920, 4 );
+	}
+	path[ path.size ] = ( -60, -880, 4 );
+	path[ path.size ] = ( -200, -880, 4 );
+	path[ path.size ] = ( -144, -756, 4 );
+	for ( i = 0; i < path.size; i++ )
+		walk_to( p, path[ i ], "pit entrance " + i );
+
+	order = [];
+	order[ order.size ] = "1";
+	order[ order.size ] = "2";
+	order[ order.size ] = "3";
+	order[ order.size ] = "4";
+	order[ order.size ] = "5";
+	order[ order.size ] = "14";
+	order[ order.size ] = "6";
+	order[ order.size ] = "12";
+	order[ order.size ] = "13";
+	triggers = getEntArray( "target_trigger", "targetname" );
+	for ( k = 0; k < order.size; k++ )
+	{
+		for ( i = 0; i < triggers.size; i++ )
+		{
+			t = triggers[ i ];
+			if ( !isDefined( t.script_linkTo ) || t.script_linkTo != "pf1492_" + order[ k ] )
+				continue;
+			walk_to( p, t.origin, "course trigger " + order[ k ] );
+			wait( 1 );
+			if ( isDefined( t.script_delay ) )
+				wait( t.script_delay );
+			for ( j = 0; j < level.coop_course_targets.size; j++ )
+			{
+				g = level.coop_course_targets[ j ];
+				if ( g.coop_up && g.coop_target_type == "enemy" )
+					g notify( "damage", 50, p, ( 0, 0, 0 ), g.origin, "MOD_RIFLE_BULLET" );
+			}
+		}
+	}
+	codolprintln( "CoDOL cooptest: playroute course triggers done, hits " + level.coop_course_hits );
+	// The finish: wait for the gates the mission opens after a good run.
+	wait( 6 );
+	walk_to( p, ( 528, -700, 4 ), "course finish" );
+	walk_to( p, ( 528, -860, 4 ), "through gate_cqb_finish" );
 }
 
 flag_trigger( name )
@@ -558,7 +642,21 @@ walk_to( p, dest, what )
 			break;
 	}
 	p botStop();
-	codolprintln( "CoDOL cooptest: playroute STUCK walking to " + what + " " + dest + " at " + p.origin + "; teleporting" );
+	// What stops him: the first thing a player-sized move toward the goal
+	// meets (a script_brushmodel by name, else world/clip).
+	dir = vectorNormalize( ( dest[ 0 ] - p.origin[ 0 ], dest[ 1 ] - p.origin[ 1 ], 0 ) );
+	from = p.origin + ( 0, 0, 30 );
+	blocker = "world or clip";
+	tr = bulletTrace( from, from + dir * 48, false, p );
+	if ( isDefined( tr[ "entity" ] ) )
+	{
+		blocker = "ent " + tr[ "entity" ] getEntityNumber() + " " + tr[ "entity" ].classname;
+		if ( isDefined( tr[ "entity" ].targetname ) )
+			blocker += " " + tr[ "entity" ].targetname;
+	}
+	else if ( tr[ "fraction" ] >= 1 )
+		blocker = "player clip or step (bullets pass)";
+	codolprintln( "CoDOL cooptest: playroute STUCK walking to " + what + " " + dest + " at " + p.origin + ", blocked by " + blocker + "; teleporting" );
 	// Beside the point, not on it: an instructor stands on his own spot.
 	if ( radius > 40 )
 		p setOrigin( dest + ( 0, -80, 0 ) );
@@ -614,4 +712,126 @@ aim_check()
 		codolprintln( line );
 	}
 	codolprintln( "CoDOL cooptest: aimcheck from " + eye );
+}
+
+// colmap: one log row per y (north first), one character per cell: '.' a
+// player passes east and north from the cell centre at height z (+40), '#'
+// world blocks, a letter a script_brushmodel blocks (the legend follows),
+// '~' no floor within 96 units.  physicsTrace is the player's collision
+// (clip brushes included); bulletTrace names the entity.
+col_map( x0, y0, x1, y1, z, step )
+{
+	legend = [];
+	letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+	codolprintln( "CoDOL cooptest: colmap x " + x0 + ".." + x1 + " y " + y1 + "->" + y0 + " z " + z + " step " + step );
+	for ( y = y1; y >= y0; y -= step )
+	{
+		row = "";
+		for ( x = x0; x <= x1; x += step )
+		{
+			c = ( x, y, z + 40 );
+			floor = bulletTrace( c, c - ( 0, 0, 136 ), false, undefined );
+			if ( floor[ "fraction" ] >= 1 )
+			{
+				row += "~";
+				continue;
+			}
+			ch = ".";
+			ends = [];
+			ends[ 0 ] = c + ( step, 0, 0 );
+			ends[ 1 ] = c + ( 0, step, 0 );
+			for ( k = 0; k < 2 && ch == "."; k++ )
+			{
+				pos = physicsTrace( c, ends[ k ] );
+				if ( distanceSquared( pos, ends[ k ] ) < 1 )
+					continue;
+				ch = "#";
+				t = bulletTrace( c, ends[ k ], false, undefined );
+				if ( isDefined( t[ "entity" ] ) && t[ "entity" ].classname == "script_brushmodel" )
+				{
+					e = t[ "entity" ];
+					idx = -1;
+					for ( l = 0; l < legend.size; l++ )
+					{
+						if ( legend[ l ] == e )
+							idx = l;
+					}
+					if ( idx < 0 && legend.size < letters.size )
+					{
+						idx = legend.size;
+						legend[ idx ] = e;
+					}
+					if ( idx >= 0 )
+						ch = getSubStr( letters, idx, idx + 1 );
+				}
+			}
+			row += ch;
+		}
+		codolprintln( "CoDOL colmap " + int( y ) + " " + row );
+		wait( 0.05 );
+	}
+	for ( l = 0; l < legend.size; l++ )
+	{
+		e = legend[ l ];
+		name = "";
+		if ( isDefined( e.targetname ) )
+			name = e.targetname;
+		if ( isDefined( e.script_noteworthy ) )
+			name += "/" + e.script_noteworthy;
+		codolprintln( "CoDOL colmap legend " + getSubStr( letters, l, l + 1 ) + " = ent " + e getEntityNumber() + " " + name + " at " + e.origin );
+	}
+	codolprintln( "CoDOL cooptest: colmap done" );
+}
+
+// brushes: for every script_brushmodel of the name, the x / y / z range a
+// grid of bullet traces through it hits that brush (its real hull, whatever
+// its origin says).
+brush_report( name )
+{
+	parts = getEntArray( name, "targetname" );
+	for ( i = 0; i < parts.size; i++ )
+	{
+		b = parts[ i ];
+		if ( b.classname != "script_brushmodel" )
+			continue;
+		r = brush_extent( b );
+		codolprintln( "CoDOL cooptest: brush " + name + " ent " + b getEntityNumber() + " origin " + b.origin + " hull " + r );
+		wait( 0.05 );
+	}
+}
+
+brush_extent( b )
+{
+	o = b.origin;
+	minx = 99999; maxx = -99999; miny = 99999; maxy = -99999; minz = 99999; maxz = -99999;
+	for ( dz = -200; dz <= 200; dz += 8 )
+	{
+		for ( d = -256; d <= 256; d += 8 )
+		{
+			// along y at x = o + d, and along x at y = o + d
+			t = bulletTrace( ( o[ 0 ] + d, o[ 1 ] - 300, o[ 2 ] + dz ), ( o[ 0 ] + d, o[ 1 ] + 300, o[ 2 ] + dz ), false, undefined );
+			if ( isDefined( t[ "entity" ] ) && t[ "entity" ] == b )
+			{
+				p = t[ "position" ];
+				if ( p[ 0 ] < minx ) minx = p[ 0 ];
+				if ( p[ 0 ] > maxx ) maxx = p[ 0 ];
+				if ( p[ 1 ] < miny ) miny = p[ 1 ];
+				if ( p[ 2 ] < minz ) minz = p[ 2 ];
+				if ( p[ 2 ] > maxz ) maxz = p[ 2 ];
+			}
+			t = bulletTrace( ( o[ 0 ] - 300, o[ 1 ] + d, o[ 2 ] + dz ), ( o[ 0 ] + 300, o[ 1 ] + d, o[ 2 ] + dz ), false, undefined );
+			if ( isDefined( t[ "entity" ] ) && t[ "entity" ] == b )
+			{
+				p = t[ "position" ];
+				if ( p[ 0 ] < minx ) minx = p[ 0 ];
+				if ( p[ 1 ] < miny ) miny = p[ 1 ];
+				if ( p[ 1 ] > maxy ) maxy = p[ 1 ];
+				if ( p[ 2 ] < minz ) minz = p[ 2 ];
+				if ( p[ 2 ] > maxz ) maxz = p[ 2 ];
+			}
+		}
+	}
+	if ( minx > maxx && miny > maxy )
+		return "not hit by any trace";
+	return "x " + minx + ".." + maxx + " y " + miny + ".." + maxy + " z " + minz + ".." + maxz;
 }

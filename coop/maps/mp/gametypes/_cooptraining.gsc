@@ -1232,16 +1232,34 @@ station_pit()
 	say( price, "pit_pri_010", 2.8 );
 	say( price, "pit_pri_011", 5.0 );
 
+	// The way in.  The pit's start room (x -370..-125, y -836..-980) and the
+	// corridor east of it are walled off from the hangar along y -989; the
+	// one opening is gate_cqb_out (x 84..196), and gate_cqb_start (x -121,
+	// y -836..-922) joins the corridor to the start room.  The first version
+	// opened gate_cqb_out only after the course, so a player could never reach
+	// the start trigger (user report 2026-10-07, "one of the gates doesn't open
+	// for the cqb course"; MEASURED with _cooptest colmap: the y -989 wall is
+	// closed from x -376 to 300 except that gate).  Both open for the run;
+	// the finish (gate_cqb_finish + course_end_blocker) opens after it.
+	open_doors( "gate_cqb_out" );
 	open_doors( "gate_cqb_start" );
 	objective_at( ( -218, -758, 48 ) );
 	maps\mp\gametypes\_coopmission::announce( "Run the pit: under 60 seconds" );
 
 	// The pit course itself (_coopcourse.gsc); repeat until it is cleared in
 	// time, as Price demands.
+	// The finish (the lane x 476..572 ending at y -840) is closed by
+	// gate_cqb_finish and course_end_blocker (532 -761) so the course is not
+	// run backward from the corridor; both open when a run ends, made or not,
+	// so a slow player walks out by the finish into the same corridor and
+	// back to the start for another try (MEASURED with colmap: the lane joins
+	// the corridor south of y -856).
 	for ( ;; )
 	{
 		step( "course" );
 		level waittill( "coop_course_run_over", finished, elapsed );
+		open_doors( "gate_cqb_finish" );
+		remove_named( "course_end_blocker" );
 		if ( finished && elapsed <= 60 )
 			break;
 		say( price, "pit_pri_050", 3.9 );
@@ -1250,11 +1268,6 @@ station_pit()
 		say( price, "pit_pri_058", 3.1 );
 	else
 		say( price, "pit_pri_056", 4.3 );
-	open_doors( "gate_cqb_finish" );
-	// course_end_blocker (532 -761) closes the finish behind gate_cqb_finish
-	// while the course runs; the mission keeps it till the course is passed.
-	remove_named( "course_end_blocker" );
-	open_doors( "gate_cqb_out" );
 }
 
 // --------------------------------------------------------------------------
