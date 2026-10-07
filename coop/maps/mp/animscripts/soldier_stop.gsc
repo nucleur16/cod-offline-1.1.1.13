@@ -19,6 +19,14 @@ main()
 	for ( ;; )
 	{
 		idle_pose( 0.3 );
-		DoNoteTracksForTime( 1, "idleanim" );
+		// A cast member's authored idle plays through, then starts over.
+		length = 1;
+		if ( isDefined( self.coop_idle_anim ) )
+		{
+			length = getAnimLength( self.coop_idle_anim );
+			if ( length < 1 )
+				length = 1;
+		}
+		DoNoteTracksForTime( length, "idleanim" );
 	}
 }

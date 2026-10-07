@@ -321,6 +321,7 @@ course_run( runner )
 		level notify( "coop_course_complete" );
 	}
 
+	level notify( "coop_course_run_over", finished, elapsed );
 	wait( 3 );
 	drop( level.coop_course_targets );
 	wait( 2 );
@@ -347,6 +348,9 @@ proximity_groups()
 	{
 		t = level.coop_course_targets[ i ];
 		if ( t.script_noteworthy != "cargoship_target" && t.script_noteworthy != "deck_target" && t.script_noteworthy != "grenade_target_dummy" )
+			continue;
+		// The training mission calls the mock-up's positions itself.
+		if ( t.script_noteworthy == "cargoship_target" && isDefined( level.coop_training_flow ) && level.coop_training_flow )
 			continue;
 		key = t.script_noteworthy;
 		if ( isDefined( t.targetname ) && t.script_noteworthy == "cargoship_target" )

@@ -408,10 +408,10 @@ vehicle_run()
 	mover = maps\mp\gametypes\_coopvehicle::spawn_mover( self );
 	if ( !isDefined( mover ) )
 		return;
-	height = 0;
-	if ( maps\mp\gametypes\_coopvehicle::is_ground_path( path ) )
-		height = self.origin[ 2 ] - path[ 0 ].origin[ 2 ];
-	mover maps\mp\gametypes\_coopvehicle::follow_path( path, height, 40 );
+	// Ground vehicles drive on the ground under their nodes (see
+	// _coopvehicle::ground_under); helicopters fly the points themselves.
+	ground = maps\mp\gametypes\_coopvehicle::is_ground_path( path );
+	mover maps\mp\gametypes\_coopvehicle::follow_path( path, 0, 40, ground );
 	// IW4 script_vehicle_selfremove / a path ending far off the map: gone.
 	mover delete();
 }

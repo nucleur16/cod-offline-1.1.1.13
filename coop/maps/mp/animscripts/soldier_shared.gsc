@@ -92,7 +92,10 @@ idle_pose( blend )
 {
 	if ( !isDefined( blend ) )
 		blend = 0.3;
-	if ( isDefined( self.enemy ) )
+	// A cast member's authored idle (_cooptraining.gsc).
+	if ( isDefined( self.coop_idle_anim ) )
+		self setFlaggedAnimKnobAllRestart( "idleanim", self.coop_idle_anim, %body, 1, blend, 1 );
+	else if ( isDefined( self.enemy ) )
 		self setFlaggedAnimKnobAll( "idleanim", %exposed_aim_5, %body, 1, blend, 1 );
 	else
 		self setFlaggedAnimKnobAll( "idleanim", %casual_stand_idle, %body, 1, blend, 1 );

@@ -14,6 +14,9 @@
 //                          player 0 as the attacker
 //   godmode <n>            keep player n's health topped up
 //   weapons <name> ...     log codol_isWeaponMounted / codol_isWeaponPublished
+//   route                  training mission: do what each station waits for
+//                          (walk there, shoot its targets, throw, run the
+//                          course) as player 0, until the mission ends
 //
 // Lives under the coop category root and is named only by _coopmode, so it
 // exists in no mp or zm match.
@@ -96,6 +99,9 @@ watch()
 				teleport( 0, evac.origin );
 			else
 				codolprintln( "CoDOL cooptest: no extraction trigger" );
+			break;
+		case "route":
+			level thread route();
 			break;
 		case "runcourse":
 			level thread run_course();
@@ -282,6 +288,21 @@ status()
 			" hp " + ai.health + " at " + ai.origin + " enemy " + enemy );
 	}
 
+	if ( isDefined( level.coop_cast_list ) )
+	{
+		for ( i = 0; i < level.coop_cast_list.size; i++ )
+		{
+			ai = level.coop_cast_list[ i ];
+			if ( !isDefined( ai ) )
+				continue;
+			name = ai.coop_cast;
+			if ( isDefined( ai.coop_name ) )
+				name += " (" + ai.coop_name + ")";
+			codolprintln( "CoDOL cooptest:   cast " + name + " team " + ai.team + " alive " + isAlive( ai ) + " at " + ai.origin +
+				" idle " + isDefined( ai.coop_idle_anim ) );
+		}
+	}
+
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 	{
@@ -320,5 +341,60 @@ godmode( index )
 		if ( isAlive( p ) && p.health < p.maxhealth )
 			p.health = p.maxhealth;
 		wait( 0.05 );
+	}
+}
+
+// route: the coop_training_mp_killhouse_sh autopilot.  _cooptraining.gsc
+// publishes what it is waiting for in level.coop_training_step; this does it
+// as player 0 would, once per step, and logs where player 0 stands.
+route()
+{
+	level endon( "coop_mission_over" );
+	codolprintln( "CoDOL cooptest: route started" );
+	last = undefined;
+	for ( ;; )
+	{
+		wait( 1 );
+		s = level.coop_training_step;
+		p = player( 0 );
+		if ( !isDefined( s ) || !isDefined( p ) || !isAlive( p ) )
+			continue;
+		if ( isDefined( p.coop_in_intro ) )
+			continue;
+		if ( isDefined( last ) && last == s && s.kind != "hits" && s.kind != "note" && s.kind != "ship" )
+			continue;
+		last = s;
+		switch ( s.kind )
+		{
+		case "flag":
+			goto_flag( 0, s.value );
+			break;
+		case "near":
+			teleport( 0, s.value );
+			break;
+		case "hits":
+			type = "MOD_RIFLE_BULLET";
+			if ( isDefined( s.value2 ) && s.value2 )
+				type = "MOD_MELEE";
+			for ( i = 0; i < s.value.size; i++ )
+				s.value[ i ] notify( "damage", 50, p, ( 0, 0, 0 ), s.value[ i ].origin, type );
+			break;
+		case "note":
+			p notify( s.value );
+			break;
+		case "course":
+			run_course();
+			break;
+		case "ship":
+			teleport( 0, s.value[ 0 ].origin + ( 0, 0, 8 ) );
+			for ( i = 0; i < s.value.size; i++ )
+			{
+				t = s.value[ i ];
+				if ( t.coop_up && t.coop_target_type == "enemy" )
+					t notify( "damage", 50, p, ( 0, 0, 0 ), t.origin, "MOD_RIFLE_BULLET" );
+			}
+			break;
+		}
+		codolprintln( "CoDOL cooptest: route " + s.kind + ", player 0 at " + p.origin );
 	}
 }

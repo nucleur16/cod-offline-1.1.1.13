@@ -573,6 +573,11 @@ spawnPlayer()
 
 	self thread healthRegen();
 
+	// The opening ride: a player who spawns before it is over (the first
+	// player, and any teammate who joins while it waits or drives) starts
+	// seated in the vehicle.
+	self maps\mp\gametypes\_coopintro::board();
+
 	// IW4's own notify for a finished spawn (maps\mp\gametypes\_playerlogic).
 	self notify( "spawned_player" );
 }
@@ -674,6 +679,10 @@ Callback_StartGameType()
 	// MP game objects first, and the vehicle-group precache, which needs this
 	// precache window.  Then the training course's pop-up targets.
 	maps\mp\gametypes\_coopevents::init();
+	// The training mission's own flow (coop_training_mp_killhouse_sh only):
+	// before the course, which leaves the ship mock-up to it, and before the
+	// intro ride, which takes Price's lines from it.
+	maps\mp\gametypes\_cooptraining::init();
 	maps\mp\gametypes\_coopcourse::init();
 
 	// The campaign / Spec Ops mission, driven by the map's own entities (the
@@ -686,6 +695,7 @@ Callback_StartGameType()
 	// precaches, so it runs here, in the precache window.
 	maps\mp\gametypes\_coopintro::init();
 	level thread maps\mp\gametypes\_coopintro::main();
+	level thread maps\mp\gametypes\_cooptraining::main();
 
 	// Probe harness; inert unless +set scr_coop_test 1.
 	level thread maps\mp\gametypes\_cooptest::main();

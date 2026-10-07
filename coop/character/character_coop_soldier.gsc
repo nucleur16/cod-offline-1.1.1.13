@@ -177,6 +177,20 @@ main( faction, role )
 	self.headModel = head;
 }
 
+// A cast member's authored look (_cooptraining.gsc precaches every one).
+cast_model( body, head )
+{
+	self.coop_faction = "cast";
+	self setModel( body );
+	if ( isDefined( head ) )
+	{
+		self attach( head, "", true );
+		self.headModel = head;
+	}
+	else
+		self.headModel = undefined;
+}
+
 precache()
 {
 	precacheModel( juggernaut_body() );

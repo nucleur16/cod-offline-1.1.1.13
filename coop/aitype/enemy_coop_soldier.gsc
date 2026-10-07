@@ -111,6 +111,10 @@ main()
 			health = kind.health;
 		if ( isDefined( kind.accuracy ) )
 			accuracy = kind.accuracy;
+		// A cast member (_cooptraining.gsc): a friendly soldier on the allies
+		// team with the body and head the level authors for him.
+		if ( isDefined( kind.team ) )
+			self.team = kind.team;
 	}
 
 	self.accuracy = accuracy;
@@ -167,6 +171,11 @@ main()
 		break;
 	}
 
+	if ( isDefined( kind ) && isDefined( kind.body ) )
+	{
+		character\character_coop_soldier::cast_model( kind.body, kind.head );
+		return;
+	}
 	character\character_coop_soldier::main( faction, role );
 }
 

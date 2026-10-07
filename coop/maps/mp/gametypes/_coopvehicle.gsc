@@ -111,9 +111,23 @@ spawn_mover( vehicle )
 	return mover;
 }
 
-// Move the mover along the path.  `height` is added to every point (ground
+// The ground under a point (world only), or the point itself when there is
+// none within 512 units.  IW4 drives ground vehicles on the ground under their
+// vehicle nodes, which sit 40-90 units above it on the training road
+// (MEASURED: road z 0, nodes z 40-44, the authored humvee origin z 92); a
+// script_model placed at the node height floats.
+ground_under( point )
+{
+	trace = bulletTrace( point + ( 0, 0, 64 ), point - ( 0, 0, 512 ), false, undefined );
+	if ( trace[ "fraction" ] < 1 )
+		return trace[ "position" ];
+	return point;
+}
+
+// Move the mover along the path.  `height` is added to every point; with
+// `snapGround` each point is first dropped to the ground under it (ground
 // vehicles); flags are handled as described above.
-follow_path( path, height, defaultMph )
+follow_path( path, height, defaultMph, snapGround )
 {
 	self endon( "death" );
 	speed = defaultMph * mph_to_units();
@@ -127,7 +141,10 @@ follow_path( path, height, defaultMph )
 		if ( isDefined( node.speed ) && node.speed > 0 )
 			speed = node.speed * mph_to_units();
 
-		dest = node.origin + ( 0, 0, height );
+		dest = node.origin;
+		if ( isDefined( snapGround ) && snapGround )
+			dest = ground_under( dest );
+		dest = dest + ( 0, 0, height );
 		dist = distance( self.origin, dest );
 		if ( dist >= 1 )
 		{

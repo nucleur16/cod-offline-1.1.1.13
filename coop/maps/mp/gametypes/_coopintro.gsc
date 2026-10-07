@@ -31,12 +31,18 @@
 // end of the path the riders are set down beside the vehicle (the CH-46 is
 // then hidden: the prologue's own crashed-helicopter models stand there).
 //
-// THE JEEP DIALOGUE IS INFERRED.  pit_pri_* are Price's lines on the training
-// map, but no shipped script or string says which belong to the ride or in
-// what order, so the first lines in alias order are played at a fixed
-// spacing.  level.coop_intro_lines is the one place to correct that, and
-// +set scr_coop_intro_dialogue 0 turns it off.  +set scr_coop_intro_ride 0
-// turns the whole ride off (players then simply start at the map's start).
+// THE JEEP DIALOGUE comes from _cooptraining.gsc ride_lines(): Price's
+// pit_pri_001..003, whose place in the mission was established by listening
+// to the shipped lines (docs/CODOL_CAMPAIGN_MODE.md section 9).  They play
+// from the jeep at their own lengths.  +set scr_coop_intro_dialogue 0 turns
+// them off; +set scr_coop_intro_ride 0 turns the whole ride off (players then
+// simply start at the map's start).
+//
+// 2026-10-07 user report, second round: "the jeep just floats in air while I
+// spawned on foot outside the double car gates".  Fixed here: the jeep stands
+// on the ground under its authored origin and path (_coopvehicle
+// ground_under), players are seated as they spawn (board(), from
+// _coopmode::spawnPlayer) and the ride waits for its riders to look around.
 //
 // Coop category root only; names no multiplayer module.
 
@@ -90,76 +96,133 @@ init()
 	intro.model = model;
 	intro.path = path;
 	intro.ground = maps\mp\gametypes\_coopvehicle::is_ground_path( path );
-	// A ground vehicle's authored origin sits this far above its first node;
-	// a helicopter path is the vehicle's own positions.
-	intro.height = 0;
-	if ( intro.ground )
-		intro.height = vehicle.origin[ 2 ] - path[ 0 ].origin[ 2 ];
+	intro.riders = [];
+	intro.started = false;
+	intro.done = false;
 	level.coop_intro = intro;
+
+	// The mover exists from the start, parked where the vehicle is authored,
+	// so the first player spawns INTO it.  A ground vehicle stands on the
+	// ground under its authored origin: the 2026-10-07 user report "the jeep
+	// just floats in air" was the authored origin (z 92, 90 units above the
+	// road) used as the model's origin.
+	start = vehicle.origin;
+	if ( intro.ground )
+		start = maps\mp\gametypes\_coopvehicle::ground_under( start );
+	mover = spawn( "script_model", start );
+	mover.angles = vehicle.angles;
+	mover setModel( model );
+	vehicle hide();
+	intro.mover = mover;
 
 	level.coop_intro_lines = [];
 	if ( intro.ground )
-	{
-		level.coop_intro_lines[ 0 ] = "pit_pri_001";
-		level.coop_intro_lines[ 1 ] = "pit_pri_002_1";
-		level.coop_intro_lines[ 2 ] = "pit_pri_002_2";
-		level.coop_intro_lines[ 3 ] = "pit_pri_002_3";
-		level.coop_intro_lines[ 4 ] = "pit_pri_003";
-	}
+		maps\mp\gametypes\_cooptraining::ride_lines();
 
-	codolprintln( "CoDOL coop intro: " + vehicle.targetname + " (" + model + ") ride over " + path.size +
-		" path points from " + vehicle.origin + " to " + path[ path.size - 1 ].origin + ", ground " + intro.ground );
+	codolprintln( "CoDOL coop intro: " + vehicle.targetname + " (" + model + ") parked at " + start + ", ride over " +
+		path.size + " path points to " + path[ path.size - 1 ].origin + ", ground " + intro.ground );
 }
 
 // Threaded from _coopmode::Callback_StartGameType after init().
+//
+// THE START.  Players are seated as they SPAWN (_coopmode::spawnPlayer calls
+// board()), so the first player begins in the vehicle rather than beside it.
+// The vehicle then waits until its riders are actually playing: a real C1
+// client is spawned when it enters the game but is still fading in from the
+// load for several seconds, and the first version drove off 1.5 s after the
+// spawn -- the user saw only the end of a ride he never watched (MEASURED,
+// VPS codol-match-17733: "ride starts with 1 rider", "ride over", then the
+// player walking from camp).  The ride now starts when a rider turns his view
+// (the first sign a real client is looking at the world) or after
+// scr_coop_intro_wait seconds (default 8).
 main()
 {
 	if ( !isDefined( level.coop_intro ) )
 		return;
 
 	level endon( "coop_mission_over" );
+	intro = level.coop_intro;
 
-	// The ride starts when the first player is in; everyone in by then rides.
-	riders = [];
-	while ( riders.size <= 0 )
+	while ( intro.riders.size <= 0 )
+		wait( 0.25 );
+
+	limit = getDvarFloat( "scr_coop_intro_wait" );
+	if ( limit <= 0 )
+		limit = 8;
+	waited = 0;
+	while ( waited < limit && !riders_looking() )
 	{
-		wait( 0.5 );
-		riders = ride_candidates();
+		wait( 0.25 );
+		waited += 0.25;
 	}
-	wait( 1.5 );
-	riders = ride_candidates();
 
-	ride( riders );
+	ride();
 }
 
-ride_candidates()
+// A rider whose view has moved since he was seated is looking at the world.
+riders_looking()
 {
-	riders = [];
-	players = getPlayers();
-	for ( i = 0; i < players.size; i++ )
+	riders = level.coop_intro.riders;
+	for ( i = 0; i < riders.size; i++ )
 	{
-		p = players[ i ];
-		if ( !isAlive( p ) || !isDefined( p.sessionstate ) || p.sessionstate != "playing" )
+		p = riders[ i ];
+		if ( !isDefined( p ) || !isDefined( p.coop_seat_angles ) )
 			continue;
-		riders[ riders.size ] = p;
+		a = p getPlayerAngles();
+		if ( abs_angle( a[ 1 ] - p.coop_seat_angles[ 1 ] ) > 2 || abs_angle( a[ 0 ] - p.coop_seat_angles[ 0 ] ) > 2 )
+			return true;
 	}
-	return riders;
+	return false;
+}
+
+abs_angle( a )
+{
+	while ( a > 180 )
+		a -= 360;
+	while ( a < -180 )
+		a += 360;
+	if ( a < 0 )
+		return 0 - a;
+	return a;
+}
+
+// _coopmode::spawnPlayer hook: true when the player was seated.
+board()
+{
+	intro = level.coop_intro;
+	if ( !isDefined( intro ) || intro.done || !isDefined( intro.mover ) )
+		return false;
+
+	seat = intro.riders.size;
+	intro.riders[ seat ] = self;
+	self.coop_in_intro = true;
+	if ( intro.ground )
+		self disableWeapons();
+	self setStance( "stand" );
+
+	mover = intro.mover;
+	offset = seat_offset( seat, intro.ground );
+	self setOrigin( local_to_world( mover.origin, mover.angles, offset ) );
+	self setPlayerAngles( mover.angles );
+	self.coop_seat_angles = mover.angles;
+	self playerLinkToDelta( mover, "tag_origin", 1 );
+	codolprintln( "CoDOL coop intro: " + self.name + " seated in seat " + seat + ", ride started " + intro.started );
+	return true;
 }
 
 // Seats: offsets from the vehicle origin in its own frame (forward, right,
-// up).  The humvee viewmodel's origin is MEASURED 92 units above the road at
-// its spawn (checkstarts ground trace, road at z 0), so its riders' feet go
-// 62 below it; the CH-46 interior model's origin is its cabin floor
+// up).  The humvee stands on the ground (see init), so a seated rider's feet
+// are a little above it; the CH-46 interior model's origin is its cabin floor
 // (INFERRED), so riders stand on it.
 seat_offset( index, ground )
 {
 	seats = [];
 	if ( ground )
 	{
-		seats[ 0 ] = ( -8, 18, -62 );
-		seats[ 1 ] = ( -8, -18, -62 );
-		seats[ 2 ] = ( -48, 18, -62 );
-		seats[ 3 ] = ( -48, -18, -62 );
+		seats[ 0 ] = ( -8, 18, 24 );
+		seats[ 1 ] = ( -40, -18, 24 );
+		seats[ 2 ] = ( -40, 18, 24 );
+		seats[ 3 ] = ( -64, 0, 24 );
 	}
 	else
 	{
@@ -176,40 +239,23 @@ local_to_world( origin, angles, offset )
 	return origin + anglesToForward( angles ) * offset[ 0 ] + anglesToRight( angles ) * offset[ 1 ] + ( 0, 0, offset[ 2 ] );
 }
 
-ride( riders )
+ride()
 {
 	intro = level.coop_intro;
-
-	vehicle = intro.vehicle;
-	mover = spawn( "script_model", vehicle.origin );
-	mover.angles = vehicle.angles;
-	mover setModel( intro.model );
-	vehicle hide();
-	intro.mover = mover;
-
-	codolprintln( "CoDOL coop intro: ride starts with " + riders.size + " rider(s)" );
+	mover = intro.mover;
+	intro.started = true;
 	level.coop_intro_riding = true;
-
-	for ( i = 0; i < riders.size; i++ )
-	{
-		p = riders[ i ];
-		p.coop_in_intro = true;
-		if ( intro.ground )
-			p disableWeapons();
-		p setStance( "stand" );
-		p setOrigin( local_to_world( mover.origin, mover.angles, seat_offset( i, intro.ground ) ) );
-		p setPlayerAngles( mover.angles );
-		p playerLinkToDelta( mover, "tag_origin", 1 );
-	}
+	codolprintln( "CoDOL coop intro: ride starts with " + intro.riders.size + " rider(s)" );
+	level notify( "coop_intro_started" );
 
 	if ( intro.ground )
 		mover playLoopSound( "hummer_player_engine_low" );
-	level thread intro_dialogue( riders );
+	level thread intro_dialogue();
 
 	defaultMph = 15;
 	if ( !intro.ground )
 		defaultMph = 30;
-	mover maps\mp\gametypes\_coopvehicle::follow_path( intro.path, intro.height, defaultMph );
+	mover maps\mp\gametypes\_coopvehicle::follow_path( intro.path, 0, defaultMph, intro.ground );
 
 	if ( intro.ground )
 	{
@@ -218,7 +264,8 @@ ride( riders )
 	}
 	wait( 0.5 );
 
-	// Set the riders down beside the vehicle, on the ground.
+	intro.done = true;
+	riders = intro.riders;
 	for ( i = 0; i < riders.size; i++ )
 	{
 		p = riders[ i ];
@@ -228,8 +275,8 @@ ride( riders )
 		side = 1;
 		if ( i % 2 )
 			side = -1;
-		spot = mover.origin + anglesToRight( mover.angles ) * ( 64 * side ) - anglesToForward( mover.angles ) * ( 24 * int( i / 2 ) );
-		trace = bulletTrace( spot + ( 0, 0, 16 ), spot - ( 0, 0, 1024 ), false, mover );
+		spot = mover.origin + anglesToRight( mover.angles ) * ( 72 * side ) - anglesToForward( mover.angles ) * ( 24 * int( i / 2 ) );
+		trace = bulletTrace( spot + ( 0, 0, 32 ), spot - ( 0, 0, 1024 ), false, mover );
 		if ( trace[ "fraction" ] < 1 )
 			spot = trace[ "position" ] + ( 0, 0, 1 );
 		p setOrigin( spot );
@@ -245,19 +292,24 @@ ride( riders )
 	level notify( "coop_intro_done" );
 }
 
-intro_dialogue( riders )
+// The ride's lines, from the vehicle's driver when the map authors one
+// (_cooptraining gives the training humvee Price at the wheel), else from the
+// vehicle.
+intro_dialogue()
 {
 	if ( getDvar( "scr_coop_intro_dialogue" ) != "" && getDvarInt( "scr_coop_intro_dialogue" ) == 0 )
 		return;
 	lines = level.coop_intro_lines;
-	wait( 1.5 );
+	speaker = level.coop_intro.mover;
+	if ( isDefined( level.coop_intro_driver ) )
+		speaker = level.coop_intro_driver;
+	wait( 1.0 );
 	for ( l = 0; l < lines.size; l++ )
 	{
-		for ( i = 0; i < riders.size; i++ )
-		{
-			if ( isDefined( riders[ i ] ) )
-				riders[ i ] playLocalSound( lines[ l ] );
-		}
-		wait( 3.5 );
+		if ( !isDefined( speaker ) )
+			return;
+		speaker playSound( lines[ l ].alias );
+		codolprintln( "CoDOL coop intro: line " + lines[ l ].alias );
+		wait( lines[ l ].time );
 	}
 }

@@ -1064,7 +1064,10 @@ main()
 	setup_flag_groups();
 	setup_objective_chain();
 
-	if ( level.coop_pmc_spawners.size > 0 )
+	// The training mission runs its own stations (_cooptraining.gsc).
+	if ( isDefined( level.coop_training_flow ) && level.coop_training_flow )
+		codolprintln( "CoDOL coop mission: the training flow runs this mission" );
+	else if ( level.coop_pmc_spawners.size > 0 )
 		level thread run_elimination();
 	else if ( level.coop_obj_chain.size >= 2 )
 		level thread run_objective_chain();
