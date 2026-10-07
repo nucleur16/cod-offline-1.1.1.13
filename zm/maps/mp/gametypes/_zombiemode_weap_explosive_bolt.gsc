@@ -76,6 +76,13 @@ init()
 		return;
 	}
 
+	// The armed bolt's grenade danger indicator: C1 only draws it for a timed
+	// frag definition, so the engine marks each armed bolt with an unseen
+	// stielhandgranate (C1 zm weapon window 101; no trail or beacon effect),
+	// falling back to frag_grenade_zm (codol_bolt_attachment.c).  Registered
+	// here, before any wait, as precacheItem requires.
+	precacheItem( "stielhandgranate" );
+
 	if ( crossbow )
 	{
 		level._effect[ "crossbow_friendly_light" ] = loadfx( "weapon/crossbow/fx_trail_crossbow_blink_grn_os" );
@@ -172,7 +179,20 @@ explosive_bolt_armed( player, weapon )
 		bolt notify( "explode", origin );
 	}
 
-	if ( isDefined( player ) && isPlayer( player ) )
+	// The bolt is the blast's inflictor, as T5's spawned grenade is: the
+	// engine then measures each target from its origin, T5's rule, rather than
+	// from the edge of its box, C1's rule for its own explosions, which made
+	// the T5 radius reach about a body's width further and ignored the height
+	// of a bolt stuck in a chest (codol_bolt_attachment.c
+	// CODOL_RadiusDamageFromOrigin).
+	if ( isDefined( bolt ) )
+	{
+		if ( isDefined( player ) && isPlayer( player ) )
+			bolt radiusDamage( origin, s.radius, s.inner, s.outer, player, "MOD_GRENADE_SPLASH", s.launcher );
+		else
+			bolt radiusDamage( origin, s.radius, s.inner, s.outer );
+	}
+	else if ( isDefined( player ) && isPlayer( player ) )
 		radiusDamage( origin, s.radius, s.inner, s.outer, player, "MOD_GRENADE_SPLASH", s.launcher );
 	else
 		radiusDamage( origin, s.radius, s.inner, s.outer );
