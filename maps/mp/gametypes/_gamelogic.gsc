@@ -1516,6 +1516,7 @@ Callback_StartGameType()
 	thread maps\mp\_events::init();
 	thread maps\mp\_defcon::init();
 	thread maps\mp\gametypes\_codol_bots::init();
+	maps\mp\gametypes\_codol_top_players::init();
 	
 	if ( level.teamBased )
 		thread maps\mp\gametypes\_friendicons::init();
@@ -2257,6 +2258,11 @@ endGame( winner, endReasonText, nukeDetonated )
 
 		waittillFinalKillcamDone();
 	}				
+
+	// CoDOL: C1's end-of-match top players scene runs here, after the final
+	// killcam and before the intermission; it returns at once on a map
+	// without top_players ents.
+	maps\mp\gametypes\_codol_top_players::playScene();
 
 	levelFlagClear( "block_notifies" );
 
