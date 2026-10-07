@@ -24,6 +24,15 @@
 //             publishes the player at entityState +64, which makes C1 compose
 //             that client's whole character on the model (C1 0x55b5e0 /
 //             0x43e809 -> 0x4437c0) with the player_3rd_person tree.
+//   Weapons   codol_setCharacterClone also links the player's world guns to
+//             the clone at the same hand tags (C1 0x55b5e0 does the same), or
+//             the named weapon when the player holds none any more.
+//   Camera    the view starts scr_codol_topplayers_dolly units behind
+//             top_players_camera and dollies onto it over the walk. Viewers
+//             are spectators camera-linked to a moving tag_origin model, so
+//             C1 interpolates the camera from the entity's trajectory; an
+//             intermission view cannot move smoothly (C1 0x476848 draws
+//             pm_type 6 from the snapshot origin and skips the camera link).
 //   Cards     the HUD menus playercard_top_players_{1,2,3} (hud_720.txt,
 //             patch_common_mp) draw getplayercardinfo(*, 0, 1|2|3) and are
 //             visible while dvarbool("cg_topPlayersCards"). Slot N is filled
@@ -48,6 +57,12 @@ init()
 	// has arrived.
 	if ( getDvar( "scr_codol_topplayers_hold" ) == "" )
 		setDvar( "scr_codol_topplayers_hold", 6 );
+	// How far behind top_players_camera the shot starts; it dollies in over
+	// the walk-up. 0 keeps the camera still.
+	if ( getDvar( "scr_codol_topplayers_dolly" ) == "" )
+		setDvar( "scr_codol_topplayers_dolly", 64 );
+
+	precacheModel( "tag_origin" );
 
 	level.topPlayersWalk = [];
 	level.topPlayersWalk[0] = %post_game_walkup_1st;
@@ -139,8 +154,9 @@ sceneMarks()
 	return scene;
 }
 
-// The match's best players by placement: score, then fewer deaths
-// (_gamescore::getBetterPlayer). Spectators never place.
+// The match's best players overall, regardless of team: level.placement["all"]
+// holds every allies and axis player sorted by score, then fewer deaths
+// (_gamescore::updatePlacement / getBetterPlayer). Spectators never place.
 pickTopPlayers( count )
 {
 	maps\mp\gametypes\_gamescore::updatePlacement();
@@ -186,19 +202,24 @@ playScene()
 	level.topPlayersSceneActive = true;
 	level notify( "top_players_scene_start" );
 
-	foreach ( player in level.players )
-		player viewFromCamera( scene.camera );
-
 	longest = 0;
 	for ( rank = 0; rank < top.size; rank++ )
 	{
 		length = getAnimLength( level.topPlayersWalk[ rank ] );
 		if ( length > longest )
 			longest = length;
-		level.topPlayersModels[ rank ] = top[ rank ] spawnWalker( rank, scene.marks[ rank ] );
 	}
 
-	print( "CoDOL top players: " + top.size + " on " + getDvar( "mapname" ) + ", walk " + longest + " s\n" );
+	// The clones first, while the players still hold their guns: their world
+	// guns are what the clones are given.
+	for ( rank = 0; rank < top.size; rank++ )
+		level.topPlayersModels[ rank ] = top[ rank ] spawnWalker( rank, scene.marks[ rank ] );
+
+	level.topPlayersCamera = spawnCamera( scene.camera, longest );
+	foreach ( player in level.players )
+		player viewFromCamera( level.topPlayersCamera );
+
+	print( "CoDOL top players: " + top.size + " on " + getDvar( "mapname" ) + ", walk " + longest + " s, camera ent " + level.topPlayersCamera getEntityNumber() + " from " + level.topPlayersCamera.origin + " to " + scene.camera.origin + "\n" );
 
 	wait ( longest );
 
@@ -211,19 +232,44 @@ playScene()
 	level notify( "top_players_scene_end" );
 
 	foreach ( player in level.players )
+	{
 		player setClientDvar( "cg_topPlayersCards", 0 );
+		player cameraUnlink();
+	}
 
 	foreach ( model in level.topPlayersModels )
 	{
 		if ( isDefined( model ) )
-			model delete();
+			model removeClone();
 	}
 	level.topPlayersModels = [];
+
+	if ( isDefined( level.topPlayersCamera ) )
+		level.topPlayersCamera delete();
+	level.topPlayersCamera = undefined;
 }
 
-// _playerlogic::spawnIntermission's spawn, at the scene camera. An
-// intermission view is the spawn origin and angles themselves, which is what
-// the camera struct holds.
+// The moving camera: a tag_origin model starting behind top_players_camera
+// along its view direction, moved onto it over the walk with ease in and out.
+// moveTo publishes a trajectory, which C1 evaluates every frame.
+spawnCamera( camera, duration )
+{
+	dolly = getDvarFloat( "scr_codol_topplayers_dolly" );
+	start = camera.origin - anglesToForward( camera.angles ) * dolly;
+
+	ent = spawn( "script_model", start );
+	ent setModel( "tag_origin" );
+	ent.angles = camera.angles;
+	ent notSolid();
+
+	if ( dolly != 0 && duration > 0.1 )
+		ent moveTo( camera.origin, duration, duration * 0.25, duration * 0.4 );
+	return ent;
+}
+
+// _playerlogic::spawnIntermission's preparation, then a frozen spectator at
+// the camera's position, camera-linked to it (as _remotemissile links the
+// view to the missile).
 viewFromCamera( camera )
 {
 	self notify( "spawned" );
@@ -235,11 +281,23 @@ viewFromCamera( camera )
 	self clearLowerMessages();
 	self freezeControlsWrapper( true );
 
-	self.sessionstate = "intermission";
+	self.sessionstate = "spectator";
+	self.spectatorclient = -1;
+	self.killcamentity = -1;
+	self.archivetime = 0;
+	self.psoffsettime = 0;
 	self ClearKillcamState();
 	self.friendlydamage = undefined;
 
+	// No following and no free look: the scene is the only view.
+	self allowSpectateTeam( "allies", false );
+	self allowSpectateTeam( "axis", false );
+	self allowSpectateTeam( "freelook", false );
+	self allowSpectateTeam( "none", true );
+
 	self spawn( camera.origin, camera.angles );
+	self freezeControlsWrapper( true );
+	self cameraLinkTo( camera, "tag_origin" );
 	self setDepthOfField( 0, 128, 512, 4000, 6, 1.8 );
 }
 
@@ -291,28 +349,87 @@ spawnWalker( rank, mark )
 		model setModel( "tag_origin" );
 	model notSolid();
 
-	model codol_setCharacterClone( self );
+	// The player's own world guns, in their hands; a player who holds none
+	// any more (dead after the final killcam) gets the last weapon they had.
+	model.weapons = model codol_setCharacterClone( self );
+	if ( !model.weapons.size )
+	{
+		weapon = self lastHeldWeapon();
+		if ( isDefined( weapon ) )
+			model.weapons = model codol_setCharacterClone( self, weapon );
+	}
 
 	model setAnimKnobRestart( walk, 1, 0, 1 );
 
-	print( "CoDOL top players: rank " + ( rank + 1 ) + " client " + self getEntityNumber() + " '" + self.name + "' ent " + model getEntityNumber() + " from " + start + " yaw " + startAngles[1] + " to " + mark.origin + " yaw " + endAngles[1] + " over " + length + " s\n" );
+	print( "CoDOL top players: rank " + ( rank + 1 ) + " client " + self getEntityNumber() + " '" + self.name + "' ent " + model getEntityNumber() + " weapons " + model.weapons.size + " from " + start + " yaw " + startAngles[1] + " to " + mark.origin + " yaw " + endAngles[1] + " over " + length + " s\n" );
 
-	if ( distanceSquared( start, mark.origin ) > 1 && length > 0.1 )
-		model moveTo( mark.origin, length );
-	if ( startAngles[1] != endAngles[1] && length > 0.1 )
-		model rotateTo( endAngles, length );
-
-	model thread holdPose( self, idle, length );
+	model thread walkUp( self, walk, idle, length, start, startAngles );
 	return model;
 }
 
-holdPose( player, idle, delay )
+lastHeldWeapon()
+{
+	if ( isDefined( self.lastDroppableWeapon ) && self.lastDroppableWeapon != "none" && self.lastDroppableWeapon != "" )
+		return self.lastDroppableWeapon;
+	if ( isDefined( self.primaryWeapon ) && self.primaryWeapon != "none" && self.primaryWeapon != "" )
+		return self.primaryWeapon;
+	return undefined;
+}
+
+// The clone and the guns linked to it.
+removeClone()
+{
+	if ( isDefined( self.weapons ) )
+	{
+		foreach ( weapon in self.weapons )
+		{
+			if ( isDefined( weapon ) )
+				weapon delete();
+		}
+	}
+	self delete();
+}
+
+// The clip carries its displacement as root motion, which neither the server
+// DObj nor C1 applies to a script model's origin (the delta is not part of
+// the bone pose), so the model is carried along the clip's own path: every
+// step it moves, on a linear trajectory C1 interpolates, to where the clip's
+// accumulated motion puts it at the end of that step. A single moveTo over
+// the whole clip is linear, while the walk starts and stops with the steps,
+// which slid the feet. The clip was restarted at time 0 on this same frame
+// (setAnimKnobRestart in spawnWalker), so path and pose share one clock; the
+// idle takes over with a short blend on the frame the walk ends.
+walkUp( player, walk, idle, length, start, startAngles )
 {
 	self endon( "death" );
 
 	player thread dropCloneOnDisconnect( self );
 
-	wait ( delay );
+	step = 0.1;
+	trace = getDvarInt( "scr_codol_topplayers_trace" );
+	elapsed = 0;
+	while ( length - elapsed > 0.001 )
+	{
+		next = elapsed + step;
+		if ( next > length )
+			next = length;
+		fraction = next / length;
+		target = start + animDeltaToWorld( getMoveDelta( walk, 0, fraction ), startAngles );
+		yaw = startAngles[1] + getAngleDelta( walk, 0, fraction );
+		duration = next - elapsed;
+
+		self moveTo( target, duration );
+		if ( yaw != self.angles[1] )
+			self rotateTo( ( 0, yaw, 0 ), duration );
+
+		if ( trace )
+			print( "CoDOL top players: ent " + self getEntityNumber() + " t " + elapsed + " origin " + self.origin + " clip " + ( start + animDeltaToWorld( getMoveDelta( walk, 0, elapsed / length ), startAngles ) ) + "\n" );
+
+		wait ( duration );
+		elapsed = next;
+	}
+	if ( trace )
+		print( "CoDOL top players: ent " + self getEntityNumber() + " t " + elapsed + " origin " + self.origin + " (end of walk), idle\n" );
 	self setAnimKnobRestart( idle, 1, 0.2, 1 );
 }
 
@@ -324,5 +441,5 @@ dropCloneOnDisconnect( model )
 	level endon( "top_players_scene_end" );
 
 	self waittill( "disconnect" );
-	model delete();
+	model removeClone();
 }
