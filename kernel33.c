@@ -458,48 +458,67 @@ static void PatchScoresOpen(void)
     Log("scoreboard: TAB reloads the HUD movie when a lost device skipped it");
 }
 
-/* Patch folder: client_shipRetail\patch\*.ff loaded from memory ahead of the stock zones.
- * A zone read from disk must be RSA-signed: DB_LoadXFile (0x4B5D50) sends an unsigned IWffu100
- * zone whose stream is a file handle to the error path (0x4B5EEA-0x4B5F02). The only unsigned
- * zone C1 takes is the lobby's fastfile of the day, which DB_TryLoadXFileInternal (0x4CD260,
- * called per queued zone by the DB thread at 0x4CD8E5) serves from memory:
- *     0x4CD27F  strcmp(name, "ffotd_client") ; 0x4CD2AF jne 0x4CD3E3 (disk: CreateFile "%s.ff")
- *     ffotd: [ebp-0x214] = size, [ebp-0x210] = buffer, esi = -1 (no handle) -> 0x4CD55E
- * 0x4CD55E fills the zone entry {handle, remaining, cursor, name[64], ..., allocFlags @+0x4C},
- * and the stream reader (0x4B6790) memcpys from the cursor when the handle is -1, so the buffer
- * is only read. Only "ffotd_client" also sets the entry's FFOTD byte (+0xA4).
- * Two changes, both byte-checked:
- *   - the jne at 0x4CD2AF goes to PatchDirOpenHook: a name that is one of the patch files takes
- *     the ffotd memory path with that file's buffer, any other name continues to 0x4CD3E3
- *     exactly as before. Disk zones keep their signature check; "ffotd_client" never gets here.
+/* Unsigned zones from disk. DB_LoadXFile (0x4B5D50) reads the header and sets signed = 0 for
+ * "IWffu100", then refuses it unless the stream has no file handle, i.e. unless it is the
+ * lobby's fastfile of the day served from memory:
+ *     0x4B5EFB  cmp eax, ebx ; jne 0x4B5F04 (signed) ; cmp [stream.handle], -1 ; jne 0x4B5F1A (error)
+ * Past that test nothing depends on where the bytes come from: 0x4B5AC0 records signed = 0 and
+ * decrypts the first 0x40000-byte chunk's input once (0x4B5B7D), the reader (0x4B6790) fills
+ * chunks with ReadFileEx for a handle or memcpy for a buffer, and 0x4B69E0 inflates unsigned
+ * chunks directly (signed ones go through 0x4B5840). The jne becomes two nops, so an unsigned
+ * zone loads from a file like any other; signed zones are untouched. Any client_shipRetail zone
+ * may now be an unsigned build, in the same layout tools/codol_english/build_font_ff.py writes. */
+#define UNSIGNED_GATE_VA 0x004B5EF5u
+
+static BOOL PatchUnsignedZones(void)
+{
+    static const BYTE kGate[] = { 0x8B, 0x0D, 0x80, 0x68, 0x7C, 0x01, 0x3B, 0xC3, 0x75, 0x05,
+                                  0x83, 0x39, 0xFF, 0x75, 0x16 };
+    static const BYTE kNops[] = { 0x90, 0x90 };
+    BYTE *gate = (BYTE *)(DWORD_PTR)UNSIGNED_GATE_VA;
+    if (!Readable(gate, sizeof(kGate)) || memcmp(gate, kGate, sizeof(kGate)) != 0) {
+        Log("unsigned zones: bytes at 0x%08X do not match, disk zones must be signed", UNSIGNED_GATE_VA);
+        return FALSE;
+    }
+    WriteCode(gate + 13, kNops, sizeof(kNops));
+    Log("unsigned zones: IWffu100 zones load from disk");
+    return TRUE;
+}
+
+/* Patch folder: client_shipRetail\patch\*.ff loaded ahead of the stock zones, from disk.
+ * DB_TryLoadXFileInternal (0x4CD260, called per queued zone by the DB thread at 0x4CD8E5) opens
+ * a zone as CreateFile("<zone dir>\<name>.ff", GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING,
+ * FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING) at 0x4CD44E, then 0x4CD55E fills the zone
+ * entry {handle, remaining 0, cursor 0, name[64], ..., allocFlags @+0x4C, GetFileSize @+0x9C}.
+ *     0x4CD27F  strcmp(name, "ffotd_client") ; 0x4CD2AF jne 0x4CD3E3 (the disk path)
+ * Two changes, both byte-checked, and only once PatchUnsignedZones is in:
+ *   - the jne at 0x4CD2AF goes to PatchDirOpenHook: a name that is one of the patch files is
+ *     opened from patch\ with the same flags and joins 0x4CD55E as a disk zone; any other name
+ *     continues to 0x4CD3E3 exactly as before. "ffotd_client" never gets here.
  *   - the code_pre_gfx list's DB_LoadXAssets call (0x59841C, 4 zones, alloc flags 1) goes to
  *     PreGfxLoadHook, which prepends the patch zones (same alloc flags) to the list. C1 keeps the
  *     first entry it links under a name, so their assets win over every stock zone.
- * Files are taken in alphabetical order; each must be IWffu100 version 0x14E and at most 32 MiB.
- * C1 decrypts only the first 0x40000-byte read chunk of an unsigned zone (0x4B5B7D, over the
- * z_stream input after the header) and inflates every later chunk as read (0x4B69E0 skips the
- * decrypt when the zone is unsigned), so a file over 256 KiB must carry its body in plain after
- * the first chunk; tools/codol_english/build_font_ff.py writes it that way.
- * A file named like a stock zone (or ffotd_client) is skipped, so it can never replace one.
+ * Files are taken in alphabetical order; each must start IWffu100 version 0x14E. Nothing is held
+ * in memory: C1's own streaming reader reads the file on every load.
+ * A file named like a stock zone (or ffotd_client) is skipped, so it can never shadow one; to
+ * replace a stock zone, put the unsigned build in its stock folder instead.
  * "+set codol_patchdir 0" on the command line turns the folder off. */
 #define PATCHDIR_OPEN_JNE_VA   0x004CD2AFu
 #define PATCHDIR_DISK_PATH_VA  0x004CD3E3u
-#define PATCHDIR_MEM_PATH_VA   0x004CD55Eu
+#define PATCHDIR_OPENED_VA     0x004CD55Eu
 #define PREGFX_LOAD_CALL_VA    0x0059841Cu
 #define DB_LOAD_XASSETS_VA     0x08465768u
-#define ZONE_OVERRIDE_FLAG_VA  0x019A2F6Cu
 #define PATCHDIR_MAX_FILES     16
-#define PATCHDIR_MAX_BYTES     0x2000000u /* 32 MiB; the English font zone is ~7.4 MB */
 
 typedef struct { const char *name; int allocFlags; int freeFlags; } XZoneInfo;
 typedef void (__cdecl *LoadXAssetsFn)(XZoneInfo *info, unsigned count, int sync);
 
-typedef struct { DWORD size; const BYTE *data; char name[64]; } PatchZone; /* size, data: read by asm */
+typedef struct { char name[64]; char path[MAX_PATH]; } PatchZone;
 
 static PatchZone g_patchZones[PATCHDIR_MAX_FILES];
 static int g_patchZoneCount;
 __attribute__((used)) DWORD g_patchDirDiskPath = PATCHDIR_DISK_PATH_VA;
-__attribute__((used)) DWORD g_patchDirMemPath = PATCHDIR_MEM_PATH_VA;
+__attribute__((used)) DWORD g_patchDirOpenedPath = PATCHDIR_OPENED_VA;
 
 /* "+set codol_patchdir 0" anywhere on the command line; the last setting wins. */
 static BOOL PatchDirEnabled(void)
@@ -591,52 +610,41 @@ static void LoadPatchDir(void)
             continue;
         }
 
-        char path[MAX_PATH];
-        _snprintf(path, sizeof(path), "%spatch\\%s", dir, file);
-        path[sizeof(path) - 1] = 0;
-        HANDLE f = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+        _snprintf(z->path, sizeof(z->path), "%spatch\\%s", dir, file);
+        z->path[sizeof(z->path) - 1] = 0;
+        HANDLE f = CreateFileA(z->path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
         if (f == INVALID_HANDLE_VALUE) {
             Log("patch folder: skipped %s: open failed (%lu)", file, GetLastError());
             continue;
         }
-        DWORD size = GetFileSize(f, NULL), got = 0;
-        if (size == INVALID_FILE_SIZE || size > PATCHDIR_MAX_BYTES || size < 16) {
-            CloseHandle(f);
-            Log("patch folder: skipped %s: %lu bytes (an unsigned zone must be 16..%u bytes)", file,
-                (unsigned long)size, PATCHDIR_MAX_BYTES);
-            continue;
-        }
-        BYTE *data = (BYTE *)HeapAlloc(GetProcessHeap(), 0, size); /* kept: C1 reads it on every load */
-        BOOL ok = data && ReadFile(f, data, size, &got, NULL) && got == size;
+        BYTE hdr[12];
+        DWORD got = 0, size = GetFileSize(f, NULL);
+        BOOL ok = ReadFile(f, hdr, sizeof(hdr), &got, NULL) && got == sizeof(hdr);
         CloseHandle(f);
-        if (!ok) {
-            Log("patch folder: skipped %s: read failed", file);
-            if (data) HeapFree(GetProcessHeap(), 0, data);
-            continue;
-        }
-        if (memcmp(data, "IWffu100", 8) != 0 || *(DWORD *)(data + 8) != 0x14E) {
+        if (!ok || memcmp(hdr, "IWffu100", 8) != 0 || *(DWORD *)(hdr + 8) != 0x14E) {
             Log("patch folder: skipped %s: not an IWffu100 version 0x14E zone", file);
-            HeapFree(GetProcessHeap(), 0, data);
             continue;
         }
-        z->size = size;
-        z->data = data;
         g_patchZoneCount++;
         Log("patch folder: %s (%lu bytes) queued as zone \"%s\"", file, (unsigned long)size, z->name);
     }
 }
 
-/* Called on the DB thread with the name DB_TryLoadXFileInternal is about to open from disk. */
-__attribute__((used)) const PatchZone *__cdecl PatchDirFind(const char *name)
+/* Called on the DB thread with the name DB_TryLoadXFileInternal is about to open from disk.
+ * Returns the open patch file, or INVALID_HANDLE_VALUE when the name is not a patch zone. */
+__attribute__((used)) HANDLE __cdecl PatchDirOpen(const char *name)
 {
     for (int i = 0; i < g_patchZoneCount; i++) {
-        if (lstrcmpiA(g_patchZones[i].name, name) == 0) {
-            Log("patch folder: zone \"%s\" loading from memory (%lu bytes, override flag %lu)", name,
-                (unsigned long)g_patchZones[i].size, *(volatile DWORD *)(DWORD_PTR)ZONE_OVERRIDE_FLAG_VA);
-            return &g_patchZones[i];
-        }
+        if (lstrcmpiA(g_patchZones[i].name, name) != 0) continue;
+        HANDLE f = CreateFileA(g_patchZones[i].path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+                               FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING, NULL);
+        if (f == INVALID_HANDLE_VALUE)
+            Log("patch folder: zone \"%s\": open failed (%lu)", name, GetLastError());
+        else
+            Log("patch folder: zone \"%s\" loading from %s", name, g_patchZones[i].path);
+        return f;
     }
-    return NULL;
+    return INVALID_HANDLE_VALUE;
 }
 
 void PatchDirOpenHook(void);
@@ -645,17 +653,15 @@ __asm__(
     ".globl _PatchDirOpenHook\n"
     "_PatchDirOpenHook:\n"            /* ebx = zone name, edi = 0, ebp = the caller's frame */
     "    pushl %ebx\n"
-    "    call _PatchDirFind\n"
+    "    call _PatchDirOpen\n"
     "    addl $4, %esp\n"
-    "    testl %eax, %eax\n"
-    "    jz 1f\n"
-    "    movl (%eax), %ecx\n"
-    "    movl %ecx, -0x214(%ebp)\n"    /* size */
-    "    movl 4(%eax), %ecx\n"
-    "    movl %ecx, -0x210(%ebp)\n"    /* buffer */
-    "    orl $-1, %esi\n"              /* no file handle */
+    "    cmpl $-1, %eax\n"
+    "    je 1f\n"
+    "    movl %eax, %esi\n"            /* the handle, as CreateFileA @ 0x4CD454 leaves it */
     "    movl %esi, -0x218(%ebp)\n"
-    "    jmp *_g_patchDirMemPath\n"
+    "    movl %edi, -0x214(%ebp)\n"    /* remaining 0, cursor 0: a disk zone */
+    "    movl %edi, -0x210(%ebp)\n"
+    "    jmp *_g_patchDirOpenedPath\n"
     "1:  jmp *_g_patchDirDiskPath\n");
 
 static void __cdecl PreGfxLoadHook(XZoneInfo *info, unsigned count, int sync)
@@ -675,6 +681,10 @@ static void __cdecl PreGfxLoadHook(XZoneInfo *info, unsigned count, int sync)
 
 static void PatchPatchDir(void)
 {
+    if (!PatchUnsignedZones()) {
+        Log("patch folder: not installed (unsigned zones cannot load from disk)");
+        return;
+    }
     if (!PatchDirEnabled()) {
         Log("patch folder: off (codol_patchdir 0)");
         return;
@@ -697,7 +707,7 @@ static void PatchPatchDir(void)
     WriteCode(jne + 2, &rel, 4);
     rel = (LONG)((DWORD_PTR)PreGfxLoadHook - (PREGFX_LOAD_CALL_VA + 5));
     WriteCode(call + 1, &rel, 4);
-    Log("patch folder: %d zone(s) load from memory ahead of code_pre_gfx", g_patchZoneCount);
+    Log("patch folder: %d zone(s) load from disk ahead of code_pre_gfx", g_patchZoneCount);
 }
 
 /* GPU rating. Com_Init registers "2658" (the benchmark score) as Dvar_RegisterInt(default 0,
