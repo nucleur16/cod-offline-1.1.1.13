@@ -604,7 +604,29 @@ Callback_PlayerConnect()
 
 	level notify( "connected", self );
 
+	self thread onMenuResponse();
 	self thread spawnPlayer();
+}
+
+// One Escape resumes from the pause menu, as in zm (04aab03c): C1's pause
+// screen answers the closing Escape with "mr <id> <slot> back" and only hides
+// its movie, leaving the legacy sf_pausemenu_minimap panel holding
+// KEYCATCH_UI.  Two closeInGameMenu ('H', C1 0x005F5160) passes run C1's
+// two-step teardown; see zm _zombiemode.gsc onMenuResponse.
+onMenuResponse()
+{
+	self endon( "disconnect" );
+
+	for ( ;; )
+	{
+		self waittill( "menuresponse", menu, response );
+
+		if ( response != "back" )
+			continue;
+
+		self closeInGameMenu();
+		self closeInGameMenu();
+	}
 }
 
 Callback_PlayerDisconnect()
