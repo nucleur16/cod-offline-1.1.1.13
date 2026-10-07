@@ -165,6 +165,12 @@ player_laststand()
 	// remembers it in score_lost_when_downed for the reviver.
 	self maps\mp\gametypes\_zombiemode_score::player_downed_penalty();
 
+	// T5 :2141 calls the weapon power-up's last-stand hook before storing
+	// the weapons; its hold restrictions go first so the pistol switch below
+	// is not refused (the power-up watcher takes the weapon itself).
+	if ( self has_powerup_weapon() )
+		self powerup_weapon_unlock();
+
 	// _zombiemode.gsc:2176.
 	self disableOffhandWeapons();
 
@@ -520,6 +526,10 @@ can_revive( revivee )
 		return false;
 
 	if ( !is_player_valid( self ) )
+		return false;
+
+	// T5 _zombiemode.gsc:4176 (level.can_revive): not with a power-up weapon.
+	if ( self has_powerup_weapon() )
 		return false;
 
 	// The perk bottle is in his hands (T5 makes the same exclusion through

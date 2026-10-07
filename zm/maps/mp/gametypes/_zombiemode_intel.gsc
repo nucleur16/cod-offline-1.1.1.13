@@ -287,6 +287,9 @@ intel_think()
 				continue;
 			if ( isDefined( player.sessionstate ) && player.sessionstate != "playing" )
 				continue;
+			// Not while a power-up weapon is in hand, like every use trigger.
+			if ( is_true( player.has_powerup_weapon ) )
+				continue;
 			for ( i = 0; i < level.zm_intel.size; i++ )
 			{
 				intel = level.zm_intel[ i ];

@@ -843,6 +843,8 @@ spawnPlayer()
 	self allowAds( true );
 	self setMoveSpeedScale( 1 );
 	self enableOffhandWeapons();
+	// A power-up weapon held at death leaves its hold restrictions behind.
+	self powerup_weapon_unlock();
 
 	self giveStartingLoadout();
 	self.zmLastDamageTime = getTime();

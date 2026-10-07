@@ -369,6 +369,42 @@ use_button_held()
 	return self useButtonPressed();
 }
 
+// T5 :3842.  The grabber of a weapon power-up (Death Machine, Wunderwaffe).
+has_powerup_weapon()
+{
+	return is_true( self.has_powerup_weapon );
+}
+
+// While a weapon power-up is in hand.  T5 increment_is_drinking (:3316)
+// disables offhands and weapon cycling, and T5's use triggers and can_revive
+// each refuse has_powerup_weapon(); here the native use gate does that for
+// every trigger at once (disableUsability: Player_UpdateActivate refuses the
+// use and Player_UpdateCursorHints offers no hint).  The Death Machine is
+// also held without a sprint or a melee.  Its own definition (C1 def+0xbd9)
+// already refuses prone and so the dive.  disableWeaponSwitch also refuses a
+// switch the client asks for, so it is set only once the power-up weapon is
+// in hand and cleared before any scripted switch away from it.
+powerup_weapon_lock( kind )
+{
+	self disableWeaponSwitch();
+	self disableOffhandWeapons();
+	self disableUsability();
+	if ( kind == "minigun" )
+	{
+		self allowSprint( false );
+		self allowMelee( false );
+	}
+}
+
+powerup_weapon_unlock()
+{
+	self enableWeaponSwitch();
+	self enableOffhandWeapons();
+	self enableUsability();
+	self allowSprint( true );
+	self allowMelee( true );
+}
+
 // --------------------------------------------------------------------------
 // Enemy accounting.  T5 _zombiemode_utility.gsc:51 get_enemy_count() calls
 // GetAiSpeciesArray( "axis", "all" ), which this server does not register

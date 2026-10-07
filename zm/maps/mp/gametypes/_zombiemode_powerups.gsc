@@ -1327,9 +1327,12 @@ powerup_hud_update()
 // C1 interpretation, stated:
 //   * Per-player state lives in player.zm_powerup_state[] (see
 //     set_powerup_state) under T5's own zombie_vars key names.
-//   * T5's increment_is_drinking / _show_solo_hud is not taken: this port has
-//     no drinking counter.  The solo HUD icon (zom_icon_minigun) is drawn by
-//     THE ACTIVE POWER-UP HUD below, from zm_powerup_time / zm_powerup_state.
+//   * T5's increment_is_drinking (no offhands, no weapon cycling) and its
+//     has_powerup_weapon trigger checks are _zombiemode_utility's
+//     powerup_weapon_lock / _unlock (no switch, no offhands, no use; the
+//     Death Machine also no sprint, no melee), set once the weapon is in hand.
+//     The solo HUD icon (zom_icon_minigun) is drawn by THE ACTIVE POWER-UP
+//     HUD below, from zm_powerup_time / zm_powerup_state.
 //   * THE DOWN.  T5 routes it through level._zombie_*_powerup_last_stand_func,
 //     called from _laststand before it stores the player's weapons.  This
 //     port's _zombiemode_laststand::player_laststand stores them FIRST
@@ -1417,6 +1420,10 @@ weapon_powerup_give( ent_player, kind, time )
 	before = ent_player getCurrentWeapon();
 	ent_player.zm_powerup_gun_before[ kind ] = before;
 
+	// A power-up weapon replaced by this one left its switch lock set; the
+	// switch below is a client request that lock would refuse.
+	ent_player powerup_weapon_unlock();
+
 	ent_player giveWeapon( w.weapon );
 	if ( kind == "tesla" )
 		ent_player giveMaxAmmo( w.weapon );
@@ -1430,10 +1437,31 @@ weapon_powerup_give( ent_player, kind, time )
 	level thread weapon_powerup_downed( ent_player, w );
 	level thread weapon_powerup_replace( ent_player, w );
 
+	level thread weapon_powerup_lock_when_held( ent_player, w );
+
 	if ( kind == "minigun" )
 		level thread minigun_weapon_powerup_countdown( ent_player, w, time );
 	else
 		level thread tesla_weapon_powerup_countdown( ent_player, w, time );
+}
+
+// T5 locks at the grab (increment_is_drinking).  This engine's switch lock
+// also refuses the client's own request for the power-up weapon, so it waits
+// for the raise to take the weapon into hand (two seconds at most).
+weapon_powerup_lock_when_held( ent_player, w )
+{
+	ent_player endon( "death" );
+	ent_player endon( "disconnect" );
+	ent_player endon( "player_downed" );
+	ent_player endon( w.over_notify );
+	ent_player endon( "replace_weapon_powerup" );
+
+	for ( i = 0; i < 40 && ent_player getCurrentWeapon() != w.weapon; i++ )
+		wait( 0.05 );
+
+	ent_player powerup_weapon_lock( w.kind );
+	codolPrintLn( "CoDOL zm powerup: " + w.weapon + " hold restrictions on for " + ent_player.name +
+		" (in hand: " + ent_player getCurrentWeapon() + ")" );
 }
 
 // T5 :2502.  Thirty seconds of minigun.
@@ -1522,6 +1550,9 @@ weapon_powerup_remove( ent_player, w, reason )
 	ent_player endon( "death" );
 	ent_player endon( "player_downed" );
 	ent_player endon( "disconnect" );
+
+	// Restrictions off before the switch back, which the lock would refuse.
+	ent_player powerup_weapon_unlock();
 
 	ent_player takeWeapon( w.weapon );
 
@@ -2088,6 +2119,18 @@ qb_zombie_fling_result( position )
 //       nearest zombie, through the native damage path.
 //   set scr_zm_powerup_test "state <clientnum> x" / "sentrydiag <clientnum> x"
 //       log the client's held weapon / every active sentry's view.
+//   set scr_zm_powerup_test "press <clientnum> <mask> <seconds> [direction]"
+//       holds C1 usercmd buttons (sprint 2, melee 4, prone 256, dive
+//       8388608, use 40) and direction bits (forward 1) on a test client and
+//       logs its weapon, stance and speed every 0.2 s meanwhile.
+//   set scr_zm_powerup_test "dive <clientnum> x"
+//       sprints the test client forward 1.2 s, then presses dive + prone.
+//   set scr_zm_powerup_test "dmtest <clientnum> <phase> [yaw]"
+//       the Death Machine hold restrictions on a test client: sprint, melee,
+//       dive, a weapon switch and a wall-buy use, each logged; phase "grab"
+//       first drops and grabs the minigun, phase "after" runs them as is.
+//   set scr_zm_powerup_test "switch <clientnum> <weapon>"
+//       switchToWeapon on the client (hold buttons so its usercmd carries it).
 //   set scr_zm_powerup_test "gather <clientnum> <radius>"
 //       forceTeleports every live zombie onto a ring around the client, at
 //       points the client can see, so a test does not wait on pathing.
@@ -2175,6 +2218,33 @@ powerup_test_watch()
 		case "gather":
 			player powerup_test_gather( float( tokens[ 2 ] ) );
 			break;
+		case "press":
+			seconds = 1.0;
+			direction = 0;
+			if ( tokens.size > 3 )
+				seconds = float( tokens[ 3 ] );
+			if ( tokens.size > 4 )
+				direction = int( tokens[ 4 ] );
+			player codol_botPressButtons( int( tokens[ 2 ] ), seconds, direction );
+			player thread powerup_test_sample( tokens[ 2 ], seconds );
+			break;
+		case "dive":
+			player codol_botPressButtons( 2, 1.3, 1 );
+			player thread powerup_test_sample( "2", 1.2 );
+			wait( 1.2 );
+			player codol_botPressButtons( 8388866, 1.0, 1 );
+			player thread powerup_test_sample( "8388866", 1.2 );
+			break;
+		case "dmtest":
+			yaw = undefined;
+			if ( tokens.size > 3 )
+				yaw = float( tokens[ 3 ] );
+			player thread powerup_test_deathmachine( tokens[ 2 ], yaw );
+			break;
+		case "switch":
+			codolPrintLn( "CoDOL zm powerup test: " + player.name + " asks for " + tokens[ 2 ] + " holding " + player getCurrentWeapon() );
+			player switchToWeapon( tokens[ 2 ] );
+			break;
 		}
 	}
 }
@@ -2217,6 +2287,109 @@ powerup_test_fire( seconds )
 		ammo = " clip " + self getWeaponAmmoClip( weapon ) + " stock " + self getWeaponAmmoStock( weapon );
 	codolPrintLn( "CoDOL zm powerup test: " + self.name + " stopped firing, holding " + weapon + ammo +
 		"; zombies killed meanwhile " + ( level.total_zombies_killed - killed_before ) );
+}
+
+powerup_test_sample( mask, seconds, step )
+{
+	self endon( "disconnect" );
+	if ( !isDefined( step ) )
+		step = 0.2;
+	end_time = getTime() + int( seconds * 1000 );
+	while ( getTime() < end_time )
+	{
+		v = self getVelocity();
+		codolPrintLn( "CoDOL zm powerup test: press " + mask + " " + self.name + " holds " + self getCurrentWeapon() +
+			" stance " + self getStance() + " speed " + int( length( ( v[ 0 ], v[ 1 ], 0 ) ) ) + " vz " + int( v[ 2 ] ) +
+			" at " + self.origin );
+		wait( step );
+	}
+}
+
+// Bit 0x2000 (hold breath, inert without a scope) keeps the test client
+// sending commands between the steps; without them its weapon is put away.
+powerup_test_deathmachine( phase, yaw )
+{
+	self endon( "disconnect" );
+	idle = 8192;
+	// The test client's commands name the weapon its controller last
+	// selected; select the one in hand so the holds do not put it away.
+	if ( self getCurrentWeapon() != "none" )
+		self switchToWeapon( self getCurrentWeapon() );
+	self codol_botPressButtons( idle, 60 );
+	if ( isDefined( yaw ) )
+		self setPlayerAngles( ( 0, yaw, 0 ) );
+	wait( 0.5 );
+
+	if ( phase == "grab" )
+	{
+		specific_powerup_drop( "minigun", self.origin - ( 0, 0, 40 ) );
+		wait( 3.0 );
+	}
+	codolPrintLn( "CoDOL zm dmtest [" + phase + "]: " + self.name + " holds " + self getCurrentWeapon() +
+		", has_powerup_weapon " + is_true( self.has_powerup_weapon ) );
+
+	start = self.origin;
+	self codol_botPressButtons( idle + 2, 1.5, 1 );
+	self thread powerup_test_sample( "dm sprint", 1.4 );
+	wait( 1.5 );
+	self codol_botPressButtons( idle, 60 );
+	codolPrintLn( "CoDOL zm dmtest [" + phase + "]: sprint covered " + int( distance( start, self.origin ) ) + " units in 1.5 s" );
+	self setOrigin( start );
+	wait( 0.6 );
+
+	self codol_botPressButtons( idle + 4, 0.4 );
+	codolPrintLn( "CoDOL zm dmtest [" + phase + "]: melee pressed (see CoDOL melee: fire)" );
+	wait( 1.0 );
+	self codol_botPressButtons( idle, 60 );
+	wait( 0.5 );
+
+	self codol_botPressButtons( idle + 2, 0.8, 1 );
+	wait( 0.7 );
+	self codol_botPressButtons( idle + 8388608 + 256 + 2, 1.2, 1 );
+	self thread powerup_test_sample( "dm dive", 1.0, 0.05 );
+	wait( 1.2 );
+	self codol_botPressButtons( idle, 60 );
+	codolPrintLn( "CoDOL zm dmtest [" + phase + "]: after the dive press, stance " + self getStance() );
+	self setStance( "stand" );
+	self setOrigin( start );
+	wait( 1.0 );
+
+	primaries = self getWeaponsListPrimaries();
+	other = "none";
+	for ( i = 0; i < primaries.size; i++ )
+	{
+		if ( primaries[ i ] != self getCurrentWeapon() )
+			other = primaries[ i ];
+	}
+	held = self getCurrentWeapon();
+	if ( other != "none" )
+	{
+		self switchToWeapon( other );
+		wait( 1.5 );
+	}
+	codolPrintLn( "CoDOL zm dmtest [" + phase + "]: switch " + held + " -> " + other + " asked; holds " + self getCurrentWeapon() );
+
+	all = getEntArray( "weapon_upgrade", "targetname" );
+	trigs = [];
+	for ( i = 0; i < all.size; i++ )
+	{
+		if ( isDefined( all[ i ].zombie_weapon_upgrade ) && !self hasWeapon( all[ i ].zombie_weapon_upgrade ) )
+			trigs[ trigs.size ] = all[ i ];
+	}
+	if ( trigs.size > 0 )
+	{
+		if ( self.score < 5000 )
+			self maps\mp\gametypes\_zombiemode_score::add_to_player_score( 5000 );
+		self setOrigin( trigs[ 0 ].origin - ( 0, 0, 40 ) );
+		wait( 0.3 );
+		before = self.score;
+		self codol_botPressButtons( idle + 40, 1.0 );
+		wait( 2.0 );
+		codolPrintLn( "CoDOL zm dmtest [" + phase + "]: native use on " + trigs[ 0 ].zombie_weapon_upgrade +
+			" wall buy, score " + before + " -> " + self.score + ", holds " + self getCurrentWeapon() );
+		self setOrigin( start );
+	}
+	self codol_botPressButtons( idle, 60 );
 }
 
 powerup_test_gather( radius )
