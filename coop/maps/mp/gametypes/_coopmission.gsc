@@ -22,10 +22,14 @@
 //     trigger_*_flag_set* sets its script_flag; script_flag_true /
 //     script_flag_false gate a trigger; a spawner with script_flag_wait
 //     spawns when its flag is set;
-//   * the mission ends in success at the elimination count, when an IW4
-//     "end" flag is set by the map's own trigger, or -- on a map with no
-//     pmc spawners -- once every triggered spawner is spent and its soldiers
-//     are dead; it ends in failure when every player is dead with no lives.
+//   * a flag-set trigger whose flag names a spawner group releases that group
+//     (take fav combat_zone_<n>); numbered obj_<n>_* flags are an objective
+//     chain (take fav);
+//   * the mission's main phase is, in order of preference: elimination (pmc
+//     maps), the objective chain, the trigger chains, group waves, the pit
+//     course (killhouse maps); after it, laptop objectives (_coopevents) and
+//     the map's exit trigger (evac / escape flag) if it has one; it ends in
+//     failure when every player is dead with no lives.
 //
 // MP ISOLATION.  This file lives under the coop category root and is named
 // only by _coopmode.gsc, so it exists in no mp or zm match.  It names no
@@ -145,6 +149,10 @@ is_enemy_spawner( ent )
 	// scripted civilian hostages (actor_enemy_vazquez_civilian_so); those
 	// spawners stay unspawned and are listed in the doc's "left" table.
 	if ( isSubStr( cls, "_dog" ) || isSubStr( cls, "civilian" ) )
+		return false;
+	// The runtime soldier template itself (spawnactorspawner) is not an
+	// authored spawner: the group-wave scan once made it a wave of its own.
+	if ( cls == "actor_enemy_coop_soldier" )
 		return false;
 	return true;
 }
@@ -383,7 +391,7 @@ run_elimination()
 		remaining = level.coop_kills_to_win - level.coop_killed;
 		if ( remaining <= 0 )
 		{
-			mission_complete( "all enemies eliminated" );
+			level thread finish_after_elimination( "all enemies eliminated" );
 			return;
 		}
 
@@ -559,6 +567,115 @@ spawner_spawn_count( spawner )
 	level notify( "coop_spawner_spent" );
 }
 
+// --------------------------------------------------------------------------
+// Flag-named spawner groups.  A flag-set trigger whose script_flag equals an
+// enemy spawner group's targetname releases that group when the flag is set
+// (MEASURED, coop_take_mp_fav_tropical: triggers set combat_zone_10 .. _60
+// and the spawners of each zone carry targetname combat_zone_<n>; the IW4
+// level script that joined them does not ship, the shared name is the link).
+// --------------------------------------------------------------------------
+
+setup_flag_groups()
+{
+	level.coop_flag_groups = 0;
+	if ( !isDefined( level.coop_flag ) )
+		return;
+	ents = getEntArray();
+	groups = [];
+	for ( i = 0; i < ents.size; i++ )
+	{
+		e = ents[ i ];
+		if ( !is_enemy_spawner( e ) || !isDefined( e.targetname ) )
+			continue;
+		if ( !isDefined( level.coop_flag[ e.targetname ] ) )
+			continue;
+		if ( isDefined( e.targetname ) && e.targetname == "pmc_spawner" )
+			continue;
+		if ( !isDefined( groups[ e.targetname ] ) )
+		{
+			groups[ e.targetname ] = true;
+			level.coop_flag_groups++;
+			level thread flag_group_think( e.targetname );
+		}
+	}
+	if ( level.coop_flag_groups > 0 )
+		codolprintln( "CoDOL coop mission: " + level.coop_flag_groups + " spawner groups released by their own flag" );
+}
+
+flag_group_think( name )
+{
+	level endon( "coop_mission_over" );
+	flag_wait( name );
+	spawners = getEntArray( name, "targetname" );
+	count = 0;
+	for ( i = 0; i < spawners.size; i++ )
+	{
+		if ( !is_enemy_spawner( spawners[ i ] ) )
+			continue;
+		level thread spawner_spawn_count( spawners[ i ] );
+		count++;
+	}
+	codolprintln( "CoDOL coop mission: flag " + name + " released its group (" + count + " spawners)" );
+}
+
+// --------------------------------------------------------------------------
+// Numbered objective chain.  Flag-set triggers named obj_<n>_arrive /
+// obj_<n>_complete (coop_take_mp_fav_tropical: obj_40_arrive, obj_45_arrive,
+// obj_47_arrive, obj_50_complete, obj_75_arrive) are the mission's waypoints
+// in number order: each is a compass objective until its flag is set.
+// --------------------------------------------------------------------------
+
+setup_objective_chain()
+{
+	level.coop_obj_chain = [];
+	ents = getEntArray();
+	for ( i = 0; i < ents.size; i++ )
+	{
+		e = ents[ i ];
+		if ( !isDefined( e.classname ) || !starts_with( e.classname, "trigger_" ) || !isDefined( e.script_flag ) )
+			continue;
+		tokens = strTok( e.script_flag, "_" );
+		if ( tokens.size < 3 || tokens[ 0 ] != "obj" )
+			continue;
+		n = int( tokens[ 1 ] );
+		if ( n <= 0 )
+			continue;
+		e.coop_obj_number = n;
+		// Insertion sort by number.
+		chain = [];
+		placed = false;
+		for ( j = 0; j < level.coop_obj_chain.size; j++ )
+		{
+			if ( !placed && n < level.coop_obj_chain[ j ].coop_obj_number )
+			{
+				chain[ chain.size ] = e;
+				placed = true;
+			}
+			chain[ chain.size ] = level.coop_obj_chain[ j ];
+		}
+		if ( !placed )
+			chain[ chain.size ] = e;
+		level.coop_obj_chain = chain;
+	}
+}
+
+run_objective_chain()
+{
+	level endon( "coop_mission_over" );
+	chain = level.coop_obj_chain;
+	codolprintln( "CoDOL coop mission: objective chain of " + chain.size );
+	for ( i = 0; i < chain.size; i++ )
+	{
+		t = chain[ i ];
+		objective_add( 0, "active", t.origin );
+		announce( "Objective " + ( i + 1 ) + " of " + chain.size );
+		codolprintln( "CoDOL coop mission: objective " + ( i + 1 ) + " is " + t.script_flag + " at " + t.origin );
+		flag_wait( t.script_flag );
+		objective_delete( 0 );
+	}
+	level thread finish_after_elimination( "objective chain complete" );
+}
+
 setup_entity_driven()
 {
 	level.coop_chain_spawners = [];
@@ -609,17 +726,77 @@ setup_entity_driven()
 // End conditions.
 // --------------------------------------------------------------------------
 
-// Flags the shipped addons set from their own end-of-mission triggers
-// (docs/CODOL_CAMPAIGN_MODE.md section 3.3).  Any one of them completes the
-// mission once a player has reached it.
+// Generic completion flags.  NOT player_has_escaped or the evac flag on their
+// own: those are set by triggers a player can walk into at any time
+// (MEASURED, coop_spec_mp_estate_tropical: the player_has_escaped /
+// player_trying_to_escape volumes are interior boxes up to 2500 units wide
+// around the house, one of them containing the estate_player_start, so a
+// player ended the mission seconds after spawning).  They are not IW4's
+// out-of-bounds ring either (enable_escape_warning's triggers ring the map
+// edge; these do not), so they are read as the mission's EXIT: the
+// extraction phase after the main objective, see finish_after_elimination.
 end_flags()
 {
 	names = [];
-	names[ names.size ] = "player_has_escaped";
-	names[ names.size ] = "reach_1st_evac_point";
 	names[ names.size ] = "mission_complete";
 	names[ names.size ] = "level_complete";
 	return names;
+}
+
+// Every elimination enemy is dead.  On a map that authors laptop objectives
+// (IW4 _pmc mode_objective: script_model pmc_objective + trigger_use) those
+// must be done too; on a map that authors an evac trigger (a flag-set trigger
+// whose flag names evac / extract) the squad then has to reach it.
+finish_after_elimination( reason )
+{
+	level endon( "coop_mission_over" );
+
+	while ( isDefined( level.coop_objectives_left ) && level.coop_objectives_left > 0 )
+	{
+		announce( "Enemies cleared: complete the objectives (" + level.coop_objectives_left + " left)" );
+		level waittill( "coop_objective_done" );
+	}
+
+	evac = find_extraction();
+	if ( isDefined( evac ) )
+	{
+		name = evac.script_flag;
+		level.coop_flag[ name ] = false;
+		announce( "Area clear. Get to the extraction point" );
+		objective_add( 0, "active", evac.origin );
+		codolprintln( "CoDOL coop mission: extraction at " + evac.origin + " (flag " + name + ")" );
+		flag_wait( name );
+		objective_delete( 0 );
+		mission_complete( reason + ", extracted" );
+		return;
+	}
+
+	mission_complete( reason );
+}
+
+// The exit trigger: an evac / extract flag first (estate spec
+// reach_1st_evac_point), else the escape flag (player_has_escaped on estate
+// spec and fav spec, player_escape on take estate).
+find_extraction()
+{
+	words = [];
+	words[ 0 ] = "evac";
+	words[ 1 ] = "extract";
+	words[ 2 ] = "has_escaped";
+	words[ 3 ] = "player_escape";
+	ents = getEntArray();
+	for ( w = 0; w < words.size; w++ )
+	{
+		for ( i = 0; i < ents.size; i++ )
+		{
+			e = ents[ i ];
+			if ( !isDefined( e.classname ) || !starts_with( e.classname, "trigger_" ) || !isDefined( e.script_flag ) )
+				continue;
+			if ( isSubStr( toLower( e.script_flag ), words[ w ] ) )
+				return e;
+		}
+	}
+	return undefined;
 }
 
 watch_end_flag( name )
@@ -735,7 +912,18 @@ run_group_waves()
 			announce( "Wave " + wave + " cleared" );
 	}
 
-	mission_complete( "every group wave cleared" );
+	level thread finish_after_elimination( "every group wave cleared" );
+}
+
+// The killhouse maps author no enemies: the mission is the pit course
+// (_coopcourse.gsc, IW4 so_killspree_trainer), complete when a run clears
+// every course target.
+run_course()
+{
+	level endon( "coop_mission_over" );
+	announce( "Run the course: clear every target" );
+	level waittill( "coop_course_complete" );
+	mission_complete( "course cleared in " + level.coop_course_best + " s" );
 }
 
 // No pmc spawners: the mission is the map's trigger chains.  It is over once
@@ -873,12 +1061,19 @@ main()
 	if ( !make_template() )
 		return;
 
+	setup_flag_groups();
+	setup_objective_chain();
+
 	if ( level.coop_pmc_spawners.size > 0 )
 		level thread run_elimination();
+	else if ( level.coop_obj_chain.size >= 2 )
+		level thread run_objective_chain();
 	else if ( level.coop_chain_spawners.size > 0 )
 		level thread run_chain_completion();
 	else if ( level.coop_spawner_count > 0 )
 		level thread run_group_waves();
+	else if ( isDefined( level.coop_course_enemies ) && level.coop_course_enemies.size > 0 )
+		level thread run_course();
 
 	level thread watch_players_failed();
 }

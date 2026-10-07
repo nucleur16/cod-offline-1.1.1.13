@@ -76,6 +76,33 @@ watch()
 				codolprintln( "CoDOL cooptest: weapon " + tokens[ i ] + " mounted " + codol_isWeaponMounted( tokens[ i ] ) +
 					" published " + codol_isWeaponPublished( tokens[ i ] ) );
 			break;
+		case "uselaptops":
+			p = player( 0 );
+			objs = getEntArray( "pmc_objective", "targetname" );
+			for ( i = 0; i < objs.size; i++ )
+			{
+				if ( !isDefined( objs[ i ].target ) )
+					continue;
+				use = getEnt( objs[ i ].target, "targetname" );
+				if ( isDefined( use ) && isDefined( p ) )
+					use notify( "trigger", p );
+				wait( 0.2 );
+			}
+			codolprintln( "CoDOL cooptest: used " + objs.size + " laptops" );
+			break;
+		case "goextract":
+			evac = maps\mp\gametypes\_coopmission::find_extraction();
+			if ( isDefined( evac ) )
+				teleport( 0, evac.origin );
+			else
+				codolprintln( "CoDOL cooptest: no extraction trigger" );
+			break;
+		case "runcourse":
+			level thread run_course();
+			break;
+		case "checkstarts":
+			level thread check_starts();
+			break;
 		case "godmode":
 			if ( tokens.size >= 2 )
 				level thread godmode( int( tokens[ 1 ] ) );
@@ -99,6 +126,77 @@ bot_body()
 		self setModel( "body_complete_sp_juggernaut" );
 		codolprintln( "CoDOL cooptest: bot " + self getEntityNumber() + " given a body" );
 	}
+}
+
+// runcourse: walk player 0 through every pit-course trigger and shoot every
+// target that is up (as player 0), then report.
+run_course()
+{
+	p = player( 0 );
+	if ( !isDefined( p ) || !isDefined( level.coop_course_triggers ) )
+	{
+		codolprintln( "CoDOL cooptest: no player or no course" );
+		return;
+	}
+	triggers = level.coop_course_triggers;
+	for ( i = 0; i < triggers.size; i++ )
+	{
+		p setOrigin( triggers[ i ].origin );
+		wait( 1.5 );
+		if ( isDefined( triggers[ i ].script_delay ) )
+			wait( triggers[ i ].script_delay );
+		up = 0;
+		for ( j = 0; j < level.coop_course_targets.size; j++ )
+		{
+			t = level.coop_course_targets[ j ];
+			if ( t.coop_up && t.coop_target_type == "enemy" )
+			{
+				t notify( "damage", 50, p, ( 0, 0, 0 ), t.origin, "MOD_RIFLE_BULLET" );
+				up++;
+			}
+		}
+		codolprintln( "CoDOL cooptest: course trigger " + i + " at " + triggers[ i ].origin + " (" + triggers[ i ].coop_targets.size +
+			" linked), shot " + up + " targets, hits " + level.coop_course_hits );
+		wait( 0.5 );
+	}
+	codolprintln( "CoDOL cooptest: runcourse done, running " + level.coop_course_running );
+}
+
+// checkstarts: every start classname the coop spawn order knows, with the
+// verdict _coopmode::isUsableStart gives it, a ground trace and the nearest
+// waypoint, then player 0 is dropped on each one for 3 s to see whether he
+// stays put (a start outside the world falls or is stuck in solid).
+check_starts()
+{
+	names = maps\mp\gametypes\_coopmode::spawnClassnames();
+	p = player( 0 );
+	for ( n = 0; n < names.size; n++ )
+	{
+		points = getEntArray( names[ n ], "classname" );
+		for ( i = 0; i < points.size; i++ )
+		{
+			s = points[ i ];
+			trace = bulletTrace( s.origin + ( 0, 0, 32 ), s.origin - ( 0, 0, 1024 ), false, undefined );
+			nav = codol_botNavPointNear( s.origin, 768 );
+			navText = "none within 768";
+			if ( isDefined( nav ) )
+				navText = "" + int( distance( nav, s.origin ) );
+			line = "CoDOL cooptest: start " + names[ n ] + " " + s.origin + " usable " +
+				maps\mp\gametypes\_coopmode::isUsableStart( s ) + " ground frac " + trace[ "fraction" ] +
+				" at " + trace[ "position" ] + " surface " + trace[ "surfacetype" ] + " nav " + navText;
+			if ( isDefined( p ) && isAlive( p ) )
+			{
+				p setOrigin( s.origin );
+				wait( 3 );
+				line += " | player after 3 s at " + p.origin + " dz " + int( p.origin[ 2 ] - s.origin[ 2 ] );
+			}
+			codolprintln( line );
+		}
+		// Only the first few MP fallbacks are interesting.
+		if ( names[ n ] == "info_player_start" )
+			break;
+	}
+	codolprintln( "CoDOL cooptest: checkstarts done" );
 }
 
 player( index )

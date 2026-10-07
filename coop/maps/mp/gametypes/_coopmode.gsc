@@ -392,33 +392,112 @@ spawnClassnames()
 	return names;
 }
 
-// IW4's pick_starting_location_pmc spreads players with get_closest_exclude.
-// getclosest is not a builtin on this server, so the same rule is expressed
-// with distance(): take the candidate whose nearest already-taken point is the
-// farthest away.
-farthestFromTaken( points, taken )
+// A start a player can actually stand on: solid ground within 256 units
+// below it.  MEASURED 2026-10-07 every addon start on all nine coop maps
+// passes (checkstarts in _cooptest), so this only guards a future map.
+isUsableStart( point )
+{
+	if ( !isDefined( point ) || !isDefined( point.origin ) )
+		return false;
+	trace = bulletTrace( point.origin + ( 0, 0, 32 ), point.origin - ( 0, 0, 256 ), false, undefined );
+	return trace[ "fraction" ] < 1;
+}
+
+// THE FIRST PLAYER'S START, deterministically.
+//
+// The bug this fixes (user report 2026-10-07, coop_training_mp_killhouse_sh:
+// "I spawned outside of the map", then "restarted the map and I ended up in
+// the right starting spot"): that addon authors TWO info_player_start_so,
+//   non_CQB_spawn_point  (5560 -1866 16)  on the road in front of the
+//                        humvee_player jeep -- the mission's opening
+//   CQB_only_spawn_point (-133 -1129 8)   by the hangar, the "skip to the
+//                        CQB course" start, nowhere near the opening
+// and the old pick was points[ randomInt( points.size ) ] -- IW4
+// _specialops_code's random( p1_starts ), which is only right because an IW4
+// so_* level script deletes the starts it does not want.  No such script
+// ships, so every load was a coin toss; the VPS log of the bad load shows the
+// player touching the hangar's at_ssdd_hanger trigger, i.e. the CQB start.
+//
+// The authored names are the only signal left, so they rank the starts:
+//   * "only" -- a special-case start (CQB_only_...) -- last;
+//   * a numbered or "_2nd" spelling (player_start_point02, 4_coop_start_02,
+//     estate_player_start_2nd) after the plain one;
+// ties keep map order, so the same start wins on every load.
+startRank( point )
+{
+	name = "";
+	if ( isDefined( point.targetname ) )
+		name = toLower( point.targetname );
+
+	rank = 0;
+	if ( isSubStr( name, "only" ) )
+		rank += 100;
+	if ( isSubStr( name, "2nd" ) || isSubStr( name, "02" ) || isSubStr( name, "03" ) || isSubStr( name, "04" ) )
+		rank += 10;
+	return rank;
+}
+
+primaryStart( points )
 {
 	best = undefined;
-	bestScore = -1;
-
+	bestRank = 0;
 	for ( i = 0; i < points.size; i++ )
 	{
-		score = 0;
-		for ( j = 0; j < taken.size; j++ )
-		{
-			d = distance( points[ i ].origin, taken[ j ].origin );
-			if ( j == 0 || d < score )
-				score = d;
-		}
-
-		if ( !isDefined( best ) || score > bestScore )
+		if ( !isUsableStart( points[ i ] ) )
+			continue;
+		rank = startRank( points[ i ] );
+		if ( !isDefined( best ) || rank < bestRank )
 		{
 			best = points[ i ];
-			bestScore = score;
+			bestRank = rank;
 		}
 	}
-
 	return best;
+}
+
+// IW4 places every later player NEXT TO the first: _specialops_code's player 2
+// takes the closest info_player_start_soPlayer2 (or is placed near player 1),
+// and pick_starting_location_pmc's get_closest_exclude is the CLOSEST unused
+// start to the previous one.  (The old code took the FARTHEST, which on the
+// training map would have sent player 2 to the CQB start.)  Excluding "only"
+// starts keeps a squad together; when every start is taken the closest one is
+// shared.
+closestFreeStart( points, anchor, taken )
+{
+	best = undefined;
+	bestDist = 0;
+	fallback = undefined;
+	fallbackDist = 0;
+	for ( i = 0; i < points.size; i++ )
+	{
+		p = points[ i ];
+		if ( !isUsableStart( p ) || startRank( p ) >= 100 )
+			continue;
+		d = distance( p.origin, anchor.origin );
+		if ( !isDefined( fallback ) || d < fallbackDist )
+		{
+			fallback = p;
+			fallbackDist = d;
+		}
+		used = false;
+		for ( j = 0; j < taken.size; j++ )
+		{
+			if ( taken[ j ] == p )
+				used = true;
+		}
+		if ( used )
+			continue;
+		if ( !isDefined( best ) || d < bestDist )
+		{
+			best = p;
+			bestDist = d;
+		}
+	}
+	if ( isDefined( best ) )
+		return best;
+	if ( isDefined( fallback ) )
+		return fallback;
+	return anchor;
 }
 
 pickStartingLocation()
@@ -434,16 +513,32 @@ pickStartingLocation()
 		if ( points.size <= 0 )
 			continue;
 
-		if ( level.coop_taken_spawns.size <= 0 || points.size == 1 )
-			point = points[ randomInt( points.size ) ];
+		if ( !isDefined( level.coop_primary_start ) || level.coop_primary_start.classname != names[ i ] )
+		{
+			point = primaryStart( points );
+			if ( !isDefined( point ) )
+				continue;
+			level.coop_primary_start = point;
+			codolprintln( "CoDOL coop: primary start " + names[ i ] + " " + startName( point ) + " at " + point.origin );
+		}
 		else
-			point = farthestFromTaken( points, level.coop_taken_spawns );
+			point = closestFreeStart( points, level.coop_primary_start, level.coop_taken_spawns );
+
+		if ( level.coop_taken_spawns.size <= 0 )
+			point = level.coop_primary_start;
 
 		level.coop_taken_spawns[ level.coop_taken_spawns.size ] = point;
 		return point;
 	}
 
 	return undefined;
+}
+
+startName( point )
+{
+	if ( isDefined( point.targetname ) )
+		return point.targetname;
+	return "(unnamed)";
 }
 
 spawnPlayer()
@@ -575,9 +670,22 @@ Callback_StartGameType()
 
 	level notify( "prematch_over" );
 
+	// Scripted events read from the map entities (_coopevents.gsc): cleanup of
+	// MP game objects first, and the vehicle-group precache, which needs this
+	// precache window.  Then the training course's pop-up targets.
+	maps\mp\gametypes\_coopevents::init();
+	maps\mp\gametypes\_coopcourse::init();
+
 	// The campaign / Spec Ops mission, driven by the map's own entities (the
 	// coop addon MapEnts this server overlays onto the base level).
 	level thread maps\mp\gametypes\_coopmission::main();
+	level thread maps\mp\gametypes\_coopevents::main();
+
+	// The mission's opening vehicle ride, when the map authors one (the
+	// training map's humvee_player, the prologue's seaknightPlayer).  init()
+	// precaches, so it runs here, in the precache window.
+	maps\mp\gametypes\_coopintro::init();
+	level thread maps\mp\gametypes\_coopintro::main();
 
 	// Probe harness; inert unless +set scr_coop_test 1.
 	level thread maps\mp\gametypes\_cooptest::main();
@@ -656,6 +764,13 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 		iDamage = int( iDamage * level.coop_ai_damage_scale );
 		if ( iDamage < 1 )
 			iDamage = 1;
+		// No one-shot kills from an AI round: a sniper's cheytac_silencer_so
+		// headshot still took a full-health test client after the 0.5 scale
+		// (MEASURED, coop_spec_mp_crash_tropical survey).  IW4's difficulty
+		// tables likewise never let one AI bullet kill a healthy player on
+		// regular.
+		if ( iDamage > 40 )
+			iDamage = 40;
 	}
 
 	self.coop_last_damage = getTime();
