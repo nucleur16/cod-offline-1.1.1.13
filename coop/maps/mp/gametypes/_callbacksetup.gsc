@@ -87,6 +87,19 @@ CodeCallback_PlayerLastStand( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWe
 }
 
 /*================
+Called when an actor has been killed.  self is the actor.
+The coop mission's enemy soldiers are native actors (species "soldier",
+src/codol/player/codol_actor_scripts.cpp); the engine resolves this label
+optionally (CODOL_ActorDamage_LoadCallbacks), exactly as the zm copy relies on.
+CodeCallback_ActorDamage is deliberately NOT defined, as in zm: defining it
+would gate every actor's damage on finishActorDamage.
+================*/
+CodeCallback_ActorKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset )
+{
+	[[ level.callbackActorKilled ]]( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset );
+}
+
+/*================
 Called when code is forcibly ending the game.
 ================*/
 CodeCallback_CodeEndGame()
@@ -130,6 +143,7 @@ SetDefaultCallbacks()
 	level.callbackPlayerKilled		= maps\mp\gametypes\_coopmode::Callback_PlayerKilled;
 	level.callbackPlayerLastStand	= maps\mp\gametypes\_coopmode::Callback_PlayerLastStand;
 	level.callbackCodeEndGame		= maps\mp\gametypes\_coopmode::Callback_CodeEndGame;
+	level.callbackActorKilled		= maps\mp\gametypes\_coopmode::Callback_ActorKilled;
 }
 
 callbackVoid()

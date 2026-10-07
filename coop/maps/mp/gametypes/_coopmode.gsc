@@ -140,6 +140,22 @@ init()
 	level.coop_vision = undefined;
 	level.coop_respawn_delay = 5;
 
+	// The campaign mission layer (_coopmission.gsc).  Spec Ops has no respawn
+	// (IW4 maps\_coop downs the player instead, which this server cannot do
+	// yet -- see Callback_PlayerLastStand), so a player gets a small number of
+	// respawns and the mission fails when every player has spent his.
+	level.coop_lives = getDvarInt( "scr_coop_lives" );
+	if ( level.coop_lives <= 0 )
+		level.coop_lives = 3;
+
+	// IW4 singleplayer scales what an AI bullet does to a player through the
+	// difficulty tables (maps\_gameskill: regular takes roughly half).  The
+	// enemy soldiers' rounds arrive with the world as attacker (magicBullet
+	// with no player owner), which is how they are told apart here.
+	level.coop_ai_damage_scale = getDvarFloat( "scr_coop_ai_damage_scale" );
+	if ( level.coop_ai_damage_scale <= 0 )
+		level.coop_ai_damage_scale = 0.5;
+
 	// IW4 player health is 100 with regeneration; Spec Ops does not change it
 	// (maps\_utility::set_player_health is only used by scripted moments).
 	level.coop_player_health = 100;
@@ -459,6 +475,36 @@ spawnPlayer()
 	self spawn( spawnpoint.origin, spawnpoint.angles );
 
 	self giveStartingLoadout();
+
+	self thread healthRegen();
+
+	// IW4's own notify for a finished spawn (maps\mp\gametypes\_playerlogic).
+	self notify( "spawned_player" );
+}
+
+// IW4 SP and MP both regenerate player health a few seconds out of damage;
+// the multiplayer _healthoverlay that does it there is an mp module, so the
+// coop player gets this small local copy (IW4 _gameskill regular:
+// regeneration starts 5 s after the last hit and refills in about 2 s).
+healthRegen()
+{
+	self endon( "disconnect" );
+	self endon( "death" );
+	self notify( "coop_regen" );
+	self endon( "coop_regen" );
+
+	self.coop_last_damage = 0;
+	for ( ;; )
+	{
+		wait( 0.25 );
+		if ( self.health <= 0 || self.health >= self.maxhealth )
+			continue;
+		if ( getTime() - self.coop_last_damage < 5000 )
+			continue;
+		self.health = self.health + 12;
+		if ( self.health > self.maxhealth )
+			self.health = self.maxhealth;
+	}
 }
 
 respawnPlayer()
@@ -466,6 +512,8 @@ respawnPlayer()
 	self endon( "disconnect" );
 
 	wait( level.coop_respawn_delay );
+	if ( isDefined( level.coop_mission_over ) && level.coop_mission_over )
+		return;
 	self spawnPlayer();
 }
 
@@ -508,6 +556,15 @@ Callback_StartGameType()
 	// loadout weapon today.
 	resolveLoadout();
 
+	// The native world gun every armed player carries is a script_model with
+	// the tag_origin model linked to his hand (src/codol/player/
+	// codol_player_worldweapon.c spawn_worldweapon).  mp precaches tag_origin
+	// in _globallogic and zm in its weapon modules; coop compiled neither, so
+	// the first player whose character gave him a server DObj killed the
+	// server with "Sys_Error: model 'tag_origin' not precached" (MEASURED
+	// 2026-10-07 on a coop_spec_mp_estate_tropical probe).
+	precacheModel( "tag_origin" );
+
 	// Membership probe only.  A coop map absent from mp/cocoopmapsettings.csv
 	// is not an error -- the table lists eleven playlist names and only four of
 	// them have a zone on disk -- but the line is worth having in the log when
@@ -517,6 +574,13 @@ Callback_StartGameType()
 		println( "CoDOL coop: " + mapname + " is not a row of " + coop_map_table() );
 
 	level notify( "prematch_over" );
+
+	// The campaign / Spec Ops mission, driven by the map's own entities (the
+	// coop addon MapEnts this server overlays onto the base level).
+	level thread maps\mp\gametypes\_coopmission::main();
+
+	// Probe harness; inert unless +set scr_coop_test 1.
+	level thread maps\mp\gametypes\_cooptest::main();
 }
 
 Callback_CodeEndGame()
@@ -535,6 +599,8 @@ Callback_PlayerConnect()
 	self.score = 0;
 	self.deaths = 0;
 	self.kills = 0;
+	self.coop_lives_left = level.coop_lives;
+	self.coop_out = false;
 
 	level notify( "connected", self );
 
@@ -559,6 +625,18 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 	if ( level.gameEnded )
 		return;
 
+	// Every coop player is on the same side: no damage from another player.
+	if ( isDefined( eAttacker ) && isPlayer( eAttacker ) && eAttacker != self )
+		return;
+
+	if ( !isDefined( eAttacker ) || !isPlayer( eAttacker ) )
+	{
+		iDamage = int( iDamage * level.coop_ai_damage_scale );
+		if ( iDamage < 1 )
+			iDamage = 1;
+	}
+
+	self.coop_last_damage = getTime();
 	self finishPlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, timeOffset );
 }
 
@@ -567,7 +645,28 @@ Callback_PlayerKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, v
 	self.sessionstate = "dead";
 	self.deaths++;
 
+	if ( isDefined( level.coop_mission_over ) && level.coop_mission_over )
+		return;
+
+	if ( !isDefined( self.coop_lives_left ) )
+		self.coop_lives_left = level.coop_lives;
+	self.coop_lives_left--;
+	if ( self.coop_lives_left < 0 )
+	{
+		self.coop_out = true;
+		self iPrintLnBold( "Out of lives" );
+		level notify( "coop_player_out" );
+		return;
+	}
+
 	self thread respawnPlayer();
+}
+
+// CodeCallback_ActorKilled (coop _callbacksetup).  The mission's own
+// bookkeeping runs off the actor's "death" notify; this is the per-kill hook.
+Callback_ActorKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset )
+{
+	self maps\mp\gametypes\_coopmission::onActorKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset );
 }
 
 // Reached only when the engine decides a player is eligible for last stand.
