@@ -23,11 +23,20 @@ main()
 	maps\mp\gametypes\_callbacksetup::SetupCallbacks();
 	maps\mp\gametypes\_globallogic::SetupCallbacks();
 
-	registerTimeLimitDvar( level.gameType, 3, 0, 1440 );
-	registerScoreLimitDvar( level.gameType, 1, 0, 10000 );
-	registerRoundLimitDvar( level.gameType, 0, 0, 30 );
-	registerWinLimitDvar( level.gameType, 4, 0, 10 );
-	registerRoundSwitchDvar( level.gameType, 3, 0, 30 );
+	// CoDOL: the stock IW4 script defaults (3 minutes, score limit 1, win
+	// limit 4, round switch 3, halftime) were never meant to be played: IW4
+	// always ran CTF with the values from default_mp_gamesettings.cfg
+	// (scr_ctf_timelimit 10, scorelimit 0, roundlimit 1, winlimit 1,
+	// halftime 1), and C1's playlist sets none of them. With the stock
+	// defaults every capture ended a 90-second "round" and the match became
+	// a chain of map_restarts. Use IW4's shipped rules: two five-minute
+	// halves, sides swap at halftime, captures accumulate, overtime on a
+	// tie. C1's HUD reads ui_halftime (IW4), not IW5's ui_override_halftime.
+	registerTimeLimitDvar( level.gameType, 10, 0, 1440 );
+	registerScoreLimitDvar( level.gameType, 0, 0, 10000 );
+	registerRoundLimitDvar( level.gameType, 1, 0, 30 );
+	registerWinLimitDvar( level.gameType, 1, 0, 10 );
+	registerRoundSwitchDvar( level.gameType, 0, 0, 30 );
 	registerNumLivesDvar( level.gameType, 0, 0, 10 );
 	registerHalfTimeDvar( level.gameType, 1, 0, 1 );
 
@@ -296,6 +305,7 @@ ctf()
 	level.friendlyFlagStatusIcon["allies"] setPoint( "TOP LEFT", "TOP LEFT", 132, 0 );
 	level.friendlyFlagStatusIcon["allies"].alpha = hudElemAlpha;
 	level.friendlyFlagStatusIcon["allies"].hideWhenInMenu = true;
+	level thread hideHudElementOnGameEnd( level.friendlyFlagStatusIcon["allies"] );
 
 	level.friendlyFlagStatusText["allies"] = createServerFontString( "small", 1.6, "allies" );	
 	level.friendlyFlagStatusText["allies"] setParent( level.friendlyFlagStatusIcon["allies"] );
@@ -305,11 +315,13 @@ ctf()
 	level.friendlyFlagStatusText["allies"].color = (1,1,1);
 	level.friendlyFlagStatusText["allies"].glowAlpha = 1;
 	level.friendlyFlagStatusText["allies"].hideWhenInMenu = true;
+	level thread hideHudElementOnGameEnd( level.friendlyFlagStatusText["allies"] );
 
 	level.enemyFlagStatusIcon["allies"] = createServerIcon( "waypoint_flag_enemy", 24, 24, "allies" );
 	level.enemyFlagStatusIcon["allies"] setPoint( "TOP LEFT", "TOP LEFT", 132, 26 );
 	level.enemyFlagStatusIcon["allies"].alpha = hudElemAlpha;
 	level.enemyFlagStatusIcon["allies"].hideWhenInMenu = true;
+	level thread hideHudElementOnGameEnd( level.enemyFlagStatusIcon["allies"] );
 
 	level.enemyFlagStatusText["allies"] = createServerFontString( "small", 1.6, "allies" );
 	level.enemyFlagStatusText["allies"] setParent( level.enemyFlagStatusIcon["allies"] );
@@ -319,12 +331,14 @@ ctf()
 	level.enemyFlagStatusText["allies"].color = (1,1,1);
 	level.enemyFlagStatusText["allies"].glowAlpha = 1;
 	level.enemyFlagStatusText["allies"].hideWhenInMenu = true;
+	level thread hideHudElementOnGameEnd( level.enemyFlagStatusText["allies"] );
 
 
 	level.friendlyFlagStatusIcon["axis"] = createServerIcon( "waypoint_flag_friendly", 32, 32, "axis" );
 	level.friendlyFlagStatusIcon["axis"] setPoint( "TOP LEFT", "TOP LEFT", 132, 0 );
 	level.friendlyFlagStatusIcon["axis"].alpha = hudElemAlpha;
 	level.friendlyFlagStatusIcon["axis"].hideWhenInMenu = true;
+	level thread hideHudElementOnGameEnd( level.friendlyFlagStatusIcon["axis"] );
 
 	level.friendlyFlagStatusText["axis"] = createServerFontString( "small", 1.6, "axis" );	
 	level.friendlyFlagStatusText["axis"] setParent( level.friendlyFlagStatusIcon["axis"] );
@@ -334,11 +348,13 @@ ctf()
 	level.friendlyFlagStatusText["axis"].color = (1,1,1);
 	level.friendlyFlagStatusText["axis"].glowAlpha = 1;
 	level.friendlyFlagStatusText["axis"].hideWhenInMenu = true;
+	level thread hideHudElementOnGameEnd( level.friendlyFlagStatusText["axis"] );
 
 	level.enemyFlagStatusIcon["axis"] = createServerIcon( "waypoint_flag_enemy", 24, 24, "axis" );
 	level.enemyFlagStatusIcon["axis"] setPoint( "TOP LEFT", "TOP LEFT", 132, 26 );
 	level.enemyFlagStatusIcon["axis"].alpha = hudElemAlpha;
 	level.enemyFlagStatusIcon["axis"].hideWhenInMenu = true;
+	level thread hideHudElementOnGameEnd( level.enemyFlagStatusIcon["axis"] );
 
 	level.enemyFlagStatusText["axis"] = createServerFontString( "small", 1.6, "axis" );
 	level.enemyFlagStatusText["axis"] setParent( level.enemyFlagStatusIcon["axis"] );
@@ -348,6 +364,18 @@ ctf()
 	level.enemyFlagStatusText["axis"].color = (1,1,1);
 	level.enemyFlagStatusText["axis"].glowAlpha = 1;
 	level.enemyFlagStatusText["axis"].hideWhenInMenu = true;
+	level thread hideHudElementOnGameEnd( level.enemyFlagStatusText["axis"] );
+}
+
+// IW5 ctf.gsc hidehudelementongameend: the flag status icons and names
+// are server elems; drop them when the round ends so they do not sit over
+// the scoreboard / outcome screen.
+hideHudElementOnGameEnd( hudElement )
+{
+	level waittill( "game_ended" );
+
+	if ( isDefined( hudElement ) )
+		hudElement.alpha = 0;
 }
 
 //sets overtime and associated variables
@@ -365,8 +393,11 @@ onTimeLimit()
 	{
 		thread maps\mp\gametypes\_gamelogic::endGame( "allies", game["strings"]["time_limit_reached"] );
 	}
-	else if ( inOvertime() )
+	else
 	{
+		// A tie in overtime, or a tie with halftime disabled
+		// (scr_ctf_halftime 0): IW4 fell through and never ended the game,
+		// leaving the clock at 0:00.
 		thread maps\mp\gametypes\_gamelogic::endGame( "tie", game["strings"]["time_limit_reached"] );
 	}
 }
@@ -548,7 +579,9 @@ onPickup( player )
 			//wait ( 1.5 );
 
 			maps\mp\gametypes\_gamescore::giveTeamScoreForObjective( team, 1 );
-			thread maps\mp\gametypes\_gamelogic::endGame( "winner", game["strings"]["grabbed_flag"] );		
+			// IW4 passed the literal "winner": endGame then credited no
+			// team (roundsWon["winner"]) and showed no winner.
+			thread maps\mp\gametypes\_gamelogic::endGame( team, game["strings"]["grabbed_flag"] );		
 		}
 		
 		player attachFlag();

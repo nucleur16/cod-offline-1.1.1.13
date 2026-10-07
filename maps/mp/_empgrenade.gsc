@@ -135,5 +135,13 @@ endCleanup( player )
 {
     player endon( "disconnect" );
     level waittill( "game_ended" );
-    if ( isDefined( player ) ) player clearPersonalEMP();
+    if ( !isDefined( player ) ) return;
+    // Only a player whose EMP lifecycle ran this level (lifecycle() on
+    // spawned_player) has jamming to clear. "connected" is notified before
+    // Callback_PlayerConnect assigns the team, and that callback ends on
+    // game_ended; a client still connecting when a round ends instantly
+    // (seen on a CTF map_restart) never gets a team or a spawn, so it has
+    // no EMP state and self.team is undefined.
+    if ( !isDefined( player.codolEMPGeneration ) ) return;
+    player clearPersonalEMP();
 }
