@@ -154,26 +154,51 @@ sceneMarks()
 	return scene;
 }
 
-// The match's best players overall, regardless of team: level.placement["all"]
-// holds every allies and axis player sorted by score, then fewer deaths
-// (_gamescore::updatePlacement / getBetterPlayer). Spectators never place.
+// The match's best players overall, regardless of team, ranked at the moment
+// the scene starts the way the scoreboard ranks them: score, then fewer
+// deaths (_gamescore::getBetterPlayer), then the lower client number so equal
+// lines always resolve the same way. Built from level.players here rather
+// than read from level.placement, which is only as fresh as its last
+// updatePlacement. Spectators never place.
 pickTopPlayers( count )
 {
-	maps\mp\gametypes\_gamescore::updatePlacement();
+	ranked = [];
+	foreach ( player in level.players )
+	{
+		if ( !isDefined( player ) || isDefined( player.connectedPostGame ) )
+			continue;
+		if ( !isDefined( player.pers["team"] ) || ( player.pers["team"] != "allies" && player.pers["team"] != "axis" ) )
+			continue;
+		ranked[ ranked.size ] = player;
+	}
+
+	for ( i = 1; i < ranked.size; i++ )
+	{
+		player = ranked[i];
+		for ( j = i - 1; j >= 0 && rankedAbove( player, ranked[j] ); j-- )
+			ranked[ j + 1 ] = ranked[j];
+		ranked[ j + 1 ] = player;
+	}
 
 	top = [];
-	if ( !isDefined( level.placement ) || !isDefined( level.placement["all"] ) )
-		return top;
+	for ( i = 0; i < ranked.size && top.size < count; i++ )
+		top[ top.size ] = ranked[i];
 
-	foreach ( player in level.placement["all"] )
+	if ( getDvarInt( "scr_codol_topplayers_trace" ) )
 	{
-		if ( top.size >= count )
-			break;
-		if ( !isDefined( player ) || !isPlayer( player ) )
-			continue;
-		top[ top.size ] = player;
+		for ( i = 0; i < ranked.size; i++ )
+			print( "CoDOL top players: place " + ( i + 1 ) + " client " + ranked[i] getEntityNumber() + " '" + ranked[i].name + "' team " + ranked[i].pers["team"] + " score " + ranked[i].score + " deaths " + ranked[i].deaths + "\n" );
 	}
 	return top;
+}
+
+rankedAbove( a, b )
+{
+	if ( a.score != b.score )
+		return a.score > b.score;
+	if ( a.deaths != b.deaths )
+		return a.deaths < b.deaths;
+	return a getEntityNumber() < b getEntityNumber();
 }
 
 // Called by _gamelogic::endGame once the final killcam is over and before the
@@ -216,16 +241,25 @@ playScene()
 		level.topPlayersModels[ rank ] = top[ rank ] spawnWalker( rank, scene.marks[ rank ] );
 
 	level.topPlayersCamera = spawnCamera( scene.camera, longest );
+
+	// C1 builds a clone by copying its source player's entity DObj (see
+	// codol_sendToAll), so the three stay players - out of sight below the
+	// camera, sent to everyone - until every client has built its clones,
+	// and only then join the others behind the camera.
+	for ( rank = 0; rank < top.size; rank++ )
+		top[ rank ] thread holdAsSource( level.topPlayersCamera, scene.camera.origin, rank );
+
 	foreach ( player in level.players )
-		player viewFromCamera( level.topPlayersCamera );
+	{
+		if ( !isDefined( player.topPlayersRank ) )
+			player viewFromCamera( level.topPlayersCamera );
+	}
 
 	print( "CoDOL top players: " + top.size + " on " + getDvar( "mapname" ) + ", walk " + longest + " s, camera ent " + level.topPlayersCamera getEntityNumber() + " from " + level.topPlayersCamera.origin + " to " + scene.camera.origin + "\n" );
 
+	// The cards are up for the whole scene (viewFromCamera and holdAsSource
+	// each put them up for their player as it joins the shot).
 	wait ( longest );
-
-	foreach ( player in level.players )
-		player showCards();
-
 	wait ( getDvarFloat( "scr_codol_topplayers_hold" ) );
 
 	level.topPlayersSceneActive = false;
@@ -235,6 +269,7 @@ playScene()
 	{
 		player setClientDvar( "cg_topPlayersCards", 0 );
 		player cameraUnlink();
+		player.topPlayersRank = undefined;
 	}
 
 	foreach ( model in level.topPlayersModels )
@@ -298,7 +333,74 @@ viewFromCamera( camera )
 	self spawn( camera.origin, camera.angles );
 	self freezeControlsWrapper( true );
 	self cameraLinkTo( camera, "tag_origin" );
+	self showCards();
 	self setDepthOfField( 0, 128, 512, 4000, 6, 1.8 );
+}
+
+// scr_codol_topplayers_trace 2: the server origin every server frame against
+// where the clip's own motion has the model at that time.
+sampleWalk( walk, length, start, startAngles )
+{
+	self endon( "death" );
+	began = getTime();
+	for ( ;; )
+	{
+		t = ( getTime() - began ) / 1000;
+		if ( t > length + 0.1 )
+			return;
+		fraction = t / length;
+		if ( fraction > 1 )
+			fraction = 1;
+		print( "CoDOL top players: sample ent " + self getEntityNumber() + " ms " + ( getTime() - began ) + " origin " + self.origin + " clip " + ( start + animDeltaToWorld( getMoveDelta( walk, 0, fraction ), startAngles ) ) + "\n" );
+		wait ( 0.001 );
+	}
+}
+
+// A top player during the first moments of the scene: still a player, so
+// clients hold the entity DObj its clone is copied from, but frozen below the
+// camera where the shot cannot see it, sent to every client whatever its PVS,
+// and looking through the scene camera like everyone else.
+holdAsSource( camera, cameraOrigin, rank )
+{
+	self endon( "disconnect" );
+	level endon( "top_players_scene_end" );
+
+	self.topPlayersRank = rank;
+
+	self notify( "spawned" );
+	self notify( "end_respawn" );
+	self maps\mp\gametypes\_playerlogic::setSpawnVariables();
+	self closepopupMenu();
+	self closeInGameMenu();
+	self clearLowerMessages();
+
+	self.sessionstate = "playing";
+	self.spectatorclient = -1;
+	self.killcamentity = -1;
+	self.archivetime = 0;
+	self.psoffsettime = 0;
+	self ClearKillcamState();
+	self.friendlydamage = undefined;
+	if ( !isDefined( self.maxhealth ) || self.maxhealth <= 0 )
+		self.maxhealth = 100;
+	self.health = self.maxhealth;
+
+	hidden = cameraOrigin - ( 0, 0, 256 ) + anglesToRight( camera.angles ) * ( ( rank - 1 ) * 40 );
+	self spawn( hidden, camera.angles );
+	self freezeControlsWrapper( true );
+	self codol_sendToAll( 3000 );
+	self cameraLinkTo( camera, "tag_origin" );
+	self showCards();
+
+	if ( getDvarInt( "scr_codol_topplayers_trace" ) )
+		print( "CoDOL top players: source client " + self getEntityNumber() + " held at " + hidden + " for the clone build\n" );
+
+	// Several snapshots at 20 Hz and more: every client has had the source
+	// and the clone in the same snapshot by then.
+	wait ( 1.5 );
+
+	self codol_sendToAll( 0 );
+	self viewFromCamera( camera );
 }
 
 showCards()
@@ -407,16 +509,25 @@ walkUp( player, walk, idle, length, start, startAngles )
 
 	step = 0.1;
 	trace = getDvarInt( "scr_codol_topplayers_trace" );
+	if ( trace >= 2 )
+		self thread sampleWalk( walk, length, start, startAngles );
 	elapsed = 0;
 	while ( length - elapsed > 0.001 )
 	{
 		next = elapsed + step;
 		if ( next > length )
 			next = length;
-		fraction = next / length;
+		// Aim one step past the next update: each segment is still moving
+		// when its replacement arrives, so a snapshot that lands a frame
+		// late never shows the model stopped, and consecutive segments
+		// average overlapping windows, so the speed changes gradually.
+		ahead = next + step;
+		if ( ahead > length )
+			ahead = length;
+		fraction = ahead / length;
 		target = start + animDeltaToWorld( getMoveDelta( walk, 0, fraction ), startAngles );
 		yaw = startAngles[1] + getAngleDelta( walk, 0, fraction );
-		duration = next - elapsed;
+		duration = ahead - elapsed;
 
 		self moveTo( target, duration );
 		if ( yaw != self.angles[1] )
@@ -425,7 +536,7 @@ walkUp( player, walk, idle, length, start, startAngles )
 		if ( trace )
 			print( "CoDOL top players: ent " + self getEntityNumber() + " t " + elapsed + " origin " + self.origin + " clip " + ( start + animDeltaToWorld( getMoveDelta( walk, 0, elapsed / length ), startAngles ) ) + "\n" );
 
-		wait ( duration );
+		wait ( next - elapsed );
 		elapsed = next;
 	}
 	if ( trace )
