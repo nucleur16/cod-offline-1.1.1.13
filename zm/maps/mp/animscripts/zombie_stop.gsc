@@ -44,6 +44,9 @@ main()
 			idle = %zombie_stationary_idle_v7;
 		else
 			idle = %ai_zombie_idle_crawl;
+		// A species variant's own idle (the juggernaut, _zombiemode_ai_boss).
+		if ( isDefined( self.idle_anim_override ) )
+			idle = self.idle_anim_override;
 
 		self setFlaggedAnimKnobAll( "idleanim", idle, %body, 1, 0.3, self.animplaybackrate );
 

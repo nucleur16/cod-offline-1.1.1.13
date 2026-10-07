@@ -860,6 +860,13 @@ nuke_kill_zombie()
 	if ( !isDefined( self ) )
 		return;
 
+	// T5 nuke_powerup: a boss answers with its own nuke_damage_func.
+	if ( isDefined( self.nuke_damage_func ) )
+	{
+		self thread [[ self.nuke_damage_func ]]();
+		return;
+	}
+
 	self.nuked = true;
 	self doDamage( self.health + 100, self.origin );
 }

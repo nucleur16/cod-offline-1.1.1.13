@@ -251,6 +251,10 @@ cortex_living_zombie( z )
 {
 	if ( !isDefined( z ) || !isAlive( z ) )
 		return false;
+	// The juggernaut (_zombiemode_ai_boss) is not one of the Cortex's horde:
+	// its head carries no tag_mouth for the overlay.
+	if ( is_true( z.is_boss ) )
+		return false;
 	return true;
 }
 

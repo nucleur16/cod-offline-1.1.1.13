@@ -443,6 +443,9 @@ Callback_StartGameType()
 	maps\mp\gametypes\_zombiemode_power::init();
 	maps\mp\gametypes\_zombiemode_spawner::init();
 	maps\mp\gametypes\_zombiemode_cortex::init();
+	// The minigun Juggernaut boss: after the spawner, whose zombie template
+	// it spawns from.
+	maps\mp\gametypes\_zombiemode_ai_boss::init();
 	// Power-ups LAST: get_valid_powerup asks the blockers module whether any
 	// barrier is damaged and the perks module which machines this map has,
 	// so both have to have run.
@@ -620,6 +623,19 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 			iDamage = eAttacker.meleeDamage;
 		else
 			iDamage = 50;
+	}
+
+	// The Juggernaut's minigun rounds (_zombiemode_ai_boss.gsc) come from
+	// magicBullet with the world as attacker; they become the boss's hit.
+	if ( isDefined( level.zm_boss_player_damage_func ) )
+	{
+		boss = [[ level.zm_boss_player_damage_func ]]( eAttacker, sWeapon, sMeansOfDeath );
+		if ( isDefined( boss ) )
+		{
+			eAttacker = boss;
+			eInflictor = boss;
+			iDamage = boss.boss_minigun_damage;
+		}
 	}
 
 	// Perk-pop damage rules: flak jacket immunity and dive explosion, the
