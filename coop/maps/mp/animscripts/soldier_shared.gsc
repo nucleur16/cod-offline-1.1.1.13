@@ -92,11 +92,26 @@ idle_pose( blend )
 {
 	if ( !isDefined( blend ) )
 		blend = 0.3;
-	// A cast member's authored idle (_cooptraining.gsc).
-	if ( isDefined( self.coop_idle_anim ) )
-		self setFlaggedAnimKnobAllRestart( "idleanim", self.coop_idle_anim, %body, 1, blend, 1 );
-	else if ( isDefined( self.enemy ) )
+	if ( isDefined( self.enemy ) )
 		self setFlaggedAnimKnobAll( "idleanim", %exposed_aim_5, %body, 1, blend, 1 );
 	else
 		self setFlaggedAnimKnobAll( "idleanim", %casual_stand_idle, %body, 1, blend, 1 );
+}
+
+// A cast member's pose (_cooptraining.gsc): the gesture in coop_pose_anim
+// when one is set, played from its start, else the looping idle in
+// coop_idle_anim.  Both come from animlists every coop client loads
+// (common_human / common_actor_shared), never from the playlist animlist.
+cast_pose( blend )
+{
+	if ( isDefined( self.coop_pose_anim ) )
+	{
+		self setFlaggedAnimKnobAll( "idleanim", self.coop_pose_anim, %body, 1, blend, 1 );
+		self setAnimTime( self.coop_pose_anim, 0 );
+		return;
+	}
+	idle = %casual_stand_idle;
+	if ( isDefined( self.coop_idle_anim ) )
+		idle = self.coop_idle_anim;
+	self setFlaggedAnimKnobAll( "idleanim", idle, %body, 1, blend, 1 );
 }

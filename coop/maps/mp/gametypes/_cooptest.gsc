@@ -14,6 +14,12 @@
 //                          player 0 as the attacker
 //   godmode <n>            keep player n's health topped up
 //   weapons <name> ...     log codol_isWeaponMounted / codol_isWeaponPublished
+//   playroute              training mission as a player plays it: player 0
+//                          WALKS (botMoveTo) into each trigger and to each
+//                          instructor, fires its rifle at the range dummies
+//                          and throws real frags; a walk that makes no
+//                          progress is logged as STUCK (a closed door) and
+//                          then skipped by teleport so the run goes on
 //   route                  training mission: do what each station waits for
 //                          (walk there, shoot its targets, throw, run the
 //                          course) as player 0, until the mission ends
@@ -102,6 +108,19 @@ watch()
 			break;
 		case "route":
 			level thread route();
+			break;
+		case "playroute":
+			level thread play_route();
+			break;
+		case "opengates":
+			maps\mp\gametypes\_cooptraining::open_everything();
+			break;
+		case "aimcheck":
+			level thread aim_check();
+			break;
+		case "walk":
+			// walk <x> <y> <z> [<x> <y> <z> ...]: player 0 walks the points.
+			level thread walk_points( tokens );
 			break;
 		case "runcourse":
 			level thread run_course();
@@ -397,4 +416,202 @@ route()
 		}
 		codolprintln( "CoDOL cooptest: route " + s.kind + ", player 0 at " + p.origin );
 	}
+}
+
+// playroute: route() with a player's means (see the header).
+play_route()
+{
+	level endon( "coop_mission_over" );
+	codolprintln( "CoDOL cooptest: playroute started" );
+	last = undefined;
+	for ( ;; )
+	{
+		wait( 0.5 );
+		s = level.coop_training_step;
+		p = player( 0 );
+		if ( !isDefined( s ) || !isDefined( p ) || !isAlive( p ) || isDefined( p.coop_in_intro ) )
+			continue;
+		if ( isDefined( last ) && last == s && s.kind != "hits" && s.kind != "note" && s.kind != "ship" )
+			continue;
+		last = s;
+		switch ( s.kind )
+		{
+		case "flag":
+			t = flag_trigger( s.value );
+			if ( isDefined( t ) )
+				walk_to( p, t.origin, "flag " + s.value );
+			break;
+		case "near":
+			walk_to( p, s.value, "near" );
+			break;
+		case "hits":
+			// The range: in through its door to the firing stall first.
+			stall = getEnt( "obj_station_one_glowing", "targetname" );
+			if ( isDefined( stall ) && distance( p.origin, stall.origin ) > 200 && p.origin[ 1 ] < -1150 )
+			{
+				walk_to( p, ( 1408, -1240, 4 ), "range door, outside" );
+				walk_to( p, ( 1408, -1100, 4 ), "range door, inside" );
+				walk_to( p, stall.origin, "firing stall" );
+			}
+			if ( isDefined( s.value2 ) && s.value2 )
+			{
+				// The knife: walk up to the dummy and press melee.
+				walk_to( p, s.value[ 0 ].origin + ( 48, -48, 0 ), "melee dummy" );
+				p botLookAt( s.value[ 0 ].origin, 1 );
+				wait( 0.4 );
+				p codol_botPressButtons( 4, 0.3 );
+				wait( 1.5 );
+				if ( level.coop_training_step == s )
+				{
+					s.value[ 0 ] notify( "damage", 50, p, ( 0, 0, 0 ), s.value[ 0 ].origin, "MOD_MELEE" );
+					codolprintln( "CoDOL cooptest: playroute melee button gave no hit; knife simulated" );
+				}
+				break;
+			}
+			for ( i = 0; i < s.value.size; i++ )
+			{
+				// Aim and pull the trigger (C1 usercmd button 1);
+				// codol_botFireAt only serves combat bots.
+				p botLookAt( s.value[ i ].origin + ( 0, 0, 40 ), 0.8 );
+				wait( 0.4 );
+				p codol_botPressButtons( 1, 0.1 );
+				wait( 0.5 );
+			}
+			codolprintln( "CoDOL cooptest: playroute fired at " + s.value.size + " dummies, hits " + level.coop_training_hits );
+			break;
+		case "note":
+			if ( s.value == "grenade_fire" )
+			{
+				p codol_botPressButtons( 16384, 0.3 );
+				wait( 2 );
+			}
+			else
+			{
+				p notify( s.value );
+				p notify( "grenade_fire" );
+			}
+			break;
+		case "course":
+			run_course();
+			break;
+		case "ship":
+			for ( i = 0; i < s.value.size; i++ )
+			{
+				t = s.value[ i ];
+				if ( t.coop_up && t.coop_target_type == "enemy" )
+					t notify( "damage", 50, p, ( 0, 0, 0 ), t.origin, "MOD_RIFLE_BULLET" );
+			}
+			break;
+		}
+	}
+}
+
+flag_trigger( name )
+{
+	ents = getEntArray();
+	for ( i = 0; i < ents.size; i++ )
+	{
+		e = ents[ i ];
+		if ( isDefined( e.script_flag ) && e.script_flag == name && isDefined( e.classname ) && getSubStr( e.classname, 0, 8 ) == "trigger_" )
+			return e;
+	}
+	return undefined;
+}
+
+// Walk player 0 to `dest`.  STUCK: under 16 units of progress in 4 s.
+walk_to( p, dest, what )
+{
+	// Out of the range hangar the way a player leaves it: by its door.
+	if ( isDefined( level.coop_training_flow ) && level.coop_training_flow && !isDefined( p.coop_walk_nested ) &&
+	     p.origin[ 0 ] > 1300 && p.origin[ 0 ] < 2100 && p.origin[ 1 ] > -1180 && p.origin[ 1 ] < -500 && dest[ 1 ] < -1200 )
+	{
+		p.coop_walk_nested = true;
+		walk_to( p, ( 1408, -1100, 4 ), "range door, inside" );
+		walk_to( p, ( 1408, -1260, 4 ), "range door, outside" );
+		p.coop_walk_nested = undefined;
+	}
+	radius = 40;
+	if ( isSubStr( what, "near" ) )
+		radius = 150;
+	start = p.origin;
+	p botMoveTo( dest );
+	lastPos = p.origin;
+	still = 0;
+	for ( t = 0; t < 90; t += 0.5 )
+	{
+		wait( 0.5 );
+		if ( !isDefined( p ) || !isAlive( p ) )
+			return false;
+		d = p.origin - dest;
+		if ( length( ( d[ 0 ], d[ 1 ], 0 ) ) < radius )
+		{
+			p botStop();
+			codolprintln( "CoDOL cooptest: playroute walked to " + what + " from " + start + " in " + t + " s" );
+			return true;
+		}
+		if ( distance( p.origin, lastPos ) < 16 )
+			still += 0.5;
+		else
+			still = 0;
+		lastPos = p.origin;
+		if ( still >= 4 )
+			break;
+	}
+	p botStop();
+	codolprintln( "CoDOL cooptest: playroute STUCK walking to " + what + " " + dest + " at " + p.origin + "; teleporting" );
+	// Beside the point, not on it: an instructor stands on his own spot.
+	if ( radius > 40 )
+		p setOrigin( dest + ( 0, -80, 0 ) );
+	else
+		p setOrigin( dest );
+	return false;
+}
+
+walk_points( tokens )
+{
+	p = player( 0 );
+	if ( !isDefined( p ) )
+		return;
+	for ( i = 1; i + 2 < tokens.size; i += 3 )
+		walk_to( p, ( float( tokens[ i ] ), float( tokens[ i + 1 ] ), float( tokens[ i + 2 ] ) ), "point " + int( ( i - 1 ) / 3 ) );
+	codolprintln( "CoDOL cooptest: walk done at " + p.origin );
+}
+
+// aimcheck: for each range dummy (lane1, ads_tutorial_target), what a trace
+// from player 0's eye to the dummy at several heights hits.
+aim_check()
+{
+	p = player( 0 );
+	if ( !isDefined( p ) )
+		return;
+	eye = p getEye();
+	targets = getEntArray( "lane1", "targetname" );
+	ents = getEntArray();
+	for ( i = 0; i < ents.size; i++ )
+	{
+		if ( isDefined( ents[ i ].script_noteworthy ) && ents[ i ].script_noteworthy == "ads_tutorial_target" )
+			targets[ targets.size ] = ents[ i ];
+	}
+	for ( i = 0; i < targets.size; i++ )
+	{
+		t = targets[ i ];
+		line = "CoDOL cooptest: aimcheck target " + t getEntityNumber() + " at " + t.origin + " angles " + t.angles + ":";
+		for ( h = -8; h <= 80; h += 8 )
+		{
+			trace = bulletTrace( eye, t.origin + ( 0, 0, h ), true, p );
+			hit = "world";
+			if ( trace[ "fraction" ] >= 1 )
+				hit = "none";
+			else if ( isDefined( trace[ "entity" ] ) )
+			{
+				if ( trace[ "entity" ] == t )
+					hit = "TARGET";
+				else
+					hit = "ent" + trace[ "entity" ] getEntityNumber() + "/" + trace[ "entity" ].classname;
+			}
+			line += " " + h + "=" + hit;
+		}
+		codolprintln( line );
+	}
+	codolprintln( "CoDOL cooptest: aimcheck from " + eye );
 }
