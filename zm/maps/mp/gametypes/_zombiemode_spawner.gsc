@@ -338,6 +338,19 @@ spawn_zombie( spawn_point )
 	if ( !isDefined( angles ) )
 		angles = ( 0, randomInt( 360 ), 0 );
 
+	// Near-window spawn (see near_window_spawn below): the zombie keeps its
+	// authored spawner, and therefore its window, but starts a few seconds'
+	// walk outside that window instead of 700-2400 units away.
+	ai.zm_spawn_time = getTime();
+	ai.zm_spawn_near = false;
+	near = near_window_spawn( spawn_point );
+	if ( isDefined( near ) )
+	{
+		origin = near.origin;
+		angles = near.angles;
+		ai.zm_spawn_near = true;
+	}
+
 	ai forceTeleport( origin, angles );
 	ai show();
 
@@ -547,7 +560,7 @@ apply_move_speed_scale( scale )
 move_speed_scale()
 {
 	if ( !isDefined( self.zombie_move_speed ) )
-		return 0.5;
+		return walk_speed_scale();
 
 	switch ( self.zombie_move_speed )
 	{
@@ -557,7 +570,348 @@ move_speed_scale()
 		return 0.9;
 	}
 
-	return 0.5;
+	return walk_speed_scale();
+}
+
+// The walk bucket.  T5 plays every zombie move cycle at moveplaybackrate 1
+// (animscripts\zombie_init.gsc:320) and never scales a zombie's movement
+// (no SetMoveSpeedScale on a zombie anywhere in T5's zombiemode), so a
+// walker covers its walk clip's own root motion.  This port played walks at
+// 0.5 / 0.9 = 0.56 of that: MEASURED on the VPS, every walker moved 19-20
+// units/s against 34-36 at rate 1, so the round-1..3 walkers took 60-120 s
+// from Prototype's yard spawners to their windows.  0.9 here is rate 1, the
+// same normalisation point as "run".  scr_zm_t5_walk_rate 0 restores 0.5.
+walk_speed_scale()
+{
+	if ( zm_dvar_int( "scr_zm_t5_walk_rate", 1 ) <= 0 )
+		return 0.5;
+	return 0.9;
+}
+
+zm_dvar_int( name, default_value )
+{
+	value = getDvar( name );
+	if ( value == "" )
+		return default_value;
+	return int( value );
+}
+
+// --------------------------------------------------------------------------
+// Near-window spawning.
+//
+// MEASURED (VPS codol-match-17733, 2026-10-07, 152 entrance walks on
+// zm_prototype_sh): every authored zombie_spawner targets the node inside
+// its own window, as in T5, but CoDOL placed the structs out at the edge
+// of the expanded map, 666-2397 units (median 1165) in a straight line from
+// that window -- (1885 -1502) feeds the window at (273 247), (135 2388) the
+// one at (238 1176).  zm_asylum_sh's are mostly 160-300 units out (median
+// 241), with a few at 800-1460.  T5 spawns from these same structs and
+// keeps them within a few seconds of the boards.
+//
+// So the spawner still picks the window (the zone manager's active-zone
+// choice, T5's random spawner, the spawner's target -> closest
+// exterior_goal, all unchanged), but unless the authored struct already
+// stands within scr_zm_spawn_near_min (160) of that window the zombie
+// starts at one of the window's own approach points instead: a map path
+// node outside the window (on the far side of the window from its inside
+// traversal point, in no player volume), between scr_zm_spawn_near_min and
+// scr_zm_spawn_near_max (320; 480 when that band holds fewer than three) of
+// the exterior_goal, with clear line of sight to it at knee and chest height,
+// a floor under it and a findpath() route to it.  A point some player can
+// see is skipped (no zombie appears in view), as is one another zombie is
+// standing on; when none is left the authored spawner is used, which is
+// the old behaviour.  scr_zm_spawn_near_window 0 restores it everywhere.
+// --------------------------------------------------------------------------
+
+near_window_spawn( spawn_point )
+{
+	if ( zm_dvar_int( "scr_zm_spawn_near_window", 1 ) <= 0 )
+		return undefined;
+	if ( !isDefined( spawn_point ) || !isDefined( spawn_point.script_noteworthy ) ||
+		spawn_point.script_noteworthy != "zombie_spawner" )
+		return undefined;
+
+	window = spawner_window( spawn_point );
+	if ( !isDefined( window ) )
+		return undefined;
+
+	// An authored spawner already at the boards (Asylum's (-178 413) is 57
+	// units from its window) is T5's own near-window spawner; keep it.  One
+	// farther out is replaced even when its straight-line distance is short:
+	// MEASURED, Asylum's (902 566) is 272 units from the window (705 754)
+	// but its route takes 23-27 s; an approach point sees its window.
+	if ( distance( spawn_point.origin, window.origin ) <= zm_dvar_int( "scr_zm_spawn_near_min", 160 ) )
+		return undefined;
+
+	spots = window_spawn_spots( window );
+	if ( spots.size < 1 )
+		return undefined;
+
+	// Random start, then the first spot nobody can see and nobody stands on.
+	first = randomInt( spots.size );
+	for ( i = 0; i < spots.size; i++ )
+	{
+		spot = spots[ ( first + i ) % spots.size ];
+		if ( spot_occupied( spot.origin ) )
+			continue;
+		if ( spot_seen_by_player( spot.origin ) )
+		{
+			if ( zm_dvar_int( "scr_zm_spawn_log", 0 ) > 0 )
+				codolprintln( "CoDOL zm spawn: approach point " + spot.origin + " of window " + window.origin + " is in a player's view; skipped" );
+			continue;
+		}
+		return spot;
+	}
+
+	if ( !isDefined( level.zm_near_all_seen_reported ) || level.zm_near_all_seen_reported != level.round_number )
+	{
+		level.zm_near_all_seen_reported = level.round_number;
+		codolprintln( "CoDOL zm spawn: every approach point of window " + window.origin +
+			" is in view or occupied; using the authored spawner " + spawn_point.origin );
+	}
+	return undefined;
+}
+
+// The window a zombie from this spawner attacks: pick_entrance_node's rule
+// for a targeted spawner (T5 zombie_think :461, the exterior_goal closest to
+// the spawner's target).  An untargeted spawner keeps its own position: T5
+// sends those to the closest of three windows from where they stand.
+spawner_window( spawn_point )
+{
+	if ( isDefined( spawn_point.zm_window ) )
+		return spawn_point.zm_window;
+	if ( !isDefined( level.exterior_goals ) || level.exterior_goals.size < 1 )
+		return undefined;
+	if ( !isDefined( spawn_point.target ) || spawn_point.target == "" )
+		return undefined;
+
+	desired = undefined;
+	ent = getEnt( spawn_point.target, "targetname" );
+	if ( isDefined( ent ) )
+		desired = ent.origin;
+	if ( !isDefined( desired ) )
+	{
+		s = get_struct( spawn_point.target, "targetname" );
+		if ( isDefined( s ) )
+			desired = s.origin;
+	}
+	if ( !isDefined( desired ) )
+	{
+		node = getNode( spawn_point.target, "targetname" );
+		if ( isDefined( node ) )
+			desired = node.origin;
+	}
+	if ( !isDefined( desired ) )
+		return undefined;
+
+	spawn_point.zm_window = get_closest( desired, level.exterior_goals );
+	return spawn_point.zm_window;
+}
+
+// The approach points of one window, built once per window.  Nodes between
+// min and max (within 96 units of the window's height) come first; when
+// that band yields fewer than three (Asylum's upper-floor windows open onto
+// narrow ledges), the band is widened by half, and then ground up to 320
+// units below the window is allowed.
+window_spawn_spots( window )
+{
+	if ( isDefined( window.zm_near_spots ) )
+		return window.zm_near_spots;
+
+	min_dist = zm_dvar_int( "scr_zm_spawn_near_min", 160 );
+	max_dist = zm_dvar_int( "scr_zm_spawn_near_max", 320 );
+	wide_dist = int( max_dist * 1.5 );
+
+	// The outward direction: from the window's inside traversal point out
+	// through the exterior_goal.
+	inside = maps\mp\gametypes\_zombiemode_zone_manager::entrance_inside_point( window );
+	out = undefined;
+	if ( isDefined( inside ) )
+	{
+		out = window.origin - inside;
+		out = vectorNormalize( ( out[ 0 ], out[ 1 ], 0 ) );
+	}
+
+	goal_low = window.origin + ( 0, 0, 24 );
+	goal_high = window.origin + ( 0, 0, 52 );
+	near = [];
+	wide = [];
+	below = [];
+	rej_side = 0;
+	rej_zone = 0;
+	rej_floor = 0;
+	rej_sight = 0;
+	rej_path = 0;
+	nodes = getAllNodes();
+	for ( i = 0; isDefined( nodes ) && i < nodes.size && near.size < 10; i++ )
+	{
+		node = nodes[ i ];
+		if ( !isDefined( node.classname ) || node.classname != "node_pathnode" )
+			continue;
+		d = distance2D( node.origin, window.origin );
+		if ( d < min_dist || d > wide_dist )
+			continue;
+		dz = node.origin[ 2 ] - window.origin[ 2 ];
+		low = dz < -96;
+		if ( dz > 96 || dz < -320 )
+			continue;
+		if ( low && below.size >= 6 )
+			continue;
+		if ( !low && d > max_dist && wide.size >= 6 )
+			continue;
+		if ( isDefined( out ) )
+		{
+			v = node.origin - window.origin;
+			if ( v[ 0 ] * out[ 0 ] + v[ 1 ] * out[ 1 ] < 0.25 * d )
+			{
+				rej_side++;
+				continue;
+			}
+		}
+		if ( isDefined( maps\mp\gametypes\_zombiemode_zone_manager::zone_at_point( node.origin ) ) )
+		{
+			rej_zone++;
+			continue;
+		}
+
+		trace = bulletTrace( node.origin + ( 0, 0, 16 ), node.origin - ( 0, 0, 128 ), false, undefined );
+		if ( trace[ "fraction" ] >= 1 )
+		{
+			rej_floor++;
+			continue;
+		}
+		pos = trace[ "position" ];
+
+		if ( !bulletTracePassed( pos + ( 0, 0, 24 ), goal_low, false, undefined ) ||
+			!bulletTracePassed( pos + ( 0, 0, 52 ), goal_high, false, undefined ) )
+		{
+			rej_sight++;
+			continue;
+		}
+		if ( !findpath( pos, window.origin ) )
+		{
+			rej_path++;
+			continue;
+		}
+
+		spot = spawnStruct();
+		// 2 units up: a teleport exactly onto the traced floor reads as
+		// solid to the actor and gets lifted (and logged) on every spawn.
+		spot.origin = pos + ( 0, 0, 2 );
+		spot.angles = vectorToAngles( window.origin - pos );
+		spot.angles = ( 0, spot.angles[ 1 ], 0 );
+		spot.window = window;
+		if ( low )
+			below[ below.size ] = spot;
+		else if ( d <= max_dist )
+			near[ near.size ] = spot;
+		else
+			wide[ wide.size ] = spot;
+	}
+
+	spots = near;
+	band = min_dist + "-" + max_dist;
+	if ( spots.size < 3 )
+	{
+		for ( i = 0; i < wide.size; i++ )
+			spots[ spots.size ] = wide[ i ];
+		band = min_dist + "-" + wide_dist;
+	}
+	// Still short: an upper-floor window whose zombies climb to it from the
+	// ground (Asylum's (-122 424 253): the T5-placed spawner (-178 413 13)
+	// stands 240 below it).  Ground nodes below the window with a sight line
+	// up to it and a route to it join the list.
+	if ( spots.size < 3 )
+	{
+		for ( i = 0; i < below.size; i++ )
+			spots[ spots.size ] = below[ i ];
+		if ( below.size > 0 )
+			band = band + " incl. " + below.size + " below";
+	}
+
+	window.zm_near_spots = spots;
+	codolprintln( "CoDOL zm spawn: window " + window.origin + " has " + spots.size + " approach points within " + band +
+		" (rejected: side " + rej_side + " zone " + rej_zone + " floor " + rej_floor + " sight " + rej_sight + " path " + rej_path + ")" );
+	return spots;
+}
+
+abs_float( value )
+{
+	if ( value < 0 )
+		return 0 - value;
+	return value;
+}
+
+spot_occupied( origin )
+{
+	if ( !isDefined( level.zombies ) )
+		return false;
+	for ( i = 0; i < level.zombies.size; i++ )
+	{
+		z = level.zombies[ i ];
+		if ( isDefined( z ) && isAlive( z ) && distanceSquared( z.origin, origin ) < 40 * 40 )
+			return true;
+	}
+	return false;
+}
+
+// A live player looking towards the point (within about 70 degrees of his
+// view direction) with a clear sight line to the zombie's chest, or one
+// standing within 200 units of it.
+spot_seen_by_player( origin )
+{
+	chest = origin + ( 0, 0, 48 );
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+	{
+		player = players[ i ];
+		if ( !isDefined( player ) || !isAlive( player ) )
+			continue;
+		if ( isDefined( player.sessionstate ) && player.sessionstate != "playing" )
+			continue;
+		if ( distanceSquared( player.origin, origin ) < 200 * 200 )
+			return true;
+		eye = player getEye();
+		dir = vectorNormalize( chest - eye );
+		forward = anglesToForward( player getPlayerAngles() );
+		if ( vectorDot( forward, dir ) < 0.34 )
+			continue;
+		if ( sightTracePassed( eye, chest, false, undefined ) )
+			return true;
+	}
+	return false;
+}
+
+// Spawn-to-window and spawn-to-inside times.  The first of each per round is
+// always printed (one line each); scr_zm_spawn_log 1 prints every zombie.
+zm_entry_timing( what, node )
+{
+	if ( !isDefined( self.zm_spawn_time ) )
+		return;
+	ms = getTime() - self.zm_spawn_time;
+	round_ms = -1;
+	if ( isDefined( level.round_start_time ) )
+		round_ms = getTime() - level.round_start_time;
+	where = "";
+	if ( isDefined( node ) )
+		where = " window " + node.origin;
+	key = "zm_first_" + what + "_round";
+	first = !isDefined( level.zm_entry_first ) || !isDefined( level.zm_entry_first[ key ] ) ||
+		level.zm_entry_first[ key ] != level.round_number;
+	if ( first )
+	{
+		if ( !isDefined( level.zm_entry_first ) )
+			level.zm_entry_first = [];
+		level.zm_entry_first[ key ] = level.round_number;
+	}
+	if ( first || zm_dvar_int( "scr_zm_spawn_log", 0 ) > 0 )
+	{
+		prefix = "";
+		if ( first )
+			prefix = "round " + level.round_number + " first ";
+		codolprintln( "CoDOL zm spawn: " + prefix + "ent " + self getEntityNumber() + " at " + what + " " + ms +
+			" ms after spawn (" + round_ms + " ms into round), near " + self.zm_spawn_near + where );
+	}
 }
 
 // T5 :3657 zombie_eye_glow / zombie_eye_glow_stop / delayed_zombie_eye_glow.
@@ -871,10 +1225,12 @@ zombie_think()
 		if ( self zombie_wait_entrance() )
 		{
 			node = self.first_node;
+			self zm_entry_timing( "window", node );
 			self.goalradius = 64;
 			self zombie_tear_until_open( node );
 			self open_barrier_paths( node );
 			self zombie_climb_in( node );
+			self zm_entry_timing( "inside", node );
 		}
 		else if ( !self zombie_can_reach_flesh() )
 		{
