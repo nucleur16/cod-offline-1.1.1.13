@@ -287,6 +287,64 @@ coop_name( weapon )
 	return weapon;
 }
 
+// The one way a coop script gives a player a weapon (the training stations,
+// the map's weapon pickups, mission rewards): a player carries at most two
+// primary weapons, as in the CoD4 / MW2 campaigns, plus his offhands and
+// equipment.  A new primary when two are held replaces one: a held primary
+// of the same weaponClass (a pistol replaces the pistol, a rifle the rifle),
+// else the weapon in hand (the CoD4 SP pickup swap).  The replaced weapon is
+// taken, not dropped: CoD4 killhouse's scripted gives drop nothing.  Offhands
+// and items are only added.  User report 2026-10-07: "when the scripts give
+// the player a new weapon it adds onto their total weapons instead of just
+// keeping only two weapons".
+coop_give_weapon( weapon, switchTo )
+{
+	if ( !isDefined( weapon ) || weapon == "" || weapon == "none" )
+		return false;
+	if ( !isDefined( switchTo ) )
+		switchTo = false;
+	if ( self hasWeapon( weapon ) )
+	{
+		self giveMaxAmmo( weapon );
+		if ( switchTo )
+			self switchToWeapon( weapon );
+		return true;
+	}
+	if ( weaponInventoryType( weapon ) == "primary" )
+	{
+		primaries = self getWeaponsListPrimaries();
+		if ( primaries.size >= 2 )
+		{
+			replace = undefined;
+			newClass = weaponClass( weapon );
+			for ( i = 0; i < primaries.size; i++ )
+			{
+				if ( weaponClass( primaries[ i ] ) == newClass )
+					replace = primaries[ i ];
+			}
+			if ( !isDefined( replace ) )
+			{
+				current = self getCurrentWeapon();
+				for ( i = 0; i < primaries.size; i++ )
+				{
+					if ( primaries[ i ] == current )
+						replace = current;
+				}
+			}
+			if ( !isDefined( replace ) )
+				replace = primaries[ primaries.size - 1 ];
+			self takeWeapon( replace );
+			switchTo = true;
+			codolprintln( "CoDOL coop: " + self.name + " swaps " + replace + " for " + weapon );
+		}
+	}
+	self giveWeapon( weapon );
+	self giveMaxAmmo( weapon );
+	if ( switchTo )
+		self switchToWeapon( weapon );
+	return true;
+}
+
 giveStartingLoadout()
 {
 	self takeAllWeapons();

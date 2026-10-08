@@ -27,8 +27,22 @@
 //   * the cargoship and deck targets pop by group when a player comes within
 //     512 units of the group, and re-arm 20 s after the group is down.
 //
-// The lateral rail movement (script_parameters use_rail) and the melee-only
-// target are not ported; rail targets pop up in place.
+// The melee-only target (script_parameters melee: the upstairs target at
+// 168 1214 192, linkName 14) is IW4's: while it is up, melee_clip (*310, a
+// player clip across the upstairs walkway at 166 1264 209) is solid so the
+// player has to knife it, only MOD_MELEE takes it down, and the clip goes
+// with the hit (trainer.gsc target_think: show_entity on pop_up,
+// hide_entity on the hit; so_killspree_trainer hides it at load).  The first
+// version ignored both, so melee_clip stood across the walkway for good
+// (user report 2026-10-07, "script brush model for the melee target in the
+// cqb course doesn't get removed after knifing the target").
+//
+// A target is non-solid whenever it is down (IW4 notsolid() on the way
+// down), including before its first pop-up: a lying target in a lane must not
+// stop the player.
+//
+// The lateral rail movement (script_parameters use_rail) is not ported; rail
+// targets pop up in place.
 //
 // Coop category root only; names no multiplayer module.
 
@@ -62,6 +76,7 @@ init()
 	if ( pivots <= 0 )
 		return;
 
+	melee_clip( false );
 	codolprintln( "CoDOL coop course: " + pivots + " pop-up targets" );
 	level thread course_triggers();
 	level thread proximity_groups();
@@ -129,13 +144,17 @@ target_think()
 		}
 	}
 	pivot_down( pivot, 0.25 );
+	self notSolid();
 	self.coop_up = false;
+	meleeOnly = isDefined( self.script_parameters ) && self.script_parameters == "melee";
 
 	for ( ;; )
 	{
 		self waittill( "pop_up" );
 		if ( self.coop_up )
 			continue;
+		if ( meleeOnly )
+			melee_clip( true );
 		wait( randomFloatRange( 0, 0.2 ) );
 
 		self solid();
@@ -154,6 +173,12 @@ target_think()
 				continue;
 			if ( isDefined( type ) && type == "MOD_IMPACT" )
 				continue;
+			if ( meleeOnly )
+			{
+				codolprintln( "CoDOL coop course: melee target hit by " + attacker.name + " with " + type );
+				if ( !isDefined( type ) || type != "MOD_MELEE" )
+					continue;
+			}
 
 			self playSound( "target_metal_hit" );
 			if ( self.coop_target_type == "friendly" )
@@ -172,6 +197,8 @@ target_think()
 			break;
 		}
 
+		if ( meleeOnly )
+			melee_clip( false );
 		self notify( "hit" );
 		level notify( "coop_target_down" );
 		self setCanDamage( false );
@@ -180,6 +207,25 @@ target_think()
 		self.coop_up = false;
 		wait( 0.25 );
 	}
+}
+
+// melee_clip: solid and shown while the melee target is up, else gone.
+melee_clip( present )
+{
+	clip = getEnt( "melee_clip", "targetname" );
+	if ( !isDefined( clip ) )
+		return;
+	if ( present )
+	{
+		clip show();
+		clip solid();
+	}
+	else
+	{
+		clip hide();
+		clip notSolid();
+	}
+	codolprintln( "CoDOL coop course: melee_clip " + present );
 }
 
 drop( targets )

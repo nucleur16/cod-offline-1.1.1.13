@@ -118,6 +118,52 @@ watch()
 		case "aimcheck":
 			level thread aim_check();
 			break;
+		case "pickuptest":
+			// pickuptest <weapon_classname>: drop a world weapon at player 0's
+			// feet and report his primaries before and after he walks over
+			// it (the native pickup's two-primary rule in coop).
+			if ( tokens.size >= 2 )
+				level thread pickup_test( tokens[ 1 ] );
+			break;
+		case "jeeptags":
+			// jeeptags: the intro vehicle's seat tags in its own frame
+			// (forward, right, up), and where the driver model stands.
+			if ( isDefined( level.coop_intro ) && isDefined( level.coop_intro.mover ) )
+			{
+				m = level.coop_intro.mover;
+				tags = strTok( "tag_origin tag_body tag_driver tag_passenger tag_player tag_guy0 tag_guy1 tag_seat_rb", " " );
+				for ( j = 0; j < tags.size; j++ )
+				{
+					o = m getTagOrigin( tags[ j ] ) - m.origin;
+					codolprintln( "CoDOL cooptest: jeep " + tags[ j ] + " local ( " + vectorDot( o, anglesToForward( m.angles ) ) + ", " +
+						vectorDot( o, anglesToRight( m.angles ) ) + ", " + o[ 2 ] + " ) angles " + m getTagAngles( tags[ j ] ) );
+				}
+				codolprintln( "CoDOL cooptest: jeep at " + m.origin + " angles " + m.angles );
+			}
+			break;
+		case "knifetest":
+			// knifetest: pop the pit's melee-only target and knife it for
+			// real from the upstairs walkway.
+			for ( j = 0; j < level.coop_course_targets.size; j++ )
+			{
+				g = level.coop_course_targets[ j ];
+				if ( isDefined( g.script_parameters ) && g.script_parameters == "melee" )
+				{
+					g notify( "pop_up" );
+					teleport( 0, ( 142, 1270, 150 ) );
+					level thread knife_target( player( 0 ), g );
+				}
+			}
+			break;
+		case "pitwalk":
+			// pitwalk: player 0 from the hangar through the whole pit course
+			// on foot (walk_course), the entrance gates opened as the
+			// briefing opens them.
+			maps\mp\gametypes\_cooptraining::open_doors( "gate_cqb_out" );
+			maps\mp\gametypes\_cooptraining::open_doors( "gate_cqb_start" );
+			teleport( 0, ( 89, -1315, 4 ) );
+			level thread walk_course( player( 0 ) );
+			break;
 		case "colmap":
 			// colmap <x0> <y0> <x1> <y1> <z> <step>: a top-down map of what
 			// stops a player there (see col_map).
@@ -443,7 +489,7 @@ play_route()
 		p = player( 0 );
 		if ( !isDefined( s ) || !isDefined( p ) || !isAlive( p ) || isDefined( p.coop_in_intro ) )
 			continue;
-		if ( isDefined( last ) && last == s && s.kind != "hits" && s.kind != "note" && s.kind != "ship" )
+		if ( isDefined( last ) && last == s && s.kind != "hits" && s.kind != "note" && s.kind != "ship" && s.kind != "weapon" )
 			continue;
 		last = s;
 		switch ( s.kind )
@@ -522,6 +568,32 @@ play_route()
 		case "course":
 			walk_course( p );
 			break;
+		case "trigger":
+			// Walk into the trigger (the safety pit, station one, a deck
+			// position, the debrief).
+			walk_to( p, s.value.origin, "trigger " + s.value2 );
+			break;
+		case "weapon":
+			// A player's weapon switch.
+			p switchToWeapon( s.value );
+			codolprintln( "CoDOL cooptest: playroute switched to " + s.value );
+			break;
+		case "damage":
+			play_windows( p, s.value, s.value2 );
+			break;
+		case "flash":
+			play_flash( p, s.value, s.value2 );
+			break;
+		case "use":
+			walk_to( p, s.value.origin + ( 0, 0, -40 ), "use " + s.value2 );
+			p codol_botPressButtons( 8, 0.3 );
+			wait( 1.5 );
+			if ( level.coop_training_step == s )
+			{
+				s.value notify( "trigger", p );
+				codolprintln( "CoDOL cooptest: playroute use button did not take; use SIMULATED" );
+			}
+			break;
 		case "ship":
 			for ( i = 0; i < s.value.size; i++ )
 			{
@@ -578,8 +650,14 @@ walk_course( p )
 			for ( j = 0; j < level.coop_course_targets.size; j++ )
 			{
 				g = level.coop_course_targets[ j ];
-				if ( g.coop_up && g.coop_target_type == "enemy" )
-					g notify( "damage", 50, p, ( 0, 0, 0 ), g.origin, "MOD_RIFLE_BULLET" );
+				if ( !g.coop_up || g.coop_target_type != "enemy" )
+					continue;
+				if ( isDefined( g.script_parameters ) && g.script_parameters == "melee" )
+				{
+					knife_target( p, g );
+					continue;
+				}
+				g notify( "damage", 50, p, ( 0, 0, 0 ), g.origin, "MOD_RIFLE_BULLET" );
 			}
 		}
 	}
@@ -834,4 +912,100 @@ brush_extent( b )
 	if ( minx > maxx && miny > maxy )
 		return "not hit by any trace";
 	return "x " + minx + ".." + maxx + " y " + miny + ".." + maxy + " z " + minz + ".." + maxz;
+}
+
+// A real knife: walk up to the target, look at it and press melee (C1
+// usercmd button 4), up to four times; never a faked damage notify.  The
+// melee target's own log line (_coopcourse) shows what the engine delivered.
+knife_target( p, g )
+{
+	wait( 1 );
+	// The pit's melee target stands up as a panel across the upstairs
+	// walkway at x 164..172, y 1224..1280 (MEASURED with colmap; its pivot,
+	// 168 1214, is in the wall corner), so it is knifed from the west, facing
+	// east, at the walkway's height.
+	spot = ( 128, 1260, 150 );
+	aimAt = ( 168, 1260, 200 );
+	for ( n = 0; n < 4 && g.coop_up; n++ )
+	{
+		walk_to( p, spot, "melee target" );
+		aim = aimAt;
+		p botLookAt( aim, 3 );
+		p setPlayerAngles( vectorToAngles( aim - p getEye() ) );
+		wait( 0.6 );
+		p codol_botPressButtons( 4, 0.2 );
+		wait( 1.2 );
+		codolprintln( "CoDOL cooptest: knife " + n + " at melee target from " + p.origin + " (" + int( distance( p.origin, g.origin ) ) +
+			" units), target up " + g.coop_up );
+	}
+}
+
+// The demolition windows as a player does them: from the safety pit, look
+// at each window not yet hit and throw a frag (button 0x4000) or fire the
+// launcher (button 1).  A window the throw misses is reported and then
+// triggered (SIMULATED) so the run goes on.
+play_windows( p, trigs, what )
+{
+	for ( i = 0; i < trigs.size; i++ )
+	{
+		t = trigs[ i ];
+		if ( t.coop_hit )
+			continue;
+		aim = t.origin;
+		p botLookAt( aim, 3 );
+		p setPlayerAngles( vectorToAngles( aim - p getEye() ) + ( -8, 0, 0 ) );
+		wait( 0.6 );
+		if ( isSubStr( what, "frag" ) )
+			p codol_botPressButtons( 16384, 0.4 );
+		else
+			p codol_botPressButtons( 1, 0.1 );
+		wait( 3.5 );
+		codolprintln( "CoDOL cooptest: playroute " + what + " at " + t getEntityNumber() + " real hit " + t.coop_hit );
+	}
+	for ( i = 0; i < trigs.size; i++ )
+	{
+		if ( !trigs[ i ].coop_hit )
+		{
+			trigs[ i ] notify( "trigger", p );
+			codolprintln( "CoDOL cooptest: playroute " + what + " " + trigs[ i ] getEntityNumber() + " SIMULATED" );
+		}
+	}
+}
+
+// A flashbang into the room (button 0x8000), else SIMULATED.
+play_flash( p, volume, what )
+{
+	aim = volume.origin;
+	p botLookAt( aim, 3 );
+	p setPlayerAngles( vectorToAngles( aim - p getEye() ) );
+	wait( 0.6 );
+	p codol_botPressButtons( 32768, 0.4 );
+	wait( 3.5 );
+	codolprintln( "CoDOL cooptest: playroute flash into " + what + " real " + level.coop_training_flashed );
+	if ( !level.coop_training_flashed )
+	{
+		level.coop_training_flashed = true;
+		codolprintln( "CoDOL cooptest: playroute flash " + what + " SIMULATED" );
+	}
+}
+
+pickup_test( classname )
+{
+	p = player( 0 );
+	if ( !isDefined( p ) )
+		return;
+	before = p getWeaponsListPrimaries();
+	spot = p.origin + anglesToForward( p.angles ) * 64 + ( 0, 0, 8 );
+	item = spawn( classname, spot );
+	codolprintln( "CoDOL cooptest: pickup " + classname + " defined " + isDefined( item ) + "; primaries before " + before.size );
+	wait( 0.5 );
+	walk_to( p, spot, "pickup " + classname );
+	wait( 1 );
+	p codol_botPressButtons( 8, 0.5 );
+	wait( 1.5 );
+	after = p getWeaponsListPrimaries();
+	text = "";
+	for ( i = 0; i < after.size; i++ )
+		text += " " + after[ i ];
+	codolprintln( "CoDOL cooptest: pickup " + classname + " primaries after " + after.size + ":" + text + " (item still there " + isDefined( item ) + ")" );
 }

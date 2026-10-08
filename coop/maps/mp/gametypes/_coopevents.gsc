@@ -279,8 +279,7 @@ weapon_pickup_think( weapon )
 		self waittill( "trigger", who );
 		if ( !isDefined( who ) || !isPlayer( who ) )
 			continue;
-		who giveWeapon( weapon );
-		who giveMaxAmmo( weapon );
+		who maps\mp\gametypes\_coopmode::coop_give_weapon( weapon );
 		who iPrintLnBold( "Picked up " + weapon );
 		wait( 1 );
 	}

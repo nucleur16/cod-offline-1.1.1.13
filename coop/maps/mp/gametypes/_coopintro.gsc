@@ -202,6 +202,18 @@ board()
 
 	mover = intro.mover;
 	offset = seat_offset( seat, intro.ground );
+	// The humvee seats are the model's own tags (MEASURED, _cooptest
+	// jeeptags on vehicle_hummer_viewmodel: tag_driver front left,
+	// tag_passenger front right, tag_guy0 / tag_guy1 rear left / right,
+	// tag_player the middle, all about 36 units up).  Price has the driver's
+	// tag (_cooptraining seat_driver); the riders sit, crouched, on the rest.
+	tag = seat_tag( seat, intro.ground );
+	if ( isDefined( tag ) )
+	{
+		offset = mover getTagOrigin( tag ) - mover.origin;
+		offset = ( vectorDot( offset, anglesToForward( mover.angles ) ), vectorDot( offset, anglesToRight( mover.angles ) ), offset[ 2 ] );
+		self setStance( "crouch" );
+	}
 	self setOrigin( local_to_world( mover.origin, mover.angles, offset ) );
 	self setPlayerAngles( mover.angles );
 	self.coop_seat_angles = mover.angles;
@@ -232,6 +244,18 @@ seat_offset( index, ground )
 		seats[ 3 ] = ( 48, -24, 8 );
 	}
 	return seats[ index % seats.size ];
+}
+
+seat_tag( index, ground )
+{
+	if ( !ground )
+		return undefined;
+	tags = [];
+	tags[ 0 ] = "tag_passenger";
+	tags[ 1 ] = "tag_guy1";
+	tags[ 2 ] = "tag_guy0";
+	tags[ 3 ] = "tag_player";
+	return tags[ index % tags.size ];
 }
 
 local_to_world( origin, angles, offset )
@@ -280,6 +304,7 @@ ride()
 		if ( trace[ "fraction" ] < 1 )
 			spot = trace[ "position" ] + ( 0, 0, 1 );
 		p setOrigin( spot );
+		p setStance( "stand" );
 		p enableWeapons();
 		p.coop_in_intro = undefined;
 	}
