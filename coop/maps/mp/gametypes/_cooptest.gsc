@@ -468,6 +468,9 @@ route()
 		case "note":
 			p notify( s.value );
 			break;
+		case "pickup":
+			p giveWeapon( s.value2 );
+			break;
 		case "course":
 			run_course();
 			break;
@@ -586,6 +589,31 @@ play_route()
 			// A player's weapon switch.
 			p switchToWeapon( s.value );
 			codolprintln( "CoDOL cooptest: playroute switched to " + s.value );
+			break;
+		case "pickup":
+			// A weapon lying in the world (the range table's rifle): in
+			// through the range door, up to it, look at it, press use.
+			if ( p.origin[ 1 ] < -1150 )
+			{
+				walk_to( p, ( 1408, -1240, 4 ), "range door, outside" );
+				walk_to( p, ( 1408, -1100, 4 ), "range door, inside" );
+			}
+			if ( isDefined( s.value ) )
+			{
+				walk_to( p, s.value.origin + ( 0, -40, 0 ), "pickup " + s.value2 );
+				p botLookAt( s.value.origin, 1 );
+				p setPlayerAngles( vectorToAngles( s.value.origin - p getEye() ) );
+				wait( 0.5 );
+				p codol_botPressButtons( 8, 0.5 );
+				wait( 1.5 );
+			}
+			codolprintln( "CoDOL cooptest: playroute pickup " + s.value2 + " real " + p hasWeapon( s.value2 ) +
+				", weapons " + p getWeaponsListPrimaries().size );
+			if ( !p hasWeapon( s.value2 ) )
+			{
+				p giveWeapon( s.value2 );
+				codolprintln( "CoDOL cooptest: playroute pickup " + s.value2 + " SIMULATED" );
+			}
 			break;
 		case "damage":
 			play_windows( p, s.value, s.value2 );

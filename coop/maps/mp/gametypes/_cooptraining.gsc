@@ -1,14 +1,14 @@
 // coop_training_mp_killhouse_sh: the scripted training mission.
 //
-// CoDOL's training mission is CoD4's killhouse (F.N.G.) with MW2's pit (the
-// CQB course) and MW2's jeep ride added, on mp_killhouse_sh, with CoDOL's
-// own cast and voice lines.  Its level script does not ship.  The PRIMARY
-// reference for everything but the pit is CoD4 maps\killhouse.gsc,
-// killhouse_code.gsc and killhouse_anim.gsc (user direction 2026-10-08): the
-// station order, flags, triggers, objectives, door moves and character
-// places follow them (docs/CODOL_CAMPAIGN_MODE.md section 12 maps each CoD4
-// name to this map's); C1's pit_* lines are CoD4's in CoD4's order.  The pit
-// course keeps IW4 trainer.gsc / so_killspree_trainer.gsc (_coopcourse.gsc).
+// CoDOL's training mission is CoD4's killhouse (F.N.G.) with MW2's jeep ride
+// added, on mp_killhouse_sh, with CoDOL's own cast and voice lines.  Its
+// level script does not ship.  The reference for the station mechanics is
+// CoD4 maps\killhouse.gsc, killhouse_code.gsc and killhouse_anim.gsc (user
+// direction 2026-10-08): flags, triggers, door moves and character places
+// follow them (docs/CODOL_CAMPAIGN_MODE.md section 12 maps each CoD4 name to
+// this map's).  The map's pit (the CQB course) and cargoship mock-up are not
+// part of this mission (user, 2026-10-08: the pit belongs to another
+// training); _coopcourse.gsc leaves the pit idle here.
 // Sources:
 //
 //   * the map entities: the addon's actors (script_friendname Captain Price,
@@ -27,21 +27,26 @@
 //     transcription; no line text is reproduced here).  Durations are the
 //     shipped files' own lengths.
 //
-// Stations, in order:
-//   0 the jeep ride into camp (Price, pit_pri_001..003) -- _coopintro
-//   1 to the range (Price nags pit_pri_004..006 until inside_firing_range)
-//   2 the range with Tiny Man: hip fire, aim down the sights, penetration,
-//     timed targets, sidearm, knife (pit_tiny_001..025); the range's targets
-//     are the base map's rifle / ADS dummies and the knife dummy
-//   3 demolitions with Sgt. Newcastle: frags into the windows, the grenade
-//     launcher at wall one and windows five to seven (pit_ncastle_001..014)
-//   4 the obstacle course with Mac (pit_mac_001..008)
-//   5 Price at the end of the course, then the hangar: Colonel Harker's
-//     welcome and the pit briefing (pit_har_*, pit_pri_007..011, pit_mct,
-//     pit_gst), the pit CQB course (_coopcourse.gsc) and Price's verdict
-//   6 the cargoship deck mock-up with Price calling the positions
-//     (pit_pri_012..044), his verdict, and the debrief at the monitors
-//     (pit_pri_061..065), which completes the mission.
+// The retail mission as a player sees it (a gameplay recording of the CoDOL
+// client, user direction 2026-10-08) is the authority for the order of
+// stations and lines, who stands where, what glows and what moves;
+// docs/CODOL_CAMPAIGN_MODE.md section 14 is that timeline.  Stations, in
+// order:
+//   0 the jeep ride into camp, Price at the wheel (pit_pri_001..002_3) --
+//     _coopintro; on foot Price sends the rookie to Tiny Man (pit_pri_003)
+//     and nags (004..006); the floor arrows light the way to the range door,
+//     whose frame glows
+//   1 the range with Tiny Man: the rifle is a real pickup from the table
+//     (the player arrives with only his pistol and offhands, weapons down),
+//     hip fire, aim down the sights, targets popping up one at a time,
+//     pistol then rifle, knife (pit_tiny_001..025; no plywood lesson)
+//   2 demolitions with Sgt. Newcastle: frags into windows two to four, the
+//     grenadier rifle at wall one and windows five to seven; each window
+//     glows and carries a marker until it is hit (pit_ncastle_001..014)
+//   3 the obstacle course with Mac and the crouched recruits at the line
+//     (pit_mac_001..008)
+//   4 Price by the fence at the end of the course: the debrief
+//     (pit_pri_062..065), which completes the mission.
 // The camp's soldiers trade the pit_rgr* chatter when a player walks past.
 //
 // Every task has a time-out so a player is never stuck behind a line the
@@ -86,7 +91,8 @@ ride_lines()
 	level.coop_intro_lines[ 1 ] = line( "pit_pri_002_1", 2.4 );
 	level.coop_intro_lines[ 2 ] = line( "pit_pri_002_2", 3.1 );
 	level.coop_intro_lines[ 3 ] = line( "pit_pri_002_3", 4.5 );
-	level.coop_intro_lines[ 4 ] = line( "pit_pri_003", 3.6 );
+	// pit_pri_003 (go see Tiny Man) is spoken on foot, after the ride
+	// (station_range), as the recording shows it.
 }
 
 seat_driver()
@@ -303,20 +309,6 @@ open_everything()
 	open_doors( "gate_cqb_exit2" );
 	remove_named( "clip_obstacle_start" );
 	open_doors( "gate_cqb_enter_main", -170 );
-	open_slide_gate( "slide_gate_03", ( -1237, -1200, 8 ) );
-	open_doors( "gate_cqb_start" );
-	open_doors( "gate_cqb_finish" );
-	remove_named( "course_end_blocker" );
-	open_doors( "gate_cqb_out" );
-	door = getEnt( "ship_hanger_door", "targetname" );
-	if ( isDefined( door ) && !isDefined( door.coop_open ) )
-	{
-		door.coop_open = true;
-		door moveX( 150, 1 );
-	}
-	remove_named( "ship_hanger_clip" );
-	raise_door( "hanger_one_door", 200 );
-	remove_named( "ship_melee_clip" );
 }
 
 // Take a blocker out of the way: hidden and not solid (by targetname).
@@ -351,8 +343,8 @@ range_screen( name, present )
 	codolprintln( "CoDOL coop training: range screen " + name + " (" + parts.size + ") " + present );
 }
 
-// Single brush doors with no hinge origin (ship_hanger_door,
-// hanger_one_door, arsenal_door): raised out of the way.
+// Single brush doors with no hinge origin (arsenal_door): raised out of the
+// way.
 raise_door( name, height )
 {
 	ents = getEntArray( name, "targetname" );
@@ -436,8 +428,92 @@ cast_models( cls )
 	return m;
 }
 
+// What the recording shows a cast member wearing, where it differs from his
+// authored classname: Mac in the boonie and sunglasses of the woodland SAS
+// (his spawner is a SEAL classname), Newcastle in the tan Task Force uniform
+// and cap, the recruits at the obstacle line in T-shirts.
+cast_models_for( cls, key )
+{
+	m = undefined;
+	if ( isDefined( key ) )
+	{
+		switch ( key )
+		{
+		case "mac":
+			m = spawnStruct();
+			m.body = "body_sp_sas_woodland_assault_a";
+			m.head = "head_sp_sas_woodland_mac";
+			break;
+		case "nwc":
+			m = spawnStruct();
+			m.body = "body_complete_tf_tan";
+			m.head = "head_complete_tf_tan";
+			break;
+		case "buddy1":
+		case "buddy2":
+		case "buddy3":
+			m = cast_models( "actor_ally_codo_tf_ustshirt_clean_so" );
+			break;
+		}
+	}
+	if ( !isDefined( m ) )
+		m = cast_models( cls );
+	return m;
+}
+
+// The props the recording shows in the cast's hands, on tag_inhand (C1 ships
+// each model in this mission's zone, MEASURED docs/zone_assets): the
+// mechanics' welder handle, the texters' PDA, the reader's book, the map
+// writer's pencil, the basketball.
+prop_for( key )
+{
+	switch ( key )
+	{
+	case "repair_bottom":
+	case "engine":
+	case "package_guy":
+		return "machinery_welder_handle";
+	case "phoneguy":
+	case "phoneguy2":
+		return "electronics_pda";
+	case "sitman":
+		return "open_book_static";
+	case "writter":
+		return "characters_accessories_pencil";
+	case "friendlies_basketball":
+		return "basketball";
+	}
+	return undefined;
+}
+
+precache_props()
+{
+	props = strTok( "machinery_welder_handle electronics_pda open_book_static characters_accessories_pencil basketball body_complete_tf_tan", " " );
+	for ( i = 0; i < props.size; i++ )
+		precacheModel( props[ i ] );
+	// The welders' sparks: the effect the zone's own fx script loads for
+	// them (maps/mp/coop_training_mp_killhouse_sh_fx.gsc, welding_runner).
+	level._effect[ "coop_training_welding" ] = loadfx( "misc/welding_runner" );
+}
+
+// Sparks at a crouched welder's hands, every few seconds.
+welding_fx()
+{
+	self endon( "death" );
+	level endon( "coop_mission_over" );
+	if ( !isDefined( level._effect ) || !isDefined( level._effect[ "coop_training_welding" ] ) )
+		return;
+	for ( ;; )
+	{
+		spot = self.origin + anglesToForward( self.angles ) * 22 + ( 0, 0, 26 );
+		playFx( level._effect[ "coop_training_welding" ], spot );
+		wait( 1.5 + randomFloat( 2.5 ) );
+	}
+}
+
 precache_cast()
 {
+	precache_props();
 	models = [];
 	models[ models.size ] = "body_desert_tf141_assault_a";
 	models[ models.size ] = "head_hero_price_desert";
@@ -487,11 +563,16 @@ idle_anim( name, key )
 		case "waters":
 		case "nwc":
 			return %patrol_bored_idle;
-		case "mac":
 		case "price2":
 		case "driver":
 		case "price":
 			return %casual_stand_v2_idle;
+		// The recording has Mac and the three recruits crouched at the
+		// obstacle course's start line.
+		case "mac":
+		case "buddy1":
+		case "buddy2":
+		case "buddy3":
 		case "chair_guy":
 			return %casual_crouch_idle;
 		case "sas1":
@@ -567,7 +648,10 @@ show_nametags()
 show_nametags_player()
 {
 	self endon( "disconnect" );
-	self waittill( "spawned_player" );
+	// As training_loadout_player: the spawn can come before this waits.
+	wait( 0.05 );
+	if ( !isAlive( self ) || self.sessionstate != "playing" )
+		self waittill( "spawned_player" );
 	self setClientDvar( "772", "1" );
 }
 
@@ -617,7 +701,7 @@ spawn_cast( spawner, key )
 	kind.team = "allies";
 	kind.health = 1000;
 	kind.accuracy = 0;
-	m = cast_models( spawner.classname );
+	m = cast_models_for( spawner.classname, key );
 	kind.body = m.body;
 	kind.head = m.head;
 
@@ -652,6 +736,15 @@ spawn_cast( spawner, key )
 	}
 	ai setAnimKnobAll( ai.coop_idle_anim, %body, 1, 0.1, 1 );
 	ai notify( "coop_cast_pose" );
+	prop = prop_for( key );
+	if ( isDefined( prop ) && !isDefined( level.coop_training_prop_done[ key ] ) )
+	{
+		// One basketball for the pair that share the key.
+		level.coop_training_prop_done[ key ] = true;
+		ai attach( prop, "tag_inhand" );
+		if ( prop == "machinery_welder_handle" )
+			ai thread welding_fx();
+	}
 	return ai;
 }
 
@@ -663,6 +756,7 @@ spawn_cast_all()
 {
 	level.coop_cast = [];
 	level.coop_cast_list = [];
+	level.coop_training_prop_done = [];
 	ents = getEntArray();
 	wanted = [];
 	order = [];
@@ -678,6 +772,8 @@ spawn_cast_all()
 	ambient = 0;
 	for ( pass = 0; pass < 2; pass++ )
 	{
+		if ( pass == 1 )
+			spawn_recruits();
 		for ( i = 0; i < ents.size; i++ )
 		{
 			e = ents[ i ];
@@ -698,10 +794,13 @@ spawn_cast_all()
 			}
 			if ( pass == 0 && !named )
 				continue;
+			// The recruits at the obstacle line are placed below.
+			if ( key == "buddy" )
+				continue;
 			if ( pass == 1 )
 			{
 				// Ambient soldiers: the ones with an authored idle animation.
-				if ( !isDefined( idle_anim( e.animation ) ) || ambient >= 18 )
+				if ( !isDefined( idle_anim( e.animation ) ) || ambient >= 15 )
 					continue;
 				ambient++;
 			}
@@ -717,6 +816,43 @@ spawn_cast_all()
 		}
 	}
 	codolprintln( "CoDOL coop training: cast of " + level.coop_cast.size + " placed (" + ambient + " ambient)" );
+}
+
+// The three recruits (buddy1..3) crouch on their crouch nodes at the
+// obstacle course's start line, in T-shirts, and stay there while the
+// player runs (the recording's minimap keeps them at the line).  One wears
+// the name the recording shows over him.
+spawn_recruits()
+{
+	for ( n = 1; n <= 3; n++ )
+	{
+		spawner = getEnt( "buddy" + n, "targetname" );
+		if ( !isDefined( spawner ) || isDefined( spawner.coop_cast_done ) )
+			continue;
+		spawner.coop_cast_done = true;
+		spot = spawnStruct();
+		spot.classname = spawner.classname;
+		spot.origin = spawner.origin;
+		spot.angles = spawner.angles;
+		if ( isDefined( spawner.target ) )
+		{
+			node = getNode( spawner.target, "targetname" );
+			if ( isDefined( node ) )
+			{
+				spot.origin = node.origin;
+				spot.angles = node.angles;
+			}
+		}
+		if ( n == 2 )
+			spot.script_friendname = "Pvt. Ritchie";
+		key = "buddy" + n;
+		ai = spawn_cast( spot, key );
+		if ( isDefined( ai ) )
+		{
+			level.coop_cast[ key ] = ai;
+			level.coop_cast_list[ level.coop_cast_list.size ] = ai;
+		}
+	}
 }
 
 // Captain Price drives the jeep (_coopintro seats a model of him at the
@@ -925,40 +1061,6 @@ report_inventory()
 	}
 }
 
-// Counts `note` (and `note2`) from every player.  A grenade launcher round
-// is a grenade_fire in IW3 weapons and a missile_fire in IW4 ones, so the
-// launcher task counts both.
-waittill_any_player( note, count, timeout, note2 )
-{
-	step( "note", note );
-	level.coop_training_events = 0;
-	players = getPlayers();
-	for ( i = 0; i < players.size; i++ )
-	{
-		players[ i ] thread count_note( note );
-		if ( isDefined( note2 ) )
-			players[ i ] thread count_note( note2 );
-	}
-	waited = 0;
-	while ( level.coop_training_events < count && waited < timeout )
-	{
-		wait( 0.25 );
-		waited += 0.25;
-	}
-	level notify( "coop_stop_notes" );
-}
-
-count_note( note )
-{
-	self endon( "disconnect" );
-	level endon( "coop_stop_notes" );
-	for ( ;; )
-	{
-		self waittill( note );
-		level.coop_training_events++;
-	}
-}
-
 // --------------------------------------------------------------------------
 // Entry points.
 // --------------------------------------------------------------------------
@@ -988,7 +1090,217 @@ init()
 	open_slide_gate( "slide_gate_03", ( 4466, -1360, 59 ) );
 	open_slide_gate( "slide_gate_01" );
 	open_slide_gate( "slide_gate_02" );
+	// The recording's lights: the floor arrows, the station-one marker and
+	// the demolition windows light only while they are the way or the
+	// target; the range dummies lie flat until a lesson raises them.
+	glow_setup();
+	range_targets_setup();
+	// The range's sheet-metal screen (script_noteworthy range_metalwall,
+	// across lane one at y -455) belongs to a penetration lesson the
+	// recording does not have; standing, it took every shot at the far
+	// dummy (MEASURED, _cooptest aimcheck / colmap: ent 672 at 16..56).
+	range_screen( "range_metalwall", false );
+	level thread training_loadout_watch();
 	codolprintln( "CoDOL coop training: mission flow active" );
+}
+
+// --------------------------------------------------------------------------
+// The player's weapons.  The recording's rookie arrives with his pistol and
+// his offhands only, weapons down: he walks the camp and the range
+// empty-handed, picks the rifle off the range table, and is told to pull
+// out the pistol he has had all along.
+// --------------------------------------------------------------------------
+
+training_pistol()
+{
+	return first_mounted( "usp_so", "usp_silencer_so" );
+}
+
+training_rifle()
+{
+	return first_mounted( "m4techgrip_eotech_so", "m4_grunt_reflex_so" );
+}
+
+training_loadout_watch()
+{
+	for ( ;; )
+	{
+		level waittill( "connected", player );
+		player thread training_loadout_player();
+	}
+}
+
+training_loadout_player()
+{
+	self endon( "disconnect" );
+	// spawnPlayer runs in the same frame as the "connected" notify and can
+	// notify spawned_player before this thread waits for it (MEASURED with a
+	// test client), so a player already in the world is armed now.
+	wait( 0.05 );
+	if ( isAlive( self ) && self.sessionstate == "playing" )
+		self training_loadout();
+	for ( ;; )
+	{
+		self waittill( "spawned_player" );
+		self training_loadout();
+	}
+}
+
+training_loadout()
+{
+	pistol = training_pistol();
+	primaries = self getWeaponsListPrimaries();
+	for ( i = 0; i < primaries.size; i++ )
+	{
+		if ( primaries[ i ] != pistol )
+			self takeWeapon( primaries[ i ] );
+	}
+	if ( codol_isWeaponMounted( pistol ) && !self hasWeapon( pistol ) )
+	{
+		self giveWeapon( pistol );
+		self giveMaxAmmo( pistol );
+	}
+	if ( isDefined( level.coop_training_rifle ) )
+	{
+		// A teammate who (re)spawns after the range has the rifle too.
+		self maps\mp\gametypes\_coopmode::coop_give_weapon( level.coop_training_rifle, true );
+		self enableWeapons();
+	}
+	else
+	{
+		self switchToWeapon( pistol );
+		if ( !isDefined( self.coop_in_intro ) )
+			self disableWeapons();
+	}
+	report_inventory();
+}
+
+weapons_down_all( down )
+{
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+	{
+		if ( !isAlive( players[ i ] ) )
+			continue;
+		if ( down )
+			players[ i ] disableWeapons();
+		else
+			players[ i ] enableWeapons();
+	}
+	codolprintln( "CoDOL coop training: weapons down " + down );
+}
+
+// --------------------------------------------------------------------------
+// Glowing markers and floor arrows.  The base map carries them as
+// script_brushmodels: the floor chevrons (script_noteworthy
+// navigation_arrows: arrows_to_hanger, _station_one, _newcastle, _obstacle,
+// _end, _price, _debrief, _heli), the range stall's marker and number
+// (obj_station_one_glowing / _number), the demolition windows
+// (glowing_window_two .. _seven) and wall one (glowing_wall_one).  All start
+// hidden; each lights while the recording shows it lit.
+// --------------------------------------------------------------------------
+
+glow_setup()
+{
+	level.coop_training_arrow_names = strTok( "arrows_to_hanger arrows_to_station_one arrows_to_newcastle arrows_to_obstacle arrows_to_end arrows_to_price arrows_to_debrief arrows_to_heli", " " );
+	glows = strTok( "obj_station_one_glowing obj_station_one_number glowing_window_two glowing_window_three glowing_window_four glowing_window_five glowing_window_six glowing_window_seven glowing_wall_one", " " );
+	names = level.coop_training_arrow_names;
+	for ( i = 0; i < glows.size; i++ )
+		names[ names.size ] = glows[ i ];
+	n = 0;
+	for ( i = 0; i < names.size; i++ )
+	{
+		parts = getEntArray( names[ i ], "targetname" );
+		for ( j = 0; j < parts.size; j++ )
+		{
+			parts[ j ] hide();
+			parts[ j ] notSolid();
+			n++;
+		}
+	}
+	codolprintln( "CoDOL coop training: " + n + " glow / arrow brush(es) hidden" );
+}
+
+glow( name, on )
+{
+	parts = getEntArray( name, "targetname" );
+	for ( i = 0; i < parts.size; i++ )
+	{
+		if ( on )
+			parts[ i ] show();
+		else
+			parts[ i ] hide();
+	}
+	codolprintln( "CoDOL coop training: glow " + name + " " + on + " (" + parts.size + ")" );
+}
+
+// Light one set of floor arrows (undefined: none).
+arrows( name )
+{
+	if ( isDefined( level.coop_training_arrow_lit ) && isDefined( name ) && name == level.coop_training_arrow_lit )
+		return;
+	if ( isDefined( level.coop_training_arrow_lit ) )
+		glow( level.coop_training_arrow_lit, false );
+	level.coop_training_arrow_lit = name;
+	if ( isDefined( name ) )
+		glow( name, true );
+}
+
+// --------------------------------------------------------------------------
+// The range dummies (lane1, ads_tutorial_target) pop up and lie down as the
+// recording's do.  CoD4 killhouse targetDummyThink lowers each one at the
+// start and moveTargetDummy raises it (rotatePitch on a pivot entity); this
+// map's dummies have their pivot at the brush origin, on the floor, and face
+// down the range along y, so they tip about x: rotateRoll -90 lays one flat
+// away from the shooter, +90 stands it up.
+// --------------------------------------------------------------------------
+
+range_targets_setup()
+{
+	level.coop_training_lane = getEntArray( "lane1", "targetname" );
+	level.coop_training_ads = by_noteworthy( "ads_tutorial_target" );
+	all = range_targets_all();
+	for ( i = 0; i < all.size; i++ )
+	{
+		all[ i ].coop_raised = true;
+		all[ i ] range_target( false, true );
+	}
+}
+
+range_targets_all()
+{
+	all = [];
+	for ( i = 0; i < level.coop_training_lane.size; i++ )
+		all[ all.size ] = level.coop_training_lane[ i ];
+	for ( i = 0; i < level.coop_training_ads.size; i++ )
+		all[ all.size ] = level.coop_training_ads[ i ];
+	return all;
+}
+
+range_target( up, silent )
+{
+	if ( self.coop_raised == up )
+		return;
+	self.coop_raised = up;
+	if ( up )
+	{
+		self rotateRoll( 90, 0.25, 0.1, 0.1 );
+		self playSound( "killhouse_target_up_metal" );
+	}
+	else if ( isDefined( silent ) && silent )
+		self rotateRoll( -90, 0.05 );
+	else
+	{
+		self rotateRoll( -90, 0.5, 0.2, 0.2 );
+		self playSound( "killhouse_target_up" );
+	}
+}
+
+range_targets( targets, up )
+{
+	for ( i = 0; i < targets.size; i++ )
+		targets[ i ] range_target( up );
+	wait( 0.5 );
 }
 
 main()
@@ -1008,13 +1320,15 @@ main()
 	// Station 0: the jeep (_coopintro plays Price's lines from the jeep).
 	if ( isDefined( level.coop_intro ) && !level.coop_intro.done )
 		level waittill( "coop_intro_done" );
+	// Off the jeep empty-handed (the ride's end raises the riders' weapons).
+	if ( !isDefined( level.coop_training_rifle ) )
+		weapons_down_all( true );
 	spawn_driver();
 
 	station_range();
 	station_demolitions();
 	station_obstacle();
-	station_pit();
-	station_debrief();
+	station_price();
 
 	maps\mp\gametypes\_coopmission::mission_complete( "training complete" );
 }
@@ -1097,12 +1411,25 @@ weapon_wait( weapon, timeout, what )
 // CoD4 frag_trigger_think / launcher_trigger_think: each trigger_damage of
 // the windows fires once, with the buzzer; returns when all have, or at
 // the time-out.
-damage_triggers_wait( trigs, timeout, what )
+//
+// The recording lights each window still to be hit (its glowing frame) and
+// puts an objective marker on it (objectives 1..3 beside the safety pit's
+// 0); both go when it is hit.  `glows` names the frame brush per trigger.
+damage_triggers_wait( trigs, timeout, what, glows )
 {
 	level.coop_training_windows = 0;
 	for ( i = 0; i < trigs.size; i++ )
 	{
 		trigs[ i ].coop_hit = false;
+		trigs[ i ].coop_glow = undefined;
+		trigs[ i ].coop_obj = i + 1;
+		if ( isDefined( glows ) && isDefined( glows[ i ] ) )
+		{
+			trigs[ i ].coop_glow = glows[ i ];
+			glow( glows[ i ], true );
+		}
+		objective_delete( i + 1 );
+		objective_add( i + 1, "active", trigs[ i ].origin );
 		trigs[ i ] enableGrenadeTouchDamage();
 		trigs[ i ] thread damage_trigger_think();
 	}
@@ -1114,9 +1441,27 @@ damage_triggers_wait( trigs, timeout, what )
 		waited += 0.25;
 	}
 	for ( i = 0; i < trigs.size; i++ )
+	{
 		trigs[ i ] notify( "coop_stop_window" );
+		trigs[ i ] window_done();
+	}
 	codolprintln( "CoDOL coop training: " + what + " " + level.coop_training_windows + "/" + trigs.size );
 	return level.coop_training_windows >= trigs.size;
+}
+
+// A window's frame stops glowing and its marker goes.
+window_done()
+{
+	if ( isDefined( self.coop_glow ) )
+	{
+		glow( self.coop_glow, false );
+		self.coop_glow = undefined;
+	}
+	if ( isDefined( self.coop_obj ) )
+	{
+		objective_delete( self.coop_obj );
+		self.coop_obj = undefined;
+	}
 }
 
 ent_name( e )
@@ -1134,6 +1479,7 @@ damage_trigger_think()
 	self waittill( "trigger", who );
 	self.coop_hit = true;
 	level.coop_training_windows++;
+	self window_done();
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 		players[ i ] playLocalSound( "killhouse_buzzer" );
@@ -1141,68 +1487,6 @@ damage_trigger_think()
 	if ( isDefined( who ) && isPlayer( who ) )
 		who_name = who.name;
 	codolprintln( "CoDOL coop training: window " + ent_name( self ) + " hit by " + who_name );
-}
-
-// Price's mock-up calls are his radio lines (the `_r` sound files): every
-// player hears them wherever he is on the deck.
-radio( alias, time )
-{
-	players = getPlayers();
-	for ( i = 0; i < players.size; i++ )
-		players[ i ] playLocalSound( alias );
-	codolprintln( "CoDOL coop training: radio " + alias );
-	if ( isDefined( time ) )
-		wait( time + 0.3 );
-}
-
-// A flashbang thrown into an info_volume (CoD4 wait_till_flashed), or the
-// time-out.
-flash_wait( volume, timeout, what )
-{
-	step( "flash", volume, what );
-	level.coop_training_flashed = false;
-	players = getPlayers();
-	for ( i = 0; i < players.size; i++ )
-		players[ i ] thread flash_watch( volume );
-	waited = 0;
-	while ( !level.coop_training_flashed && waited < timeout )
-	{
-		wait( 0.25 );
-		waited += 0.25;
-	}
-	level notify( "coop_stop_flash" );
-	codolprintln( "CoDOL coop training: " + what + " flashed " + level.coop_training_flashed );
-	return level.coop_training_flashed;
-}
-
-flash_watch( volume )
-{
-	self endon( "disconnect" );
-	level endon( "coop_stop_flash" );
-	for ( ;; )
-	{
-		self waittill( "grenade_fire", grenade, weapon );
-		if ( !isDefined( weapon ) || !isSubStr( weapon, "flash" ) )
-			continue;
-		self thread flash_track( grenade, volume );
-	}
-}
-
-flash_track( grenade, volume )
-{
-	level endon( "coop_stop_flash" );
-	last = undefined;
-	for ( i = 0; i < 60 && isDefined( grenade ); i++ )
-	{
-		last = grenade.origin;
-		wait( 0.05 );
-	}
-	if ( !isDefined( last ) )
-		return;
-	probe = spawn( "script_origin", last );
-	if ( probe isTouching( volume ) )
-		level.coop_training_flashed = true;
-	probe delete();
 }
 
 // --------------------------------------------------------------------------
@@ -1224,7 +1508,11 @@ station_range()
 	obj = getEnt( "rifle_range_obj", "targetname" );
 	if ( isDefined( obj ) )
 		objective_at( obj.origin );
-	maps\mp\gametypes\_coopmission::announce( "Report to Tiny Man on the shooting range" );
+	// On foot by the jeep, Price sends the rookie on; the chevrons on the
+	// yard light the way to the range door (its frame glows until it opens).
+	arrows( "arrows_to_hanger" );
+	maps\mp\gametypes\_coopmission::announce( "Follow the objective marker to the shooting range" );
+	say( price, "pit_pri_003", 3.6 );
 	nags = [];
 	nags[ 0 ] = line( "pit_pri_004", 1.9 );
 	nags[ 1 ] = line( "pit_pri_005", 2.6 );
@@ -1251,54 +1539,67 @@ station_range()
 	// door_to_rifle_handler / rifleTraining: Gaz greets the player, sends
 	// him to station one (obj_rifle_stall, rifleTraining_stall) and moves to
 	// stationone_node once the player is past him (past_gaz).
+	arrows( "arrows_to_station_one" );
 	level thread tiny_to_station( tiny );
+
+	// The rifle is the one on the table by Tiny Man (the addon's
+	// range_m4tech: the foregrip and holographic sight the recording shows),
+	// picked up by hand.  Tiny Man's two lines run back to back, as in the
+	// recording; the station-one marker and its number light once the
+	// rifle is in hand.
 	say( tiny, "pit_tiny_001", 2.8 );
-	give_all( first_mounted( "m4_grunt_reflex_so", "m16_basic_so" ), true );
+	rifle = training_rifle();
+	table = range_rifle( rifle );
+	if ( isDefined( table ) )
+		objective_at( table.origin );
+	maps\mp\gametypes\_coopmission::announce( "Pick up a rifle from the table" );
+	say( tiny, "pit_tiny_002", 2.0 );
+	pickup_wait( rifle, table, 45, "the range rifle" );
+	level.coop_training_rifle = rifle;
+	give_all( rifle, true );
+	weapons_down_all( false );
+
+	glow( "obj_station_one_glowing", true );
+	glow( "obj_station_one_number", true );
 	stallObj = getEnt( "obj_rifle_stall", "targetname" );
 	if ( isDefined( stallObj ) )
 		objective_at( stallObj.origin );
-	say( tiny, "pit_tiny_002", 2.0 );
 	stall = getEnt( "rifleTraining_stall", "targetname" );
 	trigger_wait( stall, 30, "station one" );
+	arrows( undefined );
+	glow( "obj_station_one_glowing", false );
+	glow( "obj_station_one_number", false );
 
-	lane = getEntArray( "lane1", "targetname" );
-	ads = by_noteworthy( "ads_tutorial_target" );
-	targets = lane;
-	for ( i = 0; i < ads.size; i++ )
-		targets[ targets.size ] = ads[ i ];
+	lane = level.coop_training_lane;
+	ads = level.coop_training_ads;
 
-	// rifle_hip_shooting: from the hip (hits while aiming down the sights
-	// do not count and draw "stop aiming"), then down the sights.
+	// rifle_hip_shooting: the lane's dummies pop up; from the hip (hits
+	// while aiming down the sights do not count and draw "stop aiming"),
+	// then the bullseye pops up for the sights.
 	say( tiny, "pit_tiny_003", 2.7 );
+	range_targets( lane, true );
+	maps\mp\gametypes\_coopmission::announce( "Shoot each target from the hip" );
 	level.coop_training_hip_only = true;
 	level thread hip_nags( tiny );
-	if ( !wait_hits( targets, 3, 40 ) )
+	if ( !wait_hits( lane, 3, 40 ) )
 		say( tiny, "pit_tiny_015", 0.7 );
 	level.coop_training_hip_only = undefined;
 	level notify( "coop_hip_done" );
+	range_targets( lane, false );
 	say( tiny, "pit_tiny_005", 1.5 );
 	say( tiny, "pit_tiny_006", 2.1 );
-	wait_hits( targets, 3, 40 );
+	range_targets( ads, true );
+	maps\mp\gametypes\_coopmission::announce( "Shoot the target while aiming down the sights" );
+	wait_hits( ads, 3, 40 );
+	range_targets( ads, false );
 	say( tiny, "pit_tiny_007", 0.8 );
 
-	// rifle_penetration_shooting: raisePlywoodWalls (rotateRoll 90), a hit
-	// through the wood, lowerPlywoodWalls.
-	say( tiny, "pit_tiny_008_1", 2.8 );
-	plywood_walls( true );
-	say( tiny, "pit_tiny_008_2", 2.1 );
-	lineStart = getTime();
-	level thread say( tiny, "pit_tiny_009", 10.8 );
-	wait_hits( targets, 1, 40 );
-	left = 11.1 - ( getTime() - lineStart ) / 1000.0;
-	if ( left > 0 )
-		wait( left );
-	say( tiny, "pit_tiny_010", 0.5 );
-	plywood_walls( false );
-
-	// rifle_timed_shooting: targetspop, hitall, snaponto; ten-second rounds
-	// until more than six hits, with Gaz's "too slow" lines between.
+	// rifle_timed_shooting (the recording has no plywood lesson): the
+	// dummies pop up one at a time; rounds until enough are hit in time,
+	// with the "too slow" lines between.
 	say( tiny, "pit_tiny_011_1", 2.5 );
 	say( tiny, "pit_tiny_011_2", 1.8 );
+	maps\mp\gametypes\_coopmission::announce( "Shoot each target as quickly as you can" );
 	say( tiny, "pit_tiny_012", 5.5 );
 	tooSlow = [];
 	tooSlow[ 0 ] = line( "pit_tiny_014", 1.3 );
@@ -1307,7 +1608,7 @@ station_range()
 	tooSlow[ 3 ] = line( "pit_tiny_017", 3.4 );
 	for ( round = 0; round < 4; round++ )
 	{
-		if ( timed_round( targets, 10, 7 ) )
+		if ( popup_round( 8, 6 ) )
 			break;
 		if ( round == 0 )
 			say( tiny, "pit_tiny_013", 1.6 );
@@ -1320,20 +1621,19 @@ station_range()
 	}
 	say( tiny, "pit_tiny_018", 0.8 );
 
-	// sideArm_Training: getasidearm (the table, obj_rifle_ammo), then the
-	// switches: to the rifle, to the sidearm.
-	ammoObj = getEnt( "obj_rifle_ammo", "targetname" );
-	if ( isDefined( ammoObj ) )
-		objective_at( ammoObj.origin );
-	say( tiny, "pit_tiny_019", 1.8 );
-	rifle = first_mounted( "m4_grunt_reflex_so", "m16_basic_so" );
-	pistol = first_mounted( "usp_so", "usp_silencer_so" );
+	// sideArm_Training as the recording plays it: no pickup -- the pistol
+	// is already carried -- "pull out your sidearm", then "good, now switch
+	// to your rifle", with the lane's dummies up.
+	pistol = training_pistol();
 	give_all( pistol, false );
+	range_targets( lane, true );
+	say( tiny, "pit_tiny_021", 1.2 );
+	maps\mp\gametypes\_coopmission::announce( "Switch to your sidearm" );
+	weapon_wait( pistol, 20, "pull out the sidearm" );
 	say( tiny, "pit_tiny_020", 2.0 );
 	weapon_wait( rifle, 20, "switch to the rifle" );
-	say( tiny, "pit_tiny_021", 1.2 );
-	weapon_wait( pistol, 20, "pull out the sidearm" );
 	say( tiny, "pit_tiny_022", 3.3 );
+	range_targets( lane, false );
 	maps\mp\gametypes\_coopmission::flag_set( "sidearm_complete" );
 
 	// melee_training: the "watermelon" -- melee_target_dummy, hidden until
@@ -1348,6 +1648,7 @@ station_range()
 	objective_at( ( 1887, -854, 35 ) );
 	say( tiny, "pit_tiny_023", 1.4 );
 	flag_wait_timeout( "near_melee", 30 );
+	maps\mp\gametypes\_coopmission::announce( "Knife the target" );
 	say( tiny, "pit_tiny_024", 1.0 );
 	if ( melee.size > 0 )
 		wait_hits( melee, 1, 45, true );
@@ -1356,6 +1657,7 @@ station_range()
 		melee[ i ] hide();
 		melee[ i ] notSolid();
 	}
+	arrows( "arrows_to_newcastle" );
 	say( tiny, "pit_tiny_025", 3.7 );
 	maps\mp\gametypes\_coopmission::flag_set( "melee_complete" );
 	maps\mp\gametypes\_coopmission::flag_set( "start_frag_training" );
@@ -1410,13 +1712,87 @@ waittill_or_timeout( note, timeout )
 	wait( timeout );
 }
 
-// One timed round: hits on the range targets within `seconds`.
-timed_round( targets, seconds, needed )
+// One timed round as the recording shows it: `pops` dummies stand up one at
+// a time, each for up to three seconds or until it is hit; the round is
+// passed with `needed` hits.
+popup_round( pops, needed )
 {
-	start = getTime();
-	got = wait_hits( targets, needed, seconds );
-	codolprintln( "CoDOL coop training: timed round " + level.coop_training_hits + " hits in " + ( getTime() - start ) / 1000.0 + " s" );
-	return got;
+	all = range_targets_all();
+	got = 0;
+	last = -1;
+	for ( n = 0; n < pops && all.size > 0; n++ )
+	{
+		k = randomInt( all.size );
+		if ( k == last && all.size > 1 )
+			k = ( k + 1 ) % all.size;
+		last = k;
+		t = [];
+		t[ 0 ] = all[ k ];
+		// The ADS dummy is two brushes (the bullseye and its board).
+		if ( isDefined( all[ k ].script_noteworthy ) && all[ k ].script_noteworthy == "ads_tutorial_target" )
+			t = level.coop_training_ads;
+		range_targets( t, true );
+		if ( wait_hits( t, 1, 3 ) )
+			got++;
+		range_targets( t, false );
+	}
+	codolprintln( "CoDOL coop training: pop-up round " + got + "/" + pops + " hit (" + needed + " needed)" );
+	return got >= needed;
+}
+
+// The rifle on the range table: the addon's weapon entity (range_m4tech),
+// or one placed where it lies if the entity is gone.
+range_rifle( rifle )
+{
+	item = getEnt( "range_m4tech", "targetname" );
+	if ( isDefined( item ) )
+		return item;
+	if ( !codol_isWeaponMounted( rifle ) )
+		return undefined;
+	item = spawn( "weapon_" + rifle, ( 1873, -797.5, 41 ) );
+	if ( isDefined( item ) )
+		item.angles = ( 0, 161.2, 90 );
+	codolprintln( "CoDOL coop training: range rifle placed, " + isDefined( item ) );
+	return item;
+}
+
+// Some living player has picked `weapon` up, or the time-out; the others
+// are given it by give_all after.  Either the native world pickup (walking
+// onto the item) or, as in the recording where the rifle is taken off the
+// table from the floor beside it, the use key within reach of it -- the
+// item lies on the table top, beyond the touch of a player standing at the
+// table's edge (MEASURED: a test client stopped 35 units off and never
+// touched it).
+pickup_wait( weapon, item, timeout, what )
+{
+	step( "pickup", item, weapon );
+	waited = 0;
+	while ( waited < timeout )
+	{
+		players = getPlayers();
+		for ( i = 0; i < players.size; i++ )
+		{
+			p = players[ i ];
+			if ( !isAlive( p ) )
+				continue;
+			how = undefined;
+			if ( p hasWeapon( weapon ) )
+				how = "picked up";
+			else if ( isDefined( item ) && distance( p.origin, item.origin ) < 96 && p useButtonPressed() )
+				how = "took (use)";
+			if ( isDefined( how ) )
+			{
+				codolprintln( "CoDOL coop training: " + p.name + " " + how + " " + what );
+				if ( isDefined( item ) )
+					item delete();
+				return true;
+			}
+		}
+		wait( 0.1 );
+		waited += 0.1;
+	}
+	codolprintln( "CoDOL coop training: " + what + " pickup timed out" );
+	return false;
 }
 
 // CoD4 silently_lowerPlywoodWalls / raisePlywoodWalls / lowerPlywoodWalls.
@@ -1455,6 +1831,7 @@ station_demolitions()
 	// The enter gate's stand-in collision (1959 -2267) stays behind otherwise.
 	remove_named( "door_fake_collision" );
 	flag_wait_timeout( "near_grenade_area", 120 );
+	arrows( undefined );
 	codolprintln( "CoDOL coop training: station demolitions" );
 
 	say( nwc, "pit_ncastle_001", 2.1 );
@@ -1464,46 +1841,87 @@ station_demolitions()
 	pit = getEnt( "safety_pit", "targetname" );
 	if ( isDefined( pit ) )
 		objective_at( pit.origin );
+	maps\mp\gametypes\_coopmission::announce( "Enter the safety pit" );
 	trigger_wait_nag( pit, 60, "safety pit", nwc, line( "pit_ncastle_003", 1.2 ) );
+	// Newcastle watches from the platform above the pit, by the camera on
+	// its tripod (a static model of the map).
 	move_cast( nwc, ( 2075, -2364, 72 ), 270 );
 
 	say( nwc, "pit_ncastle_004", 3.4 );
+	maps\mp\gametypes\_coopmission::announce( "Throw a grenade into windows two, three and four" );
 	frags = [];
+	fragGlows = [];
+	names = strTok( "two three four", " " );
 	for ( k = 2; k <= 4; k++ )
 	{
 		t = getEnt( "grenade_damage_trigger" + k, "targetname" );
 		if ( isDefined( t ) )
+		{
+			fragGlows[ frags.size ] = "glowing_window_" + names[ k - 2 ];
 			frags[ frags.size ] = t;
+		}
 	}
-	damage_triggers_wait( frags, 90, "frag windows" );
+	damage_triggers_wait( frags, 90, "frag windows", fragGlows );
 
 	// launcherTraining: back to the table, the launcher, back to the pit.
+	// The recording's launcher is the M4 with an underbarrel grenade
+	// launcher and a red-dot sight (m4techm203_reflex_so; its launcher half
+	// is m203_m4tech_reflex_so), which the player switches to.
 	move_cast( nwc, ( 2148.5, -2481.5, 48 ), 185 );
 	say( nwc, "pit_ncastle_005", 2.0 );
-	launcher = first_mounted( "m79_so", "m16_grenadier_reddot_so" );
+	launcher = first_mounted( "m4techm203_reflex_so", "m79_so" );
 	give_all( launcher, true );
 	say( nwc, "pit_ncastle_006", 1.4 );
 	trigger_wait( pit, 30, "safety pit (launcher)" );
 	move_cast( nwc, ( 2075, -2364, 72 ), 270 );
+	gl = weaponAltWeaponName( launcher );
+	if ( isDefined( gl ) && gl != "" && gl != "none" )
+	{
+		maps\mp\gametypes\_coopmission::announce( "Switch to the grenade launcher" );
+		weapon_wait( gl, 30, "equip the grenade launcher" );
+	}
 	say( nwc, "pit_ncastle_007", 1.9 );
+	maps\mp\gametypes\_coopmission::announce( "Fire at wall one" );
 	wall = by_noteworthy( "launcher_wall_trigger" );
-	damage_triggers_wait( wall, 45, "launcher wall" );
+	wallGlows = [];
+	if ( wall.size > 0 )
+		wallGlows[ 0 ] = "glowing_wall_one";
+	damage_triggers_wait( wall, 45, "launcher wall", wallGlows );
 	say( nwc, "pit_ncastle_008", 1.4 );
 	say( nwc, "pit_ncastle_009", 3.3 );
 	say( nwc, "pit_ncastle_010", 3.3 );
+	maps\mp\gametypes\_coopmission::announce( "Fire the grenade launcher into windows five, six and seven" );
 	windows = [];
+	winGlows = [];
+	names = strTok( "five six seven", " " );
 	for ( k = 5; k <= 7; k++ )
 	{
 		t = getEnt( "launcher_damage_trigger" + k, "targetname" );
 		if ( isDefined( t ) )
+		{
+			winGlows[ windows.size ] = "glowing_window_" + names[ k - 5 ];
 			windows[ windows.size ] = t;
+		}
 	}
-	damage_triggers_wait( windows, 90, "launcher windows" );
+	damage_triggers_wait( windows, 90, "launcher windows", winGlows );
 
-	// C4_complete_dialog.
+	// C4_complete_dialog.  The recording's rookie leaves with the rifle
+	// again (no launcher): the range rifle takes the launcher's slot.
 	say( nwc, "pit_ncastle_011", 1.3 );
 	say( nwc, "pit_ncastle_012", 1.1 );
 	say( nwc, "pit_ncastle_013", 2.0 );
+	if ( isDefined( level.coop_training_rifle ) && launcher != level.coop_training_rifle )
+	{
+		players = getPlayers();
+		for ( i = 0; i < players.size; i++ )
+		{
+			if ( isAlive( players[ i ] ) && players[ i ] hasWeapon( launcher ) )
+				players[ i ] takeWeapon( launcher );
+		}
+		give_all( level.coop_training_rifle, true );
+	}
+	arrows( "arrows_to_obstacle" );
+	maps\mp\gametypes\_coopmission::announce( "Complete the obstacle course" );
 	say( nwc, "pit_ncastle_014_1", 2.1 );
 	say( nwc, "pit_ncastle_014_2", 2.6 );
 	maps\mp\gametypes\_coopmission::flag_set( "c4_equiped" );
@@ -1523,9 +1941,10 @@ station_obstacle()
 		objective_at( o.origin );
 	else
 		objective_at( ( 330, -2537, 40 ) );
-	maps\mp\gametypes\_coopmission::announce( "Report to Mac on the obstacle course" );
+	arrows( "arrows_to_obstacle" );
 	open_doors( "gate_cqb_exit2" );
 	trigger_wait( getEnt( "obstacle_course_start", "targetname" ), 180, "obstacle course start" );
+	arrows( undefined );
 	maps\mp\gametypes\_coopmission::flag_set( "start_obstacle" );
 	codolprintln( "CoDOL coop training: station obstacle course" );
 
@@ -1541,13 +1960,61 @@ station_obstacle()
 	remove_named( "clip_obstacle_start" );
 	maps\mp\gametypes\_coopmission::flag_set( "start_course" );
 	objective_at( ( -1106, -2824, 72 ) );
+	// The course's chevrons (the big one on the first hurdle, the ones on
+	// the ground after it) light for the run.
+	arrows( "arrows_to_end" );
 
 	level thread obstacle_nags( mac );
 	flag_wait_timeout( "obstacle_course_end", 180 );
 	level notify( "coop_obstacle_done" );
+	arrows( undefined );
 	say( mac, "pit_mac_008_1", 3.6 );
 	maps\mp\gametypes\_coopmission::flag_set( "obstacle_complete" );
 	open_doors( "gate_cqb_enter_main", -170 );
+}
+
+// --------------------------------------------------------------------------
+// The end, as the recording plays it: Price waits by the fence at the end of
+// the obstacle course (his authored spot, price2, beside obj_price_nearby);
+// the arrows light the way, and walking up to him (come_to_price) plays the
+// debrief -- the simple intelligence job, the source called Ortiz -- with
+// the rookie's weapons down, and the mission is complete.  The recording
+// starts the debrief at pit_pri_062 (061, about the "fancy obstacle course"
+// of the pit, is not heard).  Price stands with his arms crossed in the
+// recording; that idle (killhouse_price_stand_talk) is only in the map
+// animlist C1 does not load, so he keeps the casual stand (idle_anim).
+// --------------------------------------------------------------------------
+
+station_price()
+{
+	price = cast( "price2" );
+	pos = ( -1390, -2514, 0 );
+	if ( isDefined( price ) )
+		pos = price.origin;
+	objective_at( pos );
+	arrows( "arrows_to_price" );
+	maps\mp\gametypes\_coopmission::announce( "Report to Captain Price" );
+	flag_wait_timeout( "come_to_price", 120 );
+	if ( !maps\mp\gametypes\_coopmission::flag( "come_to_price" ) )
+		wait_player_near( pos, 200, 60 );
+	arrows( undefined );
+	codolprintln( "CoDOL coop training: debrief by the course" );
+
+	// He turns to the rookie who reached him.
+	p = player_near( pos, 600 );
+	if ( isDefined( price ) && isDefined( p ) )
+	{
+		d = p.origin - price.origin;
+		face = vectorToAngles( ( d[ 0 ], d[ 1 ], 0 ) );
+		move_cast( price, price.origin, face[ 1 ] );
+	}
+	weapons_down_all( true );
+	say( price, "pit_pri_062", 6.8 );
+	say( price, "pit_pri_063", 7.0 );
+	say( price, "pit_pri_064", 3.2 );
+	say( price, "pit_pri_065_1", 5.0 );
+	say( price, "pit_pri_065_2", 4.4 );
+	objective_delete( 0 );
 }
 
 // CoD4 obstacleTraining_dialog: charity walk at once, jump on mantle2, crawl
@@ -1569,372 +2036,6 @@ obstacle_line_on_flag( mac, flag, alias, time )
 	level endon( "coop_obstacle_done" );
 	maps\mp\gametypes\_coopmission::flag_wait( flag );
 	say( mac, alias, time );
-}
-
-// --------------------------------------------------------------------------
-// Station 5: Price, the hangar, Harker and the pit.
-// --------------------------------------------------------------------------
-
-station_pit()
-{
-	price2 = cast( "price2" );
-	pos = ( -1390, -2514, 0 );
-	if ( isDefined( price2 ) )
-		pos = price2.origin;
-	objective_at( pos );
-	maps\mp\gametypes\_coopmission::announce( "Report to Captain Price" );
-	flag_wait_timeout( "come_to_price", 90 );
-
-	// Through the hangar yard to the S.S.D.D. hangar.
-	open_slide_gate( "slide_gate_03", ( -1237, -1200, 8 ) );
-	objective_at( ( 89, -1315, 46 ) );
-	maps\mp\gametypes\_coopmission::announce( "Head to the hangar" );
-	flag_wait_timeout( "at_ssdd_hanger", 120 );
-	codolprintln( "CoDOL coop training: station pit (briefing)" );
-
-	harker = cast( "sas3" );
-	price = cast( "price" );
-	ghost = cast( "sas2" );
-	soap = cast( "sas1" );
-	say( harker, "pit_har_001", 7.5 );
-	say( harker, "pit_har_002", 8.7 );
-	say( harker, "pit_har_003", 8.1 );
-	say( price, "pit_pri_007", 6.5 );
-	say( harker, "pit_har_004", 4.1 );
-	say( soap, "pit_mct_001", 2.9 );
-	say( harker, "pit_har_005", 4.4 );
-	say( ghost, "pit_gst_001", 6.3 );
-	say( price, "pit_pri_008", 2.2 );
-	say( price, "pit_pri_009", 5.2 );
-	say( price, "pit_pri_010", 2.8 );
-	say( price, "pit_pri_011", 5.0 );
-
-	// The way in.  The pit's start room (x -370..-125, y -836..-980) and the
-	// corridor east of it are walled off from the hangar along y -989; the
-	// one opening is gate_cqb_out (x 84..196), and gate_cqb_start (x -121,
-	// y -836..-922) joins the corridor to the start room.  The first version
-	// opened gate_cqb_out only after the course, so a player could never reach
-	// the start trigger (user report 2026-10-07, "one of the gates doesn't open
-	// for the cqb course"; MEASURED with _cooptest colmap: the y -989 wall is
-	// closed from x -376 to 300 except that gate).  Both open for the run;
-	// the finish (gate_cqb_finish + course_end_blocker) opens after it.
-	open_doors( "gate_cqb_out" );
-	open_doors( "gate_cqb_start" );
-	objective_at( ( -218, -758, 48 ) );
-	maps\mp\gametypes\_coopmission::announce( "Run the pit: under 60 seconds" );
-
-	// The pit course itself (_coopcourse.gsc); repeat until it is cleared in
-	// time, as Price demands.
-	// The finish (the lane x 476..572 ending at y -840) is closed by
-	// gate_cqb_finish and course_end_blocker (532 -761) so the course is not
-	// run backward from the corridor; both open when a run ends, made or not,
-	// so a slow player walks out by the finish into the same corridor and
-	// back to the start for another try (MEASURED with colmap: the lane joins
-	// the corridor south of y -856).
-	for ( ;; )
-	{
-		step( "course" );
-		level waittill( "coop_course_run_over", finished, elapsed );
-		open_doors( "gate_cqb_finish" );
-		remove_named( "course_end_blocker" );
-		if ( finished && elapsed <= 60 )
-			break;
-		say( price, "pit_pri_050", 3.9 );
-	}
-	if ( level.coop_course_best <= 23 )
-		say( price, "pit_pri_058", 3.1 );
-	else
-		say( price, "pit_pri_056", 4.3 );
-}
-
-// --------------------------------------------------------------------------
-// The end: Price waits in the corridor the pit's finish lane opens into
-// (lane x 476..572 joins the corridor south of y -856; the hangar wall runs
-// along y -989), and walking up to him plays the debrief and ends the
-// mission (user, 2026-10-08: "have him standing out by the cqb training last
-// thing so the player can get to him and then trigger the mission end").
-// The cargoship mock-up (station_ship) is no longer part of the flow.
-// --------------------------------------------------------------------------
-
-station_debrief()
-{
-	spot = ( 520, -920, 64 );
-	trace = bulletTrace( spot, spot - ( 0, 0, 256 ), false, undefined );
-	if ( trace[ "fraction" ] < 1 )
-		spot = trace["position"];
-	else
-		spot = ( spot[0], spot[1], 0 );
-
-	price = cast( "price" );
-	move_cast( price, spot, 90 );
-	objective_at( spot );
-	maps\mp\gametypes\_coopmission::announce( "Report to Captain Price" );
-	codolprintln( "CoDOL coop training: debrief at " + spot );
-
-	wait_player_near( spot, 128 );
-
-	say( price, "pit_pri_061", 9.3 );
-	say( price, "pit_pri_062", 6.8 );
-	say( price, "pit_pri_063", 7.0 );
-	say( price, "pit_pri_064", 3.2 );
-	say( price, "pit_pri_065_1", 5.0 );
-	say( price, "pit_pri_065_2", 4.4 );
-	objective_delete( 0 );
-}
-
-// --------------------------------------------------------------------------
-// Station 6: the cargoship mock-up and the debrief (CoD4 report_to_price,
-// reveal_anims, cargoship_training, wait_till_pos_cleared,
-// wait_till_flashed, rope, debrief).
-// --------------------------------------------------------------------------
-
-station_ship()
-{
-	// report_to_price: Price and the SAS at the reveal by the ship hangar,
-	// the hangar door slides open (moveX 40, then 110 over 8 s) and the
-	// clip goes.
-	reveal_cast();
-	door = getEnt( "ship_hanger_door", "targetname" );
-	if ( isDefined( door ) )
-	{
-		door moveX( 40, 0.1, 0, 0 );
-		wait( 0.2 );
-		door moveX( 110, 8, 0.3, 0 );
-		door playSound( "door_hanger_metal_open" );
-		door connectPaths();
-	}
-	clip = getEnt( "ship_hanger_clip", "targetname" );
-	if ( isDefined( clip ) )
-		clip delete();
-	raise_door( "hanger_one_door", 200 );
-	price = cast( "price" );
-	objective_at( ( 3893.5, -2401, 54 ) );
-	maps\mp\gametypes\_coopmission::announce( "Report to Captain Price" );
-	wait_player_near( ( 3893.5, -2401, 54 ), 400, 180 );
-	codolprintln( "CoDOL coop training: station ship mock-up" );
-
-	// The ladder ("ladderthere"), then at the top: the MP5 and four
-	// flashbangs, the plan, the rope.
-	say( price, "pit_pri_012", 1.5 );
-	objective_at( ( 3530.5, -2467.5, 32 ) );
-	flag_wait_timeout( "at_top_of_ladder", 90 );
-	radio( "pit_pri_013", 3.5 );
-	give_all( first_mounted( "mp5k_codo_so", "mp5_silencer_so" ), true );
-	give_all( "flash_grenade_so" );
-	radio( "pit_pri_014", 4.4 );
-	radio( "pit_pri_015", 3.7 );
-	radio( "pit_pri_016", 5.4 );
-	radio( "pit_pri_017", 2.5 );
-	rope = getEnt( "top_of_rope_trigger", "targetname" );
-	if ( isDefined( rope ) )
-	{
-		objective_at( rope.origin );
-		level thread rope_think( rope );
-		step( "use", rope, "the rope" );
-		level waittill_or_timeout( "coop_starting_rope", 60 );
-	}
-	radio( "pit_pri_018", 2.0 );
-	start = getTime();
-	timer = ship_timer( 60 );
-
-	// The positions.  three and six are the flashbang rooms (info_volume
-	// position_three_vol / position_6_vol); position_melee is the
-	// mock-up's knife target CoDOL adds after four.
-	ship_position( "position_one", "pit_pri_019" );
-	radio( "pit_pri_025", 2.1 );
-	ship_position( "position_two", "pit_pri_019" );
-	radio( "pit_pri_027", 2.1 );
-	ship_flash( "position_three", "position_three_vol" );
-	radio( "pit_pri_030", 1.9 );
-	ship_position( "position_four", "pit_pri_034" );
-	if ( isDefined( getEnt( "position_melee", "targetname" ) ) )
-	{
-		remove_named( "ship_melee_clip" );
-		ship_position( "position_melee", "pit_pri_029" );
-	}
-	radio( "pit_pri_035", 2.6 );
-	ship_position( "position_five", "pit_pri_037" );
-	radio( "pit_pri_038", 2.0 );
-	ship_flash( "position_six", "position_6_vol" );
-	ship_position( "position_six", "pit_pri_037", true );
-	radio( "pit_pri_039", 2.2 );
-	objective_at( ( 3322, -2648, 16 ) );
-	flag_wait_timeout( "sprint", 45 );
-	radio( "pit_pri_041", 2.1 );
-	flag_wait_timeout( "at_finish", 45 );
-	elapsed = ( getTime() - start ) / 1000.0;
-	if ( isDefined( timer ) )
-		timer destroy();
-	codolprintln( "CoDOL coop training: ship mock-up in " + elapsed + " s" );
-
-	// dialog_end_of_course, anothergo, debrief.
-	if ( elapsed <= 60 )
-		radio( "pit_pri_042", 3.4 );
-	else
-		radio( "pit_pri_050", 3.9 );
-	radio( "pit_pri_043", 2.9 );
-	radio( "pit_pri_044", 3.4 );
-
-	debrief = getEnt( "debrief_trigger", "targetname" );
-	if ( isDefined( debrief ) )
-	{
-		objective_at( debrief.origin );
-		trigger_wait( debrief, 120, "debrief" );
-	}
-	say( price, "pit_pri_061", 9.3 );
-	say( price, "pit_pri_062", 6.8 );
-	say( price, "pit_pri_063", 7.0 );
-	say( price, "pit_pri_064", 3.2 );
-	say( price, "pit_pri_065_1", 5.0 );
-	say( price, "pit_pri_065_2", 4.4 );
-	objective_delete( 0 );
-}
-
-// CoD4 report_to_price / reveal_anims: Price and the three SAS stand at the
-// reveal by the ship hangar (their spawners target price/soap/ghost/
-// harker_reveal_node; reveal_node 4178 -2352), facing the nodes' way.
-reveal_cast()
-{
-	keys = [];
-	nodes = [];
-	keys[ 0 ] = "price";
-	nodes[ 0 ] = "price_reveal_node";
-	keys[ 1 ] = "sas1";
-	nodes[ 1 ] = "soap_reveal_node";
-	keys[ 2 ] = "sas2";
-	nodes[ 2 ] = "ghost_reveal_node";
-	keys[ 3 ] = "sas3";
-	nodes[ 3 ] = "harker_reveal_node";
-	// Node origins and yaws (MEASURED, base mp_killhouse_sh node_guard).
-	spots = [];
-	spots[ 0 ] = ( 3893.5, -2401, 54 );
-	spots[ 1 ] = ( 3948.5, -2415, 54 );
-	spots[ 2 ] = ( 4027, -2422.5, 54 );
-	spots[ 3 ] = ( 4088.5, -2403.5, 54 );
-	yaws = [];
-	yaws[ 0 ] = 57.35;
-	yaws[ 1 ] = 69.05;
-	yaws[ 2 ] = 107.25;
-	yaws[ 3 ] = 117.65;
-	for ( i = 0; i < keys.size; i++ )
-	{
-		ai = cast( keys[ i ] );
-		if ( !isDefined( ai ) )
-			continue;
-		move_cast( ai, spots[ i ], yaws[ i ] );
-		if ( isDefined( ai.coop_nametag ) )
-			ai.coop_nametag.origin = spots[ i ];
-	}
-}
-
-// CoD4 rope(): use the rope at the top, slide to bottom_of_rope in 1.5 s.
-rope_think( trig )
-{
-	level endon( "coop_mission_over" );
-	top = getEnt( "top_of_rope", "targetname" );
-	bottom = getEnt( "bottom_of_rope", "targetname" );
-	if ( !isDefined( top ) || !isDefined( bottom ) )
-		return;
-	for ( ;; )
-	{
-		trig waittill( "trigger", who );
-		if ( !isDefined( who ) || !isPlayer( who ) )
-			continue;
-		level notify( "coop_starting_rope" );
-		who thread rope_ride( top, bottom );
-	}
-}
-
-rope_ride( top, bottom )
-{
-	self endon( "disconnect" );
-	tag = spawn( "script_model", top.origin + ( 0, 0, -60 ) );
-	tag setModel( "tag_origin" );
-	tag.angles = top.angles;
-	self disableWeapons();
-	self setOrigin( tag.origin );
-	self playerLinkToDelta( tag, "tag_origin", 1 );
-	tag moveTo( bottom.origin + ( 0, 0, -60 ), 1.5, 1, 0.2 );
-	wait( 1.5 );
-	self unlink();
-	tag delete();
-	self enableWeapons();
-	codolprintln( "CoDOL coop training: " + self.name + " roped down to " + self.origin );
-}
-
-// CoD4 wait_till_pos_cleared: the position's trigger, its targets up, "hit
-// the targets", nags while any stands.
-ship_position( name, hitLine, skipTrigger )
-{
-	trig = getEnt( name, "targetname" );
-	if ( !isDefined( trig ) )
-		return;
-	if ( !isDefined( skipTrigger ) )
-	{
-		objective_at( trig.origin );
-		trigger_wait( trig, 60, name );
-	}
-	if ( !isDefined( trig.target ) )
-		return;
-	targets = getEntArray( trig.target, "targetname" );
-	if ( targets.size <= 0 )
-		return;
-	for ( i = 0; i < targets.size; i++ )
-		targets[ i ] notify( "pop_up" );
-	radio( hitLine, 2.1 );
-	ship_wait_cleared( targets, 45 );
-}
-
-// CoD4 flash_dialog_three / six + wait_till_flashed.
-ship_flash( name, volumeName )
-{
-	trig = getEnt( name, "targetname" );
-	volume = getEnt( volumeName, "targetname" );
-	if ( !isDefined( trig ) || !isDefined( volume ) )
-		return;
-	objective_at( trig.origin );
-	trigger_wait( trig, 60, name );
-	radio( "pit_pri_032", 2.4 );
-	flash_wait( volume, 30, name );
-}
-
-// startTimer( 60 ).
-ship_timer( seconds )
-{
-	timer = newHudElem();
-	timer.x = 0;
-	timer.y = 80;
-	timer.alignX = "center";
-	timer.alignY = "top";
-	timer.horzAlign = "center";
-	timer.vertAlign = "top";
-	timer.fontScale = 1.6;
-	timer setTimer( seconds );
-	return timer;
-}
-
-ship_wait_cleared( targets, timeout )
-{
-	step( "ship", targets );
-	waited = 0;
-	for ( ;; )
-	{
-		up = 0;
-		for ( i = 0; i < targets.size; i++ )
-		{
-			if ( isDefined( targets[ i ].coop_up ) && targets[ i ].coop_up && targets[ i ].coop_target_type == "enemy" )
-				up++;
-		}
-		if ( up == 0 && waited > 1 )
-			return;
-		if ( waited >= timeout )
-		{
-			maps\mp\gametypes\_coopcourse::drop( targets );
-			return;
-		}
-		wait( 0.5 );
-		waited += 0.5;
-	}
 }
 
 // --------------------------------------------------------------------------

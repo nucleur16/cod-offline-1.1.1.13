@@ -78,7 +78,13 @@ init()
 
 	melee_clip( false );
 	codolprintln( "CoDOL coop course: " + pivots + " pop-up targets" );
-	level thread course_triggers();
+	// The training mission has no pit run (the retail recording ends it with
+	// Price after the obstacle course; user, 2026-10-08: the pit is for
+	// another training), so its course triggers stay idle there.  Its gates
+	// stay as authored, closed, off the training route, and the melee clip
+	// is gone (above).
+	if ( !isDefined( level.coop_training_flow ) || !level.coop_training_flow )
+		level thread course_triggers();
 	level thread proximity_groups();
 }
 
@@ -395,8 +401,9 @@ proximity_groups()
 		t = level.coop_course_targets[ i ];
 		if ( t.script_noteworthy != "cargoship_target" && t.script_noteworthy != "deck_target" && t.script_noteworthy != "grenade_target_dummy" )
 			continue;
-		// The training mission calls the mock-up's positions itself.
-		if ( t.script_noteworthy == "cargoship_target" && isDefined( level.coop_training_flow ) && level.coop_training_flow )
+		// The training mission has no cargoship mock-up or deck run.
+		if ( ( t.script_noteworthy == "cargoship_target" || t.script_noteworthy == "deck_target" ) &&
+		     isDefined( level.coop_training_flow ) && level.coop_training_flow )
 			continue;
 		key = t.script_noteworthy;
 		if ( isDefined( t.targetname ) && t.script_noteworthy == "cargoship_target" )

@@ -196,6 +196,153 @@ levelMain( visionName )
 		VisionSetNaked( visionName, 0 );
 		VisionSetPain( visionName );
 	}
+
+	coop_minimap();
+}
+
+// --------------------------------------------------------------------------
+// Minimap
+// --------------------------------------------------------------------------
+
+// The compass map of the running mission.  The multiplayer level scripts set
+// theirs with maps\mp\_compass::setupMiniMap, a multiplayer module, so coop
+// never set one and C1 drew no map (configstring 823 stayed empty).  Each
+// mission's own zone ships its material (MEASURED, docs/zone_assets:
+// compass_map_killhouse in coop_training_mp_killhouse_sh,
+// compass_map_cqbhanger in coop_spec1_mp_killhouse_sh, compass_map_mp_crash_sp
+// in coop_defense_mp_crash_tropical, compass_map_mp_estate_sp in
+// coop_take_mp_estate_tropical, compass_map_mp_fav_tropical_sp /
+// _spec in coop_take / coop_spec_mp_fav_tropical); the other missions ship
+// none and use their base map's (the multiplayer level script's material).
+// The retail recording of the training mission shows the camp's own map in
+// the corner, not the multiplayer killhouse.
+coop_minimap_material( session )
+{
+	switch ( session )
+	{
+	case "coop_training_mp_killhouse_sh":
+		return "compass_map_killhouse";
+	case "coop_spec1_mp_killhouse_sh":
+		return "compass_map_cqbhanger";
+	case "coop_defense_mp_crash_tropical":
+		return "compass_map_mp_crash_sp";
+	case "coop_take_mp_estate_tropical":
+		return "compass_map_mp_estate_sp";
+	case "coop_take_mp_fav_tropical":
+		return "compass_map_mp_fav_tropical_sp";
+	case "coop_spec_mp_fav_tropical":
+		return "compass_map_mp_fav_tropical_spec";
+	}
+	switch ( getDvar( "mapname" ) )
+	{
+	case "mp_killhouse_sh":
+		return "compass_map_mp_killhouse_sh";
+	case "mp_crash_tropical":
+		return "compass_map_mp_crash_dlc";
+	case "mp_crash_intro":
+		return "compass_map_mp_crash_intro";
+	case "mp_estate_tropical":
+		return "compass_map_mp_estate_tropical";
+	case "mp_fav_tropical":
+		return "compass_map_mp_fav_tropical";
+	}
+	return undefined;
+}
+
+// The bounds: the map's minimap_corner script_origins.  The coop addon
+// MapEnts overlay their own pair on the base map's for the killhouse
+// missions (script_specialops 1, and script_specialopsname when it names
+// one mission -- coop_training's pair spans -2368 1408 .. 4864 -5824, the
+// whole camp; the base pair spans only the multiplayer killhouse), so the
+// mission's pair wins and the base pair is the fallback.  The corner maths
+// is maps\mp\_compass::setupMiniMap's.
+coop_minimap()
+{
+	session = getDvar( "codol_sessionMap" );
+	material = coop_minimap_material( session );
+	if ( !isDefined( material ) )
+	{
+		codolprintln( "CoDOL coop: no minimap for " + session );
+		return;
+	}
+	all = getEntArray( "minimap_corner", "targetname" );
+	mission = [];
+	base = [];
+	for ( i = 0; i < all.size; i++ )
+	{
+		c = all[ i ];
+		// script_specialops reads as defined on all four corners (MEASURED:
+		// the isDefined test alone counted 4 mission corners), so its value
+		// decides; only the addon's pair has 1.
+		if ( isDefined( c.script_specialops ) && int( c.script_specialops ) == 1 )
+		{
+			if ( !isDefined( c.script_specialopsname ) || c.script_specialopsname == session )
+				mission[ mission.size ] = c;
+		}
+		else
+			base[ base.size ] = c;
+	}
+	corners = base;
+	if ( mission.size == 2 )
+		corners = mission;
+	if ( corners.size != 2 )
+	{
+		codolprintln( "CoDOL coop: minimap " + material + " not set: " + all.size + " minimap_corner entities (" + mission.size + " mission, " + base.size + " base)" );
+		for ( i = 0; i < all.size; i++ )
+		{
+			v = "undefined";
+			if ( isDefined( all[ i ].script_specialops ) )
+				v = "" + all[ i ].script_specialops;
+			codolprintln( "CoDOL coop:   minimap_corner " + all[ i ].origin + " script_specialops " + v );
+		}
+		return;
+	}
+
+	corner0 = ( corners[ 0 ].origin[ 0 ], corners[ 0 ].origin[ 1 ], 0 );
+	corner1 = ( corners[ 1 ].origin[ 0 ], corners[ 1 ].origin[ 1 ], 0 );
+	cornerdiff = corner1 - corner0;
+	north = ( cos( getNorthYaw() ), sin( getNorthYaw() ), 0 );
+	west = ( 0 - north[ 1 ], north[ 0 ], 0 );
+	if ( vectorDot( cornerdiff, west ) > 0 )
+	{
+		if ( vectorDot( cornerdiff, north ) > 0 )
+		{
+			northwest = corner1;
+			southeast = corner0;
+		}
+		else
+		{
+			side = coop_vecscale( north, vectorDot( cornerdiff, north ) );
+			northwest = corner1 - side;
+			southeast = corner0 + side;
+		}
+	}
+	else
+	{
+		if ( vectorDot( cornerdiff, north ) > 0 )
+		{
+			side = coop_vecscale( north, vectorDot( cornerdiff, north ) );
+			northwest = corner0 + side;
+			southeast = corner1 - side;
+		}
+		else
+		{
+			northwest = corner0;
+			southeast = corner1;
+		}
+	}
+	level.mapSize = vectorDot( northwest - southeast, north );
+	setMiniMap( material, northwest[ 0 ], northwest[ 1 ], southeast[ 0 ], southeast[ 1 ] );
+	which = "base";
+	if ( mission.size == 2 )
+		which = "mission";
+	codolprintln( "CoDOL coop: minimap " + material + " " + northwest + " .. " + southeast + " (north yaw " + getNorthYaw() + ", " +
+		which + " corners)" );
+}
+
+coop_vecscale( vec, scalar )
+{
+	return ( vec[ 0 ] * scalar, vec[ 1 ] * scalar, vec[ 2 ] * scalar );
 }
 
 // --------------------------------------------------------------------------
