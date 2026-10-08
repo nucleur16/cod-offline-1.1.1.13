@@ -41,11 +41,16 @@ init()
 // Threaded once a player is in.
 main()
 {
-	level thread escape_watch();
+	// A mission script that places its own markers and boundaries
+	// (level.coop_mission_owns_markers): take estate's obj_house marker and
+	// its interior "escape" volumes would otherwise nag along its route.
+	if ( !isDefined( level.coop_mission_owns_markers ) )
+		level thread escape_watch();
 	level thread laptops();
 	level thread intel_pickups();
 	level thread weapon_pickups();
-	level thread objective_markers();
+	if ( !isDefined( level.coop_mission_owns_markers ) )
+		level thread objective_markers();
 	level thread vehicle_groups();
 }
 

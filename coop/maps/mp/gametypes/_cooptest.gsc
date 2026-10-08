@@ -424,6 +424,9 @@ status()
 			if ( !isDefined( ai ) )
 				continue;
 			name = ai.coop_cast;
+			// A fighting ally (take estate's Ghost) is no cast member.
+			if ( !isDefined( name ) )
+				name = "actor";
 			if ( isDefined( ai.coop_name ) )
 				name += " (" + ai.coop_name + ")";
 			codolprintln( "CoDOL cooptest:   cast " + name + " team " + ai.team + " alive " + isAlive( ai ) + " at " + ai.origin +

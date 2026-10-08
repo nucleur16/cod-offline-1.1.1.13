@@ -318,6 +318,11 @@ soldier_think()
 {
 	self endon( "death" );
 
+	// A spawner a mission script drives itself (coop_no_hunt, e.g. the take
+	// estate stealth patrols) is left to it: no hunting.
+	if ( isDefined( self.coop_spawner ) && isDefined( self.coop_spawner.coop_no_hunt ) )
+		return;
+
 	self.goalradius = 450;
 	hunter = ( randomInt( 3 ) == 0 );
 
@@ -1087,7 +1092,13 @@ main()
 	if ( !make_template() )
 		return;
 
-	setup_flag_groups();
+	// A mission script that releases its own spawner groups
+	// (level.coop_mission_owns_groups) does not want them released by flag
+	// name: take estate's guard_midhouse / reinforce_midhouse / patrol_prehouse
+	// flags name groups that come only when its stealth breaks or a stage
+	// begins.
+	if ( !isDefined( level.coop_mission_owns_groups ) )
+		setup_flag_groups();
 	setup_objective_chain();
 
 	// The training mission runs its own stations (_cooptraining.gsc).
