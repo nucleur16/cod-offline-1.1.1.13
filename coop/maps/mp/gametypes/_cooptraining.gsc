@@ -1146,6 +1146,21 @@ training_loadout_player()
 	}
 }
 
+// Frags in the lethal slot.  A grenade reaches C1's frag button only through
+// setOffhandEquipment (as _coopmode giveStartingLoadout and the multiplayer
+// _class::codol_giveEquipment do); giveWeapon alone left the player with
+// nothing to throw at Newcastle's windows (user report 2026-10-08).
+training_give_frags()
+{
+	frag = level.coop_training_frags;
+	if ( !isDefined( frag ) || !codol_isWeaponMounted( frag ) )
+		return;
+	self giveWeapon( frag );
+	self giveMaxAmmo( frag );
+	self setOffhandEquipment( frag, "none", "none" );
+	codolprintln( "CoDOL coop training: " + self.name + " given " + frag );
+}
+
 training_loadout()
 {
 	pistol = training_pistol();
@@ -1160,8 +1175,9 @@ training_loadout()
 		if ( weapons[ i ] != pistol && weapons[ i ] != "none" )
 			self takeWeapon( weapons[ i ] );
 	}
+	self setOffhandEquipment( "none", "none", "none" );
 	if ( isDefined( level.coop_training_frags ) )
-		self maps\mp\gametypes\_coopmode::coop_give_weapon( level.coop_training_frags, false );
+		self training_give_frags();
 	if ( codol_isWeaponMounted( pistol ) && !self hasWeapon( pistol ) )
 	{
 		self giveWeapon( pistol );
@@ -1844,7 +1860,12 @@ station_demolitions()
 	say( nwc, "pit_ncastle_001", 2.1 );
 	say( nwc, "pit_ncastle_002", 2.4 );
 	level.coop_training_frags = first_mounted( "fraggrenade_training_so", "fraggrenade_so" );
-	give_all( level.coop_training_frags );
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+	{
+		if ( isAlive( players[ i ] ) )
+			players[ i ] training_give_frags();
+	}
 	open_doors( "gate_enter_grenade" );
 	pit = getEnt( "safety_pit", "targetname" );
 	if ( isDefined( pit ) )
