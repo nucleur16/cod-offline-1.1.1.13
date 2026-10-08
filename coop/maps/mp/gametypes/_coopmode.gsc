@@ -928,6 +928,8 @@ Callback_StartGameType()
 	maps\mp\gametypes\_coopmission_take_fav::init();
 	// coop_take_mp_estate_tropical's own flow (stealth, house, breach, chase).
 	maps\mp\gametypes\_coopmission_estate::init();
+	// coop_defense_mp_crash_tropical's own flow (the crash site).
+	maps\mp\gametypes\_coopmission_defense_crash::init();
 	maps\mp\gametypes\_coopcourse::init();
 
 	// The campaign / Spec Ops mission, driven by the map's own entities (the
@@ -943,6 +945,7 @@ Callback_StartGameType()
 	level thread maps\mp\gametypes\_cooptraining::main();
 	level thread maps\mp\gametypes\_coopmission_take_fav::main();
 	level thread maps\mp\gametypes\_coopmission_estate::main();
+	level thread maps\mp\gametypes\_coopmission_defense_crash::main();
 
 	// Probe harness; inert unless +set scr_coop_test 1.
 	level thread maps\mp\gametypes\_cooptest::main();
