@@ -917,10 +917,13 @@ shoot_informants()
 			shooter = fav.gunmen[ i % fav.gunmen.size ];
 		if ( isDefined( shooter ) && isAlive( shooter ) && isDefined( shooter.coop_weapon ) && shooter.coop_weapon != "" )
 		{
-			start = shooter.origin + ( 0, 0, 56 ) + anglesToForward( vectorToAngles( inf.origin - shooter.origin ) ) * 24;
-			magicBullet( shooter.coop_weapon, start, inf.origin + ( 0, 0, 48 ) );
+			start = shooter.origin + ( 0, 0, 56 ) + anglesToForward( vectorToAngles( inf.origin - shooter.origin ) ) * 16;
+			if ( isDefined( shooter.coop_weapon_model ) )
+				start = shooter getTagOrigin( "tag_flash" );
+			shooter maps\mp\gametypes\_coopmission::actor_fire_round( shooter.coop_weapon, start, inf.origin + ( 0, 0, 48 ) );
 			wait( 0.15 );
-			magicBullet( shooter.coop_weapon, start, inf.origin + ( 0, 0, 40 ) );
+			if ( isDefined( shooter ) && isAlive( shooter ) )
+				shooter maps\mp\gametypes\_coopmission::actor_fire_round( shooter.coop_weapon, start, inf.origin + ( 0, 0, 40 ) );
 		}
 		if ( isAlive( inf ) )
 		{
@@ -1272,7 +1275,9 @@ technical_gunner( truck, ai )
 		for ( b = 0; b < 5; b++ )
 		{
 			aim = target getEye() - ( 0, 0, 10 ) + ( randomFloatRange( -40, 40 ), randomFloatRange( -40, 40 ), randomFloatRange( -24, 24 ) );
-			magicBullet( ai.coop_weapon, muzzle + anglesToForward( vectorToAngles( aim - muzzle ) ) * 30, aim );
+			// The round leaves the truck's gun; the fire event (sound, flash)
+			// is the gunner's own (codol_actorShoot).
+			ai maps\mp\gametypes\_coopmission::actor_fire_round( ai.coop_weapon, muzzle + anglesToForward( vectorToAngles( aim - muzzle ) ) * 30, aim );
 			wait( 0.1 );
 		}
 	}

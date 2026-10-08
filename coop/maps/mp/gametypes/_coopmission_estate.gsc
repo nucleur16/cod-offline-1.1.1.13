@@ -582,6 +582,7 @@ spawn_ghost()
 	// His silenced SMG (a coop window slot, see aitype role_weapons).
 	if ( codol_isWeaponMounted( "mp5_silencer_so" ) )
 		ai.coop_weapon = "mp5_silencer_so";
+	ai maps\mp\gametypes\_coopmission::arm_soldier();
 	level.coop_estate.ghost = ai;
 	if ( !isDefined( level.coop_cast_list ) )
 		level.coop_cast_list = [];
@@ -715,8 +716,9 @@ ghost_fights( fight )
 	g.ignoreall = !fight;
 }
 
-// Ghost takes his man: his silenced shot at a stealth soldier, then the kill
-// (the round alone is world-owned and may not finish him).
+// Ghost takes his man: his silenced shot at a stealth soldier (his own
+// weapon's fire, codol_actorShoot), then the kill (one round may not finish
+// him).
 ghost_shoots( target )
 {
 	g = level.coop_estate.ghost;
@@ -727,9 +729,11 @@ ghost_shoots( target )
 		weapon = g.coop_weapon;
 	start = g.origin + ( 0, 0, 56 );
 	head = target.origin + ( 0, 0, 62 );
-	start = start + vectorNormalize( head - start ) * 32;
+	start = start + vectorNormalize( head - start ) * 16;
+	if ( isDefined( g.coop_weapon_model ) )
+		start = g getTagOrigin( "tag_flash" );
 	if ( codol_isWeaponMounted( weapon ) )
-		magicBullet( weapon, start, head );
+		g maps\mp\gametypes\_coopmission::actor_fire_round( weapon, start, head );
 	if ( isAlive( target ) )
 		target doDamage( target.health + 200, start );
 	codolprintln( "CoDOL coop estate: Ghost takes ent " + target getEntityNumber() );

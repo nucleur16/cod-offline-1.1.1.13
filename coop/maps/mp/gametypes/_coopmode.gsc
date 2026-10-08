@@ -148,13 +148,37 @@ init()
 	if ( level.coop_lives <= 0 )
 		level.coop_lives = 3;
 
-	// IW4 singleplayer scales what an AI bullet does to a player through the
-	// difficulty tables (maps\_gameskill: regular takes roughly half).  The
-	// enemy soldiers' rounds arrive with the world as attacker (magicBullet
-	// with no player owner), which is how they are told apart here.
-	level.coop_ai_damage_scale = getDvarFloat( "scr_coop_ai_damage_scale" );
-	if ( level.coop_ai_damage_scale <= 0 )
-		level.coop_ai_damage_scale = 0.5;
+	// What an AI round does to a player: the regular-difficulty model of
+	// CoD4/IW4 maps\_gameskill.gsc (see Callback_PlayerDamage and
+	// healthRegen).  The soldiers fire through codol_actorShoot, so their
+	// rounds arrive with the soldier (an actor, never a player) as attacker;
+	// anything else that is not a player (the world, a vehicle, a scripted
+	// magicBullet) is told apart by its means of death.
+	//
+	// regular: player_damageMultiplier = 100 / playerDifficultyHealth(275).
+	// The coop weapons' AI rounds arrive at 50..100 raw (MEASURED 2026-10-08:
+	// m16_basic_so / ump45_so 97..100 a hit, aa12_so 50 a pellet), so the
+	// scale that gives a full-health player SP's six-to-seven rifle hits is
+	// lower than SP's 0.36.
+	level.coop_ai_damage_scale = coop_dvar_float( "scr_coop_ai_damage_scale", 0.18 );
+	// No single AI round takes more than this (sniper, close shotgun pellet).
+	level.coop_ai_damage_cap = coop_dvar_float( "scr_coop_ai_damage_cap", 30 );
+	// Damage from other non-player sources (explosions, falls, vehicles).
+	level.coop_world_damage_scale = coop_dvar_float( "scr_coop_world_damage_scale", 0.5 );
+	// _gameskill regular: invulTime_preShield 0.35 s, invulTime_onShield 0.5 s,
+	// invulTime_postShield 0.3 s, worthyDamageRatio 0.1,
+	// healthOverlayCutoff 0.2, player_deathInvulnerableTime 1700 ms,
+	// playerHealth_RegularRegenDelay 2000 ms, longRegenTime 5000 ms.
+	level.coop_invul_pre = coop_dvar_float( "scr_coop_invul_pre", 0.35 );
+	level.coop_invul_on = coop_dvar_float( "scr_coop_invul_on", 0.5 );
+	level.coop_invul_post = coop_dvar_float( "scr_coop_invul_post", 0.3 );
+	level.coop_worthy_ratio = coop_dvar_float( "scr_coop_worthy_ratio", 0.1 );
+	level.coop_red_cutoff = coop_dvar_float( "scr_coop_red_cutoff", 0.2 );
+	level.coop_death_grace = coop_dvar_float( "scr_coop_death_grace", 1.7 );
+	level.coop_regen_delay = coop_dvar_float( "scr_coop_regen_delay", 2.0 );
+	level.coop_regen_delay_red = coop_dvar_float( "scr_coop_regen_delay_red", 5.0 );
+	// Health per second once regeneration starts (a full bar in two seconds).
+	level.coop_regen_rate = coop_dvar_float( "scr_coop_regen_rate", 50 );
 
 	// IW4 player health is 100 with regeneration; Spec Ops does not change it
 	// (maps\_utility::set_player_health is only used by scripted moments).
@@ -823,10 +847,19 @@ spawnPlayer()
 	self notify( "spawned_player" );
 }
 
+coop_dvar_float( name, value )
+{
+	if ( getDvar( name ) == "" )
+		return value;
+	return getDvarFloat( name );
+}
+
 // IW4 SP and MP both regenerate player health a few seconds out of damage;
 // the multiplayer _healthoverlay that does it there is an mp module, so the
-// coop player gets this small local copy (IW4 _gameskill regular:
-// regeneration starts 5 s after the last hit and refills in about 2 s).
+// coop player gets this local copy of CoD4/IW4 _gameskill's regular rule:
+// regeneration starts playerHealth_RegularRegenDelay (2 s) after the last
+// hit, or longRegenTime (5 s) after a hit that put him in the red (under
+// healthOverlayCutoff), and then refills the bar in about two seconds.
 healthRegen()
 {
 	self endon( "disconnect" );
@@ -835,17 +868,99 @@ healthRegen()
 	self endon( "coop_regen" );
 
 	self.coop_last_damage = 0;
+	self.coop_was_red = false;
+	self.coop_grace_used = false;
+	self.coop_invul_until = 0;
+	carry = 0;
 	for ( ;; )
 	{
-		wait( 0.25 );
+		wait( 0.1 );
 		if ( self.health <= 0 || self.health >= self.maxhealth )
+		{
+			self.coop_was_red = false;
+			self.coop_grace_used = false;
+			carry = 0;
 			continue;
-		if ( getTime() - self.coop_last_damage < 5000 )
+		}
+		delay = level.coop_regen_delay;
+		if ( self.coop_was_red )
+			delay = level.coop_regen_delay_red;
+		if ( getTime() - self.coop_last_damage < delay * 1000 )
+		{
+			carry = 0;
 			continue;
-		self.health = self.health + 12;
+		}
+		carry += level.coop_regen_rate * 0.1;
+		step = int( carry );
+		if ( step < 1 )
+			continue;
+		carry -= step;
+		self.health = self.health + step;
 		if ( self.health > self.maxhealth )
 			self.health = self.maxhealth;
 	}
+}
+
+coop_is_bullet( sMeansOfDeath )
+{
+	return isDefined( sMeansOfDeath ) && isSubStr( sMeansOfDeath, "BULLET" );
+}
+
+// The regular-difficulty AI hit (CoD4/IW4 _gameskill): the round's damage
+// scaled and capped; a "worthy" hit (at least worthyDamageRatio of max
+// health) makes the player briefly invulnerable to the next rounds -- 0.35 s,
+// 0.5 s on the hit that first puts him in the red, 0.3 s after that -- and a
+// hit that would kill a player who was not already at death's door leaves
+// him at 1 health and untouchable for player_deathInvulnerableTime.  This is
+// what lets a full-health player take several hits and run for cover.
+// Returns the damage to apply (0: none).
+coop_ai_hit( iDamage, sHitLoc )
+{
+	now = getTime();
+	if ( isDefined( self.coop_invul_until ) && now < self.coop_invul_until )
+		return 0;
+
+	// An AI does not pick headshots: the round lands where the scatter puts
+	// it, so the weapon's head multiplier (raw 200 against 100 to the body,
+	// MEASURED for m16_basic_so) is taken back out.
+	if ( isDefined( sHitLoc ) && ( sHitLoc == "head" || sHitLoc == "helmet" || sHitLoc == "neck" ) )
+		iDamage = iDamage * 0.5;
+	dealt = int( iDamage * level.coop_ai_damage_scale + 0.5 );
+	if ( dealt < 1 )
+		dealt = 1;
+	if ( dealt > level.coop_ai_damage_cap )
+		dealt = int( level.coop_ai_damage_cap );
+
+	red = self.maxhealth * level.coop_red_cutoff;
+	if ( dealt >= self.health )
+	{
+		// The death shield: once per trip into the red.
+		if ( self.health > 1 && !( isDefined( self.coop_grace_used ) && self.coop_grace_used ) && level.coop_death_grace > 0 )
+		{
+			self.coop_grace_used = true;
+			self.coop_invul_until = now + int( level.coop_death_grace * 1000 );
+			self.coop_was_red = true;
+			return self.health - 1;
+		}
+		return dealt;
+	}
+
+	if ( dealt >= self.maxhealth * level.coop_worthy_ratio )
+	{
+		after = self.health - dealt;
+		invul = level.coop_invul_pre;
+		if ( after <= red )
+		{
+			if ( self.coop_was_red )
+				invul = level.coop_invul_post;
+			else
+				invul = level.coop_invul_on;
+		}
+		self.coop_invul_until = now + int( invul * 1000 );
+	}
+	if ( self.health - dealt <= red )
+		self.coop_was_red = true;
+	return dealt;
 }
 
 respawnPlayer()
@@ -1018,22 +1133,37 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 	// Every coop player is on the same side: no damage from another player.
 	if ( isDefined( eAttacker ) && isPlayer( eAttacker ) && eAttacker != self )
 		return;
+	// Nor from a friendly AI (the cast: Ghost, Price, the allies).
+	if ( isDefined( eAttacker ) && isDefined( eAttacker.coop_friendly ) && eAttacker.coop_friendly )
+		return;
 
+	iRawDamage = iDamage;
 	if ( !isDefined( eAttacker ) || !isPlayer( eAttacker ) )
 	{
-		iDamage = int( iDamage * level.coop_ai_damage_scale );
-		if ( iDamage < 1 )
-			iDamage = 1;
-		// No one-shot kills from an AI round: a sniper's cheytac_silencer_so
-		// headshot still took a full-health test client after the 0.5 scale
-		// (MEASURED, coop_spec_mp_crash_tropical survey).  IW4's difficulty
-		// tables likewise never let one AI bullet kill a healthy player on
-		// regular.
-		if ( iDamage > 40 )
-			iDamage = 40;
+		if ( coop_is_bullet( sMeansOfDeath ) )
+		{
+			iDamage = coop_ai_hit( iDamage, sHitLoc );
+			if ( iDamage <= 0 )
+				return;
+		}
+		else
+		{
+			iDamage = int( iDamage * level.coop_world_damage_scale );
+			if ( iDamage < 1 )
+				iDamage = 1;
+			// No single non-player hit takes more than 40 (the rule this
+			// mode had for every non-player source before).
+			if ( iDamage > 40 )
+				iDamage = 40;
+		}
 	}
 
 	self.coop_last_damage = getTime();
+	if ( self.health - iDamage > self.maxhealth * level.coop_red_cutoff )
+		self.coop_grace_used = false;
+	// The probe harness's measurement hook (_cooptest duel); unset in play.
+	if ( isDefined( level.coop_damage_watch ) )
+		[[ level.coop_damage_watch ]]( self, iRawDamage, iDamage, eAttacker, sWeapon, sHitLoc );
 	self finishPlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, timeOffset );
 }
 

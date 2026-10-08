@@ -21,8 +21,9 @@ defaultmdl="body_complete_sp_juggernaut"
 SPAWNER -- makes this a spawner instead of a guy
 */
 
-// Weapon per role.  A magicBullet publishes EV_FIRE_WEAPON with the weapon's
-// index, and C1 dereferences that index's definition with no NULL check, so an
+// Weapon per role.  A soldier's shot (codol_actorShoot) publishes
+// EV_FIRE_WEAPON on him with the weapon's index, and C1 dereferences that
+// index's definition with no NULL check, so an
 // enemy may only fire a weapon the client has REGISTERED: a slot of C1's coop
 // constant window (mp/constconfigstrings_coop.csv,
 // docs/CODOL_CATEGORY_WEAPON_WINDOW_20260917.md section 1.1) that this
@@ -116,6 +117,11 @@ main()
 		if ( isDefined( kind.team ) )
 			self.team = kind.team;
 	}
+	// The players' side: his rounds never hurt a player (_coopmode
+	// Callback_PlayerDamage), as a friendly AI's do not in SP.
+	self.coop_friendly = false;
+	if ( isDefined( kind ) && isDefined( kind.team ) )
+		self.coop_friendly = ( kind.team == "allies" );
 
 	self.accuracy = accuracy;
 	self.health = health;
@@ -195,8 +201,11 @@ precache()
 	// builds the window at map load, so getWeaponModel registers nothing new.
 	level.coop_role_weapon = [];
 	// Only a model recorded here may be attached later: attaching one that was
-	// not precached is a fatal script error (MEASURED on
-	// coop_spec_mp_crash_tropical: "model 'weapon_cheytac' not precached").
+	// not precached is a fatal script error.  (MEASURED on
+	// coop_spec_mp_crash_tropical: "model 'weapon_cheytac' not precached".
+	// The cause was native: G_ModelIndex gave weapon_m82 the slot IW3's
+	// constant table names for it, overwriting weapon_cheytac, which a
+	// precache moments earlier had put there -- fixed in _g_utils_mp.asm.)
 	level.coop_weapon_models = [];
 	roles = [];
 	roles[ 0 ] = "ar";

@@ -825,6 +825,8 @@ spawn_ghost( origin, angles )
 		return undefined;
 	}
 	ai forceTeleport( origin, angles );
+	// His rifle in his hands, so his fire has a flash and a sound.
+	ai maps\mp\gametypes\_coopmission::arm_soldier();
 	ai setCanDamage( false );
 	ai.ignoreall = true;
 	ai.crash_moving = false;
@@ -1019,7 +1021,7 @@ ghost_lead( points, what, waitRadius )
 }
 
 // Ghost's rifle: he takes the nearest enemy he can see inside 1400 units
-// and fires short bursts at him (the same magicBullet shot the enemy
+// and fires short bursts at him (the same codol_actorShoot round the enemy
 // soldiers fire, soldier_combat).  He holds fire with a player in the line.
 ghost_fire_support()
 {
@@ -1097,7 +1099,9 @@ ghost_shot( target )
 	aim = target.origin + ( 0, 0, 44 );
 	chest = self.origin + ( 0, 0, 52 );
 	dir = vectorNormalize( aim - chest );
-	start = chest + dir * 32;
+	start = chest + dir * 16;
+	if ( isDefined( self.coop_weapon_model ) )
+		start = self getTagOrigin( "tag_flash" );
 	trace = bulletTrace( start, aim, true, self );
 	if ( isDefined( trace[ "entity" ] ) && trace[ "entity" ] != target && ( isPlayer( trace[ "entity" ] ) || isAI( trace[ "entity" ] ) ) )
 		return;
@@ -1113,7 +1117,7 @@ ghost_shot( target )
 	weapon = self.coop_weapon;
 	if ( !isDefined( weapon ) || weapon == "" )
 		weapon = "m16_basic_so";
-	magicBullet( weapon, start, end );
+	self maps\mp\gametypes\_coopmission::actor_fire_round( weapon, start, end );
 }
 
 // --------------------------------------------------------------------------

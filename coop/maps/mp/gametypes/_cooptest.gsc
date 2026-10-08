@@ -236,6 +236,27 @@ watch()
 			if ( tokens.size >= 2 )
 				level thread godmode( int( tokens[ 1 ] ) );
 			break;
+		case "duel":
+			// duel <role> <dist> <secs> [stand|crouch|prone] [still|strafe]
+			if ( tokens.size >= 4 )
+			{
+				stance = "stand";
+				moving = "still";
+				if ( tokens.size >= 5 )
+					stance = tokens[ 4 ];
+				if ( tokens.size >= 6 )
+					moving = tokens[ 5 ];
+				level thread duel( tokens[ 1 ], int( tokens[ 2 ] ), int( tokens[ 3 ] ), stance, moving );
+			}
+			break;
+		case "spawnat":
+			// spawnat <role> <x> <y> <z>: one soldier there (placement checks)
+			if ( tokens.size >= 5 )
+				level thread spawn_at( tokens[ 1 ], ( float( tokens[ 2 ] ), float( tokens[ 3 ] ), float( tokens[ 4 ] ) ) );
+			break;
+		case "gunmodels":
+			gun_models();
+			break;
 		default:
 			// A mission script's own verbs (level.coop_mission_testcmd).
 			if ( isDefined( level.coop_mission_testcmd ) )
@@ -1090,4 +1111,264 @@ pickup_test( classname )
 	for ( i = 0; i < after.size; i++ )
 		text += " " + after[ i ];
 	codolprintln( "CoDOL cooptest: pickup " + classname + " primaries after " + after.size + ":" + text + " (item still there " + isDefined( item ) + ")" );
+}
+
+// --------------------------------------------------------------------------
+// duel: one soldier of <role> against player 0, standing in the open at
+// <dist> units, for <secs> seconds or until the player dies.  Measures what
+// the player receives (every hit through _coopmode's damage watch: raw and
+// scaled damage, time) and what the soldier fires (the animscript's shot
+// counters).  The mission's own spawns are held off for the duel
+// (level.coop_max_alive 0) and every other enemy is removed first.
+// --------------------------------------------------------------------------
+duel( role, dist, secs, stance, moving )
+{
+	// The mission's own spawns stay off from the first duel on.
+	level.coop_max_alive = 0;
+	kill_enemies( 999 );
+	p = undefined;
+	for ( t = 0; t < 200; t++ )
+	{
+		p = player( 0 );
+		if ( isDefined( p ) && isAlive( p ) )
+			break;
+		wait( 0.1 );
+	}
+	if ( !isDefined( p ) || !isAlive( p ) )
+	{
+		codolprintln( "CoDOL duel: no live player 0" );
+		return;
+	}
+	wait( 0.5 );
+
+	spot = duel_find_spot( p, dist );
+	if ( !isDefined( spot ) )
+	{
+		// Somewhere in the open: the mission's authored enemy spawners
+		// stand outdoors; try the player on each until one has a spot.
+		cands = getEntArray( "pmc_spawner", "targetname" );
+		if ( isDefined( level.coop_duel_starts ) )
+			cands = level.coop_duel_starts;
+		for ( i = 0; i < cands.size && !isDefined( spot ); i++ )
+		{
+			p setOrigin( cands[ i ].origin + ( 0, 0, 4 ) );
+			wait( 0.1 );
+			spot = duel_find_spot( p, dist );
+		}
+	}
+	if ( !isDefined( spot ) )
+	{
+		codolprintln( "CoDOL duel: no open spot " + dist + " units from player 0 at " + p.origin );
+		return;
+	}
+	p.health = p.maxhealth;
+	if ( stance != "stand" )
+		p setStance( stance );
+
+	fake = spawnStruct();
+	fake.classname = "actor_enemy_favela_" + role + "_so";
+	fake.origin = spot;
+	fake.angles = vectorToAngles( p.origin - spot );
+	fake.coop_no_hunt = true;
+	level.coop_max_alive = level.coop_alive + 1;
+	ai = maps\mp\gametypes\_coopmission::spawn_soldier( fake );
+	level.coop_max_alive = 0;
+	if ( !isDefined( ai ) )
+	{
+		codolprintln( "CoDOL duel: spawn refused" );
+		return;
+	}
+	// The clock starts when the soldier has the player as his enemy (the
+	// native sight test is his, not this script's).
+	acquired = false;
+	for ( t = 0; t < 80; t++ )
+	{
+		if ( isDefined( ai.enemy ) )
+		{
+			acquired = true;
+			break;
+		}
+		wait( 0.1 );
+	}
+	if ( !acquired )
+	{
+		codolprintln( "CoDOL duel: soldier at " + ai.origin + " never acquired player 0; skipped" );
+		ai doDamage( ai.health + 100, ai.origin );
+		return;
+	}
+	p.health = p.maxhealth;
+	gun = "none";
+	if ( isDefined( ai.coop_weapon_model ) )
+		gun = ai.coop_weapon_model;
+	codolprintln( "CoDOL duel: start role " + role + " weapon " + ai.coop_weapon + " gun model " + gun + " attached " +
+		ai getAttachSize() + " dist " + int( distance( ai.origin, p.origin ) ) + " stance " + stance + " " + moving +
+		" player at " + p.origin + " soldier ent " + ai getEntityNumber() + " at " + ai.origin );
+
+	level.coop_duel = spawnStruct();
+	level.coop_duel.player = p;
+	level.coop_duel.hits = 0;
+	level.coop_duel.raw = 0;
+	level.coop_duel.dealt = 0;
+	level.coop_duel.first_hit = 0;
+	level.coop_duel.start = getTime();
+	level.coop_duel.deaths = 0;
+	level.coop_duel.death_time = 0;
+	level.coop_damage_watch = ::duel_damage;
+	ai.coop_stat_shots = 0;
+	ai.coop_stat_bursts = 0;
+	ai.coop_stat_aimed_hits = 0;
+	ai.coop_stat_miss_dist = 0;
+	ai.coop_stat_miss_ground = 0;
+
+	if ( moving == "strafe" )
+		p thread duel_strafe( ai );
+
+	start = getTime();
+	while ( getTime() - start < secs * 1000 && isAlive( ai ) && level.coop_duel.deaths == 0 )
+		wait( 0.05 );
+	p notify( "duel_over" );
+	elapsed = ( getTime() - start ) / 1000;
+	if ( level.coop_duel.deaths > 0 )
+		elapsed = ( level.coop_duel.death_time - start ) / 1000;
+	if ( elapsed <= 0 )
+		elapsed = 0.05;
+
+	shots = "?";
+	bursts = "?";
+	aimed = "?";
+	misses = "?";
+	if ( isDefined( ai ) && isDefined( ai.coop_stat_shots ) )
+	{
+		shots = ai.coop_stat_shots;
+		bursts = ai.coop_stat_bursts;
+		aimed = ai.coop_stat_aimed_hits;
+		missed = shots - aimed;
+		misses = missed + " (" + ai.coop_stat_miss_ground + " into the ground by his feet";
+		if ( missed > 0 )
+			misses += ", aimed " + int( ai.coop_stat_miss_dist / missed ) + " units from his chest on average";
+		misses += ")";
+	}
+	first = "none";
+	if ( level.coop_duel.first_hit > 0 )
+		first = ( level.coop_duel.first_hit - start ) / 1000;
+	codolprintln( "CoDOL duel: result role " + role + " dist " + dist + " " + stance + " " + moving + " secs " + elapsed +
+		" hits " + level.coop_duel.hits + " raw " + level.coop_duel.raw + " dealt " + level.coop_duel.dealt +
+		" dps " + ( level.coop_duel.dealt / elapsed ) + " first_hit " + first + " died " + level.coop_duel.deaths +
+		" shots " + shots + " bursts " + bursts + " aimed_hits " + aimed + " misses " + misses + " health_left " + p.health );
+	level.coop_damage_watch = undefined;
+	level.coop_duel = undefined;
+	if ( isDefined( ai ) && isAlive( ai ) )
+		ai doDamage( ai.health + 100, ai.origin );
+	if ( stance != "stand" && isAlive( p ) )
+		p setStance( "stand" );
+}
+
+duel_damage( victim, raw, dealt, eAttacker, sWeapon, sHitLoc )
+{
+	d = level.coop_duel;
+	if ( !isDefined( d ) || victim != d.player )
+		return;
+	d.hits++;
+	d.raw += raw;
+	d.dealt += dealt;
+	if ( d.first_hit == 0 )
+		d.first_hit = getTime();
+	attacker = "world";
+	if ( isDefined( eAttacker ) )
+		attacker = "ent " + eAttacker getEntityNumber();
+	codolprintln( "CoDOL duel: hit t " + ( getTime() - d.start ) + " raw " + raw + " dealt " + dealt + " from " + attacker +
+		" weapon " + sWeapon + " loc " + sHitLoc + " health before " + victim.health );
+	if ( dealt >= victim.health )
+	{
+		d.deaths++;
+		d.death_time = getTime();
+	}
+}
+
+// Side to side across the soldier's line, 96 units each way.
+duel_strafe( ai )
+{
+	self endon( "duel_over" );
+	self endon( "death" );
+	self endon( "disconnect" );
+	base = self.origin;
+	dir = vectorNormalize( ai.origin - base );
+	side = ( 0 - dir[ 1 ], dir[ 0 ], 0 );
+	sign = 1;
+	for ( ;; )
+	{
+		self botMoveTo( base + side * ( 96 * sign ) );
+		wait( 1.2 );
+		sign = 0 - sign;
+	}
+}
+
+// The first spot <dist> from the player, 16 headings, where a soldier has
+// floor under him, room to stand and a clear line to the player's chest.
+duel_find_spot( p, dist )
+{
+	eye = p.origin + ( 0, 0, 48 );
+	for ( k = 0; k < 16; k++ )
+	{
+		dir = anglesToForward( ( 0, k * 22.5, 0 ) );
+		cand = p.origin + dir * dist;
+		down = bulletTrace( cand + ( 0, 0, 64 ), cand - ( 0, 0, 256 ), false, undefined );
+		if ( down[ "fraction" ] >= 1 )
+			continue;
+		spot = down[ "position" ] + ( 0, 0, 1 );
+		if ( abs_f( spot[ 2 ] - p.origin[ 2 ] ) > 96 )
+			continue;
+		if ( !bulletTracePassed( eye, spot + ( 0, 0, 56 ), false, p ) )
+			continue;
+		// The soldier's own sight line: capsule centre to capsule centre.
+		if ( !bulletTracePassed( spot + ( 0, 0, 36 ), p.origin + ( 0, 0, 35 ), false, p ) )
+			continue;
+		if ( !bulletTracePassed( spot + ( 0, 0, 8 ), spot + ( 0, 0, 72 ), false, undefined ) )
+			continue;
+		return spot;
+	}
+	return undefined;
+}
+
+abs_f( v )
+{
+	if ( v < 0 )
+		return 0 - v;
+	return v;
+}
+
+spawn_at( role, origin )
+{
+	fake = spawnStruct();
+	fake.classname = "actor_enemy_favela_" + role + "_so";
+	fake.origin = origin;
+	fake.angles = ( 0, 0, 0 );
+	fake.coop_no_hunt = true;
+	old = level.coop_max_alive;
+	level.coop_max_alive = level.coop_alive + 1;
+	ai = maps\mp\gametypes\_coopmission::spawn_soldier( fake );
+	level.coop_max_alive = old;
+	if ( isDefined( ai ) )
+		codolprintln( "CoDOL cooptest: spawnat " + origin + " -> ent " + ai getEntityNumber() + " at " + ai.origin );
+	else
+		codolprintln( "CoDOL cooptest: spawnat " + origin + " refused" );
+}
+
+// gunmodels: every live soldier's weapon and attached gun model.
+gun_models()
+{
+	n = 0;
+	for ( i = 0; i < level.coop_enemies.size; i++ )
+	{
+		ai = level.coop_enemies[ i ];
+		if ( !isDefined( ai ) || !isAlive( ai ) )
+			continue;
+		gun = "none";
+		if ( isDefined( ai.coop_weapon_model ) )
+			gun = ai.coop_weapon_model;
+		codolprintln( "CoDOL cooptest: soldier ent " + ai getEntityNumber() + " weapon " + ai.coop_weapon + " gun " + gun +
+			" attached " + ai getAttachSize() );
+		n++;
+	}
+	codolprintln( "CoDOL cooptest: gunmodels " + n + " soldiers" );
 }

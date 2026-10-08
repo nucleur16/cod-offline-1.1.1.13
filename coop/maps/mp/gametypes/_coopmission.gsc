@@ -248,7 +248,12 @@ spawn_soldier( spawner )
 	angles = spawner.angles;
 	if ( !isDefined( angles ) )
 		angles = ( 0, randomInt( 360 ), 0 );
-	ai forceTeleport( spawner.origin, angles );
+	// A collision-checked placement: an authored SP spawner can stand inside
+	// the MP level's geometry, and the native placement moves the soldier to
+	// clear floor on the near side of it (or reports that it could not).
+	if ( !ai forceTeleport( spawner.origin, angles ) )
+		codolprintln( "CoDOL coop mission: spawner at " + spawner.origin + " has no clear floor nearby; soldier ent " +
+			ai getEntityNumber() + " left at " + ai.origin );
 	ai show();
 
 	ai.coop_spawner = spawner;
@@ -256,26 +261,7 @@ spawn_soldier( spawner )
 	if ( isDefined( spawner.script_noteworthy ) )
 		ai.script_noteworthy = spawner.script_noteworthy;
 
-	// The weapon in his hands.  The bullets are the animscript's
-	// magicBullet; this is what the client would draw.  OFF by default:
-	// MEASURED 2026-10-07, attaching weapon_cheytac -- precached by the aitype
-	// in the same match, and attached fine on coop_spec_mp_estate_tropical --
-	// raised "model 'weapon_cheytac' not precached" on
-	// coop_spec_mp_crash_tropical after an in-process map change, and a script
-	// runtime error stops the server.  The model-slot lookup for these models
-	// (G_ModelIndex's constant / high-model paths) needs fixing natively first
-	// (docs/CODOL_CAMPAIGN_MODE.md section 7); +set scr_coop_ai_weapon_models 1
-	// turns the attach back on for testing.
-	if ( getDvarInt( "scr_coop_ai_weapon_models" ) && isDefined( ai.coop_weapon ) && ai.coop_weapon != "" )
-	{
-		model = getWeaponModel( ai.coop_weapon );
-		if ( isDefined( model ) && model != "" && isDefined( level.coop_weapon_models ) &&
-		     isDefined( level.coop_weapon_models[ model ] ) )
-		{
-			ai attach( model, "tag_weapon_right" );
-			ai.coop_weapon_model = model;
-		}
-	}
+	ai arm_soldier();
 
 	// The bootstrap pose: the animscripts' own main() runs too early to
 	// animate (soldier_init.gsc), so the first pose is set here.
@@ -288,6 +274,40 @@ spawn_soldier( spawner )
 	ai thread soldier_death_watch();
 	ai thread soldier_think();
 	return ai;
+}
+
+// The weapon in his hands: the world model on tag_weapon_right (its
+// tag_flash is where C1 draws the muzzle flash of his fire), and the weapon
+// named in his entity state (codol_actorSetWeapon), which C1 reads for every
+// fire event on him.  On by default; +set scr_coop_ai_weapon_models 0 hides
+// the model.  (It was off while attaching weapon_cheytac failed as "not
+// precached" after a map change; that was a native model-slot clobber, now
+// fixed -- docs/CODOL_CAMPAIGN_MODE.md, coop AI combat.)  Mission scripts
+// that spawn their own cast call this too.
+arm_soldier()
+{
+	if ( !isDefined( self.coop_weapon ) || self.coop_weapon == "" )
+		return;
+	self codol_actorSetWeapon( self.coop_weapon );
+	if ( getDvar( "scr_coop_ai_weapon_models" ) == "0" || isDefined( self.coop_weapon_model ) )
+		return;
+	model = getWeaponModel( self.coop_weapon );
+	if ( isDefined( model ) && model != "" && isDefined( level.coop_weapon_models ) &&
+	     isDefined( level.coop_weapon_models[ model ] ) )
+	{
+		self attach( model, "tag_weapon_right" );
+		self.coop_weapon_model = model;
+	}
+}
+
+// One round from an actor's own weapon (codol_actorShoot), for the mission
+// scripts' scripted fire: the round, the fire sound and the muzzle flash on
+// the actor, where magicBullet gave only the round.
+actor_fire_round( weapon, start, end )
+{
+	if ( !isDefined( weapon ) || weapon == "" )
+		return;
+	self codol_actorShoot( weapon, start, end );
 }
 
 soldier_death_watch()
