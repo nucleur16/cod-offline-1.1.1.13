@@ -1014,7 +1014,7 @@ main()
 	station_demolitions();
 	station_obstacle();
 	station_pit();
-	station_ship();
+	station_debrief();
 
 	maps\mp\gametypes\_coopmission::mission_complete( "training complete" );
 }
@@ -1645,6 +1645,41 @@ station_pit()
 		say( price, "pit_pri_058", 3.1 );
 	else
 		say( price, "pit_pri_056", 4.3 );
+}
+
+// --------------------------------------------------------------------------
+// The end: Price waits in the corridor the pit's finish lane opens into
+// (lane x 476..572 joins the corridor south of y -856; the hangar wall runs
+// along y -989), and walking up to him plays the debrief and ends the
+// mission (user, 2026-10-08: "have him standing out by the cqb training last
+// thing so the player can get to him and then trigger the mission end").
+// The cargoship mock-up (station_ship) is no longer part of the flow.
+// --------------------------------------------------------------------------
+
+station_debrief()
+{
+	spot = ( 520, -920, 64 );
+	trace = bulletTrace( spot, spot - ( 0, 0, 256 ), false, undefined );
+	if ( trace[ "fraction" ] < 1 )
+		spot = trace["position"];
+	else
+		spot = ( spot[0], spot[1], 0 );
+
+	price = cast( "price" );
+	move_cast( price, spot, 90 );
+	objective_at( spot );
+	maps\mp\gametypes\_coopmission::announce( "Report to Captain Price" );
+	codolprintln( "CoDOL coop training: debrief at " + spot );
+
+	wait_player_near( spot, 128 );
+
+	say( price, "pit_pri_061", 9.3 );
+	say( price, "pit_pri_062", 6.8 );
+	say( price, "pit_pri_063", 7.0 );
+	say( price, "pit_pri_064", 3.2 );
+	say( price, "pit_pri_065_1", 5.0 );
+	say( price, "pit_pri_065_2", 4.4 );
+	objective_delete( 0 );
 }
 
 // --------------------------------------------------------------------------
