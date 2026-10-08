@@ -156,6 +156,11 @@ main()
 		waited += 0.25;
 	}
 
+	// The training jeep's driver is an actor (_cooptraining seat_driver),
+	// placed once the cast can spawn; the jeep does not leave without him.
+	for ( w = 0; isDefined( level.coop_intro_wait_driver ) && w < 40; w++ )
+		wait( 0.25 );
+
 	ride();
 }
 
@@ -211,15 +216,39 @@ board()
 	if ( isDefined( tag ) )
 	{
 		offset = mover getTagOrigin( tag ) - mover.origin;
-		offset = ( vectorDot( offset, anglesToForward( mover.angles ) ), vectorDot( offset, anglesToRight( mover.angles ) ), offset[ 2 ] );
+		// The seat tag is the cushion (about 36 above the jeep's origin on
+		// the ground).  A crouched player's eye is 40 above his feet and a
+		// seated man's about 28 above the cushion, so the feet go 12 below
+		// the tag.
+		offset = ( vectorDot( offset, anglesToForward( mover.angles ) ), vectorDot( offset, anglesToRight( mover.angles ) ), offset[ 2 ] - 12 );
 		self setStance( "crouch" );
+		self seat_lock( true );
 	}
 	self setOrigin( local_to_world( mover.origin, mover.angles, offset ) );
 	self setPlayerAngles( mover.angles );
 	self.coop_seat_angles = mover.angles;
 	self playerLinkToDelta( mover, "tag_origin", 1 );
-	codolprintln( "CoDOL coop intro: " + self.name + " seated in seat " + seat + ", ride started " + intro.started );
+	tagName = "none";
+	if ( isDefined( tag ) )
+		tagName = tag;
+	codolprintln( "CoDOL coop intro: " + self.name + " seated in seat " + seat + " (" + tagName + ") offset " + offset +
+		", stance " + self getStance() + ", linked " + self isLinked() + ", ride started " + intro.started );
 	return true;
+}
+
+// A seated rider keeps the crouched (sitting) stance until he gets out:
+// C1's stance permissions (allowStand / allowProne: pm_flags 0x800000 /
+// 0x2000000, which its own prediction honours while linked, C1 0x412e42)
+// refuse standing and going prone, and jumping and sprinting are off.  The
+// link (PM_NORMAL_LINKED) carries him with the jeep and leaves him no
+// walking of his own.
+seat_lock( locked )
+{
+	self allowStand( !locked );
+	self allowProne( !locked );
+	self allowJump( !locked );
+	self allowSprint( !locked );
+	self.coop_seat_locked = locked;
 }
 
 // Seats: offsets from the vehicle origin in its own frame (forward, right,
@@ -303,6 +332,8 @@ ride()
 		trace = bulletTrace( spot + ( 0, 0, 32 ), spot - ( 0, 0, 1024 ), false, mover );
 		if ( trace[ "fraction" ] < 1 )
 			spot = trace[ "position" ] + ( 0, 0, 1 );
+		if ( isDefined( p.coop_seat_locked ) && p.coop_seat_locked )
+			p seat_lock( false );
 		p setOrigin( spot );
 		p setStance( "stand" );
 		p enableWeapons();

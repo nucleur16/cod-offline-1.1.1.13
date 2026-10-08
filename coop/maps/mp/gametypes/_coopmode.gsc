@@ -190,14 +190,50 @@ levelMain( visionName )
 	// ships only vision/slomo_breach.vision.  Those two name their base map's
 	// vision instead, which is mounted because CODOL_LoadMapArchives mounts the
 	// base mp_<map> zone alongside the coop_<mode>_mp_<map> one.
+	//
+	// The level script that runs is the one named by the map the server
+	// loaded, and for a coop match that is the BASE level (mp_killhouse_sh),
+	// whose coop copy passes the base map's own multiplayer vision.  The
+	// mission's vision is the session's, when its zone ships one (MEASURED,
+	// docs/zone_assets: vision/<session>.vision in coop_training, _spec1,
+	// _defense_crash, _prolog_crash_intro, _spec_crash, _spec_estate,
+	// _take_fav), so the session wins: the training mission was drawn with
+	// the multiplayer Killhouse vision (user report 2026-10-08, "the vision
+	// seems different from the video").
+	session = getDvar( "codol_sessionMap" );
+	if ( coop_session_has_vision( session ) )
+		visionName = session;
 	if ( isDefined( visionName ) && visionName != "" )
 	{
 		level.coop_vision = visionName;
 		VisionSetNaked( visionName, 0 );
 		VisionSetPain( visionName );
 	}
+	codolprintln( "CoDOL coop: vision " + visionName + " (session " + session + ")" );
+
+	// The mission's ambient bed: the Killhouse missions' zones ship
+	// ambient_killhouse_exterior (the multiplayer level plays
+	// ambient_scoutsniper_ext0 instead, from its own level script).
+	if ( session == "coop_training_mp_killhouse_sh" || session == "coop_spec1_mp_killhouse_sh" )
+		ambientPlay( "ambient_killhouse_exterior" );
 
 	coop_minimap();
+}
+
+coop_session_has_vision( session )
+{
+	switch ( session )
+	{
+	case "coop_training_mp_killhouse_sh":
+	case "coop_spec1_mp_killhouse_sh":
+	case "coop_defense_mp_crash_tropical":
+	case "coop_prolog_mp_crash_intro":
+	case "coop_spec_mp_crash_tropical":
+	case "coop_spec_mp_estate_tropical":
+	case "coop_take_mp_fav_tropical":
+		return true;
+	}
+	return false;
 }
 
 // --------------------------------------------------------------------------

@@ -185,6 +185,43 @@ watch()
 			if ( tokens.size >= 2 )
 				level thread brush_report( tokens[ 1 ] );
 			break;
+		case "lookcast":
+			// lookcast <cast key>: player 0 turns to face that cast member
+			// (for the look-only name tag), or away with "lookcast none".
+			p = player( 0 );
+			if ( tokens.size >= 2 && isDefined( p ) )
+			{
+				c = maps\mp\gametypes\_cooptraining::cast( tokens[ 1 ] );
+				if ( isDefined( c ) )
+				{
+					p botLookAt( c.origin + ( 0, 0, 50 ), 2 );
+					p setPlayerAngles( vectorToAngles( c.origin + ( 0, 0, 50 ) - p getEye() ) );
+				}
+				else
+					p setPlayerAngles( ( -80, 0, 0 ) );
+				codolprintln( "CoDOL cooptest: lookcast " + tokens[ 1 ] + " defined " + isDefined( c ) );
+			}
+			break;
+		case "bounds":
+			// bounds <targetname|noteworthy>: each entity's model bounds in
+			// the world (getPointInBounds -1 / +1), solid or not, and the
+			// ground under its middle.
+			if ( tokens.size >= 2 )
+			{
+				ents = getEntArray( tokens[ 1 ], "targetname" );
+				if ( ents.size <= 0 )
+					ents = maps\mp\gametypes\_cooptraining::by_noteworthy( tokens[ 1 ] );
+				for ( j = 0; j < ents.size; j++ )
+				{
+					lo = ents[ j ] getPointInBounds( -1, -1, -1 );
+					hi = ents[ j ] getPointInBounds( 1, 1, 1 );
+					mid = ( ( lo[ 0 ] + hi[ 0 ] ) / 2, ( lo[ 1 ] + hi[ 1 ] ) / 2, 0 );
+					g = bulletTrace( mid + ( 0, 0, 600 ), mid - ( 0, 0, 900 ), false, ents[ j ] );
+					codolprintln( "CoDOL cooptest: bounds " + tokens[ 1 ] + " ent " + ents[ j ] getEntityNumber() + " " + ents[ j ].classname +
+						" origin " + ents[ j ].origin + " min " + lo + " max " + hi + " ground " + g[ "position" ] );
+				}
+			}
+			break;
 		case "walk":
 			// walk <x> <y> <z> [<x> <y> <z> ...]: player 0 walks the points.
 			level thread walk_points( tokens );

@@ -76,16 +76,13 @@ line( alias, time )
 
 // The jeep: Price welcomes the rookie and sends him to Tiny Man.
 //
-// Price drives: a model of him (his body and head) sits in the driver's seat,
-// linked to the jeep, playing bh_pilot_idle -- the seated pilot idle C1 ships
-// in common_actor_shared.animlist (generic_human), the one seated idle every
-// coop client has (the trainer's own humvee_idle_frontl is only in the
-// playlist animlist, which C1 does not load; see idle_anim).  The players sit
-// in the passenger seats (_coopintro seat_offset).  When the ride is over
-// spawn_driver() removes him and places the soldier at the driver's door.
+// Price drives: see seat_driver().  The players sit in the passenger seats
+// (_coopintro board).  When the ride is over spawn_driver() takes him out at
+// the driver's door.
 ride_lines()
 {
-	seat_driver();
+	// _coopintro waits for the driver before it sets off.
+	level.coop_intro_wait_driver = true;
 	level.coop_intro_lines = [];
 	level.coop_intro_lines[ 0 ] = line( "pit_pri_001", 1.8 );
 	level.coop_intro_lines[ 1 ] = line( "pit_pri_002_1", 2.4 );
@@ -95,35 +92,80 @@ ride_lines()
 	// (station_range), as the recording shows it.
 }
 
+// Price at the wheel: an ACTOR of the coop soldier species with Price's body
+// and head, the same path that animates and composes the standing cast,
+// riding the humvee's driver tag (tag_driver, front left, 15 / -29 / 36 in
+// the model's frame -- MEASURED with _cooptest jeeptags), in animmode
+// "nophysics" so the actor's own movement leaves the link alone, playing
+// technical_driver_idle: the seated driving idle (hands on a wheel) in
+// common_actor_shared.animlist, which every coop client loads, and in the
+// server's generic_human tree.
+//
+// The earlier versions sat a SCRIPT_MODEL there with the head attach()ed and
+// scriptModelPlayAnim( "bh_pilot_idle" ).  On C1 that showed headless and in
+// the bind pose (user reports 2026-10-07 and twice on 2026-10-08): a script
+// model's attachments are not composed by C1 the way an actor's head is, and
+// bh_pilot_idle is in no animtree the server declares to the client
+// (codol_model_animation.h), so the model got no animation.
 seat_driver()
 {
 	intro = level.coop_intro;
-	if ( !isDefined( intro ) || !isDefined( intro.mover ) || !intro.ground )
+	if ( !isDefined( intro ) || !isDefined( intro.mover ) || !intro.ground || intro.done )
 		return;
-	m = cast_models( "actor_ally_hero_price_afghan_ar_so" );
 	mover = intro.mover;
-	// Price drives: his body and head on the humvee's own driver tag
-	// (tag_driver, front left, 15 / -29 / 36 in the model's frame -- MEASURED
-	// with _cooptest jeeptags), seated in bh_pilot_idle.  The first version
-	// guessed an offset 21 units behind and 16 below the seat, which put him
-	// inside the body shell where a rider could not see him (user report
-	// 2026-10-07, "captain price still isn't driving the jeep").
-	seat = mover getTagOrigin( "tag_driver" );
-	driver = spawn( "script_model", seat );
-	driver.angles = mover getTagAngles( "tag_driver" );
-	driver setModel( m.body );
-	if ( isDefined( m.head ) )
-		driver attach( m.head, "", true );
-	driver linkTo( mover, "tag_driver", ( 0, 0, 0 ), ( 0, 0, 0 ) );
-	driver scriptModelPlayAnim( "bh_pilot_idle" );
-	level.coop_intro_driver = driver;
-	tag = nametag( "Captain Price", seat );
-	if ( isDefined( tag ) )
+	spot = spawnStruct();
+	spot.classname = "actor_ally_hero_price_afghan_ar_so";
+	spot.origin = mover getTagOrigin( "tag_driver" );
+	a = mover getTagAngles( "tag_driver" );
+	spot.angles = ( 0, a[ 1 ], 0 );
+	spot.script_friendname = "Captain Price";
+	ai = spawn_cast( spot, "driver_seat" );
+	if ( !isDefined( ai ) )
 	{
-		tag linkTo( mover, "tag_driver", ( 0, 0, 0 ), ( 0, 0, 0 ) );
-		driver.coop_nametag = tag;
+		codolprintln( "CoDOL coop training: no actor for Price at the wheel" );
+		level.coop_intro_wait_driver = undefined;
+		return;
 	}
-	codolprintln( "CoDOL coop training: Price at the wheel on tag_driver " + seat + " (" + m.body + ", bh_pilot_idle)" );
+	ai animMode( "nophysics" );
+	ai.coop_idle_anim = %bh_pilot_idle;
+	ai setAnimKnobAll( %bh_pilot_idle, %body, 1, 0.1, 1 );
+	ai notify( "coop_cast_pose" );
+	// Actors refuse linkTo; codol_actorRide places him at the tag every
+	// frame from the jeep's own trajectory (native, coop only).
+	ai codol_actorRide( mover, "tag_driver" );
+	if ( isDefined( ai.coop_nametag ) )
+		ai.coop_nametag linkTo( mover, "tag_driver", ( 0, 0, 0 ), ( 0, 0, 0 ) );
+	level.coop_intro_driver = ai;
+	level.coop_intro_wait_driver = undefined;
+	codolprintln( "CoDOL coop training: Price at the wheel: actor ent " + ai getEntityNumber() + " riding tag_driver at " +
+		spot.origin + ", bh_pilot_idle, nophysics" );
+	level thread ride_trace( ai, mover );
+}
+
+// One line a second during the ride, for checking a user report against the
+// server log: the jeep, Price against his tag, and every rider's place,
+// stance and link.
+ride_trace( driver, mover )
+{
+	level endon( "coop_intro_done" );
+	for ( n = 0; ; n++ )
+	{
+		if ( !isDefined( mover ) )
+			return;
+		text = "CoDOL coop ride: t " + n + " jeep " + mover.origin;
+		if ( isDefined( driver ) )
+			text += " price " + driver.origin + " off tag " + int( distance( driver.origin, mover getTagOrigin( "tag_driver" ) ) );
+		riders = level.coop_intro.riders;
+		for ( i = 0; i < riders.size; i++ )
+		{
+			p = riders[ i ];
+			if ( !isDefined( p ) )
+				continue;
+			text += " | " + p.name + " " + p.origin + " " + p getStance() + " linked " + p isLinked() + " " + p codol_moveStateText();
+		}
+		codolprintln( text );
+		wait( 1 );
+	}
 }
 
 local_to_world( origin, angles, offset )
@@ -304,6 +346,7 @@ open_everything()
 	raise_door( "arsenal_door", 120 );
 	open_doors( "gate_cqb_enter" );
 	remove_named( "door_fake_collision" );
+	raise_wall_one();
 	open_doors( "gate_enter_grenade" );
 	open_doors( "gate_cqb_exit", -95 );
 	open_doors( "gate_cqb_exit2" );
@@ -616,24 +659,37 @@ idle_anim( name, key )
 }
 
 // The overhead name of a friendly NPC, as vanilla shows "Captain Price" over
-// him.  C1 draws no name for an actor; it draws one over a script model whose
-// entityState +0x64 names a client slot (C1 0x43a3b0, gated by client dvar
-// "772"), at the model's origin + 82.  codol_setOverheadName (native,
-// src/codol/script/codol_script_overhead_name.c) gives an invisible model a
-// slot no player occupies, holding the name.  The names are the map's own
-// script_friendname values (C1's localized strings carry none for this cast).
+// a teammate.  C1 draws no name for an actor; it draws one over a script
+// model whose entityState +0x64 names a client slot (C1 0x43a3b0, gated by
+// client dvar "772"), at the model's origin + 82.  codol_setOverheadName
+// (native, src/codol/script/codol_script_overhead_name.c) gives an
+// invisible model a slot no player occupies, holding the name.  The names
+// are the map's own script_friendname values.
+//
+// How C1 draws them (MEASURED, static disassembly of C1.exe):
+//   * 0x43a3b0 (the mover path) draws EVERY such model, every frame, at full
+//     alpha -- there is no look test on that path.  The look test with its
+//     fade belongs to the teammate path 0x43a140 (players only: same team,
+//     0x439ef0 look check, fade timer, 0x439e90 alpha).
+//   * The colour comes from 0x43e260: dvar "291" for a name on the viewer's
+//     team (0.4 0.6 0.85), "292" for any other team (0.75 0.25 0.25, red),
+//     "1250" for a party member, "1257" for team 6.  A borrowed name slot has
+//     no clientState, so its team is 0: never the viewer's, hence red.
+// So the look-only behaviour is made here: each player has ONE name model,
+// shown only to him (showToPlayer), placed over the named NPC he is looking
+// at and hidden otherwise (look_nametag_player).  And because no other
+// player in a coop match is ever on another team, each coop client's "292"
+// is set to green: the only names C1 colours with it are these.
 // +set scr_coop_cast_nametags 0 turns them off.
 nametag( name, origin )
 {
-	if ( getDvar( "scr_coop_cast_nametags" ) != "" && getDvarInt( "scr_coop_cast_nametags" ) == 0 )
-		return undefined;
-	tag = spawn( "script_model", origin );
-	tag setModel( "tag_origin" );
-	tag codol_setOverheadName( name );
-	return tag;
+	// The cast's names are drawn by the per-player look model; nothing is
+	// placed per NPC any more.
+	return undefined;
 }
 
-// Every player is told to draw those names (C1 dvar "772", default 0).
+// Every player is told to draw those names (C1 dvar "772", default 0) in
+// green ("292", see above), and gets his look model.
 show_nametags()
 {
 	if ( getDvar( "scr_coop_cast_nametags" ) != "" && getDvarInt( "scr_coop_cast_nametags" ) == 0 )
@@ -653,6 +709,95 @@ show_nametags_player()
 	if ( !isAlive( self ) || self.sessionstate != "playing" )
 		self waittill( "spawned_player" );
 	self setClientDvar( "772", "1" );
+	self setClientDvar( "292", "0.4 0.85 0.4 1" );
+	self thread look_nametag_player();
+}
+
+// The named NPC the player is looking at: within 1500 units, his line of
+// sight passing within 28 units of the NPC's chest or head, nothing solid in
+// between; the nearest such.
+looked_at_cast()
+{
+	eye = self getEye();
+	forward = anglesToForward( self getPlayerAngles() );
+	best = undefined;
+	bestDist = 1500;
+	list = level.coop_cast_list;
+	if ( isDefined( level.coop_intro_driver ) )
+	{
+		list = [];
+		for ( i = 0; i < level.coop_cast_list.size; i++ )
+			list[ list.size ] = level.coop_cast_list[ i ];
+		list[ list.size ] = level.coop_intro_driver;
+	}
+	for ( i = 0; i < list.size; i++ )
+	{
+		ai = list[ i ];
+		if ( !isDefined( ai ) || !isDefined( ai.coop_name ) )
+			continue;
+		for ( h = 0; h < 2; h++ )
+		{
+			point = ai.origin + ( 0, 0, 36 + h * 28 );
+			d = point - eye;
+			dist = length( d );
+			if ( dist < 1 || dist >= bestDist )
+				continue;
+			along = vectorDot( d, forward );
+			if ( along <= 0 )
+				continue;
+			off = dist * dist - along * along;
+			if ( off > 28 * 28 )
+				continue;
+			if ( !bulletTracePassed( eye, point, false, ai ) )
+				continue;
+			best = ai;
+			bestDist = dist;
+			break;
+		}
+	}
+	return best;
+}
+
+// The player's look model: over the named NPC he looks at (held 0.6 s after
+// he looks away, so a glance does not flicker it), shown to him alone.
+look_nametag_player()
+{
+	self endon( "disconnect" );
+	level endon( "coop_mission_over" );
+	tag = spawn( "script_model", self.origin );
+	tag setModel( "tag_origin" );
+	tag hide();
+	shownNpc = undefined;
+	lastSeen = 0;
+	for ( ;; )
+	{
+		wait( 0.1 );
+		target = undefined;
+		if ( isAlive( self ) && isDefined( level.coop_cast_list ) )
+			target = self looked_at_cast();
+		if ( isDefined( target ) )
+			lastSeen = getTime();
+		else if ( isDefined( shownNpc ) && getTime() - lastSeen < 600 )
+			target = shownNpc;
+		if ( !isDefined( target ) )
+		{
+			if ( isDefined( shownNpc ) )
+			{
+				tag hide();
+				shownNpc = undefined;
+				codolprintln( "CoDOL coop training: " + self.name + " name tag hidden" );
+			}
+			continue;
+		}
+		if ( !isDefined( shownNpc ) || shownNpc != target )
+		{
+			tag codol_setOverheadName( target.coop_name );
+			shownNpc = target;
+			tag showToPlayer( self );
+			codolprintln( "CoDOL coop training: " + self.name + " looks at " + target.coop_name );
+		}
+		tag.origin = target.origin;
+	}
 }
 
 // Talk: the casual talking twitch (common_human), then back to the idle.
@@ -877,10 +1022,26 @@ spawn_driver()
 		}
 		if ( isDefined( level.coop_intro_driver ) )
 		{
-			if ( isDefined( level.coop_intro_driver.coop_nametag ) )
-				level.coop_intro_driver.coop_nametag delete();
-			level.coop_intro_driver delete();
+			// The actor at the wheel climbs out: unlinked, back under normal
+			// actor movement, standing at the driver's door.
+			ai = level.coop_intro_driver;
 			level.coop_intro_driver = undefined;
+			ai codol_actorRide();
+			ai animMode( "none" );
+			ai forceTeleport( spot.origin, spot.angles );
+			ai.coop_cast = "driver";
+			ai.coop_idle_anim = idle_anim( undefined, "driver" );
+			ai setAnimKnobAll( ai.coop_idle_anim, %body, 1, 0.2, 1 );
+			ai notify( "coop_cast_pose" );
+			if ( isDefined( ai.coop_nametag ) )
+			{
+				ai.coop_nametag unlink();
+				ai.coop_nametag.origin = ai.origin;
+			}
+			codolprintln( "CoDOL coop training: Price out of the jeep at " + ai.origin );
+			level.coop_cast[ "driver" ] = ai;
+			level.coop_cast_list[ level.coop_cast_list.size ] = ai;
+			return;
 		}
 		ai = spawn_cast( spot, "driver" );
 		if ( isDefined( ai ) )
@@ -1074,7 +1235,6 @@ init()
 		return;
 	level.coop_training_flow = true;
 	precache_cast();
-	precacheMpAnim( "bh_pilot_idle" );
 	// The Spec Ops gates (so_gate: a brush across the demolition pit's exit
 	// at 1868 -2484 and the pit course entrance at 391 -884) belong to
 	// so_killspree_trainer, not to this mission.
@@ -1338,6 +1498,8 @@ main()
 		wait( 0.5 );
 	wait( 0.5 );
 	spawn_cast_all();
+	// Price at the wheel before the jeep sets off (_coopintro waits for him).
+	seat_driver();
 	level thread ambient_chatter();
 
 	// Station 0: the jeep (_coopintro plays Price's lines from the jeep).
@@ -1920,6 +2082,38 @@ plywood_walls( up )
 // (wall 1), launcher_damage_trigger5/6/7 (windows 5, 6, 7).
 // --------------------------------------------------------------------------
 
+// Wall one, the launcher's arming-distance target: the free-standing wall
+// with the number 1 in front of the safety pit (the recording, 3:59-4:10).
+// The map stores it, its number and its trigger_damage 376 units under the
+// ground (MEASURED, _cooptest bounds: glowing_wall_one -- the wall itself,
+// 100 x 15 x 92 -- spans z -354..-262, wall_num_1 the "1" on its face
+// -324..-278, launcher_wall_trigger at -307, ground there z 21.6), for the
+// level script to raise.  Nothing did, so the wall was missing (user report
+// 2026-10-08).  It stands for the whole station, solid.
+raise_wall_one()
+{
+	if ( isDefined( level.coop_training_wall_raised ) )
+		return;
+	level.coop_training_wall_raised = true;
+	parts = getEntArray( "glowing_wall_one", "targetname" );
+	num = getEntArray( "wall_num_1", "targetname" );
+	for ( i = 0; i < num.size; i++ )
+		parts[ parts.size ] = num[ i ];
+	trig = by_noteworthy( "launcher_wall_trigger" );
+	for ( i = 0; i < trig.size; i++ )
+		parts[ parts.size ] = trig[ i ];
+	for ( i = 0; i < parts.size; i++ )
+	{
+		parts[ i ].origin = parts[ i ].origin + ( 0, 0, 376 );
+		if ( parts[ i ].classname == "script_brushmodel" )
+			parts[ i ] show();
+	}
+	walls = getEntArray( "glowing_wall_one", "targetname" );
+	for ( i = 0; i < walls.size; i++ )
+		walls[ i ] solid();
+	codolprintln( "CoDOL coop training: wall one raised (" + parts.size + " parts)" );
+}
+
 station_demolitions()
 {
 	nwc = cast( "nwc" );
@@ -1930,6 +2124,7 @@ station_demolitions()
 	open_doors( "gate_cqb_enter" );
 	// The enter gate's stand-in collision (1959 -2267) stays behind otherwise.
 	remove_named( "door_fake_collision" );
+	raise_wall_one();
 	flag_wait_timeout( "near_grenade_area", 120 );
 	arrows( undefined );
 	codolprintln( "CoDOL coop training: station demolitions" );
@@ -1989,10 +2184,9 @@ station_demolitions()
 	say( nwc, "pit_ncastle_007", 1.9 );
 	maps\mp\gametypes\_coopmission::announce( "Fire at wall one" );
 	wall = by_noteworthy( "launcher_wall_trigger" );
-	wallGlows = [];
-	if ( wall.size > 0 )
-		wallGlows[ 0 ] = "glowing_wall_one";
-	damage_triggers_wait( wall, 45, "launcher wall", wallGlows );
+	// Wall one stands for the whole station (raise_wall_one); only its
+	// marker goes with the hit.
+	damage_triggers_wait( wall, 45, "launcher wall" );
 	say( nwc, "pit_ncastle_008", 1.4 );
 	say( nwc, "pit_ncastle_009", 3.3 );
 	say( nwc, "pit_ncastle_010", 3.3 );
