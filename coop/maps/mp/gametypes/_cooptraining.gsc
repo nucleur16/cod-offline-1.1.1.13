@@ -1149,12 +1149,19 @@ training_loadout_player()
 training_loadout()
 {
 	pistol = training_pistol();
-	primaries = self getWeaponsListPrimaries();
-	for ( i = 0; i < primaries.size; i++ )
+	// The rookie carries the pistol and nothing else: no grenades, specials
+	// or equipment from the coop class (user, 2026-10-08: "it should just
+	// give me frag grenades when I get to the grenade stage").  Frags come
+	// from Newcastle (station_demolitions sets level.coop_training_frags);
+	// a player who (re)spawns after that gets them back.
+	weapons = self getWeaponsList();
+	for ( i = 0; i < weapons.size; i++ )
 	{
-		if ( primaries[ i ] != pistol )
-			self takeWeapon( primaries[ i ] );
+		if ( weapons[ i ] != pistol && weapons[ i ] != "none" )
+			self takeWeapon( weapons[ i ] );
 	}
+	if ( isDefined( level.coop_training_frags ) )
+		self maps\mp\gametypes\_coopmode::coop_give_weapon( level.coop_training_frags, false );
 	if ( codol_isWeaponMounted( pistol ) && !self hasWeapon( pistol ) )
 	{
 		self giveWeapon( pistol );
@@ -1836,7 +1843,8 @@ station_demolitions()
 
 	say( nwc, "pit_ncastle_001", 2.1 );
 	say( nwc, "pit_ncastle_002", 2.4 );
-	give_all( first_mounted( "fraggrenade_training_so", "fraggrenade_so" ) );
+	level.coop_training_frags = first_mounted( "fraggrenade_training_so", "fraggrenade_so" );
+	give_all( level.coop_training_frags );
 	open_doors( "gate_enter_grenade" );
 	pit = getEnt( "safety_pit", "targetname" );
 	if ( isDefined( pit ) )
