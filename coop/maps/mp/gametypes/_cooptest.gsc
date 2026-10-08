@@ -20,6 +20,9 @@
 //                          and throws real frags; a walk that makes no
 //                          progress is logged as STUCK (a closed door) and
 //                          then skipped by teleport so the run goes on
+//   complete / fail        end the mission now, complete or failed, through
+//                          _coopmission::mission_complete / mission_failed
+//                          (the result report and the lobby return)
 //   route                  training mission: do what each station waits for
 //                          (walk there, shoot its targets, throw, run the
 //                          course) as player 0, until the mission ends
@@ -105,6 +108,12 @@ watch()
 				teleport( 0, evac.origin );
 			else
 				codolprintln( "CoDOL cooptest: no extraction trigger" );
+			break;
+		case "complete":
+			maps\mp\gametypes\_coopmission::mission_complete( "cooptest complete" );
+			break;
+		case "fail":
+			maps\mp\gametypes\_coopmission::mission_failed( "cooptest fail" );
 			break;
 		case "route":
 			level thread route();

@@ -1009,7 +1009,33 @@ end_level()
 		delay = 10;
 	wait( delay );
 
+	report_mission_result();
+
+	// exitLevel returns every player to the lobby (t "EXE_MATCHENDED", as an
+	// mp match ends), writes the match report carrying the results above,
+	// and -- in a coop match -- loads nothing further: the server waits for
+	// the lobby's next map instead of replaying coop missions for nobody
+	// (src/codol/script/codol_coop_progress.c).
 	exitLevel( false );
+}
+
+// The mission's result for every player still in it, by playlist name
+// (codol_sessionMap, e.g. coop_training_mp_killhouse_sh).  The match report
+// carries it to the lobby, which records a completion in the profile and
+// unlocks the next mission; a failure unlocks nothing.  IW4 Spec Ops credits
+// every player in the mission, including one who is out of lives.
+report_mission_result()
+{
+	mission = getDvar( "codol_sessionMap" );
+	if ( mission == "" )
+		mission = getDvar( "mapname" );
+	success = isDefined( level.coop_mission_success ) && level.coop_mission_success;
+
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+		players[ i ] codol_reportCoopMission( mission, success );
+	codolprintln( "CoDOL coop mission: " + mission + " result " + success + " reported for " +
+		players.size + " player(s); returning them to the lobby" );
 }
 
 // --------------------------------------------------------------------------
