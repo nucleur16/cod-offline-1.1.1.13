@@ -236,6 +236,11 @@ watch()
 			if ( tokens.size >= 2 )
 				level thread godmode( int( tokens[ 1 ] ) );
 			break;
+		default:
+			// A mission script's own verbs (level.coop_mission_testcmd).
+			if ( isDefined( level.coop_mission_testcmd ) )
+				level thread [[ level.coop_mission_testcmd ]]( tokens );
+			break;
 		}
 	}
 }

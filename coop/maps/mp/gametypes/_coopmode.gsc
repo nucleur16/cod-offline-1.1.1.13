@@ -924,6 +924,8 @@ Callback_StartGameType()
 	// before the course, which leaves the ship mock-up to it, and before the
 	// intro ride, which takes Price's lines from it.
 	maps\mp\gametypes\_cooptraining::init();
+	// coop_take_mp_fav_tropical's own flow (the meet and the chase).
+	maps\mp\gametypes\_coopmission_take_fav::init();
 	maps\mp\gametypes\_coopcourse::init();
 
 	// The campaign / Spec Ops mission, driven by the map's own entities (the
@@ -937,6 +939,7 @@ Callback_StartGameType()
 	maps\mp\gametypes\_coopintro::init();
 	level thread maps\mp\gametypes\_coopintro::main();
 	level thread maps\mp\gametypes\_cooptraining::main();
+	level thread maps\mp\gametypes\_coopmission_take_fav::main();
 
 	// Probe harness; inert unless +set scr_coop_test 1.
 	level thread maps\mp\gametypes\_cooptest::main();

@@ -1093,6 +1093,11 @@ main()
 	// The training mission runs its own stations (_cooptraining.gsc).
 	if ( isDefined( level.coop_training_flow ) && level.coop_training_flow )
 		codolprintln( "CoDOL coop mission: the training flow runs this mission" );
+	// A mission with its own script (_coopmission_<name>.gsc, selected by
+	// codol_sessionMap) runs its own flow; the shared flag triggers, flag
+	// groups, spawn helpers and end conditions still serve it.
+	else if ( isDefined( level.coop_mission_flow ) )
+		codolprintln( "CoDOL coop mission: the " + level.coop_mission_flow + " flow runs this mission" );
 	else if ( level.coop_pmc_spawners.size > 0 )
 		level thread run_elimination();
 	else if ( level.coop_obj_chain.size >= 2 )
