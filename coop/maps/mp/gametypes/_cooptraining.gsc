@@ -1457,12 +1457,15 @@ damage_triggers_wait( trigs, timeout, what, glows )
 		trigs[ i ] thread damage_trigger_think();
 	}
 	step( "damage", trigs, what );
+	level thread window_grenade_watch( trigs );
+	level thread demolition_ammo_refill();
 	waited = 0;
 	while ( level.coop_training_windows < trigs.size && waited < timeout )
 	{
 		wait( 0.25 );
 		waited += 0.25;
 	}
+	level notify( "coop_windows_over" );
 	for ( i = 0; i < trigs.size; i++ )
 	{
 		trigs[ i ] notify( "coop_stop_window" );
@@ -1496,10 +1499,84 @@ ent_name( e )
 	return "ent " + e getEntityNumber();
 }
 
+// Real grenades never fired the windows' trigger_damage on a live server
+// (user report 2026-10-08: frags thrown through the windows, no feedback;
+// the VPS log showed the station waiting with no hit), so every live grenade
+// -- thrown frags and launcher rounds alike, which no longer notify
+// grenade_fire once they have an arming distance -- is checked against each
+// open window's volume every frame as well.
+window_grenade_watch( trigs )
+{
+	level endon( "coop_windows_over" );
+	level endon( "coop_mission_over" );
+	for ( ;; )
+	{
+		nades = getEntArray( "grenade", "classname" );
+		for ( n = 0; n < nades.size; n++ )
+		{
+			nade = nades[ n ];
+			for ( i = 0; i < trigs.size; i++ )
+			{
+				t = trigs[ i ];
+				if ( t.coop_hit || !nade isTouching( t ) )
+					continue;
+				who = undefined;
+				if ( isDefined( nade.owner ) )
+					who = nade.owner;
+				t notify( "coop_stop_window" );
+				t window_hit( who );
+			}
+		}
+		wait( 0.05 );
+	}
+}
+
+// Out of frags or launcher rounds during demolitions: topped up, so a player
+// can keep trying for the windows (user request 2026-10-08).
+demolition_ammo_refill()
+{
+	level endon( "coop_windows_over" );
+	level endon( "coop_mission_over" );
+	for ( ;; )
+	{
+		players = getPlayers();
+		for ( i = 0; i < players.size; i++ )
+		{
+			p = players[ i ];
+			if ( !isAlive( p ) )
+				continue;
+			frag = level.coop_training_frags;
+			if ( isDefined( frag ) && p hasWeapon( frag ) && p getAmmoCount( frag ) < 1 )
+			{
+				p giveMaxAmmo( frag );
+				codolprintln( "CoDOL coop training: " + p.name + " frags refilled" );
+			}
+			weapons = p getWeaponsListPrimaries();
+			for ( w = 0; w < weapons.size; w++ )
+			{
+				gl = weaponAltWeaponName( weapons[ w ] );
+				if ( isDefined( gl ) && gl != "none" && gl != "" && p getAmmoCount( gl ) < 1 )
+				{
+					p giveMaxAmmo( gl );
+					codolprintln( "CoDOL coop training: " + p.name + " " + gl + " refilled" );
+				}
+			}
+		}
+		wait( 0.5 );
+	}
+}
+
 damage_trigger_think()
 {
 	self endon( "coop_stop_window" );
 	self waittill( "trigger", who );
+	self window_hit( who );
+}
+
+window_hit( who )
+{
+	if ( self.coop_hit )
+		return;
 	self.coop_hit = true;
 	level.coop_training_windows++;
 	self window_done();
