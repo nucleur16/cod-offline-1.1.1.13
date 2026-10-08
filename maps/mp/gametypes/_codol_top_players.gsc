@@ -107,6 +107,23 @@ lateViewer()
 	self showCards();
 }
 
+// The scene's look, the same whether or not a final killcam ran before it.
+// endGame puts the whole level in the desaturated "mpOutro" vision and
+// displayGameEnd draws the outcome (title, reason, team scores) for every
+// player. With a final killcam both are gone by the time the scene starts:
+// endGame sends reset_outcome before the killcam, which destroys the outcome
+// elements, and _damage::doFinalKillcam gives every player the map's own
+// vision. Without one (a match ended by time, an objective, a bomb or a
+// forfeit; dom, koth, ctf, oneflag and sab never have a final kill) nothing
+// cleared them, so the scene was black and white under the outcome. This does
+// what the killcam path does, for each player as it joins the shot (a late
+// joiner gets mpOutro from the gamestate).
+sceneLook()
+{
+	self notify( "reset_outcome" );
+	self VisionSetNakedForPlayer( getDvar( "mapname" ), 0 );
+}
+
 // Script structs by targetname, without common_scripts' getstruct asserts
 // (a map that authors two cameras is skipped rather than killed).
 findStructs( name )
@@ -330,6 +347,7 @@ viewFromCamera( camera )
 	self allowSpectateTeam( "freelook", false );
 	self allowSpectateTeam( "none", true );
 
+	self sceneLook();
 	self spawn( camera.origin, camera.angles );
 	self freezeControlsWrapper( true );
 	self cameraLinkTo( camera, "tag_origin" );
@@ -386,6 +404,7 @@ holdAsSource( camera, cameraOrigin, rank )
 	self.health = self.maxhealth;
 
 	hidden = cameraOrigin - ( 0, 0, 256 ) + anglesToRight( camera.angles ) * ( ( rank - 1 ) * 40 );
+	self sceneLook();
 	self spawn( hidden, camera.angles );
 	self freezeControlsWrapper( true );
 	self codol_sendToAll( 3000 );
