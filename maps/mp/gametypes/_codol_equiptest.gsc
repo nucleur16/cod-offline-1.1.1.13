@@ -115,6 +115,18 @@ watchDvar()
                 codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
             continue;
         }
+        // "akimbosprint <client> <delay> <seconds>": empty the held akimbo
+        // weapon's left gun, let its reload run <delay> seconds, then sprint
+        // forward for <seconds>, logging both magazines. See akimboSprintTrial.
+        if ( tokens[0] == "akimbosprint" && tokens.size > 3 )
+        {
+            player = playerByNumber( int( tokens[1] ) );
+            if ( isDefined( player ) )
+                player thread akimboSprintTrial( float( tokens[2] ), float( tokens[3] ) );
+            else
+                codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
+            continue;
+        }
         // "weapflags <client>": each held weapon with the C1 script-only
         // definition flags and script mods.
         // "weapflags name <weapon ...>": the same for one weapon name.
@@ -530,6 +542,54 @@ nearestZombie( origin )
         }
     }
     return best;
+}
+
+// "akimbosprint" trial: run after an "akimbo" trial has armed the weapon.
+// Fires the left gun (hand 1, C1 trigger 0x1) one round per press until its
+// magazine is empty, waits <delay> seconds into the reload that starts, then
+// holds sprint (0x2) with the stick forward for <seconds>. C1's sprint check
+// (0x41d3e0 -> 0x41d070) puts every hand into sprint-in, so the left reload is
+// dropped: the left magazine must stay empty through the sprint and refill
+// only after it, by a fresh reload.
+akimboSprintTrial( delay, seconds )
+{
+    self endon( "disconnect" );
+    if ( !isAlive( self ) || !self isDualWielding() )
+    {
+        codolPrintLn( "CoDOL akimbosprint: " + self.name + " is not dual wielding" );
+        return;
+    }
+    weapon = self getCurrentWeapon();
+    self giveMaxAmmo( weapon );
+    for ( shots = 0; self getCurrentWeaponClipAmmo( "left" ) > 0 && shots < 60; shots++ )
+    {
+        self codol_botPressButtons( 1, 0.1 );
+        wait 0.25;
+    }
+    codolPrintLn( "CoDOL akimbosprint: left emptied after " + shots + " presses, right " +
+        self getCurrentWeaponClipAmmo( "right" ) + " left " + self getCurrentWeaponClipAmmo( "left" ) );
+    // Keep the bot's commands running (stance-held bit only) through the delay.
+    self codol_botPressButtons( 4096, delay );
+    wait delay;
+    codolPrintLn( "CoDOL akimbosprint: sprint for " + seconds + " left " + self getCurrentWeaponClipAmmo( "left" ) );
+    self codol_botPressButtons( 2, seconds, 1 );
+    start = getTime();
+    lastLeft = -1;
+    lastRight = -1;
+    while ( getTime() - start < seconds * 1000 + 4000 )
+    {
+        if ( getTime() - start >= seconds * 1000 && getTime() - start < seconds * 1000 + 100 )
+            self codol_botPressButtons( 4096, 4 );
+        right = self getCurrentWeaponClipAmmo( "right" );
+        left = self getCurrentWeaponClipAmmo( "left" );
+        if ( right != lastRight || left != lastLeft )
+            codolPrintLn( "CoDOL akimbosprint: t " + ( getTime() - start ) + " right " + right + " left " + left );
+        lastRight = right;
+        lastLeft = left;
+        wait 0.05;
+    }
+    codolPrintLn( "CoDOL akimbosprint: done right " + self getCurrentWeaponClipAmmo( "right" ) + " left " +
+        self getCurrentWeaponClipAmmo( "left" ) );
 }
 
 // "akimbo" trial: the held weapon's per-hand magazines ("right" is hand 0, the
