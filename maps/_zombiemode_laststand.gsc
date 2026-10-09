@@ -119,6 +119,83 @@ zm_downed()
 	self maps\_zombiemode_score::player_downed_penalty();
 	if ( self has_powerup_weapon() )
 		self powerup_weapon_unlock();
+	if ( getPlayers().size == 1 && self.pers[ "lives" ] > 0 )
+		level thread solo_retreat_think( self );
+}
+
+// While the solo player self-revives, send hunting zombies and hounds to a
+// map-authored spawner at least 640 units from the body.  The native actor
+// perception pass otherwise keeps its old enemy and replaces script goals.
+solo_retreat_think( player )
+{
+	points = level.enemy_spawns;
+	if ( !isDefined( points ) )
+		points = [];
+	best = undefined;
+	best_dist = 640 * 640;
+	for ( i = 0; i < points.size; i++ )
+	{
+		d = distanceSquared( points[ i ].origin, player.origin );
+		if ( d > best_dist )
+		{
+			best = points[ i ];
+			best_dist = d;
+		}
+	}
+	// The open starting zone can have only nearby spawners.  If so, use a
+	// farther authored point from another zone instead of keeping the horde
+	// beside the downed player.
+	if ( !isDefined( best ) )
+	{
+		points = get_struct_array( "zombie_spawner", "script_noteworthy" );
+		if ( isDefined( points ) )
+		{
+			for ( i = 0; i < points.size; i++ )
+			{
+				d = distanceSquared( points[ i ].origin, player.origin );
+				if ( d > best_dist )
+				{
+					best = points[ i ];
+					best_dist = d;
+				}
+			}
+		}
+	}
+	if ( !isDefined( best ) )
+	{
+		codolprintln( "CoDOL zm: no distant solo retreat spawner" );
+		return;
+	}
+
+	goal = best.origin;
+	codolprintln( "CoDOL zm: solo retreat to " + goal + " from " + player.origin );
+	while ( isDefined( player ) && is_true( player.laststand ) && getPlayers().size == 1 && !level.gameEnded )
+	{
+		for ( i = 0; i < level.zombies.size; i++ )
+		{
+			z = level.zombies[ i ];
+			if ( !isDefined( z ) || !isAlive( z ) || is_true( z.zm_solo_retreat ) )
+				continue;
+			// An actor at a boarded entrance owns that route until it starts
+			// hunting.  Those actors are already away from the player.
+		if ( !is_true( z.isdog ) && ( !isDefined( z.zm_path_phase ) || z.zm_path_phase != "hunt" ) )
+				continue;
+			z.zm_solo_retreat = true;
+			z.ignoreall = true;
+			z.goalradius = 96;
+			z setGoalPos( goal );
+		}
+		wait( 0.1 );
+	}
+
+	for ( i = 0; i < level.zombies.size; i++ )
+	{
+		z = level.zombies[ i ];
+		if ( !isDefined( z ) || !isAlive( z ) || !is_true( z.zm_solo_retreat ) )
+			continue;
+		z.zm_solo_retreat = false;
+		z.ignoreall = false;
+	}
 }
 
 zm_downed_post()

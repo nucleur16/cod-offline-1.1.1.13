@@ -581,12 +581,9 @@ Callback_PlayerConnect()
 
 	if ( !isDefined( self.pers ) )
 		self.pers = [];
-	// The difficulty table counts the life currently being played.  The
-	// last-stand code stores only spare lives; otherwise a solo player gets
-	// a free self-revive without buying Quick Revive.
-	self.pers[ "lives" ] = level.zombie_vars[ "starting_lives" ] - 1;
-	if ( self.pers[ "lives" ] < 0 )
-		self.pers[ "lives" ] = 0;
+	// Solo spare lives come only from buying Quick Revive.  The difficulty
+	// table's starting_lives value must not grant a free self-revive.
+	self.pers[ "lives" ] = 0;
 
 	level notify( "connected", self );
 
@@ -938,6 +935,10 @@ spawnPlayer()
 	self.num_perks = 0;
 
 	self spawn( spawnpoint.origin, spawnpoint.angles );
+	// A new Zombies spawn never owns a machine perk.  Clear both native perk
+	// slots and the server-only no_slot Zombies perks before rebuilding the
+	// mode's ability floor; Quick Revive must come from a purchase.
+	self clearPerks();
 
 	// ClientSpawn clears the playerState extension's abilities_known flag.
 	// Commit the freshly empty script ability set so the native Zombies

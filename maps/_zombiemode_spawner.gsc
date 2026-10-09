@@ -1262,6 +1262,11 @@ zombie_think()
 
 	for ( ;; )
 	{
+		if ( is_true( self.zm_solo_retreat ) )
+		{
+			wait( 0.1 );
+			continue;
+		}
 		// ---- zm placeable traps hook (_zombiemode_traps_placeable.gsc) ----
 		// A zombie held by a freeze trap stays in the native scripted state;
 		// neither the chase nor a board tear (whose animscripted would
