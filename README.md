@@ -36,8 +36,10 @@ value vs. the value rebuilt from the snapshot at the same commandTime), `snap-en
 missing from the snapshot, sentinel values), `asset` (a name no zone has, so the default is used,
 with the configstring index that carries it), `menu`, `localvar`.
 
-Each key prints 5 times (50 at level 2), then every 100th with `[xN]`; assets, menus and localVars
-print once per name.
+Each key prints 5 times (50 at level 2), then every 100th with `[xN]`, and each category prints at
+most 30 lines a minute (300 at level 2), noting how many it held back; assets, menus and localVars
+print once per name. Assets referenced only from inside a zone (renderer shaders, frontend images)
+and localVars the HUD reads before a script menu sets them are level-2 only.
 
 Toggle: dvar `parity_log` 0 off / 1 normal (default) / 2 verbose (lower prediction thresholds,
 higher limits), registered with the archive flag so the console can change it. Startup value:

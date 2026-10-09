@@ -16,8 +16,10 @@
  * inside the DB lock), are queued and printed by the next main-thread hook.
  *
  * Rate limit: each finding has a key (category + what differs). The first 5 of a key are logged
- * (50 at parity_log 2), then every 100th with "[xN]" so the count still shows. Missing assets,
- * menus and local variables are logged once per name.
+ * (50 at parity_log 2), then every 100th with "[xN]" so the count still shows; on top of that each
+ * category prints at most 30 lines a minute (300 verbose) and says how many it held back. Missing
+ * assets, menus and local variables are logged once per name. Zone-internal asset references and
+ * UI localVars read before they are set are client-side or by design and only show at level 2.
  *
  * Toggle: dvar "parity_log" 0 off / 1 normal (default) / 2 verbose, registered as an int with the
  * archive flag on the first main-thread hook (C1 refuses console sets of non-archive dvars, see
@@ -79,7 +81,11 @@
 #define ET_EVENTS              0x15        /* eType = ET_EVENTS + event (0x441E13) */
 #define ET_PLAYER              1
 #define ET_MISSILE             4
-#define NUM_WEAPONS_VA         0x06C3D28Cu /* CG_Missile clamps es weapon >= this to 0 */
+/* The LAST registered weapon index, not a count: registration does `inc; store def at
+ * [0x150D720 + n*4]; mov [0x6C3D28C], n` (0x41F641..0x41F651) and readers compare against it + 1
+ * (0x419CA6, 0x443BEC, 0x46BCD6, 0x481F77). Valid weapons are 0..last; 0 is "none". It grows
+ * during a match as the server's weapon configstrings arrive. */
+#define LAST_WEAPON_VA         0x06C3D28Cu
 
 #define ASSET_TYPE_NAMES_VA    0x00CD55B0u /* physpreset .. weaponattach */
 #define ASSET_TYPE_COUNT       44
@@ -208,9 +214,13 @@ static void ParityTick(void)
 
 static BYTE *ParityCg(void)
 {
+    /* The index is not the local client number: CG_Init's allocator (0x44E138..0x44E167) picks a
+     * slot of the encoded-pointer table, stores the index at 0x6C3D2AC and the encoded heap block
+     * (0x174890 bytes) in that slot. */
     DWORD idx = *(volatile DWORD *)(DWORD_PTR)CG_INDEX_VA;
-    if (idx > 3) return NULL;
-    DWORD enc = *(volatile DWORD *)(DWORD_PTR)(ENC_PTR_TABLE_VA + idx * 4);
+    const DWORD *slot = (const DWORD *)(DWORD_PTR)(ENC_PTR_TABLE_VA + idx * 4);
+    if (idx >= 0x100000 || !Readable(slot, 4)) return NULL;
+    DWORD enc = *(volatile const DWORD *)slot;
     if (!enc) return NULL;
     BYTE *cg = (BYTE *)(DWORD_PTR)(enc ^ CG_KEY);
     return Readable(cg, CG_SNAP + 8) && Readable(cg + CG_TIME, 4) ? cg : NULL;
@@ -226,6 +236,42 @@ static int ParitySnapNum(const BYTE *snap)
     for (int i = 0; i < 2; i++)
         if (snap && g_snapBuf[i] == snap) return g_snapNum[i];
     return -1;
+}
+
+/* Per-category budget on top of the per-key limit, so many distinct keys cannot flood the log:
+ * at most 30 lines a minute per category (300 at parity_log 2). What the budget drops is counted
+ * and announced on the category's next printed line. Once-per-name lines are exempt. */
+#define PARITY_CATEGORIES 32
+typedef struct { DWORD cat, windowStart, printed, suppressed; } ParityBudgetSlot;
+static ParityBudgetSlot g_parityBudget[PARITY_CATEGORIES];
+
+static BOOL ParityBudget(const char *cat, int level, DWORD *suppressedOut)
+{
+    DWORD key = ParityHash(2166136261u, cat), now = GetTickCount(), budget = level >= 2 ? 300 : 30;
+    BOOL ok = TRUE;
+    EnterCriticalSection(&g_parityLock);
+    ParityBudgetSlot *b = NULL;
+    for (int i = 0; i < PARITY_CATEGORIES && !b; i++) {
+        ParityBudgetSlot *c = &g_parityBudget[(key + i) % PARITY_CATEGORIES];
+        if (c->cat == key || !c->cat) b = c;
+    }
+    if (b) {
+        if (b->cat != key || now - b->windowStart >= 60000) {
+            b->cat = key;
+            b->windowStart = now;
+            b->printed = 0;
+        }
+        if (b->printed >= budget) {
+            b->suppressed++;
+            ok = FALSE;
+        } else {
+            b->printed++;
+            *suppressedOut = b->suppressed;
+            b->suppressed = 0;
+        }
+    }
+    LeaveCriticalSection(&g_parityLock);
+    return ok;
 }
 
 #define PR_ONCE 0x1 /* log a key once, with no repeat count */
@@ -244,6 +290,8 @@ static void ParityReport(unsigned flags, const char *cat, const char *key, const
     LeaveCriticalSection(&g_parityLock);
     DWORD limit = (flags & PR_ONCE) ? 1 : level >= 2 ? 50 : 5;
     if (n > limit && ((flags & PR_ONCE) || n % 100)) return;
+    DWORD suppressed = 0;
+    if (!(flags & PR_ONCE) && !ParityBudget(cat, level, &suppressed)) return;
 
     int t = -1, st = -1, msg = -1;
     BYTE *cg = ParityCg();
@@ -261,11 +309,14 @@ static void ParityReport(unsigned flags, const char *cat, const char *key, const
     _vsnprintf(body, sizeof(body), fmt, ap);
     va_end(ap);
     body[sizeof(body) - 1] = 0;
-    if (n > limit)
-        _snprintf(line, sizeof(line), "^3PARITY t=%d st=%d msg=%d %s: %s [x%lu]\n", t, st, msg, cat, body,
-                  (unsigned long)n);
-    else
-        _snprintf(line, sizeof(line), "^3PARITY t=%d st=%d msg=%d %s: %s\n", t, st, msg, cat, body);
+    char tail[112] = "";
+    int tl = 0;
+    if (n > limit) tl = _snprintf(tail, sizeof(tail), " [x%lu]", (unsigned long)n);
+    if (suppressed && tl >= 0)
+        _snprintf(tail + tl, sizeof(tail) - tl, " (+%lu %s line(s) over the per-minute budget not shown)",
+                  (unsigned long)suppressed, cat);
+    tail[sizeof(tail) - 1] = 0;
+    _snprintf(line, sizeof(line), "^3PARITY t=%d st=%d msg=%d %s: %s%s\n", t, st, msg, cat, body, tail);
     line[sizeof(line) - 2] = '\n';
     line[sizeof(line) - 1] = 0;
 
@@ -505,7 +556,7 @@ __attribute__((used)) void __cdecl ParitySnapshot(int ok, const BYTE *snap, int 
     memset(bits, 0, sizeof(bits));
     int numEnts = *(const int *)(snap + SNAP_NUM_ENTITIES);
     int numClients = *(const int *)(snap + SNAP_NUM_CLIENTS);
-    int numWeapons = *(volatile const int *)(DWORD_PTR)NUM_WEAPONS_VA;
+    int lastWeapon = *(volatile const int *)(DWORD_PTR)LAST_WEAPON_VA;
     if (numEnts < 0 || numEnts > 0x400 || numClients < 0 || numClients > 0x13) {
         ParityReport(0, "snap", "counts", "snapshot %d counts out of range: %d entities, %d clients",
                      num, numEnts, numClients);
@@ -532,11 +583,18 @@ __attribute__((used)) void __cdecl ParitySnapshot(int ok, const BYTE *snap, int 
             ParityReport(0, "snap-entity", key, "entity %d has eType %d (event entities end at %d)", n, type,
                          ET_EVENTS + EVENT_COUNT - 1);
         }
-        int weapon = *(const int *)(es + 0xD4);
-        if ((type == ET_PLAYER || type == ET_MISSILE) && numWeapons > 0 && (weapon < 0 || weapon >= numWeapons)) {
-            _snprintf(key, sizeof(key), "weapon:%d:%d", type, weapon);
-            ParityReport(0, "snap-entity", key, "entity %d eType %d weapon %d, client has %d weapons (CG_Missile "
-                         "clamps it to 0)", n, type, weapon, numWeapons);
+        /* es+0xD4 is two unsigned shorts, the weapon per hand: cgame reads it as
+         * movzx word [es+0xD4] (e.g. 0x428BAD) and movzx word [es+hand*2+0xD4] (0x43C691). Players
+         * carry both hands (akimbo); a missile's weapon is the first. */
+        if ((type == ET_PLAYER || type == ET_MISSILE) && lastWeapon > 0) {
+            for (int hand = 0; hand < (type == ET_PLAYER ? 2 : 1); hand++) {
+                int weapon = *(const WORD *)(es + 0xD4 + hand * 2);
+                if (weapon <= lastWeapon) continue;
+                _snprintf(key, sizeof(key), "weapon:%d:%d", type, hand);
+                ParityReport(0, "snap-entity", key, "entity %d eType %d weapon[%d] %d is past the last registered "
+                             "weapon %d%s", n, type, hand, weapon, lastWeapon,
+                             type == ET_MISSILE ? " (CG_Missile draws it as weapon 0)" : "");
+            }
         }
     }
 
@@ -575,9 +633,9 @@ __attribute__((used)) void __cdecl ParitySnapshot(int ok, const BYTE *snap, int 
         ParityReport(0, "snap-ps", "linkWeaponEnt", "playerState linkWeaponEnt %d is not in snapshot %d", link, num);
     }
     int weapon = *(const int *)(snap + PS_WEAPON);
-    if (numWeapons > 0 && (weapon < 0 || weapon >= numWeapons)) {
-        _snprintf(key, sizeof(key), "weapon:%d", weapon);
-        ParityReport(0, "snap-ps", key, "playerState weapon %d, client has %d weapons", weapon, numWeapons);
+    if (lastWeapon > 0 && (weapon < 0 || weapon > lastWeapon)) {
+        ParityReport(0, "snap-ps", "weapon", "playerState weapon %d is past the last registered weapon %d (its "
+                     "weapon configstring has not reached the client yet?)", weapon, lastWeapon);
     }
 }
 
@@ -608,7 +666,10 @@ static int ParityConfigstringOf(const char *name)
 
 __attribute__((used)) void __cdecl ParityDefaultAsset(DWORD ret, int type, const char *name)
 {
-    if (!name || !ParityLevel()) return;
+    int level = ParityLevel();
+    /* A zone referencing an asset no zone has is the client's own content (renderer shaders,
+     * frontend images): only shown at parity_log 2. Lookups by name (configstrings, code) always. */
+    if (!name || !level || (ret == DEFASSET_ZONEREF_RET && level < 2)) return;
     const char *typeName = "?";
     if (type >= 0 && type < ASSET_TYPE_COUNT) {
         const char *t = *(const char *const *)(DWORD_PTR)(ASSET_TYPE_NAMES_VA + type * 4);
@@ -649,10 +710,14 @@ __attribute__((used)) void __cdecl ParityMenuFind(const char *name, const void *
 __attribute__((used)) void __cdecl ParityLocalVar(const int *operand, const void *found)
 {
     ParityTick();
-    if (found || !operand || operand[0] != 2) return;
+    /* Only at parity_log 2. The HUD reads its timer localVars every frame from spawn, and they
+     * only exist once a script menu's onOpen sets them (IW4 hud_720.menu: milliseconds() -
+     * localvarint("ui_show_perks") < 5000, set by perk_display's onOpen), so a miss before the first
+     * open is by design and reads as 0 = "not shown". */
+    if (found || !operand || operand[0] != 2 || ParityLevel() < 2) return;
     const char *name = (const char *)(DWORD_PTR)operand[1];
     if (!name) return;
-    ParityReport(PR_ONCE, "localvar", name, "UI localVar '%s' is not defined; it reads as empty/0", name);
+    ParityReport(PR_ONCE, "localvar", name, "UI localVar '%s' read before anything set it; it reads as empty/0", name);
 }
 
 /* ---- thunks ----------------------------------------------------------------------------- */
