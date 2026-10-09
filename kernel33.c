@@ -895,6 +895,9 @@ static void PatchGbkInput(void)
         Log("gbk input: bytes at 0x%08X do not match, paste uses the ANSI code page", CLIPBOARD_CALL_VA);
 }
 
+/* Snapshot-parity logger, parity-log branch only: see parity.c. */
+#include "parity.c"
+
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 static void __cdecl TakeOver(void)
 {
@@ -910,6 +913,7 @@ static void __cdecl TakeOver(void)
     PatchGbkInput();
     PatchScoresOpen();
     PatchPatchDir();
+    InstallParityLogger();
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
     ExitProcess(0); /* the CRT entry ends in exit(); not reached */
