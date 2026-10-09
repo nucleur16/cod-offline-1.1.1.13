@@ -54,5 +54,9 @@
 
 main()
 {
+	// The map's destructible anim registrations, as the multiplayer level
+	// script makes them before its loader (maps/mp/mp_fav_tropical.gsc): the
+	// shared loader in levelMain starts the destructibles that need them.
+	maps\mp\mp_fav_tropical_precache::main();
 	maps\mp\gametypes\_coopmode::levelMain( "mp_fav_tropical" );
 }

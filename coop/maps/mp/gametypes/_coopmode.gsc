@@ -148,6 +148,13 @@ init()
 	if ( level.coop_lives <= 0 )
 		level.coop_lives = 3;
 
+	// Downs and revives, IW4 Spec Ops (maps\_coop.gsc) through the shared
+	// common_scripts/_laststand.gsc that zm runs too: a lethal hit downs the
+	// player, a teammate revives him, a bleed-out is a death (which then
+	// spends a life, below).  scr_coop_laststand 0 restores death on the
+	// lethal hit.
+	level.coop_laststand = ( getDvar( "scr_coop_laststand" ) == "" || getDvarInt( "scr_coop_laststand" ) != 0 );
+
 	// What an AI round does to a player: the regular-difficulty model of
 	// CoD4/IW4 maps\_gameskill.gsc (see Callback_PlayerDamage and
 	// healthRegen).  The soldiers fire through codol_actorShoot, so their
@@ -240,6 +247,13 @@ levelMain( visionName )
 	// ambient_scoutsniper_ext0 instead, from its own level script).
 	if ( session == "coop_training_mp_killhouse_sh" || session == "coop_spec1_mp_killhouse_sh" )
 		ambientPlay( "ambient_killhouse_exterior" );
+
+	// The base map's own systems -- destructible vehicles and props,
+	// exploders, pipes, the dynamic world, minefields -- through the shared
+	// level loader (common_scripts/_load_common.gsc).  They were started only
+	// by maps\mp\_load::main(), which this category must not compile.  The
+	// level script's main() is the precache window they need.
+	common_scripts\_load_common::main();
 
 	coop_minimap();
 }
@@ -358,51 +372,16 @@ coop_minimap()
 		return;
 	}
 
-	corner0 = ( corners[ 0 ].origin[ 0 ], corners[ 0 ].origin[ 1 ], 0 );
-	corner1 = ( corners[ 1 ].origin[ 0 ], corners[ 1 ].origin[ 1 ], 0 );
-	cornerdiff = corner1 - corner0;
-	north = ( cos( getNorthYaw() ), sin( getNorthYaw() ), 0 );
-	west = ( 0 - north[ 1 ], north[ 0 ], 0 );
-	if ( vectorDot( cornerdiff, west ) > 0 )
-	{
-		if ( vectorDot( cornerdiff, north ) > 0 )
-		{
-			northwest = corner1;
-			southeast = corner0;
-		}
-		else
-		{
-			side = coop_vecscale( north, vectorDot( cornerdiff, north ) );
-			northwest = corner1 - side;
-			southeast = corner0 + side;
-		}
-	}
-	else
-	{
-		if ( vectorDot( cornerdiff, north ) > 0 )
-		{
-			side = coop_vecscale( north, vectorDot( cornerdiff, north ) );
-			northwest = corner0 + side;
-			southeast = corner1 - side;
-		}
-		else
-		{
-			northwest = corner0;
-			southeast = corner1;
-		}
-	}
-	level.mapSize = vectorDot( northwest - southeast, north );
-	setMiniMap( material, northwest[ 0 ], northwest[ 1 ], southeast[ 0 ], southeast[ 1 ] );
+	// IW4 _compass setupMiniMap's maths, shared (common_scripts/_compass.gsc).
+	if ( !common_scripts\_compass::setupMiniMapCorners( material, corners ) )
+		return;
+	northwest = level.minimapNorthwest;
+	southeast = level.minimapSoutheast;
 	which = "base";
 	if ( mission.size == 2 )
 		which = "mission";
 	codolprintln( "CoDOL coop: minimap " + material + " " + northwest + " .. " + southeast + " (north yaw " + getNorthYaw() + ", " +
 		which + " corners)" );
-}
-
-coop_vecscale( vec, scalar )
-{
-	return ( vec[ 0 ] * scalar, vec[ 1 ] * scalar, vec[ 2 ] * scalar );
 }
 
 // --------------------------------------------------------------------------
@@ -473,6 +452,23 @@ resolveLoadout()
 	// melee cosmetic, never given.
 	level.coop_melee_item = class_value( "loadoutMeleeWpn" );
 
+	// The class's three perk slots (specialty_coop_* rows of
+	// mp/coPerkStatsTable.csv, applied by the shared perk core at spawn).
+	level.coop_perks = [];
+	for ( slot = 1; slot <= 3; slot++ )
+	{
+		perk = class_value( "loadoutPerk" + slot );
+		if ( perk != "" )
+			level.coop_perks[ level.coop_perks.size ] = perk;
+	}
+
+	// IW4 maps\_coop.gsc:995: a downed player holds his own pistol, else the
+	// forced "Beretta" -- beretta_so in common_gametype_coop.
+	pistols = [];
+	pistols[ 0 ] = "beretta_so";
+	pistols[ 1 ] = "usp_silencer_so";
+	level.coop_laststand_pistol = resolveWeapon( pistols );
+
 	// codolprintln, not println: println is a developer builtin and production
 	// runs developer 0.
 	summary = "CoDOL coop: class column " + level.coop_class_column;
@@ -481,6 +477,7 @@ resolveLoadout()
 	summary += " lethal " + coop_name( level.coop_lethal );
 	summary += " special " + coop_name( level.coop_special );
 	summary += " tactical " + coop_name( level.coop_tactical );
+	summary += " perks " + common_scripts\_perks::perkList( level.coop_perks );
 	codolprintln( summary );
 
 	if ( !isDefined( level.coop_primary ) )
@@ -588,6 +585,11 @@ giveStartingLoadout()
 		self giveStartAmmo( offhands[ slot ] );
 	}
 	self setOffhandEquipment( offhands[ 0 ], offhands[ 1 ], offhands[ 2 ] );
+
+	// The class's perks through the shared perk core (setPerk on the
+	// specialty_coop_* rows; a Pro grants its base too).
+	given = self common_scripts\_perks::giveLoadoutPerks( level.coop_perks );
+	codolprintln( "CoDOL coop: " + self.name + " perks " + common_scripts\_perks::perkList( given ) );
 
 	if ( isDefined( primary ) )
 	{
@@ -836,6 +838,13 @@ spawnPlayer()
 
 	self giveStartingLoadout();
 
+	// modMaxHealth (specialty_coop_armorvest +50) is a script quantity.
+	self common_scripts\_perks::applyHealthPerks( level.coop_player_health );
+
+	self.laststand = false;
+	if ( level.coop_laststand )
+		self common_scripts\_laststand::enable_player();
+
 	self thread healthRegen();
 
 	// The opening ride: a player who spawns before it is over (the first
@@ -875,7 +884,7 @@ healthRegen()
 	for ( ;; )
 	{
 		wait( 0.1 );
-		if ( self.health <= 0 || self.health >= self.maxhealth )
+		if ( self.health <= 0 || self.health >= self.maxhealth || ( isDefined( self.laststand ) && self.laststand ) )
 		{
 			self.coop_was_red = false;
 			self.coop_grace_used = false;
@@ -1012,6 +1021,10 @@ Callback_StartGameType()
 	// loadout weapon today.
 	resolveLoadout();
 
+	common_scripts\_perks::init();
+	if ( level.coop_laststand )
+		coop_laststand_init();
+
 	// The native world gun every armed player carries is a script_model with
 	// the tag_origin model linked to his hand (src/codol/player/
 	// codol_player_worldweapon.c spawn_worldweapon).  mp precaches tag_origin
@@ -1130,6 +1143,16 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 	if ( level.gameEnded )
 		return;
 
+	// A dead player, between Callback_PlayerKilled and the respawn, has the
+	// CLIENT_DEAD entity handler, which has no die function: finishPlayerDamage
+	// on him is the script error "No die handler for player entity type 12",
+	// which ends the match (MEASURED on a probe: a second hit on a killed coop
+	// player; any explosion reaching a body takes the same path).  IW4
+	// maps\mp\gametypes\_damage.gsc Callback_PlayerDamage_internal returns
+	// first thing for a victim that is not isReallyAlive.
+	if ( !isAlive( self ) )
+		return;
+
 	// Every coop player is on the same side: no damage from another player.
 	if ( isDefined( eAttacker ) && isPlayer( eAttacker ) && eAttacker != self )
 		return;
@@ -1169,6 +1192,14 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 
 Callback_PlayerKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset, deathAnimDuration )
 {
+	// A downed player finished off (or bled out) is no longer down.
+	self.laststand = false;
+	if ( isDefined( self.revivetrigger ) )
+	{
+		self.revivetrigger delete();
+		self.revivetrigger = undefined;
+	}
+
 	self.sessionstate = "dead";
 	self.deaths++;
 
@@ -1210,5 +1241,54 @@ Callback_ActorKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vD
 // the honest behaviour until the engine side exists.
 Callback_PlayerLastStand( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset, deathAnimDuration )
 {
+	if ( level.coop_laststand )
+	{
+		self common_scripts\_laststand::player_laststand();
+		return;
+	}
 	self Callback_PlayerKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset, deathAnimDuration );
+}
+
+// --------------------------------------------------------------------------
+// Downs and revives: the coop configuration of common_scripts/_laststand.gsc.
+// IW4 maps\_coop.gsc player_coop_proc (:64-140): bleed-out 120 s at regular
+// difficulty, a 1.5 s revive hold (:771 totalTime), the revive reach
+// player_useradius 128 (:868); the downed player holds his pistol (:995).
+// Everyone down: IW4 fails the mission at once; here every downed player
+// bleeds out now, which is a death and spends a life (Callback_PlayerKilled),
+// so the existing lives rule decides whether the mission fails.
+// --------------------------------------------------------------------------
+
+coop_laststand_init()
+{
+	level.laststand_vars = [];
+	level.laststand_vars[ "bleedout_time" ] = coop_dvar_float( "scr_coop_bleedout_time", 120 );
+	level.laststand_vars[ "revive_time" ] = coop_dvar_float( "scr_coop_revive_time", 1.5 );
+	level.laststand_vars[ "trigger_radius" ] = 128;
+	level.laststand_vars[ "log" ] = "CoDOL coop laststand";
+	level.laststand_funcs = [];
+	level.laststand_funcs[ "pistol" ] = ::coop_laststand_pistol;
+	level.laststand_funcs[ "all_down" ] = ::coop_all_down;
+	common_scripts\_laststand::init();
+}
+
+coop_laststand_pistol()
+{
+	weapons = self getWeaponsListPrimaries();
+	for ( i = 0; i < weapons.size; i++ )
+	{
+		if ( weaponClass( weapons[ i ] ) == "pistol" )
+			return weapons[ i ];
+	}
+	return level.coop_laststand_pistol;
+}
+
+coop_all_down()
+{
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+	{
+		if ( players[ i ] common_scripts\_laststand::player_is_in_laststand() )
+			players[ i ] thread common_scripts\_laststand::laststand_die();
+	}
 }

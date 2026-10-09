@@ -54,5 +54,10 @@
 
 main()
 {
+	// The map's destructible anim registrations, as the multiplayer level
+	// script makes them before its loader (maps/mp/mp_crash_tropical.gsc): the
+	// shared loader in levelMain starts the destructibles that need them.
+	common_scripts\_destructible_types_anim_light_fluo_single::main();
+	common_scripts\_destructible_types_anim_me_fanceil1_spin::main();
 	maps\mp\gametypes\_coopmode::levelMain( "mp_crash_tropical" );
 }

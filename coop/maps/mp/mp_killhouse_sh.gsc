@@ -54,5 +54,9 @@
 
 main()
 {
+	// The map's destructible anim registrations, as the multiplayer level
+	// script makes them before its loader (maps/mp/mp_killhouse_sh.gsc): the
+	// shared loader in levelMain starts the destructibles that need them.
+	common_scripts\_destructible_types_anim_airconditioner::main();
 	maps\mp\gametypes\_coopmode::levelMain( "mp_killhouse_sh" );
 }
