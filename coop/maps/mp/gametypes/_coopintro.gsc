@@ -217,10 +217,12 @@ board()
 	{
 		offset = mover getTagOrigin( tag ) - mover.origin;
 		// The seat tag is the cushion (about 36 above the jeep's origin on
-		// the ground).  A crouched player's eye is 40 above his feet and a
-		// seated man's about 28 above the cushion, so the feet go 12 below
-		// the tag.
-		offset = ( vectorDot( offset, anglesToForward( mover.angles ) ), vectorDot( offset, anglesToRight( mover.angles ) ), offset[ 2 ] - 12 );
+		// the ground).  A crouched player's eye is 40 above his feet.  With
+		// the feet 12 below the tag the user's view sat at Price's elbow,
+		// under the dash line (his recording, 2026-10-08); the retail
+		// recording's rider looks over the dash with his eye level with
+		// Price's head, about 10 higher, so the feet go 2 below the tag.
+		offset = ( vectorDot( offset, anglesToForward( mover.angles ) ), vectorDot( offset, anglesToRight( mover.angles ) ), offset[ 2 ] - 2 );
 		self setStance( "crouch" );
 		self seat_lock( true );
 	}
@@ -228,6 +230,10 @@ board()
 	self setPlayerAngles( mover.angles );
 	self.coop_seat_angles = mover.angles;
 	self playerLinkToDelta( mover, "tag_origin", 1 );
+	// The training's title card over a black screen that lifts as the ride
+	// starts (the retail recording, 1:19-1:26).
+	if ( isDefined( level.coop_training_flow ) && level.coop_training_flow )
+		self thread maps\mp\gametypes\_cooptraininghud::title_card_player();
 	tagName = "none";
 	if ( isDefined( tag ) )
 		tagName = tag;
