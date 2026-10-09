@@ -43,8 +43,9 @@
 // CS_MODELS 267-278, all in common_gametype_zm (docs/zone_assets).  Each
 // power-up below names T5's model for it (T5 :69-:120 add_zombie_powerup;
 // tesla gets C1's own zombie_pickup_tesla rather than T5's minigun stand-in).
-// Sentry and RC-XD have no T5 pickup; they show the thing they give
-// (sentry_minigun, t5_veh_rcbomb_allies, both in the same constant table).
+// Sentry has no T5 pickup; it shows the turret it gives (sentry_minigun).
+// The RC-XD weapon exists in the catalogue, but it is not a random Zombies
+// power-up drop.
 // ==========================================================================
 //
 // TAKEN, by T5 function:
@@ -73,9 +74,8 @@
 //   start_revive_all              :1383
 //   free_perk_powerup             :2293
 //
-// THE FIVE WEAPON-BACKED PICKUPS (2026-09-24).  Previously excluded from the
-// bag; each now has its module and joins the bag only if what it needs
-// resolves in the mounted zones:
+// THE FOUR WEAPON-BACKED PICKUPS.  Each joins the random drop bag only if
+// what it needs resolves in the mounted zones:
 //   kis_minigun_zm -- T5 :2459 minigun_weapon_powerup and its countdown /
 //     replace / remove / downed helpers, over C1's minigun_zm.
 //   kis_tesla_zm   -- T5 :2643 tesla_weapon_powerup and helpers, over C1's
@@ -83,16 +83,14 @@
 //     _zombiemode_weap_tesla.gsc (T5 _zombiemode_weap_tesla.gsc).
 //   kis_sentry_zm  -- _zombiemode_auto_turret.gsc (T5
 //     _zombiemode_auto_turret.gsc behaviour on C1's sentry_minigun_mp).
-//   kis_rcbomb_zm  -- _zombiemode_rcbomb.gsc (T5 multiplayer RC-XD on the
-//     native rc_car_medium_mp).
 //   kis_pandora_zm -- T5 _zombiemode_weap_quantum_bomb.gsc's weighted result
 //     table plus the results T5 _zombiemode_powerups.gsc:151 registers into
 //     it, restricted to results whose content exists here (see the PANDORA
 //     section below for which are in and why the rest are not).
-// T5 :425 keeps tesla (and free_perk, bonus points) out of random drops; the
-// C1 catalogue lists every kis_* as a drop pickup (the reason this port
-// already drops free_perk and the bonus points), so tesla is in the bag with
-// T5's one-at-a-time rule instead.
+// T5 :425 keeps tesla (and free_perk, bonus points) out of random drops;
+// this port currently includes them, with T5's one-at-a-time rule for tesla.
+// A kis_* weapon's presence in C1's catalogue alone does not make it an
+// eligible random drop; RC-XD is excluded from the bag.
 // Also not taken: bonfire_sale (no zm map authors the bonfire trigger),
 // random_weapon (needs treasure_chest_ChooseWeightedRandomWeapon plus
 // useweaponhidetags, which is not registered), the zombie-grabbable path
@@ -200,7 +198,7 @@ init_powerups()
 	add_zombie_powerup( "bonus_points_player", "kis_bonus_points_player_zm", "zombie_z_money_icon" );
 	add_zombie_powerup( "bonus_points_team",   "kis_bonus_points_team_zm",   "zombie_z_money_icon" );
 
-	// The five weapon-backed pickups, each gated on its own content.
+	// The four weapon-backed pickups, each gated on its own content.
 	precacheItem( "minigun_zm" );
 	if ( codol_isWeaponMounted( "minigun_zm" ) )
 		add_zombie_powerup( "minigun", "kis_minigun_zm", "zombie_pickup_minigun" );
@@ -209,10 +207,7 @@ init_powerups()
 		add_zombie_powerup( "tesla", "kis_tesla_zm", "zombie_pickup_tesla" );
 
 	if ( is_true( level.zm_sentry_ok ) )
-		add_zombie_powerup( "sentry", "kis_sentry_zm", "sentry_minigun" );
-
-	if ( is_true( level.zm_rcbomb_ok ) )
-		add_zombie_powerup( "rcbomb", "kis_rcbomb_zm", "t5_veh_rcbomb_allies" );
+		add_zombie_powerup( "sentry", "kis_sentry_zm", "sentry_minigun_folded" );
 
 	add_zombie_powerup( "pandora", "kis_pandora_zm", "zombie_pandora" );
 }
@@ -1411,7 +1406,12 @@ weapon_powerup_give( ent_player, kind, time )
 		( ent_player getCurrentWeapon() == w.weapon || is_true( ent_player.zm_powerup_weapon_held[ kind ] ) ) )
 	{
 		if ( kind == "tesla" )
+		{
 			ent_player giveMaxAmmo( w.weapon );
+			if ( getDvarInt( "zm_tesla_ammo_debug" ) > 0 )
+				codolPrintLn( "CoDOL zm tesla ammo: top-up " + ent_player.name + " clip " +
+					ent_player getWeaponAmmoClip( w.weapon ) + " stock " + ent_player getWeaponAmmoStock( w.weapon ) );
+		}
 		if ( !isDefined( ent_player.zm_powerup_time[ kind ] ) || ent_player.zm_powerup_time[ kind ] < time )
 			ent_player.zm_powerup_time[ kind ] = time;
 		codolPrintLn( "CoDOL zm powerup: " + kind + " topped up for " + ent_player.name );
@@ -1433,7 +1433,13 @@ weapon_powerup_give( ent_player, kind, time )
 
 	ent_player giveWeapon( w.weapon );
 	if ( kind == "tesla" )
+	{
 		ent_player giveMaxAmmo( w.weapon );
+		if ( getDvarInt( "zm_tesla_ammo_debug" ) > 0 )
+			codolPrintLn( "CoDOL zm tesla ammo: grant " + ent_player.name + " clip " +
+				ent_player getWeaponAmmoClip( w.weapon ) + " stock " + ent_player getWeaponAmmoStock( w.weapon ) +
+				" sustain " + getDvarInt( "player_sustainAmmo" ) );
+	}
 	ent_player switchToWeapon( w.weapon );
 
 	ent_player set_powerup_state( w.on_field, true );
@@ -1502,6 +1508,11 @@ tesla_weapon_powerup_countdown( ent_player, w, time )
 	ent_player endon( "replace_weapon_powerup" );
 
 	ent_player.zm_powerup_time[ w.kind ] = time;
+	debug_ammo = getDvarInt( "zm_tesla_ammo_debug" ) > 0;
+	debug_clip = -1;
+	debug_stock = -1;
+	debug_weapon = "";
+	debug_lines = 0;
 
 	// Let the raise finish before an empty clip can end it.
 	wait( 1.0 );
@@ -1513,13 +1524,32 @@ tesla_weapon_powerup_countdown( ent_player, w, time )
 		if ( !ent_player hasWeapon( w.weapon ) )
 			break;
 
-		if ( ent_player getWeaponAmmoStock( w.weapon ) )
+		stock_count = ent_player getWeaponAmmoStock( w.weapon );
+		clip_count = undefined;
+		if ( debug_ammo )
+		{
+			clip_count = ent_player getWeaponAmmoClip( w.weapon );
+			current_weapon = ent_player getCurrentWeapon();
+			if ( debug_lines < 32 &&
+				( clip_count != debug_clip || stock_count != debug_stock || current_weapon != debug_weapon ) )
+			{
+				codolPrintLn( "CoDOL zm tesla ammo: poll " + ent_player.name + " clip " + clip_count +
+					" stock " + stock_count + " held " + current_weapon );
+				debug_clip = clip_count;
+				debug_stock = stock_count;
+				debug_weapon = current_weapon;
+				debug_lines++;
+			}
+		}
+
+		if ( stock_count )
 		{
 			ent_player.zm_powerup_time[ w.kind ] = 11;   // no blink
 			continue;
 		}
 
-		clip_count = ent_player getWeaponAmmoClip( w.weapon );
+		if ( !isDefined( clip_count ) )
+			clip_count = ent_player getWeaponAmmoClip( w.weapon );
 		if ( !clip_count )
 			break;
 		else if ( clip_count == 1 )

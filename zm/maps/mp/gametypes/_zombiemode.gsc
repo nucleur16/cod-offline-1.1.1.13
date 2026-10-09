@@ -422,6 +422,7 @@ Callback_StartGameType()
 	// the grenade_fire registry the item modules below hook into.  Before
 	// them, so their register_equipment calls find the registry.
 	maps\mp\gametypes\_zombiemode_equipment::init();
+	maps\mp\gametypes\_zombiemode_betty::init();
 	// The four placeable traps (equipment slot): register with the registry
 	// above and precache their models and FX in this window.
 	maps\mp\gametypes\_zombiemode_traps_placeable::init();

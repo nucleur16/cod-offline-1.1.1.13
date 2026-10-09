@@ -63,9 +63,10 @@
 //     (juggernaut_walkf_zm, runf_zm when far).
 //   * in range and in sight it stops, spins the barrels up
 //     (zmb_juggernaut_gatling_spinup), fires a burst
-//     (juggernaut_stand_fire_burst_zm) and spins down.  The rounds are real
-//     bullets: magicBullet( minigun_zm ) from the gun's tag_flash, i.e.
-//     Bullet_Fire with its impacts and the EV_FIRE_WEAPON event every client
+//     (juggernaut_stand_fire_burst_zm over its full-body idle) and spins down.
+//     Each round is checked against cover before magicBullet( minigun_zm )
+//     fires from the gun's tag_flash, i.e. a real Bullet_Fire round with
+//     impacts and the EV_FIRE_WEAPON event every client
 //     sees, plus the shipped muzzle flash on tag_flash and the boss's own
 //     fire loop.  _zombiemode::Callback_PlayerDamage turns each round that
 //     hits a player into this boss's hit (scr_zm_boss_bullet_damage).
@@ -727,8 +728,8 @@ boss_muzzle_origin()
 	return self getTagOrigin( "tag_weapon_right" );
 }
 
-// The barrels spin up, the burst plays and re-aims every clip loop, every
-// round is a real bullet, and the barrels spin down.
+// The barrels spin up, the additive burst plays over the idle pose, and each
+// round is traced before firing. The barrels spin down afterward.
 boss_fire_burst( target )
 {
 	self endon( "death" );
@@ -752,27 +753,33 @@ boss_fire_burst( target )
 	shots = 0;
 
 	self playLoopSound( "zmb_juggernaut_gatling_fire" );
+	// The mounted generic_human tree puts this clip under add_fire : additive.
+	// Keep the scripted full-body idle alive beneath it for the whole burst.
+	self setAnim( %add_fire, 1, 0.1, 1 );
 
 	while ( getTime() < burst_end )
 	{
 		if ( !is_player_valid( target ) )
 			break;
+		if ( !self boss_can_see( target ) )
+			break;
 
 		now = getTime();
 		if ( now >= clip_end )
 		{
-			yaw = vectorToAngles( target.origin - self.origin );
-			self animscripted( "bossfire", self.origin, ( 0, yaw[ 1 ], 0 ), %juggernaut_stand_fire_burst_zm, "normal", %body, 1, 0.1 );
+			self setAnimKnobRestart( %juggernaut_stand_fire_burst_zm, 1, 0.05, 1 );
 			clip_end = now + int( clip_len * 1000 );
 		}
+		self orientmode( "face point", target.origin );
 
-		self boss_fire_round( target, shots );
-		shots++;
+		if ( self boss_fire_round( target, shots ) )
+			shots++;
 		wait( 0.1 );
 	}
 
 	self stopLoopSound();
 	self playSound( "zmb_juggernaut_gatling_spindown" );
+	self clearAnim( %add_fire, 0.1 );
 	self stopanimscripted();
 
 	self.boss_firing = false;
@@ -807,6 +814,12 @@ boss_fire_round( target, shot )
 	// hit boxes (Bullet_Fire with no weapon entity ignores nothing).
 	dir = vectorNormalize( aim - start );
 	start = start + vector_scale( dir, 20 );
+	// Test the exact bullet path before Bullet_Fire's penetration pass can
+	// carry a minigun round through cover to the player.
+	trace = bulletTrace( start, aim, true, self );
+	if ( trace["fraction"] < 1 &&
+		( !isDefined( trace["entity"] ) || trace["entity"] != target ) )
+		return false;
 
 	magicBullet( BOSS_WEAPON, start, aim );
 
@@ -818,6 +831,7 @@ boss_fire_round( target, shot )
 	if ( !isDefined( level.zm_boss_rounds_fired ) )
 		level.zm_boss_rounds_fired = 0;
 	level.zm_boss_rounds_fired++;
+	return true;
 }
 
 // _zombiemode::Callback_PlayerDamage asks this about every hit a player takes.
