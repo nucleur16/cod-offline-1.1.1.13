@@ -59,10 +59,11 @@
 //     already refuses shots while overheated.
 //   * The turret shoots as itself (TurretTarget_Attacker returns the turret
 //     when it has no user), so its kills pay no points, as T5's do not.
-//   * Placement: 48 units in front of the grabber on the ground, facing the
-//     grabber's yaw (maps\mp\killstreaks\_autosentry.gsc:166 spawns at the
-//     owner and faces the owner's angles; the offset keeps the grabber out of
-//     the turret's bounds, since there is no carry step).
+//   * Placement: 48 units in front of the grabber on the ground.  The
+//     multiplayer sentry lets its owner aim before planting; this power-up
+//     has no carry step.  Face the closest visible zombie on pickup, so the
+//     shipped 55-degree left/right arc can reach a target.  Otherwise keep
+//     the grabber's yaw.  The offset keeps the grabber out of the bounds.
 
 #include maps\_zombiemode_utility;
 
@@ -103,6 +104,12 @@ sentry_powerup( drop_origin )
 	yaw = self.angles[ 1 ];
 	forward = anglesToForward( ( 0, yaw, 0 ) );
 	spot = groundpos( self.origin + vector_scale( forward, 48 ) + ( 0, 0, 32 ) );
+	face = sentry_visible_zombie( spot, undefined );
+	if ( isDefined( face ) )
+	{
+		facing = vectorToAngles( face.origin - spot );
+		yaw = facing[ 1 ];
+	}
 
 	turret = spawnTurret( "misc_turret", spot, level.zm_sentry_weapon );
 	if ( !isDefined( turret ) )
@@ -124,9 +131,43 @@ sentry_powerup( drop_origin )
 
 	turret playSound( "sentry_gun_plant" );
 
-	codolPrintLn( "CoDOL zm sentry: placed for " + self.name + " at " + spot );
+	codolPrintLn( "CoDOL zm sentry: placed for " + self.name + " at " + spot +
+		" yaw " + yaw + " visible zombie " + isDefined( face ) );
 
 	turret thread auto_turret_activate( self );
+}
+
+// A placed multiplayer sentry is aimed by its owner.  This pickup plants
+// immediately, so face the nearest live zombie with a clear path to its
+// native acquisition point (origin + 2).  Before the turret has a model,
+// its muzzle is approximated at ground + 40; the native test later uses
+// tag_aim and remains authoritative for cover and target checks.
+sentry_visible_zombie( spot, ignore )
+{
+	if ( !isDefined( level.zombies ) )
+		return undefined;
+
+	best = undefined;
+	best_dist = 8192 * 8192;
+	from = spot + ( 0, 0, 40 );
+	for ( i = 0; i < level.zombies.size; i++ )
+	{
+		zombie = level.zombies[ i ];
+		if ( !isDefined( zombie ) || !isAlive( zombie ) || zombie getDontTarget() )
+			continue;
+
+		d = distanceSquared( spot, zombie.origin );
+		if ( d >= best_dist )
+			continue;
+		trace = bulletTrace( from, zombie.origin + ( 0, 0, 2 ), false, ignore );
+		if ( trace[ "fraction" ] < 1 &&
+			( !isDefined( trace[ "entity" ] ) || trace[ "entity" ] != zombie ) )
+			continue;
+
+		best = zombie;
+		best_dist = d;
+	}
+	return best;
 }
 
 // T5 :176.  self is the turret.
@@ -157,6 +198,7 @@ auto_turret_activate( owner )
 	level.curr_auto_turrets_active++;
 	level.zm_sentries[ level.zm_sentries.size ] = self;
 	self.turret_active = true;
+	self.zm_shots = 0;
 
 	// setsentryowner requires an auto or sentry mode, so it follows setmode.
 	self setMode( "auto_nonai" );
@@ -173,10 +215,40 @@ auto_turret_activate( owner )
 	self thread auto_turret_update_timeout();
 	self thread auto_turret_fire();
 	self thread auto_turret_watch_targets();
+	if ( getDvarInt( "zm_sentry_diag" ) > 0 )
+		self thread auto_turret_acquire_diag();
 
 	wait( level.auto_turret_timeout );
 
 	self auto_turret_deactivate( "timeout" );
+}
+
+// Two opt-in snapshots after the native target walk has run.  This avoids
+// querying model tags, which can raise a script error when a model is missing.
+auto_turret_acquire_diag()
+{
+	self endon( "turret_deactivated" );
+	self endon( "death" );
+
+	wait( 1 );
+	for ( i = 0; i < 2; i++ )
+	{
+		target = self getTurretTarget( false );
+		near = sentry_visible_zombie( self.origin, self );
+		msg = "CoDOL zm sentry: diag target " + isDefined( target ) +
+			" firing " + self isFiringTurret() + " shots " + self.zm_shots;
+		if ( isDefined( near ) )
+		{
+			facing = vectorToAngles( near.origin - self.origin );
+			msg = msg + " visible zombie " + near getEntityNumber() +
+				" distance " + int( distance( self.origin, near.origin ) ) +
+				" bearing " + facing[ 1 ] + " base yaw " + self.angles[ 1 ];
+		}
+		else
+			msg = msg + " no visible zombie";
+		codolPrintLn( msg );
+		wait( 9 );
+	}
 }
 
 // T5 :238, plus the removal a dropped (not map-authored) turret needs.

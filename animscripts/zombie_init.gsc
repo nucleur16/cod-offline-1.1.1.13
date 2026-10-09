@@ -13,7 +13,7 @@
 // (docs/CODOL_SCRIPTED_ANIMATION_20260920.md section 8) and MEASURED that the
 // %anim reference system and the notetrack producer were already complete, so
 // the set below animates through setflaggedanimknoball / setflaggedanim and
-// reads notetracks back through maps\mp\animscripts\zombie_shared.
+// reads notetracks back through animscripts\zombie_shared.
 //
 // STILL ABSENT, and therefore ported AROUND rather than with, by name:
 // animscripted / animscriptedskiprestart / stopanimscripted /

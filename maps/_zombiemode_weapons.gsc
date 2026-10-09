@@ -191,6 +191,7 @@ init_weapons()
 
 	// SMGs
 	add_zombie_weapon( "mp5k_zm",					"mp5k_upgraded_zm",					"MP5K",				1000,	500 );
+	add_zombie_weapon( "ump45_zm",				"ump45_upgraded_zm",				"UMP45",				1000,	500, false );
 	add_zombie_weapon( "uzi_zm",					"uzi_upgraded_zm",					"Uzi",				1200,	600 );
 	add_zombie_weapon( "p90_zm",					"p90_upgraded_zm",					"P90",				1200,	600 );
 	add_zombie_weapon( "tmp_zm",					"tmp_upgraded_zm",					"TMP",				1000,	500 );

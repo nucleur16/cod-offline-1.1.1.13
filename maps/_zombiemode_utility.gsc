@@ -26,10 +26,8 @@
 // Tuning table.  T5 _zombiemode_utility.gsc:1331 set_zombie_var().
 //
 // mp/zombiemode.csv ships in common_gametype_zm.ff, 5 columns x 106 rows,
-// NAME | EASY | MEDIUM | HARD | VETERAN.  T5 reads it as
-// TableLookUp( table, 0, name, difficulty + 1 ); difficulty 1 => column 2 in
-// T5's indexing, which is column 1 counting the name column as 0 -- the same
-// cell this server's tableLookup( table, 0, name, 1 ) returns.
+// NAME | EASY | MEDIUM | HARD | VETERAN.  C1's room passes g_difficulty
+// 0/1/2; level.zm_difficulty selects table columns 1/2/3 respectively.
 //
 // tableLookup answers "" for a missing table or row and never errors
 // (src/codol/script/codol_script_table.c:77-98), so an absent
@@ -46,7 +44,11 @@ set_zombie_var( var, value, is_float, column )
 	if ( !isDefined( is_float ) )
 		is_float = false;
 	if ( !isDefined( column ) )
+	{
 		column = 1;
+		if ( isDefined( level.zm_difficulty ) )
+			column = level.zm_difficulty;
+	}
 
 	if ( !isDefined( level.zombie_vars ) )
 		level.zombie_vars = [];

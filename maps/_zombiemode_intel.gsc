@@ -28,12 +28,9 @@
 // match report the lobby persists), splashes it, and hides the item from
 // that player.  There is no button prompt: walking up to the item takes it.
 //
-// DIFFICULTY.  CoDOL's difficulty selection is not ported (the zombiemode
-// table is read at column 1 and _zombiemode_challenges never completes a
-// difficulty), so by default every item on the map is collectible.
-// scr_zm_intel_difficulty 1/2/3 restricts the map to that difficulty's four,
-// as C1 does when a difficulty is chosen; level.zm_difficulty takes
-// precedence once a difficulty selection exists.
+// DIFFICULTY.  _zombiemode sets level.zm_difficulty to 1/2/3 from the C1
+// room selection, so each match exposes its own four collectibles.
+// scr_zm_intel_difficulty remains a fallback for standalone map tests.
 //
 // VISIBILITY.  Collection is per player, so each item is drawn only for the
 // players who still need it (hide + showToPlayer per player); one nobody

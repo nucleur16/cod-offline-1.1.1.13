@@ -88,6 +88,7 @@ init()
 	// docs/zone_assets/ALL_sound.txt; these ship in common_gametype_zm.
 	add_sound( "perk_deny", "evt_perk_deny" );
 	add_sound( "bottle_dispense", "evt_bottle_dispense" );
+	level.zm_solo_quickrevive_buys = 0;
 
 	vending_triggers = getEntArray( "zombie_vending", "targetname" );
 	// The perks this MAP carries, for _zombiemode_powerups::free_perk_powerup:
@@ -276,6 +277,10 @@ vending_trigger_think()
 		return;
 	}
 
+	// Machines start before the first player reaches "begin".  Wait for the
+	// roster before deciding whether Quick Revive is the power-free solo one.
+	flag_wait( "all_players_connected" );
+
 	solo = false;
 	players = getPlayers();
 	if ( players.size == 1 )
@@ -288,11 +293,16 @@ vending_trigger_think()
 	self useTriggerRequireLookAt();
 	self setHintString( &"ZOMBIE_NEED_POWER" );
 
-	// T5 gates every machine but solo quick-revive behind the power switch.
-	if ( !( solo && perk == "specialty_quickrevive" ) )
-		level waittill( perk + "_power_on" );
-
-	self setHintString( perk_hint( perk, solo ), cost );
+	// Solo Quick Revive is live before power, but a teammate may enter after
+	// the first player.  Keep its hint and price tied to the current roster.
+	if ( perk == "specialty_quickrevive" )
+		self thread quickrevive_hint_think();
+	else
+	{
+		// The power flag survives a notify sent before the roster was ready.
+		flag_wait( "power_on" );
+		self setHintString( perk_hint( perk, solo ), cost );
+	}
 
 	for ( ;; )
 	{
@@ -310,6 +320,18 @@ vending_trigger_think()
 		if ( player in_revive_trigger() )
 			continue;
 
+		if ( perk == "specialty_quickrevive" )
+		{
+			solo = getPlayers().size == 1;
+			cost = perk_cost( perk, solo );
+			self.cost = cost;
+			if ( !solo && !flag( "power_on" ) )
+			{
+				self play_sound_on_ent( "perk_deny" );
+				continue;
+			}
+		}
+
 		if ( is_true( player.is_drinking ) )
 		{
 			wait( 0.1 );
@@ -320,6 +342,14 @@ vending_trigger_think()
 		{
 			self play_sound_on_ent( "perk_deny" );
 			wait( 0.5 );
+			continue;
+		}
+
+		// A solo player can buy three self-revives in this match.  Count only
+		// machine purchases, not Quick Revive awarded by another source.
+		if ( solo && perk == "specialty_quickrevive" && level.zm_solo_quickrevive_buys >= 3 )
+		{
+			self play_sound_on_ent( "perk_deny" );
 			continue;
 		}
 
@@ -357,6 +387,30 @@ vending_trigger_think()
 			continue;
 
 		player give_perk( perk );
+
+		if ( solo && perk == "specialty_quickrevive" )
+		{
+			level.zm_solo_quickrevive_buys++;
+		}
+	}
+}
+
+// A capped solo machine shows no purchase prompt.  If a teammate enters,
+// it can still serve the cooperative version once the power is on.
+quickrevive_hint_think()
+{
+	for ( ;; )
+	{
+		solo = getPlayers().size == 1;
+		cost = perk_cost( "specialty_quickrevive", solo );
+		self.cost = cost;
+		if ( solo && level.zm_solo_quickrevive_buys >= 3 )
+			self setHintString( "" );
+		else if ( !solo && !flag( "power_on" ) )
+			self setHintString( &"ZOMBIE_NEED_POWER" );
+		else
+			self setHintString( perk_hint( "specialty_quickrevive", solo ), cost );
+		wait( 0.5 );
 	}
 }
 
