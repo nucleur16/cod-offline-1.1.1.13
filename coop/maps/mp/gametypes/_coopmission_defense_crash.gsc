@@ -834,11 +834,15 @@ spawn_ghost( origin, angles )
 	ai.coop_name = "Ghost";
 	ai.targetname = "crash_ghost";
 	// He runs when he moves (soldier_move's run, not the patrol walk) and
-	// stands in the alert idle (soldier_stop's cast pose).
+	// stands rifle up (soldier_stop's cast pose).  exposed_aim_5 is a whole
+	// pose; exposed_idle_alert_v1 is built additive in common_gametype_coop
+	// (its xanim carries the additive flag, like the exposed_shoot_* set), so
+	// as his only knob it drew him T-posed in C1 (user's playthrough, at the
+	// office corner, the download room and the roof).
 	ai.coop_hunting = true;
 	ai.coop_cast = "ghost";
-	ai.coop_idle_anim = %exposed_idle_alert_v1;
-	ai setAnimKnobAll( %exposed_idle_alert_v1, %body, 1, 0.1, 1 );
+	ai.coop_idle_anim = %exposed_aim_5;
+	ai setAnimKnobAll( %exposed_aim_5, %body, 1, 0.1, 1 );
 	ai notify( "coop_cast_pose" );
 	if ( !isDefined( level.coop_cast_list ) )
 		level.coop_cast_list = [];
@@ -970,6 +974,17 @@ open_price_door()
 	if ( doors.size > 0 )
 		sound_at( "door_wood_slow_open", doors[ 0 ].origin );
 	codolprintln( "CoDOL coop crash: price_door opened (" + doors.size + " halves)" );
+}
+
+// Ghost's standing (or crouched) pose while he waits; both are whole poses
+// from common_human, never the additive alert idles.
+ghost_pose( pose )
+{
+	ai = level.crash_ghost;
+	if ( !isDefined( ai ) )
+		return;
+	ai.coop_idle_anim = pose;
+	ai notify( "coop_cast_pose" );
 }
 
 ghost_wait_player( radius, timeout )
@@ -1783,12 +1798,20 @@ phase_office()
 					idle = %patrol_bored_idle_smoke;
 			}
 		}
-		ais[ i ] thread unaware( idle, 160 );
+		// They wake only to a shot, or to a player right beside them: in
+		// the recording the room stays oblivious while the rookie stands in
+		// the doorway with the flashbang (at 160 units the user's own
+		// playthrough had them up and firing at the doorway before the
+		// throw).
+		ais[ i ] thread unaware( idle, 72 );
 	}
 
 	// Ghost at the office's corner: flashbangs from his pack.
 	packSpot = point( "pre_download_checkpoint_price", ( -404, 2120, 268 ) );
 	ghost_move( packSpot, "the office corner" );
+	// He crouches at the corner with his pack to the rookie (the
+	// recording, 3:08), rifle up, until the room is flashed.
+	ghost_pose( %exposed_crouch_aim_5 );
 	level.crash_objective_name = "get flashbangs from Ghost";
 	objective( &"COOP_DEFENSE_MP_CRASH_TROPICAL_OBJ_PICK_UP_FLASH", undefined, level.crash_ghost );
 	ghost_say( "crash_gst_48", true );
@@ -1822,6 +1845,7 @@ phase_office()
 			ais[ i ] thread flashed_then_wake( 2 );
 	}
 	ghost_say( "crash_gst_54", true );
+	ghost_pose( %exposed_aim_5 );
 	objective_clear();
 	hint( &"COOP_DEFENSE_MP_CRASH_TROPICAL_ADS_HINT", 5 );
 	level.crash_ghost_free_fire = true;
@@ -2107,35 +2131,25 @@ download_run( laptopOrigin, radius, downloadTime, totalFiles, first )
 	progress.label = &"PMC_DSM_PROGRESS";
 	count = dsm_hud( 170 );
 	count.alignX = "right";
+	// Every element gets its value as it is made: a labelled element with
+	// no value yet draws its raw placeholder (the user's playthrough showed
+	// "&&1%" for the signal and a blank count for the first frame).
+	count setValue( int( level.crash_files_done ) );
 	total = dsm_hud( 170 );
 	total.label = &"PMC_DSM_TOTALFILES";
 	total setValue( totalFiles );
 	signal = dsm_hud( 0 );
 	signal.y = 70;
 	signal.label = &"COOP_DEFENSE_MP_CRASH_TROPICAL_SIGNAL_STRENGTH";
+	signal setValue( dsm_signal( laptopOrigin, radius ) );
 
 	lost = 0;
 	ok = true;
 	while ( level.crash_download_elapsed < downloadTime )
 	{
 		wait( 0.25 );
-		// Signal: the nearest living player's distance to the laptop.
-		d = 99999;
-		players = maps\mp\gametypes\_coopmission::living_players();
-		for ( i = 0; i < players.size; i++ )
-		{
-			dd = distance( players[ i ].origin, laptopOrigin );
-			if ( dd < d )
-				d = dd;
-		}
-		strength = int( 100 - 84 * d / radius );
-		if ( strength > 99 )
-			strength = 99;
-		if ( strength < 0 )
-			strength = 0;
-		strength = strength - randomInt( 3 );
-		if ( strength < 0 )
-			strength = 0;
+		d = dsm_nearest( laptopOrigin );
+		strength = dsm_signal( laptopOrigin, radius );
 		signal setValue( strength );
 		if ( strength < 30 )
 			signal.color = ( 1, 0.25, 0.25 );
@@ -2167,6 +2181,36 @@ download_run( laptopOrigin, radius, downloadTime, totalFiles, first )
 	codolprintln( "CoDOL coop crash: download run ends, ok " + ok + ", " + int( level.crash_files_done ) + " of " + totalFiles + " files, " +
 		level.crash_download_elapsed + " s" );
 	return ok;
+}
+
+// The nearest living player's distance to the laptop.
+dsm_nearest( laptopOrigin )
+{
+	d = 99999;
+	players = maps\mp\gametypes\_coopmission::living_players();
+	for ( i = 0; i < players.size; i++ )
+	{
+		dd = distance( players[ i ].origin, laptopOrigin );
+		if ( dd < d )
+			d = dd;
+	}
+	return d;
+}
+
+// Signal strength from that distance (99 at the laptop, 16 at the edge of
+// the radius, as the recording's red 16% when the rookie strays).
+dsm_signal( laptopOrigin, radius )
+{
+	d = dsm_nearest( laptopOrigin );
+	strength = int( 100 - 84 * d / radius );
+	if ( strength > 99 )
+		strength = 99;
+	if ( strength < 0 )
+		strength = 0;
+	strength = strength - randomInt( 3 );
+	if ( strength < 0 )
+		strength = 0;
+	return strength;
 }
 
 dsm_hud( xOffset )
@@ -2317,23 +2361,7 @@ phase_heli()
 
 	// The searchers at the wreck (group_investigate_heli on their
 	// crouch_search / stand_search structs).
-	searchers = spawn_group( "group_investigate_heli", undefined, undefined, true );
-	for ( i = 0; i < searchers.size; i++ )
-	{
-		sp = searchers[ i ].coop_spawner;
-		idle = %casual_crouch_idle;
-		if ( isDefined( sp.target ) )
-		{
-			s = crash_struct( sp.target );
-			if ( isDefined( s ) )
-			{
-				searchers[ i ] forceTeleport( s.origin, searchers[ i ].angles );
-				if ( isDefined( s.script_animation ) && s.script_animation == "stand_search" )
-					idle = %patrol_bored_idle;
-			}
-		}
-		searchers[ i ] thread unaware( idle, 700 );
-	}
+	searchers = spawn_searchers();
 
 	// Down and out of the office, back south to the landing zone on the
 	// waypoint graph (nodes 55, 51, 314, 66, 77, 78, 79).
@@ -2343,9 +2371,20 @@ phase_heli()
 	route[ 1 ] = ( -228, 1669, 230 );
 	route[ 2 ] = ( -180, 1466, 229 );
 	route[ 3 ] = ( -151, 1174, 214 );
-	route[ 4 ] = ( 161, 975, 148 );
-	route[ 5 ] = ( 318, 796, 129 );
 	ghost_lead( route, "back to the landing zone" );
+	// With the download's survivors still on the office stairs the actor
+	// budget can be full when the stretch starts (MEASURED on the probe:
+	// 0 of 5 spawned, the wreck empty).  Half way there they are far
+	// enough behind to be taken out, and the searchers come now.
+	if ( alive_count( searchers ) == 0 )
+	{
+		clear_leftovers( 900 );
+		searchers = spawn_searchers();
+	}
+	route = [];
+	route[ 0 ] = ( 161, 975, 148 );
+	route[ 1 ] = ( 318, 796, 129 );
+	ghost_lead( route, "back to the landing zone (2)" );
 	vol = getEnt( "investigate_heli_volume", "targetname" );
 	volOrigin = ( 499, 740, 177 );
 	if ( isDefined( vol ) )
@@ -2417,6 +2456,28 @@ phase_heli()
 ground_or( p )
 {
 	return maps\mp\gametypes\_coopvehicle::ground_under( p );
+}
+
+spawn_searchers()
+{
+	searchers = spawn_group( "group_investigate_heli", undefined, undefined, true );
+	for ( i = 0; i < searchers.size; i++ )
+	{
+		sp = searchers[ i ].coop_spawner;
+		idle = %casual_crouch_idle;
+		if ( isDefined( sp.target ) )
+		{
+			s = crash_struct( sp.target );
+			if ( isDefined( s ) )
+			{
+				searchers[ i ] forceTeleport( s.origin, searchers[ i ].angles );
+				if ( isDefined( s.script_animation ) && s.script_animation == "stand_search" )
+					idle = %patrol_bored_idle;
+			}
+		}
+		searchers[ i ] thread unaware( idle, 700 );
+	}
+	return searchers;
 }
 
 bomb_timer( time )
@@ -2509,11 +2570,23 @@ phase_roof()
 	playFx( level._effect[ "crash_flare" ], flare + ( 0, 0, 4 ) );
 	playFx( level._effect[ "crash_flare_smoke" ], flare );
 	sound_at( "scn_crash_tropical_flare_start", flare );
+	// The recording: the flare, the wreck goes up behind, and the Black Hawk
+	// comes in over the roof before "mission complete" (7:13 -> 7:25, about
+	// ten seconds).  The mission used to end 4.5 s after the flare, with the
+	// helicopter still kilometres out and nobody facing it, so it was never
+	// seen.  Now the squad looks toward it and the end waits for it.
+	level.crash_chopper_arrived = undefined;
 	level thread extraction_chopper();
+	level thread watch_chopper();
+	start = getTime();
 	wait( 3 );
 	blow_wreck();
 	wait( 1.5 );
 	say( undefined, "crash_pri_0408" );
+	while ( !isDefined( level.crash_chopper_arrived ) && getTime() - start < 14000 )
+		wait( 0.1 );
+	wait( 1.5 );
+	level notify( "crash_chopper_view_stop" );
 	players = getPlayers();
 	kills = 0;
 	for ( i = 0; i < players.size; i++ )
@@ -2560,6 +2633,7 @@ extraction_chopper()
 	mover.angles = ( 0, 0, 0 );
 	level.crash_chopper = mover;
 	codolprintln( "CoDOL coop crash: extraction helicopter from " + start + " over " + path.size + " nodes" );
+	flyStart = getTime();
 	for ( i = 0; i < path.size; i++ )
 	{
 		mph = 60;
@@ -2578,7 +2652,51 @@ extraction_chopper()
 	}
 	// Over the roof, low.
 	roof = point( "smoke_point", ( 1696, 688, 698 ) );
-	mover moveTo( roof + ( -200, 0, 300 ), 4, 0, 2 );
+	dest = roof + ( -200, 0, 300 );
+	d = distance( mover.origin, dest );
+	time = d / 1056;
+	if ( time < 2.5 )
+		time = 2.5;
+	yaw = vectorToAngles( dest - mover.origin );
+	mover rotateTo( ( 0, yaw[ 1 ], 0 ), 0.5 );
+	mover moveTo( dest, time, 0, time * 0.4 );
+	wait( time * 0.7 );
+	level.crash_chopper_arrived = true;
+	codolprintln( "CoDOL coop crash: extraction helicopter over the roof at " + mover.origin + " after " + ( getTime() - flyStart ) / 1000 + " s" );
+}
+
+// The squad's view follows the incoming helicopter (the recording ends on
+// the rookie looking up at it).  Their controls are frozen; the view is
+// eased toward it a little each frame rather than snapped.
+watch_chopper()
+{
+	level endon( "crash_chopper_view_stop" );
+	wait( 0.5 );
+	for ( ;; )
+	{
+		wait( 0.05 );
+		if ( !isDefined( level.crash_chopper ) )
+			continue;
+		players = maps\mp\gametypes\_coopmission::living_players();
+		for ( i = 0; i < players.size; i++ )
+		{
+			p = players[ i ];
+			eye = p.origin + ( 0, 0, 60 );
+			want = vectorToAngles( level.crash_chopper.origin - eye );
+			have = p getPlayerAngles();
+			p setPlayerAngles( ( ease_angle( have[ 0 ], want[ 0 ], 0.12 ), ease_angle( have[ 1 ], want[ 1 ], 0.12 ), 0 ) );
+		}
+	}
+}
+
+ease_angle( from, to, f )
+{
+	d = to - from;
+	while ( d > 180 )
+		d -= 360;
+	while ( d < -180 )
+		d += 360;
+	return from + d * f;
 }
 
 // --------------------------------------------------------------------------

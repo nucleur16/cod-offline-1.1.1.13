@@ -10,7 +10,9 @@
 
 #using_animtree ( "generic_human" );
 
-main()
+// The native traversal starts this with four arguments, as dog_jump; a
+// script that declares none is a fatal "too many parameters" error.
+main( begin, begin_angles, end, animscript )
 {
 	self endon( "killanimscript" );
 	self animmode( "gravity" );

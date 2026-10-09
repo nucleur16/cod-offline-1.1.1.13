@@ -621,7 +621,7 @@ idle_anim( name, key )
 		case "sas1":
 		case "sas2":
 		case "sas3":
-			return %exposed_idle_alert_v1;
+			return %exposed_aim_5; // exposed_idle_alert_v1 is additive: bind pose
 		}
 	}
 	if ( !isDefined( name ) )

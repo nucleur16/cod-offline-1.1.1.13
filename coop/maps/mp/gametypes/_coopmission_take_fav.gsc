@@ -1530,7 +1530,9 @@ ghost_intro_run()
 	if ( !isDefined( ghost ) )
 		return;
 	ghost setCanDamage( false );
-	ghost.coop_idle_anim = %exposed_idle_alert_v1;
+	// exposed_idle_alert_v1 is additive in common_gametype_coop: alone it
+	// leaves the bind pose. exposed_aim_5 is a whole stand.
+	ghost.coop_idle_anim = %exposed_aim_5;
 	ghost notify( "coop_cast_pose" );
 	goal = struct( "ghost_intro_goal" );
 	if ( isDefined( goal ) )

@@ -358,6 +358,7 @@ init()
 	e.boat_done = false;
 	e.riders = [];
 	e.vazquez_alive_needed = true;
+	e.color_rank = -1;
 	level.coop_estate = e;
 
 	// The cast's looks (the zone's own models, docs/zone_assets): Ghost in
@@ -395,11 +396,53 @@ init()
 		if ( isDefined( v.classname ) && v.classname.size > 14 && getSubStr( v.classname, 0, 14 ) == "script_vehicle" )
 			v hide();
 	}
+	// IW4 _specialops_code specialops_remove_flag_check: in a Spec Ops game
+	// an entity whose script_specialops is 0 exists only outside Spec Ops
+	// and is deleted.  The base map carries five such script_brushmodels
+	// (MEASURED, mp_estate_tropical map entities): *190, a clip wall across
+	// the top of the river beach, (-5033 2423 -505)..(-4927 2665 1217);
+	// *10 over the villa roof; *7 and *20 in the villa; *51 on the road.
+	// _coopevents' cleanup removes other missions' entities but not these,
+	// and *190 is the invisible wall that stopped the user (and Ghost, at
+	// (-4994 2652 -509)) at the top of the beach in the 2026-10-08 run.
+	mp_only = 0;
+	ents = getEntArray();
+	for ( i = 0; i < ents.size; i++ )
+	{
+		e = ents[ i ];
+		if ( !isDefined( e ) || isPlayer( e ) || !isDefined( e.script_specialops ) )
+			continue;
+		if ( ( "" + e.script_specialops ) == "0" )
+		{
+			e delete();
+			mp_only++;
+		}
+	}
+	codolprintln( "CoDOL coop estate: removed " + mp_only + " multiplayer-only (script_specialops 0) entities" );
+
 	// A foliage model the coop mission removes (base map,
 	// script_noteworthy plant_delete_coop_take_estate).
 	plants = maps\mp\gametypes\_cooptraining::by_noteworthy( "plant_delete_coop_take_estate" );
 	for ( i = 0; i < plants.size; i++ )
 		plants[ i ] delete();
+
+	// The look: the recording plays the whole mission under low cloud in a
+	// thick grey river fog.  The mission zone ships no vision of its own and
+	// its fog is client createfx C1 draws only for the playlist map name
+	// (docs section 15.5), so the server's exponential fog (configstring 9,
+	// C1's 13; codol_script_fog.c) carries it.  Values matched by eye to the
+	// recording: trees at ~1000 units half gone, the far bank a grey wall.
+	// scr_coop_estate_fog "start half r g b opacity" overrides, "0" removes.
+	fog = getDvar( "scr_coop_estate_fog" );
+	if ( fog != "0" )
+	{
+		f = strTok( fog, " " );
+		if ( f.size >= 6 )
+			setExpFog( float( f[ 0 ] ), float( f[ 1 ] ), float( f[ 2 ] ), float( f[ 3 ] ), float( f[ 4 ] ), float( f[ 5 ] ), 0 );
+		else
+			setExpFog( 96, 1100, 0.63, 0.66, 0.67, 0.86, 0 );
+		codolprintln( "CoDOL coop estate: river fog set" );
+	}
 
 	level thread loadout_watch();
 	level thread maps\mp\gametypes\_cooptraining::show_nametags();
@@ -641,22 +684,351 @@ ghost_color_trigger()
 		self waittill( "trigger", who );
 		if ( !isDefined( who ) || !isPlayer( who ) )
 			continue;
-		ghost_to( color_node( self.script_color_allies ), self.script_color_allies );
+		// IW4 colour triggers move the squad forward; a player stepping
+		// back over an earlier one (or a second player behind) must not
+		// call Ghost back out of the house.
+		c = self.script_color_allies;
+		if ( color_rank( c ) >= 0 && color_rank( c ) <= level.coop_estate.color_rank )
+			continue;
+		if ( color_rank( c ) > level.coop_estate.color_rank )
+			level.coop_estate.color_rank = color_rank( c );
+		ghost_to( color_node( c ), c );
 		wait( 2 );
 	}
+}
+
+// The colours in the order the mission reaches them (-1: off the route).
+color_rank( c )
+{
+	order = strTok( "r2 r3 r4 r7 r14 r0 r15 r9 r11 r12 r10 r1 r8 r6 r5", " " );
+	for ( i = 0; i < order.size; i++ )
+	{
+		if ( order[ i ] == c )
+			return i;
+	}
+	return -1;
 }
 
 ghost_to( point, why )
 {
 	g = level.coop_estate.ghost;
-	if ( !isDefined( g ) || !isDefined( point ) || isDefined( level.coop_estate.ghost_riding ) )
+	if ( !isDefined( g ) || !isDefined( point ) )
 		return;
 	if ( isDefined( level.coop_estate.ghost_goal_why ) && level.coop_estate.ghost_goal_why == why )
 		return;
 	level.coop_estate.ghost_goal = point;
 	level.coop_estate.ghost_goal_why = why;
-	g setGoalPos( point );
+	// A stage order moves the colour rank on too (its colour is the first
+	// word of the reason, "r7 (mid house)").
+	r = color_rank( strTok( why, " " )[ 0 ] );
+	if ( r > level.coop_estate.color_rank )
+		level.coop_estate.color_rank = r;
 	codolprintln( "CoDOL coop estate: Ghost to " + why + " " + point );
+	// Aboard the zodiac or walking up the beach: the order waits for the
+	// end of the ride (ghost_up_the_beach takes it over).
+	if ( isDefined( level.coop_estate.ghost_riding ) )
+		return;
+	level thread ghost_walk( point );
+}
+
+// --------------------------------------------------------------------------
+// Ghost's way: the base map's own SP path nodes (_coopmission_estate_nav,
+// generated from the mp_estate_tropical map entities).  The coop actors plan
+// over the multiplayer bot graph, which has no waypoint on the river beach or
+// the slope above it (MEASURED: the nearest, node 10, is 725 units from the
+// landing).  In the user's run of 2026-10-08 Ghost walked from the landing
+// toward that node, wedged against the bank at (-4994 2652 -509) and stood
+// there for the rest of the session while the rookie waited for him.  Here
+// he walks node to node (each leg short enough for the native straight leg),
+// and a leg he cannot finish is skipped by putting him on its node: at once
+// when no player sees him, after a longer wait when one does.
+// --------------------------------------------------------------------------
+
+nav_init()
+{
+	if ( isDefined( level.coop_estate.nav_p ) )
+		return;
+	level.coop_estate.nav_p = maps\mp\gametypes\_coopmission_estate_nav::nav_points();
+	level.coop_estate.nav_l = maps\mp\gametypes\_coopmission_estate_nav::nav_links();
+	level.coop_estate.nav_ok = [];
+	codolprintln( "CoDOL coop estate: Ghost's way over " + level.coop_estate.nav_p.size + " path nodes" );
+}
+
+// A link is walked only when it is open at knee and chest height.
+nav_link_ok( i, j )
+{
+	key = i + "_" + j;
+	if ( i > j )
+		key = j + "_" + i;
+	// An open link is remembered; a closed one for 15 s only, since the
+	// stage blockers (stairs_blocker, post_breach_player_blocker, the breach
+	// door) open as the mission goes on.
+	if ( isDefined( level.coop_estate.nav_ok[ key ] ) )
+	{
+		t = level.coop_estate.nav_ok[ key ];
+		if ( t == 0 )
+			return true;
+		if ( getTime() - t < 15000 )
+			return false;
+	}
+	a = level.coop_estate.nav_p[ i ];
+	b = level.coop_estate.nav_p[ j ];
+	// Knee and chest height: head height fails under the basement stair's
+	// ceiling (MEASURED, navlink 230 -> 222: open to 48, shut from 56).
+	ok = sightTracePassed( a + ( 0, 0, 32 ), b + ( 0, 0, 32 ), false, undefined ) &&
+		sightTracePassed( a + ( 0, 0, 48 ), b + ( 0, 0, 48 ), false, undefined );
+	if ( ok )
+		level.coop_estate.nav_ok[ key ] = 0;
+	else
+		level.coop_estate.nav_ok[ key ] = getTime() + 1;
+	return ok;
+}
+
+// The nearest node in the open from a point (up to 600 units away).
+nav_nearest( point )
+{
+	p = level.coop_estate.nav_p;
+	tried = [];
+	for ( pass = 0; pass < 6; pass++ )
+	{
+		best = -1;
+		bestd = 600 * 600;
+		for ( i = 0; i < p.size; i++ )
+		{
+			if ( isDefined( tried[ i ] ) )
+				continue;
+			d = distanceSquared( p[ i ], point );
+			if ( d < bestd )
+			{
+				bestd = d;
+				best = i;
+			}
+		}
+		if ( best < 0 )
+			return -1;
+		tried[ best ] = true;
+		if ( sightTracePassed( point + ( 0, 0, 40 ), p[ best ] + ( 0, 0, 40 ), false, undefined ) )
+			return best;
+	}
+	return -1;
+}
+
+// A* over the nodes; the open list is scanned (a few hundred nodes), and the
+// search yields a frame every 60 expansions.
+nav_route( from, to )
+{
+	p = level.coop_estate.nav_p;
+	l = level.coop_estate.nav_l;
+	g = [];
+	prev = [];
+	closed = [];
+	open = [];
+	g[ from ] = 0;
+	open[ 0 ] = from;
+	n = 0;
+	found = false;
+	while ( open.size > 0 )
+	{
+		bi = 0;
+		bf = undefined;
+		for ( k = 0; k < open.size; k++ )
+		{
+			f = g[ open[ k ] ] + distance( p[ open[ k ] ], p[ to ] );
+			if ( !isDefined( bf ) || f < bf )
+			{
+				bf = f;
+				bi = k;
+			}
+		}
+		u = open[ bi ];
+		open[ bi ] = open[ open.size - 1 ];
+		open[ open.size - 1 ] = undefined;
+		if ( u == to )
+		{
+			found = true;
+			break;
+		}
+		closed[ u ] = true;
+		links = strTok( l[ u ], " " );
+		for ( k = 0; k < links.size; k++ )
+		{
+			v = int( links[ k ] );
+			if ( isDefined( closed[ v ] ) )
+				continue;
+			ng = g[ u ] + distance( p[ u ], p[ v ] );
+			if ( isDefined( g[ v ] ) && ng >= g[ v ] )
+				continue;
+			if ( !nav_link_ok( u, v ) )
+				continue;
+			if ( !isDefined( g[ v ] ) )
+				open[ open.size ] = v;
+			g[ v ] = ng;
+			prev[ v ] = u;
+		}
+		n++;
+		if ( n % 60 == 0 )
+			wait( 0.05 );
+	}
+	route = [];
+	if ( !found )
+		return route;
+	rev = [];
+	for ( u = to; ; u = prev[ u ] )
+	{
+		rev[ rev.size ] = u;
+		if ( u == from )
+			break;
+	}
+	for ( k = rev.size - 1; k >= 0; k-- )
+		route[ route.size ] = p[ rev[ k ] ];
+	return route;
+}
+
+ghost_walk( goal )
+{
+	level notify( "coop_estate_ghost_walk" );
+	level endon( "coop_estate_ghost_walk" );
+	level endon( "coop_mission_over" );
+	g = level.coop_estate.ghost;
+	if ( !isDefined( g ) )
+		return;
+	g endon( "death" );
+	nav_init();
+	points = [];
+	a = nav_nearest( g.origin );
+	b = nav_nearest( goal );
+	if ( a >= 0 && b >= 0 && a != b && distance( g.origin, goal ) > 200 )
+		points = nav_route( a, b );
+	// The route's first node may lie behind him: start from the node after
+	// the nearest one when that is no farther from the goal.
+	if ( points.size >= 2 && distance( g.origin, points[ 1 ] ) < distance( points[ 0 ], points[ 1 ] ) )
+		points = array_from( points, 1 );
+	points[ points.size ] = goal;
+	codolprintln( "CoDOL coop estate: Ghost's way to " + goal + ": " + ( points.size - 1 ) + " nodes (from node " + a + " to " + b + ")" );
+	for ( k = 0; k < points.size; k++ )
+	{
+		last = ( k == points.size - 1 );
+		wp = points[ k ];
+		g setGoalPos( wp );
+		// The native goal radius is 64: he stops inside it.
+		near = 80;
+		if ( last )
+			near = 72;
+		mark = g.origin;
+		still = 0;
+		for ( ;; )
+		{
+			wait( 0.25 );
+			if ( flat_distance( g.origin, wp ) < near )
+				break;
+			if ( distance( g.origin, mark ) > 20 )
+			{
+				mark = g.origin;
+				still = 0;
+				continue;
+			}
+			still += 0.25;
+			// Busy in a fight he may hold; leave him to it.
+			if ( isDefined( g.enemy ) && !g.ignoreall )
+			{
+				still = 0;
+				continue;
+			}
+			if ( still >= 8 || ( still >= 3 && !ghost_seen() ) )
+			{
+				spot = maps\mp\gametypes\_coopvehicle::ground_under( wp + ( 0, 0, 32 ) );
+				g forceTeleport( spot, g.angles );
+				g setGoalPos( wp );
+				codolprintln( "CoDOL coop estate: Ghost stuck at " + mark + ", put on his way at " + spot );
+				break;
+			}
+		}
+	}
+}
+
+// Off the boat and up the beach to the landing node.  The beach is off the
+// multiplayer bot graph and its rocks fail the native straight-leg hull
+// test, so a goal there sends the actor toward the graph's nearest waypoint
+// and into the bank (MEASURED on the probe 2026-10-09: three legs of the
+// node route, each wedged at (-4994 2652 -509) or (-4840 2394 -468)).  He
+// walks the node route on a mover at the patrol walk's own pace (about 30
+// units a second, the native walk's measured speed) with that walk playing,
+// as the training jeep carries Price (codol_actorRide), then goes on under
+// his own legs from the landing node.
+ghost_up_the_beach( goal )
+{
+	level endon( "coop_mission_over" );
+	g = level.coop_estate.ghost;
+	if ( !isDefined( g ) )
+		return;
+	g endon( "death" );
+	level.coop_estate.ghost_goal = goal;
+	level.coop_estate.ghost_goal_why = "r2 (landing)";
+	nav_init();
+	points = [];
+	a = nav_nearest( g.origin );
+	b = nav_nearest( goal );
+	if ( a >= 0 && b >= 0 && a != b )
+		points = nav_route( a, b );
+	points[ points.size ] = goal;
+	mover = spawn( "script_model", g.origin );
+	mover setModel( "tag_origin" );
+	mover.angles = g.angles;
+	g animMode( "nophysics" );
+	g.coop_cast = "walk";
+	g.coop_idle_anim = %patrol_bored_patrolwalk;
+	g setAnimKnobAll( %patrol_bored_patrolwalk, %body, 1, 0.2, 1 );
+	g notify( "coop_cast_pose" );
+	wait( 0.05 );
+	g codol_actorRide( mover );
+	level.coop_estate.ghost_riding = true;
+	codolprintln( "CoDOL coop estate: Ghost walks up the beach over " + ( points.size - 1 ) + " nodes" );
+	for ( k = 0; k < points.size; k++ )
+	{
+		target = maps\mp\gametypes\_coopvehicle::ground_under( points[ k ] + ( 0, 0, 32 ) );
+		d = distance( mover.origin, target );
+		if ( d < 8 )
+			continue;
+		dir = target - mover.origin;
+		mover rotateTo( ( 0, vectorToAngles( ( dir[ 0 ], dir[ 1 ], 0 ) )[ 1 ], 0 ), 0.4 );
+		t = d / 30;
+		mover moveTo( target, t );
+		wait( t );
+	}
+	g codol_actorRide();
+	g forceTeleport( mover.origin, mover.angles );
+	g animMode( "none" );
+	g.coop_cast = undefined;
+	g.coop_idle_anim = undefined;
+	g setAnimKnobAll( %exposed_aim_5, %body, 1, 0.2, 1 );
+	g notify( "coop_cast_pose" );
+	level.coop_estate.ghost_riding = undefined;
+	mover delete();
+	codolprintln( "CoDOL coop estate: Ghost at the landing " + g.origin );
+	// A colour or stage order given while he walked takes over now.
+	if ( isDefined( level.coop_estate.ghost_goal ) && level.coop_estate.ghost_goal != goal )
+		level thread ghost_walk( level.coop_estate.ghost_goal );
+}
+
+array_from( list, first )
+{
+	out = [];
+	for ( i = first; i < list.size; i++ )
+		out[ out.size ] = list[ i ];
+	return out;
+}
+
+ghost_seen()
+{
+	g = level.coop_estate.ghost;
+	players = maps\mp\gametypes\_coopmission::living_players();
+	for ( i = 0; i < players.size; i++ )
+	{
+		if ( distance( players[ i ].origin, g.origin ) < 2500 &&
+		     bulletTracePassed( players[ i ] getEye(), g.origin + ( 0, 0, 48 ), false, g ) )
+			return true;
+	}
+	return false;
 }
 
 // The coop actors path over the bot waypoint graph and can wedge on the
@@ -703,7 +1075,7 @@ ghost_catch_up()
 		dest = maps\mp\gametypes\_coopvehicle::ground_under( dest + ( 0, 0, 32 ) );
 		g forceTeleport( dest, g.angles );
 		if ( isDefined( level.coop_estate.ghost_goal ) )
-			g setGoalPos( level.coop_estate.ghost_goal );
+			level thread ghost_walk( level.coop_estate.ghost_goal );
 		codolprintln( "CoDOL coop estate: Ghost caught up to " + dest + " (was " + int( d ) + " away)" );
 	}
 }
@@ -1168,6 +1540,14 @@ stage_boat()
 	if ( isDefined( g ) )
 	{
 		g forceTeleport( local_to_world( boat.origin, boat.angles, ( -48, 0, 22 ) ), boat.angles );
+		// Low at the stern by the motor, as the recording has him, not
+		// standing over the riders (casual_crouch_idle: common_gametype_coop,
+		// in every coop client's tree).
+		g animMode( "nophysics" );
+		g.coop_cast = "boat";
+		g.coop_idle_anim = %casual_crouch_idle;
+		g setAnimKnobAll( %casual_crouch_idle, %body, 1, 0.2, 1 );
+		g notify( "coop_cast_pose" );
 		wait( 0.1 );
 		g codol_actorRide( boat );
 		level.coop_estate.ghost_riding = true;
@@ -1226,10 +1606,15 @@ stage_boat()
 	if ( isDefined( g ) )
 	{
 		g codol_actorRide();
+		g animMode( "none" );
+		g.coop_cast = undefined;
+		g.coop_idle_anim = undefined;
+		g setAnimKnobAll( %exposed_aim_5, %body, 1, 0.2, 1 );
+		g notify( "coop_cast_pose" );
 		level.coop_estate.ghost_riding = undefined;
 		spot = maps\mp\gametypes\_coopvehicle::ground_under( boat.origin - anglesToForward( boat.angles ) * 60 + ( 0, 0, 64 ) );
 		g forceTeleport( spot, boat.angles );
-		ghost_to( color_node( "r2" ), "r2 (landing)" );
+		level thread ghost_up_the_beach( color_node( "r2" ) );
 	}
 	set_checkpoint( path[ path.size - 1 ].origin, "the beach" );
 	codolprintln( "CoDOL coop estate: zodiac ride over at " + boat.origin );
@@ -2128,6 +2513,10 @@ heli_leave()
 //                          press use at the laptop and the breach (button 8;
 //                          SIMULATED when it does not take), walk out of the
 //                          safe room
+//   ghostlead [rN ...]     Ghost walks his colour nodes in order (default
+//                          the stealth leg r2 r3 r7 r14 r0 r15) with player
+//                          0 kept in sight 250 units behind him; each leg's
+//                          time and any stuck rescue are logged
 //   trace <x> <y> <z> ...  what a bullet straight down from 40 above each
 //                          point meets (floor, water, a counter top)
 // --------------------------------------------------------------------------
@@ -2138,6 +2527,61 @@ test_command( tokens )
 	{
 	case "estateroute":
 		level thread test_route();
+		break;
+	case "brushnear":
+		// brushnear <x> <y> <z> <r>: every script_brushmodel within r, with
+		// its bounds; "brushnear off <entnum>" makes one not solid.
+		if ( tokens.size >= 3 && tokens[ 1 ] == "off" )
+		{
+			all = getEntArray( "script_brushmodel", "classname" );
+			for ( j = 0; j < all.size; j++ )
+			{
+				if ( all[ j ] getEntityNumber() == int( tokens[ 2 ] ) )
+				{
+					all[ j ] notSolid();
+					codolprintln( "CoDOL cooptest: brush ent " + tokens[ 2 ] + " not solid" );
+				}
+			}
+			break;
+		}
+		if ( tokens.size >= 5 )
+		{
+			pt = ( float( tokens[ 1 ] ), float( tokens[ 2 ] ), float( tokens[ 3 ] ) );
+			all = getEntArray( "script_brushmodel", "classname" );
+			for ( j = 0; j < all.size; j++ )
+			{
+				lo = all[ j ] getPointInBounds( -1, -1, -1 );
+				hi = all[ j ] getPointInBounds( 1, 1, 1 );
+				mid = ( lo + hi ) * 0.5;
+				if ( distance( mid, pt ) > float( tokens[ 4 ] ) )
+					continue;
+				name = "";
+				if ( isDefined( all[ j ].targetname ) )
+					name = all[ j ].targetname;
+				codolprintln( "CoDOL cooptest: brush ent " + all[ j ] getEntityNumber() + " '" + name + "' origin " + all[ j ].origin + " min " + lo + " max " + hi );
+			}
+		}
+		break;
+	case "walknav":
+		// walknav <rN|x y z> ...: player 0 walks the path-node route to each
+		// in turn (a player's way through the mission, for blockers).
+		level thread test_walk_nav( tokens );
+		break;
+	case "navlink":
+		// navlink <i> <j> ...: sight traces between path node pairs at 16..72.
+		nav_init();
+		for ( j = 1; j + 1 < tokens.size; j += 2 )
+		{
+			a = level.coop_estate.nav_p[ int( tokens[ j ] ) ];
+			b = level.coop_estate.nav_p[ int( tokens[ j + 1 ] ) ];
+			line = "CoDOL cooptest: navlink " + tokens[ j ] + " " + a + " -> " + tokens[ j + 1 ] + " " + b + ":";
+			for ( h = 16; h <= 72; h += 8 )
+				line += " " + h + "=" + sightTracePassed( a + ( 0, 0, h ), b + ( 0, 0, h ), false, undefined );
+			codolprintln( line );
+		}
+		break;
+	case "ghostlead":
+		level thread test_ghost_lead( tokens );
 		break;
 	case "trace":
 		for ( j = 1; j + 2 < tokens.size; j += 3 )
@@ -2243,4 +2687,76 @@ test_shoot_group( p, ais, what )
 		else
 			codolprintln( "CoDOL cooptest: estateroute " + what + ": shot dead for real" );
 	}
+}
+
+test_ghost_lead( tokens )
+{
+	level endon( "coop_mission_over" );
+	g = level.coop_estate.ghost;
+	if ( !isDefined( g ) )
+		return;
+	names = [];
+	for ( i = 1; i < tokens.size; i++ )
+		names[ names.size ] = tokens[ i ];
+	if ( names.size <= 0 )
+		names = strTok( "r2 r3 r7 r14 r0 r15", " " );
+	for ( i = 0; i < names.size; i++ )
+	{
+		goal = color_node( names[ i ] );
+		if ( !isDefined( goal ) )
+			continue;
+		level.coop_estate.ghost_goal_why = undefined;
+		start = getTime();
+		ghost_to( goal, "test " + names[ i ] );
+		for ( t = 0; t < 120; t += 0.5 )
+		{
+			p = maps\mp\gametypes\_cooptest::player( 0 );
+			if ( isDefined( p ) && isAlive( p ) && distance( p.origin, g.origin ) > 350 )
+			{
+				back = g.origin - anglesToForward( g.angles ) * 250;
+				p setOrigin( maps\mp\gametypes\_coopvehicle::ground_under( back + ( 0, 0, 48 ) ) + ( 0, 0, 2 ) );
+			}
+			if ( flat_distance( g.origin, goal ) < 64 )
+				break;
+			wait( 0.5 );
+		}
+		codolprintln( "CoDOL cooptest: ghostlead " + names[ i ] + " " + flat_distance( g.origin, goal ) + " from the node after " + ( getTime() - start ) / 1000 + " s" );
+	}
+	codolprintln( "CoDOL cooptest: ghostlead done" );
+}
+
+test_walk_nav( tokens )
+{
+	level endon( "coop_mission_over" );
+	p = maps\mp\gametypes\_cooptest::player( 0 );
+	if ( !isDefined( p ) )
+		return;
+	nav_init();
+	stuck = 0;
+	legs = 0;
+	for ( i = 1; i < tokens.size; i++ )
+	{
+		goal = color_node( tokens[ i ] );
+		if ( !isDefined( goal ) && i + 2 < tokens.size )
+		{
+			goal = ( float( tokens[ i ] ), float( tokens[ i + 1 ] ), float( tokens[ i + 2 ] ) );
+			i += 2;
+		}
+		if ( !isDefined( goal ) )
+			continue;
+		a = nav_nearest( p.origin );
+		b = nav_nearest( goal );
+		points = [];
+		if ( a >= 0 && b >= 0 && a != b )
+			points = nav_route( a, b );
+		points[ points.size ] = goal;
+		codolprintln( "CoDOL cooptest: walknav to " + goal + " over " + ( points.size - 1 ) + " nodes" );
+		for ( k = 0; k < points.size; k++ )
+		{
+			legs++;
+			if ( !maps\mp\gametypes\_cooptest::walk_to( p, points[ k ], "nav node " + k ) )
+				stuck++;
+		}
+	}
+	codolprintln( "CoDOL cooptest: walknav done, " + stuck + " of " + legs + " legs stuck" );
 }

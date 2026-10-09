@@ -87,6 +87,18 @@ cleanup()
 			deleted++;
 			continue;
 		}
+		// IW4 _specialops_code specialops_remove_flag_check: script_specialops 0
+		// marks an entity that exists only outside Spec Ops (the base maps'
+		// multiplayer clip walls, S&D bomb sites; estate's *190 walls off the
+		// top of the beach). killhouse's minimap_corner origins carry it too,
+		// and coop_minimap reads them.
+		if ( isDefined( e.script_specialops ) && ( "" + e.script_specialops ) == "0" &&
+		     !( isDefined( e.targetname ) && e.targetname == "minimap_corner" ) )
+		{
+			e delete();
+			deleted++;
+			continue;
+		}
 		// IW4 SP _load deletes "delete_on_load" entities.
 		if ( isDefined( e.targetname ) && e.targetname == "delete_on_load" )
 		{

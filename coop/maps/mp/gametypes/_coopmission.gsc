@@ -987,6 +987,15 @@ announce( text )
 		players[ i ] iPrintLnBold( text );
 }
 
+// Log the English text for probes; players see the zone's localized string.
+announce_localized( text, logtext )
+{
+	codolprintln( "CoDOL coop mission: " + logtext );
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+		players[ i ] iPrintLnBold( text );
+}
+
 mission_complete( reason )
 {
 	// Threaded: every caller endons "coop_mission_over", which mission_over
@@ -1007,8 +1016,12 @@ mission_over( success, reason )
 	level.coop_mission_success = success;
 	level notify( "coop_mission_over" );
 
-	if ( success )
-		announce( "MISSION COMPLETE" );
+	// Retail draws its localized banner, and none at all after the training
+	// (that mission ends on Price's debrief and the fade).
+	if ( success && isDefined( level.coop_training_flow ) && level.coop_training_flow )
+		codolprintln( "CoDOL coop mission: MISSION COMPLETE" );
+	else if ( success )
+		announce_localized( &"SCRIPT_MISSION_COMPLETE", "MISSION COMPLETE" );
 	else
 		announce( "MISSION FAILED" );
 	codolprintln( "CoDOL coop mission: over, success " + success + " (" + reason + "), " +
@@ -1081,6 +1094,9 @@ init()
 	level.coop_spawner_count = 0;
 	level.coop_seek_players = false;
 	level.coop_min_spawn_distance = 1024;
+
+	// Retail shows the localized banner (localized_common_gametype_coop).
+	precacheString( &"SCRIPT_MISSION_COMPLETE" );
 
 	// The native actor pool is 32 slots (CODOL_MAX_ACTOR_SLOTS); IW4's 25
 	// alive is a singleplayer engine number.
