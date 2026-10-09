@@ -494,15 +494,17 @@ boss_setup()
 	self.deathFunction = ::boss_death_function;
 	self.allow_ragdoll = true;
 
-	// The idle zombie_stop.gsc holds when the boss is not moving.
-	self.idle_anim_override = %juggernaut_stand_idle_zm;
+	// Aim5_zm is the complete standing pose.  The idle and fire clips in
+	// C1's mounted tree are additive and need this pose beneath them.
+	self.idle_anim_override = %juggernaut_aim5_zm;
+	self.idle_additive_override = %juggernaut_stand_idle_zm;
 
 	// T5 ape: nuke and tesla only hurt the boss.
 	self.nuke_damage_func = ::boss_nuke_damage;
 	self.tesla_damage_func = ::boss_tesla_damage;
 	self.instakill_func = ::boss_instakill;
 
-	self setAnimKnobAll( %juggernaut_stand_idle_zm, %body, 1, 0.1, 1 );
+	self setAnimKnobAll( %juggernaut_aim5_zm, %body, 1, 0.1, 1 );
 
 	self boss_eye_on();
 	self thread boss_ambient_sounds();
@@ -739,9 +741,15 @@ boss_fire_burst( target )
 	self.boss_fire_time = getTime();
 	self setGoalPos( self.origin );
 
-	// Spin-up: the shipped one-shot, on the aim pose.
+	// The long additive idle keeps the native actor in its scripted state
+	// through the whole burst; publish the complete aim pose beneath it.
+	// C1's mounted tree puts idle_zm under add_idle and fire_burst_zm under
+	// add_fire.  Neither clip can pose the boss model by itself.
 	yaw = vectorToAngles( target.origin - self.origin );
 	self animscripted( "bossspin", self.origin, ( 0, yaw[ 1 ], 0 ), %juggernaut_stand_idle_zm, "normal", %body, 1, 0.2 );
+	self setAnimKnobAll( %juggernaut_aim5_zm, %body, 1, 0.1, 1 );
+	self setAnim( %add_idle, 1, 0.1, 1 );
+	self setAnimKnob( %juggernaut_stand_idle_zm, 1, 0.1, 1 );
 	self playSound( "zmb_juggernaut_gatling_spinup" );
 	wait( 0.8 );
 
@@ -754,7 +762,7 @@ boss_fire_burst( target )
 
 	self playLoopSound( "zmb_juggernaut_gatling_fire" );
 	// The mounted generic_human tree puts this clip under add_fire : additive.
-	// Keep the scripted full-body idle alive beneath it for the whole burst.
+	// Keep the complete aim pose and additive idle alive beneath it.
 	self setAnim( %add_fire, 1, 0.1, 1 );
 
 	while ( getTime() < burst_end )
@@ -780,6 +788,7 @@ boss_fire_burst( target )
 	self stopLoopSound();
 	self playSound( "zmb_juggernaut_gatling_spindown" );
 	self clearAnim( %add_fire, 0.1 );
+	self clearAnim( %add_idle, 0.1 );
 	self stopanimscripted();
 
 	self.boss_firing = false;
