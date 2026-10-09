@@ -5,3 +5,6 @@
 *.pre-*
 # old diagnostic build, no source here
 Kernel33_trace.dll
+
+# parity-log branch build output
+Kernel33_parity.dll
