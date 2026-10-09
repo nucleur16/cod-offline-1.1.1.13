@@ -66,7 +66,7 @@
 // scr_zm_extract_arrive (seconds from the call to the landing, default 60),
 // scr_zm_extract_wait (seconds the helicopter waits, default 60).
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 HELI_VEHICLE = "blackhawk_minigun";
 HELI_MODEL = "vehicle_blackhawk_minigun_hero";
@@ -354,7 +354,7 @@ extraction_start()
 	level thread extraction_horde();
 
 	// The rescue music, a character's radio call and HQ's answer.
-	level thread maps\mp\gametypes\_zombiemode_audio::change_zombie_music( "rescue" );
+	level thread maps\_zombiemode_audio::change_zombie_music( "rescue" );
 	level thread evac_call_vo();
 
 	// "Rescue team arriving: N minutes".
@@ -392,7 +392,7 @@ pick_route()
 	open = [];
 	for ( i = 0; i < level.zm_extraction_routes.size; i++ )
 	{
-		zone = maps\mp\gametypes\_zombiemode_zone_manager::zone_at_point( level.zm_extraction_routes[ i ].lz );
+		zone = maps\_zombiemode_zone_manager::zone_at_point( level.zm_extraction_routes[ i ].lz );
 		if ( isDefined( zone ) && zone.enabled )
 			open[ open.size ] = level.zm_extraction_routes[ i ];
 	}
@@ -417,7 +417,7 @@ extraction_horde()
 
 	level.zm_extraction_horde = true;
 	level.max_zombie_func = ::extraction_max_zombies;
-	level.round_spawn_func = maps\mp\gametypes\_zombiemode_spawner::round_spawning;
+	level.round_spawn_func = maps\_zombiemode_spawner::round_spawning;
 	level thread [[ level.round_spawn_func ]]();
 }
 
@@ -440,7 +440,7 @@ evac_call_vo()
 	if ( callers.size > 0 )
 	{
 		level.player_is_speaking = false;
-		callers[ randomInt( callers.size ) ] maps\mp\gametypes\_zombiemode_audio::create_and_play_dialog( "evac_call", true );
+		callers[ randomInt( callers.size ) ] maps\_zombiemode_audio::create_and_play_dialog( "evac_call", true );
 	}
 
 	wait( 4 );
@@ -458,7 +458,7 @@ radio_all( alias, delay )
 {
 	if ( isDefined( delay ) && delay > 0 )
 		wait( delay );
-	if ( !maps\mp\gametypes\_zombiemode_audio::alias_exists( alias ) )
+	if ( !maps\_zombiemode_audio::alias_exists( alias ) )
 		return;
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
@@ -927,7 +927,7 @@ extraction_finish()
 				p ShowHudSplash( "zrescue_left", 0 );
 		}
 
-		level thread maps\mp\gametypes\_zombiemode_audio::change_zombie_music( "victory" );
+		level thread maps\_zombiemode_audio::change_zombie_music( "victory" );
 		codolprintln( "CoDOL zm extraction: WIN -- " + extracted + " extracted, " + left + " left behind, on round " + level.round_number );
 	}
 	else

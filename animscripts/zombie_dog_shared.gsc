@@ -1,4 +1,4 @@
-// zm hellhound animscript: maps/mp/animscripts/zombie_dog_shared.gsc
+// zm hellhound animscript: animscripts/zombie_dog_shared.gsc
 //
 // Ported from this tree's multiplayer dog animscript
 // maps/mp/animscripts/dog_shared.gsc (itself adapted from the shipped T5
@@ -14,13 +14,13 @@
 //   - HandleNoteTrack and trackLoop treat species "zombie_dog" as a dog.
 
 /*
-	scripts/codol/maps/mp/animscripts/dog_shared.gsc
+	maps/mp/animscripts/dog_shared.gsc
 
 	Adapted from the shipped Black Ops (T5) script source:
 		D:\CoD\COD-GSC-Source\T5-STEAM-GSC\maps\mp\animscripts\shared.gsc
 		D:\CoD\COD-GSC-Source\T5-STEAM-GSC\maps\mp\animscripts\utility.gsc
 
-	This file carries ONLY the helpers the maps\mp\animscripts\zombie_dog_* scripts
+	This file carries ONLY the helpers the animscripts\zombie_dog_* scripts
 	call.  It is deliberately a separate module rather than a port of the two
 	T5 files: the CoDOL tree already mounts an IW4-shaped animscripts\shared
 	and animscripts\utility (bin/home/codol_rawfiles/animscripts/), and those
@@ -29,7 +29,7 @@
 
 	Changed for CoDOL:
 	  - shared.gsc + utility.gsc merged into one dog-local module, so the dog
-	    scripts #include maps\mp\animscripts\zombie_dog_shared instead of
+	    scripts #include animscripts\zombie_dog_shared instead of
 	    maps\mp\animscripts\shared / ...\utility (neither path exists here).
 	  - T5 canonical-hash dvar literals GetDvarInt( #"name" ) rewritten to the
 	    plain string form GetDvarInt( "name" ): the #"..." token is a T5

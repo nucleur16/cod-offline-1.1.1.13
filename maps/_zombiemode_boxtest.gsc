@@ -18,7 +18,7 @@
 //   volumes             list the player_volumes and whether each client is in one.
 //   goto <client> <x> <y> <z>   move a client.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {
@@ -73,7 +73,7 @@ boxtest_watch()
 			break;
 
 		case "firesale":
-			level thread maps\mp\gametypes\_zombiemode_powerups::start_fire_sale();
+			level thread maps\_zombiemode_powerups::start_fire_sale();
 			wait( 1 );
 			boxtest_dump();
 			level waittill( "fire_sale_off" );
@@ -90,7 +90,7 @@ boxtest_watch()
 			break;
 
 		case "volumes":
-			vols = maps\mp\gametypes\_zombiemode_powerups::playable_area_volumes();
+			vols = maps\_zombiemode_powerups::playable_area_volumes();
 			for ( i = 0; i < vols.size; i++ )
 				codolprintln( "CoDOL boxtest: player_volume ent " + vols[ i ] getEntityNumber() + " " + vols[ i ].targetname + " at " + vols[ i ].origin );
 			players = getPlayers();
@@ -148,7 +148,7 @@ boxtest_use( clientnum, n )
 			wait( 0.25 );
 
 		if ( player.score < 2000 )
-			player maps\mp\gametypes\_zombiemode_score::add_to_player_score( 5000 );
+			player maps\_zombiemode_score::add_to_player_score( 5000 );
 
 		// A test client has nothing in hand; the box's "none" guard lets it
 		// through on this developer-only mark.
@@ -290,7 +290,7 @@ boxtest_drop_points( label, points )
 		level.powerup_drop_count = 0;
 		level.zombie_vars[ "zombie_drop_item" ] = 1;
 		before = getEntArray( "script_model", "classname" ).size;
-		maps\mp\gametypes\_zombiemode_powerups::powerup_drop( points[ i ] );
+		maps\_zombiemode_powerups::powerup_drop( points[ i ] );
 		models = getEntArray( "script_model", "classname" );
 		made = undefined;
 		for ( k = 0; k < models.size; k++ )

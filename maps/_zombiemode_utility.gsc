@@ -553,7 +553,7 @@ play_sound_on_ent( ref )
 // localize key set -- 458 keys in localized_code_post_gfx_mp alone, and the
 // same keys again in zm_prototype_sh and zm_zombie_training
 // (docs/zone_assets/ALL_localize.txt).  So T5's ref table ports verbatim; only
-// the registrations move to maps\mp\gametypes\_zombiemode::init_hints().
+// the registrations move to maps\_zombiemode::init_hints().
 //
 // self is the trigger, ent is the entity whose script_hint may override.
 // fallback_ref is this server's addition: T5 falls through to

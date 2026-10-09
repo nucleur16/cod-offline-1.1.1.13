@@ -9,7 +9,7 @@
 // a soldier without an enemy patrols at a walk (IW4 _patrol's
 // patrol_bored_patrolwalk).  Both clips ship in common_gametype_coop.
 
-#include maps\mp\animscripts\soldier_shared;
+#include animscripts\soldier_shared;
 
 #using_animtree ( "generic_human" );
 

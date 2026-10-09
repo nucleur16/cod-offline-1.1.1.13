@@ -44,7 +44,7 @@
 // The lateral rail movement (script_parameters use_rail) is not ported; rail
 // targets pop up in place.
 //
-// Coop category root only; names no multiplayer module.
+// Coop module (maps/, IW4 singleplayer namespace); names no multiplayer module.
 
 init()
 {
@@ -328,7 +328,7 @@ course_run( runner )
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 		players[ i ] playLocalSound( "killhouse_buzzer" );
-	maps\mp\gametypes\_coopmission::announce( "Course started: " + level.coop_course_enemies.size + " targets" );
+	maps\_coopmission::announce( "Course started: " + level.coop_course_enemies.size + " targets" );
 	codolprintln( "CoDOL coop course: run " + level.coop_course_runs + " started by " + runner.name );
 
 	timer = newHudElem();
@@ -361,9 +361,9 @@ course_run( runner )
 			players[ i ] playLocalSound( "killhouse_buzzer" );
 	}
 	if ( finished )
-		maps\mp\gametypes\_coopmission::announce( "Course complete: " + elapsed + " s, civilians hit " + level.coop_course_civs_hit );
+		maps\_coopmission::announce( "Course complete: " + elapsed + " s, civilians hit " + level.coop_course_civs_hit );
 	else
-		maps\mp\gametypes\_coopmission::announce( "Out of time: " + level.coop_course_hits + " of " + level.coop_course_enemies.size + " targets" );
+		maps\_coopmission::announce( "Out of time: " + level.coop_course_hits + " of " + level.coop_course_enemies.size + " targets" );
 	codolprintln( "CoDOL coop course: run " + level.coop_course_runs + " " + finished + " in " + elapsed + " s, hits " +
 		level.coop_course_hits + "/" + level.coop_course_enemies.size + ", civilians " + level.coop_course_civs_hit );
 

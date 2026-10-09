@@ -1,4 +1,4 @@
-// zm hellhound animscript: maps/mp/animscripts/zombie_dog_attack_log.gsc
+// zm hellhound animscript: animscripts/zombie_dog_attack_log.gsc
 //
 // Ported from this tree's multiplayer dog animscript
 // maps/mp/animscripts/dog_attack_log.gsc (itself adapted from the shipped T5

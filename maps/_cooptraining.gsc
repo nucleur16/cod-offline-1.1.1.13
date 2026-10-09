@@ -53,7 +53,7 @@
 // engine cannot judge (a grenade landing in a window, a flashbang thrown);
 // the doors of each station open when the station is reached.
 //
-// Coop category root only; names no multiplayer module.
+// Coop module (maps/, IW4 singleplayer namespace); names no multiplayer module.
 
 #using_animtree ( "generic_human" );
 
@@ -1019,7 +1019,7 @@ spawn_driver()
 			spot.classname = ents[ i ].classname;
 			spot.script_friendname = ents[ i ].script_friendname;
 			spot.animation = ents[ i ].animation;
-			spot.origin = maps\mp\gametypes\_coopvehicle::ground_under( mover.origin + anglesToRight( mover.angles ) * -72 + anglesToForward( mover.angles ) * 8 );
+			spot.origin = maps\_coopvehicle::ground_under( mover.origin + anglesToRight( mover.angles ) * -72 + anglesToForward( mover.angles ) * 8 );
 			spot.angles = ( 0, mover.angles[ 1 ] - 90, 0 );
 		}
 		if ( isDefined( level.coop_intro_driver ) )
@@ -1071,7 +1071,7 @@ objective_at( point )
 {
 	objective_delete( 0 );
 	objective_add( 0, "active", point );
-	maps\mp\gametypes\_cooptraininghud::marker( point );
+	maps\_cooptraininghud::marker( point );
 }
 
 // A new task: the recording's objective line (the zone's own localized
@@ -1080,9 +1080,9 @@ objective_at( point )
 task( text, log, point, ent, height )
 {
 	codolprintln( "CoDOL coop mission: " + log );
-	maps\mp\gametypes\_cooptraininghud::objective_text( text );
+	maps\_cooptraininghud::objective_text( text );
 	if ( isDefined( point ) || isDefined( ent ) )
-		maps\mp\gametypes\_cooptraininghud::marker( point, ent, height );
+		maps\_cooptraininghud::marker( point, ent, height );
 }
 
 hint_list( a, b, c )
@@ -1112,11 +1112,11 @@ too_low_hint( first, low )
 	level endon( "coop_mission_over" );
 	if ( isDefined( first ) )
 	{
-		maps\mp\gametypes\_cooptraininghud::hint( first, 8 );
+		maps\_cooptraininghud::hint( first, 8 );
 		wait( 8 );
 	}
 	wait( 10 );
-	maps\mp\gametypes\_cooptraininghud::hint( low, 8 );
+	maps\_cooptraininghud::hint( low, 8 );
 }
 
 // What the flow is waiting for, for the log and the probe harness
@@ -1139,7 +1139,7 @@ flag_wait_timeout( name, timeout )
 	step( "flag", name );
 	level endon( name );
 	waited = 0;
-	while ( !maps\mp\gametypes\_coopmission::flag( name ) && waited < timeout )
+	while ( !maps\_coopmission::flag( name ) && waited < timeout )
 	{
 		wait( 0.5 );
 		waited += 0.5;
@@ -1249,7 +1249,7 @@ give_all( weapon, slot )
 	{
 		if ( !isAlive( players[ i ] ) )
 			continue;
-		players[ i ] maps\mp\gametypes\_coopmode::coop_give_weapon( weapon, isDefined( slot ) && slot );
+		players[ i ] maps\_coopmode::coop_give_weapon( weapon, isDefined( slot ) && slot );
 	}
 	report_inventory();
 }
@@ -1283,7 +1283,7 @@ init()
 		return;
 	level.coop_training_flow = true;
 	precache_cast();
-	maps\mp\gametypes\_cooptraininghud::precache();
+	maps\_cooptraininghud::precache();
 	// The Spec Ops gates (so_gate: a brush across the demolition pit's exit
 	// at 1868 -2484 and the pit course entrance at 391 -884) belong to
 	// so_killspree_trainer, not to this mission.
@@ -1395,7 +1395,7 @@ training_loadout()
 	if ( isDefined( level.coop_training_rifle ) )
 	{
 		// A teammate who (re)spawns after the range has the rifle too.
-		self maps\mp\gametypes\_coopmode::coop_give_weapon( level.coop_training_rifle, true );
+		self maps\_coopmode::coop_give_weapon( level.coop_training_rifle, true );
 		self enableWeapons();
 	}
 	else
@@ -1564,7 +1564,7 @@ main()
 	station_obstacle();
 	station_price();
 
-	maps\mp\gametypes\_coopmission::mission_complete( "training complete" );
+	maps\_coopmission::mission_complete( "training complete" );
 }
 
 // --------------------------------------------------------------------------
@@ -1664,7 +1664,7 @@ damage_triggers_wait( trigs, timeout, what, glows )
 		}
 		objective_delete( i + 1 );
 		objective_add( i + 1, "active", trigs[ i ].origin );
-		maps\mp\gametypes\_cooptraininghud::target_marker( i + 1, trigs[ i ].origin );
+		maps\_cooptraininghud::target_marker( i + 1, trigs[ i ].origin );
 		trigs[ i ] enableGrenadeTouchDamage();
 		trigs[ i ] thread damage_trigger_think();
 	}
@@ -1697,7 +1697,7 @@ window_done()
 	}
 	if ( isDefined( self.coop_obj ) )
 	{
-		maps\mp\gametypes\_cooptraininghud::target_marker_clear( self.coop_obj );
+		maps\_cooptraininghud::target_marker_clear( self.coop_obj );
 		objective_delete( self.coop_obj );
 		self.coop_obj = undefined;
 	}
@@ -1826,17 +1826,17 @@ station_range()
 	arrows( "arrows_to_hanger" );
 	task( &"KILLHOUSE_USE_YOUR_OBJECTIVE_INDICATOR", "Follow the objective marker to the shooting range" );
 	// After the ride: look up, look down, then the move keys (recording 1:39-1:45).
-	level thread maps\mp\gametypes\_cooptraininghud::hint_sequence( look_hints(), 3 );
+	level thread maps\_cooptraininghud::hint_sequence( look_hints(), 3 );
 	say( price, "pit_pri_003", 3.6 );
 	nags = [];
 	nags[ 0 ] = line( "pit_pri_004", 1.9 );
 	nags[ 1 ] = line( "pit_pri_005", 2.6 );
 	nags[ 2 ] = line( "pit_pri_006", 2.7 );
 	n = 0;
-	while ( !maps\mp\gametypes\_coopmission::flag( "at_rifle_range" ) )
+	while ( !maps\_coopmission::flag( "at_rifle_range" ) )
 	{
 		flag_wait_timeout( "at_rifle_range", 15 );
-		if ( maps\mp\gametypes\_coopmission::flag( "at_rifle_range" ) )
+		if ( maps\_coopmission::flag( "at_rifle_range" ) )
 			break;
 		if ( n < nags.size )
 		{
@@ -1882,7 +1882,7 @@ station_range()
 	stall = getEnt( "rifleTraining_stall", "targetname" );
 	task( &"KILLHOUSE_ENTER_STATION_NUMBER", "Enter station one and aim at the targets" );
 	trigger_wait( stall, 30, "station one" );
-	maps\mp\gametypes\_cooptraininghud::marker_clear();
+	maps\_cooptraininghud::marker_clear();
 	arrows( undefined );
 	glow( "obj_station_one_glowing", false );
 	glow( "obj_station_one_number", false );
@@ -1896,7 +1896,7 @@ station_range()
 	say( tiny, "pit_tiny_003", 2.7 );
 	range_targets( lane, true );
 	task( &"KILLHOUSE_SHOOT_EACH_TARGET_WHILE1", "Shoot each target from the hip" );
-	level thread maps\mp\gametypes\_cooptraininghud::hint_sequence( hint_list( &"KILLHOUSE_HINT_HIP_ATTACK_PC", &"KILLHOUSE_HINT_CROSSHAIR_CHANGES" ), 4 );
+	level thread maps\_cooptraininghud::hint_sequence( hint_list( &"KILLHOUSE_HINT_HIP_ATTACK_PC", &"KILLHOUSE_HINT_CROSSHAIR_CHANGES" ), 4 );
 	level.coop_training_hip_only = true;
 	level thread hip_nags( tiny );
 	if ( !wait_hits( lane, 3, 40 ) )
@@ -1908,7 +1908,7 @@ station_range()
 	say( tiny, "pit_tiny_006", 2.1 );
 	range_targets( ads, true );
 	task( &"KILLHOUSE_SHOOT_EACH_TARGET_WHILE", "Shoot the target while aiming down the sights" );
-	level thread maps\mp\gametypes\_cooptraininghud::hint_sequence( hint_list( &"KILLHOUSE_HINT_ADS_THROW", &"KILLHOUSE_HINT_ADS_ACCURACY" ), 4 );
+	level thread maps\_cooptraininghud::hint_sequence( hint_list( &"KILLHOUSE_HINT_ADS_THROW", &"KILLHOUSE_HINT_ADS_ACCURACY" ), 4 );
 	wait_hits( ads, 3, 40 );
 	range_targets( ads, false );
 	say( tiny, "pit_tiny_007", 0.8 );
@@ -1919,7 +1919,7 @@ station_range()
 	say( tiny, "pit_tiny_011_1", 2.5 );
 	say( tiny, "pit_tiny_011_2", 1.8 );
 	task( &"KILLHOUSE_SHOOT_EACH_TARGET_AS", "Shoot each target as quickly as you can" );
-	maps\mp\gametypes\_cooptraininghud::hint( &"KILLHOUSE_HINT_RELOAD", 5 );
+	maps\_cooptraininghud::hint( &"KILLHOUSE_HINT_RELOAD", 5 );
 	say( tiny, "pit_tiny_012", 5.5 );
 	tooSlow = [];
 	tooSlow[ 0 ] = line( "pit_tiny_014", 1.3 );
@@ -1949,18 +1949,18 @@ station_range()
 	range_targets( lane, true );
 	say( tiny, "pit_tiny_021", 1.2 );
 	task( &"KILLHOUSE_SWITCH_TO_YOUR_PISTOL", "Switch to your sidearm" );
-	maps\mp\gametypes\_cooptraininghud::hint( &"KILLHOUSE_HINT_SIDEARM_SWAP", 6 );
+	maps\_cooptraininghud::hint( &"KILLHOUSE_HINT_SIDEARM_SWAP", 6 );
 	weapon_wait( pistol, 20, "pull out the sidearm" );
 	// The recording's next task is a pistol round on the raised dummies
 	// (2:59-3:05), then the switch back.
 	task( &"KILLHOUSE_SHOOT_EACH_TARGET_PISTOL", "Shoot each target with your pistol" );
 	wait_hits( lane, 3, 20 );
 	say( tiny, "pit_tiny_020", 2.0 );
-	maps\mp\gametypes\_cooptraininghud::hint( &"KILLHOUSE_HINT_PRIMARY_SWAP", 6 );
+	maps\_cooptraininghud::hint( &"KILLHOUSE_HINT_PRIMARY_SWAP", 6 );
 	weapon_wait( rifle, 20, "switch to the rifle" );
 	say( tiny, "pit_tiny_022", 3.3 );
 	range_targets( lane, false );
-	maps\mp\gametypes\_coopmission::flag_set( "sidearm_complete" );
+	maps\_coopmission::flag_set( "sidearm_complete" );
 
 	// melee_training: the "watermelon" -- melee_target_dummy, hidden until
 	// now as CoD4 hides the melon (melon_think) -- at the stall; near_melee
@@ -1972,11 +1972,11 @@ station_range()
 		melee[ i ] solid();
 	}
 	objective_at( ( 1887, -854, 35 ) );
-	maps\mp\gametypes\_cooptraininghud::marker_clear();
+	maps\_cooptraininghud::marker_clear();
 	say( tiny, "pit_tiny_023", 1.4 );
 	flag_wait_timeout( "near_melee", 30 );
 	task( &"KILLHOUSE_MELEE_THE_TARGET", "Knife the target" );
-	maps\mp\gametypes\_cooptraininghud::hint( &"KILLHOUSE_HINT_MELEE_TARGET", 6 );
+	maps\_cooptraininghud::hint( &"KILLHOUSE_HINT_MELEE_TARGET", 6 );
 	say( tiny, "pit_tiny_024", 1.0 );
 	if ( melee.size > 0 )
 		wait_hits( melee, 1, 45, true );
@@ -1987,8 +1987,8 @@ station_range()
 	}
 	arrows( "arrows_to_newcastle" );
 	say( tiny, "pit_tiny_025", 3.7 );
-	maps\mp\gametypes\_coopmission::flag_set( "melee_complete" );
-	maps\mp\gametypes\_coopmission::flag_set( "start_frag_training" );
+	maps\_coopmission::flag_set( "melee_complete" );
+	maps\_coopmission::flag_set( "start_frag_training" );
 }
 
 melee_dummies()
@@ -2209,7 +2209,7 @@ station_demolitions()
 	if ( isDefined( pit ) )
 		objective_at( pit.origin );
 	task( &"KILLHOUSE_ENTER_THE_SAFETY_PIT", "Enter the safety pit" );
-	maps\mp\gametypes\_cooptraininghud::hint( &"KILLHOUSE_HINT_FRAG", 6 );
+	maps\_cooptraininghud::hint( &"KILLHOUSE_HINT_FRAG", 6 );
 	trigger_wait_nag( pit, 60, "safety pit", nwc, line( "pit_ncastle_003", 1.2 ) );
 	// Newcastle watches from the platform above the pit, by the camera on
 	// its tripod (a static model of the map).
@@ -2217,7 +2217,7 @@ station_demolitions()
 
 	say( nwc, "pit_ncastle_004", 3.4 );
 	task( &"KILLHOUSE_THROW_A_GRENADE_INTO", "Throw a grenade into windows two, three and four" );
-	maps\mp\gametypes\_cooptraininghud::marker_clear();
+	maps\_cooptraininghud::marker_clear();
 	level thread too_low_hint( &"KILLHOUSE_HINT_FRAG", &"KILLHOUSE_HINT_GRENADE_TOO_LOW" );
 	frags = [];
 	fragGlows = [];
@@ -2247,14 +2247,14 @@ station_demolitions()
 	gl = weaponAltWeaponName( launcher );
 	if ( isDefined( gl ) && gl != "" && gl != "none" )
 	{
-		maps\mp\gametypes\_cooptraininghud::hint( &"KILLHOUSE_HINT_FIREMODE", 6 );
+		maps\_cooptraininghud::hint( &"KILLHOUSE_HINT_FIREMODE", 6 );
 		task( &"KILLHOUSE_HINT_EQUIP_LAUNCHER", "Switch to the grenade launcher" );
 		weapon_wait( gl, 30, "equip the grenade launcher" );
 	}
 	say( nwc, "pit_ncastle_007", 1.9 );
 	task( &"KILLHOUSE_FIRE_AT_THE_WALL_WITH", "Fire at wall one" );
-	maps\mp\gametypes\_cooptraininghud::marker_clear();
-	maps\mp\gametypes\_cooptraininghud::hint( &"KILLHOUSE_HINT_ATTACK_PC", 5 );
+	maps\_cooptraininghud::marker_clear();
+	maps\_cooptraininghud::hint( &"KILLHOUSE_HINT_ATTACK_PC", 5 );
 	wall = by_noteworthy( "launcher_wall_trigger" );
 	// Wall one stands for the whole station (raise_wall_one); only its
 	// marker goes with the hit.
@@ -2297,7 +2297,7 @@ station_demolitions()
 	task( &"KILLHOUSE_RUN_THE_OBSTACLE_COURSE", "Complete the obstacle course" );
 	say( nwc, "pit_ncastle_014_1", 2.1 );
 	say( nwc, "pit_ncastle_014_2", 2.6 );
-	maps\mp\gametypes\_coopmission::flag_set( "c4_equiped" );
+	maps\_coopmission::flag_set( "c4_equiped" );
 	open_doors( "gate_cqb_exit", -95 );
 }
 
@@ -2318,22 +2318,22 @@ station_obstacle()
 	open_doors( "gate_cqb_exit2" );
 	trigger_wait( getEnt( "obstacle_course_start", "targetname" ), 180, "obstacle course start" );
 	arrows( undefined );
-	maps\mp\gametypes\_coopmission::flag_set( "start_obstacle" );
+	maps\_coopmission::flag_set( "start_obstacle" );
 	codolprintln( "CoDOL coop training: station obstacle course" );
 
 	// misssoap, lineup (until the start_course trigger, the line), GO.
 	say( mac, "pit_mac_001", 3.2 );
-	if ( !maps\mp\gametypes\_coopmission::flag( "start_course" ) )
+	if ( !maps\_coopmission::flag( "start_course" ) )
 	{
 		say( mac, "pit_mac_002", 1.9 );
 		flag_wait_timeout( "start_course", 30 );
 	}
 	// The recording counts the line down before Mac's GO (4:47-4:49).
-	maps\mp\gametypes\_cooptraininghud::countdown();
+	maps\_cooptraininghud::countdown();
 	say( mac, "pit_mac_003", 0.5 );
 	// GO: the clip across the start line (clip_obstacle_start, 308 -2556).
 	remove_named( "clip_obstacle_start" );
-	maps\mp\gametypes\_coopmission::flag_set( "start_course" );
+	maps\_coopmission::flag_set( "start_course" );
 	objective_at( ( -1106, -2824, 72 ) );
 	// The course's chevrons (the big one on the first hurdle, the ones on
 	// the ground after it) light for the run.
@@ -2344,7 +2344,7 @@ station_obstacle()
 	level notify( "coop_obstacle_done" );
 	arrows( undefined );
 	say( mac, "pit_mac_008_1", 3.6 );
-	maps\mp\gametypes\_coopmission::flag_set( "obstacle_complete" );
+	maps\_coopmission::flag_set( "obstacle_complete" );
 	open_doors( "gate_cqb_enter_main", -170 );
 }
 
@@ -2368,14 +2368,14 @@ station_price()
 		pos = price.origin;
 	objective_at( pos );
 	if ( isDefined( price ) )
-		maps\mp\gametypes\_cooptraininghud::marker( undefined, price, 80 );
+		maps\_cooptraininghud::marker( undefined, price, 80 );
 	arrows( "arrows_to_price" );
 	task( &"KILLHOUSE_DEBRIEF_WITH_CPT_PRICE", "Report to Captain Price" );
 	flag_wait_timeout( "come_to_price", 120 );
-	if ( !maps\mp\gametypes\_coopmission::flag( "come_to_price" ) )
+	if ( !maps\_coopmission::flag( "come_to_price" ) )
 		wait_player_near( pos, 200, 60 );
 	arrows( undefined );
-	maps\mp\gametypes\_cooptraininghud::marker_clear();
+	maps\_cooptraininghud::marker_clear();
 	codolprintln( "CoDOL coop training: debrief by the course" );
 
 	// He turns to the rookie who reached him.
@@ -2394,7 +2394,7 @@ station_price()
 	say( price, "pit_pri_065_2", 4.4 );
 	objective_delete( 0 );
 	// The recording blurs and darkens the view before the lobby (5:44-5:50).
-	maps\mp\gametypes\_cooptraininghud::end_fade();
+	maps\_cooptraininghud::end_fade();
 	wait( 2 );
 }
 
@@ -2407,18 +2407,18 @@ obstacle_nags( mac )
 	say( mac, "pit_mac_004", 3.8 );
 	level thread obstacle_line_on_flag( mac, "obstacleTraining_mantle2", "pit_mac_005", 1.7 );
 	level thread obstacle_line_on_flag( mac, "crawl_dialog", "pit_mac_006", 2.1 );
-	maps\mp\gametypes\_coopmission::flag_wait( "crawl_dialog" );
+	maps\_coopmission::flag_wait( "crawl_dialog" );
 	wait( 4 );
 	say( mac, "pit_mac_007", 3.2 );
 	// Out of the crawl, the sprint to the end (recording 5:10-5:15).
-	maps\mp\gametypes\_coopmission::flag_wait( "stop_shoot_at_crawling" );
-	level thread maps\mp\gametypes\_cooptraininghud::hint_sequence( hint_list( &"KILLHOUSE_HINT_SPRINT_PC", &"KILLHOUSE_HINT_HOLDING_SPRINT" ), 4 );
+	maps\_coopmission::flag_wait( "stop_shoot_at_crawling" );
+	level thread maps\_cooptraininghud::hint_sequence( hint_list( &"KILLHOUSE_HINT_SPRINT_PC", &"KILLHOUSE_HINT_HOLDING_SPRINT" ), 4 );
 }
 
 obstacle_line_on_flag( mac, flag, alias, time )
 {
 	level endon( "coop_obstacle_done" );
-	maps\mp\gametypes\_coopmission::flag_wait( flag );
+	maps\_coopmission::flag_wait( flag );
 	say( mac, alias, time );
 }
 

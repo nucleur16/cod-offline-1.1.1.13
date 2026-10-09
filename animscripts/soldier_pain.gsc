@@ -4,7 +4,7 @@
 // IW4 limits it (a soldier does not re-flinch inside 1.5 s), standing or
 // running clip by movement.
 
-#include maps\mp\animscripts\soldier_shared;
+#include animscripts\soldier_shared;
 
 #using_animtree ( "generic_human" );
 

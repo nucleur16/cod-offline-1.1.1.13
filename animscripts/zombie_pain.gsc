@@ -43,8 +43,8 @@
 // common_gametype_zm and declared in generic_human.atr.  Those are the pool.
 
 
-#include maps\mp\gametypes\_zombiemode_utility;
-#include maps\mp\animscripts\zombie_shared;
+#include maps\_zombiemode_utility;
+#include animscripts\zombie_shared;
 
 #using_animtree ("generic_human");
 

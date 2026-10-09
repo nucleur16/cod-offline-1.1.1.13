@@ -54,7 +54,7 @@
 // `self playsound( alias )`); the _2d twins are not used.  One player speaks
 // at a time, level-wide, as in T5 (level.player_is_speaking).
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 // Measured speech length is not available to script; T5 waits for the
 // sound_done notify.  The longest C1 quote is a few seconds; hold the
@@ -352,7 +352,7 @@ vox_code()
 		isDefined( self.zmb_vox_code_key ) && self.zmb_vox_code_key == self.zombie_character )
 		return self.zmb_vox_code;
 
-	code = self maps\mp\gametypes\_zombiemode_laststand::revive_vox_code();
+	code = self maps\_zombiemode_laststand::revive_vox_code();
 	self.zmb_vox_code = code;
 	self.zmb_vox_code_key = self.zombie_character;
 	return code;

@@ -45,7 +45,7 @@
 // RIFT_LIFETIME seconds and any number of players may use it; its volume is
 // T5's 64 x 70.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 TELEPORTER_WEAPON = "teleporter_zm";
 RIFT_RADIUS = 64;
@@ -73,7 +73,7 @@ init()
 	level._effect[ "teleporter_player" ] = loadfx( "maps/zombie/fx_portable_teleporter_player" );
 	precacheModel( "t5_tp_bomb_world" );
 
-	maps\mp\gametypes\_zombiemode_equipment::register_equipment( TELEPORTER_WEAPON, ::teleporter_fired );
+	maps\_zombiemode_equipment::register_equipment( TELEPORTER_WEAPON, ::teleporter_fired );
 	codolprintln( "CoDOL zm teleporter: ready, " + level.zombie_explored.size + " explored spots seeded from spawn points" );
 }
 

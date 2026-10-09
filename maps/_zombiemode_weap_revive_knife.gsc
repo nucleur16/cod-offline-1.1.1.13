@@ -37,7 +37,7 @@
 // Presentation, C1 assets: maps/zombie/fx_reviveknife and zmb_revive_knife
 // (both patch_common_gametype_zm) on the revived player.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 REVIVE_KNIFE_WEAPON = "revive_knife_zm";
 KNIFE_HIT_RADIUS = 40;
@@ -50,7 +50,7 @@ init()
 	// Test hook for _codol_equiptest's "down <client>" verb: the shared test
 	// file cannot name a zombies-only function without dragging the zombies
 	// chain into multiplayer, so it calls through this pointer.
-	level.codolEquipTestDown = maps\mp\gametypes\_zombiemode_laststand::player_laststand;
+	level.codolEquipTestDown = maps\_zombiemode_laststand::player_laststand;
 
 	if ( getWeaponIndexFromName( REVIVE_KNIFE_WEAPON ) <= 0 )
 	{
@@ -60,7 +60,7 @@ init()
 
 	level._effect[ "revive_knife" ] = loadfx( "maps/zombie/fx_reviveknife" );
 
-	maps\mp\gametypes\_zombiemode_equipment::register_equipment( REVIVE_KNIFE_WEAPON, ::revive_knife_fired );
+	maps\_zombiemode_equipment::register_equipment( REVIVE_KNIFE_WEAPON, ::revive_knife_fired );
 	codolprintln( "CoDOL zm revive knife: ready" );
 }
 
@@ -136,7 +136,7 @@ downed_teammate_near( thrower, pos, radius )
 			continue;
 		if ( isDefined( thrower ) && p == thrower )
 			continue;
-		if ( !p maps\mp\gametypes\_zombiemode_laststand::player_is_in_laststand() )
+		if ( !p maps\_zombiemode_laststand::player_is_in_laststand() )
 			continue;
 
 		delta = pos - p.origin;
@@ -154,7 +154,7 @@ downed_teammate_near( thrower, pos, radius )
 
 knife_revive( target, thrower, pos, how )
 {
-	if ( !isDefined( target ) || !target maps\mp\gametypes\_zombiemode_laststand::player_is_in_laststand() )
+	if ( !isDefined( target ) || !target maps\_zombiemode_laststand::player_is_in_laststand() )
 		return false;
 
 	reviver = undefined;
@@ -174,7 +174,7 @@ knife_revive( target, thrower, pos, how )
 	// T5 auto_revive waits out a revive already in progress (:772); the
 	// hold loop is cancelled by the "player_revived" notify revive_success
 	// raises, so revive immediately.
-	target maps\mp\gametypes\_zombiemode_laststand::revive_success( reviver );
+	target maps\_zombiemode_laststand::revive_success( reviver );
 	return true;
 }
 

@@ -31,8 +31,8 @@
 //     the map's exit trigger (evac / escape flag) if it has one; it ends in
 //     failure when every player is dead with no lives.
 //
-// MP ISOLATION.  This file lives under the coop category root and is named
-// only by _coopmode.gsc, so it exists in no mp or zm match.  It names no
+// MP ISOLATION.  This file is a coop module (maps/, the IW4 singleplayer
+// namespace) named only by _coopmode.gsc, so it exists in no mp or zm match.  It names no
 // multiplayer module (no #include of maps\mp\_utility, common_scripts\utility
 // or any gametype file) -- every helper below is local or a builtin.
 //

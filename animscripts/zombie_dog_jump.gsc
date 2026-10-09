@@ -1,4 +1,4 @@
-// zm hellhound animscript: maps/mp/animscripts/zombie_dog_jump.gsc
+// zm hellhound animscript: animscripts/zombie_dog_jump.gsc
 //
 // Ported from this tree's multiplayer dog animscript
 // maps/mp/animscripts/dog_jump.gsc (itself adapted from the shipped T5
@@ -14,7 +14,7 @@
 //   - nothing else changed.
 
 /*
-	scripts/codol/maps/mp/animscripts/dog_jump.gsc
+	maps/mp/animscripts/dog_jump.gsc
 
 	Adapted from the shipped Black Ops (T5) script source:
 		D:\CoD\COD-GSC-Source\T5-STEAM-GSC\maps\mp\animscripts\dog_jump.gsc
@@ -22,7 +22,7 @@
 	Changed for CoDOL:
 	  - #include maps\mp\animscripts\utility + ...\shared and the namespaced
 	    maps\mp\animscripts\shared::DoNoteTracks call now point at the
-	    dog-local maps\mp\animscripts\zombie_dog_shared module.
+	    dog-local animscripts\zombie_dog_shared module.
 	  - main() takes the native traversal's arguments (begin, begin_angles,
 	    end, animscript), as the zm species jump module does.  The native dog
 	    wall hop (codol_actor_lifecycle.cpp ActorStartWallHop) passes the T5
@@ -34,7 +34,7 @@
 	    Anything else plays "traverse_wallhop".
 */
 
-#include maps\mp\animscripts\zombie_dog_shared;
+#include animscripts\zombie_dog_shared;
 
 main( begin, begin_angles, end, animscript )
 {
@@ -49,6 +49,6 @@ main( begin, begin_angles, end, animscript )
 
 	self.safeToChangeScript = false;
 	self setanimstate( state );
-	maps\mp\animscripts\zombie_dog_shared::DoNoteTracks( "done" );
+	animscripts\zombie_dog_shared::DoNoteTracks( "done" );
 	self.safeToChangeScript = true;
 }

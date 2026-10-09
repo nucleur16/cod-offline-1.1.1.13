@@ -52,7 +52,7 @@
 //                         selection, are not ported; the game only ends when
 //                         everyone is down.  zm_map_completed() is the hook.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {
@@ -137,7 +137,7 @@ init()
 
 	// Developer-only test verbs (scr_zm_chtest); returns at once on the live
 	// server, which runs developer 0.
-	level thread maps\mp\gametypes\_zombiemode_challengetest::init();
+	level thread maps\_zombiemode_challengetest::init();
 }
 
 on_player_connect()

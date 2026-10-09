@@ -18,7 +18,7 @@
 //   status               every zombie's model, attachments and gib state,
 //                        and every live thrown piece
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {
@@ -193,13 +193,13 @@ gibtest_force( tokens )
 	}
 	gibtest_describe( z, "before gib " + tokens[ 1 ] );
 	if ( tokens[ 1 ] == "head" )
-		z maps\mp\gametypes\_zombiemode_gib::zombie_head_gib();
+		z maps\_zombiemode_gib::zombie_head_gib();
 	else
 	{
 		z.a.gib_ref = tokens[ 1 ];
-		z maps\mp\gametypes\_zombiemode_gib::do_gib();
+		z maps\_zombiemode_gib::do_gib();
 		if ( z.health > 0 && tokens[ 1 ] != "right_arm" && tokens[ 1 ] != "left_arm" && tokens[ 1 ] != "guts" )
-			z maps\mp\gametypes\_zombiemode_spawner::make_crawler();
+			z maps\_zombiemode_spawner::make_crawler();
 	}
 	wait( 0.2 );
 	gibtest_describe( z, "after gib " + tokens[ 1 ] );

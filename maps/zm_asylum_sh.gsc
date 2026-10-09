@@ -1,11 +1,10 @@
 // zm_asylum_sh level script.
 //
-// GScr_LoadScripts asks for exactly one module, maps/mp/<mapname>, for every
-// asset category (src/scr_vm_main.c), and the per-category source root is what
-// makes that file zm's rather than multiplayer's.  Without this file the server
-// prints "no level script for zm_asylum_sh" and the map runs with no per-map setup at
-// all -- and because the shared tree has no maps/mp/zm_asylum_sh.gsc either, there was
-// nothing for it to fall back to.
+// GScr_LoadScripts asks for exactly one level module per match, maps/<mapname>
+// for a zm match (CODOL_ScriptEntryPoints, src/codol/script/codol_script_source.c;
+// T5 keeps its zombie level scripts in maps/ too).  Without this file the server
+// prints "no level script for zm_asylum_sh" and the map runs with no per-map
+// setup at all.
 //
 // mp/basemaps.arena gives zm_asylum_sh gametype "zm", the same as zm_zombie_training,
 // so the zm rules script plus this file is the whole per-map contract.
@@ -31,5 +30,5 @@
 
 main()
 {
-	maps\mp\gametypes\_zombiemode::levelMain( "zm_asylum_sh" );
+	maps\_zombiemode::levelMain( "zm_asylum_sh" );
 }

@@ -44,7 +44,7 @@
 // channel to C1 and no way to read the zone's createfx rawfile.  The
 // announcer laugh (zmb_ann_vox_laugh_l) is not in any CoDOL zone.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {
@@ -183,7 +183,7 @@ wait_for_power()
 
 	// T5 fans the power out to the perk machines by notify, one network frame
 	// apart so the machines' own state does not all land in one snapshot.
-	// maps\mp\gametypes\_zombiemode_perks::vending_trigger_think waits on
+	// maps\_zombiemode_perks::vending_trigger_think waits on
 	// <perk>_power_on by exactly these names.
 	names = [];
 	names[ 0 ] = "specialty_quickrevive_power_on";

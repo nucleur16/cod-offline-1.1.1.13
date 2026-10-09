@@ -123,7 +123,7 @@
 // body into a zm match under a zm name -- thundergun_zm sat in the mystery
 // box backed by that clone on every map that does not ship it.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 // C1's box lid animations (THE LID, above): the tree the client registers from
 // common_zombie.animlist, and the one the lid's %anim references compile
@@ -502,7 +502,7 @@ weapon_spawn_think()
 			if ( player.score < cost )
 			{
 				self play_sound_on_ent( "no_purchase" );
-				player maps\mp\gametypes\_zombiemode_audio::no_cash_vox();
+				player maps\_zombiemode_audio::no_cash_vox();
 				wait( 0.5 );
 				continue;
 			}
@@ -516,13 +516,13 @@ weapon_spawn_think()
 				self setHintString( &"ZOMBIE_WEAPONCOSTAMMO", cost, ammo_cost );
 			}
 
-			player maps\mp\gametypes\_zombiemode_score::minus_to_player_score( cost );
+			player maps\_zombiemode_score::minus_to_player_score( cost );
 			player weapon_give( weapon_name );
 			level notify( "zm_cortex_event", "weapon" );   // _zombiemode_cortex reaction
 			// CHALLENGE_ZM_WALLWEAPONS "buy &&1 wall weapons"; ammo is not one.
-			player maps\mp\gametypes\_zombiemode_challenges::zm_challenge_inc( "zm_wallweapons" );
+			player maps\_zombiemode_challenges::zm_challenge_inc( "zm_wallweapons" );
 			player play_sound_on_ent( "purchase" );
-			player maps\mp\gametypes\_zombiemode_audio::purchase_vox();
+			player maps\_zombiemode_audio::purchase_vox();
 			wait( 0.5 );
 			continue;
 		}
@@ -540,14 +540,14 @@ weapon_spawn_think()
 		if ( player.score < refill_cost )
 		{
 			self play_sound_on_ent( "no_purchase" );
-			player maps\mp\gametypes\_zombiemode_audio::no_cash_vox();
+			player maps\_zombiemode_audio::no_cash_vox();
 			wait( 0.5 );
 			continue;
 		}
 
 		if ( player ammo_give( refill_name ) )
 		{
-			player maps\mp\gametypes\_zombiemode_score::minus_to_player_score( refill_cost );
+			player maps\_zombiemode_score::minus_to_player_score( refill_cost );
 			player play_sound_on_ent( "purchase" );
 		}
 
@@ -621,7 +621,7 @@ treasure_chest_init()
 	}
 
 	array_thread_1( level.chests, ::treasure_chest_think );
-	level thread maps\mp\gametypes\_zombiemode_boxtest::init();
+	level thread maps\_zombiemode_boxtest::init();
 
 	println( "CoDOL zm: " + level.chests.size + " mystery box location(s)\n" );
 }
@@ -887,12 +887,12 @@ treasure_chest_think()
 			if ( who.score < cost )
 			{
 				self play_sound_on_ent( "no_purchase" );
-				who maps\mp\gametypes\_zombiemode_audio::no_cash_vox();
+				who maps\_zombiemode_audio::no_cash_vox();
 				wait( 0.5 );
 				continue;
 			}
 
-			who maps\mp\gametypes\_zombiemode_score::minus_to_player_score( cost );
+			who maps\_zombiemode_score::minus_to_player_score( cost );
 			user = who;
 			user_cost = cost;
 			paid_by_fire_sale = is_true( level.zombie_vars[ "zombie_powerup_fire_sale_on" ] );
@@ -916,7 +916,7 @@ treasure_chest_think()
 			// hidden when the move returns, so the loop below waits on a
 			// disabled trigger until a later move or a fire sale shows it.
 			if ( isDefined( user ) )
-				user maps\mp\gametypes\_zombiemode_score::add_to_player_score( user_cost, false );
+				user maps\_zombiemode_score::add_to_player_score( user_cost, false );
 			self treasure_chest_move();
 			self._box_open = false;
 			continue;
@@ -927,7 +927,7 @@ treasure_chest_think()
 			// Nothing to give.  Refund, exactly as T5 refunds a teddy-bear
 			// pull (:1188 add_to_player_score( user_cost, false )): the spend
 			// comes back without crediting the lifetime total.
-			user maps\mp\gametypes\_zombiemode_score::add_to_player_score( user_cost, false );
+			user maps\_zombiemode_score::add_to_player_score( user_cost, false );
 			if ( isDefined( self.chest_lid ) )
 				self.chest_lid thread treasure_chest_lid_close();
 			self._box_open = false;
@@ -963,10 +963,10 @@ treasure_chest_think()
 			self notify( "user_grabbed_weapon" );
 			user treasure_chest_give_weapon( weapon );
 			level notify( "zm_cortex_event", "weapon" );   // _zombiemode_cortex reaction
-			user maps\mp\gametypes\_zombiemode_audio::box_weapon_vox( weapon );
+			user maps\_zombiemode_audio::box_weapon_vox( weapon );
 			// CHALLENGE_ZM_CRATEWEAPONS "buy &&1 items from the mystery box":
 			// counted when the bought item is taken.
-			user maps\mp\gametypes\_zombiemode_challenges::zm_challenge_inc( "zm_crateweapons" );
+			user maps\_zombiemode_challenges::zm_challenge_inc( "zm_crateweapons" );
 			break;
 		}
 

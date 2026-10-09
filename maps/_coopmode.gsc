@@ -2,7 +2,7 @@
 //
 // The coop counterpart of the multiplayer _gamelogic/_playerlogic/_damage trio,
 // reduced to what a Spec Ops match needs to boot and hold a player.  It is the
-// sibling of zm/maps/mp/gametypes/_zombiemode.gsc and follows the same three
+// sibling of maps/_zombiemode.gsc and follows the same three
 // rules:
 //
 //   1. NOTHING IN THIS FILE MAY NAME A MULTIPLAYER MODULE.  A GSC
@@ -197,15 +197,17 @@ init()
 // --------------------------------------------------------------------------
 // Level-script entry point.
 //
-// GScr_LoadScripts asks for exactly one module, maps/mp/<mapname>, for every
-// asset category (src/scr_vm_main.c).  coop is the only category whose map name
-// is NOT category-distinct: the lobby's two spellings for the same match are
-// the playlist name (coop_training_mp_killhouse_sh) and the base level name
-// (mp_killhouse_sh), and the coop zones ship no world assets at all -- only an
-// addon_map_ents -- so the level zone really is the shared mp_* one.  That is
-// why coop/maps/mp/ carries BOTH spellings of all nine playlists, and why the
-// base-map spellings there deliberately shadow the multiplayer level scripts of
-// the same name.  Each of those files is a few lines and calls this.
+// GScr_LoadScripts asks for exactly one level module per match: maps/<mapname>
+// for coop (CODOL_ScriptEntryPoints, src/codol/script/codol_script_source.c).
+// coop is the only category whose map name is NOT category-distinct: the
+// lobby's two spellings for the same match are the playlist name
+// (coop_training_mp_killhouse_sh) and the base level name (mp_killhouse_sh),
+// and the coop zones ship no world assets at all -- only an addon_map_ents --
+// so the level zone really is the shared mp_* one.  That is why maps/ carries
+// BOTH spellings of all nine playlists; the base-map spellings
+// (maps/mp_killhouse_sh.gsc) are distinct modules from the multiplayer level
+// scripts (maps/mp/mp_killhouse_sh.gsc), as IW4 keeps SP and MP levels apart.
+// Each of those files is a few lines and calls this.
 // --------------------------------------------------------------------------
 
 levelMain( visionName )
@@ -850,7 +852,7 @@ spawnPlayer()
 	// The opening ride: a player who spawns before it is over (the first
 	// player, and any teammate who joins while it waits or drives) starts
 	// seated in the vehicle.
-	self maps\mp\gametypes\_coopintro::board();
+	self maps\_coopintro::board();
 
 	// IW4's own notify for a finished spawn (maps\mp\gametypes\_playerlogic).
 	self notify( "spawned_player" );
@@ -988,9 +990,9 @@ respawnPlayer()
 
 Callback_StartGameType()
 {
-	// coop.gsc::main() runs init() at gametype-script load.  If this callback
-	// is reached without it -- the engine pins the coop category to coop.gsc
-	// now (codol_gametype_policy, src/scr_vm_main.c), but on 2026-10-02 a coop
+	// _coop_gametype::main() runs init() at rules-script load.  If this
+	// callback is reached without it -- the engine pins the coop category to
+	// maps/_coop_gametype now (CODOL_ScriptEntryPoints), but on 2026-10-02 a coop
 	// load under g_gametype dm ran the multiplayer dm.gsc main() against this
 	// _callbacksetup instead -- run it here, before anything reads its state.
 	// No player has connected yet, so init()'s level.players = [] loses nothing.
@@ -1047,36 +1049,36 @@ Callback_StartGameType()
 	// Scripted events read from the map entities (_coopevents.gsc): cleanup of
 	// MP game objects first, and the vehicle-group precache, which needs this
 	// precache window.  Then the training course's pop-up targets.
-	maps\mp\gametypes\_coopevents::init();
+	maps\_coopevents::init();
 	// The training mission's own flow (coop_training_mp_killhouse_sh only):
 	// before the course, which leaves the ship mock-up to it, and before the
 	// intro ride, which takes Price's lines from it.
-	maps\mp\gametypes\_cooptraining::init();
+	maps\_cooptraining::init();
 	// coop_take_mp_fav_tropical's own flow (the meet and the chase).
-	maps\mp\gametypes\_coopmission_take_fav::init();
+	maps\_coopmission_take_fav::init();
 	// coop_take_mp_estate_tropical's own flow (stealth, house, breach, chase).
-	maps\mp\gametypes\_coopmission_estate::init();
+	maps\_coopmission_estate::init();
 	// coop_defense_mp_crash_tropical's own flow (the crash site).
-	maps\mp\gametypes\_coopmission_defense_crash::init();
-	maps\mp\gametypes\_coopcourse::init();
+	maps\_coopmission_defense_crash::init();
+	maps\_coopcourse::init();
 
 	// The campaign / Spec Ops mission, driven by the map's own entities (the
 	// coop addon MapEnts this server overlays onto the base level).
-	level thread maps\mp\gametypes\_coopmission::main();
-	level thread maps\mp\gametypes\_coopevents::main();
+	level thread maps\_coopmission::main();
+	level thread maps\_coopevents::main();
 
 	// The mission's opening vehicle ride, when the map authors one (the
 	// training map's humvee_player, the prologue's seaknightPlayer).  init()
 	// precaches, so it runs here, in the precache window.
-	maps\mp\gametypes\_coopintro::init();
-	level thread maps\mp\gametypes\_coopintro::main();
-	level thread maps\mp\gametypes\_cooptraining::main();
-	level thread maps\mp\gametypes\_coopmission_take_fav::main();
-	level thread maps\mp\gametypes\_coopmission_estate::main();
-	level thread maps\mp\gametypes\_coopmission_defense_crash::main();
+	maps\_coopintro::init();
+	level thread maps\_coopintro::main();
+	level thread maps\_cooptraining::main();
+	level thread maps\_coopmission_take_fav::main();
+	level thread maps\_coopmission_estate::main();
+	level thread maps\_coopmission_defense_crash::main();
 
 	// Probe harness; inert unless +set scr_coop_test 1.
-	level thread maps\mp\gametypes\_cooptest::main();
+	level thread maps\_cooptest::main();
 }
 
 Callback_CodeEndGame()
@@ -1224,7 +1226,7 @@ Callback_PlayerKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, v
 // bookkeeping runs off the actor's "death" notify; this is the per-kill hook.
 Callback_ActorKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset )
 {
-	self maps\mp\gametypes\_coopmission::onActorKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset );
+	self maps\_coopmission::onActorKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset );
 }
 
 // Reached only when the engine decides a player is eligible for last stand.

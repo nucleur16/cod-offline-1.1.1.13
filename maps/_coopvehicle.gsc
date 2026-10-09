@@ -18,7 +18,7 @@
 //   * ground vehicles keep the authored height of the vehicle above its
 //     first node; helicopter paths are the vehicle's own positions.
 //
-// Coop category root only; names no multiplayer module.
+// Coop module (maps/, IW4 singleplayer namespace); names no multiplayer module.
 
 mph_to_units()
 {
@@ -158,11 +158,11 @@ follow_path( path, height, defaultMph, snapGround )
 		}
 
 		if ( isDefined( node.script_flag_set ) )
-			maps\mp\gametypes\_coopmission::flag_set( node.script_flag_set );
-		if ( isDefined( node.script_flag ) && !maps\mp\gametypes\_coopmission::flag( node.script_flag ) )
+			maps\_coopmission::flag_set( node.script_flag_set );
+		if ( isDefined( node.script_flag ) && !maps\_coopmission::flag( node.script_flag ) )
 		{
 			waited = 0;
-			while ( waited < flagWaitMax && !maps\mp\gametypes\_coopmission::flag( node.script_flag ) )
+			while ( waited < flagWaitMax && !maps\_coopmission::flag( node.script_flag ) )
 			{
 				wait( 0.5 );
 				waited += 0.5;

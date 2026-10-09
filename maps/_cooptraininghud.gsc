@@ -17,7 +17,7 @@
 //   * the objective's 3D marker: a point with the distance under it, on the
 //     current goal (squares on each window still to be hit).
 //
-// Coop category root only; names no multiplayer module.
+// Coop module (maps/, IW4 singleplayer namespace); names no multiplayer module.
 
 precache()
 {

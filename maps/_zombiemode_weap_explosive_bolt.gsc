@@ -61,15 +61,15 @@
 //     _zombiemode_poi, as T5 :88-:166 makes it; the holder's taunt animation
 //     (T5 monkey_bolt_taunts) is not taken.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {
 	level.zm_explosive_bolts = [];
 
 	// Both launchers have to be in this map's box roster (T5 :9 / :15).
-	crossbow = maps\mp\gametypes\_zombiemode_weapons::is_weapon_included( "crossbow_explosive_zm" );
-	sniper = maps\mp\gametypes\_zombiemode_weapons::is_weapon_included( "sniper_explosive_zm" );
+	crossbow = maps\_zombiemode_weapons::is_weapon_included( "crossbow_explosive_zm" );
+	sniper = maps\_zombiemode_weapons::is_weapon_included( "sniper_explosive_zm" );
 	if ( !crossbow && !sniper )
 	{
 		codolprintln( "CoDOL zm bolts: neither explosive launcher is in this map's weapon table" );
@@ -115,7 +115,7 @@ init()
 
 	keys = getArrayKeys( level.zm_explosive_bolts );
 	for ( i = 0; i < keys.size; i++ )
-		maps\mp\gametypes\_zombiemode_equipment::register_equipment( keys[ i ], ::explosive_bolt_armed );
+		maps\_zombiemode_equipment::register_equipment( keys[ i ], ::explosive_bolt_armed );
 
 	codolprintln( "CoDOL zm bolts: " + keys.size + " spawned bolt weapon(s) registered" );
 }
@@ -175,7 +175,7 @@ explosive_bolt_armed( player, weapon )
 	if ( isDefined( bolt ) )
 	{
 		if ( is_true( bolt.is_zombie_poi ) )
-			bolt maps\mp\gametypes\_zombiemode_poi::remove_zombie_point_of_interest();
+			bolt maps\_zombiemode_poi::remove_zombie_point_of_interest();
 		bolt notify( "explode", origin );
 	}
 
@@ -252,8 +252,8 @@ crossbow_monkey_bolt( info )
 	if ( !isDefined( max_attract_dist ) )
 		max_attract_dist = 1536;
 
-	bolt maps\mp\gametypes\_zombiemode_poi::create_zombie_point_of_interest( max_attract_dist, num_attractors, 10000, true );
-	bolt maps\mp\gametypes\_zombiemode_poi::create_zombie_point_of_interest_attractor_positions( 4, attract_dist_diff );
+	bolt maps\_zombiemode_poi::create_zombie_point_of_interest( max_attract_dist, num_attractors, 10000, true );
+	bolt maps\_zombiemode_poi::create_zombie_point_of_interest_attractor_positions( 4, attract_dist_diff );
 }
 
 // T5 sniper_explosive_death_response / the csc mist.  Run on the attacker by

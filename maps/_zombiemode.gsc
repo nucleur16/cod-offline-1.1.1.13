@@ -9,9 +9,9 @@
 //
 // T5 has no zm.gsc-style gametype file at all: _callbackglobal::Callback_Start-
 // GameType is empty and the mode is entered from the level script calling
-// maps\_zombiemode::main().  CoDOL's engine demands a gametype script
-// (GScr_LoadGameTypeScript, src/scr_vm_main.c), so the entry point here is the
-// gametype's, and the level script only carries per-map data.
+// maps\_zombiemode::main().  CoDOL's engine demands a rules script
+// (GScr_LoadGameTypeScript loads maps/_zombiemode_gametype), so the entry point
+// here is the rules script's, and the level script only carries per-map data.
 //
 // NOTHING IN THIS SCRIPT SET MAY NAME A MULTIPLAYER MODULE.  A `file::function`
 // reference is a compile-time dependency: naming maps\mp\_load or
@@ -61,7 +61,7 @@
 // cap; C1 draws the count as "Round n/cap" by itself -- see updateRoundHud.
 
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 #using_animtree ("generic_human");
 
@@ -213,7 +213,7 @@ init_hints()
 	// the in-repo working idiom wins over T5's zombies-specific key.
 	precacheString( &"PLATFORM_REVIVE" );
 
-	maps\mp\gametypes\_zombiemode_perks::precache_perk_bottles();
+	maps\_zombiemode_perks::precache_perk_bottles();
 }
 
 // T5 _zombiemode.gsc:649 init_levelvars.  The comment T5 puts above its table
@@ -300,9 +300,9 @@ init_levelvars()
 // --------------------------------------------------------------------------
 // Level-script entry point.
 //
-// GScr_LoadScripts asks for exactly one module, maps/mp/<mapname>, for every
-// asset category (src/scr_vm_main.c).  All three zm maps therefore need a file
-// under zm/maps/mp/, and each of them calls this.
+// GScr_LoadScripts asks for exactly one level module per match, maps/<mapname>
+// for zm (CODOL_ScriptEntryPoints).  All three zm maps therefore need a file
+// maps/zm_*.gsc, and each of them calls this.
 //
 // The VISION NAME is passed in rather than taken from getDvar( "mapname" )
 // because the three zm zones disagree.  MEASURED from the shipped fastfiles:
@@ -416,78 +416,78 @@ Callback_StartGameType()
 
 	// Player-damage rule test verbs (idle unless developer and
 	// scr_codol_fftest is set).
-	maps\mp\gametypes\_zombiemode_fftest::init();
+	maps\_zombiemode_fftest::init();
 
 	// Each Cyborg's pistol/lethal/special/trap (mp/cyborgclasstable.csv) and
 	// the grenade_fire registry the item modules below hook into.  Before
 	// them, so their register_equipment calls find the registry.
-	maps\mp\gametypes\_zombiemode_equipment::init();
+	maps\_zombiemode_equipment::init();
 	// The four placeable traps (equipment slot): register with the registry
 	// above and precache their models and FX in this window.
-	maps\mp\gametypes\_zombiemode_traps_placeable::init();
+	maps\_zombiemode_traps_placeable::init();
 
 	// C1-original zombies items (docs/CODOL_ZM_EQUIPMENT_EVIDENCE_20260924.md):
 	// the money grenade's kill bonus, the rescue throwing knife and the random
 	// teleporter.  After the registry, which their register_equipment calls use.
-	maps\mp\gametypes\_zombiemode_weap_money_ball::init();
-	maps\mp\gametypes\_zombiemode_weap_revive_knife::init();
-	maps\mp\gametypes\_zombiemode_weap_teleporter::init();
+	maps\_zombiemode_weap_money_ball::init();
+	maps\_zombiemode_weap_revive_knife::init();
+	maps\_zombiemode_weap_teleporter::init();
 
 	// Each character's two perk pops: C1's survival-streak rewards.  After
 	// the equipment module, which reads the roster that names them.
-	maps\mp\gametypes\_zombiemode_perkpops::init();
+	maps\_zombiemode_perkpops::init();
 
 	// Points of interest, and the specials that lure with them (zm2's cymbal
 	// monkey, zm3's black hole bomb).  After the registry they hook into.
-	maps\mp\gametypes\_zombiemode_poi::init();
-	maps\mp\gametypes\_zombiemode_weap_cymbal_monkey::init();
-	maps\mp\gametypes\_zombiemode_weap_black_hole_bomb::init();
+	maps\_zombiemode_poi::init();
+	maps\_zombiemode_weap_cymbal_monkey::init();
+	maps\_zombiemode_weap_black_hole_bomb::init();
 
 	// Subsystem order matters: last stand first because it reads
 	// level.zombie_start_weapon, then the weapon table, then anything that
 	// spawns triggers, then the spawner, then the loop.
-	maps\mp\gametypes\_zombiemode_laststand::init();
-	maps\mp\gametypes\_zombiemode_weapons::init();
+	maps\_zombiemode_laststand::init();
+	maps\_zombiemode_weapons::init();
 	// The explosive crossbow and the Scavenger (T5 _zombiemode_weap_crossbow /
 	// _zombiemode_weap_sniper_explosive): after the weapon table, which says
 	// whether this map has them, and after the equipment registry their
 	// spawned bolt names register with.
-	maps\mp\gametypes\_zombiemode_weap_explosive_bolt::init();
-	maps\mp\gametypes\_zombiemode_blockers::init();
-	maps\mp\gametypes\_zombiemode_perks::init();
+	maps\_zombiemode_weap_explosive_bolt::init();
+	maps\_zombiemode_blockers::init();
+	maps\_zombiemode_perks::init();
 	// The level's own electric traps (T5 _zombiemode_traps): they wait on
 	// flag "power_on", so before the power module that may set it at once.
-	maps\mp\gametypes\_zombiemode_traps::init();
+	maps\_zombiemode_traps::init();
 	// Power LAST of the trigger modules: it fans "<perk>_power_on" out by
 	// notify, and on a map with no use_elec_switch it sets the flag
 	// immediately, so every machine has to be waiting before it runs.
-	maps\mp\gametypes\_zombiemode_power::init();
-	maps\mp\gametypes\_zombiemode_spawner::init();
+	maps\_zombiemode_power::init();
+	maps\_zombiemode_spawner::init();
 	// The hound rounds and the rescue: after the spawner, whose zone manager
 	// they read for the hound structs and the round flow.
-	maps\mp\gametypes\_zombiemode_ai_dogs::init();
-	maps\mp\gametypes\_zombiemode_extraction::init();
-	maps\mp\gametypes\_zombiemode_extractiontest::init();
-	maps\mp\gametypes\_zombiemode_cortex::init();
+	maps\_zombiemode_ai_dogs::init();
+	maps\_zombiemode_extraction::init();
+	maps\_zombiemode_extractiontest::init();
+	maps\_zombiemode_cortex::init();
 	// The minigun Juggernaut boss: after the spawner, whose zombie template
 	// it spawns from.
-	maps\mp\gametypes\_zombiemode_ai_boss::init();
+	maps\_zombiemode_ai_boss::init();
 	// Power-ups LAST: get_valid_powerup asks the blockers module whether any
 	// barrier is damaged and the perks module which machines this map has,
 	// so both have to have run.
-	maps\mp\gametypes\_zombiemode_powerups::init();
+	maps\_zombiemode_powerups::init();
 
 	// Challenge progress, experience and the games log: listens for the
 	// notifies the subsystems above send.  Before the first player begins.
-	maps\mp\gametypes\_zombiemode_challenges::init();
+	maps\_zombiemode_challenges::init();
 
 	// Character quotes, round music and level ambience (T5
 	// _zombiemode_audio).  Listens for the round and purchase notifies the
 	// subsystems above send.
-	maps\mp\gametypes\_zombiemode_audio::init();
+	maps\_zombiemode_audio::init();
 	// Story intel: the secret pickups, the scoreboard intel list and the
 	// collectibles profile bits.  After challenges, before the first player.
-	maps\mp\gametypes\_zombiemode_intel::init();
+	maps\_zombiemode_intel::init();
 
 	codolprintln( "CoDOL zm: subsystems initialised; starting the round loop" );
 
@@ -682,7 +682,7 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 	// Perk-pop damage rules: flak jacket immunity and dive explosion, the
 	// electro counter-shock.  Before the test-client guard so the rules also
 	// run for invulnerable test clients.
-	iDamage = self maps\mp\gametypes\_zombiemode_perkpops::player_damage_override( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon );
+	iDamage = self maps\_zombiemode_perkpops::player_damage_override( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon );
 	if ( iDamage <= 0 )
 		return;
 
@@ -700,7 +700,7 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 	// Already down: T5 lets a downed player be finished only by the bleedout,
 	// never by another hit.  The native path expresses the same rule as a
 	// 500 ms grace window (src/codol/script/codol_script_laststand.c:41-48).
-	if ( self maps\mp\gametypes\_zombiemode_laststand::player_is_in_laststand() )
+	if ( self maps\_zombiemode_laststand::player_is_in_laststand() )
 		return;
 
 	self.zmLastDamageTime = getTime();
@@ -817,7 +817,7 @@ Callback_PlayerKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, v
 all_dead_check()
 {
 	wait( 0.05 );
-	maps\mp\gametypes\_zombiemode_laststand::checkForAllDead();
+	maps\_zombiemode_laststand::checkForAllDead();
 }
 
 // The engine fires this when it decides a player is eligible for last stand.
@@ -827,7 +827,7 @@ all_dead_check()
 // the down into the engine with no script change at all.
 Callback_PlayerLastStand( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset, deathAnimDuration )
 {
-	self maps\mp\gametypes\_zombiemode_laststand::player_laststand();
+	self maps\_zombiemode_laststand::player_laststand();
 }
 
 // --------------------------------------------------------------------------
@@ -982,7 +982,7 @@ giveStartingLoadout()
 	// C1's roster gives each character its own pistol (column 5: m1911_zm, or
 	// m1911dw_zm for Danby); the level default covers a character whose pistol
 	// did not resolve.
-	start_weapon = self maps\mp\gametypes\_zombiemode_equipment::character_pistol();
+	start_weapon = self maps\_zombiemode_equipment::character_pistol();
 	if ( !isDefined( start_weapon ) )
 		start_weapon = level.zombie_start_weapon;
 	if ( !isDefined( start_weapon ) )
@@ -994,11 +994,11 @@ giveStartingLoadout()
 	self switchToWeapon( start_weapon );
 
 	// Lethal / special / trap in C1's three offhand slots.
-	self maps\mp\gametypes\_zombiemode_equipment::give_character_loadout();
+	self maps\_zombiemode_equipment::give_character_loadout();
 
 	// Perk-pop charges, HUD previews and action slots after the native spawn
 	// cleared them.
-	self maps\mp\gametypes\_zombiemode_perkpops::on_spawned();
+	self maps\_zombiemode_perkpops::on_spawned();
 
 	// C1 keeps a separate zmCharacterIndex and mp/cyborgclasstable.csv is the
 	// whole zm roster; the native selector already forces the zm faction when a
@@ -1090,7 +1090,7 @@ round_start()
 	{
 		// The character's own lethal (give_character_loadout armed it in slot
 		// 0); the level default only for a character without one.
-		lethal = players[ i ] maps\mp\gametypes\_zombiemode_equipment::lethal_grenade();
+		lethal = players[ i ] maps\_zombiemode_equipment::lethal_grenade();
 		if ( isDefined( lethal ) && !players[ i ] hasWeapon( lethal ) )
 		{
 			players[ i ] giveWeapon( lethal );
@@ -1108,7 +1108,7 @@ round_start()
 	// T5's three overridable hooks, kept so a per-map script can replace any
 	// one of them without touching this file.
 	if ( !isDefined( level.round_spawn_func ) )
-		level.round_spawn_func = maps\mp\gametypes\_zombiemode_spawner::round_spawning;
+		level.round_spawn_func = maps\_zombiemode_spawner::round_spawning;
 
 	if ( !isDefined( level.round_wait_func ) )
 		level.round_wait_func = ::round_wait;
@@ -1164,7 +1164,7 @@ round_think()
 
 		players = getPlayers();
 		for ( i = 0; i < players.size; i++ )
-			players[ i ] maps\mp\gametypes\_zombiemode_blockers::rebuild_barrier_reward_reset();
+			players[ i ] maps\_zombiemode_blockers::rebuild_barrier_reward_reset();
 
 		level thread award_grenades_for_survivors();
 
@@ -1188,7 +1188,7 @@ round_think()
 		// (_zombiemode_extraction).  It ends the match through "end_game".
 		if ( is_final_round() )
 		{
-			level thread maps\mp\gametypes\_zombiemode_extraction::extraction_start();
+			level thread maps\_zombiemode_extraction::extraction_start();
 			return;
 		}
 
@@ -1245,7 +1245,7 @@ award_grenades_for_survivors()
 		p = players[ i ];
 
 		// Each character tops up its own lethal (semtex, money ball, betty).
-		grenade = p maps\mp\gametypes\_zombiemode_equipment::lethal_grenade();
+		grenade = p maps\_zombiemode_equipment::lethal_grenade();
 		if ( !isDefined( grenade ) )
 			continue;
 
@@ -1281,7 +1281,7 @@ end_game_watcher()
 	println( "CoDOL zm: game over on round " + level.round_number + " after " +
 		level.total_zombies_killed + " kills\n" );
 
-	maps\mp\gametypes\_zombiemode_spawner::clear_zombies();
+	maps\_zombiemode_spawner::clear_zombies();
 
 	// T5 _zombiemode::player_intermission opens with closeMenu +
 	// closeInGameMenu before parking the player for the intermission.

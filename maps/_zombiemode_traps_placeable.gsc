@@ -65,7 +65,7 @@
 // per-actor meleeDamage 5 while shrunk (no such actor field here), and the
 // freezegun shatter's radius damage to neighbours.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 #using_animtree ( "generic_human" );
 
@@ -113,7 +113,7 @@ init()
 	register[ 2 ] = "trap_shock_zm";
 	register[ 3 ] = "trap_shrink_zm";
 	for ( i = 0; i < register.size; i++ )
-		maps\mp\gametypes\_zombiemode_equipment::register_equipment( register[ i ], ::on_trap_thrown );
+		maps\_zombiemode_equipment::register_equipment( register[ i ], ::on_trap_thrown );
 
 	setDvar( "scr_codol_traptest", "" );
 	level thread trap_test_watch();

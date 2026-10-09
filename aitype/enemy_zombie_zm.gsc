@@ -4,8 +4,8 @@
 // CODOL_ActorScriptsLoadType expects: main(), precache() and spawner(), loaded
 // as aitype/<classname without the actor_ prefix>.
 //
-// This file is resolved out of the zm CATEGORY root
-// (bin/home/codol_rawfiles/zm/), never the shared one: the species table's
+// Only the zm species preload names this file (it lived in the retired
+// zm/ overlay before the IW4/T5 layout): the species table's
 // category column is what keeps the multiplayer dog chain out of zm matches
 // and must keep this out of mp matches for the same reason.
 //
@@ -28,7 +28,7 @@ main()
 {
 	// animtrees/generic_human.atr, common_mp (mounted for every asset
 	// category). It is declared with #using_animtree in
-	// maps/mp/animscripts/zombie_init.gsc, which is what actually registers
+	// animscripts/zombie_init.gsc, which is what actually registers
 	// the server tree the native actor path binds.
 	self.animTree = "generic_human.atr";
 	self.team = "axis";

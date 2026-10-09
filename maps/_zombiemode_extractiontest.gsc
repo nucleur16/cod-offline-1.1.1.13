@@ -17,7 +17,7 @@
 // Pair it with scr_codol_fftest (addbot, invuln) for test clients and
 // scr_zm_roundcap <n> for a short game.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {
@@ -70,7 +70,7 @@ extest_watch()
 		case "board":
 			p = extest_player( tokens, 1 );
 			if ( isDefined( p ) && isDefined( level.zm_rescue_heli ) )
-				p maps\mp\gametypes\_zombiemode_extraction::board( level.zm_rescue_heli, "extest board" );
+				p maps\_zombiemode_extraction::board( level.zm_rescue_heli, "extest board" );
 			else
 				codolprintln( "CoDOL extest: no client or no helicopter" );
 			break;
@@ -117,7 +117,7 @@ extest_status()
 			extracted++;
 	}
 	codolprintln( "CoDOL extest: round " + level.round_number + "/" + level.zm_round_cap +
-		" final " + maps\mp\gametypes\_zombiemode::is_final_round() +
+		" final " + maps\_zombiemode::is_final_round() +
 		" dog_round " + flag( "dog_round" ) + " next_dog_round " + diag_val( level.next_dog_round ) +
 		" dog_round_count " + level.dog_round_count +
 		" enemies " + alive + " (hounds " + dogs + ") budget " + level.zombie_total +
@@ -195,6 +195,6 @@ extest_log_round_hud()
 			goal = level.zm_round_cap;
 		codolprintln( "CoDOL extest: round HUD ui_hud_round " + level.round_number + " ui_hud_round_goal " + goal +
 			" ui_hud_special_round " + flag( "dog_round" ) +
-			" ui_hud_final_round " + maps\mp\gametypes\_zombiemode::is_final_round() );
+			" ui_hud_final_round " + maps\_zombiemode::is_final_round() );
 	}
 }

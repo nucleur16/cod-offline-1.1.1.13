@@ -1,7 +1,7 @@
 // zm_zombie_training level script: the Zombies training mission.
 //
-// GScr_LoadScripts asks for exactly one module, maps/mp/<mapname>, for every
-// asset category (src/scr_vm_main.c, GScr_LoadScripts).  No CoDOL zone ships
+// GScr_LoadScripts asks for exactly one level module per match, maps/<mapname>
+// for a zm match (CODOL_ScriptEntryPoints, src/codol/script/codol_script_source.c).  No CoDOL zone ships
 // a level script for any zm map (a sweep of all 90 client_shipRetail zones
 // found only _fx pairs), so the server owns this file the same way it owns
 // mp_killhouse_sh.gsc.  See docs/CODOL_ZOMBIES_STARTUP_20260915.md section 1.
@@ -62,14 +62,14 @@
 //    museum narration (cyborg_tutorial_m_vo_001..003 at male_vo_1..3) is
 //    placed, because its three origins name its three lines.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 main()
 {
 	// See _zombiemode::init() for why this is answered rather than inferred.
 	// zm_zombie_training.ff ships no vision rawfile of its own, but C1's
 	// startup zone common_mp does (vision/zm_zombie_training.vision).
-	maps\mp\gametypes\_zombiemode::levelMain( "zm_zombie_training" );
+	maps\_zombiemode::levelMain( "zm_zombie_training" );
 
 	training_precache();
 
@@ -317,7 +317,7 @@ training_mission()
 {
 	level endon( "end_game" );
 
-	maps\mp\gametypes\_zombiemode::publishRoundHud();
+	maps\_zombiemode::publishRoundHud();
 	codolprintln( "CoDOL zm training: mission begins with " + getPlayers().size + " player(s)" );
 
 	training_stage_lift();
@@ -349,7 +349,7 @@ training_respawn_dead()
 	for ( i = 0; i < players.size; i++ )
 	{
 		if ( players[ i ].sessionstate == "dead" )
-			players[ i ] thread maps\mp\gametypes\_zombiemode::spawnPlayer();
+			players[ i ] thread maps\_zombiemode::spawnPlayer();
 	}
 }
 
@@ -492,7 +492,7 @@ training_stage_gun()
 	if ( isDefined( wall ) )
 	{
 		training_marker( wall.origin );
-		training_fund( maps\mp\gametypes\_zombiemode_weapons::get_weapon_cost( weapon ) );
+		training_fund( maps\_zombiemode_weapons::get_weapon_cost( weapon ) );
 	}
 	training_say( &"ZOMBIE_TUTORIAL_NEW_DOOR1_WALLGUN_INTRO_01", 5 );
 
@@ -539,7 +539,7 @@ training_stage_display()
 		training_marker( sp.origin + ( 0, 0, 40 ) );
 		playSoundAtPosition( "cbg_tut_claw_up", sp.origin );
 		level.zombie_health = level.zombie_vars[ "zombie_health_start" ];
-		ai = maps\mp\gametypes\_zombiemode_spawner::spawn_zombie( sp );
+		ai = maps\_zombiemode_spawner::spawn_zombie( sp );
 	}
 
 	if ( isDefined( ai ) )
@@ -627,7 +627,7 @@ training_stage_museum()
 	if ( isDefined( wall ) )
 	{
 		training_marker( wall.origin );
-		training_fund( maps\mp\gametypes\_zombiemode_weapons::get_weapon_cost( weapon ) );
+		training_fund( maps\_zombiemode_weapons::get_weapon_cost( weapon ) );
 	}
 	training_say( &"ZOMBIE_TUTORIAL_NEW_DOOR3_WALLGUN", 5 );
 
@@ -771,7 +771,7 @@ training_stage_repair()
 	{
 		// The window is broken when the room is reached.
 		for ( i = 0; i < window.barrier_chunks.size; i++ )
-			maps\mp\gametypes\_zombiemode_blockers::remove_chunk( window.barrier_chunks[ i ], window, true );
+			maps\_zombiemode_blockers::remove_chunk( window.barrier_chunks[ i ], window, true );
 	}
 
 	training_say( &"ZOMBIE_TUTORIAL_NEW_DOOR4_TIPS", 5 );
@@ -933,7 +933,7 @@ training_stage_power()
 		if ( isDefined( machines[ i ].script_noteworthy ) && machines[ i ].script_noteworthy == perk )
 			training_marker( machines[ i ].origin + ( 0, 0, 20 ) );
 	}
-	training_fund( maps\mp\gametypes\_zombiemode_perks::perk_cost( perk, getPlayers().size == 1 ) );
+	training_fund( maps\_zombiemode_perks::perk_cost( perk, getPlayers().size == 1 ) );
 
 	start = getTime();
 	nagged = false;
@@ -944,7 +944,7 @@ training_stage_power()
 			level.zt_skip = false;
 			players = getPlayers();
 			if ( players.size > 0 )
-				players[ 0 ] maps\mp\gametypes\_zombiemode_perks::give_perk( perk );
+				players[ 0 ] maps\_zombiemode_perks::give_perk( perk );
 			break;
 		}
 		if ( !nagged && getTime() - start > 25000 )
@@ -1040,7 +1040,7 @@ training_stage_final_room()
 	chest = getEnt( "treasure_chest_use", "targetname" );
 	if ( isDefined( chest ) )
 	{
-		training_fund( chest maps\mp\gametypes\_zombiemode_weapons::treasure_chest_cost() );
+		training_fund( chest maps\_zombiemode_weapons::treasure_chest_cost() );
 		training_say( &"ZOMBIE_TUTORIAL_NEW_OPEN_MAGIC_BOX", 5 );
 	}
 
@@ -1174,7 +1174,7 @@ training_stage_exit()
 	if ( getDvar( "scr_zm_extract_arrive" ) == "" )
 		level.zm_extract_arrive = 15;
 	level thread training_marker_clear_on_landing();
-	maps\mp\gametypes\_zombiemode_extraction::extraction_start();
+	maps\_zombiemode_extraction::extraction_start();
 }
 
 training_marker_clear_on_landing()
@@ -1226,7 +1226,7 @@ training_award_on_liftoff()
 	for ( i = 0; i < players.size; i++ )
 	{
 		if ( is_true( players[ i ].zm_extracted ) )
-			players[ i ] maps\mp\gametypes\_zombiemode_challenges::zm_map_completed( 1 );
+			players[ i ] maps\_zombiemode_challenges::zm_map_completed( 1 );
 	}
 	codolprintln( "CoDOL zm training: mission complete" );
 }
@@ -1307,7 +1307,7 @@ training_fund( cost )
 	for ( i = 0; i < players.size; i++ )
 	{
 		if ( players[ i ].score < cost )
-			players[ i ] maps\mp\gametypes\_zombiemode_score::add_to_player_score( cost - players[ i ].score );
+			players[ i ] maps\_zombiemode_score::add_to_player_score( cost - players[ i ].score );
 	}
 }
 
@@ -1316,7 +1316,7 @@ training_any_has_weapon( weapon )
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 	{
-		if ( players[ i ] maps\mp\gametypes\_zombiemode_weapons::has_weapon_or_upgrade( weapon ) )
+		if ( players[ i ] maps\_zombiemode_weapons::has_weapon_or_upgrade( weapon ) )
 			return true;
 	}
 	return false;
@@ -1382,7 +1382,7 @@ training_spawn( sp )
 {
 	if ( !isDefined( sp ) )
 		return undefined;
-	ai = maps\mp\gametypes\_zombiemode_spawner::spawn_zombie( sp );
+	ai = maps\_zombiemode_spawner::spawn_zombie( sp );
 	if ( !isDefined( ai ) )
 	{
 		codolprintln( "CoDOL zm training: spawn at " + sp.origin + " failed: " + level.zm_spawn_fail_reason );
@@ -1652,14 +1652,14 @@ training_subtitle_think()
 training_skip_door( trig )
 {
 	codolprintln( "CoDOL zm training: test opens door " + trig.target );
-	trig maps\mp\gametypes\_zombiemode_blockers::door_opened();
+	trig maps\_zombiemode_blockers::door_opened();
 }
 
 training_skip_give_weapon( weapon )
 {
 	players = getPlayers();
 	if ( players.size > 0 )
-		players[ 0 ] maps\mp\gametypes\_zombiemode_weapons::weapon_give( weapon );
+		players[ 0 ] maps\_zombiemode_weapons::weapon_give( weapon );
 	codolprintln( "CoDOL zm training: test gives " + weapon );
 }
 
@@ -1680,11 +1680,11 @@ training_skip_debris( trig )
 		if ( isDefined( junk[ i ].script_linkTo ) )
 			s = get_struct( junk[ i ].script_linkTo, "script_linkname" );
 		if ( isDefined( s ) )
-			junk[ i ] thread maps\mp\gametypes\_zombiemode_blockers::debris_move( s );
+			junk[ i ] thread maps\_zombiemode_blockers::debris_move( s );
 		else
 			junk[ i ] delete();
 	}
-	trig maps\mp\gametypes\_zombiemode_blockers::delete_blocker_triggers();
+	trig maps\_zombiemode_blockers::delete_blocker_triggers();
 	codolprintln( "CoDOL zm training: test clears the debris" );
 }
 

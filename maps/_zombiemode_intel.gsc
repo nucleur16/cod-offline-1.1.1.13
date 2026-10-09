@@ -39,7 +39,7 @@
 // players who still need it (hide + showToPlayer per player); one nobody
 // present needs is hidden from everyone.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {

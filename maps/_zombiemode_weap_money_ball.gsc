@@ -28,7 +28,7 @@
 //      misc/light_moneyball_blink while it sits stuck, and zmb_money_ball_coin
 //      where a bonus is paid.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 MONEY_BALL_WEAPON = "money_ball_zm";
 MONEY_BALL_BONUS = 100;
@@ -45,7 +45,7 @@ init()
 	level._effect[ "money_ball_blink" ] = loadfx( "misc/light_moneyball_blink" );
 	precacheModel( "tag_origin" );
 
-	maps\mp\gametypes\_zombiemode_equipment::register_equipment( MONEY_BALL_WEAPON, ::money_ball_fired );
+	maps\_zombiemode_equipment::register_equipment( MONEY_BALL_WEAPON, ::money_ball_fired );
 
 	if ( !isDefined( level.zombie_kill_weapon_callbacks ) )
 		level.zombie_kill_weapon_callbacks = [];
@@ -110,9 +110,9 @@ money_ball_kill( zombie, weapon )
 	if ( isDefined( zombie ) )
 		origin = zombie.origin;
 
-	bonus = MONEY_BALL_BONUS * maps\mp\gametypes\_zombiemode_score::get_points_multiplier();
+	bonus = MONEY_BALL_BONUS * maps\_zombiemode_score::get_points_multiplier();
 	before = self.score;
-	self maps\mp\gametypes\_zombiemode_score::add_to_player_score( bonus );
+	self maps\_zombiemode_score::add_to_player_score( bonus );
 
 	if ( isDefined( origin ) )
 		playSoundAtPosition( "zmb_money_ball_coin", origin );

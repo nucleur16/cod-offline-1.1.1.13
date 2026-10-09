@@ -4,13 +4,13 @@
 // Contract (src/codol/player/codol_actor_scripts.cpp, CODOL_ActorScriptsLoadType):
 // main(), precache() and spawner(), loaded as aitype/<classname without the
 // actor_ prefix> for the "soldier" species row, whose category column is
-// "coop".  This file resolves out of the coop CATEGORY root only, so no mp or
-// zm match ever compiles it.
+// "coop".  Only the coop species preload names it, so no mp or zm match ever
+// compiles it.
 //
 // IW4 ships one aitype per authored classname (aitype\enemy_favela_ar_so ...)
 // and none of them is in a CoDOL zone (no zone ships an aitype or character
 // asset; docs/CODOL_CAMPAIGN_MODE.md section 4).  The coop mission script
-// (maps\mp\gametypes\_coopmission) therefore reads the authored spawner's
+// (maps\_coopmission) therefore reads the authored spawner's
 // classname, turns it into a faction and a role, and leaves that choice in
 // level.coop_soldier_next immediately before spawnActor() -- which runs this
 // main() synchronously -- the same way IW4's aitype files hard-code theirs.
@@ -94,7 +94,7 @@ resolve_role_weapon( role )
 main()
 {
 	// animtrees/generic_human.atr, common_mp; declared by
-	// maps/mp/animscripts/soldier_init.gsc's #using_animtree.
+	// animscripts/soldier_init.gsc's #using_animtree.
 	self.animTree = "generic_human.atr";
 	self.team = "axis";
 	self.type = "soldier";

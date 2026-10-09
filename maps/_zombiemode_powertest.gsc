@@ -29,7 +29,7 @@
 //                           whether it is then standing in the trap
 //   state                   power flag, every trap's state and kill counts
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {
@@ -88,13 +88,13 @@ powertest_watch()
 			p = powertest_player( tokens, 1 );
 			if ( !isDefined( p ) )
 				break;
-			trigs = maps\mp\gametypes\_zombiemode_power::power_switch_triggers();
+			trigs = maps\_zombiemode_power::power_switch_triggers();
 			if ( trigs.size < 1 )
 			{
 				codolprintln( "CoDOL powertest: no power switch trigger left; power_on " + flag( "power_on" ) );
 				break;
 			}
-			lever = maps\mp\gametypes\_zombiemode_power::power_switch_lever();
+			lever = maps\_zombiemode_power::power_switch_lever();
 			before = "<none>";
 			if ( isDefined( lever ) )
 				before = "" + lever.angles;
@@ -212,7 +212,7 @@ powertest_player( tokens, index )
 
 powertest_perks( p )
 {
-	perks = maps\mp\gametypes\_zombiemode_perks::perk_list();
+	perks = maps\_zombiemode_perks::perk_list();
 	line = "";
 	for ( i = 0; i < perks.size; i++ )
 		line = line + " " + perks[ i ] + "=" + p hasPerk( perks[ i ] );

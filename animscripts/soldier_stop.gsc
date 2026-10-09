@@ -3,7 +3,7 @@
 // IW4 animscripts\stop.gsc reduced to the exposed stand: alert aim pose while
 // the soldier has an enemy, the casual idle while he has none.
 
-#include maps\mp\animscripts\soldier_shared;
+#include animscripts\soldier_shared;
 
 #using_animtree ( "generic_human" );
 

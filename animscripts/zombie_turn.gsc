@@ -18,7 +18,7 @@
 // is read so a level script can see how far the turn was, matching what T5's
 // dog turn module does with the same value.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 main()
 {

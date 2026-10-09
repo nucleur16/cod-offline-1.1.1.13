@@ -3,7 +3,7 @@
 // IW4 animscripts\flashed.gsc: a flashbanged soldier staggers through one of
 // the exposed_flashbang reactions, then the native frame resumes.
 
-#include maps\mp\animscripts\soldier_shared;
+#include animscripts\soldier_shared;
 
 #using_animtree ( "generic_human" );
 

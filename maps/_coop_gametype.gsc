@@ -17,10 +17,11 @@
 //         coop_prolog_mp_crash_intro,coop,1
 //         coop_training_mp_killhouse_sh,coop,1
 //
-// Without this file GScr_LoadGameTypeScript cannot find maps/mp/gametypes/coop,
-// and because codol_gametype_policy gives the coop category itself as its own
-// fallback (src/scr_vm_main.c), the loader raises Com_Error(ERR_DROP) rather
-// than silently compiling a multiplayer gametype against coop zones.  A coop
+// This is the coop category's one rules module: GScr_LoadGameTypeScript loads
+// maps/_coop_gametype whatever g_gametype says (CODOL_ScriptEntryPoints,
+// src/codol/script/codol_script_source.c) and raises Com_Error(ERR_DROP) when
+// it is missing rather than compiling a multiplayer gametype against coop
+// zones.  (It was maps/mp/gametypes/coop.gsc in the retired coop/ overlay.)  A coop
 // match therefore does not start at all today; this is the file that starts it.
 //
 // SCOPE.  Boot chain and per-player basics: load, publish a gamestate, place a
@@ -32,6 +33,6 @@
 
 main()
 {
-	maps\mp\gametypes\_callbacksetup::SetupCallbacks();
-	maps\mp\gametypes\_coopmode::init();
+	maps\_coop_callbacksetup::SetupCallbacks();
+	maps\_coopmode::init();
 }

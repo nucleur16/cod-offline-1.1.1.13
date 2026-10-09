@@ -1,9 +1,10 @@
 // mp_estate_tropical -- coop level script (base spelling).
 //
-// GScr_LoadScripts asks the engine for exactly one module, maps/mp/<mapname>,
-// for every asset category (src/scr_vm_main.c), and the per-category source
-// root is what makes that file coop's rather than multiplayer's
-// (src/codol/script/codol_script_source.c).
+// GScr_LoadScripts asks the engine for exactly one level module per match:
+// maps/<mapname> for a coop or zm match, maps/mp/<mapname> for multiplayer
+// (CODOL_ScriptEntryPoints, src/codol/script/codol_script_source.c) -- the
+// IW4 split between singleplayer and multiplayer level scripts
+// (docs/CODOL_GSC_TREE_LAYOUT.md).
 //
 // WHICH SPELLING IS <mapname>.  A coop match has two names for the same level:
 // the PLAYLIST name (coop_training_mp_killhouse_sh) and the BASE level name
@@ -46,9 +47,9 @@
 //
 //  * maps\mp\_compass::setupMiniMap.  _compass is a multiplayer module.
 //
-// This is the BASE spelling.  It shadows the multiplayer level script of the
-// same name for coop matches ONLY -- the shared maps/mp/mp_estate_tropical.gsc is
-// untouched and is what an mp match still compiles.  It cannot know which of
+// This is the BASE spelling.  It is the coop level script of the base level;
+// the multiplayer level script of the same name, maps/mp/mp_estate_tropical.gsc, is a
+// different module that only an mp match compiles.  It cannot know which of
 // the coop playlists (coop_spec_mp_estate_tropical, coop_take_mp_estate_tropical) is running, so it names its own
 // zone's vision, which the base zone always ships.
 
@@ -58,5 +59,5 @@ main()
 	// script makes them before its loader (maps/mp/mp_estate_tropical.gsc): the
 	// shared loader in levelMain starts the destructibles that need them.
 	maps\mp\mp_estate_precache::main();
-	maps\mp\gametypes\_coopmode::levelMain( "mp_estate_tropical" );
+	maps\_coopmode::levelMain( "mp_estate_tropical" );
 }

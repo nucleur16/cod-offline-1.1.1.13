@@ -1,11 +1,10 @@
 // zm asset-category callback setup.
 //
-// This file shadows scripts/codol/maps/mp/gametypes/_callbacksetup.gsc for a zm
-// match only.  Scr_ReadFile searches scripts/codol/<category>/ ahead of
-// scripts/codol/ (src/codol/script/codol_script_source.c), and the engine binds
-// its six mandatory labels by the same module name for every category
-// (src/scr_vm_main.c:1303-1312, GScr_LoadGameTypeScript), so the module name is
-// all that is shared -- the file the VM compiles is this one.
+// The zm counterpart of maps/mp/gametypes/_callbacksetup.gsc (T5 keeps its
+// singleplayer/zombies one at maps/_callbacksetup.gsc).  GScr_LoadGameTypeScript
+// binds the six mandatory CodeCallback_* labels from the category's own
+// callback module, which for zm is this file (CODOL_ScriptEntryPoints,
+// src/codol/script/codol_script_source.c).
 //
 // It exists because the multiplayer _callbacksetup's SetDefaultCallbacks names
 // maps\mp\gametypes\_gamelogic, \_playerlogic, \_damage and \_hostmigration as
@@ -137,14 +136,14 @@ SetupCallbacks()
 
 SetDefaultCallbacks()
 {
-	level.callbackStartGameType		= maps\mp\gametypes\_zombiemode::Callback_StartGameType;
-	level.callbackPlayerConnect		= maps\mp\gametypes\_zombiemode::Callback_PlayerConnect;
-	level.callbackPlayerDisconnect	= maps\mp\gametypes\_zombiemode::Callback_PlayerDisconnect;
-	level.callbackPlayerDamage		= maps\mp\gametypes\_zombiemode::Callback_PlayerDamage;
-	level.callbackPlayerKilled		= maps\mp\gametypes\_zombiemode::Callback_PlayerKilled;
-	level.callbackPlayerLastStand	= maps\mp\gametypes\_zombiemode::Callback_PlayerLastStand;
-	level.callbackCodeEndGame		= maps\mp\gametypes\_zombiemode::Callback_CodeEndGame;
-	level.callbackActorKilled		= maps\mp\gametypes\_zombiemode_challenges::Callback_ActorKilled;
+	level.callbackStartGameType		= maps\_zombiemode::Callback_StartGameType;
+	level.callbackPlayerConnect		= maps\_zombiemode::Callback_PlayerConnect;
+	level.callbackPlayerDisconnect	= maps\_zombiemode::Callback_PlayerDisconnect;
+	level.callbackPlayerDamage		= maps\_zombiemode::Callback_PlayerDamage;
+	level.callbackPlayerKilled		= maps\_zombiemode::Callback_PlayerKilled;
+	level.callbackPlayerLastStand	= maps\_zombiemode::Callback_PlayerLastStand;
+	level.callbackCodeEndGame		= maps\_zombiemode::Callback_CodeEndGame;
+	level.callbackActorKilled		= maps\_zombiemode_challenges::Callback_ActorKilled;
 }
 
 callbackVoid()
@@ -154,7 +153,7 @@ callbackVoid()
 /*================
 Called when a gametype is not supported.
 
-REQUIRED, not optional.  maps\mp\gametypes\_callbacksetup::AbortLevel() is
+REQUIRED, not optional.  maps\_zombiemode_callbacksetup::AbortLevel() is
 called from nine sites in the SHARED script tree (_spawnlogic, _teams and
 others).  A category _callbacksetup REPLACES the shared one wholesale, so
 omitting this makes any shared module that reaches it a fatal COMPILE error --
@@ -164,7 +163,7 @@ the dog aitype preload dragged _spawnlogic in.
 
 Divergence from the multiplayer version, deliberately: it does NOT
 setdvar("g_gametype","dm").  Under this category the gametype script is forced
-by codol_gametype_policy (src/scr_vm_main.c), and rewriting the dvar to a
+by CODOL_ScriptEntryPoints (src/codol/script/codol_script_source.c), and rewriting the dvar to a
 multiplayer gametype here would only make the abort disagree with the mounted
 zones and with what the client was told.
 ================*/

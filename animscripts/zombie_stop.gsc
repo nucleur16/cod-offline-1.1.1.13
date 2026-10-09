@@ -25,8 +25,8 @@
 //   setLastStoppedTime / trackScriptState -- telemetry.
 
 
-#include maps\mp\gametypes\_zombiemode_utility;
-#include maps\mp\animscripts\zombie_shared;
+#include maps\_zombiemode_utility;
+#include animscripts\zombie_shared;
 
 #using_animtree ("generic_human");
 

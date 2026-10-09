@@ -50,17 +50,17 @@ is_mission()
 
 flag( name )
 {
-	return maps\mp\gametypes\_coopmission::flag( name );
+	return maps\_coopmission::flag( name );
 }
 
 flag_set( name )
 {
-	maps\mp\gametypes\_coopmission::flag_set( name );
+	maps\_coopmission::flag_set( name );
 }
 
 flag_wait( name )
 {
-	maps\mp\gametypes\_coopmission::flag_wait( name );
+	maps\_coopmission::flag_wait( name );
 }
 
 flag_wait_or_timeout( name, timeout )
@@ -93,12 +93,12 @@ ent( name )
 
 struct( name )
 {
-	return maps\mp\gametypes\_coopvehicle::path_point( name );
+	return maps\_coopvehicle::path_point( name );
 }
 
 ground( point )
 {
-	return maps\mp\gametypes\_coopvehicle::ground_under( point );
+	return maps\_coopvehicle::ground_under( point );
 }
 
 by_noteworthy( value )
@@ -127,7 +127,7 @@ flag_trigger( name )
 
 living_players()
 {
-	return maps\mp\gametypes\_coopmission::living_players();
+	return maps\_coopmission::living_players();
 }
 
 nearest_player( origin )
@@ -149,7 +149,7 @@ nearest_player( origin )
 
 nearest_player_distance( origin )
 {
-	d = maps\mp\gametypes\_coopmission::nearest_player_distance( origin );
+	d = maps\_coopmission::nearest_player_distance( origin );
 	if ( !isDefined( d ) )
 		return 999999;
 	return d;
@@ -336,7 +336,7 @@ init()
 	// The look-only overhead names (_cooptraining's), for Ghost.
 	level.coop_cast_list = [];
 	level.coop_cast = [];
-	level thread maps\mp\gametypes\_cooptraining::show_nametags();
+	level thread maps\_cooptraining::show_nametags();
 	level thread loadout_watch();
 
 	// The probe harness's mission verbs (_cooptest forwards what it does
@@ -364,7 +364,7 @@ main()
 	while ( getPlayers().size <= 0 )
 		wait( 0.5 );
 	wait( 0.5 );
-	if ( !maps\mp\gametypes\_coopmission::make_template() )
+	if ( !maps\_coopmission::make_template() )
 		return;
 
 	level thread civilians();
@@ -388,7 +388,7 @@ main()
 	chase();
 	ending();
 
-	maps\mp\gametypes\_coopmission::mission_complete( "Ortiz captured" );
+	maps\_coopmission::mission_complete( "Ortiz captured" );
 }
 
 // --------------------------------------------------------------------------
@@ -526,7 +526,7 @@ seat_in_car()
 	offset = fav_seat_offset( car, row );
 	self disableWeapons();
 	self setStance( "crouch" );
-	self maps\mp\gametypes\_coopintro::seat_lock( true );
+	self maps\_coopintro::seat_lock( true );
 	origin = car.origin + anglesToForward( car.angles ) * offset[ 0 ] + anglesToRight( car.angles ) * offset[ 1 ] + ( 0, 0, offset[ 2 ] );
 	self setOrigin( origin );
 	self setPlayerAngles( car.angles );
@@ -577,7 +577,7 @@ leave_cars()
 		car playSound( "scn_mpfav_cardoor_open" );
 		eye = p getEye();
 		p unlink();
-		p maps\mp\gametypes\_coopintro::seat_lock( false );
+		p maps\_coopintro::seat_lock( false );
 		spot = exit_spot( car, eye, int( i / fav.cars.size ) );
 		p setOrigin( spot );
 		p setPlayerAngles( car.angles );
@@ -656,8 +656,8 @@ wait_riders_looking( limit )
 			if ( !isDefined( p ) || !isDefined( p.coop_seat_angles ) )
 				continue;
 			a = p getPlayerAngles();
-			if ( maps\mp\gametypes\_coopintro::abs_angle( a[ 1 ] - p.coop_seat_angles[ 1 ] ) > 2 ||
-			     maps\mp\gametypes\_coopintro::abs_angle( a[ 0 ] - p.coop_seat_angles[ 0 ] ) > 2 )
+			if ( maps\_coopintro::abs_angle( a[ 1 ] - p.coop_seat_angles[ 1 ] ) > 2 ||
+			     maps\_coopintro::abs_angle( a[ 0 ] - p.coop_seat_angles[ 0 ] ) > 2 )
 				return;
 		}
 		wait( 0.25 );
@@ -673,7 +673,7 @@ wait_riders_looking( limit )
 
 spawn_actor( origin, angles, key, body, head, team, name )
 {
-	template = maps\mp\gametypes\_cooptraining::ally_template();
+	template = maps\_cooptraining::ally_template();
 	if ( !isDefined( template ) )
 		return undefined;
 	kind = spawnStruct();
@@ -917,7 +917,7 @@ spawn_gunmen()
 		s = ent( names[ i ] );
 		if ( !isDefined( s ) )
 			continue;
-		ai = maps\mp\gametypes\_coopmission::spawn_soldier( s );
+		ai = maps\_coopmission::spawn_soldier( s );
 		if ( !isDefined( ai ) )
 			continue;
 		ai.ignoreall = true;
@@ -1026,10 +1026,10 @@ shoot_informants()
 			start = shooter.origin + ( 0, 0, 56 ) + anglesToForward( vectorToAngles( inf.origin - shooter.origin ) ) * 16;
 			if ( isDefined( shooter.coop_weapon_model ) )
 				start = shooter getTagOrigin( "tag_flash" );
-			shooter maps\mp\gametypes\_coopmission::actor_fire_round( shooter.coop_weapon, start, inf.origin + ( 0, 0, 48 ) );
+			shooter maps\_coopmission::actor_fire_round( shooter.coop_weapon, start, inf.origin + ( 0, 0, 48 ) );
 			wait( 0.15 );
 			if ( isDefined( shooter ) && isAlive( shooter ) )
-				shooter maps\mp\gametypes\_coopmission::actor_fire_round( shooter.coop_weapon, start, inf.origin + ( 0, 0, 40 ) );
+				shooter maps\_coopmission::actor_fire_round( shooter.coop_weapon, start, inf.origin + ( 0, 0, 40 ) );
 		}
 		if ( isAlive( inf ) )
 		{
@@ -1103,7 +1103,7 @@ chase()
 	ortiz endon( "death" );
 	level endon( "coop_mission_over" );
 
-	path = maps\mp\gametypes\_coopvehicle::get_path( "escape_path_start" );
+	path = maps\_coopvehicle::get_path( "escape_path_start" );
 	fav.chase_path = path;
 	log( "chase path of " + path.size + " nodes" );
 	fav.chase_reached = -1;
@@ -1287,8 +1287,8 @@ ai_trigger_think( t, name )
 		spawners = getEntArray( name, "targetname" );
 		for ( i = 0; i < spawners.size; i++ )
 		{
-			if ( maps\mp\gametypes\_coopmission::is_enemy_spawner( spawners[ i ] ) )
-				level thread maps\mp\gametypes\_coopmission::spawner_spawn_count( spawners[ i ] );
+			if ( maps\_coopmission::is_enemy_spawner( spawners[ i ] ) )
+				level thread maps\_coopmission::spawner_spawn_count( spawners[ i ] );
 		}
 	}
 }
@@ -1328,7 +1328,7 @@ technical()
 	if ( vehicles.size <= 0 )
 		return;
 	v = vehicles[ 0 ];
-	path = maps\mp\gametypes\_coopvehicle::get_path( v.target );
+	path = maps\_coopvehicle::get_path( v.target );
 	truck = spawn( "script_model", ground( v.origin + ( 0, 0, 16 ) ) );
 	truck.angles = flat_angles( v.angles );
 	truck setModel( "vehicle_pickup_technical" );
@@ -1347,7 +1347,7 @@ technical()
 	for ( i = 0; i < riders.size; i++ )
 	{
 		r = riders[ i ];
-		if ( !maps\mp\gametypes\_coopmission::is_enemy_spawner( r ) || ( isDefined( r.targetname ) && r.targetname == "combat_zone_10" ) )
+		if ( !maps\_coopmission::is_enemy_spawner( r ) || ( isDefined( r.targetname ) && r.targetname == "combat_zone_10" ) )
 			continue;
 		pos = 0;
 		if ( isDefined( r.script_startingposition ) )
@@ -1359,7 +1359,7 @@ technical()
 		spot.origin = truck getTagOrigin( tags[ pos ] );
 		spot.angles = truck.angles;
 		spot.script_noteworthy = "combat_zone_10";
-		ai = maps\mp\gametypes\_coopmission::spawn_soldier( spot );
+		ai = maps\_coopmission::spawn_soldier( spot );
 		if ( !isDefined( ai ) )
 			continue;
 		ai.ignoreall = true;
@@ -1373,7 +1373,7 @@ technical()
 	log( "technical rolls (" + path.size + " nodes), crew " + crew.size );
 	level thread radio( "favela_pri_ambush01", 3.5 );
 	truck playLoopSound( "veh_pickuptruck_engine_high" );
-	truck maps\mp\gametypes\_coopvehicle::follow_path( path, 0, 25, true );
+	truck maps\_coopvehicle::follow_path( path, 0, 25, true );
 	truck stopLoopSound();
 	truck playLoopSound( "veh_pickuptruck_idle_low" );
 	say( level.fav.ortiz, "favela_ortiz_03", 0.8 );
@@ -1429,7 +1429,7 @@ technical_gunner( truck, ai )
 			aim = target getEye() - ( 0, 0, 10 ) + ( randomFloatRange( -40, 40 ), randomFloatRange( -40, 40 ), randomFloatRange( -24, 24 ) );
 			// The round leaves the truck's gun; the fire event (sound, flash)
 			// is the gunner's own (codol_actorShoot).
-			ai maps\mp\gametypes\_coopmission::actor_fire_round( ai.coop_weapon, muzzle + anglesToForward( vectorToAngles( aim - muzzle ) ) * 30, aim );
+			ai maps\_coopmission::actor_fire_round( ai.coop_weapon, muzzle + anglesToForward( vectorToAngles( aim - muzzle ) ) * 30, aim );
 			wait( 0.1 );
 		}
 	}
@@ -1763,12 +1763,12 @@ fav_route()
 			if ( o.targetname == "obj_100" )
 			{
 				if ( isDefined( level.fav.ortiz ) )
-					maps\mp\gametypes\_cooptest::walk_to( p, level.fav.ortiz.origin + ( 160, -160, 0 ), "near Ortiz" );
+					maps\_cooptest::walk_to( p, level.fav.ortiz.origin + ( 160, -160, 0 ), "near Ortiz" );
 			}
 			continue;
 		}
 		last = o;
-		maps\mp\gametypes\_cooptest::walk_to( p, o.origin, "objective " + o.targetname );
+		maps\_cooptest::walk_to( p, o.origin, "objective " + o.targetname );
 		t = undefined;
 		trig_flags = strTok( "chase_05_leave chase_11_leave chase_15_leave chase_20_leave chase_25_leave chase_30_leave chase_40_leave chase_41_leave obj_45_arrive obj_47_arrive obj_50_complete chase_60_leave chase_70_leave chase_72_leave obj_75_arrive chase_80_leave chase_90_leave ending_tackle", " " );
 		objs = strTok( "obj_10 obj_11 obj_15 obj_20 obj_25 obj_30 obj_40 obj_41 obj_45 obj_47 obj_50 obj_60 obj_70 obj_72 obj_75 obj_80 obj_90 obj_100", " " );
@@ -1778,7 +1778,7 @@ fav_route()
 				t = flag_trigger( trig_flags[ i ] );
 		}
 		if ( isDefined( t ) && !flag( t.script_flag ) )
-			maps\mp\gametypes\_cooptest::walk_to( p, t.origin, "trigger " + t.script_flag );
+			maps\_cooptest::walk_to( p, t.origin, "trigger " + t.script_flag );
 	}
 }
 

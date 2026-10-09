@@ -27,8 +27,8 @@
 //                          (walk there, shoot its targets, throw, run the
 //                          course) as player 0, until the mission ends
 //
-// Lives under the coop category root and is named only by _coopmode, so it
-// exists in no mp or zm match.
+// A coop module (maps/) named only by _coopmode, so it exists in no mp or zm
+// match.
 
 main()
 {
@@ -103,17 +103,17 @@ watch()
 			codolprintln( "CoDOL cooptest: used " + objs.size + " laptops" );
 			break;
 		case "goextract":
-			evac = maps\mp\gametypes\_coopmission::find_extraction();
+			evac = maps\_coopmission::find_extraction();
 			if ( isDefined( evac ) )
 				teleport( 0, evac.origin );
 			else
 				codolprintln( "CoDOL cooptest: no extraction trigger" );
 			break;
 		case "complete":
-			maps\mp\gametypes\_coopmission::mission_complete( "cooptest complete" );
+			maps\_coopmission::mission_complete( "cooptest complete" );
 			break;
 		case "fail":
-			maps\mp\gametypes\_coopmission::mission_failed( "cooptest fail" );
+			maps\_coopmission::mission_failed( "cooptest fail" );
 			break;
 		case "route":
 			level thread route();
@@ -122,7 +122,7 @@ watch()
 			level thread play_route();
 			break;
 		case "opengates":
-			maps\mp\gametypes\_cooptraining::open_everything();
+			maps\_cooptraining::open_everything();
 			break;
 		case "aimcheck":
 			level thread aim_check();
@@ -168,8 +168,8 @@ watch()
 			// pitwalk: player 0 from the hangar through the whole pit course
 			// on foot (walk_course), the entrance gates opened as the
 			// briefing opens them.
-			maps\mp\gametypes\_cooptraining::open_doors( "gate_cqb_out" );
-			maps\mp\gametypes\_cooptraining::open_doors( "gate_cqb_start" );
+			maps\_cooptraining::open_doors( "gate_cqb_out" );
+			maps\_cooptraining::open_doors( "gate_cqb_start" );
 			teleport( 0, ( 89, -1315, 4 ) );
 			level thread walk_course( player( 0 ) );
 			break;
@@ -191,7 +191,7 @@ watch()
 			p = player( 0 );
 			if ( tokens.size >= 2 && isDefined( p ) )
 			{
-				c = maps\mp\gametypes\_cooptraining::cast( tokens[ 1 ] );
+				c = maps\_cooptraining::cast( tokens[ 1 ] );
 				if ( isDefined( c ) )
 				{
 					p botLookAt( c.origin + ( 0, 0, 50 ), 2 );
@@ -210,7 +210,7 @@ watch()
 			{
 				ents = getEntArray( tokens[ 1 ], "targetname" );
 				if ( ents.size <= 0 )
-					ents = maps\mp\gametypes\_cooptraining::by_noteworthy( tokens[ 1 ] );
+					ents = maps\_cooptraining::by_noteworthy( tokens[ 1 ] );
 				for ( j = 0; j < ents.size; j++ )
 				{
 					lo = ents[ j ] getPointInBounds( -1, -1, -1 );
@@ -323,7 +323,7 @@ run_course()
 // stays put (a start outside the world falls or is stuck in solid).
 check_starts()
 {
-	names = maps\mp\gametypes\_coopmode::spawnClassnames();
+	names = maps\_coopmode::spawnClassnames();
 	p = player( 0 );
 	for ( n = 0; n < names.size; n++ )
 	{
@@ -337,7 +337,7 @@ check_starts()
 			if ( isDefined( nav ) )
 				navText = "" + int( distance( nav, s.origin ) );
 			line = "CoDOL cooptest: start " + names[ n ] + " " + s.origin + " usable " +
-				maps\mp\gametypes\_coopmode::isUsableStart( s ) + " ground frac " + trace[ "fraction" ] +
+				maps\_coopmode::isUsableStart( s ) + " ground frac " + trace[ "fraction" ] +
 				" at " + trace[ "position" ] + " surface " + trace[ "surfacetype" ] + " nav " + navText;
 			if ( isDefined( p ) && isAlive( p ) )
 			{
@@ -1171,7 +1171,7 @@ duel( role, dist, secs, stance, moving )
 	fake.angles = vectorToAngles( p.origin - spot );
 	fake.coop_no_hunt = true;
 	level.coop_max_alive = level.coop_alive + 1;
-	ai = maps\mp\gametypes\_coopmission::spawn_soldier( fake );
+	ai = maps\_coopmission::spawn_soldier( fake );
 	level.coop_max_alive = 0;
 	if ( !isDefined( ai ) )
 	{
@@ -1346,7 +1346,7 @@ spawn_at( role, origin )
 	fake.coop_no_hunt = true;
 	old = level.coop_max_alive;
 	level.coop_max_alive = level.coop_alive + 1;
-	ai = maps\mp\gametypes\_coopmission::spawn_soldier( fake );
+	ai = maps\_coopmission::spawn_soldier( fake );
 	level.coop_max_alive = old;
 	if ( isDefined( ai ) )
 		codolprintln( "CoDOL cooptest: spawnat " + origin + " -> ent " + ai getEntityNumber() + " at " + ai.origin );

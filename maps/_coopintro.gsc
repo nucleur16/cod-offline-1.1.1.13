@@ -44,7 +44,7 @@
 // ground_under), players are seated as they spawn (board(), from
 // _coopmode::spawnPlayer) and the ride waits for its riders to look around.
 //
-// Coop category root only; names no multiplayer module.
+// Coop module (maps/, IW4 singleplayer namespace); names no multiplayer module.
 
 // The player's vehicle: an authored script_vehicle* whose targetname names
 // the player (humvee_player, seaknightPlayer).
@@ -74,14 +74,14 @@ init()
 	if ( !isDefined( vehicle ) )
 		return;
 
-	model = maps\mp\gametypes\_coopvehicle::vehicle_model( vehicle );
+	model = maps\_coopvehicle::vehicle_model( vehicle );
 	if ( !isDefined( model ) )
 	{
 		codolprintln( "CoDOL coop intro: " + vehicle.targetname + " has no model; no ride" );
 		return;
 	}
 
-	path = maps\mp\gametypes\_coopvehicle::get_path( vehicle.target );
+	path = maps\_coopvehicle::get_path( vehicle.target );
 	if ( path.size < 2 )
 	{
 		codolprintln( "CoDOL coop intro: " + vehicle.targetname + " has no vehicle path; no ride" );
@@ -95,7 +95,7 @@ init()
 	intro.vehicle = vehicle;
 	intro.model = model;
 	intro.path = path;
-	intro.ground = maps\mp\gametypes\_coopvehicle::is_ground_path( path );
+	intro.ground = maps\_coopvehicle::is_ground_path( path );
 	intro.riders = [];
 	intro.started = false;
 	intro.done = false;
@@ -108,7 +108,7 @@ init()
 	// road) used as the model's origin.
 	start = vehicle.origin;
 	if ( intro.ground )
-		start = maps\mp\gametypes\_coopvehicle::ground_under( start );
+		start = maps\_coopvehicle::ground_under( start );
 	mover = spawn( "script_model", start );
 	mover.angles = vehicle.angles;
 	mover setModel( model );
@@ -117,7 +117,7 @@ init()
 
 	level.coop_intro_lines = [];
 	if ( intro.ground )
-		maps\mp\gametypes\_cooptraining::ride_lines();
+		maps\_cooptraining::ride_lines();
 
 	codolprintln( "CoDOL coop intro: " + vehicle.targetname + " (" + model + ") parked at " + start + ", ride over " +
 		path.size + " path points to " + path[ path.size - 1 ].origin + ", ground " + intro.ground );
@@ -233,7 +233,7 @@ board()
 	// The training's title card over a black screen that lifts as the ride
 	// starts (the retail recording, 1:19-1:26).
 	if ( isDefined( level.coop_training_flow ) && level.coop_training_flow )
-		self thread maps\mp\gametypes\_cooptraininghud::title_card_player();
+		self thread maps\_cooptraininghud::title_card_player();
 	tagName = "none";
 	if ( isDefined( tag ) )
 		tagName = tag;
@@ -314,7 +314,7 @@ ride()
 	defaultMph = 15;
 	if ( !intro.ground )
 		defaultMph = 30;
-	mover maps\mp\gametypes\_coopvehicle::follow_path( intro.path, 0, defaultMph, intro.ground );
+	mover maps\_coopvehicle::follow_path( intro.path, 0, defaultMph, intro.ground );
 
 	if ( intro.ground )
 	{

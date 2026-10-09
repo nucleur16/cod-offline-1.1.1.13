@@ -51,7 +51,7 @@
 // scr_coop_ai_misstime 0.3, scr_coop_ai_misstime_dist 0.0004 (s per unit),
 // scr_coop_ai_burst_scale 1, scr_coop_ai_pause_scale 1.
 
-#include maps\mp\animscripts\soldier_shared;
+#include animscripts\soldier_shared;
 
 #using_animtree ( "generic_human" );
 

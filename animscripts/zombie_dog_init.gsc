@@ -1,4 +1,4 @@
-// zm hellhound animscript: maps/mp/animscripts/zombie_dog_init.gsc
+// zm hellhound animscript: animscripts/zombie_dog_init.gsc
 //
 // Ported from this tree's multiplayer dog animscript
 // maps/mp/animscripts/dog_init.gsc (itself adapted from the shipped T5
@@ -16,20 +16,20 @@
 //   - setTalkToSpecies( "zombie_dog" ); hellhound vocals for the barks.
 
 /*
-	scripts/codol/maps/mp/animscripts/dog_init.gsc
+	maps/mp/animscripts/dog_init.gsc
 
 	Adapted from the shipped Black Ops (T5) script source:
 		D:\CoD\COD-GSC-Source\T5-STEAM-GSC\maps\mp\animscripts\dog_init.gsc
 
 	Changed for CoDOL:
 	  - #include maps\mp\animscripts\shared + ...\utility replaced by the single
-	    dog-local maps\mp\animscripts\zombie_dog_shared (neither T5 path exists here,
+	    dog-local animscripts\zombie_dog_shared (neither T5 path exists here,
 	    and the IW4-shaped animscripts\shared / animscripts\utility already
 	    mounted in this tree are a different, human-AI module).
 	  - nothing else changed.
 */
 
-#include maps\mp\animscripts\zombie_dog_shared;
+#include animscripts\zombie_dog_shared;
 
 #using_animtree ("zombie_dog");
 
@@ -44,7 +44,7 @@ main()
 
 	firstInit();
 
-	maps\mp\animscripts\zombie_dog_move::setup_sound_variables();
+	animscripts\zombie_dog_move::setup_sound_variables();
 
 	anim_get_dvar_int("debug_dog_sound","0");
 	anim_get_dvar_int("debug_dog_notetracks","0");

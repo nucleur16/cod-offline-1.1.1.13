@@ -1,4 +1,4 @@
-// zm hellhound animscript: maps/mp/animscripts/zombie_dog_move.gsc
+// zm hellhound animscript: animscripts/zombie_dog_move.gsc
 //
 // Ported from this tree's multiplayer dog animscript
 // maps/mp/animscripts/dog_move.gsc (itself adapted from the shipped T5
@@ -16,7 +16,7 @@
 //     ships only in the mp/coop gametype zones.
 
 /*
-	scripts/codol/maps/mp/animscripts/dog_move.gsc
+	maps/mp/animscripts/dog_move.gsc
 
 	Adapted from the shipped Black Ops (T5) script source:
 		D:\CoD\COD-GSC-Source\T5-STEAM-GSC\maps\mp\animscripts\dog_move.gsc
@@ -24,7 +24,7 @@
 	Changed for CoDOL:
 	  - #include maps\mp\animscripts\utility + ...\shared and every namespaced
 	    maps\mp\animscripts\shared::... call now point at the dog-local
-	    maps\mp\animscripts\zombie_dog_shared module.
+	    animscripts\zombie_dog_shared module.
 	  - setup_sound_variables(): T5's "aml_dog_bark_close" / "aml_dog_bark"
 	    are not MP aliases in C1 (the aml_* dog sounds ship only in
 	    common_gametype_zm); C1's MP bark is "zmb_hellhound_vocals_amb"
@@ -38,7 +38,7 @@
 	    ported to the server here; see the function for the adaptation.
 */
 
-#include maps\mp\animscripts\zombie_dog_shared;
+#include animscripts\zombie_dog_shared;
 
 //#using_animtree ("dog");
 
@@ -273,7 +273,7 @@ main()
 		{
 			debug_anim_print("dog_move::main() - Setting move_run" );
 			self setanimstate( "move_run" );
-			maps\mp\animscripts\zombie_dog_shared::DoNoteTracksForTime(0.1, "done");
+			animscripts\zombie_dog_shared::DoNoteTracksForTime(0.1, "done");
 			debug_anim_print("dog_move::main() - move_run wait 0.1 done " );
 		}
 		else
@@ -283,7 +283,7 @@ main()
 		}
 	}
 
-	self thread maps\mp\animscripts\zombie_dog_stop::lookAtTarget( "normal" );
+	self thread animscripts\zombie_dog_stop::lookAtTarget( "normal" );
 	self thread playMovementSounds();
 
 	while ( 1 )
@@ -326,7 +326,7 @@ moveLoop()
 		{
 			self SetAimAnimWeights( 0, 0 );
 			self setanimstate( "stop_idle" );
-			maps\mp\animscripts\zombie_dog_shared::DoNoteTracks( "done" );
+			animscripts\zombie_dog_shared::DoNoteTracks( "done" );
 			continue;
 		}
 
@@ -339,7 +339,7 @@ moveLoop()
 		{
 			debug_anim_print("dog_move::moveLoop() - Setting move_run" );
 			self setanimstate( "move_run" );
-			maps\mp\animscripts\zombie_dog_shared::DoNoteTracksForTime(0.2, "done");
+			animscripts\zombie_dog_shared::DoNoteTracksForTime(0.2, "done");
 			debug_anim_print("dog_move::moveLoop() - move_run wait 0.2 done " );
 		}
 		else
@@ -348,7 +348,7 @@ moveLoop()
 
 			debug_anim_print("dog_move::moveLoop() - Setting move_walk " );
 			self setanimstate( "move_walk" );
-			maps\mp\animscripts\zombie_dog_shared::DoNoteTracksForTime(0.1, "done");
+			animscripts\zombie_dog_shared::DoNoteTracksForTime(0.1, "done");
 			debug_anim_print("dog_move::moveLoop() - move_walk wait 0.2 done " );
 		}
 	}
@@ -368,7 +368,7 @@ startMove()
 {
 	debug_anim_print("dog_move::startMove() - Setting move_start " );
 	self setanimstate( "move_start" );
-	maps\mp\animscripts\zombie_dog_shared::DoNoteTracks("done");
+	animscripts\zombie_dog_shared::DoNoteTracks("done");
 	debug_anim_print("dog_move::startMove() - move_start notify done." );
 
 	self animMode( "none" );
@@ -383,7 +383,7 @@ stopMove()
 
 	debug_anim_print("dog_move::stopMove() - Setting move_stop" );
 	self setanimstate( "move_stop" );
-	maps\mp\animscripts\zombie_dog_shared::DoNoteTracks("done");
+	animscripts\zombie_dog_shared::DoNoteTracks("done");
 	debug_anim_print("dog_move::stopMove() - move_stop notify done." );
 }
 

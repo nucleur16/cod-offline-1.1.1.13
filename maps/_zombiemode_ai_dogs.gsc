@@ -40,7 +40,7 @@
 // NEXT round a hound round (T5's force_dogs); scr_zm_dog_count overrides the
 // hound count of a hound round.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {
@@ -217,7 +217,7 @@ dog_round_tracker()
 		}
 
 		// The round cap's final round is the extraction's, never a hound round.
-		if ( level.round_number == level.next_dog_round && maps\mp\gametypes\_zombiemode::is_final_round() )
+		if ( level.round_number == level.next_dog_round && maps\_zombiemode::is_final_round() )
 			level.next_dog_round++;
 
 		if ( level.round_number == level.next_dog_round )
@@ -244,7 +244,7 @@ dog_round_tracker()
 			level.dog_round_count += 1;
 		}
 
-		maps\mp\gametypes\_zombiemode::publishRoundHud();
+		maps\_zombiemode::publishRoundHud();
 	}
 }
 
@@ -442,13 +442,13 @@ dog_round_aftermath()
 
 	level waittill( "last_dog_down" );
 
-	level thread maps\mp\gametypes\_zombiemode_audio::change_zombie_music( "dog_end" );
+	level thread maps\_zombiemode_audio::change_zombie_music( "dog_end" );
 
 	power_up_origin = level.last_dog_origin;
 	if ( isDefined( power_up_origin ) )
 	{
 		codolprintln( "CoDOL zm dogs: last hellhound down at " + power_up_origin + "; dropping Max Ammo" );
-		level thread maps\mp\gametypes\_zombiemode_powerups::specific_powerup_drop( "full_ammo", power_up_origin );
+		level thread maps\_zombiemode_powerups::specific_powerup_drop( "full_ammo", power_up_origin );
 	}
 
 	wait( 8 );
@@ -530,13 +530,13 @@ window_inside_locations()
 	for ( i = 0; i < level.exterior_goals.size; i++ )
 	{
 		goal = level.exterior_goals[ i ];
-		if ( !maps\mp\gametypes\_zombiemode_zone_manager::entrance_available( goal ) )
+		if ( !maps\_zombiemode_zone_manager::entrance_available( goal ) )
 			continue;
-		point = maps\mp\gametypes\_zombiemode_zone_manager::entrance_inside_point( goal );
+		point = maps\_zombiemode_zone_manager::entrance_inside_point( goal );
 		if ( !isDefined( point ) )
 			continue;
 		// Only the windows of zones the players have opened.
-		zone = maps\mp\gametypes\_zombiemode_zone_manager::zone_for_point( point, 200 );
+		zone = maps\_zombiemode_zone_manager::zone_for_point( point, 200 );
 		if ( isDefined( zone ) && !zone.enabled )
 			continue;
 		if ( !isDefined( level.zm_dog_window_locs[ i ] ) )
@@ -700,7 +700,7 @@ dog_init( favorite_enemy )
 	self dog_fx_trail();
 
 	level thread dog_death( self );
-	self thread maps\mp\gametypes\_zombiemode_spawner::zombie_damage_watch();
+	self thread maps\_zombiemode_spawner::zombie_damage_watch();
 	self thread dog_failsafe();
 }
 
@@ -836,7 +836,7 @@ dog_death( dog )
 			mod = dog.damagemod;
 			hit_location = dog.damagelocation;
 		}
-		attacker maps\mp\gametypes\_zombiemode_score::player_add_points( "death", mod, hit_location );
+		attacker maps\_zombiemode_score::player_add_points( "death", mod, hit_location );
 
 		if ( !isDefined( attacker.kills ) )
 			attacker.kills = 0;

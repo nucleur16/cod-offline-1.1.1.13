@@ -33,12 +33,12 @@
 // them; this file only records the two names.
 //
 // ITEM MODULES register a grenade_fire callback per weapon:
-//   maps\mp\gametypes\_zombiemode_equipment::register_equipment( weapon, ::cb );
+//   maps\_zombiemode_equipment::register_equipment( weapon, ::cb );
 // cb runs as  <grenade> thread [[ cb ]]( <player>, <weapon> )  on the
 // engine's own "grenade_fire" for that weapon, so no module watches the
 // player itself.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 ROSTER_TABLE = "mp/cyborgclasstable.csv";
 

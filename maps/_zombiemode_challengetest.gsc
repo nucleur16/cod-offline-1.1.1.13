@@ -25,7 +25,7 @@
 // Pair it with scr_codol_fftest (addbot, zhit, zdmg) for test clients, kills
 // and downs, and scr_zm_challenges_testclients 1 so test clients are counted.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {
@@ -64,26 +64,26 @@ chtest_watch()
 
 		case "perk":
 			if ( tokens.size > 2 )
-				p maps\mp\gametypes\_zombiemode_perks::give_perk( tokens[ 2 ] );
+				p maps\_zombiemode_perks::give_perk( tokens[ 2 ] );
 			codolprintln( "CoDOL chtest: give_perk done" );
 			break;
 
 		case "revive":
 			q = chtest_player( tokens, 2 );
-			if ( isDefined( q ) && q maps\mp\gametypes\_zombiemode_laststand::player_is_in_laststand() )
-				q maps\mp\gametypes\_zombiemode_laststand::revive_success( p );
+			if ( isDefined( q ) && q maps\_zombiemode_laststand::player_is_in_laststand() )
+				q maps\_zombiemode_laststand::revive_success( p );
 			else
 				codolprintln( "CoDOL chtest: revivee is not down" );
 			break;
 
 		case "powerup":
 			if ( tokens.size > 2 )
-				level thread maps\mp\gametypes\_zombiemode_powerups::specific_powerup_drop( tokens[ 2 ], p.origin );
+				level thread maps\_zombiemode_powerups::specific_powerup_drop( tokens[ 2 ], p.origin );
 			break;
 
 		case "trap":
 			if ( tokens.size > 2 )
-				level thread maps\mp\gametypes\_zombiemode_traps_placeable::spawn_trap( p.origin, p, tokens[ 2 ] );
+				level thread maps\_zombiemode_traps_placeable::spawn_trap( p.origin, p, tokens[ 2 ] );
 			break;
 
 		case "zkill":
@@ -139,7 +139,7 @@ chtest_use( p, tokens )
 	trig = trigs[ index ];
 
 	if ( p.score < 5000 )
-		p maps\mp\gametypes\_zombiemode_score::add_to_player_score( 5000 );
+		p maps\_zombiemode_score::add_to_player_score( 5000 );
 
 	p setOrigin( trig.origin - ( 0, 0, 40 ) );
 	codolprintln( "CoDOL chtest: client " + p getEntityNumber() + " on " + tokens[ 2 ] + "[" + index + "] at " + trig.origin + ", score " + p.score );
@@ -173,7 +173,7 @@ chtest_window( p, tokens )
 		return;
 	}
 
-	goal maps\mp\gametypes\_zombiemode_blockers::remove_chunk( goal.barrier_chunks[ 0 ], undefined, true );
+	goal maps\_zombiemode_blockers::remove_chunk( goal.barrier_chunks[ 0 ], undefined, true );
 	wait( 1.5 );
 
 	where = goal.origin;
@@ -191,7 +191,7 @@ chtest_window( p, tokens )
 
 chtest_zkill( weapon, mod, head )
 {
-	best = maps\mp\gametypes\_zombiemode_fftest::fftest_nearest_zombie( self );
+	best = maps\_zombiemode_fftest::fftest_nearest_zombie( self );
 	if ( !isDefined( best ) )
 	{
 		codolprintln( "CoDOL chtest: no live zombie" );

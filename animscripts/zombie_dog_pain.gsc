@@ -1,4 +1,4 @@
-// zm hellhound animscript: maps/mp/animscripts/zombie_dog_pain.gsc
+// zm hellhound animscript: animscripts/zombie_dog_pain.gsc
 //
 // Ported from this tree's multiplayer dog animscript
 // maps/mp/animscripts/dog_pain.gsc (itself adapted from the shipped T5
@@ -14,7 +14,7 @@
 //   - nothing else changed.
 
 /*
-	scripts/codol/maps/mp/animscripts/dog_pain.gsc
+	maps/mp/animscripts/dog_pain.gsc
 
 	Adapted from the shipped Black Ops (T5) script source:
 		D:\CoD\COD-GSC-Source\T5-STEAM-GSC\maps\mp\animscripts\dog_pain.gsc
@@ -22,12 +22,12 @@
 	Changed for CoDOL:
 	  - #include maps\mp\animscripts\utility and the namespaced
 	    maps\mp\animscripts\shared::DoNoteTracksForTime call now point at the
-	    dog-local maps\mp\animscripts\zombie_dog_shared module.
+	    dog-local animscripts\zombie_dog_shared module.
 	  - nothing else changed.
 */
 
 //#using_animtree ("dog");
-#include maps\mp\animscripts\zombie_dog_shared;
+#include animscripts\zombie_dog_shared;
 
 main()
 {
@@ -58,5 +58,5 @@ main()
 
 	self setanimstate( pain_anim );
 
-	self maps\mp\animscripts\zombie_dog_shared::DoNoteTracksForTime(0.2, "done");
+	self animscripts\zombie_dog_shared::DoNoteTracksForTime(0.2, "done");
 }

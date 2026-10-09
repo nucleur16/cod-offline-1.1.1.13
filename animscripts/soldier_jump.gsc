@@ -6,7 +6,7 @@
 // cleanly: it holds the stand pose for one beat and returns, which is what
 // releases the native negotiation hold.
 
-#include maps\mp\animscripts\soldier_shared;
+#include animscripts\soldier_shared;
 
 #using_animtree ( "generic_human" );
 

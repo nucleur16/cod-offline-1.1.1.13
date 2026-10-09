@@ -44,7 +44,7 @@
 //     this port); a POI with no traceable ring positions is walked to at its
 //     own ground point instead.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {

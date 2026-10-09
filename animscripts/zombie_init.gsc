@@ -4,8 +4,8 @@
 // nine modules per species -- <animscript>_init/_stop/_move/_combat/_death/
 // _pain/_flashed/_turn/_jump -- and refuses the species outright if any one of
 // them is missing, so all nine exist.  The species row names the prefix
-// "maps/mp/animscripts/zombie"; these resolve out of the zm CATEGORY root and
-// are never compiled into an mp or coop match.
+// "animscripts/zombie" (T5's own top-level animscripts/zombie_*); only the zm
+// species row loads them, so they are never compiled into an mp or coop match.
 //
 // 2026-09-20: THESE ARE NOW REAL PORTS OF T5's ZOMBIE ANIMSCRIPTS.  The
 // previous pass shipped nine parked stubs because this server registered no
@@ -48,8 +48,8 @@
 // (which carries zero ai_zombie nodes and is never consulted in a zm match).
 
 
-#include maps\mp\gametypes\_zombiemode_utility;
-#include maps\mp\animscripts\zombie_shared;
+#include maps\_zombiemode_utility;
+#include animscripts\zombie_shared;
 
 #using_animtree ("generic_human");
 

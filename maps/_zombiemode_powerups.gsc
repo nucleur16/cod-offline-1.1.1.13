@@ -106,7 +106,7 @@
 // NO ANIMATION IS USED IN THIS FILE.  It needs none: T5's power-ups wobble
 // with rotateto and blink with hide/show.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 // THE ACTIVE POWER-UP HUD's countdown, in the band under the shared icon row
 // (the row itself is _zombiemode_perks' zm_hud_row_*).  "default" at 0.9 is
@@ -161,9 +161,9 @@ init()
 
 	// The weapon-backed pickups' own modules, before the registry reads
 	// what they resolved.
-	maps\mp\gametypes\_zombiemode_weap_tesla::init();
-	maps\mp\gametypes\_zombiemode_auto_turret::init();
-	maps\mp\gametypes\_zombiemode_rcbomb::init();
+	maps\_zombiemode_weap_tesla::init();
+	maps\_zombiemode_auto_turret::init();
+	maps\_zombiemode_rcbomb::init();
 
 	init_powerups();
 	init_pandora();
@@ -306,7 +306,7 @@ get_valid_powerup()
 			continue;
 
 		// T5 :430.  Nothing to revive, nothing to carpenter.
-		if ( name == "all_revive" && maps\mp\gametypes\_zombiemode_laststand::player_num_in_laststand() < 1 )
+		if ( name == "all_revive" && maps\_zombiemode_laststand::player_num_in_laststand() < 1 )
 			continue;
 
 		if ( name == "carpenter" && !any_barrier_damaged() )
@@ -721,7 +721,7 @@ powerup_grab()
 			}
 
 			// CHALLENGE_ZM_POWERUPS "pick up &&1 power-ups".
-			player maps\mp\gametypes\_zombiemode_challenges::zm_challenge_inc( "zm_powerups" );
+			player maps\_zombiemode_challenges::zm_challenge_inc( "zm_powerups" );
 			codolPrintLn( "CoDOL zm powerup: " + self.powerup_name + " grabbed by " + player.name + " at " + self.origin );
 			player powerup_vo( self.powerup_name );
 			player play_sound_on_ent( "powerup_grabbed" );
@@ -765,10 +765,10 @@ powerup_grab()
 				level thread tesla_weapon_powerup( player );
 				break;
 			case "sentry":
-				player thread maps\mp\gametypes\_zombiemode_auto_turret::sentry_powerup( self.origin );
+				player thread maps\_zombiemode_auto_turret::sentry_powerup( self.origin );
 				break;
 			case "rcbomb":
-				player thread maps\mp\gametypes\_zombiemode_rcbomb::rcbomb_powerup();
+				player thread maps\_zombiemode_rcbomb::rcbomb_powerup();
 				break;
 			case "pandora":
 				player thread pandora_powerup( self.origin );
@@ -838,7 +838,7 @@ nuke_powerup( player )
 	level notify( "nuke_powerup" );
 
 	if ( isDefined( player ) && is_player_valid( player ) )
-		player maps\mp\gametypes\_zombiemode_score::player_add_points( "nuke_powerup", 400 );
+		player maps\_zombiemode_score::player_add_points( "nuke_powerup", 400 );
 
 	if ( !isDefined( level.zombies ) )
 		return;
@@ -948,7 +948,7 @@ check_for_instakill( player, mod, hit_location )
 		player.last_kill_method = "MOD_UNKNOWN";
 
 	if ( !is_true( self.no_gib ) )
-		self maps\mp\gametypes\_zombiemode_gib::zombie_head_gib( player, mod );
+		self maps\_zombiemode_gib::zombie_head_gib( player, mod );
 
 	self.attacker = player;
 	self.damagemod = "MOD_UNKNOWN";
@@ -1028,7 +1028,7 @@ start_carpenter()
 
 			// T5 :1501 threads it with via_powerup: every board flies back
 			// at once (replace_chunk animates for ~1.2 s).
-			node thread maps\mp\gametypes\_zombiemode_blockers::replace_chunk( chunks[ j ], false, true );
+			node thread maps\_zombiemode_blockers::replace_chunk( chunks[ j ], false, true );
 			wait( 0.05 );
 		}
 
@@ -1041,7 +1041,7 @@ start_carpenter()
 	for ( i = 0; i < players.size; i++ )
 	{
 		if ( is_player_valid( players[ i ] ) )
-			players[ i ] maps\mp\gametypes\_zombiemode_score::player_add_points( "bonus_points_powerup", 200 );
+			players[ i ] maps\_zombiemode_score::player_add_points( "bonus_points_powerup", 200 );
 	}
 }
 
@@ -1057,7 +1057,7 @@ start_fire_sale()
 		return;
 
 	// T5 :1414 toggle_fire_sale_on: every hidden box spot opens for the sale.
-	level thread maps\mp\gametypes\_zombiemode_weapons::treasure_chest_fire_sale();
+	level thread maps\_zombiemode_weapons::treasure_chest_fire_sale();
 
 	timed_powerup_wait( "fire_sale" );
 
@@ -1072,13 +1072,13 @@ start_revive_all()
 
 	for ( i = 0; i < players.size; i++ )
 	{
-		if ( !players[ i ] maps\mp\gametypes\_zombiemode_laststand::player_is_in_laststand() )
+		if ( !players[ i ] maps\_zombiemode_laststand::player_is_in_laststand() )
 			continue;
 
 		// Called with NO reviver on purpose: revive_success pays its reviver
 		// 100 points (the "reviver" score event), and T5's start_revive_all
 		// revives for free -- the power-up is the payment.
-		players[ i ] maps\mp\gametypes\_zombiemode_laststand::revive_success();
+		players[ i ] maps\_zombiemode_laststand::revive_success();
 	}
 }
 
@@ -1102,14 +1102,14 @@ free_perk_powerup()
 	if ( candidates.size < 1 )
 		return;
 
-	self maps\mp\gametypes\_zombiemode_perks::give_perk( candidates[ randomInt( candidates.size ) ] );
+	self maps\_zombiemode_perks::give_perk( candidates[ randomInt( candidates.size ) ] );
 }
 
 // T5's two bonus-point pickups.  _zombiemode_score.gsc already carries the
 // "bonus_points_powerup" event and takes the amount as its second argument.
 bonus_points_player()
 {
-	self maps\mp\gametypes\_zombiemode_score::player_add_points( "bonus_points_powerup", 500 );
+	self maps\_zombiemode_score::player_add_points( "bonus_points_powerup", 500 );
 }
 
 bonus_points_team()
@@ -1119,7 +1119,7 @@ bonus_points_team()
 	for ( i = 0; i < players.size; i++ )
 	{
 		if ( is_player_valid( players[ i ] ) )
-			players[ i ] maps\mp\gametypes\_zombiemode_score::player_add_points( "bonus_points_powerup", 500 );
+			players[ i ] maps\_zombiemode_score::player_add_points( "bonus_points_powerup", 500 );
 	}
 }
 
@@ -1244,10 +1244,10 @@ powerup_hud_update()
 		self.zm_powerup_hud = [];
 
 	now = getTime();
-	size = maps\mp\gametypes\_zombiemode_perks::zm_hud_row_size();
-	row_y = maps\mp\gametypes\_zombiemode_perks::zm_hud_row_y();
+	size = maps\_zombiemode_perks::zm_hud_row_size();
+	row_y = maps\_zombiemode_perks::zm_hud_row_y();
 	// The power-ups follow the perk icons in the shared row.
-	column = self maps\mp\gametypes\_zombiemode_perks::zm_hud_perk_count();
+	column = self maps\_zombiemode_perks::zm_hud_perk_count();
 
 	for ( k = 0; k < level.zm_powerup_hud_kinds.size; k++ )
 	{
@@ -1268,7 +1268,7 @@ powerup_hud_update()
 			continue;
 		}
 
-		x = maps\mp\gametypes\_zombiemode_perks::zm_hud_row_x( column );
+		x = maps\_zombiemode_perks::zm_hud_row_x( column );
 		column++;
 
 		if ( !isDefined( h ) )
@@ -1791,7 +1791,7 @@ pandora_powerup( position, forced )
 qb_get_cached_closest_zombies( position )
 {
 	if ( !isDefined( level.quantum_bomb_cached_closest_zombies ) )
-		level.quantum_bomb_cached_closest_zombies = maps\mp\gametypes\_zombiemode_weap_tesla::tesla_sorted_zombies( position );
+		level.quantum_bomb_cached_closest_zombies = maps\_zombiemode_weap_tesla::tesla_sorted_zombies( position );
 	return level.quantum_bomb_cached_closest_zombies;
 }
 
@@ -1955,12 +1955,12 @@ qb_pack_or_unpack_current_weapon_result( position )
 		if ( !isDefined( weapon ) || weapon == "none" )
 			continue;
 		if ( !isDefined( level.zombie_weapons[ weapon ] ) &&
-			!maps\mp\gametypes\_zombiemode_weapons::is_weapon_upgraded( weapon ) )
+			!maps\_zombiemode_weapons::is_weapon_upgraded( weapon ) )
 			continue;
 		if ( weaponInventoryType( weapon ) != "primary" )
 			continue;
 
-		if ( maps\mp\gametypes\_zombiemode_weapons::is_weapon_upgraded( weapon ) )
+		if ( maps\_zombiemode_weapons::is_weapon_upgraded( weapon ) )
 		{
 			if ( randomInt( 5 ) )   // only 20% chance of losing the packed weapon
 				continue;
@@ -1972,7 +1972,7 @@ qb_pack_or_unpack_current_weapon_result( position )
 				if ( isDefined( up ) && up == weapon )
 				{
 					player takeWeapon( weapon );
-					player maps\mp\gametypes\_zombiemode_weapons::weapon_give( keys[ k ] );
+					player maps\_zombiemode_weapons::weapon_give( keys[ k ] );
 					playFx( level._effect[ "quantum_bomb_player_effect" ], player.origin );
 					codolPrintLn( "CoDOL zm pandora: unpacked " + weapon + " for " + player.name );
 					break;
@@ -1981,7 +1981,7 @@ qb_pack_or_unpack_current_weapon_result( position )
 		}
 		else
 		{
-			up = maps\mp\gametypes\_zombiemode_weapons::get_upgrade_name( weapon );
+			up = maps\_zombiemode_weapons::get_upgrade_name( weapon );
 			if ( !isDefined( up ) )
 				continue;
 
@@ -1991,10 +1991,10 @@ qb_pack_or_unpack_current_weapon_result( position )
 			// T5 :499: under the limit, weapon_give would not take the
 			// current weapon, so take it here.
 			primaries = player getWeaponsListPrimaries();
-			if ( primaries.size < player maps\mp\gametypes\_zombiemode_weapons::player_weapon_limit() )
+			if ( primaries.size < player maps\_zombiemode_weapons::player_weapon_limit() )
 				player takeWeapon( weapon );
 
-			player maps\mp\gametypes\_zombiemode_weapons::weapon_give( up );
+			player maps\_zombiemode_weapons::weapon_give( up );
 			playFx( level._effect[ "quantum_bomb_player_effect" ], player.origin );
 			codolPrintLn( "CoDOL zm pandora: packed " + weapon + " into " + up + " for " + player.name );
 		}
@@ -2007,7 +2007,7 @@ qb_auto_revive_validation( position )
 	if ( getPlayers().size < 2 )
 		return false;
 
-	return ( maps\mp\gametypes\_zombiemode_laststand::player_num_in_laststand() > 0 );
+	return ( maps\_zombiemode_laststand::player_num_in_laststand() > 0 );
 }
 
 // qb :539.  T5's auto_revive( self ) credits the thrower as reviver.
@@ -2019,9 +2019,9 @@ qb_auto_revive_result( position )
 	for ( i = 0; i < players.size; i++ )
 	{
 		player = players[ i ];
-		if ( player maps\mp\gametypes\_zombiemode_laststand::player_is_in_laststand() && randomInt( 3 ) )  // 66%
+		if ( player maps\_zombiemode_laststand::player_is_in_laststand() && randomInt( 3 ) )  // 66%
 		{
-			player maps\mp\gametypes\_zombiemode_laststand::revive_success( self );
+			player maps\_zombiemode_laststand::revive_success( self );
 			playFx( level._effect[ "quantum_bomb_player_effect" ], player.origin );
 			codolPrintLn( "CoDOL zm pandora: revived " + player.name );
 		}
@@ -2042,9 +2042,9 @@ qb_zombie_speed_buff_result( position )
 		if ( !isDefined( zombie ) || !isAlive( zombie ) )
 			continue;
 
-		zombie maps\mp\gametypes\_zombiemode_spawner::set_zombie_run_cycle( "sprint" );
+		zombie maps\_zombiemode_spawner::set_zombie_run_cycle( "sprint" );
 		zombie.needs_run_update = false;
-		zombie maps\mp\gametypes\_zombiemode_spawner::apply_move_speed_scale();
+		zombie maps\_zombiemode_spawner::apply_move_speed_scale();
 		count++;
 	}
 
@@ -2206,7 +2206,7 @@ powerup_test_watch()
 			// through the native G_Damage path (doDamage with the weapon and
 			// MOD_PROJECTILE), so the actor "damage" notify and the spawner's
 			// tesla hook run exactly as for a real hit.
-			z = get_closest( player.origin, maps\mp\gametypes\_zombiemode_weap_tesla::tesla_sorted_zombies( player.origin ) );
+			z = get_closest( player.origin, maps\_zombiemode_weap_tesla::tesla_sorted_zombies( player.origin ) );
 			if ( !isDefined( z ) )
 			{
 				codolPrintLn( "CoDOL zm powerup test: no zombie to zap" );
@@ -2219,7 +2219,7 @@ powerup_test_watch()
 			if ( isDefined( level.zm_sentries ) )
 			{
 				for ( k = 0; k < level.zm_sentries.size; k++ )
-					level.zm_sentries[ k ] maps\mp\gametypes\_zombiemode_auto_turret::auto_turret_diag( level.zm_sentries[ k ] getTurretTarget( false ) );
+					level.zm_sentries[ k ] maps\_zombiemode_auto_turret::auto_turret_diag( level.zm_sentries[ k ] getTurretTarget( false ) );
 			}
 			break;
 		case "gather":
@@ -2278,7 +2278,7 @@ powerup_test_fire( seconds )
 	end_time = getTime() + int( seconds * 1000 );
 	while ( getTime() < end_time )
 	{
-		target = get_closest( self.origin, maps\mp\gametypes\_zombiemode_weap_tesla::tesla_sorted_zombies( self.origin ) );
+		target = get_closest( self.origin, maps\_zombiemode_weap_tesla::tesla_sorted_zombies( self.origin ) );
 		if ( isDefined( target ) )
 		{
 			eye = self.origin + ( 0, 0, 60 );
@@ -2386,7 +2386,7 @@ powerup_test_deathmachine( phase, yaw )
 	if ( trigs.size > 0 )
 	{
 		if ( self.score < 5000 )
-			self maps\mp\gametypes\_zombiemode_score::add_to_player_score( 5000 );
+			self maps\_zombiemode_score::add_to_player_score( 5000 );
 		self setOrigin( trigs[ 0 ].origin - ( 0, 0, 40 ) );
 		wait( 0.3 );
 		before = self.score;
@@ -2403,7 +2403,7 @@ powerup_test_gather( radius )
 {
 	eye = self.origin + ( 0, 0, 60 );
 	moved = 0;
-	zombies = maps\mp\gametypes\_zombiemode_weap_tesla::tesla_sorted_zombies( self.origin );
+	zombies = maps\_zombiemode_weap_tesla::tesla_sorted_zombies( self.origin );
 	for ( i = 0; i < zombies.size; i++ )
 	{
 		for ( tries = 0; tries < 12; tries++ )

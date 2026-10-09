@@ -1,4 +1,4 @@
-// zm hellhound animscript: maps/mp/animscripts/zombie_dog_stop.gsc
+// zm hellhound animscript: animscripts/zombie_dog_stop.gsc
 //
 // Ported from this tree's multiplayer dog animscript
 // maps/mp/animscripts/dog_stop.gsc (itself adapted from the shipped T5
@@ -14,7 +14,7 @@
 //   - nothing else changed.
 
 /*
-	scripts/codol/maps/mp/animscripts/dog_stop.gsc
+	maps/mp/animscripts/dog_stop.gsc
 
 	Adapted from the shipped Black Ops (T5) script source:
 		D:\CoD\COD-GSC-Source\T5-STEAM-GSC\maps\mp\animscripts\dog_stop.gsc
@@ -22,14 +22,14 @@
 	Changed for CoDOL:
 	  - #include maps\mp\animscripts\shared + ...\utility and every namespaced
 	    maps\mp\animscripts\shared::... call now point at the dog-local
-	    maps\mp\animscripts\zombie_dog_shared module.
+	    animscripts\zombie_dog_shared module.
 	  - nothing else changed.  cansee() is kept verbatim; it is an engine
 	    method this server does not register yet (reported as a required
 	    builtin).
 */
 
 //#using_animtree ("dog");
-#include maps\mp\animscripts\zombie_dog_shared;
+#include animscripts\zombie_dog_shared;
 
 main()
 {
@@ -45,7 +45,7 @@ main()
 		if ( shouldAttackIdle() )
 		{
 			self randomAttackIdle();
-			maps\mp\animscripts\zombie_dog_shared::DoNoteTracks("done");
+			animscripts\zombie_dog_shared::DoNoteTracks("done");
 		}
 		else
 		{
@@ -55,7 +55,7 @@ main()
 			self notify( "stop tracking" );
 			self SetAimAnimWeights( 0, 0 );
 			self setanimstate( "stop_idle" );
-			maps\mp\animscripts\zombie_dog_shared::DoNoteTracks("done");
+			animscripts\zombie_dog_shared::DoNoteTracks("done");
 			self thread lookAtTarget( "attackIdle" );
 		}
 
@@ -156,6 +156,6 @@ lookAtTarget( lookPoseSet )
 	self.upAimLimit = 45;
 	self.downAimLimit = -45;
 
-	self maps\mp\animscripts\zombie_dog_shared::setAnimAimWeight( 1, 0.2 );
-	self maps\mp\animscripts\zombie_dog_shared::trackLoop( );
+	self animscripts\zombie_dog_shared::setAnimAimWeight( 1, 0.2 );
+	self animscripts\zombie_dog_shared::trackLoop( );
 }

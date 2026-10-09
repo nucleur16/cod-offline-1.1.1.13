@@ -109,7 +109,7 @@
 // roster row, so the streak can never award them; they are not implemented
 // here (see the report).
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 PERKPOP_TABLE = "mp/coKillstreakStatsTable.csv";
 
@@ -683,7 +683,7 @@ effect_detail( key )
 	case "deadshot":
 		return " (spread modifier set " + self hasAbilityModifier( "modBulletSpreadScale" ) + ")";
 	case "additionalprimary":
-		return " (weapon limit " + self maps\mp\gametypes\_zombiemode_weapons::player_weapon_limit() + ")";
+		return " (weapon limit " + self maps\_zombiemode_weapons::player_weapon_limit() + ")";
 	}
 	return "";
 }
@@ -912,7 +912,7 @@ watch_spent_points()
 		refund = int( points * 0.1 );
 		if ( refund <= 0 )
 			continue;
-		self maps\mp\gametypes\_zombiemode_score::add_to_player_score( refund, false );
+		self maps\_zombiemode_score::add_to_player_score( refund, false );
 		codolprintln( "CoDOL zm perkpop: " + self.name + " discount refunded " + refund + " of " + points );
 	}
 }
@@ -1079,10 +1079,10 @@ test_verb( player, tokens )
 		break;
 
 	case "down":
-		player maps\mp\gametypes\_zombiemode_laststand::player_laststand();
+		player maps\_zombiemode_laststand::player_laststand();
 		wait( 3 );
-		if ( isDefined( player ) && player maps\mp\gametypes\_zombiemode_laststand::player_is_in_laststand() )
-			player maps\mp\gametypes\_zombiemode_laststand::revive_success();
+		if ( isDefined( player ) && player maps\_zombiemode_laststand::player_is_in_laststand() )
+			player maps\_zombiemode_laststand::revive_success();
 		break;
 
 	case "hit":
@@ -1159,7 +1159,7 @@ test_verb( player, tokens )
 		if ( tokens.size > 3 )
 			points = int( tokens[ 3 ] );
 		before = player.score;
-		player maps\mp\gametypes\_zombiemode_score::minus_to_player_score( points );
+		player maps\_zombiemode_score::minus_to_player_score( points );
 		codolprintln( "CoDOL zm perkpop test: " + player.name + " bought for " + points + ": score " + before + " -> " + player.score );
 		break;
 
@@ -1192,7 +1192,7 @@ test_verb( player, tokens )
 			" targets " + player getKillstreakTarget( 1 ) + "/" + player getKillstreakTarget( 2 ) +
 			" earned " + charges + "active " + active + "current " + player getCurrentWeapon() +
 			" primaries " + primaries.size + " limit " +
-			player maps\mp\gametypes\_zombiemode_weapons::player_weapon_limit() );
+			player maps\_zombiemode_weapons::player_weapon_limit() );
 		break;
 	}
 }

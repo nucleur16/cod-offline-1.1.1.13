@@ -66,7 +66,7 @@
 //     on the shipped maps the teleport never fires; where C1 sends the
 //     player for CHALLENGE_ZM_BLACKHOLE_TELE is not established.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 #using_animtree( "generic_human" );
 
@@ -114,7 +114,7 @@ init()
 		fuse = "" + level.black_hole_bomb_fuse_ms + " ms";
 	codolprintln( "CoDOL zm black hole: registered; weapon fuse " + fuse + ", pull radius " + level.black_hole_bomb_attract_dist + ", " + level.black_hole_teleport_structs.size + " teleport destinations on " + getDvar( "mapname" ) );
 
-	maps\mp\gametypes\_zombiemode_equipment::register_equipment( bhb_weapon(), ::black_hole_bomb_fired );
+	maps\_zombiemode_equipment::register_equipment( bhb_weapon(), ::black_hole_bomb_fired );
 }
 
 // T5 :1261.  Kept in its own table: _zombiemode::init_standard_zombie_anims
@@ -174,7 +174,7 @@ black_hole_bomb_fired( player, weapon )
 	codolprintln( "CoDOL zm black hole: thrown by " + thrower + " at " + grenade.origin );
 
 	// T5 :91.
-	if ( isDefined( player ) && player maps\mp\gametypes\_zombiemode_laststand::player_is_in_laststand() )
+	if ( isDefined( player ) && player maps\_zombiemode_laststand::player_is_in_laststand() )
 	{
 		grenade delete();
 		return;
@@ -207,7 +207,7 @@ black_hole_bomb_fired( player, weapon )
 	grenade._black_hole_bomb_player = player;
 	grenade._black_hole_bomb_info = info;
 	grenade._new_ground_trace = true;
-	grenade maps\mp\gametypes\_zombiemode_poi::create_zombie_point_of_interest( level.black_hole_bomb_attract_dist, level.num_black_hole_bomb_attractors, 0, true, ::black_hole_bomb_initial_attract_func, ::black_hole_bomb_arrival_attract_func );
+	grenade maps\_zombiemode_poi::create_zombie_point_of_interest( level.black_hole_bomb_attract_dist, level.num_black_hole_bomb_attractors, 0, true, ::black_hole_bomb_initial_attract_func, ::black_hole_bomb_arrival_attract_func );
 
 	// The vortex (T5 SetClientFlag 10 -> fx_zmb_blackhole_looping).
 	if ( isDefined( level._effect[ "black_hole_bomb_portal" ] ) )
@@ -244,13 +244,13 @@ black_hole_bomb_collapse( info )
 	if ( isDefined( info.portal_fx ) )
 		info.portal_fx delete();
 
-	maps\mp\gametypes\_zombiemode_poi::compact_pois();
+	maps\_zombiemode_poi::compact_pois();
 
 	near = [];
 	if ( isDefined( info.near ) )
 		near = info.near;
 	wait( 0.25 );
-	blast = maps\mp\gametypes\_zombiemode_poi::count_dead( near );
+	blast = maps\_zombiemode_poi::count_dead( near );
 
 	codolprintln( "CoDOL zm black hole: collapsed at " + origin + " " + ( getTime() - info.thrown_time ) + " ms after the throw; " + info.pulled + " zombies pulled, " + info.kills + " crushed; of " + near.size + " within 256 at the collapse, " + blast + " are dead" );
 }
@@ -261,7 +261,7 @@ track_grenade( info )
 	while ( isDefined( grenade ) )
 	{
 		info.last_origin = grenade.origin;
-		info.near = maps\mp\gametypes\_zombiemode_poi::zombies_in_radius( info.last_origin, 256 );
+		info.near = maps\_zombiemode_poi::zombies_in_radius( info.last_origin, 256 );
 		wait( 0.05 );
 	}
 	info.exploded = true;
@@ -490,7 +490,7 @@ black_hole_bomb_event_horizon_death( vec_black_hole_org, grenade )
 		return;
 	self._bhb_dying = true;
 
-	self maps\mp\gametypes\_zombiemode_spawner::zombie_eye_glow_stop();
+	self maps\_zombiemode_spawner::zombie_eye_glow_stop();
 	self playSound( "wpn_gersh_device_kill" );
 
 	// T5 csc :398 plays the pull on a tag_origin that is deleted with the

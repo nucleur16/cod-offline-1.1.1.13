@@ -93,7 +93,7 @@
 //     on).
 // Nothing polls, and no board is removed except by an animation.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {
@@ -156,7 +156,7 @@ init_blockers()
 
 	// Developer-only test verbs (scr_codol_blockertest); returns at once on
 	// the live server, which runs developer 0.
-	level thread maps\mp\gametypes\_zombiemode_blockertest::init();
+	level thread maps\_zombiemode_blockertest::init();
 }
 
 // ==========================================================================
@@ -386,7 +386,7 @@ blocker_trigger_think()
 			delay = 1;
 			if ( isDefined( self.script_delay ) )
 				delay = self.script_delay;
-			wait( player maps\mp\gametypes\_zombiemode_perkpops::board_repair_delay( delay ) );
+			wait( player maps\_zombiemode_perkpops::board_repair_delay( delay ) );
 
 			if ( !is_player_valid( player ) )
 				break;
@@ -397,7 +397,7 @@ blocker_trigger_think()
 			player.rebuild_barrier_reward += cost;
 			if ( player.rebuild_barrier_reward < level.zombie_vars[ "rebuild_barrier_cap_per_round" ] )
 			{
-				player maps\mp\gametypes\_zombiemode_score::player_add_points( "rebuild_board", cost );
+				player maps\_zombiemode_score::player_add_points( "rebuild_board", cost );
 				player play_sound_on_ent( "purchase" );
 			}
 
@@ -413,10 +413,10 @@ blocker_trigger_think()
 			{
 				// CHALLENGE_ZM_WINDOWS "rebuild &&1 windows": the player who
 				// puts the last board back has rebuilt the window.
-				player maps\mp\gametypes\_zombiemode_challenges::zm_challenge_inc( "zm_windows" );
+				player maps\_zombiemode_challenges::zm_challenge_inc( "zm_windows" );
 
 				// The carpenter perk pop plants its C4 behind a finished window.
-				player thread maps\mp\gametypes\_zombiemode_perkpops::barrier_repaired( self );
+				player thread maps\_zombiemode_perkpops::barrier_repaired( self );
 				player forceUseHintOff();
 				trigger notify( "all_boards_repaired" );
 				return;
@@ -915,13 +915,13 @@ door_buy()
 	if ( who.score < cost )
 	{
 		play_sound_at_pos( "no_purchase", self.origin );
-		who maps\mp\gametypes\_zombiemode_audio::no_cash_vox();
+		who maps\_zombiemode_audio::no_cash_vox();
 		return false;
 	}
 
-	who maps\mp\gametypes\_zombiemode_score::minus_to_player_score( cost );
+	who maps\_zombiemode_score::minus_to_player_score( cost );
 	// CHALLENGE_ZM_DOORS "open &&1 doors".
-	who maps\mp\gametypes\_zombiemode_challenges::zm_challenge_inc( "zm_doors" );
+	who maps\_zombiemode_challenges::zm_challenge_inc( "zm_doors" );
 	return true;
 }
 
@@ -1112,14 +1112,14 @@ debris_think()
 		if ( who.score < cost )
 		{
 			play_sound_at_pos( "no_purchase", self.origin );
-			who maps\mp\gametypes\_zombiemode_audio::no_cash_vox();
+			who maps\_zombiemode_audio::no_cash_vox();
 			continue;
 		}
 
-		who maps\mp\gametypes\_zombiemode_score::minus_to_player_score( cost );
+		who maps\_zombiemode_score::minus_to_player_score( cost );
 		// CHALLENGE_ZM_DOORS counts debris too: it is the same bought
 		// blocker, and zm_prototype_sh has no other kind.
-		who maps\mp\gametypes\_zombiemode_challenges::zm_challenge_inc( "zm_doors" );
+		who maps\_zombiemode_challenges::zm_challenge_inc( "zm_doors" );
 
 		junk = getEntArray( self.target, "targetname" );
 

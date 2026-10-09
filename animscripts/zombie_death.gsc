@@ -29,7 +29,7 @@
 //     heads are separate xmodels with no face tree.
 //   (do_gib is TAKEN since 2026-10-05: T5 :76 runs it when the death starts
 //     with self.a.gib_ref set.  The gib itself -- models, pieces, blood --
-//     lives in maps\mp\gametypes\_zombiemode_gib.gsc, whose damage watcher
+//     lives in maps\_zombiemode_gib.gsc, whose damage watcher
 //     also gibs the killing hit; do_gib is idempotent, so this call is the
 //     backstop for a gib_ref set by any other script.)
 //   the non-deathanim arms (:112-:1774): explosive deaths, helmetPop, the
@@ -44,8 +44,8 @@
 // root anim that has a parent).  %body is used.
 
 
-#include maps\mp\gametypes\_zombiemode_utility;
-#include maps\mp\animscripts\zombie_shared;
+#include maps\_zombiemode_utility;
+#include animscripts\zombie_shared;
 
 #using_animtree ("generic_human");
 
@@ -83,7 +83,7 @@ main()
 
 	// T5 :76.
 	if ( isDefined( self.a ) && isDefined( self.a.gib_ref ) )
-		self thread maps\mp\gametypes\_zombiemode_gib::do_gib();
+		self thread maps\_zombiemode_gib::do_gib();
 
 	if ( isDefined( self.gib_func ) )
 		self thread [[ self.gib_func ]]();

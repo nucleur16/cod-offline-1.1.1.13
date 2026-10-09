@@ -6,7 +6,7 @@
 // (CODOL_ActorRunFrame / ActorBecomeCorpse), so the clip is played to its
 // length and the module returns.
 
-#include maps\mp\animscripts\soldier_shared;
+#include animscripts\soldier_shared;
 
 #using_animtree ( "generic_human" );
 

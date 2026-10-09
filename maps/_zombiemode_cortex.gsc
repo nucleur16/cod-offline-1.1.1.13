@@ -84,7 +84,7 @@
 // Dvars: scr_zm_cortex "0" turns it off.  scr_zm_cortex_test "1" (developer
 // servers only) fires an event every 8 s with no round cap.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 #using_animtree ( "generic_human" );
 

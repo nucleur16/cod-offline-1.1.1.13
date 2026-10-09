@@ -66,7 +66,7 @@
 //     above) and the dog/crawler death-anim selection (no tesla death clips
 //     are registered for this port's zombies).
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {

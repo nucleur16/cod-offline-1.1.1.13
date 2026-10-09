@@ -29,7 +29,7 @@
 //                    of that group along their authored paths
 //                    (_coopvehicle.gsc), honouring script_flag_true.
 //
-// Coop category root only; names no multiplayer module.
+// Coop module (maps/, IW4 singleplayer namespace); names no multiplayer module.
 
 // Synchronous, from Callback_StartGameType (precache window).
 init()
@@ -126,7 +126,7 @@ escape_watch()
 	// MEASURED, its estate_player_start is inside the west warning box) and
 	// warning there would nag from the first second.
 	starts = [];
-	names = maps\mp\gametypes\_coopmode::spawnClassnames();
+	names = maps\_coopmode::spawnClassnames();
 	for ( n = 0; n < names.size; n++ )
 	{
 		points = getEntArray( names[ n ], "classname" );
@@ -216,7 +216,7 @@ laptops()
 		slot++;
 	}
 	codolprintln( "CoDOL coop events: " + level.coop_objectives_left + " laptop objectives" );
-	maps\mp\gametypes\_coopmission::announce( "Secure the intel: " + level.coop_objectives_left + " laptops" );
+	maps\_coopmission::announce( "Secure the intel: " + level.coop_objectives_left + " laptops" );
 }
 
 laptop_think( use, slot )
@@ -296,7 +296,7 @@ weapon_pickup_think( weapon )
 		self waittill( "trigger", who );
 		if ( !isDefined( who ) || !isPlayer( who ) )
 			continue;
-		who maps\mp\gametypes\_coopmode::coop_give_weapon( weapon );
+		who maps\_coopmode::coop_give_weapon( weapon );
 		who iPrintLnBold( "Picked up " + weapon );
 		wait( 1 );
 	}
@@ -331,7 +331,7 @@ objective_marker_think( slot, flag )
 {
 	level endon( "coop_mission_over" );
 	objective_add( slot, "active", self.origin );
-	maps\mp\gametypes\_coopmission::flag_wait( flag );
+	maps\_coopmission::flag_wait( flag );
 	objective_delete( slot );
 }
 
@@ -365,7 +365,7 @@ precache_vehicle_groups()
 			continue;
 		if ( !isDefined( e.script_vehiclespawngroup ) )
 			continue;
-		model = maps\mp\gametypes\_coopvehicle::vehicle_model( e );
+		model = maps\_coopvehicle::vehicle_model( e );
 		if ( isDefined( model ) )
 			precacheModel( model );
 	}
@@ -393,7 +393,7 @@ vehicle_group_trigger()
 {
 	level endon( "coop_mission_over" );
 	if ( isDefined( self.script_flag_true ) )
-		maps\mp\gametypes\_coopmission::flag_wait( self.script_flag_true );
+		maps\_coopmission::flag_wait( self.script_flag_true );
 
 	for ( ;; )
 	{
@@ -418,16 +418,16 @@ vehicle_run()
 	self.coop_released = true;
 	if ( !isDefined( self.target ) )
 		return;
-	path = maps\mp\gametypes\_coopvehicle::get_path( self.target );
+	path = maps\_coopvehicle::get_path( self.target );
 	if ( path.size <= 0 )
 		return;
-	mover = maps\mp\gametypes\_coopvehicle::spawn_mover( self );
+	mover = maps\_coopvehicle::spawn_mover( self );
 	if ( !isDefined( mover ) )
 		return;
 	// Ground vehicles drive on the ground under their nodes (see
 	// _coopvehicle::ground_under); helicopters fly the points themselves.
-	ground = maps\mp\gametypes\_coopvehicle::is_ground_path( path );
-	mover maps\mp\gametypes\_coopvehicle::follow_path( path, 0, 40, ground );
+	ground = maps\_coopvehicle::is_ground_path( path );
+	mover maps\_coopvehicle::follow_path( path, 0, 40, ground );
 	// IW4 script_vehicle_selfremove / a path ending far off the map: gone.
 	mover delete();
 }

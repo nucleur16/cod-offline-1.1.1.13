@@ -1,6 +1,6 @@
 // coop soldier animscripts: shared helpers.
 //
-// The coop species' counterpart of zm/maps/mp/animscripts/zombie_shared.gsc,
+// The coop species' counterpart of animscripts/zombie_shared.gsc,
 // reduced to the IW4 animscripts\shared.gsc notetrack handling a basic soldier
 // needs.  It names no multiplayer or zm module: everything is local or a
 // builtin, so the coop script closure stays its own.

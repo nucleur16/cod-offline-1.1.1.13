@@ -54,7 +54,7 @@
 // names no trigger_use -- its target is a second trigger_multiple and two
 // audio structs -- so it has no T5 buy handle and is left alone, logged.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {
@@ -65,7 +65,7 @@ init()
 
 	// Developer-only test verbs (scr_codol_powertest); returns at once on
 	// a production server.
-	level thread maps\mp\gametypes\_zombiemode_powertest::init();
+	level thread maps\_zombiemode_powertest::init();
 
 	ents = getEntArray( "zombie_trap", "targetname" );
 	traps = [];
@@ -278,12 +278,12 @@ trap_use_think( trap )
 
 		if ( who.score < trap.zombie_cost )
 		{
-			who maps\mp\gametypes\_zombiemode_audio::no_cash_vox();
+			who maps\_zombiemode_audio::no_cash_vox();
 			codolprintln( "CoDOL zm trap: " + trap._trap_id + " refused to " + who.name + " (" + who.score + " points, costs " + trap.zombie_cost + ")" );
 			continue;
 		}
 
-		who maps\mp\gametypes\_zombiemode_score::minus_to_player_score( trap.zombie_cost );
+		who maps\_zombiemode_score::minus_to_player_score( trap.zombie_cost );
 
 		trap._trap_in_use = 1;
 		trap trap_set_string( &"ZOMBIE_TRAP_ACTIVE" );
@@ -561,7 +561,7 @@ player_elec_damage()
 	self endon( "death" );
 	self endon( "disconnect" );
 
-	if ( isDefined( self.is_burning ) || self maps\mp\gametypes\_zombiemode_laststand::player_is_in_laststand() )
+	if ( isDefined( self.is_burning ) || self maps\_zombiemode_laststand::player_is_in_laststand() )
 		return;
 
 	// Under zm the native perk lookup resolves the T5 name to C1's no_slot

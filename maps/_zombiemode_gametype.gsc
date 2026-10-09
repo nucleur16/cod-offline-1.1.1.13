@@ -7,11 +7,13 @@
 // and mp/basemaps.arena gives every zm_* map `gametype "zm"`.  See
 // docs/CODOL_ZOMBIES_STARTUP_20260915.md section 3.1.
 //
-// Before this file existed, GScr_LoadGameTypeScript could not find
-// maps/mp/gametypes/zm, printed one error line, and loaded maps/mp/gametypes/dm
-// instead -- so `g_gametype zm` ran IW4 free-for-all deathmatch on a zombies
-// map while the serverinfo still said zm.  That fallback is now refused for a
-// non-mp asset category (src/scr_vm_main.c, codol_gametype_policy).
+// Before this file existed (as maps/mp/gametypes/zm.gsc in the retired zm/
+// overlay), GScr_LoadGameTypeScript could not find it, printed one error line,
+// and loaded maps/mp/gametypes/dm instead -- so `g_gametype zm` ran IW4
+// free-for-all deathmatch on a zombies map while the serverinfo still said zm.
+// The zm category now loads exactly this rules module and refuses any
+// multiplayer fallback (CODOL_ScriptEntryPoints,
+// src/codol/script/codol_script_source.c).
 //
 // SCOPE.  This is the boot chain only: load, publish a gamestate, accept a
 // player, do not fatally error, and do not compile or precache anything
@@ -21,6 +23,6 @@
 
 main()
 {
-	maps\mp\gametypes\_callbacksetup::SetupCallbacks();
-	maps\mp\gametypes\_zombiemode::init();
+	maps\_zombiemode_callbacksetup::SetupCallbacks();
+	maps\_zombiemode::init();
 }

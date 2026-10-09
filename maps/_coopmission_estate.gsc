@@ -47,7 +47,7 @@
 // the subtitle each alias carries in the zone (a private mapping; no line text
 // is reproduced here).  Their lengths are estimates from the subtitle text.
 //
-// Coop category root only; names no multiplayer module.
+// Coop module (maps/, IW4 singleplayer namespace); names no multiplayer module.
 
 #using_animtree ( "generic_human" );
 
@@ -211,7 +211,7 @@ structs_named( name )
 
 struct_named( name )
 {
-	return maps\mp\gametypes\_coopvehicle::struct_by_targetname( name );
+	return maps\_coopvehicle::struct_by_targetname( name );
 }
 
 ent_named( name )
@@ -237,7 +237,7 @@ spawners_named( name )
 spawners_noteworthy( value )
 {
 	found = [];
-	list = maps\mp\gametypes\_cooptraining::by_noteworthy( value );
+	list = maps\_cooptraining::by_noteworthy( value );
 	for ( i = 0; i < list.size; i++ )
 	{
 		if ( isDefined( list[ i ].classname ) && getSubStr( list[ i ].classname, 0, 12 ) == "actor_enemy_" )
@@ -260,17 +260,17 @@ flag_trigger( flagName )
 
 flag( name )
 {
-	return maps\mp\gametypes\_coopmission::flag( name );
+	return maps\_coopmission::flag( name );
 }
 
 flag_set( name )
 {
-	maps\mp\gametypes\_coopmission::flag_set( name );
+	maps\_coopmission::flag_set( name );
 }
 
 flag_wait( name )
 {
-	maps\mp\gametypes\_coopmission::flag_wait( name );
+	maps\_coopmission::flag_wait( name );
 }
 
 // What the flow waits for, for the log and the probe harness (_cooptest
@@ -290,7 +290,7 @@ step( kind, value, value2 )
 
 player_near( point, radius )
 {
-	players = maps\mp\gametypes\_coopmission::living_players();
+	players = maps\_coopmission::living_players();
 	for ( i = 0; i < players.size; i++ )
 	{
 		if ( distanceSquared( players[ i ].origin, point ) < radius * radius )
@@ -422,7 +422,7 @@ init()
 
 	// A foliage model the coop mission removes (base map,
 	// script_noteworthy plant_delete_coop_take_estate).
-	plants = maps\mp\gametypes\_cooptraining::by_noteworthy( "plant_delete_coop_take_estate" );
+	plants = maps\_cooptraining::by_noteworthy( "plant_delete_coop_take_estate" );
 	for ( i = 0; i < plants.size; i++ )
 		plants[ i ] delete();
 
@@ -445,7 +445,7 @@ init()
 	}
 
 	level thread loadout_watch();
-	level thread maps\mp\gametypes\_cooptraining::show_nametags();
+	level thread maps\_cooptraining::show_nametags();
 	codolprintln( "CoDOL coop estate: mission flow active" );
 }
 
@@ -479,7 +479,7 @@ main()
 	stage_chase();
 	stage_ending();
 
-	maps\mp\gametypes\_coopmission::mission_complete( "Vazquez's laptop secured" );
+	maps\_coopmission::mission_complete( "Vazquez's laptop secured" );
 }
 
 // --------------------------------------------------------------------------
@@ -577,7 +577,7 @@ checkpoint_triggers()
 
 set_checkpoint( origin, why )
 {
-	ground = maps\mp\gametypes\_coopvehicle::ground_under( origin + ( 0, 0, 8 ) );
+	ground = maps\_coopvehicle::ground_under( origin + ( 0, 0, 8 ) );
 	level.coop_estate.checkpoint = ground;
 	codolprintln( "CoDOL coop estate: checkpoint " + why + " at " + ground );
 }
@@ -591,7 +591,7 @@ set_checkpoint( origin, why )
 spawn_ghost()
 {
 	spawner = ent_named( "ghost" );
-	template = maps\mp\gametypes\_cooptraining::ally_template();
+	template = maps\_cooptraining::ally_template();
 	if ( !isDefined( spawner ) || !isDefined( template ) )
 	{
 		codolprintln( "CoDOL coop estate: no Ghost" );
@@ -625,7 +625,7 @@ spawn_ghost()
 	// His silenced SMG (a coop window slot, see aitype role_weapons).
 	if ( codol_isWeaponMounted( "mp5_silencer_so" ) )
 		ai.coop_weapon = "mp5_silencer_so";
-	ai maps\mp\gametypes\_coopmission::arm_soldier();
+	ai maps\_coopmission::arm_soldier();
 	level.coop_estate.ghost = ai;
 	if ( !isDefined( level.coop_cast_list ) )
 		level.coop_cast_list = [];
@@ -667,7 +667,7 @@ color_node( c )
 ghost_colors()
 {
 	level endon( "coop_mission_over" );
-	triggers = maps\mp\gametypes\_cooptraining::by_noteworthy( "ghost_color_trigger" );
+	triggers = maps\_cooptraining::by_noteworthy( "ghost_color_trigger" );
 	for ( i = 0; i < triggers.size; i++ )
 	{
 		if ( isDefined( triggers[ i ].script_color_allies ) )
@@ -748,8 +748,8 @@ nav_init()
 {
 	if ( isDefined( level.coop_estate.nav_p ) )
 		return;
-	level.coop_estate.nav_p = maps\mp\gametypes\_coopmission_estate_nav::nav_points();
-	level.coop_estate.nav_l = maps\mp\gametypes\_coopmission_estate_nav::nav_links();
+	level.coop_estate.nav_p = maps\_coopmission_estate_nav::nav_points();
+	level.coop_estate.nav_l = maps\_coopmission_estate_nav::nav_links();
 	level.coop_estate.nav_ok = [];
 	codolprintln( "CoDOL coop estate: Ghost's way over " + level.coop_estate.nav_p.size + " path nodes" );
 }
@@ -936,7 +936,7 @@ ghost_walk( goal )
 			}
 			if ( still >= 8 || ( still >= 3 && !ghost_seen() ) )
 			{
-				spot = maps\mp\gametypes\_coopvehicle::ground_under( wp + ( 0, 0, 32 ) );
+				spot = maps\_coopvehicle::ground_under( wp + ( 0, 0, 32 ) );
 				g forceTeleport( spot, g.angles );
 				g setGoalPos( wp );
 				codolprintln( "CoDOL coop estate: Ghost stuck at " + mark + ", put on his way at " + spot );
@@ -985,7 +985,7 @@ ghost_up_the_beach( goal )
 	codolprintln( "CoDOL coop estate: Ghost walks up the beach over " + ( points.size - 1 ) + " nodes" );
 	for ( k = 0; k < points.size; k++ )
 	{
-		target = maps\mp\gametypes\_coopvehicle::ground_under( points[ k ] + ( 0, 0, 32 ) );
+		target = maps\_coopvehicle::ground_under( points[ k ] + ( 0, 0, 32 ) );
 		d = distance( mover.origin, target );
 		if ( d < 8 )
 			continue;
@@ -1021,7 +1021,7 @@ array_from( list, first )
 ghost_seen()
 {
 	g = level.coop_estate.ghost;
-	players = maps\mp\gametypes\_coopmission::living_players();
+	players = maps\_coopmission::living_players();
 	for ( i = 0; i < players.size; i++ )
 	{
 		if ( distance( players[ i ].origin, g.origin ) < 2500 &&
@@ -1043,7 +1043,7 @@ ghost_catch_up()
 		g = level.coop_estate.ghost;
 		if ( !isDefined( g ) || isDefined( level.coop_estate.ghost_riding ) )
 			continue;
-		players = maps\mp\gametypes\_coopmission::living_players();
+		players = maps\_coopmission::living_players();
 		if ( players.size <= 0 )
 			continue;
 		// Only when he is far from every player; then toward the player
@@ -1072,7 +1072,7 @@ ghost_catch_up()
 		dest = level.coop_estate.ghost_goal;
 		if ( !isDefined( dest ) || distance( dest, lead.origin ) > 900 )
 			dest = lead.origin - anglesToForward( lead.angles ) * 160;
-		dest = maps\mp\gametypes\_coopvehicle::ground_under( dest + ( 0, 0, 32 ) );
+		dest = maps\_coopvehicle::ground_under( dest + ( 0, 0, 32 ) );
 		g forceTeleport( dest, g.angles );
 		if ( isDefined( level.coop_estate.ghost_goal ) )
 			level thread ghost_walk( level.coop_estate.ghost_goal );
@@ -1105,7 +1105,7 @@ ghost_shoots( target )
 	if ( isDefined( g.coop_weapon_model ) )
 		start = g getTagOrigin( "tag_flash" );
 	if ( codol_isWeaponMounted( weapon ) )
-		g maps\mp\gametypes\_coopmission::actor_fire_round( weapon, start, head );
+		g maps\_coopmission::actor_fire_round( weapon, start, head );
 	if ( isAlive( target ) )
 		target doDamage( target.health + 200, start );
 	codolprintln( "CoDOL coop estate: Ghost takes ent " + target getEntityNumber() );
@@ -1133,7 +1133,7 @@ spawn_group( spawners, stealth, group )
 		ai = undefined;
 		for ( tries = 0; tries < 20 && !isDefined( ai ); tries++ )
 		{
-			ai = maps\mp\gametypes\_coopmission::spawn_soldier( s );
+			ai = maps\_coopmission::spawn_soldier( s );
 			if ( !isDefined( ai ) )
 				wait( 0.5 );
 		}
@@ -1215,7 +1215,7 @@ stealth_soldier( group )
 		self patrol_idle( undefined );
 		return;
 	}
-	path = maps\mp\gametypes\_coopvehicle::get_path( spawner.target );
+	path = maps\_coopvehicle::get_path( spawner.target );
 	self.goalradius = 24;
 	for ( n = 0; n < path.size; n++ )
 	{
@@ -1315,7 +1315,7 @@ stealth_sight_watch( group )
 	for ( ;; )
 	{
 		wait( 0.5 );
-		players = maps\mp\gametypes\_coopmission::living_players();
+		players = maps\_coopmission::living_players();
 		for ( i = 0; i < players.size; i++ )
 		{
 			p = players[ i ];
@@ -1353,7 +1353,7 @@ alert_group( group, why )
 		ai.coop_cast = undefined;
 		ai.coop_hunting = true;
 		ai notify( "coop_cast_pose" );
-		players = maps\mp\gametypes\_coopmission::living_players();
+		players = maps\_coopmission::living_players();
 		if ( players.size > 0 )
 			ai setGoalPos( players[ randomInt( players.size ) ].origin );
 		n++;
@@ -1478,7 +1478,7 @@ board_boat()
 	level.coop_estate.riders[ seat ] = self;
 	self disableWeapons();
 	self setStance( "crouch" );
-	self maps\mp\gametypes\_coopintro::seat_lock( true );
+	self maps\_coopintro::seat_lock( true );
 	self setOrigin( local_to_world( boat.origin, boat.angles, boat_seat( seat ) ) );
 	self setPlayerAngles( boat.angles );
 	self.coop_seat_angles = boat.angles;
@@ -1515,8 +1515,8 @@ stage_boat()
 		level.coop_estate.boat_done = true;
 		return;
 	}
-	path = maps\mp\gametypes\_coopvehicle::get_path( vehicle.target );
-	boat = maps\mp\gametypes\_coopvehicle::spawn_mover( vehicle );
+	path = maps\_coopvehicle::get_path( vehicle.target );
+	boat = maps\_coopvehicle::spawn_mover( vehicle );
 	if ( !isDefined( boat ) || path.size <= 0 )
 	{
 		level.coop_estate.boat_done = true;
@@ -1575,7 +1575,7 @@ stage_boat()
 	level thread spawn_forest();
 	boat snd_loop( "zodiac_player_sustain" );
 	boat snd( "scn_boat_intro_wave" );
-	boat maps\mp\gametypes\_coopvehicle::follow_path( path, 0, 25, false );
+	boat maps\_coopvehicle::follow_path( path, 0, 25, false );
 	boat stopLoopSound();
 	boat snd( "zodiac_player_shutdown" );
 	wait( 0.3 );
@@ -1592,12 +1592,12 @@ stage_boat()
 		if ( !isDefined( p ) || !isAlive( p ) )
 			continue;
 		p unlink();
-		p maps\mp\gametypes\_coopintro::seat_lock( false );
+		p maps\_coopintro::seat_lock( false );
 		side = 1;
 		if ( i % 2 )
 			side = -1;
 		spot = boat.origin + anglesToRight( boat.angles ) * ( 64 * side ) + anglesToForward( boat.angles ) * ( 40 - 30 * int( i / 2 ) );
-		spot = maps\mp\gametypes\_coopvehicle::ground_under( spot + ( 0, 0, 64 ) );
+		spot = maps\_coopvehicle::ground_under( spot + ( 0, 0, 64 ) );
 		p setOrigin( spot + ( 0, 0, 2 ) );
 		p setStance( "stand" );
 		p enableWeapons();
@@ -1612,7 +1612,7 @@ stage_boat()
 		g setAnimKnobAll( %exposed_aim_5, %body, 1, 0.2, 1 );
 		g notify( "coop_cast_pose" );
 		level.coop_estate.ghost_riding = undefined;
-		spot = maps\mp\gametypes\_coopvehicle::ground_under( boat.origin - anglesToForward( boat.angles ) * 60 + ( 0, 0, 64 ) );
+		spot = maps\_coopvehicle::ground_under( boat.origin - anglesToForward( boat.angles ) * 60 + ( 0, 0, 64 ) );
 		g forceTeleport( spot, boat.angles );
 		level thread ghost_up_the_beach( color_node( "r2" ) );
 	}
@@ -1893,7 +1893,7 @@ stage_house_front()
 
 spawn_vazquez( spawner, origin, angles )
 {
-	template = maps\mp\gametypes\_cooptraining::ally_template();
+	template = maps\_cooptraining::ally_template();
 	if ( !isDefined( template ) )
 		return undefined;
 	kind = spawnStruct();
@@ -2043,7 +2043,7 @@ stage_intel()
 	for ( t = 0; ; t += 0.1 )
 	{
 		taker = undefined;
-		players = maps\mp\gametypes\_coopmission::living_players();
+		players = maps\_coopmission::living_players();
 		for ( i = 0; i < players.size; i++ )
 		{
 			p = players[ i ];
@@ -2109,7 +2109,7 @@ stage_breach()
 	breacher = undefined;
 	while ( !isDefined( breacher ) )
 	{
-		players = maps\mp\gametypes\_coopmission::living_players();
+		players = maps\_coopmission::living_players();
 		for ( i = 0; i < players.size; i++ )
 		{
 			p = players[ i ];
@@ -2149,7 +2149,7 @@ stage_breach()
 		players[ i ] snd_local( "slomo_whoosh" );
 	visionSetNaked( "slomo_breach", 0.4 );
 	room = spawn_group( spawners_named( "breach_enemy_spawner" ), false, "breach" );
-	hostage = maps\mp\gametypes\_cooptraining::by_noteworthy( "vazquez_breach" );
+	hostage = maps\_cooptraining::by_noteworthy( "vazquez_breach" );
 	if ( hostage.size > 0 )
 	{
 		v = spawn_vazquez( hostage[ 0 ], hostage[ 0 ].origin, hostage[ 0 ].angles );
@@ -2200,7 +2200,7 @@ stage_chase()
 	step( "leave", room, 260 );
 	for ( t = 0; t < 25; t += 0.5 )
 	{
-		players = maps\mp\gametypes\_coopmission::living_players();
+		players = maps\_coopmission::living_players();
 		gone = false;
 		for ( i = 0; i < players.size; i++ )
 		{
@@ -2290,13 +2290,13 @@ final_wave()
 	}
 	if ( !isDefined( tech ) || !isDefined( tech.target ) )
 		return;
-	path = maps\mp\gametypes\_coopvehicle::get_path( tech.target );
-	mover = maps\mp\gametypes\_coopvehicle::spawn_mover( tech );
+	path = maps\_coopvehicle::get_path( tech.target );
+	mover = maps\_coopvehicle::spawn_mover( tech );
 	if ( !isDefined( mover ) || path.size <= 0 )
 		return;
-	mover.origin = maps\mp\gametypes\_coopvehicle::ground_under( mover.origin + ( 0, 0, 32 ) );
+	mover.origin = maps\_coopvehicle::ground_under( mover.origin + ( 0, 0, 32 ) );
 	mover snd_loop( "veh_pickuptruck_engine_high" );
-	mover maps\mp\gametypes\_coopvehicle::follow_path( path, 0, 25, true );
+	mover maps\_coopvehicle::follow_path( path, 0, 25, true );
 	mover stopLoopSound();
 	mover snd_loop( "veh_pickuptruck_idle_low" );
 	riders = spawners_noteworthy( "final_wave_enemies" );
@@ -2307,7 +2307,7 @@ final_wave()
 			continue;
 		s = spawnStruct();
 		s.classname = riders[ i ].classname;
-		s.origin = maps\mp\gametypes\_coopvehicle::ground_under( mover.origin + anglesToRight( mover.angles ) * ( 60 - 60 * i ) + ( 0, 0, 48 ) );
+		s.origin = maps\_coopvehicle::ground_under( mover.origin + anglesToRight( mover.angles ) * ( 60 - 60 * i ) + ( 0, 0, 48 ) );
 		s.angles = mover.angles;
 		s.targetname = "final_wave_enemies";
 		drop[ drop.size ] = s;
@@ -2384,7 +2384,7 @@ vazquez_route( points )
 			if ( still < 4 )
 				continue;
 			seen = false;
-			players = maps\mp\gametypes\_coopmission::living_players();
+			players = maps\_coopmission::living_players();
 			for ( i = 0; i < players.size; i++ )
 			{
 				if ( bulletTracePassed( players[ i ] getEye(), self.origin + ( 0, 0, 48 ), false, self ) )
@@ -2392,7 +2392,7 @@ vazquez_route( points )
 			}
 			if ( seen && still < 12 )
 				continue;
-			self forceTeleport( maps\mp\gametypes\_coopvehicle::ground_under( goal + ( 0, 0, 16 ) ), self.angles );
+			self forceTeleport( maps\_coopvehicle::ground_under( goal + ( 0, 0, 16 ) ), self.angles );
 			codolprintln( "CoDOL coop estate: Vazquez put on " + goal + " (no progress for " + still + " s)" );
 			break;
 		}
@@ -2424,7 +2424,7 @@ stage_ending()
 
 	// The shot from across the water (sniper_shot_start, the glint at
 	// sniper_glint_org, the sound at sniper_sound).
-	glint = maps\mp\gametypes\_cooptraining::by_noteworthy( "sniper_glint_org" );
+	glint = maps\_cooptraining::by_noteworthy( "sniper_glint_org" );
 	from = ( 836, 7036, 468 );
 	s = struct_named( "sniper_shot_start" );
 	if ( isDefined( s ) )
@@ -2486,17 +2486,17 @@ heli_leave()
 {
 	if ( !isDefined( self.target ) )
 		return;
-	path = maps\mp\gametypes\_coopvehicle::get_path( self.target );
+	path = maps\_coopvehicle::get_path( self.target );
 	if ( path.size <= 0 )
 		return;
-	mover = maps\mp\gametypes\_coopvehicle::spawn_mover( self );
+	mover = maps\_coopvehicle::spawn_mover( self );
 	if ( !isDefined( mover ) )
 		return;
 	mover.origin = path[ 0 ].origin;
 	mover snd_loop( "havoc_engine_high" );
 	if ( isDefined( path[ 0 ].script_delay_post ) )
 		wait( float( path[ 0 ].script_delay_post ) );
-	mover maps\mp\gametypes\_coopvehicle::follow_path( path, 0, 120, false );
+	mover maps\_coopvehicle::follow_path( path, 0, 120, false );
 	mover delete();
 }
 
@@ -2603,7 +2603,7 @@ test_route()
 	{
 		wait( 0.5 );
 		s = level.coop_estate_step;
-		p = maps\mp\gametypes\_cooptest::player( 0 );
+		p = maps\_cooptest::player( 0 );
 		// A respawned player 0 does the current step again.
 		if ( isDefined( p ) && !isAlive( p ) )
 			last = undefined;
@@ -2623,19 +2623,19 @@ test_route()
 				dir = vectorNormalize( ( p.origin[ 0 ] - s.value[ 0 ], p.origin[ 1 ] - s.value[ 1 ], 0 ) );
 				dest = s.value + ( dir[ 0 ] * s.value2 * 0.6, dir[ 1 ] * s.value2 * 0.6, 0 );
 			}
-			maps\mp\gametypes\_cooptest::walk_to( p, dest, "near estate point" );
+			maps\_cooptest::walk_to( p, dest, "near estate point" );
 			break;
 		case "flag":
 			if ( isDefined( s.value2 ) )
-				maps\mp\gametypes\_cooptest::walk_to( p, s.value2, "flag " + s.value );
+				maps\_cooptest::walk_to( p, s.value2, "flag " + s.value );
 			else
-				maps\mp\gametypes\_cooptest::goto_flag( 0, s.value );
+				maps\_cooptest::goto_flag( 0, s.value );
 			break;
 		case "kill":
 			test_shoot_group( p, s.value, s.value2 );
 			break;
 		case "use":
-			maps\mp\gametypes\_cooptest::walk_to( p, s.value.origin + ( 0, -36, 0 ), "use " + s.value2 );
+			maps\_cooptest::walk_to( p, s.value.origin + ( 0, -36, 0 ), "use " + s.value2 );
 			p botLookAt( s.value.origin, 1 );
 			p setPlayerAngles( vectorToAngles( s.value.origin - p getEye() ) );
 			wait( 0.4 );
@@ -2651,7 +2651,7 @@ test_route()
 			}
 			break;
 		case "leave":
-			maps\mp\gametypes\_cooptest::walk_to( p, s.value + ( -100, -360, 0 ), "out of the safe room" );
+			maps\_cooptest::walk_to( p, s.value + ( -100, -360, 0 ), "out of the safe room" );
 			break;
 		}
 	}
@@ -2668,7 +2668,7 @@ test_shoot_group( p, ais, what )
 		if ( distance( p.origin, ai.origin ) > 900 )
 		{
 			dir = vectorNormalize( p.origin - ai.origin );
-			maps\mp\gametypes\_cooptest::walk_to( p, ai.origin + ( dir[ 0 ] * 500, dir[ 1 ] * 500, 0 ), "towards " + what );
+			maps\_cooptest::walk_to( p, ai.origin + ( dir[ 0 ] * 500, dir[ 1 ] * 500, 0 ), "towards " + what );
 		}
 		for ( shot = 0; shot < 6 && isDefined( ai ) && isAlive( ai ); shot++ )
 		{
@@ -2710,11 +2710,11 @@ test_ghost_lead( tokens )
 		ghost_to( goal, "test " + names[ i ] );
 		for ( t = 0; t < 120; t += 0.5 )
 		{
-			p = maps\mp\gametypes\_cooptest::player( 0 );
+			p = maps\_cooptest::player( 0 );
 			if ( isDefined( p ) && isAlive( p ) && distance( p.origin, g.origin ) > 350 )
 			{
 				back = g.origin - anglesToForward( g.angles ) * 250;
-				p setOrigin( maps\mp\gametypes\_coopvehicle::ground_under( back + ( 0, 0, 48 ) ) + ( 0, 0, 2 ) );
+				p setOrigin( maps\_coopvehicle::ground_under( back + ( 0, 0, 48 ) ) + ( 0, 0, 2 ) );
 			}
 			if ( flat_distance( g.origin, goal ) < 64 )
 				break;
@@ -2728,7 +2728,7 @@ test_ghost_lead( tokens )
 test_walk_nav( tokens )
 {
 	level endon( "coop_mission_over" );
-	p = maps\mp\gametypes\_cooptest::player( 0 );
+	p = maps\_cooptest::player( 0 );
 	if ( !isDefined( p ) )
 		return;
 	nav_init();
@@ -2754,7 +2754,7 @@ test_walk_nav( tokens )
 		for ( k = 0; k < points.size; k++ )
 		{
 			legs++;
-			if ( !maps\mp\gametypes\_cooptest::walk_to( p, points[ k ], "nav node " + k ) )
+			if ( !maps\_cooptest::walk_to( p, points[ k ], "nav node " + k ) )
 				stuck++;
 		}
 	}

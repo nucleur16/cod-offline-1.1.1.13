@@ -37,7 +37,7 @@
 // C1's live Zombies HUD displays the purse and point changes beside the player
 // name.  T5's floating delta hudelem is intentionally omitted here.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 // --------------------------------------------------------------------------
 // T5 _zombiemode_score.gsc:10.  self is the scoring player.
@@ -208,7 +208,7 @@ player_add_points_kill_bonus( mod, hit_location )
 
 	default:
 		// Any other head bone (the attached head's face bones) is a headshot.
-		if ( maps\mp\gametypes\_zombiemode_gib::gib_location( hit_location ) == "head" )
+		if ( maps\_zombiemode_gib::gib_location( hit_location ) == "head" )
 			score = level.zombie_vars[ "zombie_score_bonus_head" ];
 		break;
 	}

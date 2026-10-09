@@ -54,7 +54,7 @@
 //   find_flesh                  _zombiemode_spawner.gsc:3922
 //
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 #using_animtree ("generic_human");
 
@@ -84,14 +84,14 @@ init()
 	level._effect[ "zombie_eye_glow" ] = loadfx( "maps/zombie/zm_eye_lensflare_blue" );
 
 	// Dismemberment and the blue blood (_zombiemode_gib.gsc).
-	maps\mp\gametypes\_zombiemode_gib::init();
+	maps\_zombiemode_gib::init();
 
 	init_spawn_points();
 	init_spawner();
 
 	// Developer-only entrance-walk soak (scr_codol_pathtest); returns at once
 	// on a production server.
-	level thread maps\mp\gametypes\_zombiemode_pathtest::init();
+	level thread maps\_zombiemode_pathtest::init();
 }
 
 // The aiweapon every zombie needs before melee() will do anything.
@@ -127,7 +127,7 @@ resolve_melee_weapon()
 // T5 keys the spawn list off the active zone (maps\_zombiemode_zone_manager).
 init_spawn_points()
 {
-	maps\mp\gametypes\_zombiemode_zone_manager::init();
+	maps\_zombiemode_zone_manager::init();
 
 	codolprintln( "CoDOL zm: spawn points found: " + level.enemy_spawns.size + " on " + getDvar( "mapname" ) );
 }
@@ -224,7 +224,7 @@ round_spawning()
 	// player_volume may not have been polled yet when round one begins.
 	for ( zone_wait = 0; zone_wait < 100 && level.enemy_spawns.size < 1; zone_wait++ )
 	{
-		maps\mp\gametypes\_zombiemode_zone_manager::refresh_spawners();
+		maps\_zombiemode_zone_manager::refresh_spawners();
 		if ( level.enemy_spawns.size > 0 )
 			break;
 		wait( 0.1 );
@@ -425,7 +425,7 @@ spawn_zombie( spawn_point )
 	level thread zombie_death_event( ai );
 	ai thread zombie_think();
 	ai thread zombie_damage_watch();
-	ai thread maps\mp\gametypes\_zombiemode_gib::zombie_gib_on_damage();
+	ai thread maps\_zombiemode_gib::zombie_gib_on_damage();
 
 	return ai;
 }
@@ -539,7 +539,7 @@ set_run_speed()
 // `animplaybackrate` is a registered actor class field
 // (src/codol/player/codol_actor_lifecycle.cpp:194).  The zm tree already
 // drives the move cycle off self.moveplaybackrate
-// (zm/maps/mp/animscripts/zombie_move.gsc:105,:122), so scaling that is the
+// (animscripts/zombie_move.gsc:105,:122), so scaling that is the
 // faithful equivalent of T5's call.
 //
 // 0.9 is the "run" value of move_speed_scale() and the centre of the
@@ -724,7 +724,7 @@ window_spawn_spots( window )
 
 	// The outward direction: from the window's inside traversal point out
 	// through the exterior_goal.
-	inside = maps\mp\gametypes\_zombiemode_zone_manager::entrance_inside_point( window );
+	inside = maps\_zombiemode_zone_manager::entrance_inside_point( window );
 	out = undefined;
 	if ( isDefined( inside ) )
 	{
@@ -768,7 +768,7 @@ window_spawn_spots( window )
 				continue;
 			}
 		}
-		if ( isDefined( maps\mp\gametypes\_zombiemode_zone_manager::zone_at_point( node.origin ) ) )
+		if ( isDefined( maps\_zombiemode_zone_manager::zone_at_point( node.origin ) ) )
 		{
 			rej_zone++;
 			continue;
@@ -1053,7 +1053,7 @@ make_crawler()
 	if ( !isDefined( self.a.gib_ref ) )
 		self.a.gib_ref = "no_legs";
 	if ( !is_true( self.gibbed ) )
-		self maps\mp\gametypes\_zombiemode_gib::do_gib();
+		self maps\_zombiemode_gib::do_gib();
 	self.a.pose = "prone";
 
 	self set_zombie_run_cycle( "walk" );
@@ -1156,9 +1156,9 @@ zombie_damage_watch()
 		// a tesla projectile hit starts the chain lightning (the weapon's
 		// real damage) and pays no damage points.  Threaded on level because
 		// this watcher ends with this zombie, the chain's first kill.
-		if ( maps\mp\gametypes\_zombiemode_weap_tesla::is_tesla_damage( weapon, mod ) )
+		if ( maps\_zombiemode_weap_tesla::is_tesla_damage( weapon, mod ) )
 		{
-			level thread maps\mp\gametypes\_zombiemode_weap_tesla::tesla_damage_init( self, partName, point, attacker );
+			level thread maps\_zombiemode_weap_tesla::tesla_damage_init( self, partName, point, attacker );
 			continue;
 		}
 		// END tesla hook
@@ -1173,13 +1173,13 @@ zombie_damage_watch()
 
 		// T5 pays damage_ads at 1.25x for a hit landed while aiming.
 		if ( attacker playerADS() > 0.9 )
-			attacker maps\mp\gametypes\_zombiemode_score::player_add_points( "damage_ads", mod, partName );
+			attacker maps\_zombiemode_score::player_add_points( "damage_ads", mod, partName );
 		else
-			attacker maps\mp\gametypes\_zombiemode_score::player_add_points( "damage", mod, partName );
+			attacker maps\_zombiemode_score::player_add_points( "damage", mod, partName );
 
 		// T5 zombie_damage :3654 / zombie_damage_ads :3712 end every hit with
 		// check_for_instakill: while Insta-Kill is up the hit is lethal.
-		self maps\mp\gametypes\_zombiemode_powerups::check_for_instakill( attacker, mod, partName );
+		self maps\_zombiemode_powerups::check_for_instakill( attacker, mod, partName );
 	}
 }
 
@@ -1303,7 +1303,7 @@ zombie_think()
 		// T5 find_flesh :3989 / zombie_follow_enemy :4305: a point of interest
 		// (cymbal monkey, black hole bomb) outranks flesh and owns the goal
 		// for this pass; _zombiemode_poi hands the zombie back when it ends.
-		if ( !self maps\mp\gametypes\_zombiemode_poi::zombie_follow_poi() )
+		if ( !self maps\_zombiemode_poi::zombie_follow_poi() )
 		{
 			player = closest_valid_player( self.origin );
 
@@ -1315,8 +1315,8 @@ zombie_think()
 			// eyes, blue mouth) and then resumes the chase.  Run here, on
 			// the thread that owns the goal and the board tear, so the
 			// pause overlaps neither.
-			if ( self maps\mp\gametypes\_zombiemode_cortex::cortex_should_join( player ) )
-				self maps\mp\gametypes\_zombiemode_cortex::cortex_join( player );
+			if ( self maps\_zombiemode_cortex::cortex_should_join( player ) )
+				self maps\_zombiemode_cortex::cortex_join( player );
 		}
 
 		// T5 :455.  The round raised level.zombie_move_speed since this actor
@@ -1334,7 +1334,7 @@ zombie_think()
 
 		// One-second poll, woken early when a Cortex event starts so the
 		// whole horde stops together.
-		self maps\mp\gametypes\_zombiemode_cortex::cortex_hunt_wait( 1 );
+		self maps\_zombiemode_cortex::cortex_hunt_wait( 1 );
 	}
 }
 
@@ -1382,7 +1382,7 @@ zombie_tear_until_open( node )
 // the clip is dropped out of the way (disable_trigger) and the window's
 // negotiation link is reconnected (native Path_ConnectPaths), so the
 // interior route can cross it; the native mover then plays the traversal at
-// the begin node (maps\mp\animscripts\zombie_jump).  Idempotent.
+// the begin node (animscripts\zombie_jump).  Idempotent.
 open_barrier_paths( node )
 {
 	if ( !isDefined( node ) || !isDefined( node.clip ) )
@@ -1485,7 +1485,7 @@ closest_exterior_goals( origin, n )
 	pool = [];
 	for ( i = 0; i < level.exterior_goals.size; i++ )
 	{
-		if ( maps\mp\gametypes\_zombiemode_zone_manager::entrance_available( level.exterior_goals[ i ] ) )
+		if ( maps\_zombiemode_zone_manager::entrance_available( level.exterior_goals[ i ] ) )
 			pool[ pool.size ] = level.exterior_goals[ i ];
 	}
 	// T5 :497 and zombie_assure_node :660 search every exterior_goal.  The
@@ -1629,7 +1629,7 @@ zombie_climb_in( node )
 
 	if ( !isDefined( node ) || !isDefined( node.barrier_chunks ) || !all_chunks_destroyed( node.barrier_chunks ) )
 		return;
-	inside = maps\mp\gametypes\_zombiemode_zone_manager::entrance_inside_point( node );
+	inside = maps\_zombiemode_zone_manager::entrance_inside_point( node );
 	if ( !isDefined( inside ) )
 		return;
 
@@ -1728,7 +1728,7 @@ zombie_death_event( zombie )
 
 	if ( isDefined( attacker ) && isPlayer( attacker ) )
 	{
-		attacker maps\mp\gametypes\_zombiemode_score::player_add_points( "death", mod, hit_location );
+		attacker maps\_zombiemode_score::player_add_points( "death", mod, hit_location );
 
 		if ( !isDefined( attacker.kills ) )
 			attacker.kills = 0;
@@ -1755,7 +1755,7 @@ zombie_death_event( zombie )
 	// clear_zombies' between-round sweep, neither of which T5 has at all.
 	// Both set .no_powerup_drop.
 	if ( isDefined( zombie ) && !is_true( zombie.nuked ) && !is_true( zombie.no_powerup_drop ) )
-		level thread maps\mp\gametypes\_zombiemode_powerups::powerup_drop( zombie.origin, is_true( zombie.ignoreme ) );
+		level thread maps\_zombiemode_powerups::powerup_drop( zombie.origin, is_true( zombie.ignoreme ) );
 
 	zombie_list_compact();
 
@@ -2034,7 +2034,7 @@ get_tear_anim( chunk, node )
 //
 // The "board" arm is T5's, verbatim in behaviour: on the note, if the chunk
 // is still there, stamp the time, play the tear FX and audio and call
-// maps\mp\gametypes\_zombiemode_blockers::remove_chunk.  The FX/audio are
+// maps\_zombiemode_blockers::remove_chunk.  The FX/audio are
 // threaded off remove_chunk itself here rather than off this note, because
 // this port keeps them next to the chunk they act on; the ordering within the
 // frame is the same.
@@ -2066,7 +2066,7 @@ zombie_tear_notetracks( msg, chunk, node )
 			{
 				codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " tear clip ended without its board notetrack; removing board " + chunk.script_noteworthy + " at the end instead" );
 				self.lastchunk_destroy_time = getTime();
-				maps\mp\gametypes\_zombiemode_blockers::remove_chunk( chunk, node, true, self );
+				maps\_zombiemode_blockers::remove_chunk( chunk, node, true, self );
 			}
 			return;
 		}
@@ -2080,12 +2080,12 @@ zombie_tear_notetracks( msg, chunk, node )
 				// the barrier, whose facing aims the board's flight
 				// (2026-09-22, the boards fly now).  remove_chunk marks the
 				// chunk synchronously and threads the flight itself.
-				maps\mp\gametypes\_zombiemode_blockers::remove_chunk( chunk, node, true, self );
+				maps\_zombiemode_blockers::remove_chunk( chunk, node, true, self );
 			}
 			continue;
 		}
 
-		self maps\mp\animscripts\zombie_shared::HandleNoteTrack( notetrack, msg );
+		self animscripts\zombie_shared::HandleNoteTrack( notetrack, msg );
 	}
 }
 
@@ -2312,7 +2312,7 @@ should_attack_player_thru_boards()
 				reach = level._zombie_window_attack[ randomInt( level._zombie_window_attack.size ) ];
 				// T5 :471 animScripted( "window_melee", self.origin, self.angles, reach, "normal", undefined, 1, 0.3 ).
 				self animscripted( "windowattack", self.origin, self.angles, reach, "normal", %body, self.animplaybackrate, 0.3 );
-				self maps\mp\animscripts\zombie_shared::DoNoteTracksForTime( getAnimLength( reach ), "windowattack" );
+				self animscripts\zombie_shared::DoNoteTracksForTime( getAnimLength( reach ), "windowattack" );
 			}
 			return true;
 		}
@@ -2339,7 +2339,7 @@ do_a_taunt()
 	self play_sound_on_ent( "zombie_taunt" );
 	// T5 :437 animScripted( "zombie_taunt", self.origin, self.angles, anime, "normal", undefined, 1, 0.4 ).
 	self animscripted( "tauntanim", self.origin, self.angles, taunt, "normal", %body, self.animplaybackrate, 0.4 );
-	self maps\mp\animscripts\zombie_shared::DoNoteTracksForTime( getAnimLength( taunt ), "tauntanim" );
+	self animscripts\zombie_shared::DoNoteTracksForTime( getAnimLength( taunt ), "tauntanim" );
 	self stopanimscripted();
 }
 
@@ -2362,7 +2362,7 @@ nearest_blocking_barrier()
 	// 15 s later, again and again (MEASURED 2026-10-02, zm_prototype_sh:
 	// "did not reach attack spot (-250 -157) from (-191 -156)").  T5 only
 	// tears from the exterior_goal side (zombie_goto_entrance).
-	if ( isDefined( maps\mp\gametypes\_zombiemode_zone_manager::zone_at_point( self.origin ) ) )
+	if ( isDefined( maps\_zombiemode_zone_manager::zone_at_point( self.origin ) ) )
 		return undefined;
 
 	best = undefined;
@@ -2371,7 +2371,7 @@ nearest_blocking_barrier()
 	for ( i = 0; i < level.exterior_goals.size; i++ )
 	{
 		node = level.exterior_goals[ i ];
-		if ( !maps\mp\gametypes\_zombiemode_zone_manager::entrance_available( node ) )
+		if ( !maps\_zombiemode_zone_manager::entrance_available( node ) )
 			continue;
 
 		if ( !isDefined( node.barrier_chunks ) || node.barrier_chunks.size < 1 )

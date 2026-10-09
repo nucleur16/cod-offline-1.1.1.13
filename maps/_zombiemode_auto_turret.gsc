@@ -37,7 +37,7 @@
 //     CODOL_TurretHeat_SetMode).  BY SOURCE, TurretAuto_Acquire
 //     (src/codol/script/codol_script_turret_target.cpp) accepts zombies: the
 //     zombie aitype calls setspawnerteam( "axis" )
-//     (zm/aitype/enemy_zombie_zm.gsc:68), CODOL_ActorAllocate registers each
+//     (aitype/enemy_zombie_zm.gsc:68), CODOL_ActorAllocate registers each
 //     one as an axis sentient with isActor set
 //     (src/codol/player/codol_actor_lifecycle.cpp:167-184), and an "allies"
 //     turret walks class mask 0xa = axis | team3 (CODOL_Sentient_ClassMask).
@@ -64,7 +64,7 @@
 //     owner and faces the owner's angles; the offset keeps the grabber out of
 //     the turret's bounds, since there is no carry step).
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {
@@ -233,7 +233,7 @@ auto_turret_lifetime_watch( turret, num )
 // acquisition is looking at, for the handback in the header.
 auto_turret_diag( target )
 {
-	near = get_closest( self.origin, maps\mp\gametypes\_zombiemode_weap_tesla::tesla_sorted_zombies( self.origin ) );
+	near = get_closest( self.origin, maps\_zombiemode_weap_tesla::tesla_sorted_zombies( self.origin ) );
 	msg = "CoDOL zm sentry diag: target " + isDefined( target ) + " firing " + self isFiringTurret();
 	if ( isDefined( target ) )
 		msg = msg + " (entity " + target getEntityNumber() + " health " + target.health + ")";

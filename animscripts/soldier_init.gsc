@@ -4,8 +4,8 @@
 // <animscript>_init/_stop/_move/_combat/_death/_pain/_flashed/_turn/_jump --
 // and refuses the species if any one is missing
 // (src/codol/player/codol_actor_scripts.cpp LoadSpeciesScripts).  The species
-// row names the prefix "maps/mp/animscripts/soldier"; these resolve out of the
-// coop CATEGORY root only.
+// row names the prefix "animscripts/soldier" (the top-level IW4 singleplayer
+// animscripts/ namespace); only the coop species row loads them.
 //
 // Behaviour reference: IW4 animscripts\init.gsc (the self.a state block and
 // the per-actor fields) for a standing, rifle-carrying human.  The clip names
@@ -17,7 +17,7 @@
 // registers "generic_human" in the server animtree registry for a coop match
 // (zm's zombie_init does the same for zm; no mp module is compiled here).
 
-#include maps\mp\animscripts\soldier_shared;
+#include animscripts\soldier_shared;
 
 #using_animtree ( "generic_human" );
 

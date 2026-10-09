@@ -63,7 +63,7 @@
 // self.maxhealth and self.health directly, which is how the zm spawn path
 // already sets a player's health (_zombiemode.gsc spawnPlayer).
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {
@@ -190,7 +190,7 @@ precache_perk_bottles()
 }
 
 // array() is NOT a registered builtin on this server (MEASURED; the same note
-// is already on zm/character/character_zm_zombie.gsc:31), so the list is built
+// is already on character/character_zm_zombie.gsc:31), so the list is built
 // by assignment.
 perk_list()
 {
@@ -326,7 +326,7 @@ vending_trigger_think()
 		if ( player.score < cost )
 		{
 			self play_sound_on_ent( "perk_deny" );
-			player maps\mp\gametypes\_zombiemode_audio::no_cash_vox();
+			player maps\_zombiemode_audio::no_cash_vox();
 			wait( 0.5 );
 			continue;
 		}
@@ -339,7 +339,7 @@ vending_trigger_think()
 		}
 
 		self play_sound_on_ent( "bottle_dispense" );
-		player maps\mp\gametypes\_zombiemode_score::minus_to_player_score( cost );
+		player maps\_zombiemode_score::minus_to_player_score( cost );
 
 		gun = player perk_give_bottle_begin( perk );
 
@@ -798,7 +798,7 @@ perk_hud_clear( reason )
 // The upgrade names are real content here: MEASURED from
 // docs/zone_assets/ALL_weapon.txt, CoDOL's zm zones ship 40-odd
 // "<base>_upgraded_zm" weapons alongside their bases, which is exactly the
-// pairing maps\mp\gametypes\_zombiemode_weapons::add_zombie_weapon records.
+// pairing maps\_zombiemode_weapons::add_zombie_weapon records.
 // ==========================================================================
 
 vending_weapon_upgrade_cost()
@@ -843,7 +843,7 @@ vending_weapon_upgrade()
 		if ( !isDefined( current ) || current == "none" )
 			continue;
 
-		upgrade = maps\mp\gametypes\_zombiemode_weapons::get_upgrade_name( current );
+		upgrade = maps\_zombiemode_weapons::get_upgrade_name( current );
 		if ( !isDefined( upgrade ) )
 		{
 			// The held weapon has no upgraded variant in any mounted zone.
@@ -857,13 +857,13 @@ vending_weapon_upgrade()
 		if ( player.score < cost )
 		{
 			self play_sound_on_ent( "perk_deny" );
-			player maps\mp\gametypes\_zombiemode_audio::no_cash_vox();
+			player maps\_zombiemode_audio::no_cash_vox();
 			wait( 0.5 );
 			continue;
 		}
 
 		flag_set( "pack_machine_in_use" );
-		player maps\mp\gametypes\_zombiemode_score::minus_to_player_score( cost );
+		player maps\_zombiemode_score::minus_to_player_score( cost );
 
 		// T5 :450.  Take the gun, run the machine's presentation, hand the
 		// upgrade back.  All three are ported now.
@@ -984,7 +984,7 @@ upgrade_knuckle_crack_end( gun )
 
 	self takeWeapon( weapon );
 
-	if ( self maps\mp\gametypes\_zombiemode_laststand::player_is_in_laststand() )
+	if ( self maps\_zombiemode_laststand::player_is_in_laststand() )
 		return;
 
 	// The caller gives and switches to the upgraded weapon straight after

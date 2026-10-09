@@ -39,7 +39,7 @@
 //     one attractor ring position could be traced around it; otherwise the
 //     zombies walk to the monkey itself.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 // A function, not a file constant: this compiler substitutes a constant
 // for every identifier of the same name, case-insensitively (a parameter
@@ -72,7 +72,7 @@ init()
 	level.monkey_fuse_ms = getWeaponFuseTime( monkey_weapon() );
 	codolprintln( "CoDOL zm monkey: registered; weapon fuse " + describe_ms( level.monkey_fuse_ms ) + ", lure radius " + level.monkey_attract_dist );
 
-	maps\mp\gametypes\_zombiemode_equipment::register_equipment( monkey_weapon(), ::monkey_fired );
+	maps\_zombiemode_equipment::register_equipment( monkey_weapon(), ::monkey_fired );
 }
 
 describe_ms( v )
@@ -92,7 +92,7 @@ monkey_fired( player, weapon )
 	codolprintln( "CoDOL zm monkey: thrown by " + thrower + " at " + grenade.origin );
 
 	// T5 :54.  A downed player's monkey is taken away.
-	if ( isDefined( player ) && player maps\mp\gametypes\_zombiemode_laststand::player_is_in_laststand() )
+	if ( isDefined( player ) && player maps\_zombiemode_laststand::player_is_in_laststand() )
 	{
 		grenade delete();
 		return;
@@ -108,7 +108,7 @@ monkey_fired( player, weapon )
 
 	// T5 :71-:72.  The monkey lures from the moment it leaves the hand,
 	// with the zombies walking at the monkey itself until it lands.
-	grenade maps\mp\gametypes\_zombiemode_poi::create_zombie_point_of_interest( level.monkey_attract_dist, level.num_monkey_attractors, 10000 );
+	grenade maps\_zombiemode_poi::create_zombie_point_of_interest( level.monkey_attract_dist, level.num_monkey_attractors, 10000 );
 	grenade.attract_to_origin = true;
 
 	// T5 :74-:85.  Wait for it to come to rest.
@@ -160,7 +160,7 @@ track_origin( info )
 	while ( isDefined( grenade ) )
 	{
 		info.last_origin = grenade.origin;
-		info.near = maps\mp\gametypes\_zombiemode_poi::zombies_in_radius( info.last_origin, 256 );
+		info.near = maps\_zombiemode_poi::zombies_in_radius( info.last_origin, 256 );
 		wait( 0.05 );
 	}
 	info.exploded = true;
@@ -200,7 +200,7 @@ forward_stationary( info )
 
 monkey_attractor_positions( info )
 {
-	self maps\mp\gametypes\_zombiemode_poi::create_zombie_point_of_interest_attractor_positions( 4, level.monkey_attract_dist_diff );
+	self maps\_zombiemode_poi::create_zombie_point_of_interest_attractor_positions( 4, level.monkey_attract_dist_diff );
 	if ( !isDefined( self ) )
 		return;
 
@@ -223,7 +223,7 @@ monkey_finish( info )
 
 	// The POI is already gone with the freed grenade; the next chase pass
 	// hands every lured zombie back to flesh.
-	maps\mp\gametypes\_zombiemode_poi::compact_pois();
+	maps\_zombiemode_poi::compact_pois();
 
 	// The blast is the weapon's own (the engine's grenade explosion); what
 	// it did is read back from the zombies that stood within 256 units of the
@@ -233,7 +233,7 @@ monkey_finish( info )
 		near = info.near;
 	wait( 0.25 );
 
-	killed = maps\mp\gametypes\_zombiemode_poi::count_dead( near );
+	killed = maps\_zombiemode_poi::count_dead( near );
 	retargets = 0;
 	if ( isDefined( level.zombie_poi_retargets ) )
 		retargets = level.zombie_poi_retargets;

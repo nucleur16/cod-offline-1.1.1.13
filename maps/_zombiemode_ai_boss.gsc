@@ -101,7 +101,7 @@
 //   hurt <dmg> [head]  damage the boss as the first player (body or head)
 //   shoot <client> <head|body> [weapon]  magicBullet from the client into the boss
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 #using_animtree ( "generic_human" );
 
@@ -258,9 +258,9 @@ boss_spawn_candidates( include_spawners )
 		for ( i = 0; i < level.exterior_goals.size; i++ )
 		{
 			goal = level.exterior_goals[ i ];
-			if ( !maps\mp\gametypes\_zombiemode_zone_manager::entrance_available( goal ) )
+			if ( !maps\_zombiemode_zone_manager::entrance_available( goal ) )
 				continue;
-			inside = maps\mp\gametypes\_zombiemode_zone_manager::entrance_inside_point( goal );
+			inside = maps\_zombiemode_zone_manager::entrance_inside_point( goal );
 			if ( isDefined( inside ) )
 				points[ points.size ] = inside;
 		}
@@ -377,7 +377,7 @@ boss_spawn( near_player )
 	level.zm_boss = ai;
 	level.zombies[ level.zombies.size ] = ai;
 
-	level thread maps\mp\gametypes\_zombiemode_spawner::zombie_death_event( ai );
+	level thread maps\_zombiemode_spawner::zombie_death_event( ai );
 	level thread boss_death_watch( ai );
 	ai thread boss_damage_watch();
 	ai thread boss_think();
@@ -389,7 +389,7 @@ boss_spawn( near_player )
 
 closest_valid_player( origin )
 {
-	return maps\mp\gametypes\_zombiemode_spawner::closest_valid_player( origin );
+	return maps\_zombiemode_spawner::closest_valid_player( origin );
 }
 
 boss_setup()
@@ -933,9 +933,9 @@ boss_damage_watch()
 		self.boss_damage_by[ num ] += effective;
 
 		if ( attacker playerADS() > 0.9 )
-			attacker maps\mp\gametypes\_zombiemode_score::player_add_points( "damage_ads", mod, partName );
+			attacker maps\_zombiemode_score::player_add_points( "damage_ads", mod, partName );
 		else
-			attacker maps\mp\gametypes\_zombiemode_score::player_add_points( "damage", mod, partName );
+			attacker maps\_zombiemode_score::player_add_points( "damage", mod, partName );
 
 		self.boss_hp -= effective;
 
@@ -1055,7 +1055,7 @@ boss_death_watch( boss )
 	{
 		if ( !isDefined( level.zombie_powerups ) || !isDefined( level.zombie_powerups[ reward ] ) )
 			reward = "full_ammo";
-		level thread maps\mp\gametypes\_zombiemode_powerups::specific_powerup_drop( reward, origin );
+		level thread maps\_zombiemode_powerups::specific_powerup_drop( reward, origin );
 	}
 
 	players = getPlayers();
@@ -1066,7 +1066,7 @@ boss_death_watch( boss )
 			continue;
 		if ( boss.boss_damage_by[ num ] < boss.boss_health_max * 0.1 && players[ i ] != attacker )
 			continue;
-		players[ i ] maps\mp\gametypes\_zombiemode_score::add_to_player_score( 500 );
+		players[ i ] maps\_zombiemode_score::add_to_player_score( 500 );
 		players[ i ] ShowHudSplash( "extra_boss_damage", 0 );
 		if ( getDvarInt( "developer" ) > 0 )
 			codolprintln( "CoDOL zm boss: " + players[ i ].name + " did " + boss.boss_damage_by[ num ] + "; extra_boss_damage splash, +500" );

@@ -23,7 +23,7 @@
 //
 // <attacker> may equal <victim> for self damage.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {
@@ -95,7 +95,7 @@ fftest_watch()
 			p = fftest_player( tokens, 1 );
 			if ( isDefined( p ) )
 			{
-				p maps\mp\gametypes\_zombiemode_perks::give_perk( "specialty_armorvest" );
+				p maps\_zombiemode_perks::give_perk( "specialty_armorvest" );
 				codolprintln( "CoDOL fftest: " + p.name + " juggernog, health " + p.health + "/" + p.maxhealth );
 			}
 			break;
@@ -116,8 +116,8 @@ fftest_watch()
 			p = fftest_player( tokens, 1 );
 			if ( isDefined( p ) )
 			{
-				if ( p maps\mp\gametypes\_zombiemode_laststand::player_is_in_laststand() )
-					p maps\mp\gametypes\_zombiemode_laststand::revive_success();
+				if ( p maps\_zombiemode_laststand::player_is_in_laststand() )
+					p maps\_zombiemode_laststand::revive_success();
 				p.health = p.maxhealth;
 				codolprintln( "CoDOL fftest: " + p.name + " health " + p.health );
 			}
@@ -200,7 +200,7 @@ fftest_hit( tokens )
 	if ( !isDefined( victim ) )
 		return;
 	codolprintln( "CoDOL fftest: " + desc + " " + attacker.name + " -> " + victim.name + ": health " + before + " -> " + victim.health +
-		" laststand " + victim maps\mp\gametypes\_zombiemode_laststand::player_is_in_laststand() + " state " + victim.sessionstate );
+		" laststand " + victim maps\_zombiemode_laststand::player_is_in_laststand() + " state " + victim.sessionstate );
 }
 
 fftest_nearest_zombie( player )
@@ -232,7 +232,7 @@ fftest_zombie_hit( tokens )
 	victim doDamage( int( tokens[ 2 ] ), z.origin, z, z, 0, "MOD_MELEE", 0, "none" );
 	wait( 0.5 );
 	codolprintln( "CoDOL fftest: zhit zombie " + z getEntityNumber() + " -> " + victim.name + ": health " + before + " -> " + victim.health +
-		" laststand " + victim maps\mp\gametypes\_zombiemode_laststand::player_is_in_laststand() );
+		" laststand " + victim maps\_zombiemode_laststand::player_is_in_laststand() );
 }
 
 fftest_zombie_damage( tokens )

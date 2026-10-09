@@ -31,7 +31,7 @@
 // (localized_common_gametype_zm; lb / danby / hh / lg, column 1 of
 // mp/cyborgclasstable.csv).
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 ROSTER_TABLE = "mp/cyborgclasstable.csv";
 
@@ -116,7 +116,7 @@ checkForAllDead()
 // watcher takes the weapon itself).
 zm_downed()
 {
-	self maps\mp\gametypes\_zombiemode_score::player_downed_penalty();
+	self maps\_zombiemode_score::player_downed_penalty();
 	if ( self has_powerup_weapon() )
 		self powerup_weapon_unlock();
 }
@@ -130,7 +130,7 @@ zm_downed_post()
 // _zombiemode_score.gsc:222, from zombify_player.
 zm_bled_out()
 {
-	self maps\mp\gametypes\_zombiemode_score::player_died_penalty();
+	self maps\_zombiemode_score::player_died_penalty();
 }
 
 // player_revive_monitor: the reviver gets back what the downed player lost
@@ -140,7 +140,7 @@ zm_revived( reviver )
 	points = 0;
 	if ( isDefined( self.score_lost_when_downed ) )
 		points = self.score_lost_when_downed;
-	reviver maps\mp\gametypes\_zombiemode_score::player_add_points( "reviver", points );
+	reviver maps\_zombiemode_score::player_add_points( "reviver", points );
 	self.score_lost_when_downed = 0;
 	codolprintln( "CoDOL zm laststand: " + reviver.name + " paid +" + points + " for reviving " + self.name );
 }
@@ -151,7 +151,7 @@ zm_revive_done()
 {
 	self.zmLastDamageTime = getTime();
 	self notify( "zm_regen_restart" );
-	self thread maps\mp\gametypes\_zombiemode::zm_player_health_regen();
+	self thread maps\_zombiemode::zm_player_health_regen();
 }
 
 // T5 _zombiemode.gsc:4176 (level.can_revive): not with a power-up weapon,
@@ -201,12 +201,12 @@ revive_vox_code()
 
 	for ( row = 0; row < 16; row++ )
 	{
-		key = maps\mp\gametypes\_zombiemode_equipment::trim( tableLookupByRow( ROSTER_TABLE, row, 0 ) );
+		key = maps\_zombiemode_equipment::trim( tableLookupByRow( ROSTER_TABLE, row, 0 ) );
 		if ( key == "" )
 			break;
 		if ( key != self.zombie_character )
 			continue;
-		code = maps\mp\gametypes\_zombiemode_equipment::trim( tableLookupByRow( ROSTER_TABLE, row, 1 ) );
+		code = maps\_zombiemode_equipment::trim( tableLookupByRow( ROSTER_TABLE, row, 1 ) );
 		if ( code == "" )
 			return undefined;
 		return code;

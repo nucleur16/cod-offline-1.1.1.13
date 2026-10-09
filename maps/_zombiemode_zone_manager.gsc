@@ -3,7 +3,7 @@
 // player_volume targets its own script_struct spawner group.  CoDOL's
 // prototype and training maps also carry T5's three door flags exactly.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {

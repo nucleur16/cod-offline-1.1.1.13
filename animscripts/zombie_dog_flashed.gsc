@@ -1,4 +1,4 @@
-// zm hellhound animscript: maps/mp/animscripts/zombie_dog_flashed.gsc
+// zm hellhound animscript: animscripts/zombie_dog_flashed.gsc
 //
 // Ported from this tree's multiplayer dog animscript
 // maps/mp/animscripts/dog_flashed.gsc (itself adapted from the shipped T5
@@ -14,14 +14,14 @@
 //   - nothing else changed.
 
 /*
-	scripts/codol/maps/mp/animscripts/dog_flashed.gsc
+	maps/mp/animscripts/dog_flashed.gsc
 
 	Adapted from the shipped Black Ops (T5) script source:
 		D:\CoD\COD-GSC-Source\T5-STEAM-GSC\maps\mp\animscripts\dog_flashed.gsc
 
 	Changed for CoDOL:
 	  - the namespaced maps\mp\animscripts\shared::DoNoteTracks call now points
-	    at the dog-local maps\mp\animscripts\zombie_dog_shared module.
+	    at the dog-local animscripts\zombie_dog_shared module.
 	  - nothing else changed.  setFlashBanged / getFlashBangedStrength are kept
 	    verbatim; they are engine methods this server does not register yet
 	    (reported as required builtins).
@@ -37,7 +37,7 @@ main()
 	duration = self startFlashBanged() * 0.001;
 
 	self setanimstate( "flashed" );
-	self maps\mp\animscripts\zombie_dog_shared::DoNoteTracks("done");
+	self animscripts\zombie_dog_shared::DoNoteTracks("done");
 
 	self setFlashBanged( false );
 

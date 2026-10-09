@@ -22,7 +22,7 @@
 // trigger survived a first-floor buy).  See _zombiemode_blockers.gsc
 // delete_blocker_triggers().
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {
@@ -169,7 +169,7 @@ blockertest_buy( verb, clientnum, entnum )
 	if ( isDefined( trig.zombie_cost ) )
 		cost = trig.zombie_cost;
 	if ( player.score < cost )
-		player maps\mp\gametypes\_zombiemode_score::add_to_player_score( cost - player.score + 500 );
+		player maps\_zombiemode_score::add_to_player_score( cost - player.score + 500 );
 
 	before = player.score;
 	player setOrigin( trig.origin - ( 0, 0, 40 ) );
@@ -210,7 +210,7 @@ blockertest_board( index, clientnum )
 	codolprintln( "CoDOL blockertest: board barrier " + index + " at " + node.origin + ", " + chunks.size + " chunks" );
 	for ( i = 0; i < chunks.size; i++ )
 	{
-		maps\mp\gametypes\_zombiemode_blockers::remove_chunk( chunks[ i ], node, true );
+		maps\_zombiemode_blockers::remove_chunk( chunks[ i ], node, true );
 		wait( 0.1 );
 	}
 	wait( 2 );
@@ -239,7 +239,7 @@ blockertest_board( index, clientnum )
 	{
 		for ( i = 0; i < chunks.size; i++ )
 		{
-			node thread maps\mp\gametypes\_zombiemode_blockers::replace_chunk( chunks[ i ] );
+			node thread maps\_zombiemode_blockers::replace_chunk( chunks[ i ] );
 			wait( 1 );
 		}
 	}

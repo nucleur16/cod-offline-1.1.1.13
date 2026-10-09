@@ -45,7 +45,7 @@
 //   global object, so this file does the same rather than being the first
 //   thing to depend on it.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 // --------------------------------------------------------------------------
 // The registry.  Level-once; zombie_init::firstInit calls it.

@@ -37,7 +37,7 @@
 //     extraction helicopter arrives -- mission complete (_coopmission's
 //     lobby return).
 //
-// Coop category root only; names no multiplayer module.
+// Coop module (maps/, IW4 singleplayer namespace); names no multiplayer module.
 
 #using_animtree ( "generic_human" );
 
@@ -193,11 +193,11 @@ init()
 	// The rifle Ghost throws: the recording's M4A1 with the M203 and the
 	// holographic sight (codo_weapon_m4a1tech_world is the authored throw
 	// model, gun_to_throw).
-	level.crash_rifle = maps\mp\gametypes\_coopmode::resolveWeapon( strTok( "m4m203_eotech_so m203_m4_eotech_so m4_grunt_so m16_basic_so", " " ) );
-	level.crash_pistol = maps\mp\gametypes\_coopmode::resolveWeapon( strTok( "usp_silencer_so beretta_so", " " ) );
-	level.crash_frag = maps\mp\gametypes\_coopmode::resolveWeapon( strTok( "fraggrenade_so", " " ) );
-	level.crash_flash = maps\mp\gametypes\_coopmode::resolveWeapon( strTok( "flash_grenade_so", " " ) );
-	level.crash_claymore = maps\mp\gametypes\_coopmode::resolveWeapon( strTok( "claymore_so", " " ) );
+	level.crash_rifle = maps\_coopmode::resolveWeapon( strTok( "m4m203_eotech_so m203_m4_eotech_so m4_grunt_so m16_basic_so", " " ) );
+	level.crash_pistol = maps\_coopmode::resolveWeapon( strTok( "usp_silencer_so beretta_so", " " ) );
+	level.crash_frag = maps\_coopmode::resolveWeapon( strTok( "fraggrenade_so", " " ) );
+	level.crash_flash = maps\_coopmode::resolveWeapon( strTok( "flash_grenade_so", " " ) );
+	level.crash_claymore = maps\_coopmode::resolveWeapon( strTok( "claymore_so", " " ) );
 	codolprintln( "CoDOL coop crash: rifle " + name_of( level.crash_rifle ) + " pistol " + name_of( level.crash_pistol ) + " frag " +
 		name_of( level.crash_frag ) + " flash " + name_of( level.crash_flash ) + " claymore " + name_of( level.crash_claymore ) );
 }
@@ -255,7 +255,7 @@ strings()
 
 crash_struct( name )
 {
-	return maps\mp\gametypes\_coopvehicle::struct_by_targetname( name );
+	return maps\_coopvehicle::struct_by_targetname( name );
 }
 
 structs( name )
@@ -506,7 +506,7 @@ step( kind, value, value2 )
 
 any_player_near( origin, radius )
 {
-	players = maps\mp\gametypes\_coopmission::living_players();
+	players = maps\_coopmission::living_players();
 	for ( i = 0; i < players.size; i++ )
 	{
 		if ( distance( players[ i ].origin, origin ) <= radius )
@@ -558,7 +558,7 @@ wait_use( origin, radius, hold, timeout, trigger, bar )
 			trigger notify( "crash_relay_stop" );
 			return who;
 		}
-		players = maps\mp\gametypes\_coopmission::living_players();
+		players = maps\_coopmission::living_players();
 		for ( i = 0; i < players.size; i++ )
 		{
 			p = players[ i ];
@@ -805,7 +805,7 @@ freeze_all( on )
 
 spawn_ghost( origin, angles )
 {
-	template = maps\mp\gametypes\_cooptraining::ally_template();
+	template = maps\_cooptraining::ally_template();
 	if ( !isDefined( template ) )
 		return undefined;
 	kind = spawnStruct();
@@ -826,7 +826,7 @@ spawn_ghost( origin, angles )
 	}
 	ai forceTeleport( origin, angles );
 	// His rifle in his hands, so his fire has a flash and a sound.
-	ai maps\mp\gametypes\_coopmission::arm_soldier();
+	ai maps\_coopmission::arm_soldier();
 	ai setCanDamage( false );
 	ai.ignoreall = true;
 	ai.crash_moving = false;
@@ -1004,7 +1004,7 @@ ghost_spot()
 {
 	if ( isDefined( level.crash_ghost ) )
 		return level.crash_ghost.origin;
-	players = maps\mp\gametypes\_coopmission::living_players();
+	players = maps\_coopmission::living_players();
 	if ( players.size > 0 )
 		return players[ 0 ].origin;
 	return undefined;
@@ -1132,7 +1132,7 @@ ghost_shot( target )
 	weapon = self.coop_weapon;
 	if ( !isDefined( weapon ) || weapon == "" )
 		weapon = "m16_basic_so";
-	self maps\mp\gametypes\_coopmission::actor_fire_round( weapon, start, end );
+	self maps\_coopmission::actor_fire_round( weapon, start, end );
 }
 
 // --------------------------------------------------------------------------
@@ -1153,13 +1153,13 @@ spawn_group( name, limit, goal, noHunt )
 		// this script (the unaware groups hold their idles).
 		if ( isDefined( noHunt ) && noHunt )
 			list[ i ].coop_no_hunt = true;
-		ai = maps\mp\gametypes\_coopmission::spawn_soldier( list[ i ] );
+		ai = maps\_coopmission::spawn_soldier( list[ i ] );
 		// The actor budget is full: wait a little for a slot rather than
 		// lose the soldier (an earlier group's men may still be dying).
 		for ( tries = 0; !isDefined( ai ) && tries < 8 && level.coop_alive >= level.coop_max_alive && !level.coop_mission_over; tries++ )
 		{
 			wait( 1 );
-			ai = maps\mp\gametypes\_coopmission::spawn_soldier( list[ i ] );
+			ai = maps\_coopmission::spawn_soldier( list[ i ] );
 		}
 		if ( !isDefined( ai ) )
 			continue;
@@ -1198,7 +1198,7 @@ clear_leftovers( dist, except )
 			continue;
 		if ( isDefined( except ) && isDefined( e.crash_group ) && isSubStr( e.crash_group, except ) )
 			continue;
-		d = maps\mp\gametypes\_coopmission::nearest_player_distance( e.origin );
+		d = maps\_coopmission::nearest_player_distance( e.origin );
 		if ( isDefined( d ) && d < dist )
 			continue;
 		remove_actor( e );
@@ -1256,7 +1256,7 @@ wait_group_dead( ais, what, timeout, allowLeft, moveOn )
 			// The last few come for the players and are marked on the
 			// compass (IW4 _pmc's last enemies, _coopmission's markers).
 			marked = true;
-			players = maps\mp\gametypes\_coopmission::living_players();
+			players = maps\_coopmission::living_players();
 			slot = 0;
 			for ( i = 0; i < ais.size; i++ )
 			{
@@ -1285,7 +1285,7 @@ wait_group_dead( ais, what, timeout, allowLeft, moveOn )
 			{
 				if ( !isDefined( ais[ i ] ) || !isAlive( ais[ i ] ) )
 					continue;
-				d = maps\mp\gametypes\_coopmission::nearest_player_distance( ais[ i ].origin );
+				d = maps\_coopmission::nearest_player_distance( ais[ i ].origin );
 				if ( isDefined( d ) && d > 900 )
 				{
 					codolprintln( "CoDOL coop crash: " + what + ": a straggler at " + ais[ i ].origin + " (" + int( d ) + " from the players) is removed" );
@@ -1359,10 +1359,10 @@ main()
 	if ( !is_mission() )
 		return;
 	level thread players_watch();
-	level thread maps\mp\gametypes\_cooptraining::show_nametags();
+	level thread maps\_cooptraining::show_nametags();
 	prepare_props();
 
-	while ( maps\mp\gametypes\_coopmission::living_players().size <= 0 )
+	while ( maps\_coopmission::living_players().size <= 0 )
 		wait( 0.25 );
 	// _coopmission's own main() has run its init() by now.
 	level.coop_max_alive = 14;
@@ -1485,7 +1485,7 @@ phase_intro()
 	if ( list.size > 0 )
 	{
 		list[ 0 ].coop_no_hunt = true;
-		dragger = maps\mp\gametypes\_coopmission::spawn_soldier( list[ 0 ] );
+		dragger = maps\_coopmission::spawn_soldier( list[ 0 ] );
 		if ( isDefined( dragger ) )
 		{
 			fwd = anglesToForward( ( 0, dragYaw, 0 ) );
@@ -1624,7 +1624,7 @@ intro_actor( spawnerNoteworthy, locNoteworthy, idle )
 	if ( list.size <= 0 )
 		return undefined;
 	list[ 0 ].coop_no_hunt = true;
-	ai = maps\mp\gametypes\_coopmission::spawn_soldier( list[ 0 ] );
+	ai = maps\_coopmission::spawn_soldier( list[ 0 ] );
 	if ( !isDefined( ai ) )
 		return undefined;
 	locs = by_noteworthy( locNoteworthy );
@@ -2187,7 +2187,7 @@ download_run( laptopOrigin, radius, downloadTime, totalFiles, first )
 dsm_nearest( laptopOrigin )
 {
 	d = 99999;
-	players = maps\mp\gametypes\_coopmission::living_players();
+	players = maps\_coopmission::living_players();
 	for ( i = 0; i < players.size; i++ )
 	{
 		dd = distance( players[ i ].origin, laptopOrigin );
@@ -2455,7 +2455,7 @@ phase_heli()
 
 ground_or( p )
 {
-	return maps\mp\gametypes\_coopvehicle::ground_under( p );
+	return maps\_coopvehicle::ground_under( p );
 }
 
 spawn_searchers()
@@ -2538,7 +2538,7 @@ phase_roof()
 	waited = 0;
 	while ( waited < 240 )
 	{
-		players = maps\mp\gametypes\_coopmission::living_players();
+		players = maps\_coopmission::living_players();
 		for ( i = 0; i < players.size; i++ )
 		{
 			if ( isDefined( roof ) && players[ i ] isTouching( roof ) )
@@ -2599,7 +2599,7 @@ phase_roof()
 		start = level.crash_start_time;
 	codolprintln( "CoDOL coop crash: mission played in " + int( ( getTime() - start ) / 1000 ) + " s; the players killed " + kills +
 		", Ghost fired " + shots + " rounds" );
-	maps\mp\gametypes\_coopmission::mission_complete( "the squad reached the roof and was extracted" );
+	maps\_coopmission::mission_complete( "the squad reached the roof and was extracted" );
 }
 
 // Ghost to the roof: across to the building (nodes 102, 103, 104) and up
@@ -2617,9 +2617,9 @@ extraction_chopper()
 	chopper = getEnt( "chopper_end", "targetname" );
 	path = [];
 	if ( isDefined( chopper ) && isDefined( chopper.target ) )
-		path = maps\mp\gametypes\_coopvehicle::get_path( chopper.target );
+		path = maps\_coopvehicle::get_path( chopper.target );
 	else
-		path = maps\mp\gametypes\_coopvehicle::get_path( "so_chopper_end_path" );
+		path = maps\_coopvehicle::get_path( "so_chopper_end_path" );
 	start = ( -4047, 426, 1140 );
 	model = "vehicle_blackhawk_minigun_hero";
 	if ( isDefined( chopper ) )
@@ -2677,7 +2677,7 @@ watch_chopper()
 		wait( 0.05 );
 		if ( !isDefined( level.crash_chopper ) )
 			continue;
-		players = maps\mp\gametypes\_coopmission::living_players();
+		players = maps\_coopmission::living_players();
 		for ( i = 0; i < players.size; i++ )
 		{
 			p = players[ i ];

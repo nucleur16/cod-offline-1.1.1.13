@@ -1,9 +1,10 @@
 // coop_spec1_mp_killhouse_sh -- coop level script (playlist spelling, canonical).
 //
-// GScr_LoadScripts asks the engine for exactly one module, maps/mp/<mapname>,
-// for every asset category (src/scr_vm_main.c), and the per-category source
-// root is what makes that file coop's rather than multiplayer's
-// (src/codol/script/codol_script_source.c).
+// GScr_LoadScripts asks the engine for exactly one level module per match:
+// maps/<mapname> for a coop or zm match, maps/mp/<mapname> for multiplayer
+// (CODOL_ScriptEntryPoints, src/codol/script/codol_script_source.c) -- the
+// IW4 split between singleplayer and multiplayer level scripts
+// (docs/CODOL_GSC_TREE_LAYOUT.md).
 //
 // WHICH SPELLING IS <mapname>.  A coop match has two names for the same level:
 // the PLAYLIST name (coop_training_mp_killhouse_sh) and the BASE level name
@@ -48,5 +49,5 @@
 
 main()
 {
-	maps\mp\gametypes\_coopmode::levelMain( "coop_spec1_mp_killhouse_sh" );
+	maps\_coopmode::levelMain( "coop_spec1_mp_killhouse_sh" );
 }

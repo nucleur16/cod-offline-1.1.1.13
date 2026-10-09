@@ -47,7 +47,7 @@
 // radiusDamage names the player as attacker, which _zombiemode_spawner's
 // zombie_death_event pays.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {

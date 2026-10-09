@@ -1,4 +1,4 @@
-// zm hellhound animscript: maps/mp/animscripts/zombie_dog_turn.gsc
+// zm hellhound animscript: animscripts/zombie_dog_turn.gsc
 //
 // Ported from this tree's multiplayer dog animscript
 // maps/mp/animscripts/dog_turn.gsc (itself adapted from the shipped T5
@@ -14,7 +14,7 @@
 //   - nothing else changed.
 
 /*
-	scripts/codol/maps/mp/animscripts/dog_turn.gsc
+	maps/mp/animscripts/dog_turn.gsc
 
 	Adapted from the shipped Black Ops (T5) script source:
 		D:\CoD\COD-GSC-Source\T5-STEAM-GSC\maps\mp\animscripts\dog_turn.gsc
@@ -22,7 +22,7 @@
 	Changed for CoDOL:
 	  - #include maps\mp\animscripts\utility + ...\shared and the namespaced
 	    maps\mp\animscripts\shared::DoNoteTracksForTime calls now point at the
-	    dog-local maps\mp\animscripts\zombie_dog_shared module.
+	    dog-local animscripts\zombie_dog_shared module.
 	  - GetDvarFloat( #"dog_turn90_angle" ) / #"dog_turn180_angle" rewritten to
 	    the plain string form: the T5 #"..." canonical-hash token does not
 	    exist in this VM.  maps\mp\_dogs::dog_dvar_update registers both dvars
@@ -30,7 +30,7 @@
 	  - nothing else changed.
 */
 
-#include maps\mp\animscripts\zombie_dog_shared;
+#include animscripts\zombie_dog_shared;
 
 main()
 {
@@ -86,7 +86,7 @@ do_turn_anim( stopped_anim, run_anim, wait_time, run_wait_time )
 
 	debug_anim_print("dog_move::do_turn_anim() - Setting " + do_anim );
 	self setanimstate( do_anim );
-	maps\mp\animscripts\zombie_dog_shared::DoNoteTracksForTime( run_wait_time, "done" );
+	animscripts\zombie_dog_shared::DoNoteTracksForTime( run_wait_time, "done" );
 	debug_anim_print("dog_move::turn_around_right() - done with " + do_anim + " wait time " + run_wait_time );
 }
 
@@ -116,7 +116,7 @@ move_out_of_turn()
 	{
 		debug_anim_print("dog_move::move_out_of_turn() - Setting move_run" );
 		self setanimstate( "move_run" );
-		maps\mp\animscripts\zombie_dog_shared::DoNoteTracksForTime(0.1, "done");
+		animscripts\zombie_dog_shared::DoNoteTracksForTime(0.1, "done");
 		debug_anim_print("dog_move::move_out_of_turn() - move_run wait 0.1 done " );
 	}
 	else

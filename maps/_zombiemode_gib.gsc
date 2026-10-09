@@ -52,7 +52,7 @@
 //     pistol may still pop a head on a killing headshot -- the round-1 weapon
 //     otherwise never shows the feature -- but limbs keep T5's rule.
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {
@@ -71,7 +71,7 @@ init()
 
 	// Developer-only verbs (scr_codol_gibtest); returns at once on a
 	// production server.
-	maps\mp\gametypes\_zombiemode_gibtest::init();
+	maps\_zombiemode_gibtest::init();
 }
 
 // ---------------------------------------------------------------------------
@@ -161,7 +161,7 @@ zombie_gib_on_damage()
 
 		// T5 :2909: a zombie that keeps living without a leg crawls.
 		if ( self.health > 0 && ( gib_ref == "no_legs" || gib_ref == "right_leg" || gib_ref == "left_leg" ) )
-			self maps\mp\gametypes\_zombiemode_spawner::make_crawler();
+			self maps\_zombiemode_spawner::make_crawler();
 	}
 }
 
@@ -670,8 +670,8 @@ zombie_head_gib( attacker, mod )
 
 	// The glow lives on the head's eye bones; stopFxOnTag on a bone that is
 	// gone is a script error, so it is stopped first (T5 :2643 does the same).
-	self maps\mp\gametypes\_zombiemode_spawner::zombie_eye_glow_stop();
-	self maps\mp\gametypes\_zombiemode_cortex::cortex_overlay_off();
+	self maps\_zombiemode_spawner::zombie_eye_glow_stop();
+	self maps\_zombiemode_cortex::cortex_overlay_off();
 
 	self detach( head, "" );
 	if ( isDefined( self.torsoDmg5 ) )

@@ -29,7 +29,7 @@
 //
 // Written for "sometimes the zombies get stuck when pathing to the windows".
 
-#include maps\mp\gametypes\_zombiemode_utility;
+#include maps\_zombiemode_utility;
 
 init()
 {
@@ -180,7 +180,7 @@ pathtest_repair( seconds )
 			chunk = get_random_destroyed_chunk( node.barrier_chunks );
 			if ( !isDefined( chunk ) )
 				continue;
-			node thread maps\mp\gametypes\_zombiemode_blockers::replace_chunk( chunk, false );
+			node thread maps\_zombiemode_blockers::replace_chunk( chunk, false );
 			if ( isDefined( node.clip ) )
 			{
 				node.clip enable_trigger();
@@ -243,13 +243,13 @@ pathtest_open_all()
 	client = players[ 0 ] getEntityNumber();
 	for ( pass = 0; pass < 4; pass++ )
 	{
-		trigs = maps\mp\gametypes\_zombiemode_blockertest::blockertest_triggers();
+		trigs = maps\_zombiemode_blockertest::blockertest_triggers();
 		if ( trigs.size < 1 )
 			break;
 		for ( i = 0; i < trigs.size; i++ )
 		{
 			if ( isDefined( trigs[ i ] ) )
-				maps\mp\gametypes\_zombiemode_blockertest::blockertest_buy( "fire", client, trigs[ i ] getEntityNumber() );
+				maps\_zombiemode_blockertest::blockertest_buy( "fire", client, trigs[ i ] getEntityNumber() );
 		}
 	}
 	pathtest_open_zones();
@@ -283,16 +283,16 @@ pathtest_dump_zones()
 	for ( i = 0; i < level.exterior_goals.size; i++ )
 	{
 		goal = level.exterior_goals[ i ];
-		inside = maps\mp\gametypes\_zombiemode_zone_manager::entrance_inside_point( goal );
+		inside = maps\_zombiemode_zone_manager::entrance_inside_point( goal );
 		zone = "none";
 		if ( isDefined( inside ) )
 		{
-			z = maps\mp\gametypes\_zombiemode_zone_manager::zone_at_point( inside );
+			z = maps\_zombiemode_zone_manager::zone_at_point( inside );
 			if ( isDefined( z ) )
 				zone = z.name;
 		}
 		codolprintln( "CoDOL pathtest: window " + goal.origin + " inside " + inside + " zone " + zone + " available " +
-			maps\mp\gametypes\_zombiemode_zone_manager::entrance_available( goal ) );
+			maps\_zombiemode_zone_manager::entrance_available( goal ) );
 	}
 }
 
@@ -388,7 +388,7 @@ pathtest_soak( seconds, alive, mode )
 			}
 		}
 
-		ai = maps\mp\gametypes\_zombiemode_spawner::spawn_zombie( spawn_point );
+		ai = maps\_zombiemode_spawner::spawn_zombie( spawn_point );
 		if ( !isDefined( ai ) )
 		{
 			wait( 1 );
@@ -417,7 +417,7 @@ pathtest_spawn_at( origin, index )
 	spawn_point.origin = origin;
 	spawn_point.angles = ( 0, 0, 0 );
 	spawn_point.target = spawners[ index ].target;
-	ai = maps\mp\gametypes\_zombiemode_spawner::spawn_zombie( spawn_point );
+	ai = maps\_zombiemode_spawner::spawn_zombie( spawn_point );
 	if ( !isDefined( ai ) )
 		return;
 	if ( !isDefined( level.pathtest_spawned ) )

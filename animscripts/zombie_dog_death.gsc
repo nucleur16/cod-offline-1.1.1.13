@@ -1,4 +1,4 @@
-// zm hellhound animscript: maps/mp/animscripts/zombie_dog_death.gsc
+// zm hellhound animscript: animscripts/zombie_dog_death.gsc
 //
 // Ported from this tree's multiplayer dog animscript
 // maps/mp/animscripts/dog_death.gsc (itself adapted from the shipped T5
@@ -14,7 +14,7 @@
 //   - nothing else changed.
 
 /*
-	scripts/codol/maps/mp/animscripts/dog_death.gsc
+	maps/mp/animscripts/dog_death.gsc
 
 	Adapted from the shipped Black Ops (T5) script source:
 		D:\CoD\COD-GSC-Source\T5-STEAM-GSC\maps\mp\animscripts\dog_death.gsc
@@ -22,12 +22,12 @@
 	Changed for CoDOL:
 	  - #include maps\mp\animscripts\utility and the namespaced
 	    maps\mp\animscripts\shared::DoNoteTracks call now point at the
-	    dog-local maps\mp\animscripts\zombie_dog_shared module.
+	    dog-local animscripts\zombie_dog_shared module.
 	  - nothing else changed.
 */
 
 //#using_animtree ("dog");
-#include maps\mp\animscripts\zombie_dog_shared;
+#include animscripts\zombie_dog_shared;
 
 main()
 {
@@ -59,5 +59,5 @@ main()
 	self animMode( "gravity" );
 	debug_anim_print("dog_death::main() - Setting " + death_anim );
 	self setanimstate( death_anim );
-	self maps\mp\animscripts\zombie_dog_shared::DoNoteTracks( "done" );
+	self animscripts\zombie_dog_shared::DoNoteTracks( "done" );
 }
