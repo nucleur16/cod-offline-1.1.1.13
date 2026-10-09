@@ -49,6 +49,11 @@ main()
 			idle = self.idle_anim_override;
 
 		self setFlaggedAnimKnobAll( "idleanim", idle, %body, 1, 0.3, self.animplaybackrate );
+		if ( isDefined( self.idle_additive_override ) )
+		{
+			self setAnim( %add_idle, 1, 0.3, 1 );
+			self setAnimKnob( self.idle_additive_override, 1, 0.3, self.animplaybackrate );
+		}
 
 		DoNoteTracksForTime( 1, "idleanim" );
 	}
