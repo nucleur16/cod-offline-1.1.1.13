@@ -31,10 +31,11 @@
 //     ("Special round") while dvar ui_hud_special_round is 1 (see
 //     _zombiemode.gsc updateRoundHud).
 //
-// Frequency is T5's: the first hound round is round 5, 6 or 7, then every 4
-// or 5 rounds.  A hound round counts as a round like any other (the round
-// counter advances through it), and the round cap's final round is never a
-// hound round.
+// Finite Easy/Medium/Hard matches have hounds on round 6, then 10 and 14
+// as their length permits: exactly 1/2/3 hound rounds.  This leaves round 5
+// available to the map's first boss.  Endless mode keeps
+// T5's randomized first round 5..7 and 4..5-round intervals.  The extraction
+// round itself is never a hound round.
 //
 // Developer verbs (developer servers only): scr_zm_force_dogs 1 makes the
 // NEXT round a hound round (T5's force_dogs); scr_zm_dog_count overrides the
@@ -46,6 +47,7 @@ init()
 {
 	level.dogs_enabled = true;
 	level.dog_round_count = 1;
+	level.dog_rounds_played = 0;
 	level.dog_health = 100;
 	level.enemy_dog_locations = [];
 	level.dog_intermission = false;
@@ -199,8 +201,14 @@ dog_round_tracker()
 
 	level.dog_round_count = 1;
 
-	// T5: "making dog rounds random between round 5 thru 7".
-	level.next_dog_round = randomIntRange( 5, 8 );
+	if ( level.zm_round_cap > 0 )
+	{
+		level.next_dog_round = 0;
+		if ( level.zm_round_cap > 6 && level.zm_hound_rounds_goal > 0 )
+			level.next_dog_round = 6;
+	}
+	else
+		level.next_dog_round = randomIntRange( 5, 8 );
 	codolprintln( "CoDOL zm dogs: first hound round is round " + level.next_dog_round );
 
 	old_spawn_func = level.round_spawn_func;
@@ -216,9 +224,9 @@ dog_round_tracker()
 			level.next_dog_round = level.round_number;
 		}
 
-		// The round cap's final round is the extraction's, never a hound round.
+		// A developer-forced round still cannot replace extraction.
 		if ( level.round_number == level.next_dog_round && maps\mp\gametypes\_zombiemode::is_final_round() )
-			level.next_dog_round++;
+			level.next_dog_round = 0;
 
 		if ( level.round_number == level.next_dog_round )
 		{
@@ -229,9 +237,18 @@ dog_round_tracker()
 			}
 			level.music_round_override = true;
 			dog_round_start();
+			level.dog_rounds_played++;
 			level.round_spawn_func = ::dog_round_spawning;
 
-			level.next_dog_round = level.round_number + randomIntRange( 4, 6 );
+			if ( level.zm_round_cap > 0 )
+			{
+				level.next_dog_round = 0;
+				if ( level.dog_rounds_played < level.zm_hound_rounds_goal &&
+					level.round_number + 4 < level.zm_round_cap )
+					level.next_dog_round = level.round_number + 4;
+			}
+			else
+				level.next_dog_round = level.round_number + randomIntRange( 4, 6 );
 			codolprintln( "CoDOL zm dogs: round " + level.round_number + " is hound round " +
 				level.dog_round_count + "; the next is round " + level.next_dog_round );
 		}
@@ -428,6 +445,10 @@ waiting_for_next_dog_spawn( count, max )
 		default_wait = 2;
 
 	default_wait = default_wait - ( count / max );
+	if ( level.zm_round_mode == 0 )
+		default_wait = default_wait * 1.20;
+	else if ( level.zm_round_mode >= 2 )
+		default_wait = default_wait * 0.80;
 	if ( default_wait < 0.1 )
 		default_wait = 0.1;
 

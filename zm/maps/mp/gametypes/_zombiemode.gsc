@@ -56,9 +56,10 @@
 // CoDOL zone carries, and C1 already has a round widget that works.
 //
 // THE ROUND CAP AND THE RESCUE.  CoDOL's zombies end in a helicopter rescue
-// after a fixed number of rounds (_zombiemode_extraction.gsc has the C1
-// evidence).  scr_zm_roundcap (default 13; 0 = T5's endless rounds) is the
-// cap; C1 draws the count as "Round n/cap" by itself -- see updateRoundHud.
+// after 8/12/16 survival rounds on Easy/Medium/Hard.  Round 9/13/17 is the
+// extraction itself.  g_difficulty 3 is reserved for a future endless lobby
+// option; the current lobby only offers 0..2.  scr_zm_roundcap can still
+// override the extraction round (0 = endless) for development.
 
 
 #include maps\mp\gametypes\_zombiemode_utility;
@@ -221,9 +222,9 @@ init_hints()
 // whatever you put in as a value below.  However, if they don't exist in the
 // file, then the values below will be used."
 //
-// mp/zombiemode.csv ships in common_gametype_zm.ff, 5 columns x 106 rows,
-// NAME | EASY | MEDIUM | HARD | VETERAN; T5 reads difficulty+1, difficulty 1,
-// which is the same cell tableLookup(table, 0, name, 1) returns here.
+// mp/zombiemode.csv ships in common_gametype_zm.ff, 5 columns x 106 rows:
+// NAME | EASY | MEDIUM | HARD | VETERAN.  The selected C1 room difficulty
+// chooses columns 1/2/3; the future endless option uses Hard's column.
 init_levelvars()
 {
 	level.is_zombie_level = true;
@@ -239,14 +240,28 @@ init_levelvars()
 	level.zombies = [];
 	level.gameEnded = false;
 
-	// The rescue's round cap.  Read at gametype load, like every zombie_var.
-	level.zm_round_cap = 13;
+	// C1's room difficulty reaches the match as g_difficulty 0/1/2.
+	// Reserve 3 for a future endless option without exposing it in the lobby.
+	level.zm_round_mode = getDvarInt( "g_difficulty" );
+	if ( level.zm_round_mode < 0 || level.zm_round_mode > 3 )
+		level.zm_round_mode = 0;
+	level.zm_difficulty = level.zm_round_mode + 1;
+	if ( level.zm_difficulty > 3 )
+		level.zm_difficulty = 3;
+
+	level.zm_round_cap = 9 + level.zm_round_mode * 4;
+	level.zm_hound_rounds_goal = level.zm_round_mode + 1;
+	if ( level.zm_round_mode == 3 )
+	{
+		level.zm_round_cap = 0;
+		level.zm_hound_rounds_goal = 0;
+	}
 	if ( getDvar( "scr_zm_roundcap" ) != "" )
 		level.zm_round_cap = getDvarInt( "scr_zm_roundcap" );
 	if ( level.zm_round_cap < 0 )
 		level.zm_round_cap = 0;
 
-	column = 1;
+	column = level.zm_difficulty;
 
 	// AI
 	set_zombie_var( "zombie_health_increase",            100,  false, column );
@@ -290,6 +305,41 @@ init_levelvars()
 	// Player
 	set_zombie_var( "player_starting_health",            100 );
 	set_zombie_var( "player_health_regen_delay",          5000 );
+
+	// The shipped EASY/MEDIUM/HARD rows for spawn delay and health are all
+	// identical.  Add a small tier gradient on top of their actual values;
+	// keep the simultaneous actor cap at 24 to avoid server-frame spikes.
+	if ( level.zm_round_mode == 0 )
+	{
+		level.zombie_vars[ "zombie_spawn_delay" ] = level.zombie_vars[ "zombie_spawn_delay" ] * 1.25;
+		level.zombie_vars[ "zombie_health_start" ] = int( level.zombie_vars[ "zombie_health_start" ] * 0.85 );
+		level.zombie_vars[ "zombie_health_increase" ] = int( level.zombie_vars[ "zombie_health_increase" ] * 0.85 );
+		level.zombie_vars[ "zombie_max_ai" ] = int( level.zombie_vars[ "zombie_max_ai" ] * 0.85 );
+		level.zombie_vars[ "zombie_ai_per_player" ] = int( level.zombie_vars[ "zombie_ai_per_player" ] * 0.85 );
+		level.zm_spawn_decay = 0.97;
+		level.zm_spawn_floor = 0.30;
+	}
+	else if ( level.zm_round_mode >= 2 )
+	{
+		level.zombie_vars[ "zombie_spawn_delay" ] = level.zombie_vars[ "zombie_spawn_delay" ] * 0.75;
+		level.zombie_vars[ "zombie_health_start" ] = int( level.zombie_vars[ "zombie_health_start" ] * 1.20 );
+		level.zombie_vars[ "zombie_health_increase" ] = int( level.zombie_vars[ "zombie_health_increase" ] * 1.20 );
+		level.zombie_vars[ "zombie_max_ai" ] = int( level.zombie_vars[ "zombie_max_ai" ] * 1.10 );
+		level.zombie_vars[ "zombie_ai_per_player" ] = int( level.zombie_vars[ "zombie_ai_per_player" ] * 1.20 );
+		level.zombie_vars[ "zombie_move_speed_multiplier" ] = int( level.zombie_vars[ "zombie_move_speed_multiplier" ] * 1.25 );
+		level.zm_spawn_decay = 0.93;
+		level.zm_spawn_floor = 0.12;
+	}
+	else
+	{
+		level.zm_spawn_decay = 0.95;
+		level.zm_spawn_floor = 0.20;
+	}
+	codolprintln( "CoDOL zm: difficulty " + level.zm_round_mode + " extraction round " +
+		level.zm_round_cap + " hound rounds " + level.zm_hound_rounds_goal +
+		" spawn delay " + level.zombie_vars[ "zombie_spawn_delay" ] +
+		" health " + level.zombie_vars[ "zombie_health_start" ] +
+		" budget base " + level.zombie_vars[ "zombie_max_ai" ] );
 
 	flag_init( "all_players_connected" );
 	flag_init( "begin_spawning" );
@@ -342,7 +392,7 @@ levelMain( visionName )
 resolveStartWeapon()
 {
 	candidates = [];
-	candidates[ 0 ] = tableLookup( zombie_table(), 0, "zombie_starting_weapon", 1 );
+	candidates[ 0 ] = tableLookup( zombie_table(), 0, "zombie_starting_weapon", level.zm_difficulty );
 	candidates[ 1 ] = "coltanaconda_zm";
 	candidates[ 2 ] = "m1911_zm";
 
@@ -1053,7 +1103,7 @@ updateRoundHud()
 		"ui_hud_final_round", "" + final );
 }
 
-// The round the rescue comes after.
+// The extraction round, after the tier's survival rounds.
 is_final_round()
 {
 	return level.zm_round_cap > 0 && level.round_number >= level.zm_round_cap;
@@ -1154,6 +1204,17 @@ round_think()
 
 	for ( ;; )
 	{
+		// The extraction has its own continuous horde, not an ordinary
+		// survival wave.  The previous round already advanced the HUD and
+		// waited through the usual between-round pause.
+		if ( is_final_round() )
+		{
+			publishRoundHud();
+			level.round_start_time = getTime();
+			level thread maps\mp\gametypes\_zombiemode_extraction::extraction_start();
+			return;
+		}
+
 		// T5 DT#36173: the per-round barricade reward cap is
 		// min( 50 * round, 500 ).
 		maxreward = 50 * level.round_number;
@@ -1185,20 +1246,12 @@ round_think()
 		level.first_round = false;
 		level notify( "end_of_round" );
 
-		// The cap round survived: no next round, the rescue instead
-		// (_zombiemode_extraction).  It ends the match through "end_game".
-		if ( is_final_round() )
-		{
-			level thread maps\mp\gametypes\_zombiemode_extraction::extraction_start();
-			return;
-		}
-
-		// T5 :3948 -- the spawn delay decays 5% per round, floored at 0.08s.
+		// Tier-specific decay of the interval between successful spawn attempts.
 		timer = level.zombie_vars[ "zombie_spawn_delay" ];
-		if ( timer > 0.08 )
-			level.zombie_vars[ "zombie_spawn_delay" ] = timer * 0.95;
+		if ( timer * level.zm_spawn_decay > level.zm_spawn_floor )
+			level.zombie_vars[ "zombie_spawn_delay" ] = timer * level.zm_spawn_decay;
 		else
-			level.zombie_vars[ "zombie_spawn_delay" ] = 0.08;
+			level.zombie_vars[ "zombie_spawn_delay" ] = level.zm_spawn_floor;
 
 		// T5 :3960.
 		level.zombie_move_speed = level.round_number * level.zombie_vars[ "zombie_move_speed_multiplier" ];

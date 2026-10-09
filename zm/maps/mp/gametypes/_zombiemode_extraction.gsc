@@ -1,4 +1,4 @@
-// zm extraction: survive the round cap, then reach the rescue helicopter.
+// zm extraction: survive the tier's waves, then reach the rescue helicopter.
 //
 // CoDOL's zombies ended in a rescue, not T5's endless rounds.  Nothing of the
 // Tencent game script survives, so this file is rebuilt from what C1 ships
@@ -48,10 +48,11 @@
 //   sh_env_roadflare_burn.
 //
 // THE FLOW
-//   rounds 1 .. cap-1  every round opens with "Rescue arrives in N rounds".
-//   round cap          "Final round" (C1's round HUD draws MPUI_FINAL_ROUND).
-//   cap survived       the extraction: zombies keep coming; a character
-//                      radios for evac, HQ answers; one minute later the
+//   rounds 1 .. cap-1  the survival waves, with a final-round warning on
+//                      the last wave.
+//   round cap          extraction begins, with C1's MPUI_FINAL_ROUND HUD;
+//                      zombies keep coming, a character radios for evac,
+//                      HQ answers, and one minute later the
 //                      helicopter flies the route to its hover point.
 //   landed             "Go to the extraction point", the waypoint and a
 //                      leave timer.  A player boards by jumping at the
@@ -62,7 +63,8 @@
 //   lift-off           the boarded ride out; the rest are left to the
 //                      horde.  Anyone aboard -> the match is a WIN.
 //
-// Dvars: scr_zm_roundcap (default 13, 0 = endless rounds, no extraction),
+// Dvars: scr_zm_roundcap overrides the extraction round (default 9/13/17
+// for Easy/Medium/Hard; 0 = endless rounds, no extraction),
 // scr_zm_extract_arrive (seconds from the call to the landing, default 60),
 // scr_zm_extract_wait (seconds the helicopter waits, default 60).
 
@@ -315,8 +317,8 @@ notice_destroy_on_replace( elem )
 }
 
 // --------------------------------------------------------------------------
-// The extraction.  _zombiemode::round_think hands over here once the cap
-// round is survived; it does not return: it ends in "end_game".
+// The extraction.  _zombiemode::round_think hands over at the start of the
+// extraction round; it does not return: it ends in "end_game".
 // --------------------------------------------------------------------------
 
 extraction_start()
@@ -328,7 +330,7 @@ extraction_start()
 	level.zm_extraction_active = true;
 	level notify( "zm_extraction_start" );
 
-	codolprintln( "CoDOL zm extraction: round " + level.round_number + " survived; calling the rescue" );
+	codolprintln( "CoDOL zm extraction: round " + level.round_number + " begins; calling the rescue" );
 
 	if ( level.zm_extraction_routes.size < 1 )
 	{
