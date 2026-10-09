@@ -16,3 +16,33 @@ PATH=/c/msys64/mingw32/bin:$PATH sh build.sh
 ```
 `unpacked.z` (C1.exe's decompressed code range) is embedded as a resource; `build.sh` copies the
 result to `../Kernel33.dll`.
+
+## Parity logger (branch `parity-log`)
+`parity.c` adds a client-side snapshot-parity logger for bringing the server to retail parity. It
+writes to the game's own console log (`main\console_mp-00N.log`) through C1's Com_Printf, one line
+per finding:
+```
+^3PARITY t=<cg.time> st=<cg.snap serverTime> msg=<its messageNum> <category>: <details>
+```
+(`t/st/msg` are -1 outside a match). On load it logs `parity: logger active, N hooks installed,
+M skipped` to `Kernel33.log`, and the console log gets `PARITY logger active: N hooks installed,
+M skipped (parity_log L)` at the first menu or game frame.
+
+Categories: `event-replay` (a playerState event slot changed under the same sequence, so C1 fires
+it again: the double-shot/double-footstep class), `events` (slot overflow, unknown event),
+`event-unknown`, `pred` (prediction miss: origin, velocity or a named playerState field, client
+value vs. the value rebuilt from the snapshot at the same commandTime), `snap-entity` / `snap-client`
+/ `snap-ps` (entity numbers, order, eType, weapon index, world-gun / ground / linked-weapon entities
+missing from the snapshot, sentinel values), `asset` (a name no zone has, so the default is used,
+with the configstring index that carries it), `menu`, `localvar`.
+
+Each key prints 5 times (50 at level 2), then every 100th with `[xN]`; assets, menus and localVars
+print once per name.
+
+Toggle: dvar `parity_log` 0 off / 1 normal (default) / 2 verbose (lower prediction thresholds,
+higher limits), registered with the archive flag so the console can change it. Startup value:
+`+set parity_log N` on the command line, else the environment variable `CODOL_PARITY_LOG`, else 1.
+A startup value of 0 installs no hooks at all.
+
+Build without touching the live DLL: `PATH=/c/msys64/mingw32/bin:$PATH sh build-parity.sh` writes
+`Kernel33_parity.dll`; copy it over `../Kernel33.dll` (keep a backup) to use it.
