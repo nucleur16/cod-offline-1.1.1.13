@@ -312,6 +312,7 @@ init()
 	for ( i = 0; i < models.size; i++ )
 		precacheModel( models[ i ] );
 
+	precacheShader( "objpoint_default" );
 	precacheString( &"COOP_TAKE_MP_FAV_TROPICAL_GRAB" );
 	precacheString( &"COOP_TAKE_MP_FAV_TROPICAL_CAPTURE" );
 	precacheString( &"COOP_TAKE_MP_FAV_TROPICAL_SPRINT_HINT" );
@@ -368,7 +369,10 @@ main()
 
 	level thread civilians();
 	level thread van_blocker();
-	level thread hints();
+	// The sprint / ADS key hints are not shown: the retail recording draws
+	// neither on its triggers, and on C1 the zone strings' key token prints
+	// as "[unbound]" (the 2026-10-08 playthrough, the ADS hint at the
+	// technical).  hints() stays for a client that binds the keys.
 	level thread ai_triggers();
 
 	opening();
@@ -376,7 +380,10 @@ main()
 	level thread objectives();
 	level thread technical();
 	level thread chase_dialogue();
-	level thread ghost_intro_run();
+	// Ghost stays a voice until the end (the recording never shows him at
+	// the meet; ghost_intro sits just behind the rookie's car, where the
+	// 2026-10-08 playthrough met him and the gunmen shot at him), so
+	// ghost_intro_run() is not started.
 
 	chase();
 	ending();
@@ -439,6 +446,9 @@ player_spawned()
 	for ( i = 0; i < primaries.size; i++ )
 		text += " " + primaries[ i ];
 	log( self.name + " carries" + text );
+	for ( i = 0; i < primaries.size; i++ )
+		log( primaries[ i ] + " clip " + weaponClipSize( primaries[ i ] ) + " start " + weaponStartAmmo( primaries[ i ] ) + " max " + weaponMaxAmmo( primaries[ i ] ) +
+			", given " + self getWeaponAmmoClip( primaries[ i ] ) + " | " + self getWeaponAmmoStock( primaries[ i ] ) );
 
 	if ( !fav.opening_done )
 	{
@@ -468,16 +478,22 @@ player_spawned()
 // --------------------------------------------------------------------------
 // The cars.  The recording's rookie sits in the front passenger seat of a
 // left-hand-drive sedan facing the meet, the driver's seat empty, weapons
-// down; a second player takes the other car (player_vehicle, across the
-// street).  The authored vehicles are interiors (_viewmodel models); each is
-// shown as a script_model on the ground under its origin.
+// down.  That car is player_vehicle: the recording's interior is the dark
+// 2009 sedan (grey dashboard, a radio on it; vehicle_luxurysedan_2009_
+// viewmodel, the one with the blood layer IW4 favela hides on the player's
+// car), and its authored place (372 2402, facing west down the street) puts
+// the van's authored spawn (605 2294, facing west) behind it on the left, so
+// the van "passes on the left and stops ahead" as the recording shows.  A
+// second player takes player_vehicle2 (the cream sedan across the corner).
+// The authored vehicles are interiors (_viewmodel models); each is shown as
+// a script_model on the ground under its origin.
 // --------------------------------------------------------------------------
 
 setup_cars()
 {
 	names = [];
-	names[ 0 ] = "player_vehicle2";
-	names[ 1 ] = "player_vehicle";
+	names[ 0 ] = "player_vehicle";
+	names[ 1 ] = "player_vehicle2";
 	for ( i = 0; i < names.size; i++ )
 	{
 		v = ent( names[ i ] );
@@ -559,13 +575,12 @@ leave_cars()
 			continue;
 		car = p.coop_fav_car;
 		car playSound( "scn_mpfav_cardoor_open" );
+		eye = p getEye();
 		p unlink();
 		p maps\mp\gametypes\_coopintro::seat_lock( false );
-		spot = car.origin + anglesToRight( car.angles ) * 64 - anglesToForward( car.angles ) * ( 24 * int( i / fav.cars.size ) );
-		tr = bulletTrace( spot + ( 0, 0, 48 ), spot - ( 0, 0, 256 ), false, car );
-		if ( tr[ "fraction" ] < 1 )
-			spot = tr[ "position" ] + ( 0, 0, 1 );
+		spot = exit_spot( car, eye, int( i / fav.cars.size ) );
 		p setOrigin( spot );
+		p setPlayerAngles( car.angles );
 		p setStance( "stand" );
 		p enableWeapons();
 		p.coop_in_intro = undefined;
@@ -576,6 +591,49 @@ leave_cars()
 		log( p.name + " out of the car at " + spot );
 	}
 	fav.opening_done = true;
+}
+
+// Where a rider steps out: beside his door (the passenger side, the right),
+// a little forward or back if the door spot is blocked, then the other side.
+// A spot counts when a standing player hull fits there (playerPhysicsTrace
+// drops onto the ground under it) and the seat can see it (not through a
+// wall).  The 2026-10-08 playthrough set the rookie down in a wall corner
+// beside the cream sedan.
+exit_spot( car, eye, row )
+{
+	fwd = anglesToForward( car.angles );
+	right = anglesToRight( car.angles );
+	offsets = [];
+	offsets[ offsets.size ] = ( -24 * row, 64, 0 );
+	offsets[ offsets.size ] = ( 36, 64, 0 );
+	offsets[ offsets.size ] = ( -48, 64, 0 );
+	offsets[ offsets.size ] = ( 90, 72, 0 );
+	offsets[ offsets.size ] = ( 0, 84, 0 );
+	offsets[ offsets.size ] = ( 140, 40, 0 );
+	offsets[ offsets.size ] = ( -140, 30, 0 );
+	offsets[ offsets.size ] = ( 0, -72, 0 );
+	first = undefined;
+	for ( k = 0; k < offsets.size; k++ )
+	{
+		o = offsets[ k ];
+		c = car.origin + fwd * o[ 0 ] + right * o[ 1 ];
+		tr = bulletTrace( c + ( 0, 0, 64 ), c - ( 0, 0, 200 ), false, car );
+		if ( tr[ "fraction" ] >= 1 )
+			continue;
+		g = tr[ "position" ];
+		if ( !isDefined( first ) )
+			first = g + ( 0, 0, 1 );
+		landed = playerPhysicsTrace( g + ( 0, 0, 40 ), g + ( 0, 0, 1 ) );
+		if ( distance( landed, g + ( 0, 0, 1 ) ) > 4 )
+			continue;
+		if ( !bulletTracePassed( eye, g + ( 0, 0, 40 ), false, car ) )
+			continue;
+		log( "exit spot " + k + " " + g );
+		return g + ( 0, 0, 1 );
+	}
+	if ( isDefined( first ) )
+		return first;
+	return car.origin + right * 64;
 }
 
 // A seated rider who turns his view is looking at the world (a real client
@@ -728,9 +786,14 @@ seen_by_player( ai )
 // The meet (the recording, 1:29 .. 1:58).
 // --------------------------------------------------------------------------
 
-// The van brings Ortiz and the two informants: it passes the rookie's car
-// on the left and stops ahead of it, its back to him (the recording shows
-// the van's rear doors); its authored path (van_start) is not in the addon.
+// The van brings Ortiz and the two informants: it comes from behind the
+// rookie's car on the left, passes it and stops ahead in the street, its
+// rear doors toward him (the recording, 1:30-1:35).  It starts on the
+// authored van (605 2294, facing west: behind player_vehicle's left), as
+// IW4 favela's van does; its authored path (van_start) is not in the addon,
+// so it drives two straight legs: down the left of the street past the car,
+// then in to the stop.  MEASURED from the recording's frame at 1:36: the
+// van's rear stands about 300 units ahead and a little left of the eye.
 van_pullup()
 {
 	fav = level.fav;
@@ -740,22 +803,37 @@ van_pullup()
 		return undefined;
 	fwd = anglesToForward( car.angles );
 	left = anglesToRight( car.angles ) * -1;
-	stop = ground( car.origin + fwd * 430 + left * 130 + ( 0, 0, 40 ) );
-	start = ground( car.origin - fwd * 520 + left * 130 + ( 0, 0, 40 ) );
+	stop = ground( car.origin + fwd * 390 + left * 50 + ( 0, 0, 40 ) );
+	start = ground( car.origin - fwd * 230 + left * 108 + ( 0, 0, 40 ) );
+	angles = car.angles;
 	model = "vehicle_uaz_van";
-	if ( isDefined( v ) && isDefined( v.model ) && v.model != "" )
-		model = v.model;
+	if ( isDefined( v ) )
+	{
+		if ( isDefined( v.model ) && v.model != "" )
+			model = v.model;
+		start = ground( v.origin + ( 0, 0, 16 ) );
+		angles = flat_angles( v.angles );
+	}
+	// The first leg holds the van's lane on the car's left; the second
+	// eases in to the stop.
+	mid = start + vectorDot( ( car.origin + fwd * 170 ) - start, fwd ) * fwd;
+	mid = ground( mid + ( 0, 0, 40 ) );
 	van = spawn( "script_model", start );
-	van.angles = car.angles;
+	van.angles = angles;
 	van setModel( model );
 	if ( isDefined( v ) )
 		v hide();
 	fav.van = van;
 	van playSound( "scn_favela_van_pullup" );
 	van playLoopSound( "veh_uaz_engine_low" );
-	van moveTo( stop, 4, 0, 1.6 );
-	log( "van pulls up from " + start + " to " + stop );
-	wait( 4 );
+	van moveTo( mid, 2.4, 0.4, 0 );
+	log( "van pulls up from " + start + " via " + mid + " to " + stop );
+	wait( 2.4 );
+	van moveTo( stop, 1.8, 0, 1.2 );
+	van rotateTo( flat_angles( vectorToAngles( stop - mid ) ) * 0.5 + angles * 0.5, 0.9 );
+	wait( 0.9 );
+	van rotateTo( angles, 0.9 );
+	wait( 0.9 );
 	van stopLoopSound();
 	van playSound( "scn_favela_van_skid2stop" );
 	wait( 0.6 );
@@ -769,11 +847,7 @@ van_pullup()
 spawn_meet( van )
 {
 	fav = level.fav;
-	node = struct( "opening_scene_node" );
-	meet = ( 157, 2239, 283 );
-	if ( isDefined( node ) )
-		meet = node.origin;
-	meet = ground( meet + ( 0, 0, 16 ) );
+	meet = meet_point();
 	back = van.origin - anglesToForward( van.angles ) * 90 + anglesToRight( van.angles ) * 48;
 
 	spawner = ent( "chase_target_spawner" );
@@ -809,8 +883,30 @@ spawn_meet( van )
 	log( "the meet: Ortiz and " + fav.informants.size + " informants walk to " + meet );
 }
 
+// Where Ortiz brings the informants: in the street between the rookie's car
+// and the van, a little left of the car's line, so the meet plays in front
+// of the windscreen as the recording frames it (the authored
+// opening_scene_node, 157 2239, sits 40 degrees off the car's nose: IW4
+// favela's scene animations carried the actors well away from it).
+meet_point()
+{
+	car = level.fav.cars[ 0 ];
+	if ( !isDefined( car ) )
+	{
+		node = struct( "opening_scene_node" );
+		if ( isDefined( node ) )
+			return ground( node.origin + ( 0, 0, 16 ) );
+		return ground( ( 157, 2239, 299 ) );
+	}
+	fwd = anglesToForward( car.angles );
+	left = anglesToRight( car.angles ) * -1;
+	return ground( car.origin + fwd * 210 + left * 70 + ( 0, 0, 40 ) );
+}
+
 // The gunmen: the three authored opening spawners (deserteagle), enemy
-// soldiers holding fire until the informants are shot.
+// soldiers holding fire until the informants are shot.  They wait at the
+// meet's left side, clear of the van's lane, facing it (the recording: three men already standing
+// there when the van pulls up).
 spawn_gunmen()
 {
 	fav = level.fav;
@@ -825,9 +921,19 @@ spawn_gunmen()
 		if ( !isDefined( ai ) )
 			continue;
 		ai.ignoreall = true;
+		car = fav.cars[ 0 ];
+		if ( isDefined( car ) )
+		{
+			meet = meet_point();
+			fwd = anglesToForward( car.angles );
+			left = anglesToRight( car.angles ) * -1;
+			spot = ground( meet + left * 115 + fwd * ( -30 + 45 * fav.gunmen.size ) + ( 0, 0, 40 ) );
+			ai forceTeleport( spot, flat_angles( vectorToAngles( meet - spot ) ) );
+			log( "gunman " + fav.gunmen.size + " waits at " + spot );
+		}
 		fav.gunmen[ fav.gunmen.size ] = ai;
 	}
-	log( fav.gunmen.size + " gunmen at the blue car" );
+	log( fav.gunmen.size + " gunmen wait at the meet" );
 }
 
 opening()
@@ -947,6 +1053,7 @@ ortiz_marker()
 		return;
 	objective_add( 1, "active", fav.ortiz.origin );
 	objective_onEntity( 1, fav.ortiz );
+	ortiz_marker_hud( true );
 }
 
 // Price's "we need him alive" when a player shoots Ortiz (the recording,
@@ -1074,6 +1181,7 @@ objectives()
 		}
 		objective_add( 0, "active", o.origin );
 		level.fav.objective_point = o;
+		point_marker( o.origin );
 		log( "objective point " + list[ i ] + " at " + o.origin + " (until " + pairs[ i ] + ")" );
 		for ( ;; )
 		{
@@ -1096,6 +1204,50 @@ objectives()
 		level.fav.respawn = o.origin;
 	}
 	objective_delete( 0 );
+	point_marker();
+}
+
+// The 3D markers the recording draws: a dot with the distance on the next
+// objective point (e.g. "21m"), and one over Ortiz.  A world-space waypoint
+// HUD element, as the crash-site mission draws its markers; the floating
+// "take alive" label over Ortiz is objective_setpointertextoverride, which
+// this server does not register (M2.5), so he carries the dot alone.
+point_marker( origin )
+{
+	if ( isDefined( level.fav.point_marker ) )
+		level.fav.point_marker destroy();
+	level.fav.point_marker = undefined;
+	if ( !isDefined( origin ) )
+		return;
+	wp = newHudElem();
+	wp.x = origin[ 0 ];
+	wp.y = origin[ 1 ];
+	wp.z = origin[ 2 ] + 24;
+	wp.alpha = 0.9;
+	wp.hidewheninmenu = true;
+	wp setShader( "objpoint_default", 8, 8 );
+	wp setWaypoint( true, true );
+	level.fav.point_marker = wp;
+}
+
+ortiz_marker_hud( on )
+{
+	if ( isDefined( level.fav.ortiz_marker ) )
+		level.fav.ortiz_marker destroy();
+	level.fav.ortiz_marker = undefined;
+	ortiz = level.fav.ortiz;
+	if ( !on || !isDefined( ortiz ) )
+		return;
+	wp = newHudElem();
+	wp.x = ortiz.origin[ 0 ];
+	wp.y = ortiz.origin[ 1 ];
+	wp.z = ortiz.origin[ 2 ] + 80;
+	wp setTargetEnt( ortiz );
+	wp.alpha = 0.9;
+	wp.hidewheninmenu = true;
+	wp setShader( "objpoint_default", 8, 8 );
+	wp setWaypoint( true, false );
+	level.fav.ortiz_marker = wp;
 }
 
 // The AI-only triggers Ortiz crosses (spawnflags 9: AI_AXIS | NOTPLAYER):
@@ -1398,8 +1550,9 @@ ghost_intro_run()
 // him; Price stops Ghost from beating him and has him taken to the landing
 // zone; mission complete.  The tackle and beating are map animations C1
 // does not load, so Ortiz falls (run_pain_fall), lies on his back
-// (dying_back_idle) and Ghost kneels by him (exposed_crouch_idle_alert_v1),
-// with the zone's punch and takedown sounds.
+// (dying_back_idle) and Ghost kneels over him (casual_crouch_idle), with the
+// zone's punch and takedown sounds.  The view then blurs out as the
+// recording's does (setBlurForPlayer).
 // --------------------------------------------------------------------------
 
 ending()
@@ -1438,12 +1591,18 @@ ending()
 		ortiz notify( "coop_cast_pose" );
 	}
 	objective_delete( 1 );
+	ortiz_marker_hud( false );
 	fav.tackled = true;
 	if ( isDefined( ghost ) && isDefined( ortiz ) )
 	{
-		ghost forceTeleport( ground( ortiz.origin + anglesToForward( ortiz.angles ) * 28 + ( 0, 0, 8 ) ),
+		ghost forceTeleport( ground( ortiz.origin + anglesToForward( ortiz.angles ) * 16 + ( 0, 0, 8 ) ),
 			flat_angles( vectorToAngles( ortiz.origin - ghost.origin ) ) );
-		ghost.coop_idle_anim = %exposed_crouch_idle_alert_v1;
+		// casual_crouch_idle, the kneel the other coop missions' cast hold
+		// (common_human, common_gametype_coop).  exposed_crouch_idle_alert_v1
+		// is listed there too, but the 2026-10-08 playthrough shows Ghost
+		// standing in the bind pose while the server played it (its clip
+		// ran to t 1.000 and held: a non-looping clip the client drops).
+		ghost.coop_idle_anim = %casual_crouch_idle;
 		ghost setAnimKnobAll( ghost.coop_idle_anim, %body, 1, 0.3, 1 );
 		ghost notify( "coop_cast_pose" );
 		level thread ghost_punches( ortiz );
@@ -1462,6 +1621,10 @@ ending()
 	radio( "favela_pri_0272", 4.5 );
 	level notify( "coop_fav_punches_over" );
 	radio( "favela_gst_10", 2 );
+	// 4:15 the view blurs and the mission is over.
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+		players[ i ] setBlurForPlayer( 8, 2 );
 	wait( 1.5 );
 }
 
