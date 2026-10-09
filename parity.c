@@ -319,7 +319,8 @@ __attribute__((used)) void __cdecl ParityEvents(int localClient, const BYTE *ops
     const int *oldEv = (const int *)(ops + 0xC);
     char key[64];
 
-    if (seq - old > 4) {
+    /* ops is zeroed on map start / respawn (0x45EF70), so a huge jump is a reset, not lost events */
+    if (seq - old > 4 && seq - old < 64 && old > 0) {
         ParityReport(0, "events", "overflow", "%d new playerState events in one frame (seq %d -> %d), "
                      "only the newest 4 slots exist; %d never fired", seq - old, old, seq, seq - old - 4);
     }
@@ -421,6 +422,13 @@ __attribute__((used)) void __cdecl ParityPredCheck(const float *delta, const BYT
     memcpy(&len, &lenBits, sizeof(len));
     int cmdTime = g_prev.commandTime;
 
+    /* A jump this large is a spawn or teleport: the whole state changes at once, so it gets one
+     * line of its own and the field comparison is skipped for this frame. */
+    if (len > 64.0f) {
+        ParityReport(0, "pred", "teleport", "origin jumped %.1f units at commandTime %d (spawn/teleport?), fields "
+                     "not compared this frame", len, cmdTime);
+        return;
+    }
     if (len > (level >= 2 ? 0.01f : 0.1f))
         ParityReport(0, "pred", "origin", "origin error %.3f (client-predicted minus from-snapshot %.3f %.3f %.3f) "
                      "at commandTime %d", len, delta[0], delta[1], delta[2], cmdTime);
