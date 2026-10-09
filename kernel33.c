@@ -28,6 +28,7 @@
  * stub makes; that is how VirtualAlloc/VirtualProtect are intercepted.
  */
 #include <windows.h>
+#include <imm.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -789,6 +790,111 @@ static void PatchGpuRating(void)
     Log("gpu rating: benchmark clamped to %d, low-spec texture floors reset once", GPU_RATING_MAX);
 }
 
+/* Chinese text input on any system locale. The game's text is GBK: it converts with code page
+ * 936 everywhere it converts at all (0x580679, 0x5BD0C6, 0x6A5B5D, 0x70384A, ...). Text typed
+ * into the ANSI main window does not reach it as GBK, though: Windows converts it with the
+ * system ANSI code page, so on a 1252 (Western) system every Chinese character arrives as '?'
+ * and with the "UTF-8 for worldwide language support" option it arrives as UTF-8 bytes that the
+ * game then reads as GBK. Two places, both byte-checked:
+ *   - IME results. The main WndProc (0x633590) offers WM_IME_* to Scaleform first (event 0x1E,
+ *     0x633A26); what Scaleform leaves goes to DefWindowProcA @ 0x633B6F, which reads the
+ *     result with ImmGetCompositionStringA and posts it back as WM_IME_CHAR / WM_CHAR in the ANSI
+ *     code page. That call goes to ImeDefWindowProc instead: for the main window's
+ *     WM_IME_COMPOSITION it takes GCS_RESULTSTR as UTF-16, converts it to GBK and feeds the bytes
+ *     to the WndProc as WM_CHAR (0x6339AC queues each as an SE_CHAR event), exactly what a
+ *     Chinese-locale system delivers, then lets DefWindowProcA do the rest without the result.
+ *   - Paste. 0x62EED0 reads GetClipboardData(CF_TEXT) @ 0x62EEE5, which Windows synthesizes from
+ *     the Unicode clipboard with a locale code page. ClipboardGbk returns CF_UNICODETEXT converted
+ *     to GBK; the caller only locks, copies and unlocks it, so the block is freed on the next
+ *     paste. Characters with no GBK form become '?', as they would on a Chinese system. */
+#define GAME_WNDPROC_VA      0x00633590u
+#define WNDPROC_DEFPROC_VA   0x00633B6Fu
+#define DEFWINDOWPROCA_SLOT  0x00B42420u
+#define CLIPBOARD_CALL_VA    0x0062EEE5u
+#define GETCLIPBOARDDATA_SLOT 0x00B4242Cu
+#define GAME_CODEPAGE        936
+
+static LRESULT WINAPI ImeDefWindowProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    if (msg == WM_IME_COMPOSITION && (lp & GCS_RESULTSTR) && hwnd == *(HWND *)(DWORD_PTR)MAIN_HWND_VA) {
+        HIMC imc = ImmGetContext(hwnd);
+        LONG bytes = imc ? ImmGetCompositionStringW(imc, GCS_RESULTSTR, NULL, 0) : 0;
+        if (bytes > 0) {
+            WCHAR wide[256];
+            char gbk[512];
+            if (bytes > (LONG)sizeof(wide)) bytes = sizeof(wide);
+            bytes = ImmGetCompositionStringW(imc, GCS_RESULTSTR, wide, bytes);
+            int n = bytes > 0 ? WideCharToMultiByte(GAME_CODEPAGE, 0, wide, bytes / 2, gbk, sizeof(gbk), NULL, NULL) : 0;
+            for (int i = 0; i < n; i++)
+                ((WNDPROC)(DWORD_PTR)GAME_WNDPROC_VA)(hwnd, WM_CHAR, (BYTE)gbk[i], 1);
+        }
+        if (imc) ImmReleaseContext(hwnd, imc);
+        lp &= ~(GCS_RESULTSTR | GCS_RESULTCLAUSE | GCS_RESULTREADSTR | GCS_RESULTREADCLAUSE);
+        if (!lp) return 0;
+    }
+    return DefWindowProcA(hwnd, msg, wp, lp);
+}
+
+static HGLOBAL g_clipGbk;
+
+static HANDLE WINAPI ClipboardGbk(UINT format)
+{
+    if (format != CF_TEXT) return GetClipboardData(format);
+    HANDLE src = GetClipboardData(CF_UNICODETEXT);
+    const WCHAR *wide = src ? (const WCHAR *)GlobalLock(src) : NULL;
+    if (!wide) return GetClipboardData(CF_TEXT);
+    int n = WideCharToMultiByte(GAME_CODEPAGE, 0, wide, -1, NULL, 0, NULL, NULL);
+    HGLOBAL dst = n > 0 ? GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, n) : NULL;
+    char *gbk = dst ? (char *)GlobalLock(dst) : NULL;
+    if (gbk) {
+        WideCharToMultiByte(GAME_CODEPAGE, 0, wide, -1, gbk, n, NULL, NULL);
+        GlobalUnlock(dst);
+    }
+    GlobalUnlock(src);
+    if (!gbk) {
+        if (dst) GlobalFree(dst);
+        return GetClipboardData(CF_TEXT);
+    }
+    if (g_clipGbk) GlobalFree(g_clipGbk);
+    g_clipGbk = dst;
+    return dst;
+}
+
+/* Replaces "call dword ptr [slot]" (FF 15 slot) with "call hook ; nop". */
+static BOOL RedirectIndirectCall(DWORD va, DWORD slot, void *hook)
+{
+    BYTE *call = (BYTE *)(DWORD_PTR)va;
+    if (!Readable(call, 6) || call[0] != 0xFF || call[1] != 0x15 || memcmp(call + 2, &slot, 4) != 0)
+        return FALSE;
+    BYTE code[6] = { 0xE8, 0, 0, 0, 0, 0x90 };
+    LONG rel = (LONG)((DWORD_PTR)hook - (va + 5));
+    memcpy(code + 1, &rel, 4);
+    WriteCode(call, code, sizeof(code));
+    return TRUE;
+}
+
+static void PatchGbkInput(void)
+{
+    static const BYTE kWndProc[] = { 0x55, 0x8B, 0xEC, 0x83, 0xE4, 0xF8, 0x83, 0xEC, 0x4C };
+    static const BYTE kDefArgs[] = { 0x8B, 0x55, 0x14, 0x52, 0x53, 0x57, 0x56 }; /* push lp, wp, msg, hwnd */
+    static const BYTE kClipArg[] = { 0x6A, 0x01 };                               /* push CF_TEXT */
+    BYTE *proc = (BYTE *)(DWORD_PTR)GAME_WNDPROC_VA;
+    BYTE *def = (BYTE *)(DWORD_PTR)WNDPROC_DEFPROC_VA;
+    BYTE *clip = (BYTE *)(DWORD_PTR)CLIPBOARD_CALL_VA;
+    if (Readable(proc, sizeof(kWndProc)) && memcmp(proc, kWndProc, sizeof(kWndProc)) == 0 &&
+        Readable(def - 7, 7) && memcmp(def - 7, kDefArgs, 7) == 0 &&
+        RedirectIndirectCall(WNDPROC_DEFPROC_VA, DEFWINDOWPROCA_SLOT, ImeDefWindowProc))
+        Log("gbk input: IME results reach the game as GBK");
+    else
+        Log("gbk input: bytes at 0x%08X / 0x%08X do not match, IME text uses the ANSI code page",
+            GAME_WNDPROC_VA, WNDPROC_DEFPROC_VA);
+    if (Readable(clip - 2, 2) && memcmp(clip - 2, kClipArg, 2) == 0 &&
+        RedirectIndirectCall(CLIPBOARD_CALL_VA, GETCLIPBOARDDATA_SLOT, ClipboardGbk))
+        Log("gbk input: paste converts the Unicode clipboard to GBK");
+    else
+        Log("gbk input: bytes at 0x%08X do not match, paste uses the ANSI code page", CLIPBOARD_CALL_VA);
+}
+
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 static void __cdecl TakeOver(void)
 {
@@ -801,6 +907,7 @@ static void __cdecl TakeOver(void)
     PatchGpuRating();
     PatchAltTab();
     PatchRawMouse();
+    PatchGbkInput();
     PatchScoresOpen();
     PatchPatchDir();
     Log("entering game at 0x%08X", GAME_ENTRY_VA);

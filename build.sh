@@ -7,6 +7,6 @@ BIN=/c/msys64/mingw32/bin
 [ -f unpacked.z ] || { echo "unpacked.z missing: run python make_exe.py first"; exit 1; }
 "$BIN/windres.exe" -O coff -i kernel33.rc -o kernel33_res.o
 "$BIN/gcc.exe" -O2 -Wall -shared -s -static -static-libgcc -o Kernel33.dll kernel33.c kernel33_res.o kernel33.def \
-    -lz -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat
+    -lz -limm32 -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat
 cp Kernel33.dll ../Kernel33.dll
 echo "built Kernel33.dll"
