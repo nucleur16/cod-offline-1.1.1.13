@@ -322,6 +322,13 @@ levelMain( visionName )
 		VisionSetNaked( visionName, 0 );
 		VisionSetPain( visionName );
 	}
+
+	// The map's own systems -- destructibles, exploders, pipes, the dynamic
+	// world, minefields -- are the shared level loader's, as T5's
+	// maps\_zombiemode_load runs maps\_load_common.  It names no multiplayer
+	// module (common_scripts/_load_common.gsc header), and the level script's
+	// main() is the precache window it needs.
+	common_scripts\_load_common::main();
 }
 
 // The mode's weapon set is named in mp/zombiemode.csv, and CoDOL publishes zm
@@ -603,6 +610,17 @@ Callback_PlayerDisconnect()
 Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, timeOffset )
 {
 	if ( level.gameEnded )
+		return;
+
+	// A dead player still in the CLIENT_DEAD entity handler has no die
+	// function, so finishPlayerDamage on him is the script error "No die
+	// handler for player entity type 12" that ends the match (MEASURED on a
+	// coop probe: a second hit on a killed player).  The map's destructibles
+	// (common_scripts/_load_common: 48 on zm_prototype_sh, 114 on
+	// zm_asylum_sh) are one more source of explosions near a body.  IW4
+	// maps\mp\gametypes\_damage.gsc Callback_PlayerDamage_internal returns
+	// first thing for a victim that is not isReallyAlive.
+	if ( !isAlive( self ) )
 		return;
 
 	// Aboard the rescue helicopter (_zombiemode_extraction::board).
