@@ -277,6 +277,11 @@ sentry_initSentry( sentryType, owner )
 		self setLeftArc( 180 );
 		self setRightArc( 180 );
 		self setTopArc( 80 );
+		// T5 _turret_killstreak.gsc (tow turret, the model and weapon C1
+		// ships): "Set the scan angle to look at the sky." Without it the
+		// idle sweep (C1 0x57b610) steers the launcher to scanning pitch 0
+		// and scans level, like the sentry gun. Negative pitch is up.
+		self setScanningPitch( -35.0 );
 	}
 	
 	self sentry_setOwner( owner );
