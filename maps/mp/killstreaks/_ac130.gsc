@@ -39,7 +39,8 @@ init()
 	
 	level._effect[ "cloud" ] 					= loadfx( "misc/ac130_cloud" );
 	level._effect[ "beacon" ] 					= loadfx( "misc/ir_beacon_coop" );
-	level._effect[ "ac130_explode" ] 			= loadfx( "explosions/aerial_explosion_ac130_coop" );
+	// CoDOL: IW4 effect not shipped in any CoDOL zone (parity log 2026-10-09); C1 common_gametype_mp has aerial_explosion_heli_large.
+	level._effect[ "ac130_explode" ] 			= loadfx( "explosions/aerial_explosion_heli_large" );
 	level._effect[ "ac130_flare" ] 				= loadfx( "misc/flares_cobra" );
 	level._effect[ "ac130_light_red" ] 			= loadfx( "misc/aircraft_light_wingtip_red" );
 	level._effect[ "ac130_light_white_blink" ] 	= loadfx( "misc/aircraft_light_white_blink" );

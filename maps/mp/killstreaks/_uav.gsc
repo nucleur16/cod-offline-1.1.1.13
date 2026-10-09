@@ -24,7 +24,8 @@ init()
 	assert( level.radarViewTime > 7 );
 	assert( level.uavBlockTime > 7 );
 
-	level.uav_fx[ "explode" ] = loadFx( "explosions/helicopter_explosion_cobra_low" );
+	// CoDOL: IW4 effect not shipped in any CoDOL zone (parity log 2026-10-09); C1 common_gametype_mp has aerial_explosion_heli.
+	level.uav_fx[ "explode" ] = loadFx( "explosions/aerial_explosion_heli" );
 
 	level.killStreakFuncs["uav"] = ::tryUseUAV;
 	level.killStreakFuncs["double_uav"] = ::tryUseDoubleUAV;

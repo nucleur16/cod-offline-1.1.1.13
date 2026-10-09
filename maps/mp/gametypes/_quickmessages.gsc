@@ -4,9 +4,14 @@ init()
 	game["menu_quickstatements"] = "quickstatements";
 	game["menu_quickresponses"] = "quickresponses";
 
-	precacheMenu(game["menu_quickcommands"]);
-	precacheMenu(game["menu_quickstatements"]);
-	precacheMenu(game["menu_quickresponses"]);
+	// CoDOL: C1 ships no quickcommands/quickstatements/quickresponses menus.
+	// common_mp has one menufile, ui_mp/scriptmenus/quickmessages.menu, whose
+	// "quickmessages" menu pages through mp/quickMessagesTable.csv on the
+	// client (dvar quick_msg_cur_menu) and answers scriptMenuResponse 1..9.
+	// Precaching the three IW4 names made the client load three missing
+	// menufiles (parity log 2026-10-09); precache the menu C1 has instead.
+	game["menu_quickmessages"] = "quickmessages";
+	precacheMenu(game["menu_quickmessages"]);
 	precacheHeadIcon("talkingicon");
 
 	precacheString( &"QUICKMESSAGE_FOLLOW_ME" );

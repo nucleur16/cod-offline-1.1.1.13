@@ -92,8 +92,10 @@ init()
 	level.fx_heli_dust = loadfx ("treadfx/heli_dust_default");
 	level.fx_heli_water = loadfx ("treadfx/heli_water");
 
-	makeHeliType( "cobra", "explosions/helicopter_explosion_cobra_low", ::defaultLightFX );
-	addAirExplosion( "cobra", "explosions/aerial_explosion_cobra_low_mp" );
+	// CoDOL: IW4 effect not shipped in any CoDOL zone (parity log 2026-10-09); the cobra and apache
+	// explosions use C1's generic helicopter set from common_gametype_mp.
+	makeHeliType( "cobra", "explosions/helicopter_explosion", ::defaultLightFX );
+	addAirExplosion( "cobra", "explosions/aerial_explosion_heli" );
 
 	makeHeliType( "pavelow", "explosions/helicopter_explosion_pavelow", ::pavelowLightFx );
 	addAirExplosion( "pavelow", "explosions/aerial_explosion_pavelow_mp" );
@@ -104,8 +106,8 @@ init()
 	makeHeliType( "hind", "explosions/helicopter_explosion_hind_chernobyl", ::defaultLightFX );
 	addAirExplosion( "hind", "explosions/aerial_explosion_hind_chernobyl_mp" );
 
-	makeHeliType( "apache", "explosions/helicopter_explosion_apache", ::defaultLightFX );
-	addAirExplosion( "apache", "explosions/aerial_explosion_apache_mp" );
+	makeHeliType( "apache", "explosions/helicopter_explosion", ::defaultLightFX );
+	addAirExplosion( "apache", "explosions/aerial_explosion_heli_large" );
 
 	makeHeliType( "littlebird", "explosions/aerial_explosion_littlebird_mp", ::defaultLightFX );
 	addAirExplosion( "littlebird", "explosions/aerial_explosion_littlebird_mp" );

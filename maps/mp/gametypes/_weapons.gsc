@@ -187,7 +187,7 @@ init()
 	for( row = 1; weaponStatsRowId( row ) != ""; row++ )
 	{
 		weapon = weaponStatsBaseName( row );
-		stow_model = tableLookupByRow( statsTable, row, 9 );
+		stow_model = codolStowModel( tableLookupByRow( statsTable, row, 9 ) );
 
 		if ( weapon == "" || stow_model == "" )
 			continue;
@@ -228,6 +228,29 @@ init()
 	array_thread( getEntArray( "misc_turret", "classname" ), ::turret_monitorUse );
 	
 //	thread dumpIt();
+}
+
+
+// C1's mp/coWeapStatsTableInGame.csv column 9 still names IW4's stow models for
+// the four launchers (weapon_rpg7_stow, weapon_at4_stow, weapon_javelin_stow,
+// weapon_stinger_stow). No CoDOL zone ships them; common_gametype_mp carries
+// the CoDOL renames wea_<w>_<w>_blk_stow instead (docs/zone_assets/ALL_xmodel.txt).
+// Precaching the IW4 names published configstrings the client resolved to its
+// default model (parity log 2026-10-09, CS 2183-2186).
+codolStowModel( model )
+{
+	switch ( model )
+	{
+		case "weapon_rpg7_stow":
+			return "wea_rpg_rpg_blk_stow";
+		case "weapon_at4_stow":
+			return "wea_at4_at4_blk_stow";
+		case "weapon_javelin_stow":
+			return "wea_javelin_javelin_blk_stow";
+		case "weapon_stinger_stow":
+			return "wea_stinger_stinger_blk_stow";
+	}
+	return model;
 }
 
 

@@ -28,7 +28,8 @@ init()
 	level.spawnGlow["friendly"] = loadfx( "misc/flare_ambient_green" );
 	level.c4Death = loadfx( "explosions/oxygen_tank_explosion" );
 
-	level.spawnFire = loadfx( "props/barrelexp" );
+	// CoDOL: IW4 effect not shipped in any CoDOL zone (parity log 2026-10-09); props/barrelexp ships only in a few map zones.
+	level.spawnFire = loadfx( "explosions/small_vehicle_explosion" );
 	
 	precacheModel( level.spawnGlowModel["friendly"] );
 	precacheModel( level.spawnGlowModel["enemy"] );
