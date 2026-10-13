@@ -32,6 +32,9 @@
 //     and 2 of row dvarInt( "fo_splash_ref" )) and field_order_win (3 s,
 //     mp_challenge_complete, FO_COMPLETE and the reward: locstring( "@" +
 //     column 4, column 7 ), which C1 cannot format -- see foComplete).
+//     Their menus have no timeout of their own: only C1's slot timer closes
+//     them, and it loses them when the next splash in slot 0 arrives first,
+//     so the server closes them too (_hud_message::codolRegisterClosedSplashMenu).
 //   * mp/cofieldordertable.csv names the sets: (ref, 1, 3) for
 //     coFieldOrderBootcamp and zm_FieldOrder, (ref, 1, 9) for
 //     coFieldOrderMPOnboarding. Each ref is also a row of
@@ -101,6 +104,11 @@ init()
 
 	precacheMenu( "fo_display" );
 	precacheMenu( "fo_complete_time" );
+	// The two splash menus have no timeout of their own and nothing else
+	// closes them; the splash queue closes them when their time is up
+	// (_hud_message::codolRegisterClosedSplashMenu).
+	maps\mp\gametypes\_hud_message::codolRegisterClosedSplashMenu( "field_order_get" );
+	maps\mp\gametypes\_hud_message::codolRegisterClosedSplashMenu( "field_order_win" );
 
 	level.foSets = [];
 	summary = "";

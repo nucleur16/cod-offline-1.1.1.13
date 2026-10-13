@@ -9,9 +9,13 @@ init()
 	precacheString( &"MP_THIRDPLACE_NAME" );
 	precacheString( &"MP_MATCH_BONUS_IS" );
 
-	precacheMenu( "splash" );
+	// CoDOL: C1's menu bank (configstrings 4243..4274) has 32 slots and
+	// mp/constConfigStrings_mp.csv already fills 0..25 with the retail
+	// server's own precaches. "splash" and "defcon" are not among them and no
+	// script opens or closes them by name -- CG_ShowSplash opens a splash's
+	// column-11 menu by name, not by slot -- so they are not precached; their
+	// slots go to the field order splash menus (codolRegisterClosedSplashMenu).
 	precacheMenu( "challenge" );
-	precacheMenu( "defcon" );
 	precacheMenu( "killstreak" );
 	precacheMenu( "perk_display" );
 	precacheMenu( "perk_hide" );
@@ -142,6 +146,70 @@ initNotifyMessage()
 	self.splashQueue[1] = [];
 	self.splashQueue[2] = [];
 	self.splashQueue[3] = [];
+
+	// Splash menus this server closes itself, by slot; see
+	// codolRegisterClosedSplashMenu. A round restart or rotation reconnects
+	// the player without closing C1's menus, so close any left from before.
+	self.codolSplashMenu = [];
+	if ( isDefined( level.codolClosedSplashMenus ) && !self.isbot )
+	{
+		foreach ( menu in level.codolClosedSplashMenus )
+			self closePopupMenu( menu );
+	}
+}
+
+
+// CoDOL: splash menus that nothing on the client closes but the slot timer.
+//
+// C1 times a splash per slot: CG_ShowSplash (0x00469140) writes {row, start,
+// duration, optionalNumber} into cg+0x174384+slot*16 (start = the client's
+// wall clock at receipt, duration = splashTable column 4) and opens the
+// column-11 menu (0x005F5740 at 0x004692C4). Its per-frame timer 0x0044E390
+// (called from 0x00497A7B) closes, for each slot 0..3 whose start + duration
+// has passed, the menu of the row the slot holds NOW (column 11 again,
+// Menus_FindByName 0x005F95C0 + Menus_Close 0x005F9AE0). A second splash in
+// the same slot overwrites the record, so the first splash's menu is never
+// closed by the timer.
+//
+// That is harmless for the stock splash menus: splash, killstreak,
+// killstreak_pickup, promotion, promotion_weapon and challenge each close all
+// the others in onOpen, and splash also fades its own items by timer_mark.
+// patch_common_mp's field_order_get and field_order_win (read from the live
+// client's menu assets) have no visibility or alpha expression at all, and
+// no splash menu's onOpen closes them (only perk_gained and intel_found close
+// field_order_win; nothing closes field_order_get, and neither closes the
+// other). The queue below releases a slot exactly `duration` after the 'w'
+// was sent, and C1 starts its timer when the 'w' arrives, so a queued splash
+// (a capture or kill medal, a killstreak, the win splash behind the get
+// splash) lands in the same snapshot-interval as the expiry and wins the race
+// about half the time -- every time when the first 'w' was delayed more than
+// the second. The field order splash then stayed on screen for good.
+//
+// So the server closes these menus itself through closePopupMenu ('v' <menu
+// slot>: 0x00467FC0 -> 0x005F5790, the same FindByName + Menus_Close the
+// timer runs; closing a menu that is already closed only drops it from the
+// open list). It is sent when the splash's duration has passed, and again
+// before anything else is shown in that slot; reliable commands arrive in
+// order, so the close always reaches the client before the next splash.
+codolRegisterClosedSplashMenu( menu )
+{
+	if ( !isDefined( level.codolClosedSplashMenus ) )
+		level.codolClosedSplashMenus = [];
+	if ( isDefined( level.codolClosedSplashMenus[ menu ] ) )
+		return;
+	precacheMenu( menu );
+	level.codolClosedSplashMenus[ menu ] = menu;
+}
+
+
+codolCloseSplashMenu( slot )
+{
+	if ( !isDefined( self.codolSplashMenu ) || !isDefined( self.codolSplashMenu[ slot ] ) )
+		return;
+	menu = self.codolSplashMenu[ slot ];
+	self.codolSplashMenu[ slot ] = undefined;
+	self closePopupMenu( menu );
+	self maps\mp\gametypes\_fieldorders::foTrace( "closed splash menu " + menu + " (slot " + slot + ") at " + getTime() );
 }
 
 
@@ -670,11 +738,24 @@ actionNotifyMessage( actionData )
 		if ( isDefined( actionData.clientDvar ) )
 			self setClientDvar( actionData.clientDvar, actionData.clientDvarValue );
 
+		// A field order splash still open from a cut-short worker (reset)
+		// goes before anything else takes the slot.
+		self codolCloseSplashMenu( slot );
+
 		if ( isDefined( actionData.optionalNumber ) )
 			self ShowHudSplash( actionData.name, actionData.slot, actionData.optionalNumber );
 		else
 			self ShowHudSplash( actionData.name, actionData.slot );
-	
+
+		menu = tableLookup( "mp/splashTable.csv", 0, actionData.name, 11 );
+		if ( isDefined( level.codolClosedSplashMenus ) && isDefined( level.codolClosedSplashMenus[ menu ] ) )
+		{
+			if ( !isDefined( self.codolSplashMenu ) )
+				self.codolSplashMenu = [];
+			self.codolSplashMenu[ slot ] = menu;
+		}
+		self maps\mp\gametypes\_fieldorders::foTrace( "splash " + actionData.name + " (menu " + menu + ") in slot " + slot + " at " + getTime() );
+
 		self.doingSplash[ slot ] = actionData;
 	
 		duration = stringToFloat( tableLookup( "mp/splashTable.csv", 0, actionData.name, 4 ) );
@@ -693,6 +774,10 @@ actionNotifyMessage( actionData )
 		// C1 uses column 4 as its complete slot lifetime. Do not reopen a
 		// same-menu splash 50 ms before the previous client slot expires.
 		wait ( duration );
+
+		// Close a field order splash now: C1's own timer loses it whenever
+		// the next splash in this slot arrives first (codolRegisterClosedSplashMenu).
+		self codolCloseSplashMenu( slot );
 	}
 
 	self codolFinishNotify( slot );
@@ -1322,4 +1407,4 @@ updateOutcome( firstTitle, secondTitle, thirdTitle )
 canShowSplash( type )
 {
 	
-}
+}
