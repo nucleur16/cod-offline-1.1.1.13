@@ -754,78 +754,27 @@ spawnPlayer()
 	not dismissed until killedby_card_hide at respawn, so both lasted the whole
 	death-to-respawn window.
 
-	Opening and immediately closing performs every write the menu makes and
-	leaves no menu open.  closeMenu() is C1's two-pass teardown (see
-	src/codol/script/codol_script_menu.c); q,r,r leave in one reliable batch
-	that C1 executes in one CG_ExecuteNewServerCommands loop (0x0046A1A0), so
-	no frame is rendered with the UI key-catcher set.  (These menus close
-	themselves in onOpen, so the first r already takes pass two; the second
-	covers a menu that stays open, and sv_main.c sub_530FC0 no longer folds it
-	into the first.)
+	So these menus are never opened with openMenu ('q').  openPopupMenu sends
+	C1 'u' (CG_ServerCommand 0x00469816 -> 0x00467EE0), which resolves the
+	same precached slot and calls 0x005F5740 -> Menus_Open 0x006014D0
+	directly: no KEYCATCH_UI write (only Menus_OpenByName's 0x005F509B makes
+	one), no menu-mode change, and no "a legacy menu is visible" refusal or
+	pending slot, so it cannot be deferred behind a splash either.  It is the
+	path C1 itself uses for HUD-type menus: CG_ShowSplash opens every splash
+	menu through the same 0x005F5740 (0x004692C4).  Menus_Open runs onOpen,
+	which performs the setLocalVarInt writes and then "close" "self", so the
+	menu is gone again in the same command batch and nothing needs closing.
+	The old q,r,r pulse set KEYCATCH_UI for every card, perk and field-order
+	stamp; whenever C1 parked the 'q' (a splash up while the menu mode was not
+	6) the menu opened after both closes and left the key-catcher set until a
+	key press: the cursor flashed over the game, and the HUD menus gated on
+	!ui_active (0x005DF340 = keyCatchers & KEYCATCH_UI: weaponbar_hd and the
+	field_orders panel that shares its visibility statement) vanished.  The
+	first 'r' also cleared the open-menu list, closing a splash on screen.
 */
 pulseScriptMenu( menuName )
 {
-	if ( !isDefined( self.codolMenuPulses ) )
-		self.codolMenuPulses = [];
-
-	if ( !self.codolMenuPulses.size && !self codolClientSplashVisible() )
-	{
-		self openMenu( menuName );
-		self closeMenu();
-		return;
-	}
-
-	// Keep order (display before hide); a runaway queue drops its oldest.
-	if ( self.codolMenuPulses.size >= 16 )
-	{
-		for ( i = 1; i < self.codolMenuPulses.size; i++ )
-			self.codolMenuPulses[i-1] = self.codolMenuPulses[i];
-		self.codolMenuPulses[i-1] = undefined;
-	}
-	self.codolMenuPulses[self.codolMenuPulses.size] = menuName;
-	if ( self.codolMenuPulses.size == 1 )
-		self thread codolDrainMenuPulses();
-}
-
-/*
-	The q,r,r pulse is only atomic when C1 opens the menu at once.  Its 'q'
-	handler (0x00467D80) parks the name in the pending slot 0x016EC420 when
-	Menus_OpenByName (0x005F4FB0) refuses, and CG (0x0046C8BF) retries it every
-	frame AFTER the command batch -- so both closes have already run and the
-	card opens later with KEYCATCH_UI set: the mouse cursor until a key press.
-	Menus_OpenByName refuses while a legacy menu is visible (0x00606E00) and
-	the UI menu mode (0x0283464C) is not 6 or 7; UI_SetActiveMenu sets it to 3
-	for the Scaleform team/class popups and to 0 when they or 'v' close, and
-	only a successful legacy open puts it back to 6.  In a match the visible
-	legacy menu is the client's own "splash" (every ShowHudSplash), so a card
-	pulsed during a splash after a class change stuck the cursor.  Hold the
-	pulses until the recipient's splash window has passed.
-*/
-codolDrainMenuPulses()
-{
-	self endon( "disconnect" );
-
-	while ( self.codolMenuPulses.size )
-	{
-		while ( self codolClientSplashVisible() )
-			wait ( 0.05 );
-
-		menuName = self.codolMenuPulses[0];
-		for ( i = 1; i < self.codolMenuPulses.size; i++ )
-			self.codolMenuPulses[i-1] = self.codolMenuPulses[i];
-		self.codolMenuPulses[i-1] = undefined;
-
-		self openMenu( menuName );
-		self closeMenu();
-	}
-}
-
-// codolClientSplashUntil is the server time the client's last splash slot
-// expires (_hud_message::codolNoteClientSplash); the margin covers the 'w'
-// command's delivery latency.
-codolClientSplashVisible()
-{
-	return isDefined( self.codolClientSplashUntil ) && getTime() < self.codolClientSplashUntil + 300;
+	self openPopupMenu( menuName );
 }
 
 hidePerksAfterTime( delay )

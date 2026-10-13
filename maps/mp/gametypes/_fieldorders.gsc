@@ -14,15 +14,24 @@
 //       hint     locstring( "@" + column 2 ) while getFOStatus(i) == 0
 //       reward   locstring( "@" + column 4, getFOReward(i) )  ("&&1 XP/GP")
 //       bar      getFOPercent(i) = progress / column 5
-//     and slides a slot in after the fo_display scriptmenu stamps
-//     ui_show_fo = milliseconds(), out 500 ms after fo_complete_time stamps
-//     ui_fo_complete_time. fo_table is the client dvar naming the table
-//     ("mp/cofieldorderbootcamp.csv"); C1.exe reads it with Dvar_FindVar
-//     (0x5e326f) and nothing in the client ever sets it.
+//     x = 5 + clamp( 1 - ( milliseconds() - localvarint( "ui_show_fo" ) +
+//     i*500 ) / 200, 0, 1 ) * -256: the fo_display scriptmenu's stamp only
+//     slides a new slot in; an old or missing stamp leaves it in place. The
+//     completed slot (progress >= target) shows for 500 ms after
+//     fo_complete_time stamps ui_fo_complete_time and then slides out. The
+//     whole menu reuses weaponbar_hd's visibility statement (block-3 replay
+//     of patch_common_mp): !ui_active && !g_hardcore && !flashbanged && no
+//     remote-killstreak weapon && !isempjammed && !scr_gameended &&
+//     !selecting_location && !spectatingfree && cg_weaponBarHide == 0, where
+//     ui_active (0x5df340) is keyCatchers & KEYCATCH_UI -- so the stamps go
+//     out as popups ('u'), never openMenu ('q'), see
+//     _playerlogic::pulseScriptMenu. fo_table is the client dvar naming the
+//     table ("mp/cofieldorderbootcamp.csv"); C1.exe reads it with
+//     Dvar_FindVar (0x5e326f) and nothing in the client ever sets it.
 //   * Splash rows field_order_get (6 s, mp_bonus_start, FO_RECEIVED, column 1
 //     and 2 of row dvarInt( "fo_splash_ref" )) and field_order_win (3 s,
 //     mp_challenge_complete, FO_COMPLETE and the reward: locstring( "@" +
-//     column 4, column 7 )).
+//     column 4, column 7 ), which C1 cannot format -- see foComplete).
 //   * mp/cofieldordertable.csv names the sets: (ref, 1, 3) for
 //     coFieldOrderBootcamp and zm_FieldOrder, (ref, 1, 9) for
 //     coFieldOrderMPOnboarding. Each ref is also a row of
@@ -344,16 +353,20 @@ foAssign( slot, order )
 	state.done = false;
 	self.foSlots[ slot ] = state;
 
+	// Every HUD line resolves the goal row through fo_table; send it with each
+	// order so a client that lost or never got the first one recovers.
+	self setClientDvar( "fo_table", self.foSet.table );
 	self setFOGoal( slot, order.index );
 	self setFOProgress( slot, 0 );
 	self setFOReward( slot, order.reward );
 	self setFOStatus( slot, 0 );
 
-	// fo_display stamps ui_show_fo, which slides the HUD slot in.
+	// fo_display stamps ui_show_fo, which slides the HUD slot in. Opened as a
+	// popup ('u'): no UI key-catcher, so no cursor and no !ui_active HUD hide.
 	self maps\mp\gametypes\_playerlogic::pulseScriptMenu( "fo_display" );
 
-	self setClientDvar( "fo_splash_ref", order.index );
-	self foSplash( "field_order_get", "mp_bonus_start" );
+	// field_order_get reads columns 1 and 2 of row fo_splash_ref.
+	self foSplash( "field_order_get", "mp_bonus_start", order.index );
 
 	codolPrintLn( "CoDOL field orders: " + self.name + " slot " + slot + " got " + self.foSet.ref
 		+ " row " + order.index + " " + order.ref + " (" + order.kind + " x" + order.target
@@ -371,11 +384,15 @@ foClear( slot )
 }
 
 
-foSplash( name, defaultSound )
+foSplash( name, defaultSound, splashRef )
 {
 	actionData = spawnStruct();
 	actionData.name = name;
 	actionData.type = "fieldorder";
+	// Set when the splash is shown (_hud_message::actionNotifyMessage), so a
+	// queued win splash cannot rewrite the row of a get splash still on screen.
+	actionData.clientDvar = "fo_splash_ref";
+	actionData.clientDvarValue = splashRef;
 	actionData.sound = tableLookup( "mp/splashTable.csv", 0, name, 9 );
 	if ( actionData.sound == "" )
 		actionData.sound = defaultSound;
@@ -424,8 +441,18 @@ foComplete( slot )
 	// briefly and slides out.
 	self maps\mp\gametypes\_playerlogic::pulseScriptMenu( "fo_complete_time" );
 
-	self setClientDvar( "fo_splash_ref", order.index );
-	self foSplash( "field_order_win", "mp_challenge_complete" );
+	// field_order_win's only dynamic line is locString( "@" + column 4,
+	// column 7 ) of row fo_splash_ref, and C1 cannot format it: locString
+	// (0x005E2A80) takes every string argument after the first as an "@"
+	// reference -- it drops the first character of "50" and localizes "0"
+	// (SEH_LocalizeTextMessage 0x005DA400 returns one-character keys as they
+	// are), so a 50 reward read "0 XP" and a 100+ reward failed to localize
+	// ("00") and the line went blank. Only a numeric argument is substituted,
+	// and tablelookupbyrow (0x005E2530) always returns a string. Row 0 ("none")
+	// makes the line fail cleanly to empty; the panel shows the reward
+	// (locString( "@" + column 4, int( getFOReward( i ) ) )) while the order
+	// runs, and giveRankXP's score popup shows the XP it paid.
+	self foSplash( "field_order_win", "mp_challenge_complete", 0 );
 
 	self foGrantReward( order );
 	self thread foCreditChallenge( self.foSet.ref );
