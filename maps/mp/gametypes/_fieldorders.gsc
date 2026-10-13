@@ -44,11 +44,33 @@
 //     FO_GP), 5 target, 6 (0), 7 reward amount, 8 / 9 flags, 10 required perk,
 //     11 required killstreak, 12 C1's notify name for an action order.
 //
+//   * WHO GETS THEM (MEASURED in mp_playlists_shipRetail_cb2.info, the
+//     lobby's copy of C1's playlist file): playlist 1 is "Boot Camp"
+//     (新手训练, league 0, LEAGUE0_BOOT_CAMP): flag combattraining, gametype
+//     combat ("Combat Training"), "combat training with bots on small maps",
+//     mp_killhouse_sh, 5 minutes, and "players can no longer join once they
+//     reach level 10". Playlist 3 (人机训练, LEAGUE3_COMBAT_TRAINING) is the
+//     other combattraining (bots) playlist. coFieldOrderBootcamp is that
+//     playlist's set. Challenge 931 (onboarding) carries the same title and
+//     description string as 930, FO_CH_BOOTCAMP ("是的长官", "complete &&1
+//     multiplayer field orders"), so the onboarding orders belong to the same
+//     novice flow. Nothing names a field order set for the ranked
+//     playlists 4..14.
+//   * THE END (MEASURED): each set's challenge row has one tier, 930 / 932 at
+//     100 completed orders (200 XP), 931 at 10. Within a match the set's
+//     column 2 caps the orders (3 bootcamp, 9 onboarding), which is why a
+//     player who finishes three quick orders sees no more that match.
+//
 // WHAT THIS SCRIPT DOES
 //
-//   A human player gets the MP onboarding orders in table order until the
+//   Only in a bot match (foBotMatch: gametype combat, or every enemy is a
+//   bot): a player gets the MP onboarding orders in table order until the
 //   onboarding challenge (931) counts all of them, then three random
-//   bootcamp orders per match, one at a time. Progress comes from kills
+//   bootcamp orders per match, one at a time, until the bootcamp challenge
+//   (930) reaches its final tier (100): after that no more. scr_fieldorders_
+//   anymatch 1 lifts the bot-match rule, scr_fieldorders_permatch N replaces
+//   column 2, scr_fieldorders_trace 1 logs every decision and progress step.
+//   Progress comes from kills
 //   (_damage.gsc calls onEnemyKilled) and from the player notifies C1's
 //   column 12 names. A completed order pays its reward (FO_XP through
 //   giveRankXP, FO_GP through codol_creditGP into the match report, which
@@ -75,6 +97,7 @@ init()
 	level.fieldOrders = getIntProperty( "scr_fieldorders", 1 );
 	if ( !level.fieldOrders )
 		return;
+	level.foTrace = getIntProperty( "scr_fieldorders_trace", 0 );
 
 	precacheMenu( "fo_display" );
 	precacheMenu( "fo_complete_time" );
@@ -96,6 +119,9 @@ init()
 		if ( foSet.slots > 2 )
 			foSet.slots = 2;
 		foSet.perMatch = int( tableLookupByRow( "mp/cofieldordertable.csv", row, 2 ) );
+		perMatch = getIntProperty( "scr_fieldorders_permatch", 0 );
+		if ( perMatch > 0 )
+			foSet.perMatch = perMatch;
 		foSet.orders = foLoadOrders( foSet.table );
 		level.foSets[ toLower( ref ) ] = foSet;
 		summary = summary + " " + ref + "(" + foSet.orders.size + " orders, " + foSet.perMatch + "/match)";
@@ -198,7 +224,11 @@ foPlayer()
 
 	foSet = self foChooseSet();
 	if ( !isDefined( foSet ) || !foSet.orders.size || foSet.perMatch < 1 )
+	{
+		self foTrace( "no set this match" );
 		return;
+	}
+	self foTrace( "set " + foSet.ref + ", " + foSet.perMatch + " orders this match" );
 
 	self.foSet = foSet;
 	self.foSlots = [];
@@ -220,7 +250,7 @@ foPlayer()
 
 
 // Onboarding until its challenge has counted every onboarding order, the
-// bootcamp set after that.
+// bootcamp set after that until its challenge's final tier, then none.
 foChooseSet()
 {
 	// scr_fieldorders_set names a set ref to use for everyone (tests).
@@ -243,7 +273,83 @@ foChooseSet()
 			return onboarding;
 		}
 	}
+
+	if ( !isDefined( bootcamp ) )
+		return undefined;
+	// 930 "complete 100 multiplayer field orders" is the set's whole career:
+	// once its final tier is reached there are no more bootcamp orders.
+	done = self foChallengeProgress( bootcamp.ref );
+	lastTarget = foFinalTarget( bootcamp.ref );
+	if ( lastTarget > 0 && done >= lastTarget )
+	{
+		codolPrintLn( "CoDOL field orders: " + self.name + " has completed " + done + " of "
+			+ bootcamp.ref + "'s " + lastTarget + " orders; no more field orders" );
+		return undefined;
+	}
 	return bootcamp;
+}
+
+
+// The last tier's target of a set's career challenge (0 when it has none).
+foFinalTarget( ref )
+{
+	if ( !isDefined( level.challengeInfo ) || !isDefined( level.challengeInfo[ ref ] ) ||
+	     !isDefined( level.challengeInfo[ ref ][ "targetval" ] ) )
+		return 0;
+	targets = level.challengeInfo[ ref ][ "targetval" ];
+	lastTarget = 0;
+	for ( tier = 1; isDefined( targets[ tier ] ); tier++ )
+		lastTarget = targets[ tier ];
+	return lastTarget;
+}
+
+
+foIsBot( player )
+{
+	if ( isDefined( player.isbot ) && player.isbot )
+		return true;
+	return maps\mp\gametypes\_codol_bots::isCombatBot( player );
+}
+
+
+// The MP sets are the Boot Camp / combat-training sets: C1's playlists 1 and
+// 3 (flag combattraining, gametype combat) put a party against bots. A match
+// counts when its gametype is combat, or when every enemy of this player is a
+// bot (the lobby's rooms run war or dm against scr_codol_bots training bots).
+// Human teammates do not matter. Returns 1 (bot match), 0 (a human enemy),
+// -1 (no enemy yet: bots are still being added).
+foBotMatch()
+{
+	if ( getDvarInt( "scr_fieldorders_anymatch" ) || getDvar( "g_gametype" ) == "combat" )
+		return 1;
+
+	enemies = 0;
+	foreach ( player in level.players )
+	{
+		if ( !isDefined( player ) || player == self )
+			continue;
+		if ( !isDefined( player.team ) || player.team == "spectator" )
+			continue;
+		if ( level.teamBased && isDefined( self.team ) && player.team == self.team )
+			continue;
+		if ( !foIsBot( player ) )
+			return 0;
+		enemies++;
+	}
+	if ( !enemies )
+		return -1;
+	return 1;
+}
+
+
+foTrace( text )
+{
+	if ( !isDefined( level.foTrace ) || !level.foTrace )
+		return;
+	name = "level";
+	if ( isPlayer( self ) )
+		name = self.name;
+	codolPrintLn( "CoDOL field orders trace: " + name + ": " + text );
 }
 
 
@@ -253,7 +359,9 @@ foChallengeProgress( ref )
 	{
 		if ( isDefined( self.pers[ "foProgress_" + ref ] ) )
 			return self.pers[ "foProgress_" + ref ];
-		return 0;
+		// Test hook for a player without a career (bots): start every set's
+		// count here, e.g. 100 to see the bootcamp set end.
+		return getIntProperty( "scr_fieldorders_testprogress", 0 );
 	}
 	if ( maps\mp\gametypes\_missions::ch_challengeId( ref ) < 0 )
 		return 0;
@@ -269,14 +377,32 @@ foSlotLoop( slot )
 	for ( ;; )
 	{
 		if ( self.foAssigned >= self.foSet.perMatch )
+		{
+			// The set's per-match count (cofieldordertable column 2) is
+			// spent: nothing more this match, and C1 has no HUD line for it.
+			codolPrintLn( "CoDOL field orders: " + self.name + " finished this match's "
+				+ self.foSet.perMatch + " " + self.foSet.ref + " orders" );
 			return;
+		}
 
-		while ( !isReallyAlive( self ) )
+		// Bot matches only; wait out a human enemy (or the bots still joining)
+		// instead of giving up on the match.
+		for ( waited = 0; ; waited++ )
+		{
+			botMatch = self foBotMatch();
+			if ( botMatch > 0 && isReallyAlive( self ) )
+				break;
+			if ( waited % 20 == 0 )
+				self foTrace( "slot " + slot + " waiting: bot match " + botMatch + ", alive " + isReallyAlive( self ) );
 			wait ( 0.5 );
+		}
 
 		order = self foPickOrder();
 		if ( !isDefined( order ) )
+		{
+			self foTrace( "slot " + slot + " has no available " + self.foSet.ref + " order" );
 			return;
+		}
 
 		self.foAssigned++;
 		self.foUsed[ order.ref ] = true;
@@ -422,6 +548,7 @@ foAdvance( kind, amount, filter )
 		if ( state.progress > state.order.target )
 			state.progress = state.order.target;
 		self setFOProgress( slot, state.progress );
+		self foTrace( "slot " + slot + " " + state.order.ref + " " + state.progress + "/" + state.order.target );
 
 		if ( state.progress >= state.order.target )
 			self foComplete( slot );
@@ -533,6 +660,9 @@ onEnemyKilled( victim, sWeapon, sMeansOfDeath )
 	bullet = ( sMeansOfDeath == "MOD_RIFLE_BULLET" || sMeansOfDeath == "MOD_PISTOL_BULLET" ||
 	           sMeansOfDeath == "MOD_HEAD_SHOT" );
 	weaponClass = getWeaponClass( sWeapon );
+	if ( isDefined( level.foTrace ) && level.foTrace )
+		self foTrace( "kill " + sWeapon + " " + sMeansOfDeath + " class " + weaponClass
+			+ " ads " + self playerAds() + " stance " + self getStance() );
 
 	if ( foIsLethal( sWeapon ) )
 		self foAdvance( "kill_let" );
