@@ -23,6 +23,17 @@
 //   set scr_codol_equiptest "tozombie <clientnum> <dist>"
 //       stands a client <dist> units west of the nearest live zombie in
 //       level.zombies, facing it (a target for a thrown lethal).
+//   set scr_codol_equiptest "knife <thrower> <victim>"
+//       arms <thrower> with throwingknife_mp, stands <victim> 300 units in
+//       front of it and throws the knife at the victim's chest; the knife's
+//       position is logged twice a second for 12 s. A trailing "tough"
+//       lets the victim survive the knife and kills it 2.5 s later.
+//   set scr_codol_equiptest "knifeat <thrower> <x> <y> <z>"
+//       the same throw at a point; "knifeat <thrower> wall 0 0" aims at
+//       the first wall 250..700 units away, "... ground 0 0" at the floor.
+//   set scr_codol_equiptest "knifepick <client>"
+//       stands a client on the last knife and holds use; logs its knife ammo
+//       before and after.
 //   set scr_codol_equiptest "state <clientnum>"
 //       prints a client's alive flag, session state, health and team.
 //   set scr_codol_equiptest "weapflags <clientnum>" | "weapflags name <weapon>"
@@ -76,6 +87,12 @@ watchDvar()
             tokens[0] == "tozombie" )
         {
             positionVerb( tokens );
+            continue;
+        }
+        if ( ( tokens[0] == "knife" && tokens.size > 2 ) || ( tokens[0] == "knifeat" && tokens.size > 4 ) ||
+            ( tokens[0] == "knifepick" && tokens.size > 1 ) )
+        {
+            level thread knifeTrial( tokens );
             continue;
         }
         if ( tokens[0] == "perk" && tokens.size > 2 )
@@ -662,4 +679,171 @@ akimboTrial( weapon, mask, seconds )
     }
     codolPrintLn( "CoDOL akimbo: done right " + self getCurrentWeaponClipAmmo( "right" ) + " left " +
         self getCurrentWeaponClipAmmo( "left" ) );
+}
+
+// "knife", "knifeat" and "knifepick" (see the header): a real thrown
+// throwingknife_mp through the bot's lethal button and native aim, then its
+// entity followed until it is gone.
+knifeTrial( tokens )
+{
+    level endon( "game_ended" );
+    player = playerByNumber( int( tokens[1] ) );
+    if ( !isDefined( player ) || !isAlive( player ) )
+    {
+        codolPrintLn( "CoDOL knife test: no live client " + tokens[1] );
+        return;
+    }
+    if ( tokens[0] == "knifepick" )
+    {
+        if ( !isDefined( level.codolKnifeTestKnife ) )
+        {
+            codolPrintLn( "CoDOL knife test: no knife to pick up" );
+            return;
+        }
+        before = player getAmmoCount( "throwingknife_mp" );
+        spot = level.codolKnifeTestKnife.origin;
+        trace = bulletTrace( spot + ( 0, 0, 8 ), spot - ( 0, 0, 256 ), false, level.codolKnifeTestKnife );
+        player setOrigin( trace["position"] );
+        wait 0.3;
+        codolPrintLn( "CoDOL knife test: " + player.name + " stands on the knife, ammo " + player getAmmoCount( "throwingknife_mp" ) +
+            ", knife still there " + isDefined( level.codolKnifeTestKnife ) );
+        player codol_botPressButtons( 40, 0.6 );   // 0x08 activate | 0x20 use-reload
+        wait 1.0;
+        codolPrintLn( "CoDOL knife test: " + player.name + " at " + player.origin + " knife ammo " + before + " -> " +
+            player getAmmoCount( "throwingknife_mp" ) + ", knife still there " + isDefined( level.codolKnifeTestKnife ) );
+        return;
+    }
+    slots = [];
+    for ( i = 0; i < 3; i++ )
+        slots[i] = player getOffhandEquipment( i );
+    slots[0] = "throwingknife_mp";
+    player giveWeapon( "throwingknife_mp" );
+    player giveStartAmmo( "throwingknife_mp" );
+    player setOffhandEquipment( slots[0], slots[1], slots[2] );
+    victim = undefined;
+    if ( tokens[0] == "knife" )
+    {
+        victim = playerByNumber( int( tokens[2] ) );
+        if ( !isDefined( victim ) || !isAlive( victim ) )
+        {
+            codolPrintLn( "CoDOL knife test: no live victim " + tokens[2] );
+            return;
+        }
+        forward = anglesToForward( ( 0, player.angles[1], 0 ) );
+        spot = player.origin + ( forward[0] * 300, forward[1] * 300, 0 );
+        trace = bulletTrace( spot + ( 0, 0, 48 ), spot - ( 0, 0, 256 ), false, victim );
+        victim setOrigin( trace["position"] );
+        // A still target: the bot AI would otherwise walk out of the throw.
+        victim freezeControls( true );
+        victim thread knifeVictimThaw();
+        // "knife <thrower> <victim> tough": the victim survives the knife and
+        // dies 2 s later, carrying it.
+        if ( tokens.size > 3 && tokens[3] == "tough" )
+        {
+            victim.maxhealth = 400;
+            victim.health = 400;
+            victim thread knifeVictimLaterDeath();
+        }
+        wait 0.3;
+        point = victim.origin + ( 0, 0, 44 );
+    }
+    else if ( tokens[2] == "wall" || tokens[2] == "ground" )
+    {
+        // "knifeat <thrower> wall|ground 0 0": the first wall straight ahead
+        // at chest height, or the floor 200 units ahead.
+        forward = anglesToForward( ( 0, player.angles[1], 0 ) );
+        eye = player.origin + ( 0, 0, 48 );
+        point = player.origin + ( forward[0] * 200, forward[1] * 200, 0 );
+        if ( tokens[2] == "wall" )
+        {
+            // The first wall 250..700 units away, searched round the thrower.
+            for ( yaw = 0; yaw < 360; yaw += 30 )
+            {
+                dir = anglesToForward( ( 0, player.angles[1] + yaw, 0 ) );
+                hit = bulletTrace( eye, eye + ( dir[0] * 700, dir[1] * 700, 0 ), false, player );
+                if ( hit["fraction"] < 1 && distance( eye, hit["position"] ) > 250 )
+                {
+                    point = hit["position"];
+                    break;
+                }
+            }
+        }
+    }
+    else
+        point = ( float( tokens[2] ), float( tokens[3] ), float( tokens[4] ) );
+    level.codolKnifeTestKnife = undefined;
+    player thread knifeCatch();
+    codolPrintLn( "CoDOL knife test: " + player.name + " at " + player.origin + " throws at " + point + " (ammo " +
+        player getAmmoCount( "throwingknife_mp" ) + ")" );
+    thrown = false;
+    for ( attempt = 0; attempt < 6 && !thrown; attempt++ )
+    {
+        thrown = player codol_botThrowOffhand( 0, point );
+        if ( !thrown )
+            wait 0.5;
+    }
+    if ( !thrown )
+    {
+        codolPrintLn( "CoDOL knife test: " + player.name + " refused the throw" );
+        return;
+    }
+    for ( t = 0; t < 40 && !isDefined( level.codolKnifeTestKnife ); t++ )
+        wait 0.05;
+    knife = level.codolKnifeTestKnife;
+    if ( !isDefined( knife ) )
+    {
+        codolPrintLn( "CoDOL knife test: no knife left the hand" );
+        return;
+    }
+    for ( t = 0; t < 24 && isDefined( knife ); t++ )
+    {
+        line = "CoDOL knife test: t=" + ( t * 0.5 ) + " knife " + knife getEntityNumber() + " at " + knife.origin;
+        if ( isDefined( victim ) )
+            line += " victim alive " + isAlive( victim ) + " at " + victim.origin;
+        codolPrintLn( line );
+        wait 0.5;
+    }
+    if ( !isDefined( knife ) )
+        codolPrintLn( "CoDOL knife test: knife entity is gone" );
+}
+
+knifeCatch()
+{
+    self endon( "disconnect" );
+    self notify( "codol_knife_catch" );
+    self endon( "codol_knife_catch" );
+    for ( ;; )
+    {
+        self waittill( "grenade_fire", grenade, weapon );
+        if ( weapon == "throwingknife_mp" && isDefined( grenade ) )
+        {
+            level.codolKnifeTestKnife = grenade;
+            return;
+        }
+    }
+}
+
+knifeVictimThaw()
+{
+    self endon( "disconnect" );
+    self thread knifeVictimThawOnDeath();
+    wait 6;
+    self freezeControls( false );
+}
+
+knifeVictimLaterDeath()
+{
+    self endon( "disconnect" );
+    self endon( "death" );
+    wait 2.5;
+    codolPrintLn( "CoDOL knife test: " + self.name + " health " + self.health + ", now killed" );
+    self.maxhealth = 100;
+    self suicide();
+}
+
+knifeVictimThawOnDeath()
+{
+    self endon( "disconnect" );
+    self waittill( "death" );
+    self freezeControls( false );
 }
