@@ -22,6 +22,9 @@
 //       a spectating test client picks the team and class0, as _dev.gsc's do.
 //   set scr_codol_chtest "arm <client> <weapon>"
 //       give the client the weapon and put it in hand.
+//   set scr_codol_chtest "armbase <client> <base weapon>"
+//       give the client the bare composed form of a stock weapon ("*a 68 0"
+//       for javelin_mp), as a class would, and put it in hand.
 //   set scr_codol_chtest "show <client>"
 //       the client's perk challenge progress and derived tiers.
 #include maps\mp\_utility;
@@ -78,6 +81,10 @@ watchDvar()
                 a switchToWeapon( tokens[2] );
             }
             break;
+        case "armbase":
+            if ( tokens.size > 2 )
+                a armBase( tokens[2] );
+            break;
         case "join":
             if ( tokens.size > 2 )
                 a thread join( tokens[2] );
@@ -117,6 +124,40 @@ perkRefs()
     return strTok( "ch_quickdraw_pro ch_stalker_pro ch_marksman_pro ch_flakjacket_pro ch_engineer_pro ch_paint_pro ch_bulletpaint ch_sleightofhand_pro ch_bulletaccuracy_pro", " " );
 }
 
+// The bare composed form of a stock weapon ("*a 68 0" is javelin_mp), as a
+// class gives it; the base index is the weapon's slot in the published
+// registry, found by asking the native for each slot's base.
+armBase( base )
+{
+    for ( index = 2; index < 512; index++ )
+    {
+        weapon = "*a " + index + " 0";
+        if ( codol_getWeaponBaseName( weapon ) != base )
+            continue;
+        self giveWeapon( weapon );
+        self giveMaxAmmo( weapon );
+        self switchToWeapon( weapon );
+        report( self.name + " arms " + weapon + " (" + base + ")" );
+        return;
+    }
+    report( "no composed slot for " + base );
+}
+
+weaponRefs()
+{
+    refs = [];
+    foreach ( weapon in self getWeaponsListPrimaries() )
+    {
+        base = codolWeaponBase( weapon );
+        foreach ( prefix in strTok( "ch_marksman_ pr_marksman_ ch_expert_ pr_expert_", " " ) )
+        {
+            if ( isDefined( level.challengeInfo[prefix + base] ) )
+                refs[refs.size] = prefix + base;
+        }
+    }
+    return refs;
+}
+
 admit()
 {
     self.codolChTest = true;
@@ -125,6 +166,15 @@ admit()
         self.challengeData = [];
     foreach ( ref in perkRefs() )
         self.challengeData[ref] = self maps\mp\gametypes\_missions::ch_getState( ref );
+    // The weapon challenges of the guns it holds, keyed as C1 keys them by
+    // the full base of a composed class weapon ("ch_marksman_m4_mp").
+    foreach ( ref in self weaponRefs() )
+    {
+        status = self maps\mp\gametypes\_missions::ch_getState( ref );
+        if ( status == 0 )
+            status = 1;
+        self.challengeData[ref] = status;
+    }
     report( self.name + " admitted" );
     self show();
 }
@@ -135,7 +185,10 @@ show()
     foreach ( weapon in self getWeaponsListPrimaries() )
         text += " " + weapon;
     text += ";";
-    foreach ( ref in perkRefs() )
+    refs = perkRefs();
+    foreach ( ref in self weaponRefs() )
+        refs[refs.size] = ref;
+    foreach ( ref in refs )
     {
         status = "-";
         if ( isDefined( self.challengeData ) && isDefined( self.challengeData[ref] ) )
