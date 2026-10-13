@@ -64,6 +64,9 @@
 /* playerState (C1 offsets: src/codol/snapshot/codol_player_fields.inc in the server repo,
  * docs/CODOL_C1_MOVEMENT_LAYOUT.md, src/codol/weapon/codol_weapon_state.h). */
 #define PS_COMMANDTIME         0x000
+#define PS_PMTYPE              0x004
+#define CG_SNAPBUF             0x35E8   /* cg's two snapshot_t buffers, 0x556B0 apart */
+#define CG_SNAPBUF_SIZE        0x556B0
 #define PS_VELOCITY            0x028
 #define PS_GROUNDENT           0x0A8
 #define PS_EVENTSEQ            0x0F0
@@ -486,6 +489,10 @@ __attribute__((used)) void __cdecl ParityPredCheck(const float *delta, const BYT
                      "not compared this frame", len, cmdTime);
         return;
     }
+    /* A pm_type change (death, spawn into spectator, intermission) is the server's decision,
+     * never predicted: skip the frame below level 2, as for a teleport. */
+    if (level < 2 && *(const int *)(cg + PS_PMTYPE) != (int)g_prev.fields[0] /* kPredFields[0] is pm_type */)
+        return;
     if (len > (level >= 2 ? 0.01f : 0.1f))
         ParityReport(0, "pred", "origin", "origin error %.3f (client-predicted minus from-snapshot %.3f %.3f %.3f) "
                      "at commandTime %d", len, delta[0], delta[1], delta[2], cmdTime);
@@ -553,7 +560,15 @@ static BOOL InSnap(const BYTE *bits, int num)
 __attribute__((used)) void __cdecl ParitySnapshot(int ok, const BYTE *snap, int num)
 {
     if (!ok) return;
-    int slot = g_snapBuf[0] == snap ? 0 : g_snapBuf[1] == snap ? 1 : !g_snapBuf[0] ? 0 : 1;
+    /* The slot is the cg buffer the snapshot lives in. Assigning slots by first sight left a
+     * stale pointer in slot 0 once cg moved (reconnect, map change), so most lines read msg=-1. */
+    int slot = -1;
+    const BYTE *cg = ParityCg();
+    if (cg && snap >= cg + CG_SNAPBUF) {
+        DWORD_PTR d = (DWORD_PTR)(snap - (cg + CG_SNAPBUF));
+        if (d % CG_SNAPBUF_SIZE == 0 && d / CG_SNAPBUF_SIZE < 2) slot = (int)(d / CG_SNAPBUF_SIZE);
+    }
+    if (slot < 0) slot = g_snapBuf[0] == snap ? 0 : g_snapBuf[1] == snap ? 1 : !g_snapBuf[0] ? 0 : 1;
     g_snapBuf[slot] = snap;
     g_snapNum[slot] = num;
     if (!ParityLevel()) return;
@@ -630,8 +645,15 @@ __attribute__((used)) void __cdecl ParitySnapshot(int ok, const BYTE *snap, int 
         }
     }
 
+    /* Ground 0 while spectating, in intermission (pm_type 5/6) or right after ClientSpawn is
+     * what retail sends too: C1's ClientSpawn memsets the client (0x50F6EA) and neither its
+     * spectator nor its intermission arm writes ps+0xA8. Level 2 still shows them. */
     int ground = *(const int *)(snap + PS_GROUNDENT);
-    if (ground >= 0 && ground < ENTITYNUM_WORLD && ground != self && !InSnap(bits, ground)) {
+    int pmType = *(const int *)(snap + PS_PMTYPE);
+    BOOL retailZero = ground == 0 && (ParityLevel() < 2);
+    BOOL noMove = (pmType == 5 || pmType == 6) && ParityLevel() < 2;
+    if (!retailZero && !noMove &&
+        ground >= 0 && ground < ENTITYNUM_WORLD && ground != self && !InSnap(bits, ground)) {
         ParityReport(0, "snap-ps", "groundEntityNum", "playerState groundEntityNum %d is not in snapshot %d",
                      ground, num);
     }
