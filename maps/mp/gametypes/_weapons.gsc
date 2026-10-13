@@ -545,7 +545,8 @@ watchWeaponChange()
 
 	self.bothBarrels = undefined;
 
-	if ( isSubStr( weapon, "ranger" ) )
+	// A class ranger is composed ("*a ..."): test its base, not the name.
+	if ( isSubStr( codolWeaponBase( weapon ), "ranger" ) )
 		self thread watchRangerUsage( weapon );
 
 	while(1)
@@ -556,7 +557,7 @@ watchWeaponChange()
 
 		self.bothBarrels = undefined;
 
-		if ( isSubStr( newWeapon, "ranger" ) )
+		if ( isSubStr( codolWeaponBase( newWeapon ), "ranger" ) )
 			self thread watchRangerUsage( newWeapon );
 
 		if ( tokedNewWeapon[0] == "gl" || ( tokedNewWeapon.size > 2 && tokedNewWeapon[2] == "attach" ) )
@@ -600,7 +601,7 @@ watchWeaponReload()
 
 		self.bothBarrels = undefined;
 		
-		if ( !isSubStr( weaponName, "ranger" ) )
+		if ( !isSubStr( codolWeaponBase( weaponName ), "ranger" ) )
 			continue;
 
 		self thread watchRangerUsage( weaponName );
@@ -625,7 +626,7 @@ watchRangerUsage( rangerName )
 
 		self.bothBarrels = undefined;
 
-		if ( isSubStr( rangerName, "akimbo" ) )
+		if ( codolWeaponHasAttachment( rangerName, "akimbo" ) )
 		{
 			newLeftAmmo = self getWeaponAmmoClip( rangerName, "left" );
 			newRightAmmo = self getWeaponAmmoClip( rangerName, "right" );
@@ -711,7 +712,7 @@ dropWeaponForDeath( attacker )
 		return;
 	}
 	
-	if ( weapon != "riotshield_mp" )
+	if ( !codolIsWeaponBase( weapon, "riotshield_mp" ) )
 	{
 		if ( !(self AnyAmmoForWeaponModes( weapon )) )
 		{
@@ -2735,7 +2736,7 @@ updateMoveSpeedScale( weaponType )
 	else if ( weaponType == "secondary" )
 		weaponType = self.secondaryWeapon;
 	
-	if( isDefined(self.primaryWeapon ) && self.primaryWeapon == "riotshield_mp" )
+	if( isDefined(self.primaryWeapon ) && codolIsWeaponBase( self.primaryWeapon, "riotshield_mp" ) )
 	{
 		self setMoveSpeedScale( .8 * self.moveSpeedScaler );
 		return;

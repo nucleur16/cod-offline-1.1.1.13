@@ -1145,7 +1145,8 @@ Callback_VehicleDamage( inflictor, attacker, damage, dFlags, meansOfDeath, weapo
 	if ( !maps\mp\gameTypes\_weapons::attackerCanDamageItem( attacker, self.owner ) )
 		return;
 
-	switch ( weapon )
+	// A class launcher is composed ("*a 68 0"): switch on its base.
+	switch ( codolWeaponBase( weapon ) )
 	{
 		case "ac130_105mm_mp":
 		case "ac130_40mm_mp":

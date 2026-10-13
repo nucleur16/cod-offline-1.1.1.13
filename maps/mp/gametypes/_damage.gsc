@@ -720,7 +720,7 @@ PlayerKilled_internal( eInflictor, attacker, victim, iDamage, sMeansOfDeath, sWe
 	
 	if ( (sMeansOfDeath == "MOD_MELEE") )
 	{
-		if ( IsSubStr( sWeapon, "riotshield" ) )
+		if ( IsSubStr( codolWeaponBase( sWeapon ), "riotshield" ) )
 		{
 			attacker incPlayerStat( "shieldkills", 1 );
 			
@@ -1292,7 +1292,7 @@ Callback_PlayerDamage_internal( eInflictor, eAttacker, victim, iDamage, iDFlags,
 			return;
 		}
 	}
-	else if ( (smeansofdeath == "MOD_MELEE") && IsSubStr( sweapon, "riotshield" ) )
+	else if ( (smeansofdeath == "MOD_MELEE") && IsSubStr( codolWeaponBase( sweapon ), "riotshield" ) )
 	{
 		if ( !(attackerIsHittingTeammate && (level.friendlyfire == 0)) )
 		{
@@ -2183,7 +2183,7 @@ mayDoLastStand( sWeapon, sMeansOfDeath, sHitLoc )
 	if ( sMeansOfDeath == "MOD_IMPACT" && sWeapon == "throwingknife_mp" )
 		return false;
 		
-	if ( sMeansOfDeath == "MOD_IMPACT" && ( sWeapon == "m79_mp" || isSubStr(sWeapon, "gl_") ) )
+	if ( sMeansOfDeath == "MOD_IMPACT" && ( codolIsWeaponBase( sWeapon, "m79_mp" ) || isSubStr(sWeapon, "gl_") ) )
 		return false;
 
 	if ( isHeadShot( sWeapon, sHitLoc, sMeansOfDeath ) )

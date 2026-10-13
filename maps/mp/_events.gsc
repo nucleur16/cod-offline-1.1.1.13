@@ -260,7 +260,15 @@ checkMatchDataKills( killId, victim, weapon, meansOfDeath )
 	if ( isDefined( victim.laststand ) && victim.laststand )
 		self incPlayerStat( "laststanderkills", 1 );
 	
-	if ( self getCurrentWeapon() != self.loadoutPrimary + "_mp" && self getCurrentWeapon() != self.loadoutSecondary + "_mp" )
+	// A class weapon is the composed name the class gave (self.primaryWeapon,
+	// self.secondaryWeapon), never loadoutPrimary + "_mp".
+	currentWeapon = self getCurrentWeapon();
+	if ( !isDefined( self.primaryWeapon ) || !isDefined( self.secondaryWeapon ) )
+	{
+		if ( currentWeapon != self.loadoutPrimary + "_mp" && currentWeapon != self.loadoutSecondary + "_mp" )
+			self incPlayerStat( "otherweaponkills", 1 );
+	}
+	else if ( currentWeapon != self.primaryWeapon && currentWeapon != self.secondaryWeapon )
 		self incPlayerStat( "otherweaponkills", 1 );
 
 	if ( getBaseWeaponName( weapon ) == "m79" )
@@ -349,10 +357,10 @@ checkMatchDataWeaponKills( victim, weapon, meansOfDeath, weaponType )
 	{
 		attacker incPlayerStat( "adskills", 1 );
 
-		if ( weaponType == "weapon_sniper" || isSubStr( weapon, "acog" ) )
+		if ( weaponType == "weapon_sniper" || codolWeaponHasAttachment( weapon, "acog" ) )
 			attacker incPlayerStat( "scopedkills", 1 );
 		
-		if ( isSubStr( weapon, "thermal" ) )
+		if ( codolWeaponHasAttachment( weapon, "thermal" ) )
 			attacker incPlayerStat( "thermalkills", 1 );
 	}
 	else

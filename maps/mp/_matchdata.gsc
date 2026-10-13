@@ -212,7 +212,9 @@ logPlayerDeath( lifeId, attacker, iDamage, sMeansOfDeath, sWeapon, sPrimaryWeapo
 			setMatchData( "lives", lifeId, "altMode", true );
 		}
 		
-		weaponTokens = strTok( sWeapon, "_" );
+		// A class weapon is composed ("*a 17 10 ..."), one token with no "mp";
+		// log its base. Its attachments are C1 items, not IW4 matchdata ones.
+		weaponTokens = strTok( codolWeaponBase( sWeapon ), "_" );
 
 		/#
 		if ( !(weaponTokens.size > 1 && weaponTokens.size <= 4) )

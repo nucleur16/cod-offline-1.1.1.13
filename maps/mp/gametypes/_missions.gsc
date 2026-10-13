@@ -899,12 +899,14 @@ ch_kills( data, time )
 		else
 		{
 			baseWeapon = getBaseWeaponName( data.sWeapon );
+			// C1 keys weapon challenges by the full base, "ch_marksman_m4_mp".
+			weaponRef = codolWeaponBase( data.sWeapon );
 			
-			if ( isDefined( level.challengeInfo["ch_marksman_" + baseWeapon] ) )
-				player processChallenge( "ch_marksman_" + baseWeapon );
+			if ( isDefined( level.challengeInfo["ch_marksman_" + weaponRef] ) )
+				player processChallenge( "ch_marksman_" + weaponRef );
 
-			if ( isDefined( level.challengeInfo["pr_marksman_" + baseWeapon] ) )
-				player processChallenge( "pr_marksman_" + baseWeapon );
+			if ( isDefined( level.challengeInfo["pr_marksman_" + weaponRef] ) )
+				player processChallenge( "pr_marksman_" + weaponRef );
 		}
 	}
 	else if ( isSubStr( data.sMeansOfDeath, "MOD_GRENADE" ) || isSubStr( data.sMeansOfDeath, "MOD_EXPLOSIVE" ) || isSubStr( data.sMeansOfDeath, "MOD_PROJECTILE" ) )
@@ -931,12 +933,14 @@ ch_kills( data, time )
 			player.explosiveKills[expId]++;
 			
 			baseWeapon = getBaseWeaponName( data.sWeapon );
+			// C1 keys weapon challenges by the full base, "ch_marksman_m4_mp".
+			weaponRef = codolWeaponBase( data.sWeapon );
 			
 			if ( baseWeapon == "javelin" || baseWeapon == "m79" || baseWeapon == "at4" || baseWeapon == "rpg" )
 			{
 				if ( player.explosiveKills[expId] > 1 )
 				{
-					player processChallenge( "pr_expert_" + baseWeapon );
+					player processChallenge( "pr_expert_" + weaponRef );
 				}
 			}	
 			
@@ -945,8 +949,8 @@ ch_kills( data, time )
 				weaponAttachments = getWeaponAttachments( data.sweapon );
 				player processChallenge( "ch_" + weaponAttachments[0] + "_gl" );
 
-				if ( isDefined( level.challengeInfo["ch_marksman_" + weaponAttachments[0]] ) )
-					player processChallenge( "ch_marksman_" + weaponAttachments[0] );
+				if ( isDefined( level.challengeInfo["ch_marksman_" + weaponAttachments[0] + "_mp"] ) )
+					player processChallenge( "ch_marksman_" + weaponAttachments[0] + "_mp" );
 				
 				if ( player _hasPerk( "specialty_bling" ) )
 				{
@@ -955,8 +959,8 @@ ch_kills( data, time )
 						player processChallenge( "ch_bling_pro" );
 				}
 				
-				if ( isDefined( level.challengeInfo["pr_marksman_" + weaponAttachments[0]] ) )
-					player processChallenge( "pr_marksman_" + weaponAttachments[0] );
+				if ( isDefined( level.challengeInfo["pr_marksman_" + weaponAttachments[0] + "_mp"] ) )
+					player processChallenge( "pr_marksman_" + weaponAttachments[0] + "_mp" );
 			}
 			
 			if ( isDefined( data.victim.explosiveInfo["stickKill"] ) && data.victim.explosiveInfo["stickKill"] )
@@ -978,11 +982,11 @@ ch_kills( data, time )
 			
 			if ( !isSubStr( baseWeapon, "stinger" ) )
 			{
-				if ( isDefined( level.challengeInfo["ch_marksman_" + baseWeapon] ) )
-					player processChallenge( "ch_marksman_" + baseWeapon );
+				if ( isDefined( level.challengeInfo["ch_marksman_" + weaponRef] ) )
+					player processChallenge( "ch_marksman_" + weaponRef );
 	
-				if ( isDefined( level.challengeInfo["pr_marksman_" + baseWeapon] ) )
-					player processChallenge( "pr_marksman_" + baseWeapon );
+				if ( isDefined( level.challengeInfo["pr_marksman_" + weaponRef] ) )
+					player processChallenge( "pr_marksman_" + weaponRef );
 			}
 			
 			if ( isStrStart( data.sWeapon, "frag_" ) )
@@ -1064,14 +1068,14 @@ ch_kills( data, time )
 			{
 				player processChallenge( "ch_carbomb" );
 			}
-			else if ( isStrStart( data.sWeapon, "rpg_" ) || isStrStart( data.sWeapon, "at4_" ) )
+			else if ( weaponRef == "rpg_mp" || weaponRef == "at4_mp" )
 			{
 				if ( player.explosiveKills[expId] > 1 )
 					player processChallenge( "ch_multirpg" );
 			}
 		}
 	}
-	else if ( isSubStr( data.sMeansOfDeath,	"MOD_MELEE" ) && !isSubStr( data.sweapon, "riotshield_mp" ) )
+	else if ( isSubStr( data.sMeansOfDeath,	"MOD_MELEE" ) && !codolIsWeaponBase( data.sweapon, "riotshield_mp" ) )
 	{
 		player endMGStreak();
 		
@@ -1117,15 +1121,17 @@ ch_kills( data, time )
 			player processChallenge( "ch_plague" );
 		
 		baseWeapon = getBaseWeaponName( data.sWeapon );
+		// C1 keys weapon challenges by the full base, "ch_marksman_m4_mp".
+		weaponRef = codolWeaponBase( data.sWeapon );
 		weaponAttachments = getWeaponAttachments( data.sweapon );
 		
-		if ( isDefined( weaponAttachments[0] ) && weaponAttachments[0] == "tactical" )
+		if ( codolWeaponHasAttachment( data.sWeapon, "tactical" ) )
 		{
-			if ( isDefined( level.challengeInfo["ch_marksman_" + baseWeapon] ) )
-				player processChallenge( "ch_marksman_" + baseWeapon );
+			if ( isDefined( level.challengeInfo["ch_marksman_" + weaponRef] ) )
+				player processChallenge( "ch_marksman_" + weaponRef );
 		}
 	}
-	else if ( isSubStr( data.sMeansOfDeath,	"MOD_MELEE" ) && isSubStr( data.sweapon, "riotshield_mp" ) )
+	else if ( isSubStr( data.sMeansOfDeath,	"MOD_MELEE" ) && codolIsWeaponBase( data.sweapon, "riotshield_mp" ) )
 	{
 		player endMGStreak();
 		
@@ -1179,6 +1185,8 @@ ch_kills( data, time )
 		}
 		
 		baseWeapon = getBaseWeaponName( data.sWeapon );
+		// C1 keys weapon challenges by the full base, "ch_marksman_m4_mp".
+		weaponRef = codolWeaponBase( data.sWeapon );
 	
 		if ( baseWeapon == "gl" )
 		{
@@ -1187,11 +1195,11 @@ ch_kills( data, time )
 			if ( isDefined( level.challengeInfo["ch_" + weaponAttachments[0] + "_" + "gl"] ) )
 				player processChallenge( "ch_" + weaponAttachments[0] + "_" + "gl" );
 
-			if ( isDefined( level.challengeInfo["ch_marksman_" + weaponAttachments[0]] ) )
-				player processChallenge( "ch_marksman_" + weaponAttachments[0] );
+			if ( isDefined( level.challengeInfo["ch_marksman_" + weaponAttachments[0] + "_mp"] ) )
+				player processChallenge( "ch_marksman_" + weaponAttachments[0] + "_mp" );
 
-			if ( isDefined( level.challengeInfo["pr_marksman_" + weaponAttachments[0]] ) )
-				player processChallenge( "pr_marksman_" + weaponAttachments[0] );
+			if ( isDefined( level.challengeInfo["pr_marksman_" + weaponAttachments[0] + "_mp"] ) )
+				player processChallenge( "pr_marksman_" + weaponAttachments[0] + "_mp" );
 		}
 	}
 	else if ( data.sMeansOfDeath == "MOD_HEAD_SHOT" )
@@ -1235,18 +1243,20 @@ ch_kills( data, time )
 		else
 		{
 			baseWeapon = getBaseWeaponName( data.sWeapon );
+			// C1 keys weapon challenges by the full base, "ch_marksman_m4_mp".
+			weaponRef = codolWeaponBase( data.sWeapon );
 			
-			if ( isDefined( level.challengeInfo["ch_expert_" + baseWeapon] ) )
-				player processChallenge( "ch_expert_" + baseWeapon );
+			if ( isDefined( level.challengeInfo["ch_expert_" + weaponRef] ) )
+				player processChallenge( "ch_expert_" + weaponRef );
 
-			if ( isDefined( level.challengeInfo["pr_expert_" + baseWeapon] ) )
-				player processChallenge( "pr_expert_" + baseWeapon );
+			if ( isDefined( level.challengeInfo["pr_expert_" + weaponRef] ) )
+				player processChallenge( "pr_expert_" + weaponRef );
 
-			if ( isDefined( level.challengeInfo["ch_marksman_" + baseWeapon] ) )
-				player processChallenge( "ch_marksman_" + baseWeapon );
+			if ( isDefined( level.challengeInfo["ch_marksman_" + weaponRef] ) )
+				player processChallenge( "ch_marksman_" + weaponRef );
 
-			if ( isDefined( level.challengeInfo["pr_marksman_" + baseWeapon] ) )
-				player processChallenge( "pr_marksman_" + baseWeapon );
+			if ( isDefined( level.challengeInfo["pr_marksman_" + weaponRef] ) )
+				player processChallenge( "pr_marksman_" + weaponRef );
 		}
 	}
 	
@@ -1256,6 +1266,8 @@ ch_kills( data, time )
 		// checks and processes all weapon attachment challenges
 		weaponAttachments = getWeaponAttachments( data.sweapon );
 		baseWeapon = getBaseWeaponName( data.sWeapon );
+		// C1 keys weapon challenges by the full base, "ch_marksman_m4_mp".
+		weaponRef = codolWeaponBase( data.sWeapon );
 		
 		foreach( weaponAttachment in weaponAttachments )
 		{
@@ -1431,7 +1443,7 @@ ch_bulletDamageCommon( data, player, time, weaponClass )
 	}
 	else if ( weaponClass == "weapon_shotgun" )
 	{
-		if ( isSubStr( data.sWeapon, "ranger" ) && isDefined( player.bothBarrels ) )
+		if ( isSubStr( codolWeaponBase( data.sWeapon ), "ranger" ) && isDefined( player.bothBarrels ) )
 		{
 			player processChallenge( "ch_bothbarrels" );
 			player.bothBarrels = undefined;
@@ -1467,7 +1479,7 @@ ch_bulletDamageCommon( data, player, time, weaponClass )
 			player processChallenge( "ch_ghillie" );	
 	}
 	
-	if ( isSubStr( data.sWeapon, "_silencer_" ) )
+	if ( codolWeaponHasAttachment( data.sWeapon, "silencer" ) )
 		player processChallenge( "ch_stealth" ); 
 }
 
@@ -2240,6 +2252,15 @@ getWeaponAttachment( weaponName, index )
 
 masteryChallengeProcess( baseName, progressInc )
 {
+	// CoDOL: C1's ch_<weapon>_mp_mastery is CHALLENGE_GET_ALL_ATTACHMENTS
+	// over C1 attachment items. IW4's walk below asks isItemUnlocked about
+	// IW4 attachment names (mp/coWeapStatsTableInGame.csv columns 11+) and
+	// force-sets the progress, which could lower what the profile holds. The
+	// marksman refs it was reached from only match C1's names ("_mp") since
+	// the composed-name fix, so keep it from running until it is ported.
+	if ( isSubStr( baseName, "_mp" ) )
+		return;
+
 	if ( isSubStr( baseName, "ch_marksman_" ) )
 	{
 		prefix = "ch_marksman_";
@@ -2505,10 +2526,10 @@ monitorKilledKillstreak()
 		if ( self _hasPerk( "specialty_coldblooded" ) )
 			self processChallenge( "ch_coldblooded_pro" );
 
-		if ( isDefined( weapon ) && weapon == "stinger_mp" )
+		if ( isDefined( weapon ) && codolIsWeaponBase( weapon, "stinger_mp" ) )
 		{
-			self processChallenge( "ch_marksman_stinger" );		
-			self processChallenge( "pr_marksman_stinger" );		
+			self processChallenge( "ch_marksman_stinger_mp" );		
+			self processChallenge( "pr_marksman_stinger_mp" );		
 		}
 	}	
 }
