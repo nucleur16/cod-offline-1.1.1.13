@@ -1378,7 +1378,7 @@ restoreData()
 		//self _giveWeapon( weapon.name );
 			
 		self setWeaponAmmoClip( weapon.name, weapon.clipAmmoR, "right" );
-		if ( isSubStr( weapon.name, "akimbo" ) )
+		if ( codolWeaponHasAttachment( weapon.name, "akimbo" ) )
 			self setWeaponAmmoClip( weapon.name, weapon.clipAmmoL, "left" );
 
 		self setWeaponAmmoStock( weapon.name, weapon.stockAmmo );
@@ -2249,6 +2249,116 @@ getBaseWeaponName( weaponName )
 
 	tokens = strTok( weaponName, "_" );
 	return tokens[0];
+}
+
+/*
+	CoDOL: a weapon from a player's class is a composed name, the base item
+	index followed by attachment item indices ("*a 17 10 123 5 30 14 ..."),
+	not IW4's "m4_reflex_mp".  It has no "_mp" suffix and no attachment
+	tokens, so comparing it with "m4_mp" or searching it for "ranger" or
+	"_silencer_" never matches.  Compare the base instead, and keep the
+	original name for every native that takes the weapon itself (giveMaxAmmo,
+	switchToWeapon, getWeaponAmmoClip, ...).
+*/
+
+// The full base weapon of a composed name ("m4_mp"); any other name
+// (killstreak, offhand, alternate-mode "gl_acr_mp", undefined) unchanged.
+codolWeaponBase( weapon )
+{
+	if ( !isDefined( weapon ) || getSubStr( weapon, 0, 1 ) != "*" )
+		return weapon;
+	return codol_getWeaponBaseName( weapon );
+}
+
+// True when the weapon, or the base of a composed weapon, is base.
+codolIsWeaponBase( weapon, base )
+{
+	if ( !isDefined( weapon ) )
+		return false;
+	return ( codolWeaponBase( weapon ) == base );
+}
+
+// The owned weapon whose base is base ("riotshield_mp"), whatever name the
+// class gave it; undefined when the player has none.
+codolOwnedWeaponWithBase( base )
+{
+	if ( self hasWeapon( base ) )
+		return base;
+	foreach ( weapon in self getWeaponsListPrimaries() )
+	{
+		if ( codolIsWeaponBase( weapon, base ) )
+			return weapon;
+	}
+	return undefined;
+}
+
+// IW4 attachment keyword ("silencer", "gl", "akimbo", "acog", ...) on either
+// an IW4 name ("m4_gl_silencer_mp") or a composed one, whose attachments are
+// C1 marketplace items (muz_silencerar, gre_m203he, rof_akimbo, aco_ta31, ...).
+codolWeaponHasAttachment( weapon, attachment )
+{
+	if ( !isDefined( weapon ) || weapon == "" || weapon == "none" )
+		return false;
+
+	if ( getSubStr( weapon, 0, 1 ) != "*" )
+	{
+		tokens = strTok( weapon, "_" );
+		for ( i = 1; i < tokens.size; i++ )
+		{
+			if ( tokens[i] == attachment )
+				return true;
+		}
+		return false;
+	}
+
+	foreach ( item in codol_getWeaponAttachmentNames( weapon ) )
+	{
+		if ( codolItemIsAttachment( item, attachment ) )
+			return true;
+	}
+	return false;
+}
+
+// Whether a C1 attachment item (mp/coMarketplaceItems.csv "wat" row name)
+// is the IW4 attachment keyword.
+codolItemIsAttachment( item, attachment )
+{
+	switch ( attachment )
+	{
+		case "akimbo":
+			return ( item == "rof_akimbo" || item == "akimbo" );
+		case "silencer":
+			return ( codolStrStart( item, "muz_silencer" ) );
+		case "gl":
+			return ( codolStrStart( item, "gre_" ) );
+		case "shotgun":
+			return ( codolStrStart( item, "sho_" ) );
+		case "acog":
+			return ( codolStrStart( item, "aco_" ) );
+		case "thermal":
+			return ( codolStrStart( item, "the_" ) );
+		case "reflex":
+			return ( codolStrStart( item, "red_" ) );
+		case "eotech":
+			return ( codolStrStart( item, "eot_" ) );
+		case "heartbeat":
+			return ( codolStrStart( item, "hbs_" ) );
+		case "fmj":
+			return ( item == "fmj" || item == "mag_fmj" );
+		case "xmags":
+			return ( item == "xmags" || codolStrStart( item, "mag_ext" ) );
+		case "tactical":
+			return ( item == "cqc_tactical" );
+		case "grip":
+			return ( codolStrStart( item, "for_grip" ) );
+		default:
+			return ( item == attachment );
+	}
+}
+
+codolStrStart( string, prefix )
+{
+	return ( getSubStr( string, 0, prefix.size ) == prefix );
 }
 
 playSoundinSpace( alias, origin )

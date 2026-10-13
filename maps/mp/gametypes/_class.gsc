@@ -714,8 +714,8 @@ giveLoadout( team, class, allowCopycat )
 		self _giveWeapon( primaryName, self.loadoutPrimaryCamo );
 	
 	// fix changing from a riotshield class to a riotshield class during grace period not giving a shield
-	if ( primaryName == "riotshield_mp" && level.inGracePeriod )
-		self notify ( "weapon_change", "riotshield_mp" );
+	if ( codolIsWeaponBase( primaryName, "riotshield_mp" ) && level.inGracePeriod )
+		self notify ( "weapon_change", primaryName );
 
 	if ( self hasPerk( "specialty_extraammo", true ) )
 		self giveMaxAmmo( primaryName );
@@ -958,8 +958,10 @@ trackRiotShield()
 	self endon ( "death" );
 	self endon ( "disconnect" );
 
-	self.hasRiotShield = self hasWeapon( "riotshield_mp" );
-	self.hasRiotShieldEquipped = (self.currentWeaponAtSpawn == "riotshield_mp");
+	// A class shield is composed ("*a ..."); hasWeapon( "riotshield_mp" )
+	// and a name compare only recognise the stock one.
+	self.hasRiotShield = isDefined( self codolOwnedWeaponWithBase( "riotshield_mp" ) );
+	self.hasRiotShieldEquipped = codolIsWeaponBase( self.currentWeaponAtSpawn, "riotshield_mp" );
 	
 	// note this function must play nice with _detachAll().
 	
@@ -979,7 +981,7 @@ trackRiotShield()
 	{
 		self waittill ( "weapon_change", newWeapon );
 		
-		if ( newWeapon == "riotshield_mp" )
+		if ( codolIsWeaponBase( newWeapon, "riotshield_mp" ) )
 		{
 			// defensive check in case we somehow get an extra "weapon_change"
 			if ( self.hasRiotShieldEquipped )
@@ -1000,7 +1002,7 @@ trackRiotShield()
 		else if ( self.hasRiotShieldEquipped )
 		{
 			assert( self.hasRiotShield );
-			self.hasRiotShield = self hasWeapon( "riotshield_mp" );
+			self.hasRiotShield = isDefined( self codolOwnedWeaponWithBase( "riotshield_mp" ) );
 			
 			if ( self.hasRiotShield )
 				self MoveShieldModel( "weapon_riot_shield_mp", "tag_weapon_left", "tag_shield_back" );
@@ -1011,7 +1013,7 @@ trackRiotShield()
 		}
 		else if ( self.hasRiotShield )
 		{
-			if ( !self hasWeapon( "riotshield_mp" ) )
+			if ( !isDefined( self codolOwnedWeaponWithBase( "riotshield_mp" ) ) )
 			{
 				// we probably just lost all of our weapons (maybe switched classes)
 				self DetachShieldModel( "weapon_riot_shield_mp", "tag_shield_back" );
