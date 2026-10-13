@@ -174,14 +174,16 @@ proximity()
     self.pickup = undefined;
     self playSound( "mine_betty_click" );
     // C1 Engineer's modDelayTriggeredExplosive on the triggering player (the
-    // IW4/IW5 name specialty_delaymine is C1 Stalker Pro). IW5 delay: 3 s.
+    // IW4/IW5 name specialty_delaymine is C1 Stalker Pro). T5's rule: the
+    // normal delay, then perk_delayExplosiveTime more.
+    wait 0.3;
     if ( player HasAbilityModifier( "modDelayTriggeredExplosive" ) )
     {
-        maps\mp\perks\_codol_equipperks::perkLog( "betty " + self getEntityNumber() + " triggered by " + player.name + " (modDelayTriggeredExplosive): 3s delay" );
+        extra = maps\mp\perks\_codol_equipperks::delayExplosiveTime();
+        maps\mp\perks\_codol_equipperks::perkLog( "betty " + self getEntityNumber() + " triggered by " + player.name + " (modDelayTriggeredExplosive): +" + extra + "s delay" );
         player notify( "triggered_mine" );
-        wait 3;
+        wait extra;
     }
-    else wait 0.3;
     self playSound( "mine_betty_spin" );
     playFx( level.codolMineLaunch, self.origin );
     self moveTo( self.origin + (0,0,64), 0.7, 0, 0.65 );

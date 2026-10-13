@@ -1644,15 +1644,17 @@ claymoreDetonation()
 	
 	
 	// C1 Engineer (perk 90) carries modDelayTriggeredExplosive; the IW4 name
-	// specialty_delaymine is C1 Stalker Pro (footsteps), not this delay. The
-	// 3.0 s replacing the grace period is IW4's value for the same effect.
+	// specialty_delaymine is C1 Stalker Pro (footsteps), not this delay. C1's
+	// table gives the modifier no value, so T5's rule applies
+	// (_weaponobjects.gsc: the normal grace period, then perk_delayExplosiveTime
+	// more): the perk adds to the trigger delay instead of replacing it.
+	wait level.claymoreDetectionGracePeriod;
 	if ( isPlayer( player ) && player HasAbilityModifier( "modDelayTriggeredExplosive" ) )
 	{
-		maps\mp\perks\_codol_equipperks::perkLog( "claymore " + self getEntityNumber() + " triggered by " + player.name + " (modDelayTriggeredExplosive): 3.0s delay" );
-		wait 3.0;
+		extra = maps\mp\perks\_codol_equipperks::delayExplosiveTime();
+		maps\mp\perks\_codol_equipperks::perkLog( "claymore " + self getEntityNumber() + " triggered by " + player.name + " (modDelayTriggeredExplosive): +" + extra + "s delay" );
+		wait extra;
 	}
-	else 
-		wait level.claymoreDetectionGracePeriod;
 		
 	self maps\mp\perks\_codol_equipperks::detonateAsOwner();
 }
