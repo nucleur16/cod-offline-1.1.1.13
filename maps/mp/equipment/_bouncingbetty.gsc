@@ -47,8 +47,17 @@ deploy( owner )
     origin = trace["position"];
     if ( trace["fraction"] == 1 )
     {
-        origin = getGroundPosition( self.origin, 12, 0, 32 );
-        trace["normal"] *= -1;
+        // Nothing within 4 units below: look further down. getGroundPosition
+        // raised "check starts in solid" (and the mine was never placed) when
+        // the betty came to rest wedged against geometry.
+        trace = bulletTrace( self.origin + (0,0,4), self.origin - (0,0,64), false, self );
+        if ( trace["fraction"] < 1 )
+            origin = trace["position"];
+        else
+        {
+            origin = self.origin;
+            trace["normal"] = (0,0,1);
+        }
     }
     mine = spawn( "script_model", origin );
     mine.angles = vectorToAngles( vectorNormalize( trace["normal"] ) ) + (90,0,0);
