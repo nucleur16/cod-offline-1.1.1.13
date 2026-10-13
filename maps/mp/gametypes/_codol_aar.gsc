@@ -21,7 +21,8 @@
 //     ui_eog_r6          challenges: token 2 XP, token 3 GP. Owned by
 //                        _missions.gsc (codolNoteChallengeReward).
 //     ui_eog_r7          match bonus: token 2 XP (win/loss/tie), token 3 GP
-//                        (GP from play)
+//                        (GP from play, plus the fixed rank-up GP: 200 x
+//                        each level reached this match)
 //     ui_eog_r10         field orders: token 2 XP (added to misc), token 3 GP
 //     ui_eog_ch<i>       "vis|ref|tier|start|gain|target|startPct|gainPct|xp|gp"
 //                        one challenge the match advanced (allChallengesTable
@@ -340,6 +341,9 @@ sendSummary()
 	totalGP = self codol_matchGP();
 	fieldOrderGP = self codol_matchGP( "fieldorder" );
 	challengeGP = self codol_matchGP( "challenge" );
+	// r7 carries everything else the row will deposit: the scaled play GP and
+	// the fixed rank-up GP (codol_matchGP( "rankup" )), so r6 + r7 + r10, the
+	// GP C1 shows, is the deposit.
 	bonusGP = totalGP - fieldOrderGP - challengeGP;
 	if ( bonusGP < 0 )
 		bonusGP = 0;

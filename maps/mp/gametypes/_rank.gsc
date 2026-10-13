@@ -434,6 +434,13 @@ giveRankXP( type, value )
 		for ( rankId = 2; rankId <= self.pers["rank"] + 1; rankId++ )
 			unlockFlags += "|" + rankId;
 		self setClientDvar( "cg_unlockFlagSet", unlockFlags );
+
+		// CoDOL: a rank-up pays a FIXED 200 GP x the new displayed level, for
+		// every level this award crossed (4 -> 6 pays 200*5 + 200*6). Never
+		// scaled. The match report row keeps the highest level it has paid,
+		// across a reconnect too, so a level is credited once; the lobby
+		// deposits rank-up GP off its own per-account level mark.
+		self codol_creditRankUpGP( oldRankId + 1, self.pers["rank"] + 1 );
 	}
 
 	if ( !level.hardcoreMode )
