@@ -652,16 +652,34 @@ __attribute__((used)) void __cdecl ParitySnapshot(int ok, const BYTE *snap, int 
 #define DEFASSET_LOOKUP_RET  0x004CBD26u
 #define DEFASSET_ZONEREF_RET 0x004CC484u
 
-static int ParityConfigstringOf(const char *name)
+/* Model configstrings, CS_MODELS 1315..3362. A name search across every configstring also
+ * matches localized strings case-insensitively ("WEAPON_USP" at 772 for xmodel weapon_usp). */
+#define CS_MODELS_FIRST 1315u
+#define CS_MODELS_LAST  3362u
+
+static int ParityConfigstringOf(const char *name, DWORD first, DWORD last)
 {
     if (!g_csReadable) return -1;
     const DWORD *offsets = (const DWORD *)(DWORD_PTR)CS_OFFSETS_VA;
-    for (DWORD i = 0; i < CS_COUNT; i++) {
+    if (last >= CS_COUNT) last = CS_COUNT - 1;
+    for (DWORD i = first; i <= last; i++) {
         DWORD off = offsets[i];
         if (!off || off >= CS_DATA_LIMIT - 256) continue;
         if (lstrcmpiA((const char *)(DWORD_PTR)(CS_DATA_VA + off), name) == 0) return (int)i;
     }
     return -1;
+}
+
+/* A gameState is present once the server's configstrings have arrived (empty strings have
+ * offset 0, and disconnecting clears the gameState). Before that every lookup is the client's
+ * own startup or menu content: the ui_viewer_mp weapons' sounds, the intro movie's subtitles. */
+static BOOL ParityHaveGameState(void)
+{
+    if (!g_csReadable) return TRUE;
+    const DWORD *offsets = (const DWORD *)(DWORD_PTR)CS_OFFSETS_VA;
+    for (DWORD i = 0; i < 64; i++)
+        if (offsets[i]) return TRUE;
+    return FALSE;
 }
 
 __attribute__((used)) void __cdecl ParityDefaultAsset(DWORD ret, int type, const char *name)
@@ -670,6 +688,8 @@ __attribute__((used)) void __cdecl ParityDefaultAsset(DWORD ret, int type, const
     /* A zone referencing an asset no zone has is the client's own content (renderer shaders,
      * frontend images): only shown at parity_log 2. Lookups by name (configstrings, code) always. */
     if (!name || !level || (ret == DEFASSET_ZONEREF_RET && level < 2)) return;
+    /* Before the gameState arrives nothing the server sent can be involved: level 2 only. */
+    if (level < 2 && !ParityHaveGameState()) return;
     const char *typeName = "?";
     if (type >= 0 && type < ASSET_TYPE_COUNT) {
         const char *t = *(const char *const *)(DWORD_PTR)(ASSET_TYPE_NAMES_VA + type * 4);
@@ -678,7 +698,8 @@ __attribute__((used)) void __cdecl ParityDefaultAsset(DWORD ret, int type, const
     char key[300];
     _snprintf(key, sizeof(key), "%d:%s", type, name);
     key[sizeof(key) - 1] = 0;
-    int cs = ParityConfigstringOf(name);
+    int cs = lstrcmpA(typeName, "xmodel") == 0 ? ParityConfigstringOf(name, CS_MODELS_FIRST, CS_MODELS_LAST)
+                                               : ParityConfigstringOf(name, 0, CS_COUNT - 1);
     char csText[32] = "";
     if (cs >= 0) _snprintf(csText, sizeof(csText), ", configstring %d", cs);
     ParityReport(PR_ONCE | PR_QUEUE, "asset", key, "%s '%s' is not in any loaded zone, the client uses the default %s%s%s",
