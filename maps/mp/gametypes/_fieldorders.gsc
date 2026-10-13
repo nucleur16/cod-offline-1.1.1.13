@@ -28,9 +28,9 @@
 //     _playerlogic::pulseScriptMenu. fo_table is the client dvar naming the
 //     table ("mp/cofieldorderbootcamp.csv"); C1.exe reads it with
 //     Dvar_FindVar (0x5e326f) and nothing in the client ever sets it.
-//   * Splash rows field_order_get (6 s, mp_bonus_start, FO_RECEIVED, column 1
+//   * Splash rows field_order_get (6 s, FO_RECEIVED; sound mp_suitcase_pickup, see foSplash; column 1
 //     and 2 of row dvarInt( "fo_splash_ref" )) and field_order_win (3 s,
-//     mp_challenge_complete, FO_COMPLETE and the reward: locstring( "@" +
+//     mp_war_objective_taken, FO_COMPLETE and the reward: locstring( "@" +
 //     column 4, column 7 ), which C1 cannot format -- see foComplete).
 //     Their menus have no timeout of their own: only C1's slot timer closes
 //     them, and it loses them when the next splash in slot 0 arrives first,
@@ -135,8 +135,7 @@ init()
 		summary = summary + " " + ref + "(" + foSet.orders.size + " orders, " + foSet.perMatch + "/match)";
 	}
 
-	codolPrintLn( "CoDOL field orders:" + summary + "; splash field_order_get sound '"
-		+ tableLookup( "mp/splashTable.csv", 0, "field_order_get", 9 ) + "'" );
+	codolPrintLn( "CoDOL field orders:" + summary + "; splash sounds mp_suitcase_pickup / mp_war_objective_taken (Headquarters')" );
 
 	if ( !isDefined( level.foSets[ "cofieldorderbootcamp" ] ) &&
 	     !isDefined( level.foSets[ "cofieldordermponboarding" ] ) )
@@ -500,7 +499,7 @@ foAssign( slot, order )
 	self maps\mp\gametypes\_playerlogic::pulseScriptMenu( "fo_display" );
 
 	// field_order_get reads columns 1 and 2 of row fo_splash_ref.
-	self foSplash( "field_order_get", "mp_bonus_start", order.index );
+	self foSplash( "field_order_get", "mp_suitcase_pickup", order.index );
 
 	codolPrintLn( "CoDOL field orders: " + self.name + " slot " + slot + " got " + self.foSet.ref
 		+ " row " + order.index + " " + order.ref + " (" + order.kind + " x" + order.target
@@ -518,7 +517,11 @@ foClear( slot )
 }
 
 
-foSplash( name, defaultSound, splashRef )
+// The sounds are Headquarters': a new HQ (mp_suitcase_pickup) for a received
+// order, a secured HQ (mp_war_objective_taken) for a completed one (koth.gsc).
+// C1's splash table names mp_bonus_start for field_order_get, which no zone
+// ships, so the table's column 9 is not used here.
+foSplash( name, sound, splashRef )
 {
 	actionData = spawnStruct();
 	actionData.name = name;
@@ -527,9 +530,7 @@ foSplash( name, defaultSound, splashRef )
 	// queued win splash cannot rewrite the row of a get splash still on screen.
 	actionData.clientDvar = "fo_splash_ref";
 	actionData.clientDvarValue = splashRef;
-	actionData.sound = tableLookup( "mp/splashTable.csv", 0, name, 9 );
-	if ( actionData.sound == "" )
-		actionData.sound = defaultSound;
+	actionData.sound = sound;
 	actionData.slot = 0;
 	self thread maps\mp\gametypes\_hud_message::actionNotify( actionData );
 }
@@ -587,7 +588,7 @@ foComplete( slot )
 	// makes the line fail cleanly to empty; the panel shows the reward
 	// (locString( "@" + column 4, int( getFOReward( i ) ) )) while the order
 	// runs, and giveRankXP's score popup shows the XP it paid.
-	self foSplash( "field_order_win", "mp_challenge_complete", 0 );
+	self foSplash( "field_order_win", "mp_war_objective_taken", 0 );
 
 	self foGrantReward( order );
 	self thread foCreditChallenge( self.foSet.ref );
