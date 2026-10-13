@@ -662,7 +662,8 @@ watchForThreat()
 				continue;
 			}
 			
-			currentWeapon = player GetCurrentWeapon();
+			// A class launcher is composed ("*a 68 0"): test its base.
+			currentWeapon = codolWeaponBase( player GetCurrentWeapon() );
 
 			if ( isSubStr( currentWeapon, "at4" ) || isSubStr( currentWeapon, "stinger" ) || isSubStr( currentWeapon, "javelin" ) )
 			{
@@ -977,6 +978,7 @@ getBestTarget( targets )
 		weaponsArray = targ GetWeaponsListItems();
 		foreach ( weapon in weaponsArray )
 		{
+			weapon = codolWeaponBase( weapon );
 			if ( isSubStr( weapon, "at4" ) || isSubStr( weapon, "jav" ) || isSubStr( weapon, "c4" ) )
 				angle -= 40;
 		}
@@ -1218,7 +1220,7 @@ getBestMiniTarget( targets )
 		
 		// in this calculation having a rocket javelin or c4 increases mini turret priority
 		// to prioritize targeting dangerous targets.
-		curWeaon = targ GetCurrentWeapon();
+		curWeaon = codolWeaponBase( targ GetCurrentWeapon() );
 		if ( isSubStr( curWeaon, "at4" ) || isSubStr( curWeaon, "jav" ) || isSubStr( curWeaon, "c4" ) || isSubStr( curWeaon, "smart" ) || isSubStr( curWeaon, "grenade" ) )
 				curDist -= 200;
 		

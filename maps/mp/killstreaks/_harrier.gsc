@@ -804,6 +804,7 @@ getBestTarget( targets )
 		weaponsArray = targ GetWeaponsListItems();
 		foreach ( weapon in weaponsArray )
 		{
+			weapon = codolWeaponBase( weapon );
 			if ( isSubStr( weapon, "at4" ) || isSubStr( weapon, "stinger" ) || isSubStr( weapon, "jav" ) )
 				angle -= 40;
 		}
@@ -898,7 +899,8 @@ Callback_VehicleDamage( inflictor, attacker, damage, dFlags, meansOfDeath, weapo
 	if ( self.health <= 0 )
 		return;
 	
-	switch ( weapon )
+	// A class launcher is composed ("*a 68 0"): switch on its base.
+	switch ( codolWeaponBase( weapon ) )
 	{
 		case "ac130_105mm_mp":
 		case "ac130_40mm_mp":
