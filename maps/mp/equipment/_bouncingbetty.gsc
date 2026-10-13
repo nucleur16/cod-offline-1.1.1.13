@@ -68,6 +68,7 @@ deploy( owner )
     mine.pickup = spawn( "script_origin", origin + (0,0,25) );
     mine thread pickup();
     mine thread damage();
+    mine thread empDisable();
     mine thread proximity();
     owner thread watchOwner( mine );
     owner thread watchSpawn( mine );
@@ -138,12 +139,31 @@ damage()
     {
         self waittill( "damage", amount, attacker, direction, point, mod, model, part, tag, flags, weapon );
         if ( !isDefined( attacker ) || !isPlayer( attacker ) ) continue;
-        if ( isDefined( weapon ) && (weapon == "bouncingbetty_mp" || weapon == "smoke_grenade_mp") ) continue;
+        if ( isDefined( weapon ) && (weapon == "bouncingbetty_mp" || weapon == "smoke_grenade_mp" ||
+             weapon == "emp_grenade_mp") ) continue;
         if ( !maps\mp\gametypes\_weapons::friendlyFireCheck( self.owner, attacker ) ) continue;
         self maps\mp\equipment\_pickup::close();
         self notify( "mine_destroyed" );
         self thread explode( attacker );
         return;
+    }
+}
+// An EMP grenade disables the mine for its duration instead of destroying it
+// (empExplodeWaiter in _weapons.gsc sends emp_damage); proximity ignores
+// everyone while self.disabled is set.
+empDisable()
+{
+    self endon( "death" );
+    self endon( "mine_triggered" );
+    for ( ;; )
+    {
+        self waittill( "emp_damage", attacker, duration );
+        playFx( getfx( "sentry_explode_mp" ), self.origin );
+        self.disabled = true;
+        self notify( "disabled" );
+        wait( duration );
+        self.disabled = undefined;
+        self notify( "enabled" );
     }
 }
 proximity()
@@ -155,6 +175,7 @@ proximity()
     for ( ;; )
     {
         self.sensor waittill( "trigger", player );
+        if ( isDefined( self.disabled ) ) continue;
         if ( !isPlayer( player ) || !isAlive( player ) ) continue;
         if ( getDvarInt( "scr_minesKillOwner" ) != 1 )
         {

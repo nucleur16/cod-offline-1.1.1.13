@@ -1384,6 +1384,23 @@ empExplodeWaiter()
 
 		ent notify( "emp_damage", self.owner, 8.0 );
 	}
+
+	// Bouncing betties and scramblers are script models, which the grenade /
+	// turret sweep above never finds; they get the same temporary disable.
+	equipment = level.scramblers;
+	foreach ( player in level.players )
+	{
+		if ( isDefined( player.equipmentMines ) )
+			equipment = array_combine( equipment, player.equipmentMines );
+	}
+	foreach ( ent in equipment )
+	{
+		if ( !isDefined( ent ) || distance( position, ent.origin ) >= 512 )
+			continue;
+		if ( isDefined( ent.owner ) && !friendlyFireCheck( self.owner, ent.owner ) )
+			continue;
+		ent notify( "emp_damage", self.owner, 8.0 );
+	}
 }
 
 
@@ -1847,8 +1864,12 @@ c4Damage()
 
 		// IW5 excludes these utility grenades by identity. C1 EMP damage is
 		// one point and must still reach the existing detonation lifecycle.
+		// An EMP grenade disables C4 and claymores for a while (c4EMPDamage,
+		// through empExplodeWaiter's emp_damage); its one point of damage must
+		// not destroy them.
 		if ( isDefined( weapon ) && (weapon == "concussion_grenade_mp" ||
-		     weapon == "smoke_grenade_mp" || weapon == "flash_grenade_mp") )
+		     weapon == "smoke_grenade_mp" || weapon == "flash_grenade_mp" ||
+		     weapon == "emp_grenade_mp") )
 			continue;
 
 		break;
