@@ -48,3 +48,16 @@ A startup value of 0 installs no hooks at all.
 
 Build without touching the live DLL: `PATH=/c/msys64/mingw32/bin:$PATH sh build-parity.sh` writes
 `Kernel33_parity.dll`; copy it over `../Kernel33.dll` (keep a backup) to use it.
+
+### Several clients on one PC (branch `parity-log`)
+The branch also skips WinMain's "is already running." check (0x630C3A; the game's mutex
+`Global\{5BD75B76-...}` still exists, it is just ignored), so a second client can watch another
+real player's movement. Start every copy through `codoMP_client_shipRetail.exe` (`C1.exe` never
+loads this DLL) with its own `dw_username`, and give each copy after the first its own console
+log through dvar `1436`, the log-name prefix C1 already reads before opening `console_mp.log`:
+
+    codoMP_client_shipRetail.exe +set dw_username devplayer
+    codoMP_client_shipRetail.exe +set dw_username devplayer2 +set 1436 p2   (main\p2_console_mp.log)
+
+Without `1436` the second copy takes over `console_mp.log` and the two logs mix. `config_mp.cfg`
+and `Kernel33.log` stay shared (Kernel33.log lines carry each copy's pid at attach).
