@@ -1517,6 +1517,8 @@ Callback_StartGameType()
 	thread maps\mp\_defcon::init();
 	thread maps\mp\gametypes\_codol_bots::init();
 	maps\mp\gametypes\_codol_top_players::init();
+	// C1 field orders (fo_table, the field_orders HUD, SetFO*).
+	thread maps\mp\gametypes\_fieldorders::init();
 	
 	if ( level.teamBased )
 		thread maps\mp\gametypes\_friendicons::init();

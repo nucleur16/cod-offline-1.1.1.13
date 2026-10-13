@@ -574,6 +574,9 @@ awardRideKillstreakActivation()
 
 usedKillstreak( streakName, awardXp )
 {
+	// C1's act_uavuse field order (mp/cofieldorder*.csv column 12).
+	self notify( "killstreak_used", streakName );
+
 	self playLocalSound( "weap_c4detpack_trigger_plr" );
 
 	if ( awardXp )
@@ -1050,6 +1053,9 @@ giveKillstreak( streakName, isEarned, awardXp, owner )
 		
 	if ( isDefined( isEarned ) && isEarned && isDefined( awardXp ) && awardXp )
 		self notify( "received_earned_killstreak" );
+	// C1's act_uavearn field order (mp/cofieldorderbootcamp.csv column 12).
+	if ( isDefined( isEarned ) && isEarned )
+		self notify( "given_killstreak", streakName );
 }
 
 

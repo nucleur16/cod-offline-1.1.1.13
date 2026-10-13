@@ -764,6 +764,8 @@ PlayerKilled_internal( eInflictor, attacker, victim, iDamage, sMeansOfDeath, sWe
 			println( "kill: killcam silenced for " + victim.name + " (" + sWeapon + ")" );
 		handleNormalDeath( lifeId, attacker, eInflictor, sWeapon, sMeansOfDeath );
 		victim thread maps\mp\gametypes\_missions::playerKilled( eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, sPrimaryWeapon, sHitLoc, attacker.modifiers );
+		// Before any wait: reads the killer's stance and ADS at the kill.
+		attacker maps\mp\gametypes\_fieldorders::onEnemyKilled( victim, sWeapon, sMeansOfDeath );
 		
 		victim.pers["cur_death_streak"]++;
 		

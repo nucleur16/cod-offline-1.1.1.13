@@ -850,6 +850,8 @@ watchPickup()
 			break;
 		// otherwise, player merely acquired ammo and didn't pick this up
 	}
+	// C1's act_pickupwpn field order waits for this notify.
+	player notify( "pickedupweapon", weapname );
 	
 	/#
 	if ( getdvar("scr_dropdebug") == "1" )
