@@ -12,9 +12,9 @@ CH_LABEL_COL	= 3;
 CH_RES1_COL		= 4;
 CH_RES2_COL		= 5;
 CH_TARGET_COL	= 6;
-CH_REWARD_COL	= 7;
+CH_REWARD_COL	= 7;		// tier XP, interleaved with the targets: 7, 9, 11, ...
 CH_ID_COL		= 4;		// CoDOL: the numeric id into challenges[1000]
-CH_CO_REWARD_COL = 24;		// CoDOL: per-tier rewards, parallel to the targets
+CH_CO_REWARD_COL = 24;		// CoDOL: per-tier GP (C1's CP1..CP9), parallel to the targets
 
 
 TIER_FILE_COL	= 4;
@@ -2191,7 +2191,36 @@ giveRankXpAfterWait( baseName,missionStatus )
 	self endon ( "disconnect" );
 
 	wait( 0.25 );
-	self maps\mp\gametypes\_rank::giveRankXP( "challenge", level.challengeInfo[baseName]["reward"][missionStatus] );
+	xp = level.challengeInfo[baseName]["reward"][missionStatus];
+	gp = 0;
+	if ( isDefined( level.challengeInfo[baseName]["gp"] ) && isDefined( level.challengeInfo[baseName]["gp"][missionStatus] ) )
+		gp = level.challengeInfo[baseName]["gp"][missionStatus];
+	if ( xp > 0 )
+		self maps\mp\gametypes\_rank::giveRankXP( "challenge", xp );
+	// A tier's GP is a FIXED award (user rule 2026-10-13): the table amount,
+	// never an activity gp_scale. The match report carries it to the lobby,
+	// which deposits it in the GP wallet.
+	if ( gp > 0 )
+		self codol_creditGP( gp, "challenge" );
+	self codolNoteChallengeReward( xp, gp );
+}
+
+// The end-of-game summary's challenge row. C1's LobbySummaryController and
+// in-game AARPanelXP read client dvar ui_eog_r6 as "|"-separated tokens,
+// token 2 the challenge XP and token 3 the challenge GP of the match
+// (codo.gfx, get_EXPInfo). Tokens 0 and 1 are not read by either page.
+codolNoteChallengeReward( xp, gp )
+{
+	if ( !isDefined( self.pers["codolChallengeXP"] ) )
+	{
+		self.pers["codolChallengeXP"] = 0;
+		self.pers["codolChallengeGP"] = 0;
+		self.pers["codolChallengeTiers"] = 0;
+	}
+	self.pers["codolChallengeXP"] += xp;
+	self.pers["codolChallengeGP"] += gp;
+	self.pers["codolChallengeTiers"]++;
+	self setClientDvar( "ui_eog_r6", "challenges|" + self.pers["codolChallengeTiers"] + "|" + self.pers["codolChallengeXP"] + "|" + self.pers["codolChallengeGP"] );
 }
 
 
@@ -2286,13 +2315,23 @@ challenge_targetVal( refString, tierId )
 
 
 /*
-	CoDOL's per-tier reward series is columns 24..32, running PARALLEL to the
-	targets in 6, 8, ... -- not IW4's interleaved 7, 9, 11, ...  Reading the
-	IW4 columns against CoDOL's table returns 0 for 1349 of the 2330 authored
-	tiers (58%), because CoDOL populates only the first two of those cells and
-	leaves the rest blank.
+	A tier pays XP and GP from two different series, exactly as C1's own UI
+	reads them (codo.gfx codo.constants.ChallengeTable and
+	LobbySummaryController.get_challenges):
+	  XP  = column XP + 2*(tier-1): 7, 9, 11, ... interleaved with the targets;
+	  GP  = column CP1 + (tier-1): 24..32, parallel to the targets.
+	CoDOL authors XP only for the first two tiers of most challenges (the
+	later cells are blank, so 0 XP) and GP for every tier. Columns 24..32
+	were read as XP here before 2026-10-13, which paid GP amounts as XP and
+	no GP at all.
 */
 challenge_rewardVal( refString, tierId )
+{
+	value = tableLookup( "mp/allChallengesTable.csv", CH_REF_COL, refString, CH_REWARD_COL + ((tierId-1)*2) );
+	return int( value );
+}
+
+challenge_gpVal( refString, tierId )
 {
 	value = tableLookup( "mp/allChallengesTable.csv", CH_REF_COL, refString, CH_CO_REWARD_COL + (tierId-1) );
 	return int( value );
@@ -2317,6 +2356,7 @@ buildChallegeInfo()
 		level.challengeInfo[refString] = [];
 		level.challengeInfo[refString]["targetval"] = [];
 		level.challengeInfo[refString]["reward"] = [];
+		level.challengeInfo[refString]["gp"] = [];
 
 		// The numeric id IS the storage address; a row without one cannot be
 		// progressed at all, so record it here rather than looking it up per
@@ -2334,6 +2374,7 @@ buildChallegeInfo()
 
 			level.challengeInfo[refString]["targetval"][tierId] = targetVal;
 			level.challengeInfo[refString]["reward"][tierId] = rewardVal;
+			level.challengeInfo[refString]["gp"][tierId] = challenge_gpVal( refString, tierId );
 			
 			totalRewardXP += rewardVal;
 		}
