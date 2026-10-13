@@ -166,7 +166,8 @@ JavelinUsageLoop()
 		if ( GetDVar( "missileDebugText" ) == "1" )
 			debugText = true;
 
-		weapon = self getCurrentWeapon();
+		// A class-built javelin is a composed name ("*a 68 0"); its base is javelin_mp.
+		weapon = codol_getWeaponBaseName( self getCurrentWeapon() );
 		if ( !isSubStr( weapon, "javelin" ) || self isEMPed() )
 		{
 			ResetJavelinLocking();

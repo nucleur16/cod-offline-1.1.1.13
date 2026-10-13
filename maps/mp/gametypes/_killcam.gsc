@@ -41,7 +41,7 @@ killcam(
 			camtime = (gettime() - killcamentitystarttime) / 1000 - predelay - .1;
 		else if ( level.showingFinalKillcam	)
 			camtime = 4.0;
-		else if ( sWeapon == "javelin_mp" )
+		else if ( codol_getWeaponBaseName( sWeapon ) == "javelin_mp" )
 			camtime = 8;
 		else if ( issubstr( sWeapon, "remotemissile_" ) )
 			camtime = 5;

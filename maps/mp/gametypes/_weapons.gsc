@@ -1314,6 +1314,8 @@ watchMissileUsage()
 	for ( ;; )
 	{
 		self waittill( "missile_fire", missile, weaponName );
+		// Launchers from a class are composed names ("*a 68 0"): switch on the base.
+		baseWeaponName = codol_getWeaponBaseName( weaponName );
 		
 		if ( isSubStr( weaponName, "gl_" ) )
 		{
@@ -1321,7 +1323,7 @@ watchMissileUsage()
 			missile thread maps\mp\gametypes\_shellshock::grenade_earthQuake();
 		}
 
-		switch ( weaponName )
+		switch ( baseWeaponName )
 		{
 			case "at4_mp":
 			case "stinger_mp":
@@ -1336,7 +1338,7 @@ watchMissileUsage()
 				break;
 		}
 
-		switch ( weaponName )
+		switch ( baseWeaponName )
 		{
 			case "at4_mp":
 			case "javelin_mp":
