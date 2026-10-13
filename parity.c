@@ -414,11 +414,17 @@ __attribute__((used)) void __cdecl ParityEvents(int localClient, const BYTE *ops
 #define VECLEN_FUNC_VA   0x00402490u
 
 enum { PF_INT, PF_HEX, PF_BYTE };
-typedef struct { WORD off; BYTE kind; const char *name; } ParityField;
+/* ignore: bits only shown at level 2, because the client changes them outside Pmove so the
+ * prediction and the snapshot never agree:
+ *   pm_flags 0x8000   PMF_SHELLSHOCK, set and cleared only by game code (0x50CC13, 0x538AAE,
+ *                     0x54324B), so every server toggle is one line;
+ *   weapFlags 0x18    the crosshair scan in .tvm0 (0x8400416 / 0x842EEBC / 0x848D2BE) rewrites
+ *                     them every frame after prediction; Pmove only reads bit 8 (0x41DAAE). */
+typedef struct { WORD off; BYTE kind; const char *name; DWORD ignore; } ParityField;
 
 static const ParityField kPredFields[] = {
     { 0x004, PF_INT, "pm_type" },          { 0x008, PF_INT, "pm_time" },
-    { 0x00C, PF_HEX, "pm_flags" },         { 0x010, PF_HEX, "otherFlags" },
+    { 0x00C, PF_HEX, "pm_flags", 0x8000 },         { 0x010, PF_HEX, "otherFlags" },
     { 0x014, PF_HEX, "ps+0x14" },          { 0x018, PF_BYTE, "bobCycle" },
     { 0x0A8, PF_INT, "groundEntityNum" },  { 0x0B8, PF_INT, "jumpTime" },
     { 0x0E8, PF_BYTE, "movementDir" },     { 0x0EC, PF_HEX, "stanceAnimFlags" },
@@ -436,7 +442,7 @@ static const ParityField kPredFields[] = {
     { 0x28C, PF_INT, "hand1+0x8" },        { 0x290, PF_INT, "weaponTimer2[1]" },
     { 0x294, PF_INT, "weaponstate[1]" },   { 0x298, PF_HEX, "handFlags[1]" },
     { 0x328, PF_INT, "offhandWeapon" },    { PS_WEAPON, PF_INT, "weapon" },
-    { 0x340, PF_INT, "primaryWeapon" },    { 0x344, PF_HEX, "weapFlags" },
+    { 0x340, PF_INT, "primaryWeapon" },    { 0x344, PF_HEX, "weapFlags", 0x18 },
     { 0x35C, PF_INT, "dualWield" },
     { 0x4B0, PF_HEX, "perks[0]" }, { 0x4B4, PF_HEX, "perks[1]" }, { 0x4B8, PF_HEX, "perks[2]" },
     { 0x4BC, PF_HEX, "perks[3]" }, { 0x4C0, PF_HEX, "perks[4]" }, { 0x4C4, PF_HEX, "perks[5]" },
@@ -499,7 +505,8 @@ __attribute__((used)) void __cdecl ParityPredCheck(const float *delta, const BYT
     for (unsigned i = 0; i < PRED_FIELD_COUNT; i++) {
         const ParityField *f = &kPredFields[i];
         DWORD now = ParityFieldValue(cg, f), was = g_prev.fields[i];
-        if (now == was) continue;
+        DWORD ignore = level >= 2 ? 0 : f->ignore;
+        if ((now & ~ignore) == (was & ~ignore)) continue;
         if (f->kind == PF_HEX)
             ParityReport(0, "pred", f->name, "%s (ps+0x%X) client 0x%lX snapshot 0x%lX (diff bits 0x%lX) at commandTime %d",
                          f->name, f->off, (unsigned long)was, (unsigned long)now, (unsigned long)(was ^ now), cmdTime);
