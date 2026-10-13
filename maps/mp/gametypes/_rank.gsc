@@ -413,6 +413,8 @@ giveRankXP( type, value )
 	self.xpGains[type] += value;
 	
 	self incRankXP( value );
+	// CoDOL: the lobby's after-action report (_codol_aar.gsc).
+	self maps\mp\gametypes\_codol_aar::noteXP( type, oldxp, self getRankXP() );
 
 	if ( codolRankShouldTrace() )
 		println( "rank: " + self.name + " " + type + " +" + value + " XP (xpScale " + level.xpScale

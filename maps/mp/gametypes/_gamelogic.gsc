@@ -1517,6 +1517,7 @@ Callback_StartGameType()
 	thread maps\mp\_defcon::init();
 	thread maps\mp\gametypes\_codol_bots::init();
 	maps\mp\gametypes\_codol_top_players::init();
+	maps\mp\gametypes\_codol_aar::init();
 	// C1 field orders (fo_table, the field_orders HUD, SetFO*).
 	thread maps\mp\gametypes\_fieldorders::init();
 	
@@ -2414,5 +2415,9 @@ processLobbyData()
 	maps\mp\_awards::assignAwards();
 	maps\mp\_scoreboard::processLobbyScoreboards();
 	
+	// CoDOL: the lobby's after-action report, complete, before the match
+	// report below carries (and zeroes) this match's GP.
+	maps\mp\gametypes\_codol_aar::sendFinal();
+
 	sendClientMatchData();
 }

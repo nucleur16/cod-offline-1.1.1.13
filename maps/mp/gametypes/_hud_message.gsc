@@ -553,6 +553,9 @@ splashNotify( text, optionalNumber )
 
 splashNotifyDelayed( text, optionalNumber )
 {
+	// CoDOL: a medal, for the lobby's after-action report (_codol_aar.gsc).
+	self maps\mp\gametypes\_codol_aar::noteMedal( text, optionalNumber );
+
 	if ( level.hardcoreMode )
 		return;
 	

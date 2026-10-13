@@ -120,6 +120,8 @@ ch_setProgress( refString, value )
 	if ( id < 0 )
 		return;
 
+	// CoDOL: the lobby's after-action report (_codol_aar.gsc).
+	self maps\mp\gametypes\_codol_aar::noteChallengeProgress( refString, self getPlayerData( "challenges", id ), value );
 	self setPlayerData( "challenges", id, value );
 }
 
