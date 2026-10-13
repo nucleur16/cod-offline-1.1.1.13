@@ -214,6 +214,14 @@ foPlayer()
 // bootcamp set after that.
 foChooseSet()
 {
+	// scr_fieldorders_set names a set ref to use for everyone (tests).
+	forced = toLower( getDvar( "scr_fieldorders_set" ) );
+	if ( forced != "" && isDefined( level.foSets[ forced ] ) )
+	{
+		self.foOnboardingDone = 0;
+		return level.foSets[ forced ];
+	}
+
 	onboarding = level.foSets[ "cofieldordermponboarding" ];
 	bootcamp = level.foSets[ "cofieldorderbootcamp" ];
 
