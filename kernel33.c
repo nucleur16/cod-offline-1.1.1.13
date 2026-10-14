@@ -895,6 +895,10 @@ static void PatchGbkInput(void)
         Log("gbk input: bytes at 0x%08X do not match, paste uses the ANSI code page", CLIPBOARD_CALL_VA);
 }
 
+/* <game>\usermaps\<map>\ zones and iwds: see usermaps.c. */
+#include <shlwapi.h>
+#include "usermaps.c"
+
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 static void __cdecl TakeOver(void)
 {
@@ -910,6 +914,7 @@ static void __cdecl TakeOver(void)
     PatchGbkInput();
     PatchScoresOpen();
     PatchPatchDir();
+    PatchUserMaps();
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
     ExitProcess(0); /* the CRT entry ends in exit(); not reached */
