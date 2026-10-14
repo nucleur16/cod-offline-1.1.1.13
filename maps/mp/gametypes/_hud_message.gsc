@@ -14,7 +14,8 @@ init()
 	// server's own precaches. "splash" and "defcon" are not among them and no
 	// script opens or closes them by name -- CG_ShowSplash opens a splash's
 	// column-11 menu by name, not by slot -- so they are not precached; their
-	// slots go to the field order splash menus (codolRegisterClosedSplashMenu).
+	// slots stay free (closePopupMenu borrows a free slot, per client, to close
+	// the field order splash menus: codolRegisterClosedSplashMenu).
 	precacheMenu( "challenge" );
 	precacheMenu( "killstreak" );
 	precacheMenu( "perk_display" );
@@ -197,7 +198,11 @@ codolRegisterClosedSplashMenu( menu )
 		level.codolClosedSplashMenus = [];
 	if ( isDefined( level.codolClosedSplashMenus[ menu ] ) )
 		return;
-	precacheMenu( menu );
+	// Not precacheMenu: these menus live inside patch_common_mp's own menu
+	// files, and C1's CG_Init loads every precached name as
+	// ui_mp/scriptmenus/<name>.menu (a default menufile for these). The
+	// server's closePopupMenu closes a menu that was not precached by name
+	// through a slot set for that client alone (codol_script_menu.c).
 	level.codolClosedSplashMenus[ menu ] = menu;
 }
 
