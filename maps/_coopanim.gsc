@@ -257,6 +257,9 @@ idle_replay_wait()
 kick_cast_loop( clip )
 {
 	self endon( "death" );
+	self endon( "coop_scene_scripted" );
+	if ( isDefined( self.coop_scene_scripted_on ) )
+		return;
 	self setGoalPos( self.origin );
 	self animscripted( "coop_scene_kick", self.origin, self.angles, clip, "normal", %body, 1, 0.3 );
 	wait( 0.1 );
@@ -376,12 +379,18 @@ play_gesture( clip, length )
 play_scripted( clip, node, mode, length )
 {
 	self endon( "death" );
+	// A newer scene started on this actor (even in the frame this one ends)
+	// owns the scripted state: this one must not stop it.
+	self notify( "coop_scene_scripted" );
+	self endon( "coop_scene_scripted" );
 	self notify( "coop_gesture" );
 	if ( isDefined( node ) )
 		place_at_start( self, clip, node );
 	self setGoalPos( self.origin );
+	self.coop_scene_scripted_on = true;
 	self animscripted( "coop_scene", self.origin, self.angles, clip, mode, %body, 1, 0.2 );
 	self waittill_scene_done( length );
+	self.coop_scene_scripted_on = undefined;
 	if ( isAlive( self ) )
 	{
 		self stopanimscripted();
@@ -453,6 +462,8 @@ release( guy )
 	if ( !isDefined( guy ) || !isAlive( guy ) )
 		return;
 	guy notify( "coop_scene_stop" );
+	guy notify( "coop_scene_scripted" );
+	guy.coop_scene_scripted_on = undefined;
 	guy.coop_scene_stopped_at = getTime();
 	guy stopanimscripted();
 	guy.coop_pose_anim = undefined;
