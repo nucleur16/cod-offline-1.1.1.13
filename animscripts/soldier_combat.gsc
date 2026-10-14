@@ -63,18 +63,101 @@ main()
 {
 	self endon( "killanimscript" );
 
-	self orientmode( "face enemy" );
+	init_transitions();
+	watch_player_grenades();
+	update_cover_use();
+	self.coop_in_cover = undefined;
+	self.a.movement = "stop";
+
+	// IW4 combat.gsc: at a cover node the node's own script runs
+	// (cover_left / cover_right / cover_stand / cover_crouch); the native
+	// actor says when he stands on the node it claimed for him.
+	if ( self codol_actorCoverArrived() )
+		animscripts\soldier_cover::main();
+
+	self orientmode( "face current" );
 	self animmode( "zonly_physics", false );
 	choose_pose( true );
 
 	for ( ;; )
 	{
-		self orientmode( "face enemy" );
+		if ( self codol_actorCoverArrived() )
+		{
+			stop_aiming();
+			animscripts\soldier_cover::main();
+			choose_pose( true );
+			continue;
+		}
 		self animmode( "zonly_physics", false );
+		if ( react_to_grenade() )
+		{
+			choose_pose( true );
+			continue;
+		}
+		enemy = self.enemy;
+		if ( isDefined( enemy ) && can_melee( enemy ) )
+		{
+			melee_strike( enemy );
+			choose_pose( true );
+			continue;
+		}
+		// IW4 combat.gsc: an enemy closing inside arm's reach plus a step is
+		// backed away from (exposed_backpedal), weapon up.
+		if ( isDefined( enemy ) && self.a.pose == "stand" && distanceSquared( enemy.origin, self.origin ) < 160 * 160 &&
+		     ( !isDefined( self.coop_next_backpedal ) || getTime() >= self.coop_next_backpedal ) )
+		{
+			self.coop_next_backpedal = getTime() + 3000 + randomInt( 2000 );
+			if ( backpedal( enemy ) )
+				continue;
+		}
+		// IW4 TurnToFaceRelativeYaw: a target well off his facing is
+		// turned to with the stance's turn clip; the aim tracks the rest.
+		if ( isDefined( enemy ) )
+		{
+			turn_toward( enemy.origin, 45 );
+			self orientmode( "face angle", vectorToYaw( enemy.origin - self.origin ) );
+		}
+		if ( isDefined( enemy ) && can_throw_grenade( enemy ) && randomInt( 6 ) == 0 &&
+		     throw_grenade( enemy, exposed_grenade_anim() ) )
+		{
+			choose_pose( true );
+			continue;
+		}
 		ShootAtEnemy();
 		self.safeToChangeScript = true;
 		wait( 0.05 );
 	}
+}
+
+backpedal( enemy )
+{
+	self endon( "killanimscript" );
+	clip = pick( list2( %exposed_backpedal, %exposed_backpedal_v2 ) );
+	self orientmode( "face angle", vectorToYaw( enemy.origin - self.origin ), 1 );
+	endPos = delta_end( self.origin, self.angles[ 1 ], getMoveDelta( clip, 0, 1 ) );
+	if ( !may_move( self.origin, endPos ) )
+		return false;
+	trace_anim( "backpedal" );
+	stat_bump( "backpedal" );
+	stop_aiming();
+	self.safeToChangeScript = false;
+	self orientmode( "face current" );
+	self animmode( "zonly_physics", false );
+	self setFlaggedAnimKnobAllRestart( "backpedal", clip, %body, 1, 0.2, 1 );
+	DoNoteTracksForTime( getAnimLength( clip ), "backpedal" );
+	self.safeToChangeScript = true;
+	start_aiming( 0.2 );
+	return true;
+}
+
+// IW4 animset grenade throws for the exposed pose he is in.
+exposed_grenade_anim()
+{
+	if ( isDefined( self.a.pose ) && self.a.pose == "crouch" )
+		return %crouch_grenade_throw;
+	if ( isDefined( self.coop_cqb ) )
+		return %cqb_stand_grenade_throw;
+	return pick( list3( %stand_grenade_throw, %exposed_grenadethrowb, %exposed_grenadethrowc ) );
 }
 
 // IW4 combat.gsc exposed stance choice: a soldier who settles into a fire
@@ -526,6 +609,11 @@ ShootAtEnemy()
 
 		if ( getTime() >= self.coop_next_pose_check )
 			choose_pose( false );
+		if ( self codol_actorCoverArrived() )
+		{
+			self.safeToChangeScript = true;
+			return;
+		}
 
 		begin_engagement( enemy );
 
