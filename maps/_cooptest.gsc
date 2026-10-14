@@ -89,6 +89,12 @@ watch()
 				count = int( tokens[ 1 ] );
 			kill_enemies( count );
 			break;
+		case "hurt":
+			// hurt <damage>: wound every live enemy without killing him
+			// (pain animscript probe)
+			if ( tokens.size >= 2 )
+				hurt_enemies( int( tokens[ 1 ] ) );
+			break;
 		case "weapons":
 			for ( i = 1; i < tokens.size; i++ )
 				codolprintln( "CoDOL cooptest: weapon " + tokens[ i ] + " mounted " + codol_isWeaponMounted( tokens[ i ] ) +
@@ -555,6 +561,24 @@ kill_enemies( count )
 		killed++;
 	}
 	codolprintln( "CoDOL cooptest: killed " + killed );
+}
+
+hurt_enemies( amount )
+{
+	attacker = player( 0 );
+	hurt = 0;
+	for ( i = 0; i < level.coop_enemies.size; i++ )
+	{
+		ai = level.coop_enemies[ i ];
+		if ( !isDefined( ai ) || !isAlive( ai ) || ai.health <= amount )
+			continue;
+		if ( isDefined( attacker ) )
+			ai doDamage( amount, ai.origin + ( 0, 0, 48 ), attacker );
+		else
+			ai doDamage( amount, ai.origin + ( 0, 0, 48 ) );
+		hurt++;
+	}
+	codolprintln( "CoDOL cooptest: hurt " + hurt );
 }
 
 godmode( index )
