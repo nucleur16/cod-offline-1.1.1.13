@@ -72,6 +72,8 @@ static int g_conHead, g_conCount;
 static char g_conPartial[CON_LINE_LEN];
 static int g_conPartialLen;
 static int g_conScroll, g_conRows = 20;
+static volatile LONG g_conBlink = 1;
+static volatile LONG g_conShot; /* "k33shot": save the next rendered overlay to main\k33_console.bmp */
 static volatile LONG g_conExpanded;   /* Shift+Tab / Shift+~: the full log; collapsed by default */
 static char g_res[CON_RESULTS][CON_LINE_LEN]; /* what the last command printed */
 static int g_resCount;
@@ -182,7 +184,7 @@ static void ConPushLine(const char *line)
     ConAnnotate(line, dst, CON_LINE_LEN);
     if (g_conCount < CON_LINES) g_conCount++;
     else g_conHead = (g_conHead + 1) % CON_LINES;
-    if (g_resUntil && (LONG)(GetTickCount() - g_resUntil) < 0) {
+    if (g_resUntil && (LONG)(GetTickCount() - g_resUntil) < 0 && strncmp(dst, "[DWLOG]", 7) && strncmp(dst, "[TLOG", 5)) {
         if (g_resCount == CON_RESULTS) {
             memmove(g_res[0], g_res[1], sizeof(g_res[0]) * (CON_RESULTS - 1));
             g_resCount--;
@@ -363,7 +365,7 @@ static const BYTE *ConFindDvar(const char *name, int count)
 typedef struct ConCmd { struct ConCmd *next; const char *name; void *fn; } ConCmd;
 
 /* Commands the console handles itself (they also cover the IW4 ones C1 dropped). */
-static const char *const kBuiltins[] = { "clear", "cmdlist", "condump", "dvarlist", "find", "k33help" };
+static const char *const kBuiltins[] = { "clear", "cmdlist", "condump", "dvarlist", "find", "k33help", "k33shot" };
 #define BUILTIN_COUNT (sizeof(kBuiltins) / sizeof(kBuiltins[0]))
 
 static BOOL ConIsSetCommand(const char *t)
@@ -854,7 +856,7 @@ static void ConExecute(const char *line)
     int dcount = ConSnapshotDvars();
     EnterCriticalSection(&g_conLock);
     g_resCount = 0;
-    g_resUntil = GetTickCount() + 1500; /* Cbuf runs it next frame; its output lands well inside this */
+    g_resUntil = GetTickCount() + 500; /* Cbuf runs it next frame; its output lands well inside this */
     if (!g_resUntil) g_resUntil = 1;
     LeaveCriticalSection(&g_conLock);
     ConPrintf("]%s\n", line);
@@ -884,6 +886,16 @@ static void ConExecute(const char *line)
             g_conScroll = 0;
             LeaveCriticalSection(&g_conLock);
             InterlockedExchange(&g_conDirty, 1);
+            continue;
+        }
+        if (!_stricmp(t0, "k33shot")) {
+            int delay;
+            ConReadToken(seg, &p, t1, sizeof(t1));
+            delay = atoi(t1);
+            if (delay < 0 || delay > 60000) delay = 0;
+            InterlockedExchange(&g_conShot, (LONG)((GetTickCount() + delay) | 1));
+            InterlockedExchange(&g_conDirty, 1);
+            ConPrintf("k33shot: the console frame %d ms from now goes to main\\k33_console.bmp\n", delay);
             continue;
         }
         if (!_stricmp(t0, "dvarlist") || !_stricmp(t0, "cmdlist") || !_stricmp(t0, "find") || !_stricmp(t0, "condump") ||
@@ -1222,7 +1234,7 @@ static HFONT g_font;
 
 typedef struct {
     char lines[160][CON_LINE_LEN];
-    int lineCount, scroll, total, expanded;
+    int lineCount, scroll, total, expanded, blink, cycling;
     char input[CON_INPUT_LEN];
     int cursor;
     ConSuggest sugg[CON_SHOWN];
@@ -1292,9 +1304,9 @@ static void ConFill(int x0, int y0, int x1, int y1, COLORREF c)
 
 static BOOL ConEnsureDib(int w, int h)
 {
-    int fh = h / 56;
-    if (fh < 13) fh = 13;
-    if (fh > 40) fh = 40;
+    int fh = h / 64; /* IW4's consoleFont is 16 px on a 1024-line screen */
+    if (fh < 12) fh = 12;
+    if (fh > 32) fh = 32;
     if (g_dc && g_dibW == w && g_dibH == h && g_fontH == fh) return TRUE;
     if (!g_dc) g_dc = CreateCompatibleDC(NULL);
     if (!g_dc) return FALSE;
@@ -1323,30 +1335,32 @@ static BOOL ConEnsureDib(int w, int h)
     return TRUE;
 }
 
-/* Translucent regions: GDI leaves alpha 0, so each box records the alpha its pixels get. */
-typedef struct { int x0, y0, x1, y1; BYTE a; } ConAlphaRect;
+/* Translucent regions: GDI leaves alpha 0, so each box records its fill and the alpha it gets;
+ * any pixel that is not the fill (text) is made opaque. */
+typedef struct { int x0, y0, x1, y1; COLORREF fill; BYTE a; } ConAlphaRect;
 static ConAlphaRect g_alpha[16];
 static int g_alphaCount;
 
-/* IW4's console palette (con_inputBoxColor 0.25 0.25 0.2, con_inputHintBoxColor 0.4, con_outputWindowColor
- * 0.25 0.25 0.2 0.85, con_versionColor yellow, dvar matches 1 1 0.8, commands 0.8 0.8 1) with IW4x's
- * blue accent border. Background colours stay below the text threshold in the alpha pass. */
-#define CON_BOX        RGB(30, 30, 25)
-#define CON_HINTBOX    RGB(46, 46, 46)
-#define CON_ACCENT     RGB(0, 150, 255)
+/* IW4's console dvar defaults (iw4x.exe Con_OneTimeInit): con_inputBoxColor 0.25 0.25 0.2,
+ * con_inputHintBoxColor 0.4 0.4 0.35, con_outputWindowColor 0.35 0.35 0.3 0.75, con_outputBarColor
+ * 1 1 0.95 0.6, con_outputSliderColor 0.15 0.15 0.1 0.6; dvar matches and values 1 1 0.8, inactive
+ * values 0.8 0.8 0.8, command matches 0.8 0.8 1, con_versionColor 1 1 0. The prompt is drawn the way
+ * IW4x draws its "IW4x MP >" prompt, in the version colour. */
+#define CON_PROMPT     "SH1X >"
+#define CON_INPUTBOX   RGB(64, 64, 51)
+#define CON_HINTBOX    RGB(102, 102, 89)
+#define CON_OUTBOX     RGB(89, 89, 77)
 #define CON_DVARCOL    RGB(255, 255, 204)
-#define CON_CMDCOL     RGB(204, 204, 255)
-#define CON_MATCHCOL   RGB(0, 200, 255)
 #define CON_VALCOL     RGB(255, 255, 204)
+#define CON_INACTIVE   RGB(204, 204, 204)
+#define CON_CMDCOL     RGB(204, 204, 255)
+#define CON_MATCHCOL   RGB(255, 255, 0)
+#define CON_VERSIONCOL RGB(255, 255, 0)
 
 static void ConBox(int x0, int y0, int x1, int y1, COLORREF fill, BYTE alpha)
 {
     ConFill(x0, y0, x1, y1, fill);
-    ConFill(x0, y0, x1, y0 + 1, CON_ACCENT);
-    ConFill(x0, y1 - 1, x1, y1, CON_ACCENT);
-    ConFill(x0, y0, x0 + 2, y1, CON_ACCENT);
-    ConFill(x1 - 1, y0, x1, y1, CON_ACCENT);
-    if (g_alphaCount < 16) g_alpha[g_alphaCount++] = (ConAlphaRect){ x0, y0, x1, y1, alpha };
+    if (g_alphaCount < 16) g_alpha[g_alphaCount++] = (ConAlphaRect){ x0, y0, x1, y1, fill, alpha };
 }
 
 /* name with the typed part highlighted */
@@ -1364,133 +1378,125 @@ static int ConMatchText(int x, int y, const char *name, const char *part, COLORR
     return ConText(x, y, c, base, maxX);
 }
 
+/* IW4 Con_DrawInput: the input line is one text line plus padding across the top of the screen,
+ * inset by the console's screen margin; the hint box hangs under it from the input text's x; the full
+ * console (Shift+Tab) is the output window under the same input line, down to the bottom margin. */
 static int ConRender(int W, int H)
 {
     ConSnap *s = &g_snap;
-    int lh = g_fontH + 4, m = W / 64, pad = 6;
-    if (m < 8) m = 8;
+    int fh = g_fontH, pad = fh / 4 + 2, lh = fh + 2;
+    int m = H / 120 + 2;                         /* con_screenMin/Max inset */
     g_alphaCount = 0;
     memset(g_bits, 0, (size_t)W * H * 4);
 
-    /* input bar, as IW4x: prompt, input, version string on the right */
-    int bx0 = m, by0 = m / 2, bx1 = W - m, by1 = by0 + lh + 2 * pad;
-    ConBox(bx0, by0, bx1, by1, CON_BOX, 0xE0);
-    static const char kVersion[] = "Kernel33 dev  C1 1.1.1.13 build 550136";
-    int vw = ConTextWidth(kVersion, (int)sizeof(kVersion) - 1);
-    ConText(bx1 - pad - vw, by0 + pad, kVersion, RGB(255, 255, 0), bx1);
+    int bx0 = m, by0 = m, bx1 = W - m, by1 = by0 + fh + 2 * pad;
+    ConBox(bx0, by0, bx1, by1, CON_INPUTBOX, 0xE0);
     int iy = by0 + pad;
-    int ix = ConText(bx0 + pad + 2, iy, "]", RGB(255, 255, 255), bx1) + 4;
+    int ix = ConText(bx0 + pad, iy, CON_PROMPT, CON_VERSIONCOL, bx1) + fh / 2;
     SetTextColor(g_dc, RGB(255, 255, 255));
     {
         WCHAR w[CON_INPUT_LEN + 8];
         int wn = MultiByteToWideChar(GAME_CODEPAGE, 0, s->input, (int)strlen(s->input), w, CON_INPUT_LEN + 8);
         if (wn > 0) TextOutW(g_dc, ix, iy, w, wn);
     }
-    int cx = ix + ConTextWidth(s->input, s->cursor);
-    ConFill(cx, iy + 1, cx + 2, iy + lh - 2, RGB(255, 255, 255));
+    if (s->blink) {
+        int cx = ix + ConTextWidth(s->input, s->cursor);
+        ConFill(cx, iy + 1, cx + 2, iy + fh, RGB(255, 255, 255));
+    }
     int used = by1;
 
-    /* full log (Shift+Tab / Shift+~): from under the bar to the bottom, with IW4's scroll bar */
     if (s->expanded) {
-        int ox0 = bx0, oy0 = by1 + 4, ox1 = bx1, oy1 = H - m / 2;
-        ConBox(ox0, oy0, ox1, oy1, CON_BOX, 0xD8);
-        int rows = (oy1 - oy0 - 2 * pad) / lh;
+        int ox0 = bx0, oy0 = by1, ox1 = bx1, oy1 = H - m;
+        ConBox(ox0, oy0, ox1, oy1, CON_OUTBOX, 0xC0);
+        int rows = (oy1 - oy0 - 2 * pad - lh) / lh;
         g_conRows = rows;
-        int y = oy1 - pad - lh;
+        int y = oy1 - pad - 2 * lh;
         for (int i = s->lineCount - 1; i >= 0 && y >= oy0 + pad; i--, y -= lh)
-            ConText(ox0 + pad + 2, y, s->lines[i], RGB(220, 220, 220), ox1 - 16);
-        /* scroll bar: con_outputBarColor / con_outputSliderColor */
-        int sx0 = ox1 - 12, sx1 = ox1 - 4, sy0 = oy0 + pad, sy1 = oy1 - pad;
-        ConFill(sx0, sy0, sx1, sy1, RGB(128, 128, 115));
+            ConText(ox0 + pad, y, s->lines[i], RGB(255, 255, 255), ox1 - 3 * pad);
+        /* scroll bar on the right: con_outputBarColor track, con_outputSliderColor thumb */
+        int sx0 = ox1 - 2 * pad, sx1 = ox1 - pad / 2, sy0 = oy0 + pad, sy1 = oy1 - pad - lh;
+        ConFill(sx0, sy0, sx1, sy1, RGB(255, 255, 242));
         if (s->total > rows) {
             int track = sy1 - sy0, len = track * rows / s->total;
-            if (len < 12) len = 12;
+            if (len < 8) len = 8;
             int bottom = s->total - s->scroll;
             int top = sy0 + (int)((long long)(track - len) * (bottom - rows) / (s->total - rows));
-            ConFill(sx0, top, sx1, top + len, CON_ACCENT);
-        } else {
-            ConFill(sx0, sy0, sx1, sy1, CON_ACCENT);
+            ConFill(sx0, top, sx1, top + len, RGB(38, 38, 26));
         }
+        static const char kVersion[] = "SH1X Kernel33 dev - C1 1.1.1.13 build 550136";
+        int vw = ConTextWidth(kVersion, (int)sizeof(kVersion) - 1);
+        ConText(ox1 - pad - vw, oy1 - pad - lh, kVersion, CON_VERSIONCOL, ox1);
         if (s->scroll) {
             char t[64];
-            _snprintf(t, sizeof(t), "^3-- %d more below (PgDn) --", s->scroll);
+            _snprintf(t, sizeof(t), "-- %d more below (PgDn) --", s->scroll);
             t[sizeof(t) - 1] = 0;
-            ConText(ox0 + pad + 2, oy1 - pad - lh, t, RGB(255, 255, 0), ox1 - 16);
+            ConText(ox0 + pad, oy1 - pad - lh, t, CON_VERSIONCOL, ox1 - vw - 2 * pad);
         }
         used = oy1;
     }
 
-    /* autocomplete hint box under the input, IW4 style; over the log when that is open */
-    int hy = by1 + 2;
-    int rowsShown = s->suggCount + (s->suggTotal > s->suggCount ? 1 : 0) + s->detailCount;
+    /* the hint box, only while something is typed */
+    int hy = by1;
     BOOL single = s->detailCount && s->suggTotal <= 1;
-    if (single) rowsShown = s->detailCount;
-    if (rowsShown) {
-        int nameW = 0, valW = 0;
+    BOOL tooMany = s->suggTotal > CON_SHOWN && !s->cycling;
+    int rowsShown = single ? s->detailCount : tooMany ? 1 : s->suggCount + s->detailCount;
+    if (s->input[0] && rowsShown) {
+        int nameW = 0;
         for (int i = 0; i < s->suggCount; i++) {
             int w = ConTextWidth(s->sugg[i].name, (int)strlen(s->sugg[i].name));
             if (w > nameW) nameW = w;
-            int v = ConTextWidth(s->sugg[i].value, (int)strlen(s->sugg[i].value)) + g_fontH;
-            if (v > valW) valW = v;
         }
-        nameW += g_fontH * 2;
+        nameW += fh * 2;
         int hx0 = ix - pad, hx1 = bx1;
         int hy1 = hy + rowsShown * lh + 2 * pad;
         if (hy1 > H) hy1 = H;
         ConBox(hx0, hy, hx1, hy1, CON_HINTBOX, 0xF0);
         int ry = hy + pad;
-        if (!single) {
+        if (tooMany && !single) {
+            char more[128];
+            _snprintf(more, sizeof(more), "%d matches (too many to show here, press shift+tab to view full list)",
+                      s->suggTotal);
+            more[sizeof(more) - 1] = 0;
+            ConText(hx0 + pad, ry, more, RGB(255, 255, 255), hx1 - pad);
+        } else if (!single) {
             for (int i = 0; i < s->suggCount && ry + lh <= hy1; i++, ry += lh) {
                 const ConSuggest *g = &s->sugg[i];
-                if (s->suggFirst + i == s->suggSel) ConFill(hx0 + 2, ry, hx1 - 1, ry + lh, RGB(40, 60, 100));
+                if (s->suggFirst + i == s->suggSel) ConFill(hx0, ry, hx1, ry + lh, RGB(140, 140, 120));
                 ConMatchText(hx0 + pad, ry, g->name, s->part, g->kind ? CON_CMDCOL : CON_DVARCOL, hx0 + pad + nameW);
-                int vx = hx0 + pad + nameW;
                 if (g->kind == 0) {
                     char v[96];
                     _snprintf(v, sizeof(v), "%s^7", g->value);
                     v[sizeof(v) - 1] = 0;
-                    ConText(vx, ry, v, CON_VALCOL, hx1 - pad);
-                    ConText(vx + (valW < W / 4 ? valW : W / 4) + g_fontH, ry, g->info, RGB(140, 140, 140), hx1 - pad);
-                } else {
-                    ConText(vx, ry, "command", RGB(140, 140, 170), hx1 - pad);
+                    ConText(hx0 + pad + nameW, ry, v, CON_VALCOL, hx1 - pad);
                 }
             }
-            if (s->suggTotal > s->suggCount && ry + lh <= hy1) {
-                char more[128];
-                _snprintf(more, sizeof(more), "%d matches (too many to show here; keep typing, Tab cycles)", s->suggTotal);
-                more[sizeof(more) - 1] = 0;
-                ConText(hx0 + pad, ry, more, RGB(255, 255, 0), hx1 - pad);
-                ry += lh;
-            }
         }
-        for (int i = 0; i < s->detailCount && ry + lh <= hy1; i++, ry += lh)
-            ConText(hx0 + pad, ry, s->detail[i], RGB(220, 220, 220), hx1 - pad);
-        hy = hy1 + 2;
+        for (int i = 0; !tooMany && i < s->detailCount && ry + lh <= hy1; i++, ry += lh)
+            ConText(hx0 + pad, ry, s->detail[i], i ? CON_INACTIVE : CON_VALCOL, hx1 - pad);
+        hy = hy1;
         if (hy1 > used) used = hy1;
     }
 
-    /* collapsed: what the last command printed */
+    /* collapsed: what the last command printed, under the line */
     if (!s->expanded && s->resCount) {
         int ry0 = hy, ry1 = ry0 + s->resCount * lh + 2 * pad;
         if (ry1 > H) ry1 = H;
-        ConBox(bx0, ry0, bx1, ry1, CON_BOX, 0xD8);
+        ConBox(bx0, ry0, bx1, ry1, CON_OUTBOX, 0xC0);
         int y = ry0 + pad;
         for (int i = 0; i < s->resCount && y + lh <= ry1; i++, y += lh)
-            ConText(bx0 + pad + 2, y, s->res[i], RGB(220, 220, 220), bx1 - pad);
+            ConText(bx0 + pad, y, s->res[i], RGB(255, 255, 255), bx1 - pad);
         if (ry1 > used) used = ry1;
     }
     GdiFlush();
 
-    /* alpha: each box its own, text and borders opaque */
     for (int r = 0; r < g_alphaCount; r++) {
         const ConAlphaRect *a = &g_alpha[r];
+        DWORD fill = ((DWORD)GetRValue(a->fill) << 16) | ((DWORD)GetGValue(a->fill) << 8) | GetBValue(a->fill);
         for (int yy = a->y0 < 0 ? 0 : a->y0; yy < a->y1 && yy < H; yy++) {
             DWORD *row = g_bits + (size_t)yy * W;
             for (int xx = a->x0 < 0 ? 0 : a->x0; xx < a->x1 && xx < W; xx++) {
                 DWORD p = row[xx] & 0xFFFFFF;
-                BYTE rr = (BYTE)(p >> 16), gg = (BYTE)(p >> 8), bb = (BYTE)p;
-                BYTE mx = rr > gg ? (rr > bb ? rr : bb) : (gg > bb ? gg : bb);
-                BYTE al = mx > 90 ? 0xFF : a->a;
+                BYTE al = p == fill ? a->a : 0xFF;
                 if ((row[xx] >> 24) < al) row[xx] = p | ((DWORD)al << 24);
             }
         }
@@ -1503,6 +1509,8 @@ static void ConTakeSnapshot(void)
     ConSnap *s = &g_snap;
     EnterCriticalSection(&g_conLock);
     s->expanded = g_conExpanded != 0;
+    s->blink = g_conBlink;
+    s->cycling = g_suggCycling;
     int rows = g_conRows > 0 && g_conRows < 160 ? g_conRows : 20;
     if (g_conScroll > g_conCount - rows) g_conScroll = g_conCount - rows > 0 ? g_conCount - rows : 0;
     int end = g_conCount - g_conScroll;
@@ -1563,10 +1571,32 @@ static void ConDraw(IDirect3DDevice9 *dev)
         g_texH = H;
         InterlockedExchange(&g_conDirty, 1);
     }
+    {
+        LONG blink = !((GetTickCount() >> 8) & 1); /* IW4 blinks the cursor every 256 ms */
+        if (InterlockedExchange(&g_conBlink, blink) != blink) InterlockedExchange(&g_conDirty, 1);
+    }
     if (InterlockedExchange(&g_conDirty, 0)) {
         if (!ConEnsureDib(W, H)) { IDirect3DSurface9_Release(bb); goto out; }
         ConTakeSnapshot();
         g_usedH = ConRender(W, H);
+        LONG shot = g_conShot;
+        if (shot && (LONG)(GetTickCount() - (DWORD)shot) >= 0 && InterlockedCompareExchange(&g_conShot, 0, shot) == shot &&
+            g_usedH > 0) {
+            char path[MAX_PATH];
+            DWORD n = GetModuleFileNameA(NULL, path, MAX_PATH);
+            while (n && path[n - 1] != '\\') n--;
+            lstrcpynA(path + n, "main\\k33_console.bmp", MAX_PATH - n);
+            FILE *f = fopen(path, "wb");
+            if (f) {
+                BITMAPFILEHEADER fh2 = { 0x4D42, 0, 0, 0, sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) };
+                BITMAPINFOHEADER ih = { sizeof(ih), W, -g_usedH, 1, 32, BI_RGB, 0, 0, 0, 0, 0 };
+                fh2.bfSize = fh2.bfOffBits + (DWORD)W * g_usedH * 4;
+                fwrite(&fh2, sizeof(fh2), 1, f);
+                fwrite(&ih, sizeof(ih), 1, f);
+                fwrite(g_bits, 4, (size_t)W * g_usedH, f);
+                fclose(f);
+            }
+        }
         D3DLOCKED_RECT lr;
         RECT rc = { 0, 0, W, g_usedH };
         if (g_usedH > 0 && SUCCEEDED(IDirect3DTexture9_LockRect(g_tex, 0, &lr, &rc, 0))) {

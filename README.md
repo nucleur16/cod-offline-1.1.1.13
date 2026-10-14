@@ -67,11 +67,15 @@ and `Kernel33.log` stay shared (Kernel33.log lines carry each copy's pid at atta
 `toggleconsole`/`clear`/`condump`, the console field and `Con_DrawConsole` were removed, and
 `CL_KeyEvent` (0x493240) no longer tests the `~` key. The console is an overlay instead:
 
-- **Look (modelled on IW4x)**: `~` opens a compact input bar at the top (prompt, input, version
-  string on the right; IW4's dark translucent console colours with a blue accent border). Below it
-  the autocomplete hint box, and below that only what the last command printed. Shift+Tab or
-  Shift+`~` toggles the full-height log with scrollback and IW4's scroll bar (PgUp/PgDn, wheel,
-  Ctrl+Home/End); collapsed is the default, so engine and PARITY lines stay out of the way.
+- **Look (IW4/IW4x Con_DrawInput)**: `~` opens one thin input line across the top of the screen
+  (con_inputBoxColor), prompt `SH1X >` in the version colour, the typed text and a cursor blinking every
+  256 ms; no panel or title. While text is typed, IW4's hint box hangs under it (con_inputHintBoxColor):
+  each match with the typed part highlighted and its current value, IW4's value/default/domain rows for
+  an exact dvar, and "N matches (too many to show here, press shift+tab to view full list)" past 24.
+  Under that, only what the last command printed. Shift+Tab or Shift+`~` opens the full-height log
+  (con_outputWindowColor, IW4's scroll bar, the version string bottom right). Engine and PARITY lines
+  appear only there.
+- `k33shot [ms]` writes the console overlay as rendered, that many ms later, to `main\k33_console.bmp`.
 - **Toggle**: the key left of 1 (`~` on US layouts, by scan code) or the virtual key in the archived
   dvar `k33_consoleKey` (default 112 = F1, 0 = none). Works at the Scaleform menus and in game. Esc
   closes it (first Esc only closes the hint box).
