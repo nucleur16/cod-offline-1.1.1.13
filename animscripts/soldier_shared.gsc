@@ -397,6 +397,8 @@ setup_aim( transTime )
 {
 	if ( !isDefined( transTime ) )
 		transTime = 0.2;
+	if ( !isDefined( self.a.array ) )
+		self.a.pose = set_anim_array( self.a.pose );
 	self setAnimKnobAll( %exposed_aiming, %body, 1, transTime, 1 );
 	self setAnimKnobLimited( animArray( "straight_level" ), 1, transTime );
 	self setAnimKnobLimited( animArray( "add_aim_up" ), 1, transTime );
@@ -601,6 +603,14 @@ change_pose( newPose )
 	}
 
 	stop_aiming();
+	// The set of the pose he is leaving (unset when combat is his first
+	// module since spawning).
+	self.a.pose = set_anim_array( self.a.pose );
+	if ( self.a.pose == newPose )
+	{
+		start_aiming( 0.2 );
+		return newPose;
+	}
 	transAnim = animArray( self.a.pose + "_2_" + newPose );
 	self animmode( "zonly_physics", false );
 	self setFlaggedAnimKnobAllRestart( "trans", transAnim, %body, 1, 0.2, 1.2 );
