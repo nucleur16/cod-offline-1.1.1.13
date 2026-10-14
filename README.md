@@ -67,9 +67,14 @@ and `Kernel33.log` stay shared (Kernel33.log lines carry each copy's pid at atta
 `toggleconsole`/`clear`/`condump`, the console field and `Con_DrawConsole` were removed, and
 `CL_KeyEvent` (0x493240) no longer tests the `~` key. The console is an overlay instead:
 
+- **Look (modelled on IW4x)**: `~` opens a compact input bar at the top (prompt, input, version
+  string on the right; IW4's dark translucent console colours with a blue accent border). Below it
+  the autocomplete hint box, and below that only what the last command printed. Shift+Tab or
+  Shift+`~` toggles the full-height log with scrollback and IW4's scroll bar (PgUp/PgDn, wheel,
+  Ctrl+Home/End); collapsed is the default, so engine and PARITY lines stay out of the way.
 - **Toggle**: the key left of 1 (`~` on US layouts, by scan code) or the virtual key in the archived
   dvar `k33_consoleKey` (default 112 = F1, 0 = none). Works at the Scaleform menus and in game. Esc
-  closes it (first Esc only closes the dropdown).
+  closes it (first Esc only closes the hint box).
 - **Input**: the window class's WndProc (0x62FB85) goes through `ConsoleWndProc`, which owns the
   keyboard while the console is open; key-ups and everything else still reach the game. IME results
   are inserted as GBK; with the console closed the GBK IME patch is unchanged.
@@ -81,11 +86,19 @@ and `Kernel33.log` stay shared (Kernel33.log lines carry each copy's pid at atta
 - **Execute**: lines go to `Cbuf_AddText` (0x58BA60). Readable dvar names are rewritten to C1's
   numeric ones (`cg_drawFPS 1` -> `591 1`, also after `set/seta/reset/toggle/togglep/setfromdvar`);
   the rewrite is echoed as `-> ...`.
-- **Autocomplete**: as you type, a dropdown lists matching commands and dvars (prefix matches
-  first, then substring matches, numeric IDs match too), each dvar with its current value, its C1
-  name and its domain. Tab completes the longest common prefix, then cycles the matches (Shift+Tab
-  back). After a dvar name, the dropdown shows its value, default, flags, domain and IW4 description.
-- **Keys**: Up/Down history (saved to `main\k33_console_history.txt`), PgUp/PgDn/wheel scroll,
+- **Autocomplete**: as you type, the hint box lists matching dvars (with their current value, C1
+  name and domain) and commands, prefix matches first, then substring matches, the typed part
+  highlighted; numeric IDs match too. Over 24 matches it shows the count. One exact dvar shows its
+  value, default, type/flags, domain and IW4 description, as IW4's Con_DrawAutoCompleteChoice does.
+  Tab completes the longest common prefix, then cycles the matches.
+- **Sets** go through C1's own command path (Cbuf -> Dvar_Command -> Dvar_SetCommand ->
+  Dvar_SetVariant), which validates type, domain and flags; the console never writes dvar memory.
+  A readable name whose mapping is a positional guess prints a warning when used.
+- **cg_draw2D at the menu**: setting `cg_draw2D` ("585") to 1 at the front end crashed C1. The name
+  and the set were right; C1's CG_Draw2D just cannot run without a snapshot (it reads cg.nextSnap at
+  0x43A205, and 0x453CCD after that), which is why the front end keeps it 0. The console now refuses
+  to change it (set/reset/toggle or `cg_draw2D <v>`) until cgame has a snapshot, i.e. in a match.
+- **Keys**: Up/Down history (saved to `main\k33_console_history.txt`), PgUp/PgDn/wheel scroll the full log,
   Ctrl+Home/End top/bottom, Ctrl+V paste, Ctrl+U/K cut, Ctrl+Backspace word, Ctrl+L clear.
 - **Built-ins**: `dvarlist [filter]` and `cmdlist [filter]` with readable names, `find <text>`,
   `clear`, `condump [file]` (to `main\`), `k33help`.
