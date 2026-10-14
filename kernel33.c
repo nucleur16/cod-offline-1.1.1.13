@@ -923,6 +923,10 @@ static void PatchGbkInput(void)
 /* Snapshot-parity logger, parity-log branch only: see parity.c. */
 #include "parity.c"
 
+/* <game>\usermaps\<map>\ zones and iwds: see usermaps.c. */
+#include <shlwapi.h>
+#include "usermaps.c"
+
 /* Developer console overlay, dev branch only: see console.c. */
 #include "console.c"
 
@@ -942,6 +946,7 @@ static void __cdecl TakeOver(void)
     PatchGbkInput();
     PatchScoresOpen();
     PatchPatchDir();
+    PatchUserMaps();
     InstallParityLogger();
     InstallConsole();
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
