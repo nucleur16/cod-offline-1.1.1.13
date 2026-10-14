@@ -89,6 +89,13 @@ init()
 	level.zombie_vars = [];
 	level.flag = [];
 
+	// T5 _zombiemode.gsc:60.  Zombies never push a player: T5's
+	// _callbackglobal.gsc:701 Callback_PlayerDamage adds
+	// iDFLAGS_NO_KNOCKBACK to every player hit while this is set, so
+	// finishPlayerDamage (C1 0x51be33) skips the velocity kick and the
+	// PMF_TIME_KNOCKBACK pm_time that the client cannot predict.
+	level.disable_player_damage_knockback = true;
+
 	init_levelvars();
 	init_anims();
 	init_hints();
@@ -770,6 +777,10 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 	//
 	// T5 keeps its player_damage_override (:4544) only because T5's engine
 	// has no equivalent gate.  C1 does.  Per the standing mandate, C1 wins.
+
+	// T5 _callbackglobal.gsc:701: no knockback on a zombies map (init above).
+	if ( is_true( level.disable_player_damage_knockback ) )
+		iDFlags = iDFlags | level.iDFLAGS_NO_KNOCKBACK;
 
 	self finishPlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, timeOffset );
 }
