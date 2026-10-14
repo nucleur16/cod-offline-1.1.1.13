@@ -316,7 +316,11 @@ coop_minimap_material( session )
 	case "mp_crash_tropical":
 		return "compass_map_mp_crash_dlc";
 	case "mp_crash_intro":
-		return "compass_map_mp_crash_intro";
+		// No zone ships a compass_map_mp_crash_intro (MEASURED: mp_crash_intro
+		// and coop_prolog_mp_crash_intro carry no compass material).  The map
+		// is Crash's geometry with Crash's corners, and patch_common_mp, which
+		// is always mounted, carries Crash's.
+		return "compass_map_mp_crash_dlc";
 	case "mp_estate_tropical":
 		return "compass_map_mp_estate_tropical";
 	case "mp_fav_tropical":
@@ -374,6 +378,18 @@ coop_minimap()
 		return;
 	}
 
+	// The compass image is square, so the bounds must be square in the
+	// north-yaw frame.  maps\mp\_load::main() sets this before every
+	// multiplayer level script's setupMiniMap; coop never runs that loader,
+	// so the bounds went out unexpanded.  MEASURED (docs/CODOL_CAMPAIGN_MODE.md
+	// 14.3): mp_estate_tropical's corners are a world-axis 6400 square under
+	// north yaw 144, which is 8940 x 1416 in the compass frame (the 6.3:1
+	// squish on both estate missions); the AI path nodes fill the image's
+	// drawn area exactly in the 8940 x 8940 square this expands it to.  Crash
+	// (4694 x 3176) and favela (5504 x 4544) were squished the same way.
+	if ( !isDefined( level.requiredMapAspectRatio ) )
+		level.requiredMapAspectRatio = getDvarFloat( "scr_RequiredMapAspectratio", 1 );
+
 	// IW4 _compass setupMiniMap's maths, shared (common_scripts/_compass.gsc).
 	if ( !common_scripts\_compass::setupMiniMapCorners( material, corners ) )
 		return;
@@ -382,8 +398,11 @@ coop_minimap()
 	which = "base";
 	if ( mission.size == 2 )
 		which = "mission";
+	// The compass-frame extent the client derives (CG_MiniMapChanged): east
+	// by south.  A square image wants the two equal.
+	east = ( sin( getNorthYaw() ), 0 - cos( getNorthYaw() ), 0 );
 	codolprintln( "CoDOL coop: minimap " + material + " " + northwest + " .. " + southeast + " (north yaw " + getNorthYaw() + ", " +
-		which + " corners)" );
+		which + " corners, compass frame " + vectordot( southeast - northwest, east ) + " x " + level.mapSize + ")" );
 }
 
 // --------------------------------------------------------------------------

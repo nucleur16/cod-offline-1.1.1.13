@@ -86,6 +86,58 @@ init()
 	if ( !isDefined( level.coop_training_flow ) || !level.coop_training_flow )
 		level thread course_triggers();
 	level thread proximity_groups();
+	if ( getDvar( "codol_sessionMap" ) == "coop_spec1_mp_killhouse_sh" )
+		level thread spec1_cast();
+}
+
+// coop_spec1_mp_killhouse_sh's two allies (the addon's only actors besides
+// the obstacle gunner): Price in the black kit at the pit's entrance, in
+// CoD4's reveal idle (killhouse_sas_price_idle, his authored animation), and
+// Captain Price on the tower over the course (SAS_blackkit, authored with
+// killhouse_gaz_intro): the intro when a player first comes into view of the
+// tower, then the instructor idle.  Cast members as in the training
+// (_cooptraining spawn_cast: unhurt, never fighting, the look-only name).
+spec1_cast()
+{
+	level endon( "coop_mission_over" );
+	while ( getPlayers().size <= 0 )
+		wait( 0.5 );
+	wait( 0.5 );
+	level.coop_cast = [];
+	level.coop_cast_list = [];
+	level.coop_training_prop_done = [];
+	ents = getEntArray();
+	tower = undefined;
+	for ( i = 0; i < ents.size; i++ )
+	{
+		e = ents[ i ];
+		if ( !isDefined( e.classname ) || e.classname != "actor_ally_hero_price_blackkit_maskup_so" )
+			continue;
+		key = "spec1_price";
+		if ( isDefined( e.targetname ) && e.targetname == "SAS_blackkit" )
+			key = "spec1_tower";
+		ai = maps\_cooptraining::spawn_cast( e, key );
+		if ( !isDefined( ai ) )
+			continue;
+		level.coop_cast[ key ] = ai;
+		level.coop_cast_list[ level.coop_cast_list.size ] = ai;
+		if ( key == "spec1_tower" )
+			tower = ai;
+	}
+	codolprintln( "CoDOL coop course: spec1 cast of " + level.coop_cast_list.size + " placed" );
+	level thread maps\_cooptraining::show_nametags();
+	if ( !isDefined( tower ) )
+		return;
+	for ( ;; )
+	{
+		wait( 0.5 );
+		if ( !isAlive( tower ) )
+			return;
+		p = maps\_cooptraining::player_near( tower.origin, 1500 );
+		if ( isDefined( p ) )
+			break;
+	}
+	tower maps\_coopscene_killhouse::scene( "intro" );
 }
 
 // "enemy" / "friendly", or undefined for a brushmodel that is not a target.

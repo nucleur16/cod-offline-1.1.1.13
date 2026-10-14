@@ -117,6 +117,7 @@ say( speaker, alias, noWait )
 	}
 	if ( isSubStr( alias, "_pri_" ) )
 	{
+		ghost_radio( time );
 		players = getPlayers();
 		for ( i = 0; i < players.size; i++ )
 			players[ i ] playLocalSound( alias );
@@ -153,6 +154,40 @@ local_sound( alias )
 ghost_say( alias, noWait )
 {
 	say( level.crash_ghost, alias, noWait );
+}
+
+// Ghost puts a hand to his radio while Price is on it (IW4 estate's
+// estate_ghost_radio), when he is standing still and in no other scene.
+// The clip is IW4's whole radio conversation (52 s), so it is held only for
+// Price's line.
+ghost_radio( time )
+{
+	ai = level.crash_ghost;
+	if ( !isDefined( ai ) || !isAlive( ai ) || ai.crash_moving || isDefined( ai.crash_scene ) )
+		return;
+	if ( maps\_coopanim::anim_single_solo( ai, "radio", undefined, "inplace", true ) > 0 )
+		ai thread ghost_radio_end( time + 0.5 );
+}
+
+ghost_radio_end( time )
+{
+	self endon( "death" );
+	self endon( "coop_gesture" );
+	wait( time );
+	self.coop_pose_anim = undefined;
+	self notify( "coop_cast_pose" );
+	self notify( "coop_gesture" );
+}
+
+// A gesture Ghost is in the middle of ends when he moves on.
+ghost_stop_gesture( ai )
+{
+	ai notify( "coop_gesture" );
+	if ( isDefined( ai.coop_pose_anim ) )
+	{
+		ai.coop_pose_anim = undefined;
+		ai notify( "coop_cast_pose" );
+	}
 }
 
 // --------------------------------------------------------------------------
@@ -825,6 +860,7 @@ spawn_ghost( origin, angles )
 	ai.crash_moving = false;
 	ai.goalradius = 48;
 	ai.coop_name = "Ghost";
+	ai.animname = "ghost";
 	ai.targetname = "crash_ghost";
 	// He runs when he moves (soldier_move's run, not the patrol walk) and
 	// stands rifle up (soldier_stop's cast pose).  exposed_aim_5 is a whole
@@ -861,6 +897,7 @@ ghost_move( dest, what, radius, timeout )
 		timeout = 40;
 	ai notify( "crash_ghost_move" );
 	ai endon( "crash_ghost_move" );
+	ghost_stop_gesture( ai );
 	ai.crash_moving = true;
 	ai orientMode( "face default" );
 	ai setGoalPos( dest );
@@ -915,6 +952,7 @@ ghost_walk( points, what, speed )
 	if ( !isDefined( speed ) )
 		speed = 150;
 	ai notify( "crash_ghost_move" );
+	ghost_stop_gesture( ai );
 	ai.crash_moving = true;
 	ai orientMode( "face default" );
 	mover = spawn( "script_model", ai.origin );
@@ -1325,10 +1363,38 @@ unaware( idle, wakeRadius )
 	self wake();
 }
 
+// A searcher keeps searching: the search clips do not loop, so each
+// playing is started again while he is unaware.
+search_loop( clip )
+{
+	self endon( "death" );
+	for ( ;; )
+	{
+		len = getAnimLength( clip );
+		if ( len < 1 )
+			len = 1;
+		wait( len );
+		if ( !isDefined( self.crash_unaware ) )
+			return;
+		self.coop_pose_anim = clip;
+		self notify( "coop_cast_pose" );
+		wait( 0.05 );
+		self.coop_pose_anim = undefined;
+	}
+}
+
 wake()
 {
 	if ( !isDefined( self.crash_unaware ) )
 		return;
+	// A crouched searcher gets up from the debris first.
+	if ( isDefined( self.crash_search ) && self.crash_search == "crouch_idle" &&
+		maps\_coopanim::has_anim( "searcher", "crouch_end" ) && self.health > 0 )
+	{
+		self.crash_search = undefined;
+		self thread wake_after( maps\_coopanim::anim_single_solo( self, "crouch_end", undefined, "inplace", true ) );
+		return;
+	}
 	self.crash_unaware = undefined;
 	self.coop_cast = undefined;
 	self.coop_idle_anim = undefined;
@@ -1341,6 +1407,15 @@ wake()
 			level.crash_alert = [];
 		level.crash_alert[ self.crash_group ] = true;
 	}
+}
+
+wake_after( time )
+{
+	self endon( "death" );
+	if ( time > 1.5 )
+		time = 1.5;
+	wait( time );
+	self wake();
 }
 
 // --------------------------------------------------------------------------
@@ -1360,6 +1435,7 @@ main()
 	// _coopmission's own main() has run its init() by now.
 	level.coop_max_alive = 14;
 	wait( 1 );
+	maps\_coopscene_crash::init_scenes();
 	level.crash_start_time = getTime();
 
 	if ( getDvarInt( "scr_coop_crash_skip" ) > 0 )
@@ -1485,8 +1561,12 @@ phase_intro()
 			dragger forceTeleport( dragOrigin + fwd * 44, ( 0, dragYaw + 180, 0 ) );
 			dragger.ignoreall = true;
 			dragger.coop_cast = "intro";
+			dragger.animname = "dragger";
 			dragger.coop_idle_anim = %casual_stand_idle;
-			dragger notify( "coop_cast_pose" );
+			// He has dragged the rookie out (crash_body_drag_enemy), and
+			// stands over him (drone_stand_idle).
+			maps\_coopanim::anim_loop_solo( dragger, "idle" );
+			maps\_coopanim::anim_single_solo( dragger, "drag", undefined, "inplace", true );
 		}
 	}
 	black_all( 0, 1.0 );
@@ -1529,10 +1609,31 @@ phase_intro()
 	}
 	for ( n = 1; n <= 4; n++ )
 		intro_actor( "intro_ai_watcher0" + n + "_spawner", "loc_ai_watcher0" + n, %casual_stand_idle );
+	// The scene as the recording plays it: the boss on the phone with his
+	// back turned, one of his men in front
+	// of the rookie working him over (village_interrogationb_price: the
+	// punches, then he reaches for a pistol), the others standing by.
+	// (The phone itself, village_interrogationb_phone, is a script_model
+	// prop clip; the boss holds the common phone idle.)
+	if ( isDefined( ortiz ) )
+		ortiz.animname = "ortiz";
+	puncher = intro_puncher( roomOrigin, roomYaw );
+	if ( isDefined( puncher ) )
+		maps\_coopanim::anim_single_solo( puncher, "interrogate", undefined, "inplace", true );
 	black_all( 0, 1.5 );
 	wait( 1 );
 	say( ortiz, "crash_ortiz_03" );
 	wait( 1 );
+	// Ghost at the door frame (price_flash_point), out of the room's sight,
+	// peeking in while the boss finishes his call (crash_flash_price_peek).
+	ghostSpot = point( "price_flash_point", ( 1689.5, -1778, 226 ) );
+	ghost = spawn_ghost( ghostSpot, ( 0, 60, 0 ) );
+	peekEnd = getTime();
+	if ( isDefined( ghost ) )
+	{
+		ghost.crash_scene = true;
+		peekEnd += int( maps\_coopanim::anim_single_solo( ghost, "flash_peek", undefined, "inplace", true ) * 1000 );
+	}
 	say( ortiz, "crash_ortiz_04" );
 	if ( isDefined( ortiz ) )
 	{
@@ -1542,6 +1643,16 @@ phase_intro()
 		ortiz notify( "coop_cast_pose" );
 	}
 	say( ortiz, "crash_ortiz_05" );
+	// The throw (crash_flash_price_throw): the bang goes off as it leaves
+	// his hand (the clip's flash_release note, 39% in).
+	while ( getTime() < peekEnd )
+		wait( 0.05 );
+	if ( isDefined( ghost ) )
+	{
+		len = maps\_coopanim::anim_single_solo( ghost, "flash_throw", undefined, "inplace", true );
+		if ( len > 0 )
+			wait( len * 0.39 + 0.3 );
+	}
 
 	// Ghost's flashbang (magic_flashbang) through the doorway, then Ghost
 	// (price_flash_point / price_peek_point) with the rifle for the rookie.
@@ -1552,6 +1663,9 @@ phase_intro()
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 		players[ i ] shellShock( "flashbang_mp_scripted", 3 );
+	// The room reels (IW4 flashed reactions; one man sprays blind, the
+	// boss staggers back, crash_flash_react_ortiz).
+	sprayed = false;
 	for ( i = 0; i < level.crash_intro_enemies.size; i++ )
 	{
 		e = level.crash_intro_enemies[ i ];
@@ -1559,9 +1673,26 @@ phase_intro()
 			continue;
 		e.coop_idle_anim = %casual_crouch_idle;
 		e notify( "coop_cast_pose" );
+		if ( isDefined( e.crash_ortiz ) )
+		{
+			e thread ortiz_flashed();
+			continue;
+		}
+		e.crash_recover = 2.5;
+		len = 0;
+		if ( !sprayed && !isDefined( e.crash_puncher ) )
+		{
+			e.animname = "watcher";
+			len = maps\_coopanim::anim_single_solo( e, "flash_spray", undefined, "inplace", true );
+			sprayed = len > 0;
+		}
+		if ( len <= 0 )
+			len = e maps\_coopanim::play_anim( maps\_coopanim::get_anim( "generic", "flashed" ), undefined, "inplace", true );
+		if ( len > e.crash_recover )
+			e.crash_recover = len;
 	}
-	ghostSpot = point( "price_flash_point", ( 1689.5, -1778, 226 ) );
-	spawn_ghost( ghostSpot, ( 0, 60, 0 ) );
+	if ( isDefined( ghost ) )
+		ghost.crash_scene = undefined;
 	wait( 1.5 );
 	// The gun: the recording's M4A1 with the M203 and the holo sight.
 	level.crash_intro_done = true;
@@ -1573,14 +1704,19 @@ phase_intro()
 	}
 	ghost_say( "crash_gst_12", true );
 	level.crash_phase = "route";
-	// Ortiz gets away; the watchers recover and fight.
-	if ( isDefined( ortiz ) && isAlive( ortiz ) )
-		ortiz thread ortiz_escape();
+	// Ortiz gets away (ortiz_flashed); the watchers recover and fight once
+	// their reaction has played.
 	for ( i = 0; i < level.crash_intro_enemies.size; i++ )
 	{
 		e = level.crash_intro_enemies[ i ];
-		if ( isDefined( e ) && isAlive( e ) && !isDefined( e.crash_ortiz ) )
-			e thread recover_after( 2.5 );
+		if ( !isDefined( e ) || !isAlive( e ) || isDefined( e.crash_ortiz ) )
+			continue;
+		t = 2.5;
+		if ( isDefined( e.crash_recover ) )
+			t = e.crash_recover - 1.5;
+		if ( t < 1 )
+			t = 1;
+		e thread recover_after( t );
 	}
 	watchers = [];
 	for ( i = 0; i < level.crash_intro_enemies.size; i++ )
@@ -1631,6 +1767,42 @@ intro_actor( spawnerNoteworthy, locNoteworthy, idle )
 	ai notify( "coop_cast_pose" );
 	level.crash_intro_enemies[ level.crash_intro_enemies.size ] = ai;
 	return ai;
+}
+
+// The watcher who works the rookie over: the one nearest him, brought in
+// front of him, facing him.
+intro_puncher( roomOrigin, roomYaw )
+{
+	best = undefined;
+	bestDist = 100000;
+	for ( i = 0; i < level.crash_intro_enemies.size; i++ )
+	{
+		e = level.crash_intro_enemies[ i ];
+		if ( !isDefined( e ) || !isAlive( e ) || isDefined( e.crash_ortiz ) )
+			continue;
+		d = distance( e.origin, roomOrigin );
+		if ( d < bestDist )
+		{
+			best = e;
+			bestDist = d;
+		}
+	}
+	if ( !isDefined( best ) || !maps\_coopanim::has_anim( "puncher", "interrogate" ) )
+		return undefined;
+	spot = roomOrigin + anglesToForward( ( 0, roomYaw, 0 ) ) * 40;
+	best forceTeleport( spot, ( 0, roomYaw + 180, 0 ) );
+	best.animname = "puncher";
+	best.crash_puncher = true;
+	return best;
+}
+
+// The boss reels from the flash (crash_flash_react_ortiz), then runs.
+ortiz_flashed()
+{
+	self endon( "death" );
+	self.animname = "ortiz";
+	maps\_coopanim::anim_single_solo( self, "flash_react", undefined, "inplace" );
+	self ortiz_escape();
 }
 
 recover_after( time )
@@ -1686,6 +1858,14 @@ phase_route()
 	downstairs[ 2 ] = ( 1650, -1900, 66 );
 	downstairs[ 3 ] = ( 1655, -1815, 66 );
 	ghost_walk( downstairs, "down the stairs" );
+	// He pushes the double door open with his flat hand (IW4 hunted /
+	// airport: hunted_open_barndoor_flathand), the doors swinging as his
+	// hand meets them.
+	len = 0;
+	if ( isDefined( level.crash_ghost ) )
+		len = maps\_coopanim::anim_single_solo( level.crash_ghost, "door_open", undefined, "inplace", true );
+	if ( len > 0 )
+		wait( 0.5 );
 	open_price_door();
 	wait( 0.6 );
 	ghost_wait_player( 450, 30 );
@@ -1893,6 +2073,10 @@ flashed_then_wake( time )
 	self endon( "death" );
 	self.coop_idle_anim = %casual_crouch_idle;
 	self notify( "coop_cast_pose" );
+	// IW4 animscripts\flashed: one of the exposed flashbang reactions.
+	len = self maps\_coopanim::play_anim( maps\_coopanim::get_anim( "generic", "flashed" ), undefined, "inplace", true );
+	if ( len - 1 > time )
+		time = len - 1;
 	wait( time );
 	self wake();
 }
@@ -2457,7 +2641,9 @@ spawn_searchers()
 	for ( i = 0; i < searchers.size; i++ )
 	{
 		sp = searchers[ i ].coop_spawner;
-		idle = %casual_crouch_idle;
+		// The wreck's own search scenes (crash_search_wreckage_*): crouched
+		// over the debris, or looking it over standing.
+		scene = "crouch_idle";
 		if ( isDefined( sp.target ) )
 		{
 			s = crash_struct( sp.target );
@@ -2465,10 +2651,16 @@ spawn_searchers()
 			{
 				searchers[ i ] forceTeleport( s.origin, searchers[ i ].angles );
 				if ( isDefined( s.script_animation ) && s.script_animation == "stand_search" )
-					idle = %patrol_bored_idle;
+					scene = "stand_idle";
 			}
 		}
+		searchers[ i ].animname = "searcher";
+		searchers[ i ].crash_search = scene;
+		idle = maps\_coopanim::get_anim( "searcher", scene );
+		if ( !isDefined( idle ) )
+			idle = %casual_crouch_idle;
 		searchers[ i ] thread unaware( idle, 700 );
+		searchers[ i ] thread search_loop( idle );
 	}
 	return searchers;
 }
