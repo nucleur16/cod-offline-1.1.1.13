@@ -9,5 +9,5 @@ BIN=/c/msys64/mingw32/bin
 "$BIN/windres.exe" -O coff -i kernel33.rc -o kernel33_res.o
 "$BIN/gcc.exe" -O2 -Wall -Wextra -Wno-unused-parameter -Wno-cast-function-type -Wno-missing-field-initializers -shared -s -static -static-libgcc \
     -o Kernel33_parity.dll kernel33.c kernel33_res.o kernel33.def \
-    -lz -limm32 -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat
+    -lz -limm32 -lshlwapi -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat
 echo "built Kernel33_parity.dll (not installed)"

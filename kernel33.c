@@ -923,6 +923,10 @@ static void PatchGbkInput(void)
 /* Snapshot-parity logger, parity-log branch only: see parity.c. */
 #include "parity.c"
 
+/* <game>\usermaps\<map>\ zones and iwds: see usermaps.c. */
+#include <shlwapi.h>
+#include "usermaps.c"
+
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 static void __cdecl TakeOver(void)
 {
@@ -939,6 +943,7 @@ static void __cdecl TakeOver(void)
     PatchGbkInput();
     PatchScoresOpen();
     PatchPatchDir();
+    PatchUserMaps();
     InstallParityLogger();
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
