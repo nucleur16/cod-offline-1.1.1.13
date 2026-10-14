@@ -91,6 +91,8 @@ corner_set( dir, pose )
 		a[ "alert_to_A" ] = list1( %corner_standl_trans_alert_2_a );
 		a[ "alert_to_B" ] = list1( %corner_standl_trans_alert_2_b_v2 );
 		a[ "A_to_alert" ] = list1( %corner_standl_trans_a_2_alert_v2 );
+		a[ "A_to_B" ] = list1( %corner_standl_trans_a_2_b_v2 );
+		a[ "B_to_A" ] = list1( %corner_standl_trans_b_2_a_v2 );
 		a[ "B_to_alert" ] = list1( %corner_standl_trans_b_2_alert_v2 );
 		a[ "B_to_alert_reload" ] = list1( %corner_standl_reload_b_2_alert );
 		a[ "lean_to_alert" ] = list1( %cornerstndl_lean_2_alert );
@@ -131,6 +133,8 @@ corner_set( dir, pose )
 		a[ "alert_to_A" ] = list2( %corner_standr_trans_alert_2_a, %corner_standr_trans_alert_2_a_v2 );
 		a[ "alert_to_B" ] = list3( %corner_standr_trans_alert_2_b, %corner_standr_trans_alert_2_b_v2, %corner_standr_trans_alert_2_b_v3 );
 		a[ "A_to_alert" ] = list1( %corner_standr_trans_a_2_alert_v2 );
+		a[ "A_to_B" ] = list2( %corner_standr_trans_a_2_b, %corner_standr_trans_a_2_b_v2 );
+		a[ "B_to_A" ] = list2( %corner_standr_trans_b_2_a, %corner_standr_trans_b_2_a_v2 );
 		a[ "B_to_alert" ] = list3( %corner_standr_trans_b_2_alert, %corner_standr_trans_b_2_alert_v2, %corner_standr_trans_b_2_alert_v3 );
 		a[ "B_to_alert_reload" ] = list1( %corner_standr_reload_b_2_alert );
 		a[ "lean_to_alert" ] = list1( %cornerstndr_lean_2_alert );
@@ -164,6 +168,8 @@ corner_set( dir, pose )
 		a[ "alert_to_A" ] = list1( %cornercrl_trans_alert_2_a );
 		a[ "alert_to_B" ] = list1( %cornercrl_trans_alert_2_b );
 		a[ "A_to_alert" ] = list1( %cornercrl_trans_a_2_alert );
+		a[ "A_to_B" ] = list1( %cornercrl_trans_a_2_b );
+		a[ "B_to_A" ] = list1( %cornercrl_trans_b_2_a );
 		a[ "B_to_alert" ] = list1( %cornercrl_trans_b_2_alert );
 		a[ "lean_to_alert" ] = list1( %cornercrl_lean_2_alert );
 		a[ "alert_to_lean" ] = list1( %cornercrl_alert_2_lean );
@@ -191,6 +197,8 @@ corner_set( dir, pose )
 	a[ "alert_to_A" ] = list1( %cornercrr_trans_alert_2_a );
 	a[ "alert_to_B" ] = list1( %cornercrr_trans_alert_2_b );
 	a[ "A_to_alert" ] = list1( %cornercrr_trans_a_2_alert );
+	a[ "A_to_B" ] = list1( %cornercrr_trans_a_2_b );
+	a[ "B_to_A" ] = list1( %cornercrr_trans_b_2_a );
 	a[ "B_to_alert" ] = list1( %cornercrr_trans_b_2_alert );
 	a[ "lean_to_alert" ] = list1( %cornercrr_lean_2_alert );
 	a[ "alert_to_lean" ] = list1( %cornercrr_alert_2_lean );
@@ -776,6 +784,27 @@ corner_step_out_and_shoot( dir, cover, hideYaw )
 		self orientmode( "face enemy" );
 	start_aiming( 0.2 );
 	shoot_from_here( 2.0 + randomFloat( 2.5 ) );
+	// IW4 changeStepOutPos: the enemy moved across the A/B line -- step
+	// over to the other position and keep firing.
+	if ( ( mode == "A" || mode == "B" ) && isDefined( self.enemy ) && !needs_reload( 0.3 ) )
+	{
+		other = corner_mode( dir );
+		if ( isDefined( other ) && ( other == "A" || other == "B" ) && other != mode && isDefined( cover[ mode + "_to_" + other ] ) )
+		{
+			switchAnim = pick( cover[ mode + "_to_" + other ] );
+			trace_anim( "corner step " + mode + " -> " + other );
+			stat_bump( "corner_switch_" + mode + "_to_" + other );
+			stop_aiming();
+			self orientmode( "face current" );
+			self setFlaggedAnimKnobAllRestart( "changeStepOutPos", switchAnim, %body, 1, 0.2, 1 );
+			DoNoteTracksForTime( getAnimLength( switchAnim ), "changeStepOutPos" );
+			mode = other;
+			self.a.array = aim_set( cover, mode, self.a.pose );
+			self orientmode( "face enemy" );
+			start_aiming( 0.2 );
+			shoot_from_here( 1.5 + randomFloat( 2.0 ) );
+		}
+	}
 	stop_aiming();
 	set_anim_array( self.a.pose );
 
