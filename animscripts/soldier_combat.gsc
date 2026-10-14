@@ -1,4 +1,5 @@
-// coop soldier animscript: soldier_combat.  Exposed standing fire.
+// coop soldier animscript: soldier_combat.  Exposed fire, standing or
+// kneeling.
 //
 // The native frame hands the actor this module once its enemy is inside
 // self.meleeAttackDist AND CODOL_ActorMeleeRangeGoal finds the knee (+20) and
@@ -9,8 +10,11 @@
 // soldier gives up a lost target and goes back to moving.
 //
 // Behaviour reference: IW4 animscripts\combat.gsc / combat_utility.gsc
-// (exposed stand, aim at the enemy, fire bursts, reload when the clip runs
-// dry) and the regular-difficulty numbers of CoD4/IW4 maps\_gameskill.gsc.
+// (exposed stand or crouch, aim at the enemy with the additive aim groups,
+// fire bursts on %add_fire, reload when the clip runs dry) and the
+// regular-difficulty numbers of CoD4/IW4 maps\_gameskill.gsc.  The clips are
+// IW4's animset tables for the weapon in his hands (soldier_shared.gsc):
+// rifle, pistol, pump shotgun or launcher, standing or crouched.
 //
 //  * THE SHOT.  self codol_actorShoot( weapon, muzzle, end ): the native
 //    actor fire (src/codol/player/codol_actor_fire.c) -- Bullet_Fire owned by
@@ -59,15 +63,81 @@ main()
 {
 	self endon( "killanimscript" );
 
+	self orientmode( "face enemy" );
+	self animmode( "zonly_physics", false );
+	choose_pose( true );
+
 	for ( ;; )
 	{
 		self orientmode( "face enemy" );
-		self animmode( "zonly_physics" );
+		self animmode( "zonly_physics", false );
 		ShootAtEnemy();
 		self.safeToChangeScript = true;
-		self animmode( "normal" );
 		wait( 0.05 );
 	}
+}
+
+// IW4 combat.gsc exposed stance choice: a soldier who settles into a fire
+// fight at range often drops to a knee (IW4 hesitates, then crouches if the
+// crouched line of fire is clear), and now and then rises again.  Pistol
+// carriers stay up (IW4 never crouches a sidearm).  The pose change plays
+// IW4's exposed_stand_2_crouch / exposed_crouch_2_stand.
+choose_pose( entering )
+{
+	self endon( "killanimscript" );
+
+	if ( !isDefined( self.a.pose ) || self.a.pose == "prone" )
+		self.a.pose = "stand";
+	want = "stand";
+	enemy = self.enemy;
+
+	if ( can_crouch() && isDefined( enemy ) )
+	{
+		dist = distance( self.origin, enemy.origin );
+		chance = 30;
+		switch ( self.coop_role )
+		{
+		case "snpr":
+			chance = 65;
+			break;
+		case "rpg":
+			chance = 50;
+			break;
+		case "lmg":
+			chance = 45;
+			break;
+		case "shgn":
+			chance = 15;
+			break;
+		}
+		if ( dist < 400 )
+			chance = 0;
+		if ( !entering )
+			chance = int( chance * 0.6 );
+		roll = randomInt( 100 );
+		if ( roll < chance && crouch_line_clear( enemy ) )
+			want = "crouch";
+		else if ( roll < chance )
+			trace_anim( "combat crouch refused: crouched line of fire blocked" );
+		else if ( !entering && ( self.a.pose == "stand" || crouch_line_clear( enemy ) ) )
+			want = self.a.pose;
+	}
+
+	self.coop_next_pose_check = getTime() + 8000 + randomInt( 6000 );
+	trace_anim( "combat pose " + self.a.pose + " -> " + want + " (" + weapon_kind() + ", role " + self.coop_role + ")" );
+	if ( want != self.a.pose )
+	{
+		change_pose( want );
+		return;
+	}
+	self.a.pose = set_anim_array( self.a.pose );
+	if ( entering || !isDefined( self.coop_aiming ) )
+		start_aiming( 0.2 );
+}
+
+crouch_line_clear( enemy )
+{
+	return bulletTracePassed( self.origin + ( 0, 0, 40 ), aim_point( enemy ), false, self );
 }
 
 dvar_float( name, value )
@@ -252,33 +322,35 @@ role_clip()
 	return 30;
 }
 
-role_fire_anim()
+// IW4 shoot_behavior / combat_utility FireUntilOutOfAmmo: full-auto
+// weapons play the set's "fire" loop, semi-automatics and snipers the
+// "single"/"semiN" clips, everything else the "burstN" clip of the burst's
+// length -- each from the soldier's own weapon family set (soldier_shared
+// animsets), so a pistol fires pistol_stand_fire_A and a pump shotgun
+// shotgun_stand_fire_1A/1B, as in IW4.
+fire_anim_for( shots )
 {
+	if ( !isDefined( self.a.array ) )
+		set_anim_array( "stand" );
 	switch ( self.coop_role )
 	{
-	case "shgn":
-	case "snpr":
-	case "pistol":
-		return %exposed_shoot_semi1;
 	case "lmg":
-		return %exposed_shoot_auto_v2;
+	case "smg":
+		return animArray( "fire" );
+	case "snpr":
+	case "shgn":
+	case "pistol":
+		if ( shots <= 1 )
+			return animArrayPickRandom( "single" );
+		if ( shots > 5 )
+			shots = 5;
+		return animArray( "semi" + shots );
 	}
-	return %exposed_shoot_burst3;
-}
-
-aim_point( enemy )
-{
-	// The chest of a standing player; a crouched or prone one is lower.
-	height = 48;
-	if ( isPlayer( enemy ) )
-	{
-		stance = enemy getStance();
-		if ( stance == "crouch" )
-			height = 32;
-		else if ( stance == "prone" )
-			height = 10;
-	}
-	return enemy.origin + ( 0, 0, height );
+	if ( shots <= 1 )
+		return animArrayPickRandom( "single" );
+	if ( shots > 6 )
+		shots = 6;
+	return animArray( "burst" + shots );
 }
 
 // The muzzle: the gun's own flash tag when the soldier carries the model,
@@ -288,7 +360,7 @@ muzzle_point( target )
 {
 	if ( isDefined( self.coop_weapon_model ) )
 		return self getTagOrigin( "tag_flash" );
-	chest = self.origin + ( 0, 0, 52 );
+	chest = self.origin + ( 0, 0, shoot_from_height() - 6 );
 	dir = vectorNormalize( target - chest );
 	return chest + dir * 16;
 }
@@ -323,6 +395,9 @@ hit_chance( enemy, dist )
 	if ( !isDefined( chance ) )
 		chance = 0.3;
 	chance = chance * t.accuracy * role_accuracy();
+	// Firing on the run (soldier_move run and gun) is wilder.
+	if ( isDefined( self.coop_moving_fire ) )
+		chance = chance * 0.5;
 
 	// Range.
 	near = role_range( "near" );
@@ -422,12 +497,23 @@ fire_shot( enemy )
 	self.a.burstShots++;
 }
 
+// A new target, or one not shot at for four seconds (longer than any
+// class's pause between bursts), starts a new engagement: the miss time and
+// the ramp begin again.
+begin_engagement( enemy )
+{
+	if ( !isDefined( self.coop_aim_target ) || self.coop_aim_target != enemy ||
+	     !isDefined( self.coop_aim_last ) || getTime() - self.coop_aim_last > 4000 )
+	{
+		self.coop_aim_target = enemy;
+		self.coop_aim_start = getTime();
+	}
+}
+
 ShootAtEnemy()
 {
 	self endon( "killanimscript" );
 	self endon( "death" );
-
-	stand_pose( 0.2 );
 
 	for ( ;; )
 	{
@@ -438,15 +524,10 @@ ShootAtEnemy()
 		self.safeToChangeScript = false;
 		self orientmode( "face enemy" );
 
-		// A new target, or one not shot at for four seconds (longer than
-		// any class's pause between bursts), starts a new engagement: the
-		// miss time and the ramp begin again.
-		if ( !isDefined( self.coop_aim_target ) || self.coop_aim_target != enemy ||
-		     !isDefined( self.coop_aim_last ) || getTime() - self.coop_aim_last > 4000 )
-		{
-			self.coop_aim_target = enemy;
-			self.coop_aim_start = getTime();
-		}
+		if ( getTime() >= self.coop_next_pose_check )
+			choose_pose( false );
+
+		begin_engagement( enemy );
 
 		// Turn to face him before the first round of a burst leaves the barrel.
 		wait( 0.15 );
@@ -456,10 +537,14 @@ ShootAtEnemy()
 			return;
 		}
 
-		self setAnim( %add_fire, 1, 0.1, 1 );
-		self setFlaggedAnimKnobRestart( "fireanim", role_fire_anim(), 1, 0.05, 1 );
-
 		shots = role_burst( distance( self.origin, enemy.origin ) );
+		fireAnim = fire_anim_for( shots );
+
+		// IW4 showFireHideAimIdle: the idle additive gives way to the fire one.
+		self setAnimLimited( %add_idle, 0, 0.2 );
+		self setAnim( %add_fire, 1, 0.1 );
+		self setFlaggedAnimKnobRestart( "fireanim", fireAnim, 1, 0, 1 );
+
 		delay = role_fire_delay();
 		for ( i = 0; i < shots; i++ )
 		{
@@ -469,7 +554,9 @@ ShootAtEnemy()
 			self.coop_aim_last = getTime();
 			wait( delay );
 		}
+		// IW4 hideFireShowAimIdle.
 		self clearAnim( %add_fire, 0.2 );
+		self setAnimLimited( %add_idle, 1, 0.2 );
 		if ( isDefined( self.coop_stat_bursts ) )
 			self.coop_stat_bursts++;
 
@@ -481,10 +568,16 @@ ShootAtEnemy()
 	}
 }
 
+// IW4 combat_utility Reload: the weapon family's reload for the pose he is
+// in, then back to the aim.
 Reload()
 {
+	self endon( "killanimscript" );
+
 	self.a.burstShots = 0;
-	self setFlaggedAnimKnobAllRestart( "reloadanim", %exposed_reload, %body, 1, 0.2, 1 );
-	DoNoteTracksForTime( getAnimLength( %exposed_reload ), "reloadanim" );
-	stand_pose( 0.2 );
+	reloadAnim = animArrayPickRandom( "reload" );
+	stop_aiming();
+	self setFlaggedAnimKnobAllRestart( "reloadanim", reloadAnim, %body, 1, 0.2, 1 );
+	DoNoteTracksForTime( getAnimLength( reloadAnim ), "reloadanim" );
+	start_aiming( 0.2 );
 }
