@@ -171,12 +171,26 @@ anim_loop_solo( guy, scene, node )
 		return false;
 	if ( isDefined( node ) )
 		place_at_start( guy, a, node );
-	guy loop_idle( a );
+	variants = undefined;
+	name = guy.animname;
+	if ( !isDefined( name ) || !has_anim( name, scene ) )
+		name = "generic";
+	if ( has_anim( name, scene ) && isArray( level.coop_scr_anim[ name ][ scene ] ) )
+		variants = level.coop_scr_anim[ name ][ scene ];
+	guy loop_idle( a, variants );
 	return true;
 }
 
-// The actor holds <clip> as his idle (an animation value).
-loop_idle( clip )
+// The actor holds <clip> as his idle (an animation value), or one of
+// <variants> picked at random each cycle.
+//
+// Most authored idles in the C1 zones are NOT looping clips (their xanim
+// loop flag is off: killhouse_*_idle, humvee_idle_*, the breach and hostage
+// idles, ...), so held as one knob they stop on their last frame.  IW4's
+// anim_loop replays each cycle from its first frame; so does this, through
+// the cast pose's one-shot slot (coop_pose_anim is played from its start each
+// time it is set), pausing while a gesture plays (play_anim in place).
+loop_idle( clip, variants )
 {
 	if ( !isDefined( clip ) || !isAlive( self ) )
 		return;
@@ -185,13 +199,58 @@ loop_idle( clip )
 		self.coop_cast = "scene";
 		self.coop_scene_cast = true;
 	}
-	self.coop_pose_anim = undefined;
 	self.coop_idle_anim = clip;
+	self.coop_idle_variants = variants;
+	self.coop_pose_anim = clip;
 	self notify( "coop_cast_pose" );
+	self thread idle_replay();
 	if ( !isDefined( self.coop_scene_kicked ) )
 	{
 		self.coop_scene_kicked = true;
 		self thread kick_cast_loop( clip );
+	}
+}
+
+idle_replay()
+{
+	self endon( "death" );
+	self notify( "coop_idle_replay" );
+	self endon( "coop_idle_replay" );
+	self endon( "coop_scene_stop" );
+	first = true;
+	for ( ;; )
+	{
+		if ( !isDefined( self.coop_scene_busy ) )
+		{
+			clip = self.coop_idle_anim;
+			if ( isDefined( self.coop_idle_variants ) && self.coop_idle_variants.size > 0 )
+			{
+				clip = self.coop_idle_variants[ randomInt( self.coop_idle_variants.size ) ];
+				self.coop_idle_anim = clip;
+			}
+			if ( !first )
+			{
+				self.coop_pose_anim = clip;
+				self notify( "coop_cast_pose" );
+			}
+			first = false;
+			len = getAnimLength( clip );
+			if ( len < 0.5 )
+				len = 0.5;
+			self.coop_idle_next = getTime() + int( len * 1000 );
+		}
+		self idle_replay_wait();
+	}
+}
+
+idle_replay_wait()
+{
+	self endon( "coop_idle_resume" );
+	for ( ;; )
+	{
+		wait( 0.1 );
+		if ( !isDefined( self.coop_scene_busy ) && isDefined( self.coop_idle_next ) && getTime() >= self.coop_idle_next )
+			return;
 	}
 }
 
@@ -257,11 +316,20 @@ trace_scene( clip, mode )
 	}
 }
 
+// Waits out a clip; returns early (never ends the caller's thread) when the
+// actor dies or his scene is stopped (release).
 waittill_scene_done( length )
 {
-	self endon( "death" );
-	self endon( "coop_scene_stop" );
-	wait( length );
+	start = getTime();
+	stop = start + int( length * 1000 );
+	while ( getTime() < stop )
+	{
+		if ( !isDefined( self ) || !isAlive( self ) )
+			return;
+		if ( isDefined( self.coop_scene_stopped_at ) && self.coop_scene_stopped_at > start )
+			return;
+		wait( 0.05 );
+	}
 }
 
 // One playing of a clip through the cast pose (soldier_stop plays
@@ -279,6 +347,7 @@ play_gesture( clip, length )
 		if ( !isDefined( self.coop_idle_anim ) )
 			self.coop_idle_anim = %casual_stand_idle;
 	}
+	self.coop_scene_busy = true;
 	self.coop_pose_anim = clip;
 	self notify( "coop_cast_pose" );
 	if ( !isDefined( self.coop_scene_kicked ) )
@@ -286,9 +355,19 @@ play_gesture( clip, length )
 		self.coop_scene_kicked = true;
 		self thread kick_cast_loop( clip );
 	}
-	wait( length );
-	self.coop_pose_anim = undefined;
-	self notify( "coop_cast_pose" );
+	self waittill_scene_done( length );
+	self.coop_scene_busy = undefined;
+	if ( isDefined( self.coop_idle_next ) )
+	{
+		// The idle replay resumes at once with a fresh cycle.
+		self.coop_idle_next = 0;
+		self notify( "coop_idle_resume" );
+	}
+	else
+	{
+		self.coop_pose_anim = undefined;
+		self notify( "coop_cast_pose" );
+	}
 }
 
 // The clip through animscripted, with its root motion: the actor placed at
@@ -374,8 +453,12 @@ release( guy )
 	if ( !isDefined( guy ) || !isAlive( guy ) )
 		return;
 	guy notify( "coop_scene_stop" );
+	guy.coop_scene_stopped_at = getTime();
 	guy stopanimscripted();
 	guy.coop_pose_anim = undefined;
+	guy.coop_scene_busy = undefined;
+	guy.coop_idle_next = undefined;
+	guy.coop_idle_variants = undefined;
 	if ( isDefined( guy.coop_scene_cast ) )
 	{
 		guy.coop_cast = undefined;
