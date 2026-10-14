@@ -279,6 +279,25 @@ watch()
 				d = float( tokens[ 1 ] );
 			level thread nade_test( d );
 			break;
+		case "bulletkill":
+			// bulletkill [k]: kill up to k live enemies with a rifle round
+			// from player 0 (the long-death probe).
+			k = 3;
+			if ( tokens.size >= 2 )
+				k = int( tokens[ 1 ] );
+			p = player( 0 );
+			n = 0;
+			for ( j = 0; j < level.coop_enemies.size && n < k; j++ )
+			{
+				ai = level.coop_enemies[ j ];
+				if ( !isDefined( ai ) || !isAlive( ai ) || !isDefined( p ) )
+					continue;
+				ai doDamage( ai.health + 50, ai.origin + ( 0, 0, 40 ), p, p, 0, "MOD_RIFLE_BULLET" );
+				n++;
+				wait( 3.2 );
+			}
+			codolprintln( "CoDOL cooptest: bulletkill " + n );
+			break;
 		case "skirmish":
 			// skirmish <n> <dist>: n soldiers spawn round player 0 at about
 			// dist and fight him (cover, grenades, turns, arrivals).
@@ -1565,7 +1584,7 @@ trav_test( animscript, k )
 	dir = vectorNormalize( ( end.origin[ 0 ] - begin.origin[ 0 ], end.origin[ 1 ] - begin.origin[ 1 ], 0 ) );
 	fake = spawnStruct();
 	fake.classname = "actor_enemy_favela_ar_so";
-	fake.origin = begin.origin - dir * 96;
+	fake.origin = begin.origin - dir * 12;
 	fake.angles = vectorToAngles( dir );
 	fake.coop_no_hunt = true;
 	level.coop_max_alive = level.coop_alive + 1;

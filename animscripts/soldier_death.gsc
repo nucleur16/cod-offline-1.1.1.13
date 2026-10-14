@@ -25,6 +25,7 @@ main()
 	}
 
 	stop_aiming();
+	trace_anim( "death by " + self.damageMod + " at " + self.damageLocation + " pose " + self.a.pose + " moving " + self.a.movement );
 	if ( try_long_death() )
 		return;
 	deathAnim = get_death_anim();
@@ -321,8 +322,8 @@ cover_death_anim()
 	return undefined;
 }
 
-// IW4 death.gsc tryDyingCrawl / the long deaths: a soldier hit low or in
-// the gut by a bullet at range sometimes goes down wounded -- onto his back
+// IW4 pain.gsc crawlingPain / death.gsc's dying deaths: a soldier killed by
+// a bullet away from the players sometimes goes down wounded -- onto his back
 // (dying_stand_2_back, the dying_back idle and twitches) or onto his front
 // and crawls (dying_stand_2_crawl, dying_crawl) -- before he dies
 // (dying_back_death_*, dying_crawl_death_*).  The game already counts him
@@ -333,16 +334,23 @@ try_long_death()
 	self endon( "killanimscript" );
 	if ( getDvar( "scr_coop_ai_long_death" ) == "0" )
 		return false;
-	if ( isDefined( self.coop_traverse_death ) || isDefined( self.coop_in_cover ) || self.a.movement == "run" )
+	if ( isDefined( self.coop_traverse_death ) || isDefined( self.coop_in_cover ) )
 		return false;
 	if ( !isDefined( self.damageMod ) || ( self.damageMod != "MOD_RIFLE_BULLET" && self.damageMod != "MOD_PISTOL_BULLET" ) )
 		return false;
-	if ( !damageLocationIsAny( "torso_lower", "left_leg_upper", "right_leg_upper", "left_leg_lower", "right_leg_lower" ) )
+	// IW4 pain.gsc crawlingPain: not a head or hand hit, no player within
+	// 175 units, and at most one every 3 s across the match.
+	if ( damageLocationIsAny( "head", "helmet", "neck", "right_hand", "left_hand" ) )
 		return false;
-	if ( isDefined( self.coop_last_attacker ) && distance( self.origin, self.coop_last_attacker.origin ) < 300 )
+	players = getEntArray( "player", "classname" );
+	for ( i = 0; i < players.size; i++ )
+		if ( isAlive( players[ i ] ) && distance( self.origin, players[ i ].origin ) < 175 )
+			return false;
+	if ( isDefined( level.coop_next_long_death ) && getTime() < level.coop_next_long_death )
 		return false;
-	if ( randomInt( 100 ) >= 30 )
+	if ( randomInt( 100 ) >= 25 )
 		return false;
+	level.coop_next_long_death = getTime() + 3000;
 
 	crouched = isDefined( self.a.pose ) && self.a.pose == "crouch";
 	crawl = randomInt( 2 ) == 0;
@@ -361,6 +369,9 @@ try_long_death()
 	kind = "back";
 	if ( crawl )
 		kind = "crawl";
+	// IW4 isCrawlDeltaAllowed: room on the ground for the fall.
+	if ( !may_move( self.origin, delta_end( self.origin, self.angles[ 1 ], getMoveDelta( down, 0, 1 ) ) ) )
+		return false;
 	trace_anim( "long death (" + kind + ")" );
 	stat_bump( "long_death" );
 	self animmode( "gravity" );
