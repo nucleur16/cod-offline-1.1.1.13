@@ -986,6 +986,10 @@ climb_out_of_jeep()
 	self maps\_coopscene_killhouse::stop_idle();
 	self codol_actorRide();
 	self animMode( "none" );
+	// The jeep's driver-side door clip with his climb-out (IW4 _humvee
+	// set_vehicle_anims position 0 vehicle_getoutanim).
+	if ( isDefined( level.coop_intro ) && isDefined( level.coop_intro.mover ) )
+		level.coop_intro.mover maps\_coopintro::door_anim( "uaz_driver_exit_into_run_door" );
 	len = maps\_coopanim::anim_single_solo( self, "getout", undefined, "noclip" );
 	if ( len > 0 )
 	{
