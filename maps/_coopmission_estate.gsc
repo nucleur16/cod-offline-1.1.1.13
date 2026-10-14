@@ -118,6 +118,9 @@ ghost_says( alias, noWait )
 	if ( isDefined( speaker ) )
 		speaker snd( alias );
 	codolprintln( "CoDOL coop estate: line " + alias );
+	// Standing with nothing else to do, he talks with his hands.
+	if ( isDefined( level.coop_estate.ghost ) && !isDefined( level.coop_estate.ghost_riding ) )
+		level thread maps\_coopscene_estate::talk_gesture( level.coop_estate.ghost );
 	if ( !isDefined( noWait ) || !noWait )
 		wait( line_time( alias ) + 0.3 );
 }
@@ -468,6 +471,8 @@ main()
 
 	level thread unsuppressed_watch();
 	level thread checkpoint_triggers();
+	// The mission's scene clips (_coopscene_estate, IW4 estate_anim.gsc).
+	maps\_coopscene_estate::init_anims();
 
 	spawn_ghost();
 	stage_boat();
@@ -1344,13 +1349,13 @@ alert_group( group, why )
 			continue;
 		ai notify( "coop_alerted" );
 		ai.ignoreall = false;
+		wasStealth = isDefined( ai.coop_stealth );
+		walking = !isDefined( ai.coop_cast );
 		ai.coop_stealth = undefined;
 		ai.coop_cast = undefined;
 		ai.coop_hunting = true;
 		ai notify( "coop_cast_pose" );
-		players = maps\_coopmission::living_players();
-		if ( players.size > 0 )
-			ai setGoalPos( players[ randomInt( players.size ) ].origin );
+		ai thread alerted_hunt( wasStealth, walking );
 		n++;
 	}
 	if ( n > 0 )
@@ -1360,6 +1365,18 @@ alert_group( group, why )
 			ghost_says( "estate_gst_126", true );
 		level notify( "coop_estate_alert", group );
 	}
+}
+
+// IW4 _stealth: a patrolman caught unaware reacts first (the walk-stop
+// reaction on a walk, the spotted twitch at his spot), then hunts.
+alerted_hunt( wasStealth, walking )
+{
+	self endon( "death" );
+	if ( wasStealth )
+		self maps\_coopscene_estate::stealth_react( walking );
+	players = maps\_coopmission::living_players();
+	if ( players.size > 0 )
+		self setGoalPos( players[ randomInt( players.size ) ].origin );
 }
 
 // A loud weapon in the forest gives the player away (IW4 so_forest
@@ -1565,6 +1582,9 @@ stage_boat()
 	}
 
 	codolprintln( "CoDOL coop estate: zodiac ride starts with " + level.coop_estate.riders.size + " rider(s)" );
+	// Ghost's rider clip at the stern (estate_intro_3rd_character_right).
+	if ( isDefined( g ) )
+		maps\_coopscene_estate::boat_ride( g );
 	level thread title_card();
 	level thread boat_lines();
 	level thread spawn_forest();
@@ -1600,6 +1620,7 @@ stage_boat()
 	}
 	if ( isDefined( g ) )
 	{
+		maps\_coopanim::release( g );
 		g codol_actorRide();
 		g animMode( "none" );
 		g.coop_cast = undefined;
@@ -2080,7 +2101,15 @@ stage_breach()
 	price_says( "estate_pri_0461", true );
 	cp = structs_named( "checkpoint_breach_ghost" );
 	if ( cp.size > 0 )
+	{
 		ghost_to( cp[ 0 ].origin, "checkpoint_breach_ghost" );
+		// He stacks on the door (breach_flash_r1_enter / _idle) until the
+		// charge goes; the struct faces the door frame (MEASURED: yaw 230).
+		yaw = 230;
+		if ( isDefined( cp[ 0 ].angles ) )
+			yaw = cp[ 0 ].angles[ 1 ];
+		level thread maps\_coopscene_estate::breach_stack( level.coop_estate.ghost, cp[ 0 ].origin, yaw );
+	}
 
 	// The glowing charge frame on the door (mil_frame_charge_obj), at the
 	// base map's breach_fx origin on the door.
@@ -2116,6 +2145,7 @@ stage_breach()
 		wait( 0.05 );
 	}
 	codolprintln( "CoDOL coop estate: breach by " + breacher.name );
+	maps\_coopscene_estate::breach_stack_done( level.coop_estate.ghost );
 	charge setModel( "mil_frame_charge" );
 	charge snd( "scn_estate_breach_door_impact" );
 	wait( 1.5 );
@@ -2141,6 +2171,10 @@ stage_breach()
 		players[ i ] snd_local( "slomo_whoosh" );
 	visionSetNaked( "slomo_breach", 0.4 );
 	room = spawn_group( spawners_named( "breach_enemy_spawner" ), false, "breach" );
+	// IW4 _slowmo_breach: each guard's spawner names his reaction
+	// (breach_react_push_guy1 / _guy2, exposed_idle_reactA,
+	// breach_react_knife_charge), played at the spawner.
+	maps\_coopscene_estate::breach_reactions( room );
 	hostage = maps\_cooptraining::by_noteworthy( "vazquez_breach" );
 	if ( hostage.size > 0 )
 	{
@@ -2149,6 +2183,9 @@ stage_breach()
 		{
 			v.coop_idle_anim = %covercrouch_hide_idle;
 			v notify( "coop_cast_pose" );
+			// The cower at the blast, then cowering
+			// (estate_breach_hvt_cower / _cower_idle).
+			level thread maps\_coopscene_estate::vazquez_breach( v );
 		}
 	}
 	ghost_fights( true );
@@ -2184,13 +2221,26 @@ stage_chase()
 	if ( isDefined( evac ) )
 		objective_point( evac.origin );
 	wait( 1 );
+	g = level.coop_estate.ghost;
+	// Up from the cower, pleading (unarmed_cowerstand_idle2point /
+	// _pointidle), while Ghost presses him.
+	level thread maps\_coopscene_estate::vazquez_plead( v );
 	ghost_says( "estate_gst_158" );
 	vazquez_says( "estate_vaz_08" );
+	wait( line_time( "estate_vaz_08" ) );
+	// The lead out: the two walk out of the safe room together
+	// (estate_breach_hvt_walkout / estate_breach_buddy_walkout), toward
+	// his way out (r10).
+	walk = maps\_coopscene_estate::walkout_start( v, g, color_node( "r10" ) );
 	// The shelves' weapons are the player's to take (the native world
-	// pickups); he bolts when a player heads out or after 25 s.
+	// pickups).  With the walk-out, he bolts at its end (the recording's
+	// scene runs its course); without it, when a player heads out or
+	// after 25 s.
+	if ( walk > 0 )
+		wait( walk );
 	room = ( 724, 920, 60 );
 	step( "leave", room, 260 );
-	for ( t = 0; t < 25; t += 0.5 )
+	for ( t = 0; t < 25 && walk <= 0; t += 0.5 )
 	{
 		players = maps\_coopmission::living_players();
 		gone = false;
@@ -2213,6 +2263,9 @@ stage_chase()
 		blockers[ i ] notSolid();
 		blockers[ i ] hide();
 	}
+	// He knocks Ghost aside and bolts through the door
+	// (estate_breach_hvt_walkout_p2 / estate_breach_buddy_walkout_p2).
+	maps\_coopscene_estate::walkout_bolt( v, g );
 	level thread vazquez_flees();
 	wait( 1 );
 	price_says( "estate_pri_0470" );
@@ -2304,7 +2357,10 @@ final_wave()
 		s.targetname = "final_wave_enemies";
 		drop[ drop.size ] = s;
 	}
-	spawn_group( drop, false, "technical" );
+	crew = spawn_group( drop, false, "technical" );
+	// Out of the cab (technical_driver_climb_out / _passenger_climb_out).
+	for ( i = 0; i < crew.size; i++ )
+		crew[ i ] thread maps\_coopscene_estate::climb_out( i == 0 );
 }
 
 vazquez_flees()
@@ -2411,6 +2467,9 @@ stage_ending()
 		// own pathing).
 		v forceTeleport( cliff.origin, ( 0, 200, 0 ) );
 	}
+	// Hands up at the authored surrender struct (estate_surrender_vasquez,
+	// then its idle).
+	level thread maps\_coopscene_estate::surrender( v, maps\_coopscene_estate::surrender_struct() );
 	vazquez_says( "estate_vaz_09" );
 	wait( 2.5 );
 
@@ -2435,9 +2494,14 @@ stage_ending()
 		if ( codol_isWeaponMounted( "cheytac_silencer_so" ) )
 			magicBullet( "cheytac_silencer_so", from, head );
 		playFx( level._effect[ "estate_sniper_blood" ], head );
-		v setCanDamage( true );
-		v.coop_cast = undefined;
-		v doDamage( v.health + 500, from );
+		// The shot's own fall (estate_surrender_vasquez_02_shot), dead where
+		// it leaves him; without the clip, the death animscript.
+		if ( !maps\_coopscene_estate::surrender_shot( v ) )
+		{
+			v setCanDamage( true );
+			v.coop_cast = undefined;
+			v doDamage( v.health + 500, from );
+		}
 	}
 	flag_set( "vazquez_dead" );
 	objective_delete( 2 );

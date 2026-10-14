@@ -405,6 +405,11 @@ vehicle_group_trigger()
 	group = self.script_vehiclespawngroup;
 	if ( !isDefined( group ) )
 		group = self.script_vehiclestartmove;
+	release_group( group );
+}
+
+release_group( group )
+{
 	vehicles = vehicles_in_group( group );
 	codolprintln( "CoDOL coop events: vehicle group " + group + " (" + vehicles.size + " vehicles) released" );
 	for ( i = 0; i < vehicles.size; i++ )
@@ -427,7 +432,273 @@ vehicle_run()
 	// Ground vehicles drive on the ground under their nodes (see
 	// _coopvehicle::ground_under); helicopters fly the points themselves.
 	ground = maps\_coopvehicle::is_ground_path( path );
-	mover maps\_coopvehicle::follow_path( path, 0, 40, ground );
+	play_drive_anim( mover );
+	unload = unload_node_index( path );
+	riders = [];
+	if ( !ground && isDefined( unload ) )
+		riders = load_riders( mover, self );
+	if ( riders.size > 0 )
+	{
+		// IW4 _vehicle: fly to the script_unload node, hover there while the
+		// riders fast-rope down, then fly the rest of the path.
+		mover maps\_coopvehicle::follow_path( path_slice( path, 0, unload + 1 ), 0, 40, false );
+		fastrope_unload( mover, riders );
+		mover maps\_coopvehicle::follow_path( path_slice( path, unload + 1, path.size ), 0, 40, false );
+	}
+	else
+		mover maps\_coopvehicle::follow_path( path, 0, 40, ground );
 	// IW4 script_vehicle_selfremove / a path ending far off the map: gone.
 	mover delete();
+}
+
+// IW4 build_drive: a helicopter's rotor clip (vehicles animtree) loops while
+// it flies.  The mover is a script_model; its first setAnim gives it the
+// vehicles tree (codol_script_model_tree).  The clips are the missions' own
+// (=vehicles in their animlists), looked up by name.
+drive_anim_name( model )
+{
+	if ( !isDefined( model ) )
+		return undefined;
+	if ( isSubStr( model, "mi17" ) )
+		return "mi17_heli_rotors";
+	if ( isSubStr( model, "ch46" ) )
+		return "sniper_escape_ch46_rotors";
+	if ( isSubStr( model, "mi-28" ) || isSubStr( model, "mi28" ) || isSubStr( model, "little_bird" ) || isSubStr( model, "littlebird" ) )
+		return "mi28_rotors";
+	if ( isSubStr( model, "blackhawk" ) )
+		return "bh_rotors";
+	return undefined;
+}
+
+play_drive_anim( mover )
+{
+	name = drive_anim_name( mover.model );
+	if ( !isDefined( name ) )
+		return;
+	a = codol_getAnim( "vehicles", name );
+	if ( !isDefined( a ) )
+		return;
+	mover setAnim( a, 1, 0, 1 );
+	codolprintln( "CoDOL coop events: " + mover.model + " plays " + name );
+}
+
+// --------------------------------------------------------------------------
+// helicopter riders (IW4 _vehicle_aianim / maps\_mi17): the spawners whose
+// script_vehicleride names the helicopter's ride group sit in it at their
+// script_startingposition, in that position's seat idle (mi17_<n>_idle), and
+// fast-rope down at the path's script_unload node (mi17_<n>_drop, the clip's
+// own 750-unit descent from the seat), then fight.  The clips are the
+// mission's own (coop_spec_mp_crash_tropical / coop_prolog_mp_crash_intro
+// animlists), looked up by name (maps\_coopanim).  MEASURED in the addon
+// MapEnts: two mi17 (vehicle_mi17_woodland_fly_cheap) with six desert_elite
+// riders each (positions 2..7), path start -> unload node (z 714 / 834,
+// script_stopnode, script_unload "both") -> off the map.
+// --------------------------------------------------------------------------
+
+unload_node_index( path )
+{
+	for ( i = 0; i < path.size; i++ )
+	{
+		if ( isDefined( path[ i ].script_unload ) )
+			return i;
+	}
+	return undefined;
+}
+
+path_slice( path, from, to )
+{
+	out = [];
+	for ( i = from; i < to && i < path.size; i++ )
+		out[ out.size ] = path[ i ];
+	return out;
+}
+
+rider_spawners( vehicle )
+{
+	found = [];
+	if ( !isDefined( vehicle.script_vehicleride ) )
+		return found;
+	ents = getEntArray();
+	for ( i = 0; i < ents.size; i++ )
+	{
+		e = ents[ i ];
+		if ( !isDefined( e.script_vehicleride ) || e.script_vehicleride != vehicle.script_vehicleride )
+			continue;
+		if ( isDefined( e.coop_rider_used ) || !maps\_coopmission::is_enemy_spawner( e ) )
+			continue;
+		found[ found.size ] = e;
+	}
+	return found;
+}
+
+// The seat a rider's clips are authored against: the helicopter's tag_detach
+// in IW4 (maps\_mi17 sittag).  The shipped fly_cheap model's tags are not
+// read here; its origin stands in (IW4's mi17 detach tag sits on the cabin
+// floor over the model origin).
+seat_node( mover )
+{
+	node = spawnStruct();
+	node.origin = mover.origin;
+	node.angles = mover.angles;
+	return node;
+}
+
+// The clip for a rider's seat; a seat whose own drop clip this mission does
+// not ship borrows the drop of the nearest seat on the same rope (IW4: 2-4
+// right rope, 5-8 left rope).
+rider_clip( pos, what )
+{
+	a = maps\_coopanim::scene_anim( "mi17_" + pos + "_" + what, undefined );
+	if ( isDefined( a ) || what != "drop" )
+		return a;
+	order = [];
+	if ( pos <= 4 )
+	{
+		order[ 0 ] = 2; order[ 1 ] = 3; order[ 2 ] = 4;
+	}
+	else
+	{
+		order[ 0 ] = 5; order[ 1 ] = 8; order[ 2 ] = 6; order[ 3 ] = 7;
+	}
+	for ( i = 0; i < order.size; i++ )
+	{
+		a = maps\_coopanim::scene_anim( "mi17_" + order[ i ] + "_drop", undefined );
+		if ( isDefined( a ) )
+			return a;
+	}
+	return undefined;
+}
+
+load_riders( mover, vehicle )
+{
+	guys = [];
+	spawners = rider_spawners( vehicle );
+	if ( !spawners.size )
+		return guys;
+	node = seat_node( mover );
+	// The riders are IW4 reinforcements on top of the mission's living
+	// enemies: the alive budget is lifted for them (the native actor pool
+	// is 32), and the mission's own spawning waits until it is back under.
+	budget = level.coop_max_alive;
+	level.coop_max_alive = level.coop_alive + spawners.size;
+	if ( level.coop_max_alive > 28 )
+		level.coop_max_alive = 28;
+	if ( level.coop_max_alive < budget )
+		level.coop_max_alive = budget;
+	for ( i = 0; i < spawners.size; i++ )
+	{
+		sp = spawners[ i ];
+		pos = 2 + i;
+		if ( isDefined( sp.script_startingposition ) )
+			pos = int( sp.script_startingposition );
+		idle = rider_clip( pos, "idle" );
+		drop = rider_clip( pos, "drop" );
+		if ( !isDefined( idle ) || !isDefined( drop ) )
+			continue;
+		ai = maps\_coopmission::spawn_soldier( sp );
+		if ( !isDefined( ai ) )
+			continue;
+		sp.coop_rider_used = true;
+		ai.coop_rider_pos = pos;
+		ai.coop_rider_drop = drop;
+		ai.ignoreall = true;
+		maps\_coopanim::place_at_start( ai, idle, node );
+		ai codol_actorRide( mover, undefined, true );
+		ai maps\_coopanim::loop_idle( idle );
+		guys[ guys.size ] = ai;
+	}
+	level.coop_max_alive = budget;
+	codolprintln( "CoDOL coop events: " + guys.size + " riders aboard " + mover.model );
+	return guys;
+}
+
+// IW4 fastrope unload: the riders go down the two ropes, one after another on
+// each rope, and fight once on the ground.  The helicopter hovers until the
+// last is down (or dead).
+fastrope_unload( mover, guys )
+{
+	hover_for_ropes( mover, guys );
+	wait( 1 );
+	ropes = [];
+	ropes[ "ri" ] = [];
+	ropes[ "le" ] = [];
+	for ( i = 0; i < guys.size; i++ )
+	{
+		side = "le";
+		if ( guys[ i ].coop_rider_pos <= 4 )
+			side = "ri";
+		ropes[ side ][ ropes[ side ].size ] = guys[ i ];
+	}
+	level thread rope_queue( mover, ropes[ "ri" ], "ri" );
+	level thread rope_queue( mover, ropes[ "le" ], "le" );
+	longest = 0;
+	for ( i = 0; i < guys.size; i++ )
+		if ( isDefined( guys[ i ].coop_rider_drop ) )
+		{
+			len = getAnimLength( guys[ i ].coop_rider_drop );
+			if ( len > longest )
+				longest = len;
+		}
+	// Each rope sends a man every 2.5 s (the next starts as the one before
+	// clears the door); wait for the slowest rope.
+	waitTime = longest + 2.5 * ( guys.size / 2 + 1 ) + 1;
+	wait( waitTime );
+	mover notify( "coop_unloaded" );
+}
+
+// IW4 hovers the helicopter at its fastropeoffset over the ground at the
+// unload node; here the drop clips' own descent (getMoveDelta) and the ground
+// under the helicopter decide the hover height, so the riders land on it.
+hover_for_ropes( mover, guys )
+{
+	drop = 0;
+	for ( i = 0; i < guys.size; i++ )
+	{
+		if ( !isDefined( guys[ i ] ) || !isDefined( guys[ i ].coop_rider_drop ) )
+			continue;
+		d = getMoveDelta( guys[ i ].coop_rider_drop, 0, 1 );
+		if ( d[ 2 ] < drop )
+			drop = d[ 2 ];
+	}
+	if ( drop >= 0 )
+		return;
+	trace = bulletTrace( mover.origin - ( 0, 0, 64 ), mover.origin - ( 0, 0, 4000 ), false, mover );
+	if ( trace[ "fraction" ] >= 1 )
+		return;
+	// The seat clips start 6 units under the seat node (mi17_<n>_idle).
+	want = trace[ "position" ][ 2 ] - drop + 6;
+	if ( abs( want - mover.origin[ 2 ] ) < 4 )
+		return;
+	time = abs( want - mover.origin[ 2 ] ) / 120;
+	if ( time < 0.5 )
+		time = 0.5;
+	codolprintln( "CoDOL coop events: helicopter hovers at z " + int( want ) + " over ground " + int( trace[ "position" ][ 2 ] ) + " for the ropes" );
+	mover moveTo( ( mover.origin[ 0 ], mover.origin[ 1 ], want ), time, time * 0.3, time * 0.3 );
+	wait( time );
+}
+
+rope_queue( mover, guys, side )
+{
+	for ( i = 0; i < guys.size; i++ )
+	{
+		ai = guys[ i ];
+		if ( isDefined( ai ) && isAlive( ai ) )
+			ai thread fastrope_down( mover );
+		wait( 2.5 );
+	}
+}
+
+fastrope_down( mover )
+{
+	self endon( "death" );
+	node = seat_node( mover );
+	self codol_actorRide();
+	codolprintln( "CoDOL coop events: rider ent " + self getEntityNumber() + " (seat " + self.coop_rider_pos + ") fast-ropes from " + self.origin );
+	maps\_coopanim::release( self );
+	maps\_coopanim::play_anim( self.coop_rider_drop, node, "noclip" );
+	// Onto the ground (the noclip descent can end a few units into it).
+	self forceTeleport( maps\_coopvehicle::ground_under( self.origin + ( 0, 0, 60 ) ), self.angles );
+	self.ignoreall = false;
+	maps\_coopanim::release( self );
+	codolprintln( "CoDOL coop events: rider ent " + self getEntityNumber() + " down at " + self.origin );
 }

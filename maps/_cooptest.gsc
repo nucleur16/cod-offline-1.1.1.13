@@ -114,6 +114,12 @@ watch()
 			}
 			codolprintln( "CoDOL cooptest: used " + objs.size + " laptops" );
 			break;
+		case "vehiclegroup":
+			// vehiclegroup <group>: release an authored vehicle spawn group
+			// as its trigger would (helicopter riders and their fast-rope)
+			if ( tokens.size >= 2 )
+				maps\_coopevents::release_group( int( tokens[ 1 ] ) );
+			break;
 		case "goextract":
 			evac = maps\_coopmission::find_extraction();
 			if ( isDefined( evac ) )
