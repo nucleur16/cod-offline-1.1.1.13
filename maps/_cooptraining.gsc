@@ -127,8 +127,10 @@ seat_driver()
 		return;
 	}
 	ai animMode( "nophysics" );
-	ai.coop_idle_anim = %bh_pilot_idle;
-	ai setAnimKnobAll( %bh_pilot_idle, %body, 1, 0.1, 1 );
+	// IW4 maps\_humvee position 0 (tag_driver): humvee_idle_frontL, replayed
+	// each cycle (a non-looping clip).  spawn_cast started his idle under the
+	// "driver_seat" key; bh_pilot_idle is the common fallback.
+	ai setAnimKnobAll( ai.coop_idle_anim, %body, 1, 0.1, 1 );
 	ai notify( "coop_cast_pose" );
 	// Actors refuse linkTo; codol_actorRide places him at the tag every
 	// frame from the jeep's own trajectory (native, coop only).
@@ -138,7 +140,7 @@ seat_driver()
 	level.coop_intro_driver = ai;
 	level.coop_intro_wait_driver = undefined;
 	codolprintln( "CoDOL coop training: Price at the wheel: actor ent " + ai getEntityNumber() + " riding tag_driver at " +
-		spot.origin + ", bh_pilot_idle, nophysics" );
+		spot.origin + ", humvee_idle_frontl, nophysics" );
 	level thread ride_trace( ai, mover );
 }
 
@@ -496,6 +498,11 @@ precache_cast()
 
 // The idle a cast member stands in, and the gesture he talks with.
 //
+// The common FALLBACK idle of a cast member.  The authored idles themselves
+// (and the instructors' scene sets) are played by _coopscene_killhouse since
+// codol_coopClientMapName puts this mission's animlist on the client
+// (2026-10-14).  What follows is the reason these fallbacks exist:
+//
 // Only animations from the animlists EVERY coop client loads are used:
 // animlists/common_human and common_actor_shared (common_gametype_coop), whose
 // xanims ship in that zone.  The trainer's own idles (killhouse_*,
@@ -713,22 +720,13 @@ look_nametag_player()
 	}
 }
 
-// Talk: the casual talking twitch (common_human), then back to the idle.
+// Talk: the speaker's own talk clip from the killhouse scene table (CoD4
+// gaz_animation: killhouse_gaz_talk_side / point_side / idleA; Price's
+// killhouse_price_stand_talk), else the casual talking twitch, for the line's
+// length; then back to his idle.
 gesture( time )
 {
-	self endon( "death" );
-	self notify( "coop_gesture" );
-	self endon( "coop_gesture" );
-	self.coop_pose_anim = %casual_stand_v2_twitch_talk;
-	self notify( "coop_cast_pose" );
-	length = getAnimLength( %casual_stand_v2_twitch_talk );
-	if ( length > time + 0.3 )
-		length = time + 0.3;
-	if ( length < 1 )
-		length = 1;
-	wait( length );
-	self.coop_pose_anim = undefined;
-	self notify( "coop_cast_pose" );
+	self maps\_coopscene_killhouse::talk( time );
 }
 
 ally_template()
@@ -777,13 +775,19 @@ spawn_cast( spawner, key )
 	ai.ignoreall = true;
 	ai.ignoreme = true;
 	ai.coop_cast = key;
-	ai.coop_idle_anim = idle_anim( spawner.animation, key );
-	if ( !isDefined( ai.coop_idle_anim ) )
-		ai.coop_idle_anim = %casual_stand_idle;
-	// The authored idle itself, now that this mission's animlist reaches the
-	// client (codol_coopClientMapName); the common idle above is the fallback.
-	if ( isDefined( spawner.animation ) )
-		ai.coop_idle_anim = maps\_coopanim::scene_anim( spawner.animation, ai.coop_idle_anim );
+	// The common idle (idle_anim) is the fallback; the scene idle comes from
+	// the killhouse scene table or the spawner's authored animation, now that
+	// this mission's animlist reaches the client (codol_coopClientMapName),
+	// and is replayed cycle by cycle (_coopscene_killhouse idle_loop).
+	fallback = idle_anim( spawner.animation, key );
+	if ( !isDefined( fallback ) )
+		fallback = %casual_stand_idle;
+	// Mac and the recruits crouch at the obstacle line (the recording):
+	// they keep their crouch while Mac talks.
+	if ( key == "mac" || key == "buddy1" || key == "buddy2" || key == "buddy3" )
+		ai.coop_crouched = true;
+	ai.coop_idle_anim = fallback;
+	ai maps\_coopscene_killhouse::start_idle( key, spawner.animation, fallback );
 	if ( isDefined( spawner.script_friendname ) )
 	{
 		ai.coop_name = spawner.script_friendname;
@@ -936,11 +940,18 @@ spawn_driver()
 			// actor movement, standing at the driver's door.
 			ai = level.coop_intro_driver;
 			level.coop_intro_driver = undefined;
-			ai codol_actorRide();
-			ai animMode( "none" );
+			// IW4 maps\_humvee position 0 getout: humvee_driver_climb_out from
+			// the seat, its own root motion carrying him out of the door,
+			// then on his feet by the jeep in Price's stand idle.
+			// The clip's root ends below the seat by more than the seat's
+			// height (MEASURED: 38.7 -> -34 on the probe); he stands on
+			// the ground under where it put him.
+			seatZ = ai.origin[ 2 ];
+			if ( ai climb_out_of_jeep() > 0 && isAlive( ai ) )
+				spot.origin = maps\_coopvehicle::ground_under( ( ai.origin[ 0 ], ai.origin[ 1 ], seatZ ) );
 			ai forceTeleport( spot.origin, spot.angles );
 			ai.coop_cast = "driver";
-			ai.coop_idle_anim = idle_anim( undefined, "driver" );
+			ai maps\_coopscene_killhouse::start_idle( "driver", undefined, idle_anim( undefined, "driver" ) );
 			ai setAnimKnobAll( ai.coop_idle_anim, %body, 1, 0.2, 1 );
 			ai notify( "coop_cast_pose" );
 			if ( isDefined( ai.coop_nametag ) )
@@ -962,6 +973,27 @@ spawn_driver()
 		}
 		return;
 	}
+}
+
+// Price gets out at the driver's door: the climb-out clip played from the
+// seat with its root motion (noclip: the clip carries him over the door
+// sill and down), the ride released first.  Without the clip he is simply
+// placed by the door.
+climb_out_of_jeep()
+{
+	self endon( "death" );
+	seat = self.origin;
+	self maps\_coopscene_killhouse::stop_idle();
+	self codol_actorRide();
+	self animMode( "none" );
+	len = maps\_coopanim::anim_single_solo( self, "getout", undefined, "noclip" );
+	if ( len > 0 )
+	{
+		wait( 0.1 );
+		self stopanimscripted();
+	}
+	codolprintln( "CoDOL coop training: Price climbed out (" + len + " s) from " + seat + " to " + self.origin );
+	return len;
 }
 
 cast( key )
@@ -1770,6 +1802,10 @@ station_range()
 	// picked up by hand.  Tiny Man's two lines run back to back, as in the
 	// recording; the station-one marker and its number light once the
 	// rifle is in hand.
+	// CoD4 door_to_rifle_handler: Gaz's intro (killhouse_gaz_intro) as he
+	// greets the rookie; his lines run over it.
+	if ( isDefined( tiny ) )
+		tiny maps\_coopscene_killhouse::scene( "intro" );
 	say( tiny, "pit_tiny_001", 2.8 );
 	rifle = training_rifle();
 	table = range_rifle( rifle );
@@ -2264,8 +2300,9 @@ station_obstacle()
 // the rookie's weapons down, and the mission is complete.  The recording
 // starts the debrief at pit_pri_062 (061, about the "fancy obstacle course"
 // of the pit, is not heard).  Price stands with his arms crossed in the
-// recording; that idle (killhouse_price_stand_talk) is only in the map
-// animlist C1 does not load, so he keeps the casual stand (idle_anim).
+// recording: CoD4's killhouse_price_stand_idle, and he talks the debrief in
+// killhouse_price_stand_talk (_coopscene_killhouse "price_stand"), now that
+// the mission animlist reaches C1; the casual stand is the fallback.
 // --------------------------------------------------------------------------
 
 station_price()
