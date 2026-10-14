@@ -780,6 +780,10 @@ spawn_cast( spawner, key )
 	ai.coop_idle_anim = idle_anim( spawner.animation, key );
 	if ( !isDefined( ai.coop_idle_anim ) )
 		ai.coop_idle_anim = %casual_stand_idle;
+	// The authored idle itself, now that this mission's animlist reaches the
+	// client (codol_coopClientMapName); the common idle above is the fallback.
+	if ( isDefined( spawner.animation ) )
+		ai.coop_idle_anim = maps\_coopanim::scene_anim( spawner.animation, ai.coop_idle_anim );
 	if ( isDefined( spawner.script_friendname ) )
 	{
 		ai.coop_name = spawner.script_friendname;
