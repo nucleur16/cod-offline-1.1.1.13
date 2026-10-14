@@ -1775,13 +1775,28 @@ setDistanceOnParts( partList, point )
 
 	for ( i = 0; i < partList.size; i++ )
 	{
-		d = Distance( point, self GetTagOrigin( partList[ i ].v[ "tagName" ] ) );
+		d = Distance( point, self codol_partTagOrigin( partList[ i ].v[ "tagName" ] ) );
 		partList[ i ].v[ "distance" ] = d;
 	}
 
 	prof_end( "_destructible" );
 
 	return partList;
+}
+
+// CoDOL: the base part's states inherit its tag (destructible_state copies
+// parts[ 0 ][ 0 ]'s tagName, "tag_origin" in every type), and splash damage
+// measures each active part from that tag. A final model without a tag_origin
+// bone then raises "tag 'tag_origin' does not exist", which ends the match:
+// mp_abandon_sh_mk's burnt firecracker, abdn_chinese_firecracker_01_dstry, has a
+// single unnamed bone, and a grenade next to one shut the server down. The
+// root tag_origin sits at the entity origin, so answer that for it and keep
+// GetTagOrigin for every named part tag.
+codol_partTagOrigin( tagName )
+{
+	if ( tagName == "tag_origin" )
+		return self.origin;
+	return self GetTagOrigin( tagName );
 }
 
 getLowestPartDistance( partList )

@@ -86,3 +86,37 @@ gulag_rescueB_pistol_reshoot
 airport_ending_climbin_makarov_weapon
 laptop_chair_idle
 laptop_chair_runin
+
+//////////////////
+//mp_abandon_sh_mk section (3.3.3.3 animtrees/animated_props.atr, mp_abandon
+//and mp_abandon section_mk; the coaster badguy signs are not in the ported zone)
+//////////////////
+mp_abandon_dragon_windsock_idle
+mp_abandon_banner_idle
+mp_abandon_firecracker_top_fire
+mp_abandon_firecracker_bottom_fire
+mp_abandon_ferriswheel
+mp_abandon_mk_globe_spin
+mp_abandon_mk_ufo1_loop
+mp_abandon_mk_ufo2_loop
+mp_abdn_fish_school_swim
+mp_abandon_mk_coaster_sign_all_wiggle
+
+//////////////////
+//3.3.3.3 maps ported to 1.1.1.13 (mp_cha_quad, mp_mideast, mp_seatown): their animlists name these
+//animated_props animations, which C1's common_mp tree lacks
+//////////////////
+mp_quad_windy_umbrella_tree
+mp_quad_windy_rope_swing
+mp_quad_windy_rope_bridge
+mp_quad_windy_pine_tall
+mp_quad_windy_olive_tree
+mp_quad_windy_cargo_net
+mp_quad_wind_lamp_brass
+mp_mid_lamp_wall_idle
+mid_wires_02_loop
+mid_wires_01_loop
+seatown_wire_flags2_sway
+seatown_wire_flags1_sway
+seatown_mid01_wiregrp_sway
+seatown_lrg_wiregrp_sway

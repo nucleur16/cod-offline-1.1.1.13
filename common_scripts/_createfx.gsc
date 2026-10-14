@@ -43,6 +43,20 @@ createLoopSound()
 	return ent;
 }
 
+// CoDOL: createIntervalSound from IW5 common_scripts\_createfx.gsc (COD-GSC-Source
+// IW5-GSC/scripts/512.gsc, with its getIntervalSoundDelayMin/MaxDefault values 0.75 and 2
+// inlined). The createfx files of the 3.3.3.3 maps ported to 1.1.1.13 (mp_rust_long,
+// mp_shipment_long) place IW5 interval sounds. The server does not play createfx ents (the
+// client does, clientSideEffects), but the call must resolve for those files to compile.
+createIntervalSound()
+{
+	ent = createLoopSound();
+	ent.v[ "type" ] = "soundfx_interval";
+	ent.v[ "delay_min" ] = 0.75;
+	ent.v[ "delay_max" ] = 2;
+	return ent;
+}
+
 createNewExploder()
 {
 	ent = spawnStruct();
