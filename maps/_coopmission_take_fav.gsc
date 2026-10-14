@@ -821,7 +821,7 @@ van_pullup()
 	van rotateTo( angles, 0.9 );
 	wait( 0.9 );
 	van maps\_coopscene_fav::stop_vehicle_clip( wheels );
-	van maps\_coopscene_fav::play_vehicle_clip( "favela_van_shootout_van", 0.5, true );
+	van maps\_coopscene_fav::play_vehicle_clip( "favela_van_shootout_van", 0.5 );
 	van stopLoopSound();
 	van playSound( "scn_favela_van_skid2stop" );
 	wait( 0.6 );
@@ -1270,7 +1270,7 @@ van_scene( node, driver_clip )
 	// IW4 favela: van anim_single_solo( van, "door_open" ) from the moment
 	// the four start theirs (favela_van_shootout_van, 19.2 s: the doors the
 	// driver climbs out of), its wheels turning while it rolls in.
-	van maps\_coopscene_fav::play_vehicle_clip( "favela_van_shootout_van", undefined, true );
+	van maps\_coopscene_fav::play_vehicle_clip( "favela_van_shootout_van" );
 	// The cars' own scene clips (car1 / car2: their root sits exactly on
 	// player_vehicle / player_vehicle2 from this node, MEASURED), the
 	// passenger door only, as the riders get out on that side.
@@ -1301,7 +1301,7 @@ cars_scene()
 	for ( i = 0; i < cars.size && i < names.size; i++ )
 	{
 		if ( isDefined( cars[ i ] ) )
-			cars[ i ] maps\_coopscene_fav::play_vehicle_clip( names[ i ], 1.7 / 25.5, true );
+			cars[ i ] maps\_coopscene_fav::play_vehicle_clip( names[ i ], 1.7 / 25.5 );
 	}
 }
 
