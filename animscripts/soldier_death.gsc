@@ -25,6 +25,8 @@ main()
 	}
 
 	stop_aiming();
+	if ( try_long_death() )
+		return;
 	deathAnim = get_death_anim();
 
 	self animmode( "gravity" );
@@ -54,8 +56,30 @@ get_death_anim()
 		self.damageLocation = "none";
 	yaw = iw4_damage_yaw();
 
+	// IW4 traverse\shared handleTraverseDeathNotetrack: killed on a wall or
+	// a car, the crossing's own death for the half he was in.
+	if ( isDefined( self.coop_traverse_death ) )
+	{
+		phase = 0;
+		if ( isDefined( self.coop_traverse_phase ) )
+			phase = self.coop_traverse_phase;
+		stat_bump( "traverse_death" );
+		return pick( self.coop_traverse_death[ phase ] );
+	}
+
 	if ( was_damaged_by_explosive() && self.damageLocation == "none" )
 		return explode_death_anim( yaw );
+
+	// IW4 death.gsc a.special: hidden at a cover node he dies in its pose.
+	if ( isDefined( self.coop_in_cover ) )
+	{
+		d = cover_death_anim();
+		if ( isDefined( d ) )
+		{
+			stat_bump( "cover_death_" + self.coop_in_cover );
+			return d;
+		}
+	}
 
 	if ( strong_bullet_damage() )
 	{
@@ -272,4 +296,97 @@ explode_death_anim( yaw )
 	if ( yaw > -45 && yaw <= 45 )
 		return pick( list4( %death_explosion_run_f_v1, %death_explosion_run_f_v2, %death_explosion_run_f_v3, %death_explosion_run_f_v4 ) );
 	return pick( list2( %death_explosion_run_r_v1, %death_explosion_run_r_v2 ) );
+}
+
+// IW4 death.gsc special deaths at cover (a.special cover_left / cover_right
+// / cover_stand / cover_crouch), standing or crouched at a corner.
+cover_death_anim()
+{
+	crouched = isDefined( self.a.pose ) && self.a.pose == "crouch";
+	switch ( self.coop_in_cover )
+	{
+	case "left":
+		if ( crouched )
+			return pick( list2( %cornercrl_death_side, %cornercrl_death_back ) );
+		return pick( list2( %corner_standl_deatha, %corner_standl_deathb ) );
+	case "right":
+		if ( crouched )
+			return pick( list2( %cornercrr_alert_death_slideout, %cornercrr_alert_death_back ) );
+		return pick( list2( %corner_standr_deatha, %corner_standr_deathb ) );
+	case "stand":
+		return pick( list2( %coverstand_death_left, %coverstand_death_right ) );
+	case "crouch":
+		return pick( list3( %covercrouch_death_1, %covercrouch_death_2, %covercrouch_death_3 ) );
+	}
+	return undefined;
+}
+
+// IW4 death.gsc tryDyingCrawl / the long deaths: a soldier hit low or in
+// the gut by a bullet at range sometimes goes down wounded -- onto his back
+// (dying_stand_2_back, the dying_back idle and twitches) or onto his front
+// and crawls (dying_stand_2_crawl, dying_crawl) -- before he dies
+// (dying_back_death_*, dying_crawl_death_*).  The game already counts him
+// dead; IW4's wounded pistol fire from the back is not played (a dead actor
+// fires nothing here).  scr_coop_ai_long_death 0 turns it off.
+try_long_death()
+{
+	self endon( "killanimscript" );
+	if ( getDvar( "scr_coop_ai_long_death" ) == "0" )
+		return false;
+	if ( isDefined( self.coop_traverse_death ) || isDefined( self.coop_in_cover ) || self.a.movement == "run" )
+		return false;
+	if ( !isDefined( self.damageMod ) || ( self.damageMod != "MOD_RIFLE_BULLET" && self.damageMod != "MOD_PISTOL_BULLET" ) )
+		return false;
+	if ( !damageLocationIsAny( "torso_lower", "left_leg_upper", "right_leg_upper", "left_leg_lower", "right_leg_lower" ) )
+		return false;
+	if ( isDefined( self.coop_last_attacker ) && distance( self.origin, self.coop_last_attacker.origin ) < 300 )
+		return false;
+	if ( randomInt( 100 ) >= 30 )
+		return false;
+
+	crouched = isDefined( self.a.pose ) && self.a.pose == "crouch";
+	crawl = randomInt( 2 ) == 0;
+	if ( crawl )
+	{
+		down = pick( list3( %dying_stand_2_crawl_v1, %dying_stand_2_crawl_v2, %dying_stand_2_crawl_v3 ) );
+		if ( crouched )
+			down = %dying_crouch_2_crawl;
+	}
+	else
+	{
+		down = pick( list2( %dying_stand_2_back_v1, %dying_stand_2_back_v2 ) );
+		if ( crouched )
+			down = %dying_crouch_2_back;
+	}
+	kind = "back";
+	if ( crawl )
+		kind = "crawl";
+	trace_anim( "long death (" + kind + ")" );
+	stat_bump( "long_death" );
+	self animmode( "gravity" );
+	self orientmode( "face current" );
+	self setFlaggedAnimKnobAllRestart( "deathanim", down, %body, 1, 0.1, 1 );
+	DoNoteTracksForTime( getAnimLength( down ), "deathanim" );
+	if ( crawl )
+	{
+		cycles = 1 + randomInt( 3 );
+		self setFlaggedAnimKnobAll( "deathanim", %dying_crawl, %body, 1, 0.2, 1 );
+		DoNoteTracksForTime( getAnimLength( %dying_crawl ) * cycles, "deathanim" );
+		final = pick( list2( %dying_crawl_death_v1, %dying_crawl_death_v2 ) );
+	}
+	else
+	{
+		self setFlaggedAnimKnobAll( "deathanim", %dying_back_idle, %body, 1, 0.2, 1 );
+		DoNoteTracksForTime( 1.0 + randomFloat( 1.5 ), "deathanim" );
+		twitch = pick( list2( %dying_back_twitch_a, %dying_back_twitch_b ) );
+		self setFlaggedAnimKnobAllRestart( "deathanim", twitch, %body, 1, 0.2, 1 );
+		DoNoteTracksForTime( getAnimLength( twitch ), "deathanim" );
+		final = pick( list4( %dying_back_death_v1, %dying_back_death_v2, %dying_back_death_v3, %dying_back_death_v4 ) );
+	}
+	self setFlaggedAnimKnobAllRestart( "deathanim", final, %body, 1, 0.2, 1 );
+	length = getAnimLength( final );
+	if ( !animHasNotetrack( final, "start_ragdoll" ) )
+		self thread ragdoll_after( length * 0.8 );
+	DoNoteTracksForTime( length, "deathanim" );
+	return true;
 }

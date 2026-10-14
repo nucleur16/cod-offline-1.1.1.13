@@ -43,6 +43,17 @@ get_pain_anim()
 	self.coop_pain_ends_crouched = false;
 	if ( !isDefined( self.a.pose ) )
 		self.a.pose = "stand";
+	// IW4 pain.gsc special pains: hidden at a cover node he flinches in its
+	// pose and stays there.
+	if ( isDefined( self.coop_in_cover ) )
+	{
+		p = cover_pain_anim();
+		if ( isDefined( p ) )
+		{
+			stat_bump( "cover_pain_" + self.coop_in_cover );
+			return p;
+		}
+	}
 	if ( self.a.pose == "crouch" && can_crouch() )
 	{
 		self.a.movement = "stop";
@@ -176,4 +187,35 @@ crouch_pain_anim()
 	if ( damageLocationIsAny( "right_hand", "right_arm_lower", "right_arm_upper" ) )
 		p[ p.size ] = %exposed_crouch_pain_right_arm;
 	return pick( p );
+}
+
+// IW4 pain.gsc getCornerStandLPain / getCornerStandRPain / the crouched
+// corner pains / cover_stand and cover_crouch pains.
+cover_pain_anim()
+{
+	crouched = isDefined( self.a.pose ) && self.a.pose == "crouch";
+	self.a.movement = "stop";
+	switch ( self.coop_in_cover )
+	{
+	case "left":
+		if ( crouched )
+		{
+			self.coop_pain_ends_crouched = true;
+			return %cornercrl_painb;
+		}
+		return pick( list4( %corner_standl_painb, %corner_standl_painc, %corner_standl_paind, %corner_standl_paine ) );
+	case "right":
+		if ( crouched )
+		{
+			self.coop_pain_ends_crouched = true;
+			return pick( list2( %cornercrr_alert_paina, %cornercrr_alert_painc ) );
+		}
+		return pick( list3( %corner_standr_pain, %corner_standr_painb, %corner_standr_painc ) );
+	case "stand":
+		return pick( list2( %coverstand_pain_groin, %coverstand_pain_leg ) );
+	case "crouch":
+		self.coop_pain_ends_crouched = true;
+		return pick( list3( %covercrouch_pain_front, %covercrouch_pain_left_3, %covercrouch_pain_right ) );
+	}
+	return undefined;
 }
