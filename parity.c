@@ -419,6 +419,8 @@ __attribute__((used)) void __cdecl ParityEvents(int localClient, const BYTE *ops
 enum { PF_INT, PF_HEX, PF_BYTE };
 /* ignore: bits only shown at level 2, because the client changes them outside Pmove so the
  * prediction and the snapshot never agree:
+ *   pm_flags 0x0100   PMF_TIME_KNOCKBACK, set by damage (finishPlayerDamage 0x51BE26), never by
+ *                     prediction;
  *   pm_flags 0x8000   PMF_SHELLSHOCK, set and cleared only by game code (0x50CC13, 0x538AAE,
  *                     0x54324B), so every server toggle is one line;
  *   weapFlags 0x18    the crosshair scan in .tvm0 (0x8400416 / 0x842EEBC / 0x848D2BE) rewrites
@@ -427,7 +429,7 @@ typedef struct { WORD off; BYTE kind; const char *name; DWORD ignore; } ParityFi
 
 static const ParityField kPredFields[] = {
     { 0x004, PF_INT, "pm_type" },          { 0x008, PF_INT, "pm_time" },
-    { 0x00C, PF_HEX, "pm_flags", 0x8000 },         { 0x010, PF_HEX, "otherFlags" },
+    { 0x00C, PF_HEX, "pm_flags", 0x8100 },         { 0x010, PF_HEX, "otherFlags" },
     { 0x014, PF_HEX, "ps+0x14" },          { 0x018, PF_BYTE, "bobCycle" },
     { 0x0A8, PF_INT, "groundEntityNum" },  { 0x0B8, PF_INT, "jumpTime" },
     { 0x0E8, PF_BYTE, "movementDir" },     { 0x0EC, PF_HEX, "stanceAnimFlags" },
@@ -492,6 +494,11 @@ __attribute__((used)) void __cdecl ParityPredCheck(const float *delta, const BYT
     /* A pm_type change (death, spawn into spectator, intermission) is the server's decision,
      * never predicted: skip the frame below level 2, as for a teleport. */
     if (level < 2 && *(const int *)(cg + PS_PMTYPE) != (int)g_prev.fields[0] /* kPredFields[0] is pm_type */)
+        return;
+    /* Knockback (0x100) and shellshock (0x8000) are applied by the server's damage and game code
+     * and never predicted; the velocity, pm_time and sprint fields that change with them on that
+     * frame are the same server decision, so the frame is skipped below level 2. */
+    if (level < 2 && ((*(const DWORD *)(cg + 0x00C) ^ g_prev.fields[2] /* kPredFields[2] is pm_flags */) & 0x8100))
         return;
     if (len > (level >= 2 ? 0.01f : 0.1f))
         ParityReport(0, "pred", "origin", "origin error %.3f (client-predicted minus from-snapshot %.3f %.3f %.3f) "
