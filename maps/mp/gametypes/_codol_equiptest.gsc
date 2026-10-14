@@ -34,6 +34,11 @@
 //   set scr_codol_equiptest "knifepick <client>"
 //       stands a client on the last knife and holds use; logs its knife ammo
 //       before and after.
+//   set scr_codol_equiptest "car <clientnum> <dist>"
+//       freezes a client <dist> units from the nearest intact destructible
+//       vehicle and damages the car until it burns and explodes, logging the
+//       server time of the explosion and of the client's death (pair with
+//       codol_soundTrace 1 for the sound events).
 //   set scr_codol_equiptest "state <clientnum>"
 //       prints a client's alive flag, session state, health and team.
 //   set scr_codol_equiptest "weapflags <clientnum>" | "weapflags name <weapon>"
@@ -93,6 +98,18 @@ watchDvar()
             ( tokens[0] == "knifepick" && tokens.size > 1 ) )
         {
             level thread knifeTrial( tokens );
+            continue;
+        }
+        // "car <client> <dist>": stands a client <dist> units from the nearest
+        // destructible vehicle and shoots the car with small radius damage
+        // until it burns and explodes; logs the server time of each step.
+        if ( tokens[0] == "car" && tokens.size > 2 )
+        {
+            player = playerByNumber( int( tokens[1] ) );
+            if ( isDefined( player ) )
+                player thread carTrial( float( tokens[2] ) );
+            else
+                codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
             continue;
         }
         if ( tokens[0] == "perk" && tokens.size > 2 )
@@ -538,6 +555,72 @@ positionVerb( tokens )
     }
     codolPrintLn( "CoDOL equiptest: " + player.name + " moved from " + player.origin + " to " + target );
     player setOrigin( target );
+}
+
+carTrial( dist )
+{
+    self endon( "disconnect" );
+    while ( !isAlive( self ) )
+        wait 0.1;
+    cars = getEntArray( "destructible_vehicle", "targetname" );
+    toys = getEntArray( "destructible_toy", "targetname" );
+    for ( i = 0; i < toys.size; i++ )
+        cars[cars.size] = toys[i];
+    car = undefined;
+    for ( i = 0; i < cars.size; i++ )
+    {
+        if ( isDefined( cars[i].exploded ) || !isDefined( cars[i].destructible_type ) ||
+            getSubStr( cars[i].destructible_type, 0, 7 ) != "vehicle" )
+            continue;
+        if ( !isDefined( car ) || distanceSquared( self.origin, cars[i].origin ) < distanceSquared( self.origin, car.origin ) )
+            car = cars[i];
+    }
+    if ( !isDefined( car ) )
+    {
+        codolPrintLn( "CoDOL equiptest: car: no intact destructible vehicle" );
+        return;
+    }
+    spot = car.origin + ( dist, 0, 0 );
+    trace = bulletTrace( spot + ( 0, 0, 64 ), spot - ( 0, 0, 256 ), false, self );
+    self setOrigin( trace["position"] );
+    self freezeControls( true );
+    codolPrintLn( "CoDOL equiptest: car t=" + getTime() + " ent " + car getEntityNumber() + " " + car.destructible_type +
+        " at " + car.origin + "; client " + self getEntityNumber() + " at " + self.origin );
+    self thread carTrialDeath();
+    car thread carTrialNotes();
+    for ( n = 0; n < 200 && isDefined( car ) && !isDefined( car.exploded ); n++ )
+    {
+        radiusDamage( car.origin + ( 0, 0, 16 ), 72, 30, 30, self );
+        wait 0.3;
+    }
+}
+
+// No endon "death": the engine notifies "death" on a destructible the first
+// time its script_model health runs out, long before it explodes.
+carTrialNotes()
+{
+    self thread carTrialDamage();
+    self waittill( "exploded" );
+    codolPrintLn( "CoDOL equiptest: car t=" + getTime() + " exploded notify" );
+    self waittill( "destroyed" );
+    codolPrintLn( "CoDOL equiptest: car t=" + getTime() + " destroyed notify (radius damage done)" );
+}
+
+carTrialDamage()
+{
+    self endon( "destroyed" );
+    for ( ;; )
+    {
+        self waittill( "damage", amount, attacker, dir, point, type );
+        codolPrintLn( "CoDOL equiptest: car t=" + getTime() + " damage " + amount + " " + type );
+    }
+}
+
+carTrialDeath()
+{
+    self endon( "disconnect" );
+    self waittill( "death" );
+    codolPrintLn( "CoDOL equiptest: car t=" + getTime() + " client " + self getEntityNumber() + " died" );
 }
 
 nearestZombie( origin )
