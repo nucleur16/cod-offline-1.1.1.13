@@ -420,9 +420,44 @@ destructible_healthdrain( amount, interval, badplaceRadius, badplaceTeam )
 	level.destructible_type[ destructibleIndex ].parts[ partIndex ][ stateIndex ].v[ "badplace_team" ] = badplaceTeam;
 }
 
+// CoDOL: the IW4 type tables name sound aliases C1 ships under other names or
+// only in some zones (docs/zone_assets/ALL_sound.txt).
+//  * mack_truck_fire_med / mack_truck_glass_break_* ship in no zone at all; the
+//    truck burns and breaks like the other vehicles (fire_vehicle_med,
+//    veh_glass_break_*, common_mp).
+//  * A zombies match does not mount common_mp, which carries every IW vehicle
+//    alias. zm_prototype_sh's coupes (the only destructible vehicles on a zm
+//    map) then burn with car_fire -- the same fire/fire_vehicle_medbig_loop1
+//    loop, shipped by zm_prototype_sh and zm_zombie_training -- explode with
+//    barrel_mtl_explode (the metal destructible explosion those zones ship)
+//    and break glass with zmb_break_glass_barrier (common_gametype_zm).
+//    Nothing in the zombies zones matches fire_vehicle_flareup_med,
+//    veh_tire_deflate or car_alarm(_off); those stay as they are.
+codol_destructible_sound_alias( soundAlias )
+{
+	if ( soundAlias == "mack_truck_fire_med" )
+		soundAlias = "fire_vehicle_med";
+	else if ( soundAlias == "mack_truck_glass_break_large" )
+		soundAlias = "veh_glass_break_large";
+	else if ( soundAlias == "mack_truck_glass_break_small" )
+		soundAlias = "veh_glass_break_small";
+
+	if ( getDvar( "g_gametype" ) != "zm" )
+		return soundAlias;
+	if ( soundAlias == "fire_vehicle_med" )
+		return "car_fire";
+	if ( soundAlias == "car_explode" || soundAlias == "car_explode_police" )
+		return "barrel_mtl_explode";
+	if ( soundAlias == "veh_glass_break_large" || soundAlias == "veh_glass_break_small" )
+		return "zmb_break_glass_barrier";
+	return soundAlias;
+}
+
 destructible_sound( soundAlias, soundCause, groupNum )
 {
 	Assert( IsDefined( soundAlias ) );
+
+	soundAlias = codol_destructible_sound_alias( soundAlias );
 
 	destructibleIndex = ( level.destructible_type.size - 1 );
 	partIndex = ( level.destructible_type[ destructibleIndex ].parts.size - 1 );
@@ -458,6 +493,8 @@ destructible_sound( soundAlias, soundCause, groupNum )
 destructible_loopsound( soundAlias, loopsoundCause )
 {
 	Assert( IsDefined( soundAlias ) );
+
+	soundAlias = codol_destructible_sound_alias( soundAlias );
 
 	destructibleIndex = ( level.destructible_type.size - 1 );
 	partIndex = ( level.destructible_type[ destructibleIndex ].parts.size - 1 );
