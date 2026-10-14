@@ -931,13 +931,26 @@ zm_entry_timing( what, node )
 //
 // THE TAGS.  MEASURED with codol_checkmodel: every c_zom_*_head carries
 // j_eyeball_le, j_eyeball_ri and tag_eye (the bodies carry none of them,
-// which is why character_zm_zombie attaches the head).  One flare per eye;
-// T5's clientscript plays its single glow on J_Eyeball_LE.
+// which is why character_zm_zombie attaches the head).
+//
+// ONE TAG, NOT ONE PER EYE: the effect already draws BOTH eyes.  MEASURED
+// 2026-10-13 from its FxEffectDef in the inflated common_gametype_zm zone:
+// 10 looping elements, five with spawnOrigin x = -0.15 and five with
+// x = -2.85, i.e. a flare on the tag and a second one 2.7 units along the
+// tag's -X axis.  That is the layout of T5's misc/fx_zombie_eye_single
+// (elements at x -0.15 and -2.85), which T5/BO1 play once, on J_Eyeball_LE
+// (BO1 clientscripts/_zombiemode.csc:273, _waw_zombie_mode.csc:12).  Played
+// on both eyeballs it drew four flares: two coincided on one eye and the
+// fourth floated 2.7 units off the side of the head (the user's "third
+// glowing dot drawing to the left off their head").  MEASURED on a
+// zm_prototype_sh probe (getTagOrigin/getTagAngles, all four heads): the
+// eyeballs are 2.66-2.73 apart; from j_eyeball_le the second flare lands
+// 0.57 from j_eyeball_ri, from j_eyeball_ri it lands 5.4 from j_eyeball_le,
+// i.e. 2.7 outside the zombie's right eye (the viewer's left).
 zombie_eye_glow_tags()
 {
 	tags = [];
 	tags[ 0 ] = "j_eyeball_le";
-	tags[ 1 ] = "j_eyeball_ri";
 	return tags;
 }
 

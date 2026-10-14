@@ -114,9 +114,12 @@ init()
 	cortex_pool_add( "repair", 2 );
 	cortex_pool_add( "round", 1 );
 
+	// eye_glow_red draws both eyes from one tag (elements at x -0.15 and
+	// -2.85, T5's fx_zombie_eye_single layout), so it goes on j_eyeball_le
+	// only, as T5 plays it; one per eyeball drew a third red dot off the
+	// side of the head (see _zombiemode_spawner zombie_eye_glow_tags).
 	level.cortex_overlay_tags = [];
 	level.cortex_overlay_tags[ 0 ] = "j_eyeball_le";
-	level.cortex_overlay_tags[ 1 ] = "j_eyeball_ri";
 
 	// The overlay and the stops last as long as the longer taunt clip
 	// (taunts_5, 3.2 s); every reaction line is <= 2.2 s after a 0.3 s lead.
