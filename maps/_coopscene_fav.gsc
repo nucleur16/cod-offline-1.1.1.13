@@ -111,3 +111,72 @@ hold_loop( clip )
 	for ( ;; )
 		self maps\_coopanim::play_anim( clip, undefined, "inplace" );
 }
+
+// --------------------------------------------------------------------------
+// Vehicle clips (IW4 favela_anim vehicle_anims: the van's "door_open", the
+// cars' scene clips; _vehicle's driving idles).  They are in the mission
+// animlist's =vehicles section, which the server's vehicles tree mirrors, so
+// codol_getAnim( "vehicles", name ) answers them; a script_model's first
+// setAnim binds it to that tree (codol_script_model_tree).
+// --------------------------------------------------------------------------
+
+vehicle_clip( name )
+{
+	a = codol_getAnim( "vehicles", name );
+	if ( !isDefined( a ) )
+	{
+		if ( !isDefined( level.coop_fav_vehicle_missing ) )
+			level.coop_fav_vehicle_missing = [];
+		if ( !isDefined( level.coop_fav_vehicle_missing[ name ] ) )
+		{
+			level.coop_fav_vehicle_missing[ name ] = true;
+			codolprintln( "CoDOL coop scene: vehicle clip " + name + " is not in this mission's animlists; skipped" );
+		}
+	}
+	return a;
+}
+
+// The model plays the vehicle clip <name> (from <fraction> of its length).
+// Returns the clip, or undefined when it does not ship to this client.
+play_vehicle_clip( name, fraction, once )
+{
+	// +set scr_coop_fav_vehicle_anims 0 leaves the vehicles unanimated.
+	if ( getDvar( "scr_coop_fav_vehicle_anims" ) == "0" )
+		return undefined;
+	a = vehicle_clip( name );
+	if ( !isDefined( a ) )
+		return undefined;
+	self setAnim( a, 1, 0, 1 );
+	if ( isDefined( fraction ) && fraction > 0 )
+		self setAnimTime( a, fraction );
+	else
+		fraction = 0;
+	codolprintln( "CoDOL coop scene: " + self.model + " plays " + name );
+	if ( isDefined( once ) && once )
+		self thread hold_last_frame( a, ( 1 - fraction ) * getAnimLength( a ) );
+	return a;
+}
+
+// A clip that plays once (the van's and cars' doors) is frozen just before
+// its end and held there (rate 0), so the doors stay as the scene leaves
+// them.  MEASURED 2026-10-14 (probes fav6 / fav8 on 17815 / 17817): letting
+// favela_van_shootout_van run to its end on the script_model was followed
+// within two seconds by "SL_AddRefToString: script string ... was already
+// freed (stale handle)" and then a fatal MT_GetRefByIndex; with the vehicle
+// clips off (fav7) neither appeared.  A native defect in a script_model's
+// end-of-clip handling, reported to the parent; this keeps the clip from
+// ever ending.
+hold_last_frame( a, length )
+{
+	self endon( "death" );
+	if ( length > 0.2 )
+		wait( length - 0.2 );
+	if ( isDefined( self ) )
+		self setAnim( a, 1, 0, 0 );
+}
+
+stop_vehicle_clip( a )
+{
+	if ( isDefined( a ) )
+		self clearAnim( a, 0.2 );
+}

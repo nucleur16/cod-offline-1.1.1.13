@@ -811,6 +811,7 @@ van_pullup()
 	fav.van = van;
 	van playSound( "scn_favela_van_pullup" );
 	van playLoopSound( "veh_uaz_engine_low" );
+	wheels = van maps\_coopscene_fav::play_vehicle_clip( "uaz_driving_idle_forward" );
 	van moveTo( mid, 2.4, 0.4, 0 );
 	log( "van pulls up from " + start + " via " + mid + " to " + stop );
 	wait( 2.4 );
@@ -819,6 +820,8 @@ van_pullup()
 	wait( 0.9 );
 	van rotateTo( angles, 0.9 );
 	wait( 0.9 );
+	van maps\_coopscene_fav::stop_vehicle_clip( wheels );
+	van maps\_coopscene_fav::play_vehicle_clip( "favela_van_shootout_van", 0.5, true );
 	van stopLoopSound();
 	van playSound( "scn_favela_van_skid2stop" );
 	wait( 0.6 );
@@ -1264,16 +1267,42 @@ van_scene( node, driver_clip )
 	if ( isDefined( v ) )
 		v hide();
 	fav.van = van;
+	// IW4 favela: van anim_single_solo( van, "door_open" ) from the moment
+	// the four start theirs (favela_van_shootout_van, 19.2 s: the doors the
+	// driver climbs out of), its wheels turning while it rolls in.
+	van maps\_coopscene_fav::play_vehicle_clip( "favela_van_shootout_van", undefined, true );
+	// The cars' own scene clips (car1 / car2: their root sits exactly on
+	// player_vehicle / player_vehicle2 from this node, MEASURED), the
+	// passenger door only, as the riders get out on that side.
+	level thread cars_scene();
 	van playLoopSound( "veh_uaz_engine_low" );
 	wait( 4.5 );
 	van playSound( "scn_favela_van_pullup" );
+	wheels = van maps\_coopscene_fav::play_vehicle_clip( "uaz_driving_idle_forward" );
 	van moveTo( park, 2.8, 0.3, 1.4 );
 	log( "van pulls up from " + start + " to " + park );
 	wait( 2.8 );
+	van maps\_coopscene_fav::stop_vehicle_clip( wheels );
 	van stopLoopSound();
 	van playSound( "scn_favela_van_skid2stop" );
 	wait( 1.8 );
 	van playSound( "scn_favela_van_door_open" );
+}
+
+// The cars' passenger-door clips (favela_van_shootout_car1 / car2
+// _passenger_door_open_only, 25.5 s, the scene's length).  C1's player
+// exit clip in this zone notes scn_mpfav_cardoor_open at 20.1 s; the riders
+// get out about 18.4 s into the scene here, so the car clips start 1.7 s in
+// (INFERRED: the door bones' timing was not measured, only that note).
+cars_scene()
+{
+	names = strTok( "favela_van_shootout_car1_passenger_door_open_only favela_van_shootout_car2_passenger_door_open_only", " " );
+	cars = level.fav.cars;
+	for ( i = 0; i < cars.size && i < names.size; i++ )
+	{
+		if ( isDefined( cars[ i ] ) )
+			cars[ i ] maps\_coopscene_fav::play_vehicle_clip( names[ i ], 1.7 / 25.5, true );
+	}
 }
 
 opening_banter()
@@ -1761,7 +1790,11 @@ technical()
 	log( "technical rolls (" + path.size + " nodes), crew " + crew.size );
 	level thread radio( "favela_pri_ambush01", 3.5 );
 	truck playLoopSound( "veh_pickuptruck_engine_high" );
+	// IW4 vehicles\technical's driving idle (wheels and suspension) while it
+	// rolls.
+	wheels = truck maps\_coopscene_fav::play_vehicle_clip( "technical_driving_idle_forward" );
 	truck maps\_coopvehicle::follow_path( path, 0, 25, true );
+	truck maps\_coopscene_fav::stop_vehicle_clip( wheels );
 	truck stopLoopSound();
 	truck playLoopSound( "veh_pickuptruck_idle_low" );
 	say( level.fav.ortiz, "favela_ortiz_03", 0.8 );
