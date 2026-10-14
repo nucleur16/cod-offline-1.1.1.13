@@ -152,7 +152,7 @@ is_enemy_spawner( ent )
 		return false;
 	// The runtime soldier template itself (spawnactorspawner) is not an
 	// authored spawner: the group-wave scan once made it a wave of its own.
-	if ( cls == "actor_enemy_coop_soldier" )
+	if ( cls == "actor_enemy_coop_soldier" || isDefined( ent.coop_template ) )
 		return false;
 	return true;
 }
@@ -224,6 +224,92 @@ make_template()
 	return true;
 }
 
+// A spawner of an authored classname, built once per classname and team: an
+// unlimited copy (count -1) of what the map authors, so spawnactor runs that
+// classname's aitype -- aitype/<classname without actor_>.gsc, which the
+// engine loaded and precached at level load -- exactly as IW4 spawns from the
+// authored spawner itself.  The missions spawn from these rather than from the
+// authored entities because they reuse a spawner many times (waves, pmc
+// respawns) and place the soldier themselves (forceTeleport).  `team`
+// overrides the aitype spawner()'s team (Vazquez and the civilians fight on
+// the players' side).  Undefined when the classname has no loaded aitype.
+template_for( cls, team )
+{
+	if ( !isDefined( cls ) )
+		return undefined;
+	key = toLower( cls );
+	if ( isDefined( team ) )
+		key = key + "@" + team;
+	if ( !isDefined( level.coop_templates ) )
+	{
+		level.coop_templates = [];
+		level.coop_template_missing = [];
+	}
+	if ( isDefined( level.coop_templates[ key ] ) )
+		return level.coop_templates[ key ];
+	if ( isDefined( level.coop_template_missing[ key ] ) )
+		return undefined;
+	t = spawnActorSpawner( toLower( cls ), ( 0, 0, 0 ), ( 0, 0, 0 ), -1 );
+	if ( !isDefined( t ) )
+	{
+		level.coop_template_missing[ key ] = true;
+		codolprintln( "CoDOL coop mission: no aitype template for " + cls + "; the generic soldier stands in" );
+		return undefined;
+	}
+	if ( isDefined( team ) )
+		t setSpawnerTeam( team );
+	// Not an authored spawner: every scan for those skips it (is_enemy_spawner).
+	t.coop_template = true;
+	t.targetname = "coop_template_" + key;
+	level.coop_templates[ key ] = t;
+	return t;
+}
+
+// A mission's own cast member (Ghost, Price, Vazquez, Ortiz, a civilian): an
+// actor of the authored classname `cls`, so his aitype and character decide
+// his look, with the mission's `kind` (aitype\enemy_coop_soldier::soldier_setup
+// lists its fields) and `team`.  Falls back to the generic soldier template
+// when the classname's aitype did not load.  Returns the actor or undefined;
+// the caller places him.
+spawn_class_actor( cls, team, kind )
+{
+	if ( !isDefined( kind ) )
+		kind = spawnStruct();
+	if ( isDefined( team ) )
+		kind.team = team;
+	template = template_for( cls, team );
+	if ( !isDefined( template ) )
+	{
+		if ( isDefined( team ) && team == "allies" )
+			template = maps\_cooptraining::ally_template();
+		else if ( make_template() )
+			template = level.coop_soldier_template;
+		if ( !isDefined( template ) )
+			return undefined;
+		// character_coop_soldier downgrades this to what the zones carry.
+		if ( !isDefined( kind.faction ) || kind.faction == "cast" )
+			kind.faction = "militia";
+		if ( !isDefined( kind.role ) )
+			kind.role = "pistol";
+	}
+	level.coop_soldier_next = kind;
+	ai = template spawnActor();
+	level.coop_soldier_next = undefined;
+	return ai;
+}
+
+// What an authored spawner asks of its soldier beyond its aitype (IW4 honours
+// both keys on the spawner): script_accuracy and script_char_index.
+spawner_overrides( spawner )
+{
+	kind = spawnStruct();
+	if ( isDefined( spawner.script_accuracy ) )
+		kind.accuracy = float( spawner.script_accuracy );
+	if ( isDefined( spawner.script_char_index ) )
+		kind.char_index = int( spawner.script_char_index );
+	return kind;
+}
+
 // Spawns one soldier where the authored spawner stands.  Returns the actor, or
 // undefined when the actor budget or the native spawn refuses.
 spawn_soldier( spawner )
@@ -235,8 +321,19 @@ spawn_soldier( spawner )
 	if ( !make_template() )
 		return undefined;
 
-	level.coop_soldier_next = soldier_kind( spawner );
-	ai = level.coop_soldier_template spawnActor();
+	// The authored classname's own aitype (IW4: the spawner's aitype main()
+	// and its character), through a template of that classname; the generic
+	// template with the classname's faction and role only when that aitype
+	// did not load.
+	template = template_for( spawner.classname );
+	if ( isDefined( template ) )
+		level.coop_soldier_next = spawner_overrides( spawner );
+	else
+	{
+		template = level.coop_soldier_template;
+		level.coop_soldier_next = soldier_kind( spawner );
+	}
+	ai = template spawnActor();
 	level.coop_soldier_next = undefined;
 
 	if ( !isDefined( ai ) )

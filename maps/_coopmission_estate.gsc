@@ -591,23 +591,18 @@ set_checkpoint( origin, why )
 spawn_ghost()
 {
 	spawner = ent_named( "ghost" );
-	template = maps\_cooptraining::ally_template();
-	if ( !isDefined( spawner ) || !isDefined( template ) )
+	if ( !isDefined( spawner ) )
 	{
 		codolprintln( "CoDOL coop estate: no Ghost" );
 		return;
 	}
+	// His spawner's classname (actor_ally_hero_ghost_estate_so): its aitype
+	// wears character\character_hero_forest_ghost.
 	kind = spawnStruct();
-	kind.faction = "cast";
 	kind.role = "smg";
-	kind.team = "allies";
 	kind.health = 1000;
 	kind.accuracy = 0.6;
-	kind.body = "body_forest_tf141_ghost";
-	kind.head = "head_hero_ghost_forest";
-	level.coop_soldier_next = kind;
-	ai = template spawnActor();
-	level.coop_soldier_next = undefined;
+	ai = maps\_coopmission::spawn_class_actor( spawner.classname, "allies", kind );
 	if ( !isDefined( ai ) )
 	{
 		codolprintln( "CoDOL coop estate: Ghost refused by the actor pool" );
@@ -1893,20 +1888,17 @@ stage_house_front()
 
 spawn_vazquez( spawner, origin, angles )
 {
-	template = maps\_cooptraining::ally_template();
-	if ( !isDefined( template ) )
-		return undefined;
+	// The addon's Vazquez classname: aitype\enemy_vazquez_so wears
+	// character\character_codo_vil_vazquez.  He is a hostage the players
+	// protect, so he is on their side.
+	cls = "actor_enemy_vazquez_so";
+	if ( isDefined( spawner ) && isDefined( spawner.classname ) )
+		cls = spawner.classname;
 	kind = spawnStruct();
-	kind.faction = "cast";
 	kind.role = "pistol";
-	kind.team = "allies";
 	kind.health = 1000;
 	kind.accuracy = 0;
-	kind.body = "body_militia_smg_aa_wht";
-	kind.head = "head_airport_a";
-	level.coop_soldier_next = kind;
-	ai = template spawnActor();
-	level.coop_soldier_next = undefined;
+	ai = maps\_coopmission::spawn_class_actor( cls, "allies", kind );
 	if ( !isDefined( ai ) )
 	{
 		codolprintln( "CoDOL coop estate: Vazquez refused by the actor pool" );

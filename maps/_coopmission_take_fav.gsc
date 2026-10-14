@@ -667,26 +667,22 @@ wait_riders_looking( limit )
 
 // --------------------------------------------------------------------------
 // Actors: Ortiz, Ghost, the informants, the civilians.  Soldier-species
-// actors from the allies template (_cooptraining's), with the bodies the
-// zone ships; the gunmen and helpers are _coopmission's enemy soldiers.
+// actors of the addon's own classnames (actor_enemy_villian_ortiz_so,
+// actor_ally_hero_ghost_socom_so, actor_civilian_slum_male_so), whose aitypes
+// and character scripts give them the bodies and heads the zone ships;
+// char_index picks a civilian's character the way an authored
+// script_char_index does.  The gunmen and helpers are _coopmission's enemy
+// soldiers.
 // --------------------------------------------------------------------------
 
-spawn_actor( origin, angles, key, body, head, team, name )
+spawn_actor( origin, angles, key, cls, char_index, team, name )
 {
-	template = maps\_cooptraining::ally_template();
-	if ( !isDefined( template ) )
-		return undefined;
 	kind = spawnStruct();
-	kind.faction = "cast";
 	kind.role = "pistol";
-	kind.team = team;
 	kind.health = 1000;
 	kind.accuracy = 0;
-	kind.body = body;
-	kind.head = head;
-	level.coop_soldier_next = kind;
-	ai = template spawnActor();
-	level.coop_soldier_next = undefined;
+	kind.char_index = char_index;
+	ai = maps\_coopmission::spawn_class_actor( cls, team, kind );
 	if ( !isDefined( ai ) )
 	{
 		log( "could not spawn " + key );
@@ -706,18 +702,6 @@ spawn_actor( origin, angles, key, body, head, team, name )
 		level.coop_cast[ key ] = ai;
 	}
 	return ai;
-}
-
-civ_body( n )
-{
-	bodies = strTok( "body_slum_civ_male_aa body_slum_civ_male_ab body_slum_civ_male_ba body_slum_civ_male_bb body_slum_civ_male_aa_wht body_slum_civ_male_bb_wht", " " );
-	return bodies[ n % bodies.size ];
-}
-
-civ_head( n )
-{
-	heads = strTok( "head_slum_civ_male_a head_slum_civ_male_b head_slum_civ_male_c head_slum_civ_male_d head_slum_civ_male_e head_slum_civ_male_f head_slum_civ_male_g head_slum_civ_male_h", " " );
-	return heads[ n % heads.size ];
 }
 
 // Walk or run an actor to a point: the native planner over the map's bot
@@ -852,7 +836,7 @@ spawn_meet( van )
 
 	spawner = ent( "chase_target_spawner" );
 	yaw = vectorToAngles( meet - back );
-	fav.ortiz = spawn_actor( ground( back + ( 0, 0, 16 ) ), flat_angles( yaw ), "ortiz", "body_airport_assault_a", "head_militia_ba_blk", "axis" );
+	fav.ortiz = spawn_actor( ground( back + ( 0, 0, 16 ) ), flat_angles( yaw ), "ortiz", "actor_enemy_villian_ortiz_so", undefined, "axis" );
 	if ( isDefined( fav.ortiz ) )
 	{
 		fav.ortiz.coop_cast = "ortiz";
@@ -867,7 +851,7 @@ spawn_meet( van )
 	for ( i = 0; i < 2; i++ )
 	{
 		spot = ground( back - anglesToRight( van.angles ) * ( 30 + i * 30 ) - anglesToForward( van.angles ) * ( 20 + i * 24 ) + ( 0, 0, 16 ) );
-		inf = spawn_actor( spot, flat_angles( yaw ), "informant" + i, civ_body( i + 1 ), civ_head( i + 3 ), "allies" );
+		inf = spawn_actor( spot, flat_angles( yaw ), "informant" + i, "actor_civilian_slum_male_so", i + 1, "allies" );
 		if ( isDefined( inf ) )
 		{
 			inf.health = 60;
@@ -1467,7 +1451,8 @@ civilians()
 	for ( i = 0; i < ents.size; i++ )
 	{
 		e = ents[ i ];
-		if ( !isDefined( e.classname ) || !isSubStr( e.classname, "actor_civilian" ) || !isDefined( e.targetname ) )
+		if ( !isDefined( e.classname ) || !isSubStr( e.classname, "actor_civilian" ) || !isDefined( e.targetname ) ||
+		     isDefined( e.coop_template ) )
 			continue;
 		e.coop_civ_index = n;
 		n++;
@@ -1497,7 +1482,7 @@ civ_run( s )
 	level endon( "coop_mission_over" );
 	if ( isDefined( s.script_delay_spawn ) )
 		wait( float( s.script_delay_spawn ) );
-	ai = spawn_actor( s.origin, flat_angles( s.angles ), "civilian", civ_body( s.coop_civ_index ), civ_head( s.coop_civ_index ), "allies" );
+	ai = spawn_actor( s.origin, flat_angles( s.angles ), "civilian", s.classname, s.coop_civ_index, "allies" );
 	if ( !isDefined( ai ) )
 		return;
 	ai setCanDamage( false );
@@ -1526,7 +1511,7 @@ ghost_intro_run()
 	s = ent( "ghost_intro" );
 	if ( !isDefined( s ) )
 		return;
-	ghost = spawn_actor( s.origin, flat_angles( s.angles ), "ghost", "body_hero_ghost_socom", "head_hero_ghost_soccom", "allies", "Ghost" );
+	ghost = spawn_actor( s.origin, flat_angles( s.angles ), "ghost", "actor_ally_hero_ghost_socom_so", undefined, "allies", "Ghost" );
 	if ( !isDefined( ghost ) )
 		return;
 	ghost setCanDamage( false );
@@ -1572,7 +1557,7 @@ ending()
 		origin = s.origin;
 		angles = flat_angles( s.angles );
 	}
-	ghost = spawn_actor( ground( origin + ( 0, 0, 16 ) ), angles, "ghost", "body_hero_ghost_socom", "head_hero_ghost_soccom", "allies", "Ghost" );
+	ghost = spawn_actor( ground( origin + ( 0, 0, 16 ) ), angles, "ghost", "actor_ally_hero_ghost_socom_so", undefined, "allies", "Ghost" );
 	if ( isDefined( ghost ) )
 		ghost setCanDamage( false );
 	fav.ghost = ghost;
