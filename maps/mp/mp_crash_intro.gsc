@@ -15,7 +15,9 @@ main()
 	maps\createart\mp_crash_art::main();
 	maps\mp\_load::main();
 
-	maps\mp\_compass::setupMiniMap( "compass_map_mp_crash_intro" );
+	// compass_map_mp_crash_intro ships in no zone; crash_intro has crash's geometry and
+	// corners, and compass_map_mp_crash_dlc is in patch_common_mp (always mounted).
+	maps\mp\_compass::setupMiniMap( "compass_map_mp_crash_dlc" );
 
 	AmbientPlay( "ambient_mp_crash" );
 
