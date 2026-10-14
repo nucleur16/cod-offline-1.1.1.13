@@ -408,100 +408,30 @@ raise_door( name, height )
 // The cast.
 // --------------------------------------------------------------------------
 
-// Body and head per authored ally classname; every model ships in the
-// coop_training_mp_killhouse_sh zone (MEASURED, docs/zone_assets).
-cast_models( cls )
-{
-	m = spawnStruct();
-	cls = toLower( cls );
-	if ( isSubStr( cls, "price" ) )
-	{
-		m.body = "body_desert_tf141_assault_a";
-		m.head = "head_hero_price_desert";
-	}
-	else if ( isSubStr( cls, "soap" ) )
-	{
-		m.body = "body_hero_soap_socom";
-		m.head = "head_hero_soap_soccom_a";
-	}
-	else if ( isSubStr( cls, "ghost_forest" ) )
-	{
-		m.body = "body_forest_tf141_ghost";
-		m.head = "head_hero_ghost_forest";
-	}
-	else if ( isSubStr( cls, "ghost" ) )
-	{
-		m.body = "body_hero_ghost_socom";
-		m.head = "head_hero_ghost_soccom";
-	}
-	else if ( isSubStr( cls, "harker" ) || isSubStr( cls, "socom_shotgun" ) )
-	{
-		m.body = "body_seal_soccom_assault_c_blk";
-		m.head = "head_seal_soccom_d";
-	}
-	else if ( isSubStr( cls, "tf_141_forest_shotgun" ) )
-	{
-		m.body = "body_forest_tf141_shotgun";
-		m.head = "head_tf141_forest_a";
-	}
-	else if ( isSubStr( cls, "tf_141_forest" ) )
-	{
-		m.body = "body_forest_tf141_smg";
-		m.head = "head_tf141_forest_b";
-	}
-	else if ( isSubStr( cls, "sas_woodland" ) )
-	{
-		m.body = "body_sp_sas_woodland_assault_a";
-		m.head = "head_sp_sas_woodland_mac";
-	}
-	else if ( isSubStr( cls, "blackkit" ) )
-	{
-		m.body = "body_complete_sp_sas_ct_benjamin";
-	}
-	else if ( isSubStr( cls, "ustshirt" ) )
-	{
-		m.body = "body_ustshirt_tf_m_clean_yel";
-		m.head = "head_complete_tf_tan";
-	}
-	else
-	{
-		m.body = "body_complete_sp_lw";
-		m.head = "head_complete_sp_lw";
-	}
-	return m;
-}
-
-// What the recording shows a cast member wearing, where it differs from his
-// authored classname: Mac in the boonie and sunglasses of the woodland SAS
+// A cast member's look is his authored classname's: spawn_cast spawns him
+// through that classname's aitype (aitype\ally_*_so), whose character\
+// scripts give him his body and head, as IW4 gives every actor.  Where the
+// recording shows a cast member in another character than his classname's,
+// the key names it here: Mac in the boonie and sunglasses of the woodland SAS
 // (his spawner is a SEAL classname), Newcastle in the tan Task Force uniform
-// and cap, the recruits at the obstacle line in T-shirts.
-cast_models_for( cls, key )
+// and cap, the recruits at the obstacle line in T-shirts.  Each is precached by
+// precache_cast; every model ships in coop_training_mp_killhouse_sh.
+cast_character( key )
 {
-	m = undefined;
-	if ( isDefined( key ) )
+	if ( !isDefined( key ) )
+		return undefined;
+	switch ( key )
 	{
-		switch ( key )
-		{
-		case "mac":
-			m = spawnStruct();
-			m.body = "body_sp_sas_woodland_assault_a";
-			m.head = "head_sp_sas_woodland_mac";
-			break;
-		case "nwc":
-			m = spawnStruct();
-			m.body = "body_complete_tf_tan";
-			m.head = "head_complete_tf_tan";
-			break;
-		case "buddy1":
-		case "buddy2":
-		case "buddy3":
-			m = cast_models( "actor_ally_codo_tf_ustshirt_clean_so" );
-			break;
-		}
+	case "mac":
+		return character\character_sas_woodland_mac::main;
+	case "nwc":
+		return character\character_codo_complete_tf_tan::main;
+	case "buddy1":
+	case "buddy2":
+	case "buddy3":
+		return character\character_codo_tf_ustshirt_clean_yel::main;
 	}
-	if ( !isDefined( m ) )
-		m = cast_models( cls );
-	return m;
+	return undefined;
 }
 
 // The props the recording shows in the cast's hands, on tag_inhand (C1 ships
@@ -557,30 +487,11 @@ welding_fx()
 precache_cast()
 {
 	precache_props();
-	models = [];
-	models[ models.size ] = "body_desert_tf141_assault_a";
-	models[ models.size ] = "head_hero_price_desert";
-	models[ models.size ] = "body_hero_soap_socom";
-	models[ models.size ] = "head_hero_soap_soccom_a";
-	models[ models.size ] = "body_forest_tf141_ghost";
-	models[ models.size ] = "head_hero_ghost_forest";
-	models[ models.size ] = "body_hero_ghost_socom";
-	models[ models.size ] = "head_hero_ghost_soccom";
-	models[ models.size ] = "body_seal_soccom_assault_c_blk";
-	models[ models.size ] = "head_seal_soccom_d";
-	models[ models.size ] = "body_forest_tf141_shotgun";
-	models[ models.size ] = "head_tf141_forest_a";
-	models[ models.size ] = "body_forest_tf141_smg";
-	models[ models.size ] = "head_tf141_forest_b";
-	models[ models.size ] = "body_sp_sas_woodland_assault_a";
-	models[ models.size ] = "head_sp_sas_woodland_mac";
-	models[ models.size ] = "body_complete_sp_sas_ct_benjamin";
-	models[ models.size ] = "body_ustshirt_tf_m_clean_yel";
-	models[ models.size ] = "head_complete_tf_tan";
-	models[ models.size ] = "body_complete_sp_lw";
-	models[ models.size ] = "head_complete_sp_lw";
-	for ( i = 0; i < models.size; i++ )
-		precacheModel( models[ i ] );
+	// The keyed characters (cast_character); every other cast member's
+	// character is precached by his classname's aitype at level load.
+	character\character_sas_woodland_mac::precache();
+	character\character_codo_complete_tf_tan::precache();
+	character\character_codo_tf_ustshirt_clean_yel::precache();
 }
 
 // The idle a cast member stands in, and the gesture he talks with.
@@ -838,23 +749,16 @@ ally_template()
 // fights or walks.
 spawn_cast( spawner, key )
 {
-	template = ally_template();
-	if ( !isDefined( template ) )
-		return undefined;
-
 	kind = spawnStruct();
 	kind.faction = "cast";
 	kind.role = "pistol";
-	kind.team = "allies";
 	kind.health = 1000;
 	kind.accuracy = 0;
-	m = cast_models_for( spawner.classname, key );
-	kind.body = m.body;
-	kind.head = m.head;
+	kind.character = cast_character( key );
+	if ( isDefined( spawner.script_char_index ) )
+		kind.char_index = int( spawner.script_char_index );
 
-	level.coop_soldier_next = kind;
-	ai = template spawnActor();
-	level.coop_soldier_next = undefined;
+	ai = maps\_coopmission::spawn_class_actor( spawner.classname, "allies", kind );
 	if ( !isDefined( ai ) )
 	{
 		codolprintln( "CoDOL coop training: could not spawn cast member " + key );

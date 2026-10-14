@@ -6,6 +6,9 @@
 //
 //   addbot                 addtestclient(); the bot spawns like a player
 //   status                 one log line of mission state and every live enemy
+//   characters             spawn one actor of every authored actor_ classname
+//                          through its aitype and log its body, head and
+//                          attachments, flagging any model no zone ships
 //   goto <n> <x> <y> <z>   setOrigin player n (index into getPlayers())
 //   gotoflag <n> <flag>    setOrigin player n onto the first trigger that sets
 //                          <flag> (fires it the way walking into it would)
@@ -64,6 +67,9 @@ watch()
 			break;
 		case "status":
 			status();
+			break;
+		case "characters":
+			characters();
 			break;
 		case "goto":
 			if ( tokens.size >= 5 )
@@ -417,6 +423,72 @@ goto_trigger( index, which )
 	codolprintln( "CoDOL cooptest: only " + found + " spawn triggers" );
 }
 
+// characters: one actor of every authored actor_ classname on the map,
+// spawned through its own aitype where its spawner stands, and a log line per
+// actor naming its body, head and every attachment, each with whether a
+// mounted zone ships it.  A "MISSING" is a model C1 would draw as its default.
+characters()
+{
+	seen = [];
+	ents = getEntArray();
+	n = 0;
+	bad = 0;
+	for ( i = 0; i < ents.size; i++ )
+	{
+		e = ents[ i ];
+		if ( !isDefined( e ) || !isDefined( e.classname ) || isDefined( e.coop_template ) )
+			continue;
+		cls = toLower( e.classname );
+		if ( getSubStr( cls, 0, 6 ) != "actor_" || cls == "actor_enemy_coop_soldier" || isDefined( seen[ cls ] ) )
+			continue;
+		// No coop dog species: its spawners stay inert.
+		if ( isSubStr( cls, "_dog" ) )
+			continue;
+		seen[ cls ] = true;
+		kind = spawnStruct();
+		kind.health = 1000;
+		ai = maps\_coopmission::spawn_class_actor( cls, undefined, kind );
+		if ( !isDefined( ai ) )
+		{
+			codolprintln( "CoDOL cooptest: characters " + cls + " -> no actor" );
+			continue;
+		}
+		ai forceTeleport( e.origin, ( 0, 0, 0 ) );
+		ai.ignoreall = true;
+		n++;
+		line = "CoDOL cooptest: characters " + cls + " ent " + ai getEntityNumber() + " team " + ai.team + " body " + ai.model;
+		if ( !codol_isModelMounted( ai.model ) )
+		{
+			line += " MISSING";
+			bad++;
+		}
+		head = "none";
+		if ( isDefined( ai.headModel ) )
+			head = ai.headModel;
+		line += " head " + head;
+		count = ai getAttachSize();
+		for ( a = 0; a < count; a++ )
+		{
+			m = ai getAttachModelName( a );
+			line += " +" + m;
+			if ( !codol_isModelMounted( m ) )
+			{
+				line += " MISSING";
+				bad++;
+			}
+		}
+		codolprintln( line );
+	}
+	codolprintln( "CoDOL cooptest: characters done, " + n + " classnames spawned, " + bad + " missing models" );
+}
+
+castHead( ai )
+{
+	if ( isDefined( ai.headModel ) )
+		return ai.headModel;
+	return "none";
+}
+
 status()
 {
 	line = "CoDOL cooptest: status over " + level.coop_mission_over + " alive " + level.coop_alive +
@@ -433,8 +505,11 @@ status()
 		enemy = "none";
 		if ( isDefined( ai.enemy ) )
 			enemy = "" + ai.enemy getEntityNumber();
-		codolprintln( "CoDOL cooptest:   ai " + ai getEntityNumber() + " " + ai.coop_role + " " + ai.coop_weapon +
-			" hp " + ai.health + " at " + ai.origin + " enemy " + enemy );
+		head = "none";
+		if ( isDefined( ai.headModel ) )
+			head = ai.headModel;
+		codolprintln( "CoDOL cooptest:   ai " + ai getEntityNumber() + " " + ai.classname + " " + ai.coop_role + " " + ai.coop_weapon +
+			" hp " + ai.health + " at " + ai.origin + " enemy " + enemy + " body " + ai.model + " head " + head );
 	}
 
 	if ( isDefined( level.coop_cast_list ) )
@@ -451,7 +526,7 @@ status()
 			if ( isDefined( ai.coop_name ) )
 				name += " (" + ai.coop_name + ")";
 			codolprintln( "CoDOL cooptest:   cast " + name + " team " + ai.team + " alive " + isAlive( ai ) + " at " + ai.origin +
-				" idle " + isDefined( ai.coop_idle_anim ) );
+				" idle " + isDefined( ai.coop_idle_anim ) + " " + ai.classname + " body " + ai.model + " head " + castHead( ai ) );
 		}
 	}
 

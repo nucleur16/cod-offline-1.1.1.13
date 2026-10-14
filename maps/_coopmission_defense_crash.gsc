@@ -805,20 +805,13 @@ freeze_all( on )
 
 spawn_ghost( origin, angles )
 {
-	template = maps\_cooptraining::ally_template();
-	if ( !isDefined( template ) )
-		return undefined;
+	// The addon's own Ghost spawner classname: aitype\ally_hero_ghost_socom_so,
+	// character\character_hero_seal_soccom_ghost.
 	kind = spawnStruct();
-	kind.faction = "cast";
 	kind.role = "ar";
-	kind.team = "allies";
 	kind.health = 1000;
 	kind.accuracy = 0.45;
-	kind.body = "body_hero_ghost_socom";
-	kind.head = "head_hero_ghost_soccom";
-	level.coop_soldier_next = kind;
-	ai = template spawnActor();
-	level.coop_soldier_next = undefined;
+	ai = maps\_coopmission::spawn_class_actor( "actor_ally_hero_ghost_socom_so", "allies", kind );
 	if ( !isDefined( ai ) )
 	{
 		codolprintln( "CoDOL coop crash: no actor for Ghost" );
