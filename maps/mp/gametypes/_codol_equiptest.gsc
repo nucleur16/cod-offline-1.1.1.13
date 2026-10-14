@@ -112,6 +112,18 @@ watchDvar()
                 codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
             continue;
         }
+        // "pipe <client>": stands a client beside the nearest shootable pipe
+        // and hits the pipe once (a "damage" notify at the middle of the
+        // pipe), so its hit sound and steam/water loop start.
+        if ( tokens[0] == "pipe" && tokens.size > 1 )
+        {
+            player = playerByNumber( int( tokens[1] ) );
+            if ( isDefined( player ) )
+                player thread pipeTrial();
+            else
+                codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
+            continue;
+        }
         if ( tokens[0] == "perk" && tokens.size > 2 )
         {
             player = playerByNumber( int( tokens[1] ) );
@@ -614,6 +626,39 @@ carTrialDamage()
         self waittill( "damage", amount, attacker, dir, point, type );
         codolPrintLn( "CoDOL equiptest: car t=" + getTime() + " damage " + amount + " " + type );
     }
+}
+
+pipeTrial()
+{
+    self endon( "disconnect" );
+    while ( !isAlive( self ) )
+        wait 0.1;
+    pipes = getEntArray( "pipe_shootable", "targetname" );
+    pipe = undefined;
+    for ( i = 0; i < pipes.size; i++ )
+    {
+        if ( !isDefined( pipes[i].A ) || !isDefined( pipes[i].B ) )
+            continue;
+        if ( !isDefined( pipe ) || distanceSquared( self.origin, pipes[i].A ) < distanceSquared( self.origin, pipe.A ) )
+            pipe = pipes[i];
+    }
+    if ( !isDefined( pipe ) )
+    {
+        codolPrintLn( "CoDOL equiptest: pipe: none of " + pipes.size + " shootable pipes is set up" );
+        return;
+    }
+    // A point a few units off the pipe's axis, as a bullet hits its surface:
+    // on the axis _pipes.gsc gets a zero spray direction and playFx throws.
+    dir = vectorNormalize( pipe.B - pipe.A );
+    off = ( 3, 3, 3 );
+    off = off - dir * vectorDot( off, dir );
+    point = ( pipe.A + pipe.B ) * 0.5 + off;
+    trace = bulletTrace( point + ( 64, 0, 0 ), point + ( 64, 0, -512 ), false, self );
+    self setOrigin( trace["position"] );
+    self freezeControls( true );
+    codolPrintLn( "CoDOL equiptest: pipe t=" + getTime() + " " + pipe.script_noteworthy + " at " + point + "; client " +
+        self getEntityNumber() + " at " + self.origin );
+    pipe notify( "damage", 10, self, ( -1, 0, 0 ), point, "MOD_PISTOL_BULLET" );
 }
 
 carTrialDeath()
