@@ -154,6 +154,8 @@ init()
 	level._effect[ "powerup_grabbed_solo" ]      = loadfx( "misc/fx_zombie_powerup_solo_grab" );
 	level._effect[ "powerup_grabbed_wave_solo" ] = loadfx( "misc/fx_zombie_powerup_solo_wave" );
 	precacheModel( "tag_origin" );
+	// nuke_flash's full-screen fade (T5 _zombiemode_powerups.gsc:1772).
+	precacheShader( "white" );
 
 	powerup_hud_precache();
 
@@ -279,42 +281,54 @@ get_next_powerup()
 	return name;
 }
 
-// T5 :368.  A drawn power-up that cannot legally fire right now is skipped;
-// the bag is walked at most once so the draw always terminates.
+// T5 :368 get_valid_powerup.  A drawn power-up that cannot legally drop now
+// is skipped, exactly by T5's rules:
+//   carpenter    only once 5 windows are fully torn open;
+//   fire_sale    not while one is on, nor before the box has moved;
+//   all_revive   only while someone is downed;
+//   minigun      not while anyone holds one, and before the power is on only
+//                in a solo game where a life (Quick Revive) was bought;
+//   free_perk, tesla, bonus_points_player / _team never drop with the
+//                regular power-ups (T5 hands them out from other systems).
+// Insta-Kill and Double Points DO drop again while active (T5 has no such
+// skip; a second one refreshes the timer).  CoDOL's own pickups (sentry,
+// pandora) keep their CoDOL gates.  The draw is bounded by two passes of the
+// bag; T5's while( 1 ) cannot stall there because its bag always holds a
+// legal entry.
 get_valid_powerup()
 {
-	for ( i = 0; i < level.zombie_powerup_array.size; i++ )
+	for ( i = 0; i < level.zombie_powerup_array.size * 2; i++ )
 	{
 		name = get_next_powerup();
 
 		if ( !isDefined( name ) )
 			continue;
 
-		// T5 :400.  No second insta-kill or double-points while one is up.
-		if ( name == "insta_kill" && is_true( level.zombie_vars[ "zombie_powerup_insta_kill_on" ] ) )
+		switch ( name )
+		{
+		case "free_perk":
+		case "tesla":
+		case "bonus_points_player":
+		case "bonus_points_team":
+		case "random_weapon":
+		case "bonfire_sale":
+		case "lose_points_team":
+		case "lose_perk":
+		case "empty_clip":
+			continue;
+		}
+
+		if ( name == "carpenter" && get_num_window_destroyed() < 5 )
 			continue;
 
-		if ( name == "double_points" && is_true( level.zombie_vars[ "zombie_powerup_point_doubler_on" ] ) )
+		if ( name == "fire_sale" && ( is_true( level.zombie_vars[ "zombie_powerup_fire_sale_on" ] ) ||
+			!isDefined( level.chest_moves ) || level.chest_moves < 1 ) )
 			continue;
 
-		if ( name == "fire_sale" && is_true( level.zombie_vars[ "zombie_powerup_fire_sale_on" ] ) )
-			continue;
-
-		// T5 :430.  Nothing to revive, nothing to carpenter.
 		if ( name == "all_revive" && maps\_zombiemode_laststand::player_num_in_laststand() < 1 )
 			continue;
 
-		if ( name == "carpenter" && !any_barrier_damaged() )
-			continue;
-
-		// T5 :460 minigun_no_drop, first half: not while anyone holds one.
-		// (Its second half -- no drop before the power is on in solo --
-		// reads T5's solo-lives bookkeeping, which this port does not keep.)
-		if ( name == "minigun" && any_player_has( "zombie_powerup_minigun_on" ) )
-			continue;
-
-		// T5 :919 / :2843 tesla_powerup_active: one tesla at a time.
-		if ( name == "tesla" && any_player_has( "zombie_powerup_tesla_on" ) )
+		if ( name == "minigun" && minigun_no_drop() )
 			continue;
 
 		// T5 _zombiemode_auto_turret.gsc:188 keeps at most two turrets up.
@@ -325,6 +339,40 @@ get_valid_powerup()
 	}
 
 	return level.zombie_powerup_array[ 0 ];
+}
+
+// T5 :460 minigun_no_drop.  T5's level.solo_lives_given is the count of
+// Quick Revive lives bought in solo; here that is the solo player's spare
+// life (pers[ "lives" ], _zombiemode_laststand.gsc zm_spare_life).
+minigun_no_drop()
+{
+	if ( any_player_has( "zombie_powerup_minigun_on" ) )
+		return true;
+
+	if ( !flag_exist( "power_on" ) || !flag( "power_on" ) )
+	{
+		players = getPlayers();
+		if ( players.size != 1 )
+			return true;
+		if ( !isDefined( players[ 0 ].pers ) || !isDefined( players[ 0 ].pers[ "lives" ] ) || players[ 0 ].pers[ "lives" ] < 1 )
+			return true;
+	}
+	return false;
+}
+
+// T5 :467 get_num_window_destroyed.
+get_num_window_destroyed()
+{
+	num = 0;
+	if ( !isDefined( level.exterior_goals ) )
+		return 0;
+	for ( i = 0; i < level.exterior_goals.size; i++ )
+	{
+		chunks = level.exterior_goals[ i ].barrier_chunks;
+		if ( isDefined( chunks ) && chunks.size > 0 && all_chunks_destroyed( chunks ) )
+			num++;
+	}
+	return num;
 }
 
 // T5 keeps these in player.zombie_vars[]; this port's players have no such
@@ -375,25 +423,25 @@ any_barrier_damaged()
 // --------------------------------------------------------------------------
 // Arming a drop.  T5 :523 watch_for_drop.
 //
-// T5 sums the points every player has EARNED and raises the drop flag each
-// time the running total passes another zombie_powerup_drop_increment.  The
-// running total is maintained here off the same "zom_kill" notify the round
-// loop already uses, plus the player's own score delta, because this port's
-// _zombiemode_score has no per-award notify to hook.
+// The first drop arms once the players' combined score_total passes their
+// starting points plus zombie_powerup_drop_increment (2000).  Every time one
+// is armed the increment grows by 14% and the next threshold is the current
+// total plus the new increment, so drops thin out as the game goes on.
 // --------------------------------------------------------------------------
 
 watch_for_drop()
 {
 	level endon( "intermission" );
 
-	last_total = 0;
+	flag_wait( "begin_spawning" );
+
+	players = getPlayers();
+	score_to_drop = ( players.size * level.zombie_vars[ "zombie_score_start_1p" ] ) + level.zombie_vars[ "zombie_powerup_drop_increment" ];
 
 	for ( ;; )
 	{
-		wait( 1 );
-
-		total = 0;
 		players = getPlayers();
+		total = 0;
 		for ( i = 0; i < players.size; i++ )
 		{
 			if ( isDefined( players[ i ].score_total ) )
@@ -402,20 +450,14 @@ watch_for_drop()
 				total += players[ i ].score;
 		}
 
-		if ( total <= last_total )
+		if ( total > score_to_drop )
 		{
-			last_total = total;
-			continue;
+			level.zombie_vars[ "zombie_powerup_drop_increment" ] *= 1.14;
+			score_to_drop = total + level.zombie_vars[ "zombie_powerup_drop_increment" ];
+			level.zombie_vars[ "zombie_drop_item" ] = 1;
 		}
 
-		level.zombie_score_since_drop += total - last_total;
-		last_total = total;
-
-		if ( level.zombie_score_since_drop < level.next_drop_threshold )
-			continue;
-
-		level.zombie_score_since_drop = 0;
-		level.zombie_vars[ "zombie_drop_item" ] = 1;
+		wait( 0.5 );
 	}
 }
 
@@ -645,20 +687,28 @@ powerup_wobble()
 	}
 }
 
-// T5 :1626 powerup_timeout.  T5's numbers: alive for 30 s, blinking for the
-// last 5 at 4 Hz.
+// T5 :1626 powerup_timeout: solid for 15 s, then 40 hide/show toggles --
+// 15 at 0.5 s, 10 at 0.25 s, 15 at 0.1 s -- about 26.5 s in all.
 powerup_timeout()
 {
 	self endon( "powerup_grabbed" );
+	self endon( "death" );
 
-	wait( 25 );
+	wait( 15 );
 
-	for ( i = 0; i < 20; i++ )
+	for ( i = 0; i < 40; i++ )
 	{
-		self hide();
-		wait( 0.125 );
-		self show();
-		wait( 0.125 );
+		if ( i % 2 )
+			self hide();
+		else
+			self show();
+
+		if ( i < 15 )
+			wait( 0.5 );
+		else if ( i < 25 )
+			wait( 0.25 );
+		else
+			wait( 0.1 );
 	}
 
 	self notify( "powerup_timedout" );
@@ -724,7 +774,7 @@ powerup_grab()
 			switch ( self.powerup_name )
 			{
 			case "nuke":
-				level thread nuke_powerup( player );
+				level thread nuke_powerup( player, self.origin );
 				break;
 			case "full_ammo":
 				level thread full_ammo_powerup();
@@ -826,44 +876,108 @@ powerup_vo( type )
 // The effects
 // --------------------------------------------------------------------------
 
-// T5 :1677 nuke_powerup.  Kill every zombie alive and pay the grabber.
-// _zombiemode_score.gsc already carries the "nuke_powerup" event.
-nuke_powerup( player )
+// T5 :1677 nuke_powerup.  A white flash for everyone, then -- half a second
+// later -- every zombie is marked and killed in order of distance from the
+// drop, 0.1-0.7 s apart, each losing its head first (unless no_gib).  The
+// kills are the world's (no kill points; a nuked zombie still rolls for a
+// power-up, T5 :3388), and every player is paid 400.
+//
+// NOT TAKEN: T5's misc/fx_zombie_mini_nuke at the drop, flame_death_fx on
+// the first five and the evt_nuked / evt_nuke_flash sounds -- none of them
+// ships in a CoDOL zone (docs/zone_assets/ALL_fx.txt, ALL_sound.txt).
+nuke_powerup( player, location )
 {
 	level notify( "nuke_powerup" );
 
-	if ( isDefined( player ) && is_player_valid( player ) )
-		player maps\_zombiemode_score::player_add_points( "nuke_powerup", 400 );
-
-	if ( !isDefined( level.zombies ) )
-		return;
-
-	for ( i = 0; i < level.zombies.size; i++ )
+	if ( !isDefined( location ) )
 	{
-		if ( !isDefined( level.zombies[ i ] ) )
-			continue;
-
-		// T5 staggers the kills so the round counter and the death events do
-		// not all land in one frame.
-		level.zombies[ i ] thread nuke_kill_zombie();
-		wait( 0.05 );
+		location = ( 0, 0, 0 );
+		if ( isDefined( player ) )
+			location = player.origin;
 	}
+
+	level thread nuke_flash();
+
+	wait( 0.5 );
+
+	zombies = [];
+	if ( isDefined( level.zombies ) )
+	{
+		for ( i = 0; i < level.zombies.size; i++ )
+		{
+			z = level.zombies[ i ];
+			if ( isDefined( z ) && isAlive( z ) )
+				zombies[ zombies.size ] = z;
+		}
+	}
+
+	// T5 get_array_of_closest( location, zombies ).
+	for ( i = 1; i < zombies.size; i++ )
+	{
+		z = zombies[ i ];
+		d = distanceSquared( z.origin, location );
+		j = i - 1;
+		while ( j >= 0 && distanceSquared( zombies[ j ].origin, location ) > d )
+		{
+			zombies[ j + 1 ] = zombies[ j ];
+			j--;
+		}
+		zombies[ j + 1 ] = z;
+	}
+
+	nuked = [];
+	for ( i = 0; i < zombies.size; i++ )
+	{
+		z = zombies[ i ];
+		if ( is_true( z.marked_for_death ) )
+			continue;
+		if ( isDefined( z.nuke_damage_func ) )
+		{
+			z thread [[ z.nuke_damage_func ]]();
+			continue;
+		}
+		z.marked_for_death = true;
+		z.nuked = true;
+		nuked[ nuked.size ] = z;
+	}
+
+	for ( i = 0; i < nuked.size; i++ )
+	{
+		wait( randomFloatRange( 0.1, 0.7 ) );
+		z = nuked[ i ];
+		if ( !isDefined( z ) || !isAlive( z ) )
+			continue;
+		if ( !is_true( z.isdog ) && !is_true( z.no_gib ) )
+			z maps\_zombiemode_gib::zombie_head_gib();
+		z doDamage( z.health + 666, z.origin );
+	}
+
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+		players[ i ] maps\_zombiemode_score::player_add_points( "nuke_powerup", 400 );
 }
 
-nuke_kill_zombie()
+// T5 :1758 nuke_flash: the screen fades to white and back.
+nuke_flash()
 {
-	if ( !isDefined( self ) )
-		return;
+	fadetowhite = newHudElem();
+	fadetowhite.x = 0;
+	fadetowhite.y = 0;
+	fadetowhite.alpha = 0;
+	fadetowhite.horzAlign = "fullscreen";
+	fadetowhite.vertAlign = "fullscreen";
+	fadetowhite.foreground = true;
+	fadetowhite setShader( "white", 640, 480 );
 
-	// T5 nuke_powerup: a boss answers with its own nuke_damage_func.
-	if ( isDefined( self.nuke_damage_func ) )
-	{
-		self thread [[ self.nuke_damage_func ]]();
-		return;
-	}
+	fadetowhite fadeOverTime( 0.2 );
+	fadetowhite.alpha = 0.8;
 
-	self.nuked = true;
-	self doDamage( self.health + 100, self.origin );
+	wait( 0.5 );
+	fadetowhite fadeOverTime( 1.0 );
+	fadetowhite.alpha = 0;
+
+	wait( 1.1 );
+	fadetowhite destroy();
 }
 
 // T5 :1792 double_points_powerup + :1980 point_doubler_on_hud /
