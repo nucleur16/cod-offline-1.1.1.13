@@ -99,6 +99,8 @@ main()
 // (z -500): halfway = half_dist * 2 ^ ( ( -500 - base_height ) / half_height ).
 //   normal  start 452.915  half_dist 161.557  half_height 426.143  base -675.164  -> 215
 //   hounds  start 1622.47  half_dist 2126.6   half_height 288.118  base  399.766  -> 244
+// T5's blue-green colours read as a blue tint in C1, so the colours are dark
+// grey instead (lighter for hound rounds, as T5's are).
 // zm maps do not run maps\mp\_load, whose codolFogDvar sends C1's r_fog
 // (dvar 1464); a previous map may have turned it off, so it is sent here.
 // --------------------------------------------------------------------------
@@ -107,7 +109,7 @@ sumpf_fog()
 {
 	level thread sumpf_fog_dvar();
 
-	setExpFog( 452.915, 215, 0.419608, 0.564706, 0.513726, 1, 0 );
+	setExpFog( 452.915, 215, 0.30, 0.31, 0.30, 1, 0 );
 
 	// _zombiemode_ai_dogs owns the flag; it may be created after main().
 	while ( !flag_exist( "dog_round" ) )
@@ -115,9 +117,9 @@ sumpf_fog()
 	for ( ;; )
 	{
 		flag_wait( "dog_round" );
-		setExpFog( 1622.47, 244, 0.478431, 0.623529, 0.572549, 1, 7 );
+		setExpFog( 1622.47, 244, 0.38, 0.39, 0.38, 1, 7 );
 		flag_waitopen( "dog_round" );
-		setExpFog( 452.915, 215, 0.419608, 0.564706, 0.513726, 1, 7 );
+		setExpFog( 452.915, 215, 0.30, 0.31, 0.30, 1, 7 );
 	}
 }
 
