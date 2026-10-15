@@ -66,6 +66,16 @@ init()
 			zone.enabled = true;
 	}
 
+	// A level script that declares its zone graph the T5 way (T5
+	// zone_manager manage_zones( init_zones ) plus the level's
+	// add_adjacent_zone calls) names its starting zones here.  Only
+	// zm_sumpf_sh sets either variable; every other map skips this.
+	if ( isDefined( level.zm_zone_initial ) )
+	{
+		for ( i = 0; i < level.zm_zone_initial.size; i++ )
+			enable_zone( level.zm_zone_initial[ i ] );
+	}
+
 	level.enemy_spawns = [];
 	if ( level.zm_spawn_zones.size < 1 )
 	{
@@ -136,6 +146,11 @@ refresh_spawners()
 			enable_zone( "box_zone" );
 	}
 
+	// A declared graph (add_adjacent_zone below): a set flag opens both
+	// zones it joins, as T5 zone_manager enable_zone does.
+	if ( isDefined( level.zm_zone_adjacency ) )
+		adjacency_enable_zones();
+
 	// Asylum has no recoverable map-specific adjacency script.  An authored
 	// zone becomes reachable when a live player actually enters its volume;
 	// purchased doors govern physical access to that volume.
@@ -157,7 +172,8 @@ refresh_spawners()
 					// Prototype and Training have authored purchase flags.  A
 					// volume may overlap a closed doorway, so touching it alone
 					// must never unlock its spawners.
-					if ( level.zm_zone_mode != "zm_prototype_sh" )
+					// A map with a declared graph opens zones by flag only.
+					if ( level.zm_zone_mode != "zm_prototype_sh" && !isDefined( level.zm_zone_adjacency ) )
 						zone.enabled = true;
 					break;
 				}
@@ -173,6 +189,8 @@ refresh_spawners()
 		active = occupied[ i ];
 		if ( !active && level.zm_zone_mode == "zm_prototype_sh" )
 			active = occupied_adjacent_zone( zone.name, occupied );
+		if ( !active && isDefined( level.zm_zone_adjacency ) )
+			active = adjacency_occupied_neighbour( zone.name, occupied );
 		if ( !zone.enabled || !active )
 			continue;
 		active_names = active_names + zone.name + ",";
@@ -417,6 +435,57 @@ occupied_adjacent_zone( name, occupied )
 			return true;
 		if ( ( ( name == "box_zone" && other == "upstairs_zone" ) || ( name == "upstairs_zone" && other == "box_zone" ) ) && flag( "box_2_upstairs" ) )
 			return true;
+	}
+	return false;
+}
+
+// T5 _zombiemode_zone_manager.gsc add_adjacent_zone, for a level script that
+// declares its zone graph (zm_sumpf_sh, from T5 zombie_cod5_sumpf.gsc
+// sumpf_zone_init).  Call it from the level script's main(): data only, the
+// zones themselves are built later by init().  Two-way, as T5's default.
+add_adjacent_zone( zone_a, zone_b, flag_name )
+{
+	if ( !isDefined( level.zm_zone_adjacency ) )
+		level.zm_zone_adjacency = [];
+	link = spawnStruct();
+	link.zone_a = zone_a;
+	link.zone_b = zone_b;
+	link.flag_name = flag_name;
+	level.zm_zone_adjacency[ level.zm_zone_adjacency.size ] = link;
+}
+
+// T5 enable_zone on the adjacency flag: both ends open.
+adjacency_enable_zones()
+{
+	for ( i = 0; i < level.zm_zone_adjacency.size; i++ )
+	{
+		link = level.zm_zone_adjacency[ i ];
+		if ( !flag( link.flag_name ) )
+			continue;
+		enable_zone( link.zone_a );
+		enable_zone( link.zone_b );
+	}
+}
+
+// T5 manage_zones: a zone is active when a player is in it or in a zone
+// joined to it by a set adjacency flag.
+adjacency_occupied_neighbour( name, occupied )
+{
+	for ( i = 0; i < level.zm_zone_adjacency.size; i++ )
+	{
+		link = level.zm_zone_adjacency[ i ];
+		other = undefined;
+		if ( link.zone_a == name )
+			other = link.zone_b;
+		else if ( link.zone_b == name )
+			other = link.zone_a;
+		if ( !isDefined( other ) || !flag( link.flag_name ) )
+			continue;
+		for ( z = 0; z < level.zm_spawn_zones.size; z++ )
+		{
+			if ( occupied[ z ] && level.zm_spawn_zones[ z ].name == other )
+				return true;
+		}
 	}
 	return false;
 }

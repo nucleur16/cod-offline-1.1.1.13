@@ -209,6 +209,13 @@ trap_init()
 
 	flag_wait( "all_players_connected" );
 
+	// A level that powers machines separately (zm_sumpf_sh: one switch per
+	// hut) names this entity's own power flag; every other map waits on the
+	// one "power_on" flag, exactly as before.
+	power_flag = "power_on";
+	if ( isDefined( self.zm_power_flag ) )
+		power_flag = self.zm_power_flag;
+
 	self trap_lights_red();
 	for ( i = 0; i < self._trap_use_trigs.size; i++ )
 		self._trap_use_trigs[ i ] setCursorHint( "HINT_NOICON" );
@@ -216,7 +223,7 @@ trap_init()
 	if ( !isDefined( self.script_flag_wait ) )
 	{
 		self trap_set_string( &"ZOMBIE_NEED_POWER" );
-		flag_wait( "power_on" );
+		flag_wait( power_flag );
 	}
 	else
 	{

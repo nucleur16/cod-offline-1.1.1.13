@@ -73,6 +73,16 @@ init()
 		precacheModel( "lights_indlight_on" );
 	}
 
+	// A level whose switches power separate areas (zm_sumpf_sh: one switch
+	// per hut) runs its own switches in place of the single master switch
+	// below.  No other map sets level.zm_power_func.
+	if ( isDefined( level.zm_power_func ) )
+	{
+		level thread [[ level.zm_power_func ]]();
+		level thread power_lights();
+		return;
+	}
+
 	level thread electric_switch();
 	level thread wait_for_power();
 	level thread power_lights();
