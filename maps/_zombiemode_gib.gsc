@@ -260,10 +260,19 @@ head_should_gib( attacker, mod, point, location, weapon )
 			return false;
 	}
 
-	if ( location != "head" )
+	// T5 :2771 damageLocationIsAny( "head", "helmet", "neck" ).
+	if ( location != "head" && location != "helmet" && location != "neck" )
 		return false;
 
 	if ( !isDefined( weapon ) || weapon == "none" )
+		return false;
+
+	// T5 :2776: the starting pistol (m1911_zm) never pops a head.
+	if ( isDefined( attacker.zombie_start_weapon ) && weapon == attacker.zombie_start_weapon )
+		return false;
+	if ( isDefined( level.zombie_start_weapon ) && weapon == level.zombie_start_weapon )
+		return false;
+	if ( weapon == "m1911_zm" )
 		return false;
 
 	return true;
