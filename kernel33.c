@@ -528,18 +528,25 @@ static BOOL PatchUnsignedZones(void)
  * in memory: C1's own streaming reader reads the file on every load.
  * A file named like a stock zone (or ffotd_client) is skipped, so it can never shadow one; to
  * replace a stock zone, put the unsigned build in its stock folder instead.
- * "+set codol_patchdir 0" on the command line turns the folder off. */
+ * "+set codol_patchdir 0" on the command line turns the folder off.
+ *
+ * Patch zones named *_ui_mp (the stock UI zones' naming: patch_ui_mp, ui_mp) are prepended instead,
+ * the same way, to the UI list's DB_LoadXAssets call
+ * (0x5985CD: patch_ui_mp, ui_mp, ... 7 zones, alloc flags 2), which loads once the renderer is up and
+ * again whenever the front end comes back. Image assets belong there: an image in a zone that loads
+ * ahead of code_pre_gfx crashes the client (AV read 0x0000000C at 0x00A92825, 2026-10-14). */
 #define PATCHDIR_OPEN_JNE_VA   0x004CD2AFu
 #define PATCHDIR_DISK_PATH_VA  0x004CD3E3u
 #define PATCHDIR_OPENED_VA     0x004CD55Eu
 #define PREGFX_LOAD_CALL_VA    0x0059841Cu
+#define UI_LOAD_CALL_VA        0x005985CDu
 #define DB_LOAD_XASSETS_VA     0x08465768u
 #define PATCHDIR_MAX_FILES     16
 
 typedef struct { const char *name; int allocFlags; int freeFlags; } XZoneInfo;
 typedef void (__cdecl *LoadXAssetsFn)(XZoneInfo *info, unsigned count, int sync);
 
-typedef struct { char name[64]; char path[MAX_PATH]; } PatchZone;
+typedef struct { char name[64]; char path[MAX_PATH]; int ui; } PatchZone;
 
 static PatchZone g_patchZones[PATCHDIR_MAX_FILES];
 static int g_patchZoneCount;
@@ -588,13 +595,21 @@ static int CompareNames(const void *a, const void *b)
     return lstrcmpiA((const char *)a, (const char *)b);
 }
 
+/* "*_ui_mp" -> ahead of the UI zones, anything else ahead of code_pre_gfx */
+static int PatchZoneIsUi(const char *name)
+{
+    size_t len = strlen(name);
+    return len > 6 && lstrcmpiA(name + len - 6, "_ui_mp") == 0;
+}
+
 static void LoadPatchDir(void)
 {
+    const char *sub = "patch\\";
     char dir[MAX_PATH], pattern[MAX_PATH];
     DWORD n = GetModuleFileNameA(NULL, dir, MAX_PATH);
     while (n && dir[n - 1] != '\\') n--;
     lstrcpynA(dir + n, "client_shipRetail\\", MAX_PATH - n);
-    _snprintf(pattern, sizeof(pattern), "%spatch\\*.ff", dir);
+    _snprintf(pattern, sizeof(pattern), "%s%s*.ff", dir, sub);
     pattern[sizeof(pattern) - 1] = 0;
 
     static char files[64][MAX_PATH];
@@ -602,7 +617,7 @@ static void LoadPatchDir(void)
     WIN32_FIND_DATAA fd;
     HANDLE h = FindFirstFileA(pattern, &fd);
     if (h == INVALID_HANDLE_VALUE) {
-        Log("patch folder: no .ff files in %spatch\\", dir);
+        Log("patch folder: no .ff files in %s%s", dir, sub);
         return;
     }
     do {
@@ -636,7 +651,8 @@ static void LoadPatchDir(void)
             continue;
         }
 
-        _snprintf(z->path, sizeof(z->path), "%spatch\\%s", dir, file);
+        _snprintf(z->path, sizeof(z->path), "%s%s%s", dir, sub, file);
+        z->ui = PatchZoneIsUi(z->name);
         z->path[sizeof(z->path) - 1] = 0;
         HANDLE f = CreateFileA(z->path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
         if (f == INVALID_HANDLE_VALUE) {
@@ -652,8 +668,15 @@ static void LoadPatchDir(void)
             continue;
         }
         g_patchZoneCount++;
-        Log("patch folder: %s (%lu bytes) queued as zone \"%s\"", file, (unsigned long)size, z->name);
+        Log("patch folder: %s%s (%lu bytes) queued as zone \"%s\"", sub, file, (unsigned long)size, z->name);
     }
+}
+
+static int PatchZonesIn(int ui)
+{
+    int n = 0;
+    for (int i = 0; i < g_patchZoneCount; i++) n += g_patchZones[i].ui == ui;
+    return n;
 }
 
 /* Called on the DB thread with the name DB_TryLoadXFileInternal is about to open from disk.
@@ -690,19 +713,30 @@ __asm__(
     "    jmp *_g_patchDirOpenedPath\n"
     "1:  jmp *_g_patchDirDiskPath\n");
 
-static void __cdecl PreGfxLoadHook(XZoneInfo *info, unsigned count, int sync)
+static void PrependPatchZones(int ui, const char *list, XZoneInfo *info, unsigned count, int sync)
 {
     XZoneInfo all[PATCHDIR_MAX_FILES + 8];
     unsigned n = 0;
     for (int i = 0; i < g_patchZoneCount; i++) {
+        if (g_patchZones[i].ui != ui) continue;
         all[n].name = g_patchZones[i].name;
         all[n].allocFlags = info[0].allocFlags;
         all[n].freeFlags = 0;
         n++;
     }
     for (unsigned i = 0; i < count && n < sizeof(all) / sizeof(all[0]); i++) all[n++] = info[i];
-    Log("patch folder: code_pre_gfx list: %d patch zone(s) ahead of %u stock", g_patchZoneCount, count);
+    Log("patch folder: %s list: %d patch zone(s) ahead of %u stock", list, PatchZonesIn(ui), count);
     ((LoadXAssetsFn)(DWORD_PTR)DB_LOAD_XASSETS_VA)(all, n, sync);
+}
+
+static void __cdecl PreGfxLoadHook(XZoneInfo *info, unsigned count, int sync)
+{
+    PrependPatchZones(0, "code_pre_gfx", info, count, sync);
+}
+
+static void __cdecl UiLoadHook(XZoneInfo *info, unsigned count, int sync)
+{
+    PrependPatchZones(1, "ui", info, count, sync);
 }
 
 static void PatchPatchDir(void)
@@ -731,9 +765,22 @@ static void PatchPatchDir(void)
     if (!g_patchZoneCount) return;
     rel = (LONG)((DWORD_PTR)PatchDirOpenHook - (PATCHDIR_OPEN_JNE_VA + 6));
     WriteCode(jne + 2, &rel, 4);
-    rel = (LONG)((DWORD_PTR)PreGfxLoadHook - (PREGFX_LOAD_CALL_VA + 5));
-    WriteCode(call + 1, &rel, 4);
-    Log("patch folder: %d zone(s) load from disk ahead of code_pre_gfx", g_patchZoneCount);
+    if (PatchZonesIn(0)) {
+        rel = (LONG)((DWORD_PTR)PreGfxLoadHook - (PREGFX_LOAD_CALL_VA + 5));
+        WriteCode(call + 1, &rel, 4);
+    }
+    Log("patch folder: %d zone(s) load from disk ahead of code_pre_gfx", PatchZonesIn(0));
+    if (!PatchZonesIn(1)) return;
+    static const BYTE kUiList[] = { 0x89, 0xB5, 0xB0, 0xFE, 0xFF, 0xFF }; /* the UI list's last store */
+    BYTE *ui = (BYTE *)(DWORD_PTR)UI_LOAD_CALL_VA;
+    rel = (LONG)(DB_LOAD_XASSETS_VA - (UI_LOAD_CALL_VA + 5));
+    if (!Readable(ui - 6, 11) || memcmp(ui - 6, kUiList, 6) != 0 || ui[0] != 0xE8 || memcmp(ui + 1, &rel, 4) != 0) {
+        Log("patch folder: bytes at 0x%08X do not match, *_ui_mp patch zones not loaded", UI_LOAD_CALL_VA);
+        return;
+    }
+    rel = (LONG)((DWORD_PTR)UiLoadHook - (UI_LOAD_CALL_VA + 5));
+    WriteCode(ui + 1, &rel, 4);
+    Log("patch folder: %d zone(s) load from disk ahead of the UI zones", PatchZonesIn(1));
 }
 
 /* GPU rating. Com_Init registers "2658" (the benchmark score) as Dvar_RegisterInt(default 0,
