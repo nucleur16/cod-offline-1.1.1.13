@@ -422,7 +422,7 @@ main()
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -904.618, -666.537, -15.7883 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_light_creak";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_light_creak: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -186.97, -801.524, 267.775 );
@@ -602,7 +602,7 @@ main()
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1752.71, 114.634, -11.6896 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_light_creak";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_light_creak: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1309.58, 103.995, -22.6268 );

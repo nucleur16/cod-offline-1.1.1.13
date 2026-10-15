@@ -8,172 +8,172 @@ main()
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2601, 510, 6 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_light_buzz_harsh";
+	ent.v[ "soundalias" ] = "nil"; // emt_light_buzz_harsh: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1450.75, -335.323, -28.4352 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cricket_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cricket_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1471.82, 212.772, -34.954 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cricket_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cricket_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -258.974, -101.823, -63 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cicada_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cicada_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -496.343, 1388.88, -64 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cricket_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cricket_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 346.553, 956.453, -64 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cicada_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cicada_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1476.5, 1316.02, -20 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cricket_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cricket_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1111.57, 2175.41, -64 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cricket_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cricket_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1803.53, 2060.15, -64 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cicada_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cicada_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1944.27, 2523.95, -33.1686 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cricket_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cricket_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2529.21, 1501.21, -60.4466 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cricket_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cricket_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 3131.75, 861.107, -62.4906 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cicada_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cicada_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 3521, 535.418, -36.826 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cricket_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cricket_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2709.8, -1391.61, 10.3796 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cricket_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cricket_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2802.36, -2355.53, -45.537 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cicada_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cicada_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1362.44, -2353.23, -24.8341 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cricket_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cricket_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -656.368, -1349.07, -64 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cicada_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cicada_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 948.617, 290.832, -34.1611 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_fly_loop_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_fly_loop_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1462.21, -1049.68, -64 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cricket_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cricket_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 875.493, -632.5, -64 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cicada_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cicada_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2545.49, -665.468, -25.7075 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cricket_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cricket_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1142.84, -549.335, 125.194 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_tree_leaf_rustle";
+	ent.v[ "soundalias" ] = "nil"; // emt_tree_leaf_rustle: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -871.758, 622.384, -32 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_tree_leaf_rustle";
+	ent.v[ "soundalias" ] = "nil"; // emt_tree_leaf_rustle: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -861.406, 128.006, 14.7832 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_tree_leaf_rustle";
+	ent.v[ "soundalias" ] = "nil"; // emt_tree_leaf_rustle: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -945.903, 1247.87, -22.8787 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_tree_leaf_rustle";
+	ent.v[ "soundalias" ] = "nil"; // emt_tree_leaf_rustle: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -124.077, 1379.74, 0.741041 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_tree_leaf_rustle";
+	ent.v[ "soundalias" ] = "nil"; // emt_tree_leaf_rustle: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 690.983, 2013.42, 66.1407 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_tree_leaf_rustle";
+	ent.v[ "soundalias" ] = "nil"; // emt_tree_leaf_rustle: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1293.21, 2534.39, 75.4923 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_tree_leaf_rustle";
+	ent.v[ "soundalias" ] = "nil"; // emt_tree_leaf_rustle: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1760.86, 2380.57, -21 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_tree_leaf_rustle";
+	ent.v[ "soundalias" ] = "nil"; // emt_tree_leaf_rustle: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 3533.95, -2011.62, 41.2335 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_tree_leaf_rustle";
+	ent.v[ "soundalias" ] = "nil"; // emt_tree_leaf_rustle: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2000.64, -2872.3, 150.615 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_tree_leaf_rustle";
+	ent.v[ "soundalias" ] = "nil"; // emt_tree_leaf_rustle: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2242.98, -2257, 147.063 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_tree_leaf_rustle";
+	ent.v[ "soundalias" ] = "nil"; // emt_tree_leaf_rustle: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1303.87, -2792.16, 96.0702 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_tree_leaf_rustle";
+	ent.v[ "soundalias" ] = "nil"; // emt_tree_leaf_rustle: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 96.2569, -2008.34, 171.379 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_tree_leaf_rustle";
+	ent.v[ "soundalias" ] = "nil"; // emt_tree_leaf_rustle: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 3520.02, 843.949, 7.10812 );
@@ -183,102 +183,102 @@ main()
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 5081.57, 1251.02, 92.8941 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_bird_distant_caw_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_bird_distant_caw_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 3318.81, 70.7101, 119.863 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 3094.86, -360.482, 102.589 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2436.59, -379.579, -17.875 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2612.82, -808.58, 158.171 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2701.95, -1542.5, 179.836 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2224, -1513.93, 194.522 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2005.34, -1798.62, 193.406 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 3217.22, -2130.71, 57.7543 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1558.7, -1900.84, 86.6326 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1241.53, -2131.69, 81.653 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 461.051, -2272.86, 64.9569 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -646.038, 98.4949, 45.875 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -237.153, 910.135, -39 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -747.995, 902.379, -39 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2163.53, 648.296, 315.875 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1996.62, 492.329, 126.125 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2652.95, 134.401, 260.928 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2509.76, 584.994, 38.7281 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2705.22, 1847.94, 42.8445 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 294.37, 1894.04, 359.983 );
@@ -354,22 +354,22 @@ main()
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1072.01, -838.059, -56.875 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 920.18, -1408.99, 102.125 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -153.107, -1183.96, 178.558 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 274.085, -1109.36, 209.234 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wood_creak_light_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_wood_creak_light_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -973, 414, 23 );
@@ -384,17 +384,17 @@ main()
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -91.2972, 475.047, -11.7903 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_metal_sheet_knocking";
+	ent.v[ "soundalias" ] = "nil"; // emt_metal_sheet_knocking: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1338.03, 2157, 25 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_roundup_metal_creak";
+	ent.v[ "soundalias" ] = "nil"; // emt_roundup_metal_creak: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2688.07, 915.571, -30.8188 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_metal_sheet_knocking";
+	ent.v[ "soundalias" ] = "nil"; // emt_metal_sheet_knocking: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2791.9, 1433.63, 48.0047 );
@@ -404,174 +404,174 @@ main()
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2600.09, -1310.28, 33.9281 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_metal_sheet_knocking";
+	ent.v[ "soundalias" ] = "nil"; // emt_metal_sheet_knocking: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1897.86, -2319.92, 35.7235 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_metal_sheet_knocking";
+	ent.v[ "soundalias" ] = "nil"; // emt_metal_sheet_knocking: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -484.125, -1105.34, -22.2497 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_metal_bumpercars";
+	ent.v[ "soundalias" ] = "nil"; // emt_metal_bumpercars: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -468.932, 976.775, 242.556 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_metal_rattle_squeak";
+	ent.v[ "soundalias" ] = "nil"; // emt_metal_rattle_squeak: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2060.44, 2662.77, 173.587 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_metal_rattle_ring";
+	ent.v[ "soundalias" ] = "nil"; // emt_metal_rattle_ring: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2550.33, 2286.07, 174.958 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_metal_rattle_squeak";
+	ent.v[ "soundalias" ] = "nil"; // emt_metal_rattle_squeak: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2703.35, -1543.58, 381.224 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_metal_rattle_dull";
+	ent.v[ "soundalias" ] = "nil"; // emt_metal_rattle_dull: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1935.1, -2639.76, 220.25 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_metal_rattle_dull";
+	ent.v[ "soundalias" ] = "nil"; // emt_metal_rattle_dull: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2403.39, -1969.96, 242.823 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_metal_rattle_squeak";
+	ent.v[ "soundalias" ] = "nil"; // emt_metal_rattle_squeak: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1314.46, -2173.49, 619.415 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_metal_rattle_dull";
+	ent.v[ "soundalias" ] = "nil"; // emt_metal_rattle_dull: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -78.4394, -668.195, -50.8887 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_metal_bumpercars";
+	ent.v[ "soundalias" ] = "nil"; // emt_metal_bumpercars: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 706.533, -1139.23, -64.5493 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wind_desert_light";
+	ent.v[ "soundalias" ] = "nil"; // emt_wind_desert_light: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -55.4072, -1574.29, 144.211 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wind_desert_light";
+	ent.v[ "soundalias" ] = "nil"; // emt_wind_desert_light: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -320.831, 1110.86, 203.363 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cloth_flap_tent";
+	ent.v[ "soundalias" ] = "nil"; // emt_cloth_flap_tent: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 108.213, -253.362, 26.2917 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_ac_duct_rattle";
+	ent.v[ "soundalias" ] = "nil"; // emt_ac_duct_rattle: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1900.92, 1654.15, 67.1471 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wind_desert_light";
+	ent.v[ "soundalias" ] = "nil"; // emt_wind_desert_light: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 412.063, 19.6324, -64 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_cricket_loop";
+	ent.v[ "soundalias" ] = "nil"; // emt_cricket_loop: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2239.15, -1606.23, -12.5577 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_metal_sheet_knocking";
+	ent.v[ "soundalias" ] = "nil"; // emt_metal_sheet_knocking: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1896.34, -705.505, 80 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wind_desert_light";
+	ent.v[ "soundalias" ] = "nil"; // emt_wind_desert_light: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 3098.13, -796.404, 138.657 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_tree_leaf_rustle";
+	ent.v[ "soundalias" ] = "nil"; // emt_tree_leaf_rustle: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -1396.07, -894.418, 104.531 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_ferris_wheel_distant";
+	ent.v[ "soundalias" ] = "nil"; // emt_ferris_wheel_distant: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -1435.17, -780.717, 122.121 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_ferris_rattle_squeak";
+	ent.v[ "soundalias" ] = "nil"; // emt_ferris_rattle_squeak: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2636.22, 1513.94, -8.34849 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_paper_flutter_rustle";
+	ent.v[ "soundalias" ] = "nil"; // emt_paper_flutter_rustle: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2090.04, 1572.1, -31.0181 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_paper_flutter_rustle";
+	ent.v[ "soundalias" ] = "nil"; // emt_paper_flutter_rustle: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2376.52, -845.661, 391.25 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wind_tarp_flap";
+	ent.v[ "soundalias" ] = "nil"; // emt_wind_tarp_flap: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1296, -1540, 540 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wind_tarp_flap";
+	ent.v[ "soundalias" ] = "nil"; // emt_wind_tarp_flap: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 422, -871, 559 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wind_tarp_flap";
+	ent.v[ "soundalias" ] = "nil"; // emt_wind_tarp_flap: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2239.85, 574.676, 24.0847 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_ship_chain_sway";
+	ent.v[ "soundalias" ] = "nil"; // emt_ship_chain_sway: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2788.16, -314.83, 363.899 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wind_tarp_flap";
+	ent.v[ "soundalias" ] = "nil"; // emt_wind_tarp_flap: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2205.57, -521.879, 419.124 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wind_tarp_flap";
+	ent.v[ "soundalias" ] = "nil"; // emt_wind_tarp_flap: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2429.65, -230.9, 425.108 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_wind_tarp_flap";
+	ent.v[ "soundalias" ] = "nil"; // emt_wind_tarp_flap: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1016.65, -1169.76, 96.4972 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_ship_chain_sway";
+	ent.v[ "soundalias" ] = "nil"; // emt_ship_chain_sway: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1052, -1887, -7 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_light_buzz_harsh";
+	ent.v[ "soundalias" ] = "nil"; // emt_light_buzz_harsh: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createOneshotEffect( "insects_carcass_runner" );
 	ent.v[ "origin" ] = ( 1253.59, -1737.89, -35.1528 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
 	ent.v[ "fxid" ] = "insects_carcass_runner";
 	ent.v[ "delay" ] = -15;
-	ent.v[ "soundalias" ] = "emt_fly_loop_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_fly_loop_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createOneshotEffect( "insects_carcass_runner" );
 	ent.v[ "origin" ] = ( 3305.68, 453.041, -25.4045 );
@@ -602,7 +602,7 @@ main()
 	ent.v[ "angles" ] = ( 270, 0, 0 );
 	ent.v[ "fxid" ] = "insects_carcass_runner";
 	ent.v[ "delay" ] = -15;
-	ent.v[ "soundalias" ] = "emt_fly_loop_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_fly_loop_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createOneshotEffect( "insects_carcass_runner" );
 	ent.v[ "origin" ] = ( 2400.48, -1126.28, -20.4915 );
@@ -915,7 +915,7 @@ main()
 	ent.v[ "angles" ] = ( 270, 0, 0 );
 	ent.v[ "fxid" ] = "insects_carcass_runner";
 	ent.v[ "delay" ] = -15;
-	ent.v[ "soundalias" ] = "emt_fly_loop_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_fly_loop_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createOneshotEffect( "moth_runner" );
 	ent.v[ "origin" ] = ( -428.61, 1312.76, -33 );
@@ -934,7 +934,7 @@ main()
 	ent.v[ "angles" ] = ( 270, 0, 0 );
 	ent.v[ "fxid" ] = "insects_carcass_runner";
 	ent.v[ "delay" ] = -15;
-	ent.v[ "soundalias" ] = "emt_fly_loop_res";
+	ent.v[ "soundalias" ] = "nil"; // emt_fly_loop_res: not in the ported zone (a missing alias still holds a voice)
 
 	ent = createOneshotEffect( "rocket_smoke" );
 	ent.v[ "origin" ] = ( 905.274, 834.195, 32.6947 );
