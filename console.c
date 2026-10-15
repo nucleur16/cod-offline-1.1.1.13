@@ -1122,8 +1122,12 @@ static void ConKeyDown(HWND hwnd, WPARAM vk)
     InterlockedExchange(&g_conDirty, 1);
 }
 
+static void VoiceWndMsg(UINT msg, WPARAM wp, LPARAM lp); /* voice.c: push-to-talk key */
+static BOOL g_conInputOk;
+
 static LRESULT CALLBACK ConsoleWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
+    VoiceWndMsg(msg, wp, lp);
     WNDPROC game = (WNDPROC)(DWORD_PTR)GAME_WNDPROC_VA;
     if (!g_conKeyDvarTried && (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) &&
         *(volatile int *)(DWORD_PTR)CON_DVAR_COUNT_VA > 100)
@@ -1820,6 +1824,7 @@ static void InstallConsole(void)
         WriteCode(wc + 3, &proc, 4);
         inputOk = TRUE;
     }
+    g_conInputOk = inputOk;
 
     /* drawing */
     BOOL drawHook = FALSE;

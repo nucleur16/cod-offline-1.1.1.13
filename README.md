@@ -120,3 +120,33 @@ Numbers without a name display as they are. Command names are not hashed in this
 `Cmd_AddCommand` names are plaintext), so commands are listed as registered.
 
 Build without touching the live DLL: `sh build-dev.sh` writes `Kernel33_dev.dll`.
+
+## Voice chat (branch `feat/voicechat`)
+`voice.c` puts back in-game voice chat, which C1 stripped (no capture, no codec, no `+talk`; the "v"
+packet branch only printed "voice communication is disabled"). It uses Opus (libopus, linked
+statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
+(`src/codol/net/codol_voice.c` on its `feat/voicechat` branch).
+
+- **Push-to-talk**: hold **Caps Lock** (dvar `k33_talkKey`, a Windows virtual-key code; 86 = V,
+  0 = none), or bind any key to `+talk` (`bind MOUSE4 +talk`); `toggletalk` latches transmit on/off.
+  The key is ignored while the developer console is open. The microphone stream runs only while
+  transmitting.
+- **Path**: WASAPI shared-mode capture (default communications device) -> 48 kHz mono -> Opus VOIP,
+  20 ms frames, 24 kbps, in-band FEC, DTX -> OOB `"v"` packets to `clc.serverAddress` through C1's
+  NET_OutOfBandData (the game socket and its bdDTLS association) -> server relay -> OOB `"v"` back to
+  each listener -> CL_ConnectionlessPacket's "v" branch (0x496482) -> per-talker jitter buffer (40 ms
+  prebuffer, FEC/PLC on loss) -> mix -> WASAPI playback.
+- **Talk balloon**: the server sets es.eFlags 0x100 on a talking player's entity for 500 ms, the bit
+  C1's head-icon code already draws `headicontalkballoon` for (teammates only).
+- **Dvars**: `codol_voice` (1; `+set codol_voice 0` installs nothing), `k33_talkKey` (20),
+  `k33_voiceVolume` (100 %), `k33_voiceBitrate` (24000), `k33_voiceLoopback` (0; 1 plays your own
+  voice back locally without a server), `k33_voiceDebug` (0; 1 prints status every 5 s, 2 every packet).
+- **Commands**: `+talk`/`-talk`, `toggletalk`, `k33voice` (status: devices, counters, who is
+  talking), `k33voicemute <client>` (toggle a client-side mute).
+- **UI**: the Scaleform callbacks `EnableVoiceTalk` (voice on/off) and `SetVoiceMicMute` (mic mute),
+  both `ret 4` stubs in C1, now reach `voice.c`.
+- C1 applies no command-line `+set` to dvars registered this late and runs no `+command`, so
+  `voice.c` re-issues `+set <its dvar> <n>` and honours `+toggletalk` itself.
+
+Build without touching the live DLL: `PATH=/c/msys64/mingw32/bin:$PATH sh build-voice.sh` writes
+`Kernel33_voice.dll`.

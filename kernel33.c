@@ -977,6 +977,9 @@ static void PatchGbkInput(void)
 /* Developer console overlay, dev branch only: see console.c. */
 #include "console.c"
 
+/* In-game voice chat (feat/voicechat): see voice.c. */
+#include "voice.c"
+
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 static void __cdecl TakeOver(void)
 {
@@ -996,6 +999,7 @@ static void __cdecl TakeOver(void)
     PatchUserMaps();
     InstallParityLogger();
     InstallConsole();
+    InstallVoice(g_conInputOk);
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
     ExitProcess(0); /* the CRT entry ends in exit(); not reached */
