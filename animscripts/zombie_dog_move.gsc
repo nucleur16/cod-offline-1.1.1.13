@@ -284,7 +284,10 @@ main()
 	}
 
 	self thread animscripts\zombie_dog_stop::lookAtTarget( "normal" );
-	self thread playMovementSounds();
+	// T5 animscripts/zombie_dog_move.gsc:14 leaves the running bark loop
+	// commented out: a hellhound's voice is _zombiemode_ai_dogs'
+	// dog_stalk_audio / dog_behind_audio, not the multiplayer dog's
+	// movement barks (playMovementSounds, kept below for reference).
 
 	while ( 1 )
 	{
@@ -348,8 +351,15 @@ moveLoop()
 
 			debug_anim_print("dog_move::moveLoop() - Setting move_walk " );
 			self setanimstate( "move_walk" );
-			animscripts\zombie_dog_shared::DoNoteTracksForTime(0.1, "done");
+			animscripts\zombie_dog_shared::DoNoteTracksForTime(0.2, "done");
 			debug_anim_print("dog_move::moveLoop() - move_walk wait 0.2 done " );
+
+			// T5 zombie_dog_move.gsc:104-110, the "stalking" behaviour.
+			if ( self need_to_run() )
+			{
+				self.a.movement = "run";
+				self notify( "dog_running" );
+			}
 		}
 	}
 }
@@ -413,4 +423,53 @@ getSoundKey( distanceSqr )
 		return keys[i];
 	}
 	return keys[keys.size - 1];
+}
+
+// T5 animscripts/zombie_dog_move.gsc:250 need_to_run: a stalking hound breaks
+// into the sprint once it has been hurt, or once it sees its enemy inside
+// scr_dog_run_distance (500), within 64 units of its height, 20 degrees of
+// its facing and 30 degrees of pitch.
+need_to_run()
+{
+	run_dist_squared = 384 * 384;
+	if ( getDvar( "scr_dog_run_distance" ) != "" )
+	{
+		dist = getDvarInt( "scr_dog_run_distance" );
+		run_dist_squared = dist * dist;
+	}
+
+	run_yaw = 20;
+	run_pitch = 30;
+	run_height = 64;
+
+	if ( self.a.movement != "walk" )
+		return false;
+
+	if ( self.health < self.maxhealth )
+		return true;	// dog took damage
+
+	if ( !isdefined( self.enemy ) || !isalive( self.enemy ) )
+		return false;
+
+	if ( !self cansee( self.enemy ) )
+		return false;
+
+	dist = distancesquared( self.origin, self.enemy.origin );
+	if ( dist > run_dist_squared )
+		return false;
+
+	height = self.origin[2] - self.enemy.origin[2];
+	if ( abs( height ) > run_height )
+		return false;
+
+	// T5 AbsYawToEnemy: the yaw from the dog's facing to its enemy.
+	yaw = abs( angleclamp180( vectortoangles( self.enemy.origin - self.origin )[1] - self.angles[1] ) );
+	if ( yaw > run_yaw )
+		return false;
+
+	pitch = angleclamp180( vectortoangles( self.origin - self.enemy.origin )[0] );
+	if ( abs( pitch ) > run_pitch )
+		return false;
+
+	return true;
 }

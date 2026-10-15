@@ -36,6 +36,11 @@ main()
 	self endon("killanimscript");
 	self SetAimAnimWeights( 0, 0 );
 
+	// T5 animscripts/zombie_dog_pain.gsc:7: a hellhound never flinches
+	// (_zombiemode_ai_dogs dog_init sets allowpain false and a.disablePain).
+	if ( ( isdefined( self.a ) && isdefined( self.a.disablePain ) && self.a.disablePain ) || ( isdefined( self.allowpain ) && !self.allowpain ) )
+		return;
+
 	if ( isdefined( self.enemy ) && isdefined( self.enemy.syncedMeleeTarget) && self.enemy.syncedMeleeTarget == self )
 	{
 		self unlink();
