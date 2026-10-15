@@ -44,8 +44,22 @@ main()
 // at z 240-256, which would give 1042):
 // halfway = half_dist * 2 ^ ( ( 72 - base_height ) / half_height ).
 //   start 244.829  half_dist 697.262  half_height 200  base 124  -> 582.3
-// Colour is T5's warm brown (fog_scale 2 and the sun colour have no C1
-// equivalent).
+// Colour.  Not T5's brown 0.4196 0.3216 0.2510 any more: the map's
+// vision/zm_asylum_sh.vision (MEASURED, zone rawfile) grades after the fog
+// is drawn.  Its film block is in IW5's order (see zm_prototype_sh.gsc):
+// desaturation 523 -0.805 (negative = extra saturation, x1.2 at the fog's
+// luminance, applied before the tint), light tint 526 "1.5 1.57888 1.5",
+// medium 527 "1.15 1.37 1.37", dark 528 "0.701083 0.895233 1.01064" -- every
+// tint lifts green and blue over red.  Modelled per pixel (Rec.709
+// luminance; tint lerped dark -> medium -> light; saturation lerped
+// desaturationDark -> desaturation), the brown grades to an over-saturated
+// yellow-brown 0.44 0.39 0.29 and any greyer fog drifts toward cyan.  The
+// colour below is that model solved backwards for a slightly warm grey
+// 0.42 0.40 0.37 after grading -- roughly target / tint per channel, with
+// the warm offset shrunk by the saturation boost -- at the same luminance as
+// T5's fog: 0.403 0.330 0.303.  (Under the other reading of the tint ids,
+// 527 dark / 528 medium, it grades to a near-neutral 0.35 0.34 0.33.)
+// Distance is unchanged.
 // zm maps do not run maps\mp\_load, whose codolFogDvar sends C1's r_fog
 // (dvar 1464); a previous map may have turned it off, so it is sent here.
 // --------------------------------------------------------------------------
@@ -54,7 +68,7 @@ asylum_fog()
 {
 	level thread asylum_fog_dvar();
 
-	setExpFog( 244.829, 582.3, 0.419608, 0.321569, 0.25098, 1, 0 );
+	setExpFog( 244.829, 582.3, 0.403, 0.330, 0.303, 1, 0 );
 }
 
 asylum_fog_dvar()
