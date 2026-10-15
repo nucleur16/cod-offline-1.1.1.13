@@ -842,6 +842,74 @@ static void RedirectCall(DWORD va, void *hook)
     WriteCode((BYTE *)(DWORD_PTR)va + 1, &rel, 4);
 }
 
+/* Client-side loop effects. At map load CG parses maps/mp/<map>_fx.gsc and maps/createfx/<map>_fx.gsc
+ * (0x42DF70) and registers every loop effect (0x42C930) in a per-local-client table at
+ * 0x16B01C0 + lc * 0x304: int count, int next[64] (+4), { int period, fx }[64] (+0x104), with
+ * next = cg time + period. cg time is still 0 then. Each frame 0x42E1B0 (called from 0x478F0F and
+ * 0x49F8C7) replays every period that has passed:
+ *     0x42E300  while (next[i] < now) { 0x4FE820(next[i]) ; next[i] += period[i] }
+ * so the first frame after CA_ACTIVE spawns (server time / period) effects per loop effect. Server
+ * time counts from the server process start: after 15 h (55,767,470 ms) 42 loop effects of 500 ms are
+ * 4.7 million spawns, and the client stood on a blank screen for 0.3-1.7 s after the loading screen
+ * (2026-10-15, measured between Com_EventLoop passes). Before both calls, an effect more than
+ * LOOPFX_REPLAY_MS behind is moved forward by whole periods, so the original loop replays at most
+ * that much of its past (long-lived effects still look as if they had been running). */
+#define LOOPFX_TABLE_VA       0x016B01C0u
+#define LOOPFX_TABLE_STRIDE   0x304u
+#define LOOPFX_MAX            64
+#define LOOPFX_PROCESS_VA     0x0042E1B0u
+#define LOOPFX_CALL_CG_VA     0x00478F0Fu
+#define LOOPFX_CALL_CL_VA     0x0049F8C7u
+#define LOOPFX_CG_INDEX_VA    0x06C3D2ACu /* the cg lookup 0x42E1B0 itself uses */
+#define LOOPFX_CG_TABLE_VA    0x016D3B58u
+#define LOOPFX_CG_KEY         0x490B400Cu
+#define LOOPFX_CG_TIME_OFF    0x000B0350u
+#define LOOPFX_REPLAY_MS      10000
+
+typedef void (__cdecl *LoopFxProcessFn)(int localClient);
+
+static void __cdecl LoopFxProcessHook(int localClient)
+{
+    static LONG logged;
+    DWORD idx = *(volatile DWORD *)(DWORD_PTR)LOOPFX_CG_INDEX_VA;
+    const BYTE *cg = NULL;
+    if (idx < 4)
+        cg = (const BYTE *)(DWORD_PTR)(*(volatile DWORD *)(DWORD_PTR)(LOOPFX_CG_TABLE_VA + idx * 4) ^ LOOPFX_CG_KEY);
+    if (cg && (unsigned)localClient < 4 && Readable(cg + LOOPFX_CG_TIME_OFF, 4)) {
+        int now = *(const volatile int *)(cg + LOOPFX_CG_TIME_OFF);
+        BYTE *t = (BYTE *)(DWORD_PTR)(LOOPFX_TABLE_VA + (DWORD)localClient * LOOPFX_TABLE_STRIDE);
+        int count = *(int *)t, moved = 0;
+        int *next = (int *)(t + 4);
+        long long skipped = 0, worst = 0;
+        for (int i = 0; i < count && i < LOOPFX_MAX; i++) {
+            int period = *(int *)(t + 0x104 + i * 8);
+            long long behind = (long long)now - LOOPFX_REPLAY_MS - next[i];
+            if (period <= 0 || behind <= 0) continue;
+            long long steps = behind / period + 1;
+            if (behind > worst) worst = behind;
+            next[i] = (int)(next[i] + steps * period);
+            skipped += steps;
+            moved++;
+        }
+        if (moved && InterlockedIncrement(&logged) <= 8)
+            Log("loop fx: %d of %d effects were up to %lld ms behind cg time %d; skipped %lld replays", moved, count,
+                worst + LOOPFX_REPLAY_MS, now, skipped);
+    }
+    ((LoopFxProcessFn)(DWORD_PTR)LOOPFX_PROCESS_VA)(localClient);
+}
+
+static void PatchLoopFxCatchUp(void)
+{
+    if (!CallsTarget(LOOPFX_CALL_CG_VA, LOOPFX_PROCESS_VA) || !CallsTarget(LOOPFX_CALL_CL_VA, LOOPFX_PROCESS_VA)) {
+        Log("loop fx: calls at 0x%08X / 0x%08X do not match, catch-up limit not installed", LOOPFX_CALL_CG_VA,
+            LOOPFX_CALL_CL_VA);
+        return;
+    }
+    RedirectCall(LOOPFX_CALL_CG_VA, (void *)LoopFxProcessHook);
+    RedirectCall(LOOPFX_CALL_CL_VA, (void *)LoopFxProcessHook);
+    Log("loop fx: a joining client replays at most %d ms of each loop effect", LOOPFX_REPLAY_MS);
+}
+
 static void PatchGpuRating(void)
 {
     /* push desc ; push 1 (archive) ; push 20000 ; push ebx ; push ebx ; push "2658" */
@@ -995,6 +1063,7 @@ static void __cdecl TakeOver(void)
     PatchRawMouse();
     PatchGbkInput();
     PatchScoresOpen();
+    PatchLoopFxCatchUp();
     PatchPatchDir();
     PatchUserMaps();
     InstallParityLogger();
