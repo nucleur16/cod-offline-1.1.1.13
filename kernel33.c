@@ -302,6 +302,31 @@ static void PatchAltTab(void)
     Log("alt+tab: keyboard hook no longer eats Alt+Tab");
 }
 
+/* Multiple instances, parity-log branch: lets a second client run on the same PC to watch
+ * another real player's movement. A static initializer (0xB32060) creates the mutex
+ * "Global\{5BD75B76-601A-4...}" and keeps GetLastError() in 0x7F907D8. WinMain then refuses
+ * to start a second copy:
+ *     0x630C3A  cmp dword [0x7F907D8], 0B7h (ERROR_ALREADY_EXISTS) ; ... ; jne <start>
+ * and otherwise shows "<game> is already running." and returns. The jne becomes jmp. Give each
+ * copy its own +set dw_username so the lobby sees two players. */
+#define INSTANCE_CHECK_VA 0x00630C3Au
+#define INSTANCE_JNE_OFFSET 0x17
+
+static void PatchMultiInstance(void)
+{
+    static const BYTE kCheck[] = { 0x81, 0x3D, 0xD8, 0x07, 0xF9, 0x07, 0xB7, 0x00, 0x00, 0x00,
+                                   0x8B, 0x45, 0x08, 0x53, 0x56, 0x89, 0x44, 0x24, 0x10,
+                                   0x8B, 0x45, 0x10, 0x57, 0x75, 0x45 };
+    BYTE *check = (BYTE *)(DWORD_PTR)INSTANCE_CHECK_VA;
+    if (!Readable(check, sizeof(kCheck)) || memcmp(check, kCheck, sizeof(kCheck)) != 0) {
+        Log("multi-instance: bytes at 0x%08X do not match, one copy at a time", INSTANCE_CHECK_VA);
+        return;
+    }
+    BYTE jmp = 0xEB;
+    WriteCode(check + INSTANCE_JNE_OFFSET, &jmp, 1);
+    Log("multi-instance: \"already running\" check skipped");
+}
+
 /* Raw mouse input. IN_MouseMove (0x62D990) reads the Windows cursor every frame: GetCursorPos,
  * delta against the last position, recenter. That delta has the Windows pointer curve
  * ("Enhance pointer precision") baked in, and a flick that reaches the window edge before the
@@ -942,9 +967,19 @@ static void PatchGbkInput(void)
         Log("gbk input: bytes at 0x%08X do not match, paste uses the ANSI code page", CLIPBOARD_CALL_VA);
 }
 
+/* Snapshot-parity logger, parity-log branch only: see parity.c. */
+#include "parity.c"
+
 /* <game>\usermaps\<map>\ zones and iwds: see usermaps.c. */
 #include <shlwapi.h>
 #include "usermaps.c"
+
+/* Console plumbing for voice.c; on main the console itself is off (no toggle, no drawing). */
+#define K33_CONSOLE_UI 0
+#include "console.c"
+
+/* In-game voice chat (feat/voicechat): see voice.c. */
+#include "voice.c"
 
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 static void __cdecl TakeOver(void)
@@ -957,11 +992,15 @@ static void __cdecl TakeOver(void)
     PatchPlainConfig();
     PatchGpuRating();
     PatchAltTab();
+    PatchMultiInstance();
     PatchRawMouse();
     PatchGbkInput();
     PatchScoresOpen();
     PatchPatchDir();
     PatchUserMaps();
+    InstallParityLogger();
+    InstallConsole();
+    InstallVoice(g_conInputOk);
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
     ExitProcess(0); /* the CRT entry ends in exit(); not reached */
