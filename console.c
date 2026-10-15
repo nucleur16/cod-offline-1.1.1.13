@@ -39,19 +39,14 @@
 #include <d3d9.h>
 #include "c1_dvars.h"
 
-#define CON_COM_PRINTF_VA     0x005941B0u
 #define CON_LOGPRINT_VA       0x00594010u
-#define CON_CBUF_VA           0x0058BA60u
-#define CON_CMDFIND_VA        0x0058C790u
-#define CON_CMD_LIST_VA       0x024F6424u
+/* Com_Printf, Cbuf_AddText, the command list, Dvar_RegisterInt and the dvar count: c1game.c */
 #define CON_DVAR_FOREACH_VA   0x00621710u
 #define CON_DVAR_ARRAY_VA     0x02AB98E0u
-#define CON_DVAR_COUNT_VA     0x02AB98C4u
 #define CON_DVAR_LOCK_VA      0x02AB98D0u
 #define CON_DVAR_BUSY_VA      0x02AB98D4u
 #define CON_WNDCLASS_VA       0x0062FB85u  /* mov dword [ebp-28h], 0x633590 */
 #define CON_D3DCREATE_SLOT    0x00B42598u
-#define CON_REGISTER_INT_VA   0x00624420u
 #define CON_CHANNEL           8            /* logfile_only: the log and this console, not the HUD */
 
 #define CON_LINES     4096
@@ -65,7 +60,7 @@
 /* ---- state ------------------------------------------------------------------------------------ */
 
 static CRITICAL_SECTION g_conLock;
-static BOOL g_conReady, g_conCaptureOk, g_conCbufOk, g_conDvarsOk, g_conCmdsOk, g_conDrawOk;
+static BOOL g_conReady, g_conCaptureOk, g_conDvarsOk, g_conDrawOk;
 static volatile LONG g_conOpen, g_conDirty = 1;
 static char g_conLines[CON_LINES][CON_LINE_LEN];
 static int g_conHead, g_conCount;
@@ -227,19 +222,14 @@ static void ConPrintf(const char *fmt, ...)
     va_end(ap);
     buf[sizeof(buf) - 1] = 0;
     if (g_conCaptureOk)
-        ((void(__cdecl *)(int, const char *, ...))(DWORD_PTR)CON_COM_PRINTF_VA)(CON_CHANNEL, "%s", buf);
+        C1Print(CON_CHANNEL, buf);
     else
         ConAppend(buf);
 }
 
 /* ---- C1 access (main thread) --------------------------------------------------------------------- */
 
-static void ConCbufAddText(const char *text)
-{
-    int lc = 0;
-    DWORD fn = CON_CBUF_VA;
-    __asm__ volatile("call *%[fn]" : "+a"(text), "+c"(lc) : [fn] "r"(fn) : "edx", "memory", "cc");
-}
+static void ConCbufAddText(const char *text) { C1CbufAddText(text); }
 
 /* The dvar table's reader lock (Dvar_FindVar 0x6232C0, Dvar_ForEach 0x621710): readers
  * InterlockedIncrement the count at 0x2AB98D0, then Sleep(1) while the writer flag at 0x2AB98D4 is
@@ -262,7 +252,7 @@ static int ConSnapshotDvars(void)
 {
     if (!g_conDvarsOk) return 0;
     ConDvarLock();
-    int n = *(volatile int *)(DWORD_PTR)CON_DVAR_COUNT_VA;
+    int n = *(volatile int *)(DWORD_PTR)C1_DVAR_COUNT_VA;
     if (n < 0) n = 0;
     if (n > CON_MAX_DVARS) n = CON_MAX_DVARS;
     memcpy(g_dvarSnap, (const void *)(DWORD_PTR)CON_DVAR_ARRAY_VA, n * sizeof(g_dvarSnap[0]));
@@ -519,7 +509,7 @@ static void ConUpdateSuggestions(void)
         m++;
     }
     if (t.cur == 0) {
-        for (const ConCmd *c = g_conCmdsOk ? *(ConCmd *const *)(DWORD_PTR)CON_CMD_LIST_VA : NULL;
+        for (const ConCmd *c = (const ConCmd *)C1CommandList();
              c && m < (int)(sizeof(g_matches) / sizeof(g_matches[0])) - (int)BUILTIN_COUNT; c = c->next) {
             if (!Readable(c, sizeof(*c)) || !Readable(c->name, 1)) break;
             BYTE prefix = _strnicmp(c->name, part, plen) == 0;
@@ -738,7 +728,7 @@ static void ConCmdList(const char *filter)
 {
     static const char *names[4096];
     int n = 0;
-    for (const ConCmd *c = g_conCmdsOk ? *(ConCmd *const *)(DWORD_PTR)CON_CMD_LIST_VA : NULL; c && n < 4096; c = c->next) {
+    for (const ConCmd *c = (const ConCmd *)C1CommandList(); c && n < 4096; c = c->next) {
         if (!Readable(c, sizeof(*c)) || !Readable(c->name, 1)) break;
         names[n++] = c->name;
     }
@@ -947,7 +937,7 @@ static void ConExecute(const char *line)
     if (mapped) ConPrintf("  -> %s\n", out);
     out[o++] = '\n';
     out[o] = 0;
-    if (g_conCbufOk) ConCbufAddText(out);
+    if (g_c1CbufOk) ConCbufAddText(out);
     else ConPrintf("Cbuf_AddText did not match, cannot execute\n");
 }
 
@@ -956,12 +946,9 @@ static void ConExecute(const char *line)
 static void ConRegisterKeyDvar(void)
 {
     g_conKeyDvarTried = TRUE;
-    typedef const BYTE *(__cdecl *RegisterIntFn)(const char *, int, int, int, unsigned, const char *);
-    if (!Readable((void *)(DWORD_PTR)CON_REGISTER_INT_VA, 1)) return;
-    const BYTE *d = ((RegisterIntFn)(DWORD_PTR)CON_REGISTER_INT_VA)(
-        "k33_consoleKey", VK_F1, 0, 255, 0x1 /* archive */,
-        "Kernel33 console: extra toggle key (Windows virtual-key code; 112 F1, 0 none)");
-    if (d && Readable(d, 0x10)) g_conKeyDvar = d;
+    const BYTE *d = C1RegisterInt("k33_consoleKey", VK_F1, 0, 255, 0x1 /* archive */,
+                                  "Kernel33 console: extra toggle key (Windows virtual-key code; 112 F1, 0 none)");
+    if (d) g_conKeyDvar = d;
 }
 
 static BOOL ConIsToggle(WPARAM vk, LPARAM lp)
@@ -996,7 +983,7 @@ static void ConSetOpen(BOOL open)
             g_conBanner = TRUE;
             ConPrintf("Kernel33 developer console (dev branch): type k33help. %u readable dvar names; "
                       "hooks: output %s, input ok, draw %s, execute %s\n", (unsigned)C1_DVAR_NAME_COUNT,
-                      g_conCaptureOk ? "ok" : "OFF", g_conDrawOk ? "ok" : "OFF", g_conCbufOk ? "ok" : "OFF");
+                      g_conCaptureOk ? "ok" : "OFF", g_conDrawOk ? "ok" : "OFF", g_c1CbufOk ? "ok" : "OFF");
         }
         ConUpdateSuggestions();
     }
@@ -1122,15 +1109,11 @@ static void ConKeyDown(HWND hwnd, WPARAM vk)
     InterlockedExchange(&g_conDirty, 1);
 }
 
-static BOOL VoiceWndMsg(UINT msg, WPARAM wp, LPARAM lp); /* voice.c: push-to-talk key */
-static BOOL g_conInputOk;
-
 static LRESULT CALLBACK ConsoleWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
-    if (VoiceWndMsg(msg, wp, lp)) return 0;
     WNDPROC game = (WNDPROC)(DWORD_PTR)GAME_WNDPROC_VA;
     if (!g_conKeyDvarTried && (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) &&
-        *(volatile int *)(DWORD_PTR)CON_DVAR_COUNT_VA > 100)
+        *(volatile int *)(DWORD_PTR)C1_DVAR_COUNT_VA > 100)
         ConRegisterKeyDvar();
     BOOL open = g_conOpen != 0;
     switch (msg) {
@@ -1770,14 +1753,11 @@ static void InstallConsole(void)
         { 0x005944A2u, { 0x15, 0x08, 0x22, 0xB4, 0x00 } }, /* after OutputDebugStringA */
         { 0x0059B96Eu, { 0x83, 0xFF, 0x09, 0x74, 0x05 } },
     };
-    static const BYTE kCbuf[] = { 0x53, 0x56, 0x57, 0x68, 0xE0, 0x2D, 0xB6, 0x02, 0x8B, 0xF0, 0x8B, 0xF9 };
-    static const BYTE kCmdFind[] = { 0xA1, 0x24, 0x64, 0x4F, 0x02, 0x53, 0x85, 0xC0 };
     static const BYTE kForEach[] = { 0x68, 0xD0, 0x98, 0xAB, 0x02 };              /* @0x621719 */
     static const BYTE kForEachArr[] = { 0x8B, 0x14, 0xB5, 0xE0, 0x98, 0xAB, 0x02 }; /* @0x621760 */
     static const BYTE kForEachCnt[] = { 0x39, 0x35, 0xC4, 0x98, 0xAB, 0x02 };       /* @0x621751 */
     static const BYTE kWndClass[] = { 0xC7, 0x45, 0xD8, 0x90, 0x35, 0x63, 0x00 };
     static const BYTE kWndProc[] = { 0x55, 0x8B, 0xEC, 0x83, 0xE4, 0xF8, 0x83, 0xEC, 0x4C };
-    static const BYTE kComPrintf[] = { 0x55, 0x8B, 0xEC, 0xB8, 0x28, 0x20, 0x00, 0x00 };
 
     if (GetCommandLineA() && strstr(GetCommandLineA(), "k33_console 0")) {
         Log("console: off (k33_console 0)");
@@ -1789,8 +1769,8 @@ static void InstallConsole(void)
 
     /* output */
     int logHooks = 0;
-    BOOL printfOk = Readable((void *)(DWORD_PTR)CON_COM_PRINTF_VA, sizeof(kComPrintf)) &&
-                    memcmp((void *)(DWORD_PTR)CON_COM_PRINTF_VA, kComPrintf, sizeof(kComPrintf)) == 0;
+    C1GameInit();
+    BOOL printfOk = g_c1PrintOk;
     for (unsigned i = 0; printfOk && i < sizeof(kLogSites) / sizeof(kLogSites[0]); i++) {
         const BYTE *site = (const BYTE *)(DWORD_PTR)kLogSites[i].site;
         if (!Readable(site - 5, 5) || memcmp(site - 5, kLogSites[i].before, 5) != 0 ||
@@ -1805,10 +1785,6 @@ static void InstallConsole(void)
     g_conCaptureOk = logHooks > 0;
 
     /* commands, dvars, Cbuf */
-    g_conCbufOk = Readable((void *)(DWORD_PTR)CON_CBUF_VA, sizeof(kCbuf)) &&
-                  memcmp((void *)(DWORD_PTR)CON_CBUF_VA, kCbuf, sizeof(kCbuf)) == 0;
-    g_conCmdsOk = Readable((void *)(DWORD_PTR)CON_CMDFIND_VA, sizeof(kCmdFind)) &&
-                  memcmp((void *)(DWORD_PTR)CON_CMDFIND_VA, kCmdFind, sizeof(kCmdFind)) == 0;
     g_conDvarsOk = Readable((void *)(DWORD_PTR)(CON_DVAR_FOREACH_VA + 9), 5) &&
                    memcmp((void *)(DWORD_PTR)(CON_DVAR_FOREACH_VA + 9), kForEach, sizeof(kForEach)) == 0 &&
                    memcmp((void *)(DWORD_PTR)(CON_DVAR_FOREACH_VA + 0x50), kForEachArr, sizeof(kForEachArr)) == 0 &&
@@ -1824,7 +1800,6 @@ static void InstallConsole(void)
         WriteCode(wc + 3, &proc, 4);
         inputOk = TRUE;
     }
-    g_conInputOk = inputOk;
 
     /* drawing */
     BOOL drawHook = FALSE;
@@ -1841,6 +1816,6 @@ static void InstallConsole(void)
     Log("console: output %d/4 print paths, input %s, draw %s, Cbuf_AddText %s, cmd list %s, dvar list %s, "
         "%u dvar names",
         logHooks, inputOk ? "hooked (WndProc)" : "NOT hooked (bytes differ)",
-        drawHook ? "hooked (Direct3DCreate9)" : "NOT hooked", g_conCbufOk ? "ok" : "bytes differ",
-        g_conCmdsOk ? "ok" : "bytes differ", g_conDvarsOk ? "ok" : "bytes differ", (unsigned)C1_DVAR_NAME_COUNT);
+        drawHook ? "hooked (Direct3DCreate9)" : "NOT hooked", g_c1CbufOk ? "ok" : "bytes differ",
+        g_c1CmdsOk ? "ok" : "bytes differ", g_conDvarsOk ? "ok" : "bytes differ", (unsigned)C1_DVAR_NAME_COUNT);
 }

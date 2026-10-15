@@ -974,8 +974,14 @@ static void PatchGbkInput(void)
 #include <shlwapi.h>
 #include "usermaps.c"
 
-/* Developer console overlay, dev branch only: see console.c. */
+/* C1 engine helpers shared by the features below: see c1game.c. */
+#include "c1game.c"
+
+/* Developer console overlay: see console.c. Builds without it (-DK33_NO_CONSOLE, or delete these three
+ * lines and the InstallConsole() call) still compile and link. */
+#ifndef K33_NO_CONSOLE
 #include "console.c"
+#endif
 
 /* In-game voice chat (feat/voicechat): see voice.c. */
 #include "voice.c"
@@ -998,8 +1004,10 @@ static void __cdecl TakeOver(void)
     PatchPatchDir();
     PatchUserMaps();
     InstallParityLogger();
+#ifndef K33_NO_CONSOLE
     InstallConsole();
-    InstallVoice(g_conInputOk);
+#endif
+    InstallVoice();
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
     ExitProcess(0); /* the CRT entry ends in exit(); not reached */

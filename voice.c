@@ -21,9 +21,10 @@
  *            VoiceOnPacket, then returns 1 the way the original branch does (0x496491).
  *   play     per-talker Opus decoder and jitter buffer (40 ms prebuffer, FEC from the next packet,
  *            PLC on loss), mixed and played through WASAPI on the same worker thread.
- *   keys     commands +talk/-talk/toggletalk (bindable: "bind CAPSLOCK +talk") linked into C1's
- *            cmd_function_t list 0x24F6424 {next, name, function}, plus a direct key (dvar
- *            k33_talkKey, Windows virtual key, default 20 = Caps Lock) read in the WndProc hook.
+ *   keys     +talk/-talk are a C1 key binding like +melee (see "push-to-talk as a C1 bind"): added to
+ *            the bind table, run by the binding executor, rebound in Options > Controls > Chat and
+ *            saved in config_mp.cfg; default V when nothing is bound to +talk and V is free.
+ *            +talk/-talk/toggletalk are also console commands in the cmd list 0x24F6424.
  *   ui       AS_EnableVoiceTalk (vtable 0xC77100) and AS_SetVoiceMicMute (0xC636A8) Call slots,
  *            both `ret 4` at 0x97C8B0, go to VoiceAsEnable / VoiceAsMicMute.
  *
@@ -31,7 +32,7 @@
  *   client -> server  "\xff\xff\xff\xffv\0" u8 ver=1, u8 flags (1 = last), u16 seq, u8 n, n*(u8 len, data)
  *   server -> client  "\xff\xff\xff\xffv\0" u8 ver=1, u8 flags, u8 talker, u16 seq, u8 n, frames
  *
- * Dvars: codol_voice (master switch; "+set codol_voice 0" installs nothing), k33_talkKey,
+ * Dvars: codol_voice (master switch; "+set codol_voice 0" installs nothing),
  * k33_voiceVolume (percent), k33_voiceBitrate, k33_voiceLoopback (hear yourself locally, no server),
  * k33_voiceDebug. Commands: +talk, -talk, toggletalk, k33voice (status), k33voicemute <client>.
  *
@@ -39,6 +40,10 @@
  * only disable capture or playback (retried every few seconds), never the game.
  */
 
+#ifndef COBJMACROS
+#define COBJMACROS
+#endif
+#include <ctype.h>
 #include <mmdeviceapi.h>
 #include <audioclient.h>
 #include <opus/opus.h>
@@ -81,7 +86,7 @@ typedef struct {
 typedef struct { unsigned short seq; BYTE len, last; BYTE data[VOICE_MAXFRAME]; DWORD made; } VoiceOut;
 
 static BOOL g_voiceOn;                         /* installed */
-static BOOL g_voiceSendOk, g_voiceRecvOk, g_voiceCmdsOk, g_voiceKeyOk;
+static BOOL g_voiceSendOk, g_voiceRecvOk, g_voiceCmdsOk;
 static CRITICAL_SECTION g_voiceLock;           /* talkers + send queue */
 static VoiceTalker g_talkers[VOICE_TALKERS];
 static VoiceOut g_sendq[VOICE_SENDQ];
@@ -93,7 +98,7 @@ static volatile LONG g_statCapFrames, g_statSent, g_statRecv, g_statPlayed, g_st
 static volatile LONG g_captureState, g_renderState; /* 0 not tried, 1 ok, -1 failed */
 static volatile LONG g_audioStarted;
 static char g_captureName[128], g_renderName[128];
-static const BYTE *volatile g_dvVoice, *volatile g_dvKey, *volatile g_dvVolume, *volatile g_dvBitrate,
+static const BYTE *volatile g_dvVoice, *volatile g_dvVolume, *volatile g_dvBitrate,
     *volatile g_dvLoopback, *volatile g_dvDebug, *volatile g_dvTone;
 static BOOL g_voiceDvarsDone, g_voiceAnnounced;
 static unsigned short g_sendSeq;
@@ -101,6 +106,8 @@ static volatile DWORD g_lastHeard[VOICE_TALKERS];
 static int g_lastTalkPrint;
 
 static void __cdecl VoiceCmdStatus(void);
+static void VoiceTalkDown(int key);
+static void VoiceTalkUp(int key);
 static int VoiceDvarInt(const BYTE *d, int def) { return d ? *(volatile const int *)(d + 0xC) : def; }
 
 /* ---- jitter buffer (any thread, under g_voiceLock) ------------------------------------------ */
@@ -561,12 +568,9 @@ static const BYTE *VoiceServerAdr(void)
 
 static void VoiceRegisterDvars(void)
 {
-    typedef const BYTE *(__cdecl *RegisterIntFn)(const char *, int, int, int, unsigned, const char *);
-    RegisterIntFn reg = (RegisterIntFn)(DWORD_PTR)CON_REGISTER_INT_VA;
+    const BYTE *(*reg)(const char *, int, int, int, unsigned, const char *) = C1RegisterInt;
     g_voiceDvarsDone = TRUE;
     g_dvVoice = reg("codol_voice", 1, 0, 1, 0x1, "Voice chat: 1 on, 0 off (+set codol_voice 0 on the command line installs nothing)");
-    g_dvKey = reg("k33_talkKey", 'V', 0, 255, 0x1,
-                  "Push-to-talk key (Windows virtual-key code; 86 V, 20 Caps Lock, 0 none). Binding +talk also works.");
     g_dvVolume = reg("k33_voiceVolume", 100, 0, 400, 0x1, "Voice chat playback volume in percent");
     g_dvBitrate = reg("k33_voiceBitrate", 24000, 6000, 64000, 0x1, "Opus voice bitrate (bits per second)");
     g_dvLoopback = reg("k33_voiceLoopback", 0, 0, 1, 0, "Play your own voice back locally instead of sending it");
@@ -575,7 +579,7 @@ static void VoiceRegisterDvars(void)
 
     /* C1 does not apply "+set" from the command line to a dvar registered this late (and runs no
      * "+command" at all), so re-issue ours: "+set k33_voiceLoopback 1", "+toggletalk". */
-    static const char *const kMine[] = { "codol_voice", "k33_talkKey", "k33_voiceVolume", "k33_voiceBitrate",
+    static const char *const kMine[] = { "codol_voice", "k33_voiceVolume", "k33_voiceBitrate",
                                          "k33_voiceLoopback", "k33_voiceDebug", "k33_voiceTone" };
     const char *cl = GetCommandLineA();
     for (unsigned i = 0; cl && i < sizeof(kMine) / sizeof(kMine[0]); i++) {
@@ -586,18 +590,10 @@ static void VoiceRegisterDvars(void)
         at += strlen(pat);
         int v = atoi(at[0] == '"' ? at + 1 : at);
         _snprintf(cmd, sizeof(cmd), "set %s %d\n", kMine[i], v);
-        if (g_conCbufOk) ConCbufAddText(cmd);
+        C1CbufAddText(cmd);
         Log("voice: command line: set %s %d", kMine[i], v);
     }
     if (cl && strstr(cl, "+toggletalk")) InterlockedExchange(&g_toggleTalk, 1);
-}
-
-static const char *VoiceKeyName(int vk, char *buf, int n)
-{
-    UINT sc = MapVirtualKeyA((UINT)vk, MAPVK_VK_TO_VSC);
-    if (vk == VK_CAPITAL) return "Caps Lock";
-    if (!sc || !GetKeyNameTextA((LONG)(sc << 16), buf, n)) _snprintf(buf, n, "virtual key %d", vk);
-    return buf;
 }
 
 static BOOL VoiceEnabled(void) { return VoiceDvarInt(g_dvVoice, 1) != 0 && !g_uiVoiceOff; }
@@ -639,15 +635,198 @@ static void VoiceSendQueued(const BYTE *adr)
     }
 }
 
+
+/* ---- push-to-talk as a C1 bind ----------------------------------------------------------------------
+ *
+ * C1 binds are not command strings: playerKeys[lc].keys[k].binding (0x16F5164 + lc*0xD28 + k*12) is an
+ * index into the name table 0xCD62C0 (86 entries; Key_GetBindingForCmd 0x492DB0 scans it, count
+ * 0x56 at 0x492E22). CL_KeyEvent runs a binding through 0x491580(eax = localClient, index, key), a
+ * switch over indices 1..85; indices below 0x47 come in +/- pairs (odd = +, the next = -), and the
+ * key-up path (0x4934E5) and the clear-all-keys path (0x49383C) call index+1 for an odd index
+ * below 0x47. "+talk" is not in the table, so "bind v +talk" stored 0 and the Options > Controls
+ * > Chat rows (codo.gfx OptionView_control_chat: chatmodeteam, toggletalk, +talk, read through
+ * AS_GetKeyBindingNamesFromCommand / AS_SetKeyBindingForCommand) could not bind it, and
+ * "toggletalk" (79) is an empty case.
+ *
+ * The table is copied into one with two more entries, 87 "+talk" and 88 "-talk" (86 is a placeholder
+ * so that +talk is odd like every other + command); its four users and the count point at the copy.
+ * The two pair tests also accept 87, and the executor hook runs 87, 88 and 79 (toggletalk) here.
+ * So +talk is bound, saved to config_mp.cfg by Key_WriteBindings ("bind V "+talk"") and rebound in
+ * the Controls menu exactly like +melee, and C1's key routing (menus, chat line) decides when it
+ * fires. */
+#define VOICE_BIND_TABLE_VA   0x00CD62C0u
+#define VOICE_BIND_COUNT      86
+#define VOICE_BIND_TALK       87
+#define VOICE_BIND_UNTALK     88
+#define VOICE_BIND_TOGGLETALK 79
+#define VOICE_KEYS_VA         0x016F5164u
+#define VOICE_EXEC_VA         0x00491580u
+#define VOICE_EXEC_RESUME     0x0049158Bu
+
+static const char *g_bindNames[VOICE_BIND_UNTALK + 1];
+static BOOL g_bindOk;
+static int g_talkKeys[2];
+
+/* Keys (C1 names, upper case like its own lists) bound to +talk for local client 0. */
+static void VoiceTalkKeys(char *out, int n)
+{
+    int o = 0;
+    out[0] = 0;
+    if (!g_bindOk) return;
+    for (int k = 1; k < 256 && o < n - 16; k++) {
+        int b = *(volatile const int *)(DWORD_PTR)(VOICE_KEYS_VA + k * 12);
+        if (b != VOICE_BIND_TALK) continue;
+        char name[16];
+        if (k > 32 && k < 127) _snprintf(name, sizeof(name), "%c", (char)toupper(k));
+        else _snprintf(name, sizeof(name), "key %d", k);
+        o += _snprintf(out + o, n - o, "%s%s", o ? ", " : "", name);
+    }
+    out[n - 1] = 0;
+}
+
+/* The default bind, as a default: V -> +talk only when no key is bound to +talk and V is free. */
+static void VoiceDefaultBind(void)
+{
+    if (!g_bindOk || !g_c1CbufOk) return;
+    for (int k = 0; k < 256; k++)
+        if (*(volatile const int *)(DWORD_PTR)(VOICE_KEYS_VA + k * 12) == VOICE_BIND_TALK) return;
+    int v = *(volatile const int *)(DWORD_PTR)(VOICE_KEYS_VA + 'v' * 12);
+    if (v) {
+        Log("voice: V is bound to %s and nothing is bound to +talk; no default bind",
+            v > 0 && v <= VOICE_BIND_UNTALK && g_bindNames[v] ? g_bindNames[v] : "?");
+        return;
+    }
+    C1CbufAddText("bind v +talk\n");
+    Log("voice: default bind v +talk");
+}
+
+/* 0x491580's first stack argument is the binding index, the second the key. 1 = handled. */
+__attribute__((used)) int __cdecl VoiceExecBinding(int index, int key)
+{
+    if (index == VOICE_BIND_TALK) { if (g_voiceOn) VoiceTalkDown(key); return 1; }
+    if (index == VOICE_BIND_UNTALK) { if (g_voiceOn) VoiceTalkUp(key); return 1; }
+    if (index == VOICE_BIND_TOGGLETALK) {
+        if (g_voiceOn) {
+            LONG v = !g_toggleTalk;
+            InterlockedExchange(&g_toggleTalk, v);
+            C1Printf("voice: toggletalk %s\n", v ? "on (transmitting)" : "off");
+        }
+        return 1;
+    }
+    return 0;
+}
+
+__attribute__((used)) DWORD g_voiceExecResume = VOICE_EXEC_RESUME;
+void VOICE_ExecHook(void);
+void VOICE_PairEdx(void);
+void VOICE_PairEbx(void);
+__asm__(
+    ".text\n"
+    ".globl _VOICE_ExecHook\n"
+    "_VOICE_ExecHook:\n"                  /* jmp from 0x491580 */
+    "    pushl %eax\n"
+    "    pushl %ecx\n"
+    "    pushl %edx\n"
+    "    pushl 20(%esp)\n"                /* key */
+    "    pushl 20(%esp)\n"                /* index */
+    "    call _VoiceExecBinding\n"
+    "    addl $8, %esp\n"
+    "    testl %eax, %eax\n"
+    "    popl %edx\n"
+    "    popl %ecx\n"
+    "    popl %eax\n"
+    "    jz 1f\n"
+    "    ret\n"
+    "1:  pushl %ebp\n"                    /* the displaced first 11 bytes */
+    "    movl %esp, %ebp\n"
+    "    pushl %ecx\n"
+    "    cmpb $0, 0x16FC2DA\n"
+    "    jmp *_g_voiceExecResume\n"
+    /* "is this binding a + command with a - partner": ZF clear when yes */
+    ".globl _VOICE_PairEdx\n"
+    "_VOICE_PairEdx:\n"
+    "    cmpl $87, %edx\n"
+    "    je 2f\n"
+    "    cmpl $0x47, %edx\n"
+    "    jge 3f\n"
+    "    testb $1, %dl\n"
+    "    ret\n"
+    ".globl _VOICE_PairEbx\n"
+    "_VOICE_PairEbx:\n"
+    "    cmpl $87, %ebx\n"
+    "    je 2f\n"
+    "    cmpl $0x47, %ebx\n"
+    "    jge 3f\n"
+    "    testb $1, %bl\n"
+    "    ret\n"
+    "2:  pushl %eax\n"                    /* ZF = 0 */
+    "    xorl %eax, %eax\n"
+    "    incl %eax\n"
+    "    popl %eax\n"
+    "    ret\n"
+    "3:  cmpl %eax, %eax\n"               /* ZF = 1 */
+    "    ret\n");
+
+static BOOL VoicePatchPair(DWORD site, const BYTE *expect, void *thunk)
+{
+    BYTE *p = (BYTE *)(DWORD_PTR)site;
+    if (!Readable(p, 10) || memcmp(p, expect, 10)) return FALSE;
+    BYTE code[10] = { 0xE8, 0, 0, 0, 0, 0x74, 0, 0x90, 0x90, 0x90 };
+    LONG rel = (LONG)((DWORD_PTR)thunk - (site + 5));
+    memcpy(code + 1, &rel, 4);
+    /* the original je rel8 at +8 targets site + 10 + rel8; the new jz sits at +5 */
+    code[6] = (BYTE)(expect[9] + 3);
+    WriteCode(p, code, 10);
+    return TRUE;
+}
+
+static void VoiceInstallBind(void)
+{
+    static const BYTE kExec[] = { 0x55, 0x8B, 0xEC, 0x51, 0x80, 0x3D, 0xDA, 0xC2, 0x6F, 0x01, 0x00 };
+    static const BYTE kPairEdx[] = { 0x83, 0xFA, 0x47, 0x7D, 0x5E, 0xF6, 0xC2, 0x01, 0x74, 0x59 };
+    static const BYTE kPairEbx[] = { 0x83, 0xFB, 0x47, 0x7D, 0x54, 0xF6, 0xC3, 0x01, 0x74, 0x4F };
+    static const BYTE kCount[] = { 0x83, 0xF8, 0x56 };
+    static const DWORD kTableRefs[] = { 0x00492C0Au, 0x00492C11u, 0x00492DC3u, 0x004930ACu };
+    const DWORD *table = (const DWORD *)(DWORD_PTR)VOICE_BIND_TABLE_VA;
+    BOOL ok = Readable((void *)(DWORD_PTR)VOICE_EXEC_VA, sizeof(kExec)) &&
+              !memcmp((void *)(DWORD_PTR)VOICE_EXEC_VA, kExec, sizeof(kExec)) &&
+              !memcmp((void *)(DWORD_PTR)0x004934E5u, kPairEdx, 10) && !memcmp((void *)(DWORD_PTR)0x0049383Cu, kPairEbx, 10) &&
+              !memcmp((void *)(DWORD_PTR)0x00492E22u, kCount, 3) && Readable(table, VOICE_BIND_COUNT * 4) &&
+              table[VOICE_BIND_COUNT - 1] && !strcmp((const char *)(DWORD_PTR)table[VOICE_BIND_COUNT - 1], "leaveads") &&
+              !strcmp((const char *)(DWORD_PTR)table[VOICE_BIND_TOGGLETALK], "toggletalk");
+    for (unsigned i = 0; ok && i < sizeof(kTableRefs) / sizeof(kTableRefs[0]); i++)
+        ok = *(const DWORD *)(DWORD_PTR)kTableRefs[i] == VOICE_BIND_TABLE_VA;
+    if (!ok) {
+        Log("voice: key binding table bytes differ, +talk is not bindable (console +talk still works)");
+        return;
+    }
+    for (int i = 0; i < VOICE_BIND_COUNT; i++) g_bindNames[i] = (const char *)(DWORD_PTR)table[i];
+    g_bindNames[86] = "k33_reserved";
+    g_bindNames[VOICE_BIND_TALK] = "+talk";
+    g_bindNames[VOICE_BIND_UNTALK] = "-talk";
+    DWORD nt = (DWORD)(DWORD_PTR)g_bindNames;
+    for (unsigned i = 0; i < sizeof(kTableRefs) / sizeof(kTableRefs[0]); i++) WriteCode((void *)(DWORD_PTR)kTableRefs[i], &nt, 4);
+    BYTE count = VOICE_BIND_UNTALK + 1;
+    WriteCode((void *)(DWORD_PTR)0x00492E24u, &count, 1);
+    VoicePatchPair(0x004934E5u, kPairEdx, (void *)VOICE_PairEdx);
+    VoicePatchPair(0x0049383Cu, kPairEbx, (void *)VOICE_PairEbx);
+    BYTE jmp[5] = { 0xE9 };
+    LONG rel = (LONG)((DWORD_PTR)VOICE_ExecHook - (VOICE_EXEC_VA + 5));
+    memcpy(jmp + 1, &rel, 4);
+    WriteCode((void *)(DWORD_PTR)VOICE_EXEC_VA, jmp, 5);
+    g_bindOk = TRUE;
+    Log("voice: key bindings: +talk (87) / -talk (88) added to C1's bind table, toggletalk (79) runs; "
+        "bindable in Options > Controls > Chat and with bind");
+}
+
 static void VoiceAnnounce(void)
 {
-    char kn[64];
-    int vk = VoiceDvarInt(g_dvKey, 'V');
+    char keys[128];
     g_voiceAnnounced = TRUE;
-    ConPrintf("^3voice: Opus voice chat %s. Push-to-talk: hold %s (k33_talkKey %d)%s, or bind a key to +talk "
-              "(e.g. bind CAPSLOCK +talk); toggletalk latches. k33voice shows status.\n",
-              VoiceEnabled() ? "on" : "OFF (codol_voice 0)", vk ? VoiceKeyName(vk, kn, sizeof(kn)) : "no key", vk,
-              g_voiceKeyOk ? "" : " [key hook OFF]");
+    VoiceTalkKeys(keys, sizeof(keys));
+    C1Printf("^3voice: Opus voice chat %s. Push-to-talk: %s (+talk; rebind under Options > Controls > Chat or "
+              "\"bind <key> +talk\"); toggletalk latches. k33voice shows status.\n",
+              VoiceEnabled() ? "on" : "OFF (codol_voice 0)", keys[0] ? keys : "no key bound");
 }
 
 /* Test automation, only with "+set k33_cmdFile 1" on the command line: every half second the lines
@@ -681,7 +860,7 @@ static void VoiceCmdFile(void)
         if (buf[i] == '\r') buf[i] = '\n';
     if (got && buf[got - 1] != '\n') { buf[got++] = '\n'; buf[got] = 0; }
     Log("voice: command file: %s", buf);
-    if (g_conCbufOk) ConCbufAddText(buf);
+    C1CbufAddText(buf);
 }
 
 /* Once per Com_EventLoop pass (main thread). */
@@ -690,10 +869,16 @@ __attribute__((used)) void __cdecl VoiceMainTick(void)
     static LONG ticks;
     if (++ticks == 1) Log("voice: first main-thread tick");
     if (!g_voiceDvarsDone) {
-        if (*(volatile int *)(DWORD_PTR)CON_DVAR_COUNT_VA <= 100) return;
+        if (!C1DvarsReady()) return;
         VoiceRegisterDvars();
-        Log("voice: dvars registered at tick %ld (codol_voice %d, k33_talkKey %d, loopback %d)", ticks,
-            VoiceDvarInt(g_dvVoice, -1), VoiceDvarInt(g_dvKey, -1), VoiceDvarInt(g_dvLoopback, -1));
+        Log("voice: dvars registered at tick %ld (codol_voice %d, loopback %d)", ticks,
+            VoiceDvarInt(g_dvVoice, -1), VoiceDvarInt(g_dvLoopback, -1));
+    }
+    {
+        static DWORD started;
+        static BOOL defaulted;
+        if (!started) started = GetTickCount();
+        if (!defaulted && GetTickCount() - started > 8000) { defaulted = TRUE; VoiceDefaultBind(); }
     }
     const BYTE *adr = VoiceServerAdr();
     BOOL on = VoiceEnabled();
@@ -706,14 +891,14 @@ __attribute__((used)) void __cdecl VoiceMainTick(void)
         InterlockedExchange(&g_wantCapture, talk);
         if (VoiceDvarInt(g_dvDebug, 0) || g_lastTalkPrint < 3) {
             g_lastTalkPrint++;
-            ConPrintf("voice: %s\n", talk ? "talking" : "stopped talking");
+            C1Printf("voice: %s\n", talk ? "talking" : "stopped talking");
         }
     }
     if (g_captureState < 0 && talk) {
         static DWORD warned;
         if (!warned || GetTickCount() - warned > 30000) {
             warned = GetTickCount();
-            ConPrintf("^1voice: no microphone could be opened (see Kernel33.log)\n");
+            C1Printf("^1voice: no microphone could be opened (see Kernel33.log)\n");
         }
     }
     if (VoiceDvarInt(g_dvDebug, 0)) {
@@ -759,7 +944,7 @@ __attribute__((used)) void __cdecl VoiceOnPacket(const BYTE *msg, const DWORD *f
     }
     LeaveCriticalSection(&g_voiceLock);
     if (VoiceDvarInt(g_dvDebug, 0) >= 2)
-        ConPrintf("voice: rx talker %d seq %u frames %d flags %d\n", talker, seq, count, flags);
+        C1Printf("voice: rx talker %d seq %u frames %d flags %d\n", talker, seq, count, flags);
 }
 
 /* ---- commands --------------------------------------------------------------------------------- */
@@ -779,47 +964,66 @@ static const char *VoiceArgv(int n)
     return argv && Readable(argv + n, 4) && argv[n] ? argv[n] : "";
 }
 
-static void __cdecl VoiceCmdTalkDown(void) { InterlockedExchange(&g_cmdTalk, 1); }
-static void __cdecl VoiceCmdTalkUp(void) { InterlockedExchange(&g_cmdTalk, 0); }
+/* IW's kbutton rules (IN_KeyDown/IN_KeyUp): up to two keys hold the button, a key-up with no key
+ * number (typed "-talk") releases it, and talking lasts while any holding key is down. */
+static void VoiceTalkDown(int key)
+{
+    if (key == g_talkKeys[0] || key == g_talkKeys[1]) return;
+    if (!g_talkKeys[0]) g_talkKeys[0] = key;
+    else if (!g_talkKeys[1]) g_talkKeys[1] = key;
+    InterlockedExchange(&g_keyTalk, 1);
+}
+
+static void VoiceTalkUp(int key)
+{
+    if (key <= 0) g_talkKeys[0] = g_talkKeys[1] = 0;
+    else if (g_talkKeys[0] == key) g_talkKeys[0] = 0;
+    else if (g_talkKeys[1] == key) g_talkKeys[1] = 0;
+    else return;
+    if (!g_talkKeys[0] && !g_talkKeys[1]) InterlockedExchange(&g_keyTalk, 0);
+}
+
+static void __cdecl VoiceCmdTalkDown(void) { VoiceTalkDown(VoiceArgc() > 1 ? atoi(VoiceArgv(1)) : -1); }
+static void __cdecl VoiceCmdTalkUp(void) { VoiceTalkUp(VoiceArgc() > 1 ? atoi(VoiceArgv(1)) : -1); }
 static void __cdecl VoiceCmdToggle(void)
 {
     Log("voice: toggletalk command");
     LONG v = !g_toggleTalk;
     InterlockedExchange(&g_toggleTalk, v);
-    ConPrintf("voice: toggletalk %s\n", v ? "on (transmitting)" : "off");
+    C1Printf("voice: toggletalk %s\n", v ? "on (transmitting)" : "off");
 }
 
 static void __cdecl VoiceCmdMute(void)
 {
     if (VoiceArgc() < 2) {
-        ConPrintf("usage: k33voicemute <client number>   (toggles; k33voice lists who is talking)\n");
+        C1Printf("usage: k33voicemute <client number>   (toggles; k33voice lists who is talking)\n");
         return;
     }
     int n = atoi(VoiceArgv(1));
     if (n < 0 || n >= VOICE_TALKERS) return;
     LONG m = !g_talkers[n].muted;
     InterlockedExchange(&g_talkers[n].muted, m);
-    ConPrintf("voice: client %d %s\n", n, m ? "muted" : "unmuted");
+    C1Printf("voice: client %d %s\n", n, m ? "muted" : "unmuted");
 }
 
 static void __cdecl VoiceCmdStatus(void)
 {
-    char kn[64];
-    int vk = VoiceDvarInt(g_dvKey, 'V');
-    ConPrintf("voice: %s, %s, mic %s%s; key %s (k33_talkKey %d), +talk %s, toggletalk %s, loopback %d, volume %d%%, "
+    char kn[128];
+    VoiceTalkKeys(kn, sizeof(kn));
+    C1Printf("voice: %s, %s, mic %s%s; push-to-talk %s, +talk %s, toggletalk %s, loopback %d, volume %d%%, "
               "bitrate %d\n",
               VoiceEnabled() ? "on" : "OFF", g_connected ? "connected" : "not in a match",
               g_captureState > 0 ? g_captureName : g_captureState < 0 ? "FAILED" : "not opened yet",
-              g_micMuted ? " (muted)" : "", vk ? VoiceKeyName(vk, kn, sizeof(kn)) : "none", vk,
-              g_voiceCmdsOk ? "registered" : "UNAVAILABLE", g_toggleTalk ? "on" : "off", VoiceDvarInt(g_dvLoopback, 0),
+              g_micMuted ? " (muted)" : "", kn[0] ? kn : "no key bound",
+              g_bindOk ? "bindable" : g_voiceCmdsOk ? "console only" : "UNAVAILABLE", g_toggleTalk ? "on" : "off", VoiceDvarInt(g_dvLoopback, 0),
               VoiceDvarInt(g_dvVolume, 100), VoiceDvarInt(g_dvBitrate, 24000));
-    ConPrintf("voice: playback %s; frames captured %ld, packets sent %ld, received %ld, mixed %ld, concealed %ld\n",
+    C1Printf("voice: playback %s; frames captured %ld, packets sent %ld, received %ld, mixed %ld, concealed %ld\n",
               g_renderState > 0 ? g_renderName : g_renderState < 0 ? "FAILED" : "not opened yet", g_statCapFrames,
               g_statSent, g_statRecv, g_statPlayed, g_statLostFrames);
     DWORD now = GetTickCount();
     for (int i = 0; i < VOICE_TALKERS; i++)
         if (g_lastHeard[i] && now - g_lastHeard[i] < 60000)
-            ConPrintf("voice:   client %d last heard %lu ms ago%s%s\n", i, now - g_lastHeard[i],
+            C1Printf("voice:   client %d last heard %lu ms ago%s%s\n", i, now - g_lastHeard[i],
                       now - g_lastHeard[i] < 500 ? " (talking)" : "", g_talkers[i].muted ? " [muted]" : "");
 }
 
@@ -830,7 +1034,7 @@ static void __cdecl VoiceCmdReady(void)
 {
     static const BYTE kReady[] = { 0x55, 0x8B, 0xEC, 0xB8, 0x01, 0x00, 0x00, 0x00, 0x84, 0x05, 0xA8, 0xB0, 0x2E, 0x08 };
     const char *cl = GetCommandLineA();
-    if (!cl || !strstr(cl, "k33_cmdFile 1")) { ConPrintf("k33ready: test builds only (+set k33_cmdFile 1)\n"); return; }
+    if (!cl || !strstr(cl, "k33_cmdFile 1")) { C1Printf("k33ready: test builds only (+set k33_cmdFile 1)\n"); return; }
     if (!Readable((void *)(DWORD_PTR)0x006AEFF0u, sizeof(kReady)) || memcmp((void *)(DWORD_PTR)0x006AEFF0u, kReady, sizeof(kReady))) return;
     static double args[2];
     static DWORD params[8];
@@ -844,8 +1048,7 @@ static void __cdecl VoiceCmdReady(void)
     Log("voice: k33ready %d", ((BYTE *)args)[8]);
 }
 
-typedef struct VoiceCmdNode { struct VoiceCmdNode *next; const char *name; void *fn; } VoiceCmdNode;
-static VoiceCmdNode g_voiceCmds[] = {
+static C1Cmd g_voiceCmds[] = {
     { NULL, "+talk", (void *)VoiceCmdTalkDown },   { NULL, "-talk", (void *)VoiceCmdTalkUp },
     { NULL, "toggletalk", (void *)VoiceCmdToggle }, { NULL, "k33voice", (void *)VoiceCmdStatus },
     { NULL, "k33voicemute", (void *)VoiceCmdMute }, { NULL, "k33ready", (void *)VoiceCmdReady },
@@ -859,64 +1062,13 @@ static void VoiceRegisterCommands(void)
     static BOOL done;
     if (done) return;
     done = TRUE;
-    VoiceCmdNode **head = (VoiceCmdNode **)(DWORD_PTR)CON_CMD_LIST_VA;
     int added = 0;
     for (unsigned i = 0; i < sizeof(g_voiceCmds) / sizeof(g_voiceCmds[0]); i++) {
-        BOOL exists = FALSE;
-        for (VoiceCmdNode *c = *head; c && Readable(c, 12); c = c->next)
-            if (c->name && Readable(c->name, 1) && !_stricmp(c->name, g_voiceCmds[i].name)) { exists = TRUE; break; }
-        if (exists) { Log("voice: command %s already exists, left alone", g_voiceCmds[i].name); continue; }
-        g_voiceCmds[i].next = *head;
-        *head = &g_voiceCmds[i];
-        added++;
+        if (C1AddCommand(&g_voiceCmds[i])) added++;
+        else Log("voice: command %s not added (exists, or no command list)", g_voiceCmds[i].name);
     }
     g_voiceCmdsOk = added > 0;
     Log("voice: %d commands linked into the command list", added);
-}
-
-/* ---- WndProc key path (main thread) ---------------------------------------------------------- */
-
-/* 1 when the message belongs to push-to-talk and must not reach the game. The talk key only acts
- * in play: while a menu, the chat line or the console owns the keyboard (keyCatchers [0x16FC2E0],
- * the word CL_CmdButtons 0x4905C5 tests; or the Kernel33 console) it types normally. While it is
- * held for talking, its key-down and key-up are kept from C1, so a bind on the same key never
- * fires as well. */
-#define VOICE_KEYCATCHERS_VA 0x016FC2E0u
-static BOOL VoiceWndMsg(UINT msg, WPARAM wp, LPARAM lp)
-{
-    if (!g_voiceOn) return FALSE;
-    switch (msg) {
-    case WM_KEYDOWN:
-    case WM_SYSKEYDOWN: {
-        if (!g_voiceDvarsDone) return FALSE;
-        int vk = VoiceDvarInt(g_dvKey, 'V');
-        if (vk <= 0 || (int)wp != vk) return FALSE;
-        if (g_keyTalk) return TRUE; /* auto-repeat while talking */
-        if (g_conOpen || *(volatile int *)(DWORD_PTR)VOICE_KEYCATCHERS_VA) return FALSE;
-        InterlockedExchange(&g_keyTalk, 1);
-        return TRUE;
-    }
-    case WM_KEYUP:
-    case WM_SYSKEYUP: {
-        int vk = VoiceDvarInt(g_dvKey, 'V');
-        if (vk > 0 && (int)wp == vk && g_keyTalk) { InterlockedExchange(&g_keyTalk, 0); return TRUE; }
-        return FALSE;
-    }
-    case WM_KILLFOCUS:
-        InterlockedExchange(&g_keyTalk, 0);
-        InterlockedExchange(&g_cmdTalk, 0);
-        break;
-    case WM_ACTIVATEAPP:
-        if (!wp) { InterlockedExchange(&g_keyTalk, 0); InterlockedExchange(&g_cmdTalk, 0); }
-        break;
-    }
-    return FALSE;
-}
-
-static LRESULT CALLBACK VoiceWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
-{
-    if (VoiceWndMsg(msg, wp, lp)) return 0;
-    return ((WNDPROC)(DWORD_PTR)GAME_WNDPROC_VA)(hwnd, msg, wp, lp);
 }
 
 /* ---- Scaleform callbacks ---------------------------------------------------------------------- */
@@ -1146,14 +1298,13 @@ static BOOL VoiceSlotHook(DWORD slot, void *fn)
     return TRUE;
 }
 
-static void InstallVoice(BOOL consoleWndProc)
+static void InstallVoice(void)
 {
     static const BYTE kRecv[] = { 0x68, 0x7C, 0x7E, 0xC4, 0x00, 0x6A, 0x10, 0xE8 };     /* push msg; push 10h; call */
     static const BYTE kRecvDone[] = { 0xB0, 0x01, 0x5F, 0x5E, 0x5B };                  /* mov al,1; pop edi/esi/ebx */
     static const BYTE kRecvMsg[] = { 0x89, 0x8D, 0x94, 0xF3, 0xFF, 0xFF };             /* mov [ebp-0C6Ch], ecx @0x496421 */
     static const BYTE kOob[] = { 0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x53 };
     static const BYTE kClc[] = { 0x8B, 0x3D, 0x68, 0x80, 0x6F, 0x01, 0x6A, 0x01, 0x81, 0xF7, 0xCC, 0x50, 0xF9, 0x26 };
-    static const BYTE kWndClass[] = { 0xC7, 0x45, 0xD8, 0x90, 0x35, 0x63, 0x00 };
 
     const char *cl = GetCommandLineA();
     if (cl && (strstr(cl, "codol_voice 0") || strstr(cl, "codol_voice \"0\""))) {
@@ -1161,6 +1312,7 @@ static void InstallVoice(BOOL consoleWndProc)
         return;
     }
     InitializeCriticalSection(&g_voiceLock);
+    C1GameInit();
 
     /* send: NET_OutOfBandData + clc.serverAddress */
     g_voiceSendOk = Readable((void *)(DWORD_PTR)VOICE_OOBDATA_VA, sizeof(kOob)) &&
@@ -1182,24 +1334,10 @@ static void InstallVoice(BOOL consoleWndProc)
         WriteCode(recv, jmp, 5);
     }
 
-    /* keys: the console's WndProc forwards to VoiceWndMsg; without the console, hook it here */
-    if (consoleWndProc) g_voiceKeyOk = TRUE;
-    else {
-        BYTE *wc = (BYTE *)(DWORD_PTR)CON_WNDCLASS_VA;
-        if (Readable(wc, sizeof(kWndClass)) && !memcmp(wc, kWndClass, sizeof(kWndClass))) {
-            DWORD proc = (DWORD)(DWORD_PTR)VoiceWndProc;
-            WriteCode(wc + 3, &proc, 4);
-            g_voiceKeyOk = TRUE;
-        }
-    }
+    VoiceInstallBind();
 
     /* commands */
-    static const BYTE kCmdFind[] = { 0xA1, 0x24, 0x64, 0x4F, 0x02, 0x53, 0x85, 0xC0 };
-    if (Readable((void *)(DWORD_PTR)CON_CMDFIND_VA, sizeof(kCmdFind)) &&
-        !memcmp((void *)(DWORD_PTR)CON_CMDFIND_VA, kCmdFind, sizeof(kCmdFind)))
-        VoiceRegisterCommands();
-    else
-        Log("voice: Cmd_FindCommand bytes differ, +talk/-talk not registered (k33_talkKey still works)");
+    VoiceRegisterCommands();
 
     /* hud menu voice ownerdraws (talking 266, talker1..4 193..196) */
     {
@@ -1231,9 +1369,9 @@ static void InstallVoice(BOOL consoleWndProc)
         else g_voiceOn = FALSE;
     }
     Log("voice: hud menu ownerdraws (talking 266, talker1-4 193-196) %s", g_voiceHudOk ? "hooked (CG_OwnerDraw 0x459E10)" : "NOT hooked (bytes differ)");
-    Log("voice: send %s, tick %s, receive %s, keys %s, UI EnableVoiceTalk %s, SetVoiceMicMute %s, opus %s%s",
+    Log("voice: send %s, tick %s, receive %s, push-to-talk bind %s, UI EnableVoiceTalk %s, SetVoiceMicMute %s, opus %s%s",
         g_voiceSendOk ? "ok" : "bytes differ", tickOk ? "hooked (0x595E9D)" : "NOT hooked",
-        g_voiceRecvOk ? "hooked (0x496482)" : "NOT hooked (bytes differ)", g_voiceKeyOk ? "ok" : "NOT hooked",
+        g_voiceRecvOk ? "hooked (0x496482)" : "NOT hooked (bytes differ)", g_bindOk ? "ok" : "NOT installed",
         asEnable ? "hooked" : "bytes differ", asMute ? "hooked" : "bytes differ", opus_get_version_string(),
         g_voiceOn ? "" : " -- voice OFF");
 }

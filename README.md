@@ -127,12 +127,20 @@ packet branch only printed "voice communication is disabled"). It uses Opus (lib
 statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
 (`src/codol/net/codol_voice.c` on its `feat/voicechat` branch).
 
-- **Push-to-talk**: hold **V** (dvar `k33_talkKey`, a Windows virtual-key code; 86 = V, 20 = Caps
-  Lock, 0 = none), or bind any key to `+talk` (`bind MOUSE4 +talk`); `toggletalk` latches transmit
-  on/off. The key acts only in play: while a menu, the chat line (C1 keyCatchers) or the developer
-  console has the keyboard it types normally. While held for talking its key events are kept from C1,
-  so a bind on the same key does not fire too (V has no bind in the stock config_mp.cfg). The microphone stream runs only while
-  transmitting.
+- **Push-to-talk**: `+talk`, a real C1 key binding like `+melee`. C1 stores binds as indices into its
+  bind table (0xCD62C0, 86 names, no `+talk`), so voice.c extends the table with `+talk`/`-talk`, lets
+  the key-up path pair them like the other +/- commands, and runs them (and `toggletalk`, an empty case
+  in C1) in the binding executor 0x491580. Rebind it in **Options > Controls > Chat** (C1's own
+  OptionView_control_chat rows: chatmodeteam, toggletalk, +talk) or with `bind <key> +talk`; it is
+  saved in `players\config_mp.cfg` with the other binds. Default **V**, applied only when no key is
+  bound to `+talk` and V is unbound. C1's key routing keeps it from firing in menus or the chat line.
+  `toggletalk` latches transmit on/off. The microphone stream runs only while transmitting.
+- **Options > Controls > Chat**: C1's own options screen (codo.gfx `OptionView_control_chat`) already
+  has the push-to-talk row ("说话" with a key button and a "hold to talk" checkbox that switches the
+  button between `toggletalk` and `+talk`), but its onInit hid it. `build_voice_ui.py` flips those three
+  `visible = false` to true in the codo.gfx C1 uses (patch_ui_mp's; same byte length) and installs it as
+  `client_shipRetail\patchoice_ui_mp.ff`, a *_ui_mp patch zone Kernel33 loads ahead of the UI zones.
+  Rebinding there goes through C1's own AS_SetKeyBindingForCommand.
 - **Path**: WASAPI shared-mode capture (default communications device) -> 48 kHz mono -> Opus VOIP,
   20 ms frames, 24 kbps, in-band FEC, DTX -> OOB `"v"` packets to `clc.serverAddress` through C1's
   NET_OutOfBandData (the game socket and its bdDTLS association) -> server relay -> OOB `"v"` back to
@@ -140,7 +148,7 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
   prebuffer, FEC/PLC on loss) -> mix -> WASAPI playback.
 - **Talk balloon**: the server sets es.eFlags 0x100 on a talking player's entity for 500 ms, the bit
   C1's head-icon code already draws `headicontalkballoon` for (teammates only).
-- **Dvars**: `codol_voice` (1; `+set codol_voice 0` installs nothing), `k33_talkKey` (86 = V),
+- **Dvars**: `codol_voice` (1; `+set codol_voice 0` installs nothing),
   `k33_voiceVolume` (100 %), `k33_voiceBitrate` (24000), `k33_voiceLoopback` (0; 1 plays your own
   voice back locally without a server), `k33_voiceDebug` (0; 1 prints status every 5 s, 2 every packet), `k33_voiceTone` (0; 1 transmits a
   440 Hz tone instead of the microphone, for tests).
@@ -167,3 +175,10 @@ draws them like IW4's CG_DrawPlayerTalking / CG_DrawTalkerNum with C1's own call
 text scale and under its visibility rules. `talking` shows while you transmit and dims when the mic
 is silent; `talkerN` lists the players heard in the last 500 ms with their names (configstring
 1280 + clientNum), mutes excluded. With `k33_voiceLoopback 1` you appear in the list yourself.
+
+**Shared C1 helpers / no-console builds.** `c1game.c` holds what features share: Com_Printf, Cbuf_AddText,
+the command list (Cmd_AddCommand), Dvar_RegisterInt and keyCatchers, each byte-checked once. `voice.c`
+needs only that file; `console.c` uses it too. `kernel33.c` includes console.c and calls InstallConsole()
+under `#ifndef K33_NO_CONSOLE`; `build-voice.sh` also links `Kernel33_noconsole.dll` with
+`-DK33_NO_CONSOLE` and fails if it does not build. Without the console, voice prints go to C1's own
+console and console_mp.log through Com_Printf.
