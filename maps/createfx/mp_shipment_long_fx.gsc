@@ -47,7 +47,7 @@ main()
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -774.494, -632.406, 332.547 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "nil"; // emt_wind_metal_shipmentA_lp: not in the ported zone (a missing alias still holds a voice)
+	ent.v[ "soundalias" ] = "emt_wind_metal_shipmentA_lp";
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 63.875, 128.89, 392.724 );
@@ -57,17 +57,17 @@ main()
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 780.594, -763.875, 304.545 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "nil"; // emt_wind_metal_shipmentB_lp: not in the ported zone (a missing alias still holds a voice)
+	ent.v[ "soundalias" ] = "emt_wind_metal_shipmentB_lp";
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1087.88, -110.615, 192.125 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "nil"; // emt_wind_metal_shipmentA_lp: not in the ported zone (a missing alias still holds a voice)
+	ent.v[ "soundalias" ] = "emt_wind_metal_shipmentA_lp";
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 738.938, 770.663, 307.269 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "nil"; // emt_wind_metal_shipmentA_lp: not in the ported zone (a missing alias still holds a voice)
+	ent.v[ "soundalias" ] = "emt_wind_metal_shipmentA_lp";
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -406.884, -387.643, 212.276 );

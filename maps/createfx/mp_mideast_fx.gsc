@@ -177,7 +177,7 @@ main()
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 39, -2400, -401 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "nil"; // emt_wind_metal_shipmentB_lp: not in the ported zone (a missing alias still holds a voice)
+	ent.v[ "soundalias" ] = "emt_wind_metal_shipmentB_lp";
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -280, -342, -390 );

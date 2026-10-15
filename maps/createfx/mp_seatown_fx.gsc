@@ -199,7 +199,7 @@ main()
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -1531, -1517, 208 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "nil"; // emt_metal_light_settle : not in the ported zone (a missing alias still holds a voice)
+	ent.v[ "soundalias" ] = "emt_metal_light_settle ";
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( -219, 1094, 100 );
