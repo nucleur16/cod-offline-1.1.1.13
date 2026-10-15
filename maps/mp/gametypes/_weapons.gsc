@@ -1238,6 +1238,7 @@ watchGrenadeUsage()
 	thread deleteC4AndClaymoresOnDisconnect();
 
 	self thread watchForThrowbacks();
+	self thread watchEquipmentStunGrenades();
 
 	for ( ;; )
 	{
@@ -1284,11 +1285,6 @@ beginGrenadeTracking()
 		grenade.originalOwner = self;
 	}
 
-	if ( weaponName == "flash_grenade_mp" || weaponName == "concussion_grenade_mp" )
-	{
-		grenade.owner = self;
-		grenade thread empExplodeWaiter();
-	}
 }
 
 AddMissileToSightTraces( team )
@@ -1368,6 +1364,27 @@ watchSentryUsage()
 	}
 }
 
+
+// Flash, concussion and EMP grenades disable placed equipment for a while
+// (empExplodeWaiter). IW4 hooked this in beginGrenadeTracking, which only runs
+// after a grenade_pullback notify; C1 tactical offhands do not reliably send
+// one, so no stun grenade ever reached it. grenade_fire is sent for every throw.
+watchEquipmentStunGrenades()
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+
+	for ( ;; )
+	{
+		self waittill( "grenade_fire", grenade, weaponName );
+		if ( !isDefined( grenade ) || !isDefined( weaponName ) )
+			continue;
+		if ( weaponName != "flash_grenade_mp" && weaponName != "concussion_grenade_mp" && weaponName != "emp_grenade_mp" )
+			continue;
+		grenade.owner = self;
+		grenade thread empExplodeWaiter();
+	}
+}
 
 empExplodeWaiter()
 {
