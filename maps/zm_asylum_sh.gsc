@@ -31,4 +31,39 @@
 main()
 {
 	maps\_zombiemode::levelMain( "zm_asylum_sh" );
+
+	asylum_zone_init();
+}
+
+// --------------------------------------------------------------------------
+// Zones.  T5 zombie_cod5_asylum.gsc:85-88 (manage_zones with the two west
+// starting rooms) and asylum_zone_init :131, verbatim.  MEASURED on a
+// zm_asylum_sh probe (scr_codol_pathtest zones): the map's player volumes
+// carry T5's zone names and its doors / debris T5's flags
+// (north_door1, north_upstairs_blocker, upstairs_north_door1/2,
+// magic_box_north/south, south_upstairs_blocker, south_access_1); the two
+// flagless doors between the west rooms are T5's power doors ("power_on").
+// Without the graph a room only spawned while a player stood in it, so the
+// rooms next to the players' never fed zombies.
+// --------------------------------------------------------------------------
+
+asylum_zone_init()
+{
+	level.zm_zone_initial = [];
+	level.zm_zone_initial[ 0 ] = "west_downstairs_zone";
+	level.zm_zone_initial[ 1 ] = "west2_downstairs_zone";
+
+	maps\_zombiemode_zone_manager::add_adjacent_zone( "west_downstairs_zone", "west2_downstairs_zone", "power_on" );
+
+	// path north to power
+	maps\_zombiemode_zone_manager::add_adjacent_zone( "west2_downstairs_zone", "north_downstairs_zone", "north_door1" );
+	maps\_zombiemode_zone_manager::add_adjacent_zone( "north_downstairs_zone", "north_upstairs_zone", "north_upstairs_blocker" );
+	maps\_zombiemode_zone_manager::add_adjacent_zone( "north_upstairs_zone", "north2_upstairs_zone", "upstairs_north_door1" );
+	maps\_zombiemode_zone_manager::add_adjacent_zone( "north2_upstairs_zone", "kitchen_upstairs_zone", "upstairs_north_door2" );
+	maps\_zombiemode_zone_manager::add_adjacent_zone( "kitchen_upstairs_zone", "power_upstairs_zone", "magic_box_north" );
+
+	// path south to power
+	maps\_zombiemode_zone_manager::add_adjacent_zone( "west_downstairs_zone", "south_upstairs_zone", "south_upstairs_blocker" );
+	maps\_zombiemode_zone_manager::add_adjacent_zone( "south_upstairs_zone", "south2_upstairs_zone", "south_access_1" );
+	maps\_zombiemode_zone_manager::add_adjacent_zone( "south2_upstairs_zone", "power_upstairs_zone", "magic_box_south" );
 }
