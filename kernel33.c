@@ -974,9 +974,8 @@ static void PatchGbkInput(void)
 #include <shlwapi.h>
 #include "usermaps.c"
 
-/* Console plumbing for voice.c; on main the console itself is off (no toggle, no drawing). */
-#define K33_CONSOLE_UI 0
-#include "console.c"
+/* C1 engine helpers shared by the features below: see c1game.c. */
+#include "c1game.c"
 
 /* In-game voice chat (feat/voicechat): see voice.c. */
 #include "voice.c"
@@ -999,8 +998,7 @@ static void __cdecl TakeOver(void)
     PatchPatchDir();
     PatchUserMaps();
     InstallParityLogger();
-    InstallConsole();
-    InstallVoice(g_conInputOk);
+    InstallVoice();
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
     ExitProcess(0); /* the CRT entry ends in exit(); not reached */

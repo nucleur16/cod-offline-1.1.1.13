@@ -62,77 +62,31 @@ log through dvar `1436`, the log-name prefix C1 already reads before opening `co
 Without `1436` the second copy takes over `console_mp.log` and the two logs mix. `config_mp.cfg`
 and `Kernel33.log` stay shared (Kernel33.log lines carry each copy's pid at attach).
 
-## Developer console (branch `dev`)
-`dev` is `parity-log` plus `console.c`, an in-game console for C1, which has none left: IW4's
-`toggleconsole`/`clear`/`condump`, the console field and `Con_DrawConsole` were removed, and
-`CL_KeyEvent` (0x493240) no longer tests the `~` key. The console is an overlay instead:
+## Developer console
 
-- **Look (IW4/IW4x Con_DrawInput)**: `~` opens one thin input line across the top of the screen
-  (con_inputBoxColor), prompt `SH1X >` in the version colour, the typed text and a cursor blinking every
-  256 ms; no panel or title. While text is typed, IW4's hint box hangs under it (con_inputHintBoxColor):
-  each match with the typed part highlighted and its current value, IW4's value/default/domain rows for
-  an exact dvar, and "N matches (too many to show here, press shift+tab to view full list)" past 24.
-  Under that, only what the last command printed. Shift+Tab or Shift+`~` opens the full-height log
-  (con_outputWindowColor, IW4's scroll bar, the version string bottom right). Engine and PARITY lines
-  appear only there.
-- `k33shot [ms]` writes the console overlay as rendered, that many ms later, to `main\k33_console.bmp`.
-- **Toggle**: the key left of 1 (`~` on US layouts, by scan code) or the virtual key in the archived
-  dvar `k33_consoleKey` (default 112 = F1, 0 = none). Works at the Scaleform menus and in game. Esc
-  closes it (first Esc only closes the hint box).
-- **Input**: the window class's WndProc (0x62FB85) goes through `ConsoleWndProc`, which owns the
-  keyboard while the console is open; key-ups and everything else still reach the game. IME results
-  are inserted as GBK; with the console closed the GBK IME patch is unchanged.
-- **Output**: a pre-hook on the four calls of `Com_LogPrintMessage` (0x594010) copies everything C1
-  logs into a 4096-line scrollback. Quoted numeric dvar names get their readable name appended
-  (`"591" (cg_drawFPS)`).
-- **Drawing**: `Direct3DCreate9`'s import slot is wrapped; the device's `Present` draws the panel
-  (GDI into a DIB, uploaded to a managed texture, one quad inside a `D3DSBT_ALL` state block).
-- **Execute**: lines go to `Cbuf_AddText` (0x58BA60). Readable dvar names are rewritten to C1's
-  numeric ones (`cg_drawFPS 1` -> `591 1`, also after `set/seta/reset/toggle/togglep/setfromdvar`);
-  the rewrite is echoed as `-> ...`.
-- **Autocomplete**: as you type, the hint box lists matching dvars (with their current value, C1
-  name and domain) and commands, prefix matches first, then substring matches, the typed part
-  highlighted; numeric IDs match too. Over 24 matches it shows the count. One exact dvar shows its
-  value, default, type/flags, domain and IW4 description, as IW4's Con_DrawAutoCompleteChoice does.
-  Tab completes the longest common prefix, then cycles the matches.
-- **Sets** go through C1's own command path (Cbuf -> Dvar_Command -> Dvar_SetCommand ->
-  Dvar_SetVariant), which validates type, domain and flags; the console never writes dvar memory.
-  A readable name whose mapping is a positional guess prints a warning when used.
-- **cg_draw2D at the menu**: setting `cg_draw2D` ("585") to 1 at the front end crashed C1. The name
-  and the set were right; C1's CG_Draw2D just cannot run without a snapshot (it reads cg.nextSnap at
-  0x43A205, and 0x453CCD after that), which is why the front end keeps it 0. The console now refuses
-  to change it (set/reset/toggle or `cg_draw2D <v>`) until cgame has a snapshot, i.e. in a match.
-- **Keys**: Up/Down history (saved to `main\k33_console_history.txt`), PgUp/PgDn/wheel scroll the full log,
-  Ctrl+Home/End top/bottom, Ctrl+V paste, Ctrl+U/K cut, Ctrl+Backspace word, Ctrl+L clear.
-- **Built-ins**: `dvarlist [filter]` and `cmdlist [filter]` with readable names, `find <text>`,
-  `clear`, `condump [file]` (to `main\`), `k33help`.
-- `+set k33_console 0` on the command line leaves the console out entirely.
+The developer console (IW4x-style `SH1X >` line, dvar names, autocomplete) lives on branch `dev` only;
+main carries no console code.
 
-### Dvar name table (`c1_dvars.h`, `gen_dvars.py`)
-C1 registers most dvars under numbers ("591" = cg_drawFPS, "1848" = com_maxfps). `gen_dvars.py`
-decodes every `Dvar_Register*` call in C1.exe and in `iw4x.exe` (stack simulation), groups them by
-registration function (IW4 names from `iw4x.pdb` via cdb), aligns each C1 function with its IW4
-counterpart by the longest common subsequence of type/default/domain, and merges the names with
-alpha0022's `docs/dvars_c1exe.md` and hand-checked notes (doc and notes win). The header maps
-1284 of the 1593 numeric dvars registered in `.text` to a name, type, default, domain and IW4
-description, with a confidence; below 85 the name is a positional guess and the console says so.
-Numbers without a name display as they are. Command names are not hashed in this build (all
-`Cmd_AddCommand` names are plaintext), so commands are listed as registered.
-
-Build without touching the live DLL: `sh build-dev.sh` writes `Kernel33_dev.dll`.
-
-## Voice chat (branch `feat/voicechat`)
+## Voice chat
 `voice.c` puts back in-game voice chat, which C1 stripped (no capture, no codec, no `+talk`; the "v"
 packet branch only printed "voice communication is disabled"). It uses Opus (libopus, linked
 statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
 (`src/codol/net/codol_voice.c` on its `feat/voicechat` branch).
 
-- **Push-to-talk**: hold **V** (dvar `k33_talkKey`, a Windows virtual-key code; 86 = V, 20 = Caps
-  Lock, 0 = none), or bind any key to `+talk` (`bind MOUSE4 +talk`); `toggletalk` latches transmit
-  on/off. The key acts only in play: while a menu, the chat line (C1 keyCatchers) or the developer
-  console has the keyboard it types normally. While held for talking its key events are kept from C1,
-  so a bind on the same key does not fire too (V has no bind in the stock config_mp.cfg). The microphone stream runs only while
-  transmitting.
+- **Push-to-talk**: `+talk`, a real C1 key binding like `+melee`. C1 stores binds as indices into its
+  bind table (0xCD62C0, 86 names, no `+talk`), so voice.c extends the table with `+talk`/`-talk`, lets
+  the key-up path pair them like the other +/- commands, and runs them (and `toggletalk`, an empty case
+  in C1) in the binding executor 0x491580. Rebind it in **Options > Controls > Chat** (C1's own
+  OptionView_control_chat rows: chatmodeteam, toggletalk, +talk) or with `bind <key> +talk`; it is
+  saved in `players\config_mp.cfg` with the other binds. Default **V**, applied only when no key is
+  bound to `+talk` and V is unbound. C1's key routing keeps it from firing in menus or the chat line.
+  `toggletalk` latches transmit on/off. The microphone stream runs only while transmitting.
+- **Options > Controls > Chat**: C1's own options screen (codo.gfx `OptionView_control_chat`) already
+  has the push-to-talk row ("说话" with a key button and a "hold to talk" checkbox that switches the
+  button between `toggletalk` and `+talk`), but its onInit hid it. `build_voice_ui.py` flips those three
+  `visible = false` to true in the codo.gfx C1 uses (patch_ui_mp's; same byte length) and installs it as
+  `client_shipRetail\patch\voice_ui_mp.ff`, a *_ui_mp patch zone Kernel33 loads ahead of the UI zones.
+  Rebinding there goes through C1's own AS_SetKeyBindingForCommand.
 - **Path**: WASAPI shared-mode capture (default communications device) -> 48 kHz mono -> Opus VOIP,
   20 ms frames, 24 kbps, in-band FEC, DTX -> OOB `"v"` packets to `clc.serverAddress` through C1's
   NET_OutOfBandData (the game socket and its bdDTLS association) -> server relay -> OOB `"v"` back to
@@ -140,7 +94,7 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
   prebuffer, FEC/PLC on loss) -> mix -> WASAPI playback.
 - **Talk balloon**: the server sets es.eFlags 0x100 on a talking player's entity for 500 ms, the bit
   C1's head-icon code already draws `headicontalkballoon` for (teammates only).
-- **Dvars**: `codol_voice` (1; `+set codol_voice 0` installs nothing), `k33_talkKey` (86 = V),
+- **Dvars**: `codol_voice` (1; `+set codol_voice 0` installs nothing),
   `k33_voiceVolume` (100 %), `k33_voiceBitrate` (24000), `k33_voiceLoopback` (0; 1 plays your own
   voice back locally without a server), `k33_voiceDebug` (0; 1 prints status every 5 s, 2 every packet), `k33_voiceTone` (0; 1 transmits a
   440 Hz tone instead of the microphone, for tests).
@@ -151,8 +105,8 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
 - C1 applies no command-line `+set` to dvars registered this late and runs no `+command`, so
   `voice.c` re-issues `+set <its dvar> <n>` and honours `+toggletalk` itself.
 
-Build without touching the live DLL: `PATH=/c/msys64/mingw32/bin:$PATH sh build-voice.sh` writes
-`Kernel33_voice.dll`.
+Built by `build.sh` (libopus linked statically: `pacman -S mingw-w64-i686-opus`). The Controls-menu
+push-to-talk row comes from `python build_voice_ui.py`, which writes `client_shipRetail\patch\voice_ui_mp.ff`.
 
 Test automation (only with `+set k33_cmdFile 1` on the command line): the lines of
 `<exe dir>\k33_cmd_<pid>.txt` are executed every half second, and `k33ready [0|1]` presses the room's
@@ -167,3 +121,7 @@ draws them like IW4's CG_DrawPlayerTalking / CG_DrawTalkerNum with C1's own call
 text scale and under its visibility rules. `talking` shows while you transmit and dims when the mic
 is silent; `talkerN` lists the players heard in the last 500 ms with their names (configstring
 1280 + clientNum), mutes excluded. With `k33_voiceLoopback 1` you appear in the list yourself.
+
+**Shared C1 helpers.** `c1game.c` holds what features share: Com_Printf, Cbuf_AddText, the command
+list (Cmd_AddCommand), Dvar_RegisterInt and keyCatchers, each byte-checked once. Voice prints go to
+C1's own console and console_mp.log through Com_Printf.
