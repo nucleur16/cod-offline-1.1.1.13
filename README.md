@@ -149,8 +149,10 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
   "Sound Presets" combo box. `voice_ui/OptionView_audio.as` is that class with the section shown and
   rewired, one control per row: **Voice Mode** (the presets box: Push to talk / Voice activation ->
   `k33_voiceMode`), **Voice** (chat volume -> `k33_voiceVolume`), **Microphone** (checkbox = mic on,
-  `k33_voiceMicMute`; slider = activation level, `k33_voiceThreshold`), **Input Level** (a live meter
-  `####|....  42` of `k33_voiceLevel`, the `|` marking the threshold; while the tab is shown it keeps
+  `k33_voiceMicMute`; slider = activation level, `k33_voiceThreshold`), **Input Level** (a level bar
+  drawn on the Microphone slider's track geometry: teal below the activation level, bright cyan at or
+  above it, a white marker at the level, a decaying peak tick, and the number where the sliders show
+  theirs; dimmed with "no mic" when there is no capture device; while the tab is shown it keeps
   `k33_voiceMeter` set so the mic is open for metering, nothing is sent). Subtitles moves up beside
   Output. That edit is not same-length, so `build_voice_ui.py` compiles the class with JPEXS FFDec
   (`ffdec-cli`, `$CODOL_FFDEC`) and splices only its DoABC tag into codo.gfx, checking every other tag

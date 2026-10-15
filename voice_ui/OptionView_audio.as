@@ -9,9 +9,9 @@ package codo.views.option_sub
    //                    voice-activation level (0..100 = -60..0 dBFS)
    //   Voice Mode       C1's unused "Sound Presets" combo box, moved into the Voice section:
    //                    Push to talk / Voice activation -> k33_voiceMode 0/1
-   //   Input Level      C1's unused mic indicator text: live mic level from k33_voiceLevel; while
-   //                    this tab is shown it keeps k33_voiceMeter set so voice.c opens the mic
-   //                    (metering only, nothing is sent)
+   //   Input Level      a level bar drawn on the Microphone slider's geometry (fill from k33_voiceLevel,
+   //                    marker at the activation level) and the number; while this tab is shown it
+   //                    keeps k33_voiceMeter set so voice.c opens the mic (metering only, nothing sent)
    import codo.common.BaseSubElement;
    import codo.common.CFunctionContainerCommon;
    import codo.common.Logger;
@@ -84,6 +84,18 @@ package codo.views.option_sub
       private var _volumeComponentBind:Dictionary = new Dictionary();
 
       private var _k33Frames:int = 0;
+      
+      private var _k33Bar:Sprite = null;
+      
+      private var _k33BarW:Number = 200;
+      
+      private var _k33BarH:Number = 6;
+      
+      private var _k33Shown:Number = 0;
+      
+      private var _k33Peak:Number = 0;
+      
+      private var _k33Drawn:String = "";
       
       private var _k33Refreshing:Boolean = false;
 
@@ -162,7 +174,29 @@ package codo.views.option_sub
          this.myCBVolumeVoiceMic.y += tempRow;
          this.myPBVolumeVoiceMic.y += tempRow;
          this.myTFMicLevel.y = this.myCBVolumeVoiceMic.y + tempRow + 4;
-         this.myMicLevel.x = this.myPBVolumeVoiceMic.x;
+         // k33: the Input Level meter is a bar drawn on the Microphone slider's geometry (its track
+         // myBg and its value text myCurrentTF), one row below it; myMicLevel shows the number.
+         var tempPB:ProgressBar = this.myPBVolumeVoiceMic;
+         var tempBarX:Number = tempPB.x;
+         var tempBarMid:Number = this.myTFMicLevel.y + this.myTFMicLevel.height / 2;
+         if(tempPB.myBg != null)
+         {
+            tempBarX = tempPB.x + tempPB.myBg.x;
+            this._k33BarW = tempPB.myBg.width;
+         }
+         this._k33Bar = new Sprite();
+         this._k33Bar.mouseEnabled = false;
+         this._k33Bar.x = tempBarX;
+         this._k33Bar.y = tempBarMid - this._k33BarH / 2;
+         this.addChild(this._k33Bar);
+         if(tempPB.myCurrentTF != null)
+         {
+            this.myMicLevel.x = tempPB.x + tempPB.myCurrentTF.x;
+         }
+         else
+         {
+            this.myMicLevel.x = tempBarX + this._k33BarW + 8;
+         }
          this.myMicLevel.y = this.myTFMicLevel.y;
          this.myMicLevel.text = "";
          this.myTFVoice.visible = true;
@@ -310,29 +344,61 @@ package codo.views.option_sub
          }
          this._k33Frames++;
          var tempLevel:int = CFunctionContainerCommon.Dvar_GetInt("k33_voiceLevel");
-         var tempText:String = "";
-         if(tempLevel < 0)
+         var tempThr:Number = this.myPBVolumeVoiceMic.value;
+         var tempMic:Boolean = tempLevel >= 0 && this.myCBVolumeVoiceMic.selected;
+         if(!tempMic)
          {
-            tempText = "no microphone";
+            tempLevel = 0;
          }
-         else
+         // fast attack, short decay; the peak tick falls back more slowly
+         this._k33Shown = tempLevel > this._k33Shown ? tempLevel : Math.max(tempLevel,this._k33Shown - 2.5);
+         this._k33Peak = tempLevel > this._k33Peak ? tempLevel : Math.max(0,this._k33Peak - 0.6);
+         var tempKey:String = int(this._k33Shown) + "/" + int(this._k33Peak) + "/" + int(tempThr) + "/" + tempMic;
+         if(tempKey != this._k33Drawn)
          {
-            var tempBars:int = int(tempLevel / 5);
-            var tempMark:int = int(this.myPBVolumeVoiceMic.value / 5);
-            var j:int = 0;
-            while(j < 20)
-            {
-               tempText += j == tempMark ? "|" : (j < tempBars ? "#" : ".");
-               j++;
-            }
-            tempText += " " + tempLevel;
+            this._k33Drawn = tempKey;
+            this.drawLevelBar(this._k33Shown,this._k33Peak,tempThr,tempMic);
          }
+         var tempText:String = tempMic ? String(int(this._k33Shown)) : (CFunctionContainerCommon.Dvar_GetInt("k33_voiceLevel") < 0 ? "no mic" : "off");
          if(this.myMicLevel.text != tempText)
          {
             this.myMicLevel.text = tempText;
          }
       }
-
+      
+      // k33: track like the sliders' (dark, thin teal rim), fill teal below the activation level and
+      // bright cyan at or above it (the gate would open), a white marker at the level, a peak tick
+      private function drawLevelBar(cLevel:Number, cPeak:Number, cThr:Number, cMic:Boolean) : void
+      {
+         var g:* = this._k33Bar.graphics;
+         var w:Number = this._k33BarW;
+         var h:Number = this._k33BarH;
+         g.clear();
+         g.lineStyle(1,5415348,0.7);
+         g.beginFill(1056799,0.9);
+         g.drawRect(0,0,w,h);
+         g.endFill();
+         g.lineStyle();
+         var fw:Number = Math.max(0,Math.min(1,cLevel / 100)) * w;
+         if(cMic && fw > 0)
+         {
+            g.beginFill(cLevel >= cThr ? 11464185 : 5415348,1);
+            g.drawRect(0,1,fw,h - 1);
+            g.endFill();
+         }
+         if(cMic && cPeak > cLevel + 1)
+         {
+            g.beginFill(11464185,0.8);
+            g.drawRect(Math.min(w - 2,cPeak / 100 * w),1,2,h - 1);
+            g.endFill();
+         }
+         var mx:Number = Math.max(0,Math.min(1,cThr / 100)) * w;
+         g.beginFill(16777215,1);
+         g.drawRect(mx - 1,-3,2,h + 6);
+         g.endFill();
+         this._k33Bar.alpha = cMic ? 1 : 0.4;
+      }
+      
       private function onDeviceChangedHandle(cEvt:ParaEvent) : void
       {
          this.broadcast(BCEvent.EVT_CHANGE_OUTPUT_CONFIG,this.myCBDevice.selectedValue.id);
