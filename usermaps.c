@@ -14,7 +14,11 @@
  *     main\*iw_image_*.iwd only, so it still sees the stock count.
  * An iwd keeps the name it was written with (the name is part of its encryption, and C1 accepts
  * iw_image_00..23 only), so two maps must not use the same iw_image_NN, nor one main\ has.
- * "+set codol_usermaps 0" on the command line turns it off. */
+ * "+set codol_usermaps 0" on the command line turns it off.
+ *
+ * Maps may also be installed directly (zones in client_shipRetail\chinese, iwds in main\): PatchPureCheck hides
+ * every file the built-in lists do not name from the pure check's two folder listings, so it still sees the stock
+ * 90 zones and 39 iwds. */
 
 #define USERMAPS_MAX_FILES 512
 #define USERMAP_CREATEFILEA_SLOT     0x00B421D8u
@@ -274,8 +278,89 @@ static BOOL WINAPI UserMapFindClose(HANDLE h)
     return TRUE;
 }
 
+/* The client pure check 0x00617FA0 lists the zone folder (*.ff, call at 0x00618036) and main\ (*.iwd, call at
+ * 0x006182CD) with Sys_ListFiles 0x0062A270 (edx = &count, ecx = 0, then dir, extension, 0). It fails when the zone
+ * count is not 90 or a zone is missing from the sorted name table 0x00CD5448 ("ff file count: %d, check count: %d"),
+ * and when main\ has a different number of iw_image_ iwds than the 39-name table 0x00CD5398 ("iwd file count").
+ * Both calls go through PureListHook, which drops the names those tables lack from the returned list. */
+#define PURE_LISTFILES_VA     0x0062A270u
+#define PURE_FF_LIST_CALL_VA  0x00618036u
+#define PURE_IWD_LIST_CALL_VA 0x006182CDu
+#define PURE_FF_NAMES_VA      0x00CD5448u
+#define PURE_FF_NAME_COUNT    90
+#define PURE_IWD_NAMES_VA     0x00CD5398u
+#define PURE_IWD_NAME_COUNT   39
+
+static BOOL PureStockName(const char *file, DWORD table, int count)
+{
+    char name[MAX_PATH];
+    const char *slash = strrchr(file, '/'), *bslash = strrchr(file, '\\');
+    if (bslash > slash) slash = bslash;
+    lstrcpynA(name, slash ? slash + 1 : file, sizeof(name));
+    char *dot = strrchr(name, '.');
+    if (dot) *dot = 0;
+    const char *const *names = (const char *const *)(DWORD_PTR)table;
+    for (int i = 0; i < count; i++)
+        if (names[i] && lstrcmpiA(names[i], name) == 0) return TRUE;
+    return FALSE;
+}
+
+void __cdecl PureFilterList(char **list, int *count, DWORD ret)
+{
+    if (!list || !count) return;
+    BOOL ff = ret == PURE_FF_LIST_CALL_VA + 5;
+    DWORD table = ff ? PURE_FF_NAMES_VA : PURE_IWD_NAMES_VA;
+    int names = ff ? PURE_FF_NAME_COUNT : PURE_IWD_NAME_COUNT, kept = 0;
+    for (int i = 0; i < *count; i++) {
+        if (list[i] && PureStockName(list[i], table, names)) list[kept++] = list[i];
+        else if (list[i]) Log("pure check: %s not counted (not a stock %s)", list[i], ff ? "zone" : "iwd");
+    }
+    for (int i = kept; i < *count; i++) list[i] = NULL;
+    *count = kept;
+}
+
+void PureListHook(void);
+__asm__(
+    ".text\n"
+    ".globl _PureListHook\n"
+    "_PureListHook:\n"
+    "    pushl 12(%esp)\n"               /* Sys_ListFiles's 3 stack arguments again; ecx and edx pass through */
+    "    pushl 12(%esp)\n"
+    "    pushl 12(%esp)\n"
+    "    movl $0x0062A270, %eax\n"
+    "    call *%eax\n"
+    "    addl $12, %esp\n"
+    "    pushl %eax\n"
+    "    pushl 4(%esp)\n"                /* the call site's return address tells the two listings apart */
+    "    leal -0x318(%ebp), %ecx\n"      /* both callers keep the count at [ebp-0x318] */
+    "    pushl %ecx\n"
+    "    pushl %eax\n"
+    "    call _PureFilterList\n"
+    "    addl $12, %esp\n"
+    "    popl %eax\n"
+    "    ret\n");
+
+static void PatchPureCheck(void)
+{
+    static const DWORD kCalls[] = { PURE_FF_LIST_CALL_VA, PURE_IWD_LIST_CALL_VA };
+    for (unsigned i = 0; i < sizeof(kCalls) / sizeof(kCalls[0]); i++) {
+        BYTE *call = (BYTE *)(DWORD_PTR)kCalls[i];
+        LONG rel = (LONG)(PURE_LISTFILES_VA - (kCalls[i] + 5));
+        if (!Readable(call, 5) || call[0] != 0xE8 || memcmp(call + 1, &rel, 4) != 0) {
+            Log("pure check: bytes at 0x%08lX do not match, extra installed maps fail it", (unsigned long)kCalls[i]);
+            return;
+        }
+    }
+    for (unsigned i = 0; i < sizeof(kCalls) / sizeof(kCalls[0]); i++) {
+        LONG rel = (LONG)((DWORD_PTR)PureListHook - (kCalls[i] + 5));
+        WriteCode((BYTE *)(DWORD_PTR)kCalls[i] + 1, &rel, 4);
+    }
+    Log("pure check: only stock zones and iwds are counted");
+}
+
 static void PatchUserMaps(void)
 {
+    PatchPureCheck();
     static const struct { DWORD slot; void *hook; } kSlots[] = {
         { USERMAP_CREATEFILEA_SLOT, (void *)UserMapCreateFileA },
         { USERMAP_GETFILEATTRIBUTES_SLOT, (void *)UserMapGetFileAttributesA },
