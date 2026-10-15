@@ -31,4 +31,35 @@
 main()
 {
 	maps\_zombiemode::levelMain( "zm_prototype_sh" );
+	hideNavigationArrows();
+}
+
+// The yellow floor arrows.  MEASURED from the zone MapEnts
+// (alpha0022 resources/map_spawns.proposed.json, zm_prototype_sh): 14
+// script_brushmodels, script_noteworthy "navigation_arrows", under 13
+// arrows_to_* targetnames (brush models *12..*25; arrows_to_windows has
+// two).  They are the zombie-training tutorial's objective pointers, shared
+// with zm_zombie_training's layout; nothing on this map drives them, so they
+// are hidden for the whole match (as zm_zombie_training.gsc
+// training_setup() does with its own set), not deleted.
+hideNavigationArrows()
+{
+	// getEntArray answers only the engine's own keys (targetname, classname,
+	// ...); a script_noteworthy query returns undefined, so the arrows are
+	// found by their targetnames.
+	names = strTok( "arrows_to_first arrows_to_second arrows_to_third arrows_to_fourth arrows_to_fifth arrows_to_windows arrows_to_stairs arrows_to_power arrows_to_door arrows_to_box arrows_to_speedcola arrows_to_m14 arrows_to_m16", " " );
+	hidden = 0;
+	for ( i = 0; i < names.size; i++ )
+	{
+		arrows = getEntArray( names[ i ], "targetname" );
+		if ( !isDefined( arrows ) )
+			continue;
+		for ( j = 0; j < arrows.size; j++ )
+		{
+			arrows[ j ] notSolid();
+			arrows[ j ] hide();
+			hidden++;
+		}
+	}
+	codolprintln( "CoDOL zm_prototype_sh: " + hidden + " navigation arrows hidden" );
 }
