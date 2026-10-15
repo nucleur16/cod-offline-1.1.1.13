@@ -9,7 +9,9 @@
  *
  *   capture  WASAPI shared mode, default capture endpoint, on a worker thread; converted to 48 kHz
  *            mono and encoded with libopus (VOIP, 20 ms frames, FEC, DTX), linked statically.
- *            The stream only runs while push-to-talk is held, so the mic is idle otherwise.
+ *            Push-to-talk (k33_voiceMode 0): the stream only runs while +talk is held. Voice
+ *            activation (k33_voiceMode 1): it stays open in a match and a level gate (threshold,
+ *            attack, hang, 120 ms pre-roll; see "capture + encode") decides what is sent.
  *   send     main thread, once per Com_EventLoop pass (call 0x595E9D -> 0x595CF0 hooked): queued
  *            frames go to clc.serverAddress as OOB "v" via C1's NET_OutOfBandData 0x5A3D60
  *            (sock 0 = NS_CLIENT1), i.e. through the same bdDTLS association as the game.
@@ -34,7 +36,11 @@
  *
  * Dvars: codol_voice (master switch; "+set codol_voice 0" installs nothing),
  * k33_voiceVolume (percent), k33_voiceBitrate, k33_voiceLoopback (hear yourself locally, no server),
- * k33_voiceDebug. Commands: +talk, -talk, toggletalk, k33voice (status), k33voicemute <client>.
+ * k33_voiceDebug, k33_voiceTone, k33_voiceMode (0 push-to-talk, 1 voice activation), k33_voiceThreshold
+ * (0..100 = -60..0 dBFS), k33_voiceHangMs, k33_voiceMicMute, k33_voiceLevel (live, read only),
+ * k33_voiceMeter (Options > Audio's meter request). Commands: +talk, -talk, toggletalk, k33voice
+ * (status), k33voicemute <client>.
+ * Options > Audio's Voice section (build_voice_ui.py, voice_ui/OptionView_audio.as) sets these.
  *
  * Every site is byte-checked; a mismatch is logged and that part stays off. Missing audio devices
  * only disable capture or playback (retried every few seconds), never the game.
@@ -65,6 +71,7 @@
 
 #define VOICE_RATE      48000
 #define VOICE_FRAME     960      /* 20 ms */
+#define VOICE_FRAME_MS  20
 #define VOICE_MAXFRAME  255
 #define VOICE_TALKERS   64
 #define VOICE_LOOPBACK_TALKER 63
@@ -99,7 +106,8 @@ static volatile LONG g_captureState, g_renderState; /* 0 not tried, 1 ok, -1 fai
 static volatile LONG g_audioStarted;
 static char g_captureName[128], g_renderName[128];
 static const BYTE *volatile g_dvVoice, *volatile g_dvVolume, *volatile g_dvBitrate,
-    *volatile g_dvLoopback, *volatile g_dvDebug, *volatile g_dvTone;
+    *volatile g_dvLoopback, *volatile g_dvDebug, *volatile g_dvTone, *volatile g_dvMode, *volatile g_dvThreshold,
+    *volatile g_dvHang, *volatile g_dvMicMute, *volatile g_dvLevel, *volatile g_dvMeter;
 static BOOL g_voiceDvarsDone, g_voiceAnnounced;
 static unsigned short g_sendSeq;
 static volatile DWORD g_lastHeard[VOICE_TALKERS];
@@ -303,13 +311,40 @@ static void VoiceSampleOut(const VoiceDev *d, BYTE *frame, float v)
     }
 }
 
-/* ---- capture + encode ----------------------------------------------------------------------- */
+/* ---- capture + encode ----------------------------------------------------------------------- *
+ *
+ * The main thread decides what the microphone is for (VoiceMainTick): g_wantCapture opens the
+ * stream, g_txForce transmits regardless of level (push-to-talk held, toggletalk, the +talk override
+ * in voice-activation mode), g_vadArmed lets the voice-activation gate transmit, and with neither set
+ * the stream only meters (the Options > Audio Input Level). Every 20 ms frame goes through
+ * VoiceProcessFrame on the audio thread:
+ *
+ *   level   RMS of the frame in dBFS, mapped -60..0 dBFS -> 0..100 (k33_voiceThreshold's scale).
+ *   attack  the gate opens after two frames in a row at or above the threshold (40 ms), or at once
+ *           on a frame 15 above it (a loud onset).
+ *   hang    every frame within 8 of the threshold (about 5 dB hysteresis) restarts k33_voiceHangMs
+ *           (400); when it runs out the gate closes and that frame goes out marked last.
+ *   pre-roll  the last VOICE_PREROLL frames (120 ms) before the gate opened are encoded first, so
+ *           the start of a word that only crossed the threshold half way through is not clipped.
+ *
+ * Opus DTX stays on while transmitting; the encoder is reset at the start of each talk spurt. */
 
-static volatile LONG g_micLevel; /* peak of the last encoded 20 ms frame, 0..1000 */
+#define VOICE_PREROLL 6        /* frames of pre-roll (120 ms) */
+
+static volatile LONG g_micLevel;      /* peak of the last 20 ms frame, 0..1000 (HUD brightness) */
+static volatile LONG g_micLevel100;   /* RMS level of the last frame, 0..100 = -60..0 dBFS */
+static volatile LONG g_txForce, g_vadArmed; /* main thread -> audio thread */
+static volatile LONG g_vadThreshold = 30, g_vadHangMs = 400;
+static volatile LONG g_txActive;      /* audio thread: a talk spurt is being sent */
+static volatile LONG g_statSpurts;
 static OpusEncoder *g_enc;
 static int g_encBitrate;
 static float g_capFrame[VOICE_FRAME];
 static int g_capFill;
+static float g_preroll[VOICE_PREROLL][VOICE_FRAME];
+static int g_prerollHead, g_prerollCount;
+static int g_vadAbove, g_vadHangLeft;
+static BOOL g_vadOpen;
 
 static void VoiceQueueFrame(const BYTE *data, int len, BOOL last)
 {
@@ -333,16 +368,8 @@ static void VoiceQueueFrame(const BYTE *data, int len, BOOL last)
     LeaveCriticalSection(&g_voiceLock);
 }
 
-static void VoiceEncodeFrame(BOOL last)
+static void VoiceEncodePcm(const float *pcm, BOOL last)
 {
-    {
-        float peak = 0;
-        for (int i = 0; i < VOICE_FRAME; i++) {
-            float a = g_capFrame[i] < 0 ? -g_capFrame[i] : g_capFrame[i];
-            if (a > peak) peak = a;
-        }
-        InterlockedExchange(&g_micLevel, (LONG)(peak > 1.0f ? 1000 : peak * 1000));
-    }
     if (!g_enc) {
         int err = 0;
         g_enc = opus_encoder_create(VOICE_RATE, 1, OPUS_APPLICATION_VOIP, &err);
@@ -359,40 +386,127 @@ static void VoiceEncodeFrame(BOOL last)
     if (br > 64000) br = 64000;
     if (br != g_encBitrate) { opus_encoder_ctl(g_enc, OPUS_SET_BITRATE(br)); g_encBitrate = br; }
     BYTE out[VOICE_MAXFRAME];
-    int n = opus_encode_float(g_enc, g_capFrame, VOICE_FRAME, out, sizeof(out));
+    int n = opus_encode_float(g_enc, pcm, VOICE_FRAME, out, sizeof(out));
     if (n > 0) {
         VoiceQueueFrame(out, n, last);
         InterlockedIncrement(&g_statCapFrames);
     }
 }
 
-/* k33_voiceTone 1: transmit a 440 Hz test tone instead of the microphone (no capture device). */
+/* 0..100 for -60..0 dBFS; also sets the HUD's peak level. */
+static int VoiceFrameLevel(const float *pcm)
+{
+    float peak = 0;
+    double sum = 0;
+    for (int i = 0; i < VOICE_FRAME; i++) {
+        float a = pcm[i] < 0 ? -pcm[i] : pcm[i];
+        if (a > peak) peak = a;
+        sum += (double)pcm[i] * pcm[i];
+    }
+    InterlockedExchange(&g_micLevel, (LONG)(peak > 1.0f ? 1000 : peak * 1000));
+    double rms = sqrt(sum / VOICE_FRAME);
+    double db = rms > 1e-6 ? 20.0 * log10(rms) : -120.0;
+    int level = (int)floor((db + 60.0) * 100.0 / 60.0 + 0.5);
+    return level < 0 ? 0 : level > 100 ? 100 : level;
+}
+
+static void VoiceGateReset(void)
+{
+    g_prerollHead = g_prerollCount = 0;
+    g_vadAbove = g_vadHangLeft = 0;
+    g_vadOpen = FALSE;
+}
+
+/* One 20 ms frame of microphone (or test tone) in g_capFrame. Audio thread. */
+static void VoiceProcessFrame(void)
+{
+    int level = VoiceFrameLevel(g_capFrame);
+    InterlockedExchange(&g_micLevel100, level);
+
+    /* voice-activation gate */
+    int thr = g_vadThreshold, hangFrames = (g_vadHangMs + VOICE_FRAME_MS - 1) / VOICE_FRAME_MS;
+    if (g_vadArmed) {
+        g_vadAbove = level >= thr ? g_vadAbove + 1 : 0;
+        if (!g_vadOpen && (g_vadAbove >= 2 || level >= thr + 15)) g_vadOpen = TRUE;
+        if (g_vadOpen) {
+            if (level >= thr - 8) g_vadHangLeft = hangFrames;
+            else if (--g_vadHangLeft <= 0) g_vadOpen = FALSE;
+        }
+    } else {
+        g_vadOpen = FALSE;
+        g_vadAbove = g_vadHangLeft = 0;
+    }
+
+    BOOL send = g_txForce || g_vadOpen;
+    if (send) {
+        if (!g_txActive) {
+            /* new talk spurt: fresh encoder state, then the pre-roll */
+            if (g_enc) opus_encoder_ctl(g_enc, OPUS_RESET_STATE);
+            int first = (g_prerollHead - g_prerollCount + VOICE_PREROLL) % VOICE_PREROLL;
+            for (int i = 0; i < g_prerollCount; i++) VoiceEncodePcm(g_preroll[(first + i) % VOICE_PREROLL], FALSE);
+            g_prerollCount = 0;
+            InterlockedExchange(&g_txActive, 1);
+            InterlockedIncrement(&g_statSpurts);
+            if (VoiceDvarInt(g_dvDebug, 0)) Log("voice: transmit on (level %d, threshold %d, %s)", level, thr, g_txForce ? "key" : "voice activation");
+        }
+        VoiceEncodePcm(g_capFrame, FALSE);
+        return;
+    }
+    if (g_txActive) {
+        /* end of the spurt: this frame goes out as the last one */
+        VoiceEncodePcm(g_capFrame, TRUE);
+        InterlockedExchange(&g_txActive, 0);
+        if (VoiceDvarInt(g_dvDebug, 0)) Log("voice: transmit off (level %d)", level);
+        return;
+    }
+    memcpy(g_preroll[g_prerollHead], g_capFrame, sizeof(g_capFrame));
+    g_prerollHead = (g_prerollHead + 1) % VOICE_PREROLL;
+    if (g_prerollCount < VOICE_PREROLL) g_prerollCount++;
+}
+
+/* The stream is closing: a spurt still going out ends with the partial frame, marked last. */
+static void VoiceCaptureEnd(void)
+{
+    if (g_txActive) {
+        for (int i = g_capFill; i < VOICE_FRAME; i++) g_capFrame[i] = 0;
+        VoiceEncodePcm(g_capFrame, TRUE);
+        InterlockedExchange(&g_txActive, 0);
+    }
+    g_capFill = 0;
+    VoiceGateReset();
+    InterlockedExchange(&g_micLevel, 0);
+    InterlockedExchange(&g_micLevel100, 0);
+}
+
+/* k33_voiceTone 1: a 440 Hz test tone instead of the microphone (no capture device); 2: the tone in
+ * bursts, 600 ms on and 900 ms off, to exercise the voice-activation gate. */
 static BOOL VoiceToneTick(BOOL want)
 {
     static BOOL active;
     static DWORD start;
     static LONG64 made;
     static double phase;
-    if (!g_dvTone || !VoiceDvarInt(g_dvTone, 0)) {
-        if (active && !want) active = FALSE;
+    int tone = g_dvTone ? VoiceDvarInt(g_dvTone, 0) : 0;
+    if (!tone) {
+        if (active && !want) { active = FALSE; VoiceCaptureEnd(); }
         if (!active) return FALSE;
     }
-    if (want && !active) { active = TRUE; start = GetTickCount(); made = 0; g_capFill = 0; }
+    if (want && !active) { active = TRUE; start = GetTickCount(); made = 0; g_capFill = 0; VoiceGateReset(); }
     if (!active) return TRUE;
     LONG64 due = (LONG64)(GetTickCount() - start) * VOICE_RATE / 1000;
     while (made + VOICE_FRAME <= due) {
+        BOOL on = tone != 2 || (made * 1000 / VOICE_RATE) % 1500 < 600;
         for (int i = 0; i < VOICE_FRAME; i++) {
-            g_capFrame[i] = 0.25f * (float)sin(phase);
+            g_capFrame[i] = on ? 0.25f * (float)sin(phase) : 0.0f;
             phase += 2.0 * 3.14159265358979 * 440.0 / VOICE_RATE;
             if (phase > 6.283185307179586) phase -= 6.283185307179586;
         }
-        VoiceEncodeFrame(FALSE);
+        VoiceProcessFrame();
         made += VOICE_FRAME;
     }
     if (!want) {
-        for (int i = 0; i < VOICE_FRAME; i++) g_capFrame[i] = 0;
-        VoiceEncodeFrame(TRUE);
         active = FALSE;
+        VoiceCaptureEnd();
     }
     return TRUE;
 }
@@ -413,7 +527,7 @@ static void VoiceCaptureTick(BOOL want)
         d->prev = 0;
         if (FAILED(IAudioClient_Start(d->client))) { VoiceDevRelease(d); d->retryAt = GetTickCount() + 3000; return; }
         d->running = TRUE;
-        if (g_enc) opus_encoder_ctl(g_enc, OPUS_RESET_STATE);
+        VoiceGateReset();
     }
     if (!d->running) return;
 
@@ -422,7 +536,13 @@ static void VoiceCaptureTick(BOOL want)
     for (;;) {
         UINT32 packet = 0;
         HRESULT hr = IAudioCaptureClient_GetNextPacketSize(d->cap, &packet);
-        if (FAILED(hr)) { Log("voice: capture lost (0x%08lX), reopening", (unsigned long)hr); VoiceDevRelease(d); d->retryAt = GetTickCount() + 2000; return; }
+        if (FAILED(hr)) {
+            Log("voice: capture lost (0x%08lX), reopening", (unsigned long)hr);
+            VoiceCaptureEnd();
+            VoiceDevRelease(d);
+            d->retryAt = GetTickCount() + 2000;
+            return;
+        }
         if (!packet) break;
         BYTE *data;
         UINT32 frames;
@@ -433,7 +553,7 @@ static void VoiceCaptureTick(BOOL want)
             /* linear resample to 48 kHz: emit every output sample that falls in [prev, x) */
             while (d->pos < 1.0) {
                 g_capFrame[g_capFill++] = d->prev + (float)d->pos * (x - d->prev);
-                if (g_capFill == VOICE_FRAME) { VoiceEncodeFrame(FALSE); g_capFill = 0; }
+                if (g_capFill == VOICE_FRAME) { VoiceProcessFrame(); g_capFill = 0; }
                 d->pos += step;
             }
             d->pos -= 1.0;
@@ -443,10 +563,7 @@ static void VoiceCaptureTick(BOOL want)
     }
 
     if (!want) {
-        /* end of transmission: pad the partial frame and mark it last */
-        for (int i = g_capFill; i < VOICE_FRAME; i++) g_capFrame[i] = 0;
-        VoiceEncodeFrame(TRUE);
-        g_capFill = 0;
+        VoiceCaptureEnd();
         IAudioClient_Stop(d->client);
         IAudioClient_Reset(d->client);
         d->running = FALSE;
@@ -575,12 +692,21 @@ static void VoiceRegisterDvars(void)
     g_dvBitrate = reg("k33_voiceBitrate", 24000, 6000, 64000, 0x1, "Opus voice bitrate (bits per second)");
     g_dvLoopback = reg("k33_voiceLoopback", 0, 0, 1, 0, "Play your own voice back locally instead of sending it");
     g_dvDebug = reg("k33_voiceDebug", 0, 0, 2, 0, "Voice chat diagnostics in the console");
-    g_dvTone = reg("k33_voiceTone", 0, 0, 1, 0, "Transmit a 440 Hz test tone instead of the microphone");
+    g_dvTone = reg("k33_voiceTone", 0, 0, 2, 0, "Transmit a 440 Hz test tone instead of the microphone (2: in bursts)");
+    g_dvMode = reg("k33_voiceMode", 0, 0, 1, 0x1, "Voice chat transmit mode: 0 push-to-talk, 1 voice activation (open mic gated by level)");
+    g_dvThreshold = reg("k33_voiceThreshold", 30, 0, 100, 0x1,
+                        "Voice activation level, 0..100 = -60..0 dBFS (RMS); k33voice shows the live mic level");
+    g_dvHang = reg("k33_voiceHangMs", 400, 0, 3000, 0x1, "Voice activation: keep transmitting this long after the level drops");
+    g_dvMicMute = reg("k33_voiceMicMute", 0, 0, 1, 0x1, "Microphone off (Options > Audio > Microphone)");
+    g_dvLevel = reg("k33_voiceLevel", 0, -1, 100, 0, "Live microphone level 0..100 (read only; -1 no microphone)");
+    g_dvMeter = reg("k33_voiceMeter", 0, 0, 1, 0, "Set by Options > Audio while shown: open the mic to meter it (nothing is sent)");
 
     /* C1 does not apply "+set" from the command line to a dvar registered this late (and runs no
      * "+command" at all), so re-issue ours: "+set k33_voiceLoopback 1", "+toggletalk". */
     static const char *const kMine[] = { "codol_voice", "k33_voiceVolume", "k33_voiceBitrate",
-                                         "k33_voiceLoopback", "k33_voiceDebug", "k33_voiceTone" };
+                                         "k33_voiceLoopback", "k33_voiceDebug", "k33_voiceTone",
+                                         "k33_voiceMode", "k33_voiceThreshold", "k33_voiceHangMs",
+                                         "k33_voiceMicMute" };
     const char *cl = GetCommandLineA();
     for (unsigned i = 0; cl && i < sizeof(kMine) / sizeof(kMine[0]); i++) {
         char pat[64], cmd[96];
@@ -597,6 +723,27 @@ static void VoiceRegisterDvars(void)
 }
 
 static BOOL VoiceEnabled(void) { return VoiceDvarInt(g_dvVoice, 1) != 0 && !g_uiVoiceOff; }
+
+static BOOL VoiceMicMuted(void) { return VoiceDvarInt(g_dvMicMute, 0) != 0 || g_micMuted; }
+
+/* A read-only dvar's value (k33_voiceLevel) or a consumed request (k33_voiceMeter) written in place:
+ * the current integer at dvar+0xC, as C1DvarInt reads it. Main thread. */
+static void VoiceDvarPoke(const BYTE *d, int v)
+{
+    if (d && *(volatile const int *)(d + 0xC) != v) *(volatile int *)(d + 0xC) = v;
+}
+
+/* The game window (any top-level window of this process) is in the foreground. */
+static BOOL VoiceGameFocused(void)
+{
+    HWND fg = GetForegroundWindow();
+    DWORD pid = 0;
+    if (!fg) return FALSE;
+    GetWindowThreadProcessId(fg, &pid);
+    return pid == GetCurrentProcessId();
+}
+
+static DWORD g_meterUntil;
 
 static void VoiceSendQueued(const BYTE *adr)
 {
@@ -824,9 +971,11 @@ static void VoiceAnnounce(void)
     char keys[128];
     g_voiceAnnounced = TRUE;
     VoiceTalkKeys(keys, sizeof(keys));
-    C1Printf("^3voice: Opus voice chat %s. Push-to-talk: %s (+talk; rebind under Options > Controls > Chat or "
-              "\"bind <key> +talk\"); toggletalk latches. k33voice shows status.\n",
-              VoiceEnabled() ? "on" : "OFF (codol_voice 0)", keys[0] ? keys : "no key bound");
+    C1Printf("^3voice: Opus voice chat %s, %s. Push-to-talk: %s (+talk; rebind under Options > Controls > Chat or "
+              "\"bind <key> +talk\"); toggletalk latches. Voice mode, microphone and activation level: Options > "
+              "Audio. k33voice shows status.\n",
+              VoiceEnabled() ? "on" : "OFF (codol_voice 0)",
+              VoiceDvarInt(g_dvMode, 0) == 1 ? "voice activation" : "push-to-talk", keys[0] ? keys : "no key bound");
 }
 
 /* Test automation, only with "+set k33_cmdFile 1" on the command line: every half second the lines
@@ -885,15 +1034,42 @@ __attribute__((used)) void __cdecl VoiceMainTick(void)
     InterlockedExchange(&g_connected, adr != NULL);
     if (adr && !g_voiceAnnounced) VoiceAnnounce();
 
-    BOOL talk = on && !g_micMuted && (g_keyTalk || g_cmdTalk || g_toggleTalk) &&
-                (adr || VoiceDvarInt(g_dvLoopback, 0));
-    if (talk != (g_wantCapture != 0)) {
-        InterlockedExchange(&g_wantCapture, talk);
+    /* What the microphone is for this pass:
+     *   key    push-to-talk held / toggletalk latched: transmit (also the override in voice activation)
+     *   vad    voice activation (k33_voiceMode 1): the mic stays open in a match while the game window
+     *          has focus, and the level gate decides (scoreboard, chat line and console do not stop it)
+     *   meter  Options > Audio is showing its Input Level: open the mic, send nothing */
+    BOOL muted = VoiceMicMuted();
+    BOOL target = adr || VoiceDvarInt(g_dvLoopback, 0);
+    BOOL key = on && !muted && (g_keyTalk || g_cmdTalk || g_toggleTalk) && target;
+    BOOL vad = on && !muted && target && VoiceDvarInt(g_dvMode, 0) == 1 &&
+               (VoiceGameFocused() || VoiceDvarInt(g_dvTone, 0)); /* the test tone is not the mic */
+    if (g_dvMeter && VoiceDvarInt(g_dvMeter, 0)) {
+        g_meterUntil = GetTickCount() + 1500; /* the options screen re-sets it every 10 frames */
+        VoiceDvarPoke(g_dvMeter, 0);
+    }
+    BOOL meter = on && !muted && (LONG)(g_meterUntil - GetTickCount()) > 0;
+    int thr = VoiceDvarInt(g_dvThreshold, 30), hang = VoiceDvarInt(g_dvHang, 400);
+    if (thr != g_vadThreshold) InterlockedExchange(&g_vadThreshold, thr);
+    if (hang != g_vadHangMs) InterlockedExchange(&g_vadHangMs, hang);
+    if (vad != (g_vadArmed != 0)) {
+        InterlockedExchange(&g_vadArmed, vad);
         if (VoiceDvarInt(g_dvDebug, 0) || g_lastTalkPrint < 3) {
             g_lastTalkPrint++;
-            C1Printf("voice: %s\n", talk ? "talking" : "stopped talking");
+            C1Printf("voice: voice activation %s\n", vad ? "armed (open mic)" : "off");
         }
     }
+    if (key != (g_txForce != 0)) {
+        InterlockedExchange(&g_txForce, key);
+        if (VoiceDvarInt(g_dvDebug, 0) || g_lastTalkPrint < 3) {
+            g_lastTalkPrint++;
+            C1Printf("voice: %s\n", key ? "talking" : "stopped talking");
+        }
+    }
+    BOOL talk = key || vad;
+    BOOL open = talk || meter;
+    if (open != (g_wantCapture != 0)) InterlockedExchange(&g_wantCapture, open);
+    VoiceDvarPoke(g_dvLevel, g_captureState < 0 && open ? -1 : open ? (int)g_micLevel100 : 0);
     if (g_captureState < 0 && talk) {
         static DWORD warned;
         if (!warned || GetTickCount() - warned > 30000) {
@@ -1014,9 +1190,18 @@ static void __cdecl VoiceCmdStatus(void)
               "bitrate %d\n",
               VoiceEnabled() ? "on" : "OFF", g_connected ? "connected" : "not in a match",
               g_captureState > 0 ? g_captureName : g_captureState < 0 ? "FAILED" : "not opened yet",
-              g_micMuted ? " (muted)" : "", kn[0] ? kn : "no key bound",
+              VoiceMicMuted() ? " (muted)" : "", kn[0] ? kn : "no key bound",
               g_bindOk ? "bindable" : g_voiceCmdsOk ? "console only" : "UNAVAILABLE", g_toggleTalk ? "on" : "off", VoiceDvarInt(g_dvLoopback, 0),
               VoiceDvarInt(g_dvVolume, 100), VoiceDvarInt(g_dvBitrate, 24000));
+    {
+        int mode = VoiceDvarInt(g_dvMode, 0), thr = VoiceDvarInt(g_dvThreshold, 30);
+        LONG lv = g_wantCapture ? g_micLevel100 : 0;
+        C1Printf("voice: mode %d (%s), threshold %d (%d dBFS), hang %d ms; mic %s, level %ld (%ld dBFS), %s; "
+                  "talk spurts %ld\n",
+                  mode, mode == 1 ? "voice activation, +talk overrides" : "push-to-talk", thr, thr * 60 / 100 - 60,
+                  VoiceDvarInt(g_dvHang, 400), g_wantCapture ? "open" : "closed", lv, lv * 60 / 100 - 60,
+                  g_txActive ? "TRANSMITTING" : g_vadArmed ? "gate closed" : "not transmitting", g_statSpurts);
+    }
     C1Printf("voice: playback %s; frames captured %ld, packets sent %ld, received %ld, mixed %ld, concealed %ld\n",
               g_renderState > 0 ? g_renderName : g_renderState < 0 ? "FAILED" : "not opened yet", g_statCapFrames,
               g_statSent, g_statRecv, g_statPlayed, g_statLostFrames);
@@ -1048,7 +1233,63 @@ static void __cdecl VoiceCmdReady(void)
     Log("voice: k33ready %d", ((BYTE *)args)[8]);
 }
 
+/* Test automation: "k33mouse <x> <y> [click|off]" points C1 at a client-area position and clicks there
+ * without the window having focus, so a test client next to the player's game can drive the menus:
+ * C1's GetCursorPos / GetForegroundWindow / GetActiveWindow import slots (0xB423A4, 0xB423F4,
+ * 0xB42454) report that position and the game window, and the click is posted as WM_LBUTTON*.
+ * Only with "+set k33_cmdFile 1" on the command line. */
+static volatile LONG g_fakeMouse;
+static POINT g_fakeCursor;
+static FARPROC g_realCursor, g_realFg, g_realActive;
+#define VOICE_MAIN_HWND_VA 0x02B68104u
+
+static BOOL WINAPI VoiceFakeCursorPos(LPPOINT p)
+{
+    HWND h = *(HWND *)(DWORD_PTR)VOICE_MAIN_HWND_VA;
+    if (g_fakeMouse && h && p) { *p = g_fakeCursor; ClientToScreen(h, p); return TRUE; }
+    return ((BOOL(WINAPI *)(LPPOINT))g_realCursor)(p);
+}
+static HWND WINAPI VoiceFakeFg(void)
+{
+    HWND h = *(HWND *)(DWORD_PTR)VOICE_MAIN_HWND_VA;
+    return g_fakeMouse && h ? h : ((HWND(WINAPI *)(void))g_realFg)();
+}
+static HWND WINAPI VoiceFakeActive(void)
+{
+    HWND h = *(HWND *)(DWORD_PTR)VOICE_MAIN_HWND_VA;
+    return g_fakeMouse && h ? h : ((HWND(WINAPI *)(void))g_realActive)();
+}
+
+static void __cdecl VoiceCmdMouse(void)
+{
+    const char *cl = GetCommandLineA();
+    if (!cl || !strstr(cl, "k33_cmdFile 1")) { C1Printf("k33mouse: test builds only (+set k33_cmdFile 1)\n"); return; }
+    if (!g_realCursor) {
+        g_realCursor = *(FARPROC *)(DWORD_PTR)0x00B423A4u;
+        g_realFg = *(FARPROC *)(DWORD_PTR)0x00B423F4u;
+        g_realActive = *(FARPROC *)(DWORD_PTR)0x00B42454u;
+        FARPROC f1 = (FARPROC)VoiceFakeCursorPos, f2 = (FARPROC)VoiceFakeFg, f3 = (FARPROC)VoiceFakeActive;
+        WriteCode((void *)(DWORD_PTR)0x00B423A4u, &f1, 4);
+        WriteCode((void *)(DWORD_PTR)0x00B423F4u, &f2, 4);
+        WriteCode((void *)(DWORD_PTR)0x00B42454u, &f3, 4);
+    }
+    if (VoiceArgc() >= 2 && !_stricmp(VoiceArgv(1), "off")) { InterlockedExchange(&g_fakeMouse, 0); return; }
+    if (VoiceArgc() < 3) return;
+    g_fakeCursor.x = atoi(VoiceArgv(1));
+    g_fakeCursor.y = atoi(VoiceArgv(2));
+    InterlockedExchange(&g_fakeMouse, 1);
+    HWND h = *(HWND *)(DWORD_PTR)VOICE_MAIN_HWND_VA;
+    LPARAM lp = MAKELPARAM(g_fakeCursor.x, g_fakeCursor.y);
+    if (h) PostMessageA(h, WM_MOUSEMOVE, 0, lp);
+    if (h && VoiceArgc() >= 4 && !_stricmp(VoiceArgv(3), "click")) {
+        PostMessageA(h, WM_LBUTTONDOWN, MK_LBUTTON, lp);
+        PostMessageA(h, WM_LBUTTONUP, 0, lp);
+    }
+    Log("voice: k33mouse %ld %ld %s", g_fakeCursor.x, g_fakeCursor.y, VoiceArgc() >= 4 ? VoiceArgv(3) : "");
+}
+
 static C1Cmd g_voiceCmds[] = {
+    { NULL, "k33mouse", (void *)VoiceCmdMouse },
     { NULL, "+talk", (void *)VoiceCmdTalkDown },   { NULL, "-talk", (void *)VoiceCmdTalkUp },
     { NULL, "toggletalk", (void *)VoiceCmdToggle }, { NULL, "k33voice", (void *)VoiceCmdStatus },
     { NULL, "k33voicemute", (void *)VoiceCmdMute }, { NULL, "k33ready", (void *)VoiceCmdReady },
@@ -1102,7 +1343,11 @@ __attribute__((thiscall)) static void VoiceAsMicMute(void *self, const BYTE *par
     int v = 0;
     int has = VoiceAsArg(params, &v);
     Log("voice: UI SetVoiceMicMute(%s)", has ? (v ? "true" : "false") : "?");
-    if (has) InterlockedExchange(&g_micMuted, v);
+    if (!has) return;
+    char cmd[48];
+    _snprintf(cmd, sizeof(cmd), "set k33_voiceMicMute %d\n", v ? 1 : 0);
+    if (!g_voiceDvarsDone || !C1CbufAddText(cmd)) InterlockedExchange(&g_micMuted, v);
+    else InterlockedExchange(&g_micMuted, 0);
 }
 
 
@@ -1231,7 +1476,7 @@ __attribute__((used)) int __cdecl VoiceOwnerDraw(const DWORD *args)
     const void *scr = ((const void *(__cdecl *)(int))(DWORD_PTR)VOICE_SCRPLACE_VA)(lc);
 
     if (ownerDraw == VOICE_OD_TALKING) {
-        if (!g_wantCapture) return 1;
+        if (!g_txActive) return 1; /* transmitting: key held, or the voice-activation gate open */
         LONG lv = g_micLevel;
         float a = lv > 40 ? 1.0f : lv > 12 ? 0.75f : 0.4f; /* picking something up: full brightness */
         c[3] *= a;
