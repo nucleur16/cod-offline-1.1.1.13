@@ -799,6 +799,11 @@ dog_init( favorite_enemy )
 	self.flame_damage_time = 0;
 	self.zombie_move_speed = "sprint";
 
+	// T5 :627-628.  thundergun_zm ships in zm_prototype_sh; whichever script
+	// ports its blast reads these hooks for a hound.
+	self.thundergun_disintegrate_func = ::dog_thundergun_disintegrate;
+	self.thundergun_knockdown_func = ::dog_thundergun_knockdown;
+
 	self.aiweapon = character\character_zm_zombie_dog::bite_weapon();
 
 	// T5 :595-602 multiplies by scr_dog_health_walk_multiplier, and
@@ -1141,4 +1146,21 @@ dog_clip_monitor()
 		flag_clear( "dog_clips" );
 		wait( 1 );
 	}
+}
+
+// T5 :969.
+dog_thundergun_disintegrate( player )
+{
+	self endon( "death" );
+
+	self doDamage( self.health + 666, player.origin, player );
+}
+
+// T5 :976.
+dog_thundergun_knockdown( player, gib )
+{
+	self endon( "death" );
+
+	damage = int( self.maxhealth * 0.5 );
+	self doDamage( damage, player.origin, player );
 }
