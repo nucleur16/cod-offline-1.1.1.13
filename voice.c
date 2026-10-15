@@ -42,6 +42,7 @@
 #include <mmdeviceapi.h>
 #include <audioclient.h>
 #include <opus/opus.h>
+#include <math.h>
 
 #define VOICE_EVENTLOOP_CALL_VA 0x00595E9Du
 #define VOICE_EVENTLOOP_FUNC_VA 0x00595CF0u
@@ -93,7 +94,7 @@ static volatile LONG g_captureState, g_renderState; /* 0 not tried, 1 ok, -1 fai
 static volatile LONG g_audioStarted;
 static char g_captureName[128], g_renderName[128];
 static const BYTE *volatile g_dvVoice, *volatile g_dvKey, *volatile g_dvVolume, *volatile g_dvBitrate,
-    *volatile g_dvLoopback, *volatile g_dvDebug;
+    *volatile g_dvLoopback, *volatile g_dvDebug, *volatile g_dvTone;
 static BOOL g_voiceDvarsDone, g_voiceAnnounced;
 static unsigned short g_sendSeq;
 static volatile DWORD g_lastHeard[VOICE_TALKERS];
@@ -349,9 +350,41 @@ static void VoiceEncodeFrame(BOOL last)
     }
 }
 
+/* k33_voiceTone 1: transmit a 440 Hz test tone instead of the microphone (no capture device). */
+static BOOL VoiceToneTick(BOOL want)
+{
+    static BOOL active;
+    static DWORD start;
+    static LONG64 made;
+    static double phase;
+    if (!g_dvTone || !VoiceDvarInt(g_dvTone, 0)) {
+        if (active && !want) active = FALSE;
+        if (!active) return FALSE;
+    }
+    if (want && !active) { active = TRUE; start = GetTickCount(); made = 0; g_capFill = 0; }
+    if (!active) return TRUE;
+    LONG64 due = (LONG64)(GetTickCount() - start) * VOICE_RATE / 1000;
+    while (made + VOICE_FRAME <= due) {
+        for (int i = 0; i < VOICE_FRAME; i++) {
+            g_capFrame[i] = 0.25f * (float)sin(phase);
+            phase += 2.0 * 3.14159265358979 * 440.0 / VOICE_RATE;
+            if (phase > 6.283185307179586) phase -= 6.283185307179586;
+        }
+        VoiceEncodeFrame(FALSE);
+        made += VOICE_FRAME;
+    }
+    if (!want) {
+        for (int i = 0; i < VOICE_FRAME; i++) g_capFrame[i] = 0;
+        VoiceEncodeFrame(TRUE);
+        active = FALSE;
+    }
+    return TRUE;
+}
+
 static void VoiceCaptureTick(BOOL want)
 {
     VoiceDev *d = &g_cap;
+    if (VoiceToneTick(want)) return;
     if (want && !d->client) {
         if ((LONG)(GetTickCount() - d->retryAt) < 0) return;
         if (!VoiceDevOpen(d, TRUE)) { InterlockedExchange(&g_captureState, -1); return; }
@@ -523,17 +556,18 @@ static void VoiceRegisterDvars(void)
     RegisterIntFn reg = (RegisterIntFn)(DWORD_PTR)CON_REGISTER_INT_VA;
     g_voiceDvarsDone = TRUE;
     g_dvVoice = reg("codol_voice", 1, 0, 1, 0x1, "Voice chat: 1 on, 0 off (+set codol_voice 0 on the command line installs nothing)");
-    g_dvKey = reg("k33_talkKey", VK_CAPITAL, 0, 255, 0x1,
-                  "Push-to-talk key (Windows virtual-key code; 20 Caps Lock, 86 V, 0 none). Binding +talk also works.");
+    g_dvKey = reg("k33_talkKey", 'V', 0, 255, 0x1,
+                  "Push-to-talk key (Windows virtual-key code; 86 V, 20 Caps Lock, 0 none). Binding +talk also works.");
     g_dvVolume = reg("k33_voiceVolume", 100, 0, 400, 0x1, "Voice chat playback volume in percent");
     g_dvBitrate = reg("k33_voiceBitrate", 24000, 6000, 64000, 0x1, "Opus voice bitrate (bits per second)");
     g_dvLoopback = reg("k33_voiceLoopback", 0, 0, 1, 0, "Play your own voice back locally instead of sending it");
     g_dvDebug = reg("k33_voiceDebug", 0, 0, 2, 0, "Voice chat diagnostics in the console");
+    g_dvTone = reg("k33_voiceTone", 0, 0, 1, 0, "Transmit a 440 Hz test tone instead of the microphone");
 
     /* C1 does not apply "+set" from the command line to a dvar registered this late (and runs no
      * "+command" at all), so re-issue ours: "+set k33_voiceLoopback 1", "+toggletalk". */
     static const char *const kMine[] = { "codol_voice", "k33_talkKey", "k33_voiceVolume", "k33_voiceBitrate",
-                                         "k33_voiceLoopback", "k33_voiceDebug" };
+                                         "k33_voiceLoopback", "k33_voiceDebug", "k33_voiceTone" };
     const char *cl = GetCommandLineA();
     for (unsigned i = 0; cl && i < sizeof(kMine) / sizeof(kMine[0]); i++) {
         char pat[64], cmd[96];
@@ -599,12 +633,46 @@ static void VoiceSendQueued(const BYTE *adr)
 static void VoiceAnnounce(void)
 {
     char kn[64];
-    int vk = VoiceDvarInt(g_dvKey, VK_CAPITAL);
+    int vk = VoiceDvarInt(g_dvKey, 'V');
     g_voiceAnnounced = TRUE;
     ConPrintf("^3voice: Opus voice chat %s. Push-to-talk: hold %s (k33_talkKey %d)%s, or bind a key to +talk "
               "(e.g. bind CAPSLOCK +talk); toggletalk latches. k33voice shows status.\n",
               VoiceEnabled() ? "on" : "OFF (codol_voice 0)", vk ? VoiceKeyName(vk, kn, sizeof(kn)) : "no key", vk,
               g_voiceKeyOk ? "" : " [key hook OFF]");
+}
+
+/* Test automation, only with "+set k33_cmdFile 1" on the command line: every half second the lines
+ * of <exe dir>\k33_cmd_<pid>.txt are executed (Cbuf) and the file is deleted. */
+static void VoiceCmdFile(void)
+{
+    static int enabled = -1;
+    static DWORD last;
+    static char path[MAX_PATH];
+    if (enabled < 0) {
+        const char *cl = GetCommandLineA();
+        enabled = cl && strstr(cl, "k33_cmdFile 1") != NULL;
+        if (enabled) {
+            DWORD n = GetModuleFileNameA(NULL, path, MAX_PATH);
+            while (n && path[n - 1] != '\\') n--;
+            _snprintf(path + n, MAX_PATH - n, "k33_cmd_%lu.txt", GetCurrentProcessId());
+            Log("voice: command file %s", path);
+        }
+    }
+    if (!enabled || GetTickCount() - last < 500) return;
+    last = GetTickCount();
+    HANDLE h = CreateFileA(path, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+    if (h == INVALID_HANDLE_VALUE) return;
+    char buf[2048];
+    DWORD got = 0;
+    ReadFile(h, buf, sizeof(buf) - 2, &got, NULL);
+    CloseHandle(h);
+    DeleteFileA(path);
+    buf[got] = 0;
+    for (DWORD i = 0; i < got; i++)
+        if (buf[i] == '\r') buf[i] = '\n';
+    if (got && buf[got - 1] != '\n') { buf[got++] = '\n'; buf[got] = 0; }
+    Log("voice: command file: %s", buf);
+    if (g_conCbufOk) ConCbufAddText(buf);
 }
 
 /* Once per Com_EventLoop pass (main thread). */
@@ -643,6 +711,7 @@ __attribute__((used)) void __cdecl VoiceMainTick(void)
         static DWORD lastStat;
         if (GetTickCount() - lastStat > 5000) { lastStat = GetTickCount(); VoiceCmdStatus(); }
     }
+    VoiceCmdFile();
     if (adr && on) VoiceSendQueued(adr);
     else if (g_sendCount) {
         EnterCriticalSection(&g_voiceLock);
@@ -727,7 +796,7 @@ static void __cdecl VoiceCmdMute(void)
 static void __cdecl VoiceCmdStatus(void)
 {
     char kn[64];
-    int vk = VoiceDvarInt(g_dvKey, VK_CAPITAL);
+    int vk = VoiceDvarInt(g_dvKey, 'V');
     ConPrintf("voice: %s, %s, mic %s%s; key %s (k33_talkKey %d), +talk %s, toggletalk %s, loopback %d, volume %d%%, "
               "bitrate %d\n",
               VoiceEnabled() ? "on" : "OFF", g_connected ? "connected" : "not in a match",
@@ -745,11 +814,32 @@ static void __cdecl VoiceCmdStatus(void)
                       now - g_lastHeard[i] < 500 ? " (talking)" : "", g_talkers[i].muted ? " [muted]" : "");
 }
 
+/* Test automation: "k33ready [0|1]" presses the room's Ready button the way the Scaleform
+ * SetReadyState callback does (AS_SetReadyState::Call 0x6AEFF0 reads the bool at args[0]+8). Only
+ * with "+set k33_cmdFile 1" on the command line. */
+static void __cdecl VoiceCmdReady(void)
+{
+    static const BYTE kReady[] = { 0x55, 0x8B, 0xEC, 0xB8, 0x01, 0x00, 0x00, 0x00, 0x84, 0x05, 0xA8, 0xB0, 0x2E, 0x08 };
+    const char *cl = GetCommandLineA();
+    if (!cl || !strstr(cl, "k33_cmdFile 1")) { ConPrintf("k33ready: test builds only (+set k33_cmdFile 1)\n"); return; }
+    if (!Readable((void *)(DWORD_PTR)0x006AEFF0u, sizeof(kReady)) || memcmp((void *)(DWORD_PTR)0x006AEFF0u, kReady, sizeof(kReady))) return;
+    static double args[2];
+    static DWORD params[8];
+    memset(args, 0, sizeof(args));
+    ((BYTE *)args)[4] = 2; /* bool */
+    ((BYTE *)args)[8] = VoiceArgc() < 2 || atoi(VoiceArgv(1)) != 0;
+    params[4] = (DWORD)(DWORD_PTR)args;
+    params[5] = 1;
+    typedef void(__attribute__((thiscall)) * CallFn)(void *, void *);
+    ((CallFn)(DWORD_PTR)0x006AEFF0u)(NULL, params);
+    Log("voice: k33ready %d", ((BYTE *)args)[8]);
+}
+
 typedef struct VoiceCmdNode { struct VoiceCmdNode *next; const char *name; void *fn; } VoiceCmdNode;
 static VoiceCmdNode g_voiceCmds[] = {
     { NULL, "+talk", (void *)VoiceCmdTalkDown },   { NULL, "-talk", (void *)VoiceCmdTalkUp },
     { NULL, "toggletalk", (void *)VoiceCmdToggle }, { NULL, "k33voice", (void *)VoiceCmdStatus },
-    { NULL, "k33voicemute", (void *)VoiceCmdMute },
+    { NULL, "k33voicemute", (void *)VoiceCmdMute }, { NULL, "k33ready", (void *)VoiceCmdReady },
 };
 
 /* Link the nodes into C1's command list. Done before the game entry: the list head 0x24F6424 is
@@ -777,22 +867,31 @@ static void VoiceRegisterCommands(void)
 
 /* ---- WndProc key path (main thread) ---------------------------------------------------------- */
 
-static void VoiceWndMsg(UINT msg, WPARAM wp, LPARAM lp)
+/* 1 when the message belongs to push-to-talk and must not reach the game. The talk key only acts
+ * in play: while a menu, the chat line or the console owns the keyboard (keyCatchers [0x16FC2E0],
+ * the word CL_CmdButtons 0x4905C5 tests; or the Kernel33 console) it types normally. While it is
+ * held for talking, its key-down and key-up are kept from C1, so a bind on the same key never
+ * fires as well. */
+#define VOICE_KEYCATCHERS_VA 0x016FC2E0u
+static BOOL VoiceWndMsg(UINT msg, WPARAM wp, LPARAM lp)
 {
-    if (!g_voiceOn) return;
+    if (!g_voiceOn) return FALSE;
     switch (msg) {
     case WM_KEYDOWN:
     case WM_SYSKEYDOWN: {
-        if (!g_voiceDvarsDone) return;
-        int vk = VoiceDvarInt(g_dvKey, VK_CAPITAL);
-        if (vk > 0 && (int)wp == vk && !(lp & (1 << 30)) && !g_conOpen) InterlockedExchange(&g_keyTalk, 1);
-        break;
+        if (!g_voiceDvarsDone) return FALSE;
+        int vk = VoiceDvarInt(g_dvKey, 'V');
+        if (vk <= 0 || (int)wp != vk) return FALSE;
+        if (g_keyTalk) return TRUE; /* auto-repeat while talking */
+        if (g_conOpen || *(volatile int *)(DWORD_PTR)VOICE_KEYCATCHERS_VA) return FALSE;
+        InterlockedExchange(&g_keyTalk, 1);
+        return TRUE;
     }
     case WM_KEYUP:
     case WM_SYSKEYUP: {
-        int vk = VoiceDvarInt(g_dvKey, VK_CAPITAL);
-        if (vk > 0 && (int)wp == vk) InterlockedExchange(&g_keyTalk, 0);
-        break;
+        int vk = VoiceDvarInt(g_dvKey, 'V');
+        if (vk > 0 && (int)wp == vk && g_keyTalk) { InterlockedExchange(&g_keyTalk, 0); return TRUE; }
+        return FALSE;
     }
     case WM_KILLFOCUS:
         InterlockedExchange(&g_keyTalk, 0);
@@ -802,11 +901,12 @@ static void VoiceWndMsg(UINT msg, WPARAM wp, LPARAM lp)
         if (!wp) { InterlockedExchange(&g_keyTalk, 0); InterlockedExchange(&g_cmdTalk, 0); }
         break;
     }
+    return FALSE;
 }
 
 static LRESULT CALLBACK VoiceWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
-    VoiceWndMsg(msg, wp, lp);
+    if (VoiceWndMsg(msg, wp, lp)) return 0;
     return ((WNDPROC)(DWORD_PTR)GAME_WNDPROC_VA)(hwnd, msg, wp, lp);
 }
 

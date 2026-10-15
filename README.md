@@ -127,9 +127,11 @@ packet branch only printed "voice communication is disabled"). It uses Opus (lib
 statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
 (`src/codol/net/codol_voice.c` on its `feat/voicechat` branch).
 
-- **Push-to-talk**: hold **Caps Lock** (dvar `k33_talkKey`, a Windows virtual-key code; 86 = V,
-  0 = none), or bind any key to `+talk` (`bind MOUSE4 +talk`); `toggletalk` latches transmit on/off.
-  The key is ignored while the developer console is open. The microphone stream runs only while
+- **Push-to-talk**: hold **V** (dvar `k33_talkKey`, a Windows virtual-key code; 86 = V, 20 = Caps
+  Lock, 0 = none), or bind any key to `+talk` (`bind MOUSE4 +talk`); `toggletalk` latches transmit
+  on/off. The key acts only in play: while a menu, the chat line (C1 keyCatchers) or the developer
+  console has the keyboard it types normally. While held for talking its key events are kept from C1,
+  so a bind on the same key does not fire too (V has no bind in the stock config_mp.cfg). The microphone stream runs only while
   transmitting.
 - **Path**: WASAPI shared-mode capture (default communications device) -> 48 kHz mono -> Opus VOIP,
   20 ms frames, 24 kbps, in-band FEC, DTX -> OOB `"v"` packets to `clc.serverAddress` through C1's
@@ -138,9 +140,10 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
   prebuffer, FEC/PLC on loss) -> mix -> WASAPI playback.
 - **Talk balloon**: the server sets es.eFlags 0x100 on a talking player's entity for 500 ms, the bit
   C1's head-icon code already draws `headicontalkballoon` for (teammates only).
-- **Dvars**: `codol_voice` (1; `+set codol_voice 0` installs nothing), `k33_talkKey` (20),
+- **Dvars**: `codol_voice` (1; `+set codol_voice 0` installs nothing), `k33_talkKey` (86 = V),
   `k33_voiceVolume` (100 %), `k33_voiceBitrate` (24000), `k33_voiceLoopback` (0; 1 plays your own
-  voice back locally without a server), `k33_voiceDebug` (0; 1 prints status every 5 s, 2 every packet).
+  voice back locally without a server), `k33_voiceDebug` (0; 1 prints status every 5 s, 2 every packet), `k33_voiceTone` (0; 1 transmits a
+  440 Hz tone instead of the microphone, for tests).
 - **Commands**: `+talk`/`-talk`, `toggletalk`, `k33voice` (status: devices, counters, who is
   talking), `k33voicemute <client>` (toggle a client-side mute).
 - **UI**: the Scaleform callbacks `EnableVoiceTalk` (voice on/off) and `SetVoiceMicMute` (mic mute),
@@ -150,3 +153,8 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
 
 Build without touching the live DLL: `PATH=/c/msys64/mingw32/bin:$PATH sh build-voice.sh` writes
 `Kernel33_voice.dll`.
+
+Test automation (only with `+set k33_cmdFile 1` on the command line): the lines of
+`<exe dir>\k33_cmd_<pid>.txt` are executed every half second, and `k33ready [0|1]` presses the room's
+Ready button (AS_SetReadyState), so `room.match.cyborg` then `k33ready 1` puts a test client into a
+match without the UI.
