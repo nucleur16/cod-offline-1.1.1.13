@@ -31,4 +31,37 @@
 main()
 {
 	maps\_zombiemode::levelMain( "zm_asylum_sh" );
+	level thread asylum_fog();
+}
+
+// --------------------------------------------------------------------------
+// Fog.  T5 maps\createart\zombie_cod5_asylum_art.gsc fog_settings (called
+// once from zombie_cod5_asylum.gsc main) sets height fog (setVolFog); no
+// other T5 script changes it on this map (no hounds; turning the power on
+// changes no fog).  C1 has exponential fog only, so the setting is the T5
+// density at the ground floor where players spawn (z 72, the eight
+// initial_spawn_points; the downstairs path nodes lie at z 64-96, upstairs
+// at z 240-256, which would give 1042):
+// halfway = half_dist * 2 ^ ( ( 72 - base_height ) / half_height ).
+//   start 244.829  half_dist 697.262  half_height 200  base 124  -> 582.3
+// Colour is T5's warm brown (fog_scale 2 and the sun colour have no C1
+// equivalent).
+// zm maps do not run maps\mp\_load, whose codolFogDvar sends C1's r_fog
+// (dvar 1464); a previous map may have turned it off, so it is sent here.
+// --------------------------------------------------------------------------
+
+asylum_fog()
+{
+	level thread asylum_fog_dvar();
+
+	setExpFog( 244.829, 582.3, 0.419608, 0.321569, 0.25098, 1, 0 );
+}
+
+asylum_fog_dvar()
+{
+	for ( ;; )
+	{
+		level waittill( "connected", player );
+		player setClientDvar( "1464", 1 );
+	}
 }

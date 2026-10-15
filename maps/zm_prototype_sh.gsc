@@ -32,6 +32,36 @@ main()
 {
 	maps\_zombiemode::levelMain( "zm_prototype_sh" );
 	hideNavigationArrows();
+	level thread prototype_fog();
+}
+
+// --------------------------------------------------------------------------
+// Fog.  T5 maps\createart\zombie_cod5_prototype_art.gsc fog_settings (called
+// once from zombie_cod5_prototype.gsc main) sets height fog (setVolFog); no
+// other T5 script changes it on this map (no hounds, no power transition).
+// C1 has exponential fog only, so the setting is the T5 density at the ground
+// floor (z 17, the four initial_spawn_points; most path nodes lie at z 16-48):
+// halfway = half_dist * 2 ^ ( ( 17 - base_height ) / half_height ).
+//   start 220  half_dist 948.75  half_height 154.636  base 75  -> 731.5
+// Colour is T5's neutral grey 0.501961 (fog_scale 3.02824 has no C1 equivalent).
+// zm maps do not run maps\mp\_load, whose codolFogDvar sends C1's r_fog
+// (dvar 1464); a previous map may have turned it off, so it is sent here.
+// --------------------------------------------------------------------------
+
+prototype_fog()
+{
+	level thread prototype_fog_dvar();
+
+	setExpFog( 220, 731.5, 0.501961, 0.501961, 0.501961, 1, 0 );
+}
+
+prototype_fog_dvar()
+{
+	for ( ;; )
+	{
+		level waittill( "connected", player );
+		player setClientDvar( "1464", 1 );
+	}
 }
 
 // The yellow floor arrows.  MEASURED from the zone MapEnts
