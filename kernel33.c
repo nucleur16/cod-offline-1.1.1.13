@@ -860,7 +860,8 @@ static void RedirectCall(DWORD va, void *hook)
 #define LOOPFX_PROCESS_VA     0x0042E1B0u
 #define LOOPFX_CALL_CG_VA     0x00478F0Fu
 #define LOOPFX_CALL_CL_VA     0x0049F8C7u
-#define LOOPFX_CG_INDEX_VA    0x06C3D2ACu /* the cg lookup 0x42E1B0 itself uses */
+#define LOOPFX_CG_INDEX_VA    0x06C3D2ACu /* the cg lookup 0x42E1B0 itself uses: the slot is chosen at random */
+#define LOOPFX_CG_SLOTS_MAX   1024u       /* per run (seen 0 and 4), so it is only sanity-checked */
 #define LOOPFX_CG_TABLE_VA    0x016D3B58u
 #define LOOPFX_CG_KEY         0x490B400Cu
 #define LOOPFX_CG_TIME_OFF    0x000B0350u
@@ -873,8 +874,8 @@ static void __cdecl LoopFxProcessHook(int localClient)
     static LONG logged;
     DWORD idx = *(volatile DWORD *)(DWORD_PTR)LOOPFX_CG_INDEX_VA;
     const BYTE *cg = NULL;
-    if (idx < 4)
-        cg = (const BYTE *)(DWORD_PTR)(*(volatile DWORD *)(DWORD_PTR)(LOOPFX_CG_TABLE_VA + idx * 4) ^ LOOPFX_CG_KEY);
+    if (idx < LOOPFX_CG_SLOTS_MAX && Readable((const void *)(DWORD_PTR)(LOOPFX_CG_TABLE_VA + idx * 4), 4))
+        cg =(const BYTE *)(DWORD_PTR)(*(volatile DWORD *)(DWORD_PTR)(LOOPFX_CG_TABLE_VA + idx * 4) ^ LOOPFX_CG_KEY);
     if (cg && (unsigned)localClient < 4 && Readable(cg + LOOPFX_CG_TIME_OFF, 4)) {
         int now = *(const volatile int *)(cg + LOOPFX_CG_TIME_OFF);
         BYTE *t = (BYTE *)(DWORD_PTR)(LOOPFX_TABLE_VA + (DWORD)localClient * LOOPFX_TABLE_STRIDE);
@@ -894,6 +895,10 @@ static void __cdecl LoopFxProcessHook(int localClient)
         if (moved && InterlockedIncrement(&logged) <= 8)
             Log("loop fx: %d of %d effects were up to %lld ms behind cg time %d; skipped %lld replays", moved, count,
                 worst + LOOPFX_REPLAY_MS, now, skipped);
+    } else {
+        static LONG warned;
+        if (InterlockedIncrement(&warned) == 1)
+            Log("loop fx: cg slot %lu (local client %d) not usable, catch-up not limited", (unsigned long)idx, localClient);
     }
     ((LoopFxProcessFn)(DWORD_PTR)LOOPFX_PROCESS_VA)(localClient);
 }
