@@ -158,3 +158,12 @@ Test automation (only with `+set k33_cmdFile 1` on the command line): the lines 
 `<exe dir>\k33_cmd_<pid>.txt` are executed every half second, and `k33ready [0|1]` presses the room's
 Ready button (AS_SetReadyState), so `room.match.cyborg` then `k33ready 1` puts a test client into a
 match without the UI.
+
+**HUD (hud menu ownerdraws).** C1's `ui_mp/hud_720.txt` (common_mp) still has IW4's voice items,
+`talking` (ownerdraw 266) and `talker1`..`talker4` (193..196), but C1's CG_OwnerDraw (0x459E10) had
+lost their code (193-196 return, 266 falls to the default). `voice.c` hooks CG_OwnerDraw's entry and
+draws them like IW4's CG_DrawPlayerTalking / CG_DrawTalkerNum with C1's own calls
+(Material_RegisterHandle "voice_on", UI_DrawHandlePic, UI_DrawText), at the menu's own rects and
+text scale and under its visibility rules. `talking` shows while you transmit and dims when the mic
+is silent; `talkerN` lists the players heard in the last 500 ms with their names (configstring
+1280 + clientNum), mutes excluded. With `k33_voiceLoopback 1` you appear in the list yourself.

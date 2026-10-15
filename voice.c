@@ -298,6 +298,7 @@ static void VoiceSampleOut(const VoiceDev *d, BYTE *frame, float v)
 
 /* ---- capture + encode ----------------------------------------------------------------------- */
 
+static volatile LONG g_micLevel; /* peak of the last encoded 20 ms frame, 0..1000 */
 static OpusEncoder *g_enc;
 static int g_encBitrate;
 static float g_capFrame[VOICE_FRAME];
@@ -327,6 +328,14 @@ static void VoiceQueueFrame(const BYTE *data, int len, BOOL last)
 
 static void VoiceEncodeFrame(BOOL last)
 {
+    {
+        float peak = 0;
+        for (int i = 0; i < VOICE_FRAME; i++) {
+            float a = g_capFrame[i] < 0 ? -g_capFrame[i] : g_capFrame[i];
+            if (a > peak) peak = a;
+        }
+        InterlockedExchange(&g_micLevel, (LONG)(peak > 1.0f ? 1000 : peak * 1000));
+    }
     if (!g_enc) {
         int err = 0;
         g_enc = opus_encoder_create(VOICE_RATE, 1, OPUS_APPLICATION_VOIP, &err);
@@ -944,12 +953,158 @@ __attribute__((thiscall)) static void VoiceAsMicMute(void *self, const BYTE *par
     if (has) InterlockedExchange(&g_micMuted, v);
 }
 
+
+/* ---- HUD: the hud menu's voice ownerdraws (main thread, inside C1's menu paint) -------------------
+ *
+ * C1's ui_mp/hud_720.txt (common_mp) still carries IW4's voice items: "talking" (ownerdraw 266, the
+ * local player's transmit icon) and "talker1".."talker4" (ownerdraws 193..196, a mic icon and the
+ * name of each player heard), with their rects, text scale and visibility expressions. C1 stripped
+ * the code behind them: CG_OwnerDraw 0x459E10 switches on ownerDraw-5 through the byte table
+ * 0x45A8D8, and 193..196 land on case 29 (0x45A7B3, return) while 266 falls to the default
+ * (0x45A636), so nothing is drawn. The materials are still in the zones: voice_on (common_mp) and
+ * talkingicon (code_post_gfx_mp).
+ *
+ * VoiceOwnerDrawHook takes CG_OwnerDraw's first six bytes (push ebp; mov ebp,esp; sub esp,18h) and
+ * handles those five ownerdraws the way IW4's CG_DrawPlayerTalking / CG_DrawTalkerNum do, with C1's
+ * own calls: Material_RegisterHandle 0xA78170, ScrPlace_GetView 0x4B52A0, UI_DrawHandlePic 0x5DD460
+ * (edx = scrPlace, ecx = color) and UI_DrawText 0x5EC3E0. Everything else continues into C1.
+ * CG_OwnerDraw's stack arguments (ebp-relative): +8 localClientNum, +20h..+2Ch rect x/y/w/h, +30h/+34h
+ * horz/vert align, +38h/+3Ch text x/y, +40h ownerDraw, +44h font, +48h text scale, +4Ch color,
+ * +54h text style.
+ *
+ * "talking" shows while this client transmits; its alpha follows the mic level (dim when silent,
+ * full when the mic picks something up). talkerN is the Nth player heard in the last 500 ms
+ * (g_voiceChatTalkingDuration), mutes excluded; the name comes from the player-name configstring
+ * 1280 + clientNum the server publishes. */
+#define VOICE_OWNERDRAW_VA     0x00459E10u
+#define VOICE_OWNERDRAW_RESUME 0x00459E16u
+#define VOICE_MAT_REGISTER_VA  0x00A78170u
+#define VOICE_SCRPLACE_VA      0x004B52A0u
+#define VOICE_DRAWPIC_VA       0x005DD460u
+#define VOICE_DRAWTEXT_VA      0x005EC3E0u
+#define VOICE_OD_TALKER1       193
+#define VOICE_OD_TALKING       266
+#define VOICE_CS_NAMES         1280
+#define VOICE_CS_OFFSETS_VA    0x06D0D130u
+#define VOICE_CS_DATA_VA       0x06D1370Cu
+
+static void *g_matVoiceOn;
+static BOOL g_voiceHudOk;
+
+static void VoicePlayerName(int client, char *out, int n)
+{
+    out[0] = 0;
+    if (client >= 0 && client < 20) {
+        const DWORD *offs = (const DWORD *)(DWORD_PTR)(VOICE_CS_OFFSETS_VA + (VOICE_CS_NAMES + client) * 4);
+        if (Readable(offs, 4) && *offs) {
+            const char *str = (const char *)(DWORD_PTR)(VOICE_CS_DATA_VA + *offs);
+            int k = 0;
+            for (const char *c = str; k < n - 1 && Readable(c, 1) && *c; c++)
+                if (*c != '"') out[k++] = *c;
+            out[k] = 0;
+        }
+    }
+    if (!out[0]) _snprintf(out, n, "Player %d", client);
+    out[n - 1] = 0;
+}
+
+static int VoiceLocalClient(void)
+{
+    BYTE *cg = ParityCg();
+    return cg && Readable(cg + PS_CLIENTNUM, 4) ? *(const int *)(cg + PS_CLIENTNUM) : -1;
+}
+
+/* The Nth (0-based) player heard in the last 500 ms, or -1. */
+static int VoiceTalkerNum(int nth)
+{
+    DWORD now = GetTickCount();
+    for (int i = 0; i < VOICE_TALKERS; i++) {
+        DWORD t = g_lastHeard[i];
+        if (!t || now - t > 500 || g_talkers[i].muted) continue;
+        if (nth-- == 0) return i == VOICE_LOOPBACK_TALKER ? VoiceLocalClient() : i; /* k33_voiceLoopback: you */
+    }
+    return -1;
+}
+
+static void *VoiceMaterial(void)
+{
+    if (!g_matVoiceOn)
+        g_matVoiceOn = ((void *(__cdecl *)(const char *, int))(DWORD_PTR)VOICE_MAT_REGISTER_VA)("voice_on", 7);
+    return g_matVoiceOn;
+}
+
+/* UI_DrawHandlePic 0x5DD460 takes scrPlace in edx and the colour in ecx; the thunk moves them there
+ * and re-pushes the other seven arguments (each "push [esp+36]" takes the next lower one). */
+__attribute__((used)) DWORD g_voiceDrawPic = VOICE_DRAWPIC_VA;
+void __cdecl VOICE_DrawPic(const void *scr, const float *color, float x, float y, float w, float h, int horz,
+                           int vert, void *material);
+__asm__(
+    ".text\n"
+    ".globl _VOICE_DrawPic\n"
+    "_VOICE_DrawPic:\n"
+    "    movl 4(%esp), %edx\n"
+    "    movl 8(%esp), %ecx\n"
+    "    pushl 36(%esp)\n"
+    "    pushl 36(%esp)\n"
+    "    pushl 36(%esp)\n"
+    "    pushl 36(%esp)\n"
+    "    pushl 36(%esp)\n"
+    "    pushl 36(%esp)\n"
+    "    pushl 36(%esp)\n"
+    "    call *_g_voiceDrawPic\n"
+    "    addl $28, %esp\n"
+    "    ret\n");
+
+typedef void(__cdecl *UiDrawTextFn)(const void *, const char *, int, void *, float, float, int, int, float,
+                                    const float *, int);
+
+/* args points at CG_OwnerDraw's first stack argument ([ebp+8]). 1 = handled here. */
+__attribute__((used)) int __cdecl VoiceOwnerDraw(const DWORD *args)
+{
+    int ownerDraw = (int)args[(0x40 - 8) / 4];
+    if (ownerDraw != VOICE_OD_TALKING && (ownerDraw < VOICE_OD_TALKER1 || ownerDraw > VOICE_OD_TALKER1 + 3)) return 0;
+    if (!g_voiceOn || !g_voiceDvarsDone || !VoiceEnabled()) return 1;
+    int lc = (int)args[0];
+    float x = *(const float *)&args[(0x20 - 8) / 4], y = *(const float *)&args[(0x24 - 8) / 4];
+    float w = *(const float *)&args[(0x28 - 8) / 4], h = *(const float *)&args[(0x2C - 8) / 4];
+    int horz = (BYTE)args[(0x30 - 8) / 4], vert = (BYTE)args[(0x34 - 8) / 4];
+    void *font = (void *)(DWORD_PTR)args[(0x44 - 8) / 4];
+    float scale = *(const float *)&args[(0x48 - 8) / 4];
+    const float *color = (const float *)(DWORD_PTR)args[(0x4C - 8) / 4];
+    int style = (int)args[(0x54 - 8) / 4];
+    float c[4] = { 1, 1, 1, 1 };
+    if (color && Readable(color, 16)) memcpy(c, color, sizeof(c));
+    void *mat = VoiceMaterial();
+    if (!mat) return 1;
+    const void *scr = ((const void *(__cdecl *)(int))(DWORD_PTR)VOICE_SCRPLACE_VA)(lc);
+
+    if (ownerDraw == VOICE_OD_TALKING) {
+        if (!g_wantCapture) return 1;
+        LONG lv = g_micLevel;
+        float a = lv > 40 ? 1.0f : lv > 12 ? 0.75f : 0.4f; /* picking something up: full brightness */
+        c[3] *= a;
+        VOICE_DrawPic(scr, c, x, y, w, h, horz, vert, mat);
+        return 1;
+    }
+    int client = VoiceTalkerNum(ownerDraw - VOICE_OD_TALKER1);
+    if (client < 0) return 1;
+    char name[64];
+    VoicePlayerName(client, name, sizeof(name));
+    VOICE_DrawPic(scr, c, x, y, w, h, horz, vert, mat);
+    if (font)
+        ((UiDrawTextFn)(DWORD_PTR)VOICE_DRAWTEXT_VA)(scr, name, 32, font, x + w + 2.0f, y + h - 1.0f, horz, vert,
+                                                     scale, c, style);
+    return 1;
+}
+
 /* ---- thunks and install --------------------------------------------------------------------------- */
 
 __attribute__((used)) DWORD g_voiceEventLoop = VOICE_EVENTLOOP_FUNC_VA;
 __attribute__((used)) DWORD g_voiceRecvDone = VOICE_RECV_DONE_VA;
+__attribute__((used)) DWORD g_voiceOwnerDrawResume = VOICE_OWNERDRAW_RESUME;
 void VOICE_TickHook(void);
 void VOICE_RecvHook(void);
+void VOICE_OwnerDrawHook(void);
 __asm__(
     ".text\n"
     ".globl _VOICE_TickHook\n"
@@ -967,7 +1122,20 @@ __asm__(
     "    call _VoiceOnPacket\n"
     "    addl $8, %esp\n"
     "    popal\n"
-    "    jmp *_g_voiceRecvDone\n");     /* mov al, 1 ... ret */
+    "    jmp *_g_voiceRecvDone\n"     /* mov al, 1 ... ret */
+    ".globl _VOICE_OwnerDrawHook\n"
+    "_VOICE_OwnerDrawHook:\n"         /* jmp from CG_OwnerDraw 0x459E10, before its prologue */
+    "    leal 4(%esp), %eax\n"         /* the first stack argument ([ebp+8] in C1's frame) */
+    "    pushl %eax\n"
+    "    call _VoiceOwnerDraw\n"
+    "    addl $4, %esp\n"
+    "    testl %eax, %eax\n"
+    "    jz 1f\n"
+    "    ret\n"
+    "1:  pushl %ebp\n"                 /* the displaced prologue */
+    "    movl %esp, %ebp\n"
+    "    subl $0x18, %esp\n"
+    "    jmp *_g_voiceOwnerDrawResume\n");
 
 static BOOL VoiceSlotHook(DWORD slot, void *fn)
 {
@@ -1033,6 +1201,26 @@ static void InstallVoice(BOOL consoleWndProc)
     else
         Log("voice: Cmd_FindCommand bytes differ, +talk/-talk not registered (k33_talkKey still works)");
 
+    /* hud menu voice ownerdraws (talking 266, talker1..4 193..196) */
+    {
+        static const BYTE kOd[] = { 0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x18, 0x8B, 0x15, 0xAC, 0xD2, 0xC3, 0x06 };
+        static const BYTE kOdSwitch[] = { 0x81, 0xFA, 0x21, 0x01, 0x00, 0x00 }; /* cmp edx, 121h @0x459E68 */
+        static const BYTE kPic[] = { 0x55, 0x8B, 0xEC, 0xD9, 0xEE, 0x83, 0xEC, 0x0C };
+        static const BYTE kText[] = { 0x55, 0x8B, 0xEC, 0x83, 0xE4, 0xC0, 0x83, 0xEC, 0x34 };
+        BYTE *od = (BYTE *)(DWORD_PTR)VOICE_OWNERDRAW_VA;
+        if (Readable(od, sizeof(kOd)) && !memcmp(od, kOd, sizeof(kOd)) &&
+            !memcmp((void *)(DWORD_PTR)0x00459E68u, kOdSwitch, sizeof(kOdSwitch)) &&
+            !memcmp((void *)(DWORD_PTR)VOICE_DRAWPIC_VA, kPic, sizeof(kPic)) &&
+            !memcmp((void *)(DWORD_PTR)VOICE_DRAWTEXT_VA, kText, sizeof(kText)) &&
+            CallsTarget(0x0044EE08u, VOICE_MAT_REGISTER_VA)) {
+            BYTE jmp[6] = { 0xE9, 0, 0, 0, 0, 0x90 };
+            LONG rel = (LONG)((DWORD_PTR)VOICE_OwnerDrawHook - (VOICE_OWNERDRAW_VA + 5));
+            memcpy(jmp + 1, &rel, 4);
+            WriteCode(od, jmp, 6);
+            g_voiceHudOk = TRUE;
+        }
+    }
+
     BOOL asEnable = VoiceSlotHook(VOICE_AS_ENABLE_SLOT, (void *)VoiceAsEnable);
     BOOL asMute = VoiceSlotHook(VOICE_AS_MICMUTE_SLOT, (void *)VoiceAsMicMute);
 
@@ -1042,6 +1230,7 @@ static void InstallVoice(BOOL consoleWndProc)
         if (t) { SetThreadPriority(t, THREAD_PRIORITY_ABOVE_NORMAL); CloseHandle(t); }
         else g_voiceOn = FALSE;
     }
+    Log("voice: hud menu ownerdraws (talking 266, talker1-4 193-196) %s", g_voiceHudOk ? "hooked (CG_OwnerDraw 0x459E10)" : "NOT hooked (bytes differ)");
     Log("voice: send %s, tick %s, receive %s, keys %s, UI EnableVoiceTalk %s, SetVoiceMicMute %s, opus %s%s",
         g_voiceSendOk ? "ok" : "bytes differ", tickOk ? "hooked (0x595E9D)" : "NOT hooked",
         g_voiceRecvOk ? "hooked (0x496482)" : "NOT hooked (bytes differ)", g_voiceKeyOk ? "ok" : "NOT hooked",
