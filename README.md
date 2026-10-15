@@ -9,6 +9,9 @@ to the exe. See the comments in `kernel33.c` for addresses and reasoning.
 1. `python make_exe.py` renames the packed exe's `Kernel32.dll` import to `Kernel33.dll` (needs C1.exe
    and `codoMP_client_shipRetail.exe.bak`; also writes `unpacked.z`).
 2. Put `Kernel33.dll` next to `codoMP_client_shipRetail.exe` (TenProxy.dll + TerSafe.dll must still be there).
+3. Copy `patch\voice_ui_mp.ff` into `<game>\client_shipRetail\patch\` (create the folder). It carries the voice
+   chat menus: Options > Controls > Chat (Talk key) and Options > Audio > Voice (mode, mic level bar).
+   `python build_voice_ui.py` rebuilds it from the game's own patch_ui_mp.
 
 ## Build (MSYS2 mingw32)
 ```sh
@@ -80,7 +83,29 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
   OptionView_control_chat rows: chatmodeteam, toggletalk, +talk) or with `bind <key> +talk`; it is
   saved in `players\config_mp.cfg` with the other binds. Default **V**, applied only when no key is
   bound to `+talk` and V is unbound. C1's key routing keeps it from firing in menus or the chat line.
-  `toggletalk` latches transmit on/off. The microphone stream runs only while transmitting.
+  `toggletalk` latches transmit on/off. In push-to-talk mode the microphone stream runs only while
+  transmitting.
+- **Voice activation** (`k33_voiceMode 1`, Options > Audio > Voice Mode): open mic. While in a match
+  and with the game window in the foreground (scoreboard, chat line and console do not stop it; alt-tab,
+  the lobby and the main menu do), the mic stays open and a level gate decides what is sent: RMS level
+  of each 20 ms frame on a 0..100 scale (-60..0 dBFS), opens after two frames at or above
+  `k33_voiceThreshold` (or at once 15 above it), holds for `k33_voiceHangMs` after the level drops
+  below threshold-8, and sends the 120 ms before it opened first (pre-roll) so word starts and endings
+  are not clipped. Opus DTX stays on. `+talk` still transmits regardless of level. The HUD `talking`
+  icon follows what is actually sent (key or open gate).
+- **Options > Audio**: C1's audio panel (`OptionView_audio`) has a Voice section its onInit hides:
+  a voice-chat volume slider, a microphone checkbox + slider, an input-level indicator, and an unused
+  "Sound Presets" combo box. `voice_ui/OptionView_audio.as` is that class with the section shown and
+  rewired, one control per row: **Voice Mode** (the presets box: Push to talk / Voice activation ->
+  `k33_voiceMode`), **Voice** (chat volume -> `k33_voiceVolume`), **Microphone** (checkbox = mic on,
+  `k33_voiceMicMute`; slider = activation level, `k33_voiceThreshold`), **Input Level** (a level bar
+  drawn on the Microphone slider's track geometry: teal below the activation level, bright cyan at or
+  above it, a white marker at the level, a decaying peak tick, and the number where the sliders show
+  theirs; dimmed with "no mic" when there is no capture device; while the tab is shown it keeps
+  `k33_voiceMeter` set so the mic is open for metering, nothing is sent). Subtitles moves up beside
+  Output. That edit is not same-length, so `build_voice_ui.py` compiles the class with JPEXS FFDec
+  (`ffdec-cli`, `$CODOL_FFDEC`) and splices only its DoABC tag into codo.gfx, checking every other tag
+  is unchanged.
 - **Options > Controls > Chat**: C1's own options screen (codo.gfx `OptionView_control_chat`) already
   has the push-to-talk row ("说话" with a key button and a "hold to talk" checkbox that switches the
   button between `toggletalk` and `+talk`), but its onInit hid it. `build_voice_ui.py` flips those three
@@ -97,11 +122,16 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
 - **Dvars**: `codol_voice` (1; `+set codol_voice 0` installs nothing),
   `k33_voiceVolume` (100 %), `k33_voiceBitrate` (24000), `k33_voiceLoopback` (0; 1 plays your own
   voice back locally without a server), `k33_voiceDebug` (0; 1 prints status every 5 s, 2 every packet), `k33_voiceTone` (0; 1 transmits a
-  440 Hz tone instead of the microphone, for tests).
-- **Commands**: `+talk`/`-talk`, `toggletalk`, `k33voice` (status: devices, counters, who is
-  talking), `k33voicemute <client>` (toggle a client-side mute).
-- **UI**: the Scaleform callbacks `EnableVoiceTalk` (voice on/off) and `SetVoiceMicMute` (mic mute),
-  both `ret 4` stubs in C1, now reach `voice.c`.
+  440 Hz tone instead of the microphone, 2 the tone in 600 ms bursts every 1.5 s, for tests).
+  Archived (saved in config_mp.cfg): `k33_voiceMode` (0 push-to-talk, 1 voice activation),
+  `k33_voiceThreshold` (30 = -42 dBFS RMS; 0..100 = -60..0 dBFS), `k33_voiceHangMs` (400),
+  `k33_voiceMicMute` (0). Read only: `k33_voiceLevel` (live mic level, -1 no microphone);
+  `k33_voiceMeter` (set by Options > Audio).
+- **Commands**: `+talk`/`-talk`, `toggletalk`, `k33voice` (status: devices, counters, mode,
+  threshold, live mic level and gate state, who is talking), `k33voicemute <client>` (toggle a
+  client-side mute).
+- **UI**: the Scaleform callbacks `EnableVoiceTalk` (voice on/off) and `SetVoiceMicMute` (mic mute,
+  stored in `k33_voiceMicMute`), both `ret 4` stubs in C1, now reach `voice.c`.
 - C1 applies no command-line `+set` to dvars registered this late and runs no `+command`, so
   `voice.c` re-issues `+set <its dvar> <n>` and honours `+toggletalk` itself.
 
@@ -111,7 +141,10 @@ push-to-talk row comes from `python build_voice_ui.py`, which writes `client_shi
 Test automation (only with `+set k33_cmdFile 1` on the command line): the lines of
 `<exe dir>\k33_cmd_<pid>.txt` are executed every half second, and `k33ready [0|1]` presses the room's
 Ready button (AS_SetReadyState), so `room.match.cyborg` then `k33ready 1` puts a test client into a
-match without the UI.
+match without the UI. `k33mouse <x> <y> [click|off]` drives the Scaleform menus of an unfocused test
+client: C1's GetCursorPos / GetForegroundWindow / GetActiveWindow import slots report that client-area
+position and the game window, and the click is posted (e.g. `k33mouse 1441 47 click` opens Options
+at 1680x1050).
 
 **HUD (hud menu ownerdraws).** C1's `ui_mp/hud_720.txt` (common_mp) still has IW4's voice items,
 `talking` (ownerdraw 266) and `talker1`..`talker4` (193..196), but C1's CG_OwnerDraw (0x459E10) had
