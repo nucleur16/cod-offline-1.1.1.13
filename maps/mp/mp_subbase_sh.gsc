@@ -11,6 +11,9 @@ main()
 	maps\mp\mp_subbase_sh_precache::main();
 	maps\createart\mp_subbase_sh_art::main();
 	maps\mp\mp_subbase_sh_fx::main();
+	// fog off (r_fog 0, sent by _load::codolFogDvar): even thinned, IW4 mp_subbase's snow fog lays a white film over
+	// the light-grid-lit models
+	level.codolFog = 0;
 	maps\mp\_load::main();
 
 	// turn the light grid tweaks off explicitly: another map's level script (e.g. mp_terminal_cls) may have left them on

@@ -33,6 +33,7 @@ main()
 		return;
 
 	level._loadStarted = true;
+	level thread codolFogDvar();
 	codolRemoveMissionEntities();
 
 	level.createFX_enabled = ( getdvar( "createfx" ) != "" );
@@ -396,3 +397,17 @@ codolRemoveMissionEntities()
     printLn( "CoDOL MP mission cleanup: removed " + removed + " mission-only entities" );
 }
 
+// Sends each player the map's fog switch, C1 dvar "1464" (r_fog, default 1; the 1.1.1.13 client knows its dvars by
+// number only). A level script sets level.codolFog = 0 before calling main() to turn fog off; every other map sends
+// 1, so the setting does not carry over to the next map.
+codolFogDvar()
+{
+	fog = 1;
+	if ( isDefined( level.codolFog ) )
+		fog = level.codolFog;
+	for ( ;; )
+	{
+		level waittill( "connected", player );
+		player setClientDvar( "1464", fog );
+	}
+}
