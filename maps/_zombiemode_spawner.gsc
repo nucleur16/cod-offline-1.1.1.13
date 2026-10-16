@@ -94,6 +94,9 @@ init()
 	// T5 _zombiemode_audio.gsc:455 (every player's zombie_behind_vox).
 	level thread zombie_behind_vox_think();
 
+	// T5 :30.
+	level thread track_players_intersection_tracker();
+
 	// Developer-only entrance-walk soak (scr_codol_pathtest); returns at once
 	// on a production server.
 	level thread maps\_zombiemode_pathtest::init();
@@ -447,6 +450,7 @@ spawn_zombie( spawn_point )
 	ai thread zombie_think();
 	ai thread zombie_damage_watch();
 	ai thread maps\_zombiemode_gib::zombie_gib_on_damage();
+	ai thread zombie_damage_failsafe();
 
 	return ai;
 }
@@ -1001,6 +1005,83 @@ do_zombies_playvocals( state )
 	self play_sound_on_ent( "zombie_" + state );
 }
 
+// T5 _zombiemode_spawner.gsc:284 zombie_damage_failsafe, the anti-exploit
+// check: a zombie that has been touching its player enemy for 5 s without
+// moving 60 units (a player wedged where the swing cannot land) kills that
+// player, unless he has Juggernog or is already down.
+zombie_damage_failsafe()
+{
+	self endon( "death" );
+
+	continue_failsafe_damage = false;
+	for ( ;; )
+	{
+		wait( 0.5 );
+
+		enemy = self.enemy;
+		if ( !isDefined( enemy ) || !isPlayer( enemy ) )
+			continue;
+
+		if ( self isTouching( enemy ) )
+		{
+			old_org = self.origin;
+			if ( !continue_failsafe_damage )
+				wait( 5 );
+
+			enemy = self.enemy;
+			if ( !isDefined( enemy ) || !isPlayer( enemy ) || enemy hasPerk( "specialty_armorvest" ) )
+				continue;
+
+			if ( self isTouching( enemy ) && !is_true( enemy.laststand ) && isAlive( enemy ) )
+			{
+				if ( distanceSquared( old_org, self.origin ) < 60 * 60 )
+				{
+					codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " has pinned " + enemy.name + " for 5 s; failsafe kill (T5 zombie_damage_failsafe)" );
+					enemy doDamage( enemy.health + 1000, enemy.origin );
+					continue_failsafe_damage = true;
+				}
+			}
+		}
+		else
+			continue_failsafe_damage = false;
+	}
+}
+
+// T5 :34 track_players_intersection_tracker: two live players standing in
+// each other (within 18 units across and 60 up) are both killed, with the
+// laugh.  C1 ships no zmb_laugh_child; the kill is kept, the sound is not.
+track_players_intersection_tracker()
+{
+	level endon( "end_game" );
+
+	wait( 5 );
+
+	for ( ;; )
+	{
+		players = getPlayers();
+		for ( i = 0; i < players.size; i++ )
+		{
+			if ( is_true( players[ i ].laststand ) || players[ i ].sessionstate == "spectator" || !isAlive( players[ i ] ) )
+				continue;
+			for ( j = 0; j < players.size; j++ )
+			{
+				if ( i == j || is_true( players[ j ].laststand ) || players[ j ].sessionstate == "spectator" || !isAlive( players[ j ] ) )
+					continue;
+				if ( isDefined( level.player_intersection_tracker_override ) && players[ i ] [[ level.player_intersection_tracker_override ]]( players[ j ] ) )
+					continue;
+				dz = players[ i ].origin[ 2 ] - players[ j ].origin[ 2 ];
+				if ( dz > 60 || dz < -60 )
+					continue;
+				if ( distance2D( players[ i ].origin, players[ j ].origin ) > 18 )
+					continue;
+				players[ i ] doDamage( 1000, ( 0, 0, 0 ) );
+				players[ j ] doDamage( 1000, ( 0, 0, 0 ) );
+			}
+		}
+		wait( 0.5 );
+	}
+}
+
 // T5 :4983 play_ambient_zombie_vocals.  T5 picks the vocal by the move
 // bucket -- "ambient" for a walker, "sprint" for a runner or sprinter,
 // "crawler" for a zombie without legs -- and plays one every 1-4 s
@@ -1144,16 +1225,24 @@ init_rise()
 	level._zombie_rise_death_anims[ 2 ][ "out" ][ 1 ] = %ai_zombie_traverse_ground_v2_death_high_alt;
 
 	// T5 _zombiemode.gsc:1034-:1040.  The dirt and water rise effects ship
-	// in zm_asylum_sh's zone; misc/fx_zombie_body_dirt_billowing
-	// (common_gametype_zm) is played as well so a map without them still
-	// shows the ground breaking.
+	// only in zm_asylum_sh's zone (docs/zone_assets/ALL_fx.txt); every other
+	// map plays common_gametype_zm's misc/fx_zombie_body_dirt_billowing, so
+	// no client draws a missing-effect box.  zm_sumpf_sh's own zone is a
+	// usermap container the asset lister cannot read yet; if it carries
+	// T5's *_smpf water effects they can be mapped here.
+	level.zm_rise_t5_fx = getDvar( "mapname" ) == "zm_asylum_sh";
+	level._effect[ "rise_billow_common" ] = loadfx( "misc/fx_zombie_body_dirt_billowing" );
+	if ( !level.zm_rise_t5_fx )
+	{
+		add_sound( "zombie_rise", "zmb_zombie_spawn" );
+		return;
+	}
 	level._effect[ "rise_burst" ] = loadfx( "maps/zombie/fx_mp_zombie_hand_dirt_burst" );
 	level._effect[ "rise_billow" ] = loadfx( "maps/zombie/fx_mp_zombie_body_dirt_billowing" );
 	level._effect[ "rise_dust" ] = loadfx( "maps/zombie/fx_mp_zombie_body_dust_falling" );
 	level._effect[ "rise_burst_water" ] = loadfx( "maps/zombie/fx_zombie_body_wtr_burst" );
 	level._effect[ "rise_billow_water" ] = loadfx( "maps/zombie/fx_zombie_body_wtr_billowing" );
 	level._effect[ "rise_dust_water" ] = loadfx( "maps/zombie/fx_zombie_body_wtr_falling" );
-	level._effect[ "rise_billow_common" ] = loadfx( "misc/fx_zombie_body_dirt_billowing" );
 
 	add_sound( "zombie_rise", "zmb_zombie_spawn" );
 }
@@ -1285,6 +1374,11 @@ zombie_rise_fx( zombie )
 	water = isDefined( self.script_string ) && self.script_string == "in_water";
 
 	zombie play_sound_on_ent( "zombie_rise" );
+	if ( !is_true( level.zm_rise_t5_fx ) )
+	{
+		playFx( level._effect[ "rise_billow_common" ], self.origin + ( 0, 0, 5 ) );
+		return;
+	}
 	if ( water )
 	{
 		playFx( level._effect[ "rise_burst_water" ], self.origin + ( 0, 0, randomIntRange( 5, 10 ) ) );
