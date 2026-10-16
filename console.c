@@ -14,8 +14,13 @@
  *           and passes everything else to the game's WndProc untouched. The toggle is the key left
  *           of 1 (scan code 0x29, '`'/'~' on US layouts) or the virtual key in dvar k33_consoleKey
  *           (default F1, 0 = none). Key-up messages always reach the game, so nothing held when
- *           the console opens stays down. IME results go into the console line as GBK while it is
- *           open; otherwise the GBK patch (ImeDefWindowProc) works exactly as before.
+ *           the console opens stays down. Typed characters arrive as WM_CHAR in the code page of
+ *           the active input language (the window is ANSI; a DBCS character comes as one WM_CHAR,
+ *           lead byte low), not the system code page, so they are converted from that code page
+ *           to GBK. The window's IME context is detached while the console is open: an East Asian
+ *           IME (Microsoft Pinyin defaults to Chinese mode) otherwise turns every letter into a
+ *           composition whose window is invisible over a fullscreen game, and nothing reaches the
+ *           line. It is put back on close; paste (Ctrl+V) still takes Chinese text as GBK.
  *   output  every line C1 writes to its log: the four calls of Com_LogPrintMessage 0x594010
  *           (esi = text; from Com_PrintMessage 0x5941A4, Com_Printf 0x5942CE, 0x5944A2 and
  *           0x59B96E) get a pre-hook that copies the text into a 4096-line scrollback.
@@ -86,6 +91,10 @@ static int g_conHistCount, g_conHistPos;
 static BOOL g_conHistLoaded, g_conEatChar, g_conBanner;
 static const BYTE *volatile g_conKeyDvar;
 static BOOL g_conKeyDvarTried;
+static BYTE g_conMb[4];       /* WM_CHAR bytes of a character still incomplete (UTF-8, split DBCS) */
+static int g_conMbLen;
+static HWND g_conImeHwnd;     /* window whose IME context the open console detached */
+static HIMC g_conImeSaved;
 
 typedef struct {
     char name[80];   /* what Tab inserts */
@@ -1021,9 +1030,27 @@ static void ConPaste(HWND hwnd)
     CloseClipboard();
 }
 
+/* GBK-aware cursor steps: a double-byte character is one step for the arrows, Backspace and Delete. */
+static int ConCharBefore(int pos)
+{
+    int i = 0, prev = 0;
+    while (i < pos) {
+        prev = i;
+        i += IsDBCSLeadByteEx(GAME_CODEPAGE, (BYTE)g_conInput[i]) && i + 1 < g_conInputLen ? 2 : 1;
+    }
+    return prev;
+}
+
+static int ConCharAfter(int pos)
+{
+    if (pos >= g_conInputLen) return g_conInputLen;
+    return pos + (IsDBCSLeadByteEx(GAME_CODEPAGE, (BYTE)g_conInput[pos]) && pos + 1 < g_conInputLen ? 2 : 1);
+}
+
 static void ConKeyDown(HWND hwnd, WPARAM vk)
 {
-    BOOL ctrl = GetKeyState(VK_CONTROL) < 0, shift = GetKeyState(VK_SHIFT) < 0;
+    /* AltGr is Ctrl+Alt: AltGr+L is a letter on some layouts (Polish l-stroke), not Ctrl+L */
+    BOOL ctrl = GetKeyState(VK_CONTROL) < 0 && GetKeyState(VK_MENU) >= 0, shift = GetKeyState(VK_SHIFT) < 0;
     BOOL edited = FALSE;
     switch (vk) {
     case VK_ESCAPE:
@@ -1059,24 +1086,24 @@ static void ConKeyDown(HWND hwnd, WPARAM vk)
             while (s > 0 && g_conInput[s - 1] != ' ') s--;
             ConReplaceRange(s, g_conCursor, "");
         } else if (g_conCursor > 0) {
-            ConReplaceRange(g_conCursor - 1, g_conCursor, "");
+            ConReplaceRange(ConCharBefore(g_conCursor), g_conCursor, "");
         }
         edited = TRUE;
         break;
     case VK_DELETE:
-        if (g_conCursor < g_conInputLen) { int c = g_conCursor; ConReplaceRange(c, c + 1, ""); g_conCursor = c; }
+        if (g_conCursor < g_conInputLen) { int c = g_conCursor; ConReplaceRange(c, ConCharAfter(c), ""); g_conCursor = c; }
         edited = TRUE;
         break;
     case VK_LEFT:
         if (ctrl) { while (g_conCursor > 0 && g_conInput[g_conCursor - 1] == ' ') g_conCursor--;
                     while (g_conCursor > 0 && g_conInput[g_conCursor - 1] != ' ') g_conCursor--; }
-        else if (g_conCursor > 0) g_conCursor--;
+        else if (g_conCursor > 0) g_conCursor = ConCharBefore(g_conCursor);
         edited = TRUE;
         break;
     case VK_RIGHT:
         if (ctrl) { while (g_conCursor < g_conInputLen && g_conInput[g_conCursor] != ' ') g_conCursor++;
                     while (g_conCursor < g_conInputLen && g_conInput[g_conCursor] == ' ') g_conCursor++; }
-        else if (g_conCursor < g_conInputLen) g_conCursor++;
+        else if (g_conCursor < g_conInputLen) g_conCursor = ConCharAfter(g_conCursor);
         edited = TRUE;
         break;
     case VK_HOME:
@@ -1122,12 +1149,110 @@ static void ConKeyDown(HWND hwnd, WPARAM vk)
     InterlockedExchange(&g_conDirty, 1);
 }
 
+/* The ANSI code page Windows uses for this thread's WM_CHAR: the active input language's, not the
+ * system's (measured: Russian layout on a 1252 system gives 1251 bytes, Chinese gives GBK). */
+static UINT ConInputCodePage(void)
+{
+    char buf[8];
+    LANGID lang = LOWORD((DWORD_PTR)GetKeyboardLayout(0));
+    if (GetLocaleInfoA(MAKELCID(lang, SORT_DEFAULT), LOCALE_IDEFAULTANSICODEPAGE, buf, sizeof(buf)) > 0) {
+        UINT cp = (UINT)atoi(buf);
+        if (cp) return cp;
+    }
+    return GetACP();
+}
+
+/* One WM_CHAR into the line as GBK. A double-byte character arrives as one message (lead byte in
+ * the low byte, trail byte in the next); UTF-8 or a split DBCS pair arrives byte by byte. */
+static void ConTypeChar(WPARAM wp)
+{
+    BYTE in[2] = { (BYTE)wp, (BYTE)(wp >> 8) };
+    int count = in[1] ? 2 : 1;
+    UINT cp = ConInputCodePage();
+    for (int i = 0; i < count; i++) {
+        BYTE c = in[i];
+        if (!g_conMbLen && c < 0x80) {
+            if (c >= 0x20 && c != 0x7F) { char t[2] = { (char)c, 0 }; ConInsert(t); }
+            continue;
+        }
+        g_conMb[g_conMbLen++] = c;
+        WCHAR wide[4];
+        int n = MultiByteToWideChar(cp, MB_ERR_INVALID_CHARS, (LPCSTR)g_conMb, g_conMbLen, wide, 4);
+        if (n <= 0) {
+            BOOL utf8 = cp == CP_UTF8;
+            BOOL lead = utf8 ? g_conMb[0] >= 0xC2 && g_conMb[0] <= 0xF4 : IsDBCSLeadByteEx(cp, g_conMb[0]);
+            if (lead && g_conMbLen < (utf8 ? 4 : 2)) continue; /* wait for the rest */
+            g_conMbLen = 0;
+            if (c >= 0x20 && c < 0x7F) { char t[2] = { (char)c, 0 }; ConInsert(t); }
+            continue;
+        }
+        g_conMbLen = 0;
+        char gbk[16];
+        int m = WideCharToMultiByte(GAME_CODEPAGE, 0, wide, n, gbk, sizeof(gbk) - 1, NULL, NULL);
+        if (m > 0) {
+            gbk[m] = 0;
+            if ((BYTE)gbk[0] >= 0x20 && gbk[0] != 0x7F) ConInsert(gbk);
+        }
+    }
+}
+
+/* A dead key used as the toggle (^ on German, ` on US-International) leaves its accent pending in
+ * the layout; a throwaway ToUnicodeEx of Space consumes it, so the next letter is not accented. */
+static void ConClearDeadKey(void)
+{
+    BYTE keys[256] = { 0 };
+    WCHAR out[4];
+    HKL hkl = GetKeyboardLayout(0);
+    ToUnicodeEx(VK_SPACE, MapVirtualKeyExA(VK_SPACE, 0 /* MAPVK_VK_TO_VSC */, hkl), keys, out, 4, 0, hkl);
+}
+
+static HIMC ConImeDetach(HWND hwnd)
+{
+    HIMC cur = ImmGetContext(hwnd);
+    if (!cur) return NULL;
+    ImmNotifyIME(cur, NI_COMPOSITIONSTR, CPS_CANCEL, 0);
+    ImmReleaseContext(hwnd, cur);
+    return ImmAssociateContext(hwnd, NULL);
+}
+
+static void ConImeRestore(void)
+{
+    HWND h = g_conImeHwnd;
+    HIMC saved = g_conImeSaved;
+    g_conImeHwnd = NULL;
+    g_conImeSaved = NULL;
+    if (!h || !IsWindow(h)) return;
+    HIMC cur = ImmGetContext(h);
+    if (cur) ImmReleaseContext(h, cur); /* the game attached its own meanwhile: keep that */
+    else if (saved) ImmAssociateContext(h, saved);
+}
+
+/* No IME while the console is open: keys arrive as plain characters of the layout under it. */
+static void ConImeSync(HWND hwnd, UINT msg)
+{
+    if (!g_conOpen) {
+        if (g_conImeHwnd) ConImeRestore();
+        return;
+    }
+    if (g_conImeHwnd != hwnd) {
+        if (g_conImeHwnd) ConImeRestore();
+        g_conImeHwnd = hwnd;
+        g_conImeSaved = ConImeDetach(hwnd);
+        g_conMbLen = 0;
+    } else if (msg == WM_KEYDOWN || msg == WM_IME_STARTCOMPOSITION || msg == WM_INPUTLANGCHANGE ||
+               msg == WM_IME_SETCONTEXT) {
+        HIMC again = ConImeDetach(hwnd); /* Scaleform's text fields re-attach it (0x6B5461) */
+        if (again && !g_conImeSaved) g_conImeSaved = again;
+    }
+}
+
 static LRESULT CALLBACK ConsoleWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
     WNDPROC game = (WNDPROC)(DWORD_PTR)GAME_WNDPROC_VA;
     if (!g_conKeyDvarTried && (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) &&
         *(volatile int *)(DWORD_PTR)CON_DVAR_COUNT_VA > 100)
         ConRegisterKeyDvar();
+    ConImeSync(hwnd, msg);
     BOOL open = g_conOpen != 0;
     switch (msg) {
     case WM_KEYDOWN:
@@ -1142,6 +1267,7 @@ static LRESULT CALLBACK ConsoleWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
                 else ConSetOpen(FALSE);
             }
             g_conEatChar = ((lp >> 16) & 0xFF) == 0x29;
+            ConImeSync(hwnd, 0);
             return 0;
         }
         if (open) {
@@ -1153,16 +1279,18 @@ static LRESULT CALLBACK ConsoleWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
     case WM_SYSCHAR:
         if (g_conEatChar) { g_conEatChar = FALSE; return 0; }
         if (open) {
-            if (msg == WM_CHAR && (BYTE)wp >= 0x20 && wp != 0x7F) {
-                char c[2] = { (char)wp, 0 };
+            if (msg == WM_CHAR) {
                 if (g_suggCycling) g_suggCycling = FALSE;
-                ConInsert(c);
+                ConTypeChar(wp);
                 ConUpdateSuggestions();
+                InterlockedExchange(&g_conDirty, 1);
             }
             return 0;
         }
         break;
     case WM_DEADCHAR:
+    case WM_SYSDEADCHAR:
+        if (g_conEatChar) { g_conEatChar = FALSE; ConClearDeadKey(); return 0; }
         if (open) return 0;
         break;
     case WM_MOUSEWHEEL:
