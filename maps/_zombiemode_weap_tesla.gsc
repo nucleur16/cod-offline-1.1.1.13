@@ -450,6 +450,10 @@ tesla_head_point( ent )
 
 tesla_chest_point( ent )
 {
+	// T5 :187 plays a hound's shock on J_Spine1, a dog's back, not a standing
+	// zombie's chest.
+	if ( is_true( ent.isdog ) )
+		return ent.origin + ( 0, 0, 20 );
 	return ent.origin + ( 0, 0, 48 );
 }
 
