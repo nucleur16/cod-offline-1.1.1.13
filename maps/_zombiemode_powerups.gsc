@@ -677,13 +677,20 @@ powerup_wobble()
 
 	self thread powerup_glow_on();
 
-	self.angles = ( 0, 0, 0 );
-
-	for ( ;; )
+	// T5 :1603-:1621: every 2.5-5 s the pickup eases to a new random
+	// tumble -- pitch -60..60, roll -45..45, yaw on by 60..300 degrees.
+	while ( isDefined( self ) )
 	{
-		self rotateTo( self.angles + ( 0, 180, 0 ), 1, 0, 0 );
-		wait( 1 );
-		self.angles = self.angles + ( 0, 180, 0 );
+		waittime = randomFloatRange( 2.5, 5 );
+		yaw = randomInt( 360 );
+		if ( yaw > 300 )
+			yaw = 300;
+		else if ( yaw < 60 )
+			yaw = 60;
+		yaw = self.angles[ 1 ] + yaw;
+		new_angles = ( -60 + randomInt( 120 ), yaw, -45 + randomInt( 90 ) );
+		self rotateTo( new_angles, waittime, waittime * 0.5, waittime * 0.5 );
+		wait( 0.05 + randomFloat( waittime - 0.15 ) );
 	}
 }
 
@@ -718,7 +725,7 @@ powerup_timeout()
 }
 
 // T5 :1197 powerup_grab.  A 64-unit proximity test, not a trigger -- T5's
-// own form, and it is what lets a downed player fail to collect.
+// own form.
 powerup_grab()
 {
 	self endon( "powerup_timedout" );
@@ -738,13 +745,15 @@ powerup_grab()
 		{
 			player = players[ i ];
 
-			if ( !is_player_valid( player ) )
+			// T5 :1213-:1221 checks nobody's validity: a downed player
+			// crawling over a power-up takes it -- except a weapon power-up
+			// (minigun, tesla, random weapon; here also the RC car), which a
+			// downed or reviving player cannot hold.  A spectator is not in
+			// the world.
+			if ( !isDefined( player ) || !isAlive( player ) || player.sessionstate != "playing" )
 				continue;
-
-			// T5 :1215: no weapon power-up for a player who is reviving (a
-			// downed one already fails is_player_valid); the RC car is a
-			// ride of the same kind.
-			if ( is_weapon_powerup( self.powerup_name ) && player useButtonPressed() && player in_revive_trigger() )
+			if ( is_weapon_powerup( self.powerup_name ) &&
+				( is_true( player.laststand ) || ( player useButtonPressed() && player in_revive_trigger() ) ) )
 				continue;
 
 			if ( distanceSquared( player.origin, self.origin ) >= range_squared )
@@ -1104,6 +1113,10 @@ full_ammo_powerup()
 	{
 		player = players[ i ];
 		if ( !isDefined( player ) )
+			continue;
+
+		// T5 :1813: a downed player's ammo is left alone.
+		if ( is_true( player.laststand ) )
 			continue;
 
 		weapons = player getWeaponsListAll();
