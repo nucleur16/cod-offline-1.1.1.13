@@ -8,6 +8,7 @@
 init()
 {
 	level.zm_spawn_zones = [];
+	level.zombie_rise_spawners = [];
 	level.zm_zone_mode = getDvar( "mapname" );
 
 	// This VM's filtered getEntArray only accepts native ent_fields; C1's
@@ -43,6 +44,13 @@ init()
 				if ( isDefined( group[ j ].script_noteworthy ) && group[ j ].script_noteworthy == "zombie_spawner" )
 					zone.spawners[ zone.spawners.size ] = group[ j ];
 			}
+			// T5 zone_init :231: the zone's rise points, "<volume target>_rise"
+			// (zm_sumpf_sh's swamp risers; script_noteworthy "find_flesh" lets
+			// a riser skip the barricades, script_string "in_water" picks the
+			// water effects).
+			zone.rise_locations = get_struct_array( volume.target + "_rise", "targetname" );
+			if ( !isDefined( zone.rise_locations ) )
+				zone.rise_locations = [];
 			level.zm_spawn_zones[ level.zm_spawn_zones.size ] = zone;
 		}
 		zone.volumes[ zone.volumes.size ] = volume;
@@ -182,6 +190,7 @@ refresh_spawners()
 	}
 
 	new_spawns = [];
+	new_rise = [];
 	active_names = "";
 	for ( i = 0; i < level.zm_spawn_zones.size; i++ )
 	{
@@ -196,6 +205,12 @@ refresh_spawners()
 		active_names = active_names + zone.name + ",";
 		for ( j = 0; j < zone.spawners.size; j++ )
 			new_spawns[ new_spawns.size ] = zone.spawners[ j ];
+		// T5 create_spawner_list :712: the active zones' rise points.
+		if ( isDefined( zone.rise_locations ) )
+		{
+			for ( j = 0; j < zone.rise_locations.size; j++ )
+				new_rise[ new_rise.size ] = zone.rise_locations[ j ];
+		}
 	}
 
 	// The T5 manager retains the initial room when nobody occupies an
@@ -214,6 +229,7 @@ refresh_spawners()
 	}
 
 	level.enemy_spawns = new_spawns;
+	level.zombie_rise_spawners = new_rise;
 	if ( !isDefined( level.zm_last_active_zone_names ) || active_names != level.zm_last_active_zone_names )
 	{
 		level.zm_last_active_zone_names = active_names;
