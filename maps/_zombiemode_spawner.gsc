@@ -1428,8 +1428,9 @@ zombie_rise_dust_fx( zombie, water )
 // models.  A crawler made by any other script (gibtest) gets T5 make_crawler's
 // own roll: a foot, then 3:1 that leg against no_legs.
 //
-// NOT TAKEN: T5 setPhysParams( 15, 0, 24 ), the shrunken collision box that
-// lets a player jump over a crawler -- not a registered method here.
+// T5 :2955 setPhysParams( 15, 0, 24 ): the crawler's collision box drops to
+// 24 units so a player can step over it (native since this branch,
+// codol_actor_spawn.cpp ActorSetPhysParams).
 make_crawler()
 {
 	if ( !is_true( self.has_legs ) )
@@ -1451,6 +1452,7 @@ make_crawler()
 
 	self.has_legs = false;
 	self.needs_run_update = true;
+	self setPhysParams( 15, 0, 24 );
 	if ( !is_true( self.gibbed ) )
 		self maps\_zombiemode_gib::do_gib();
 	self.a.pose = "prone";
@@ -2190,7 +2192,12 @@ zombie_death_event( zombie )
 
 	if ( isDefined( attacker ) && isPlayer( attacker ) )
 	{
-		attacker maps\_zombiemode_score::player_add_points( "death", mod, hit_location );
+		// T5 zombie_death_points :3283.
+		event = "death";
+		if ( isDefined( kill_weapon ) && isSubStr( kill_weapon, "knife_ballistic_" ) && isDefined( mod ) &&
+			( mod == "MOD_MELEE" || mod == "MOD_IMPACT" ) )
+			event = "ballistic_knife_death";
+		attacker maps\_zombiemode_score::player_add_points( event, mod, hit_location );
 
 		if ( !isDefined( attacker.kills ) )
 			attacker.kills = 0;
