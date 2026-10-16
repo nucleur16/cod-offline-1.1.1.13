@@ -110,6 +110,12 @@ pathtest_watch()
 			level thread pathtest_kill( interval, range );
 			break;
 
+		case "towindow":
+			// towindow: move the first player to the repair spot of the
+			// first window a zombie is tearing (reach-through tests).
+			level thread pathtest_to_window();
+			break;
+
 		case "repair":
 			level thread pathtest_repair( 6 );
 			break;
@@ -170,6 +176,31 @@ pathtest_shoot_tear( percent )
 			z.no_powerup_drop = true;
 			z doDamage( z.health + 100, z.origin );
 		}
+	}
+}
+
+pathtest_to_window()
+{
+	for ( t = 0; t < 600; t++ )
+	{
+		players = getPlayers();
+		if ( players.size > 0 && isDefined( level.zombies ) )
+		{
+			for ( i = 0; i < level.zombies.size; i++ )
+			{
+				z = level.zombies[ i ];
+				if ( !isDefined( z ) || !isAlive( z ) || !isDefined( z.attacking_spot ) || !isDefined( z.zm_tear_node ) )
+					continue;
+				node = z.zm_tear_node;
+				spot = node.origin;
+				if ( isDefined( node.trigger_location ) )
+					spot = node.trigger_location.origin;
+				players[ 0 ] setOrigin( spot );
+				codolprintln( "CoDOL pathtest: client moved to window " + node.origin + " repair spot " + spot + " (ent " + z getEntityNumber() + " tearing)" );
+				return;
+			}
+		}
+		wait( 0.1 );
 	}
 }
 

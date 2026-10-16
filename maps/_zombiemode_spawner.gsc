@@ -2777,6 +2777,8 @@ should_attack_player_thru_boards()
 	}
 
 	self.old_origin = self.origin;
+	if ( zm_dvar_int( "scr_zm_spawn_log", 0 ) > 0 )
+		codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " reaches through the boards at " + self.player_targets.size + " player(s)" );
 	self do_zombies_playvocals( "attack" );
 	// T5 :1021 animscripted( "window_melee", self.origin, self.angles, anim, "normal", undefined, 1, 0.3 ).
 	self animscripted( "window_melee", self.origin, self.angles, reach, "normal", %body, 1, 0.3 );
@@ -2834,7 +2836,10 @@ window_notetracks( msg, reach )
 			height = player.origin[ 2 ] - trigger_location.origin[ 2 ];
 			if ( dist >= 51 || height * height >= 51 * 51 )
 				continue;
+			before = player.health;
 			player doDamage( self.meleeDamage, self.origin, self, self, 0, "MOD_MELEE" );
+			if ( zm_dvar_int( "scr_zm_spawn_log", 0 ) > 0 )
+				codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " swipe through the boards hit " + player.name + " health " + before + " -> " + player.health );
 			break;
 		}
 	}
