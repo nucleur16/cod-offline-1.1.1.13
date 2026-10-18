@@ -23,12 +23,6 @@ init()
 		level.missileRemoteLaunchTargetDist = 1500;
 
 	}	
-	// mp_subbase_sh boxes the map in clip_weap brushes (shot and missile clip) up to z 5728; 14000 out from its
-	// remoteMissileSpawn targets is above them, so the missile hit the ceiling. 6000 keeps every launch inside.
-	level.missileRemoteSpawnDist = 14000;
-	if ( mapname == "mp_subbase_sh" )
-		level.missileRemoteSpawnDist = 6000;
-
 	precacheItem( "remotemissile_projectile_mp" );
 	precacheShader( "ac130_overlay_grain" );
 	precacheString( &"MP_CIVILIAN_AIR_TRAFFIC" );
@@ -165,7 +159,7 @@ _fire( lifeId, player )
 		//thread drawLine( startPos, targetPos, 30, (0,1,0) );
 
 		vector = vectorNormalize( startPos - targetPos );		
-		startPos = vector_multiply( vector, level.missileRemoteSpawnDist ) + targetPos;
+		startPos = vector_multiply( vector, 14000 ) + targetPos;
 
 		//thread drawLine( startPos, targetPos, 15, (1,0,0) );
 		
