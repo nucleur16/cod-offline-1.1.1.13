@@ -158,3 +158,19 @@ is silent; `talkerN` lists the players heard in the last 500 ms with their names
 **Shared C1 helpers.** `c1game.c` holds what features share: Com_Printf, Cbuf_AddText, the command
 list (Cmd_AddCommand), Dvar_RegisterInt and keyCatchers, each byte-checked once. Voice prints go to
 C1's own console and console_mp.log through Com_Printf.
+
+## TAB scoreboard team emblems (`patch/codol_english_hud_emblems.ff`)
+
+The English UI zone `codol_english_ui_extra.ff` (launcher release 1.1.1.13-r24 on) carries a codohud.gfx
+whose `ScoreboardTeamPanel.SetScoreboardData` sizes each team panel to its player count and then hides
+the whole team sprite (TF141 / Shadow Company emblem and header bar art) unless the emblem still fits
+between the team name and the shrunken panel bottom. With five or fewer players on a team that test
+fails, so small matches show no team emblems. Stock C1 never hides them in a team mode.
+`scoreboard_hud/ScoreboardTeamPanel.as` keeps a team panel at least 6 rows tall and scales the emblem
+into the band between the team name and the score instead of hiding it (the stock 81 px position and
+full size at 9 rows; hidden only below 30 %). `build_scoreboard_hud.py --game <install>` compiles that
+class with FFDec into the install's `codol_english_ui_extra` codohud.gfx, splices only its DoABC tag
+and writes `codol_english_hud_emblems.ff`, which Kernel33's patch folder loads ahead of
+`codol_english_ui_extra` (name order; the first linked codohud.gfx wins). It refuses a source zone
+whose panel class is not the r24 layout. Rebuild it whenever `codol_english_ui_extra.ff` changes,
+since it carries a whole codohud.gfx. A client without the English UI zones needs nothing.
