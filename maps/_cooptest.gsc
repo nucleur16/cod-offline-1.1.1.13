@@ -338,6 +338,35 @@ watch()
 			if ( tokens.size >= 3 )
 				root_delta( tokens );
 			break;
+		case "searchers":
+			// defense crash: the wreck's searchers now, in their search
+			// scenes (the crouched one's getting-up clip when woken)
+			level thread maps\_coopmission_defense_crash::spawn_searchers();
+			break;
+		case "pathcheck":
+			// pathcheck <clip> <x> <y> <z> <yaw>: would the generic_human clip's
+			// root path from there be clear (maps\_coopanim root_path_clear)
+			if ( tokens.size >= 6 )
+			{
+				a = codol_getAnim( "generic_human", tokens[ 1 ] );
+				if ( isDefined( a ) )
+				{
+					ok = level maps\_coopanim::root_path_clear( a, ( float( tokens[ 2 ] ), float( tokens[ 3 ] ), float( tokens[ 4 ] ) ), float( tokens[ 5 ] ) );
+					codolprintln( "CoDOL cooptest: pathcheck " + tokens[ 1 ] + " clear " + ok );
+				}
+			}
+			break;
+		case "stacktest":
+			// take estate: Ghost put on checkpoint_breach_ghost in his breach
+			// stack, then the breach (his r1_enter into the doorway)
+			level thread stack_test();
+			break;
+		case "where":
+			// where <targetname> ...: every struct and entity of that
+			// targetname with its origin and angles (scene nodes)
+			for ( i = 1; i < tokens.size; i++ )
+				where( tokens[ i ] );
+			break;
 		case "rootscene":
 			// rootscene <tree> <clip> <model|ai> <x> <y> <z> <yaw>: the same
 			// through maps\_coopanim::play_anim with that spot as the scene
@@ -457,6 +486,56 @@ player( index )
 	return players[ index ];
 }
 
+stack_test()
+{
+	if ( !isDefined( level.coop_estate ) || !isDefined( level.coop_estate.ghost ) || !isDefined( level.struct ) )
+		return;
+	cp = undefined;
+	for ( i = 0; i < level.struct.size; i++ )
+		if ( isDefined( level.struct[ i ].targetname ) && level.struct[ i ].targetname == "checkpoint_breach_ghost" )
+			cp = level.struct[ i ];
+	if ( !isDefined( cp ) )
+		return;
+	g = level.coop_estate.ghost;
+	yaw = 230;
+	if ( isDefined( cp.angles ) )
+		yaw = cp.angles[ 1 ];
+	g forceTeleport( cp.origin + ( 0, 0, 8 ), g.angles );
+	codolprintln( "CoDOL cooptest: stacktest at " + cp.origin + " yaw " + yaw );
+	level thread maps\_coopscene_estate::breach_stack( g, cp.origin, yaw );
+	wait( 3 );
+	maps\_coopscene_estate::breach_stack_done( g );
+	wait( 4 );
+	codolprintln( "CoDOL cooptest: stacktest Ghost at " + g.origin + " yaw " + g.angles[ 1 ] );
+}
+
+where( name )
+{
+	n = 0;
+	if ( isDefined( level.struct ) )
+	{
+		for ( i = 0; i < level.struct.size; i++ )
+		{
+			st = level.struct[ i ];
+			if ( !isDefined( st.targetname ) || st.targetname != name )
+				continue;
+			a = "none";
+			if ( isDefined( st.angles ) )
+				a = "" + st.angles;
+			codolprintln( "CoDOL cooptest: where " + name + " struct at " + st.origin + " angles " + a );
+			n++;
+		}
+	}
+	ents = getEntArray( name, "targetname" );
+	for ( i = 0; i < ents.size; i++ )
+	{
+		codolprintln( "CoDOL cooptest: where " + name + " " + ents[ i ].classname + " at " + ents[ i ].origin + " angles " + ents[ i ].angles );
+		n++;
+	}
+	if ( !n )
+		codolprintln( "CoDOL cooptest: where " + name + " none" );
+}
+
 root_delta( tokens )
 {
 	tree = tokens[ 1 ];
@@ -472,6 +551,16 @@ root_delta( tokens )
 		turn = getAngleDelta( a, 0, 1 );
 		codolprintln( "CoDOL cooptest: rootdelta " + tree + " " + tokens[ i ] + " length " + getAnimLength( a ) +
 			" move " + move + " (" + length( move ) + " units) yaw " + turn );
+		// The path: where the root is at each tenth, and where the clip's
+		// first frame stands from an origin node (getStartOrigin).
+		path = "";
+		for ( f = 1; f <= 10; f++ )
+		{
+			m = getMoveDelta( a, 0, f / 10 );
+			path += " " + int( m[ 0 ] ) + "," + int( m[ 1 ] );
+		}
+		codolprintln( "CoDOL cooptest: rootdelta " + tokens[ i ] + " path" + path + " start " + getStartOrigin( ( 0, 0, 0 ), ( 0, 0, 0 ), a ) +
+			" startyaw " + getStartAngles( ( 0, 0, 0 ), ( 0, 0, 0 ), a )[ 1 ] );
 	}
 }
 

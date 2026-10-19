@@ -258,6 +258,25 @@ scene( name )
 	clip = maps\_coopanim::get_anim( self.animname, name );
 	len = getAnimLength( clip );
 	self.coop_scene_until = getTime() + int( len * 1000 );
-	self thread play_once( clip );
+	self thread play_scene( clip );
 	return len;
+}
+
+// The scene with its root motion (killhouse_gaz_intro steps and turns him
+// 127 degrees toward the arriving rookie), or over the idle in place when
+// its path is not clear; the idle resumes where it ends.
+play_scene( clip )
+{
+	self endon( "death" );
+	if ( !self maps\_coopanim::root_path_clear( clip, self.origin, self.angles[ 1 ] ) )
+	{
+		self play_once( clip );
+		return;
+	}
+	self notify( "coop_scene_once" );
+	self.coop_scene_busy = true;
+	self maps\_coopanim::play_root( clip );
+	self.coop_scene_busy = undefined;
+	if ( isDefined( self.coop_idle_clips ) )
+		self notify( "coop_scene_done" );
 }

@@ -159,13 +159,17 @@ ghost_say( alias, noWait )
 // Ghost puts a hand to his radio while Price is on it (IW4 estate's
 // estate_ghost_radio), when he is standing still and in no other scene.
 // The clip is IW4's whole radio conversation (52 s), so it is held only for
-// Price's line.
+// Price's line.  It walks him (about 120 units in its first 5 s, turning):
+// played with its root motion where the way is clear, in place otherwise.
 ghost_radio( time )
 {
 	ai = level.crash_ghost;
-	if ( !isDefined( ai ) || !isAlive( ai ) || ai.crash_moving || isDefined( ai.crash_scene ) )
+	if ( !isDefined( ai ) || !isAlive( ai ) || ai.crash_moving || isDefined( ai.crash_scene ) || isDefined( ai.coop_scene_scripted_on ) )
 		return;
-	if ( maps\_coopanim::anim_single_solo( ai, "radio", undefined, "inplace", true ) > 0 )
+	clip = maps\_coopanim::get_anim( "ghost", "radio" );
+	if ( !isDefined( clip ) )
+		return;
+	if ( maps\_coopanim::anim_single_root( ai, "radio", undefined, true, ( time + 0.5 ) / getAnimLength( clip ) ) > 0 )
 		ai thread ghost_radio_end( time + 0.5 );
 }
 
@@ -174,6 +178,7 @@ ghost_radio_end( time )
 	self endon( "death" );
 	self endon( "coop_gesture" );
 	wait( time );
+	maps\_coopanim::stop_scripted( self );
 	self.coop_pose_anim = undefined;
 	self notify( "coop_cast_pose" );
 	self notify( "coop_gesture" );
@@ -182,6 +187,7 @@ ghost_radio_end( time )
 // A gesture Ghost is in the middle of ends when he moves on.
 ghost_stop_gesture( ai )
 {
+	maps\_coopanim::stop_scripted( ai );
 	ai notify( "coop_gesture" );
 	if ( isDefined( ai.coop_pose_anim ) )
 	{
@@ -897,6 +903,7 @@ ghost_move( dest, what, radius, timeout )
 		timeout = 40;
 	ai notify( "crash_ghost_move" );
 	ai endon( "crash_ghost_move" );
+	maps\_coopanim::settle_scene( ai );
 	ghost_stop_gesture( ai );
 	ai.crash_moving = true;
 	ai orientMode( "face default" );
@@ -943,15 +950,18 @@ crash_abs( v )
 // A scripted walk for Ghost where the bot waypoint graph has no nodes (the
 // intro building's rooms and stairs): he rides an invisible mover along
 // hand-placed points (codol_actorRide; actors cannot linkTo), playing the
-// run.  The points were measured with _cooptest colmap / floors.
+// run at its own pace.  The points were measured with _cooptest colmap / floors.
 ghost_walk( points, what, speed )
 {
 	ai = level.crash_ghost;
 	if ( !isDefined( ai ) )
 		return;
+	// The mover goes at the run's own pace (run_lowready_f: 182 units a
+	// second), so his feet keep to the ground.
 	if ( !isDefined( speed ) )
-		speed = 150;
+		speed = maps\_coopanim::clip_pace( %run_lowready_f );
 	ai notify( "crash_ghost_move" );
+	maps\_coopanim::settle_scene( ai );
 	ghost_stop_gesture( ai );
 	ai.crash_moving = true;
 	ai orientMode( "face default" );
@@ -1392,7 +1402,7 @@ wake()
 		maps\_coopanim::has_anim( "searcher", "crouch_end" ) && self.health > 0 )
 	{
 		self.crash_search = undefined;
-		self thread wake_after( maps\_coopanim::anim_single_solo( self, "crouch_end", undefined, "inplace", true ) );
+		self thread wake_after( maps\_coopanim::anim_single_root( self, "crouch_end", undefined, true ) );
 		return;
 	}
 	self.crash_unaware = undefined;
@@ -1619,7 +1629,7 @@ phase_intro()
 		ortiz.animname = "ortiz";
 	puncher = intro_puncher( roomOrigin, roomYaw );
 	if ( isDefined( puncher ) )
-		maps\_coopanim::anim_single_solo( puncher, "interrogate", undefined, "inplace", true );
+		maps\_coopanim::anim_single_root( puncher, "interrogate", undefined, true );
 	black_all( 0, 1.5 );
 	wait( 1 );
 	say( ortiz, "crash_ortiz_03" );
@@ -1632,7 +1642,7 @@ phase_intro()
 	if ( isDefined( ghost ) )
 	{
 		ghost.crash_scene = true;
-		peekEnd += int( maps\_coopanim::anim_single_solo( ghost, "flash_peek", undefined, "inplace", true ) * 1000 );
+		peekEnd += int( maps\_coopanim::anim_single_root( ghost, "flash_peek", undefined, true, undefined, peek_node() ) * 1000 );
 	}
 	say( ortiz, "crash_ortiz_04" );
 	if ( isDefined( ortiz ) )
@@ -1649,7 +1659,8 @@ phase_intro()
 		wait( 0.05 );
 	if ( isDefined( ghost ) )
 	{
-		len = maps\_coopanim::anim_single_solo( ghost, "flash_throw", undefined, "inplace", true );
+		// From where the peek left him (the peek returns to its start).
+		len = maps\_coopanim::anim_single_root( ghost, "flash_throw", undefined, true );
 		if ( len > 0 )
 			wait( len * 0.39 + 0.3 );
 	}
@@ -1683,7 +1694,7 @@ phase_intro()
 		if ( !sprayed && !isDefined( e.crash_puncher ) )
 		{
 			e.animname = "watcher";
-			len = maps\_coopanim::anim_single_solo( e, "flash_spray", undefined, "inplace", true );
+			len = maps\_coopanim::anim_single_root( e, "flash_spray", undefined, true );
 			sprayed = len > 0;
 		}
 		if ( len <= 0 )
@@ -1796,12 +1807,29 @@ intro_puncher( roomOrigin, roomYaw )
 	return best;
 }
 
+// The scene node Ghost's peek and throw are authored against: both clips
+// start 46 units behind price_peek_point (1660 -1820.5 222, yaw 0) facing
+// along it (MEASURED with _cooptest rootdelta / where).  undefined when the
+// addon has no such struct (they are then played where he stands).
+peek_node()
+{
+	s = crash_struct( "price_peek_point" );
+	if ( !isDefined( s ) )
+		return undefined;
+	node = spawnStruct();
+	node.origin = s.origin;
+	node.angles = ( 0, 0, 0 );
+	if ( isDefined( s.angles ) )
+		node.angles = s.angles;
+	return node;
+}
+
 // The boss reels from the flash (crash_flash_react_ortiz), then runs.
 ortiz_flashed()
 {
 	self endon( "death" );
 	self.animname = "ortiz";
-	maps\_coopanim::anim_single_solo( self, "flash_react", undefined, "inplace" );
+	maps\_coopanim::anim_single_root( self, "flash_react" );
 	self ortiz_escape();
 }
 
@@ -1861,13 +1889,29 @@ phase_route()
 	// He pushes the double door open with his flat hand (IW4 hunted /
 	// airport: hunted_open_barndoor_flathand), the doors swinging as his
 	// hand meets them.
+	// The clip carries him 74 units to his left and 17 forward, turning
+	// left 109 degrees: facing east from the foot of the stairs that takes
+	// him north through the doorway (x 1635..1705 at y -1784) as it opens.
+	// The halves stop nothing from here (they swing clear at once), so the
+	// path check sees the doorway open.
 	len = 0;
-	if ( isDefined( level.crash_ghost ) )
-		len = maps\_coopanim::anim_single_solo( level.crash_ghost, "door_open", undefined, "inplace", true );
+	if ( isDefined( level.crash_ghost ) && isAlive( level.crash_ghost ) )
+	{
+		doors = getEntArray( "price_door", "targetname" );
+		for ( i = 0; i < doors.size; i++ )
+			doors[ i ] notSolid();
+		level.crash_ghost orientMode( "face angle", 0 );
+		wait( 0.4 );
+		len = maps\_coopanim::anim_single_root( level.crash_ghost, "door_open", 0, true );
+	}
 	if ( len > 0 )
 		wait( 0.5 );
 	open_price_door();
 	wait( 0.6 );
+	// He goes through the doorway on the clip; the walk out starts from
+	// where it leaves him.
+	if ( len > 1.1 )
+		wait( len - 1.1 );
 	ghost_wait_player( 450, 30 );
 	outside = [];
 	outside[ 0 ] = ( 1655, -1700, 66 );
