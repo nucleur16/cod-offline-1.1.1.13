@@ -454,21 +454,18 @@ spawnWalker( rank, mark )
 	idle = level.topPlayersIdle[ rank ];
 	length = getAnimLength( walk );
 
-	// The mark is where the walk ends, facing the camera; start where the
-	// clip's own motion would bring the model onto it.
+	// The walk starts on the mark itself (the placed position, which is known
+	// to be clear) and carries the clone forward from there toward the camera,
+	// turning so the pose ends facing it.  Starting a clip-length behind the
+	// mark, as before, was never traced and walked clones out of walls or
+	// through the ground on some maps.  scr_codol_topplayers_nowalk 1 keeps the
+	// clone standing on its mark in the idle.
 	endAngles = ( 0, mark.angles[1], 0 );
 	startAngles = ( 0, mark.angles[1] - getAngleDelta( walk, 0, 1 ), 0 );
-	start = mark.origin - animDeltaToWorld( getMoveDelta( walk, 0, 1 ), startAngles );
-	// The walk's start lies a clip-length behind the mark and was never
-	// traced, so on some maps the clone walked out of a wall or through the
-	// ground.  By default the clone stands on its mark (the placed end
-	// position) in the idle; scr_codol_topplayers_walk 1 brings the walk back.
-	walkIn = getDvarInt( "scr_codol_topplayers_walk" );
+	start = mark.origin;
+	walkIn = !getDvarInt( "scr_codol_topplayers_nowalk" );
 	if ( !walkIn )
-	{
-		start = mark.origin;
 		startAngles = endAngles;
-	}
 
 	model = spawn( "script_model", start );
 	model.angles = startAngles;
