@@ -539,7 +539,8 @@ walkUp( player, walk, idle, length, start, startAngles )
 
 	player thread dropCloneOnDisconnect( self );
 
-	step = 0.1;
+	// One segment per 20 Hz snapshot: 0.1 s segments read as steps (choppy).
+	step = 0.05;
 	trace = getDvarInt( "scr_codol_topplayers_trace" );
 	if ( trace >= 2 )
 		self thread sampleWalk( walk, length, start, startAngles );
