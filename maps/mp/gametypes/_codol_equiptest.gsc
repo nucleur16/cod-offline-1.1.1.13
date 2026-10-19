@@ -31,6 +31,18 @@
 //   set scr_codol_equiptest "knifeat <thrower> <x> <y> <z>"
 //       the same throw at a point; "knifeat <thrower> wall 0 0" aims at
 //       the first wall 250..700 units away, "... ground 0 0" at the floor.
+//   set scr_codol_equiptest "minepick <client> [use seconds]"
+//       stands a client beside its newest bouncing betty, claymore or C4,
+//       aims at the pickup trigger and presses use; logs the ammo before and
+//       after. scr_codol_minepickmask sets the use buttons (default 40,
+//       activate | use-reload; 8 is +activate alone, as C1's F key sends).
+//   set scr_codol_equiptest "quietpick <client> <slot> <weapon>"
+//       the client stops being a combat bot, throws <weapon> from <slot> and
+//       reclaims it three times (pick up, throw again, pick up).
+//   set scr_codol_equiptest "walkpick <client> <sprint 0|1> [1]"
+//       the quiet client plants a betty, walks (or sprints) up to it from
+//       160 units and taps use on arrival. A trailing 1 refuses the native
+//       use for the owner, so only the pickup's use-button poll can take it.
 //   set scr_codol_equiptest "knifepick <client>"
 //       stands a client on the last knife and holds use; logs its knife ammo
 //       before and after.
@@ -98,6 +110,43 @@ watchDvar()
             ( tokens[0] == "knifepick" && tokens.size > 1 ) )
         {
             level thread knifeTrial( tokens );
+            continue;
+        }
+        // "walkpick <client> <sprint 0|1> [1]": see the header.
+        if ( tokens[0] == "walkpick" && tokens.size > 2 )
+        {
+            player = playerByNumber( int( tokens[1] ) );
+            if ( isDefined( player ) )
+            {
+                level.codolWalkPickBlockNative = tokens.size > 3 && tokens[3] == "1";
+                player thread walkPickTrial( int( tokens[2] ) );
+            }
+            continue;
+        }
+        // "quietpick <client> <slot> <weapon>": the client stops being a
+        // combat bot (no AI buttons), throws <weapon> from <slot>, waits
+        // idle (crouched) and then tries to reclaim it with the use button.
+        if ( tokens[0] == "quietpick" && tokens.size > 3 )
+        {
+            player = playerByNumber( int( tokens[1] ) );
+            if ( isDefined( player ) )
+                player thread quietPickTrial( int( tokens[2] ), tokens[3] );
+            continue;
+        }
+        // "minepick <client> [use seconds]": stands a client 40 units from
+        // its newest planted bouncing betty, claymore or C4, looks at the
+        // device's pickup trigger and holds use; logs the device's ammo
+        // before and after and whether the device is still there.
+        if ( tokens[0] == "minepick" && tokens.size > 1 )
+        {
+            player = playerByNumber( int( tokens[1] ) );
+            hold = 0.5;
+            if ( tokens.size > 2 )
+                hold = float( tokens[2] );
+            if ( isDefined( player ) )
+                player thread minePickTrial( hold );
+            else
+                codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
             continue;
         }
         // "car <client> <dist>": stands a client <dist> units from the nearest
@@ -399,7 +448,7 @@ throwEquipment( slot, weapon )
     self giveStartAmmo( weapon );
     self setOffhandEquipment( slots[0], slots[1], slots[2] );
     codolPrintLn( "CoDOL equiptest: " + self.name + " throws " + weapon + " from slot " + slot +
-        " (ammo " + self getAmmoCount( weapon ) + ")" );
+        " (ammo " + self getAmmoCount( weapon ) + " stock " + self getWeaponAmmoStock( weapon ) + " clip " + self getWeaponAmmoClip( weapon ) + ")" );
     wait 0.5;
     self pressUntilThrown( slotButton( slot ), weapon );
 }
@@ -974,4 +1023,199 @@ knifeVictimThawOnDeath()
     self endon( "disconnect" );
     self waittill( "death" );
     self freezeControls( false );
+}
+
+// "minepick" (see watchDvar): the owner reclaims its newest planted device
+// with the real use button, through the device's own pickup trigger.
+minePickTrial( hold )
+{
+    self minePickTrialMask( hold, 0 );
+}
+
+minePickTrialMask( hold, extra )
+{
+    if ( !isDefined( level.codolMinePickMask ) )
+        level.codolMinePickMask = 40;
+    if ( getDvar( "scr_codol_minepickmask" ) != "" )
+        level.codolMinePickMask = getDvarInt( "scr_codol_minepickmask" );
+    self endon( "disconnect" );
+    device = undefined;
+    weapon = undefined;
+    trigger = undefined;
+    if ( isDefined( self.equipmentMines ) )
+    {
+        foreach ( mine in self.equipmentMines )
+        {
+            if ( isDefined( mine ) )
+            {
+                device = mine;
+                weapon = "bouncingbetty_mp";
+            }
+        }
+    }
+    if ( !isDefined( device ) )
+    {
+        lists = [];
+        if ( isDefined( self.claymoreArray ) )
+            lists[lists.size] = self.claymoreArray;
+        if ( isDefined( self.c4Array ) )
+            lists[lists.size] = self.c4Array;
+        foreach ( list in lists )
+        {
+            if ( !isDefined( list ) )
+                continue;
+            foreach ( item in list )
+            {
+                if ( isDefined( item ) )
+                {
+                    device = item;
+                    weapon = item.weaponName;
+                }
+            }
+        }
+    }
+    if ( !isDefined( device ) )
+    {
+        codolPrintLn( "CoDOL minepick: " + self.name + " has no planted device" );
+        return;
+    }
+    if ( isDefined( device.codolPickupTrigger ) )
+        trigger = device.codolPickupTrigger;
+    aim = device.origin;
+    if ( isDefined( trigger ) )
+        aim = trigger.origin;
+    yaw = randomFloat( 360 );
+    dir = anglesToForward( ( 0, yaw, 0 ) );
+    spot = device.origin + ( dir[0] * 40, dir[1] * 40, 0 );
+    ground = bulletTrace( spot + ( 0, 0, 32 ), spot - ( 0, 0, 128 ), false, self );
+    before = self getAmmoCount( weapon );
+    codolPrintLn( "CoDOL minepick: " + self.name + " device " + weapon + " at " + device.origin +
+        " trigger defined " + isDefined( trigger ) + " ammo " + before + " has " + self hasWeapon( weapon ) + " clipsize " + weaponClipSize( weapon ) +
+        " start " + weaponStartAmmo( weapon ) + " max " + weaponMaxAmmo( weapon ) + " stock " + self getWeaponAmmoStock( weapon ) +
+        " clip " + self getWeaponAmmoClip( weapon ) );
+    // Bots steer themselves between frames, so re-place and re-aim before
+    // each press, as gpsdrop does for a dropped weapon.
+    for ( i = 0; i < 8 && isDefined( device ); i++ )
+    {
+        self setOrigin( ground["position"] );
+        self setPlayerAngles( vectorToAngles( aim - self getEye() ) );
+        self codol_botPressButtons( level.codolMinePickMask | extra, hold );   // 0x08 activate | 0x20 use-reload
+        wait hold;
+        if ( extra )
+            self codol_botPressButtons( extra, 30 );
+        wait 0.1;
+    }
+    codolPrintLn( "CoDOL minepick: " + self.name + " " + weapon + " ammo " + before + " -> " + self getAmmoCount( weapon ) +
+        ", device still there " + isDefined( device ) );
+}
+
+quietPickTrial( slot, weapon )
+{
+    self endon( "disconnect" );
+    self endon( "death" );
+    self enableCombatBot( false );
+    slots = [];
+    for ( i = 0; i < 3; i++ )
+        slots[i] = self getOffhandEquipment( i );
+    slots[slot] = weapon;
+    self giveWeapon( weapon );
+    self giveStartAmmo( weapon );
+    self setOffhandEquipment( slots[0], slots[1], slots[2] );
+    self codol_botPressButtons( 512, 1.0 );
+    wait 1.0;
+    self.codolLastThrown = undefined;
+    self codol_botPressButtons( slotButton( slot ) | 512, 0.4 );
+    wait 0.4;
+    self codol_botPressButtons( 512, 30 );
+    wait 2.6;
+    codolPrintLn( "CoDOL quietpick: " + self.name + " threw " + self.codolLastThrown + " ammo " + self getAmmoCount( weapon ) );
+    for ( round = 1; round <= 3; round++ )
+    {
+        self minePickTrialMask( 0.5, 512 );
+        wait 1.0;
+        codolPrintLn( "CoDOL quietpick: round " + round + " after pickup stock " + self getWeaponAmmoStock( weapon ) + " clip " +
+            self getWeaponAmmoClip( weapon ) + " count " + self getAmmoCount( weapon ) );
+        self.codolLastThrown = undefined;
+        self codol_botPressButtons( slotButton( slot ) | 512, 0.4 );
+        wait 0.4;
+        self codol_botPressButtons( 512, 30 );
+        wait 2.6;
+        thrown = "nothing";
+        if ( isDefined( self.codolLastThrown ) )
+            thrown = self.codolLastThrown;
+        codolPrintLn( "CoDOL quietpick: round " + round + " rethrow threw " + thrown + " count " + self getAmmoCount( weapon ) );
+    }
+    self codol_botPressButtons( 0, 0 );
+    self enableCombatBot( true );
+}
+
+walkPickTrial( sprint )
+{
+    self endon( "disconnect" );
+    self endon( "death" );
+    if ( !isDefined( level.codolMinePickMask ) )
+        level.codolMinePickMask = 40;
+    self enableCombatBot( false );
+    weapon = "bouncingbetty_mp";
+    slots = [];
+    for ( i = 0; i < 3; i++ )
+        slots[i] = self getOffhandEquipment( i );
+    slots[0] = weapon;
+    self giveWeapon( weapon );
+    self giveStartAmmo( weapon );
+    self setOffhandEquipment( slots[0], slots[1], slots[2] );
+    wait 0.5;
+    self codol_botPressButtons( slotButton( 0 ), 0.4 );
+    wait 3.0;
+    device = undefined;
+    if ( isDefined( self.equipmentMines ) )
+        foreach ( mine in self.equipmentMines )
+            if ( isDefined( mine ) )
+                device = mine;
+    if ( !isDefined( device ) )
+    {
+        codolPrintLn( "CoDOL walkpick: no betty" );
+        return;
+    }
+    // "walkpick <client> <sprint> 1": the native use is refused for the
+    // owner, so only the script poll can reclaim the device.
+    if ( isDefined( level.codolWalkPickBlockNative ) && level.codolWalkPickBlockNative && isDefined( device.codolPickupTrigger ) )
+        device.codolPickupTrigger disablePlayerUse( self );
+    before = self getAmmoCount( "bouncingbetty_mp" );
+    for ( tries = 0; tries < 12 && isDefined( device ); tries++ )
+    {
+        dir = anglesToForward( ( 0, randomFloat( 360 ), 0 ) );
+        spot = device.origin + ( dir[0] * 160, dir[1] * 160, 0 );
+        ground = bulletTrace( spot + ( 0, 0, 32 ), spot - ( 0, 0, 128 ), false, self );
+        if ( !bulletTracePassed( ground["position"] + ( 0, 0, 40 ), device.origin + ( 0, 0, 20 ), false, self ) )
+            continue;
+        self setOrigin( ground["position"] );
+        self setPlayerAngles( vectorToAngles( device.origin - self getEye() ) );
+        // Crouch-walk (0x200) or sprint (0x2): a hold needs some button.
+        buttons = 512;
+        if ( sprint )
+            buttons = 2;
+        self codol_botPressButtons( buttons, 3, 1 );
+        for ( t = 0; t < 60 && isDefined( device ) && distance2D( self.origin, device.origin ) > 40; t++ )
+        {
+            self setPlayerAngles( vectorToAngles( device.origin - self getEye() ) );
+            wait 0.05;
+        }
+        if ( !isDefined( device ) )
+            break;
+        self setPlayerAngles( vectorToAngles( device.origin - self getEye() ) );
+        self codol_botPressButtons( buttons | level.codolMinePickMask, 0.5, 1 );
+        wait 0.5;
+        self codol_botPressButtons( 0, 0 );
+        wait 0.5;
+        if ( !isDefined( device ) )
+        {
+            codolPrintLn( "CoDOL walkpick: try " + tries + " sprint " + sprint + " picked up" );
+            break;
+        }
+        codolPrintLn( "CoDOL walkpick: try " + tries + " sprint " + sprint + " at " + self.origin + " dist " +
+            distance( self.origin, device.origin ) + " device there" );
+    }
+    self enableCombatBot( true );
+    codolPrintLn( "CoDOL walkpick: ammo " + before + " -> " + self getAmmoCount( "bouncingbetty_mp" ) + " device still there " + isDefined( device ) );
 }
