@@ -1047,6 +1047,9 @@ static void PatchGbkInput(void)
 #include <shlwapi.h>
 #include "usermaps.c"
 
+/* Sound voice diagnostics (channel-cap / voice-pool refusals and voice snapshots in Kernel33.log): see sounddiag.c. */
+#include "sounddiag.c"
+
 /* C1 engine helpers shared by the features below: see c1game.c. */
 #include "c1game.c"
 
@@ -1077,6 +1080,7 @@ static void __cdecl TakeOver(void)
     PatchLoopFxCatchUp();
     PatchPatchDir();
     PatchUserMaps();
+    InstallSoundDiag();
     InstallParityLogger();
 #ifndef K33_NO_CONSOLE
     InstallConsole();

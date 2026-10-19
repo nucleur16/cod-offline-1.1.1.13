@@ -14,3 +14,6 @@ Kernel33_dev.dll
 iw4x_syms.txt
 Kernel33_voice.dll
 Kernel33_noconsole.dll
+
+# staged diagnostic builds (not installed)
+staged-*/
