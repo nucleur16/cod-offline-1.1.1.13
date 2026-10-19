@@ -331,6 +331,27 @@ watch()
 		case "gunmodels":
 			gun_models();
 			break;
+		case "rootdelta":
+			// rootdelta <tree> <clip> ...: each clip's length and its whole
+			// root motion (getMoveDelta / getAngleDelta 0..1), to tell a clip
+			// that moves its model from one that plays in place
+			if ( tokens.size >= 3 )
+				root_delta( tokens );
+			break;
+		case "rootscene":
+			// rootscene <tree> <clip> <model|ai> <x> <y> <z> <yaw>: the same
+			// through maps\_coopanim::play_anim with that spot as the scene
+			// node (the IW4 _anim path a script_model scene member takes)
+			if ( tokens.size >= 8 )
+				level thread root_play( tokens, true );
+			break;
+		case "rootplay":
+			// rootplay <tree> <clip> <model|ai> [<x> <y> <z> <yaw>]: a script_model
+			// plays the clip with its root motion (codol_animScriptedModel),
+			// at player 0's spot and facing by default
+			if ( tokens.size >= 4 )
+				level thread root_play( tokens );
+			break;
 		default:
 			// A mission script's own verbs (level.coop_mission_testcmd).
 			if ( isDefined( level.coop_mission_testcmd ) )
@@ -434,6 +455,92 @@ player( index )
 	if ( index < 0 || index >= players.size )
 		return undefined;
 	return players[ index ];
+}
+
+root_delta( tokens )
+{
+	tree = tokens[ 1 ];
+	for ( i = 2; i < tokens.size; i++ )
+	{
+		a = codol_getAnim( tree, tokens[ i ] );
+		if ( !isDefined( a ) )
+		{
+			codolprintln( "CoDOL cooptest: rootdelta " + tree + " " + tokens[ i ] + " not in this match's tree" );
+			continue;
+		}
+		move = getMoveDelta( a, 0, 1 );
+		turn = getAngleDelta( a, 0, 1 );
+		codolprintln( "CoDOL cooptest: rootdelta " + tree + " " + tokens[ i ] + " length " + getAnimLength( a ) +
+			" move " + move + " (" + length( move ) + " units) yaw " + turn );
+	}
+}
+
+root_play( tokens, scene )
+{
+	a = codol_getAnim( tokens[ 1 ], tokens[ 2 ] );
+	if ( !isDefined( a ) )
+	{
+		codolprintln( "CoDOL cooptest: rootplay " + tokens[ 2 ] + " not in this match's tree" );
+		return;
+	}
+	org = undefined;
+	yaw = 0;
+	if ( tokens.size >= 8 )
+	{
+		org = ( float( tokens[ 4 ] ), float( tokens[ 5 ] ), float( tokens[ 6 ] ) );
+		yaw = float( tokens[ 7 ] );
+	}
+	else
+	{
+		p = player( 0 );
+		if ( !isDefined( p ) )
+			return;
+		org = p.origin;
+		yaw = p.angles[ 1 ];
+	}
+	// <model> "ai": the body of the first live enemy actor (a model this match has
+	// precached; setModel of one it has not is a fatal script error)
+	model = tokens[ 3 ];
+	if ( model == "ai" )
+	{
+		model = "tag_origin";
+		ai = [];
+		if ( isDefined( level.coop_enemies ) )
+			ai = level.coop_enemies;
+		for ( i = 0; i < ai.size; i++ )
+		{
+			if ( isAlive( ai[ i ] ) && isDefined( ai[ i ].model ) && ai[ i ].model != "" )
+			{
+				model = ai[ i ].model;
+				break;
+			}
+		}
+	}
+	m = spawn( "script_model", org );
+	m setModel( model );
+	m.angles = ( 0, yaw, 0 );
+	len = getAnimLength( a );
+	d = getMoveDelta( a, 0, 1 );
+	end = org + anglesToForward( ( 0, yaw, 0 ) ) * d[ 0 ] - anglesToRight( ( 0, yaw, 0 ) ) * d[ 1 ] + ( 0, 0, d[ 2 ] );
+	if ( isDefined( scene ) && scene )
+	{
+		node = spawnStruct();
+		node.origin = org;
+		node.angles = ( 0, yaw, 0 );
+		start = getStartOrigin( org, node.angles, a );
+		sa = getStartAngles( org, node.angles, a );
+		end = start + anglesToForward( sa ) * d[ 0 ] - anglesToRight( sa ) * d[ 1 ] + ( 0, 0, d[ 2 ] );
+		m maps\_coopanim::play_anim( a, node, undefined, true );
+	}
+	else
+		m codol_animScriptedModel( "cooptest_rootplay", org, ( 0, yaw, 0 ), a, 1, 0 );
+	codolprintln( "CoDOL cooptest: rootplay " + tokens[ 2 ] + " on ent " + m getEntityNumber() + " (" + model + ") from " + org + " yaw " + yaw +
+		", " + len + " s, clip end " + end );
+	wait( len + 0.5 );
+	codolprintln( "CoDOL cooptest: rootplay " + tokens[ 2 ] + " ended at " + m.origin + " yaw " + m.angles[ 1 ] );
+	maps\_coopanim::release( m );
+	wait( 5 );
+	m delete();
 }
 
 teleport( index, origin )
