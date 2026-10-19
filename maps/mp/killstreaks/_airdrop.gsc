@@ -1120,6 +1120,9 @@ heliSetup( owner, pathStart, pathGoal )
 	if ( !isDefined( chopper ) )
 		return;
 
+	// IW4 _littlebird build_drive: the rotor loop (common_scripts\_heli_rotors).
+	chopper common_scripts\_heli_rotors::spin_rotors();
+
 	//chopper playLoopSound( "littlebird_move" );
 
 	chopper.health = 500; 

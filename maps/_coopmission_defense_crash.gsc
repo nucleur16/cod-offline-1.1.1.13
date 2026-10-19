@@ -2816,6 +2816,7 @@ extraction_chopper()
 	mover = spawn( "script_model", start );
 	mover setModel( model );
 	mover.angles = ( 0, 0, 0 );
+	mover common_scripts\_heli_rotors::spin_rotors();
 	level.crash_chopper = mover;
 	codolprintln( "CoDOL coop crash: extraction helicopter from " + start + " over " + path.size + " nodes" );
 	flyStart = getTime();

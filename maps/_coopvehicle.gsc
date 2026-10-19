@@ -108,6 +108,9 @@ spawn_mover( vehicle )
 	mover setModel( model );
 	vehicle hide();
 	mover.coop_vehicle = vehicle;
+	// A helicopter's rotors turn from the moment it exists (IW4 _vehicle
+	// build_drive); common_scripts\_heli_rotors picks the model's clip.
+	mover common_scripts\_heli_rotors::spin_rotors();
 	return mover;
 }
 

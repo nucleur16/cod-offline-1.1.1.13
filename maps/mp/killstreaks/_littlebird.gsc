@@ -191,6 +191,8 @@ spawnAttackLittleBird( owner, pathStart, pathGoal, coord )
 
 	if ( !isDefined( lb ) )
 		return;
+	// IW4 _littlebird build_drive: the rotor loop (common_scripts\_heli_rotors).
+	lb common_scripts\_heli_rotors::spin_rotors();
 	lb.speed = 400;
 	lb.health = 350; 
 	lb setCanDamage( true );

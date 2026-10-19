@@ -453,33 +453,18 @@ vehicle_run()
 
 // IW4 build_drive: a helicopter's rotor clip (vehicles animtree) loops while
 // it flies.  The mover is a script_model; its first setAnim gives it the
-// vehicles tree (codol_script_model_tree).  The clips are the missions' own
-// (=vehicles in their animlists), looked up by name.
+// vehicles tree (codol_script_model_tree).  The clip is the mission's own
+// (=vehicles in its animlist) or bh_rotors (common.animlist, every match),
+// chosen by common_scripts\_heli_rotors.  _coopvehicle::spawn_mover already
+// starts it; this is kept for the callers that name it.
 drive_anim_name( model )
 {
-	if ( !isDefined( model ) )
-		return undefined;
-	if ( isSubStr( model, "mi17" ) )
-		return "mi17_heli_rotors";
-	if ( isSubStr( model, "ch46" ) )
-		return "sniper_escape_ch46_rotors";
-	if ( isSubStr( model, "mi-28" ) || isSubStr( model, "mi28" ) || isSubStr( model, "little_bird" ) || isSubStr( model, "littlebird" ) )
-		return "mi28_rotors";
-	if ( isSubStr( model, "blackhawk" ) )
-		return "bh_rotors";
-	return undefined;
+	return common_scripts\_heli_rotors::rotor_anim_name( model );
 }
 
 play_drive_anim( mover )
 {
-	name = drive_anim_name( mover.model );
-	if ( !isDefined( name ) )
-		return;
-	a = codol_getAnim( "vehicles", name );
-	if ( !isDefined( a ) )
-		return;
-	mover setAnim( a, 1, 0, 1 );
-	codolprintln( "CoDOL coop events: " + mover.model + " plays " + name );
+	mover common_scripts\_heli_rotors::spin_rotors();
 }
 
 // --------------------------------------------------------------------------

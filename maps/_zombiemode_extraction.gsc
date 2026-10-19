@@ -519,6 +519,8 @@ spawn_rescue_heli( route )
 		heli.zm_vehicle = false;
 		heli playLoopSound( "blackhawk_engine_high" );
 	}
+	// IW4 _blackhawk build_drive: the rotor loop (common_scripts\_heli_rotors).
+	heli common_scripts\_heli_rotors::spin_rotors();
 
 	heli.targetname = "zm_rescue_heli";
 	heli.riders = [];

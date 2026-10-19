@@ -362,6 +362,10 @@ spawn_helicopter( owner, origin, angles, vehicleType, modelName )
 	if ( !isDefined( chopper ) )
 		return undefined;
 
+	// IW4 _vehicle build_drive: the rotor loop (common_scripts\_heli_rotors;
+	// bh_rotors for the hind, mi-28 and pave low).
+	chopper common_scripts\_heli_rotors::spin_rotors();
+
 	chopper.heli_type = level.heli_types[ modelName ];
 	
 	chopper thread [[ level.lightFxFunc[ chopper.heli_type ] ]]();
