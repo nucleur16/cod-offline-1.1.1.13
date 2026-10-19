@@ -459,6 +459,16 @@ spawnWalker( rank, mark )
 	endAngles = ( 0, mark.angles[1], 0 );
 	startAngles = ( 0, mark.angles[1] - getAngleDelta( walk, 0, 1 ), 0 );
 	start = mark.origin - animDeltaToWorld( getMoveDelta( walk, 0, 1 ), startAngles );
+	// The walk's start lies a clip-length behind the mark and was never
+	// traced, so on some maps the clone walked out of a wall or through the
+	// ground.  By default the clone stands on its mark (the placed end
+	// position) in the idle; scr_codol_topplayers_walk 1 brings the walk back.
+	walkIn = getDvarInt( "scr_codol_topplayers_walk" );
+	if ( !walkIn )
+	{
+		start = mark.origin;
+		startAngles = endAngles;
+	}
 
 	model = spawn( "script_model", start );
 	model.angles = startAngles;
@@ -480,11 +490,17 @@ spawnWalker( rank, mark )
 			model.weapons = model codol_setCharacterClone( self, weapon );
 	}
 
-	model setAnimKnobRestart( walk, 1, 0, 1 );
+	if ( walkIn )
+		model setAnimKnobRestart( walk, 1, 0, 1 );
+	else
+		model setAnimKnobRestart( idle, 1, 0, 1 );
 
 	print( "CoDOL top players: rank " + ( rank + 1 ) + " client " + self getEntityNumber() + " '" + self.name + "' ent " + model getEntityNumber() + " weapons " + model.weapons.size + " from " + start + " yaw " + startAngles[1] + " to " + mark.origin + " yaw " + endAngles[1] + " over " + length + " s\n" );
 
-	model thread walkUp( self, walk, idle, length, start, startAngles );
+	if ( walkIn )
+		model thread walkUp( self, walk, idle, length, start, startAngles );
+	else
+		self thread dropCloneOnDisconnect( model );
 	return model;
 }
 
