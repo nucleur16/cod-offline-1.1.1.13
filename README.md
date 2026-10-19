@@ -62,6 +62,27 @@ log through dvar `1436`, the log-name prefix C1 already reads before opening `co
 Without `1436` the second copy takes over `console_mp.log` and the two logs mix. `config_mp.cfg`
 and `Kernel33.log` stay shared (Kernel33.log lines carry each copy's pid at attach).
 
+## Frame cap
+`1848` is C1's `com_maxfps` (there is no `cg_fps`; `591`, cg_drawFPS, is registered but nothing reads it).
+Stock C1 registers it 0..100, default 85, not archived, with IW's integer limiter (`1000 / maxfps` whole ms,
+so 144 ran at 166 and 60 at 62.5). Kernel33 (`PatchFrameCap` in kernel33.c):
+- default 0 and archive (saved in `players\config_mp.cfg`), domain raised to **0..1000**; 0 = no cap (the
+  engine still waits at least 1 ms a frame, so 1000 fps is the ceiling);
+- frames start on a fractional schedule (exact average cap) and the last ms of the wait yields instead of
+  `Sleep(1)`, so caps hold within about 1 % (measured 30/60/75/90/120/144/165/240/250 exact; 360 and 500 are
+  limited by the test machine);
+- there is no separate menu, lobby or background cap: menus run at the same cap (about 460 fps uncapped on the
+  test machine); a minimized window only adds `Sleep(5)` per loop. Vsync ("Sync every frame", r_vsync) still
+  limits to the refresh rate when it is on.
+
+**Options > Graphics > Max FPS** (`voice_ui/OptionView_video.as`): C1's hidden Aspect Ratio combo box, shown below
+Anti-Aliasing (Vsync moves down a row): Unlimited / 30 / 60 / 75 / 90 / 120 / 144 / 165 / 240 / 360 / 500, set
+with the screen's Apply button (Cancel discards it); a value set from the console shows as its own entry. C1
+disables the whole Graphics tab in a room ("temporarily disabled"); set it from the main menu.
+
+To see the frame rate in a match: `set 2614 1` (C1's loss/ping/FPS debug graphs; the FPS number is readable
+below 100).
+
 ## Developer console (branch `dev`)
 `dev` is `parity-log` plus `console.c`, an in-game console for C1, which has none left: IW4's
 `toggleconsole`/`clear`/`condump`, the console field and `Con_DrawConsole` were removed, and

@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-r"""build_voice_ui.py -- client_shipRetail\patch\voice_ui_mp.ff: C1's own voice-chat options, shown.
+r"""build_voice_ui.py -- client_shipRetail\patch\voice_ui_mp.ff: C1's options screens with Kernel33's settings.
+
+Every *_ui_mp patch zone that carries scaleform/default/codo.gfx carries the whole movie, and the first
+one loaded wins, so all of Kernel33's options-screen changes go into this one codo.gfx: the voice-chat
+rows (Controls > Chat, Audio > Voice) and the frame-rate cap (Graphics > Max FPS).
 
     python build_voice_ui.py              build, verify, install
     python build_voice_ui.py --dry-run    build and verify only
@@ -33,6 +37,10 @@ k33_voiceMicMute, Microphone slider -> k33_voiceThreshold, the presets box (move
 k33_voiceLevel. That is not a same-length edit, so JPEXS FFDec (ffdec-cli, $CODOL_FFDEC) compiles the
 class into a copy of codo.gfx, and only that class's DoABC tag is taken from FFDec's output and spliced
 into the original file; every other tag is checked to be byte-identical.
+
+Options > Graphics: voice_ui/OptionView_video.as is codo.views.option_sub.OptionView_video with C1's
+hidden Aspect Ratio row turned into "Max FPS" (Unlimited / 30 ... 500 -> "1848", com_maxfps, whose
+domain Kernel33 raises to 0..1000), set when Apply is pressed. It is compiled and spliced the same way.
 """
 import argparse
 import os
@@ -52,8 +60,11 @@ ZONE_NAME = "voice_ui_mp"
 GFX = "scaleform/default/codo.gfx"
 T_RAWFILE = 36
 FFDEC = os.environ.get("CODOL_FFDEC", r"C:\Program Files (x86)\FFDec\ffdec-cli.exe")
-AUDIO_CLASS = "codo.views.option_sub.OptionView_audio"
-AUDIO_SRC = os.path.join(HERE, "voice_ui", "OptionView_audio.as")
+# classes compiled from voice_ui/*.as by FFDec, in order
+VIEW_CLASSES = [
+    ("codo.views.option_sub.OptionView_audio", os.path.join(HERE, "voice_ui", "OptionView_audio.as")),
+    ("codo.views.option_sub.OptionView_video", os.path.join(HERE, "voice_ui", "OptionView_video.as")),
+]
 
 for _p in (ALPHA, os.path.join(ALPHA, "zones"), TOOLS, os.path.join(TOOLS, "codol_english")):
     if _p not in sys.path:
@@ -100,18 +111,18 @@ def abc_tags(data):
     return [(b, e, n) for code, _, b, e, n in all_tags(data) if code == 82]
 
 
-def splice_audio_view(data):
-    """codo.gfx with OptionView_audio's DoABC tag compiled from voice_ui/OptionView_audio.as."""
-    want = AUDIO_CLASS.replace(".", "/")
+def splice_view(data, cls, src_as):
+    """codo.gfx with the DoABC tag of class cls compiled from src_as."""
+    want = cls.replace(".", "/")
     if not os.path.isfile(FFDEC):
         raise SystemExit("FFDec not found at %s (set CODOL_FFDEC)" % FFDEC)
     with tempfile.TemporaryDirectory() as tmp:
         src, dst = os.path.join(tmp, "in.gfx"), os.path.join(tmp, "out.gfx")
         with open(src, "wb") as f:
             f.write(data)
-        r = subprocess.run([FFDEC, "-replace", src, dst, AUDIO_CLASS, AUDIO_SRC], capture_output=True, text=True)
+        r = subprocess.run([FFDEC, "-replace", src, dst, cls, src_as], capture_output=True, text=True)
         if r.returncode or not os.path.isfile(dst):
-            raise SystemExit("FFDec could not compile %s:\n%s%s" % (AUDIO_SRC, r.stdout, r.stderr))
+            raise SystemExit("FFDec could not compile %s:\n%s%s" % (src_as, r.stdout, r.stderr))
         with open(dst, "rb") as f:
             compiled = f.read()
     old, new = all_tags(data), all_tags(compiled)
@@ -156,7 +167,10 @@ def patched_gfx():
     for g in (3, 7, 10):
         out[m.start(g)] = 0x26                                      # pushfalse -> pushtrue
     print("%s from %s: %d bytes; onInit visibility at 0x%X: pushfalse -> pushtrue x3" % (GFX, zone, len(data), m.start()))
-    return splice_audio_view(bytes(out))
+    out = bytes(out)
+    for cls, src_as in VIEW_CLASSES:
+        out = splice_view(out, cls, src_as)
+    return out
 
 
 def main(argv=None):
