@@ -974,6 +974,9 @@ static void PatchGbkInput(void)
 #include <shlwapi.h>
 #include "usermaps.c"
 
+/* Sound voice diagnostics (channel-cap / voice-pool refusals and voice snapshots in Kernel33.log): see sounddiag.c. */
+#include "sounddiag.c"
+
 /* Developer console overlay, dev branch only: see console.c. */
 #include "console.c"
 
@@ -994,6 +997,7 @@ static void __cdecl TakeOver(void)
     PatchScoresOpen();
     PatchPatchDir();
     PatchUserMaps();
+    InstallSoundDiag();
     InstallParityLogger();
     InstallConsole();
     Log("entering game at 0x%08X", GAME_ENTRY_VA);

@@ -12,3 +12,6 @@ Kernel33_parity.dll
 # dev branch build output
 Kernel33_dev.dll
 iw4x_syms.txt
+
+# staged diagnostic builds (not installed)
+staged-*/

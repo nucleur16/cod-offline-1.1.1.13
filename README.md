@@ -120,3 +120,21 @@ Numbers without a name display as they are. Command names are not hashed in this
 `Cmd_AddCommand` names are plaintext), so commands are listed as registered.
 
 Build without touching the live DLL: `sh build-dev.sh` writes `Kernel33_dev.dll`.
+
+### Sound voice diagnostics (`sounddiag.c`, branch `dev`)
+For sounds that sometimes do not play (gunshots on ported maps): the three play paths' channel-cap checks
+(calls of 0x736C10 at 0x73E1FB 2D / 0x73E4DB 3D / 0x73EDFE stream) and the three voice allocators (calls of
+0x737AC0 at 0x73E20E, 0x737B30 at 0x73E4EE, 0x737BB0 at 0x737F77) go through stubs that call the original
+and log when it refuses. A background thread appends to `Kernel33.log` once a second:
+```
+snd refuse 3d alias=weap_ak47_fire_plr ch=weapon(2) t=522200875 why=pool 3d=32/32
+snd refuse 3d alias=weap_ak47_fire_plr ch=weapon(2) t=522200875 why=pool 3d=32/32 repeated 49 more times in 1 s
+snd voices t=522201875 2d=0/8 3d=32/32 stream=1/13 refusals=54
+snd   v08 3d ch=ambient(5) alias=amb_abandon_wind_lp ent=1008 st=0
+snd chans ambient=32/64(p5) music=1/1(p5)
+```
+`why=cap` = the channel was at its cap (active/cap shown), `why=pool` = no free voice and none of a lower
+channel priority to steal. `t` is GetTickCount ms. Snapshots (`snd voices` + one line per busy voice +
+`snd chans`) are written each second while a refusal happened in the last 3 s.
+Toggle: dvar `k33_snddiag` 0 off / 1 (default) / 2 also a snapshot every 5 s; startup value from
+`+set k33_snddiag N`, else `CODOL_SNDDIAG`, else 1; 0 at startup installs no hooks.
