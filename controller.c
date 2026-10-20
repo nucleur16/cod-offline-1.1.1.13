@@ -83,33 +83,48 @@ typedef DWORD (WINAPI *XInputGetStateFn)(DWORD, CtlState *);
 #define XI_Y 0x8000
 #define CTL_LT_BIT 0x0400   /* triggers past gpad_button_deadzone, in the two bits XInput leaves free */
 #define CTL_RT_BIT 0x0800
+#define CTL_XHOLD_BIT 0x10000 /* X held for gpad_use_hold_time: the BUTTON_X_HOLD key */
 
 /* IW4 keyNum_t gamepad codes. */
 enum { K_BUTTON_A = 1, K_BUTTON_B, K_BUTTON_X, K_BUTTON_Y, K_BUTTON_LSHLDR, K_BUTTON_RSHLDR,
        K_BUTTON_START = 14, K_BUTTON_BACK, K_BUTTON_LSTICK, K_BUTTON_RSTICK, K_BUTTON_LTRIG,
-       K_BUTTON_RTRIG, K_DPAD_UP, K_DPAD_DOWN, K_DPAD_LEFT, K_DPAD_RIGHT };
+       K_BUTTON_RTRIG, K_DPAD_UP, K_DPAD_DOWN, K_DPAD_LEFT, K_DPAD_RIGHT, K_BUTTON_X_HOLD = 28 };
 
-typedef struct { WORD xi; int key; const char *name; const char *display; const char *bind; } CtlButton;
-/* Digital buttons, then the two triggers (xi 0: read from the analog value). Default binds after
- * IW4x's, with C1's own command names (C1's ADS is +speed_throw). */
+typedef struct { DWORD xi; int key; const char *name; const char *display; const char *bind; const char *oldBind; } CtlButton;
+/* Digital buttons, the two triggers (xi 0: read from the analog value) and BUTTON_X_HOLD (X held for
+ * gpad_use_hold_time; a shorter tap is BUTTON_X). Default binds after IW4 console MP with C1's own
+ * commands: G/+frag is C1's lethal grenade, Q/+smoke the tactical one, 4/+tact the equipment, 3/weapalt
+ * the attachment (underbarrel), and killstreaks sit in action slots 1..5 (keys 8,5,6,7 -> slots 1..4),
+ * which gpad_ksnext / gpad_ksuse cycle and call in. oldBind is the phase-1 default, replaced when a
+ * config still has it (gpad_binds_version). */
 static const CtlButton kCtlButtons[] = {
-    { XI_A, K_BUTTON_A, "BUTTON_A", "Pad A", "+gostand" },
-    { XI_B, K_BUTTON_B, "BUTTON_B", "Pad B", "+stance" },
-    { XI_X, K_BUTTON_X, "BUTTON_X", "Pad X", "+usereload" },
-    { XI_Y, K_BUTTON_Y, "BUTTON_Y", "Pad Y", "weapnext" },
-    { XI_LSHOULDER, K_BUTTON_LSHLDR, "BUTTON_LSHLDR", "Pad LB", "+frag" },
-    { XI_RSHOULDER, K_BUTTON_RSHLDR, "BUTTON_RSHLDR", "Pad RB", "+smoke" },
-    { XI_START, K_BUTTON_START, "BUTTON_START", "Pad Start", "togglemenu" },
-    { XI_BACK, K_BUTTON_BACK, "BUTTON_BACK", "Pad Back", "+scores" },
-    { XI_LTHUMB, K_BUTTON_LSTICK, "BUTTON_LSTICK", "Pad L3", "+breath_sprint" },
-    { XI_RTHUMB, K_BUTTON_RSTICK, "BUTTON_RSTICK", "Pad R3", "+melee" },
-    { XI_DPAD_UP, K_DPAD_UP, "DPAD_UP", "Pad Up", "+actionslot 1" },
-    { XI_DPAD_DOWN, K_DPAD_DOWN, "DPAD_DOWN", "Pad Down", "+actionslot 2" },
-    { XI_DPAD_LEFT, K_DPAD_LEFT, "DPAD_LEFT", "Pad Left", "+actionslot 3" },
-    { XI_DPAD_RIGHT, K_DPAD_RIGHT, "DPAD_RIGHT", "Pad Right", "+actionslot 4" },
-    { 0, K_BUTTON_LTRIG, "BUTTON_LTRIG", "Pad LT", "+speed_throw" },
-    { 0, K_BUTTON_RTRIG, "BUTTON_RTRIG", "Pad RT", "+attack" },
+    { XI_A, K_BUTTON_A, "BUTTON_A", "A", "+gostand", NULL },
+    { XI_B, K_BUTTON_B, "BUTTON_B", "B", "+stance", NULL },
+    { XI_X, K_BUTTON_X, "BUTTON_X", "X", "+reload", "+usereload" },
+    { XI_Y, K_BUTTON_Y, "BUTTON_Y", "Y", "weapnext", NULL },
+    { XI_LSHOULDER, K_BUTTON_LSHLDR, "BUTTON_LSHLDR", "LB", "+smoke", "+frag" },
+    { XI_RSHOULDER, K_BUTTON_RSHLDR, "BUTTON_RSHLDR", "RB", "+frag", "+smoke" },
+    { XI_START, K_BUTTON_START, "BUTTON_START", "Start", "togglemenu", NULL },
+    { XI_BACK, K_BUTTON_BACK, "BUTTON_BACK", "Back", "+scores", NULL },
+    { XI_LTHUMB, K_BUTTON_LSTICK, "BUTTON_LSTICK", "LS", "+breath_sprint", NULL },
+    { XI_RTHUMB, K_BUTTON_RSTICK, "BUTTON_RSTICK", "RS", "+melee", NULL },
+    { XI_DPAD_UP, K_DPAD_UP, "DPAD_UP", "D-pad Up", "+tact", "+actionslot 1" },
+    { XI_DPAD_DOWN, K_DPAD_DOWN, "DPAD_DOWN", "D-pad Down", "gpad_ksnext", "+actionslot 2" },
+    { XI_DPAD_LEFT, K_DPAD_LEFT, "DPAD_LEFT", "D-pad Left", "weapalt", "+actionslot 3" },
+    { XI_DPAD_RIGHT, K_DPAD_RIGHT, "DPAD_RIGHT", "D-pad Right", "gpad_ksuse", "+actionslot 4" },
+    { 0, K_BUTTON_LTRIG, "BUTTON_LTRIG", "LT", "+speed_throw", NULL },
+    { 0, K_BUTTON_RTRIG, "BUTTON_RTRIG", "RT", "+attack", NULL },
+    { CTL_XHOLD_BIT, K_BUTTON_X_HOLD, "BUTTON_X_HOLD", "Hold X", "+activate", NULL },
 };
+#define CTL_BINDS_VERSION 2
+/* What C1 prints for each pad key (Key_KeynumToString display names, so every hint, prompt and the
+ * Controls screen), by the pad's family from SDL_GameControllerGetType. Nintendo pads are read by
+ * position (SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS 0), so the bottom button is labelled B. */
+static const char *const kCtlNamesPs[] = { "Cross", "Circle", "Square", "Triangle", "L1", "R1", "Options", "Touchpad",
+                                           "L3", "R3", "D-pad Up", "D-pad Down", "D-pad Left", "D-pad Right", "L2", "R2",
+                                           "Hold Square" };
+static const char *const kCtlNamesNin[] = { "B", "A", "Y", "X", "L", "R", "+", "-", "L Stick", "R Stick", "D-pad Up",
+                                            "D-pad Down", "D-pad Left", "D-pad Right", "ZL", "ZR", "Hold Y" };
 #define CTL_NBUTTONS ((int)(sizeof(kCtlButtons) / sizeof(kCtlButtons[0])))
 
 typedef struct { const char *name; int key; } CtlKeyName;
@@ -117,7 +132,10 @@ static CtlKeyName g_ctlKeyNames[160], g_ctlKeyNamesLoc[160];
 
 static BOOL g_ctlOn, g_ctlKeysOk, g_ctlMoveOk, g_ctlDvarsDone;
 static const BYTE *g_gpEnabled, *g_gpDzMin, *g_gpDzMax, *g_gpSens, *g_gpInvert, *g_gpBtnDz, *g_gpYaw, *g_gpPitch,
-    *g_gpYawAds, *g_gpPitchAds, *g_gpCurve, *g_gpAccel, *g_gpCursor, *g_gpDebug;
+    *g_gpYawAds, *g_gpPitchAds, *g_gpCurve, *g_gpAccel, *g_gpCursor, *g_gpDebug, *g_gpUseHold, *g_gpAim,
+    *g_gpAimRange, *g_gpAimSnap, *g_gpGlyphs, *g_gpBindsVer, *g_gpUserinfo;
+static volatile LONG g_padType;            /* 0 Xbox (and XInput), 1 PlayStation, 2 Nintendo */
+static int g_locBase = -1;                 /* first pad entry in g_ctlKeyNamesLoc */
 
 /* Published by the input thread: the pad that drives the game now (real or gpad_fake), raw values. */
 static volatile LONG g_padActive, g_pubLX, g_pubLY, g_pubRX, g_pubRY, g_pubButtons;
@@ -173,6 +191,27 @@ static void CtlRegisterDvars(void)
     g_gpAccel = CtlRegisterFloat("gpad_view_accel", 1200.0f, 0.0f, 10000.0f, 0x1, "Turn-rate acceleration, deg/s per s (0 = instant)");
     g_gpCursor = CtlRegisterFloat("gpad_menu_cursor_speed", 1100.0f, 50.0f, 5000.0f, 0x1, "Menu cursor speed at full deflection, pixels/s");
     g_gpDebug = C1RegisterInt("gpad_debug", 0, 0, 2, 0, "Gamepad diagnostics in the console (1 state twice a second, 2 also every button)");
+    g_gpUseHold = C1RegisterInt("gpad_use_hold_time", 250, 0, 2000, 0x1,
+                                "Hold X this long (ms) for BUTTON_X_HOLD (+activate: pickups, use prompts); a shorter tap is BUTTON_X (reload); 0 = no split");
+    g_gpAim = CtlRegisterFloat("gpad_aimassist", 1.0f, 0.0f, 1.0f, 0x1,
+                               "Aim assist strength for the pad's right stick (slowdown, lock-on, ADS snap): 1 IW4 console values, 0 off. Never applies to the mouse");
+    g_gpAimRange = CtlRegisterFloat("gpad_aimassist_range", 3200.0f, 0.0f, 20000.0f, 0x1, "Aim assist range, units");
+    g_gpAimSnap = C1RegisterInt("gpad_aimassist_snap", 1, 0, 1, 0x1, "Aim down sights (pad LT) turns onto a target near the crosshair");
+    g_gpGlyphs = C1RegisterInt("gpad_glyphs", 0, 0, 3, 0x1, "Pad button names: 0 by pad type, 1 Xbox, 2 PlayStation, 3 Nintendo");
+    g_gpBindsVer = C1RegisterInt("gpad_binds_version", 0, 0, 1000, 0x1, "Default pad binds last applied (read only)");
+    g_gpUserinfo = C1RegisterInt("gpad", 0, 0, 1, 0x200, "1 while a gamepad is the last-used input (userinfo, visible to the server)");
+}
+
+/* Last-used input device, for the key names C1 shows (CtlCommandKeys) and for aim assist: 1 pad,
+ * 0 keyboard / mouse. g_lastMouseMs is the last real mouse movement (CL_MouseMove, menu cursor). */
+static volatile LONG g_lastDevice;
+static volatile DWORD g_lastMouseMs, g_lastPadMs, g_selfPostMs;
+static volatile LONG g_deviceChanged;
+static void CtlSetDevice(int pad)
+{
+    if (g_lastDevice == pad) return;
+    InterlockedExchange(&g_lastDevice, pad);
+    InterlockedExchange(&g_deviceChanged, 1);
 }
 
 static BOOL CtlEnabled(void) { return !g_ctlDvarsDone || C1DvarInt(g_gpEnabled, 1) != 0; }
@@ -290,12 +329,24 @@ static void CtlInstallKeyNames(void)
     for (unsigned i = 0; i < sizeof(kRefs) / sizeof(kRefs[0]); i++) WriteCode((void *)(DWORD_PTR)kRefs[i], &t, 4);
     WriteCode((void *)(DWORD_PTR)kLocRef, &tl, 4);
     g_ctlKeysOk = TRUE;
+    g_locBase = m - CTL_NBUTTONS;
     Log("controller: key names BUTTON_A .. DPAD_RIGHT added (%d names, %d display names)", n, m);
 }
 
-/* Default binds for the pad keys, the first time and whenever C1 has cleared every one of them: its
- * first-run key-layout screen and Options > Controls defaults run unbindall and rebind only keyboard
- * keys. A pad key the player bound or unbound by hand is left alone while any pad key is bound. */
+/* C1's bind table (voice.c and this file extend it): the name of binding index i. */
+static const char *CtlBindName(int i)
+{
+    const char *const *t = *(const char *const *const *)(DWORD_PTR)0x00492DC3u;
+    int n = *(const BYTE *)(DWORD_PTR)0x00492E24u;
+    return i > 0 && i < n && t && Readable(t + i, 4) && t[i] && Readable(t[i], 1) ? t[i] : "";
+}
+
+/* Default binds for the pad keys:
+ *   - whenever C1 has cleared every pad key (its first-run key-layout screen and Options > Controls
+ *     defaults run unbindall and rebind only keyboard keys);
+ *   - once per CTL_BINDS_VERSION: a pad key still bound to the previous default (oldBind) or unbound
+ *     gets the new default, so configs written with the phase-1 defaults move to the new layout while
+ *     anything the player changed stays. gpad_binds_version records it. */
 static BOOL CtlPadUnbound(void)
 {
     for (int i = 0; i < CTL_NBUTTONS; i++)
@@ -303,19 +354,243 @@ static BOOL CtlPadUnbound(void)
     return TRUE;
 }
 
-static void CtlApplyDefaultBinds(BOOL force)
+static void CtlApplyDefaultBinds(int how) /* 0 unbound only, 1 force all, 2 migrate */
 {
     char cmd[96];
     int applied = 0;
     if (!g_c1CbufOk || !g_ctlKeysOk) return;
     for (int i = 0; i < CTL_NBUTTONS; i++) {
-        if (!force && CtlKeyBinding(kCtlButtons[i].key)) continue;
+        int cur = CtlKeyBinding(kCtlButtons[i].key);
+        const char *curName = CtlBindName(cur);
+        BOOL doit = how == 1 || !cur || (how == 2 && kCtlButtons[i].oldBind && !_stricmp(curName, kCtlButtons[i].oldBind));
+        if (!doit || !_stricmp(curName, kCtlButtons[i].bind)) continue;
         _snprintf(cmd, sizeof(cmd), "bind %s \"%s\"\n", kCtlButtons[i].name, kCtlButtons[i].bind);
         cmd[sizeof(cmd) - 1] = 0;
         C1CbufAddText(cmd);
         applied++;
+        Log("controller: bind %s \"%s\" (was \"%s\")", kCtlButtons[i].name, kCtlButtons[i].bind, curName);
     }
-    Log("controller: %d default gamepad binds applied%s", applied, force ? " (gpad_defaultbinds)" : " (no pad key was bound)");
+    if (how != 0) {
+        _snprintf(cmd, sizeof(cmd), "set gpad_binds_version %d\n", CTL_BINDS_VERSION);
+        C1CbufAddText(cmd);
+    }
+    Log("controller: %d default gamepad binds applied (%s)", applied, how == 1 ? "gpad_defaultbinds" : how == 2 ? "layout update" : "no pad key was bound");
+}
+
+/* ---- C1's key-name display path ----------------------------------------------------------------------
+ * Key_GetBindingNames 0x493920 (every "[{+attack}]" in hints and prompts, the HUD, the Controls screen
+ * through AS_GetKeyBindingNamesFromCommand) asks Key_GetCommandAssignment 0x492E30 (eax = command, ecx =
+ * localClient, [esp+4] = int keys[2]) for the first two keys bound to a command. That call (0x49393E)
+ * comes here: the keys of the last-used device only, so the same prompt reads "LT" while the pad is in
+ * use and "MOUSE2" after the mouse, from the next frame on (C1 rebuilds those strings when it draws them).
+ * A command bound only on the other device still shows that device's key. The bind and unbind paths keep
+ * calling 0x492E30 directly. */
+static BOOL CtlIsPadKey(int k)
+{
+    return (k >= 1 && k <= 6) || (k >= 14 && k <= 23) || k == K_BUTTON_X_HOLD;
+}
+
+__attribute__((used)) int __cdecl CtlCommandKeys(const char *cmd, int lc, int *keys)
+{
+    keys[0] = keys[1] = -1;
+    if (!cmd || (unsigned)lc > 3) return 0;
+    int idx = ((int(__cdecl *)(const char *))(DWORD_PTR)0x00492DB0u)(cmd);
+    if (!idx) return 0;
+    int pad = g_lastDevice == 1, n = 0;
+    const BYTE *kb = (const BYTE *)(DWORD_PTR)(CTL_KEYS_VA + lc * 0xD28);
+    for (int pass = 0; pass < 2 && n == 0; pass++)   /* pass 1: any device, when the active one has none */
+        for (int k = 0; k < 256 && n < 2; k++) {
+            if (*(const int *)(kb + k * 12 + 8) != idx) continue;
+            if (pass == 0 && CtlIsPadKey(k) != pad) continue;
+            keys[n++] = k;
+        }
+    return n;
+}
+
+__attribute__((used)) DWORD g_ctlQueEventResume = 0x0062EF65u;
+void CTL_CmdKeysHook(void);
+void CTL_QueEventHook(void);
+__attribute__((used)) void __cdecl CtlNoteEvent(int type, int value, int down);
+__asm__(
+    ".text\n"
+    ".globl _CTL_CmdKeysHook\n"
+    "_CTL_CmdKeysHook:\n"             /* call from 0x49393E: eax = command, ecx = lc, [esp+4] = keys */
+    "    pushl 4(%esp)\n"
+    "    pushl %ecx\n"
+    "    pushl %eax\n"
+    "    call _CtlCommandKeys\n"
+    "    addl $12, %esp\n"
+    "    ret\n"
+    ".globl _CTL_QueEventHook\n"
+    "_CTL_QueEventHook:\n"            /* jmp from Sys_QueEvent 0x62EF60: eax = time; type, value, value2, ... */
+    "    pushal\n"
+    "    pushl 44(%esp)\n"            /* value2 (down) */
+    "    pushl 44(%esp)\n"            /* value (key) */
+    "    pushl 44(%esp)\n"            /* type */
+    "    call _CtlNoteEvent\n"
+    "    addl $12, %esp\n"
+    "    popal\n"
+    "    pushl %ebp\n"                /* the displaced 5 bytes */
+    "    movl %esp, %ebp\n"
+    "    pushl %esi\n"
+    "    pushl %edi\n"
+    "    jmp *_g_ctlQueEventResume\n");
+
+/* Every input event C1 queues (window thread and the pad thread): a keyboard key or mouse button makes
+ * keyboard / mouse the last-used device. The pad's own keys, and keys Kernel33 posts for the pad
+ * (Escape, the pause-menu keys, menu clicks) within 150 ms, do not. */
+__attribute__((used)) void __cdecl CtlNoteEvent(int type, int value, int down)
+{
+    if (type != CTL_SE_KEY || !down || CtlIsPadKey(value)) return;
+    if (GetTickCount() - g_selfPostMs < 150) return;
+    if (value >= 200 && value <= 206) g_lastMouseMs = GetTickCount();   /* MOUSE1..5, wheel */
+    CtlSetDevice(0);
+}
+
+/* ---- killstreaks: select and call in --------------------------------------------------------------
+ * C1 keeps each killstreak in an action slot (maps/mp/killstreaks/_killstreaks.gsc setActionSlot 1..5;
+ * playerState actionSlotType[5] at +0x544, 0 empty), used with +actionslot N (keyboard 8,5,6,7 = slots
+ * 1..4). gpad_ksnext selects the next filled slot, gpad_ksuse presses +actionslot <selected> (down now,
+ * up 120 ms later). Both are bind-table commands (89, 90), so the D-pad binds are ordinary binds. */
+static int g_ksSel;
+static DWORD g_ksUpAt;
+static int g_ksUpIndex;
+
+static int CtlKsType(int slot)
+{
+    BYTE *cg = ParityCg();
+    return cg && Readable(cg + 0x544 + slot * 4, 4) ? *(const int *)(cg + 0x544 + (slot - 1) * 4) : 0;
+}
+
+static void CtlRunBinding(int index, int key)
+{
+    int lc = 0;
+    DWORD fn = 0x00491580u;
+    __asm__ volatile("pushl %2\n\tpushl %1\n\tcall *%3\n\taddl $8, %%esp"
+                     : "+a"(lc) : "r"(index), "r"(key), "r"(fn) : "ecx", "edx", "memory", "cc");
+}
+
+static void CtlKsNext(void)
+{
+    for (int i = 1; i <= 5; i++) {
+        int slot = (g_ksSel + i - 1) % 5 + 1;
+        if (CtlKsType(slot)) {
+            g_ksSel = slot;
+            C1Printf("^3gamepad: killstreak slot %d selected (D-pad right calls it in)\n", slot);
+            return;
+        }
+    }
+    g_ksSel = 0;
+    C1Printf("gamepad: no killstreak ready\n");
+}
+
+static void CtlKsUse(void)
+{
+    if (!g_ksSel || !CtlKsType(g_ksSel)) CtlKsNext();
+    if (!g_ksSel) return;
+    int index = 17 + 2 * (g_ksSel - 1); /* "+actionslot N" in C1's bind table */
+    CtlRunBinding(index, K_DPAD_RIGHT);
+    g_ksUpIndex = index + 1;
+    g_ksUpAt = GetTickCount() + 120;
+    Log("controller: killstreak slot %d called in", g_ksSel);
+}
+
+static void __cdecl CtlCmdKsNext(void) { CtlKsNext(); }
+static void __cdecl CtlCmdKsUse(void) { CtlKsUse(); }
+
+#define CTL_BIND_KSNEXT 89
+#define CTL_BIND_KSUSE  90
+#define CTL_BIND_COUNT  91
+static const char *g_ctlBindNames[CTL_BIND_COUNT];
+static BOOL g_ctlBindOk;
+
+__attribute__((used)) int __cdecl CtlExecBinding(int index, int key)
+{
+    (void)key;
+    if (index == CTL_BIND_KSNEXT) { CtlKsNext(); return 1; }
+    if (index == CTL_BIND_KSUSE) { CtlKsUse(); return 1; }
+    return 0;
+}
+
+__attribute__((used)) DWORD g_ctlExecResume = 0x0049158Bu;
+void CTL_ExecHook(void);
+void CTL_ExecChain(void);
+__asm__(
+    ".text\n"
+    ".globl _CTL_ExecHook\n"
+    "_CTL_ExecHook:\n"                /* jmp from 0x491580 (no voice hook): eax = lc, [esp+4] index, [esp+8] key */
+    "    cmpl $89, 4(%esp)\n"
+    "    jb 2f\n"
+    "    cmpl $90, 4(%esp)\n"
+    "    ja 2f\n"
+    "    pushal\n"
+    "    pushl 40(%esp)\n"
+    "    pushl 40(%esp)\n"
+    "    call _CtlExecBinding\n"
+    "    addl $8, %esp\n"
+    "    popal\n"
+    "    ret\n"
+    "2:  pushl %ebp\n"                /* the displaced first 11 bytes */
+    "    movl %esp, %ebp\n"
+    "    pushl %ecx\n"
+    "    cmpb $0, 0x16FC2DA\n"
+    "    jmp *_g_ctlExecResume\n"
+    ".globl _CTL_ExecChain\n"
+    "_CTL_ExecChain:\n"               /* voice.c's hook ran the prologue: ebp frame, flags of the cmp */
+    "    pushfl\n"
+    "    cmpl $89, 8(%ebp)\n"
+    "    jb 1f\n"
+    "    cmpl $90, 8(%ebp)\n"
+    "    ja 1f\n"
+    "    popfl\n"
+    "    pushal\n"
+    "    pushl 12(%ebp)\n"
+    "    pushl 8(%ebp)\n"
+    "    call _CtlExecBinding\n"
+    "    addl $8, %esp\n"
+    "    popal\n"
+    "    movl %ebp, %esp\n"
+    "    popl %ebp\n"
+    "    ret\n"
+    "1:  popfl\n"
+    "    jmp *_g_ctlExecResume\n");
+
+/* Copies whatever bind table is current (C1's 86 names, or voice.c's 89) and adds gpad_ksnext (89) and
+ * gpad_ksuse (90). The executor goes through voice.c's hook when it is there, else through our own. */
+static void CtlInstallBindCommands(void)
+{
+    static const DWORD kTableRefs[] = { 0x00492C0Au, 0x00492C11u, 0x00492DC3u, 0x004930ACu };
+    static const BYTE kExec[] = { 0x55, 0x8B, 0xEC, 0x51, 0x80, 0x3D, 0xDA, 0xC2, 0x6F, 0x01, 0x00 };
+    static const BYTE kCount[] = { 0x83, 0xF8 };
+    const char *const *cur = *(const char *const *const *)(DWORD_PTR)kTableRefs[2];
+    int n = *(const BYTE *)(DWORD_PTR)0x00492E24u;
+    BOOL ok = !memcmp((void *)(DWORD_PTR)0x00492E22u, kCount, 2) && (n == 86 || n == 89) && Readable(cur, n * 4);
+    for (unsigned i = 0; ok && i < sizeof(kTableRefs) / sizeof(kTableRefs[0]); i++)
+        ok = *(const DWORD *)(DWORD_PTR)kTableRefs[i] == (DWORD)(DWORD_PTR)cur;
+    BYTE *exec = (BYTE *)(DWORD_PTR)0x00491580u;
+    BOOL viaVoice = ok && g_bindOk && exec[0] == 0xE9 && n == 89;
+    ok = ok && (viaVoice || (n == 86 && !memcmp(exec, kExec, sizeof(kExec))));
+    if (!ok) {
+        Log("controller: bind table differs, gpad_ksnext / gpad_ksuse work from the console only");
+        return;
+    }
+    for (int i = 0; i < n; i++) g_ctlBindNames[i] = cur[i];
+    for (int i = n; i < CTL_BIND_KSNEXT; i++) g_ctlBindNames[i] = "k33_reserved";
+    g_ctlBindNames[CTL_BIND_KSNEXT] = "gpad_ksnext";
+    g_ctlBindNames[CTL_BIND_KSUSE] = "gpad_ksuse";
+    DWORD nt = (DWORD)(DWORD_PTR)g_ctlBindNames;
+    for (unsigned i = 0; i < sizeof(kTableRefs) / sizeof(kTableRefs[0]); i++) WriteCode((void *)(DWORD_PTR)kTableRefs[i], &nt, 4);
+    BYTE count = CTL_BIND_COUNT;
+    WriteCode((void *)(DWORD_PTR)0x00492E24u, &count, 1);
+    if (viaVoice) g_voiceExecResume = (DWORD)(DWORD_PTR)CTL_ExecChain;
+    else {
+        BYTE jmp[5] = { 0xE9 };
+        LONG rel = (LONG)((DWORD_PTR)CTL_ExecHook - (0x00491580u + 5));
+        memcpy(jmp + 1, &rel, 4);
+        WriteCode(exec, jmp, 5);
+    }
+    g_ctlBindOk = TRUE;
+    Log("controller: bind table: gpad_ksnext (89) / gpad_ksuse (90) added (%s)", viaVoice ? "after voice.c's +talk" : "own executor hook");
 }
 
 /* ---- menus --------------------------------------------------------------------------------------- */
@@ -407,16 +682,25 @@ static void CtlCursorMove(HWND h, float dx, float dy, BOOL focused)
     }
 }
 
+/* 0 game, 1 front-end menus (stick cursor), 2 console / chat line, 3 in-match menu (the pause menu,
+ * codo.gfx opened by togglemenu: focus navigation, no cursor). */
+#define CTL_MODE_GAME  0
+#define CTL_MODE_MENU  1
+#define CTL_MODE_TEXT  2
+#define CTL_MODE_PAUSE 3
 static int CtlMode(void)
 {
     int kc = C1KeyCatchers();
-    return (kc & (CTL_KC_CONSOLE | CTL_KC_CHAT)) ? 2
-         : ((kc & CTL_KC_UI) || *(volatile int *)(DWORD_PTR)CTL_CONNSTATE_VA != CTL_CA_ACTIVE) ? 1 : 0;
+    BOOL inMatch = *(volatile int *)(DWORD_PTR)CTL_CONNSTATE_VA == CTL_CA_ACTIVE;
+    if (kc & (CTL_KC_CONSOLE | CTL_KC_CHAT)) return CTL_MODE_TEXT;
+    if (!inMatch) return CTL_MODE_MENU;
+    return (kc & CTL_KC_UI) ? CTL_MODE_PAUSE : CTL_MODE_GAME;
 }
+
 
 /* Menu buttons (input thread): A is the left mouse button at the cursor, B and Start are Escape,
  * posted to the game window like the real ones. */
-static void CtlMenuButton(HWND h, WORD pressed, WORD released)
+static void CtlMenuButton(HWND h, DWORD pressed, DWORD released)
 {
     LPARAM lp;
     if (!CtlFocused()) {
@@ -446,7 +730,7 @@ static void CtlMenuButton(HWND h, WORD pressed, WORD released)
 
 /* ---- the input thread ---------------------------------------------------------------------------- */
 
-static int CtlButtonKey(WORD bit)
+static int CtlButtonKey(DWORD bit)
 {
     for (int i = 0; i < CTL_NBUTTONS; i++)
         if ((kCtlButtons[i].xi ? kCtlButtons[i].xi : (kCtlButtons[i].key == K_BUTTON_LTRIG ? CTL_LT_BIT : CTL_RT_BIT)) == bit)
@@ -465,20 +749,112 @@ static void CtlQueueKey(int key, int down)
 
 /* Input-thread state. */
 static CtlPad g_real;               /* the connected pad, XInput layout */
-static WORD g_trig;                 /* trigger bits latched with hysteresis */
-static WORD g_sent, g_ignore;       /* buttons acted on in the current mode; held across a mode switch */
+static DWORD g_trig;                 /* trigger bits latched with hysteresis */
+static DWORD g_sent, g_ignore;       /* buttons acted on in the current mode; held across a mode switch */
 static int g_sentMode = -1;
 
-static void CtlRelease(int mode, WORD bits)
+static void CtlPostKey(HWND h, UINT vk, int down);
+
+static void CtlRelease(int mode, DWORD bits)
 {
     if (!bits || mode < 0) return;
     if (mode == 0) {
-        for (WORD b = 1; b; b <<= 1)
+        for (DWORD b = 1; b <= CTL_XHOLD_BIT; b <<= 1)
             if ((bits & b) && CtlButtonKey(b)) CtlQueueKey(CtlButtonKey(b), 0);
+    } else if (mode == CTL_MODE_PAUSE) {
+        HWND h = *(HWND *)(DWORD_PTR)CTL_MAIN_HWND_VA;
+        if (h && (bits & XI_A)) CtlPostKey(h, VK_F15, 0);
+        if (h && (bits & (XI_B | XI_START))) CtlPostKey(h, VK_ESCAPE, 0);
     } else {
         HWND h = *(HWND *)(DWORD_PTR)CTL_MAIN_HWND_VA;
         if (h) CtlMenuButton(h, 0, bits);
     }
+}
+
+/* In-match menu (CTL_MODE_PAUSE): the pad's directions and A become keys the codo.gfx focus navigator
+ * (voice_ui/StageKeyController.as, onStageKeyDownHandle) understands: F13 up, F14 down, F11 left, F12 right,
+ * F15 select. B / Start are Escape. Posted to the game window like real keys; Scaleform hands them to the
+ * stage's KEY_DOWN listener. Directions repeat after 350 ms, then every 140 ms. */
+static void CtlPostKey(HWND h, UINT vk, int down)
+{
+    UINT sc = MapVirtualKeyA(vk, 0);
+    g_selfPostMs = GetTickCount();
+    PostMessageA(h, down ? WM_KEYDOWN : WM_KEYUP, vk, (LPARAM)(1u | (sc << 16) | (down ? 0u : 0xC0000000u)));
+}
+
+static void CtlPauseNav(HWND h, DWORD pressed, DWORD released, DWORD held, float lx, float ly)
+{
+    static int lastDir;            /* 1 up 2 down 3 left 4 right */
+    static DWORD nextRepeat;
+    static const UINT kVk[5] = { 0, VK_F13, VK_F14, VK_F11, VK_F12 };
+    int dir = 0;
+    if (held & XI_DPAD_UP) dir = 1;
+    else if (held & XI_DPAD_DOWN) dir = 2;
+    else if (held & XI_DPAD_LEFT) dir = 3;
+    else if (held & XI_DPAD_RIGHT) dir = 4;
+    else if (fabsf(ly) >= 0.55f || fabsf(lx) >= 0.55f) dir = fabsf(ly) >= fabsf(lx) ? (ly > 0 ? 1 : 2) : (lx < 0 ? 3 : 4);
+    else if (lastDir && (fabsf(ly) >= 0.4f || fabsf(lx) >= 0.4f)) dir = lastDir; /* hysteresis */
+    DWORD now = GetTickCount();
+    if (dir != lastDir) {
+        if (dir) { CtlPostKey(h, kVk[dir], 1); CtlPostKey(h, kVk[dir], 0); nextRepeat = now + 350; }
+        lastDir = dir;
+    } else if (dir && (LONG)(now - nextRepeat) >= 0) {
+        CtlPostKey(h, kVk[dir], 1);
+        CtlPostKey(h, kVk[dir], 0);
+        nextRepeat = now + 140;
+    }
+    if (pressed & XI_A) CtlPostKey(h, VK_F15, 1);
+    if (released & XI_A) CtlPostKey(h, VK_F15, 0);
+    if (pressed & (XI_B | XI_START)) CtlPostKey(h, VK_ESCAPE, 1);
+    if (released & (XI_B | XI_START)) CtlPostKey(h, VK_ESCAPE, 0);
+    if (dir && dir != 0 && (pressed | released) == 0) return;
+    if ((pressed | released) & (XI_A | XI_B | XI_START))
+        CtlDebugf(2, "gamepad: pause menu %s%s\n", (pressed | released) & XI_A ? "select" : "escape",
+                  (pressed & (XI_A | XI_B | XI_START)) ? " down" : " up");
+}
+
+/* X: a tap shorter than gpad_use_hold_time is BUTTON_X (reload); holding it is BUTTON_X_HOLD (+activate:
+ * pickups, planting, "Press [Use] to ..."), console style. 0, or nothing bound to BUTTON_X_HOLD = X is
+ * plain BUTTON_X. */
+static int g_xState;      /* 0 up, 1 pressed (undecided), 2 holding */
+static DWORD g_xDownAt;
+
+static void CtlGameButtons(DWORD act)
+{
+    int holdMs = C1DvarInt(g_gpUseHold, 250);
+    BOOL split = holdMs > 0 && CtlKeyBinding(K_BUTTON_X_HOLD) != 0;
+    DWORD now = GetTickCount();
+    DWORD xNow = act & XI_X;
+    if (split) {
+        act &= ~XI_X;
+        if (xNow && g_xState == 0) { g_xState = 1; g_xDownAt = now; }
+        if (xNow && g_xState == 1 && now - g_xDownAt >= (DWORD)holdMs) {
+            g_xState = 2;
+            CtlQueueKey(K_BUTTON_X_HOLD, 1);
+            CtlDebugf(2, "gamepad: X held %d ms -> BUTTON_X_HOLD down (bind %d)\n", holdMs, CtlKeyBinding(K_BUTTON_X_HOLD));
+        }
+        if (!xNow && g_xState == 1) {
+            CtlQueueKey(K_BUTTON_X, 1);
+            CtlQueueKey(K_BUTTON_X, 0);
+            CtlDebugf(2, "gamepad: X tap -> BUTTON_X (bind %d)\n", CtlKeyBinding(K_BUTTON_X));
+        }
+        if (!xNow && g_xState == 2) CtlQueueKey(K_BUTTON_X_HOLD, 0);
+        if (!xNow) g_xState = 0;
+    }
+    DWORD pressed = act & ~g_sent, released = g_sent & ~act;
+    for (DWORD bit = 1; (pressed | released) && bit <= 0x8000; bit <<= 1) {
+        int key = CtlButtonKey(bit);
+        if (!key || !((pressed | released) & bit)) continue;
+        CtlQueueKey(key, (pressed & bit) != 0);
+        CtlDebugf(2, "gamepad: key %d %s (bind %d)\n", key, (pressed & bit) ? "down" : "up", CtlKeyBinding(key));
+    }
+    g_sent = act;
+}
+
+static void CtlReleaseGameX(void)
+{
+    if (g_xState == 2) CtlQueueKey(K_BUTTON_X_HOLD, 0);
+    g_xState = 0;
 }
 
 /* Works out which pad drives the game and turns every button change into C1 input. Called after
@@ -495,39 +871,47 @@ static void CtlEvaluate(void)
     float thr = CtlDvarFloat(g_gpBtnDz, 0.13f) * 255.0f;
     if (p.bLeftTrigger > ((g_trig & CTL_LT_BIT) ? thr * 0.7f : thr)) g_trig |= CTL_LT_BIT; else g_trig &= ~CTL_LT_BIT;
     if (p.bRightTrigger > ((g_trig & CTL_RT_BIT) ? thr * 0.7f : thr)) g_trig |= CTL_RT_BIT; else g_trig &= ~CTL_RT_BIT;
-    WORD b = (p.wButtons & 0xF3FF) | g_trig;
+    DWORD b = (p.wButtons & 0xF3FF) | g_trig;
 
     InterlockedExchange(&g_pubLX, p.sThumbLX);
     InterlockedExchange(&g_pubLY, p.sThumbLY);
     InterlockedExchange(&g_pubRX, p.sThumbRX);
     InterlockedExchange(&g_pubRY, p.sThumbRY);
-    InterlockedExchange(&g_pubButtons, b);
+    InterlockedExchange(&g_pubButtons, (LONG)b);
     InterlockedExchange(&g_padActive, have);
+
+    /* the pad becomes the last-used device on a button, a trigger, or a stick well past its deadzone
+     * (0.45 of full travel: drift and a resting thumb never count) */
+    if (have) {
+        int lx = abs(p.sThumbLX), ly = abs(p.sThumbLY), rx = abs(p.sThumbRX), ry = abs(p.sThumbRY);
+        int big = lx > ly ? lx : ly;
+        if (rx > big) big = rx;
+        if (ry > big) big = ry;
+        if (b || big > 14745) { g_lastPadMs = GetTickCount(); CtlSetDevice(1); }
+    }
 
     int mode = CtlMode();
     if (mode != g_sentMode) {
         CtlRelease(g_sentMode, g_sent);   /* let go of what the old mode was told */
+        if (g_sentMode == CTL_MODE_GAME) CtlReleaseGameX();
         g_sent = 0;
         g_ignore = b;                     /* a button held across the switch counts once it is released */
-        if (g_sentMode >= 0) CtlDebugf(1, "gamepad: mode %s\n", mode == 0 ? "game" : mode == 1 ? "menu" : "text");
+        if (g_sentMode >= 0)
+            CtlDebugf(1, "gamepad: mode %s\n", mode == 0 ? "game" : mode == 1 ? "menu" : mode == 2 ? "text" : "pause menu");
         g_sentMode = mode;
     }
     g_ignore &= b;
-    WORD act = b & ~g_ignore;
-    if (mode == 2) act &= XI_B | XI_START; /* console / chat line: only Escape */
-    WORD pressed = act & ~g_sent, released = g_sent & ~act;
-    if (!(pressed | released)) return;
-    if (mode == 0) {
-        for (WORD bit = 1; bit; bit <<= 1) {
-            int key = CtlButtonKey(bit);
-            if (!key || !((pressed | released) & bit)) continue;
-            CtlQueueKey(key, (pressed & bit) != 0);
-            CtlDebugf(2, "gamepad: key %d %s (bind %d)\n", key, (pressed & bit) ? "down" : "up", CtlKeyBinding(key));
-        }
-    } else {
-        HWND h = *(HWND *)(DWORD_PTR)CTL_MAIN_HWND_VA;
-        if (h) CtlMenuButton(h, pressed, released);
-    }
+    DWORD act = b & ~g_ignore;
+    if (mode == CTL_MODE_GAME) { CtlGameButtons(act); return; }
+    if (mode == CTL_MODE_TEXT) act &= XI_B | XI_START; /* console / chat line: only Escape */
+    DWORD pressed = act & ~g_sent, released = g_sent & ~act;
+    HWND h = *(HWND *)(DWORD_PTR)CTL_MAIN_HWND_VA;
+    if (h && mode == CTL_MODE_PAUSE) {
+        float lx, ly;
+        CtlStick(p.sThumbLX, p.sThumbLY, &lx, &ly);
+        CtlPauseNav(h, pressed, released, act, lx, ly);
+    } else if (h && (pressed | released))
+        CtlMenuButton(h, pressed, released);
     g_sent = act;
 }
 
@@ -573,6 +957,13 @@ static void CtlSdlOpen(int index)
     lstrcpynA(g_padName, name ? name : "controller", sizeof(g_padName));
     LeaveCriticalSection(&g_ctlLock);
     memset(&g_real, 0, sizeof(g_real));
+    {
+        SDL_GameControllerType t = SDL_GameControllerGetType(g_sdlPad);
+        LONG type = (t == SDL_CONTROLLER_TYPE_PS3 || t == SDL_CONTROLLER_TYPE_PS4 || t == SDL_CONTROLLER_TYPE_PS5) ? 1
+                  : (t == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_PRO || t == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_LEFT ||
+                     t == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT || t == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_PAIR) ? 2 : 0;
+        InterlockedExchange(&g_padType, type);
+    }
     InterlockedExchange(&g_padConnected, 1);
     Log("controller: SDL opened \"%s\" (type %d, instance %d)", g_padName, (int)SDL_GameControllerGetType(g_sdlPad), (int)g_sdlId);
     CtlDebugf(0, "^3gamepad: %s connected\n", g_padName);
@@ -694,6 +1085,7 @@ static void CtlXInputPoll(void)
         if (g_xiGetState((DWORD)i, &s) != ERROR_SUCCESS) continue;
         g_xiSlot = i;
         g_real = s.Gamepad;
+        InterlockedExchange(&g_padType, 0);
         EnterCriticalSection(&g_ctlLock);
         _snprintf(g_padName, sizeof(g_padName), "XInput controller %d", i + 1);
         LeaveCriticalSection(&g_ctlLock);
@@ -731,6 +1123,63 @@ static void CtlSampleSticks(void)
     CtlStick((SHORT)g_pubRX, (SHORT)g_pubRY, &g_rx, &g_ry);
 }
 
+/* Pad family names in C1's display table (gpad_glyphs overrides). */
+static void CtlApplyPadNames(void)
+{
+    static int applied = -1;
+    int want = C1DvarInt(g_gpGlyphs, 0);
+    want = want ? want - 1 : (int)g_padType;
+    if (want == applied || g_locBase < 0) return;
+    applied = want;
+    for (int i = 0; i < CTL_NBUTTONS; i++)
+        g_ctlKeyNamesLoc[g_locBase + i].name = want == 1 ? kCtlNamesPs[i] : want == 2 ? kCtlNamesNin[i] : kCtlButtons[i].display;
+    Log("controller: pad button names: %s", want == 1 ? "PlayStation" : want == 2 ? "Nintendo" : "Xbox");
+}
+
+/* Test clients only: "gpad_testmouse <dx> <dy> <ms>" feeds mouse counts into C1's own accumulator
+ * (cl+0x3424/+0x342C, as IN_MouseMove's 0x48FD40 does), so CL_MouseMove turns the view exactly like a
+ * mouse would. For the mixed-input aim-assist test. */
+static int g_testMouseDx, g_testMouseDy;
+static DWORD g_testMouseUntil;
+
+static void CtlFrameExtras(void)
+{
+    DWORD now = GetTickCount();
+    CtlApplyPadNames();
+    if (g_ksUpAt && (LONG)(now - g_ksUpAt) >= 0) { g_ksUpAt = 0; CtlRunBinding(g_ksUpIndex, K_DPAD_RIGHT); }
+    if (g_deviceChanged && g_gpUserinfo && g_c1CbufOk) {  /* userinfo "gpad": at most once a second */
+        static DWORD lastSent;
+        if (now - lastSent > 1000) {
+            char cmd[32];
+            lastSent = now;
+            InterlockedExchange(&g_deviceChanged, 0);
+            _snprintf(cmd, sizeof(cmd), "set gpad %d\n", (int)g_lastDevice);
+            C1CbufAddText(cmd);
+            CtlDebugf(1, "gamepad: last-used input: %s\n", g_lastDevice ? "pad" : "keyboard/mouse");
+        }
+    }
+    /* the real mouse pointer moving in the menus (not by us) */
+    if (CtlFocused()) {
+        static POINT last;
+        static DWORD lastOwn;
+        POINT pt;
+        GetCursorPos(&pt);
+        if (g_padActive && g_lastDevice == 1) lastOwn = now; /* our own SetCursorPos */
+        if ((abs(pt.x - last.x) > 12 || abs(pt.y - last.y) > 12)) {
+            if (now - lastOwn > 200) { g_lastMouseMs = now; CtlSetDevice(0); }
+            last = pt;
+        }
+    }
+    if (CtlTestMode() && g_testMouseUntil && (LONG)(now - g_testMouseUntil) < 0) {
+        BYTE *cl = (BYTE *)(DWORD_PTR)(*(volatile DWORD *)(DWORD_PTR)CTL_CL_PTR_VA ^ CTL_CL_KEY);
+        if (Readable(cl + 0x3434, 4)) {
+            int idx = *(int *)(cl + 0x3434) & 1;
+            *(int *)(cl + 0x3424 + idx * 4) += g_testMouseDx;
+            *(int *)(cl + 0x342C + idx * 4) += g_testMouseDy;
+        }
+    } else g_testMouseUntil = 0;
+}
+
 /* IN_Frame (every client frame, menus included). */
 __attribute__((used)) void __cdecl ControllerFrame(void)
 {
@@ -748,16 +1197,18 @@ __attribute__((used)) void __cdecl ControllerFrame(void)
         if (t) { SetThreadPriority(t, THREAD_PRIORITY_ABOVE_NORMAL); CloseHandle(t); }
         else Log("controller: input thread could not start (%lu)", GetLastError());
     }
-    {   /* after config_mp.cfg has run (8 s), then every 2 s: no pad key bound -> the defaults */
+    {   /* after config_mp.cfg has run (8 s), then every 2 s: layout update, or no pad key bound -> defaults */
         static DWORD lastBindCheck;
         static int applies;  /* a bind that never takes would otherwise repeat forever */
         DWORD t = GetTickCount();
         if (t - started > 8000 && t - lastBindCheck > 2000 && applies < 10) {
             lastBindCheck = t;
-            if (CtlPadUnbound()) { applies++; CtlApplyDefaultBinds(FALSE); }
+            if (C1DvarInt(g_gpBindsVer, 0) < CTL_BINDS_VERSION) { applies++; CtlApplyDefaultBinds(CtlPadUnbound() ? 1 : 2); }
+            else if (CtlPadUnbound()) { applies++; CtlApplyDefaultBinds(0); }
         }
     }
     CtlDrainDebug();
+    CtlFrameExtras();
     DWORD now = GetTickCount();
     float dt = lastFrame ? (now - lastFrame) * 0.001f : 0.0f;
     if (dt > 0.1f) dt = 0.1f;
@@ -781,17 +1232,99 @@ __attribute__((used)) void __cdecl ControllerFrame(void)
     }
 }
 
+/* ---- aim assist (pad only) -----------------------------------------------------------------------------
+ * C1 still runs IW4's AimAssist_UpdateScreenTargets: aaGlob[lc] at 0x1501A80 (stride 0xE60) holds up to
+ * 64 targets at +0x134 (0x34 each: entIndex, clipMins[2], clipMaxs[2], aimPos[3], velocity[3], distSqr,
+ * crosshairDistSqr), count at +0xE34, ordered nearest the crosshair first, and the view origin / angles
+ * at +0xD0 / +0xDC. What IW4x's AimAssist_UpdateGamePadInput does with them is done here for the pad's
+ * right stick only:
+ *   slowdown  the stick's turn rate x0.4 (hip) .. x0.5 (ADS) while a target is in the 90x90 (of 640x480)
+ *             box around the crosshair;
+ *   lock-on   while the pad is moving the view or the player (any stick past 0.05), the view follows the
+ *             target's motion relative to ours (strength 0.6);
+ *   ADS snap  pressing LT turns onto a target in the 160x120 box over 0.25 s (gpad_aimassist_snap).
+ * It never touches C1's mouse path (CL_MouseMove and its melee-lunge helper 0x4020D0 run unchanged before
+ * this) and is off unless the pad is the last-used device and the mouse has not moved for 1.5 s, so a
+ * pad held in ADS while the mouse aims gives nothing, and an idle connected pad enables nothing.
+ * gpad_aimassist scales all three, 0 = off. */
+#define CTL_AAGLOB_VA      0x01501A80u
+#define CTL_AA_TARGETS     0x134
+#define CTL_AA_COUNT       0xE34
+#define CTL_AA_VIEWORG     0xD0
+#define CTL_AA_VIEWANG     0xDC
+#define CTL_PS_VELOCITY    0x28
+
+typedef struct { int ent; float mins[2], maxs[2], aim[3], vel[3], distSqr, xhairDistSqr; } CtlAimTarget;
+
+static const CtlAimTarget *CtlAimFind(float range, float hw, float hh, int prefer)
+{
+    const BYTE *aa = (const BYTE *)(DWORD_PTR)CTL_AAGLOB_VA;
+    int n = *(const int *)(aa + CTL_AA_COUNT);
+    if (n <= 0 || n > 64) return NULL;
+    const CtlAimTarget *t = (const CtlAimTarget *)(aa + CTL_AA_TARGETS);
+    float r2 = range * range;
+    for (int pass = prefer >= 0 ? 0 : 1; pass < 2; pass++)
+        for (int i = 0; i < n; i++) {
+            if (pass == 0 && t[i].ent != prefer) continue;
+            if (t[i].distSqr > 0.0f && t[i].distSqr <= r2 && hw >= t[i].mins[0] && t[i].maxs[0] >= -hw &&
+                hh >= t[i].mins[1] && t[i].maxs[1] >= -hh)
+                return &t[i];
+        }
+    return NULL;
+}
+
+static float CtlAngleDiff(float a, float b)
+{
+    float d = fmodf(a - b, 360.0f);
+    if (d > 180.0f) d -= 360.0f;
+    if (d < -180.0f) d += 360.0f;
+    return d;
+}
+
+static int g_lockEnt = -1;
+static DWORD g_snapUntil;
+static BOOL g_prevAds;
+static float g_preYaw, g_prePitch, g_mouseAccum;
+static DWORD g_mouseAccumAt;
+
+static BOOL CtlAimAllowed(void)
+{
+    return CtlDvarFloat(g_gpAim, 1.0f) > 0.0f && g_lastDevice == 1 && GetTickCount() - g_lastMouseMs > 1500;
+}
+
+/* Before C1's CL_MouseMove: the view angles, so the mouse's own turn can be measured. */
+__attribute__((used)) void __cdecl ControllerPreMove(int lc)
+{
+    BYTE *cl = (BYTE *)(DWORD_PTR)(*(volatile DWORD *)(DWORD_PTR)CTL_CL_PTR_VA ^ CTL_CL_KEY);
+    if (lc != 0 || !Readable(cl + CTL_CL_YAW, 4)) return;
+    g_prePitch = *(const float *)(cl + CTL_CL_PITCH);
+    g_preYaw = *(const float *)(cl + CTL_CL_YAW);
+}
+
 /* After C1's CL_MouseMove (main thread, inside CL_CreateCmd): left stick -> forwardmove/rightmove,
- * right stick -> clientActive viewangles. IW4x's CL_GamepadMove and AimAssist_ApplyTurnRates, without
- * aim assist (CONTROLLER.md phase 2). */
+ * right stick -> clientActive viewangles (IW4x's CL_GamepadMove and AimAssist_ApplyTurnRates), then aim
+ * assist on the stick's contribution. */
 __attribute__((used)) void __cdecl ControllerMove(int lc, BYTE *cmd, float frametime)
 {
     (void)frametime;
     static DWORD lastDebug;
-    if (lc != 0 || !g_padActive || CtlMode() != 0 || !cmd || !CtlEnabled()) return;
-    CtlSampleSticks(); /* once per usercmd, next to the mouse */
     BYTE *cl = (BYTE *)(DWORD_PTR)(*(volatile DWORD *)(DWORD_PTR)CTL_CL_PTR_VA ^ CTL_CL_KEY);
-    if (!Readable(cl + CTL_CL_YAW, 4)) return;
+    if (lc != 0 || !cmd || !Readable(cl + CTL_CL_YAW, 4)) return;
+    DWORD now = GetTickCount();
+    {   /* the mouse turned the view in C1's CL_MouseMove: keyboard / mouse is in use (0.5 deg within
+         * 300 ms switches the device, so a nudge does not) */
+        float moved = fabsf(CtlAngleDiff(*(const float *)(cl + CTL_CL_YAW), g_preYaw)) +
+                      fabsf(*(const float *)(cl + CTL_CL_PITCH) - g_prePitch);
+        if (moved > 0.0001f) {
+            g_lastMouseMs = now;
+            if (now - g_mouseAccumAt > 300) g_mouseAccum = 0.0f;
+            g_mouseAccumAt = now;
+            g_mouseAccum += moved;
+            if (g_mouseAccum > 0.5f) CtlSetDevice(0);
+        }
+    }
+    if (!g_padActive || CtlMode() != CTL_MODE_GAME || !CtlEnabled()) { g_lockEnt = -1; return; }
+    CtlSampleSticks(); /* once per usercmd, next to the mouse */
 
     /* move: IW4x's moveScale keeps diagonal full deflection at full speed */
     float fwd = g_ly, side = g_lx;
@@ -800,33 +1333,44 @@ __attribute__((used)) void __cdecl ControllerMove(int lc, BYTE *cmd, float frame
         float r = fabsf(side) <= fabsf(fwd) ? side / fwd : fwd / side;
         scale *= sqrtf(r * r + 1.0f);
         int f = (signed char)cmd[CTL_CMD_FORWARD] + (int)floorf(fwd * scale);
-        int s = (signed char)cmd[CTL_CMD_RIGHT] + (int)floorf(side * scale);
+        int s2 = (signed char)cmd[CTL_CMD_RIGHT] + (int)floorf(side * scale);
         cmd[CTL_CMD_FORWARD] = (BYTE)(signed char)(f < -128 ? -128 : f > 127 ? 127 : f);
-        cmd[CTL_CMD_RIGHT] = (BYTE)(signed char)(s < -128 ? -128 : s > 127 ? 127 : s);
+        cmd[CTL_CMD_RIGHT] = (BYTE)(signed char)(s2 < -128 ? -128 : s2 > 127 ? 127 : s2);
     }
 
     /* look */
     int msec = *(volatile int *)(DWORD_PTR)CTL_FRAMEMSEC_VA;
     float dt = msec > 0 && msec < 200 ? msec * 0.001f : 0.0f;
-    float ads = (*(volatile const DWORD *)(cmd + CTL_CMD_BUTTONS) & CTL_ADS_BUTTONS) ? 1.0f : 0.0f;
+    BOOL adsNow = (*(volatile const DWORD *)(cmd + CTL_CMD_BUTTONS) & CTL_ADS_BUTTONS) != 0;
     float lerpStep = dt / 0.15f; /* about the ADS transition time */
-    g_adsLerp += ads > g_adsLerp ? (g_adsLerp + lerpStep > 1.0f ? 1.0f - g_adsLerp : lerpStep)
-                                 : (g_adsLerp - lerpStep < 0.0f ? -g_adsLerp : -lerpStep);
-    if (*(volatile const int *)(cl + CTL_CL_PMFLAGS) & CTL_FROZEN) { g_yawVel = g_pitchVel = 0.0f; return; }
+    g_adsLerp += adsNow ? (g_adsLerp + lerpStep > 1.0f ? 1.0f - g_adsLerp : lerpStep)
+                        : (g_adsLerp - lerpStep < 0.0f ? -g_adsLerp : -lerpStep);
+    if (*(volatile const int *)(cl + CTL_CL_PMFLAGS) & CTL_FROZEN) { g_yawVel = g_pitchVel = 0.0f; g_lockEnt = -1; return; }
     float yawAxis = -g_rx;
     float pitchAxis = C1DvarInt(g_gpInvert, 0) ? g_ry : -g_ry;
-    float mag = sqrtf(yawAxis * yawAxis + pitchAxis * pitchAxis);
-    if (mag > 1.0f) mag = 1.0f;
+    float stickMag = sqrtf(yawAxis * yawAxis + pitchAxis * pitchAxis);
+    float mag = stickMag > 1.0f ? 1.0f : stickMag;
     float curve = CtlDvarFloat(g_gpCurve, 2.0f);
     float shape = mag > 0.0f ? powf(mag, curve - 1.0f) : 0.0f;
     yawAxis *= shape;
     pitchAxis *= shape;
+
+    BOOL assist = CtlAimAllowed();
+    float aim = CtlDvarFloat(g_gpAim, 1.0f), range = CtlDvarFloat(g_gpAimRange, 3200.0f);
+    const char *aaNote = "";
+    float slowY = 1.0f, slowP = 1.0f;
+    if (assist && CtlAimFind(range, 90.0f / 640.0f, 90.0f / 480.0f, -1)) {
+        float sc = 0.4f + 0.1f * g_adsLerp;                  /* aim_slowdown_*_scale 0.4, _ads 0.5 */
+        slowY = slowP = 1.0f - (1.0f - sc) * aim;
+        aaNote = " slowdown";
+    }
+
     float sens = CtlDvarFloat(g_gpSens, 1.0f);
     float yawRate = CtlDvarFloat(g_gpYaw, 260.0f), pitchRate = CtlDvarFloat(g_gpPitch, 90.0f);
     yawRate += (CtlDvarFloat(g_gpYawAds, 90.0f) - yawRate) * g_adsLerp;
     pitchRate += (CtlDvarFloat(g_gpPitchAds, 55.0f) - pitchRate) * g_adsLerp;
-    yawRate *= sens;
-    pitchRate *= sens;
+    yawRate *= sens * slowY;
+    pitchRate *= sens * slowP;
     float maxYaw = *(const float *)(cl + CTL_CL_MAXYAW), maxPitch = *(const float *)(cl + CTL_CL_MAXPITCH);
     if (maxYaw > 0.0f && maxYaw < yawRate) yawRate = maxYaw;      /* cgameMaxYawSpeed (turrets, vehicles) */
     if (maxPitch > 0.0f && maxPitch < pitchRate) pitchRate = maxPitch;
@@ -841,15 +1385,57 @@ __attribute__((used)) void __cdecl ControllerMove(int lc, BYTE *cmd, float frame
     }
     float dyaw = g_yawVel * dt * (yawAxis >= 0.0f ? 1.0f : -1.0f);
     float dpitch = g_pitchVel * dt * (pitchAxis >= 0.0f ? 1.0f : -1.0f);
+
+    /* lock-on: needs the pad to be moving the view or the player (IW4 aim_lockon_deflection 0.05) */
+    const BYTE *aa = (const BYTE *)(DWORD_PTR)CTL_AAGLOB_VA;
+    BYTE *cg = ParityCg();
+    BOOL deflected = stickMag > 0.05f || fabsf(g_lx) > 0.05f || fabsf(g_ly) > 0.05f;
+    const CtlAimTarget *lock = assist && deflected ? CtlAimFind(range, 90.0f / 640.0f, 90.0f / 480.0f, g_lockEnt) : NULL;
+    g_lockEnt = lock ? lock->ent : -1;
+    if (lock && cg && Readable(cg + CTL_PS_VELOCITY, 12)) {
+        const float *va = (const float *)(aa + CTL_AA_VIEWANG), *pv = (const float *)(cg + CTL_PS_VELOCITY);
+        float yr = va[1] * (float)M_PI / 180.0f, pr = va[0] * (float)M_PI / 180.0f;
+        float left[3] = { -sinf(yr), cosf(yr), 0.0f };                                          /* IW axis[1] */
+        float up[3] = { cosf(yr) * sinf(pr), sinf(yr) * sinf(pr), cosf(pr) };                   /* IW axis[2] */
+        float rel[3] = { lock->vel[0] - pv[0], lock->vel[1] - pv[1], lock->vel[2] - pv[2] };
+        float arc = sqrtf(lock->distSqr) * (float)M_PI;
+        float strength = 0.6f * aim;                                                            /* aim_lockon_strength */
+        dyaw += (rel[0] * left[0] + rel[1] * left[1]) / arc * 180.0f * strength * dt;
+        dpitch -= (rel[0] * up[0] + rel[1] * up[1] + rel[2] * up[2]) / arc * 180.0f * strength * dt;
+        aaNote = *aaNote ? " slowdown+lock-on" : " lock-on";
+    }
+
+    /* ADS snap: the pad's LT going down turns onto the target nearest the crosshair over 0.25 s */
+    BOOL ltNow = (g_pubButtons & CTL_LT_BIT) != 0;
+    if (adsNow && !g_prevAds && ltNow && assist && C1DvarInt(g_gpAimSnap, 1)) g_snapUntil = now + 250;
+    g_prevAds = adsNow;
+    if (g_snapUntil && (!assist || !adsNow || (LONG)(now - g_snapUntil) >= 0)) g_snapUntil = 0;
+    if (g_snapUntil) {
+        const CtlAimTarget *t = CtlAimFind(range, 160.0f / 640.0f, 120.0f / 480.0f, g_lockEnt);
+        if (t) {
+            const float *vo = (const float *)(aa + CTL_AA_VIEWORG), *va = (const float *)(aa + CTL_AA_VIEWANG);
+            float d[3] = { t->aim[0] - vo[0], t->aim[1] - vo[1], t->aim[2] - vo[2] };
+            float wantYaw = atan2f(d[1], d[0]) * 180.0f / (float)M_PI;
+            float wantPitch = -atan2f(d[2], sqrtf(d[0] * d[0] + d[1] * d[1])) * 180.0f / (float)M_PI;
+            float k = fminf(1.0f, dt / 0.08f) * aim;
+            dyaw += CtlAngleDiff(wantYaw, va[1]) * k;
+            dpitch += CtlAngleDiff(wantPitch, va[0]) * k;
+            aaNote = " ads-snap";
+        }
+    }
     *(float *)(cl + CTL_CL_YAW) += dyaw;
     *(float *)(cl + CTL_CL_PITCH) += dpitch;
+    g_preYaw = *(const float *)(cl + CTL_CL_YAW);   /* our own turn is not the mouse's */
+    g_prePitch = *(const float *)(cl + CTL_CL_PITCH);
 
-    if (C1DvarInt(g_gpDebug, 0) && GetTickCount() - lastDebug > 500) {
-        lastDebug = GetTickCount();
-        C1Printf("gamepad: cmd fwd %d right %d buttons 0x%lX ads %.2f; view pitch %.2f yaw %.2f (%+.3f/%+.3f in %d ms)\n",
+    if (C1DvarInt(g_gpDebug, 0) && now - lastDebug > 500) {
+        lastDebug = now;
+        C1Printf("gamepad: cmd fwd %d right %d buttons 0x%lX ads %.2f; view pitch %.2f yaw %.2f (%+.3f/%+.3f in %d ms); "
+                 "assist %s%s, targets %d, device %s, mouse %lu ms ago\n",
                  (signed char)cmd[CTL_CMD_FORWARD], (signed char)cmd[CTL_CMD_RIGHT],
                  (unsigned long)*(const DWORD *)(cmd + CTL_CMD_BUTTONS), g_adsLerp, *(const float *)(cl + CTL_CL_PITCH),
-                 *(const float *)(cl + CTL_CL_YAW), dpitch, dyaw, msec);
+                 *(const float *)(cl + CTL_CL_YAW), dpitch, dyaw, msec, assist ? "on" : "OFF", aaNote,
+                 *(const int *)(aa + CTL_AA_COUNT), g_lastDevice ? "pad" : "kb/mouse", (unsigned long)(now - g_lastMouseMs));
     }
 }
 
@@ -906,18 +1492,48 @@ static void __cdecl CtlCmdStatus(void)
              g_ctlMoveOk ? "ok" : "MISSING");
     for (int i = 0; i < CTL_NBUTTONS; i++) {
         int b = CtlKeyBinding(kCtlButtons[i].key);
-        const char *bn = b > 0 && b < 89 && g_bindOk && g_bindNames[b] ? g_bindNames[b]
-                       : b > 0 && b < 86 ? (const char *)(DWORD_PTR)((const DWORD *)(DWORD_PTR)0x00CD62C0u)[b] : "";
+        const char *bn = CtlBindName(b);
         C1Printf("gamepad:   %-14s %s\n", kCtlButtons[i].name, b ? bn : "(unbound)");
     }
 }
 
-static void __cdecl CtlCmdDefaults(void) { CtlApplyDefaultBinds(TRUE); }
+static void __cdecl CtlCmdDefaults(void) { CtlApplyDefaultBinds(1); }
+
+static void __cdecl CtlCmdTestMouse(void)
+{
+    if (!CtlTestMode()) { C1Printf("gpad_testmouse: test clients only (+set k33_cmdFile 1)\n"); return; }
+    if (VoiceArgc() < 4) { C1Printf("usage: gpad_testmouse <dx> <dy> <ms>   (mouse counts per frame)\n"); return; }
+    g_testMouseDx = atoi(VoiceArgv(1));
+    g_testMouseDy = atoi(VoiceArgv(2));
+    g_testMouseUntil = GetTickCount() + (DWORD)atoi(VoiceArgv(3));
+}
+
+/* aaGlob[0] fields (aim-assist offsets check). */
+static void __cdecl CtlCmdAaDump(void)
+{
+    const BYTE *aa = (const BYTE *)(DWORD_PTR)CTL_AAGLOB_VA;
+    const float *f = (const float *)aa;
+    BYTE *cg = ParityCg();
+    C1Printf("aaGlob: init %d count %d meleeRegion %.3f %.3f vieworg %.1f %.1f %.1f viewang %.2f %.2f %.2f\n",
+             aa[0xB0], *(const int *)(aa + CTL_AA_COUNT), f[0xC0 / 4], f[0xC4 / 4], f[0xD0 / 4], f[0xD4 / 4], f[0xD8 / 4],
+             f[0xDC / 4], f[0xE0 / 4], f[0xE4 / 4]);
+    if (cg) C1Printf("ps origin %.1f %.1f %.1f velocity %.1f %.1f %.1f\n", *(float *)(cg + 0x1C), *(float *)(cg + 0x20),
+                     *(float *)(cg + 0x24), *(float *)(cg + 0x28), *(float *)(cg + 0x2C), *(float *)(cg + 0x30));
+    int n = *(const int *)(aa + CTL_AA_COUNT);
+    const CtlAimTarget *t = (const CtlAimTarget *)(aa + CTL_AA_TARGETS);
+    for (int i = 0; i < n && i < 6; i++)
+        C1Printf("  target ent %d clip %.2f,%.2f..%.2f,%.2f aim %.0f %.0f %.0f dist %.0f\n", t[i].ent, t[i].mins[0], t[i].mins[1],
+                 t[i].maxs[0], t[i].maxs[1], t[i].aim[0], t[i].aim[1], t[i].aim[2], sqrtf(t[i].distSqr));
+}
 
 static C1Cmd g_ctlCmds[] = {
     { NULL, "gpad_fake", (void *)CtlCmdFake },
     { NULL, "gpad_status", (void *)CtlCmdStatus },
     { NULL, "gpad_defaultbinds", (void *)CtlCmdDefaults },
+    { NULL, "gpad_ksnext", (void *)CtlCmdKsNext },
+    { NULL, "gpad_ksuse", (void *)CtlCmdKsUse },
+    { NULL, "gpad_testmouse", (void *)CtlCmdTestMouse },
+    { NULL, "gpad_aadump", (void *)CtlCmdAaDump },
 };
 
 /* ---- install ------------------------------------------------------------------------------------- */
@@ -939,6 +1555,10 @@ __asm__(
     ".globl _CTL_MouseMoveHook\n"
     "_CTL_MouseMoveHook:\n"           /* call from CL_CreateCmd 0x490E2F: eax = lc, [esp+4] cmd, [esp+8] frametime */
     "    pushl %eax\n"
+    "    pushl %eax\n"
+    "    call _ControllerPreMove\n"   /* (lc): the view before the mouse */
+    "    addl $4, %esp\n"
+    "    movl (%esp), %eax\n"
     "    pushl 12(%esp)\n"
     "    pushl 12(%esp)\n"
     "    call *_g_ctlMouseMove\n"     /* C1's CL_MouseMove(cmd, frametime), eax = lc */
@@ -982,6 +1602,21 @@ static void InstallController(void)
     LONG rel = (LONG)((DWORD_PTR)CTL_InFrameHook - (CTL_IN_FRAME_VA + 5));
     memcpy(jmp + 1, &rel, 4);
     WriteCode(inFrame, jmp, sizeof(jmp));
+    CtlInstallBindCommands();
+    /* key names by last-used device: Key_GetBindingNames' call to Key_GetCommandAssignment */
+    BOOL namesOk = CallsTarget(0x0049393Eu, 0x00492E30u) && !memcmp((void *)(DWORD_PTR)0x00493935u, "\x8b\x45\x08", 3);
+    if (namesOk) RedirectCall(0x0049393Eu, (void *)CTL_CmdKeysHook);
+    /* keyboard / mouse activity: Sys_QueEvent's first five bytes (push ebp; mov ebp,esp; push esi; push edi) */
+    BYTE *que = (BYTE *)(DWORD_PTR)CTL_QUEEVENT_VA;
+    BOOL queOk = !memcmp(que, "\x55\x8b\xec\x56\x57", 5);
+    if (queOk) {
+        BYTE jq[5] = { 0xE9 };
+        LONG rq = (LONG)((DWORD_PTR)CTL_QueEventHook - (CTL_QUEEVENT_VA + 5));
+        memcpy(jq + 1, &rq, 4);
+        WriteCode(que, jq, 5);
+    }
+    Log("controller: key names by last-used device %s, keyboard/mouse detection %s", namesOk ? "hooked (0x49393E)" : "NOT hooked",
+        queOk ? "hooked (Sys_QueEvent)" : "NOT hooked");
     int added = 0;
     for (unsigned i = 0; i < sizeof(g_ctlCmds) / sizeof(g_ctlCmds[0]); i++) added += C1AddCommand(&g_ctlCmds[i]);
     g_ctlOn = TRUE;

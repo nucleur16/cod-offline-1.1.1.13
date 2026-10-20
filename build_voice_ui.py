@@ -64,6 +64,7 @@ FFDEC = os.environ.get("CODOL_FFDEC", r"C:\Program Files (x86)\FFDec\ffdec-cli.e
 VIEW_CLASSES = [
     ("codo.views.option_sub.OptionView_audio", os.path.join(HERE, "voice_ui", "OptionView_audio.as")),
     ("codo.views.option_sub.OptionView_video", os.path.join(HERE, "voice_ui", "OptionView_video.as")),
+    ("codo.controllers.StageKeyController", os.path.join(HERE, "voice_ui", "StageKeyController.as")),
 ]
 
 for _p in (ALPHA, os.path.join(ALPHA, "zones"), TOOLS, os.path.join(TOOLS, "codol_english")):

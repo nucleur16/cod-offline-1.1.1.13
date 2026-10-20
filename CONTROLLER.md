@@ -198,3 +198,42 @@ pad switches to cursor mode), the menu cursor on a focused window (SetCursorPos 
 2. Gyro aiming (SDL sensors) and touchpad.
 3. Per-pad profiles / `gpad_sticksConfig` presets (southpaw, legacy), Options > Controls > Controller page.
 4. Split-screen / second local client (lc 1) only if C1 ever runs it.
+
+## 8. Phase 2 work in progress (2026-10-20, built, not yet run in a match)
+
+Compiled into `Kernel33_controller.dll`; in-game testing stopped because the main install's
+`client_shipRetail\chinese\patch_common_gametype_zm.ff` became an unsigned IWffu100 build at 17:50 (other
+work), which fails C1's client pure check (0x617FA0, "WIN_FILE_CORRUPT") on every launch from that folder.
+
+- **Binds (CTL_BINDS_VERSION 2)**: LB `+smoke` (C1's tactical, keyboard Q), RB `+frag` (lethal, G),
+  D-pad up `+tact` (equipment, 4), left `weapalt` (attachment / underbarrel, 3), down `gpad_ksnext`, right
+  `gpad_ksuse`, X `+reload`, BUTTON_X_HOLD `+activate`. Configs still holding a phase-1 default for a key
+  are moved to the new one once (`gpad_binds_version`); changed keys are kept.
+- **Killstreaks**: C1 keeps them in action slots 1..5 (`_killstreaks.gsc` setActionSlot; playerState
+  actionSlotType[5] at +0x544). `gpad_ksnext` selects the next filled slot, `gpad_ksuse` presses
+  `+actionslot <selected>`; both are added to the bind table as 89 / 90 (after voice.c's +talk) and as
+  console commands.
+- **Hold to use**: X shorter than `gpad_use_hold_time` (250 ms) is BUTTON_X (reload), longer is
+  BUTTON_X_HOLD (`+activate`: weapon pickups, equipment reclaim, every "Press [Use]" prompt). Client-side
+  only; no server change needed. Hints for `{+activate}` read "Hold X" on the pad.
+- **Pause menu** (in a match with the UI catcher: codo.gfx opened by togglemenu, `cpp_openPauseMenu`): no
+  cursor; D-pad / left stick post F13 / F14 / F11 / F12, A posts F15, B / Start Escape.
+  `voice_ui/StageKeyController.as` (codo.gfx's stage key handler, C1's Esc logic unchanged) moves focus to the
+  nearest visible clickable object in that direction, sends it MOUSE_OVER / ROLL_OVER (its own hover look) and
+  draws a frame; F15 sends MOUSE_DOWN / MOUSE_UP / CLICK. Front-end menus keep the stick cursor.
+- **Button names by last-used device**: Key_GetBindingNames' call to Key_GetCommandAssignment (0x49393E)
+  returns only the active device's keys (pad: buttons, triggers or a stick past 0.45; keyboard / mouse:
+  any key or mouse button through Sys_QueEvent, mouse look of 0.5 deg in 300 ms, or the pointer moving 12 px).
+  Pad names by SDL controller type: Xbox (A, B, X, Y, LB, RB, LT, RT, LS, RS, Start, Back), PlayStation
+  (Cross, Circle, Square, Triangle, L1, R1, L2, R2, L3, R3, Options, Touchpad), Nintendo (positional);
+  `gpad_glyphs` overrides. C1's zones ship no button icon materials (only `dpad_*` killstreak icons), so
+  these are text; images need a font or patch zone (phase 3).
+- **Aim assist (pad only)**: C1's AimAssist_UpdateScreenTargets fills aaGlob 0x1501A80 (targets at +0x134,
+  0x34 each, count +0xE34, view origin / angles +0xD0 / +0xDC). Slowdown 0.4 hip / 0.5 ADS in a 90x90 box,
+  lock-on 0.6 (needs pad input past 0.05), ADS snap over 0.25 s in a 160x120 box (IW4 console values from
+  iw4mp AimAssist_RegisterDvars). Applied to the right stick's own delta after C1's CL_MouseMove; off unless
+  the pad is the last-used device and the mouse has not moved for 1.5 s. C1's mouse-path helper 0x4020D0 is
+  IW4 PC's melee lunge, unchanged and no aim assist. `gpad_aimassist` (0..1), `gpad_aimassist_range`,
+  `gpad_aimassist_snap`.
+- **Server visibility**: userinfo dvar `gpad` (flag 0x200) is 1 while the pad is the last-used input.
+- Test-only: `gpad_testmouse <dx> <dy> <ms>` (mouse counts into C1's accumulator), `gpad_aadump`.
