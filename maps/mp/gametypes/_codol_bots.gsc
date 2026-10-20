@@ -8,6 +8,7 @@ init()
     level.codolCombatBotsStarted = true;
     if ( getDvar( "scr_codol_bots" ) == "" )
         setDvar( "scr_codol_bots", 0 );
+    syncRegularRoomDifficulty();
     // Independent of bots: it also drives a human client by number.
     level thread watchKillstreakTestDvar();
     maps\mp\gametypes\_codol_equiptest::init();
@@ -33,6 +34,17 @@ init()
 // the undefined killstreak kills the match; watchSpawns would not run either,
 // and maintainBots would add a second set of bots. Called from
 // Callback_PlayerConnect before anything reads those fields.
+// Regular room-fill AI already uses Normal; keep match metadata in sync.
+// Combat Training owns its explicit difficulty, including war+positive bot count.
+syncRegularRoomDifficulty()
+{
+    if ( getDvar( "g_gametype" ) == "combat" || getDvarInt( "scr_codol_bots" ) > 0 )
+        return;
+    profile = getDvar( "sv_botDifficulty" );
+    if ( profile == "" || profile == "regular" )
+        setDvar( "g_difficulty", 1 );
+}
+
 restoreCombatBot()
 {
     if ( !isDefined( self.pers["codolCombatBot"] ) || !self.pers["codolCombatBot"] )
