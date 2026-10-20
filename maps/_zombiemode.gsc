@@ -249,6 +249,7 @@ init_levelvars()
 	level.enemy_spawns = [];
 	level.zombies = [];
 	level.gameEnded = false;
+	level.zm_end_report_requested = false;
 
 	// C1's room difficulty reaches the match as g_difficulty 0/1/2.
 	// Reserve 3 for a future endless option without exposing it in the lobby.
@@ -566,6 +567,8 @@ Callback_StartGameType()
 
 Callback_CodeEndGame()
 {
+	if ( is_true( level.zm_end_report_requested ) )
+		return;
 	level.gameEnded = true;
 	// Settle before camera respawns and the result-screen disconnect.
 	players = getPlayers();
@@ -575,6 +578,9 @@ Callback_CodeEndGame()
 			level.zm_round_mode, report_round_number(), level.zm_round_cap,
 			players[ i ].downs, players[ i ].revives, players[ i ].headshots, false );
 	}
+	// Native persistence owns retries after this synchronous result snapshot.
+	// A repeated code-end or end_game notification must not request it twice.
+	level.zm_end_report_requested = true;
 	sendClientMatchData();
 }
 
@@ -1393,8 +1399,9 @@ end_game_watcher()
 	level waittill( "end_game" );
 	if ( level.intermission )
 		return;
-	level.gameEnded = true;
-	sendClientMatchData();
+	// The natural all-down path does not receive the engine code-end callback.
+	// Settle its player results before reporting or starting presentation.
+	Callback_CodeEndGame();
 	level.intermission = true;
 	maps\_zombiemode_laststand::clear_all_down_countdown();
 	maps\_zombiemode_spawner::stop_spawning();
