@@ -57,7 +57,7 @@ watchDvar()
             if ( isDefined( player ) )
             {
                 player enableCombatBot( false );
-                codolPrintLn( "CoDOL ride test: " + player.name + " combat AI off" );
+                {}
             }
         }
         else if ( tokens[0] == "aim" && tokens.size > 2 )
@@ -72,7 +72,7 @@ watchDvar()
                 target.maxhealth = 100;
                 target.health = 100;
                 shooter setPlayerAngles( vectorToAngles( target.origin - camera ) );
-                codolPrintLn( "CoDOL ride test: " + shooter.name + " aims from " + camera + " at " + target.name + " " + target.origin );
+                {}
             }
         }
         else if ( tokens[0] == "subs" )
@@ -93,7 +93,7 @@ reportRadar()
             if ( isDefined( level.activeUAVs[ player.guid ] ) )
                 line = line + " UAVs " + level.activeUAVs[ player.guid ];
         }
-        codolPrintLn( line );
+        {}
     }
 }
 
@@ -112,18 +112,18 @@ holdFire( seconds, weapon )
             // A bot's scripted switch does not complete; put the weapon in
             // its hands directly, then keep the button held so its commands
             // keep naming that weapon.
-            codolPrintLn( "CoDOL ride test: " + self.name + " switch did not complete; setSpawnWeapon " + weapon );
+            {}
             self setSpawnWeapon( weapon );
             self codol_botPressButtons( 8192, 1 );
             wait 0.3;
         }
         if ( self getCurrentWeapon() != weapon )
         {
-            codolPrintLn( "CoDOL ride test: " + self.name + " still holds " + self getCurrentWeapon() + ", not " + weapon + "; not firing" );
+            {}
             return;
         }
     }
-    codolPrintLn( "CoDOL ride test: " + self.name + " fires " + self getCurrentWeapon() + " for " + seconds + "s from " + self.origin );
+    {}
     self thread logFire( seconds + 12 );
     self codol_botPressButtons( 1, seconds );
 }
@@ -140,9 +140,9 @@ logFire( seconds )
         camera = "none";
         if ( isDefined( level.ac130 ) )
             camera = level.ac130 getTagOrigin( "tag_player" );
-        codolPrintLn( "CoDOL ride test: weapon_fired " + self getCurrentWeapon() + " body " + self.origin + " gunship camera " + camera );
+        {}
         foreach ( rocket in getEntArray( "rocket", "classname" ) )
-            codolPrintLn( "CoDOL ride test: projectile in flight at " + rocket.origin );
+            {}
     }
 }
 
@@ -154,7 +154,7 @@ logImpacts( seconds )
     while ( getTime() < endTime )
     {
         self waittill( "projectile_impact", weaponName, position, radius );
-        codolPrintLn( "CoDOL ride test: projectile_impact " + weaponName + " at " + position + " radius " + radius );
+        {}
     }
 }
 
@@ -170,6 +170,6 @@ reportSubtitles()
             subtitle = soundAliasSubtitle( alias );
             if ( !isDefined( subtitle ) )
                 subtitle = "<none>";
-            codolPrintLn( "CoDOL ride test: dialog " + key + " " + team + " " + alias + " -> " + subtitle );
+            {}
         }
 }

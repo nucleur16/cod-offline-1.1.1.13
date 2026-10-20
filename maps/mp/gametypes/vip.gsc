@@ -264,7 +264,7 @@ vip_endGame( winningTeam, endReasonText )
 
 vipSelection()
 {
-	println( "SELECTION" );
+	{}
 	potentialVIPs = [];
 	abortTime = 0;
 	
@@ -326,9 +326,9 @@ extractionZone()
 	// check to see if zone is available.
 	if ( !isDefined( extractionZone ) )
 	{	
-		println("WARNING: no extraction zone specified" );
+		{}
 	
-		printLn( "^1Not enough extraction zones found in level!" );
+		{}
 		maps\mp\gametypes\_callbacksetup::AbortLevel();
 		return;
 	}
@@ -411,7 +411,7 @@ handleTimer( player )
 
 onEndUse( team, player, success )
 {
-	println( "End Use" );
+	{}
 }
 
 onCantUse( player )

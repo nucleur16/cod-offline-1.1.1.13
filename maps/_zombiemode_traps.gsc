@@ -86,8 +86,6 @@ init()
 	level._effect[ "zapper_wall" ] = loadfx( "misc/fx_zombie_zapper_wall_control_on" );
 	level._effect[ "zapper_light_ready" ] = loadfx( "misc/fx_zombie_zapper_light_green" );
 	level._effect[ "zapper_light_notready" ] = loadfx( "misc/fx_zombie_zapper_light_red" );
-	// T5 character_fire_death_torso, the burning-zombie torso fire (C1 name).
-	level._effect[ "zm_trap_fire_torso" ] = loadfx( "env/fire/fx_fire_player_torso" );
 	level._effect[ "elec_torso" ] = loadfx( "env/electrical/fx_elec_player_torso" );
 	level._effect[ "elec_md" ] = loadfx( "env/electrical/fx_elec_player_md" );
 	level._effect[ "elec_sm" ] = loadfx( "env/electrical/fx_elec_player_sm" );
@@ -211,13 +209,6 @@ trap_init()
 
 	flag_wait( "all_players_connected" );
 
-	// A level that powers machines separately (zm_sumpf_sh: one switch per
-	// hut) names this entity's own power flag; every other map waits on the
-	// one "power_on" flag, exactly as before.
-	power_flag = "power_on";
-	if ( isDefined( self.zm_power_flag ) )
-		power_flag = self.zm_power_flag;
-
 	self trap_lights_red();
 	for ( i = 0; i < self._trap_use_trigs.size; i++ )
 		self._trap_use_trigs[ i ] setCursorHint( "HINT_NOICON" );
@@ -225,7 +216,7 @@ trap_init()
 	if ( !isDefined( self.script_flag_wait ) )
 	{
 		self trap_set_string( &"ZOMBIE_NEED_POWER" );
-		flag_wait( power_flag );
+		flag_wait( "power_on" );
 	}
 	else
 	{
@@ -609,43 +600,14 @@ zombie_trap_death( trap, param )
 
 	if ( !isDefined( self.animname ) || self.animname != "zombie_dog" )
 	{
-		if ( !isDefined( level.burning_zombies ) )
-			level.burning_zombies = [];
-		if ( isDefined( param ) && param > 90 && level.burning_zombies.size < 6 )
+		playSoundAtPosition( "zmb_zombie_arc", self.origin );
+		if ( randomInt( 100 ) > 50 )
 		{
-			// T5 :905-:911: one zombie in ten burns instead (at most six at a
-			// time) -- ignite, the torso fire, no gib.  C1 names: zmb_ignite,
-			// env/fire/fx_fire_player_torso (T5 character_fire_death_torso).
-			level.burning_zombies[ level.burning_zombies.size ] = self;
-			self thread trap_burning_watch();
-			self playSound( "zmb_ignite" );
-			if ( isDefined( level._effect[ "zm_trap_fire_torso" ] ) )
-				playFxOnTag( level._effect[ "zm_trap_fire_torso" ], self, "j_spinelower" );
-			wait( randomFloat( 1.25 ) );
+			self thread electroctute_death_fx();
+			self thread play_elec_vocals();
 		}
-		else
-		{
-			// T5 :913-:921: the zombie comes apart as it dies.
-			refs = [];
-			refs[ 0 ] = "guts";
-			refs[ 1 ] = "right_arm";
-			refs[ 2 ] = "left_arm";
-			refs[ 3 ] = "right_leg";
-			refs[ 4 ] = "left_leg";
-			refs[ 5 ] = "no_legs";
-			refs[ 6 ] = "head";
-			if ( isDefined( self.a ) && !is_true( self.gibbed ) )
-				self.a.gib_ref = refs[ randomInt( refs.size ) ];
-
-			playSoundAtPosition( "zmb_zombie_arc", self.origin );
-			if ( randomInt( 100 ) > 50 )
-			{
-				self thread electroctute_death_fx();
-				self thread play_elec_vocals();
-			}
-			wait( randomFloat( 1.25 ) );
-			self playSound( "zmb_zombie_arc" );
-		}
+		wait( randomFloat( 1.25 ) );
+		self playSound( "zmb_zombie_arc" );
 	}
 
 	level notify( "trap_kill", self, trap );
@@ -653,19 +615,6 @@ zombie_trap_death( trap, param )
 	if ( isDefined( trap ) )
 		trap._trap_kills++;
 	self doDamage( self.health + 666, self.origin );
-}
-
-// T5 zombie_flame_watch: a burning zombie leaves the burning list when it dies.
-trap_burning_watch()
-{
-	self waittill( "death" );
-	keep = [];
-	for ( i = 0; i < level.burning_zombies.size; i++ )
-	{
-		if ( isDefined( level.burning_zombies[ i ] ) && level.burning_zombies[ i ] != self )
-			keep[ keep.size ] = level.burning_zombies[ i ];
-	}
-	level.burning_zombies = keep;
 }
 
 // T5 :1000.

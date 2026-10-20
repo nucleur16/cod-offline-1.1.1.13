@@ -770,11 +770,7 @@ perks_a_cola_jingle_timer()
 		return;
 
 	// The power module fans <perk>_power_on out after flag "power_on".
-	// A machine with its own power flag (zm_sumpf_sh's per-hut power) waits
-	// on that; every other map is unchanged.
-	if ( isDefined( self.zm_power_flag ) )
-		flag_wait( self.zm_power_flag );
-	else if ( flag_exist( "power_on" ) )
+	if ( flag_exist( "power_on" ) )
 		flag_wait( "power_on" );
 
 	for ( ;; )

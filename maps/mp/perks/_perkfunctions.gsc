@@ -467,7 +467,7 @@ unsetTank()
 
 setPrecision_airstrike()
 {
-	println( "!precision airstrike!" );
+	{}
 	self thread killstreakThink( "precision_airstrike", 6, "end_precision_airstrike" );
 }
 
@@ -1106,7 +1106,7 @@ setPainted( painter )
 	self.painted = true;
 	self setAbilityModifier( "modRadarArrow" );
 	self setAbilityModifierValue( "modRadarArrow", painter getEntityNumber() + 1 );
-	codolPrintLn( "CoDOL paint: " + painter.name + " painted " + self.name + " for " + duration + "s" );
+	{}
 	self thread unsetPaintedAfter( duration );
 }
 
@@ -1120,7 +1120,7 @@ unsetPaintedAfter( duration )
 
 	self.painted = false;
 	self unsetAbilityModifier( "modRadarArrow" );
-	codolPrintLn( "CoDOL paint: cleared " + self.name );
+	{}
 }
 
 isPainted()

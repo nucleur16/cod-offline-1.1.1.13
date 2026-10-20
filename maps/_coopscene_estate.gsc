@@ -165,8 +165,8 @@ boat_ride( g )
 	maps\_coopanim::anim_single_solo( g, "boat_ride", undefined, "inplace", true );
 }
 
-// The breach stack: when Ghost reaches checkpoint_breach_ghost he holds the
-// stack idle there until the charge goes (then breach_enter).
+// The breach stack: when Ghost reaches checkpoint_breach_ghost he steps in
+// against the door frame (enter) and holds the stack until the charge goes.
 breach_stack( g, spot, yaw )
 {
 	if ( !isDefined( g ) )
@@ -182,11 +182,9 @@ breach_stack( g, spot, yaw )
 	wait( 0.5 );
 	g.animname = "ghost";
 	g.coop_estate_scene = "stack";
-	// IW4 _slowmo_breach: breach_flash_r1_idle is the stack (it starts on
-	// the same spot as r1_enter, MEASURED), and r1_enter is the way IN
-	// after the blast (115 units, turning -143): breach_stack_done.
 	g forceTeleport( g.origin, ( 0, yaw, 0 ) );
 	codolprintln( "CoDOL coop estate scene: Ghost stacks on the breach door at " + g.origin );
+	maps\_coopanim::anim_single_solo( g, "breach_stack_enter" );
 	maps\_coopanim::anim_loop_solo( g, "breach_stack_idle" );
 }
 
@@ -196,23 +194,7 @@ breach_stack_done( g )
 	if ( !isDefined( g ) || !isDefined( g.coop_estate_scene ) || g.coop_estate_scene != "stack" )
 		return;
 	g.coop_estate_scene = undefined;
-	g thread breach_enter();
-}
-
-// The blast (1.5 s after the charge is set, _coopmission_estate
-// stage_breach), then IW4's r1_enter from the stack with its root motion: he
-// runs up to the blown doorway and turns into it; then he fights.  Played in
-// place where its path is not clear.
-breach_enter()
-{
-	self endon( "death" );
-	wait( 1.6 );
-	if ( maps\_coopanim::has_anim( "ghost", "breach_stack_enter" ) )
-	{
-		self.animname = "ghost";
-		maps\_coopanim::anim_single_root( self, "breach_stack_enter" );
-	}
-	maps\_coopanim::release( self );
+	maps\_coopanim::release( g );
 }
 
 // IW4 _slowmo_breach: each room guard plays his spawner's reaction at the

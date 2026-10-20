@@ -295,7 +295,8 @@ init_levelvars()
 
 	// Scoring
 	set_zombie_var( "zombie_point_scalar",               1 );
-	set_zombie_var( "zombie_score_start_1p",             500,  false, column );
+	// The shipped difficulty table contains larger purses; always start at 500.
+	level.zombie_vars[ "zombie_score_start_1p" ] = 500;
 	set_zombie_var( "zombie_score_kill_4player",         50 );
 	set_zombie_var( "zombie_score_kill_3player",         50 );
 	set_zombie_var( "zombie_score_kill_2player",         50 );
@@ -311,7 +312,7 @@ init_levelvars()
 
 	// Player
 	set_zombie_var( "player_starting_health",            100 );
-	set_zombie_var( "player_health_regen_delay",          2400 );
+	set_zombie_var( "player_health_regen_delay",          5000 );
 
 	// The shipped EASY/MEDIUM/HARD rows for spawn delay and health are all
 	// identical.  Add a small tier gradient on top of their actual values;
@@ -339,7 +340,13 @@ init_levelvars()
 	}
 	else
 	{
-		level.zm_spawn_decay = 0.95;
+		// Normal keeps its round count and wave budget, with a gentler
+		// health and sprint ramp and more space between spawn attempts.
+		level.zombie_vars[ "zombie_spawn_delay" ] *= 1.10;
+		level.zombie_vars[ "zombie_health_start" ] = int( level.zombie_vars[ "zombie_health_start" ] * 0.90 );
+		level.zombie_vars[ "zombie_health_increase" ] = int( level.zombie_vars[ "zombie_health_increase" ] * 0.90 );
+		level.zombie_vars[ "zombie_move_speed_multiplier" ] = 7;
+		level.zm_spawn_decay = 0.96;
 		level.zm_spawn_floor = 0.20;
 	}
 	codolprintln( "CoDOL zm: difficulty " + level.zm_round_mode + " extraction round " +
@@ -979,15 +986,9 @@ spawnPlayer()
 }
 
 // The multiplayer tree runs _healthoverlay::playerHealthRegen on each spawn.
-// Zombies has its own gametype root and never starts that thread.  T5 zombies
-// run _gameskill::playerHealthRegen (_zombiemode_load.gsc:970) at the
-// "normal" difficulty fraction 0.75 (_gameskill.gsc:176-:306):
-//   playerHealth_RegularRegenDelay 2400 ms -- after 2.4 s without damage
-//     a player above the cutoff snaps back to full health;
-//   healthOverlayCutoff 0.2 -- a player hit to 20% or less is "very hurt":
-//     nothing comes back until longRegenTime (5000 ms) after the hit, then
-//     10% of max health per 0.05 s.
-// The client draws its own damage overlay; only the health is driven here.
+// Zombies has its own gametype root and never starts that thread, leaving
+// every nonlethal claw hit permanently subtracted.  Keep this health-only
+// variant local to zm; the client already owns its damage overlay.
 zm_player_health_regen()
 {
 	self endon( "death" );
@@ -995,42 +996,19 @@ zm_player_health_regen()
 	self endon( "player_downed" );
 	self endon( "zm_regen_restart" );
 
-	very_hurt = false;
-	hurt_time = 0;
-
 	for ( ;; )
 	{
-		wait( 0.05 );
-		if ( self.health <= 0 || self.laststand )
+		wait( 0.1 );
+		if ( self.health <= 0 || self.laststand || self.health >= self.maxhealth )
 			continue;
-		if ( self.health >= self.maxhealth )
-		{
-			very_hurt = false;
-			continue;
-		}
-
-		if ( isDefined( self.zmLastDamageTime ) && self.zmLastDamageTime > hurt_time )
-		{
-			hurt_time = self.zmLastDamageTime;
-			if ( self.health / self.maxhealth <= 0.2 )
-				very_hurt = true;
-		}
-
-		if ( getTime() - hurt_time < level.zombie_vars[ "player_health_regen_delay" ] )
+		if ( getTime() - self.zmLastDamageTime < level.zombie_vars[ "player_health_regen_delay" ] )
 			continue;
 
-		if ( very_hurt )
-		{
-			if ( getTime() <= hurt_time + 5000 )
-				continue;
-			health = self.health + int( self.maxhealth * 0.1 );
-		}
-		else
-			health = self.maxhealth;
-
-		if ( health > self.maxhealth )
-			health = self.maxhealth;
-		self.health = health;
+		// Match the multiplayer thread's rapid recovery after its five-second
+		// quiet window; avoid writing through the native damage callback.
+		self.health += 10;
+		if ( self.health > self.maxhealth )
+			self.health = self.maxhealth;
 	}
 }
 
@@ -1271,15 +1249,6 @@ round_think()
 
 		level thread award_grenades_for_survivors();
 
-		// T5 :3913 chalk_one_up runs before the round's spawning starts: the
-		// intro on the first round (1 + 2 + 3 + 0.25 + 2 = 8.25 s, :3708-
-		// :3790), the chalk flash on every later one (0.5 + 2 = 2.5 s).  The
-		// round-over chalk (10 s) is the between-round wait below.
-		if ( is_true( level.first_round ) )
-			wait( 8.25 );
-		else
-			wait( 2.5 );
-
 		codolprintln( "CoDOL zm: round " + level.round_number + " begins with " + players.size + " player(s)" );
 
 		level.round_start_time = getTime();
@@ -1380,6 +1349,9 @@ end_game_watcher()
 		return;
 
 	level.gameEnded = true;
+	// Settle defeat and extraction while the players' session counters still
+	// exist. The camera respawns players; disconnect during music comes later.
+	sendClientMatchData();
 	level.intermission = true;
 
 	println( "CoDOL zm: game over on round " + level.round_number + " after " +
@@ -1392,6 +1364,8 @@ end_game_watcher()
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 	{
+		players[ i ] codol_reportZombiesResult( is_true( players[ i ].zm_extracted ),
+			level.zm_round_mode, level.round_number, level.zm_round_cap );
 		players[ i ] closeMenu();
 		players[ i ] closeInGameMenu();
 		players[ i ] freezeControls( true );

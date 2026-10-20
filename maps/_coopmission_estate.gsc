@@ -951,8 +951,8 @@ ghost_walk( goal )
 // test, so a goal there sends the actor toward the graph's nearest waypoint
 // and into the bank (MEASURED on the probe 2026-10-09: three legs of the
 // node route, each wedged at (-4994 2652 -509) or (-4840 2394 -468)).  He
-// walks the node route on a mover at the patrol walk's own pace (27.6 units
-// a second, from the clip's root motion) with that walk playing,
+// walks the node route on a mover at the patrol walk's own pace (about 30
+// units a second, the native walk's measured speed) with that walk playing,
 // as the training jeep carries Price (codol_actorRide), then goes on under
 // his own legs from the landing node.
 ghost_up_the_beach( goal )
@@ -982,10 +982,7 @@ ghost_up_the_beach( goal )
 	wait( 0.05 );
 	g codol_actorRide( mover );
 	level.coop_estate.ghost_riding = true;
-	// The mover keeps the walk's own pace (patrol_bored_patrolwalk: 27.6
-	// units a second), so his feet keep to the sand.
-	pace = maps\_coopanim::clip_pace( %patrol_bored_patrolwalk );
-	codolprintln( "CoDOL coop estate: Ghost walks up the beach over " + ( points.size - 1 ) + " nodes at " + pace + " units/s" );
+	codolprintln( "CoDOL coop estate: Ghost walks up the beach over " + ( points.size - 1 ) + " nodes" );
 	for ( k = 0; k < points.size; k++ )
 	{
 		target = maps\_coopvehicle::ground_under( points[ k ] + ( 0, 0, 32 ) );
@@ -994,7 +991,7 @@ ghost_up_the_beach( goal )
 			continue;
 		dir = target - mover.origin;
 		mover rotateTo( ( 0, vectorToAngles( ( dir[ 0 ], dir[ 1 ], 0 ) )[ 1 ], 0 ), 0.4 );
-		t = d / pace;
+		t = d / 30;
 		mover moveTo( target, t );
 		wait( t );
 	}

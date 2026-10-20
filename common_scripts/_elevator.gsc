@@ -1244,26 +1244,26 @@ elevator_debug()
 			mainframe = elevator get_housing_mainframe();
 			musak_model = elevator get_housing_musak_model();
 
-			print3d( musak_model.origin, "[e" + i + "]musak_origin", ( 0.75, 0.75, 1.0 ), 1, 0.25, 20 );
-			print3d( mainframe.origin, "[e" + i + "]mainframe", ( 0.75, 0.75, 1.0 ), 1, 0.25, 20 );
-			print3d( elevator.e[ "housing" ][ "left_door" ].origin, "[e" + i + "]left door", ( 0.75, 0.75, 1.0 ), 1, 0.25, 20 );
-			print3d( elevator.e[ "housing" ][ "right_door" ].origin, "[e" + i + "]right door", ( 0.75, 0.75, 1.0 ), 1, 0.25, 20 );
-			print3d( elevator.e[ "housing" ][ "door_closed_pos" ], "[e" + i + "]->|<-", ( 0.75, 0.75, 1.0 ), 1, 0.25, 20 );
-			print3d( elevator.e[ "housing" ][ "inside_trigger" ].origin, "[e" + i + "]USE", ( 0.75, 0.75, 1.0 ), 1, 0.25, 20 );
+			{}
+			{}
+			{}
+			{}
+			{}
+			{}
 
 			foreach ( j, eFloor in elevator.e[ "outer_doorset" ] )
 			{
-				print3d( eFloor[ "left_door" ].origin + ( 0, 0, 8 ), "[e" + i + "][f" + j + "]left door", ( 0.75, 1.0, 0.75 ), 1, 0.25, 20 );
-				print3d( eFloor[ "right_door" ].origin + ( 0, 0, 8 ), "[e" + i + "][f" + j + "]right door", ( 0.75, 1.0, 0.75 ), 1, 0.25, 20 );
-				print3d( eFloor[ "door_closed_pos" ] + ( 0, 0, 8 ), "[e" + i + "][f" + j + "]->|<-", ( 0.75, 1.0, 0.75 ), 1, 0.25, 20 );
-				print3d( elevator.e[ "floor" + j + "_pos" ] + ( 0, 0, 8 ), "[e" + i + "][f" + j + "]stop", ( 1.0, 0.75, 0.75 ), 1, 0.25, 20 );
+				{}
+				{}
+				{}
+				{}
 			}
 		}
 
 		// per button
 		foreach ( callbutton in level.elevator_callbuttons )
 		{
-			print3d( callbutton.origin, "linked to:", ( 0.75, 0.75, 1.0 ), 1, 0.25, 20 );
+			{}
 
 			// per floor
 			foreach ( f_idx, eFloor in callbutton.e )
@@ -1275,7 +1275,7 @@ elevator_debug()
 					printoffset++ ;
 					// e_idx is used to offset print
 					print_pos = callbutton.origin + ( 0, 0, ( printoffset ) * ( -4 ) );
-					print3d( print_pos, "[f" + f_idx + "][e" + eLinked.e[ "id" ] + "]", ( 0.75, 0.75, 1.0 ), 1, 0.25, 20 );
+					{}
 				}
 			}
 		}

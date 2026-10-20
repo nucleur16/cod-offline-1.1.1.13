@@ -92,15 +92,7 @@ aerialPathCensus()
 	if ( isDefined( level.mapCenter ) )
 		center = "" + level.mapCenter;
 
-	println( "CoDOL killstreak paths: heli_start " + getEntArray( "heli_start", "targetname" ).size +
-		", heli_loop_start " + getEntArray( "heli_loop_start", "targetname" ).size +
-		", heli_leave " + getEntArray( "heli_leave", "targetname" ).size +
-		", heli_crash_start " + getEntArray( "heli_crash_start", "targetname" ).size +
-		", heli_dest " + getEntArray( "heli_dest", "targetname" ).size +
-		", heli_attack_area " + getEntArray( "heli_attack_area", "targetname" ).size +
-		", minimap_corner " + getEntArray( "minimap_corner", "targetname" ).size +
-		", airstrike height " + heightSource +
-		", mapCenter " + center );
+	{}
 }
 
 
@@ -300,10 +292,13 @@ waitForChangeTeam()
 	
 	self notify ( "waitForChangeTeam" );
 	self endon ( "waitForChangeTeam" );
+	if ( !isDefined( self.pers["codolKillstreakTeamGeneration"] ) )
+		self.pers["codolKillstreakTeamGeneration"] = 0;
 	
 	for ( ;; )
 	{
 		self waittill ( "joined_team" );
+		self.pers["codolKillstreakTeamGeneration"]++;
 		clearKillstreaks();
 	}
 }
@@ -345,6 +340,8 @@ killstreakTakesKID( streakName )
 		case "airdrop_sam_turret":
 		case "airdrop_predator_missile":
 		case "mortar_mp":
+		case "helicopter":
+		case "helicopter_flares":
 			return true;
 
 		default:
@@ -395,7 +392,7 @@ deadlyKillstreak( streakName )
 // already expect, so no control flow changes.
 killstreakRefused( streakName, reason )
 {
-	codolPrintLn( "CoDOL killstreak: " + streakName + " refused: " + reason );
+	{}
 	return false;
 }
 
@@ -509,8 +506,7 @@ killstreakUsePressed( selectedID )
 		{
 			self codolPublishStreakHudCount( self.pers["cur_kill_streak"], true );
 			if ( getDvarInt( "developer" ) > 0 )
-				codolPrintLn( "CoDOL streak HUD after use: " + self.name + " " + streakName +
-					" raw " + self.pers["cur_kill_streak"] + " hud " + self getKillstreak() );
+				{}
 		}
 		self giveOwnedKillstreakItem();
 	}
@@ -822,8 +818,7 @@ codolRunRewardUse( selectedID, life, use )
         waittillframeend;
         self.codolRewardUseWeapon = undefined;
         if ( getDvarInt( "developer" ) > 0 )
-            codolPrintLn( "CoDOL killstreak use: " + self.name + " " + streakName + "#" + selectedID +
-                " result " + ( isDefined( result ) && result ) + " holding " + self getCurrentWeapon() );
+            {}
 
         // The weapon belongs to the life that raised the reward weapon. After
         // a death (or a respawn during a ride) the spawn loadout owns it.
@@ -857,7 +852,7 @@ codolRunRewardUse( selectedID, life, use )
                     lastWeapon = getKillstreakWeapon( pressed.streakName );
                 self switchToWeapon( lastWeapon );
                 if ( getDvarInt( "developer" ) > 0 )
-                    codolPrintLn( "CoDOL killstreak use: " + self.name + " " + streakName + " returns to " + lastWeapon );
+                    {}
             }
 
             // give time to switch to the near weapon; when the weapon is none (such as during a "disableWeapon()" period
@@ -1265,9 +1260,7 @@ giveOwnedKillstreakItem( skipDialog )
         self giveKillstreakWeapon( weapon );
         if ( !self hasWeapon( weapon ) )
         {
-            println( "CoDOL killstreak: " + reward.streakName + " weapon " + weapon +
-                " was not granted (no publishable index); action slot left empty," +
-                " reward kept pending" );
+            {}
             self _setActionSlot( slot, "" );
             continue;
         }

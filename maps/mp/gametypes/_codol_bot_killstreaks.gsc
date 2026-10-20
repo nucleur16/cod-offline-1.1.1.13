@@ -172,7 +172,7 @@ useReward( reward, kind )
     streakName = reward.streakName;
     kID = reward.kID;
     if ( getDvarInt( "developer" ) > 0 )
-        codolPrintLn( "CoDOL bot killstreak: " + self.name + " calls in " + streakName + "#" + kID + " (" + kind + ")" );
+        {}
     if ( kind == "locate" || kind == "mortar" )
     {
         self useLocationReward( reward, kind );
@@ -243,7 +243,7 @@ useLocationReward( reward, kind )
             target = target + ( randomIntRange( -256, 256 ), randomIntRange( -256, 256 ), 0 );
         yaw = vectorToAngles( target - self.origin )[1];
         if ( getDvarInt( "developer" ) > 0 )
-            codolPrintLn( "CoDOL bot killstreak: " + self.name + " targets " + target + " yaw " + yaw + " for " + reward.streakName );
+            {}
         self notify( "confirm_location", target, yaw );
         wait 0.4;
     }
@@ -464,7 +464,7 @@ openCrate( crate )
     if ( !isDefined( crate ) || distanceSquared( start, crate.origin ) > 16 * 16 )
         return;
     if ( getDvarInt( "developer" ) > 0 )
-        codolPrintLn( "CoDOL bot killstreak: " + self.name + " goes for the " + crate.crateType + " crate at " + crate.origin );
+        {}
     crate.codolBotClaim = self;
     crate.codolBotClaimTime = getTime() + 20000;
     self.codolBotTask = "crate";
@@ -483,7 +483,7 @@ openCrate( crate )
         }
     }
     if ( getDvarInt( "developer" ) > 0 )
-        codolPrintLn( "CoDOL bot killstreak: " + self.name + " crate run " + result + ", crate taken " + !isDefined( crate ) );
+        {}
     // Could not get there: leave it to someone else for a minute.
     if ( isDefined( crate ) && result != "goal" )
         crate.codolBotClaimTime = getTime() + 60000;

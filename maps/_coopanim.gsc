@@ -19,13 +19,6 @@
 // nothing.  A %anim is still right for the common_human / common_actor_shared
 // clips every coop client loads; they are the fallbacks here.
 //
-// A scene member may also be a SCRIPT_MODEL (a prop, a vehicle model, a
-// script-model character).  IW4 _anim plays a non-AI with animScripted at
-// the scene node, so the clip's root motion moves it; here that is the native
-// codol_animScriptedModel (anim_single_solo / play_anim / anim_first_frame_solo
-// / release dispatch on is_model).  A looping scene idle is still an actor
-// feature (the soldier_stop cast pose).
-//
 // Coop category only; names no multiplayer module.
 
 #using_animtree ( "generic_human" );
@@ -156,25 +149,7 @@ place_at_start( guy, clip, node )
 	ang = node_angles( node, guy );
 	start = getStartOrigin( org, ang, clip );
 	angles = getStartAngles( org, ang, clip );
-	if ( isDefined( node ) && isDefined( node.coop_at_start ) )
-	{
-		// A node that is the clip's start spot itself (play_root).
-		start = node.origin;
-		angles = node.angles;
-	}
-	if ( is_model( guy ) )
-	{
-		guy.origin = start;
-		guy.angles = angles;
-		return;
-	}
 	guy forceTeleport( start, ( 0, angles[ 1 ], 0 ) );
-}
-
-// A script_model scene member (not an actor): IW4 _anim's non-AI branch.
-is_model( guy )
-{
-	return isDefined( guy ) && isDefined( guy.classname ) && guy.classname == "script_model";
 }
 
 // --------------------------------------------------------------------------
@@ -305,7 +280,7 @@ kick_cast_loop( clip )
 anim_single_solo( guy, scene, node, mode, nowait )
 {
 	a = guy_anim( guy, scene );
-	if ( !isDefined( a ) || ( !isAlive( guy ) && !is_model( guy ) ) )
+	if ( !isDefined( a ) || !isAlive( guy ) )
 		return 0;
 	return guy play_anim( a, node, mode, nowait );
 }
@@ -313,8 +288,6 @@ anim_single_solo( guy, scene, node, mode, nowait )
 // The same with an animation value.
 play_anim( clip, node, mode, nowait )
 {
-	if ( isDefined( clip ) && is_model( self ) )
-		return self play_model_anim( clip, node, nowait );
 	if ( !isDefined( clip ) || !isAlive( self ) )
 		return 0;
 	length = getAnimLength( clip );
@@ -333,46 +306,6 @@ play_anim( clip, node, mode, nowait )
 	if ( !isDefined( nowait ) || !nowait )
 		self waittill_scene_done( length );
 	return length;
-}
-
-// A script_model plays the clip once with its root motion, as IW4's
-// animScripted on a non-AI does: from the scene's start spot and facing
-// (getStartOrigin / getStartAngles of the node, which is where the clip's
-// first frame stands), or from where the model stands when there is no node.
-// The model then holds the clip's last position (and pose) until it is moved,
-// released (release / codol_stopAnimScriptedModel) or deleted.  Notetracks
-// and "end" arrive on "coop_scene".
-play_model_anim( clip, node, nowait )
-{
-	length = getAnimLength( clip );
-	start = self.origin;
-	angles = self.angles;
-	if ( isDefined( node ) )
-	{
-		org = node_origin( node, self );
-		ang = node_angles( node, self );
-		start = getStartOrigin( org, ang, clip );
-		angles = getStartAngles( org, ang, clip );
-	}
-	trace_scene( clip, "model" );
-	self codol_animScriptedModel( "coop_scene", start, angles, clip, 1, 0.2 );
-	if ( !isDefined( nowait ) || !nowait )
-		self waittill_model_scene( length );
-	return length;
-}
-
-waittill_model_scene( length )
-{
-	self endon( "death" );
-	self endon( "coop_scene_stop" );
-	start = getTime();
-	stop = start + int( length * 1000 );
-	while ( getTime() < stop )
-	{
-		if ( !isDefined( self ) )
-			return;
-		wait( 0.05 );
-	}
 }
 
 trace_scene( clip, mode )
@@ -410,9 +343,6 @@ play_gesture( clip, length )
 	self notify( "coop_gesture" );
 	self endon( "coop_gesture" );
 	self endon( "coop_scene_stop" );
-	// A gesture plays on the cast pose, which a scripted scene overrides:
-	// the scene ends where it has got to.
-	stop_scripted( self );
 	if ( !isDefined( self.coop_cast ) )
 	{
 		self.coop_cast = "scene";
@@ -458,173 +388,14 @@ play_scripted( clip, node, mode, length )
 		place_at_start( self, clip, node );
 	self setGoalPos( self.origin );
 	self.coop_scene_scripted_on = true;
-	from = self.origin;
 	self animscripted( "coop_scene", self.origin, self.angles, clip, mode, %body, 1, 0.2 );
 	self waittill_scene_done( length );
 	self.coop_scene_scripted_on = undefined;
 	if ( isAlive( self ) )
 	{
-		if ( getDvarInt( "scr_coop_scene_trace" ) )
-			codolprintln( "CoDOL coop scene: ent " + self getEntityNumber() + " " + mode + " clip ended at " + self.origin + " yaw " +
-				self.angles[ 1 ] + ", " + int( distance( from, self.origin ) ) + " from its start" );
 		self stopanimscripted();
 		self setGoalPos( self.origin );
-		self.coop_scene_released_at = getTime();
 	}
-}
-
-// A scripted scene ends now where it has got to; the actor goes back to his
-// animscripts (his cast pose, if he has one).  True when one was playing:
-// the animscript restarts on the actor's next think, so a caller that then
-// sets an anim mode or a cast pose of its own waits a moment first
-// (soldier_stop starts with animmode "normal" and the current cast pose).
-stop_scripted( guy )
-{
-	if ( !isDefined( guy ) || !isDefined( guy.coop_scene_scripted_on ) )
-		return false;
-	guy notify( "coop_scene_scripted" );
-	guy.coop_scene_scripted_on = undefined;
-	// A caller waiting on the scene (waittill_scene_done) returns now.
-	guy.coop_scene_stopped_at = getTime();
-	if ( isAlive( guy ) )
-	{
-		guy stopanimscripted();
-		guy setGoalPos( guy.origin );
-		guy.coop_scene_released_at = getTime();
-	}
-	return true;
-}
-
-// Ends a scripted scene and waits until the actor's animscript has had time
-// to restart (stopanimscripted leaves the clip on him until it does): a
-// caller that then rides him on a mover or gives him a cast pose of its own
-// must not do it before, or the old clip stays on through the ride.
-settle_scene( guy )
-{
-	stop_scripted( guy );
-	if ( isDefined( guy ) && isDefined( guy.coop_scene_released_at ) && getTime() - guy.coop_scene_released_at < 250 )
-		wait( 0.25 );
-}
-
-// --------------------------------------------------------------------------
-// Root motion from where the actor stands.
-// --------------------------------------------------------------------------
-
-// IW4 anim_single at the actor's own spot: the clip played with its root
-// motion (animscripted "zonly_physics": the clip moves and turns him, the
-// floor holds his height) from where he stands, facing <yaw> (default his
-// own).  A scene clip whose motion is played over the cast pose instead
-// slides its feet on one spot and never makes its turn.
-//   fraction: how much of the clip will be played (a clip cut short), for
-//             the path check
-// The path the clip takes is checked first against the world
-// (root_path_clear); one that would walk him into a wall or off a floor is
-// played in place instead.  Returns the clip's length.
-//   node: the IW4 scene node the clip is authored against; the actor is
-//         placed at the clip's start from it (getStartOrigin / Angles)
-//         instead of playing from where he stands
-anim_single_root( guy, scene, yaw, nowait, fraction, node )
-{
-	a = guy_anim( guy, scene );
-	if ( !isDefined( a ) || !isAlive( guy ) )
-		return 0;
-	return guy play_root( a, yaw, nowait, fraction, node );
-}
-
-play_root( clip, yaw, nowait, fraction, node )
-{
-	if ( !isDefined( clip ) || !isAlive( self ) )
-		return 0;
-	if ( isDefined( node ) )
-	{
-		org = node_origin( node, self );
-		ang = node_angles( node, self );
-		start = getStartOrigin( org, ang, clip );
-		// The floor under the start (a node's clip may start a few units
-		// off it; the floor holds him in zonly_physics).
-		t = bulletTrace( start + ( 0, 0, 24 ), start - ( 0, 0, 48 ), false, self );
-		if ( t[ "fraction" ] < 1 )
-			start = t[ "position" ];
-		at = spawnStruct();
-		at.origin = start;
-		at.angles = ( 0, getStartAngles( org, ang, clip )[ 1 ], 0 );
-		at.coop_at_start = true;
-		if ( !self root_path_clear( clip, at.origin, at.angles[ 1 ], fraction ) )
-			return self play_anim( clip, undefined, "inplace", nowait );
-		return self play_anim( clip, at, "zonly_physics", nowait );
-	}
-	if ( !isDefined( yaw ) )
-		yaw = self.angles[ 1 ];
-	if ( !self root_path_clear( clip, self.origin, yaw, fraction ) )
-		return self play_anim( clip, undefined, "inplace", nowait );
-	node = spawnStruct();
-	node.origin = self.origin;
-	node.angles = ( 0, yaw, 0 );
-	node.coop_at_start = true;
-	return self play_anim( clip, node, "zonly_physics", nowait );
-}
-
-// A locomotion clip's own pace in units a second (its root travel over its
-// length): the speed a mover that carries an actor playing it must go, or
-// his feet slide.
-clip_pace( clip )
-{
-	d = getMoveDelta( clip, 0, 1 );
-	len = getAnimLength( clip );
-	if ( len <= 0 )
-		return 0;
-	return length( ( d[ 0 ], d[ 1 ], 0 ) ) / len;
-}
-
-// The clip's root path from <org> facing <yaw>, in tenths of <fraction> of
-// the clip: no wall between two samples (a physics trace at hip and chest
-// height, above a stair step) and a floor under each sample, from 36 units
-// over the start's height (a step up) to 40 under it.  A failure is logged with the sample that failed.
-root_path_clear( clip, org, yaw, fraction )
-{
-	if ( !isDefined( fraction ) || fraction > 1 )
-		fraction = 1;
-	who = "a probe";
-	if ( self != level )
-		who = "ent " + self getEntityNumber();
-	f = anglesToForward( ( 0, yaw, 0 ) );
-	r = anglesToRight( ( 0, yaw, 0 ) );
-	prev = org;
-	for ( i = 1; i <= 10; i++ )
-	{
-		d = getMoveDelta( clip, 0, fraction * i / 10 );
-		p = org + f * d[ 0 ] - r * d[ 1 ];
-		p = ( p[ 0 ], p[ 1 ], org[ 2 ] );
-		why = undefined;
-		for ( h = 36; h <= 64 && !isDefined( why ); h += 28 )
-		{
-			a = prev + ( 0, 0, h );
-			b = p + ( 0, 0, h );
-			hit = physicsTrace( a, b );
-			if ( distanceSquared( hit, b ) > 1 )
-				why = "wall at " + hit;
-		}
-		if ( !isDefined( why ) )
-		{
-			t = bulletTrace( p + ( 0, 0, 36 ), p - ( 0, 0, 40 ), false, undefined );
-			if ( t[ "fraction" ] >= 1 )
-				why = "no floor under " + p;
-		}
-		if ( isDefined( why ) )
-		{
-			codolprintln( "CoDOL coop scene: " + who + " clip path from " + org + " yaw " + yaw +
-				" blocked at " + ( i * 10 ) + "% (" + why + "); played in place" );
-			return false;
-		}
-		prev = p;
-	}
-	if ( getDvarInt( "scr_coop_scene_trace" ) )
-	{
-		d = getMoveDelta( clip, 0, fraction );
-		codolprintln( "CoDOL coop scene: " + who + " root motion from " + org + " yaw " + yaw + " to " +
-			( org + f * d[ 0 ] - r * d[ 1 ] + ( 0, 0, d[ 2 ] ) ) + " yaw " + ( yaw + getAngleDelta( clip, 0, fraction ) ) );
-	}
-	return true;
 }
 
 // IW4 anim_first_frame_solo: the actor placed at the scene's start spot and
@@ -634,15 +405,9 @@ root_path_clear( clip, org, yaw, fraction )
 anim_first_frame_solo( guy, scene, node, idle_scene )
 {
 	a = guy_anim( guy, scene );
-	if ( !isDefined( a ) || ( !isAlive( guy ) && !is_model( guy ) ) )
+	if ( !isDefined( a ) || !isAlive( guy ) )
 		return false;
 	place_at_start( guy, a, node );
-	if ( is_model( guy ) )
-	{
-		// IW4 anim_first_frame on a model: the clip's first frame, held.
-		guy setAnimKnobRestart( a, 1, 0, 0 );
-		return true;
-	}
 	if ( isDefined( idle_scene ) )
 		anim_loop_solo( guy, idle_scene );
 	return true;
@@ -694,13 +459,6 @@ reach_spot( spot, yaw, radius, timeout )
 // back to his animscripts (combat, if he is not a cast member).
 release( guy )
 {
-	if ( is_model( guy ) )
-	{
-		// The model stays where its clip put it.
-		guy notify( "coop_scene_stop" );
-		guy codol_stopAnimScriptedModel();
-		return;
-	}
 	if ( !isDefined( guy ) || !isAlive( guy ) )
 		return;
 	guy notify( "coop_scene_stop" );

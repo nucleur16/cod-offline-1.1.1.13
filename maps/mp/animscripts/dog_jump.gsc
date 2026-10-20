@@ -25,7 +25,7 @@ main( begin, begin_angles, end, animscript )
 {
 	self endon("killanimscript");
 
-	debug_anim_print("dog_jump::main()" );
+	{}
 	self SetAimAnimWeights( 0, 0 );
 
 	state = "traverse_wallhop";

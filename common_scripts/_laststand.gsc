@@ -106,7 +106,7 @@ ls_log( text )
 	prefix = "CoDOL laststand";
 	if ( isDefined( level.laststand_vars ) && isDefined( level.laststand_vars[ "log" ] ) )
 		prefix = level.laststand_vars[ "log" ];
-	codolprintln( prefix + ": " + text );
+	{}
 }
 
 is_true( value )

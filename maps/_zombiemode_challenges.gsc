@@ -56,6 +56,8 @@
 
 init()
 {
+	precacheShader( "damage_feedback" );
+
 	level.zm_challenge_ids = [];
 	level.zm_challenge_targets = [];
 	level.zm_challenge_rewards = [];
@@ -151,6 +153,18 @@ on_player_connect()
 
 player_watch()
 {
+	// Native score field: this is the value sent in C1's Zombies scoreboard.
+	self.headshots = 0;
+	self.hud_zm_hitmarker = newClientHudElem( self );
+	self.hud_zm_hitmarker.horzAlign = "center";
+	self.hud_zm_hitmarker.vertAlign = "middle";
+	self.hud_zm_hitmarker.x = -12;
+	self.hud_zm_hitmarker.y = -12;
+	self.hud_zm_hitmarker.alpha = 0;
+	self.hud_zm_hitmarker.archived = true;
+	self.hud_zm_hitmarker.foreground = true;
+	self.hud_zm_hitmarker setShader( "damage_feedback", 24, 48 );
+
 	// The games log identifies a player the way MP's _playerlogic does.
 	self.zm_log_guid = self getGuid();
 	self.zm_log_num = self getEntityNumber();
@@ -171,6 +185,28 @@ watch_disconnect()
 	name = self.zm_log_name;
 	self waittill( "disconnect" );
 	logPrint( "Q;" + guid + ";" + num + ";" + name + "\n" );
+}
+
+show_hitmarker( kill )
+{
+	if ( !isDefined( self.hud_zm_hitmarker ) )
+		return;
+	self notify( "zm_hitmarker_refresh" );
+	self thread hitmarker_flash( kill );
+}
+
+hitmarker_flash( kill )
+{
+	self endon( "disconnect" );
+	self endon( "zm_hitmarker_refresh" );
+	if ( kill )
+		self.hud_zm_hitmarker.color = ( 1, 0.12, 0.12 );
+	else
+		self.hud_zm_hitmarker.color = ( 1, 1, 1 );
+	self.hud_zm_hitmarker.alpha = 1;
+	wait( 0.10 );
+	self.hud_zm_hitmarker fadeOverTime( 0.20 );
+	self.hud_zm_hitmarker.alpha = 0;
 }
 
 // --------------------------------------------------------------------------
@@ -263,17 +299,19 @@ zm_is_bullet( mod )
 
 zm_is_headshot( mod, hit_location )
 {
-	if ( isDefined( mod ) && mod == "MOD_HEAD_SHOT" )
+	// Only bullet kills count; a knife or blast can also strike a head bone.
+	if ( !zm_is_bullet( mod ) )
+		return false;
+	if ( mod == "MOD_HEAD_SHOT" )
 		return true;
 	if ( !isDefined( hit_location ) )
 		return false;
-	if ( hit_location != "head" && hit_location != "helmet" )
+	hit_location = toLower( hit_location );
+	// gib_location groups the neck with the head for body-part removal, but
+	// scoring distinguishes them. Accept head/helmet/face bones as a fallback.
+	if ( hit_location == "neck" || hit_location == "j_neck" )
 		return false;
-	// A blast or a blade that happens to report the head is not a headshot.
-	if ( isDefined( mod ) && ( mod == "MOD_MELEE" || mod == "MOD_GRENADE_SPLASH" ||
-		mod == "MOD_EXPLOSIVE" || mod == "MOD_PROJECTILE_SPLASH" ) )
-		return false;
-	return true;
+	return maps\_zombiemode_gib::gib_location( hit_location ) == "head";
 }
 
 // Hook for a map's end: the rescue round reached on difficulty 1..3.
@@ -320,6 +358,8 @@ watch_kills()
 			weapon = zombie.zm_kill_weapon;
 			if ( !isDefined( mod ) )
 				mod = zombie.damagemod;
+			if ( !isDefined( hit_location ) || hit_location == "none" || hit_location == "" )
+				hit_location = zombie.damagelocation;
 			if ( !isDefined( weapon ) || weapon == "none" )
 				weapon = zombie.damageweapon;
 		}
@@ -329,11 +369,17 @@ watch_kills()
 			weapon = self getCurrentWeapon();
 
 		self log_zombie_kill( zombie, weapon, mod, hit_location );
+		self show_hitmarker( true );
+		headshot = zm_is_headshot( mod, hit_location );
+		if ( headshot )
+		{
+			self.headshots = self.headshots + 1;
+			if ( self zm_challenges_enabled() )
+				self setPlayerData( "headshots", self getPlayerData( "headshots" ) + 1 );
+		}
 
 		if ( !self zm_challenges_enabled() )
 			continue;
-
-		headshot = zm_is_headshot( mod, hit_location );
 
 		self zm_give_xp( level.zm_kill_xp );
 		if ( headshot )

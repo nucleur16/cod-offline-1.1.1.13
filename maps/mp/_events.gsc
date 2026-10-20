@@ -127,11 +127,11 @@ killedPlayer( killId, victim, weapon, meansOfDeath )
 			/#
 			if ( !isDefined( victim.attackers[self.guid] ) )
 			{
-				println("Weapon: "+ weapon );
-				println("Attacker GUID:" + self.guid );
+				{}
+				{}
 				
 				foreach ( key,value in victim.attackers )
-					println( "Victim Attacker list GUID: " + key );
+					{}
 			}
 			#/
 			assertEx( isDefined( victim.attackers[self.guid] ), "See console log for details" );
@@ -523,7 +523,7 @@ postDeathKill( killId )
 
 backStab( killId )
 {
-	self iPrintLnBold( "backstab" );
+	{}
 }
 
 

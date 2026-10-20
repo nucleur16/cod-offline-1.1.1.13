@@ -79,9 +79,9 @@ init()
 		/#
 		if ( getDvar( "scr_dump_weapon_assets" ) != "" )
 		{
-			printLn( "" );
-			printLn( "// " + weapon_name + " real assets" );
-			printLn( "weapon,mp/" + weapon_name + "_mp" );
+			{}
+			{}
+			{}
 		}
 		#/
 
@@ -109,7 +109,7 @@ init()
 			attachments[attachments.size] = attachmentName;
 			/#
 			if ( getDvar( "scr_dump_weapon_assets" ) != "" )
-				println( "weapon,mp/" + weapon_name + "_" + attachmentName + "_mp" );
+				{}
 			#/
 		}
 
@@ -128,14 +128,14 @@ init()
 
 		/#
 		if ( getDvar( "scr_dump_weapon_assets" ) != "" && attachmentCombos.size )
-			println( "// " + weapon_name + " virtual assets" );
+			{}
 		#/
 		
 		foreach ( combo in attachmentCombos )
 		{
 			/#
 			if ( getDvar( "scr_dump_weapon_assets" ) != "" )
-				println( "weapon,mp/" + weapon_name + "_" + combo + "_mp" );
+				{}
 			#/
 
 			level.weaponList[level.weaponList.size] = weapon_name + "_" + combo + "_mp";
@@ -151,7 +151,7 @@ init()
 		{
 			altWeapon = weaponAltWeaponName( weaponName );
 			if ( altWeapon != "none" )
-				println( "weapon,mp/" + altWeapon );				
+				{}				
 		}
 		#/
 	}
@@ -689,7 +689,7 @@ dropWeaponForDeath( attacker )
 	{
 		/#
 		if ( getdvar("scr_dropdebug") == "1" )
-			println( "didn't drop weapon: not defined" );
+			{}
 		#/
 		return;
 	}
@@ -698,7 +698,7 @@ dropWeaponForDeath( attacker )
 	{
 		/#
 		if ( getdvar("scr_dropdebug") == "1" )
-			println( "didn't drop weapon: weapon == none" );
+			{}
 		#/
 		return;
 	}
@@ -707,7 +707,7 @@ dropWeaponForDeath( attacker )
 	{
 		/#
 		if ( getdvar("scr_dropdebug") == "1" )
-			println( "didn't drop weapon: don't have it anymore (" + weapon + ")" );
+			{}
 		#/
 		return;
 	}
@@ -718,7 +718,7 @@ dropWeaponForDeath( attacker )
 		{
 			/#
 			if ( getdvar("scr_dropdebug") == "1" )
-			  println( "didn't drop weapon: no ammo for weapon modes" );
+			  {}
 			#/
 			return;
 		}
@@ -729,7 +729,7 @@ dropWeaponForDeath( attacker )
 		{
 			/#
 			if ( getdvar("scr_dropdebug") == "1" )
-			  println( "didn't drop weapon: no ammo in clip" );
+			  {}
 			#/
 			return;
 		}
@@ -752,7 +752,7 @@ dropWeaponForDeath( attacker )
 
 	/#
 	if ( getdvar("scr_dropdebug") == "1" )
-		println( "dropped weapon: " + weapon );
+		{}
 	#/
 
 	self.droppedDeathWeapon = true;
@@ -856,7 +856,7 @@ watchPickup()
 	
 	/#
 	if ( getdvar("scr_dropdebug") == "1" )
-		println( "picked up weapon: " + weapname + ", " + isdefined( self.ownersattacker ) );
+		{}
 	#/
 
 	assert( isdefined( player.tookWeaponFrom ) );
@@ -916,7 +916,7 @@ codolGpsTrackPickup( owner, weapon )
 
 	self.codolGpsTrackOwner = owner;
 	self setAbilityModifier( "modOwnerTrack" );
-	codolPrintLn( "CoDOL gps: " + owner.name + " tracks " + self.name + " (" + weapon + ")" );
+	{}
 
 	reason = undefined;
 	for ( ;; )
@@ -941,7 +941,7 @@ codolGpsTrackPickup( owner, weapon )
 	self unsetAbilityModifier( "modOwnerTrack" );
 	if ( !self maps\mp\perks\_perkfunctions::isPainted() )
 		self unsetAbilityModifier( "modRadarArrow" );
-	codolPrintLn( "CoDOL gps: track of " + self.name + " ended (" + reason + ")" );
+	{}
 }
 
 itemRemoveAmmoFromAltModes()
@@ -1757,7 +1757,7 @@ watchC4AltDetonate()
 				wait( 0.05 );
 			}
 
-			println( "pressTime1: " + buttonTime );
+			{}
 			if ( buttonTime >= 0.5 )
 				continue;
 
@@ -1768,7 +1768,7 @@ watchC4AltDetonate()
 				wait( 0.05 );
 			}
 
-			println( "delayTime: " + buttonTime );
+			{}
 			if ( buttonTime >= 0.5 )
 				continue;
 
@@ -1944,7 +1944,7 @@ saydamaged( orig, amount )
 {
 	for ( i = 0; i < 60; i++ )
 	{
-		print3d( orig, "damaged! " + amount );
+		{}
 		wait .05;
 	}
 }
@@ -2246,11 +2246,11 @@ weaponDamageTracePassed( from, to, startRadius, ent )
 
 	if ( getdvarint( "scr_damage_debug" ) != 0 )
 	{
-		thread debugprint( from, ".dmg" );
+		{}
 		if ( isdefined( ent ) )
-			thread debugprint( to, "." + ent.classname );
+			{}
 		else
-			thread debugprint( to, ".undefined" );
+			{}
 		if ( trace[ "fraction" ] == 1 )
 		{
 			thread debugline( midpos, to, ( 1, 1, 1 ) );
@@ -2311,13 +2311,7 @@ debugline( a, b, color )
 }
 
 debugprint( pt, txt )
-{
-	for ( i = 0; i < 30 * 20; i++ )
-	{
-		print3d( pt, txt );
-		wait .05;
-	}
-}
+{}
 
 
 onWeaponDamage( eInflictor, sWeapon, meansOfDeath, damage, eAttacker )

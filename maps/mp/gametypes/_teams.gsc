@@ -4,7 +4,8 @@
 // mp/factionTable.csv keys are the alpha's two factions (taskforce_141 first,
 // shadow_company second) and carry no character-set rows. The faction-table
 // lookups therefore key on the team's faction row (allies = data row 1,
-// axis = data row 2) instead of game[teamRef]. Everything else is the vendor file.
+// axis = data row 2) instead of game[teamRef]. CoDOL live balancing below also
+// retains classes, prefers training bots and waits for natural human deaths.
 
 #include maps\mp\_utility;
 
@@ -32,6 +33,10 @@ init()
 {
 	initScoreBoard();
 
+	// Dedicated C1 playlists do not all publish this IW4 dvar. An absent
+	// value must not silently disable balancing; an explicit 0 still does.
+	if ( getDvar( "scr_teambalance" ) == "" )
+		setDvar( "scr_teambalance", 1 );
 	level.teamBalance = getDvarInt("scr_teambalance");
 	level.maxClients = getDvarInt( "sv_maxclients" );
 
@@ -46,7 +51,12 @@ init()
 	if( level.teamBased )
 	{
 		level thread onPlayerConnect();
-		level thread updateTeamBalance();
+		// Infection deliberately grows one side by converting survivors.
+		// Normal balancing would move infected back and cap survivors at half.
+		if ( level.gameType == "infect" )
+			level.teamLimit = level.maxClients;
+		else
+			level thread updateTeamBalance();
 
 		wait .15;
 		level thread updatePlayerTimes();
@@ -228,9 +238,6 @@ updatePlayedTime()
 
 updateTeamTime()
 {
-	if ( game["state"] != "playing" )
-		return;
-
 	self.pers["teamTime"] = getTime();
 }
 
@@ -256,7 +263,7 @@ updateTeamBalance()
 
 	wait .15;
 
-	if ( level.teamBalance && isRoundBased() )
+	if ( isRoundBased() )
 	{
     	if( isDefined( game["BalanceTeamsNextRound"] ) )
     		iPrintLnbold( &"MP_AUTOBALANCE_NEXT_ROUND" );
@@ -264,12 +271,12 @@ updateTeamBalance()
 		// TODO: add or change
 		level waittill( "restarting" );
 
-		if( isDefined( game["BalanceTeamsNextRound"] ) )
+		if( level.teamBalance && isDefined( game["BalanceTeamsNextRound"] ) )
 		{
-			level balanceTeams();
+			level balanceTeams( true );
 			game["BalanceTeamsNextRound"] = undefined;
 		}
-		else if( !getTeamBalance() )
+		else if( level.teamBalance && !getTeamBalance() )
 		{
 			game["BalanceTeamsNextRound"] = true;
 		}
@@ -277,26 +284,59 @@ updateTeamBalance()
 	else
 	{
 		level endon ( "game_ended" );
+		level.teamBalanceStartedAt = undefined;
+		level.teamBalanceAnnouncedSeconds = undefined;
 		for( ;; )
 		{
-			if( level.teamBalance )
-			{
-				if( !getTeamBalance() )
-				{
-					iPrintLnBold( &"MP_AUTOBALANCE_SECONDS", 15 );
-				    wait 15.0;
+			updateTeamBalanceCountdown();
 
-					if( !getTeamBalance() )
-						level balanceTeams();
-				}
-
-				wait 59.0;
-			}
-
-			wait 1.0;
+			// Keep observing joins/leaves and catch a human's death before their
+			// normal respawn. No minute-long blind interval after every check.
+			wait 0.25;
 		}
 	}
 
+}
+
+
+getTeamBalanceSecondsRemaining( startedAt, now )
+{
+    if ( !isDefined( startedAt ) )
+        return 0;
+    remaining = 15000 - ( now - startedAt );
+    if ( remaining <= 0 )
+        return 0;
+    if ( remaining > 15000 )
+        remaining = 15000;
+    return int( ceil( remaining / 1000.0 ) );
+}
+
+
+updateTeamBalanceCountdown()
+{
+    if ( !level.teamBalance || game["state"] != "playing" || getTeamBalance() )
+    {
+        level.teamBalanceStartedAt = undefined;
+        level.teamBalanceAnnouncedSeconds = undefined;
+        return;
+    }
+
+    if ( !isDefined( level.teamBalanceStartedAt ) )
+        level.teamBalanceStartedAt = getTime();
+    seconds = getTeamBalanceSecondsRemaining( level.teamBalanceStartedAt, getTime() );
+    if ( seconds > 0 )
+    {
+        if ( !isDefined( level.teamBalanceAnnouncedSeconds ) )
+        {
+            iPrintLnBold( "Teams will be balanced in 15 seconds" );
+            level.teamBalanceAnnouncedSeconds = seconds;
+        }
+        return;
+    }
+
+    // Keep the original deadline while waiting for a safe candidate. A
+    // human's next natural death must not start another 15-second countdown.
+    level balanceTeams( false );
 }
 
 
@@ -321,76 +361,117 @@ getTeamBalance()
 }
 
 
-balanceTeams()
+// Retain IW4's team membership/notifies and normal death/respawn lifecycle.
+// The team-choice menus deliberately clear the class and await UI input;
+// using them here stranded training bots and interrupted human respawns.
+balanceTeams( roundBoundary )
 {
-	iPrintLnBold( game["strings"]["autobalance"] );
-	//Create/Clear the team arrays
-	AlliedPlayers = [];
-	AxisPlayers = [];
+    if ( !isDefined( roundBoundary ) )
+        roundBoundary = false;
 
-	// Populate the team arrays
-	players = level.players;
-	for(i = 0; i < players.size; i++)
-	{
-		if(!isdefined(players[i].pers["teamTime"]))
-			continue;
+    moved = false;
+    while ( !getTeamBalance() )
+    {
+        if ( !roundBoundary && ( !level.teamBalance || game["state"] != "playing" ) )
+            return;
 
-		if((isdefined(players[i].pers["team"])) && (players[i].pers["team"] == "allies"))
-			AlliedPlayers[AlliedPlayers.size] = players[i];
-		else if((isdefined(players[i].pers["team"])) && (players[i].pers["team"] == "axis"))
-			AxisPlayers[AxisPlayers.size] = players[i];
-	}
+        fromTeam = "allies";
+        toTeam = "axis";
+        if ( level.team["axis"] > level.team["allies"] )
+        {
+            fromTeam = "axis";
+            toTeam = "allies";
+        }
 
-	MostRecent = undefined;
+        player = getBalanceCandidate( fromTeam, roundBoundary );
+        // Everyone may be alive, cooling down, remote-controlling or exempt.
+        // Leave the match running and retry; never call an undefined entity
+        // or spin forever without yielding when no switch is possible.
+        if ( !isDefined( player ) )
+            return;
 
-	while((AlliedPlayers.size > (AxisPlayers.size + 1)) || (AxisPlayers.size > (AlliedPlayers.size + 1)))
-	{
-		if(AlliedPlayers.size > (AxisPlayers.size + 1))
-		{
-			// Move the player that's been on the team the shortest ammount of time (highest teamTime value)
-			for(j = 0; j < AlliedPlayers.size; j++)
-			{
-				if(isdefined(AlliedPlayers[j].dont_auto_balance))
-					continue;
+        if ( !moved )
+            iPrintLnBold( "Balancing teams" );
+        moved = true;
+        player.codolLastAutoBalance = getTime();
+        if ( isAlive( player ) )
+        {
+            player.switching_teams = true;
+            player.joining_team = toTeam;
+            player.leaving_team = fromTeam;
+            player suicide();
+        }
+        player maps\mp\gametypes\_menus::addToTeam( toTeam );
+        codolPrintLn( "CoDOL autobalance: " + player.name + " " + fromTeam + " -> " + toTeam );
+        // Preserve class/pers class and the existing death/killcam/spawn
+        // thread. It now selects the destination team's spawn and loadout.
+    }
+}
 
-				if(!isdefined(MostRecent))
-					MostRecent = AlliedPlayers[j];
-				else if(AlliedPlayers[j].pers["teamTime"] > MostRecent.pers["teamTime"])
-					MostRecent = AlliedPlayers[j];
-			}
 
-			MostRecent [[level.axis]]();
-		}
-		else if(AxisPlayers.size > (AlliedPlayers.size + 1))
-		{
-			// Move the player that's been on the team the shortest ammount of time (highest teamTime value)
-			for(j = 0; j < AxisPlayers.size; j++)
-			{
-				if(isdefined(AxisPlayers[j].dont_auto_balance))
-					continue;
+getBalanceCandidate( team, roundBoundary )
+{
+    best = undefined;
+    bestBot = false;
+    bestAlive = true;
+    bestLastMove = 0;
+    bestTeamTime = 0;
+    foreach ( player in level.players )
+    {
+        if ( !isDefined( player.pers["team"] ) || player.pers["team"] != team )
+            continue;
+        if ( isDefined( player.dont_auto_balance ) || isDefined( player.switching_teams ) )
+            continue;
+        if ( player isUsingRemote() )
+            continue;
+        // A client still selecting its first class must keep that menu.
+        if ( !isValidClass( player.class ) )
+            continue;
 
-				if(!isdefined(MostRecent))
-					MostRecent = AxisPlayers[j];
-				else if(AxisPlayers[j].pers["teamTime"] > MostRecent.pers["teamTime"])
-					MostRecent = AxisPlayers[j];
-			}
+        bot = maps\mp\gametypes\_codol_bots::isCombatBot( player );
+        alive = isAlive( player );
+        // Live humans move after dying naturally. Bots can use the standard
+        // team-switch death path, so bot fill/removal never waits on a human.
+        if ( !roundBoundary && alive && !bot )
+            continue;
 
-			MostRecent [[level.allies]]();
-		}
+        lastMove = 0;
+        if ( isDefined( player.codolLastAutoBalance ) )
+        {
+            lastMove = player.codolLastAutoBalance;
+            if ( !roundBoundary && getTime() - lastMove < 60000 )
+                continue;
+        }
+        teamTime = 0;
+        if ( isDefined( player.pers["teamTime"] ) )
+            teamTime = player.pers["teamTime"];
 
-		MostRecent = undefined;
-		AlliedPlayers = [];
-		AxisPlayers = [];
-
-		players = level.players;
-		for(i = 0; i < players.size; i++)
-		{
-			if((isdefined(players[i].pers["team"])) && (players[i].pers["team"] == "allies"))
-				AlliedPlayers[AlliedPlayers.size] = players[i];
-			else if((isdefined(players[i].pers["team"])) &&(players[i].pers["team"] == "axis"))
-				AxisPlayers[AxisPlayers.size] = players[i];
-		}
-	}
+        // Bots first, dead bots first, then the least recently moved player;
+        // equal candidates retain IW4's newest-team-member preference.
+        if ( isDefined( best ) )
+        {
+            if ( bestBot && !bot )
+                continue;
+            if ( bot == bestBot )
+            {
+                if ( !bestAlive && alive )
+                    continue;
+                if ( alive == bestAlive )
+                {
+                    if ( lastMove > bestLastMove )
+                        continue;
+                    if ( lastMove == bestLastMove && teamTime <= bestTeamTime )
+                        continue;
+                }
+            }
+        }
+        best = player;
+        bestBot = bot;
+        bestAlive = alive;
+        bestLastMove = lastMove;
+        bestTeamTime = teamTime;
+    }
+    return best;
 }
 
 

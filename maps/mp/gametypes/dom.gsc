@@ -266,7 +266,7 @@ domFlags()
 	
 	if ( (primaryFlags.size + secondaryFlags.size) < 2 )
 	{
-		printLn( "^1Not enough domination flags found in level!" );
+		{}
 		maps\mp\gametypes\_callbacksetup::AbortLevel();
 		return;
 	}
@@ -389,9 +389,9 @@ domDebug()
 				}
 				
 				if ( level.flags[i] == level.bestSpawnFlag["allies"] )
-					print3d( level.flags[i].origin, "allies best spawn flag" );
+					{}
 				if ( level.flags[i] == level.bestSpawnFlag["axis"] )
-					print3d( level.flags[i].origin, "axis best spawn flag" );
+					{}
 			}
 			wait .05;
 		}
@@ -540,7 +540,7 @@ giveFlagCaptureXP( touchList )
 		player thread maps\mp\gametypes\_hud_message::SplashNotify( "capture", maps\mp\gametypes\_rank::getScoreInfoValue( "capture" ) );
 		player thread updateCPM();
 		player thread maps\mp\gametypes\_rank::giveRankXP( "capture", maps\mp\gametypes\_rank::getScoreInfoValue( "capture" ) * player getCapXPScale() );
-		printLn( maps\mp\gametypes\_rank::getScoreInfoValue( "capture" ) * player getCapXPScale() );
+		{}
 		maps\mp\gametypes\_gamescore::givePlayerScore( "capture", player );
 		player incPlayerStat( "pointscaptured", 1 );
 	}
@@ -922,10 +922,10 @@ flagSetup()
 	
 	if (maperrors.size > 0)
 	{
-		println("^1------------ Map Errors ------------");
+		{}
 		for(i = 0; i < maperrors.size; i++)
-			println(maperrors[i]);
-		println("^1------------------------------------");
+			{}
+		{}
 		
 		error("Map errors. See above");
 		maps\mp\gametypes\_callbacksetup::AbortLevel();

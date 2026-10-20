@@ -409,20 +409,21 @@ creditKillstreakAssist()
 		self.codolStreakAssists = 0;
 	}
 	self.codolStreakAssists++;
-	codolPrintLn( "CoDOL perks: " + self.name + " killstreak assist " + self.codolStreakAssists + "/" + assistsPerKill );
+	{}
 	if ( self.codolStreakAssists < assistsPerKill )
 		return;
 
 	self.codolStreakAssists = 0;
 	self.pers["cur_kill_streak"]++;
-	codolPrintLn( "CoDOL perks: " + self.name + " assists credit a kill, streak " + self.pers["cur_kill_streak"] );
+	{}
 
 	self setPlayerStatIfGreater( "killstreak", self.pers["cur_kill_streak"] );
 	if ( self.pers["cur_kill_streak"] > self getPersStat( "longestStreak" ) )
 		self setPersStat( "longestStreak", self.pers["cur_kill_streak"] );
 
 	level notify ( "player_got_killstreak_" + self.pers["cur_kill_streak"], self );
-	self thread maps\mp\killstreaks\_killstreaks::checkKillstreakReward( self.pers["cur_kill_streak"] );
+	if ( !isDefined( level.partyMode ) || !level.partyMode )
+		self thread maps\mp\killstreaks\_killstreaks::checkKillstreakReward( self.pers["cur_kill_streak"] );
 }
 
 processShieldAssist( killedPlayer )

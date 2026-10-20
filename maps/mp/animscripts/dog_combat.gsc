@@ -29,7 +29,7 @@
 
 main()
 {
-	debug_anim_print("dog_combat::main() " );
+	{}
 
 	self endon("killanimscript");
 	self SetAimAnimWeights( 0, 0 );
@@ -73,10 +73,10 @@ combatIdle()
 
 	self thread combatIdlePreventOverlappingPlayer();
 
-	debug_anim_print("dog_combat::combatIdle() - Setting " + idleAnim );
+	{}
 	self setanimstate( idleAnim );
 	self maps\mp\animscripts\dog_shared::DoNoteTracks( "done" );
-	debug_anim_print("dog_combat::combatIdle() - " + idleAnim + " notify done." );
+	{}
 
 	self notify( "combatIdleEnd" );
 }
@@ -187,7 +187,7 @@ meleeBiteAttackPlayer(player)
 
 /#
 		if ( GetDvarInt( "debug_dog_sound" ) )
-			iprintln( "dog " + (self getentnum()) + " attack player " + getTime() );
+			{}
 
 #/
 		player setNextDogAttackAllowTime( 200 );
@@ -215,12 +215,12 @@ meleeBiteAttackPlayer(player)
 			{
 				// 1.6 is about as big as you want to go or the dog anim will "stall"
 				attack_time = 1.2 + randomfloat( 0.4 );
-				debug_anim_print("dog_combat::meleeBiteAttackPlayer() - Setting  combat_run_attack" );
+				{}
 				self setanimstate( "combat_attack_run" );
 				self maps\mp\animscripts\dog_attack_log::anim_chosen( "run" );
 				self maps\mp\animscripts\dog_shared::DoNoteTracksForTime( attack_time, "done", ::handleMeleeBiteAttackNoteTracks, player );
 				self maps\mp\animscripts\dog_attack_log::end();
-				debug_anim_print("dog_combat::meleeBiteAttackPlayer() - combat_attack_run notify done." );
+				{}
 			}
 		}
 		else
@@ -229,10 +229,10 @@ meleeBiteAttackPlayer(player)
 			player.attacked_by_dog = true;
 			self thread clear_player_attacked_by_dog_on_death(player);
 
-			debug_anim_print("dog_combat::meleeBiteAttackPlayer() - Setting  combat_attack_player" );
+			{}
 			self setanimstate( "combat_attack_player" );
 			self maps\mp\animscripts\dog_shared::DoNoteTracks( "done", ::Handlemeleefinishattacknotetracks, player );
-			debug_anim_print("dog_combat::meleeBiteAttackPlayer() - combat_attack_player notify done." );
+			{}
 			self notify( "dog_no_longer_melee_able" );
 			self setcandamage( true );
 			self unlink();
@@ -362,13 +362,13 @@ handleMeleeFinishAttackNoteTracks( note, player )
 		case "dog_early":
 			self notify( "dog_early_notetrack" );
 
-			debug_anim_print("dog_combat::handleMeleeFinishAttackNoteTracks() - Setting  combat_attack_player_early" );
+			{}
 			self setanimstate( "combat_attack_player_early" );
 			break;
 
 		case "dog_lunge":
 			thread set_melee_timer(player);
-			debug_anim_print("dog_combat::handleMeleeFinishAttackNoteTracks() - Setting  combat_attack_player_lunge" );
+			{}
 			self setanimstate( "combat_attack_player_lunge" );
 			break;
 
@@ -606,11 +606,11 @@ dog_melee_death(player)
 					{
 						player.player_view.custom_dog_save = "neck_snap";
 						self notify( "melee_stop" );
-						debug_anim_print("dog_combat::dog_melee_death() - Setting  combat_player_neck_snap" );
+						{}
 						self setanimstate( "combat_player_neck_snap" );
 
 						self waittillmatch( "done", "dog_death" );
-						debug_anim_print("dog_combat::dog_melee_death() - combat_player_neck_snap notify done." );
+						{}
 						self playsound( "anml_dog_neckbreak_collar", self gettagorigin( "tag_eye" ) );
 						self setcandamage( true );
 						self.a.nodeath = true;
@@ -621,7 +621,7 @@ dog_melee_death(player)
 					}
 					else
 					{
-						debug_anim_print("dog_combat::dog_melee_death() - Setting  combat_player_neck_snap"  );
+						{}
 						self setanimstate( "combat_attack_player" );
 						level.dog_death_quote = &"SCRIPT_PLATFORM_DOG_DEATH_TOO_LATE";
 					}
@@ -629,7 +629,7 @@ dog_melee_death(player)
 				}
 
 				level.dog_death_quote = &"SCRIPT_PLATFORM_DOG_DEATH_TOO_SOON";
-				debug_anim_print("dog_combat::dog_melee_death() - Setting  combat_player_neck_miss" );
+				{}
 				self setanimstate( "combat_player_neck_miss" );
 
 				// once player clicks, if it is at the wrong time, he does not get another chance.
@@ -657,7 +657,7 @@ attackMiss()
 		dirToEnemy = self.enemy.origin - ( self.origin + vector_multiply( forward, 50 ) );
 		if ( vectordot( dirToEnemy, forward ) > 0 )
 		{
-			debug_anim_print("dog_combat::attackMiss() - Setting  combat_attack_miss" );
+			{}
 			self setanimstate( "combat_attack_miss" );
 			self thread maps\mp\animscripts\dog_stop::lookAtTarget( "normal" );
 		}
@@ -668,26 +668,26 @@ attackMiss()
 
 			if ( ( dirToEnemy[0] * forward[1] - dirToEnemy[1] * forward[0] ) > 0 )
 			{
-						debug_anim_print("dog_combat::attackMiss() - Setting  combat_attack_miss_right" );
+						{}
 						self setanimstate( "combat_attack_miss_right" );
 			}
 			else
 			{
-						debug_anim_print("dog_combat::attackMiss() - Setting  combat_attack_miss_left" );
+						{}
 						self setanimstate( "combat_attack_miss_left" );
 			}
 		}
 	}
 	else
 	{
-					debug_anim_print("dog_combat::attackMiss() - Setting  combat_attack_miss" );
+					{}
 					self setanimstate( "combat_attack_miss" );
 	}
 
 	self maps\mp\animscripts\dog_shared::DoNoteTracks( "done" );
-	debug_anim_print("dog_combat::attackMiss() - attackMiss notify done." );
+	{}
 	self notify("stop tracking");
-	debug_anim_print("dog_combat::attackMiss() - Stopped tracking"  );
+	{}
 }
 
 

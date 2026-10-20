@@ -47,7 +47,7 @@ delayExplosiveTime()
 perkLog( message )
 {
     if ( getDvarInt( "scr_codol_perklog" ) )
-        codolPrintLn( "CoDOL perk: " + message );
+        {}
 }
 
 nameOf( player )

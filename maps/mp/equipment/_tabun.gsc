@@ -116,7 +116,7 @@ detonation( owner )
 gasTrace( text )
 {
     if ( level.codolGasTrace )
-        codolPrintLn( "CoDOL tabun: " + text );
+        {}
 }
 
 // T5 SpawnTimedFX: the effect lives until the cloud is removed.

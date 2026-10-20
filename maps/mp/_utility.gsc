@@ -1141,7 +1141,7 @@ logXPGains()
 		if ( !gain )
 			continue;
 
-		self logString( "xp " + xpTypes[ index ] + ": " + gain );
+		{}
 	}
 }
 
@@ -2754,6 +2754,11 @@ getLastLivingPlayer( team )
 
 	foreach ( player in level.players )
 	{
+		if ( !isDefined( player.pers["team"] ) ||
+			( player.pers["team"] != "allies" && player.pers["team"] != "axis" ) ||
+			( isDefined( player.connectedPostGame ) && player.connectedPostGame ) )
+			continue;
+
 		if ( isDefined( team ) && player.team != team )
 			continue;
 
@@ -2775,6 +2780,12 @@ getPotentialLivingPlayers()
 
 	foreach ( player in level.players )
 	{
+		// Spectators can retain unused lives. They are not round contenders.
+		if ( !isDefined( player.pers["team"] ) ||
+			( player.pers["team"] != "allies" && player.pers["team"] != "axis" ) ||
+			( isDefined( player.connectedPostGame ) && player.connectedPostGame ) )
+			continue;
+
 		if ( !isReallyAlive( player ) && !player maps\mp\gametypes\_playerlogic::maySpawn() )
 			continue;
 		

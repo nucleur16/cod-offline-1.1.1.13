@@ -219,7 +219,7 @@ testShock()
 		
 		for ( i = 0; i < numShots; i++ )
 		{
-			iPrintLnBold( numShots );
+			{}
 			self shellShock( "frag_grenade_mp", 0.2 );
 			wait ( 0.1 );
 		}

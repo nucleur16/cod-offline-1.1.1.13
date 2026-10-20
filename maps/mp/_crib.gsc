@@ -395,11 +395,11 @@ draw_radial_button( button_group )
 		if ( isInRange( self.start_angle, self.end_angle ) )
 			range_color = ( 1, 1, 0 );
 			
-		print3d( self.pos, self.label, self.font_color, 0.75, self.font_size, 1 );
+		{}
 		
 		if ( isdefined( level.crib_debug ) && level.crib_debug > 0 )
 		{
-			print3d( button_radial_pos, ".("+int(self.pos_angle)+")", range_color, 0.75, 0.05, 1 );
+			{}
 	
 			line( floating_origin, floating_origin + radial_angle_to_vector( self.start_angle, 2 ), range_color, 0.05 );
 			line( floating_origin + radial_angle_to_vector( self.start_angle, 2 ), floating_origin + radial_angle_to_vector( self.end_angle, 2 ), range_color, 0.05 );
@@ -410,7 +410,7 @@ draw_radial_button( button_group )
 			
 			
 		}
-		print3d( floating_origin - ( 0, 0, 4.5 ), "(A)=Select (X)=Back", (1, 1, 1), 0.5, 0.05, 1 );
+		{}
 		
 		wait 0.05;
 	}
@@ -530,34 +530,34 @@ action_back()
 // ==== main ====
 action_weapons_primary()
 {
-	iPrintLnBold( "action_weapons_primary" );
+	{}
 	zoom_to_radial_menu( "weapons_primary" );
 }
 
 
 action_weapons_secondary()
 {
-	iPrintLnBold( "action_weapons_secondary" );	
+	{}	
 	zoom_to_radial_menu( "weapons_secondary" );
 }
 
 action_gears()
 {
-	iPrintLnBold( "action_gears" );	
+	{}	
 	zoom_to_radial_menu( "gears" );
 }
 
 
 action_killstreak()
 {
-	iPrintLnBold( "action_killstreak" );	
+	{}	
 	zoom_to_radial_menu( "killstreak" );
 }
 
 
 action_leaderboards()
 {
-	iPrintLnBold( "action_leaderboards" );	
+	{}	
 	zoom_to_radial_menu( "leaderboards" );
 }
 

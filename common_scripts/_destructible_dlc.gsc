@@ -33,35 +33,35 @@ main()
 	if ( GetDvarInt( "destructibles_locate" ) > 0 )
 	{
 		// Print out the destructibles we created and where they are all located
-		PrintLn( "##################" );
-		PrintLn( "DESTRUCTIBLE LIST:" );
-		PrintLn( "##################" );
-		PrintLn( "" );
+		{}
+		{}
+		{}
+		{}
 
 		keys = GetArrayKeys( level.created_destructibles );
 		foreach ( key in keys )
 		{
-			PrintLn( key + ": " + level.created_destructibles[ key ].size );
+			{}
 			total += level.created_destructibles[ key ].size;
 		}
-		PrintLn( "" );
-		PrintLn( "Total: " + total );
-		PrintLn( "" );
-		PrintLn( "Locations:" );
+		{}
+		{}
+		{}
+		{}
 
 		foreach ( key in keys )
 		{
 			foreach ( destructible in level.created_destructibles[ key ] )
 			{
-				PrintLn( key + ": " + destructible.origin );
+				{}
 				//destructible thread maps\_debug::drawOrgForever();
 			}
 		}
 
-		PrintLn( "" );
-		PrintLn( "##################" );
-		PrintLn( "##################" );
-		PrintLn( "##################" );
+		{}
+		{}
+		{}
+		{}
 
 		level.created_destructibles = undefined;
 	}

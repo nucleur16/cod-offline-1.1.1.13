@@ -6,7 +6,9 @@
 init()
 {
 	level.scoreInfo = [];
-	level.xpScale = getDvarInt( "scr_xpscale" );
+	// Preserve fractional playlist rates; combat training awards 25% XP.
+	// Integer reads turn 0.25 into zero and suppress both XP and its popup.
+	level.xpScale = getDvarFloat( "scr_xpscale" );
 	
 	if ( level.xpScale > 4 || level.xpScale < 0)
 		exitLevel( false );
@@ -127,6 +129,40 @@ getScoreInfoValue( type )
 		return getDvarInt( overrideDvar );
 	else
 		return ( level.scoreInfo[type]["value"] );
+}
+
+
+// Account XP is separate from each mode's scoreboard and weapon-XP values.
+getRankXPValue( type )
+{
+	switch ( type )
+	{
+		case "kill": return 100;
+		case "headshot": return 25;
+		case "assist": return 25;
+	}
+	return getScoreInfoValue( type );
+}
+
+
+getKillRankXP( isHeadshot, inLastStand )
+{
+	value = getRankXPValue( "kill" );
+	if ( isHeadshot )
+		value += getRankXPValue( "headshot" );
+	// Account kill XP is fixed base XP; perks and last stand do not multiply it.
+	return value;
+}
+
+
+scaleRankXP( value, scale )
+{
+	scaledValue = int( value * scale );
+	// Positive enabled awards must survive integer conversion. An explicitly
+	// disabled rate and zero/negative events retain their existing meaning.
+	if ( value > 0 && scale > 0 && scaledValue == 0 )
+		scaledValue = 1;
+	return scaledValue;
 }
 
 
@@ -334,8 +370,7 @@ giveRankXP( type, value )
 			offline = "undefined";
 			if ( isDefined( self.usingOnlineDataOffline ) )
 				offline = "" + self.usingOnlineDataOffline;
-			println( "rank: " + self.name + " " + type + " NOT awarded - rankingEnabled false (level.rankedMatch "
-				+ ranked + ", usingOnlineDataOffline " + offline + ")" );
+			{}
 		}
 		return;
 	}
@@ -343,20 +378,18 @@ giveRankXP( type, value )
 	if ( level.teamBased && (!level.teamCount["allies"] || !level.teamCount["axis"]) )
 	{
 		if ( codolRankShouldTrace() )
-			println( "rank: " + self.name + " " + type + " NOT awarded - a team is empty (allies "
-				+ level.teamCount["allies"] + ", axis " + level.teamCount["axis"] + ")" );
+			{}
 		return;
 	}
 	else if ( !level.teamBased && (level.teamCount["allies"] + level.teamCount["axis"] < 2) )
 	{
 		if ( codolRankShouldTrace() )
-			println( "rank: " + self.name + " " + type + " NOT awarded - fewer than two players ("
-				+ level.teamCount["allies"] + " + " + level.teamCount["axis"] + ")" );
+			{}
 		return;
 	}
 
 	if ( !isDefined( value ) )
-		value = getScoreInfoValue( type );
+		value = getRankXPValue( type );
 
 	if ( !isDefined( self.xpGains[type] ) )
 		self.xpGains[type] = 0;
@@ -368,9 +401,14 @@ giveRankXP( type, value )
 	{
 		case "kill":
 		case "headshot":
+		case "assist":
+			// Combat awards are base XP x the advertised server percentage.
+			// Hidden perk, life-count and rested multipliers break that contract.
+			value = scaleRankXP( value, level.xpScale );
+			break;
+
 		case "shield_damage":
 			value *= self.xpScaler;
-		case "assist":
 		case "suicide":
 		case "teamkill":
 		case "capture":
@@ -388,7 +426,7 @@ giveRankXP( type, value )
 				value = int(value * multiplier);
 			}
 
-			value = int( value * level.xpScale );
+			value = scaleRankXP( value, level.xpScale );
 			
 			restXPAwarded = getRestXPAward( value );
 			value += restXPAwarded;
@@ -417,8 +455,7 @@ giveRankXP( type, value )
 	self maps\mp\gametypes\_codol_aar::noteXP( type, oldxp, self getRankXP() );
 
 	if ( codolRankShouldTrace() )
-		println( "rank: " + self.name + " " + type + " +" + value + " XP (xpScale " + level.xpScale
-			+ ", total " + oldxp + " -> " + self getRankXP() + ")" );
+		{}
 
 	oldRankId = self.pers["rank"];
 	if ( self rankingEnabled() && updateRank( oldxp ) )
@@ -507,7 +544,7 @@ updateRank( oldxp )
 	self.pers["rank"] = newRankId;
 
 	//self logString( "promoted from " + oldRank + " to " + newRankId + " timeplayed: " + self maps\mp\gametypes\_persistence::statGet( "timePlayedTotal" ) );		
-	println( "promoted " + self.name + " from rank " + oldRank + " to " + newRankId + ". Experience went from " + oldxp + " to " + self getRankXP() + "." );
+	{}
 	
 	self setRank( newRankId );
 	
@@ -572,8 +609,9 @@ scorePopup( amount, bonus, hudColor, glowAlpha )
 	self notify( "scorePopup" );
 	self endon( "scorePopup" );
 
-	self.xpUpdateTotal += amount;
-	self.bonusUpdateTotal += bonus;
+	// Each popup displays this award, never a previous kill/challenge total.
+	self.xpUpdateTotal = amount;
+	self.bonusUpdateTotal = bonus;
 
 	wait ( 0.05 );
 
@@ -743,8 +781,7 @@ syncXPStat()
 		// The commit to the secure profile is what the match report measures,
 		// so a silent skip here is a silent loss of the whole match's XP.
 		if ( codolRankShouldTrace() )
-			println( "rank: " + self.name + " XP NOT committed - xpScale " + level.xpScale
-				+ ", rankingEnabled " + self rankingEnabled() );
+			{}
 		return;
 	}
 

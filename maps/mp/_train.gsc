@@ -455,7 +455,7 @@ print3d_eq( origin, msg )
 	level endon( "stop_train_debug" + origin );
 	for ( ;; )
 	{
-		Print3d( origin, msg );
+		{}
 		wait( 0.05 );
 	}
 }

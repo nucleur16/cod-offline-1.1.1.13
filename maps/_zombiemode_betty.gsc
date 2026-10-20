@@ -63,6 +63,10 @@ planted_betty( owner )
 			wait( 0.3 );
 			origin = self.origin;
 			playFx( level.zm_betty_explosion, origin );
+			// A planted script model bypasses the native missile explosion
+			// sound. Use C1's mounted explosion alias at the blast position;
+			// the one-shot event survives deleting the mine below.
+			playSoundAtPos( origin, "grenade_explode_metal" );
 			// Entity radiusDamage supplies weapon and MOD_EXPLOSIVE to the
 			// normal damage path.  Zombies' player callback excludes this
 			// placeable mine from friendly/self damage.

@@ -16,7 +16,7 @@
 
 main()
 {
-	debug_anim_print("dog_pain::main() " );
+	{}
 
 	self endon("killanimscript");
 	self SetAimAnimWeights( 0, 0 );

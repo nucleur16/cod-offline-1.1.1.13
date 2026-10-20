@@ -343,6 +343,7 @@ extraction_start()
 			if ( is_player_valid( players[ i ] ) )
 				players[ i ] mark_extracted();
 		}
+		record_extracted_results();
 		extraction_finish();
 		return;
 	}
@@ -519,8 +520,6 @@ spawn_rescue_heli( route )
 		heli.zm_vehicle = false;
 		heli playLoopSound( "blackhawk_engine_high" );
 	}
-	// IW4 _blackhawk build_drive: the rotor loop (common_scripts\_heli_rotors).
-	heli common_scripts\_heli_rotors::spin_rotors();
 
 	heli.targetname = "zm_rescue_heli";
 	heli.riders = [];
@@ -883,11 +882,29 @@ extraction_leave( route, heli )
 	level endon( "end_game" );
 
 	codolprintln( "CoDOL zm extraction: lift-off with " + count_extracted() + " aboard" );
+	// Persist the rescue before the outbound flight. A disconnect during that
+	// flight still writes a match report, but end_game_watcher has not run yet.
+	record_extracted_results();
 	radio_all( "zmby_liftoff1_chpr", 0 );
 
 	// The ride out; the match ends a few seconds into it.
 	heli thread heli_fly_outbound( route );
 	wait( 6 );
+}
+
+record_extracted_results()
+{
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+	{
+		if ( is_true( players[ i ].zm_extracted ) )
+		{
+			recorded = players[ i ] codol_reportZombiesResult( true,
+				level.zm_round_mode, level.round_number, level.zm_round_cap );
+			codolprintln( "CoDOL zm extraction: result staged for " +
+				players[ i ].name + " = " + recorded );
+		}
+	}
 }
 
 count_extracted()

@@ -998,11 +998,11 @@ manipulate_createfx_ents( highlightedEnt, leftClick, leftHeld, ctrlHeld, colors,
 				colorIndex = "selected";
 
 
-			print3d( ent.v[ "origin" ], ".", colors[ ent.v[ "type" ] ][ colorIndex ], 1, scale );
+			{}
 			if ( ent.textalpha > 0 )
 			{
 				printRight = vector_multiply( right, ent.v[ "fxid" ].size * - 2.93 * scale );
-				print3d( ent.v[ "origin" ] + printRight + ( 0, 0, 15 ), ent.v[ "fxid" ], colors[ ent.v[ "type" ] ][ colorIndex ], ent.textalpha, scale );
+				{}
 			}
 		}
 		else
@@ -1011,11 +1011,11 @@ manipulate_createfx_ents( highlightedEnt, leftClick, leftHeld, ctrlHeld, colors,
 			if ( index_is_selected( i ) )
 				colorIndex = "selected";
 
-			print3d( ent.v[ "origin" ], ".", colors[ ent.v[ "type" ] ][ colorIndex ], 1, scale );
+			{}
 			if ( ent.textalpha > 0 )
 			{
 				printRight = vector_multiply( right, ent.v[ "fxid" ].size * - 2.93 );
-				print3d( ent.v[ "origin" ] + printRight + ( 0, 0, 15 ), ent.v[ "fxid" ], colors[ ent.v[ "type" ] ][ colorIndex ], ent.textalpha, scale );
+				{}
 			}
 		}
 	}
@@ -1562,7 +1562,7 @@ func_get_level_fx()
 		}
 	}
 
-	println( "alphabetizing fx" );
+	{}
 	keys = alphabetize( keys );
 	level._effect_keys = keys;
 	return keys;

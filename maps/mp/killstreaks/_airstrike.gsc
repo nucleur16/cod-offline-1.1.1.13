@@ -606,6 +606,9 @@ stealthBomber_killCam( plane, pathEnd, flyTime, typeOfStrike )
 	plane.killCamEnt = killCamEnt;
 	plane.airstrikeType = typeOfStrike;
 	killCamEnt.startTime = gettime();
+	// _damage and setKillCamEntity use birthtime to wait until this camera
+	// exists in the archived world before switching away from the killer.
+	killCamEnt.birthtime = killCamEnt.startTime;
 	killCamEnt thread deleteAfterTime( 15.0 );
 
 	killCamEnt linkTo( plane, "tag_origin", (-256,768,768), ( 0,0,0 ) );
@@ -726,6 +729,7 @@ callStrike_bombEffect( plane, pathEnd, flyTime, launchTime, owner, requiredDeath
 	bomb.killCamEnt = killCamEnt;
 	bomb.airstrikeType = typeOfStrike;
 	killCamEnt.startTime = gettime();
+	killCamEnt.birthtime = killCamEnt.startTime;
 	killCamEnt thread deleteAfterTime( 15.0 );
 	killCamEnt.angles = planedir;
 	killCamEnt moveTo( pathEnd + (0,0,100), flyTime, 0, 0 );
@@ -868,7 +872,7 @@ callStrike( lifeId, owner, coord, yaw )
 		
 		if ( !isDefined( heightEnt ) )//old system 
 		{
-			println( "NO DEFINED AIRSTRIKE HEIGHT SCRIPT_ORIGIN IN LEVEL" );
+			{}
 			planeFlyHeight = 950;
 			planeBombExplodeDistance = 1500;
 			if ( isdefined( level.airstrikeHeightScale ) )
@@ -888,7 +892,7 @@ callStrike( lifeId, owner, coord, yaw )
 		
 		if ( !isDefined( heightEnt ) )//old system 
 		{
-			println( "NO DEFINED AIRSTRIKE HEIGHT SCRIPT_ORIGIN IN LEVEL" );
+			{}
 			planeFlyHeight = 850;
 			planeBombExplodeDistance = 1500;
 			if ( isdefined( level.airstrikeHeightScale ) )

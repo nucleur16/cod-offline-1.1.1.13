@@ -394,7 +394,7 @@ codolRemoveMissionEntities()
             removed++;
         }
     }
-    printLn( "CoDOL MP mission cleanup: removed " + removed + " mission-only entities" );
+    {}
 }
 
 // Sends each player the map's fog switch, C1 dvar "1464" (r_fog, default 1; the 1.1.1.13 client knows its dvars by

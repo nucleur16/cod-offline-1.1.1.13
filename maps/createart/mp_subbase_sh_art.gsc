@@ -7,6 +7,6 @@ main()
 
 	setDevDvar( "scr_fog_disable", "0" );
 
-	setExpFog( 400, 4500, 0.894118, 0.8962, 0.929412, 0.4, 0 );
+	setExpFog( 0, 2228.18, 0.894118, 0.8962, 0.929412, 0.35, 0 );
 	VisionSetNaked( "mp_subbase_sh", 0 );
 }

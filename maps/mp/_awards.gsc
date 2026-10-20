@@ -424,7 +424,7 @@ getAwardRecordTime( ref )
 // does this work correctly for roundbased games?
 assignAwards()
 {
-	println( "Awards: Assigning" );
+	{}
 	
 	// Special case handling of awards which get stat values updated at the end of a game
 	foreach ( player in level.players )
@@ -518,26 +518,26 @@ assignAwards()
 			continue;
 		awardCount = player getPlayerData( "round", "awardCount" );
 
-		println( "Awards: [", player.name, "] won ", awardCount, " awards" );
+		{}
 		
 		for ( i = 0; (i < awardCount && i < 3 ); i++ )
 		{
 			award = player getPlayerData( "round", "awards", i, "award" );
 			value = player getPlayerData( "round", "awards", i, "value" );
 
-			println( "Awards: [", player.name, "][", i, "] ", award, " ", value );
+			{}
 		}
 		
 		/#
 		if ( isDefined( player.statprint ) )
 		{
 			for ( i = 3; i < player.statprint.size; i++ )
-				println( "Awards: [", player.name, "][", i, "] ", player.statprint[i].ref, " ", player.statprint[i].value );
+				{}
 		}
 		#/
 	}
 	
-	println( "Awards: Finished assigning" );
+	{}
 }
 
 assignAward( ref )

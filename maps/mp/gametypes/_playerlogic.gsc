@@ -221,7 +221,7 @@ waitAndSpawnClient()
 	}
 	
 	waveBased = (getDvarInt( "scr_" + level.gameType + "_waverespawndelay" ) > 0);
-	if ( maps\mp\gametypes\_tweakables::getTweakableValue( "player", "forcerespawn" ) == 0 && self.hasSpawned && !waveBased && !self.wantSafeSpawn )
+	if ( ( !isDefined( level.partyMode ) || !level.partyMode ) && maps\mp\gametypes\_tweakables::getTweakableValue( "player", "forcerespawn" ) == 0 && self.hasSpawned && !waveBased && !self.wantSafeSpawn )
 	{
 		setLowerMessage( "spawn_info", game["strings"]["press_to_spawn"] );
 		
@@ -403,7 +403,7 @@ checkPredictedSpawnpointCorrectness( spawnpointorigin )
 	
 	if ( !isdefined( self.predictedSpawnPoint ) )
 	{
-		println( "Failed to predict spawn for player " + self.name + " at " + spawnpointorigin );
+		{}
 		level.spawnpointPrediction.failures++;
 	}
 	else
@@ -425,9 +425,9 @@ checkPredictedSpawnpointCorrectness( spawnpointorigin )
 			level.spawnpointPrediction.buckets[6]++;
 		
 		if ( dist > 0 )
-			println( "Predicted player " + self.name + " would spawn at " + self.predictedSpawnPoint.origin + ", but spawned " + dist + " units away at " + spawnpointorigin );
+			{}
 		else
-			println( "Predicted " + self.name + "'s spawn " + ((gettime() - self.predictedSpawnPointTime) / 1000) + " seconds ahead of time" );
+			{}
 	}
 	#/
 	
@@ -453,24 +453,24 @@ printPredictedSpawnpointCorrectness()
 	if ( total <= 0 )
 		return;
 	
-	println( "****** Spawnpoint Prediction *******" );
-	println( "There were " + total + " spawns. " + percentage( level.spawnpointPrediction.failures, total ) + " failed to be predicted." );
+	{}
+	{}
 	
 	total -= level.spawnpointPrediction.failures;
 	if ( total > 0 )
 	{
-		println( "Out of the predicted ones..." );
+		{}
 		
-		println( " " + percentage( level.spawnpointPrediction.buckets[0], total ) + " were perfect" );
-		println( " " + percentage( level.spawnpointPrediction.buckets[1], total ) + " were within 128 units" );
-		println( " " + percentage( level.spawnpointPrediction.buckets[2], total ) + " were within 256 units" );
-		println( " " + percentage( level.spawnpointPrediction.buckets[3], total ) + " were within 512 units" );
-		println( " " + percentage( level.spawnpointPrediction.buckets[4], total ) + " were within 1024 units" );
-		println( " " + percentage( level.spawnpointPrediction.buckets[5], total ) + " were within 2048 units" );
-		println( " " + percentage( level.spawnpointPrediction.buckets[6], total ) + " were beyond 2048 units" );
+		{}
+		{}
+		{}
+		{}
+		{}
+		{}
+		{}
 	}
 	
-	println( "*************" );
+	{}
 	#/
 }
 
@@ -1309,6 +1309,15 @@ Callback_PlayerConnect()
 	if ( isDefined( level.hostMigrationTimer ) )
 		self thread maps\mp\gametypes\_hostmigration::hostMigrationTimerThink();
 	
+	// Every human in a fixed-loadout mode follows the same initial join path,
+	// including players with no carried team/class from an earlier match.
+	if ( !self.isbot && isDefined( level.partyMode ) && level.partyMode )
+	{
+		self thread spawnSpectator();
+		self thread codolAutoJoinFirstSpawn();
+		return;
+	}
+
 	// first connect only
 	if ( !isDefined( self.pers["team"] ) )
 	{
@@ -1326,7 +1335,6 @@ Callback_PlayerConnect()
 	else
 	{
 		self maps\mp\gametypes\_menus::addToTeam( self.pers["team"], true );
-		
 		if ( isValidClass( self.pers["class"] ) )
 		{
 			self thread spawnClient();
@@ -1347,9 +1355,36 @@ Callback_PlayerConnect()
 }
 
 
+codolAutoJoinFirstSpawn()
+{
+	self endon( "disconnect" );
+	level endon( "game_ended" );
+	// Finish the initial spectator spawn before the first class selection.
+	wait 0.05;
+	if ( level.gameType == "infect" )
+	{
+		self [[level.autoassign]]();
+		return;
+	}
+	self maps\mp\gametypes\_menus::codolSelectPartyClass();
+}
+
+
+codolAutoChoosePartyClass()
+{
+	self endon( "disconnect" );
+	level endon( "game_ended" );
+	self thread spawnSpectator();
+	wait 0.05;
+	if ( self.pers["team"] != "allies" && self.pers["team"] != "axis" )
+		return;
+	self maps\mp\gametypes\_menus::codolSelectPartyClass();
+}
+
+
 Callback_PlayerMigrated()
 {
-	println( "Player " + self.name + " finished migrating at time " + gettime() );
+	{}
 	
 	if ( isDefined( self.connected ) && self.connected )
 	{
@@ -1363,7 +1398,7 @@ Callback_PlayerMigrated()
 	level.hostMigrationReturnedPlayerCount++;
 	if ( level.hostMigrationReturnedPlayerCount >= level.players.size * 2 / 3 )
 	{
-		println( "2/3 of players have finished migrating" );
+		{}
 		level notify( "hostmigration_enoughplayers" );
 	}
 }
@@ -1452,7 +1487,7 @@ setRestXPGoal()
 		cappedString = " (hit cap)";
 	}
 	
-	println( "Player " + self.name + " has rested for " + hoursSinceLastGame + " hours; gained " + restLevels + " levels of rest XP" + cappedString + ". Now has " + (restXPGoal - experience) + " rest XP; was " + (oldRestXPGoal - experience) );
+	{}
 	
 	self setPlayerData( "restXPGoal", restXPGoal );
 }

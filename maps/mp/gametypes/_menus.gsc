@@ -314,6 +314,12 @@ menuAutoAssign()
 
 beginClassChoice( forceNewChoice )
 {
+	if ( isDefined( level.partyMode ) && level.partyMode )
+	{
+		self [[level.class]]( "class0" );
+		return;
+	}
+
 	assert( self.pers["team"] == "axis" || self.pers["team"] == "allies" );
 	
 	team = self.pers["team"];
@@ -441,6 +447,11 @@ menuSpectator()
 menuClass( response )
 {
 	self closeMenus();
+	if ( isDefined( level.partyMode ) && level.partyMode )
+	{
+		self codolSelectPartyClass();
+		return;
+	}
 	
 	// clear new status of unlocked classes
 	if ( response == "demolitions_mp,0" && self getPlayerData( "featureNew", "demolitions" ) )
@@ -511,6 +522,28 @@ menuClass( response )
 	}
 
 	self thread maps\mp\gametypes\_spectating::setSpectatePermissions();
+}
+
+
+codolSelectPartyClass()
+{
+	self closeMenus();
+	if ( !isDefined( self.pers["team"] ) ||
+		( self.pers["team"] != "allies" && self.pers["team"] != "axis" ) )
+		assignment = getTeamAssignment();
+	else
+		assignment = self.pers["team"];
+	if ( !isDefined( self.team ) || self.team != assignment || self.sessionteam == "spectator" )
+		self addToTeam( assignment );
+
+	// Fixed-loadout modes never reissue a kit for an alive class-menu reply.
+	// In OIC that reply otherwise restores the spent bullet during grace.
+	self.selectedClass = true;
+	self.pers["class"] = "class0";
+	self.class = "class0";
+	self.pers["primary"] = 0;
+	if ( game["state"] == "playing" && self.sessionstate != "playing" && !isInKillcam() )
+		self thread maps\mp\gametypes\_playerlogic::spawnClient();
 }
 
 

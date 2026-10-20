@@ -2150,7 +2150,7 @@ processChallenge( baseName, progressInc, forceSetProgress )
 	
 	/#
 	if ( getDvarInt( "debug_challenges" ) )
-		println( "CHALLENGE PROGRESS - " + baseName + ": " + progressInc );
+		{}
 	#/
 	
 	missionStatus = getChallengeStatus( baseName );
@@ -2180,7 +2180,7 @@ processChallenge( baseName, progressInc, forceSetProgress )
 	{
 		// Identify the awarded tier when investigating repeated completion UI.
 		// This runs only on an actual progression transition, not every event.
-		println( "CoDOL challenge award: client " + ( self getEntityNumber() ) + " ref " + baseName + " tier " + missionStatus + " progress " + progress );
+		{}
 		// CUMULATIVE, not clamped to the tier target.  ch_getState derives the
 		// tier by counting the thresholds the progress has passed, so writing
 		// the target back would pin the challenge at this tier for good.
@@ -2426,7 +2426,7 @@ buildChallegeInfo()
 	}
 	
 	/#
-	printLn( "TOTAL CHALLENGE REWARD XP: " + totalRewardXP );
+	{}
 	#/
 }
 
@@ -2469,7 +2469,7 @@ completeAllChallenges( percentage )
 		wait ( 0.05 );
 	}
 	
-	println( "Done unlocking challenges" );
+	{}
 }
 #/
 

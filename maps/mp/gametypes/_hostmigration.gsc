@@ -7,11 +7,11 @@ Callback_HostMigration()
 	
 	if ( level.gameEnded )
 	{
-		println( "Migration starting at time " + gettime() + ", but game has ended, so no countdown." );
+		{}
 		return;
 	}
 		
-	println( "Migration starting at time " + gettime() );
+	{}
 	
 	level.hostMigrationTimer = true;
 	
@@ -28,7 +28,7 @@ Callback_HostMigration()
 	
 	
 	level.hostMigrationTimer = undefined;
-	println( "Migration finished at time " + gettime() );
+	{}
 	
 	level notify( "host_migration_end" );
 	maps\mp\gametypes\_gamelogic::UpdateTimerPausedness();

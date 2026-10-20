@@ -503,7 +503,7 @@ makeType( destructibleType )
 			// IW4 asserts here, which a retail VM ignores; this VM raises a script
 			// error that would end find_destructibles() for the rest of the map.
 			// Leave the object static instead (makeType returns -1).
-			PrintLn( "Destructible object 'destructible_type' key/value of '" + destructibleType + "' is not valid" );
+			{}
 			break;
 	}
 
@@ -1435,7 +1435,7 @@ toy_light_ceiling_fluorescent( destructibleType )
 	//---------------------------------------------------------------------
 	// Ceiling fluorescent light
 	//---------------------------------------------------------------------
-	println( "Ceiling light fluorescent being destroyedﬂ" );
+	{}
 	destructible_create( destructibleType, "tag_origin", 150, undefined, 32, "no_melee" );
 		destructible_splash_damage_scaler( 15 );			
 		 	destructible_fx( "tag_fx", "misc/light_fluorescent_blowout_runner" );
@@ -1461,7 +1461,7 @@ toy_light_ceiling_fluorescent_spotlight( destructibleType )
 	//---------------------------------------------------------------------
 	// Ceiling fluorescent light
 	//---------------------------------------------------------------------
-	println( "Ceiling light fluorescent being destroyedﬂ" );
+	{}
 	destructible_create( destructibleType, "tag_origin", 150, undefined, 32, "no_melee" );
 		destructible_splash_damage_scaler( 15 );
 			destructible_sound( "fluorescent_light_bulb" ); 
@@ -1484,7 +1484,7 @@ toy_light_ceiling_fluorescent_single( destructibleType )
 	//---------------------------------------------------------------------
 	// Ceiling fluorescent light
 	//---------------------------------------------------------------------
-	println( "Ceiling light fluorescent single being destroyedﬂ" );
+	{}
 	destructible_create( destructibleType, "tag_origin", 150, undefined, 32, "no_melee" );
 		destructible_splash_damage_scaler( 15 );	
 		 	destructible_fx( "tag_fx", "misc/light_fluorescent_single_blowout_runner" );
@@ -1512,7 +1512,7 @@ toy_light_ceiling_fluorescent_single_spotlight( destructibleType )
 	//---------------------------------------------------------------------
 	// Ceiling fluorescent light
 	//---------------------------------------------------------------------
-	println( "Ceiling light fluorescent single being destroyedﬂ" );
+	{}
 	destructible_create( destructibleType, "tag_origin", 150, undefined, 32, "no_melee" );
 		destructible_splash_damage_scaler( 15 );
 			destructible_lights_out( 16 );
@@ -3421,7 +3421,7 @@ destructible_electrical_transformer_large( destructibleType )
 
 get_precached_anim( animname )
 {
-	println( animname );
+	{}
 	assertEX( isdefined( level._destructible_preanims ) && isdefined( level._destructible_preanims[ animname ] ),"Can't find destructible anim: "+animname+" check the Build Precache Scripts and Repackage Zone boxes In launcher when you compile your map. " );
 	return level._destructible_preanims[ animname ];
 }

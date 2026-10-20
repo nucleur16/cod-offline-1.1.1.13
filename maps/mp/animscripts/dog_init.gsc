@@ -22,7 +22,7 @@ main()
 	level.dog_debug_anims_ent = 0;
 	level.dog_debug_turns = 0;
 
-	debug_anim_print("dog_init::main() " );
+	{}
 
 	firstInit();
 

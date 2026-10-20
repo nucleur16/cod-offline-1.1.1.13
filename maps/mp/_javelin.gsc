@@ -209,7 +209,7 @@ JavelinUsageLoop()
 						continue;
 		
 					if ( debugText )
-						PrintLn( "Javeling found a vehicle target to lock to." );
+						{}
 					
 					self.javelinTarget = sortedTargets[0];
 					

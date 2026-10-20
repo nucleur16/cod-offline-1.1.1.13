@@ -135,7 +135,7 @@ init()
 		summary = summary + " " + ref + "(" + foSet.orders.size + " orders, " + foSet.perMatch + "/match)";
 	}
 
-	codolPrintLn( "CoDOL field orders:" + summary + "; splash sounds mp_suitcase_pickup / mp_war_objective_taken (Headquarters')" );
+	{}
 
 	if ( !isDefined( level.foSets[ "cofieldorderbootcamp" ] ) &&
 	     !isDefined( level.foSets[ "cofieldordermponboarding" ] ) )
@@ -289,8 +289,7 @@ foChooseSet()
 	lastTarget = foFinalTarget( bootcamp.ref );
 	if ( lastTarget > 0 && done >= lastTarget )
 	{
-		codolPrintLn( "CoDOL field orders: " + self.name + " has completed " + done + " of "
-			+ bootcamp.ref + "'s " + lastTarget + " orders; no more field orders" );
+		{}
 		return undefined;
 	}
 	return bootcamp;
@@ -356,7 +355,7 @@ foTrace( text )
 	name = "level";
 	if ( isPlayer( self ) )
 		name = self.name;
-	codolPrintLn( "CoDOL field orders trace: " + name + ": " + text );
+	{}
 }
 
 
@@ -387,8 +386,7 @@ foSlotLoop( slot )
 		{
 			// The set's per-match count (cofieldordertable column 2) is
 			// spent: nothing more this match, and C1 has no HUD line for it.
-			codolPrintLn( "CoDOL field orders: " + self.name + " finished this match's "
-				+ self.foSet.perMatch + " " + self.foSet.ref + " orders" );
+			{}
 			return;
 		}
 
@@ -501,9 +499,7 @@ foAssign( slot, order )
 	// field_order_get reads columns 1 and 2 of row fo_splash_ref.
 	self foSplash( "field_order_get", "mp_suitcase_pickup", order.index );
 
-	codolPrintLn( "CoDOL field orders: " + self.name + " slot " + slot + " got " + self.foSet.ref
-		+ " row " + order.index + " " + order.ref + " (" + order.kind + " x" + order.target
-		+ ", " + order.reward + " " + order.rewardType + ")" );
+	{}
 }
 
 
@@ -593,8 +589,7 @@ foComplete( slot )
 	self foGrantReward( order );
 	self thread foCreditChallenge( self.foSet.ref );
 
-	codolPrintLn( "CoDOL field orders: " + self.name + " completed " + self.foSet.ref
-		+ " row " + order.index + " " + order.ref + " (" + order.reward + " " + order.rewardType + ")" );
+	{}
 
 	self notify( "fo_complete_" + slot );
 }

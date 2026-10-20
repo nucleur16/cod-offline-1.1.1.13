@@ -219,25 +219,25 @@ logPlayerDeath( lifeId, attacker, iDamage, sMeansOfDeath, sWeapon, sPrimaryWeapo
 		/#
 		if ( !(weaponTokens.size > 1 && weaponTokens.size <= 4) )
 		{
-			PrintLn( "attacker: ", attacker );
-			PrintLn( "iDamage: ", iDamage );
-			PrintLn( "sMeansOfDeath: ", sMeansOfDeath );
+			{}
+			{}
+			{}
 			
 			if ( isDefined( sWeaponOriginal ) )
-				PrintLn( "sWeaponOriginal: ", sWeaponOriginal );
+				{}
 				
-			PrintLn( "sWeapon: ", sWeapon );
-			PrintLn( "sPrimaryWeapon: ", sPrimaryWeapon );
-			PrintLn( "--------------------------------" );
-			PrintLn( "sWeaponType: ", sWeaponType );
-			PrintLn( "sWeaponClass: ", sWeaponClass );
-			PrintLn( "--------------------------------" );
-			PrintLn( "weaponTokens.size: ", weaponTokens.size );
+			{}
+			{}
+			{}
+			{}
+			{}
+			{}
+			{}
 
 			tokenCount = 0;
 			foreach ( token in weaponTokens )
 			{
-				PrintLn( "weaponTokens[", tokenCount, "]: ", weaponTokens[tokenCount] );
+				{}
 				tokenCount++;
 			}
 		}

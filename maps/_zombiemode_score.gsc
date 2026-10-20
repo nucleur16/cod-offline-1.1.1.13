@@ -71,16 +71,6 @@ player_add_points( event, mod, hit_location )
 			self.kill_tracker = 1;
 		break;
 
-	// T5 _zombiemode_score.gsc:59: a ballistic-knife stab or impact kill
-	// pays the kill plus the melee bonus.
-	case "ballistic_knife_death":
-		player_points = get_zombie_death_player_points() + level.zombie_vars[ "zombie_score_bonus_melee" ];
-		if ( isDefined( self.kill_tracker ) )
-			self.kill_tracker++;
-		else
-			self.kill_tracker = 1;
-		break;
-
 	case "damage_light":
 		player_points = level.zombie_vars[ "zombie_score_damage_light" ];
 		break;

@@ -41,13 +41,13 @@ selectedCardRow( member, family, callsignTable )
 	itemFamily = tableLookup( "mp/coMarketplaceItems.csv", 0, item, 2 );
 	if ( itemName == "" || itemFamily != family )
 	{
-		println( "CoDOL invalid player card item: ", member, " ", item );
+		{}
 		return undefined;
 	}
 	row = tableLookupRowNum( callsignTable, 0, itemName );
 	if ( row < 0 || row >= 1024 )
 	{
-		println( "CoDOL missing player card row: ", callsignTable, " ", itemName );
+		{}
 		return undefined;
 	}
 	return row;

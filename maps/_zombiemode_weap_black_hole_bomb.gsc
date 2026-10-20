@@ -428,14 +428,20 @@ black_hole_bomb_attract_run()
 // MoveCrawl self.crawl_anim), as _zombiemode_spawner::set_run_anim writes them.
 //
 // T5 plays the pull clips at their own rate: the pull is the clip's root
-// motion, at moveplaybackrate 1 (every zombie move cycle plays at 1).
+// motion.  This server scales every move cycle by self.moveplaybackrate
+// (_zombiemode_spawner apply_move_speed_scale, 0.5 for a round-1 walker), so
+// the pull is put back on the actor's base rate (animplaybackrate) while it
+// lasts, and the saved rate is restored if the zombie escapes.
 set_pull_anim( pull )
 {
 	if ( !isDefined( pull ) )
 		return;
 
 	self._bhb_pull_anim = pull;
-	self.moveplaybackrate = 1;
+	base = 1;
+	if ( isDefined( self.animplaybackrate ) )
+		base = self.animplaybackrate;
+	self.moveplaybackrate = base;
 
 	if ( is_true( self.has_legs ) )
 	{

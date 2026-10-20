@@ -97,25 +97,6 @@ pathtest_watch()
 			level thread pathtest_shoot_tear( percent );
 			break;
 
-		case "kill":
-			// kill <seconds> [range]: every <seconds>, a player shoots dead every
-			// zombie that has come inside within [range] (default 400) of him, so
-			// rounds advance with the player as the killer (points, drops).
-			interval = 4;
-			range = 400;
-			if ( tokens.size > 1 )
-				interval = int( tokens[ 1 ] );
-			if ( tokens.size > 2 )
-				range = int( tokens[ 2 ] );
-			level thread pathtest_kill( interval, range );
-			break;
-
-		case "towindow":
-			// towindow: move the first player to the repair spot of the
-			// first window a zombie is tearing (reach-through tests).
-			level thread pathtest_to_window();
-			break;
-
 		case "repair":
 			level thread pathtest_repair( 6 );
 			break;
@@ -175,61 +156,6 @@ pathtest_shoot_tear( percent )
 			codolprintln( "CoDOL pathtest: shot ent " + z getEntityNumber() + " holding a spot at " + z.attacking_node.origin );
 			z.no_powerup_drop = true;
 			z doDamage( z.health + 100, z.origin );
-		}
-	}
-}
-
-pathtest_to_window()
-{
-	for ( t = 0; t < 600; t++ )
-	{
-		players = getPlayers();
-		if ( players.size > 0 && isDefined( level.zombies ) )
-		{
-			for ( i = 0; i < level.zombies.size; i++ )
-			{
-				z = level.zombies[ i ];
-				if ( !isDefined( z ) || !isAlive( z ) || !isDefined( z.attacking_spot ) || !isDefined( z.zm_tear_node ) )
-					continue;
-				node = z.zm_tear_node;
-				spot = node.origin;
-				if ( isDefined( node.trigger_location ) )
-					spot = node.trigger_location.origin;
-				players[ 0 ] setOrigin( spot );
-				codolprintln( "CoDOL pathtest: client moved to window " + node.origin + " repair spot " + spot + " (ent " + z getEntityNumber() + " tearing)" );
-				return;
-			}
-		}
-		wait( 0.1 );
-	}
-}
-
-pathtest_kill( interval, range )
-{
-	level notify( "pathtest_kill" );
-	level endon( "pathtest_kill" );
-	codolprintln( "CoDOL pathtest: killing zombies inside within " + range + " every " + interval + " s" );
-	for ( ;; )
-	{
-		wait( interval );
-		players = getPlayers();
-		if ( players.size < 1 || !isDefined( level.zombies ) )
-			continue;
-		zombies = level.zombies;
-		for ( i = 0; i < zombies.size; i++ )
-		{
-			z = zombies[ i ];
-			if ( !isDefined( z ) || !isAlive( z ) || is_true( z.isdog ) )
-				continue;
-			if ( !isDefined( z.zm_path_phase ) || z.zm_path_phase != "hunt" )
-				continue;
-			for ( p = 0; p < players.size; p++ )
-			{
-				if ( distance( players[ p ].origin, z.origin ) > range )
-					continue;
-				z doDamage( z.health + 10, z getTagOrigin( "j_head" ), players[ p ], players[ p ], 0, "MOD_RIFLE_BULLET" );
-				break;
-			}
 		}
 	}
 }
@@ -351,34 +277,6 @@ pathtest_dump_zones()
 				target = sp.target;
 			codolprintln( "CoDOL pathtest:   spawner " + sp.origin + " targetname " + sp.targetname + " target " + target );
 		}
-		// Every struct of the zone's group with its keys, and its rise points
-		// (T5 zone_init: "<volume target>_rise").
-		group = get_struct_array( zone.spawner_target, "targetname" );
-		for ( j = 0; isDefined( group ) && j < group.size; j++ )
-		{
-			note = "none";
-			str = "none";
-			if ( isDefined( group[ j ].script_noteworthy ) )
-				note = group[ j ].script_noteworthy;
-			if ( isDefined( group[ j ].script_string ) )
-				str = group[ j ].script_string;
-			codolprintln( "CoDOL pathtest:   struct " + group[ j ].origin + " noteworthy " + note + " script_string " + str );
-		}
-		rise = get_struct_array( zone.spawner_target + "_rise", "targetname" );
-		count = 0;
-		if ( isDefined( rise ) )
-			count = rise.size;
-		codolprintln( "CoDOL pathtest:   rise points " + count );
-		for ( j = 0; isDefined( rise ) && j < rise.size; j++ )
-		{
-			str = "none";
-			if ( isDefined( rise[ j ].script_string ) )
-				str = rise[ j ].script_string;
-			note = "none";
-			if ( isDefined( rise[ j ].script_noteworthy ) )
-				note = rise[ j ].script_noteworthy;
-			codolprintln( "CoDOL pathtest:   rise " + rise[ j ].origin + " noteworthy " + note + " script_string " + str );
-		}
 	}
 	if ( !isDefined( level.exterior_goals ) )
 		return;
@@ -395,22 +293,6 @@ pathtest_dump_zones()
 		}
 		codolprintln( "CoDOL pathtest: window " + goal.origin + " inside " + inside + " zone " + zone + " available " +
 			maps\_zombiemode_zone_manager::entrance_available( goal ) );
-	}
-
-	// The purchase flags each door / debris sets (the zone graph's keys).
-	names = [];
-	names[ 0 ] = "zombie_door";
-	names[ 1 ] = "zombie_debris";
-	for ( n = 0; n < names.size; n++ )
-	{
-		ents = getEntArray( names[ n ], "targetname" );
-		for ( i = 0; isDefined( ents ) && i < ents.size; i++ )
-		{
-			flagname = "<none>";
-			if ( isDefined( ents[ i ].script_flag ) )
-				flagname = ents[ i ].script_flag;
-			codolprintln( "CoDOL pathtest: " + names[ n ] + " at " + ents[ i ].origin + " flag " + flagname );
-		}
 	}
 }
 

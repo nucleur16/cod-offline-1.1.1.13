@@ -192,7 +192,7 @@ onStartGameType()
 	level.spawn_all = maps\mp\gametypes\_spawnlogic::getSpawnpointArray( "mp_tdm_spawn" );
 	if ( !level.spawn_all.size )
 	{
-		println("^1No mp_tdm_spawn spawnpoints in level!");
+		{}
 		maps\mp\gametypes\_callbacksetup::AbortLevel();
 		return;
 	}
@@ -756,10 +756,10 @@ SetupRadios()
 	
 	if (maperrors.size > 0)
 	{
-		println("^1------------ Map Errors ------------");
+		{}
 		for(i = 0; i < maperrors.size; i++)
-			println(maperrors[i]);
-		println("^1------------------------------------");
+			{}
+		{}
 		
 		error("Map errors. See above");
 		maps\mp\gametypes\_callbacksetup::AbortLevel();

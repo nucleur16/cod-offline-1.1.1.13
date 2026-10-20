@@ -76,10 +76,6 @@ main()
 		return;
 	}
 
-	// T5 animscripts/zombie_dog_combat.gsc:19 (ends dog_stalk_audio, starts
-	// dog_behind_audio).
-	self notify( "dog_combat" );
-
 	if ( IsPlayer(self.enemy) )
 		self meleeBiteAttackPlayer(self.enemy);
 }
@@ -328,9 +324,7 @@ handleMeleeBiteAttackNoteTracks( note, player )
 			}
 			else
 			{
-				// T5 animscripts/zombie_dog_combat.gsc:71-74: a hellhound's
-				// missed bite just ends the lunge (no attack_player_miss
-				// recovery, which is the multiplayer dog's).
+				attackMiss();
 				return true;
 			}
 		}

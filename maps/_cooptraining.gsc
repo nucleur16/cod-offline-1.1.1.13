@@ -1522,7 +1522,6 @@ move_cast( ai, origin, yaw )
 {
 	if ( !isDefined( ai ) )
 		return;
-	maps\_coopanim::stop_scripted( ai );
 	ai forceTeleport( origin, ( 0, yaw, 0 ) );
 	codolprintln( "CoDOL coop training: " + ai.coop_cast + " to " + origin );
 }

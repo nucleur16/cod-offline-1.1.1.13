@@ -635,7 +635,7 @@ sentry_overheat_debug()
 			overheat_print_r = " }}}";
 		}
 		
-		print3d( self.origin + ( 0,0,45 ), overheat_print_l + self.overheat + " / " + level.sentry_fire_time*10 + overheat_print_r, ( 0+overheat_value, 1-overheat_value, 1-overheat_value ), 1, 0.35, 4 );
+		{}
 		wait 0.2;
 	}
 }

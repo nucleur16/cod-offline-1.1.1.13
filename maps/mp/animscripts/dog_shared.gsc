@@ -53,7 +53,7 @@ HandleNoteTrack( note, flagName, customFunction, var1 )
 {
 /#
 	if ( GetDvarInt( "debug_dog_notetracks" ) )
-		println("dog notetrack: " + flagName + " " + note + " " + GetTime() );
+		{}
 #/
 
 	if ( isAI( self ) && self.type == "dog" )
@@ -122,7 +122,7 @@ DoNoteTracksForeverProc( notetracksFunc, flagName, killString, customFunction, v
 			if ( timetaken < 0.05)
 			{
 /#
-				println (GetTime()+" dog_shared::DoNoteTracksForever is trying to cause an infinite loop on anim "+flagName+", returned "+returnedNote+".");
+				{}
 #/
 				wait ( 0.05 - timetaken );
 			}
@@ -343,9 +343,9 @@ set_orient_mode( mode, val1 )
 	if ( level.dog_debug_orient == self getentnum() )
 	{
 		if ( isdefined( val1 ) )
-			println( "DOG:  Setting orient mode: " + mode + " " + val1 + " " + getTime() );
+			{}
 		else
-			println( "DOG:  Setting orient mode: " + mode + " " + getTime() );
+			{}
 	}
 #/
 
@@ -356,35 +356,10 @@ set_orient_mode( mode, val1 )
 }
 
 debug_anim_print( text )
-{
-/#
-	if ( level.dog_debug_anims  )
-		println( text+ " " + getTime() );
-
-	if ( level.dog_debug_anims_ent == self getentnum() )
-		println( text+ " " + getTime() );
-#/
-}
+{}
 
 debug_turn_print( text, line )
-{
-/#
-	if ( level.dog_debug_turns == self getentnum() )
-	{
-		duration = 200;
-		currentYawColor = (1,1,1);
-		lookaheadYawColor = (1,0,0);
-		desiredYawColor = (1,1,0);
-
-		currentYaw = AngleClamp180(self.angles[1]);
-		desiredYaw = AngleClamp180(self.desiredangle);
-		lookaheadDir = self.lookaheaddir;
-		lookaheadAngles = vectortoangles(lookaheadDir);
-		lookaheadYaw = AngleClamp180(lookaheadAngles[1]);
-			println( text+ " " + getTime() + " cur: " + currentYaw + " look: " + lookaheadYaw + " desired: " + desiredYaw );
-	}
-#/
-}
+{}
 
 debug_allow_movement()
 {

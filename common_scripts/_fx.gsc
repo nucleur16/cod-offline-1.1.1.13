@@ -37,14 +37,14 @@ print_org( fxcommand, fxId, fxPos, waittime )
 {
 	if ( GetDvar( "debug" ) == "1" )
 	{
-		println( "{" );
-		println( "\"origin\" \"" + fxPos[ 0 ] + " " + fxPos[ 1 ] + " " + fxPos[ 2 ] + "\"" );
-		println( "\"classname\" \"script_model\"" );
-		println( "\"model\" \"fx\"" );
-		println( "\"script_fxcommand\" \"" + fxcommand + "\"" );
-		println( "\"script_fxid\" \"" + fxId + "\"" );
-		println( "\"script_delay\" \"" + waittime + "\"" );
-		println( "}" );
+		{}
+		{}
+		{}
+		{}
+		{}
+		{}
+		{}
+		{}
 	}
 }
 
@@ -116,7 +116,7 @@ loopfxRotate(fxId, fxPos, waittime, angle, fxStart, fxStop, timeout)
 
 loopfx( fxId, fxPos, waittime, fxPos2, fxStart, fxStop, timeout )
 {
-	println( "Loopfx is deprecated!" );
+	{}
 	ent = createLoopEffect( fxId );
 	ent.v[ "origin" ] = fxPos;
 	ent.v[ "angles" ] = ( 0, 0, 0 );
@@ -476,14 +476,14 @@ verify_effects_assignment_print( effectID )
 	level endon ( "verify_effects_assignment_print" );
 	wait .05; //allow errors on the same frame to que up before printing
 	
-	println("Error:");
-	println("Error:**********MISSING EFFECTS IDS**********");
+	{}
+	{}
 	keys = getarraykeys( level._missing_FX );
 	foreach( key in keys )
 	{
-		println( "Error: Missing Effects ID assignment for: "+ key  );
+		{}
 	}
-	println("Error:");
+	{}
 	
 	assertmsg( "Missing Effects ID assignments ( see console )" );
 }

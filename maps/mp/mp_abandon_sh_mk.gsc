@@ -74,6 +74,6 @@ codol_pinUfoAnims()
 			}
 		}
 		ufo.animation = level.anim_prop_models[ "abdn_ufo_anim" ][ key ];
-		println( "CoDOL mp_abandon_sh_mk: UFO at " + ufo.origin + " plays " + ufo.animation );
+		{}
 	}
 }

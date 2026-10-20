@@ -289,13 +289,6 @@ vending_trigger_think()
 	cost = perk_cost( perk, solo );
 	self.cost = cost;
 
-	// A level that powers machines separately (zm_sumpf_sh: one switch per
-	// hut) names this entity's own power flag; every other map waits on the
-	// one "power_on" flag, exactly as before.
-	power_flag = "power_on";
-	if ( isDefined( self.zm_power_flag ) )
-		power_flag = self.zm_power_flag;
-
 	self setCursorHint( "HINT_NOICON" );
 	self useTriggerRequireLookAt();
 	self setHintString( &"ZOMBIE_NEED_POWER" );
@@ -307,7 +300,7 @@ vending_trigger_think()
 	else
 	{
 		// The power flag survives a notify sent before the roster was ready.
-		flag_wait( power_flag );
+		flag_wait( "power_on" );
 		self setHintString( perk_hint( perk, solo ), cost );
 	}
 
@@ -332,7 +325,7 @@ vending_trigger_think()
 			solo = getPlayers().size == 1;
 			cost = perk_cost( perk, solo );
 			self.cost = cost;
-			if ( !solo && !flag( power_flag ) )
+			if ( !solo && !flag( "power_on" ) )
 			{
 				self play_sound_on_ent( "perk_deny" );
 				continue;
@@ -406,13 +399,6 @@ vending_trigger_think()
 // it can still serve the cooperative version once the power is on.
 quickrevive_hint_think()
 {
-	// A level that powers machines separately (zm_sumpf_sh: one switch per
-	// hut) names this entity's own power flag; every other map waits on the
-	// one "power_on" flag, exactly as before.
-	power_flag = "power_on";
-	if ( isDefined( self.zm_power_flag ) )
-		power_flag = self.zm_power_flag;
-
 	for ( ;; )
 	{
 		solo = getPlayers().size == 1;
@@ -420,7 +406,7 @@ quickrevive_hint_think()
 		self.cost = cost;
 		if ( solo && level.zm_solo_quickrevive_buys >= 3 )
 			self setHintString( "" );
-		else if ( !solo && !flag( power_flag ) )
+		else if ( !solo && !flag( "power_on" ) )
 			self setHintString( &"ZOMBIE_NEED_POWER" );
 		else
 			self setHintString( perk_hint( "specialty_quickrevive", solo ), cost );

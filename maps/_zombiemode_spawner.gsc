@@ -86,16 +86,8 @@ init()
 	// Dismemberment and the blue blood (_zombiemode_gib.gsc).
 	maps\_zombiemode_gib::init();
 
-	init_rise();
-
 	init_spawn_points();
 	init_spawner();
-
-	// T5 _zombiemode_audio.gsc:455 (every player's zombie_behind_vox).
-	level thread zombie_behind_vox_think();
-
-	// T5 :30.
-	level thread track_players_intersection_tracker();
 
 	// Developer-only entrance-walk soak (scr_codol_pathtest); returns at once
 	// on a production server.
@@ -275,10 +267,6 @@ round_spawning()
 	codolprintln( "CoDOL zm: round " + level.round_number + " budget " + level.zombie_total +
 		" zombies at " + level.zombie_health + " health" );
 
-	// T5 _zombiemode.gsc:3183.
-	if ( level.round_number < 10 )
-		level thread zombie_speed_up();
-
 	old_spawn = undefined;
 
 	for ( ;; )
@@ -355,17 +343,7 @@ spawn_zombie( spawn_point )
 	// walk outside that window instead of 700-2400 units away.
 	ai.zm_spawn_time = getTime();
 	ai.zm_spawn_near = false;
-
-	// T5 zombie_think :427 / should_skip_teardown :398: a spawner whose
-	// script_string is "riser" rises out of the ground at one of the active
-	// zones' rise points; "zombie_chaser" goes straight for the players.
-	// Neither walks to a window, so neither takes a window approach point.
-	ai.zm_riser = isDefined( spawn_point.script_string ) && spawn_point.script_string == "riser" &&
-		isDefined( level.zombie_rise_spawners ) && level.zombie_rise_spawners.size > 0;
-	ai.zm_chaser = isDefined( spawn_point.script_string ) && spawn_point.script_string == "zombie_chaser";
-	near = undefined;
-	if ( !ai.zm_riser && !ai.zm_chaser )
-		near = near_window_spawn( spawn_point );
+	near = near_window_spawn( spawn_point );
 	if ( isDefined( near ) )
 	{
 		origin = near.origin;
@@ -374,9 +352,7 @@ spawn_zombie( spawn_point )
 	}
 
 	ai forceTeleport( origin, angles );
-	// A riser stays hidden until its rise clip is under way (T5 hide_pop).
-	if ( !ai.zm_riser )
-		ai show();
+	ai show();
 
 	ai.targetname = "zombie";
 	ai.animname = "zombie";
@@ -421,15 +397,17 @@ spawn_zombie( spawn_point )
 	ai.ignoreall = true;
 	ai.ignoreme = true;
 
-	// T5 :206 set_zombie_run_cycle: the walk/run/sprint bucket and its clip.
-	// The actor travels at that clip's root motion (moveplaybackrate 1).
+	// T5 :3690 set_zombie_run_cycle picks BOTH halves: the animation and, via
+	// set_run_speed, the walk/run/sprint bucket.  The scalar half -- how fast
+	// the actor actually travels -- is apply_move_speed_scale(), which derives
+	// it from the bucket the cycle chose rather than from the raw round speed,
+	// so the clip and the translation agree.
 	ai set_zombie_run_cycle();
 	ai apply_move_speed_scale();
 	ai.needs_run_update = false;
 
-	// T5 :241 self.deathFunction: zombie_death.gsc runs it BEFORE the death
-	// clip (it returns false so the clip still plays).
-	ai.deathFunction = ::zombie_death_animscript;
+	// T5 :3840.  zombie_death.gsc runs this after the death clip.
+	ai.deathanimscript = ::zombie_death_animscript;
 
 	// The bootstrap pose.  See the note in zombie_init.gsc: the animscript's
 	// own main() runs too early in CODOL_ActorScriptsInitialize to animate,
@@ -440,17 +418,14 @@ spawn_zombie( spawn_point )
 
 	level.zombies[ level.zombies.size ] = ai;
 
-	// T5 plays zmb_zombie_spawn only for a zombie rising out of the ground
-	// (zombie_rise_burst_fx :4672 / :4687), never for a spawner zombie.
-	// T5 :239 delayed_zombie_eye_glow: the eyes come on 0.5 s after spawn.
-	ai thread delayed_zombie_eye_glow( 0.5 );
+	ai play_sound_on_ent( "zombie_spawn" );
+	ai thread zombie_eye_glow();
 	ai thread play_ambient_zombie_vocals();
 
 	level thread zombie_death_event( ai );
 	ai thread zombie_think();
 	ai thread zombie_damage_watch();
 	ai thread maps\_zombiemode_gib::zombie_gib_on_damage();
-	ai thread zombie_damage_failsafe();
 
 	return ai;
 }
@@ -486,29 +461,32 @@ set_zombie_run_cycle( new_move_speed )
 
 	self.needs_run_update = true;
 
-	// A crawler keeps the crawl cycle and the paired crawl death make_crawler
-	// gave it (T5 never re-runs this on a zombie that has lost its legs).
-	if ( !is_true( self.has_legs ) )
-		return;
+	// T5 :3706.  self.deathanim is what zombie_death.gsc plays.
+	if ( is_true( self.has_legs ) )
+		deaths = level._zombie_deaths[ self.animname ];
+	else
+		deaths = level._zombie_crawl_deaths[ self.animname ];
 
-	// T5 :350.  self.deathanim is what zombie_death.gsc plays.
-	deaths = level._zombie_deaths[ self.animname ];
 	if ( isDefined( deaths ) && deaths.size > 0 )
 		self.deathanim = deaths[ randomInt( deaths.size ) ];
 
-	// T5 :356-:372: walk1-7, run1-5, sprint1-3 (randomintrange's upper bound
-	// is exclusive).  CoDOL's table also defines walk8 / run6 / sprint4,
-	// which T5 never plays.
+	if ( !is_true( self.has_legs ) )
+	{
+		self set_run_anim( "crawl" + randomIntRange( 1, 7 ) );
+		self.crawl_anim = self.run_noncombatanim;
+		return;
+	}
+
 	switch ( self.zombie_move_speed )
 	{
 	case "walk":
-		self set_run_anim( "walk" + randomIntRange( 1, 8 ) );
+		self set_run_anim( "walk" + randomIntRange( 1, 9 ) );
 		break;
 	case "run":
-		self set_run_anim( "run" + randomIntRange( 1, 6 ) );
+		self set_run_anim( "run" + randomIntRange( 1, 7 ) );
 		break;
 	case "sprint":
-		self set_run_anim( "sprint" + randomIntRange( 1, 4 ) );
+		self set_run_anim( "sprint" + randomIntRange( 1, 5 ) );
 		break;
 	}
 }
@@ -545,19 +523,69 @@ set_run_speed()
 		self.zombie_move_speed = "sprint";
 }
 
-// T5 never scales a zombie's movement: every move cycle plays at
-// moveplaybackrate 1 (animscripts\zombie_init.gsc:320) and the actor travels
-// at the clip's own root motion (MEASURED, common_gametype_zm xanims: walk_v1
-// 36 u/s, run_v2 109, sprint_v1 140).  The native mover consumes exactly that
-// root motion (CODOL_ActorAdvanceGoalAnimation).  This port used to scale
-// the rate per bucket (walk 0.5 or 0.9, run 0.9, sprint 1.4, crawl 0.35 of
-// a 0.9 base), from when the actor mover was scalar; that made sprinters
-// 1.56x T5 (~218 u/s, faster than a sprinting player) and crawlers 0.39x.
-// Kept as one entry point because the speed-up, Pandora and the black hole
-// bomb call it after changing a cycle.
+// The translation that matches the cycle the actor is playing.  T5 gets this
+// for free because its AI moves at the animation's own root-motion speed;
+// this server's mover is scalar, so the bucket picks the scalar.
+// MEASURED (qconsole.log, 6 per spawn wave): `ai setMoveSpeedScale(...)` threw
+// "only valid on players; called on entity N ... classname
+// actor_enemy_zombie_zm".  setmovespeedscale IS registered
+// (src/scr_vm_main.c:867) but its handler calls GetPlayerEntity first and
+// writes client->sess.moveSpeedScaleMultiplier, so it rejects any entity
+// without a client.  There is no actor speed-scale builtin on this server.
+//
+// The lever that DOES move an actor here is the animation playback rate:
+// actor translation is pure root motion (CODOL_ActorAdvanceGoalAnimation ->
+// XAnimCalcDelta, no speed multiplier anywhere in the actor sources), and
+// `animplaybackrate` is a registered actor class field
+// (src/codol/player/codol_actor_lifecycle.cpp:194).  The zm tree already
+// drives the move cycle off self.moveplaybackrate
+// (animscripts/zombie_move.gsc:105,:122), so scaling that is the
+// faithful equivalent of T5's call.
+//
+// 0.9 is the "run" value of move_speed_scale() and the centre of the
+// per-zombie jitter zombie_init.gsc:137 assigns, so it is the normalisation
+// point: a "run" zombie keeps exactly the rate it was given.
 apply_move_speed_scale( scale )
 {
-	self.moveplaybackrate = 1;
+	if ( !isDefined( scale ) )
+		scale = move_speed_scale();
+
+	base = 1;
+	if ( isDefined( self.animplaybackrate ) )
+		base = self.animplaybackrate;
+
+	self.moveplaybackrate = base * ( scale / 0.9 );
+}
+
+move_speed_scale()
+{
+	if ( !isDefined( self.zombie_move_speed ) )
+		return walk_speed_scale();
+
+	switch ( self.zombie_move_speed )
+	{
+	case "sprint":
+		return 1.4;
+	case "run":
+		return 0.9;
+	}
+
+	return walk_speed_scale();
+}
+
+// The walk bucket.  T5 plays every zombie move cycle at moveplaybackrate 1
+// (animscripts\zombie_init.gsc:320) and never scales a zombie's movement
+// (no SetMoveSpeedScale on a zombie anywhere in T5's zombiemode), so a
+// walker covers its walk clip's own root motion.  This port played walks at
+// 0.5 / 0.9 = 0.56 of that: MEASURED on the VPS, every walker moved 19-20
+// units/s against 34-36 at rate 1, so the round-1..3 walkers took 60-120 s
+// from Prototype's yard spawners to their windows.  0.9 here is rate 1, the
+// same normalisation point as "run".  scr_zm_t5_walk_rate 0 restores 0.5.
+walk_speed_scale()
+{
+	if ( zm_dvar_int( "scr_zm_t5_walk_rate", 1 ) <= 0 )
+		return 0.5;
+	return 0.9;
 }
 
 zm_dvar_int( name, default_value )
@@ -1005,477 +1033,59 @@ do_zombies_playvocals( state )
 	self play_sound_on_ent( "zombie_" + state );
 }
 
-// T5 _zombiemode_spawner.gsc:284 zombie_damage_failsafe, the anti-exploit
-// check: a zombie that has been touching its player enemy for 5 s without
-// moving 60 units (a player wedged where the swing cannot land) kills that
-// player, unless he has Juggernog or is already down.
-zombie_damage_failsafe()
-{
-	self endon( "death" );
-
-	continue_failsafe_damage = false;
-	for ( ;; )
-	{
-		wait( 0.5 );
-
-		enemy = self.enemy;
-		if ( !isDefined( enemy ) || !isPlayer( enemy ) )
-			continue;
-
-		if ( self isTouching( enemy ) )
-		{
-			old_org = self.origin;
-			if ( !continue_failsafe_damage )
-				wait( 5 );
-
-			enemy = self.enemy;
-			if ( !isDefined( enemy ) || !isPlayer( enemy ) || enemy hasPerk( "specialty_armorvest" ) )
-				continue;
-
-			if ( self isTouching( enemy ) && !is_true( enemy.laststand ) && isAlive( enemy ) )
-			{
-				if ( distanceSquared( old_org, self.origin ) < 60 * 60 )
-				{
-					codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " has pinned " + enemy.name + " for 5 s; failsafe kill (T5 zombie_damage_failsafe)" );
-					enemy doDamage( enemy.health + 1000, enemy.origin );
-					continue_failsafe_damage = true;
-				}
-			}
-		}
-		else
-			continue_failsafe_damage = false;
-	}
-}
-
-// T5 :34 track_players_intersection_tracker: two live players standing in
-// each other (within 18 units across and 60 up) are both killed, with the
-// laugh.  C1 ships no zmb_laugh_child; the kill is kept, the sound is not.
-track_players_intersection_tracker()
-{
-	level endon( "end_game" );
-
-	wait( 5 );
-
-	for ( ;; )
-	{
-		players = getPlayers();
-		for ( i = 0; i < players.size; i++ )
-		{
-			if ( is_true( players[ i ].laststand ) || players[ i ].sessionstate == "spectator" || !isAlive( players[ i ] ) )
-				continue;
-			for ( j = 0; j < players.size; j++ )
-			{
-				if ( i == j || is_true( players[ j ].laststand ) || players[ j ].sessionstate == "spectator" || !isAlive( players[ j ] ) )
-					continue;
-				if ( isDefined( level.player_intersection_tracker_override ) && players[ i ] [[ level.player_intersection_tracker_override ]]( players[ j ] ) )
-					continue;
-				dz = players[ i ].origin[ 2 ] - players[ j ].origin[ 2 ];
-				if ( dz > 60 || dz < -60 )
-					continue;
-				if ( distance2D( players[ i ].origin, players[ j ].origin ) > 18 )
-					continue;
-				players[ i ] doDamage( 1000, ( 0, 0, 0 ) );
-				players[ j ] doDamage( 1000, ( 0, 0, 0 ) );
-			}
-		}
-		wait( 0.5 );
-	}
-}
-
-// T5 :4983 play_ambient_zombie_vocals.  T5 picks the vocal by the move
-// bucket -- "ambient" for a walker, "sprint" for a runner or sprinter,
-// "crawler" for a zombie without legs -- and plays one every 1-4 s
-// (RandomFloatRange( 1, float ), float 4), skipping a line while the
-// previous one is still playing (_zombiemode_audio.gsc:600 self.talking,
-// released on "sounddone").
-//
-// C1 ships no sprint vocal: zmb_zombie_amb covers walkers and runners
-// (docs/zone_assets/ALL_sound.txt has no zmb_vocals_zombie_sprint or other
-// sprint alias), zmb_crawler_vocals_amb the crawlers.  playSound has no
-// "sounddone" notify on this server, so a line is not restarted within
-// 2.5 s of the last one instead (the length of the longest zmb_zombie_amb
-// variant is not known here; this keeps lines from stacking).
+// T5 :3620 play_ambient_zombie_vocals.
 play_ambient_zombie_vocals()
 {
 	self endon( "death" );
 
 	for ( ;; )
 	{
-		if ( !isDefined( self.zombie_move_speed ) )
-		{
-			wait( 0.5 );
-			continue;
-		}
+		wait( randomFloatRange( 3, 8 ) );
 
-		now = getTime();
-		if ( !isDefined( self.zm_vocal_time ) || now - self.zm_vocal_time >= 2500 )
-		{
-			self.zm_vocal_time = now;
-			if ( is_true( self.has_legs ) )
-				self play_sound_on_ent( "zombie_ambient" );
-			else
-				self play_sound_on_ent( "crawler_ambient" );
-		}
-
-		wait( randomFloatRange( 1, 4 ) );
+		if ( is_true( self.has_legs ) )
+			self play_sound_on_ent( "zombie_ambient" );
+		else
+			self play_sound_on_ent( "crawler_ambient" );
 	}
 }
 
-// T5 _zombiemode_audio.gsc:463 zombie_behind_vox, one thread for every
-// player: once a second, a zombie close behind a player (200 / 250 / 275
-// units for a walker / runner / sprinter, more than 95 degrees off the
-// player's facing, within 50 units of height) plays the "behind" vocal
-// (zmb_zombie_behind, which C1 ships); a player hears it at most once every
-// 5 s.  Hounds are left out, as in T5.
-zombie_behind_vox_think()
-{
-	level endon( "end_game" );
-
-	for ( ;; )
-	{
-		wait( 1 );
-
-		players = getPlayers();
-		for ( p = 0; p < players.size; p++ )
-		{
-			player = players[ p ];
-			if ( !isDefined( player ) || !isAlive( player ) )
-				continue;
-			if ( isDefined( player.zm_behind_vox_time ) && getTime() < player.zm_behind_vox_time )
-				continue;
-
-			angles = player getPlayerAngles();
-			for ( i = 0; i < level.zombies.size; i++ )
-			{
-				z = level.zombies[ i ];
-				if ( !isDefined( z ) || !isAlive( z ) || is_true( z.isdog ) )
-					continue;
-
-				dist = 200;
-				if ( isDefined( z.zombie_move_speed ) )
-				{
-					if ( z.zombie_move_speed == "run" )
-						dist = 250;
-					else if ( z.zombie_move_speed == "sprint" )
-						dist = 275;
-				}
-				if ( distanceSquared( z.origin, player.origin ) >= dist * dist )
-					continue;
-
-				z_diff = player.origin[ 2 ] - z.origin[ 2 ];
-				if ( z_diff >= 50 || z_diff <= -50 )
-					continue;
-
-				to = vectorToAngles( z.origin - player.origin );
-				yaw = to[ 1 ] - angles[ 1 ];
-				while ( yaw > 180 )
-					yaw -= 360;
-				while ( yaw < -180 )
-					yaw += 360;
-				if ( yaw >= -95 && yaw <= 95 )
-					continue;
-
-				z do_zombies_playvocals( "behind" );
-				// T5 waits 1 s, then 5 more after a line.
-				player.zm_behind_vox_time = getTime() + 5000;
-				break;
-			}
-		}
-	}
-}
-
-// --------------------------------------------------------------------------
-// Risers.  T5 _zombiemode_spawner.gsc:4421 do_zombie_rise and its helpers.
+// T5 :4416 make_crawler.  A zombie whose legs are gone keeps fighting on the
+// ground: the cycle, the melee pool and the death clip all switch sets, and
+// the native mover is told to travel at a crawl.
 //
-// The clip starts the zombie under the floor -- version 1 45 units down
-// (ai_zombie_traverse_ground_v1_walk / _v1_run / _climbout_fast, +45 z),
-// version 2 14 units down (_v2_walk_altA, +14.8 z) -- and is played with the
-// "noclip" scripted mode, which starts the actor exactly at that origin and
-// lets the clip carry all three axes (codol_actor_lifecycle.cpp
-// CODOL_ActorScriptedAnimBegin).  T5 parks the zombie there through a
-// script_origin anchor; here the scripted start does it.  A zombie killed in
-// the ground plays the rise death for how far out it was ("deathout" /
-// "deathhigh" notetracks).
-// --------------------------------------------------------------------------
-
-init_rise()
-{
-	level._zombie_rise_anims = [];
-	level._zombie_rise_anims[ 1 ] = [];
-	level._zombie_rise_anims[ 1 ][ "walk" ] = %ai_zombie_traverse_ground_v1_walk;
-	level._zombie_rise_anims[ 1 ][ "run" ] = %ai_zombie_traverse_ground_v1_run;
-	level._zombie_rise_anims[ 1 ][ "sprint" ] = %ai_zombie_traverse_ground_climbout_fast;
-	level._zombie_rise_anims[ 2 ] = [];
-	level._zombie_rise_anims[ 2 ][ "walk" ] = %ai_zombie_traverse_ground_v2_walk_altA;
-
-	level._zombie_rise_death_anims = [];
-	level._zombie_rise_death_anims[ 1 ] = [];
-	level._zombie_rise_death_anims[ 1 ][ "in" ] = [];
-	level._zombie_rise_death_anims[ 1 ][ "in" ][ 0 ] = %ai_zombie_traverse_ground_v1_deathinside;
-	level._zombie_rise_death_anims[ 1 ][ "in" ][ 1 ] = %ai_zombie_traverse_ground_v1_deathinside_alt;
-	level._zombie_rise_death_anims[ 1 ][ "out" ] = [];
-	level._zombie_rise_death_anims[ 1 ][ "out" ][ 0 ] = %ai_zombie_traverse_ground_v1_deathoutside;
-	level._zombie_rise_death_anims[ 1 ][ "out" ][ 1 ] = %ai_zombie_traverse_ground_v1_deathoutside_alt;
-	level._zombie_rise_death_anims[ 2 ] = [];
-	level._zombie_rise_death_anims[ 2 ][ "in" ] = [];
-	level._zombie_rise_death_anims[ 2 ][ "in" ][ 0 ] = %ai_zombie_traverse_ground_v2_death_low;
-	level._zombie_rise_death_anims[ 2 ][ "in" ][ 1 ] = %ai_zombie_traverse_ground_v2_death_low_alt;
-	level._zombie_rise_death_anims[ 2 ][ "out" ] = [];
-	level._zombie_rise_death_anims[ 2 ][ "out" ][ 0 ] = %ai_zombie_traverse_ground_v2_death_high;
-	level._zombie_rise_death_anims[ 2 ][ "out" ][ 1 ] = %ai_zombie_traverse_ground_v2_death_high_alt;
-
-	// T5 _zombiemode.gsc:1034-:1040.  The dirt and water rise effects ship
-	// only in zm_asylum_sh's zone (docs/zone_assets/ALL_fx.txt); every other
-	// map plays common_gametype_zm's misc/fx_zombie_body_dirt_billowing, so
-	// no client draws a missing-effect box.  zm_sumpf_sh's own zone is a
-	// usermap container the asset lister cannot read yet; if it carries
-	// T5's *_smpf water effects they can be mapped here.
-	level.zm_rise_t5_fx = getDvar( "mapname" ) == "zm_asylum_sh";
-	level._effect[ "rise_billow_common" ] = loadfx( "misc/fx_zombie_body_dirt_billowing" );
-	if ( !level.zm_rise_t5_fx )
-	{
-		add_sound( "zombie_rise", "zmb_zombie_spawn" );
-		return;
-	}
-	level._effect[ "rise_burst" ] = loadfx( "maps/zombie/fx_mp_zombie_hand_dirt_burst" );
-	level._effect[ "rise_billow" ] = loadfx( "maps/zombie/fx_mp_zombie_body_dirt_billowing" );
-	level._effect[ "rise_dust" ] = loadfx( "maps/zombie/fx_mp_zombie_body_dust_falling" );
-	level._effect[ "rise_burst_water" ] = loadfx( "maps/zombie/fx_zombie_body_wtr_burst" );
-	level._effect[ "rise_billow_water" ] = loadfx( "maps/zombie/fx_zombie_body_wtr_billowing" );
-	level._effect[ "rise_dust_water" ] = loadfx( "maps/zombie/fx_zombie_body_wtr_falling" );
-
-	add_sound( "zombie_rise", "zmb_zombie_spawn" );
-}
-
-// T5 :4421.  Returns the rise point's script_noteworthy ("find_flesh" for a
-// point inside the playable area), which zombie_think hands to
-// should_skip_teardown.
-do_zombie_rise()
-{
-	self endon( "death" );
-
-	// T5 :4425: version 1 or 2 at random; only version 1 for run and sprint.
-	self.zombie_rise_version = randomInt( 2 ) + 1;
-	if ( !isDefined( self.zombie_move_speed ) || self.zombie_move_speed != "walk" )
-		self.zombie_rise_version = 1;
-
-	spots = level.zombie_rise_spawners;
-	if ( !isDefined( spots ) || spots.size < 1 )
-	{
-		self show();
-		return undefined;
-	}
-	spot = spots[ randomInt( spots.size ) ];
-
-	angles = ( 0, 0, 0 );
-	if ( isDefined( spot.angles ) )
-		angles = spot.angles;
-
-	anim_org = spot.origin + ( 0, 0, -45 );
-	if ( self.zombie_rise_version == 2 )
-		anim_org = spot.origin + ( 0, 0, -14 );
-
-	// T5 :4509: face the spawner's target.
-	target_org = self zombie_desired_origin();
-	if ( isDefined( target_org ) )
-	{
-		face = vectorToAngles( target_org - spot.origin );
-		angles = ( 0, face[ 1 ], 0 );
-	}
-
-	self.in_the_ground = true;
-	self.zombie_rise_death_out = false;
-	self.zm_path_phase = "rise";
-
-	// The clip is played at the rise point, not where the spawner struct
-	// stands (T5 moves the anchor there first).
-	self forceTeleport( spot.origin, angles );
-
-	self thread zombie_rise_death_watch();
-	spot thread zombie_rise_fx( self );
-
-	rise_anim = level._zombie_rise_anims[ self.zombie_rise_version ][ self.zombie_move_speed ];
-	if ( !isDefined( rise_anim ) )
-		rise_anim = level._zombie_rise_anims[ 1 ][ "walk" ];
-
-	self animscripted( "rise", anim_org, angles, rise_anim, "noclip", %body, 1, 0.2 );
-	// T5 :4520 hide_pop: show once the clip has begun, so the zombie never
-	// pops at the start position above the ground.
-	self thread rise_show_after( 0.5 );
-	self rise_notetracks( "rise", getAnimLength( rise_anim ) );
-
-	self.in_the_ground = false;
-	self notify( "rise_anim_finished" );
-	spot notify( "stop_zombie_rise_fx" );
-	self stopanimscripted();
-	self show();
-	return spot.script_noteworthy;
-}
-
-rise_show_after( delay )
-{
-	self endon( "death" );
-	wait( delay );
-	self show();
-}
-
-// T5 :4554 handle_rise_notetracks, bounded by the clip's length.
-rise_notetracks( msg, length )
-{
-	self endon( "death" );
-	self endon( "rise_notes_done" );
-	self thread rise_notetracks_timeout( msg, length + 0.25 );
-	for ( ;; )
-	{
-		self waittill( msg, note );
-		if ( !isDefined( note ) || note == "end" || note == "rise_timeout" )
-			break;
-		if ( note == "deathout" || note == "deathhigh" )
-		{
-			self.zombie_rise_death_out = true;
-			self notify( "zombie_rise_death_out" );
-		}
-	}
-	self notify( "rise_notes_done" );
-}
-
-rise_notetracks_timeout( msg, seconds )
-{
-	self endon( "death" );
-	self endon( "rise_notes_done" );
-	wait( seconds );
-	self notify( msg, "rise_timeout" );
-}
-
-// T5 :4573 zombie_rise_death: a zombie shot while still in the ground dies
-// with the rise death for how far out it was.
-zombie_rise_death_watch()
-{
-	self endon( "rise_anim_finished" );
-	self waittill( "death" );
-	if ( !isDefined( self ) )
-		return;
-
-	which = "in";
-	if ( is_true( self.zombie_rise_death_out ) )
-		which = "out";
-	version = self.zombie_rise_version;
-	if ( !isDefined( version ) )
-		version = 1;
-	pool = level._zombie_rise_death_anims[ version ][ which ];
-	if ( isDefined( pool ) && pool.size > 0 )
-		self.deathanim = pool[ randomInt( pool.size ) ];
-}
-
-// T5 :4596 zombie_rise_fx / :4618 zombie_rise_burst_fx / :4696
-// zombie_rise_dust_fx.  self is the rise point.
-zombie_rise_fx( zombie )
-{
-	water = isDefined( self.script_string ) && self.script_string == "in_water";
-
-	zombie play_sound_on_ent( "zombie_rise" );
-	if ( !is_true( level.zm_rise_t5_fx ) )
-	{
-		playFx( level._effect[ "rise_billow_common" ], self.origin + ( 0, 0, 5 ) );
-		return;
-	}
-	if ( water )
-	{
-		playFx( level._effect[ "rise_burst_water" ], self.origin + ( 0, 0, randomIntRange( 5, 10 ) ) );
-		wait( 0.25 );
-		playFx( level._effect[ "rise_billow_water" ], self.origin + ( randomIntRange( -10, 10 ), randomIntRange( -10, 10 ), randomIntRange( 5, 10 ) ) );
-	}
-	else
-	{
-		playFx( level._effect[ "rise_burst" ], self.origin + ( 0, 0, randomIntRange( 5, 10 ) ) );
-		wait( 0.25 );
-		playFx( level._effect[ "rise_billow" ], self.origin + ( randomIntRange( -10, 10 ), randomIntRange( -10, 10 ), randomIntRange( 5, 10 ) ) );
-	}
-	playFx( level._effect[ "rise_billow_common" ], self.origin + ( 0, 0, 5 ) );
-
-	self thread zombie_rise_dust_fx( zombie, water );
-}
-
-zombie_rise_dust_fx( zombie, water )
-{
-	self endon( "stop_zombie_rise_fx" );
-	zombie endon( "death" );
-
-	fx = level._effect[ "rise_dust" ];
-	if ( water )
-		fx = level._effect[ "rise_dust_water" ];
-
-	// T5 plays the falling dirt on J_SpineUpper every 0.1 s for up to 7.5 s;
-	// every 0.5 s here keeps it to a few temp entities per riser.
-	for ( t = 0; t < 7.5; t += 0.5 )
-	{
-		playFxOnTag( fx, zombie, "j_spineupper" );
-		wait( 0.5 );
-	}
-}
-
-// T5 make_crawler (:4782) and the crawler half of zombie_gib_on_damage
-// (:2948-:3028).  A zombie whose leg came off keeps fighting on the ground:
-//   - no legs at all: walks on its hands (crawl_hand_1/2, 50/50) and dies
-//     with ai_zombie_crawl_death_v1;
-//   - one leg: one of crawl1-5 (randomInt( 5 )), each with its paired death
-//     (crawl2 and crawl4 die with crawl_death_v2, the rest with _v1).
-// The move-speed bucket is left as it was (the crawl clip sets the pace,
-// at moveplaybackrate 1), and the melee picks the stumpy / crawl sets
-// (zombie_combat.gsc pick_zombie_melee_anim).
-//
-// _zombiemode_gib.gsc has already set self.a.gib_ref and swapped the leg
-// models.  A crawler made by any other script (gibtest) gets T5 make_crawler's
-// own roll: a foot, then 3:1 that leg against no_legs.
-//
-// T5 :2955 setPhysParams( 15, 0, 24 ): the crawler's collision box drops to
-// 24 units so a player can step over it (native since this branch,
-// codol_actor_spawn.cpp ActorSetPhysParams).
+// T5 reaches this from zombie_gib_on_damage (_zombiemode_gib.gsc), which
+// has already swapped the legs for the gib models and set self.a.gib_ref to
+// the leg that went.  A crawler made by any other script has no gib yet, so
+// it loses both legs here the same way (T5's "no_legs").
 make_crawler()
 {
 	if ( !is_true( self.has_legs ) )
 		return;
 
-	if ( !isDefined( self.a.gib_ref ) || ( self.a.gib_ref != "no_legs" && self.a.gib_ref != "right_leg" && self.a.gib_ref != "left_leg" ) )
-	{
-		refs = [];
-		if ( randomInt( 2 ) == 0 )
-			side = "right_leg";
-		else
-			side = "left_leg";
-		refs[ 0 ] = side;
-		refs[ 1 ] = side;
-		refs[ 2 ] = side;
-		refs[ 3 ] = "no_legs";
-		self.a.gib_ref = refs[ randomInt( refs.size ) ];
-	}
-
 	self.has_legs = false;
-	self.needs_run_update = true;
-	self setPhysParams( 15, 0, 24 );
+	if ( !isDefined( self.a.gib_ref ) )
+		self.a.gib_ref = "no_legs";
 	if ( !is_true( self.gibbed ) )
 		self maps\_zombiemode_gib::do_gib();
 	self.a.pose = "prone";
 
+	self set_zombie_run_cycle( "walk" );
+
+	// T5 :2925: with no legs at all the zombie walks on its hands.
 	if ( self.a.gib_ref == "no_legs" )
 	{
-		self.deathanim = %ai_zombie_crawl_death_v1;
-		self set_run_anim( "crawl_hand_" + randomIntRange( 1, 3 ) );
+		hands = "crawl_hand_" + randomIntRange( 1, 3 );
+		if ( isDefined( level.scr_anim[ self.animname ][ hands ] ) )
+		{
+			self set_run_anim( hands );
+			self.crawl_anim = self.run_noncombatanim;
+		}
 	}
-	else
-	{
-		which_anim = randomInt( 5 );
-		if ( which_anim == 1 || which_anim == 3 )
-			self.deathanim = %ai_zombie_crawl_death_v2;
-		else
-			self.deathanim = %ai_zombie_crawl_death_v1;
-		self set_run_anim( "crawl" + ( which_anim + 1 ) );
-	}
-	self.crawl_anim = self.run_noncombatanim;
-	self apply_move_speed_scale();
-
-	if ( isDefined( self.crawl_anim_override ) )
-		self [[ self.crawl_anim_override ]]();
+	// setMoveSpeedScale is player-only on this engine; see
+	// apply_move_speed_scale() below.  0.35 is T5's crawler scalar, which is
+	// lower than any bucket move_speed_scale() returns, so it is passed
+	// explicitly rather than derived.
+	self apply_move_speed_scale( 0.35 );
 
 	// Re-pick immediately rather than at the next cycle boundary.
 	self notify( "killanimscript" );
@@ -1488,17 +1098,8 @@ zombie_death_animscript()
 {
 	// T5 :3353: a zombie killed at a window gives its attack spot back.
 	self reset_attack_spot();
-	// T5 zombie_death_event :3819-:3820: the eyes go out and the death vocal
-	// plays on the death itself, not after the fall.
 	self zombie_eye_glow_stop();
 	self do_zombies_playvocals( "death" );
-
-	// T5 :3382: the killing hit took both legs -- fall as a legless body.
-	// ai_gib_bothlegs_gib ships in no zm zone; the crawl death plays instead.
-	if ( isDefined( self.a ) && isDefined( self.a.gib_ref ) && self.a.gib_ref == "no_legs" && is_true( self.has_legs ) )
-		self.deathanim = %ai_zombie_crawl_death_v1;
-
-	return false;
 }
 
 // T5 _zombiemode_spawner.gsc:3518 zombie_damage(), scoring half.
@@ -1556,15 +1157,9 @@ zombie_damage_watch()
 		if ( !isDefined( attacker ) || !isPlayer( attacker ) )
 			continue;
 
-		// A beheaded zombie's bleed-out tick (_zombiemode_gib::damage_over_time)
-		// keeps the location of the hit that popped the head: T5 :2689 passes
-		// self.damagelocation on, so a bleed-out kill scores as a headshot.
-		dot_tick = isDefined( self.zm_gib_dot_time ) && self.zm_gib_dot_time == getTime();
-
 		self.attacker = attacker;
 		self.damagemod = mod;
-		if ( !dot_tick )
-			self.damagelocation = partName;
+		self.damagelocation = partName;
 		// CoDOL equipment kill hook: the killing hit's weapon (10th notify
 		// argument, codol_equipment_lifecycle.c CODOL_AddDamageWeaponArgument),
 		// read by zombie_death_event for level.zombie_kill_weapon_callbacks.
@@ -1584,42 +1179,23 @@ zombie_damage_watch()
 		if ( self.health <= 0 )
 			continue;
 
-		// T5 zombie_damage :3518 / zombie_damage_ads :3657: every surviving
-		// hit pays the plain "damage" event (10), aimed or not; damage_ads is
-		// only the flame branch's (:3675).  A bleed-out tick reaches T5's
-		// zombie_damage through the same path, so it pays too.
-		attacker maps\_zombiemode_score::player_add_points( "damage", mod, self.damagelocation );
+		// A beheaded zombie's bleed-out tick (_zombiemode_gib::damage_over_time)
+		// is not a hit the player landed.
+		if ( isDefined( self.zm_gib_dot_time ) && self.zm_gib_dot_time == getTime() )
+			continue;
 
-		// T5 :3583-:3625: explosives keep pace with the round.  A grenade
-		// that leaves the zombie standing adds round + 100..199; a projectile
-		// or explosive (Ray Gun, launchers) round * 0..99.
-		if ( !dot_tick )
-			self zombie_explosive_bonus_damage( attacker, mod );
+		attacker maps\_zombiemode_challenges::show_hitmarker( false );
+
+		// T5 pays damage_ads at 1.25x for a hit landed while aiming.
+		if ( attacker playerADS() > 0.9 )
+			attacker maps\_zombiemode_score::player_add_points( "damage_ads", mod, partName );
+		else
+			attacker maps\_zombiemode_score::player_add_points( "damage", mod, partName );
 
 		// T5 zombie_damage :3654 / zombie_damage_ads :3712 end every hit with
 		// check_for_instakill: while Insta-Kill is up the hit is lethal.
 		self maps\_zombiemode_powerups::check_for_instakill( attacker, mod, partName );
 	}
-}
-
-// T5 _zombiemode_spawner.gsc:3583-:3625, the explosive scaling inside
-// zombie_damage.  Applied as a second hit from the same player so the kill
-// and its points are the player's.
-zombie_explosive_bonus_damage( attacker, mod )
-{
-	if ( !isDefined( mod ) || self.health <= 0 )
-		return;
-
-	bonus = 0;
-	if ( mod == "MOD_GRENADE" || mod == "MOD_GRENADE_SPLASH" )
-		bonus = level.round_number + randomIntRange( 100, 200 );
-	else if ( mod == "MOD_PROJECTILE" || mod == "MOD_PROJECTILE_SPLASH" || mod == "MOD_EXPLOSIVE" )
-		bonus = level.round_number * randomIntRange( 0, 100 );
-
-	if ( bonus <= 0 )
-		return;
-
-	self doDamage( bonus, self.origin, attacker, attacker, 0, mod );
 }
 
 // T5 _zombiemode_spawner.gsc:3922 find_flesh plus the animscript handoff in
@@ -1648,31 +1224,7 @@ zombie_think()
 	// boards there, and only then seeks flesh.  The old loop went straight for
 	// the player, so with the entrance 100+ units to the side the zombie
 	// walked into the outer wall next to the window and stood there.
-	// T5 zombie_think :427-:495.
-	find_flesh_struct_string = undefined;
-	if ( is_true( self.zm_riser ) )
-		find_flesh_struct_string = self do_zombie_rise();
-
-	node = undefined;
-	if ( is_true( self.zm_chaser ) || ( isDefined( find_flesh_struct_string ) && find_flesh_struct_string == "find_flesh" ) )
-	{
-		// T5 should_skip_teardown: in the playable area already -- attack at
-		// once (a chaser first walks to the path node its spawner targets).
-		self.zm_path_phase = "chase_start";
-		if ( is_true( self.zm_chaser ) && isDefined( self.zm_spawn_point ) && isDefined( self.zm_spawn_point.target ) )
-		{
-			end_at_node = getNode( self.zm_spawn_point.target, "targetname" );
-			if ( isDefined( end_at_node ) )
-			{
-				self.goalradius = 32;
-				self setGoalPos( end_at_node.origin );
-				self zombie_wait_goal_or_bad_path();
-			}
-		}
-	}
-	else
-		node = self pick_entrance_node();
-
+	node = self pick_entrance_node();
 	if ( isDefined( node ) )
 	{
 		self.first_node = node;
@@ -1787,11 +1339,18 @@ zombie_think()
 				self maps\_zombiemode_cortex::cortex_join( player );
 		}
 
-		// No speed re-roll here.  T5's needs_run_update only tells
-		// animscripts\zombie_run.gsc to re-apply the current cycle; a zombie
-		// keeps the bucket it spawned with for life (zombie_speed_up and
-		// make_crawler change the clip, never re-roll it).  zombie_move.gsc
-		// re-reads the cycle every pass, which is the same effect.
+		// T5 :455.  The round raised level.zombie_move_speed since this actor
+		// picked its cycle: re-roll the bucket, re-pick the clip and re-scale
+		// the translation so all three agree again.  zombie_speed_up() below
+		// sets needs_run_update on every live zombie when it fires.
+		if ( is_true( self.needs_run_update ) && isDefined( self.a ) )
+		{
+			self set_zombie_run_cycle();
+			self apply_move_speed_scale();
+			// set_zombie_run_cycle raises the flag again (T5 :3699 does the
+			// same), so it is cleared after the call, not before.
+			self.needs_run_update = false;
+		}
 
 		// One-second poll, woken early when a Cortex event starts so the
 		// whole horde stops together.
@@ -2174,11 +1733,8 @@ zombie_death_event( zombie )
 	// not the one before it.
 	waittillframeend;
 
-	// T5 zombie_death_points :3259 pays only a player killer.  The world
-	// entity stands in for every non-player kill here (the failsafe cull, the
-	// between-round sweep, a nuke's world damage), and those pay nothing --
-	// the cached .attacker is the last player to HIT the zombie, not its
-	// killer.
+	if ( !isPlayer( attacker ) && isDefined( zombie ) && isDefined( zombie.attacker ) )
+		attacker = zombie.attacker;
 
 	mod = undefined;
 	hit_location = undefined;
@@ -2192,12 +1748,7 @@ zombie_death_event( zombie )
 
 	if ( isDefined( attacker ) && isPlayer( attacker ) )
 	{
-		// T5 zombie_death_points :3283.
-		event = "death";
-		if ( isDefined( kill_weapon ) && isSubStr( kill_weapon, "knife_ballistic_" ) && isDefined( mod ) &&
-			( mod == "MOD_MELEE" || mod == "MOD_IMPACT" ) )
-			event = "ballistic_knife_death";
-		attacker maps\_zombiemode_score::player_add_points( event, mod, hit_location );
+		attacker maps\_zombiemode_score::player_add_points( "death", mod, hit_location );
 
 		if ( !isDefined( attacker.kills ) )
 			attacker.kills = 0;
@@ -2216,40 +1767,19 @@ zombie_death_event( zombie )
 			attacker thread [[ level.zombie_kill_weapon_callbacks[ kill_weapon ] ]]( zombie, kill_weapon );
 	}
 
-	// T5 :3818.  The kill is what rolls for a power-up drop.  A kill this
-	// server makes for bookkeeping (round_spawn_failsafe's cull, clear_zombies'
-	// sweep) sets .no_powerup_drop and never rolls.
+	// T5 :3818.  The kill is what rolls for a power-up drop.
 	//
-	// T5 zombie_death_points :3257 / zombie_death_animscript :3388 /
-	// zombie_can_drop_powerups :3234: a drop is rolled for a zombie a
-	// PLAYER killed, or one the nuke killed ("nuked zombies don't give points
-	// but should still possibly drop powerups"), never for a trap / world
-	// kill, a tactical-grenade kill, or a zombie that has not yet come in
-	// through its window (no_powerups, here ignoreme).  The drop sits on the
-	// ground under the body (GroundTrace down 300).
-	if ( isDefined( zombie ) && !is_true( zombie.no_powerup_drop ) &&
-		( is_true( zombie.nuked ) || ( isDefined( attacker ) && isPlayer( attacker ) ) ) &&
-		!is_tactical_grenade_weapon( kill_weapon ) )
-	{
-		drop = zombie.origin;
-		trace = bulletTrace( zombie.origin + ( 0, 0, 5 ), zombie.origin - ( 0, 0, 300 ), false, zombie );
-		if ( trace[ "fraction" ] < 1 )
-			drop = trace[ "position" ];
-		level thread maps\_zombiemode_powerups::powerup_drop( drop, is_true( zombie.ignoreme ) );
-	}
+	// Two kinds of kill must NOT roll: a nuke (T5 suppresses it so one
+	// power-up cannot carpet the map with more) and a kill this server makes
+	// for bookkeeping -- round_spawn_failsafe's stuck-actor cull and
+	// clear_zombies' between-round sweep, neither of which T5 has at all.
+	// Both set .no_powerup_drop.
+	if ( isDefined( zombie ) && !is_true( zombie.nuked ) && !is_true( zombie.no_powerup_drop ) )
+		level thread maps\_zombiemode_powerups::powerup_drop( zombie.origin, is_true( zombie.ignoreme ) );
 
 	zombie_list_compact();
 
 	level notify( "zom_kill" );
-}
-
-// T5 _zombiemode_utility.gsc is_tactical_grenade: the lures (cymbal monkey,
-// black hole bomb) never make a power-up drop.
-is_tactical_grenade_weapon( weapon )
-{
-	if ( !isDefined( weapon ) )
-		return false;
-	return weapon == "zombie_cymbal_monkey" || weapon == "zombie_black_hole_bomb";
 }
 
 // T5 _zombiemode.gsc:4059.  Fell out of the world, or has not moved 24 inches
@@ -2270,10 +1800,6 @@ round_spawn_failsafe()
 		if ( !is_true( level.zombie_vars[ "zombie_use_failsafe" ] ) )
 			return;
 
-		// T5 :4075.
-		if ( is_true( self.ignore_round_spawn_failsafe ) )
-			return;
-
 		wait( 30 );
 
 		// T5 :4081: a zombie that tore a board in the last 8 s is working its
@@ -2281,17 +1807,8 @@ round_spawn_failsafe()
 		if ( isDefined( self.lastchunk_destroy_time ) && getTime() - self.lastchunk_destroy_time < 8000 )
 			continue;
 
-		// T5 :4092-:4120 with level.put_timed_out_zombies_back_in_queue (T5
-		// _zombiemode.gsc:27 sets it true): a culled zombie is handed back to
-		// the round's spawn queue -- always when it fell out of the world, and
-		// when it stood still only if it had come in through its window
-		// (ignoreall off) and was not being nuked.  Never in a hound round.
-		requeue = !( flag_exist( "dog_round" ) && flag( "dog_round" ) );
-
 		if ( self.origin[ 2 ] < level.zombie_vars[ "below_world_check" ] )
 		{
-			if ( requeue )
-				level.zombie_total++;
 			self.no_powerup_drop = true;
 			self doDamage( self.health + 100, ( 0, 0, 0 ) );
 			return;
@@ -2299,8 +1816,6 @@ round_spawn_failsafe()
 
 		if ( distanceSquared( self.origin, prevorigin ) < 576 )
 		{
-			if ( requeue && !is_true( self.ignoreall ) && !is_true( self.nuked ) && !is_true( self.marked_for_death ) )
-				level.zombie_total++;
 			self.no_powerup_drop = true;
 			self doDamage( self.health + 100, ( 0, 0, 0 ) );
 			return;
@@ -2310,54 +1825,35 @@ round_spawn_failsafe()
 	}
 }
 
-// T5 _zombiemode.gsc:3294 zombie_speed_up, started by round_spawning for
-// rounds below 10.  From round 4, once the round's spawning is nearly done
-// (zombie_total <= 4) and at most three are left alive, the LAST zombie --
-// only when exactly one is left and it still has legs -- switches to a
-// sprint clip (sprint1-3).  T5 changes only the clip, not the bucket.
+// T5 _zombiemode.gsc:3294 zombie_speed_up, scalar half.  T5 also swaps the
+// run cycle animation, which is left out.
 zombie_speed_up()
 {
+	level endon( "end_of_round" );
+
 	if ( level.round_number <= 3 )
 		return;
 
-	level endon( "intermission" );
-	level endon( "end_of_round" );
-	level endon( "restart_round" );
-
-	while ( level.zombie_total > 4 )
-		wait( 2.0 );
-
-	while ( get_enemy_count() > 3 )
-		wait( 2.0 );
-
 	for ( ;; )
 	{
-		zombies = [];
+		wait( 5 );
+
+		if ( get_enemy_count() > 3 || level.zombie_total > 0 )
+			continue;
+
 		for ( i = 0; i < level.zombies.size; i++ )
 		{
-			z = level.zombies[ i ];
-			if ( isDefined( z ) && isAlive( z ) && !is_true( z.ignore_enemy_count ) )
-				zombies[ zombies.size ] = z;
+			if ( !isDefined( level.zombies[ i ] ) )
+				continue;
+			// T5 :3294 swaps the run CYCLE as well as the scalar.  Passing
+			// the bucket explicitly is T5's own set_zombie_run_cycle( speed )
+			// form and skips the re-roll, so every straggler ends up
+			// sprinting rather than re-rolling into a walk.
+			level.zombies[ i ] set_zombie_run_cycle( "sprint" );
+			level.zombies[ i ].needs_run_update = false;
+			level.zombies[ i ] apply_move_speed_scale();
 		}
-		if ( zombies.size < 1 )
-			return;
-
-		if ( zombies.size == 1 && is_true( zombies[ 0 ].has_legs ) && !is_true( zombies[ 0 ].isdog ) )
-		{
-			if ( isDefined( level.zombie_speed_up ) )
-			{
-				zombies[ 0 ] thread [[ level.zombie_speed_up ]]();
-				return;
-			}
-			if ( !is_true( zombies[ 0 ].zm_last_sprint ) )
-			{
-				zombies[ 0 ].zm_last_sprint = true;
-				codolprintln( "CoDOL zm: round " + level.round_number + " last zombie (ent " + zombies[ 0 ] getEntityNumber() + ") sprints" );
-				zombies[ 0 ] set_run_anim( "sprint" + randomIntRange( 1, 4 ) );
-				zombies[ 0 ] apply_move_speed_scale();
-			}
-		}
-		wait( 0.5 );
+		return;
 	}
 }
 
@@ -2652,10 +2148,6 @@ tear_into_building_inner( node )
 	if ( all_chunks_destroyed( node.barrier_chunks ) )
 		return;
 
-	// The window this zombie is working (T5 self.first_node); the reach
-	// through the boards reads it.
-	self.zm_tear_node = node;
-
 	// T5 :785.  No free attack spot: taunt at the window and come back.
 	if ( !self get_attack_spot( node ) )
 	{
@@ -2720,7 +2212,7 @@ tear_into_building_inner( node )
 		// walk cycle back over the tear every 0.2 s and no "board" note ever
 		// fired -- no board came down all session.  animscripted is native
 		// now (codol_script_anim.c / codol_actor_lifecycle.cpp).
-		self animscripted( "tear_anim", self.attacking_spot, node.angles, tear_anim, "normal", %body, 1, 0.3 );
+		self animscripted( "tear_anim", self.attacking_spot, node.angles, tear_anim, "normal", %body, self.animplaybackrate, 0.3 );
 
 		self zombie_tear_notetracks( "tear_anim", chunk, node );
 
@@ -2733,11 +2225,8 @@ tear_into_building_inner( node )
 			return;
 		}
 
-		// T5 :911-:915.  Between boards, maybe reach through at a player
-		// standing at the window; a legged zombie that does not reach may
-		// taunt.
-		attack = self should_attack_player_thru_boards();
-		if ( !attack && is_true( self.has_legs ) )
+		// T5 :912.  Between boards, reach through at anyone standing there.
+		if ( !self should_attack_player_thru_boards() && is_true( self.has_legs ) )
 			self do_a_taunt();
 
 		wait_network_frame();
@@ -2823,168 +2312,55 @@ get_closest_non_destroyed_chunk( org, chunks )
 	return best;
 }
 
-// T5 _zombiemode_spawner.gsc:969 should_attack_player_thru_boards.  A
-// legged zombie at its attack spot, with a live player (not downed) within
-// 90 units in 2D, reaches through the boards half the time
-// (zombie_reachin_freq 50).  The arm follows the spot: the centre spot (0)
-// picks either, the left spot (2) the right arm, the right spot (1) the left.
-// Returns true when it reached.
+// T5 :917 should_attack_player_thru_boards, reduced to its question: is a
+// player close enough on the other side of this barrier to swipe at.  T5's
+// version additionally traces; the native melee() traces for itself, so this
+// only decides whether to play the reach-through clip instead of a taunt.
 should_attack_player_thru_boards()
 {
-	if ( !is_true( self.has_legs ) )
-		return false;
-
-	// T5 :979: an unbroken glass chunk still covers the window.
-	if ( isDefined( self.zm_tear_node ) && isDefined( self.zm_tear_node.barrier_chunks ) )
-	{
-		for ( i = 0; i < self.zm_tear_node.barrier_chunks.size; i++ )
-		{
-			chunk = self.zm_tear_node.barrier_chunks[ i ];
-			if ( isDefined( chunk ) && is_true( chunk.unbroken ) )
-				return false;
-		}
-	}
-
-	if ( getDvar( "zombie_reachin_freq" ) == "" )
-		setDvar( "zombie_reachin_freq", "50" );
-	freq = getDvarInt( "zombie_reachin_freq" );
-
 	players = getPlayers();
-	self.player_targets = [];
+
 	for ( i = 0; i < players.size; i++ )
 	{
-		if ( isAlive( players[ i ] ) && !is_true( players[ i ].laststand ) && !isDefined( players[ i ].revivetrigger ) &&
-			distance2D( self.origin, players[ i ].origin ) <= 90 )
-			self.player_targets[ self.player_targets.size ] = players[ i ];
-	}
-
-	if ( self.player_targets.size < 1 || freq < randomInt( 100 ) )
-		return false;
-
-	if ( !isDefined( level._zombie_window_attack ) || level._zombie_window_attack.size < 2 )
-		return false;
-
-	arm_l = level._zombie_window_attack[ 0 ];
-	arm_r = level._zombie_window_attack[ 1 ];
-	reach = arm_l;
-	if ( isDefined( self.attacking_spot_index ) && self.attacking_spot_index == 2 )
-		reach = arm_r;
-	else if ( !isDefined( self.attacking_spot_index ) || self.attacking_spot_index == 0 )
-	{
-		if ( randomInt( 100 ) > 50 )
-			reach = arm_l;
-		else
-			reach = arm_r;
-	}
-
-	self.old_origin = self.origin;
-	if ( zm_dvar_int( "scr_zm_spawn_log", 0 ) > 0 )
-		codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " reaches through the boards at " + self.player_targets.size + " player(s)" );
-	self do_zombies_playvocals( "attack" );
-	// T5 :1021 animscripted( "window_melee", self.origin, self.angles, anim, "normal", undefined, 1, 0.3 ).
-	self animscripted( "window_melee", self.origin, self.angles, reach, "normal", %body, 1, 0.3 );
-	self window_notetracks( "window_melee", reach );
-	return true;
-}
-
-// T5 :1051 window_notetracks.  On each "fire" note the swipe lands on a
-// targeted player still within 90 units of the zombie (2D, same floor) and
-// within 51 units of the window's repair trigger point, for the zombie's
-// meleeDamage (60) as MOD_MELEE.  Bounded by the clip's length in case its
-// "end" never arrives.
-window_notetracks( msg, reach )
-{
-	self endon( "death" );
-
-	deadline = getTime() + int( getAnimLength( reach ) * 1000 ) + 250;
-	self thread window_notetracks_timeout( msg, deadline );
-
-	for ( ;; )
-	{
-		self waittill( msg, notetrack );
-		if ( !isDefined( notetrack ) || notetrack == "end" || notetrack == "window_timeout" )
-		{
-			self notify( "window_notetracks_done" );
-			self stopanimscripted();
-			return;
-		}
-		if ( notetrack != "fire" )
-		{
-			self animscripts\zombie_shared::HandleNoteTrack( notetrack, msg );
-			continue;
-		}
-
-		trigger_location = undefined;
-		if ( isDefined( self.zm_tear_node ) )
-		{
-			trigger_location = self.zm_tear_node.trigger_location;
-			if ( !isDefined( trigger_location ) )
-				trigger_location = self.zm_tear_node;
-		}
-		if ( !isDefined( trigger_location ) || !isDefined( self.player_targets ) )
+		if ( !is_player_valid( players[ i ] ) )
 			continue;
 
-		for ( i = 0; i < self.player_targets.size; i++ )
+		if ( distanceSquared( self.origin, players[ i ].origin ) < 16384 )
 		{
-			player = self.player_targets[ i ];
-			if ( !isDefined( player ) || !isAlive( player ) || is_true( player.laststand ) )
-				continue;
-			dist = distance2D( player.origin, self.origin );
-			height = player.origin[ 2 ] - self.origin[ 2 ];
-			if ( dist >= 90 || height * height >= 90 * 90 )
-				continue;
-			dist = distance2D( player.origin, trigger_location.origin );
-			height = player.origin[ 2 ] - trigger_location.origin[ 2 ];
-			if ( dist >= 51 || height * height >= 51 * 51 )
-				continue;
-			before = player.health;
-			player doDamage( self.meleeDamage, self.origin, self, self, 0, "MOD_MELEE" );
-			if ( zm_dvar_int( "scr_zm_spawn_log", 0 ) > 0 )
-				codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " swipe through the boards hit " + player.name + " health " + before + " -> " + player.health );
-			break;
+			if ( isDefined( level._zombie_window_attack ) && level._zombie_window_attack.size > 0 )
+			{
+				reach = level._zombie_window_attack[ randomInt( level._zombie_window_attack.size ) ];
+				// T5 :471 animScripted( "window_melee", self.origin, self.angles, reach, "normal", undefined, 1, 0.3 ).
+				self animscripted( "windowattack", self.origin, self.angles, reach, "normal", %body, self.animplaybackrate, 0.3 );
+				self animscripts\zombie_shared::DoNoteTracksForTime( getAnimLength( reach ), "windowattack" );
+			}
+			return true;
 		}
 	}
+
+	return false;
 }
 
-window_notetracks_timeout( msg, deadline )
-{
-	self endon( "death" );
-	self endon( "window_notetracks_done" );
-	while ( getTime() < deadline )
-		wait( 0.05 );
-	self notify( msg, "window_timeout" );
-}
-
-// T5 :937 do_a_taunt.  Only 5% of the time (zombie_taunt_freq); a crawler
-// never taunts.  T5 plays the "taunt" vocal and the clip in place, then puts
-// the zombie back where it stood.
+// T5 :960 do_a_taunt.
 do_a_taunt()
 {
-	// T5 :939 ends on "death" only; see zombie_tear_notetracks.
+	// T5 :424 ends on "death" only; see zombie_tear_notetracks.
 	self endon( "death" );
 
 	if ( !is_true( self.has_legs ) )
-		return false;
-
-	if ( getDvar( "zombie_taunt_freq" ) == "" )
-		setDvar( "zombie_taunt_freq", "5" );
-	freq = getDvarInt( "zombie_taunt_freq" );
-	if ( freq < randomInt( 100 ) )
-		return false;
+		return;
 
 	pool = level._zombie_board_taunt[ self.animname ];
 	if ( !isDefined( pool ) || pool.size < 1 )
-		return false;
+		return;
 
 	taunt = pool[ randomInt( pool.size ) ];
 
-	self.old_origin = self.origin;
 	self play_sound_on_ent( "zombie_taunt" );
-	// T5 :956 animscripted( "zombie_taunt", self.origin, self.angles, anime, "normal", undefined, 1, 0.4 ).
-	self animscripted( "tauntanim", self.origin, self.angles, taunt, "normal", %body, 1, 0.4 );
+	// T5 :437 animScripted( "zombie_taunt", self.origin, self.angles, anime, "normal", undefined, 1, 0.4 ).
+	self animscripted( "tauntanim", self.origin, self.angles, taunt, "normal", %body, self.animplaybackrate, 0.4 );
 	self animscripts\zombie_shared::DoNoteTracksForTime( getAnimLength( taunt ), "tauntanim" );
 	self stopanimscripted();
-	return true;
 }
 
 // The seeker's barrier test.  T5 reaches tear_into_building from find_flesh

@@ -123,51 +123,38 @@ zm_downed()
 		level thread solo_retreat_think( self );
 }
 
-// While the solo player self-revives, send hunting zombies and hounds to a
-// map-authored spawner at least 640 units from the body.  The native actor
-// perception pass otherwise keeps its old enemy and replaces script goals.
+// Retreat to an authored window landing INSIDE an enabled player zone.
+// Exterior spawners require reversing a one-way window negotiation: Asylum's
+// revive log showed the boss and horde repeatedly failing that impossible path.
+// Prefer the farthest landing; the 640-unit minimum preserves room to revive.
 solo_retreat_think( player )
 {
-	points = level.enemy_spawns;
-	if ( !isDefined( points ) )
-		points = [];
-	best = undefined;
+	goal = undefined;
 	best_dist = 640 * 640;
-	for ( i = 0; i < points.size; i++ )
+	if ( isDefined( level.exterior_goals ) )
 	{
-		d = distanceSquared( points[ i ].origin, player.origin );
-		if ( d > best_dist )
+		for ( i = 0; i < level.exterior_goals.size; i++ )
 		{
-			best = points[ i ];
-			best_dist = d;
-		}
-	}
-	// The open starting zone can have only nearby spawners.  If so, use a
-	// farther authored point from another zone instead of keeping the horde
-	// beside the downed player.
-	if ( !isDefined( best ) )
-	{
-		points = get_struct_array( "zombie_spawner", "script_noteworthy" );
-		if ( isDefined( points ) )
-		{
-			for ( i = 0; i < points.size; i++ )
+			inside = maps\_zombiemode_zone_manager::entrance_inside_point( level.exterior_goals[ i ] );
+			if ( !isDefined( inside ) )
+				continue;
+			zone = maps\_zombiemode_zone_manager::zone_for_point( inside, 256 );
+			if ( !isDefined( zone ) || !zone.enabled )
+				continue;
+			d = distanceSquared( inside, player.origin );
+			if ( d > best_dist )
 			{
-				d = distanceSquared( points[ i ].origin, player.origin );
-				if ( d > best_dist )
-				{
-					best = points[ i ];
-					best_dist = d;
-				}
+				goal = inside;
+				best_dist = d;
 			}
 		}
 	}
-	if ( !isDefined( best ) )
+	if ( !isDefined( goal ) )
 	{
-		codolprintln( "CoDOL zm: no distant solo retreat spawner" );
+		codolprintln( "CoDOL zm: no distant playable solo retreat landing" );
 		return;
 	}
 
-	goal = best.origin;
 	codolprintln( "CoDOL zm: solo retreat to " + goal + " from " + player.origin );
 	while ( isDefined( player ) && is_true( player.laststand ) && getPlayers().size == 1 && !level.gameEnded )
 	{
@@ -178,12 +165,17 @@ solo_retreat_think( player )
 				continue;
 			// An actor at a boarded entrance owns that route until it starts
 			// hunting.  Those actors are already away from the player.
-		if ( !is_true( z.isdog ) && ( !isDefined( z.zm_path_phase ) || z.zm_path_phase != "hunt" ) )
+			if ( !is_true( z.isdog ) && ( !isDefined( z.zm_path_phase ) || z.zm_path_phase != "hunt" ) )
 				continue;
 			z.zm_solo_retreat = true;
 			z.ignoreall = true;
 			z.goalradius = 96;
 			z setGoalPos( goal );
+			// Spread the first path searches over frames when the whole horde
+			// changes destination together. Recheck the down before each actor.
+			waittillframeend;
+			if ( !isDefined( player ) || !is_true( player.laststand ) || getPlayers().size != 1 || level.gameEnded )
+				break;
 		}
 		wait( 0.1 );
 	}

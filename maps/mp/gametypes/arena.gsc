@@ -305,11 +305,11 @@ arenaFlag()
 	// check to see if arena flag is present otherwise throw a warning and use the dom Flag.
 	if ( !isDefined( arenaFlag[0] ) )
 	{	
-		println("WARNING: no arena flags specified attempting to use Dom flag_b" );
+		{}
 	
 		if ( (primaryFlags.size + secondaryFlags.size) < 1 )
 		{
-			printLn( "^1Not enough domination flags found in level!" );
+			{}
 			maps\mp\gametypes\_callbacksetup::AbortLevel();
 			return;
 		}

@@ -1011,7 +1011,7 @@ _settext( text )
 			elem settext( elem.realtext );
 		}
 	}
-	println( "SIze of elems: " + sizeofelems );
+	{}
 }
 
 controler_hud_add( identifier, inc, initial_text, initial_description_text, initial_value )

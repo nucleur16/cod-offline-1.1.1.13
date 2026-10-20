@@ -85,18 +85,18 @@ warn_about_old_destructible()
 	destructibles = GetEntArray( "destructible", "targetname" );
 	if ( destructibles.size != 0 )
 	{
-		PrintLn( "This map contains old destructible vehicle prefabs which no longer work properly. Please update them to use the new vehicle prefabs in map_source\\prefabs\\destructible\\. See console for a list of vehicles that you need to updated." );
+		{}
 
-		PrintLn( "^1###################################################^0" );
-		PrintLn( "^1###################################################^0" );
-		PrintLn( "^1###################################################^0" );
+		{}
+		{}
+		{}
 
 		foreach ( vehicle in destructibles )
-			PrintLn( "^1Destructible vehicle at ( " + vehicle.origin + " ) uses an old prefab. Update it to use a prefab located in prefabs\destructible\^0" );
+			{}
 
-		PrintLn( "^1###################################################^0" );
-		PrintLn( "^1###################################################^0" );
-		PrintLn( "^1###################################################^0" );
+		{}
+		{}
+		{}
 
 		AssertMsg( "This map contains old destructible vehicle prefabs which no longer work properly. Please update them to use the new vehicle prefabs in map_source\\prefabs\\destructible\\. See console for a list of vehicles that you need to updated." );
 	}
@@ -132,35 +132,35 @@ find_destructibles()
 	if ( GetDvarInt( "destructibles_locate" ) > 0 )
 	{
 		// Print out the destructibles we created and where they are all located
-		PrintLn( "##################" );
-		PrintLn( "DESTRUCTIBLE LIST:" );
-		PrintLn( "##################" );
-		PrintLn( "" );
+		{}
+		{}
+		{}
+		{}
 
 		keys = GetArrayKeys( level.created_destructibles );
 		foreach ( key in keys )
 		{
-			PrintLn( key + ": " + level.created_destructibles[ key ].size );
+			{}
 			total += level.created_destructibles[ key ].size;
 		}
-		PrintLn( "" );
-		PrintLn( "Total: " + total );
-		PrintLn( "" );
-		PrintLn( "Locations:" );
+		{}
+		{}
+		{}
+		{}
 
 		foreach ( key in keys )
 		{
 			foreach ( destructible in level.created_destructibles[ key ] )
 			{
-				PrintLn( key + ": " + destructible.origin );
+				{}
 				//destructible thread maps\_debug::drawOrgForever();
 			}
 		}
 
-		PrintLn( "" );
-		PrintLn( "##################" );
-		PrintLn( "##################" );
-		PrintLn( "##################" );
+		{}
+		{}
+		{}
+		{}
 
 		level.created_destructibles = undefined;
 	}
@@ -1040,15 +1040,15 @@ destructible_think()
 		/#
 		if ( GetDvarInt( "debug_destructibles" , 0 ) == 1 )
 		{
-			Print3d( point, ".", ( 1, 1, 1 ), 1.0, 0.5, 100 );
+			{}
 			if ( IsDefined( damage ) )
-				IPrintLn( "damage amount: " + damage );
+				{}
 			if ( IsDefined( modelName ) )
-				IPrintLn( "hit model: " + modelName );
+				{}
 			if ( IsDefined( tagName ) )
-				IPrintLn( "hit model tag: " + tagName );
+				{}
 			else
-				IPrintLn( "hit model tag: " );
+				{}
 		}
 		#/
 
@@ -1077,7 +1077,7 @@ destructible_think()
 		{
 			/#
 			if ( GetDvarInt( "debug_destructibles" , 0 ) == 1 )
-				IPrintLn( "type = splash" );
+				{}
 			#/
 
 			if ( IsDefined( level.destructible_type[ self.destuctableInfo ].parts[ 0 ][ 0 ].v[ "splash_damage_scaler" ] ) )
@@ -1250,9 +1250,9 @@ destructible_update_part( damage, modelName, tagName, point, direction_vec, atta
 		/#
 		if ( GetDvarInt( "debug_destructibles" , 0 ) == 1 )
 		{
-			IPrintLn( "stateindex: " + stateIndex );
-			IPrintLn( "damage: " + damage );
-			IPrintLn( "health( before ): " + self.destructible_parts[ partIndex ].v[ "health" ] );
+			{}
+			{}
+			{}
 		}
 		#/
 
@@ -1294,7 +1294,7 @@ destructible_update_part( damage, modelName, tagName, point, direction_vec, atta
 
 		/#
 		if ( GetDvarInt( "debug_destructibles" , 0 ) == 1 )
-			IPrintLn( "health( after ): " + self.destructible_parts[ partIndex ].v[ "health" ] );
+			{}
 		#/
 
 		// if the part still has health left then we're done
@@ -1707,7 +1707,7 @@ destructible_splash_damage( damage, point, direction_vec, attacker, damageType )
 		if ( GetDvarInt( "debug_destructibles" , 0 ) == 1 )
 		{
 			if ( IsDefined( part.v[ "tagName" ] ) )
-				Print3d( self GetTagOrigin( part.v[ "tagName" ] ), damageAmount, ( 1, 1, 1 ), 1.0, 0.5, 200 );
+				{}
 		}
 		#/
 
@@ -2047,8 +2047,8 @@ health_drain( amount, interval, partIndex, modelName, tagName, badplaceRadius, b
 		/#
 		if ( GetDvarInt( "debug_destructibles" , 0 ) == 1 )
 		{
-			IPrintLn( "health before damage: " + self.destructible_parts[ partIndex ].v[ "health" ] );
-			IPrintLn( "doing " + amount + " damage" );
+			{}
+			{}
 		}
 		#/
 		self notify( "damage", amount, self, ( 0, 0, 0 ), ( 0, 0, 0 ), "MOD_UNKNOWN", modelName, tagName );
@@ -2870,8 +2870,8 @@ debug_radiusdamage_circle( center, radius, maxdamage, mindamage )
 	thread debug_circle_drawlines( circlepoints, 5.0, ( 1, 0, 0 ), center );
 
 	// draw center and range with values
-	Print3d( center, maxdamage, ( 1, 1, 1 ), 1, 1, 100 );
-	Print3d( center + ( radius, 0, 0 ), mindamage, ( 1, 1, 1 ), 1, 1, 100 );
+	{}
+	{}
 }
 
 debug_circle_drawlines( circlepoints, duration, color, center )
@@ -3033,7 +3033,7 @@ destructible_fx_think( action_v, eModel, damageType, partIndex, groupNum )
 	
 	if ( !isDefined( action_v[ "fx" ][ groupNum ] ) )
 	{
-		println( "^1destructible tried to use custom groupNum for FX but that group didn't exist" );
+		{}
 		groupNum = randomInt( action_v[ "fx_filename" ].size );
 	}
 	

@@ -139,7 +139,7 @@ killcam(
 	
 	assertex( self.archivetime <= killcamoffset + 0.0001, "archivetime: " + self.archivetime + ", killcamoffset: " + killcamoffset );
 	if ( self.archivetime < killcamoffset )
-		println( "WARNING: Code trimmed killcam time by " + (killcamoffset - self.archivetime) + " seconds because it doesn't have enough game time recorded!" );
+		{}
 	
 	camtime = self.archivetime - .05 - predelay;
 	killcamlength = camtime + postdelay;
@@ -147,7 +147,7 @@ killcam(
 	
 	if ( camtime <= 0 ) // if we're not looking back in time far enough to even see the death, cancel
 	{
-		println( "Cancelling killcam because we don't even have enough recorded to show the death." );
+		{}
 		
 		self.sessionstate = "dead";
 		self.forcespectatorclient = -1;
@@ -403,7 +403,7 @@ endKillcamIfTargetChanges( attackerNum )
 		if ( followTarget >= 0 && followTarget != attackerNum )
 		{
 			victimNum = self getEntityNumber();
-			println( "Killcam target changed: victim " + victimNum + " attacker " + attackerNum + " follow " + followTarget );
+			{}
 			self notify("abort_killcam");
 			return;
 		}

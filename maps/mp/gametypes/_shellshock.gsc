@@ -87,8 +87,8 @@ dirtEffect( position )
 	fDot = vectorDot( grenadeVec, forwardVec );
 	rDot = vectorDot( grenadeVec, rightVec );
 	
-	printLn( fDot );
-	printLn( rDot );
+	{}
+	{}
 	
 	effectMenus = [];
 	if ( fDot > 0 && fDot > 0.5 && !codolIsWeaponBase( self getCurrentWeapon(), "riotshield_mp" ) )

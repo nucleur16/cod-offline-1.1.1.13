@@ -410,7 +410,7 @@ flushPairs( pairs )
 			line += " (bot, not sent)";
 		for ( i = 0; i < pairs.size; i += 2 )
 			line += " " + pairs[i] + "=\"" + pairs[i + 1] + "\"";
-		codolPrintLn( line );
+		{}
 	}
 	if ( botSummary )
 		return;
