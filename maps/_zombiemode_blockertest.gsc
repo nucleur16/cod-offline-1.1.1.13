@@ -48,7 +48,7 @@ blockertest_watch()
 		{
 		case "addbot":
 			addtestclient();
-			codolprintln( "CoDOL blockertest: addtestclient" );
+			{}
 			break;
 
 		case "dump":
@@ -92,7 +92,7 @@ blockertest_triggers()
 blockertest_dump()
 {
 	trigs = blockertest_triggers();
-	codolprintln( "CoDOL blockertest: " + trigs.size + " door/debris triggers alive" );
+	{}
 	for ( i = 0; i < trigs.size; i++ )
 	{
 		t = trigs[ i ];
@@ -105,14 +105,12 @@ blockertest_dump()
 		pieces = 0;
 		if ( isDefined( t.target ) )
 			pieces = getEntArray( t.target, "targetname" ).size;
-		codolprintln( "CoDOL blockertest:   ent " + t getEntityNumber() + " " + t.targetname + " origin " + t.origin +
-			" target " + target + " (" + pieces + " pieces) flag " + flag );
+		{}
 	}
 
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
-		codolprintln( "CoDOL blockertest:   client " + players[ i ] getEntityNumber() + " score " + players[ i ].score +
-			" origin " + players[ i ].origin );
+		{}
 
 	blockers = [];
 	blockers[ 0 ] = "upstairs_blocker";
@@ -127,8 +125,7 @@ blockertest_dump()
 			kind = "piece";
 			if ( isDefined( pieces[ i ].script_noteworthy ) )
 				kind = pieces[ i ].script_noteworthy;
-			codolprintln( "CoDOL blockertest:   " + blockers[ b ] + " " + kind + " ent " + pieces[ i ] getEntityNumber() +
-				" origin " + pieces[ i ].origin );
+			{}
 		}
 	}
 
@@ -139,7 +136,7 @@ blockertest_dump()
 	for ( i = 0; i < flags.size; i++ )
 	{
 		if ( isDefined( level.flag ) && isDefined( level.flag[ flags[ i ] ] ) )
-			codolprintln( "CoDOL blockertest:   flag " + flags[ i ] + " = " + level.flag[ flags[ i ] ] );
+			{}
 	}
 }
 
@@ -161,7 +158,7 @@ blockertest_buy( verb, clientnum, entnum )
 	}
 	if ( !isDefined( player ) || !isDefined( trig ) )
 	{
-		codolprintln( "CoDOL blockertest: no client " + clientnum + " or no live trigger ent " + entnum );
+		{}
 		return;
 	}
 
@@ -174,8 +171,7 @@ blockertest_buy( verb, clientnum, entnum )
 	before = player.score;
 	player setOrigin( trig.origin - ( 0, 0, 40 ) );
 	player setPlayerAngles( ( 0, 0, 0 ) );
-	codolprintln( "CoDOL blockertest: " + verb + " client " + clientnum + " on ent " + entnum + " (" + trig.targetname +
-		" " + trig.origin + ") score before " + before + " cost " + cost );
+	{}
 
 	player codol_botPressButtons( 40, 2 );
 	if ( verb == "fire" )
@@ -186,8 +182,7 @@ blockertest_buy( verb, clientnum, entnum )
 	}
 
 	wait( 2.5 );
-	codolprintln( "CoDOL blockertest: after " + verb + " client " + clientnum + " score " + player.score +
-		" (charged " + ( before - player.score ) + ")" );
+	{}
 	blockertest_dump();
 }
 
@@ -196,18 +191,18 @@ blockertest_board( index, clientnum )
 {
 	if ( !isDefined( level.exterior_goals ) || index < 0 || index >= level.exterior_goals.size )
 	{
-		codolprintln( "CoDOL blockertest: no barrier " + index );
+		{}
 		return;
 	}
 	node = level.exterior_goals[ index ];
 	if ( !isDefined( node.barrier_chunks ) || node.barrier_chunks.size < 1 )
 	{
-		codolprintln( "CoDOL blockertest: barrier " + index + " has no chunks" );
+		{}
 		return;
 	}
 	chunks = node.barrier_chunks;
 
-	codolprintln( "CoDOL blockertest: board barrier " + index + " at " + node.origin + ", " + chunks.size + " chunks" );
+	{}
 	for ( i = 0; i < chunks.size; i++ )
 	{
 		maps\_zombiemode_blockers::remove_chunk( chunks[ i ], node, true );
@@ -215,8 +210,7 @@ blockertest_board( index, clientnum )
 	}
 	wait( 2 );
 	for ( i = 0; i < chunks.size; i++ )
-		codolprintln( "CoDOL blockertest:   torn chunk " + chunks[ i ].script_noteworthy + " rests at " + chunks[ i ].origin +
-			" angles " + chunks[ i ].angles + " state " + chunks[ i ] get_chunk_state() + " hidden slot " + chunks[ i ].og_origin );
+		{}
 
 	player = undefined;
 	players = getPlayers();
@@ -232,7 +226,7 @@ blockertest_board( index, clientnum )
 		if ( isDefined( node.trigger_location ) )
 			spot = node.trigger_location.origin;
 		player setOrigin( groundpos( spot ) + ( 0, 0, 4 ) );
-		codolprintln( "CoDOL blockertest: client " + clientnum + " holds USE in the repair trigger at " + player.origin + ", score " + player.score );
+		{}
 		player codol_botPressButtons( 40, 15 );
 	}
 	else
@@ -254,8 +248,7 @@ blockertest_board( index, clientnum )
 			if ( c get_chunk_state() != "mid_repair" )
 				continue;
 			flying++;
-			codolprintln( "CoDOL blockertest:   t " + getTime() + " chunk " + c.script_noteworthy + " origin " + c.origin + " angles " + c.angles +
-				" destroyed " + c.destroyed );
+			{}
 		}
 		if ( flying == 0 && all_chunks_intact( chunks ) )
 			break;
@@ -267,9 +260,8 @@ blockertest_board( index, clientnum )
 		ok = 0;
 		if ( distance( chunks[ i ].origin, chunks[ i ].og_origin ) < 0.1 )
 			ok = 1;
-		codolprintln( "CoDOL blockertest:   final chunk " + chunks[ i ].script_noteworthy + " at " + chunks[ i ].origin + " angles " + chunks[ i ].angles +
-			" state " + chunks[ i ] get_chunk_state() + " in slot " + ok );
+		{}
 	}
 	if ( isDefined( player ) )
-		codolprintln( "CoDOL blockertest: client " + clientnum + " score now " + player.score + ", intact " + all_chunks_intact( chunks ) );
+		{}
 }

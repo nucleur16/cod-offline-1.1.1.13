@@ -507,7 +507,7 @@ play_so_chatter( eventType )
 	
 	if( !SoundExists( soundalias ) )
 	{
-		PrintLn( anim.so.bcPrintFailPrefix + "soundalias " + soundalias + " doesn't exist." );
+		{}
 		return;
 	}
 	

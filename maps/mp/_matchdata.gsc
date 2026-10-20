@@ -212,32 +212,30 @@ logPlayerDeath( lifeId, attacker, iDamage, sMeansOfDeath, sWeapon, sPrimaryWeapo
 			setMatchData( "lives", lifeId, "altMode", true );
 		}
 		
-		// A class weapon is composed ("*a 17 10 ..."), one token with no "mp";
-		// log its base. Its attachments are C1 items, not IW4 matchdata ones.
-		weaponTokens = strTok( codolWeaponBase( sWeapon ), "_" );
+		weaponTokens = strTok( sWeapon, "_" );
 
 		/#
 		if ( !(weaponTokens.size > 1 && weaponTokens.size <= 4) )
 		{
-			PrintLn( "attacker: ", attacker );
-			PrintLn( "iDamage: ", iDamage );
-			PrintLn( "sMeansOfDeath: ", sMeansOfDeath );
+			{}
+			{}
+			{}
 			
 			if ( isDefined( sWeaponOriginal ) )
-				PrintLn( "sWeaponOriginal: ", sWeaponOriginal );
+				{}
 				
-			PrintLn( "sWeapon: ", sWeapon );
-			PrintLn( "sPrimaryWeapon: ", sPrimaryWeapon );
-			PrintLn( "--------------------------------" );
-			PrintLn( "sWeaponType: ", sWeaponType );
-			PrintLn( "sWeaponClass: ", sWeaponClass );
-			PrintLn( "--------------------------------" );
-			PrintLn( "weaponTokens.size: ", weaponTokens.size );
+			{}
+			{}
+			{}
+			{}
+			{}
+			{}
+			{}
 
 			tokenCount = 0;
 			foreach ( token in weaponTokens )
 			{
-				PrintLn( "weaponTokens[", tokenCount, "]: ", weaponTokens[tokenCount] );
+				{}
 				tokenCount++;
 			}
 		}

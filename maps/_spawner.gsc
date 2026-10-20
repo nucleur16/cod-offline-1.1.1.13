@@ -569,7 +569,7 @@ trigger_reinforcement_spawn_guys()
 		
 		if ( !player_saw_kill( spawned, attacker ) )
 		{
-			println( "^3player didn't see kill, respawning the reinforcement" );
+			{}
 			// could have been killspawned
 			if ( !isdefined( reinforcement ) )
 				break;
@@ -740,7 +740,7 @@ cull_spawners_from_killspawner( random_killspawner )
 
 killspawner( killspawnerNum )
 {
-	println( "killing killspawner: " + killspawnerNum );
+	{}
 	spawners = getspawnerarray();
 	for ( i = 0 ; i < spawners.size ; i++ )
 	{
@@ -1957,7 +1957,7 @@ flag_turret_for_use( ai )
 		return;
 	}
 
-	println( "Turret was already flagged for use" );
+	{}
 }
 
 set_goal_volume()
@@ -2556,7 +2556,7 @@ fallback_spawner_think( num, node )
 		if ( firstspawn )
 		{
 			if ( getDvar("fallback", "0") == "1" )
-				println( "^a First spawned: ", num );
+				{}
 			level notify( ( "fallback_firstspawn" + num ) );
 			firstspawn = false;
 		}
@@ -2653,7 +2653,7 @@ coverprint( org )
 	while ( 1 )
 	{
 		line( self.origin + ( 0, 0, 35 ), org, ( 0.2, 0.5, 0.8 ), 0.5 );
-		print3d( ( self.origin + ( 0, 0, 70 ) ), "Falling Back", ( 0.98, 0.4, 0.26 ), 0.85 );
+		{}
 		waitframe();
 	}
 }
@@ -2705,7 +2705,7 @@ newfallback_overmind( num, group )
 	thread fallback_wait( num, group );
 	level waittill( ( "fallbacker_trigger" + num ) );
 	if ( getDvar("fallback", "0") == "1" )
-		println( "^a fallback trigger hit: ", num );
+		{}
 	level.fallback_initiated[ num ] = true;
 
 	fallback_ai = undefined;
@@ -2814,15 +2814,15 @@ fallback_wait( num, group )
 {
 	level endon( ( "fallbacker_trigger" + num ) );
 	if ( getDvar("fallback", "0") == "1" )
-		println( "^a Fallback wait: ", num );
+		{}
 	for ( i = 0;i < level.spawner_fallbackers[ num ];i++ )
 	{
 		if ( getDvar("fallback", "0") == "1" )
-			println( "^a Waiting for spawners to be hit: ", num, " i: ", i );
+			{}
 		level waittill( ( "fallback_firstspawn" + num ) );
 	}
 	if ( getDvar("fallback", "0") == "1" )
-		println( "^a Waiting for AI to die, fall backers for group ", num, " is ", level.current_fallbackers[ num ] );
+		{}
 
 // 	total_fallbackers = 0;
 	ai = getaiarray();
@@ -2843,12 +2843,12 @@ fallback_wait( num, group )
 	while ( level.current_fallbackers[ num ] > max_fallbackers * 0.5 )
 	{
 		if ( getDvar("fallback", "0") == "1" )
-			println( "^cwaiting for " + level.current_fallbackers[ num ] + " to be less than " + ( max_fallbackers * 0.5 ) );
+			{}
 		level waittill( ( "fallbacker_died" + num ) );
 		deadfallbackers++;
 	}
 
-	println( deadfallbackers, " fallbackers have died, time to retreat" );
+	{}
 	level notify( ( "fallbacker_trigger" + num ) );
 }
 
@@ -2885,7 +2885,7 @@ fallback_coverprint()
 	{
 		if ( isdefined( self.coverpoint ) )
 			line( self.origin + ( 0, 0, 35 ), self.coverpoint.origin, ( 0.2, 0.5, 0.8 ), 0.5 );
-		print3d( ( self.origin + ( 0, 0, 70 ) ), "Covering", ( 0.98, 0.4, 0.26 ), 0.85 );
+		{}
 		waitframe();
 	}
 }
@@ -2899,7 +2899,7 @@ fallback_print()
 	{
 		if ( isdefined( self.coverpoint ) )
 			line( self.origin + ( 0, 0, 35 ), self.coverpoint.origin, ( 0.2, 0.5, 0.8 ), 0.5 );
-		print3d( ( self.origin + ( 0, 0, 70 ) ), "Falling Back", ( 0.98, 0.4, 0.26 ), 0.85 );
+		{}
 		waitframe();
 	}
 }
@@ -2994,7 +2994,7 @@ friendly_wave( trigger )
 			if ( isdefined( targs[ i ].classname[ 7 ] ) )
 			if ( targs[ i ].classname[ 7 ] != "l" )
 			{
-				println( "Friendyl_wave spawner at ", targs[ i ].origin, " is not an ally" );
+				{}
 				assert = true;
 			}
 		}
@@ -3011,7 +3011,7 @@ friendly_wave( trigger )
 		else
 		{
 			level.friendly_wave_trigger = undefined;
-			println( "friendly wave OFF" );
+			{}
 		}
 
 		wait( 1 );
@@ -3183,7 +3183,7 @@ friendly_mg42_death_notify( guy, mg42 )
 	mg42 endon( "friendly_finished_using_mg42" );
 	guy waittill( "death" );
 	mg42 notify( "friendly_finished_using_mg42" );
-	println( "^a guy using gun died" );
+	{}
 }
 
 friendly_mg42_wait_for_use( mg42 )
@@ -3194,7 +3194,7 @@ friendly_mg42_wait_for_use( mg42 )
 	// Hold &&1 to commandeer the MG42
 	self setHintString( &"PLATFORM_USEAIONMG42" );
 	self waittill( "trigger" );
-	println( "^a was used by player, stop using turret" );
+	{}
 	self.useable = false;
 	self setHintString( "" );
 	self stopuseturret();
@@ -3232,7 +3232,7 @@ friendly_mg42_endtrigger( mg42, guy )
 {
 	mg42 endon( "friendly_finished_using_mg42" );
 	self waittill( "trigger" );
-	println( "^a Told friendly to leave the MG42 now" );
+	{}
 // 	guy stopuseturret();
 // 	badplace_cylinder( undefined, 3, level.player.origin, 150, 150, "allies" );
 
@@ -3440,7 +3440,7 @@ showStart( origin, angles, anime )
 	org = getstartorigin( origin, angles, anime );
 	for ( ;; )
 	{
-		print3d( org, "x", ( 0.0, 0.7, 1.0 ), 1, 0.25 );	// origin, text, RGB, alpha, scale
+		{}	// origin, text, RGB, alpha, scale
 		wait( 0.05 );
 	}
 }
@@ -3487,7 +3487,7 @@ friendlySpawnWave()
 	for ( i = 0;i < triggers.size;i++ )
 	{
 		if ( triggers[ i ] getentnum() == 526 )
-			println( "Target: " + triggers[ i ].target );
+			{}
 	}
 	#/
 	array_thread( getentarray( self.target, "targetname" ), ::friendlySpawnWave_triggerThink, self );
@@ -3665,7 +3665,7 @@ flood_and_secure_spawner( instantRespawn )
 	targetname = self.targetname;
 	if ( ( !isdefined( target ) ) && ( !isdefined( self.script_moveoverride ) ) )
 	{
-		println( "Entity " + self.classname + " at origin " + self.origin + " has no target" );
+		{}
 		waittillframeend;
 		assert( isdefined( target ) );
 	}
@@ -3884,7 +3884,7 @@ debugWaveCount( ent )
 	self endon( "death" );
 	for ( ;; )
 	{
-		print3d( self.origin, ent.count + "/" + ent.total, ( 0, 0.8, 1 ), 0.5 );
+		{}
 		wait( 0.05 );
 	}
 }
@@ -4270,7 +4270,7 @@ friendlychain_onDeath()
 	{
 		if ( !isdefined( triggers[ i ].script_deathchain ) )
 		{
-			println( "trigger at origin " + triggers[ i ] getorigin() + " has no script_deathchain" );
+			{}
 			return;
 		}
 
@@ -4411,30 +4411,7 @@ goalVolumes()
 }
 
 debugPrint( msg, endonmsg, color )
-{
-// 	if ( !level.debug_corevillers )
-	if ( 1 )
-		return;
-
-	org = self getorigin();
-	height = 40 * sin( org[ 0 ] + org[ 1 ] ) - 40;
-	org = ( org[ 0 ], org[ 1 ], org[ 2 ] + height );
-	level endon( endonmsg );
-	self endon( "new_color" );
-	if ( !isdefined( color ) )
-		color = ( 0, 0.8, 0.6 );
-	num = 0;
-	for ( ;; )
-	{
-		num += 12;
-		scale = sin( num ) * 0.4;
-		if ( scale < 0 )
-			scale *= -1;
-		scale += 1;
-		print3d( org, msg, color, 1, scale );
-		wait( 0.05 );
-	}
-}
+{}
 
 aigroup_create( aigroup )
 {
@@ -4533,7 +4510,7 @@ camper_trigger_think( trigger )
 		node = getnode( token, "script_linkname" );
 		if ( !isdefined( node ) )
 		{
-			println( "Warning: Trigger token number " + token + " did not exist." );
+			{}
 			continue;
 		}
 		nodes = add_to_array( nodes, node );
@@ -5264,9 +5241,9 @@ spawner_makerealai( drone )
 {
 	if ( !isdefined( drone.spawner ) )
 	{
-		println( " -- -- failed dronespawned guy info -- -- " );
-		println( "drone.classname: " + drone.classname );
-		println( "drone.origin   : " + drone.origin );
+		{}
+		{}
+		{}
 		assertmsg( "makerealai called on drone does with no .spawner" );
 	}
 	orgorg = drone.spawner.origin;
@@ -5278,11 +5255,11 @@ spawner_makerealai( drone )
 	failed = spawn_failed( guy );
 	if ( failed )
 	{
-		println( " -- -- failed dronespawned guy info -- -- " );
-		println( "failed guys spawn position : " + drone.origin );
-		println( "failed guys spawner export key: " + drone.spawner.export );
-		println( "getaiarray size is: " + getaiarray().size );
-		println( " -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- " );
+		{}
+		{}
+		{}
+		{}
+		{}
 		assertMSG( "failed to make real ai out of drone( see console for more info )" );
 	}
 

@@ -92,7 +92,7 @@ optional( tokens, index, fallback )
 
 report( message )
 {
-    codolPrintLn( "CoDOL perktest: " + message );
+    {}
 }
 
 waitAlive()

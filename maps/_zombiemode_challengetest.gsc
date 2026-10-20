@@ -65,7 +65,7 @@ chtest_watch()
 		case "perk":
 			if ( tokens.size > 2 )
 				p maps\_zombiemode_perks::give_perk( tokens[ 2 ] );
-			codolprintln( "CoDOL chtest: give_perk done" );
+			{}
 			break;
 
 		case "revive":
@@ -73,7 +73,7 @@ chtest_watch()
 			if ( isDefined( q ) && q maps\_zombiemode_laststand::player_is_in_laststand() )
 				q maps\_zombiemode_laststand::revive_success( p );
 			else
-				codolprintln( "CoDOL chtest: revivee is not down" );
+				{}
 			break;
 
 		case "powerup":
@@ -96,7 +96,7 @@ chtest_watch()
 			{
 				p giveWeapon( tokens[ 2 ] );
 				p switchToWeapon( tokens[ 2 ] );
-				codolprintln( "CoDOL chtest: " + p.name + " now holds " + p getCurrentWeapon() );
+				{}
 			}
 			break;
 
@@ -117,7 +117,7 @@ chtest_player( tokens, index )
 		if ( level.players[ i ] getEntityNumber() == num )
 			return level.players[ i ];
 	}
-	codolprintln( "CoDOL chtest: no client " + tokens[ index ] );
+	{}
 	return undefined;
 }
 
@@ -133,7 +133,7 @@ chtest_use( p, tokens )
 	trigs = getEntArray( tokens[ 2 ], "targetname" );
 	if ( index >= trigs.size )
 	{
-		codolprintln( "CoDOL chtest: " + trigs.size + " " + tokens[ 2 ] + " trigger(s), no index " + index );
+		{}
 		return;
 	}
 	trig = trigs[ index ];
@@ -142,7 +142,7 @@ chtest_use( p, tokens )
 		p maps\_zombiemode_score::add_to_player_score( 5000 );
 
 	p setOrigin( trig.origin - ( 0, 0, 40 ) );
-	codolprintln( "CoDOL chtest: client " + p getEntityNumber() + " on " + tokens[ 2 ] + "[" + index + "] at " + trig.origin + ", score " + p.score );
+	{}
 
 	for ( n = 0; n < presses; n++ )
 	{
@@ -152,7 +152,7 @@ chtest_use( p, tokens )
 			trig notify( "trigger", p );
 		wait( 5 );
 	}
-	codolprintln( "CoDOL chtest: use done, score " + p.score + ", weapon " + p getCurrentWeapon() );
+	{}
 }
 
 chtest_window( p, tokens )
@@ -163,13 +163,13 @@ chtest_window( p, tokens )
 
 	if ( !isDefined( level.exterior_goals ) || index >= level.exterior_goals.size )
 	{
-		codolprintln( "CoDOL chtest: no exterior_goal " + index );
+		{}
 		return;
 	}
 	goal = level.exterior_goals[ index ];
 	if ( !isDefined( goal.barrier_chunks ) || goal.barrier_chunks.size < 1 )
 	{
-		codolprintln( "CoDOL chtest: exterior_goal " + index + " has no boards" );
+		{}
 		return;
 	}
 
@@ -180,7 +180,7 @@ chtest_window( p, tokens )
 	if ( isDefined( goal.trigger_location ) )
 		where = goal.trigger_location.origin;
 	p setOrigin( groundpos( where ) + ( 0, 0, 4 ) );
-	codolprintln( "CoDOL chtest: client " + p getEntityNumber() + " repairing exterior_goal " + index + " at " + where );
+	{}
 
 	for ( n = 0; n < 6; n++ )
 	{
@@ -194,12 +194,12 @@ chtest_zkill( weapon, mod, head )
 	best = maps\_zombiemode_fftest::fftest_nearest_zombie( self );
 	if ( !isDefined( best ) )
 	{
-		codolprintln( "CoDOL chtest: no live zombie" );
+		{}
 		return;
 	}
 	num = best getEntityNumber();
 	best doDamage( best.health + 50, best.origin + ( 0, 0, 60 ), self, self, head, mod, 0, weapon );
-	codolprintln( "CoDOL chtest: zkill " + weapon + " " + mod + " head " + head + " by " + self.name + " -> zombie " + num );
+	{}
 }
 
 chtest_show()
@@ -212,5 +212,5 @@ chtest_show()
 		if ( value > 0 )
 			line = line + " " + refs[ i ] + "=" + value;
 	}
-	codolprintln( line );
+	{}
 }

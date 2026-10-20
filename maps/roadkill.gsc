@@ -1240,7 +1240,7 @@ roadkill_crazy_ride_later()
 	}
 
 	dot = get_dot( level.player GetEye(), level.player GetPlayerAngles(), rocket.origin );
-	PrintLn( "dot " + dot );
+	{}
 	slowmo = dot >= 0.8;
 
 	if ( slowmo )

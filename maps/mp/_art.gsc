@@ -69,7 +69,7 @@ tweakart()
 		if ( GetDvarInt( "scr_art_tweak_message" ) )
 		{
 			SetDevDvar( "scr_art_tweak_message", "0" );
-			IPrintLnBold( "ART TWEAK ENABLED" );
+			{}
 		}
 
 		//translate the slider values to script variables

@@ -2381,7 +2381,7 @@ roofrun_modulate_playerspeed( targetEnt )
 	{
 		distFromTarget = get_dist_to_plane_nearest_player( targetEnt );
 		
-		println( distFromTarget );
+		{}
 		
 		/* do damage if the player is too far back
 		if( distFromTarget > playerFailDist )
@@ -2404,7 +2404,7 @@ roofrun_modulate_playerspeed( targetEnt )
 		{
 			targetRunSpeed = runSpeedCatchup;
 			targetSprintMult = sprintMultCatchup;
-			println( "CATCHUP" );
+			{}
 		}
 		// otherwise scale speed based on how far away the player is
 		else
@@ -2421,11 +2421,11 @@ roofrun_modulate_playerspeed( targetEnt )
 			
 			if( distFromTarget >= distMax )
 			{
-				println( "MAX" );
+				{}
 			}
 			else if( distFromTarget <= distMin )
 			{
-				println( "MIN" );
+				{}
 			}
 		}
 		
@@ -4423,7 +4423,7 @@ player_jump_watcher()
 		if( !level.player IsOnGround() )
 		{
 			flag_set( jumpflag );
-			println( "jumping" );
+			{}
 		}
 		
 		while( !level.player IsOnGround() )
@@ -4431,7 +4431,7 @@ player_jump_watcher()
 			wait( 0.05 );
 		}
 		flag_clear( jumpflag );
-		println( "not jumping" );
+		{}
 	}
 }
 
@@ -6197,7 +6197,7 @@ player_dots()
 {
 	for ( ;; )
 	{
-		Print3d( level.player.origin, ".", (1,1,1), 1, 1, 500 );
+		{}
 		wait( 0.05 );
 	}
 }

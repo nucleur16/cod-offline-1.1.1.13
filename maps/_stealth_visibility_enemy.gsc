@@ -87,9 +87,9 @@ enemy_alert_level_logic_start_attacking( enemy )
 	{
 		 /#
 			if ( self ent_flag( "_stealth_bad_event_listener" ) )
-				self stealth_debug_print( "BROKEN STEALTH. Received ent '" + enemy.unique_id + "' as an enemy from code. Attacked because the reason was a bad_event_listener...ie a gunshot or something equally bad" );
+				{}
 			else
-				self stealth_debug_print( "BROKEN STEALTH. Received ent '" + enemy.unique_id + "' as an enemy from code. Attacked because " + enemy.unique_id + " had been spotted more than the max_warning amount of " + self._stealth.logic.alert_level.max_warnings );
+				{}
 		#/
 		self maps\_stealth_threat_enemy::enemy_alert_level_change( "attack" );
 		return true;
@@ -167,7 +167,7 @@ enemy_alert_level_waittime( enemy )
 	timefrac = distance( self.origin, enemy.origin ) * .0005;
 	waittime = level._stealth.logic.min_alert_level_duration + timefrac;
 	
-	self stealth_debug_print( "WARNING time = " + waittime );
+	{}
 	//iprintlnbold( waittime );
 
 	level endon( group_get_flagname( "_stealth_spotted" ) );

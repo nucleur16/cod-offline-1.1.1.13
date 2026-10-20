@@ -975,7 +975,7 @@ print3d_time( org, text, color, timer )
 	timer *= 20;
 	for ( i = 0; i < timer; i++ )
 	{
-		Print3d( org, text, color );
+		{}
 		wait( 0.05 );
 	}
 }
@@ -1052,7 +1052,7 @@ player_aim_debug()
 		color = ( 0, 1, 0 );
 		if ( self.a.misstime > GetTime() )
 			color = ( 1, 0, 0 );
-		Print3d( self.origin + ( 0, 0, 32 ), self.finalaccuracy, color );
+		{}
 		wait( 0.05 );
 	}
 }
@@ -1563,7 +1563,7 @@ DebugTakeCoverWarnings()
 	SetDvarIfUninitialized( "scr_debugtakecover", "0" );
 	if ( GetDebugDvar( "scr_debugtakecover" ) == "1" )
 	{
-		IPrintLn( "Warnings remaining: ", self GetLocalPlayerProfileData( "takeCoverWarnings" ) - 3 );
+		{}
 	}
 }
 #/
@@ -2779,16 +2779,16 @@ auto_adust_zone_complete( zone )
 		msg = msg + ", " + keys[ i ] + ": " + aa_array[ keys[ i ] ];
 	}
 
-	logString( msg );
-	PrintLn( "^6" + msg );
+	{}
+	{}
 
 	//prof_end( "auto_adust_zone_complete" );
 }
 
 aa_print_vals( key, aa_array )
 {
-	logString( key + ": " + aa_array[ key ] );
-	PrintLn( "^6" + key + ": " + aa_array[ key ] );
+	{}
+	{}
 }
 
 /*

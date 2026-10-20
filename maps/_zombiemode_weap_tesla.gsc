@@ -68,23 +68,9 @@
 
 #include maps\_zombiemode_utility;
 
-#using_animtree ("generic_human");
-
 init()
 {
 	level.zm_tesla_ok = false;
-
-	// T5 _zombiemode.gsc init_anims: the tesla death sets.
-	level._zombie_tesla_death = [];
-	level._zombie_tesla_death[ 0 ] = %ai_zombie_tesla_death_a;
-	level._zombie_tesla_death[ 1 ] = %ai_zombie_tesla_death_b;
-	level._zombie_tesla_death[ 2 ] = %ai_zombie_tesla_death_c;
-	level._zombie_tesla_death[ 3 ] = %ai_zombie_tesla_death_d;
-	level._zombie_tesla_death[ 4 ] = %ai_zombie_tesla_death_e;
-	level._zombie_tesla_crawl_death = [];
-	level._zombie_tesla_crawl_death[ 0 ] = %ai_zombie_tesla_crawl_death_a;
-	level._zombie_tesla_crawl_death[ 1 ] = %ai_zombie_tesla_crawl_death_b;
-	level._effect[ "tesla_shock_eyes" ] = loadfx( "maps/zombie/fx_zombie_tesla_shock_eyes" );
 
 	precacheItem( "tesla_gun_zm" );
 	if ( !codol_isWeaponMounted( "tesla_gun_zm" ) )
@@ -148,11 +134,11 @@ tesla_damage_init( zombie, hit_location, hit_origin, player )
 	if ( !isDefined( player.tesla_network_death_choke ) )
 		player.tesla_network_death_choke = 0;
 
-	codolPrintLn( "CoDOL zm tesla: " + player.name + " hit zombie " + zombie getEntityNumber() + "; chain starts" );
+	{}
 
 	zombie tesla_arc_damage( zombie, player, 1 );
 
-	codolPrintLn( "CoDOL zm tesla: chain by " + player.name + " reached " + player.tesla_enemies_hit + " zombies" );
+	{}
 
 	player.tesla_enemies_hit = 0;
 }
@@ -319,18 +305,6 @@ tesla_do_damage( source_enemy, arc_num, player )
 	player.tesla_network_death_choke++;
 
 	self.tesla_death = true;
-
-	// T5 :234-:243: a tesla kill plays one of the shock deaths
-	// (ai_zombie_tesla_death_a-e, crawlers _crawl_death_a/b; all ship in
-	// common_gametype_zm).
-	if ( !is_true( self.isdog ) && isDefined( level._zombie_tesla_death ) )
-	{
-		if ( is_true( self.has_legs ) )
-			self.deathanim = level._zombie_tesla_death[ randomInt( level._zombie_tesla_death.size ) ];
-		else
-			self.deathanim = level._zombie_tesla_crawl_death[ randomInt( level._zombie_tesla_crawl_death.size ) ];
-	}
-
 	self tesla_play_death_fx( arc_num );
 
 	// T5 :284: the arc's originator picks the death direction.
@@ -362,25 +336,6 @@ tesla_play_death_fx( arc_num )
 	else
 		playFx( level._effect[ fx ], tesla_chest_point( self ) );
 	self playSound( "wpn_imp_tesla" );
-
-	// T5 :331 tesla_head_gib_func = zombie_tesla_head_gib (spawner :4963).
-	if ( !is_true( self.isdog ) && !is_true( self.head_gibbed ) )
-		self thread zombie_tesla_head_gib();
-}
-
-// T5 _zombiemode_spawner.gsc:4963: half the tesla kills pop the head a
-// moment later; the rest light the eyes with the shock effect.
-zombie_tesla_head_gib()
-{
-	self endon( "death" );
-
-	if ( randomInt( 100 ) < level.zombie_vars[ "tesla_head_gib_chance" ] )
-	{
-		wait( randomFloatRange( 0.53, 1.0 ) );
-		self maps\_zombiemode_gib::zombie_head_gib();
-	}
-	else if ( isDefined( level._effect[ "tesla_shock_eyes" ] ) )
-		playFxOnTag( level._effect[ "tesla_shock_eyes" ], self, "j_eyeball_le" );
 }
 
 // playFxOnTag raises a fatal script error for a tag the model lacks, so the
@@ -450,10 +405,6 @@ tesla_head_point( ent )
 
 tesla_chest_point( ent )
 {
-	// T5 :187 plays a hound's shock on J_Spine1, a dog's back, not a standing
-	// zombie's chest.
-	if ( is_true( ent.isdog ) )
-		return ent.origin + ( 0, 0, 20 );
 	return ent.origin + ( 0, 0, 48 );
 }
 

@@ -537,7 +537,7 @@ invalidate_attractor_pos( position )
 	{
 		self.poi_bad_path_count = 0;
 		self add_poi_to_ignore_list( poi );
-		codolprintln( "CoDOL zm poi: ent " + self getEntityNumber() + " cannot path to the poi at " + poi.origin + "; ignoring it" );
+		{}
 	}
 }
 
@@ -588,7 +588,7 @@ zombie_follow_poi()
 		if ( !isDefined( level.zombie_poi_retargets ) )
 			level.zombie_poi_retargets = 0;
 		level.zombie_poi_retargets++;
-		codolprintln( "CoDOL zm poi: ent " + self getEntityNumber() + " leaves flesh for the poi at " + poi.origin + " (goal " + position.origin + ", " + int( distance( self.origin, poi.origin ) ) + " units away)" );
+		{}
 
 		if ( isDefined( poi.initial_attract_func ) )
 			self thread [[ poi.initial_attract_func ]]( poi );
@@ -632,7 +632,7 @@ zombie_release_poi()
 	if ( isDefined( self.zombie_poi_current ) || isDefined( self.zombie_poi_goal ) )
 	{
 		self notify( "zombie_poi_changed" );
-		codolprintln( "CoDOL zm poi: ent " + self getEntityNumber() + " returns to flesh" );
+		{}
 	}
 
 	old = self.zombie_poi_current;

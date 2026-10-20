@@ -79,9 +79,9 @@ init()
 		/#
 		if ( getDvar( "scr_dump_weapon_assets" ) != "" )
 		{
-			printLn( "" );
-			printLn( "// " + weapon_name + " real assets" );
-			printLn( "weapon,mp/" + weapon_name + "_mp" );
+			{}
+			{}
+			{}
 		}
 		#/
 
@@ -109,7 +109,7 @@ init()
 			attachments[attachments.size] = attachmentName;
 			/#
 			if ( getDvar( "scr_dump_weapon_assets" ) != "" )
-				println( "weapon,mp/" + weapon_name + "_" + attachmentName + "_mp" );
+				{}
 			#/
 		}
 
@@ -128,14 +128,14 @@ init()
 
 		/#
 		if ( getDvar( "scr_dump_weapon_assets" ) != "" && attachmentCombos.size )
-			println( "// " + weapon_name + " virtual assets" );
+			{}
 		#/
 		
 		foreach ( combo in attachmentCombos )
 		{
 			/#
 			if ( getDvar( "scr_dump_weapon_assets" ) != "" )
-				println( "weapon,mp/" + weapon_name + "_" + combo + "_mp" );
+				{}
 			#/
 
 			level.weaponList[level.weaponList.size] = weapon_name + "_" + combo + "_mp";
@@ -151,7 +151,7 @@ init()
 		{
 			altWeapon = weaponAltWeaponName( weaponName );
 			if ( altWeapon != "none" )
-				println( "weapon,mp/" + altWeapon );				
+				{}				
 		}
 		#/
 	}
@@ -545,8 +545,7 @@ watchWeaponChange()
 
 	self.bothBarrels = undefined;
 
-	// A class ranger is composed ("*a ..."): test its base, not the name.
-	if ( isSubStr( codolWeaponBase( weapon ), "ranger" ) )
+	if ( isSubStr( weapon, "ranger" ) )
 		self thread watchRangerUsage( weapon );
 
 	while(1)
@@ -557,7 +556,7 @@ watchWeaponChange()
 
 		self.bothBarrels = undefined;
 
-		if ( isSubStr( codolWeaponBase( newWeapon ), "ranger" ) )
+		if ( isSubStr( newWeapon, "ranger" ) )
 			self thread watchRangerUsage( newWeapon );
 
 		if ( tokedNewWeapon[0] == "gl" || ( tokedNewWeapon.size > 2 && tokedNewWeapon[2] == "attach" ) )
@@ -601,7 +600,7 @@ watchWeaponReload()
 
 		self.bothBarrels = undefined;
 		
-		if ( !isSubStr( codolWeaponBase( weaponName ), "ranger" ) )
+		if ( !isSubStr( weaponName, "ranger" ) )
 			continue;
 
 		self thread watchRangerUsage( weaponName );
@@ -626,7 +625,7 @@ watchRangerUsage( rangerName )
 
 		self.bothBarrels = undefined;
 
-		if ( codolWeaponHasAttachment( rangerName, "akimbo" ) )
+		if ( isSubStr( rangerName, "akimbo" ) )
 		{
 			newLeftAmmo = self getWeaponAmmoClip( rangerName, "left" );
 			newRightAmmo = self getWeaponAmmoClip( rangerName, "right" );
@@ -689,7 +688,7 @@ dropWeaponForDeath( attacker )
 	{
 		/#
 		if ( getdvar("scr_dropdebug") == "1" )
-			println( "didn't drop weapon: not defined" );
+			{}
 		#/
 		return;
 	}
@@ -698,7 +697,7 @@ dropWeaponForDeath( attacker )
 	{
 		/#
 		if ( getdvar("scr_dropdebug") == "1" )
-			println( "didn't drop weapon: weapon == none" );
+			{}
 		#/
 		return;
 	}
@@ -707,18 +706,18 @@ dropWeaponForDeath( attacker )
 	{
 		/#
 		if ( getdvar("scr_dropdebug") == "1" )
-			println( "didn't drop weapon: don't have it anymore (" + weapon + ")" );
+			{}
 		#/
 		return;
 	}
 	
-	if ( !codolIsWeaponBase( weapon, "riotshield_mp" ) )
+	if ( weapon != "riotshield_mp" )
 	{
 		if ( !(self AnyAmmoForWeaponModes( weapon )) )
 		{
 			/#
 			if ( getdvar("scr_dropdebug") == "1" )
-			  println( "didn't drop weapon: no ammo for weapon modes" );
+			  {}
 			#/
 			return;
 		}
@@ -729,7 +728,7 @@ dropWeaponForDeath( attacker )
 		{
 			/#
 			if ( getdvar("scr_dropdebug") == "1" )
-			  println( "didn't drop weapon: no ammo in clip" );
+			  {}
 			#/
 			return;
 		}
@@ -752,7 +751,7 @@ dropWeaponForDeath( attacker )
 
 	/#
 	if ( getdvar("scr_dropdebug") == "1" )
-		println( "dropped weapon: " + weapon );
+		{}
 	#/
 
 	self.droppedDeathWeapon = true;
@@ -851,12 +850,10 @@ watchPickup()
 			break;
 		// otherwise, player merely acquired ammo and didn't pick this up
 	}
-	// C1's act_pickupwpn field order waits for this notify.
-	player notify( "pickedupweapon", weapname );
 	
 	/#
 	if ( getdvar("scr_dropdebug") == "1" )
-		println( "picked up weapon: " + weapname + ", " + isdefined( self.ownersattacker ) );
+		{}
 	#/
 
 	assert( isdefined( player.tookWeaponFrom ) );
@@ -916,7 +913,7 @@ codolGpsTrackPickup( owner, weapon )
 
 	self.codolGpsTrackOwner = owner;
 	self setAbilityModifier( "modOwnerTrack" );
-	codolPrintLn( "CoDOL gps: " + owner.name + " tracks " + self.name + " (" + weapon + ")" );
+	{}
 
 	reason = undefined;
 	for ( ;; )
@@ -941,7 +938,7 @@ codolGpsTrackPickup( owner, weapon )
 	self unsetAbilityModifier( "modOwnerTrack" );
 	if ( !self maps\mp\perks\_perkfunctions::isPainted() )
 		self unsetAbilityModifier( "modRadarArrow" );
-	codolPrintLn( "CoDOL gps: track of " + self.name + " ended (" + reason + ")" );
+	{}
 }
 
 itemRemoveAmmoFromAltModes()
@@ -1238,7 +1235,6 @@ watchGrenadeUsage()
 	thread deleteC4AndClaymoresOnDisconnect();
 
 	self thread watchForThrowbacks();
-	self thread watchEquipmentStunGrenades();
 
 	for ( ;; )
 	{
@@ -1285,6 +1281,11 @@ beginGrenadeTracking()
 		grenade.originalOwner = self;
 	}
 
+	if ( weaponName == "flash_grenade_mp" || weaponName == "concussion_grenade_mp" )
+	{
+		grenade.owner = self;
+		grenade thread empExplodeWaiter();
+	}
 }
 
 AddMissileToSightTraces( team )
@@ -1311,8 +1312,6 @@ watchMissileUsage()
 	for ( ;; )
 	{
 		self waittill( "missile_fire", missile, weaponName );
-		// Launchers from a class are composed names ("*a 68 0"): switch on the base.
-		baseWeaponName = codol_getWeaponBaseName( weaponName );
 		
 		if ( isSubStr( weaponName, "gl_" ) )
 		{
@@ -1320,7 +1319,7 @@ watchMissileUsage()
 			missile thread maps\mp\gametypes\_shellshock::grenade_earthQuake();
 		}
 
-		switch ( baseWeaponName )
+		switch ( weaponName )
 		{
 			case "at4_mp":
 			case "stinger_mp":
@@ -1335,7 +1334,7 @@ watchMissileUsage()
 				break;
 		}
 
-		switch ( baseWeaponName )
+		switch ( weaponName )
 		{
 			case "at4_mp":
 			case "javelin_mp":
@@ -1365,27 +1364,6 @@ watchSentryUsage()
 }
 
 
-// Flash, concussion and EMP grenades disable placed equipment for a while
-// (empExplodeWaiter). IW4 hooked this in beginGrenadeTracking, which only runs
-// after a grenade_pullback notify; C1 tactical offhands do not reliably send
-// one, so no stun grenade ever reached it. grenade_fire is sent for every throw.
-watchEquipmentStunGrenades()
-{
-	self endon( "death" );
-	self endon( "disconnect" );
-
-	for ( ;; )
-	{
-		self waittill( "grenade_fire", grenade, weaponName );
-		if ( !isDefined( grenade ) || !isDefined( weaponName ) )
-			continue;
-		if ( weaponName != "flash_grenade_mp" && weaponName != "concussion_grenade_mp" && weaponName != "emp_grenade_mp" )
-			continue;
-		grenade.owner = self;
-		grenade thread empExplodeWaiter();
-	}
-}
-
 empExplodeWaiter()
 {
 	self thread maps\mp\gametypes\_shellshock::endOnDeath();
@@ -1400,23 +1378,6 @@ empExplodeWaiter()
 		if ( isDefined( ent.owner ) && !friendlyFireCheck( self.owner, ent.owner ) )
 			continue;
 
-		ent notify( "emp_damage", self.owner, 8.0 );
-	}
-
-	// Bouncing betties and scramblers are script models, which the grenade /
-	// turret sweep above never finds; they get the same temporary disable.
-	equipment = level.scramblers;
-	foreach ( player in level.players )
-	{
-		if ( isDefined( player.equipmentMines ) )
-			equipment = array_combine( equipment, player.equipmentMines );
-	}
-	foreach ( ent in equipment )
-	{
-		if ( !isDefined( ent ) || distance( position, ent.origin ) >= 512 )
-			continue;
-		if ( isDefined( ent.owner ) && !friendlyFireCheck( self.owner, ent.owner ) )
-			continue;
 		ent notify( "emp_damage", self.owner, 8.0 );
 	}
 }
@@ -1681,17 +1642,15 @@ claymoreDetonation()
 	
 	
 	// C1 Engineer (perk 90) carries modDelayTriggeredExplosive; the IW4 name
-	// specialty_delaymine is C1 Stalker Pro (footsteps), not this delay. C1's
-	// table gives the modifier no value, so T5's rule applies
-	// (_weaponobjects.gsc: the normal grace period, then perk_delayExplosiveTime
-	// more): the perk adds to the trigger delay instead of replacing it.
-	wait level.claymoreDetectionGracePeriod;
+	// specialty_delaymine is C1 Stalker Pro (footsteps), not this delay. The
+	// 3.0 s replacing the grace period is IW4's value for the same effect.
 	if ( isPlayer( player ) && player HasAbilityModifier( "modDelayTriggeredExplosive" ) )
 	{
-		extra = maps\mp\perks\_codol_equipperks::delayExplosiveTime();
-		maps\mp\perks\_codol_equipperks::perkLog( "claymore " + self getEntityNumber() + " triggered by " + player.name + " (modDelayTriggeredExplosive): +" + extra + "s delay" );
-		wait extra;
+		maps\mp\perks\_codol_equipperks::perkLog( "claymore " + self getEntityNumber() + " triggered by " + player.name + " (modDelayTriggeredExplosive): 3.0s delay" );
+		wait 3.0;
 	}
+	else 
+		wait level.claymoreDetectionGracePeriod;
 		
 	self maps\mp\perks\_codol_equipperks::detonateAsOwner();
 }
@@ -1757,7 +1716,7 @@ watchC4AltDetonate()
 				wait( 0.05 );
 			}
 
-			println( "pressTime1: " + buttonTime );
+			{}
 			if ( buttonTime >= 0.5 )
 				continue;
 
@@ -1768,7 +1727,7 @@ watchC4AltDetonate()
 				wait( 0.05 );
 			}
 
-			println( "delayTime: " + buttonTime );
+			{}
 			if ( buttonTime >= 0.5 )
 				continue;
 
@@ -1882,12 +1841,8 @@ c4Damage()
 
 		// IW5 excludes these utility grenades by identity. C1 EMP damage is
 		// one point and must still reach the existing detonation lifecycle.
-		// An EMP grenade disables C4 and claymores for a while (c4EMPDamage,
-		// through empExplodeWaiter's emp_damage); its one point of damage must
-		// not destroy them.
 		if ( isDefined( weapon ) && (weapon == "concussion_grenade_mp" ||
-		     weapon == "smoke_grenade_mp" || weapon == "flash_grenade_mp" ||
-		     weapon == "emp_grenade_mp") )
+		     weapon == "smoke_grenade_mp" || weapon == "flash_grenade_mp") )
 			continue;
 
 		break;
@@ -1944,7 +1899,7 @@ saydamaged( orig, amount )
 {
 	for ( i = 0; i < 60; i++ )
 	{
-		print3d( orig, "damaged! " + amount );
+		{}
 		wait .05;
 	}
 }
@@ -2246,11 +2201,11 @@ weaponDamageTracePassed( from, to, startRadius, ent )
 
 	if ( getdvarint( "scr_damage_debug" ) != 0 )
 	{
-		thread debugprint( from, ".dmg" );
+		{}
 		if ( isdefined( ent ) )
-			thread debugprint( to, "." + ent.classname );
+			{}
 		else
-			thread debugprint( to, ".undefined" );
+			{}
 		if ( trace[ "fraction" ] == 1 )
 		{
 			thread debugline( midpos, to, ( 1, 1, 1 ) );
@@ -2311,13 +2266,7 @@ debugline( a, b, color )
 }
 
 debugprint( pt, txt )
-{
-	for ( i = 0; i < 30 * 20; i++ )
-	{
-		print3d( pt, txt );
-		wait .05;
-	}
-}
+{}
 
 
 onWeaponDamage( eInflictor, sWeapon, meansOfDeath, damage, eAttacker )
@@ -2753,7 +2702,7 @@ updateMoveSpeedScale( weaponType )
 	else if ( weaponType == "secondary" )
 		weaponType = self.secondaryWeapon;
 	
-	if( isDefined(self.primaryWeapon ) && codolIsWeaponBase( self.primaryWeapon, "riotshield_mp" ) )
+	if( isDefined(self.primaryWeapon ) && self.primaryWeapon == "riotshield_mp" )
 	{
 		self setMoveSpeedScale( .8 * self.moveSpeedScaler );
 		return;

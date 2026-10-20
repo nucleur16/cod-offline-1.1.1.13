@@ -54,14 +54,14 @@ init()
 
 	if ( getWeaponIndexFromName( REVIVE_KNIFE_WEAPON ) <= 0 )
 	{
-		codolprintln( "CoDOL zm revive knife: " + REVIVE_KNIFE_WEAPON + " is not loaded on this map" );
+		{}
 		return;
 	}
 
 	level._effect[ "revive_knife" ] = loadfx( "maps/zombie/fx_reviveknife" );
 
 	maps\_zombiemode_equipment::register_equipment( REVIVE_KNIFE_WEAPON, ::revive_knife_fired );
-	codolprintln( "CoDOL zm revive knife: ready" );
+	{}
 }
 
 // self = the thrown knife.
@@ -116,8 +116,7 @@ revive_knife_fired( player, weapon )
 	who = "(gone)";
 	if ( isDefined( thrower ) )
 		who = thrower.name;
-	codolprintln( "CoDOL zm revive knife: " + who + "'s knife came to rest at " + last + " (" +
-		int( distance( start, last ) ) + " units out), revived " + revived + ", zombies hit " + kills );
+	{}
 }
 
 // The closest downed teammate whose body is within radius of pos, or
@@ -165,8 +164,7 @@ knife_revive( target, thrower, pos, how )
 		reviver_name = thrower.name;
 	}
 
-	codolprintln( "CoDOL zm revive knife: " + reviver_name + " revives " + target.name + " (" + how + ", " +
-		int( distance2d( pos, target.origin ) ) + " units from the knife, horizontally)" );
+	{}
 
 	playFx( level._effect[ "revive_knife" ], target.origin + ( 0, 0, 12 ) );
 	playSoundAtPosition( "zmb_revive_knife", target.origin );

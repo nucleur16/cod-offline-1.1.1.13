@@ -151,8 +151,7 @@ init_blockers()
 	for ( i = 0; i < flag_blockers.size; i++ )
 		flag_blockers[ i ] thread flag_blocker();
 
-	println( "CoDOL zm: " + level.exterior_goals.size + " barriers, " + zombie_doors.size +
-		" doors, " + zombie_debris.size + " debris\n" );
+	{}
 
 	// Developer-only test verbs (scr_codol_blockertest); returns at once on
 	// the live server, which runs developer 0.
@@ -514,7 +513,7 @@ remove_chunk( chunk, node, destroy_immediately, zomb )
 	if ( !isDefined( node ) || !isDefined( node.angles ) )
 	{
 		chunk hide();
-		codolprintln( "CoDOL zm board: chunk " + chunk.script_noteworthy + " at " + chunk.origin + " hidden without a launch (no barrier node)" );
+		{}
 		return;
 	}
 
@@ -561,7 +560,7 @@ remove_chunk_fly( chunk, node )
 		ent rotatePitch( 90, time, time * 0.5 );
 	}
 
-	codolprintln( "CoDOL zm board: chunk " + chunk.script_noteworthy + " at " + chunk.origin + " linked to launcher, movegravity vel " + ent.launch_velocity + " for " + time + " s to " + dest + " (dist " + dist + " along yaw " + ent.angles[ 1 ] + "), spin " + spin + ", fx impacts/fx_large_woodhit, snd zmb_break_board + zmb_board_slam" );
+	{}
 
 	wait( time );
 
@@ -715,8 +714,7 @@ replace_chunk( chunk, fast, via_powerup )
 	how = "";
 	if ( is_true( fast ) )
 		how = " (carpenter)";
-	codolprintln( "CoDOL zm board: chunk " + chunk.script_noteworthy + " repair starts at " + chunk.origin + " angles " + chunk.angles +
-		" -> slot " + og_origin + " angles " + og_angles + how );
+	{}
 
 	chunk show();
 	chunk notSolid();
@@ -770,7 +768,7 @@ replace_chunk( chunk, fast, via_powerup )
 
 	play_sound_at_pos( "barrier_rebuild_slam", chunk.origin );
 
-	codolprintln( "CoDOL zm board: chunk " + chunk.script_noteworthy + " repaired in its slot at " + chunk.origin + " angles " + chunk.angles );
+	{}
 }
 
 // T5 :2605 zombie_boardtear_audio_plus_fx_offset_repair_horizontal and :2642
@@ -1040,7 +1038,7 @@ door_activate()
 	case "anim":
 		// T5 case "anim" calls level.blocker_anim_func, which is
 		// animscripted().  Not registered here; the door is simply removed.
-		println( "CoDOL zm: door element " + self.targetname + " is script_string anim; opened without animation\n" );
+		{}
 		self delete();
 		return;
 

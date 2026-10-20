@@ -828,7 +828,7 @@ specialops_mission_over_stats( was_success )
 		if ( !( player can_save_to_profile() ) )
 		{
 			/#
-			PrintLn( ">> UpdateGamerProfileAll():	[ PLAYER 2 SKIPPED ALL PROFILE UPDATES DUE TO LEVEL LOCKED ]" );
+			{}
 			#/
 			player.eog_noreward = true;
 		}
@@ -961,15 +961,15 @@ specialops_mission_over_stats( was_success )
 		}
 		
 		// Debug prints
-		PrintLn( ">> SO DEBUG: 					[ setlevel:" + setlevel + " setlevel_upto:" + upto + " clearall:" + getdvarint( "ui_debug_clearall" ) + " ]" );
-		PrintLn( ">> SO PLAYER ID: 			[" + player GetEntityNumber() + "]" );
-		PrintLn( ">> SO PERCENTAGE COMPLETED: 	[" + specOpsString + "]" );
-		PrintLn( ">> SO PLAYER PERCENTAGE: 		[" + completion_percentage + "%]" );
-		PrintLn( ">> SO PLAYER TOTAL STARS:		[" + specOpsSum + "%]" );
-		PrintLn( ">> SO LEVEL INDEX: 			[" + level.specOpsSettings maps\_endmission::getLevelIndex( level.script ) + "]" );
-		PrintLn( ">> SO LEVEL NAME: 			[" + level.script + "]" );
-		PrintLn( ">> SO STARS EARNED:	 		[" + specOpsSum + "]" );
-		PrintLn( ">> SO MAX LEVELS: 			[" + level.specOpsSettings.levels.size + "]" );
+		{}
+		{}
+		{}
+		{}
+		{}
+		{}
+		{}
+		{}
+		{}
 		#/
 		
 		player SetLocalPlayerProfileData( "percentCompleteSO", specOpsSum );
@@ -978,7 +978,7 @@ specialops_mission_over_stats( was_success )
 		
 	UpdateGamerProfileAll();
 	/#
-	PrintLn( ">> UpdateGamerProfileAll(): [ CALLED ]" );
+	{}
 	#/
 }
 

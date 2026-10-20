@@ -1233,7 +1233,7 @@ miss_player( player )
 {
 	//for default turret types to allow the player to hide before getting owned
 
-	PrintLn( "_attack_heli.gsc           missing player" );
+	{}
 
 	//right = AnglesToRight( self.angles );
 	//miss_vec = vector_multiply( right, RandomIntRange( 128, 256 ) );
@@ -1278,7 +1278,7 @@ can_see_player( player )
 		return true;
 	else
 	{
-		PrintLn( "_attack_heli.gsc        ---trace failed" );
+		{}
 		return false;
 	}
 }

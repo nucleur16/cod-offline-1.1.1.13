@@ -300,7 +300,7 @@ adjust_be_behind( guy )
 	num1 = int( num1 * 100 ) * 0.01;
 	num2 = int( num2 * 100 ) * 0.01;
 	
-	Print3d( self geteye(), num1 + " (" + num2 + ")", (1,1,1), 1, 0.7 );
+	{}
 }
 
 adjust_be_ahead_of( guy )
@@ -344,7 +344,7 @@ adjust_be_ahead_of( guy )
 	num1 = int( num1 * 100 ) * 0.01;
 	num2 = int( num2 * 100 ) * 0.01;
 	
-	Print3d( self geteye(), num1 + " (" + num2 + ")", (1,1,1), 1, 1 );
+	{}
 }
 
 my_color_trail( color )
@@ -1027,7 +1027,7 @@ ptest()
 		vec = randomvector( 0.3 );
 		PhysicsJolt( org, 350, 250, vec );
 		//PhysicsExplosionSphere( org, 350, 250, 0.5 );
-		Print3d( org, ".", (1,0,0), 1, 1, 5 );
+		{}
 		wait( 0.5 );
 	}
 }
@@ -2325,9 +2325,9 @@ spawn_ak47()
 	ak47 linkto( level.price, "tag_weapon_chest", (0,0,0), (0,0,0) );
 	wait( 1.4 );
 //	ak47 unlink();	
-	println( "ak update info:" );
-	println( "	ak47.origin = " + ak47.origin + ";" );
-	println( "	ak47.angles = " + ak47.angles + ";" );
+	{}
+	{}
+	{}
 	
 	wait_for_buffer_time_to_pass( queue, 11.3 );
 	ak47 linkto( level.price, "tag_weapon_chest", (0,0,0), (0,0,0) );

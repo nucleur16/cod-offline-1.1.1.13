@@ -43,20 +43,6 @@ createLoopSound()
 	return ent;
 }
 
-// CoDOL: createIntervalSound from IW5 common_scripts\_createfx.gsc (COD-GSC-Source
-// IW5-GSC/scripts/512.gsc, with its getIntervalSoundDelayMin/MaxDefault values 0.75 and 2
-// inlined). The createfx files of the 3.3.3.3 maps ported to 1.1.1.13 (mp_rust_long,
-// mp_shipment_long) place IW5 interval sounds. The server does not play createfx ents (the
-// client does, clientSideEffects), but the call must resolve for those files to compile.
-createIntervalSound()
-{
-	ent = createLoopSound();
-	ent.v[ "type" ] = "soundfx_interval";
-	ent.v[ "delay_min" ] = 0.75;
-	ent.v[ "delay_max" ] = 2;
-	return ent;
-}
-
 createNewExploder()
 {
 	ent = spawnStruct();
@@ -998,11 +984,11 @@ manipulate_createfx_ents( highlightedEnt, leftClick, leftHeld, ctrlHeld, colors,
 				colorIndex = "selected";
 
 
-			print3d( ent.v[ "origin" ], ".", colors[ ent.v[ "type" ] ][ colorIndex ], 1, scale );
+			{}
 			if ( ent.textalpha > 0 )
 			{
 				printRight = vector_multiply( right, ent.v[ "fxid" ].size * - 2.93 * scale );
-				print3d( ent.v[ "origin" ] + printRight + ( 0, 0, 15 ), ent.v[ "fxid" ], colors[ ent.v[ "type" ] ][ colorIndex ], ent.textalpha, scale );
+				{}
 			}
 		}
 		else
@@ -1011,11 +997,11 @@ manipulate_createfx_ents( highlightedEnt, leftClick, leftHeld, ctrlHeld, colors,
 			if ( index_is_selected( i ) )
 				colorIndex = "selected";
 
-			print3d( ent.v[ "origin" ], ".", colors[ ent.v[ "type" ] ][ colorIndex ], 1, scale );
+			{}
 			if ( ent.textalpha > 0 )
 			{
 				printRight = vector_multiply( right, ent.v[ "fxid" ].size * - 2.93 );
-				print3d( ent.v[ "origin" ] + printRight + ( 0, 0, 15 ), ent.v[ "fxid" ], colors[ ent.v[ "type" ] ][ colorIndex ], ent.textalpha, scale );
+				{}
 			}
 		}
 	}
@@ -1562,7 +1548,7 @@ func_get_level_fx()
 		}
 	}
 
-	println( "alphabetizing fx" );
+	{}
 	keys = alphabetize( keys );
 	level._effect_keys = keys;
 	return keys;

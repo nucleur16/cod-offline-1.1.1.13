@@ -71,16 +71,6 @@ player_add_points( event, mod, hit_location )
 			self.kill_tracker = 1;
 		break;
 
-	// T5 _zombiemode_score.gsc:59: a ballistic-knife stab or impact kill
-	// pays the kill plus the melee bonus.
-	case "ballistic_knife_death":
-		player_points = get_zombie_death_player_points() + level.zombie_vars[ "zombie_score_bonus_melee" ];
-		if ( isDefined( self.kill_tracker ) )
-			self.kill_tracker++;
-		else
-			self.kill_tracker = 1;
-		break;
-
 	case "damage_light":
 		player_points = level.zombie_vars[ "zombie_score_damage_light" ];
 		break;
@@ -104,7 +94,7 @@ player_add_points( event, mod, hit_location )
 		// T5 assertex( 0, "Unknown point event" ).  An assert here would end
 		// the match on a typo in a caller; an unknown event is worth nothing
 		// and is reported once instead.
-		println( "CoDOL zm: unknown point event " + event );
+		{}
 		return;
 	}
 
@@ -124,11 +114,7 @@ player_add_points( event, mod, hit_location )
 	if ( level.zm_award_count[ event ] == 1 || level.zm_award_count[ event ] % 25 == 0 ||
 		is_true( level.zombie_vars[ "zombie_powerup_point_doubler_on" ] ) )
 	{
-		codolprintln( "CoDOL zm DIAG award: event=" + event +
-			" points=" + player_points +
-			" multiplier=" + multiplier +
-			" count=" + level.zm_award_count[ event ] +
-			" purse=" + self.score );
+		{}
 	}
 
 	self add_to_player_score( player_points );
@@ -251,7 +237,7 @@ player_reduce_points( event )
 		break;
 
 	default:
-		println( "CoDOL zm: unknown point penalty " + event );
+		{}
 		return;
 	}
 

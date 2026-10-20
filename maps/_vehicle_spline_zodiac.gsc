@@ -836,7 +836,7 @@ wipeout( msg )
 	if ( !self.wipeout )
 	{
 		if ( getdebugdvarint( "vehicle_spline_debug" ) )
-			Print3d( self.origin, msg, (1,0.25,0), 1, 1.5, 400 );
+			{}
 	}
 	#/
 	self.wipeout = true;
@@ -1062,7 +1062,7 @@ drawmyoff()
 		{
 			my_speed = self vehicle_getSpeed();
 			p_speed = level.player.vehicle vehicle_getSpeed();
-			Print3d( self.origin + (0,0,64), my_speed - p_speed, (1,0,0.2), 1, 1.2 );
+			{}
 			level.difference = my_speed - p_speed;
 			
 			Line( self.origin, level.player.origin, (1,0,0.2) );
@@ -1850,7 +1850,7 @@ draw_bike_debug()
 	for ( ;; )
 	{
 		waittillframeend;
-		Print3d( self.origin, self.goal_dir, ( 1, 1, 1 ), 2 );
+		{}
 		wait( 0.05 );
 	}
 }

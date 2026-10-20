@@ -289,7 +289,7 @@ printEyeOffsetFromNode()
 				forward = anglestoforward( self.coverNode.angles );
 				right = anglestoright( self.coverNode.angles );
 				trueoffset = ( vectordot( right, offset ), vectordot( forward, offset ), offset[ 2 ] );
-				println( trueoffset );
+				{}
 			}
 		}
 		else
@@ -313,9 +313,9 @@ showLikelyEnemyPathDir()
 			printpos = self.origin + ( 0, 0, 60 ) + anglestoforward( ( 0, yaw, 0 ) ) * 100;
 			line( self.origin + ( 0, 0, 60 ), printpos );
 			if ( isdefined( dir ) )
-				print3d( printpos, "likelyEnemyPathDir: " + yaw, ( 1, 1, 1 ), 1, 0.5 );
+				{}
 			else
-				print3d( printpos, "likelyEnemyPathDir: undefined", ( 1, 1, 1 ), 1, 0.5 );
+				{}
 
 			wait .05;
 		}
@@ -381,7 +381,7 @@ PollAllowedStancesThread()
 		for ( i = 0 ; i < line.size ; i++ )
 		{
 			textPos = ( aboveHead[ 0 ] + ( offset[ 0 ] * i ), aboveHead[ 1 ] + ( offset[ 1 ] * i ), aboveHead[ 2 ] + ( offset[ 2 ] * i ) );
-			print3d( textPos, line[ i ], color[ i ], 1, 0.75 );	// origin, text, RGB, alpha, scale
+			{}	// origin, text, RGB, alpha, scale
 		}
 		wait 0.05;
 	}

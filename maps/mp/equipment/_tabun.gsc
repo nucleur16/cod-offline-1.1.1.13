@@ -8,18 +8,7 @@ init()
     if ( isDefined( level.codolGasClouds ) ) return;
     precacheShellShock( "tabun_gas_mp" );
     precacheShellShock( "tabun_gas_nokick_mp" );
-    // T5 plays the cloud through five FX-only weapons (tabun_center_mp and
-    // tabun_tiny/small/medium/large_mp) with SpawnTimedFX. C1 ships those
-    // weapons in common_gametype_mp, each carrying one effect as its
-    // projExplosionEffect (+7b8), and registers the same five effects in
-    // cgMedia (C1 0x44f07d). Stream order of common_gametype_mp pairs them:
-    // tiny _25r, small _50r, medium _75r, large _125r, center unsized.
-    level.codolGasCenterFX = loadFx( "weapon/grenade/fx_gas_poison_mp" );
-    level.codolGasSizeFX = [];
-    level.codolGasSizeFX[0] = loadFx( "weapon/grenade/fx_gas_poison_mp_25r" );
-    level.codolGasSizeFX[1] = loadFx( "weapon/grenade/fx_gas_poison_mp_50r" );
-    level.codolGasSizeFX[2] = loadFx( "weapon/grenade/fx_gas_poison_mp_75r" );
-    level.codolGasSizeFX[3] = loadFx( "weapon/grenade/fx_gas_poison_mp_125r" );
+    level.codolGasFX=loadFx( "weapon/grenade/fx_gas_poison_mp" );
     level.codolGasClouds = [];
     level.codolGasEnded = false;
     level.codolGasDuration = setting( "scr_tabunGasDuration", 8 );
@@ -33,8 +22,6 @@ init()
     level.codolGasRadii[1] = setting( "scr_fx_tabun_radius1", 55 );
     level.codolGasRadii[2] = setting( "scr_fx_tabun_radius2", 50 );
     level.codolGasRadii[3] = setting( "scr_fx_tabun_radius3", 25 );
-    // scr_tabun_trace 1 logs each throw, cloud and poison tick.
-    level.codolGasTrace = getDvarInt( "scr_tabun_trace" );
     level thread connected();
     level thread endGame();
 }
@@ -67,22 +54,15 @@ throws()
     {
         self waittill( "grenade_fire", missile, weapon );
         if ( weapon == "tabun_gas_mp" )
-        {
-            gasTrace( "throw by " + self.name );
             missile thread detonation( self );
-        }
     }
 }
 
 detonation( owner )
 {
-    // No endon( "death" ): G_ExplodeMissile notifies "explode" and then
-    // "death" in the same frame, and the death endon kills this thread before
-    // the explode waittill resumes, so no cloud ever formed. T5
-    // watchTabunGrenadeDetonation has no death endon either.
+    self endon( "death" );
     level endon( "game_ended" );
     self waittill( "explode", position );
-    gasTrace( "explode at " + position );
     // Retained explode notification carries position only. Query the same
     // native water contents used by G_ExplodeMissile, not a terrain name guess.
     if ( ( !isDefined( level.water_duds ) || level.water_duds ) && codol_isPointInWater( position ) )
@@ -92,7 +72,6 @@ detonation( owner )
     cloud = spawnStruct();
     cloud.owner = owner;
     cloud.areas = [];
-    cloud.fxs = [];
     cloud.expires = getTime() + 1000 * level.codolGasDuration;
     cloud.removeAt = getTime() + 1000 * max( level.codolGasDuration, level.codolPoisonDuration );
     cloud.origin = position;
@@ -104,27 +83,13 @@ detonation( owner )
     // T5 _tabun.gsc:111-112 stuns dogs caught in the cloud when it forms.
     foreach ( area in cloud.areas )
         owner thread maps\mp\_dogs::flash_dogs( area );
+    cloud.fx=spawnFx( level.codolGasFX, position );
+    triggerFx( cloud.fx );
     level.codolGasClouds[level.codolGasClouds.size] = cloud;
-    // C1 tabun_gas_mp has NULL explosion FX at +7b8/+7bc, so script owns the
-    // shipped poison effects (buildAreas). Native +7c0 owns tabun_gas_explode;
-    // do not double its sound. T5's wpn_gas_hiss_* aliases ship only in the
-    // zombies zones, so MP plays no hiss loop.
-    gasTrace( "cloud at " + position + " areas " + cloud.areas.size + " fx " + cloud.fxs.size );
+    // C1 weapon has NULL explosion FX at +7b8/+7bc, so script owns the shipped
+    // poison effect. Native +7c0 owns tabun_gas_explode; do not double its sound.
+    // Do not launch T5's extra FX-only grenade weapons into C1's inventory.
     level thread expire( cloud );
-}
-
-gasTrace( text )
-{
-    if ( level.codolGasTrace )
-        codolPrintLn( "CoDOL tabun: " + text );
-}
-
-// T5 SpawnTimedFX: the effect lives until the cloud is removed.
-addFx( cloud, fx, origin )
-{
-    ent = spawnFx( fx, origin );
-    triggerFx( ent );
-    cloud.fxs[cloud.fxs.size] = ent;
 }
 
 addArea( cloud, origin, radius, height )
@@ -132,7 +97,6 @@ addArea( cloud, origin, radius, height )
     if ( radius <= 0 || height <= 0 )
         return;
     area = spawn( "trigger_radius", origin, 0, radius, height );
-    gasTrace( "area at " + origin + " radius " + radius + " height " + height );
     cloud.areas[cloud.areas.size] = area;
 }
 
@@ -140,7 +104,7 @@ buildAreas( cloud, start )
 {
     if ( setting( "scr_enable_new_tabun", 1 ) == 0 )
     {
-        addWhole( cloud, start-(0,0,12) );
+        addArea( cloud, start-(0,0,12), level.codolGasRadius, level.codolGasHeight );
         return;
     }
     // T5 eight wall-clipped spokes, including its authored 0.707 diagonals.
@@ -155,45 +119,26 @@ buildAreas( cloud, start )
         points[i]=(start+trace["position"])*.5-(0,0,12);
         centroid+=points[i]*.125;
     }
+    cloud.killcam.origin=centroid+(0,0,60);
     whole=true; freePass=false;
     for ( i=0; i<8; i++ )
     {
         sizes[i]=classify( spans[i], spans[(i+7)%8], spans[(i+1)%8] );
-        // T5 spawnAllLocs compares the chosen radii, not the size classes:
-        // with the default radius0 == radius1 every size 0 or 1 spoke passes,
-        // and one spoke of radius1 is forgiven when the radii differ.
-        radius=0;
-        if ( sizes[i]>=0 ) radius=level.codolGasRadii[sizes[i]];
-        if ( radius == level.codolGasRadii[0] )
+        if ( sizes[i] == 0 )
             continue;
-        if ( radius == level.codolGasRadii[1] && !freePass )
+        if ( sizes[i] == 1 && !freePass )
             freePass=true;
         else
             whole=false;
     }
     if ( whole )
     {
-        addWhole( cloud, start-(0,0,12) );
+        addArea( cloud, start-(0,0,12), level.codolGasRadius, level.codolGasHeight );
         return;
     }
-    // T5: the killcam sits over the spokes' centroid; the large effect plays
-    // at the centre and each surviving spoke gets its sized effect and area.
-    cloud.killcam.origin=centroid+(0,0,60);
-    addFx( cloud, level.codolGasSizeFX[3], start-(0,0,12) );
     for ( i=0; i<8; i++ )
         if ( sizes[i]>=0 )
-        {
-            addFx( cloud, level.codolGasSizeFX[sizes[i]], points[i] );
             addArea( cloud, points[i], level.codolGasRadii[sizes[i]], level.codolGasRadii[sizes[i]] );
-        }
-}
-
-// T5 singleLocation: one centre effect and one 185 x 20 area.
-addWhole( cloud, origin )
-{
-    cloud.killcam.origin=origin+(0,0,60);
-    addFx( cloud, level.codolGasCenterFX, origin );
-    addArea( cloud, origin, level.codolGasRadius, level.codolGasHeight );
 }
 
 classify( span, previous, next )
@@ -211,7 +156,6 @@ expire( cloud )
 {
     while ( !level.codolGasEnded && getTime()<cloud.removeAt && isDefined( cloud.owner ) )
         wait .1;
-    gasTrace( "cloud at " + cloud.origin + " removed" );
     removeCloud( cloud );
 }
 
@@ -223,9 +167,7 @@ removeCloud( cloud )
         if ( isDefined( area ) ) area delete();
     cloud.areas=[];
     if ( isDefined( cloud.killcam ) ) cloud.killcam delete();
-    foreach ( fx in cloud.fxs )
-        if ( isDefined( fx ) ) fx delete();
-    cloud.fxs=[];
+    if ( isDefined( cloud.fx ) ) cloud.fx delete();
     remaining=[];
     foreach ( other in level.codolGasClouds )
         if ( other!=cloud ) remaining[remaining.size]=other;
@@ -295,7 +237,6 @@ exposure()
                 damage=level.codolPoisonDamage;
                 if ( level.hardcoreMode ) damage=level.codolPoisonDamageHardcore;
                 self.lastPoisonedBy=hit.cloud.owner;
-                gasTrace( "poison " + self.name + " (" + self.team + ") health " + self.health + " damage " + damage + " by " + hit.cloud.owner.name );
                 self DoDamage( damage, hit.area.origin, hit.cloud.owner, hit.cloud.killcam, 0, "MOD_GAS", 0, "tabun_gas_mp" );
                 if ( isAlive( self ) && self codol_mayApplyScreenEffect() )
                 {
@@ -315,7 +256,6 @@ exposure()
             if ( clearAt==0 ) clearAt=getTime()+1000;
             if ( getTime()>=clearAt )
             {
-                gasTrace( "clear " + self.name );
                 self clearExposure( worker ); nextDamage=0; shock=0;
             }
         }

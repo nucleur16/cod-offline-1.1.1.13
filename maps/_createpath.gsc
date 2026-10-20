@@ -383,21 +383,21 @@ path_dump()
 {
 	if ( getdvar( "path_dump" ) == "" )
 		return;
-	println( " " );
-	println( " " );
-	println( " " );
-	println( "--------******--------" );
+	{}
+	{}
+	{}
+	{}
 //	println ("   photo source dump  (paste these to your level script before maps\_load::main() ) ");
-	println( "       path dump      " );
-	println( "--------******--------" );
-	println( " " );
-	println( " " );
+	{}
+	{}
+	{}
+	{}
 	for ( j = 0;j < level.paths_selectid_list.size;j++ )
 	{
 		ident = level.paths_selectid_list[ j ];
-		println( "path ident: " + ident );
+		{}
 		for ( i = 0;i < level.path_views[ ident ].size;i++ )
-				println( level.path_views[ ident ][ i ].origin + "," + level.path_views[ ident ][ i ].angles );
+				{}
 	}
 	// todo: [level.path_selectid] list
 //	println ("thread maps\\\_photosource::photosource_init();");
@@ -406,13 +406,13 @@ path_dump()
 		ident = level.paths_selectid_list[ j ];
 		for ( i = 0;i < level.path_views[ ident ].size;i++ )
 		{
-	    	println( "maps\\\_createpath::path_create(\"" + level.path_views[ ident ][ i ].origin + "," + level.path_views[ ident ][ i ].angles + ");" );
+	    	{}
 		}
 	}
 //	println ("thread maps\\\_photosource::photosource_main();");
-	println( " " );
-	println( " " );
-	println( " " );
+	{}
+	{}
+	{}
 	setdvar( "path_dump", "" );
 
 }
@@ -422,33 +422,33 @@ path_help()
 {
 	if ( getdvar( "path_help" ) == "" )
 		return;
-	println( " " );
-	println( " " );
-	println( "Photo refrenence - Help " );
-	println( " " );
-	println( " photo reference is a tool to help communicate art direction within the level " );
-	println( " An artist or a level designer can run this tool to place images of photo " );
-	println( " source like a gallery throughout the level." );
-	println( " " );
-	println( " before starting do /exec psource.cfg" );
-	println( " " );
-	println( "path_enable ( 7 Key ) - toggles psource on and off" );
-	println( "path_setview ( 8 Key ) - sets the view of the currently selected position." );
-	println( "path_select_prev ( [ Key ) - selects prev psourceposition" );
-	println( "path_select_next ( ] Key ) - selects next psourceposition" );
-	println( "path_select_new ( \\ Key ) - selects NEW psourceposition, used to create a new position on setview" );
-	println( "path_help ( h Key ) - prints to console this help text" );
-	println( "path_dump ( u Key ) - dumps view list to the console to be cut and pasted into script somewhere" );
-	println( "path_delete ( del Key ) - deletes the currently selected view (yellow star in circle)" );
-	println( " " );
-	println( "Pressing the usebutton on a sphere will teleport you so that you can see " );
-	println( "the desired angle of the piece of reference, this also selects the view" );
-	println( "and highlights it yellow" );
-	println( " " );
-	println( "To change the image of the currently selected view go to the console and enter this dvar" );
-	println( "path_image <materialname>" );
-	println( " " );
-	println( "Once you have all your views press the dump button, open your console.log and paste the script to your level script" );
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
 	setdvar( "path_help", "" );
 }
 

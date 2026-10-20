@@ -35,7 +35,7 @@
 // as their length permits: exactly 1/2/3 hound rounds.  This leaves round 5
 // available to the map's first boss.  Endless mode keeps
 // T5's randomized first round 5..7 and 4..5-round intervals.  The extraction
-// round itself is never a hound round.
+// round itself is never a hound round; every difficulty mixes hounds into its horde.
 //
 // Developer verbs (developer servers only): scr_zm_force_dogs 1 makes the
 // NEXT round a hound round (T5's force_dogs); scr_zm_dog_count overrides the
@@ -53,7 +53,6 @@ init()
 	level.dog_intermission = false;
 
 	flag_init( "dog_round" );
-	flag_init( "dog_clips" );
 
 	// T5 keeps the hound rounds off unless the level enables them; every
 	// CoDOL zm map authors hound structs, so they are on unless a server
@@ -62,18 +61,8 @@ init()
 	if ( getDvar( "scr_zm_dog_rounds" ) != "" && getDvarInt( "scr_zm_dog_rounds" ) == 0 )
 		level.dog_rounds_enabled = false;
 
-	// T5 :18.
-	precacheRumble( "explosion_generic" );
-
-	// T5 :25-33.  scr_dog_run_distance is read by zombie_dog_move's
-	// need_to_run (the stalking trot turns into the sprint inside it).
-	dog_dvar_default( "scr_dog_health_walk_multiplier", "4.0" );
-	dog_dvar_default( "scr_dog_run_distance", "500" );
-
-	// T5 :43-47: the build-up effect is the whole strike (T5 loads no other
-	// spawn effect; fx_zombie_dog_lightning_spawn ships in C1 but no T5
-	// script plays it).
 	level._effect[ "lightning_dog_spawn" ]	= loadfx( "maps/zombie/fx_zombie_dog_lightning_buildup" );
+	level._effect[ "dog_lightning_strike" ]	= loadfx( "maps/zombie/fx_zombie_dog_lightning_spawn" );
 	level._effect[ "dog_eye_glow" ]			= loadfx( "maps/zombie/fx_zombie_dog_eyes" );
 	level._effect[ "dog_gib" ]				= loadfx( "maps/zombie/fx_zombie_dog_explosion" );
 	level._effect[ "dog_trail_fire" ]		= loadfx( "maps/zombie/fx_zombie_dog_fire_trail" );
@@ -92,9 +81,6 @@ init()
 	level.dog_fire_trail_percent = 50;
 
 	dog_spawner_init();
-
-	// T5 :55.
-	level thread dog_clip_monitor();
 
 	if ( getDvarInt( "developer" ) > 0 )
 	{
@@ -123,12 +109,12 @@ dog_spawner_init()
 	if ( !isDefined( level.dog_spawner ) )
 	{
 		// The native side has printed a "CoDOL actor:" line naming the cause.
-		codolprintln( "CoDOL zm dogs: spawnactorspawner produced no hellhound spawner; hound rounds are off" );
+		{}
 		level.dogs_enabled = false;
 		return;
 	}
 	level.dog_spawner.targetname = "zombie_dog_spawner";
-	codolprintln( "CoDOL zm dogs: hellhound spawner ready" );
+	{}
 }
 
 // The hound structs of the zones a player can reach (T5 Factory
@@ -151,13 +137,8 @@ refresh_dog_locations()
 		}
 	}
 
-	// A map whose volumes did not instantiate: every hound struct with a floor.
-	if ( locations.size < 1 )
-	{
-		if ( !isDefined( level.zm_all_dog_locations ) )
-			level.zm_all_dog_locations = all_dog_locations();
-		locations = level.zm_all_dog_locations;
-	}
+	// An empty enabled group is not permission to spawn in closed rooms.
+	// dog_spawn_location falls back to inside entrances/path nodes instead.
 
 	level.enemy_dog_locations = locations;
 	return locations;
@@ -201,7 +182,36 @@ all_dog_locations()
 dog_location_has_floor( loc )
 {
 	trace = bulletTrace( loc.origin + ( 0, 0, 16 ), loc.origin - ( 0, 0, 128 ), false, undefined );
-	return trace[ "fraction" ] < 1;
+	if ( trace[ "fraction" ] <= 0 || trace[ "fraction" ] >= 1 )
+		return false;
+	// A trace can hit a wall/steep face, not a walkable floor.
+	return trace[ "normal" ][ 2 ] >= 0.7;
+}
+
+dog_location_is_open( loc )
+{
+	if ( !dog_location_has_floor( loc ) )
+		return false;
+	// Navigation nodes also exist outside windows and behind unopened doors.
+	// A floor alone does not make either a fair hellhound spawn.
+	if ( isDefined( level.zm_spawn_zones ) && level.zm_spawn_zones.size > 0 )
+	{
+		zone = maps\_zombiemode_zone_manager::zone_at_point( loc.origin );
+		if ( !isDefined( zone ) || !zone.enabled )
+			return false;
+	}
+	return true;
+}
+
+open_dog_locations( locations )
+{
+	kept = [];
+	for ( i = 0; i < locations.size; i++ )
+	{
+		if ( dog_location_is_open( locations[ i ] ) )
+			kept[ kept.size ] = locations[ i ];
+	}
+	return kept;
 }
 
 // --------------------------------------------------------------------------
@@ -223,7 +233,7 @@ dog_round_tracker()
 	}
 	else
 		level.next_dog_round = randomIntRange( 5, 8 );
-	codolprintln( "CoDOL zm dogs: first hound round is round " + level.next_dog_round );
+	{}
 
 	old_spawn_func = level.round_spawn_func;
 	old_wait_func = level.round_wait_func;
@@ -253,9 +263,6 @@ dog_round_tracker()
 			dog_round_start();
 			level.dog_rounds_played++;
 			level.round_spawn_func = ::dog_round_spawning;
-			// T5 _zombiemode.gsc:4148 round_wait's hound-round arm, installed
-			// through the hook T5's tracker already saves and restores.
-			level.round_wait_func = ::dog_round_wait;
 
 			if ( level.zm_round_cap > 0 )
 			{
@@ -266,8 +273,7 @@ dog_round_tracker()
 			}
 			else
 				level.next_dog_round = level.round_number + randomIntRange( 4, 6 );
-			codolprintln( "CoDOL zm dogs: round " + level.round_number + " is hound round " +
-				level.dog_round_count + "; the next is round " + level.next_dog_round );
+			{}
 		}
 		else if ( flag( "dog_round" ) )
 		{
@@ -288,7 +294,6 @@ dog_round_tracker()
 dog_round_start()
 {
 	flag_set( "dog_round" );
-	flag_set( "dog_clips" );
 	level notify( "dog_round_starting" );
 }
 
@@ -296,46 +301,7 @@ dog_round_start()
 dog_round_stop()
 {
 	flag_clear( "dog_round" );
-	flag_clear( "dog_clips" );
 	level notify( "dog_round_ending" );
-}
-
-// T5 _zombiemode.gsc:4146-4155, round_wait during a hound round: the round
-// does not end with the last hound but when dog_round_aftermath releases
-// level.dog_intermission, 8 s after the last hound fell -- the time to pick
-// up its Max Ammo before the next round's countdown.
-dog_round_wait()
-{
-	level endon( "end_game" );
-
-	wait( 1 );
-	wait( 7 );
-
-	// CoDOL: a hound round whose budget was released without a last kill
-	// (the hounds could not be placed, or a developer endround) never sends
-	// last_dog_down, so the lull is also over once nothing is left for 10 s.
-	empty_since = undefined;
-	while ( level.dog_intermission )
-	{
-		if ( flag( "end_round_wait" ) )
-		{
-			flag_clear( "end_round_wait" );
-			level.dog_intermission = false;
-			return;
-		}
-
-		if ( live_enemy_count() == 0 && level.zombie_total <= 0 && !is_true( level.dog_aftermath_running ) )
-		{
-			if ( !isDefined( empty_since ) )
-				empty_since = getTime();
-			else if ( getTime() - empty_since > 10000 )
-				level.dog_intermission = false;
-		}
-		else
-			empty_since = undefined;
-
-		wait( 0.5 );
-	}
 }
 
 // T5 :540 play_dog_round, with C1's assets: the announcer line, and C1's own
@@ -346,16 +312,10 @@ play_dog_round()
 {
 	self endon( "disconnect" );
 
-	// T5 :544 plays zmb_dog_round_start here; no C1 zone ships that alias
-	// (or any renamed copy of it), so the announcer is the first sound.
 	self thread dog_round_notice();
 
 	wait( 1 );
 	self playLocalSound( "zmb_vox_ann_dogstart" );
-
-	// T5 :550-554: a random player calls the hounds out (plr_vox general
-	// dog_spawn, "spawn_dog").  C1's character vox sets (<code>_<line>,
-	// _zombiemode_audio vox_alias) carry no hound line, so nothing is said.
 }
 
 dog_round_notice()
@@ -401,18 +361,19 @@ dog_round_spawning()
 {
 	level endon( "intermission" );
 	level endon( "end_game" );
+	level endon( "zm_stop_spawning" );
 
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 		players[ i ].hunted_by = 0;
 
-	if ( is_true( level.intermission ) )
+	if ( maps\_zombiemode_spawner::spawning_closed() )
 		return;
 
 	if ( !is_true( level.dogs_enabled ) )
 	{
 		level.zombie_total = 0;
-		codolprintln( "CoDOL zm dogs: hound round " + level.round_number + " has no hellhound spawner; nothing to spawn" );
+		{}
 		return;
 	}
 
@@ -435,8 +396,7 @@ dog_round_spawning()
 	level.zm_round_spawned = 0;
 	dog_health_increase();
 
-	codolprintln( "CoDOL zm dogs: hound round " + level.dog_round_count + " (round " + level.round_number +
-		"): " + max + " hellhounds at " + level.dog_health + " health" );
+	{}
 
 	wait( 7 );
 
@@ -483,7 +443,7 @@ dog_round_spawning()
 			failures++;
 			if ( failures >= 10 )
 			{
-				codolprintln( "CoDOL zm dogs: could not place a hellhound 10 times; releasing " + ( max - count ) + " from the budget" );
+				{}
 				level.zombie_total = 0;
 				return;
 			}
@@ -493,6 +453,54 @@ dog_round_spawning()
 
 		waiting_for_next_dog_spawn( count, max );
 	}
+}
+
+// Mixed final horde on every difficulty: ordinary admissions own the AI cap and
+// budget. Do not enable dog_round, replace round functions, run aftermath or
+// claim a separate hound-round budget/music state. Reuse the survival round's
+// two-live-hounds-per-standing-player ceiling; other slots remain humanoids.
+final_round_dog_due()
+{
+	if ( !is_true( level.zm_extraction_active ) || !maps\_zombiemode::is_final_round() )
+		return false;
+	if ( !is_true( level.dogs_enabled ) || !isDefined( level.dog_spawner ) ||
+		maps\_zombiemode_spawner::spawning_closed() )
+		return false;
+
+	players = getPlayers();
+	standing = 0;
+	for ( i = 0; i < players.size; i++ )
+	{
+		if ( is_player_valid( players[ i ] ) && !is_true( players[ i ].zm_extracted ) )
+			standing++;
+	}
+	if ( standing < 1 )
+		return false;
+
+	live_dogs = 0;
+	for ( i = 0; i < level.zombies.size; i++ )
+	{
+		ai = level.zombies[ i ];
+		if ( isDefined( ai ) && isAlive( ai ) && is_true( ai.isdog ) )
+			live_dogs++;
+	}
+	return live_dogs < standing * 2;
+}
+
+spawn_final_round_dog()
+{
+	if ( !final_round_dog_due() )
+		return undefined;
+	target = get_favorite_enemy();
+	if ( !isDefined( target ) )
+		return undefined;
+	loc = dog_spawn_location( target );
+	if ( !isDefined( loc ) )
+		return undefined;
+	// The existing count advances after each completed survival hound round.
+	// Keep that same health progression for the final horde's ordinary hounds.
+	dog_health_increase();
+	return spawn_dog( loc, target );
 }
 
 // T5 :216.
@@ -523,26 +531,25 @@ waiting_for_next_dog_spawn( count, max )
 dog_round_aftermath()
 {
 	level endon( "end_game" );
+	// A local skip can end admission before even one hound spawned. Do not
+	// let that old round's Max Ammo/intermission waiter survive into a new one.
+	level endon( "end_of_round" );
+	level endon( "zm_stop_spawning" );
 
 	level waittill( "last_dog_down" );
-	level.dog_aftermath_running = true;
 
-	level thread maps\_zombiemode_audio::change_zombie_music( "dog_end" );
+	// The audio round watcher owns the hound ending at end_of_round. A second
+	// cue here races the ordinary ending and can duplicate or interrupt music.
 
 	power_up_origin = level.last_dog_origin;
 	if ( isDefined( power_up_origin ) )
 	{
-		codolprintln( "CoDOL zm dogs: last hellhound down at " + power_up_origin + "; dropping Max Ammo" );
+		{}
 		level thread maps\_zombiemode_powerups::specific_powerup_drop( "full_ammo", power_up_origin );
 	}
 
-	// T5 :259-262: clientnotify "dog_stop" after 2 s (the map fog goes back,
-	// see zm_sumpf_sh sumpf_fog), the round ends 6 s after that.
-	wait( 2 );
-	level notify( "dog_stop" );
-	wait( 6 );
+	wait( 8 );
 	level.dog_intermission = false;
-	level.dog_aftermath_running = false;
 }
 
 // T5 :349 dog_spawn_factory_logic: 400..1000 units from the hunted player,
@@ -550,7 +557,7 @@ dog_round_aftermath()
 // else any.
 dog_spawn_location( favorite_enemy )
 {
-	locs = refresh_dog_locations();
+	locs = open_dog_locations( refresh_dog_locations() );
 	if ( locs.size < 1 )
 	{
 		// No hound struct with a floor in an open zone -- zm_zombie_training,
@@ -559,7 +566,7 @@ dog_spawn_location( favorite_enemy )
 		// of the open zones by construction (the zombies' own way in); the
 		// minigun boss arrives at the same points.  MEASURED on the probe: the
 		// zombie spawners outside the windows left hounds stuck at the boards.
-		locs = window_inside_locations();
+		locs = open_dog_locations( window_inside_locations() );
 	}
 	if ( locs.size < 1 )
 	{
@@ -626,8 +633,8 @@ window_inside_locations()
 		if ( !isDefined( point ) )
 			continue;
 		// Only the windows of zones the players have opened.
-		zone = maps\_zombiemode_zone_manager::zone_for_point( point, 200 );
-		if ( isDefined( zone ) && !zone.enabled )
+		zone = maps\_zombiemode_zone_manager::zone_at_point( point );
+		if ( !isDefined( zone ) || !zone.enabled )
 			continue;
 		if ( !isDefined( level.zm_dog_window_locs[ i ] ) )
 		{
@@ -660,7 +667,8 @@ path_node_locations( player )
 			continue;
 		loc = spawnStruct();
 		loc.origin = n.origin;
-		locs[ locs.size ] = loc;
+		if ( dog_location_is_open( loc ) )
+			locs[ locs.size ] = loc;
 	}
 	return locs;
 }
@@ -713,27 +721,30 @@ spawn_dog( spawn_loc, favorite_enemy )
 {
 	if ( !isDefined( level.dog_spawner ) )
 		return undefined;
+	if ( !dog_location_is_open( spawn_loc ) )
+		return undefined;
 
-	origin = spawn_loc.origin;
+	// Place feet on the tested floor, not an authored point floating above it.
+	trace = bulletTrace( spawn_loc.origin + ( 0, 0, 16 ), spawn_loc.origin - ( 0, 0, 128 ), false, undefined );
+	origin = trace[ "position" ] + ( 0, 0, 1 );
 
-	// T5 dog_spawn_fx :281-288: the build-up strike and the pre-spawn crackle,
-	// 1.5 s, then the bolt, the quake, the rumble and the arrival.
+	// T5 dog_spawn_fx: the build-up, 1.5 s, then the bolt.
 	playFx( level._effect[ "lightning_dog_spawn" ], origin );
 	playSoundAtPosition( "zmb_hellhound_prespawn", origin );
 	wait( 1.5 );
 	playSoundAtPosition( "zmb_hellhound_bolt", origin );
+	playFx( level._effect[ "dog_lightning_strike" ], origin );
 	earthquake( 0.5, 0.75, origin, 1000 );
-	playRumbleOnPosition( "explosion_generic", origin );
 	playSoundAtPosition( "zmb_hellhound_spawn", origin );
 
 	ai = level.dog_spawner spawnActor();
 	if ( !isDefined( ai ) )
 	{
-		codolprintln( "CoDOL zm dogs: spawnactor returned no hellhound (actor budget, aitype or animscripts)" );
+		{}
 		return undefined;
 	}
 
-	// T5 :291-293: face the hunted player.
+	// Face the hunted player.
 	angles = ( 0, randomInt( 360 ), 0 );
 	if ( isDefined( favorite_enemy ) )
 	{
@@ -741,193 +752,57 @@ spawn_dog( spawn_loc, favorite_enemy )
 		angles = ( 0, face[ 1 ], 0 );
 	}
 	ai forceTeleport( origin, angles );
+	ai show();
 
 	ai dog_init( favorite_enemy );
-	ai zombie_setup_attack_properties_dog();
 
 	level.zombies[ level.zombies.size ] = ai;
 
-	// T5 :304-307: "dog should come out running after this wait".
-	wait( 0.05 );
-	if ( isDefined( ai ) && isAlive( ai ) )
-	{
-		ai show();
-		ai.ignoreme = false;
-		ai notify( "visible" );
-	}
-
-	if ( isDefined( ai ) && ( !isDefined( level.zm_dog_spawn_reported ) || level.zm_dog_spawn_reported != level.round_number ) )
+	if ( !isDefined( level.zm_dog_spawn_reported ) || level.zm_dog_spawn_reported != level.round_number )
 	{
 		level.zm_dog_spawn_reported = level.round_number;
-		codolprintln( "CoDOL zm dogs: round " + level.round_number + " first hellhound spawned at " +
-			ai.origin + " (ent " + ai getEntityNumber() + ", " + ai.health + " hp) hunting " + favorite_enemy.name );
+		{}
 	}
 
 	return ai;
 }
 
-// T5 :558 dog_init, the fields that exist on this server's actor.
+// T5 :556 dog_init, the fields that exist on this server's actor.
 dog_init( favorite_enemy )
 {
 	self.targetname = "zombie_dog";
 	self.animname = "zombie_dog";
 	self.isdog = true;
-	self.allowdeath = true;
-	// T5 :566 / :619: hellhounds never flinch (native T5 allowPain gate).
-	self.allowpain = false;
-	if ( isDefined( self.a ) )
-		self.a.disablePain = true;
-	self.force_gib = true;
 	// _zombiemode::Callback_PlayerDamage treats an is_zombie attacker's hit as
-	// worth its meleeDamage; T5 dog_init :625 self.meleeDamage = 40.
+	// worth its meleeDamage; T5 dog_init :641 self.meleeDamage = 40.
 	self.is_zombie = true;
 	self.meleeDamage = 40;
-	self.has_legs = true;
-	self.gibbed = false;
-	self.head_gibbed = false;
-	self.default_goalheight = 40;
-	self.grenadeawareness = 0;
-	self.badplaceawareness = 0;
+	self.allowdeath = true;
 	self.ignoreSuppression = true;
 	self.suppressionThreshold = 1;
 	self.noDodgeMove = true;
-	self.dontShootWhileMoving = true;
-	self.pathenemylookahead = 0;
-	self.chatInitialized = false;
+	self.grenadeawareness = 0;
+	self.badplaceawareness = 0;
 	self.dropweapon = false;
-	self.freezegun_damage = 0;
-	self.flame_damage_time = 0;
-	self.zombie_move_speed = "sprint";
-
-	// T5 :627-628.  thundergun_zm ships in zm_prototype_sh; whichever script
-	// ports its blast reads these hooks for a hound.
-	self.thundergun_disintegrate_func = ::dog_thundergun_disintegrate;
-	self.thundergun_knockdown_func = ::dog_thundergun_knockdown;
 
 	self.aiweapon = character\character_zm_zombie_dog::bite_weapon();
 
-	// T5 :595-602 multiplies by scr_dog_health_walk_multiplier, and
-	// dog_run_think :939 takes it back down to level.dog_health on "visible"
-	// (0.05 s later); the hound is never hittable in between, so it starts
-	// at level.dog_health here.
 	self.maxhealth = level.dog_health;
 	self.health = level.dog_health;
 
-	// T5 :563-564: blind and unseen until the strike reveals it.
-	self.ignoreall = true;
-	self.ignoreme = true;
-	// T5 dog_round_spawning :185 ai.favoriteenemy: the least-hunted player is
-	// this hound's quarry (native threat pass, T5 actor_threat.cpp:317).
+	// A hound hunts at once (T5 reveals it with ignoreme/ignoreall cleared);
+	// the perfect-info species row hands it the nearest valid player.
+	self.ignoreall = false;
+	self.ignoreme = false;
 	self.favoriteenemy = favorite_enemy;
 	self.zm_dog_round = level.dog_round_count;
 
-	self thread dog_run_think();
-	self thread dog_stalk_audio();
-	self dog_fx_trail_type();
+	self dog_fx_eye_glow();
+	self dog_fx_trail();
 
 	level thread dog_death( self );
 	self thread maps\_zombiemode_spawner::zombie_damage_watch();
 	self thread dog_failsafe();
-}
-
-// T5 :746 zombie_setup_attack_properties_dog.
-zombie_setup_attack_properties_dog()
-{
-	self thread dog_behind_audio();
-
-	// allows the hound to attack
-	self.ignoreall = false;
-
-	self.pathEnemyFightDist = 64;
-	self.meleeAttackDist = 64;
-
-	// turn off transition anims
-	self.disableArrivals = true;
-	self.disableExits = true;
-}
-
-// T5 :929 dog_run_think: on "visible" the eye glow and the trail start.
-dog_run_think()
-{
-	self endon( "death" );
-
-	self waittill( "visible" );
-
-	if ( self.health > level.dog_health )
-	{
-		self.maxhealth = level.dog_health;
-		self.health = level.dog_health;
-	}
-
-	self dog_fx_eye_glow();
-	playFxOnTag( self.fx_dog_trail_type, self, "tag_origin" );
-	self playLoopSound( self.fx_dog_trail_sound );
-}
-
-// T5 :955 dog_stalk_audio: the ambient snarl while the hound stalks (trots);
-// it stops when it breaks into the sprint or attacks.
-dog_stalk_audio()
-{
-	self endon( "death" );
-	self endon( "dog_running" );
-	self endon( "dog_combat" );
-
-	for ( ;; )
-	{
-		self.dog_stalk_vox_playing = true;
-		self playSound( "zmb_hellhound_vocals_amb", "stalk_vox_done" );
-		self waittill( "stalk_vox_done" );
-		self.dog_stalk_vox_playing = false;
-		wait( randomFloatRange( 1, 4 ) );
-	}
-}
-
-// T5 :766 stop_dog_sound_on_death.
-stop_dog_sound_on_death()
-{
-	self waittill( "death" );
-	if ( isDefined( self ) )
-		self stopSounds();
-}
-
-// T5 :772 dog_behind_audio: once it runs, a hound behind a standing player
-// (more than 90 degrees off his view, farther than 100 units) growls at him.
-dog_behind_audio()
-{
-	self thread stop_dog_sound_on_death();
-
-	self endon( "death" );
-	self common_scripts\utility::waittill_any( "dog_running", "dog_combat" );
-
-	// This VM allows one playsound notification per entity at a time (C1
-	// 0x54d312 throws on a second one); let the last stalking snarl finish.
-	if ( is_true( self.dog_stalk_vox_playing ) )
-		self waittill( "stalk_vox_done" );
-
-	self playSound( "zmb_hellhound_vocals_close", "sounddone" );
-	self waittill( "sounddone" );
-
-	for ( ;; )
-	{
-		players = getPlayers();
-		for ( i = 0; i < players.size; i++ )
-		{
-			if ( !isDefined( players[ i ] ) )
-				continue;
-			dogAngle = angleClamp180( vectorToAngles( self.origin - players[ i ].origin )[ 1 ] - players[ i ].angles[ 1 ] );
-
-			if ( isAlive( players[ i ] ) && !isDefined( players[ i ].revivetrigger ) )
-			{
-				if ( abs( dogAngle ) > 90 && distance2d( self.origin, players[ i ].origin ) > 100 )
-				{
-					self playSound( "zmb_hellhound_vocals_close", "sounddone" );
-					self waittill( "sounddone" );
-				}
-			}
-		}
-
-		wait( 0.75 );
-	}
 }
 
 // T5 round_spawn_failsafe (_zombiemode.gsc:4059) for a hound: one that fell
@@ -953,7 +828,7 @@ dog_failsafe()
 
 		if ( distanceSquared( self.origin, prevorigin ) < 576 && !dog_near_player( 160 ) )
 		{
-			codolprintln( "CoDOL zm dogs: hellhound " + self getEntityNumber() + " stuck at " + self.origin + "; culled" );
+			{}
 			self doDamage( self.health + 100, self.origin );
 			return;
 		}
@@ -987,17 +862,16 @@ live_enemy_count()
 	return count;
 }
 
-// T5 :639 dog_fx_eye_glow links a tag_origin model to J_EyeBall_LE so the
-// clientscript can play on it; the server plays the glow on the bone itself
-// and stops it there (dog_death).
+// T5 :608 dog_fx_eye_glow links a tag_origin model to J_EyeBall_LE so the
+// clientscript can play on it; the server plays the glow on the bone itself.
 dog_fx_eye_glow()
 {
 	playFxOnTag( level._effect[ "dog_eye_glow" ], self, "j_eyeball_le" );
 }
 
-// T5 :650 dog_fx_trail: half the hounds burn (and burst on death, a.nodeath),
-// the rest trail ash.  The effect itself starts on "visible" (dog_run_think).
-dog_fx_trail_type()
+// T5 :618 dog_fx_trail: half the hounds burn and explode on death, the rest
+// trail ash.
+dog_fx_trail()
 {
 	if ( randomInt( 100 ) > level.dog_fire_trail_percent )
 	{
@@ -1006,16 +880,16 @@ dog_fx_trail_type()
 	}
 	else
 	{
-		// fire dogs will explode during death
 		self.fire_dog = true;
-		if ( isDefined( self.a ) )
-			self.a.nodeath = true;
 		self.fx_dog_trail_type = level._effect[ "dog_trail_fire" ];
 		self.fx_dog_trail_sound = "zmb_hellhound_loop_fire";
 	}
+
+	playFxOnTag( self.fx_dog_trail_type, self, "tag_origin" );
+	self playLoopSound( self.fx_dog_trail_sound );
 }
 
-// T5 :674 dog_death.  The kill pays the "death" points like a zombie's and
+// T5 :656 dog_death.  The kill pays the "death" points like a zombie's and
 // counts toward the match's kills; the last hound of the round drops the Max
 // Ammo (dog_round_aftermath).  T5's hellhounds roll no random power-up.
 dog_death( dog )
@@ -1025,17 +899,10 @@ dog_death( dog )
 	level.total_zombies_killed++;
 
 	origin = undefined;
-	fire_dog = false;
 	if ( isDefined( dog ) )
 	{
 		origin = dog.origin;
-		fire_dog = is_true( dog.fire_dog );
-		// T5 :710: sound.
 		dog stopLoopSound();
-		// T5 :713-717: the eye and trail carriers are deleted with the hound.
-		stopFxOnTag( level._effect[ "dog_eye_glow" ], dog, "j_eyeball_le" );
-		if ( isDefined( dog.fx_dog_trail_type ) )
-			stopFxOnTag( dog.fx_dog_trail_type, dog, "tag_origin" );
 	}
 
 	// The same frame-end wait as _zombiemode_spawner::zombie_death_event, so
@@ -1045,9 +912,16 @@ dog_death( dog )
 	if ( !isPlayer( attacker ) && isDefined( dog ) && isDefined( dog.attacker ) )
 		attacker = dog.attacker;
 
+	if ( isDefined( origin ) )
+	{
+		// T5 dog_death :702: every hound bursts on death (fire hounds also skip
+		// the death animation; T5 deletes them).
+		playFx( level._effect[ "dog_gib" ], origin );
+		playSoundAtPosition( "zmb_hellhound_explode", origin );
+	}
+
 	zombie_list_compact();
 
-	// T5 :678.
 	if ( live_enemy_count() == 0 && level.zombie_total <= 0 && flag( "dog_round" ) )
 	{
 		level.last_dog_origin = origin;
@@ -1069,98 +943,15 @@ dog_death( dog )
 			attacker.kills = 0;
 		attacker.kills = attacker.kills + 1;
 		attacker notify( "zom_kill", dog );
-
-		// T5 :697-700: 20% of kills draw the player's "kill_hellhound" line;
-		// no C1 character vox set has a hound line, so nothing is said.
 	}
 
 	level notify( "zom_kill" );
 
-	if ( !isDefined( origin ) )
-		return;
-
-	if ( fire_dog )
+	// A burning hound is gone in its explosion (T5 :702 self delete()).
+	if ( isDefined( dog ) && is_true( dog.fire_dog ) )
 	{
-		// T5 :719-722: a burning hound bursts (dog_explode_fx) and is deleted
-		// outright; zombie_dog_death skips its animation (a.nodeath).  The
-		// burst deals no damage in T5.
-		level thread dog_explode_fx( origin );
+		wait( 0.1 );
 		if ( isDefined( dog ) )
 			dog hide();
 	}
-	else if ( isDefined( dog ) )
-	{
-		// T5 :726: an ash hound falls with its death animation and a yelp.
-		dog playSound( "zmb_hellhound_vocals_death" );
-	}
-}
-
-// T5 :731 dog_explode_fx.
-dog_explode_fx( origin )
-{
-	playFx( level._effect[ "dog_gib" ], origin );
-	playSoundAtPosition( "zmb_hellhound_explode", origin );
-}
-
-// T5 :806 dog_clip_monitor: the map's dog_clips brushes stand while a hound
-// is alive or a hound round runs (none of the shipped zm maps author any).
-dog_clip_monitor()
-{
-	level.dog_clips = getEntArray( "dog_clips", "targetname" );
-	if ( !isDefined( level.dog_clips ) || level.dog_clips.size == 0 )
-		return;
-
-	for ( ;; )
-	{
-		for ( i = 0; i < level.dog_clips.size; i++ )
-		{
-			level.dog_clips[ i ] common_scripts\utility::trigger_off();
-			level.dog_clips[ i ] connectPaths();
-		}
-
-		flag_wait( "dog_clips" );
-
-		if ( is_true( level.no_dog_clip ) )
-			return;
-
-		for ( i = 0; i < level.dog_clips.size; i++ )
-		{
-			level.dog_clips[ i ] common_scripts\utility::trigger_on();
-			level.dog_clips[ i ] disconnectPaths();
-			wait( 0.05 );
-		}
-
-		dog_is_alive = true;
-		while ( dog_is_alive || flag( "dog_round" ) )
-		{
-			dog_is_alive = false;
-			dogs = getEntArray( "zombie_dog", "targetname" );
-			for ( i = 0; i < dogs.size; i++ )
-			{
-				if ( isAlive( dogs[ i ] ) )
-					dog_is_alive = true;
-			}
-			wait( 1 );
-		}
-
-		flag_clear( "dog_clips" );
-		wait( 1 );
-	}
-}
-
-// T5 :969.
-dog_thundergun_disintegrate( player )
-{
-	self endon( "death" );
-
-	self doDamage( self.health + 666, player.origin, player );
-}
-
-// T5 :976.
-dog_thundergun_knockdown( player, gib )
-{
-	self endon( "death" );
-
-	damage = int( self.maxhealth * 0.5 );
-	self doDamage( damage, player.origin, player );
 }

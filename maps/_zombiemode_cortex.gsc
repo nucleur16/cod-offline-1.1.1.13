@@ -355,9 +355,7 @@ cortex_horde_event()
 	wait( 0.3 );
 	speakers = cortex_speak( event.alias );
 
-	codolprintln( "CoDOL zm cortex: event " + event.id + " " + event.alias + " (" + category + ") round " +
-		diag_round() + " " + level.cortex_round_count + "/" + cortex_round_cap() + ": " + glowing +
-		" glowing, " + speakers + " speaker(s)" );
+	{}
 
 	wait( level.cortex_event_length - 0.3 );
 
@@ -366,10 +364,11 @@ cortex_horde_event()
 	level notify( "cortex_event_over" );
 }
 
-// Play the alias once per listener; returns the number of speakers.
+// One positional sound event per listener. Broadcast speakers can each produce
+// a subtitle on the same client, even when the players are far apart.
 cortex_speak( alias )
 {
-	speakers = [];
+	listeners = 0;
 	players = getPlayers();
 	range_sq = level.cortex_voice_range * level.cortex_voice_range;
 
@@ -379,19 +378,6 @@ cortex_speak( alias )
 		if ( !isDefined( player ) )
 			continue;
 		if ( isDefined( player.sessionstate ) && player.sessionstate != "playing" )
-			continue;
-
-		// Already in earshot of a chosen speaker?
-		covered = false;
-		for ( j = 0; j < speakers.size; j++ )
-		{
-			if ( isDefined( speakers[ j ] ) && distanceSquared( speakers[ j ].origin, player.origin ) < range_sq )
-			{
-				covered = true;
-				break;
-			}
-		}
-		if ( covered )
 			continue;
 
 		best = undefined;
@@ -413,11 +399,11 @@ cortex_speak( alias )
 		if ( !isDefined( best ) )
 			best = player;
 
-		speakers[ speakers.size ] = best;
-		best playSound( alias );
+		best playSoundToPlayer( alias, player );
+		listeners++;
 	}
 
-	return speakers.size;
+	return listeners;
 }
 
 diag_round()

@@ -1523,7 +1523,7 @@ wait_until_player_looks_at_knife()
 		else
 		{
 			if ( GetDvarInt( "x" ) )
-				Print3d( pos + ( 0, 0, 32 ), "x", ( 1, 0, 0 ) );
+				{}
 			count -= 1;
 		}
 
@@ -1560,7 +1560,7 @@ flag_if_player_aims_at_shepherd( player_rig )
 		else
 		{
 			if ( GetDvarInt( "x" ) )
-				Print3d( pos, "x", ( 1, 0, 0 ) );
+				{}
 			flag_clear( "player_aims_knife_at_shepherd" );
 		}
 		wait( 0.05 );

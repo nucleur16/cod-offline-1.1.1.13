@@ -6099,7 +6099,7 @@ estate_autosave_proximity_threat_func( enemy )
 		
 		if ( dist < 360 && v_dist < 200 )
 		{
-			/# maps\_autosave::AutoSavePrint( "autosave failed: AI too close to player" ); #/
+			/# {} #/
 			return "return";
 		}
 		else

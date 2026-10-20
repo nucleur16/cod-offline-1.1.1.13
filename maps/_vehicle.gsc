@@ -201,7 +201,7 @@ vehicle_spawn_think()
 		self.count--;
 		if ( !isdefined( vehicle ) )
 		{
-			PrintLn( "Vehicle spawned from spawner at " + self.origin + " but didnt exist!" );
+			{}
 			continue;
 		}
 		vehicle.spawn_funcs = self.spawn_functions;
@@ -349,7 +349,7 @@ trigger_process( trigger, vehicles )
 		{
 			if ( !isdefined( level.vehicle_DeleteGroup[ trigger.script_vehicleGroupDelete ] ) )
 			{
-				PrintLn( "failed to find deleteable vehicle with script_vehicleGroupDelete group number: ", trigger.script_vehicleGroupDelete );
+				{}
 				level.vehicle_DeleteGroup[ trigger.script_vehicleGroupDelete ] = [];
 			}
 			array_levelthread( level.vehicle_DeleteGroup[ trigger.script_vehicleGroupDelete ], ::deleteEnt );
@@ -366,7 +366,7 @@ trigger_process( trigger, vehicles )
 		{
 			if ( !isdefined( level.vehicle_StartMoveGroup[ trigger.script_VehicleStartMove ] ) )
 			{
-				PrintLn( "^3Vehicle start trigger is: ", trigger.script_VehicleStartMove );
+				{}
 				return;
 			}
 			array_levelthread( level.vehicle_StartMoveGroup[ trigger.script_VehicleStartMove ], ::gopath );
@@ -1212,12 +1212,12 @@ overshoot_next_node( vnode )
 
 	self endon( "delay_passed" );
 	vnode waittillmatch( "trigger", self );
-	PrintLn( "^1**************************************************************************************" );
-	PrintLn( "^1****** WARNING!!! ********************************************************************" );
-	PrintLn( "^1**************************************************************************************" );
-	PrintLn( "^1A vehicle most likely overshoot a node at " + vnode.origin + " while trying to come to a stop." );
-	PrintLn( "^1This will stop any future nodes for that vehicle to be handled by the vehicle script." );
-	PrintLn( "^1**************************************************************************************" );
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
 #/
 }
 
@@ -1554,8 +1554,8 @@ getonpath( skip_attach )
 		/#
 		if ( ishelicopter() && IsDefined( path_start ) )
 		{
-			PrintLn( "helicopter node targetname: " + path_start.targetname );
-			PrintLn( "vehicletype: " + self.vehicletype );
+			{}
+			{}
 			AssertMsg( "helicopter on vehicle path( see console for info )" );
 		}
 		#/
@@ -1679,7 +1679,7 @@ gopath( vehicle )
 
 	if ( IsDefined( vehicle.hasstarted ) )
 	{
-		PrintLn( "vehicle already moving when triggered with a startmove" );
+		{}
 		return;
 	}
 	else
@@ -1894,8 +1894,8 @@ vehicle_init( vehicle )
 
 	if ( !isdefined( 	level.vehicleInitThread[ vehicle.vehicletype ][ vehicle.model ] ) )
 	{
-		PrintLn( "vehicle.vehicletype is: " + vehicle.vehicletype );
-		PrintLn( "vehicle.model is: " + vehicle.model );
+		{}
+		{}
 	}
 
 
@@ -2986,12 +2986,12 @@ precache_scripts()
 
 	if ( level.needsprecaching.size > 0 )
 	{
-		PrintLn( "----------------------------------------------------------------------------------" );
-		PrintLn( "---missing vehicle script: run repackage zone and precache scripts from launcher--" );
-		PrintLn( "----------------------------------------------------------------------------------" );
+		{}
+		{}
+		{}
 		for ( i = 0; i < level.needsprecaching.size; i++ )
-			PrintLn( level.needsprecaching[ i ] );
-		PrintLn( "----------------------------------------------------------------------------------" );
+			{}
+		{}
 		AssertEx( false, "missing vehicle scripts, see above console prints" );
 		level waittill( "never" );
 	}
@@ -3072,7 +3072,7 @@ debug_vehiclesetspeed( speed, rate, msg )
 	{
 		while ( GetDvar( "debug_vehiclesetspeed" ) != "off" )
 		{
-			Print3d( self.origin + ( 0, 0, 192 ), "vehicle setspeed: " + msg, ( 1, 1, 1 ), 1, 3 );
+			{}
 			wait .05;
 		}
 		wait .5;
@@ -3147,7 +3147,7 @@ print_resumespeed( timer )
 		for ( i = start; i < self.resumemsgs.size; i++ )// only display last 5 messages
 		{
 			position = i * 32;
-			Print3d( self.origin + ( 0, 0, position ), "resuming speed: " + self.resumemsgs[ i ], ( 0, 1, 0 ), 1, 3 );
+			{}
 		}
 		wait .05;
 	}
@@ -3456,7 +3456,7 @@ node_trigger_process()
 
 		level.vehicle_detourpaths = array_2dadd( level.vehicle_detourpaths, self.script_vehicledetour, self );
 		if ( level.vehicle_detourpaths[ self.script_vehicledetour ].size > 2 )
-			PrintLn( "more than two script_vehicledetour grouped in group number: ", self.script_vehicledetour );
+			{}
 	}
 
 	// if a gate isn't open then the vehicle will stop there and wait for it to become open.
@@ -3565,10 +3565,10 @@ check_failed_spawn_groups()
 		return;
 	}
 
-	PrintLn( "Error: FAILED SPAWNGROUPS" );
+	{}
 	foreach ( failed_spawner in level.failed_spawnvehicles )
 	{
-		PrintLn( "Error: spawner at: " + failed_spawner.origin );
+		{}
 	}
 	AssertMsg( "Spawngrouped vehicle( s ) without spawnflag checked, see console" );
 
@@ -4520,7 +4520,7 @@ treadget( vehicle, side )
 
 	if ( !isdefined( level._vehicle_effect[ vehicle.vehicletype ] ) )
 	{
-		PrintLn( "no treads setup for vehicle type: ", vehicle.vehicletype );
+		{}
 		wait 1;
 		return - 1;
 	}
@@ -4687,8 +4687,8 @@ get_vehiclenode_any_dynamic( target )
 		}
 		else if ( ishelicopter() )
 		{
-			PrintLn( "helicopter node targetname: " + path_start.targetname );
-			PrintLn( "vehicletype: " + self.vehicletype );
+			{}
+			{}
 			AssertMsg( "helicopter on vehicle path( see console for info )" );
 		}
 		if ( !isdefined( path_start ) )
@@ -5835,8 +5835,8 @@ lights_off_internal( group, model )
 		return;
 	if ( !isdefined( level.vehicle_lights_group[ model ][ group ] ) )
 	{
-		PrintLn( "vehicletype: " + self.vehicletype );
-		PrintLn( "light group: " + group );
+		{}
+		{}
 		AssertMsg( "lights not defined for this vehicle( see console" );
 	}
 	lights = level.vehicle_lights_group[ model ][ group ];
@@ -6830,8 +6830,8 @@ get_compassTypeForVehicleType( type )
 {
 	if ( !isdefined( level.vehicle_compass_types[ type ] ) )
 	{
-		PrintLn( "Compass - type doesn't exist for type '" + type + "'." );
-		PrintLn( "Set it in vehicle script:_" + type + ".gsc with build_compassicon." );
+		{}
+		{}
 		AssertMsg( "Compass - type for model doesn't exits, see console for info" );
 	}
 	return level.vehicle_compass_types[ type ];

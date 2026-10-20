@@ -164,39 +164,7 @@ stealth_event_validate( key )
 
 
 stealth_debug_print( msg )
-{
-	 /#
-		if ( !flag( "_stealth_enabled" ) )
-			return;
-
-		type = undefined;
-		name = undefined;
-
-		if ( isdefined( self.script_noteworthy ) )
-		{
-			type = "Script_noteworthy";
-			name = self.script_noteworthy;
-		}
-		else if ( isdefined( self.targetname ) )
-		{
-			type = "Targetname";
-			name = self.targetname;
-		}
-
-		actor = "Actor -> ID: " + self.unique_id + " Export: " + self.export;
-
-		if ( isdefined( type ) )
-		{
-			actor += " " + type + ": " + name;
-		}
-		txt = "STEALTH DEBUG PRINT: " + actor + "\n     " + msg;
-
-		println( txt );
-
-    	if ( getdvarint( "stealth_debug_prints" ) == 1 )
-			self thread debug_message_ai( msg );
-	#/
-}
+{}
 
 enemy_event_debug_print( type )
 {
@@ -214,9 +182,9 @@ enemy_event_debug_print( type )
 		self waittill( type, subtype );
 	
 		if ( isdefined( subtype ) )
-			self stealth_debug_print( "Received an event: " + type + " " + subtype );
+			{}
 		else
-			self stealth_debug_print( "Received an event: " + type );
+			{}
 	#/
 }
 
@@ -228,17 +196,17 @@ stealth_flag_debug_print( _flag )
 			flag_wait( _flag );
 			{
 				if ( getdvarint( "stealth_debug_prints" ) == 1 )
-					iprintlnbold( _flag );
+					{}
 				else
-					println( _flag );
+					{}
 			}
 
 			flag_waitopen( _flag );
 			{
 				if ( getdvarint( "stealth_debug_prints" ) == 1 )
-					iprintlnbold( "back to normal: " + _flag );
+					{}
 				else
-					println( "back to normal: " + _flag );
+					{}
 			}
 		}
 	#/

@@ -502,22 +502,22 @@ assert_existance_of_anim( anime, animname )
 		if ( has_anim )
 		{
 			array = GetArrayKeys( level.scr_anim[ animname ] );
-			PrintLn( "Legal anime scenes for " + animname + ":" );
+			{}
 			foreach ( member in array )
 			{
-				PrintLn( member );
+				{}
 			}
 		}
 		if ( has_sound )
 		{
 			array = GetArrayKeys( level.scr_sound[ animname ] );
-			PrintLn( "Legal scr_sound scenes for " + animname + ":" );
+			{}
 			foreach ( member in array )
 			{
-				PrintLn( member );
+				{}
 			}
 		}
-		PrintLn( "Guy with animname " + animname + " is trying to do scene " + anime + " there is no level.scr_anim or level.scr_sound for that animname" );
+		{}
 		AssertMsg( "That scene doesn't exist! See above in console log for details." );
 		return;
 	}
@@ -526,7 +526,7 @@ assert_existance_of_anim( anime, animname )
 	keys = array_combine( keys, GetArrayKeys( level.scr_sound ) );
 	foreach ( key in keys )
 	{
-		PrintLn( key );
+		{}
 	}
 	AssertMsg( "Animname " + animname + " is not setup to do animations. See above for list of legal animnames." );
 }
@@ -849,7 +849,7 @@ anim_single_failsafeOnGuy( owner, anime )
 	name = self.classname;
 	num = self GetEntNum();
 	wait( 60 );
-	PrintLn( "Guy had classname " + name + " and entnum " + num );
+	{}
 	waittillframeend;
 	AssertEx( 0, "Animation '" + anime + "' did not finish after 60 seconds. See note above" );
 	#/
@@ -1059,7 +1059,7 @@ anim_single_internal( guys, anime, tag, anim_end_time, animname_override )
 		if ( ( doFacialanim ) || ( doDialogue ) )
 		{
 			/#
-			println("**dialog alias playing locally: " + dialogue );
+			{}
 			#/
 			if ( doFacialAnim )
 			{

@@ -305,7 +305,7 @@ shootEnemyTarget_Bullets( eTarget )
 	{
 		randomShots = randomintrange( 1, 25 );
 		if ( getdvar( "cobrapilot_debug" ) == "1" )
-			iprintln( "randomShots = " + randomShots );
+			{}
 
 		for ( i = 0 ; i < randomShots ; i++ )
 		{

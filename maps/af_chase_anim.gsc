@@ -398,10 +398,10 @@ delete_glock( guy )
 	origin = guy GetTagOrigin( "tag_weapon_right" );
 	angles = guy GetTagAngles( "tag_weapon_right" );
 
-	PrintLn( "	// origin and angles for the gun on the ground" );
-	PrintLn( "	gun_org = ( " + origin[ 0 ] + ", " + origin[ 1 ] + ", " + origin[ 2 ] + " );" );
-	PrintLn( "	gun_ang = ( " + angles[ 0 ] + ", " + angles[ 1 ] + ", " + angles[ 2 ] + " );" );
-	PrintLn( " " );
+	{}
+	{}
+	{}
+	{}
 }
 
 start_aim( guy )

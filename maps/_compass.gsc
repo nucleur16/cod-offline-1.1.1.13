@@ -3,7 +3,7 @@ setupMiniMap( material )
 	level.minimap_image = material;
 	if ( !isdefined( level._loadStarted ) )
 	{
-		println( "^1Warning: shouldn't call setupMiniMap until after _load::main()" );
+		{}
 	}
 
 	// use 0 for no required map aspect ratio.
@@ -12,7 +12,7 @@ setupMiniMap( material )
 	corners = getentarray( "minimap_corner", "targetname" );
 	if ( corners.size != 2 )
 	{
-		println( "^1Error: There are not exactly two \"minimap_corner\" entities in the map. Could not set up minimap." );
+		{}
 		return;
 	}
 

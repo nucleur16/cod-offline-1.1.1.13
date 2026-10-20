@@ -618,12 +618,12 @@ drawAnimTimes( guys, anime )
 {
 	for ( ;; )
 	{
-		PrintLn( " " );
+		{}
 		foreach ( guy in guys )
 		{
 			animation = guy getanim( anime );
 			time = guy GetAnimTime( animation );
-			PrintLn( guy.animname + " " + time );
+			{}
 		}
 		wait( 0.05 );
 	}

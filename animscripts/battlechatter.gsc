@@ -2322,7 +2322,7 @@ playPhrase( chatPhrase, noSound )
 		if ( !SoundExists( chatPhrase.soundAliases[ i ] ) )
 		{
 			/#
-			PrintLn( anim.bcPrintFailPrefix + "Tried to play an alias that doesn't exist: '" + chatPhrase.soundAliases[ i ] + "'." );
+			{}
 			#/
 
 			continue;
@@ -3500,7 +3500,7 @@ addThreatCalloutEcho( reportAlias, respondTo )
 	if ( !SoundExists( alias ) )
 	{
 		/#
-		PrintLn( anim.bcPrintFailPrefix + "Can't find echo alias '" + alias + "'." );
+		{}
 		#/
 		// TODO maybe output to data csv/txt file later
 		return false;
@@ -3520,7 +3520,7 @@ addThreatCalloutResponseAlias( modifier )
 	if ( !SoundExists( alias ) )
 	{
 		/#
-		PrintLn( anim.bcPrintFailPrefix + "Can't find callout response alias '" + alias + "'." );
+		{}
 		#/
 		// TODO maybe output to data csv/txt file later
 		return false;
@@ -3641,7 +3641,7 @@ addThreatCalloutLandmarkAlias( landmark, frontArcDirection, isRelative )
 	if ( !SoundExists( alias ) )
 	{
 		/#
-		PrintLn( anim.bcPrintFailPrefix + "Can't find sound alias '" + alias + "'. Does landmark '" + landmarkStr + "' have callout references in the battlechatter csv for nationality '" + self.owner.countryID + "'?" );
+		{}
 		#/
 		// TODO maybe output to data csv/txt file later
 		return false;
@@ -3722,7 +3722,7 @@ addThreatCalloutLocationAlias( location )
 		}
 		printStr += ". Are you sure that there is an alias to support it?";
 
-		PrintLn( printStr );
+		{}
 		// TODO maybe output to data csv/txt file later
 		#/
 
@@ -4172,7 +4172,7 @@ flavorBurstLineDebug( burster, alias )
 
 	while ( 1 )
 	{
-		Print3d( burster GetTagOrigin( "j_spinelower" ), alias, ( 1, 1, 1 ), 1, 0.5 );
+		{}
 		wait( 0.05 );
 	}
 }
@@ -4300,14 +4300,14 @@ battleChatter_print( aliases )
 	}
 
 	// print to the console
-	Print( colorPrefix );
+	{}
 
 	foreach ( alias in aliases )
 	{
-		Print( alias );
+		{}
 	}
 
-	PrintLn( "" );
+	{}
 }
 
 // optionally dumps info out to files for examination later
@@ -4465,7 +4465,7 @@ drawBCObject( string, origin, offset, color )
 			continue;
 		}
 
-		Print3d( origin + offset, string, color, 1, 0.75 );	// origin, text, RGB, alpha, scale
+		{}	// origin, text, RGB, alpha, scale
 		wait 0.05;
 	}
 }
@@ -4489,7 +4489,7 @@ drawBCDirections( landmark, offset, color )
 
 		string = compass + ", " + clock + ":00";
 
-		Print3d( landmarkOrigin + offset, string, color, 1, 0.75 );	// origin, text, RGB, alpha, scale
+		{}	// origin, text, RGB, alpha, scale
 		wait 0.05;
 	}
 }

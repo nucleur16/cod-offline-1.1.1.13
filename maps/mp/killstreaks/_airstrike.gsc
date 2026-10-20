@@ -868,7 +868,7 @@ callStrike( lifeId, owner, coord, yaw )
 		
 		if ( !isDefined( heightEnt ) )//old system 
 		{
-			println( "NO DEFINED AIRSTRIKE HEIGHT SCRIPT_ORIGIN IN LEVEL" );
+			{}
 			planeFlyHeight = 950;
 			planeBombExplodeDistance = 1500;
 			if ( isdefined( level.airstrikeHeightScale ) )
@@ -888,7 +888,7 @@ callStrike( lifeId, owner, coord, yaw )
 		
 		if ( !isDefined( heightEnt ) )//old system 
 		{
-			println( "NO DEFINED AIRSTRIKE HEIGHT SCRIPT_ORIGIN IN LEVEL" );
+			{}
 			planeFlyHeight = 850;
 			planeBombExplodeDistance = 1500;
 			if ( isdefined( level.airstrikeHeightScale ) )

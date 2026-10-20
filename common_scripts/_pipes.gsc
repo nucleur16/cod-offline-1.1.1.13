@@ -249,7 +249,7 @@ precacheFX()
 		}
 		else
 		{
-			println( "Unknown 'pipe_shootable' script_noteworthy type '%s'\n", value.script_noteworthy );
+			{}
 		}
 	}
 

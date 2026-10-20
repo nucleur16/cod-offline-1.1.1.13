@@ -93,7 +93,7 @@ pick_warning( warning )
 		
 	if ( level.price_last_climb_hit == warning )
 	{
-		iprintlnbold( "Called same hit twice in a row (" + warning + ")" );
+		{}
 	}
 	
 	level.price_last_climb_hit = warning;

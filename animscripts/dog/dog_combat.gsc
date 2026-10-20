@@ -187,7 +187,7 @@ dogMelee()
 	/#
 	if ( isgodmode( self.meleeingPlayer ) )
 	{
-		println( "Player in god mode, aborting dog attack" );
+		{}
 		return;
 	}
 	#/
@@ -441,7 +441,7 @@ meleeBiteAttackPlayer()
 
  /#
 		if ( getdebugdvar( "debug_dog_sound" ) != "" )
-			iprintln( "dog " + ( self getentnum() ) + " attack player " + getTime() );
+			{}
 
 #/
 		//self thread play_sound_on_tag( "anml_dog_growl", "tag_eye" );

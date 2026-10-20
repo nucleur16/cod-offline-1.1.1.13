@@ -18,7 +18,7 @@
 */
 rainHard( transition )
 {
-	println( "Rain becomes Hard over " + transition + " seconds" );
+	{}
 	level notify( "rain_change", "hard", transition );
 	level thread rainEffectChange( 10, transition );
 	wait( transition * 0.5 );
@@ -44,7 +44,7 @@ rainHard( transition )
 */
 rainMedium( transition )
 {
-	println( "Rain becomes Medium over " + transition + " seconds" );
+	{}
 	level notify( "rain_change", "hard", transition );
 	level thread rainEffectChange( 8, transition );
 	wait( transition * 0.5 );
@@ -70,7 +70,7 @@ rainMedium( transition )
 */
 rainLight( transition )
 {
-	println( "Rain becomes Light over " + transition + " seconds" );
+	{}
 	level notify( "rain_change", "light", transition );
 	level thread rainEffectChange( 5, transition );
 	wait( transition * 0.5 );
@@ -96,7 +96,7 @@ rainLight( transition )
 */
 rainNone( transition )
 {
-	println( "Rain fades out over " + transition + " seconds" );
+	{}
 	level notify( "rain_change", "none", transition );
 	level thread rainEffectChange( 0, transition );
 	wait( transition * 0.5 );

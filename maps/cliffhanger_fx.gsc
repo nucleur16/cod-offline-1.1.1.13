@@ -173,12 +173,12 @@ test_transition()
 		wait 10;
 
 		blizzard_level_transition_none( 1 );
-		iprintlnbold( "none" );
+		{}
 
 		wait 10;
 
 		blizzard_level_transition_hard( 1 );
-		iprintlnbold( "hard" );
+		{}
 	}
 }
 

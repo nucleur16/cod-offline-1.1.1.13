@@ -6477,11 +6477,11 @@ air_nodes_think()
 		return;
 	flag_init( self.script_flag );
 	if ( getdvar( "oilrig_debug" ) == "1" )
-		self thread debug_message( self.script_flag , self.origin, 9999 );
+		{}
 	self waittill( "trigger" );
 	flag_set( self.script_flag );
 	if ( getdvar( "oilrig_debug" ) == "1" )
-		iPrintlnbold( "flag: " + self.script_flag + " has been set" );
+		{}
 }
 
 

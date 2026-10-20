@@ -1056,7 +1056,7 @@ draw_selected_node_name()
 		}
 		msg = level.selected_node.model;
 		printRight = anglestoright( level.player getplayerangles() ) * msg.size * - 3;
-		thread debug_message( msg, level.selected_node.origin + printRight, .05 );
+		{}
 		wait .05;
 	}
 }

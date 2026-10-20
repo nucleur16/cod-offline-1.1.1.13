@@ -153,7 +153,7 @@ WaitABit()
 noGunShoot()
 {
 	 /#
-	println( "^1Warning: AI at " + self.origin + ", entnum " + self getEntNum() + ", export " + self.export + " trying to shoot but has no gun" );
+	{}
 	#/
 	self.shootEnt = undefined;
 	self.shootPos = undefined;
@@ -666,7 +666,7 @@ sniper_glint_behavior()
 	assertex( self isSniper(), "Not a sniper!" );
 	if ( !isdefined( level._effect[ "sniper_glint" ] ) )
 	{
-		println( "^3Warning, sniper glint is not setup for sniper with classname " + self.classname );
+		{}
 		return;
 	}
 	

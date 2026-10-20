@@ -66,6 +66,10 @@ init()
 	level.player_is_speaking = false;
 	level.zmb_alias_exists = [];
 	level.zmb_music_state = undefined;
+	level.zmb_music_epoch = 0;
+	level.zmb_dog_end_until = 0;
+	level.zmb_fire_sale_music_active = false;
+	level.zmb_fire_sale_music_epoch = 0;
 	level.music_override = false;
 
 	level thread on_player_connect();
@@ -77,8 +81,6 @@ init()
 	level thread music_round_watch();
 	level thread music_game_over_watch();
 
-	if ( getDvarInt( "developer" ) > 0 )
-		level thread audiotest_watch();
 }
 
 // Developer test verbs, scr_codol_audiotest:
@@ -109,7 +111,7 @@ audiotest_watch()
 					if ( isDefined( players[ i ] vox_alias( all[ j ] ) ) )
 						have = have + " " + all[ j ];
 				}
-				codolprintln( "CoDOL zm audio: " + players[ i ].name + " code " + players[ i ] vox_code() + ":" + have );
+				{ players[i] vox_code(); }
 			}
 		}
 		else if ( args[ 0 ] == "vox" && args.size > 1 )
@@ -118,14 +120,14 @@ audiotest_watch()
 			{
 				level.player_is_speaking = false;
 				ok = players[ i ] create_and_play_dialog( args[ 1 ], true );
-				codolprintln( "CoDOL zm audio: " + players[ i ].name + " vox " + args[ 1 ] + " -> " + ok );
+				{}
 			}
 		}
 		else if ( args[ 0 ] == "music" && args.size > 1 )
 		{
 			level.zmb_music_state = undefined;
 			change_zombie_music( args[ 1 ] );
-			codolprintln( "CoDOL zm audio: music " + args[ 1 ] );
+			{}
 		}
 	}
 }
@@ -144,7 +146,7 @@ alias_exists( alias )
 // --------------------------------------------------------------------------
 // Music.  T5 change_zombie_music with C1's assets: the WAVE state's looping
 // bed is CoDOL's cyborg_amb_scape_01 ambience (AMBIENT_BED), the alias
-// stingers are 2D local sounds on every player so they play over the bed, and
+// stingers use C1 musicPlay above the ambient bed, and
 // the SILENCE state stops the bed.
 // --------------------------------------------------------------------------
 
@@ -154,76 +156,267 @@ alias_exists( alias )
 // carries it and a player who begins mid-round is started on "begin".
 AMBIENT_BED = "amb_mainmenu_zm";
 
-play_sound_2d_all( alias )
+// C1 local-sound command p uses the generic streamed-voice pool (slots 45+).
+// musicPlay command l uses the reserved music slots (40..44). Keep finite
+// cues there so unrelated effects/VO cannot consume their streamed voice.
+// BO1 _zombiemode_audio::change_zombie_music accepts a new state immediately;
+// its _zombiemode_utility::really_play_2D_sound gives each alias its own entity
+// rather than queuing all cues. C1 adapts those aliases to its music transport.
+// Quotes, effects, jingles and the ambient bed keep their existing paths.
+music_cue_length( alias )
+{
+	length_ms = int( tableLookup( "sound/soundlength.csv", 0, alias, 1 ) );
+	// Exact C1 patch stream music/cyborg/mus_fire_sale_song.mp3 is finite.
+	// Its mounted CSV has no duration. CRC/SHA-verified iw_image_15 payload
+	// 790e4e601ace... measures 10.251477s; round upward, never invent a loop
+	// length or replace it with the 66.980548s base-game recording.
+	if ( alias == "mus_fire_sale" && length_ms <= 0 )
+		return 10252;
+	// The client defeat-music asset restores the original 24.375466-second
+	// recording under the patch alias's existing cyborg filename. Both stock
+	// table variants need its measured upper millisecond bound. Extraction
+	// retains its separate rescue/victory aliases and recordings.
+	// Distinguish the mounted patch/base records rather than guess a delay.
+	if ( alias == "mus_zombie_game_over" )
+	{
+		if ( length_ms == 10032 || length_ms == 22405 )
+			return 24376;
+	}
+	// Rescue stream hz_dc_whitehouse_endrun_LR_r1.mp3 is 115.306057 s,
+	// longer than the mounted 113031-ms record.
+	if ( alias == "mus_zombie_rescue" && length_ms == 113031 )
+		return 115307;
+	return length_ms;
+}
+
+play_music_cue( alias )
 {
 	if ( !alias_exists( alias ) )
+		return false;
+	// C1 0x739870 refuses l while reserved voice 40 is occupied. Its
+	// m 0 handler (0x739810) releases that slot synchronously, so the
+	// following ordered l command can replace rescue/round music.
+	musicStop( 0 );
+	musicPlay( alias );
+	level.zmb_music_current_alias = alias;
+	level.zmb_music_current_until = getTime() + music_cue_length( alias );
+	if ( getDvarInt( "developer" ) > 0 )
+		{}
+	return true;
+}
+
+// C1's patch replaces the base looping Fire Sale alias with the finite
+// music/cyborg/mus_fire_sale_song.mp3 on music channel 32. Use the normal
+// reserved music transport, never the per-box zmb_music_box roll sound.
+// One owner follows the shared power-up deadline; another pickup extends
+// that deadline without restarting the song or creating another watcher.
+fire_sale_music_start()
+{
+	if ( is_true( level.zmb_fire_sale_music_active ) || !fire_sale_music_allowed() )
 		return;
-	players = getPlayers();
-	for ( i = 0; i < players.size; i++ )
-		players[ i ] playLocalSound( alias );
+	if ( !is_true( level.zombie_vars[ "zombie_powerup_fire_sale_on" ] ) ||
+		!isDefined( level.zm_powerup_end[ "fire_sale" ] ) ||
+		getTime() >= level.zm_powerup_end[ "fire_sale" ] )
+		return;
+	if ( !play_music_cue( "mus_fire_sale" ) )
+		return;
+
+	level.zmb_fire_sale_music_active = true;
+	level.zmb_fire_sale_music_epoch++;
+	// Invalidate a delayed round opening that was waiting on dog-end music.
+	level.zmb_music_epoch++;
+	level thread fire_sale_music_think( level.zmb_fire_sale_music_epoch );
+}
+
+fire_sale_music_allowed()
+{
+	if ( is_true( level.gameEnded ) || is_true( level.music_override ) )
+		return false;
+	if ( isDefined( level.zmb_music_state ) &&
+		( level.zmb_music_state == "rescue_wait" || level.zmb_music_state == "rescue" || level.zmb_music_state == "victory" ||
+		level.zmb_music_state == "game_over" ) )
+		return false;
+	return true;
+}
+
+fire_sale_music_think( epoch )
+{
+	level endon( "end_game" );
+	// Mounted sound metadata is fixed for this owner; avoid a lookup every tick.
+	cue_length = music_cue_length( "mus_fire_sale" );
+	while ( is_true( level.zmb_fire_sale_music_active ) && level.zmb_fire_sale_music_epoch == epoch &&
+		is_true( level.zombie_vars[ "zombie_powerup_fire_sale_on" ] ) &&
+		isDefined( level.zm_powerup_end[ "fire_sale" ] ) &&
+		getTime() < level.zm_powerup_end[ "fire_sale" ] )
+	{
+		if ( !fire_sale_music_allowed() || !isDefined( level.zmb_music_current_alias ) ||
+			level.zmb_music_current_alias != "mus_fire_sale" )
+			break;
+		// The patched alias does not loop. If an extension outlasts its
+		// measured recording, begin the next finite pass at its natural end.
+		// A missing soundlength never causes a rapid replay loop.
+		if ( cue_length > 0 && getTime() >= level.zmb_music_current_until )
+			play_music_cue( "mus_fire_sale" );
+		wait( 0.1 );
+	}
+	if ( level.zmb_fire_sale_music_epoch == epoch )
+		fire_sale_music_stop();
+}
+
+fire_sale_music_stop()
+{
+	if ( !is_true( level.zmb_fire_sale_music_active ) )
+		return;
+	level.zmb_fire_sale_music_active = false;
+	level.zmb_fire_sale_music_epoch++;
+	// Cleanup may follow rescue/result replacement. It can stop only the
+	// cue still owned by the sale, never the new rescue/victory/defeat cue.
+	if ( isDefined( level.zmb_music_current_alias ) && level.zmb_music_current_alias == "mus_fire_sale" )
+	{
+		musicStop( 0 );
+		level.zmb_music_current_alias = undefined;
+		level.zmb_music_current_until = 0;
+	}
+}
+
+// C1 adaptation requested for the longer shipped dog-end cue: protect only
+// the next round opening, without delaying gameplay or queuing the result.
+round_start_stinger( epoch )
+{
+	level endon( "end_game" );
+	while ( isDefined( level.zmb_dog_end_until ) && getTime() < level.zmb_dog_end_until )
+		wait( 0.05 );
+	if ( level.zmb_music_epoch == epoch && !is_true( level.zmb_fire_sale_music_active ) )
+		play_music_cue( "mus_zombie_round_start" );
 }
 
 change_zombie_music( state )
 {
-	if ( isDefined( level.zmb_music_state ) && level.zmb_music_state == "game_over" )
+	// BO1 rejects duplicate states and all transitions after game_over. C1
+	// also treats its extraction victory as terminal.
+	if ( isDefined( level.zmb_music_state ) &&
+		( level.zmb_music_state == "game_over" || level.zmb_music_state == "victory" ) )
 		return;
-	// A rescue's victory owns the end: no game-over stinger after it.
-	if ( isDefined( level.zmb_music_state ) && level.zmb_music_state == "victory" && state == "game_over" )
+	if ( isDefined( level.zmb_music_state ) && level.zmb_music_state == state )
 		return;
+	terminal = state == "game_over" || state == "victory";
+	if ( !terminal && is_true( level.music_override ) )
+		return;
+	if ( ( state == "game_start" || state == "round_start" || state == "round_end" ) &&
+		is_true( level.music_round_override ) )
+		return;
+ // Final-phase ownership includes the quiet 3:00..1:50 interval. A pending
+ // ordinary round/dog stinger cannot steal that interval or the rescue cue.
+ if ( isDefined( level.zmb_music_state ) &&
+  ( level.zmb_music_state == "rescue_wait" || level.zmb_music_state == "rescue" ) &&
+  ( state == "game_start" || state == "round_start" || state == "round_end" ||
+    state == "dog_start" || state == "dog_end" ) ) return;
+	if ( !isDefined( level.zmb_music_epoch ) )
+		level.zmb_music_epoch = 0;
+	level.zmb_music_epoch++;
+	level.zmb_music_state = state;
+
+	if ( terminal || state == "rescue_wait" || state == "rescue" )
+	{
+		// Release only the sale's cue before the higher-priority replacement.
+		// This also ends it safely if the replacement alias is unavailable.
+		fire_sale_music_stop();
+	}
+	else if ( is_true( level.zmb_fire_sale_music_active ) )
+	{
+		// Keep the latest round/ambient state, but do not interrupt the sale
+		// with round or hound stingers. No stale finite cue is replayed later.
+		if ( state == "game_start" || state == "round_start" )
+			music_wave_start();
+		else if ( state == "round_end" || state == "dog_end" )
+			music_wave_stop();
+		return;
+	}
 
 	switch ( state )
 	{
 		case "game_start":
 			// Round 1 opens with the round-start stinger. mus_zombie_start is
 			// C1's longer menu track, not a match intro.
-			play_sound_2d_all( "mus_zombie_round_start" );
+			level thread round_start_stinger( level.zmb_music_epoch );
 			music_wave_start();
 			break;
 
 		case "round_start":
 			// T5: round_start sets musicstate WAVE (musicAliasloop
 			// mus_zombie_wave_loop) and plays mus_zombie_round_start 2D.
-			play_sound_2d_all( "mus_zombie_round_start" );
+			level thread round_start_stinger( level.zmb_music_epoch );
 			music_wave_start();
 			break;
 
 		case "round_end":
 			// T5: musicstate SILENCE + mus_zombie_round_over.
 			music_wave_stop();
-			play_sound_2d_all( "mus_zombie_round_over" );
+			play_music_cue( "mus_zombie_round_over" );
 			break;
 
 		case "game_over":
 			// T5: musicstate SILENCE + mus_zombie_game_over, and nothing after.
 			music_wave_stop();
-			play_sound_2d_all( "mus_zombie_game_over" );
+			play_music_cue( "mus_zombie_game_over" );
+			level.zmb_terminal_music_until = level.zmb_music_current_until;
+			level.zmb_dog_end_until = 0;
 			break;
 
 		// T5 dog_round_start / dog_round_aftermath: the hound round's own
 		// stingers (common_gametype_zm ships both).
 		case "dog_start":
-			play_sound_2d_all( "mus_zombie_dog_start" );
-			music_wave_start();
+			play_music_cue( "mus_zombie_dog_start" );
 			break;
 
 		case "dog_end":
-			play_sound_2d_all( "mus_zombie_dog_end" );
+			music_wave_stop();
+			// Both dog aliases are finite C1 music-channel cues, not loops.
+			play_music_cue( "mus_zombie_dog_end" );
+			level.zmb_dog_end_until = level.zmb_music_current_until;
 			break;
 
 		// _zombiemode_extraction: the rescue call and the escape.
 		// mus_zombie_rescue and mus_zombie_victory ship in common_gametype_zm.
+  case "rescue_wait":
+   musicStop( 0 );
+   level.zmb_music_current_alias = undefined;
+   level.zmb_music_current_until = 0;
+   music_wave_start();
+   break;
+
 		case "rescue":
-			play_sound_2d_all( "mus_zombie_rescue" );
+			play_music_cue( "mus_zombie_rescue" );
 			music_wave_start();
 			break;
 
 		case "victory":
 			music_wave_stop();
-			play_sound_2d_all( "mus_zombie_victory" );
+			play_music_cue( "mus_zombie_victory" );
+			level.zmb_terminal_music_until = level.zmb_music_current_until;
+			level.zmb_dog_end_until = 0;
 			break;
 	}
 
-	level.zmb_music_state = state;
+}
+
+// Wait for both the ordinary intermission and the selected result cue.
+// Result playback starts immediately, superseding background/round music.
+wait_terminal_music( minimum_seconds )
+{
+	// Synchronous ownership avoids depending on the order in which the two
+	// end_game watchers resume. An already playing victory keeps ownership.
+	change_zombie_music( "game_over" );
+	minimum_until = getTime() + int( minimum_seconds * 1000 );
+	for ( ;; )
+	{
+		deadline = minimum_until;
+		if ( isDefined( level.zmb_terminal_music_until ) && level.zmb_terminal_music_until > deadline )
+			deadline = level.zmb_terminal_music_until;
+		if ( getTime() >= deadline )
+			break;
+		wait( 0.05 );
+	}
 }
 
 music_wave_start()
@@ -233,12 +426,12 @@ music_wave_start()
 	if ( !alias_exists( AMBIENT_BED ) )
 	{
 		if ( getDvarInt( "developer" ) > 0 )
-			codolprintln( "CoDOL zm audio: ambient bed alias " + AMBIENT_BED + " is not loaded" );
+			{}
 		return;
 	}
 	level.zmb_wave_playing = true;
 	if ( getDvarInt( "developer" ) > 0 )
-		codolprintln( "CoDOL zm audio: ambient bed " + AMBIENT_BED + " on" );
+		{}
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 		players[ i ] ambient_bed_on();
@@ -289,12 +482,14 @@ music_round_watch()
 	for ( ;; )
 	{
 		level waittill( "start_of_round" );
-		if ( is_true( level.music_round_override ) )
-			level thread change_zombie_music( "dog_start" );
+		// Save the round type before the next-round selector can change it.
+		dog_round = is_true( level.music_round_override );
+		if ( dog_round )
+			change_zombie_music( "dog_start" );
 		else if ( level.round_number <= 1 )
-			level thread change_zombie_music( "game_start" );
+			change_zombie_music( "game_start" );
 		else
-			level thread change_zombie_music( "round_start" );
+			change_zombie_music( "round_start" );
 
 		// T5 play_level_start_vox_delayed (_zombiemode.gsc:6357): five
 		// seconds into the first round a random player says the intro line.
@@ -302,8 +497,13 @@ music_round_watch()
 			level thread play_level_start_vox_delayed();
 
 		level waittill( "end_of_round" );
-		level thread change_zombie_music( "round_end" );
-		level thread round_end_banter();
+		if ( dog_round )
+			change_zombie_music( "dog_end" );
+		else
+		{
+			change_zombie_music( "round_end" );
+			level thread round_end_banter();
+		}
 	}
 }
 
@@ -323,6 +523,7 @@ music_game_over_watch()
 
 play_level_start_vox_delayed()
 {
+	level endon( "end_game" );
 	wait( 5 );
 	players = getPlayers();
 	if ( players.size > 0 )
@@ -333,6 +534,7 @@ play_level_start_vox_delayed()
 // banter, spoken now and then in the lull after a round.
 round_end_banter()
 {
+	level endon( "end_game" );
 	wait( 6 );
 	if ( randomInt( 100 ) >= 35 )
 		return;
@@ -770,11 +972,7 @@ perks_a_cola_jingle_timer()
 		return;
 
 	// The power module fans <perk>_power_on out after flag "power_on".
-	// A machine with its own power flag (zm_sumpf_sh's per-hut power) waits
-	// on that; every other map is unchanged.
-	if ( isDefined( self.zm_power_flag ) )
-		flag_wait( self.zm_power_flag );
-	else if ( flag_exist( "power_on" ) )
+	if ( flag_exist( "power_on" ) )
 		flag_wait( "power_on" );
 
 	for ( ;; )
@@ -804,7 +1002,8 @@ play_jingle_or_stinger( alias )
 
 // T5 zombie_cod5_<map>_amb.csc: every zm room carries the ambient package
 // element addAmbientElement( "amb_spooky_2d", 5, 8, ... ) -- a 2D whisper
-// every 5-8 seconds.  Per player, as the client ran it.
+// every 5-8 seconds. This C1 alias lasts 4.138 s. Use a quieter 15-25 second
+// interval per player; this is local tuning, not measured CoDOL beta timing.
 ambient_package()
 {
 	if ( !alias_exists( "amb_spooky_2d" ) )
@@ -820,9 +1019,10 @@ ambient_package()
 ambient_package_player()
 {
 	self endon( "disconnect" );
+	level endon( "end_game" );
 	for ( ;; )
 	{
-		wait( randomFloatRange( 5, 8 ) );
+		wait( randomFloatRange( 15, 25 ) );
 		if ( self.sessionstate == "playing" )
 			self playLocalSound( "amb_spooky_2d" );
 	}

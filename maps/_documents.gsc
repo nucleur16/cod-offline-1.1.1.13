@@ -14,7 +14,7 @@
 main( objective_number, objective_text, array_targetname, activate_notify )
 {
 	documents = getentarray( array_targetname, "targetname" );
-	println( array_targetname, " documents.size: ", documents.size );
+	{}
 
 	for ( i = 0;i < documents.size;i++ )
 	{
@@ -52,7 +52,7 @@ main( objective_number, objective_text, array_targetname, activate_notify )
 			{
 				objective_state( objective_number, "done" );
 				temp = ( "objective_complete" + objective_number );
-				println( temp );
+				{}
 				level notify( temp );
 			}
 		}
@@ -99,7 +99,7 @@ document_think( activate_notify, array_targetname )
 		self maps\_utility::trigger_off();
 	}
 	self waittill( "trigger" );
-	println( "triggered" );
+	{}
 	//self.document playsound ("paper_pickup");
 	level thread play_sound_in_space( "paper_pickup", self.document.origin );
 

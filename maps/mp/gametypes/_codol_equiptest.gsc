@@ -23,34 +23,6 @@
 //   set scr_codol_equiptest "tozombie <clientnum> <dist>"
 //       stands a client <dist> units west of the nearest live zombie in
 //       level.zombies, facing it (a target for a thrown lethal).
-//   set scr_codol_equiptest "knife <thrower> <victim>"
-//       arms <thrower> with throwingknife_mp, stands <victim> 300 units in
-//       front of it and throws the knife at the victim's chest; the knife's
-//       position is logged twice a second for 12 s. A trailing "tough"
-//       lets the victim survive the knife and kills it 2.5 s later.
-//   set scr_codol_equiptest "knifeat <thrower> <x> <y> <z>"
-//       the same throw at a point; "knifeat <thrower> wall 0 0" aims at
-//       the first wall 250..700 units away, "... ground 0 0" at the floor.
-//   set scr_codol_equiptest "minepick <client> [use seconds]"
-//       stands a client beside its newest bouncing betty, claymore or C4,
-//       aims at the pickup trigger and presses use; logs the ammo before and
-//       after. scr_codol_minepickmask sets the use buttons (default 40,
-//       activate | use-reload; 8 is +activate alone, as C1's F key sends).
-//   set scr_codol_equiptest "quietpick <client> <slot> <weapon>"
-//       the client stops being a combat bot, throws <weapon> from <slot> and
-//       reclaims it three times (pick up, throw again, pick up).
-//   set scr_codol_equiptest "walkpick <client> <sprint 0|1> [1]"
-//       the quiet client plants a betty, walks (or sprints) up to it from
-//       160 units and taps use on arrival. A trailing 1 refuses the native
-//       use for the owner, so only the pickup's use-button poll can take it.
-//   set scr_codol_equiptest "knifepick <client>"
-//       stands a client on the last knife and holds use; logs its knife ammo
-//       before and after.
-//   set scr_codol_equiptest "car <clientnum> <dist>"
-//       freezes a client <dist> units from the nearest intact destructible
-//       vehicle and damages the car until it burns and explodes, logging the
-//       server time of the explosion and of the client's death (pair with
-//       codol_soundTrace 1 for the sound events).
 //   set scr_codol_equiptest "state <clientnum>"
 //       prints a client's alive flag, session state, health and team.
 //   set scr_codol_equiptest "weapflags <clientnum>" | "weapflags name <weapon>"
@@ -106,80 +78,13 @@ watchDvar()
             positionVerb( tokens );
             continue;
         }
-        if ( ( tokens[0] == "knife" && tokens.size > 2 ) || ( tokens[0] == "knifeat" && tokens.size > 4 ) ||
-            ( tokens[0] == "knifepick" && tokens.size > 1 ) )
-        {
-            level thread knifeTrial( tokens );
-            continue;
-        }
-        // "walkpick <client> <sprint 0|1> [1]": see the header.
-        if ( tokens[0] == "walkpick" && tokens.size > 2 )
-        {
-            player = playerByNumber( int( tokens[1] ) );
-            if ( isDefined( player ) )
-            {
-                level.codolWalkPickBlockNative = tokens.size > 3 && tokens[3] == "1";
-                player thread walkPickTrial( int( tokens[2] ) );
-            }
-            continue;
-        }
-        // "quietpick <client> <slot> <weapon>": the client stops being a
-        // combat bot (no AI buttons), throws <weapon> from <slot>, waits
-        // idle (crouched) and then tries to reclaim it with the use button.
-        if ( tokens[0] == "quietpick" && tokens.size > 3 )
-        {
-            player = playerByNumber( int( tokens[1] ) );
-            if ( isDefined( player ) )
-                player thread quietPickTrial( int( tokens[2] ), tokens[3] );
-            continue;
-        }
-        // "minepick <client> [use seconds]": stands a client 40 units from
-        // its newest planted bouncing betty, claymore or C4, looks at the
-        // device's pickup trigger and holds use; logs the device's ammo
-        // before and after and whether the device is still there.
-        if ( tokens[0] == "minepick" && tokens.size > 1 )
-        {
-            player = playerByNumber( int( tokens[1] ) );
-            hold = 0.5;
-            if ( tokens.size > 2 )
-                hold = float( tokens[2] );
-            if ( isDefined( player ) )
-                player thread minePickTrial( hold );
-            else
-                codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
-            continue;
-        }
-        // "car <client> <dist>": stands a client <dist> units from the nearest
-        // destructible vehicle and shoots the car with small radius damage
-        // until it burns and explodes; logs the server time of each step.
-        if ( tokens[0] == "car" && tokens.size > 2 )
-        {
-            player = playerByNumber( int( tokens[1] ) );
-            if ( isDefined( player ) )
-                player thread carTrial( float( tokens[2] ) );
-            else
-                codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
-            continue;
-        }
-        // "pipe <client>": stands a client beside the nearest shootable pipe
-        // and hits the pipe once (a "damage" notify at the middle of the
-        // pipe), so its hit sound and steam/water loop start.
-        if ( tokens[0] == "pipe" && tokens.size > 1 )
-        {
-            player = playerByNumber( int( tokens[1] ) );
-            if ( isDefined( player ) )
-                player thread pipeTrial();
-            else
-                codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
-            continue;
-        }
         if ( tokens[0] == "perk" && tokens.size > 2 )
         {
             player = playerByNumber( int( tokens[1] ) );
             if ( isDefined( player ) )
                 player thread keepPerk( tokens[2] );
             else
-                codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
+                {}
             continue;
         }
         if ( tokens[0] == "state" && tokens.size > 1 )
@@ -190,8 +95,7 @@ watchDvar()
                 team = "none";
                 if ( isDefined( player.team ) )
                     team = player.team;
-                codolPrintLn( "CoDOL equiptest: state " + player.name + " alive " + isAlive( player ) + " session " +
-                    player.sessionstate + " health " + player.health + " maxhealth " + player.maxhealth + " team " + team );
+                {}
             }
             continue;
         }
@@ -207,7 +111,7 @@ watchDvar()
             if ( isDefined( player ) )
                 player thread akimboTrial( weapon, int( tokens[2] ), float( tokens[3] ) );
             else
-                codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
+                {}
             continue;
         }
         // "akimbosprint <client> <delay> <seconds>": empty the held akimbo
@@ -219,7 +123,7 @@ watchDvar()
             if ( isDefined( player ) )
                 player thread akimboSprintTrial( float( tokens[2] ), float( tokens[3] ) );
             else
-                codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
+                {}
             continue;
         }
         // "weapflags <client>": each held weapon with the C1 script-only
@@ -239,7 +143,7 @@ watchDvar()
             if ( isDefined( player ) )
                 player weaponFlagsReport();
             else
-                codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
+                {}
             continue;
         }
         // "gpstrack <holder> <owner> <weapon ...>": give <holder> the weapon
@@ -251,7 +155,7 @@ watchDvar()
             holder = playerByNumber( int( tokens[1] ) );
             if ( !isDefined( holder ) )
             {
-                codolPrintLn( "CoDOL equiptest: no client " + tokens[1] );
+                {}
                 continue;
             }
             if ( tokens.size > 3 && isDefined( level.codolEquipTestGpsTrack ) )
@@ -268,9 +172,7 @@ watchDvar()
                 }
             }
             wait 0.3;
-            codolPrintLn( "CoDOL equiptest: gpstrack " + holder.name + " (" + holder getEntityNumber() + ", " + holder.team +
-                ") alive " + isAlive( holder ) + " ownerTrack " + holder hasAbilityModifier( "modOwnerTrack" ) +
-                " radarArrow " + holder hasAbilityModifier( "modRadarArrow" ) );
+            {}
             continue;
         }
         // "gpsdrop <owner> <picker> <weapon ...>": <owner> drops <weapon>
@@ -300,7 +202,7 @@ watchDvar()
             if ( isDefined( player ) && isDefined( level.codolEquipTestPerkpop ) )
                 level thread [[ level.codolEquipTestPerkpop ]]( player, tokens );
             else
-                codolPrintLn( "CoDOL equiptest: perkpop needs a zombies match and client " + tokens[1] );
+                {}
             continue;
         }
         if ( tokens.size < 3 )
@@ -308,7 +210,7 @@ watchDvar()
         player = playerByNumber( int( tokens[0] ) );
         if ( !isDefined( player ) )
         {
-            codolPrintLn( "CoDOL equiptest: no client " + tokens[0] );
+            {}
             continue;
         }
         player thread throwEquipment( int( tokens[1] ), tokens[2] );
@@ -328,11 +230,7 @@ keepPerk( perkName )
         if ( isAlive( self ) )
         {
             self setPerk( perkName );
-            codolPrintLn( "CoDOL equiptest: " + self.name + " (" + self getEntityNumber() + ", " + self.team +
-                ") perk " + perkName + " hasPerk " + self hasPerk( perkName ) +
-                " noSentry " + self hasAbilityModifier( "modNoSentryGuns" ) +
-                " bulletPaint " + self hasAbilityModifier( "modBulletPaint" ) +
-                " explosivePaint " + self hasAbilityModifier( "modExplosivePaint" ) );
+            {}
         }
         self waittill( "spawned_player" );
         wait 0.1;
@@ -350,7 +248,7 @@ gpsDropTrial( owner, picker, weapon )
     owner [[ level.codolEquipTestDropWeapon ]]( undefined );
     wait 0.5;
     items = getEntArray( "weapon_" + weapon, "classname" );
-    codolPrintLn( "CoDOL equiptest: gpsdrop " + owner.name + " dropped '" + weapon + "' items " + items.size );
+    {}
     if ( !items.size )
         return;
     for ( i = 0; i < 12; i++ )
@@ -361,9 +259,7 @@ gpsDropTrial( owner, picker, weapon )
         picker codol_botPressButtons( 40, 0.5 );   // 0x08 activate | 0x20 use-reload
         wait 0.25;
     }
-    codolPrintLn( "CoDOL equiptest: gpsdrop " + picker.name + " has it " + picker hasWeapon( weapon ) +
-        " ownerTrack " + picker hasAbilityModifier( "modOwnerTrack" ) +
-        " radarArrow " + picker hasAbilityModifier( "modRadarArrow" ) );
+    {}
 }
 
 weaponFlagsReport()
@@ -374,9 +270,7 @@ weaponFlagsReport()
 
 weaponFlagsLine( label, weapon )
 {
-    codolPrintLn( "CoDOL equiptest: weapflags " + label + " '" + weapon + "' thermal " + weaponHasThermalScope( weapon ) +
-        " gps " + codol_weaponHasGPS( weapon ) + " idlock " + codol_weaponHasIDLock( weapon ) +
-        " hpbt " + codol_weaponHasHPBT( weapon ) + " mods '" + getWeaponScriptMods( weapon ) + "'" );
+    {}
 }
 
 // "turretwatch <seconds>": twice a second, every live turret in level.turrets
@@ -398,7 +292,7 @@ turretWatch( seconds )
                 report = "CoDOL equiptest: turret " + turret getEntityNumber() + " targets ent " + target getEntityNumber();
                 if ( isPlayer( target ) )
                     report += " " + target.name + " (" + target.team + ") noSentry " + target hasAbilityModifier( "modNoSentryGuns" );
-                codolPrintLn( report );
+                {}
             }
         }
         wait 0.5;
@@ -432,12 +326,12 @@ throwEquipment( slot, weapon )
         wait 0.5;
     if ( !isAlive( self ) )
     {
-        codolPrintLn( "CoDOL equiptest: " + self.name + " never came back alive" );
+        {}
         return;
     }
     if ( getWeaponIndexFromName( weapon ) <= 0 )
     {
-        codolPrintLn( "CoDOL equiptest: weapon " + weapon + " is not loaded on this map" );
+        {}
         return;
     }
     slots = [];
@@ -447,8 +341,7 @@ throwEquipment( slot, weapon )
     self giveWeapon( weapon );
     self giveStartAmmo( weapon );
     self setOffhandEquipment( slots[0], slots[1], slots[2] );
-    codolPrintLn( "CoDOL equiptest: " + self.name + " throws " + weapon + " from slot " + slot +
-        " (ammo " + self getAmmoCount( weapon ) + " stock " + self getWeaponAmmoStock( weapon ) + " clip " + self getWeaponAmmoClip( weapon ) + ")" );
+    {}
     wait 0.5;
     self pressUntilThrown( slotButton( slot ), weapon );
 }
@@ -468,7 +361,7 @@ pressUntilThrown( button, weapon )
         if ( isDefined( self.codolLastThrown ) && self.codolLastThrown == weapon )
             return true;
     }
-    codolPrintLn( "CoDOL equiptest: " + self.name + " never threw " + weapon );
+    {}
     return false;
 }
 
@@ -494,8 +387,7 @@ logPlayerFlashbang()
         who = "undefined";
         if ( isDefined( attacker ) && isPlayer( attacker ) )
             who = attacker.name;
-        codolPrintLn( "CoDOL equiptest: flashbang on " + self.name + " origin " + origin + " distance " +
-            amountDistance + " angle " + amountAngle + " attacker " + who );
+        {}
     }
 }
 
@@ -511,7 +403,7 @@ logPlayerGrenadeFire()
             where = "" + grenade.origin;
         if ( isDefined( grenade ) )
             level thread trackLastGrenade( grenade );
-        codolPrintLn( "CoDOL equiptest: grenade_fire " + weapon + " by " + self.name + " at " + where );
+        {}
     }
 }
 
@@ -526,7 +418,7 @@ dumpTable( table )
         line = "";
         for ( col = 0; col < 24; col++ )
             line = line + tableLookupByRow( table, row, col ) + "|";
-        codolPrintLn( "CoDOL equiptest: " + table + " row " + row + ": " + line );
+        {}
     }
 }
 
@@ -538,13 +430,13 @@ addTestBots( count )
         bot = addTestClient( "Test " + ( i + 1 ) );
         if ( !isDefined( bot ) )
         {
-            codolPrintLn( "CoDOL equiptest: addTestClient failed" );
+            {}
             return;
         }
         bot.codolEquipTestBot = true;
         // Honoured by the zombies damage callback only; see _zombiemode.gsc.
         bot.codolTestInvulnerable = true;
-        codolPrintLn( "CoDOL equiptest: added test client " + bot getEntityNumber() );
+        {}
         wait 0.5;
     }
 }
@@ -568,17 +460,17 @@ positionVerb( tokens )
     player = playerByNumber( int( tokens[1] ) );
     if ( !isDefined( player ) || !isAlive( player ) )
     {
-        codolPrintLn( "CoDOL equiptest: no live client " + tokens[1] );
+        {}
         return;
     }
     if ( tokens[0] == "down" )
     {
         if ( !isDefined( level.codolEquipTestDown ) )
         {
-            codolPrintLn( "CoDOL equiptest: this gametype has no down hook" );
+            {}
             return;
         }
-        codolPrintLn( "CoDOL equiptest: " + player.name + " goes down at " + player.origin );
+        {}
         player thread [[ level.codolEquipTestDown ]]();
         return;
     }
@@ -594,8 +486,7 @@ positionVerb( tokens )
         {
             target = zombie.origin - ( float( tokens[2] ), 0, 0 );
             player setPlayerAngles( ( 20, 0, 0 ) );
-            codolPrintLn( "CoDOL equiptest: nearest zombie ent " + zombie getEntityNumber() + " at " + zombie.origin +
-                " health " + zombie.health );
+            {}
         }
     }
     else if ( tokens[0] == "place" && tokens.size > 3 )
@@ -611,110 +502,11 @@ positionVerb( tokens )
     }
     if ( !isDefined( target ) )
     {
-        codolPrintLn( "CoDOL equiptest: " + tokens[0] + " has no target position" );
+        {}
         return;
     }
-    codolPrintLn( "CoDOL equiptest: " + player.name + " moved from " + player.origin + " to " + target );
+    {}
     player setOrigin( target );
-}
-
-carTrial( dist )
-{
-    self endon( "disconnect" );
-    while ( !isAlive( self ) )
-        wait 0.1;
-    cars = getEntArray( "destructible_vehicle", "targetname" );
-    toys = getEntArray( "destructible_toy", "targetname" );
-    for ( i = 0; i < toys.size; i++ )
-        cars[cars.size] = toys[i];
-    car = undefined;
-    for ( i = 0; i < cars.size; i++ )
-    {
-        if ( isDefined( cars[i].exploded ) || !isDefined( cars[i].destructible_type ) ||
-            getSubStr( cars[i].destructible_type, 0, 7 ) != "vehicle" )
-            continue;
-        if ( !isDefined( car ) || distanceSquared( self.origin, cars[i].origin ) < distanceSquared( self.origin, car.origin ) )
-            car = cars[i];
-    }
-    if ( !isDefined( car ) )
-    {
-        codolPrintLn( "CoDOL equiptest: car: no intact destructible vehicle" );
-        return;
-    }
-    spot = car.origin + ( dist, 0, 0 );
-    trace = bulletTrace( spot + ( 0, 0, 64 ), spot - ( 0, 0, 256 ), false, self );
-    self setOrigin( trace["position"] );
-    self freezeControls( true );
-    codolPrintLn( "CoDOL equiptest: car t=" + getTime() + " ent " + car getEntityNumber() + " " + car.destructible_type +
-        " at " + car.origin + "; client " + self getEntityNumber() + " at " + self.origin );
-    self thread carTrialDeath();
-    car thread carTrialNotes();
-    for ( n = 0; n < 200 && isDefined( car ) && !isDefined( car.exploded ); n++ )
-    {
-        radiusDamage( car.origin + ( 0, 0, 16 ), 72, 30, 30, self );
-        wait 0.3;
-    }
-}
-
-// No endon "death": the engine notifies "death" on a destructible the first
-// time its script_model health runs out, long before it explodes.
-carTrialNotes()
-{
-    self thread carTrialDamage();
-    self waittill( "exploded" );
-    codolPrintLn( "CoDOL equiptest: car t=" + getTime() + " exploded notify" );
-    self waittill( "destroyed" );
-    codolPrintLn( "CoDOL equiptest: car t=" + getTime() + " destroyed notify (radius damage done)" );
-}
-
-carTrialDamage()
-{
-    self endon( "destroyed" );
-    for ( ;; )
-    {
-        self waittill( "damage", amount, attacker, dir, point, type );
-        codolPrintLn( "CoDOL equiptest: car t=" + getTime() + " damage " + amount + " " + type );
-    }
-}
-
-pipeTrial()
-{
-    self endon( "disconnect" );
-    while ( !isAlive( self ) )
-        wait 0.1;
-    pipes = getEntArray( "pipe_shootable", "targetname" );
-    pipe = undefined;
-    for ( i = 0; i < pipes.size; i++ )
-    {
-        if ( !isDefined( pipes[i].A ) || !isDefined( pipes[i].B ) )
-            continue;
-        if ( !isDefined( pipe ) || distanceSquared( self.origin, pipes[i].A ) < distanceSquared( self.origin, pipe.A ) )
-            pipe = pipes[i];
-    }
-    if ( !isDefined( pipe ) )
-    {
-        codolPrintLn( "CoDOL equiptest: pipe: none of " + pipes.size + " shootable pipes is set up" );
-        return;
-    }
-    // A point a few units off the pipe's axis, as a bullet hits its surface:
-    // on the axis _pipes.gsc gets a zero spray direction and playFx throws.
-    dir = vectorNormalize( pipe.B - pipe.A );
-    off = ( 3, 3, 3 );
-    off = off - dir * vectorDot( off, dir );
-    point = ( pipe.A + pipe.B ) * 0.5 + off;
-    trace = bulletTrace( point + ( 64, 0, 0 ), point + ( 64, 0, -512 ), false, self );
-    self setOrigin( trace["position"] );
-    self freezeControls( true );
-    codolPrintLn( "CoDOL equiptest: pipe t=" + getTime() + " " + pipe.script_noteworthy + " at " + point + "; client " +
-        self getEntityNumber() + " at " + self.origin );
-    pipe notify( "damage", 10, self, ( -1, 0, 0 ), point, "MOD_PISTOL_BULLET" );
-}
-
-carTrialDeath()
-{
-    self endon( "disconnect" );
-    self waittill( "death" );
-    codolPrintLn( "CoDOL equiptest: car t=" + getTime() + " client " + self getEntityNumber() + " died" );
 }
 
 nearestZombie( origin )
@@ -750,7 +542,7 @@ akimboSprintTrial( delay, seconds )
     self endon( "disconnect" );
     if ( !isAlive( self ) || !self isDualWielding() )
     {
-        codolPrintLn( "CoDOL akimbosprint: " + self.name + " is not dual wielding" );
+        {}
         return;
     }
     weapon = self getCurrentWeapon();
@@ -760,12 +552,11 @@ akimboSprintTrial( delay, seconds )
         self codol_botPressButtons( 1, 0.1 );
         wait 0.25;
     }
-    codolPrintLn( "CoDOL akimbosprint: left emptied after " + shots + " presses, right " +
-        self getCurrentWeaponClipAmmo( "right" ) + " left " + self getCurrentWeaponClipAmmo( "left" ) );
+    {}
     // Keep the bot's commands running (stance-held bit only) through the delay.
     self codol_botPressButtons( 4096, delay );
     wait delay;
-    codolPrintLn( "CoDOL akimbosprint: sprint for " + seconds + " left " + self getCurrentWeaponClipAmmo( "left" ) );
+    {}
     self codol_botPressButtons( 2, seconds, 1 );
     start = getTime();
     lastLeft = -1;
@@ -777,13 +568,12 @@ akimboSprintTrial( delay, seconds )
         right = self getCurrentWeaponClipAmmo( "right" );
         left = self getCurrentWeaponClipAmmo( "left" );
         if ( right != lastRight || left != lastLeft )
-            codolPrintLn( "CoDOL akimbosprint: t " + ( getTime() - start ) + " right " + right + " left " + left );
+            {}
         lastRight = right;
         lastLeft = left;
         wait 0.05;
     }
-    codolPrintLn( "CoDOL akimbosprint: done right " + self getCurrentWeaponClipAmmo( "right" ) + " left " +
-        self getCurrentWeaponClipAmmo( "left" ) );
+    {}
 }
 
 // "akimbo" trial: the held weapon's per-hand magazines ("right" is hand 0, the
@@ -806,7 +596,7 @@ akimboTrial( weapon, mask, seconds )
         {
             if ( self isDualWielding() )
                 break;
-            codolPrintLn( "CoDOL akimbo: candidate '" + candidate + "'" );
+            {}
             self switchToWeapon( candidate );
             for ( tries = 0; self getCurrentWeapon() != candidate && tries < 40; tries++ )
                 wait 0.1;
@@ -827,15 +617,12 @@ akimboTrial( weapon, mask, seconds )
         // no weapon until the server has published one for it.
         self setSpawnWeapon( weapon );
         self switchToWeapon( weapon );
-        codolPrintLn( "CoDOL akimbo: gave '" + weapon + "' has " + self hasWeapon( weapon ) + " current '" +
-            self getCurrentWeapon() + "'" );
+        {}
         for ( tries = 0; self getCurrentWeapon() != weapon && tries < 40; tries++ )
             wait 0.1;
         wait 1.5;
     }
-    codolPrintLn( "CoDOL akimbo: " + self.name + " weapon '" + self getCurrentWeapon() + "' dual " +
-        self isDualWielding() + " right " + self getCurrentWeaponClipAmmo( "right" ) + " left " +
-        self getCurrentWeaponClipAmmo( "left" ) + " mask " + mask + " for " + seconds );
+    {}
     self codol_botPressButtons( mask, seconds );
     start = getTime();
     lastRight = -1;
@@ -847,375 +634,11 @@ akimboTrial( weapon, mask, seconds )
         left = self getCurrentWeaponClipAmmo( "left" );
         ads = self playerADS();
         if ( right != lastRight || left != lastLeft || ads != lastAds )
-            codolPrintLn( "CoDOL akimbo: t " + ( getTime() - start ) + " right " + right + " left " + left +
-                " ads " + ads );
+            {}
         lastRight = right;
         lastLeft = left;
         lastAds = ads;
         wait 0.05;
     }
-    codolPrintLn( "CoDOL akimbo: done right " + self getCurrentWeaponClipAmmo( "right" ) + " left " +
-        self getCurrentWeaponClipAmmo( "left" ) );
-}
-
-// "knife", "knifeat" and "knifepick" (see the header): a real thrown
-// throwingknife_mp through the bot's lethal button and native aim, then its
-// entity followed until it is gone.
-knifeTrial( tokens )
-{
-    level endon( "game_ended" );
-    player = playerByNumber( int( tokens[1] ) );
-    if ( !isDefined( player ) || !isAlive( player ) )
-    {
-        codolPrintLn( "CoDOL knife test: no live client " + tokens[1] );
-        return;
-    }
-    if ( tokens[0] == "knifepick" )
-    {
-        if ( !isDefined( level.codolKnifeTestKnife ) )
-        {
-            codolPrintLn( "CoDOL knife test: no knife to pick up" );
-            return;
-        }
-        before = player getAmmoCount( "throwingknife_mp" );
-        spot = level.codolKnifeTestKnife.origin;
-        trace = bulletTrace( spot + ( 0, 0, 8 ), spot - ( 0, 0, 256 ), false, level.codolKnifeTestKnife );
-        player setOrigin( trace["position"] );
-        wait 0.3;
-        codolPrintLn( "CoDOL knife test: " + player.name + " stands on the knife, ammo " + player getAmmoCount( "throwingknife_mp" ) +
-            ", knife still there " + isDefined( level.codolKnifeTestKnife ) );
-        player codol_botPressButtons( 40, 0.6 );   // 0x08 activate | 0x20 use-reload
-        wait 1.0;
-        codolPrintLn( "CoDOL knife test: " + player.name + " at " + player.origin + " knife ammo " + before + " -> " +
-            player getAmmoCount( "throwingknife_mp" ) + ", knife still there " + isDefined( level.codolKnifeTestKnife ) );
-        return;
-    }
-    slots = [];
-    for ( i = 0; i < 3; i++ )
-        slots[i] = player getOffhandEquipment( i );
-    slots[0] = "throwingknife_mp";
-    player giveWeapon( "throwingknife_mp" );
-    player giveStartAmmo( "throwingknife_mp" );
-    player setOffhandEquipment( slots[0], slots[1], slots[2] );
-    victim = undefined;
-    if ( tokens[0] == "knife" )
-    {
-        victim = playerByNumber( int( tokens[2] ) );
-        if ( !isDefined( victim ) || !isAlive( victim ) )
-        {
-            codolPrintLn( "CoDOL knife test: no live victim " + tokens[2] );
-            return;
-        }
-        forward = anglesToForward( ( 0, player.angles[1], 0 ) );
-        spot = player.origin + ( forward[0] * 300, forward[1] * 300, 0 );
-        trace = bulletTrace( spot + ( 0, 0, 48 ), spot - ( 0, 0, 256 ), false, victim );
-        victim setOrigin( trace["position"] );
-        // A still target: the bot AI would otherwise walk out of the throw.
-        victim freezeControls( true );
-        victim thread knifeVictimThaw();
-        // "knife <thrower> <victim> tough": the victim survives the knife and
-        // dies 2 s later, carrying it.
-        if ( tokens.size > 3 && tokens[3] == "tough" )
-        {
-            victim.maxhealth = 400;
-            victim.health = 400;
-            victim thread knifeVictimLaterDeath();
-        }
-        wait 0.3;
-        point = victim.origin + ( 0, 0, 44 );
-    }
-    else if ( tokens[2] == "wall" || tokens[2] == "ground" )
-    {
-        // "knifeat <thrower> wall|ground 0 0": the first wall straight ahead
-        // at chest height, or the floor 200 units ahead.
-        forward = anglesToForward( ( 0, player.angles[1], 0 ) );
-        eye = player.origin + ( 0, 0, 48 );
-        point = player.origin + ( forward[0] * 200, forward[1] * 200, 0 );
-        if ( tokens[2] == "wall" )
-        {
-            // The first wall 250..700 units away, searched round the thrower.
-            for ( yaw = 0; yaw < 360; yaw += 30 )
-            {
-                dir = anglesToForward( ( 0, player.angles[1] + yaw, 0 ) );
-                hit = bulletTrace( eye, eye + ( dir[0] * 700, dir[1] * 700, 0 ), false, player );
-                if ( hit["fraction"] < 1 && distance( eye, hit["position"] ) > 250 )
-                {
-                    point = hit["position"];
-                    break;
-                }
-            }
-        }
-    }
-    else
-        point = ( float( tokens[2] ), float( tokens[3] ), float( tokens[4] ) );
-    level.codolKnifeTestKnife = undefined;
-    player thread knifeCatch();
-    codolPrintLn( "CoDOL knife test: " + player.name + " at " + player.origin + " throws at " + point + " (ammo " +
-        player getAmmoCount( "throwingknife_mp" ) + ")" );
-    thrown = false;
-    for ( attempt = 0; attempt < 6 && !thrown; attempt++ )
-    {
-        thrown = player codol_botThrowOffhand( 0, point );
-        if ( !thrown )
-            wait 0.5;
-    }
-    if ( !thrown )
-    {
-        codolPrintLn( "CoDOL knife test: " + player.name + " refused the throw" );
-        return;
-    }
-    for ( t = 0; t < 40 && !isDefined( level.codolKnifeTestKnife ); t++ )
-        wait 0.05;
-    knife = level.codolKnifeTestKnife;
-    if ( !isDefined( knife ) )
-    {
-        codolPrintLn( "CoDOL knife test: no knife left the hand" );
-        return;
-    }
-    for ( t = 0; t < 24 && isDefined( knife ); t++ )
-    {
-        line = "CoDOL knife test: t=" + ( t * 0.5 ) + " knife " + knife getEntityNumber() + " at " + knife.origin;
-        if ( isDefined( victim ) )
-            line += " victim alive " + isAlive( victim ) + " at " + victim.origin;
-        codolPrintLn( line );
-        wait 0.5;
-    }
-    if ( !isDefined( knife ) )
-        codolPrintLn( "CoDOL knife test: knife entity is gone" );
-}
-
-knifeCatch()
-{
-    self endon( "disconnect" );
-    self notify( "codol_knife_catch" );
-    self endon( "codol_knife_catch" );
-    for ( ;; )
-    {
-        self waittill( "grenade_fire", grenade, weapon );
-        if ( weapon == "throwingknife_mp" && isDefined( grenade ) )
-        {
-            level.codolKnifeTestKnife = grenade;
-            return;
-        }
-    }
-}
-
-knifeVictimThaw()
-{
-    self endon( "disconnect" );
-    self thread knifeVictimThawOnDeath();
-    wait 6;
-    self freezeControls( false );
-}
-
-knifeVictimLaterDeath()
-{
-    self endon( "disconnect" );
-    self endon( "death" );
-    wait 2.5;
-    codolPrintLn( "CoDOL knife test: " + self.name + " health " + self.health + ", now killed" );
-    self.maxhealth = 100;
-    self suicide();
-}
-
-knifeVictimThawOnDeath()
-{
-    self endon( "disconnect" );
-    self waittill( "death" );
-    self freezeControls( false );
-}
-
-// "minepick" (see watchDvar): the owner reclaims its newest planted device
-// with the real use button, through the device's own pickup trigger.
-minePickTrial( hold )
-{
-    self minePickTrialMask( hold, 0 );
-}
-
-minePickTrialMask( hold, extra )
-{
-    if ( !isDefined( level.codolMinePickMask ) )
-        level.codolMinePickMask = 40;
-    if ( getDvar( "scr_codol_minepickmask" ) != "" )
-        level.codolMinePickMask = getDvarInt( "scr_codol_minepickmask" );
-    self endon( "disconnect" );
-    device = undefined;
-    weapon = undefined;
-    trigger = undefined;
-    if ( isDefined( self.equipmentMines ) )
-    {
-        foreach ( mine in self.equipmentMines )
-        {
-            if ( isDefined( mine ) )
-            {
-                device = mine;
-                weapon = "bouncingbetty_mp";
-            }
-        }
-    }
-    if ( !isDefined( device ) )
-    {
-        lists = [];
-        if ( isDefined( self.claymoreArray ) )
-            lists[lists.size] = self.claymoreArray;
-        if ( isDefined( self.c4Array ) )
-            lists[lists.size] = self.c4Array;
-        foreach ( list in lists )
-        {
-            if ( !isDefined( list ) )
-                continue;
-            foreach ( item in list )
-            {
-                if ( isDefined( item ) )
-                {
-                    device = item;
-                    weapon = item.weaponName;
-                }
-            }
-        }
-    }
-    if ( !isDefined( device ) )
-    {
-        codolPrintLn( "CoDOL minepick: " + self.name + " has no planted device" );
-        return;
-    }
-    if ( isDefined( device.codolPickupTrigger ) )
-        trigger = device.codolPickupTrigger;
-    aim = device.origin;
-    if ( isDefined( trigger ) )
-        aim = trigger.origin;
-    yaw = randomFloat( 360 );
-    dir = anglesToForward( ( 0, yaw, 0 ) );
-    spot = device.origin + ( dir[0] * 40, dir[1] * 40, 0 );
-    ground = bulletTrace( spot + ( 0, 0, 32 ), spot - ( 0, 0, 128 ), false, self );
-    before = self getAmmoCount( weapon );
-    codolPrintLn( "CoDOL minepick: " + self.name + " device " + weapon + " at " + device.origin +
-        " trigger defined " + isDefined( trigger ) + " ammo " + before + " has " + self hasWeapon( weapon ) + " clipsize " + weaponClipSize( weapon ) +
-        " start " + weaponStartAmmo( weapon ) + " max " + weaponMaxAmmo( weapon ) + " stock " + self getWeaponAmmoStock( weapon ) +
-        " clip " + self getWeaponAmmoClip( weapon ) );
-    // Bots steer themselves between frames, so re-place and re-aim before
-    // each press, as gpsdrop does for a dropped weapon.
-    for ( i = 0; i < 8 && isDefined( device ); i++ )
-    {
-        self setOrigin( ground["position"] );
-        self setPlayerAngles( vectorToAngles( aim - self getEye() ) );
-        self codol_botPressButtons( level.codolMinePickMask | extra, hold );   // 0x08 activate | 0x20 use-reload
-        wait hold;
-        if ( extra )
-            self codol_botPressButtons( extra, 30 );
-        wait 0.1;
-    }
-    codolPrintLn( "CoDOL minepick: " + self.name + " " + weapon + " ammo " + before + " -> " + self getAmmoCount( weapon ) +
-        ", device still there " + isDefined( device ) );
-}
-
-quietPickTrial( slot, weapon )
-{
-    self endon( "disconnect" );
-    self endon( "death" );
-    self enableCombatBot( false );
-    slots = [];
-    for ( i = 0; i < 3; i++ )
-        slots[i] = self getOffhandEquipment( i );
-    slots[slot] = weapon;
-    self giveWeapon( weapon );
-    self giveStartAmmo( weapon );
-    self setOffhandEquipment( slots[0], slots[1], slots[2] );
-    self codol_botPressButtons( 512, 1.0 );
-    wait 1.0;
-    self.codolLastThrown = undefined;
-    self codol_botPressButtons( slotButton( slot ) | 512, 0.4 );
-    wait 0.4;
-    self codol_botPressButtons( 512, 30 );
-    wait 2.6;
-    codolPrintLn( "CoDOL quietpick: " + self.name + " threw " + self.codolLastThrown + " ammo " + self getAmmoCount( weapon ) );
-    for ( round = 1; round <= 3; round++ )
-    {
-        self minePickTrialMask( 0.5, 512 );
-        wait 1.0;
-        codolPrintLn( "CoDOL quietpick: round " + round + " after pickup stock " + self getWeaponAmmoStock( weapon ) + " clip " +
-            self getWeaponAmmoClip( weapon ) + " count " + self getAmmoCount( weapon ) );
-        self.codolLastThrown = undefined;
-        self codol_botPressButtons( slotButton( slot ) | 512, 0.4 );
-        wait 0.4;
-        self codol_botPressButtons( 512, 30 );
-        wait 2.6;
-        thrown = "nothing";
-        if ( isDefined( self.codolLastThrown ) )
-            thrown = self.codolLastThrown;
-        codolPrintLn( "CoDOL quietpick: round " + round + " rethrow threw " + thrown + " count " + self getAmmoCount( weapon ) );
-    }
-    self codol_botPressButtons( 0, 0 );
-    self enableCombatBot( true );
-}
-
-walkPickTrial( sprint )
-{
-    self endon( "disconnect" );
-    self endon( "death" );
-    if ( !isDefined( level.codolMinePickMask ) )
-        level.codolMinePickMask = 40;
-    self enableCombatBot( false );
-    weapon = "bouncingbetty_mp";
-    slots = [];
-    for ( i = 0; i < 3; i++ )
-        slots[i] = self getOffhandEquipment( i );
-    slots[0] = weapon;
-    self giveWeapon( weapon );
-    self giveStartAmmo( weapon );
-    self setOffhandEquipment( slots[0], slots[1], slots[2] );
-    wait 0.5;
-    self codol_botPressButtons( slotButton( 0 ), 0.4 );
-    wait 3.0;
-    device = undefined;
-    if ( isDefined( self.equipmentMines ) )
-        foreach ( mine in self.equipmentMines )
-            if ( isDefined( mine ) )
-                device = mine;
-    if ( !isDefined( device ) )
-    {
-        codolPrintLn( "CoDOL walkpick: no betty" );
-        return;
-    }
-    // "walkpick <client> <sprint> 1": the native use is refused for the
-    // owner, so only the script poll can reclaim the device.
-    if ( isDefined( level.codolWalkPickBlockNative ) && level.codolWalkPickBlockNative && isDefined( device.codolPickupTrigger ) )
-        device.codolPickupTrigger disablePlayerUse( self );
-    before = self getAmmoCount( "bouncingbetty_mp" );
-    for ( tries = 0; tries < 12 && isDefined( device ); tries++ )
-    {
-        dir = anglesToForward( ( 0, randomFloat( 360 ), 0 ) );
-        spot = device.origin + ( dir[0] * 160, dir[1] * 160, 0 );
-        ground = bulletTrace( spot + ( 0, 0, 32 ), spot - ( 0, 0, 128 ), false, self );
-        if ( !bulletTracePassed( ground["position"] + ( 0, 0, 40 ), device.origin + ( 0, 0, 20 ), false, self ) )
-            continue;
-        self setOrigin( ground["position"] );
-        self setPlayerAngles( vectorToAngles( device.origin - self getEye() ) );
-        // Crouch-walk (0x200) or sprint (0x2): a hold needs some button.
-        buttons = 512;
-        if ( sprint )
-            buttons = 2;
-        self codol_botPressButtons( buttons, 3, 1 );
-        for ( t = 0; t < 60 && isDefined( device ) && distance2D( self.origin, device.origin ) > 40; t++ )
-        {
-            self setPlayerAngles( vectorToAngles( device.origin - self getEye() ) );
-            wait 0.05;
-        }
-        if ( !isDefined( device ) )
-            break;
-        self setPlayerAngles( vectorToAngles( device.origin - self getEye() ) );
-        self codol_botPressButtons( buttons | level.codolMinePickMask, 0.5, 1 );
-        wait 0.5;
-        self codol_botPressButtons( 0, 0 );
-        wait 0.5;
-        if ( !isDefined( device ) )
-        {
-            codolPrintLn( "CoDOL walkpick: try " + tries + " sprint " + sprint + " picked up" );
-            break;
-        }
-        codolPrintLn( "CoDOL walkpick: try " + tries + " sprint " + sprint + " at " + self.origin + " dist " +
-            distance( self.origin, device.origin ) + " device there" );
-    }
-    self enableCombatBot( true );
-    codolPrintLn( "CoDOL walkpick: ammo " + before + " -> " + self getAmmoCount( "bouncingbetty_mp" ) + " device still there " + isDefined( device ) );
+    {}
 }

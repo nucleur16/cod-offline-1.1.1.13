@@ -84,7 +84,7 @@ printer( org )
 	level endon( "print_this_" + org );
 	for ( ;; )
 	{
-		print3d( org, ".", ( 1, 1, 1 ), 5 );
+		{}
 		wait( 0.05 );
 	}
 }
@@ -104,7 +104,7 @@ printerdebugger( msg, org )
 	level endon( "prrint_this_" + org );
 	for ( ;; )
 	{
-		print3d( org, msg, ( 1, 1, 1 ), 5 );
+		{}
 		wait( 0.05 );
 	}
 }

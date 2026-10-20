@@ -739,7 +739,7 @@ drone_move()
 		{
 			thread draw_line_for_time( traceOrg1, traceOrg2, 1, 1, 1, loopTime );
 			thread draw_point( lookaheadPoint, 1, 0, 0, 16, loopTime );
-			println( lookaheadDistanceFromNode + "/" + nodes[ currentNode_LookAhead ][ "dist" ] + " units forward from node[" + currentNode_LookAhead + "]" );
+			{}
 		}
 		//---------------------------------------------
 

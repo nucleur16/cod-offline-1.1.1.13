@@ -459,7 +459,7 @@ pick_enemy_spawn_positions()
 			thread draw_line( topRight, bottomRight, lineColor[ 0 ], lineColor[ 1 ], lineColor[ 2 ] );
 			thread draw_line( bottomRight, bottomLeft, lineColor[ 0 ], lineColor[ 1 ], lineColor[ 2 ] );
 			thread draw_line( bottomLeft, topLeft, lineColor[ 0 ], lineColor[ 1 ], lineColor[ 2 ] );
-			print3d( ( textOrgX, textOrgY, 0 ), string( quad.number ), textColor, 1.0, 5.0, 100000 );
+			{}
 		}
 	}
 
@@ -1626,7 +1626,7 @@ debug_print( string )
 	if ( getdvar( "pmc_debug" ) == "1" )
 	{
 		assert( isdefined( string ) );
-		iprintln( string );
+		{}
 	}
 }
 
@@ -1754,7 +1754,7 @@ delete_unseen_enemy()
 	{
 		if ( !enemy enemy_can_see_any_player() )
 		{
-			println( "^3An AI was deleted to make room for a door breach spawner" );
+			{}
 			enemy notify( "cancel_enemy_death_wait" );
 			enemy delete();
 			return;
@@ -1791,7 +1791,7 @@ staged_pacing_system()
 		if ( level.pmc.enemies_remaining >= two_thirds )
 		{
 			//50% chance through this entire period
-			println( "pacing                  stage 1" );
+			{}
 			force_odds = one_third * 2;
 		}
 
@@ -1802,7 +1802,7 @@ staged_pacing_system()
 		else if ( level.pmc.enemies_remaining >= one_third )
 		{
 			flag_set( "pacing_stage_2" );
-			println( "pacing                  stage 2" );
+			{}
 			thread send_in_one_juggernaut( one_third );
 			//create_one_heli( if_none_already );
 		}
@@ -1813,7 +1813,7 @@ staged_pacing_system()
 		else
 		{
 			flag_set( "pacing_stage_3" );
-			println( "pacing                  stage 3" );
+			{}
 			//create_one_heli();
 			thread send_in_multiple_juggernauts();
 		}
@@ -1872,13 +1872,13 @@ send_in_one_juggernaut( one_third )
 	if ( level.pmc.juggernauts_spawned >= allowed_for_this_stage )
 		return;
 
-	println( "pacing                  trying for 1 juggernaut" );
+	{}
 	odds = int( ( one_third / allowed_for_this_stage ) / 2 );
 
 	if ( randomint( odds ) > 0 )
 		return;
 
-	println( "pacing                  spawning 1 juggernaut" );
+	{}
 	delete_unseen_enemy();
 	level.pmc.send_in_juggernaut = true;
 }
@@ -1891,7 +1891,7 @@ send_in_multiple_juggernauts()
 	if ( jugs_remaining < 1 )
 		return;
 
-	println( "pacing                  trying for x juggernauts" );
+	{}
 	odds = int( level.pmc.enemies_remaining / jugs_remaining );
 
 	if ( odds <= 0 )
@@ -1899,7 +1899,7 @@ send_in_multiple_juggernauts()
 	if ( randomint( odds ) > 0 )
 		return;
 
-	println( "pacing                  spawning 1 juggernaut" );
+	{}
 	delete_unseen_enemy();
 	level.pmc.send_in_juggernaut = true;
 }

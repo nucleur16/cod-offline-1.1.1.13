@@ -220,7 +220,7 @@ main()
 {
 	self endon("killanimscript");
 
-	debug_anim_print("dog_move::main()" );
+	{}
 	self SetAimAnimWeights( 0, 0 );
 
 	do_movement = true;
@@ -254,14 +254,14 @@ main()
 	{
 		if ( self.a.movement == "run" )
 		{
-			debug_anim_print("dog_move::main() - Setting move_run" );
+			{}
 			self setanimstate( "move_run" );
 			maps\mp\animscripts\dog_shared::DoNoteTracksForTime(0.1, "done");
-			debug_anim_print("dog_move::main() - move_run wait 0.1 done " );
+			{}
 		}
 		else
 		{
-			debug_anim_print("dog_move::main() - Setting move_start ");
+			{}
 			self setanimstate( "move_walk" );
 		}
 	}
@@ -320,19 +320,19 @@ moveLoop()
 
 		if ( self.a.movement == "run" )
 		{
-			debug_anim_print("dog_move::moveLoop() - Setting move_run" );
+			{}
 			self setanimstate( "move_run" );
 			maps\mp\animscripts\dog_shared::DoNoteTracksForTime(0.2, "done");
-			debug_anim_print("dog_move::moveLoop() - move_run wait 0.2 done " );
+			{}
 		}
 		else
 		{
 			assert( self.a.movement == "walk" );
 
-			debug_anim_print("dog_move::moveLoop() - Setting move_walk " );
+			{}
 			self setanimstate( "move_walk" );
 			maps\mp\animscripts\dog_shared::DoNoteTracksForTime(0.1, "done");
-			debug_anim_print("dog_move::moveLoop() - move_walk wait 0.2 done " );
+			{}
 		}
 	}
 }
@@ -349,10 +349,10 @@ startMoveTrackLookAhead()
 
 startMove()
 {
-	debug_anim_print("dog_move::startMove() - Setting move_start " );
+	{}
 	self setanimstate( "move_start" );
 	maps\mp\animscripts\dog_shared::DoNoteTracks("done");
-	debug_anim_print("dog_move::startMove() - move_start notify done." );
+	{}
 
 	self animMode( "none" );
 	self set_orient_mode( "face motion" );
@@ -364,10 +364,10 @@ stopMove()
 	self endon( "killanimscript" );
 	self endon( "run" );
 
-	debug_anim_print("dog_move::stopMove() - Setting move_stop" );
+	{}
 	self setanimstate( "move_stop" );
 	maps\mp\animscripts\dog_shared::DoNoteTracks("done");
-	debug_anim_print("dog_move::stopMove() - move_stop notify done." );
+	{}
 }
 
 getEnemyDistanceSqr()

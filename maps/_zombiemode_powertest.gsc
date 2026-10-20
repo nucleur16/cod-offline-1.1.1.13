@@ -51,7 +51,7 @@ powertest_watch()
 		setDvar( "scr_codol_powertest", "" );
 
 		tokens = strTok( request, " " );
-		codolprintln( "CoDOL powertest: > " + request );
+		{}
 		switch ( tokens[ 0 ] )
 		{
 		case "addbot":
@@ -74,7 +74,7 @@ powertest_watch()
 			if ( isDefined( p ) && tokens.size > 2 )
 			{
 				p.score = int( tokens[ 2 ] );
-				codolprintln( "CoDOL powertest: client " + p getEntityNumber() + " has " + p.score + " points" );
+				{}
 			}
 			break;
 
@@ -91,7 +91,7 @@ powertest_watch()
 			trigs = maps\_zombiemode_power::power_switch_triggers();
 			if ( trigs.size < 1 )
 			{
-				codolprintln( "CoDOL powertest: no power switch trigger left; power_on " + flag( "power_on" ) );
+				{}
 				break;
 			}
 			lever = maps\_zombiemode_power::power_switch_lever();
@@ -103,7 +103,7 @@ powertest_watch()
 			after = "<none>";
 			if ( isDefined( lever ) )
 				after = "" + lever.angles;
-			codolprintln( "CoDOL powertest: power_on " + flag( "power_on" ) + "; lever angles " + before + " -> " + after );
+			{}
 			break;
 
 		case "perk":
@@ -123,7 +123,7 @@ powertest_watch()
 				wait( 0.1 );
 				machines[ i ] notify( "trigger", p );
 				wait( 4 );
-				codolprintln( "CoDOL powertest: vending " + machines[ i ].script_noteworthy + ": client has it " + p hasPerk( machines[ i ].script_noteworthy ) + ", points " + p.score );
+				{}
 			}
 			break;
 
@@ -162,8 +162,7 @@ powertest_watch()
 			sw2 = "<none>";
 			if ( trap._trap_switches.size )
 				sw2 = "" + trap._trap_switches[ 0 ].angles;
-			codolprintln( "CoDOL powertest: trap " + trap._trap_id + " in use " + trap._trap_in_use + ", charged " + ( before - p.score ) +
-				", handle " + sw + " -> " + sw2 + ", traps activated by client " + activated );
+			{}
 			break;
 
 		case "lure":
@@ -182,13 +181,11 @@ powertest_watch()
 			break;
 
 		case "state":
-			codolprintln( "CoDOL powertest: power_on " + flag( "power_on" ) + ", traps " + level.zm_map_traps.size + ", trap kills " + level.zombie_trap_killed_count +
-				", zombies " + level.zombies.size );
+			{}
 			for ( i = 0; i < level.zm_map_traps.size; i++ )
 			{
 				t = level.zm_map_traps[ i ];
-				codolprintln( "CoDOL powertest: trap " + t._trap_id + " ent " + t getEntityNumber() + " at " + t.origin + " in use " + t._trap_in_use +
-					" cooling " + t._trap_cooling_down + " handle " + t._trap_use_trigs[ 0 ].origin );
+				{}
 			}
 			break;
 		}
@@ -206,7 +203,7 @@ powertest_player( tokens, index )
 		if ( players[ i ] getEntityNumber() == n )
 			return players[ i ];
 	}
-	codolprintln( "CoDOL powertest: no client " + n );
+	{}
 	return undefined;
 }
 
@@ -219,8 +216,7 @@ powertest_perks( p )
 	count = 0;
 	if ( isDefined( p.num_perks ) )
 		count = p.num_perks;
-	codolprintln( "CoDOL powertest: client " + p getEntityNumber() + " perks" + line + ", num_perks " + count +
-		", health " + p.health + "/" + p.maxhealth + ", lives " + diag_lives( p ) );
+	{}
 	mods = [];
 	mods[ mods.size ] = "modMaxHealth";
 	mods[ mods.size ] = "modReviveRate";
@@ -235,7 +231,7 @@ powertest_perks( p )
 		if ( isDefined( value ) )
 			line = line + "(" + value + ")";
 	}
-	codolprintln( "CoDOL powertest: client " + p getEntityNumber() + " modifiers" + line );
+	{}
 	p thread powertest_weapon_perks();
 }
 
@@ -251,12 +247,12 @@ diag_lives( p )
 powertest_weapon_perks()
 {
 	weapon = self getCurrentWeapon();
-	codolprintln( "CoDOL powertest: client " + self getEntityNumber() + " weapon " + weapon + " inherits perks " + weaponInheritsPerks( weapon ) );
+	{}
 }
 
 powertest_weapon_inherits( weapon )
 {
-	codolprintln( "CoDOL powertest: weapon " + weapon + " inherits perks " + weaponInheritsPerks( weapon ) );
+	{}
 }
 
 powertest_trap( tokens, index )
@@ -268,7 +264,7 @@ powertest_trap( tokens, index )
 		if ( level.zm_map_traps[ i ]._trap_id == tokens[ index ] )
 			return level.zm_map_traps[ i ];
 	}
-	codolprintln( "CoDOL powertest: no trap " + tokens[ index ] );
+	{}
 	return undefined;
 }
 
@@ -278,7 +274,7 @@ powertest_press( p, origin )
 {
 	p setOrigin( origin - ( 0, 0, 40 ) );
 	wait( 0.2 );
-	codolprintln( "CoDOL powertest: client " + p getEntityNumber() + " at " + p.origin + " pressing USE" );
+	{}
 	p codol_botPressButtons( 40, 1 );
 }
 
@@ -300,12 +296,12 @@ powertest_lure( trap, n )
 		z forceTeleport( spot, ( 0, 0, 0 ) );
 		moved++;
 		wait( 0.05 );
-		codolprintln( "CoDOL powertest: zombie ent " + z getEntityNumber() + " at " + z.origin + " touching trap " + trap._trap_id + " " + z isTouching( trap ) );
+		{}
 	}
 
 	before = level.zombie_trap_killed_count;
 	wait( 3 );
-	codolprintln( "CoDOL powertest: lure " + trap._trap_id + ": moved " + moved + ", trap kills +" + ( level.zombie_trap_killed_count - before ) + ", live trap " + trap._trap_in_use );
+	{}
 }
 
 powertest_probe( p, trap )
@@ -327,9 +323,9 @@ powertest_probe( p, trap )
 			{
 				safe++;
 				if ( safe <= 3 )
-					codolprintln( "CoDOL powertest: probe " + trap._trap_id + " reaches the handle outside the trap at " + p.origin );
+					{}
 			}
 		}
 	}
-	codolprintln( "CoDOL powertest: probe " + trap._trap_id + ": handle reachable from " + ( both + safe ) + " grid points, " + safe + " of them outside the trap" );
+	{}
 }

@@ -298,7 +298,7 @@ speed_print()
 	self endon( "death" );
 	for ( ;; )
 	{
-		Print3d( self.origin + (0,0,36), self.printspeed + " " + self.printprogress, (1,0.2,0.2), 1, 1, int( 0.2 * 20 ) );
+		{}
 		wait( 0.2 );
 	}
 }

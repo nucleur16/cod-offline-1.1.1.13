@@ -133,7 +133,7 @@ _nextmission( endgame )
 	/#
 	if( getdvarint("nextmission_disable") )
 	{
-		iprintlnbold( "Nextmission Here, but disabled!" );
+		{}
 		return;
 	}
 	#/
@@ -192,7 +192,7 @@ _nextmission( endgame )
 	    }
 	    
 	    /#
-	    PrintLn( ">> SP PERCENT UPDATE - _nextmission()" );
+	    {}
 	    #/
 	    completion_percentage = updateSpPercent();
 		
@@ -207,15 +207,15 @@ _nextmission( endgame )
 		
 		// Debug prints
 		if ( completion_percentage < level.player GetLocalPlayerProfileData( "percentCompleteSP" ) )
-			PrintLn( ">> SP DEBUG: 					[ WARNING! NEW:" + completion_percentage + "% < OLD:" + level.player GetLocalPlayerProfileData( "percentCompleteSP" ) + "% ]\n" );
+			{}
 		
-		PrintLn( ">> SP DEBUG: 				[ setlevel:" + getdvarint( "ui_debug_setlevel" ) + " clearall:" + getdvarint( "ui_debug_clearall" ) + " ]" );
-		PrintLn( ">> SP PLAYER DIFFICULTY: 		[" + (level.player GetLocalPlayerProfileData( "missionHighestDifficulty" )) + "]" );
-		PrintLn( ">> SP PERCENTAGE COMPLETED:		[" + completion_percentage/100 + "%]" );
-		PrintLn( ">> SP LEVEL INDEX: 			[" + levelIndex + "]" );
-		PrintLn( ">> SP LEVEL NAME: 			[" + level.script + "]" );
-		PrintLn( ">> SP LEVELS COMPLETED: 		[" + (level.player GetLocalPlayerProfileData( "highestMission" )) + "]" );
-		PrintLn( ">> SP MAX LEVELS: 			[" + level.missionSettings.levels.size + "]" );
+		{}
+		{}
+		{}
+		{}
+		{}
+		{}
+		{}
 		#/
 	
 		UpdateGamerProfile();
@@ -318,25 +318,25 @@ getTotalpercentCompleteSP()
 	stat_progression = max( getStat_easy(), getStat_regular() ); // easy is always higher than regular anyways...
 	stat_progression_ratio = 0.5/1;
 	/#
-		PrintLn( ">> SP STAT REGULAR: " + stat_progression + "%" + "(" + stat_progression_ratio*100 + "%)" );
+		{}
 	#/
 	
 	stat_hardened = getStat_hardened();
 	stat_hardened_ratio = 0.25/1;
 	/#
-		PrintLn( ">> SP STAT HARDENED: " + stat_hardened + "%" + "(" + stat_hardened_ratio*100 + "%)" );
+		{}
 	#/
 	
 	stat_veteran = getStat_veteran();
 	stat_veteran_ratio = 0.1/1;
 	/#
-		PrintLn( ">> SP STAT VETERAN: " + stat_veteran + "%" + "(" + stat_veteran_ratio*100 + "%)" );
+		{}
 	#/
 	
 	stat_intel = getStat_intel();
 	stat_intel_ratio = 0.15/1;
 	/#
-		PrintLn( ">> SP STAT INTEL: " + stat_intel + "%" + "(" + stat_intel_ratio*100 + "%)" );
+		{}
 	#/
 
 	assertex( ( stat_progression_ratio + stat_hardened_ratio + stat_veteran_ratio + stat_intel_ratio ) <= 1.0, "Total sum of SP progress breakdown contributes to more than 100%!" );
@@ -349,7 +349,7 @@ getTotalpercentCompleteSP()
 
 	assertex( total_progress <= 100.0, "Total Percentage calculation is out of bound, larger then 100%" );
 	/#
-		PrintLn( ">> SP STAT TOTAL: " + total_progress + "%" );
+		{}
 	#/
 	
 	return total_progress;	
@@ -781,7 +781,7 @@ getNextLevelIndex()
 
 force_all_complete()
 {
-	println( "tada!" );
+	{}
 	missionString = (level.player GetLocalPlayerProfileData( "missionHighestDifficulty" ));
 	newString = "";
 	for ( index = 0; index < missionString.size; index++ )

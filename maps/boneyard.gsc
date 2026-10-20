@@ -263,7 +263,7 @@ objectives()
 	}
 	else
 	{
-		IPrintLnBold( "DEVELOPER: END OF SCRIPTED LEVEL" );
+		{}
 	}
 }
 
@@ -1710,7 +1710,7 @@ ride_track_health()
 			continue;
 
 		self.damage_taken += damage;
-		println( "DAMAGE: " + self.damage_taken );
+		{}
 		if ( self.damage_taken > 37000 )
 			break;
 	}

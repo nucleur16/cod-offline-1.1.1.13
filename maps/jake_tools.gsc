@@ -250,7 +250,7 @@ print3Dthread( sMessage, org, fSize, zOffset )
 		for ( ;; )
 		{
 			if ( isdefined( self ) )
-				print3d( self.origin + ( 0, 0, zOffset ), sMessage, ( 1, 1, 1 ), 1, fSize );
+				{}
 			wait( 0.05 );
 		}
 	}
@@ -258,7 +258,7 @@ print3Dthread( sMessage, org, fSize, zOffset )
 	{
 		for ( ;; )
 		{
-			print3d( org, sMessage, ( 1, 1, 1 ), 1, fSize );
+			{}
 			wait( 0.05 );
 		}
 	}

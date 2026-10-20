@@ -217,13 +217,13 @@ savecommit_afterGrenade()
 	currentTime = GetTime();
 	if ( currentTime < 4500 )
 	{
-		PrintLn( "^3aborting friendly fire because the level just loaded and saved and could cause a autosave grenade loop" );
+		{}
 		return true;
 	}
 	else
 	if ( ( currentTime - level.lastAutoSaveTime ) < 4500 )
 	{
-		PrintLn( "^3aborting friendly fire because it could be caused by an autosave grenade loop" );
+		{}
 		return true;
 	}
 	return false;

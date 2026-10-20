@@ -52,7 +52,7 @@ script_print_fx()
 {
 	if ( ( !isdefined( self.script_fxid ) ) || ( !isdefined( self.script_fxcommand ) ) || ( !isdefined( self.script_delay ) ) )
 	{
-		println( "Effect at origin ", self.origin, " doesn't have script_fxid/script_fxcommand/script_delay" );
+		{}
 		self delete();
 		return;
 	}
@@ -64,13 +64,13 @@ script_print_fx()
 
 //	println ("^a Command:", self.script_fxcommand, " Effect:", self.script_fxID, " Delay:", self.script_delay, " ", self.origin);
 	if ( self.script_fxcommand == "OneShotfx" )
-		println( "maps\_fx::OneShotfx(\"" + self.script_fxid + "\", " + self.origin + ", " + self.script_delay + ", " + org + ");" );
+		{}
 
 	if ( self.script_fxcommand == "loopfx" )
-		println( "maps\_fx::LoopFx(\"" + self.script_fxid + "\", " + self.origin + ", " + self.script_delay + ", " + org + ");" );
+		{}
 
 	if ( self.script_fxcommand == "loopsound" )
-		println( "maps\_fx::LoopSound(\"" + self.script_fxid + "\", " + self.origin + ", " + self.script_delay + ", " + org + ");" );
+		{}
 }
 
 script_playfx( id, pos, pos2 )

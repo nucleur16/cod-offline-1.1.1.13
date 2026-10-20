@@ -4312,7 +4312,7 @@ player_jump_watcher()
 		if( !level.player IsOnGround() )
 		{
 			flag_set( jumpflag );
-			println( "jumping" );
+			{}
 		}
 		
 		while( !level.player IsOnGround() )
@@ -4320,7 +4320,7 @@ player_jump_watcher()
 			wait( 0.05 );
 		}
 		flag_clear( jumpflag );
-		println( "not jumping" );
+		{}
 	}
 }
 

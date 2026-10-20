@@ -414,11 +414,11 @@ watchAirDropMarker( dropType, kID )
 	
 		if ( !isDefined( self.pers["kIDs_valid"][kID] ) )
 		{
-			codolPrintLn( "CoDOL airdrop: " + dropType + " marker from " + self.name + " discarded, reward " + kID + " already consumed" );
+			{}
 			airDropWeapon delete();
 			continue;
 		}
-		codolPrintLn( "CoDOL airdrop: " + dropType + " marker thrown by " + self.name );
+		{}
 			
 		self.pers["kIDs_valid"][kID] = undefined;
 
@@ -449,7 +449,7 @@ airDropMarkerActivate( dropType )
 	self endon( "airDropMarkerActivate" );
 	self waittill( "explode", position );
 	owner = self.owner;
-	codolPrintLn( "CoDOL airdrop: " + dropType + " marker exploded at " + position );
+	{}
 
 	if ( !isDefined( owner ) )
 		return;
@@ -732,7 +732,7 @@ dropTheCrate( dropPoint, dropType, lbHeight, dropImmediately, crateOverride, sta
 	self waittill ( "drop_crate" );
 	
 	dropCrate Unlink();
-	codolPrintLn( "CoDOL airdrop: " + dropType + " crate (" + crateType + ") released at " + dropCrate.origin );
+	{}
 	dropCrate PhysicsLaunchServer( (0,0,0), (randomInt(5),randomInt(5),randomInt(5)) );		
 	dropCrate thread physicsWaiter( dropType, crateType );	
 }
@@ -741,7 +741,7 @@ dropTheCrate( dropPoint, dropType, lbHeight, dropImmediately, crateOverride, sta
 physicsWaiter( dropType, crateType )
 {
 	self waittill( "physics_finished" );
-	codolPrintLn( "CoDOL airdrop: " + dropType + " crate (" + crateType + ") landed at " + self.origin );
+	{}
 
 	self thread [[ level.crateFuncs[ dropType ][ crateType ] ]]( dropType );
 	level thread dropTimeOut( self, self.owner );
@@ -820,7 +820,7 @@ getFlyHeightOffset( dropSite )
 	if ( !isDefined( heightEnt ) )//old system 
 	{
 		/#
-		println( "NO DEFINED AIRSTRIKE HEIGHT SCRIPT_ORIGIN IN LEVEL" );
+		{}
 		#/
 		if ( isDefined( level.airstrikeHeightScale ) )
 		{	
@@ -865,7 +865,7 @@ doFlyBy( owner, dropSite, dropYaw, dropType, heightAdjustment )
 	pathGoal = pathGoal + vector_multiply( anglestoforward( (0,dropYaw,0) ), -50 );
 
 	chopper = heliSetup( owner, pathStart, pathGoal );
-	codolPrintLn( "CoDOL airdrop: " + dropType + " helicopter spawned=" + isDefined( chopper ) + " start " + pathStart + " goal " + pathGoal );
+	{}
 	if ( !isDefined( chopper ) )
 	{
 		decrementLittleBirdCount();
@@ -887,14 +887,14 @@ doFlyBy( owner, dropSite, dropYaw, dropType, heightAdjustment )
 	chopper SetYawSpeed( 180, 180, 180, .3 );
 	
 	chopper waittill ( "goal" );
-	codolPrintLn( "CoDOL airdrop: " + dropType + " helicopter reached drop point " + chopper.origin );
+	{}
 	wait( .10 );
 	chopper notify( "drop_crate" );
 	chopper setvehgoalpos( pathEnd, 1 );
 	chopper Vehicle_SetSpeed( 300, 75 );
 	chopper.leaving = true;
 	chopper waittill ( "goal" );
-	codolPrintLn( "CoDOL airdrop: " + dropType + " helicopter left at " + chopper.origin );
+	{}
 	chopper notify( "leaving" );
 	chopper trimActiveBirdList();
 	decrementLittleBirdCount();
@@ -1119,9 +1119,6 @@ heliSetup( owner, pathStart, pathGoal )
 
 	if ( !isDefined( chopper ) )
 		return;
-
-	// IW4 _littlebird build_drive: the rotor loop (common_scripts\_heli_rotors).
-	chopper common_scripts\_heli_rotors::spin_rotors();
 
 	//chopper playLoopSound( "littlebird_move" );
 
@@ -1348,7 +1345,7 @@ killstreakCrateThink( dropType )
 			}
 		}		
 	
-		codolPrintLn( "CoDOL airdrop: crate (" + self.crateType + ") captured by " + player.name );
+		{}
 		player playLocalSound( "ammo_crate_use" );
 		player thread maps\mp\killstreaks\_killstreaks::giveKillstreak( self.crateType, false, false, self.owner );
 

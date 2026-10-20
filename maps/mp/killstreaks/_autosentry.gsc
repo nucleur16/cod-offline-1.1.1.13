@@ -910,7 +910,7 @@ sam_attackTargets()
 	level endon( "game_ended" );
 
 	self.samTargetEnt = undefined;
-	codolPrintLn( "CoDOL killstreak: sam_turret active at " + self.origin );
+	{}
 
 	for ( ;; )
 	{
@@ -1087,7 +1087,7 @@ sam_fireOnTarget()
 		}
 		else
 		{
-			codolPrintLn( "CoDOL killstreak: sam_turret magicBullet returned no missile" );
+			{}
 		}
 
 		if ( i == 3 )
@@ -1098,9 +1098,9 @@ sam_fireOnTarget()
 
 	// The salvo may already have destroyed the target.
 	if ( isDefined( target ) )
-		codolPrintLn( "CoDOL killstreak: sam_turret fired a salvo at " + target.classname + " " + target getEntityNumber() );
+		{}
 	else
-		codolPrintLn( "CoDOL killstreak: sam_turret fired a salvo; target already gone" );
+		{}
 
 	wait ( 3.0 );
 }

@@ -43,7 +43,7 @@ main()
 	if ( isdefined( newOrigin ) )
 		origin = newOrigin;
 	else
-		println( "Custom animation may be playing in solid for entity '" + self getentnum() + "'\n" );
+		{}
 
 	if ( !isdefined( self.noTeleport ) )
 		self teleport( origin, angles );

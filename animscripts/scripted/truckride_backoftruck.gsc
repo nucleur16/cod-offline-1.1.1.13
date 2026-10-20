@@ -16,7 +16,7 @@ hackangle()
 
 main()
 {
-	println( "anim1" );
+	{}
 	self endon( "killanimscript" );
 	self endon( "outoftruck" );
 	animscripts\utility::initialize( "l33t truckride combat" );

@@ -719,7 +719,7 @@ enemy_monitor_loop()
 				if ( enemies[ i ].script_noteworthy == "defender" )
 					roaming -- ;
 
-		println( "                roaming/total: " + roaming + "/" + total );
+		{}
 		if ( roaming < 13 )
 			spawn_enemy_group();
 		wait 1;

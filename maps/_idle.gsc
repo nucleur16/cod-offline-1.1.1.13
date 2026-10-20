@@ -285,14 +285,14 @@ check_animation( anime, node )
 		if ( !array2.size )
 			return true;
 
-		println( " -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- " );
-		println( " -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- " );
-		println( " -- -- - add these lines to your level script AFTER maps\\\_load::main(); -- -- -- -- -- -- - " );
+		{}
+		{}
+		{}
 		for ( i = 0; i < array2.size; i++ )
-			println( "maps\\\_idle_" + array2[ i ] + "::main();" );
-		println( " -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- " );
-		println( " -- -- -- -- -- -- -- -- -- -- -- -- - hint copy paste them from console.log -- -- -- -- -- -- -- -- -- -- " );
-		println( " -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- " );
+			{}
+		{}
+		{}
+		{}
 		assertEX( false, "missing _idle scripts, see above console prints" );
 
 		return false;
@@ -304,13 +304,13 @@ check_animation( anime, node )
 		{
 			if ( !isdefined( level.scr_anim[ "generic" ][ anime + "_react" ] ) )
 			{
-				println( " -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- " );
-				println( " -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- " );
-				println( " -- -- - add these lines to your level script AFTER maps\\\_load::main(); -- -- -- -- -- -- - " );
-				println( "maps\\\_idle_" + anime + "::main();" );
-				println( " -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- " );
-				println( " -- -- -- -- -- -- -- -- -- -- -- -- - hint copy paste them from console.log -- -- -- -- -- -- -- -- -- -- " );
-				println( " -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- " );
+				{}
+				{}
+				{}
+				{}
+				{}
+				{}
+				{}
 				assertEX( false, "missing _idle scripts, see above console prints" );
 
 				return false;

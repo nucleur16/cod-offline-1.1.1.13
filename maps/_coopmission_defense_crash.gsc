@@ -110,14 +110,13 @@ say( speaker, alias, noWait )
 	time = line_time( alias );
 	if ( !soundExists( alias ) )
 	{
-		codolprintln( "CoDOL coop crash: no sound alias " + alias );
+		{}
 		if ( !isDefined( noWait ) || !noWait )
 			wait( time + 0.3 );
 		return;
 	}
 	if ( isSubStr( alias, "_pri_" ) )
 	{
-		ghost_radio( time );
 		players = getPlayers();
 		for ( i = 0; i < players.size; i++ )
 			players[ i ] playLocalSound( alias );
@@ -130,7 +129,7 @@ say( speaker, alias, noWait )
 		for ( i = 0; i < players.size; i++ )
 			players[ i ] playLocalSound( alias );
 	}
-	codolprintln( "CoDOL coop crash: line " + alias );
+	{}
 	if ( !isDefined( noWait ) || !noWait )
 		wait( time + 0.3 );
 }
@@ -142,7 +141,7 @@ sound_at( alias, origin )
 	if ( soundExists( alias ) )
 		playSoundAtPosition( alias, origin );
 	else
-		codolprintln( "CoDOL coop crash: no sound alias " + alias );
+		{}
 }
 
 local_sound( alias )
@@ -154,46 +153,6 @@ local_sound( alias )
 ghost_say( alias, noWait )
 {
 	say( level.crash_ghost, alias, noWait );
-}
-
-// Ghost puts a hand to his radio while Price is on it (IW4 estate's
-// estate_ghost_radio), when he is standing still and in no other scene.
-// The clip is IW4's whole radio conversation (52 s), so it is held only for
-// Price's line.  It walks him (about 120 units in its first 5 s, turning):
-// played with its root motion where the way is clear, in place otherwise.
-ghost_radio( time )
-{
-	ai = level.crash_ghost;
-	if ( !isDefined( ai ) || !isAlive( ai ) || ai.crash_moving || isDefined( ai.crash_scene ) || isDefined( ai.coop_scene_scripted_on ) )
-		return;
-	clip = maps\_coopanim::get_anim( "ghost", "radio" );
-	if ( !isDefined( clip ) )
-		return;
-	if ( maps\_coopanim::anim_single_root( ai, "radio", undefined, true, ( time + 0.5 ) / getAnimLength( clip ) ) > 0 )
-		ai thread ghost_radio_end( time + 0.5 );
-}
-
-ghost_radio_end( time )
-{
-	self endon( "death" );
-	self endon( "coop_gesture" );
-	wait( time );
-	maps\_coopanim::stop_scripted( self );
-	self.coop_pose_anim = undefined;
-	self notify( "coop_cast_pose" );
-	self notify( "coop_gesture" );
-}
-
-// A gesture Ghost is in the middle of ends when he moves on.
-ghost_stop_gesture( ai )
-{
-	maps\_coopanim::stop_scripted( ai );
-	ai notify( "coop_gesture" );
-	if ( isDefined( ai.coop_pose_anim ) )
-	{
-		ai.coop_pose_anim = undefined;
-		ai notify( "coop_cast_pose" );
-	}
 }
 
 // --------------------------------------------------------------------------
@@ -239,8 +198,7 @@ init()
 	level.crash_frag = maps\_coopmode::resolveWeapon( strTok( "fraggrenade_so", " " ) );
 	level.crash_flash = maps\_coopmode::resolveWeapon( strTok( "flash_grenade_so", " " ) );
 	level.crash_claymore = maps\_coopmode::resolveWeapon( strTok( "claymore_so", " " ) );
-	codolprintln( "CoDOL coop crash: rifle " + name_of( level.crash_rifle ) + " pistol " + name_of( level.crash_pistol ) + " frag " +
-		name_of( level.crash_frag ) + " flash " + name_of( level.crash_flash ) + " claymore " + name_of( level.crash_claymore ) );
+	{}
 }
 
 name_of( v )
@@ -321,7 +279,7 @@ point( name, fallback )
 	e = getEnt( name, "targetname" );
 	if ( isDefined( e ) )
 		return e.origin;
-	codolprintln( "CoDOL coop crash: no point " + name + ", using " + fallback );
+	{}
 	return fallback;
 }
 
@@ -358,7 +316,7 @@ by_noteworthy( value )
 // the screen for a few seconds; the compass carries the marker.
 objective( text, origin, ent )
 {
-	codolprintln( "CoDOL coop crash: objective " + level.crash_objective_name );
+	{}
 	if ( isDefined( level.crash_objective_hud ) )
 		level.crash_objective_hud destroy();
 	hud = newHudElem();
@@ -542,7 +500,7 @@ step( kind, value, value2 )
 		text += " " + value;
 	else if ( kind == "kill" )
 		text += " " + value;
-	codolprintln( "CoDOL coop crash: waiting for " + text );
+	{}
 }
 
 any_player_near( origin, radius )
@@ -568,7 +526,7 @@ wait_player_near( origin, radius, timeout )
 		wait( 0.25 );
 		waited += 0.25;
 	}
-	codolprintln( "CoDOL coop crash: nobody came near " + origin + " in " + timeout + " s" );
+	{}
 	return undefined;
 }
 
@@ -629,7 +587,7 @@ wait_use( origin, radius, hold, timeout, trigger, bar )
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 		players[ i ] progress_bar( -1 );
-	codolprintln( "CoDOL coop crash: nobody used " + origin + " in " + timeout + " s" );
+	{}
 	return undefined;
 }
 
@@ -779,7 +737,7 @@ player_spawned()
 			angles = p.angles;
 		self setOrigin( p.origin );
 		self setPlayerAngles( angles );
-		codolprintln( "CoDOL coop crash: " + self.name + " respawns at " + p.origin + " (" + level.crash_phase + ")" );
+		{}
 	}
 	self give_kit();
 }
@@ -846,16 +804,23 @@ freeze_all( on )
 
 spawn_ghost( origin, angles )
 {
-	// The addon's own Ghost spawner classname: aitype\ally_hero_ghost_socom_so,
-	// character\character_hero_seal_soccom_ghost.
+	template = maps\_cooptraining::ally_template();
+	if ( !isDefined( template ) )
+		return undefined;
 	kind = spawnStruct();
+	kind.faction = "cast";
 	kind.role = "ar";
+	kind.team = "allies";
 	kind.health = 1000;
 	kind.accuracy = 0.45;
-	ai = maps\_coopmission::spawn_class_actor( "actor_ally_hero_ghost_socom_so", "allies", kind );
+	kind.body = "body_hero_ghost_socom";
+	kind.head = "head_hero_ghost_soccom";
+	level.coop_soldier_next = kind;
+	ai = template spawnActor();
+	level.coop_soldier_next = undefined;
 	if ( !isDefined( ai ) )
 	{
-		codolprintln( "CoDOL coop crash: no actor for Ghost" );
+		{}
 		return undefined;
 	}
 	ai forceTeleport( origin, angles );
@@ -866,7 +831,6 @@ spawn_ghost( origin, angles )
 	ai.crash_moving = false;
 	ai.goalradius = 48;
 	ai.coop_name = "Ghost";
-	ai.animname = "ghost";
 	ai.targetname = "crash_ghost";
 	// He runs when he moves (soldier_move's run, not the patrol walk) and
 	// stands rifle up (soldier_stop's cast pose).  exposed_aim_5 is a whole
@@ -884,7 +848,7 @@ spawn_ghost( origin, angles )
 	level.coop_cast_list[ level.coop_cast_list.size ] = ai;
 	level.crash_ghost = ai;
 	ai thread ghost_fire_support();
-	codolprintln( "CoDOL coop crash: Ghost (actor ent " + ai getEntityNumber() + ") at " + origin );
+	{}
 	return ai;
 }
 
@@ -903,8 +867,6 @@ ghost_move( dest, what, radius, timeout )
 		timeout = 40;
 	ai notify( "crash_ghost_move" );
 	ai endon( "crash_ghost_move" );
-	maps\_coopanim::settle_scene( ai );
-	ghost_stop_gesture( ai );
 	ai.crash_moving = true;
 	ai orientMode( "face default" );
 	ai setGoalPos( dest );
@@ -922,7 +884,7 @@ ghost_move( dest, what, radius, timeout )
 		if ( length( ( d[ 0 ], d[ 1 ], 0 ) ) <= radius && crash_abs( d[ 2 ] ) < 90 )
 		{
 			ai.crash_moving = false;
-			codolprintln( "CoDOL coop crash: Ghost reached " + what + " " + dest + " from " + start + " in " + waited + " s" );
+			{}
 			return;
 		}
 		if ( distance( ai.origin, last ) < 12 )
@@ -933,8 +895,7 @@ ghost_move( dest, what, radius, timeout )
 		if ( still >= 5 )
 			break;
 	}
-	codolprintln( "CoDOL coop crash: Ghost could not walk to " + what + " " + dest + " (at " + ai.origin + " after " + waited +
-		" s); placing him there" );
+	{}
 	ai forceTeleport( dest, ai.angles );
 	ai setGoalPos( dest );
 	ai.crash_moving = false;
@@ -950,19 +911,15 @@ crash_abs( v )
 // A scripted walk for Ghost where the bot waypoint graph has no nodes (the
 // intro building's rooms and stairs): he rides an invisible mover along
 // hand-placed points (codol_actorRide; actors cannot linkTo), playing the
-// run at its own pace.  The points were measured with _cooptest colmap / floors.
+// run.  The points were measured with _cooptest colmap / floors.
 ghost_walk( points, what, speed )
 {
 	ai = level.crash_ghost;
 	if ( !isDefined( ai ) )
 		return;
-	// The mover goes at the run's own pace (run_lowready_f: 182 units a
-	// second), so his feet keep to the ground.
 	if ( !isDefined( speed ) )
-		speed = maps\_coopanim::clip_pace( %run_lowready_f );
+		speed = 150;
 	ai notify( "crash_ghost_move" );
-	maps\_coopanim::settle_scene( ai );
-	ghost_stop_gesture( ai );
 	ai.crash_moving = true;
 	ai orientMode( "face default" );
 	mover = spawn( "script_model", ai.origin );
@@ -991,7 +948,7 @@ ghost_walk( points, what, speed )
 	ai notify( "coop_cast_pose" );
 	mover delete();
 	ai.crash_moving = false;
-	codolprintln( "CoDOL coop crash: Ghost walked " + what + " to " + ai.origin );
+	{}
 }
 
 // The double door between the building's two ground-floor rooms (base map
@@ -1014,7 +971,7 @@ open_price_door()
 	}
 	if ( doors.size > 0 )
 		sound_at( "door_wood_slow_open", doors[ 0 ].origin );
-	codolprintln( "CoDOL coop crash: price_door opened (" + doors.size + " halves)" );
+	{}
 }
 
 // Ghost's standing (or crouched) pose while he waits; both are whole poses
@@ -1150,8 +1107,7 @@ ghost_shot( target )
 		self.crash_shots = 0;
 	self.crash_shots++;
 	if ( self.crash_shots == 1 || self.crash_shots % 50 == 0 )
-		codolprintln( "CoDOL coop crash: Ghost has fired " + self.crash_shots + " rounds (target ent " + target getEntityNumber() + " at " +
-			int( distance( self.origin, target.origin ) ) + ")" );
+		{}
 	aim = target.origin + ( 0, 0, 44 );
 	chest = self.origin + ( 0, 0, 52 );
 	dir = vectorNormalize( aim - chest );
@@ -1221,7 +1177,7 @@ spawn_group( name, limit, goal, noHunt )
 		ais[ ais.size ] = ai;
 		wait( 0.1 );
 	}
-	codolprintln( "CoDOL coop crash: group " + name + " spawned " + ais.size + " of " + list.size );
+	{}
 	return ais;
 }
 
@@ -1246,7 +1202,7 @@ clear_leftovers( dist, except )
 		n++;
 	}
 	if ( n > 0 )
-		codolprintln( "CoDOL coop crash: " + n + " leftover enemies taken out of the scene (" + dist + " from the players)" );
+		{}
 }
 
 append( a, b )
@@ -1289,7 +1245,7 @@ wait_group_dead( ais, what, timeout, allowLeft, moveOn )
 		// rooftop and upper-floor shooters, who stay and keep firing).
 		if ( isDefined( moveOn ) && waited >= moveOn )
 		{
-			codolprintln( "CoDOL coop crash: " + what + ": moving on with " + alive_count( ais ) + " still up after " + waited + " s" );
+			{}
 			break;
 		}
 		if ( !marked && waited >= timeout )
@@ -1313,9 +1269,9 @@ wait_group_dead( ais, what, timeout, allowLeft, moveOn )
 					objective_onEntity( 4 + slot, ais[ i ] );
 					slot++;
 				}
-				codolprintln( "CoDOL coop crash: " + what + ": one left at " + ais[ i ].origin );
+				{}
 			}
-			codolprintln( "CoDOL coop crash: " + what + ": " + alive_count( ais ) + " left after " + timeout + " s, sent at the players" );
+			{}
 		}
 		// One stuck far from everyone (the waypoint graph strands a soldier
 		// now and then) has fled: he is taken out of the scene.
@@ -1329,14 +1285,14 @@ wait_group_dead( ais, what, timeout, allowLeft, moveOn )
 				d = maps\_coopmission::nearest_player_distance( ais[ i ].origin );
 				if ( isDefined( d ) && d > 900 )
 				{
-					codolprintln( "CoDOL coop crash: " + what + ": a straggler at " + ais[ i ].origin + " (" + int( d ) + " from the players) is removed" );
+					{}
 					remove_actor( ais[ i ] );
 				}
 			}
 		}
 		if ( waited >= timeout * 2.2 )
 		{
-			codolprintln( "CoDOL coop crash: " + what + " not cleared after " + waited + " s; the rest are removed" );
+			{}
 			for ( i = 0; i < ais.size; i++ )
 				remove_actor( ais[ i ] );
 			break;
@@ -1344,7 +1300,7 @@ wait_group_dead( ais, what, timeout, allowLeft, moveOn )
 	}
 	for ( i = 0; i < 4; i++ )
 		objective_delete( 4 + i );
-	codolprintln( "CoDOL coop crash: " + what + " cleared in " + waited + " s" );
+	{}
 }
 
 // An unaware soldier: holds an idle from the common animlists every coop
@@ -1373,38 +1329,10 @@ unaware( idle, wakeRadius )
 	self wake();
 }
 
-// A searcher keeps searching: the search clips do not loop, so each
-// playing is started again while he is unaware.
-search_loop( clip )
-{
-	self endon( "death" );
-	for ( ;; )
-	{
-		len = getAnimLength( clip );
-		if ( len < 1 )
-			len = 1;
-		wait( len );
-		if ( !isDefined( self.crash_unaware ) )
-			return;
-		self.coop_pose_anim = clip;
-		self notify( "coop_cast_pose" );
-		wait( 0.05 );
-		self.coop_pose_anim = undefined;
-	}
-}
-
 wake()
 {
 	if ( !isDefined( self.crash_unaware ) )
 		return;
-	// A crouched searcher gets up from the debris first.
-	if ( isDefined( self.crash_search ) && self.crash_search == "crouch_idle" &&
-		maps\_coopanim::has_anim( "searcher", "crouch_end" ) && self.health > 0 )
-	{
-		self.crash_search = undefined;
-		self thread wake_after( maps\_coopanim::anim_single_root( self, "crouch_end", undefined, true ) );
-		return;
-	}
 	self.crash_unaware = undefined;
 	self.coop_cast = undefined;
 	self.coop_idle_anim = undefined;
@@ -1417,15 +1345,6 @@ wake()
 			level.crash_alert = [];
 		level.crash_alert[ self.crash_group ] = true;
 	}
-}
-
-wake_after( time )
-{
-	self endon( "death" );
-	if ( time > 1.5 )
-		time = 1.5;
-	wait( time );
-	self wake();
 }
 
 // --------------------------------------------------------------------------
@@ -1445,7 +1364,6 @@ main()
 	// _coopmission's own main() has run its init() by now.
 	level.coop_max_alive = 14;
 	wait( 1 );
-	maps\_coopscene_crash::init_scenes();
 	level.crash_start_time = getTime();
 
 	if ( getDvarInt( "scr_coop_crash_skip" ) > 0 )
@@ -1502,7 +1420,7 @@ skip_to( n )
 			players[ i ] setOrigin( pts[ i % pts.size ].origin );
 		players[ i ] give_kit();
 	}
-	codolprintln( "CoDOL coop crash: skipped to phase " + n );
+	{}
 }
 
 // The office's props start as the recording shows them.
@@ -1571,12 +1489,8 @@ phase_intro()
 			dragger forceTeleport( dragOrigin + fwd * 44, ( 0, dragYaw + 180, 0 ) );
 			dragger.ignoreall = true;
 			dragger.coop_cast = "intro";
-			dragger.animname = "dragger";
 			dragger.coop_idle_anim = %casual_stand_idle;
-			// He has dragged the rookie out (crash_body_drag_enemy), and
-			// stands over him (drone_stand_idle).
-			maps\_coopanim::anim_loop_solo( dragger, "idle" );
-			maps\_coopanim::anim_single_solo( dragger, "drag", undefined, "inplace", true );
+			dragger notify( "coop_cast_pose" );
 		}
 	}
 	black_all( 0, 1.0 );
@@ -1619,31 +1533,10 @@ phase_intro()
 	}
 	for ( n = 1; n <= 4; n++ )
 		intro_actor( "intro_ai_watcher0" + n + "_spawner", "loc_ai_watcher0" + n, %casual_stand_idle );
-	// The scene as the recording plays it: the boss on the phone with his
-	// back turned, one of his men in front
-	// of the rookie working him over (village_interrogationb_price: the
-	// punches, then he reaches for a pistol), the others standing by.
-	// (The phone itself, village_interrogationb_phone, is a script_model
-	// prop clip; the boss holds the common phone idle.)
-	if ( isDefined( ortiz ) )
-		ortiz.animname = "ortiz";
-	puncher = intro_puncher( roomOrigin, roomYaw );
-	if ( isDefined( puncher ) )
-		maps\_coopanim::anim_single_root( puncher, "interrogate", undefined, true );
 	black_all( 0, 1.5 );
 	wait( 1 );
 	say( ortiz, "crash_ortiz_03" );
 	wait( 1 );
-	// Ghost at the door frame (price_flash_point), out of the room's sight,
-	// peeking in while the boss finishes his call (crash_flash_price_peek).
-	ghostSpot = point( "price_flash_point", ( 1689.5, -1778, 226 ) );
-	ghost = spawn_ghost( ghostSpot, ( 0, 60, 0 ) );
-	peekEnd = getTime();
-	if ( isDefined( ghost ) )
-	{
-		ghost.crash_scene = true;
-		peekEnd += int( maps\_coopanim::anim_single_root( ghost, "flash_peek", undefined, true, undefined, peek_node() ) * 1000 );
-	}
 	say( ortiz, "crash_ortiz_04" );
 	if ( isDefined( ortiz ) )
 	{
@@ -1653,17 +1546,6 @@ phase_intro()
 		ortiz notify( "coop_cast_pose" );
 	}
 	say( ortiz, "crash_ortiz_05" );
-	// The throw (crash_flash_price_throw): the bang goes off as it leaves
-	// his hand (the clip's flash_release note, 39% in).
-	while ( getTime() < peekEnd )
-		wait( 0.05 );
-	if ( isDefined( ghost ) )
-	{
-		// From where the peek left him (the peek returns to its start).
-		len = maps\_coopanim::anim_single_root( ghost, "flash_throw", undefined, true );
-		if ( len > 0 )
-			wait( len * 0.39 + 0.3 );
-	}
 
 	// Ghost's flashbang (magic_flashbang) through the doorway, then Ghost
 	// (price_flash_point / price_peek_point) with the rifle for the rookie.
@@ -1674,9 +1556,6 @@ phase_intro()
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 		players[ i ] shellShock( "flashbang_mp_scripted", 3 );
-	// The room reels (IW4 flashed reactions; one man sprays blind, the
-	// boss staggers back, crash_flash_react_ortiz).
-	sprayed = false;
 	for ( i = 0; i < level.crash_intro_enemies.size; i++ )
 	{
 		e = level.crash_intro_enemies[ i ];
@@ -1684,26 +1563,9 @@ phase_intro()
 			continue;
 		e.coop_idle_anim = %casual_crouch_idle;
 		e notify( "coop_cast_pose" );
-		if ( isDefined( e.crash_ortiz ) )
-		{
-			e thread ortiz_flashed();
-			continue;
-		}
-		e.crash_recover = 2.5;
-		len = 0;
-		if ( !sprayed && !isDefined( e.crash_puncher ) )
-		{
-			e.animname = "watcher";
-			len = maps\_coopanim::anim_single_root( e, "flash_spray", undefined, true );
-			sprayed = len > 0;
-		}
-		if ( len <= 0 )
-			len = e maps\_coopanim::play_anim( maps\_coopanim::get_anim( "generic", "flashed" ), undefined, "inplace", true );
-		if ( len > e.crash_recover )
-			e.crash_recover = len;
 	}
-	if ( isDefined( ghost ) )
-		ghost.crash_scene = undefined;
+	ghostSpot = point( "price_flash_point", ( 1689.5, -1778, 226 ) );
+	spawn_ghost( ghostSpot, ( 0, 60, 0 ) );
 	wait( 1.5 );
 	// The gun: the recording's M4A1 with the M203 and the holo sight.
 	level.crash_intro_done = true;
@@ -1715,19 +1577,14 @@ phase_intro()
 	}
 	ghost_say( "crash_gst_12", true );
 	level.crash_phase = "route";
-	// Ortiz gets away (ortiz_flashed); the watchers recover and fight once
-	// their reaction has played.
+	// Ortiz gets away; the watchers recover and fight.
+	if ( isDefined( ortiz ) && isAlive( ortiz ) )
+		ortiz thread ortiz_escape();
 	for ( i = 0; i < level.crash_intro_enemies.size; i++ )
 	{
 		e = level.crash_intro_enemies[ i ];
-		if ( !isDefined( e ) || !isAlive( e ) || isDefined( e.crash_ortiz ) )
-			continue;
-		t = 2.5;
-		if ( isDefined( e.crash_recover ) )
-			t = e.crash_recover - 1.5;
-		if ( t < 1 )
-			t = 1;
-		e thread recover_after( t );
+		if ( isDefined( e ) && isAlive( e ) && !isDefined( e.crash_ortiz ) )
+			e thread recover_after( 2.5 );
 	}
 	watchers = [];
 	for ( i = 0; i < level.crash_intro_enemies.size; i++ )
@@ -1780,59 +1637,6 @@ intro_actor( spawnerNoteworthy, locNoteworthy, idle )
 	return ai;
 }
 
-// The watcher who works the rookie over: the one nearest him, brought in
-// front of him, facing him.
-intro_puncher( roomOrigin, roomYaw )
-{
-	best = undefined;
-	bestDist = 100000;
-	for ( i = 0; i < level.crash_intro_enemies.size; i++ )
-	{
-		e = level.crash_intro_enemies[ i ];
-		if ( !isDefined( e ) || !isAlive( e ) || isDefined( e.crash_ortiz ) )
-			continue;
-		d = distance( e.origin, roomOrigin );
-		if ( d < bestDist )
-		{
-			best = e;
-			bestDist = d;
-		}
-	}
-	if ( !isDefined( best ) || !maps\_coopanim::has_anim( "puncher", "interrogate" ) )
-		return undefined;
-	spot = roomOrigin + anglesToForward( ( 0, roomYaw, 0 ) ) * 40;
-	best forceTeleport( spot, ( 0, roomYaw + 180, 0 ) );
-	best.animname = "puncher";
-	best.crash_puncher = true;
-	return best;
-}
-
-// The scene node Ghost's peek and throw are authored against: both clips
-// start 46 units behind price_peek_point (1660 -1820.5 222, yaw 0) facing
-// along it (MEASURED with _cooptest rootdelta / where).  undefined when the
-// addon has no such struct (they are then played where he stands).
-peek_node()
-{
-	s = crash_struct( "price_peek_point" );
-	if ( !isDefined( s ) )
-		return undefined;
-	node = spawnStruct();
-	node.origin = s.origin;
-	node.angles = ( 0, 0, 0 );
-	if ( isDefined( s.angles ) )
-		node.angles = s.angles;
-	return node;
-}
-
-// The boss reels from the flash (crash_flash_react_ortiz), then runs.
-ortiz_flashed()
-{
-	self endon( "death" );
-	self.animname = "ortiz";
-	maps\_coopanim::anim_single_root( self, "flash_react" );
-	self ortiz_escape();
-}
-
 recover_after( time )
 {
 	self endon( "death" );
@@ -1853,7 +1657,7 @@ ortiz_escape()
 	self.goalradius = 64;
 	self setGoalPos( point( "price_open_door", ( 1607, -1801, 66 ) ) );
 	wait( 6 );
-	codolprintln( "CoDOL coop crash: Ortiz escaped" );
+	{}
 	remove_actor( self );
 }
 
@@ -1886,32 +1690,8 @@ phase_route()
 	downstairs[ 2 ] = ( 1650, -1900, 66 );
 	downstairs[ 3 ] = ( 1655, -1815, 66 );
 	ghost_walk( downstairs, "down the stairs" );
-	// He pushes the double door open with his flat hand (IW4 hunted /
-	// airport: hunted_open_barndoor_flathand), the doors swinging as his
-	// hand meets them.
-	// The clip carries him 74 units to his left and 17 forward, turning
-	// left 109 degrees: facing east from the foot of the stairs that takes
-	// him north through the doorway (x 1635..1705 at y -1784) as it opens.
-	// The halves stop nothing from here (they swing clear at once), so the
-	// path check sees the doorway open.
-	len = 0;
-	if ( isDefined( level.crash_ghost ) && isAlive( level.crash_ghost ) )
-	{
-		doors = getEntArray( "price_door", "targetname" );
-		for ( i = 0; i < doors.size; i++ )
-			doors[ i ] notSolid();
-		level.crash_ghost orientMode( "face angle", 0 );
-		wait( 0.4 );
-		len = maps\_coopanim::anim_single_root( level.crash_ghost, "door_open", 0, true );
-	}
-	if ( len > 0 )
-		wait( 0.5 );
 	open_price_door();
 	wait( 0.6 );
-	// He goes through the doorway on the clip; the walk out starts from
-	// where it leaves him.
-	if ( len > 1.1 )
-		wait( len - 1.1 );
 	ghost_wait_player( 450, 30 );
 	outside = [];
 	outside[ 0 ] = ( 1655, -1700, 66 );
@@ -2043,7 +1823,7 @@ phase_office()
 		if ( isAlive( players[ i ] ) )
 			players[ i ] equip_offhands();
 	}
-	codolprintln( "CoDOL coop crash: flashbangs handed out" );
+	{}
 
 	// Through the door (throw_flash_window_obj).
 	window = point( "throw_flash_window_obj", ( -521.5, 2148, 307 ) );
@@ -2091,7 +1871,7 @@ wait_flash( window, timeout )
 		waited += 0.25;
 	}
 	level notify( "crash_flash_watch_stop" );
-	codolprintln( "CoDOL coop crash: no flashbang thrown in " + timeout + " s; the room is taken anyway" );
+	{}
 	return false;
 }
 
@@ -2104,7 +1884,7 @@ watch_flash_throw()
 		self waittill( "grenade_fire", grenade, weapon );
 		if ( !isDefined( weapon ) || !isSubStr( weapon, "flash" ) )
 			continue;
-		codolprintln( "CoDOL coop crash: " + self.name + " threw " + weapon );
+		{}
 		wait( 1.5 );
 		level.crash_flash_seen = true;
 		level notify( "crash_flash_watch_stop" );
@@ -2117,10 +1897,6 @@ flashed_then_wake( time )
 	self endon( "death" );
 	self.coop_idle_anim = %casual_crouch_idle;
 	self notify( "coop_cast_pose" );
-	// IW4 animscripts\flashed: one of the exposed flashbang reactions.
-	len = self maps\_coopanim::play_anim( maps\_coopanim::get_anim( "generic", "flashed" ), undefined, "inplace", true );
-	if ( len - 1 > time )
-		time = len - 1;
 	wait( time );
 	self wake();
 }
@@ -2255,7 +2031,7 @@ phase_download()
 	ghost_say( "crash_gst_93", true );
 	wait( 1.5 );
 	say( undefined, "crash_pri_0364" );
-	codolprintln( "CoDOL coop crash: download complete, " + level.crash_files_done + " files" );
+	{}
 }
 
 wait_claymores( spots, timeout )
@@ -2278,7 +2054,7 @@ wait_claymores( spots, timeout )
 		waited += 0.25;
 	}
 	level notify( "crash_claymore_watch_stop" );
-	codolprintln( "CoDOL coop crash: " + level.crash_claymores_placed + " claymore spot(s) covered in " + waited + " s" );
+	{}
 	return level.crash_claymores_placed;
 }
 
@@ -2308,7 +2084,7 @@ watch_claymores( spots )
 				if ( isDefined( spots[ i ].crash_glow ) )
 					spots[ i ].crash_glow hide();
 				level.crash_claymores_placed++;
-				codolprintln( "CoDOL coop crash: " + self.name + " covered claymore spot " + i + " at " + grenade.origin );
+				{}
 				break;
 			}
 		}
@@ -2399,8 +2175,7 @@ download_run( laptopOrigin, radius, downloadTime, totalFiles, first )
 	count destroy();
 	total destroy();
 	signal destroy();
-	codolprintln( "CoDOL coop crash: download run ends, ok " + ok + ", " + int( level.crash_files_done ) + " of " + totalFiles + " files, " +
-		level.crash_download_elapsed + " s" );
+	{}
 	return ok;
 }
 
@@ -2640,7 +2415,7 @@ phase_heli()
 	who = wait_use( site, 90, 1.0, 60, undefined, true );
 	hint_clear();
 	case_model delete();
-	codolprintln( "CoDOL coop crash: explosives picked up" );
+	{}
 	say( undefined, "crash_pri_0404", true );
 
 	// Back to the wreck with them; plant.
@@ -2669,7 +2444,7 @@ phase_heli()
 	if ( soundExists( "bomb_tick" ) )
 		bomb playLoopSound( "bomb_tick" );
 	level.crash_bomb = bomb;
-	codolprintln( "CoDOL coop crash: C4 planted at " + plantOrigin );
+	{}
 	level thread bomb_timer( 40 );
 	objective_clear();
 }
@@ -2685,9 +2460,7 @@ spawn_searchers()
 	for ( i = 0; i < searchers.size; i++ )
 	{
 		sp = searchers[ i ].coop_spawner;
-		// The wreck's own search scenes (crash_search_wreckage_*): crouched
-		// over the debris, or looking it over standing.
-		scene = "crouch_idle";
+		idle = %casual_crouch_idle;
 		if ( isDefined( sp.target ) )
 		{
 			s = crash_struct( sp.target );
@@ -2695,16 +2468,10 @@ spawn_searchers()
 			{
 				searchers[ i ] forceTeleport( s.origin, searchers[ i ].angles );
 				if ( isDefined( s.script_animation ) && s.script_animation == "stand_search" )
-					scene = "stand_idle";
+					idle = %patrol_bored_idle;
 			}
 		}
-		searchers[ i ].animname = "searcher";
-		searchers[ i ].crash_search = scene;
-		idle = maps\_coopanim::get_anim( "searcher", scene );
-		if ( !isDefined( idle ) )
-			idle = %casual_crouch_idle;
 		searchers[ i ] thread unaware( idle, 700 );
-		searchers[ i ] thread search_loop( idle );
 	}
 	return searchers;
 }
@@ -2736,7 +2503,7 @@ blow_wreck()
 	sound_at( "exp_suitcase_bomb_main", o );
 	earthquake( 0.4, 1.5, o, 2500 );
 	radiusDamage( o + ( 0, 0, 40 ), 300, 200, 20 );
-	codolprintln( "CoDOL coop crash: the wreck is destroyed at " + o );
+	{}
 }
 
 // --------------------------------------------------------------------------
@@ -2783,7 +2550,7 @@ phase_roof()
 	level.crash_phase = "roof";
 	objective_clear();
 	if ( isDefined( who ) )
-		codolprintln( "CoDOL coop crash: " + who.name + " is on the roof" );
+		{}
 
 	// The flare (flare_wave): green smoke, the extraction helicopter
 	// (chopper_end on so_chopper_end_path), the wreck goes up.
@@ -2826,8 +2593,7 @@ phase_roof()
 	start = getTime();
 	if ( isDefined( level.crash_start_time ) )
 		start = level.crash_start_time;
-	codolprintln( "CoDOL coop crash: mission played in " + int( ( getTime() - start ) / 1000 ) + " s; the players killed " + kills +
-		", Ghost fired " + shots + " rounds" );
+	{}
 	maps\_coopmission::mission_complete( "the squad reached the roof and was extracted" );
 }
 
@@ -2860,9 +2626,8 @@ extraction_chopper()
 	mover = spawn( "script_model", start );
 	mover setModel( model );
 	mover.angles = ( 0, 0, 0 );
-	mover common_scripts\_heli_rotors::spin_rotors();
 	level.crash_chopper = mover;
-	codolprintln( "CoDOL coop crash: extraction helicopter from " + start + " over " + path.size + " nodes" );
+	{}
 	flyStart = getTime();
 	for ( i = 0; i < path.size; i++ )
 	{
@@ -2892,7 +2657,7 @@ extraction_chopper()
 	mover moveTo( dest, time, 0, time * 0.4 );
 	wait( time * 0.7 );
 	level.crash_chopper_arrived = true;
-	codolprintln( "CoDOL coop crash: extraction helicopter over the roof at " + mover.origin + " after " + ( getTime() - flyStart ) / 1000 + " s" );
+	{}
 }
 
 // The squad's view follows the incoming helicopter (the recording ends on
@@ -2952,7 +2717,7 @@ test_command( tokens )
 			text += " " + int( p[ 2 ] );
 			z = p[ 2 ] - 40;
 		}
-		codolprintln( text );
+		{}
 		break;
 	case "crashstatus":
 		s = level.crash_step;
@@ -2961,7 +2726,7 @@ test_command( tokens )
 			text += " step " + s.kind;
 		if ( isDefined( level.crash_ghost ) )
 			text += " ghost " + level.crash_ghost.origin;
-		codolprintln( text );
+		{}
 		break;
 	case "crashroute":
 		level thread crash_route();
@@ -2979,14 +2744,14 @@ crash_route()
 	if ( !isDefined( p ) )
 		return;
 	p endon( "disconnect" );
-	codolprintln( "CoDOL crashtest: crashroute starts" );
+	{}
 	last = undefined;
 	for ( ;; )
 	{
 		wait( 0.5 );
 		if ( level.coop_mission_over )
 		{
-			codolprintln( "CoDOL crashtest: crashroute sees the mission over" );
+			{}
 			return;
 		}
 		s = level.crash_step;
@@ -3030,11 +2795,11 @@ route_act( p, s )
 		wait( 0.5 );
 		// The special offhand button (C1 usercmd 0x8000), as a player throws.
 		p codol_botPressButtons( 32768, 0.4 );
-		codolprintln( "CoDOL crashtest: flashbang button pressed, carrying " + p getCurrentOffhand_text() );
+		{}
 		wait( 3 );
 		if ( !isDefined( level.crash_flash_seen ) )
 		{
-			codolprintln( "CoDOL crashtest: flashbang throw SIMULATED (no grenade_fire from the test client)" );
+			{}
 			level.crash_flash_seen = true;
 		}
 		break;
@@ -3048,11 +2813,11 @@ route_act( p, s )
 			p setPlayerAngles( ( 45, p.angles[ 1 ], 0 ) );
 			wait( 0.2 );
 			p codol_botPressButtons( 65536, 0.4 );
-			codolprintln( "CoDOL crashtest: claymore " + i + " button pressed" );
+			{}
 			wait( 2.5 );
 			if ( !isDefined( s.value[ i ].crash_done ) )
 			{
-				codolprintln( "CoDOL crashtest: claymore " + i + " SIMULATED" );
+				{}
 				s.value[ i ].crash_done = true;
 				level.crash_claymores_placed++;
 			}
@@ -3080,7 +2845,7 @@ route_use( p, s )
 	}
 	if ( level.crash_step == s )
 	{
-		codolprintln( "CoDOL crashtest: use at " + s.value + " SIMULATED" );
+		{}
 		trig = undefined;
 		ents = getEntArray( "trigger_use", "classname" );
 		for ( i = 0; i < ents.size; i++ )
@@ -3121,7 +2886,7 @@ route_walk( p, dest, what )
 		last = p.origin;
 		if ( still >= 3 )
 		{
-			codolprintln( "CoDOL crashtest: walk to " + what + " " + dest + " STUCK at " + p.origin + "; teleporting" );
+			{}
 			p setOrigin( dest );
 			break;
 		}

@@ -58,7 +58,7 @@ gibtest_watch()
 			gibtest_status();
 			break;
 		default:
-			codolprintln( "CoDOL gibtest: unknown verb " + tokens[ 0 ] );
+			{}
 			break;
 		}
 	}
@@ -74,7 +74,7 @@ gibtest_player( tokens, index )
 		if ( level.players[ i ] getEntityNumber() == num )
 			return level.players[ i ];
 	}
-	codolprintln( "CoDOL gibtest: no client " + tokens[ index ] );
+	{}
 	return undefined;
 }
 
@@ -100,7 +100,7 @@ gibtest_describe( z, label )
 {
 	if ( !isDefined( z ) )
 	{
-		codolprintln( "CoDOL gibtest: " + label + ": zombie is gone" );
+		{}
 		return;
 	}
 	parts = "";
@@ -110,12 +110,7 @@ gibtest_describe( z, label )
 	ref = "none";
 	if ( isDefined( z.a ) && isDefined( z.a.gib_ref ) )
 		ref = z.a.gib_ref;
-	codolprintln( "CoDOL gibtest: " + label + ": zombie " + z getEntityNumber() + " health " + z.health +
-		" model " + z.model + " attached[" + parts + " ] gib_ref " + ref +
-		" gibbed " + is_true( z.gibbed ) + " head_gibbed " + is_true( z.head_gibbed ) +
-		" has_legs " + is_true( z.has_legs ) + " eye_glow " + is_true( z.eye_glow_on ) +
-		" j_head-origin " + ( z getTagOrigin( "j_head" ) - z.origin ) +
-		" j_knee_ri-origin " + ( z getTagOrigin( "j_knee_ri" ) - z.origin ) );
+	{}
 }
 
 gibtest_shoot( tokens )
@@ -123,13 +118,13 @@ gibtest_shoot( tokens )
 	attacker = gibtest_player( tokens, 1 );
 	if ( !isDefined( attacker ) || tokens.size < 4 )
 	{
-		codolprintln( "CoDOL gibtest: shoot needs <client> <bone> <weapon> [health]" );
+		{}
 		return;
 	}
 	z = gibtest_zombie( attacker.origin );
 	if ( !isDefined( z ) )
 	{
-		codolprintln( "CoDOL gibtest: no live zombie" );
+		{}
 		return;
 	}
 	if ( tokens.size > 4 )
@@ -158,13 +153,13 @@ gibtest_blast( tokens )
 	attacker = gibtest_player( tokens, 1 );
 	if ( !isDefined( attacker ) || tokens.size < 4 )
 	{
-		codolprintln( "CoDOL gibtest: blast needs <client> <bone> <damage>" );
+		{}
 		return;
 	}
 	z = gibtest_zombie( attacker.origin );
 	if ( !isDefined( z ) )
 	{
-		codolprintln( "CoDOL gibtest: no live zombie" );
+		{}
 		return;
 	}
 	point = z getTagOrigin( tokens[ 2 ] );
@@ -179,7 +174,7 @@ gibtest_force( tokens )
 {
 	if ( tokens.size < 2 )
 	{
-		codolprintln( "CoDOL gibtest: gib needs a ref" );
+		{}
 		return;
 	}
 	origin = undefined;
@@ -188,7 +183,7 @@ gibtest_force( tokens )
 	z = gibtest_zombie( origin );
 	if ( !isDefined( z ) || !isDefined( z.a ) )
 	{
-		codolprintln( "CoDOL gibtest: no live zombie" );
+		{}
 		return;
 	}
 	gibtest_describe( z, "before gib " + tokens[ 1 ] );
@@ -219,7 +214,7 @@ gibtest_status()
 			count++;
 		}
 	}
-	codolprintln( "CoDOL gibtest: " + count + " live zombies" );
+	{}
 	gibtest_pieces();
 }
 
@@ -232,7 +227,7 @@ gibtest_pieces()
 		if ( !isDefined( piece ) )
 			continue;
 		live++;
-		codolprintln( "CoDOL gibtest: piece " + piece getEntityNumber() + " " + piece.classname + " model " + piece.model + " at " + piece.origin );
+		{}
 	}
-	codolprintln( "CoDOL gibtest: " + live + " live pieces" );
+	{}
 }

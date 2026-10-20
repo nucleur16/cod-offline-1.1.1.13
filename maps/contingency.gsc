@@ -574,8 +574,8 @@ handle_slide()
 	
 	flag_wait( "start_btr_slide" );
 	autosave_stealth();
-	println( "hit flag" );
-	println( "anim starting" );
+	{}
+	{}
 	
 	level.price notify( "stop_adjust_movement_speed" );
 	
@@ -1227,7 +1227,7 @@ handle_defend_sub()
 	fire_stinger_at_uav( stinger_source );
 	
 	thread breakforsub_music();
-	println( "^3z:              thread breakforsub_music();   " );
+	{}
 	//thread debug_timer();
 	
 	wait 1;
@@ -2210,7 +2210,7 @@ debug_timer()
 	{	
 		wait .05;
 		time_past = time_past + .05;
-		println( "time past: " + time_past );
+		{}
 	}
 }
 
@@ -3183,7 +3183,7 @@ dialog_russians_looking_for_you()
 			if( isalive( guy ) )
 			{
 				selection = dialog[ randomint( dialog.size ) ];
-				println( "guy.export " + guy.export + " sound " + selection );
+				{}
 				guy playsound( selection );
 				break;
 			}
@@ -6503,7 +6503,7 @@ setup_bridge_trucks()
 	self endon( "death" );
 	
 	flag_wait( "truck_guys_alerted" );
-	println( "truck_guys_alerted" );
+	{}
 	
 	flag_wait( "convoy_half_way_across_bridge" );
 
@@ -6983,9 +6983,9 @@ base_autosave_logic()
 	if( isdefined( level.timer_allowed_time ) )
 	{
 		time_passed = ( gettime() - level.timer_start_time ) / 1000;
-		println( "time passed " + time_passed );
+		{}
 		time_left = level.timer_allowed_time - time_passed;
-		println( "time left " + time_left );
+		{}
 		if( time_left < 90 )
 			save = false;
 		else
@@ -6999,9 +6999,9 @@ base_autosave_logic()
 	if( isdefined( level.timer_allowed_time ) )
 	{
 		time_passed = ( gettime() - level.timer_start_time ) / 1000;
-		println( "time passed " + time_passed );
+		{}
 		time_left = level.timer_allowed_time - time_passed;
-		println( "time left " + time_left );
+		{}
 		if( time_left < 80 )
 			save = false;
 		else
@@ -7015,9 +7015,9 @@ base_autosave_logic()
 	if( isdefined( level.timer_allowed_time ) )
 	{
 		time_passed = ( gettime() - level.timer_start_time ) / 1000;
-		println( "time passed " + time_passed );
+		{}
 		time_left = level.timer_allowed_time - time_passed;
-		println( "time left " + time_left );
+		{}
 		if( time_left < 40 )
 			save = false;
 		else

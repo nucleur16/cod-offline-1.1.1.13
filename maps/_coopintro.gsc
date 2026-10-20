@@ -77,14 +77,14 @@ init()
 	model = maps\_coopvehicle::vehicle_model( vehicle );
 	if ( !isDefined( model ) )
 	{
-		codolprintln( "CoDOL coop intro: " + vehicle.targetname + " has no model; no ride" );
+		{}
 		return;
 	}
 
 	path = maps\_coopvehicle::get_path( vehicle.target );
 	if ( path.size < 2 )
 	{
-		codolprintln( "CoDOL coop intro: " + vehicle.targetname + " has no vehicle path; no ride" );
+		{}
 		return;
 	}
 
@@ -119,8 +119,7 @@ init()
 	if ( intro.ground )
 		maps\_cooptraining::ride_lines();
 
-	codolprintln( "CoDOL coop intro: " + vehicle.targetname + " (" + model + ") parked at " + start + ", ride over " +
-		path.size + " path points to " + path[ path.size - 1 ].origin + ", ground " + intro.ground );
+	{}
 }
 
 // Threaded from _coopmode::Callback_StartGameType after init().
@@ -237,8 +236,7 @@ board()
 	tagName = "none";
 	if ( isDefined( tag ) )
 		tagName = tag;
-	codolprintln( "CoDOL coop intro: " + self.name + " seated in seat " + seat + " (" + tagName + ") offset " + offset +
-		", stance " + self getStance() + ", linked " + self isLinked() + ", ride started " + intro.started );
+	{}
 	return true;
 }
 
@@ -304,12 +302,11 @@ ride()
 	mover = intro.mover;
 	intro.started = true;
 	level.coop_intro_riding = true;
-	codolprintln( "CoDOL coop intro: ride starts with " + intro.riders.size + " rider(s)" );
+	{}
 	level notify( "coop_intro_started" );
 
 	if ( intro.ground )
 		mover playLoopSound( "hummer_player_engine_low" );
-	mover drive_anims( intro.ground, true );
 	level thread intro_dialogue();
 
 	defaultMph = 15;
@@ -321,7 +318,6 @@ ride()
 	{
 		mover stopLoopSound();
 		mover playSound( "veh_humvee_engine_stop" );
-		mover drive_anims( true, false );
 	}
 	wait( 0.5 );
 
@@ -352,60 +348,8 @@ ride()
 		mover hide();
 
 	level.coop_intro_riding = undefined;
-	codolprintln( "CoDOL coop intro: ride over at " + mover.origin );
+	{}
 	level notify( "coop_intro_done" );
-}
-
-// The vehicle's own clips (vehicles animtree; the mover is a script_model,
-// whose first setAnim binds the tree).  The clips are the mission's =vehicles
-// animlist entries, looked up by name (never %anim: they ship in one
-// mission's animlist only).
-//   humvee: IW4 maps\_humvee build_drive humvee_50cal_driving_idle_forward
-//           (the body's sway while it drives) and init_local's
-//           humvee_antennas_idle_movement, both while the jeep moves;
-//   CH-46:  IW4 maps\_seaknight build_drive sniper_escape_ch46_rotors, through
-//           _coopevents play_drive_anim (the same table the mission's other
-//           helicopters use).
-vehicle_clip( name )
-{
-	return codol_getAnim( "vehicles", name );
-}
-
-drive_anims( ground, on )
-{
-	if ( !ground )
-	{
-		if ( on )
-			maps\_coopevents::play_drive_anim( self );
-		return;
-	}
-	names = strTok( "humvee_50cal_driving_idle_forward humvee_antennas_idle_movement", " " );
-	for ( i = 0; i < names.size; i++ )
-	{
-		a = vehicle_clip( names[ i ] );
-		if ( !isDefined( a ) )
-			continue;
-		if ( on )
-			self setAnim( a, 1, 0.2, 1 );
-		else
-			self clearAnim( a, 0.5 );
-		codolprintln( "CoDOL coop intro: " + self.model + " " + names[ i ] + " " + on );
-	}
-}
-
-// IW4 _vehicle_aianim guy_unload: the vehicle's own clip for a seat's getout
-// (maps\_humvee set_vehicle_anims: the driver's door,
-// uaz_driver_exit_into_run_door), in step with the rider's getout clip.
-door_anim( name )
-{
-	if ( !isDefined( self ) )
-		return 0;
-	a = vehicle_clip( name );
-	if ( !isDefined( a ) )
-		return 0;
-	self setAnimRestart( a, 1, 0, 1 );
-	codolprintln( "CoDOL coop intro: " + self.model + " plays " + name );
-	return getAnimLength( a );
 }
 
 // The ride's lines, from the vehicle's driver when the map authors one
@@ -425,7 +369,7 @@ intro_dialogue()
 		if ( !isDefined( speaker ) )
 			return;
 		speaker playSound( lines[ l ].alias );
-		codolprintln( "CoDOL coop intro: line " + lines[ l ].alias );
+		{}
 		wait( lines[ l ].time );
 	}
 }

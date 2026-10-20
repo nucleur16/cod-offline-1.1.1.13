@@ -57,14 +57,14 @@ init()
 
 		if ( !isDefined( trigger.script_index ) )
 		{
-			codolprintln( "CoDOL zm intel: trigger at " + trigger.origin + " has no script_index" );
+			{}
 			continue;
 		}
 		index = int( trigger.script_index );
 		name = tableLookupByRow( table, index, 0 );
 		if ( name == "" )
 		{
-			codolprintln( "CoDOL zm intel: script_index " + index + " is not a row of " + table );
+			{}
 			continue;
 		}
 
@@ -115,8 +115,7 @@ init()
 		codol_objective_setsort( slot, i + 1 );
 	}
 
-	codolprintln( "CoDOL zm intel: " + level.zm_intel.size + " of " + triggers.size +
-		" intel item(s) on " + getDvar( "mapname" ) + ", difficulty " + difficulty );
+	{}
 
 	level thread intel_on_connect();
 	level thread intel_think();
@@ -331,8 +330,7 @@ intel_collect( intel )
 	self setClientDvar( "intel_splash_ref", intel.index );
 	self ShowHudSplash( "intel_found", 0 );
 
-	codolprintln( "CoDOL zm intel: " + self.name + " found " + intel.name + " (collectibles[" +
-		intel.index + "], scoreboard slot " + intel.objective + ")" );
+	{}
 	self notify( "zm_intel_found", intel.index );
 	level notify( "zm_intel_found", self, intel.index );
 
@@ -369,8 +367,7 @@ intel_test_init()
 			for ( i = 0; i < level.zm_intel.size; i++ )
 			{
 				intel = level.zm_intel[ i ];
-				codolprintln( "CoDOL inteltest: [" + intel.index + "] " + intel.name + " difficulty " +
-					intel.difficulty + " at " + intel.origin + " slot " + intel.objective );
+				{}
 			}
 			continue;
 		}
@@ -387,7 +384,7 @@ intel_test_init()
 		}
 		if ( !isDefined( player ) )
 		{
-			codolprintln( "CoDOL inteltest: no client" );
+			{}
 			continue;
 		}
 
@@ -399,7 +396,7 @@ intel_test_init()
 				if ( level.zm_intel[ i ].index != target )
 					continue;
 				player setOrigin( level.zm_intel[ i ].origin );
-				codolprintln( "CoDOL inteltest: " + player.name + " moved to intel " + target );
+				{}
 			}
 		}
 		else if ( tokens[ 0 ] == "show" )
@@ -410,7 +407,7 @@ intel_test_init()
 				index = level.zm_intel[ i ].index;
 				text += " " + index + "=" + player codol_hasCollectible( index );
 			}
-			codolprintln( "CoDOL inteltest: " + player.name + " holds" + text );
+			{}
 		}
 	}
 }

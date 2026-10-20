@@ -95,7 +95,7 @@ tweakart()
 		if ( !printed )
 		{
 			printed = true;
-			IPrintLnBold( "ART TWEAK ENABLED" );
+			{}
 		}
 
 		//translate the slider values to script variables
@@ -114,7 +114,7 @@ tweakart()
 
 		if ( dump )
 		{
-			PrintLn( "Art settings dumped success!" );
+			{}
 			addstring = "maps\\createart\\" + level.script + "_art::main();";
 			AssertEx( level.tweakfile, "remove all art setting in " + level.script + ".gsc and add the following line before _load: " + addstring );
 			SetDvar( "scr_art_dump", "0" );
@@ -222,7 +222,7 @@ dumpsettings()
 	if ( ! artEndVisionFileExport() )
 		return false;
 
-	PrintLn( "CREATE ART DUMP SUCCESS!" );
+	{}
 
 	return true;
 	#/

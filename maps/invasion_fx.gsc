@@ -125,9 +125,9 @@ glasstest()
 	if ( !getdvarint( "scr_glasstest" ) )
 		return;
 
-	PrintLn( "NOW" );
+	{}
 	array = GetGlassArray( "nates_glass_delete" );
-	PrintLn( array.size );
+	{}
 	foreach ( glass in array )
 	{
 		origin = GetGlassOrigin( glass );
@@ -140,10 +140,10 @@ glasstest()
 sayhi( org, num )
 {
 	level waittillmatch( "glass_destroyed", num );
-	PrintLn( num );
+	{}
 	for ( i = 0; i < 200; i++ )
 	{
-		Print3d( org, "." + num );
+		{}
 		wait .05;
 	}
 }

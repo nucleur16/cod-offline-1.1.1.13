@@ -4327,14 +4327,14 @@ dcemp_music()
 			flag_wait( "dc_emp_missile" );
 			thread music_play( "dc_emp_missile" );
 			/#
-			println( " *** MUSIC: dc_emp_missile *** " );
+			{}
 			#/
 			flag_wait( "dc_emp_missile_hit" );
 		//	thread music_stop( 1.0 );
 		//	level.player thread playlocalsoundwrapper( "dc_emp_missile_hit_sfx" );
 			thread music_play( "dc_emp_missile_hit" );
 			/#
-			println( " *** MUSIC: dc_emp_missile_hit *** " );
+			{}
 			#/
 			
 		case "emp":					
@@ -4342,7 +4342,7 @@ dcemp_music()
 			flag_wait( "dc_emp_afternath" );
 			thread music_play( "dc_emp_afternath" );
 			/#
-			println( " *** MUSIC: dc_emp_afternath *** " );
+			{}
 			#/
 			
 		case "corner":
@@ -4356,7 +4356,7 @@ dcemp_music()
 			wait 2.5;
 			thread music_play( "dc_emp_bunker" );
 			/#
-			println( " *** MUSIC: dc_emp_bunker *** " );
+			{}
 			#/
 		
 			break;

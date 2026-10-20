@@ -72,7 +72,7 @@ init()
 	sniper = maps\_zombiemode_weapons::is_weapon_included( "sniper_explosive_zm" );
 	if ( !crossbow && !sniper )
 	{
-		codolprintln( "CoDOL zm bolts: neither explosive launcher is in this map's weapon table" );
+		{}
 		return;
 	}
 
@@ -117,7 +117,7 @@ init()
 	for ( i = 0; i < keys.size; i++ )
 		maps\_zombiemode_equipment::register_equipment( keys[ i ], ::explosive_bolt_armed );
 
-	codolprintln( "CoDOL zm bolts: " + keys.size + " spawned bolt weapon(s) registered" );
+	{}
 }
 
 add_bolt( spawned, launcher, fuse, radius, inner, outer, fx, sound, monkey )
@@ -165,7 +165,13 @@ explosive_bolt_armed( player, weapon )
 		wait( 0.05 );
 		waited += 0.05;
 		if ( !isDefined( bolt ) )
-			break;
+		{
+			// T5's fuse belongs to its grenade entity. Removing that entity
+			// cancels the blast; do not explode at a cached old position after
+			// pickup, native cleanup, or deletion of an attached carrier.
+			info.exploded = true;
+			return;
+		}
 		info.origin = bolt.origin;
 	}
 
@@ -201,7 +207,7 @@ explosive_bolt_armed( player, weapon )
 		playFx( level._effect[ s.fx ], origin );
 	playSoundAtPosition( s.sound, origin );
 
-	codolprintln( "CoDOL zm bolts: " + weapon + " exploded at " + origin + " (radius " + s.radius + ", " + s.inner + "/" + s.outer + ")" );
+	{}
 
 	if ( isDefined( bolt ) )
 		bolt delete();

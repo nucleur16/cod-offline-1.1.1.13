@@ -260,8 +260,7 @@ StingerUsageLoop()
 	{
 		wait 0.05;
 
-		// A class-built launcher is a composed name; compare its base weapon.
-		weapon = codol_getWeaponBaseName( self getCurrentWeapon() );
+		weapon = self getCurrentWeapon();
 		
 		if ( weapon != "stinger_mp" && weapon != "at4_mp" )
 		{

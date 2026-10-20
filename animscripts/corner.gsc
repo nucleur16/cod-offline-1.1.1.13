@@ -149,7 +149,7 @@ printYaws()
 	wait( 2 );
 	for ( ;; )
 	{
-		println( "coveryaw = ", self.coverNode GetYawToOrigin( getEnemyEyePos() ) );
+		{ getEnemyEyePos(); }
 		printYawToEnemy();
 		wait( 0.05 );
 	}
@@ -363,7 +363,7 @@ changeStepOutPos()
 	}
 	else
 	{
-		 /#println( "^1Corner position switch animation \"" + animname + "\" in corner_" + self.cornerDirection + " " + self.a.pose + " didn't have \"start_aim\" notetrack" );#/
+		 /#{}#/
 		self waittillmatch( "changeStepOutPos", "end" );
 	}
 
@@ -587,7 +587,7 @@ stepOut() /* bool */
 	}
 	else
 	{
-		/#println( "^1Corner stepout animation \"" + animname + "\" in corner_" + self.cornerDirection + " " + self.a.pose + " didn't have \"start_aim\" notetrack" );#/
+		/#{}#/
 		self waittillmatch( "stepout", "end" );
 	}
 
@@ -855,7 +855,7 @@ showstate()
 	while ( 1 )
 	{
 		wait .05;
-		print3d( self.origin + ( 0, 0, 60 ), self.statetext );
+		{}
 	}
 }
 
@@ -996,7 +996,7 @@ tryThrowingGrenade( throwAt, safe )
 
 printYawToEnemy()
 {
-	println( "yaw: ", self getYawToEnemy() );
+	{}
 }
 
 lookForEnemy( lookTime )

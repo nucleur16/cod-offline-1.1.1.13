@@ -443,7 +443,7 @@ wait_reaction_time()
 	t = ( d - 200)/1000;
 	t = clamp( t, 0, 0.5 );
 	wait t;
-	println( "---------reaction time: " + t );
+	{}
 }
 
 /*
@@ -733,7 +733,7 @@ debug_timer()
 	{	
 		wait .05;
 		time_past = time_past + .05;
-		println( "time past: " + time_past );
+		{}
 	}
 }
 
@@ -1163,7 +1163,7 @@ spawn_beehive()
 	
 	while( 1 )
 	{
-		println( "                   beehive ready" );
+		{}
 		flag_wait( "_stealth_spotted" );
 		
 		wait 1;
@@ -1181,7 +1181,7 @@ spawn_beehive()
 		
 
 		
-		println( "                   beehives     : " + hives );
+		{}
 		//sort from closest to furtherest
 		spawner_triggers = get_array_of_closest( getAveragePlayerOrigin(), spawner_triggers );
 	

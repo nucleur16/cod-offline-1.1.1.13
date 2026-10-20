@@ -982,7 +982,7 @@ breakable_think()
 	}
 	if ( !isdefined( type ) )
 	{
-		println( "Entity ", self.targetname, " at ", self.origin, " is not a valid breakable object." );
+		{}
 		return;
 	}
 

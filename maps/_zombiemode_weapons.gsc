@@ -48,8 +48,9 @@
 //   zmb_box_poof_land sounds, which no zone carries either (ALL_sound.txt).
 //   init_weapon_toggle / init_pay_turret / weapon cabinet / hacker /
 //   dual-wield left-hand models / limited tesla -- separate systems.
-//   useweaponhidetags() (:2026) -- MEASURED, not a registered builtin here;
-//   the floating box model is a plain setModel of getWeaponModel's answer.
+//   useweaponhidetags() (:2026) -- applied below through the native
+//   getWeaponHideTags/showAllParts/hidePart operations. Only tags actually
+//   present on the chosen world model are passed to hidePart.
 //   setclientflag(level._ZOMBIE_SCRIPTMOVER_FLAG_BOX_RANDOM) (:1972) -- there
 //   is no CSC VM and no zm client-flag table on this server.
 //
@@ -246,7 +247,7 @@ init_weapons()
 	add_zombie_weapon( "c4_zm",						undefined,	"C4",				1000,	1000,	false );
 
 	keys = getArrayKeys( level.zombie_weapons );
-	println( "CoDOL zm: " + keys.size + " zombie weapons resolved out of the mounted zones\n" );
+	{}
 }
 
 // T5 :177,:188,:677-:708.
@@ -457,14 +458,23 @@ init_weapon_upgrade()
 			// The wall names a weapon that is in no mounted zone.  T5 would
 			// AssertEx; here the wall is left inert rather than ending the
 			// match, and it is reported by name.
-			println( "CoDOL zm: wall buy names unknown weapon " + trig.zombie_weapon_upgrade + "\n" );
+			{}
 			continue;
+		}
+
+		// The map authors the physical weapon separately from its wall mark.
+		// T5 reveals that model only on the first successful weapon purchase.
+		model = getEnt( trig.target, "targetname" );
+		if ( isDefined( model ) )
+		{
+			model weapon_model_hide_tags( trig.zombie_weapon_upgrade, model.model );
+			model hide();
 		}
 
 		trig thread weapon_spawn_think();
 	}
 
-	println( "CoDOL zm: " + weapon_spawns.size + " wall buys\n" );
+	{}
 }
 
 // T5 :2649, solo purse, minus the hacker/fire-sale/collector branches.
@@ -565,6 +575,53 @@ weapon_show()
 	self play_sound_on_ent( "weapon_show" );
 }
 
+// T5's box applies the weapon's hide tags after every model change. CoDOL's
+// authored world models contain the alternative sights too (for example the
+// SPAS-12 has tag_red_dot and tag_eotech). A plain setModel displays both.
+// Reset first because the box reuses one entity for different weapons. Some
+// shipped T5-derived definitions name tags absent from their CoDOL model;
+// hidePart errors on an absent bone, so intersect with that exact skeleton.
+weapon_model_hide_tags( weapon_name, model_name )
+{
+	self showAllParts();
+	tags = getWeaponHideTags( weapon_name );
+	if ( !isDefined( tags ) || tags.size == 0 )
+		return;
+
+	for ( i = 0; i < getNumParts( model_name ); i++ )
+	{
+		part = getPartName( model_name, i );
+		for ( j = 0; j < tags.size; j++ )
+		{
+			if ( part != tags[ j ] )
+				continue;
+			self hidePart( part );
+			break;
+		}
+	}
+}
+
+// Mystery-box preview policy only: remove optional authored attachment parts.
+// The awarded weapon name/definition and wall/held-weapon masks are unchanged.
+// Unlike the award variant hide list (e.g. scar_h_eotech_zm), retain ordinary
+// iron sights and the regular/base receiver. Test exact skeleton before hidePart.
+box_weapon_model_plain( model_name )
+{
+ self showAllParts();
+ optional = strTok( "tag_acog_2 tag_aimpoint tag_aug_scope_rail tag_bayonet tag_big_mag tag_dualmag tag_elbit tag_eotech tag_ext_clip tag_foregrip tag_grenade_launcher tag_heartbeat tag_m203 tag_other_knife tag_red_dot tag_scope tag_scope_anpvs tag_scope_colt tag_shotgun tag_silencer tag_sra tag_suppressor tag_thermal_scope tag_upgraded_sights", " " );
+ for ( i = 0; i < getNumParts( model_name ); i++ )
+ {
+  part = getPartName( model_name, i );
+  for ( j = 0; j < optional.size; j++ )
+  {
+   if ( part != optional[j] )
+    continue;
+   self hidePart( part );
+   break;
+  }
+ }
+}
+
 // ==========================================================================
 // MYSTERY BOX -- T5 :793, :945, :1057, :1742-:1784, :1951, :2365.
 // ==========================================================================
@@ -578,7 +635,7 @@ treasure_chest_init()
 
 	if ( level.chests.size < 1 )
 	{
-		println( "CoDOL zm: no treasure_chest_use on this map; no mystery box\n" );
+		{}
 		return;
 	}
 
@@ -624,7 +681,7 @@ treasure_chest_init()
 	array_thread_1( level.chests, ::treasure_chest_think );
 	level thread maps\_zombiemode_boxtest::init();
 
-	println( "CoDOL zm: " + level.chests.size + " mystery box location(s)\n" );
+	{}
 }
 
 // T5 :850, the semi-random branch: the list is already shuffled, the first
@@ -767,38 +824,44 @@ treasure_chest_timeout()
 }
 
 // T5 :1774,:1784.
-treasure_chest_ChooseRandomWeapon()
+// Preview spins and final rewards share the same eligibility rule. The full
+// registry also contains equipment for wall buys and local developer tools.
+treasure_chest_box_weapons()
 {
 	keys = getArrayKeys( level.zombie_weapons );
+	filtered = [];
+	for ( i = 0; i < keys.size; i++ )
+	{
+		if ( get_is_in_box( keys[ i ] ) )
+			filtered[ filtered.size ] = keys[ i ];
+	}
+	return filtered;
+}
+
+treasure_chest_ChooseRandomWeapon()
+{
+	keys = treasure_chest_box_weapons();
+	if ( keys.size < 1 )
+		return undefined;
 	return keys[ randomInt( keys.size ) ];
 }
 
 treasure_chest_ChooseWeightedRandomWeapon( player )
 {
-	keys = getArrayKeys( level.zombie_weapons );
+	keys = treasure_chest_box_weapons();
 
 	filtered = [];
 	for ( i = 0; i < keys.size; i++ )
 	{
-		if ( !get_is_in_box( keys[ i ] ) )
-			continue;
-
 		if ( isDefined( player ) && is_player_valid( player ) && player has_weapon_or_upgrade( keys[ i ] ) )
 			continue;
 
 		filtered[ filtered.size ] = keys[ i ];
 	}
 
-	// T5 falls back to the unfiltered set when the player owns everything the
-	// box can give.
+	// Owning every eligible gun may relax ownership, never box eligibility.
 	if ( filtered.size < 1 )
-	{
-		for ( i = 0; i < keys.size; i++ )
-		{
-			if ( get_is_in_box( keys[ i ] ) )
-				filtered[ filtered.size ] = keys[ i ];
-		}
-	}
+		filtered = keys;
 
 	if ( filtered.size < 1 )
 		return undefined;
@@ -938,7 +1001,11 @@ treasure_chest_think()
 		}
 
 		self.grabbed_weapon = weapon;
-		self setHintString( &"ZOMBIE_SWITCH_WEAPON" );
+		// The shipped swap hint advertises weapon cycling, but this trigger
+		// consumes useButtonPressed below. Expand the actual use binding (F
+		// by default), including players who have rebound it. Highlight only
+		// the binding in yellow, then restore white for the rest of the hint.
+		self setHintString( "Press ^3[{+activate}]^7 to Swap Weapon" );
 		self enable_trigger();
 		self thread treasure_chest_timeout();
 
@@ -1017,6 +1084,9 @@ treasure_chest_weapon_spawn( player )
 		self.weapon_model.angles = angles + ( 0, 90, 0 );
 	}
 	self.weapon_model moveTo( origin + ( 0, 0, floatHeight ), 3, 2, 0.9 );
+	// The shipped box jingle belongs to the roll at this box, not the
+	// player's music channel or a moving/deleted preview weapon model.
+	playSoundAtPos( origin, "zmb_music_box" );
 
 	rand = undefined;
 	number_cycles = 40;
@@ -1044,14 +1114,17 @@ treasure_chest_weapon_spawn( player )
 
 		modelname = getWeaponModel( rand );
 		if ( isDefined( modelname ) && modelname != "" )
+		{
 			self.weapon_model setModel( modelname );
+			self.weapon_model box_weapon_model_plain( modelname );
+		}
 
 		if ( i + 1 == number_cycles )
 		{
 			modeltext = "<none>";
 			if ( isDefined( modelname ) && modelname != "" )
 				modeltext = modelname;
-			codolprintln( "CoDOL zm box final weapon=" + rand + " model=" + modeltext );
+			{}
 		}
 	}
 
@@ -1059,12 +1132,13 @@ treasure_chest_weapon_spawn( player )
 	{
 		// T5 :2132.  The teddy bear replaces the weapon, facing the box.
 		self.weapon_model setModel( "zombie_teddybear" );
+		self.weapon_model showAllParts();
 		self.weapon_model.angles = angles;
 		self.chest_moving = true;
 		flag_set( "moving_chest_now" );
 		level.chest_accessed = 0;
 		level.chest_moves++;
-		codolprintln( "CoDOL zm box: teddy bear, the box moves (move " + level.chest_moves + ")" );
+		{}
 		return undefined;
 	}
 
@@ -1256,7 +1330,7 @@ treasure_chest_move()
 	next show_chest();
 	next hide_rubble();
 	flag_clear( "moving_chest_now" );
-	codolprintln( "CoDOL zm box: the box is now at " + next.chest_lid.origin );
+	{}
 }
 
 // _zombiemode_powerups (T5 :1414 toggle_fire_sale_on, :1468

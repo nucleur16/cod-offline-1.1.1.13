@@ -147,7 +147,7 @@ mgTurret_auto( trigger )
 		if ( ( isdefined( ai[ i ].script_mg42auto ) ) && ( trigger.script_mg42auto == ai[ i ].script_mg42auto ) )
 		{
 			ai[ i ] notify( "auto_ai" );
-			println( "^a ai auto on!" );
+			{}
 		}
 	}
 
@@ -156,7 +156,7 @@ mgTurret_auto( trigger )
 	if ( ( isdefined( spawners[ i ].script_mg42auto ) ) && ( trigger.script_mg42auto == spawners[ i ].script_mg42auto ) )
 	{
 		spawners[ i ].ai_mode = "auto_ai";
-		println( "^aspawner ", i, " set to auto" );
+		{}
 	}
 
 	maps\_spawner::kill_trigger( trigger );
@@ -473,7 +473,7 @@ mg42_think()
 	node = getnode( self.target, "targetname" );
 	if ( !isdefined( node ) )
 	{
-		println( "Guy at org ", self.origin, " had no node" );
+		{}
 		return;
 	}
 	mg42 = getent( node.target, "targetname" );
@@ -1232,11 +1232,11 @@ auto_mgTurretLink( nodes )
 	keys = getArrayKeys( turrets );
 	if ( keys.size )
 	{
-		println( "The turrets at the following origins were not auto-bound to a node_turret." );
-		println( "Set .script_dont_link_turret if you do not want a turret to use a node_turret." );
+		{}
+		{}
 		for ( i = 0; i < keys.size; i++ )
 		{
-			println( keys[ i ] );
+			{}
 		}
 		assertEx( 0, "Turrets failed to be linked to node_turrets, see list above." );
 	}

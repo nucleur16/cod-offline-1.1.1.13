@@ -37,7 +37,7 @@ watchDvar()
         player = maps\mp\gametypes\_codol_equiptest::playerByNumber( int( tokens[0] ) );
         if ( !isDefined( player ) || !isAlive( player ) )
         {
-            codolPrintLn( "CoDOL breath test: no live client " + tokens[0] );
+            {}
             continue;
         }
         player thread holdBreath( tokens[1], float( tokens[2] ), float( tokens[3] ) );
@@ -55,16 +55,16 @@ holdBreath( weapon, adsSeconds, holdSeconds )
     self setSpawnWeapon( weapon );
     self switchToWeapon( weapon );
     wait 1.5;
-    codolPrintLn( "CoDOL breath test: " + self.name + " holds " + self getCurrentWeapon() + " (has " + weapon + ": " + self hasWeapon( weapon ) + ")" );
+    {}
     self codol_botPressButtons( 2048, adsSeconds );
     wait adsSeconds;
-    codolPrintLn( "CoDOL breath test: breath button down" );
+    {}
     self codol_botPressButtons( 2048 + 8192, holdSeconds );
     wait holdSeconds;
-    codolPrintLn( "CoDOL breath test: breath button up" );
+    {}
     self codol_botPressButtons( 2048, 1.5 );
     wait 1.5;
     self codol_botPressButtons( 0, 0 );
     self clearScriptGoal();
-    codolPrintLn( "CoDOL breath test: done" );
+    {}
 }

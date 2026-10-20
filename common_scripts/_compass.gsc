@@ -16,7 +16,7 @@ setupMiniMap( material )
 	corners = getentarray( "minimap_corner", "targetname" );
 	if ( corners.size != 2 )
 	{
-		println( "^1Error: There are not exactly two \"minimap_corner\" entities in the map. Could not set up minimap." );
+		{}
 		return false;
 	}
 	return setupMiniMapCorners( material, corners );

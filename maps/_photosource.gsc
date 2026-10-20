@@ -247,7 +247,7 @@ psource_viewwait( index )
 			thread plot_circle_fortime( level.psource_selectrad, frametime, ( 0, 1, 0 ) );
 		if ( isdefined( level.psource_viewindex ) && level.psource_viewindex == index )
 		{
-			thread debug_message( "image: " + self.image, self.origin, frametime );
+			{}
 			if ( viewradexpandcount > viewradexpandmax )
 				viewraddir = -1;
 			else if ( viewradexpandcount < 0 )
@@ -396,21 +396,21 @@ psource_dump()
 {
 	if ( getdvar( "psource_dump" ) == "" )
 		return;
-	println( " " );
-	println( " " );
-	println( " " );
-	println( "--------******--------" );
-	println( "   photo source dump  (paste these to your level script before maps\_load::main() ) " );
-	println( "--------******--------" );
-	println( " " );
-	println( " " );
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
 //	println ("thread maps\\\_photosource::photosource_init();");
 	for ( i = 0;i < level.psource_views.size;i++ )
-		println( "maps\\\_photosource::psource_create(\"" + level.psource_views[ i ].image + "\"," + level.psource_views[ i ].origin + "," + level.psource_views[ i ].angles + ");" );
+		{}
 //	println ("thread maps\\\_photosource::photosource_main();");
-	println( " " );
-	println( " " );
-	println( " " );
+	{}
+	{}
+	{}
 	setdvar( "psource_dump", "" );
 
 }
@@ -419,33 +419,33 @@ psource_help()
 {
 	if ( getdvar( "psource_help" ) == "" )
 		return;
-	println( " " );
-	println( " " );
-	println( "Photo refrenence - Help " );
-	println( " " );
-	println( " photo reference is a tool to help communicate art direction within the level " );
-	println( " An artist or a level designer can run this tool to place images of photo " );
-	println( " source like a gallery throughout the level." );
-	println( " " );
-	println( " before starting do /exec psource.cfg" );
-	println( " " );
-	println( "psource_enable ( 7 Key ) - toggles psource on and off" );
-	println( "psource_setview ( 8 Key ) - sets the view of the currently selected position." );
-	println( "psource_select_prev ( [ Key ) - selects prev psourceposition" );
-	println( "psource_select_next ( ] Key ) - selects next psourceposition" );
-	println( "psource_select_new ( \\ Key ) - selects NEW psourceposition, used to create a new position on setview" );
-	println( "psource_help ( h Key ) - prints to console this help text" );
-	println( "psource_dump ( u Key ) - dumps view list to the console to be cut and pasted into script somewhere" );
-	println( "psource_delete ( del Key ) - deletes the currently selected view (yellow star in circle)" );
-	println( " " );
-	println( "Pressing the usebutton on a sphere will teleport you so that you can see " );
-	println( "the desired angle of the piece of reference, this also selects the view" );
-	println( "and highlights it yellow" );
-	println( " " );
-	println( "To change the image of the currently selected view go to the console and enter this dvar" );
-	println( "psource_image <materialname>" );
-	println( " " );
-	println( "Once you have all your views press the dump button, open your console.log and paste the script to your level script" );
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
 	setdvar( "psource_help", "" );
 }
 

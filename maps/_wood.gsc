@@ -27,7 +27,7 @@ wood_think()
 {
 	if ( !isdefined( self.target ) )
 	{
-		println( "Wood at ", self getorigin(), " has no target" );
+		{}
 		return;
 	}
 

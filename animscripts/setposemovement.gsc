@@ -1033,7 +1033,7 @@ PlayTransitionAnimationFunc( transAnim, endPose, endMovement, finalAnim, rate, w
 		{
 			if ( !animhasnotetrack( transAnim, "anim_pose = \"" + endPose + "\"" ) )
 			{
-				println( "Animation ", transAnim, " lacks an endpose notetrack of ", endPose );
+				{}
 				assertEx( 0, "A transition animation is missing a pose notetrack (see the line above)" );
 			}
 		}
@@ -1041,7 +1041,7 @@ PlayTransitionAnimationFunc( transAnim, endPose, endMovement, finalAnim, rate, w
 		{
 			if ( !animhasnotetrack( transAnim, "anim_movement = \"" + endMovement + "\"" ) )
 			{
-				println( "Animation ", transAnim, " lacks an endmovement notetrack of ", endMovement );
+				{}
 				assertEx( 0, "A transition animation is missing a movement notetrack (see the line above)" );
 			}
 		}

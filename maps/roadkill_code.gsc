@@ -1533,7 +1533,7 @@ rpgguy()
 
 	for ( ;; )
 	{
-		Print3d( self.origin + ( 0, 0, 64 ), "RPG" );
+		{}
 		wait( 0.05 );
 	}
 }
@@ -1695,7 +1695,7 @@ guy_gets_in_player_humvee()
 		self stop_magic_bullet_shield();
 
 	wait( 0.4 );
-	PrintLn( "goalpos " + self.goalpos );
+	{}
 }
 
 jeep_rider_spawner_think()
@@ -3591,7 +3591,7 @@ dump_vehicle_bones()
 		tag_body_ang = self GetTagAngles( "tag_body" );
 
 		time = GetTime() - start_time;
-		PrintLn( "Time: " + time + " tag_origin: " + tag_origin_pos + " " + tag_origin_ang + " tag_body:" + tag_body_pos + " " + tag_body_ang );
+		{}
 		wait( 0.05 );
 	}
 }
@@ -3888,7 +3888,7 @@ printer()
 	frames = Int( 2.5 * 20 );
 	for ( i = 0; i < frames; i++ )
 	{
-		Print3d( self GetEye(), "*" );
+		{}
 		wait( 0.05 );
 	}
 }
@@ -6898,7 +6898,7 @@ garage_brushes_move( brushes, lower_struct, origins )
 {
 
 	level endon( "stop_pulling" );
-	PrintLn( "	origins = [];" );
+	{}
 	index = 0;
 	for ( ;; )
 	{

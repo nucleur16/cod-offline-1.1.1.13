@@ -1120,26 +1120,7 @@ autosave_or_timeout( name, timeout )
 =============
 */
 debug_message( message, origin, duration, entity )
-{
-	if ( !isDefined( duration ) )
-		duration = 5;
-
-	if ( IsDefined( entity ) )
-	{
-		entity endon( "death" );
-		origin = entity.origin;
-	}
-
-
-	for ( time = 0; time < ( duration * 20 ); time++ )
-	{
-		if ( !isdefined( entity ) )
-			Print3d( ( origin + ( 0, 0, 45 ) ), message, ( 0.48, 9.4, 0.76 ), 0.85 );
-		else
-			Print3d( entity.origin, message, ( 0.48, 9.4, 0.76 ), 0.85 );
-		wait 0.05;
-	}
-}
+{}
 
 /*
 =============
@@ -1166,7 +1147,7 @@ debug_message_ai( message, duration )
 
 	for ( time = 0; time < ( duration * 20 ); time++ )
 	{
-		Print3d( ( self.origin + ( 0, 0, 45 ) ), message, ( 0.48, 9.4, 0.76 ), 0.85 );
+		{}
 		wait 0.05;
 	}
 }
@@ -1204,7 +1185,7 @@ debug_message_clear( message, origin, duration, extraEndon )
 
 	for ( time = 0; time < ( duration * 20 ); time++ )
 	{
-		Print3d( ( origin + ( 0, 0, 45 ) ), message, ( 0.48, 9.4, 0.76 ), 0.85 );
+		{}
 		wait 0.05;
 	}
 }
@@ -2752,7 +2733,7 @@ play_sound_on_tag( alias, tag, ends_on_death, op_notify_string, radio_dialog )
 
 	/#
 	if ( IsDefined( level.player_radio_emitter ) && ( self == level.player_radio_emitter ) )
-		PrintLn( "**dialog alias playing radio: " + alias );
+		{}
 	#/
 
 	org PlaySound( alias, "sounddone" );
@@ -2905,7 +2886,7 @@ spawn_setcharacter( data )
 	if ( maps\_utility::spawn_failed( spawn ) )
 		return;
 
-	PrintLn( "Size is ", data[ "attach" ].size );
+	{}
 	spawn codescripts\character::new();
 	spawn codescripts\character::load( data );
 }
@@ -6097,14 +6078,14 @@ ignoreAllEnemies( qTrue )
 		num = undefined;
 		/#
 			num = self GetEntNum();
-			PrintLn( "entity: " + num + "ignoreAllEnemies TRUE" );
-			PrintLn( "entity: " + num + " threatbiasgroup is " + self.old_threat_bias_group );
+			{}
+			{}
 		#/
 
 		CreateThreatBiasGroup( "ignore_everybody" );
 		/#
-			PrintLn( "entity: " + num + "ignoreAllEnemies TRUE" );
-			PrintLn( "entity: " + num + " SetThreatBiasGroup( ignore_everybody )" );
+			{}
+			{}
 		#/
 		self SetThreatBiasGroup( "ignore_everybody" );
 		teams = [];
@@ -6121,8 +6102,8 @@ ignoreAllEnemies( qTrue )
 		for ( i = 0; i < keys.size; i++ )
 		{
 			/#
-				PrintLn( "entity: " + num + "ignoreAllEnemies TRUE" );
-				PrintLn( "entity: " + num + " SetThreatBias( " + keys[ i ] + ", ignore_everybody, 0 )" );
+				{}
+				{}
 			#/
 			SetThreatBias( keys[ i ], "ignore_everybody", 0 );
 		}
@@ -6135,14 +6116,14 @@ ignoreAllEnemies( qTrue )
 		AssertEx( IsDefined( self.old_threat_bias_group ), "You can't use ignoreAllEnemies( false ) on an AI that has never ran ignoreAllEnemies( true )" );
 		/#
 			num = self GetEntNum();
-			PrintLn( "entity: " + num + "ignoreAllEnemies FALSE" );
-			PrintLn( "entity: " + num + " self.old_threat_bias_group is " + self.old_threat_bias_group );
+			{}
+			{}
 		#/
 		if ( self.old_threat_bias_group != "" )
 		{
 			/#
-				PrintLn( "entity: " + num + "ignoreAllEnemies FALSE" );
-				PrintLn( "entity: " + num + " SetThreatBiasGroup( " + self.old_threat_bias_group + " )" );
+				{}
+				{}
 			#/
 			self SetThreatBiasGroup( self.old_threat_bias_group );
 		}
@@ -8474,10 +8455,7 @@ clearThreatBias( group1, group2 )
 }
 
 scr_println( msg )
-{
-	// so println can be called from a function pointer
-	PrintLn( msg );
-}
+{}
 
 // use in moderation!
 ThrowGrenadeAtPlayerASAP()
@@ -12634,7 +12612,7 @@ giveachievement_wrapper( achievement )
 	}
 	
 	/#
-		println( "ACHIEVEMENT: " + achievement );
+		{}
 	#/
 }
 
@@ -12659,7 +12637,7 @@ player_giveachievement_wrapper( achievement )
 	self GiveAchievement( achievement );
 	
 	/#
-		println( "ACHIEVEMENT: " + achievement );
+		{}
 	#/
 }
 
@@ -13216,7 +13194,7 @@ player_is_near_live_grenade()
 			player = level.players[ playerIndex ];
 			if ( DistanceSquared( grenade.origin, player.origin ) < ( 275 * 275 ) )// grenade radius is 256
 			{
-				/# maps\_autosave::AutoSavePrint( "autosave failed: live grenade too close to player" ); #/
+				/# {} #/
 				return true;
 			}
 		}
@@ -14935,7 +14913,7 @@ doingLongDeath()
 get_rumble_ent( rumble )
 {
 	if ( is_coop() )
-		PrintLn( "^3Warning! Using get_rumble_ent will cause the same rumbles to apply to all of the coop players!" );
+		{}
 
 	player = get_player_from_self();
 	if ( !IsDefined( rumble ) )
@@ -15645,7 +15623,7 @@ restore_players_weapons( scene )
 
 	if ( !isdefined( self.stored_weapons ) || !isdefined( self.stored_weapons[ scene ] ) )
 	{
-		PrintLn( "^3Warning! Tried to restore weapons for scene " + scene + " but they weren't stored" );
+		{}
 		return;
 	}
 

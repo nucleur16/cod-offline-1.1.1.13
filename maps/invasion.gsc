@@ -2158,7 +2158,7 @@ spawn_humvee_boarders()
 	redshirt_spawn_groups = getstructarray( group, "targetname" );
 	farthest = getfarthest( level.player.origin, redshirt_spawn_groups );
 	spawners = getentarray( farthest.target, "targetname" );
-	println( " selected redshirt group: " + farthest.script_noteworthy );
+	{}
 	
 	//closest = getclosest( level.player.origin, redshirt_spawn_groups );
 	//redshirt_spawn_groups = array_remove( redshirt_spawn_groups, closest );
@@ -2199,7 +2199,7 @@ dialog_enemies_on_roof()
 	{
 		trig waittill( "trigger", other );	
 		
-		println( other.classname + "    " + other.origin );
+		{}
 		level.raptor dialogue_queue( dialog[current_line] );
 		current_line++;
 		if( current_line >= dialog.size )
@@ -3052,7 +3052,7 @@ enemy_monitor()
 		enemies = getaiarray( "axis" );
 		total = enemies.size;
 		roaming = total;
-		println ( "             total: " + total );
+		{}
 
 /*
 		for ( i = 0 ; i < enemies.size ; i++ )
@@ -3071,7 +3071,7 @@ enemy_monitor()
 			{
 				level.num_of_enemy_forces_spawned++;
 				level notify( "enemy_group_spawning" );
-				println ( "   level.num_of_enemy_forces_spawned: " + level.num_of_enemy_forces_spawned );
+				{}
 				spawn_enemy_group();
 				
 				wait 9;
@@ -3101,7 +3101,7 @@ enemy_monitor()
 				
 			level.num_of_enemy_forces_spawned++;
 			level notify( "enemy_group_spawning" );
-			println ( "   level.num_of_enemy_forces_spawned: " + level.num_of_enemy_forces_spawned );
+			{}
 			if( level.num_of_enemy_forces_spawned == 1 )
 				thread dialog_uav_the_infantry();
 			if( level.num_of_enemy_forces_spawned == 2 )
@@ -4285,7 +4285,7 @@ spawn_redshirts( desired_num )
 	redshirt_spawn_groups = getstructarray( group, "targetname" );
 	farthest = getfarthest( level.player.origin, redshirt_spawn_groups );
 	spawners = getentarray( farthest.target, "targetname" );
-	println( " selected redshirt group: " + farthest.script_noteworthy );
+	{}
 	
 	//closest = getclosest( level.player.origin, redshirt_spawn_groups );
 	//redshirt_spawn_groups = array_remove( redshirt_spawn_groups, closest );
@@ -6075,7 +6075,7 @@ paradrops_ambient()
 			if( isdefined( dir_selection ) )
 			{
 				planes = getentarray( dir_selection, "targetname" );
-				println( "     z: ambient paradrop: " + dir_selection );
+				{}
 			}
 		}
 		if( !isdefined( planes ) )//no obj direction
@@ -6090,7 +6090,7 @@ paradrops_ambient()
 				selected++;
 				continue;
 			}
-			println( "     %%%% ambient paradrop: " + group_name );
+			{}
 			
 			planes = getentarray( drop_groups[selected], "targetname" );
 			old_selection = selected;
@@ -6232,7 +6232,7 @@ paradrop( first_plane )
 	
 	airplane ent_flag_wait( "start_drop" );
 	//println( "start drop, airplane num: " + links[0] );
-	println( "start drop, airplane num: " );
+	{}
 	
 	if( isdefined( self.script_noteworthy ) && self.script_noteworthy == "drop_bmp" )
 	{
@@ -6946,7 +6946,7 @@ debug_bmp_hit_player()
 	{
 		level.player waittill( "damage", amount, who );
 		if( who == self )
-			println( "         bmp damaged player" );
+			{}
 	}
 }
 
@@ -6954,7 +6954,7 @@ fire_at_player( player )
 {
 	//level.cansave = false;
 	burstsize = randomintrange( 3, 5 );
-	println("         **HITTING PLAYER, burst: " + burstsize );
+	{}
 	fireTime = .2;
 	for ( i = 0; i < burstsize; i++ )
 	{
@@ -7024,7 +7024,7 @@ end_of_script()
 {
 
 	// End of current level.
-	iprintlnbold( &"SCRIPT_DEBUG_LEVEL_END" );
+	{}
 }
 
 flag_save( _flag )

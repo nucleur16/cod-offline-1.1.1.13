@@ -110,7 +110,7 @@ SayGenericDialogue( typeString )
 		importance = 1.0;
 		break;
 	default:
-		println( "Unexpected generic dialog string: " + typeString );
+		{}
 		importance = 0.3;
 		break;
 	}

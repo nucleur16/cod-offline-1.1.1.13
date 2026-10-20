@@ -90,7 +90,7 @@ main()
 
 	 /#
 	if ( getdvarint( "scr_paindebug" ) == 1 )
-		println( "^2Playing pain: ", painAnim, " ; pose is ", self.a.pose );
+		{}
 	#/
 
 	playPainAnim( painAnim );
@@ -633,7 +633,7 @@ specialPain( anim_special )
 		handled = false;
 		break;
 	default:
-		println( "Unexpected anim_special value : " + anim_special + " in specialPain." );
+		{}
 		handled = false;
 	}
 	return handled;
@@ -672,7 +672,7 @@ mg42pain( pose )
 	 /#
 	assertEx( isdefined( level.mg_animmg ), "You're missing maps\\_mganim::main();  Add it to your level." );
 	{
-		println( "	maps\\_mganim::main();" );
+		{}
 		return;
 	}
 	#/
@@ -1216,7 +1216,7 @@ preventPainForAShortTime( type )
 		 /#
 		if ( getDebugDvarInt( "scr_crawldebug" ) == 1 )
 		{
-			thread printLongDeathDebugText( self.origin + ( 0, 0, 64 ), "crawl death" );
+			{}
 			return;
 		}
 		#/
@@ -1239,7 +1239,7 @@ preventPainForAShortTime( type )
 		 /#
 		if ( getDebugDvarInt( "scr_cornergrenadedebug" ) == 1 )
 		{
-			thread printLongDeathDebugText( self.origin + ( 0, 0, 64 ), "grenade death" );
+			{}
 			return;
 		}
 		#/
@@ -1248,13 +1248,7 @@ preventPainForAShortTime( type )
 
  /#
 printLongDeathDebugText( loc, text )
-{
-	for ( i = 0; i < 100; i++ )
-	{
-		print3d( loc, text );
-		wait .05;
-	}
-}
+{}
 #/
 
 decideNumCrawls()

@@ -1266,8 +1266,8 @@ right_add_test( ent )
 	left_anims = arm_anims[ "left" ];
 	right_anims = arm_anims[ "right" ];
 
-	Print3d( left.origin, left GetEntNum(), ( 1, 1, 0 ), 1, 0.3, 50000 );
-	Print3d( right.origin, right GetEntNum(), ( 0, 1, 1 ), 1, 0.3, 50000 );
+	{}
+	{}
 	left_tag_name = get_icepick_tag_name( "left" );
 	right_tag_name = get_icepick_tag_name( "right" );
 
@@ -1298,8 +1298,8 @@ right_add_test( ent )
 
 			left_org = left GetTagOrigin( left_tag_name );
 			right_org = right GetTagOrigin( right_tag_name );
-			Print3d( left_org, ".", ( 1, 1, 0 ), 1, 0.2, 100 );
-			Print3d( right_org, ".", ( 0, 1, 1 ), 1, 0.2, 100 );
+			{}
+			{}
 			//Print3d( <origin>, <text>, <color>, <alpha>, <scale>, <duration> );
 			wait( 0.05 );
 		}
@@ -2021,7 +2021,7 @@ reached_drop_down_spot( ent )
 		ent.viewModel Hide();
 		ent.player Unlink();
 		wait( 0.05 );
-		PrintLn( "Origin " + level.player.origin );
+		{}
 		ent.player SetMoveSpeedScale( 1 );
 		ent.player notify( "stop_climbing" );
 		return true;
@@ -2584,7 +2584,7 @@ trace_test()
 		//line( self.origin, trace[ "position" ], ( 0.4, 0.4, 0.5 ), 1, 1, 5000 );
 //		Line( trace[ "position" ], trace[ "position" ] + trace[ "normal" ] * 15, ( 0.3, 0.85, 0.53 ), 1, 1, 5000 );
 		Line( trace[ "position" ], trace[ "position" ] + trace[ "normal" ] * 15, ( 0.9, 0.3, 0.2 ), 1, 1, 5000 );
-		Print3d( trace[ "position" ], trace[ "surfacetype" ], ( 1, 1, 0 ), 1, 0.5 );
+		{}
 
 		wait( 0.05 );
 //		self.origin += randomvector( 64 );
@@ -2676,7 +2676,7 @@ calculate_add_penetration( ent, index, additive_weight, additive_type )
 				frac *= 10;
 				frac = Int( frac );
 				frac *= 0.1;
-				Print3d( trace[ "position" ], frac, ( 1, 0, 0 ), 1, 0.4, 5000 );
+				{}
 				wait( 0.8 );
 			}
 			else
@@ -2784,7 +2784,7 @@ calculate_add_vertical_correction( ent, index, additive_weight, additive_type, a
 				frac *= 10;
 				frac = Int( frac );
 				frac *= 0.1;
-				Print3d( trace[ "position" ], frac, ( 1, 0, 0 ), 1, 0.4, 5000 );
+				{}
 			}
 			else
 			{
@@ -3207,7 +3207,7 @@ draw_ent_num( offset )
 	self endon( "draw_ent_num" );
 	for ( ;; )
 	{
-		Print3d( self.origin + ( 0, 0, offset ), self GetEntNum(), ( 0.3, 0.9, 0.5 ), 1, 0.25 );
+		{}
 		wait( 0.05 );
 	}
 	#/
@@ -3985,7 +3985,7 @@ player_big_jump()
 
 	player_arms	Hide();
 	player_arms delayThread( 0.5, ::self_delete );
-	PrintLn( "Origin " + level.player.origin );
+	{}
 
 	for ( ;; )
 	{

@@ -65,7 +65,7 @@ main( begin_origin, begin_angles, end_origin, animscript )
 	anime = pick_traverse_anim();
 	if ( !isDefined( anime ) )
 	{
-		codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " traverse: no clip for move speed " + self.zombie_move_speed );
+		{}
 		return;
 	}
 

@@ -237,7 +237,7 @@ handleDamage()
 	{
 	  self waittill( "damage" );
 	  
-	  println ( "projectile damaged!" );
+	  {}
 	}
 }	
 

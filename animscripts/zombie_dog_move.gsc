@@ -25,11 +25,8 @@
 	  - #include maps\mp\animscripts\utility + ...\shared and every namespaced
 	    maps\mp\animscripts\shared::... call now point at the dog-local
 	    animscripts\zombie_dog_shared module.
-	  - setup_sound_variables(): T5's "aml_dog_bark_close" / "aml_dog_bark"
-	    are not MP aliases in C1 (the aml_* dog sounds ship only in
-	    common_gametype_zm); C1's MP bark is "zmb_hellhound_vocals_amb"
-	    (common_gametype_mp), so both sets name it.  As in T5 this table is
-	    not read by any MP script.
+	  - setup_sound_variables(): the close and ambient families use C1's
+	    zmb_hellhound_vocals_close / _amb aliases in common_gametype_zm.
 	  - playMovementSounds(): T5 barks while a dog moves from its client
 	    script (clientscripts\mp\_dogs.csc playMovementSounds).  C1 runs no
 	    client script and its dog notetracks (mp/constconfigstrings_mp.csv
@@ -69,13 +66,9 @@ setup_sound_variables()
 	setup_movement_sound_variables();
 }
 
-// T5 clientscripts\mp\_dogs.csc init(): the movement bark states.  T5's
-// aliases are aml_dog_bark (normal), aml_dog_bark_mid (both attack_mid
-// states) and aml_dog_bark_close; C1 MP ships one bark, anml_dog_bark, so
-// every state names it.  soundLength stands in for the CSC's soundplaying()
-// wait and keeps T5's cadence: it is the length of the T5 alias the state
-// played, as C1's own sound/soundlength.csv lists it (aml_dog_bark 170 ms,
-// aml_dog_bark_mid 170 ms, aml_dog_bark_close 640 ms).
+// T5 clientscripts\mp\_dogs.csc init(): the movement bark states. Adapt its
+// soundplaying() wait to the actual C1 hellhound alias duration; the T5
+// aml_dog_* clips are shorter. Keep its randomized rest after each clip.
 setup_movement_sound_variables()
 {
 	level.movementStateSound = [];
@@ -87,7 +80,7 @@ setup_movement_sound_variables()
 	level.movementStateSound["normal"].waitMax = 4;
 	level.movementStateSound["normal"].waitMin = 1;
 	level.movementStateSound["normal"].enemyrange = level.maxStateSoundDistance;  // this has no range
-	level.movementStateSound["normal"].soundLength = 0.170;
+	level.movementStateSound["normal"].soundLengthMs = movement_sound_length_ms( "zmb_hellhound_vocals_amb", 998 );
 	level.movementStateSound["normal"].localenemyonly = false;
 
 	// this is for everyone other then the enemy
@@ -96,7 +89,7 @@ setup_movement_sound_variables()
 	level.movementStateSound["attack_mid_everyone"].waitMax = 2;
 	level.movementStateSound["attack_mid_everyone"].waitMin = 0.5;
 	level.movementStateSound["attack_mid_everyone"].enemyrange = 1500;
-	level.movementStateSound["attack_mid_everyone"].soundLength = 0.170;
+	level.movementStateSound["attack_mid_everyone"].soundLengthMs = movement_sound_length_ms( "zmb_hellhound_vocals_amb", 998 );
 	level.movementStateSound["attack_mid_everyone"].localenemyonly = false;
 
 	// this is only for the enemy to hear
@@ -105,17 +98,27 @@ setup_movement_sound_variables()
 	level.movementStateSound["attack_mid_enemy"].waitMax = 0.5;
 	level.movementStateSound["attack_mid_enemy"].waitMin = 0.01;
 	level.movementStateSound["attack_mid_enemy"].enemyrange = 1500;
-	level.movementStateSound["attack_mid_enemy"].soundLength = 0.170;
+	level.movementStateSound["attack_mid_enemy"].soundLengthMs = movement_sound_length_ms( "zmb_hellhound_vocals_amb", 998 );
 	level.movementStateSound["attack_mid_enemy"].localenemyonly = true;
 
 	// this is only for the enemy to hear
 	level.movementStateSound["attack_close_enemy"] = spawnStruct();
-	level.movementStateSound["attack_close_enemy"].sound = "zmb_hellhound_vocals_amb";
+	level.movementStateSound["attack_close_enemy"].sound = "zmb_hellhound_vocals_close";
 	level.movementStateSound["attack_close_enemy"].waitMax = 0.1;
 	level.movementStateSound["attack_close_enemy"].waitMin = 0.01;
 	level.movementStateSound["attack_close_enemy"].enemyrange = 1000;
-	level.movementStateSound["attack_close_enemy"].soundLength = 0.640;
+	level.movementStateSound["attack_close_enemy"].soundLengthMs = movement_sound_length_ms( "zmb_hellhound_vocals_close", 719 );
 	level.movementStateSound["attack_close_enemy"].localenemyonly = true;
+}
+
+// Use the mounted C1 alias duration, not the shorter T5 bark being replaced.
+// Both shipped base and patch tables give amb 998 ms and close 719 ms.
+movement_sound_length_ms( alias, measured_fallback )
+{
+	length_ms = int( tableLookup( "sound/soundlength.csv", 0, alias, 1 ) );
+	if ( length_ms > 0 )
+		return length_ms;
+	return measured_fallback;
 }
 
 // T5 clientscripts\mp\_dogs.csc playMovementSounds / getMovementSoundState,
@@ -123,25 +126,13 @@ setup_movement_sound_variables()
 // the dog's anim category is "move" and picks the closest state it qualifies
 // for: the player the dog is hunting gets the *_enemy states (rapid barks
 // within 1500/1000 units), everyone else the everyone states.  The server
-// keeps one loop per listener class: the hunted player is sent his stream
-// with playSoundToPlayer, every other player the everyone stream.  The loop
-// lives as long as dog_move (killanimscript), as the CSC loop lives as long
-// as the "move" category.
+// routes the hunted player's state and the everyone state separately. The
+// loop lives as long as dog_move (killanimscript); pending playback deadlines
+// stay on the actor per listener so re-entering move cannot cut off a bark.
 playMovementSounds()
 {
 	self endon( "killanimscript" );
 	self endon( "death" );
-
-	everyone = spawnStruct();
-	everyone.state = "normal";
-	everyone.next = 0;
-	everyone.wait_time = 0;
-
-	hunted = spawnStruct();
-	hunted.state = "normal";
-	hunted.next = 0;
-	hunted.wait_time = 0;
-	hunted.player = undefined;
 
 	while ( 1 )
 	{
@@ -149,42 +140,20 @@ playMovementSounds()
 		if ( isDefined( self.enemy ) && isPlayer( self.enemy ) )
 			enemy = self.enemy;
 
-		// a new quarry starts its own stream, as its client's loop would
-		if ( !isDefined( enemy ) || !isDefined( hunted.player ) || hunted.player != enemy )
-		{
-			hunted.player = enemy;
-			hunted.state = "normal";
-			hunted.next = 0;
-			hunted.wait_time = 0;
-		}
-
-		self movementSoundStream( everyone, getMovementSoundState( false ), enemy, false );
+		self movementSoundStream( getMovementSoundState( false ), enemy, false );
 
 		if ( isDefined( enemy ) )
-			self movementSoundStream( hunted, getMovementSoundState( true ), enemy, true );
+			self movementSoundStream( getMovementSoundState( true ), enemy, true );
 
 		wait( 0.05 );
 	}
 }
 
-movementSoundStream( stream, state, enemy, toEnemy )
+movementSoundStream( state, enemy, toEnemy )
 {
-	now = getTime();
-	next_sound = false;
-
-	// "New State forcing next sound".  T5 compares waitMax (seconds) with
-	// wait_time (milliseconds), so in practice any state change barks at once;
-	// kept as shipped.
-	if ( state != stream.state && level.movementStateSound[state].waitMax < stream.wait_time )
-		next_sound = true;
-
-	if ( !next_sound && now < stream.next )
-		return;
-
-	sound = level.movementStateSound[state].sound;
 	if ( toEnemy )
 	{
-		self playSoundToPlayer( sound, enemy );
+		self movementSoundForPlayer( state, enemy );
 	}
 	else
 	{
@@ -192,13 +161,46 @@ movementSoundStream( stream, state, enemy, toEnemy )
 		{
 			if ( isDefined( enemy ) && player == enemy )
 				continue;
-			self playSoundToPlayer( sound, player );
+			self movementSoundForPlayer( state, player );
 		}
 	}
+}
+
+movementSoundForPlayer( state, player )
+{
+	if ( !isDefined( player ) )
+		return;
+	if ( !isDefined( self.zm_dog_movement_audio ) )
+		self.zm_dog_movement_audio = [];
+	listener = player getEntityNumber();
+	stream = self.zm_dog_movement_audio[ listener ];
+	if ( !isDefined( stream ) || !isDefined( stream.player ) || stream.player != player )
+	{
+		stream = spawnStruct();
+		stream.player = player;
+		stream.state = undefined;
+		stream.audible_until = 0;
+		stream.next = 0;
+		self.zm_dog_movement_audio[ listener ] = stream;
+	}
+
+	// This actor-owned listener record survives animscript restarts, changes
+	// of quarry and movement categories. A state change can shorten the rest
+	// after a completed bark; it cannot restart audio that is still playing.
+	now = getTime();
+	if ( now < stream.audible_until )
+		return;
+	state_changed = !isDefined( stream.state ) || state != stream.state;
+	if ( !state_changed && now < stream.next )
+		return;
+
+	sound = level.movementStateSound[ state ].sound;
+	self playSoundToPlayer( sound, player );
 
 	stream.state = state;
 	stream.wait_time = 1000 * randomfloatrange( level.movementStateSound[state].waitMin, level.movementStateSound[state].waitMax );
-	stream.next = now + int( level.movementStateSound[state].soundLength * 1000 ) + stream.wait_time;
+	stream.audible_until = now + level.movementStateSound[state].soundLengthMs;
+	stream.next = stream.audible_until + stream.wait_time;
 }
 
 getMovementSoundState( localPlayer )
@@ -237,7 +239,7 @@ main()
 {
 	self endon("killanimscript");
 
-	debug_anim_print("dog_move::main()" );
+	{}
 	self SetAimAnimWeights( 0, 0 );
 
 	do_movement = true;
@@ -271,23 +273,20 @@ main()
 	{
 		if ( self.a.movement == "run" )
 		{
-			debug_anim_print("dog_move::main() - Setting move_run" );
+			{}
 			self setanimstate( "move_run" );
 			animscripts\zombie_dog_shared::DoNoteTracksForTime(0.1, "done");
-			debug_anim_print("dog_move::main() - move_run wait 0.1 done " );
+			{}
 		}
 		else
 		{
-			debug_anim_print("dog_move::main() - Setting move_start ");
+			{}
 			self setanimstate( "move_walk" );
 		}
 	}
 
 	self thread animscripts\zombie_dog_stop::lookAtTarget( "normal" );
-	// T5 animscripts/zombie_dog_move.gsc:14 leaves the running bark loop
-	// commented out: a hellhound's voice is _zombiemode_ai_dogs'
-	// dog_stalk_audio / dog_behind_audio, not the multiplayer dog's
-	// movement barks (playMovementSounds, kept below for reference).
+	self thread playMovementSounds();
 
 	while ( 1 )
 	{
@@ -340,26 +339,19 @@ moveLoop()
 
 		if ( self.a.movement == "run" )
 		{
-			debug_anim_print("dog_move::moveLoop() - Setting move_run" );
+			{}
 			self setanimstate( "move_run" );
 			animscripts\zombie_dog_shared::DoNoteTracksForTime(0.2, "done");
-			debug_anim_print("dog_move::moveLoop() - move_run wait 0.2 done " );
+			{}
 		}
 		else
 		{
 			assert( self.a.movement == "walk" );
 
-			debug_anim_print("dog_move::moveLoop() - Setting move_walk " );
+			{}
 			self setanimstate( "move_walk" );
-			animscripts\zombie_dog_shared::DoNoteTracksForTime(0.2, "done");
-			debug_anim_print("dog_move::moveLoop() - move_walk wait 0.2 done " );
-
-			// T5 zombie_dog_move.gsc:104-110, the "stalking" behaviour.
-			if ( self need_to_run() )
-			{
-				self.a.movement = "run";
-				self notify( "dog_running" );
-			}
+			animscripts\zombie_dog_shared::DoNoteTracksForTime(0.1, "done");
+			{}
 		}
 	}
 }
@@ -376,10 +368,10 @@ startMoveTrackLookAhead()
 
 startMove()
 {
-	debug_anim_print("dog_move::startMove() - Setting move_start " );
+	{}
 	self setanimstate( "move_start" );
 	animscripts\zombie_dog_shared::DoNoteTracks("done");
-	debug_anim_print("dog_move::startMove() - move_start notify done." );
+	{}
 
 	self animMode( "none" );
 	self set_orient_mode( "face motion" );
@@ -391,10 +383,10 @@ stopMove()
 	self endon( "killanimscript" );
 	self endon( "run" );
 
-	debug_anim_print("dog_move::stopMove() - Setting move_stop" );
+	{}
 	self setanimstate( "move_stop" );
 	animscripts\zombie_dog_shared::DoNoteTracks("done");
-	debug_anim_print("dog_move::stopMove() - move_stop notify done." );
+	{}
 }
 
 getEnemyDistanceSqr()
@@ -423,53 +415,4 @@ getSoundKey( distanceSqr )
 		return keys[i];
 	}
 	return keys[keys.size - 1];
-}
-
-// T5 animscripts/zombie_dog_move.gsc:250 need_to_run: a stalking hound breaks
-// into the sprint once it has been hurt, or once it sees its enemy inside
-// scr_dog_run_distance (500), within 64 units of its height, 20 degrees of
-// its facing and 30 degrees of pitch.
-need_to_run()
-{
-	run_dist_squared = 384 * 384;
-	if ( getDvar( "scr_dog_run_distance" ) != "" )
-	{
-		dist = getDvarInt( "scr_dog_run_distance" );
-		run_dist_squared = dist * dist;
-	}
-
-	run_yaw = 20;
-	run_pitch = 30;
-	run_height = 64;
-
-	if ( self.a.movement != "walk" )
-		return false;
-
-	if ( self.health < self.maxhealth )
-		return true;	// dog took damage
-
-	if ( !isdefined( self.enemy ) || !isalive( self.enemy ) )
-		return false;
-
-	if ( !self cansee( self.enemy ) )
-		return false;
-
-	dist = distancesquared( self.origin, self.enemy.origin );
-	if ( dist > run_dist_squared )
-		return false;
-
-	height = self.origin[2] - self.enemy.origin[2];
-	if ( abs( height ) > run_height )
-		return false;
-
-	// T5 AbsYawToEnemy: the yaw from the dog's facing to its enemy.
-	yaw = abs( angleclamp180( vectortoangles( self.enemy.origin - self.origin )[1] - self.angles[1] ) );
-	if ( yaw > run_yaw )
-		return false;
-
-	pitch = angleclamp180( vectortoangles( self.origin - self.enemy.origin )[0] );
-	if ( abs( pitch ) > run_pitch )
-		return false;
-
-	return true;
 }

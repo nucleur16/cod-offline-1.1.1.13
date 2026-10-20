@@ -118,7 +118,7 @@ init()
 	setDvar( "scr_codol_traptest", "" );
 	level thread trap_test_watch();
 
-	codolprintln( "CoDOL zm trap: fire/freeze/shock/shrink placeable traps registered" );
+	{}
 }
 
 // ==========================================================================
@@ -191,8 +191,7 @@ spawn_trap( origin, player, weapon )
 	level.zm_traps[ level.zm_traps.size ] = trap;
 	level notify( "zm_trap_placed", trap );
 
-	codolprintln( "CoDOL zm trap: " + weapon + " #" + trap.zm_trap_id + " placed by " + owner_name +
-		" at " + origin + ", lifetime 40 s" );
+	{}
 
 	switch ( weapon )
 	{
@@ -242,7 +241,7 @@ trap_owner_add( trap )
 		{
 			if ( live[ i ].zm_trap_weapon == trap.zm_trap_weapon )
 			{
-				codolprintln( "CoDOL zm trap: #" + live[ i ].zm_trap_id + " replaced by a newer " + trap.zm_trap_weapon );
+				{}
 				live[ i ].zm_trap_end = 0;
 				break;
 			}
@@ -289,8 +288,7 @@ trap_finish( sound_end )
 	if ( isDefined( sound_end ) )
 		playSoundAtPosition( sound_end, self.origin );
 
-	codolprintln( "CoDOL zm trap: " + self.zm_trap_weapon + " #" + self.zm_trap_id + " expired after " +
-		( ( getTime() - self.zm_trap_start ) / 1000 ) + " s; zombies affected " + self.zm_trap_kills );
+	{}
 
 	self stopLoopSound();
 
@@ -429,14 +427,13 @@ fire_burn_zombie( z )
 
 	if ( !isDefined( trap ) || is_true( trap.zm_trap_done ) )
 	{
-		codolprintln( "CoDOL zm trap: fire #" + trap_id + " burned zombie " + who + " to death after the trap went out" );
+		{}
 		return;
 	}
 
 	trap.zm_trap_kills++;
 	trap.zm_trap_end = trap.zm_trap_end + 2000;
-	codolprintln( "CoDOL zm trap: fire #" + trap_id + " burned zombie " + who + " to death; extended by 2 s, " +
-		( ( trap.zm_trap_end - getTime() ) / 1000 ) + " s left" );
+	{}
 }
 
 // ==========================================================================
@@ -499,7 +496,7 @@ freeze_zombie( trap_id, seconds )
 	legs = spawnFx( level._effect[ "zm_trap_freeze_md" ], self.origin + ( 0, 0, 12 ) );
 	triggerFx( legs );
 
-	codolprintln( "CoDOL zm trap: freeze #" + trap_id + " froze zombie " + who + " at " + self.origin + " for " + seconds + " s" );
+	{}
 
 	self thread freeze_cleanup_fx( torso, legs );
 	self thread freeze_watch_shatter( trap_id, who );
@@ -513,7 +510,7 @@ freeze_zombie( trap_id, seconds )
 	{
 		self stopanimscripted();
 		playFx( level._effect[ "zm_trap_freeze_crumple" ], self.origin + ( 0, 0, 30 ) );
-		codolprintln( "CoDOL zm trap: freeze #" + trap_id + " zombie " + who + " thawed" );
+		{}
 	}
 }
 
@@ -555,7 +552,7 @@ freeze_watch_shatter( trap_id, who )
 		self notify( "zm_trap_shattered" );
 		playFx( level._effect[ "zm_trap_freeze_shatter" ], origin + ( 0, 0, 40 ) );
 		playSoundAtPosition( "wpn_freezegun_shatter_zombie", origin );
-		codolprintln( "CoDOL zm trap: freeze #" + trap_id + " zombie " + who + " shattered by " + attacker.name );
+		{}
 		self doDamage( self.health + 666, attacker.origin, attacker );
 		return;
 	}
@@ -641,8 +638,7 @@ shock_update_links()
 		if ( !isDefined( self.zm_shock_logged[ key ] ) && other.zm_trap_id > self.zm_trap_id )
 		{
 			self.zm_shock_logged[ key ] = true;
-			codolprintln( "CoDOL zm trap: shock #" + self.zm_trap_id + " linked with shock #" + other.zm_trap_id +
-				" (" + int( distance( other.origin, self.origin ) ) + " units): electric grid of " + ( self shock_grid_size() ) + " traps" );
+			{}
 			playSoundAtPosition( "zmb_elec_arc", self.origin );
 		}
 	}
@@ -731,7 +727,7 @@ shock_zombie_run( z, source, how )
 	}
 	if ( isDefined( trap ) && !is_true( trap.zm_trap_done ) )
 		trap.zm_trap_kills++;
-	codolprintln( "CoDOL zm trap: shock #" + trap_id + " electrocuted zombie " + who + " via " + how );
+	{}
 }
 
 // T5 tesla_play_arc_fx :341: the bolt rides a tag_origin from source to
@@ -802,7 +798,7 @@ shrink_zombie( trap_id, owner )
 	self setModelScale( 0.5 );
 
 	self.health = 1;
-	codolprintln( "CoDOL zm trap: shrink #" + trap_id + " shrank zombie " + who + " into a dwarf for " + shrink_time + " s (health " + health + " -> 1)" );
+	{}
 
 	self thread shrink_ambient_vox();
 	self thread shrink_watch_kicked( trap_id, who );
@@ -819,7 +815,7 @@ shrink_zombie( trap_id, owner )
 	self.health = health;
 	self.trap_shrunk = false;
 	self notify( "unshrink" );
-	codolprintln( "CoDOL zm trap: shrink #" + trap_id + " zombie " + who + " grew back" );
+	{}
 }
 
 // T5 :450 play_ambient_vox.
@@ -897,7 +893,7 @@ shrink_watch_kicked( trap_id, who )
 shrink_kicked_death( killer, trap_id, who )
 {
 	playSoundAtPosition( "zmb_mini_kicked", self.origin );
-	codolprintln( "CoDOL zm trap: shrink #" + trap_id + " dwarf " + who + " kicked away by " + killer.name );
+	{}
 	self doDamage( self.health + 666, killer.origin, killer );
 }
 
@@ -906,7 +902,7 @@ shrink_stepped_death( killer, trap_id, who )
 {
 	playSoundAtPosition( "zmb_mini_squashed", self.origin );
 	playFx( level._effect[ "zm_trap_squish" ], self.origin );
-	codolprintln( "CoDOL zm trap: shrink #" + trap_id + " dwarf " + who + " stepped on by " + killer.name );
+	{}
 	self doDamage( self.health + 666, self.origin, killer );
 }
 
@@ -961,7 +957,7 @@ trap_test_watch()
 		}
 		if ( !isDefined( player ) )
 		{
-			codolprintln( "CoDOL zm trap test: no client " + tokens[ 1 ] );
+			{}
 			continue;
 		}
 		if ( tokens[ 0 ] == "grid" && tokens.size > 3 )
@@ -1016,7 +1012,7 @@ trap_test_throw( weapon, near, dx, dy )
 
 	if ( getWeaponIndexFromName( weapon ) <= 0 )
 	{
-		codolprintln( "CoDOL zm trap test: " + weapon + " is not loaded" );
+		{}
 		return;
 	}
 
@@ -1037,7 +1033,7 @@ trap_test_throw( weapon, near, dx, dy )
 			if ( !found )
 				wait( 0.25 );
 		}
-		codolprintln( "CoDOL zm trap test: zombie within " + near + " of " + self.name + ": " + found );
+		{}
 	}
 
 	if ( dx != 0 || dy != 0 )
@@ -1059,8 +1055,7 @@ trap_test_throw( weapon, near, dx, dy )
 	self giveStartAmmo( weapon );
 	self setWeaponAmmoClip( weapon, 2 );
 	self setOffhandEquipment( slots[ 0 ], slots[ 1 ], slots[ 2 ] );
-	codolprintln( "CoDOL zm trap test: " + self.name + " at " + self.origin + " throws " + weapon +
-		" (ammo " + self getAmmoCount( weapon ) + ")" );
+	{}
 	// Look at the floor so the trap lands at the client's feet.
 	self setPlayerAngles( ( 85, self.angles[ 1 ], 0 ) );
 	wait( 0.5 );
@@ -1095,7 +1090,7 @@ trap_test_place( owner, weapon, ahead, within )
 		return;
 	dir = vectorNormalize( ( owner.origin[ 0 ] - target.origin[ 0 ], owner.origin[ 1 ] - target.origin[ 1 ], 0 ) );
 	spot = groundpos( target.origin + vector_scale( dir, ahead ) );
-	codolprintln( "CoDOL zm trap test: " + weapon + " stood " + ahead + " units ahead of chasing zombie " + ent_desc( target ) );
+	{}
 	spawn_trap( spot, owner, weapon );
 }
 
@@ -1108,7 +1103,7 @@ trap_test_grid( a, b, half )
 	dir = vectorNormalize( ( a.origin[ 0 ] - target.origin[ 0 ], a.origin[ 1 ] - target.origin[ 1 ], 0 ) );
 	side = ( 0 - dir[ 1 ], dir[ 0 ], 0 );
 	centre = target.origin + vector_scale( dir, 120 );
-	codolprintln( "CoDOL zm trap test: grid across the path of zombie " + ent_desc( target ) + " at " + centre );
+	{}
 
 	// The throw itself is proven by the other tests; test clients do not
 	// hold a setOrigin, so the two traps are stood directly on the line.
@@ -1131,7 +1126,7 @@ trap_test_hit( seconds, nth )
 		{
 			if ( !is_true( zombies[ i ].trap_frozen ) )
 				continue;
-			codolprintln( "CoDOL zm trap test: " + self.name + " hits frozen zombie " + ent_desc( zombies[ i ] ) );
+			{}
 			zombies[ i ] doDamage( 10, self.origin, self );
 			return;
 		}
@@ -1170,7 +1165,7 @@ trap_test_push( seconds, nth )
 				// this client is on, so walls between them do not matter.
 				back = vectorNormalize( ( self.origin[ 0 ] - target.origin[ 0 ], self.origin[ 1 ] - target.origin[ 1 ], 0 ) );
 				self setOrigin( target.origin + vector_scale( back, 90 ) + ( 0, 0, 4 ) );
-				codolprintln( "CoDOL zm trap test: pushing " + self.name + " at dwarf " + ent_desc( target ) + " from " + self.origin );
+				{}
 			}
 			dir = vectorNormalize( ( target.origin[ 0 ] - self.origin[ 0 ], target.origin[ 1 ] - self.origin[ 1 ], 0 ) );
 			self setVelocity( vector_scale( dir, 190 ) );

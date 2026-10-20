@@ -47,17 +47,8 @@ deploy( owner )
     origin = trace["position"];
     if ( trace["fraction"] == 1 )
     {
-        // Nothing within 4 units below: look further down. getGroundPosition
-        // raised "check starts in solid" (and the mine was never placed) when
-        // the betty came to rest wedged against geometry.
-        trace = bulletTrace( self.origin + (0,0,4), self.origin - (0,0,64), false, self );
-        if ( trace["fraction"] < 1 )
-            origin = trace["position"];
-        else
-        {
-            origin = self.origin;
-            trace["normal"] = (0,0,1);
-        }
+        origin = getGroundPosition( self.origin, 12, 0, 32 );
+        trace["normal"] *= -1;
     }
     mine = spawn( "script_model", origin );
     mine.angles = vectorToAngles( vectorNormalize( trace["normal"] ) ) + (90,0,0);
@@ -77,7 +68,6 @@ deploy( owner )
     mine.pickup = spawn( "script_origin", origin + (0,0,25) );
     mine thread pickup();
     mine thread damage();
-    mine thread empDisable();
     mine thread proximity();
     owner thread watchOwner( mine );
     owner thread watchSpawn( mine );
@@ -148,31 +138,12 @@ damage()
     {
         self waittill( "damage", amount, attacker, direction, point, mod, model, part, tag, flags, weapon );
         if ( !isDefined( attacker ) || !isPlayer( attacker ) ) continue;
-        if ( isDefined( weapon ) && (weapon == "bouncingbetty_mp" || weapon == "smoke_grenade_mp" ||
-             weapon == "emp_grenade_mp") ) continue;
+        if ( isDefined( weapon ) && (weapon == "bouncingbetty_mp" || weapon == "smoke_grenade_mp") ) continue;
         if ( !maps\mp\gametypes\_weapons::friendlyFireCheck( self.owner, attacker ) ) continue;
         self maps\mp\equipment\_pickup::close();
         self notify( "mine_destroyed" );
         self thread explode( attacker );
         return;
-    }
-}
-// An EMP grenade disables the mine for its duration instead of destroying it
-// (empExplodeWaiter in _weapons.gsc sends emp_damage); proximity ignores
-// everyone while self.disabled is set.
-empDisable()
-{
-    self endon( "death" );
-    self endon( "mine_triggered" );
-    for ( ;; )
-    {
-        self waittill( "emp_damage", attacker, duration );
-        playFx( getfx( "sentry_explode_mp" ), self.origin );
-        self.disabled = true;
-        self notify( "disabled" );
-        wait( duration );
-        self.disabled = undefined;
-        self notify( "enabled" );
     }
 }
 proximity()
@@ -184,7 +155,6 @@ proximity()
     for ( ;; )
     {
         self.sensor waittill( "trigger", player );
-        if ( isDefined( self.disabled ) ) continue;
         if ( !isPlayer( player ) || !isAlive( player ) ) continue;
         if ( getDvarInt( "scr_minesKillOwner" ) != 1 )
         {
@@ -204,16 +174,14 @@ proximity()
     self.pickup = undefined;
     self playSound( "mine_betty_click" );
     // C1 Engineer's modDelayTriggeredExplosive on the triggering player (the
-    // IW4/IW5 name specialty_delaymine is C1 Stalker Pro). T5's rule: the
-    // normal delay, then perk_delayExplosiveTime more.
-    wait 0.3;
+    // IW4/IW5 name specialty_delaymine is C1 Stalker Pro). IW5 delay: 3 s.
     if ( player HasAbilityModifier( "modDelayTriggeredExplosive" ) )
     {
-        extra = maps\mp\perks\_codol_equipperks::delayExplosiveTime();
-        maps\mp\perks\_codol_equipperks::perkLog( "betty " + self getEntityNumber() + " triggered by " + player.name + " (modDelayTriggeredExplosive): +" + extra + "s delay" );
+        maps\mp\perks\_codol_equipperks::perkLog( "betty " + self getEntityNumber() + " triggered by " + player.name + " (modDelayTriggeredExplosive): 3s delay" );
         player notify( "triggered_mine" );
-        wait extra;
+        wait 3;
     }
+    else wait 0.3;
     self playSound( "mine_betty_spin" );
     playFx( level.codolMineLaunch, self.origin );
     self moveTo( self.origin + (0,0,64), 0.7, 0, 0.65 );

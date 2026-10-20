@@ -45,7 +45,7 @@ addSpawnPoints( team, spawnPointName, isSetOptional )
 	
 	if ( !level.teamSpawnPoints[team].size && !isSetOptional )
 	{
-		println( "^1Error: No " + spawnPointName + " spawnpoints found in level!" );
+		{}
 		maps\mp\gametypes\_callbacksetup::AbortLevel();
 		wait 1; // so we don't try to abort more than once before the frame ends
 		return;
@@ -88,7 +88,7 @@ placeSpawnPoints( spawnPointName )
 	
 	if ( !spawnPoints.size )
 	{
-		println( "^1Error: No " + spawnPointName + " spawnpoints found in level!" );
+		{}
 		maps\mp\gametypes\_callbacksetup::AbortLevel();
 		wait 1; // so we don't try to abort more than once before the frame ends
 		return;
@@ -364,7 +364,7 @@ getBestWeightedSpawnpoint( spawnpoints )
 		
 		if ( try >= maxSightTracedSpawnpoints )
 		{
-			println( "Spawning " + self.name + " at spawnpoint " + bestspawnpoint.origin + " because the " + maxSightTracedSpawnpoints + " best spawnpoints failed last minute sight trace tests." );
+			{}
 			/# DumpSpawnData( spawnpoints, bestspawnpoint ); #/
 			return bestspawnpoint;
 		}
@@ -378,7 +378,7 @@ getBestWeightedSpawnpoint( spawnpoints )
 		
 		if ( sights > 0 )
 		{
-			println( "Spawning " + self.name + " at spawnpoint " + bestspawnpoint.origin + " even though " + sights + " lines of sight to the enemy exist." );
+			{}
 			/# DumpSpawnData( spawnpoints, bestspawnpoint ); #/
 			return bestspawnpoint;
 		}
@@ -417,40 +417,40 @@ DumpSpawnData( spawnpoints, winnerspawnpoint )
 			return;
 	}
 	
-	println( "=================================" );
-	println( "spawndata = spawnstruct();" );
-	println( "spawndata.playername = \"" + self.name + "\";" );
-	println( "spawndata.friends = [];" );
-	println( "spawndata.enemies = [];" );
+	{}
+	{}
+	{}
+	{}
+	{}
 	foreach ( player in level.players )
 	{
 		if ( player.team == self.team )
-			println( "spawndata.friends[ spawndata.friends.size ] = " + player.origin + ";" );
+			{}
 		else
-			println( "spawndata.enemies[ spawndata.enemies.size ] = " + player.origin + ";" );
+			{}
 	}
-	println( "spawndata.otherdata = [];" );
+	{}
 	
-	println( "spawndata.spawnpoints = [];" );
+	{}
 	index = 0;
 	foreach ( spawnpoint in spawnpoints )
 	{
 		if ( spawnpoint == winnerspawnpoint )
-			println( "spawndata.spawnpointwinner = " + index + ";" );
+			{}
 		
-		println( "spawnpoint = spawnstruct();" );
-		println( "spawnpoint.weight = " + spawnpoint.weight + ";" );
-		println( "spawnpoint.origin = " + spawnpoint.origin + ";" );
-		println( "spawnpoint.spawndata = [];" );
+		{}
+		{}
+		{}
+		{}
 		for ( i = 0; i < spawnpoint.spawndata.size; i++ )
 		{
-			println( "spawnpoint.spawndata[" + i + "] = \"" + spawnpoint.spawndata[i] + "\";" );
+			{}
 		}
 		
-		println( "spawndata.spawnpoints[spawndata.spawnpoints.size] = spawnpoint;" );
+		{}
 		index++;
 	}
-	println( "=================================" );
+	{}
 }
 
 DrawRecordedSpawnData()
@@ -489,8 +489,8 @@ badSpawnLine( start, end, name1, name2 )
 	for ( i = 0; i < 20 * 10; i++ )
 	{
 		line( start, end, (1,0,0) );
-		print3d( start, "Bad spawn! " + name1 + ", dist = " + dist );
-		print3d( end, name2 );
+		{}
+		{}
 		
 		wait .05;
 	}
@@ -512,16 +512,16 @@ drawSpawnData( spawndata )
 	{
 		for (i = 0; i < spawndata.friends.size; i++)
 		{
-			print3d(spawndata.friends[i], "=)", (.5,1,.5), 1, 5);
+			{}
 		}
 		for (i = 0; i < spawndata.enemies.size; i++)
 		{
-			print3d(spawndata.enemies[i], "=(", (1,.5,.5), 1, 5);
+			{}
 		}
 		
 		for (i = 0; i < spawndata.otherdata.size; i++)
 		{
-			print3d(spawndata.otherdata[i].origin, spawndata.otherdata[i].text, (.5,.75,1), 1, 2);
+			{}
 		}
 		
 		wait .05;
@@ -1090,7 +1090,7 @@ spawnGraph()
 	corners = getentarray("minimap_corner", "targetname");
 	if ( corners.size != 2 )
 	{
-		println("^1 can't spawn graph: no minimap corners");
+		{}
 		return;
 	}
 	min = corners[0].origin;
@@ -1323,12 +1323,12 @@ spawnWeightDebug(spawnpoints, winner)
 			
 			orig = spawnpoints[i].origin + (0,0,80);
 			
-			print3d(orig, int(spawnpoints[i].weight), (1,amnt,.5));
+			{}
 			orig += textoffset;
 			
 			if ( spawnpoints[i] == winner )
 			{
-				print3d(orig, "Spawned " + self.name + " here", (1,amnt,.5));
+				{}
 				orig += textoffset;
 			}
 			
@@ -1336,7 +1336,7 @@ spawnWeightDebug(spawnpoints, winner)
 			{
 				for (j = 0; j < spawnpoints[i].spawnData.size; j++)
 				{
-					print3d(orig, spawnpoints[i].spawnData[j], (.5,.5,.5));
+					{}
 					orig += textoffset;
 				}
 			}

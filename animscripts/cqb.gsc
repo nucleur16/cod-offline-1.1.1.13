@@ -185,12 +185,12 @@ CQBDebug()
 			if ( isdefined( self.shootPos ) )
 			{
 				line( shootAtPos, self.shootPos, ( 1, 1, 1 ) );
-				print3d( self.shootPos, "shootPos", ( 1, 1, 1 ), 1, 0.5 );
+				{}
 			}
 			else if ( isdefined( self.cqb_target ) )
 			{
 				line( shootAtPos, self.cqb_target.origin, ( .5, 1, .5 ) );
-				print3d( self.cqb_target.origin, "cqb_target", ( .5, 1, .5 ), 1, 0.5 );
+				{}
 			}
 			else
 			{
@@ -213,7 +213,7 @@ CQBDebug()
 				if ( isdefined( self.cqb_point_of_interest ) )
 				{
 					line( lookAheadPoint, self.cqb_point_of_interest, ( 1, .5, .5 ) );
-					print3d( self.cqb_point_of_interest, "cqb_point_of_interest", ( 1, .5, .5 ), 1, 0.5 );
+					{}
 				}
 			}
 
@@ -241,7 +241,7 @@ CQBDebugGlobal()
 
 		for ( i = 0; i < level.cqbPointsOfInterest.size; i++ )
 		{
-			print3d( level.cqbPointsOfInterest[ i ], ".", ( .7, .7, 1 ), .7, 3 );
+			{}
 		}
 
 		wait .05;

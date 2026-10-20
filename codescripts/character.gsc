@@ -1,62 +1,16 @@
-// IW4 codescripts\character, with one CoDOL rule: C1 ships each character
-// set per mission zone, not per faction (head_militia_ba_blk is in two of the
-// seven militia missions, body_shadow_co_shotgun in three of the four shadow
-// company ones), and a model in no mounted zone must never be precached or
-// attached -- the client is told its name and draws its default model.  So
-// every xmodelalias array passes through mountedArray() before IW4's code
-// indexes it, and precache only names models that ship.  codol_isModelMounted
-// is the native find-only zone probe (codol_actor_spawn.cpp).
-
-modelMounted( name )
-{
-	if ( !isdefined( level.character_mounted ) )
-		level.character_mounted = [];
-	if ( !isdefined( level.character_mounted[ name ] ) )
-		level.character_mounted[ name ] = codol_isModelMounted( name );
-	return level.character_mounted[ name ];
-}
-
-mountedArray( a )
-{
-	out = [];
-	for ( i = 0; i < a.size; i++ )
-	{
-		if ( modelMounted( a[ i ] ) )
-			out[ out.size ] = a[ i ];
-	}
-	return out;
-}
-
-// precacheModel for one model, when it ships.
-precacheMounted( name )
-{
-	if ( modelMounted( name ) )
-		precacheModel( name );
-}
-
 setModelFromArray( a )
 {
-	a = mountedArray( a );
-	if ( a.size )
-		self setModel( a[ randomint( a.size ) ] );
+	self setModel( a[ randomint( a.size ) ] );
 }
 
 precacheModelArray( a )
 {
-	a = mountedArray( a );
 	for ( i = 0; i < a.size; i++ )
 		precacheModel( a[ i ] );
 }
 
 attachHead( headAlias, headArray )
 {
-	headArray = mountedArray( headArray );
-	if ( !headArray.size )
-	{
-		self.headModel = undefined;
-		return;
-	}
-
 	if ( !isdefined( level.character_head_index ) )
 		level.character_head_index = [];
 		
@@ -98,10 +52,10 @@ save()
 	if ( isdefined( self.name ) )
 	{
 		info[ "name" ] = self.name;
-		println( "Save: Guy has name ", self.name );
+		{}
 	}
 	else
-		println( "save: Guy had no name!" );
+		{}
 		
 	attachSize = self getAttachSize();
 	for ( i = 0; i < attachSize; i++ )
@@ -122,10 +76,10 @@ load( info )
 	if ( isdefined( info[ "name" ] ) )
 	{
 		self.name = info[ "name" ];
-		println( "Load: Guy has name ", self.name );
+		{}
 	}
 	else
-		println( "Load: Guy had no name!" );
+		{}
 		
 	attachInfo = info[ "attach" ];
 	attachSize = attachInfo.size;
@@ -136,9 +90,9 @@ load( info )
 precache( info )
 {
 	if ( isdefined( info[ "name" ] ) )
-		println( "Precache: Guy has name ", info[ "name" ] );
+		{}
 	else
-		println( "Precache: Guy had no name!" );
+		{}
 
 	precacheModel( info[ "model" ] );
 
@@ -167,9 +121,7 @@ load:
 get_random_character( amount )
 {
 	self_info = strtok( self.classname, "_" );
-	// A player's character (IW4 MP).  The coop actors run on an mp_* level, so
-	// isSP() is false for them too, but they are SP-style actors with no pers.
-	if ( !common_scripts\utility::isSP() && isPlayer( self ) )
+	if ( !common_scripts\utility::isSP() )
 	{
 		if ( isDefined( self.pers["modelIndex"] ) && self.pers["modelIndex"] < amount )
 			return self.pers["modelIndex"];
@@ -279,27 +231,6 @@ initialize_character_group( prefix, group, amount )
 get_random_weapon( amount )
 {
 	return randomint( amount );
-}
-
-// CoDOL: get_random_character() over an aitype's character list, where
-// bodies[ i ] is the body model character case i sets.  IW4's least-used
-// choice, then -- when that character's body ships in no mounted zone -- a
-// character whose body does.  Every aitype in this tree lists the bodies its
-// characters set, so a mission whose zone lacks one variant never draws it.
-get_random_mounted_character( bodies )
-{
-	index = get_random_character( bodies.size );
-	if ( modelMounted( bodies[ index ] ) )
-		return index;
-	mounted = [];
-	for ( i = 0; i < bodies.size; i++ )
-	{
-		if ( modelMounted( bodies[ i ] ) )
-			mounted[ mounted.size ] = i;
-	}
-	if ( !mounted.size )
-		return index;
-	return random( mounted );
 }
 
 random( array )

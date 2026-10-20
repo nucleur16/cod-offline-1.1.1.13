@@ -12,9 +12,9 @@ CH_LABEL_COL	= 3;
 CH_RES1_COL		= 4;
 CH_RES2_COL		= 5;
 CH_TARGET_COL	= 6;
-CH_REWARD_COL	= 7;		// tier XP, interleaved with the targets: 7, 9, 11, ...
+CH_REWARD_COL	= 7;
 CH_ID_COL		= 4;		// CoDOL: the numeric id into challenges[1000]
-CH_CO_REWARD_COL = 24;		// CoDOL: per-tier GP (C1's CP1..CP9), parallel to the targets
+CH_CO_REWARD_COL = 24;		// CoDOL: per-tier rewards, parallel to the targets
 
 
 TIER_FILE_COL	= 4;
@@ -120,8 +120,6 @@ ch_setProgress( refString, value )
 	if ( id < 0 )
 		return;
 
-	// CoDOL: the lobby's after-action report (_codol_aar.gsc).
-	self maps\mp\gametypes\_codol_aar::noteChallengeProgress( refString, self getPlayerData( "challenges", id ), value );
 	self setPlayerData( "challenges", id, value );
 }
 
@@ -899,14 +897,12 @@ ch_kills( data, time )
 		else
 		{
 			baseWeapon = getBaseWeaponName( data.sWeapon );
-			// C1 keys weapon challenges by the full base, "ch_marksman_m4_mp".
-			weaponRef = codolWeaponBase( data.sWeapon );
 			
-			if ( isDefined( level.challengeInfo["ch_marksman_" + weaponRef] ) )
-				player processChallenge( "ch_marksman_" + weaponRef );
+			if ( isDefined( level.challengeInfo["ch_marksman_" + baseWeapon] ) )
+				player processChallenge( "ch_marksman_" + baseWeapon );
 
-			if ( isDefined( level.challengeInfo["pr_marksman_" + weaponRef] ) )
-				player processChallenge( "pr_marksman_" + weaponRef );
+			if ( isDefined( level.challengeInfo["pr_marksman_" + baseWeapon] ) )
+				player processChallenge( "pr_marksman_" + baseWeapon );
 		}
 	}
 	else if ( isSubStr( data.sMeansOfDeath, "MOD_GRENADE" ) || isSubStr( data.sMeansOfDeath, "MOD_EXPLOSIVE" ) || isSubStr( data.sMeansOfDeath, "MOD_PROJECTILE" ) )
@@ -933,14 +929,12 @@ ch_kills( data, time )
 			player.explosiveKills[expId]++;
 			
 			baseWeapon = getBaseWeaponName( data.sWeapon );
-			// C1 keys weapon challenges by the full base, "ch_marksman_m4_mp".
-			weaponRef = codolWeaponBase( data.sWeapon );
 			
 			if ( baseWeapon == "javelin" || baseWeapon == "m79" || baseWeapon == "at4" || baseWeapon == "rpg" )
 			{
 				if ( player.explosiveKills[expId] > 1 )
 				{
-					player processChallenge( "pr_expert_" + weaponRef );
+					player processChallenge( "pr_expert_" + baseWeapon );
 				}
 			}	
 			
@@ -949,8 +943,8 @@ ch_kills( data, time )
 				weaponAttachments = getWeaponAttachments( data.sweapon );
 				player processChallenge( "ch_" + weaponAttachments[0] + "_gl" );
 
-				if ( isDefined( level.challengeInfo["ch_marksman_" + weaponAttachments[0] + "_mp"] ) )
-					player processChallenge( "ch_marksman_" + weaponAttachments[0] + "_mp" );
+				if ( isDefined( level.challengeInfo["ch_marksman_" + weaponAttachments[0]] ) )
+					player processChallenge( "ch_marksman_" + weaponAttachments[0] );
 				
 				if ( player _hasPerk( "specialty_bling" ) )
 				{
@@ -959,8 +953,8 @@ ch_kills( data, time )
 						player processChallenge( "ch_bling_pro" );
 				}
 				
-				if ( isDefined( level.challengeInfo["pr_marksman_" + weaponAttachments[0] + "_mp"] ) )
-					player processChallenge( "pr_marksman_" + weaponAttachments[0] + "_mp" );
+				if ( isDefined( level.challengeInfo["pr_marksman_" + weaponAttachments[0]] ) )
+					player processChallenge( "pr_marksman_" + weaponAttachments[0] );
 			}
 			
 			if ( isDefined( data.victim.explosiveInfo["stickKill"] ) && data.victim.explosiveInfo["stickKill"] )
@@ -982,11 +976,11 @@ ch_kills( data, time )
 			
 			if ( !isSubStr( baseWeapon, "stinger" ) )
 			{
-				if ( isDefined( level.challengeInfo["ch_marksman_" + weaponRef] ) )
-					player processChallenge( "ch_marksman_" + weaponRef );
+				if ( isDefined( level.challengeInfo["ch_marksman_" + baseWeapon] ) )
+					player processChallenge( "ch_marksman_" + baseWeapon );
 	
-				if ( isDefined( level.challengeInfo["pr_marksman_" + weaponRef] ) )
-					player processChallenge( "pr_marksman_" + weaponRef );
+				if ( isDefined( level.challengeInfo["pr_marksman_" + baseWeapon] ) )
+					player processChallenge( "pr_marksman_" + baseWeapon );
 			}
 			
 			if ( isStrStart( data.sWeapon, "frag_" ) )
@@ -1068,14 +1062,14 @@ ch_kills( data, time )
 			{
 				player processChallenge( "ch_carbomb" );
 			}
-			else if ( weaponRef == "rpg_mp" || weaponRef == "at4_mp" )
+			else if ( isStrStart( data.sWeapon, "rpg_" ) || isStrStart( data.sWeapon, "at4_" ) )
 			{
 				if ( player.explosiveKills[expId] > 1 )
 					player processChallenge( "ch_multirpg" );
 			}
 		}
 	}
-	else if ( isSubStr( data.sMeansOfDeath,	"MOD_MELEE" ) && !codolIsWeaponBase( data.sweapon, "riotshield_mp" ) )
+	else if ( isSubStr( data.sMeansOfDeath,	"MOD_MELEE" ) && !isSubStr( data.sweapon, "riotshield_mp" ) )
 	{
 		player endMGStreak();
 		
@@ -1121,17 +1115,15 @@ ch_kills( data, time )
 			player processChallenge( "ch_plague" );
 		
 		baseWeapon = getBaseWeaponName( data.sWeapon );
-		// C1 keys weapon challenges by the full base, "ch_marksman_m4_mp".
-		weaponRef = codolWeaponBase( data.sWeapon );
 		weaponAttachments = getWeaponAttachments( data.sweapon );
 		
-		if ( codolWeaponHasAttachment( data.sWeapon, "tactical" ) )
+		if ( isDefined( weaponAttachments[0] ) && weaponAttachments[0] == "tactical" )
 		{
-			if ( isDefined( level.challengeInfo["ch_marksman_" + weaponRef] ) )
-				player processChallenge( "ch_marksman_" + weaponRef );
+			if ( isDefined( level.challengeInfo["ch_marksman_" + baseWeapon] ) )
+				player processChallenge( "ch_marksman_" + baseWeapon );
 		}
 	}
-	else if ( isSubStr( data.sMeansOfDeath,	"MOD_MELEE" ) && codolIsWeaponBase( data.sweapon, "riotshield_mp" ) )
+	else if ( isSubStr( data.sMeansOfDeath,	"MOD_MELEE" ) && isSubStr( data.sweapon, "riotshield_mp" ) )
 	{
 		player endMGStreak();
 		
@@ -1185,8 +1177,6 @@ ch_kills( data, time )
 		}
 		
 		baseWeapon = getBaseWeaponName( data.sWeapon );
-		// C1 keys weapon challenges by the full base, "ch_marksman_m4_mp".
-		weaponRef = codolWeaponBase( data.sWeapon );
 	
 		if ( baseWeapon == "gl" )
 		{
@@ -1195,11 +1185,11 @@ ch_kills( data, time )
 			if ( isDefined( level.challengeInfo["ch_" + weaponAttachments[0] + "_" + "gl"] ) )
 				player processChallenge( "ch_" + weaponAttachments[0] + "_" + "gl" );
 
-			if ( isDefined( level.challengeInfo["ch_marksman_" + weaponAttachments[0] + "_mp"] ) )
-				player processChallenge( "ch_marksman_" + weaponAttachments[0] + "_mp" );
+			if ( isDefined( level.challengeInfo["ch_marksman_" + weaponAttachments[0]] ) )
+				player processChallenge( "ch_marksman_" + weaponAttachments[0] );
 
-			if ( isDefined( level.challengeInfo["pr_marksman_" + weaponAttachments[0] + "_mp"] ) )
-				player processChallenge( "pr_marksman_" + weaponAttachments[0] + "_mp" );
+			if ( isDefined( level.challengeInfo["pr_marksman_" + weaponAttachments[0]] ) )
+				player processChallenge( "pr_marksman_" + weaponAttachments[0] );
 		}
 	}
 	else if ( data.sMeansOfDeath == "MOD_HEAD_SHOT" )
@@ -1243,20 +1233,18 @@ ch_kills( data, time )
 		else
 		{
 			baseWeapon = getBaseWeaponName( data.sWeapon );
-			// C1 keys weapon challenges by the full base, "ch_marksman_m4_mp".
-			weaponRef = codolWeaponBase( data.sWeapon );
 			
-			if ( isDefined( level.challengeInfo["ch_expert_" + weaponRef] ) )
-				player processChallenge( "ch_expert_" + weaponRef );
+			if ( isDefined( level.challengeInfo["ch_expert_" + baseWeapon] ) )
+				player processChallenge( "ch_expert_" + baseWeapon );
 
-			if ( isDefined( level.challengeInfo["pr_expert_" + weaponRef] ) )
-				player processChallenge( "pr_expert_" + weaponRef );
+			if ( isDefined( level.challengeInfo["pr_expert_" + baseWeapon] ) )
+				player processChallenge( "pr_expert_" + baseWeapon );
 
-			if ( isDefined( level.challengeInfo["ch_marksman_" + weaponRef] ) )
-				player processChallenge( "ch_marksman_" + weaponRef );
+			if ( isDefined( level.challengeInfo["ch_marksman_" + baseWeapon] ) )
+				player processChallenge( "ch_marksman_" + baseWeapon );
 
-			if ( isDefined( level.challengeInfo["pr_marksman_" + weaponRef] ) )
-				player processChallenge( "pr_marksman_" + weaponRef );
+			if ( isDefined( level.challengeInfo["pr_marksman_" + baseWeapon] ) )
+				player processChallenge( "pr_marksman_" + baseWeapon );
 		}
 	}
 	
@@ -1266,8 +1254,6 @@ ch_kills( data, time )
 		// checks and processes all weapon attachment challenges
 		weaponAttachments = getWeaponAttachments( data.sweapon );
 		baseWeapon = getBaseWeaponName( data.sWeapon );
-		// C1 keys weapon challenges by the full base, "ch_marksman_m4_mp".
-		weaponRef = codolWeaponBase( data.sWeapon );
 		
 		foreach( weaponAttachment in weaponAttachments )
 		{
@@ -1443,7 +1429,7 @@ ch_bulletDamageCommon( data, player, time, weaponClass )
 	}
 	else if ( weaponClass == "weapon_shotgun" )
 	{
-		if ( isSubStr( codolWeaponBase( data.sWeapon ), "ranger" ) && isDefined( player.bothBarrels ) )
+		if ( isSubStr( data.sWeapon, "ranger" ) && isDefined( player.bothBarrels ) )
 		{
 			player processChallenge( "ch_bothbarrels" );
 			player.bothBarrels = undefined;
@@ -1479,7 +1465,7 @@ ch_bulletDamageCommon( data, player, time, weaponClass )
 			player processChallenge( "ch_ghillie" );	
 	}
 	
-	if ( codolWeaponHasAttachment( data.sWeapon, "silencer" ) )
+	if ( isSubStr( data.sWeapon, "_silencer_" ) )
 		player processChallenge( "ch_stealth" ); 
 }
 
@@ -2150,7 +2136,7 @@ processChallenge( baseName, progressInc, forceSetProgress )
 	
 	/#
 	if ( getDvarInt( "debug_challenges" ) )
-		println( "CHALLENGE PROGRESS - " + baseName + ": " + progressInc );
+		{}
 	#/
 	
 	missionStatus = getChallengeStatus( baseName );
@@ -2180,7 +2166,7 @@ processChallenge( baseName, progressInc, forceSetProgress )
 	{
 		// Identify the awarded tier when investigating repeated completion UI.
 		// This runs only on an actual progression transition, not every event.
-		println( "CoDOL challenge award: client " + ( self getEntityNumber() ) + " ref " + baseName + " tier " + missionStatus + " progress " + progress );
+		{}
 		// CUMULATIVE, not clamped to the tier target.  ch_getState derives the
 		// tier by counting the thresholds the progress has passed, so writing
 		// the target back would pin the challenge at this tier for good.
@@ -2205,36 +2191,7 @@ giveRankXpAfterWait( baseName,missionStatus )
 	self endon ( "disconnect" );
 
 	wait( 0.25 );
-	xp = level.challengeInfo[baseName]["reward"][missionStatus];
-	gp = 0;
-	if ( isDefined( level.challengeInfo[baseName]["gp"] ) && isDefined( level.challengeInfo[baseName]["gp"][missionStatus] ) )
-		gp = level.challengeInfo[baseName]["gp"][missionStatus];
-	if ( xp > 0 )
-		self maps\mp\gametypes\_rank::giveRankXP( "challenge", xp );
-	// A tier's GP is a FIXED award (user rule 2026-10-13): the table amount,
-	// never an activity gp_scale. The match report carries it to the lobby,
-	// which deposits it in the GP wallet.
-	if ( gp > 0 )
-		self codol_creditGP( gp, "challenge" );
-	self codolNoteChallengeReward( xp, gp );
-}
-
-// The end-of-game summary's challenge row. C1's LobbySummaryController and
-// in-game AARPanelXP read client dvar ui_eog_r6 as "|"-separated tokens,
-// token 2 the challenge XP and token 3 the challenge GP of the match
-// (codo.gfx, get_EXPInfo). Tokens 0 and 1 are not read by either page.
-codolNoteChallengeReward( xp, gp )
-{
-	if ( !isDefined( self.pers["codolChallengeXP"] ) )
-	{
-		self.pers["codolChallengeXP"] = 0;
-		self.pers["codolChallengeGP"] = 0;
-		self.pers["codolChallengeTiers"] = 0;
-	}
-	self.pers["codolChallengeXP"] += xp;
-	self.pers["codolChallengeGP"] += gp;
-	self.pers["codolChallengeTiers"]++;
-	self setClientDvar( "ui_eog_r6", "challenges|" + self.pers["codolChallengeTiers"] + "|" + self.pers["codolChallengeXP"] + "|" + self.pers["codolChallengeGP"] );
+	self maps\mp\gametypes\_rank::giveRankXP( "challenge", level.challengeInfo[baseName]["reward"][missionStatus] );
 }
 
 
@@ -2252,15 +2209,6 @@ getWeaponAttachment( weaponName, index )
 
 masteryChallengeProcess( baseName, progressInc )
 {
-	// CoDOL: C1's ch_<weapon>_mp_mastery is CHALLENGE_GET_ALL_ATTACHMENTS
-	// over C1 attachment items. IW4's walk below asks isItemUnlocked about
-	// IW4 attachment names (mp/coWeapStatsTableInGame.csv columns 11+) and
-	// force-sets the progress, which could lower what the profile holds. The
-	// marksman refs it was reached from only match C1's names ("_mp") since
-	// the composed-name fix, so keep it from running until it is ported.
-	if ( isSubStr( baseName, "_mp" ) )
-		return;
-
 	if ( isSubStr( baseName, "ch_marksman_" ) )
 	{
 		prefix = "ch_marksman_";
@@ -2338,23 +2286,13 @@ challenge_targetVal( refString, tierId )
 
 
 /*
-	A tier pays XP and GP from two different series, exactly as C1's own UI
-	reads them (codo.gfx codo.constants.ChallengeTable and
-	LobbySummaryController.get_challenges):
-	  XP  = column XP + 2*(tier-1): 7, 9, 11, ... interleaved with the targets;
-	  GP  = column CP1 + (tier-1): 24..32, parallel to the targets.
-	CoDOL authors XP only for the first two tiers of most challenges (the
-	later cells are blank, so 0 XP) and GP for every tier. Columns 24..32
-	were read as XP here before 2026-10-13, which paid GP amounts as XP and
-	no GP at all.
+	CoDOL's per-tier reward series is columns 24..32, running PARALLEL to the
+	targets in 6, 8, ... -- not IW4's interleaved 7, 9, 11, ...  Reading the
+	IW4 columns against CoDOL's table returns 0 for 1349 of the 2330 authored
+	tiers (58%), because CoDOL populates only the first two of those cells and
+	leaves the rest blank.
 */
 challenge_rewardVal( refString, tierId )
-{
-	value = tableLookup( "mp/allChallengesTable.csv", CH_REF_COL, refString, CH_REWARD_COL + ((tierId-1)*2) );
-	return int( value );
-}
-
-challenge_gpVal( refString, tierId )
 {
 	value = tableLookup( "mp/allChallengesTable.csv", CH_REF_COL, refString, CH_CO_REWARD_COL + (tierId-1) );
 	return int( value );
@@ -2379,7 +2317,6 @@ buildChallegeInfo()
 		level.challengeInfo[refString] = [];
 		level.challengeInfo[refString]["targetval"] = [];
 		level.challengeInfo[refString]["reward"] = [];
-		level.challengeInfo[refString]["gp"] = [];
 
 		// The numeric id IS the storage address; a row without one cannot be
 		// progressed at all, so record it here rather than looking it up per
@@ -2397,7 +2334,6 @@ buildChallegeInfo()
 
 			level.challengeInfo[refString]["targetval"][tierId] = targetVal;
 			level.challengeInfo[refString]["reward"][tierId] = rewardVal;
-			level.challengeInfo[refString]["gp"][tierId] = challenge_gpVal( refString, tierId );
 			
 			totalRewardXP += rewardVal;
 		}
@@ -2426,7 +2362,7 @@ buildChallegeInfo()
 	}
 	
 	/#
-	printLn( "TOTAL CHALLENGE REWARD XP: " + totalRewardXP );
+	{}
 	#/
 }
 
@@ -2469,7 +2405,7 @@ completeAllChallenges( percentage )
 		wait ( 0.05 );
 	}
 	
-	println( "Done unlocking challenges" );
+	{}
 }
 #/
 
@@ -2526,10 +2462,10 @@ monitorKilledKillstreak()
 		if ( self _hasPerk( "specialty_coldblooded" ) )
 			self processChallenge( "ch_coldblooded_pro" );
 
-		if ( isDefined( weapon ) && codolIsWeaponBase( weapon, "stinger_mp" ) )
+		if ( isDefined( weapon ) && weapon == "stinger_mp" )
 		{
-			self processChallenge( "ch_marksman_stinger_mp" );		
-			self processChallenge( "pr_marksman_stinger_mp" );		
+			self processChallenge( "ch_marksman_stinger" );		
+			self processChallenge( "pr_marksman_stinger" );		
 		}
 	}	
 }

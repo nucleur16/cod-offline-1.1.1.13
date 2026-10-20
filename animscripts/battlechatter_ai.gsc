@@ -1390,7 +1390,7 @@ custom_battlechatter_internal( string )
 			if( !self nationalityOkForMoveOrder() )
 			{
 				/#
-				println( badCountryIdStr );
+				{}
 				#/
 				return false;
 			}
@@ -1403,7 +1403,7 @@ custom_battlechatter_internal( string )
 			if( !self nationalityOkForMoveOrderNoncombat() )
 			{
 				/#
-				println( badCountryIdStr );
+				{}
 				#/
 				return false;
 			}

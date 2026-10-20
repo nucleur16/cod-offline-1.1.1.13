@@ -156,7 +156,7 @@ debug_draw_on_ent( msg )
 
 	while ( GetTime() < timer )
 	{
-		Print3d( self.origin, msg, ( 0.8, 0.8, 0.2 ) );
+		{}
 		wait( 0.05 );
 	}
 #/

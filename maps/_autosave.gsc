@@ -55,7 +55,7 @@ beginningOfLevelSave()
 		// Start
 		SaveGame( "levelstart", &"AUTOSAVE_LEVELSTART", imagename, true );
 	SetDvar( "ui_grenade_death", "0" );
-	PrintLn( "Saving level start saved game" );
+	{}
 
 	flag_clear( "game_saving" );
 }
@@ -86,7 +86,7 @@ autosaves_think( trigger )
 
 	if ( !( IsDefined( savedescription ) ) )
 	{
-		PrintLn( "autosave", self.script_autosave, " with no save description in _autosave.gsc!" );
+		{}
 		return;
 	}
 
@@ -128,24 +128,7 @@ trigger_autosave_immediate( trigger )
 }
 
 AutoSavePrint( msg, msg2 )
-{
-	/#
-	SetDvarIfUninitialized( "scr_autosave_debug", "0" );
-	if ( GetDebugDvarInt( "scr_autosave_debug" ) == 1 )
-	{
-		if ( IsDefined( msg2 ) )
-			IPrintLn( msg + " [ localized description ]" );
-		else
-			IPrintLn( msg );
-		return;
-	}
-	#/
-
-	if ( IsDefined( msg2 ) )
-		PrintLn( msg, msg2 );
-	else
-		PrintLn( msg );
-}
+{}
 
 autosave_timeout( timeout )
 {
@@ -198,11 +181,11 @@ _autosave_game_now( suppress_print )
 
 
 
-	/# AutoSavePrint( "Saving game " + filename + " with desc ", descriptionString ); #/
+	/# {} #/
 
 	if ( saveId < 0 )
 	{
-		/# AutoSavePrint( "Savegame failed - save error.: " + filename + " with desc ", descriptionString ); #/
+		/# {} #/
 		return false;
 	}
 
@@ -218,7 +201,7 @@ _autosave_game_now( suppress_print )
 
 	if ( !CommitWouldBeValid( saveId ) )
 	{
-		/# AutoSavePrint( "Save is no longer valid, another save was run from elsewhere" ); #/
+		/# {} #/
 		return false;
 	}
 
@@ -256,7 +239,7 @@ try_to_autosave_now()
 
 	if ( !flag( "can_save" ) )
 	{
-		/# AutoSavePrint( "Can_save flag was clear" ); #/
+		/# {} #/
 		return false;
 	}
 
@@ -307,11 +290,11 @@ tryAutoSave( filename, description, image, timeout, doStealthChecks, suppress_pr
 		if ( autoSaveCheck( undefined, doStealthChecks ) )
 		{
 			saveId = SaveGameNoCommit( filename, descriptionString, image, suppress_print );
-			/# AutoSavePrint( "Saving game " + filename + " with desc ", descriptionString ); #/
+			/# {} #/
 
 			if ( saveId < 0 )
 			{
-				/# AutoSavePrint( "Savegame failed - save error.: " + filename + " with desc ", descriptionString ); #/
+				/# {} #/
 				break;
 			}
 
@@ -329,7 +312,7 @@ tryAutoSave( filename, description, image, timeout, doStealthChecks, suppress_pr
 
 			if ( !autoSaveCheck( undefined, doStealthChecks ) )
 			{
-				/# AutoSavePrint( "Savegame invalid: 1.25 second check failed" ); #/
+				/# {} #/
 				continue;
 			}
 
@@ -337,7 +320,7 @@ tryAutoSave( filename, description, image, timeout, doStealthChecks, suppress_pr
 
 			if ( !autoSaveCheck_not_picky() )
 			{
-				/# AutoSavePrint( "Savegame invalid: 2.5 second check failed" ); #/
+				/# {} #/
 				continue;
 			}
 
@@ -349,13 +332,13 @@ tryAutoSave( filename, description, image, timeout, doStealthChecks, suppress_pr
 
 			if ( !flag( "can_save" ) )
 			{
-				/# AutoSavePrint( "Can_save flag was clear" ); #/
+				/# {} #/
 				break;
 			}
 
 			if ( !CommitWouldBeValid( saveId ) )
 			{
-				/# AutoSavePrint( "Save is no longer valid, another save was run from elsewhere" ); #/
+				/# {} #/
 				flag_clear( "game_saving" );
 				return false;
 			}
@@ -381,7 +364,7 @@ extra_autosave_checks_failed()
 	{
 		if ( ![[ func[ "func" ] ]]() )
 		{
-			AutoSavePrint( "autosave failed: " + func[ "msg" ] );
+			{}
 			return true;
 		}
 	}
@@ -455,7 +438,7 @@ autoSaveCheck( doPickyChecks, doStealthChecks )
 	// save was unsuccessful for internal reasons, such as lack of memory
 	if ( !issavesuccessful() )
 	{
-		AutoSavePrint( "autosave failed: save call was unsuccessful" );
+		{}
 		return false;
 	}
 
@@ -471,31 +454,31 @@ autoSavePlayerCheck( doPickyChecks )
 
 	if ( self IsMeleeing() && doPickyChecks )
 	{
-		AutoSavePrint( "autosave failed:player is meleeing" );
+		{}
 		return false;
 	}
 
 	if ( self IsThrowingGrenade() && doPickyChecks )
 	{
-		AutoSavePrint( "autosave failed:player is throwing a grenade" );
+		{}
 		return false;
 	}
 
 	if ( self IsFiring() && doPickyChecks )
 	{
-		AutoSavePrint( "autosave failed:player is firing" );
+		{}
 		return false;
 	}
 
 	if ( IsDefined( self.shellshocked ) && self.shellshocked )
 	{
-		AutoSavePrint( "autosave failed:player is in shellshock" );
+		{}
 		return false;
 	}
 
 	if ( self isFlashed() )
 	{
-		AutoSavePrint( "autosave failed:player is flashbanged" );
+		{}
 		return false;
 	}
 
@@ -518,7 +501,7 @@ autoSaveAmmoCheck()
 		    return( true );
     }
 
-	AutoSavePrint( "autosave failed: ammo too low" );
+	{}
 	return( false );
 }
 
@@ -531,27 +514,27 @@ autoSaveHealthCheck()
 
 	if ( self ent_flag_exist( "coop_downed" ) && self ent_flag( "coop_downed" ) )
 	{
-		/# AutoSavePrint( "autosave failed: health too low" ); #/
+		/# {} #/
 		return false;
 	}
 
 	healthFraction = self.health / self.maxhealth;
 	if ( healthFraction < 0.5 )
 	{
-		/# AutoSavePrint( "autosave failed: health too low" ); #/
+		/# {} #/
 		return false;
 	}
 
 	if ( flag( "_radiation_poisoning" ) )
 	{
-		/# AutoSavePrint( "autosave failed: player has radiation sickness" ); #/
+		/# {} #/
 		return false;
 	}
 
 
 	if ( self ent_flag( "player_has_red_flashing_overlay" ) )
 	{
-		/# AutoSavePrint( "autosave failed: player has red flashing overlay" ); #/
+		/# {} #/
 		return false;
 	}
 
@@ -579,7 +562,7 @@ autoSaveThreatCheck( doPickyChecks )
 			{
 				if ( Distance( enemy.origin, player.origin ) < 384 )
 				{
-					/# AutoSavePrint( "autosave failed: Dog near player" ); #/
+					/# {} #/
 					return( false );
 				}
 			}
@@ -590,7 +573,7 @@ autoSaveThreatCheck( doPickyChecks )
 		// is trying to melee the player
 		if ( IsDefined( enemy.Melee ) && IsDefined( enemy.melee.target ) && IsPlayer( enemy.melee.target ) )
 		{
-			/# AutoSavePrint( "autosave failed: AI meleeing player" ); #/
+			/# {} #/
 			return( false );
 		}
 
@@ -617,14 +600,14 @@ autoSaveThreatCheck( doPickyChecks )
 		{
 			if ( doPickyChecks || enemy animscripts\utility::canSeeEnemy( 0 ) && enemy CanShootEnemy( 0 ) )
 			{
-				/# AutoSavePrint( "autosave failed: AI firing on player" ); #/
+				/# {} #/
 				return( false );
 			}
 		}
 
 		if ( IsDefined( enemy.a.aimIdleThread ) && enemy animscripts\utility::canSeeEnemy( 0 ) && enemy CanShootEnemy( 0 ) )
 		{
-			/# AutoSavePrint( "autosave failed: AI aiming at player" ); #/
+			/# {} #/
 			return( false );
 		}
 	}
@@ -642,7 +625,7 @@ autoSaveThreatCheck( doPickyChecks )
 		{
 			if ( Distance( vehicle.origin, player.origin ) < 400 )// grenade radius is 220
 			{
-				/# AutoSavePrint( "autosave failed: burning car too close to player" ); #/
+				/# {} #/
 				return( false );
 			}
 		}
@@ -674,7 +657,7 @@ autosave_proximity_threat_func( enemy )
 		
 		if ( dist < 360 )
 		{
-			/# AutoSavePrint( "autosave failed: AI too close to player" ); #/
+			/# {} #/
 			return "return";
 		}
 		else

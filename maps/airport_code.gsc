@@ -180,14 +180,14 @@ player_dynamic_move_speed()
 		}
 		/#
 		if ( GetDvarInt( "debug_playerDMS" ) )
-			Print3d( actor.origin, "dist: " + Distance( level.player.origin, actor.origin ), ( 1, 1, 1 ), 1 );
+			{}
 		#/
 		//if he's wait out in front - really slow him down
 		if ( DistanceSquared( level.player.origin, actor.origin ) > squared( 100 ) && ahead )
 		{
 			/#
 			if ( GetDvarInt( "debug_playerDMS" ) )
-				PrintLn( "TOOO FAR AHEAD!!!!!!!!!!!" );
+				{}
 			#/
 			if ( current > .55 )
 				current -= .015;
@@ -238,7 +238,7 @@ player_dynamic_move_speed()
 
 		/#
 		if ( GetDvarInt( "debug_playerDMS" ) )
-			PrintLn( "baseline: " + level.player.baseline_speed + ", 	adjusted: " + level.player.adjusted_baseline );
+			{}
 		#/
 
 		level.player SetMoveSpeedScale( ( level.player.adjusted_baseline ) );
@@ -8864,7 +8864,7 @@ music_sfx_to_music( alias, time, fade, timesfx )
 	
 	wait timesfx;
 	/#
-	println( " *** switching from sfx to music *** " );
+	{}
 	#/
 	music_loop( alias, time, fade );
 	wait .1;

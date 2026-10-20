@@ -136,7 +136,7 @@ testGrenadeThrowAnimOffsets()
 		endpos = startpos + forward * offset[ 0 ] - right * offset[ 1 ] + ( 0, 0, 1 ) * offset[ 2 ];
 		thread debugLine( startpos, endpos, ( 1, 1, 1 ), 20 );
 
-		println( "addGrenadeThrowAnimOffset( %", throwAnim, ", ", offset, " );" );
+		{}
 
 		self detach( model, tag );
 
@@ -1073,7 +1073,7 @@ transitionTo( newPose )
 
 	if ( !animHasNoteTrack( transAnim, "anim_pose = \"" + newPose + "\"" ) )
 	{
-		println( "error: " + self.a.pose + "_2_" + newPose + " missing notetrack to set pose!" );
+		{}
 	}
 
 	self setFlaggedAnimKnobAllRestart( "trans", transanim, %body, 1, .2, rate );

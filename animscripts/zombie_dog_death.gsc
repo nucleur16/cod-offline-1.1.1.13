@@ -31,15 +31,13 @@
 
 main()
 {
-	debug_anim_print("dog_death::main()" );
+	{}
 	self SetAimAnimWeights( 0, 0 );
 
 	self endon("killanimscript");
-	// CoDOL: _zombiemode_ai_dogs marks a burning hound with fire_dog as well
-	// as a.nodeath (T5 dog_fx_trail :660), so the burst holds however the
-	// actor's self.a was rebuilt.
-	if ( isdefined( self.a.nodeath ) || ( isdefined( self.fire_dog ) && self.fire_dog ) )
+	if ( isdefined( self.a.nodeath ) )
 	{
+		assertex( self.a.nodeath, "Nodeath needs to be set to true or undefined." );
 
 		// allow death script to run for a bit so it doesn't turn to corpse and get deleted too soon during melee sequence
 		wait 3;
@@ -54,28 +52,12 @@ main()
 	}
 
 	death_anim = "death_" + getAnimDirection( self.damageyaw );
-
-	// T5 animscripts/zombie_dog_death.gsc:383-395: a hound the wunderwaffe
-	// (or the microwave gun) killed plays one of its five tesla deaths
-	// (native states death_tesla_a..e, codol_dog_states.cpp).
-	if ( ( isdefined( self.tesla_death ) && self.tesla_death ) ||
-		( isdefined( self.microwavegun_death ) && self.microwavegun_death ) ||
-		( isdefined( self.microwavegun_dw_death ) && self.microwavegun_dw_death ) )
-	{
-		tesla_deaths = [];
-		tesla_deaths[ tesla_deaths.size ] = "death_tesla_a";
-		tesla_deaths[ tesla_deaths.size ] = "death_tesla_b";
-		tesla_deaths[ tesla_deaths.size ] = "death_tesla_c";
-		tesla_deaths[ tesla_deaths.size ] = "death_tesla_d";
-		tesla_deaths[ tesla_deaths.size ] = "death_tesla_e";
-		death_anim = tesla_deaths[ randomint( tesla_deaths.size ) ];
-	}
 /#
-	println(death_anim);
+	{}
 #/
 
 	self animMode( "gravity" );
-	debug_anim_print("dog_death::main() - Setting " + death_anim );
+	{}
 	self setanimstate( death_anim );
 	self animscripts\zombie_dog_shared::DoNoteTracks( "done" );
 }

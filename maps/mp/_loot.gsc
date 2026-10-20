@@ -379,7 +379,7 @@ dropLoot( lootTier, lootName, dropEnt )
 	if ( !isDefined( trace ) )
 		return;
 
-	println( "dropping loot" );
+	{}
 
 	tempAngle = randomfloat( 360 );
 	
@@ -414,7 +414,7 @@ dropLoot( lootTier, lootName, dropEnt )
 	lootTrigger thread lootDeleteOnDisconnect();
 	/#
 	if ( getdvarint( "scr_lootdebug" ) )
-		lootTrigger thread lootDebugPrint( lootTier, lootName );
+		{}
 	#/
 	
 	lootTrigger endon ( "death" );
@@ -438,14 +438,7 @@ dropLoot( lootTier, lootName, dropEnt )
 }
 
 lootDebugPrint( lootTier, lootName )
-{
-	self endon("death");
-	while ( 1 )
-	{
-		print3d( self.origin, "(" + lootTier + ") " + lootName );
-		wait .05;
-	}
-}
+{}
 
 lootPickupWaiter( lootTier, lootName )
 {

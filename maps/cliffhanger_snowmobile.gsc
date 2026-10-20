@@ -1414,7 +1414,7 @@ snowmobile_ending_autosave()
 	if ( !CommitWouldBeValid( id ) )
 		return;
 
-	println( "SAVING DOWNHILL" );
+	{}
 	commitsave( id );
 }
 

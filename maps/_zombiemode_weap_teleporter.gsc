@@ -27,19 +27,14 @@
 //
 // "AN AREA ALREADY EXPLORED".  T5 answers it with the zone manager
 // (check_point_in_active_zone over struct_black_hole_teleport structs).
-// Neither exists on CoDOL's zm maps: the zone manager is not ported
-// (_zombiemode_spawner.gsc init_spawn_points header), no zm map authors
-// struct_black_hole_teleport, and a zombie_door / zombie_debris trigger marks
-// the doorway, not the room behind it.  So explored space is recorded
-// directly: this module keeps level.zombie_explored, a set of standing
-// positions -- the player spawn points (the start room, explored by
-// definition) plus every spot a valid, grounded player has actually stood
-// on, sampled once a second and kept only when it is at least
-// EXPLORED_SPACING units from every recorded spot.  A room behind a door
-// joins the set the moment somebody walks into it, which is exactly when T5
-// would have activated its zone.  The destination is a random explored spot
-// at least TELEPORT_MIN_DISTANCE from the rift (T5's "not your current
-// zone"), and one positionWouldTelefrag() does not reject.
+// Current CoDOL zone_manager resolves authored player volumes and open zones.
+// Store only positions a valid grounded player actually visited, spaced by
+// EXPLORED_SPACING. Generic multiplayer spawn entities are deliberately not
+// seeded: they may be outside the Zombies play area and were never explored.
+// Every candidate must remain in an enabled player volume, on a standable floor
+// within four units of its recorded feet, and clear for the native player hull.
+// Revalidate at selection and immediately before moving; no safe spot means no
+// teleport. Existing randomization, distance, effects and weapon use are kept.
 //
 // CoDOL INTERPRETATION (C1 gives no numbers): the rift stays open
 // RIFT_LIFETIME seconds and any number of players may use it; its volume is
@@ -58,14 +53,13 @@ TELEPORT_MIN_DISTANCE = 512;
 init()
 {
 	level.zombie_explored = [];
-	seed_explored_from_spawns();
 
 	// The explored set is useful whether or not this map loads the device.
 	level thread explored_tracker();
 
 	if ( getWeaponIndexFromName( TELEPORTER_WEAPON ) <= 0 )
 	{
-		codolprintln( "CoDOL zm teleporter: " + TELEPORTER_WEAPON + " is not loaded on this map" );
+		{}
 		return;
 	}
 
@@ -74,37 +68,34 @@ init()
 	precacheModel( "t5_tp_bomb_world" );
 
 	maps\_zombiemode_equipment::register_equipment( TELEPORTER_WEAPON, ::teleporter_fired );
-	codolprintln( "CoDOL zm teleporter: ready, " + level.zombie_explored.size + " explored spots seeded from spawn points" );
+	{}
 }
 
 // ---------------------------------------------------------------------------
 // Explored space.
 // ---------------------------------------------------------------------------
 
-seed_explored_from_spawns()
+// Only actual grounded player visits prove exploration. Generic MP spawn
+// entities are not evidence of a playable/explored Zombies destination.
+// Recheck authored enabled zones and native geometry at capture and use time.
+destination_is_safe( origin )
 {
-	names = [];
-	names[ 0 ] = "mp_tdm_spawn_allies_start";
-	names[ 1 ] = "mp_dm_spawn";
-	names[ 2 ] = "mp_tdm_spawn";
-	names[ 3 ] = "info_player_start";
-
-	for ( i = 0; i < names.size; i++ )
-	{
-		points = getEntArray( names[ i ], "classname" );
-		for ( j = 0; j < points.size; j++ )
-		{
-			angles = ( 0, 0, 0 );
-			if ( isDefined( points[ j ].angles ) )
-				angles = points[ j ].angles;
-			add_explored( points[ j ].origin, angles, "spawn" );
-		}
-	}
+    zone = maps\_zombiemode_zone_manager::zone_at_point( origin + ( 0, 0, 36 ) );
+    if ( !isDefined( zone ) || !is_true( zone.enabled ) )
+        return false;
+    trace = bulletTrace( origin + ( 0, 0, 32 ), origin - ( 0, 0, 8 ), false, undefined );
+    if ( trace[ "fraction" ] <= 0 || trace[ "fraction" ] >= 1 || trace[ "normal" ][ 2 ] < 0.7 )
+        return false;
+    if ( abs( trace[ "position" ][ 2 ] - origin[ 2 ] ) > 4 )
+        return false;
+    return canSpawn( origin );
 }
 
 // Returns true when the spot was new.
 add_explored( origin, angles, source )
 {
+	if ( !destination_is_safe( origin ) )
+		return false;
 	if ( level.zombie_explored.size >= EXPLORED_MAX )
 		return false;
 
@@ -119,7 +110,7 @@ add_explored( origin, angles, source )
 	spot.origin = origin;
 	spot.angles = ( 0, angles[ 1 ], 0 );
 	level.zombie_explored[ level.zombie_explored.size ] = spot;
-	codolprintln( "CoDOL zm teleporter: explored spot " + level.zombie_explored.size + " at " + origin + " (" + source + ")" );
+	{}
 	return true;
 }
 
@@ -164,7 +155,7 @@ pick_destination( from )
 	far = array_randomize( far );
 	for ( i = 0; i < far.size; i++ )
 	{
-		if ( positionWouldTelefrag( far[ i ].origin ) )
+		if ( !destination_is_safe( far[ i ].origin ) || positionWouldTelefrag( far[ i ].origin ) )
 			continue;
 		return far[ i ];
 	}
@@ -210,7 +201,7 @@ rift_think( origin, owner )
 	owner_name = "(gone)";
 	if ( isDefined( owner ) )
 		owner_name = owner.name;
-	codolprintln( "CoDOL zm teleporter: " + owner_name + " opened a rift at " + origin + " for " + RIFT_LIFETIME + "s" );
+	{}
 
 	device = spawn( "script_model", origin );
 	device setModel( "t5_tp_bomb_world" );
@@ -246,8 +237,7 @@ rift_think( origin, owner )
 				if ( !is_true( p.teleporter_no_dest_logged ) )
 				{
 					p.teleporter_no_dest_logged = true;
-					codolprintln( "CoDOL zm teleporter: " + p.name + " entered the rift, but no explored spot is " +
-						TELEPORT_MIN_DISTANCE + "+ units away (" + level.zombie_explored.size + " explored)" );
+					{}
 				}
 				continue;
 			}
@@ -263,7 +253,7 @@ rift_think( origin, owner )
 	if ( isDefined( device ) )
 		device delete();
 
-	codolprintln( "CoDOL zm teleporter: rift at " + origin + " closed after " + uses + " use(s)" );
+	{}
 }
 
 in_rift( p, origin )
@@ -277,6 +267,10 @@ in_rift( p, origin )
 // self = player.  T5 quantum_bomb_teleport :645 / black_hole_teleport :1020.
 teleport_player( dest, rift_origin )
 {
+	// A door/platform/player can change after selection. Fail before any move
+	// or control/weapon changes if the destination is no longer safe.
+	if ( !isDefined( dest ) || !destination_is_safe( dest.origin ) || positionWouldTelefrag( dest.origin ) )
+		return;
 	// A timestamp, not a flag: a flag set here would stick if this thread
 	// ended early on death or disconnect.
 	self.teleporter_moved_at = getTime();
@@ -300,8 +294,7 @@ teleport_player( dest, rift_origin )
 	playFx( level._effect[ "teleporter_player" ], dest.origin );
 	playSoundAtPosition( "zmb_gersh_teleporter_go", dest.origin );
 
-	codolprintln( "CoDOL zm teleporter: " + self.name + " teleported from " + from + " to " + dest.origin +
-		" (" + int( distance( from, dest.origin ) ) + " units, rift at " + rift_origin + ")" );
+	{}
 }
 
 // self = player.  One second of grace after a move, so the rift a player

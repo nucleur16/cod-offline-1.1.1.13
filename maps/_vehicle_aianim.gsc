@@ -1125,8 +1125,8 @@ check_unloadgroup( pos, unload_group )
 
 	if ( !isdefined( level.vehicle_unloadgroups[ type ][ unload_group ] ) )
 	{
-		PrintLn( "Invalid Unload group on node at origin: " + self.currentnode.origin + " with group:( \"" + unload_group + "\" )" );
-		PrintLn( "Unloading everybody" );
+		{}
+		{}
 		return true;
 	}
 
@@ -2369,7 +2369,7 @@ animate_guys( other )
 				return_guys[ return_guys.size ] = guy;
 		}
 		else
-			PrintLn( "Error: leaaaaaaaaaaaaaak", other );
+			{}
 	}
 	return return_guys;
 

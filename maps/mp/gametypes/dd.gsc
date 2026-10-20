@@ -819,7 +819,7 @@ playDemolitionTickingSound( site )
 
 setBombTimerDvar()
 {
-	println( "BOMBS PLANTED: " + level.bombsPlanted );
+	{}
 	
 	if ( level.bombsPlanted == 1 )
 		setDvar( "ui_bomb_timer", 2 );

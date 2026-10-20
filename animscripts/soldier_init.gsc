@@ -8,11 +8,10 @@
 // animscripts/ namespace); only the coop species row loads them.
 //
 // Behaviour reference: IW4 animscripts\init.gsc (the self.a state block and
-// the per-actor fields) for a rifle-carrying human, and animset.gsc for the
-// animation tables (soldier_shared.gsc init_animsets).  Every %anim used by
-// this set is a node of the generic_human tree patch_common_mp ships AND a
-// name one of the animlists every coop client loads (common_human,
-// common_actor_shared); tools/codol_coop_anim_check.py proves it.
+// the per-actor fields) for a standing, rifle-carrying human.  The clip names
+// are CoDOL's: every %anim used by this set is a node of the generic_human
+// tree common_mp ships AND an xanim common_gametype_coop ships
+// (docs/CODOL_CAMPAIGN_MODE.md section 5).
 //
 // This module carries the species' #using_animtree declaration, which is what
 // registers "generic_human" in the server animtree registry for a coop match
@@ -45,14 +44,6 @@ main()
 	self.coop_allow_ragdoll = true;
 
 	self setTalkToSpecies( "soldier" );
-
-	// IW4 animset tables, built once per match.  The soldier's own family
-	// (rifle, pistol, shotgun, launcher) is chosen from his weapon the first
-	// time a module asks (weapon_kind), after the aitype has armed him.
-	init_animsets();
-
-	// IW4's self.damageLocation / damageMod, from the "damage" notify.
-	self thread damage_watch();
 
 	// The bootstrap pose cannot be set here: this runs inside
 	// CODOL_ActorScriptsInitialize before the server DObj owns the tree (see

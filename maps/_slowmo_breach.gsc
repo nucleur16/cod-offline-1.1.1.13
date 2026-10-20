@@ -388,7 +388,7 @@ is_breach_anim_loop_setup( anime, index, animation )
 //	if ( level.scr_anim[ "generic" ][ anime ][ index ] != animation )
 //		return false;
 
-	PrintLn( "	level.scr_anim[ \"generic\" ][ \"" + anime + "\" ][ " + index + " ] = %" + animation + ";" );
+	{}
 	return true;
 }
 
@@ -400,7 +400,7 @@ is_breach_anim_single_setup( anime, animation )
 //	if ( level.scr_anim[ "generic" ][ anime ] != animation )
 //		return false;
 
-	PrintLn( "	level.scr_anim[ \"generic\" ][ \"" + anime + "\" ] = %" + animation + ";" );
+	{}
 	return true;
 }
 
@@ -409,8 +409,8 @@ dump_missing_anims()
 	if ( !level.missing_animations.size )
 		return;
 
-	PrintLn( "^3Add these lines to the generic_human.atr section of " + level.script + "_anim.gsc:" );
-	PrintLn( "	// _slowmo_breach anims" );
+	{}
+	{}
 	adds = [];
 	adds[ adds.size ] = "_survives";
 	adds[ adds.size ] = "_death";
@@ -482,7 +482,7 @@ dump_missing_anims()
 			level.missing_animations[ anime ] = undefined;
 	}
 
-	PrintLn( " " );
+	{}
 	//assertEx( !level.missing_animations.size, "Important! See missing slow mo breach anim defines above!" );
 
 	level.missing_animation_parameters = undefined;
@@ -1826,7 +1826,7 @@ friendlies_breach( breach_array, aBreachFriendlies )
 		}
 		else
 		{
-			PrintLn( "Second friendly breaching position couldn't be filled because all possible breach friendlies to teleport are visible to the player." );
+			{}
 		}
 	}
 
@@ -3477,7 +3477,7 @@ breach_debug_display_animnames( room_volume )
 		{
 			if ( IsDefined( spawner.animation ) )
 			{
-				thread debug_message( spawner.animation, neworg, 1 );
+				{}
 				neworg = neworg - ( 0, 0, 10 );
 			}
 

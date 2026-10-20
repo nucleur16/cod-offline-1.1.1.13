@@ -99,8 +99,8 @@ updateDevSettings()
 		for ( rId = 0; rId <= level.maxRank; rId++ )
 		{
 			rankName = tableLookupIString( "mp/rankTable.csv", 0, rId, 5 );
-			iprintln( "REFERENCE           UNLOCKED_AT_LV" + (rId+1) );
-			iprintln( "LANG_ENGLISH        Unlocked at ", rankName, " (Lv" + (rId+1) + ")" );
+			{}
+			{}
 			
 			wait ( 0.05 );
 		}		
@@ -109,7 +109,7 @@ updateDevSettings()
 	if ( getDvar( "scr_list_weapons" ) != "" )
 	{
 		foreach ( baseWeapon, _ in level.baseWeaponList )
-			iPrintLn( baseWeapon );
+			{}
 
 		setDevDvar( "scr_list_weapons", "" );
 	}
@@ -191,12 +191,12 @@ updateDevSettings()
 		}
 		else
 		{
-			println( "\"" + getDvar("scr_givekillstreak") + "\" is not a valid value for scr_givekillstreak. Try:" );
+			{}
 			foreach ( killstreak, value in level.killstreakFuncs )
 			{
-				println( "    " + killstreak );
+				{}
 			}
-			println( "" );
+			{}
 		}
 			
 		setDevDvar( "scr_givekillstreak", "" );
@@ -227,7 +227,7 @@ updateDevSettings()
 			}
 			
 			if ( !isDefined( owner ) )
-				printLn( "Player " + playerName + "not found!" );				
+				{}				
 		}
 
 		setDevDvar( "scr_showcard", "" );
@@ -243,7 +243,7 @@ updateDevSettings()
 			streakName = tokens[1];
 
 			if ( !isDefined( level.killstreakFuncs[streakName] ) )
-				printLn( "Killstreak " + streakName + "not found!" );
+				{}
 			
 			owner = undefined;
 			foreach ( player in level.players )
@@ -279,7 +279,7 @@ updateDevSettings()
 			}
 			
 			if ( !isDefined( owner ) )
-				printLn( "Player " + playerName + "not found!" );				
+				{}				
 		}
 		setDevDvar( "scr_usekillstreak", "" );
 	}
@@ -313,7 +313,7 @@ updateDevSettings()
 			gambitName = tokens[1];
 
 			if ( !isDefined( level.scriptPerks[gambitName] ) )
-				printLn( "Gambit " + gambitName + "not found!" );
+				{}
 			
 			owner = undefined;
 			foreach ( player in level.players )
@@ -327,7 +327,7 @@ updateDevSettings()
 			}
 			
 			if ( !isDefined( owner ) )
-				printLn( "Player " + playerName + "not found!" );				
+				{}				
 		}
 		setDevDvar( "scr_useGambit", "" );
 	}
@@ -424,9 +424,9 @@ updateDevSettings()
 		setDevDvar( "scr_set_rank", "" );
 
 		if ( level.teamBased && (!level.teamCount["allies"] || !level.teamCount["axis"]) )
-			println( "scr_set_rank may not work because there are not players on both teams" );
+			{}
 		else if ( !level.teamBased && (level.teamCount["allies"] + level.teamCount["axis"] < 2) )
-			println( "scr_set_rank may not work because there are not at least two players" );
+			{}
 		
 		level.players[0] setPlayerData( "restXPGoal", 0 );
 		
@@ -482,7 +482,7 @@ updateDevSettings()
 		
 		if ( splashType == "" || splashType == "none" )
 		{
-			println( "splash not found in splash table" );
+			{}
 		}
 		else
 		{
@@ -819,7 +819,7 @@ updateMinimapSetting()
 					player setplayerangles(origin.angles);
 				}
 				else
-					println("^1Error: There are not exactly 2 \"minimap_corner\" entities in the level.");
+					{}
 			}
 			else
 				setDevDvar("scr_minimap_height", "0");
@@ -882,7 +882,7 @@ drawMiniMapBounds(viewpos, mincorner, maxcorner)
 		line(origcorner2, origcorner3, (1,0,0));
 		line(origcorner3, origcorner0, (1,0,0));*/
 		
-		print3d(toppos, "This Side Up", (1,1,1), 1, textscale);
+		{}
 		
 		wait .05;
 	}
@@ -909,7 +909,7 @@ addTestClients()
 		ent[i] = addtestclient();
 
 		if (!isdefined(ent[i])) {
-			println("Could not add test client");
+			{}
 			wait 1;
 			continue;
 		}
@@ -1030,7 +1030,7 @@ print3DUntilNotified(origin, text, color, alpha, scale)
 	
 	for(;;)
 	{
-		print3d(origin, text, color, alpha, scale);
+		{}
 		wait .05;
 	}
 }

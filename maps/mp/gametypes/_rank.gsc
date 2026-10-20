@@ -334,8 +334,7 @@ giveRankXP( type, value )
 			offline = "undefined";
 			if ( isDefined( self.usingOnlineDataOffline ) )
 				offline = "" + self.usingOnlineDataOffline;
-			println( "rank: " + self.name + " " + type + " NOT awarded - rankingEnabled false (level.rankedMatch "
-				+ ranked + ", usingOnlineDataOffline " + offline + ")" );
+			{}
 		}
 		return;
 	}
@@ -343,15 +342,13 @@ giveRankXP( type, value )
 	if ( level.teamBased && (!level.teamCount["allies"] || !level.teamCount["axis"]) )
 	{
 		if ( codolRankShouldTrace() )
-			println( "rank: " + self.name + " " + type + " NOT awarded - a team is empty (allies "
-				+ level.teamCount["allies"] + ", axis " + level.teamCount["axis"] + ")" );
+			{}
 		return;
 	}
 	else if ( !level.teamBased && (level.teamCount["allies"] + level.teamCount["axis"] < 2) )
 	{
 		if ( codolRankShouldTrace() )
-			println( "rank: " + self.name + " " + type + " NOT awarded - fewer than two players ("
-				+ level.teamCount["allies"] + " + " + level.teamCount["axis"] + ")" );
+			{}
 		return;
 	}
 
@@ -413,12 +410,9 @@ giveRankXP( type, value )
 	self.xpGains[type] += value;
 	
 	self incRankXP( value );
-	// CoDOL: the lobby's after-action report (_codol_aar.gsc).
-	self maps\mp\gametypes\_codol_aar::noteXP( type, oldxp, self getRankXP() );
 
 	if ( codolRankShouldTrace() )
-		println( "rank: " + self.name + " " + type + " +" + value + " XP (xpScale " + level.xpScale
-			+ ", total " + oldxp + " -> " + self getRankXP() + ")" );
+		{}
 
 	oldRankId = self.pers["rank"];
 	if ( self rankingEnabled() && updateRank( oldxp ) )
@@ -434,13 +428,6 @@ giveRankXP( type, value )
 		for ( rankId = 2; rankId <= self.pers["rank"] + 1; rankId++ )
 			unlockFlags += "|" + rankId;
 		self setClientDvar( "cg_unlockFlagSet", unlockFlags );
-
-		// CoDOL: a rank-up pays a FIXED 200 GP x the new displayed level, for
-		// every level this award crossed (4 -> 6 pays 200*5 + 200*6). Never
-		// scaled. The match report row keeps the highest level it has paid,
-		// across a reconnect too, so a level is credited once; the lobby
-		// deposits rank-up GP off its own per-account level mark.
-		self codol_creditRankUpGP( oldRankId + 1, self.pers["rank"] + 1 );
 	}
 
 	if ( !level.hardcoreMode )
@@ -507,7 +494,7 @@ updateRank( oldxp )
 	self.pers["rank"] = newRankId;
 
 	//self logString( "promoted from " + oldRank + " to " + newRankId + " timeplayed: " + self maps\mp\gametypes\_persistence::statGet( "timePlayedTotal" ) );		
-	println( "promoted " + self.name + " from rank " + oldRank + " to " + newRankId + ". Experience went from " + oldxp + " to " + self getRankXP() + "." );
+	{}
 	
 	self setRank( newRankId );
 	
@@ -743,8 +730,7 @@ syncXPStat()
 		// The commit to the secure profile is what the match report measures,
 		// so a silent skip here is a silent loss of the whole match's XP.
 		if ( codolRankShouldTrace() )
-			println( "rank: " + self.name + " XP NOT committed - xpScale " + level.xpScale
-				+ ", rankingEnabled " + self rankingEnabled() );
+			{}
 		return;
 	}
 

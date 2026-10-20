@@ -326,7 +326,7 @@ setDangerSpeed()
 
 stopToReverse()
 {
-	debugPrintLn2( "tank changing direction at " + getTime() );
+	{}
 	self vehicle_setSpeed( 0, 5, 6 );
 	
 	self.changingDirection = true;
@@ -335,7 +335,7 @@ stopToReverse()
 
 	wait( 0.25 );
 	self.changingDirection = undefined;
-	debugPrintLn2( "tank done changing direction" );
+	{}
 
 	self.veh_transmission = "reverse";
 	self.veh_pathDir = "reverse";
@@ -344,7 +344,7 @@ stopToReverse()
 
 stopToForward()
 {
-	debugPrintLn2( "tank changing direction at " + getTime() );
+	{}
 	self vehicle_setSpeed( 0, 5, 6 );
 
 	self.changingDirection = true;
@@ -353,7 +353,7 @@ stopToForward()
 
 	wait( 0.25 );
 	self.changingDirection = undefined;
-	debugPrintLn2( "tank done changing direction" );
+	{}
 
 	self.veh_transmission = "forward";
 	self.veh_pathDir = "forward";
@@ -476,7 +476,7 @@ tankDamageMonitor()
 			if ( isDefined( self.bestTarget ) && self.bestTarget != attacker )
 			{
 				self.forcedTarget = attacker;
-				println( "Abandoning Target due to vehicle attacker" );	
+				{}	
 				self thread explicitAbandonTarget();
 			}			
 		}
@@ -499,7 +499,7 @@ tankDamageMonitor()
 		if ( self.health <= 0 )
 		{
 			self notify( "death" );	
-			print("sent death notify via script");
+			{}
 			return;
 		}
 		else if (self.health < (maxHealth/4) && stage3 == false )
@@ -636,7 +636,7 @@ relativeAngle( ent1 )
 			return "rear_side";
 	}	
 		
-	ent1 iPrintLnBold( targetCosine );
+	{}
 }
 
 watchForThreat()
@@ -662,8 +662,7 @@ watchForThreat()
 				continue;
 			}
 			
-			// A class launcher is composed ("*a 68 0"): test its base.
-			currentWeapon = codolWeaponBase( player GetCurrentWeapon() );
+			currentWeapon = player GetCurrentWeapon();
 
 			if ( isSubStr( currentWeapon, "at4" ) || isSubStr( currentWeapon, "stinger" ) || isSubStr( currentWeapon, "javelin" ) )
 			{
@@ -776,7 +775,7 @@ onHitPitchClamp()
 	self endon( "turret_on_target" );
 	
 	self waittill( "turret_pitch_clamped" );
-	println( "Abandoning Target due to turret not being able to reach target" );	
+	{}	
 	self thread explicitAbandonTarget( false, self.bestTarget );
 }
 
@@ -800,7 +799,7 @@ fireOnTarget()
 		trace = BulletTrace( self.origin, flashOrigin, false, self );
 		if ( trace["position"] != flashOrigin )
 		{
-			println( "Abandoning Target due to turret not being able to reach target without clipping" );	
+			{}	
 			self thread explicitAbandonTarget( false, self.bestTarget );
 		}
 		
@@ -820,7 +819,7 @@ fireOnTarget()
 				self playSound( "bmp_fire" );
 				self.timeLastFired = getTime();
 			}
-			println( "Abandoning due to not hitting intended space" );
+			{}
 			
 			// Adjust forward or backward to hit target...
 			// check angle of target
@@ -978,7 +977,6 @@ getBestTarget( targets )
 		weaponsArray = targ GetWeaponsListItems();
 		foreach ( weapon in weaponsArray )
 		{
-			weapon = codolWeaponBase( weapon );
 			if ( isSubStr( weapon, "at4" ) || isSubStr( weapon, "jav" ) || isSubStr( weapon, "c4" ) )
 				angle -= 40;
 		}
@@ -1021,7 +1019,7 @@ explicitAbandonTarget( noNewTarget, targ )
 	self endon( "death" );
 	
 	self notify( "abandonedTarget" );
-	println("ABANDON TARGET EXPLICIT");
+	{}
 	self setStandardSpeed();
 	self thread Setnotarget();
 	self removeTarget();
@@ -1177,7 +1175,7 @@ tankGetMiniTargets()
 	self endon( "death" );
 	self endon( "leaving" );
 	miniTargets = [];
- 	println( "Geting Mini Targets" );
+ 	{}
 	
 	for ( ;; )
 	{
@@ -1220,7 +1218,7 @@ getBestMiniTarget( targets )
 		
 		// in this calculation having a rocket javelin or c4 increases mini turret priority
 		// to prioritize targeting dangerous targets.
-		curWeaon = codolWeaponBase( targ GetCurrentWeapon() );
+		curWeaon = targ GetCurrentWeapon();
 		if ( isSubStr( curWeaon, "at4" ) || isSubStr( curWeaon, "jav" ) || isSubStr( curWeaon, "c4" ) || isSubStr( curWeaon, "smart" ) || isSubStr( curWeaon, "grenade" ) )
 				curDist -= 200;
 		
@@ -1269,11 +1267,11 @@ fireMiniOnTarget()
 	
 	if ( !isDefined( self.bestMiniTarget ) )
 	{
-		println("No Targ to fire on");
+		{}
 		return;
 	}
 	
-	println("firing on best target");
+	{}
 	
 	while( 1 )
 	{
@@ -1326,7 +1324,7 @@ watchMiniTargetDeath( targets )
 	self.bestMiniTarget waittill( "death" );
 	
 	self notify( "killedMiniTarget" );
-	println( "Killed Mini Target" );
+	{}
 	
 	self.bestMiniTarget = undefined;
 	self.mgTurret ClearTargetEntity();
@@ -1348,11 +1346,11 @@ watchMiniTargetDistance( targets )
 		
 		if ( traceDistance > 1024 )
 		{
-			println( "MINI TARGET DIST TOO FAR!!!" );
+			{}
 			self thread explicitAbandonMiniTarget();
 			return;	
 		}
-		println( traceDistance );
+		{}
 		wait ( 2 );
 	}	
 }
@@ -1400,7 +1398,7 @@ explicitAbandonMiniTarget( noNewTarget )
 
 	self notify( "abandonedMiniTarget" );
 	
-	println( "ABANDONED MINI TARGET" );
+	{}
 	
 	self.bestMiniTarget = undefined;
 	self.mgTurret ClearTargetEntity();
@@ -1756,7 +1754,7 @@ handleCapNode( joinNode, direction )
 		if ( tank.veh_pathdir != direction )
 			continue;
 		
-		debugPrintLn2( "tank starting path at join node: " + joinNode.graphId );
+		{}
 			
 		tank startPath( joinNode );
 	}
@@ -1793,9 +1791,9 @@ nodeTracker()
 			nodeType = "NODE";
 		
 		if ( isDefined( wasForced ) )
-			debugPrint3D( self.origin, nodeType, (1,0.5,0), 1, 2, 100 );
+			{}
 		else
-			debugPrint3D( self.origin, nodeType, (0,1,0), 1, 2, 100 );
+			{}
 	}
 }
 
@@ -1809,8 +1807,8 @@ forceTrigger( prevNode, nextNode, tank )
 	minDist = distanceSquared( tank.origin, nextNode.origin );
 	tankDir = tank.veh_pathdir;
 
-	debugPrint3D( prevNode.origin+(0,0,30), "LAST", (0,0,1), 0.5, 1, 100 );
-	debugPrint3D( nextNode.origin+(0,0,60), "NEXT", (0,1,0), 0.5, 1, 100 );
+	{}
+	{}
 
 	timeOutNextFrame = false;
 	for ( ;; )
@@ -1820,14 +1818,14 @@ forceTrigger( prevNode, nextNode, tank )
 		// tank changed direction
 		if ( tankDir != tank.veh_pathdir )
 		{
-			debugPrintLn2( "tank missed node: reversing direction" );
+			{}
 			tank thread forceTrigger( nextNode, prevNode, tank );
 			return;
 		}
 		
 		if ( timeOutNextFrame )
 		{
-			debugPrintLn2( "... sending notify." );
+			{}
 			nextNode notify ( "trigger", tank, true );
 			return;
 		}
@@ -1837,7 +1835,7 @@ forceTrigger( prevNode, nextNode, tank )
 		if ( curDist > minDist )
 		{
 			timeOutNextFrame = true;
-			debugPrintLn2( "tank missed node: forcing notify in one frame..." );
+			{}
 		}
 			
 		minDist = curDist;		
@@ -1902,7 +1900,7 @@ initNodeGraph( astarBaseNodes )
 		graphNode.graphId = graphNodes.size;
 		pathNode.graphId = graphNodes.size;
 
-		debugPrint3D( graphNode.origin + (0,0,80), graphNode.graphId, (1,1,1), 0.65, 2, 100000 );
+		{}
 
 		graphNodes[graphNodes.size] = graphNode;		
 	}
@@ -2218,32 +2216,14 @@ drawLink( start, end, color )
 }
 
 debugPrintLn2( printString )
-{
-	/#
-	if ( getDvarInt( "tankDebug" ) )
-		printLn( printString );
-	#/
-}
+{}
 
 debugPrint( printString )
-{
-	/#
-	if ( getDvarInt( "tankDebug" ) )
-		print( printString );
-	#/
-}
+{}
 
 
 debugPrint3D( origin, printString, color, alpha, scale, duration )
-{
-	/#
-	if ( getDvarInt( "tankDebug" ) )
-	{
-		print3d( origin, printString, color, alpha, scale, duration );
-		println( "3D: " + printString );
-	}
-	#/
-}
+{}
 
 
 drawTankGraphIds()
@@ -2256,7 +2236,7 @@ drawTankGraphIds()
 		
 		for ( ;; )
 		{
-			print3d( self.origin + (0,0,128), "FW: " + self.forwardGraphId + " RV: " + self.reverseGraphId, (0,1,0), 1, 3, 1 );
+			{}
 			wait ( 0.05 );
 		}
 	}

@@ -71,7 +71,7 @@ init()
 
 	// Developer-only verbs (scr_codol_gibtest); returns at once on a
 	// production server.
-	maps\_zombiemode_gibtest::init();
+
 }
 
 // ---------------------------------------------------------------------------
@@ -119,14 +119,12 @@ zombie_gib_on_damage()
 			diag_weapon = "<undefined>";
 			if ( isDefined( weapon ) )
 				diag_weapon = weapon;
-			codolprintln( "CoDOL zm gib: zombie " + self getEntityNumber() + " " + mod + " " + amount +
-				" health " + self.health + " weapon " + diag_weapon + " model '" + modelName + "' tag '" + tagName +
-				"' part '" + partName + "' -> " + location + " (" + source + ")" );
+			{}
 		}
 
 		if ( self head_should_gib( attacker, mod, point, location, weapon ) )
 		{
-			self zombie_head_gib( attacker, mod );
+			self zombie_head_gib( attacker, mod, weapon );
 			continue;
 		}
 
@@ -260,19 +258,10 @@ head_should_gib( attacker, mod, point, location, weapon )
 			return false;
 	}
 
-	// T5 :2771 damageLocationIsAny( "head", "helmet", "neck" ).
-	if ( location != "head" && location != "helmet" && location != "neck" )
+	if ( location != "head" )
 		return false;
 
 	if ( !isDefined( weapon ) || weapon == "none" )
-		return false;
-
-	// T5 :2776: the starting pistol (m1911_zm) never pops a head.
-	if ( isDefined( attacker.zombie_start_weapon ) && weapon == attacker.zombie_start_weapon )
-		return false;
-	if ( isDefined( level.zombie_start_weapon ) && weapon == level.zombie_start_weapon )
-		return false;
-	if ( weapon == "m1911_zm" )
 		return false;
 
 	return true;
@@ -647,7 +636,7 @@ derive_damage_refs( point )
 // ---------------------------------------------------------------------------
 // The head.  T5 zombie_head_gib :2605.
 // ---------------------------------------------------------------------------
-zombie_head_gib( attacker, mod )
+zombie_head_gib( attacker, mod, weapon )
 {
 	if ( is_true( self.head_gibbed ) )
 		return false;
@@ -692,11 +681,13 @@ zombie_head_gib( attacker, mod )
 		playFx( level._effect[ "zombie_blood_impact" ], neck_origin, ( 0, 0, 1 ) );
 	}
 
-	self play_sound_on_ent( "zombie_head_gib" );
+	// A lethal headshot enters zombie_death in the same frame and stops
+	// actor-owned sounds. The head-pop cue belongs to the captured contact.
+	play_sound_at_pos( "zombie_head_gib", pop_origin );
 
 	// T5 :2668: a headless zombie that is still standing bleeds out.
 	if ( self.health > 0 )
-		self thread damage_over_time( self.health * 0.2, 1, attacker, mod );
+		self thread damage_over_time( self.health * 0.2, 1, attacker, mod, weapon );
 
 	return true;
 }
@@ -704,7 +695,7 @@ zombie_head_gib( attacker, mod )
 // T5 :2671.  Each tick is flagged so zombie_gib_on_damage does not read it as
 // a new wound, and _zombiemode_spawner::zombie_damage_watch does not pay
 // damage points for it.
-damage_over_time( dmg, delay, attacker, mod )
+damage_over_time( dmg, delay, attacker, mod, weapon )
 {
 	self endon( "death" );
 
@@ -716,6 +707,12 @@ damage_over_time( dmg, delay, attacker, mod )
 
 	if ( !isDefined( attacker ) || !isPlayer( attacker ) )
 		attacker = undefined;
+
+	// Credit a bullet-caused beheading only when its own bleed-out kills.
+	// A later body hit still supplies its own killing location and weapon.
+	headshot = maps\_zombiemode_challenges::zm_is_bullet( mod );
+	if ( !isDefined( weapon ) || weapon == "" )
+		weapon = "none";
 
 	// doDamage resolves the name against the retained (IW3) means-of-death
 	// table; C1's MOD_EXPLOSIVE_BULLET is past it, and anything but a bullet
@@ -732,7 +729,7 @@ damage_over_time( dmg, delay, attacker, mod )
 		self.zm_gib_dot_time = getTime();
 
 		if ( isDefined( attacker ) )
-			self doDamage( dmg, self.origin, attacker, attacker, 0, mod );
+			self doDamage( dmg, self.origin, attacker, attacker, headshot, mod, 0, weapon );
 		else
 			self doDamage( dmg, self.origin );
 	}

@@ -75,9 +75,7 @@ flag_wait_or_timeout( name, timeout )
 }
 
 log( text )
-{
-	codolprintln( "CoDOL coop fav: " + text );
-}
+{}
 
 // --------------------------------------------------------------------------
 // Entity lookups.
@@ -171,7 +169,7 @@ radio( alias, time )
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 		players[ i ] playLocalSound( alias );
-	log( "line " + alias );
+	{}
 	if ( isDefined( time ) )
 		wait( time );
 }
@@ -180,7 +178,7 @@ say( speaker, alias, time )
 {
 	if ( isDefined( speaker ) )
 		speaker playSound( alias );
-	log( "line " + alias );
+	{}
 	if ( isDefined( time ) )
 		wait( time );
 }
@@ -268,7 +266,7 @@ hint_on_flag( name, text )
 	h setText( text );
 	h fadeOverTime( 0.3 );
 	h.alpha = 1;
-	log( "hint " + name );
+	{}
 	wait( 4 );
 	h fadeOverTime( 0.5 );
 	h.alpha = 0;
@@ -343,7 +341,7 @@ init()
 	// not know itself).
 	level.coop_mission_testcmd = ::test_command;
 
-	log( "mission flow active (rifle " + fav.rifle + ", shotgun " + fav.shotgun + ", " + fav.cars.size + " cars)" );
+	{}
 }
 
 first_mounted( a, b )
@@ -374,7 +372,6 @@ main()
 	// as "[unbound]" (the 2026-10-08 playthrough, the ADS hint at the
 	// technical).  hints() stays for a client that binds the keys.
 	level thread ai_triggers();
-	level thread soldier_scenes();
 
 	opening();
 
@@ -446,10 +443,9 @@ player_spawned()
 	text = "";
 	for ( i = 0; i < primaries.size; i++ )
 		text += " " + primaries[ i ];
-	log( self.name + " carries" + text );
+	{}
 	for ( i = 0; i < primaries.size; i++ )
-		log( primaries[ i ] + " clip " + weaponClipSize( primaries[ i ] ) + " start " + weaponStartAmmo( primaries[ i ] ) + " max " + weaponMaxAmmo( primaries[ i ] ) +
-			", given " + self getWeaponAmmoClip( primaries[ i ] ) + " | " + self getWeaponAmmoStock( primaries[ i ] ) );
+		{}
 
 	if ( !fav.opening_done )
 	{
@@ -471,7 +467,7 @@ player_spawned()
 		if ( isDefined( buddy ) )
 			spot = buddy.origin - anglesToForward( flat_angles( buddy getPlayerAngles() ) ) * 48;
 		self setOrigin( ground( spot + ( 0, 0, 16 ) ) );
-		log( self.name + " respawns at " + self.origin );
+		{}
 	}
 	self.coop_fav_spawned = true;
 }
@@ -508,7 +504,7 @@ setup_cars()
 		v hide();
 		car.coop_vehicle = v;
 		level.fav.cars[ level.fav.cars.size ] = car;
-		log( "car " + names[ i ] + " (" + v.model + ") at " + car.origin + " yaw " + car.angles[ 1 ] );
+		{}
 	}
 }
 
@@ -535,7 +531,7 @@ seat_in_car()
 	self.coop_fav_car = car;
 	self playerLinkToDelta( car, "tag_origin", 1 );
 	self.coop_in_intro = true;
-	log( self.name + " seated in " + car.coop_vehicle.targetname + " row " + row + " at " + origin );
+	{}
 }
 
 // Front passenger, then rear right.  MEASURED with codol_checkmodel and
@@ -589,7 +585,7 @@ leave_cars()
 		p.coop_fav_spawned = true;
 		if ( !isDefined( fav.respawn ) )
 			fav.respawn = spot;
-		log( p.name + " out of the car at " + spot );
+		{}
 	}
 	fav.opening_done = true;
 }
@@ -629,7 +625,7 @@ exit_spot( car, eye, row )
 			continue;
 		if ( !bulletTracePassed( eye, g + ( 0, 0, 40 ), false, car ) )
 			continue;
-		log( "exit spot " + k + " " + g );
+		{}
 		return g + ( 0, 0, 1 );
 	}
 	if ( isDefined( first ) )
@@ -668,25 +664,29 @@ wait_riders_looking( limit )
 
 // --------------------------------------------------------------------------
 // Actors: Ortiz, Ghost, the informants, the civilians.  Soldier-species
-// actors of the addon's own classnames (actor_enemy_villian_ortiz_so,
-// actor_ally_hero_ghost_socom_so, actor_civilian_slum_male_so), whose aitypes
-// and character scripts give them the bodies and heads the zone ships;
-// char_index picks a civilian's character the way an authored
-// script_char_index does.  The gunmen and helpers are _coopmission's enemy
-// soldiers.
+// actors from the allies template (_cooptraining's), with the bodies the
+// zone ships; the gunmen and helpers are _coopmission's enemy soldiers.
 // --------------------------------------------------------------------------
 
-spawn_actor( origin, angles, key, cls, char_index, team, name )
+spawn_actor( origin, angles, key, body, head, team, name )
 {
+	template = maps\_cooptraining::ally_template();
+	if ( !isDefined( template ) )
+		return undefined;
 	kind = spawnStruct();
+	kind.faction = "cast";
 	kind.role = "pistol";
+	kind.team = team;
 	kind.health = 1000;
 	kind.accuracy = 0;
-	kind.char_index = char_index;
-	ai = maps\_coopmission::spawn_class_actor( cls, team, kind );
+	kind.body = body;
+	kind.head = head;
+	level.coop_soldier_next = kind;
+	ai = template spawnActor();
+	level.coop_soldier_next = undefined;
 	if ( !isDefined( ai ) )
 	{
-		log( "could not spawn " + key );
+		{}
 		return undefined;
 	}
 	ai forceTeleport( origin, angles );
@@ -703,6 +703,18 @@ spawn_actor( origin, angles, key, cls, char_index, team, name )
 		level.coop_cast[ key ] = ai;
 	}
 	return ai;
+}
+
+civ_body( n )
+{
+	bodies = strTok( "body_slum_civ_male_aa body_slum_civ_male_ab body_slum_civ_male_ba body_slum_civ_male_bb body_slum_civ_male_aa_wht body_slum_civ_male_bb_wht", " " );
+	return bodies[ n % bodies.size ];
+}
+
+civ_head( n )
+{
+	heads = strTok( "head_slum_civ_male_a head_slum_civ_male_b head_slum_civ_male_c head_slum_civ_male_d head_slum_civ_male_e head_slum_civ_male_f head_slum_civ_male_g head_slum_civ_male_h", " " );
+	return heads[ n % heads.size ];
 }
 
 // Walk or run an actor to a point: the native planner over the map's bot
@@ -744,12 +756,12 @@ move_actor( dest, run, timeout, ahead )
 		if ( isDefined( ahead ) && ahead && waited >= 2 && length( ( d[ 0 ], d[ 1 ], 0 ) ) > 400 && !seen_by_player( self ) &&
 		     nearest_player_distance( dest ) < nearest_player_distance( self.origin ) + 300 )
 		{
-			log( self.coop_cast + " out of sight at " + self.origin + "; on to " + dest );
+			{}
 			self forceTeleport( dest, self.angles );
 			return true;
 		}
 	}
-	log( self.coop_cast + " made no headway from " + self.origin + " to " + dest + "; placed there" );
+	{}
 	self forceTeleport( dest, self.angles );
 	return false;
 }
@@ -811,17 +823,14 @@ van_pullup()
 	fav.van = van;
 	van playSound( "scn_favela_van_pullup" );
 	van playLoopSound( "veh_uaz_engine_low" );
-	wheels = van maps\_coopscene_fav::play_vehicle_clip( "uaz_driving_idle_forward" );
 	van moveTo( mid, 2.4, 0.4, 0 );
-	log( "van pulls up from " + start + " via " + mid + " to " + stop );
+	{}
 	wait( 2.4 );
 	van moveTo( stop, 1.8, 0, 1.2 );
 	van rotateTo( flat_angles( vectorToAngles( stop - mid ) ) * 0.5 + angles * 0.5, 0.9 );
 	wait( 0.9 );
 	van rotateTo( angles, 0.9 );
 	wait( 0.9 );
-	van maps\_coopscene_fav::stop_vehicle_clip( wheels );
-	van maps\_coopscene_fav::play_vehicle_clip( "favela_van_shootout_van", 0.5 );
 	van stopLoopSound();
 	van playSound( "scn_favela_van_skid2stop" );
 	wait( 0.6 );
@@ -840,7 +849,7 @@ spawn_meet( van )
 
 	spawner = ent( "chase_target_spawner" );
 	yaw = vectorToAngles( meet - back );
-	fav.ortiz = spawn_actor( ground( back + ( 0, 0, 16 ) ), flat_angles( yaw ), "ortiz", "actor_enemy_villian_ortiz_so", undefined, "axis" );
+	fav.ortiz = spawn_actor( ground( back + ( 0, 0, 16 ) ), flat_angles( yaw ), "ortiz", "body_airport_assault_a", "head_militia_ba_blk", "axis" );
 	if ( isDefined( fav.ortiz ) )
 	{
 		fav.ortiz.coop_cast = "ortiz";
@@ -855,7 +864,7 @@ spawn_meet( van )
 	for ( i = 0; i < 2; i++ )
 	{
 		spot = ground( back - anglesToRight( van.angles ) * ( 30 + i * 30 ) - anglesToForward( van.angles ) * ( 20 + i * 24 ) + ( 0, 0, 16 ) );
-		inf = spawn_actor( spot, flat_angles( yaw ), "informant" + i, "actor_civilian_slum_male_so", i + 1, "allies" );
+		inf = spawn_actor( spot, flat_angles( yaw ), "informant" + i, civ_body( i + 1 ), civ_head( i + 3 ), "allies" );
 		if ( isDefined( inf ) )
 		{
 			inf.health = 60;
@@ -868,7 +877,7 @@ spawn_meet( van )
 		fav.ortiz thread move_actor( meet + ( -30, 30, 0 ), false, 10 );
 	for ( i = 0; i < fav.informants.size; i++ )
 		fav.informants[ i ] thread move_actor( meet + ( 20 + i * 30, -20 - i * 25, 0 ), false, 10 );
-	log( "the meet: Ortiz and " + fav.informants.size + " informants walk to " + meet );
+	{}
 }
 
 // Where Ortiz brings the informants: in the street between the rookie's car
@@ -917,11 +926,11 @@ spawn_gunmen()
 			left = anglesToRight( car.angles ) * -1;
 			spot = ground( meet + left * 115 + fwd * ( -30 + 45 * fav.gunmen.size ) + ( 0, 0, 40 ) );
 			ai forceTeleport( spot, flat_angles( vectorToAngles( meet - spot ) ) );
-			log( "gunman " + fav.gunmen.size + " waits at " + spot );
+			{}
 		}
 		fav.gunmen[ fav.gunmen.size ] = ai;
 	}
-	log( fav.gunmen.size + " gunmen wait at the meet" );
+	{}
 }
 
 opening()
@@ -931,15 +940,8 @@ opening()
 
 	// As the training jeep waits for its riders to look around.
 	wait_riders_looking( 8 );
-	log( "the meet begins with " + fav.riders.size + " rider(s)" );
+	{}
 	level notify( "coop_fav_meet" );
-
-	// The meet as C1 ships it: the four scene clips at opening_scene_node.
-	if ( maps\_coopscene_fav::meet_scene_available() && isDefined( ent( "opening_scene_node" ) ) )
-	{
-		opening_scene();
-		return;
-	}
 
 	spawn_gunmen();
 	level thread intro_card();
@@ -995,316 +997,6 @@ opening()
 	level thread opening_banter();
 }
 
-// --------------------------------------------------------------------------
-// The meet from C1's own scene clips (IW4 favela opening_scene: makarov /
-// gunner1 / gunner2 / driver at opening_scene_node; here Ortiz and the three
-// authored opening spawners).  The clips' timing, MEASURED from their delta
-// tracks and notetracks (maps\_coopscene_fav.gsc):
-//   driver (guy4)  sits in the van 0 .. 4.5 s, rides it in 4.5 .. 7.3 s (the
-//                  van stops at opening_scene_node_vehicles), climbs out
-//                  9 .. 11 s, walks to the meet and fires at 13.7 s
-//                  (scn_favela_shootoutguy4), 20.1 s long
-//   gunner1 / 2    (guy2 / guy3, C1's two informants) walk a few steps and
-//                  fall 7.3 s into their 10.9 s clips (scn_favela_intro_
-//                  bodyfall): started 6.4 s in, they fall to the driver's shot
-//   Ortiz (guy1)   stands by the van's side, walks up, fires at the car
-//                  14.9 .. 21.6 s (the windscreen), runs west at 20.2 s and
-//                  ends 24.5 s in beside the first chase node
-// which puts the lines where the recording has them (scene start ~1:31:
-// Ghost 1:38, Ortiz 1:40, the shots 1:44, the windscreen 1:46, out 1:49).
-// --------------------------------------------------------------------------
-
-opening_scene()
-{
-	fav = level.fav;
-	node = ent( "opening_scene_node" );
-	start = getTime();
-
-	level thread intro_card();
-	level thread objective_text( &"COOP_TAKE_MP_FAV_TROPICAL_GRAB" );
-	level thread radio( "favela_pri_simplejob01", 5.5 );
-
-	ortiz_clip = maps\_coopscene_fav::get( "ortiz", "opening_scene" );
-	driver_clip = maps\_coopscene_fav::get( "driver", "opening_scene" );
-
-	// Ortiz, at his clip's start.
-	org = getStartOrigin( node.origin, node.angles, ortiz_clip );
-	ang = getStartAngles( node.origin, node.angles, ortiz_clip );
-	fav.ortiz = spawn_actor( org, flat_angles( ang ), "ortiz", "actor_enemy_villian_ortiz_so", undefined, "axis" );
-	if ( isDefined( fav.ortiz ) )
-	{
-		fav.ortiz.animname = "ortiz";
-		fav.ortiz.coop_cast = "ortiz";
-		fav.ortiz.health = 100000;
-		fav.ortiz.allowpain = false;
-		fav.ortiz setCanDamage( true );
-		fav.ortiz thread ortiz_damage_watch();
-		fav.ortiz.coop_fav_scene = true;
-		spawner = ent( "chase_target_spawner" );
-		if ( isDefined( spawner ) )
-			fav.ortiz.coop_spawner = spawner;
-	}
-
-	// The informants (gunner1 / gunner2), waiting at the meet.
-	fav.informants = [];
-	fav.gunmen = [];
-	names = strTok( "opening_gunner1_spawner opening_gunner2_spawner", " " );
-	keys = strTok( "gunner1 gunner2", " " );
-	for ( i = 0; i < names.size; i++ )
-	{
-		s = ent( names[ i ] );
-		cls = "actor_civilian_slum_male_so";
-		if ( isDefined( s ) )
-			cls = s.classname;
-		clip = maps\_coopscene_fav::get( keys[ i ], "opening_scene" );
-		org = getStartOrigin( node.origin, node.angles, clip );
-		ang = getStartAngles( node.origin, node.angles, clip );
-		inf = spawn_actor( org, flat_angles( ang ), "informant" + i, cls, i + 1, "allies" );
-		if ( !isDefined( inf ) )
-			continue;
-		inf.animname = keys[ i ];
-		inf setCanDamage( false );
-		fav.informants[ fav.informants.size ] = inf;
-	}
-
-	// The driver: an enemy soldier, who fights once his clip is over.
-	s = ent( "opening_driver_spawner" );
-	driver = undefined;
-	if ( isDefined( s ) )
-		driver = maps\_coopmission::spawn_soldier( s );
-	if ( isDefined( driver ) )
-	{
-		driver.animname = "driver";
-		driver.ignoreall = true;
-		driver.coop_cast = "driver";
-		driver forceTeleport( getStartOrigin( node.origin, node.angles, driver_clip ),
-			flat_angles( getStartAngles( node.origin, node.angles, driver_clip ) ) );
-		fav.gunmen[ 0 ] = driver;
-	}
-
-	// The van carries the driver in (it follows his seat), as IW4 favela's
-	// van drives its path while guy4 rides it.
-	level thread van_scene( node, driver_clip );
-
-	// Everybody's clip from the same moment (IW4 anim_single on the group);
-	// the informants' from 6.4 s, so they fall to the driver's shot.
-	log( "the meet: the scene clips at " + node.origin );
-	if ( isDefined( fav.ortiz ) )
-		fav.ortiz thread scene_then( ortiz_clip, node, "zonly_physics", ::ortiz_scene_done );
-	if ( isDefined( driver ) )
-	{
-		driver thread scene_then( driver_clip, node, "zonly_physics", ::driver_scene_done );
-		driver thread driver_in_van( node );
-	}
-	for ( i = 0; i < fav.informants.size; i++ )
-		fav.informants[ i ] thread informant_scene( node, 6.4 );
-
-	// 1:38 Ghost picks out Ortiz and the informants; 1:40 Ortiz calms them;
-	// 1:43 the trap: Ghost sees it, an informant regrets coming.
-	wait_scene( start, 7.4 );
-	level thread radio( "favela_gst_02", 3 );
-	wait_scene( start, 9.6 );
-	level thread say( fav.ortiz, "favela_ortiz_01", 3 );
-	wait_scene( start, 12.4 );
-	level thread radio( "favela_gst_03", 3 );
-	if ( fav.informants.size > 0 )
-		level thread say( fav.informants[ 0 ], "favela_inf2_01", 0.8 );
-	// 13.7 s: the driver's shots (the clip's fire note); the informants fall.
-	wait_scene( start, 13.5 );
-	if ( isDefined( driver ) && isAlive( driver ) && isDefined( driver.coop_weapon ) && driver.coop_weapon != "" )
-	{
-		for ( i = 0; i < fav.informants.size; i++ )
-		{
-			inf = fav.informants[ i ];
-			if ( isDefined( inf ) )
-				driver maps\_coopmission::actor_fire_round( driver.coop_weapon, driver.origin + ( 0, 0, 56 ), inf.origin + ( 0, 0, 44 ) );
-			wait( 0.15 );
-		}
-	}
-	log( "the informants are shot" );
-
-	// 14.9 s: Ortiz turns on the car; the windscreen shatters.
-	wait_scene( start, 14.9 );
-	level thread ortiz_fires_on_car( start );
-	wait_scene( start, 15.3 );
-	level thread ortiz_flees();
-	for ( i = 0; i < fav.cars.size; i++ )
-	{
-		fav.cars[ i ] playSound( "scn_favela_car_glass_shatter" );
-		fav.cars[ i ] hidePart( "tag_glass_front" );
-		fav.cars[ i ] showPart( "tag_glass_front_d" );
-	}
-	earthquake( 0.25, 0.6, fav.cars[ 0 ].origin, 400 );
-	wait( 0.6 );
-
-	// 1:47 Price: chase Ortiz, Ghost cuts him off.
-	level thread objective_text( &"COOP_TAKE_MP_FAV_TROPICAL_CAPTURE" );
-	ortiz_marker();
-	radio( "favela_pri_intercept01", 2.5 );
-
-	// 1:49 out of the car.
-	leave_cars();
-	level.coop_fav_step = "chase";
-	level notify( "coop_fav_chase" );
-	level thread opening_banter();
-}
-
-// Waits until <t> seconds after the scene's start.
-wait_scene( start, t )
-{
-	left = t - ( getTime() - start ) / 1000;
-	if ( left > 0 )
-		wait( left );
-}
-
-// One actor's scene clip at the node, then <done>.
-scene_then( clip, node, mode, done )
-{
-	self endon( "death" );
-	self maps\_coopanim::play_anim( clip, node, mode );
-	if ( isDefined( done ) )
-		self [[ done ]]();
-}
-
-ortiz_scene_done()
-{
-	self.coop_fav_scene = undefined;
-	log( "Ortiz's scene is over at " + self.origin );
-	self notify( "coop_fav_scene_done" );
-}
-
-// The driver rides the van in seated (his clip's first 9 s, the seat 49
-// units up); the soldier is not shown until he climbs out, and if the van or
-// the street held him back he is put where his clip has him then.
-driver_in_van( node )
-{
-	self endon( "death" );
-	self hide();
-	wait( 10.6 );
-	spot = node.origin + ( -46, -40, 0 );
-	if ( distance2D( self.origin, spot ) > 60 )
-	{
-		log( "the driver was held back at " + self.origin + "; placed at " + spot );
-		self forceTeleport( ground( spot + ( 0, 0, 16 ) ), self.angles );
-	}
-	self show();
-}
-
-// The driver fights once his clip is over.
-driver_scene_done()
-{
-	self.coop_cast = undefined;
-	self.ignoreall = false;
-	self notify( "coop_cast_pose" );
-	log( "the driver joins the fight at " + self.origin );
-}
-
-// An informant waits at his start (the casual idle), plays his clip from
-// <delay> s (he falls 7.3 s into it) and lies there on his back.  They are
-// gone once the chase has moved on.
-informant_scene( node, delay )
-{
-	self endon( "death" );
-	self.coop_idle_anim = %casual_stand_idle;
-	self notify( "coop_cast_pose" );
-	wait( delay );
-	clip = maps\_coopscene_fav::get( self.animname, "opening_scene" );
-	// The pose he is left in when the clip is over (on his back).
-	self.coop_idle_anim = %dying_back_idle;
-	self maps\_coopanim::play_anim( clip, node, "zonly_physics" );
-	self.coop_pose_anim = undefined;
-	self notify( "coop_cast_pose" );
-	flag_wait_or_timeout( "combat_zone_20", 240 );
-	while ( isDefined( self ) && seen_by_player( self ) )
-		wait( 1 );
-	if ( isDefined( self ) )
-		self delete();
-}
-
-// Ortiz's rounds at the windscreen on his clip's fire notes (0.61 .. 0.88 of
-// 24.5 s), from his own gun.
-ortiz_fires_on_car( start )
-{
-	ortiz = level.fav.ortiz;
-	car = level.fav.cars[ 0 ];
-	if ( !isDefined( ortiz ) || !isDefined( car ) || !isDefined( ortiz.coop_weapon ) || ortiz.coop_weapon == "" )
-		return;
-	notes = strTok( "14.9 15.7 16.7 17.9 19.1 19.6 19.8 21.3 21.6", " " );
-	for ( i = 0; i < notes.size; i++ )
-	{
-		wait_scene( start, float( notes[ i ] ) );
-		if ( !isDefined( ortiz ) || !isAlive( ortiz ) )
-			return;
-		target = car.origin + anglesToForward( car.angles ) * 40 + ( randomFloatRange( -20, 20 ), randomFloatRange( -20, 20 ), 44 );
-		ortiz maps\_coopmission::actor_fire_round( ortiz.coop_weapon, ortiz.origin + ( 0, 0, 56 ), target );
-	}
-}
-
-// The van: it follows the driver's seat through his clip's ride (4.5 ..
-// 7.3 s) and stands at opening_scene_node_vehicles, its rear doors to the
-// rookie's car; it opens them as the driver climbs out.
-van_scene( node, driver_clip )
-{
-	fav = level.fav;
-	v = ent( "van" );
-	vnode = ent( "opening_scene_node_vehicles" );
-	park = node.origin + ( 112, 0, 0 );
-	if ( isDefined( vnode ) )
-		park = vnode.origin;
-	park = ground( park + ( -1.9, 3.6, 40 ) );
-	yaw = node.angles[ 1 ] - 171;
-	// The seat's offset from the van: the driver's spot when the van stops
-	// (7.3 s) against the van's parked place.
-	seatStart = getStartOrigin( node.origin, node.angles, driver_clip );
-	seatParked = node.origin + ( -18, -19, 0 );
-	start = ground( seatStart + ( park - seatParked ) + ( 0, 0, 40 ) );
-	model = "vehicle_uaz_van";
-	if ( isDefined( v ) && isDefined( v.model ) && v.model != "" )
-		model = v.model;
-	van = spawn( "script_model", start );
-	van.angles = ( 0, yaw, 0 );
-	van setModel( model );
-	if ( isDefined( v ) )
-		v hide();
-	fav.van = van;
-	// IW4 favela: van anim_single_solo( van, "door_open" ) from the moment
-	// the four start theirs (favela_van_shootout_van, 19.2 s: the doors the
-	// driver climbs out of), its wheels turning while it rolls in.
-	van maps\_coopscene_fav::play_vehicle_clip( "favela_van_shootout_van" );
-	// The cars' own scene clips (car1 / car2: their root sits exactly on
-	// player_vehicle / player_vehicle2 from this node, MEASURED), the
-	// passenger door only, as the riders get out on that side.
-	level thread cars_scene();
-	van playLoopSound( "veh_uaz_engine_low" );
-	wait( 4.5 );
-	van playSound( "scn_favela_van_pullup" );
-	wheels = van maps\_coopscene_fav::play_vehicle_clip( "uaz_driving_idle_forward" );
-	van moveTo( park, 2.8, 0.3, 1.4 );
-	log( "van pulls up from " + start + " to " + park );
-	wait( 2.8 );
-	van maps\_coopscene_fav::stop_vehicle_clip( wheels );
-	van stopLoopSound();
-	van playSound( "scn_favela_van_skid2stop" );
-	wait( 1.8 );
-	van playSound( "scn_favela_van_door_open" );
-}
-
-// The cars' passenger-door clips (favela_van_shootout_car1 / car2
-// _passenger_door_open_only, 25.5 s, the scene's length).  C1's player
-// exit clip in this zone notes scn_mpfav_cardoor_open at 20.1 s; the riders
-// get out about 18.4 s into the scene here, so the car clips start 1.7 s in
-// (INFERRED: the door bones' timing was not measured, only that note).
-cars_scene()
-{
-	names = strTok( "favela_van_shootout_car1_passenger_door_open_only favela_van_shootout_car2_passenger_door_open_only", " " );
-	cars = level.fav.cars;
-	for ( i = 0; i < cars.size && i < names.size; i++ )
-	{
-		if ( isDefined( cars[ i ] ) )
-			cars[ i ] maps\_coopscene_fav::play_vehicle_clip( names[ i ], 1.7 / 25.5 );
-	}
-}
-
 opening_banter()
 {
 	level endon( "coop_mission_over" );
@@ -1343,7 +1035,7 @@ shoot_informants()
 			else
 				inf doDamage( inf.health + 100, inf.origin );
 		}
-		log( "informant " + i + " shot, alive " + isAlive( inf ) );
+		{}
 		wait( 0.3 );
 	}
 }
@@ -1402,7 +1094,7 @@ chase()
 	ortiz = fav.ortiz;
 	if ( !isDefined( ortiz ) )
 	{
-		log( "no Ortiz; the chase is skipped" );
+		{}
 		return;
 	}
 	ortiz endon( "death" );
@@ -1410,55 +1102,31 @@ chase()
 
 	path = maps\_coopvehicle::get_path( "escape_path_start" );
 	fav.chase_path = path;
-	log( "chase path of " + path.size + " nodes" );
+	{}
 	fav.chase_reached = -1;
-	// The meet's clip carries him off to the first node.
-	while ( isDefined( ortiz.coop_fav_scene ) )
-		wait( 0.1 );
 	for ( n = 0; n < path.size; n++ )
 	{
 		node = path[ n ];
 		fav.chase_node = n;
-		// A node with an `animation` key is the scene node of a traversal
-		// clip (favela_escape's runner: the rail vault, the rooftop jump):
-		// he runs to the clip's start spot and plays it there.
-		clip = undefined;
-		if ( isDefined( node.animation ) )
-			clip = maps\_coopscene_fav::get( "ortiz", node.animation );
-		dest = node.origin;
-		if ( isDefined( clip ) )
-			dest = getStartOrigin( node.origin, maps\_coopanim::node_angles( node, ortiz ), clip );
-		ortiz move_actor( dest, true, undefined, true );
+		ortiz move_actor( node.origin, true, undefined, true );
 		fav.chase_reached = n;
 		if ( isDefined( node.script_flag_set ) )
 			flag_set( node.script_flag_set );
 		if ( isDefined( node.script_flag_wait ) && !flag( node.script_flag_wait ) )
 		{
 			ortiz.coop_hunting = undefined;
-			log( "Ortiz waits at " + node.origin + " for " + node.script_flag_wait );
+			{}
 			// He faces back toward the nearest player while he waits, and
 			// bolts if one gets right up to him.
 			p = nearest_player( ortiz.origin );
 			if ( isDefined( p ) )
 				ortiz.angles = flat_angles( vectorToAngles( p.origin - ortiz.origin ) );
-			fav.ortiz_waiting = true;
 			while ( !flag( node.script_flag_wait ) && nearest_player_distance( ortiz.origin ) > 220 )
 				wait( 0.25 );
-			fav.ortiz_waiting = undefined;
-			while ( isDefined( ortiz.coop_fav_scene ) )
-				wait( 0.1 );
-		}
-		if ( isDefined( clip ) )
-		{
-			log( "Ortiz plays " + node.animation + " at " + node.origin );
-			ortiz.coop_fav_scene = true;
-			ortiz maps\_coopanim::play_anim( clip, node, "noclip" );
-			ortiz.coop_fav_scene = undefined;
-			ortiz forceTeleport( ground( ortiz.origin + ( 0, 0, 16 ) ), ortiz.angles );
 		}
 	}
 	fav.chase_done = true;
-	log( "Ortiz at the end of his run, " + ortiz.origin );
+	{}
 }
 
 // The chase node that waits for a flag (its index on the run), or -1.
@@ -1511,12 +1179,12 @@ objectives()
 		objective_add( 0, "active", o.origin );
 		level.fav.objective_point = o;
 		point_marker( o.origin );
-		log( "objective point " + list[ i ] + " at " + o.origin + " (until " + pairs[ i ] + ")" );
+		{}
 		for ( ;; )
 		{
 			if ( zones[ i ] != "-" && !flag( zones[ i ] ) && ( flag( pairs[ i ] ) || nearest_player_distance( o.origin ) < 400 ) )
 			{
-				log( "a player came to " + list[ i ] + " without crossing " + zones[ i ] + "'s trigger" );
+				{}
 				flag_set( zones[ i ] );
 			}
 			if ( flag( pairs[ i ] ) )
@@ -1609,7 +1277,7 @@ ai_trigger_think( t, name )
 		if ( ortiz isTouching( t ) || distance( ( ortiz.origin[ 0 ], ortiz.origin[ 1 ], 0 ), ( t.origin[ 0 ], t.origin[ 1 ], 0 ) ) < 96 )
 			break;
 	}
-	log( "Ortiz crossed " + t.targetname );
+	{}
 	flag_set( name );
 	if ( name == "combat_zone_51" || name == "combat_zone_55" )
 	{
@@ -1622,92 +1290,19 @@ ai_trigger_think( t, name )
 	}
 }
 
-// IW4 _spawner: a soldier whose spawner targets a struct with an
-// `animation` key runs to it and plays that clip there before he fights
-// (combat_zone_45's two men smash the windows of the house they hold:
-// me0_auto606 / 616, window_smash_stop_inside).  The helpers are
-// _coopmission's soldiers; this only watches for the new ones.
-soldier_scenes()
-{
-	level endon( "coop_mission_over" );
-	for ( ;; )
-	{
-		wait( 0.5 );
-		ais = level.coop_enemies;
-		if ( !isDefined( ais ) )
-			continue;
-		for ( i = 0; i < ais.size; i++ )
-		{
-			ai = ais[ i ];
-			if ( !isDefined( ai ) || !isAlive( ai ) || isDefined( ai.coop_fav_spawn_scene ) || !isDefined( ai.coop_spawner ) )
-				continue;
-			ai.coop_fav_spawn_scene = true;
-			if ( !isDefined( ai.coop_spawner.target ) )
-				continue;
-			node = struct( ai.coop_spawner.target );
-			if ( !isDefined( node ) || !isDefined( node.animation ) )
-				continue;
-			// "a,b" lists a sequence; the first that ships is played.
-			names = strTok( node.animation, "," );
-			for ( k = 0; k < names.size; k++ )
-			{
-				clip = maps\_coopscene_fav::get( "generic", names[ k ] );
-				if ( isDefined( clip ) )
-				{
-					ai thread soldier_spawn_scene( node, clip, names[ k ] );
-					break;
-				}
-			}
-		}
-	}
-}
-
-soldier_spawn_scene( node, clip, name )
-{
-	self endon( "death" );
-	self.ignoreall = true;
-	self.coop_cast = "spawn_scene";
-	maps\_coopanim::reach_spot( getStartOrigin( node.origin, maps\_coopanim::node_angles( node, self ), clip ),
-		getStartAngles( node.origin, maps\_coopanim::node_angles( node, self ), clip )[ 1 ], 16, 6 );
-	log( "soldier plays " + name + " at " + node.origin );
-	self maps\_coopanim::play_anim( clip, node, "zonly_physics" );
-	self.coop_cast = undefined;
-	self.ignoreall = false;
-	self notify( "coop_cast_pose" );
-}
-
 // The chase's lines, on the flags the player and Ortiz set (the recording,
 // 2:05 .. 2:45; there are none on the rooftops or in the houses).
 chase_dialogue()
 {
 	level endon( "coop_mission_over" );
 	flag_wait( "combat_zone_20" );
-	level thread ortiz_orders();
 	say( level.fav.ortiz, "favela_ortiz_02", 1.5 );
 	wait( 4 );
 	radio( "favela_pri_tangos01", 2 );
 	flag_wait( "combat_zone_30" );
 	radio( "favela_pri_ortiz01", 1.5 );
 	flag_wait( "combat_zone_35" );
-	level thread ortiz_orders();
 	say( level.fav.ortiz, "favela_ortiz_04", 1.5 );
-}
-
-// Ortiz waves his men on as he shouts (favela_order_grunts_ortiz, IW4
-// favela_escape's runner ordering his grunts), when he is waiting at a chase
-// node and not in another clip; the clip ends with him running on.
-ortiz_orders()
-{
-	ortiz = level.fav.ortiz;
-	if ( !isDefined( ortiz ) || !isAlive( ortiz ) || !isDefined( level.fav.ortiz_waiting ) || isDefined( ortiz.coop_fav_scene ) )
-		return;
-	clip = maps\_coopscene_fav::get( "ortiz", "order_grunts" );
-	if ( !isDefined( clip ) )
-		return;
-	ortiz.coop_fav_scene = true;
-	ortiz maps\_coopanim::play_anim( clip, undefined, "zonly_physics" );
-	if ( isDefined( ortiz ) )
-		ortiz.coop_fav_scene = undefined;
 }
 
 // --------------------------------------------------------------------------
@@ -1766,35 +1361,16 @@ technical()
 			continue;
 		ai.ignoreall = true;
 		ai animMode( "nophysics" );
-		// The rider idles C1 ships for this mission (IW4 _vehicle_aianim's
-		// technical seats); technical_driver_idle itself ships in no list.
-		seat = "gunner_idle";
-		if ( pos == 0 )
-			seat = "driver_idle";
-		else if ( pos == 1 )
-			seat = "passenger_idle";
-		idle = maps\_coopscene_fav::get( "technical", seat );
-		if ( !isDefined( idle ) && pos < 2 )
-			idle = %casual_crouch_idle;
-		if ( isDefined( idle ) )
-		{
-			ai.coop_cast = "technical";
-			ai.coop_idle_anim = idle;
-			ai setAnimKnobAll( idle, %body, 1, 0.1, 1 );
-			ai notify( "coop_cast_pose" );
-		}
+		if ( pos < 2 )
+			ai setAnimKnobAll( %technical_driver_idle, %body, 1, 0.1, 1 );
 		ai codol_actorRide( truck, tags[ pos ] );
 		crew[ pos ] = ai;
 	}
 
-	log( "technical rolls (" + path.size + " nodes), crew " + crew.size );
+	{}
 	level thread radio( "favela_pri_ambush01", 3.5 );
 	truck playLoopSound( "veh_pickuptruck_engine_high" );
-	// IW4 vehicles\technical's driving idle (wheels and suspension) while it
-	// rolls.
-	wheels = truck maps\_coopscene_fav::play_vehicle_clip( "technical_driving_idle_forward" );
 	truck maps\_coopvehicle::follow_path( path, 0, 25, true );
-	truck maps\_coopscene_fav::stop_vehicle_clip( wheels );
 	truck stopLoopSound();
 	truck playLoopSound( "veh_pickuptruck_idle_low" );
 	say( level.fav.ortiz, "favela_ortiz_03", 0.8 );
@@ -1811,37 +1387,14 @@ technical()
 			side = 1;
 		ai codol_actorRide();
 		ai animMode( "normal" );
-		out = "driver_out";
-		if ( pos == 1 )
-			out = "passenger_out";
-		clip = maps\_coopscene_fav::get( "technical", out );
-		if ( isDefined( clip ) )
-		{
-			// IW4 _vehicle_aianim's unload: the seat's climb-out clip, from
-			// the seat down to the street (42 units, out of the door).
-			ai thread technical_climb_out( clip );
-			continue;
-		}
 		ai forceTeleport( ground( truck.origin + anglesToRight( truck.angles ) * ( 72 * side ) + ( 0, 0, 16 ) ), truck.angles );
-		ai.coop_cast = undefined;
-		ai notify( "coop_cast_pose" );
 		ai.ignoreall = false;
 	}
-	log( "technical stopped at " + truck.origin );
+	{}
 	if ( isDefined( crew[ 2 ] ) )
 		level thread technical_gunner( truck, crew[ 2 ] );
 	wait( 6 );
 	truck stopLoopSound();
-}
-
-technical_climb_out( clip )
-{
-	self endon( "death" );
-	self maps\_coopanim::play_anim( clip, undefined, "noclip" );
-	self forceTeleport( ground( self.origin + ( 0, 0, 16 ) ), self.angles );
-	self.coop_cast = undefined;
-	self notify( "coop_cast_pose" );
-	self.ignoreall = false;
 }
 
 // The gunner's bursts from the M2 at the nearest player he can see.  His
@@ -1893,7 +1446,7 @@ van_blocker()
 	flag_wait( "move_van" );
 	van playSound( "scn_favela_van_backup_skid" );
 	van moveTo( dest.origin, 1.5, 0.2, 0.6 );
-	log( "van_blocker backs up to " + dest.origin );
+	{}
 }
 
 // --------------------------------------------------------------------------
@@ -1911,8 +1464,7 @@ civilians()
 	for ( i = 0; i < ents.size; i++ )
 	{
 		e = ents[ i ];
-		if ( !isDefined( e.classname ) || !isSubStr( e.classname, "actor_civilian" ) || !isDefined( e.targetname ) ||
-		     isDefined( e.coop_template ) )
+		if ( !isDefined( e.classname ) || !isSubStr( e.classname, "actor_civilian" ) || !isDefined( e.targetname ) )
 			continue;
 		e.coop_civ_index = n;
 		n++;
@@ -1922,7 +1474,7 @@ civilians()
 			level thread civ_group( e.targetname );
 		}
 	}
-	log( n + " civilian spawners" );
+	{}
 }
 
 civ_group( name )
@@ -1937,89 +1489,19 @@ civ_group( name )
 		level thread civ_run( spawners[ i ] );
 }
 
-// The scene a civilian's node carries: its `animation` key (a struct keeps
-// it; a script_origin node may not), else the addon's own pairing of the
-// window and garage spawners with their nodes (me0_auto567 / me0_auto570).
-civ_scene_name( dest, s )
-{
-	if ( isDefined( dest.animation ) )
-		return dest.animation;
-	if ( isDefined( s.targetname ) )
-	{
-		if ( s.targetname == "civ_window_1" )
-			return "unarmed_shout_window";
-		if ( s.targetname == "civ_garage_door" )
-			return "unarmed_close_garage";
-	}
-	return undefined;
-}
-
-// IW4 _hiding_door_anims: the man behind the door opens it, peeks while the
-// rookie is near (or a few seconds), and shuts it.  No door model ships for
-// this spot, so it is his part alone.
-civ_hiding_door( node )
-{
-	self endon( "death" );
-	open = maps\_coopscene_fav::get( "hiding_door_guy", "open" );
-	maps\_coopanim::place_at_start( self, open, node );
-	log( "the hiding-door man peeks at " + node.origin );
-	self maps\_coopanim::play_anim( open, node, "noclip" );
-	idle = maps\_coopscene_fav::get( "hiding_door_guy", "idle" );
-	if ( isDefined( idle ) )
-		self maps\_coopanim::loop_idle( idle );
-	for ( t = 0; t < 8 && nearest_player_distance( self.origin ) < 900; t += 0.5 )
-		wait( 0.5 );
-	wait( 2 );
-	close = maps\_coopscene_fav::get( "hiding_door_guy", "close" );
-	if ( isDefined( close ) )
-		self maps\_coopanim::play_anim( close, node, "noclip" );
-}
-
 civ_run( s )
 {
 	level endon( "coop_mission_over" );
 	if ( isDefined( s.script_delay_spawn ) )
 		wait( float( s.script_delay_spawn ) );
-	ai = spawn_actor( s.origin, flat_angles( s.angles ), "civilian", s.classname, s.coop_civ_index, "allies" );
+	ai = spawn_actor( s.origin, flat_angles( s.angles ), "civilian", civ_body( s.coop_civ_index ), civ_head( s.coop_civ_index ), "allies" );
 	if ( !isDefined( ai ) )
 		return;
 	ai setCanDamage( false );
 	dest = undefined;
 	if ( isDefined( s.target ) )
 		dest = struct( s.target );
-	// The hiding-door man (IW4 _hiding_door: doorpeek open / idle / close).
-	if ( isDefined( s.script_noteworthy ) && s.script_noteworthy == "hiding_door_guy" && isDefined( dest ) &&
-	     maps\_coopscene_fav::has( "hiding_door_guy", "open" ) )
-	{
-		ai civ_hiding_door( dest );
-		if ( isDefined( ai ) )
-			ai delete();
-		return;
-	}
-	// A node with an `animation` key is the civilian's scene there (favela's
-	// civilian_window_1 shouting from the window, the man pulling the garage
-	// door down): he goes to its start spot, plays it, and runs on to the
-	// node's own target.
-	clip = undefined;
-	scene = undefined;
 	if ( isDefined( dest ) )
-		scene = civ_scene_name( dest, s );
-	if ( isDefined( scene ) )
-		clip = maps\_coopscene_fav::get( "generic", scene );
-	if ( isDefined( clip ) )
-	{
-		ai move_actor( getStartOrigin( dest.origin, maps\_coopanim::node_angles( dest, ai ), clip ), true, 12 );
-		log( "civilian plays " + scene + " at " + dest.origin );
-		ai maps\_coopanim::play_anim( clip, dest, "noclip" );
-		if ( isDefined( dest.script_flag_set ) )
-			flag_set( dest.script_flag_set );
-		next = undefined;
-		if ( isDefined( dest.target ) )
-			next = struct( dest.target );
-		if ( isDefined( next ) )
-			ai move_actor( next.origin, true, 12 );
-	}
-	else if ( isDefined( dest ) )
 		ai move_actor( dest.origin, true, 12 );
 	else
 		wait( 4 );
@@ -2041,7 +1523,7 @@ ghost_intro_run()
 	s = ent( "ghost_intro" );
 	if ( !isDefined( s ) )
 		return;
-	ghost = spawn_actor( s.origin, flat_angles( s.angles ), "ghost", "actor_ally_hero_ghost_socom_so", undefined, "allies", "Ghost" );
+	ghost = spawn_actor( s.origin, flat_angles( s.angles ), "ghost", "body_hero_ghost_socom", "head_hero_ghost_soccom", "allies", "Ghost" );
 	if ( !isDefined( ghost ) )
 		return;
 	ghost setCanDamage( false );
@@ -2056,7 +1538,7 @@ ghost_intro_run()
 	if ( isDefined( ghost ) )
 	{
 		ghost delete();
-		log( "Ghost leaves for the far side" );
+		{}
 	}
 	level.coop_cast_list = [];
 }
@@ -2087,16 +1569,11 @@ ending()
 		origin = s.origin;
 		angles = flat_angles( s.angles );
 	}
-	ghost = spawn_actor( ground( origin + ( 0, 0, 16 ) ), angles, "ghost", "actor_ally_hero_ghost_socom_so", undefined, "allies", "Ghost" );
+	ghost = spawn_actor( ground( origin + ( 0, 0, 16 ) ), angles, "ghost", "body_hero_ghost_socom", "head_hero_ghost_soccom", "allies", "Ghost" );
 	if ( isDefined( ghost ) )
 		ghost setCanDamage( false );
 	fav.ghost = ghost;
 	level thread radio( "favela_gst_08", 3 );
-	if ( isDefined( ghost ) && isDefined( ortiz ) && tackle_scene( ghost, ortiz ) )
-	{
-		ending_close();
-		return;
-	}
 	if ( isDefined( ghost ) && isDefined( ortiz ) )
 		ghost move_actor( ortiz.origin, true, 6 );
 	if ( isDefined( ortiz ) )
@@ -2129,15 +1606,8 @@ ending()
 		ghost notify( "coop_cast_pose" );
 		level thread ghost_punches( ortiz );
 	}
-	log( "Ortiz taken down at " + ortiz.origin );
+	{}
 
-	ending_close();
-}
-
-// Price and Ghost close it out as the rookie comes up; the view blurs.
-ending_close()
-{
-	ortiz = level.fav.ortiz;
 	// Price as the rookie comes up (the recording: 4:01).
 	waited = 0;
 	while ( waited < 25 && isDefined( ortiz ) && nearest_player_distance( ortiz.origin ) > 400 )
@@ -2155,58 +1625,6 @@ ending_close()
 	for ( i = 0; i < players.size; i++ )
 		players[ i ] setBlurForPlayer( 8, 2 );
 	wait( 1.5 );
-}
-
-// The tackle as C1 ships it (favela_tackle_ghost / _ortiz, 17.2 s, at the
-// end of Ortiz's run, me0_auto571 / me0_auto323: 1088 1216 220): Ghost dives
-// into Ortiz from behind, they go down together 175 units on, and Ghost
-// kneels on him and beats him (the clips' rest), then their _idle clips hold
-// (not looping clips: replayed, maps\_coopscene_fav::hold_loop).
-tackle_scene( ghost, ortiz )
-{
-	if ( !maps\_coopscene_fav::has( "ghost", "tackle" ) || !maps\_coopscene_fav::has( "ortiz", "tackle" ) )
-		return false;
-	node = ent( "me0_auto571" );
-	if ( !isDefined( node ) )
-		node = struct( "me0_auto323" );
-	if ( !isDefined( node ) )
-		return false;
-	ghost.animname = "ghost";
-	ortiz.animname = "ortiz";
-	ortiz.coop_hunting = undefined;
-	ortiz setGoalPos( ortiz.origin );
-	// Ghost runs in to his dive's start, just behind Ortiz.
-	maps\_coopanim::anim_reach_solo( ghost, "tackle", node, 24, 4 );
-	objective_delete( 1 );
-	ortiz_marker_hud( false );
-	log( "the tackle at " + node.origin );
-	// What each holds when his clip is over (replayed by tackle_hold).
-	ortiz.coop_idle_anim = maps\_coopscene_fav::get( "ortiz", "tackle_idle" );
-	ghost.coop_idle_anim = maps\_coopscene_fav::get( "ghost", "tackle_idle" );
-	if ( !isDefined( ortiz.coop_idle_anim ) )
-		ortiz.coop_idle_anim = %dying_back_idle;
-	if ( !isDefined( ghost.coop_idle_anim ) )
-		ghost.coop_idle_anim = %casual_crouch_idle;
-	maps\_coopanim::anim_single_solo( ortiz, "tackle", node, "zonly_physics", true );
-	level thread ghost_punches( ortiz );
-	len = maps\_coopanim::anim_single_solo( ghost, "tackle", node, "zonly_physics", true );
-	level.fav.tackled = true;
-	level thread tackle_hold( ghost, ortiz, len );
-	return true;
-}
-
-tackle_hold( ghost, ortiz, len )
-{
-	level endon( "coop_mission_over" );
-	wait( 2.5 );
-	if ( isDefined( ortiz ) )
-		log( "Ortiz taken down at " + ortiz.origin );
-	wait( len - 2.5 );
-	if ( isDefined( ortiz ) )
-		ortiz thread maps\_coopscene_fav::hold_loop( maps\_coopscene_fav::get( "ortiz", "tackle_idle" ) );
-	if ( isDefined( ghost ) )
-		ghost thread maps\_coopscene_fav::hold_loop( maps\_coopscene_fav::get( "ghost", "tackle_idle" ) );
-	return true;
 }
 
 ghost_punches( ortiz )
@@ -2240,21 +1658,13 @@ test_command( tokens )
 	case "favroute":
 		level thread fav_route();
 		break;
-	case "favflag":
-		// favflag <flag>: set a mission flag as its trigger would (scene probes).
-		if ( tokens.size >= 2 )
-		{
-			flag_set( tokens[ 1 ] );
-			codolprintln( "CoDOL cooptest: favflag " + tokens[ 1 ] );
-		}
-		break;
 	case "favhitortiz":
 		// favhitortiz: player 0 wounds Ortiz (Price's "alive" line).
 		p = getPlayers()[ 0 ];
 		if ( isDefined( level.fav.ortiz ) && isDefined( p ) )
 		{
 			level.fav.ortiz doDamage( 30, p.origin, p );
-			codolprintln( "CoDOL cooptest: favhitortiz, Ortiz alive " + isAlive( level.fav.ortiz ) + " health " + level.fav.ortiz.health );
+			{}
 		}
 		break;
 	case "favtrace":
@@ -2272,7 +1682,7 @@ test_command( tokens )
 				if ( isDefined( tr[ "entity" ] ) )
 					hit = "ent " + tr[ "entity" ] getEntityNumber() + " " + tr[ "entity" ].classname + " at " + tr[ "position" ];
 			}
-			codolprintln( "CoDOL cooptest: favtrace " + a + " -> " + b + ": " + hit );
+			{}
 		}
 		break;
 	case "favtags":
@@ -2296,8 +1706,7 @@ test_command( tokens )
 			for ( j = 0; j < tags.size; j++ )
 			{
 				o = c getTagOrigin( tags[ j ] ) - c.origin;
-				codolprintln( "CoDOL cooptest: " + c.model + " " + tags[ j ] + " local ( " + vectorDot( o, anglesToForward( c.angles ) ) + ", " +
-					vectorDot( o, anglesToRight( c.angles ) ) + ", " + o[ 2 ] + " )" );
+				{}
 			}
 		}
 		break;
@@ -2326,13 +1735,13 @@ fav_status()
 	if ( isDefined( fav.objective_point ) )
 		text += " objective " + fav.objective_point.targetname;
 	text += " alive " + level.coop_alive + " spawned " + level.coop_spawned + " killed " + level.coop_killed;
-	codolprintln( text );
+	{}
 }
 
 fav_route()
 {
 	level endon( "coop_mission_over" );
-	codolprintln( "CoDOL cooptest: favroute started" );
+	{}
 	while ( !level.fav.opening_done )
 		wait( 0.5 );
 	p = getPlayers()[ 0 ];

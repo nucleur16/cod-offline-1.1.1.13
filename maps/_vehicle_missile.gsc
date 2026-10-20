@@ -50,7 +50,7 @@ turret_think()
 	self.attackRadius *= difficultyScaler;
 
 	if ( getdvar( "cobrapilot_debug" ) == "1" )
-		iprintln( "surface-to-air missile range difficultyScaler = " + difficultyScaler );
+		{}
 
 	for ( ;; )
 	{

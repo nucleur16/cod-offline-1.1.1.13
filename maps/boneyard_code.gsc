@@ -529,7 +529,7 @@ vehicle_event_node()
 		{
 			vehicle Maps\_vehicle::vehicle_ai_event( self.script_vehicleaianim );
 			/#
-				println( self.script_vehicleaianim );
+				{}
 			#/
 		}
 	}
@@ -1238,7 +1238,7 @@ threewayfight_threads()
 			if ( level.ai_cap[ self.team ] < level.ai_cap[ self.team + "_alive" ] && !isdefined( self.ridingvehicle ) )
 			{
 				/#
-					println( "^2didn't spawn " + self.team + " guy because of ai_cap." );
+					{}
 				#/
 				self waittill( "finished spawning" );
 				self delete();
@@ -2442,7 +2442,7 @@ main_turret_think( target_ai )
 		old_target_ent = target_ent;
 
 		/#
-			println( "btr80 aquired a new target" );
+			{}
 		#/
 
 		self ent_flag_set( "have_target" );
@@ -3043,9 +3043,9 @@ debug_stance( stance )
 		if ( getdvarint( "debug_stance", 0 ) )
 		{
 			if ( stance == "stand" )
-				Print3d( self.origin + (0,0,80), "S" );
+				{}
 			else
-				Print3d( self.origin + (0,0,80), "C" );
+				{}
 		}
 	}
 }

@@ -18,7 +18,7 @@
 
 main()
 {
-	debug_anim_print("dog_stop::main()" );
+	{}
 
 	self endon("killanimscript");
 	self SetAimAnimWeights( 0, 0 );
@@ -35,7 +35,7 @@ main()
 		else
 		{
 			self set_orient_mode( "face current" );
-			debug_anim_print("dog_stop::main() - Setting stop_idle"  );
+			{}
 
 			self notify( "stop tracking" );
 			self SetAimAnimWeights( 0, 0 );
@@ -44,7 +44,7 @@ main()
 			self thread lookAtTarget( "attackIdle" );
 		}
 
-			debug_anim_print("dog_stop::main() - stop idle loop notify done." );
+			{}
 	}
 }
 
@@ -76,7 +76,7 @@ randomAttackIdle()
 	if ( should_growl() )
 	{
 		// just growl
-		debug_anim_print("dog_stop::main() - Setting stop_attackidle_growl" );
+		{}
 		self setanimstate( "stop_attackidle_growl" );
 		return;
 	}
@@ -101,17 +101,17 @@ randomAttackIdle()
 	rand = randomInt( 100 );
 	if ( rand < idleChance )
 	{
-			debug_anim_print("dog_stop::main() - Setting stop_attackidle" );
+			{}
 			self setanimstate( "stop_attackidle" );
 	}
 	else if ( rand < barkChance )
 	{
-			debug_anim_print("dog_stop::main() - Setting stop_attackidle_bark " );
+			{}
 			self setanimstate( "stop_attackidle_bark" );
 	}
 	else
 	{
-			debug_anim_print("dog_stop::main() - Setting stop_attackidle_growl " );
+			{}
 			self setanimstate( "stop_attackidle_growl" );
 	}
 }
@@ -134,7 +134,7 @@ lookAtTarget( lookPoseSet )
 {
 	self endon( "killanimscript" );
 	self endon( "stop tracking" );
-	debug_anim_print("dog_stop::lookAtTarget() - Starting look at " + lookPoseSet  );
+	{}
 
 	self.rightAimLimit = 90;
 	self.leftAimLimit = -90;

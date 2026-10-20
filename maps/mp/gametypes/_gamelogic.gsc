@@ -76,9 +76,9 @@ onForfeit( team )
 	level.forcedEnd = true;
 	
 	if ( isPlayer( winner ) )
-		logString( "forfeit, win: " + winner getXuid() + "(" + winner.name + ")" );
+		{}
 	else
-		logString( "forfeit, win: " + winner + ", allies: " + game["teamScores"]["allies"] + ", opfor: " + game["teamScores"]["axis"] );
+		{}
 	thread endGame( winner, endReason );
 }
 
@@ -100,7 +100,7 @@ default_onDeadEvent( team )
 	{
 		iPrintLn( game["strings"]["allies_eliminated"] );
 
-		logString( "team eliminated, win: opfor, allies: " + game["teamScores"]["allies"] + ", opfor: " + game["teamScores"]["axis"] );
+		{}
 		
 		thread endGame( "axis", game["strings"]["allies_eliminated"] );
 	}
@@ -108,13 +108,13 @@ default_onDeadEvent( team )
 	{
 		iPrintLn( game["strings"]["axis_eliminated"] );
 
-		logString( "team eliminated, win: allies, allies: " + game["teamScores"]["allies"] + ", opfor: " + game["teamScores"]["axis"] );
+		{}
 
 		thread endGame( "allies", game["strings"]["axis_eliminated"] );
 	}
 	else
 	{
-		logString( "tie, allies: " + game["teamScores"]["allies"] + ", opfor: " + game["teamScores"]["axis"] );
+		{}
 
 		if ( level.teamBased )
 			thread endGame( "tie", game["strings"]["tie"] );
@@ -137,7 +137,7 @@ default_onOneLeftEvent( team )
 	{
 		lastPlayer = getLastLivingPlayer();
 		
-		logString( "last one alive, win: " + lastPlayer.name );
+		{}
 		thread endGame( lastPlayer, &"MP_ENEMIES_ELIMINATED" );
 	}
 
@@ -158,16 +158,16 @@ default_onTimeLimit()
 		else
 			winner = "allies";
 
-		logString( "time limit, win: " + winner + ", allies: " + game["teamScores"]["allies"] + ", opfor: " + game["teamScores"]["axis"] );
+		{}
 	}
 	else
 	{
 		winner = maps\mp\gametypes\_gamescore::getHighestScoringPlayer();
 
 		if ( isDefined( winner ) )
-			logString( "time limit, win: " + winner.name );
+			{}
 		else
-			logString( "time limit, tie" );
+			{}
 	}
 	
 	thread endGame( winner, game["strings"]["time_limit_reached"] );
@@ -197,15 +197,15 @@ forceEnd()
 			winner = "axis";
 		else
 			winner = "allies";
-		logString( "host ended game, win: " + winner + ", allies: " + game["teamScores"]["allies"] + ", opfor: " + game["teamScores"]["axis"] );
+		{}
 	}
 	else
 	{
 		winner = maps\mp\gametypes\_gamescore::getHighestScoringPlayer();
 		if ( isDefined( winner ) )
-			logString( "host ended game, win: " + winner.name );
+			{}
 		else
-			logString( "host ended game, tie" );
+			{}
 	}
 	
 	level.forcedEnd = true;
@@ -233,15 +233,15 @@ onScoreLimit()
 			winner = "axis";
 		else
 			winner = "allies";
-		logString( "scorelimit, win: " + winner + ", allies: " + game["teamScores"]["allies"] + ", opfor: " + game["teamScores"]["axis"] );
+		{}
 	}
 	else
 	{
 		winner = maps\mp\gametypes\_gamescore::getHighestScoringPlayer();
 		if ( isDefined( winner ) )
-			logString( "scorelimit, win: " + winner.name );
+			{}
 		else
-			logString( "scorelimit, tie" );
+			{}
 	}
 	
 	thread endGame( winner, scoreText );
@@ -496,7 +496,7 @@ updateWinStats( winner )
 	
 	winner maps\mp\gametypes\_persistence::statAdd( "losses", -1 );
 	
-	println( "setting winner: " + winner maps\mp\gametypes\_persistence::statGet( "wins" ) );
+	{ winner maps\mp\gametypes\_persistence::statGet("wins"); }
 	winner maps\mp\gametypes\_persistence::statAdd( "wins", 1 );
 	winner updatePersRatio( "winLossRatio", "wins", "losses" );
 	winner maps\mp\gametypes\_persistence::statAdd( "currentWinStreak", 1 );
@@ -1437,7 +1437,7 @@ Callback_StartGameType()
 
 	level.hardcoreMode = getDvarInt( "g_hardcore" );
 	if ( level.hardcoreMode )
-		logString( "game mode: hardcore" );
+		{}
 
 	level.dieHardMode = getDvarInt( "scr_diehard" );
 	
@@ -1445,7 +1445,7 @@ Callback_StartGameType()
 		level.dieHardMode = 0;
 
 	if ( level.dieHardMode )
-		logString( "game mode: diehard" );
+		{}
 
 	// IW4 default_mp_gamesettings.cfg enables rewards by default. The native
 	// CoDOL bootstrap may not load that file; an absent dvar reads as zero.
@@ -1460,22 +1460,22 @@ Callback_StartGameType()
 		setDvar( "scr_explBulletMod", 1 );
 
 	/#
-	printLn( "SESSION INFO" );
-	printLn( "=====================================" );
-	printLn( "  Map:         " + level.script );
-	printLn( "  Script:      " + level.gametype );
-	printLn( "  HardCore:    " + level.hardcoreMode );
-	printLn( "  Diehard:     " + level.dieHardMode );
-	printLn( "  3rd Person:  " + getDvarInt( "camera_thirdperson" ) );
-	printLn( "  Round:       " + game[ "roundsPlayed" ] );
-	printLn( "  scr_" + level.gametype + "_scorelimit " + getDvar( "scr_" + level.gametype + "_scorelimit" ) );
-	printLn( "  scr_" + level.gametype + "_roundlimit " +getDvar( "scr_" + level.gametype + "_roundlimit" ) );
-	printLn( "  scr_" + level.gametype + "_winlimit " + getDvar( "scr_" + level.gametype + "_winlimit" ) );
-	printLn( "  scr_" + level.gametype + "_timelimit " + getDvar( "scr_" + level.gametype + "_timelimit" ) );
-	printLn( "  scr_" + level.gametype + "_numlives " + getDvar( "scr_" + level.gametype + "_numlives" ) );
-	printLn( "  scr_" + level.gametype + "_halftime " + getDvar( "scr_" + level.gametype + "_halftime" ) );
-	printLn( "  scr_" + level.gametype + "_roundswitch " + getDvar( "scr_" + level.gametype + "_roundswitch" ) );
-	printLn( "=====================================" );
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
+	{}
 	#/
 
 	// this gets set to false when someone takes damage or a gametype-specific event happens.
@@ -1517,9 +1517,6 @@ Callback_StartGameType()
 	thread maps\mp\_defcon::init();
 	thread maps\mp\gametypes\_codol_bots::init();
 	maps\mp\gametypes\_codol_top_players::init();
-	maps\mp\gametypes\_codol_aar::init();
-	// C1 field orders (fo_table, the field_orders HUD, SetFO*).
-	thread maps\mp\gametypes\_fieldorders::init();
 	
 	if ( level.teamBased )
 		thread maps\mp\gametypes\_friendicons::init();
@@ -1940,7 +1937,7 @@ rankedMatchUpdates( winner )
 		if ( hostIdledOut() )
 		{
 			level.hostForcedEnd = true;
-			logString( "host idled out" );
+			{}
 			endLobby();
 		}
 
@@ -2415,9 +2412,5 @@ processLobbyData()
 	maps\mp\_awards::assignAwards();
 	maps\mp\_scoreboard::processLobbyScoreboards();
 	
-	// CoDOL: the lobby's after-action report, complete, before the match
-	// report below carries (and zeroes) this match's GP.
-	maps\mp\gametypes\_codol_aar::sendFinal();
-
 	sendClientMatchData();
 }

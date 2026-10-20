@@ -1555,7 +1555,7 @@ escape_main()
 	if ( is_default_start() )
 		nextmission();
 	else
-		IPrintLnBold( "DEVELOPER: END OF SCRIPTED LEVEL" );
+		{}
 }
 
 escape_palm_style_door_open( soundalias )
@@ -2268,7 +2268,7 @@ airport_music()
 			flag_wait( "airport_alternate" );
 			music_loop( "airport_alternate", 212 );
 			/#
-			println( " *** MUSIC: airport_alternate *** " );
+			{}
 			#/
 		case "gate":
 		case "basement":
@@ -2277,13 +2277,13 @@ airport_music()
 			thread music_stop( 1 );
 			thread music_sfx_to_music( "airport_anticipation", 308, undefined, 306 );
 			/#
-			println( " *** MUSIC: airport_anticipation *** " );
+			{}
 			#/
 		case "escape":
 			flag_wait( "airport_escape" );
 			music_loop( "airport_escape", 150 );
 			/#
-			println( " *** MUSIC: airport_escape *** " );
+			{}
 			#/
 			
 			flag_wait( "escape_hold_your_fire" );
@@ -2293,7 +2293,7 @@ airport_music()
 			snd linkto( level.player );
 			snd playsound( "airport_doublecross_sfx" );
 			/#
-			println( " *** MUSIC: airport_doublecross *** " );
+			{}
 			#/
 		
 		break;

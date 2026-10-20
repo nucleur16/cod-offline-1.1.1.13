@@ -384,7 +384,7 @@ saydamaged( orig, amount )
 {
 	for ( i = 0; i < 60; i++ )
 	{
-		print3d( orig, "damaged! " + amount );
+		{}
 		wait .05;
 	}
 }
@@ -602,7 +602,7 @@ watchC4AltDetonate()
 				wait( 0.05 );
 			}
 
-			println( "pressTime1: " + buttonTime );
+			{}
 			if ( buttonTime >= 0.5 )
 				continue;
 
@@ -613,7 +613,7 @@ watchC4AltDetonate()
 				wait( 0.05 );
 			}
 
-			println( "delayTime: " + buttonTime );
+			{}
 			if ( buttonTime >= 0.5 )
 				continue;
 

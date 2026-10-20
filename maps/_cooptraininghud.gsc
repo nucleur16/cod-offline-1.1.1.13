@@ -121,7 +121,7 @@ title_card_player()
 		huds[ i ] = h;
 		wait( 0.6 );
 	}
-	codolprintln( "CoDOL coop training: title card for " + self.name );
+	{}
 
 	// The black lifts as the jeep sets off (or after a few seconds).
 	waited = 0;
@@ -351,5 +351,5 @@ end_fade()
 		b fadeOverTime( 3 );
 		b.alpha = 0.85;
 	}
-	codolprintln( "CoDOL coop training: end fade" );
+	{}
 }

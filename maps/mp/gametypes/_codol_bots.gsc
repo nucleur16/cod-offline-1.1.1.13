@@ -8,7 +8,6 @@ init()
     level.codolCombatBotsStarted = true;
     if ( getDvar( "scr_codol_bots" ) == "" )
         setDvar( "scr_codol_bots", 0 );
-    syncRegularRoomDifficulty();
     // Independent of bots: it also drives a human client by number.
     level thread watchKillstreakTestDvar();
     maps\mp\gametypes\_codol_equiptest::init();
@@ -34,17 +33,6 @@ init()
 // the undefined killstreak kills the match; watchSpawns would not run either,
 // and maintainBots would add a second set of bots. Called from
 // Callback_PlayerConnect before anything reads those fields.
-// Regular room-fill AI already uses Normal; keep match metadata in sync.
-// Combat Training owns its explicit difficulty, including war+positive bot count.
-syncRegularRoomDifficulty()
-{
-    if ( getDvar( "g_gametype" ) == "combat" || getDvarInt( "scr_codol_bots" ) > 0 )
-        return;
-    profile = getDvar( "sv_botDifficulty" );
-    if ( profile == "" || profile == "regular" )
-        setDvar( "g_difficulty", 1 );
-}
-
 restoreCombatBot()
 {
     if ( !isDefined( self.pers["codolCombatBot"] ) || !self.pers["codolCombatBot"] )
@@ -101,7 +89,7 @@ watchKillstreakTestDvar()
             foreach ( player in level.players )
                 if ( player getEntityNumber() == int( hurtTokens[1] ) && isAlive( player ) )
                 {
-                    codolPrintLn( "CoDOL killstreak test: hurt " + player.name );
+                    {}
                     player thread reportNextSpawn();
                     player doDamage( 1000, player.origin + ( 0, 0, 40 ), level.players[0] );
                     player codol_deathGates();
@@ -120,8 +108,7 @@ watchKillstreakTestDvar()
                     {
                         oldXP = player maps\mp\gametypes\_rank::getRankXP();
                         player maps\mp\gametypes\_rank::giveRankXP( "challenge", xpAmount );
-                        codolPrintLn( "CoDOL rank test: " + player.name + " requested " + xpAmount +
-                            " XP, stored " + oldXP + " -> " + player maps\mp\gametypes\_rank::getRankXP() );
+                        {}
                     }
             continue;
         }
@@ -144,7 +131,7 @@ watchKillstreakTestDvar()
                     perkPlayer = player;
             if ( !isDefined( perkPlayer ) || !isAlive( perkPlayer ) )
             {
-                codolPrintLn( "CoDOL perk test: client " + perkTokens[1] + " is not alive" );
+                {}
                 continue;
             }
             if ( perkTokens[0] == "perk" )
@@ -152,7 +139,7 @@ watchKillstreakTestDvar()
             else if ( perkTokens[0] == "perkdmg" && perkTokens.size > 3 )
             {
                 left = maps\mp\perks\_perks::cac_modified_damage( perkPlayer, level.players[0], int( perkTokens[3] ), perkTokens[2], "frag_grenade_mp", perkPlayer.origin, ( 0, 0, 1 ), "none" );
-                codolPrintLn( "CoDOL perk test: " + perkPlayer.name + " takes " + left + " of " + perkTokens[3] + " " + perkTokens[2] );
+                {}
             }
             else if ( perkTokens[0] == "assist" )
             {
@@ -174,7 +161,7 @@ watchKillstreakTestDvar()
                 {
                     player setOrigin( ( float( tiTokens[2] ), float( tiTokens[3] ), float( tiTokens[4] ) ) );
                     player setPlayerAngles( ( 0, float( tiTokens[5] ), 0 ) );
-                    codolPrintLn( "CoDOL killstreak test: relocated " + player.name + " to " + player.origin );
+                    {}
                 }
             continue;
         }
@@ -202,8 +189,7 @@ watchKillstreakTestDvar()
                         if ( isDefined( reward ) )
                             selected = selected + slot + ":" + reward.streakName + "#" + reward.kID + " ";
                     }
-                    codolPrintLn( "CoDOL killstreak cycle test: " + player.name + " count " + count +
-                        " thresholds [" + thresholds + "] owned [" + owned + "] selected [" + selected + "]" );
+                    {}
                 }
             continue;
         }
@@ -225,10 +211,10 @@ watchKillstreakTestDvar()
                         foreach ( w in list )
                             if ( w != player getCurrentWeapon() && !isDefined( want ) )
                                 want = w;
-                    codolPrintLn( "CoDOL killstreak test: " + player.name + " holds " + player getCurrentWeapon() + " owns " + names );
+                    {}
                     player thread logWeaponChanges( 5 );
                     ok = player switchToWeapon( want );
-                    codolPrintLn( "CoDOL killstreak test: switchToWeapon( " + want + " ) returned " + ok );
+                    {}
                 }
             continue;
         }
@@ -267,14 +253,14 @@ watchKillstreakTestDvar()
                         foreach ( other in level.players )
                             if ( other != player && isAlive( other ) && ( !level.teamBased || other.team != player.team ) )
                                 enemy = other;
-                        codolPrintLn( "CoDOL killstreak test: downed " + player.name + " by " + enemy.name );
+                        {}
                         player.maxhealth = 100;
                         player.health = 100;
                         player doDamage( 1000, player.origin + ( 0, 0, 40 ), enemy, enemy, 0, "MOD_RIFLE_BULLET" );
                     }
                     else if ( isDefined( player.lastStand ) )
                     {
-                        codolPrintLn( "CoDOL killstreak test: revive " + player.name );
+                        {}
                         player.lastStand = undefined;
                         player maps\mp\_utility::clearLowerMessage( "last_stand" );
                         player maps\mp\gametypes\_playerlogic::lastStandRespawnPlayer();
@@ -329,7 +315,7 @@ watchKillstreakTestDvar()
                     {
                         // "kill <client>": end an "activate"d subject's
                         // protection and kill it through the damage callback.
-                        codolPrintLn( "CoDOL killstreak test: kill " + player.name );
+                        {}
                         player.maxhealth = 100;
                         player.health = 100;
                         player doDamage( 1000, player.origin + ( 0, 0, 40 ), level.players[0] );
@@ -337,7 +323,7 @@ watchKillstreakTestDvar()
                     if ( tiTokens[0] == "confirm" )
                     {
                         location = player.origin + anglesToForward( ( 0, player.angles[1], 0 ) ) * 600;
-                        codolPrintLn( "CoDOL killstreak test: " + player.name + " confirms " + location + " (selecting " + isDefined( player.selectingLocation ) + ")" );
+                        {}
                         player notify( "confirm_location", location, player.angles[1] );
                     }
                 }
@@ -356,7 +342,7 @@ watchKillstreakTestDvar()
         if ( tiTokens[0] == "rcsafe" && tiTokens.size > 1 )
         {
             level.disableRCBombTrigger = int( tiTokens[1] ) != 0;
-            codolPrintLn( "CoDOL killstreak test: rcsafe " + level.disableRCBombTrigger );
+            {}
             continue;
         }
         if ( tiTokens[0] == "ti" && tiTokens.size > 1 )
@@ -376,7 +362,7 @@ watchKillstreakTestDvar()
         streakRef = tokens[1];
         if ( !isDefined( level.killstreakFuncs[streakRef] ) )
         {
-            codolPrintLn( "CoDOL killstreak test: no handler for " + streakRef );
+            {}
             continue;
         }
         target = undefined;
@@ -391,7 +377,7 @@ watchKillstreakTestDvar()
             wait 0.5;
         if ( !isDefined( target ) || !isAlive( target ) )
         {
-            codolPrintLn( "CoDOL killstreak test: client " + clientNum + " is not alive" );
+            {}
             continue;
         }
         // Rides and carried rewards refuse an airborne user; bots jump.
@@ -401,7 +387,7 @@ watchKillstreakTestDvar()
         target freezeControls( false );
         target.maxhealth = 100000;
         target.health = 100000;
-        codolPrintLn( "CoDOL killstreak test: " + target.name + " (" + target.team + ") uses " + streakRef );
+        {}
         // Own it first, as a real use does: several rewards (the helicopter
         // queue, for one) reshuffle the owner's pers["killstreaks"] list and
         // raise a runtime error for a streak that is not in it.
@@ -451,7 +437,7 @@ activateTopReward( streakName, hold )
     // a bot otherwise fires the tablet it was just handed.
     if ( !isDefined( hold ) )
         self freezeControls( false );
-    codolPrintLn( "CoDOL killstreak test: " + self.name + " activated " + reward.streakName + " holding " + self getCurrentWeapon() );
+    {}
 }
 
 reportRewardState()
@@ -465,12 +451,7 @@ reportRewardState()
     rule = "";
     if ( isDefined( level.codolRCRule ) )
         rule = " rcRule " + level.codolRCRule.cur + "/" + level.codolRCRule.max;
-    codolPrintLn( "CoDOL killstreak test: state " + self.name + " alive " + isAlive( self ) +
-        " origin " + self.origin + " angles " + self.angles + " onGround " + self isOnGround() +
-        " weapon " + self getCurrentWeapon() + " busy " + ( isDefined( self.codolRewardActivationBusy ) && self.codolRewardActivationBusy ) +
-        " usingRemote " + isDefined( self.usingRemote ) + " selecting " + isDefined( self.selectingLocation ) +
-        " remoteCtl " + self isRemoteControlling() + " rcClaim " + claim + rule +
-        " littleBirds " + level.littleBirds + " owned [" + owned + "]" );
+    {}
     // Offhand hold counter (_disableOffhandWeapons) and each offhand's ammo:
     // every remote must return the counter to 0 when it ends.
     hold = "undefined";
@@ -482,8 +463,7 @@ reportRewardState()
     switchHold = "undefined";
     if ( isDefined( self.disabledWeaponSwitch ) )
         switchHold = "" + self.disabledWeaponSwitch;
-    codolPrintLn( "CoDOL killstreak test: offhands " + self.name + " hold " + hold + " switchHold " + switchHold +
-        " lastStand " + isDefined( self.lastStand ) + " [" + offhands + "]" );
+    {}
     // weapFlags 0x800 weapon switch held, 0x1000 offhands held (native).
     self codol_deathGates();
 }
@@ -497,7 +477,7 @@ confirmTestLocation()
         wait 0.3;
     wait 1.0;
     location = self.origin + anglesToForward( ( 0, self.angles[1], 0 ) ) * 600;
-    codolPrintLn( "CoDOL killstreak test: " + self.name + " confirms location " + location + " (selecting " + isDefined( self.selectingLocation ) + ")" );
+    {}
     self notify( "confirm_location", location, self.angles[1] );
 }
 
@@ -513,7 +493,7 @@ reportStreakEntities()
     foreach ( c in classes )
         line = line + c + "=" + getEntArray( c, "classname" ).size + " ";
     line = line + "helis=" + isDefined( level.chopper ) + " ac130player=" + isDefined( level.ac130player ) + " empTeam allies/axis " + level.teamEMPed["allies"] + "/" + level.teamEMPed["axis"] + " nukeIncoming " + isDefined( level.nukeIncoming ) + " sr71 allies/axis " + isDefined( level.sr71TeamUntil["allies"] ) + "/" + isDefined( level.sr71TeamUntil["axis"] ) + " uav allies/axis " + level.activeUAVs["allies"] + "/" + level.activeUAVs["axis"] + " counter " + level.activeCounterUAVs["allies"] + "/" + level.activeCounterUAVs["axis"];
-    codolPrintLn( "CoDOL killstreak test: entities " + line );
+    {}
 }
 
 testCrateTable()
@@ -523,12 +503,12 @@ testCrateTable()
         line = "";
         foreach ( crateType, crateWeight in crateTypes )
             line = line + crateType + "=" + crateWeight + " ";
-        codolPrintLn( "CoDOL killstreak test: crate table " + dropType + " max " + level.crateMaxVal[dropType] + ": " + line );
+        {}
     }
     draws = "";
     for ( i = 0; i < 10; i++ )
         draws = draws + randomInt( 125 ) + ":" + maps\mp\killstreaks\_airdrop::getRandomCrateType( "airdrop" ) + " ";
-    codolPrintLn( "CoDOL killstreak test: crate draws " + draws );
+    {}
 }
 
 testCaptureCrate()
@@ -545,7 +525,7 @@ testCaptureCrate()
     }
     if ( !isDefined( best ) )
     {
-        codolPrintLn( "CoDOL killstreak test: no landed care package to capture" );
+        {}
         return;
     }
     self.maxhealth = 100000;
@@ -553,13 +533,13 @@ testCaptureCrate()
     crateType = best.crateType;
     self setOrigin( best.origin + ( 48, 0, 0 ) );
     self setPlayerAngles( vectorToAngles( best.origin - ( self.origin + ( 0, 0, 60 ) ) ) );
-    codolPrintLn( "CoDOL killstreak test: " + self.name + " (" + self.team + ") captures " + crateType + " crate at " + best.origin + " owner " + best.owner.name );
+    {}
     for ( i = 0; i < 12 && isDefined( best ); i++ )
     {
         self codol_botPressButtons( 40, 1.0 );
         wait 1.0;
     }
-    codolPrintLn( "CoDOL killstreak test: capture by " + self.name + " done, crate gone " + !isDefined( best ) );
+    {}
 }
 
 throwKillstreakMarker( streakRef )
@@ -571,7 +551,7 @@ throwKillstreakMarker( streakRef )
     self.maxhealth = 100000;
     self.health = 100000;
     wait 0.5;
-    codolPrintLn( "CoDOL killstreak test: " + self.name + " before switch holds " + self getCurrentWeapon() + ", has " + weapon + " " + self hasWeapon( weapon ) + " ammo " + self getAmmoCount( weapon ) );
+    {}
     self thread logWeaponChanges( 8 );
     self switchToWeapon( weapon );
     for ( i = 0; i < 20 && self getCurrentWeapon() != weapon; i++ )
@@ -587,7 +567,7 @@ throwKillstreakMarker( streakRef )
             self thread maps\mp\killstreaks\_killstreaks::codolActivateReward( self.pers["killstreaks"][0].kID );
         wait 0.3;
     }
-    codolPrintLn( "CoDOL killstreak test: " + self.name + " holds " + self getCurrentWeapon() + " for " + streakRef + " (wants " + weapon + ")" );
+    {}
     self thread logMarkerThrow( weapon );
     for ( attempt = 1; attempt <= 6; attempt++ )
     {
@@ -597,7 +577,7 @@ throwKillstreakMarker( streakRef )
         wait 1.5;
     }
     if ( !isDefined( self.codolMarkerThrown ) )
-        codolPrintLn( "CoDOL killstreak test: " + self.name + " never threw " + weapon + " (holding " + self getCurrentWeapon() + ")" );
+        {}
 }
 
 logWeaponChanges( seconds )
@@ -610,7 +590,7 @@ logWeaponChanges( seconds )
     while ( getTime() < endTime )
     {
         self waittill( "weapon_change", newWeapon );
-        codolPrintLn( "CoDOL killstreak test: " + self.name + " weapon_change " + newWeapon + " at " + getTime() );
+        {}
     }
 }
 
@@ -621,7 +601,7 @@ trackMarker( weapname )
     start = getTime();
     for ( i = 0; i < 40; i++ )
     {
-        codolPrintLn( "CoDOL killstreak test: " + weapname + " t+" + ( getTime() - start ) + " at " + self.origin );
+        {}
         self common_scripts\utility::waittill_any_timeout( 2.5, "stationary", "missile_stuck" );
     }
 }
@@ -636,10 +616,10 @@ logMarkerThrow( weapon )
         if ( weapname != weapon )
             continue;
         self.codolMarkerThrown = true;
-        codolPrintLn( "CoDOL killstreak test: " + self.name + " threw " + weapname + " from " + self.origin );
+        {}
         grenade thread trackMarker( weapname );
         grenade waittill( "explode", position );
-        codolPrintLn( "CoDOL killstreak test: " + weapname + " exploded at " + position );
+        {}
         return;
     }
 }
@@ -660,11 +640,9 @@ reportKillstreakCoverage()
         handled = isDefined( level.killstreakFuncs[ref] );
         if ( !handled )
             missing++;
-        codolPrintLn( "CoDOL killstreak coverage: row " + row + " id " + tableLookupByRow( table, row, 0 ) +
-            " " + ref + " weapon " + tableLookupByRow( table, row, 13 ) + " base " + tableLookupByRow( table, row, 22 ) +
-            " handler " + handled );
+        {}
     }
-    codolPrintLn( "CoDOL killstreak coverage: " + missing + " catalogue row(s) without a handler" );
+    {}
 }
 
 // set scr_codol_usekillstreak rows: every column of every catalogue row.
@@ -679,7 +657,7 @@ reportKillstreakRows()
         line = "";
         for ( col = 0; col < 24; col++ )
             line = line + tableLookupByRow( table, row, col ) + "|";
-        codolPrintLn( "CoDOL killstreak row " + row + ": " + line );
+        {}
     }
 }
 
@@ -705,7 +683,7 @@ testTacticalInsertion()
     self giveStartAmmo( "flare_mp" );
     if ( !self hasWeapon( "flare_mp" ) )
     {
-        codolPrintLn( "CoDOL killstreak test: TI for " + self.name + ": flare_mp was not kept (shared frag ammo cap)" );
+        {}
         return;
     }
     slots = [];
@@ -713,21 +691,20 @@ testTacticalInsertion()
         slots[i] = self getOffhandEquipment( i );
     slots[2] = "flare_mp";
     self setOffhandEquipment( slots[0], slots[1], slots[2] );
-    codolPrintLn( "CoDOL killstreak test: TI slots for " + self.name + ": " + self getOffhandEquipment( 0 ) + " / " +
-        self getOffhandEquipment( 1 ) + " / " + self getOffhandEquipment( 2 ) + ", flare ammo " + self getAmmoCount( "flare_mp" ) );
+    {}
     wait 1.0;
     self maps\mp\gametypes\_codol_equiptest::pressUntilThrown( 65536, "flare_mp" );
     wait 1.0;
     if ( !isDefined( self.setSpawnPoint ) )
     {
-        codolPrintLn( "CoDOL killstreak test: TI for " + self.name + " placed no beacon (TISpawnPosition " + isDefined( self.TISpawnPosition ) + ")" );
+        {}
         return;
     }
     beacon = self.setSpawnPoint.origin;
-    codolPrintLn( "CoDOL killstreak test: TI beacon for " + self.name + " at " + beacon );
+    {}
     self suicide();
     self waittill( "spawned_player" );
-    codolPrintLn( "CoDOL killstreak test: TI respawn for " + self.name + " at " + self.origin + ", " + distance( self.origin, beacon ) + " from the beacon" );
+    {}
 }
 
 testPerk( perk )
@@ -753,7 +730,7 @@ testPerk( perk )
         report += " unlocked=" + unlocked;
     else
         report += " unlocked=unresolved";
-    codolPrintLn( report );
+    {}
 }
 
 testSuicide()
@@ -763,10 +740,10 @@ testSuicide()
         wait 0.5;
     if ( !isAlive( self ) )
     {
-        codolPrintLn( "CoDOL killstreak test: " + self.name + " never came back alive" );
+        {}
         return;
     }
-    codolPrintLn( "CoDOL killstreak test: suicide " + self.name );
+    {}
     self codol_deathGates();
     self thread reportNextSpawn();
     self suicide();
@@ -778,7 +755,7 @@ reportNextSpawn()
     self endon( "disconnect" );
     self thread reportAliveAfterSuicide();
     self waittill( "spawned_player" );
-    codolPrintLn( "CoDOL killstreak test: " + self.name + " respawned at " + self.origin );
+    {}
 }
 
 reportAliveAfterSuicide()
@@ -787,7 +764,7 @@ reportAliveAfterSuicide()
     for ( i = 0; i < 8; i++ )
     {
         wait 1.0;
-        codolPrintLn( "CoDOL killstreak test: " + self.name + " t+" + ( i + 1 ) + "s alive " + isAlive( self ) + " health " + self.health + " session " + self.sessionstate );
+        {}
     }
 }
 
@@ -833,7 +810,7 @@ testSentryPlace()
             carried = turret;
     if ( !isDefined( carried ) )
     {
-        codolPrintLn( "CoDOL sentry test: " + self.name + " is not carrying a sentry" );
+        {}
         self freezeControls( false );
         return;
     }
@@ -857,7 +834,7 @@ testSentryPlace()
         self setOrigin( self.origin + anglesToForward( ( 0, self.angles[1], 0 ) ) * -48 );
     }
     self freezeControls( false );
-    codolPrintLn( "CoDOL sentry test: " + self.name + " (" + self.team + ") placed " + !isDefined( carried.carriedBy ) + " at " + carried.origin + " yaw " + carried.angles[1] );
+    {}
 }
 
 // "sentryvictim <client> <distance> <yawOffset> <seconds>": stand that
@@ -877,13 +854,13 @@ testSentryVictim( tokens )
     self freezeControls( true );
     self.maxhealth = 100;
     self.health = 100;
-    codolPrintLn( "CoDOL sentry test: victim " + self.name + " (" + self.team + ") at " + self.origin + " in front of " + best getEntityNumber() );
+    {}
     self thread testSentryVictimDeath( best );
     wait float( tokens[4] );
     if ( isAlive( self ) )
     {
         self freezeControls( false );
-        codolPrintLn( "CoDOL sentry test: victim " + self.name + " (" + self.team + ") survived with health " + self.health );
+        {}
     }
 }
 
@@ -900,7 +877,7 @@ testSentryVictimDeath( turret )
         weapon = "undefined";
     if ( !isDefined( meansOfDeath ) )
         meansOfDeath = "undefined";
-    codolPrintLn( "CoDOL sentry test: victim " + self.name + " (" + self.team + ") killed by " + attackerName + " with " + weapon + " " + meansOfDeath );
+    {}
 }
 
 testSentryUse( tokens )
@@ -920,7 +897,7 @@ testSentryUse( tokens )
     }
     if ( !isDefined( best ) )
     {
-        codolPrintLn( "CoDOL sentry test: no placed turret to use" );
+        {}
         return;
     }
     self.maxhealth = 100000;
@@ -938,8 +915,7 @@ testSentryUse( tokens )
     ownerName = "none";
     if ( isDefined( best.owner ) )
         ownerName = best.owner.name;
-    codolPrintLn( "CoDOL sentry test: " + self.name + " (" + self.team + ") uses " + best.sentryType + " " + best getEntityNumber() +
-        " owned by " + ownerName + " from yaw offset " + yawOffset + ", onGround " + self isOnGround() + " at " + self.origin + " turret at " + best.origin + " tries " + tries );
+    {}
     for ( i = 0; i < 4 && isDefined( best ) && !isDefined( best.carriedBy ); i++ )
     {
         // Not frozen: a frozen player gets no use hints at all (the
@@ -951,7 +927,7 @@ testSentryUse( tokens )
     carrier = "nobody";
     if ( isDefined( best ) && isDefined( best.carriedBy ) )
         carrier = best.carriedBy.name;
-    codolPrintLn( "CoDOL sentry test: after use by " + self.name + " the turret is carried by " + carrier );
+    {}
     self freezeControls( false );
     if ( isDefined( best ) && isDefined( best.carriedBy ) && best.carriedBy == self )
     {
@@ -962,14 +938,14 @@ testSentryUse( tokens )
         best.canBePlaced = true;
         self notify( "place_sentry" );
         wait 0.5;
-        codolPrintLn( "CoDOL sentry test: " + self.name + " placed it again, carried " + isDefined( best.carriedBy ) );
+        {}
     }
 }
 
 reportSentries()
 {
     foreach ( player in level.players )
-        codolPrintLn( "CoDOL sentry test: player " + player getEntityNumber() + " " + player.name + " team " + player.team + " alive " + isAlive( player ) + " health " + player.health + " origin " + player.origin );
+        {}
     foreach ( turret in getEntArray( "misc_turret", "classname" ) )
     {
         if ( !isDefined( turret.sentryType ) )
@@ -989,9 +965,7 @@ reportSentries()
             targetName = target.name + "(" + target.team + ")";
         else if ( isDefined( target ) )
             targetName = target.classname;
-        codolPrintLn( "CoDOL sentry test: " + turret.sentryType + " " + turret getEntityNumber() + " mode " + turret getMode() +
-            " owner " + ownerName + " team " + teamName + " carriedBy " + carrier + " target " + targetName +
-            " firing " + turret isFiringTurret() + " angles " + turret.angles + " tag_flash " + turret getTagAngles( "tag_flash" ) );
+        {}
     }
 }
 
@@ -1007,14 +981,12 @@ placeCarriedKillstreak()
         self notify( "place_sentry" );
     }
     turrets = getEntArray( "misc_turret", "classname" );
-    codolPrintLn( "CoDOL killstreak test: " + turrets.size + " misc_turret(s) after placement for " + self.name +
-        ", onGround " + self isOnGround() );
+    {}
     foreach ( turret in turrets )
     {
         if ( !isDefined( turret.sentryType ) )
             continue;
-        codolPrintLn( "CoDOL killstreak test:   " + turret.sentryType + " at " + turret.origin +
-            " carried " + isDefined( turret.carriedBy ) + " canBePlaced " + turret.canBePlaced );
+        {}
     }
 }
 
@@ -1035,9 +1007,15 @@ maintainBots()
     // before counting them.
     if ( game["codolBotSerial"] > 0 )
         wait 2;
-    for ( ;; )
-    {
-        bots = [];
+	for ( ;; )
+	{
+		matchLimit = getDvarInt( "sv_maxclients" );
+		if ( level.gameType == "gun" || level.gameType == "oic" || level.gameType == "shrp" )
+		{
+			if ( matchLimit > 4 )
+				matchLimit = 4;
+		}
+		bots = [];
         humans = 0;
         players = getEntArray( "player", "classname" );
         foreach ( player in players )
@@ -1047,9 +1025,14 @@ maintainBots()
             else if ( !player.isbot )
                 humans++;
         }
-        // Test hook, idle unless set: pretend this many more real players are on.
-        humans += getDvarInt( "scr_codol_botfill_testhumans" );
-        fill = getDvarInt( "scr_codol_botfill" );
+		// Test hook, idle unless set: pretend this many more real players are on.
+		humans += getDvarInt( "scr_codol_botfill_testhumans" );
+		availableBots = matchLimit - humans;
+		if ( humans == 0 )
+			availableBots--;
+		if ( availableBots < 0 )
+			availableBots = 0;
+		fill = getDvarInt( "scr_codol_botfill" );
         if ( fill > 0 )
         {
             desired = 0;
@@ -1058,8 +1041,10 @@ maintainBots()
             botMax = getDvarInt( "scr_codol_botmax" );
             if ( desired > botMax )
                 desired = botMax;
-            if ( desired < 0 )
-                desired = 0;
+			if ( desired < 0 )
+				desired = 0;
+			if ( desired > availableBots )
+				desired = availableBots;
             if ( desired > bots.size )
                 spawnBots( desired - bots.size );
             else if ( desired < bots.size )
@@ -1068,8 +1053,10 @@ maintainBots()
         else
         {
             desired = getDvarInt( "scr_codol_bots" );
-            if ( desired > 16 )
-                desired = 16;
+			if ( desired > 16 )
+				desired = 16;
+			if ( desired > availableBots )
+				desired = availableBots;
             if ( desired > bots.size )
                 spawnBots( desired - bots.size );
         }
@@ -1106,7 +1093,7 @@ spawnBots( count )
             return;
         bot.codolCombatBot = true;
         bot.codolBotClass = classForDifficulty( game["codolBotSerial"] );
-        codolPrintLn( "CoDOL bot difficulty: " + getDvar( "sv_botDifficulty" ) + " class " + bot.codolBotClass + " for " + bot.name );
+        {}
         bot.pers["codolCombatBot"] = true;
         bot.pers["codolBotClass"] = bot.codolBotClass;
         game["codolBotSerial"]++;
@@ -1197,7 +1184,7 @@ testRewardSlotVerb( tokens )
             subject = player;
     if ( !isDefined( subject ) )
     {
-        codolPrintLn( "CoDOL ksslot: client " + tokens[1] + " is not alive" );
+        {}
         return;
     }
     subject.maxhealth = 100000;
@@ -1252,7 +1239,7 @@ pressRewardSlot( slot, carry )
     // Rides and carried rewards refuse an airborne user; bots jump.
     for ( tries = 0; tries < 40 && !self isOnGround(); tries++ )
         wait 0.05;
-    codolPrintLn( "CoDOL ksslot: " + self.name + " presses slot " + slot + " (" + weapon + ") holding " + self getCurrentWeapon() );
+    {}
     self notify( "codol_reward_slot_" + slot );
     if ( carry )
         self notify( "cancel_sentry" );
@@ -1281,9 +1268,5 @@ reportRewardSlots( label )
     foreach ( item in self getWeaponsListAll() )
         if ( isDefined( level.killstreakWeapons[item] ) )
             held = held + item + ":" + self getAmmoCount( item ) + " ";
-    codolPrintLn( "CoDOL ksslot: " + label + " " + self.name + " weapon " + self getCurrentWeapon() +
-        " busy " + ( isDefined( self.codolRewardActivationBusy ) && self.codolRewardActivationBusy ) +
-        " disabled " + self.disabledWeapon + " selecting " + isDefined( self.selectingLocation ) + " remote " + isDefined( self.usingRemote ) +
-        " uav " + level.activeUAVs[self.team] + " cuav " + level.activeCounterUAVs[self.team] +
-        " birds " + level.littleBirds + " owned [" + owned + "] reward weapons [" + held + "]" );
+    {}
 }

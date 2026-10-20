@@ -883,7 +883,7 @@ onDPadLeft()
 
 				setdvar( focusedItem.setting.dvar, dvarValues[ indexNew ] );
 				focusedItem updateDisplayValue();
-				println( "Setting: " + focusedItem.setting.dvar + " to " + dvarValues[ indexNew ] );
+				{}
 				level.player playsound( "mouse_over" );
 			}
 
@@ -919,7 +919,7 @@ onDPadRight()
 				setdvar( focusedItem.setting.dvar, dvarValues[ indexNew ] );
 				focusedItem updateDisplayValue();
 				level.player playsound( "mouse_over" );
-				println( "Setting: " + focusedItem.setting.dvar + " to " + dvarValues[ indexNew ] );
+				{}
 			}
 
 	    	break;
@@ -1014,7 +1014,7 @@ menuResponse()
 	for ( ;; )
 	{
 		self waittill( "menuresponse", menu, response );
-		println( response );
+		{}
 
 		switch( response )
 		{

@@ -47,7 +47,7 @@ stryker_setmode_ai()
 	
 	/#
 	if ( getdvar( "arcadia_debug_stryker" ) == "1" )
-		iprintln( "^2stryker - " + self.turretMode + " mode" );
+		{}
 	#/
 	
 	self thread stryker_turret_think();
@@ -69,7 +69,7 @@ stryker_setmode_manual( origin )
 	
 	/#
 	if ( getdvar( "arcadia_debug_stryker" ) == "1" )
-		iprintln( "^2stryker - " + self.turretMode + " mode" );
+		{}
 	#/
 	
 	wait STRYKER_MANUAL_AI_DURATION;
@@ -119,7 +119,7 @@ stryker_scan_start()
 	
 	/#
 	if ( getdvar( "arcadia_debug_stryker" ) == "1" )
-		iprintln( "^2stryker - scan start" );
+		{}
 	#/
 	
 	alternate = 0;
@@ -154,7 +154,7 @@ stryker_scan_stop()
 {
 	/#
 	if ( getdvar( "arcadia_debug_stryker" ) == "1" )
-		iprintln( "^2stryker - scan stop" );
+		{}
 	#/
 	
 	self clearTurretTarget();
@@ -280,7 +280,7 @@ stryker_shoot_target( target )
 	/#
 	if ( getdvar( "arcadia_debug_stryker" ) == "1" )
 	{
-		iprintln( "^2stryker - shooting a target" );
+		{}
 		if ( self.turretMode == "ai" )
 			thread draw_line_for_time( self.origin + ( 0, 0, 100 ), target.origin + targetOffset, 1, 1, 0, 2.0 );
 		else

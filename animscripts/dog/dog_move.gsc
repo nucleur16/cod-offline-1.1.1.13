@@ -321,7 +321,7 @@ randomSoundDuringRunLoop()
 	{
 /#
 		if ( getdebugdvar( "debug_dog_sound" ) != "" )
-			iprintln( "dog " + ( self getentnum() ) + " bark start " + getTime() );
+			{}
 #/
 		sound = undefined;
 		if ( isdefined( self.script_growl ) )
@@ -336,7 +336,7 @@ randomSoundDuringRunLoop()
 		self waittill( "randomRunSound" );
 /#
 		if ( getdebugdvar( "debug_dog_sound" ) != "" )
-			iprintln( "dog " + ( self getentnum() ) + " bark end " + getTime() );
+			{}
 #/
 
 		wait( randomfloatrange( 0.1, 0.3 ) );

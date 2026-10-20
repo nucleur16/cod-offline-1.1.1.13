@@ -44,14 +44,14 @@ boxtest_watch()
 		{
 		case "addbot":
 			addtestclient();
-			codolprintln( "CoDOL boxtest: addtestclient" );
+			{}
 			break;
 
 		case "use":
 			if ( tokens.size < 3 )
 				break;
 			boxtest_use( int( tokens[ 1 ] ), int( tokens[ 2 ] ) );
-			codolprintln( "CoDOL boxtest: use done" );
+			{}
 			break;
 
 		case "dump":
@@ -63,9 +63,9 @@ boxtest_watch()
 			// out of the box while it cycles and sinks back while it waits).
 			chest = level.chests[ level.chest_index ];
 			if ( isDefined( chest.weapon_model ) )
-				codolprintln( "CoDOL boxtest: weapon model " + chest.weapon_model.model + " at " + chest.weapon_model.origin + ", " + ( chest.weapon_model.origin[ 2 ] - chest.chest_origin.origin[ 2 ] ) + " above the chest origin" );
+				{}
 			else
-				codolprintln( "CoDOL boxtest: no weapon model" );
+				{}
 			break;
 
 		case "dropscan":
@@ -92,7 +92,7 @@ boxtest_watch()
 		case "volumes":
 			vols = maps\_zombiemode_powerups::playable_area_volumes();
 			for ( i = 0; i < vols.size; i++ )
-				codolprintln( "CoDOL boxtest: player_volume ent " + vols[ i ] getEntityNumber() + " " + vols[ i ].targetname + " at " + vols[ i ].origin );
+				{}
 			players = getPlayers();
 			for ( i = 0; i < players.size; i++ )
 			{
@@ -102,7 +102,7 @@ boxtest_watch()
 					if ( players[ i ] isTouching( vols[ k ] ) )
 						inside = true;
 				}
-				codolprintln( "CoDOL boxtest: client " + players[ i ] getEntityNumber() + " at " + players[ i ].origin + " in a player_volume " + inside );
+				{}
 			}
 			break;
 
@@ -111,7 +111,7 @@ boxtest_watch()
 			for ( i = 0; i < keys.size; i++ )
 			{
 				p = level.zombie_powerups[ keys[ i ] ];
-				codolprintln( "CoDOL boxtest: power-up " + keys[ i ] + " weapon " + p.weapon_name + " weapon model " + getWeaponModel( p.weapon_name ) + " drawn as " + p.model_name );
+				{}
 			}
 			break;
 		}
@@ -136,7 +136,7 @@ boxtest_use( clientnum, n )
 		player = boxtest_player( clientnum );
 		if ( !isDefined( player ) || !isAlive( player ) )
 		{
-			codolprintln( "CoDOL boxtest: no live client " + clientnum );
+			{}
 			return;
 		}
 
@@ -159,7 +159,7 @@ boxtest_use( clientnum, n )
 		player setOrigin( chest.origin - ( 0, 0, 40 ) );
 		player codol_botPressButtons( 40, 1 );
 		wait( 0.1 );
-		codolprintln( "CoDOL boxtest: pass " + pass + " valid " + is_player_valid( player ) + " use " + player useButtonPressed() + " holds " + player getCurrentWeapon() + " score " + player.score );
+		{}
 		chest notify( "trigger", player );
 		level thread boxtest_weapon_track( chest, pass );
 
@@ -168,7 +168,7 @@ boxtest_use( clientnum, n )
 
 		if ( level.chest_moves != moves )
 		{
-			codolprintln( "CoDOL boxtest: pass " + pass + " teddy bear at chest " + chest getEntityNumber() + "; refund " + ( player.score - before ) );
+			{}
 			while ( flag( "moving_chest_now" ) )
 				wait( 0.5 );
 			boxtest_dump();
@@ -181,7 +181,7 @@ boxtest_use( clientnum, n )
 		model = "<none>";
 		if ( isDefined( chest.weapon_model ) && isDefined( chest.weapon_model.model ) )
 			model = chest.weapon_model.model;
-		codolprintln( "CoDOL boxtest: pass " + pass + " chest " + chest getEntityNumber() + " offers " + weapon + " model " + model + " charged " + ( before - player.score ) );
+		{}
 
 		if ( pass % 3 != 2 )
 		{
@@ -189,10 +189,10 @@ boxtest_use( clientnum, n )
 			wait( 0.1 );
 			chest notify( "trigger", player );
 			wait( 0.5 );
-			codolprintln( "CoDOL boxtest: pass " + pass + " took it; holds " + player getCurrentWeapon() );
+			{}
 		}
 		else
-			codolprintln( "CoDOL boxtest: pass " + pass + " left it to time out" );
+			{}
 
 		while ( is_true( chest._box_open ) )
 			wait( 0.25 );
@@ -208,24 +208,23 @@ boxtest_weapon_track( chest, pass )
 		wait( 1 );
 		if ( !isDefined( chest.weapon_model ) || !isDefined( chest.chest_origin ) )
 		{
-			codolprintln( "CoDOL boxtest: pass " + pass + " t+" + ( t + 1 ) + " no weapon model" );
+			{}
 			return;
 		}
-		codolprintln( "CoDOL boxtest: pass " + pass + " t+" + ( t + 1 ) + " weapon " + chest.weapon_model.model + " " + ( chest.weapon_model.origin[ 2 ] - chest.chest_origin.origin[ 2 ] ) + " above the chest origin" );
+		{}
 	}
 }
 
 boxtest_dump()
 {
-	codolprintln( "CoDOL boxtest: live index " + level.chest_index + " of " + level.chests.size + ", moves " + level.chest_moves + ", accessed " + level.chest_accessed );
+	{}
 	for ( c = 0; c < level.chests.size; c++ )
 	{
 		chest = level.chests[ c ];
 		sn = "<none>";
 		if ( isDefined( chest.script_noteworthy ) )
 			sn = chest.script_noteworthy;
-		codolprintln( "CoDOL boxtest: chest " + c + " trigger ent " + chest getEntityNumber() + " " + sn + " hidden " + is_true( chest.hidden ) +
-			" disabled " + is_true( chest.disabled ) + " rubble " + chest.chest_rubble.size );
+		{}
 		boxtest_piece( "lid", chest.chest_lid );
 		boxtest_piece( "box", chest.chest_box );
 		for ( r = 0; r < chest.chest_rubble.size; r++ )
@@ -237,13 +236,13 @@ boxtest_piece( label, ent )
 {
 	if ( !isDefined( ent ) )
 	{
-		codolprintln( "CoDOL boxtest:   " + label + " <undefined>" );
+		{}
 		return;
 	}
 	m = "<none>";
 	if ( isDefined( ent.model ) )
 		m = ent.model;
-	codolprintln( "CoDOL boxtest:   " + label + " ent " + ent getEntityNumber() + " model " + m + " at " + ent.origin );
+	{}
 }
 
 boxtest_dropscan()
@@ -279,7 +278,7 @@ boxtest_dropscan()
 
 	o = boxtest_drop_points( "outside", outside );
 	inn = boxtest_drop_points( "inside", inside );
-	codolprintln( "CoDOL boxtest: dropscan outside " + o + "/" + outside.size + " dropped, inside " + inn + "/" + inside.size + " dropped" );
+	{}
 }
 
 boxtest_drop_points( label, points )
@@ -301,14 +300,14 @@ boxtest_drop_points( label, points )
 		if ( isDefined( made ) )
 		{
 			dropped++;
-			codolprintln( "CoDOL boxtest: " + label + " " + points[ i ] + " -> " + made.powerup_name + " model " + made.model + " ent " + made getEntityNumber() );
+			{}
 			made.boxtest_seen = true;
 			made notify( "powerup_grabbed" );
 			made notify( "powerup_timedout" );
 			made delete();
 		}
 		else
-			codolprintln( "CoDOL boxtest: " + label + " " + points[ i ] + " -> no drop (" + before + " models)" );
+			{}
 		wait( 0.05 );
 	}
 	level.powerup_drop_count = 0;

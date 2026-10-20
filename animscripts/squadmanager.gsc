@@ -633,7 +633,7 @@ printAboveHead( string, duration, offset, color )
 			return;
 
 		aboveHead = self getshootatpos() + ( 0, 0, 10 ) + offset;
-		print3d( aboveHead, string, color, 1, 0.5 );	// origin, text, RGB, alpha, scale
+		{}	// origin, text, RGB, alpha, scale
 		wait( 0.05 );
 	}
 }

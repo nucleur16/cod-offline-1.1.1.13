@@ -339,7 +339,7 @@ handleNormalDeath( lifeId, attacker, eInflictor, sWeapon, sMeansOfDeath )
 	if ( advancesStreak )
 		level notify ( "player_got_killstreak_" + attacker.pers["cur_kill_streak"], attacker );
 	
-	if ( isAlive( attacker ) && advancesStreak )
+	if ( isAlive( attacker ) && advancesStreak && ( !isDefined( level.partyMode ) || !level.partyMode ) )
 		attacker thread maps\mp\killstreaks\_killstreaks::checkKillstreakReward( attacker.pers["cur_kill_streak"] );
 
 	attacker notify ( "killed_enemy" );
@@ -448,7 +448,7 @@ Callback_PlayerKilled( eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vD
 		killer = "world";
 		if ( isDefined( attacker ) && isPlayer( attacker ) )
 			killer = attacker.name;
-		println( "kill: " + killer + " killed " + self.name + " with " + sWeapon + " (" + sMeansOfDeath + ")" );
+		{}
 	}
 	PlayerKilled_internal( eInflictor, attacker, self, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, psOffsetTime, deathAnimDuration, false );
 }
@@ -680,8 +680,11 @@ PlayerKilled_internal( eInflictor, attacker, victim, iDamage, sMeansOfDeath, sWe
 	
 	//prof_begin( " PlayerKilled_3_drop" );
 	// drop weapons from killed player
-	victim maps\mp\gametypes\_weapons::dropScavengerForDeath( attacker );	// must be done before dropWeaponForDeath, since we use some weapon information
-	victim maps\mp\gametypes\_weapons::dropWeaponForDeath( attacker );
+	if ( !isDefined( level.partyMode ) || !level.partyMode )
+	{
+		victim maps\mp\gametypes\_weapons::dropScavengerForDeath( attacker );	// must be done before dropWeaponForDeath, since we use some weapon information
+		victim maps\mp\gametypes\_weapons::dropWeaponForDeath( attacker );
+	}
 	//prof_end( " PlayerKilled_3_drop" );
 	
 	if ( !isFauxDeath )
@@ -720,7 +723,7 @@ PlayerKilled_internal( eInflictor, attacker, victim, iDamage, sMeansOfDeath, sWe
 	
 	if ( (sMeansOfDeath == "MOD_MELEE") )
 	{
-		if ( IsSubStr( codolWeaponBase( sWeapon ), "riotshield" ) )
+		if ( IsSubStr( sWeapon, "riotshield" ) )
 		{
 			attacker incPlayerStat( "shieldkills", 1 );
 			
@@ -761,11 +764,9 @@ PlayerKilled_internal( eInflictor, attacker, victim, iDamage, sMeansOfDeath, sWe
 		doKillcam = true;
 		killcamSilenced = weaponSuppressesKillcam( sWeapon );
 		if ( killcamSilenced )
-			println( "kill: killcam silenced for " + victim.name + " (" + sWeapon + ")" );
+			{}
 		handleNormalDeath( lifeId, attacker, eInflictor, sWeapon, sMeansOfDeath );
 		victim thread maps\mp\gametypes\_missions::playerKilled( eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, sPrimaryWeapon, sHitLoc, attacker.modifiers );
-		// Before any wait: reads the killer's stance and ADS at the kill.
-		attacker maps\mp\gametypes\_fieldorders::onEnemyKilled( victim, sWeapon, sMeansOfDeath );
 		
 		victim.pers["cur_death_streak"]++;
 		
@@ -1256,7 +1257,7 @@ Callback_PlayerDamage_internal( eInflictor, eAttacker, victim, iDamage, iDFlags,
 				else
 					xpVal = 50;
 				
-				printLn( xpVal );
+				{}
 				
 				victim thread maps\mp\gametypes\_rank::giveRankXP( "shield_damage", xpVal );
 				victim thread giveRecentShieldXP();
@@ -1292,7 +1293,7 @@ Callback_PlayerDamage_internal( eInflictor, eAttacker, victim, iDamage, iDFlags,
 			return;
 		}
 	}
-	else if ( (smeansofdeath == "MOD_MELEE") && IsSubStr( codolWeaponBase( sweapon ), "riotshield" ) )
+	else if ( (smeansofdeath == "MOD_MELEE") && IsSubStr( sweapon, "riotshield" ) )
 	{
 		if ( !(attackerIsHittingTeammate && (level.friendlyfire == 0)) )
 		{
@@ -1570,7 +1571,7 @@ Callback_PlayerDamage_internal( eInflictor, eAttacker, victim, iDamage, iDFlags,
 
 	// why getEntityNumber() for victim and .clientid for attacker?
 	if ( getDvarInt( "g_debugDamage" ) )
-		println( "client:" + victim getEntityNumber() + " health:" + victim.health + " attacker:" + eAttacker.clientid + " inflictor is player:" + isPlayer( eInflictor ) + " damage:" + iDamage + " hitLoc:" + sHitLoc );
+		{}
 
 	if ( victim.sessionstate != "dead" )
 	{
@@ -1664,6 +1665,9 @@ resetAttackerList()
 
 Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime )
 {
+	// BO1 OIC's pistol-hit rule is applied before the ordinary C1 damage path.
+	if ( isDefined( level.partyDamageCallback ) )
+		iDamage = self [[level.partyDamageCallback]]( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime );
 	Callback_PlayerDamage_internal( eInflictor, eAttacker, self, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime );
 }
 
@@ -1751,7 +1755,7 @@ Callback_PlayerLastStand( eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon,
 	// is dropped so the next life is not downed again.
 	if ( !self _hasPerk( "specialty_finalstand" ) && !level.dieHardMode )
 	{
-		codolPrintLn( "CoDOL laststand: " + self.name + " downed without Final Stand (pistoldeath " + self _hasPerk( "specialty_pistoldeath" ) + "); no Last Stand in CoDOL MP" );
+		{}
 		if ( self hasAbilityModifier( "modPistolDeath" ) && !self _hasPerk( "specialty_pistoldeath" ) )
 			self unsetAbilityModifier( "modPistolDeath" );
 		mayDoLastStand = false;
@@ -1872,7 +1876,7 @@ Callback_PlayerLastStand( eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon,
 			self.lastStandHeldOffhands = true;
 		}
 		else
-			codolPrintLn( "CoDOL perks: " + self.name + " last stand keeps offhands (Last Stand Pro)" );
+			{}
 				
 		self switchToWeapon( pistolWeapon );
 		
@@ -1895,7 +1899,7 @@ finalStandDuration()
 	if ( self _hasPerk( "specialty_laststandoffhand" ) )
 	{
 		lastStandProShare = maps\mp\perks\_perks::perkTableModifierDelta( "specialty_laststandoffhand", "modFinalStandTime" );
-		codolPrintLn( "CoDOL perks: " + self.name + " final stand " + duration + " s less Last Stand Pro share " + lastStandProShare );
+		{}
 		duration -= lastStandProShare;
 	}
 	return max( 0, duration );
@@ -2183,7 +2187,7 @@ mayDoLastStand( sWeapon, sMeansOfDeath, sHitLoc )
 	if ( sMeansOfDeath == "MOD_IMPACT" && sWeapon == "throwingknife_mp" )
 		return false;
 		
-	if ( sMeansOfDeath == "MOD_IMPACT" && ( codolIsWeaponBase( sWeapon, "m79_mp" ) || isSubStr(sWeapon, "gl_") ) )
+	if ( sMeansOfDeath == "MOD_IMPACT" && ( sWeapon == "m79_mp" || isSubStr(sWeapon, "gl_") ) )
 		return false;
 
 	if ( isHeadShot( sWeapon, sHitLoc, sMeansOfDeath ) )

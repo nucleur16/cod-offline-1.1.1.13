@@ -1,16 +1,8 @@
 scriptPrintln( channel, msg )
-{
-	setprintchannel( channel );
-	println( msg );
-	setprintchannel( "script" );
-}
+{}
 
 debugPrintln( channel, msg )
-{
-	setprintchannel( "script_debug" );
-	println( msg );
-	setprintchannel( "script" );
-}
+{}
 
 draw_debug_line( start, end, timer )
 {
@@ -3815,7 +3807,7 @@ delete_on_death( ent )
 
 error( msg )
 {
-	PrintLn( "^c * ERROR * ", msg );
+	{}
 	waitframe();
 
 	/#

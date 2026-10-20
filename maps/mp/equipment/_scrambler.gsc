@@ -80,7 +80,6 @@ deploy( owner )
     owner.deployedScrambler = device;
     level.scramblers[level.scramblers.size] = device;
     device thread damageListener();
-    device thread empDisable();
     device thread useListener();
     device thread beeps();
     owner thread watchOwner( device );
@@ -146,25 +145,6 @@ beeps()
     }
 }
 
-// An EMP grenade switches the scrambler's jamming off for its duration instead
-// of destroying it (empExplodeWaiter in _weapons.gsc sends emp_damage).
-empDisable()
-{
-    self endon( "death" );
-    for ( ;; )
-    {
-        self waittill( "emp_damage", attacker, duration );
-        playFx( getfx( "sentry_explode_mp" ), self.origin );
-        self.disabled = true;
-        self codol_setScramblerActive( false );
-        self notify( "disabled" );
-        wait( duration );
-        self.disabled = undefined;
-        self codol_setScramblerActive( true );
-        self notify( "enabled" );
-    }
-}
-
 damageListener()
 {
     self endon( "death" );
@@ -173,8 +153,7 @@ damageListener()
         self waittill( "damage", damage, attacker, direction, point, mod, model, tag, part, flags, weapon );
         if ( isDefined( attacker ) && !maps\mp\gametypes\_weapons::friendlyFireCheck( self.owner, attacker ) )
             continue;
-        if ( isDefined( weapon ) && (weapon == "concussion_grenade_mp" || weapon == "flash_grenade_mp" ||
-             weapon == "smoke_grenade_mp" || weapon == "emp_grenade_mp") )
+        if ( isDefined( weapon ) && (weapon == "concussion_grenade_mp" || weapon == "flash_grenade_mp" || weapon == "smoke_grenade_mp") )
             continue;
         // IW5 retains these fields for damage/challenge consumers and sends
         // hit feedback for every accepted player hit, not just destruction.

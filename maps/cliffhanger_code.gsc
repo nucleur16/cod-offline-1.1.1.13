@@ -555,7 +555,7 @@ price_teleport_fallback( flag, loc_ent, dist )
 	}
 	else
 	{
-		PrintLn( " skipping price teleport, distance: " + p_dist );
+		{}
 	}
 }
 
@@ -2520,7 +2520,7 @@ dialog_player_kill()
 		}
 		level.player_kill_time = GetTime();
 
-		PrintLn( "--------- player kill: " + method );
+		{}
 		if ( ( method != "MOD_RIFLE_BULLET" ) && ( method != "MOD_PISTOL_BULLET" ) )
 			play_Sound_Over_Radio( "cliff_pri_melee_plyr" );
 		else
@@ -2550,9 +2550,9 @@ dialog_hes_mine()
 	while ( 1 )
 	{
 		self waittill_entity_in_range( level.player, 650 );
-		PrintLn( "        price target in range" );
+		{}
 		self waittill_player_lookat_for_time( 0.4 );
-		PrintLn( "        price target looked at" );
+		{}
 
 		if ( flag( "_stealth_spotted" ) )
 			return;
@@ -2756,7 +2756,7 @@ dialog_theyre_looking_for_you()
 		return;
 
 	dialog_line = dialog[ RandomInt( dialog.size ) ];
-	PrintLn( dialog_line );
+	{}
 	radio_clear_queue();
 	radio_dialogue( dialog_line );// dont cut off the other line but clear the que
 	//play_Radio_Interupt( dialog_line, true );//cut off the line and clear the que.
@@ -3023,7 +3023,7 @@ dialog_unsilenced_weapons()
 			wait .5;
 	}
 
-	PrintLn( weap );
+	{}
 	//Be careful about picking up enemy weapons, Soap. Any un-suppressed firearms will attract a lot of attention.	
 	play_Sound_Over_Radio( "cliff_pri_attractattn", true );
 

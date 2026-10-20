@@ -367,7 +367,7 @@ updateRadiationBlackOut()
 			end_alpha = fraction * 0.5;
 			end_blur = 7.2 * end_alpha;
 
-			println( "fraction: ", fraction, " length: ", length, " alpha: ", alpha, " blur: ", blur );
+			{}
 
 			if ( fraction == 1 )
 				break;

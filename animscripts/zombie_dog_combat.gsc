@@ -17,6 +17,9 @@
 //     meleeDamage, through _zombiemode::Callback_PlayerDamage), and the
 //     bite shellshock is T5 zombie's 0.35 s;
 //   - the debug dvar read goes through the local anim_get_dvar_int.
+//   - C1's raised attack is selected for standing/crouched targets with a
+//     clear attack trace; prone/obstructed targets retain the low bite.
+//     Native navigation/root motion owns the approach, without MP gap teleport.
 
 /*
 	maps/mp/animscripts/dog_combat.gsc
@@ -49,7 +52,7 @@
 
 main()
 {
-	debug_anim_print("dog_combat::main() " );
+	{}
 
 	self endon("killanimscript");
 	self SetAimAnimWeights( 0, 0 );
@@ -76,10 +79,6 @@ main()
 		return;
 	}
 
-	// T5 animscripts/zombie_dog_combat.gsc:19 (ends dog_stalk_audio, starts
-	// dog_behind_audio).
-	self notify( "dog_combat" );
-
 	if ( IsPlayer(self.enemy) )
 		self meleeBiteAttackPlayer(self.enemy);
 }
@@ -97,10 +96,10 @@ combatIdle()
 
 	self thread combatIdlePreventOverlappingPlayer();
 
-	debug_anim_print("dog_combat::combatIdle() - Setting " + idleAnim );
+	{}
 	self setanimstate( idleAnim );
 	self animscripts\zombie_dog_shared::DoNoteTracks( "done" );
-	debug_anim_print("dog_combat::combatIdle() - " + idleAnim + " notify done." );
+	{}
 
 	self notify( "combatIdleEnd" );
 }
@@ -211,7 +210,7 @@ meleeBiteAttackPlayer(player)
 
 /#
 		if ( GetDvarInt( "debug_dog_sound" ) )
-			iprintln( "dog " + (self getentnum()) + " attack player " + getTime() );
+			{}
 
 #/
 		player setNextDogAttackAllowTime( 200 );
@@ -237,14 +236,15 @@ meleeBiteAttackPlayer(player)
 			}
 			else
 			{
-				// 1.6 is about as big as you want to go or the dog anim will "stall"
-				attack_time = 1.2 + randomfloat( 0.4 );
-				debug_anim_print("dog_combat::meleeBiteAttackPlayer() - Setting  combat_run_attack" );
+				{}
 				self setanimstate( "combat_attack_run" );
 				self animscripts\zombie_dog_attack_log::anim_chosen( "run" );
-				self animscripts\zombie_dog_shared::DoNoteTracksForTime( attack_time, "done", ::handleMeleeBiteAttackNoteTracks, player );
+				// Mounted C1 zombie_dog_run_attack is 45 frames at 30 fps:
+				// dog_melee is at .2 (300 ms at rate 1), end at 1. Use its
+				// actual notetracks, including playback rate, for hit/recovery.
+				self animscripts\zombie_dog_shared::DoNoteTracks( "done", ::handleMeleeBiteAttackNoteTracks, player );
 				self animscripts\zombie_dog_attack_log::end();
-				debug_anim_print("dog_combat::meleeBiteAttackPlayer() - combat_attack_run notify done." );
+				{}
 			}
 		}
 		else
@@ -253,10 +253,10 @@ meleeBiteAttackPlayer(player)
 			player.attacked_by_dog = true;
 			self thread clear_player_attacked_by_dog_on_death(player);
 
-			debug_anim_print("dog_combat::meleeBiteAttackPlayer() - Setting  combat_attack_player" );
+			{}
 			self setanimstate( "combat_attack_player" );
 			self animscripts\zombie_dog_shared::DoNoteTracks( "done", ::Handlemeleefinishattacknotetracks, player );
-			debug_anim_print("dog_combat::meleeBiteAttackPlayer() - combat_attack_player notify done." );
+			{}
 			self notify( "dog_no_longer_melee_able" );
 			self setcandamage( true );
 			self unlink();
@@ -328,9 +328,7 @@ handleMeleeBiteAttackNoteTracks( note, player )
 			}
 			else
 			{
-				// T5 animscripts/zombie_dog_combat.gsc:71-74: a hellhound's
-				// missed bite just ends the lunge (no attack_player_miss
-				// recovery, which is the multiplayer dog's).
+				attackMiss();
 				return true;
 			}
 		}
@@ -388,13 +386,13 @@ handleMeleeFinishAttackNoteTracks( note, player )
 		case "dog_early":
 			self notify( "dog_early_notetrack" );
 
-			debug_anim_print("dog_combat::handleMeleeFinishAttackNoteTracks() - Setting  combat_attack_player_early" );
+			{}
 			self setanimstate( "combat_attack_player_early" );
 			break;
 
 		case "dog_lunge":
 			thread set_melee_timer(player);
-			debug_anim_print("dog_combat::handleMeleeFinishAttackNoteTracks() - Setting  combat_attack_player_lunge" );
+			{}
 			self setanimstate( "combat_attack_player_lunge" );
 			break;
 
@@ -458,25 +456,16 @@ checkEndCombat( meleeRange )
 
 use_low_attack(player)
 {
+	// T5's stance/clearance choice, against C1's separate high/low clips.
+	// Original CoDOL xWsKn1NEBt8 6:25/6:27 shows raised hound attacks;
+	// forcing the low clip for every player stance suppresses that pose.
 	height_diff = self.enemy_attack_start_origin[2] - self.origin[2];
-
-	low_enough = 30.0;
-
- 	if ( height_diff < low_enough && self.enemy_attack_start_stance == "prone" )
- 	{
- 		return true;
- 	}
-
-	// check if the jumping melee attack origin would be in a solid
-	melee_origin = ( self.origin[0], self.origin[1], self.origin[2] + 65 );
-	enemy_origin = ( self.enemy.origin[0], self.enemy.origin[1], self.enemy.origin[2] + 32 );
-
-	if ( !BulletTracePassed( melee_origin, enemy_origin, false, self ) )
-	{
+	if ( height_diff < 30 && self.enemy_attack_start_stance == "prone" )
 		return true;
-	}
 
- 	return false;
+	melee_origin = self.origin + ( 0, 0, 65 );
+	enemy_origin = self.enemy.origin + ( 0, 0, 32 );
+	return !BulletTracePassed( melee_origin, enemy_origin, false, self );
 }
 
 prepareAttackPlayer(player)
@@ -490,23 +479,12 @@ prepareAttackPlayer(player)
 	self.enemy_attack_start_time = GetTime();
 	self.enemy_attack_start_stance = player getStance();
 
-	distance_ok = ( (distanceToTarget > self.meleeAttackDist) && (targetHeight < (self.meleeAttackDist * 0.5)) );
-
-	if ( distance_ok && !use_low_attack() )
-	{
-		offset = self.enemy.origin - self.origin;
-
-		length = ( distanceToTarget - self.meleeAttackDist ) / distanceToTarget;
-		offset = ( offset[0] * length, offset[1] * length, offset[2] * length );
-
-		self thread attackTeleportThread( offset, player );
-	}
+	// The 32-unit Zombies approach already admits a native melee contact.
+	// Selecting the raised pose must not restore the MP gap-closing teleport.
 
 	if ( animscripts\zombie_dog_attack_log::enabled() )
 	{
 		teleport = 0;
-		if ( distance_ok && !use_low_attack() )
-			teleport = distanceToTarget - self.meleeAttackDist;
 		traceClear = BulletTracePassed( ( self.origin[0], self.origin[1], self.origin[2] + 65 ), ( self.enemy.origin[0], self.enemy.origin[1], self.enemy.origin[2] + 32 ), false, self );
 		self animscripts\zombie_dog_attack_log::begin( player, use_low_attack(), traceClear, teleport );
 	}
@@ -515,10 +493,6 @@ prepareAttackPlayer(player)
 	if ( anim_get_dvar_int( "debug_dog_attack", "0" )  )
 	{
 		teleported = "";
-		if ( distance_ok && !use_low_attack() )
-		{
-			teleported = "Teleported";
-		}
 
 		//println("Attack Target - Dist: " + distanceToTarget + " Stance: " + self.enemy_attack_start_stance + " " + teleported);
 	}
@@ -635,11 +609,11 @@ dog_melee_death(player)
 					{
 						player.player_view.custom_dog_save = "neck_snap";
 						self notify( "melee_stop" );
-						debug_anim_print("dog_combat::dog_melee_death() - Setting  combat_player_neck_snap" );
+						{}
 						self setanimstate( "combat_player_neck_snap" );
 
 						self waittillmatch( "done", "dog_death" );
-						debug_anim_print("dog_combat::dog_melee_death() - combat_player_neck_snap notify done." );
+						{}
 						self playsound( "anml_dog_bite", self gettagorigin( "tag_eye" ) );
 						self setcandamage( true );
 						self.a.nodeath = true;
@@ -650,7 +624,7 @@ dog_melee_death(player)
 					}
 					else
 					{
-						debug_anim_print("dog_combat::dog_melee_death() - Setting  combat_player_neck_snap"  );
+						{}
 						self setanimstate( "combat_attack_player" );
 						level.dog_death_quote = &"SCRIPT_PLATFORM_DOG_DEATH_TOO_LATE";
 					}
@@ -658,7 +632,7 @@ dog_melee_death(player)
 				}
 
 				level.dog_death_quote = &"SCRIPT_PLATFORM_DOG_DEATH_TOO_SOON";
-				debug_anim_print("dog_combat::dog_melee_death() - Setting  combat_player_neck_miss" );
+				{}
 				self setanimstate( "combat_player_neck_miss" );
 
 				// once player clicks, if it is at the wrong time, he does not get another chance.
@@ -686,7 +660,7 @@ attackMiss()
 		dirToEnemy = self.enemy.origin - ( self.origin + vector_multiply( forward, 50 ) );
 		if ( vectordot( dirToEnemy, forward ) > 0 )
 		{
-			debug_anim_print("dog_combat::attackMiss() - Setting  combat_attack_miss" );
+			{}
 			self setanimstate( "combat_attack_miss" );
 			self thread animscripts\zombie_dog_stop::lookAtTarget( "normal" );
 		}
@@ -697,26 +671,26 @@ attackMiss()
 
 			if ( ( dirToEnemy[0] * forward[1] - dirToEnemy[1] * forward[0] ) > 0 )
 			{
-						debug_anim_print("dog_combat::attackMiss() - Setting  combat_attack_miss_right" );
+						{}
 						self setanimstate( "combat_attack_miss_right" );
 			}
 			else
 			{
-						debug_anim_print("dog_combat::attackMiss() - Setting  combat_attack_miss_left" );
+						{}
 						self setanimstate( "combat_attack_miss_left" );
 			}
 		}
 	}
 	else
 	{
-					debug_anim_print("dog_combat::attackMiss() - Setting  combat_attack_miss" );
+					{}
 					self setanimstate( "combat_attack_miss" );
 	}
 
 	self animscripts\zombie_dog_shared::DoNoteTracks( "done" );
-	debug_anim_print("dog_combat::attackMiss() - attackMiss notify done." );
+	{}
 	self notify("stop tracking");
-	debug_anim_print("dog_combat::attackMiss() - Stopped tracking"  );
+	{}
 }
 
 

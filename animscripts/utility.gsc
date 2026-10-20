@@ -185,7 +185,7 @@ printDisplaceInfo()
 	self endon( "displaceprint" );
 	for ( ;; )
 	{
-		print3d( self.origin + ( 0, 0, 60 ), "displacer", ( 0, 0.4, 0.7 ), 0.85, 0.5 );
+		{}
 		wait( 0.05 );
 	}
 }
@@ -429,7 +429,7 @@ choosePose( preferredPose )
 		}
 		else
 		{
-			println( "No stance allowed!  Remaining standing." );
+			{}
 			resultPose = "stand";
 		}
 		break;
@@ -449,7 +449,7 @@ choosePose( preferredPose )
 		}
 		else
 		{
-			println( "No stance allowed!  Remaining crouched." );
+			{}
 			resultPose = "crouch";
 		}
 		break;
@@ -469,13 +469,13 @@ choosePose( preferredPose )
 		}
 		else
 		{
-			println( "No stance allowed!  Remaining prone." );
+			{}
 			resultPose = "prone";
 		}
 		break;
 
 	default:
-		println( "utility::choosePose, called in " + self.script + " script: Unhandled anim_pose " + self.a.pose + " - using stand." );
+		{}
 		resultPose = "stand";
 		break;
 	}
@@ -647,7 +647,7 @@ drawDebugInfo()
 		if ( isDefined( line[ i ] ) )
 		{
 			textPos = ( belowFeet[ 0 ] + ( offset[ 0 ] * i ), belowFeet[ 1 ] + ( offset[ 1 ] * i ), belowFeet[ 2 ] + ( offset[ 2 ] * i ) );
-			print3d( textPos, line[ i ], ( .2, .2, 1 ), 1, 0.75 );	// origin, text, RGB, alpha, scale
+			{}	// origin, text, RGB, alpha, scale
 		}
 	}
 }
@@ -774,7 +774,7 @@ playAnim( animation )
 	if ( isDefined( animation ) )
 	{
 		// self thread drawString( animation );	// Doesn't work for animations, only strings.
-		println( "NOW PLAYING: ", animation );
+		{}
 		self setFlaggedAnimKnobAllRestart( "playAnim", animation, %root, 1, .1, 1 );
 		timeToWait = getanimlength( animation );
 		timeToWait = ( 3 * timeToWait ) + 1;	// So looping animations play through 3 times.
@@ -800,7 +800,7 @@ drawString( stringtodraw )
 	for ( ;; )
 	{
 		wait .05;
-		print3d( ( self GetDebugEye() ) + ( 0, 0, 8 ), stringtodraw, ( 1, 1, 1 ), 1, 0.2 );
+		{}
 	}
 }
 
@@ -809,7 +809,7 @@ drawStringTime( msg, org, color, timer )
 	maxtime = timer * 20;
 	for ( i = 0;i < maxtime;i++ )
 	{
-		print3d( org, msg, color, 1, 1 );
+		{}
 		wait .05;
 	}
 }
@@ -834,7 +834,7 @@ showLastEnemySightPos( string )
 		if ( !isdefined( self.lastEnemySightPos ) )
 			continue;
 
-		print3d( self.lastEnemySightPos, string, color, 1, 2.15 );	// origin, text, RGB, alpha, scale
+		{}	// origin, text, RGB, alpha, scale
 	}
 }
 
@@ -851,7 +851,7 @@ printDebugTextProc( string, org, printTime, color )
 	for ( i = 0;i < timer;i += 1 )
 	{
 		wait( 0.05 );
-		print3d( org, string, color, 1, 1 );	// origin, text, RGB, alpha, scale
+		{}	// origin, text, RGB, alpha, scale
 	}
 }
 
@@ -937,7 +937,7 @@ debugPosInternal( org, string, size )
 	while ( 1 )
 	{
 		wait( 0.05 );
-		print3d( org, string, color, 1, size );	// origin, text, RGB, alpha, scale
+		{}	// origin, text, RGB, alpha, scale
 	}
 }
 
@@ -983,7 +983,7 @@ printShootProc()
 	for ( i = 0;i < timer;i += 1 )
 	{
 		wait( 0.05 );
-		print3d( self.origin + ( 0, 0, 70 ), "Shoot", ( 1, 0, 0 ), 1, 1 );	// origin, text, RGB, alpha, scale
+		{}	// origin, text, RGB, alpha, scale
 	}
 }
 
@@ -1698,7 +1698,7 @@ print3dtime( timer, org, msg, color, alpha, scale )
 	newtime = timer / 0.05;
 	for ( i = 0;i < newtime;i++ )
 	{
-		print3d( org, msg, color, alpha, scale );
+		{}
 		wait( 0.05 );
 	}
 }
@@ -1712,7 +1712,7 @@ print3drise( org, msg, color, alpha, scale )
 	for ( i = 0;i < newtime;i++ )
 	{
 		up += 0.5;
-		print3d( org + ( 0, 0, up ), msg, color, alpha, scale );
+		{}
 		wait( 0.05 );
 	}
 }
@@ -1960,14 +1960,14 @@ animArrayPickRandom( animname )
  /#
 dumpAnimArray()
 {
-	println( "self.a.array:" );
+	{}
 	keys = getArrayKeys( self.a.array );
 	for ( i = 0; i < keys.size; i++ )
 	{
 		if ( isarray( self.a.array[ keys[ i ] ] ) )
-			println( " array[ \"" + keys[ i ] + "\" ] = {array of size " + self.a.array[ keys[ i ] ].size + "}" );
+			{}
 		else
-			println( " array[ \"" + keys[ i ] + "\" ] = ", self.a.array[ keys[ i ] ] );
+			{}
 	}
 }
 #/

@@ -604,7 +604,7 @@ get_zombie_hint( ref )
 	if ( isDefined( level.zombie_hints ) && isDefined( level.zombie_hints[ ref ] ) )
 		return level.zombie_hints[ ref ];
 
-	println( "CoDOL zm: no hint string registered for ref " + ref );
+	{}
 	return undefined;
 }
 

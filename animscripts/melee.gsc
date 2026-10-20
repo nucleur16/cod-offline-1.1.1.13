@@ -1645,7 +1645,7 @@ Melee_EndScript_CheckPositionAndMovement()
 	if ( isDefined ( newOrigin ) )
 		self forceTeleport( newOrigin, self.angles );
 	else
-		println( "Warning: Melee animation might have ended up in solid for entity #" + self getentnum() );
+		{}
 }
 
 

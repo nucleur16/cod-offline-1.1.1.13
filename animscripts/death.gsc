@@ -113,7 +113,7 @@ main()
 
 	 /#
 	if ( getdvarint( "scr_paindebug" ) == 1 )
-		println( "^2Playing pain: ", deathAnim, " ; pose is ", self.a.pose );
+		{}
 	#/
 
 	playDeathAnim( deathAnim );
@@ -187,8 +187,8 @@ playDeathAnim( deathAnim )
 		if ( animhasnotetrack( deathAnim, "bodyfall small" ) )
 			return;
 
-		println( "Death animation ", deathAnim, " does not have a bodyfall notetrack" );
-		iprintlnbold( "Death animation needs fixing (check console and report bug in the animation to Boon)" );
+		{}
+		{}
 	}
 	#/
 	
@@ -376,7 +376,7 @@ print3dfortime( place, text, time )
 	numframes = time * 20;
 	for ( i = 0; i < numframes; i++ )
 	{
-		print3d( place, text );
+		{}
 		wait .05;
 	}
 }

@@ -16,7 +16,7 @@
 
 main()
 {
-	debug_anim_print("dog_death::main()" );
+	{}
 	self SetAimAnimWeights( 0, 0 );
 
 	self endon("killanimscript");
@@ -38,11 +38,11 @@ main()
 
 	death_anim = "death_" + getAnimDirection( self.damageyaw );
 /#
-	println(death_anim);
+	{}
 #/
 
 	self animMode( "gravity" );
-	debug_anim_print("dog_death::main() - Setting " + death_anim );
+	{}
 	self setanimstate( death_anim );
 	self maps\mp\animscripts\dog_shared::DoNoteTracks( "done" );
 }

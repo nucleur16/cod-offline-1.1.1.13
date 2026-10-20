@@ -1378,7 +1378,7 @@ update_rumble_intensity( player )
 		self.origin = player.origin + ( 0, 0, intensity );
 		/#
 		if( is_coop() )
-			PrintLn( "^3Warning! Using get_rumble_ent will cause the same rumbles to apply to all of the coop players!" );
+			{}
 		#/
 		wait( 0.05 );
 	}

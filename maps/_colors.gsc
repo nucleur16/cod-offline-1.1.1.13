@@ -252,7 +252,7 @@ goto_current_ColorIndex()
 
 no_node_to_go_to()
 {
-	println( "AI with export " + self.export + " was told to go to color node but had no node to go to." );
+	{}
 	// what to do?
 	/* 
 	col = self.script_forcecolor;
@@ -715,7 +715,7 @@ issue_color_order_to_ai( colorCode, color, team, ai )
 
 	 /#
 	if ( nodes.size < ai.size )
-		println( "^3Warning, ColorNumber system tried to make " + ai.size + " AI go to " + nodes.size + " nodes." );
+		{}
 	#/
 
 	counter = 0;

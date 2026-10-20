@@ -71,7 +71,7 @@ debugchains()
 			{
 				if ( Distance( level.player GetOrigin(), fnodes[ i ].origin ) < 1500 )
 				{
-					Print3d( fnodes[ i ].origin, "yo", ( 0.2, 0.8, 0.5 ), 0.45 );
+					{}
 					/*
 					count++;
 					if( count > 25 )
@@ -602,9 +602,9 @@ debugMisstime()
 	for ( ;; )
 	{
 		if ( self.a.misstime <= 0 )
-			Print3d( self GetTagOrigin( "TAG_EYE" ) + ( 0, 0, 15 ), "hit", ( 0.3, 1, 1 ), 1 );
+			{}
 		else
-			Print3d( self GetTagOrigin( "TAG_EYE" ) + ( 0, 0, 15 ), self.a.misstime / 20, ( 0.3, 1, 1 ), 1 );
+			{}
 		wait( 0.05 );
 	}
 }
@@ -1187,11 +1187,11 @@ hatmodel()
 
 		if ( noHat.size )
 		{
-			PrintLn( " " );
-			PrintLn( "The following AI have no Hatmodel, so helmets can not pop off on head-shot death:" );
+			{}
+			{}
 			for ( i = 0; i < noHat.size; i++ )
-				PrintLn( "Classname: ", noHat[ i ] );
-			PrintLn( "To disable hatModel spam, type debug_hatmodel off" );
+				{}
+			{}
 		}
 		wait( 15 );
 	}
@@ -1515,8 +1515,8 @@ anglescheck()
 	{
 		if ( GetDvar( "angles", "0" ) == "1" )
 		{
-			PrintLn( "origin " + level.player GetOrigin() );
-			PrintLn( "angles " + level.player.angles );
+			{}
+			{}
 			SetDvar( "angles", "0" );
 		}
 		wait( 1 );
@@ -1569,12 +1569,12 @@ dollyGo()
 			SetDvar( "dolly", "" );
 			if ( !isdefined( level.dollystart ) )
 			{
-				PrintLn( "NO Dolly Start!" );
+				{}
 				continue;
 			}
 			if ( !isdefined( level.dollyend ) )
 			{
-				PrintLn( "NO Dolly End!" );
+				{}
 				continue;
 			}
 
@@ -1602,9 +1602,9 @@ deathspawnerPreview()
 		{
 			ent = array[ p ];
 			if ( IsDefined( ent.truecount ) )
-				Print3d( ent.origin, i + ": " + ent.truecount, ( 0, 0.8, 0.6 ), 5 );
+				{}
 			else
-				Print3d( ent.origin, i + ": " + ".", ( 0, 0.8, 0.6 ), 5 );
+				{}
 		}
 	}
 }
@@ -1794,7 +1794,7 @@ updateMinimapSetting()
 				thread drawMiniMapBounds( viewpos, mincorner, maxcorner );
 			}
 			else
-				PrintLn( "^1Error: There are not exactly 2 \"minimap_corner\" entities in the level." );
+				{}
 		}
 	}
 }
@@ -1880,7 +1880,7 @@ drawMiniMapBounds( viewpos, mincorner, maxcorner )
 
 		array_levelthread( chains, ::plot_points );
 
-		Print3d( toppos, "This Side Up", ( 1, 1, 1 ), 1, textscale );
+		{}
 
 		wait .05;
 	}
@@ -1925,7 +1925,7 @@ debug_colornodes()
 		if ( IsDefined( guy.script_forcecolor ) )
 			color = level.color_debug[ guy.script_forcecolor ];
 
-		Print3d( guy.origin + ( 0, 0, 50 ), guy.currentColorCode, color, 1, 1 );
+		{}
 
 		// axis dont do forcecolor behavior, they do follow the leader for force color
 		if ( guy.team == "axis" )
@@ -1952,7 +1952,7 @@ draw_colorNodes( array, team )
 			teamArray = level.colorNodes_debug_array[ team ][ keys[ i ] ];
 			for ( p = 0; p < teamArray.size; p++ )
 			{
-				Print3d( teamArray[ p ].origin, "N-" + keys[ i ], color, 1, 1 );
+				{}
 			}
 		}
 	}
@@ -2083,22 +2083,22 @@ displayThreat( entity, entityGroup )
 
 	for ( i = 0; i <= timer; i++ )
 	{
-		Print3d( self.origin + ( 0, 0, 65 ), "Him to Me:", col, 3 );
-		Print3d( self.origin + ( 0, 0, 50 ), threat, col, 5 );
+		{}
+		{}
 		if ( IsDefined( entityGroup ) )
 		{
-			Print3d( self.origin + ( 0, 0, 35 ), entityGroup, col, 2 );
+			{}
 		}
 
-		Print3d( self.origin + ( 0, 0, 15 ), "Me to Him:", col2, 3 );
-		Print3d( self.origin + ( 0, 0, 0 ), selfThreat, col2, 5 );
+		{}
+		{}
 		if ( IsDefined( mygroup ) )
 		{
-			Print3d( self.origin + ( 0, 0, -15 ), mygroup, col2, 2 );
+			{}
 		}
 		if ( pacifist )
 		{
-			Print3d( self.origin + ( 0, 0, 25 ), "( Pacifist )", col2, 5 );
+			{}
 		}
 
 		wait( 0.05 );
@@ -2187,7 +2187,7 @@ playerNode()
 	for ( ;; )
 	{
 		if ( IsDefined( level.player.node ) )
-			Print3d( level.player.node.origin + ( 0, 0, 25 ), "P-Node", ( 0.3, 1, 1 ), 1 );
+			{}
 
 		wait( 0.05 );
 	}
@@ -2200,7 +2200,7 @@ drawUsers()
 	{
 		Line( self.origin + ( 0, 0, 35 ), self.color_user.origin + ( 0, 0, 35 ), ( 1, 1, 1 ), 1.0 );
 
-		Print3d( self.origin + ( 0, 0, -25 ), "in-use", ( 1, 1, 1 ), 1, 1 );
+		{}
 	}
 }
 
@@ -2504,7 +2504,7 @@ debug_animSound()
 		msg = "*";
 		if ( level.animsound_locked )
 			msg = "*LOCK";
-		Print3d( animSound.origin + ( 0, 0, 40 ), msg + animSound.animsounds.size, animSound.animsound_color, 1, scale );
+		{}
 	}
 
 	if ( is_tagged )
@@ -2846,7 +2846,7 @@ print_aliases_to_file( file )
 					// this is attached to a notetrack					
 					FPrintLn( file, tab + "addNotetrack_animSound( " + tostr( animnames[ i ] ) + ", " + tostr( anime ) + ", " + tostr( notetrack ) + ", " + tostr( alias ) + " ); " );
 				}
-				PrintLn( "^1Saved alias ^4" + alias + "^1 to notetrack ^4" + notetrack );
+				{}
 			}
 		}
 	}
@@ -2899,7 +2899,7 @@ print3ddraw( org, text, color )
 {
 	for ( ;; )
 	{
-		Print3d( org, text, color );
+		{}
 		wait( 0.05 );
 	}
 }
@@ -3003,13 +3003,13 @@ viewfx()
 	foreach ( fx in level.createfxent )
 	{
 		if ( IsDefined( fx.looper ) )
-			Print3d( fx.v[ "origin" ], ".", ( 1, 1, 0 ), 1, 1.5, 200 );
+			{}
 	}
 }
 
 add_key( key, val )
 {
-	PrintLn( "	\"" + key + "\" \"" + val + "\"" );
+	{}
 }
 
 print_vehicle_info( noteworthy )
@@ -3020,8 +3020,8 @@ print_vehicle_info( noteworthy )
 	level.vnum++;
 
 	layer = "bridge_helpers";
-	PrintLn( "entity " + level.vnum );
-	PrintLn( "{" );
+	{}
+	{}
 	add_key( "origin", self.origin[ 0 ] + " " + self.origin[ 1 ] + " " + self.origin[ 2 ] );
 	add_key( "angles", self.angles[ 0 ] + " " + self.angles[ 1 ] + " " + self.angles[ 2 ] );
 	add_key( "targetname", "helper_model" );
@@ -3029,12 +3029,12 @@ print_vehicle_info( noteworthy )
 	add_key( "classname", "script_model" );
 	add_key( "spawnflags", "4" );
 	add_key( "_color", "0.443137 0.443137 1.000000" );
-	PrintLn( "	layer \"" + layer + "\"" );
+	{}
 
 	if ( IsDefined( noteworthy ) )
 		add_key( "script_noteworthy", noteworthy );
 
-	PrintLn( "}" );
+	{}
 }
 
 draw_dot_for_ent( entnum )
@@ -3061,5 +3061,5 @@ draw_dot_for_guy()
 	forward = AnglesToForward( angles );
 
 	dot = VectorDot( forward, player_forward );
-	Print3d( start, dot, ( 1, 0.5, 0 ) );
+	{}
 }

@@ -655,7 +655,7 @@ print3Dmessage( info_origin, message, show_time, color, offset, scale )
 	show_time = gettime() + ( show_time * 1000 );
 	while ( gettime() < show_time )
 	{
-		print3d( info_origin + offset, message, color, 1, scale );
+		{}
 		wait( 0.05 );
 	}
 }

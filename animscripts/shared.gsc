@@ -341,7 +341,7 @@ showNoteTrack( note )
 		alpha = 1.0 - amnt * amnt;
 		pos = self geteye() + ( 0, 0, 20 + anim.showNotetrackSpeed * time - thisoffset );
 
-		print3d( pos, note, color, alpha );
+		{}
 
 		wait .05;
 	}
@@ -502,7 +502,7 @@ noteTrackStartRagdoll( note, flagName )
 	self startRagdoll();
 	/#
 	if ( isalive( self ) )
-		println( "^4Warning!! Living guy did ragdoll!" );
+		{}
 	#/
 }
 
@@ -998,7 +998,7 @@ DoNoteTracksForeverProc( notetracksFunc, flagName, killString, customFunction, d
 			timetaken = GetTime() - time;
 			if ( timetaken < 0.05 )
 			{
-				println( GetTime() + " " + debugIdentifier + " animscripts\shared::DoNoteTracksForever is trying to cause an infinite loop on anim " + flagName + ", returned " + returnedNote + "." );
+				{}
 				wait( 0.05 - timetaken );
 			}
 		}
@@ -1909,7 +1909,7 @@ moveToOriginOverTime( origin, time )
 
 	if ( distSq > 16 * 16 && !self mayMoveToPoint( origin ) )
 	{
-		 /# println( "^1Warning: AI starting behavior for node at " + origin + " but could not move to that point." ); #/
+		 /# {} #/
 		return;
 	}
 

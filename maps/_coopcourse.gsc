@@ -77,7 +77,7 @@ init()
 		return;
 
 	melee_clip( false );
-	codolprintln( "CoDOL coop course: " + pivots + " pop-up targets" );
+	{}
 	// The training mission has no pit run (the retail recording ends it with
 	// Price after the obstacle course; user, 2026-10-08: the pit is for
 	// another training), so its course triggers stay idle there.  Its gates
@@ -86,58 +86,6 @@ init()
 	if ( !isDefined( level.coop_training_flow ) || !level.coop_training_flow )
 		level thread course_triggers();
 	level thread proximity_groups();
-	if ( getDvar( "codol_sessionMap" ) == "coop_spec1_mp_killhouse_sh" )
-		level thread spec1_cast();
-}
-
-// coop_spec1_mp_killhouse_sh's two allies (the addon's only actors besides
-// the obstacle gunner): Price in the black kit at the pit's entrance, in
-// CoD4's reveal idle (killhouse_sas_price_idle, his authored animation), and
-// Captain Price on the tower over the course (SAS_blackkit, authored with
-// killhouse_gaz_intro): the intro when a player first comes into view of the
-// tower, then the instructor idle.  Cast members as in the training
-// (_cooptraining spawn_cast: unhurt, never fighting, the look-only name).
-spec1_cast()
-{
-	level endon( "coop_mission_over" );
-	while ( getPlayers().size <= 0 )
-		wait( 0.5 );
-	wait( 0.5 );
-	level.coop_cast = [];
-	level.coop_cast_list = [];
-	level.coop_training_prop_done = [];
-	ents = getEntArray();
-	tower = undefined;
-	for ( i = 0; i < ents.size; i++ )
-	{
-		e = ents[ i ];
-		if ( !isDefined( e.classname ) || e.classname != "actor_ally_hero_price_blackkit_maskup_so" )
-			continue;
-		key = "spec1_price";
-		if ( isDefined( e.targetname ) && e.targetname == "SAS_blackkit" )
-			key = "spec1_tower";
-		ai = maps\_cooptraining::spawn_cast( e, key );
-		if ( !isDefined( ai ) )
-			continue;
-		level.coop_cast[ key ] = ai;
-		level.coop_cast_list[ level.coop_cast_list.size ] = ai;
-		if ( key == "spec1_tower" )
-			tower = ai;
-	}
-	codolprintln( "CoDOL coop course: spec1 cast of " + level.coop_cast_list.size + " placed" );
-	level thread maps\_cooptraining::show_nametags();
-	if ( !isDefined( tower ) )
-		return;
-	for ( ;; )
-	{
-		wait( 0.5 );
-		if ( !isAlive( tower ) )
-			return;
-		p = maps\_cooptraining::player_near( tower.origin, 1500 );
-		if ( isDefined( p ) )
-			break;
-	}
-	tower maps\_coopscene_killhouse::scene( "intro" );
 }
 
 // "enemy" / "friendly", or undefined for a brushmodel that is not a target.
@@ -233,7 +181,7 @@ target_think()
 				continue;
 			if ( meleeOnly )
 			{
-				codolprintln( "CoDOL coop course: melee target hit by " + attacker.name + " with " + type );
+				{}
 				if ( !isDefined( type ) || type != "MOD_MELEE" )
 					continue;
 			}
@@ -283,7 +231,7 @@ melee_clip( present )
 		clip hide();
 		clip notSolid();
 	}
-	codolprintln( "CoDOL coop course: melee_clip " + present );
+	{}
 }
 
 drop( targets )
@@ -340,7 +288,7 @@ course_triggers()
 		}
 		t thread course_trigger_think();
 	}
-	codolprintln( "CoDOL coop course: pit course, " + triggers.size + " triggers, " + level.coop_course_enemies.size + " enemy targets" );
+	{}
 }
 
 course_trigger_think()
@@ -381,7 +329,7 @@ course_run( runner )
 	for ( i = 0; i < players.size; i++ )
 		players[ i ] playLocalSound( "killhouse_buzzer" );
 	maps\_coopmission::announce( "Course started: " + level.coop_course_enemies.size + " targets" );
-	codolprintln( "CoDOL coop course: run " + level.coop_course_runs + " started by " + runner.name );
+	{}
 
 	timer = newHudElem();
 	timer.x = 0;
@@ -416,8 +364,7 @@ course_run( runner )
 		maps\_coopmission::announce( "Course complete: " + elapsed + " s, civilians hit " + level.coop_course_civs_hit );
 	else
 		maps\_coopmission::announce( "Out of time: " + level.coop_course_hits + " of " + level.coop_course_enemies.size + " targets" );
-	codolprintln( "CoDOL coop course: run " + level.coop_course_runs + " " + finished + " in " + elapsed + " s, hits " +
-		level.coop_course_hits + "/" + level.coop_course_enemies.size + ", civilians " + level.coop_course_civs_hit );
+	{}
 
 	if ( finished )
 	{
@@ -470,7 +417,7 @@ proximity_groups()
 	for ( k = 0; k < keys.size; k++ )
 		level thread proximity_group_think( keys[ k ], groups[ keys[ k ] ] );
 	if ( keys.size > 0 )
-		codolprintln( "CoDOL coop course: " + keys.size + " proximity target groups" );
+		{}
 }
 
 proximity_group_think( key, targets )
@@ -501,7 +448,7 @@ proximity_group_think( key, targets )
 
 		for ( i = 0; i < targets.size; i++ )
 			targets[ i ] notify( "pop_up" );
-		codolprintln( "CoDOL coop course: target group " + key + " up" );
+		{}
 
 		// Down once every enemy of the group is down, then re-arm.
 		for ( ;; )

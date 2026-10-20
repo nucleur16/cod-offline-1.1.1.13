@@ -53,7 +53,7 @@ advancedTraverse2( traverseAnim, normalHeight )
 
 handle_death( note )
 {
-	println( note );
+	{}
 
 	if ( note != "traverse_death" )
 		return;

@@ -606,7 +606,7 @@ Reload( thresholdFraction, optionalAnimation )
 		}
 		else
 		{
-			println( "Bad anim_pose in combat::Reload" );
+			{}
 			//prof_end( "Reload" );
 			wait 2;
 			return;
@@ -676,9 +676,9 @@ getGrenadeThrowOffset( throwAnim )
 	if ( offset[ 2 ] == 64 )
 	{
 		if ( isdefined( throwAnim ) )
-			println( "^1Warning: undefined grenade throw animation used; hand offset unknown" );
+			{}
 		else
-			println( "^1Warning: grenade throw animation ", throwAnim, " has no recorded hand offset" );
+			{}
 	}
 
 	//prof_end( "getGrenadeThrowOffset" );
@@ -710,7 +710,7 @@ ThrowGrenadeAtPlayerASAP_combat_utility()
 		if ( enemies[ i ].grenadeammo > 0 )
 			return;
 	}
-	println( "^1Warning: called ThrowGrenadeAtPlayerASAP, but no enemies have any grenadeammo!" );
+	{}
 	#/
 }
 
@@ -1033,11 +1033,11 @@ grenadeDebug( state, duration, showMissReason )
 
 	while ( gettime() < endtime )
 	{
-		print3d( self getShootAtPos() + ( 0, 0, 10 ), state );
+		{}
 		if ( isdefined( showMissReason ) && isdefined( self.grenadeMissReason ) )
-			print3d( self getShootAtPos() + ( 0, 0, 0 ), "Failed: " + self.grenadeMissReason );
+			{}
 		else if ( isdefined( self.activeGrenadeTimer ) )
-			print3d( self getShootAtPos() + ( 0, 0, 0 ), "Timer: " + getGrenadeTimerDebugName( self.activeGrenadeTimer ) );
+			{}
 		wait .05;
 	}
 }
@@ -1349,8 +1349,8 @@ DoGrenadeThrow( throw_anim, throwVel, nextGrenadeTimeToUse, secondGrenadeOfDoubl
 			emptySlot[ tags[ i ] ]++ ;
 			if ( emptySlot[ tags[ i ] ] < 2 )
 				continue;
-			iprintlnbold( "Grenade throw needs fixing (check console)" );
-			println( "Grenade throw animation ", throw_anim, " has multiple weapons attached to ", tags[ i ] );
+			{}
+			{}
 			break;
 		}
 	}
@@ -1396,9 +1396,9 @@ DoGrenadeThrow( throw_anim, throwVel, nextGrenadeTimeToUse, secondGrenadeOfDoubl
 		self detach( model, attachside );
 	else
 	{
-		print( "No grenade hand set: " );
-		println( throw_anim );
-		println( "animation in console does not specify grenade hand" );
+		{}
+		{}
+		{}
 	}
 	self.isHoldingGrenade = undefined;
 
@@ -1579,8 +1579,8 @@ grenadeLine( start, end )
 	for ( ;; )
 	{
 		line( start, end, ( 1, 0, 1 ) );
-		print3d( start, start, ( 0.2, 0.5, 1.0 ), 1, 1 );	// origin, text, RGB, alpha, scale
-		print3d( end, end, ( 0.2, 0.5, 1.0 ), 1, 1 );	// origin, text, RGB, alpha, scale
+		{}	// origin, text, RGB, alpha, scale
+		{}	// origin, text, RGB, alpha, scale
 		wait( 0.05 );
 	}
 }
@@ -1695,7 +1695,7 @@ DebugFailedCoverUsage( node )
 		for ( i = 0; i < 20; i++ )
 		{
 			line( self.origin, node.origin );
-			print3d( node.origin, "failed" );
+			{}
 			wait .05;
 		}
 	}

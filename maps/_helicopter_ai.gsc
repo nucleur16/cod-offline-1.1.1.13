@@ -278,7 +278,7 @@ wingman_think( vehicle )
 				bStop = true;
 
 			if ( getdvar( "cobrapilot_debug" ) == "1" )
-				iprintln( "wingman speed: " + wingmanSpeed + " : " + bStop );
+				{}
 
 			vehicle setVehGoalPos( goalPos, bStop );
 		}

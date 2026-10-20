@@ -52,7 +52,7 @@ extest_watch()
 
 		case "dogs":
 			setDvar( "scr_zm_force_dogs", "1" );
-			codolprintln( "CoDOL extest: the next round is a hound round" );
+			{}
 			break;
 
 		case "killdog":
@@ -72,7 +72,7 @@ extest_watch()
 			if ( isDefined( p ) && isDefined( level.zm_rescue_heli ) )
 				p maps\_zombiemode_extraction::board( level.zm_rescue_heli, "extest board" );
 			else
-				codolprintln( "CoDOL extest: no client or no helicopter" );
+				{}
 			break;
 		}
 	}
@@ -89,7 +89,7 @@ extest_player( tokens, index )
 		if ( players[ i ] getEntityNumber() == num )
 			return players[ i ];
 	}
-	codolprintln( "CoDOL extest: no client " + tokens[ index ] );
+	{}
 	return undefined;
 }
 
@@ -116,13 +116,7 @@ extest_status()
 		if ( is_true( players[ i ].zm_extracted ) )
 			extracted++;
 	}
-	codolprintln( "CoDOL extest: round " + level.round_number + "/" + level.zm_round_cap +
-		" final " + maps\_zombiemode::is_final_round() +
-		" dog_round " + flag( "dog_round" ) + " next_dog_round " + diag_val( level.next_dog_round ) +
-		" dog_round_count " + level.dog_round_count +
-		" enemies " + alive + " (hounds " + dogs + ") budget " + level.zombie_total +
-		" extraction " + is_true( level.zm_extraction_active ) + " extracted " + extracted +
-		" players " + players.size );
+	{}
 }
 
 extest_end_round()
@@ -140,7 +134,7 @@ extest_end_round()
 			z doDamage( z.health + 1000, z.origin );
 		}
 	}
-	codolprintln( "CoDOL extest: round " + level.round_number + " ended by test" );
+	{}
 }
 
 extest_kill_dog()
@@ -161,25 +155,25 @@ extest_kill_dog()
 	}
 	if ( !isDefined( best ) )
 	{
-		codolprintln( "CoDOL extest: no live hellhound" );
+		{}
 		return;
 	}
 	num = best getEntityNumber();
 	origin = best.origin;
 	best doDamage( best.health + 10, origin, self, self, 0, "MOD_RIFLE_BULLET", 0, "m1911_zm" );
-	codolprintln( "CoDOL extest: " + self.name + " killed hellhound " + num + " at " + origin );
+	{}
 }
 
 extest_lz()
 {
 	if ( !isDefined( level.zm_extraction_route ) )
 	{
-		codolprintln( "CoDOL extest: no rescue landing zone yet" );
+		{}
 		return;
 	}
 	lz = level.zm_extraction_route.lz;
 	self setOrigin( lz + ( 0, 0, 8 ) );
-	codolprintln( "CoDOL extest: " + self.name + " placed at the landing zone " + lz );
+	{}
 }
 
 // Every round boundary: the four round HUD dvars as updateRoundHud sets them.
@@ -193,8 +187,6 @@ extest_log_round_hud()
 		goal = 0;
 		if ( level.zm_round_cap > 0 )
 			goal = level.zm_round_cap;
-		codolprintln( "CoDOL extest: round HUD ui_hud_round " + level.round_number + " ui_hud_round_goal " + goal +
-			" ui_hud_special_round " + flag( "dog_round" ) +
-			" ui_hud_final_round " + maps\_zombiemode::is_final_round() );
+		{}
 	}
 }

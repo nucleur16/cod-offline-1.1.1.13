@@ -242,7 +242,7 @@ levelMain( visionName )
 		VisionSetNaked( visionName, 0 );
 		VisionSetPain( visionName );
 	}
-	codolprintln( "CoDOL coop: vision " + visionName + " (session " + session + ")" );
+	{}
 
 	// The mission's ambient bed: the Killhouse missions' zones ship
 	// ambient_killhouse_exterior (the multiplayer level plays
@@ -316,11 +316,7 @@ coop_minimap_material( session )
 	case "mp_crash_tropical":
 		return "compass_map_mp_crash_dlc";
 	case "mp_crash_intro":
-		// No zone ships a compass_map_mp_crash_intro (MEASURED: mp_crash_intro
-		// and coop_prolog_mp_crash_intro carry no compass material).  The map
-		// is Crash's geometry with Crash's corners, and patch_common_mp, which
-		// is always mounted, carries Crash's.
-		return "compass_map_mp_crash_dlc";
+		return "compass_map_mp_crash_intro";
 	case "mp_estate_tropical":
 		return "compass_map_mp_estate_tropical";
 	case "mp_fav_tropical":
@@ -342,7 +338,7 @@ coop_minimap()
 	material = coop_minimap_material( session );
 	if ( !isDefined( material ) )
 	{
-		codolprintln( "CoDOL coop: no minimap for " + session );
+		{}
 		return;
 	}
 	all = getEntArray( "minimap_corner", "targetname" );
@@ -367,28 +363,16 @@ coop_minimap()
 		corners = mission;
 	if ( corners.size != 2 )
 	{
-		codolprintln( "CoDOL coop: minimap " + material + " not set: " + all.size + " minimap_corner entities (" + mission.size + " mission, " + base.size + " base)" );
+		{}
 		for ( i = 0; i < all.size; i++ )
 		{
 			v = "undefined";
 			if ( isDefined( all[ i ].script_specialops ) )
 				v = "" + all[ i ].script_specialops;
-			codolprintln( "CoDOL coop:   minimap_corner " + all[ i ].origin + " script_specialops " + v );
+			{}
 		}
 		return;
 	}
-
-	// The compass image is square, so the bounds must be square in the
-	// north-yaw frame.  maps\mp\_load::main() sets this before every
-	// multiplayer level script's setupMiniMap; coop never runs that loader,
-	// so the bounds went out unexpanded.  MEASURED (docs/CODOL_CAMPAIGN_MODE.md
-	// 14.3): mp_estate_tropical's corners are a world-axis 6400 square under
-	// north yaw 144, which is 8940 x 1416 in the compass frame (the 6.3:1
-	// squish on both estate missions); the AI path nodes fill the image's
-	// drawn area exactly in the 8940 x 8940 square this expands it to.  Crash
-	// (4694 x 3176) and favela (5504 x 4544) were squished the same way.
-	if ( !isDefined( level.requiredMapAspectRatio ) )
-		level.requiredMapAspectRatio = getDvarFloat( "scr_RequiredMapAspectratio", 1 );
 
 	// IW4 _compass setupMiniMap's maths, shared (common_scripts/_compass.gsc).
 	if ( !common_scripts\_compass::setupMiniMapCorners( material, corners ) )
@@ -398,11 +382,7 @@ coop_minimap()
 	which = "base";
 	if ( mission.size == 2 )
 		which = "mission";
-	// The compass-frame extent the client derives (CG_MiniMapChanged): east
-	// by south.  A square image wants the two equal.
-	east = ( sin( getNorthYaw() ), 0 - cos( getNorthYaw() ), 0 );
-	codolprintln( "CoDOL coop: minimap " + material + " " + northwest + " .. " + southeast + " (north yaw " + getNorthYaw() + ", " +
-		which + " corners, compass frame " + vectordot( southeast - northwest, east ) + " x " + level.mapSize + ")" );
+	{}
 }
 
 // --------------------------------------------------------------------------
@@ -499,10 +479,10 @@ resolveLoadout()
 	summary += " special " + coop_name( level.coop_special );
 	summary += " tactical " + coop_name( level.coop_tactical );
 	summary += " perks " + common_scripts\_perks::perkList( level.coop_perks );
-	codolprintln( summary );
+	{}
 
 	if ( !isDefined( level.coop_primary ) )
-		codolprintln( "CoDOL coop: no primary weapon from " + coop_class_table() + " is present in the mounted coop zones" );
+		{}
 }
 
 coop_name( weapon )
@@ -560,7 +540,7 @@ coop_give_weapon( weapon, switchTo )
 				replace = primaries[ primaries.size - 1 ];
 			self takeWeapon( replace );
 			switchTo = true;
-			codolprintln( "CoDOL coop: " + self.name + " swaps " + replace + " for " + weapon );
+			{}
 		}
 	}
 	self giveWeapon( weapon );
@@ -610,7 +590,7 @@ giveStartingLoadout()
 	// The class's perks through the shared perk core (setPerk on the
 	// specialty_coop_* rows; a Pro grants its base too).
 	given = self common_scripts\_perks::giveLoadoutPerks( level.coop_perks );
-	codolprintln( "CoDOL coop: " + self.name + " perks " + common_scripts\_perks::perkList( given ) );
+	{}
 
 	if ( isDefined( primary ) )
 	{
@@ -807,7 +787,7 @@ pickStartingLocation()
 			if ( !isDefined( point ) )
 				continue;
 			level.coop_primary_start = point;
-			codolprintln( "CoDOL coop: primary start " + names[ i ] + " " + startName( point ) + " at " + point.origin );
+			{}
 		}
 		else
 			point = closestFreeStart( points, level.coop_primary_start, level.coop_taken_spawns );
@@ -836,7 +816,7 @@ spawnPlayer()
 	spawnpoint = pickStartingLocation();
 	if ( !isDefined( spawnpoint ) )
 	{
-		println( "CoDOL coop: no usable spawn point on " + getDvar( "mapname" ) );
+		{}
 		return;
 	}
 
@@ -1017,7 +997,7 @@ Callback_StartGameType()
 	// No player has connected yet, so init()'s level.players = [] loses nothing.
 	if ( !isDefined( level.coop_class_column ) )
 	{
-		codolprintln( "CoDOL coop: gametype init() had not run (g_gametype " + getDvar( "g_gametype" ) + "); running it from Callback_StartGameType" );
+		{}
 		init();
 	}
 
@@ -1061,7 +1041,7 @@ Callback_StartGameType()
 	// a handoff misbehaves.
 	mapname = getDvar( "mapname" );
 	if ( tableLookup( coop_map_table(), 0, mapname, 0 ) == "" )
-		println( "CoDOL coop: " + mapname + " is not a row of " + coop_map_table() );
+		{}
 
 	level notify( "prematch_over" );
 

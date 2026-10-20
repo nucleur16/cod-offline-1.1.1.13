@@ -360,7 +360,7 @@ objectives()
 		nextmission();
 	}
 	else
-		IPrintLnBold( "DEVELOPER: END OF SCRIPTED LEVEL" );
+		{}
 }
 
 dunn_objective_dvars()
@@ -654,9 +654,9 @@ whitehouse_radio()
 		flag_set( "broadcast_pause" );
 		flag_waitopen( "broadcast" );
 
-		println( "***********************************" );
-		println( "********** COUNTDOWN: " + elapsed_time( start_time ) + " **********" );
-		println( "***********************************" );
+		{}
+		{}
+		{}
 		level whitehouse_radio_broadcast( countdown_line[ level.countdown_index - 1 ] );
 		start_time = gettime();
 

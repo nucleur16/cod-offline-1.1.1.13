@@ -1200,7 +1200,7 @@ liner()
 	for ( ;; )
 	{
 		Line( self.origin, level.player.origin );
-		Print3d( self.origin, "x" );
+		{}
 		wait( 0.05 );
 	}
 }

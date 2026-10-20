@@ -30,24 +30,10 @@ init()
     precacheString( &"MP_HACK_C4" );
 }
 
-// Engineer's modDelayTriggeredExplosive: the extra seconds a claymore or
-// bouncing betty waits after its normal trigger delay when the player who
-// tripped it has the perk. T5 reads dvar perk_delayExplosiveTime the same way;
-// C1's ability table carries no value for the modifier.
-delayExplosiveTime()
-{
-    if ( getDvar( "perk_delayExplosiveTime" ) == "" )
-        return 1.0;
-    t = getDvarFloat( "perk_delayExplosiveTime" );
-    if ( t < 0 )
-        t = 0;
-    return t;
-}
-
 perkLog( message )
 {
     if ( getDvarInt( "scr_codol_perklog" ) )
-        codolPrintLn( "CoDOL perk: " + message );
+        {}
 }
 
 nameOf( player )

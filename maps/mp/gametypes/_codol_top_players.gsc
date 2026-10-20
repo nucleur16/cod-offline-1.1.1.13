@@ -18,10 +18,8 @@
 //             in C1's animtrees/player_3rd_person.atr (patch_common_mp) and
 //             registered for script models by animlists/common.animlist
 //             (=player_3rd_person). They play through the snapshot
-//             animation-command channel from time 0 (codol_animScriptedModel
-//             for the walk, which also applies its root motion natively;
-//             setAnimKnobRestart for the idle), not the random-phase
-//             scriptModelPlayAnim path.
+//             animation-command channel from time 0 (setAnimKnobRestart),
+//             not the random-phase scriptModelPlayAnim path.
 //   Models    a script_model only draws one xmodel in C1; codol_setCharacterClone
 //             publishes the player at entityState +64, which makes C1 compose
 //             that client's whole character on the model (C1 0x55b5e0 /
@@ -206,7 +204,7 @@ pickTopPlayers( count )
 	if ( getDvarInt( "scr_codol_topplayers_trace" ) )
 	{
 		for ( i = 0; i < ranked.size; i++ )
-			print( "CoDOL top players: place " + ( i + 1 ) + " client " + ranked[i] getEntityNumber() + " '" + ranked[i].name + "' team " + ranked[i].pers["team"] + " score " + ranked[i].score + " deaths " + ranked[i].deaths + "\n" );
+			{}
 	}
 	return top;
 }
@@ -232,7 +230,7 @@ playScene()
 	scene = sceneMarks();
 	if ( !isDefined( scene ) )
 	{
-		print( "CoDOL top players: " + getDvar( "mapname" ) + " has no top_players_camera / top_players_loc, scene skipped\n" );
+		{}
 		return;
 	}
 
@@ -274,7 +272,7 @@ playScene()
 			player viewFromCamera( level.topPlayersCamera );
 	}
 
-	print( "CoDOL top players: " + top.size + " on " + getDvar( "mapname" ) + ", walk " + longest + " s, camera ent " + level.topPlayersCamera getEntityNumber() + " from " + level.topPlayersCamera.origin + " to " + scene.camera.origin + "\n" );
+	{}
 
 	// The cards are up for the whole scene (viewFromCamera and holdAsSource
 	// each put them up for their player as it joins the shot).
@@ -371,7 +369,7 @@ sampleWalk( walk, length, start, startAngles )
 		fraction = t / length;
 		if ( fraction > 1 )
 			fraction = 1;
-		print( "CoDOL top players: sample ent " + self getEntityNumber() + " ms " + ( getTime() - began ) + " origin " + self.origin + " clip " + ( start + animDeltaToWorld( getMoveDelta( walk, 0, fraction ), startAngles ) ) + "\n" );
+		{}
 		wait ( 0.001 );
 	}
 }
@@ -414,7 +412,7 @@ holdAsSource( camera, cameraOrigin, rank )
 	self showCards();
 
 	if ( getDvarInt( "scr_codol_topplayers_trace" ) )
-		print( "CoDOL top players: source client " + self getEntityNumber() + " held at " + hidden + " for the clone build\n" );
+		{}
 
 	// Several snapshots at 20 Hz and more: every client has had the source
 	// and the clone in the same snapshot by then.
@@ -456,18 +454,11 @@ spawnWalker( rank, mark )
 	idle = level.topPlayersIdle[ rank ];
 	length = getAnimLength( walk );
 
-	// The walk starts on the mark itself (the placed position, which is known
-	// to be clear) and carries the clone forward from there toward the camera,
-	// turning so the pose ends facing it.  Starting a clip-length behind the
-	// mark, as before, was never traced and walked clones out of walls or
-	// through the ground on some maps.  scr_codol_topplayers_nowalk 1 keeps the
-	// clone standing on its mark in the idle.
+	// The mark is where the walk ends, facing the camera; start where the
+	// clip's own motion would bring the model onto it.
 	endAngles = ( 0, mark.angles[1], 0 );
 	startAngles = ( 0, mark.angles[1] - getAngleDelta( walk, 0, 1 ), 0 );
-	start = mark.origin;
-	walkIn = !getDvarInt( "scr_codol_topplayers_nowalk" );
-	if ( !walkIn )
-		startAngles = endAngles;
+	start = mark.origin - animDeltaToWorld( getMoveDelta( walk, 0, 1 ), startAngles );
 
 	model = spawn( "script_model", start );
 	model.angles = startAngles;
@@ -489,20 +480,11 @@ spawnWalker( rank, mark )
 			model.weapons = model codol_setCharacterClone( self, weapon );
 	}
 
-	// The walk plays from time 0 with its root motion applied natively: the
-	// server moves the model every frame to where the clip's own motion puts
-	// it, on the clip's own server clock (codol_animScriptedModel).
-	if ( walkIn )
-		model codol_animScriptedModel( "top_players_walk", start, startAngles, walk, 1, 0 );
-	else
-		model setAnimKnobRestart( idle, 1, 0, 1 );
+	model setAnimKnobRestart( walk, 1, 0, 1 );
 
-	print( "CoDOL top players: rank " + ( rank + 1 ) + " client " + self getEntityNumber() + " '" + self.name + "' ent " + model getEntityNumber() + " weapons " + model.weapons.size + " from " + start + " yaw " + startAngles[1] + " to " + mark.origin + " yaw " + endAngles[1] + " over " + length + " s\n" );
+	{}
 
-	if ( walkIn )
-		model thread walkUp( self, walk, idle, length, start, startAngles );
-	else
-		self thread dropCloneOnDisconnect( model );
+	model thread walkUp( self, walk, idle, length, start, startAngles );
 	return model;
 }
 
@@ -530,61 +512,55 @@ removeClone()
 }
 
 // The clip carries its displacement as root motion, which neither the server
-// DObj nor C1 applies to a script model by itself. codol_animScriptedModel
-// (spawnWalker) does it natively: every server frame the model is placed
-// where the clip's accumulated motion puts it at the clip's server time, and
-// published as a linear trajectory C1 evaluates every render frame, so the
-// feet stay planted and the motion is continuous. When the clip ends ("end"
-// on the notify name) the model holds the clip's last position and the idle
-// takes over with a short blend.
+// DObj nor C1 applies to a script model's origin (the delta is not part of
+// the bone pose), so the model is carried along the clip's own path: every
+// step it moves, on a linear trajectory C1 interpolates, to where the clip's
+// accumulated motion puts it at the end of that step. A single moveTo over
+// the whole clip is linear, while the walk starts and stops with the steps,
+// which slid the feet. The clip was restarted at time 0 on this same frame
+// (setAnimKnobRestart in spawnWalker), so path and pose share one clock; the
+// idle takes over with a short blend on the frame the walk ends.
 walkUp( player, walk, idle, length, start, startAngles )
 {
 	self endon( "death" );
 
 	player thread dropCloneOnDisconnect( self );
 
+	step = 0.1;
 	trace = getDvarInt( "scr_codol_topplayers_trace" );
 	if ( trace >= 2 )
 		self thread sampleWalk( walk, length, start, startAngles );
-	if ( trace )
-		self thread traceWalkEnd( walk, length, start, startAngles );
-
-	self thread walkTimeout( length + 0.5 );
-	self waittillmatch( "top_players_walk", "end" );
-	self notify( "top_players_walk_done" );
-
-	if ( trace )
-		print( "CoDOL top players: ent " + self getEntityNumber() + " origin " + self.origin + " (end of walk), idle\n" );
-	self setAnimKnobRestart( idle, 1, 0.2, 1 );
-}
-
-// The walk's "end" is raised by the server's own animation update; this only
-// guards against a clip that never reports it.
-walkTimeout( seconds )
-{
-	self endon( "death" );
-	self endon( "top_players_walk_done" );
-	wait ( seconds );
-	self notify( "top_players_walk", "end" );
-}
-
-// scr_codol_topplayers_trace 1: the server origin against the clip's root
-// position every 0.25 s and at the end.
-traceWalkEnd( walk, length, start, startAngles )
-{
-	self endon( "death" );
-	began = getTime();
-	for ( ;; )
+	elapsed = 0;
+	while ( length - elapsed > 0.001 )
 	{
-		t = ( getTime() - began ) / 1000;
-		fraction = t / length;
-		if ( fraction > 1 )
-			fraction = 1;
-		print( "CoDOL top players: ent " + self getEntityNumber() + " t " + t + " origin " + self.origin + " clip " + ( start + animDeltaToWorld( getMoveDelta( walk, 0, fraction ), startAngles ) ) + "\n" );
-		if ( fraction >= 1 )
-			return;
-		wait ( 0.25 );
+		next = elapsed + step;
+		if ( next > length )
+			next = length;
+		// Aim one step past the next update: each segment is still moving
+		// when its replacement arrives, so a snapshot that lands a frame
+		// late never shows the model stopped, and consecutive segments
+		// average overlapping windows, so the speed changes gradually.
+		ahead = next + step;
+		if ( ahead > length )
+			ahead = length;
+		fraction = ahead / length;
+		target = start + animDeltaToWorld( getMoveDelta( walk, 0, fraction ), startAngles );
+		yaw = startAngles[1] + getAngleDelta( walk, 0, fraction );
+		duration = ahead - elapsed;
+
+		self moveTo( target, duration );
+		if ( yaw != self.angles[1] )
+			self rotateTo( ( 0, yaw, 0 ), duration );
+
+		if ( trace )
+			{}
+
+		wait ( next - elapsed );
+		elapsed = next;
 	}
+	if ( trace )
+		{}
+	self setAnimKnobRestart( idle, 1, 0.2, 1 );
 }
 
 // A disconnected client's character record is gone; C1 would fall back to

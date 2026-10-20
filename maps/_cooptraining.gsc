@@ -122,15 +122,13 @@ seat_driver()
 	ai = spawn_cast( spot, "driver_seat" );
 	if ( !isDefined( ai ) )
 	{
-		codolprintln( "CoDOL coop training: no actor for Price at the wheel" );
+		{}
 		level.coop_intro_wait_driver = undefined;
 		return;
 	}
 	ai animMode( "nophysics" );
-	// IW4 maps\_humvee position 0 (tag_driver): humvee_idle_frontL, replayed
-	// each cycle (a non-looping clip).  spawn_cast started his idle under the
-	// "driver_seat" key; bh_pilot_idle is the common fallback.
-	ai setAnimKnobAll( ai.coop_idle_anim, %body, 1, 0.1, 1 );
+	ai.coop_idle_anim = %bh_pilot_idle;
+	ai setAnimKnobAll( %bh_pilot_idle, %body, 1, 0.1, 1 );
 	ai notify( "coop_cast_pose" );
 	// Actors refuse linkTo; codol_actorRide places him at the tag every
 	// frame from the jeep's own trajectory (native, coop only).
@@ -139,8 +137,7 @@ seat_driver()
 		ai.coop_nametag linkTo( mover, "tag_driver", ( 0, 0, 0 ), ( 0, 0, 0 ) );
 	level.coop_intro_driver = ai;
 	level.coop_intro_wait_driver = undefined;
-	codolprintln( "CoDOL coop training: Price at the wheel: actor ent " + ai getEntityNumber() + " riding tag_driver at " +
-		spot.origin + ", humvee_idle_frontl, nophysics" );
+	{}
 	level thread ride_trace( ai, mover );
 }
 
@@ -165,7 +162,7 @@ ride_trace( driver, mover )
 				continue;
 			text += " | " + p.name + " " + p.origin + " " + p getStance() + " linked " + p isLinked() + " " + p codol_moveStateText();
 		}
-		codolprintln( text );
+		{}
 		wait( 1 );
 	}
 }
@@ -183,7 +180,7 @@ say( speaker, alias, time )
 		if ( isDefined( speaker.coop_cast ) && isDefined( time ) )
 			speaker thread gesture( time );
 	}
-	codolprintln( "CoDOL coop training: line " + alias );
+	{}
 	if ( isDefined( time ) )
 		wait( time + 0.3 );
 }
@@ -258,7 +255,7 @@ open_doors( name, angles )
 		for ( b = 0; b < d.brushes.size; b++ )
 			d.brushes[ b ] notSolid();
 	}
-	codolprintln( "CoDOL coop training: opened " + doors.size + " door(s) " + name );
+	{}
 }
 
 // The sliding gates (slide_gate_01/02/03): brush panels on wheels (script
@@ -311,7 +308,7 @@ open_slide_gate( name, nearPoint )
 		moved++;
 	}
 	parts[ 0 ] playSound( "scn_training_fence_open" );
-	codolprintln( "CoDOL coop training: slid gate " + name + " (" + moved + " panels) from wheels at " + wheels );
+	{}
 }
 
 // The range's entrance, CoD4 killhouse.gsc open_firing_range_door:
@@ -337,7 +334,7 @@ open_range_door()
 		frame hide();
 		frame notSolid();
 	}
-	codolprintln( "CoDOL coop training: opened rifle_range_door (+88 about its origin)" );
+	{}
 }
 
 // Every door, gate and blocker on the route, opened as the stations open
@@ -365,7 +362,7 @@ remove_named( name )
 		parts[ i ] hide();
 		parts[ i ] notSolid();
 	}
-	codolprintln( "CoDOL coop training: removed " + parts.size + " part(s) of " + name );
+	{}
 }
 
 // Show or remove one of the range's screens (by script_noteworthy).
@@ -385,7 +382,7 @@ range_screen( name, present )
 			parts[ i ] notSolid();
 		}
 	}
-	codolprintln( "CoDOL coop training: range screen " + name + " (" + parts.size + ") " + present );
+	{}
 }
 
 // Single brush doors with no hinge origin (arsenal_door): raised out of the
@@ -403,37 +400,107 @@ raise_door( name, height )
 		if ( e.classname == "script_brushmodel" )
 			e notSolid();
 	}
-	codolprintln( "CoDOL coop training: raised " + ents.size + " part(s) of " + name );
+	{}
 }
 
 // --------------------------------------------------------------------------
 // The cast.
 // --------------------------------------------------------------------------
 
-// A cast member's look is his authored classname's: spawn_cast spawns him
-// through that classname's aitype (aitype\ally_*_so), whose character\
-// scripts give him his body and head, as IW4 gives every actor.  Where the
-// recording shows a cast member in another character than his classname's,
-// the key names it here: Mac in the boonie and sunglasses of the woodland SAS
-// (his spawner is a SEAL classname), Newcastle in the tan Task Force uniform
-// and cap, the recruits at the obstacle line in T-shirts.  Each is precached by
-// precache_cast; every model ships in coop_training_mp_killhouse_sh.
-cast_character( key )
+// Body and head per authored ally classname; every model ships in the
+// coop_training_mp_killhouse_sh zone (MEASURED, docs/zone_assets).
+cast_models( cls )
 {
-	if ( !isDefined( key ) )
-		return undefined;
-	switch ( key )
+	m = spawnStruct();
+	cls = toLower( cls );
+	if ( isSubStr( cls, "price" ) )
 	{
-	case "mac":
-		return character\character_sas_woodland_mac::main;
-	case "nwc":
-		return character\character_codo_complete_tf_tan::main;
-	case "buddy1":
-	case "buddy2":
-	case "buddy3":
-		return character\character_codo_tf_ustshirt_clean_yel::main;
+		m.body = "body_desert_tf141_assault_a";
+		m.head = "head_hero_price_desert";
 	}
-	return undefined;
+	else if ( isSubStr( cls, "soap" ) )
+	{
+		m.body = "body_hero_soap_socom";
+		m.head = "head_hero_soap_soccom_a";
+	}
+	else if ( isSubStr( cls, "ghost_forest" ) )
+	{
+		m.body = "body_forest_tf141_ghost";
+		m.head = "head_hero_ghost_forest";
+	}
+	else if ( isSubStr( cls, "ghost" ) )
+	{
+		m.body = "body_hero_ghost_socom";
+		m.head = "head_hero_ghost_soccom";
+	}
+	else if ( isSubStr( cls, "harker" ) || isSubStr( cls, "socom_shotgun" ) )
+	{
+		m.body = "body_seal_soccom_assault_c_blk";
+		m.head = "head_seal_soccom_d";
+	}
+	else if ( isSubStr( cls, "tf_141_forest_shotgun" ) )
+	{
+		m.body = "body_forest_tf141_shotgun";
+		m.head = "head_tf141_forest_a";
+	}
+	else if ( isSubStr( cls, "tf_141_forest" ) )
+	{
+		m.body = "body_forest_tf141_smg";
+		m.head = "head_tf141_forest_b";
+	}
+	else if ( isSubStr( cls, "sas_woodland" ) )
+	{
+		m.body = "body_sp_sas_woodland_assault_a";
+		m.head = "head_sp_sas_woodland_mac";
+	}
+	else if ( isSubStr( cls, "blackkit" ) )
+	{
+		m.body = "body_complete_sp_sas_ct_benjamin";
+	}
+	else if ( isSubStr( cls, "ustshirt" ) )
+	{
+		m.body = "body_ustshirt_tf_m_clean_yel";
+		m.head = "head_complete_tf_tan";
+	}
+	else
+	{
+		m.body = "body_complete_sp_lw";
+		m.head = "head_complete_sp_lw";
+	}
+	return m;
+}
+
+// What the recording shows a cast member wearing, where it differs from his
+// authored classname: Mac in the boonie and sunglasses of the woodland SAS
+// (his spawner is a SEAL classname), Newcastle in the tan Task Force uniform
+// and cap, the recruits at the obstacle line in T-shirts.
+cast_models_for( cls, key )
+{
+	m = undefined;
+	if ( isDefined( key ) )
+	{
+		switch ( key )
+		{
+		case "mac":
+			m = spawnStruct();
+			m.body = "body_sp_sas_woodland_assault_a";
+			m.head = "head_sp_sas_woodland_mac";
+			break;
+		case "nwc":
+			m = spawnStruct();
+			m.body = "body_complete_tf_tan";
+			m.head = "head_complete_tf_tan";
+			break;
+		case "buddy1":
+		case "buddy2":
+		case "buddy3":
+			m = cast_models( "actor_ally_codo_tf_ustshirt_clean_so" );
+			break;
+		}
+	}
+	if ( !isDefined( m ) )
+		m = cast_models( cls );
+	return m;
 }
 
 // The props the recording shows in the cast's hands, on tag_inhand (C1 ships
@@ -489,19 +556,33 @@ welding_fx()
 precache_cast()
 {
 	precache_props();
-	// The keyed characters (cast_character); every other cast member's
-	// character is precached by his classname's aitype at level load.
-	character\character_sas_woodland_mac::precache();
-	character\character_codo_complete_tf_tan::precache();
-	character\character_codo_tf_ustshirt_clean_yel::precache();
+	models = [];
+	models[ models.size ] = "body_desert_tf141_assault_a";
+	models[ models.size ] = "head_hero_price_desert";
+	models[ models.size ] = "body_hero_soap_socom";
+	models[ models.size ] = "head_hero_soap_soccom_a";
+	models[ models.size ] = "body_forest_tf141_ghost";
+	models[ models.size ] = "head_hero_ghost_forest";
+	models[ models.size ] = "body_hero_ghost_socom";
+	models[ models.size ] = "head_hero_ghost_soccom";
+	models[ models.size ] = "body_seal_soccom_assault_c_blk";
+	models[ models.size ] = "head_seal_soccom_d";
+	models[ models.size ] = "body_forest_tf141_shotgun";
+	models[ models.size ] = "head_tf141_forest_a";
+	models[ models.size ] = "body_forest_tf141_smg";
+	models[ models.size ] = "head_tf141_forest_b";
+	models[ models.size ] = "body_sp_sas_woodland_assault_a";
+	models[ models.size ] = "head_sp_sas_woodland_mac";
+	models[ models.size ] = "body_complete_sp_sas_ct_benjamin";
+	models[ models.size ] = "body_ustshirt_tf_m_clean_yel";
+	models[ models.size ] = "head_complete_tf_tan";
+	models[ models.size ] = "body_complete_sp_lw";
+	models[ models.size ] = "head_complete_sp_lw";
+	for ( i = 0; i < models.size; i++ )
+		precacheModel( models[ i ] );
 }
 
 // The idle a cast member stands in, and the gesture he talks with.
-//
-// The common FALLBACK idle of a cast member.  The authored idles themselves
-// (and the instructors' scene sets) are played by _coopscene_killhouse since
-// codol_coopClientMapName puts this mission's animlist on the client
-// (2026-10-14).  What follows is the reason these fallbacks exist:
 //
 // Only animations from the animlists EVERY coop client loads are used:
 // animlists/common_human and common_actor_shared (common_gametype_coop), whose
@@ -703,7 +784,7 @@ look_nametag_player()
 			{
 				tag hide();
 				shownNpc = undefined;
-				codolprintln( "CoDOL coop training: " + self.name + " name tag hidden" );
+				{}
 			}
 			continue;
 		}
@@ -712,7 +793,7 @@ look_nametag_player()
 			tag codol_setOverheadName( target.coop_name );
 			shownNpc = target;
 			tag showToPlayer( self );
-			codolprintln( "CoDOL coop training: " + self.name + " looks at " + target.coop_name );
+			{}
 		}
 		// C1 draws the name 82 above the model; the recording's names sit
 		// level with the speaker's head and shoulders, not over his hat.
@@ -720,13 +801,22 @@ look_nametag_player()
 	}
 }
 
-// Talk: the speaker's own talk clip from the killhouse scene table (CoD4
-// gaz_animation: killhouse_gaz_talk_side / point_side / idleA; Price's
-// killhouse_price_stand_talk), else the casual talking twitch, for the line's
-// length; then back to his idle.
+// Talk: the casual talking twitch (common_human), then back to the idle.
 gesture( time )
 {
-	self maps\_coopscene_killhouse::talk( time );
+	self endon( "death" );
+	self notify( "coop_gesture" );
+	self endon( "coop_gesture" );
+	self.coop_pose_anim = %casual_stand_v2_twitch_talk;
+	self notify( "coop_cast_pose" );
+	length = getAnimLength( %casual_stand_v2_twitch_talk );
+	if ( length > time + 0.3 )
+		length = time + 0.3;
+	if ( length < 1 )
+		length = 1;
+	wait( length );
+	self.coop_pose_anim = undefined;
+	self notify( "coop_cast_pose" );
 }
 
 ally_template()
@@ -747,19 +837,26 @@ ally_template()
 // fights or walks.
 spawn_cast( spawner, key )
 {
+	template = ally_template();
+	if ( !isDefined( template ) )
+		return undefined;
+
 	kind = spawnStruct();
 	kind.faction = "cast";
 	kind.role = "pistol";
+	kind.team = "allies";
 	kind.health = 1000;
 	kind.accuracy = 0;
-	kind.character = cast_character( key );
-	if ( isDefined( spawner.script_char_index ) )
-		kind.char_index = int( spawner.script_char_index );
+	m = cast_models_for( spawner.classname, key );
+	kind.body = m.body;
+	kind.head = m.head;
 
-	ai = maps\_coopmission::spawn_class_actor( spawner.classname, "allies", kind );
+	level.coop_soldier_next = kind;
+	ai = template spawnActor();
+	level.coop_soldier_next = undefined;
 	if ( !isDefined( ai ) )
 	{
-		codolprintln( "CoDOL coop training: could not spawn cast member " + key );
+		{}
 		return undefined;
 	}
 
@@ -775,19 +872,9 @@ spawn_cast( spawner, key )
 	ai.ignoreall = true;
 	ai.ignoreme = true;
 	ai.coop_cast = key;
-	// The common idle (idle_anim) is the fallback; the scene idle comes from
-	// the killhouse scene table or the spawner's authored animation, now that
-	// this mission's animlist reaches the client (codol_coopClientMapName),
-	// and is replayed cycle by cycle (_coopscene_killhouse idle_loop).
-	fallback = idle_anim( spawner.animation, key );
-	if ( !isDefined( fallback ) )
-		fallback = %casual_stand_idle;
-	// Mac and the recruits crouch at the obstacle line (the recording):
-	// they keep their crouch while Mac talks.
-	if ( key == "mac" || key == "buddy1" || key == "buddy2" || key == "buddy3" )
-		ai.coop_crouched = true;
-	ai.coop_idle_anim = fallback;
-	ai maps\_coopscene_killhouse::start_idle( key, spawner.animation, fallback );
+	ai.coop_idle_anim = idle_anim( spawner.animation, key );
+	if ( !isDefined( ai.coop_idle_anim ) )
+		ai.coop_idle_anim = %casual_stand_idle;
 	if ( isDefined( spawner.script_friendname ) )
 	{
 		ai.coop_name = spawner.script_friendname;
@@ -874,7 +961,7 @@ spawn_cast_all()
 				break;
 		}
 	}
-	codolprintln( "CoDOL coop training: cast of " + level.coop_cast.size + " placed (" + ambient + " ambient)" );
+	{}
 }
 
 // The three recruits (buddy1..3) crouch on their crouch nodes at the
@@ -940,18 +1027,11 @@ spawn_driver()
 			// actor movement, standing at the driver's door.
 			ai = level.coop_intro_driver;
 			level.coop_intro_driver = undefined;
-			// IW4 maps\_humvee position 0 getout: humvee_driver_climb_out from
-			// the seat, its own root motion carrying him out of the door,
-			// then on his feet by the jeep in Price's stand idle.
-			// The clip's root ends below the seat by more than the seat's
-			// height (MEASURED: 38.7 -> -34 on the probe); he stands on
-			// the ground under where it put him.
-			seatZ = ai.origin[ 2 ];
-			if ( ai climb_out_of_jeep() > 0 && isAlive( ai ) )
-				spot.origin = maps\_coopvehicle::ground_under( ( ai.origin[ 0 ], ai.origin[ 1 ], seatZ ) );
+			ai codol_actorRide();
+			ai animMode( "none" );
 			ai forceTeleport( spot.origin, spot.angles );
 			ai.coop_cast = "driver";
-			ai maps\_coopscene_killhouse::start_idle( "driver", undefined, idle_anim( undefined, "driver" ) );
+			ai.coop_idle_anim = idle_anim( undefined, "driver" );
 			ai setAnimKnobAll( ai.coop_idle_anim, %body, 1, 0.2, 1 );
 			ai notify( "coop_cast_pose" );
 			if ( isDefined( ai.coop_nametag ) )
@@ -959,7 +1039,7 @@ spawn_driver()
 				ai.coop_nametag unlink();
 				ai.coop_nametag.origin = ai.origin;
 			}
-			codolprintln( "CoDOL coop training: Price out of the jeep at " + ai.origin );
+			{}
 			level.coop_cast[ "driver" ] = ai;
 			level.coop_cast_list[ level.coop_cast_list.size ] = ai;
 			return;
@@ -967,37 +1047,12 @@ spawn_driver()
 		ai = spawn_cast( spot, "driver" );
 		if ( isDefined( ai ) )
 		{
-			codolprintln( "CoDOL coop training: Price out of the jeep at " + ai.origin );
+			{}
 			level.coop_cast[ "driver" ] = ai;
 			level.coop_cast_list[ level.coop_cast_list.size ] = ai;
 		}
 		return;
 	}
-}
-
-// Price gets out at the driver's door: the climb-out clip played from the
-// seat with its root motion (noclip: the clip carries him over the door
-// sill and down), the ride released first.  Without the clip he is simply
-// placed by the door.
-climb_out_of_jeep()
-{
-	self endon( "death" );
-	seat = self.origin;
-	self maps\_coopscene_killhouse::stop_idle();
-	self codol_actorRide();
-	self animMode( "none" );
-	// The jeep's driver-side door clip with his climb-out (IW4 _humvee
-	// set_vehicle_anims position 0 vehicle_getoutanim).
-	if ( isDefined( level.coop_intro ) && isDefined( level.coop_intro.mover ) )
-		level.coop_intro.mover maps\_coopintro::door_anim( "uaz_driver_exit_into_run_door" );
-	len = maps\_coopanim::anim_single_solo( self, "getout", undefined, "noclip" );
-	if ( len > 0 )
-	{
-		wait( 0.1 );
-		self stopanimscripted();
-	}
-	codolprintln( "CoDOL coop training: Price climbed out (" + len + " s) from " + seat + " to " + self.origin );
-	return len;
 }
 
 cast( key )
@@ -1023,7 +1078,7 @@ objective_at( point )
 // and the probe read.
 task( text, log, point, ent, height )
 {
-	codolprintln( "CoDOL coop mission: " + log );
+	{}
 	maps\_cooptraininghud::objective_text( text );
 	if ( isDefined( point ) || isDefined( ent ) )
 		maps\_cooptraininghud::marker( point, ent, height );
@@ -1075,7 +1130,7 @@ step( kind, value, value2 )
 	text = kind;
 	if ( isDefined( value ) && ( kind == "flag" || kind == "note" || kind == "near" ) )
 		text += " " + value;
-	codolprintln( "CoDOL coop training: waiting for " + text );
+	{}
 }
 
 flag_wait_timeout( name, timeout )
@@ -1160,7 +1215,7 @@ count_hits( meleeOnly )
 		}
 		self playSound( "target_metal_hit" );
 		level.coop_training_hits++;
-		codolprintln( "CoDOL coop training: target " + self getEntityNumber() + " hit by " + attacker.name + ", " + level.coop_training_hits );
+		{}
 	}
 }
 
@@ -1210,7 +1265,7 @@ report_inventory()
 		text = "";
 		for ( k = 0; k < primaries.size; k++ )
 			text += " " + primaries[ k ];
-		codolprintln( "CoDOL coop training: " + players[ i ].name + " carries " + primaries.size + " primaries:" + text );
+		{}
 	}
 }
 
@@ -1254,7 +1309,7 @@ init()
 	// dummy (MEASURED, _cooptest aimcheck / colmap: ent 672 at 16..56).
 	range_screen( "range_metalwall", false );
 	level thread training_loadout_watch();
-	codolprintln( "CoDOL coop training: mission flow active" );
+	{}
 }
 
 // --------------------------------------------------------------------------
@@ -1311,7 +1366,7 @@ training_give_frags()
 	self giveWeapon( frag );
 	self giveMaxAmmo( frag );
 	self setOffhandEquipment( frag, "none", "none" );
-	codolprintln( "CoDOL coop training: " + self.name + " given " + frag );
+	{}
 }
 
 training_loadout()
@@ -1363,7 +1418,7 @@ weapons_down_all( down )
 		else
 			players[ i ] enableWeapons();
 	}
-	codolprintln( "CoDOL coop training: weapons down " + down );
+	{}
 }
 
 // --------------------------------------------------------------------------
@@ -1394,7 +1449,7 @@ glow_setup()
 			n++;
 		}
 	}
-	codolprintln( "CoDOL coop training: " + n + " glow / arrow brush(es) hidden" );
+	{}
 }
 
 glow( name, on )
@@ -1407,7 +1462,7 @@ glow( name, on )
 		else
 			parts[ i ] hide();
 	}
-	codolprintln( "CoDOL coop training: glow " + name + " " + on + " (" + parts.size + ")" );
+	{}
 }
 
 // Light one set of floor arrows (undefined: none).
@@ -1522,9 +1577,8 @@ move_cast( ai, origin, yaw )
 {
 	if ( !isDefined( ai ) )
 		return;
-	maps\_coopanim::stop_scripted( ai );
 	ai forceTeleport( origin, ( 0, yaw, 0 ) );
-	codolprintln( "CoDOL coop training: " + ai.coop_cast + " to " + origin );
+	{}
 }
 
 // A trigger touched by a living player (CoD4 `trigger waittill( "trigger" )`),
@@ -1547,7 +1601,7 @@ trigger_wait( trig, timeout, what )
 		wait( 0.25 );
 		waited += 0.25;
 	}
-	codolprintln( "CoDOL coop training: " + what + " timed out" );
+	{}
 	return false;
 }
 
@@ -1583,7 +1637,7 @@ weapon_wait( weapon, timeout, what )
 		wait( 0.25 );
 		waited += 0.25;
 	}
-	codolprintln( "CoDOL coop training: " + what + " timed out" );
+	{}
 	return false;
 }
 
@@ -1628,7 +1682,7 @@ damage_triggers_wait( trigs, timeout, what, glows )
 		trigs[ i ] notify( "coop_stop_window" );
 		trigs[ i ] window_done();
 	}
-	codolprintln( "CoDOL coop training: " + what + " " + level.coop_training_windows + "/" + trigs.size );
+	{}
 	return level.coop_training_windows >= trigs.size;
 }
 
@@ -1707,7 +1761,7 @@ demolition_ammo_refill()
 			if ( isDefined( frag ) && p hasWeapon( frag ) && p getAmmoCount( frag ) < 1 )
 			{
 				p giveMaxAmmo( frag );
-				codolprintln( "CoDOL coop training: " + p.name + " frags refilled" );
+				{}
 			}
 			weapons = p getWeaponsListPrimaries();
 			for ( w = 0; w < weapons.size; w++ )
@@ -1716,7 +1770,7 @@ demolition_ammo_refill()
 				if ( isDefined( gl ) && gl != "none" && gl != "" && p getAmmoCount( gl ) < 1 )
 				{
 					p giveMaxAmmo( gl );
-					codolprintln( "CoDOL coop training: " + p.name + " " + gl + " refilled" );
+					{}
 				}
 			}
 		}
@@ -1744,7 +1798,7 @@ window_hit( who )
 	who_name = "?";
 	if ( isDefined( who ) && isPlayer( who ) )
 		who_name = who.name;
-	codolprintln( "CoDOL coop training: window " + ent_name( self ) + " hit by " + who_name );
+	{}
 }
 
 // --------------------------------------------------------------------------
@@ -1794,7 +1848,7 @@ station_range()
 	open_range_door();
 	raise_door( "arsenal_door", 120 );
 	flag_wait_timeout( "inside_firing_range", 60 );
-	codolprintln( "CoDOL coop training: station range" );
+	{}
 
 	// door_to_rifle_handler / rifleTraining: Gaz greets the player, sends
 	// him to station one (obj_rifle_stall, rifleTraining_stall) and moves to
@@ -1807,10 +1861,6 @@ station_range()
 	// picked up by hand.  Tiny Man's two lines run back to back, as in the
 	// recording; the station-one marker and its number light once the
 	// rifle is in hand.
-	// CoD4 door_to_rifle_handler: Gaz's intro (killhouse_gaz_intro) as he
-	// greets the rookie; his lines run over it.
-	if ( isDefined( tiny ) )
-		tiny maps\_coopscene_killhouse::scene( "intro" );
 	say( tiny, "pit_tiny_001", 2.8 );
 	rifle = training_rifle();
 	table = range_rifle( rifle );
@@ -2013,7 +2063,7 @@ popup_round( pops, needed )
 			got++;
 		range_targets( t, false );
 	}
-	codolprintln( "CoDOL coop training: pop-up round " + got + "/" + pops + " hit (" + needed + " needed)" );
+	{}
 	return got >= needed;
 }
 
@@ -2029,7 +2079,7 @@ range_rifle( rifle )
 	item = spawn( "weapon_" + rifle, ( 1873, -797.5, 41 ) );
 	if ( isDefined( item ) )
 		item.angles = ( 0, 161.2, 90 );
-	codolprintln( "CoDOL coop training: range rifle placed, " + isDefined( item ) );
+	{}
 	return item;
 }
 
@@ -2059,7 +2109,7 @@ pickup_wait( weapon, item, timeout, what )
 				how = "took (use)";
 			if ( isDefined( how ) )
 			{
-				codolprintln( "CoDOL coop training: " + p.name + " " + how + " " + what );
+				{}
 				if ( isDefined( item ) )
 					item delete();
 				return true;
@@ -2068,7 +2118,7 @@ pickup_wait( weapon, item, timeout, what )
 		wait( 0.1 );
 		waited += 0.1;
 	}
-	codolprintln( "CoDOL coop training: " + what + " pickup timed out" );
+	{}
 	return false;
 }
 
@@ -2086,7 +2136,7 @@ plywood_walls( up )
 		else
 			walls[ i ] rotateRoll( -90, 0.25, 0.1, 0.1 );
 	}
-	codolprintln( "CoDOL coop training: plywood " + up );
+	{}
 }
 
 // --------------------------------------------------------------------------
@@ -2126,7 +2176,7 @@ raise_wall_one()
 	walls = getEntArray( "glowing_wall_one", "targetname" );
 	for ( i = 0; i < walls.size; i++ )
 		walls[ i ] solid();
-	codolprintln( "CoDOL coop training: wall one raised (" + parts.size + " parts)" );
+	{}
 }
 
 station_demolitions()
@@ -2142,7 +2192,7 @@ station_demolitions()
 	raise_wall_one();
 	flag_wait_timeout( "near_grenade_area", 120 );
 	arrows( undefined );
-	codolprintln( "CoDOL coop training: station demolitions" );
+	{}
 
 	say( nwc, "pit_ncastle_001", 2.1 );
 	say( nwc, "pit_ncastle_002", 2.4 );
@@ -2268,7 +2318,7 @@ station_obstacle()
 	trigger_wait( getEnt( "obstacle_course_start", "targetname" ), 180, "obstacle course start" );
 	arrows( undefined );
 	maps\_coopmission::flag_set( "start_obstacle" );
-	codolprintln( "CoDOL coop training: station obstacle course" );
+	{}
 
 	// misssoap, lineup (until the start_course trigger, the line), GO.
 	say( mac, "pit_mac_001", 3.2 );
@@ -2305,9 +2355,8 @@ station_obstacle()
 // the rookie's weapons down, and the mission is complete.  The recording
 // starts the debrief at pit_pri_062 (061, about the "fancy obstacle course"
 // of the pit, is not heard).  Price stands with his arms crossed in the
-// recording: CoD4's killhouse_price_stand_idle, and he talks the debrief in
-// killhouse_price_stand_talk (_coopscene_killhouse "price_stand"), now that
-// the mission animlist reaches C1; the casual stand is the fallback.
+// recording; that idle (killhouse_price_stand_talk) is only in the map
+// animlist C1 does not load, so he keeps the casual stand (idle_anim).
 // --------------------------------------------------------------------------
 
 station_price()
@@ -2326,7 +2375,7 @@ station_price()
 		wait_player_near( pos, 200, 60 );
 	arrows( undefined );
 	maps\_cooptraininghud::marker_clear();
-	codolprintln( "CoDOL coop training: debrief by the course" );
+	{}
 
 	// He turns to the rookie who reached him.
 	p = player_near( pos, 600 );
@@ -2413,7 +2462,7 @@ ambient_chatter()
 				continue;
 			ai.coop_last_chatter = getTime();
 			ai playSound( lines[ next % lines.size ] );
-			codolprintln( "CoDOL coop training: chatter " + lines[ next % lines.size ] + " from " + ai.coop_cast );
+			{}
 			next++;
 			break;
 		}

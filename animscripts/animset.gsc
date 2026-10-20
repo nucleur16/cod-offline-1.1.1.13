@@ -276,25 +276,10 @@ init_animset_heat_stand()
 init_animset_default_stand()
 {
 	anim.initAnimSet = [];
-	// CoDOL: common_gametype_zm ships the exposed aim additives only as
-	// exposed_aim_2/4/6/8_zm (common_gametype_coop has the plain names), so a
-	// zombies actor on this set (the juggernaut) asked for four xanims no zm
-	// zone mounts and stood static. The _zm nodes sit beside the plain ones in
-	// generic_human.atr's aim_2/4/6/8 additive groups.
-	if ( getDvar( "codol_zoneType" ) == "zm" )
-	{
-		anim.initAnimSet[ "add_aim_up" ] = %exposed_aim_8_zm;
-		anim.initAnimSet[ "add_aim_down" ] = %exposed_aim_2_zm;
-		anim.initAnimSet[ "add_aim_left" ] = %exposed_aim_4_zm;
-		anim.initAnimSet[ "add_aim_right" ] = %exposed_aim_6_zm;
-	}
-	else
-	{
-		anim.initAnimSet[ "add_aim_up" ] = %exposed_aim_8;
-		anim.initAnimSet[ "add_aim_down" ] = %exposed_aim_2;
-		anim.initAnimSet[ "add_aim_left" ] = %exposed_aim_4;
-		anim.initAnimSet[ "add_aim_right" ] = %exposed_aim_6;
-	}
+	anim.initAnimSet[ "add_aim_up" ] = %exposed_aim_8;
+	anim.initAnimSet[ "add_aim_down" ] = %exposed_aim_2;
+	anim.initAnimSet[ "add_aim_left" ] = %exposed_aim_4;
+	anim.initAnimSet[ "add_aim_right" ] = %exposed_aim_6;
 
 	anim.initAnimSet[ "straight_level" ] = %exposed_aim_5;
 

@@ -457,45 +457,6 @@ makeType( destructibleType )
 			destructible_electrical_transformer_large( destructibleType );
 			break;
 
-		// CoDOL: mp_abandon_sh_mk (3.3.3.3 amusement-park Abandon). The arcade and
-		// pinball cabinets and the trash can follow IW5's _destructible_types
-		// (toy_arcade_machine, toy_pinball_machine, toy_trashcan_clown); the
-		// firecracker has no IW4/IW5 counterpart. See the functions below.
-		case "toy_arcade_machine_1":
-			toy_arcade_machine( "_1" );
-			break;
-		case "toy_arcade_machine_2":
-			toy_arcade_machine( "_2" );
-			break;
-		case "toy_pinball_machine_chi":
-			toy_pinball_machine_model( destructibleType, "abdn_pinball_machine_01" );
-			break;
-		case "toy_trashcan_monkey":
-			toy_trashcan_monkey( destructibleType );
-			break;
-		case "toy_firecracker":
-			toy_firecracker( destructibleType );
-			break;
-
-		// CoDOL: types placed by the 3.3.3.3 maps ported to 1.1.1.13 that the IW4
-		// table lacks. See the functions below for the sources and asset names.
-		case "toy_tubetv_tv4":
-			// mp_firingrange (IW4x _destructible_types toy_tubetv_( "tv4" ))
-			toy_tubetv_( "tv4" );
-			break;
-		case "toy_propane_tanks_02":
-			// mp_firingrange
-			toy_propane_tanks_02( destructibleType );
-			break;
-		case "toy_propane_tank02hr":
-			// mp_terminal_cls
-			toy_propane_tank02hr( destructibleType );
-			break;
-		case "toy_tv_flatscreen_wallmount_02_static":
-			// mp_terminal_cls
-			toy_tv_flatscreen_static( destructibleType, "02", "wallmount_" );
-			break;
-
 		// Default means invalid type
 		default:
 			// CoDOL: C1 maps place a few types no IW4 table defines (toy_radio_r01,
@@ -503,7 +464,7 @@ makeType( destructibleType )
 			// IW4 asserts here, which a retail VM ignores; this VM raises a script
 			// error that would end find_destructibles() for the rest of the map.
 			// Leave the object static instead (makeType returns -1).
-			PrintLn( "Destructible object 'destructible_type' key/value of '" + destructibleType + "' is not valid" );
+			{}
 			break;
 	}
 
@@ -1185,172 +1146,6 @@ toy_trashcan_metal_closed( destructibleType )
 		destructible_part( "tag_fx", "com_trashcan_metalLID", undefined, undefined, undefined, undefined, 1.0, 1.0 );
 }
 
-// CoDOL: mp_abandon_sh_mk destructibles. PROVENANCE: toy_arcade_machine,
-// toy_pinball_machine and toy_trashcan_clown from IW5 common_scripts/
-// _destructible_types.gsc (COD-GSC-Source IW5-GSC/scripts/94.gsc), where IW5
-// folded IW4's DLC2 (mp_abandon) and later carnival props into the main table.
-// Model, fx and alias names are the ones the mp_abandon_sh_mk zone ships
-// (checked against its asset list): arcade_machine_1/_2 and their _des models,
-// abdn_pinball_machine_01(_des), abdn_trashcan_monkey_01 / abdn_trashcan_01 /
-// abdn_trashcan_monkey_head_01, props/arcade_machine_exp|coins,
-// props/pinball_machine_exp|glass, props/garbage_spew(_des), and the aliases
-// arcade_machine_destroy, pinball_machine_destroy, exp_trashcan_sweet.
-toy_arcade_machine( version )
-{
-	//---------------------------------------------------------------------
-	// Arcade cabinet (IW5 toy_arcade_machine)
-	//---------------------------------------------------------------------
-	destructible_create( "toy_arcade_machine" + version, "tag_origin", 0, undefined, 32 );
-		destructible_state( "tag_origin", "arcade_machine" + version, 75 );
-			destructible_fx( "tag_fx", "props/arcade_machine_exp" );
-			destructible_fx( "tag_fx2", "props/arcade_machine_coins" );
-			destructible_sound( "arcade_machine_destroy" );
-		destructible_state( undefined, "arcade_machine" + version + "_des", undefined, undefined, "no_melee" );
-}
-
-toy_pinball_machine_model( destructibleType, modelName )
-{
-	//---------------------------------------------------------------------
-	// Pinball machine (IW5 toy_pinball_machine, model passed in: the
-	// 3.3.3.3 cabinet is abdn_pinball_machine_01, not pinball_machine_N)
-	//---------------------------------------------------------------------
-	destructible_create( destructibleType, "tag_origin", 0, undefined, 32 );
-		destructible_state( "tag_origin", modelName, 75 );
-			destructible_fx( "tag_fx", "props/pinball_machine_exp", undefined, undefined, undefined, 1 );
-			destructible_fx( "tag_fx2", "props/arcade_machine_coins" );
-			destructible_fx( "tag_fx3", "props/pinball_machine_glass" );
-			destructible_sound( "pinball_machine_destroy" );
-		destructible_state( undefined, modelName + "_des", undefined, undefined, "no_melee" );
-}
-
-toy_trashcan_monkey( destructibleType )
-{
-	//---------------------------------------------------------------------
-	// Monkey-head trash can (IW5 toy_trashcan_clown with the monkey models:
-	// abdn_trashcan_01 is the can without the head, the head flies off as
-	// the lid does on the clown and metal cans)
-	//---------------------------------------------------------------------
-	destructible_create( destructibleType, "tag_origin", 120, undefined, 32 );
-			destructible_fx( "tag_fx", "props/garbage_spew_des", true, "splash" );
-			destructible_fx( "tag_fx", "props/garbage_spew", true, damage_not( "splash" ) );
-			destructible_sound( "exp_trashcan_sweet" );
-			destructible_explode( 600, 651, 1, 1, 10, 20 ); 	// force_min, force_max, rangeSP, rangeMP, mindamage, maxdamage
-		destructible_state( "tag_origin", "abdn_trashcan_01", undefined, undefined, undefined, undefined, undefined, false );
-
-		destructible_part( "tag_fx", "abdn_trashcan_monkey_head_01", undefined, undefined, undefined, undefined, 1.0, 1.0 );
-}
-
-toy_firecracker( destructibleType )
-{
-	//---------------------------------------------------------------------
-	// Chinese firecracker string (3.3.3.3 only; no IW4/IW5 source exists).
-	// Built from the zone's own assets: the placed one-bone
-	// abdn_chinese_firecracker_01_ribstatic swaps to the rigged
-	// abdn_chinese_firecracker_01_ribbon (same skeleton as the anims), which
-	// plays mp_abandon_firecracker_bottom_fire (4.47 s) under the
-	// ab_mk_firecracker_explosion_runner fx while a health drain burns it down
-	// over about the same time, then it leaves abdn_chinese_firecracker_01_dstry.
-	// The anim's per-cracker hide_part notetracks are not handled (MP plays
-	// the anim on the client through scriptModelPlayAnim).
-	//---------------------------------------------------------------------
-	destructible_create( destructibleType, "tag_origin", 50, undefined, 32 );
-			destructible_anim( get_precached_anim( "mp_abandon_firecracker_bottom_fire" ), #animtree, "setanimknob", undefined, undefined, "mp_abandon_firecracker_bottom_fire" );
-			// CoDOL: useTagAngles false. tag_fx_wick exists only on the ribbon this
-			// state swaps in (the placed ribstatic has one bone, tag_origin), and the
-			// swap and the fx go out in the same snapshot. PlayFXOnTag names the tag,
-			// which the client resolves against the entity's DObj and can still find
-			// the one-bone ribstatic there, so the runner was dropped. With false,
-			// _destructible reads the tag on the server (the ribbon, already set) and
-			// sends a plain PlayFX at that point, which needs no client DObj.
-			destructible_fx( "tag_fx_wick", "explosions/ab_mk_firecracker_explosion_runner", false );
-			destructible_sound( "firework_explosion_runner" );
-			destructible_healthdrain( 10, 1.0 );
-		destructible_state( undefined, "abdn_chinese_firecracker_01_ribbon", 45, undefined, 32 );
-			// No tag: abdn_chinese_firecracker_01_dstry has a single bone named bone_0,
-			// so PlayFXOnTag( tag_origin ) is a script error; untagged fx play at the origin.
-			destructible_fx( undefined, "explosions/ab_mk_firecracker_explosion_a" );
-		destructible_state( undefined, "abdn_chinese_firecracker_01_dstry", undefined, undefined, "no_melee" );
-}
-
-// CoDOL: destructible types for the 3.3.3.3 maps ported to 1.1.1.13
-// (mp_firingrange, mp_terminal_cls). Model, fx and alias names are the ones
-// those zones ship (checked against their asset lists and xmodel bones).
-
-toy_propane_tanks_02( destructibleType )
-{
-	//---------------------------------------------------------------------
-	// mp_firingrange propane tank pair (Black Ops dest_propanetanks_02).
-	// No IW4/IW5 type exists; built like IW4 toy_propane_tank02_small from
-	// what mp_firingrange ships: dest_propanetanks_02_d0 -> _d0_d (both
-	// tag_origin + tag_fx), fx explosions/propane_small_exp, and the metal
-	// explosion alias barrel_mtl_explode (the zone has no propanetank02_*).
-	//---------------------------------------------------------------------
-	destructible_create( destructibleType, "tag_origin", 150, undefined, 32, "no_melee" );
-		destructible_splash_damage_scaler( 5 );
-			destructible_fx( "tag_fx", "explosions/propane_small_exp", false );
-			destructible_sound( "barrel_mtl_explode" );
-			destructible_explode( 4000, 5000, 256, 256, 32, 200 ); 	// force_min, force_max, rangeSP, rangeMP, mindamage, maxdamage
-		destructible_state( undefined, "dest_propanetanks_02_d0_d", undefined, undefined, "no_melee" );
-}
-
-toy_propane_tank02hr( destructibleType )
-{
-	//---------------------------------------------------------------------
-	// mp_terminal_cls large propane tank: IW4 toy_propane_tank02 with the
-	// highrise tank models mp_terminal_cls ships. hr_propane_tank_large has
-	// tag_cap, tag_valve and tag_fx like com_propane_tank02; its loose parts
-	// are hr_propane_tank_large_lid_des (tag_cap) and _wheel_des (tag_valve),
-	// the wreck hr_propane_tank_large_des. All fx and propanetank02_* aliases
-	// are in the zone.
-	//---------------------------------------------------------------------
-	destructible_create( destructibleType, "tag_origin", 50, undefined, 32, "no_melee" );
-		destructible_splash_damage_scaler( 5 );
-			destructible_state( undefined, undefined, 350, undefined, 32, "no_melee" );
-				destructible_loopsound( "propanetank02_gas_leak_loop" );
-				destructible_loopfx( "tag_cap", "distortion/propane_cap_distortion", 0.1 );
-			destructible_state( undefined, undefined, 350, undefined, 32, "no_melee" );
-				destructible_loopfx( "tag_cap", "fire/propane_capfire_leak", 0.1 );
-				destructible_sound( "propanetank02_flareup_med" );
-				destructible_loopsound( "propanetank02_fire_med" );
-				destructible_healthdrain( 12, 0.2, 300, "allies" );
-			destructible_state( undefined, undefined, 150, undefined, 32, "no_melee" );
-				destructible_physics( "tag_cap", ( 50, 0, 0 ) );
-				destructible_loopfx( "tag_cap", "fire/propane_capfire", 0.6 );
-				destructible_fx( "tag_valve", "fire/propane_valvefire_flareup" );
-				destructible_physics( "tag_valve", ( 50, 0, 0 ) );
-				destructible_fx( "tag_cap", "fire/propane_capfire_flareup" );
-				destructible_loopfx( "tag_valve", "fire/propane_valvefire", 0.1 );
-				destructible_sound( "propanetank02_flareup2_med" );
-				destructible_loopsound( "propanetank02_fire_med" );
-			destructible_state( undefined, undefined, 150, undefined, 5, "no_melee" );
-				destructible_fx( "tag_fx", "fire/propane_small_fire" );
-				destructible_fx( "tag_fx", "explosions/propane_large_exp_fireball" );
-				destructible_fx( "tag_fx", "explosions/propane_large_exp", false );
-				destructible_sound( "propanetank02_explode" );
-				destructible_loopsound( "propanetank02_fire_blown_med" );
-				destructible_explode( 7000, 8000, 600, 600, 32, 300 ); 	// force_min, force_max, rangeSP, rangeMP, mindamage, maxdamage
-			destructible_state( undefined, "hr_propane_tank_large_des", undefined, undefined, "no_melee" );
-		// Lower Valve
-		destructible_part( "tag_valve", "hr_propane_tank_large_wheel_des" );
-		// Top Cap
-		destructible_part( "tag_cap", "hr_propane_tank_large_lid_des" );
-}
-
-toy_tv_flatscreen_static( destructibleType, version, mounting )
-{
-	//---------------------------------------------------------------------
-	// Flatscreen TV placed with its screen-on (static) model,
-	// ma_flatscreen_tv_on_wallmount_02_static: IW4 toy_tvs_flatscreen under
-	// its own type name, breaking to the same ma_flatscreen_tv_wallmount_broken_02.
-	//---------------------------------------------------------------------
-	destructible_create( destructibleType, "tag_origin", 1, undefined, 32 );
-		destructible_splash_damage_scaler( 1 );
-			destructible_fx( "tag_fx", "explosions/tv_flatscreen_explosion" );
-			destructible_sound( "tv_shot_burst" );
-			destructible_explode( 20, 2000, 10, 10, 3, 3, undefined, 15 ); 	// force_min, force_max, rangeSP, rangeMP, mindamage, maxdamage
-		destructible_state( undefined, "ma_flatscreen_tv_" + mounting + "broken_" + version, 200, undefined, "no_melee" );
-}
-
 toy_water_collector( destructibleType )
 {
 	//---------------------------------------------------------------------
@@ -1435,7 +1230,7 @@ toy_light_ceiling_fluorescent( destructibleType )
 	//---------------------------------------------------------------------
 	// Ceiling fluorescent light
 	//---------------------------------------------------------------------
-	println( "Ceiling light fluorescent being destroyedﬂ" );
+	{}
 	destructible_create( destructibleType, "tag_origin", 150, undefined, 32, "no_melee" );
 		destructible_splash_damage_scaler( 15 );			
 		 	destructible_fx( "tag_fx", "misc/light_fluorescent_blowout_runner" );
@@ -1461,7 +1256,7 @@ toy_light_ceiling_fluorescent_spotlight( destructibleType )
 	//---------------------------------------------------------------------
 	// Ceiling fluorescent light
 	//---------------------------------------------------------------------
-	println( "Ceiling light fluorescent being destroyedﬂ" );
+	{}
 	destructible_create( destructibleType, "tag_origin", 150, undefined, 32, "no_melee" );
 		destructible_splash_damage_scaler( 15 );
 			destructible_sound( "fluorescent_light_bulb" ); 
@@ -1484,7 +1279,7 @@ toy_light_ceiling_fluorescent_single( destructibleType )
 	//---------------------------------------------------------------------
 	// Ceiling fluorescent light
 	//---------------------------------------------------------------------
-	println( "Ceiling light fluorescent single being destroyedﬂ" );
+	{}
 	destructible_create( destructibleType, "tag_origin", 150, undefined, 32, "no_melee" );
 		destructible_splash_damage_scaler( 15 );	
 		 	destructible_fx( "tag_fx", "misc/light_fluorescent_single_blowout_runner" );
@@ -1512,7 +1307,7 @@ toy_light_ceiling_fluorescent_single_spotlight( destructibleType )
 	//---------------------------------------------------------------------
 	// Ceiling fluorescent light
 	//---------------------------------------------------------------------
-	println( "Ceiling light fluorescent single being destroyedﬂ" );
+	{}
 	destructible_create( destructibleType, "tag_origin", 150, undefined, 32, "no_melee" );
 		destructible_splash_damage_scaler( 15 );
 			destructible_lights_out( 16 );
@@ -3421,7 +3216,7 @@ destructible_electrical_transformer_large( destructibleType )
 
 get_precached_anim( animname )
 {
-	println( animname );
+	{}
 	assertEX( isdefined( level._destructible_preanims ) && isdefined( level._destructible_preanims[ animname ] ),"Can't find destructible anim: "+animname+" check the Build Precache Scripts and Repackage Zone boxes In launcher when you compile your map. " );
 	return level._destructible_preanims[ animname ];
 }

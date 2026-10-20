@@ -1066,7 +1066,7 @@ tunnels_end()
 		nextmission();
 	}
 	else
-		IPrintLnBold( "DEVELOPER: END OF SCRIPTED LEVEL" );
+		{}
 }
 
 tunnels_rain()

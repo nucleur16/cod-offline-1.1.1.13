@@ -2032,11 +2032,11 @@ arcadeMode_ends()
 	wait( 1 );
 	if ( getdvar( "arcademode_full" ) == "1" )
 	{
-		logString( "ArcadeMode Score: " + score + ", mission: " + level.script + ", gameskill: " + level.gameskill + ", total: " + combined_score );
+		{}
 	}
 	else
 	{
-		logString( "ArcadeMode Score: " + score + ", mission: " + level.script + ", gameskill: " + level.gameskill );
+		{}
 	}
 
 	setdvar( "arcademode_combined_score", combined_score );

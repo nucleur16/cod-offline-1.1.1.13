@@ -463,7 +463,7 @@ showclaimed( goal )
 	for ( ;; )
 	{
 		entnum = self getentnum();
-		print3d( goal.origin, entnum, ( 1.0, 1.0, 0.0 ), 1 );
+		{}
 		wait 0.05;
 	}
 	#/
@@ -655,7 +655,7 @@ pet_debug_positions( positions )
 		key = keys[ i ];
 		if ( key == "null" )
 			continue;
-		print3d( positions[ key ].origin, "o", ( 0, 1, 0 ), 1, .5 );
+		{}
 	}
 }
 

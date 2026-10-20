@@ -117,10 +117,7 @@ ghost_says( alias, noWait )
 		speaker = level.coop_estate.boat;
 	if ( isDefined( speaker ) )
 		speaker snd( alias );
-	codolprintln( "CoDOL coop estate: line " + alias );
-	// Standing with nothing else to do, he talks with his hands.
-	if ( isDefined( level.coop_estate.ghost ) && !isDefined( level.coop_estate.ghost_riding ) )
-		level thread maps\_coopscene_estate::talk_gesture( level.coop_estate.ghost );
+	{}
 	if ( !isDefined( noWait ) || !noWait )
 		wait( line_time( alias ) + 0.3 );
 }
@@ -130,7 +127,7 @@ price_says( alias, noWait )
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 		players[ i ] snd_local( alias );
-	codolprintln( "CoDOL coop estate: line " + alias );
+	{}
 	if ( !isDefined( noWait ) || !noWait )
 		wait( line_time( alias ) + 0.3 );
 }
@@ -139,7 +136,7 @@ vazquez_says( alias )
 {
 	if ( isDefined( level.coop_estate.vazquez ) )
 		level.coop_estate.vazquez snd( alias );
-	codolprintln( "CoDOL coop estate: line " + alias );
+	{}
 }
 
 // Every sound goes through these: an alias the mounted zones do not carry is
@@ -150,7 +147,7 @@ snd( alias )
 	if ( soundExists( alias ) )
 		self playSound( alias );
 	else
-		codolprintln( "CoDOL coop estate: no sound alias " + alias );
+		{}
 }
 
 snd_local( alias )
@@ -158,7 +155,7 @@ snd_local( alias )
 	if ( soundExists( alias ) )
 		self playLocalSound( alias );
 	else
-		codolprintln( "CoDOL coop estate: no sound alias " + alias );
+		{}
 }
 
 snd_loop( alias )
@@ -166,7 +163,7 @@ snd_loop( alias )
 	if ( soundExists( alias ) )
 		self playLoopSound( alias );
 	else
-		codolprintln( "CoDOL coop estate: no sound alias " + alias );
+		{}
 }
 
 // Ghost's praise after a kill, one of the eight, at most every 8 s.
@@ -288,7 +285,7 @@ step( kind, value, value2 )
 	text = kind;
 	if ( isDefined( value ) && ( kind == "flag" || kind == "near" || kind == "leave" ) )
 		text += " " + value;
-	codolprintln( "CoDOL coop estate: waiting for " + text );
+	{}
 }
 
 player_near( point, radius )
@@ -421,7 +418,7 @@ init()
 			mp_only++;
 		}
 	}
-	codolprintln( "CoDOL coop estate: removed " + mp_only + " multiplayer-only (script_specialops 0) entities" );
+	{}
 
 	// A foliage model the coop mission removes (base map,
 	// script_noteworthy plant_delete_coop_take_estate).
@@ -444,12 +441,12 @@ init()
 			setExpFog( float( f[ 0 ] ), float( f[ 1 ] ), float( f[ 2 ] ), float( f[ 3 ] ), float( f[ 4 ] ), float( f[ 5 ] ), 0 );
 		else
 			setExpFog( 96, 1100, 0.63, 0.66, 0.67, 0.86, 0 );
-		codolprintln( "CoDOL coop estate: river fog set" );
+		{}
 	}
 
 	level thread loadout_watch();
 	level thread maps\_cooptraining::show_nametags();
-	codolprintln( "CoDOL coop estate: mission flow active" );
+	{}
 }
 
 main()
@@ -471,8 +468,6 @@ main()
 
 	level thread unsuppressed_watch();
 	level thread checkpoint_triggers();
-	// The mission's scene clips (_coopscene_estate, IW4 estate_anim.gsc).
-	maps\_coopscene_estate::init_anims();
 
 	spawn_ghost();
 	stage_boat();
@@ -547,7 +542,7 @@ spawned()
 		self setSpawnWeapon( primary );
 		self switchToWeapon( primary );
 	}
-	codolprintln( "CoDOL coop estate: " + self.name + " armed " + primary + " / " + secondary );
+	{}
 
 	if ( !level.coop_estate.boat_done && isDefined( level.coop_estate.boat ) )
 	{
@@ -559,7 +554,7 @@ spawned()
 	if ( isDefined( level.coop_estate.checkpoint ) )
 	{
 		self setOrigin( level.coop_estate.checkpoint + ( randomFloatRange( -24, 24 ), randomFloatRange( -24, 24 ), 4 ) );
-		codolprintln( "CoDOL coop estate: " + self.name + " back at checkpoint " + level.coop_estate.checkpoint );
+		{}
 	}
 }
 
@@ -584,7 +579,7 @@ set_checkpoint( origin, why )
 {
 	ground = maps\_coopvehicle::ground_under( origin + ( 0, 0, 8 ) );
 	level.coop_estate.checkpoint = ground;
-	codolprintln( "CoDOL coop estate: checkpoint " + why + " at " + ground );
+	{}
 }
 
 // --------------------------------------------------------------------------
@@ -596,21 +591,26 @@ set_checkpoint( origin, why )
 spawn_ghost()
 {
 	spawner = ent_named( "ghost" );
-	if ( !isDefined( spawner ) )
+	template = maps\_cooptraining::ally_template();
+	if ( !isDefined( spawner ) || !isDefined( template ) )
 	{
-		codolprintln( "CoDOL coop estate: no Ghost" );
+		{}
 		return;
 	}
-	// His spawner's classname (actor_ally_hero_ghost_estate_so): its aitype
-	// wears character\character_hero_forest_ghost.
 	kind = spawnStruct();
+	kind.faction = "cast";
 	kind.role = "smg";
+	kind.team = "allies";
 	kind.health = 1000;
 	kind.accuracy = 0.6;
-	ai = maps\_coopmission::spawn_class_actor( spawner.classname, "allies", kind );
+	kind.body = "body_forest_tf141_ghost";
+	kind.head = "head_hero_ghost_forest";
+	level.coop_soldier_next = kind;
+	ai = template spawnActor();
+	level.coop_soldier_next = undefined;
 	if ( !isDefined( ai ) )
 	{
-		codolprintln( "CoDOL coop estate: Ghost refused by the actor pool" );
+		{}
 		return;
 	}
 	ai forceTeleport( spawner.origin, spawner.angles );
@@ -630,7 +630,7 @@ spawn_ghost()
 	if ( !isDefined( level.coop_cast_list ) )
 		level.coop_cast_list = [];
 	level.coop_cast_list[ level.coop_cast_list.size ] = ai;
-	codolprintln( "CoDOL coop estate: Ghost (" + ai.coop_name + ") at " + ai.origin );
+	{}
 	level thread ghost_colors();
 	level thread ghost_catch_up();
 }
@@ -673,7 +673,7 @@ ghost_colors()
 		if ( isDefined( triggers[ i ].script_color_allies ) )
 			triggers[ i ] thread ghost_color_trigger();
 	}
-	codolprintln( "CoDOL coop estate: " + triggers.size + " ghost colour triggers" );
+	{}
 }
 
 ghost_color_trigger()
@@ -723,7 +723,7 @@ ghost_to( point, why )
 	r = color_rank( strTok( why, " " )[ 0 ] );
 	if ( r > level.coop_estate.color_rank )
 		level.coop_estate.color_rank = r;
-	codolprintln( "CoDOL coop estate: Ghost to " + why + " " + point );
+	{}
 	// Aboard the zodiac or walking up the beach: the order waits for the
 	// end of the ride (ghost_up_the_beach takes it over).
 	if ( isDefined( level.coop_estate.ghost_riding ) )
@@ -751,7 +751,7 @@ nav_init()
 	level.coop_estate.nav_p = maps\_coopmission_estate_nav::nav_points();
 	level.coop_estate.nav_l = maps\_coopmission_estate_nav::nav_links();
 	level.coop_estate.nav_ok = [];
-	codolprintln( "CoDOL coop estate: Ghost's way over " + level.coop_estate.nav_p.size + " path nodes" );
+	{}
 }
 
 // A link is walked only when it is open at knee and chest height.
@@ -904,7 +904,7 @@ ghost_walk( goal )
 	if ( points.size >= 2 && distance( g.origin, points[ 1 ] ) < distance( points[ 0 ], points[ 1 ] ) )
 		points = array_from( points, 1 );
 	points[ points.size ] = goal;
-	codolprintln( "CoDOL coop estate: Ghost's way to " + goal + ": " + ( points.size - 1 ) + " nodes (from node " + a + " to " + b + ")" );
+	{}
 	for ( k = 0; k < points.size; k++ )
 	{
 		last = ( k == points.size - 1 );
@@ -939,7 +939,7 @@ ghost_walk( goal )
 				spot = maps\_coopvehicle::ground_under( wp + ( 0, 0, 32 ) );
 				g forceTeleport( spot, g.angles );
 				g setGoalPos( wp );
-				codolprintln( "CoDOL coop estate: Ghost stuck at " + mark + ", put on his way at " + spot );
+				{}
 				break;
 			}
 		}
@@ -951,8 +951,8 @@ ghost_walk( goal )
 // test, so a goal there sends the actor toward the graph's nearest waypoint
 // and into the bank (MEASURED on the probe 2026-10-09: three legs of the
 // node route, each wedged at (-4994 2652 -509) or (-4840 2394 -468)).  He
-// walks the node route on a mover at the patrol walk's own pace (27.6 units
-// a second, from the clip's root motion) with that walk playing,
+// walks the node route on a mover at the patrol walk's own pace (about 30
+// units a second, the native walk's measured speed) with that walk playing,
 // as the training jeep carries Price (codol_actorRide), then goes on under
 // his own legs from the landing node.
 ghost_up_the_beach( goal )
@@ -982,10 +982,7 @@ ghost_up_the_beach( goal )
 	wait( 0.05 );
 	g codol_actorRide( mover );
 	level.coop_estate.ghost_riding = true;
-	// The mover keeps the walk's own pace (patrol_bored_patrolwalk: 27.6
-	// units a second), so his feet keep to the sand.
-	pace = maps\_coopanim::clip_pace( %patrol_bored_patrolwalk );
-	codolprintln( "CoDOL coop estate: Ghost walks up the beach over " + ( points.size - 1 ) + " nodes at " + pace + " units/s" );
+	{}
 	for ( k = 0; k < points.size; k++ )
 	{
 		target = maps\_coopvehicle::ground_under( points[ k ] + ( 0, 0, 32 ) );
@@ -994,7 +991,7 @@ ghost_up_the_beach( goal )
 			continue;
 		dir = target - mover.origin;
 		mover rotateTo( ( 0, vectorToAngles( ( dir[ 0 ], dir[ 1 ], 0 ) )[ 1 ], 0 ), 0.4 );
-		t = d / pace;
+		t = d / 30;
 		mover moveTo( target, t );
 		wait( t );
 	}
@@ -1007,7 +1004,7 @@ ghost_up_the_beach( goal )
 	g notify( "coop_cast_pose" );
 	level.coop_estate.ghost_riding = undefined;
 	mover delete();
-	codolprintln( "CoDOL coop estate: Ghost at the landing " + g.origin );
+	{}
 	// A colour or stage order given while he walked takes over now.
 	if ( isDefined( level.coop_estate.ghost_goal ) && level.coop_estate.ghost_goal != goal )
 		level thread ghost_walk( level.coop_estate.ghost_goal );
@@ -1079,7 +1076,7 @@ ghost_catch_up()
 		g forceTeleport( dest, g.angles );
 		if ( isDefined( level.coop_estate.ghost_goal ) )
 			level thread ghost_walk( level.coop_estate.ghost_goal );
-		codolprintln( "CoDOL coop estate: Ghost caught up to " + dest + " (was " + int( d ) + " away)" );
+		{}
 	}
 }
 
@@ -1111,7 +1108,7 @@ ghost_shoots( target )
 		g maps\_coopmission::actor_fire_round( weapon, start, head );
 	if ( isAlive( target ) )
 		target doDamage( target.health + 200, start );
-	codolprintln( "CoDOL coop estate: Ghost takes ent " + target getEntityNumber() );
+	{}
 }
 
 // --------------------------------------------------------------------------
@@ -1142,7 +1139,7 @@ spawn_group( spawners, stealth, group )
 		}
 		if ( !isDefined( ai ) )
 		{
-			codolprintln( "CoDOL coop estate: spawner at " + s.origin + " refused" );
+			{}
 			continue;
 		}
 		ai.coop_group = group;
@@ -1158,7 +1155,7 @@ spawn_group( spawners, stealth, group )
 	text = "";
 	if ( stealth )
 		text = " (stealth)";
-	codolprintln( "CoDOL coop estate: group " + group + " spawned " + ais.size + " of " + spawners.size + text );
+	{}
 	return ais;
 }
 
@@ -1342,7 +1339,7 @@ alert_group( group, why )
 	if ( isDefined( level.coop_estate.alerted[ group ] ) )
 		return;
 	level.coop_estate.alerted[ group ] = true;
-	codolprintln( "CoDOL coop estate: group " + group + " alerted (" + why + ")" );
+	{}
 	ais = level.coop_enemies;
 	n = 0;
 	for ( i = 0; i < ais.size; i++ )
@@ -1352,13 +1349,13 @@ alert_group( group, why )
 			continue;
 		ai notify( "coop_alerted" );
 		ai.ignoreall = false;
-		wasStealth = isDefined( ai.coop_stealth );
-		walking = !isDefined( ai.coop_cast );
 		ai.coop_stealth = undefined;
 		ai.coop_cast = undefined;
 		ai.coop_hunting = true;
 		ai notify( "coop_cast_pose" );
-		ai thread alerted_hunt( wasStealth, walking );
+		players = maps\_coopmission::living_players();
+		if ( players.size > 0 )
+			ai setGoalPos( players[ randomInt( players.size ) ].origin );
 		n++;
 	}
 	if ( n > 0 )
@@ -1368,18 +1365,6 @@ alert_group( group, why )
 			ghost_says( "estate_gst_126", true );
 		level notify( "coop_estate_alert", group );
 	}
-}
-
-// IW4 _stealth: a patrolman caught unaware reacts first (the walk-stop
-// reaction on a walk, the spotted twitch at his spot), then hunts.
-alerted_hunt( wasStealth, walking )
-{
-	self endon( "death" );
-	if ( wasStealth )
-		self maps\_coopscene_estate::stealth_react( walking );
-	players = maps\_coopmission::living_players();
-	if ( players.size > 0 )
-		self setGoalPos( players[ randomInt( players.size ) ].origin );
 }
 
 // A loud weapon in the forest gives the player away (IW4 so_forest
@@ -1499,7 +1484,7 @@ board_boat()
 	self.coop_seat_angles = boat.angles;
 	self playerLinkToDelta( boat, "tag_origin", 1 );
 	self.coop_in_intro = true;
-	codolprintln( "CoDOL coop estate: " + self.name + " aboard the zodiac, seat " + seat );
+	{}
 }
 
 boat_riders_looking()
@@ -1540,7 +1525,7 @@ stage_boat()
 	level.coop_estate.boat = boat;
 	path = on_water( path );
 	boat.origin = water_point( boat.origin );
-	codolprintln( "CoDOL coop estate: zodiac at " + boat.origin + ", " + path.size + " nodes to " + path[ path.size - 1 ].origin );
+	{}
 
 	// Players already in the world board now; later ones board on spawn.
 	players = getPlayers();
@@ -1584,10 +1569,7 @@ stage_boat()
 		waited += 0.25;
 	}
 
-	codolprintln( "CoDOL coop estate: zodiac ride starts with " + level.coop_estate.riders.size + " rider(s)" );
-	// Ghost's rider clip at the stern (estate_intro_3rd_character_right).
-	if ( isDefined( g ) )
-		maps\_coopscene_estate::boat_ride( g );
+	{}
 	level thread title_card();
 	level thread boat_lines();
 	level thread spawn_forest();
@@ -1623,7 +1605,6 @@ stage_boat()
 	}
 	if ( isDefined( g ) )
 	{
-		maps\_coopanim::release( g );
 		g codol_actorRide();
 		g animMode( "none" );
 		g.coop_cast = undefined;
@@ -1636,7 +1617,7 @@ stage_boat()
 		level thread ghost_up_the_beach( color_node( "r2" ) );
 	}
 	set_checkpoint( path[ path.size - 1 ].origin, "the beach" );
-	codolprintln( "CoDOL coop estate: zodiac ride over at " + boat.origin );
+	{}
 	level notify( "coop_estate_landed" );
 }
 
@@ -1697,7 +1678,7 @@ title_card()
 		huds[ i ] = h;
 		wait( 0.6 );
 	}
-	codolprintln( "CoDOL coop estate: title card shown" );
+	{}
 	wait( 5 );
 	for ( i = 0; i < huds.size; i++ )
 	{
@@ -1912,20 +1893,23 @@ stage_house_front()
 
 spawn_vazquez( spawner, origin, angles )
 {
-	// The addon's Vazquez classname: aitype\enemy_vazquez_so wears
-	// character\character_codo_vil_vazquez.  He is a hostage the players
-	// protect, so he is on their side.
-	cls = "actor_enemy_vazquez_so";
-	if ( isDefined( spawner ) && isDefined( spawner.classname ) )
-		cls = spawner.classname;
+	template = maps\_cooptraining::ally_template();
+	if ( !isDefined( template ) )
+		return undefined;
 	kind = spawnStruct();
+	kind.faction = "cast";
 	kind.role = "pistol";
+	kind.team = "allies";
 	kind.health = 1000;
 	kind.accuracy = 0;
-	ai = maps\_coopmission::spawn_class_actor( cls, "allies", kind );
+	kind.body = "body_militia_smg_aa_wht";
+	kind.head = "head_airport_a";
+	level.coop_soldier_next = kind;
+	ai = template spawnActor();
+	level.coop_soldier_next = undefined;
 	if ( !isDefined( ai ) )
 	{
-		codolprintln( "CoDOL coop estate: Vazquez refused by the actor pool" );
+		{}
 		return undefined;
 	}
 	ai forceTeleport( origin, angles );
@@ -1941,7 +1925,7 @@ spawn_vazquez( spawner, origin, angles )
 	ai setAnimKnobAll( ai.coop_idle_anim, %body, 1, 0.1, 1 );
 	ai notify( "coop_cast_pose" );
 	level.coop_estate.vazquez = ai;
-	codolprintln( "CoDOL coop estate: Vazquez at " + ai.origin );
+	{}
 	return ai;
 }
 
@@ -1978,7 +1962,7 @@ vazquez_runs_inside()
 	objective_delete( 2 );
 	v delete();
 	level.coop_estate.vazquez = undefined;
-	codolprintln( "CoDOL coop estate: Vazquez out of sight" );
+	{}
 }
 
 // --------------------------------------------------------------------------
@@ -2049,7 +2033,7 @@ stage_intel()
 	laptop.angles = ( 0, 163, 0 );
 	objective_point( spot );
 	level.coop_estate.laptop = laptop;
-	codolprintln( "CoDOL coop estate: laptop at " + spot );
+	{}
 
 	ghost_says( "estate_gst_154", true );
 	step( "use", laptop, "the laptop" );
@@ -2086,7 +2070,7 @@ stage_intel()
 	}
 	laptop delete();
 	flag_set( "keyboard_used" );
-	codolprintln( "CoDOL coop estate: laptop taken by " + taker.name );
+	{}
 	wait_group_dead( cell, 30, "the cell guards" );
 }
 
@@ -2104,15 +2088,7 @@ stage_breach()
 	price_says( "estate_pri_0461", true );
 	cp = structs_named( "checkpoint_breach_ghost" );
 	if ( cp.size > 0 )
-	{
 		ghost_to( cp[ 0 ].origin, "checkpoint_breach_ghost" );
-		// He stacks on the door (breach_flash_r1_enter / _idle) until the
-		// charge goes; the struct faces the door frame (MEASURED: yaw 230).
-		yaw = 230;
-		if ( isDefined( cp[ 0 ].angles ) )
-			yaw = cp[ 0 ].angles[ 1 ];
-		level thread maps\_coopscene_estate::breach_stack( level.coop_estate.ghost, cp[ 0 ].origin, yaw );
-	}
 
 	// The glowing charge frame on the door (mil_frame_charge_obj), at the
 	// base map's breach_fx origin on the door.
@@ -2147,8 +2123,7 @@ stage_breach()
 			breacher = level.coop_estate.breach_by;
 		wait( 0.05 );
 	}
-	codolprintln( "CoDOL coop estate: breach by " + breacher.name );
-	maps\_coopscene_estate::breach_stack_done( level.coop_estate.ghost );
+	{}
 	charge setModel( "mil_frame_charge" );
 	charge snd( "scn_estate_breach_door_impact" );
 	wait( 1.5 );
@@ -2174,10 +2149,6 @@ stage_breach()
 		players[ i ] snd_local( "slomo_whoosh" );
 	visionSetNaked( "slomo_breach", 0.4 );
 	room = spawn_group( spawners_named( "breach_enemy_spawner" ), false, "breach" );
-	// IW4 _slowmo_breach: each guard's spawner names his reaction
-	// (breach_react_push_guy1 / _guy2, exposed_idle_reactA,
-	// breach_react_knife_charge), played at the spawner.
-	maps\_coopscene_estate::breach_reactions( room );
 	hostage = maps\_cooptraining::by_noteworthy( "vazquez_breach" );
 	if ( hostage.size > 0 )
 	{
@@ -2186,9 +2157,6 @@ stage_breach()
 		{
 			v.coop_idle_anim = %covercrouch_hide_idle;
 			v notify( "coop_cast_pose" );
-			// The cower at the blast, then cowering
-			// (estate_breach_hvt_cower / _cower_idle).
-			level thread maps\_coopscene_estate::vazquez_breach( v );
 		}
 	}
 	ghost_fights( true );
@@ -2224,26 +2192,13 @@ stage_chase()
 	if ( isDefined( evac ) )
 		objective_point( evac.origin );
 	wait( 1 );
-	g = level.coop_estate.ghost;
-	// Up from the cower, pleading (unarmed_cowerstand_idle2point /
-	// _pointidle), while Ghost presses him.
-	level thread maps\_coopscene_estate::vazquez_plead( v );
 	ghost_says( "estate_gst_158" );
 	vazquez_says( "estate_vaz_08" );
-	wait( line_time( "estate_vaz_08" ) );
-	// The lead out: the two walk out of the safe room together
-	// (estate_breach_hvt_walkout / estate_breach_buddy_walkout), toward
-	// his way out (r10).
-	walk = maps\_coopscene_estate::walkout_start( v, g, color_node( "r10" ) );
 	// The shelves' weapons are the player's to take (the native world
-	// pickups).  With the walk-out, he bolts at its end (the recording's
-	// scene runs its course); without it, when a player heads out or
-	// after 25 s.
-	if ( walk > 0 )
-		wait( walk );
+	// pickups); he bolts when a player heads out or after 25 s.
 	room = ( 724, 920, 60 );
 	step( "leave", room, 260 );
-	for ( t = 0; t < 25 && walk <= 0; t += 0.5 )
+	for ( t = 0; t < 25; t += 0.5 )
 	{
 		players = maps\_coopmission::living_players();
 		gone = false;
@@ -2266,9 +2221,6 @@ stage_chase()
 		blockers[ i ] notSolid();
 		blockers[ i ] hide();
 	}
-	// He knocks Ghost aside and bolts through the door
-	// (estate_breach_hvt_walkout_p2 / estate_breach_buddy_walkout_p2).
-	maps\_coopscene_estate::walkout_bolt( v, g );
 	level thread vazquez_flees();
 	wait( 1 );
 	price_says( "estate_pri_0470" );
@@ -2327,7 +2279,7 @@ final_wave()
 	flag_wait( "final_enemy_wave" );
 	if ( isDefined( level.coop_estate.vazquez_dead ) )
 		return;
-	codolprintln( "CoDOL coop estate: the final wave" );
+	{}
 	level thread spawn_group( spawners_named( "final_wave" ), false, "final_wave" );
 	tech = undefined;
 	ents = getEntArray();
@@ -2360,10 +2312,7 @@ final_wave()
 		s.targetname = "final_wave_enemies";
 		drop[ drop.size ] = s;
 	}
-	crew = spawn_group( drop, false, "technical" );
-	// Out of the cab (technical_driver_climb_out / _passenger_climb_out).
-	for ( i = 0; i < crew.size; i++ )
-		crew[ i ] thread maps\_coopscene_estate::climb_out( i == 0 );
+	spawn_group( drop, false, "technical" );
 }
 
 vazquez_flees()
@@ -2391,11 +2340,11 @@ vazquez_flees()
 	route[ 1 ] = color_node( "r1" );
 	route[ 2 ] = color_node( "r8" );
 	route[ 3 ] = firstPos;
-	codolprintln( "CoDOL coop estate: Vazquez runs" );
+	{}
 	v vazquez_route( route );
 	if ( !isDefined( level.coop_estate.to_cliff ) )
 		level waittill( "coop_estate_vazquez_to_cliff" );
-	codolprintln( "CoDOL coop estate: Vazquez for the cliff from " + v.origin );
+	{}
 	route = [];
 	route[ 0 ] = color_node( "r5" );
 	route[ 1 ] = cliffPos;
@@ -2404,7 +2353,7 @@ vazquez_flees()
 	v.coop_cast = "vazquez";
 	v.coop_idle_anim = %exposed_idle_reacta;
 	v notify( "coop_cast_pose" );
-	codolprintln( "CoDOL coop estate: Vazquez at the cliff " + v.origin );
+	{}
 }
 
 // Run point to point.  The coop actors path over the MP bot graph, which
@@ -2444,10 +2393,10 @@ vazquez_route( points )
 			if ( seen && still < 12 )
 				continue;
 			self forceTeleport( maps\_coopvehicle::ground_under( goal + ( 0, 0, 16 ) ), self.angles );
-			codolprintln( "CoDOL coop estate: Vazquez put on " + goal + " (no progress for " + still + " s)" );
+			{}
 			break;
 		}
-		codolprintln( "CoDOL coop estate: Vazquez reached " + goal + " at " + self.origin );
+		{}
 	}
 }
 
@@ -2470,9 +2419,6 @@ stage_ending()
 		// own pathing).
 		v forceTeleport( cliff.origin, ( 0, 200, 0 ) );
 	}
-	// Hands up at the authored surrender struct (estate_surrender_vasquez,
-	// then its idle).
-	level thread maps\_coopscene_estate::surrender( v, maps\_coopscene_estate::surrender_struct() );
 	vazquez_says( "estate_vaz_09" );
 	wait( 2.5 );
 
@@ -2497,19 +2443,14 @@ stage_ending()
 		if ( codol_isWeaponMounted( "cheytac_silencer_so" ) )
 			magicBullet( "cheytac_silencer_so", from, head );
 		playFx( level._effect[ "estate_sniper_blood" ], head );
-		// The shot's own fall (estate_surrender_vasquez_02_shot), dead where
-		// it leaves him; without the clip, the death animscript.
-		if ( !maps\_coopscene_estate::surrender_shot( v ) )
-		{
-			v setCanDamage( true );
-			v.coop_cast = undefined;
-			v doDamage( v.health + 500, from );
-		}
+		v setCanDamage( true );
+		v.coop_cast = undefined;
+		v doDamage( v.health + 500, from );
 	}
 	flag_set( "vazquez_dead" );
 	objective_delete( 2 );
 	objective_point( undefined );
-	codolprintln( "CoDOL coop estate: Vazquez shot by the sniper" );
+	{}
 	level thread helicopters_leave();
 	calm_enemies();
 
@@ -2598,7 +2539,7 @@ test_command( tokens )
 				if ( all[ j ] getEntityNumber() == int( tokens[ 2 ] ) )
 				{
 					all[ j ] notSolid();
-					codolprintln( "CoDOL cooptest: brush ent " + tokens[ 2 ] + " not solid" );
+					{}
 				}
 			}
 			break;
@@ -2617,7 +2558,7 @@ test_command( tokens )
 				name = "";
 				if ( isDefined( all[ j ].targetname ) )
 					name = all[ j ].targetname;
-				codolprintln( "CoDOL cooptest: brush ent " + all[ j ] getEntityNumber() + " '" + name + "' origin " + all[ j ].origin + " min " + lo + " max " + hi );
+				{}
 			}
 		}
 		break;
@@ -2636,7 +2577,7 @@ test_command( tokens )
 			line = "CoDOL cooptest: navlink " + tokens[ j ] + " " + a + " -> " + tokens[ j + 1 ] + " " + b + ":";
 			for ( h = 16; h <= 72; h += 8 )
 				line += " " + h + "=" + sightTracePassed( a + ( 0, 0, h ), b + ( 0, 0, h ), false, undefined );
-			codolprintln( line );
+			{}
 		}
 		break;
 	case "ghostlead":
@@ -2647,7 +2588,7 @@ test_command( tokens )
 		{
 			pt = ( float( tokens[ j ] ), float( tokens[ j + 1 ] ), float( tokens[ j + 2 ] ) );
 			tr = bulletTrace( pt + ( 0, 0, 40 ), pt - ( 0, 0, 600 ), false, undefined );
-			codolprintln( "CoDOL cooptest: trace " + pt + " hits " + tr[ "position" ] + " surface " + tr[ "surfacetype" ] + " fraction " + tr[ "fraction" ] );
+			{}
 		}
 		break;
 	}
@@ -2656,7 +2597,7 @@ test_command( tokens )
 test_route()
 {
 	level endon( "coop_mission_over" );
-	codolprintln( "CoDOL cooptest: estateroute started" );
+	{}
 	last = undefined;
 	for ( ;; )
 	{
@@ -2706,7 +2647,7 @@ test_route()
 					level.coop_estate.laptop_taken_by = p;
 				else
 					level.coop_estate.breach_by = p;
-				codolprintln( "CoDOL cooptest: estateroute use on " + s.value2 + " did not take; SIMULATED" );
+				{}
 			}
 			break;
 		case "leave":
@@ -2741,10 +2682,10 @@ test_shoot_group( p, ais, what )
 		if ( isDefined( ai ) && isAlive( ai ) )
 		{
 			ai doDamage( ai.health + 100, ai.origin, p );
-			codolprintln( "CoDOL cooptest: estateroute " + what + ": ent " + ai getEntityNumber() + " killed SIMULATED" );
+			{}
 		}
 		else
-			codolprintln( "CoDOL cooptest: estateroute " + what + ": shot dead for real" );
+			{}
 	}
 }
 
@@ -2779,9 +2720,9 @@ test_ghost_lead( tokens )
 				break;
 			wait( 0.5 );
 		}
-		codolprintln( "CoDOL cooptest: ghostlead " + names[ i ] + " " + flat_distance( g.origin, goal ) + " from the node after " + ( getTime() - start ) / 1000 + " s" );
+		{}
 	}
-	codolprintln( "CoDOL cooptest: ghostlead done" );
+	{}
 }
 
 test_walk_nav( tokens )
@@ -2809,7 +2750,7 @@ test_walk_nav( tokens )
 		if ( a >= 0 && b >= 0 && a != b )
 			points = nav_route( a, b );
 		points[ points.size ] = goal;
-		codolprintln( "CoDOL cooptest: walknav to " + goal + " over " + ( points.size - 1 ) + " nodes" );
+		{}
 		for ( k = 0; k < points.size; k++ )
 		{
 			legs++;
@@ -2817,5 +2758,5 @@ test_walk_nav( tokens )
 				stuck++;
 		}
 	}
-	codolprintln( "CoDOL cooptest: walknav done, " + stuck + " of " + legs + " legs stuck" );
+	{}
 }

@@ -112,8 +112,7 @@ MeleeCombat()
 		// scripts out from under a swing while it is clear.
 		self.safeToChangeScript = false;
 
-		// T5 zombie_melee.gsc:116 plays the attack at rate 1.
-		self setFlaggedAnimKnobAllRestart( "meleeanim", zombie_attack, %body, 1, 0.2, 1 );
+		self setFlaggedAnimKnobAllRestart( "meleeanim", zombie_attack, %body, 1, 0.2, self.animplaybackrate );
 
 		swing_notetracks();
 
@@ -130,13 +129,14 @@ MeleeCombat()
 
 // T5 zombie_melee.gsc:126-:166, the inner note loop.
 //
-// Every "fire" note swings (T5 zombie_melee.gsc:126-:150 calls melee() on
-// each).  The double-swipe clips carry two notes about 0.35-0.4 s apart; a
-// second hit lands when it falls outside Callback_PlayerDamage's 0.4 s
-// per-attacker ignore window, as in T5, where one double swipe can down a
-// player without Juggernog.
+// One swing animation lands at most one hit.  The double-swipe attacks carry
+// two "fire" notes spaced wider than the 0.4 s ignore window in
+// Callback_PlayerDamage, so both connected and a full-health player went down
+// from a single attack (two 60s against 100).  The second note now only
+// connects when the first one missed.
 swing_notetracks()
 {
+	landed = false;
 
 	for ( ;; )
 	{
@@ -153,14 +153,22 @@ swing_notetracks()
 			if ( !isDefined( self.enemy ) )
 				return;
 
-			oldhealth = self.enemy.health;
-			self land_melee_hit();
+			if ( landed )
+				continue;
+
+			// melee() returns the entity the native trace actually contacted.
+			// Another player can stand between this zombie and self.enemy;
+			// that contact still consumes this swing, even if damage is blocked.
+			hit = self land_melee_hit();
 
 			if ( !isDefined( self.enemy ) )
 				return;
 
-			if ( self.enemy.health < oldhealth )
+			if ( isDefined( hit ) )
+			{
+				landed = true;
 				self resetGiveUpTime();
+			}
 			else if ( isDefined( level.melee_miss_func ) )
 				self [[ level.melee_miss_func ]]();
 
@@ -186,12 +194,12 @@ land_melee_hit()
 		if ( !isDefined( self.melee_weapon_warned ) )
 		{
 			self.melee_weapon_warned = true;
-			println( "CoDOL zm: a zombie has no aiweapon; its melee notetrack cannot damage anyone" );
+			{}
 		}
 		return;
 	}
 
-	self melee();
+	return self melee();
 }
 
 // T5 zombie_melee.gsc:60.

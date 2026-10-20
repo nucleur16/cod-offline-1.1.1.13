@@ -804,11 +804,11 @@ FindBestSplitTime( exitanim, isapproach, isright, arrayname, debugname )
 
 	if ( bestdelta[ 0 ] < 32 || bestdelta[ 1 ] < 0 )
 	{
-		println( "^0 ^1" + debugname + " has no valid split time available! Best was at " + bestsplit + ", delta of " + bestdelta );
+		{}
 		return;
 	}
 	//println("^0 ^2" + debugname + " has best split time at " + bestsplit + ", delta of " + bestdelta );
-	println( "^0 ^2" + arrayname + " = " + bestsplit + "; // delta of " + bestdelta );
+	{}
 }
 
 
@@ -828,11 +828,11 @@ AssertIsValidSplitDelta( delta, isRightSide, debugname )
 
 	// assert the delta goes out far enough from the node
 	if ( delta[ 0 ] < 32 )
-		println( "^0 ^1" + debugname + " doesn't go out from the node far enough in the given split time (delta = " + delta + ")" );
+		{}
 
 	// assert the delta doesn't go into the wall
 	if ( delta[ 1 ] < 0 )
-		println( "^0 ^1" + debugname + " goes into the wall during the given split time (delta = " + delta + ")" );
+		{}
 }
 
 checkApproachAngles( transTypes )
@@ -866,7 +866,7 @@ checkApproachAngles( transTypes )
 				actualAngle = AngleClamp180( anim.coverTransAngles[ trans ][ i ] );
 				if ( AbsAngleClamp180( actualAngle - correctAngle ) > 7 )
 				{
-					println( "^1Cover approach animation has bad yaw delta: anim.coverTrans[\"" + trans + "\"][" + i + "]; is ^2" + actualAngle + "^1, should be closer to ^2" + correctAngle + "^1." );
+					{}
 				}
 			}
 		}
@@ -890,7 +890,7 @@ checkApproachAngles( transTypes )
 				actualAngle = AngleClamp180( anim.coverExitAngles[ trans ][ i ] );
 				if ( AbsAngleClamp180( actualAngle - correctAngle ) > 7 )
 				{
-					println( "^1Cover exit animation has bad yaw delta: anim.coverTrans[\"" + trans + "\"][" + i + "]; is ^2" + actualAngle + "^1, should be closer to ^2" + correctAngle + "^1." );
+					{}
 				}
 			}
 		}

@@ -61,6 +61,11 @@ init()
 	level.laststand_funcs[ "spare_life" ] = ::zm_spare_life;
 	level.laststand_funcs[ "use_spare" ] = ::zm_use_spare;
 	level.laststand_funcs[ "all_down" ] = ::zm_all_down;
+	level.laststand_funcs[ "down_window" ] = maps\_zombiemode_tokens::begin_down;
+	level.laststand_funcs[ "down_end" ] = maps\_zombiemode_tokens::end_down;
+	level.zm_solo_retreat_active = false;
+	maps\_zombiemode_tokens::init();
+	maps\_zombiemode_revive_protection::init();
 
 	// T5 _zombiemode.gsc:653 level.laststandpistol.  The resolved zm starting
 	// weapon is the honest choice here: it is the one pistol this client is
@@ -116,18 +121,32 @@ checkForAllDead()
 // watcher takes the weapon itself).
 zm_downed()
 {
+	self maps\_zombiemode_revive_protection::clear();
 	self maps\_zombiemode_score::player_downed_penalty();
 	if ( self has_powerup_weapon() )
 		self powerup_weapon_unlock();
-	if ( getPlayers().size == 1 && self.pers[ "lives" ] > 0 )
+	// Recovery needs breathing room when nobody remains a valid standing
+	// target. Connected spectators/dead teammates must not suppress it, and
+	// a standing teammate must retain normal combat. One level owner avoids
+	// competing all-down callbacks clearing each other's actor markers.
+	if ( no_standing_retreat_eligible( self ) && !is_true( level.zm_solo_retreat_active ) )
 		level thread solo_retreat_think( self );
 }
 
-// While the solo player self-revives, send hunting zombies and hounds to a
+no_standing_retreat_eligible( player )
+{
+	return isDefined( player ) && is_true( player.laststand ) &&
+		!is_true( level.gameEnded ) && get_number_of_valid_players() == 0;
+}
+
+// While no standing target remains, send hunting zombies and hounds to a
 // map-authored spawner at least 640 units from the body.  The native actor
 // perception pass otherwise keeps its old enemy and replaces script goals.
 solo_retreat_think( player )
 {
+	if ( is_true( level.zm_solo_retreat_active ) || !no_standing_retreat_eligible( player ) )
+		return;
+	level.zm_solo_retreat_active = true;
 	points = level.enemy_spawns;
 	if ( !isDefined( points ) )
 		points = [];
@@ -136,7 +155,7 @@ solo_retreat_think( player )
 	for ( i = 0; i < points.size; i++ )
 	{
 		d = distanceSquared( points[ i ].origin, player.origin );
-		if ( d > best_dist )
+		if ( d > best_dist && findpath( player.origin, points[ i ].origin ) )
 		{
 			best = points[ i ];
 			best_dist = d;
@@ -153,7 +172,7 @@ solo_retreat_think( player )
 			for ( i = 0; i < points.size; i++ )
 			{
 				d = distanceSquared( points[ i ].origin, player.origin );
-				if ( d > best_dist )
+				if ( d > best_dist && findpath( player.origin, points[ i ].origin ) )
 				{
 					best = points[ i ];
 					best_dist = d;
@@ -161,15 +180,43 @@ solo_retreat_think( player )
 			}
 		}
 	}
+	// Closed doors/windows can disconnect every distant spawn. Fall back to
+	// the farthest reachable authored navigation point in the open area.
+	// Spread the search over frames rather than stalling the down callback.
 	if ( !isDefined( best ) )
 	{
-		codolprintln( "CoDOL zm: no distant solo retreat spawner" );
+		points = codol_getwalkablewaypoints();
+		best_dist = 128 * 128;
+		for ( i = 0; i < points.size; i++ )
+		{
+			if ( i % 32 == 0 )
+			{
+				wait( 0.05 );
+				if ( !no_standing_retreat_eligible( player ) )
+				{
+					level.zm_solo_retreat_active = false;
+					return;
+				}
+			}
+			d = distanceSquared( points[ i ], player.origin );
+			if ( d > best_dist && findpath( player.origin, points[ i ] ) )
+			{
+				best = spawnstruct();
+				best.origin = points[ i ];
+				best_dist = d;
+			}
+		}
+	}
+	if ( !isDefined( best ) )
+	{
+		{}
+		level.zm_solo_retreat_active = false;
 		return;
 	}
 
 	goal = best.origin;
-	codolprintln( "CoDOL zm: solo retreat to " + goal + " from " + player.origin );
-	while ( isDefined( player ) && is_true( player.laststand ) && getPlayers().size == 1 && !level.gameEnded )
+	{}
+	while ( no_standing_retreat_eligible( player ) )
 	{
 		for ( i = 0; i < level.zombies.size; i++ )
 		{
@@ -178,7 +225,7 @@ solo_retreat_think( player )
 				continue;
 			// An actor at a boarded entrance owns that route until it starts
 			// hunting.  Those actors are already away from the player.
-		if ( !is_true( z.isdog ) && ( !isDefined( z.zm_path_phase ) || z.zm_path_phase != "hunt" ) )
+			if ( !is_true( z.isdog ) && ( !isDefined( z.zm_path_phase ) || z.zm_path_phase != "hunt" ) )
 				continue;
 			z.zm_solo_retreat = true;
 			z.ignoreall = true;
@@ -196,6 +243,7 @@ solo_retreat_think( player )
 		z.zm_solo_retreat = false;
 		z.ignoreall = false;
 	}
+	level.zm_solo_retreat_active = false;
 }
 
 zm_downed_post()
@@ -219,13 +267,14 @@ zm_revived( reviver )
 		points = self.score_lost_when_downed;
 	reviver maps\_zombiemode_score::player_add_points( "reviver", points );
 	self.score_lost_when_downed = 0;
-	codolprintln( "CoDOL zm laststand: " + reviver.name + " paid +" + points + " for reviving " + self.name );
+	{}
 }
 
 // The health regen thread ends on "player_downed"; a revived player
 // regenerates again, as in T5.
 zm_revive_done()
 {
+	self maps\_zombiemode_revive_protection::start_if_token();
 	self.zmLastDamageTime = getTime();
 	self notify( "zm_regen_restart" );
 	self thread maps\_zombiemode::zm_player_health_regen();
@@ -260,13 +309,78 @@ zm_spare_life()
 zm_use_spare()
 {
 	self.pers[ "lives" ]--;
-	codolprintln( "CoDOL zm laststand: " + self.name + " solo self revive, " + self.pers[ "lives" ] + " spare lives left" );
+	{}
 }
 
-// _zombiemode.gsc:4700: nobody left standing ends the game at once.
+// C1 January 2014 footage: all-down recovery has a fifteen-second ending
+// countdown in the existing death POV. Token inventory/receipt authority and
+// the three-use cap remain owned by _zombiemode_tokens and the lobby.
 zm_all_down()
 {
-	level notify( "end_game" );
+	if ( level.gameEnded || is_true( level.zm_all_down_active ) )
+		return;
+	level.zm_all_down_active = true;
+	level thread all_down_countdown();
+}
+
+all_down_recovered()
+{
+	players = getPlayers();
+	if ( players.size == 0 )
+		return true;
+	for ( i = 0; i < players.size; i++ )
+		if ( isAlive( players[ i ] ) && !players[ i ] common_scripts\_laststand::player_is_in_laststand() )
+			return true;
+	return false;
+}
+
+clear_all_down_countdown()
+{
+	if ( isDefined( level.zm_all_down_timer ) )
+		level.zm_all_down_timer destroy();
+	level.zm_all_down_timer = undefined;
+	level.zm_all_down_active = false;
+}
+
+all_down_countdown()
+{
+	timer = newHudElem();
+	timer.alignX = "center";
+	timer.alignY = "middle";
+	timer.horzAlign = "center";
+	timer.vertAlign = "middle";
+	timer.y = -100;
+	timer.font = "objective";
+	timer.fontScale = 1.6;
+	timer.foreground = true;
+	// Same native inline localized-label + timer representation used by the
+	// extraction countdown; no separate second text row.
+	timer.label = &"ZOMBIE_GAME_OVER_IN";
+	timer setTimer( 15 );
+	level.zm_all_down_timer = timer;
+	deadline = getTime() + 15000;
+	last_second = 15;
+	tick_available = maps\_zombiemode_audio::alias_exists( "ui_mp_timer_countdown" );
+	while ( !level.gameEnded && !all_down_recovered() && getTime() < deadline )
+	{
+		// Tick only when a displayed positive second has elapsed (14..1).
+		// No initial15 or final0 tick, and no catch-up burst after a stall.
+		second = int( ( deadline - getTime() + 999 ) / 1000 );
+		if ( second < last_second && second > 0 )
+		{
+			last_second = second;
+			if ( tick_available )
+				foreach ( player in getPlayers() )
+					player playLocalSound( "ui_mp_timer_countdown" );
+		}
+		wait( 0.05 );
+	}
+	// Re-check at expiry: an authenticated revive completed on this frame wins
+	// over ending the match. No token request/receipt is synthesized here.
+	ended = !level.gameEnded && !all_down_recovered();
+	clear_all_down_countdown();
+	if ( ended )
+		level notify( "end_game" );
 }
 
 // The character code (column 1 of the roster, lb / danby / hh / lg) of this

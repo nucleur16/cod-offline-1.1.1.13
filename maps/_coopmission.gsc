@@ -71,7 +71,7 @@ flag_set( name )
 	if ( level.coop_flag[ name ] )
 		return;
 	level.coop_flag[ name ] = true;
-	codolprintln( "CoDOL coop mission: flag " + name + " set" );
+	{}
 	level notify( name );
 	level notify( "coop_flag_changed" );
 }
@@ -152,7 +152,7 @@ is_enemy_spawner( ent )
 		return false;
 	// The runtime soldier template itself (spawnactorspawner) is not an
 	// authored spawner: the group-wave scan once made it a wave of its own.
-	if ( cls == "actor_enemy_coop_soldier" || isDefined( ent.coop_template ) )
+	if ( cls == "actor_enemy_coop_soldier" )
 		return false;
 	return true;
 }
@@ -217,97 +217,11 @@ make_template()
 	level.coop_soldier_template = spawnActorSpawner( "actor_enemy_coop_soldier", ( 0, 0, 0 ), ( 0, 0, 0 ), -1 );
 	if ( !isDefined( level.coop_soldier_template ) )
 	{
-		codolprintln( "CoDOL coop mission: spawnactorspawner produced no soldier template; no enemies this mission" );
+		{}
 		return false;
 	}
 	level.coop_soldier_template.targetname = "coop_soldier_template";
 	return true;
-}
-
-// A spawner of an authored classname, built once per classname and team: an
-// unlimited copy (count -1) of what the map authors, so spawnactor runs that
-// classname's aitype -- aitype/<classname without actor_>.gsc, which the
-// engine loaded and precached at level load -- exactly as IW4 spawns from the
-// authored spawner itself.  The missions spawn from these rather than from the
-// authored entities because they reuse a spawner many times (waves, pmc
-// respawns) and place the soldier themselves (forceTeleport).  `team`
-// overrides the aitype spawner()'s team (Vazquez and the civilians fight on
-// the players' side).  Undefined when the classname has no loaded aitype.
-template_for( cls, team )
-{
-	if ( !isDefined( cls ) )
-		return undefined;
-	key = toLower( cls );
-	if ( isDefined( team ) )
-		key = key + "@" + team;
-	if ( !isDefined( level.coop_templates ) )
-	{
-		level.coop_templates = [];
-		level.coop_template_missing = [];
-	}
-	if ( isDefined( level.coop_templates[ key ] ) )
-		return level.coop_templates[ key ];
-	if ( isDefined( level.coop_template_missing[ key ] ) )
-		return undefined;
-	t = spawnActorSpawner( toLower( cls ), ( 0, 0, 0 ), ( 0, 0, 0 ), -1 );
-	if ( !isDefined( t ) )
-	{
-		level.coop_template_missing[ key ] = true;
-		codolprintln( "CoDOL coop mission: no aitype template for " + cls + "; the generic soldier stands in" );
-		return undefined;
-	}
-	if ( isDefined( team ) )
-		t setSpawnerTeam( team );
-	// Not an authored spawner: every scan for those skips it (is_enemy_spawner).
-	t.coop_template = true;
-	t.targetname = "coop_template_" + key;
-	level.coop_templates[ key ] = t;
-	return t;
-}
-
-// A mission's own cast member (Ghost, Price, Vazquez, Ortiz, a civilian): an
-// actor of the authored classname `cls`, so his aitype and character decide
-// his look, with the mission's `kind` (aitype\enemy_coop_soldier::soldier_setup
-// lists its fields) and `team`.  Falls back to the generic soldier template
-// when the classname's aitype did not load.  Returns the actor or undefined;
-// the caller places him.
-spawn_class_actor( cls, team, kind )
-{
-	if ( !isDefined( kind ) )
-		kind = spawnStruct();
-	if ( isDefined( team ) )
-		kind.team = team;
-	template = template_for( cls, team );
-	if ( !isDefined( template ) )
-	{
-		if ( isDefined( team ) && team == "allies" )
-			template = maps\_cooptraining::ally_template();
-		else if ( make_template() )
-			template = level.coop_soldier_template;
-		if ( !isDefined( template ) )
-			return undefined;
-		// character_coop_soldier downgrades this to what the zones carry.
-		if ( !isDefined( kind.faction ) || kind.faction == "cast" )
-			kind.faction = "militia";
-		if ( !isDefined( kind.role ) )
-			kind.role = "pistol";
-	}
-	level.coop_soldier_next = kind;
-	ai = template spawnActor();
-	level.coop_soldier_next = undefined;
-	return ai;
-}
-
-// What an authored spawner asks of its soldier beyond its aitype (IW4 honours
-// both keys on the spawner): script_accuracy and script_char_index.
-spawner_overrides( spawner )
-{
-	kind = spawnStruct();
-	if ( isDefined( spawner.script_accuracy ) )
-		kind.accuracy = float( spawner.script_accuracy );
-	if ( isDefined( spawner.script_char_index ) )
-		kind.char_index = int( spawner.script_char_index );
-	return kind;
 }
 
 // Spawns one soldier where the authored spawner stands.  Returns the actor, or
@@ -321,19 +235,8 @@ spawn_soldier( spawner )
 	if ( !make_template() )
 		return undefined;
 
-	// The authored classname's own aitype (IW4: the spawner's aitype main()
-	// and its character), through a template of that classname; the generic
-	// template with the classname's faction and role only when that aitype
-	// did not load.
-	template = template_for( spawner.classname );
-	if ( isDefined( template ) )
-		level.coop_soldier_next = spawner_overrides( spawner );
-	else
-	{
-		template = level.coop_soldier_template;
-		level.coop_soldier_next = soldier_kind( spawner );
-	}
-	ai = template spawnActor();
+	level.coop_soldier_next = soldier_kind( spawner );
+	ai = level.coop_soldier_template spawnActor();
 	level.coop_soldier_next = undefined;
 
 	if ( !isDefined( ai ) )
@@ -349,8 +252,7 @@ spawn_soldier( spawner )
 	// the MP level's geometry, and the native placement moves the soldier to
 	// clear floor on the near side of it (or reports that it could not).
 	if ( !ai forceTeleport( spawner.origin, angles ) )
-		codolprintln( "CoDOL coop mission: spawner at " + spawner.origin + " has no clear floor nearby; soldier ent " +
-			ai getEntityNumber() + " left at " + ai.origin );
+		{}
 	ai show();
 
 	ai.coop_spawner = spawner;
@@ -503,8 +405,7 @@ run_elimination()
 	if ( level.coop_kills_to_win > remaining_spawners )
 		level.coop_kills_to_win = remaining_spawners;
 
-	codolprintln( "CoDOL coop mission: elimination, " + level.coop_kills_to_win + " enemies from " +
-		level.coop_pmc_spawners.size + " pmc spawners, " + level.coop_max_alive + " alive at once" );
+	{}
 	announce( "Eliminate all enemies: " + level.coop_kills_to_win );
 
 	to_spawn = level.coop_kills_to_win;
@@ -641,8 +542,7 @@ trigger_think( trigger, spawners, setsFlag )
 
 		if ( spawners.size > 0 )
 		{
-			codolprintln( "CoDOL coop mission: " + trigger.classname + " at " + trigger.origin +
-				" spawns " + spawners.size );
+			{}
 			for ( i = 0; i < spawners.size; i++ )
 				level thread spawner_spawn_count( spawners[ i ] );
 			// IW4 trigger_multiple_spawn and spawn triggers fire once.
@@ -721,7 +621,7 @@ setup_flag_groups()
 		}
 	}
 	if ( level.coop_flag_groups > 0 )
-		codolprintln( "CoDOL coop mission: " + level.coop_flag_groups + " spawner groups released by their own flag" );
+		{}
 }
 
 flag_group_think( name )
@@ -737,7 +637,7 @@ flag_group_think( name )
 		level thread spawner_spawn_count( spawners[ i ] );
 		count++;
 	}
-	codolprintln( "CoDOL coop mission: flag " + name + " released its group (" + count + " spawners)" );
+	{}
 }
 
 // --------------------------------------------------------------------------
@@ -785,13 +685,13 @@ run_objective_chain()
 {
 	level endon( "coop_mission_over" );
 	chain = level.coop_obj_chain;
-	codolprintln( "CoDOL coop mission: objective chain of " + chain.size );
+	{}
 	for ( i = 0; i < chain.size; i++ )
 	{
 		t = chain[ i ];
 		objective_add( 0, "active", t.origin );
 		announce( "Objective " + ( i + 1 ) + " of " + chain.size );
-		codolprintln( "CoDOL coop mission: objective " + ( i + 1 ) + " is " + t.script_flag + " at " + t.origin );
+		{}
 		flag_wait( t.script_flag );
 		objective_delete( 0 );
 	}
@@ -886,7 +786,7 @@ finish_after_elimination( reason )
 		level.coop_flag[ name ] = false;
 		announce( "Area clear. Get to the extraction point" );
 		objective_add( 0, "active", evac.origin );
-		codolprintln( "CoDOL coop mission: extraction at " + evac.origin + " (flag " + name + ")" );
+		{}
 		flag_wait( name );
 		objective_delete( 0 );
 		mission_complete( reason + ", extracted" );
@@ -983,7 +883,7 @@ run_group_waves()
 
 	collect_groups();
 	remaining = level.coop_group_keys;
-	codolprintln( "CoDOL coop mission: group waves, " + remaining.size + " groups" );
+	{}
 	announce( "Clear the area: " + remaining.size + " waves" );
 
 	wave = 0;
@@ -1012,7 +912,7 @@ run_group_waves()
 
 		wave++;
 		spawners = level.coop_groups[ key ];
-		codolprintln( "CoDOL coop mission: wave " + wave + " is group " + key + " (" + spawners.size + " spawners)" );
+		{}
 		for ( i = 0; i < spawners.size; i++ )
 			level thread spawner_spawn_count( spawners[ i ] );
 
@@ -1078,7 +978,7 @@ run_chain_completion()
 
 announce( text )
 {
-	codolprintln( "CoDOL coop mission: " + text );
+	{}
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 		players[ i ] iPrintLnBold( text );
@@ -1087,7 +987,7 @@ announce( text )
 // Log the English text for probes; players see the zone's localized string.
 announce_localized( text, logtext )
 {
-	codolprintln( "CoDOL coop mission: " + logtext );
+	{}
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 		players[ i ] iPrintLnBold( text );
@@ -1116,13 +1016,12 @@ mission_over( success, reason )
 	// Retail draws its localized banner, and none at all after the training
 	// (that mission ends on Price's debrief and the fade).
 	if ( success && isDefined( level.coop_training_flow ) && level.coop_training_flow )
-		codolprintln( "CoDOL coop mission: MISSION COMPLETE" );
+		{}
 	else if ( success )
 		announce_localized( &"SCRIPT_MISSION_COMPLETE", "MISSION COMPLETE" );
 	else
 		announce( "MISSION FAILED" );
-	codolprintln( "CoDOL coop mission: over, success " + success + " (" + reason + "), " +
-		level.coop_killed + " killed, " + level.coop_spawned + " spawned" );
+	{}
 
 	level thread end_level();
 }
@@ -1169,8 +1068,7 @@ report_mission_result()
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 		players[ i ] codol_reportCoopMission( mission, success );
-	codolprintln( "CoDOL coop mission: " + mission + " result " + success + " reported for " +
-		players.size + " player(s); returning them to the lobby" );
+	{}
 }
 
 // --------------------------------------------------------------------------
@@ -1209,9 +1107,7 @@ main()
 	init();
 	setup_entity_driven();
 
-	codolprintln( "CoDOL coop mission: " + getDvar( "mapname" ) + " (" + getDvar( "codol_sessionMap" ) + "): " +
-		level.coop_spawner_count + " enemy spawners, " + level.coop_pmc_spawners.size + " pmc, " +
-		level.coop_chain_spawners.size + " chained, " + level.coop_trigger_count + " triggers" );
+	{}
 
 	names = end_flags();
 	for ( i = 0; i < names.size; i++ )
@@ -1236,12 +1132,12 @@ main()
 
 	// The training mission runs its own stations (_cooptraining.gsc).
 	if ( isDefined( level.coop_training_flow ) && level.coop_training_flow )
-		codolprintln( "CoDOL coop mission: the training flow runs this mission" );
+		{}
 	// A mission with its own script (_coopmission_<name>.gsc, selected by
 	// codol_sessionMap) runs its own flow; the shared flag triggers, flag
 	// groups, spawn helpers and end conditions still serve it.
 	else if ( isDefined( level.coop_mission_flow ) )
-		codolprintln( "CoDOL coop mission: the " + level.coop_mission_flow + " flow runs this mission" );
+		{}
 	else if ( level.coop_pmc_spawners.size > 0 )
 		level thread run_elimination();
 	else if ( level.coop_obj_chain.size >= 2 )

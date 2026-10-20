@@ -1653,7 +1653,7 @@ give_loadout( character_selected )
 
 	// -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
 	// level.script is not a single player level. give default weapons.
-	println( "loadout.gsc:     No level listing in _loadout.gsc, giving default guns" );
+	{}
 	level.testmap = true;
 
 	give_default_loadout();
@@ -2334,7 +2334,7 @@ give_loadout_specialops( character_selected )
 	}
 
 	// -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-	println( "loadout.gsc:     No level listing in _loadout::give_loadout_specialops(), giving default guns" );
+	{}
 	level.testmap = true;
 	level.so_campaign = "ranger";
 	

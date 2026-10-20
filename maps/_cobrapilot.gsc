@@ -906,7 +906,7 @@ weaponsSystems_Detach_Weapon( modelname, tagname )
 	if ( qAttached )
 		self detach( modelname, tagname );
 	else
-		println( "FAILED TO DETACH MODEL: " + modelname + " from tag: " + tagname );
+		{}
 }
 
 weaponsSystems_Attach_Weapon( weapon )
@@ -2403,7 +2403,7 @@ gunner_think( gunner )
 		}
 		else if ( getdvar( "cobrapilot_debug" ) == "1" )
 		{
-			iprintln( "no valid targets" );
+			{}
 			gunner thread gunner_lookAtTarget();
 		}
 		wait 2;

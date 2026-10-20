@@ -179,9 +179,9 @@ defaultLightFX()
 }
 
 
-useHelicopter( lifeId )
+useHelicopter( lifeId, kID )
 {
-	return tryUseHelicopter( lifeId );
+	return tryUseHelicopter( lifeId, undefined, kID );
 }
 
 useHelicopterBlackbox( lifeId )
@@ -189,9 +189,9 @@ useHelicopterBlackbox( lifeId )
 	return tryUseHelicopter( lifeId, "blackbox" );
 }
 
-useHelicopterFlares( lifeId )
+useHelicopterFlares( lifeId, kID )
 {
-	return tryUseHelicopter( lifeId, "flares" );
+	return tryUseHelicopter( lifeId, "flares", kID );
 }
 
 
@@ -218,7 +218,7 @@ useHelicopterMK19( lifeId )
 }
 
 
-tryUseHelicopter( lifeId, heliType )
+tryUseHelicopter( lifeId, heliType, kID )
 {
 	if ( isDefined( level.civilianJetFlyBy ) )
 	{
@@ -230,12 +230,15 @@ tryUseHelicopter( lifeId, heliType )
 	{
 		self iPrintLnBold( &"MP_HELI_IN_QUEUE" );
 		
-		if ( isDefined( heliType ) )
-			streakName = "helicopter_" + heliType;
-		else
-			streakName = "helicopter";
-		
-		self maps\mp\killstreaks\_killstreaks::shuffleKillStreaksFILO( streakName );
+		// The catalogue maps pro rewards to this base callback. Keep the
+		// exact owned record when queueing so a pro reward is removed by ID
+		// and receives its own activation XP/dialog when the chopper launches.
+		reward = self maps\mp\killstreaks\_killstreaks::codolRewardByID( kID );
+		if ( !isDefined( reward ) )
+			return false;
+		streakName = reward.streakName;
+		awardXp = reward.awardXp;
+		self maps\mp\killstreaks\_killstreaks::shuffleKillStreaksFILO( streakName, kID );
 		self maps\mp\killstreaks\_killstreaks::giveOwnedKillstreakItem();		
 		
 		queueEnt = spawn( "script_origin", (0,0,0) );
@@ -243,8 +246,11 @@ tryUseHelicopter( lifeId, heliType )
 		queueEnt thread deleteOnEntNotify( self, "disconnect" );
 		queueEnt.player = self;
 		queueEnt.lifeId = lifeId;
+		queueEnt.team = self.pers["team"];
+		queueEnt.teamGeneration = self.pers["codolKillstreakTeamGeneration"];
 		queueEnt.heliType = heliType;
 		queueEnt.streakName = streakName;
+		queueEnt.awardXp = awardXp;
 		
 		queueAdd( "helicopter", queueEnt );
 		
@@ -361,10 +367,6 @@ spawn_helicopter( owner, origin, angles, vehicleType, modelName )
 	
 	if ( !isDefined( chopper ) )
 		return undefined;
-
-	// IW4 _vehicle build_drive: the rotor loop (common_scripts\_heli_rotors;
-	// bh_rotors for the hind, mi-28 and pave low).
-	chopper common_scripts\_heli_rotors::spin_rotors();
 
 	chopper.heli_type = level.heli_types[ modelName ];
 	
@@ -738,10 +740,10 @@ heli_think( lifeId, owner, startnode, heli_team, heliType )
 	// dropped it, so nobody ever saw it.
 	if ( !isDefined( chopper ) )
 	{
-		println( "CoDOL killstreak: helicopter " + heliType + " failed to spawn vehicle " + vehicleType + " model " + vehicleModel );
+		{}
 		return;
 	}
-	println( "CoDOL killstreak: helicopter " + heliType + " spawned entity " + chopper getEntityNumber() + " vehicle " + vehicleType + " model " + vehicleModel );
+	{}
 
 	level.chopper = chopper;
 	chopper.heliType = heliType;
@@ -955,28 +957,37 @@ heli_existance()
 	
 	self notify( "helicopter_done" );
 	
-	player = undefined;
-	queueEnt = queueRemoveFirst( "helicopter" );
-	if ( !isDefined( queueEnt ) )
+	// A disconnected or team-switched owner forfeits a queued reward. Keep
+	// draining the queue so that one invalid entry does not strand the next
+	// player's helicopter after this chopper leaves. Team changes revoke owned
+	// streaks in _killstreaks::waitForChangeTeam, including queued use rights.
+	for ( ;; )
 	{
-		level.chopper = undefined;
-		return;
-	}
-	
-	player = queueEnt.player;
-	lifeId = queueEnt.lifeId;
-	streakName = queueEnt.streakName;
-	heliType = queueEnt.heliType;
-	queueEnt delete();
-	
-	if ( isDefined( player ) && (player.sessionstate == "playing" || player.sessionstate == "dead") )
-	{
-		player maps\mp\killstreaks\_killstreaks::usedKillstreak( streakName, true );
+		queueEnt = queueRemoveFirst( "helicopter" );
+		if ( !isDefined( queueEnt ) )
+		{
+			level.chopper = undefined;
+			return;
+		}
+
+		player = queueEnt.player;
+		lifeId = queueEnt.lifeId;
+		team = queueEnt.team;
+		teamGeneration = queueEnt.teamGeneration;
+		streakName = queueEnt.streakName;
+		awardXp = queueEnt.awardXp;
+		heliType = queueEnt.heliType;
+		queueEnt delete();
+
+		if ( !isDefined( player ) ||
+		     (player.sessionstate != "playing" && player.sessionstate != "dead") ||
+		     player.pers["team"] != team ||
+		     player.pers["codolKillstreakTeamGeneration"] != teamGeneration )
+			continue;
+
+		player maps\mp\killstreaks\_killstreaks::usedKillstreak( streakName, awardXp );
 		player startHelicopter( lifeId, heliType );
-	}
-	else
-	{
-		level.chopper = undefined;
+		return;
 	}
 }
 
@@ -1149,8 +1160,7 @@ Callback_VehicleDamage( inflictor, attacker, damage, dFlags, meansOfDeath, weapo
 	if ( !maps\mp\gameTypes\_weapons::attackerCanDamageItem( attacker, self.owner ) )
 		return;
 
-	// A class launcher is composed ("*a 68 0"): switch on its base.
-	switch ( codolWeaponBase( weapon ) )
+	switch ( weapon )
 	{
 		case "ac130_105mm_mp":
 		case "ac130_40mm_mp":
@@ -1719,7 +1729,7 @@ attack_primary()
 heliLog( msg )
 {
 	if ( getDvarInt( "scr_codol_helilog" ) )
-		codolPrintLn( "CoDOL heli: " + msg );
+		{}
 }
 
 
@@ -1774,7 +1784,7 @@ getOriginOffsets( goalNode )
 
 	while ( distance( traceOrigin, endOrigin+traceOffset ) > 10 && numTraces < maxTraces )
 	{	
-		println( "trace failed: " + distance( physicsTrace( startOrigin+traceOffset, endOrigin+traceOffset ), endOrigin+traceOffset ) );
+		{}
 			
 		if ( startOrigin[2] < endOrigin[2] )
 		{
@@ -1906,8 +1916,8 @@ heli_fly_simple_path( startNode )
 		currentNode = nextNode;
 	}
 	
-	printLn( currentNode.origin );
-	printLn( self.origin );
+	{}
+	{}
 }
 
 
@@ -2137,7 +2147,7 @@ draw_text( msg, color, ent, offset, frames )
 	{
 		while ( isdefined( ent ) )
 		{
-			print3d( ent.origin+offset, msg , color, 0.5, 4 );
+			{}
 			wait 0.05;
 		}
 	}
@@ -2147,7 +2157,7 @@ draw_text( msg, color, ent, offset, frames )
 		{
 			if( !isdefined( ent ) )
 				break;
-			print3d( ent.origin+offset, msg , color, 0.5, 4 );
+			{}
 			wait 0.05;
 		}
 	}

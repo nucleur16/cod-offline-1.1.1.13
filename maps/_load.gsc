@@ -413,11 +413,11 @@ main()
 
 	if ( GetDvar( "g_connectpaths" ) == "2" )
 	{
-		/# PrintLn( "g_connectpaths == 2; halting script execution" ); #/
+		/# {} #/
 		level waittill( "eternity" );
 	}
 
-	PrintLn( "level.script: ", level.script );
+	{}
 
 	maps\_autosave::main();
 	if ( !isdefined( level.animSounds ) )
@@ -1155,31 +1155,31 @@ trigger_group_remove()
 /#
 star( total )
 {
-	PrintLn( "         " );
-	PrintLn( "         " );
-	PrintLn( "         " );
+	{}
+	{}
+	{}
 	for ( i = 0; i < total; i++ )
 	{
 		for ( z = total - i; z > 1; z-- )
-		Print( " " );
-		Print( " * " );
+		{}
+		{}
 		for ( z = 0; z < i; z++ )
-			Print( " ** " );
-		PrintLn( "" );
+			{}
+		{}
 	}
 	for ( i = total - 2; i > -1; i-- )
 	{
 		for ( z = total - i; z > 1; z-- )
-		Print( " " );
-		Print( " * " );
+		{}
+		{}
 		for ( z = 0; z < i; z++ )
-			Print( " ** " );
-		PrintLn( "" );
+			{}
+		{}
 	}
 
-	PrintLn( "         " );
-	PrintLn( "         " );
-	PrintLn( "         " );
+	{}
+	{}
+	{}
 }
 #/
 
@@ -1251,13 +1251,13 @@ usedAnimations()
 
 		if ( !isdefined( level.completedAnims[ animname ] ) )
 		{
-			PrintLn( "^d -- -- No anims for ", animname, "^d -- -- -- -- -- - " );
+			{}
 			continue;
 		}
 
-		PrintLn( "^d -- -- Used animations for ", animname, "^d: ", level.completedAnims[ animname ].size, "^d -- -- -- -- -- - " );
+		{}
 		for ( i = 0; i < level.completedAnims[ animname ].size; i++ )
-			PrintLn( level.completedAnims[ animname ][ i ] );
+			{}
 	}
 }
 
@@ -1864,12 +1864,12 @@ traverseThink()
 deprecatedTraverseThink()
 {
 	wait .05;
-	PrintLn( "^1Warning: deprecated traverse used in this map somewhere around " + self.origin );
+	{}
 	if ( GetDvarInt( "scr_traverse_debug" ) )
 	{
 		while ( 1 )
 		{
-			Print3d( self.origin, "deprecated traverse!" );
+			{}
 			wait .05;
 		}
 	}
@@ -4291,11 +4291,11 @@ load_friendlies()
 	if ( IsDefined( game[ "total characters" ] ) )
 	{
 		game_characters = game[ "total characters" ];
-		PrintLn( "Loading Characters: ", game_characters );
+		{}
 	}
 	else
 	{
-		PrintLn( "Loading Characters: None!" );
+		{}
 		return;
 	}
 
@@ -4321,7 +4321,7 @@ load_friendlies()
 				continue;
 			}
 
-			PrintLn( "Loading character.. ", game_characters );
+			{}
 			ai[ index_ai ] codescripts\character::new();
 			ai[ index_ai ] thread codescripts\character::load( game[ "character" + ( game_characters - 1 ) ] );
 			total_ai--;
@@ -4339,7 +4339,7 @@ load_friendlies()
 				continue;
 			}
 
-			PrintLn( "Loading character.. ", game_characters );
+			{}
 			info = game[ "character" + ( game_characters - 1 ) ];
 			precache( info [ "model" ] );
 			precache( info [ "model" ] );
@@ -5098,7 +5098,7 @@ window_destroy()
 	//assertex( IsDefined( glassID ), "couldn't find glass for ent with targetname \"window_poster\" at "+ self GetOrigin() );
 	if ( !isDefined( glassID ) )
 	{
-		PrintLn( "Warning: Couldn't find glass with targetname \"" + self.target + "\" for ent with targetname \"window_poster\" at " + self.origin );
+		{}
 		return;
 	}
 
@@ -5146,10 +5146,10 @@ weapon_list_debug()
 		}
 	}
 
-	PrintLn( "Placed weapons list: " );
+	{}
 	foreach ( weapon, _ in list )
 	{
-		PrintLn( weapon );
+		{}
 	}
 
 	spawners = GetSpawnerArray();
@@ -5159,12 +5159,12 @@ weapon_list_debug()
 		classes[ spawner.code_classname ] = true;
 	}
 
-	PrintLn( "" );
-	PrintLn( "Spawner classnames: " );
+	{}
+	{}
 
 	foreach ( class, _ in classes )
 	{
-		PrintLn( class );
+		{}
 	}
 }
 

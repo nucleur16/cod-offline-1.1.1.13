@@ -26,6 +26,7 @@ Called by code after the level's main script function has run.
 ================*/
 CodeCallback_StartGameType()
 {
+	maps\_codol_maintenance_banner::init();
 	// If the gametype has not been started, run the startup
 	if ( !isDefined( level.gametypestarted ) || !level.gametypestarted )
 	{
@@ -169,7 +170,7 @@ zones and with what the client was told.
 ================*/
 AbortLevel()
 {
-	println( "Aborting level - gametype is not supported (zm)" );
+	{}
 
 	level.callbackStartGameType		= ::callbackVoid;
 	level.callbackPlayerConnect		= ::callbackVoid;

@@ -14,6 +14,7 @@
 //   - #using_animtree("zombie_dog") is declared HERE: it is what registers
 //     the server tree the native actor binds (CODOL_ActorPrepareAnimation);
 //   - setTalkToSpecies( "zombie_dog" ); hellhound vocals for the barks.
+//   - ground bites start close enough for the native 64-unit melee trace.
 
 /*
 	maps/mp/animscripts/dog_init.gsc
@@ -40,7 +41,7 @@ main()
 	level.dog_debug_anims_ent = 0;
 	level.dog_debug_turns = 0;
 
-	debug_anim_print("dog_init::main() " );
+	{}
 
 	firstInit();
 
@@ -54,12 +55,11 @@ main()
 	self.chatInitialized = false;
 	self.noDodgeMove = true;
 
-	// T5 animscripts/zombie_dog_init.gsc:215: dogAttackPlayerDist is 64 for the
-	// "zombie" anim set (the multiplayer dog's 102 is T5 MP's); :68 keeps 102
-	// for an enemy that is not a player.  T5's zombie set has no prone case.
-	level.dogAttackPlayerDist = 64;
-	level.dogAttackPlayerCloseRangeDist = 64;
-	level.dogAttackAIDist = 102;
+	// The old 102-unit range relied on the running attack's forward motion.
+	// Native admission adds 15 (30 for moving targets); script combat adds
+	// 30. A 32-unit approach keeps both within the native 64-unit bite range.
+	level.dogAttackPlayerDist = 32;
+	level.dogAttackPlayerCloseRangeDist = 32;
 
 	level.dogRunTurnSpeed = 20; // if the speed is greater then play the run turns
 	level.dogRunPainSpeed = 20; // if the speed is greater then play the run pains
@@ -70,9 +70,7 @@ main()
 	self.a = spawnStruct();
 	self.a.pose = "stand";					// to use DoNoteTracks()
 	self.a.nextStandingHitDying = false;	// to allow dogs to use bullet shield
-	// T5 animscripts/zombie_dog_init.gsc:31: a hellhound starts out trotting
-	// ("stalking"); zombie_dog_move::need_to_run breaks it into the sprint.
-	self.a.movement = "walk";
+	self.a.movement = "run";
 
 	set_anim_playback_rate();
 
@@ -129,7 +127,7 @@ setMeleeAttackDist()
 			}
 			else
 			{
-				self.meleeAttackDist = level.dogAttackAIDist;
+				self.meleeAttackDist = level.dogAttackPlayerDist;
 			}
 		}
 

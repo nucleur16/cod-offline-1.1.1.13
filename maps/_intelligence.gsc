@@ -10,7 +10,7 @@ main()
 	precachestring( &"SCRIPT_INTELLIGENCE_OF_FOURTYFIVE" );
 	precachestring( &"SCRIPT_INTELLIGENCE_PREV_FOUND" );
 	level.intel_items = create_array_of_intel_items();
-	println( "intelligence.gsc:             intelligence items:", level.intel_items.size );
+	{}
 
 	setDvar( "ui_level_cheatpoints", level.intel_items.size );
 	level.intel_counter = 0;	// intel counter for collected intel points for this mission
@@ -51,7 +51,7 @@ remove_intel_item()
 	
 	self notify( "end_trigger_thread" );
 	/#
-	println( "^3Removed Intel: " + self.num );
+	{}
 	#/
 }
 
@@ -109,7 +109,7 @@ create_array_of_intel_items()
 	intelligence_items = getentarray( "intelligence_item", "targetname" );
 	for ( i = 0;i < intelligence_items.size;i++ )
 	{
-		println( intelligence_items[ i ].origin );
+		{}
 		intelligence_items[ i ].item = getent( intelligence_items[ i ].target, "targetname" );
 		intelligence_items[ i ].found = false;
 	}
@@ -172,11 +172,11 @@ save_intel_for_all_players()
 			
 		player SetPlayerIntelFound( self.num );
 	}	
-	logString( "found intel item " + self.num );
+	{}
 	
 	// updates percent complete
     /#
-    PrintLn( ">> SP PERCENT UPDATE - save_intel_for_all_players()" );
+    {}
     #/
     maps\_endmission::updateSpPercent();
 }

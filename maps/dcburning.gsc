@@ -313,11 +313,11 @@ air_nodes_think()
 		return;
 	flag_init( self.script_flag );
 	if ( getdvar( "dc_debug" ) == "1" )
-		self thread debug_message( self.script_flag , self.origin, 9999 );
+		{}
 	self waittill( "trigger" );
 	flag_set( self.script_flag );
 	if ( getdvar( "dc_debug" ) == "1" )
-		iPrintlnbold( "flag: " + self.script_flag + " has been set" );
+		{}
 }
 
 /****************************************************************************
@@ -4782,7 +4782,7 @@ reduce_monument_hitpoints( hitpoints )
 	level.evacSitePercentDestroyed = fPercentDestroyed;
 	level notify( "monument_dummy_hit" );
 	if ( getdvar( "dc_debug" ) == "1" )
-		println( "evac damage = " + level.evacSitePercentDestroyed ); 
+		{} 
 }
 
 evac_site_damage_nags_armor()
@@ -8294,7 +8294,7 @@ heli_teleport_to_newpath( sSpawnerTargetname, eNode )
 vehicle_think()
 {
 	if ( ( getdvar( "dc_debug" ) == "1" ) && ( isdefined( self.spawner.targetname ) ) )
-		self thread debug_message( self.spawner.targetname , self.origin, 9999, self );
+		{}
 	
 	if ( self maps\_vehicle::isCheap() )
 	{
@@ -8556,7 +8556,7 @@ vehicle_damage_think()
 	{
 		self notify( "killed_by_friendly" );
 		if ( getdvar( "dc_debug" ) == "1" )
-			iprintlnbold( "friendly just owned a vehicle" );
+			{}
 		level.friendlyArmorTargets--;
 		//assertex( level.friendlyArmorTargets > -1, "Friendlies have killed more vehicles than they should have" );
 		thread friendly_crows_help_cooldown();
@@ -9372,7 +9372,7 @@ dialouge_random_friendly( sLine )
 	if ( isdefined( guy ) )
 		guy play_sound_in_space( level.scr_sound[ sLine ] );
 	else
-		iprintln( "unable to play random friendly dialogue " + sLine + " because couldn't find an AI" ); 
+		{} 
 }
 
 triggersEnable( triggerName, noteworthyOrTargetname, bool )

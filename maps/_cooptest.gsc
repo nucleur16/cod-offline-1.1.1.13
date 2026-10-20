@@ -6,9 +6,6 @@
 //
 //   addbot                 addtestclient(); the bot spawns like a player
 //   status                 one log line of mission state and every live enemy
-//   characters             spawn one actor of every authored actor_ classname
-//                          through its aitype and log its body, head and
-//                          attachments, flagging any model no zone ships
 //   goto <n> <x> <y> <z>   setOrigin player n (index into getPlayers())
 //   gotoflag <n> <flag>    setOrigin player n onto the first trigger that sets
 //                          <flag> (fires it the way walking into it would)
@@ -39,7 +36,7 @@ main()
 		return;
 
 	setDvar( "scr_coop_test_cmd", "" );
-	codolprintln( "CoDOL cooptest: harness active" );
+	{}
 	level thread watch();
 }
 
@@ -61,15 +58,12 @@ watch()
 		{
 		case "addbot":
 			bot = addtestclient();
-			codolprintln( "CoDOL cooptest: addtestclient" );
+			{}
 			if ( isDefined( bot ) )
 				bot thread bot_body();
 			break;
 		case "status":
 			status();
-			break;
-		case "characters":
-			characters();
 			break;
 		case "goto":
 			if ( tokens.size >= 5 )
@@ -89,16 +83,9 @@ watch()
 				count = int( tokens[ 1 ] );
 			kill_enemies( count );
 			break;
-		case "hurt":
-			// hurt <damage>: wound every live enemy without killing him
-			// (pain animscript probe)
-			if ( tokens.size >= 2 )
-				hurt_enemies( int( tokens[ 1 ] ) );
-			break;
 		case "weapons":
 			for ( i = 1; i < tokens.size; i++ )
-				codolprintln( "CoDOL cooptest: weapon " + tokens[ i ] + " mounted " + codol_isWeaponMounted( tokens[ i ] ) +
-					" published " + codol_isWeaponPublished( tokens[ i ] ) );
+				{}
 			break;
 		case "uselaptops":
 			p = player( 0 );
@@ -112,20 +99,14 @@ watch()
 					use notify( "trigger", p );
 				wait( 0.2 );
 			}
-			codolprintln( "CoDOL cooptest: used " + objs.size + " laptops" );
-			break;
-		case "vehiclegroup":
-			// vehiclegroup <group>: release an authored vehicle spawn group
-			// as its trigger would (helicopter riders and their fast-rope)
-			if ( tokens.size >= 2 )
-				maps\_coopevents::release_group( int( tokens[ 1 ] ) );
+			{}
 			break;
 		case "goextract":
 			evac = maps\_coopmission::find_extraction();
 			if ( isDefined( evac ) )
 				teleport( 0, evac.origin );
 			else
-				codolprintln( "CoDOL cooptest: no extraction trigger" );
+				{}
 			break;
 		case "complete":
 			maps\_coopmission::mission_complete( "cooptest complete" );
@@ -162,10 +143,9 @@ watch()
 				for ( j = 0; j < tags.size; j++ )
 				{
 					o = m getTagOrigin( tags[ j ] ) - m.origin;
-					codolprintln( "CoDOL cooptest: jeep " + tags[ j ] + " local ( " + vectorDot( o, anglesToForward( m.angles ) ) + ", " +
-						vectorDot( o, anglesToRight( m.angles ) ) + ", " + o[ 2 ] + " ) angles " + m getTagAngles( tags[ j ] ) );
+					{}
 				}
-				codolprintln( "CoDOL cooptest: jeep at " + m.origin + " angles " + m.angles );
+				{}
 			}
 			break;
 		case "knifetest":
@@ -217,7 +197,7 @@ watch()
 				}
 				else
 					p setPlayerAngles( ( -80, 0, 0 ) );
-				codolprintln( "CoDOL cooptest: lookcast " + tokens[ 1 ] + " defined " + isDefined( c ) );
+				{}
 			}
 			break;
 		case "bounds":
@@ -235,8 +215,7 @@ watch()
 					hi = ents[ j ] getPointInBounds( 1, 1, 1 );
 					mid = ( ( lo[ 0 ] + hi[ 0 ] ) / 2, ( lo[ 1 ] + hi[ 1 ] ) / 2, 0 );
 					g = bulletTrace( mid + ( 0, 0, 600 ), mid - ( 0, 0, 900 ), false, ents[ j ] );
-					codolprintln( "CoDOL cooptest: bounds " + tokens[ 1 ] + " ent " + ents[ j ] getEntityNumber() + " " + ents[ j ].classname +
-						" origin " + ents[ j ].origin + " min " + lo + " max " + hi + " ground " + g[ "position" ] );
+					{}
 				}
 			}
 			break;
@@ -253,62 +232,6 @@ watch()
 		case "godmode":
 			if ( tokens.size >= 2 )
 				level thread godmode( int( tokens[ 1 ] ) );
-			break;
-		case "animstats":
-			// animstats: the soldier animscripts' behaviour counters
-			// (soldier_shared stat_bump): cover taken, step-outs, pop-ups,
-			// arrivals, exits, turns, traversals, grenades, melee.
-			anim_stats();
-			break;
-		case "travtest":
-			// travtest <animscript> [k]: a soldier walks across the k-th
-			// negotiation pair carrying that animscript (soldier_jump).
-			if ( tokens.size >= 2 )
-			{
-				k = 0;
-				if ( tokens.size >= 3 )
-					k = int( tokens[ 2 ] );
-				level thread trav_test( tokens[ 1 ], k );
-			}
-			break;
-		case "fragnear":
-			// fragnear: player 0 throws his lethal at the nearest live enemy
-			// (grenade_return_throw / grenade_cower probe).
-			level thread frag_near();
-			break;
-		case "nadetest":
-			// nadetest [dist]: a live grenade, credited to player 0, lands
-			// dist (default 48) units from the enemy nearest him
-			// (soldier_shared react_to_grenade: return throw or dive).
-			d = 48;
-			if ( tokens.size >= 2 )
-				d = float( tokens[ 1 ] );
-			level thread nade_test( d );
-			break;
-		case "bulletkill":
-			// bulletkill [k]: kill up to k live enemies with a rifle round
-			// from player 0 (the long-death probe).
-			k = 3;
-			if ( tokens.size >= 2 )
-				k = int( tokens[ 1 ] );
-			p = player( 0 );
-			n = 0;
-			for ( j = 0; j < level.coop_enemies.size && n < k; j++ )
-			{
-				ai = level.coop_enemies[ j ];
-				if ( !isDefined( ai ) || !isAlive( ai ) || !isDefined( p ) )
-					continue;
-				ai doDamage( ai.health + 50, ai.origin + ( 0, 0, 40 ), p, p, 0, "MOD_RIFLE_BULLET" );
-				n++;
-				wait( 3.2 );
-			}
-			codolprintln( "CoDOL cooptest: bulletkill " + n );
-			break;
-		case "skirmish":
-			// skirmish <n> <dist>: n soldiers spawn round player 0 at about
-			// dist and fight him (cover, grenades, turns, arrivals).
-			if ( tokens.size >= 3 )
-				level thread skirmish( int( tokens[ 1 ] ), float( tokens[ 2 ] ) );
 			break;
 		case "duel":
 			// duel <role> <dist> <secs> [stand|crouch|prone] [still|strafe]
@@ -330,56 +253,6 @@ watch()
 			break;
 		case "gunmodels":
 			gun_models();
-			break;
-		case "rootdelta":
-			// rootdelta <tree> <clip> ...: each clip's length and its whole
-			// root motion (getMoveDelta / getAngleDelta 0..1), to tell a clip
-			// that moves its model from one that plays in place
-			if ( tokens.size >= 3 )
-				root_delta( tokens );
-			break;
-		case "searchers":
-			// defense crash: the wreck's searchers now, in their search
-			// scenes (the crouched one's getting-up clip when woken)
-			level thread maps\_coopmission_defense_crash::spawn_searchers();
-			break;
-		case "pathcheck":
-			// pathcheck <clip> <x> <y> <z> <yaw>: would the generic_human clip's
-			// root path from there be clear (maps\_coopanim root_path_clear)
-			if ( tokens.size >= 6 )
-			{
-				a = codol_getAnim( "generic_human", tokens[ 1 ] );
-				if ( isDefined( a ) )
-				{
-					ok = level maps\_coopanim::root_path_clear( a, ( float( tokens[ 2 ] ), float( tokens[ 3 ] ), float( tokens[ 4 ] ) ), float( tokens[ 5 ] ) );
-					codolprintln( "CoDOL cooptest: pathcheck " + tokens[ 1 ] + " clear " + ok );
-				}
-			}
-			break;
-		case "stacktest":
-			// take estate: Ghost put on checkpoint_breach_ghost in his breach
-			// stack, then the breach (his r1_enter into the doorway)
-			level thread stack_test();
-			break;
-		case "where":
-			// where <targetname> ...: every struct and entity of that
-			// targetname with its origin and angles (scene nodes)
-			for ( i = 1; i < tokens.size; i++ )
-				where( tokens[ i ] );
-			break;
-		case "rootscene":
-			// rootscene <tree> <clip> <model|ai> <x> <y> <z> <yaw>: the same
-			// through maps\_coopanim::play_anim with that spot as the scene
-			// node (the IW4 _anim path a script_model scene member takes)
-			if ( tokens.size >= 8 )
-				level thread root_play( tokens, true );
-			break;
-		case "rootplay":
-			// rootplay <tree> <clip> <model|ai> [<x> <y> <z> <yaw>]: a script_model
-			// plays the clip with its root motion (codol_animScriptedModel),
-			// at player 0's spot and facing by default
-			if ( tokens.size >= 4 )
-				level thread root_play( tokens );
 			break;
 		default:
 			// A mission script's own verbs (level.coop_mission_testcmd).
@@ -403,7 +276,7 @@ bot_body()
 	{
 		self waittill( "spawned_player" );
 		self setModel( "body_complete_sp_juggernaut" );
-		codolprintln( "CoDOL cooptest: bot " + self getEntityNumber() + " given a body" );
+		{}
 	}
 }
 
@@ -414,7 +287,7 @@ run_course()
 	p = player( 0 );
 	if ( !isDefined( p ) || !isDefined( level.coop_course_triggers ) )
 	{
-		codolprintln( "CoDOL cooptest: no player or no course" );
+		{}
 		return;
 	}
 	triggers = level.coop_course_triggers;
@@ -434,11 +307,10 @@ run_course()
 				up++;
 			}
 		}
-		codolprintln( "CoDOL cooptest: course trigger " + i + " at " + triggers[ i ].origin + " (" + triggers[ i ].coop_targets.size +
-			" linked), shot " + up + " targets, hits " + level.coop_course_hits );
+		{}
 		wait( 0.5 );
 	}
-	codolprintln( "CoDOL cooptest: runcourse done, running " + level.coop_course_running );
+	{}
 }
 
 // checkstarts: every start classname the coop spawn order knows, with the
@@ -469,13 +341,13 @@ check_starts()
 				wait( 3 );
 				line += " | player after 3 s at " + p.origin + " dz " + int( p.origin[ 2 ] - s.origin[ 2 ] );
 			}
-			codolprintln( line );
+			{}
 		}
 		// Only the first few MP fallbacks are interesting.
 		if ( names[ n ] == "info_player_start" )
 			break;
 	}
-	codolprintln( "CoDOL cooptest: checkstarts done" );
+	{}
 }
 
 player( index )
@@ -486,159 +358,13 @@ player( index )
 	return players[ index ];
 }
 
-stack_test()
-{
-	if ( !isDefined( level.coop_estate ) || !isDefined( level.coop_estate.ghost ) || !isDefined( level.struct ) )
-		return;
-	cp = undefined;
-	for ( i = 0; i < level.struct.size; i++ )
-		if ( isDefined( level.struct[ i ].targetname ) && level.struct[ i ].targetname == "checkpoint_breach_ghost" )
-			cp = level.struct[ i ];
-	if ( !isDefined( cp ) )
-		return;
-	g = level.coop_estate.ghost;
-	yaw = 230;
-	if ( isDefined( cp.angles ) )
-		yaw = cp.angles[ 1 ];
-	g forceTeleport( cp.origin + ( 0, 0, 8 ), g.angles );
-	codolprintln( "CoDOL cooptest: stacktest at " + cp.origin + " yaw " + yaw );
-	level thread maps\_coopscene_estate::breach_stack( g, cp.origin, yaw );
-	wait( 3 );
-	maps\_coopscene_estate::breach_stack_done( g );
-	wait( 4 );
-	codolprintln( "CoDOL cooptest: stacktest Ghost at " + g.origin + " yaw " + g.angles[ 1 ] );
-}
-
-where( name )
-{
-	n = 0;
-	if ( isDefined( level.struct ) )
-	{
-		for ( i = 0; i < level.struct.size; i++ )
-		{
-			st = level.struct[ i ];
-			if ( !isDefined( st.targetname ) || st.targetname != name )
-				continue;
-			a = "none";
-			if ( isDefined( st.angles ) )
-				a = "" + st.angles;
-			codolprintln( "CoDOL cooptest: where " + name + " struct at " + st.origin + " angles " + a );
-			n++;
-		}
-	}
-	ents = getEntArray( name, "targetname" );
-	for ( i = 0; i < ents.size; i++ )
-	{
-		codolprintln( "CoDOL cooptest: where " + name + " " + ents[ i ].classname + " at " + ents[ i ].origin + " angles " + ents[ i ].angles );
-		n++;
-	}
-	if ( !n )
-		codolprintln( "CoDOL cooptest: where " + name + " none" );
-}
-
-root_delta( tokens )
-{
-	tree = tokens[ 1 ];
-	for ( i = 2; i < tokens.size; i++ )
-	{
-		a = codol_getAnim( tree, tokens[ i ] );
-		if ( !isDefined( a ) )
-		{
-			codolprintln( "CoDOL cooptest: rootdelta " + tree + " " + tokens[ i ] + " not in this match's tree" );
-			continue;
-		}
-		move = getMoveDelta( a, 0, 1 );
-		turn = getAngleDelta( a, 0, 1 );
-		codolprintln( "CoDOL cooptest: rootdelta " + tree + " " + tokens[ i ] + " length " + getAnimLength( a ) +
-			" move " + move + " (" + length( move ) + " units) yaw " + turn );
-		// The path: where the root is at each tenth, and where the clip's
-		// first frame stands from an origin node (getStartOrigin).
-		path = "";
-		for ( f = 1; f <= 10; f++ )
-		{
-			m = getMoveDelta( a, 0, f / 10 );
-			path += " " + int( m[ 0 ] ) + "," + int( m[ 1 ] );
-		}
-		codolprintln( "CoDOL cooptest: rootdelta " + tokens[ i ] + " path" + path + " start " + getStartOrigin( ( 0, 0, 0 ), ( 0, 0, 0 ), a ) +
-			" startyaw " + getStartAngles( ( 0, 0, 0 ), ( 0, 0, 0 ), a )[ 1 ] );
-	}
-}
-
-root_play( tokens, scene )
-{
-	a = codol_getAnim( tokens[ 1 ], tokens[ 2 ] );
-	if ( !isDefined( a ) )
-	{
-		codolprintln( "CoDOL cooptest: rootplay " + tokens[ 2 ] + " not in this match's tree" );
-		return;
-	}
-	org = undefined;
-	yaw = 0;
-	if ( tokens.size >= 8 )
-	{
-		org = ( float( tokens[ 4 ] ), float( tokens[ 5 ] ), float( tokens[ 6 ] ) );
-		yaw = float( tokens[ 7 ] );
-	}
-	else
-	{
-		p = player( 0 );
-		if ( !isDefined( p ) )
-			return;
-		org = p.origin;
-		yaw = p.angles[ 1 ];
-	}
-	// <model> "ai": the body of the first live enemy actor (a model this match has
-	// precached; setModel of one it has not is a fatal script error)
-	model = tokens[ 3 ];
-	if ( model == "ai" )
-	{
-		model = "tag_origin";
-		ai = [];
-		if ( isDefined( level.coop_enemies ) )
-			ai = level.coop_enemies;
-		for ( i = 0; i < ai.size; i++ )
-		{
-			if ( isAlive( ai[ i ] ) && isDefined( ai[ i ].model ) && ai[ i ].model != "" )
-			{
-				model = ai[ i ].model;
-				break;
-			}
-		}
-	}
-	m = spawn( "script_model", org );
-	m setModel( model );
-	m.angles = ( 0, yaw, 0 );
-	len = getAnimLength( a );
-	d = getMoveDelta( a, 0, 1 );
-	end = org + anglesToForward( ( 0, yaw, 0 ) ) * d[ 0 ] - anglesToRight( ( 0, yaw, 0 ) ) * d[ 1 ] + ( 0, 0, d[ 2 ] );
-	if ( isDefined( scene ) && scene )
-	{
-		node = spawnStruct();
-		node.origin = org;
-		node.angles = ( 0, yaw, 0 );
-		start = getStartOrigin( org, node.angles, a );
-		sa = getStartAngles( org, node.angles, a );
-		end = start + anglesToForward( sa ) * d[ 0 ] - anglesToRight( sa ) * d[ 1 ] + ( 0, 0, d[ 2 ] );
-		m maps\_coopanim::play_anim( a, node, undefined, true );
-	}
-	else
-		m codol_animScriptedModel( "cooptest_rootplay", org, ( 0, yaw, 0 ), a, 1, 0 );
-	codolprintln( "CoDOL cooptest: rootplay " + tokens[ 2 ] + " on ent " + m getEntityNumber() + " (" + model + ") from " + org + " yaw " + yaw +
-		", " + len + " s, clip end " + end );
-	wait( len + 0.5 );
-	codolprintln( "CoDOL cooptest: rootplay " + tokens[ 2 ] + " ended at " + m.origin + " yaw " + m.angles[ 1 ] );
-	maps\_coopanim::release( m );
-	wait( 5 );
-	m delete();
-}
-
 teleport( index, origin )
 {
 	p = player( index );
 	if ( !isDefined( p ) )
 		return;
 	p setOrigin( origin );
-	codolprintln( "CoDOL cooptest: player " + index + " to " + origin );
+	{}
 }
 
 goto_flag( index, name )
@@ -654,7 +380,7 @@ goto_flag( index, name )
 		teleport( index, e.origin );
 		return;
 	}
-	codolprintln( "CoDOL cooptest: no trigger sets flag " + name );
+	{}
 }
 
 goto_trigger( index, which )
@@ -677,80 +403,13 @@ goto_trigger( index, which )
 			continue;
 		if ( found == which )
 		{
-			codolprintln( "CoDOL cooptest: spawn trigger " + which + " is " + e.classname + " targeting " + e.target +
-				" (" + spawners + " spawners)" );
+			{}
 			teleport( index, e.origin );
 			return;
 		}
 		found++;
 	}
-	codolprintln( "CoDOL cooptest: only " + found + " spawn triggers" );
-}
-
-// characters: one actor of every authored actor_ classname on the map,
-// spawned through its own aitype where its spawner stands, and a log line per
-// actor naming its body, head and every attachment, each with whether a
-// mounted zone ships it.  A "MISSING" is a model C1 would draw as its default.
-characters()
-{
-	seen = [];
-	ents = getEntArray();
-	n = 0;
-	bad = 0;
-	for ( i = 0; i < ents.size; i++ )
-	{
-		e = ents[ i ];
-		if ( !isDefined( e ) || !isDefined( e.classname ) || isDefined( e.coop_template ) )
-			continue;
-		cls = toLower( e.classname );
-		if ( getSubStr( cls, 0, 6 ) != "actor_" || cls == "actor_enemy_coop_soldier" || isDefined( seen[ cls ] ) )
-			continue;
-		// No coop dog species: its spawners stay inert.
-		if ( isSubStr( cls, "_dog" ) )
-			continue;
-		seen[ cls ] = true;
-		kind = spawnStruct();
-		kind.health = 1000;
-		ai = maps\_coopmission::spawn_class_actor( cls, undefined, kind );
-		if ( !isDefined( ai ) )
-		{
-			codolprintln( "CoDOL cooptest: characters " + cls + " -> no actor" );
-			continue;
-		}
-		ai forceTeleport( e.origin, ( 0, 0, 0 ) );
-		ai.ignoreall = true;
-		n++;
-		line = "CoDOL cooptest: characters " + cls + " ent " + ai getEntityNumber() + " team " + ai.team + " body " + ai.model;
-		if ( !codol_isModelMounted( ai.model ) )
-		{
-			line += " MISSING";
-			bad++;
-		}
-		head = "none";
-		if ( isDefined( ai.headModel ) )
-			head = ai.headModel;
-		line += " head " + head;
-		count = ai getAttachSize();
-		for ( a = 0; a < count; a++ )
-		{
-			m = ai getAttachModelName( a );
-			line += " +" + m;
-			if ( !codol_isModelMounted( m ) )
-			{
-				line += " MISSING";
-				bad++;
-			}
-		}
-		codolprintln( line );
-	}
-	codolprintln( "CoDOL cooptest: characters done, " + n + " classnames spawned, " + bad + " missing models" );
-}
-
-castHead( ai )
-{
-	if ( isDefined( ai.headModel ) )
-		return ai.headModel;
-	return "none";
+	{}
 }
 
 status()
@@ -759,7 +418,7 @@ status()
 		" spawned " + level.coop_spawned + " killed " + level.coop_killed + " failures " + level.coop_spawn_failures;
 	if ( isDefined( level.coop_kills_to_win ) )
 		line += " goal " + level.coop_kills_to_win;
-	codolprintln( line );
+	{}
 
 	for ( i = 0; i < level.coop_enemies.size; i++ )
 	{
@@ -769,11 +428,7 @@ status()
 		enemy = "none";
 		if ( isDefined( ai.enemy ) )
 			enemy = "" + ai.enemy getEntityNumber();
-		head = "none";
-		if ( isDefined( ai.headModel ) )
-			head = ai.headModel;
-		codolprintln( "CoDOL cooptest:   ai " + ai getEntityNumber() + " " + ai.classname + " " + ai.coop_role + " " + ai.coop_weapon +
-			" hp " + ai.health + " at " + ai.origin + " enemy " + enemy + " body " + ai.model + " head " + head );
+		{}
 	}
 
 	if ( isDefined( level.coop_cast_list ) )
@@ -789,8 +444,7 @@ status()
 				name = "actor";
 			if ( isDefined( ai.coop_name ) )
 				name += " (" + ai.coop_name + ")";
-			codolprintln( "CoDOL cooptest:   cast " + name + " team " + ai.team + " alive " + isAlive( ai ) + " at " + ai.origin +
-				" idle " + isDefined( ai.coop_idle_anim ) + " " + ai.classname + " body " + ai.model + " head " + castHead( ai ) );
+			{}
 		}
 	}
 
@@ -798,8 +452,7 @@ status()
 	for ( i = 0; i < players.size; i++ )
 	{
 		p = players[ i ];
-		codolprintln( "CoDOL cooptest:   player " + i + " " + p.sessionstate + " hp " + p.health + " at " + p.origin +
-			" lives " + p.coop_lives_left + " kills " + p.kills );
+		{}
 	}
 }
 
@@ -818,25 +471,7 @@ kill_enemies( count )
 			ai doDamage( ai.health + 100, ai.origin );
 		killed++;
 	}
-	codolprintln( "CoDOL cooptest: killed " + killed );
-}
-
-hurt_enemies( amount )
-{
-	attacker = player( 0 );
-	hurt = 0;
-	for ( i = 0; i < level.coop_enemies.size; i++ )
-	{
-		ai = level.coop_enemies[ i ];
-		if ( !isDefined( ai ) || !isAlive( ai ) || ai.health <= amount )
-			continue;
-		if ( isDefined( attacker ) )
-			ai doDamage( amount, ai.origin + ( 0, 0, 48 ), attacker );
-		else
-			ai doDamage( amount, ai.origin + ( 0, 0, 48 ) );
-		hurt++;
-	}
-	codolprintln( "CoDOL cooptest: hurt " + hurt );
+	{}
 }
 
 godmode( index )
@@ -859,7 +494,7 @@ godmode( index )
 route()
 {
 	level endon( "coop_mission_over" );
-	codolprintln( "CoDOL cooptest: route started" );
+	{}
 	last = undefined;
 	for ( ;; )
 	{
@@ -907,7 +542,7 @@ route()
 			}
 			break;
 		}
-		codolprintln( "CoDOL cooptest: route " + s.kind + ", player 0 at " + p.origin );
+		{}
 	}
 }
 
@@ -915,7 +550,7 @@ route()
 play_route()
 {
 	level endon( "coop_mission_over" );
-	codolprintln( "CoDOL cooptest: playroute started" );
+	{}
 	last = undefined;
 	for ( ;; )
 	{
@@ -973,7 +608,7 @@ play_route()
 				if ( level.coop_training_step == s )
 				{
 					s.value[ 0 ] notify( "damage", 50, p, ( 0, 0, 0 ), s.value[ 0 ].origin, "MOD_MELEE" );
-					codolprintln( "CoDOL cooptest: playroute melee button gave no hit; knife simulated" );
+					{}
 				}
 				break;
 			}
@@ -986,7 +621,7 @@ play_route()
 				p codol_botPressButtons( 1, 0.1 );
 				wait( 0.5 );
 			}
-			codolprintln( "CoDOL cooptest: playroute fired at " + s.value.size + " dummies, hits " + level.coop_training_hits );
+			{}
 			break;
 		case "note":
 			if ( s.value == "grenade_fire" )
@@ -1011,7 +646,7 @@ play_route()
 		case "weapon":
 			// A player's weapon switch.
 			p switchToWeapon( s.value );
-			codolprintln( "CoDOL cooptest: playroute switched to " + s.value );
+			{}
 			break;
 		case "pickup":
 			// A weapon lying in the world (the range table's rifle): in
@@ -1030,12 +665,11 @@ play_route()
 				p codol_botPressButtons( 8, 0.5 );
 				wait( 1.5 );
 			}
-			codolprintln( "CoDOL cooptest: playroute pickup " + s.value2 + " real " + p hasWeapon( s.value2 ) +
-				", weapons " + p getWeaponsListPrimaries().size );
+			{}
 			if ( !p hasWeapon( s.value2 ) )
 			{
 				p giveWeapon( s.value2 );
-				codolprintln( "CoDOL cooptest: playroute pickup " + s.value2 + " SIMULATED" );
+				{}
 			}
 			break;
 		case "damage":
@@ -1051,7 +685,7 @@ play_route()
 			if ( level.coop_training_step == s )
 			{
 				s.value notify( "trigger", p );
-				codolprintln( "CoDOL cooptest: playroute use button did not take; use SIMULATED" );
+				{}
 			}
 			break;
 		case "ship":
@@ -1121,7 +755,7 @@ walk_course( p )
 			}
 		}
 	}
-	codolprintln( "CoDOL cooptest: playroute course triggers done, hits " + level.coop_course_hits );
+	{}
 	// The finish: wait for the gates the mission opens after a good run.
 	wait( 6 );
 	walk_to( p, ( 528, -700, 4 ), "course finish" );
@@ -1168,7 +802,7 @@ walk_to( p, dest, what )
 		if ( length( ( d[ 0 ], d[ 1 ], 0 ) ) < radius )
 		{
 			p botStop();
-			codolprintln( "CoDOL cooptest: playroute walked to " + what + " from " + start + " in " + t + " s" );
+			{}
 			return true;
 		}
 		if ( distance( p.origin, lastPos ) < 16 )
@@ -1194,7 +828,7 @@ walk_to( p, dest, what )
 	}
 	else if ( tr[ "fraction" ] >= 1 )
 		blocker = "player clip or step (bullets pass)";
-	codolprintln( "CoDOL cooptest: playroute STUCK walking to " + what + " " + dest + " at " + p.origin + ", blocked by " + blocker + "; teleporting" );
+	{}
 	// Beside the point, not on it: an instructor stands on his own spot.
 	if ( radius > 40 )
 		p setOrigin( dest + ( 0, -80, 0 ) );
@@ -1210,7 +844,7 @@ walk_points( tokens )
 		return;
 	for ( i = 1; i + 2 < tokens.size; i += 3 )
 		walk_to( p, ( float( tokens[ i ] ), float( tokens[ i + 1 ] ), float( tokens[ i + 2 ] ) ), "point " + int( ( i - 1 ) / 3 ) );
-	codolprintln( "CoDOL cooptest: walk done at " + p.origin );
+	{}
 }
 
 // aimcheck: for each range dummy (lane1, ads_tutorial_target), what a trace
@@ -1247,9 +881,9 @@ aim_check()
 			}
 			line += " " + h + "=" + hit;
 		}
-		codolprintln( line );
+		{}
 	}
-	codolprintln( "CoDOL cooptest: aimcheck from " + eye );
+	{}
 }
 
 // colmap: one log row per y (north first), one character per cell: '.' a
@@ -1261,7 +895,7 @@ col_map( x0, y0, x1, y1, z, step )
 {
 	legend = [];
 	letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-	codolprintln( "CoDOL cooptest: colmap x " + x0 + ".." + x1 + " y " + y1 + "->" + y0 + " z " + z + " step " + step );
+	{}
 	for ( y = y1; y >= y0; y -= step )
 	{
 		row = "";
@@ -1305,7 +939,7 @@ col_map( x0, y0, x1, y1, z, step )
 			}
 			row += ch;
 		}
-		codolprintln( "CoDOL colmap " + int( y ) + " " + row );
+		{}
 		wait( 0.05 );
 	}
 	for ( l = 0; l < legend.size; l++ )
@@ -1316,9 +950,9 @@ col_map( x0, y0, x1, y1, z, step )
 			name = e.targetname;
 		if ( isDefined( e.script_noteworthy ) )
 			name += "/" + e.script_noteworthy;
-		codolprintln( "CoDOL colmap legend " + getSubStr( letters, l, l + 1 ) + " = ent " + e getEntityNumber() + " " + name + " at " + e.origin );
+		{}
 	}
-	codolprintln( "CoDOL cooptest: colmap done" );
+	{}
 }
 
 // brushes: for every script_brushmodel of the name, the x / y / z range a
@@ -1333,7 +967,7 @@ brush_report( name )
 		if ( b.classname != "script_brushmodel" )
 			continue;
 		r = brush_extent( b );
-		codolprintln( "CoDOL cooptest: brush " + name + " ent " + b getEntityNumber() + " origin " + b.origin + " hull " + r );
+		{}
 		wait( 0.05 );
 	}
 }
@@ -1395,8 +1029,7 @@ knife_target( p, g )
 		wait( 0.6 );
 		p codol_botPressButtons( 4, 0.2 );
 		wait( 1.2 );
-		codolprintln( "CoDOL cooptest: knife " + n + " at melee target from " + p.origin + " (" + int( distance( p.origin, g.origin ) ) +
-			" units), target up " + g.coop_up );
+		{}
 	}
 }
 
@@ -1420,14 +1053,14 @@ play_windows( p, trigs, what )
 		else
 			p codol_botPressButtons( 1, 0.1 );
 		wait( 3.5 );
-		codolprintln( "CoDOL cooptest: playroute " + what + " at " + t getEntityNumber() + " real hit " + t.coop_hit );
+		{}
 	}
 	for ( i = 0; i < trigs.size; i++ )
 	{
 		if ( !trigs[ i ].coop_hit )
 		{
 			trigs[ i ] notify( "trigger", p );
-			codolprintln( "CoDOL cooptest: playroute " + what + " " + trigs[ i ] getEntityNumber() + " SIMULATED" );
+			{}
 		}
 	}
 }
@@ -1441,11 +1074,11 @@ play_flash( p, volume, what )
 	wait( 0.6 );
 	p codol_botPressButtons( 32768, 0.4 );
 	wait( 3.5 );
-	codolprintln( "CoDOL cooptest: playroute flash into " + what + " real " + level.coop_training_flashed );
+	{}
 	if ( !level.coop_training_flashed )
 	{
 		level.coop_training_flashed = true;
-		codolprintln( "CoDOL cooptest: playroute flash " + what + " SIMULATED" );
+		{}
 	}
 }
 
@@ -1457,7 +1090,7 @@ pickup_test( classname )
 	before = p getWeaponsListPrimaries();
 	spot = p.origin + anglesToForward( p.angles ) * 64 + ( 0, 0, 8 );
 	item = spawn( classname, spot );
-	codolprintln( "CoDOL cooptest: pickup " + classname + " defined " + isDefined( item ) + "; primaries before " + before.size );
+	{}
 	wait( 0.5 );
 	walk_to( p, spot, "pickup " + classname );
 	wait( 1 );
@@ -1467,7 +1100,7 @@ pickup_test( classname )
 	text = "";
 	for ( i = 0; i < after.size; i++ )
 		text += " " + after[ i ];
-	codolprintln( "CoDOL cooptest: pickup " + classname + " primaries after " + after.size + ":" + text + " (item still there " + isDefined( item ) + ")" );
+	{}
 }
 
 // --------------------------------------------------------------------------
@@ -1493,7 +1126,7 @@ duel( role, dist, secs, stance, moving )
 	}
 	if ( !isDefined( p ) || !isAlive( p ) )
 	{
-		codolprintln( "CoDOL duel: no live player 0" );
+		{}
 		return;
 	}
 	wait( 0.5 );
@@ -1515,7 +1148,7 @@ duel( role, dist, secs, stance, moving )
 	}
 	if ( !isDefined( spot ) )
 	{
-		codolprintln( "CoDOL duel: no open spot " + dist + " units from player 0 at " + p.origin );
+		{}
 		return;
 	}
 	p.health = p.maxhealth;
@@ -1532,7 +1165,7 @@ duel( role, dist, secs, stance, moving )
 	level.coop_max_alive = 0;
 	if ( !isDefined( ai ) )
 	{
-		codolprintln( "CoDOL duel: spawn refused" );
+		{}
 		return;
 	}
 	// The clock starts when the soldier has the player as his enemy (the
@@ -1549,7 +1182,7 @@ duel( role, dist, secs, stance, moving )
 	}
 	if ( !acquired )
 	{
-		codolprintln( "CoDOL duel: soldier at " + ai.origin + " never acquired player 0; skipped" );
+		{}
 		ai doDamage( ai.health + 100, ai.origin );
 		return;
 	}
@@ -1557,9 +1190,7 @@ duel( role, dist, secs, stance, moving )
 	gun = "none";
 	if ( isDefined( ai.coop_weapon_model ) )
 		gun = ai.coop_weapon_model;
-	codolprintln( "CoDOL duel: start role " + role + " weapon " + ai.coop_weapon + " gun model " + gun + " attached " +
-		ai getAttachSize() + " dist " + int( distance( ai.origin, p.origin ) ) + " stance " + stance + " " + moving +
-		" player at " + p.origin + " soldier ent " + ai getEntityNumber() + " at " + ai.origin );
+	{}
 
 	level.coop_duel = spawnStruct();
 	level.coop_duel.player = p;
@@ -1608,10 +1239,7 @@ duel( role, dist, secs, stance, moving )
 	first = "none";
 	if ( level.coop_duel.first_hit > 0 )
 		first = ( level.coop_duel.first_hit - start ) / 1000;
-	codolprintln( "CoDOL duel: result role " + role + " dist " + dist + " " + stance + " " + moving + " secs " + elapsed +
-		" hits " + level.coop_duel.hits + " raw " + level.coop_duel.raw + " dealt " + level.coop_duel.dealt +
-		" dps " + ( level.coop_duel.dealt / elapsed ) + " first_hit " + first + " died " + level.coop_duel.deaths +
-		" shots " + shots + " bursts " + bursts + " aimed_hits " + aimed + " misses " + misses + " health_left " + p.health );
+	{}
 	level.coop_damage_watch = undefined;
 	level.coop_duel = undefined;
 	if ( isDefined( ai ) && isAlive( ai ) )
@@ -1633,8 +1261,7 @@ duel_damage( victim, raw, dealt, eAttacker, sWeapon, sHitLoc )
 	attacker = "world";
 	if ( isDefined( eAttacker ) )
 		attacker = "ent " + eAttacker getEntityNumber();
-	codolprintln( "CoDOL duel: hit t " + ( getTime() - d.start ) + " raw " + raw + " dealt " + dealt + " from " + attacker +
-		" weapon " + sWeapon + " loc " + sHitLoc + " health before " + victim.health );
+	{}
 	if ( dealt >= victim.health )
 	{
 		d.deaths++;
@@ -1706,9 +1333,9 @@ spawn_at( role, origin )
 	ai = maps\_coopmission::spawn_soldier( fake );
 	level.coop_max_alive = old;
 	if ( isDefined( ai ) )
-		codolprintln( "CoDOL cooptest: spawnat " + origin + " -> ent " + ai getEntityNumber() + " at " + ai.origin );
+		{}
 	else
-		codolprintln( "CoDOL cooptest: spawnat " + origin + " refused" );
+		{}
 }
 
 // gunmodels: every live soldier's weapon and attached gun model.
@@ -1723,199 +1350,8 @@ gun_models()
 		gun = "none";
 		if ( isDefined( ai.coop_weapon_model ) )
 			gun = ai.coop_weapon_model;
-		codolprintln( "CoDOL cooptest: soldier ent " + ai getEntityNumber() + " weapon " + ai.coop_weapon + " gun " + gun +
-			" attached " + ai getAttachSize() );
+		{}
 		n++;
 	}
-	codolprintln( "CoDOL cooptest: gunmodels " + n + " soldiers" );
-}
-
-// ---------------------------------------------------------------------------
-// Soldier behaviour probes (animstats / travtest / skirmish).
-// ---------------------------------------------------------------------------
-
-anim_stats()
-{
-	if ( !isDefined( level.coop_anim_stats ) )
-	{
-		codolprintln( "CoDOL animstats: none" );
-		return;
-	}
-	keys = getArrayKeys( level.coop_anim_stats );
-	line = "CoDOL animstats:";
-	for ( i = 0; i < keys.size; i++ )
-	{
-		line += " " + keys[ i ] + "=" + level.coop_anim_stats[ keys[ i ] ];
-		if ( line.size > 900 )
-		{
-			codolprintln( line );
-			line = "CoDOL animstats:";
-		}
-	}
-	codolprintln( line );
-}
-
-trav_test( animscript, k )
-{
-	nodes = getAllNodes();
-	found = 0;
-	begin = undefined;
-	for ( i = 0; i < nodes.size; i++ )
-	{
-		n = nodes[ i ];
-		if ( !isDefined( n.animscript ) || n.animscript != animscript || !isDefined( n.target ) )
-			continue;
-		if ( found == k )
-		{
-			begin = n;
-			break;
-		}
-		found++;
-	}
-	if ( !isDefined( begin ) )
-	{
-		codolprintln( "CoDOL travtest: no node pair " + k + " with animscript " + animscript );
-		return;
-	}
-	end = getNode( begin.target, "targetname" );
-	if ( !isDefined( end ) )
-	{
-		codolprintln( "CoDOL travtest: begin at " + begin.origin + " has no end node" );
-		return;
-	}
-	dir = vectorNormalize( ( end.origin[ 0 ] - begin.origin[ 0 ], end.origin[ 1 ] - begin.origin[ 1 ], 0 ) );
-	fake = spawnStruct();
-	fake.classname = "actor_enemy_favela_ar_so";
-	fake.origin = begin.origin - dir * 12;
-	fake.angles = vectorToAngles( dir );
-	fake.coop_no_hunt = true;
-	level.coop_max_alive = level.coop_alive + 1;
-	ai = maps\_coopmission::spawn_soldier( fake );
-	level.coop_max_alive = 0;
-	if ( !isDefined( ai ) )
-	{
-		codolprintln( "CoDOL travtest: spawn refused" );
-		return;
-	}
-	ai.ignoreall = true;
-	ai.goalradius = 16;
-	goal = end.origin + dir * 96;
-	ai setGoalPos( goal );
-	codolprintln( "CoDOL travtest: ent " + ai getEntityNumber() + " " + animscript + " begin " + begin.origin + " end " + end.origin +
-		" from " + ai.origin + " to " + goal );
-	start = getTime();
-	while ( isAlive( ai ) && getTime() - start < 20000 && distance2d( ai.origin, goal ) > 24 )
-		wait( 0.1 );
-	if ( !isAlive( ai ) )
-		return;
-	codolprintln( "CoDOL travtest: ent " + ai getEntityNumber() + " " + animscript + " ended at " + ai.origin + " " +
-		int( distance2d( ai.origin, goal ) ) + " from the goal after " + ( getTime() - start ) / 1000 + " s; dz from begin " +
-		int( ai.origin[ 2 ] - begin.origin[ 2 ] ) + " (end node dz " + int( end.origin[ 2 ] - begin.origin[ 2 ] ) + ")" );
-	ai doDamage( ai.health + 100, ai.origin );
-}
-
-skirmish( n, dist )
-{
-	level.coop_max_alive = 0;
-	p = player( 0 );
-	if ( !isDefined( p ) || !isAlive( p ) )
-	{
-		codolprintln( "CoDOL skirmish: no live player 0" );
-		return;
-	}
-	cands = getEntArray( "pmc_spawner", "targetname" );
-	spawned = 0;
-	for ( i = 0; i < cands.size && spawned < n; i++ )
-	{
-		d = distance( cands[ i ].origin, p.origin );
-		if ( d < dist * 0.5 || d > dist * 1.6 )
-			continue;
-		fake = spawnStruct();
-		fake.classname = "actor_enemy_favela_ar_so";
-		if ( spawned % 3 == 1 )
-			fake.classname = "actor_enemy_favela_smg_so";
-		fake.origin = cands[ i ].origin;
-		fake.angles = vectorToAngles( p.origin - cands[ i ].origin );
-		level.coop_max_alive = level.coop_alive + 1;
-		ai = maps\_coopmission::spawn_soldier( fake );
-		level.coop_max_alive = 0;
-		if ( isDefined( ai ) )
-		{
-			spawned++;
-			codolprintln( "CoDOL skirmish: ent " + ai getEntityNumber() + " at " + ai.origin + " " + int( d ) + " from player 0" );
-		}
-	}
-	codolprintln( "CoDOL skirmish: " + spawned + " soldiers round player 0 at " + p.origin );
-}
-
-frag_near()
-{
-	p = player( 0 );
-	if ( !isDefined( p ) || !isAlive( p ) )
-		return;
-	best = undefined;
-	for ( i = 0; i < level.coop_enemies.size; i++ )
-	{
-		ai = level.coop_enemies[ i ];
-		if ( !isDefined( ai ) || !isAlive( ai ) )
-			continue;
-		if ( !isDefined( best ) || distanceSquared( ai.origin, p.origin ) < distanceSquared( best.origin, p.origin ) )
-			best = ai;
-	}
-	if ( !isDefined( best ) )
-	{
-		codolprintln( "CoDOL fragnear: no live enemy" );
-		return;
-	}
-	ok = p codol_botThrowOffhand( 0, best.origin );
-	codolprintln( "CoDOL fragnear: player 0 at " + p.origin + " throws at ent " + best getEntityNumber() + " at " + best.origin +
-		" (" + int( distance( p.origin, best.origin ) ) + " units) accepted " + ok );
-}
-
-nade_test( dist )
-{
-	p = player( 0 );
-	if ( !isDefined( p ) )
-		return;
-	target = undefined;
-	thrower = undefined;
-	for ( i = 0; i < level.coop_enemies.size; i++ )
-	{
-		ai = level.coop_enemies[ i ];
-		if ( !isDefined( ai ) || !isAlive( ai ) )
-			continue;
-		if ( !isDefined( target ) || distanceSquared( ai.origin, p.origin ) < distanceSquared( target.origin, p.origin ) )
-			target = ai;
-	}
-	for ( i = 0; i < level.coop_enemies.size; i++ )
-	{
-		ai = level.coop_enemies[ i ];
-		if ( isDefined( ai ) && isAlive( ai ) && isDefined( target ) && ai != target )
-			thrower = ai;
-	}
-	if ( !isDefined( target ) || !isDefined( thrower ) )
-	{
-		codolprintln( "CoDOL nadetest: need two live enemies" );
-		return;
-	}
-	weapon = animscripts\soldier_shared::grenade_weapon();
-	if ( weapon == "" )
-	{
-		codolprintln( "CoDOL nadetest: no grenade weapon mounted" );
-		return;
-	}
-	animscripts\soldier_shared::watch_player_grenades();
-	spot = target.origin + anglesToForward( ( 0, randomInt( 360 ), 0 ) ) * dist + ( 0, 0, 24 );
-	g = thrower codol_actorThrowGrenade( weapon, spot, ( 0, 0, -40 ), 3.5 );
-	if ( !isDefined( g ) )
-	{
-		codolprintln( "CoDOL nadetest: no grenade" );
-		return;
-	}
-	g.coop_thrown_time = getTime();
-	g.coop_thrower = p;
-	live = level.coop_live_grenades;
-	live[ live.size ] = g;
-	level.coop_live_grenades = live;
-	codolprintln( "CoDOL nadetest: grenade at " + spot + " beside ent " + target getEntityNumber() + " at " + target.origin );
+	{}
 }

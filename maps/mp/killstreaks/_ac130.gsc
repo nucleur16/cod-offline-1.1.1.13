@@ -888,12 +888,12 @@ attachPlayer( player )
 	// shipped bone list is tag_origin/tag_angle/tag_player.
 	if ( !isDefined( level.ac130 ) )
 	{
-		println( "CoDOL killstreak: ac130 attachPlayer has no level.ac130 rig; player keeps first person" );
+		{}
 		return;
 	}
 	self PlayerLinkWeaponviewToDelta( level.ac130, "tag_player", 1.0, 35, 35, 35, 35 );
 	self setPlayerAngles( level.ac130 getTagAngles( "tag_player" ) );	
-	println( "CoDOL killstreak: ac130 linked player " + self getEntityNumber() + " weaponview to rig " + level.ac130 getEntityNumber() + " tag_player" );
+	{}
 }
 
 
@@ -1275,8 +1275,8 @@ context_Sensative_Dialog_Kill_Thread()
 	{
 		level waittill ( "enemy_killed" );
 		wait timeWindow;
-		println ( "guys killed in time window: " );
-		println ( level.enemiesKilledInTimeWindow );
+		{}
+		{}
 		
 		soundAlias1 = "kill";
 		soundAlias2 = undefined;

@@ -1606,8 +1606,8 @@ context_Sensative_Dialog_Kill_Thread()
 	{
 		level waittill( "enemy_killed" );
 		wait timeWindow;
-		println( "guys killed in time window: " );
-		println( level.enemiesKilledInTimeWindow );
+		{}
+		{}
 
 		soundAlias1 = "kill";
 		soundAlias2 = undefined;

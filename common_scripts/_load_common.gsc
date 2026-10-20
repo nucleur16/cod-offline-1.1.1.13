@@ -155,8 +155,7 @@ main()
 	}
 
 	destructibles = getEntArray( "destructible_vehicle", "targetname" ).size + getEntArray( "destructible_toy", "targetname" ).size;
-	codolprintln( "CoDOL load_common: " + getDvar( "mapname" ) + " (" + getDvar( "codol_zoneType" ) + ") started" + started +
-		"; " + destructibles + " destructibles, " + level.createFXent.size + " createfx/exploder entries" );
+	{}
 }
 
 run( name )
@@ -390,7 +389,7 @@ guard_destructible_anims()
 		}
 	}
 	if ( skipped > 0 )
-		codolprintln( "CoDOL load_common: " + skipped + " destructibles left static; the level script registers no anim" + missing );
+		{}
 }
 
 // The anims each animated destructible type of _destructible_types.gsc asks

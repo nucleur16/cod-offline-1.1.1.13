@@ -844,11 +844,11 @@ setup_mortar_terrain()
 	}
 	else
 	{
-		println( "z:          mortar entity has no target: ", self.origin );
+		{}
 	}
 
 	if ( !isdefined( self.terrain ) )
-		println( "z:          mortar entity has target, but target doesnt exist: ", self.origin );
+		{}
 
 	if ( isdefined( self.script_hidden ) )
 	{

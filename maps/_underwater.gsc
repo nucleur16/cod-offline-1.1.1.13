@@ -62,7 +62,7 @@ debug_org()
 {
 	while( true )
 	{
-		print3d( self.origin + ( 0, 0, 0 ), "ORG", ( 1, 1, 1 ), 1, 0.5 );
+		{}
 		wait( 0.5 );
 	}
 	

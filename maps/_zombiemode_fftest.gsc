@@ -49,7 +49,7 @@ fftest_watch()
 		{
 		case "addbot":
 			addtestclient();
-			codolprintln( "CoDOL fftest: addtestclient" );
+			{}
 			break;
 
 		case "watch":
@@ -78,7 +78,7 @@ fftest_watch()
 			if ( isDefined( p ) && isDefined( z ) )
 			{
 				p setOrigin( z.origin + ( 40, 0, 0 ) );
-				codolprintln( "CoDOL fftest: " + p.name + " moved to zombie " + z getEntityNumber() );
+				{}
 			}
 			break;
 
@@ -87,7 +87,7 @@ fftest_watch()
 			if ( isDefined( p ) && tokens.size > 4 )
 			{
 				p setOrigin( p.origin + ( int( tokens[ 2 ] ), int( tokens[ 3 ] ), int( tokens[ 4 ] ) ) );
-				codolprintln( "CoDOL fftest: " + p.name + " moved to " + p.origin );
+				{}
 			}
 			break;
 
@@ -96,7 +96,7 @@ fftest_watch()
 			if ( isDefined( p ) )
 			{
 				p maps\_zombiemode_perks::give_perk( "specialty_armorvest" );
-				codolprintln( "CoDOL fftest: " + p.name + " juggernog, health " + p.health + "/" + p.maxhealth );
+				{}
 			}
 			break;
 
@@ -108,7 +108,7 @@ fftest_watch()
 					p.codolTestInvulnerable = true;
 				else
 					p.codolTestInvulnerable = undefined;
-				codolprintln( "CoDOL fftest: " + p.name + " invulnerable " + tokens[ 2 ] );
+				{}
 			}
 			break;
 
@@ -119,7 +119,7 @@ fftest_watch()
 				if ( p maps\_zombiemode_laststand::player_is_in_laststand() )
 					p maps\_zombiemode_laststand::revive_success();
 				p.health = p.maxhealth;
-				codolprintln( "CoDOL fftest: " + p.name + " health " + p.health );
+				{}
 			}
 			break;
 		}
@@ -136,7 +136,7 @@ fftest_player( tokens, index )
 		if ( level.players[ i ] getEntityNumber() == num )
 			return level.players[ i ];
 	}
-	codolprintln( "CoDOL fftest: no client " + tokens[ index ] );
+	{}
 	return undefined;
 }
 
@@ -145,7 +145,7 @@ fftest_log_damage()
 	self endon( "disconnect" );
 	self notify( "fftest_log_damage" );
 	self endon( "fftest_log_damage" );
-	codolprintln( "CoDOL fftest: watching " + self.name );
+	{}
 	for ( ;; )
 	{
 		self waittill( "damage", amount, attacker, dir, point, mod );
@@ -158,7 +158,7 @@ fftest_log_damage()
 			if ( is_true( attacker.is_zombie ) )
 				who = "zombie " + attacker getEntityNumber();
 		}
-		codolprintln( "CoDOL fftest: " + self.name + " took " + amount + " " + mod + " from " + who + ", health " + self.health );
+		{}
 	}
 }
 
@@ -170,7 +170,7 @@ fftest_hit( tokens )
 		return;
 
 	before = victim.health;
-	codolprintln( "CoDOL fftest: " + attacker.name + " at " + attacker.origin + ", " + victim.name + " at " + victim.origin );
+	{}
 	switch ( tokens[ 0 ] )
 	{
 	case "bullet":
@@ -199,8 +199,7 @@ fftest_hit( tokens )
 	wait( 0.5 );
 	if ( !isDefined( victim ) )
 		return;
-	codolprintln( "CoDOL fftest: " + desc + " " + attacker.name + " -> " + victim.name + ": health " + before + " -> " + victim.health +
-		" laststand " + victim maps\_zombiemode_laststand::player_is_in_laststand() + " state " + victim.sessionstate );
+	{}
 }
 
 fftest_nearest_zombie( player )
@@ -225,14 +224,13 @@ fftest_zombie_hit( tokens )
 	z = fftest_nearest_zombie( victim );
 	if ( !isDefined( victim ) || !isDefined( z ) || tokens.size < 3 )
 	{
-		codolprintln( "CoDOL fftest: zhit needs a victim, a damage and a live zombie" );
+		{}
 		return;
 	}
 	before = victim.health;
 	victim doDamage( int( tokens[ 2 ] ), z.origin, z, z, 0, "MOD_MELEE", 0, "none" );
 	wait( 0.5 );
-	codolprintln( "CoDOL fftest: zhit zombie " + z getEntityNumber() + " -> " + victim.name + ": health " + before + " -> " + victim.health +
-		" laststand " + victim maps\_zombiemode_laststand::player_is_in_laststand() );
+	{}
 }
 
 fftest_zombie_damage( tokens )
@@ -241,7 +239,7 @@ fftest_zombie_damage( tokens )
 	z = fftest_nearest_zombie( attacker );
 	if ( !isDefined( attacker ) || !isDefined( z ) || tokens.size < 3 )
 	{
-		codolprintln( "CoDOL fftest: zdmg needs an attacker, a weapon and a live zombie" );
+		{}
 		return;
 	}
 	num = z getEntityNumber();
@@ -251,5 +249,5 @@ fftest_zombie_damage( tokens )
 	after = "dead";
 	if ( isDefined( z ) && isAlive( z ) )
 		after = z.health;
-	codolprintln( "CoDOL fftest: zdmg " + tokens[ 2 ] + " " + attacker.name + " -> zombie " + num + ": health " + before + " -> " + after );
+	{}
 }

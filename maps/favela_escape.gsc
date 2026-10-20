@@ -1589,7 +1589,7 @@ solorun_balcony_save_aicheck()
 		// is trying to melee the player
 		if ( IsDefined( enemy.Melee ) && IsDefined( enemy.melee.target ) && IsPlayer( enemy.melee.target ) )
 		{
-			/# maps\_autosave::AutoSavePrint( "autosave failed: AI meleeing player" ); #/
+			/# {} #/
 			return( false );
 		}
 
@@ -1602,7 +1602,7 @@ solorun_balcony_save_aicheck()
 		// level specific!  he's in the room behind the player
 		if( volume IsTouching( enemy ) )
 		{
-			/# maps\_autosave::AutoSavePrint( "autosave failed: AI are in a volume close behind the player" ); #/
+			/# {} #/
 			return false;
 		}
 	
@@ -1636,14 +1636,14 @@ solorun_balcony_save_aicheck()
 		{
 			if ( enemy animscripts\utility::canSeeEnemy( 0 ) && enemy CanShootEnemy( 0 ) )
 			{
-				/# maps\_autosave::AutoSavePrint( "autosave failed: AI firing on player" ); #/
+				/# {} #/
 				return false;
 			}
 		}
 
 		if ( IsDefined( enemy.a.aimIdleThread ) && enemy animscripts\utility::canSeeEnemy( 0 ) && enemy CanShootEnemy( 0 ) )
 		{
-			/# maps\_autosave::AutoSavePrint( "autosave failed: AI aiming at player" ); #/
+			/# {} #/
 			return false;
 		}
 	}

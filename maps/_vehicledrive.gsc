@@ -208,7 +208,7 @@ vehicle_ridehandle()
 		if ( self.damaged )
 		{
 			if ( getdvar( "debug_vehicleplayerhealth" ) != "off" )
-				iprintlnbold( "playervehicles health: ", self.health - self.healthbuffer );
+				{}
 			self.damaged = false;
 			regentimer = gettime() + health_regentimer;
 		}
@@ -222,7 +222,7 @@ vehicle_ridehandle()
 				self.health += health_regeninc;
 			regeninctimer = gettime() + 250;
 			if ( getdvar( "debug_vehicleplayerhealth" ) != "off" )
-				iprintlnbold( "playervehicles health: ", self.health - self.healthbuffer );
+				{}
 		}
 
 		wait .05;
@@ -250,7 +250,7 @@ vehicle_damageset()
 	while ( 1 )
 	{
 		self waittill( "damage", ammount );
-		println( "damage ", ammount );
+		{}
 		self.damaged = true;
 	}
 }

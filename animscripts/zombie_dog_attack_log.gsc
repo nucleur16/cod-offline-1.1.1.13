@@ -186,9 +186,7 @@ finish( outcome )
 	dal notify( "dal_done" );
 	if ( isDefined( dal.result ) )
 		outcome = dal.result;
-	print( "CoDOL dogattack: id " + dal.id + " dog " + self getEntityNumber() + " t " + dal.start
-		+ " " + dal.text + " anim " + dal.animName + " notes" + dal.notes + dal.melee
-		+ " ms " + ( getTime() - dal.start ) + " result " + outcome + "\n" );
+	{}
 }
 
 // Called once the attack window closes (DoNoteTracksForTime returned).
@@ -234,7 +232,7 @@ watch()
 		if ( attempting )
 		{
 			if ( inRange && self.dal.id != lastId )
-				print( "CoDOL dogapproach: dog " + self getEntityNumber() + " attacked after " + ( getTime() - since ) + " ms in range\n" );
+				{}
 			lastId = self.dal.id;
 			inRange = false;
 			continue;
@@ -248,12 +246,12 @@ watch()
 		else if ( near && getTime() - sampled >= 500 )
 		{
 			sampled = getTime();
-			print( "CoDOL dogapproach: dog " + self getEntityNumber() + " in range, no attack, " + ( sampled - since ) + " ms: d2d " + int( distance2d( self.origin, enemy.origin ) ) + " dz " + int( dz ) + " yaw " + self yaw_error( enemy.origin ) + " tgtspeed " + horizontal_speed( enemy ) + "\n" );
+			{}
 		}
 		else if ( !near && inRange && distance2d( self.origin, enemy.origin ) > reach + 60 )
 		{
 			inRange = false;
-			print( "CoDOL dogapproach: dog " + self getEntityNumber() + " pass after " + ( getTime() - since ) + " ms in range, now " + int( distance2d( self.origin, enemy.origin ) ) + " away\n" );
+			{}
 		}
 	}
 }
@@ -292,7 +290,7 @@ test_watcher()
 				foreach ( player in level.players )
 					player freezeControls( false );
 		}
-		print( "CoDOL dogattack test: " + request + "\n" );
+		{}
 	}
 }
 

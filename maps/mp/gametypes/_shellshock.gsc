@@ -87,11 +87,11 @@ dirtEffect( position )
 	fDot = vectorDot( grenadeVec, forwardVec );
 	rDot = vectorDot( grenadeVec, rightVec );
 	
-	printLn( fDot );
-	printLn( rDot );
+	{}
+	{}
 	
 	effectMenus = [];
-	if ( fDot > 0 && fDot > 0.5 && !codolIsWeaponBase( self getCurrentWeapon(), "riotshield_mp" ) )
+	if ( fDot > 0 && fDot > 0.5 && self getCurrentWeapon() != "riotshield_mp" )
 		effectMenus[effectMenus.size] = "dirt_effect_center";
 
 	if ( abs(fDot) < 0.866 )

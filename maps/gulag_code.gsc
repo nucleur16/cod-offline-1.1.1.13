@@ -510,18 +510,18 @@ track_heli_times()
 
 debug_heli_times()
 {
-	PrintLn( "debugging flight times" );
+	{}
 	foreach ( name, time_array in level.heli_time_tracker )
 	{
-		PrintLn( "Heli " + name + ":" );
+		{}
 		foreach ( index, array in time_array )
 		{
 			if ( IsDefined( array[ "flag" ] ) )
-				PrintLn( array[ "name" ] + " " + array[ "total_time" ] + " " + array[ "flag" ] );
+				{}
 			else
-				PrintLn( array[ "name" ] + " " + array[ "total_time" ] );
+				{}
 		}
-		PrintLn( " " );
+		{}
 	}
 }
 
@@ -4803,7 +4803,7 @@ print3dforever()
 {
 	for ( ;; )
 	{
-		Print3d( self.origin, ".", ( 0, 1, 0 ), 1, 1, 20 );
+		{}
 		wait( 0.05 );
 	}
 }
@@ -5718,8 +5718,8 @@ printpos( surface, pos, start_time )
 		return;
 
 	time = GetTime() * 0.001;
-	PrintLn( "	add_waterfx( " + time + ", " + pos + " );" );
-	Print3d( pos, "x", ( 1, 0, 0 ), 1, 5, 100 );
+	{}
+	{}
 }
 
 add_waterfx( time, pos )

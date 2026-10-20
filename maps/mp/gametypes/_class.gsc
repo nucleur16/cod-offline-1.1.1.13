@@ -87,9 +87,9 @@ logClassChoice( class, primaryWeapon, specialType, perks )
 	if ( class == self.lastClass )
 		return;
 
-	self logstring( "choseclass: " + class + " weapon: " + primaryWeapon + " special: " + specialType );		
+	{}		
 	for( i=0; i<perks.size; i++ )
-		self logstring( "perk" + i + ": " + perks[i] );
+		{}
 	
 	self.lastClass = class;
 }
@@ -198,7 +198,7 @@ codol_giveEquipment( items )
 		// ported) would make giveWeapon raise a script error and stop the server.
 		if ( !codol_isWeaponMounted( weapon ) )
 		{
-			codolPrintLn( "CoDOL loadout: " + self.name + " equipment " + item + " has no weapon " + weapon + "; skipped" );
+			{}
 			continue;
 		}
 		self giveWeapon( weapon );
@@ -409,6 +409,31 @@ cloneLoadout()
 giveLoadout( team, class, allowCopycat )
 {
 	self takeAllWeapons();
+	// Script-owned modes provide their complete loadout.  Reading an unused
+	// class-table/profile weapon first can equip defaultweapon_mp or fail
+	// before Gun Game, Infection, and other mode weapons are issued.
+	if ( isDefined( level.givePartyLoadout ) )
+	{
+		self.codolEquipment = undefined;
+		self.specialty = [];
+		self [[level.givePartyLoadout]]();
+		self setKillstreaks( "none", "none", "none" );
+		// The character composer normally runs below the C1 class path.
+		// Skipping it leaves party-mode players invisible to other clients.
+		modeWeapon = self getCurrentWeapon();
+		self.loadoutPrimary = getBaseWeaponName( modeWeapon );
+		self.loadoutSecondary = "none";
+		self.loadoutPrimaryCamo = 0;
+		self.loadoutSecondaryCamo = 0;
+		self.pers["primaryWeapon"] = getBaseWeaponName( modeWeapon );
+		self.primaryWeapon = modeWeapon;
+		self.secondaryWeapon = "none";
+		self maps\mp\gametypes\_teams::playerModelForWeapon( self.pers["primaryWeapon"], "none" );
+		self notify( "changed_kit" );
+		self notify( "giveLoadout" );
+		return;
+	}
+
 	botLoadout = isDefined( self.codolCombatBot ) && self.codolCombatBot;
 	profileWeapons = false;
 	primaryRecipe = "none";
@@ -670,7 +695,7 @@ giveLoadout( team, class, allowCopycat )
 		deathVal += self loadoutModifierDelta( "modDeathstreakShift", loadoutPerk1, loadoutPerk2, loadoutPerk3 );
 		
 		if ( deathVal <= 0 )
-			codolPrintLn( "CoDOL deathstreak: " + self.name + " " + loadoutDeathStreak + " has no death count in mp/coPerkStatsTable.csv; not granted" );
+			{}
 		else if ( self.pers["cur_death_streak"] == deathVal )
 		{
 			self thread maps\mp\perks\_perks::givePerk( loadoutDeathStreak );
@@ -699,7 +724,7 @@ giveLoadout( team, class, allowCopycat )
 	if ( isDefined( objectiveScale ) && objectiveScale > 0 )
 	{
 		self.objectiveScaler = objectiveScale;
-		codolPrintLn( "CoDOL perks: " + self.name + " objectiveScaler " + objectiveScale );
+		{}
 	}
 
 	if ( self hasPerk( "specialty_extraammo", true ) && getWeaponClass( secondaryName ) != "weapon_projectile" )
@@ -714,8 +739,8 @@ giveLoadout( team, class, allowCopycat )
 		self _giveWeapon( primaryName, self.loadoutPrimaryCamo );
 	
 	// fix changing from a riotshield class to a riotshield class during grace period not giving a shield
-	if ( codolIsWeaponBase( primaryName, "riotshield_mp" ) && level.inGracePeriod )
-		self notify ( "weapon_change", primaryName );
+	if ( primaryName == "riotshield_mp" && level.inGracePeriod )
+		self notify ( "weapon_change", "riotshield_mp" );
 
 	if ( self hasPerk( "specialty_extraammo", true ) )
 		self giveMaxAmmo( primaryName );
@@ -763,7 +788,7 @@ giveLoadout( team, class, allowCopycat )
 
 	// cac specialties that require loop threads
 	self maps\mp\perks\_perks::cac_selector();
-	
+
 	self notify ( "changed_kit" );
 	self notify ( "giveLoadout" );
 }
@@ -816,7 +841,7 @@ perkUpgradeOwned( upgradeName )
 	owned = self codol_tryOwnsItem( upgradeName );
 	if ( !isDefined( owned ) )
 	{
-		codolPrintLn( "CoDOL perks: " + self.name + " cannot establish ownership of " + upgradeName + "; Pro not granted" );
+		{}
 		return false;
 	}
 	return owned != 0;
@@ -912,7 +937,7 @@ codolOfferedPerk( perkName )
 {
 	if ( perkName != "specialty_pistoldeath" && perkName != "specialty_laststandoffhand" )
 		return perkName;
-	codolPrintLn( "CoDOL perks: " + self.name + " loadout names " + perkName + ", which CoDOL MP does not offer; no perk" );
+	{}
 	return "specialty_null";
 }
 
@@ -958,10 +983,8 @@ trackRiotShield()
 	self endon ( "death" );
 	self endon ( "disconnect" );
 
-	// A class shield is composed ("*a ..."); hasWeapon( "riotshield_mp" )
-	// and a name compare only recognise the stock one.
-	self.hasRiotShield = isDefined( self codolOwnedWeaponWithBase( "riotshield_mp" ) );
-	self.hasRiotShieldEquipped = codolIsWeaponBase( self.currentWeaponAtSpawn, "riotshield_mp" );
+	self.hasRiotShield = self hasWeapon( "riotshield_mp" );
+	self.hasRiotShieldEquipped = (self.currentWeaponAtSpawn == "riotshield_mp");
 	
 	// note this function must play nice with _detachAll().
 	
@@ -981,7 +1004,7 @@ trackRiotShield()
 	{
 		self waittill ( "weapon_change", newWeapon );
 		
-		if ( codolIsWeaponBase( newWeapon, "riotshield_mp" ) )
+		if ( newWeapon == "riotshield_mp" )
 		{
 			// defensive check in case we somehow get an extra "weapon_change"
 			if ( self.hasRiotShieldEquipped )
@@ -1002,7 +1025,7 @@ trackRiotShield()
 		else if ( self.hasRiotShieldEquipped )
 		{
 			assert( self.hasRiotShield );
-			self.hasRiotShield = isDefined( self codolOwnedWeaponWithBase( "riotshield_mp" ) );
+			self.hasRiotShield = self hasWeapon( "riotshield_mp" );
 			
 			if ( self.hasRiotShield )
 				self MoveShieldModel( "weapon_riot_shield_mp", "tag_weapon_left", "tag_shield_back" );
@@ -1013,7 +1036,7 @@ trackRiotShield()
 		}
 		else if ( self.hasRiotShield )
 		{
-			if ( !isDefined( self codolOwnedWeaponWithBase( "riotshield_mp" ) ) )
+			if ( !self hasWeapon( "riotshield_mp" ) )
 			{
 				// we probably just lost all of our weapons (maybe switched classes)
 				self DetachShieldModel( "weapon_riot_shield_mp", "tag_shield_back" );
@@ -1177,14 +1200,14 @@ codol_validKillstreak( streak, slot )
 {
 	if ( !isDefined( streak ) )
 	{
-		codolPrintLn( "CoDOL loadout: " + self.name + " killstreak slot " + slot + " is undefined; using none" );
+		{}
 		return "none";
 	}
 	if ( streak == "none" || streak == "" || streak == "specialty_null" )
 		return "none";
 	if ( tableLookup( "mp/coKillstreakStatsTable.csv", 1, streak, 4 ) == "" )
 	{
-		codolPrintLn( "CoDOL loadout: " + self.name + " killstreak " + streak + " has no mp/coKillstreakStatsTable.csv row; using none" );
+		{}
 		return "none";
 	}
 	return streak;
