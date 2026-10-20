@@ -225,7 +225,9 @@ player_laststand()
 
 	self allowSprint( false );
 	self allowJump( false );
-	self allowAds( false );
+	// C1 BG_PlayerCanAds permits pm_type7; WEAPFLAG0x20 still blocks ADS.
+	// Zombies keeps sighted pistol aim; preserve the co-op restriction.
+	self allowAds( getDvar( "g_gametype" ) == "zm" );
 	self setMoveSpeedScale( 0.15 );
 	self setStance( "prone" );
 

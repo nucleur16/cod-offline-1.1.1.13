@@ -34,6 +34,7 @@ main()
 	prototype_fog_precache();
 
 	maps\_zombiemode::levelMain( "zm_prototype_sh" );
+	maps\_zombiemode_barrels::main();
 	hideNavigationArrows();
 	level thread prototype_fog();
 	level thread prototype_fog_fx();

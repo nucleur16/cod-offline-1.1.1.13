@@ -48,8 +48,9 @@
 //   zmb_box_poof_land sounds, which no zone carries either (ALL_sound.txt).
 //   init_weapon_toggle / init_pay_turret / weapon cabinet / hacker /
 //   dual-wield left-hand models / limited tesla -- separate systems.
-//   useweaponhidetags() (:2026) -- MEASURED, not a registered builtin here;
-//   the floating box model is a plain setModel of getWeaponModel's answer.
+//   useweaponhidetags() (:2026) -- applied below through the native
+//   getWeaponHideTags/showAllParts/hidePart operations. Only tags actually
+//   present on the chosen world model are passed to hidePart.
 //   setclientflag(level._ZOMBIE_SCRIPTMOVER_FLAG_BOX_RANDOM) (:1972) -- there
 //   is no CSC VM and no zm client-flag table on this server.
 //
@@ -461,6 +462,15 @@ init_weapon_upgrade()
 			continue;
 		}
 
+		// The map authors the physical weapon separately from its wall mark.
+		// T5 reveals that model only on the first successful weapon purchase.
+		model = getEnt( trig.target, "targetname" );
+		if ( isDefined( model ) )
+		{
+			model weapon_model_hide_tags( trig.zombie_weapon_upgrade, model.model );
+			model hide();
+		}
+
 		trig thread weapon_spawn_think();
 	}
 
@@ -563,6 +573,32 @@ weapon_show()
 {
 	self show();
 	self play_sound_on_ent( "weapon_show" );
+}
+
+// T5's box applies the weapon's hide tags after every model change. CoDOL's
+// authored world models contain the alternative sights too (for example the
+// SPAS-12 has tag_red_dot and tag_eotech). A plain setModel displays both.
+// Reset first because the box reuses one entity for different weapons. Some
+// shipped T5-derived definitions name tags absent from their CoDOL model;
+// hidePart errors on an absent bone, so intersect with that exact skeleton.
+weapon_model_hide_tags( weapon_name, model_name )
+{
+	self showAllParts();
+	tags = getWeaponHideTags( weapon_name );
+	if ( !isDefined( tags ) || tags.size == 0 )
+		return;
+
+	for ( i = 0; i < getNumParts( model_name ); i++ )
+	{
+		part = getPartName( model_name, i );
+		for ( j = 0; j < tags.size; j++ )
+		{
+			if ( part != tags[ j ] )
+				continue;
+			self hidePart( part );
+			break;
+		}
+	}
 }
 
 // ==========================================================================
@@ -1044,7 +1080,10 @@ treasure_chest_weapon_spawn( player )
 
 		modelname = getWeaponModel( rand );
 		if ( isDefined( modelname ) && modelname != "" )
+		{
 			self.weapon_model setModel( modelname );
+			self.weapon_model weapon_model_hide_tags( rand, modelname );
+		}
 
 		if ( i + 1 == number_cycles )
 		{
@@ -1059,6 +1098,7 @@ treasure_chest_weapon_spawn( player )
 	{
 		// T5 :2132.  The teddy bear replaces the weapon, facing the box.
 		self.weapon_model setModel( "zombie_teddybear" );
+		self.weapon_model showAllParts();
 		self.weapon_model.angles = angles;
 		self.chest_moving = true;
 		flag_set( "moving_chest_now" );
