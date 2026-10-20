@@ -678,6 +678,7 @@ static void CtlCursorMove(HWND h, float dx, float dy, BOOL focused)
         SetCursorPos(s.x, s.y);
     } else {
         g_ctlCursorFake = TRUE;
+        g_selfPostMs = GetTickCount();
         PostMessageA(h, WM_MOUSEMOVE, 0, MAKELPARAM(g_ctlCursor.x, g_ctlCursor.y));
     }
 }
@@ -718,6 +719,7 @@ static void CtlMenuButton(HWND h, DWORD pressed, DWORD released)
         ScreenToClient(h, &p);
         lp = MAKELPARAM(p.x, p.y);
     }
+    if (pressed | released) g_selfPostMs = GetTickCount(); /* the pad's own clicks are not keyboard / mouse use */
     if (pressed & XI_A) PostMessageA(h, WM_LBUTTONDOWN, MK_LBUTTON, lp);
     if (released & XI_A) PostMessageA(h, WM_LBUTTONUP, 0, lp);
     if (pressed & (XI_B | XI_START)) PostMessageA(h, WM_KEYDOWN, VK_ESCAPE, 0x00010001);
