@@ -93,6 +93,14 @@ below 100).
 The developer console (IW4x-style `SH1X >` line, dvar names, autocomplete) lives on branch `dev` only;
 main carries no console code.
 
+## Controller (branch `feat/controller`)
+`controller.c` adds gamepad play: SDL2 2.32.10 GameController (static; Xbox, PlayStation, Switch Pro, generic 
+pads, hot-plug; XInput fallback) on its own ~1 kHz thread, pad buttons as real C1 keys (`BUTTON_A`.. `DPAD_RIGHT`, 
+bindable and saved in config_mp.cfg, queued through C1's Sys_QueEvent), analog move/look in CL_MouseMove, a 
+stick-driven cursor for the Scaleform menus (A click, B Escape) and `gpad_*` dvars. See `CONTROLLER.md` for C1's 
+input path, the dvars, commands, default binds, what was verified and the phase 2/3 plan. Build with 
+`PATH=/c/msys64/mingw32/bin:$PATH sh build-controller.sh` (writes `Kernel33_controller.dll`, copies nothing).
+
 ## Voice chat
 `voice.c` puts back in-game voice chat, which C1 stripped (no capture, no codec, no `+talk`; the "v"
 packet branch only printed "voice communication is disabled"). It uses Opus (libopus, linked
