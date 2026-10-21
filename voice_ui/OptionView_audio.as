@@ -291,6 +291,11 @@ package codo.views.option_sub
          this._k33DevBtn.y = this.myCBPresets.y + cRow;
          this._k33DevBtn.addEventListener(MouseEvent.CLICK,this.k33OnDevButton);
          this.addChild(this._k33DevBtn);
+         // an open list draws above every later row: a combo box comes to the top when pressed
+         this.myCBPresets.addEventListener(MouseEvent.MOUSE_DOWN,this.k33ToTop,true);
+         this.myCBDevice.addEventListener(MouseEvent.MOUSE_DOWN,this.k33ToTop,true);
+         this.myCBPresets.addEventListener(MouseEvent.MOUSE_DOWN,this.k33ToTop);
+         this.myCBDevice.addEventListener(MouseEvent.MOUSE_DOWN,this.k33ToTop);
          this._k33DevPop = new Sprite();
          this._k33DevPop.visible = false;
          this._k33DevPop.x = this._k33DevBtn.x;
@@ -298,6 +303,19 @@ package codo.views.option_sub
          this.addChild(this._k33DevPop);
       }
 
+      private function k33ToTop(e:MouseEvent) : void
+      {
+         var o:* = e.currentTarget;
+         if(o != null && o.parent == this)
+         {
+            this.setChildIndex(o,this.numChildren - 1);
+         }
+         if(this._k33DevPop != null && this._k33DevPop.visible && o != this._k33DevBtn)
+         {
+            this._k33DevPop.visible = false;
+         }
+      }
+      
       private function k33DevNames() : Array
       {
          return this._k33DevList == "?" || this._k33DevList == "" ? ["Default"] : this._k33DevList.split(";");
@@ -338,6 +356,7 @@ package codo.views.option_sub
 
       private function k33OnDevButton(e:MouseEvent) : void
       {
+         this.setChildIndex(this._k33DevBtn,this.numChildren - 1);
          if(this._k33DevPop.visible)
          {
             this._k33DevPop.visible = false;
