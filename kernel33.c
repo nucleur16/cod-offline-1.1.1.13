@@ -1184,6 +1184,11 @@ static void PatchGbkInput(void)
 /* C1 engine helpers shared by the features below: see c1game.c. */
 #include "c1game.c"
 
+/* Sound voices: per-alias voice limit and nearest-wins at a channel cap (soundvoices.c), through the voice
+ * diagnostics' hooks (sounddiag.c, which also logs refusals to Kernel33.log at k33_snddiag 1+). */
+#include "sounddiag.c"
+#include "soundvoices.c"
+
 /* In-game voice chat (feat/voicechat): see voice.c. */
 #include "voice.c"
 
@@ -1209,6 +1214,7 @@ static void __cdecl TakeOver(void)
     PatchLoopFxCatchUp();
     PatchPatchDir();
     PatchUserMaps();
+    InstallSoundDiag();
     InstallParityLogger();
     InstallVoice();
     InstallController();

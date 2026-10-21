@@ -189,3 +189,15 @@ is silent; `talkerN` lists the players heard in the last 500 ms with their names
 **Shared C1 helpers.** `c1game.c` holds what features share: Com_Printf, Cbuf_AddText, the command
 list (Cmd_AddCommand), Dvar_RegisterInt and keyCatchers, each byte-checked once. Voice prints go to
 C1's own console and console_mp.log through Com_Printf.
+
+### Sound voices (`soundvoices.c`, through `sounddiag.c`'s hooks)
+The 3D play path's channel check (call of 0x736C10 at 0x73E4DB) decides two more things before C1 takes a voice:
+- **Alias limit** (`k33_sndAliasLimit`, default 4, 0 = off): a one-shot alias on a channel of priority <= 1 holds at
+  most that many 3D voices; one more play takes its farthest copy's voice when nearer, else it is not started.
+  mp_abandon_sh_mk's fireworks launchers played `fireworks_launch` ~50 times a second and held 19.7 of the 32 3D voices
+  on average (snddiag, 2026-10-19..21), starving the map's loops and the players' gear sounds.
+- **Nearest wins at a cap** (`k33_sndNearest`, default 1): a 3D sound refused because its channel is at its cap
+  (ambdist1/2 and physics 6, bulletimpact 10) takes the voice of that channel's farthest 3D sound when nearer. C1's
+  own SND_StealVoice only runs after the cap check.
+`+set codol_soundvoices 0` turns both off at startup. The voice diagnostics (`k33_snddiag`, `CODOL_SNDDIAG`) now
+default to 0; at 1+ they also log `snd policy` totals and `why=limit` refusals to Kernel33.log.
