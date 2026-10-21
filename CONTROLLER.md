@@ -309,3 +309,25 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
 - Front end with `gpad_glyphtest`: all four sets render, `gpad_glyphs 1..4` switches them live, 5 gives text.
 - In a Killhouse match: the cgame spectator hint showed the RT / LT icons for Xbox 360, R2 / L2 for PS3,
   ZR / ZL for Wii U, drawn white beside the hint text.
+
+## 10. Killstreaks on the pad (2026-10-20, built; in-match test pending)
+- **Location selection** (airstrike, precision strike, mortar, any `beginLocationSelection` streak):
+  - **How C1 does it:**
+    - At 0x490DF6, while keyCatchers bit 8 is set, CL_CreateCmd calls 0x490700(cmd, lc). That step:
+      - moves the selector (cg+0xC8B08 / +0xC8B0C, 0..1) with the mouse;
+      - rotates the heading (cg+0xC8B10, degrees) while MOUSE2 is held on a directional streak (ps.locationSelectionInfo +0x230 bit 7);
+      - writes usercmd 0x20000 (confirm) / 0x40000 (cancel) plus the heading byte (+0x23).
+    - It writes those bits when CL_KeyEvent has left state 1 (MOUSE1) or 2 (Escape) at 0x16F5D5C + lc*0xD28.
+    - The server's CODOL_LocationSelectionAction then notifies `confirm_location` (position, yaw).
+  - **The pad hook** (CtlLocSelect, ahead of 0x490700):
+    - The left stick moves the selector at `gpad_locsel_speed` map widths per second (default 0.45). The response is quadratic, and speed doubles over 0.6 s of full push.
+    - The right stick sets the heading.
+    - A or RT sets state 1 and B sets state 2, the same path as the mouse click, so the server sees an identical usercmd.
+    - Mode CTL_MODE_LOCSEL keeps A / B / RT from reaching their game binds; Start / Back still work.
+- **Cycling**:
+  - `gpad_ksnext` (D-pad down) walks the filled action slots (ps actionSlotType, cg+0x544) and wraps around. `gpad_ksuse` (D-pad right) presses `+actionslot <selected>`.
+  - The selection snaps to the first filled slot when it is empty or used up.
+  - C1's GSC has no selection of its own: each streak is its own `+actionslot N`, `codolRewardActionWaiter`. So no server change is needed.
+- **HUD keys**:
+  - The killstreak HUD names each slot by its `+actionslot N` key, and the pad has no per-slot key.
+  - With the pad last used, the selected streak shows the D-pad-right key (use) and the others show D-pad down (cycle). They are drawn as icons, and change live with the device and the selection.

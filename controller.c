@@ -136,7 +136,7 @@ static CtlKeyName g_ctlKeyNames[160], g_ctlKeyNamesLoc[160];
 static BOOL g_ctlOn, g_ctlKeysOk, g_ctlMoveOk, g_ctlDvarsDone;
 static const BYTE *g_gpEnabled, *g_gpDzMin, *g_gpDzMax, *g_gpSens, *g_gpInvert, *g_gpBtnDz, *g_gpYaw, *g_gpPitch,
     *g_gpYawAds, *g_gpPitchAds, *g_gpCurve, *g_gpAccel, *g_gpCursor, *g_gpDebug, *g_gpUseHold, *g_gpAim,
-    *g_gpAimRange, *g_gpAimSnap, *g_gpGlyphs, *g_gpBindsVer, *g_gpUserinfo, *g_gpKbmCooldown;
+    *g_gpAimRange, *g_gpAimSnap, *g_gpGlyphs, *g_gpBindsVer, *g_gpUserinfo, *g_gpKbmCooldown, *g_gpLocSpeed;
 static volatile LONG g_padType;            /* 0 Xbox (and XInput), 1 PlayStation, 2 Nintendo, 3 other */
 static int g_locBase = -1;                 /* first pad entry in g_ctlKeyNamesLoc */
 
@@ -205,6 +205,8 @@ static void CtlRegisterDvars(void)
     g_gpBindsVer = C1RegisterInt("gpad_binds_version", 0, 0, 1000, 0x1, "Default pad binds last applied (read only)");
     g_gpUserinfo = C1RegisterInt("gpad", 0, 0, 2, 0x200,
                                  "Userinfo, visible to the server: 0 keyboard / mouse, 1 gamepad with aim assist, 2 gamepad in the keyboard/mouse cooldown (no assist)");
+    g_gpLocSpeed = CtlRegisterFloat("gpad_locsel_speed", 0.45f, 0.05f, 3.0f, 0x1,
+                                    "Killstreak map selector speed with the left stick, map widths per second (doubles over a 0.6 s full push)");
     g_gpKbmCooldown = CtlRegisterFloat("gpad_aimassist_kbm_cooldown", 20.0f, 20.0f, 600.0f, 0x1,
                                        "Seconds without aim assist after any in-game keyboard / mouse use (20 minimum; may be raised, not lowered)");
     ((const BYTE *(__cdecl *)(const char *, const char *, unsigned, const char *))(DWORD_PTR)0x00624740u)(
@@ -400,6 +402,8 @@ static BOOL CtlIsPadKey(int k)
     return (k >= 1 && k <= 6) || (k >= 14 && k <= 23) || k == K_BUTTON_X_HOLD;
 }
 
+static int CtlKsHudKey(int slot, const BYTE *kb);
+
 __attribute__((used)) int __cdecl CtlCommandKeys(const char *cmd, int lc, int *keys)
 {
     keys[0] = keys[1] = -1;
@@ -417,6 +421,13 @@ __attribute__((used)) int __cdecl CtlCommandKeys(const char *cmd, int lc, int *k
     /* C1's spectator hint asks for +toggleads_throw first and uses +speed_throw only when that has no key:
      * with the pad in use, a keyboard-only +toggleads_throw must not win over the pad's LT. */
     if (pad && n && !CtlIsPadKey(keys[0]) && !_stricmp(cmd, "+toggleads_throw")) return keys[0] = keys[1] = -1, 0;
+    /* The killstreak HUD names each action slot by its "+actionslot N" key. The pad has no per-slot key:
+     * the selected streak shows the gpad_ksuse key (D-pad right), the others the gpad_ksnext key (D-pad
+     * down) that cycles to them. */
+    if (pad && (!n || !CtlIsPadKey(keys[0])) && !_strnicmp(cmd, "+actionslot ", 12)) {
+        int k = CtlKsHudKey(atoi(cmd + 12), kb);
+        if (k > 0) { keys[0] = k; keys[1] = -1; return 1; }
+    }
     return n;
 }
 
@@ -516,6 +527,29 @@ static void CtlRunBinding(int index, int key)
     DWORD fn = 0x00491580u;
     __asm__ volatile("pushl %2\n\tpushl %1\n\tcall *%3\n\taddl $8, %%esp"
                      : "+a"(lc) : "r"(index), "r"(key), "r"(fn) : "ecx", "edx", "memory", "cc");
+}
+
+/* The selection always points at a filled slot while one exists (first filled, then kept). */
+static void CtlKsValidate(void)
+{
+    if (g_ksSel && CtlKsType(g_ksSel)) return;
+    for (int slot = 1; slot <= 5; slot++)
+        if (CtlKsType(slot)) { g_ksSel = slot; return; }
+    g_ksSel = 0;
+}
+
+static int CtlPadKeyFor(int bindIndex, const BYTE *kb)
+{
+    for (int k = 1; k < 256; k++)
+        if (CtlIsPadKey(k) && *(const int *)(kb + k * 12 + 8) == bindIndex) return k;
+    return 0;
+}
+
+static int CtlKsHudKey(int slot, const BYTE *kb)
+{
+    if (slot < 1 || slot > 5 || !CtlKsType(slot)) return 0;
+    CtlKsValidate();
+    return CtlPadKeyFor(slot == g_ksSel ? 90 /* gpad_ksuse */ : 89 /* gpad_ksnext */, kb);
 }
 
 static void CtlKsNext(void)
@@ -737,6 +771,8 @@ static void CtlCursorMove(HWND h, float dx, float dy, BOOL focused)
 #define CTL_MODE_MENU  1
 #define CTL_MODE_TEXT  2
 #define CTL_MODE_PAUSE 3
+#define CTL_MODE_LOCSEL 4   /* killstreak map location selection (keyCatchers bit 8) */
+#define CTL_KC_LOCSEL  0x08
 /* C1's Scaleform UI mode switch 0x6B77A0 (eax = mode; called from 0x83DA993): 1 front end, 2 the in-match
  * pause menu (cpp_openPauseMenu), 7 scoreboard, 12 HUD. keyCatchers' UI bit cannot tell the pause menu: the
  * menu's ActionScript sets and clears it as the pointer moves over its panels (callback 0x5C4110), and the
@@ -758,7 +794,8 @@ static int CtlMode(void)
     if (!inMatch) return CTL_MODE_MENU;
     /* C1's current Scaleform menu type (0x6C44D64, the AS MenuType: 3 = PAUSE, codoingame.gfx up). The UI
      * mode switch is only called to open the menu; the menu's own Return / Esc close it without one. */
-    return *(volatile int *)(DWORD_PTR)0x06C44D64u == 3 ? CTL_MODE_PAUSE : CTL_MODE_GAME;
+    if (*(volatile int *)(DWORD_PTR)0x06C44D64u == 3) return CTL_MODE_PAUSE;
+    return (kc & CTL_KC_LOCSEL) ? CTL_MODE_LOCSEL : CTL_MODE_GAME;
 }
 
 
@@ -812,6 +849,8 @@ static void CtlQueueKey(int key, int down)
                      : "+a"(t) : "r"(key), "r"(down), "i"(CTL_SE_KEY), "r"(fn) : "ecx", "edx", "memory", "cc");
 }
 
+static volatile LONG g_locAction;   /* 1 confirm, 2 cancel, for CtlLocSelect */
+
 /* Input-thread state. */
 static CtlPad g_real;               /* the connected pad, XInput layout */
 static DWORD g_trig;                 /* trigger bits latched with hysteresis */
@@ -824,7 +863,7 @@ static void CtlQueueSfKey(int flashCode, int down);
 static void CtlRelease(int mode, DWORD bits)
 {
     if (!bits || mode < 0) return;
-    if (mode == 0) {
+    if (mode == 0 || mode == CTL_MODE_LOCSEL) {
         for (DWORD b = 1; b <= CTL_XHOLD_BIT; b <<= 1)
             if ((bits & b) && CtlButtonKey(b)) CtlQueueKey(CtlButtonKey(b), 0);
     } else if (mode == CTL_MODE_PAUSE) {
@@ -1001,12 +1040,23 @@ static void CtlEvaluate(void)
         g_sent = 0;
         g_ignore = b;                     /* a button held across the switch counts once it is released */
         if (g_sentMode >= 0)
-            CtlDebugf(1, "gamepad: mode %s\n", mode == 0 ? "game" : mode == 1 ? "menu" : mode == 2 ? "text" : "pause menu");
+            CtlDebugf(1, "gamepad: mode %s\n", mode == 0 ? "game" : mode == 1 ? "menu" : mode == 2 ? "text" : mode == 3 ? "pause menu" : "location selection");
         g_sentMode = mode;
     }
     g_ignore &= b;
     DWORD act = b & ~g_ignore;
     if (mode == CTL_MODE_GAME) { CtlGameButtons(act); return; }
+    if (mode == CTL_MODE_LOCSEL) {
+        /* A / RT confirm, B cancels: the state C1's CL_KeyEvent sets for MOUSE1 / Escape (CtlLocSelect hands
+         * it over on the main thread). Start / Back stay ordinary keys (pause menu, scoreboard). */
+        static DWORD prev;
+        DWORD sel = act & (XI_A | XI_B | CTL_RT_BIT), down = sel & ~prev;
+        prev = sel;
+        if (down & (XI_A | CTL_RT_BIT)) InterlockedExchange(&g_locAction, 1);
+        else if (down & XI_B) InterlockedExchange(&g_locAction, 2);
+        CtlGameButtons(act & (XI_START | XI_BACK));
+        return;
+    }
     if (mode == CTL_MODE_TEXT) act &= XI_B | XI_START; /* console / chat line: only Escape */
     DWORD pressed = act & ~g_sent, released = g_sent & ~act;
     HWND h = *(HWND *)(DWORD_PTR)CTL_MAIN_HWND_VA;
@@ -1228,6 +1278,78 @@ static void CtlSampleSticks(void)
     CtlStick((SHORT)g_pubLX, (SHORT)g_pubLY, &g_lx, &g_ly);
     CtlStick((SHORT)g_pubRX, (SHORT)g_pubRY, &g_rx, &g_ry);
 }
+
+/* ---- killstreak location selection (airstrike, precision strike, mortar, ...) ---------------------
+ * C1's CL_CreateCmd calls its location-selection step 0x490700 (cmd, lc) at 0x490DF6 while keyCatchers
+ * has bit 8; when it returns 1 the rest of the usercmd (CL_MouseMove included) is skipped. That step adds
+ * the mouse to the selector (cg+0xC8B08 / +0xC8B0C, 0..1 map fractions; y scaled by cg+0xBFA20 /
+ * cg+0xBFA24), rotates the heading (cg+0xC8B10, degrees: the vector from a second point cg+0xC8B30 / 34
+ * back to the selector, while MOUSE2 is held on a directional streak, ps.locationSelectionInfo bit 7),
+ * and on the state CL_KeyEvent leaves at 0x16F5D5C + lc * 0xD28 (1 MOUSE1 = confirm, 2 Escape = cancel)
+ * puts 0x20000 / 0x40000 and the heading byte in the usercmd; the server (CODOL_LocationSelectionAction)
+ * then notifies confirm_location. The hook runs first: left stick moves the selector (speed
+ * gpad_locsel_speed, quadratic response, doubling over 0.6 s of full push, IW4 console style), right
+ * stick sets the heading, and A / RT / B set that same state, so the pad takes the mouse's path. */
+static int g_locLastSet;
+__attribute__((used)) void __cdecl CtlLocSelect(BYTE *cmd, int lc)
+{
+    static DWORD fullSince;
+    (void)cmd;
+    if (lc != 0 || !CtlEnabled()) return;
+    DWORD cgv = *(volatile DWORD *)(DWORD_PTR)(0x016D3B58u + (*(volatile int *)(DWORD_PTR)0x06C3D2ACu) * 4) ^ 0x490B400Cu;
+    BYTE *cg = (BYTE *)(DWORD_PTR)cgv;
+    if (!Readable(cg + 0x230, 4) || !Readable(cg + 0xC8B08, 0x30) || !Readable(cg + 0xBFA20, 8)) return;
+    int info = *(const int *)(cg + 0x230);
+    int *state = (int *)(DWORD_PTR)(0x016F5D5Cu + lc * 0xD28);
+    LONG act = InterlockedExchange(&g_locAction, 0);
+    if (!info) { fullSince = 0; return; }
+    if (act && *state == 0) {
+        *state = (int)act;
+        Log("controller: location selection %s (%.3f, %.3f, heading %.0f)", act == 1 ? "confirmed" : "cancelled",
+            *(const float *)(cg + 0xC8B08), *(const float *)(cg + 0xC8B0C), *(const float *)(cg + 0xC8B10));
+    }
+    if (!g_padActive) return;
+    CtlSampleSticks();
+    int msec = *(volatile int *)(DWORD_PTR)CTL_FRAMEMSEC_VA;
+    float dt = msec > 0 && msec < 200 ? msec * 0.001f : 0.0f;
+    float mag = sqrtf(g_lx * g_lx + g_ly * g_ly);
+    if (mag > 1.0f) mag = 1.0f;
+    DWORD now = GetTickCount();
+    if (mag > 0.9f) { if (!fullSince) fullSince = now; } else fullSince = 0;
+    float boost = fullSince ? 1.0f + fminf((now - fullSince) / 600.0f, 1.0f) : 1.0f;
+    if (mag > 0.0f && dt > 0.0f) {
+        float v = CtlDvarFloat(g_gpLocSpeed, 0.45f) * boost * mag * dt;   /* direction * mag^2 */
+        float aspect = *(const float *)(cg + 0xBFA24) != 0.0f ? *(const float *)(cg + 0xBFA20) / *(const float *)(cg + 0xBFA24) : 1.0f;
+        float x = *(float *)(cg + 0xC8B08) + g_lx * v;
+        float y = *(float *)(cg + 0xC8B0C) - g_ly * v * aspect;
+        x = x < 0.0f ? 0.0f : x > 1.0f ? 1.0f : x;
+        y = y < 0.0f ? 0.0f : y > 1.0f ? 1.0f : y;
+        *(float *)(cg + 0xC8B08) = x;
+        *(float *)(cg + 0xC8B0C) = y;
+        g_locLastSet = 1;
+    }
+    if ((info & 0x80) && g_rx * g_rx + g_ry * g_ry > 0.25f) {
+        /* the mouse drag's convention: heading of -(second point - selector), map y down */
+        float dx = g_rx, dy = -g_ry;
+        float yaw = atan2f(-dy, -dx) * (180.0f / 3.14159265f);
+        if (yaw < 0.0f) yaw += 360.0f;
+        *(float *)(cg + 0xC8B10) = yaw;
+    }
+}
+
+__attribute__((used)) DWORD g_ctlLocSelFn = 0x00490700u;
+void CTL_LocSelectHook(void);
+__asm__(
+    ".text\n"
+    ".globl _CTL_LocSelectHook\n"
+    "_CTL_LocSelectHook:\n"          /* call 0x490700 at 0x490DF6: [esp+4] cmd, [esp+8] lc */
+    "    pushal\n"
+    "    pushl 40(%esp)\n"            /* lc */
+    "    pushl 40(%esp)\n"            /* cmd */
+    "    call _CtlLocSelect\n"
+    "    addl $8, %esp\n"
+    "    popal\n"
+    "    jmp *_g_ctlLocSelFn\n");
 
 /* The pad family whose names and icons C1 shows: 0 Xbox, 1 PlayStation, 2 Nintendo, 3 generic (gpad_glyphs
  * 1..4 forces one; 0 and 5 follow the pad's SDL type). */
@@ -1808,6 +1930,11 @@ static void InstallController(void)
         WriteCode(que, jq, 5);
     }
     CtlInstallGlyphs(namesOk);
+    {   /* location selection: push esi; push ebx; call 0x490700 */
+        BOOL ok = !memcmp((void *)(DWORD_PTR)0x00490DF4u, "\x56\x53", 2) && CallsTarget(0x00490DF6u, 0x00490700u);
+        if (ok) RedirectCall(0x00490DF6u, (void *)CTL_LocSelectHook);
+        Log("controller: killstreak location selection %s", ok ? "hooked (0x490DF6): left stick, right stick heading, A/RT confirm, B cancel" : "NOT hooked (bytes differ)");
+    }
     Log("controller: key names by last-used device %s, keyboard/mouse detection %s", namesOk ? "hooked (0x49393E)" : "NOT hooked",
         queOk ? "hooked (Sys_QueEvent)" : "NOT hooked");
     int added = 0;
