@@ -352,3 +352,11 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
     - C1 lays out text in runs. The 0x6B7510 runs are measured by 0x6B7350 from a per-character advance table.
     - The icon drawer gets the pen x of the icon's slot, and the slot C1 then leaves is wider than the drawn icon. So the icon sat at the slot's left edge, with all the gap on its right.
     - The draw hook now moves it right by `gpad_glyph_xshift` × its drawn width (default 0.08, measured on devtest at text scales 0.35, 0.6 and 0.75 and on the spectator hint) to centre it.
+- **Fix (2026-10-21, third user test):**
+  - **Mortar points:** only the mortar's first point was placed with A. The pad's confirm stayed set, and C1 re-arms (cg+0xC8B14 = 0) only on a frame with state 0, which C1 itself sets on the key release (0x493710). The pad's press now lasts one frame.
+  - **Back:** pad B, and Escape the same way, with a point placed takes that point back. The client marker at cg+0xC8B18 is set back to -1; C1 still sends its cancel. In rawfiles 78dbc61, `_mortar.gsc` `undoOrCancel` drops the last target on `cancel_location`, and closes the selection only when none is placed.
+  - **Icon placement:**
+    - R_TextWidth 0xA78580, which C1 uses to centre and right-align text (cursor hints, menu items, the HUD), skips "^digit" colour codes but not the inline icon code. It measured an icon as eight characters.
+    - A test row with a bar at x + measured width × scale showed it: the bar ended far right of a line with an icon, and exactly at the end of plain text.
+    - The hook measures the text without the icon codes and adds each icon's slot, (1 + 2 × `gpad_glyph_xshift`) × its drawn width. Bars now end at the line's end in both cases.
+  - **Selection arrow:** the killstreak HUD's selected slot is pseudo key 29. It renders as a yellow arrow (Xelu's Others/Arrows/Directional_Arrow_Straight, recoloured by `make_glyphs.py`, glyph 18 in every set) followed by the gpad_ksuse key. In text mode it is "> name".
