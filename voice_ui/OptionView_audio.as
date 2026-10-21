@@ -27,7 +27,11 @@ package codo.views.option_sub
    import components.ProgressBar;
    import flash.display.Sprite;
    import flash.events.Event;
+   import flash.events.MouseEvent;
+   import flash.geom.ColorTransform;
    import flash.text.TextField;
+   import flash.text.TextFieldAutoSize;
+   import flash.text.TextFormat;
    import flash.utils.Dictionary;
 
    public class OptionView_audio extends BaseSubElement
@@ -98,6 +102,17 @@ package codo.views.option_sub
       private var _k33Drawn:String = "";
       
       private var _k33Refreshing:Boolean = false;
+
+      // k33: Input Device (k33_voiceInputList / k33_voiceInputIndex from voice.c, pick -> k33_voiceInputPick)
+      private var _k33DevBtn:Sprite = null;
+
+      private var _k33DevPop:Sprite = null;
+
+      private var _k33DevList:String = "?";
+
+      private var _k33DevIndex:int = -2;
+
+      private var _k33DevW:Number = 200;
 
       public function OptionView_audio()
       {
@@ -212,6 +227,149 @@ package codo.views.option_sub
          {
             this.myDecoVoice.visible = true;
          }
+         this.k33BuildDevice(tempRow);
+      }
+
+      // k33: "输入设备" (Input Device): a row under Input Level, a button with the chosen microphone that
+      // opens a list (Default first); picking one sets k33_voiceInputPick and the Input Level bar then
+      // meters that device
+      private function k33Text(cSrc:TextField, cText:String, cSize:int, cColor:uint) : TextField
+      {
+         var tf:TextField = new TextField();
+         var fmt:TextFormat = cSrc.getTextFormat();
+         tf.embedFonts = cSrc.embedFonts;
+         tf.defaultTextFormat = new TextFormat(fmt.font,cSize,cColor);
+         tf.selectable = false;
+         tf.mouseEnabled = false;
+         tf.autoSize = TextFieldAutoSize.LEFT;
+         tf.text = cText;
+         return tf;
+      }
+
+      private function k33Box(cW:Number, cH:Number, cText:String) : Sprite
+      {
+         var b:Sprite = new Sprite();
+         b.graphics.lineStyle(1,6272712,0.8);
+         b.graphics.beginFill(928307,0.95);
+         b.graphics.drawRect(0,0,cW,cH);
+         b.graphics.endFill();
+         var tf:TextField = this.k33Text(this.myTFMicLevel,cText,13,14544626);
+         tf.name = "label";
+         tf.x = 6;
+         tf.y = (cH - tf.height) / 2;
+         b.addChild(tf);
+         b.buttonMode = true;
+         b.mouseChildren = false;
+         b.addEventListener(MouseEvent.ROLL_OVER,this.k33Over);
+         b.addEventListener(MouseEvent.ROLL_OUT,this.k33Out);
+         return b;
+      }
+
+      private function k33Over(e:MouseEvent) : void
+      {
+         (e.currentTarget as Sprite).transform.colorTransform = new ColorTransform(1.4,1.4,1.4);
+      }
+
+      private function k33Out(e:MouseEvent) : void
+      {
+         (e.currentTarget as Sprite).transform.colorTransform = new ColorTransform();
+      }
+
+      private function k33BuildDevice(cRow:Number) : void
+      {
+         // on the Voice Mode row, right side, where Output Device sits in the Volume section
+         var tf:TextField = this.k33Text(this.myTFDevice,"输入设备",int(this.myTFDevice.getTextFormat().size),uint(this.myTFDevice.getTextFormat().color));
+         tf.x = this.myTFDevice.x;
+         tf.y = this.myTFPresets.y;
+         this.addChild(tf);
+         this._k33DevW = 170;
+         this._k33DevBtn = this.k33Box(this._k33DevW,26,"...");
+         this._k33DevBtn.x = this.myCBDevice.x;
+         this._k33DevBtn.y = this.myCBPresets.y;
+         this._k33DevBtn.addEventListener(MouseEvent.CLICK,this.k33OnDevButton);
+         this.addChild(this._k33DevBtn);
+         this._k33DevPop = new Sprite();
+         this._k33DevPop.visible = false;
+         this._k33DevPop.x = this._k33DevBtn.x;
+         this._k33DevPop.y = this._k33DevBtn.y + 24;
+         this.addChild(this._k33DevPop);
+      }
+
+      private function k33DevNames() : Array
+      {
+         return this._k33DevList == "?" || this._k33DevList == "" ? ["Default"] : this._k33DevList.split(";");
+      }
+
+      private function k33DevLabel(cName:String) : String
+      {
+         var n:String = cName == "Default" ? "默认设备" : cName;
+         return n.length > 18 ? n.substr(0,17) + ".." : n;
+      }
+
+      private function k33DevRefresh() : void
+      {
+         if(this._k33DevBtn == null)
+         {
+            return;
+         }
+         var list:String = CFunctionContainerCommon.Dvar_GetString("k33_voiceInputList");
+         var index:int = CFunctionContainerCommon.Dvar_GetInt("k33_voiceInputIndex");
+         if(list == null)
+         {
+            list = "";
+         }
+         if(list == this._k33DevList && index == this._k33DevIndex)
+         {
+            return;
+         }
+         this._k33DevList = list;
+         this._k33DevIndex = index;
+         var names:Array = this.k33DevNames();
+         var tf:TextField = this._k33DevBtn.getChildByName("label") as TextField;
+         tf.text = this.k33DevLabel(index >= 0 && index < names.length ? names[index] : names[0]) + "  v";
+         if(this._k33DevPop.visible)
+         {
+            this.k33DevOpen();
+         }
+      }
+
+      private function k33OnDevButton(e:MouseEvent) : void
+      {
+         if(this._k33DevPop.visible)
+         {
+            this._k33DevPop.visible = false;
+            return;
+         }
+         this.k33DevOpen();
+      }
+
+      private function k33DevOpen() : void
+      {
+         while(this._k33DevPop.numChildren > 0)
+         {
+            this._k33DevPop.removeChildAt(0);
+         }
+         var names:Array = this.k33DevNames();
+         var i:int = 0;
+         while(i < names.length)
+         {
+            var item:Sprite = this.k33Box(this._k33DevW,22,(i == this._k33DevIndex ? "• " : "  ") + this.k33DevLabel(names[i]));
+            item.name = "dev" + i;
+            item.y = i * 23;
+            item.addEventListener(MouseEvent.CLICK,this.k33OnDevPick);
+            this._k33DevPop.addChild(item);
+            i++;
+         }
+         this.setChildIndex(this._k33DevPop,this.numChildren - 1);
+         this._k33DevPop.visible = true;
+      }
+
+      private function k33OnDevPick(e:MouseEvent) : void
+      {
+         var i:int = int((e.currentTarget as Sprite).name.substr(3));
+         this._k33DevPop.visible = false;
+         CFunctionContainerCommon.setdvar("k33_voiceInputPick",String(i));
+         this._k33DevIndex = -2;
       }
 
       override protected function onInitListener() : void
@@ -338,6 +496,10 @@ package codo.views.option_sub
 
       private function onMicLevelFrame(cEvt:Event) : void
       {
+         if(this._k33Frames % 15 == 0)
+         {
+            this.k33DevRefresh();
+         }
          if(this._k33Frames % 10 == 0)
          {
             CFunctionContainerCommon.setdvar("k33_voiceMeter","1");

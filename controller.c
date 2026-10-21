@@ -138,7 +138,8 @@ static CtlKeyName g_ctlKeyNames[160], g_ctlKeyNamesLoc[160];
 static BOOL g_ctlOn, g_ctlKeysOk, g_ctlMoveOk, g_ctlDvarsDone;
 static const BYTE *g_gpEnabled, *g_gpDzMin, *g_gpDzMax, *g_gpSens, *g_gpInvert, *g_gpBtnDz, *g_gpYaw, *g_gpPitch,
     *g_gpYawAds, *g_gpPitchAds, *g_gpCurve, *g_gpAccel, *g_gpCursor, *g_gpDebug, *g_gpUseHold, *g_gpAim,
-    *g_gpAimRange, *g_gpAimSnap, *g_gpGlyphs, *g_gpBindsVer, *g_gpUserinfo, *g_gpKbmCooldown, *g_gpLocSpeed, *g_gpGlyphShift, *g_gpAccelStart, *g_gpHires, *g_gpLookVer, *g_gpDive, *g_gpMoveDigital, *g_gpMoveThreshold;
+    *g_gpAimRange, *g_gpAimSnap, *g_gpGlyphs, *g_gpBindsVer, *g_gpUserinfo, *g_gpKbmCooldown, *g_gpLocSpeed, *g_gpGlyphShift, *g_gpAccelStart, *g_gpHires, *g_gpLookVer, *g_gpDive, *g_gpMoveDigital, *g_gpMoveThreshold, *g_gpCustom, *g_gpSwapSticks,
+    *g_k33PadInfo, *g_k33PadBinds, *g_k33PadCapture, *g_k33PadClear;
 static volatile LONG g_padType;            /* 0 Xbox (and XInput), 1 PlayStation, 2 Nintendo, 3 other */
 static int g_locBase = -1;                 /* first pad entry in g_ctlKeyNamesLoc */
 
@@ -203,7 +204,19 @@ static void CtlRegisterDvars(void)
                                     "direction bits); 0 = analog values, which the server does not see");
     g_gpMoveThreshold = CtlRegisterFloat("gpad_move_threshold", 0.3f, 0.0f, 0.95f, 0x1,
                                          "Left stick deflection that starts moving (with gpad_move_digital, any move is full key speed)");
-    g_gpDive = C1RegisterInt("gpad_dive", 1, 0, 1, 0x1, "B while sprinting dives (C1's dolphin dive, toggleprone during a sprint); 0 = B is always +stance");
+    g_gpCustom = C1RegisterInt("gpad_binds_custom", 0, 0, 1, 0x1,
+                               "1 once pad binds were changed in Options > Controller: the bind repair then leaves every pad bind as it is");
+    g_gpSwapSticks = C1RegisterInt("gpad_swap_sticks", 0, 0, 1, 0x1, "Southpaw: the left stick looks, the right stick moves (in game)");
+    {
+        typedef const BYTE *(__cdecl *RegStr)(const char *, const char *, unsigned, const char *);
+        RegStr reg = (RegStr)(DWORD_PTR)0x00624740u;
+        g_k33PadInfo = reg("k33_padinfo", "", 0, "Options > Controller: pad family|connected|name|forced (Kernel33, read only)");
+        g_k33PadBinds = reg("k33_padbinds", "", 0, "Options > Controller: every pad button's bind (Kernel33, read only)");
+        g_k33PadCapture = reg("k33_padcapture", "", 0, "Options > Controller: bind the next pad button pressed to this command");
+        g_k33PadClear = reg("k33_padclear", "", 0, "Options > Controller: unbind this command's pad buttons");
+    }
+    g_gpDive = C1RegisterInt("gpad_dive", 1, 0, 1, 0x1,
+                             "The pad button bound to +stance (B by default) dives while sprinting (C1's dolphin dive, toggleprone during a sprint); 0 = always +stance");
     g_gpCursor = CtlRegisterFloat("gpad_menu_cursor_speed", 1100.0f, 50.0f, 5000.0f, 0x1, "Menu cursor speed at full deflection, pixels/s");
     g_gpDebug = C1RegisterInt("gpad_debug", 0, 0, 2, 0, "Gamepad diagnostics in the console (1 state twice a second, 2 also every button)");
     g_gpUseHold = C1RegisterInt("gpad_use_hold_time", 250, 0, 2000, 0x1,
@@ -932,7 +945,9 @@ static void CtlQueueKey(int key, int down)
 }
 
 static volatile LONG g_locAction;   /* 1 confirm, 2 cancel, for CtlLocSelect */
-static volatile LONG g_bEvents;     /* B: 1 press, 2 release (input thread -> CtlFrameStance) */
+static volatile LONG g_bEvents;     /* the stance button: 1 press, 2 release (input thread -> CtlFrameStance) */
+static volatile LONG g_captureOn;   /* Options > Controller wants the next pad button (main -> input thread) */
+static volatile LONG g_captureKey;  /* the pad key pressed for it (input -> main thread) */
 
 /* Input-thread state. */
 static CtlPad g_real;               /* the connected pad, XInput layout */
@@ -947,7 +962,7 @@ static void CtlRelease(int mode, DWORD bits)
 {
     if (!bits || mode < 0) return;
     if (mode == 0 || mode == CTL_MODE_LOCSEL) {
-        if (bits & XI_B) { InterlockedOr(&g_bEvents, 2); bits &= ~XI_B; }
+        InterlockedOr(&g_bEvents, 2);   /* CtlFrameStance releases the stance key if it sent one */
         for (DWORD b = 1; b <= CTL_XHOLD_BIT; b <<= 1)
             if ((bits & b) && CtlButtonKey(b)) CtlQueueKey(CtlButtonKey(b), 0);
     } else if (mode == CTL_MODE_PAUSE) {
@@ -1053,7 +1068,8 @@ static DWORD g_xDownAt;
  * tap crouch, hold prone). The input thread only records B's edges; IN_Frame decides, since the sprint test
  * reads cgame. */
 /* g_bEvents: declared with the input-thread state */
-static int g_bState;                /* 0 up, 1 BUTTON_B down sent, 2 dived */
+static int g_bState;                /* 0 up, 1 the stance key down sent, 2 dived */
+static volatile LONG g_bKey = 2;    /* the pad key bound to +stance (K_BUTTON_B by default) */
 
 static BOOL CtlSprinting(void)
 {
@@ -1066,19 +1082,20 @@ static BOOL CtlSprinting(void)
 static void CtlFrameStance(void)
 {
     LONG ev = InterlockedExchange(&g_bEvents, 0);
+    int key = (int)g_bKey;
     if (ev & 1) {
-        if (g_bState == 1) CtlQueueKey(K_BUTTON_B, 0);
+        if (g_bState == 1) CtlQueueKey(key, 0);
         if (C1DvarInt(g_gpDive, 1) && CtlSprinting()) {
-            CtlRunBinding(81 /* toggleprone */, K_BUTTON_B);
+            CtlRunBinding(81 /* toggleprone */, key);
             g_bState = 2;
-            CtlDebugf(1, "gamepad: B while sprinting -> dive (toggleprone)\n");
+            CtlDebugf(1, "gamepad: stance button while sprinting -> dive (toggleprone)\n");
         } else {
-            CtlQueueKey(K_BUTTON_B, 1);
+            CtlQueueKey(key, 1);
             g_bState = 1;
         }
     }
     if (ev & 2) {
-        if (g_bState == 1) CtlQueueKey(K_BUTTON_B, 0);
+        if (g_bState == 1) CtlQueueKey(key, 0);
         g_bState = 0;
     }
 }
@@ -1106,10 +1123,21 @@ static void CtlGameButtons(DWORD act)
         if (!xNow) g_xState = 0;
     }
     DWORD pressed = act & ~g_sent, released = g_sent & ~act;
-    if ((pressed | released) & XI_B) {   /* B goes through CtlFrameStance (dive while sprinting) */
-        InterlockedOr(&g_bEvents, (pressed & XI_B) ? 1 : 2);
-        pressed &= ~XI_B;
-        released &= ~XI_B;
+    {   /* the button bound to +stance goes through CtlFrameStance (dive while sprinting) */
+        static DWORD stanceBit = XI_B;
+        if (!(g_sent & stanceBit) && !(pressed & stanceBit)) {   /* re-pick only while it is up */
+            DWORD pick = 0;
+            for (DWORD bit = 1; bit <= 0x8000 && !pick; bit <<= 1) {
+                int key = CtlButtonKey(bit);
+                if (key && bit != XI_X && CtlKeyBinding(key) == 27 /* +stance */) { pick = bit; InterlockedExchange(&g_bKey, key); }
+            }
+            stanceBit = pick;
+        }
+        if (stanceBit && ((pressed | released) & stanceBit)) {
+            InterlockedOr(&g_bEvents, (pressed & stanceBit) ? 1 : 2);
+            pressed &= ~stanceBit;
+            released &= ~stanceBit;
+        }
     }
     for (DWORD bit = 1; (pressed | released) && bit <= 0x8000; bit <<= 1) {
         int key = CtlButtonKey(bit);
@@ -1181,6 +1209,24 @@ static void CtlEvaluate(void)
         if (down & (XI_A | CTL_RT_BIT)) InterlockedExchange(&g_locAction, 1);
         else if (down & XI_B) InterlockedExchange(&g_locAction, 2);
         CtlGameButtons(act & (XI_START | XI_BACK));
+        return;
+    }
+    if (mode == CTL_MODE_MENU && g_captureOn) {   /* Options > Controller: the next pad button is bound */
+        static DWORD xDown;
+        DWORD capPressed = act & ~g_sent & ~(CTL_LT_BIT | CTL_RT_BIT);
+        if (act & XI_X) { if (!xDown) xDown = GetTickCount(); }
+        if (xDown && GetTickCount() - xDown >= (DWORD)C1DvarInt(g_gpUseHold, 250) && (act & XI_X)) {
+            InterlockedExchange(&g_captureKey, K_BUTTON_X_HOLD);
+            xDown = 0;
+        } else if (xDown && !(act & XI_X)) {
+            InterlockedExchange(&g_captureKey, K_BUTTON_X);
+            xDown = 0;
+        } else if (capPressed & ~XI_X) {
+            for (DWORD bit = 1; bit <= 0x8000; bit <<= 1)
+                if ((capPressed & bit) && bit != XI_X && CtlButtonKey(bit)) { InterlockedExchange(&g_captureKey, CtlButtonKey(bit)); break; }
+        }
+        g_sent = act;
+        g_ignore = act;   /* nothing of this press reaches the menu, not even its release */
         return;
     }
     if (mode == CTL_MODE_TEXT) act &= XI_B | XI_START; /* console / chat line: only Escape */
@@ -1401,8 +1447,9 @@ static DWORD WINAPI CtlInputThread(LPVOID unused)
 
 static void CtlSampleSticks(void)
 {
-    CtlStick((SHORT)g_pubLX, (SHORT)g_pubLY, &g_lx, &g_ly);
-    CtlStick((SHORT)g_pubRX, (SHORT)g_pubRY, &g_rx, &g_ry);
+    BOOL swap = C1DvarInt(g_gpSwapSticks, 0) != 0;   /* southpaw */
+    CtlStick((SHORT)(swap ? g_pubRX : g_pubLX), (SHORT)(swap ? g_pubRY : g_pubLY), &g_lx, &g_ly);
+    CtlStick((SHORT)(swap ? g_pubLX : g_pubRX), (SHORT)(swap ? g_pubLY : g_pubRY), &g_rx, &g_ry);
 }
 
 /* ---- killstreak location selection (airstrike, precision strike, mortar, ...) ---------------------
@@ -1533,6 +1580,95 @@ static void CtlApplyPadNames(void)
 
 #include "controller_glyphs.c"
 
+/* ---- Options > Controller (voice_ui/OptionView.as) ------------------------------------------------
+ * Publishes k33_padinfo ("family|connected|name|forced") and k33_padbinds ("A=cmd;B=cmd;...;HOLDX=cmd")
+ * when they change, binds the next pad button to k33_padcapture's command (the input thread catches it in
+ * menu mode; the command's other pad buttons are unbound, one pad button per action) and unbinds
+ * k33_padclear's command. Both set gpad_binds_custom, which stops the bind repair. */
+static const char *CtlDvarStr(const BYTE *d)
+{
+    const char *v = d && Readable(d, 0x10) ? *(const char *const *)(d + 0xC) : NULL;
+    return v && Readable(v, 1) ? v : "";
+}
+
+static void CtlUnbindPadKeysOf(const char *cmd, char *out, int n, int *len)
+{
+    int idx = ((int(__cdecl *)(const char *))(DWORD_PTR)0x00492DB0u)(cmd);
+    if (!idx) return;
+    for (int i = 0; i < CTL_NBUTTONS; i++)
+        if (CtlKeyBinding(kCtlButtons[i].key) == idx && *len < n - 40)
+            *len += _snprintf(out + *len, n - *len, "unbind %s; ", kCtlButtons[i].name);
+}
+
+static void CtlFrameOptions(void)
+{
+    static DWORD lastPublish;
+    static char lastInfo[160], lastBinds[700], lastCapture[64];
+    static const char *const kTag[] = { "A", "B", "X", "Y", "LB", "RB", "START", "BACK", "LS", "RS", "UP", "DOWN", "LEFT", "RIGHT",
+                                        "LT", "RT", "HOLDX" };
+    DWORD now = GetTickCount();
+    if (!g_c1CbufOk || !g_k33PadInfo) return;
+    if (now - lastPublish > 250) {
+        char info[160], binds[700], cmd[900], name[96];
+        int n = 0;
+        lastPublish = now;
+        EnterCriticalSection(&g_ctlLock);
+        lstrcpynA(name, g_padName, sizeof(name));
+        LeaveCriticalSection(&g_ctlLock);
+        for (char *c = name; *c; c++) if (*c == '"' || *c == ';' || *c == '|' || (BYTE)*c >= 0x80) *c = ' ';
+        int g = C1DvarInt(g_gpGlyphs, 0);
+        _snprintf(info, sizeof(info), "%d|%d|%s|%d", CtlPadFamily(), (int)g_padConnected, g_padConnected ? name : "", g >= 1 && g <= 4);
+        for (int i = 0; i < CTL_NBUTTONS && i < (int)(sizeof(kTag) / sizeof(kTag[0])); i++) {
+            const char *b = CtlBindName(CtlKeyBinding(kCtlButtons[i].key));
+            n += _snprintf(binds + n, sizeof(binds) - n, "%s%s=%s", i ? ";" : "", kTag[i], CtlKeyBinding(kCtlButtons[i].key) && b ? b : "");
+            if (n >= (int)sizeof(binds) - 1) break;
+        }
+        if (strcmp(info, lastInfo)) {
+            lstrcpynA(lastInfo, info, sizeof(lastInfo));
+            _snprintf(cmd, sizeof(cmd), "set k33_padinfo \"%s\"\n", info);
+            C1CbufAddText(cmd);
+        }
+        if (strcmp(binds, lastBinds)) {
+            lstrcpynA(lastBinds, binds, sizeof(lastBinds));
+            _snprintf(cmd, sizeof(cmd), "set k33_padbinds \"%s\"\n", binds);
+            C1CbufAddText(cmd);
+        }
+    }
+    const char *want = CtlDvarStr(g_k33PadCapture);
+    if (strcmp(want, lastCapture)) {
+        lstrcpynA(lastCapture, want, sizeof(lastCapture));
+        InterlockedExchange(&g_captureKey, 0);
+        InterlockedExchange(&g_captureOn, want[0] != 0);
+        if (want[0]) Log("controller: Options > Controller: waiting for a pad button for \"%s\"", want);
+    }
+    LONG key = g_captureOn ? InterlockedExchange(&g_captureKey, 0) : 0;
+    if (key) {
+        char cmd[600];
+        int n = 0;
+        const char *keyName = NULL;
+        for (int i = 0; i < CTL_NBUTTONS; i++) if (kCtlButtons[i].key == key) keyName = kCtlButtons[i].name;
+        if (keyName) {
+            CtlUnbindPadKeysOf(lastCapture, cmd, sizeof(cmd), &n);
+            n += _snprintf(cmd + n, sizeof(cmd) - n, "bind %s \"%s\"; set gpad_binds_custom 1; set k33_padcapture \"\"\n", keyName, lastCapture);
+            C1CbufAddText(cmd);
+            Log("controller: Options > Controller: %s -> \"%s\"", keyName, lastCapture);
+        }
+        InterlockedExchange(&g_captureOn, 0);
+    }
+    static char lastClear[64];
+    const char *clr = CtlDvarStr(g_k33PadClear);
+    if (!clr[0]) lastClear[0] = 0;
+    else if (strcmp(clr, lastClear)) {
+        lstrcpynA(lastClear, clr, sizeof(lastClear));
+        char cmd[600];
+        int n = 0;
+        CtlUnbindPadKeysOf(clr, cmd, sizeof(cmd), &n);
+        _snprintf(cmd + n, sizeof(cmd) - n, "set gpad_binds_custom 1; set k33_padclear \"\"\n");
+        C1CbufAddText(cmd);
+        Log("controller: Options > Controller: cleared \"%s\"", clr);
+    }
+}
+
 /* Test clients only: "gpad_testmouse <dx> <dy> <ms>" feeds mouse counts into C1's own accumulator
  * (cl+0x3424/+0x342C, as IN_MouseMove's 0x48FD40 does), so CL_MouseMove turns the view exactly like a
  * mouse would. For the mixed-input aim-assist test. */
@@ -1558,6 +1694,7 @@ static void CtlFrameExtras(void)
     CtlApplyPadNames();
     CtlGlyphFrame();
     CtlFrameStance();
+    CtlFrameOptions();
     if (g_ksUpAt && (LONG)(now - g_ksUpAt) >= 0) { g_ksUpAt = 0; CtlRunBinding(g_ksUpIndex, K_DPAD_RIGHT); }
     int gpadInfo = g_lastDevice != 1 ? 0 : CtlKbmCooldownLeft() ? 2 : 1;
     if (g_gpUserinfo && g_c1CbufOk && (g_deviceChanged || gpadInfo != C1DvarInt(g_gpUserinfo, 0))) {  /* userinfo "gpad": at most once a second */
@@ -1617,6 +1754,7 @@ __attribute__((used)) void __cdecl ControllerFrame(void)
         if (t - started > 8000 && t - lastBindCheck > 2000 && applies < 10) {
             lastBindCheck = t;
             if (C1DvarInt(g_gpBindsVer, 0) < CTL_BINDS_VERSION) { applies++; CtlApplyDefaultBinds(CtlPadUnbound() ? 1 : 2); }
+            else if (C1DvarInt(g_gpCustom, 0)) { /* the player's own binds (Options > Controller): leave them */ }
             else if (CtlPadUnbound()) { applies++; CtlApplyDefaultBinds(0); }
             else if (CtlBindsLost()) { applies++; CtlApplyDefaultBinds(3); }
             /* look defaults v1 (2026-10-21): archived values still at the old defaults move to the new ones,
@@ -1961,7 +2099,8 @@ __attribute__((used)) void __cdecl ControllerMove(int lc, BYTE *cmd, float frame
     }
 
     /* ADS snap: the pad's LT going down turns onto the target nearest the crosshair over 0.25 s */
-    BOOL ltNow = (g_pubButtons & CTL_LT_BIT) != 0;
+    int rtBind = CtlKeyBinding(K_BUTTON_RTRIG);   /* triggers swapped: RT aims */
+    BOOL ltNow = (g_pubButtons & ((rtBind == 15 || rtBind == 61) ? CTL_RT_BIT : CTL_LT_BIT)) != 0;
     if (adsNow && !g_prevAds && ltNow && assist && C1DvarInt(g_gpAimSnap, 1)) g_snapUntil = now + 250;
     g_prevAds = adsNow;
     if (g_snapUntil && (!assist || !adsNow || (LONG)(now - g_snapUntil) >= 0)) g_snapUntil = 0;
@@ -2059,7 +2198,25 @@ static void __cdecl CtlCmdStatus(void)
     }
 }
 
-static void __cdecl CtlCmdDefaults(void) { CtlApplyDefaultBinds(1); }
+static void __cdecl CtlCmdDefaults(void)
+{
+    CtlApplyDefaultBinds(1);
+    C1CbufAddText("set gpad_binds_custom 0\n");
+}
+
+/* gpad_swaptriggers: swap what LT and RT do (their binds), so glyphs, hints and the ADS snap follow. */
+static void __cdecl CtlCmdSwapTriggers(void)
+{
+    char cmd[200];
+    const char *lt = CtlBindName(CtlKeyBinding(K_BUTTON_LTRIG)), *rt = CtlBindName(CtlKeyBinding(K_BUTTON_RTRIG));
+    char a[64], b2[64];
+    lstrcpynA(a, lt ? lt : "", sizeof(a));
+    lstrcpynA(b2, rt ? rt : "", sizeof(b2));
+    _snprintf(cmd, sizeof(cmd), "%s BUTTON_LTRIG \"%s\"; %s BUTTON_RTRIG \"%s\"; set gpad_binds_custom 1\n", b2[0] ? "bind" : "unbind", b2,
+              a[0] ? "bind" : "unbind", a);
+    C1CbufAddText(cmd);
+    Log("controller: triggers swapped: LT \"%s\", RT \"%s\"", b2, a);
+}
 
 /* Test: "gpad_sfkey <flash key code>" sends that key down and up to codo.gfx, as the pause-menu pad keys go. */
 static void __cdecl CtlCmdSfKey(void)
@@ -2123,6 +2280,7 @@ static C1Cmd g_ctlCmds[] = {
     { NULL, "gpad_notifytest", (void *)CtlCmdNotifyTest },
     { NULL, "gpad_looktest", (void *)CtlCmdLookTest },
     { NULL, "gpad_lookpreset", (void *)CtlCmdLookPreset },
+    { NULL, "gpad_swaptriggers", (void *)CtlCmdSwapTriggers },
     { NULL, "gpad_glyphtest", (void *)CtlCmdGlyphTest },
 };
 

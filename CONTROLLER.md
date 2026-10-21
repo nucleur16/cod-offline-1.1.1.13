@@ -375,3 +375,27 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
   - New defaults: deadzone 0.12, curve 1.7, pitch 120. A one-time migration (`gpad_look_version`) moves only archived values that still equal the old defaults.
   - Presets: `gpad_lookpreset snappy|classic|smooth`. Measurement: `gpad_looktest <rx> <ms>`.
 - **Dive:** B pressed while sprinting (cg+0x15C ≥ [0xC845B8] and pm_flags 0x4000, C1's own test) runs `toggleprone`. C1 turns that into stance state 3, usercmd 0x800000, which is the server's dive. Otherwise B stays BUTTON_B (+stance: tap crouch, hold prone). Controlled by `gpad_dive`.
+
+## 12. Options > Controller, microphone choice (2026-10-21)
+- **The tab:**
+  - `voice_ui/OptionView.as` is C1's `codo.views.OptionView`. Its hidden "Other" tab (`myTabOther`) is shown as 手柄 and opens a panel built in code.
+  - It is compiled by FFDec and spliced into the same codo.gfx in `voice_ui_mp.ff` (`build_voice_ui.py`), so there is still one UI zone.
+- **Page 手柄图示 (diagram):**
+  - A line-art diagram for the pad family (glyph family: Xbox 360 / PS3 / Wii U / generic), from `glyphs/make_diagrams.py` → `voice_ui/k33_pad_diagrams.as.inc`.
+  - Each button has a live callout with what it does, read from `k33_padbinds`.
+  - Settings rows: swap sticks (`gpad_swap_sticks`), swap triggers (`gpad_swaptriggers` swaps the two trigger binds), look feel (`gpad_lookpreset`), look sensitivity, invert Y, aim assist, deadzone, and dive with the crouch button (`gpad_dive`).
+  - With no pad, the generic diagram shows with 未连接手柄 ("no controller connected"); `gpad_glyphs 1..4` forces a family.
+  - Scaleform note: drawCircle / drawRoundRect stroke a line from the pen to their start, so the pen is moved first.
+- **Page 按键设置 (bindings):**
+  - Click an action, then press a pad button. The tab sets `k33_padcapture`; `controller.c` catches the next pad button in menu mode, binds it, unbinds the action's other pad buttons, and sets `gpad_binds_custom 1`.
+  - `gpad_binds_custom 1` stops the bind repair and the "no pad key bound" defaults.
+  - Hold X binds BUTTON_X_HOLD. Triggers and sticks are not bindable.
+  - 清除所选 clears an action (`k33_padclear`). 恢复默认 runs `gpad_defaultbinds`, which also resets `gpad_binds_custom`.
+  - The dive follows whichever pad button is bound to +stance.
+- **Published state:** `k33_padinfo` ("family|connected|name|forced") and `k33_padbinds` ("A=cmd;...;HOLDX=cmd").
+- **Microphone (Options > Audio > 语音, 输入设备):**
+  - `voice.c` lists the active capture endpoints and their friendly names (GBK, code page 936).
+  - It publishes `k33_voiceInputList` ("Default;name;...") and `k33_voiceInputIndex`, and turns the dropdown's pick (`k33_voiceInputPick`) into the archived `k33_voiceInputDevice` (endpoint ID; empty = the Windows default communications device).
+  - Capture reopens on the chosen device right away.
+  - A missing device falls back to the default (logged) and is taken again when IMMNotificationClient reports it back.
+- **Test clients:** a test client with a `k33patch\` folder next to its exe loads its patch zones from there, so a UI build can be tried while the shared `client_shipRetail\patch\` is in use.

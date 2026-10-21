@@ -38,6 +38,10 @@ k33_voiceLevel. That is not a same-length edit, so JPEXS FFDec (ffdec-cli, $CODO
 class into a copy of codo.gfx, and only that class's DoABC tag is taken from FFDec's output and spliced
 into the original file; every other tag is checked to be byte-identical.
 
+Options > Controller: voice_ui/OptionView.as is codo.views.OptionView with C1's hidden "Other" tab shown
+as the controller tab (diagram, rebinding, pad settings; see the file's header); its diagram data comes from
+glyphs/make_diagrams.py (voice_ui/k33_pad_diagrams.as.inc).
+
 Options > Graphics: voice_ui/OptionView_video.as is codo.views.option_sub.OptionView_video with C1's
 hidden Aspect Ratio row turned into "Max FPS" (Unlimited / 30 ... 500 -> "1848", com_maxfps, whose
 domain Kernel33 raises to 0..1000), set when Apply is pressed. It is compiled and spliced the same way.
@@ -64,7 +68,10 @@ FFDEC = os.environ.get("CODOL_FFDEC", r"C:\Program Files (x86)\FFDec\ffdec-cli.e
 VIEW_CLASSES = [
     ("codo.views.option_sub.OptionView_audio", os.path.join(HERE, "voice_ui", "OptionView_audio.as")),
     ("codo.views.option_sub.OptionView_video", os.path.join(HERE, "voice_ui", "OptionView_video.as")),
+    ("codo.views.OptionView", os.path.join(HERE, "voice_ui", "OptionView.as")),
 ]
+# "// @K33DIAGRAMS@" in a class source is replaced by this generated file (glyphs/make_diagrams.py)
+DIAGRAMS_INC = os.path.join(HERE, "voice_ui", "k33_pad_diagrams.as.inc")
 
 for _p in (ALPHA, os.path.join(ALPHA, "zones"), TOOLS, os.path.join(TOOLS, "codol_english")):
     if _p not in sys.path:
@@ -120,6 +127,12 @@ def splice_view(data, cls, src_as):
         src, dst = os.path.join(tmp, "in.gfx"), os.path.join(tmp, "out.gfx")
         with open(src, "wb") as f:
             f.write(data)
+        text = open(src_as, encoding="utf-8").read()
+        if "// @K33DIAGRAMS@" in text:
+            text = text.replace("// @K33DIAGRAMS@", open(DIAGRAMS_INC, encoding="utf-8").read())
+            src_as = os.path.join(tmp, os.path.basename(src_as))
+            with open(src_as, "w", encoding="utf-8", newline="") as f:
+                f.write(text)
         r = subprocess.run([FFDEC, "-replace", src, dst, cls, src_as], capture_output=True, text=True)
         if r.returncode or not os.path.isfile(dst):
             raise SystemExit("FFDec could not compile %s:\n%s%s" % (src_as, r.stdout, r.stderr))

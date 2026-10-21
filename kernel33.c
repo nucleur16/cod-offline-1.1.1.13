@@ -612,7 +612,22 @@ static void LoadPatchDir(void)
     DWORD n = GetModuleFileNameA(NULL, dir, MAX_PATH);
     while (n && dir[n - 1] != '\\') n--;
     lstrcpynA(dir + n, "client_shipRetail\\", MAX_PATH - n);
-    _snprintf(pattern, sizeof(pattern), "%s%s*.ff", dir, sub);
+    char pdir[MAX_PATH];   /* where the patch files are: client_shipRetail\patch\ */
+    _snprintf(pdir, sizeof(pdir), "%s%s", dir, sub);
+    pdir[sizeof(pdir) - 1] = 0;
+    {   /* test clients ("+set k33_cmdFile 1") with a k33patch\ folder next to the exe load that one instead,
+         * so a UI build can be tried while the shared client_shipRetail\patch\ is in use */
+        const char *cl = GetCommandLineA();
+        char test[MAX_PATH];
+        memcpy(test, dir, n);
+        lstrcpynA(test + n, "k33patch\\", MAX_PATH - n);
+        DWORD at = GetFileAttributesA(test);
+        if (cl && strstr(cl, "k33_cmdFile 1") && at != INVALID_FILE_ATTRIBUTES && (at & FILE_ATTRIBUTE_DIRECTORY)) {
+            lstrcpynA(pdir, test, sizeof(pdir));
+            Log("patch folder: test client: using %s", pdir);
+        }
+    }
+    _snprintf(pattern, sizeof(pattern), "%s*.ff", pdir);
     pattern[sizeof(pattern) - 1] = 0;
 
     static char files[64][MAX_PATH];
@@ -620,7 +635,7 @@ static void LoadPatchDir(void)
     WIN32_FIND_DATAA fd;
     HANDLE h = FindFirstFileA(pattern, &fd);
     if (h == INVALID_HANDLE_VALUE) {
-        Log("patch folder: no .ff files in %s%s", dir, sub);
+        Log("patch folder: no .ff files in %s", pdir);
         return;
     }
     do {
@@ -654,7 +669,7 @@ static void LoadPatchDir(void)
             continue;
         }
 
-        _snprintf(z->path, sizeof(z->path), "%s%s%s", dir, sub, file);
+        _snprintf(z->path, sizeof(z->path), "%s%s", pdir, file);
         z->ui = PatchZoneIsUi(z->name);
         z->path[sizeof(z->path) - 1] = 0;
         HANDLE f = CreateFileA(z->path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
