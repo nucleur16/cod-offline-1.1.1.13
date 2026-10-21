@@ -2052,6 +2052,7 @@ qb_random_weapon_starburst_result( position )
 	weapon_model = spawn( "script_model", position );
 	weapon_model.angles = start_yaw;
 	weapon_model setModel( getWeaponModel( weapon ) );
+	weapon_model useWeaponHideTags( weapon );
 
 	weapon_model moveTo( base_pos, 1, 0.25, 0.25 );
 	weapon_model waittill( "movedone" );

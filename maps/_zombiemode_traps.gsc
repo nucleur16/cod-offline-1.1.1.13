@@ -60,8 +60,11 @@ init()
 {
 	level.zombie_trap_killed_count = 0;
 	level.zm_map_traps = [];
-	level.elec_trap_time = 40;
-	level.elec_trap_cooldown_time = 60;
+	// A map may set its own before levelMain (zm_sumpf_sh: T5 Shi No Numa 25 / 90).
+	if ( !isDefined( level.elec_trap_time ) )
+		level.elec_trap_time = 40;
+	if ( !isDefined( level.elec_trap_cooldown_time ) )
+		level.elec_trap_cooldown_time = 60;
 
 	// Developer-only test verbs (scr_codol_powertest); returns at once on
 	// a production server.

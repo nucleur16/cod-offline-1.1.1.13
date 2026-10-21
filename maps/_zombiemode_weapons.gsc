@@ -205,14 +205,23 @@ init_weapons()
 
 	// Rifles
 	add_zombie_weapon( "m14ebr_zm",					"m14ebr_upgraded_zm",				"M14 EBR",			500,	250 );
-	add_zombie_weapon( "m16_zm",					"gl_m16_upgraded_zm",				"M16",				1200,	600 );
+	// MEASURED (zone weapon defs, common_gametype_zm): the rifle half of each
+	// upgraded under-barrel pair is the one to hand out.  gl_m16_upgraded_zm is
+	// the M203 launcher (rumble damage_heavy, projectile_m203grenade; its
+	// altWeapon +0xB78 is m16_gl_upgraded_zm) and mk_scar_h_upgraded_zm is the
+	// Masterkey shotgun (rumble shotgun_fire; altWeapon
+	// scar_h_eotech_mk_upgraded_zm).  Pack-a-Punch used to hand those, so the
+	// player held a launcher / shotgun where the M16 / SCAR-H should be.  The
+	// rifle defs name the launcher / shotgun as their altWeapon, as T5's
+	// m16_gl_upgraded_zm does.  The upgrade still reaches the alt mode.
+	add_zombie_weapon( "m16_zm",					"m16_gl_upgraded_zm",				"M16",				1200,	600 );
 	add_zombie_weapon( "famas_zm",					"famas_upgraded_zm",				"FAMAS",			1200,	600 );
 	add_zombie_weapon( "fal_zm",					"fal_upgraded_zm",					"FAL",				1200,	600 );
 	add_zombie_weapon( "ak104_zm",					"ak104_upgraded_zm",				"AK-104",			1200,	600 );
 	add_zombie_weapon( "aug_eotech_zm",				"aug_eotech_upgraded_zm",			"AUG",				1200,	600 );
 	add_zombie_weapon( "tavor_zm",					"tavor_upgraded_zm",				"Tavor",			1200,	600 );
 	add_zombie_weapon( "m4a1tech_zm",				"m4a1tech_upgraded_zm",				"M4A1",				1200,	600 );
-	add_zombie_weapon( "scar_h_eotech_zm",			"mk_scar_h_upgraded_zm",			"SCAR-H",			1200,	600 );
+	add_zombie_weapon( "scar_h_eotech_zm",			"scar_h_eotech_mk_upgraded_zm",	"SCAR-H",			1200,	600 );
 
 	// Sniper rifles
 	add_zombie_weapon( "cheytac_zm",				"cheytac_upgraded_zm",				"CheyTac",			2500,	1250 );
@@ -598,6 +607,8 @@ treasure_chest_init()
 			level.chests[ i ].zombie_cost = 950;
 	}
 
+	box_marker_init();
+
 	flag_init( "moving_chest_enabled" );
 	flag_init( "moving_chest_now" );
 
@@ -619,6 +630,7 @@ treasure_chest_init()
 		// shipped single-box maps) belongs hidden while the box is there.
 		level.chests[ 0 ] hide_rubble();
 		level.chests[ 0 ].hidden = false;
+		level.chests[ 0 ] thread box_marker_on();
 	}
 
 	array_thread_1( level.chests, ::treasure_chest_think );
@@ -655,6 +667,92 @@ init_starting_chest_location()
 
 	level.chests[ level.chest_index ] hide_rubble();
 	level.chests[ level.chest_index ].hidden = false;
+	level.chests[ level.chest_index ] thread box_marker_on();
+}
+
+// THE BOX BEACON.  T5 :703 default_pandora_fx_func / :716
+// default_pandora_show_func: a tag_origin at the box's chest_origin, pitched
+// -90, carries the looping column of light ("lght_marker") while the box is
+// at that spot, and "lght_marker_flare" flashes half a second after the box
+// appears there.  Each map plays the marker its own zones ship (MEASURED):
+// zm_sumpf_sh fx_zombie_lght_marker(_flare) -- T5 Shi No Numa's own --,
+// zm_asylum_sh fx_zombie_factory_marker(_fl), and every other map the
+// fx_zombie_coast_marker(_fl) pair common_gametype_zm carries.  Not on
+// zm_prototype_sh, by the user's call (T5 Nacht has a single fixed box).
+box_marker_init()
+{
+	level.zm_box_marker = false;
+
+	map = getDvar( "mapname" );
+	if ( map == "zm_prototype_sh" )
+		return;
+
+	if ( map == "zm_sumpf_sh" )
+	{
+		marker = "maps/zombie/fx_zombie_lght_marker";
+		flare = "maps/zombie/fx_zombie_lght_marker_flare";
+	}
+	else if ( map == "zm_asylum_sh" )
+	{
+		marker = "maps/zombie/fx_zombie_factory_marker";
+		flare = "maps/zombie/fx_zombie_factory_marker_fl";
+	}
+	else
+	{
+		marker = "maps/zombie/fx_zombie_coast_marker";
+		flare = "maps/zombie/fx_zombie_coast_marker_fl";
+	}
+
+	precacheModel( "tag_origin" );
+	level._effect[ "lght_marker" ] = loadfx( marker );
+	level._effect[ "lght_marker_flare" ] = loadfx( flare );
+	level.zm_box_marker = true;
+	codolprintln( "CoDOL zm box: beacon " + marker + " on " + map );
+}
+
+// self = a box use trigger.  T5 :716 (the objective icon is not taken).
+box_marker_on()
+{
+	if ( !is_true( level.zm_box_marker ) || isDefined( self.pandora_light ) )
+		return;
+
+	origin = self.origin;
+	angles = ( 0, 0, 0 );
+	if ( isDefined( self.chest_origin ) )
+	{
+		origin = self.chest_origin.origin;
+		if ( isDefined( self.chest_origin.angles ) )
+			angles = self.chest_origin.angles;
+	}
+	else if ( isDefined( self.chest_lid ) )
+		origin = self.chest_lid.origin;
+
+	light = spawn( "script_model", origin );
+	light.angles = angles + ( -90, 0, 0 );
+	light setModel( "tag_origin" );
+	self.pandora_light = light;
+	wait_network_frame();
+	if ( !isDefined( light ) )
+		return;
+	playFxOnTag( level._effect[ "lght_marker" ], light, "tag_origin" );
+
+	wait( 0.5 );
+	if ( isDefined( light ) )
+		playFx( level._effect[ "lght_marker_flare" ], light.origin );
+}
+
+// self = a box use trigger.  The looping column is stopped explicitly, a
+// network frame passes so the stop reaches every client, then the carrier
+// goes (as the tesla arc carrier does).
+box_marker_off()
+{
+	if ( !isDefined( self.pandora_light ) )
+		return;
+	light = self.pandora_light;
+	self.pandora_light = undefined;
+	stopFxOnTag( level._effect[ "lght_marker" ], light, "tag_origin" );
+	wait_network_frame();
+	light delete();
 }
 
 // T5 :902,:921.  Rubble is what is visible where the box is not.
@@ -690,10 +788,12 @@ show_chest()
 		playSoundAtPosition( "zmb_couch_slam", self.chest_lid.origin );
 
 	self.hidden = false;
+	self thread box_marker_on();
 }
 
 hide_chest()
 {
+	self thread box_marker_off();
 	self disable_trigger();
 	if ( isDefined( self.chest_lid ) )
 		self.chest_lid hide();
@@ -1044,7 +1144,13 @@ treasure_chest_weapon_spawn( player )
 
 		modelname = getWeaponModel( rand );
 		if ( isDefined( modelname ) && modelname != "" )
+		{
+			// T5 :2026 useweaponhidetags: the attachments the weapon does not
+			// carry stay hidden; the previous spin's mask is cleared first.
 			self.weapon_model setModel( modelname );
+			self.weapon_model showAllParts();
+			self.weapon_model useWeaponHideTags( rand );
+		}
 
 		if ( i + 1 == number_cycles )
 		{

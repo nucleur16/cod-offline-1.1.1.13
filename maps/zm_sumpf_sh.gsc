@@ -75,6 +75,9 @@ main()
 	// Before any wait: this is the level script's precache window.
 	sumpf_precache();
 
+	// T5 Shi No Numa purchase values (before levelMain, whose modules read them).
+	sumpf_t5_values();
+
 	maps\_zombiemode::levelMain( "zm_sumpf_sh" );
 
 	// T5 zombie_cod5_sumpf.gsc init_sounds: the hut doors' script_sound.
@@ -238,8 +241,8 @@ sumpf_point( s )
 // instead of its single master switch.
 //
 // PACK-A-PUNCH (zombie_vending_upgrade in the centre building, no hut of its
-// own) comes on with the FIRST hut powered; nothing in the edit ties it to a
-// particular switch.  The first hut also sets the map-wide "power_on" flag,
+// own) comes on once ALL FOUR huts are powered (the user's rule for this map;
+// nothing in the edit ties it to a switch).  The first hut sets the map-wide "power_on" flag,
 // which on this map gates nothing per-hut (every machine and trap carries its
 // own flag); it keeps "the power is on somewhere" meaning what it means on
 // the other maps.
@@ -365,10 +368,24 @@ sumpf_hut_switch_think()
 		// _zombiemode_power::wait_for_power's notifies for the first power.
 		level notify( "switch_flipped" );
 		wait_network_frame();
-		level notify( "Pack_A_Punch_on" );
 		level notify( "master_switch_activated" );
-		codolprintln( "CoDOL zm sumpf: first hut powered; Pack-a-Punch on" );
+		codolprintln( "CoDOL zm sumpf: first hut powered" );
 	}
+
+	// Pack-a-Punch waits for every hut (the user's rule for this map).
+	powered = 0;
+	for ( i = 0; i < level.sumpf_huts.size; i++ )
+	{
+		if ( flag( level.sumpf_huts[ i ].flag_name ) )
+			powered++;
+	}
+	if ( powered == level.sumpf_huts.size )
+	{
+		level notify( "Pack_A_Punch_on" );
+		codolprintln( "CoDOL zm sumpf: all " + powered + " huts powered; Pack-a-Punch on" );
+	}
+	else
+		codolprintln( "CoDOL zm sumpf: " + powered + " of " + level.sumpf_huts.size + " huts powered" );
 }
 
 // --------------------------------------------------------------------------
@@ -396,4 +413,41 @@ sumpf_book_useage()
 		maniac_l playSound( "maniac_l" );
 	if ( isDefined( maniac_r ) )
 		maniac_r playSound( "maniac_r" );
+}
+
+// --------------------------------------------------------------------------
+// T5 Shi No Numa values.  The ported map entities carry CODOL 3.3.3.3's
+// costs (mystery box 1000, hut doors 1000), which differ from T5's own
+// zombie_cod5_sumpf entities (MEASURED from Black Ops zombie_cod5_sumpf.ff's
+// entity string): every treasure_chest_use 950, the four hut doors
+// (script_flag *_building_unlocked) 750.  T5 zombie_cod5_sumpf_trap_perk_electric
+// runs the hut electric traps for 25 s (electric_trap_fx) and re-arms them
+// after 90 s (cost 1000, unchanged here).  950 also gives the box its
+// ZOMBIE_RANDOM_WEAPON_950 hint; 1000 had no box hint and fell back to
+// the generic "buy weapon" text.
+// --------------------------------------------------------------------------
+sumpf_t5_values()
+{
+	chests = getEntArray( "treasure_chest_use", "targetname" );
+	for ( i = 0; i < chests.size; i++ )
+		chests[ i ].zombie_cost = 950;
+
+	doors = getEntArray( "zombie_door", "targetname" );
+	hut_doors = 0;
+	for ( i = 0; i < doors.size; i++ )
+	{
+		flag = doors[ i ].script_flag;
+		if ( isDefined( flag ) && ( flag == "northwest_building_unlocked" || flag == "northeast_building_unlocked" ||
+			flag == "southwest_building_unlocked" || flag == "southeast_building_unlocked" ) )
+		{
+			doors[ i ].zombie_cost = 750;
+			hut_doors++;
+		}
+	}
+
+	level.elec_trap_time = 25;
+	level.elec_trap_cooldown_time = 90;
+
+	codolprintln( "CoDOL zm sumpf: T5 values: " + chests.size + " mystery box spot(s) at 950, " + hut_doors +
+		" hut door(s) at 750, electric traps 25 s / 90 s cooldown" );
 }

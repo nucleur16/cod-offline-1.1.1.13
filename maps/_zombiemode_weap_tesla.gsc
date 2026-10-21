@@ -109,6 +109,17 @@ init()
 	set_zombie_var( "tesla_min_fx_distance",     128 );
 	set_zombie_var( "tesla_network_death_choke", 4 );
 
+	// T5 clientscripts\_zombiemode_weap_tesla.csc :17, the viewmodel effects
+	// (bulbs and rail); all eight ship in common_gametype_zm.
+	level._effect[ "tesla_viewmodel_rail" ]           = loadfx( "maps/zombie/fx_zombie_tesla_rail_view" );
+	level._effect[ "tesla_viewmodel_tube" ]           = loadfx( "maps/zombie/fx_zombie_tesla_tube_view" );
+	level._effect[ "tesla_viewmodel_tube2" ]          = loadfx( "maps/zombie/fx_zombie_tesla_tube_view2" );
+	level._effect[ "tesla_viewmodel_tube3" ]          = loadfx( "maps/zombie/fx_zombie_tesla_tube_view3" );
+	level._effect[ "tesla_viewmodel_rail_upgraded" ]  = loadfx( "maps/zombie/fx_zombie_tesla_rail_view_ug" );
+	level._effect[ "tesla_viewmodel_tube_upgraded" ]  = loadfx( "maps/zombie/fx_zombie_tesla_tube_view_ug" );
+	level._effect[ "tesla_viewmodel_tube2_upgraded" ] = loadfx( "maps/zombie/fx_zombie_tesla_tube_view2_ug" );
+	level._effect[ "tesla_viewmodel_tube3_upgraded" ] = loadfx( "maps/zombie/fx_zombie_tesla_tube_view3_ug" );
+
 	level.zm_tesla_ok = true;
 	level thread on_player_connect();
 }
@@ -464,6 +475,110 @@ on_player_connect()
 	{
 		level waittill( "connected", player );
 		player thread tesla_network_choke();
+		player thread tesla_viewmodel_fx_tube();
+		player thread tesla_viewmodel_fx_rail();
+		player thread tesla_viewmodel_fx_grenade_watch();
+	}
+}
+
+// VIEWMODEL EFFECTS.  T5 plays the bulb glow and the rail spark from its
+// client script (clientscripts\_zombiemode_weap_tesla.csc tesla_fx_tube :92,
+// tesla_fx_rail :46) with PlayViewmodelFx.  C1 has no client scripts; its
+// counterpart is the server player method PlayViewModelFXOnTag (C1 544ff0,
+// event 92 to that player only), which this server registers as
+// playViewModelFxOnTag.  The loops below are T5's, run per player here:
+//   * tube: every 0.1 s, the bulb effect on tag_brass, three/two/one lit by
+//     the clip (T5 :123-153); the effect lives 300 ms, so it stays lit.
+//   * rail: every 8-12 s, the rail spark on tag_flash and wpn_tesla_effects,
+//     not while aiming down the sights (T5 :46-89).
+// Differences, each forced by what this server can see:
+//   * T5 pauses both from the first-raise notetrack until the switch-flip one
+//     (tesla_notetrack_think :160).  Viewmodel notetracks never reach the
+//     server, so the bulbs light as soon as the gun is out.
+//   * IsThrowingGrenade / IsMeleeing are client queries with no server
+//     builtin here; a grenade throw is tracked from grenade_pullback /
+//     grenade_fire instead, and melee is not checked.
+//   * tesla_happy's "TGH" pause of the rail is not taken: its notify comes
+//     from tesla_killstreak_sound, which this port does not carry.
+tesla_viewmodel_weapon()
+{
+	weapon = self getCurrentWeapon();
+	if ( !isDefined( weapon ) || ( weapon != "tesla_gun_zm" && weapon != "tesla_gun_upgraded_zm" ) )
+		return undefined;
+	if ( is_true( self.zm_tesla_throwing ) )
+		return undefined;
+	if ( self getWeaponAmmoClip( weapon ) <= 0 )
+		return undefined;
+	return weapon;
+}
+
+tesla_viewmodel_fx_tube()
+{
+	self endon( "disconnect" );
+
+	for ( ;; )
+	{
+		wait( 0.1 );
+
+		weapon = self tesla_viewmodel_weapon();
+		if ( !isDefined( weapon ) )
+			continue;
+
+		ammo = self getWeaponAmmoClip( weapon );
+		if ( weapon == "tesla_gun_upgraded_zm" )
+		{
+			if ( ammo == 3 || ammo == 4 )
+				fx = level._effect[ "tesla_viewmodel_tube2_upgraded" ];
+			else if ( ammo == 1 || ammo == 2 )
+				fx = level._effect[ "tesla_viewmodel_tube3_upgraded" ];
+			else
+				fx = level._effect[ "tesla_viewmodel_tube_upgraded" ];
+		}
+		else
+		{
+			if ( ammo == 1 )
+				fx = level._effect[ "tesla_viewmodel_tube3" ];
+			else if ( ammo == 2 )
+				fx = level._effect[ "tesla_viewmodel_tube2" ];
+			else
+				fx = level._effect[ "tesla_viewmodel_tube" ];
+		}
+
+		self playViewModelFxOnTag( fx, "tag_brass" );
+	}
+}
+
+tesla_viewmodel_fx_rail()
+{
+	self endon( "disconnect" );
+
+	for ( ;; )
+	{
+		wait( randomFloatRange( 8, 12 ) );
+
+		weapon = self tesla_viewmodel_weapon();
+		if ( !isDefined( weapon ) || self playerADS() > 0 )
+			continue;
+
+		fx = level._effect[ "tesla_viewmodel_rail" ];
+		if ( weapon == "tesla_gun_upgraded_zm" )
+			fx = level._effect[ "tesla_viewmodel_rail_upgraded" ];
+
+		self playViewModelFxOnTag( fx, "tag_flash" );
+		self playLocalSound( "wpn_tesla_effects" );
+	}
+}
+
+tesla_viewmodel_fx_grenade_watch()
+{
+	self endon( "disconnect" );
+
+	for ( ;; )
+	{
+		self waittill( "grenade_pullback" );
+		self.zm_tesla_throwing = true;
+		self common_scripts\utility::waittill_any( "grenade_fire", "death", "weapon_change" );
+		self.zm_tesla_throwing = false;
 	}
 }
 
