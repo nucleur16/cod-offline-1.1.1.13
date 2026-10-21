@@ -245,10 +245,16 @@ work), which fails C1's client pure check (0x617FA0, "WIN_FILE_CORRUPT") on ever
   0x34 each, count +0xE34, view origin / angles +0xD0 / +0xDC). Slowdown 0.4 hip / 0.5 ADS in a 90x90 box,
   lock-on 0.6 (needs pad input past 0.05), ADS snap over 0.25 s in a 160x120 box (IW4 console values from
   iw4mp AimAssist_RegisterDvars). Applied to the right stick's own delta after C1's CL_MouseMove; off unless
-  the pad is the last-used device and the mouse has not moved for 1.5 s. C1's mouse-path helper 0x4020D0 is
+  the pad is the last-used device and no keyboard / mouse cooldown runs: any in-game key, mouse button,
+  mouse turn past the device threshold (0.5 deg in 300 ms) or pointer move in a match turns assist off for
+  `gpad_aimassist_kbm_cooldown` seconds (default and minimum 20, may only be raised), restarted by every new
+  use and kept even if the pad is used meanwhile. Keys and buttons count only in game mode (not menus, chat,
+  console, front end); Kernel33's own posted keys and clicks never count. `gpad_status` prints the state
+  ("aim assist off, KBM cooldown 14 s"). C1's mouse-path helper 0x4020D0 is
   IW4 PC's melee lunge, unchanged and no aim assist. `gpad_aimassist` (0..1), `gpad_aimassist_range`,
   `gpad_aimassist_snap`.
-- **Server visibility**: userinfo dvar `gpad` (flag 0x200) is 1 while the pad is the last-used input.
+- **Server visibility**: userinfo dvar `gpad` (flag 0x200): 0 keyboard / mouse, 1 pad with aim assist,
+  2 pad during the keyboard / mouse cooldown (no assist).
 - Test-only: `gpad_testmouse <dx> <dy> <ms>` (mouse counts into C1's accumulator), `gpad_aadump`,
   `gpad_sfkey <code> [hud]` (one key code straight to a movie).
 

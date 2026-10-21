@@ -136,7 +136,7 @@ static CtlKeyName g_ctlKeyNames[160], g_ctlKeyNamesLoc[160];
 static BOOL g_ctlOn, g_ctlKeysOk, g_ctlMoveOk, g_ctlDvarsDone;
 static const BYTE *g_gpEnabled, *g_gpDzMin, *g_gpDzMax, *g_gpSens, *g_gpInvert, *g_gpBtnDz, *g_gpYaw, *g_gpPitch,
     *g_gpYawAds, *g_gpPitchAds, *g_gpCurve, *g_gpAccel, *g_gpCursor, *g_gpDebug, *g_gpUseHold, *g_gpAim,
-    *g_gpAimRange, *g_gpAimSnap, *g_gpGlyphs, *g_gpBindsVer, *g_gpUserinfo;
+    *g_gpAimRange, *g_gpAimSnap, *g_gpGlyphs, *g_gpBindsVer, *g_gpUserinfo, *g_gpKbmCooldown;
 static volatile LONG g_padType;            /* 0 Xbox (and XInput), 1 PlayStation, 2 Nintendo, 3 other */
 static int g_locBase = -1;                 /* first pad entry in g_ctlKeyNamesLoc */
 
@@ -203,7 +203,10 @@ static void CtlRegisterDvars(void)
     g_gpGlyphs = C1RegisterInt("gpad_glyphs", 0, 0, 5, 0x1,
                                "Pad button icons in hints and prompts: 0 by pad type, 1 Xbox 360, 2 PS3, 3 Wii U, 4 generic, 5 text names only");
     g_gpBindsVer = C1RegisterInt("gpad_binds_version", 0, 0, 1000, 0x1, "Default pad binds last applied (read only)");
-    g_gpUserinfo = C1RegisterInt("gpad", 0, 0, 1, 0x200, "1 while a gamepad is the last-used input (userinfo, visible to the server)");
+    g_gpUserinfo = C1RegisterInt("gpad", 0, 0, 2, 0x200,
+                                 "Userinfo, visible to the server: 0 keyboard / mouse, 1 gamepad with aim assist, 2 gamepad in the keyboard/mouse cooldown (no assist)");
+    g_gpKbmCooldown = CtlRegisterFloat("gpad_aimassist_kbm_cooldown", 20.0f, 20.0f, 600.0f, 0x1,
+                                       "Seconds without aim assist after any in-game keyboard / mouse use (20 minimum; may be raised, not lowered)");
     ((const BYTE *(__cdecl *)(const char *, const char *, unsigned, const char *))(DWORD_PTR)0x00624740u)(
         "k33nav", "", 0, "Pause-menu navigator: its last decision (voice_ui/StageKeyController.as, read with gpad_debug)");
 }
@@ -213,6 +216,7 @@ static void CtlRegisterDvars(void)
 static volatile LONG g_lastDevice;
 static volatile DWORD g_lastMouseMs, g_lastPadMs, g_selfPostMs;
 static volatile LONG g_deviceChanged;
+static volatile DWORD g_kbmUseMs;   /* last in-game keyboard / mouse use, 0 = none yet (aim-assist cooldown) */
 static void CtlSetDevice(int pad)
 {
     if (g_lastDevice == pad) return;
@@ -445,6 +449,40 @@ __asm__(
     "    pushl %edi\n"
     "    jmp *_g_ctlQueEventResume\n");
 
+/* ---- aim assist: keyboard / mouse cooldown ----------------------------------------------------------
+ * Any in-game keyboard or mouse use (a key, a mouse button, the mouse turning the view past the device
+ * threshold, or the pointer moving while in a match) turns aim assist off for gpad_aimassist_kbm_cooldown
+ * seconds (20 minimum), and every new use restarts it, even if the pad is used in between. In-game means
+ * connected and in game mode (no menu, chat or console) for keys and buttons; mouse movement in a match
+ * always counts. Kernel33's own posted keys and clicks do not count. */
+static int CtlMode(void);
+static BOOL CtlInMatch(void) { return *(volatile const int *)(DWORD_PTR)CTL_CONNSTATE_VA == CTL_CA_ACTIVE; }
+
+static DWORD CtlKbmCooldownMs(void)
+{
+    float sec = CtlDvarFloat(g_gpKbmCooldown, 20.0f);
+    if (!(sec >= 20.0f)) sec = 20.0f;   /* also NaN */
+    if (sec > 600.0f) sec = 600.0f;
+    return (DWORD)(sec * 1000.0f);
+}
+
+/* ms of cooldown left, 0 = none */
+static DWORD CtlKbmCooldownLeft(void)
+{
+    DWORD at = g_kbmUseMs, cd = CtlKbmCooldownMs();
+    if (!at) return 0;
+    DWORD since = GetTickCount() - at;
+    return since < cd ? cd - since : 0;
+}
+
+static void CtlNoteKbm(BOOL movement)
+{
+    if (!CtlInMatch()) return;
+    if (!movement && CtlMode() != 0) return;   /* CTL_MODE_GAME */
+    DWORD now = GetTickCount();
+    g_kbmUseMs = now ? now : 1;
+}
+
 /* Every input event C1 queues (window thread and the pad thread): a keyboard key or mouse button makes
  * keyboard / mouse the last-used device. The pad's own keys, and keys Kernel33 posts for the pad
  * (Escape, the pause-menu keys, menu clicks) within 150 ms, do not. */
@@ -453,6 +491,7 @@ __attribute__((used)) void __cdecl CtlNoteEvent(int type, int value, int down)
     if (type != CTL_SE_KEY || !down || CtlIsPadKey(value)) return;
     if (GetTickCount() - g_selfPostMs < 150) return;
     if (value >= 200 && value <= 206) g_lastMouseMs = GetTickCount();   /* MOUSE1..5, wheel */
+    CtlNoteKbm(FALSE);
     CtlSetDevice(0);
 }
 
@@ -1239,13 +1278,14 @@ static void CtlFrameExtras(void)
     CtlApplyPadNames();
     CtlGlyphFrame();
     if (g_ksUpAt && (LONG)(now - g_ksUpAt) >= 0) { g_ksUpAt = 0; CtlRunBinding(g_ksUpIndex, K_DPAD_RIGHT); }
-    if (g_deviceChanged && g_gpUserinfo && g_c1CbufOk) {  /* userinfo "gpad": at most once a second */
+    int gpadInfo = g_lastDevice != 1 ? 0 : CtlKbmCooldownLeft() ? 2 : 1;
+    if (g_gpUserinfo && g_c1CbufOk && (g_deviceChanged || gpadInfo != C1DvarInt(g_gpUserinfo, 0))) {  /* userinfo "gpad": at most once a second */
         static DWORD lastSent;
         if (now - lastSent > 1000) {
             char cmd[32];
             lastSent = now;
             InterlockedExchange(&g_deviceChanged, 0);
-            _snprintf(cmd, sizeof(cmd), "set gpad %d\n", (int)g_lastDevice);
+            _snprintf(cmd, sizeof(cmd), "set gpad %d\n", gpadInfo);
             C1CbufAddText(cmd);
             CtlDebugf(1, "gamepad: last-used input: %s\n", g_lastDevice ? "pad" : "keyboard/mouse");
         }
@@ -1258,7 +1298,7 @@ static void CtlFrameExtras(void)
         GetCursorPos(&pt);
         if (g_padActive && g_lastDevice == 1) lastOwn = now; /* our own SetCursorPos */
         if ((abs(pt.x - last.x) > 12 || abs(pt.y - last.y) > 12)) {
-            if (now - lastOwn > 200) { g_lastMouseMs = now; CtlSetDevice(0); }
+            if (now - lastOwn > 200) { g_lastMouseMs = now; CtlNoteKbm(TRUE); CtlSetDevice(0); }
             last = pt;
         }
     }
@@ -1392,7 +1432,7 @@ static DWORD g_mouseAccumAt;
 
 static BOOL CtlAimAllowed(void)
 {
-    return CtlDvarFloat(g_gpAim, 1.0f) > 0.0f && g_lastDevice == 1 && GetTickCount() - g_lastMouseMs > 1500;
+    return CtlDvarFloat(g_gpAim, 1.0f) > 0.0f && g_lastDevice == 1 && CtlKbmCooldownLeft() == 0;
 }
 
 /* Before C1's CL_MouseMove: the view angles, so the mouse's own turn can be measured. */
@@ -1423,7 +1463,7 @@ __attribute__((used)) void __cdecl ControllerMove(int lc, BYTE *cmd, float frame
             if (now - g_mouseAccumAt > 300) g_mouseAccum = 0.0f;
             g_mouseAccumAt = now;
             g_mouseAccum += moved;
-            if (g_mouseAccum > 0.5f) CtlSetDevice(0);
+            if (g_mouseAccum > 0.5f) { CtlNoteKbm(TRUE); CtlSetDevice(0); }
         }
     }
     if (!g_padActive || CtlMode() != CTL_MODE_GAME || !CtlEnabled()) { g_lockEnt = -1; return; }
@@ -1537,11 +1577,11 @@ __attribute__((used)) void __cdecl ControllerMove(int lc, BYTE *cmd, float frame
     if (C1DvarInt(g_gpDebug, 0) && now - lastDebug > 500) {
         lastDebug = now;
         C1Printf("gamepad: cmd fwd %d right %d buttons 0x%lX ads %.2f; view pitch %.2f yaw %.2f (%+.3f/%+.3f in %d ms); "
-                 "assist %s%s, targets %d, device %s, mouse %lu ms ago\n",
+                 "assist %s%s, targets %d, device %s, mouse %lu ms ago, KBM cooldown %lu ms\n",
                  (signed char)cmd[CTL_CMD_FORWARD], (signed char)cmd[CTL_CMD_RIGHT],
                  (unsigned long)*(const DWORD *)(cmd + CTL_CMD_BUTTONS), g_adsLerp, *(const float *)(cl + CTL_CL_PITCH),
                  *(const float *)(cl + CTL_CL_YAW), dpitch, dyaw, msec, assist ? "on" : "OFF", aaNote,
-                 *(const int *)(aa + CTL_AA_COUNT), g_lastDevice ? "pad" : "kb/mouse", (unsigned long)(now - g_lastMouseMs));
+                 *(const int *)(aa + CTL_AA_COUNT), g_lastDevice ? "pad" : "kb/mouse", (unsigned long)(now - g_lastMouseMs), (unsigned long)CtlKbmCooldownLeft());
     }
 }
 
@@ -1596,6 +1636,13 @@ static void __cdecl CtlCmdStatus(void)
              g_padConnected ? name : "no controller", g_fakeOn ? " (gpad_fake active)" : "",
              CtlMode() == 0 ? "game" : CtlMode() == 1 ? "menu" : "text", C1KeyCatchers(), g_ctlKeysOk ? "ok" : "MISSING",
              g_ctlMoveOk ? "ok" : "MISSING");
+    {
+        DWORD left = CtlKbmCooldownLeft();
+        if (CtlDvarFloat(g_gpAim, 1.0f) <= 0.0f) C1Printf("gamepad: aim assist off (gpad_aimassist 0)\n");
+        else if (left) C1Printf("gamepad: aim assist off, KBM cooldown %lu s\n", (unsigned long)((left + 999) / 1000));
+        else if (g_lastDevice != 1) C1Printf("gamepad: aim assist off (keyboard/mouse is the last-used input)\n");
+        else C1Printf("gamepad: aim assist on\n");
+    }
     for (int i = 0; i < CTL_NBUTTONS; i++) {
         int b = CtlKeyBinding(kCtlButtons[i].key);
         const char *bn = CtlBindName(b);
