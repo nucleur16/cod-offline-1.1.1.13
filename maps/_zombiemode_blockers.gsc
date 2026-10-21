@@ -64,13 +64,13 @@
 //   this work is a native change (give a script model a server animtree), not
 //   a script one.
 //
-// TWO BUILTINS T5 USES THAT THIS SERVER DOES NOT REGISTER (MEASURED
-// 2026-09-20): ConnectPaths and DisconnectPaths.  T5 calls them on every door
-// brush and every barrier clip so the AI pathfinder learns the map changed.
-// They are simply not called here.  The consequence is that opening a door
-// does not re-path the AI; the actors reach new space by walking, and
-// setGoalPos is recomputed every second (_zombiemode_spawner::zombie_think),
-// so a newly opened room becomes reachable as soon as a player stands in it.
+// CONNECTPATHS / DISCONNECTPATHS.  Unregistered when this port was written
+// (2026-09-20); native since (codol_actor_lifecycle.cpp, over the map's
+// node_* graph with T5's per-link disconnect counts).  As in T5, every door
+// brush and debris piece cuts its links at init and gives them back when
+// bought, and the barrier clips cut their window's negotiation link while
+// boards stand.  A freed entity gives back its links natively too (T5
+// G_FreeEntity -> Path_ConnectPathsForEntity).
 //
 // THE INVENTED TEAR TIMER IS GONE.  2026-09-20.  The previous pass shipped
 // blocker_zombie_tear_watch(), a barrier-side poll that removed one chunk
@@ -996,7 +996,7 @@ door_opened()
 	self delete_blocker_triggers();
 }
 
-// T5 :584, minus ConnectPaths (not registered) and the "anim" style.
+// T5 :584, minus the "anim" style.
 door_activate()
 {
 	time = 1;
@@ -1086,7 +1086,7 @@ debris_init()
 	self thread debris_think();
 }
 
-// T5 :960, solo purse branch, minus ConnectPaths.
+// T5 :960, solo purse branch.
 debris_think()
 {
 	cost = 1000;
@@ -1136,6 +1136,15 @@ debris_think()
 		clip = undefined;
 		for ( i = 0; i < junk.size; i++ )
 		{
+			// T5 :1044 connects EVERY piece, not only the clip: debris_init
+			// cut paths for each script_brushmodel it targets, and a jiggle
+			// brush deleted still owning its links left them cut.  MEASURED
+			// 2026-10-21, zm_sumpf_sh: the stairs debris's *14/*15 kept 76
+			// stair links cut after purchase; upstairs was a 65-node island
+			// and its zombies wedged against the attic door.
+			if ( junk[ i ].classname == "script_brushmodel" )
+				junk[ i ] connectpaths();
+
 			if ( isDefined( junk[ i ].script_noteworthy ) && junk[ i ].script_noteworthy == "clip" )
 			{
 				clip = junk[ i ];
