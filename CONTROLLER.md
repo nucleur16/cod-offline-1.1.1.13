@@ -331,3 +331,14 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
 - **HUD keys**:
   - The killstreak HUD names each slot by its `+actionslot N` key, and the pad has no per-slot key.
   - With the pad last used, the selected streak shows the D-pad-right key (use) and the others show D-pad down (cycle). They are drawn as icons, and change live with the device and the selection.
+- **Fix (2026-10-20, after the user's mp_subbase_sh test):**
+  - **Cause:** the user's `players/config_mp.cfg` had no DPAD_DOWN, DPAD_RIGHT or BUTTON_X_HOLD binds.
+    - A Kernel33 build without `gpad_ksnext` / `gpad_ksuse` / BUTTON_X_HOLD loaded the config. This was the older DLL another session used for the shadow bisect.
+    - C1 dropped the binds it could not resolve and wrote the file without them.
+    - `gpad_binds_version` stayed 2, so nothing re-applied them.
+  - **Effects:** D-pad right did nothing. The killstreak HUD kept keyboard 5–8, because no pad key was bound to gpad_ksuse / ksnext. Hold-X use was lost too.
+  - **Fix:** a pad button that is unbound, and whose default command no other pad key carries, gets its default back after the config runs ("repaired binds lost by an older config load").
+- `gpad_ksuse` falls back to the first filled slot. `gpad_ksnext` prints "Killstreak N selected - D-pad right calls it in" as the bold centre line (print channel 5; `gpad_notifytest <ch>` tests channels).
+- With `gpad_debug 1`, Kernel33.log records:
+  - `ksnext -> slot N (slots 1:t 2:t ...)` and `ksuse -> +actionslot N (bind I; slots ...)`, where t is actionSlotType at cg+0x544;
+  - `HUD key lookup "+actionslot N": device, slot type, selected, keys`, once per 2 s per slot. This line also shows whether the HUD asks through Key_GetBindingNames.

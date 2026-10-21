@@ -60,6 +60,7 @@
 #define CTL_KC_CONSOLE         0x01
 #define CTL_KC_UI              0x10
 #define CTL_KC_CHAT            0x20
+#define C1_GAMENOTIFY_CHANNEL  5           /* C1 print channel drawn as the bold centre line in a match (gpad_notifytest; 2 / 3 / 0 are not shown) */
 #define CTL_FROZEN             0x800         /* the pm_flags bit C1's CL_MouseMove skips on */
 #define CTL_ADS_BUTTONS        0x00000800u   /* usercmd ADS bit (+speed_throw sets 0x800 | 0x100000, measured) */
 
@@ -366,7 +367,28 @@ static BOOL CtlPadUnbound(void)
     return TRUE;
 }
 
-static void CtlApplyDefaultBinds(int how) /* 0 unbound only, 1 force all, 2 migrate */
+/* A pad button whose default is lost: the button is unbound and no other pad key carries its default
+ * command. That happens when a Kernel33 without these commands (gpad_ksnext / gpad_ksuse) or key names
+ * (BUTTON_X_HOLD) loads config_mp.cfg: C1 drops the binds it cannot resolve and writes the file without
+ * them, while gpad_binds_version stays current. */
+static BOOL CtlBindLost(int i)
+{
+    if (CtlKeyBinding(kCtlButtons[i].key)) return FALSE;
+    int idx = ((int(__cdecl *)(const char *))(DWORD_PTR)0x00492DB0u)(kCtlButtons[i].bind);
+    if (!idx) return FALSE;
+    for (int j = 0; j < CTL_NBUTTONS; j++)
+        if (CtlKeyBinding(kCtlButtons[j].key) == idx) return FALSE;
+    return TRUE;
+}
+
+static int CtlBindsLost(void)
+{
+    int n = 0;
+    for (int i = 0; i < CTL_NBUTTONS; i++) n += CtlBindLost(i);
+    return n;
+}
+
+static void CtlApplyDefaultBinds(int how) /* 0 unbound only, 1 force all, 2 migrate, 3 repair lost */
 {
     char cmd[96];
     int applied = 0;
@@ -374,7 +396,8 @@ static void CtlApplyDefaultBinds(int how) /* 0 unbound only, 1 force all, 2 migr
     for (int i = 0; i < CTL_NBUTTONS; i++) {
         int cur = CtlKeyBinding(kCtlButtons[i].key);
         const char *curName = CtlBindName(cur);
-        BOOL doit = how == 1 || !cur || (how == 2 && kCtlButtons[i].oldBind && !_stricmp(curName, kCtlButtons[i].oldBind));
+        BOOL doit = how == 1 || (how == 3 ? CtlBindLost(i) : !cur) ||
+                    (how == 2 && kCtlButtons[i].oldBind && !_stricmp(curName, kCtlButtons[i].oldBind));
         if (!doit || !_stricmp(curName, kCtlButtons[i].bind)) continue;
         _snprintf(cmd, sizeof(cmd), "bind %s \"%s\"\n", kCtlButtons[i].name, kCtlButtons[i].bind);
         cmd[sizeof(cmd) - 1] = 0;
@@ -382,11 +405,12 @@ static void CtlApplyDefaultBinds(int how) /* 0 unbound only, 1 force all, 2 migr
         applied++;
         Log("controller: bind %s \"%s\" (was \"%s\")", kCtlButtons[i].name, kCtlButtons[i].bind, curName);
     }
-    if (how != 0) {
+    if (how == 1 || how == 2) {
         _snprintf(cmd, sizeof(cmd), "set gpad_binds_version %d\n", CTL_BINDS_VERSION);
         C1CbufAddText(cmd);
     }
-    Log("controller: %d default gamepad binds applied (%s)", applied, how == 1 ? "gpad_defaultbinds" : how == 2 ? "layout update" : "no pad key was bound");
+    Log("controller: %d default gamepad binds applied (%s)", applied,
+        how == 1 ? "gpad_defaultbinds" : how == 2 ? "layout update" : how == 3 ? "repaired binds lost by an older config load" : "no pad key was bound");
 }
 
 /* ---- C1's key-name display path ----------------------------------------------------------------------
@@ -403,6 +427,8 @@ static BOOL CtlIsPadKey(int k)
 }
 
 static int CtlKsHudKey(int slot, const BYTE *kb);
+static int CtlKsType(int slot);
+static int g_ksSel;
 
 __attribute__((used)) int __cdecl CtlCommandKeys(const char *cmd, int lc, int *keys)
 {
@@ -424,6 +450,16 @@ __attribute__((used)) int __cdecl CtlCommandKeys(const char *cmd, int lc, int *k
     /* The killstreak HUD names each action slot by its "+actionslot N" key. The pad has no per-slot key:
      * the selected streak shows the gpad_ksuse key (D-pad right), the others the gpad_ksnext key (D-pad
      * down) that cycles to them. */
+    if (!_strnicmp(cmd, "+actionslot ", 12) && C1DvarInt(g_gpDebug, 0)) {
+        static DWORD lastLog[6];
+        int slot = atoi(cmd + 12);
+        DWORD now = GetTickCount();
+        if (slot >= 0 && slot <= 5 && now - lastLog[slot] > 2000) {
+            lastLog[slot] = now;
+            Log("controller: HUD key lookup \"%s\": device %s, slot type %d, selected %d, keys %d/%d", cmd, pad ? "pad" : "kb/mouse",
+                CtlKsType(slot), g_ksSel, keys[0], keys[1]);
+        }
+    }
     if (pad && (!n || !CtlIsPadKey(keys[0])) && !_strnicmp(cmd, "+actionslot ", 12)) {
         int k = CtlKsHudKey(atoi(cmd + 12), kb);
         if (k > 0) { keys[0] = k; keys[1] = -1; return 1; }
@@ -511,7 +547,7 @@ __attribute__((used)) void __cdecl CtlNoteEvent(int type, int value, int down)
  * playerState actionSlotType[5] at +0x544, 0 empty), used with +actionslot N (keyboard 8,5,6,7 = slots
  * 1..4). gpad_ksnext selects the next filled slot, gpad_ksuse presses +actionslot <selected> (down now,
  * up 120 ms later). Both are bind-table commands (89, 90), so the D-pad binds are ordinary binds. */
-static int g_ksSel;
+/* g_ksSel: declared with CtlKsHudKey */
 static DWORD g_ksUpAt;
 static int g_ksUpIndex;
 
@@ -552,29 +588,57 @@ static int CtlKsHudKey(int slot, const BYTE *kb)
     return CtlPadKeyFor(slot == g_ksSel ? 90 /* gpad_ksuse */ : 89 /* gpad_ksnext */, kb);
 }
 
+static void CtlKsSlots(char *out, int n)
+{
+    int k = 0;
+    out[0] = 0;
+    for (int slot = 1; slot <= 5 && k < n - 12; slot++)
+        k += _snprintf(out + k, n - k, "%s%d:%d", slot > 1 ? " " : "", slot, CtlKsType(slot));
+}
+
+/* The selection shows on the killstreak HUD (the selected slot's key is the D-pad-right icon, the others
+ * D-pad down) and as a line in the game-message area. */
 static void CtlKsNext(void)
 {
+    char slots[64];
+    CtlKsSlots(slots, sizeof(slots));
     for (int i = 1; i <= 5; i++) {
         int slot = (g_ksSel + i - 1) % 5 + 1;
         if (CtlKsType(slot)) {
             g_ksSel = slot;
-            C1Printf("^3gamepad: killstreak slot %d selected (D-pad right calls it in)\n", slot);
+            {
+                char m[96];
+                _snprintf(m, sizeof(m), "^3Killstreak %d selected - D-pad right calls it in\n", slot);
+                C1Print(C1_GAMENOTIFY_CHANNEL, m);
+            }
+            CtlDebugf(1, "gamepad: ksnext -> slot %d (slots %s)\n", slot, slots);
+            Log("controller: ksnext -> slot %d (slots %s)", slot, slots);
             return;
         }
     }
     g_ksSel = 0;
-    C1Printf("gamepad: no killstreak ready\n");
+    C1Print(C1_GAMENOTIFY_CHANNEL, "no killstreak ready\n");
+    CtlDebugf(1, "gamepad: ksnext: nothing filled (slots %s)\n", slots);
+    Log("controller: ksnext: nothing filled (slots %s)", slots);
 }
 
 static void CtlKsUse(void)
 {
-    if (!g_ksSel || !CtlKsType(g_ksSel)) CtlKsNext();
-    if (!g_ksSel) return;
-    int index = 17 + 2 * (g_ksSel - 1); /* "+actionslot N" in C1's bind table */
+    char slots[64];
+    CtlKsSlots(slots, sizeof(slots));
+    CtlKsValidate();   /* no valid selection: the first filled slot */
+    if (!g_ksSel) {
+        C1Print(C1_GAMENOTIFY_CHANNEL, "no killstreak ready\n");
+        CtlDebugf(1, "gamepad: ksuse: nothing filled (slots %s)\n", slots);
+        Log("controller: ksuse: nothing filled (slots %s)", slots);
+        return;
+    }
+    int index = 17 + 2 * (g_ksSel - 1); /* "+actionslot N" in C1's bind table (17 = +actionslot 1) */
     CtlRunBinding(index, K_DPAD_RIGHT);
     g_ksUpIndex = index + 1;
     g_ksUpAt = GetTickCount() + 120;
-    Log("controller: killstreak slot %d called in", g_ksSel);
+    CtlDebugf(1, "gamepad: ksuse -> +actionslot %d (bind %d; slots %s)\n", g_ksSel, index, slots);
+    Log("controller: ksuse -> +actionslot %d (bind %d; slots %s)", g_ksSel, index, slots);
 }
 
 static void __cdecl CtlCmdKsNext(void) { CtlKsNext(); }
@@ -1459,6 +1523,7 @@ __attribute__((used)) void __cdecl ControllerFrame(void)
             lastBindCheck = t;
             if (C1DvarInt(g_gpBindsVer, 0) < CTL_BINDS_VERSION) { applies++; CtlApplyDefaultBinds(CtlPadUnbound() ? 1 : 2); }
             else if (CtlPadUnbound()) { applies++; CtlApplyDefaultBinds(0); }
+            else if (CtlBindsLost()) { applies++; CtlApplyDefaultBinds(3); }
         }
     }
     CtlDrainDebug();
@@ -1783,6 +1848,15 @@ static void __cdecl CtlCmdSfKey(void)
     CtlQueueSfKey(atoi(VoiceArgv(1)) | hud, 0);
 }
 
+/* Test: "gpad_notifytest <channel>": one line on that print channel (finding the in-match message area). */
+static void __cdecl CtlCmdNotifyTest(void)
+{
+    char line[64];
+    int ch = VoiceArgc() > 1 ? atoi(VoiceArgv(1)) : C1_GAMENOTIFY_CHANNEL;
+    _snprintf(line, sizeof(line), "^3notify test on channel %d\n", ch);
+    C1Print(ch, line);
+}
+
 static void __cdecl CtlCmdTestMouse(void)
 {
     if (!CtlTestMode()) { C1Printf("gpad_testmouse: test clients only (+set k33_cmdFile 1)\n"); return; }
@@ -1824,6 +1898,7 @@ static C1Cmd g_ctlCmds[] = {
     { NULL, "gpad_sfkey", (void *)CtlCmdSfKey },
     { NULL, "gpad_aadump", (void *)CtlCmdAaDump },
     { NULL, "gpad_glyphdump", (void *)CtlCmdGlyphDump },
+    { NULL, "gpad_notifytest", (void *)CtlCmdNotifyTest },
     { NULL, "gpad_glyphtest", (void *)CtlCmdGlyphTest },
 };
 
