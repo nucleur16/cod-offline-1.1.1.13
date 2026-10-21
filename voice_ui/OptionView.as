@@ -46,7 +46,7 @@ package codo.views
 
       private static const K33_BUTTONS:Array = ["A","B","X","Y","LB","RB","START","BACK","LS","RS","UP","DOWN","LEFT","RIGHT","LT","RT"];
 
-      private static const K33_DS:Number = 0.75;
+      private static const K33_DS:Number = 0.7;
 
       public var myIconCloseBtn:CodoButton;
 
@@ -351,7 +351,7 @@ package codo.views
          this._k33Status.y = 3;
          this._k33Panel.addChild(this._k33Status);
          this._k33Diagram = new Sprite();
-         this._k33Diagram.x = 140;
+         this._k33Diagram.x = 132;
          this._k33Diagram.y = 40;
          this._k33Diagram.scaleX = this._k33Diagram.scaleY = K33_DS;
          this._k33Panel.addChild(this._k33Diagram);
@@ -385,22 +385,22 @@ package codo.views
             var nm:TextField = this.k33Text(K33_ACTIONS[i][1],13,14544626);
             nm.y = 3;
             holder.addChild(nm);
-            var row:Sprite = this.k33Button("",200,20,this.k33OnAction);
+            var row:Sprite = this.k33Button("",145,20,this.k33OnAction);
             row.name = "act" + i;
-            row.x = 140;
+            row.x = 100;
             holder.addChild(row);
-            holder.x = i < 8 ? 0 : 320;
+            holder.x = i < 8 ? 0 : 300;
             holder.y = 28 + (i % 8) * 26;
             this._k33List.addChild(holder);
             i++;
          }
          var clr:Sprite = this.k33Button("清除所选",130,24,this.k33OnClearMode);
          clr.name = "clear";
-         clr.x = 140;
+         clr.x = 100;
          clr.y = 28 + 8 * 26 + 14;
          this._k33List.addChild(clr);
          var dflt:Sprite = this.k33Button("恢复默认",130,24,this.k33OnDefault);
-         dflt.x = 460;
+         dflt.x = 400;
          dflt.y = clr.y;
          this._k33List.addChild(dflt);
          var s:Array = [["swapsticks","交换摇杆 (左手模式)"],["swaptriggers","交换扳机 (LT 开火)"],["preset","视角手感"],["sens","视角灵敏度"],["invert","反转 Y 轴"],["aim","辅助瞄准"],["deadzone","摇杆死区"],["dive","冲刺时蹲伏键飞扑"]];
@@ -685,7 +685,7 @@ package codo.views
                txt += ", 按住" + this.k33ActionName(this.k33Bind("HOLDX"));
             }
             var tf:TextField = this.k33Text(txt,12,15398648);
-            var lx:Number = onLeft ? 130 - tf.width : this._k33Diagram.x + 440 * K33_DS + 10;
+            var lx:Number = onLeft ? 124 - tf.width : this._k33Diagram.x + 440 * K33_DS + 8;
             tf.x = lx;
             tf.y = ly - tf.height / 2;
             this._k33Callouts.addChild(tf);
@@ -693,7 +693,7 @@ package codo.views
             var sx:Number = lx - 4;
             if(onLeft)
             {
-               sx = 134;
+               sx = 128;
             }
             var dx:Number = it.x - sx;
             var dy:Number = it.y - ly;
