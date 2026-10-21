@@ -179,9 +179,7 @@ package
          {
             return;
          }
-         r = this.k33Focus.getBounds(this.stage);
-         this.k33Ring.graphics.lineStyle(2,16766976,0.9);
-         this.k33Ring.graphics.drawRect(r.x - 3,r.y - 3,r.width + 6,r.height + 6);
+         // no frame of our own: the focused button shows its own hover state (k33Hover), as with the mouse
          this.k33Ring.visible = true;
       }
 

@@ -226,14 +226,14 @@ work), which fails C1's client pure check (0x617FA0, "WIN_FILE_CORRUPT") on ever
   (vtable +0x8C, event {5/6, key}) as private key codes 240 up / 241 down / 242 left / 243 right / 244 select;
   B / Start are Escape (PauseMenuView's own back / close). `voice_ui/MainPause.as` (the 79-line document
   class) moves focus to the nearest visible clickable object (C1's BaseButton sets buttonMode), sends it
-  MouseEventEx MOUSE_OVER / ROLL_OVER and draws a frame; select sends MouseEventEx MOUSE_DOWN / UP / CLICK
+  MouseEventEx MOUSE_OVER / ROLL_OVER (its own hover look, no extra frame); select sends MouseEventEx MOUSE_DOWN / UP / CLICK
   (C1's BaseButton reads `cEvt as MouseEventEx`; a plain MouseEvent is dropped). Shipped as
   `client_shipRetail\patch\controller_ingame.ff` (build_ingame_ui.py), a non-*_ui_mp patch zone, so it loads
   ahead of code_pre_gfx and its codoingame.gfx wins over patch_common_mp's. Recompiling the 1168-line
   PauseMenuView crashed C1 (AV 0x92F6F3) when the menu opened, and recompiling codo.gfx's BaseMain blanked the
   front end, so only MainPause is replaced. Front-end menus keep the stick cursor.
   Verified in a match: Start opens it, left stick down / right / up walks loadout -> sensitivity -> Return to
-  game (gold frame), A there closes the menu and the pad is back in game mode; B closes it.
+  game (hover state), A there closes the menu and the pad is back in game mode; B closes it.
 - **Button names by last-used device**: Key_GetBindingNames' call to Key_GetCommandAssignment (0x49393E)
   returns only the active device's keys (pad: buttons, triggers or a stick past 0.45; keyboard / mouse:
   any key or mouse button through Sys_QueEvent, mouse look of 0.5 deg in 300 ms, or the pointer moving 12 px).
@@ -269,13 +269,12 @@ Pad keys in hints and prompts are drawn as icons, IW4's way: C1's text renderer 
 inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB26E / 0xAAB8B2 step over it,
 0xAAA7D0 draws it at `((size - 16) * fontHeight + 16) / 32` px). Source: `controller_glyphs.c`.
 
-- **Art**: `glyphs/make_glyphs.py` (Pillow) draws four original sets of 17 icons in kCtlButtons order (A B X Y
-  LB RB Start Back LS RS D-pad up/down/left/right LT RT Hold-X): Xbox 360 (coloured A/B/X/Y, LB/RB, LT/RT,
-  Back/Start arrows), PS3 (cross / circle / square / triangle, L1/R1, L2/R2, Select/Start, L3/R3, split
-  D-pad), Wii U (positional: bottom B, right A, left Y, top X; L/R, ZL/ZR, -/+), generic (a diamond of four
-  dots with the pressed one filled, L1/R1/L2/R2, menu / view symbols). Hold-X is the X icon in a ring.
-  64x64 with all mips, B8G8R8A8, written to `glyphs/glyphs.bin` (zlib, committed) and `glyphs/preview.png`;
-  the DLL links glyphs.bin with `.incbin`. Run `python glyphs/make_glyphs.py` after changing the art.
+- **Art**: Xelu's FREE Controllers & Keyboard Prompts (Nicolae "Xelu" Berbece, CC0; `glyphs/LICENSE.md`,
+  `glyphs/xelu/Readme.txt`): Others/Xbox 360, Others/PS3, Others/WiiU (positional: our bottom button is the
+  Wii U B), and for the generic set Others/Positional Prompts (face buttons) plus Steam Deck (the rest).
+  Hold-X is the set's left face button inside a ring added by the script. `glyphs/make_glyphs.py` converts
+  the PNGs in `glyphs/xelu/` to 64x64 with all mips, B8G8R8A8, into `glyphs/glyphs.bin` (zlib, committed)
+  and `glyphs/preview.png`; the DLL links glyphs.bin with `.incbin`.
 - **Materials**: one per button, a copy of C1's `white` (Material_RegisterHandle 0xA78170; IW4 layout
   verified at run time: textureCount +0x48, textureTable +0x54, texture def 12 bytes with the image at +8,
   image texture at +0) whose texture table points at a copy of white's GfxImage. They live in a 64 KB block
@@ -284,8 +283,9 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
 - **Textures**: created on the render thread at the icon drawer's two call sites (0xAAB320, 0xAAB92D), on
   the device of white's texture (CreateTexture 64x64x7 A8R8G8B8 managed; D3D9Ex fallback: default pool,
   dynamic). One texture per set and button, made on first use; a set change swaps only the image's texture
-  pointer, so icons switch live. The hook also draws our icons white (C1 tints text icons with the text
-  colour, and hint key names are yellow); the black shadow pass stays black.
+  pointer, so icons switch live. The hook sets our icons' vertex colour to white (C1 multiplies text icons
+  by the text colour, and hint key names are yellow), so the art keeps its own colours; the black shadow
+  pass stays black.
 - **Names**: Key_GetBindingNames' two Key_KeynumToString calls (0x49397C, 0x4A19A1) return the icon escape
   for a pad key. Scaleform (AS key names, 0x5B080D: Controls screen, pause menu, Scaleform HUD) and GSC
   (0x55A8B6) keep the text names: Scaleform has no IW4 icon escape, so it keeps the family names below.

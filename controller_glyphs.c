@@ -7,8 +7,9 @@
  * ((size - 16) * fontHeight + 16) / 32 pixels, so 48 is one line high). C1's zones have no button
  * materials, so Kernel33 makes them:
  *
- *   art        glyphs/make_glyphs.py draws four original sets (Xbox 360, PS3, Wii U, generic) of 17 icons in
- *              kCtlButtons order, 64x64 with mips, B8G8R8A8; glyphs/glyphs.bin (zlib) is linked in with .incbin.
+ *   art        Xelu's CC0 controller prompts (glyphs/xelu, glyphs/LICENSE.md): Xbox 360, PS3, Wii U and a generic
+ *              set, 17 icons each in kCtlButtons order; glyphs/make_glyphs.py converts them to 64x64 with mips,
+ *              B8G8R8A8, into glyphs/glyphs.bin (zlib), linked in with .incbin.
  *   materials  one per button: a copy of C1's "white" material (2D, alpha blended) whose texture table points
  *              at a copy of its GfxImage. They sit at addresses whose four bytes are letters (base 0xHHHH0000
  *              with HH a letter, + (0x41 + button) * 0x100 + 0x44), so the escape survives every string copy
@@ -29,7 +30,7 @@
 #define CTL_GLYPH_SIZE         64
 #define CTL_GLYPH_LEVELS       7
 #define CTL_GLYPH_SETS         4
-#define CTL_GLYPH_ESC_SIZE     52            /* 48 = one text line high; a little more reads better */
+#define CTL_GLYPH_ESC_SIZE     56            /* 48 = one text line high; a little more reads better */
 #define CTL_MATERIAL_REGISTER  0x00A78170u   /* Material_RegisterHandle(name, imageTrack) */
 #define CTL_KEYNUM_TO_STRING   0x00492AF0u   /* Key_KeynumToString(eax = key, edi = translate) */
 #define CTL_BINDING_NAMES      0x00493920u   /* Key_GetBindingNames(eax = buffer, ecx = lc; command) */
@@ -247,8 +248,9 @@ static void *CtlGlyphMakeTexture(int set, int button)
     return tex;
 }
 
-/* Returns 1 for one of our icons (the hook then draws it white: C1 tints text icons with the text colour,
- * and the key name in a hint is often yellow), 0 for anything else. */
+/* Returns 1 for one of our icons, 0 for anything else. For ours the hook sets the vertex colour to white
+ * (alpha kept): C1 multiplies text icons by the text colour, and hint key names are yellow, so white is
+ * what leaves the art's own colours (green A, red B, ...) untouched. */
 __attribute__((used)) int __cdecl CtlGlyphPrepare(const BYTE *esc)
 {
     if (!g_glyphBase || g_glyphReady != 1) return 0;
