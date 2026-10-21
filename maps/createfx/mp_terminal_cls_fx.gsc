@@ -260,7 +260,7 @@ main()
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 1508.85, 7684.36, 206.125 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_airport_traffic";
+	ent.v[ "soundalias" ] = "nil"; // emt_airport_traffic: in no zone the client loads for this map (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2421.63, 3001.6, 40.125 );
@@ -445,12 +445,12 @@ main()
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2430.83, 2697.35, 147.51 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_jet_engine_close_interior";
+	ent.v[ "soundalias" ] = "nil"; // emt_jet_engine_close_interior: in no zone the client loads for this map (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 295.538, 4206.88, 388.378 );
 	ent.v[ "angles" ] = ( 270, 0, 0 );
-	ent.v[ "soundalias" ] = "emt_jet_engine_close_interior";
+	ent.v[ "soundalias" ] = "nil"; // emt_jet_engine_close_interior: in no zone the client loads for this map (a missing alias still holds a voice)
 
 	ent = createLoopSound();
 	ent.v[ "origin" ] = ( 2604.62, 2606.16, 116.125 );
