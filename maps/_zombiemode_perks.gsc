@@ -1191,7 +1191,22 @@ upgrade_knuckle_crack_end( gun )
 	// so the Mustang & Sally pullout had no raise sound.  weapon_give's
 	// switch now leaves the knuckles, and knuckle_crack_hold takes them once
 	// the player holds anything else.
+	//
+	// That only applies when the gun in the machine was the player's only
+	// one (user, 2026-10-21): with another primary, switch to it now, as T5
+	// does, raising it from the held knuckles; knuckle_crack_hold then takes
+	// the knuckles once that gun is in hand.
 	self thread knuckle_crack_hold( weapon );
+
+	primaries = self getWeaponsListPrimaries();
+	for ( i = 0; isDefined( primaries ) && i < primaries.size; i++ )
+	{
+		if ( primaries[ i ] != weapon && primaries[ i ] != gun )
+		{
+			self switchToWeapon( primaries[ i ] );
+			break;
+		}
+	}
 }
 
 // Take the held knuckles as soon as the player holds another weapon: the
