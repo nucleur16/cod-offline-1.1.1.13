@@ -216,11 +216,24 @@ work), which fails C1's client pure check (0x617FA0, "WIN_FILE_CORRUPT") on ever
 - **Hold to use**: X shorter than `gpad_use_hold_time` (250 ms) is BUTTON_X (reload), longer is
   BUTTON_X_HOLD (`+activate`: weapon pickups, equipment reclaim, every "Press [Use]" prompt). Client-side
   only; no server change needed. Hints for `{+activate}` read "Hold X" on the pad.
-- **Pause menu** (in a match with the UI catcher: codo.gfx opened by togglemenu, `cpp_openPauseMenu`): no
-  cursor; D-pad / left stick post F13 / F14 / F11 / F12, A posts F15, B / Start Escape.
-  `voice_ui/StageKeyController.as` (codo.gfx's stage key handler, C1's Esc logic unchanged) moves focus to the
-  nearest visible clickable object in that direction, sends it MOUSE_OVER / ROLL_OVER (its own hover look) and
-  draws a frame; F15 sends MOUSE_DOWN / MOUSE_UP / CLICK. Front-end menus keep the stick cursor.
+- **Pause menu** (Start / Esc in a match). It is not codo.gfx but **scaleform/default/codoingame.gfx**
+  (common_mp / patch_common_mp; document class MainPause, view PauseMenuView), loaded into the movie slot
+  0x810C2A4 by UI mode 2 (0x6B786E). C1 routes in-match keys to the HUD movie (0x6B7F80 picks 0x810C50C while
+  byte 0x6C44D6C is set), so stock C1 gives this menu no keyboard at all. Whether it is up: C1's menu-type
+  word **0x6C44D64 == 3** (MenuType.PAUSE; measured 3 open, 2 closed; keyCatchers' UI bit flickers with the
+  pointer). While it is up the pad drives it, no cursor: D-pad / left stick (0.55, hysteresis 0.4, repeat
+  350 / 140 ms) and A are queued (input thread) and handed by IN_Frame straight to the movie's HandleEvent
+  (vtable +0x8C, event {5/6, key}) as private key codes 240 up / 241 down / 242 left / 243 right / 244 select;
+  B / Start are Escape (PauseMenuView's own back / close). `voice_ui/MainPause.as` (the 79-line document
+  class) moves focus to the nearest visible clickable object (C1's BaseButton sets buttonMode), sends it
+  MouseEventEx MOUSE_OVER / ROLL_OVER and draws a frame; select sends MouseEventEx MOUSE_DOWN / UP / CLICK
+  (C1's BaseButton reads `cEvt as MouseEventEx`; a plain MouseEvent is dropped). Shipped as
+  `client_shipRetail\patch\controller_ingame.ff` (build_ingame_ui.py), a non-*_ui_mp patch zone, so it loads
+  ahead of code_pre_gfx and its codoingame.gfx wins over patch_common_mp's. Recompiling the 1168-line
+  PauseMenuView crashed C1 (AV 0x92F6F3) when the menu opened, and recompiling codo.gfx's BaseMain blanked the
+  front end, so only MainPause is replaced. Front-end menus keep the stick cursor.
+  Verified in a match: Start opens it, left stick down / right / up walks loadout -> sensitivity -> Return to
+  game (gold frame), A there closes the menu and the pad is back in game mode; B closes it.
 - **Button names by last-used device**: Key_GetBindingNames' call to Key_GetCommandAssignment (0x49393E)
   returns only the active device's keys (pad: buttons, triggers or a stick past 0.45; keyboard / mouse:
   any key or mouse button through Sys_QueEvent, mouse look of 0.5 deg in 300 ms, or the pointer moving 12 px).
@@ -236,4 +249,17 @@ work), which fails C1's client pure check (0x617FA0, "WIN_FILE_CORRUPT") on ever
   IW4 PC's melee lunge, unchanged and no aim assist. `gpad_aimassist` (0..1), `gpad_aimassist_range`,
   `gpad_aimassist_snap`.
 - **Server visibility**: userinfo dvar `gpad` (flag 0x200) is 1 while the pad is the last-used input.
-- Test-only: `gpad_testmouse <dx> <dy> <ms>` (mouse counts into C1's accumulator), `gpad_aadump`.
+- Test-only: `gpad_testmouse <dx> <dy> <ms>` (mouse counts into C1's accumulator), `gpad_aadump`,
+  `gpad_sfkey <code> [hud]` (one key code straight to a movie).
+
+### Verified in matches (2026-10-20, devtest, synthetic pad)
+- Pause menu: see above (navigation, select, close, back to game mode).
+- Tap X: BUTTON_X -> bind 55 `+reload`; hold X 250 ms: BUTTON_X_HOLD -> bind 53 `+activate`, usercmd 0x8 (use).
+- D-pad down -> `gpad_ksnext` (bind 89; "no killstreak ready" with none earned), D-pad right -> `gpad_ksuse`
+  (bind 90). Selecting / calling a real streak still needs one earned in a match.
+- Aim assist with a bot in front (C1 screen target ent 7, 395 units): "slowdown", LT -> "ads-snap" (view
+  turned 6.25 -> 12.58 deg onto the target), stick -> "slowdown+lock-on"; with `gpad_testmouse` mouse movement
+  during pad ADS: assist OFF, device kb/mouse. aaGlob view origin / angles are +0xDC / +0xE8 (fixed); targets
+  +0x134, count +0xE34; the regions scale with C1's own tweakables (+0xC0 / +0xC4 = auto-melee 320x240).
+- Key names follow the last-used device (Options > Controls showed RT/LT/X/Y/RS/"Hold X"/RB/LB/D-pad for the
+  pad, MOUSE1/R/E/F/G/Q/4/3/TAB after a key press); the HUD shows "RB" over the lethal grenade.

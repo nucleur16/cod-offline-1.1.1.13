@@ -200,6 +200,8 @@ static void CtlRegisterDvars(void)
     g_gpGlyphs = C1RegisterInt("gpad_glyphs", 0, 0, 3, 0x1, "Pad button names: 0 by pad type, 1 Xbox, 2 PlayStation, 3 Nintendo");
     g_gpBindsVer = C1RegisterInt("gpad_binds_version", 0, 0, 1000, 0x1, "Default pad binds last applied (read only)");
     g_gpUserinfo = C1RegisterInt("gpad", 0, 0, 1, 0x200, "1 while a gamepad is the last-used input (userinfo, visible to the server)");
+    ((const BYTE *(__cdecl *)(const char *, const char *, unsigned, const char *))(DWORD_PTR)0x00624740u)(
+        "k33nav", "", 0, "Pause-menu navigator: its last decision (voice_ui/StageKeyController.as, read with gpad_debug)");
 }
 
 /* Last-used input device, for the key names C1 shows (CtlCommandKeys) and for aim assist: 1 pad,
@@ -459,7 +461,7 @@ static int g_ksUpIndex;
 static int CtlKsType(int slot)
 {
     BYTE *cg = ParityCg();
-    return cg && Readable(cg + 0x544 + slot * 4, 4) ? *(const int *)(cg + 0x544 + (slot - 1) * 4) : 0;
+    return slot >= 1 && slot <= 5 && cg && Readable(cg + 0x544 + (slot - 1) * 4, 4) ? *(const int *)(cg + 0x544 + (slot - 1) * 4) : 0;
 }
 
 static void CtlRunBinding(int index, int key)
@@ -689,13 +691,28 @@ static void CtlCursorMove(HWND h, float dx, float dy, BOOL focused)
 #define CTL_MODE_MENU  1
 #define CTL_MODE_TEXT  2
 #define CTL_MODE_PAUSE 3
+/* C1's Scaleform UI mode switch 0x6B77A0 (eax = mode; called from 0x83DA993): 1 front end, 2 the in-match
+ * pause menu (cpp_openPauseMenu), 7 scoreboard, 12 HUD. keyCatchers' UI bit cannot tell the pause menu: the
+ * menu's ActionScript sets and clears it as the pointer moves over its panels (callback 0x5C4110), and the
+ * scoreboard sets it too. CTL_UiModeHook records the last mode requested (gpad_debug); whether the pause menu
+ * is up comes from C1's menu-type word 0x6C44D64 (measured: 3 open, 2 closed). */
+static volatile LONG g_uiMode = -1;
+
+__attribute__((used)) void __cdecl CtlUiMode(int mode)
+{
+    if (mode != g_uiMode) CtlDebugf(1, "gamepad: UI mode %d\n", mode);
+    InterlockedExchange(&g_uiMode, mode);
+}
+
 static int CtlMode(void)
 {
     int kc = C1KeyCatchers();
     BOOL inMatch = *(volatile int *)(DWORD_PTR)CTL_CONNSTATE_VA == CTL_CA_ACTIVE;
     if (kc & (CTL_KC_CONSOLE | CTL_KC_CHAT)) return CTL_MODE_TEXT;
     if (!inMatch) return CTL_MODE_MENU;
-    return (kc & CTL_KC_UI) ? CTL_MODE_PAUSE : CTL_MODE_GAME;
+    /* C1's current Scaleform menu type (0x6C44D64, the AS MenuType: 3 = PAUSE, codoingame.gfx up). The UI
+     * mode switch is only called to open the menu; the menu's own Return / Esc close it without one. */
+    return *(volatile int *)(DWORD_PTR)0x06C44D64u == 3 ? CTL_MODE_PAUSE : CTL_MODE_GAME;
 }
 
 
@@ -756,6 +773,7 @@ static DWORD g_sent, g_ignore;       /* buttons acted on in the current mode; he
 static int g_sentMode = -1;
 
 static void CtlPostKey(HWND h, UINT vk, int down);
+static void CtlQueueSfKey(int flashCode, int down);
 
 static void CtlRelease(int mode, DWORD bits)
 {
@@ -765,7 +783,7 @@ static void CtlRelease(int mode, DWORD bits)
             if ((bits & b) && CtlButtonKey(b)) CtlQueueKey(CtlButtonKey(b), 0);
     } else if (mode == CTL_MODE_PAUSE) {
         HWND h = *(HWND *)(DWORD_PTR)CTL_MAIN_HWND_VA;
-        if (h && (bits & XI_A)) CtlPostKey(h, VK_F15, 0);
+        if (bits & XI_A) CtlQueueSfKey(244, 0);
         if (h && (bits & (XI_B | XI_START))) CtlPostKey(h, VK_ESCAPE, 0);
     } else {
         HWND h = *(HWND *)(DWORD_PTR)CTL_MAIN_HWND_VA;
@@ -774,9 +792,47 @@ static void CtlRelease(int mode, DWORD bits)
 }
 
 /* In-match menu (CTL_MODE_PAUSE): the pad's directions and A become keys the codo.gfx focus navigator
- * (voice_ui/StageKeyController.as, onStageKeyDownHandle) understands: F13 up, F14 down, F11 left, F12 right,
- * F15 select. B / Start are Escape. Posted to the game window like real keys; Scaleform hands them to the
+ * (voice_ui/StageKeyController.as, onStageKeyDownHandle) understands: numpad 8 up, 2 down, 4 left, 6 right,
+ * 5 select (Flash key codes 104 / 98 / 100 / 102 / 101; Scaleform drops F13 and above). B / Start are Escape. Posted to the game window like real keys; Scaleform hands them to the
  * stage's KEY_DOWN listener. Directions repeat after 350 ms, then every 140 ms. */
+/* Keys for the pause menu's ActionScript. C1 gives Scaleform keyboard input only through CL_KeyEvent ->
+ * 0x5F3760 -> 0x6B7F80, which maps C1 keynums to Flash key codes and calls the active movie's HandleEvent
+ * (vtable +0x8C) with a 0x18-byte event {type 5 down / 6 up, byte, key code, byte, int, byte}, and only
+ * while keyCatchers has the UI bit, which the pause menu keeps clearing. So the pad's codes are queued
+ * here (input thread) and handed to the movie directly by CtlDeliverSfKeys (main thread, IN_Frame):
+ * always codo.gfx 0x810C2A4, where the pause menu lives (0x6B7F80 sends in-match keys to the HUD movie 0x810C50C,
+ * so in stock C1 the pause menu takes no keys at all). */
+static volatile LONG g_sfQueue[32];
+static volatile LONG g_sfHead, g_sfTail;
+
+static void CtlQueueSfKey(int flashCode, int down)
+{
+    LONG t = g_sfTail;
+    if (((t + 1) & 31) == (g_sfHead & 31)) return; /* full: drop */
+    g_sfQueue[t & 31] = flashCode | (down ? 0x10000 : 0); /* 0x20000 in flashCode: the HUD movie */
+    InterlockedExchange(&g_sfTail, (t + 1) & 31);
+}
+
+typedef struct { int type; BYTE b4; BYTE pad5[3]; int code; BYTE bC; BYTE padD[3]; int i10; BYTE b14; BYTE pad15[3]; } CtlSfKeyEvent;
+
+static void CtlDeliverSfKeys(void)
+{
+    while (g_sfHead != g_sfTail) {
+        LONG v = g_sfQueue[g_sfHead & 31];
+        InterlockedExchange(&g_sfHead, (g_sfHead + 1) & 31);
+        void *movie = *(void *volatile *)(DWORD_PTR)((v & 0x20000) ? 0x0810C50Cu : 0x0810C2A4u); /* codo.gfx: the pause menu (C1 itself routes in-match keys to the HUD movie) */
+        if (!movie || !Readable(movie, 4)) continue;
+        void **vtbl = *(void ***)movie;
+        if (!Readable(vtbl + 0x8C / 4, 4)) continue;
+        CtlSfKeyEvent ev;
+        memset(&ev, 0, sizeof(ev));
+        ev.type = (v & 0x10000) ? 5 : 6;
+        ev.code = v & 0xFFFF;
+        ((void(__attribute__((thiscall)) *)(void *, CtlSfKeyEvent *))vtbl[0x8C / 4])(movie, &ev);
+        CtlDebugf(2, "gamepad: pause menu key %d %s\n", ev.code, ev.type == 5 ? "down" : "up");
+    }
+}
+
 static void CtlPostKey(HWND h, UINT vk, int down)
 {
     UINT sc = MapVirtualKeyA(vk, 0);
@@ -788,7 +844,7 @@ static void CtlPauseNav(HWND h, DWORD pressed, DWORD released, DWORD held, float
 {
     static int lastDir;            /* 1 up 2 down 3 left 4 right */
     static DWORD nextRepeat;
-    static const UINT kVk[5] = { 0, VK_F13, VK_F14, VK_F11, VK_F12 };
+    static const int kCode[5] = { 0, 240, 241, 242, 243 }; /* private codes for StageKeyController.as */
     int dir = 0;
     if (held & XI_DPAD_UP) dir = 1;
     else if (held & XI_DPAD_DOWN) dir = 2;
@@ -798,15 +854,15 @@ static void CtlPauseNav(HWND h, DWORD pressed, DWORD released, DWORD held, float
     else if (lastDir && (fabsf(ly) >= 0.4f || fabsf(lx) >= 0.4f)) dir = lastDir; /* hysteresis */
     DWORD now = GetTickCount();
     if (dir != lastDir) {
-        if (dir) { CtlPostKey(h, kVk[dir], 1); CtlPostKey(h, kVk[dir], 0); nextRepeat = now + 350; }
+        if (dir) { CtlQueueSfKey(kCode[dir], 1); CtlQueueSfKey(kCode[dir], 0); nextRepeat = now + 350; }
         lastDir = dir;
     } else if (dir && (LONG)(now - nextRepeat) >= 0) {
-        CtlPostKey(h, kVk[dir], 1);
-        CtlPostKey(h, kVk[dir], 0);
+        CtlQueueSfKey(kCode[dir], 1);
+        CtlQueueSfKey(kCode[dir], 0);
         nextRepeat = now + 140;
     }
-    if (pressed & XI_A) CtlPostKey(h, VK_F15, 1);
-    if (released & XI_A) CtlPostKey(h, VK_F15, 0);
+    if (pressed & XI_A) CtlQueueSfKey(244, 1);   /* select */
+    if (released & XI_A) CtlQueueSfKey(244, 0);
     if (pressed & (XI_B | XI_START)) CtlPostKey(h, VK_ESCAPE, 1);
     if (released & (XI_B | XI_START)) CtlPostKey(h, VK_ESCAPE, 0);
     if (dir && dir != 0 && (pressed | released) == 0) return;
@@ -1144,9 +1200,22 @@ static void CtlApplyPadNames(void)
 static int g_testMouseDx, g_testMouseDy;
 static DWORD g_testMouseUntil;
 
+/* The pause-menu navigator's last decision (voice_ui/StageKeyController.as sets dvar "k33nav"). */
+static void CtlNavLog(void)
+{
+    static char last[200];
+    const BYTE *d = ((const BYTE *(__cdecl *)(const char *))(DWORD_PTR)0x006232C0u)("k33nav");
+    if (!d || !Readable(d, 0x10)) return;
+    const char *v = *(const char *const *)(d + 0xC);
+    if (!v || !Readable(v, 1) || !strncmp(v, last, sizeof(last) - 1)) return;
+    lstrcpynA(last, v, sizeof(last));
+    C1Printf("gamepad: %s\n", last);
+}
+
 static void CtlFrameExtras(void)
 {
     DWORD now = GetTickCount();
+    if (C1DvarInt(g_gpDebug, 0)) CtlNavLog();
     CtlApplyPadNames();
     if (g_ksUpAt && (LONG)(now - g_ksUpAt) >= 0) { g_ksUpAt = 0; CtlRunBinding(g_ksUpIndex, K_DPAD_RIGHT); }
     if (g_deviceChanged && g_gpUserinfo && g_c1CbufOk) {  /* userinfo "gpad": at most once a second */
@@ -1210,6 +1279,7 @@ __attribute__((used)) void __cdecl ControllerFrame(void)
         }
     }
     CtlDrainDebug();
+    CtlDeliverSfKeys();
     CtlFrameExtras();
     DWORD now = GetTickCount();
     float dt = lastFrame ? (now - lastFrame) * 0.001f : 0.0f;
@@ -1238,7 +1308,7 @@ __attribute__((used)) void __cdecl ControllerFrame(void)
  * C1 still runs IW4's AimAssist_UpdateScreenTargets: aaGlob[lc] at 0x1501A80 (stride 0xE60) holds up to
  * 64 targets at +0x134 (0x34 each: entIndex, clipMins[2], clipMaxs[2], aimPos[3], velocity[3], distSqr,
  * crosshairDistSqr), count at +0xE34, ordered nearest the crosshair first, and the view origin / angles
- * at +0xD0 / +0xDC. What IW4x's AimAssist_UpdateGamePadInput does with them is done here for the pad's
+ * at +0xDC / +0xE8 (IW4 AimAssistGlobals: eyeOrigin, viewOrigin, viewAngles, viewAxis, ..., adsLerp +0x120). What IW4x's AimAssist_UpdateGamePadInput does with them is done here for the pad's
  * right stick only:
  *   slowdown  the stick's turn rate x0.4 (hip) .. x0.5 (ADS) while a target is in the 90x90 (of 640x480)
  *             box around the crosshair;
@@ -1252,8 +1322,8 @@ __attribute__((used)) void __cdecl ControllerFrame(void)
 #define CTL_AAGLOB_VA      0x01501A80u
 #define CTL_AA_TARGETS     0x134
 #define CTL_AA_COUNT       0xE34
-#define CTL_AA_VIEWORG     0xD0
-#define CTL_AA_VIEWANG     0xDC
+#define CTL_AA_VIEWORG     0xDC   /* eyeOrigin +0xD0, viewOrigin +0xDC, viewAngles +0xE8, viewAxis +0xF4, adsLerp +0x120 */
+#define CTL_AA_VIEWANG     0xE8
 #define CTL_PS_VELOCITY    0x28
 
 typedef struct { int ent; float mins[2], maxs[2], aim[3], vel[3], distSqr, xhairDistSqr; } CtlAimTarget;
@@ -1273,6 +1343,16 @@ static const CtlAimTarget *CtlAimFind(float range, float hw, float hh, int prefe
                 return &t[i];
         }
     return NULL;
+}
+
+/* A region w x h in IW4's 640x480 virtual screen as clip-space half sizes, scaled like C1's own
+ * tweakables: aaGlob +0xC0 / +0xC4 hold the auto-melee region (IW4 320 x 240), aspect included. */
+static void CtlAimRegion(float w, float h, float *hw, float *hh)
+{
+    const float *f = (const float *)(DWORD_PTR)CTL_AAGLOB_VA;
+    float mw = f[0xC0 / 4], mh = f[0xC4 / 4];
+    *hw = mw > 0.05f && mw < 2.0f ? mw * w / 320.0f : w / 640.0f;
+    *hh = mh > 0.05f && mh < 2.0f ? mh * h / 240.0f : h / 480.0f;
 }
 
 static float CtlAngleDiff(float a, float b)
@@ -1361,7 +1441,10 @@ __attribute__((used)) void __cdecl ControllerMove(int lc, BYTE *cmd, float frame
     float aim = CtlDvarFloat(g_gpAim, 1.0f), range = CtlDvarFloat(g_gpAimRange, 3200.0f);
     const char *aaNote = "";
     float slowY = 1.0f, slowP = 1.0f;
-    if (assist && CtlAimFind(range, 90.0f / 640.0f, 90.0f / 480.0f, -1)) {
+    float rw, rh, sw, sh;
+    CtlAimRegion(90.0f, 90.0f, &rw, &rh);       /* aim_slowdown_region / aim_lockon_region */
+    CtlAimRegion(160.0f, 120.0f, &sw, &sh);     /* aim_autoaim_region */
+    if (assist && CtlAimFind(range, rw, rh, -1)) {
         float sc = 0.4f + 0.1f * g_adsLerp;                  /* aim_slowdown_*_scale 0.4, _ads 0.5 */
         slowY = slowP = 1.0f - (1.0f - sc) * aim;
         aaNote = " slowdown";
@@ -1392,7 +1475,7 @@ __attribute__((used)) void __cdecl ControllerMove(int lc, BYTE *cmd, float frame
     const BYTE *aa = (const BYTE *)(DWORD_PTR)CTL_AAGLOB_VA;
     BYTE *cg = ParityCg();
     BOOL deflected = stickMag > 0.05f || fabsf(g_lx) > 0.05f || fabsf(g_ly) > 0.05f;
-    const CtlAimTarget *lock = assist && deflected ? CtlAimFind(range, 90.0f / 640.0f, 90.0f / 480.0f, g_lockEnt) : NULL;
+    const CtlAimTarget *lock = assist && deflected ? CtlAimFind(range, rw, rh, g_lockEnt) : NULL;
     g_lockEnt = lock ? lock->ent : -1;
     if (lock && cg && Readable(cg + CTL_PS_VELOCITY, 12)) {
         const float *va = (const float *)(aa + CTL_AA_VIEWANG), *pv = (const float *)(cg + CTL_PS_VELOCITY);
@@ -1413,7 +1496,7 @@ __attribute__((used)) void __cdecl ControllerMove(int lc, BYTE *cmd, float frame
     g_prevAds = adsNow;
     if (g_snapUntil && (!assist || !adsNow || (LONG)(now - g_snapUntil) >= 0)) g_snapUntil = 0;
     if (g_snapUntil) {
-        const CtlAimTarget *t = CtlAimFind(range, 160.0f / 640.0f, 120.0f / 480.0f, g_lockEnt);
+        const CtlAimTarget *t = CtlAimFind(range, sw, sh, g_lockEnt);
         if (t) {
             const float *vo = (const float *)(aa + CTL_AA_VIEWORG), *va = (const float *)(aa + CTL_AA_VIEWANG);
             float d[3] = { t->aim[0] - vo[0], t->aim[1] - vo[1], t->aim[2] - vo[2] };
@@ -1501,6 +1584,15 @@ static void __cdecl CtlCmdStatus(void)
 
 static void __cdecl CtlCmdDefaults(void) { CtlApplyDefaultBinds(1); }
 
+/* Test: "gpad_sfkey <flash key code>" sends that key down and up to codo.gfx, as the pause-menu pad keys go. */
+static void __cdecl CtlCmdSfKey(void)
+{
+    if (VoiceArgc() < 2) return;
+    int hud = VoiceArgc() > 2 && !_stricmp(VoiceArgv(2), "hud") ? 0x20000 : 0;
+    CtlQueueSfKey(atoi(VoiceArgv(1)) | hud, 1);
+    CtlQueueSfKey(atoi(VoiceArgv(1)) | hud, 0);
+}
+
 static void __cdecl CtlCmdTestMouse(void)
 {
     if (!CtlTestMode()) { C1Printf("gpad_testmouse: test clients only (+set k33_cmdFile 1)\n"); return; }
@@ -1516,9 +1608,13 @@ static void __cdecl CtlCmdAaDump(void)
     const BYTE *aa = (const BYTE *)(DWORD_PTR)CTL_AAGLOB_VA;
     const float *f = (const float *)aa;
     BYTE *cg = ParityCg();
-    C1Printf("aaGlob: init %d count %d meleeRegion %.3f %.3f vieworg %.1f %.1f %.1f viewang %.2f %.2f %.2f\n",
-             aa[0xB0], *(const int *)(aa + CTL_AA_COUNT), f[0xC0 / 4], f[0xC4 / 4], f[0xD0 / 4], f[0xD4 / 4], f[0xD8 / 4],
-             f[0xDC / 4], f[0xE0 / 4], f[0xE4 / 4]);
+    C1Printf("aaGlob: init %d prevButtons 0x%X count %d adsLerp %.2f fovScale %.3f\n", aa[0xB0], *(const int *)(aa + 0xB4),
+             *(const int *)(aa + CTL_AA_COUNT), f[0x120 / 4], f[0x118 / 4]);
+    C1Printf("aaGlob 0xB8..0xD4: %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f\n", f[0xB8 / 4], f[0xBC / 4], f[0xC0 / 4], f[0xC4 / 4],
+             f[0xC8 / 4], f[0xCC / 4], f[0xD0 / 4], f[0xD4 / 4]);
+    C1Printf("aaGlob eye %.1f %.1f %.1f view %.1f %.1f %.1f angles %.2f %.2f %.2f\n", f[0xD0 / 4], f[0xD4 / 4], f[0xD8 / 4],
+             f[CTL_AA_VIEWORG / 4], f[CTL_AA_VIEWORG / 4 + 1], f[CTL_AA_VIEWORG / 4 + 2], f[CTL_AA_VIEWANG / 4],
+             f[CTL_AA_VIEWANG / 4 + 1], f[CTL_AA_VIEWANG / 4 + 2]);
     if (cg) C1Printf("ps origin %.1f %.1f %.1f velocity %.1f %.1f %.1f\n", *(float *)(cg + 0x1C), *(float *)(cg + 0x20),
                      *(float *)(cg + 0x24), *(float *)(cg + 0x28), *(float *)(cg + 0x2C), *(float *)(cg + 0x30));
     int n = *(const int *)(aa + CTL_AA_COUNT);
@@ -1535,12 +1631,15 @@ static C1Cmd g_ctlCmds[] = {
     { NULL, "gpad_ksnext", (void *)CtlCmdKsNext },
     { NULL, "gpad_ksuse", (void *)CtlCmdKsUse },
     { NULL, "gpad_testmouse", (void *)CtlCmdTestMouse },
+    { NULL, "gpad_sfkey", (void *)CtlCmdSfKey },
     { NULL, "gpad_aadump", (void *)CtlCmdAaDump },
 };
 
 /* ---- install ------------------------------------------------------------------------------------- */
 
 __attribute__((used)) DWORD g_ctlInFrameResume = CTL_IN_FRAME_RESUME;
+__attribute__((used)) DWORD g_ctlUiModeResume = 0x006B77A8u;
+void CTL_UiModeHook(void);
 __attribute__((used)) DWORD g_ctlMouseMove = CTL_MOUSEMOVE_VA;
 void CTL_InFrameHook(void);
 void CTL_MouseMoveHook(void);
@@ -1554,6 +1653,16 @@ __asm__(
     "    pushl %ecx\n"                /* the displaced push ecx ; push 0xC70A08 ("2287") */
     "    pushl $0x00C70A08\n"
     "    jmp *_g_ctlInFrameResume\n"
+    ".globl _CTL_UiModeHook\n"
+    "_CTL_UiModeHook:\n"             /* jmp from 0x6B77A0: eax = mode */
+    "    pushal\n"
+    "    pushl %eax\n"
+    "    call _CtlUiMode\n"
+    "    addl $4, %esp\n"
+    "    popal\n"
+    "    pushl %ecx\n"                /* the displaced push ecx ; cmp dword [0x6C44D5C], 0 */
+    "    cmpl $0, 0x06C44D5C\n"
+    "    jmp *_g_ctlUiModeResume\n"
     ".globl _CTL_MouseMoveHook\n"
     "_CTL_MouseMoveHook:\n"           /* call from CL_CreateCmd 0x490E2F: eax = lc, [esp+4] cmd, [esp+8] frametime */
     "    pushl %eax\n"
@@ -1605,6 +1714,17 @@ static void InstallController(void)
     memcpy(jmp + 1, &rel, 4);
     WriteCode(inFrame, jmp, sizeof(jmp));
     CtlInstallBindCommands();
+    {   /* UI mode switch: push ecx ; cmp dword [0x6C44D5C], 0 ; push ebx ; push esi ; mov esi, eax */
+        static const BYTE kUi[] = { 0x51, 0x83, 0x3D, 0x5C, 0x4D, 0xC4, 0x06, 0x00, 0x53, 0x56, 0x8B, 0xF0 };
+        BYTE *ui = (BYTE *)(DWORD_PTR)0x006B77A0u;
+        if (Readable(ui, sizeof(kUi)) && !memcmp(ui, kUi, sizeof(kUi))) {
+            BYTE j[8] = { 0xE9, 0, 0, 0, 0, 0x90, 0x90, 0x90 };
+            LONG r = (LONG)((DWORD_PTR)CTL_UiModeHook - (0x006B77A0u + 5));
+            memcpy(j + 1, &r, 4);
+            WriteCode(ui, j, sizeof(j));
+            Log("controller: UI mode switch hooked (0x6B77A0): pause menu detection");
+        } else Log("controller: UI mode switch bytes differ, the pause menu keeps the stick cursor");
+    }
     /* key names by last-used device: Key_GetBindingNames' call to Key_GetCommandAssignment */
     BOOL namesOk = CallsTarget(0x0049393Eu, 0x00492E30u) && !memcmp((void *)(DWORD_PTR)0x00493935u, "\x8b\x45\x08", 3);
     if (namesOk) RedirectCall(0x0049393Eu, (void *)CTL_CmdKeysHook);
