@@ -360,3 +360,18 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
     - A test row with a bar at x + measured width × scale showed it: the bar ended far right of a line with an icon, and exactly at the end of plain text.
     - The hook measures the text without the icon codes and adds each icon's slot, (1 + 2 × `gpad_glyph_xshift`) × its drawn width. Bars now end at the line's end in both cases.
   - **Selection arrow:** the killstreak HUD's selected slot is pseudo key 29. It renders as a yellow arrow (Xelu's Others/Arrows/Directional_Arrow_Straight, recoloured by `make_glyphs.py`, glyph 18 in every set) followed by the gpad_ksuse key. In text mode it is "> name".
+
+## 11. Movement parity, look feel, dive (2026-10-21)
+- **Movement:**
+  - C1's wire usercmd has no analog movement. It carries four direction bits, and the server rebuilds forwardmove/rightmove as ±127 (CoD4x_Server `codol_game.c`).
+  - The stick's analog cmd therefore moved the server at full key speed in the octant its signs gave, while the client predicted the analog move and was corrected every snapshot:
+    - a 10-degree drift became a 45-degree strafe on the server;
+    - a half tilt ran at full speed on the server while the client predicted 0.38.
+  - `gpad_move_digital 1` (default) maps the stick to the eight ±127 key combinations by its octant (6-degree hysteresis), once past `gpad_move_threshold` (0.3). Client and server then see exactly what W/A/S/D produce.
+  - Walking at half speed is not possible on this protocol (the server ignores magnitude). Sprint and stance rules are the server's, on the same bits as the keys.
+- **Look:**
+  - dt is the QueryPerformanceCounter time between usercmds (`gpad_view_hires`); before, it was C1's whole-millisecond frametime.
+  - The turn rate reaches `gpad_view_accel_start` (0.6) of the target at once, and only the rest ramps at `gpad_view_accel` (3000 deg/s²).
+  - New defaults: deadzone 0.12, curve 1.7, pitch 120. A one-time migration (`gpad_look_version`) moves only archived values that still equal the old defaults.
+  - Presets: `gpad_lookpreset snappy|classic|smooth`. Measurement: `gpad_looktest <rx> <ms>`.
+- **Dive:** B pressed while sprinting (cg+0x15C ≥ [0xC845B8] and pm_flags 0x4000, C1's own test) runs `toggleprone`. C1 turns that into stance state 3, usercmd 0x800000, which is the server's dive. Otherwise B stays BUTTON_B (+stance: tap crouch, hold prone). Controlled by `gpad_dive`.

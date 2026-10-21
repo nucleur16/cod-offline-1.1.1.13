@@ -138,7 +138,7 @@ static CtlKeyName g_ctlKeyNames[160], g_ctlKeyNamesLoc[160];
 static BOOL g_ctlOn, g_ctlKeysOk, g_ctlMoveOk, g_ctlDvarsDone;
 static const BYTE *g_gpEnabled, *g_gpDzMin, *g_gpDzMax, *g_gpSens, *g_gpInvert, *g_gpBtnDz, *g_gpYaw, *g_gpPitch,
     *g_gpYawAds, *g_gpPitchAds, *g_gpCurve, *g_gpAccel, *g_gpCursor, *g_gpDebug, *g_gpUseHold, *g_gpAim,
-    *g_gpAimRange, *g_gpAimSnap, *g_gpGlyphs, *g_gpBindsVer, *g_gpUserinfo, *g_gpKbmCooldown, *g_gpLocSpeed, *g_gpGlyphShift;
+    *g_gpAimRange, *g_gpAimSnap, *g_gpGlyphs, *g_gpBindsVer, *g_gpUserinfo, *g_gpKbmCooldown, *g_gpLocSpeed, *g_gpGlyphShift, *g_gpAccelStart, *g_gpHires, *g_gpLookVer, *g_gpDive, *g_gpMoveDigital, *g_gpMoveThreshold;
 static volatile LONG g_padType;            /* 0 Xbox (and XInput), 1 PlayStation, 2 Nintendo, 3 other */
 static int g_locBase = -1;                 /* first pad entry in g_ctlKeyNamesLoc */
 
@@ -183,17 +183,27 @@ static void CtlRegisterDvars(void)
 {
     g_ctlDvarsDone = TRUE;
     g_gpEnabled = C1RegisterInt("gpad_enabled", 1, 0, 1, 0x1, "Gamepad support: 1 on, 0 off");
-    g_gpDzMin = CtlRegisterFloat("gpad_stick_deadzone_min", 0.2f, 0.0f, 1.0f, 0x1, "Stick deadzone at the centre (radial)");
+    g_gpDzMin = CtlRegisterFloat("gpad_stick_deadzone_min", 0.12f, 0.0f, 1.0f, 0x1, "Stick deadzone at the centre (radial)");
     g_gpDzMax = CtlRegisterFloat("gpad_stick_deadzone_max", 0.01f, 0.0f, 1.0f, 0x1, "Stick deadzone at the edge (full deflection below 1)");
     g_gpSens = CtlRegisterFloat("gpad_view_sensitivity", 1.0f, 0.1f, 5.0f, 0x1, "Right stick look sensitivity (scales the turn rates)");
     g_gpInvert = C1RegisterInt("gpad_invert_y", 0, 0, 1, 0x1, "Invert the right stick's vertical axis");
     g_gpBtnDz = CtlRegisterFloat("gpad_button_deadzone", 0.13f, 0.0f, 1.0f, 0x1, "Trigger press threshold");
     g_gpYaw = CtlRegisterFloat("gpad_turnrate_yaw", 260.0f, 1.0f, 1000.0f, 0x1, "Right stick yaw speed at full deflection, deg/s");
-    g_gpPitch = CtlRegisterFloat("gpad_turnrate_pitch", 90.0f, 1.0f, 1000.0f, 0x1, "Right stick pitch speed at full deflection, deg/s");
+    g_gpPitch = CtlRegisterFloat("gpad_turnrate_pitch", 120.0f, 1.0f, 1000.0f, 0x1, "Right stick pitch speed at full deflection, deg/s");
     g_gpYawAds = CtlRegisterFloat("gpad_turnrate_yaw_ads", 90.0f, 1.0f, 1000.0f, 0x1, "Yaw speed while aiming down sights, deg/s");
     g_gpPitchAds = CtlRegisterFloat("gpad_turnrate_pitch_ads", 55.0f, 1.0f, 1000.0f, 0x1, "Pitch speed while aiming down sights, deg/s");
-    g_gpCurve = CtlRegisterFloat("gpad_view_curve", 2.0f, 1.0f, 4.0f, 0x1, "Right stick response exponent: 1 linear, 2 quadratic (fine aim near the centre)");
-    g_gpAccel = CtlRegisterFloat("gpad_view_accel", 1200.0f, 0.0f, 10000.0f, 0x1, "Turn-rate acceleration, deg/s per s (0 = instant)");
+    g_gpCurve = CtlRegisterFloat("gpad_view_curve", 1.7f, 1.0f, 4.0f, 0x1, "Right stick response exponent: 1 linear, 2 quadratic (fine aim near the centre)");
+    g_gpAccel = CtlRegisterFloat("gpad_view_accel", 3000.0f, 0.0f, 20000.0f, 0x1, "Turn-rate acceleration above gpad_view_accel_start, deg/s per s (0 = instant)");
+    g_gpAccelStart = CtlRegisterFloat("gpad_view_accel_start", 0.6f, 0.0f, 1.0f, 0x1,
+                                      "Fraction of the stick's turn rate reached at once; only the rest accelerates (0 = all of it ramps)");
+    g_gpHires = C1RegisterInt("gpad_view_hires", 1, 0, 1, 0x1, "Turn by the real time between usercmds (QueryPerformanceCounter) instead of C1's whole-millisecond frametime");
+    g_gpLookVer = C1RegisterInt("gpad_look_version", 0, 0, 1000, 0x1, "Look defaults last applied (read only)");
+    g_gpMoveDigital = C1RegisterInt("gpad_move_digital", 1, 0, 1, 0x1,
+                                    "Left stick moves in the eight key directions at full key speed (the C1 wire command carries only "
+                                    "direction bits); 0 = analog values, which the server does not see");
+    g_gpMoveThreshold = CtlRegisterFloat("gpad_move_threshold", 0.3f, 0.0f, 0.95f, 0x1,
+                                         "Left stick deflection that starts moving (with gpad_move_digital, any move is full key speed)");
+    g_gpDive = C1RegisterInt("gpad_dive", 1, 0, 1, 0x1, "B while sprinting dives (C1's dolphin dive, toggleprone during a sprint); 0 = B is always +stance");
     g_gpCursor = CtlRegisterFloat("gpad_menu_cursor_speed", 1100.0f, 50.0f, 5000.0f, 0x1, "Menu cursor speed at full deflection, pixels/s");
     g_gpDebug = C1RegisterInt("gpad_debug", 0, 0, 2, 0, "Gamepad diagnostics in the console (1 state twice a second, 2 also every button)");
     g_gpUseHold = C1RegisterInt("gpad_use_hold_time", 250, 0, 2000, 0x1,
@@ -922,6 +932,7 @@ static void CtlQueueKey(int key, int down)
 }
 
 static volatile LONG g_locAction;   /* 1 confirm, 2 cancel, for CtlLocSelect */
+static volatile LONG g_bEvents;     /* B: 1 press, 2 release (input thread -> CtlFrameStance) */
 
 /* Input-thread state. */
 static CtlPad g_real;               /* the connected pad, XInput layout */
@@ -936,6 +947,7 @@ static void CtlRelease(int mode, DWORD bits)
 {
     if (!bits || mode < 0) return;
     if (mode == 0 || mode == CTL_MODE_LOCSEL) {
+        if (bits & XI_B) { InterlockedOr(&g_bEvents, 2); bits &= ~XI_B; }
         for (DWORD b = 1; b <= CTL_XHOLD_BIT; b <<= 1)
             if ((bits & b) && CtlButtonKey(b)) CtlQueueKey(CtlButtonKey(b), 0);
     } else if (mode == CTL_MODE_PAUSE) {
@@ -1034,6 +1046,43 @@ static void CtlPauseNav(HWND h, DWORD pressed, DWORD released, DWORD held, float
 static int g_xState;      /* 0 up, 1 pressed (undecided), 2 holding */
 static DWORD g_xDownAt;
 
+/* B and the dolphin dive. C1's toggleprone (0x48F870) turns into a dive (stance state 3 -> usercmd 0x800000,
+ * the server's CODOL dive) when the player is sprinting (cg+0x15C sprint fraction >= [0xC845B8] and pm_flags
+ * 0x4000), and C1's +stance only dives after a 200 ms hold during a sprint. With gpad_dive, B pressed while
+ * sprinting runs toggleprone at once (T5 console style); otherwise B is the ordinary BUTTON_B key (+stance:
+ * tap crouch, hold prone). The input thread only records B's edges; IN_Frame decides, since the sprint test
+ * reads cgame. */
+/* g_bEvents: declared with the input-thread state */
+static int g_bState;                /* 0 up, 1 BUTTON_B down sent, 2 dived */
+
+static BOOL CtlSprinting(void)
+{
+    BYTE *cg = ParityCg();
+    if (!cg || !Readable(cg + 0x15C, 4)) return FALSE;
+    double need = *(const double *)(DWORD_PTR)0x00C845B8u;
+    return *(const float *)(cg + 0x15C) >= need && (*(const int *)(cg + 0xC) & 0x4000) != 0;
+}
+
+static void CtlFrameStance(void)
+{
+    LONG ev = InterlockedExchange(&g_bEvents, 0);
+    if (ev & 1) {
+        if (g_bState == 1) CtlQueueKey(K_BUTTON_B, 0);
+        if (C1DvarInt(g_gpDive, 1) && CtlSprinting()) {
+            CtlRunBinding(81 /* toggleprone */, K_BUTTON_B);
+            g_bState = 2;
+            CtlDebugf(1, "gamepad: B while sprinting -> dive (toggleprone)\n");
+        } else {
+            CtlQueueKey(K_BUTTON_B, 1);
+            g_bState = 1;
+        }
+    }
+    if (ev & 2) {
+        if (g_bState == 1) CtlQueueKey(K_BUTTON_B, 0);
+        g_bState = 0;
+    }
+}
+
 static void CtlGameButtons(DWORD act)
 {
     int holdMs = C1DvarInt(g_gpUseHold, 250);
@@ -1057,6 +1106,11 @@ static void CtlGameButtons(DWORD act)
         if (!xNow) g_xState = 0;
     }
     DWORD pressed = act & ~g_sent, released = g_sent & ~act;
+    if ((pressed | released) & XI_B) {   /* B goes through CtlFrameStance (dive while sprinting) */
+        InterlockedOr(&g_bEvents, (pressed & XI_B) ? 1 : 2);
+        pressed &= ~XI_B;
+        released &= ~XI_B;
+    }
     for (DWORD bit = 1; (pressed | released) && bit <= 0x8000; bit <<= 1) {
         int key = CtlButtonKey(bit);
         if (!key || !((pressed | released) & bit)) continue;
@@ -1503,6 +1557,7 @@ static void CtlFrameExtras(void)
     if (C1DvarInt(g_gpDebug, 0)) CtlNavLog();
     CtlApplyPadNames();
     CtlGlyphFrame();
+    CtlFrameStance();
     if (g_ksUpAt && (LONG)(now - g_ksUpAt) >= 0) { g_ksUpAt = 0; CtlRunBinding(g_ksUpIndex, K_DPAD_RIGHT); }
     int gpadInfo = g_lastDevice != 1 ? 0 : CtlKbmCooldownLeft() ? 2 : 1;
     if (g_gpUserinfo && g_c1CbufOk && (g_deviceChanged || gpadInfo != C1DvarInt(g_gpUserinfo, 0))) {  /* userinfo "gpad": at most once a second */
@@ -1564,6 +1619,19 @@ __attribute__((used)) void __cdecl ControllerFrame(void)
             if (C1DvarInt(g_gpBindsVer, 0) < CTL_BINDS_VERSION) { applies++; CtlApplyDefaultBinds(CtlPadUnbound() ? 1 : 2); }
             else if (CtlPadUnbound()) { applies++; CtlApplyDefaultBinds(0); }
             else if (CtlBindsLost()) { applies++; CtlApplyDefaultBinds(3); }
+            /* look defaults v1 (2026-10-21): archived values still at the old defaults move to the new ones,
+             * a player's own values stay */
+            if (C1DvarInt(g_gpLookVer, 0) < 1 && g_c1CbufOk) {
+                char cmd[300];
+                int n = 0;
+                if (fabsf(CtlDvarFloat(g_gpDzMin, 0.12f) - 0.2f) < 0.001f) n += _snprintf(cmd + n, sizeof(cmd) - n, "set gpad_stick_deadzone_min 0.12; ");
+                if (fabsf(CtlDvarFloat(g_gpCurve, 1.7f) - 2.0f) < 0.001f) n += _snprintf(cmd + n, sizeof(cmd) - n, "set gpad_view_curve 1.7; ");
+                if (fabsf(CtlDvarFloat(g_gpAccel, 3000.0f) - 1200.0f) < 0.5f) n += _snprintf(cmd + n, sizeof(cmd) - n, "set gpad_view_accel 3000; ");
+                if (fabsf(CtlDvarFloat(g_gpPitch, 120.0f) - 90.0f) < 0.5f) n += _snprintf(cmd + n, sizeof(cmd) - n, "set gpad_turnrate_pitch 120; ");
+                _snprintf(cmd + n, sizeof(cmd) - n, "set gpad_look_version 1\n");
+                C1CbufAddText(cmd);
+                Log("controller: look defaults v1: %s", cmd);
+            }
         }
     }
     CtlDrainDebug();
@@ -1674,6 +1742,83 @@ __attribute__((used)) void __cdecl ControllerPreMove(int lc)
 /* After C1's CL_MouseMove (main thread, inside CL_CreateCmd): left stick -> forwardmove/rightmove,
  * right stick -> clientActive viewangles (IW4x's CL_GamepadMove and AimAssist_ApplyTurnRates), then aim
  * assist on the stick's contribution. */
+/* gpad_looktest <rx> <ms>: hold the right stick at rx (synthetic pad) for ms and log the turn: usercmds, mean dt,
+ * degrees turned, the time to 50 % / 90 % of the final rate, and the rate over the last 200 ms. */
+static int g_lookTest;              /* 1 recording */
+static double g_ltT, g_ltYaw, g_ltT50, g_ltT90, g_ltLateYaw, g_ltLateT, g_ltDtMin = 1, g_ltDtMax;
+static int g_ltCmds;
+static DWORD g_ltEnd;
+static float g_ltTarget;
+static void CtlLookRecord(float dt, float axis, float vel)
+{
+    if (!g_lookTest) return;
+    if (fabsf(axis) <= 0.0f && g_ltCmds == 0) return;   /* wait for the stick */
+    g_ltCmds++;
+    g_ltT += dt;
+    g_ltYaw += vel * dt;
+    if (dt < g_ltDtMin) g_ltDtMin = dt;
+    if (dt > g_ltDtMax) g_ltDtMax = dt;
+    static float trT[4096], trV[4096];
+    if (g_ltCmds <= 4096) { trT[g_ltCmds - 1] = (float)g_ltT; trV[g_ltCmds - 1] = vel; }
+    if ((LONG)(GetTickCount() - (g_ltEnd - 200)) >= 0) { g_ltLateYaw += vel * dt; g_ltLateT += dt; }
+    if ((LONG)(GetTickCount() - g_ltEnd) >= 0) {
+        g_lookTest = 0;
+        float fin = trV[(g_ltCmds < 4096 ? g_ltCmds : 4096) - 1];   /* time to 50 % / 90 % of the final rate */
+        g_ltT50 = g_ltT90 = 0;
+        for (int i = 0; i < g_ltCmds && i < 4096; i++) {
+            if (!g_ltT50 && trV[i] >= 0.5f * fin) g_ltT50 = trT[i];
+            if (!g_ltT90 && trV[i] >= 0.9f * fin) g_ltT90 = trT[i];
+        }
+        char line[300];
+        _snprintf(line, sizeof(line), "gamepad: looktest %d cmds, dt mean %.2f ms (min %.2f max %.2f), turned %.1f deg in %.3f s, "
+                  "50%% rate at %.0f ms, 90%% at %.0f ms, late rate %.1f deg/s (hires %d, accel %.0f, start %.2f, curve %.2f, dz %.2f)\n",
+                  g_ltCmds, g_ltT * 1000.0 / g_ltCmds, g_ltDtMin * 1000.0, g_ltDtMax * 1000.0, g_ltYaw, g_ltT, g_ltT50 * 1000.0,
+                  g_ltT90 * 1000.0, g_ltLateT > 0 ? g_ltLateYaw / g_ltLateT : 0.0, C1DvarInt(g_gpHires, 1), CtlDvarFloat(g_gpAccel, 0),
+                  CtlDvarFloat(g_gpAccelStart, 0), CtlDvarFloat(g_gpCurve, 0), CtlDvarFloat(g_gpDzMin, 0));
+        C1Printf("%s", line);
+        Log("controller: %s", line + 9);
+    }
+}
+
+static void __cdecl CtlCmdLookTest(void)
+{
+    if (VoiceArgc() < 3) { C1Printf("usage: gpad_looktest <rx -1..1> <ms>\n"); return; }
+    float rx = (float)atof(VoiceArgv(1));
+    int ms = atoi(VoiceArgv(2));
+    char cmd[96];
+    g_ltT = g_ltYaw = g_ltT50 = g_ltT90 = g_ltLateYaw = g_ltLateT = g_ltDtMax = 0;
+    g_ltDtMin = 1;
+    g_ltCmds = 0;
+    g_ltTarget = 0;
+    g_yawVel = g_pitchVel = 0;
+    g_ltEnd = GetTickCount() + (DWORD)ms;
+    g_lookTest = 1;
+    _snprintf(cmd, sizeof(cmd), "gpad_fake 0 0 %.3f 0 0 0 0 %d\n", rx, ms + 100);
+    C1CbufAddText(cmd);
+}
+
+/* gpad_lookpreset snappy | classic | smooth: right-stick look settings in one go. */
+static void __cdecl CtlCmdLookPreset(void)
+{
+    static const struct { const char *name; float dz, curve, accel, start, yaw, pitch; } kP[] = {
+        { "snappy", 0.12f, 1.7f, 3000.0f, 0.6f, 260.0f, 120.0f },   /* this build's defaults */
+        { "classic", 0.20f, 2.0f, 1200.0f, 0.0f, 260.0f, 90.0f },   /* the earlier builds' look */
+        { "smooth", 0.15f, 2.0f, 1800.0f, 0.4f, 230.0f, 100.0f },
+    };
+    const char *want = VoiceArgc() > 1 ? VoiceArgv(1) : "";
+    for (unsigned i = 0; i < sizeof(kP) / sizeof(kP[0]); i++)
+        if (!_stricmp(want, kP[i].name)) {
+            char cmd[400];
+            _snprintf(cmd, sizeof(cmd), "set gpad_stick_deadzone_min %.2f; set gpad_view_curve %.2f; set gpad_view_accel %.0f; "
+                      "set gpad_view_accel_start %.2f; set gpad_turnrate_yaw %.0f; set gpad_turnrate_pitch %.0f\n",
+                      kP[i].dz, kP[i].curve, kP[i].accel, kP[i].start, kP[i].yaw, kP[i].pitch);
+            C1CbufAddText(cmd);
+            C1Printf("gamepad: look preset %s\n", kP[i].name);
+            return;
+        }
+    C1Printf("usage: gpad_lookpreset snappy | classic | smooth\n");
+}
+
 __attribute__((used)) void __cdecl ControllerMove(int lc, BYTE *cmd, float frametime)
 {
     (void)frametime;
@@ -1696,9 +1841,34 @@ __attribute__((used)) void __cdecl ControllerMove(int lc, BYTE *cmd, float frame
     if (!g_padActive || CtlMode() != CTL_MODE_GAME || !CtlEnabled()) { g_lockEnt = -1; return; }
     CtlSampleSticks(); /* once per usercmd, next to the mouse */
 
-    /* move: IW4x's moveScale keeps diagonal full deflection at full speed */
+    /* move. C1's wire usercmd has no analog movement: it carries four direction bits, and the server rebuilds
+     * forwardmove / rightmove as +-127 from them (CoD4x_Server codol_game.c). An analog cmd therefore moved the
+     * server at full key speed in whatever octant the signs gave (a 10-degree drift = a full diagonal strafe,
+     * a half tilt = a run), while this client predicted a slower or straighter move, and corrected back.
+     * gpad_move_digital maps the stick to the same eight +-127 combinations the keys make, by the octant of
+     * its direction (with 6 degrees of hysteresis), once past gpad_move_threshold. */
     float fwd = g_ly, side = g_lx;
-    if (fwd != 0.0f || side != 0.0f) {
+    float moveMag = sqrtf(fwd * fwd + side * side);
+    if (C1DvarInt(g_gpMoveDigital, 1)) {
+        static int lastOct = -1;
+        if (moveMag < CtlDvarFloat(g_gpMoveThreshold, 0.3f)) lastOct = -1;
+        else {
+            float a = atan2f(fwd, side);                       /* 0 = right, pi/2 = forward */
+            if (a < 0.0f) a += 2.0f * (float)M_PI;
+            int oct = (int)floorf((a + (float)M_PI / 8.0f) / ((float)M_PI / 4.0f)) & 7;
+            if (lastOct >= 0 && oct != lastOct) {
+                float centre = lastOct * (float)M_PI / 4.0f, d = fabsf(a - centre);
+                if (d > (float)M_PI) d = 2.0f * (float)M_PI - d;
+                if (d < (float)M_PI / 8.0f + 6.0f * (float)M_PI / 180.0f) oct = lastOct;
+            }
+            lastOct = oct;
+            static const int kF[8] = { 0, 1, 1, 1, 0, -1, -1, -1 }, kR[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
+            int f = (signed char)cmd[CTL_CMD_FORWARD] + 127 * kF[oct];
+            int s2 = (signed char)cmd[CTL_CMD_RIGHT] + 127 * kR[oct];
+            cmd[CTL_CMD_FORWARD] = (BYTE)(signed char)(f < -127 ? -127 : f > 127 ? 127 : f);
+            cmd[CTL_CMD_RIGHT] = (BYTE)(signed char)(s2 < -127 ? -127 : s2 > 127 ? 127 : s2);
+        }
+    } else if (fwd != 0.0f || side != 0.0f) {   /* analog (IW4x moveScale) */
         float scale = 127.0f;
         float r = fabsf(side) <= fabsf(fwd) ? side / fwd : fwd / side;
         scale *= sqrtf(r * r + 1.0f);
@@ -1708,9 +1878,19 @@ __attribute__((used)) void __cdecl ControllerMove(int lc, BYTE *cmd, float frame
         cmd[CTL_CMD_RIGHT] = (BYTE)(signed char)(s2 < -128 ? -128 : s2 > 127 ? 127 : s2);
     }
 
-    /* look */
+    /* look: dt is the real time since the previous usercmd. C1's cls.frametime is whole milliseconds, so at
+     * 300 fps (3.33 ms frames) it read 3 and the view turned 10 % slower than the dvars say, and unevenly. */
     int msec = *(volatile int *)(DWORD_PTR)CTL_FRAMEMSEC_VA;
     float dt = msec > 0 && msec < 200 ? msec * 0.001f : 0.0f;
+    {
+        static LARGE_INTEGER freq, last;
+        LARGE_INTEGER t;
+        if (!freq.QuadPart) QueryPerformanceFrequency(&freq);
+        QueryPerformanceCounter(&t);
+        float real = last.QuadPart ? (float)((double)(t.QuadPart - last.QuadPart) / (double)freq.QuadPart) : 0.0f;
+        last = t;
+        if (C1DvarInt(g_gpHires, 1) && real > 0.0f && real < 0.2f) dt = real;
+    }
     BOOL adsNow = (*(volatile const DWORD *)(cmd + CTL_CMD_BUTTONS) & CTL_ADS_BUTTONS) != 0;
     float lerpStep = dt / 0.15f; /* about the ADS transition time */
     g_adsLerp += adsNow ? (g_adsLerp + lerpStep > 1.0f ? 1.0f - g_adsLerp : lerpStep)
@@ -1752,10 +1932,12 @@ __attribute__((used)) void __cdecl ControllerMove(int lc, BYTE *cmd, float frame
     if (accel <= 0.0f) {
         g_yawVel = yawTarget;
         g_pitchVel = pitchTarget;
-    } else { /* IW4 aim_accel_turnrate: speed up linearly, slow down at once */
-        g_yawVel = yawTarget <= g_yawVel ? yawTarget : fminf(yawTarget, g_yawVel + accel * dt);
-        g_pitchVel = pitchTarget <= g_pitchVel ? pitchTarget : fminf(pitchTarget, g_pitchVel + accel * dt);
+    } else { /* reach gpad_view_accel_start of the target at once, ramp the rest; slow down at once */
+        float start = CtlDvarFloat(g_gpAccelStart, 0.6f);
+        g_yawVel = yawTarget <= g_yawVel ? yawTarget : fminf(yawTarget, fmaxf(g_yawVel + accel * dt, yawTarget * start));
+        g_pitchVel = pitchTarget <= g_pitchVel ? pitchTarget : fminf(pitchTarget, fmaxf(g_pitchVel + accel * dt, pitchTarget * start));
     }
+    CtlLookRecord(dt, yawAxis, g_yawVel);
     float dyaw = g_yawVel * dt * (yawAxis >= 0.0f ? 1.0f : -1.0f);
     float dpitch = g_pitchVel * dt * (pitchAxis >= 0.0f ? 1.0f : -1.0f);
 
@@ -1939,6 +2121,8 @@ static C1Cmd g_ctlCmds[] = {
     { NULL, "gpad_aadump", (void *)CtlCmdAaDump },
     { NULL, "gpad_glyphdump", (void *)CtlCmdGlyphDump },
     { NULL, "gpad_notifytest", (void *)CtlCmdNotifyTest },
+    { NULL, "gpad_looktest", (void *)CtlCmdLookTest },
+    { NULL, "gpad_lookpreset", (void *)CtlCmdLookPreset },
     { NULL, "gpad_glyphtest", (void *)CtlCmdGlyphTest },
 };
 
