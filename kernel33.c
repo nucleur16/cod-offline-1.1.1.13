@@ -134,6 +134,7 @@ static void FillImports(void)
     int failed = 0;
     for (unsigned i = 0; i < sizeof(kC1Imports) / sizeof(kC1Imports[0]); i++) {
         const C1Import *imp = &kC1Imports[i];
+        if (!GetModuleHandleA(imp->dll)) Log("imports: loading %s", imp->dll);
         HMODULE m = ((HMODULE(WINAPI *)(LPCSTR))g_loadLibraryA)(imp->dll);
         FARPROC f = m ? ((FARPROC(WINAPI *)(HMODULE, LPCSTR))g_getProcAddress)(m, imp->name) : NULL;
         if (!f) {
@@ -1276,6 +1277,18 @@ static LONG CALLBACK FaultHandler(EXCEPTION_POINTERS *ep)
         Log("AV %s 0x%08lX at eip=0x%08lX [esp]=0x%08lX",
             er->ExceptionInformation[0] == 8 ? "exec" : er->ExceptionInformation[0] ? "write" : "read",
             (unsigned long)er->ExceptionInformation[1], (unsigned long)c->Eip, (unsigned long)ret);
+        /* Name the module behind eip and the top stack words, so a crash in a foreign DLL says which. */
+        for (int k = -1; k < 8; k++) {
+            DWORD a = k < 0 ? c->Eip : Readable(sp + k, 4) ? sp[k] : 0;
+            HMODULE mod;
+            char name[MAX_PATH];
+            if (a && GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                                        GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                                        (LPCSTR)(DWORD_PTR)a, &mod) &&
+                GetModuleFileNameA(mod, name, sizeof(name)))
+                Log("  %s 0x%08lX = %s+0x%lX", k < 0 ? "eip" : "stack", (unsigned long)a, name,
+                    (unsigned long)(a - (DWORD)(DWORD_PTR)mod));
+        }
     }
     return EXCEPTION_CONTINUE_SEARCH;
 }
