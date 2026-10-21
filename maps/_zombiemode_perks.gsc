@@ -502,14 +502,25 @@ perk_give_bottle_end( gun )
 	bottles[ 6 ] = "zombie_perk_bottle_deadshot";
 	bottles[ 7 ] = "zombie_perk_bottle_additionalprimaryweapon";
 
+	// Switch back first and take the bottle once the switch has begun: a
+	// change from "none" carries no raise event, so the gun came back in
+	// silence (see _zombiemode_weapons::weapon_give).
+	back = undefined;
+	if ( isDefined( gun ) && gun != "none" && self hasWeapon( gun ) )
+		back = gun;
+
 	for ( i = 0; i < bottles.size; i++ )
 	{
-		if ( self hasWeapon( bottles[ i ] ) )
+		if ( !self hasWeapon( bottles[ i ] ) )
+			continue;
+		if ( isDefined( back ) )
+			self thread maps\_zombiemode_weapons::take_weapon_after_switch( bottles[ i ], back );
+		else
 			self takeWeapon( bottles[ i ] );
 	}
 
-	if ( isDefined( gun ) && gun != "none" && self hasWeapon( gun ) )
-		self switchToWeapon( gun );
+	if ( isDefined( back ) )
+		self switchToWeapon( back );
 
 	self.is_drinking = false;
 }
@@ -988,11 +999,19 @@ vending_weapon_upgrade()
 		if ( isDefined( player ) && is_player_valid( player ) && !player hasWeapon( upgrade ) )
 		{
 			primaries = player getWeaponsListPrimaries();
-			if ( !isDefined( primaries ) || primaries.size == 0 )
+			has_primary = false;
+			for ( i = 0; isDefined( primaries ) && i < primaries.size; i++ )
+			{
+				if ( primaries[ i ] != "zombie_knuckle_crack" )
+					has_primary = true;
+			}
+			if ( !has_primary )
 			{
 				player maps\_zombiemode_weapons::weapon_give( current );
 				codolprintln( "CoDOL zm pap: " + player.name + " left " + upgrade + " in the machine with no other gun; " + current + " given back" );
 			}
+			else
+				player release_knuckle_crack();
 		}
 
 		self.pap_owner = undefined;
@@ -1157,17 +1176,65 @@ upgrade_knuckle_crack_end( gun )
 	self allowAds( true );
 	self allowSprint( true );
 
-	self takeWeapon( weapon );
+	if ( self maps\_zombiemode_laststand::player_is_in_laststand() || !self hasWeapon( weapon ) )
+	{
+		if ( self hasWeapon( weapon ) )
+			self takeWeapon( weapon );
+		return;
+	}
 
-	if ( self maps\_zombiemode_laststand::player_is_in_laststand() )
+	// CoDOL (user decision 2026-10-21): the knuckles stay in hand until the
+	// upgraded gun is taken from the machine.  Taking them here left the
+	// player holding "none" (or switched to another gun), and the upgrade
+	// then raised from "none": C1 sends EV_RAISE_WEAPON /
+	// EV_FIRST_RAISE_WEAPON only for a change from a held weapon (0x419efc),
+	// so the Mustang & Sally pullout had no raise sound.  weapon_give's
+	// switch now leaves the knuckles, and knuckle_crack_hold takes them once
+	// the player holds anything else.
+	self thread knuckle_crack_hold( weapon );
+}
+
+// Take the held knuckles as soon as the player holds another weapon: the
+// upgrade from the machine, the gun handed back on a timeout
+// (release_knuckle_crack), or anything the player switched to.
+knuckle_crack_hold( weapon )
+{
+	self endon( "disconnect" );
+	self notify( "zm_knuckle_crack_hold" );
+	self endon( "zm_knuckle_crack_hold" );
+
+	while ( self hasWeapon( weapon ) )
+	{
+		current = self getCurrentWeapon();
+		if ( isDefined( current ) && current != weapon && current != "none" )
+			break;
+		if ( self maps\_zombiemode_laststand::player_is_in_laststand() )
+			break;
+		wait( 0.05 );
+	}
+
+	if ( self hasWeapon( weapon ) )
+		self takeWeapon( weapon );
+}
+
+// The machine timed out (or the buyer could not take the gun): leave the
+// knuckles for a primary, raising it from the held knuckles.
+release_knuckle_crack()
+{
+	weapon = "zombie_knuckle_crack";
+
+	if ( !self hasWeapon( weapon ) || self getCurrentWeapon() != weapon )
 		return;
 
-	// The caller gives and switches to the upgraded weapon straight after
-	// this returns; falling back to a primary only matters when it did not
-	// (the player went down, or the machine timed out).
 	primaries = self getWeaponsListPrimaries();
-	if ( isDefined( primaries ) && primaries.size > 0 )
-		self switchToWeapon( primaries[ 0 ] );
+	for ( i = 0; isDefined( primaries ) && i < primaries.size; i++ )
+	{
+		if ( primaries[ i ] != weapon )
+		{
+			self switchToWeapon( primaries[ i ] );
+			return;
+		}
+	}
 }
 
 // T5 :283 third_person_weapon_upgrade.  Self is the player, machine is the

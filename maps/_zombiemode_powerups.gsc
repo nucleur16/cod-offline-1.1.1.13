@@ -1718,15 +1718,20 @@ weapon_powerup_remove( ent_player, w, reason )
 	// Restrictions off before the switch back, which the lock would refuse.
 	ent_player powerup_weapon_unlock();
 
-	ent_player takeWeapon( w.weapon );
-
 	ent_player set_powerup_state( w.on_field, false );
 	ent_player.zm_powerup_weapon_held[ w.kind ] = false;
 	ent_player.has_powerup_weapon = false;
 
 	ent_player notify( w.over_notify );
 
+	// Switch back first and take the power-up weapon once the switch has
+	// begun, so the restored gun's raise is heard (a change from "none"
+	// carries no raise event; _zombiemode_weapons::weapon_give).
 	restored = weapon_powerup_restore( ent_player, ent_player.zm_powerup_gun_before[ w.kind ] );
+	if ( restored != "none" && restored != w.weapon )
+		ent_player thread maps\_zombiemode_weapons::take_weapon_after_switch( w.weapon, restored );
+	else
+		ent_player takeWeapon( w.weapon );
 
 	codolPrintLn( "CoDOL zm powerup: " + w.weapon + " taken from " + ent_player.name + " (" + reason +
 		"); switched back to " + restored );
@@ -1750,10 +1755,15 @@ weapon_powerup_restore( ent_player, before )
 		}
 	}
 
-	if ( primaries.size > 0 )
+	// The power-up weapon is still held (it is taken after the switch), so
+	// it is skipped here.
+	held = ent_player getCurrentWeapon();
+	for ( i = 0; i < primaries.size; i++ )
 	{
-		ent_player switchToWeapon( primaries[ 0 ] );
-		return primaries[ 0 ];
+		if ( primaries[ i ] == held )
+			continue;
+		ent_player switchToWeapon( primaries[ i ] );
+		return primaries[ i ];
 	}
 
 	return "none";
@@ -2129,8 +2139,9 @@ qb_pack_or_unpack_current_weapon_result( position )
 				up = level.zombie_weapons[ keys[ k ] ].upgrade_name;
 				if ( isDefined( up ) && up == weapon )
 				{
-					player takeWeapon( weapon );
-					player maps\_zombiemode_weapons::weapon_give( keys[ k ] );
+					// Swap from the held gun so the raise is heard
+					// (_zombiemode_weapons::weapon_give).
+					player maps\_zombiemode_weapons::weapon_swap( weapon, keys[ k ] );
 					playFx( level._effect[ "quantum_bomb_player_effect" ], player.origin );
 					codolPrintLn( "CoDOL zm pandora: unpacked " + weapon + " for " + player.name );
 					break;
@@ -2146,13 +2157,10 @@ qb_pack_or_unpack_current_weapon_result( position )
 			if ( !randomInt( 4 ) )  // 75% chance
 				continue;
 
-			// T5 :499: under the limit, weapon_give would not take the
-			// current weapon, so take it here.
-			primaries = player getWeaponsListPrimaries();
-			if ( primaries.size < player maps\_zombiemode_weapons::player_weapon_limit() )
-				player takeWeapon( weapon );
-
-			player maps\_zombiemode_weapons::weapon_give( up );
+			// T5 :499 takes the current weapon under the limit, and
+			// weapon_give takes it over the limit: either way the held gun
+			// is replaced.  Swap from it so the raise is heard.
+			player maps\_zombiemode_weapons::weapon_swap( weapon, up );
 			playFx( level._effect[ "quantum_bomb_player_effect" ], player.origin );
 			codolPrintLn( "CoDOL zm pandora: packed " + weapon + " into " + up + " for " + player.name );
 		}

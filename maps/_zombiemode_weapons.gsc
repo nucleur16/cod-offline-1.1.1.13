@@ -368,20 +368,30 @@ player_weapon_limit()
 // none of which exist in this tree (MEASURED).
 enforce_weapon_limit( new_weapon )
 {
+	current = self weapon_limit_victim( new_weapon );
+
+	if ( isDefined( current ) )
+		self takeWeapon( current );
+}
+
+// The primary enforce_weapon_limit takes to make room for new_weapon, or
+// undefined when there is room (or new_weapon is a re-buy).
+weapon_limit_victim( new_weapon )
+{
 	primaries = self getWeaponsListPrimaries();
 
 	if ( !isDefined( primaries ) )
-		return;
+		return undefined;
 
 	// Buying a weapon already held is a re-buy, not a new slot.
 	for ( i = 0; i < primaries.size; i++ )
 	{
 		if ( primaries[ i ] == new_weapon )
-			return;
+			return undefined;
 	}
 
 	if ( primaries.size < self player_weapon_limit() )
-		return;
+		return undefined;
 
 	// T5 drops whatever is in hand.  It does NOT spare the starting pistol:
 	// T5 :2404 records last_pistol_swap for m1911_zm and takes it anyway, and
@@ -420,18 +430,69 @@ enforce_weapon_limit( new_weapon )
 		}
 	}
 
-	if ( isDefined( current ) )
-		self takeWeapon( current );
+	return current;
 }
 
 // T5 :2365, plus the ammo top-up branch of :2649.
+//
+// When the weapon making room is the one in hand it is taken AFTER the switch
+// to the new one has begun.  Taking the held weapon first leaves the player
+// holding "none" (C1 0x422109 clears ps+0x33c), and C1's PM_FinishWeaponChange
+// sends EV_RAISE_WEAPON / EV_FIRST_RAISE_WEAPON -- the events that play the
+// definition's raise sound (def +0x410 / +0x418) -- only for a change that
+// starts from a held weapon (0x419efc).  A take-then-give therefore raised the
+// new gun in silence (the Mustang & Sally pullout had no sound).
 weapon_give( weapon_name )
 {
-	self enforce_weapon_limit( weapon_name );
+	victim = self weapon_limit_victim( weapon_name );
+	held = self getCurrentWeapon();
+
+	if ( isDefined( victim ) && ( !isDefined( held ) || victim != held ) )
+	{
+		self takeWeapon( victim );
+		victim = undefined;
+	}
 
 	self giveWeapon( weapon_name );
 	self giveMaxAmmo( weapon_name );
-	self switchToWeapon( weapon_name );
+	self switch_then_take( weapon_name, victim );
+}
+
+// Replace old_weapon (normally the one in hand) with new_weapon so that the
+// raise is heard: give and switch first, take the old one afterwards.
+weapon_swap( old_weapon, new_weapon )
+{
+	self giveWeapon( new_weapon );
+	self giveMaxAmmo( new_weapon );
+	self switch_then_take( new_weapon, old_weapon );
+}
+
+// Switch to new_weapon and take old_weapon once the change has reached the
+// raise (getCurrentWeapon reports the new weapon from PM_FinishWeaponChange
+// on), so the change starts from a held weapon and carries the raise event.
+// A switch that never happens (player downed, weapon taken) still takes the
+// old weapon after 3 s.
+switch_then_take( new_weapon, old_weapon )
+{
+	self switchToWeapon( new_weapon );
+
+	if ( isDefined( old_weapon ) && old_weapon != "none" && old_weapon != new_weapon )
+		self thread take_weapon_after_switch( old_weapon, new_weapon );
+}
+
+take_weapon_after_switch( old_weapon, new_weapon )
+{
+	self endon( "disconnect" );
+
+	for ( i = 0; i < 60; i++ )
+	{
+		if ( self getCurrentWeapon() == new_weapon || !self hasWeapon( new_weapon ) )
+			break;
+		wait( 0.05 );
+	}
+
+	if ( self hasWeapon( old_weapon ) )
+		self takeWeapon( old_weapon );
 }
 
 ammo_give( weapon_name )
