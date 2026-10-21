@@ -184,10 +184,13 @@ package codo.views.option_sub
          this.myTFPresets.y = this.myCBVolumeVoiceChat.y + 4;
          this.myCBPresets.x = this.myPBVolumeVoiceChat.x;
          this.myCBPresets.y = this.myCBVolumeVoiceChat.y;
-         this.myCBVolumeVoiceChat.y += tempRow;
-         this.myPBVolumeVoiceChat.y += tempRow;
-         this.myCBVolumeVoiceMic.y += tempRow;
-         this.myPBVolumeVoiceMic.y += tempRow;
+         // k33: five rows now (Voice Mode, Input Device, Voice, Microphone, Input Level), 0.8 apart
+         var tempOrig:Number = tempRow;
+         tempRow = Math.round(tempOrig * 0.8);
+         this.myCBVolumeVoiceChat.y += 2 * tempRow;
+         this.myPBVolumeVoiceChat.y += 2 * tempRow;
+         this.myCBVolumeVoiceMic.y = this.myCBVolumeVoiceChat.y + tempRow;
+         this.myPBVolumeVoiceMic.y = this.myPBVolumeVoiceChat.y + tempRow;
          this.myTFMicLevel.y = this.myCBVolumeVoiceMic.y + tempRow + 4;
          // k33: the Input Level meter is a bar drawn on the Microphone slider's geometry (its track
          // myBg and its value text myCurrentTF), one row below it; myMicLevel shows the number.
@@ -277,15 +280,15 @@ package codo.views.option_sub
 
       private function k33BuildDevice(cRow:Number) : void
       {
-         // on the Voice Mode row, right side, where Output Device sits in the Volume section
-         var tf:TextField = this.k33Text(this.myTFDevice,"输入设备",int(this.myTFDevice.getTextFormat().size),uint(this.myTFDevice.getTextFormat().color));
-         tf.x = this.myTFDevice.x;
-         tf.y = this.myTFPresets.y;
+         // its own row under Voice Mode: label in the Voice Mode label's place, box where the Voice Mode box is
+         var tf:TextField = this.k33Text(this.myTFPresets,"输入设备",int(this.myTFPresets.getTextFormat().size),uint(this.myTFPresets.getTextFormat().color));
+         tf.x = this.myTFPresets.x;
+         tf.y = this.myTFPresets.y + cRow;
          this.addChild(tf);
-         this._k33DevW = 170;
+         this._k33DevW = 300;
          this._k33DevBtn = this.k33Box(this._k33DevW,26,"...");
-         this._k33DevBtn.x = this.myCBDevice.x;
-         this._k33DevBtn.y = this.myCBPresets.y;
+         this._k33DevBtn.x = this.myCBPresets.x;
+         this._k33DevBtn.y = this.myCBPresets.y + cRow;
          this._k33DevBtn.addEventListener(MouseEvent.CLICK,this.k33OnDevButton);
          this.addChild(this._k33DevBtn);
          this._k33DevPop = new Sprite();
@@ -303,7 +306,7 @@ package codo.views.option_sub
       private function k33DevLabel(cName:String) : String
       {
          var n:String = cName == "Default" ? "默认设备" : cName;
-         return n.length > 18 ? n.substr(0,17) + ".." : n;
+         return n.length > 34 ? n.substr(0,33) + ".." : n;
       }
 
       private function k33DevRefresh() : void

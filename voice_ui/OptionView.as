@@ -46,7 +46,7 @@ package codo.views
 
       private static const K33_BUTTONS:Array = ["A","B","X","Y","LB","RB","START","BACK","LS","RS","UP","DOWN","LEFT","RIGHT","LT","RT"];
 
-      private static const K33_DS:Number = 0.7;
+      private static const K33_DS:Number = 0.62;
 
       public var myIconCloseBtn:CodoButton;
 
@@ -351,7 +351,7 @@ package codo.views
          this._k33Status.y = 3;
          this._k33Panel.addChild(this._k33Status);
          this._k33Diagram = new Sprite();
-         this._k33Diagram.x = 132;
+         this._k33Diagram.x = 128;
          this._k33Diagram.y = 40;
          this._k33Diagram.scaleX = this._k33Diagram.scaleY = K33_DS;
          this._k33Panel.addChild(this._k33Diagram);
@@ -365,16 +365,16 @@ package codo.views
          this._k33Panel.addChild(this._k33List);
          var pg1:Sprite = this.k33Button("手柄图示",110,24,this.k33OnPage);
          pg1.name = "page0";
-         pg1.x = 380;
+         pg1.x = 330;
          pg1.y = 0;
          this._k33Panel.addChild(pg1);
          var pg2:Sprite = this.k33Button("按键设置",110,24,this.k33OnPage);
          pg2.name = "page1";
-         pg2.x = 500;
+         pg2.x = 450;
          pg2.y = 0;
          this._k33Panel.addChild(pg2);
          this._k33Settings = new Sprite();
-         this._k33Settings.y = 300;
+         this._k33Settings.y = 270;
          this._k33Panel.addChild(this._k33Settings);
          var title:TextField = this.k33Text("点击动作, 再按要使用的手柄按键 (扳机和摇杆不能绑定)",13,10474463);
          this._k33List.addChild(title);
@@ -408,12 +408,12 @@ package codo.views
          while(j < s.length)
          {
             var lab:TextField = this.k33Text(s[j][1],13,14544626);
-            lab.x = j % 2 * 310;
+            lab.x = j % 2 * 290;
             lab.y = int(j / 2) * 28 + 3;
             this._k33Settings.addChild(lab);
-            var val:Sprite = this.k33Button("",120,22,this.k33OnSetting);
+            var val:Sprite = this.k33Button("",110,22,this.k33OnSetting);
             val.name = s[j][0];
-            val.x = j % 2 * 310 + 170;
+            val.x = j % 2 * 290 + 160;
             val.y = int(j / 2) * 28;
             this._k33Settings.addChild(val);
             j++;

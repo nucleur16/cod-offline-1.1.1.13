@@ -2236,6 +2236,24 @@ static void __cdecl CtlCmdNotifyTest(void)
     C1Print(ch, line);
 }
 
+/* Test clients only: "gpad_cursor <x> <y> [click]" puts the virtual menu cursor at client pixel x,y (and
+ * clicks there), for screenshots at any window size. */
+static void __cdecl CtlCmdCursor(void)
+{
+    HWND h = *(HWND *)(DWORD_PTR)CTL_MAIN_HWND_VA;
+    if (!CtlTestMode() || !h || VoiceArgc() < 3 || !CtlInstallTestFakes()) { C1Printf("usage (test clients): gpad_cursor <x> <y> [click]\n"); return; }
+    g_ctlCursor.x = atoi(VoiceArgv(1));
+    g_ctlCursor.y = atoi(VoiceArgv(2));
+    g_ctlCursorFake = TRUE;
+    g_selfPostMs = GetTickCount();
+    LPARAM lp = MAKELPARAM(g_ctlCursor.x, g_ctlCursor.y);
+    PostMessageA(h, WM_MOUSEMOVE, 0, lp);
+    if (VoiceArgc() > 3 && !_stricmp(VoiceArgv(3), "click")) {
+        PostMessageA(h, WM_LBUTTONDOWN, MK_LBUTTON, lp);
+        PostMessageA(h, WM_LBUTTONUP, 0, lp);
+    }
+}
+
 static void __cdecl CtlCmdTestMouse(void)
 {
     if (!CtlTestMode()) { C1Printf("gpad_testmouse: test clients only (+set k33_cmdFile 1)\n"); return; }
@@ -2281,6 +2299,7 @@ static C1Cmd g_ctlCmds[] = {
     { NULL, "gpad_looktest", (void *)CtlCmdLookTest },
     { NULL, "gpad_lookpreset", (void *)CtlCmdLookPreset },
     { NULL, "gpad_swaptriggers", (void *)CtlCmdSwapTriggers },
+    { NULL, "gpad_cursor", (void *)CtlCmdCursor },
     { NULL, "gpad_glyphtest", (void *)CtlCmdGlyphTest },
 };
 
