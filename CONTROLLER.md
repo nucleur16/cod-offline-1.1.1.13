@@ -240,7 +240,7 @@ work), which fails C1's client pure check (0x617FA0, "WIN_FILE_CORRUPT") on ever
   Pad names by SDL controller type: Xbox (A, B, X, Y, LB, RB, LT, RT, LS, RS, Start, Back), PlayStation
   (Cross, Circle, Square, Triangle, L1, R1, L2, R2, L3, R3, Options, Touchpad), Nintendo (positional);
   `gpad_glyphs` overrides. C1's zones ship no button icon materials (only `dpad_*` killstreak icons), so
-  these are text; images need a font or patch zone (phase 3).
+  Scaleform shows these as text; hints drawn by C1's text renderer get icons (section 9).
 - **Aim assist (pad only)**: C1's AimAssist_UpdateScreenTargets fills aaGlob 0x1501A80 (targets at +0x134,
   0x34 each, count +0xE34, view origin / angles +0xD0 / +0xDC). Slowdown 0.4 hip / 0.5 ADS in a 90x90 box,
   lock-on 0.6 (needs pad input past 0.05), ADS snap over 0.25 s in a 160x120 box (IW4 console values from
@@ -263,3 +263,43 @@ work), which fails C1's client pure check (0x617FA0, "WIN_FILE_CORRUPT") on ever
   +0x134, count +0xE34; the regions scale with C1's own tweakables (+0xC0 / +0xC4 = auto-melee 320x240).
 - Key names follow the last-used device (Options > Controls showed RT/LT/X/Y/RS/"Hold X"/RB/LB/D-pad for the
   pad, MOUSE1/R/E/F/G/Q/4/3/TAB after a key press); the HUD shows "RB" over the lethal grenade.
+
+## 9. Phase 3: button icons (2026-10-20)
+Pad keys in hints and prompts are drawn as icons, IW4's way: C1's text renderer still understands IW4's
+inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB26E / 0xAAB8B2 step over it,
+0xAAA7D0 draws it at `((size - 16) * fontHeight + 16) / 32` px). Source: `controller_glyphs.c`.
+
+- **Art**: `glyphs/make_glyphs.py` (Pillow) draws four original sets of 17 icons in kCtlButtons order (A B X Y
+  LB RB Start Back LS RS D-pad up/down/left/right LT RT Hold-X): Xbox 360 (coloured A/B/X/Y, LB/RB, LT/RT,
+  Back/Start arrows), PS3 (cross / circle / square / triangle, L1/R1, L2/R2, Select/Start, L3/R3, split
+  D-pad), Wii U (positional: bottom B, right A, left Y, top X; L/R, ZL/ZR, -/+), generic (a diamond of four
+  dots with the pressed one filled, L1/R1/L2/R2, menu / view symbols). Hold-X is the X icon in a ring.
+  64x64 with all mips, B8G8R8A8, written to `glyphs/glyphs.bin` (zlib, committed) and `glyphs/preview.png`;
+  the DLL links glyphs.bin with `.incbin`. Run `python glyphs/make_glyphs.py` after changing the art.
+- **Materials**: one per button, a copy of C1's `white` (Material_RegisterHandle 0xA78170; IW4 layout
+  verified at run time: textureCount +0x48, textureTable +0x54, texture def 12 bytes with the image at +8,
+  image texture at +0) whose texture table points at a copy of white's GfxImage. They live in a 64 KB block
+  at a letter address (0x4B4B0000 first) so each pointer is four letters: the escape has no 0, `^`, `%`, `&`
+  and survives every string copy (Key_GetBindingNames strncpy's 0x7F bytes; the escape is 8).
+- **Textures**: created on the render thread at the icon drawer's two call sites (0xAAB320, 0xAAB92D), on
+  the device of white's texture (CreateTexture 64x64x7 A8R8G8B8 managed; D3D9Ex fallback: default pool,
+  dynamic). One texture per set and button, made on first use; a set change swaps only the image's texture
+  pointer, so icons switch live. The hook also draws our icons white (C1 tints text icons with the text
+  colour, and hint key names are yellow); the black shadow pass stays black.
+- **Names**: Key_GetBindingNames' two Key_KeynumToString calls (0x49397C, 0x4A19A1) return the icon escape
+  for a pad key. Scaleform (AS key names, 0x5B080D: Controls screen, pause menu, Scaleform HUD) and GSC
+  (0x55A8B6) keep the text names: Scaleform has no IW4 icon escape, so it keeps the family names below.
+- **Set**: `gpad_glyphs` 0 by SDL controller type (Xbox 360 / One / Series and XInput -> Xbox 360; PS3/4/5 ->
+  PS3; Switch Pro / Joy-Cons / a name with "Wii U" -> Wii U; anything else -> generic), 1 Xbox 360, 2 PS3,
+  3 Wii U, 4 generic, 5 text names only. Text names (Scaleform, mode 5) follow the same family; generic text
+  is "Button South/East/West/North", L1/R1/L2/R2.
+- The spectator hint asks for `+toggleads_throw` before `+speed_throw`; with the pad in use a keyboard-only
+  `+toggleads_throw` no longer wins, so the hint shows LT (or L2 / ZL) instead of "MOUSE2".
+- If any check fails the icons stay off and every hint keeps the text names; `gpad_glyphdump [material]`
+  prints the state and the template's bytes. Test-only: `gpad_glyphtest [caller|off]` draws every icon and a
+  sample hint each frame (it hooks R_AddCmdDrawText 0xA7EF80 and the end-of-frame call 0x60AB19 only while on).
+
+### Verified (2026-10-20, devtest, synthetic pad)
+- Front end with `gpad_glyphtest`: all four sets render, `gpad_glyphs 1..4` switches them live, 5 gives text.
+- In a Killhouse match: the cgame spectator hint showed the RT / LT icons for Xbox 360, R2 / L2 for PS3,
+  ZR / ZL for Wii U, drawn white beside the hint text.

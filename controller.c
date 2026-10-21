@@ -125,6 +125,9 @@ static const char *const kCtlNamesPs[] = { "Cross", "Circle", "Square", "Triangl
                                            "Hold Square" };
 static const char *const kCtlNamesNin[] = { "B", "A", "Y", "X", "L", "R", "+", "-", "L Stick", "R Stick", "D-pad Up",
                                             "D-pad Down", "D-pad Left", "D-pad Right", "ZL", "ZR", "Hold Y" };
+static const char *const kCtlNamesGen[] = { "Button South", "Button East", "Button West", "Button North", "L1", "R1", "Start",
+                                            "Back", "L Stick", "R Stick", "D-pad Up", "D-pad Down", "D-pad Left", "D-pad Right",
+                                            "L2", "R2", "Hold West" };
 #define CTL_NBUTTONS ((int)(sizeof(kCtlButtons) / sizeof(kCtlButtons[0])))
 
 typedef struct { const char *name; int key; } CtlKeyName;
@@ -134,7 +137,7 @@ static BOOL g_ctlOn, g_ctlKeysOk, g_ctlMoveOk, g_ctlDvarsDone;
 static const BYTE *g_gpEnabled, *g_gpDzMin, *g_gpDzMax, *g_gpSens, *g_gpInvert, *g_gpBtnDz, *g_gpYaw, *g_gpPitch,
     *g_gpYawAds, *g_gpPitchAds, *g_gpCurve, *g_gpAccel, *g_gpCursor, *g_gpDebug, *g_gpUseHold, *g_gpAim,
     *g_gpAimRange, *g_gpAimSnap, *g_gpGlyphs, *g_gpBindsVer, *g_gpUserinfo;
-static volatile LONG g_padType;            /* 0 Xbox (and XInput), 1 PlayStation, 2 Nintendo */
+static volatile LONG g_padType;            /* 0 Xbox (and XInput), 1 PlayStation, 2 Nintendo, 3 other */
 static int g_locBase = -1;                 /* first pad entry in g_ctlKeyNamesLoc */
 
 /* Published by the input thread: the pad that drives the game now (real or gpad_fake), raw values. */
@@ -197,7 +200,8 @@ static void CtlRegisterDvars(void)
                                "Aim assist strength for the pad's right stick (slowdown, lock-on, ADS snap): 1 IW4 console values, 0 off. Never applies to the mouse");
     g_gpAimRange = CtlRegisterFloat("gpad_aimassist_range", 3200.0f, 0.0f, 20000.0f, 0x1, "Aim assist range, units");
     g_gpAimSnap = C1RegisterInt("gpad_aimassist_snap", 1, 0, 1, 0x1, "Aim down sights (pad LT) turns onto a target near the crosshair");
-    g_gpGlyphs = C1RegisterInt("gpad_glyphs", 0, 0, 3, 0x1, "Pad button names: 0 by pad type, 1 Xbox, 2 PlayStation, 3 Nintendo");
+    g_gpGlyphs = C1RegisterInt("gpad_glyphs", 0, 0, 5, 0x1,
+                               "Pad button icons in hints and prompts: 0 by pad type, 1 Xbox 360, 2 PS3, 3 Wii U, 4 generic, 5 text names only");
     g_gpBindsVer = C1RegisterInt("gpad_binds_version", 0, 0, 1000, 0x1, "Default pad binds last applied (read only)");
     g_gpUserinfo = C1RegisterInt("gpad", 0, 0, 1, 0x200, "1 while a gamepad is the last-used input (userinfo, visible to the server)");
     ((const BYTE *(__cdecl *)(const char *, const char *, unsigned, const char *))(DWORD_PTR)0x00624740u)(
@@ -406,6 +410,9 @@ __attribute__((used)) int __cdecl CtlCommandKeys(const char *cmd, int lc, int *k
             if (pass == 0 && CtlIsPadKey(k) != pad) continue;
             keys[n++] = k;
         }
+    /* C1's spectator hint asks for +toggleads_throw first and uses +speed_throw only when that has no key:
+     * with the pad in use, a keyboard-only +toggleads_throw must not win over the pad's LT. */
+    if (pad && n && !CtlIsPadKey(keys[0]) && !_stricmp(cmd, "+toggleads_throw")) return keys[0] = keys[1] = -1, 0;
     return n;
 }
 
@@ -1017,9 +1024,11 @@ static void CtlSdlOpen(int index)
     memset(&g_real, 0, sizeof(g_real));
     {
         SDL_GameControllerType t = SDL_GameControllerGetType(g_sdlPad);
-        LONG type = (t == SDL_CONTROLLER_TYPE_PS3 || t == SDL_CONTROLLER_TYPE_PS4 || t == SDL_CONTROLLER_TYPE_PS5) ? 1
-                  : (t == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_PRO || t == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_LEFT ||
-                     t == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT || t == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_PAIR) ? 2 : 0;
+        BOOL wiiu = name && (strstr(name, "Wii U") || strstr(name, "WiiU"));
+        LONG type = (t == SDL_CONTROLLER_TYPE_XBOX360 || t == SDL_CONTROLLER_TYPE_XBOXONE) ? 0
+                  : (t == SDL_CONTROLLER_TYPE_PS3 || t == SDL_CONTROLLER_TYPE_PS4 || t == SDL_CONTROLLER_TYPE_PS5) ? 1
+                  : (wiiu || t == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_PRO || t == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_LEFT ||
+                     t == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT || t == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_PAIR) ? 2 : 3;
         InterlockedExchange(&g_padType, type);
     }
     InterlockedExchange(&g_padConnected, 1);
@@ -1181,18 +1190,29 @@ static void CtlSampleSticks(void)
     CtlStick((SHORT)g_pubRX, (SHORT)g_pubRY, &g_rx, &g_ry);
 }
 
-/* Pad family names in C1's display table (gpad_glyphs overrides). */
+/* The pad family whose names and icons C1 shows: 0 Xbox, 1 PlayStation, 2 Nintendo, 3 generic (gpad_glyphs
+ * 1..4 forces one; 0 and 5 follow the pad's SDL type). */
+static int CtlPadFamily(void)
+{
+    int g = C1DvarInt(g_gpGlyphs, 0);
+    return g >= 1 && g <= 4 ? g - 1 : (int)g_padType;
+}
+
+/* Pad family names in C1's display table: what Scaleform (Controls screen, pause menu) and the text-only
+ * mode show; hints and prompts drawn by C1's text renderer get icons instead (controller_glyphs.c). */
 static void CtlApplyPadNames(void)
 {
     static int applied = -1;
-    int want = C1DvarInt(g_gpGlyphs, 0);
-    want = want ? want - 1 : (int)g_padType;
+    int want = CtlPadFamily();
     if (want == applied || g_locBase < 0) return;
     applied = want;
     for (int i = 0; i < CTL_NBUTTONS; i++)
-        g_ctlKeyNamesLoc[g_locBase + i].name = want == 1 ? kCtlNamesPs[i] : want == 2 ? kCtlNamesNin[i] : kCtlButtons[i].display;
-    Log("controller: pad button names: %s", want == 1 ? "PlayStation" : want == 2 ? "Nintendo" : "Xbox");
+        g_ctlKeyNamesLoc[g_locBase + i].name = want == 1 ? kCtlNamesPs[i] : want == 2 ? kCtlNamesNin[i] : want == 3 ? kCtlNamesGen[i]
+                                             : kCtlButtons[i].display;
+    Log("controller: pad button names: %s", want == 1 ? "PlayStation" : want == 2 ? "Nintendo" : want == 3 ? "generic" : "Xbox");
 }
+
+#include "controller_glyphs.c"
 
 /* Test clients only: "gpad_testmouse <dx> <dy> <ms>" feeds mouse counts into C1's own accumulator
  * (cl+0x3424/+0x342C, as IN_MouseMove's 0x48FD40 does), so CL_MouseMove turns the view exactly like a
@@ -1217,6 +1237,7 @@ static void CtlFrameExtras(void)
     DWORD now = GetTickCount();
     if (C1DvarInt(g_gpDebug, 0)) CtlNavLog();
     CtlApplyPadNames();
+    CtlGlyphFrame();
     if (g_ksUpAt && (LONG)(now - g_ksUpAt) >= 0) { g_ksUpAt = 0; CtlRunBinding(g_ksUpIndex, K_DPAD_RIGHT); }
     if (g_deviceChanged && g_gpUserinfo && g_c1CbufOk) {  /* userinfo "gpad": at most once a second */
         static DWORD lastSent;
@@ -1633,6 +1654,8 @@ static C1Cmd g_ctlCmds[] = {
     { NULL, "gpad_testmouse", (void *)CtlCmdTestMouse },
     { NULL, "gpad_sfkey", (void *)CtlCmdSfKey },
     { NULL, "gpad_aadump", (void *)CtlCmdAaDump },
+    { NULL, "gpad_glyphdump", (void *)CtlCmdGlyphDump },
+    { NULL, "gpad_glyphtest", (void *)CtlCmdGlyphTest },
 };
 
 /* ---- install ------------------------------------------------------------------------------------- */
@@ -1737,6 +1760,7 @@ static void InstallController(void)
         memcpy(jq + 1, &rq, 4);
         WriteCode(que, jq, 5);
     }
+    CtlInstallGlyphs(namesOk);
     Log("controller: key names by last-used device %s, keyboard/mouse detection %s", namesOk ? "hooked (0x49393E)" : "NOT hooked",
         queOk ? "hooked (Sys_QueEvent)" : "NOT hooked");
     int added = 0;
