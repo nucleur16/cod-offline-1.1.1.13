@@ -15,6 +15,7 @@ Sets (controller_glyphs.c order):
 Buttons in kCtlButtons order:
     A(bottom) B(right) X(left) Y(top) LB RB Start Back LS RS Up Down Left Right LT RT HoldX
 The pack has no "hold" prompt: HoldX is the set's left face button shrunk inside a ring drawn here.
+ARROW (the killstreak HUD's selection marker) is Others/Arrows/Directional_Arrow_Straight recoloured yellow.
 Each icon is resized to 64x64 (premultiplied alpha) with a full mip chain and written as B,G,R,A rows.
 
     python glyphs/make_glyphs.py      writes glyphs/glyphs.bin (zlib) and glyphs/preview.png
@@ -31,27 +32,40 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, "xelu")
 OUT = 64
 LEVELS = 7
-BUTTONS = ["A", "B", "X", "Y", "LB", "RB", "START", "BACK", "LS", "RS", "UP", "DOWN", "LEFT", "RIGHT", "LT", "RT", "HOLDX"]
+BUTTONS = ["A", "B", "X", "Y", "LB", "RB", "START", "BACK", "LS", "RS", "UP", "DOWN", "LEFT", "RIGHT", "LT", "RT", "HOLDX",
+           "ARROW"]   # ARROW: the selected-killstreak marker (Others/Arrows, recoloured yellow), the same in every set
 
 SETS = [
     ("xbox360", ["360_A", "360_B", "360_X", "360_Y", "360_LB", "360_RB", "360_Start", "360_Back",
                  "360_Left_Stick_Click", "360_Right_Stick_Click", "360_Dpad_Up", "360_Dpad_Down", "360_Dpad_Left",
-                 "360_Dpad_Right", "360_LT", "360_RT", "@360_X"]),
+                 "360_Dpad_Right", "360_LT", "360_RT", "@360_X", "ARROW"]),
     ("ps3", ["PS3_Cross", "PS3_Circle", "PS3_Square", "PS3_Triangle", "PS3_L1", "PS3_R1", "PS3_Start", "PS3_Select",
              "PS3_Left_Stick_Click", "PS3_Right_Stick_Click", "PS3_Dpad_Up", "PS3_Dpad_Down", "PS3_Dpad_Left",
-             "PS3_Dpad_Right", "PS3_L2", "PS3_R2", "@PS3_Square"]),
+             "PS3_Dpad_Right", "PS3_L2", "PS3_R2", "@PS3_Square", "ARROW"]),
     ("wiiu", ["WiiU_B", "WiiU_A", "WiiU_Y", "WiiU_X", "WiiU_L", "WiiU_R", "WiiU_Plus", "WiiU_Minus", "WiiU_Left_Stick",
               "WiiU_Right_Stick", "WiiU_Dpad_Up", "WiiU_Dpad_Down", "WiiU_Dpad_Left", "WiiU_Dpad_Right", "WiiU_ZL",
-              "WiiU_ZR", "@WiiU_Y"]),
+              "WiiU_ZR", "@WiiU_Y", "ARROW"]),
     ("generic", ["Positional_Prompts_Down", "Positional_Prompts_Right", "Positional_Prompts_Left", "Positional_Prompts_Up",
                  "SteamDeck_L1", "SteamDeck_R1", "SteamDeck_Menu", "SteamDeck_Inventory", "SteamDeck_Left_Stick_Click",
                  "SteamDeck_Right_Stick_Click", "SteamDeck_Dpad_Up", "SteamDeck_Dpad_Down", "SteamDeck_Dpad_Left",
-                 "SteamDeck_Dpad_Right", "SteamDeck_L2", "SteamDeck_R2", "@Positional_Prompts_Left"]),
+                 "SteamDeck_Dpad_Right", "SteamDeck_L2", "SteamDeck_R2", "@Positional_Prompts_Left", "ARROW"]),
 ]
 
 
 def load(set_name, name):
     return Image.open(os.path.join(SRC, set_name, name + ".png")).convert("RGBA")
+
+
+def arrow():
+    """Xelu's straight arrow (red) recoloured to HUD yellow, keeping its shading and outline."""
+    img = Image.open(os.path.join(SRC, "common", "Directional_Arrow_Straight.png")).convert("RGBA")
+    px = img.load()
+    for y in range(img.height):
+        for x in range(img.width):
+            r, g, b, a = px[x, y]
+            if a and r > g + 40 and r > b + 40:      # the red body: luminance onto yellow
+                px[x, y] = (min(255, int(r * 1.0 + 20)), min(255, int(r * 0.84 + 10)), int(b * 0.25), a)
+    return img
 
 
 def hold(img):
@@ -87,7 +101,12 @@ def main():
     for si, (set_name, names) in enumerate(SETS):
         assert len(names) == len(BUTTONS)
         for bi, name in enumerate(names):
-            img = hold(load(set_name, name[1:])) if name.startswith("@") else load(set_name, name)
+            if name == "ARROW":
+                img = arrow()
+            elif name.startswith("@"):
+                img = hold(load(set_name, name[1:]))
+            else:
+                img = load(set_name, name)
             levels = mips(img)
             preview.alpha_composite(levels[0], (8 + bi * (OUT + 8), 8 + si * (OUT + 8)))
             for lv in levels:

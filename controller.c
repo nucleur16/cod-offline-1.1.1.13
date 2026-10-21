@@ -89,7 +89,8 @@ typedef DWORD (WINAPI *XInputGetStateFn)(DWORD, CtlState *);
 /* IW4 keyNum_t gamepad codes. */
 enum { K_BUTTON_A = 1, K_BUTTON_B, K_BUTTON_X, K_BUTTON_Y, K_BUTTON_LSHLDR, K_BUTTON_RSHLDR,
        K_BUTTON_START = 14, K_BUTTON_BACK, K_BUTTON_LSTICK, K_BUTTON_RSTICK, K_BUTTON_LTRIG,
-       K_BUTTON_RTRIG, K_DPAD_UP, K_DPAD_DOWN, K_DPAD_LEFT, K_DPAD_RIGHT, K_BUTTON_X_HOLD = 28 };
+       K_BUTTON_RTRIG, K_DPAD_UP, K_DPAD_DOWN, K_DPAD_LEFT, K_DPAD_RIGHT, K_BUTTON_X_HOLD = 28,
+       K_KS_SELECTED = 29 /* not a real key: the killstreak HUD's selected slot (arrow + the gpad_ksuse key) */ };
 
 typedef struct { DWORD xi; int key; const char *name; const char *display; const char *bind; const char *oldBind; } CtlButton;
 /* Digital buttons, the two triggers (xi 0: read from the analog value) and BUTTON_X_HOLD (X held for
@@ -583,11 +584,16 @@ static int CtlPadKeyFor(int bindIndex, const BYTE *kb)
     return 0;
 }
 
+static int g_ksUseKey;   /* the pad key bound to gpad_ksuse, for K_KS_SELECTED's name */
 static int CtlKsHudKey(int slot, const BYTE *kb)
 {
     if (slot < 1 || slot > 5 || !CtlKsType(slot)) return 0;
     CtlKsValidate();
-    return CtlPadKeyFor(slot == g_ksSel ? 90 /* gpad_ksuse */ : 89 /* gpad_ksnext */, kb);
+    if (slot == g_ksSel) {
+        g_ksUseKey = CtlPadKeyFor(90 /* gpad_ksuse */, kb);
+        return g_ksUseKey ? K_KS_SELECTED : 0;   /* a yellow arrow, then the use key */
+    }
+    return CtlPadKeyFor(89 /* gpad_ksnext */, kb);
 }
 
 static void CtlKsSlots(char *out, int n)
@@ -1370,7 +1376,12 @@ __attribute__((used)) void __cdecl CtlLocSelect(int lc, BYTE *cmd)
     int info = *(const int *)(cg + 0x230);
     int *state = (int *)(DWORD_PTR)(0x016F5D5Cu + lc * 0xD28);
     LONG act = InterlockedExchange(&g_locAction, 0);
-    if (!info) { fullSince = 0; return; }
+    static int ourState, prevState;
+    if (ourState) {
+        if (*state == ourState) *state = 0;
+        ourState = 0;
+    }
+    if (!info) { fullSince = 0; prevState = 0; return; }
     if (C1DvarInt(g_gpDebug, 0) && GetTickCount() - lastDbg > 1000) {
         lastDbg = GetTickCount();
         Log("controller: location selection active: info 0x%X (directional %d), keyCatchers 0x%X, pad %d, state %d, "
@@ -1378,11 +1389,29 @@ __attribute__((used)) void __cdecl CtlLocSelect(int lc, BYTE *cmd)
             (int)g_padActive, *state, *(const float *)(cg + 0xC8B08), *(const float *)(cg + 0xC8B0C),
             *(const float *)(cg + 0xC8B10), g_lx, g_ly, g_rx, g_ry);
     }
+    /* The pad's press lasts one frame, like a click: C1 only clears the state on a key release (0x493710), and
+     * 0x490700 re-arms (cg+0xC8B14 = 0) only on a frame with state 0. Leaving our 1 in place made every
+     * later A a no-op, so only the mortar's first of three points was placed. */
     if (act && *state == 0) {
         *state = (int)act;
-        Log("controller: location selection %s (%.3f, %.3f, heading %.0f)", act == 1 ? "confirmed" : "cancelled",
+        ourState = (int)act;
+        Log("controller: location selection %s (%.3f, %.3f, heading %.0f)", act == 1 ? "confirm" : "back / cancel",
             *(const float *)(cg + 0xC8B08), *(const float *)(cg + 0xC8B0C), *(const float *)(cg + 0xC8B10));
     }
+    /* Back (pad B or Escape) after a placed point takes that point back: C1 keeps the placed points at
+     * cg+0xC8B18 (three x,y pairs, -1 = free) and still sends its cancel (0x40000); the mortar script
+     * (maps/mp/killstreaks/_mortar.gsc) drops its last target on cancel_location while one is placed, and
+     * only closes the selection when none is. */
+    if (*state == 2 && prevState != 2) {
+        int n = 0;
+        while (n < 3 && *(const float *)(cg + 0xC8B18 + n * 8) != -1.0f) n++;
+        if (n > 0) {
+            *(float *)(cg + 0xC8B18 + (n - 1) * 8) = -1.0f;
+            *(float *)(cg + 0xC8B1C + (n - 1) * 8) = -1.0f;
+            Log("controller: location selection: point %d taken back", n);
+        }
+    }
+    prevState = *state;
     if (!g_padActive) return;
     CtlSampleSticks();
     int msec = *(volatile int *)(DWORD_PTR)CTL_FRAMEMSEC_VA;

@@ -60,7 +60,9 @@ typedef struct {
     char esc[9];                     /* '^', 1, w, h, Material * (4 bytes), 0 */
 } CtlGlyph;
 
-static CtlGlyph g_glyphs[CTL_NBUTTONS];
+#define CTL_GLYPH_COUNT (CTL_NBUTTONS + 1)   /* the buttons, then the yellow selection arrow */
+#define CTL_GLYPH_ARROW CTL_NBUTTONS
+static CtlGlyph g_glyphs[CTL_GLYPH_COUNT];
 static BYTE *g_glyphPix;             /* inflated glyphs.bin (header skipped) */
 static BYTE *g_glyphBase;            /* the 64 KB block that holds the materials */
 static const BYTE *g_glyphTemplate;  /* C1's "white" */
@@ -95,13 +97,13 @@ static size_t CtlGlyphBytes(void)
 static BOOL CtlGlyphInflate(void)
 {
     size_t per = CtlGlyphBytes();
-    uLongf len = (uLongf)(24 + (size_t)CTL_GLYPH_SETS * CTL_NBUTTONS * per);
+    uLongf len = (uLongf)(24 + (size_t)CTL_GLYPH_SETS * CTL_GLYPH_COUNT * per);
     BYTE *buf = (BYTE *)malloc(len);
     if (!buf) return FALSE;
     int rc = uncompress(buf, &len, g_glyphBlob, (uLong)(g_glyphBlobEnd - g_glyphBlob));
     const DWORD *h = (const DWORD *)(buf + 4);
-    if (rc != Z_OK || memcmp(buf, "K33G", 4) || h[0] != 1 || h[1] != CTL_GLYPH_SETS || h[2] != (DWORD)CTL_NBUTTONS ||
-        h[3] != CTL_GLYPH_SIZE || h[4] != CTL_GLYPH_LEVELS || len != 24 + (size_t)CTL_GLYPH_SETS * CTL_NBUTTONS * per) {
+    if (rc != Z_OK || memcmp(buf, "K33G", 4) || h[0] != 1 || h[1] != CTL_GLYPH_SETS || h[2] != (DWORD)CTL_GLYPH_COUNT ||
+        h[3] != CTL_GLYPH_SIZE || h[4] != CTL_GLYPH_LEVELS || len != 24 + (size_t)CTL_GLYPH_SETS * CTL_GLYPH_COUNT * per) {
         _snprintf(g_glyphWhy, sizeof(g_glyphWhy), "glyphs.bin does not match this build (zlib %d, %lu bytes)", rc, (unsigned long)len);
         free(buf);
         return FALSE;
@@ -160,7 +162,7 @@ static void CtlGlyphInit(void)
     }
     g_glyphTemplate = mat;
     const BYTE *table = *(const BYTE *const *)(mat + CTL_MAT_TEXTABLE);
-    for (int b = 0; b < CTL_NBUTTONS; b++) {
+    for (int b = 0; b < CTL_GLYPH_COUNT; b++) {
         CtlGlyph *g = &g_glyphs[b];
         g->mat = g_glyphBase + ((0x41 + b) << 8) + 0x44;
         memcpy(g->image, img, CTL_IMAGE_COPY);
@@ -209,6 +211,19 @@ static void CtlGlyphFrame(void)
 /* Key_KeynumToString in Key_GetBindingNames: the icon escape for a pad key, or NULL (C1's own name). */
 __attribute__((used)) const char *__cdecl CtlGlyphName(int key)
 {
+    if (key == K_KS_SELECTED) {   /* the killstreak HUD's selected slot: arrow + the use key */
+        static char sel[96];
+        int b = 0;
+        while (b < CTL_NBUTTONS && kCtlButtons[b].key != g_ksUseKey) b++;
+        if (b == CTL_NBUTTONS) return ">";
+        if (g_ctlTextOnly || g_glyphSet < 0 || g_glyphReady != 1) {
+            const char *name = g_locBase >= 0 ? g_ctlKeyNamesLoc[g_locBase + b].name : kCtlButtons[b].display;
+            _snprintf(sel, sizeof(sel), "> %s", name ? name : "");
+        } else
+            _snprintf(sel, sizeof(sel), "%s%s", g_glyphs[CTL_GLYPH_ARROW].esc, g_glyphs[b].esc);
+        sel[sizeof(sel) - 1] = 0;
+        return sel;
+    }
     if (g_ctlTextOnly || g_glyphSet < 0 || g_glyphReady != 1) return NULL;
     for (int b = 0; b < CTL_NBUTTONS; b++)
         if (kCtlButtons[b].key == key) return g_glyphs[b].esc;
@@ -235,7 +250,7 @@ static void *CtlGlyphMakeTexture(int set, int button)
     }
     ((ULONG(WINAPI *)(void *))(*(void ***)dev)[2])(dev);   /* Release the GetDevice reference */
     if (hr < 0 || !tex) { Log("controller: glyphs: CreateTexture failed (0x%08lX)", (unsigned long)hr); return NULL; }
-    const BYTE *pix = g_glyphPix + ((size_t)set * CTL_NBUTTONS + button) * CtlGlyphBytes();
+    const BYTE *pix = g_glyphPix + ((size_t)set * CTL_GLYPH_COUNT + button) * CtlGlyphBytes();
     for (int l = 0; l < CTL_GLYPH_LEVELS; l++) {
         int sz = CTL_GLYPH_SIZE >> l;
         CtlLockedRect r;
@@ -273,7 +288,7 @@ __attribute__((used)) int __cdecl CtlGlyphPrepare(const BYTE *esc, const BYTE *f
     if (mat < g_glyphBase || mat >= g_glyphBase + 0x10000) return 0;
     int b = (int)(((DWORD_PTR)(mat - g_glyphBase) >> 8) - 0x41);
     LONG set = g_glyphSet;
-    if (b < 0 || b >= CTL_NBUTTONS || g_glyphs[b].mat != mat) return 0;
+    if (b < 0 || b >= CTL_GLYPH_COUNT || g_glyphs[b].mat != mat) return 0;
     if (set < 0) set = CtlPadFamily();   /* a string made before a switch to text names */
     CtlGlyph *g = &g_glyphs[b];
     if (!g->tex[set]) {
@@ -283,6 +298,72 @@ __attribute__((used)) int __cdecl CtlGlyphPrepare(const BYTE *esc, const BYTE *f
     *(void **)g->image = g->tex[set];
     CtlGlyphPlace(esc, font, args);
     return 1;
+}
+
+/* ---- text width ----
+ * R_TextWidth 0xA78580 (text, maxChars, font), which C1 uses to centre and right-align text (cursor hints,
+ * menu items, the HUD), skips "^digit" colour codes but not the inline icon code: it measured an icon as
+ * the eight characters '^', 1, w, h and four pointer letters. Centred or right-aligned text with an icon was
+ * therefore measured far too wide and started far to the left of where it belongs. The hook measures the
+ * text without the icon codes and adds each icon's slot: the drawn width ((w - 16) * fontHeight + 16) / 32
+ * plus the room C1's layout leaves around it (2 * gpad_glyph_xshift of the width). */
+__attribute__((used)) BYTE g_ctlTextWidthTramp[16];
+static int CtlIconSlot(const BYTE *esc, const BYTE *font)
+{
+    int fontH = font && Readable(font, 8) ? *(const int *)(font + 4) : 0;
+    int w = ((signed char)esc[1] - 16) * fontH + 16;
+    w = w >= 0 ? w >> 5 : -((-w) >> 5);
+    float k = g_gpGlyphShift ? *(volatile const float *)(g_gpGlyphShift + 0xC) : 0.08f;
+    return w > 0 ? (int)(w * (1.0f + 2.0f * k) + 0.5f) : 0;
+}
+
+__attribute__((used)) int __cdecl CtlTextWidth(const char *text, int maxChars, const BYTE *font)
+{
+    typedef int(__cdecl * Fn)(const char *, int, const BYTE *);
+    Fn orig = (Fn)(void *)g_ctlTextWidthTramp;
+    const char *icon = NULL;
+    if (text) {
+        for (const char *c = text; *c; c++)
+            if (c[0] == '^' && (c[1] == 1 || c[1] == 2) && c[2] && c[3] && c[4] && c[5] && c[6] && c[7]) { icon = c; break; }
+    }
+    if (!icon) return orig(text, maxChars, font);
+    char buf[1024];
+    int n = 0, extra = 0;
+    for (const char *c = text; *c && n < (int)sizeof(buf) - 1;) {
+        if (c[0] == '^' && (c[1] == 1 || c[1] == 2) && c[2] && c[3] && c[4] && c[5] && c[6] && c[7]) {
+            extra += CtlIconSlot((const BYTE *)c + 1, font);
+            c += 8;
+            continue;
+        }
+        buf[n++] = *c++;
+    }
+    buf[n] = 0;
+    return (n ? orig(buf, maxChars, font) : 0) + extra;
+}
+
+void CTL_TextWidthHook(void);
+__asm__(
+    ".text\n"
+    ".globl _CTL_TextWidthHook\n"
+    "_CTL_TextWidthHook:\n"           /* jmp from R_TextWidth 0xA78580: [esp+4] text, maxChars, font */
+    "    jmp _CtlTextWidth\n");
+
+static void CtlInstallTextWidth(void)
+{
+    static const BYTE kTw[] = { 0x83, 0xEC, 0x10, 0x83, 0x7C, 0x24, 0x18, 0x00 };   /* sub esp,10h; cmp [esp+18h],0 */
+    BYTE *tw = (BYTE *)(DWORD_PTR)0x00A78580u;
+    if (!Readable(tw, sizeof(kTw)) || memcmp(tw, kTw, sizeof(kTw))) { Log("controller: R_TextWidth bytes differ, icon text keeps C1's width"); return; }
+    DWORD old;
+    memcpy(g_ctlTextWidthTramp, kTw, sizeof(kTw));               /* the displaced instructions ... */
+    g_ctlTextWidthTramp[8] = 0xE9;                                 /* ... then jmp 0xA78588 */
+    LONG back = (LONG)(0x00A78588u - ((DWORD_PTR)g_ctlTextWidthTramp + 13));
+    memcpy(g_ctlTextWidthTramp + 9, &back, 4);
+    VirtualProtect(g_ctlTextWidthTramp, sizeof(g_ctlTextWidthTramp), PAGE_EXECUTE_READWRITE, &old);
+    BYTE j[8] = { 0xE9, 0, 0, 0, 0, 0x90, 0x90, 0x90 };
+    LONG rel = (LONG)((DWORD_PTR)CTL_TextWidthHook - (0x00A78580u + 5));
+    memcpy(j + 1, &rel, 4);
+    WriteCode(tw, j, sizeof(j));
+    Log("controller: R_TextWidth hooked (0xA78580): icon codes measured as icons");
 }
 
 /* ---- hooks ---- */
@@ -359,6 +440,7 @@ static void CtlInstallGlyphs(BOOL namesOk)
         RedirectCall(kDrawCalls[i], (void *)CTL_IconDrawHook);
         RedirectCall(kNameCalls[i], (void *)CTL_KeyNameHook);
     }
+    CtlInstallTextWidth();
     Log("controller: glyph hooks installed (names 0x49397C/0x4A19A1, text-only 0x5B080D/0x55A8B6, draw 0xAAB320/0xAAB92D)");
 }
 
@@ -450,13 +532,41 @@ __attribute__((used)) void __cdecl CtlAddTextSeen(DWORD ret, const DWORD *args)
     ((CtlAddTextFn)(DWORD_PTR)CTL_ADDCMD_TEXT)(line, 0x7FFFFFFF, (void *)(DWORD_PTR)args[2], 16.0f, 128.0f, sc * 1.25f, sc * 1.25f, 0.0f, white, 0);
     /* placement rows: the icon between bars after a long run, at small, HUD-like and large scales */
     {
-        static const char *const kRun[5] = { "", "iiiiii", "WWWWWW", "Press to", "aaaaaaaaaaaa" };
+        /* "按住拾取" in UTF-8 and in GBK: C1's run measure gives every non-ASCII character one default width */
+        static const char *const kRun[5] = { "", "WWWWWW", "Press to", "\xe6\x8c\x89\xe4\xbd\x8f\xe6\x8b\xbe\xe5\x8f\x96",
+                                             "\xb0\xb4\xd7\xa1\xca\xb0\xc8\xa1" };
         static const float kScale[2] = { 0.35f, 0.6f };
         float y = 170.0f;
         for (int s = 0; s < 2; s++)
             for (int i = 0; i < 5; i++) {
                 _snprintf(line, sizeof(line), "%s|%s|x", kRun[i], g_glyphs[0].esc);
                 ((CtlAddTextFn)(DWORD_PTR)CTL_ADDCMD_TEXT)(line, 0x7FFFFFFF, (void *)(DWORD_PTR)args[2], 16.0f, y, kScale[s], kScale[s], 0.0f, white, 0);
+                y += 60.0f * kScale[s] + 6.0f;
+            }
+        /* measured width (R_TextWidth 0xA78580, what centred / right-aligned text uses) against the drawn text:
+         * a red bar at x + width * scale; it should touch the end of the line */
+        static const float red[4] = { 1, 0.2f, 0.2f, 1 };
+        static int logged;
+        if (!logged) {
+            typedef int(__cdecl * TwFn)(const char *, int, void *);
+            TwFn tw = (TwFn)(DWORD_PTR)0x00A78580u;
+            void *f = (void *)(DWORD_PTR)args[2];
+            char one[16], two[40];
+            _snprintf(one, sizeof(one), "%s", g_glyphs[2].esc);
+            _snprintf(two, sizeof(two), "%s%s", g_glyphs[2].esc, g_glyphs[2].esc);
+            logged = 1;
+            Log("controller: glyphtest widths: fontH %d, icon %d, two icons %d, \"X\" %d, \"WW\" %d, \"Press  to\" %d",
+                Readable(f, 8) ? *(const int *)((const BYTE *)f + 4) : -1, tw(one, 0x7FFFFFFF, f), tw(two, 0x7FFFFFFF, f),
+                tw("X", 0x7FFFFFFF, f), tw("WW", 0x7FFFFFFF, f), tw("Press  to", 0x7FFFFFFF, f));
+        }
+        for (int s = 0; s < 2; s++)
+            for (int i = 0; i < 3; i++) {
+                if (i == 0) _snprintf(line, sizeof(line), "Press X to pick up");
+                else if (i == 1) _snprintf(line, sizeof(line), "Press %s to pick up", g_glyphs[2].esc);
+                else _snprintf(line, sizeof(line), "\xb0\xb4\xd7\xa1 %s \xca\xb0\xc8\xa1", g_glyphs[2].esc);
+                int w = ((int(__cdecl *)(const char *, int, void *))(DWORD_PTR)0x00A78580u)(line, 0x7FFFFFFF, (void *)(DWORD_PTR)args[2]);
+                ((CtlAddTextFn)(DWORD_PTR)CTL_ADDCMD_TEXT)(line, 0x7FFFFFFF, (void *)(DWORD_PTR)args[2], 16.0f, y, kScale[s], kScale[s], 0.0f, white, 0);
+                ((CtlAddTextFn)(DWORD_PTR)CTL_ADDCMD_TEXT)("|", 0x7FFFFFFF, (void *)(DWORD_PTR)args[2], 16.0f + w * kScale[s], y, kScale[s], kScale[s], 0.0f, red, 0);
                 y += 60.0f * kScale[s] + 6.0f;
             }
     }
