@@ -251,7 +251,22 @@ static void *CtlGlyphMakeTexture(int set, int button)
 /* Returns 1 for one of our icons, 0 for anything else. For ours the hook sets the vertex colour to white
  * (alpha kept): C1 multiplies text icons by the text colour, and hint key names are yellow, so white is
  * what leaves the art's own colours (green A, red B, ...) untouched. */
-__attribute__((used)) int __cdecl CtlGlyphPrepare(const BYTE *esc)
+/* Placement: C1 lays out text in runs (0x6B7510; measured by 0x6B7350) and hands the icon drawer the pen x
+ * of the icon's slot (args[0]). The slot it then leaves for the icon is wider than the drawn icon, so the
+ * icon sat at the slot's left edge with all the gap on its right (most visible at small HUD scales). It is
+ * moved right by gpad_glyph_xshift (fraction of its width, default 0.08, measured on devtest) to sit centred.
+ * args: [0] x, [4] x scale (C1 multiplies it by the icon width). */
+static void CtlGlyphPlace(const BYTE *esc, const BYTE *font, float *args)
+{
+    if (!font || !Readable(font, 8) || !args) return;
+    int fontH = *(const int *)(font + 4);
+    int w = ((signed char)esc[1] - 16) * fontH + 16;
+    w = w >= 0 ? w >> 5 : -((-w) >> 5);
+    float k = g_gpGlyphShift ? *(volatile const float *)(g_gpGlyphShift + 0xC) : 0.08f;
+    if (w > 0 && k != 0.0f && args[4] > 0.0f && args[4] < 100.0f) args[0] += k * (float)w * args[4];
+}
+
+__attribute__((used)) int __cdecl CtlGlyphPrepare(const BYTE *esc, const BYTE *font, float *args)
 {
     if (!g_glyphBase || g_glyphReady != 1) return 0;
     const BYTE *mat = *(const BYTE *const *)(esc + 3);
@@ -266,6 +281,7 @@ __attribute__((used)) int __cdecl CtlGlyphPrepare(const BYTE *esc)
         if (!g->tex[set]) { InterlockedExchange(&g_glyphFailed, 1); return 0; }
     }
     *(void **)g->image = g->tex[set];
+    CtlGlyphPlace(esc, font, args);
     return 1;
 }
 
@@ -305,9 +321,12 @@ __asm__(
     ".globl _CTL_IconDrawHook\n"
     "_CTL_IconDrawHook:\n"            /* call to the text icon drawer: ecx = escape after '^', [esp+1Ch] = colour */
     "    pushal\n"
+    "    leal 36(%esp), %edx\n"          /* the drawer's stack arguments */
+    "    pushl %edx\n"
+    "    pushl %eax\n"                   /* font */
     "    pushl %ecx\n"
     "    call _CtlGlyphPrepare\n"
-    "    addl $4, %esp\n"
+    "    addl $12, %esp\n"
     "    testl %eax, %eax\n"
     "    jz 1f\n"
     "    movl 0x3C(%esp), %eax\n"        /* packed RGBA; the shadow pass (black) stays black */
@@ -429,6 +448,18 @@ __attribute__((used)) void __cdecl CtlAddTextSeen(DWORD ret, const DWORD *args)
     ((CtlAddTextFn)(DWORD_PTR)CTL_ADDCMD_TEXT)(line, 0x7FFFFFFF, (void *)(DWORD_PTR)args[2], 16.0f, 62.0f, sc * 1.25f, sc * 1.25f, 0.0f, white, 0);
     _snprintf(line, sizeof(line), "Press %s to reload, hold %s to use, %s to aim", g_glyphs[2].esc, g_glyphs[16].esc, g_glyphs[14].esc);
     ((CtlAddTextFn)(DWORD_PTR)CTL_ADDCMD_TEXT)(line, 0x7FFFFFFF, (void *)(DWORD_PTR)args[2], 16.0f, 128.0f, sc * 1.25f, sc * 1.25f, 0.0f, white, 0);
+    /* placement rows: the icon between bars after a long run, at small, HUD-like and large scales */
+    {
+        static const char *const kRun[5] = { "", "iiiiii", "WWWWWW", "Press to", "aaaaaaaaaaaa" };
+        static const float kScale[2] = { 0.35f, 0.6f };
+        float y = 170.0f;
+        for (int s = 0; s < 2; s++)
+            for (int i = 0; i < 5; i++) {
+                _snprintf(line, sizeof(line), "%s|%s|x", kRun[i], g_glyphs[0].esc);
+                ((CtlAddTextFn)(DWORD_PTR)CTL_ADDCMD_TEXT)(line, 0x7FFFFFFF, (void *)(DWORD_PTR)args[2], 16.0f, y, kScale[s], kScale[s], 0.0f, white, 0);
+                y += 60.0f * kScale[s] + 6.0f;
+            }
+    }
     g_inOverlay = 0;
 }
 

@@ -342,3 +342,13 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
 - With `gpad_debug 1`, Kernel33.log records:
   - `ksnext -> slot N (slots 1:t 2:t ...)` and `ksuse -> +actionslot N (bind I; slots ...)`, where t is actionSlotType at cg+0x544;
   - `HUD key lookup "+actionslot N": device, slot type, selected, keys`, once per 2 s per slot. This line also shows whether the HUD asks through Key_GetBindingNames.
+- **Fix (2026-10-20, second user test):**
+  - **Location selection never ran on the pad.** C1 calls its selection step with lc first, then cmd (it pushes cmd, then lc). CtlLocSelect declared them the other way round, so it read the cmd pointer as lc and returned on every frame. The stick, heading, confirm and cancel never reached the selector.
+    - The server log for that session shows `mortar_mp refused` twice: once with userinfo gpad 1 and once with gpad 0. The mortar's use function returns false when the selection is cancelled or put away.
+    - With the arguments fixed, the hook runs.
+    - `gpad_debug 1` logs `location selection active: info, keyCatchers, pad, state, selector, heading, sticks` once a second while a selection is open. Confirm and cancel are always logged.
+  - The "Killstreak N selected" centre line and "no killstreak ready" show only with `gpad_debug`. The HUD key icons show the selection.
+  - **Icon placement:**
+    - C1 lays out text in runs. The 0x6B7510 runs are measured by 0x6B7350 from a per-character advance table.
+    - The icon drawer gets the pen x of the icon's slot, and the slot C1 then leaves is wider than the drawn icon. So the icon sat at the slot's left edge, with all the gap on its right.
+    - The draw hook now moves it right by `gpad_glyph_xshift` × its drawn width (default 0.08, measured on devtest at text scales 0.35, 0.6 and 0.75 and on the spectator hint) to centre it.

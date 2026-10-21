@@ -137,7 +137,7 @@ static CtlKeyName g_ctlKeyNames[160], g_ctlKeyNamesLoc[160];
 static BOOL g_ctlOn, g_ctlKeysOk, g_ctlMoveOk, g_ctlDvarsDone;
 static const BYTE *g_gpEnabled, *g_gpDzMin, *g_gpDzMax, *g_gpSens, *g_gpInvert, *g_gpBtnDz, *g_gpYaw, *g_gpPitch,
     *g_gpYawAds, *g_gpPitchAds, *g_gpCurve, *g_gpAccel, *g_gpCursor, *g_gpDebug, *g_gpUseHold, *g_gpAim,
-    *g_gpAimRange, *g_gpAimSnap, *g_gpGlyphs, *g_gpBindsVer, *g_gpUserinfo, *g_gpKbmCooldown, *g_gpLocSpeed;
+    *g_gpAimRange, *g_gpAimSnap, *g_gpGlyphs, *g_gpBindsVer, *g_gpUserinfo, *g_gpKbmCooldown, *g_gpLocSpeed, *g_gpGlyphShift;
 static volatile LONG g_padType;            /* 0 Xbox (and XInput), 1 PlayStation, 2 Nintendo, 3 other */
 static int g_locBase = -1;                 /* first pad entry in g_ctlKeyNamesLoc */
 
@@ -206,6 +206,8 @@ static void CtlRegisterDvars(void)
     g_gpBindsVer = C1RegisterInt("gpad_binds_version", 0, 0, 1000, 0x1, "Default pad binds last applied (read only)");
     g_gpUserinfo = C1RegisterInt("gpad", 0, 0, 2, 0x200,
                                  "Userinfo, visible to the server: 0 keyboard / mouse, 1 gamepad with aim assist, 2 gamepad in the keyboard/mouse cooldown (no assist)");
+    g_gpGlyphShift = CtlRegisterFloat("gpad_glyph_xshift", 0.08f, -1.0f, 1.0f, 0,
+                                      "Button icons in text: move right by this fraction of their width (centres them in C1's slot)");
     g_gpLocSpeed = CtlRegisterFloat("gpad_locsel_speed", 0.45f, 0.05f, 3.0f, 0x1,
                                     "Killstreak map selector speed with the left stick, map widths per second (doubles over a 0.6 s full push)");
     g_gpKbmCooldown = CtlRegisterFloat("gpad_aimassist_kbm_cooldown", 20.0f, 20.0f, 600.0f, 0x1,
@@ -609,7 +611,7 @@ static void CtlKsNext(void)
             {
                 char m[96];
                 _snprintf(m, sizeof(m), "^3Killstreak %d selected - D-pad right calls it in\n", slot);
-                C1Print(C1_GAMENOTIFY_CHANNEL, m);
+                if (C1DvarInt(g_gpDebug, 0)) C1Print(C1_GAMENOTIFY_CHANNEL, m);   /* gpad_debug only; the HUD icons show the selection */
             }
             CtlDebugf(1, "gamepad: ksnext -> slot %d (slots %s)\n", slot, slots);
             Log("controller: ksnext -> slot %d (slots %s)", slot, slots);
@@ -617,7 +619,7 @@ static void CtlKsNext(void)
         }
     }
     g_ksSel = 0;
-    C1Print(C1_GAMENOTIFY_CHANNEL, "no killstreak ready\n");
+    if (C1DvarInt(g_gpDebug, 0)) C1Print(C1_GAMENOTIFY_CHANNEL, "no killstreak ready\n");
     CtlDebugf(1, "gamepad: ksnext: nothing filled (slots %s)\n", slots);
     Log("controller: ksnext: nothing filled (slots %s)", slots);
 }
@@ -628,7 +630,7 @@ static void CtlKsUse(void)
     CtlKsSlots(slots, sizeof(slots));
     CtlKsValidate();   /* no valid selection: the first filled slot */
     if (!g_ksSel) {
-        C1Print(C1_GAMENOTIFY_CHANNEL, "no killstreak ready\n");
+        if (C1DvarInt(g_gpDebug, 0)) C1Print(C1_GAMENOTIFY_CHANNEL, "no killstreak ready\n");
         CtlDebugf(1, "gamepad: ksuse: nothing filled (slots %s)\n", slots);
         Log("controller: ksuse: nothing filled (slots %s)", slots);
         return;
@@ -1355,9 +1357,11 @@ static void CtlSampleSticks(void)
  * gpad_locsel_speed, quadratic response, doubling over 0.6 s of full push, IW4 console style), right
  * stick sets the heading, and A / RT / B set that same state, so the pad takes the mouse's path. */
 static int g_locLastSet;
-__attribute__((used)) void __cdecl CtlLocSelect(BYTE *cmd, int lc)
+/* (lc, cmd): C1 pushes cmd, then lc, so lc is the first argument. The first build declared them the other
+ * way round and returned on every call (the cmd pointer is never 0), so the pad never reached the selector. */
+__attribute__((used)) void __cdecl CtlLocSelect(int lc, BYTE *cmd)
 {
-    static DWORD fullSince;
+    static DWORD fullSince, lastDbg;
     (void)cmd;
     if (lc != 0 || !CtlEnabled()) return;
     DWORD cgv = *(volatile DWORD *)(DWORD_PTR)(0x016D3B58u + (*(volatile int *)(DWORD_PTR)0x06C3D2ACu) * 4) ^ 0x490B400Cu;
@@ -1367,6 +1371,13 @@ __attribute__((used)) void __cdecl CtlLocSelect(BYTE *cmd, int lc)
     int *state = (int *)(DWORD_PTR)(0x016F5D5Cu + lc * 0xD28);
     LONG act = InterlockedExchange(&g_locAction, 0);
     if (!info) { fullSince = 0; return; }
+    if (C1DvarInt(g_gpDebug, 0) && GetTickCount() - lastDbg > 1000) {
+        lastDbg = GetTickCount();
+        Log("controller: location selection active: info 0x%X (directional %d), keyCatchers 0x%X, pad %d, state %d, "
+            "selector %.3f %.3f heading %.0f, sticks L %.2f %.2f R %.2f %.2f", info, (info >> 7) & 1, C1KeyCatchers(),
+            (int)g_padActive, *state, *(const float *)(cg + 0xC8B08), *(const float *)(cg + 0xC8B0C),
+            *(const float *)(cg + 0xC8B10), g_lx, g_ly, g_rx, g_ry);
+    }
     if (act && *state == 0) {
         *state = (int)act;
         Log("controller: location selection %s (%.3f, %.3f, heading %.0f)", act == 1 ? "confirmed" : "cancelled",
@@ -1406,10 +1417,10 @@ void CTL_LocSelectHook(void);
 __asm__(
     ".text\n"
     ".globl _CTL_LocSelectHook\n"
-    "_CTL_LocSelectHook:\n"          /* call 0x490700 at 0x490DF6: [esp+4] cmd, [esp+8] lc */
+    "_CTL_LocSelectHook:\n"          /* call 0x490700 at 0x490DF6: [esp+4] lc, [esp+8] cmd */
     "    pushal\n"
-    "    pushl 40(%esp)\n"            /* lc */
     "    pushl 40(%esp)\n"            /* cmd */
+    "    pushl 40(%esp)\n"            /* lc */
     "    call _CtlLocSelect\n"
     "    addl $8, %esp\n"
     "    popal\n"
