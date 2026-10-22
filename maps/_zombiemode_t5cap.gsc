@@ -113,7 +113,8 @@ cap_open()
 
 w( line )
 {
-	fs_writeline( level.cap_fh, line );
+	if ( isdefined( level.cap_fh ) )
+		fs_writeline( level.cap_fh, line );
 }
 
 cap_main( scn )
@@ -155,8 +156,13 @@ cap_main( scn )
 	if ( getdvar( "t5cap_path" ) != "" )
 		p thread cap_move_player();
 
-	if ( scn == "dump" )
+	if ( getsubstr( scn, 0, 4 ) == "dump" )
 	{
+		if ( getdvarint( "t5cap_dogs" ) )
+		{
+			level thread cap_dog_round();
+			wait 15;
+		}
 		cap_dump_all();
 		wait 1;
 		fs_fclose( level.cap_fh );
