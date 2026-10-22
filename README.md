@@ -18,6 +18,8 @@ to the exe. See the comments in `kernel33.c` for addresses and reasoning.
      tab). Keep every codo.gfx change in this one zone: each *_ui_mp patch zone carrying codo.gfx carries the
      whole movie, and the first one loaded wins.
    - `controller_ingame.ff`: the in-match pause menu (codoingame.gfx) with gamepad focus navigation.
+   - `controller_glyphs_postgfx_mp.ff`: the gamepad button icons drawn in hints (CONTROLLER.md); install it with
+     the DLL. Without it the hints show the pad's button names as text.
 
 ## Build (MSYS2 mingw32)
 ```sh
@@ -232,7 +234,9 @@ zones/<zone>/                 the zone's contents
   stringtable/<name>          stringtables as CSV (UTF-8; ">enc" says what the zone stores: gbk, ascii)
   localize.str                localize entries, NAME<TAB>value, in zone order
   script_strings.json         the zone's script string list (C#-written zones only)
-  <type>/NNNN_<name>.bin      assets kept as raw blobs (images, materials, techsets, sounds, models, ...)
+  image/<name>.png            images whose pixels are in the zone (A8R8G8B8): level 0, and <name>.mips.png the
+                              smaller levels side by side (delete it to have the build make them, 2x2 box filter)
+  <type>/NNNN_<name>.bin      assets kept as raw blobs (streamed images, materials, techsets, sounds, models, ...)
 zonekit/                      container, zone image, asset codecs, gfx patches, manifests, the zone list
 files/                        patch files that are not zones (sound_channels.txt, main\iw_image_16.iwd), copied as is
 ```
@@ -261,9 +265,11 @@ codol_infected_cyborg_postgfx_mp) assets point back at earlier data, so a resize
 point at: the manifest records each decoded asset's length (`len=`) and the build warns when an edit changes it.
 
 ### Where each zone goes
-`client_shipRetail\patch\` (Kernel33 loads it ahead of `code_pre_gfx`): 000_codol_party_modes, codol_english,
+`client_shipRetail\patch\` (Kernel33 loads `*_ui_mp` zones ahead of the UI zones, `*_postgfx_mp` zones after
+`code_post_gfx` (permanent, images allowed), the rest ahead of `code_pre_gfx`): 000_codol_party_modes, codol_english,
 codol_english_font, codol_english_ui, codol_english_ui_extra, codol_english_zombies_base,
-codol_infected_cyborg_postgfx_mp, codol_loading_mode_names, codol_zm_deathmachine_audio, controller_ingame,
+codol_infected_cyborg_postgfx_mp, codol_loading_mode_names, codol_zm_deathmachine_audio, controller_glyphs_postgfx_mp,
+controller_ingame,
 usermaps_patch, usermaps_ui_mp, voice_ui_mp, plus `sound_channels.txt`.
 `client_shipRetail\chinese\` (the 1.1.1.13 install and the CODOL 1.1.1.13 map pack): patch_common_gametype_zm (replaces
 the stock zone; keep the stock one as `patch_common_gametype_zm.ff.pre-pap`). `main\`: iw_image_16.iwd (the PaP camo
@@ -284,6 +290,7 @@ their sound channels; they do nothing for a map that is not installed.
 | codol_infected_cyborg_postgfx_mp | codol-classic branch `codex/party-infected-20261017`, `build_infected_cyborg_assets.py` |
 | voice_ui_mp, controller_ingame | this repository: hand-written classes in their `.gfxpatch/as/` (formerly `voice_ui/`, built by build_voice_ui.py / build_ingame_ui.py into `patch/`, now folded into build_zones.py); decompiled from `patch/*.ff` of 3317112 |
 | usermaps_patch, usermaps_ui_mp | the game folder's `usermaps\build_usermaps_patch.py` (now superseded by the sources here) |
+| controller_glyphs_postgfx_mp | this repository (authored here, no shipped original): the former `glyphs/glyphs.bin` icons (Xelu's CC0 prompts) as image assets with C1's `hud_status_dead` material layout |
 | patch_common_gametype_zm | `CodolSoundDumper zm-pap-patch` (CODOL-AssetExplorer + `pap_patch_staging\tool_src`) over the stock zone |
 
 ### Known gaps
