@@ -24,3 +24,6 @@ __pycache__/
 
 # build output (python build_zones.py)
 output/
+
+# all-maps build output (python build_zones.py --maps all): dev maps included, never shipped
+output_dev/
