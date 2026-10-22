@@ -406,8 +406,9 @@ boss_setup()
 	self.boss_gun_model = BOSS_GUN_MODEL;
 
 	// The juggernaut body is authored at player size; the mech is drawn larger
-	// (scr_zm_boss_model_scale, the user's call).  Drawing only: setModelScale
-	// leaves bounds, hit locations and collision as they are.
+	// (scr_zm_boss_model_scale, the user's call).  setModelScale scales the
+	// server side with it: hit locations, tag positions (the minigun's
+	// tag_flash) and the actor's movement hull (codol_script_model_scale.c).
 	scale = boss_dvar_float( "scr_zm_boss_model_scale", 1.35 );
 	if ( scale < 0.5 )
 		scale = 0.5;
