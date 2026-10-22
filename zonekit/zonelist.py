@@ -9,6 +9,7 @@ against the md5 recorded when it was made). Where two places carry a zone, the n
 `stock` names stock 1.1.1.13 zones (client_shipRetail\chinese) whose asset blobs this zone reuses unchanged: the
 manifest names those blobs by sha1 and the build takes them from the stock zone instead of the repo.
 `gfx` maps a .gfx rawfile to the stock movie it patches ("<stock zone>:<rawfile>").
+`maps` declares the zone's per-usermap data, which shipping_maps.txt filters (zonekit/shipping.py).
 `handwritten` maps a .gfx rawfile to the classes whose as/ file in the zone is a hand-written source (compiled into
 the stored tag), not FFDec's decompile: --decompile keeps those files instead of exporting over them.
 The usermap map zones themselves (mp_*.ff, zm_sumpf_sh.ff and their _load zones) are not part of this repository.
@@ -41,8 +42,14 @@ ZONES = {
     "codol_zm_deathmachine_audio": dict(origin="Z:" + PATCH, install=PATCH),
     "controller_ingame": dict(origin="R:3317112:patch", install=PATCH, gfx={"scaleform/default/codoingame.gfx": INGAME},
                               handwritten={"scaleform/default/codoingame.gfx": {"MainPause"}}),
-    "usermaps_patch": dict(origin="G:" + PATCH, install=PATCH, older="Z:" + PATCH),
-    "usermaps_ui_mp": dict(origin="G:" + PATCH, install=PATCH, older="Z:" + PATCH),
+    # the usermaps' front-end data, filtered by shipping_maps.txt (zonekit/shipping.py): only "ship" maps' rows,
+    # arena entries, strings, vision files and map-select images are in a shipping build
+    "usermaps_patch": dict(origin="G:" + PATCH, install=PATCH, older="Z:" + PATCH,
+                           maps=dict(table=("mp/comaplist.csv", 4, "patch_code_post_gfx_mp"),
+                                     arena=("mp/basemaps.arena", "code_post_gfx_mp"),
+                                     assets=["rawfile:vision/{map}.vision"], localize=True)),
+    "usermaps_ui_mp": dict(origin="G:" + PATCH, install=PATCH, older="Z:" + PATCH,
+                           maps=dict(assets=["image:sfproto_{map}_usermap"])),
     "voice_ui_mp": dict(origin="R:3317112:patch", install=PATCH, gfx={"scaleform/default/codo.gfx": CODO},
                         handwritten={"scaleform/default/codo.gfx": {"codo.views.option_sub.OptionView_audio",
                                                                     "codo.views.option_sub.OptionView_video",
