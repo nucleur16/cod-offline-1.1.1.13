@@ -1,7 +1,7 @@
 /*
  * c1game.c - the few C1 engine calls that Kernel33 features share (included by kernel33.c before
- * console.c and voice.c, after parity.c). Nothing here needs the developer console: a build without
- * console.c (-DK33_NO_CONSOLE) uses exactly this file.
+ * console.c, voice.c and controller.c, after parity.c). Nothing here needs the developer console: a
+ * build without console.c (-DK33_NO_CONSOLE) uses exactly this file.
  *
  *   print      Com_Printf 0x5941B0 (channel, fmt, ...): C1's own console and console_mp.log.
  *   execute    Cbuf_AddText 0x58BA60 (ecx = localClient, eax = text), as CL_KeyEvent's binds do.

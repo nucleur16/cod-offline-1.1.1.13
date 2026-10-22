@@ -1,6 +1,6 @@
 /*
- * In-game voice chat for C1 (feat/voicechat). Included by kernel33.c after console.c, so it shares
- * Log/Readable/WriteCode/CallsTarget/RedirectCall and the console's ConPrintf/ConCbufAddText.
+ * In-game voice chat for C1. Included by kernel33.c after c1game.c, so it shares
+ * Log/Readable/WriteCode/CallsTarget/RedirectCall and c1game.c's C1 print/Cbuf/command helpers.
  *
  * C1 stripped IW's voice: no capture (no DirectSound/waveIn), no codec (the Speex tables are gone),
  * no CL_WriteVoicePacket, no +talk. What is left: the "v" branch of CL_ConnectionlessPacket (it only
@@ -51,6 +51,8 @@
 #endif
 #include <ctype.h>
 #include <mmdeviceapi.h>
+#include <propsys.h>
+#include <propvarutil.h>
 #include <audioclient.h>
 #include <opus/opus.h>
 #include <math.h>
@@ -107,7 +109,8 @@ static volatile LONG g_audioStarted;
 static char g_captureName[128], g_renderName[128];
 static const BYTE *volatile g_dvVoice, *volatile g_dvVolume, *volatile g_dvBitrate,
     *volatile g_dvLoopback, *volatile g_dvDebug, *volatile g_dvTone, *volatile g_dvMode, *volatile g_dvThreshold,
-    *volatile g_dvHang, *volatile g_dvMicMute, *volatile g_dvLevel, *volatile g_dvMeter;
+    *volatile g_dvHang, *volatile g_dvMicMute, *volatile g_dvLevel, *volatile g_dvMeter,
+    *volatile g_dvInDevice, *volatile g_dvInList, *volatile g_dvInPick, *volatile g_dvInIndex;
 static BOOL g_voiceDvarsDone, g_voiceAnnounced;
 static unsigned short g_sendSeq;
 static volatile DWORD g_lastHeard[VOICE_TALKERS];
@@ -225,6 +228,99 @@ static void VoiceDevRelease(VoiceDev *d)
     d->retryAt = retry;
 }
 
+/* ---- microphone choice (k33_voiceInputDevice) -------------------------------------------------------
+ * The audio thread lists the active capture endpoints (EnumAudioEndpoints eCapture, DEVICE_STATE_ACTIVE,
+ * PKEY_Device_FriendlyName) when it starts and whenever Windows reports a device change
+ * (IMMNotificationClient), into g_inIds / g_inNames (names in code page 936, what C1 shows; a character
+ * GBK lacks becomes '?'). The main thread publishes the names as k33_voiceInputList ("Default;name;..."),
+ * the chosen one's position as k33_voiceInputIndex, and turns Options > Audio's pick (k33_voiceInputPick,
+ * an index) into k33_voiceInputDevice (archived: the endpoint ID; empty = Windows' default
+ * communications device). The capture stream is reopened on the chosen endpoint as soon as the choice
+ * changes; a chosen device that is missing falls back to the default (logged), and is taken again when it
+ * comes back. */
+#define VOICE_MAX_INPUTS 16
+static char g_inIds[VOICE_MAX_INPUTS][160], g_inNames[VOICE_MAX_INPUTS][96];
+static volatile LONG g_inCount, g_inListGen;
+static char g_inWant[160];               /* the chosen endpoint ID (main thread writes, audio thread reads) */
+static volatile LONG g_inWantGen;
+static char g_capOpenedId[160];          /* what the capture stream was opened on ("" = default) */
+static volatile LONG g_capFallback;      /* opened on the default because the chosen one was missing */
+static volatile LONG g_devDirty = 1;
+
+static const PROPERTYKEY kPkeyFriendlyName = { { 0xa45c254e, 0xdf1c, 0x4efd, { 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0 } }, 14 };
+static const GUID kIidNotify = { 0x7991EEC9, 0x7E89, 0x4D85, { 0x83, 0x90, 0x6C, 0x70, 0x3C, 0xEC, 0x60, 0xC0 } };
+static const GUID kIidUnknown = { 0x00000000, 0x0000, 0x0000, { 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 } };
+
+/* IMMNotificationClient: any change marks the list dirty; the audio thread does the work. */
+static HRESULT STDMETHODCALLTYPE VnQI(IMMNotificationClient *t, REFIID r, void **o)
+{
+    if (IsEqualGUID(r, &kIidUnknown) || IsEqualGUID(r, &kIidNotify)) { *o = t; return S_OK; }
+    *o = NULL;
+    return E_NOINTERFACE;
+}
+static ULONG STDMETHODCALLTYPE VnRef(IMMNotificationClient *t) { (void)t; return 1; }
+static HRESULT STDMETHODCALLTYPE VnState(IMMNotificationClient *t, LPCWSTR id, DWORD st) { (void)t; (void)id; (void)st; InterlockedExchange(&g_devDirty, 1); return S_OK; }
+static HRESULT STDMETHODCALLTYPE VnAdd(IMMNotificationClient *t, LPCWSTR id) { (void)t; (void)id; InterlockedExchange(&g_devDirty, 1); return S_OK; }
+static HRESULT STDMETHODCALLTYPE VnDefault(IMMNotificationClient *t, EDataFlow f, ERole r, LPCWSTR id) { (void)t; (void)f; (void)r; (void)id; InterlockedExchange(&g_devDirty, 1); return S_OK; }
+static HRESULT STDMETHODCALLTYPE VnProp(IMMNotificationClient *t, LPCWSTR id, const PROPERTYKEY k) { (void)t; (void)id; (void)k; return S_OK; }
+static IMMNotificationClientVtbl g_vnVtbl = { VnQI, VnRef, VnRef, VnState, VnAdd, VnAdd, VnDefault, VnProp };
+static IMMNotificationClient g_vnClient = { &g_vnVtbl };
+
+static void VoiceListInputs(void)
+{
+    static IMMDeviceEnumerator *watch;
+    IMMDeviceEnumerator *en = NULL;
+    IMMDeviceCollection *col = NULL;
+    UINT n = 0;
+    if (FAILED(CoCreateInstance(&kClsidEnum, NULL, CLSCTX_ALL, &kIidEnum, (void **)&en))) return;
+    if (!watch) {   /* kept for the notifications */
+        watch = en;
+        IMMDeviceEnumerator_AddRef(watch);
+        IMMDeviceEnumerator_RegisterEndpointNotificationCallback(watch, &g_vnClient);
+    }
+    char ids[VOICE_MAX_INPUTS][160], names[VOICE_MAX_INPUTS][96];
+    int count = 0;
+    if (SUCCEEDED(IMMDeviceEnumerator_EnumAudioEndpoints(en, eCapture, DEVICE_STATE_ACTIVE, &col)) &&
+        SUCCEEDED(IMMDeviceCollection_GetCount(col, &n))) {
+        for (UINT i = 0; i < n && count < VOICE_MAX_INPUTS; i++) {
+            IMMDevice *dev = NULL;
+            LPWSTR wid = NULL;
+            IPropertyStore *ps = NULL;
+            if (FAILED(IMMDeviceCollection_Item(col, i, &dev))) continue;
+            if (SUCCEEDED(IMMDevice_GetId(dev, &wid)) && wid) {
+                WideCharToMultiByte(CP_ACP, 0, wid, -1, ids[count], sizeof(ids[count]), NULL, NULL);
+                CoTaskMemFree(wid);
+                lstrcpynA(names[count], "?", sizeof(names[count]));
+                if (SUCCEEDED(IMMDevice_OpenPropertyStore(dev, STGM_READ, &ps))) {
+                    PROPVARIANT v;
+                    PropVariantInit(&v);
+                    if (SUCCEEDED(IPropertyStore_GetValue(ps, &kPkeyFriendlyName, &v)) && v.vt == VT_LPWSTR && v.pwszVal) {
+                        BOOL bad = FALSE;
+                        WideCharToMultiByte(936, 0, v.pwszVal, -1, names[count], sizeof(names[count]), "?", &bad);
+                        names[count][sizeof(names[count]) - 1] = 0;
+                        for (char *c = names[count]; *c; c++)   /* the list's separators and the Cbuf's quotes */
+                            if (*c == ';' || *c == '"' || *c == '|') *c = ' ';
+                    }
+                    PropVariantClear(&v);
+                    IPropertyStore_Release(ps);
+                }
+                count++;
+            }
+            IMMDevice_Release(dev);
+        }
+    }
+    if (col) IMMDeviceCollection_Release(col);
+    IMMDeviceEnumerator_Release(en);
+    EnterCriticalSection(&g_voiceLock);
+    memcpy(g_inIds, ids, sizeof(ids[0]) * count);
+    memcpy(g_inNames, names, sizeof(names[0]) * count);
+    InterlockedExchange(&g_inCount, count);
+    LeaveCriticalSection(&g_voiceLock);
+    InterlockedIncrement(&g_inListGen);
+    Log("voice: %d capture device(s)", count);
+    for (int i = 0; i < count; i++) Log("voice:   %s  %s", ids[i], names[i]);
+}
+
 static BOOL VoiceDevOpen(VoiceDev *d, BOOL capture)
 {
     IMMDeviceEnumerator *en = NULL;
@@ -235,7 +331,32 @@ static BOOL VoiceDevOpen(VoiceDev *d, BOOL capture)
     memset(d, 0, sizeof(*d));
     hr = CoCreateInstance(&kClsidEnum, NULL, CLSCTX_ALL, &kIidEnum, (void **)&en);
     if (FAILED(hr)) { Log("voice: %s: MMDeviceEnumerator failed 0x%08lX", what, (unsigned long)hr); goto fail; }
-    hr = IMMDeviceEnumerator_GetDefaultAudioEndpoint(en, capture ? eCapture : eRender, eCommunications, &dev);
+    hr = E_FAIL;
+    if (capture) {   /* the chosen microphone, if any and present */
+        char want[160];
+        EnterCriticalSection(&g_voiceLock);
+        lstrcpynA(want, g_inWant, sizeof(want));
+        LeaveCriticalSection(&g_voiceLock);
+        lstrcpynA(g_capOpenedId, "", sizeof(g_capOpenedId));
+        InterlockedExchange(&g_capFallback, 0);
+        if (want[0]) {
+            WCHAR wid[160];
+            DWORD st = 0;
+            MultiByteToWideChar(CP_ACP, 0, want, -1, wid, 160);
+            hr = IMMDeviceEnumerator_GetDevice(en, wid, &dev);
+            if (SUCCEEDED(hr) && (FAILED(IMMDevice_GetState(dev, &st)) || st != DEVICE_STATE_ACTIVE)) {
+                IMMDevice_Release(dev);
+                dev = NULL;
+                hr = E_FAIL;
+            }
+            if (SUCCEEDED(hr)) lstrcpynA(g_capOpenedId, want, sizeof(g_capOpenedId));
+            else {
+                Log("voice: capture: the chosen device %s is not available, using the default", want);
+                InterlockedExchange(&g_capFallback, 1);
+            }
+        }
+    }
+    if (FAILED(hr)) hr = IMMDeviceEnumerator_GetDefaultAudioEndpoint(en, capture ? eCapture : eRender, eCommunications, &dev);
     if (FAILED(hr)) hr = IMMDeviceEnumerator_GetDefaultAudioEndpoint(en, capture ? eCapture : eRender, eConsole, &dev);
     if (FAILED(hr)) { Log("voice: %s: no default device (0x%08lX)", what, (unsigned long)hr); goto fail; }
     hr = IMMDevice_Activate(dev, &kIidClient, CLSCTX_ALL, NULL, (void **)&d->client);
@@ -658,6 +779,23 @@ static DWORD WINAPI VoiceThread(LPVOID unused)
     timeBeginPeriod(1);
     for (;;) {
         BOOL want = g_wantCapture != 0;
+        static LONG seenWantGen;
+        if (InterlockedExchange(&g_devDirty, 0)) {
+            VoiceListInputs();
+            if (g_capFallback && g_cap.client) {   /* the chosen device may be back */
+                VoiceCaptureEnd();
+                VoiceDevRelease(&g_cap);
+            }
+        }
+        if (g_inWantGen != seenWantGen) {          /* a new choice: reopen on it */
+            seenWantGen = g_inWantGen;
+            if (g_cap.client) {
+                VoiceCaptureEnd();
+                VoiceDevRelease(&g_cap);
+                g_cap.retryAt = 0;
+            }
+            InterlockedExchange(&g_captureState, 0);
+        }
         if (g_cap.running && g_cap.event) WaitForSingleObject(g_cap.event, 10);
         else Sleep(want ? 2 : 8);
         VoiceCaptureTick(want);
@@ -700,6 +838,14 @@ static void VoiceRegisterDvars(void)
     g_dvMicMute = reg("k33_voiceMicMute", 0, 0, 1, 0x1, "Microphone off (Options > Audio > Microphone)");
     g_dvLevel = reg("k33_voiceLevel", 0, -1, 100, 0, "Live microphone level 0..100 (read only; -1 no microphone)");
     g_dvMeter = reg("k33_voiceMeter", 0, 0, 1, 0, "Set by Options > Audio while shown: open the mic to meter it (nothing is sent)");
+    {
+        typedef const BYTE *(__cdecl *RegStr)(const char *, const char *, unsigned, const char *);
+        RegStr regs = (RegStr)(DWORD_PTR)0x00624740u;
+        g_dvInDevice = regs("k33_voiceInputDevice", "", 0x1, "Microphone: Windows endpoint ID (empty = the default communications device)");
+        g_dvInList = regs("k33_voiceInputList", "", 0, "Microphones for Options > Audio: Default;name;... (read only)");
+    }
+    g_dvInPick = reg("k33_voiceInputPick", -1, -1, 64, 0, "Set by Options > Audio: choose the microphone at this position of k33_voiceInputList");
+    g_dvInIndex = reg("k33_voiceInputIndex", 0, 0, 64, 0, "The chosen microphone's position in k33_voiceInputList (read only)");
 
     /* C1 does not apply "+set" from the command line to a dvar registered this late (and runs no
      * "+command" at all), so re-issue ours: "+set k33_voiceLoopback 1", "+toggletalk". */
@@ -1013,6 +1159,55 @@ static void VoiceCmdFile(void)
 }
 
 /* Once per Com_EventLoop pass (main thread). */
+static const char *VoiceDvarStr(const BYTE *d)
+{
+    const char *v = d && Readable(d, 0x10) ? *(const char *const *)(d + 0xC) : NULL;
+    return v && Readable(v, 1) ? v : "";
+}
+
+/* Main thread: k33_voiceInputDevice -> the audio thread; the device list and the chosen index for
+ * Options > Audio; Options > Audio's pick -> k33_voiceInputDevice. */
+static void VoiceInputTick(void)
+{
+    static LONG listGen = -1;
+    static char lastWant[160] = "\x01";
+    if (!g_dvInDevice || !g_c1CbufOk) return;
+    const char *want = VoiceDvarStr(g_dvInDevice);
+    if (strcmp(want, lastWant)) {
+        lstrcpynA(lastWant, want, sizeof(lastWant));
+        EnterCriticalSection(&g_voiceLock);
+        lstrcpynA(g_inWant, want, sizeof(g_inWant));
+        LeaveCriticalSection(&g_voiceLock);
+        InterlockedIncrement(&g_inWantGen);
+        Log("voice: microphone: %s", want[0] ? want : "Windows default");
+        listGen = -1;
+    }
+    int pick = VoiceDvarInt(g_dvInPick, -1);
+    if (pick >= 0) {
+        char cmd[260];
+        EnterCriticalSection(&g_voiceLock);
+        const char *id = pick > 0 && pick <= g_inCount ? g_inIds[pick - 1] : "";
+        _snprintf(cmd, sizeof(cmd), "set k33_voiceInputDevice \"%s\"; set k33_voiceInputPick -1\n", id);
+        LeaveCriticalSection(&g_voiceLock);
+        C1CbufAddText(cmd);
+        VoiceDvarPoke(g_dvInPick, -1);
+    }
+    if (g_inListGen != listGen) {
+        char list[1600], cmd[1700];
+        int n = _snprintf(list, sizeof(list), "Default"), index = 0;
+        listGen = g_inListGen;
+        EnterCriticalSection(&g_voiceLock);
+        for (int i = 0; i < g_inCount && n < (int)sizeof(list) - 100; i++) {
+            n += _snprintf(list + n, sizeof(list) - n, ";%s", g_inNames[i]);
+            if (want[0] && !strcmp(g_inIds[i], want)) index = i + 1;
+        }
+        LeaveCriticalSection(&g_voiceLock);
+        _snprintf(cmd, sizeof(cmd), "set k33_voiceInputList \"%s\"\n", list);
+        C1CbufAddText(cmd);
+        VoiceDvarPoke(g_dvInIndex, index);
+    }
+}
+
 __attribute__((used)) void __cdecl VoiceMainTick(void)
 {
     static LONG ticks;
@@ -1029,6 +1224,7 @@ __attribute__((used)) void __cdecl VoiceMainTick(void)
         if (!started) started = GetTickCount();
         if (!defaulted && GetTickCount() - started > 8000) { defaulted = TRUE; VoiceDefaultBind(); }
     }
+    VoiceInputTick();
     const BYTE *adr = VoiceServerAdr();
     BOOL on = VoiceEnabled();
     InterlockedExchange(&g_connected, adr != NULL);

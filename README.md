@@ -9,13 +9,24 @@ to the exe. See the comments in `kernel33.c` for addresses and reasoning.
 1. `python make_exe.py` renames the packed exe's `Kernel32.dll` import to `Kernel33.dll` (needs C1.exe
    and `codoMP_client_shipRetail.exe.bak`; also writes `unpacked.z`).
 2. Put `Kernel33.dll` next to `codoMP_client_shipRetail.exe` (TenProxy.dll + TerSafe.dll must still be there).
+3. Copy `patch\voice_ui_mp.ff` into `<game>\client_shipRetail\patch\` (create the folder). It carries the
+   options-screen changes: Options > Controls > Chat (Talk key), Options > Audio > Voice (mode, mic level bar)
+   and Options > Graphics > Max FPS. `python build_voice_ui.py` rebuilds it from the game's own patch_ui_mp.
+   Keep every codo.gfx change in this one zone: each *_ui_mp patch zone carrying codo.gfx carries the whole
+   movie, and the first one loaded wins. It also carries Options > Controller (the pad tab) and the
+   microphone choice in Options > Audio.
+4. Copy `patch\controller_ingame.ff` into the same folder: the in-match pause menu (codoingame.gfx) with
+   gamepad focus navigation. `python build_ingame_ui.py` rebuilds it from the game's own patch_common_mp.
 
 ## Build (MSYS2 mingw32)
 ```sh
 PATH=/c/msys64/mingw32/bin:$PATH sh build.sh
 ```
 `unpacked.z` (C1.exe's decompressed code range) is embedded as a resource; `build.sh` copies the
-result to `../Kernel33.dll`.
+result to `../Kernel33.dll` (`K33_NO_COPY=1` leaves it in this folder). Needs libopus
+(`pacman -S mingw-w64-i686-opus`) and SDL2 2.32.10, which `build.sh` downloads once into the gitignored
+`third_party/` (official SDL2-devel mingw package, SHA-256 checked) and links statically: the DLL has no
+SDL2.dll dependency.
 
 ## Parity logger (branch `parity-log`)
 `parity.c` adds a client-side snapshot-parity logger for bringing the server to retail parity. It
@@ -84,7 +95,7 @@ To see the frame rate in a match: `set 2614 1` (C1's loss/ping/FPS debug graphs;
 below 100).
 
 ## Developer console (branch `dev`)
-`dev` is `parity-log` plus `console.c`, an in-game console for C1, which has none left: IW4's
+`dev` is `main` plus `console.c`, an in-game console for C1, which has none left: IW4's
 `toggleconsole`/`clear`/`condump`, the console field and `Con_DrawConsole` were removed, and
 `CL_KeyEvent` (0x493240) no longer tests the `~` key. The console is an overlay instead:
 
@@ -101,8 +112,12 @@ below 100).
   dvar `k33_consoleKey` (default 112 = F1, 0 = none). Works at the Scaleform menus and in game. Esc
   closes it (first Esc only closes the hint box).
 - **Input**: the window class's WndProc (0x62FB85) goes through `ConsoleWndProc`, which owns the
-  keyboard while the console is open; key-ups and everything else still reach the game. IME results
-  are inserted as GBK; with the console closed the GBK IME patch is unchanged.
+  keyboard while the console is open; key-ups and everything else still reach the game. While it is
+  open the window's IME context is detached (keys arrive as plain WM_CHAR, so Pinyin in Chinese mode
+  types Latin letters); WM_CHAR is converted from the active input language's code page to GBK; a
+  pending dead key is consumed instead of accenting the next letter; AltGr is not Ctrl; Backspace,
+  Delete and the arrows step over a whole GBK character. Ctrl+V pastes Chinese text as GBK. With the
+  console closed the GBK IME patch is unchanged.
 - **Output**: a pre-hook on the four calls of `Com_LogPrintMessage` (0x594010) copies everything C1
   logs into a 4096-line scrollback. Quoted numeric dvar names get their readable name appended
   (`"591" (cg_drawFPS)`).
@@ -140,9 +155,20 @@ description, with a confidence; below 85 the name is a positional guess and the 
 Numbers without a name display as they are. Command names are not hashed in this build (all
 `Cmd_AddCommand` names are plaintext), so commands are listed as registered.
 
-Build without touching the live DLL: `sh build-dev.sh` writes `Kernel33_dev.dll`.
+Build without touching the live DLL: `sh build-dev.sh` writes `Kernel33_dev.dll` (console + controller +
+voice + usermaps + parity + frame cap, SDL2 and libopus static, as `build.sh`) and also links
+`Kernel33_noconsole.dll` (`-DK33_NO_CONSOLE`), failing if the shared code depends on `console.c`.
 
-## Voice chat (branch `feat/voicechat`)
+## Controller (branch `feat/controller`)
+`controller.c` adds gamepad play: SDL2 2.32.10 GameController (static; Xbox, PlayStation, Switch Pro, generic 
+pads, hot-plug; XInput fallback) on its own ~1 kHz thread, pad buttons as real C1 keys (`BUTTON_A`.. `DPAD_RIGHT`, 
+bindable and saved in config_mp.cfg, queued through C1's Sys_QueEvent), analog move/look in CL_MouseMove, a 
+stick-driven cursor for the Scaleform menus (A click, B Escape) and `gpad_*` dvars. See `CONTROLLER.md` for C1's 
+input path, the dvars, commands, default binds, what was verified and the phase 2/3 plan. `build.sh` builds it
+into Kernel33.dll; `PATH=/c/msys64/mingw32/bin:$PATH sh build-controller.sh` writes a side copy,
+`Kernel33_controller.dll`, and copies nothing.
+
+## Voice chat
 `voice.c` puts back in-game voice chat, which C1 stripped (no capture, no codec, no `+talk`; the "v"
 packet branch only printed "voice communication is disabled"). It uses Opus (libopus, linked
 statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
@@ -182,7 +208,7 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
   has the push-to-talk row ("说话" with a key button and a "hold to talk" checkbox that switches the
   button between `toggletalk` and `+talk`), but its onInit hid it. `build_voice_ui.py` flips those three
   `visible = false` to true in the codo.gfx C1 uses (patch_ui_mp's; same byte length) and installs it as
-  `client_shipRetail\patchoice_ui_mp.ff`, a *_ui_mp patch zone Kernel33 loads ahead of the UI zones.
+  `client_shipRetail\patch\voice_ui_mp.ff`, a *_ui_mp patch zone Kernel33 loads ahead of the UI zones.
   Rebinding there goes through C1's own AS_SetKeyBindingForCommand.
 - **Path**: WASAPI shared-mode capture (default communications device) -> 48 kHz mono -> Opus VOIP,
   20 ms frames, 24 kbps, in-band FEC, DTX -> OOB `"v"` packets to `clc.serverAddress` through C1's
@@ -207,8 +233,8 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
 - C1 applies no command-line `+set` to dvars registered this late and runs no `+command`, so
   `voice.c` re-issues `+set <its dvar> <n>` and honours `+toggletalk` itself.
 
-Build without touching the live DLL: `PATH=/c/msys64/mingw32/bin:$PATH sh build-voice.sh` writes
-`Kernel33_voice.dll`.
+Built by `build.sh` (libopus linked statically: `pacman -S mingw-w64-i686-opus`). The Controls-menu
+push-to-talk row comes from `python build_voice_ui.py`, which writes `client_shipRetail\patch\voice_ui_mp.ff`.
 
 Test automation (only with `+set k33_cmdFile 1` on the command line): the lines of
 `<exe dir>\k33_cmd_<pid>.txt` are executed every half second, and `k33ready [0|1]` presses the room's
@@ -227,9 +253,18 @@ text scale and under its visibility rules. `talking` shows while you transmit an
 is silent; `talkerN` lists the players heard in the last 500 ms with their names (configstring
 1280 + clientNum), mutes excluded. With `k33_voiceLoopback 1` you appear in the list yourself.
 
-**Shared C1 helpers / no-console builds.** `c1game.c` holds what features share: Com_Printf, Cbuf_AddText,
-the command list (Cmd_AddCommand), Dvar_RegisterInt and keyCatchers, each byte-checked once. `voice.c`
-needs only that file; `console.c` uses it too. `kernel33.c` includes console.c and calls InstallConsole()
-under `#ifndef K33_NO_CONSOLE`; `build-voice.sh` also links `Kernel33_noconsole.dll` with
-`-DK33_NO_CONSOLE` and fails if it does not build. Without the console, voice prints go to C1's own
-console and console_mp.log through Com_Printf.
+**Shared C1 helpers.** `c1game.c` holds what features share: Com_Printf, Cbuf_AddText, the command
+list (Cmd_AddCommand), Dvar_RegisterInt and keyCatchers, each byte-checked once. Voice prints go to
+C1's own console and console_mp.log through Com_Printf.
+
+### Sound voices (`soundvoices.c`, through `sounddiag.c`'s hooks)
+The 3D play path's channel check (call of 0x736C10 at 0x73E4DB) decides two more things before C1 takes a voice:
+- **Alias limit** (`k33_sndAliasLimit`, default 4, 0 = off): a one-shot alias on a channel of priority <= 1 holds at
+  most that many 3D voices; one more play takes its farthest copy's voice when nearer, else it is not started.
+  mp_abandon_sh_mk's fireworks launchers played `fireworks_launch` ~50 times a second and held 19.7 of the 32 3D voices
+  on average (snddiag, 2026-10-19..21), starving the map's loops and the players' gear sounds.
+- **Nearest wins at a cap** (`k33_sndNearest`, default 1): a 3D sound refused because its channel is at its cap
+  (ambdist1/2 and physics 6, bulletimpact 10) takes the voice of that channel's farthest 3D sound when nearer. C1's
+  own SND_StealVoice only runs after the cap check.
+`+set codol_soundvoices 0` turns both off at startup. The voice diagnostics (`k33_snddiag`, `CODOL_SNDDIAG`) now
+default to 0; at 1+ they also log `snd policy` totals and `why=limit` refusals to Kernel33.log.

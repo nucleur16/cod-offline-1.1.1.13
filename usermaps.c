@@ -340,8 +340,49 @@ __asm__(
     "    popl %eax\n"
     "    ret\n");
 
+/* The pure check also compares each stock zone's size with a uint32[90] table at 0x00C3CFD0, parallel to the name
+ * table 0x00CD5448. patch_common_gametype_zm (index 66, stock 7184661 bytes) is rebuilt for the zombies Pack-a-Punch
+ * camo, so its entry takes the installed file's size -- only when that file is an unsigned rebuild (IWffu100; the
+ * stock zone is IWff0100). Every other name and size stays as shipped. */
+#define PURE_FF_SIZES_VA      0x00C3CFD0u
+
+static void PureAcceptRebuiltZones(void)
+{
+    static const struct { int index; const char *name; DWORD stockSize; } kZones[] = {
+        { 66, "patch_common_gametype_zm", 7184661u },
+    };
+    char path[MAX_PATH];
+    DWORD n = GetModuleFileNameA(NULL, path, MAX_PATH);
+    while (n && path[n - 1] != '\\') n--;
+    if (!n) return;
+    const char *const *names = (const char *const *)(DWORD_PTR)PURE_FF_NAMES_VA;
+    DWORD *sizes = (DWORD *)(DWORD_PTR)PURE_FF_SIZES_VA;
+    for (unsigned i = 0; i < sizeof(kZones) / sizeof(kZones[0]); i++) {
+        DWORD *entry = &sizes[kZones[i].index];
+        if (!Readable(entry, 4) || *entry != kZones[i].stockSize || !names[kZones[i].index] ||
+            lstrcmpiA(names[kZones[i].index], kZones[i].name) != 0) {
+            Log("pure check: size table entry %d is not %s/%lu, left alone", kZones[i].index, kZones[i].name,
+                (unsigned long)kZones[i].stockSize);
+            continue;
+        }
+        _snprintf(path + n, MAX_PATH - n, "client_shipRetail\\chinese\\%s.ff", kZones[i].name);
+        path[MAX_PATH - 1] = 0;
+        HANDLE f = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+        if (f == INVALID_HANDLE_VALUE) continue;
+        char magic[8];
+        DWORD got = 0, size = GetFileSize(f, NULL);
+        BOOL ok = ReadFile(f, magic, sizeof(magic), &got, NULL) && got == sizeof(magic);
+        CloseHandle(f);
+        if (!ok || memcmp(magic, "IWffu100", 8) != 0 || size == INVALID_FILE_SIZE || size == *entry) continue;
+        WriteCode((BYTE *)entry, &size, 4);
+        Log("pure check: %s.ff is a rebuilt (unsigned) zone, accepting %lu bytes instead of %lu", kZones[i].name,
+            (unsigned long)size, (unsigned long)kZones[i].stockSize);
+    }
+}
+
 static void PatchPureCheck(void)
 {
+    PureAcceptRebuiltZones();
     static const DWORD kCalls[] = { PURE_FF_LIST_CALL_VA, PURE_IWD_LIST_CALL_VA };
     for (unsigned i = 0; i < sizeof(kCalls) / sizeof(kCalls[0]); i++) {
         BYTE *call = (BYTE *)(DWORD_PTR)kCalls[i];
