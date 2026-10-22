@@ -3,7 +3,8 @@ r"""Every zone this repo carries: where the shipped file is, where it installs, 
 
 `origin` is where the zone was decompiled from: G = the 1.1.1.13 install ("Call of Duty Online 1.1.1.13"),
 Z = codol-classic-zz, R:<commit>:<dir> = a .ff this repository used to commit (patch/, removed when the zones moved
-here). Where two places carry a zone, the newest build is the source.
+here), new = a zone authored here (no shipped original: --decompile leaves it alone, --verify checks the build
+against the md5 recorded when it was made). Where two places carry a zone, the newest build is the source.
 
 `stock` names stock 1.1.1.13 zones (client_shipRetail\chinese) whose asset blobs this zone reuses unchanged: the
 manifest names those blobs by sha1 and the build takes them from the stock zone instead of the repo.
@@ -50,4 +51,8 @@ ZONES = {
     "patch_common_gametype_zm": dict(origin="G:" + CHINESE, install=CHINESE,
                                      stock=["patch_common_gametype_zm.ff.pre-pap", "common_gametype_zm",
                                             "zm_prototype_sh"]),
+    # --- client_shipRetail\patch, *_postgfx_mp: loaded after code_post_gfx (permanent; images allowed)
+    # the controller button icons controller_glyphs.c draws in text: 4 sets x 18 images (64x64 A8R8G8B8, 7 levels,
+    # from the former res/controller_glyphs.bin) and a material each (hud_status_dead's layout, ",2d")
+    "controller_glyphs_postgfx_mp": dict(origin="new", install=PATCH),
 }
