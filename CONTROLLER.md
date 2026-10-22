@@ -145,10 +145,14 @@ mouse via `0x5F3900`, keys via `0x4931E0` / UI_KeyEvent `0x5F3760`.
 | `gpad_debug` (not archived) | 0 | 1 state twice a second, 2 also every button / click |
 
 ### Commands
-`gpad_status` (backend, pad name, mode, every pad bind), `gpad_defaultbinds`,
-`gpad_fake <lx> <ly> <rx> <ry> [lt rt [buttons [ms]]] | off` (synthetic pad: sticks -1..1, triggers 0..1,
-XInput button bits A 0x1000 B 0x2000 X 0x4000 Y 0x8000 LB 0x100 RB 0x200 Start 0x10 Back 0x20 L3 0x40 R3 0x80,
-D-pad 1/2/4/8).
+`gpad_status` (backend, pad name, mode, every pad bind), `gpad_defaultbinds`, `gpad_ksnext`, `gpad_ksuse`,
+`gpad_lookpreset`, `gpad_swaptriggers`, `gpad_glyphdump`.
+
+Test commands are registered only on a test client (`+set k33_cmdFile 1`) or with `+set gpad_testcmds 1` on
+the command line: `gpad_fake <lx> <ly> <rx> <ry> [lt rt [buttons [ms]]] | off` (synthetic pad: sticks -1..1,
+triggers 0..1, XInput button bits A 0x1000 B 0x2000 X 0x4000 Y 0x8000 LB 0x100 RB 0x200 Start 0x10 Back 0x20
+L3 0x40 R3 0x80, D-pad 1/2/4/8), `gpad_testmouse`, `gpad_cursor`, `gpad_sfkey`, `gpad_aadump`,
+`gpad_notifytest`, `gpad_looktest`, `gpad_glyphtest`.
 
 ### Test clients
 With `+set k33_cmdFile 1` (a test client beside the player's game) the real pad is never read and never

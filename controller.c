@@ -2286,22 +2286,34 @@ static void __cdecl CtlCmdAaDump(void)
 }
 
 static C1Cmd g_ctlCmds[] = {
-    { NULL, "gpad_fake", (void *)CtlCmdFake },
     { NULL, "gpad_status", (void *)CtlCmdStatus },
     { NULL, "gpad_defaultbinds", (void *)CtlCmdDefaults },
     { NULL, "gpad_ksnext", (void *)CtlCmdKsNext },
     { NULL, "gpad_ksuse", (void *)CtlCmdKsUse },
+    { NULL, "gpad_glyphdump", (void *)CtlCmdGlyphDump },
+    { NULL, "gpad_lookpreset", (void *)CtlCmdLookPreset },
+    { NULL, "gpad_swaptriggers", (void *)CtlCmdSwapTriggers },
+};
+
+/* Test and measurement commands (synthetic pad, injected mouse / cursor / Scaleform keys, look and glyph
+ * tests, aim-assist dump): registered only on a test client ("+set k33_cmdFile 1") or with
+ * "+set gpad_testcmds 1" on the command line, so a player's build has none of them. */
+static C1Cmd g_ctlTestCmds[] = {
+    { NULL, "gpad_fake", (void *)CtlCmdFake },
     { NULL, "gpad_testmouse", (void *)CtlCmdTestMouse },
     { NULL, "gpad_sfkey", (void *)CtlCmdSfKey },
     { NULL, "gpad_aadump", (void *)CtlCmdAaDump },
-    { NULL, "gpad_glyphdump", (void *)CtlCmdGlyphDump },
     { NULL, "gpad_notifytest", (void *)CtlCmdNotifyTest },
     { NULL, "gpad_looktest", (void *)CtlCmdLookTest },
-    { NULL, "gpad_lookpreset", (void *)CtlCmdLookPreset },
-    { NULL, "gpad_swaptriggers", (void *)CtlCmdSwapTriggers },
     { NULL, "gpad_cursor", (void *)CtlCmdCursor },
     { NULL, "gpad_glyphtest", (void *)CtlCmdGlyphTest },
 };
+
+static BOOL CtlTestCmdsEnabled(void)
+{
+    const char *cl = GetCommandLineA();
+    return CtlTestMode() || (cl && (strstr(cl, "gpad_testcmds 1") || strstr(cl, "gpad_testcmds \"1\"")));
+}
 
 /* ---- install ------------------------------------------------------------------------------------- */
 
@@ -2415,6 +2427,10 @@ static void InstallController(void)
         queOk ? "hooked (Sys_QueEvent)" : "NOT hooked");
     int added = 0;
     for (unsigned i = 0; i < sizeof(g_ctlCmds) / sizeof(g_ctlCmds[0]); i++) added += C1AddCommand(&g_ctlCmds[i]);
+    if (CtlTestCmdsEnabled()) {
+        for (unsigned i = 0; i < sizeof(g_ctlTestCmds) / sizeof(g_ctlTestCmds[0]); i++) added += C1AddCommand(&g_ctlTestCmds[i]);
+        Log("controller: test commands registered (k33_cmdFile 1 / gpad_testcmds 1)");
+    }
     g_ctlOn = TRUE;
     Log("controller: installed: IN_Frame hooked (0x62DA90), move/look %s (CL_MouseMove call 0x490E2F), key names %s, "
         "%d commands; buttons queue through Sys_QueEvent 0x62EF60", g_ctlMoveOk ? "hooked" : "NOT hooked (bytes differ)",

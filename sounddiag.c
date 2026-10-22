@@ -32,8 +32,8 @@
  * t is GetTickCount() milliseconds. The snapshot is written each second while a refusal happened in the last 3 s,
  * and at level 2 also every 5 s regardless.
  *
- * Toggle: dvar k33_snddiag 0 off / 1 refusals + snapshots around them (default) / 2 also a snapshot every 5 s.
- * Startup value: "+set k33_snddiag N" on the command line, else CODOL_SNDDIAG=N, else 1; 0 at startup installs nothing.
+ * Toggle: dvar k33_snddiag 0 off (default) / 1 refusals + snapshots around them / 2 also a snapshot every 5 s.
+ * Startup value: "+set k33_snddiag N" on the command line, else CODOL_SNDDIAG=N, else 0; 0 at startup installs nothing.
  * Memory C1 hands over (play params, alias, alias name) is read with ReadProcessMemory, which fails instead of
  * faulting, so a bad pointer only costs the name ("?"). */
 
@@ -522,7 +522,7 @@ static DWORD WINAPI SdThread(LPVOID unused)
     return 0;
 }
 
-/* "k33_snddiag N" anywhere on the command line (last wins), else CODOL_SNDDIAG=N, else 1. */
+/* "k33_snddiag N" anywhere on the command line (last wins), else CODOL_SNDDIAG=N, else 0. */
 static int SdStartLevel(void)
 {
     int level = 0;
