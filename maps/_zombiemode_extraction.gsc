@@ -294,7 +294,39 @@ sumpf_routes()
 	routes = [];
 	route = route_from_chain( dest, chain );
 	if ( isDefined( route ) )
-		routes[ 0 ] = route;
+	{
+		// The deck is behind the upstairs door: used whenever its zone is open.
+		route.zm_priority = 1;
+		routes[ routes.size ] = route;
+	}
+
+	// The start room's landing zone, for a rescue before that door is bought:
+	// inside the room at the east window of the south wall (window
+	// (10326, 221, -502)), the helicopter hovering just outside it over the
+	// south walkway, nose west, its right door to the window.  It comes in
+	// from the east along the building's south side and leaves the same way.
+	dest = route_point( ( 10326, 320, -500 ), 0 );
+	chain = [];
+	chain[ chain.size ] = route_point( ( 11900, -150, 1600 ), 180 );	// above the south-east water
+	descend = route_point( ( 11200, -150, 300 ), 165 );				// down over the open water
+	descend.zm_stop = true;
+	chain[ chain.size ] = descend;
+	approach = route_point( ( 10700, 90, -380 ), 180 );				// south-east corner of the building
+	approach.zm_speed = 25;
+	approach.zm_stop = true;
+	chain[ chain.size ] = approach;
+	hover = route_point( ( 10325, 100, -400 ), 180 );					// outside the window
+	hover.script_noteworthy = "stop";
+	hover.zm_speed = 12;
+	chain[ chain.size ] = hover;
+	leave = route_point( ( 10700, 90, -340 ), 0 );
+	leave.zm_speed = 20;
+	chain[ chain.size ] = leave;
+	chain[ chain.size ] = route_point( ( 11200, -150, 400 ), 330 );	// over the water
+	chain[ chain.size ] = route_point( ( 11900, -150, 1600 ), 0 );		// and up
+	route = route_from_chain( dest, chain );
+	if ( isDefined( route ) )
+		routes[ routes.size ] = route;
 	return routes;
 }
 
@@ -480,8 +512,31 @@ pick_route()
 			open[ open.size ] = level.zm_extraction_routes[ i ];
 	}
 	if ( open.size > 0 )
-		return open[ randomInt( open.size ) ];
+	{
+		// A route may outrank the others (zm_priority) while its zone is open.
+		best = [];
+		top = 0;
+		for ( i = 0; i < open.size; i++ )
+		{
+			prio = route_priority( open[ i ] );
+			if ( best.size == 0 || prio > top )
+			{
+				best = [];
+				top = prio;
+			}
+			if ( prio == top )
+				best[ best.size ] = open[ i ];
+		}
+		return best[ randomInt( best.size ) ];
+	}
 	return level.zm_extraction_routes[ randomInt( level.zm_extraction_routes.size ) ];
+}
+
+route_priority( route )
+{
+	if ( isDefined( route.zm_priority ) )
+		return route.zm_priority;
+	return 0;
 }
 
 // T5's round spawner with an endless budget: zombies keep coming until the
