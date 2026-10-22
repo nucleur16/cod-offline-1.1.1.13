@@ -612,7 +612,22 @@ static void LoadPatchDir(void)
     DWORD n = GetModuleFileNameA(NULL, dir, MAX_PATH);
     while (n && dir[n - 1] != '\\') n--;
     lstrcpynA(dir + n, "client_shipRetail\\", MAX_PATH - n);
-    _snprintf(pattern, sizeof(pattern), "%s%s*.ff", dir, sub);
+    char pdir[MAX_PATH];   /* where the patch files are: client_shipRetail\patch\ */
+    _snprintf(pdir, sizeof(pdir), "%s%s", dir, sub);
+    pdir[sizeof(pdir) - 1] = 0;
+    {   /* test clients ("+set k33_cmdFile 1") with a k33patch\ folder next to the exe load that one instead,
+         * so a UI build can be tried while the shared client_shipRetail\patch\ is in use */
+        const char *cl = GetCommandLineA();
+        char test[MAX_PATH];
+        memcpy(test, dir, n);
+        lstrcpynA(test + n, "k33patch\\", MAX_PATH - n);
+        DWORD at = GetFileAttributesA(test);
+        if (cl && strstr(cl, "k33_cmdFile 1") && at != INVALID_FILE_ATTRIBUTES && (at & FILE_ATTRIBUTE_DIRECTORY)) {
+            lstrcpynA(pdir, test, sizeof(pdir));
+            Log("patch folder: test client: using %s", pdir);
+        }
+    }
+    _snprintf(pattern, sizeof(pattern), "%s*.ff", pdir);
     pattern[sizeof(pattern) - 1] = 0;
 
     static char files[64][MAX_PATH];
@@ -620,7 +635,7 @@ static void LoadPatchDir(void)
     WIN32_FIND_DATAA fd;
     HANDLE h = FindFirstFileA(pattern, &fd);
     if (h == INVALID_HANDLE_VALUE) {
-        Log("patch folder: no .ff files in %s%s", dir, sub);
+        Log("patch folder: no .ff files in %s", pdir);
         return;
     }
     do {
@@ -654,7 +669,7 @@ static void LoadPatchDir(void)
             continue;
         }
 
-        _snprintf(z->path, sizeof(z->path), "%s%s%s", dir, sub, file);
+        _snprintf(z->path, sizeof(z->path), "%s%s", pdir, file);
         z->ui = PatchZoneIsUi(z->name);
         z->path[sizeof(z->path) - 1] = 0;
         HANDLE f = CreateFileA(z->path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
@@ -1169,8 +1184,16 @@ static void PatchGbkInput(void)
 /* C1 engine helpers shared by the features below: see c1game.c. */
 #include "c1game.c"
 
+/* Sound voices: per-alias voice limit and nearest-wins at a channel cap (soundvoices.c), through the voice
+ * diagnostics' hooks (sounddiag.c, which also logs refusals to Kernel33.log at k33_snddiag 1+). */
+#include "sounddiag.c"
+#include "soundvoices.c"
+
 /* In-game voice chat (feat/voicechat): see voice.c. */
 #include "voice.c"
+
+/* XInput gamepad (feat/controller): see controller.c and CONTROLLER.md. */
+#include "controller.c"
 
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 static void __cdecl TakeOver(void)
@@ -1191,8 +1214,10 @@ static void __cdecl TakeOver(void)
     PatchLoopFxCatchUp();
     PatchPatchDir();
     PatchUserMaps();
+    InstallSoundDiag();
     InstallParityLogger();
     InstallVoice();
+    InstallController();
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
     ExitProcess(0); /* the CRT entry ends in exit(); not reached */

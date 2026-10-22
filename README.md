@@ -13,14 +13,20 @@ to the exe. See the comments in `kernel33.c` for addresses and reasoning.
    options-screen changes: Options > Controls > Chat (Talk key), Options > Audio > Voice (mode, mic level bar)
    and Options > Graphics > Max FPS. `python build_voice_ui.py` rebuilds it from the game's own patch_ui_mp.
    Keep every codo.gfx change in this one zone: each *_ui_mp patch zone carrying codo.gfx carries the whole
-   movie, and the first one loaded wins.
+   movie, and the first one loaded wins. It also carries Options > Controller (the pad tab) and the
+   microphone choice in Options > Audio.
+4. Copy `patch\controller_ingame.ff` into the same folder: the in-match pause menu (codoingame.gfx) with
+   gamepad focus navigation. `python build_ingame_ui.py` rebuilds it from the game's own patch_common_mp.
 
 ## Build (MSYS2 mingw32)
 ```sh
 PATH=/c/msys64/mingw32/bin:$PATH sh build.sh
 ```
 `unpacked.z` (C1.exe's decompressed code range) is embedded as a resource; `build.sh` copies the
-result to `../Kernel33.dll`.
+result to `../Kernel33.dll` (`K33_NO_COPY=1` leaves it in this folder). Needs libopus
+(`pacman -S mingw-w64-i686-opus`) and SDL2 2.32.10, which `build.sh` downloads once into the gitignored
+`third_party/` (official SDL2-devel mingw package, SHA-256 checked) and links statically: the DLL has no
+SDL2.dll dependency.
 
 ## Parity logger (branch `parity-log`)
 `parity.c` adds a client-side snapshot-parity logger for bringing the server to retail parity. It
@@ -92,6 +98,15 @@ below 100).
 
 The developer console (IW4x-style `SH1X >` line, dvar names, autocomplete) lives on branch `dev` only;
 main carries no console code.
+
+## Controller (branch `feat/controller`)
+`controller.c` adds gamepad play: SDL2 2.32.10 GameController (static; Xbox, PlayStation, Switch Pro, generic 
+pads, hot-plug; XInput fallback) on its own ~1 kHz thread, pad buttons as real C1 keys (`BUTTON_A`.. `DPAD_RIGHT`, 
+bindable and saved in config_mp.cfg, queued through C1's Sys_QueEvent), analog move/look in CL_MouseMove, a 
+stick-driven cursor for the Scaleform menus (A click, B Escape) and `gpad_*` dvars. See `CONTROLLER.md` for C1's 
+input path, the dvars, commands, default binds, what was verified and the phase 2/3 plan. `build.sh` builds it
+into Kernel33.dll; `PATH=/c/msys64/mingw32/bin:$PATH sh build-controller.sh` writes a side copy,
+`Kernel33_controller.dll`, and copies nothing.
 
 ## Voice chat
 `voice.c` puts back in-game voice chat, which C1 stripped (no capture, no codec, no `+talk`; the "v"
@@ -181,3 +196,15 @@ is silent; `talkerN` lists the players heard in the last 500 ms with their names
 **Shared C1 helpers.** `c1game.c` holds what features share: Com_Printf, Cbuf_AddText, the command
 list (Cmd_AddCommand), Dvar_RegisterInt and keyCatchers, each byte-checked once. Voice prints go to
 C1's own console and console_mp.log through Com_Printf.
+
+### Sound voices (`soundvoices.c`, through `sounddiag.c`'s hooks)
+The 3D play path's channel check (call of 0x736C10 at 0x73E4DB) decides two more things before C1 takes a voice:
+- **Alias limit** (`k33_sndAliasLimit`, default 4, 0 = off): a one-shot alias on a channel of priority <= 1 holds at
+  most that many 3D voices; one more play takes its farthest copy's voice when nearer, else it is not started.
+  mp_abandon_sh_mk's fireworks launchers played `fireworks_launch` ~50 times a second and held 19.7 of the 32 3D voices
+  on average (snddiag, 2026-10-19..21), starving the map's loops and the players' gear sounds.
+- **Nearest wins at a cap** (`k33_sndNearest`, default 1): a 3D sound refused because its channel is at its cap
+  (ambdist1/2 and physics 6, bulletimpact 10) takes the voice of that channel's farthest 3D sound when nearer. C1's
+  own SND_StealVoice only runs after the cap check.
+`+set codol_soundvoices 0` turns both off at startup. The voice diagnostics (`k33_snddiag`, `CODOL_SNDDIAG`) now
+default to 0; at 1+ they also log `snd policy` totals and `why=limit` refusals to Kernel33.log.
