@@ -187,7 +187,10 @@ static void MatchC1SectionFlags(void)
  *   1848 = com_maxfps: Dvar_RegisterInt(name, default 85, min 0, max 100, flags, desc)  @ 0x597E21
  *   591  = cg_drawFPS: Dvar_RegisterEnum(name, {Off, Simple, SimpleRanges, Verbose,
  *                      Verbose+Viewpos}, default 0, flags, desc)                        @ 0x44C631
- * Pushes are in reverse argument order: desc, flags, ..., name. */
+ * Pushes are in reverse argument order: desc, flags, ..., name.
+ * 591 is registered but nothing in C1 reads it (CG_DrawFPS is gone); the frame rate C1 can show
+ * is the "FPS:" graph of its net/fps debug graphs, bool dvar "2614" (CL_Init @ 0x4984AA, drawn
+ * by 0x49FA10 in a match). The 1848 domain is raised by PatchFrameCap below. */
 typedef struct {
     const char *what;
     DWORD va;
@@ -842,6 +845,79 @@ static void RedirectCall(DWORD va, void *hook)
     WriteCode((BYTE *)(DWORD_PTR)va + 1, &rel, 4);
 }
 
+/* Client-side loop effects. At map load CG parses maps/mp/<map>_fx.gsc and maps/createfx/<map>_fx.gsc
+ * (0x42DF70) and registers every loop effect (0x42C930) in a per-local-client table at
+ * 0x16B01C0 + lc * 0x304: int count, int next[64] (+4), { int period, fx }[64] (+0x104), with
+ * next = cg time + period. cg time is still 0 then. Each frame 0x42E1B0 (called from 0x478F0F and
+ * 0x49F8C7) replays every period that has passed:
+ *     0x42E300  while (next[i] < now) { 0x4FE820(next[i]) ; next[i] += period[i] }
+ * so the first frame after CA_ACTIVE spawns (server time / period) effects per loop effect. Server
+ * time counts from the server process start: after 15 h (55,767,470 ms) 42 loop effects of 500 ms are
+ * 4.7 million spawns, and the client stood on a blank screen for 0.3-1.7 s after the loading screen
+ * (2026-10-15, measured between Com_EventLoop passes). Before both calls, an effect more than
+ * LOOPFX_REPLAY_MS behind is moved forward by whole periods, so the original loop replays at most
+ * that much of its past (long-lived effects still look as if they had been running). */
+#define LOOPFX_TABLE_VA       0x016B01C0u
+#define LOOPFX_TABLE_STRIDE   0x304u
+#define LOOPFX_MAX            64
+#define LOOPFX_PROCESS_VA     0x0042E1B0u
+#define LOOPFX_CALL_CG_VA     0x00478F0Fu
+#define LOOPFX_CALL_CL_VA     0x0049F8C7u
+#define LOOPFX_CG_INDEX_VA    0x06C3D2ACu /* the cg lookup 0x42E1B0 itself uses: the slot is chosen at random */
+#define LOOPFX_CG_SLOTS_MAX   1024u       /* per run (seen 0 and 4), so it is only sanity-checked */
+#define LOOPFX_CG_TABLE_VA    0x016D3B58u
+#define LOOPFX_CG_KEY         0x490B400Cu
+#define LOOPFX_CG_TIME_OFF    0x000B0350u
+#define LOOPFX_REPLAY_MS      10000
+
+typedef void (__cdecl *LoopFxProcessFn)(int localClient);
+
+static void __cdecl LoopFxProcessHook(int localClient)
+{
+    static LONG logged;
+    DWORD idx = *(volatile DWORD *)(DWORD_PTR)LOOPFX_CG_INDEX_VA;
+    const BYTE *cg = NULL;
+    if (idx < LOOPFX_CG_SLOTS_MAX && Readable((const void *)(DWORD_PTR)(LOOPFX_CG_TABLE_VA + idx * 4), 4))
+        cg =(const BYTE *)(DWORD_PTR)(*(volatile DWORD *)(DWORD_PTR)(LOOPFX_CG_TABLE_VA + idx * 4) ^ LOOPFX_CG_KEY);
+    if (cg && (unsigned)localClient < 4 && Readable(cg + LOOPFX_CG_TIME_OFF, 4)) {
+        int now = *(const volatile int *)(cg + LOOPFX_CG_TIME_OFF);
+        BYTE *t = (BYTE *)(DWORD_PTR)(LOOPFX_TABLE_VA + (DWORD)localClient * LOOPFX_TABLE_STRIDE);
+        int count = *(int *)t, moved = 0;
+        int *next = (int *)(t + 4);
+        long long skipped = 0, worst = 0;
+        for (int i = 0; i < count && i < LOOPFX_MAX; i++) {
+            int period = *(int *)(t + 0x104 + i * 8);
+            long long behind = (long long)now - LOOPFX_REPLAY_MS - next[i];
+            if (period <= 0 || behind <= 0) continue;
+            long long steps = behind / period + 1;
+            if (behind > worst) worst = behind;
+            next[i] = (int)(next[i] + steps * period);
+            skipped += steps;
+            moved++;
+        }
+        if (moved && InterlockedIncrement(&logged) <= 8)
+            Log("loop fx: %d of %d effects were up to %lld ms behind cg time %d; skipped %lld replays", moved, count,
+                worst + LOOPFX_REPLAY_MS, now, skipped);
+    } else {
+        static LONG warned;
+        if (InterlockedIncrement(&warned) == 1)
+            Log("loop fx: cg slot %lu (local client %d) not usable, catch-up not limited", (unsigned long)idx, localClient);
+    }
+    ((LoopFxProcessFn)(DWORD_PTR)LOOPFX_PROCESS_VA)(localClient);
+}
+
+static void PatchLoopFxCatchUp(void)
+{
+    if (!CallsTarget(LOOPFX_CALL_CG_VA, LOOPFX_PROCESS_VA) || !CallsTarget(LOOPFX_CALL_CL_VA, LOOPFX_PROCESS_VA)) {
+        Log("loop fx: calls at 0x%08X / 0x%08X do not match, catch-up limit not installed", LOOPFX_CALL_CG_VA,
+            LOOPFX_CALL_CL_VA);
+        return;
+    }
+    RedirectCall(LOOPFX_CALL_CG_VA, (void *)LoopFxProcessHook);
+    RedirectCall(LOOPFX_CALL_CL_VA, (void *)LoopFxProcessHook);
+    Log("loop fx: a joining client replays at most %d ms of each loop effect", LOOPFX_REPLAY_MS);
+}
+
 static void PatchGpuRating(void)
 {
     /* push desc ; push 1 (archive) ; push 20000 ; push ebx ; push ebx ; push "2658" */
@@ -860,6 +936,122 @@ static void PatchGpuRating(void)
     RedirectCall(BENCH_CALL_VA, (void *)BenchmarkHook);
     RedirectCall(HWCHANGED_CALL_VA, (void *)HardwareChangedHook);
     Log("gpu rating: benchmark clamped to %d, low-spec texture floors reset once", GPU_RATING_MAX);
+}
+
+/* Frame cap. Com_Init registers "1848" (com_maxfps) @ 0x597E21 with domain 0..100 (default and
+ * flags are patched by PatchDvarRegistrations above), so nothing above 100 fps can be set. The
+ * registration call @ 0x597E33 goes through MaxFpsRegisterHook, which raises the maximum to
+ * FPS_CAP_MAX. Com_Frame (0x599812..0x59987A) is IW's limiter, with no other clamp (no menu or
+ * background cap; a minimized window only adds Sleep(5) per loop @ 0x6314A9):
+ *     maxfps = com_maxfps; if (timescale < 0.1) maxfps = min(maxfps, timescale * 320)
+ *     minMsec = maxfps > 0 ? max(1000 / maxfps, 1) : 1        (0 = no cap; 1 ms is the engine floor)
+ *     while (timeGetTime() - lastFrame < minMsec) Sleep(1)
+ * 1000 / maxfps is integer division, so 144 gave 6 ms frames (166 fps), 60 gave 16 ms (62.5 fps)
+ * and 360 gave 2 ms (500 fps); and Sleep(1) overshoots, so a cap ran a few percent under (a
+ * whole-ms wait of 17 for 60 measured 58 fps). The division (0x599864..0x599879, 22 bytes) is
+ * replaced with "push esi ; call FrameMsecHook ; add esp, 4 ; mov [ebp-8], eax". FrameMsecHook
+ * keeps a schedule of ideal frame starts 1000 / maxfps ms apart and returns the whole-ms wait
+ * from the previous frame's actual start (0x2574674) to the next ideal one, so the fraction
+ * and the Sleep overshoot are made up on the following frames. A frame more than one period
+ * late (GPU-bound, loading) restarts the schedule instead of being caught up.
+ * The wait itself is "while (not due) Sleep(1)", and Sleep(1) often returns 1-2 ms late, which
+ * matters most at high caps, where the whole wait is 1-3 ms.
+ * Its "mov ebx, [Sleep]" @ 0x5998C4 loads FrameSleepHook instead: Sleep(1) while 2 ms or more
+ * remain, otherwise yield until timeGetTime() reaches the due tick. */
+#define FPS_CAP_MAX             1000
+#define MAXFPS_REG_CALL_VA      0x00597E33u
+#define DVAR_REGISTER_INT_VA    0x00624420u
+#define FRAME_MSEC_VA           0x00599864u
+#define FRAME_LAST_VA           0x02574674u /* timeGetTime() when the previous frame started */
+#define FRAME_SLEEP_LOAD_VA     0x005998C4u /* mov ebx, [Sleep]: the limiter's wait */
+#define IAT_TIMEGETTIME_VA      0x00B424C0u
+
+static DWORD g_frameDue;        /* timeGetTime() at which the limiter lets the frame start */
+
+typedef void *(__cdecl *DvarRegisterIntFn)(const char *name, int def, int min, int max, unsigned flags,
+                                           const char *desc);
+
+static void *__cdecl MaxFpsRegisterHook(const char *name, int def, int min, int max, unsigned flags,
+                                        const char *desc)
+{
+    (void)max;
+    return ((DvarRegisterIntFn)(DWORD_PTR)DVAR_REGISTER_INT_VA)(name, def, min, FPS_CAP_MAX, flags, desc);
+}
+
+static int __cdecl FrameMsecHook(int maxfps)
+{
+    static double ideal;  /* when the previous frame should have started, timeGetTime() ms */
+    static int lastFps;
+    DWORD last = *(volatile DWORD *)(DWORD_PTR)FRAME_LAST_VA;
+    if (maxfps <= 0) {
+        lastFps = 0;
+        g_frameDue = last + 1;
+        return 1;
+    }
+    double period = 1000.0 / maxfps;
+    double late = (double)last - ideal;
+    if (maxfps != lastFps || late > period || late < -period)
+        ideal = (double)last;     /* first frame, new cap, or a slow frame: start the schedule here */
+    lastFps = maxfps;
+    ideal += period;
+    double wait = ideal - (double)last;
+    int msec = (int)(wait + 0.5);
+    if (msec < 1) msec = 1;
+    g_frameDue = last + (DWORD)msec;
+    return msec;
+}
+
+typedef DWORD (WINAPI *TimeGetTimeFn)(void);
+
+static void WINAPI FrameSleepHook(DWORD ms)
+{
+    TimeGetTimeFn now = *(TimeGetTimeFn *)(DWORD_PTR)IAT_TIMEGETTIME_VA;
+    LONG left = (LONG)(g_frameDue - now());
+    if (left >= 2 || left <= 0 || left > 1000) {
+        Sleep(ms);
+        return;
+    }
+    for (DWORD t0 = now(); now() == t0;)
+        if (!SwitchToThread()) YieldProcessor();
+}
+
+static void PatchFrameCap(void)
+{
+    /* test esi,esi ; jle +0x12 ; mov eax,1000 ; cdq ; idiv esi ; mov [ebp-8],eax ; test eax,eax ;
+     * jne +3 ; mov [ebp-8],ebx */
+    static const BYTE kDiv[22] = { 0x85, 0xF6, 0x7E, 0x12, 0xB8, 0xE8, 0x03, 0x00, 0x00, 0x99, 0xF7,
+                                   0xFE, 0x89, 0x45, 0xF8, 0x85, 0xC0, 0x75, 0x03, 0x89, 0x5D, 0xF8 };
+    BYTE *div = (BYTE *)(DWORD_PTR)FRAME_MSEC_VA;
+    if (!CallsTarget(MAXFPS_REG_CALL_VA, DVAR_REGISTER_INT_VA)) {
+        Log("frame cap: call at 0x%08X does not match, 1848 (com_maxfps) stays 0..100", MAXFPS_REG_CALL_VA);
+    } else {
+        RedirectCall(MAXFPS_REG_CALL_VA, (void *)MaxFpsRegisterHook);
+        Log("frame cap: 1848 (com_maxfps) domain 0..%d (0 = no cap)", FPS_CAP_MAX);
+    }
+    if (!Readable(div, sizeof(kDiv)) || memcmp(div, kDiv, sizeof(kDiv)) != 0) {
+        Log("frame cap: bytes at 0x%08X do not match, frame time stays 1000 / com_maxfps whole ms", FRAME_MSEC_VA);
+        return;
+    }
+    BYTE code[22];
+    memset(code, 0x90, sizeof(code));
+    LONG rel = (LONG)((DWORD_PTR)FrameMsecHook - (FRAME_MSEC_VA + 1 + 5));
+    code[0] = 0x56;                                   /* push esi */
+    code[1] = 0xE8; memcpy(code + 2, &rel, 4);        /* call FrameMsecHook */
+    code[6] = 0x83; code[7] = 0xC4; code[8] = 0x04;   /* add esp, 4 */
+    code[9] = 0x89; code[10] = 0x45; code[11] = 0xF8; /* mov [ebp-8], eax */
+    WriteCode(div, code, sizeof(code));
+    Log("frame cap: frames start on a 1000 / com_maxfps ms schedule, so the cap is exact on average");
+    static const BYTE kSleepLoad[6] = { 0x8B, 0x1D, 0x84, 0x21, 0xB4, 0x00 }; /* mov ebx, [0xB42184] (Sleep) */
+    BYTE *load = (BYTE *)(DWORD_PTR)FRAME_SLEEP_LOAD_VA;
+    if (!Readable(load, sizeof(kSleepLoad)) || memcmp(load, kSleepLoad, sizeof(kSleepLoad)) != 0) {
+        Log("frame cap: bytes at 0x%08X do not match, the wait stays Sleep(1)", FRAME_SLEEP_LOAD_VA);
+        return;
+    }
+    BYTE mov[6] = { 0xBB, 0, 0, 0, 0, 0x90 };                                 /* mov ebx, FrameSleepHook ; nop */
+    DWORD hook = (DWORD)(DWORD_PTR)FrameSleepHook;
+    memcpy(mov + 1, &hook, 4);
+    WriteCode(load, mov, sizeof(mov));
+    Log("frame cap: the last ms of the wait yields instead of Sleep(1)");
 }
 
 /* Chinese text input on any system locale. The game's text is GBK: it converts with code page
@@ -974,8 +1166,17 @@ static void PatchGbkInput(void)
 #include <shlwapi.h>
 #include "usermaps.c"
 
-/* Developer console overlay, dev branch only: see console.c. */
+/* C1 engine helpers shared by the features below: see c1game.c. */
+#include "c1game.c"
+
+/* Developer console overlay: see console.c. Builds without it (-DK33_NO_CONSOLE, or delete these three
+ * lines and the InstallConsole() call) still compile and link. */
+#ifndef K33_NO_CONSOLE
 #include "console.c"
+#endif
+
+/* In-game voice chat (feat/voicechat): see voice.c. */
+#include "voice.c"
 
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 static void __cdecl TakeOver(void)
@@ -987,15 +1188,20 @@ static void __cdecl TakeOver(void)
     PatchDvarRegistrations();
     PatchPlainConfig();
     PatchGpuRating();
+    PatchFrameCap();
     PatchAltTab();
     PatchMultiInstance();
     PatchRawMouse();
     PatchGbkInput();
     PatchScoresOpen();
+    PatchLoopFxCatchUp();
     PatchPatchDir();
     PatchUserMaps();
     InstallParityLogger();
+#ifndef K33_NO_CONSOLE
     InstallConsole();
+#endif
+    InstallVoice();
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
     ExitProcess(0); /* the CRT entry ends in exit(); not reached */
