@@ -12,3 +12,12 @@ Kernel33_parity.dll
 # dev branch build output
 Kernel33_dev.dll
 iw4x_syms.txt
+Kernel33_voice.dll
+Kernel33_noconsole.dll
+
+# controller branch: build output and the fetched SDL2 package
+Kernel33_controller.dll
+third_party/
+
+# glyph generator cache
+__pycache__/
