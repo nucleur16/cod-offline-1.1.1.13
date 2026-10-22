@@ -60,6 +60,9 @@ def assemble(repo, zone_name, m, stocks, ffdec=None, compile_as=False, log=print
             if not loc[name]:
                 raise BuildError("localize %s: no entry left in localize.str" % name)
             blob = codecs.encode_localize(name, loc[name].popleft())
+        elif tid == 10:
+            levels, w, h = codecs.read_image_files(os.path.join(zdir, "image", name), int(p["levels"]))
+            blob = codecs.encode_image(name, levels, w, h, p)
         elif tid == 37:
             enc = p.get("enc", "ascii")
             with open(os.path.join(zdir, "stringtable", name), encoding="utf-8", newline="") as g:

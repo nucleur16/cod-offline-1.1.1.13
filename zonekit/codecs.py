@@ -251,3 +251,89 @@ def guess_name(t, blob):
         else:
             i += 1
     return best
+
+
+# --- image (10) with its pixels in the zone --------------------------------------------------------------------------
+# GfxImage {u32 texture (0xFFFFFFFF: the GfxImageLoadDef follows the name), u8 mapType, u8 semantic, u8 category, u8,
+#           u16 picmip, u16 noPicmip, u32 cardMemory[2], u16 width, u16 height, u16 depth, u16, u32, u32 namePtr}
+# then name\0, then GfxImageLoadDef {u32 levelCount, u32 flags, u32 format, u32 resourceSize, data[resourceSize]}.
+# Only uncompressed 2D A8R8G8B8 (D3DFMT 21; bytes B G R A) is decoded: the PNG is level 0, <name>.mips.png the smaller
+# levels side by side (delete it to have the build make them with a 2x2 box filter). Streamed images (resourceSize 0,
+# pixels in an IWD) stay blobs.
+D3DFMT_A8R8G8B8 = 21
+
+
+def decode_image(blob):
+    """-> (name, [level bytes (BGRA)], params)."""
+    if len(blob) < 0x24 or blob[:4] != b"\xff\xff\xff\xff" or blob[0x20:0x24] != b"\xff\xff\xff\xff":
+        raise NotDecodable("image without an inline name and load definition")
+    map_type = blob[4]
+    w, h, d = struct.unpack_from("<HHH", blob, 0x14)
+    e = blob.index(b"\0", 0x24)
+    name = blob[0x24:e].decode("latin-1")
+    levels, flags, fmt, size = struct.unpack_from("<IIII", blob, e + 1)
+    data = blob[e + 17:]
+    if map_type != 3 or d != 1 or fmt != D3DFMT_A8R8G8B8 or size == 0 or len(data) != size or name.startswith(","):
+        raise NotDecodable("not an uncompressed 2D image with its pixels in the zone")
+    out, at = [], 0
+    for lv in range(levels):
+        n = max(w >> lv, 1) * max(h >> lv, 1) * 4
+        out.append(data[at:at + n])
+        at += n
+    if at != size:
+        raise NotDecodable("image levels do not add up to its data")
+    return name, out, {"hdr": blob[4:0x20].hex(), "levels": str(levels), "lflags": "%#x" % flags}
+
+
+def box_mip(rgba, w, h):
+    from PIL import Image
+    im = Image.frombytes("RGBA", (w, h), rgba)
+    return im.resize((max(w // 2, 1), max(h // 2, 1)), Image.BOX).tobytes()
+
+
+def encode_image(name, levels_bgra, w, h, params):
+    hdr = bytearray(bytes.fromhex(params["hdr"]))
+    data = b"".join(levels_bgra)
+    struct.pack_into("<IIHH", hdr, 0x8, len(data), len(data), w, h)     # cardMemory[2], width, height (blob +0xC..)
+    return (b"\xff\xff\xff\xff" + bytes(hdr) + b"\xff\xff\xff\xff" + name.encode("latin-1") + b"\0" +
+            struct.pack("<IIII", len(levels_bgra), int(params["lflags"], 0), D3DFMT_A8R8G8B8, len(data)) + data)
+
+
+def bgra_rgba(b):
+    a = bytearray(b)
+    a[0::4], a[2::4] = b[2::4], b[0::4]
+    return bytes(a)
+
+
+def write_image_files(path, levels_bgra, w, h):
+    """<path>.png (level 0) and, with more levels, <path>.mips.png (levels 1.. side by side, top aligned)."""
+    from PIL import Image
+    Image.frombytes("RGBA", (w, h), bgra_rgba(levels_bgra[0])).save(path + ".png", optimize=True)
+    if len(levels_bgra) > 1:
+        sizes = [(max(w >> i, 1), max(h >> i, 1)) for i in range(1, len(levels_bgra))]
+        strip = Image.new("RGBA", (sum(s[0] for s in sizes), sizes[0][1]), (0, 0, 0, 0))
+        x = 0
+        for (sw, sh), lv in zip(sizes, levels_bgra[1:]):
+            strip.paste(Image.frombytes("RGBA", (sw, sh), bgra_rgba(lv)), (x, 0))
+            x += sw
+        strip.save(path + ".mips.png", optimize=True)
+
+
+def read_image_files(path, levels):
+    """-> ([level bytes BGRA], width, height) from write_image_files' files (mips made when .mips.png is missing)."""
+    import os
+    from PIL import Image
+    im = Image.open(path + ".png").convert("RGBA")
+    w, h = im.size
+    rgba = [im.tobytes()]
+    sizes = [(max(w >> i, 1), max(h >> i, 1)) for i in range(1, levels)]
+    if levels > 1 and os.path.isfile(path + ".mips.png"):
+        strip = Image.open(path + ".mips.png").convert("RGBA")
+        x = 0
+        for sw, sh in sizes:
+            rgba.append(strip.crop((x, 0, x + sw, sh)).tobytes())
+            x += sw
+    else:
+        for (sw, sh), (pw, ph) in zip(sizes, [(w, h)] + sizes):
+            rgba.append(box_mip(rgba[-1], pw, ph))
+    return [bgra_rgba(x) for x in rgba], w, h

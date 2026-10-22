@@ -98,6 +98,9 @@ def run_decompile(names, exe, roots, chinese, ffdec, tmp):
     bad = 0
     for name in names:
         cfg = zonelist.ZONES[name]
+        if cfg["origin"] == "new":
+            print("%s: authored here (no shipped original), its sources are the originals" % name)
+            continue
         path = origin_path(cfg["origin"], name, roots, tmp)
         if path is None:
             print("%s: origin %s not available" % (name, cfg["origin"]))

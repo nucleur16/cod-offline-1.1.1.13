@@ -140,6 +140,23 @@ def decompile(zone_name, cfg, path, exe, repo, stocks, ffdec=None, log=print):
                     raise codecs.NotDecodable("localize does not re-encode")
                 localize.append((name, value))
                 line = ("localize", name, params)
+            elif t == 10:
+                name, levels, p = codecs.decode_image(blob)
+                rel = "image/" + name
+                if not SAFE.match(name) or rel.lower() in used_paths:
+                    raise codecs.NotDecodable("image name not usable as a path")
+                w, h = int.from_bytes(blob[0x14:0x16], "little"), int.from_bytes(blob[0x16:0x18], "little")
+                os.makedirs(os.path.dirname(os.path.join(zdir, rel)), exist_ok=True)
+                codecs.write_image_files(os.path.join(zdir, rel), levels, w, h)
+                back, bw, bh = codecs.read_image_files(os.path.join(zdir, rel), len(levels))
+                if codecs.encode_image(name, back, bw, bh, p) != blob:
+                    for ext in (".png", ".mips.png"):
+                        if os.path.isfile(os.path.join(zdir, rel + ext)):
+                            os.remove(os.path.join(zdir, rel + ext))
+                    raise codecs.NotDecodable("image does not re-encode")
+                used_paths.add(rel.lower())
+                params.update(p)
+                line = ("image", name, params)
             elif t == 37:
                 name, rows, p = codecs.decode_stringtable(blob)
                 rel = "stringtable/" + name
