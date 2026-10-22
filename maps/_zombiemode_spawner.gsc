@@ -100,6 +100,9 @@ init()
 	// Developer-only entrance-walk soak (scr_codol_pathtest); returns at once
 	// on a production server.
 	level thread maps\_zombiemode_pathtest::init();
+
+	// Developer-only actor telemetry for the T5 comparison (t5cap_scn).
+	level thread maps\_zombiemode_t5cap::init();
 }
 
 // The aiweapon every zombie needs before melee() will do anything.

@@ -105,6 +105,7 @@ MeleeCombat()
 		zombie_attack = pick_zombie_melee_anim();
 		if ( !isDefined( zombie_attack ) )
 			return;
+		self notify( "t5cap_mpick", zombie_attack );	// telemetry (maps/_zombiemode_t5cap.gsc)
 
 		// T5 :117.  Hold the actor in this animscript until the swing is
 		// over; CODOL_ActorRunFrame reads the same flag

@@ -77,6 +77,15 @@ main( begin_origin, begin_angles, end_origin, animscript )
 
 	play_traverse( anime );
 
+	// T5 DoTraverse :176: back on the run cycle, and 0.2 s of it, before
+	// "zombie_end_traverse".  MEASURED (t5cap, Prototype round 1): T5's
+	// window climb lasts the clip plus 0.2 s (median 2.15 s for traverse_v1).
+	if ( isDefined( self.run_combatanim ) )
+	{
+		self setAnimKnobAllRestart( self.run_combatanim, %body, 1, 0.2, 1 );
+		wait( 0.2 );
+	}
+
 	self notify( "zombie_end_traverse" );
 }
 
@@ -124,11 +133,9 @@ play_traverse( anime )
 	self animmode( "nogravity" );
 	self animmode( "noclip" );
 
-	rate = 1;
-	if ( isDefined( self.animplaybackrate ) )
-		rate = self.animplaybackrate;
-
-	self setFlaggedAnimKnobAllRestart( "traverseanim", anime, %body, 1, 0.2, rate );
+	// T5 DoMainTraverse_Animation plays the clip at rate 1, not the
+	// actor's jittered animplaybackrate.
+	self setFlaggedAnimKnobAllRestart( "traverseanim", anime, %body, 1, 0.2, 1 );
 
 	// Bounded by the clip: "end" arrives from XAnimProcessServerNotify when
 	// the clip completes (codol_script_anim.c header).  The native state
