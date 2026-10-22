@@ -473,6 +473,10 @@ makeType( destructibleType )
 		case "toy_trashcan_monkey":
 			toy_trashcan_monkey( destructibleType );
 			break;
+		// CoDOL: mp_abandon_sh (2.6.9.7) places the pig-head can
+		case "toy_trashcan_pig":
+			toy_trashcan_animal( destructibleType, "abdn_trashcan_pighead_01" );
+			break;
 		case "toy_firecracker":
 			toy_firecracker( destructibleType );
 			break;
@@ -1238,6 +1242,22 @@ toy_trashcan_monkey( destructibleType )
 		destructible_state( "tag_origin", "abdn_trashcan_01", undefined, undefined, undefined, undefined, undefined, false );
 
 		destructible_part( "tag_fx", "abdn_trashcan_monkey_head_01", undefined, undefined, undefined, undefined, 1.0, 1.0 );
+}
+
+// Pig-head trash can of the 2.6.9.7 mp_abandon_sh (its MapEnts: model abdn_trashcan_pig_01,
+// csv_include destructible_trashcan_pig, sound_csv_include destruct_trashcan). Same build as
+// toy_trashcan_monkey: the zone ships abdn_trashcan_01 (the can without a head), the head model,
+// props/garbage_spew(_des) and exp_trashcan_sweet.
+toy_trashcan_animal( destructibleType, headModel )
+{
+	destructible_create( destructibleType, "tag_origin", 120, undefined, 32 );
+			destructible_fx( "tag_fx", "props/garbage_spew_des", true, "splash" );
+			destructible_fx( "tag_fx", "props/garbage_spew", true, damage_not( "splash" ) );
+			destructible_sound( "exp_trashcan_sweet" );
+			destructible_explode( 600, 651, 1, 1, 10, 20 ); 	// force_min, force_max, rangeSP, rangeMP, mindamage, maxdamage
+		destructible_state( "tag_origin", "abdn_trashcan_01", undefined, undefined, undefined, undefined, undefined, false );
+
+		destructible_part( "tag_fx", headModel, undefined, undefined, undefined, undefined, 1.0, 1.0 );
 }
 
 toy_firecracker( destructibleType )
