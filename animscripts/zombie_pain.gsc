@@ -132,6 +132,11 @@ playThundergunPainAnim()
 	if ( !isDefined( level._zombie_knockdowns ) || !isDefined( level._zombie_knockdowns[ "zombie" ] ) )
 		return;
 
+	// C1's client tree has no thundergun knockdown clips (tg_anim, in
+	// _zombiemode_weap_thundergun.gsc): no knockdown is played then.
+	if ( !isDefined( codol_getAnim( "generic_human", "ai_zombie_thundergun_hit_armslegsforward" ) ) )
+		return;
+
 	knockdowns = level._zombie_knockdowns[ "zombie" ];
 	getups = level._zombie_getups[ "zombie" ];
 
@@ -155,7 +160,7 @@ playThundergunPainAnim()
 			fallAnim = common_scripts\utility::random( pool );
 
 		level.thundergun_last_knockdown_anim = fallAnim;
-		if ( fallAnim == %ai_zombie_thundergun_hit_deadfallknee || fallAnim == %ai_zombie_thundergun_hit_forwardtoface )
+		if ( tg_is( fallAnim, "ai_zombie_thundergun_hit_deadfallknee" ) || tg_is( fallAnim, "ai_zombie_thundergun_hit_forwardtoface" ) )
 			getupAnim = common_scripts\utility::random( getups[ "belly" ][ "early" ] );
 		else
 			getupAnim = common_scripts\utility::random( getups[ "back" ][ "early" ] );
@@ -188,7 +193,7 @@ playThundergunPainAnim()
 		return; // guy died on us
 	}
 
-	if ( getupAnim == %ai_zombie_thundergun_getup_quick_a && isDefined( self.a.gib_ref ) &&
+	if ( tg_is( getupAnim, "ai_zombie_thundergun_getup_quick_a" ) && isDefined( self.a.gib_ref ) &&
 		( self.a.gib_ref == "left_arm" || self.a.gib_ref == "right_arm" ) )
 	{
 		self animmode( "normal" );
@@ -200,4 +205,11 @@ playThundergunPainAnim()
 
 	self clearAnim( getupAnim, 0.2 );
 	self animmode( "normal" );
+}
+
+// Name comparison without a %anim (see _zombiemode_weap_thundergun.gsc tg_anim).
+tg_is( a, name )
+{
+	b = codol_getAnim( "generic_human", name );
+	return isDefined( a ) && isDefined( b ) && a == b;
 }

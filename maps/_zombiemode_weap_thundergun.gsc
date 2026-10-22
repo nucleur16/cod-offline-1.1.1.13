@@ -111,57 +111,57 @@ init_knockdown_anims()
 	k = [];
 	k[ "front" ] = [];
 	k[ "front" ][ "no_legs" ] = [];
-	k[ "front" ][ "no_legs" ][ 0 ] = %ai_zombie_thundergun_hit_armslegsforward;
-	k[ "front" ][ "no_legs" ][ 1 ] = %ai_zombie_thundergun_hit_doublebounce;
-	k[ "front" ][ "no_legs" ][ 2 ] = %ai_zombie_thundergun_hit_forwardtoface;
+	k[ "front" ][ "no_legs" ][ 0 ] = tg_anim( "ai_zombie_thundergun_hit_armslegsforward" );
+	k[ "front" ][ "no_legs" ][ 1 ] = tg_anim( "ai_zombie_thundergun_hit_doublebounce" );
+	k[ "front" ][ "no_legs" ][ 2 ] = tg_anim( "ai_zombie_thundergun_hit_forwardtoface" );
 
 	f = [];
-	f[ 0 ] = %ai_zombie_thundergun_hit_armslegsforward;
-	f[ 1 ] = %ai_zombie_thundergun_hit_doublebounce;
-	f[ 2 ] = %ai_zombie_thundergun_hit_upontoback;
-	f[ 3 ] = %ai_zombie_thundergun_hit_forwardtoface;
-	f[ 4 ] = %ai_zombie_thundergun_hit_armslegsforward;
-	f[ 5 ] = %ai_zombie_thundergun_hit_forwardtoface;
-	f[ 6 ] = %ai_zombie_thundergun_hit_stumblefall;
-	f[ 7 ] = %ai_zombie_thundergun_hit_armslegsforward;
-	f[ 8 ] = %ai_zombie_thundergun_hit_doublebounce;
-	f[ 9 ] = %ai_zombie_thundergun_hit_upontoback;
-	f[ 10 ] = %ai_zombie_thundergun_hit_forwardtoface;
-	f[ 11 ] = %ai_zombie_thundergun_hit_armslegsforward;
-	f[ 12 ] = %ai_zombie_thundergun_hit_forwardtoface;
-	f[ 13 ] = %ai_zombie_thundergun_hit_deadfallknee;
-	f[ 14 ] = %ai_zombie_thundergun_hit_armslegsforward;
-	f[ 15 ] = %ai_zombie_thundergun_hit_doublebounce;
-	f[ 16 ] = %ai_zombie_thundergun_hit_upontoback;
-	f[ 17 ] = %ai_zombie_thundergun_hit_forwardtoface;
-	f[ 18 ] = %ai_zombie_thundergun_hit_armslegsforward;
-	f[ 19 ] = %ai_zombie_thundergun_hit_forwardtoface;
-	f[ 20 ] = %ai_zombie_thundergun_hit_flatonback;
+	f[ 0 ] = tg_anim( "ai_zombie_thundergun_hit_armslegsforward" );
+	f[ 1 ] = tg_anim( "ai_zombie_thundergun_hit_doublebounce" );
+	f[ 2 ] = tg_anim( "ai_zombie_thundergun_hit_upontoback" );
+	f[ 3 ] = tg_anim( "ai_zombie_thundergun_hit_forwardtoface" );
+	f[ 4 ] = tg_anim( "ai_zombie_thundergun_hit_armslegsforward" );
+	f[ 5 ] = tg_anim( "ai_zombie_thundergun_hit_forwardtoface" );
+	f[ 6 ] = tg_anim( "ai_zombie_thundergun_hit_stumblefall" );
+	f[ 7 ] = tg_anim( "ai_zombie_thundergun_hit_armslegsforward" );
+	f[ 8 ] = tg_anim( "ai_zombie_thundergun_hit_doublebounce" );
+	f[ 9 ] = tg_anim( "ai_zombie_thundergun_hit_upontoback" );
+	f[ 10 ] = tg_anim( "ai_zombie_thundergun_hit_forwardtoface" );
+	f[ 11 ] = tg_anim( "ai_zombie_thundergun_hit_armslegsforward" );
+	f[ 12 ] = tg_anim( "ai_zombie_thundergun_hit_forwardtoface" );
+	f[ 13 ] = tg_anim( "ai_zombie_thundergun_hit_deadfallknee" );
+	f[ 14 ] = tg_anim( "ai_zombie_thundergun_hit_armslegsforward" );
+	f[ 15 ] = tg_anim( "ai_zombie_thundergun_hit_doublebounce" );
+	f[ 16 ] = tg_anim( "ai_zombie_thundergun_hit_upontoback" );
+	f[ 17 ] = tg_anim( "ai_zombie_thundergun_hit_forwardtoface" );
+	f[ 18 ] = tg_anim( "ai_zombie_thundergun_hit_armslegsforward" );
+	f[ 19 ] = tg_anim( "ai_zombie_thundergun_hit_forwardtoface" );
+	f[ 20 ] = tg_anim( "ai_zombie_thundergun_hit_flatonback" );
 	k[ "front" ][ "has_legs" ] = f;
 
 	k[ "left" ] = [];
-	k[ "left" ][ 0 ] = %ai_zombie_thundergun_hit_legsout_right;
+	k[ "left" ][ 0 ] = tg_anim( "ai_zombie_thundergun_hit_legsout_right" );
 	k[ "right" ] = [];
-	k[ "right" ][ 0 ] = %ai_zombie_thundergun_hit_legsout_left;
+	k[ "right" ][ 0 ] = tg_anim( "ai_zombie_thundergun_hit_legsout_left" );
 	k[ "back" ] = [];
-	k[ "back" ][ 0 ] = %ai_zombie_thundergun_hit_faceplant;
+	k[ "back" ][ 0 ] = tg_anim( "ai_zombie_thundergun_hit_faceplant" );
 
 	g = [];
 	g[ "back" ] = [];
 	g[ "back" ][ "early" ] = [];
-	g[ "back" ][ "early" ][ 0 ] = %ai_zombie_thundergun_getup_b;
-	g[ "back" ][ "early" ][ 1 ] = %ai_zombie_thundergun_getup_c;
+	g[ "back" ][ "early" ][ 0 ] = tg_anim( "ai_zombie_thundergun_getup_b" );
+	g[ "back" ][ "early" ][ 1 ] = tg_anim( "ai_zombie_thundergun_getup_c" );
 	g[ "back" ][ "late" ] = [];
-	g[ "back" ][ "late" ][ 0 ] = %ai_zombie_thundergun_getup_b;
-	g[ "back" ][ "late" ][ 1 ] = %ai_zombie_thundergun_getup_c;
-	g[ "back" ][ "late" ][ 2 ] = %ai_zombie_thundergun_getup_quick_b;
-	g[ "back" ][ "late" ][ 3 ] = %ai_zombie_thundergun_getup_quick_c;
+	g[ "back" ][ "late" ][ 0 ] = tg_anim( "ai_zombie_thundergun_getup_b" );
+	g[ "back" ][ "late" ][ 1 ] = tg_anim( "ai_zombie_thundergun_getup_c" );
+	g[ "back" ][ "late" ][ 2 ] = tg_anim( "ai_zombie_thundergun_getup_quick_b" );
+	g[ "back" ][ "late" ][ 3 ] = tg_anim( "ai_zombie_thundergun_getup_quick_c" );
 	g[ "belly" ] = [];
 	g[ "belly" ][ "early" ] = [];
-	g[ "belly" ][ "early" ][ 0 ] = %ai_zombie_thundergun_getup_a;
+	g[ "belly" ][ "early" ][ 0 ] = tg_anim( "ai_zombie_thundergun_getup_a" );
 	g[ "belly" ][ "late" ] = [];
-	g[ "belly" ][ "late" ][ 0 ] = %ai_zombie_thundergun_getup_a;
-	g[ "belly" ][ "late" ][ 1 ] = %ai_zombie_thundergun_getup_quick_a;
+	g[ "belly" ][ "late" ][ 0 ] = tg_anim( "ai_zombie_thundergun_getup_a" );
+	g[ "belly" ][ "late" ][ 1 ] = tg_anim( "ai_zombie_thundergun_getup_quick_a" );
 
 	if ( !isDefined( level._zombie_knockdowns ) )
 		level._zombie_knockdowns = [];
@@ -169,6 +169,21 @@ init_knockdown_anims()
 		level._zombie_getups = [];
 	level._zombie_knockdowns[ "zombie" ] = k;
 	level._zombie_getups[ "zombie" ] = g;
+}
+
+// The knockdown clips by name, never %anim.  C1's client builds its
+// generic_human tree only from the animlists it loads (common,
+// common_actor_shared, common_zombie, the map), and none of them names the
+// ai_zombie_thundergun_* clips.  A %anim reference added those 16 nodes to the
+// SERVER tree only, which shifted every later entry index on the actor
+// animation channel: C1 then played the wrong clip, or nothing (a T-pose), for
+// every zombie animation past entry 231 -- the walk cycles included
+// (tools/codol_coop_anim_check.py: "TREES DIFFER: server 263, client 247").
+// codol_getAnim answers only what the client's tree has, so on C1 this is
+// undefined and the knockdown is not played.
+tg_anim( name )
+{
+	return codol_getAnim( "generic_human", name );
 }
 
 is_thundergun_weapon( weapon )
