@@ -214,6 +214,23 @@ The 3D play path's channel check (call of 0x736C10 at 0x73E4DB) decides two more
 `+set codol_soundvoices 0` turns both off at startup. The voice diagnostics (`k33_snddiag`, `CODOL_SNDDIAG`) now
 default to 0; at 1+ they also log `snd policy` totals and `why=limit` refusals to Kernel33.log.
 
+## Discord Rich Presence (`discord.c`)
+The launcher's `TCLS\CoDOLPresence.exe` helper (a PyInstaller build of the server repo's
+`tools/codol_discord_presence.py`) now runs inside the client: no Python, no second process. It talks
+to Discord's local IPC pipe (`\\.\pipe\discord-ipc-0..9`) as application 1554730441825718272 and shows
+- front end: "In the lobby" / "Choosing a match", elapsed since the client started;
+- in a match: "<mode> on <map>" (e.g. "Team Deathmatch on Killhouse"), elapsed since joining, and as state
+  "N players, M bots" on a server at 127.0.0.1 (its `getinfo` reply) or "In a match" on a remote one;
+- the `codol` art asset with the text "Call of Duty Online".
+
+The map and mode come from the server's serverinfo configstring and the connection state from C1 itself,
+not from `console_mp.log`. All pipe and socket I/O runs on a worker thread with timeouts; with no
+Discord running it retries every 5 s, and it reconnects when Discord restarts. `codol_discord 0`
+(archived) clears the activity and closes the pipe; `+set codol_discord 0` on the command line installs
+nothing. `Kernel33.log` gets `discord:` lines for connection changes and each new activity.
+With this DLL installed the launcher should stop starting `CoDOLPresence.exe`, or both publish for the
+same process.
+
 ## Patch zones (`zones/`, `zone_source/`, `build_zones.py`)
 Every patch zone this project installs next to the stock game, as editable sources, built into `output/` by one
 script. (The ported usermap map zones themselves, mp_*.ff / zm_sumpf_sh.ff, are not part of this repository; they
