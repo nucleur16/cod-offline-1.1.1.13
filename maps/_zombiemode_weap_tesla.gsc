@@ -519,8 +519,11 @@ on_player_connect()
 		level waittill( "connected", player );
 		player thread tesla_network_choke();
 		player thread tesla_viewmodel_fx_tube();
+		player thread tesla_viewmodel_fx_tube_on_fire();
+		player thread tesla_viewmodel_fx_tube_on_raise();
 		player thread tesla_viewmodel_fx_rail();
 		player thread tesla_viewmodel_fx_grenade_watch();
+		player thread tesla_viewmodel_trace_events();
 	}
 }
 
@@ -534,24 +537,55 @@ on_player_connect()
 //     the clip (T5 :123-153); the effect lives 300 ms, so it stays lit.
 //   * rail: every 8-12 s, the rail spark on tag_flash and wpn_tesla_effects,
 //     not while aiming down the sights (T5 :46-89).
+//
+// TIMING.  T5 gates both on level.tesla_play_fx (tesla_notetrack_think
+// :160), which the viewmodel notetracks switch: off at the reload's
+// sndnt#wpn_tesla_switch_flip_off and at sndnt#wpn_tesla_first_raise_start,
+// on at sndnt#wpn_tesla_switch_flip_on, tesla_pullout_start (the first frame
+// of every raise) and tesla_idle_start (idle after anything else, a cancelled
+// reload included).  C1 moved that gate into the animations themselves.
+// MEASURED 2026-10-22 (codol_checkxanim on the C1 assets): the reload
+// carries maskfxbytag#tag_brass and #tag_flash with flip_off at 0.1218 of
+// the animation and unmaskfxbytag with flip_on at 0.7563; the first raise
+// masks both at 0 and unmasks with its flip_on at 0.4625.  The weapon plays
+// its reload over 6000 ms (upgraded 4699 ms) and its first raise over
+// 2500 ms, so the bulbs go out 731 ms into a reload (572 upgraded) and come
+// back at 4538 ms (3554), and a first raise lights them at 1156 ms.  In C1
+// the notetrack handler (C1 7342c0) flags the tag's viewmodel bone and kills
+// what plays there, PlayViewModelFX's event handler (44fc00, 44fc9d) drops
+// an effect on a flagged bone, and starting any other viewmodel animation
+// (47c550, 47cc16) clears every flag -- T5's idle_start/pullout_start.
+// So the server's part is T5's: keep the bulbs playing while the gun is held
+// with rounds in the clip, reload or not, and the client masks them on the
+// animation's own clock (the reload's speed modifiers included).
+//
+// Before this, a 0.1 s check took the bulbs off for the whole reload:
+// out at its first frame instead of 731 ms in, and back only when it
+// finished (6000 ms, plus the poll) instead of at 4538 ms.  An empty clip
+// also showed one bulb from the last shot until the reload's flip_off.
+//
+// Per shot: T5's client reads its predicted clip every 0.1 s.  The server
+// sees the shot as "weapon_fired" in the frame it is fired, so the count is
+// replayed then (tesla_viewmodel_fx_tube_on_fire) rather than at the next
+// tick, which keeps the network delay from adding a poll's worth on top.
+// A raise ("weapon_change" to the gun) is lit at once the same way.
+//
 // Differences, each forced by what this server can see:
-//   * T5 pauses both from the first-raise notetrack until the switch-flip one
-//     (tesla_notetrack_think :160).  Viewmodel notetracks never reach the
-//     server, so the bulbs light as soon as the gun is out.
 //   * IsThrowingGrenade / IsMeleeing are client queries with no server
 //     builtin here; a grenade throw is tracked from grenade_pullback /
-//     grenade_fire instead, and melee is not checked.
+//     grenade_fire instead, and melee is not checked.  IsOnTurret is
+//     isUsingTurret.
 //   * tesla_happy's "TGH" pause of the rail is not taken: its notify comes
 //     from tesla_killstreak_sound, which this port does not carry.
-//   * T5's flip-off/flip-on notetracks bracket the reload, so the bulbs go
-//     dark while it plays.  Here the loops read isReloading() every tick
-//     instead, so whatever ends a reload -- completing it, or cancelling it
-//     with a sprint, a melee, ADS, a weapon switch, a throw, going down or
-//     dying -- brings the bulbs back on the next tick.  A reload cancelled
-//     with an empty magazine (the gun reloads itself on its last round)
-//     leaves the clip at 0, where T5 lights nothing; the user asked for the
-//     effects to come back after any cancelled reload, so an empty clip
-//     with rounds in reserve shows the one-round glow.
+//   * A reload cancelled with an empty magazine (sprint, melee, a switch,
+//     going down) leaves the clip at 0, where T5 lights nothing; the user
+//     asked for the bulbs to come back after any cancelled reload, so after
+//     a reload that ended without filling the clip, an empty clip with
+//     rounds in reserve shows the one-round glow until the next shot or
+//     reload.  An empty clip after the last shot stays dark, as in T5.
+//
+// scr_zm_tesla_vmtrace 1 logs every bulb play and weapon event with its
+// time (gettime) for timing checks.
 tesla_viewmodel_weapon()
 {
 	if ( !isAlive( self ) )
@@ -559,58 +593,112 @@ tesla_viewmodel_weapon()
 	weapon = self getCurrentWeapon();
 	if ( !isDefined( weapon ) || ( weapon != "tesla_gun_zm" && weapon != "tesla_gun_upgraded_zm" ) )
 		return undefined;
-	if ( is_true( self.zm_tesla_throwing ) )
-		return undefined;
-	if ( self isReloading() )
-		return undefined;
-	if ( self tesla_viewmodel_ammo( weapon ) <= 0 )
+	if ( is_true( self.zm_tesla_throwing ) || self isUsingTurret() )
 		return undefined;
 	return weapon;
 }
 
-// Rounds the bulbs show: the clip, or one for an empty clip that still has
-// rounds in reserve (a cancelled reload, see above).
+// Rounds the bulbs show: the clip, or one for an empty clip with rounds in
+// reserve after a cancelled reload (see above).
 tesla_viewmodel_ammo( weapon )
 {
 	ammo = self getWeaponAmmoClip( weapon );
-	if ( ammo <= 0 && self getWeaponAmmoStock( weapon ) > 0 )
+	if ( ammo > 0 )
+		self.zm_tesla_reload_cancelled = false;
+	else if ( is_true( self.zm_tesla_reload_cancelled ) && self getWeaponAmmoStock( weapon ) > 0 )
 		ammo = 1;
 	return ammo;
+}
+
+tesla_viewmodel_tube_fx( weapon, ammo )
+{
+	if ( weapon == "tesla_gun_upgraded_zm" )
+	{
+		if ( ammo == 3 || ammo == 4 )
+			return level._effect[ "tesla_viewmodel_tube2_upgraded" ];
+		if ( ammo == 1 || ammo == 2 )
+			return level._effect[ "tesla_viewmodel_tube3_upgraded" ];
+		return level._effect[ "tesla_viewmodel_tube_upgraded" ];
+	}
+	if ( ammo == 1 )
+		return level._effect[ "tesla_viewmodel_tube3" ];
+	if ( ammo == 2 )
+		return level._effect[ "tesla_viewmodel_tube2" ];
+	return level._effect[ "tesla_viewmodel_tube" ];
+}
+
+// One T5 tesla_fx_tube pass (:96-153).
+tesla_viewmodel_tube_play( why )
+{
+	weapon = self tesla_viewmodel_weapon();
+	if ( !isDefined( weapon ) )
+		return;
+	ammo = self tesla_viewmodel_ammo( weapon );
+	if ( ammo <= 0 )
+	{
+		if ( why != "tick" )
+			self tesla_viewmodel_trace( why + " dark", weapon );
+		return;
+	}
+	self playViewModelFxOnTag( tesla_viewmodel_tube_fx( weapon, ammo ), "tag_brass" );
+	self tesla_viewmodel_trace( why + " bulbs " + ammo, weapon );
 }
 
 tesla_viewmodel_fx_tube()
 {
 	self endon( "disconnect" );
 
+	self.zm_tesla_reload_cancelled = false;
+	reload_weapon = undefined;
+
 	for ( ;; )
 	{
 		wait( 0.1 );
 
-		weapon = self tesla_viewmodel_weapon();
-		if ( !isDefined( weapon ) )
-			continue;
-
-		ammo = self tesla_viewmodel_ammo( weapon );
-		if ( weapon == "tesla_gun_upgraded_zm" )
+		// A reload of the gun that ends with the clip still empty was
+		// cancelled before its rounds went in.
+		weapon = self getCurrentWeapon();
+		if ( isDefined( reload_weapon ) )
 		{
-			if ( ammo == 3 || ammo == 4 )
-				fx = level._effect[ "tesla_viewmodel_tube2_upgraded" ];
-			else if ( ammo == 1 || ammo == 2 )
-				fx = level._effect[ "tesla_viewmodel_tube3_upgraded" ];
-			else
-				fx = level._effect[ "tesla_viewmodel_tube_upgraded" ];
+			if ( !( isDefined( weapon ) && weapon == reload_weapon && self isReloading() ) )
+			{
+				if ( self getWeaponAmmoClip( reload_weapon ) <= 0 )
+					self.zm_tesla_reload_cancelled = true;
+				self tesla_viewmodel_trace( "reload over", reload_weapon );
+				reload_weapon = undefined;
+			}
 		}
-		else
+		else if ( isDefined( weapon ) && ( weapon == "tesla_gun_zm" || weapon == "tesla_gun_upgraded_zm" ) && self isReloading() )
 		{
-			if ( ammo == 1 )
-				fx = level._effect[ "tesla_viewmodel_tube3" ];
-			else if ( ammo == 2 )
-				fx = level._effect[ "tesla_viewmodel_tube2" ];
-			else
-				fx = level._effect[ "tesla_viewmodel_tube" ];
+			reload_weapon = weapon;
+			self.zm_tesla_reload_cancelled = false;
+			self tesla_viewmodel_trace( "reload seen", weapon );
 		}
 
-		self playViewModelFxOnTag( fx, "tag_brass" );
+		self tesla_viewmodel_tube_play( "tick" );
+	}
+}
+
+tesla_viewmodel_fx_tube_on_fire()
+{
+	self endon( "disconnect" );
+
+	for ( ;; )
+	{
+		self waittill( "weapon_fired" );
+		self.zm_tesla_reload_cancelled = false;
+		self tesla_viewmodel_tube_play( "fired" );
+	}
+}
+
+tesla_viewmodel_fx_tube_on_raise()
+{
+	self endon( "disconnect" );
+
+	for ( ;; )
+	{
+		self waittill( "weapon_change" );
+		self tesla_viewmodel_tube_play( "raise" );
 	}
 }
 
@@ -625,6 +713,8 @@ tesla_viewmodel_fx_rail()
 		weapon = self tesla_viewmodel_weapon();
 		if ( !isDefined( weapon ) || self playerADS() > 0 )
 			continue;
+		if ( self getWeaponAmmoClip( weapon ) <= 0 )
+			continue;
 
 		fx = level._effect[ "tesla_viewmodel_rail" ];
 		if ( weapon == "tesla_gun_upgraded_zm" )
@@ -632,6 +722,7 @@ tesla_viewmodel_fx_rail()
 
 		self playViewModelFxOnTag( fx, "tag_flash" );
 		self playLocalSound( "wpn_tesla_effects" );
+		self tesla_viewmodel_trace( "rail", weapon );
 	}
 }
 
@@ -645,6 +736,49 @@ tesla_viewmodel_fx_grenade_watch()
 		self.zm_tesla_throwing = true;
 		self common_scripts\utility::waittill_any( "grenade_fire", "death", "weapon_change" );
 		self.zm_tesla_throwing = false;
+	}
+}
+
+tesla_viewmodel_trace( what, weapon )
+{
+	if ( getDvarInt( "scr_zm_tesla_vmtrace" ) <= 0 )
+		return;
+	held = self getCurrentWeapon();
+	if ( !isDefined( held ) )
+		held = "none";
+	codolPrintLn( "CoDOL zm tesla vm: t=" + getTime() + " " + self getEntityNumber() + " " + what + " (" + weapon +
+		" clip " + self getWeaponAmmoClip( weapon ) + " stock " + self getWeaponAmmoStock( weapon ) +
+		" reloading " + self isReloading() + " held " + held + ")" );
+}
+
+// The trace's weapon events (scr_zm_tesla_vmtrace only).
+tesla_viewmodel_trace_events()
+{
+	self thread tesla_viewmodel_trace_event( "weapon_fired" );
+	self thread tesla_viewmodel_trace_event( "reload_start" );
+	self thread tesla_viewmodel_trace_event( "reload" );
+	self thread tesla_viewmodel_trace_event( "weapon_change" );
+	self thread tesla_viewmodel_trace_event( "weapon_switch_started" );
+	self thread tesla_viewmodel_trace_event( "grenade_pullback" );
+	self thread tesla_viewmodel_trace_event( "grenade_fire" );
+}
+
+tesla_viewmodel_trace_event( name )
+{
+	self endon( "disconnect" );
+
+	for ( ;; )
+	{
+		self waittill( name );
+		if ( getDvarInt( "scr_zm_tesla_vmtrace" ) <= 0 )
+			continue;
+		weapon = self getCurrentWeapon();
+		if ( !isDefined( weapon ) )
+			weapon = "none";
+		if ( weapon == "tesla_gun_zm" || weapon == "tesla_gun_upgraded_zm" )
+			self tesla_viewmodel_trace( "event " + name, weapon );
+		else
+			codolPrintLn( "CoDOL zm tesla vm: t=" + getTime() + " " + self getEntityNumber() + " event " + name + " (held " + weapon + ")" );
 	}
 }
 
