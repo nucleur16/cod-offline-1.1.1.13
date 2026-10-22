@@ -9,14 +9,15 @@ to the exe. See the comments in `kernel33.c` for addresses and reasoning.
 1. `python make_exe.py` renames the packed exe's `Kernel32.dll` import to `Kernel33.dll` (needs C1.exe
    and `codoMP_client_shipRetail.exe.bak`; also writes `unpacked.z`).
 2. Put `Kernel33.dll` next to `codoMP_client_shipRetail.exe` (TenProxy.dll + TerSafe.dll must still be there).
-3. Copy `patch\voice_ui_mp.ff` into `<game>\client_shipRetail\patch\` (create the folder). It carries the
-   options-screen changes: Options > Controls > Chat (Talk key), Options > Audio > Voice (mode, mic level bar)
-   and Options > Graphics > Max FPS. `python build_voice_ui.py` rebuilds it from the game's own patch_ui_mp.
-   Keep every codo.gfx change in this one zone: each *_ui_mp patch zone carrying codo.gfx carries the whole
-   movie, and the first one loaded wins. It also carries Options > Controller (the pad tab) and the
-   microphone choice in Options > Audio.
-4. Copy `patch\controller_ingame.ff` into the same folder: the in-match pause menu (codoingame.gfx) with
-   gamepad focus navigation. `python build_ingame_ui.py` rebuilds it from the game's own patch_common_mp.
+3. `python build_zones.py` builds every patch zone into `output\` with the install's layout (see "Patch
+   zones" below). Copy `output\client_shipRetail\patch\*` into `<game>\client_shipRetail\patch\` (create the
+   folder), `output\client_shipRetail\chinese\patch_common_gametype_zm.ff` over the stock one (keep it as
+   `.pre-pap`) and `output\main\iw_image_16.iwd` into `<game>\main\`. Among them:
+   - `voice_ui_mp.ff`: the options-screen changes: Options > Controls > Chat (Talk key), Options > Audio > Voice
+     (mode, mic level bar, microphone choice), Options > Graphics > Max FPS and Options > Controller (the pad
+     tab). Keep every codo.gfx change in this one zone: each *_ui_mp patch zone carrying codo.gfx carries the
+     whole movie, and the first one loaded wins.
+   - `controller_ingame.ff`: the in-match pause menu (codoingame.gfx) with gamepad focus navigation.
 
 ## Build (MSYS2 mingw32)
 ```sh
@@ -86,7 +87,7 @@ so 144 ran at 166 and 60 at 62.5). Kernel33 (`PatchFrameCap` in kernel33.c):
   test machine); a minimized window only adds `Sleep(5)` per loop. Vsync ("Sync every frame", r_vsync) still
   limits to the refresh rate when it is on.
 
-**Options > Graphics > Max FPS** (`voice_ui/OptionView_video.as`): C1's hidden Aspect Ratio combo box, shown below
+**Options > Graphics > Max FPS** (`actionscript/OptionView_video.as`): C1's hidden Aspect Ratio combo box, shown below
 Anti-Aliasing (Vsync moves down a row): Unlimited / 30 / 60 / 75 / 90 / 120 / 144 / 165 / 240 / 360 / 500, set
 with the screen's Apply button (Cancel discards it); a value set from the console shows as its own entry. C1
 disables the whole Graphics tab in a room ("temporarily disabled"); set it from the main menu.
@@ -133,7 +134,7 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
   icon follows what is actually sent (key or open gate).
 - **Options > Audio**: C1's audio panel (`OptionView_audio`) has a Voice section its onInit hides:
   a voice-chat volume slider, a microphone checkbox + slider, an input-level indicator, and an unused
-  "Sound Presets" combo box. `voice_ui/OptionView_audio.as` is that class with the section shown and
+  "Sound Presets" combo box. `actionscript/OptionView_audio.as` is that class with the section shown and
   rewired, one control per row: **Voice Mode** (the presets box: Push to talk / Voice activation ->
   `k33_voiceMode`), **Voice** (chat volume -> `k33_voiceVolume`), **Microphone** (checkbox = mic on,
   `k33_voiceMicMute`; slider = activation level, `k33_voiceThreshold`), **Input Level** (a level bar
@@ -141,14 +142,15 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
   above it, a white marker at the level, a decaying peak tick, and the number where the sliders show
   theirs; dimmed with "no mic" when there is no capture device; while the tab is shown it keeps
   `k33_voiceMeter` set so the mic is open for metering, nothing is sent). Subtitles moves up beside
-  Output. That edit is not same-length, so `build_voice_ui.py` compiles the class with JPEXS FFDec
-  (`ffdec-cli`, `$CODOL_FFDEC`) and splices only its DoABC tag into codo.gfx, checking every other tag
-  is unchanged.
+  Output. That edit is not same-length, so `build_zones.py` compiles the class with JPEXS FFDec
+  (`ffdec-cli`, `$CODOL_FFDEC`) when the .as changes and splices only its DoABC tag into codo.gfx, checking
+  every other tag is unchanged (zonekit/gfx.py; the compiled tag is stored, so FFDec is needed only after an edit).
 - **Options > Controls > Chat**: C1's own options screen (codo.gfx `OptionView_control_chat`) already
   has the push-to-talk row ("说话" with a key button and a "hold to talk" checkbox that switches the
-  button between `toggletalk` and `+talk`), but its onInit hid it. `build_voice_ui.py` flips those three
-  `visible = false` to true in the codo.gfx C1 uses (patch_ui_mp's; same byte length) and installs it as
-  `client_shipRetail\patch\voice_ui_mp.ff`, a *_ui_mp patch zone Kernel33 loads ahead of the UI zones.
+  button between `toggletalk` and `+talk`), but its onInit hid it. voice_ui_mp's codo.gfx has those three
+  `visible = false` flipped to true (same byte length; the stored OptionView_control_chat tag, decompiled in
+  `zones/voice_ui_mp/.../as/`); it installs as `client_shipRetail\patch\voice_ui_mp.ff`, a *_ui_mp patch zone
+  Kernel33 loads ahead of the UI zones.
   Rebinding there goes through C1's own AS_SetKeyBindingForCommand.
 - **Path**: WASAPI shared-mode capture (default communications device) -> 48 kHz mono -> Opus VOIP,
   20 ms frames, 24 kbps, in-band FEC, DTX -> OOB `"v"` packets to `clc.serverAddress` through C1's
@@ -174,7 +176,8 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
   `voice.c` re-issues `+set <its dvar> <n>` and honours `+toggletalk` itself.
 
 Built by `build.sh` (libopus linked statically: `pacman -S mingw-w64-i686-opus`). The Controls-menu
-push-to-talk row comes from `python build_voice_ui.py`, which writes `client_shipRetail\patch\voice_ui_mp.ff`.
+push-to-talk row comes from `voice_ui_mp.ff` (`python build_zones.py voice_ui_mp` writes
+`output\client_shipRetail\patch\voice_ui_mp.ff`).
 
 Test automation (only with `+set k33_cmdFile 1` on the command line): the lines of
 `<exe dir>\k33_cmd_<pid>.txt` are executed every half second, and `k33ready [0|1]` presses the room's
@@ -208,3 +211,84 @@ The 3D play path's channel check (call of 0x736C10 at 0x73E4DB) decides two more
   own SND_StealVoice only runs after the cap check.
 `+set codol_soundvoices 0` turns both off at startup. The voice diagnostics (`k33_snddiag`, `CODOL_SNDDIAG`) now
 default to 0; at 1+ they also log `snd policy` totals and `why=limit` refusals to Kernel33.log.
+
+## Patch zones (`zones/`, `zone_source/`, `actionscript/`, `build_zones.py`)
+Every patch zone this project installs next to the stock game, as editable sources, built into `output/` by one
+script. (The ported usermap map zones themselves, mp_*.ff / zm_sumpf_sh.ff, are not part of this repository; they
+ship in the CODOL 1.1.1.13 map pack.)
+
+```
+build_zones.py                the only build entry point: zone_source + zones -> output\, files/ copied
+zone_source/<zone>.csv        the build manifest: >settings, then one "type,name[,param=..]" line per asset, in order
+zones/<zone>/                 the zone's contents
+  rawfile/<name>              rawfiles as files (.txt, .arena, .vision, .atr, ...)
+  rawfile/<name>.gfxpatch/    a Scaleform movie as a patch over the stock movie it was made from:
+    patch.txt                   stock tags kept by index, new tags by file, "source" classes (below)
+    tags/*.bin                  the new tags, byte for byte
+    tags/*_75_<font>.json       DefineFont3 tags as glyph patches (only the glyphs that differ)
+    as/**.as                    FFDec's decompile of every other new DoABC class (for reading / --compile-as)
+  stringtable/<name>          stringtables as CSV (UTF-8; ">enc" says what the zone stores: gbk, ascii)
+  localize.str                localize entries, NAME<TAB>value, in zone order
+  script_strings.json         the zone's script string list (C#-written zones only)
+  <type>/NNNN_<name>.bin      assets kept as raw blobs (images, materials, techsets, sounds, models, ...)
+actionscript/                 the hand-written ActionScript classes of voice_ui_mp (OptionView, OptionView_audio,
+                              OptionView_video, k33_pad_diagrams.as.inc) and controller_ingame (MainPause)
+zonekit/                      container, zone image, asset codecs, gfx patches, manifests, the zone list
+files/                        patch files that are not zones (sound_channels.txt, main\iw_image_16.iwd), copied as is
+```
+
+### Build
+Python 3.10+ with `pycryptodome` (`pip install pycryptodome`).
+```
+python build_zones.py                                   # every zone -> output\
+python build_zones.py voice_ui_mp controller_ingame     # some zones
+python build_zones.py --list                            # the zones, their install folder and origin
+python build_zones.py --verify                          # build and compare each with the original it came from
+python build_zones.py --decompile [zone ...]            # refresh zones\ + zone_source\ from the shipped files
+```
+Inputs (read, never written): `--game` (default `D:\CoD\CODOL Builds\Call of Duty Online 1.1.1.13`): `C1.exe` for
+the zone key and `client_shipRetail\chinese` for the stock zones the gfx patches and `@stock:` blobs come from;
+`--zz` (codol-classic-zz) only for `--verify`/`--decompile`. Every output keeps the recorded key and timestamp so an
+untouched tree rebuilds the original bytes; `--fresh-key` draws new ones.
+
+Editing: change the file under `zones/<zone>/` or `actionscript/` and build. A changed `actionscript/*.as` is compiled
+into its movie by JPEXS FFDec (`--ffdec`, default `C:\Program Files (x86)\FFDec\ffdec-cli.exe`) over the stock class,
+and only that DoABC tag is replaced; the compiled tags of the untouched sources are stored, so FFDec is needed only
+after an edit (compiling all of them with `--compile-as` reproduces the stored tags byte for byte). `--compile-as`
+also compiles edited files under a `.gfxpatch/as/`. Rawfiles, localize, stringtables and blobs can be changed and
+resized freely in the flat (Python-written) zones. In the C#-written zones (patch_common_gametype_zm,
+codol_infected_cyborg_postgfx_mp) assets point back at earlier data, so a resized asset can move what later assets
+point at: the manifest records each decoded asset's length (`len=`) and the build warns when an edit changes it.
+
+### Where each zone goes
+`client_shipRetail\patch\` (Kernel33 loads it ahead of `code_pre_gfx`): 000_codol_party_modes, codol_english,
+codol_english_font, codol_english_ui, codol_english_ui_extra, codol_english_zombies_base,
+codol_infected_cyborg_postgfx_mp, codol_loading_mode_names, codol_zm_deathmachine_audio, controller_ingame,
+usermaps_patch, usermaps_ui_mp, voice_ui_mp, plus `sound_channels.txt`.
+`client_shipRetail\chinese\` (the 1.1.1.13 install and the CODOL 1.1.1.13 map pack): patch_common_gametype_zm (replaces
+the stock zone; keep the stock one as `patch_common_gametype_zm.ff.pre-pap`). `main\`: iw_image_16.iwd (the PaP camo
+images). usermaps_patch / usermaps_ui_mp / sound_channels.txt list the usermaps in the create-room map pool and fix
+their sound channels; they do nothing for a map that is not installed.
+
+### Provenance
+| zone | made by |
+|---|---|
+| codol_english | `tools/codol_english/build_ff.py` (CoD4x_Server, localizedStrings-1.1.1.13) from `codol_english.tsv` |
+| codol_english_font | `build_font_ff.py` (same tools); byte-identical to localizedStrings-1.1.1.13 `zones/` |
+| codol_english_zombies_base | localizedStrings-1.1.1.13 `tools/localize_zone.py` from `strings/codol_english_zombies_base/strings.tsv` (identical) |
+| codol_english_ui | codol-classic (zzVertigo/codol-classic) launcher releases r22-r30: method transplants on the English codo.gfx; the original translation has no source |
+| codol_english_ui_extra | codol-classic `deploy/client-patches/revive-token-mode/build_token_mode.py` |
+| codol_loading_mode_names | codol-classic `launcher/tools/build_loading_mode_names.py` (r21) |
+| codol_zm_deathmachine_audio | codol-classic `deploy/client-patches/build_deathmachine_audio.py` |
+| 000_codol_party_modes | codol-classic branch `codex/party-infected-20261017` (r22) |
+| codol_infected_cyborg_postgfx_mp | codol-classic branch `codex/party-infected-20261017`, `build_infected_cyborg_assets.py` |
+| voice_ui_mp, controller_ingame | this repository: `actionscript/` (formerly `voice_ui/`, built by build_voice_ui.py / build_ingame_ui.py into `patch/`, now folded into build_zones.py); decompiled from `patch/*.ff` of 3317112 |
+| usermaps_patch, usermaps_ui_mp | the game folder's `usermaps\build_usermaps_patch.py` (now superseded by the sources here) |
+| patch_common_gametype_zm | `CodolSoundDumper zm-pap-patch` (CODOL-AssetExplorer + `pap_patch_staging\tool_src`) over the stock zone |
+
+### Known gaps
+- Asset types without a codec stay raw blobs: images, materials, techsets, shaders, sounds (alias lists with their
+  loaded PCM), models, xanims, weapons, fx. Stringtables with back-referenced cells (the PaP zone's) are blobs too.
+- patch_common_gametype_zm is the stock zone's blobs (taken from the install by sha1) plus 959 committed blobs. It was
+  compressed by .NET's zlib; this builder uses Python's, so the file differs from the shipped one although the zone
+  image is identical.
