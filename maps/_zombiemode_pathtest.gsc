@@ -19,6 +19,10 @@
 //                             done, or hunting inside a player volume); then it
 //                             is removed.  Stuck = no progress for 10 s before
 //                             entering while not tearing or traversing.
+//   soak <seconds> <alive> <all|live> keep
+//                             as above, but a zombie that gets inside is kept
+//                             and hunts the players (a steady chase load of
+//                             <alive> actors, for frame-cost profiling).
 //   report                    print the running tallies
 //   botto <x> <y> <z>         move the first player (the test client) there
 //   zones                     print every zone's volumes and spawners, and the
@@ -83,6 +87,7 @@ pathtest_watch()
 				alive = int( tokens[ 2 ] );
 			if ( tokens.size > 3 )
 				mode = tokens[ 3 ];
+			level.pathtest_keep = tokens.size > 4 && tokens[ 4 ] == "keep";
 			level thread pathtest_soak( seconds, alive, mode );
 			break;
 
@@ -589,6 +594,8 @@ pathtest_watch_zombie( index, spawn_point )
 			level.pathtest_enter_ms += getTime() - start;
 			codolprintln( "CoDOL pathtest: ent " + num + " spawner " + index + " ENTERED via " + window + " after " +
 				( getTime() - start ) + " ms at " + self.origin );
+			if ( is_true( level.pathtest_keep ) )
+				return;
 			self pathtest_finish();
 			return;
 		}
