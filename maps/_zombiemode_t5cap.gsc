@@ -70,6 +70,12 @@ cap_knockdown_one( z )
 	z thread maps\_zombiemode_weap_thundergun::thundergun_knockdown_zombie( level.cap_player, false );
 }
 
+cap_on_dog_placed( z )
+{
+	if ( getDvarInt( "codol_tracePace" ) < 0 )
+		setDvar( "codol_tracePace", z getEntityNumber() );
+}
+
 cap_platform_init()
 {
 	level.cap_swing_hits = true;
@@ -300,6 +306,13 @@ cap_frames()
 				line += " g=" + vstr( z.goalpos );
 			if ( isdefined( z.animname ) )
 				line += " an=" + z.animname;
+			if ( isdefined( z.animname ) && z.animname == "zombie_dog" && isdefined( z.enemy ) )
+			{
+				cs = 0;
+				if ( z cansee( z.enemy ) )
+					cs = 1;
+				line += " cs=" + cs;
+			}
 			w( line );
 		}
 		wait 0.05;
@@ -672,6 +685,7 @@ cap_dog_place()
 	pos = ( int( c[0] ), int( c[1] ), int( c[2] ) );
 	self forceteleport( pos, ( 0, 0, 0 ) );
 	w( "E " + gettime() + " " + self.cap_id + " placed o=" + vstr( self.origin ) );
+	cap_on_dog_placed( self );
 }
 
 cap_dump_tear()
