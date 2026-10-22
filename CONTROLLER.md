@@ -228,7 +228,7 @@ work), which fails C1's client pure check (0x617FA0, "WIN_FILE_CORRUPT") on ever
   pointer). While it is up the pad drives it, no cursor: D-pad / left stick (0.55, hysteresis 0.4, repeat
   350 / 140 ms) and A are queued (input thread) and handed by IN_Frame straight to the movie's HandleEvent
   (vtable +0x8C, event {5/6, key}) as private key codes 240 up / 241 down / 242 left / 243 right / 244 select;
-  B / Start are Escape (PauseMenuView's own back / close). `actionscript/MainPause.as` (the 79-line document
+  B / Start are Escape (PauseMenuView's own back / close). `zones/controller_ingame/rawfile/scaleform/default/codoingame.gfx.gfxpatch/as/MainPause.as` (the 79-line document
   class) moves focus to the nearest visible clickable object (C1's BaseButton sets buttonMode), sends it
   MouseEventEx MOUSE_OVER / ROLL_OVER (its own hover look, no extra frame); select sends MouseEventEx MOUSE_DOWN / UP / CLICK
   (C1's BaseButton reads `cEvt as MouseEventEx`; a plain MouseEvent is dropped). Shipped as
@@ -382,10 +382,10 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
 
 ## 12. Options > Controller, microphone choice (2026-10-21)
 - **The tab:**
-  - `actionscript/OptionView.as` is C1's `codo.views.OptionView`. Its hidden "Other" tab (`myTabOther`) is shown as 手柄 and opens a panel built in code.
+  - `zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/OptionView.as` is C1's `codo.views.OptionView`. Its hidden "Other" tab (`myTabOther`) is shown as 手柄 and opens a panel built in code.
   - It is compiled by FFDec and spliced into the same codo.gfx in `voice_ui_mp.ff` (`build_zones.py`), so there is still one UI zone.
 - **Page 手柄图示 (diagram):**
-  - A line-art diagram for the pad family (glyph family: Xbox 360 / PS3 / Wii U / generic), pre-generated in `actionscript/k33_pad_diagrams.as.inc` (original line art; inserted at `// @K33DIAGRAMS@` when the class is compiled).
+  - A line-art diagram for the pad family (glyph family: Xbox 360 / PS3 / Wii U / generic), pre-generated in `zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/k33_pad_diagrams.as.inc` (original line art; inserted at `// @K33DIAGRAMS@` when the class is compiled).
   - Each button has a live callout with what it does, read from `k33_padbinds`.
   - Settings rows: swap sticks (`gpad_swap_sticks`), swap triggers (`gpad_swaptriggers` swaps the two trigger binds), look feel (`gpad_lookpreset`), look sensitivity, invert Y, aim assist, deadzone, and dive with the crouch button (`gpad_dive`).
   - With no pad, the generic diagram shows with 未连接手柄 ("no controller connected"); `gpad_glyphs 1..4` forces a family.

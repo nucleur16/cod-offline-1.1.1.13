@@ -51,9 +51,7 @@ def assemble(repo, zone_name, m, stocks, ffdec=None, compile_as=False, log=print
                 pdir = path + ".gfxpatch"
                 stock_movie = stocks.rawfile(p["gfx"])
                 data = gfx.build_patch(pdir, stock_movie)
-                data = compile_sources(repo, pdir, data, stock_movie, ffdec, compile_as, log)
-                if compile_as:
-                    data = recompile(pdir, data, ffdec, log)
+                data = compile_as_files(pdir, data, stock_movie, ffdec, compile_as, log)
             else:
                 with open(path, "rb") as g:
                     data = g.read()
@@ -93,41 +91,28 @@ def assemble(repo, zone_name, m, stocks, ffdec=None, compile_as=False, log=print
     return zoneimage.assemble(img)
 
 
-def compile_sources(repo, pdir, movie, stock_movie, ffdec, force, log):
-    """Compile every "source" class whose actionscript/ file changed since its tag was stored (all with `force`)."""
+def compile_as_files(pdir, movie, stock_movie, ffdec, all_sources, log):
+    """Compile the as/ files whose text changed since their tag was stored (gfx.py); with `all_sources` also those
+    whose text is not FFDec's decompile of the stored tag (the hand-written sources)."""
+    import tempfile
     meta, _ops = gfx.read_patch(pdir)
-    for cls, rel, digest in meta["source"]:
-        path = os.path.join(repo, rel)
-        with open(path, "rb") as f:
-            cur = gfx.sha(f.read())
-        if cur == digest and not force:
+    for cls, rel, digest in meta["as"]:
+        path = os.path.join(pdir, rel)
+        if not os.path.isfile(path):
+            raise BuildError("%s: %s is listed in patch.txt but missing" % (pdir, rel))
+        edited = gfx.source_sha(path) != digest
+        if not edited and not all_sources:
             continue
         if not ffdec or not os.path.isfile(ffdec):
             raise BuildError("%s changed since its compiled tag was stored: FFDec (--ffdec) is needed" % rel)
-        log("  compiling %s from %s (FFDec)%s" % (cls, rel, "" if cur != digest else ", forced"))
-        movie = gfx.compile_as(gfx.with_stock_class(movie, stock_movie, cls), cls, path, ffdec)
-    return movie
-
-
-def recompile(pdir, movie, ffdec, log):
-    """Compile every .as under <pdir>/as whose text differs from FFDec's decompile of the current movie."""
-    asdir = os.path.join(pdir, "as")
-    if not os.path.isdir(asdir):
-        return movie
-    import tempfile
-    for root, _d, files in os.walk(asdir):
-        for fn in files:
-            if not fn.endswith(".as"):
-                continue
-            path = os.path.join(root, fn)
-            cls = os.path.splitext(os.path.relpath(path, asdir))[0].replace(os.sep, ".")
+        if not edited:
             with tempfile.TemporaryDirectory() as tmp:
                 gfx.export_as(movie, [cls], tmp, ffdec)
-                cur = os.path.join(tmp, os.path.relpath(path, asdir))
-                same = os.path.isfile(cur) and open(cur, "rb").read() == open(path, "rb").read()
-            if not same:
-                log("  compiling %s (FFDec)" % cls)
-                movie = gfx.compile_as(movie, cls, path, ffdec)
+                cur = os.path.join(tmp, rel[3:].replace("/", os.sep))
+                if os.path.isfile(cur) and open(cur, "rb").read() == open(path, "rb").read():
+                    continue
+        log("  compiling %s from %s (FFDec)%s" % (cls, rel, "" if edited else ", --compile-as"))
+        movie = gfx.compile_as(gfx.with_stock_class(movie, stock_movie, cls), cls, path, ffdec)
     return movie
 
 

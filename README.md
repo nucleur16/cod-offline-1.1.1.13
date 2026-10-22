@@ -87,7 +87,7 @@ so 144 ran at 166 and 60 at 62.5). Kernel33 (`PatchFrameCap` in kernel33.c):
   test machine); a minimized window only adds `Sleep(5)` per loop. Vsync ("Sync every frame", r_vsync) still
   limits to the refresh rate when it is on.
 
-**Options > Graphics > Max FPS** (`actionscript/OptionView_video.as`): C1's hidden Aspect Ratio combo box, shown below
+**Options > Graphics > Max FPS** (`zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/option_sub/OptionView_video.as`): C1's hidden Aspect Ratio combo box, shown below
 Anti-Aliasing (Vsync moves down a row): Unlimited / 30 / 60 / 75 / 90 / 120 / 144 / 165 / 240 / 360 / 500, set
 with the screen's Apply button (Cancel discards it); a value set from the console shows as its own entry. C1
 disables the whole Graphics tab in a room ("temporarily disabled"); set it from the main menu.
@@ -134,7 +134,7 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
   icon follows what is actually sent (key or open gate).
 - **Options > Audio**: C1's audio panel (`OptionView_audio`) has a Voice section its onInit hides:
   a voice-chat volume slider, a microphone checkbox + slider, an input-level indicator, and an unused
-  "Sound Presets" combo box. `actionscript/OptionView_audio.as` is that class with the section shown and
+  "Sound Presets" combo box. `zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/option_sub/OptionView_audio.as` is that class with the section shown and
   rewired, one control per row: **Voice Mode** (the presets box: Push to talk / Voice activation ->
   `k33_voiceMode`), **Voice** (chat volume -> `k33_voiceVolume`), **Microphone** (checkbox = mic on,
   `k33_voiceMicMute`; slider = activation level, `k33_voiceThreshold`), **Input Level** (a level bar
@@ -212,7 +212,7 @@ The 3D play path's channel check (call of 0x736C10 at 0x73E4DB) decides two more
 `+set codol_soundvoices 0` turns both off at startup. The voice diagnostics (`k33_snddiag`, `CODOL_SNDDIAG`) now
 default to 0; at 1+ they also log `snd policy` totals and `why=limit` refusals to Kernel33.log.
 
-## Patch zones (`zones/`, `zone_source/`, `actionscript/`, `build_zones.py`)
+## Patch zones (`zones/`, `zone_source/`, `build_zones.py`)
 Every patch zone this project installs next to the stock game, as editable sources, built into `output/` by one
 script. (The ported usermap map zones themselves, mp_*.ff / zm_sumpf_sh.ff, are not part of this repository; they
 ship in the CODOL 1.1.1.13 map pack.)
@@ -223,16 +223,16 @@ zone_source/<zone>.csv        the build manifest: >settings, then one "type,name
 zones/<zone>/                 the zone's contents
   rawfile/<name>              rawfiles as files (.txt, .arena, .vision, .atr, ...)
   rawfile/<name>.gfxpatch/    a Scaleform movie as a patch over the stock movie it was made from:
-    patch.txt                   stock tags kept by index, new tags by file, "source" classes (below)
+    patch.txt                   stock tags kept by index, new tags by file, one "as" line per as/ file (below)
     tags/*.bin                  the new tags, byte for byte
     tags/*_75_<font>.json       DefineFont3 tags as glyph patches (only the glyphs that differ)
-    as/**.as                    FFDec's decompile of every other new DoABC class (for reading / --compile-as)
+    as/<package path>/*.as      the source of every new DoABC class: FFDec's decompile, or for voice_ui_mp
+                                (OptionView, OptionView_audio, OptionView_video, k33_pad_diagrams.as.inc) and
+                                controller_ingame (MainPause) the hand-written class it was compiled from
   stringtable/<name>          stringtables as CSV (UTF-8; ">enc" says what the zone stores: gbk, ascii)
   localize.str                localize entries, NAME<TAB>value, in zone order
   script_strings.json         the zone's script string list (C#-written zones only)
   <type>/NNNN_<name>.bin      assets kept as raw blobs (images, materials, techsets, sounds, models, ...)
-actionscript/                 the hand-written ActionScript classes of voice_ui_mp (OptionView, OptionView_audio,
-                              OptionView_video, k33_pad_diagrams.as.inc) and controller_ingame (MainPause)
 zonekit/                      container, zone image, asset codecs, gfx patches, manifests, the zone list
 files/                        patch files that are not zones (sound_channels.txt, main\iw_image_16.iwd), copied as is
 ```
@@ -251,11 +251,11 @@ the zone key and `client_shipRetail\chinese` for the stock zones the gfx patches
 `--zz` (codol-classic-zz) only for `--verify`/`--decompile`. Every output keeps the recorded key and timestamp so an
 untouched tree rebuilds the original bytes; `--fresh-key` draws new ones.
 
-Editing: change the file under `zones/<zone>/` or `actionscript/` and build. A changed `actionscript/*.as` is compiled
+Editing: change the file under `zones/<zone>/` and build. A changed `.gfxpatch/as/*.as` (any zone) is compiled
 into its movie by JPEXS FFDec (`--ffdec`, default `C:\Program Files (x86)\FFDec\ffdec-cli.exe`) over the stock class,
-and only that DoABC tag is replaced; the compiled tags of the untouched sources are stored, so FFDec is needed only
-after an edit (compiling all of them with `--compile-as` reproduces the stored tags byte for byte). `--compile-as`
-also compiles edited files under a `.gfxpatch/as/`. Rawfiles, localize, stringtables and blobs can be changed and
+and only that DoABC tag is replaced. Each as/ file's sha256 is recorded in patch.txt (with the diagrams include),
+so FFDec is needed only after an edit; `--compile-as` also compiles the hand-written classes unchanged, which
+reproduces their stored tags byte for byte (the decompiled ones are skipped). Rawfiles, localize, stringtables and blobs can be changed and
 resized freely in the flat (Python-written) zones. In the C#-written zones (patch_common_gametype_zm,
 codol_infected_cyborg_postgfx_mp) assets point back at earlier data, so a resized asset can move what later assets
 point at: the manifest records each decoded asset's length (`len=`) and the build warns when an edit changes it.
@@ -282,7 +282,7 @@ their sound channels; they do nothing for a map that is not installed.
 | codol_zm_deathmachine_audio | codol-classic `deploy/client-patches/build_deathmachine_audio.py` |
 | 000_codol_party_modes | codol-classic branch `codex/party-infected-20261017` (r22) |
 | codol_infected_cyborg_postgfx_mp | codol-classic branch `codex/party-infected-20261017`, `build_infected_cyborg_assets.py` |
-| voice_ui_mp, controller_ingame | this repository: `actionscript/` (formerly `voice_ui/`, built by build_voice_ui.py / build_ingame_ui.py into `patch/`, now folded into build_zones.py); decompiled from `patch/*.ff` of 3317112 |
+| voice_ui_mp, controller_ingame | this repository: hand-written classes in their `.gfxpatch/as/` (formerly `voice_ui/`, built by build_voice_ui.py / build_ingame_ui.py into `patch/`, now folded into build_zones.py); decompiled from `patch/*.ff` of 3317112 |
 | usermaps_patch, usermaps_ui_mp | the game folder's `usermaps\build_usermaps_patch.py` (now superseded by the sources here) |
 | patch_common_gametype_zm | `CodolSoundDumper zm-pap-patch` (CODOL-AssetExplorer + `pap_patch_staging\tool_src`) over the stock zone |
 

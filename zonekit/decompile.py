@@ -34,9 +34,25 @@ def decompile(zone_name, cfg, path, exe, repo, stocks, ffdec=None, log=print):
     u = container.read_unsigned(data, exe)
     img = zoneimage.parse(u.zone)
     zdir = os.path.join(repo, "zones", zone_name)
+    # hand-written as/ sources (zonelist "handwritten") and their .inc files survive a refresh
+    handwritten = set().union(*(cfg.get("handwritten") or {}).values())
+    kept = {}
+    for root, _d, files in os.walk(zdir):
+        for fn in files:
+            rel = os.path.relpath(os.path.join(root, fn), zdir).replace(os.sep, "/")
+            if ".gfxpatch/as/" not in rel:
+                continue
+            cls = rel.split(".gfxpatch/as/", 1)[1]
+            if fn.endswith(".inc") or (cls.endswith(".as") and cls[:-3].replace("/", ".") in handwritten):
+                with open(os.path.join(root, fn), "rb") as f:
+                    kept[rel] = f.read()
     if os.path.isdir(zdir):
         shutil.rmtree(zdir)
     os.makedirs(zdir)
+    for rel, kdata in kept.items():
+        os.makedirs(os.path.dirname(os.path.join(zdir, rel)), exist_ok=True)
+        with open(os.path.join(zdir, rel), "wb") as f:
+            f.write(kdata)
     m = manifest.Manifest()
     m.comments.append("%s -- built by build_zones.py from zones/%s/ (zonekit/manifest.py describes the format)"
                       % (zone_name, zone_name))
@@ -106,7 +122,7 @@ def decompile(zone_name, cfg, path, exe, repo, stocks, ffdec=None, log=print):
                     stock_movie = stocks.rawfile(gref)
                     pdir = os.path.join(zdir, rel + ".gfxpatch")
                     n = gfx.write_patch(pdir, gref, stock_movie, rdata, ffdec=ffdec,
-                                        sources=(cfg.get("as") or {}).get(name), repo=repo)
+                                        handwritten=(cfg.get("handwritten") or {}).get(name, ()))
                     if gfx.build_patch(pdir, stock_movie) != rdata:
                         raise SystemExit("%s: gfx patch of %s does not rebuild" % (zone_name, name))
                     params["gfx"] = gref

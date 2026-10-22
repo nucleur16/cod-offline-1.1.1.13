@@ -8,8 +8,8 @@ here). Where two places carry a zone, the newest build is the source.
 `stock` names stock 1.1.1.13 zones (client_shipRetail\chinese) whose asset blobs this zone reuses unchanged: the
 manifest names those blobs by sha1 and the build takes them from the stock zone instead of the repo.
 `gfx` maps a .gfx rawfile to the stock movie it patches ("<stock zone>:<rawfile>").
-`as` maps a .gfx rawfile to {class: actionscript/<file>.as}: classes built from the hand-written sources in
-actionscript/ (gfx.py "source" lines).
+`handwritten` maps a .gfx rawfile to the classes whose as/ file in the zone is a hand-written source (compiled into
+the stored tag), not FFDec's decompile: --decompile keeps those files instead of exporting over them.
 The usermap map zones themselves (mp_*.ff, zm_sumpf_sh.ff and their _load zones) are not part of this repository.
 """
 
@@ -39,14 +39,13 @@ ZONES = {
     "codol_loading_mode_names": dict(origin="Z:" + PATCH, install=PATCH),
     "codol_zm_deathmachine_audio": dict(origin="Z:" + PATCH, install=PATCH),
     "controller_ingame": dict(origin="R:3317112:patch", install=PATCH, gfx={"scaleform/default/codoingame.gfx": INGAME},
-                              **{"as": {"scaleform/default/codoingame.gfx": {"MainPause": "actionscript/MainPause.as"}}}),
+                              handwritten={"scaleform/default/codoingame.gfx": {"MainPause"}}),
     "usermaps_patch": dict(origin="G:" + PATCH, install=PATCH, older="Z:" + PATCH),
     "usermaps_ui_mp": dict(origin="G:" + PATCH, install=PATCH, older="Z:" + PATCH),
     "voice_ui_mp": dict(origin="R:3317112:patch", install=PATCH, gfx={"scaleform/default/codo.gfx": CODO},
-                        **{"as": {"scaleform/default/codo.gfx": {
-                            "codo.views.option_sub.OptionView_audio": "actionscript/OptionView_audio.as",
-                            "codo.views.option_sub.OptionView_video": "actionscript/OptionView_video.as",
-                            "codo.views.OptionView": "actionscript/OptionView.as"}}}),
+                        handwritten={"scaleform/default/codo.gfx": {"codo.views.option_sub.OptionView_audio",
+                                                                    "codo.views.option_sub.OptionView_video",
+                                                                    "codo.views.OptionView"}}),
     # --- client_shipRetail\chinese: the Pack-a-Punch rebuild of a stock zone
     "patch_common_gametype_zm": dict(origin="G:" + CHINESE, install=CHINESE,
                                      stock=["patch_common_gametype_zm.ff.pre-pap", "common_gametype_zm",

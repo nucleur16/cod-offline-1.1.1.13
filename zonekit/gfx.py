@@ -5,14 +5,15 @@ A patched movie is stored as the stock movie it was made from (named by zone and
 tags that differ: zones/<zone>/rawfile/<path>.gfxpatch/
     patch.txt        header bytes, tag list: each line "keep <stock index>" or "new <file>"
     tags/NNNN_<code>[_<abc name>].bin   the new tags, complete (header included), byte for byte
-    as/<class path>.as                  FFDec's decompile of each new DoABC tag, for reading and editing
-    "source <class> <path> <sha256>"    a class whose real source is a hand-written .as in the repo (actionscript/):
-                                        the stored tag is that file compiled by FFDec; <sha256> is the file it was
-                                        compiled from
-Rebuilding joins the stock tags and the new tag files, so it is byte-identical. A "source" class whose .as no longer
-matches its recorded sha256 is compiled again by FFDec (-replace) and its DoABC tag replaces the stored one; --compile-as
-also compiles edited files under as/. Only that class's tag is taken from FFDec's output; every other tag is checked
-unchanged.
+    as/<package path>/<Class>.as        the ActionScript source of each new DoABC class: FFDec's decompile, or the
+                                        hand-written source the class was compiled from (voice_ui_mp, controller_ingame)
+    "as <class> <as/ path> <sha256>"    one patch.txt line per as/ file: the text the stored tag corresponds to
+Rebuilding joins the stock tags and the new tag files, so it is byte-identical. An as/ file whose text no longer matches
+its recorded sha256 (an edit) is compiled by FFDec (-replace) over the stock class, and only its DoABC tag is replaced;
+every other tag is checked unchanged. --compile-as also compiles every as/ file whose text differs from FFDec's
+decompile of the stored tag (the hand-written ones), which reproduces their stored tags byte for byte.
+A "// @K33DIAGRAMS@" line is replaced by k33_pad_diagrams.as.inc from the same folder before compiling; the include
+is part of the recorded sha256.
 """
 from __future__ import annotations
 
@@ -100,11 +101,31 @@ def safe(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9_.-]+", "_", name)[:80]
 
 
+def source_sha(path: str) -> str:
+    """sha256 of an as/ file as compiled: its text plus the diagrams include when it uses it."""
+    with open(path, "rb") as f:
+        data = f.read()
+    if DIAGRAMS.encode() in data:
+        with open(os.path.join(os.path.dirname(path), "k33_pad_diagrams.as.inc"), "rb") as f:
+            data += b"\0" + f.read()
+    return sha(data)
+
+
+def as_files(dirpath: str):
+    """[(class, as/ relative path)] of every .as under <dirpath>/as."""
+    out = []
+    for root, _d, files in os.walk(os.path.join(dirpath, "as")):
+        for fn in files:
+            if fn.endswith(".as"):
+                rel = os.path.relpath(os.path.join(root, fn), dirpath).replace(os.sep, "/")
+                out.append((rel[3:-3].replace("/", "."), rel))
+    return sorted(out)
+
+
 def write_patch(dirpath: str, stock_ref: str, stock: bytes, movie: bytes, ffdec: str | None = None,
-                sources=None, repo: str | None = None):
-    """Write <dirpath>/patch.txt + tags/ (+ as/ when FFDec is available). `sources` maps a class (dotted) to the
-    repo-relative .as it is built from. Returns the number of new tags."""
-    sources = sources or {}
+                handwritten=()):
+    """Write <dirpath>/patch.txt + tags/ (+ as/ decompiled by FFDec when available, except the `handwritten` classes,
+    whose as/ files are kept as they are). Returns the number of new tags."""
     from . import font3
     header, ops = diff(stock, movie)
     st = tags(stock)
@@ -140,22 +161,19 @@ def write_patch(dirpath: str, stock_ref: str, stock: bytes, movie: bytes, ffdec:
             f.write(body)
         lines.append("new %s" % fn)
         n += 1
-        if code == T_DOABC and name:
-            dotted = name.replace("/", ".")
-            if dotted in sources:
-                with open(os.path.join(repo, sources[dotted]), "rb") as g:
-                    lines.append("source %s %s %s" % (dotted, sources[dotted], sha(g.read())))
-            else:
-                abc.append(name)
-    with open(os.path.join(dirpath, "patch.txt"), "w", newline="\n") as f:
-        f.write("\n".join(lines) + "\n")
+        if code == T_DOABC and name and name.replace("/", ".") not in handwritten:
+            abc.append(name)
     if ffdec and abc:
         export_as(movie, abc, os.path.join(dirpath, "as"), ffdec)
+    for cls, rel in as_files(dirpath):
+        lines.append("as %s %s %s" % (cls, rel, source_sha(os.path.join(dirpath, rel))))
+    with open(os.path.join(dirpath, "patch.txt"), "w", newline="\n") as f:
+        f.write("\n".join(lines) + "\n")
     return n
 
 
 def read_patch(dirpath: str):
-    meta, ops = {"source": []}, []
+    meta, ops = {"as": []}, []
     with open(os.path.join(dirpath, "patch.txt")) as f:
         for line in f:
             line = line.strip()
@@ -169,8 +187,8 @@ def read_patch(dirpath: str):
                 i, _, fn = v.partition(" ")
                 with open(os.path.join(dirpath, fn)) as g:
                     ops.append(("font", int(i), json.load(g)))
-            elif k == "source":
-                meta["source"].append(tuple(v.split(" ")))
+            elif k == "as":
+                meta["as"].append(tuple(v.split(" ")))
             elif k == "new":
                 with open(os.path.join(dirpath, v), "rb") as g:
                     ops.append(("new", g.read(), v))
@@ -233,7 +251,7 @@ def compile_as(movie: bytes, cls: str, as_path: str, ffdec: str) -> bytes:
         with open(as_path, encoding="utf-8") as f:
             text = f.read()
         if DIAGRAMS in text:
-            # the pad diagrams (actionscript/k33_pad_diagrams.as.inc, pre-generated line art) go in at the marker
+            # the pad diagrams (k33_pad_diagrams.as.inc next to the class, pre-generated line art) go in at the marker
             with open(os.path.join(os.path.dirname(as_path), "k33_pad_diagrams.as.inc"), encoding="utf-8") as f:
                 text = text.replace(DIAGRAMS, f.read())
             as_path = os.path.join(tmp, os.path.basename(as_path))

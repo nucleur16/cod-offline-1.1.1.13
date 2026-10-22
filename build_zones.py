@@ -15,9 +15,10 @@ Options:
   --zz DIR         codol-classic-zz, for --verify / --decompile of the zones that came from it. Read only.
   --out DIR        output root (default output\); zones land in <out>\client_shipRetail\{patch,chinese}, files\ is
                    copied as it is (sound_channels.txt, main\iw_image_16.iwd).
-  --ffdec PATH     JPEXS ffdec-cli.exe. Needed only when an actionscript\*.as file changed (its class is compiled into
-                   the movie again) or with --compile-as.
-  --compile-as     compile every actionscript\ class and every edited .gfxpatch\as\ file, changed or not.
+  --ffdec PATH     JPEXS ffdec-cli.exe. Needed only when a .gfxpatch\as\*.as file changed since its tag was stored
+                   (that class is compiled into the movie again) or with --compile-as.
+  --compile-as     also compile every .gfxpatch\as\ file whose text is not FFDec's decompile of its stored tag (the
+                   hand-written sources of voice_ui_mp and controller_ingame); reproduces the stored tags.
   --fresh-key      a new AES key and timestamp instead of the recorded ones (same zone; different file bytes).
   --assetexplorer  CodolSoundDumper.exe: --verify also loads outputs that are not md5-identical and compares asset tables.
 

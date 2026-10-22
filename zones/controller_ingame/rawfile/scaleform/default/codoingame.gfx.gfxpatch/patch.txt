@@ -509,7 +509,6 @@ keep 502
 keep 503
 keep 504
 new tags/0505_82_MainPause.bin
-source MainPause actionscript/MainPause.as f5571f047c25836f0f77a19d1b569678e1c4e3fa7ca29e70418436f662654e37
 keep 506
 keep 507
 keep 508
@@ -853,3 +852,4 @@ keep 845
 keep 846
 keep 847
 keep 848
+as MainPause as/MainPause.as f5571f047c25836f0f77a19d1b569678e1c4e3fa7ca29e70418436f662654e37

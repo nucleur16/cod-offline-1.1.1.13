@@ -5992,7 +5992,6 @@ keep 5985
 keep 5986
 keep 5987
 new tags/5988_82_codo_views_OptionView.bin
-source codo.views.OptionView actionscript/OptionView.as d459f9a09f655d798cdcafe4b7061d4d89669724f624b754265db280662013f8
 keep 5989
 keep 5990
 keep 5991
@@ -6339,10 +6338,8 @@ keep 6331
 keep 6332
 keep 6333
 new tags/6334_82_codo_views_option_sub_OptionView_video.bin
-source codo.views.option_sub.OptionView_video actionscript/OptionView_video.as f0a8a27cb2bcdbccb1bbe4adcb87d9cdbb38fc5922c2bb954313301020ff73ca
 keep 6335
 new tags/6336_82_codo_views_option_sub_OptionView_audio.bin
-source codo.views.option_sub.OptionView_audio actionscript/OptionView_audio.as 9a5cbf60e739674870114f52e51d851941aa04245710b0c21cc2c146b80108fc
 keep 6337
 keep 6338
 new tags/6339_82_codo_views_option_sub_OptionView_control_chat.bin
@@ -6870,3 +6867,7 @@ keep 6860
 keep 6861
 keep 6862
 keep 6863
+as codo.views.OptionView as/codo/views/OptionView.as 0c2130010da8f41525c321d572ba8c3d630453f33372b2322a45f4999de2c417
+as codo.views.option_sub.OptionView_audio as/codo/views/option_sub/OptionView_audio.as 9a5cbf60e739674870114f52e51d851941aa04245710b0c21cc2c146b80108fc
+as codo.views.option_sub.OptionView_control_chat as/codo/views/option_sub/OptionView_control_chat.as 62b0364bf158cbc8cc8f7f4f27c6b2e103692f94b0110ca9f4bdf2930e9c4362
+as codo.views.option_sub.OptionView_video as/codo/views/option_sub/OptionView_video.as f0a8a27cb2bcdbccb1bbe4adcb87d9cdbb38fc5922c2bb954313301020ff73ca
