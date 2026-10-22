@@ -7,9 +7,9 @@
  * ((size - 16) * fontHeight + 16) / 32 pixels, so 48 is one line high). C1's zones have no button
  * materials, so Kernel33 makes them:
  *
- *   art        Xelu's CC0 controller prompts (glyphs/xelu, glyphs/LICENSE.md): Xbox 360, PS3, Wii U and a generic
- *              set, 17 icons each in kCtlButtons order; glyphs/make_glyphs.py converts them to 64x64 with mips,
- *              B8G8R8A8, into glyphs/glyphs.bin (zlib), linked in with .incbin.
+ *   art        Xelu's CC0 controller prompts (Xbox 360, PS3, Wii U and a generic set, 17 icons each in kCtlButtons
+ *              order), pre-generated as 64x64 textures with mips, B8G8R8A8, in res/controller_glyphs.bin (zlib),
+ *              linked in with .incbin.
  *   materials  one per button: a copy of C1's "white" material (2D, alpha blended) whose texture table points
  *              at a copy of its GfxImage. They sit at addresses whose four bytes are letters (base 0xHHHH0000
  *              with HH a letter, + (0x41 + button) * 0x100 + 0x44), so the escape survives every string copy
@@ -46,7 +46,7 @@
 __asm__(".section .rdata,\"dr\"\n"
         ".globl _g_glyphBlob\n"
         "_g_glyphBlob:\n"
-        ".incbin \"glyphs/glyphs.bin\"\n"
+        ".incbin \"res/controller_glyphs.bin\"\n"
         ".globl _g_glyphBlobEnd\n"
         "_g_glyphBlobEnd:\n"
         ".text\n");
