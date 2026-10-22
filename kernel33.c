@@ -27,6 +27,7 @@
  * renames it to Kernel33.dll (same length), so this DLL loads first and sees every lookup the
  * stub makes; that is how VirtualAlloc/VirtualProtect are intercepted.
  */
+#include <winsock2.h> /* before windows.h: discord.c's getinfo socket */
 #include <windows.h>
 #include <imm.h>
 #include <stdio.h>
@@ -1255,6 +1256,9 @@ static void PatchGbkInput(void)
 /* XInput gamepad (feat/controller): see controller.c and CONTROLLER.md. */
 #include "controller.c"
 
+/* Discord Rich Presence (CoDOLPresence.exe moved into the client): see discord.c. */
+#include "discord.c"
+
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 static void __cdecl TakeOver(void)
 {
@@ -1278,6 +1282,7 @@ static void __cdecl TakeOver(void)
     InstallParityLogger();
     InstallVoice();
     InstallController();
+    InstallDiscord();
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
     ExitProcess(0); /* the CRT entry ends in exit(); not reached */
