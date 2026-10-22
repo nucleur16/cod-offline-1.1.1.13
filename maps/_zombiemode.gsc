@@ -511,6 +511,8 @@ Callback_StartGameType()
 	// whether this map has them, and after the equipment registry their
 	// spawned bolt names register with.
 	maps\_zombiemode_weap_explosive_bolt::init();
+	// The Thundergun (T5 _zombiemode.gsc:111): after the weapon table.
+	maps\_zombiemode_weap_thundergun::init();
 	maps\_zombiemode_blockers::init();
 	maps\_zombiemode_perks::init();
 	// The level's own electric traps (T5 _zombiemode_traps): they wait on

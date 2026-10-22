@@ -52,9 +52,27 @@
 //     the entity's removal reach every client.
 //   * Death FX: T5 :316 plays the shock on J_SpineUpper, so it follows the
 //     falling body and ends with the corpse.  MEASURED (codol_checkmodel,
-//     2026-09-30): every body in character_zm_zombie's rotation carries
-//     j_spineupper as bone 10; any other model falls back to playFx at the
-//     chest point, which is safe for these two finite effects.
+//     2026-09-30): every body in character_zm_zombie's rotation, and the
+//     four full-skeleton gib bodies a wound swaps in, carries j_spineupper
+//     as bone 10; any other model falls back to playFx at the chest point,
+//     which is safe for these two finite effects.
+//   * Death FX TIMING.  An entity carries four events per snapshot, and a
+//     client that receives more between two snapshots it gets loses the
+//     oldest.  MEASURED 2026-10-21 (zm_prototype_sh probe,
+//     codol_traceActorEvents): T5's order (shock fx, impact sound, eye fx,
+//     then the kill) put three events on the zombie in its kill frame and
+//     the death animscript three more (stopsounds, the eye-glow stop, the
+//     death vocal) one frame later -- six in 17 ms, so the shock effect,
+//     queued first, was the one pushed out: the "tesla kills draw no shock"
+//     report.  The kill now comes first; the shock and the eyes go on the
+//     dying body 0.15 s later, after that burst, and the impact sound is a
+//     positional sound that uses none of the zombie's slots.
+//   * The arc's carrier is a new entity.  An entity event only reaches a
+//     client that already had the entity in a snapshot when it was queued
+//     (the rule _zombiemode_spawner::zombie_eye_glow_refresh works around),
+//     so an effect played on the carrier's spawn frame can be lost.  The
+//     bolt is put on the carrier 0.1 s after it is spawned, then it
+//     travels.
 //   * T5 :305 pays "death" points itself after the kill.  Not taken: this
 //     port's _zombiemode_spawner::zombie_death_event already pays the player
 //     named as the attacker of the kill, which doDamage below supplies, so
@@ -342,15 +360,14 @@ tesla_do_damage( source_enemy, arc_num, player )
 			self.deathanim = level._zombie_tesla_crawl_death[ randomInt( level._zombie_tesla_crawl_death.size ) ];
 	}
 
-	self tesla_play_death_fx( arc_num );
-
 	// T5 :284: the arc's originator picks the death direction.
 	origin = player.origin;
 	if ( isDefined( source_enemy ) && source_enemy != self )
 		origin = source_enemy.origin;
 
-	if ( !isDefined( self ) || !isAlive( self ) )
-		return;
+	// The kill, then the death fx (T5 :316) once the death animscript's own
+	// events are out -- see DEATH FX TIMING in the header.
+	level thread tesla_play_death_fx( self, arc_num );
 
 	if ( isDefined( self.tesla_damage_func ) )
 	{
@@ -361,37 +378,42 @@ tesla_do_damage( source_enemy, arc_num, player )
 	self doDamage( self.health + 666, origin, player );
 }
 
-// T5 :316.  On the body's J_SpineUpper, see the header.
-tesla_play_death_fx( arc_num )
+// T5 :316.  On the body's J_SpineUpper, see the header.  A level thread:
+// the zombie is dead (or dying) by the time it plays.
+tesla_play_death_fx( zombie, arc_num )
 {
 	fx = "tesla_shock";
 	if ( arc_num > 1 )
 		fx = "tesla_shock_secondary";
 
-	if ( tesla_has_spine_tag( self ) )
-		playFxOnTag( level._effect[ fx ], self, "j_spineupper" );
-	else
-		playFx( level._effect[ fx ], tesla_chest_point( self ) );
-	self playSound( "wpn_imp_tesla" );
+	origin = tesla_chest_point( zombie );
+	playSoundAtPosition( "wpn_imp_tesla", origin );
 
 	// T5 :331 tesla_head_gib_func = zombie_tesla_head_gib (spawner :4963).
-	if ( !is_true( self.isdog ) && !is_true( self.head_gibbed ) )
-		self thread zombie_tesla_head_gib();
-}
+	// Its head gib is behind endon( "death" ) and the kill lands in the same
+	// frame, so in T5 it practically never fires (docs/
+	// CODOL_ZOMBIE_T5_PARITY.md 6.7); the eyes are what a tesla kill shows.
+	eyes = !is_true( zombie.isdog ) && !is_true( zombie.head_gibbed ) &&
+		randomInt( 100 ) >= level.zombie_vars[ "tesla_head_gib_chance" ];
 
-// T5 _zombiemode_spawner.gsc:4963: half the tesla kills pop the head a
-// moment later; the rest light the eyes with the shock effect.
-zombie_tesla_head_gib()
-{
-	self endon( "death" );
+	wait( 0.15 );
 
-	if ( randomInt( 100 ) < level.zombie_vars[ "tesla_head_gib_chance" ] )
+	if ( !isDefined( zombie ) )
 	{
-		wait( randomFloatRange( 0.53, 1.0 ) );
-		self maps\_zombiemode_gib::zombie_head_gib();
+		playFx( level._effect[ fx ], origin );
+		return;
 	}
-	else if ( isDefined( level._effect[ "tesla_shock_eyes" ] ) )
-		playFxOnTag( level._effect[ "tesla_shock_eyes" ], self, "j_eyeball_le" );
+
+	if ( tesla_has_spine_tag( zombie ) )
+		playFxOnTag( level._effect[ fx ], zombie, "j_spineupper" );
+	else
+		playFx( level._effect[ fx ], tesla_chest_point( zombie ) );
+
+	if ( eyes && isDefined( level._effect[ "tesla_shock_eyes" ] ) && !is_true( zombie.head_gibbed ) )
+		playFxOnTag( level._effect[ "tesla_shock_eyes" ], zombie, "j_eyeball_le" );
+
+	codolPrintLn( "CoDOL zm tesla: death fx " + fx + " on zombie " + zombie getEntityNumber() + " (" + zombie.model +
+		", spine tag " + tesla_has_spine_tag( zombie ) + ", eyes " + eyes + ")" );
 }
 
 // playFxOnTag raises a fatal script error for a tag the model lacks, so the
@@ -406,6 +428,25 @@ tesla_has_spine_tag( ent )
 	{
 		if ( ent.model == bodies[ i ] )
 			return true;
+	}
+
+	// The full-skeleton gib bodies (character_zm_zombie: _upclean,
+	// _rarmoff_1/2, _larmoff_1/2, _torso_1, 73 bones each).
+	prefixes = character\character_zm_zombie::zombie_gib_prefixes();
+	upper = [];
+	upper[ 0 ] = "upclean";
+	upper[ 1 ] = "rarmoff_1";
+	upper[ 2 ] = "rarmoff_2";
+	upper[ 3 ] = "larmoff_1";
+	upper[ 4 ] = "larmoff_2";
+	upper[ 5 ] = "torso_1";
+	for ( i = 0; i < prefixes.size; i++ )
+	{
+		for ( j = 0; j < upper.size; j++ )
+		{
+			if ( ent.model == prefixes[ i ] + upper[ j ] )
+				return true;
+		}
 	}
 	return false;
 }
@@ -441,6 +482,8 @@ tesla_arc_bolt( origin, target_origin )
 
 	carrier = spawn( "script_model", origin );
 	carrier setModel( "tag_origin" );
+	// Not on the spawn frame: see the header.
+	wait( 0.1 );
 	playFxOnTag( level._effect[ "tesla_bolt" ], carrier, "tag_origin" );
 	carrier moveTo( target_origin, travel );
 	wait( travel );
@@ -500,16 +543,39 @@ on_player_connect()
 //     grenade_fire instead, and melee is not checked.
 //   * tesla_happy's "TGH" pause of the rail is not taken: its notify comes
 //     from tesla_killstreak_sound, which this port does not carry.
+//   * T5's flip-off/flip-on notetracks bracket the reload, so the bulbs go
+//     dark while it plays.  Here the loops read isReloading() every tick
+//     instead, so whatever ends a reload -- completing it, or cancelling it
+//     with a sprint, a melee, ADS, a weapon switch, a throw, going down or
+//     dying -- brings the bulbs back on the next tick.  A reload cancelled
+//     with an empty magazine (the gun reloads itself on its last round)
+//     leaves the clip at 0, where T5 lights nothing; the user asked for the
+//     effects to come back after any cancelled reload, so an empty clip
+//     with rounds in reserve shows the one-round glow.
 tesla_viewmodel_weapon()
 {
+	if ( !isAlive( self ) )
+		return undefined;
 	weapon = self getCurrentWeapon();
 	if ( !isDefined( weapon ) || ( weapon != "tesla_gun_zm" && weapon != "tesla_gun_upgraded_zm" ) )
 		return undefined;
 	if ( is_true( self.zm_tesla_throwing ) )
 		return undefined;
-	if ( self getWeaponAmmoClip( weapon ) <= 0 )
+	if ( self isReloading() )
+		return undefined;
+	if ( self tesla_viewmodel_ammo( weapon ) <= 0 )
 		return undefined;
 	return weapon;
+}
+
+// Rounds the bulbs show: the clip, or one for an empty clip that still has
+// rounds in reserve (a cancelled reload, see above).
+tesla_viewmodel_ammo( weapon )
+{
+	ammo = self getWeaponAmmoClip( weapon );
+	if ( ammo <= 0 && self getWeaponAmmoStock( weapon ) > 0 )
+		ammo = 1;
+	return ammo;
 }
 
 tesla_viewmodel_fx_tube()
@@ -524,7 +590,7 @@ tesla_viewmodel_fx_tube()
 		if ( !isDefined( weapon ) )
 			continue;
 
-		ammo = self getWeaponAmmoClip( weapon );
+		ammo = self tesla_viewmodel_ammo( weapon );
 		if ( weapon == "tesla_gun_upgraded_zm" )
 		{
 			if ( ammo == 3 || ammo == 4 )

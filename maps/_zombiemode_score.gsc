@@ -31,7 +31,7 @@
 //   whenever get_players().size == 1 and the only branch that ever moves
 //   points in T5 as shipped.
 //   play_killstreak_vo             -- commented out in T5.
-//   "ballistic_knife_death" / "thundergun_fling" / "hacker_transfer" /
+//   "hacker_transfer" /
 //   "carpenter_powerup" events -- those weapons and power-ups are not ported.
 //
 // C1's live Zombies HUD displays the purse and point changes beside the player
@@ -91,6 +91,16 @@ player_add_points( event, mod, hit_location )
 
 	case "damage_ads":
 		player_points = int( level.zombie_vars[ "zombie_score_damage_normal" ] * 1.25 );
+		break;
+
+	// T5 _zombiemode_score.gsc:101: a thundergun fling kill pays what the
+	// blast decided (_zombiemode_weap_thundergun::thundergun_fling_zombie).
+	case "thundergun_fling":
+		player_points = mod;
+		if ( isDefined( self.kill_tracker ) )
+			self.kill_tracker++;
+		else
+			self.kill_tracker = 1;
 		break;
 
 	case "rebuild_board":

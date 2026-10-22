@@ -2197,7 +2197,10 @@ zombie_death_event( zombie )
 		if ( isDefined( kill_weapon ) && isSubStr( kill_weapon, "knife_ballistic_" ) && isDefined( mod ) &&
 			( mod == "MOD_MELEE" || mod == "MOD_IMPACT" ) )
 			event = "ballistic_knife_death";
-		attacker maps\_zombiemode_score::player_add_points( event, mod, hit_location );
+		// T5 zombie_death_animscript :3360 pays nothing for a thundergun
+		// fling kill; the blast pays "thundergun_fling" itself.
+		if ( !( isDefined( zombie ) && is_true( zombie.thundergun_death ) ) )
+			attacker maps\_zombiemode_score::player_add_points( event, mod, hit_location );
 
 		if ( !isDefined( attacker.kills ) )
 			attacker.kills = 0;

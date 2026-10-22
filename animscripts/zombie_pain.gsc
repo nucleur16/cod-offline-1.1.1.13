@@ -18,14 +18,14 @@
 //   :51  the nextStandingHitDying rule (the next standing hit kills)
 //   :71  AnimMode("gravity")
 //   :90  getPainAnim, reduced to the two pools CoDOL ships
+//   :28  / :374 playThundergunPainAnim -- the thundergun knockdown and
+//        getup (SetFlaggedAnimKnobAllRestart, as T5).  T5 tests
+//        self.damageweapon; _zombiemode_weap_thundergun::zombie_knockdown
+//        sets .thundergun_knockdown for the hit instead.  Taken before the
+//        disablePain gate, as T5 :28 is.
 //   the SetFlaggedAnim + notetrack wait
 //
 // NOT TAKEN, and why:
-//   playThundergunPainAnim (:22, :28) -- the thundergun knockdown/getup set.
-//     MEASURED: %ai_zombie_thundergun_* IS shipped, but T5 drives the
-//     knockdown through AnimScripted (root-motion alignment onto a landing
-//     spot), which is not a registered builtin.  Left for whoever ports the
-//     thundergun weapon script; this file's hook is self.pain_override.
 //   anim.pain_test, self.a.flamepainTime, specialPain, helmetPop -- SP
 //     systems with no zm caller.
 //   animscripts\face::SayGenericDialogue -- no face tree.
@@ -54,6 +54,17 @@ main()
 	self endon( "death" );
 
 	self setFlashBanged( false );
+
+	// T5 :28.
+	if ( is_true( self.thundergun_knockdown ) )
+	{
+		self.thundergun_knockdown = undefined;
+		if ( !is_true( self.isdog ) )
+		{
+			self playThundergunPainAnim();
+			return;
+		}
+	}
 
 	if ( is_true( self.a.disablePain ) || !is_true( self.allowpain ) )
 		return;
@@ -106,4 +117,87 @@ getPainAnim()
 	if ( randomInt( 2 ) == 0 )
 		return %ai_zombie_walk_on_hands_shot_a;
 	return %ai_zombie_walk_on_hands_shot_b;
+}
+
+// T5 zombie_pain.gsc:374 playThundergunPainAnim.  The fall is chosen by the
+// side the blast came from; a zombie with legs then gets up.  Each wait is
+// bounded by its clip's length (see the contract above).
+playThundergunPainAnim()
+{
+	self notify( "end_play_thundergun_pain_anim" );
+	self endon( "end_play_thundergun_pain_anim" );
+
+	if ( is_true( self.marked_for_death ) )
+		return;
+	if ( !isDefined( level._zombie_knockdowns ) || !isDefined( level._zombie_knockdowns[ "zombie" ] ) )
+		return;
+
+	knockdowns = level._zombie_knockdowns[ "zombie" ];
+	getups = level._zombie_getups[ "zombie" ];
+
+	// This server's damageyaw is the yaw towards the attacker, 0..360; T5's is
+	// the yaw of the damage direction, -180..180.
+	yaw = self.damageyaw + 180;
+	while ( yaw > 180 )
+		yaw -= 360;
+	while ( yaw < -180 )
+		yaw += 360;
+
+	if ( yaw <= -135 || yaw >= 135 )
+	{
+		if ( !is_true( self.has_legs ) )
+			pool = knockdowns[ "front" ][ "no_legs" ];
+		else
+			pool = knockdowns[ "front" ][ "has_legs" ];
+
+		fallAnim = common_scripts\utility::random( pool );
+		if ( isDefined( level.thundergun_last_knockdown_anim ) && level.thundergun_last_knockdown_anim == fallAnim )
+			fallAnim = common_scripts\utility::random( pool );
+
+		level.thundergun_last_knockdown_anim = fallAnim;
+		if ( fallAnim == %ai_zombie_thundergun_hit_deadfallknee || fallAnim == %ai_zombie_thundergun_hit_forwardtoface )
+			getupAnim = common_scripts\utility::random( getups[ "belly" ][ "early" ] );
+		else
+			getupAnim = common_scripts\utility::random( getups[ "back" ][ "early" ] );
+	}
+	else if ( yaw > -135 && yaw < -45 )
+	{
+		fallAnim = common_scripts\utility::random( knockdowns[ "left" ] );
+		getupAnim = common_scripts\utility::random( getups[ "belly" ][ "early" ] );
+	}
+	else if ( yaw > 45 && yaw < 135 )
+	{
+		fallAnim = common_scripts\utility::random( knockdowns[ "right" ] );
+		getupAnim = common_scripts\utility::random( getups[ "belly" ][ "early" ] );
+	}
+	else
+	{
+		fallAnim = common_scripts\utility::random( knockdowns[ "back" ] );
+		getupAnim = common_scripts\utility::random( getups[ "belly" ][ "early" ] );
+	}
+
+	codolPrintLn( "CoDOL zm thundergun: zombie " + self getEntityNumber() + " knockdown, blast yaw " + int( yaw ) );
+
+	self animmode( "gravity" );
+	self setFlaggedAnimKnobAllRestart( "painanim", fallAnim, %body, 1, 0.2, self.animplaybackrate );
+	DoNoteTracksForTime( getAnimLength( fallAnim ), "painanim", self.thundergun_handle_pain_notetracks );
+
+	if ( !isDefined( self ) || !isAlive( self ) || !is_true( self.has_legs ) || is_true( self.marked_for_death ) )
+	{
+		self animmode( "normal" );
+		return; // guy died on us
+	}
+
+	if ( getupAnim == %ai_zombie_thundergun_getup_quick_a && isDefined( self.a.gib_ref ) &&
+		( self.a.gib_ref == "left_arm" || self.a.gib_ref == "right_arm" ) )
+	{
+		self animmode( "normal" );
+		return;
+	}
+
+	self setFlaggedAnimKnobAllRestart( "painanim", getupAnim, %body, 1, 0.2, self.animplaybackrate );
+	DoNoteTracksForTime( getAnimLength( getupAnim ), "painanim" );
+
+	self clearAnim( getupAnim, 0.2 );
+	self animmode( "normal" );
 }
