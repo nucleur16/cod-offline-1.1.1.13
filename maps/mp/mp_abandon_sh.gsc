@@ -8,6 +8,7 @@
 //     entities name in their precache_script keys (ferris wheel, dragon windsocks, banners, birch).
 //     The destructible toys (toy_trashcan_pig, toy_arcade_machine_1/2, toy_pinball_machine_chi,
 //     toy_electricbox4) are in common_scripts/_destructible_types.gsc.
+//   * carnival games: maps/mp/mp_abandon_sh_carnival.gsc (animal race, pitching game, lights).
 //   * compass: compass_map_mp_abandon_sh ships in the zone.
 //   * ambient alias: ambient_mp_abandon (common_mp), as mp_abandon_sh_mk.
 main()
@@ -15,6 +16,7 @@ main()
 	maps\mp\mp_abandon_sh_precache::main();
 	maps\createart\mp_abandon_sh_art::main();
 	maps\mp\mp_abandon_sh_fx::main();
+	maps\mp\mp_abandon_sh_carnival::precache();
 
 	maps\mp\_load::main();
 
@@ -29,4 +31,7 @@ main()
 
 	game[ "attackers" ] = "allies";
 	game[ "defenders" ] = "axis";
+
+	// carnival games (animal race, pitching game) and their lights; no fireworks
+	maps\mp\mp_abandon_sh_carnival::main();
 }
