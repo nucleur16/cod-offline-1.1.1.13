@@ -1595,6 +1595,30 @@ init_standard_zombie_anims()
 	level._zombie_stumpy_melee[ "zombie" ][ 0 ] = %ai_zombie_walk_on_hands_shot_a;
 	level._zombie_stumpy_melee[ "zombie" ][ 1 ] = %ai_zombie_walk_on_hands_shot_b;
 
+	// T5's "fire" notetracks for the melee clips, as fractions of the clip.
+	// MEASURED 2026-10-21 in real T5 (Plutonium t5cap "dump",
+	// getNotetrackTimes on zombie_cod5_prototype).  C1 ships the same clips
+	// at the same lengths with several notes moved; zombie_combat.gsc lands
+	// the hits on these instead (docs/CODOL_ZOMBIE_T5_MEASURED.md section 3).
+	level._zombie_t5_melee_fire = [];
+	zombie_t5_melee_fire( level._zombie_melee[ "zombie" ][ 0 ], array5( 0.097, 0.325, 0.534, 0.623, 0.744 ) );
+	zombie_t5_melee_fire( level._zombie_melee[ "zombie" ][ 1 ], array1( 0.258 ) );
+	zombie_t5_melee_fire( level._zombie_melee[ "zombie" ][ 2 ], array2( 0.042, 0.7 ) );
+	zombie_t5_melee_fire( level._zombie_melee[ "zombie" ][ 3 ], array2( 0.462, 0.722 ) );
+	zombie_t5_melee_fire( level._zombie_melee[ "zombie" ][ 4 ], array2( 0.414, 0.6 ) );
+	zombie_t5_melee_fire( level._zombie_melee[ "zombie" ][ 5 ], array2( 0.26, 0.42 ) );
+	zombie_t5_melee_fire( level._zombie_walk_melee[ "zombie" ][ 0 ], array1( 0.187 ) );
+	zombie_t5_melee_fire( level._zombie_walk_melee[ "zombie" ][ 1 ], array1( 0.595 ) );
+	zombie_t5_melee_fire( level._zombie_walk_melee[ "zombie" ][ 2 ], array1( 0.378 ) );
+	zombie_t5_melee_fire( level._zombie_walk_melee[ "zombie" ][ 3 ], array1( 0.431 ) );
+	zombie_t5_melee_fire( level._zombie_run_melee[ "zombie" ][ 0 ], array1( 0.666 ) );
+	zombie_t5_melee_fire( level._zombie_run_melee[ "zombie" ][ 1 ], array1( 0.227 ) );
+	zombie_t5_melee_fire( level._zombie_run_melee[ "zombie" ][ 2 ], array1( 0.107 ) );
+	zombie_t5_melee_fire( level._zombie_melee_crawl[ "zombie" ][ 0 ], array2( 0.303, 0.683 ) );
+	zombie_t5_melee_fire( level._zombie_melee_crawl[ "zombie" ][ 1 ], array1( 0.279 ) );
+	zombie_t5_melee_fire( level._zombie_stumpy_melee[ "zombie" ][ 0 ], array1( 0.223 ) );
+	zombie_t5_melee_fire( level._zombie_stumpy_melee[ "zombie" ][ 1 ], array1( 0.369 ) );
+
 	// The self.deathanim pool.  T5 :1270.
 	level._zombie_deaths = [];
 	level._zombie_deaths[ "zombie" ] = [];
@@ -1689,4 +1713,48 @@ init_standard_zombie_anims()
 
 	if ( isDefined( level.zombie_anim_override ) )
 		[[ level.zombie_anim_override ]]();
+}
+
+// T5 melee hit schedule (see the melee tables above).
+zombie_t5_melee_fire( clip, fractions )
+{
+	entry = spawnStruct();
+	entry.clip = clip;
+	entry.fractions = fractions;
+	level._zombie_t5_melee_fire[ level._zombie_t5_melee_fire.size ] = entry;
+}
+
+zombie_t5_melee_fire_times( clip )
+{
+	if ( !isDefined( level._zombie_t5_melee_fire ) || getDvarInt( "scr_zm_t5_melee_timing" ) < 0 )
+		return undefined;
+	for ( i = 0; i < level._zombie_t5_melee_fire.size; i++ )
+	{
+		if ( level._zombie_t5_melee_fire[ i ].clip == clip )
+			return level._zombie_t5_melee_fire[ i ].fractions;
+	}
+	return undefined;
+}
+
+array1( a )
+{
+	r = [];
+	r[ 0 ] = a;
+	return r;
+}
+
+array2( a, b )
+{
+	r = array1( a );
+	r[ 1 ] = b;
+	return r;
+}
+
+array5( a, b, c, d, e )
+{
+	r = array2( a, b );
+	r[ 2 ] = c;
+	r[ 3 ] = d;
+	r[ 4 ] = e;
+	return r;
 }

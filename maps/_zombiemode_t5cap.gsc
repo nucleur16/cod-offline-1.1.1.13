@@ -58,8 +58,15 @@ cap_spawn_dog()
 	maps\_zombiemode_ai_dogs::spawn_dog( maps\_zombiemode_ai_dogs::dog_spawn_location( p ), p );
 }
 
+cap_make_crawler()
+{
+	self.a.gib_ref = "left_leg";
+	self maps\_zombiemode_spawner::make_crawler();
+}
+
 cap_platform_init()
 {
+	level.cap_swing_hits = true;
 }
 
 cap_as()
@@ -306,6 +313,8 @@ cap_ai_events()
 	self thread cap_simple( "risen" );
 	self thread cap_simple( "zombie_acquire_enemy" );
 	self thread cap_mpick();
+	if ( isdefined( level.cap_swing_hits ) )
+		self thread cap_simple( "swing_hit" );
 	self thread cap_damage();
 	self thread cap_death();
 	for ( ;; )
@@ -349,7 +358,10 @@ cap_simple( msg )
 			continue;
 		}
 		last = t;
-		w( "E " + t + " " + id + " " + msg + " o=" + vstr( self.origin ) );
+		extra = "";
+		if ( isdefined( self.enemy ) )
+			extra = " ed=" + int( distance( self.origin, self.enemy.origin ) );
+		w( "E " + t + " " + id + " " + msg + " o=" + vstr( self.origin ) + extra );
 	}
 }
 
@@ -393,7 +405,7 @@ cap_player_watch()
 cap_move_player()
 {
 	// t5cap_path "x,y,z;x,y,z;..." : walk the player around at t5cap_pspeed u/s
-	parts = strtok( getdvar( "t5cap_path" ), ";" );
+	parts = strtok( getdvar( "t5cap_path" ), "|" );
 	pts = [];
 	for ( i = 0; i < parts.size; i++ )
 	{
@@ -449,9 +461,7 @@ cap_crawlers()
 			z.cap_crawl_done = true;
 			if ( z.cap_id % 2 )
 				continue;
-			z.a.gib_ref = "no_legs";
-			z.damagelocation = "left_leg_lower";
-			z dodamage( 1, z.origin + ( 0, 0, 10 ), level.cap_player );
+			z cap_make_crawler();
 			w( "E " + gettime() + " " + z.cap_id + " cap_crawl_request" );
 		}
 		wait 0.5;
@@ -506,6 +516,50 @@ cap_dump_all()
 	}
 	if ( isdefined( level.scr_anim["zombie_dog"] ) )
 		cap_dump_set( "dog", level.scr_anim["zombie_dog"] );
+	ks = getarraykeys( level.scr_anim["zombie"] );
+	for ( i = 0; i < ks.size; i++ )
+	{
+		v = level.scr_anim["zombie"][ks[i]];
+		if ( isdefined( v ) && !isarray( v ) )
+			cap_dump_profile( "scr_anim." + ks[i], v );
+	}
+	if ( isdefined( anim.dogAnims ) )
+	{
+		sets = getarraykeys( anim.dogAnims );
+		for ( i = 0; i < sets.size; i++ )
+		{
+			mv = anim.dogAnims[sets[i]].move;
+			if ( !isdefined( mv ) )
+				continue;
+			mk = getarraykeys( mv );
+			for ( j = 0; j < mk.size; j++ )
+			{
+				if ( !isarray( mv[mk[j]] ) )
+				{
+					cap_dump_anim( "dogmove." + sets[i] + "." + mk[j], mv[mk[j]] );
+					cap_dump_profile( "dogmove." + sets[i] + "." + mk[j], mv[mk[j]] );
+				}
+			}
+		}
+	}
+}
+
+// Cumulative 2D root travel at 40 even steps of the clip.
+cap_dump_profile( name, a )
+{
+	line = "R " + name + " len=" + getanimlength( a ) + " d=0";
+	prev = getmovedelta( a, 0, 0 );
+	total = 0;
+	for ( i = 1; i <= 40; i++ )
+	{
+		cur = getmovedelta( a, 0, i / 40 );
+		dx = cur[0] - prev[0];
+		dy = cur[1] - prev[1];
+		total += sqrt( dx * dx + dy * dy );
+		prev = cur;
+		line += "," + int( total * 100 ) / 100;
+	}
+	w( line );
 }
 
 cap_dump_set( tag, arr )

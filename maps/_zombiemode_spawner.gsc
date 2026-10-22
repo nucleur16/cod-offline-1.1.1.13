@@ -596,11 +596,20 @@ zm_dvar_int( name, default_value )
 // see is skipped (no zombie appears in view), as is one another zombie is
 // standing on; when none is left the authored spawner is used, which is
 // the old behaviour.  scr_zm_spawn_near_window 0 restores it everywhere.
+//
+// OFF BY DEFAULT since 2026-10-21 (docs/CODOL_ZOMBIE_T5_MEASURED.md): the
+// premise above is wrong.  MEASURED in real T5 (Plutonium t5cap,
+// zombie_cod5_prototype round 1): T5 spawns at the same far structs --
+// (1808 -1398), (-1324 -1056), (1971 -1155), (-1393 -62) -- and its walkers
+// take 29-49 s (median 37.6) from spawn to the first board, 53 s to get
+// inside.  Near-window spawning cut that to 8 s / 25 s.  With it off CoDOL
+// measures 44 s / 52 s and every zombie reaches its window.
+// scr_zm_spawn_near_window 1 turns it back on.
 // --------------------------------------------------------------------------
 
 near_window_spawn( spawn_point )
 {
-	if ( zm_dvar_int( "scr_zm_spawn_near_window", 1 ) <= 0 )
+	if ( zm_dvar_int( "scr_zm_spawn_near_window", 0 ) <= 0 )
 		return undefined;
 	if ( !isDefined( spawn_point ) || !isDefined( spawn_point.script_noteworthy ) ||
 		spawn_point.script_noteworthy != "zombie_spawner" )
