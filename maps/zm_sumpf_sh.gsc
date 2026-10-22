@@ -61,7 +61,9 @@
 //     C1 features no zm module of this server reads yet.
 //   * setup_water_physics (phys_buoyancy client dvar), the
 //     water_burst_overwrite rise effects, SetCullDist and the light-grid
-//     dvars: client presentation T5 sets from its level script.
+//     dvars: client presentation T5 sets from its level script.  The
+//     swamp's WADING (slow, no prone) is not script in T5 but engine water;
+//     see sumpf_water below.
 //   * clientnotify, the CSC radio/zipline/perk effects: no CSC VM here.
 //
 // DELIBERATELY NOT HERE (as zm_asylum_sh.gsc): maps\mp\_load, the
@@ -93,6 +95,32 @@ main()
 	level thread maps\zm_sumpf_sh_logtrap::init();
 	level thread sumpf_book_useage();
 	level thread sumpf_fog();
+	sumpf_water();
+}
+
+// --------------------------------------------------------------------------
+// Swamp water.  In T5 the wading is engine behaviour, not script: pmove reads
+// the water's height over the player's feet (CM_GetWaterHeight, PM_GetWaterLevel:
+// level 1 from 3 units deep, 2 from 24, 3 from 45) and then scales movement by
+// 1 - 0.4 * level / 3, refuses prone from level 1 (raising a prone player to
+// crouch), refuses crouch and sprint from level 2.  The server does the same
+// once the level declares its water (src/codol/player/codol_water.c); C1's
+// prediction follows through the published speed scale and stance/sprint
+// locks.  Zombies and hounds are not slowed: T5 has no actor water term.
+//
+// The height.  C1's zm_sumpf_sh has no water volume (MEASURED 2026-10-22:
+// codol_isPointInWater is false at every riser and mud-bubble struct from the
+// swamp floor to 120 units above it; the bullet trace lands on "mud").  T5's
+// own createfx puts the swamp's low fog ON the water: fx_fog_low_floor_sm at
+// z -685.875 / -686.875 / -687.875 over floors this map has at -716..-741
+// (the same file's maggots sit within 3 units of this map's hut floors, so
+// the two share their geometry).  The swamp floor is mostly -720..-730, so a
+// player wades at level 2; the deepest pockets (-740) reach level 3.
+// --------------------------------------------------------------------------
+
+sumpf_water()
+{
+	codol_setLevelWaterHeight( -687 );
 }
 
 // --------------------------------------------------------------------------
