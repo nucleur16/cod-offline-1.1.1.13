@@ -1,0 +1,10 @@
+# localize entries in zone order: NAME<TAB>value (\n \r \t \\ escaped); values are gbk in the zone
+MPUI_ABANDON_SH	游乐场
+MPUI_ABANDON_SH_MK	大圣游乐园
+MPUI_CHA_QUAD	修道院
+MPUI_DESC_MAP_ABANDON_SH	中型主题公园地图
+MPUI_DESC_MAP_CHA_QUAD	立于绝壁之上，与世隔绝的一座修道院
+MPUI_DESC_MAP_MIDEAST	绿洲城镇广场
+MPUI_DESC_MAP_SEATOWN	在活力四射的滨海小镇里逗留一下午，与敌人在狭窄的街道里，来个狂热的近距离遭遇战
+MPUI_MIDEAST	绿洲
+MPUI_SEATOWN	滨海镇

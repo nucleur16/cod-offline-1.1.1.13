@@ -1,0 +1,9 @@
+# localize entries in zone order: NAME<TAB>value (\n \r \t \\ escaped); values are ascii in the zone
+CODOL_MODE_INFECT_NAME	Infected
+CODOL_MODE_INFECT_DESC	Survive against cyborg infected. Fallen survivors join the infected.
+CODOL_MODE_GUN_NAME	Gun Game
+CODOL_MODE_GUN_DESC	Advance through weapons by eliminating players.
+CODOL_MODE_OIC_NAME	One in the Chamber
+CODOL_MODE_OIC_DESC	Survive with limited ammunition.
+CODOL_MODE_SHRP_NAME	Sharpshooter
+CODOL_MODE_SHRP_DESC	Fight with changing weapons.

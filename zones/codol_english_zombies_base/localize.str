@@ -1,0 +1,25 @@
+# localize entries in zone order: NAME<TAB>value (\n \r \t \\ escaped); values are ascii in the zone
+ZOMBIE_WEAPON_COLTANACONDA	Press [{+activate}] to buy the .44 Magnum [Cost: &&1]
+ZOMBIE_WEAPON_BERETTA	Press [{+activate}] to buy the M9 [Cost: &&1]
+ZOMBIE_WEAPON_UMP45	Press ^3[{+activate}]^7 to buy the UMP45 [Cost: &&1]
+ZOMBIE_WEAPON_KRISS	Press [{+activate}] to buy the Vector [Cost: &&1]
+ZOMBIE_WEAPON_TMP	Press ^3[{+activate}]^7 to buy the TMP [Cost: &&1]
+ZOMBIE_WEAPON_STICKY	Press [{+activate}] to buy a Sticky Grenade [Cost: 10]
+ZOMBIE_DISGUISE	Disguise
+PERKS_PAINKILLER_ZM	Painkiller\n
+CHALLENGE_ZM_PROTOTYPE_DIFFICULTY1_DESC	Finish Outpost on Easy: &&1
+CHALLENGE_ZM_PROTOTYPE_DIFFICULTY2_DESC	Finish Outpost on Normal: &&1
+CHALLENGE_ZM_PROTOTYPE_DIFFICULTY3_DESC	Finish Outpost on Hard: &&1
+CHALLENGE_ZM_ASYLUM_DIFFICULTY1_DESC	Finish Cyborg Lab on Easy: &&1
+CHALLENGE_ZM_ASYLUM_DIFFICULTY2_DESC	Finish Cyborg Lab on Normal: &&1
+CHALLENGE_ZM_ASYLUM_DIFFICULTY3_DESC	Finish Cyborg Lab on Hard: &&1
+CHALLENGE_ZM_FACTORY_DIFFICULTY1_DESC	Finish Cyborg Factory on Easy: &&1
+CHALLENGE_ZM_FACTORY_DIFFICULTY2_DESC	Finish Cyborg Factory on Normal: &&1
+CHALLENGE_ZM_FACTORY_DIFFICULTY3_DESC	Finish Cyborg Factory on Hard: &&1
+ZOMBIE_WEAPON_USP	Press [{+activate}] to buy UP-T45 [Cost: &&1]
+SUBTITLE_ZOMBIE_LU_BU_LB_PERSONALITY_11	^2Lu Bu: ^7I hope the Mystery Box holds roses for my beloved Diaochan.
+SUBTITLE_ZOMBIE_CORTEX_CRTX_BACKSTORY_05	^1Mysterious Voice: ^7Produce nanobots at full speed.
+SUBTITLE_ZOMBIE_CORTEX_CRTX_BACKSTORY_06	^1Mysterious Voice: ^7Nanobots have been deployed in every area.
+ZOMBIE_THUNDERGUN	Thunder Gun
+ZOMBIE_THUNDERGUN_UPGRADED	Zeus Cannon
+WEAPON_THUNDERGUN	Thunder Gun
