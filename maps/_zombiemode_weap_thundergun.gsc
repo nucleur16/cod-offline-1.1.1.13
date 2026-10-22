@@ -190,12 +190,34 @@ tg_anim( name )
 	a = codol_getAnim( "generic_human", name );
 	if ( isDefined( a ) )
 		return a;
+	// zm_sumpf_sh's own animlist ships most of T5's knockdown set (the
+	// server logs it: "CoDOL animlists: zm_sumpf_sh.animlist ... 48 entries")
+	// but not these three; a sibling T5 clip comes before the C1 stand-in.
+	sibling = undefined;
+	switch ( name )
+	{
+	case "ai_zombie_thundergun_hit_forwardtoface":
+		sibling = "ai_zombie_thundergun_hit_faceplant";
+		break;
+	case "ai_zombie_thundergun_hit_deadfallknee":
+		sibling = "ai_zombie_thundergun_hit_stumblefall";
+		break;
+	case "ai_zombie_thundergun_getup_quick_a":
+		sibling = "ai_zombie_thundergun_getup_a";
+		break;
+	}
+	if ( isDefined( sibling ) )
+	{
+		a = codol_getAnim( "generic_human", sibling );
+		if ( isDefined( a ) )
+			return a;
+	}
 	return codol_getAnim( "generic_human", tg_c1_standin( name ) );
 }
 
-// C1's stand-ins for T5's thundergun knockdown clips (none of which C1
-// ships; its zombie animlists have no fall or getup at all, checked against
-// common_zombie and every zm map list, 2026-10-21):
+// C1's stand-ins for T5's thundergun knockdown clips where the map ships
+// none of them: common_zombie and the Prototype / Asylum / Training lists
+// have no fall or getup at all (2026-10-21); only zm_sumpf_sh carries T5's:
 //   the falls    -> ai_zombie_humangun_react, C1's stagger-back hit reaction
 //                   (1.33 s; T5's falls run 1.3-2.4 s);
 //   a crawler    -> ai_zombie_walk_on_hands_shot_a/b, the crawler's own hit
