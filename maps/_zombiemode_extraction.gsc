@@ -139,6 +139,11 @@ ternary_string( cond, a, b )
 
 find_routes()
 {
+	// A map whose own rescue structs are unusable flies a route written here.
+	routes = map_routes();
+	if ( isDefined( routes ) )
+		return routes;
+
 	routes = [];
 	dests = get_struct_array( "rescue_dest", "targetname" );
 	starts = get_struct_array( "blackhawk_minigun", "script_noteworthy" );
@@ -185,15 +190,31 @@ nearest_start( dest, starts )
 
 build_route( dest, start )
 {
+	chain = [];
+	node = start;
+	for ( guard = 0; isDefined( node ) && guard < 32; guard++ )
+	{
+		chain[ chain.size ] = node;
+		if ( !isDefined( node.target ) )
+			break;
+		node = get_struct( node.target, "targetname" );
+	}
+	return route_from_chain( dest, chain );
+}
+
+// chain: the helicopter's nodes in flight order, the hover point marked
+// script_noteworthy "stop".
+route_from_chain( dest, chain )
+{
 	route = spawnStruct();
 	route.dest = dest;
 	route.inbound = [];
 	route.outbound = [];
 	route.hover = undefined;
 
-	node = start;
-	for ( guard = 0; isDefined( node ) && guard < 32; guard++ )
+	for ( i = 0; i < chain.size; i++ )
 	{
+		node = chain[ i ];
 		if ( !isDefined( route.hover ) )
 		{
 			route.inbound[ route.inbound.size ] = node;
@@ -202,10 +223,6 @@ build_route( dest, start )
 		}
 		else
 			route.outbound[ route.outbound.size ] = node;
-
-		if ( !isDefined( node.target ) )
-			break;
-		node = get_struct( node.target, "targetname" );
 	}
 
 	if ( !isDefined( route.hover ) || route.inbound.size < 2 )
@@ -223,6 +240,70 @@ build_route( dest, start )
 		route.lz = trace[ "position" ];
 
 	return route;
+}
+
+// Routes written here, for maps whose rescue structs cannot be flown.
+// undefined: use the map's own.
+map_routes()
+{
+	switch ( getDvar( "mapname" ) )
+	{
+	case "zm_sumpf_sh":
+		return sumpf_routes();
+	}
+	return undefined;
+}
+
+// Shi No Numa.  The map's rescue_dest and helicopter structs are Prototype's
+// prefab with Prototype's coordinates (rescue_dest (-224, -32, 216) and
+// (1024, 704, 216), the helicopter from (955, -4536, 216)): 4,000 units west
+// of the swamp, over the void at the bottom of the world.  The rescue here
+// lands at the center building's north-east balcony: the upstairs deck
+// (center_building_upstairs_buy, z -528, railing at x 10790).  The
+// helicopter starts high over the open water south-east of the building,
+// inside the world (its ceiling is z 3128), comes down over that water
+// (no canopy above (11200..11700, -300..650)), stops, slides north under
+// the canopy and hovers beside the deck, nose north, its left door at the
+// railing.  It leaves the same way.  The hover point is clear of the roof,
+// the railing and the trees for the rotor's 320-unit radius (bulletTrace
+// rays at the rotor's height); the leaning trunk over the deck's east side
+// is at z +130..+240, far above it.
+sumpf_routes()
+{
+	dest = route_point( ( 10740, 1120, -500 ), 0 );
+
+	chain = [];
+	chain[ chain.size ] = route_point( ( 11900, -150, 1600 ), 180 );	// above the south-east water
+	descend = route_point( ( 11200, -150, 300 ), 105 );				// down over the open water
+	descend.zm_stop = true;
+	chain[ chain.size ] = descend;
+	approach = route_point( ( 11000, 550, -330 ), 100 );				// under the canopy, south of the deck
+	approach.zm_speed = 25;
+	approach.zm_stop = true;
+	chain[ chain.size ] = approach;
+	hover = route_point( ( 10900, 1160, -400 ), 90 );					// beside the balcony
+	hover.script_noteworthy = "stop";
+	hover.zm_speed = 12;
+	chain[ chain.size ] = hover;
+	leave = route_point( ( 11000, 550, -300 ), 280 );					// back out under the canopy
+	leave.zm_speed = 20;
+	chain[ chain.size ] = leave;
+	chain[ chain.size ] = route_point( ( 11200, -150, 400 ), 285 );	// over the water
+	chain[ chain.size ] = route_point( ( 11900, -150, 1600 ), 0 );		// and up
+
+	routes = [];
+	route = route_from_chain( dest, chain );
+	if ( isDefined( route ) )
+		routes[ 0 ] = route;
+	return routes;
+}
+
+route_point( origin, yaw )
+{
+	s = spawnStruct();
+	s.origin = origin;
+	s.angles = ( 0, yaw, 0 );
+	return s;
 }
 
 struct_angles( s )
@@ -473,14 +554,30 @@ radio_all( alias, delay )
 
 HELI_SPEED = 50;	// mph, the vehicle's cruise (MP _helicopter uses 30..80)
 HELI_ACCEL = 20;
+HELI_DECEL = 30;	// mph/s; the native default (half the acceleration) drifts past a hover point
 HELI_UPS = 800;		// units/s, the mover's cruise; ~ HELI_SPEED * 17.6
 
 route_flight_time( route )
 {
 	total = 0;
 	for ( i = 1; i < route.inbound.size; i++ )
-		total += distance( route.inbound[ i - 1 ].origin, route.inbound[ i ].origin );
-	return total / HELI_UPS + 2;
+		total += distance( route.inbound[ i - 1 ].origin, route.inbound[ i ].origin ) / node_ups( route.inbound[ i ] );
+	return total + 2;
+}
+
+// A node may set the speed of the leg flown to it (zm_speed, mph) and stop
+// there before going on (zm_stop): a slow, straight final approach keeps the
+// vehicle's momentum from carrying it past a hover point in tight spots.
+node_speed( node )
+{
+	if ( isDefined( node.zm_speed ) )
+		return node.zm_speed;
+	return HELI_SPEED;
+}
+
+node_ups( node )
+{
+	return HELI_UPS * node_speed( node ) / HELI_SPEED;
 }
 
 spawn_rescue_heli( route )
@@ -500,7 +597,7 @@ spawn_rescue_heli( route )
 		if ( isDefined( heli ) )
 		{
 			heli.zm_vehicle = true;
-			heli Vehicle_SetSpeed( HELI_SPEED, HELI_ACCEL );
+			heli Vehicle_SetSpeed( HELI_SPEED, HELI_ACCEL, HELI_DECEL );
 			heli setYawSpeed( 60, 30 );
 			heli setMaxPitchRoll( 15, 15 );
 			heli setHoverParams( 20, 10, 5 );
@@ -546,8 +643,12 @@ heli_fly_to( node, stop )
 	if ( !isDefined( self ) )
 		return;
 
+	if ( is_true( node.zm_stop ) )
+		stop = true;
+
 	if ( is_true( self.zm_vehicle ) )
 	{
+		self Vehicle_SetSpeed( node_speed( node ), HELI_ACCEL, HELI_DECEL );
 		self setGoalYaw( struct_angles( node )[ 1 ] );
 		self setVehGoalPos( node.origin, stop );
 		self heli_wait_goal( node, stop );
@@ -555,7 +656,7 @@ heli_fly_to( node, stop )
 	}
 
 	dist = distance( self.origin, node.origin );
-	time = dist / HELI_UPS;
+	time = dist / node_ups( node );
 	if ( time < 0.5 )
 		time = 0.5;
 	accel = 0;
@@ -574,7 +675,7 @@ heli_wait_goal( node, stop )
 	self endon( "death" );
 
 	dist = distance( self.origin, node.origin );
-	limit = dist / ( HELI_SPEED * 17.6 ) * 2.5 + 4;
+	limit = dist / ( node_speed( node ) * 17.6 ) * 2.5 + 4;
 	end = getTime() + int( limit * 1000 );
 
 	if ( !stop )
