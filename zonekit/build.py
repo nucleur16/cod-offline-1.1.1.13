@@ -6,7 +6,7 @@ import collections
 import json
 import os
 
-from . import codecs, container, gfx, manifest, zoneimage
+from . import codecs, container, gfx, manifest, shipping, zoneimage, zonelist
 from .decompile import MARGIN
 
 
@@ -19,11 +19,21 @@ def load(repo, zone_name):
         return manifest.read(f.read())
 
 
-def assemble(repo, zone_name, m, stocks, ffdec=None, compile_as=False, log=print):
-    """-> zone image bytes."""
+def assemble(repo, zone_name, m, stocks, ffdec=None, compile_as=False, log=print, maps=None):
+    """-> zone image bytes (the sources as they are, or with `maps` filtered: see assemble_filtered)."""
+    return assemble_filtered(repo, zone_name, m, stocks, ffdec, compile_as, log, maps)[0]
+
+
+def assemble_filtered(repo, zone_name, m, stocks, ffdec=None, compile_as=False, log=print, maps=None):
+    """-> (zone image bytes, shipping.Plan). `maps` (shipping.ShippingMaps) leaves out the per-usermap data
+    (zonelist `maps=`) of the maps that build does not ship; None builds the sources as they are."""
     zdir = os.path.join(repo, "zones", zone_name)
     for s in m.settings.get("stock", []):
         stocks.index(s)
+    try:
+        p = shipping.plan(repo, zone_name, m, zonelist.ZONES.get(zone_name), stocks, maps)
+    except shipping.ShippingError as e:
+        raise BuildError(str(e))
     loc = collections.defaultdict(collections.deque)
     if "localize" in m.settings:
         rel, enc = m.settings["localize"][:2]
@@ -31,50 +41,12 @@ def assemble(repo, zone_name, m, stocks, ffdec=None, compile_as=False, log=print
             for name, value in codecs.read_str(f.read(), enc):
                 loc[name].append(value)
     assets = []
-    for t, name, p in m.assets:
-        tid = zoneimage.type_id(t)
-        ptr = int(p.get("ptr", "0xffffffff"), 0)
-        f = p.get("file")
-        if f:
-            if f.startswith("@"):
-                kind, _, sha = f[1:].partition(":")
-                blob = stocks.blob(sha)
-                if blob is None:
-                    raise BuildError("%s %s: blob %s not found in the %s zones (%s)" % (
-                        t, name, sha, kind, "pass --game"))
-            else:
-                with open(os.path.join(zdir, f), "rb") as g:
-                    blob = g.read()
-        elif tid == 36:
-            path = os.path.join(zdir, "rawfile", name)
-            if "gfx" in p:
-                pdir = path + ".gfxpatch"
-                stock_movie = stocks.rawfile(p["gfx"])
-                data = gfx.build_patch(pdir, stock_movie)
-                data = compile_as_files(pdir, data, stock_movie, ffdec, compile_as, log)
-            else:
-                with open(path, "rb") as g:
-                    data = g.read()
-            blob = codecs.encode_rawfile(name, data, p)
-        elif tid == 27:
-            if not loc[name]:
-                raise BuildError("localize %s: no entry left in localize.str" % name)
-            blob = codecs.encode_localize(name, loc[name].popleft())
-        elif tid == 10:
-            levels, w, h = codecs.read_image_files(os.path.join(zdir, "image", name), int(p["levels"]))
-            blob = codecs.encode_image(name, levels, w, h, p)
-        elif tid == 37:
-            enc = p.get("enc", "ascii")
-            with open(os.path.join(zdir, "stringtable", name), encoding="utf-8", newline="") as g:
-                rows = codecs.read_csv(g.read(), enc)
-            blob = codecs.encode_stringtable(name, rows, p)
-        else:
-            raise BuildError("%s %s: no file= and no codec" % (t, name))
-        if "len" in p and len(blob) != int(p["len"]):
-            log("  warning: %s %s is now %d bytes, was %s: this zone has back references (a C#-written zone), so a "
-                "resized asset can move data later assets point at; check it in game, or rebuild with its producer"
-                % (t, name, len(blob), p["len"]))
-        assets.append((tid, ptr, blob))
+    for t, name, q in m.assets:
+        if (t, name) in p.drop:
+            if t == "localize" and loc[name]:
+                loc[name].popleft()
+            continue
+        assets.append(asset_blob(zdir, t, name, q, loc, stocks, p, ffdec, compile_as, log))
     left = [n for n, q in loc.items() if q]
     if left:
         log("  warning: localize.str entries not named in the manifest: %s" % ", ".join(left[:8]))
@@ -91,7 +63,56 @@ def assemble(repo, zone_name, m, stocks, ffdec=None, compile_as=False, log=print
                   for v in blocks]
     if not img.flat and any(v == "auto" for v in blocks):
         raise BuildError("auto block size in a zone with script strings")
-    return zoneimage.assemble(img)
+    return zoneimage.assemble(img), p
+
+
+def asset_blob(zdir, t, name, q, loc, stocks, p, ffdec, compile_as, log):
+    """One manifest line -> (type id, pointer field, blob); `p` is the zone's shipping.Plan."""
+    tid = zoneimage.type_id(t)
+    ptr = int(q.get("ptr", "0xffffffff"), 0)
+    f = q.get("file")
+    if f:
+        if f.startswith("@"):
+            kind, _, sha = f[1:].partition(":")
+            blob = stocks.blob(sha)
+            if blob is None:
+                raise BuildError("%s %s: blob %s not found in the %s zones (%s)" % (
+                    t, name, sha, kind, "pass --game"))
+        else:
+            with open(os.path.join(zdir, f), "rb") as g:
+                blob = g.read()
+    elif tid == 36:
+        path = os.path.join(zdir, "rawfile", name)
+        if "gfx" in q:
+            pdir = path + ".gfxpatch"
+            stock_movie = stocks.rawfile(q["gfx"])
+            data = gfx.build_patch(pdir, stock_movie)
+            data = compile_as_files(pdir, data, stock_movie, ffdec, compile_as, log)
+        else:
+            with open(path, "rb") as g:
+                data = g.read()
+            data = p.rawfiles.get(name, data)
+        blob = codecs.encode_rawfile(name, data, q)
+    elif tid == 27:
+        if not loc[name]:
+            raise BuildError("localize %s: no entry left in localize.str" % name)
+        blob = codecs.encode_localize(name, loc[name].popleft())
+    elif tid == 10:
+        levels, w, h = codecs.read_image_files(os.path.join(zdir, "image", name), int(q["levels"]))
+        blob = codecs.encode_image(name, levels, w, h, q)
+    elif tid == 37:
+        enc = q.get("enc", "ascii")
+        with open(os.path.join(zdir, "stringtable", name), encoding="utf-8", newline="") as g:
+            rows = codecs.read_csv(g.read(), enc)
+        rows = p.rows.get(name, rows)
+        blob = codecs.encode_stringtable(name, rows, q)
+    else:
+        raise BuildError("%s %s: no file= and no codec" % (t, name))
+    if "len" in q and len(blob) != int(q["len"]):
+        log("  warning: %s %s is now %d bytes, was %s: this zone has back references (a C#-written zone), so a "
+            "resized asset can move data later assets point at; check it in game, or rebuild with its producer"
+            % (t, name, len(blob), q["len"]))
+    return tid, ptr, blob
 
 
 def compile_as_files(pdir, movie, stock_movie, ffdec, all_sources, log):
@@ -119,9 +140,10 @@ def compile_as_files(pdir, movie, stock_movie, ffdec, all_sources, log):
     return movie
 
 
-def build(repo, zone_name, exe, stocks, out_root, fresh_key=False, ffdec=None, compile_as=False, log=print):
+def build(repo, zone_name, exe, stocks, out_root, fresh_key=False, ffdec=None, compile_as=False, log=print, maps=None):
+    """-> (output path, zone image, manifest, shipping.Plan)."""
     m = load(repo, zone_name)
-    zone = assemble(repo, zone_name, m, stocks, ffdec=ffdec, compile_as=compile_as, log=log)
+    zone, plan = assemble_filtered(repo, zone_name, m, stocks, ffdec=ffdec, compile_as=compile_as, log=log, maps=maps)
     ft = None if fresh_key else tuple(int(v, 0) for v in m.settings["filetime"])
     rsa = None if fresh_key else bytes.fromhex(m.get("rsa"))
     data = container.write_unsigned(zone, exe, filetime=ft, rsa_blob=rsa, level=int(m.get("zlib", "9")))
@@ -130,4 +152,4 @@ def build(repo, zone_name, exe, stocks, out_root, fresh_key=False, ffdec=None, c
     out = os.path.join(out_dir, zone_name + ".ff")
     with open(out, "wb") as f:
         f.write(data)
-    return out, zone, m
+    return out, zone, m, plan

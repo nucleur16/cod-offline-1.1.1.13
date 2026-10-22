@@ -10,7 +10,8 @@ to the exe. See the comments in `kernel33.c` for addresses and reasoning.
    and `codoMP_client_shipRetail.exe.bak`; also writes `unpacked.z`).
 2. Put `Kernel33.dll` next to `codoMP_client_shipRetail.exe` (TenProxy.dll + TerSafe.dll must still be there).
 3. `python build_zones.py` builds every patch zone into `output\` with the install's layout (see "Patch
-   zones" below). Copy `output\client_shipRetail\patch\*` into `<game>\client_shipRetail\patch\` (create the
+   zones" below); it is the shipping build, with only the usermaps `shipping_maps.txt` marks `ship` (see "Shipping
+   maps"). Copy `output\client_shipRetail\patch\*` into `<game>\client_shipRetail\patch\` (create the
    folder), `output\client_shipRetail\chinese\patch_common_gametype_zm.ff` over the stock one (keep it as
    `.pre-pap`) and `output\main\iw_image_16.iwd` into `<game>\main\`. Among them:
    - `voice_ui_mp.ff`: the options-screen changes: Options > Controls > Chat (Talk key), Options > Audio > Voice
@@ -238,13 +239,16 @@ zones/<zone>/                 the zone's contents
                               smaller levels side by side (delete it to have the build make them, 2x2 box filter)
   <type>/NNNN_<name>.bin      assets kept as raw blobs (streamed images, materials, techsets, sounds, models, ...)
 zonekit/                      container, zone image, asset codecs, gfx patches, manifests, the zone list
-files/                        patch files that are not zones (sound_channels.txt, main\iw_image_16.iwd), copied as is
+files/                        patch files that are not zones (sound_channels.txt, main\iw_image_16.iwd), copied (sound_channels.txt
+                              filtered by shipping_maps.txt)
+shipping_maps.txt             the usermaps whose UI ships ("ship") and the ones still in development ("dev")
 ```
 
 ### Build
 Python 3.10+ with `pycryptodome` (`pip install pycryptodome`).
 ```
-python build_zones.py                                   # every zone -> output\
+python build_zones.py                                   # every zone -> output\ (shipping build: "ship" maps only)
+python build_zones.py --maps all                        # every zone with every usermap -> output_dev\ (local testing)
 python build_zones.py voice_ui_mp controller_ingame     # some zones
 python build_zones.py --list                            # the zones, their install folder and origin
 python build_zones.py --verify                          # build and compare each with the original it came from
@@ -274,7 +278,32 @@ usermaps_patch, usermaps_ui_mp, voice_ui_mp, plus `sound_channels.txt`.
 `client_shipRetail\chinese\` (the 1.1.1.13 install and the CODOL 1.1.1.13 map pack): patch_common_gametype_zm (replaces
 the stock zone; keep the stock one as `patch_common_gametype_zm.ff.pre-pap`). `main\`: iw_image_16.iwd (the PaP camo
 images). usermaps_patch / usermaps_ui_mp / sound_channels.txt list the usermaps in the create-room map pool and fix
-their sound channels; they do nothing for a map that is not installed.
+their sound channels; they do nothing for a map that is not installed. Install `output\` (the shipping build) for
+players and the map pack; `output_dev\` only on test clients that have the dev maps' zones and iwds.
+
+### Shipping maps (`shipping_maps.txt`)
+The usermap zones' sources carry the front-end data of every usermap worked on; `shipping_maps.txt` decides which
+of it ships. One line per map, `<map> ship` or `<map> dev` (`#` comments). The shipping build (`python
+build_zones.py`, `output\`) leaves out each `dev` map's:
+- create-room map pool row (usermaps_patch `mp/comaplist.csv`; the 60 stock rows, checked against
+  patch_code_post_gfx_mp's table through C1's cell hashes, are never touched),
+- vlobby arena entry (usermaps_patch `mp/basemaps.arena`; the stock text, checked against code_post_gfx_mp's, is
+  never touched),
+- display-name / description strings no remaining row or entry names (usermaps_patch `localize.str`),
+- vision override (`vision/<map>.vision`),
+- map-select image (usermaps_ui_mp `sfproto_<map>_usermap`; its pixels are in a map pack iwd, and a client without
+  that iwd fails at startup, so an image must not ship before its map),
+- sound channel fixes (`files\...\sound_channels.txt`).
+
+`python build_zones.py --maps all` (or `CODOL_MAPS=all`) keeps every listed map and writes `output_dev\`, so a
+local test build never lands in the folder that ships. A map that the zones name but `shipping_maps.txt` does not
+list fails both builds. `--verify` compares the unfiltered build with the recorded original (the installed zones
+carry every map) and prints what the shipping build left out; `--list` prints both lists. Which assets are per map
+is declared per zone in `zonekit/zonelist.py` (`maps=`); the filter is `zonekit/shipping.py`.
+
+To add a map: add its data to the zone sources as before (pool row after the stock rows, arena entry after the stock
+text, strings, image, vision, sound channels), list it as `dev`, test with `--maps all`; when its zones and iwd are
+in the map pack, change it to `ship` and build.
 
 ### Provenance
 | zone | made by |
