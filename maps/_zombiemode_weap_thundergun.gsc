@@ -111,9 +111,13 @@ init_knockdown_anims()
 	k = [];
 	k[ "front" ] = [];
 	k[ "front" ][ "no_legs" ] = [];
+	level.tg_building_crawler = true;
 	k[ "front" ][ "no_legs" ][ 0 ] = tg_anim( "ai_zombie_thundergun_hit_armslegsforward" );
 	k[ "front" ][ "no_legs" ][ 1 ] = tg_anim( "ai_zombie_thundergun_hit_doublebounce" );
 	k[ "front" ][ "no_legs" ][ 2 ] = tg_anim( "ai_zombie_thundergun_hit_forwardtoface" );
+	level.tg_building_crawler = undefined;
+	if ( !isDefined( codol_getAnim( "generic_human", "ai_zombie_thundergun_hit_doublebounce" ) ) )
+		k[ "front" ][ "no_legs" ][ 1 ] = codol_getAnim( "generic_human", "ai_zombie_walk_on_hands_shot_b" );
 
 	f = [];
 	f[ 0 ] = tg_anim( "ai_zombie_thundergun_hit_armslegsforward" );
@@ -183,7 +187,51 @@ init_knockdown_anims()
 // undefined and the knockdown is not played.
 tg_anim( name )
 {
-	return codol_getAnim( "generic_human", name );
+	a = codol_getAnim( "generic_human", name );
+	if ( isDefined( a ) )
+		return a;
+	return codol_getAnim( "generic_human", tg_c1_standin( name ) );
+}
+
+// C1's stand-ins for T5's thundergun knockdown clips (none of which C1
+// ships; its zombie animlists have no fall or getup at all, checked against
+// common_zombie and every zm map list, 2026-10-21):
+//   the falls    -> ai_zombie_humangun_react, C1's stagger-back hit reaction
+//                   (1.33 s; T5's falls run 1.3-2.4 s);
+//   a crawler    -> ai_zombie_walk_on_hands_shot_a/b, the crawler's own hit
+//                   reaction;
+//   the getups   -> ai_zombie_flash_react_01, the dazed recover (4.53 s,
+//                   played faster by tg_getup_rate to T5's ~3 s getup).
+tg_c1_standin( name )
+{
+	switch ( name )
+	{
+	case "ai_zombie_thundergun_hit_armslegsforward":
+	case "ai_zombie_thundergun_hit_doublebounce":
+	case "ai_zombie_thundergun_hit_forwardtoface":
+		if ( isDefined( level.tg_building_crawler ) )
+			return "ai_zombie_walk_on_hands_shot_a";
+		return "ai_zombie_humangun_react";
+	case "ai_zombie_thundergun_getup_a":
+	case "ai_zombie_thundergun_getup_b":
+	case "ai_zombie_thundergun_getup_c":
+	case "ai_zombie_thundergun_getup_quick_a":
+	case "ai_zombie_thundergun_getup_quick_b":
+	case "ai_zombie_thundergun_getup_quick_c":
+		return "ai_zombie_flash_react_01";
+	default:
+		return "ai_zombie_humangun_react";
+	}
+}
+
+// Playback rate for a getup: 1 for T5's own clip, faster for the C1 daze so
+// the zombie is up in T5's time.
+tg_getup_rate( getupAnim )
+{
+	daze = codol_getAnim( "generic_human", "ai_zombie_flash_react_01" );
+	if ( isDefined( daze ) && isDefined( getupAnim ) && getupAnim == daze )
+		return getAnimLength( daze ) / 3.0;
+	return 1;
 }
 
 is_thundergun_weapon( weapon )

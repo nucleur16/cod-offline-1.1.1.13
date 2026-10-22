@@ -12,6 +12,7 @@
 
 // ---- platform: CoDOL ----
 #include maps\_zombiemode_utility;
+#using_animtree( "generic_human" );
 
 cap_wait_player()
 {
@@ -62,6 +63,11 @@ cap_make_crawler()
 {
 	self.a.gib_ref = "left_leg";
 	self maps\_zombiemode_spawner::make_crawler();
+}
+
+cap_knockdown_one( z )
+{
+	z thread maps\_zombiemode_weap_thundergun::thundergun_knockdown_zombie( level.cap_player, false );
 }
 
 cap_platform_init()
@@ -153,6 +159,8 @@ cap_main( scn )
 		level thread cap_dog_round();
 	if ( getdvarint( "t5cap_crawlers" ) )
 		level thread cap_crawlers();
+	if ( getdvarint( "t5cap_knockdown" ) )
+		level thread cap_knockdowns();
 	if ( getdvar( "t5cap_path" ) != "" )
 		p thread cap_move_player();
 
@@ -319,6 +327,8 @@ cap_ai_events()
 	self thread cap_simple( "risen" );
 	self thread cap_simple( "zombie_acquire_enemy" );
 	self thread cap_mpick();
+	if ( getdvar( "t5cap_dogpos" ) != "" && isdefined( self.animname ) && self.animname == "zombie_dog" )
+		self thread cap_dog_place();
 	if ( isdefined( level.cap_swing_hits ) )
 		self thread cap_simple( "swing_hit" );
 	self thread cap_damage();
@@ -465,7 +475,7 @@ cap_crawlers()
 			if ( isdefined( z.cap_crawl_done ) || !z cap_emerged() )
 				continue;
 			z.cap_crawl_done = true;
-			if ( z.cap_id % 2 )
+			if ( z.cap_id % 2 && getdvarint( "t5cap_crawlers" ) < 2 )
 				continue;
 			z cap_make_crawler();
 			w( "E " + gettime() + " " + z.cap_id + " cap_crawl_request" );
@@ -522,6 +532,7 @@ cap_dump_all()
 	}
 	if ( isdefined( level.scr_anim["zombie_dog"] ) )
 		cap_dump_set( "dog", level.scr_anim["zombie_dog"] );
+	cap_dump_tear();
 	ks = getarraykeys( level.scr_anim["zombie"] );
 	for ( i = 0; i < ks.size; i++ )
 	{
@@ -649,4 +660,48 @@ cap_melee_name( a )
 		}
 	}
 	return "?";
+}
+
+// Staged hound run: t5cap_dogpos "x,y,z" -- 2.5 s after it spawns (after the
+// lightning reveal) the hound is teleported there, facing +x.
+cap_dog_place()
+{
+	self endon( "death" );
+	wait 2.5;
+	c = strtok( getdvar( "t5cap_dogpos" ), "," );
+	pos = ( int( c[0] ), int( c[1] ), int( c[2] ) );
+	self forceteleport( pos, ( 0, 0, 0 ) );
+	w( "E " + gettime() + " " + self.cap_id + " placed o=" + vstr( self.origin ) );
+}
+
+cap_dump_tear()
+{
+	a = [];
+	a["m_1"] = %ai_zombie_boardtear_m_1; a["m_2"] = %ai_zombie_boardtear_m_2; a["m_3"] = %ai_zombie_boardtear_m_3;
+	a["m_4"] = %ai_zombie_boardtear_m_4; a["m_5"] = %ai_zombie_boardtear_m_5; a["m_6"] = %ai_zombie_boardtear_m_6;
+	a["r_1"] = %ai_zombie_boardtear_r_1; a["r_2"] = %ai_zombie_boardtear_r_2; a["r_3"] = %ai_zombie_boardtear_r_3;
+	a["r_4"] = %ai_zombie_boardtear_r_4; a["r_5"] = %ai_zombie_boardtear_r_5; a["r_6"] = %ai_zombie_boardtear_r_6;
+	a["l_1"] = %ai_zombie_boardtear_l_1; a["l_2"] = %ai_zombie_boardtear_l_2; a["l_3"] = %ai_zombie_boardtear_l_3;
+	a["l_4"] = %ai_zombie_boardtear_l_4; a["l_5"] = %ai_zombie_boardtear_l_5; a["l_6"] = %ai_zombie_boardtear_l_6;
+	cap_dump_set( "tear", a );
+}
+
+// Knock down every emerged zombie once, 2 s after it gets inside (the
+// thundergun's knockdown path), to see the knockdown clips play.
+cap_knockdowns()
+{
+	for ( ;; )
+	{
+		ai = getaispeciesarray( "axis", "all" );
+		for ( i = 0; i < ai.size; i++ )
+		{
+			z = ai[i];
+			if ( isdefined( z.cap_kd_done ) || !z cap_emerged() || !isdefined( z.animname ) || z.animname != "zombie" )
+				continue;
+			z.cap_kd_done = true;
+			w( "E " + gettime() + " " + z.cap_id + " cap_knockdown" );
+			cap_knockdown_one( z );
+		}
+		wait 0.5;
+	}
 }

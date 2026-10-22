@@ -2533,8 +2533,19 @@ reset_attack_spot()
 // the side comes from where the chunk sits relative to the barrier.
 get_tear_anim( chunk, node )
 {
+	// T5 :1785 picks the clip set by the zombie's attack spot, not by where
+	// the board is: spot 0 the middle set, 1 the right, 2 the left, for every
+	// board it pulls.  The geometric choice below is kept for a zombie with no
+	// reserved spot.
 	side = "m";
-	if ( isDefined( node ) && isDefined( node.angles ) )
+	if ( isDefined( self.attacking_spot_index ) )
+	{
+		if ( self.attacking_spot_index == 1 )
+			side = "r";
+		else if ( self.attacking_spot_index == 2 )
+			side = "l";
+	}
+	else if ( isDefined( node ) && isDefined( node.angles ) )
 	{
 		right = anglesToRight( node.angles );
 		offset = chunk.origin - node.origin;

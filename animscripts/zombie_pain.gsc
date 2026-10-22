@@ -132,11 +132,7 @@ playThundergunPainAnim()
 	if ( !isDefined( level._zombie_knockdowns ) || !isDefined( level._zombie_knockdowns[ "zombie" ] ) )
 		return;
 
-	// C1's client tree has no thundergun knockdown clips (tg_anim, in
-	// _zombiemode_weap_thundergun.gsc): no knockdown is played then.
-	if ( !isDefined( codol_getAnim( "generic_human", "ai_zombie_thundergun_hit_armslegsforward" ) ) )
-		return;
-
+	// On C1 the tables hold C1 stand-ins (tg_anim, _zombiemode_weap_thundergun.gsc).
 	knockdowns = level._zombie_knockdowns[ "zombie" ];
 	getups = level._zombie_getups[ "zombie" ];
 
@@ -183,6 +179,9 @@ playThundergunPainAnim()
 
 	codolPrintLn( "CoDOL zm thundergun: zombie " + self getEntityNumber() + " knockdown, blast yaw " + int( yaw ) );
 
+	if ( !isDefined( fallAnim ) || !isDefined( getupAnim ) )
+		return;
+
 	self animmode( "gravity" );
 	self setFlaggedAnimKnobAllRestart( "painanim", fallAnim, %body, 1, 0.2, self.animplaybackrate );
 	DoNoteTracksForTime( getAnimLength( fallAnim ), "painanim", self.thundergun_handle_pain_notetracks );
@@ -200,8 +199,9 @@ playThundergunPainAnim()
 		return;
 	}
 
-	self setFlaggedAnimKnobAllRestart( "painanim", getupAnim, %body, 1, 0.2, self.animplaybackrate );
-	DoNoteTracksForTime( getAnimLength( getupAnim ), "painanim" );
+	getupRate = self.animplaybackrate * maps\_zombiemode_weap_thundergun::tg_getup_rate( getupAnim );
+	self setFlaggedAnimKnobAllRestart( "painanim", getupAnim, %body, 1, 0.2, getupRate );
+	DoNoteTracksForTime( getAnimLength( getupAnim ) / getupRate, "painanim" );
 
 	self clearAnim( getupAnim, 0.2 );
 	self animmode( "normal" );
