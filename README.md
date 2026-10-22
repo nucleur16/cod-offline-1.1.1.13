@@ -13,14 +13,20 @@ to the exe. See the comments in `kernel33.c` for addresses and reasoning.
    options-screen changes: Options > Controls > Chat (Talk key), Options > Audio > Voice (mode, mic level bar)
    and Options > Graphics > Max FPS. `python build_voice_ui.py` rebuilds it from the game's own patch_ui_mp.
    Keep every codo.gfx change in this one zone: each *_ui_mp patch zone carrying codo.gfx carries the whole
-   movie, and the first one loaded wins.
+   movie, and the first one loaded wins. It also carries Options > Controller (the pad tab) and the
+   microphone choice in Options > Audio.
+4. Copy `patch\controller_ingame.ff` into the same folder: the in-match pause menu (codoingame.gfx) with
+   gamepad focus navigation. `python build_ingame_ui.py` rebuilds it from the game's own patch_common_mp.
 
 ## Build (MSYS2 mingw32)
 ```sh
 PATH=/c/msys64/mingw32/bin:$PATH sh build.sh
 ```
 `unpacked.z` (C1.exe's decompressed code range) is embedded as a resource; `build.sh` copies the
-result to `../Kernel33.dll`.
+result to `../Kernel33.dll` (`K33_NO_COPY=1` leaves it in this folder). Needs libopus
+(`pacman -S mingw-w64-i686-opus`) and SDL2 2.32.10, which `build.sh` downloads once into the gitignored
+`third_party/` (official SDL2-devel mingw package, SHA-256 checked) and links statically: the DLL has no
+SDL2.dll dependency.
 
 ## Parity logger (branch `parity-log`)
 `parity.c` adds a client-side snapshot-parity logger for bringing the server to retail parity. It
@@ -98,8 +104,9 @@ main carries no console code.
 pads, hot-plug; XInput fallback) on its own ~1 kHz thread, pad buttons as real C1 keys (`BUTTON_A`.. `DPAD_RIGHT`, 
 bindable and saved in config_mp.cfg, queued through C1's Sys_QueEvent), analog move/look in CL_MouseMove, a 
 stick-driven cursor for the Scaleform menus (A click, B Escape) and `gpad_*` dvars. See `CONTROLLER.md` for C1's 
-input path, the dvars, commands, default binds, what was verified and the phase 2/3 plan. Build with 
-`PATH=/c/msys64/mingw32/bin:$PATH sh build-controller.sh` (writes `Kernel33_controller.dll`, copies nothing).
+input path, the dvars, commands, default binds, what was verified and the phase 2/3 plan. `build.sh` builds it
+into Kernel33.dll; `PATH=/c/msys64/mingw32/bin:$PATH sh build-controller.sh` writes a side copy,
+`Kernel33_controller.dll`, and copies nothing.
 
 ## Voice chat
 `voice.c` puts back in-game voice chat, which C1 stripped (no capture, no codec, no `+talk`; the "v"
