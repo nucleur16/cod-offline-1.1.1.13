@@ -462,10 +462,10 @@ onBeginUse( player )
 	{
 		otherTeam = getOtherTeam( player.pers["team"] );
 		
-		statusDialog( "securing", player.pers["team"] );
+		statusDialog( "securing_a", player.pers["team"] );
 		self.objPoints[player.pers["team"]] thread maps\mp\gametypes\_objpoints::startFlashing();
 		
-		statusDialog( "enemy_taking", otherTeam );
+		statusDialog( "losing_a", otherTeam );
 		
 		return;
 	}
