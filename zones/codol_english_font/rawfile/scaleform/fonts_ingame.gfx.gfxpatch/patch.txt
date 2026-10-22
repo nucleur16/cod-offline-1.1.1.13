@@ -1,0 +1,25 @@
+# GFx movie as a patch over a stock movie (zonekit/gfx.py)
+stock patch_code_post_gfx_mp:scaleform/fonts_ingame.gfx
+stock-sha256 69fe008aa944a1578030a41a0762738f2b30a9ea5da3cd8f0ff0dc9b7cb9942a
+sha256 08977e988ce92936e0e48dcff3d793d284283ca02901ba5735f1f312f22f23b6
+header 47465809cf6a8a007800055f00000fa000001e0100
+keep 0
+keep 1
+keep 2
+keep 3
+font 4 tags/0004_75_FZLanTingHei-R-GBK.json
+keep 5
+keep 6
+font 7 tags/0007_75_FZZongYi-M05S.json
+keep 8
+keep 9
+keep 10
+keep 11
+keep 12
+keep 13
+keep 14
+keep 15
+keep 16
+keep 17
+keep 18
+keep 19

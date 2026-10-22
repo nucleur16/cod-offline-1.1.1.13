@@ -21,3 +21,6 @@ third_party/
 
 # glyph generator cache
 __pycache__/
+
+# build output (python build_zones.py)
+output/

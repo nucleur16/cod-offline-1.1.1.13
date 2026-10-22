@@ -237,7 +237,7 @@ static void CtlRegisterDvars(void)
     g_gpKbmCooldown = CtlRegisterFloat("gpad_aimassist_kbm_cooldown", 20.0f, 20.0f, 600.0f, 0x1,
                                        "Seconds without aim assist after any in-game keyboard / mouse use (20 minimum; may be raised, not lowered)");
     ((const BYTE *(__cdecl *)(const char *, const char *, unsigned, const char *))(DWORD_PTR)0x00624740u)(
-        "k33nav", "", 0, "Pause-menu navigator: its last decision (voice_ui/StageKeyController.as, read with gpad_debug)");
+        "k33nav", "", 0, "Pause-menu navigator: its last decision (controller_ingame codoingame.gfx, read with gpad_debug)");
 }
 
 /* Last-used input device, for the key names C1 shows (CtlCommandKeys) and for aim assist: 1 pad,
@@ -976,7 +976,7 @@ static void CtlRelease(int mode, DWORD bits)
 }
 
 /* In-match menu (CTL_MODE_PAUSE): the pad's directions and A become keys the codo.gfx focus navigator
- * (voice_ui/StageKeyController.as, onStageKeyDownHandle) understands: numpad 8 up, 2 down, 4 left, 6 right,
+ * (the pause menu's StageKeyController in codoingame.gfx, onStageKeyDownHandle) understands: numpad 8 up, 2 down, 4 left, 6 right,
  * 5 select (Flash key codes 104 / 98 / 100 / 102 / 101; Scaleform drops F13 and above). B / Start are Escape. Posted to the game window like real keys; Scaleform hands them to the
  * stage's KEY_DOWN listener. Directions repeat after 350 ms, then every 140 ms. */
 /* Keys for the pause menu's ActionScript. C1 gives Scaleform keyboard input only through CL_KeyEvent ->
@@ -1580,7 +1580,7 @@ static void CtlApplyPadNames(void)
 
 #include "controller_glyphs.c"
 
-/* ---- Options > Controller (voice_ui/OptionView.as) ------------------------------------------------
+/* ---- Options > Controller (zones/voice_ui_mp/.../as/codo/views/OptionView.as) ------------------------
  * Publishes k33_padinfo ("family|connected|name|forced") and k33_padbinds ("A=cmd;B=cmd;...;HOLDX=cmd")
  * when they change, binds the next pad button to k33_padcapture's command (the input thread catches it in
  * menu mode; the command's other pad buttons are unbound, one pad button per action) and unbinds
@@ -1675,7 +1675,7 @@ static void CtlFrameOptions(void)
 static int g_testMouseDx, g_testMouseDy;
 static DWORD g_testMouseUntil;
 
-/* The pause-menu navigator's last decision (voice_ui/StageKeyController.as sets dvar "k33nav"). */
+/* The pause-menu navigator's last decision (the pause menu's StageKeyController sets dvar "k33nav"). */
 static void CtlNavLog(void)
 {
     static char last[200];

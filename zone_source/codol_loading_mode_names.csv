@@ -1,0 +1,22 @@
+// codol_loading_mode_names -- built by build_zones.py from zones/codol_loading_mode_names/ (zonekit/manifest.py describes the format)
+>zone,codol_loading_mode_names
+>install,client_shipRetail\patch
+>origin,Z:client_shipRetail/patch
+>origin-md5,41663a1f3fda4f43b6945a328b3ab711
+>container,iwffu100
+>filetime,0x01dd5e07,0x4e396268
+>rsa,7aa973d3421e9c3e58f25229afb40fc58dfa3d45593674b5d19b705e9a7ad56074f994a68b3d7f11bfc75359bd973d97f7860976684cd89d1f48a37e8bc58bf114b07d89480881879ea4325b77b96f52110e62c1dda90bec937e7a1a02b51f86baaefcc4fb4f542b650818fb0963da33d0872a4d03f7e91c81d9c64878c1e0c9189f396e2acd53b559720c4ca33d1fb4b1330d0f27e3b203a7cb74858ec84eb3893844493d6b0a30479260a50a26231f73dafbd4cf4d20afbd44b13fcf96c55397752eccb1c9326a45075ad75aa51b312a0aaa9a5e1f529136b0aa65d567031280691f4255495247e457fedea1cd27b8fd7237622445ae5e197e8f640258ea83
+>zlib,9
+>blocks,0x0,0x20,0x0,0x0,0x128f,0x0,0x0,0x0,0x0
+>xassetlist,0x0,0xffffffff
+>localize,localize.str,ascii
+rawfile,maps/mp/gametypes/_gametypes.txt
+rawfile,maps/mp/gametypes/gun.txt
+localize,CODOL_LOADING_MODE_GUN
+rawfile,maps/mp/gametypes/oic.txt
+localize,CODOL_LOADING_MODE_OIC
+rawfile,maps/mp/gametypes/shrp.txt
+localize,CODOL_LOADING_MODE_SHRP
+rawfile,maps/mp/gametypes/infect.txt
+localize,CODOL_LOADING_MODE_INFECT
+rawfile,codol_loading_mode_names

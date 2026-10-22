@@ -1,0 +1,17 @@
+1,war,tdm,MPUI_TEAM_DEATHMATCH,MENU_KILL_PLAYERS_ON_THE_OPPOSING,weapon_missing_image,pvp,default_1|mainline_1|gapp_1|gr4_1|alpha1_1|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1
+2,dom,,MPUI_DOMINATION,MENU_CAPTURE_AND_HOLD_THE,weapon_missing_image,pvp,default_1|mainline_1|gapp_1|gr4_1|alpha1_0|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1
+3,dd,,MPUI_DD,MENU_DD,weapon_missing_image,pvp,default_1|mainline_1|gapp_1|gr4_1|alpha1_1|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1
+4,dm,ffa,MPUI_DEATHMATCH,MENU_KILL_EVERYONE_FIRST_PLAYER,weapon_missing_image,pvp,default_1|mainline_1|gapp_1|gr4_1|alpha1_1|alpha2_1|alpha3_0|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1
+5,sd,,MPUI_SEARCH_AND_DESTROY,MENU_TEAMS_TAKE_TURNS_DEFENDING,weapon_missing_image,pvp,default_1|mainline_1|gapp_1|gr4_1|alpha1_0|alpha2_0|alpha3_0|ce2_0|ce3_0|cb1_0|cb2_1|cb3_1
+6,sab,,MPUI_SABOTAGE,MENU_1_BOMB_IN_THE_CENTER,weapon_missing_image,pvp,default_1|mainline_0|gapp_1|gr4_0|alpha1_0|alpha2_0|alpha3_0|ce2_0|ce3_0|cb1_0|cb2_0|cb3_1
+7,koth,hq,MPUI_HEADQUARTERS,MENU_CAPTURE_THE_HEADQUARTERS,weapon_missing_image,pvp,default_1|mainline_0|gapp_1|gr4_0|alpha1_0|alpha2_0|alpha3_0|ce2_0|ce3_0|cb1_0|cb2_0|cb3_1
+8,ctf,,MPUI_CTF,MENU_CTF_DESC,weapon_missing_image,pvp,default_1|mainline_0|gapp_1|gr4_0|alpha1_0|alpha2_0|alpha3_0|ce2_0|ce3_0|cb1_0|cb2_1|cb3_1
+9,conf,kc,MPUI_CONF,MENU_CONF_DESC,weapon_missing_image,pvp,default_1|mainline_1|gapp_1|gr4_0|alpha1_1|alpha2_0|alpha3_1|ce2_0|ce3_0|cb1_1|cb2_1|cb3_1
+10,hp,,MPUI_HARD_POINT,MENU_HARD_POINT_DESC,weapon_missing_image,pvp,default_1|mainline_0|gapp_0|gr4_0|alpha1_0|alpha2_0|alpha3_0|ce2_0|ce3_0|cb1_0|cb2_0|cb3_1
+11,infect,inf,CODOL_MODE_INFECT_NAME,CODOL_MODE_INFECT_DESC,weapon_missing_image,pvp,default_1|mainline_1|gapp_1|gr4_1|alpha1_1|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1
+12,combat,,MPUI_COMBAT_TRAINING,MENU_KILL_PLAYERS_ON_THE_OPPOSING,weapon_missing_image,pvp,default_1|mainline_1|gapp_1|gr4_1|alpha1_1|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1
+13,coop,,MPUI_COOPERATIVE,MENU_KILL_EVERYONE_FIRST_PLAYER,weapon_missing_image,pve,default_1|mainline_1|gapp_1|gr4_1|alpha1_1|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1
+14,zm,,MPUI_ZOMBIE,MPUI_ZOMBIE,weapon_missing_image,pve,default_1|mainline_1|gapp_1|gr4_1|alpha1_1|alpha2_0|alpha3_0|ce2_0|ce3_0|cb1_0|cb2_1|cb3_1
+15,gun,,CODOL_MODE_GUN_NAME,CODOL_MODE_GUN_DESC,weapon_missing_image,pvp,default_1|mainline_1|gapp_1|gr4_1|alpha1_1|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1
+16,oic,,CODOL_MODE_OIC_NAME,CODOL_MODE_OIC_DESC,weapon_missing_image,pvp,default_1|mainline_1|gapp_1|gr4_1|alpha1_1|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1
+17,shrp,,CODOL_MODE_SHRP_NAME,CODOL_MODE_SHRP_DESC,weapon_missing_image,pvp,default_1|mainline_1|gapp_1|gr4_1|alpha1_1|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1

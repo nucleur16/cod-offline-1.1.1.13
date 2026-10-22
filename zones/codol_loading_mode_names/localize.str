@@ -1,0 +1,5 @@
+# localize entries in zone order: NAME<TAB>value (\n \r \t \\ escaped); values are ascii in the zone
+CODOL_LOADING_MODE_GUN	Gun Game
+CODOL_LOADING_MODE_OIC	One in the Chamber
+CODOL_LOADING_MODE_SHRP	Sharpshooter
+CODOL_LOADING_MODE_INFECT	Infected
