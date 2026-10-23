@@ -289,97 +289,6 @@ static void ThSetToken(const char *token)
     lstrcpynA(g_thToken, token, sizeof(g_thToken));
 }
 
-/* ---- a minimal JSON reader (the service's replies only) ------------------------------------------------------ */
-
-static const char *ThJsonWs(const char *p) { while (p && (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n')) p++; return p; }
-
-static const char *ThJsonSkip(const char *p)
-{
-    p = ThJsonWs(p);
-    if (!p || !*p) return NULL;
-    if (*p == '"') {
-        for (p++; *p && *p != '"'; p++)
-            if (*p == '\\' && !*++p) return NULL;
-        return *p ? p + 1 : NULL;
-    }
-    if (*p == '{' || *p == '[') {
-        char close = *p == '{' ? '}' : ']';
-        p = ThJsonWs(p + 1);
-        if (p && *p == close) return p + 1;
-        for (;;) {
-            if (close == '}') {
-                p = ThJsonSkip(p);              /* key */
-                p = ThJsonWs(p);
-                if (!p || *p != ':') return NULL;
-                p++;
-            }
-            p = ThJsonSkip(p);
-            p = ThJsonWs(p);
-            if (!p) return NULL;
-            if (*p == ',') { p++; continue; }
-            return *p == close ? p + 1 : NULL;
-        }
-    }
-    while (*p && !strchr(",}] \t\r\n", *p)) p++;
-    return p;
-}
-
-/* The value of key in the object at p (NULL when absent). */
-static const char *ThJsonGet(const char *p, const char *key)
-{
-    p = ThJsonWs(p);
-    if (!p || *p != '{') return NULL;
-    p = ThJsonWs(p + 1);
-    size_t klen = strlen(key);
-    while (p && *p == '"') {
-        const char *k = p + 1, *ke = ThJsonSkip(p);
-        if (!ke) return NULL;
-        BOOL match = (size_t)(ke - 1 - k) == klen && !memcmp(k, key, klen);
-        p = ThJsonWs(ke);
-        if (!p || *p != ':') return NULL;
-        p = ThJsonWs(p + 1);
-        if (match) return p;
-        p = ThJsonWs(ThJsonSkip(p));
-        if (!p || *p != ',') return NULL;
-        p = ThJsonWs(p + 1);
-    }
-    return NULL;
-}
-
-static BOOL ThJsonStr(const char *p, char *out, int n)
-{
-    out[0] = 0;
-    p = ThJsonWs(p);
-    if (!p || *p != '"') return FALSE;
-    int o = 0;
-    for (p++; *p && *p != '"'; p++) {
-        char c = *p;
-        if (c == '\\') {
-            c = *++p;
-            if (c == 'n') c = '\n'; else if (c == 't') c = '\t'; else if (c == 'u') return FALSE; /* not needed */
-            else if (!c) return FALSE;
-        }
-        if (o >= n - 1) return FALSE;
-        out[o++] = c;
-    }
-    out[o] = 0;
-    return *p == '"';
-}
-
-static BOOL ThJsonNum(const char *p, double *v)
-{
-    p = ThJsonWs(p);
-    if (!p || !(*p == '-' || (*p >= '0' && *p <= '9'))) return FALSE;
-    *v = strtod(p, NULL);
-    return TRUE;
-}
-
-static int ThJsonInt(const char *obj, const char *key, int def)
-{
-    double v;
-    return ThJsonNum(ThJsonGet(obj, key), &v) ? (int)v : def;
-}
-
 /* ---- worker: the recording service -------------------------------------------------------------------------- */
 
 static BOOL ThServiceGet(ThJob *job, const char *path, char **body)
@@ -389,7 +298,7 @@ static BOOL ThServiceGet(ThJob *job, const char *path, char **body)
     _snprintf(url, sizeof(url) - 1, "%s/api/v1/theatre%s", job->url, path);
     url[sizeof(url) - 1] = 0;
     if (!K33HttpGet(url, job->token, 15000, 1024 * 1024, body, &len, &job->status)) return FALSE;
-    const char *p = ThJsonWs(*body);
+    const char *p = K33JsonWs(*body);
     if (job->status != 200 || !p || *p != '{') { free(*body); *body = NULL; return FALSE; }
     return TRUE;
 }
@@ -399,32 +308,32 @@ static void ThWorkCatalogue(ThJob *job)
     char path[96], *body = NULL;
     _snprintf(path, sizeof(path), "/replays?mode=%s&page=%d", job->filter, job->page);
     if (!ThServiceGet(job, path, &body)) return;
-    const char *rows = ThJsonGet(body, "replays");
+    const char *rows = K33JsonGet(body, "replays");
     char filter[16];
-    job->pages = ThJsonInt(body, "pages", 0);
-    job->total = ThJsonInt(body, "total", -1);
-    job->current = ThJsonInt(body, "page", 0);
-    ThJsonStr(ThJsonGet(body, "filter"), filter, sizeof(filter));
+    job->pages = K33JsonInt(body, "pages", 0);
+    job->total = K33JsonInt(body, "total", -1);
+    job->current = K33JsonInt(body, "page", 0);
+    K33JsonStr(K33JsonGet(body, "filter"), filter, sizeof(filter));
     BOOL ok = rows && *rows == '[' && job->pages >= 1 && job->total >= 0 && job->current >= 1 &&
               job->current <= job->pages && !strcmp(filter, job->filter);
-    const char *p = ok ? ThJsonWs(rows + 1) : NULL;
+    const char *p = ok ? K33JsonWs(rows + 1) : NULL;
     while (ok && p && *p == '{') {
         if (job->count >= TH_ROWS) { ok = FALSE; break; }
         ThRow *r = &job->rows[job->count];
         double ms = -1, at = 0;
-        ThJsonStr(ThJsonGet(p, "id"), r->id, sizeof(r->id));
-        ThJsonStr(ThJsonGet(p, "map"), r->map, sizeof(r->map));
-        ThJsonStr(ThJsonGet(p, "gametype"), r->mode, sizeof(r->mode));
-        ThJsonNum(ThJsonGet(p, "duration_ms"), &ms);
-        ThJsonNum(ThJsonGet(p, "archived_at"), &at);
+        K33JsonStr(K33JsonGet(p, "id"), r->id, sizeof(r->id));
+        K33JsonStr(K33JsonGet(p, "map"), r->map, sizeof(r->map));
+        K33JsonStr(K33JsonGet(p, "gametype"), r->mode, sizeof(r->mode));
+        K33JsonNum(K33JsonGet(p, "duration_ms"), &ms);
+        K33JsonNum(K33JsonGet(p, "archived_at"), &at);
         if (!ThHex64(r->id) || !ThSafe(r->map) || !ThSafe(r->mode) || ms < 0) { ok = FALSE; break; }
         r->seconds = (unsigned)(ms / 1000);
         time_t t = (time_t)at;
         struct tm *lt = localtime(&t);
         if (lt) strftime(r->date, sizeof(r->date), g_english ? "%b %d %H:%M" : "%m-%d %H:%M", lt);
         job->count++;
-        p = ThJsonWs(ThJsonSkip(p));
-        if (p && *p == ',') p = ThJsonWs(p + 1);
+        p = K33JsonWs(K33JsonSkip(p));
+        if (p && *p == ',') p = K33JsonWs(p + 1);
     }
     job->ok = ok && p && *p == ']';
     free(body);
@@ -436,18 +345,18 @@ static void ThWorkDownload(ThJob *job)
     char path[96], *body = NULL;
     _snprintf(path, sizeof(path), "/replays/%s/download", id);
     if (!ThServiceGet(job, path, &body)) return;
-    const char *rec = ThJsonGet(body, "record");
+    const char *rec = K33JsonGet(body, "record");
     char rid[72], hash[72], build[72], url[1024];
     double bytes = 0;
-    ThJsonStr(ThJsonGet(rec, "id"), rid, sizeof(rid));
-    ThJsonStr(ThJsonGet(rec, "sha256"), hash, sizeof(hash));
-    ThJsonStr(ThJsonGet(rec, "client_build"), build, sizeof(build));
-    ThJsonStr(ThJsonGet(rec, "zone_type"), job->zone, sizeof(job->zone));
-    ThJsonNum(ThJsonGet(rec, "bytes"), &bytes);
+    K33JsonStr(K33JsonGet(rec, "id"), rid, sizeof(rid));
+    K33JsonStr(K33JsonGet(rec, "sha256"), hash, sizeof(hash));
+    K33JsonStr(K33JsonGet(rec, "client_build"), build, sizeof(build));
+    K33JsonStr(K33JsonGet(rec, "zone_type"), job->zone, sizeof(job->zone));
+    K33JsonNum(K33JsonGet(rec, "bytes"), &bytes);
     BOOL known = FALSE;
     for (unsigned i = 0; i < sizeof(kThBuilds) / sizeof(kThBuilds[0]); i++) known |= !strcmp(build, kThBuilds[i]);
     BOOL ok = rec && !strcmp(rid, id) && ThHex64(hash) && known && bytes >= 36 && bytes <= 512.0 * 1024 * 1024 &&
-              bytes == (double)(ULONGLONG)bytes && ThJsonStr(ThJsonGet(body, "url"), url, sizeof(url));
+              bytes == (double)(ULONGLONG)bytes && K33JsonStr(K33JsonGet(body, "url"), url, sizeof(url));
     if (ok) {
         WCHAR file[MAX_PATH];
         DWORD n = GetModuleFileNameW(NULL, file, MAX_PATH);
