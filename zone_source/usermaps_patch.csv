@@ -23,4 +23,16 @@ localize,MPUI_DESC_MAP_MIDEAST
 localize,MPUI_DESC_MAP_SEATOWN
 localize,MPUI_MIDEAST
 localize,MPUI_SEATOWN
+localize,MPUI_MP_STRIKE_SH
+localize,MPUI_DESC_MP_STRIKE_SH
+localize,MPUI_QADEEM
+localize,MPUI_DESC_MAP_QADEEM
 rawfile,vision/mp_terminal_cls.vision,zlib=9
+localize,MPUI_DOME
+localize,MPUI_DESC_MAP_DOME
+localize,MPUI_SD_PILLARS
+localize,MPUI_DESC_SD_PILLARS
+localize,MPUI_HARDHAT
+localize,MPUI_DESC_MAP_HARDHAT
+localize,MPUI_HUNGER
+localize,MPUI_DESC_MAP_HUNGER
