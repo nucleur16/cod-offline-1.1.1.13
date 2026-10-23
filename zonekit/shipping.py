@@ -28,6 +28,9 @@ Which data is per map is declared per zone in zonelist.py (`maps=`):
         assets owned by one map (e.g. "image:sfproto_{map}_usermap").
     localize=True
         a localize entry of the zone that only dropped rows/entries name is dropped with them.
+    localize_from=<zone>
+        the zone's localize entries are another zone's in another language (codol_english_usermaps: usermaps_patch's
+        map names in English); each is dropped when that zone's filter drops it, and each must exist there.
 FILES maps a files\ path to its per-map line filter (first word of a line = the map zone).
 """
 from __future__ import annotations
@@ -226,6 +229,22 @@ def plan(repo, zone_name, m, cfg, stocks, maps):
         p.drop.update(("localize", an) for an in gone)
         if gone:
             p.notes.append("localize: %d of %d (%s dropped)" % (len(names) - len(gone), len(names), " ".join(gone)))
+    if spec.get("localize_from"):
+        from . import build, zonelist    # build imports this module
+        other = spec["localize_from"]
+        om = build.load(repo, other)
+        op = plan(repo, other, om, zonelist.ZONES.get(other), stocks, maps)
+        theirs = {an for at, an, _q in om.assets if at == "localize"}
+        names = [an for at, an, _q in m.assets if at == "localize"]
+        missing = [an for an in names if an not in theirs]
+        if missing:
+            raise ShippingError("%s: localize entries %s are not in %s, whose strings these translate"
+                                % (zone_name, " ".join(missing), other))
+        gone = [an for an in names if ("localize", an) in op.drop]
+        p.drop.update(("localize", an) for an in gone)
+        p.dropped_maps |= op.dropped_maps
+        if gone:
+            p.notes.append("localize: %d of %d (as %s)" % (len(names) - len(gone), len(names), other))
     return p
 
 
