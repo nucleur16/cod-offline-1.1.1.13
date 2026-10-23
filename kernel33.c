@@ -562,7 +562,7 @@ static BOOL PatchUnsignedZones(void)
 #define UI_LOAD_CALL_VA        0x005985CDu
 #define POSTGFX_LOAD_CALL_VA   0x005984D2u
 #define DB_LOAD_XASSETS_VA     0x08465768u
-#define PATCHDIR_MAX_FILES     16
+#define PATCHDIR_MAX_FILES     32
 
 typedef struct { const char *name; int allocFlags; int freeFlags; } XZoneInfo;
 typedef void (__cdecl *LoadXAssetsFn)(XZoneInfo *info, unsigned count, int sync);
@@ -587,6 +587,43 @@ static BOOL PatchDirEnabled(void)
         on = !(p[0] == '0' && (p[1] == '\0' || p[1] == ' ' || p[1] == '\t' || p[1] == '"'));
     }
     return on;
+}
+
+/* English (launch option k33_english). The English translation is a set of patch zones, every one named
+ * codol_english* (build_zones.py: codol_english = localized strings, codol_english_font = the Latin glyphs of
+ * fonts_ingame.gfx, codol_english_ui / codol_english_ui_extra = the front-end, login, HUD and pause-menu movies,
+ * codol_english_zombies_base = zombies strings, codol_english_usermaps = the usermaps' names). They load ahead of
+ * code_pre_gfx, so their assets win over the stock Chinese ones and over the *_ui_mp patch zones'
+ * (codol_english_ui's codo.gfx and codol_english_ui_extra's codoingame.gfx carry voice_ui_mp's and
+ * controller_ingame's classes too). The language is decided once, at startup, from the command line:
+ *     +set k33_english 1    the English zones load (default, also without the option)
+ *     +set k33_english 0    they are skipped: the original Chinese game, every other patch zone unchanged
+ * C1 execs config_mp.cfg before any of this and applies no +set to a dvar it does not know, so the option is read
+ * here and nothing stores it: a config write can never change it. The last setting on the line wins. Nothing else
+ * in the DLL depends on the language (GBK text input, fonts, voice, controller work the same in both). The pure
+ * check lists client_shipRetail\<language>\ and main\ only, never patch\, so both states pass it. */
+static BOOL g_english = TRUE;
+static int g_englishZones, g_englishSkipped;
+
+static BOOL CmdLineFlag(const char *name, BOOL def)
+{
+    const char *p = GetCommandLineA();
+    size_t n = strlen(name);
+    BOOL on = def;
+    while (p && (p = strstr(p, name)) != NULL) {
+        BOOL word = p == GetCommandLineA() || p[-1] == ' ' || p[-1] == '\t' || p[-1] == '"';
+        p += n;
+        if (!word || (*p != ' ' && *p != '\t' && *p != '"')) continue;
+        while (*p == ' ' || *p == '\t' || *p == '"') p++;
+        if ((p[0] == '0' || p[0] == '1') && (p[1] == '\0' || p[1] == ' ' || p[1] == '\t' || p[1] == '"'))
+            on = p[0] == '1';
+    }
+    return on;
+}
+
+static BOOL EnglishZone(const char *name)
+{
+    return _strnicmp(name, "codol_english", 13) == 0;
 }
 
 /* True when client_shipRetail\<any folder but patch>\<file> exists, i.e. the name is a stock zone. */
@@ -684,6 +721,11 @@ static void LoadPatchDir(void)
             Log("patch folder: skipped %s: the name belongs to the lobby's FFOTD", file);
             continue;
         }
+        if (EnglishZone(z->name) && !g_english) {
+            Log("patch folder: skipped %s: English is off (k33_english 0)", file);
+            g_englishSkipped++;
+            continue;
+        }
         BOOL dup = FALSE;
         for (int j = 0; j < g_patchZoneCount; j++) dup |= lstrcmpiA(g_patchZones[j].name, z->name) == 0;
         if (dup || StockZoneExists(dir, file)) {
@@ -708,8 +750,20 @@ static void LoadPatchDir(void)
             continue;
         }
         g_patchZoneCount++;
+        g_englishZones += EnglishZone(z->name);
         Log("patch folder: %s%s (%lu bytes) queued as zone \"%s\"", sub, file, (unsigned long)size, z->name);
     }
+}
+
+static void LogEnglish(void)
+{
+    if (!g_english)
+        Log("english: off (k33_english 0): %d codol_english* zone(s) skipped, the game is the original Chinese",
+            g_englishSkipped);
+    else if (g_englishZones)
+        Log("english: on (k33_english 1): %d codol_english* zone(s) queued", g_englishZones);
+    else
+        Log("english: on (k33_english 1), but no codol_english*.ff zone is in the patch folder: the game stays Chinese");
 }
 
 static int PatchZonesIn(int stage)
@@ -828,6 +882,7 @@ static void PatchPostGfxLoad(void)
 
 static void PatchPatchDir(void)
 {
+    g_english = CmdLineFlag("k33_english", TRUE);
     if (!PatchUnsignedZones()) {
         Log("patch folder: not installed (unsigned zones cannot load from disk)");
         return;
@@ -849,6 +904,7 @@ static void PatchPatchDir(void)
         return;
     }
     LoadPatchDir();
+    LogEnglish();
     if (!g_patchZoneCount) return;
     rel = (LONG)((DWORD_PTR)PatchDirOpenHook - (PATCHDIR_OPEN_JNE_VA + 6));
     WriteCode(jne + 2, &rel, 4);
