@@ -1172,3 +1172,10 @@
     axischar    "opforce_airborne"
     environment	"urban"
 }
+{
+	map			"zm_theater_sh"
+	longname	"MPUI_ZM_THEATER"
+	gametype	"zm"
+    description "MPUI_DESC_MAP_ZM_THEATER"
+	mapimage    "blank"
+}
