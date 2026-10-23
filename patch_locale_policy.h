@@ -7,21 +7,32 @@ static int CodolAsciiWideEqual(const wchar_t *a,const wchar_t *b)
  while(*a && *b) { wchar_t x=*a++,y=*b++; if(x>=L'A'&&x<=L'Z')x+=32;if(y>=L'A'&&y<=L'Z')y+=32;if(x!=y)return 0; }
  return *a==*b;
 }
-/* Existing launcher sends an explicit language. Missing retains legacy English;
- * malformed/unsupported selects native UI, never an English translation guess. */
+/* k33_english is the canonical startup-only switch. Keep codol_patchlang for
+ * existing launchers. The last valid canonical switch wins over the alias;
+ * an absent or malformed canonical value does not erase a valid choice. */
 static enum CodolPatchLanguage CodolPatchLanguageFromArgv(int argc,const wchar_t *const *argv)
 {
  enum CodolPatchLanguage language=CODOL_PATCH_EN;
+ enum CodolPatchLanguage canonical=CODOL_PATCH_EN;
+ int canonicalSeen=0;
  int i;
  for(i=1;i<argc;i++) {
-  if(!CodolAsciiWideEqual(argv[i],L"+set") || i+1>=argc || !CodolAsciiWideEqual(argv[i+1],L"codol_patchlang"))continue;
+  if(!CodolAsciiWideEqual(argv[i],L"+set") || i+1>=argc)continue;
+  if(CodolAsciiWideEqual(argv[i+1],L"k33_english")) {
+   if(i+2<argc && (CodolAsciiWideEqual(argv[i+2],L"0") || CodolAsciiWideEqual(argv[i+2],L"1"))) {
+    canonical=CodolAsciiWideEqual(argv[i+2],L"1") ? CODOL_PATCH_EN : CODOL_PATCH_ZH;
+    canonicalSeen=1;
+   }
+   continue;
+  }
+  if(!CodolAsciiWideEqual(argv[i+1],L"codol_patchlang"))continue;
   language=CODOL_PATCH_NATIVE;
   if(i+2<argc) {
    if(CodolAsciiWideEqual(argv[i+2],L"en"))language=CODOL_PATCH_EN;
    else if(CodolAsciiWideEqual(argv[i+2],L"zh"))language=CODOL_PATCH_ZH;
   }
  }
- return language;
+ return canonicalSeen ? canonical : language;
 }
 static int CodolAsciiPrefix(const char *name,const char *prefix)
 {

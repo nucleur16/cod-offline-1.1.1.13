@@ -574,22 +574,6 @@ static BOOL PatchDirEnabled(void)
 static BOOL g_english = TRUE;
 static int g_englishZones, g_englishSkipped, g_chineseZones;
 
-static BOOL CmdLineFlag(const char *name, BOOL def)
-{
-    const char *p = GetCommandLineA();
-    size_t n = strlen(name);
-    BOOL on = def;
-    while (p && (p = strstr(p, name)) != NULL) {
-        BOOL word = p == GetCommandLineA() || p[-1] == ' ' || p[-1] == '\t' || p[-1] == '"';
-        p += n;
-        if (!word || (*p != ' ' && *p != '\t' && *p != '"')) continue;
-        while (*p == ' ' || *p == '\t' || *p == '"') p++;
-        if ((p[0] == '0' || p[0] == '1') && (p[1] == '\0' || p[1] == ' ' || p[1] == '\t' || p[1] == '"'))
-            on = p[0] == '1';
-    }
-    return on;
-}
-
 static BOOL EnglishZone(const char *name)
 {
     return _strnicmp(name, "codol_english", 13) == 0;
@@ -650,6 +634,7 @@ static void LoadPatchDir(void)
     LPWSTR *localeArgv=CommandLineToArgvW(GetCommandLineW(),&localeArgc);
     enum CodolPatchLanguage locale=localeArgv ? CodolPatchLanguageFromArgv(localeArgc,(const wchar_t *const*)localeArgv) : CODOL_PATCH_NATIVE;
     if(localeArgv)LocalFree(localeArgv);
+    g_english = locale == CODOL_PATCH_EN;
     const char *sub = "patch\\";
     char dir[MAX_PATH], pattern[MAX_PATH];
     DWORD n = GetModuleFileNameA(NULL, dir, MAX_PATH);
@@ -701,18 +686,12 @@ static void LoadPatchDir(void)
         if (len - 3 >= sizeof(z->name)) { Log("patch folder: skipped %s: name too long", file); continue; }
         memcpy(z->name, file, len - 3);
         z->name[len - 3] = 0;
-        if (!CodolPatchZoneLocaleAllowed(z->name,locale)) continue;
+        if (!CodolPatchZoneLocaleAllowed(z->name,locale)) {
+            if (EnglishZone(z->name)) g_englishSkipped++;
+            continue;
+        }
         if (lstrcmpiA(z->name, "ffotd_client") == 0) {
             Log("patch folder: skipped %s: the name belongs to the lobby's FFOTD", file);
-            continue;
-        }
-        if (EnglishZone(z->name) && !g_english) {
-            Log("patch folder: skipped %s: English is off (k33_english 0)", file);
-            g_englishSkipped++;
-            continue;
-        }
-        if (ChineseZone(z->name) && g_english) {
-            Log("patch folder: skipped %s: English is on (k33_english 1)", file);
             continue;
         }
         BOOL dup = FALSE;
@@ -872,7 +851,6 @@ static void PatchPostGfxLoad(void)
 
 static void PatchPatchDir(void)
 {
-    g_english = CmdLineFlag("k33_english", TRUE);
     if (!PatchUnsignedZones()) {
         Log("patch folder: not installed (unsigned zones cannot load from disk)");
         return;

@@ -1,8 +1,8 @@
 # GFx movie as a patch over a stock movie (zonekit/gfx.py)
 stock patch_ui_mp:scaleform/default/codo.gfx
 stock-sha256 2f143069ed10f3c937e0f5b758591e477f57544f76bdfd3bd2635f77cca5d332
-sha256 d3d8b7de38ad1c3390495e3f80d1ccfa81f9077aaadfafd2f693790d1708b820
-header 4746580ad0b24400800003200000025800001e0100
+sha256 8186c41312ba90b90f67fa813ad821ccd7b31dcc8480a28fa47f619e8e787074
+header 4746580aa27b4500800003200000025800001e0100
 keep 0
 keep 1
 keep 2
@@ -4557,7 +4557,7 @@ new tags/4550_82_Main.bin
 keep 4551
 keep 4552
 keep 4553
-keep 4554
+new tags/4554_82_components_CodoButton.bin
 keep 4555
 keep 4556
 keep 4557
@@ -4592,7 +4592,7 @@ keep 4585
 keep 4586
 keep 4587
 keep 4588
-keep 4589
+new tags/4589_82_components_list_part_ListItemRendererBase8.bin
 keep 4590
 keep 4591
 keep 4592
@@ -4777,7 +4777,7 @@ keep 4770
 keep 4771
 keep 4772
 keep 4773
-keep 4774
+new tags/4774_82_components_combobox_part_ComboBoxBtn.bin
 keep 4775
 keep 4776
 keep 4777
@@ -5113,7 +5113,7 @@ keep 5106
 keep 5107
 keep 5108
 keep 5109
-keep 5110
+new tags/5110_82_codo_views_MatchMPDetailView.bin
 keep 5111
 keep 5112
 keep 5113
@@ -5151,7 +5151,7 @@ keep 5144
 keep 5145
 keep 5146
 keep 5147
-keep 5148
+new tags/5148_82_components_LevelChooser.bin
 keep 5149
 keep 5150
 keep 5151
@@ -5278,7 +5278,7 @@ keep 5271
 keep 5272
 keep 5273
 keep 5274
-keep 5275
+new tags/5275_82_codo_views_MatchMPCTPlayListView.bin
 keep 5276
 keep 5277
 keep 5278
@@ -5582,7 +5582,7 @@ keep 5575
 keep 5576
 keep 5577
 keep 5578
-keep 5579
+new tags/5579_82_codo_objects_ScoreboardObj.bin
 keep 5580
 keep 5581
 keep 5582
@@ -5976,7 +5976,7 @@ keep 5969
 keep 5970
 keep 5971
 keep 5972
-keep 5973
+new tags/5973_82_codo_views_RankedMatchInProgressView.bin
 keep 5974
 keep 5975
 keep 5976
@@ -5995,7 +5995,7 @@ new tags/5988_82_codo_views_OptionView.bin
 keep 5989
 keep 5990
 keep 5991
-keep 5992
+new tags/5992_82_codo_views_SummaryView.bin
 keep 5993
 keep 5994
 keep 5995
@@ -6036,7 +6036,7 @@ keep 6029
 keep 6030
 keep 6031
 keep 6032
-keep 6033
+new tags/6033_82_codo_views_CyborgInRoomView.bin
 keep 6034
 new tags/6035_82_codo_views_ScoreboardBaseView.bin
 keep 6036
@@ -6068,7 +6068,7 @@ keep 6061
 keep 6062
 keep 6063
 keep 6064
-keep 6065
+new tags/6065_82_codo_views_RankedMatchReadyView.bin
 keep 6066
 keep 6067
 keep 6068
@@ -6092,7 +6092,7 @@ keep 6085
 keep 6086
 keep 6087
 keep 6088
-keep 6089
+new tags/6089_82_codo_views_MatchMiniRoomCreatorCyborgsView.bin
 keep 6090
 keep 6091
 keep 6092
@@ -6143,13 +6143,13 @@ keep 6136
 new tags/6137_82_codo_controllers_CareerBaseController.bin
 keep 6138
 keep 6139
-keep 6140
+new tags/6140_82_codo_controllers_PartyController.bin
 keep 6141
 keep 6142
 keep 6143
 keep 6144
 keep 6145
-keep 6146
+new tags/6146_82_codo_controllers_MainMenuAARController.bin
 keep 6147
 keep 6148
 new tags/6149_82_codo_services_SettingsService.bin
@@ -6163,7 +6163,7 @@ keep 6156
 keep 6157
 new tags/6158_82_codo_controllers_LoginController.bin
 keep 6159
-keep 6160
+new tags/6160_82_codo_controllers_PageNavigationController.bin
 keep 6161
 keep 6162
 keep 6163
@@ -6562,7 +6562,7 @@ keep 6555
 keep 6556
 keep 6557
 keep 6558
-keep 6559
+new tags/6559_82_components_room_part_RoomInfo.bin
 keep 6560
 keep 6561
 keep 6562
@@ -6873,30 +6873,46 @@ as codo.common.DataManager as/codo/common/DataManager.as 73b1b2be3d0f203a9a51848
 as codo.controllers.CareerBaseController as/codo/controllers/CareerBaseController.as 87221cead3ec144083570a701d1921cf427251b12178dc657425a19ce94090be
 as codo.controllers.CharacterLoadOutController as/codo/controllers/CharacterLoadOutController.as 6ae025be95f20c678090b4a4264a28c77b374cefa511e0f2e2a48a6bf3a240f5
 as codo.controllers.ClanController as/codo/controllers/ClanController.as 8da5ac55aa001294030715d773f685c10ab45f5e32f48693df250ca0a54e324f
-as codo.controllers.LobbyController as/codo/controllers/LobbyController.as 6b4fe6be3cf1d547ca624961b012bfbb437fd689aa121472ae5a703bf66e1b64
+as codo.controllers.LobbyController as/codo/controllers/LobbyController.as 2dea07d59a9ba343f99e28db6501acd037dd82902419c8a2d36e3ad781cebbf2
 as codo.controllers.LoginController as/codo/controllers/LoginController.as 85adbb2b448f73ae2d5e74539ca17183e80e965f62bd5b7a8b3a8466ad5d5ae3
-as codo.controllers.MainMenuController as/codo/controllers/MainMenuController.as a308f450dc0bf54da4eb4e93fa0459c187b57d8f306edda6d1f96fc0f14fc796
-as codo.controllers.MatchController as/codo/controllers/MatchController.as b75fb87564fd580ece90b7db4f3ef2e266f11c3f7000feed6b70b71d31f5defd
+as codo.controllers.MainMenuAARController as/codo/controllers/MainMenuAARController.as 115d2d0695b22a5fb95cef3d9b337de7dcd11f63aef3c5bd3c24d4220db99c57
+as codo.controllers.MainMenuController as/codo/controllers/MainMenuController.as 23d7942d88b26e40fa650a3929a14e37c5556a390e69e8f24a213f6c927c2127
+as codo.controllers.MatchController as/codo/controllers/MatchController.as 8385ec2d50a7283579c4666725e72ae5fcc0ece8b19a0a2052ce6e35615445e7
 as codo.controllers.OptionController as/codo/controllers/OptionController.as 3b32f5e4ab197b3798f2d9c6ca91f789433d427ba7496ffa48408a60b7323ff8
+as codo.controllers.PageNavigationController as/codo/controllers/PageNavigationController.as c7face6bf5a5d059ac7cabb6e1b4b8aed0ddc173bb2d89adfea1c566503df7c0
+as codo.controllers.PartyController as/codo/controllers/PartyController.as b4a1fc4cfc1fa44597684553d8677e488736fafa2e0ae4da0c1a8d67da170e02
 as codo.controllers.UIUnlockController as/codo/controllers/UIUnlockController.as b9a20748edaac1e78a028cde7d57d110bfbe6860f8e23ec7b9a25aaaf991645f
+as codo.objects.ScoreboardObj as/codo/objects/ScoreboardObj.as 996f50a4f9ec373b465d7fab6a678e49fd3b27f76e87d50382ab6da9e5262238
 as codo.services.MarketService as/codo/services/MarketService.as 7ed22223a6ed6b3c972665cd6c86862628e8f1265cb62b2657cdc8cc475abe8c
 as codo.services.MatchService as/codo/services/MatchService.as 5ca9eab35141fed415ad745c23fc100f5eb8b72734562bf8045526aa4153510b
 as codo.services.SettingsService as/codo/services/SettingsService.as 941bbcf39442bb557bbf6634b037e5f3fad69ce3a4df3808d96f5b6e31e06b35
 as codo.views.BottomStartGameView as/codo/views/BottomStartGameView.as 1fb1a2035e5ebbe13489da40c1076abc2f2d69abb439b35503abf78ecc49569b
+as codo.views.CyborgInRoomView as/codo/views/CyborgInRoomView.as a7c76fd9fd752cd5c1d005c57340e7647de5ebcb072ff4f672fbd590a251542d
 as codo.views.HomeQuickJoinView as/codo/views/HomeQuickJoinView.as ca2f3859e193ba6cfc77059b9f4a502c0908d0d6d5493fda52563d901bd89e0e
 as codo.views.MatchMPCTMenuView as/codo/views/MatchMPCTMenuView.as 5c86d9f8f2bc80007558faa1575aabcf856c17c6c1f1ccacc174b45db8619abf
-as codo.views.MatchMiniRoomCreatorView as/codo/views/MatchMiniRoomCreatorView.as a649ea3e3bd6f29d5bbb56b34e5149115a259edf154b785d149113f17d6b93ef
+as codo.views.MatchMPCTPlayListView as/codo/views/MatchMPCTPlayListView.as d6de3aa6f4d50dc6010730b3ae0a55e32465117646736b7bc714fa1040d7f1fa
+as codo.views.MatchMPDetailView as/codo/views/MatchMPDetailView.as 2e2ba0d53b1ca6ea18270c56501030a0355fce5dda9538fcda0d1228dc907f72
+as codo.views.MatchMiniRoomCreatorCyborgsView as/codo/views/MatchMiniRoomCreatorCyborgsView.as 838030ac7fb8cf5137c06cb972d52b8ac250d8fba1e978bcb945bbd0728b5a71
+as codo.views.MatchMiniRoomCreatorView as/codo/views/MatchMiniRoomCreatorView.as afeba84925165f1a0c9f61a2e0eb61d6d2cde84bd6b10477865d712c8c676025
 as codo.views.MatchRoomListView as/codo/views/MatchRoomListView.as 60143521a88fe579ffcb6ea3aaa39f23bafcfaab0ebf2e5a1f3fa3e55a2f0614
 as codo.views.MatchSelectModeHomeView as/codo/views/MatchSelectModeHomeView.as e47fd4cf093adc310ae5468cdedf840643370398bea6a12669c5f2eda7ed5041
 as codo.views.OptionView as/codo/views/OptionView.as 9ea117b23ae124102daaec19435cb195100d6dcdc33589b3d5ab917873dc26fe
 as codo.views.QuickMatchChooseNewView as/codo/views/QuickMatchChooseNewView.as 9b0d744dce8ba34ed4a28c4129b3561153da1607427c5b1a17b59b8b0ffc2d94
+as codo.views.RankedMatchInProgressView as/codo/views/RankedMatchInProgressView.as d47282ae1a3432041a72e407431efd28aaaf4138e9bb024c80507880a9113647
+as codo.views.RankedMatchReadyView as/codo/views/RankedMatchReadyView.as 7843928de384b7d45c63bf13c16493492a3ddbf2239a00a2e2346aa2308d76d0
 as codo.views.ScoreboardBaseView as/codo/views/ScoreboardBaseView.as 541ac8697653999c542f3473969580c1aa640e2b0709393caec3859e16bccd5b
-as codo.views.matchmpctroomcreator_sub.MatchMPCTRoomCreatorView_mpcreator as/codo/views/matchmpctroomcreator_sub/MatchMPCTRoomCreatorView_mpcreator.as 158fe938736975149921c97d30f70eaa248f087ca009ae900f4106d8e4ebc014
+as codo.views.SummaryView as/codo/views/SummaryView.as 0e2866e484e085be128c14dc7b58e3180b1d739fe900e04762f12148430c73b1
+as codo.views.matchmpctroomcreator_sub.MatchMPCTRoomCreatorView_mpcreator as/codo/views/matchmpctroomcreator_sub/MatchMPCTRoomCreatorView_mpcreator.as 85ce86267201686f14ff40305530ecbaeb758a99e7b3a8737d3ee82b7c4f9d49
 as codo.views.option_sub.OptionView_audio as/codo/views/option_sub/OptionView_audio.as bd11696b3f0c4c5e96feae902434c0e0e317ea7a4b624a858e6eda55c0497860
 as codo.views.option_sub.OptionView_control_chat as/codo/views/option_sub/OptionView_control_chat.as 62b0364bf158cbc8cc8f7f4f27c6b2e103692f94b0110ca9f4bdf2930e9c4362
 as codo.views.option_sub.OptionView_video as/codo/views/option_sub/OptionView_video.as c1cea72f9756f1ff81ec6a283cc3ebc0d755de98497166cc10633245a9225a55
 as codo.views.summary_sub.LobbySummaryView_scoreboardPanel as/codo/views/summary_sub/LobbySummaryView_scoreboardPanel.as 6d755b9fe05a0c5ddb4ea101ac48d7783723c54405bd634ba2f894d7a48631b0
+as components.CodoButton as/components/CodoButton.as dedcc37aff499b1a1123657f95c9f33f9187764429e45bf17750d0bc53628528
+as components.LevelChooser as/components/LevelChooser.as e3eb7121705bd8eb43b2c0f97b69337f95374ca37d3249827c87f7677e95f0ff
+as components.combobox_part.ComboBoxBtn as/components/combobox_part/ComboBoxBtn.as e92b6a80b34e1d5624f31ffb6dc06c6d61f1bccc40fc22a7965cce5c3d88b992
 as components.homeTempAD.NoDataAD as/components/homeTempAD/NoDataAD.as e6cf03cf1accaf5d8ab752312d6538c8190b56f85056d267b6b90e730317af03
+as components.list_part.ListItemRendererBase8 as/components/list_part/ListItemRendererBase8.as a5be0b9947efdad8b3194940eb09ef1b66c0bbd21e4d80d0ceb9125ef5ec3c7a
 as components.list_part.RoomListItemRenderer as/components/list_part/RoomListItemRenderer.as 33d433f9d7660204e109ba8eef1f6185ab51f68ab4dac187155883db10bbbb6d
+as components.room_part.RoomInfo as/components/room_part/RoomInfo.as c5cf44707fc8cb53f225aa35b2106d202711014f4b4945e389ee125d1e00670e
 as components.scoreboard_part.ScoreboardTeamPanel as/components/scoreboard_part/ScoreboardTeamPanel.as 0e78302799a9bf0c8eb12798a5f97135dc74f947d3901e348424e6b60adb5afb
 as ime.LangBarElement as/ime/LangBarElement.as 8fa9032f2cb798dc1857499c92ed9b6136e2b794841ef1c92cb175902e6f0ea6

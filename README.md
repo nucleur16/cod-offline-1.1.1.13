@@ -226,7 +226,10 @@ string zones load. Kernel33 decides that at startup, from the command line:
     codoMP_client_shipRetail.exe +set dw_username <name> +set k33_english 0     Chinese
 
 - **Default: English** (no option, or `1`). The last `k33_english` on the line wins; any value but `0`/`1` is ignored.
-- Read by the DLL from the command line only (`kernel33.c`, `CmdLineFlag` / `EnglishZone` / `ChineseZone`): C1 execs
+- Existing launchers may still use `+set codol_patchlang en` or `+set codol_patchlang zh`. An explicit valid
+  `k33_english` takes precedence over that compatibility alias, regardless of argument order. Both selectors use
+  one parsed language choice; they cannot independently filter out both sets of string zones.
+- Read by the DLL from the command line only (`patch_locale_policy.h`, `CodolPatchLanguageFromArgv`): C1 execs
   `players\config_mp.cfg` before it registers its dvars and applies no `+set` to a dvar it does not know, so the
   option is not a saved dvar. Nothing writes it to config_mp.cfg, and a config write never changes it; it lasts until
   the client is started without it.
