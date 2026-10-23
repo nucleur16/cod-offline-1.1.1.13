@@ -24,8 +24,10 @@
  *   when a borderless window no longer covers its monitor (a desktop resolution change), one
  *   vid_restart is queued. vid_restart destroys and recreates the window and the device (0xA7AD90).
  *
- * codol_borderless is registered as an archived int 0..1 (saved in config_mp.cfg). Before that, the
- * value comes from the dvar config_mp.cfg's "seta" created (a string dvar), read by name.
+ * codol_borderless is registered as an archived bool (saved in config_mp.cfg). It must be a bool (or a
+ * string): the movie reads it with the Scaleform Dvar_GetBool (0x6A5000), which takes any other type's value
+ * as a string pointer (an int dvar crashed it in strtol). Before registration, the value comes from the dvar
+ * config_mp.cfg's "seta" created (a string dvar), read by name.
  */
 
 #define BD_CREATE_CALL_VA     0x00A7AC89u   /* call R_CreateWindow in R_InitGraphicsApi */
@@ -34,6 +36,7 @@
 #define BD_CWEX_IAT_VA        0x00B42428u   /* the exe's CreateWindowExA slot (C1.exe: 0x9A1D6F4) */
 #define BD_DVAR_FIND_VA       0x006232C0u   /* Dvar_FindVar(name) -> dvar_t* */
 #define BD_MAIN_HWND_VA       0x02B68104u
+#define BD_REGISTER_BOOL_VA   0x00624370u   /* Dvar_RegisterBool(name, value, flags, desc) */
 
 __attribute__((used)) DWORD g_bdCreateWindowFn = BD_CREATE_WINDOW_VA;
 static void *g_bdCreateWindowExPtr;          /* the IAT-style slot the patched call reads */
@@ -65,7 +68,7 @@ static int BdDvarValue(const char *name, int def)
 
 static BOOL BorderlessWanted(void)
 {
-    if (g_bdDvar) return C1DvarInt(g_bdDvar, 0) != 0;
+    if (g_bdDvar && g_bdDvar != (const BYTE *)1) return g_bdDvar[0xC] != 0;
     return BdDvarValue("codol_borderless", 0) != 0;
 }
 
@@ -176,9 +179,12 @@ static void BorderlessTick(void)
     if (!g_bdInstalled) return;
     if (!g_bdDvar && C1DvarsReady()) {
         int cur = BdDvarValue("codol_borderless", 0) != 0;
-        g_bdDvar = C1RegisterInt("codol_borderless", cur, 0, 1, 0x1,
-                                 "Fullscreen Windowed: a borderless window covering the monitor (with r_fullscreen 0)");
-        Log("borderless: codol_borderless registered (%d)", C1DvarInt(g_bdDvar, -1));
+        typedef const BYTE *(__cdecl *RegisterBoolFn)(const char *, BYTE, unsigned, const char *);
+        const BYTE *d = ((RegisterBoolFn)(DWORD_PTR)BD_REGISTER_BOOL_VA)(
+            "codol_borderless", (BYTE)cur, 0x1, "Fullscreen Windowed: a borderless window covering the monitor (with r_fullscreen 0)");
+        g_bdDvar = d && Readable(d, 0x10) && d[8] == 0 ? d : NULL;
+        Log("borderless: codol_borderless registered as a bool (%d)", g_bdDvar ? g_bdDvar[0xC] : -1);
+        if (!g_bdDvar) g_bdDvar = (const BYTE *)1;   /* do not try again; read it by name */
     }
     HWND h = *(HWND *)(DWORD_PTR)BD_MAIN_HWND_VA;
     if (!h || !IsWindow(h) || g_bdWindowBorderless < 0) return;
