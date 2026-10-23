@@ -12,6 +12,8 @@ Rebuilding joins the stock tags and the new tag files, so it is byte-identical. 
 its recorded sha256 (an edit) is compiled by FFDec (-replace) over the stock class, and only its DoABC tag is replaced;
 every other tag is checked unchanged. --compile-as also compiles every as/ file whose text differs from FFDec's
 decompile of the stored tag (the hand-written ones), which reproduces their stored tags byte for byte.
+build_zones.py --store-class compiles one as/ file and stores its tag (store_class); a class the stock movie does not
+have (Kernel33's own, e.g. codo.k33.PadSnap) is added that way as a new DoABC tag ahead of the SymbolClass tag.
 A "// @K33DIAGRAMS@" line is replaced by k33_pad_diagrams.as.inc from the same folder before compiling; the include
 is part of the recorded sha256.
 """
@@ -278,3 +280,70 @@ def compile_as(movie: bytes, cls: str, as_path: str, ffdec: str) -> bytes:
     out = bytearray(movie[:old[hit][1]] + compiled[new[hit][1]:new[hit][2]] + movie[old[hit][2]:])
     struct.pack_into("<I", out, 4, len(out))
     return bytes(out)
+
+
+
+T_SYMBOLCLASS = 76
+DONOR = "codo.common.FPSMemCounter"   # any class of the movie: FFDec compiles a new class only over an existing one
+
+
+def doabc_tag(name: str, flags: int, abc: bytes) -> bytes:
+    body = struct.pack("<I", flags) + name.encode("latin-1") + b"\0" + abc
+    return struct.pack("<HI", (T_DOABC << 6) | 0x3F, len(body)) + body
+
+
+def new_class_tag(movie: bytes, cls: str, as_path: str, ffdec: str, donor: str = DONOR) -> bytes:
+    """A complete DoABC tag (lazy, like the movies' own) holding class `cls`, which `movie` does not have, compiled by
+    FFDec from `as_path`. FFDec compiles only over an existing class, so the source replaces `donor` in a scratch
+    copy and that tag's code is taken under the new class's name."""
+    scratch = compile_as(movie, donor, as_path, ffdec)
+    hit = [(s, e) for c, s, e, n in tags(scratch) if c == T_DOABC and n == donor.replace(".", "/")]
+    if len(hit) != 1:
+        raise SystemExit("donor %s not found once" % donor)
+    s, e = hit[0]
+    hl = 6 if scratch[s] & 0x3F == 0x3F else 2
+    z = scratch.index(b"\0", s + hl + 4)
+    return doabc_tag(cls.replace(".", "/"), 1, scratch[z + 1:e])
+
+
+def store_class(dirpath: str, stock: bytes, cls: str, rel: str, ffdec: str) -> str:
+    """Compiles class `cls` from <dirpath>/<rel> (FFDec) and stores the result in the patch, so builds need no FFDec:
+    the class's DoABC tag goes to its tag file (tags/k33_82_<class>.bin for one still kept from the stock movie) and its
+    patch.txt line becomes "new" (a class the stock movie
+    does not have is added after the movie's last DoABC tag, ahead of its SymbolClass tag), and the "as" and
+    "sha256" lines are updated. Returns the tag file name."""
+    path = os.path.join(dirpath, rel)
+    lines = open(os.path.join(dirpath, "patch.txt")).read().splitlines()
+    movie = build_patch(dirpath, stock)
+    want = cls.replace(".", "/")
+    mt = tags(movie)
+    hit = [i for i, (c, _s, _e, n) in enumerate(mt) if c == T_DOABC and n == want]
+    ops = [i for i, l in enumerate(lines) if l.split(" ", 1)[0] in ("keep", "new", "font")]
+    if len(ops) != len(mt):
+        raise SystemExit("%s: %d tag lines for %d tags" % (dirpath, len(ops), len(mt)))
+    fn = "tags/k33_82_%s.bin" % safe(cls.replace(".", "_"))
+    if hit:
+        compiled = compile_as(with_stock_class(movie, stock, cls), cls, path, ffdec)
+        c, s, e, _n = tags(compiled)[hit[0]]
+        tag = compiled[s:e]
+        k, _, v = lines[ops[hit[0]]].partition(" ")
+        if k == "new":
+            fn = v                          # the class already has a tag file: it keeps its name
+        lines[ops[hit[0]]] = "new %s" % fn
+    else:
+        tag = new_class_tag(movie, cls, path, ffdec)
+        pos = [i for i, (c, _s, _e, _n) in enumerate(mt) if c == T_SYMBOLCLASS]
+        if not pos:
+            raise SystemExit("%s: no SymbolClass tag" % dirpath)
+        lines.insert(ops[pos[-1]], "new %s" % fn)
+    with open(os.path.join(dirpath, fn), "wb") as f:
+        f.write(tag)
+    lines = [l for l in lines if not l.startswith("as %s " % cls)]
+    lines.append("as %s %s %s" % (cls, rel, source_sha(path)))
+    with open(os.path.join(dirpath, "patch.txt"), "w", newline="\n") as f:
+        f.write("\n".join(lines) + "\n")
+    movie = build_patch(dirpath, stock)
+    lines = ["sha256 %s" % sha(movie) if l.startswith("sha256 ") else l for l in lines]
+    with open(os.path.join(dirpath, "patch.txt"), "w", newline="\n") as f:
+        f.write("\n".join(lines) + "\n")
+    return fn
