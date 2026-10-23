@@ -1,8 +1,8 @@
 # GFx movie as a patch over a stock movie (zonekit/gfx.py)
 stock patch_common_mp:scaleform/default/codoingame.gfx
 stock-sha256 e2a6514c6a82760d14d5b77116fc6c0e11c3c245247da86a62e1986da6dc0115
-sha256 85e1a71b468aaee575f3f3b1d886a733ec6849831789270275d76eb10c3b3ff9
-header 4746580ae3190d00800003200000025800001e0100
+sha256 9e75a0064a21ccacca9185b5b4daef78646b548c9a8e9ecc1ac8f2914bbf8c69
+header 4746580aa92a0d00800003200000025800001e0100
 keep 0
 keep 1
 keep 2
@@ -852,7 +852,7 @@ keep 845
 keep 846
 keep 847
 keep 848
-as MainPause as/MainPause.as 9b0c7265d52d34a6ffe29d07db999e84a7feb573df4cbf4e4e505bf4e5e33942
+as MainPause as/MainPause.as 16155c174d272c0a5cda88281c5db53040ec5054fe5f583eb1915231a9768042
 as codo.common.CFunctionContainer as/codo/common/CFunctionContainer.as c0f1e15ca27986ea462c0656cb2f6e5f21cc54bfef491772a82b798959f5da0d
 as codo.common.CFunctionContainerPause as/codo/common/CFunctionContainerPause.as 3231853eee0b4f09b03123bc7d1df8d50a9c2eacd0e11ff5c1e147e4ef0fc2f1
 as codo.common.PageManagerPause as/codo/common/PageManagerPause.as ec55821ee4cfdfcec3afd6668b8df81784a4ffc25cf4be3424465b1a78493171
