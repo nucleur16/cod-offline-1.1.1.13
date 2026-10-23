@@ -29,7 +29,7 @@ fi
 "$BIN/windres.exe" -O coff -i kernel33.rc -o kernel33_res.o
 CFLAGS="-O2 -Wall -Wextra -Wno-unused-parameter -Wno-cast-function-type -Wno-missing-field-initializers -shared -s -static -static-libgcc -I$SDL_DIR/include"
 LIBS="-L$SDL_DIR/lib -lSDL2 -lsetupapi -lcfgmgr32 -lversion -loleaut32 -luuid \
--lopus -lz -limm32 -lgdi32 -lshlwapi -lole32 -lwinmm -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat"
+-lopus -lz -limm32 -lgdi32 -lshlwapi -lole32 -lwinmm -lws2_32 -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat"
 "$BIN/gcc.exe" $CFLAGS -o Kernel33_dev.dll kernel33.c kernel33_res.o kernel33.def $LIBS
 "$BIN/gcc.exe" $CFLAGS -DK33_NO_CONSOLE -o Kernel33_noconsole.dll kernel33.c kernel33_res.o kernel33.def $LIBS \
     || { echo "FAILED: the build without console.c (-DK33_NO_CONSOLE) does not link"; exit 1; }
