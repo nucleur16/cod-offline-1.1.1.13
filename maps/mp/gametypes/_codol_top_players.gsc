@@ -386,6 +386,15 @@ holdAsSource( camera, cameraOrigin, rank )
 	level endon( "top_players_scene_end" );
 
 	self.topPlayersRank = rank;
+	// spawnPlayer's own fields, for a ranked player who joined a team but
+	// never spawned this match (still on the class menu at the end): from
+	// here on the player is "playing" and alive, and the spawn logic
+	// (_spawnlogic spawnPointUpdate) and the end-of-game awards
+	// (_awards longestlife) read both.
+	if ( !isDefined( self.wasTI ) )
+		self.wasTI = false;
+	if ( !isDefined( self.spawnTime ) )
+		self.spawnTime = getTime();
 
 	self notify( "spawned" );
 	self notify( "end_respawn" );

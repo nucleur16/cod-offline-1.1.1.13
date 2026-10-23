@@ -1594,6 +1594,13 @@ spawnPointUpdate( spawnpoint )
 			//prof_end( " spawn_update_player" );
 			continue;
 		}
+
+		// "playing" does not imply _playerlogic::spawnPlayer ran: the
+		// end-of-match top-players scene holds every ranked player that way,
+		// including one who joined a team and never spawned. Only a team
+		// player has weights here, and wasTI/spawnTime are guarded below.
+		if ( teambased && player.team != "allies" && player.team != "axis" )
+			continue;
 		
 		/*
 		playerSecondFloor = false;
@@ -1626,7 +1633,7 @@ spawnPointUpdate( spawnpoint )
 		
 		//prof_begin( " spawn_update_weight" );
 		// tactical insertion weighting; players should not spawn too close to recent TI spawns
-		if ( player.wasTI && curTime - player.spawnTime < 15000 )
+		if ( isDefined( player.wasTI ) && player.wasTI && isDefined( player.spawnTime ) && curTime - player.spawnTime < 15000 )
 			weight *= 0.1;
 		
 		// CoDOL appearance comes from playerdata parts, including the vest.
