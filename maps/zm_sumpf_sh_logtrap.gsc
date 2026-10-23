@@ -58,6 +58,8 @@ LOG_TRAP_SPIN = 14040;
 LOG_TRAP_TIME = 30;
 LOG_TRAP_RAMP = 6;
 LOG_TRAP_COOLDOWN = 45;
+LOG_SWEEP_RADIUS = 145;
+LOG_SWEEP_HALF_WIDTH = 72;
 
 init()
 {
@@ -396,9 +398,28 @@ log_blade_sounds()
 }
 
 // T5 penDamage, polled (see header).  self = the trap.
+//
+// The zombie_trap brush alone never hits anyone: MEASURED from the ported
+// map, it spans z -565 .. -456 around the log's hub (-510.5), while the
+// corridor floor under the log is near -655 (the buy triggers at -625 and
+// -612 reach down to -651 and -643), so a zombie or player walking under the
+// log stays some 90 units below it -- the first live run logged "zombies
+// killed 0".  T5's log trap kills whatever the spinning log sweeps, so a body
+// also counts as hit when it lies inside the disc the log turns through:
+// within LOG_SWEEP_RADIUS of the hub in the plane of the spin and within
+// LOG_SWEEP_HALF_WIDTH of it along the spin axis (the brush's own extents:
+// half length 141.8, half width 71.5).
 log_damage( who )
 {
 	self endon( "log_done" );
+
+	hub = self.origin;
+	axis = ( 0, 1, 0 );
+	if ( isDefined( self.log_movers[ 0 ] ) )
+	{
+		hub = self.log_movers[ 0 ].origin;
+		axis = anglesToRight( self.log_movers[ 0 ].angles );
+	}
 
 	for ( ;; )
 	{
@@ -413,21 +434,48 @@ log_damage( who )
 				z = zombies[ i ];
 				if ( !isDefined( z ) || !isAlive( z ) || isDefined( z.marked_for_death ) )
 					continue;
-				if ( z isTouching( self ) )
+				if ( z isTouching( self ) || log_in_sweep( z.origin, hub, axis ) )
 					z thread log_zombie_death( self );
 			}
 		}
 
+		// A crouched or prone player ducks under the log (the user's rule for
+		// this port); the sweep test reaches the floor, so both stances are
+		// excluded here and only a standing player is hit.
 		players = getPlayers();
 		for ( i = 0; i < players.size; i++ )
 		{
 			p = players[ i ];
-			if ( is_player_valid( p ) && p isTouching( self ) )
+			if ( !is_player_valid( p ) || p getStance() != "stand" )
+				continue;
+			if ( p isTouching( self ) || log_in_sweep( p.origin, hub, axis ) )
 				p thread log_player_damage();
 		}
 
 		wait( 0.1 );
 	}
+}
+
+// Is a standing body (feet at origin, tested at knee, waist and chest) inside
+// the disc the log sweeps?  The spin axis is the log's right vector, the axis
+// a pitch rotation turns about.
+log_in_sweep( origin, hub, axis )
+{
+	heights = [];
+	heights[ 0 ] = 16;
+	heights[ 1 ] = 40;
+	heights[ 2 ] = 60;
+	for ( i = 0; i < heights.size; i++ )
+	{
+		v = ( origin + ( 0, 0, heights[ i ] ) ) - hub;
+		along = vectorDot( v, axis );
+		if ( abs( along ) > LOG_SWEEP_HALF_WIDTH )
+			continue;
+		radial = v - ( axis * along );
+		if ( length( radial ) <= LOG_SWEEP_RADIUS )
+			return true;
+	}
+	return false;
 }
 
 // T5 zombiePenDamage / play_imp_sound, without the ragdoll launch.

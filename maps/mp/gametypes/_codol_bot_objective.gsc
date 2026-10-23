@@ -340,6 +340,17 @@ addUseTasks( tasks, obj, team )
 				task.urgent = true;
 				tasks[tasks.size] = task;
 			}
+			else if ( isDefined( obj.keyObject.carrier ) && obj.keyObject.carrier != self &&
+				isDefined( obj.keyObject.carrier.pers["team"] ) && obj.keyObject.carrier.pers["team"] == team )
+			{
+				// A teammate carries the bomb here (sab): clear the site ahead
+				// of him rather than let him walk into its defenders alone.
+				task = newTask( "p" + obj.entNum, "defend", origin, 400, 4 );
+				task.anchor = origin;
+				task.crowd = 1.5;
+				task.cap = 2;
+				tasks[tasks.size] = task;
+			}
 			return tasks;
 		}
 		if ( isDefuseObject( obj ) )
@@ -375,6 +386,15 @@ addUseTasks( tasks, obj, team )
 		task.anchor = origin;
 		task.crowd = 1.5;
 		task.cap = 3;
+		if ( level.gametype == "sab" && isDefuseObject( obj ) )
+		{
+			// Our bomb ticks (45 s) and the defenders respawn beside it: the
+			// whole team guards it close in, as there is nothing else left to
+			// defend (450 out, the guards patrolled away from the defuser).
+			task.radius = 250;
+			task.crowd = 0.5;
+			task.cap = 5;
+		}
 		tasks[tasks.size] = task;
 	}
 	return tasks;
@@ -412,6 +432,14 @@ addCarryTasks( tasks, obj, team )
 			task.anchor = carrier.origin;
 			task.crowd = 1.5;
 			task.cap = 2;
+			if ( isDefined( level.sabBomb ) && obj == level.sabBomb )
+			{
+				// One bomb: while we carry it our own site is safe, so the
+				// team escorts the carrier (here) and clears the target site
+				// ahead of him (addUseTasks).
+				task.weight = 4;
+				task.cap = 3;
+			}
 		}
 		else
 		{
@@ -419,6 +447,16 @@ addCarryTasks( tasks, obj, team )
 			task.crowd = 0.6;
 			if ( obj.ownerTeam == team )
 				task.urgent = true;   // they have our flag
+			else if ( isDefined( level.sabBomb ) && obj == level.sabBomb )
+			{
+				// Sabotage: the bomb is pinged to the whole enemy team, and an
+				// uncapped hunt sent every enemy at the carrier, who then never
+				// got near a site. Two hunt him; the rest hold their site
+				// (addUseTasks) or roam.
+				task.weight = 6;
+				task.crowd = 1.5;
+				task.cap = 2;
+			}
 		}
 		tasks[tasks.size] = task;
 		return tasks;
@@ -633,6 +671,7 @@ startTask( task )
 	state.holdGoal = undefined;
 	state.lastGoal = undefined;
 	state.lastRadius = 0;
+	state.useWaitStart = undefined;
 	self.codolObjState = state;
 	self debugTask( task.kind + " " + task.key + " at " + task.goal );
 }
@@ -669,7 +708,10 @@ stepTask( task )
 		radius = 64;
 	}
 	else
+	{
 		state.holdGoal = undefined;
+		state.useWaitStart = undefined;
+	}
 
 	if ( !self hasScriptGoal() || !isDefined( state.lastGoal ) || state.lastRadius != radius ||
 		distanceSquared( state.lastGoal, goal ) > 48 * 48 )
@@ -784,6 +826,25 @@ debugUse( task )
 		" progress " + progress + " weapon " + self getCurrentWeapon() );
 }
 
+// T5 bot_is_idle: no errand while the bot is engaging. getThreat keeps an
+// enemy for 3 s after it was last seen, so on a defended bomb site there was
+// always one, and a carrier stood on the trigger until he was shot. Wait only
+// for an enemy in sight, and for at most 4 s on the trigger.
+threatBlocksUse( state )
+{
+	threat = self getThreat();
+	if ( !isDefined( threat ) )
+		return false;
+	if ( isDefined( state ) )
+	{
+		if ( !isDefined( state.useWaitStart ) )
+			state.useWaitStart = getTime();
+		else if ( getTime() - state.useWaitStart > 4000 )
+			return false;
+	}
+	return sightTracePassed( self getEye(), threat getEye(), false, self );
+}
+
 // T5 bot_crate_think: hold use for the use time plus the weapon switch the
 // gameobject waits for (useHoldThinkLoop allows 1.5 s), standing still.
 // _gameobjects::useHoldThink gives the bot the object's use weapon (the
@@ -792,7 +853,8 @@ debugUse( task )
 // (codol_bot.c), so the engine raises both as it does for a C1 client.
 doUse( task )
 {
-	if ( !task.forceUse && isDefined( self getThreat() ) )
+	state = self.codolObjState;
+	if ( !task.forceUse && self threatBlocksUse( state ) )
 	{
 		wait 0.5;   // fight first
 		return;

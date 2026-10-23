@@ -49,8 +49,11 @@
 //
 // NOT TAKEN: trap_dialog (its VO line is commented out in T5 itself),
 // clientnotify (not a builtin here), Exploder for numeric script_strings (no
-// CoDOL map uses one), the rotating / flipper / fire types (no CoDOL map
-// carries one).  zm_zombie_training's `zombie_trap` (script_string "fk")
+// CoDOL map uses one), the rotating / flipper types (no CoDOL map carries
+// one).  The FIRE type (T5 trap_activate_fire :545) is taken for
+// zm_theater_sh's crematorium trap: the electric trap's buy, cooldown and
+// kill rules with fire_trap_med at its effect points and the zmb_firetrap_*
+// sounds.  zm_zombie_training's `zombie_trap` (script_string "fk")
 // names no trigger_use -- its target is a second trigger_multiple and two
 // audio structs -- so it has no T5 buy handle and is left alone, logged.
 
@@ -60,8 +63,11 @@ init()
 {
 	level.zombie_trap_killed_count = 0;
 	level.zm_map_traps = [];
-	level.elec_trap_time = 40;
-	level.elec_trap_cooldown_time = 60;
+	// A map may set its own before levelMain (zm_sumpf_sh: T5 Shi No Numa 25 / 90).
+	if ( !isDefined( level.elec_trap_time ) )
+		level.elec_trap_time = 40;
+	if ( !isDefined( level.elec_trap_cooldown_time ) )
+		level.elec_trap_cooldown_time = 60;
 
 	// Developer-only test verbs (scr_codol_powertest); returns at once on
 	// a production server.
@@ -100,6 +106,17 @@ init()
 	// T5 asylum :32.  shock/electrocution.shock ships in common_gametype_zm.
 	precacheShellShock( "electrocution" );
 
+	// T5 zombie_theater_fx.csc :148, the fire trap's flames (zm_theater_sh's
+	// crematorium).  The effect ships in that map's zone only.
+	for ( i = 0; i < traps.size; i++ )
+	{
+		if ( traps[ i ].script_noteworthy == "fire" )
+		{
+			level._effect[ "fire_trap_med" ] = loadfx( "maps/zombie/fx_zombie_fire_trap_med" );
+			break;
+		}
+	}
+
 	add_sound( "purchase", "zmb_cha_ching" );
 
 	for ( i = 0; i < traps.size; i++ )
@@ -117,9 +134,9 @@ trap_usable()
 	if ( isDefined( self.script_noteworthy ) )
 		type = self.script_noteworthy;
 
-	if ( type != "electric" )
+	if ( type != "electric" && type != "fire" )
 	{
-		codolprintln( "CoDOL zm trap: zombie_trap ent " + self getEntityNumber() + " type " + type + " is not an electric trap; left alone" );
+		codolprintln( "CoDOL zm trap: zombie_trap ent " + self getEntityNumber() + " type " + type + " is not an electric or fire trap; left alone" );
 		return false;
 	}
 
@@ -185,6 +202,17 @@ trap_init()
 	{
 		if ( !isDefined( fx[ i ].model ) )
 			self._trap_fx_structs[ self._trap_fx_structs.size ] = fx[ i ];
+	}
+	// Kino der Toten (T5 zombie_theater_fx.csc trap_fx_monitor :162) has no
+	// <id>_trap_fx structs: its effect points are the structs the trap
+	// targets, the same ones that carry its sounds.
+	if ( self._trap_fx_structs.size < 1 )
+	{
+		for ( i = 0; i < self._trap_audio_structs.size; i++ )
+		{
+			if ( !isDefined( self._trap_audio_structs[ i ].model ) )
+				self._trap_fx_structs[ self._trap_fx_structs.size ] = self._trap_audio_structs[ i ];
+		}
 	}
 
 	// The zapper box and wall-switch effect points nearest the handle.
@@ -400,7 +428,11 @@ trap_activate_electric()
 	self notify( "trap_activate" );
 	codolprintln( "CoDOL zm trap: " + self._trap_id + " live for " + self._trap_duration + " s" );
 
-	// The client script's effects (see header).
+	// The client script's effects (see header).  A fire trap (T5
+	// trap_activate_fire :545) burns fire_trap_med at the same points.
+	fx_name = "zapper";
+	if ( self._trap_type == "fire" )
+		fx_name = "fire_trap_med";
 	fx = [];
 	for ( i = 0; i < self._trap_fx_structs.size; i++ )
 	{
@@ -408,13 +440,16 @@ trap_activate_electric()
 		angles = ( 0, 0, 0 );
 		if ( isDefined( s.angles ) )
 			angles = s.angles;
-		e = spawnFx( level._effect[ "zapper" ], s.origin, anglesToForward( angles ), anglesToUp( angles ) );
+		e = spawnFx( level._effect[ fx_name ], s.origin, anglesToForward( angles ), anglesToUp( angles ) );
 		triggerFx( e );
 		fx[ fx.size ] = e;
 	}
-	self thread trap_machine_fx();
-	if ( isDefined( self._trap_sparks ) )
-		self thread trap_wire_sparks( self._trap_sparks );
+	if ( self._trap_type == "electric" )
+	{
+		self thread trap_machine_fx();
+		if ( isDefined( self._trap_sparks ) )
+			self thread trap_wire_sparks( self._trap_sparks );
+	}
 
 	for ( i = 0; i < self._trap_audio_structs.size; i++ )
 	{
@@ -504,11 +539,23 @@ trap_wire_sparks( start )
 trap_audio_fx( trap )
 {
 	sound_origin = spawn( "script_origin", self.origin );
-	sound_origin playSound( "zmb_elec_start" );
-	sound_origin playLoopSound( "zmb_elec_loop" );
-	self thread play_electrical_sound( trap );
+	if ( trap._trap_type == "fire" )
+	{
+		// T5 :691.
+		sound_origin playSound( "zmb_firetrap_start" );
+		sound_origin playLoopSound( "zmb_firetrap_loop" );
+	}
+	else
+	{
+		sound_origin playSound( "zmb_elec_start" );
+		sound_origin playLoopSound( "zmb_elec_loop" );
+		self thread play_electrical_sound( trap );
+	}
 
 	trap waittill( "trap_done" );
+
+	if ( trap._trap_type == "fire" )
+		playSoundAtPosition( "zmb_firetrap_end", self.origin );
 
 	if ( isDefined( sound_origin ) )
 	{
@@ -557,15 +604,17 @@ trap_damage()
 		{
 			p = players[ i ];
 			if ( is_player_valid( p ) && p isTouching( self ) )
-				p thread player_elec_damage();
+				p thread player_elec_damage( self._trap_type );
 		}
 
 		wait( 0.1 );
 	}
 }
 
-// T5 :809.  self = a player standing in a live trap.
-player_elec_damage()
+// T5 :809 (and player_fire_damage :858, the same rule; C1 has no setBurn,
+// so a fire trap only skips the electric shellshock).  self = a player
+// standing in a live trap.
+player_elec_damage( trap_type )
 {
 	self endon( "death" );
 	self endon( "disconnect" );
@@ -578,8 +627,13 @@ player_elec_damage()
 	jugg = self hasPerk( "specialty_armorvest" );
 
 	self.is_burning = 1;
-	self shellShock( "electrocution", 2.5 );
-	self playSound( "zmb_zombie_arc" );
+	if ( isDefined( trap_type ) && trap_type == "fire" )
+		self playSound( "zmb_ignite" );
+	else
+	{
+		self shellShock( "electrocution", 2.5 );
+		self playSound( "zmb_zombie_arc" );
+	}
 
 	if ( !isDefined( self.zm_trap_shock_logged ) || getTime() - self.zm_trap_shock_logged > 5000 )
 	{
@@ -638,7 +692,7 @@ zombie_trap_death( trap, param )
 				self.a.gib_ref = refs[ randomInt( refs.size ) ];
 
 			playSoundAtPosition( "zmb_zombie_arc", self.origin );
-			if ( randomInt( 100 ) > 50 )
+			if ( isDefined( trap ) && trap._trap_type == "electric" && randomInt( 100 ) > 50 )
 			{
 				self thread electroctute_death_fx();
 				self thread play_elec_vocals();

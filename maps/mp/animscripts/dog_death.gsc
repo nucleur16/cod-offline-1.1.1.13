@@ -16,6 +16,7 @@
 
 main()
 {
+	if ( isdefined( level.dogcap ) ) self dogcap( "death dy=" + int( self t5DamageYaw() ) );
 	debug_anim_print("dog_death::main()" );
 	self SetAimAnimWeights( 0, 0 );
 
@@ -36,7 +37,7 @@ main()
 		self.enemy.syncedMeleeTarget = undefined;
 	}
 
-	death_anim = "death_" + getAnimDirection( self.damageyaw );
+	death_anim = "death_" + getAnimDirection( self t5DamageYaw() );
 /#
 	println(death_anim);
 #/

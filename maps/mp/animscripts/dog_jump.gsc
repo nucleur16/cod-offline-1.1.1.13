@@ -23,6 +23,7 @@
 
 main( begin, begin_angles, end, animscript )
 {
+	self dogcap( "jump" );
 	self endon("killanimscript");
 
 	debug_anim_print("dog_jump::main()" );

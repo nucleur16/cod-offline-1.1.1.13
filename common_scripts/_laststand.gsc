@@ -299,6 +299,11 @@ laststand_end_cleanup()
 {
 	self waittill( "laststand_over" );
 
+	// Disconnect can resume this wait after the native player was freed.
+	// ClientDisconnect already removes client HUDs and the mode trigger.
+	if ( !isDefined( self ) )
+		return;
+
 	self laststand_hud_destroy();
 
 	// Prompts aimed at this player go with him.

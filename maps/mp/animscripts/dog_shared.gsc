@@ -404,6 +404,23 @@ debug_allow_combat()
 	return true;
 }
 
+// T5's actor damageyaw is the yaw of the damage DIRECTION (attacker to
+// victim) relative to the actor's facing, -180..180: +-180 is a hit from the
+// front.  This server's damageyaw is the yaw TOWARDS the attacker, 0..360
+// (codol_actor_lifecycle.cpp ActorRecordDamage; animscripts/zombie_pain.gsc
+// converts the same way).  MEASURED (t5cap dog clip timeline, 2026-10-22):
+// T5 hounds shot from behind play death_hit_back, from their left
+// death_hit_left; CoDOL's played death_front and death_hit_right.
+t5DamageYaw()
+{
+	yaw = self.damageyaw + 180;
+	while ( yaw > 180 )
+		yaw -= 360;
+	while ( yaw <= -180 )
+		yaw += 360;
+	return yaw;
+}
+
 getAnimDirection( damageyaw )
 {
 	if( ( damageyaw > 135 ) ||( damageyaw <= -135 ) )	// Front quadrant
@@ -423,4 +440,14 @@ getAnimDirection( damageyaw )
 		return "left";
 	}
 	return "front";
+}
+
+// Telemetry for the developer capture maps\mp\_codol_dogcap.gsc
+// (docs/CODOL_MP_DOGS_T5_PARITY.md): the animscript states the T5 capture
+// reads by detouring the same functions.  Silent unless the capture set
+// level.dogcap (its state writer).
+dogcap( s )
+{
+	if ( isdefined( level.dogcap ) )
+		[[ level.dogcap ]]( s );
 }

@@ -105,17 +105,23 @@ MeleeCombat()
 		zombie_attack = pick_zombie_melee_anim();
 		if ( !isDefined( zombie_attack ) )
 			return;
+		self notify( "t5cap_mpick", zombie_attack );	// telemetry (maps/_zombiemode_t5cap.gsc)
 
-		// T5 :117.  Hold the actor in this animscript until the swing is
-		// over; CODOL_ActorRunFrame reads the same flag
-		// (codol_actor_lifecycle.cpp:702 and :1397) and will not switch
-		// scripts out from under a swing while it is clear.
-		self.safeToChangeScript = false;
+		// T5 :117-:120: only an actor with noChangeDuringMelee (the director,
+		// the monkeys) holds its animscript through the swing.  A regular
+		// zombie leaves safeToChangeScript set, so the engine takes it off a
+		// swing and back onto its path the moment the enemy is out of reach.
+		// MEASURED (t5cap, Prototype, player walking at 120 u/s): T5 zombies
+		// spent 14 % of their time in combat and landed 0.63 swings per
+		// zombie-second in reach; CoDOL, which held every swing to the end,
+		// 34 % and 1.66 -- they stood swinging at a player who had walked off.
+		if ( is_true( self.noChangeDuringMelee ) )
+			self.safeToChangeScript = false;
 
 		// T5 zombie_melee.gsc:116 plays the attack at rate 1.
 		self setFlaggedAnimKnobAllRestart( "meleeanim", zombie_attack, %body, 1, 0.2, 1 );
 
-		swing_notetracks();
+		swing_notetracks( zombie_attack );
 
 		self.safeToChangeScript = true;
 		self orientmode( "face enemy" );
@@ -135,8 +141,24 @@ MeleeCombat()
 // second hit lands when it falls outside Callback_PlayerDamage's 0.4 s
 // per-attacker ignore window, as in T5, where one double swipe can down a
 // player without Juggernog.
-swing_notetracks()
+//
+// T5 hit timing (2026-10-21, docs/CODOL_ZOMBIE_T5_MEASURED.md section 3).
+// C1 re-timed the "fire" notes of several of these clips while keeping their
+// lengths: MEASURED with getNotetrackTimes in real T5 against the C1 xanims,
+// ai_zombie_attack_v1 hits at 0.462/0.722 of the clip in T5 and 0.204/0.574
+// in C1, attack_forward_v1 at 0.414/0.6 vs 0.214/0.714, walk_attack_v1 at
+// 0.187 vs 0.344, and walk_attack_v2/v4 carry a doubled note 0.1 s apart.  So
+// a zombie hit sooner and more often than T5's (0.85-0.96 swings landing per
+// zombie-second in reach vs T5's 0.75).  A clip with a T5 schedule
+// (_zombiemode.gsc zombie_t5_melee_fire_times) lands its hits at T5's
+// fractions of the clip and ignores the C1 "fire" notes.
+swing_notetracks( zombie_attack )
 {
+	t5fires = undefined;
+	if ( isDefined( zombie_attack ) )
+		t5fires = maps\_zombiemode::zombie_t5_melee_fire_times( zombie_attack );
+	if ( isDefined( t5fires ) )
+		self thread t5_fire_schedule( zombie_attack, t5fires );
 
 	for ( ;; )
 	{
@@ -146,35 +168,77 @@ swing_notetracks()
 			note = "undefined";
 
 		if ( note == "end" || note == "finish" || note == "undefined" )
+		{
+			self notify( "t5_swing_done" );
 			return;
+		}
 
 		if ( note == "fire" )
 		{
-			if ( !isDefined( self.enemy ) )
+			if ( isDefined( t5fires ) )
+				continue;
+
+			if ( !self swing_hit() )
+			{
+				self notify( "t5_swing_done" );
 				return;
-
-			oldhealth = self.enemy.health;
-			self land_melee_hit();
-
-			if ( !isDefined( self.enemy ) )
-				return;
-
-			if ( self.enemy.health < oldhealth )
-				self resetGiveUpTime();
-			else if ( isDefined( level.melee_miss_func ) )
-				self [[ level.melee_miss_func ]]();
-
+			}
 			continue;
 		}
 
 		if ( note == "stop" )
 		{
 			if ( !CanContinueToMelee() )
+			{
+				self notify( "t5_swing_done" );
 				return;
+			}
 			continue;
 		}
 
 		self HandleNoteTrack( note, "meleeanim" );
+	}
+}
+
+// One "fire": T5 zombie_melee.gsc:130-:150.  False when the enemy is gone,
+// which ends the swing as T5's break does.
+swing_hit()
+{
+	if ( !isDefined( self.enemy ) )
+		return false;
+
+	oldhealth = self.enemy.health;
+	self notify( "swing_hit" );	// telemetry (maps/_zombiemode_t5cap.gsc)
+	self land_melee_hit();
+
+	if ( !isDefined( self.enemy ) )
+		return false;
+
+	if ( self.enemy.health < oldhealth )
+		self resetGiveUpTime();
+	else if ( isDefined( level.melee_miss_func ) )
+		self [[ level.melee_miss_func ]]();
+	return true;
+}
+
+// T5's "fire" notes for this clip, as fractions of the clip; the clip plays
+// at rate 1 (setFlaggedAnimKnobAllRestart above).
+t5_fire_schedule( zombie_attack, fractions )
+{
+	self endon( "death" );
+	self endon( "killanimscript" );
+	self endon( "t5_swing_done" );
+
+	length = getAnimLength( zombie_attack );
+	elapsed = 0;
+	for ( i = 0; i < fractions.size; i++ )
+	{
+		at = fractions[ i ] * length;
+		if ( at > elapsed )
+			wait( at - elapsed );
+		elapsed = at;
+		if ( !self swing_hit() )
+			return;
 	}
 }
 

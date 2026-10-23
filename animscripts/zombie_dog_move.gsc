@@ -283,7 +283,10 @@ main()
 		}
 	}
 
-	self thread animscripts\zombie_dog_stop::lookAtTarget( "normal" );
+	// T5 animscripts/zombie_dog_move.gsc:51 leaves the look-at commented out:
+	// a hound runs and trots with its head on its path.  MEASURED (t5cap dog
+	// clip timeline, 2026-10-22): no T5 hound frame moved a look additive;
+	// CoDOL's look_up/left/right moved in 208 frames of a chase.
 	// T5 animscripts/zombie_dog_move.gsc:14 leaves the running bark loop
 	// commented out: a hellhound's voice is _zombiemode_ai_dogs'
 	// dog_stalk_audio / dog_behind_audio, not the multiplayer dog's

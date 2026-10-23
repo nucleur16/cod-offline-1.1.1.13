@@ -29,6 +29,7 @@
 
 main()
 {
+	self dogcap( "combat" );
 	debug_anim_print("dog_combat::main() " );
 
 	self endon("killanimscript");
@@ -62,6 +63,7 @@ main()
 
 combatIdle()
 {
+	self dogcap( "cidle" );
 	self set_orient_mode("face enemy");
 	self animMode( "zonly_physics" );
 
@@ -250,6 +252,7 @@ meleeBiteAttackPlayer(player)
 
 doMeleeAfterWait( time )
 {
+	self dogcap( "lowbite" );
 	self endon("death");
 
 	wait(time);
@@ -282,6 +285,7 @@ dogMelee()
 
 handleMeleeBiteAttackNoteTracks( note, player )
 {
+	if ( isdefined( level.dogcap ) && isdefined( player ) ) self dogcap( "note " + note + " d=" + int( distance2d( self.origin, player.origin ) ) );
 	self maps\mp\animscripts\dog_attack_log::note( note );
 	switch ( note )
 	{
@@ -455,6 +459,7 @@ use_low_attack(player)
 
 prepareAttackPlayer(player)
 {
+	if ( isdefined( level.dogcap ) && isdefined( self.enemy ) ) self dogcap( "attack d=" + int( distance2d( self.origin, self.enemy.origin ) ) + " mad=" + self.meleeAttackDist );
 	level.dog_death_quote = &"SCRIPT_PLATFORM_DOG_DEATH_DO_NOTHING";
 	distanceToTarget = distance( self.origin, self.enemy.origin );
 	targetHeight = Abs(self.enemy.origin[2] - self.origin[2]);
@@ -651,6 +656,7 @@ dog_melee_death(player)
 
 attackMiss()
 {
+	self dogcap( "miss" );
 	if ( isdefined( self.enemy ) )
 	{
 		forward	= anglestoforward( self.angles );

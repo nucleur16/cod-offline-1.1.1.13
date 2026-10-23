@@ -65,15 +65,12 @@ MoveMainLoop()
 			self.a.movement = "walk";
 	}
 
+	// T5's getAnimTime( %walk_and_run_loops ) loop counter is dropped: no
+	// animlist C1 loads names that node, so the %anim added it to the server
+	// tree only and shifted every later entry index on the actor animation
+	// channel (tools/codol_coop_anim_check.py).  Nothing read the count.
 	for ( ;; )
-	{
-		loopTime = self getAnimTime( %walk_and_run_loops );
-		if ( loopTime < prevLoopTime )
-			self.a.runLoopCount++;
-		prevLoopTime = loopTime;
-
 		MoveRun();
-	}
 }
 
 // T5 zombie_run.gsc:8.  Two poses reach this server: a zombie with legs runs

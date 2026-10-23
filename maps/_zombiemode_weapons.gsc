@@ -48,9 +48,9 @@
 //   zmb_box_poof_land sounds, which no zone carries either (ALL_sound.txt).
 //   init_weapon_toggle / init_pay_turret / weapon cabinet / hacker /
 //   dual-wield left-hand models / limited tesla -- separate systems.
-//   useweaponhidetags() (:2026) -- applied below through the native
-//   getWeaponHideTags/showAllParts/hidePart operations. Only tags actually
-//   present on the chosen world model are passed to hidePart.
+//   useweaponhidetags() (:2026) -- native useWeaponHideTags applies all source
+//   slots and skips tags absent from the entity model. Reset reused models
+//   first; both the box and authored wall models use that native path.
 //   setclientflag(level._ZOMBIE_SCRIPTMOVER_FLAG_BOX_RANDOM) (:1972) -- there
 //   is no CSC VM and no zm client-flag table on this server.
 //
@@ -206,14 +206,23 @@ init_weapons()
 
 	// Rifles
 	add_zombie_weapon( "m14ebr_zm",					"m14ebr_upgraded_zm",				"M14 EBR",			500,	250 );
-	add_zombie_weapon( "m16_zm",					"gl_m16_upgraded_zm",				"M16",				1200,	600 );
+	// MEASURED (zone weapon defs, common_gametype_zm): the rifle half of each
+	// upgraded under-barrel pair is the one to hand out.  gl_m16_upgraded_zm is
+	// the M203 launcher (rumble damage_heavy, projectile_m203grenade; its
+	// altWeapon +0xB78 is m16_gl_upgraded_zm) and mk_scar_h_upgraded_zm is the
+	// Masterkey shotgun (rumble shotgun_fire; altWeapon
+	// scar_h_eotech_mk_upgraded_zm).  Pack-a-Punch used to hand those, so the
+	// player held a launcher / shotgun where the M16 / SCAR-H should be.  The
+	// rifle defs name the launcher / shotgun as their altWeapon, as T5's
+	// m16_gl_upgraded_zm does.  The upgrade still reaches the alt mode.
+	add_zombie_weapon( "m16_zm",					"m16_gl_upgraded_zm",				"M16",				1200,	600 );
 	add_zombie_weapon( "famas_zm",					"famas_upgraded_zm",				"FAMAS",			1200,	600 );
 	add_zombie_weapon( "fal_zm",					"fal_upgraded_zm",					"FAL",				1200,	600 );
 	add_zombie_weapon( "ak104_zm",					"ak104_upgraded_zm",				"AK-104",			1200,	600 );
 	add_zombie_weapon( "aug_eotech_zm",				"aug_eotech_upgraded_zm",			"AUG",				1200,	600 );
 	add_zombie_weapon( "tavor_zm",					"tavor_upgraded_zm",				"Tavor",			1200,	600 );
 	add_zombie_weapon( "m4a1tech_zm",				"m4a1tech_upgraded_zm",				"M4A1",				1200,	600 );
-	add_zombie_weapon( "scar_h_eotech_zm",			"mk_scar_h_upgraded_zm",			"SCAR-H",			1200,	600 );
+	add_zombie_weapon( "scar_h_eotech_zm",			"scar_h_eotech_mk_upgraded_zm",	"SCAR-H",			1200,	600 );
 
 	// Sniper rifles
 	add_zombie_weapon( "cheytac_zm",				"cheytac_upgraded_zm",				"CheyTac",			2500,	1250 );
@@ -360,20 +369,30 @@ player_weapon_limit()
 // none of which exist in this tree (MEASURED).
 enforce_weapon_limit( new_weapon )
 {
+	current = self weapon_limit_victim( new_weapon );
+
+	if ( isDefined( current ) )
+		self takeWeapon( current );
+}
+
+// The primary enforce_weapon_limit takes to make room for new_weapon, or
+// undefined when there is room (or new_weapon is a re-buy).
+weapon_limit_victim( new_weapon )
+{
 	primaries = self getWeaponsListPrimaries();
 
 	if ( !isDefined( primaries ) )
-		return;
+		return undefined;
 
 	// Buying a weapon already held is a re-buy, not a new slot.
 	for ( i = 0; i < primaries.size; i++ )
 	{
 		if ( primaries[ i ] == new_weapon )
-			return;
+			return undefined;
 	}
 
 	if ( primaries.size < self player_weapon_limit() )
-		return;
+		return undefined;
 
 	// T5 drops whatever is in hand.  It does NOT spare the starting pistol:
 	// T5 :2404 records last_pistol_swap for m1911_zm and takes it anyway, and
@@ -412,18 +431,69 @@ enforce_weapon_limit( new_weapon )
 		}
 	}
 
-	if ( isDefined( current ) )
-		self takeWeapon( current );
+	return current;
 }
 
 // T5 :2365, plus the ammo top-up branch of :2649.
+//
+// When the weapon making room is the one in hand it is taken AFTER the switch
+// to the new one has begun.  Taking the held weapon first leaves the player
+// holding "none" (C1 0x422109 clears ps+0x33c), and C1's PM_FinishWeaponChange
+// sends EV_RAISE_WEAPON / EV_FIRST_RAISE_WEAPON -- the events that play the
+// definition's raise sound (def +0x410 / +0x418) -- only for a change that
+// starts from a held weapon (0x419efc).  A take-then-give therefore raised the
+// new gun in silence (the Mustang & Sally pullout had no sound).
 weapon_give( weapon_name )
 {
-	self enforce_weapon_limit( weapon_name );
+	victim = self weapon_limit_victim( weapon_name );
+	held = self getCurrentWeapon();
+
+	if ( isDefined( victim ) && ( !isDefined( held ) || victim != held ) )
+	{
+		self takeWeapon( victim );
+		victim = undefined;
+	}
 
 	self giveWeapon( weapon_name );
 	self giveMaxAmmo( weapon_name );
-	self switchToWeapon( weapon_name );
+	self switch_then_take( weapon_name, victim );
+}
+
+// Replace old_weapon (normally the one in hand) with new_weapon so that the
+// raise is heard: give and switch first, take the old one afterwards.
+weapon_swap( old_weapon, new_weapon )
+{
+	self giveWeapon( new_weapon );
+	self giveMaxAmmo( new_weapon );
+	self switch_then_take( new_weapon, old_weapon );
+}
+
+// Switch to new_weapon and take old_weapon once the change has reached the
+// raise (getCurrentWeapon reports the new weapon from PM_FinishWeaponChange
+// on), so the change starts from a held weapon and carries the raise event.
+// A switch that never happens (player downed, weapon taken) still takes the
+// old weapon after 3 s.
+switch_then_take( new_weapon, old_weapon )
+{
+	self switchToWeapon( new_weapon );
+
+	if ( isDefined( old_weapon ) && old_weapon != "none" && old_weapon != new_weapon )
+		self thread take_weapon_after_switch( old_weapon, new_weapon );
+}
+
+take_weapon_after_switch( old_weapon, new_weapon )
+{
+	self endon( "disconnect" );
+
+	for ( i = 0; i < 60; i++ )
+	{
+		if ( self getCurrentWeapon() == new_weapon || !self hasWeapon( new_weapon ) )
+			break;
+		wait( 0.05 );
+	}
+
+	if ( self hasWeapon( old_weapon ) )
+		self takeWeapon( old_weapon );
 }
 
 ammo_give( weapon_name )
@@ -467,7 +537,8 @@ init_weapon_upgrade()
 		model = getEnt( trig.target, "targetname" );
 		if ( isDefined( model ) )
 		{
-			model weapon_model_hide_tags( trig.zombie_weapon_upgrade, model.model );
+			model showAllParts();
+			model useWeaponHideTags( trig.zombie_weapon_upgrade );
 			model hide();
 		}
 
@@ -575,32 +646,6 @@ weapon_show()
 	self play_sound_on_ent( "weapon_show" );
 }
 
-// T5's box applies the weapon's hide tags after every model change. CoDOL's
-// authored world models contain the alternative sights too (for example the
-// SPAS-12 has tag_red_dot and tag_eotech). A plain setModel displays both.
-// Reset first because the box reuses one entity for different weapons. Some
-// shipped T5-derived definitions name tags absent from their CoDOL model;
-// hidePart errors on an absent bone, so intersect with that exact skeleton.
-weapon_model_hide_tags( weapon_name, model_name )
-{
-	self showAllParts();
-	tags = getWeaponHideTags( weapon_name );
-	if ( !isDefined( tags ) || tags.size == 0 )
-		return;
-
-	for ( i = 0; i < getNumParts( model_name ); i++ )
-	{
-		part = getPartName( model_name, i );
-		for ( j = 0; j < tags.size; j++ )
-		{
-			if ( part != tags[ j ] )
-				continue;
-			self hidePart( part );
-			break;
-		}
-	}
-}
-
 // ==========================================================================
 // MYSTERY BOX -- T5 :793, :945, :1057, :1742-:1784, :1951, :2365.
 // ==========================================================================
@@ -634,6 +679,8 @@ treasure_chest_init()
 			level.chests[ i ].zombie_cost = 950;
 	}
 
+	box_marker_init();
+
 	flag_init( "moving_chest_enabled" );
 	flag_init( "moving_chest_now" );
 
@@ -655,6 +702,7 @@ treasure_chest_init()
 		// shipped single-box maps) belongs hidden while the box is there.
 		level.chests[ 0 ] hide_rubble();
 		level.chests[ 0 ].hidden = false;
+		level.chests[ 0 ] thread box_marker_on();
 	}
 
 	array_thread_1( level.chests, ::treasure_chest_think );
@@ -664,15 +712,23 @@ treasure_chest_init()
 }
 
 // T5 :850, the semi-random branch: the list is already shuffled, the first
-// spot marked start_chest is live and every other spot is hidden.
+// spot marked start_chest is live and every other spot is hidden.  A level
+// that sets level.random_pandora_box_start (T5 Kino, zm_theater_sh) takes
+// T5's random branch instead: the first shuffled spot without
+// start_exclude 1.
 init_starting_chest_location()
 {
 	level.chest_index = -1;
+	random_start = is_true( level.random_pandora_box_start );
 
 	for ( i = 0; i < level.chests.size; i++ )
 	{
 		chest = level.chests[ i ];
-		if ( level.chest_index < 0 && isDefined( chest.script_noteworthy ) && isSubStr( chest.script_noteworthy, "start_chest" ) )
+		if ( random_start )
+			starts_here = !isDefined( chest.start_exclude ) || int( chest.start_exclude ) != 1;
+		else
+			starts_here = isDefined( chest.script_noteworthy ) && isSubStr( chest.script_noteworthy, "start_chest" );
+		if ( level.chest_index < 0 && starts_here )
 		{
 			level.chest_index = i;
 			continue;
@@ -691,6 +747,92 @@ init_starting_chest_location()
 
 	level.chests[ level.chest_index ] hide_rubble();
 	level.chests[ level.chest_index ].hidden = false;
+	level.chests[ level.chest_index ] thread box_marker_on();
+}
+
+// THE BOX BEACON.  T5 :703 default_pandora_fx_func / :716
+// default_pandora_show_func: a tag_origin at the box's chest_origin, pitched
+// -90, carries the looping column of light ("lght_marker") while the box is
+// at that spot, and "lght_marker_flare" flashes half a second after the box
+// appears there.  Each map plays the marker its own zones ship (MEASURED):
+// zm_sumpf_sh fx_zombie_lght_marker(_flare) -- T5 Shi No Numa's own --,
+// zm_asylum_sh fx_zombie_factory_marker(_fl), and every other map the
+// fx_zombie_coast_marker(_fl) pair common_gametype_zm carries.  Not on
+// zm_prototype_sh, by the user's call (T5 Nacht has a single fixed box).
+box_marker_init()
+{
+	level.zm_box_marker = false;
+
+	map = getDvar( "mapname" );
+	if ( map == "zm_prototype_sh" )
+		return;
+
+	if ( map == "zm_sumpf_sh" )
+	{
+		marker = "maps/zombie/fx_zombie_lght_marker";
+		flare = "maps/zombie/fx_zombie_lght_marker_flare";
+	}
+	else if ( map == "zm_asylum_sh" )
+	{
+		marker = "maps/zombie/fx_zombie_factory_marker";
+		flare = "maps/zombie/fx_zombie_factory_marker_fl";
+	}
+	else
+	{
+		marker = "maps/zombie/fx_zombie_coast_marker";
+		flare = "maps/zombie/fx_zombie_coast_marker_fl";
+	}
+
+	precacheModel( "tag_origin" );
+	level._effect[ "lght_marker" ] = loadfx( marker );
+	level._effect[ "lght_marker_flare" ] = loadfx( flare );
+	level.zm_box_marker = true;
+	codolprintln( "CoDOL zm box: beacon " + marker + " on " + map );
+}
+
+// self = a box use trigger.  T5 :716 (the objective icon is not taken).
+box_marker_on()
+{
+	if ( !is_true( level.zm_box_marker ) || isDefined( self.pandora_light ) )
+		return;
+
+	origin = self.origin;
+	angles = ( 0, 0, 0 );
+	if ( isDefined( self.chest_origin ) )
+	{
+		origin = self.chest_origin.origin;
+		if ( isDefined( self.chest_origin.angles ) )
+			angles = self.chest_origin.angles;
+	}
+	else if ( isDefined( self.chest_lid ) )
+		origin = self.chest_lid.origin;
+
+	light = spawn( "script_model", origin );
+	light.angles = angles + ( -90, 0, 0 );
+	light setModel( "tag_origin" );
+	self.pandora_light = light;
+	wait_network_frame();
+	if ( !isDefined( light ) )
+		return;
+	playFxOnTag( level._effect[ "lght_marker" ], light, "tag_origin" );
+
+	wait( 0.5 );
+	if ( isDefined( light ) )
+		playFx( level._effect[ "lght_marker_flare" ], light.origin );
+}
+
+// self = a box use trigger.  The looping column is stopped explicitly, a
+// network frame passes so the stop reaches every client, then the carrier
+// goes (as the tesla arc carrier does).
+box_marker_off()
+{
+	if ( !isDefined( self.pandora_light ) )
+		return;
+	light = self.pandora_light;
+	self.pandora_light = undefined;
+	stopFxOnTag( level._effect[ "lght_marker" ], light, "tag_origin" );
+	wait_network_frame();
+	light delete();
 }
 
 // T5 :902,:921.  Rubble is what is visible where the box is not.
@@ -726,10 +868,12 @@ show_chest()
 		playSoundAtPosition( "zmb_couch_slam", self.chest_lid.origin );
 
 	self.hidden = false;
+	self thread box_marker_on();
 }
 
 hide_chest()
 {
+	self thread box_marker_off();
 	self disable_trigger();
 	if ( isDefined( self.chest_lid ) )
 		self.chest_lid hide();
@@ -1081,8 +1225,11 @@ treasure_chest_weapon_spawn( player )
 		modelname = getWeaponModel( rand );
 		if ( isDefined( modelname ) && modelname != "" )
 		{
+			// T5 :2026 useweaponhidetags: the attachments the weapon does not
+			// carry stay hidden; the previous spin's mask is cleared first.
 			self.weapon_model setModel( modelname );
-			self.weapon_model weapon_model_hide_tags( rand, modelname );
+			self.weapon_model showAllParts();
+			self.weapon_model useWeaponHideTags( rand );
 		}
 
 		if ( i + 1 == number_cycles )

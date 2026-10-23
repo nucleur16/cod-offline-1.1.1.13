@@ -458,8 +458,9 @@ occupied_adjacent_zone( name, occupied )
 // T5 _zombiemode_zone_manager.gsc add_adjacent_zone, for a level script that
 // declares its zone graph (zm_sumpf_sh, from T5 zombie_cod5_sumpf.gsc
 // sumpf_zone_init).  Call it from the level script's main(): data only, the
-// zones themselves are built later by init().  Two-way, as T5's default.
-add_adjacent_zone( zone_a, zone_b, flag_name )
+// zones themselves are built later by init().  Two-way, as T5's default;
+// one_way (T5's fourth argument) makes zone_b active from zone_a only.
+add_adjacent_zone( zone_a, zone_b, flag_name, one_way )
 {
 	if ( !isDefined( level.zm_zone_adjacency ) )
 		level.zm_zone_adjacency = [];
@@ -467,6 +468,7 @@ add_adjacent_zone( zone_a, zone_b, flag_name )
 	link.zone_a = zone_a;
 	link.zone_b = zone_b;
 	link.flag_name = flag_name;
+	link.one_way = is_true( one_way );
 	level.zm_zone_adjacency[ level.zm_zone_adjacency.size ] = link;
 }
 
@@ -491,7 +493,9 @@ adjacency_occupied_neighbour( name, occupied )
 	{
 		link = level.zm_zone_adjacency[ i ];
 		other = undefined;
-		if ( link.zone_a == name )
+		// T5 one_way: only zone_a lists zone_b as adjacent, so an occupied
+		// zone_b does not wake zone_a.
+		if ( link.zone_a == name && !link.one_way )
 			other = link.zone_b;
 		else if ( link.zone_b == name )
 			other = link.zone_a;

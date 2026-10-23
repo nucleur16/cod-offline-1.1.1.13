@@ -86,7 +86,11 @@ do_turn_anim( stopped_anim, run_anim, wait_time, run_wait_time )
 
 	debug_anim_print("dog_move::do_turn_anim() - Setting " + do_anim );
 	self setanimstate( do_anim );
-	animscripts\zombie_dog_shared::DoNoteTracksForTime( run_wait_time, "done" );
+	// T5 animscripts/zombie_dog_turn.gsc:89 plays the turn clip to its end
+	// (DoNoteTracks "turn"); the multiplayer dog cut it at wait_time.
+	// MEASURED (t5cap dog clip timeline, 2026-10-22): every T5 hound turn
+	// clip ran to 1.00; CoDOL's stopped at 0.86 of turn_90_left.
+	animscripts\zombie_dog_shared::DoNoteTracks( "done" );
 	debug_anim_print("dog_move::turn_around_right() - done with " + do_anim + " wait time " + run_wait_time );
 }
 

@@ -9,6 +9,9 @@
 //     (VisionSetNaked( mapname )); no fog values exist for this map.
 //   * compass: compass_map_mp_cha_quad ships in the zone.
 //   * no ambientPlay: no ambient alias for this map is known.
+//   * objectives and mode spawns: the zone parks them outside the level; the server reads
+//     maps/mp/mp_cha_quad.d3dbsp.ents in place of the zone's entity string (CoD4x_Server
+//     tools/codol_objective_ents.py writes it; src/codol/collision/codol_map_ents_override.c).
 main()
 {
 	maps\mp\mp_cha_quad_precache::main();

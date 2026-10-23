@@ -127,6 +127,10 @@ init()
 	level.zm_challenge_weapon_alias = [];
 	level.zm_challenge_weapon_alias[ "mk_scar_h_zm" ] = "scar_h_eotech_zm";
 	level.zm_challenge_weapon_alias[ "gl_m16_zm" ] = "m16_zm";
+	// The Pack-a-Punch rifles (_zombiemode_weapons init_weapons) strip to
+	// these: m16_gl_upgraded_zm and scar_h_eotech_mk_upgraded_zm.
+	level.zm_challenge_weapon_alias[ "m16_gl_zm" ] = "m16_zm";
+	level.zm_challenge_weapon_alias[ "scar_h_eotech_mk_zm" ] = "scar_h_eotech_zm";
 	level.zm_challenge_weapon_alias[ "knife_ballistic_bowie_zm" ] = "knife_ballistic_zm";
 
 	codolprintln( "CoDOL zm challenges: " + count + " zm challenge(s) from " + table +

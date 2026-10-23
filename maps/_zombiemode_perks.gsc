@@ -112,6 +112,18 @@ init()
 
 	println( "CoDOL zm: " + vending_triggers.size + " perk machines, " +
 		upgrade_triggers.size + " pack-a-punch\n" );
+
+	// Which world models the Pack-a-Punch presentation draws for the starting
+	// pistol: the server's own weapon definitions decide it.
+	hide = "";
+	tags = getWeaponHideTags( "m1911_upgraded_zm" );
+	if ( isDefined( tags ) )
+	{
+		for ( i = 0; i < tags.size; i++ )
+			hide = hide + " " + tags[ i ];
+	}
+	codolprintln( "CoDOL zm pap: m1911_zm world " + getWeaponModel( "m1911_zm" ) + ", m1911_upgraded_zm world " +
+		getWeaponModel( "m1911_upgraded_zm" ) + " hiding" + hide );
 }
 
 // T5 :1083 cost ladder.
@@ -188,6 +200,17 @@ precache_perk_bottles()
 		if ( isDefined( bottle ) )
 			precacheItem( bottle );
 	}
+
+	// The Pack-a-Punch knuckle crack (upgrade_knuckle_crack_begin) is the same
+	// case.  MEASURED (qconsole.log, zm_sumpf_sh PaP buy): its precacheItem
+	// at buy time threw "precacheItem must be called before any wait
+	// statements", the definition was registered late (engine 118, "wire -1"),
+	// and the switchToWeapon that followed went out as "CoDOL selection weapon
+	// 118 has no published C1 index; selecting none" -- so the client never
+	// raised the knuckle viewmodel and no animation played.  Precached here it
+	// is in the native table from map start, mapped to its zm constant slot
+	// (CS 5475, index 113) before anyone can buy.
+	precacheItem( "zombie_knuckle_crack" );
 }
 
 // array() is NOT a registered builtin on this server (MEASURED; the same note
@@ -441,6 +464,7 @@ perk_give_bottle_begin( perk )
 {
 	self.is_drinking = true;
 
+	self.zm_knuckle_cracking = true;
 	self allowAds( false );
 	self allowSprint( false );
 
@@ -464,6 +488,7 @@ perk_give_bottle_begin( perk )
 // T5 :1882.
 perk_give_bottle_end( gun )
 {
+	self.zm_knuckle_cracking = false;
 	self allowAds( true );
 	self allowSprint( true );
 
@@ -477,14 +502,25 @@ perk_give_bottle_end( gun )
 	bottles[ 6 ] = "zombie_perk_bottle_deadshot";
 	bottles[ 7 ] = "zombie_perk_bottle_additionalprimaryweapon";
 
+	// Switch back first and take the bottle once the switch has begun: a
+	// change from "none" carries no raise event, so the gun came back in
+	// silence (see _zombiemode_weapons::weapon_give).
+	back = undefined;
+	if ( isDefined( gun ) && gun != "none" && self hasWeapon( gun ) )
+		back = gun;
+
 	for ( i = 0; i < bottles.size; i++ )
 	{
-		if ( self hasWeapon( bottles[ i ] ) )
+		if ( !self hasWeapon( bottles[ i ] ) )
+			continue;
+		if ( isDefined( back ) )
+			self thread maps\_zombiemode_weapons::take_weapon_after_switch( bottles[ i ], back );
+		else
 			self takeWeapon( bottles[ i ] );
 	}
 
-	if ( isDefined( gun ) && gun != "none" && self hasWeapon( gun ) )
-		self switchToWeapon( gun );
+	if ( isDefined( back ) )
+		self switchToWeapon( back );
 
 	self.is_drinking = false;
 }
@@ -880,6 +916,10 @@ vending_weapon_upgrade()
 
 	cost = vending_weapon_upgrade_cost();
 
+	// T5 :264 packa_timer: the script_origin the tick-tock and deny sounds
+	// play on while the upgraded gun waits in the machine.
+	packa_timer = spawn( "script_origin", self.origin );
+
 	self setCursorHint( "HINT_NOICON" );
 	self useTriggerRequireLookAt();
 	self setHintString( &"ZOMBIE_NEED_POWER" );
@@ -887,76 +927,147 @@ vending_weapon_upgrade()
 	level waittill( "Pack_A_Punch_on" );
 
 	self setHintString( &"ZOMBIE_PERK_PACKAPUNCH", cost );
+	self.pap_owner = undefined;
 
 	for ( ;; )
 	{
 		self waittill( "trigger", player );
 
-		if ( !isDefined( player ) || !isPlayer( player ) )
-			continue;
-
-		if ( !is_player_valid( player ) )
-			continue;
-
-		if ( !player useButtonPressed() )
-			continue;
-
+		// A trigger while the upgraded gun waits in the machine belongs to
+		// wait_for_player_to_take, not to a new purchase.
 		if ( flag( "pack_machine_in_use" ) )
+			continue;
+
+		if ( !isDefined( player ) || !isPlayer( player ) || !is_player_valid( player ) )
+			continue;
+
+		current = player getCurrentWeapon();
+		if ( !isDefined( current ) || current == "none" )
 		{
 			wait( 0.1 );
 			continue;
 		}
 
-		current = player getCurrentWeapon();
-		if ( !isDefined( current ) || current == "none" )
+		// T5 :291 refuses an upgraded weapon outright (no charge, no sound).
+		if ( maps\_zombiemode_weapons::is_weapon_upgraded( current ) )
+		{
+			wait( 0.1 );
 			continue;
+		}
 
 		upgrade = maps\_zombiemode_weapons::get_upgrade_name( current );
 		if ( !isDefined( upgrade ) )
 		{
-			// The held weapon has no upgraded variant in any mounted zone.
-			// Refuse without charging -- T5's machine simply will not take a
-			// weapon it cannot upgrade either.
-			self play_sound_on_ent( "perk_deny" );
-			wait( 0.5 );
+			// T5 :302: a weapon the table does not know is ignored.
 			continue;
 		}
 
 		if ( player.score < cost )
 		{
+			// T5 :305 "deny" on the machine and the perk_deny dialog.
 			self play_sound_on_ent( "perk_deny" );
 			player maps\_zombiemode_audio::no_cash_vox();
-			wait( 0.5 );
 			continue;
 		}
 
 		flag_set( "pack_machine_in_use" );
 		player maps\_zombiemode_score::minus_to_player_score( cost );
 
-		// T5 :450.  Take the gun, run the machine's presentation, hand the
-		// upgrade back.  All three are ported now.
+		// T5 :311-314: the dispense sound and the Pack-a-Punch sting.
+		playSoundAtPosition( "evt_bottle_dispense", self.origin );
+		playSoundAtPosition( "mus_perks_packa_sting", self.origin );
+
 		self setHintString( "" );
-
-		// The knuckle crack takes the held weapon itself (T5 :641), so the
-		// take is not repeated here.
 		player thread do_knuckle_crack();
-		player thread third_person_weapon_upgrade( current, upgrade, self );
 
-		wait( level.packapunch_timeout );
+		// T5 :325: the presentation returns with the upgraded gun sitting in
+		// the machine's mouth, already sinking back over packapunch_timeout.
+		weaponmodel = player third_person_weapon_upgrade( current, upgrade, self );
 
-		player notify( "weapon_change_complete" );
+		// T5 :327-330: only the buyer may take it.  This server has no
+		// SetVisibleToPlayer, so the "take" prompt is shown to everyone at
+		// the machine and wait_for_player_to_take ignores anyone else.
+		self.pap_owner = player;
+		self setHintString( &"ZOMBIE_GET_UPGRADED" );
+		self thread wait_for_player_to_take( player, current, upgrade, packa_timer );
+		self thread wait_for_timeout( current, packa_timer );
+		self waittill_either( "pap_timeout", "pap_taken" );
 
-		if ( is_player_valid( player ) )
+		// T5 loses the gun on a timeout.  A buyer whose only gun it was would
+		// then hold nothing, and the box and wall buys refuse an empty hand,
+		// so that buyer gets the base weapon back instead.
+		if ( isDefined( player ) && is_player_valid( player ) && !player hasWeapon( upgrade ) )
 		{
-			player giveWeapon( upgrade );
-			player giveMaxAmmo( upgrade );
-			player switchToWeapon( upgrade );
-			player play_sound_on_ent( "purchase" );
+			primaries = player getWeaponsListPrimaries();
+			has_primary = false;
+			for ( i = 0; isDefined( primaries ) && i < primaries.size; i++ )
+			{
+				if ( primaries[ i ] != "zombie_knuckle_crack" )
+					has_primary = true;
+			}
+			if ( !has_primary )
+			{
+				player maps\_zombiemode_weapons::weapon_give( current );
+				codolprintln( "CoDOL zm pap: " + player.name + " left " + upgrade + " in the machine with no other gun; " + current + " given back" );
+			}
+			else
+				player release_knuckle_crack();
 		}
+
+		self.pap_owner = undefined;
+		if ( isDefined( weaponmodel ) )
+			weaponmodel delete();
 
 		self setHintString( &"ZOMBIE_PERK_PACKAPUNCH", cost );
 		flag_clear( "pack_machine_in_use" );
 	}
+}
+
+// T5 :351.  Self is the machine.  The tick-tock loops until the buyer takes
+// the gun; anyone else's use does nothing.
+wait_for_player_to_take( player, weapon, upgrade_weapon, packa_timer )
+{
+	self endon( "pap_timeout" );
+
+	for ( ;; )
+	{
+		packa_timer playLoopSound( "zmb_perks_packa_ticktock" );
+		self waittill( "trigger", trigger_player );
+		packa_timer stopLoopSound( 0.05 );
+
+		if ( isDefined( trigger_player ) && isDefined( player ) && trigger_player == player )
+		{
+			// T5 :801 does not require a weapon in hand: a player whose only
+			// gun went into the machine holds nothing ("none") until taking it.
+			current = player getCurrentWeapon();
+			if ( is_player_valid( player ) && !is_true( player.zm_knuckle_cracking ) &&
+				( !isDefined( current ) || !maps\_zombiemode::is_placeable_mine( current ) ) )
+			{
+				self notify( "pap_taken" );
+				player notify( "pap_taken" );
+				player.pap_used = true;
+
+				// T5 :366-374: over the weapon limit weapon_give swaps out the
+				// held gun; under it the upgrade is simply added.
+				player maps\_zombiemode_weapons::weapon_give( upgrade_weapon );
+				player playSound( "zmb_perks_packa_ready" );
+				return;
+			}
+		}
+		wait( 0.05 );
+	}
+}
+
+// T5 :385.  The gun goes back into the machine and is lost.
+wait_for_timeout( weapon, packa_timer )
+{
+	self endon( "pap_taken" );
+
+	wait( level.packapunch_timeout );
+
+	self notify( "pap_timeout" );
+	packa_timer stopLoopSound( 0.05 );
+	packa_timer playSound( "zmb_perks_packa_deny" );
 }
 
 // ==========================================================================
@@ -988,10 +1099,25 @@ do_knuckle_crack()
 	self thread knuckle_crack_relay( waiter, "fake_death" );
 	self thread knuckle_crack_relay( waiter, "player_downed" );
 	self thread knuckle_crack_relay( waiter, "weapon_change_complete" );
+	// T5 ends the knuckle crack on "weapon_change_complete", which C1's
+	// engine sends when the knuckle weapon's raise (viewmodel_zombie_packopunch,
+	// 70 frames at 30 fps = 2.3 s) finishes.  This server never sends that
+	// notify, so the raise's own length ends it.
+	self thread knuckle_crack_timer( waiter, 2.3 );
 
 	waiter waittill( "done" );
 
 	self upgrade_knuckle_crack_end( gun );
+}
+
+knuckle_crack_timer( waiter, seconds )
+{
+	self endon( "disconnect" );
+	waiter endon( "done" );
+
+	wait( seconds );
+
+	waiter notify( "done" );
 }
 
 knuckle_crack_relay( waiter, message )
@@ -1016,10 +1142,10 @@ upgrade_knuckle_crack_begin()
 	weapon = "zombie_knuckle_crack";
 
 	// MEASURED, docs/zone_assets/ALL_weapon.txt: zombie_knuckle_crack ships
-	// in common_gametype_zm.  Validated the same way every other zm weapon
-	// is, so a zone without it degrades to "no presentation" rather than to
-	// a player left holding nothing.
-	precacheItem( weapon );
+	// in common_gametype_zm.  Precached by precache_perk_bottles (inside the
+	// precache window; a precacheItem here, after waits, throws).  Validated
+	// so a zone without it degrades to "no presentation" rather than to a
+	// player left holding nothing.
 	if ( getWeaponIndexFromName( weapon ) <= 0 )
 		return undefined;
 
@@ -1050,28 +1176,95 @@ upgrade_knuckle_crack_end( gun )
 	self allowAds( true );
 	self allowSprint( true );
 
-	self takeWeapon( weapon );
+	if ( self maps\_zombiemode_laststand::player_is_in_laststand() || !self hasWeapon( weapon ) )
+	{
+		if ( self hasWeapon( weapon ) )
+			self takeWeapon( weapon );
+		return;
+	}
 
-	if ( self maps\_zombiemode_laststand::player_is_in_laststand() )
+	// CoDOL (user decision 2026-10-21): the knuckles stay in hand until the
+	// upgraded gun is taken from the machine.  Taking them here left the
+	// player holding "none" (or switched to another gun), and the upgrade
+	// then raised from "none": C1 sends EV_RAISE_WEAPON /
+	// EV_FIRST_RAISE_WEAPON only for a change from a held weapon (0x419efc),
+	// so the Mustang & Sally pullout had no raise sound.  weapon_give's
+	// switch now leaves the knuckles, and knuckle_crack_hold takes them once
+	// the player holds anything else.
+	//
+	// That only applies when the gun in the machine was the player's only
+	// one (user, 2026-10-21): with another primary, switch to it now, as T5
+	// does, raising it from the held knuckles; knuckle_crack_hold then takes
+	// the knuckles once that gun is in hand.
+	self thread knuckle_crack_hold( weapon );
+
+	primaries = self getWeaponsListPrimaries();
+	for ( i = 0; isDefined( primaries ) && i < primaries.size; i++ )
+	{
+		if ( primaries[ i ] != weapon && primaries[ i ] != gun )
+		{
+			self switchToWeapon( primaries[ i ] );
+			break;
+		}
+	}
+}
+
+// Take the held knuckles as soon as the player holds another weapon: the
+// upgrade from the machine, the gun handed back on a timeout
+// (release_knuckle_crack), or anything the player switched to.
+knuckle_crack_hold( weapon )
+{
+	self endon( "disconnect" );
+	self notify( "zm_knuckle_crack_hold" );
+	self endon( "zm_knuckle_crack_hold" );
+
+	while ( self hasWeapon( weapon ) )
+	{
+		current = self getCurrentWeapon();
+		if ( isDefined( current ) && current != weapon && current != "none" )
+			break;
+		if ( self maps\_zombiemode_laststand::player_is_in_laststand() )
+			break;
+		wait( 0.05 );
+	}
+
+	if ( self hasWeapon( weapon ) )
+		self takeWeapon( weapon );
+}
+
+// The machine timed out (or the buyer could not take the gun): leave the
+// knuckles for a primary, raising it from the held knuckles.
+release_knuckle_crack()
+{
+	weapon = "zombie_knuckle_crack";
+
+	if ( !self hasWeapon( weapon ) || self getCurrentWeapon() != weapon )
 		return;
 
-	// The caller gives and switches to the upgraded weapon straight after
-	// this returns; falling back to a primary only matters when it did not
-	// (the player went down, or the machine timed out).
 	primaries = self getWeaponsListPrimaries();
-	if ( isDefined( primaries ) && primaries.size > 0 )
-		self switchToWeapon( primaries[ 0 ] );
+	for ( i = 0; isDefined( primaries ) && i < primaries.size; i++ )
+	{
+		if ( primaries[ i ] != weapon )
+		{
+			self switchToWeapon( primaries[ i ] );
+			return;
+		}
+	}
 }
 
 // T5 :283 third_person_weapon_upgrade.  Self is the player, machine is the
 // Pack-a-Punch trigger.
 //
-// T5 takes (current_weapon, origin, angles, packa_rollers, perk_machine) off
-// the machine's own authored struct.  CoDOL's zm maps author the machine as a
-// single trigger with no rollers child (docs/CODOL_ZOMBIES_STARTUP_20260915.md
-// lists no packa_rollers entity on any of the three zm maps), so the rig is
-// built off the trigger's own origin and angles and the roller rotation is
-// dropped -- there is nothing to rotate.
+// T5 :669-681 places the gun off the machine model the trigger targets:
+// origin = perk_machine.origin + (0,0,35), angles = perk_machine.angles +
+// (0,90,0), falling back to the trigger's own only when there is no model.
+// The trigger is no substitute: on zm_sumpf_sh it has no angles and sits
+// 50 units above and 17 units in front of the machine (trigger 10670 791 -611,
+// zombie_vending_packapunch_on 10683.5 801.55 -661 yaw 315), which put the gun
+// too high and turned 45 degrees.  CoDOL's machine faces the way T5's does:
+// the trigger lies on the model's -Y side, where T5's forward * -25 slides the
+// gun out.  CoDOL's zm maps author no packa_rollers child
+// (docs/CODOL_ZOMBIES_STARTUP_20260915.md), so the roller rotation is dropped.
 //
 // ONE T5 CALL IS UNAVAILABLE: worldgun useweaponhidetags( weapon ), which
 // culls the attachment tags the world model should not draw.  MEASURED, it is
@@ -1087,12 +1280,21 @@ third_person_weapon_upgrade( current_weapon, upgrade_name, machine )
 	self endon( "disconnect" );
 
 	if ( !isDefined( machine ) )
-		return;
+		return undefined;
 
 	origin = machine.origin;
-	angles = machine.angles;
-	if ( !isDefined( angles ) )
-		angles = ( 0, 0, 0 );
+	angles = ( 0, 0, 0 );
+	if ( isDefined( machine.angles ) )
+		angles = machine.angles;
+
+	perk_machine = undefined;
+	if ( isDefined( machine.target ) )
+		perk_machine = getEnt( machine.target, "targetname" );
+	if ( isDefined( perk_machine ) )
+	{
+		origin = perk_machine.origin + ( 0, 0, 35 );
+		angles = perk_machine.angles + ( 0, 90, 0 );
+	}
 
 	forward = anglesToForward( angles );
 	interact_pos = origin + ( forward * -25 );
@@ -1100,7 +1302,8 @@ third_person_weapon_upgrade( current_weapon, upgrade_name, machine )
 	if ( isDefined( level._effect[ "packapunch_fx" ] ) )
 		playFx( level._effect[ "packapunch_fx" ], origin + ( 0, 1, -34 ), forward );
 
-	// The gun goes in.
+	// T5 :196-212: the gun turns to face the machine (0.35 s), waits 0.5 s,
+	// slides in (0.5 s) with zmb_perks_packa_upgrade, and is gone 0.35 s later.
 	model = getWeaponModel( current_weapon );
 	worldgun = undefined;
 	if ( isDefined( model ) && model != "" )
@@ -1108,6 +1311,7 @@ third_person_weapon_upgrade( current_weapon, upgrade_name, machine )
 		worldgun = spawn( "script_model", interact_pos );
 		worldgun.angles = self.angles;
 		worldgun setModel( model );
+		worldgun useWeaponHideTags( current_weapon );
 		worldgun rotateto( angles + ( 0, 90, 0 ), 0.35, 0, 0 );
 	}
 
@@ -1116,34 +1320,33 @@ third_person_weapon_upgrade( current_weapon, upgrade_name, machine )
 	if ( isDefined( worldgun ) )
 		worldgun moveto( origin, 0.5, 0, 0 );
 
-	self playSound( "zmb_perks_packa_upgrade" );
+	machine playSound( "zmb_perks_packa_upgrade" );
 
 	wait( 0.35 );
 
 	if ( isDefined( worldgun ) )
 		worldgun delete();
 
-	// T5 waits 3 s here; this port waits out whatever is left of
-	// level.packapunch_timeout so the presentation and the hand-back finish
-	// together however the machine is tuned.
-	remaining = level.packapunch_timeout - 1.5;
-	if ( remaining < 0.5 )
-		remaining = 0.5;
-	wait( remaining );
+	// T5 :222: three seconds inside the machine.
+	wait( 3 );
 
-	self playSound( "zmb_perks_packa_ready" );
+	machine playSound( "zmb_perks_packa_ready" );
 
-	// The upgraded gun comes out.
+	// T5 :225-246: the upgraded gun slides out (0.5 s), rests 0.5 s, then
+	// sinks back into the machine over the whole take window
+	// (level.packapunch_timeout); the caller deletes it when the window closes.
 	upgrade_model = getWeaponModel( upgrade_name );
 	if ( !isDefined( upgrade_model ) || upgrade_model == "" )
-		return;
+		return undefined;
 
 	worldgun = spawn( "script_model", origin );
 	worldgun.angles = angles + ( 0, 90, 0 );
 	worldgun setModel( upgrade_model );
+	worldgun useWeaponHideTags( upgrade_name );
 	worldgun moveto( interact_pos, 0.5, 0, 0 );
 
-	wait( 1 );
+	wait( 0.5 );
 
-	worldgun delete();
+	worldgun moveto( origin, level.packapunch_timeout, 0, 0 );
+	return worldgun;
 }

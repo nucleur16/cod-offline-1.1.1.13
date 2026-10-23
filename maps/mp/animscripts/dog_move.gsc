@@ -218,6 +218,7 @@ getMovementSoundState( localPlayer )
 
 main()
 {
+	self dogcap( "move" );
 	self endon("killanimscript");
 
 	debug_anim_print("dog_move::main()" );
@@ -349,6 +350,7 @@ startMoveTrackLookAhead()
 
 startMove()
 {
+	self dogcap( "mstart" );
 	debug_anim_print("dog_move::startMove() - Setting move_start " );
 	self setanimstate( "move_start" );
 	maps\mp\animscripts\dog_shared::DoNoteTracks("done");
@@ -361,6 +363,7 @@ startMove()
 
 stopMove()
 {
+	self dogcap( "mstop" );
 	self endon( "killanimscript" );
 	self endon( "run" );
 

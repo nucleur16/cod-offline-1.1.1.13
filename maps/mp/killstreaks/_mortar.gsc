@@ -33,7 +33,7 @@ tryUseMortar( lifeId, kID )
     self.selectingLocation = true;
     self beginLocationSelection( "map_mortar_selector", false, 800 );
     self setBlurForPlayer( 4, 0.3 );
-    self thread cancelOn( selection, "cancel_location" );
+    self thread undoOrCancel( selection );
     self thread cancelOn( selection, "death" );
     self thread cancelOn( selection, "disconnect" );
     self thread cancelOn( selection, "joined_team" );
@@ -94,6 +94,29 @@ cancelOn( selection, event )
     self waittill( event );
     // Detached cleanup survives the notification that ends these waiters.
     level thread finishSelection( self, selection, false );
+}
+
+// Back (Escape, or B on a pad) while choosing: with a target placed it takes
+// the last one back (C1's client removes that marker itself, Kernel33's
+// location-selection hook); with none placed it closes the selection, as
+// before.
+undoOrCancel( selection )
+{
+    self endon( "codol_mortar_selection_done" );
+    for ( ;; )
+    {
+        self waittill( "cancel_location" );
+        if ( selection.targets.size > 0 )
+        {
+            kept = [];
+            for ( i = 0; i < selection.targets.size - 1; i++ )
+                kept[i] = selection.targets[i];
+            selection.targets = kept;
+            continue;
+        }
+        level thread finishSelection( self, selection, false );
+        return;
+    }
 }
 
 cancelOnGameEnd( selection )

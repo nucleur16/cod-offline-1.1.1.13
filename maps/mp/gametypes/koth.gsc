@@ -435,7 +435,7 @@ hideTimerDisplayOnGameEnd( timerDisplay )
 
 forceSpawnTeam( team, extraDelay )
 {
-	if ( extraDelay )
+	if ( isDefined( extraDelay ) && extraDelay )
 	{
 		foreach ( player in level.players )
 		{

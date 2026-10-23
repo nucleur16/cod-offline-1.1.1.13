@@ -16,6 +16,7 @@
 
 main()
 {
+	if ( isdefined( level.dogcap ) ) self dogcap( "pain dy=" + int( self t5DamageYaw() ) + " v=" + int( length( self getvelocity() ) ) );
 	debug_anim_print("dog_pain::main() " );
 
 	self endon("killanimscript");
@@ -29,7 +30,7 @@ main()
 
 	speed = length( self getvelocity() );
 
-	pain_anim = getAnimDirection( self.damageyaw );
+	pain_anim = getAnimDirection( self t5DamageYaw() );
 
 	// should only do this while running because the anim is supposed to while running
 	if ( speed > level.dogRunPainSpeed )

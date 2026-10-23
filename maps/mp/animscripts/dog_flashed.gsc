@@ -14,6 +14,7 @@
 
 main()
 {
+	self maps\mp\animscripts\dog_shared::dogcap( "flashed" );
 	self endon("killanimscript");
 	self endon( "stop_flashbang_effect" );
 

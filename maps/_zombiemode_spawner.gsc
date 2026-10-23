@@ -100,6 +100,9 @@ init()
 	// Developer-only entrance-walk soak (scr_codol_pathtest); returns at once
 	// on a production server.
 	level thread maps\_zombiemode_pathtest::init();
+
+	// Developer-only actor telemetry for the T5 comparison (t5cap_scn).
+	level thread maps\_zombiemode_t5cap::init();
 }
 
 // The aiweapon every zombie needs before melee() will do anything.
@@ -593,11 +596,20 @@ zm_dvar_int( name, default_value )
 // see is skipped (no zombie appears in view), as is one another zombie is
 // standing on; when none is left the authored spawner is used, which is
 // the old behaviour.  scr_zm_spawn_near_window 0 restores it everywhere.
+//
+// OFF BY DEFAULT since 2026-10-21 (docs/CODOL_ZOMBIE_T5_MEASURED.md): the
+// premise above is wrong.  MEASURED in real T5 (Plutonium t5cap,
+// zombie_cod5_prototype round 1): T5 spawns at the same far structs --
+// (1808 -1398), (-1324 -1056), (1971 -1155), (-1393 -62) -- and its walkers
+// take 29-49 s (median 37.6) from spawn to the first board, 53 s to get
+// inside.  Near-window spawning cut that to 8 s / 25 s.  With it off CoDOL
+// measures 44 s / 52 s and every zombie reaches its window.
+// scr_zm_spawn_near_window 1 turns it back on.
 // --------------------------------------------------------------------------
 
 near_window_spawn( spawn_point )
 {
-	if ( zm_dvar_int( "scr_zm_spawn_near_window", 1 ) <= 0 )
+	if ( zm_dvar_int( "scr_zm_spawn_near_window", 0 ) <= 0 )
 		return undefined;
 	if ( !isDefined( spawn_point ) || !isDefined( spawn_point.script_noteworthy ) ||
 		spawn_point.script_noteworthy != "zombie_spawner" )
@@ -2197,7 +2209,10 @@ zombie_death_event( zombie )
 		if ( isDefined( kill_weapon ) && isSubStr( kill_weapon, "knife_ballistic_" ) && isDefined( mod ) &&
 			( mod == "MOD_MELEE" || mod == "MOD_IMPACT" ) )
 			event = "ballistic_knife_death";
-		attacker maps\_zombiemode_score::player_add_points( event, mod, hit_location );
+		// T5 zombie_death_animscript :3360 pays nothing for a thundergun
+		// fling kill; the blast pays "thundergun_fling" itself.
+		if ( !( isDefined( zombie ) && is_true( zombie.thundergun_death ) ) )
+			attacker maps\_zombiemode_score::player_add_points( event, mod, hit_location );
 
 		if ( !isDefined( attacker.kills ) )
 			attacker.kills = 0;
@@ -2518,8 +2533,19 @@ reset_attack_spot()
 // the side comes from where the chunk sits relative to the barrier.
 get_tear_anim( chunk, node )
 {
+	// T5 :1785 picks the clip set by the zombie's attack spot, not by where
+	// the board is: spot 0 the middle set, 1 the right, 2 the left, for every
+	// board it pulls.  The geometric choice below is kept for a zombie with no
+	// reserved spot.
 	side = "m";
-	if ( isDefined( node ) && isDefined( node.angles ) )
+	if ( isDefined( self.attacking_spot_index ) )
+	{
+		if ( self.attacking_spot_index == 1 )
+			side = "r";
+		else if ( self.attacking_spot_index == 2 )
+			side = "l";
+	}
+	else if ( isDefined( node ) && isDefined( node.angles ) )
 	{
 		right = anglesToRight( node.angles );
 		offset = chunk.origin - node.origin;

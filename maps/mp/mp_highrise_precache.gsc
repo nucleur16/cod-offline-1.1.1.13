@@ -3,7 +3,6 @@ main()
 {
 	common_scripts\_destructible_types_anim_airconditioner::main();
 	common_scripts\_destructible_types_anim_light_fluo_on::main();
-	common_scripts\_destructible_types_anim_light_fluo_single::main();
 	common_scripts\_destructible_types_anim_wallfan::main();
 	maps\animated_models\com_roofvent2::main();
 	maps\animated_models\highrise_fencetarp_01::main();
