@@ -1,0 +1,26 @@
+// 000_codol_party_modes -- built by build_zones.py from zones/000_codol_party_modes/ (zonekit/manifest.py describes the format)
+>zone,000_codol_party_modes
+>install,client_shipRetail\patch
+>origin,Z:client_shipRetail/patch
+>origin-md5,ceafaca4114174c0546e2699a3e4020a
+>container,iwffu100
+>filetime,0x01dd5e06,0x8d11c134
+>rsa,7f051f1563685ef3cb4a17e6e0f8c807142ef44e74a0cd9672ced842f935bdee6d212a0ef4dfb4aaf80feebe2e6dda2a5b481f6d7dad19cd0b5131a0e860c00b38287325d44c60020503f086dda7fca99ed277a70a58d1f75a136918f49570e41f909008172f744f7cc9adec687b64f786321abde74754a1a8d1b38bdacd169649f10cd42cfd710223ac735011340d6e94441937a49e73e562e4bc485da6b07ec00a4bc84e583ce86f3e469742ec7ed3a530e656852ce511f12de661667406ad387adc5a98e97856f9abeb605fc85fe69f4857536926fcd80ad49c6174adfcd04e61c021a8675065cdf0f0ec76d5c2c54d042c60c720d9954cd12dfcacd7c010
+>zlib,9
+>blocks,0x0,0x20,0x0,0x0,0x22af,0x0,0x0,0x0,0x0
+>xassetlist,0x0,0xffffffff
+>localize,localize.str,ascii
+rawfile,000_codol_party_modes
+stringtable,mp/cogametypestable.csv,columns=8
+localize,CODOL_MODE_INFECT_NAME
+localize,CODOL_MODE_INFECT_DESC
+localize,CODOL_MODE_GUN_NAME
+localize,CODOL_MODE_GUN_DESC
+localize,CODOL_MODE_OIC_NAME
+localize,CODOL_MODE_OIC_DESC
+localize,CODOL_MODE_SHRP_NAME
+localize,CODOL_MODE_SHRP_DESC
+rawfile,maps/mp/gametypes/gun.txt
+rawfile,maps/mp/gametypes/oic.txt
+rawfile,maps/mp/gametypes/shrp.txt
+rawfile,maps/mp/gametypes/_gametypes.txt

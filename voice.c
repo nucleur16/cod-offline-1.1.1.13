@@ -40,7 +40,7 @@
  * (0..100 = -60..0 dBFS), k33_voiceHangMs, k33_voiceMicMute, k33_voiceLevel (live, read only),
  * k33_voiceMeter (Options > Audio's meter request). Commands: +talk, -talk, toggletalk, k33voice
  * (status), k33voicemute <client>.
- * Options > Audio's Voice section (build_voice_ui.py, voice_ui/OptionView_audio.as) sets these.
+ * Options > Audio's Voice section (voice_ui_mp: zones/voice_ui_mp/.../as/codo/views/option_sub/OptionView_audio.as) sets these.
  *
  * Every site is byte-checked; a mismatch is logged and that part stays off. Missing audio devices
  * only disable capture or playback (retried every few seconds), never the game.

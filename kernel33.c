@@ -27,6 +27,7 @@
  * renames it to Kernel33.dll (same length), so this DLL loads first and sees every lookup the
  * stub makes; that is how VirtualAlloc/VirtualProtect are intercepted.
  */
+#include <winsock2.h> /* before windows.h: discord.c's getinfo socket */
 #include <windows.h>
 #include <imm.h>
 #include <stdio.h>
@@ -537,19 +538,28 @@ static BOOL PatchUnsignedZones(void)
  * the same way, to the UI list's DB_LoadXAssets call
  * (0x5985CD: patch_ui_mp, ui_mp, ... 7 zones, alloc flags 2), which loads once the renderer is up and
  * again whenever the front end comes back. Image assets belong there: an image in a zone that loads
- * ahead of code_pre_gfx crashes the client (AV read 0x0000000C at 0x00A92825, 2026-10-14). */
+ * ahead of code_pre_gfx crashes the client (AV read 0x0000000C at 0x00A92825, 2026-10-14).
+ *
+ * Patch zones named *_postgfx_mp are appended instead to the code_post_gfx list's DB_LoadXAssets call
+ * (0x5984D2: 5 zones, patch_code_post_gfx_mp ... localized_code_post_gfx_mp, alloc flags 1): they load once
+ * the renderer is up, after C1's own code assets, and stay loaded (flags 1 are never freed, while the UI
+ * list's flags 2 are freed on match entry at 0x598631..0x59864A). Assets needed in the front end and in a
+ * match, images included, go there (controller_glyphs_postgfx_mp: the pad button icons). The same suffix
+ * and list as codol-classic's Kernel33 (its codol_infected_cyborg_postgfx_mp). */
 #define PATCHDIR_OPEN_JNE_VA   0x004CD2AFu
 #define PATCHDIR_DISK_PATH_VA  0x004CD3E3u
 #define PATCHDIR_OPENED_VA     0x004CD55Eu
 #define PREGFX_LOAD_CALL_VA    0x0059841Cu
 #define UI_LOAD_CALL_VA        0x005985CDu
+#define POSTGFX_LOAD_CALL_VA   0x005984D2u
 #define DB_LOAD_XASSETS_VA     0x08465768u
 #define PATCHDIR_MAX_FILES     16
 
 typedef struct { const char *name; int allocFlags; int freeFlags; } XZoneInfo;
 typedef void (__cdecl *LoadXAssetsFn)(XZoneInfo *info, unsigned count, int sync);
 
-typedef struct { char name[64]; char path[MAX_PATH]; int ui; } PatchZone;
+enum { PATCH_PRE_GFX, PATCH_UI, PATCH_POST_GFX };
+typedef struct { char name[64]; char path[MAX_PATH]; int stage; } PatchZone;
 
 static PatchZone g_patchZones[PATCHDIR_MAX_FILES];
 static int g_patchZoneCount;
@@ -598,11 +608,14 @@ static int CompareNames(const void *a, const void *b)
     return lstrcmpiA((const char *)a, (const char *)b);
 }
 
-/* "*_ui_mp" -> ahead of the UI zones, anything else ahead of code_pre_gfx */
-static int PatchZoneIsUi(const char *name)
+/* "*_postgfx_mp" -> after the code_post_gfx zones, "*_ui_mp" -> ahead of the UI zones, anything else ahead of
+ * code_pre_gfx */
+static int PatchZoneStage(const char *name)
 {
     size_t len = strlen(name);
-    return len > 6 && lstrcmpiA(name + len - 6, "_ui_mp") == 0;
+    if (len > 11 && lstrcmpiA(name + len - 11, "_postgfx_mp") == 0) return PATCH_POST_GFX;
+    if (len > 6 && lstrcmpiA(name + len - 6, "_ui_mp") == 0) return PATCH_UI;
+    return PATCH_PRE_GFX;
 }
 
 static void LoadPatchDir(void)
@@ -670,7 +683,7 @@ static void LoadPatchDir(void)
         }
 
         _snprintf(z->path, sizeof(z->path), "%s%s", pdir, file);
-        z->ui = PatchZoneIsUi(z->name);
+        z->stage = PatchZoneStage(z->name);
         z->path[sizeof(z->path) - 1] = 0;
         HANDLE f = CreateFileA(z->path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
         if (f == INVALID_HANDLE_VALUE) {
@@ -690,10 +703,10 @@ static void LoadPatchDir(void)
     }
 }
 
-static int PatchZonesIn(int ui)
+static int PatchZonesIn(int stage)
 {
     int n = 0;
-    for (int i = 0; i < g_patchZoneCount; i++) n += g_patchZones[i].ui == ui;
+    for (int i = 0; i < g_patchZoneCount; i++) n += g_patchZones[i].stage == stage;
     return n;
 }
 
@@ -731,30 +744,77 @@ __asm__(
     "    jmp *_g_patchDirOpenedPath\n"
     "1:  jmp *_g_patchDirDiskPath\n");
 
-static void PrependPatchZones(int ui, const char *list, XZoneInfo *info, unsigned count, int sync)
+/* The stage's patch zones ahead of the stock list (pre-gfx, UI: their assets win) or after it (post-gfx: new
+ * assets that may refer to C1's own code assets), with the list's alloc flags. */
+static void SubmitPatchZones(int stage, const char *list, XZoneInfo *info, unsigned count, int sync)
 {
     XZoneInfo all[PATCHDIR_MAX_FILES + 8];
     unsigned n = 0;
+    if (stage == PATCH_POST_GFX)
+        for (unsigned i = 0; i < count && n < sizeof(all) / sizeof(all[0]); i++) all[n++] = info[i];
     for (int i = 0; i < g_patchZoneCount; i++) {
-        if (g_patchZones[i].ui != ui) continue;
+        if (g_patchZones[i].stage != stage) continue;
         all[n].name = g_patchZones[i].name;
         all[n].allocFlags = info[0].allocFlags;
         all[n].freeFlags = 0;
         n++;
     }
-    for (unsigned i = 0; i < count && n < sizeof(all) / sizeof(all[0]); i++) all[n++] = info[i];
-    Log("patch folder: %s list: %d patch zone(s) ahead of %u stock", list, PatchZonesIn(ui), count);
+    if (stage != PATCH_POST_GFX)
+        for (unsigned i = 0; i < count && n < sizeof(all) / sizeof(all[0]); i++) all[n++] = info[i];
+    Log("patch folder: %s list: %d patch zone(s) %s %u stock", list, PatchZonesIn(stage),
+        stage == PATCH_POST_GFX ? "after" : "ahead of", count);
     ((LoadXAssetsFn)(DWORD_PTR)DB_LOAD_XASSETS_VA)(all, n, sync);
 }
 
 static void __cdecl PreGfxLoadHook(XZoneInfo *info, unsigned count, int sync)
 {
-    PrependPatchZones(0, "code_pre_gfx", info, count, sync);
+    SubmitPatchZones(PATCH_PRE_GFX, "code_pre_gfx", info, count, sync);
 }
 
 static void __cdecl UiLoadHook(XZoneInfo *info, unsigned count, int sync)
 {
-    PrependPatchZones(1, "ui", info, count, sync);
+    SubmitPatchZones(PATCH_UI, "ui", info, count, sync);
+}
+
+static volatile BOOL g_postGfxSubmitted, g_postGfxHooked;
+
+static void __cdecl PostGfxLoadHook(XZoneInfo *info, unsigned count, int sync)
+{
+    if (count != 5 || !info || info[0].allocFlags != 1 || info[0].freeFlags != 0) {
+        Log("patch folder: the code_post_gfx list differs (%u zones), *_postgfx_mp patch zones not loaded", count);
+        ((LoadXAssetsFn)(DWORD_PTR)DB_LOAD_XASSETS_VA)(info, count, sync);
+        return;
+    }
+    SubmitPatchZones(PATCH_POST_GFX, "code_post_gfx", info, count, sync);
+    g_postGfxSubmitted = TRUE;
+}
+
+/* Post-gfx patch zone `name`: -1 not in the patch folder (or not loadable), 0 queued, 1 handed to DB_LoadXAssets
+ * in the code_post_gfx list. controller_glyphs.c looks its materials up only at 1, so a missing zone never makes
+ * C1 register default materials. */
+static int PatchZoneState(const char *name)
+{
+    for (int i = 0; i < g_patchZoneCount; i++)
+        if (g_patchZones[i].stage == PATCH_POST_GFX && lstrcmpiA(g_patchZones[i].name, name) == 0)
+            return g_postGfxSubmitted ? 1 : g_postGfxHooked ? 0 : -1;
+    return -1;
+}
+
+/* 0x598440 builds the code_post_gfx list (last store 0x5984CC mov [ebp-0x16C], ecx) and calls DB_LoadXAssets
+ * at 0x5984D2. */
+static void PatchPostGfxLoad(void)
+{
+    static const BYTE kPostList[] = { 0x89, 0x8D, 0x94, 0xFE, 0xFF, 0xFF };
+    BYTE *call = (BYTE *)(DWORD_PTR)POSTGFX_LOAD_CALL_VA;
+    LONG rel = (LONG)(DB_LOAD_XASSETS_VA - (POSTGFX_LOAD_CALL_VA + 5));
+    if (!Readable(call - 6, 11) || memcmp(call - 6, kPostList, 6) != 0 || call[0] != 0xE8 || memcmp(call + 1, &rel, 4) != 0) {
+        Log("patch folder: bytes at 0x%08X do not match, *_postgfx_mp patch zones not loaded", POSTGFX_LOAD_CALL_VA);
+        return;
+    }
+    rel = (LONG)((DWORD_PTR)PostGfxLoadHook - (POSTGFX_LOAD_CALL_VA + 5));
+    WriteCode(call + 1, &rel, 4);
+    g_postGfxHooked = TRUE;
+    Log("patch folder: %d zone(s) load after code_post_gfx", PatchZonesIn(PATCH_POST_GFX));
 }
 
 static void PatchPatchDir(void)
@@ -783,12 +843,13 @@ static void PatchPatchDir(void)
     if (!g_patchZoneCount) return;
     rel = (LONG)((DWORD_PTR)PatchDirOpenHook - (PATCHDIR_OPEN_JNE_VA + 6));
     WriteCode(jne + 2, &rel, 4);
-    if (PatchZonesIn(0)) {
+    if (PatchZonesIn(PATCH_PRE_GFX)) {
         rel = (LONG)((DWORD_PTR)PreGfxLoadHook - (PREGFX_LOAD_CALL_VA + 5));
         WriteCode(call + 1, &rel, 4);
     }
-    Log("patch folder: %d zone(s) load from disk ahead of code_pre_gfx", PatchZonesIn(0));
-    if (!PatchZonesIn(1)) return;
+    Log("patch folder: %d zone(s) load from disk ahead of code_pre_gfx", PatchZonesIn(PATCH_PRE_GFX));
+    if (PatchZonesIn(PATCH_POST_GFX)) PatchPostGfxLoad();
+    if (!PatchZonesIn(PATCH_UI)) return;
     static const BYTE kUiList[] = { 0x89, 0xB5, 0xB0, 0xFE, 0xFF, 0xFF }; /* the UI list's last store */
     BYTE *ui = (BYTE *)(DWORD_PTR)UI_LOAD_CALL_VA;
     rel = (LONG)(DB_LOAD_XASSETS_VA - (UI_LOAD_CALL_VA + 5));
@@ -798,7 +859,7 @@ static void PatchPatchDir(void)
     }
     rel = (LONG)((DWORD_PTR)UiLoadHook - (UI_LOAD_CALL_VA + 5));
     WriteCode(ui + 1, &rel, 4);
-    Log("patch folder: %d zone(s) load from disk ahead of the UI zones", PatchZonesIn(1));
+    Log("patch folder: %d zone(s) load from disk ahead of the UI zones", PatchZonesIn(PATCH_UI));
 }
 
 /* GPU rating. Com_Init registers "2658" (the benchmark score) as Dvar_RegisterInt(default 0,
@@ -1201,6 +1262,9 @@ static void PatchGbkInput(void)
 /* XInput gamepad (feat/controller): see controller.c and CONTROLLER.md. */
 #include "controller.c"
 
+/* Discord Rich Presence (CoDOLPresence.exe moved into the client): see discord.c. */
+#include "discord.c"
+
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 static void __cdecl TakeOver(void)
 {
@@ -1227,6 +1291,7 @@ static void __cdecl TakeOver(void)
 #endif
     InstallVoice();
     InstallController();
+    InstallDiscord();
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
     ExitProcess(0); /* the CRT entry ends in exit(); not reached */

@@ -5,174 +5,135 @@
  * C1's text renderer still has IW4's inline icon escape: '^', 1 or 2, width, height, then a raw 4-byte
  * Material pointer (0xAAB26E / 0xAAB8B2 step over 7 bytes after the '^'; 0xAAA7D0 draws the icon at
  * ((size - 16) * fontHeight + 16) / 32 pixels, so 48 is one line high). C1's zones have no button
- * materials, so Kernel33 makes them:
+ * materials; ours come from a patch zone:
  *
- *   art        Xelu's CC0 controller prompts (glyphs/xelu, glyphs/LICENSE.md): Xbox 360, PS3, Wii U and a generic
- *              set, 17 icons each in kCtlButtons order; glyphs/make_glyphs.py converts them to 64x64 with mips,
- *              B8G8R8A8, into glyphs/glyphs.bin (zlib), linked in with .incbin.
- *   materials  one per button: a copy of C1's "white" material (2D, alpha blended) whose texture table points
- *              at a copy of its GfxImage. They sit at addresses whose four bytes are letters (base 0xHHHH0000
- *              with HH a letter, + (0x41 + button) * 0x100 + 0x44), so the escape survives every string copy
- *              and never holds a 0, '^', '%' or '&'.
- *   textures   made on the render thread, where C1 draws the icon: the calls 0xAAB320 / 0xAAB92D to 0xAAA7D0
- *              come here first. For the set in use (gpad_glyphs, or the pad's SDL type) the button's D3D9
- *              texture is created once (CreateTexture on the device of white's texture, managed pool, all mips)
- *              and put in that button's image. A set change only swaps the image's texture pointer: live.
+ *   zone       client_shipRetail\patch\controller_glyphs_postgfx_mp.ff (zones/controller_glyphs_postgfx_mp, built by
+ *              build_zones.py). A *_postgfx_mp patch zone is appended to the code_post_gfx list (kernel33.c), so it
+ *              loads once the renderer is up and stays loaded in the front end and in matches. It holds, for each
+ *              set (xbox360, ps3, wiiu, generic) and glyph (the 17 kCtlButtons, then "arrow", the killstreak HUD's
+ *              yellow selection arrow), an image k33pad_<set>_<glyph> (64x64 A8R8G8B8 with mips, Xelu's CC0
+ *              prompts) and a material of the same name (C1's hud_status_dead layout: technique set 2d, alpha
+ *              blended, one colorMap).
+ *   lookup     Material_RegisterHandle (0xA78170) by name, on the main thread, once the zone has been submitted
+ *              and the front end is up; every material must come back under its own name with its image's
+ *              texture made, else the icons stay off.
+ *   slots      the escape carries the material pointer as four raw bytes inside a C string, so it must hold no 0,
+ *              '^', '%' or '&': a zone pointer can hold any of them. Each glyph therefore has a slot at an address
+ *              whose four bytes are letters or digits (base 0xHHHH0000, + (0x41 + glyph) * 0x100 + 0x44)
+ *              holding a copy of the set's zone material (its 0x60-byte header: it points at the zone's own
+ *              technique set, texture table and image). Hints carry the slot; the set in use (gpad_glyphs, or the
+ *              pad's SDL type) is copied into the slot on the render thread, where C1 draws the icon (the calls
+ *              0xAAB320 / 0xAAB92D to 0xAAA7D0 come here first): a set change is live.
  *   names      Key_GetBindingNames 0x493920 (every "[{+attack}]" in hints, prompts and old-style menus)
  *              converts a key with Key_KeynumToString at 0x49397C and 0x4A19A1. Those calls come here: a pad
  *              key gives its icon escape. Scaleform (0x5B080D, AS key-binding names: Controls screen, pause
  *              menu) and GSC (0x55A8B6) keep the family's text names (Scaleform has no IW4 icon escape).
  *
- * If a layout check fails (white's material, its texture table, its image or texture), the icons stay off
- * and every hint keeps the text names; gpad_glyphdump prints what was found.
+ * Without the zone (or with a material missing) the icons stay off and every hint keeps the family's text names;
+ * the reason is logged once and printed by gpad_glyphdump.
  */
 
-#define CTL_GLYPH_SIZE         64
-#define CTL_GLYPH_LEVELS       7
 #define CTL_GLYPH_SETS         4
 #define CTL_GLYPH_ESC_SIZE     56            /* 48 = one text line high; a little more reads better */
+#define CTL_GLYPH_ZONE         "controller_glyphs_postgfx_mp"
 #define CTL_MATERIAL_REGISTER  0x00A78170u   /* Material_RegisterHandle(name, imageTrack) */
 #define CTL_KEYNUM_TO_STRING   0x00492AF0u   /* Key_KeynumToString(eax = key, edi = translate) */
 #define CTL_BINDING_NAMES      0x00493920u   /* Key_GetBindingNames(eax = buffer, ecx = lc; command) */
 #define CTL_ICON_DRAW          0x00AAA7D0u   /* text icon drawer (ecx = escape after '^', eax = font) */
-/* IW4 layouts, checked at run time */
+/* IW4 Material layout (the zone's material header is 0x60 bytes), checked at run time */
+#define CTL_MAT_SIZE           0x60
 #define CTL_MAT_TEXCOUNT       0x48
 #define CTL_MAT_TEXTABLE       0x54
-#define CTL_MAT_COPY           0xB0          /* bytes of the material copied (IW4 0x60, plus room) */
-#define CTL_TEXDEF_SIZE        12
 #define CTL_TEXDEF_IMAGE       8
-#define CTL_IMAGE_COPY         0x40
-
-__asm__(".section .rdata,\"dr\"\n"
-        ".globl _g_glyphBlob\n"
-        "_g_glyphBlob:\n"
-        ".incbin \"glyphs/glyphs.bin\"\n"
-        ".globl _g_glyphBlobEnd\n"
-        "_g_glyphBlobEnd:\n"
-        ".text\n");
-extern const BYTE g_glyphBlob[], g_glyphBlobEnd[];
-
-typedef struct {
-    BYTE *mat;                       /* the material (at its letter address) */
-    BYTE texTable[16 * CTL_TEXDEF_SIZE];
-    BYTE image[CTL_IMAGE_COPY];
-    void *tex[CTL_GLYPH_SETS];       /* IDirect3DTexture9 *, made on the render thread */
-    char esc[9];                     /* '^', 1, w, h, Material * (4 bytes), 0 */
-} CtlGlyph;
 
 #define CTL_GLYPH_COUNT (CTL_NBUTTONS + 1)   /* the buttons, then the yellow selection arrow */
 #define CTL_GLYPH_ARROW CTL_NBUTTONS
+static const char *const kGlyphSets[CTL_GLYPH_SETS] = { "xbox360", "ps3", "wiiu", "generic" };
+static const char *const kGlyphNames[CTL_GLYPH_COUNT] = {
+    "a", "b", "x", "y", "lb", "rb", "start", "back", "ls", "rs", "dpad_up", "dpad_down", "dpad_left", "dpad_right",
+    "lt", "rt", "x_hold", "arrow" };
+
+typedef struct {
+    BYTE *mat;                       /* the slot (at its letter address) the escape points at */
+    const BYTE *src[CTL_GLYPH_SETS]; /* the zone's material of each set */
+    LONG shown;                      /* the set copied into the slot */
+    char esc[9];                     /* '^', 1, w, h, Material * (4 bytes), 0 */
+} CtlGlyph;
+
 static CtlGlyph g_glyphs[CTL_GLYPH_COUNT];
-static BYTE *g_glyphPix;             /* inflated glyphs.bin (header skipped) */
-static BYTE *g_glyphBase;            /* the 64 KB block that holds the materials */
-static const BYTE *g_glyphTemplate;  /* C1's "white" */
-static void *g_glyphTemplateTex;     /* its texture: the device comes from it */
+static BYTE *g_glyphBase;            /* the 64 KB block that holds the slots */
 static volatile LONG g_glyphReady;   /* 1 icons usable, -1 off for good */
 static volatile LONG g_glyphSet;     /* the set the render thread uses; -1 text names */
-static volatile LONG g_glyphFailed;  /* the render thread could not make a texture */
 __attribute__((used)) int g_ctlTextOnly;           /* inside the Scaleform / GSC callers of Key_GetBindingNames */
 static int g_glyphTries;
-static DWORD g_glyphNextTry;
-static char g_glyphWhy[160] = "not tried yet";
+static DWORD g_glyphNextTry, g_glyphFrontEndAt;
+static char g_glyphWhy[200] = "not tried yet";
 
-/* A D3D9 object: its vtable's first entry is code (d3d9.dll's, or a wrapper's). */
-static BOOL CtlIsD3dObject(const void *p)
+/* The image of a zone material's only texture def, once its texture has been made. */
+static const BYTE *CtlGlyphImage(const BYTE *mat)
 {
-    if (!p || !Readable(p, 4)) return FALSE;
-    const void *vt = *(const void *const *)p;
-    if (!vt || !Readable(vt, 0x60)) return FALSE;
-    const void *f = ((const void *const *)vt)[0];
-    MEMORY_BASIC_INFORMATION mbi;
-    if (!f || !VirtualQuery(f, &mbi, sizeof(mbi))) return FALSE;
-    return (mbi.Protect & (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
-}
-
-static size_t CtlGlyphBytes(void)
-{
-    size_t n = 0;
-    for (int l = 0; l < CTL_GLYPH_LEVELS; l++) n += (size_t)(CTL_GLYPH_SIZE >> l) * (CTL_GLYPH_SIZE >> l) * 4;
-    return n;
-}
-
-static BOOL CtlGlyphInflate(void)
-{
-    size_t per = CtlGlyphBytes();
-    uLongf len = (uLongf)(24 + (size_t)CTL_GLYPH_SETS * CTL_GLYPH_COUNT * per);
-    BYTE *buf = (BYTE *)malloc(len);
-    if (!buf) return FALSE;
-    int rc = uncompress(buf, &len, g_glyphBlob, (uLong)(g_glyphBlobEnd - g_glyphBlob));
-    const DWORD *h = (const DWORD *)(buf + 4);
-    if (rc != Z_OK || memcmp(buf, "K33G", 4) || h[0] != 1 || h[1] != CTL_GLYPH_SETS || h[2] != (DWORD)CTL_GLYPH_COUNT ||
-        h[3] != CTL_GLYPH_SIZE || h[4] != CTL_GLYPH_LEVELS || len != 24 + (size_t)CTL_GLYPH_SETS * CTL_GLYPH_COUNT * per) {
-        _snprintf(g_glyphWhy, sizeof(g_glyphWhy), "glyphs.bin does not match this build (zlib %d, %lu bytes)", rc, (unsigned long)len);
-        free(buf);
-        return FALSE;
-    }
-    g_glyphPix = buf + 24;
-    return TRUE;
-}
-
-/* The template's image (first texture def whose image holds a D3D texture), or NULL. */
-static const BYTE *CtlGlyphTemplateImage(const BYTE *mat, int *count)
-{
-    *count = *(const BYTE *)(mat + CTL_MAT_TEXCOUNT);
+    if (!mat || !Readable(mat, CTL_MAT_SIZE) || *(const BYTE *)(mat + CTL_MAT_TEXCOUNT) != 1) return NULL;
     const BYTE *table = *(const BYTE *const *)(mat + CTL_MAT_TEXTABLE);
-    if (*count < 1 || *count > 16 || !Readable(table, (SIZE_T)*count * CTL_TEXDEF_SIZE)) return NULL;
-    for (int i = 0; i < *count; i++) {
-        const BYTE *img = *(const BYTE *const *)(table + i * CTL_TEXDEF_SIZE + CTL_TEXDEF_IMAGE);
-        if (img && Readable(img, CTL_IMAGE_COPY) && CtlIsD3dObject(*(void *const *)img)) return img;
-    }
-    return NULL;
+    if (!table || !Readable(table, 12)) return NULL;
+    const BYTE *img = *(const BYTE *const *)(table + CTL_TEXDEF_IMAGE);
+    return img && Readable(img, 0x24) && *(void *const *)img ? img : NULL;
 }
 
-/* Main thread, once the renderer has white's texture: the 17 materials. */
-static void CtlGlyphInit(void)
+static void CtlGlyphOff(const char *why)
+{
+    if (why != g_glyphWhy) lstrcpynA(g_glyphWhy, why, sizeof(g_glyphWhy));
+    Log("controller: button icons off, hints keep the pad's text names: %s", g_glyphWhy);
+    InterlockedExchange(&g_glyphReady, -1);
+}
+
+/* Main thread: look the 72 materials up and set up the slots. Returns FALSE to be tried again later. */
+static BOOL CtlGlyphInit(void)
 {
     typedef const BYTE *(__cdecl *RegFn)(const char *, int);
     static const BYTE kReg[] = { 0x8B, 0x44, 0x24, 0x04, 0x80, 0x38, 0x00 };
     if (!Readable((void *)(DWORD_PTR)CTL_MATERIAL_REGISTER, sizeof(kReg)) ||
         memcmp((void *)(DWORD_PTR)CTL_MATERIAL_REGISTER, kReg, sizeof(kReg))) {
-        lstrcpynA(g_glyphWhy, "Material_RegisterHandle bytes differ", sizeof(g_glyphWhy));
-        InterlockedExchange(&g_glyphReady, -1);
-        return;
+        CtlGlyphOff("Material_RegisterHandle bytes differ");
+        return TRUE;
     }
-    const BYTE *mat = ((RegFn)(DWORD_PTR)CTL_MATERIAL_REGISTER)("white", 7);
-    const char *name = mat && Readable(mat, CTL_MAT_COPY) ? *(const char *const *)mat : NULL;
-    if (!name || !Readable(name, 6) || strcmp(name, "white")) {
-        _snprintf(g_glyphWhy, sizeof(g_glyphWhy), "material \"white\" not found (got %p)", (const void *)mat);
-        return;   /* try again later */
-    }
-    int count;
-    const BYTE *img = CtlGlyphTemplateImage(mat, &count);
-    if (!img) {
-        _snprintf(g_glyphWhy, sizeof(g_glyphWhy), "white (%p): no texture table / image with a D3D texture (count %d)", (const void *)mat, count);
-        return;   /* its texture may not be loaded yet */
-    }
-    if (!g_glyphPix && !CtlGlyphInflate()) { InterlockedExchange(&g_glyphReady, -1); return; }
+    for (int s = 0; s < CTL_GLYPH_SETS; s++)
+        for (int b = 0; b < CTL_GLYPH_COUNT; b++) {
+            char name[64], why[200];
+            _snprintf(name, sizeof(name), "k33pad_%s_%s", kGlyphSets[s], kGlyphNames[b]);
+            name[sizeof(name) - 1] = 0;
+            const BYTE *mat = ((RegFn)(DWORD_PTR)CTL_MATERIAL_REGISTER)(name, 7);
+            const char *got = mat && Readable(mat, CTL_MAT_SIZE) ? *(const char *const *)mat : NULL;
+            if (!got || !Readable(got, 1) || strcmp(got, name)) {
+                _snprintf(why, sizeof(why), "material %s not found (%s.ff did not load it)", name, CTL_GLYPH_ZONE);
+                why[sizeof(why) - 1] = 0;
+                CtlGlyphOff(why);
+                return TRUE;
+            }
+            if (!CtlGlyphImage(mat)) {
+                _snprintf(g_glyphWhy, sizeof(g_glyphWhy), "material %s: no image texture yet", name);
+                return FALSE;
+            }
+            g_glyphs[b].src[s] = mat;
+        }
     if (!g_glyphBase) {
-        static const WORD kHi[] = { 0x4B4B, 0x4C4C, 0x4D4D, 0x4E4E, 0x4F4F, 0x5050, 0x5151, 0x5252, 0x5353, 0x5454,
-                                    0x5555, 0x5656, 0x5757, 0x5858, 0x5959, 0x5A5A, 0x4A4A, 0x4949, 0x4848, 0x4747 };
-        for (unsigned i = 0; i < sizeof(kHi) / sizeof(kHi[0]) && !g_glyphBase; i++)
-            g_glyphBase = (BYTE *)VirtualAlloc((void *)(DWORD_PTR)((DWORD)kHi[i] << 16), 0x10000, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+        /* a free 64 KB block whose two high address bytes are letters or digits (0xHHHH0000): letters first, from
+         * 'K' up, as before; C1's zone memory takes some of these, so every combination is tried */
+        static const char kSafe[] = "KLMNOPQRSTUVWXYZJIHGFEDCBAabcdefghijklmnopqrstuvwxyz0123456789";
+        for (const char *h = kSafe; *h && !g_glyphBase; h++)
+            for (const char *l = kSafe; *l && !g_glyphBase; l++) {
+                DWORD at = ((DWORD)(BYTE)*h << 24) | ((DWORD)(BYTE)*l << 16);
+                g_glyphBase = (BYTE *)VirtualAlloc((void *)(DWORD_PTR)at, 0x10000, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+            }
         if (!g_glyphBase) {
-            lstrcpynA(g_glyphWhy, "no free 64 KB block at a letter address", sizeof(g_glyphWhy));
-            InterlockedExchange(&g_glyphReady, -1);
-            return;
+            CtlGlyphOff("no free 64 KB block at a letter address");
+            return TRUE;
         }
     }
-    g_glyphTemplate = mat;
-    const BYTE *table = *(const BYTE *const *)(mat + CTL_MAT_TEXTABLE);
     for (int b = 0; b < CTL_GLYPH_COUNT; b++) {
         CtlGlyph *g = &g_glyphs[b];
         g->mat = g_glyphBase + ((0x41 + b) << 8) + 0x44;
-        memcpy(g->image, img, CTL_IMAGE_COPY);
-        memcpy(g->texTable, table, (size_t)count * CTL_TEXDEF_SIZE);
-        for (int i = 0; i < count; i++) {
-            BYTE **slot = (BYTE **)(g->texTable + i * CTL_TEXDEF_SIZE + CTL_TEXDEF_IMAGE);
-            if (*slot == img) *slot = g->image;
-        }
-        memcpy(g->mat, mat, CTL_MAT_COPY);
-        *(BYTE **)(g->mat + CTL_MAT_TEXTABLE) = g->texTable;
+        memcpy(g->mat, g->src[0], CTL_MAT_SIZE);
+        g->shown = 0;
         DWORD p = (DWORD)(DWORD_PTR)g->mat;
         g->esc[0] = '^';
         g->esc[1] = 1;
@@ -181,26 +142,31 @@ static void CtlGlyphInit(void)
         memcpy(g->esc + 4, &p, 4);
         g->esc[8] = 0;
     }
-    g_glyphTemplateTex = *(void *const *)img;
-    _snprintf(g_glyphWhy, sizeof(g_glyphWhy), "ready: white %p, %d texture(s), image %p, materials at %p", (const void *)mat, count,
-              (const void *)img, (void *)g_glyphBase);
+    _snprintf(g_glyphWhy, sizeof(g_glyphWhy), "ready: %d sets x %d icons from %s.ff, slots at %p", CTL_GLYPH_SETS,
+              CTL_GLYPH_COUNT, CTL_GLYPH_ZONE, (void *)g_glyphBase);
     Log("controller: glyphs %s", g_glyphWhy);
     InterlockedExchange(&g_glyphReady, 1);
+    return TRUE;
 }
 
 /* The set the render thread draws (-1 = text names). */
 static void CtlGlyphFrame(void)
 {
-    if (g_glyphReady == 0 && g_ctlDvarsDone && C1DvarsReady() && g_glyphTries < 60 && (LONG)(GetTickCount() - g_glyphNextTry) >= 0) {
-        g_glyphTries++;
-        g_glyphNextTry = GetTickCount() + 1000;
-        CtlGlyphInit();
-        if (g_glyphReady == 0 && g_glyphTries == 60) {
-            Log("controller: glyphs off: %s", g_glyphWhy);
-            InterlockedExchange(&g_glyphReady, -1);
+    if (g_glyphReady == 0 && g_ctlDvarsDone && C1DvarsReady()) {
+        DWORD now = GetTickCount();
+        int zone = PatchZoneState(CTL_GLYPH_ZONE);
+        if (zone < 0) {
+            CtlGlyphOff(CTL_GLYPH_ZONE ".ff is not in the patch folder (or the folder is off)");
+        } else if (zone == 0) {
+            /* queued, not yet handed to the loader */
+        } else if (!g_glyphFrontEndAt) {
+            g_glyphFrontEndAt = now + 2000;   /* the startup zones are loaded by the time the front end runs */
+        } else if ((LONG)(now - g_glyphFrontEndAt) >= 0 && (LONG)(now - g_glyphNextTry) >= 0) {
+            g_glyphNextTry = now + 1000;
+            if (!CtlGlyphInit() && ++g_glyphTries >= 30) CtlGlyphOff(g_glyphWhy);
         }
     }
-    LONG set = C1DvarInt(g_gpGlyphs, 0) == 5 || g_glyphReady != 1 || g_glyphFailed ? -1 : CtlPadFamily();
+    LONG set = C1DvarInt(g_gpGlyphs, 0) == 5 || g_glyphReady != 1 ? -1 : CtlPadFamily();
     if (set != g_glyphSet) {
         InterlockedExchange(&g_glyphSet, set);
         static const char *const kSet[] = { "Xbox 360", "PS3", "Wii U", "generic" };
@@ -231,38 +197,6 @@ __attribute__((used)) const char *__cdecl CtlGlyphName(int key)
 }
 
 /* ---- render thread ---- */
-typedef struct { INT Pitch; void *pBits; } CtlLockedRect;
-
-static void *CtlGlyphMakeTexture(int set, int button)
-{
-    void *tmpl = g_glyphTemplateTex, *dev = NULL, *tex = NULL;
-    if (!tmpl) return NULL;
-    /* IDirect3DResource9::GetDevice (3) */
-    if (((HRESULT(WINAPI *)(void *, void **))(*(void ***)tmpl)[3])(tmpl, &dev) < 0 || !dev) return NULL;
-    typedef HRESULT(WINAPI * CreateTex)(void *, UINT, UINT, UINT, DWORD, DWORD, DWORD, void **, HANDLE *);
-    CreateTex create = (CreateTex)(*(void ***)dev)[23];
-    HRESULT hr = create(dev, CTL_GLYPH_SIZE, CTL_GLYPH_SIZE, CTL_GLYPH_LEVELS, 0, 21 /* A8R8G8B8 */, 1 /* MANAGED */, &tex, NULL);
-    DWORD lockFlags = 0;
-    if (hr < 0 || !tex) {   /* a D3D9Ex device has no managed pool */
-        tex = NULL;
-        hr = create(dev, CTL_GLYPH_SIZE, CTL_GLYPH_SIZE, CTL_GLYPH_LEVELS, 0x200 /* DYNAMIC */, 21, 0 /* DEFAULT */, &tex, NULL);
-        lockFlags = 0x2000; /* DISCARD */
-    }
-    ((ULONG(WINAPI *)(void *))(*(void ***)dev)[2])(dev);   /* Release the GetDevice reference */
-    if (hr < 0 || !tex) { Log("controller: glyphs: CreateTexture failed (0x%08lX)", (unsigned long)hr); return NULL; }
-    const BYTE *pix = g_glyphPix + ((size_t)set * CTL_GLYPH_COUNT + button) * CtlGlyphBytes();
-    for (int l = 0; l < CTL_GLYPH_LEVELS; l++) {
-        int sz = CTL_GLYPH_SIZE >> l;
-        CtlLockedRect r;
-        if (((HRESULT(WINAPI *)(void *, UINT, CtlLockedRect *, const RECT *, DWORD))(*(void ***)tex)[19])(tex, l, &r, NULL, lockFlags) >= 0) {
-            for (int y = 0; y < sz; y++) memcpy((BYTE *)r.pBits + y * r.Pitch, pix + y * sz * 4, (size_t)sz * 4);
-            ((HRESULT(WINAPI *)(void *, UINT))(*(void ***)tex)[20])(tex, l);
-        }
-        pix += (size_t)sz * sz * 4;
-    }
-    return tex;
-}
-
 /* Returns 1 for one of our icons, 0 for anything else. For ours the hook sets the vertex colour to white
  * (alpha kept): C1 multiplies text icons by the text colour, and hint key names are yellow, so white is
  * what leaves the art's own colours (green A, red B, ...) untouched. */
@@ -291,11 +225,10 @@ __attribute__((used)) int __cdecl CtlGlyphPrepare(const BYTE *esc, const BYTE *f
     if (b < 0 || b >= CTL_GLYPH_COUNT || g_glyphs[b].mat != mat) return 0;
     if (set < 0) set = CtlPadFamily();   /* a string made before a switch to text names */
     CtlGlyph *g = &g_glyphs[b];
-    if (!g->tex[set]) {
-        g->tex[set] = CtlGlyphMakeTexture(set, b);
-        if (!g->tex[set]) { InterlockedExchange(&g_glyphFailed, 1); return 0; }
+    if (g->shown != set) {
+        memcpy(g->mat, g->src[set], CTL_MAT_SIZE);
+        g->shown = set;
     }
-    *(void **)g->image = g->tex[set];
     CtlGlyphPlace(esc, font, args);
     return 1;
 }
@@ -447,29 +380,19 @@ static void CtlInstallGlyphs(BOOL namesOk)
 static void __cdecl CtlCmdGlyphDump(void)
 {
     static const char *const kSet[] = { "Xbox 360", "PS3", "Wii U", "generic" };
-    C1Printf("glyphs: %s; set %s (gpad_glyphs %d, pad family %d)%s\n", g_glyphWhy,
-             g_glyphSet < 0 ? "text names" : kSet[g_glyphSet], C1DvarInt(g_gpGlyphs, 0), (int)g_padType,
-             g_glyphFailed ? "; texture creation FAILED" : "");
-    typedef const BYTE *(__cdecl *RegFn)(const char *, int);
-    const BYTE *mat = ((RegFn)(DWORD_PTR)CTL_MATERIAL_REGISTER)(VoiceArgc() > 1 ? VoiceArgv(1) : "white", 7);
-    if (!mat || !Readable(mat, 0x80)) { C1Printf("glyphs: no material\n"); return; }
-    char line[200];
-    for (int r = 0; r < 0x80; r += 0x20) {
-        int n = _snprintf(line, sizeof(line), "mat %p +%02X:", (const void *)mat, r);
-        for (int i = 0; i < 0x20; i += 4) n += _snprintf(line + n, sizeof(line) - n, " %08lX", (unsigned long)*(const DWORD *)(mat + r + i));
+    C1Printf("glyphs: %s; set %s (gpad_glyphs %d, pad family %d)\n", g_glyphWhy,
+             g_glyphSet < 0 ? "text names" : kSet[g_glyphSet], C1DvarInt(g_gpGlyphs, 0), (int)g_padType);
+    if (g_glyphReady != 1) return;
+    int s = g_glyphSet < 0 ? CtlPadFamily() : (int)g_glyphSet;
+    for (int b = 0; b < CTL_GLYPH_COUNT; b++) {
+        const BYTE *mat = g_glyphs[b].src[s], *img = CtlGlyphImage(mat);
+        char line[200];
+        _snprintf(line, sizeof(line), "k33pad_%s_%s: material %p, image %p, texture %p, slot %p (shows %ld)", kGlyphSets[s],
+                  kGlyphNames[b], (const void *)mat, (const void *)img, img ? *(void *const *)img : NULL,
+                  (void *)g_glyphs[b].mat, (long)g_glyphs[b].shown);
+        line[sizeof(line) - 1] = 0;
         C1Printf("%s\n", line);
-        Log("controller: %s", line);
-    }
-    int count;
-    const BYTE *img = CtlGlyphTemplateImage(mat, &count);
-    C1Printf("glyphs: textures %d, image %p, texture %p%s\n", count, (const void *)img, img ? *(void *const *)img : NULL,
-             img && CtlIsD3dObject(*(void *const *)img) ? " (D3D object)" : "");
-    Log("controller: glyphdump textures %d image %p texture %p", count, (const void *)img, img ? *(void *const *)img : NULL);
-    if (img) {
-        int n = _snprintf(line, sizeof(line), "image:");
-        for (int i = 0; i < 0x20; i += 4) n += _snprintf(line + n, sizeof(line) - n, " %08lX", (unsigned long)*(const DWORD *)(img + i));
-        C1Printf("%s\n", line);
-        Log("controller: %s", line);
+        Log("controller: glyphdump %s", line);
     }
 }
 

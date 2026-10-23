@@ -1,0 +1,966 @@
+{
+ "ascent": 18320,
+ "descent": 4640,
+ "fid": 3,
+ "flags": 140,
+ "font": "FZZongYi-M05S",
+ "glyphs": {
+  "0020": {
+   "adv": 3311,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "1000"
+  },
+  "0021": {
+   "adv": 5629,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de1fb2186e88b800be503a2f840c00773b5a07e4205624fb13e3e41f19db7b65fb40010ce0581d181e050d001d13b60b490f22ded6e9f6340fb645bd92fd000"
+  },
+  "0022": {
+   "adv": 8981,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de3e6a1b07b271bdaaeaee26d73c743d77712c4623b6a2c0bcff74360ec9c6f6ababb89b5cf1d0f5ddc4b1188eda8b000"
+  },
+  "0023": {
+   "adv": 14175,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dce82e363efd7e727f62defb8a06363d0e8fdc38f60fe88baee243988f43a3770e4583fa22bfb898a501d9486efd9d6c0765eb7b898e501d9470efd9e6c07446277f1ca7c7a1d1bbf6f59dfd1173dfc729f1e8746efd7f727f62e3fb8a06363d885405cf664f81d97adee243988f62153bf6f19de00"
+  },
+  "0024": {
+   "adv": 11837,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da3cdb6f6a0004722c4281a8b14a0943400391f174ae976262ba68bba107ea4f90002b0d83a8ac3610002e13b688f4800b27dfb2c51bfcb15d54b4ebad4d6a35ff9b83b6769e117ad6de67d6de80126e9974a000b7922003b1581421a000009174a397631cfa6486a000b8ed36d7fab4db5fabf4003921a74d177659dba574b9224555fa001a8050556a094080023976ae3e9000a304b1c2a0967095a56e92b656d36940f28bb12714204430b040ce5841001c7d2d6d4000915bc007653b68b7c00002dee9b8eec9d174b6f80"
+  },
+  "0025": {
+   "adv": 20714,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de0b52df9ea0004ba2a12a6a8a80a993bc003b15055277000150ead54541ab400168ddb173a8002d1758356ead5fd5ab12000ecabf55622001ac054d56af95280025df6ba34178e78b98545bc000016f76c8668002de48800e8799a1220000048bb5bcf4000915bc007443382f624d0d83de34d7941d8b51f672ce1b07652bc17af35cedbdae8da80012eca80a96a2a12a64ee000ec541549de000541ab55150ead8005a2f6c5cea000b46d5fd5aab58356ac44003b2afd55890006af95355ac054c0009740bdd6cf6c9a2de00000b7bb643340016f24400743ccd09100000245dade7a00048ade003a219c00"
+  },
+  "0026": {
+   "adv": 14340,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da33cb64ea0004872ba281a8aeca094d8003c1176a50d000371cda86e3363e281a8cf0b010a4003b12ebdb569e8a58a2f30034bece7a5eca4d27f2472dd15d92e7efc344a677a0f4fd3b10554bad0006e2f654371bd6001783db52ba8002e13503612ad41d83aaa000ec9365557c001a6e4fb569b13e00023e76ac4e9000b007c1f6a47c1f652cad79a594dbbabae4bf54c0a0018e514d5c7245400094dda9b305c87d6b273dbc01c2de4fc2de802cbdb5bca000a815f0037161dd8d2cc6ec94a82f2773666e8b7800002c9edb314e00b291379390f7a9b00743ccce9c0010c87390c88004df6a67a800137b7800e886700"
+  },
+  "0027": {
+   "adv": 4801,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de3e6a1b07b271bdaaeaee26d73c743d77712c4623b6a2c00"
+  },
+  "0028": {
+   "adv": 7822,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100d88ba367a80010d0b149b2a2c526d4f9000ec6bff6d503b2a573cc8000098fac6ef9c013167003b15abdb53fec940d560e001a764db569d93680021a7abe15000"
+  },
+  "0029": {
+   "adv": 7822,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de68c61d9ea000bccd3bd93ab4ef64ec20003b2501daac0ec56acecf000019feae44a70033e6200eca95f6ab03b1b01527c000162ec9d458bb26001799eb07b00"
+  },
+  "002A": {
+   "adv": 9871,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de15fefac7abe1ad47533bb7aea3b933bc0ee751dc663ea67890dd5f0e963ae57dc775b27c48e2294c5d0c21d555b937bf40adbdd6afc6cfad939a871ad6f3ea3b9487d34d9d9661e9594ea3b8b7bc6b5437ad9365875aabe4defd17491755551b3e8610e229b3dd6c9cee3ae57a39000"
+  },
+  "002B": {
+   "adv": 9540,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de0002e18fb571fd8cdaed66d762e93b664dd8cc6eda38f64cebb664dd945ced66d764c9800"
+  },
+  "002C": {
+   "adv": 5360,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dc8b0e433ec91776b79fa164fa52c27002ea8c00e8a19e96f4ec42a52c9c001b3c9d49b2c9a0027778d864000"
+  },
+  "002D": {
+   "adv": 6622,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dcaf443b3f0b83bb5721e08f976d1c000"
+  },
+  "002E": {
+   "adv": 5173,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dc85e6433ec95f76b79fb1a85db219000"
+  },
+  "002F": {
+   "adv": 11795,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de7f661b07de0e17941d8d95f67c2a1b0764a0000"
+  },
+  "0030": {
+   "adv": 12561,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da4b0b11ea0004bb2bb2baa8ae8aed434003c12ada9408000b03516a2c0d46000b45f5ae35500059dea06a555a81a975fc001e16a9d55e6001a8c56b56a295b000262faa8e605c8cfd149b91df198da8002df48400ec6abeeaebce4d6d1882e7cd35a7ec969eed1bc9aad2fcee3e3c59a0a000486df0000"
+  },
+  "0031": {
+   "adv": 9519,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da3a3a6c7b5651e0fc3f6d363b2dbbeb3a23b2745debf43f6ed605f5770ceee071fd5244f65b240"
+  },
+  "0032": {
+   "adv": 11754,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dc4b05675a6b5262dc851a8b8d46e793ca7cf13b000843b56a3e89943b688fe14526ed1a600992eb79c5fb84ddbfca00388652a5ec993bcc54279310ef17d21df17000a05db555a8002f074ef666ad3bd98b08000f0bcbeab08000d31268ab4c499c0010ffa5d1bb1893d3747380262cf00762cf276780000cfed45dce0071f1d0f3f1d0d6548f9b5f50fa000"
+  },
+  "0033": {
+   "adv": 12188,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da38fb64ea00047c2c9287a8b28a1d460003c1245a94d8000b175faa2c5d7f000b79eda38d400168bc73baf4e38bad07c0070c734bb80006cf0fd4365c3e0017addb41ea8002dbf507612ad40d83aaa000f0ba7eaabf000d2c282ab4b0a0400121fa5b2bb198bd371d3802ca43dece44de26c01d8b289d36002191272190c009bed5bdd00022fd40db4750365fc00764cebb53bbd8d189dc8002e99e8174680010ded639d00021b79801d94339eca00deef27de6f40165e9b8eec9a874b6500"
+  },
+  "0034": {
+   "adv": 13451,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dcecb6bcbed50df634b7b6bcbd0ee1db4ede8890f5b11de14f77bdc46a687b51c9e0d6102e765aad2ec9cbf9296653fe4421e2d6080"
+  },
+  "0035": {
+   "adv": 12437,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da49cb8e6a0004482d4278a8b509dd460003c1244a94dc000aef63aa2bad8e000badf1a9aea000b64e29ddca714ddb800003b283d4d55001a80a0d150a82003e1c126f6c38fc1a1cedab4fa58e1f5436bd8d18e5bcd400179a1a00762dea8488000010df14532800122b7800eca19d16f000005bdd3771d9350e971d000"
+  },
+  "0036": {
+   "adv": 12437,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da4b0b3b6a00049c2bb2a0a8ae8a853e4003c12c1a945c000ad757ea2b6d60000b64f1b30ea000b65e29ddba714ddc800003b28b94d55001a30a0d145a80003e3c11cf6c14a8002f343400ec589ce9b0010c7d39107c0048f4a247633bba657ea000b65d4bd74ab52f5d2b50003c2de4aabcc003518a46ad45291000491f5536c0b92d6d3628b7800002f3ed871d0005e691001d8b51a12100000437b5e3b400086dbe007652bc0"
+  },
+  "0037": {
+   "adv": 11402,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de72267a17dec70617dd8eb6f649ba69ef6d88fd2c2878a003d8d42e9be1ec66d00"
+  },
+  "0038": {
+   "adv": 12354,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da449b64ea0004872ba281a8aeca094d8003c125aa94d8000aef5faa2bad7f000b79eda4d54001677c73ba54e39ba30780070c734bc30006df0cd4371c340017c3db409a8002dbf507612ad40d83aaa000f0b9daaaaa000d4027dab5049f0001247b57ef500020f8dc0f3526dcf3bc3001c2e3d30780063945f571c917000262f6ad98172651ac9d179801ccf314731cc8016f76d2168002f3177999cbd9971803b14b33bb8006233d0318ce0021bdab7ba00048b9819e8e6468bcc00ecb0702f267b71be789003518ea3a8e3800bcfb6a8140016a0bbcf502ef3a9b801d8922a1370006718e819c620012ced5605000231d48d9475036dfa007658e000"
+  },
+  "0039": {
+   "adv": 12437,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100deaf926756a000b64d46d60ab51b57ec1c003c2d3faaba4003528a86ad4b2a000049cf14cf6a00049b1d7225a875c891000003b17494aab0005d35d50bad7400435c0e3f6beba80010dbcc00eca76cf65006f3853ef78400b7f4ddc764c47a5a86a00049b2bb28ca8ae8a31488003c121ba9438000aeb5bea2bad6f000b6ff5ac940bc9375fbfa2de00000bcfb61c7400179a4400762d468488000010ded78ed00021b6f001d94af000"
+  },
+  "003A": {
+   "adv": 5525,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dc8b0e433ec969f6b79fb1a5bdb21905e10d2a6b76b79fb1a5bdb219ec96980"
+  },
+  "003B": {
+   "adv": 5836,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de4966a6b7b2487dade7ec6def6c864161c7a6d74bccf620fa963a000dc643a4dbe4300140bc6c1eec921f6b79fa15ffa507e7002ee8a00e8a2f000"
+  },
+  "003C": {
+   "adv": 10057,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dc1a84e35f2fe29ad9db4edf374ff33bc31cf9458799deda76f980ecd6bed4ee000"
+  },
+  "003D": {
+   "adv": 11278,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de107eb067b52c3e88f43b6d3fe970c017083f24cf6a583d11e876da83d2e1800"
+  },
+  "003E": {
+   "adv": 10057,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de8fe6e8a7cc07794af6ac4fca2c2331f0b8fe6e9f198fb5627e5fc5ca57b6c4600"
+  },
+  "003F": {
+   "adv": 11340,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de3272186eab08000d3b26dab4ec9b40010d3a5d1bb18e7d3771380262cf00762fda672002f2998b8a401f7b5c9d3003e69154da2531c01d92e8ed727f632c7a6ba3a1a8697c2000e3deba87237b0002dbbc6d69a8002edf52b67aad4bd9dad4000f0b8dc16b8ea57ddad42ec68276cafbb25f800"
+  },
+  "0040": {
+   "adv": 18107,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100d88924b1a8001298a30a1ea28b2864c5000f44603db5d1f4be8744c400001317aceb1a0009899e003d12f4ceba001a0db399cda00627aa2ec9801c6f53a6bd4e8e00e8ba29a1002e2ca6b7b2008ff1a7ba90011cb02e1aa702e19814003b25554c91001878f3d387cf30006f5caaffb1391bb5b9c01077c003a18ea77c00000f9e95a8ef2fd0d9d3718246da19f45b267f30add3e64ad00045fda868a4003463c273693c2731c2000e8594a5c780021b12388cf4670313c46862681c5b24c8f9a1313e1dc003b1c234b7900079f1a5279b19800975eb6192a000b5bd79d79ab5eb5e6d14003d2abdd5676001aea50f56ba143800252fab59805e805f9744d1c016765359590051f4d4b4c011c5585314e13e7b7571df31e957fa0005ab652828d94a1a8000e8bb700"
+  },
+  "0041": {
+   "adv": 12644,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dcf8fe83dee1c75f1763c27df37986c1e153ffbe71af283b1cc9dc38f41eec6c002e7606987ecade791056501e4435e44156bfc00"
+  },
+  "0042": {
+   "adv": 12706,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de136a1b07d5e50783c4d529b800162ebfd4589afc0016f3db49aa8002d978e77729c7376e0f800d4adc31cea2aa5d180035187ea1a8e1f000bd6eda2e54001709a83b0756a06c25550007844d60b9fb0d64fb24d7db0a4ec6cad09080000245dad18a00048adf000179f34b8b5d92e7ed8b9f6346674d80086449c86430026fb586b40009b5be00000"
+  },
+  "0043": {
+   "adv": 12002,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de86d4029ea4e4000291d55a8a47554002cefa671fb269fcafda800121b7c00eca80d16f800005bfeb6dda8002df48400ec57fd09080000243cafdbb1963d338f500059deb7eaad5adfaab638001e16aa555e6001a8a56b56a315b00026cfaa8bea8001364ae8adaa2bb2b550d000f04ab000"
+  },
+  "0044": {
+   "adv": 12726,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de136a1b07d5e50783b555291000162e9b5458ba6c0015a9eb6382a000ad4d3bd36ab4ef4dab78003c225605cf666989d934ff5b3b1d8cb1a1220000048bd51f250002456f00000"
+  },
+  "0045": {
+   "adv": 10926,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de136a1b07d5e507a21c9eda817856f1db218f04f3bb6a05e161976c90bc1488eda817a5e3700"
+  },
+  "0046": {
+   "adv": 10636,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de136a1b07d5e50763507c6797f04ee7b69dbe1623f6c7bfc1488eda76fa5e37000"
+  },
+  "0047": {
+   "adv": 12416,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da487b07ea0004d92ba2b6a8aecad5434003b126f4a96000667585266757886b8fc453a8381c7ea0f8bcfd8aeaf5bf2de1623f6a6cfa1c23b5559400090dbc007652be7b28037bbd9f7bbd00597d6dbb4e00b290f7b390f7a9b00762d4684880000121e57edd8cb1e99c7a8002cef5d3556ad74d55b12000f0b406aaf3000d452b5ab518ad8001367d545f000"
+  },
+  "0048": {
+   "adv": 12975,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de824f3837c58faec6a17ac360ec95f78b057d9188f19f57b257feaf283b1a83e33837639e000"
+  },
+  "0049": {
+   "adv": 9436,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da350a2e7b5749e0f1e76d173b2f07eb6aa3b10fbdb45cf08713b5749d887df54ab1d978300"
+  },
+  "004A": {
+   "adv": 8422,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da205a2e7b5749e082054974000523aa15148ea80005a2facd7bec95ffaafdaa00048ade003b288e000"
+  },
+  "004B": {
+   "adv": 12209,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dcacacde3f2537321fd8ef4f38c4422be4e10892fb2365e754a605f924878cfd3d92bff57941d8d41f19bc791bd00"
+  },
+  "004C": {
+   "adv": 9767,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de136a1b07d5e50783ebbdb45cf0b793d6782764afc00"
+  },
+  "004D": {
+   "adv": 16286,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de136a1b07d5e50762fdbd6afbf2206f61939504f6355bd8639abefc886bd5504f62fdfd61b078588fefceda9f4e4bf7efce3560cf0b0cc00"
+  },
+  "004E": {
+   "adv": 13264,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de136a1b07d5e50762ee3d6b067221af624394fa78267beb0d83b288feaa7d392f37bede75833c2cc3000"
+  },
+  "004F": {
+   "adv": 12726,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da487af2ea0004e42ba2c5a8aecb15434003c13a4a9438000aeb52ea2bbd4a000b27f5ae855000593ea2ea555a8da975e4001e162e555e6001a8a56b56a315b00026cfaa89405c9756a2d45be000016ffadb76a000b7d21003b17ef421a0000090faa48aa000486f3003b281200"
+  },
+  "0050": {
+   "adv": 12292,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de136a1b07d5e50763507c6c47ec7ec54a6e000575b13515dec48005b278d45b50005bcea2ebf55a8daff592001e117382e794211fec9e5f8dad3d8c35a10d00000487c50549c009ce110e7e110ede00000"
+  },
+  "0051": {
+   "adv": 12664,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dcc4980a7ea364de7d898aebc9d21bb890a9438000aeb52ea2bbd4a000b27f5ae855000593ea2ea555a8da975e4001e162e555e6001a8a56b56a315b00026cfaa894a8001390ae8b16a2bb2c550d000ec4c502e4bab516a2df00000b7fd6dbb50005be90801d8bf7a10d00000487d52454e0067dbc7ddfbf7798ecb3b7710821f39286000"
+  },
+  "0052": {
+   "adv": 12375,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de136a1b07d5e50763507c6851e87aef235b2f5fd8de7f3cced90b46b70d6df7ed1b7dfb966ff4659bfd55eb72dd2dc67d48a6000441beb4a1fbea0021f78df0750005bce9debf55a77aff594001e117d82f3c7778dbb27c1e37f576308284880000122ed6e950002456f000000"
+  },
+  "0053": {
+   "adv": 11837,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da3cdb6f6a0004722c4281a8b14a09434003c118ba93e4000ac360ea2b0d84000b84eda23d2002c9f7ecb146ff2c57552d3aeb535a8d7fe6e0ed9da7845eb5b799f5b7a0049ba65d28002de48800ec560508680000245d28e5d8c73e9921a8002e3b4db5fead36d7eafd000f0bbcaaafd000d40282ab504a040011cbb571f4800518258e1504b384ad2b7495b2b69b4a07945d8938a1022185820672c20800e3e96b6a00048ade003b29db45be000016f74dc7764e8ba5b7c00"
+  },
+  "0054": {
+   "adv": 11505,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100deac061b07d2b7876ae93b1bcfeac3f3b1a85eb3c13b1bcfdb45c00"
+  },
+  "0055": {
+   "adv": 12706,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da4b0b07ea0004d92bb2b6a8ae8ad5434003c133da9438000aeb52ea2bad4a000b27f59aa3d92bff56101400086dbc007651c68bcc00002f3f59f01d92bef5655e000"
+  },
+  "0056": {
+   "adv": 12437,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de06261b07d8bf77941e0acafb17ef0d83b23dfefc483042e4bf7efc484fbeec8b980"
+  },
+  "0057": {
+   "adv": 16782,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de09621b07d87ae7941e08a67b08e5583391037b08baa7d3c1161f61eba1b0764c9bdfc0a53bfc107fbf6f55887b238befdbd29dfe0893dfbf5ac43d9311000"
+  },
+  "0058": {
+   "adv": 11837,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dc5754293f3b793d6fd8e3af22d4d0a3c8817c8bf6bd7f63a8bced550a4f924b2217ec8f879e6216e0e0843cf5d14907645cfc91a0ef480"
+  },
+  "0059": {
+   "adv": 11195,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dc7a3d64bf1536fb1a5be35887b1d976143b2433e79db57a392f379e57ea18ec9027b1d969f1400"
+  },
+  "005A": {
+   "adv": 11092,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da2d4b30fb533fe8965fb6989e1501fb2ba760efb6cc3e96b9bb5679e0ac07bd45a9f1400"
+  },
+  "005B": {
+   "adv": 7884,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100e009397521f95030f06007b6a81d945df58aa3d8ba3eda9ff84ffe000"
+  },
+  "005C": {
+   "adv": 11795,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de02ea1b07d9f0a7941d8d95f783861b0764a0000"
+  },
+  "005D": {
+   "adv": 7884,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dcd189581f9afd0f09ffbb5583d8ba4f5755fd945ced56078300400"
+  },
+  "005E": {
+   "adv": 9271,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de34121b07ce986d6b762d47b9082a05c0e3f720fabfbb16a3e74d994abb2b78000"
+  },
+  "005F": {
+   "adv": 10678,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100d6ba4cf7b5367e88f93b6c9be970700"
+  },
+  "0060": {
+   "adv": 5525,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de071e0e17b98e99dfd8b51efc5d988f6486000"
+  },
+  "0061": {
+   "adv": 11009,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dcde7f433ea0f8bcfd8ae9f5b88d50005b26bfebfd5afdafd676001e17ad556f2001b1250556c4140800243f2a6dec5c870d933802f448d94c9166fa01d8975a12100000487a5b2bcde8a189d34344368123145028bee8ded3dd4de8005bdd2de9500022993b929d44ee4a690e001d0e634a9700064f5ad26535a890b79c453ad781c805c8496d693de801b2dc4d656e0109d34d93802ca34dc4e34dba47c3dd435e10e96f3a000627562c28d54b09b000e88f800"
+  },
+  "0062": {
+   "adv": 11650,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dc8b0f5d1a45d2974545aa94525a9a3000e85d2a9488000aef5e6a2bad79000b6ff1964aa000b6ed5bd7aab56b5e6b78003a2fd6a902000e434eee3c22c1c11cf8d19bd934ff57c7dd8aeaea0cf365c0e3f114d3605c94bec474420000010878d4ff40017f0f9c9ce7cc9be001d89b4a12100000437c57339801f6cd227d9122f400ecb2600"
+  },
+  "0063": {
+   "adv": 10802,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dcea180a7a9368000a83592a2a1d65000b31e99b2ec9fa74a62d00021b79801d96f3a2de00000bcfc6972a000bcd22003b121b421a0000086f4a1a763033a690ea000b31d5fd64ab583596c98003b20a3558e8006ad14dd5ab453800099fe2cd05400099e54c537515314e271800763ebc0"
+  },
+  "0064": {
+   "adv": 11650,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da365b5a6a0004912bb287a8ae8a1d488003a174a968c00114e96a5156961755a788a7657038fd41a193bb15d3eb070bb26a1e2b99f0471c784a82ae43b12902000e8bf6aab78003568a1ead5a286000492f169b8172271b11cf79006cf713595c0041f8d19b400179a44007626ce77c000f86da07d1b40040bc5581a0007c20f003b2c9a00"
+  },
+  "0065": {
+   "adv": 10988,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da365b26ea0004cf2a629ba8a98a7138c003b1fdb52720001536aad454baaa0016a1cb7ebb28bbbae4a00048ade003b2c9b45bc000016f74c67782f35e375a5400168bab7ab756ad6ad58e00076404eab1d000d5a29bab568a7000133fc59a005cd804aa7d9516e9852a000b7d22003b11773a40003e21ce3f2180137d2f5c000"
+  },
+  "0066": {
+   "adv": 7532,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de4e9266ae8002a058000e8732edb26f65502aaf2000d462b0ab518ac00013e7a5c23a290bb52ebd0b7dea8da3b1961eb7263b11cbdb68becb8df4cd900"
+  },
+  "0067": {
+   "adv": 11712,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dce8d019fa00067a4d003c2935ed4cf7836cf52620001416c254503b080016ddeb41e7b2a05d7eb593b8239e3ccd6b4f31ad579b505379b504c4001d13b7556a0006a5943d5a9450c000925e2a96d400094c4e450f513914325d800742d452d98001f0d8149f1d7e38ec9f124677e0723b58400b9123c4328b7800002def1b7968002f348800ec50350f8800003b9e283ed0003e307801d95fa00"
+  },
+  "0068": {
+   "adv": 11671,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de0fda0e17d5f1f7632c7d6f63d000448f8001d894ca1370000048bd50f9f632c3d6e2d540016b5b47af556d1ebcdc180074521d338c0060b2794e0a277c714671e1160e08e7c68b8ec9a7800"
+  },
+  "0069": {
+   "adv": 5277,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de429e97d7b269feab41bb1963eb4be81783cd8385daac0ec681f6d503b25fa00"
+  },
+  "006A": {
+   "adv": 5277,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100d79892c7b5367d88a6a9270000a075aaa282d6a000b64f5a16fd934ff55c794000915bc00745c702f079b070bb5581d8d03edaa0764bf40"
+  },
+  "006B": {
+   "adv": 10885,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dcaf95c99f2336a369d8e11f3ac9d079e49b3aafbb252bdf326f32e8ac9f5bf2dd934ff57c7dd8cb1f1b933a152c0"
+  },
+  "006C": {
+   "adv": 6601,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da3cdb11ea0004d0258291a8960a455fc003b1557db569e88f89eca00deef67de6f00165f59acdd9350f568c200"
+  },
+  "006D": {
+   "adv": 17113,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dc8538001f5bdb9400107bb800743c24e9b001107d390c7c0048faa208ec658fadedca00083ddc003a1e668434000010df54411d8cb1f5b86350005b26bf6c4d5affb1364c001d17474c8600171cc75371cc7f315bdc7985d69ee119ec7615ab63b852f58003a2de69960002f017aa6f0979ea0a338f5c9bf0449d7eb6677b2a57eab41bb196200"
+  },
+  "006E": {
+   "adv": 11588,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dc8538001f5bd8f40017e8efca4e77c9bb801d8937a10d00000437d51047632c7d6e23540016c9b07aff56c26bf598800744edd3294005e62f54de62f3d414671eb937e0893afd6ccef654afd56837632c400"
+  },
+  "006F": {
+   "adv": 11402,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da365b26ea0004cf2a629ba8a98a7138c003c1162a938c000a9b592a2a6d65000b31f19982a000b31d5ad64ab56b596c74003c2e9eaac74003568a6ead5a29c0004cff16680172271ae8d16f000005e7e34b950005e691001d8a1aa12200000437c568ea000436de003b2bcc000"
+  },
+  "0070": {
+   "adv": 11650,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de3b8297d7b2a2deae2ffb1963e372670365c47d52ea1db5036df000e8420a9488000a9b5e6a2a5d79000b6ff1964aa000b6ed46d7aab5175e6b78003a28ba998a002f0965a6f0165e4ea838f329bf049bd7e666c8172507b11d11200000449e3535d000448f8001d89b49d0c002712664d48007cf15cce80010db7c00ecb1c00"
+  },
+  "0071": {
+   "adv": 11650,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dce6e740bf146d3b1961eb1d07b2a2fd7e6193b824ee3cc5934f27ac17874dd37874dcc4001d145d556f0006a3143d5a8a50c000925e2d375400092254c50f5153143a910007420fd4dbe0003b95fbc47cad781b305c89c6c4745bc0000179f8d19b30042275c4e4ddba1c01d89b3a1f100000773c5595a00077224003b2c7000"
+  },
+  "0072": {
+   "adv": 9415,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de0fda97d7d56837632c7d6f63d0005fa3bf2939df26ee007426cd0868000021bd290fd8b28e99c7a400502df175a9df175f156d9a714ed9b260038224a652800bcc5ea9bcc5e7a828ce3d726fc11275fad99deca9580"
+  },
+  "0073": {
+   "adv": 10285,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100da2abb8e6a0004722b0262a8ac098d488003b1ba752868001536ced454bb3c00171dd34334800b27e272751c4c9b5ad614eb5d6167b897787168667846675b7e9f5b7f0044b96c9d0005bc91001d88f9a1220000048b8575ec5b2f2d40a8002e1354368aad50da3ac9000ec95fd55bc001aa04c556a813180023974aded200146086385410ee12bea5d2580a5a821f3ddd965a89ddc5d2c23272ba3000e3e552f400090dbe00765a2e8bcc00002dfe19dbb2935cab540"
+  },
+  "0074": {
+   "adv": 7967,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de4e9236d7b26a1dac20e8a42ed4d9f42df78b2c5500026792c148d44b0522afe001d8b66edab4f441ecf65006f77b3ef37a00b278d0cdd88e5edb26f65c6fb67c000"
+  },
+  "0075": {
+   "adv": 11402,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de6f8e97d7d509cd0003b908001d97c1a2c900000b7bd6f06f64d43d51dd540009384f8503513e141267800742ab52d9400225d0d4a24d0c29ac4f114ab5e0723a833b31f62b57d697d764d3c00"
+  },
+  "0076": {
+   "adv": 10698,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de03e297d7d89f25a0de09fbfb13e34bebb2623efd172124e0893dfa2ebdb9d929500"
+  },
+  "0077": {
+   "adv": 15603,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de06ce97d7d86625a0de089c7910d203ce440be44347f13c1123f619e297d764edfcf9dafa47049de7b7982e3b2339e7b8e7d23824ef3e6cc171d93a200"
+  },
+  "0078": {
+   "adv": 10657,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dc4f8d255f3b5aadadd8d56f22bfdd15c0f8f91749176ec6e979d95e920f24b5d3b5d92d3f3cd9214fc11279ebf6f59ec92bf9248963000"
+  },
+  "0079": {
+   "adv": 11609,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100d8ad44dbed4cf7834635262800140ec254505b080016ddeb41e7b269fe2e10d000207c20d93e10db0700765b267b28037bbd9f7bbd00593c6325ec9a7f8bcf3500025313b943d44ee50c9b4001d090f4b6f0007db5d527db5d8f8b11c491a3381c7ed610500033d27001e153500"
+  },
+  "007A": {
+   "adv": 9850,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de8f3e97d7d2f78f6a9b7c11b3f36fd30fddaa1bf44319db593f0b6efca4373c0f6d79800"
+  },
+  "007B": {
+   "adv": 8153,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100d8de863ba40036f42886aa21521a401000ec731f6d503b2d693cc40000ad6ad7f216055f938566200c75200219cedd57bedfc2e18e77a47854b13d540021a4e00c77ae63e7d40abf27f0cc5dc00ec4a676d4ffb233b55ff8006f590d537b10d0006e13801f01443f90cf18bc9c3ecf89003a2053b55abd0fd93b3c000052eaaaf3e6231793fb10c007c80"
+  },
+  "007C": {
+   "adv": 5649,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100e009b57b6ff9479fec62f7cdc30f64e8800"
+  },
+  "007D": {
+   "adv": 8153,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100de639a11a69001242f5de6a6f5de6800003b2339daac1ec4a64ecf000014baaabcfa80a824fec67800e54800798c48ab6f488fb85c7df6f1f533b8aa80079b3800e41467f90b015049c3ecf89003b2d69daac0ec7325480000042bbcd4a15bcc00248ce0083faef5e7cc49d127f0cc5dc00e87eceda95f440a4f3100002b5ab5fc86793a24e15bc80210000"
+  },
+  "007E": {
+   "adv": 9478,
+   "bounds": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "shape": "100dc8634b4da5b797f56c3a6956a3a102800a5368002ffa8692ffa80005bcedbd6f65fab95dc4e0052d6c014730005bfc7d16f71d556df4c91d0352f8bd352b8c5fb0014d93001a04afd3a08b0000489da853ec40af2c489c015a53002819c0048872a1211c95624400"
+  }
+ },
+ "kern": null,
+ "lang": 4,
+ "leading": 2480,
+ "long_form": true,
+ "name": "465a5a6f6e6759692d4d30355300",
+ "removed": [],
+ "tail": null
+}

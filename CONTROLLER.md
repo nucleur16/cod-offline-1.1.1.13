@@ -228,11 +228,11 @@ work), which fails C1's client pure check (0x617FA0, "WIN_FILE_CORRUPT") on ever
   pointer). While it is up the pad drives it, no cursor: D-pad / left stick (0.55, hysteresis 0.4, repeat
   350 / 140 ms) and A are queued (input thread) and handed by IN_Frame straight to the movie's HandleEvent
   (vtable +0x8C, event {5/6, key}) as private key codes 240 up / 241 down / 242 left / 243 right / 244 select;
-  B / Start are Escape (PauseMenuView's own back / close). `voice_ui/MainPause.as` (the 79-line document
+  B / Start are Escape (PauseMenuView's own back / close). `zones/controller_ingame/rawfile/scaleform/default/codoingame.gfx.gfxpatch/as/MainPause.as` (the 79-line document
   class) moves focus to the nearest visible clickable object (C1's BaseButton sets buttonMode), sends it
   MouseEventEx MOUSE_OVER / ROLL_OVER (its own hover look, no extra frame); select sends MouseEventEx MOUSE_DOWN / UP / CLICK
   (C1's BaseButton reads `cEvt as MouseEventEx`; a plain MouseEvent is dropped). Shipped as
-  `client_shipRetail\patch\controller_ingame.ff` (build_ingame_ui.py), a non-*_ui_mp patch zone, so it loads
+  `client_shipRetail\patch\controller_ingame.ff` (`build_zones.py controller_ingame`), a non-*_ui_mp patch zone, so it loads
   ahead of code_pre_gfx and its codoingame.gfx wins over patch_common_mp's. Recompiling the 1168-line
   PauseMenuView crashed C1 (AV 0x92F6F3) when the menu opened, and recompiling codo.gfx's BaseMain blanked the
   front end, so only MainPause is replaced. Front-end menus keep the stick cursor.
@@ -279,23 +279,32 @@ Pad keys in hints and prompts are drawn as icons, IW4's way: C1's text renderer 
 inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB26E / 0xAAB8B2 step over it,
 0xAAA7D0 draws it at `((size - 16) * fontHeight + 16) / 32` px). Source: `controller_glyphs.c`.
 
-- **Art**: Xelu's FREE Controllers & Keyboard Prompts (Nicolae "Xelu" Berbece, CC0; `glyphs/LICENSE.md`,
-  `glyphs/xelu/Readme.txt`): Others/Xbox 360, Others/PS3, Others/WiiU (positional: our bottom button is the
-  Wii U B), and for the generic set Others/Positional Prompts (face buttons) plus Steam Deck (the rest).
-  Hold-X is the set's left face button inside a ring added by the script. `glyphs/make_glyphs.py` converts
-  the PNGs in `glyphs/xelu/` to 64x64 with all mips, B8G8R8A8, into `glyphs/glyphs.bin` (zlib, committed)
-  and `glyphs/preview.png`; the DLL links glyphs.bin with `.incbin`.
-- **Materials**: one per button, a copy of C1's `white` (Material_RegisterHandle 0xA78170; IW4 layout
-  verified at run time: textureCount +0x48, textureTable +0x54, texture def 12 bytes with the image at +8,
-  image texture at +0) whose texture table points at a copy of white's GfxImage. They live in a 64 KB block
-  at a letter address (0x4B4B0000 first) so each pointer is four letters: the escape has no 0, `^`, `%`, `&`
-  and survives every string copy (Key_GetBindingNames strncpy's 0x7F bytes; the escape is 8).
-- **Textures**: created on the render thread at the icon drawer's two call sites (0xAAB320, 0xAAB92D), on
-  the device of white's texture (CreateTexture 64x64x7 A8R8G8B8 managed; D3D9Ex fallback: default pool,
-  dynamic). One texture per set and button, made on first use; a set change swaps only the image's texture
-  pointer, so icons switch live. The hook sets our icons' vertex colour to white (C1 multiplies text icons
-  by the text colour, and hint key names are yellow), so the art keeps its own colours; the black shadow
-  pass stays black.
+- **Art**: Xelu's FREE Controllers & Keyboard Prompts (Nicolae "Xelu" Berbece / Those Awesome Guys,
+  https://thoseawesomeguys.com/prompts/, public domain under CC0 1.0; attribution not required, given with
+  thanks): Others/Xbox 360, Others/PS3, Others/WiiU (positional: our bottom button is the Wii U B), and for the
+  generic set Others/Positional Prompts (face buttons) plus Steam Deck (the rest). Hold-X is the set's left face
+  button inside a ring; the killstreak arrow is Others/Arrows/Directional_Arrow_Straight, recoloured.
+- **Zone**: the icons are real C1 assets in the patch zone `controller_glyphs_postgfx_mp.ff`
+  (`zones/controller_glyphs_postgfx_mp/`, built by `build_zones.py`; install it in `client_shipRetail\patch\`
+  with the DLL). Per set (xbox360, ps3, wiiu, generic) and glyph (a b x y lb rb start back ls rs dpad_up
+  dpad_down dpad_left dpad_right lt rt x_hold arrow): an image `k33pad_<set>_<glyph>`, 64x64 A8R8G8B8 with 7 mip
+  levels, its pixels in the zone (`image/<name>.png` + `.mips.png` in the sources), and a material of the same
+  name copied from common_mp's `hud_status_dead` (HUD icon: technique set `,2d`, sort 0x30, one colorMap,
+  sampler 0xE2, its alpha-blend state bits). A `*_postgfx_mp` patch zone is appended to C1's code_post_gfx list
+  (0x5984D2, alloc flags 1, kernel33.c): it loads once the renderer is up and stays loaded in the front end and
+  in matches (the `*_ui_mp` list is freed on match entry; images ahead of code_pre_gfx crash).
+- **Lookup**: Material_RegisterHandle (0xA78170) by name on the main thread, once the zone has been handed to the
+  loader and the front end is up; every material must come back under its own name with its image's texture
+  made. Without the zone (or with a material missing) the icons stay off, hints keep the family's text names
+  (below), and the reason is logged once (`controller: button icons off, ...`) and printed by `gpad_glyphdump`.
+- **Slots**: the escape carries the material pointer as four raw bytes inside a C string, so each glyph has a
+  slot (a copy of its set's 0x60-byte zone material header, pointing at the zone's technique set, texture table
+  and image) in a 64 KB block whose address bytes are letters or digits (0x4B4B0000 first, then every other
+  combination): the escape has no 0, `^`, `%`, `&` and survives every string copy (Key_GetBindingNames strncpy's
+  0x7F bytes; the escape is 8). At the icon drawer's two call sites (0xAAB320, 0xAAB92D, render thread) the set
+  in use is copied into the slot, so icons switch live. The hook sets our icons' vertex colour to white (C1
+  multiplies text icons by the text colour, and hint key names are yellow), so the art keeps its own colours;
+  the black shadow pass stays black.
 - **Names**: Key_GetBindingNames' two Key_KeynumToString calls (0x49397C, 0x4A19A1) return the icon escape
   for a pad key. Scaleform (AS key names, 0x5B080D: Controls screen, pause menu, Scaleform HUD) and GSC
   (0x55A8B6) keep the text names: Scaleform has no IW4 icon escape, so it keeps the family names below.
@@ -363,7 +372,7 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
     - R_TextWidth 0xA78580, which C1 uses to centre and right-align text (cursor hints, menu items, the HUD), skips "^digit" colour codes but not the inline icon code. It measured an icon as eight characters.
     - A test row with a bar at x + measured width × scale showed it: the bar ended far right of a line with an icon, and exactly at the end of plain text.
     - The hook measures the text without the icon codes and adds each icon's slot, (1 + 2 × `gpad_glyph_xshift`) × its drawn width. Bars now end at the line's end in both cases.
-  - **Selection arrow:** the killstreak HUD's selected slot is pseudo key 29. It renders as a yellow arrow (Xelu's Others/Arrows/Directional_Arrow_Straight, recoloured by `make_glyphs.py`, glyph 18 in every set) followed by the gpad_ksuse key. In text mode it is "> name".
+  - **Selection arrow:** the killstreak HUD's selected slot is pseudo key 29. It renders as a yellow arrow (Xelu's Others/Arrows/Directional_Arrow_Straight, recoloured when the textures were generated, glyph 18 in every set) followed by the gpad_ksuse key. In text mode it is "> name".
 
 ## 11. Movement parity, look feel, dive (2026-10-21)
 - **Movement:**
@@ -382,10 +391,10 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
 
 ## 12. Options > Controller, microphone choice (2026-10-21)
 - **The tab:**
-  - `voice_ui/OptionView.as` is C1's `codo.views.OptionView`. Its hidden "Other" tab (`myTabOther`) is shown as 手柄 and opens a panel built in code.
-  - It is compiled by FFDec and spliced into the same codo.gfx in `voice_ui_mp.ff` (`build_voice_ui.py`), so there is still one UI zone.
+  - `zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/OptionView.as` is C1's `codo.views.OptionView`. Its hidden "Other" tab (`myTabOther`) is shown as 手柄 and opens a panel built in code.
+  - It is compiled by FFDec and spliced into the same codo.gfx in `voice_ui_mp.ff` (`build_zones.py`), so there is still one UI zone.
 - **Page 手柄图示 (diagram):**
-  - A line-art diagram for the pad family (glyph family: Xbox 360 / PS3 / Wii U / generic), from `glyphs/make_diagrams.py` → `voice_ui/k33_pad_diagrams.as.inc`.
+  - A line-art diagram for the pad family (glyph family: Xbox 360 / PS3 / Wii U / generic), pre-generated in `zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/k33_pad_diagrams.as.inc` (original line art; inserted at `// @K33DIAGRAMS@` when the class is compiled).
   - Each button has a live callout with what it does, read from `k33_padbinds`.
   - Settings rows: swap sticks (`gpad_swap_sticks`), swap triggers (`gpad_swaptriggers` swaps the two trigger binds), look feel (`gpad_lookpreset`), look sensitivity, invert Y, aim assist, deadzone, and dive with the crouch button (`gpad_dive`).
   - With no pad, the generic diagram shows with 未连接手柄 ("no controller connected"); `gpad_glyphs 1..4` forces a family.
