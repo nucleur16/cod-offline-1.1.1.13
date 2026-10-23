@@ -21,3 +21,5 @@ image,sfproto_mp_seatown_usermap,file=image/0008_sfproto_mp_seatown_usermap.bin
 image,sfproto_mp_shipment_long_usermap,file=image/0009_sfproto_mp_shipment_long_usermap.bin
 image,sfproto_mp_subbase_sh_usermap,file=image/0010_sfproto_mp_subbase_sh_usermap.bin
 image,sfproto_mp_hunger_usermap,file=image/0073_sfproto_mp_hunger_usermap.bin
+image,sfproto_mp_strike_sh_usermap,file=image/0011_sfproto_mp_strike_sh_usermap.bin
+image,sfproto_mp_qadeem_sh_usermap,file=image/0012_sfproto_mp_qadeem_sh_usermap.bin
