@@ -528,6 +528,10 @@ menuClass( response )
 codolSelectPartyClass()
 {
 	self closeMenus();
+	// A queued class reply may arrive after the match has ended.
+	// Preserve final teams, class and accounting until the next match.
+	if ( game["state"] == "postgame" )
+		return;
 	if ( !isDefined( self.pers["team"] ) ||
 		( self.pers["team"] != "allies" && self.pers["team"] != "axis" ) )
 		assignment = getTeamAssignment();
