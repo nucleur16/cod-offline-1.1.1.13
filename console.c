@@ -1217,7 +1217,11 @@ static void ConImeRestore(void)
 /* No IME while the console is open: keys arrive as plain characters of the layout under it. */
 static void ConImeSync(HWND hwnd, UINT msg)
 {
+#ifdef K33_VISION
+    if (!g_conOpen && !VisOwnsKeyboard()) {
+#else
     if (!g_conOpen) {
+#endif
         if (g_conImeHwnd) ConImeRestore();
         return;
     }
@@ -1239,6 +1243,13 @@ static LRESULT CALLBACK ConsoleWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
     if (!g_conKeyDvarTried && (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) &&
         *(volatile int *)(DWORD_PTR)C1_DVAR_COUNT_VA > 100)
         ConRegisterKeyDvar();
+#ifdef K33_VISION
+    { /* the vision editor first: its toggle key, and the keyboard/mouse while it is open (vision.c) */
+        LRESULT r;
+        BOOL conToggle = (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) && ConIsToggle(wp, lp);
+        if (VisWndProc(hwnd, msg, wp, lp, g_conOpen != 0, conToggle, &r)) { ConImeSync(hwnd, msg); return r; }
+    }
+#endif
     ConImeSync(hwnd, msg);
     BOOL open = g_conOpen != 0;
     switch (msg) {
@@ -1331,6 +1342,7 @@ typedef HRESULT(WINAPI *SCPresentFn)(IDirect3DSwapChain9 *, const RECT *, const 
 typedef HRESULT(WINAPI *CreateDeviceFn)(IDirect3D9 *, UINT, D3DDEVTYPE, HWND, DWORD, D3DPRESENT_PARAMETERS *,
                                         IDirect3DDevice9 **);
 typedef IDirect3D9 *(WINAPI *Direct3DCreate9Fn)(UINT);
+typedef HRESULT(WINAPI *ResetFn)(IDirect3DDevice9 *, D3DPRESENT_PARAMETERS *);
 
 static Direct3DCreate9Fn g_origCreate9;
 static CreateDeviceFn g_origCreateDevice;
@@ -1797,6 +1809,9 @@ static volatile LONG g_inPresent;
 
 static HRESULT WINAPI Hook_Present(IDirect3DDevice9 *dev, const RECT *a, const RECT *b, HWND w, const RGNDATA *r)
 {
+#ifdef K33_VISION
+    VisDraw(dev); /* the vision editor under the console */
+#endif
     ConDraw(dev);
     InterlockedIncrement(&g_inPresent); /* d3d9 may present through the swap chain's vtable */
     HRESULT hr = g_origPresent(dev, a, b, w, r);
@@ -1807,7 +1822,15 @@ static HRESULT WINAPI Hook_Present(IDirect3DDevice9 *dev, const RECT *a, const R
 static HRESULT WINAPI Hook_SCPresent(IDirect3DSwapChain9 *sc, const RECT *a, const RECT *b, HWND w, const RGNDATA *r, DWORD f)
 {
     IDirect3DDevice9 *dev = NULL;
-    if (g_conOpen && !g_inPresent && SUCCEEDED(IDirect3DSwapChain9_GetDevice(sc, &dev)) && dev) {
+#ifdef K33_VISION
+    BOOL vis = g_visOpen || g_visShot;
+#else
+    BOOL vis = FALSE;
+#endif
+    if ((g_conOpen || vis) && !g_inPresent && SUCCEEDED(IDirect3DSwapChain9_GetDevice(sc, &dev)) && dev) {
+#ifdef K33_VISION
+        VisDraw(dev);
+#endif
         ConDraw(dev);
         IDirect3DDevice9_Release(dev);
     }
@@ -1826,13 +1849,31 @@ static void *ConPatchVtable(void *obj, int index, void *hook)
     return orig;
 }
 
+#ifdef K33_VISION
+/* The vision editor's ImGui DX9 objects live in D3DPOOL_DEFAULT: released before every Reset (window
+ * mode or resolution change, Alt+Tab back into fullscreen) and recreated on its next frame. */
+static ResetFn g_origReset;
+static HRESULT WINAPI Hook_Reset(IDirect3DDevice9 *dev, D3DPRESENT_PARAMETERS *pp)
+{
+    VisBeforeReset();
+    return g_origReset(dev, pp);
+}
+#endif
+
 static HRESULT WINAPI Hook_CreateDevice(IDirect3D9 *d3d, UINT adapter, D3DDEVTYPE type, HWND hwnd, DWORD flags,
                                         D3DPRESENT_PARAMETERS *pp, IDirect3DDevice9 **out)
 {
+#ifdef K33_VISION
+    VisBeforeCreateDevice(); /* ImGui's DX9 backend lets go of the old device first */
+#endif
     HRESULT hr = g_origCreateDevice(d3d, adapter, type, hwnd, flags, pp, out);
     if (SUCCEEDED(hr) && out && *out) {
         void *p = ConPatchVtable(*out, 17, (void *)Hook_Present);
         if (p) g_origPresent = (PresentFn)p;
+#ifdef K33_VISION
+        p = ConPatchVtable(*out, 16, (void *)Hook_Reset);
+        if (p) g_origReset = (ResetFn)p;
+#endif
         IDirect3DSwapChain9 *sc = NULL;
         if (SUCCEEDED(IDirect3DDevice9_GetSwapChain(*out, 0, &sc)) && sc) {
             p = ConPatchVtable(sc, 3, (void *)Hook_SCPresent);
