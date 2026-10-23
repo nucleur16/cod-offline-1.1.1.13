@@ -80,3 +80,4 @@
 80,MPUI_SD_PILLARS,MPUI_DESC_SD_PILLARS,sfproto_mp_sd_jardin_usermap.tga,mp_sd_jardin,pvp,4,18,,,,,,,,,,,default_1|mainline_1|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1,,0,0,0,0,,,,,,,46
 81,MPUI_HARDHAT,MPUI_DESC_MAP_HARDHAT,sfproto_mp_hardhat_sh_usermap.tga,mp_hardhat_sh,pvp,4,18,,,,,,,,,,,default_1|mainline_1|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1,,0,0,0,0,,,,,,,47
 82,MPUI_ZM_FACTORY,MPUI_DESC_MAP_ZM_FACTORY,sfproto_zm_factory.tga,zm_factory_sh,zm,1,4,-1,-1,MPUI_NAR_MAP_ZM_FACTORY,MPUI_TAR_MAP_ZM_FACTORY_0,MPUI_TAR_MAP_ZM_FACTORY_1,MPUI_TAR_MAP_ZM_FACTORY_2,MPUI_TAR_MAP_ZM_FACTORY_3,MPUI_HINT_MAP_ZM_FACTORY_0,MPUI_HINT_MAP_ZM_FACTORY_1,MPUI_HINT_MAP_ZM_FACTORY_2,default_0|mainline_0|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_0,,1,1,1,0,,,,,,,203
+83,MPUI_ZM_THEATER,MPUI_DESC_MAP_ZM_THEATER,sfproto_zm_theater.tga,zm_theater_sh,zm,1,4,-1,-1,,,,,,,,,default_0|mainline_0|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_0,,1,1,1,0,,,,,,,49
