@@ -386,6 +386,15 @@ addUseTasks( tasks, obj, team )
 		task.anchor = origin;
 		task.crowd = 1.5;
 		task.cap = 3;
+		if ( level.gametype == "sab" && isDefuseObject( obj ) )
+		{
+			// Our bomb ticks (45 s) and the defenders respawn beside it: the
+			// whole team guards it close in, as there is nothing else left to
+			// defend (450 out, the guards patrolled away from the defuser).
+			task.radius = 250;
+			task.crowd = 0.5;
+			task.cap = 5;
+		}
 		tasks[tasks.size] = task;
 	}
 	return tasks;
