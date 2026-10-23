@@ -163,6 +163,64 @@ Build without touching the live DLL: `sh build-dev.sh` writes `Kernel33_dev.dll`
 voice + usermaps + parity + frame cap, SDL2 and libopus static, as `build.sh`) and also links
 `Kernel33_noconsole.dll` (`-DK33_NO_CONSOLE`), failing if the shared code depends on `console.c`.
 
+## Vision editor (branch `dev`, `vision.c` + `vision_ui.cpp`)
+A realtime editor for C1's vision sets, drawn with Dear ImGui 1.91.9b (vendored in `imgui/`, MIT,
+`imgui/LICENSE.txt`) over the game through the console's D3D9 hooks. Only `build-dev.sh` builds it
+(`-DK33_VISION`, the ImGui C++ objects compiled with g++ into `obj_vision/` and linked statically, no new
+DLL imports); `build.sh` and the `-DK33_NO_CONSOLE` variant leave it out.
+
+- **Toggle**: F3, or the virtual key in the archived dvar `k33_visionKey` (0 = none). While it is open
+  the keyboard (unless the console is open), mouse buttons and wheel go to the editor; key-ups still reach
+  the game; the view stops turning and C1 stops recentring the cursor (`MouseEventHook`), and ImGui draws
+  its own cursor when C1 hides Windows'. Esc closes it unless a text field is active.
+- **What a .vision file can set** (C1 `visionDefFields` 0xCD67D8, parsed by 0x479620/0x479540; keys are
+  C1's numeric renames of IW4's names, matched case-insensitively):
+
+  | key | IW4 name | type | offset | reaches the renderer |
+  |---|---|---|---|---|
+  | 511 | r_glow | bool | 0x00 | yes |
+  | 512 | r_glowBloomCutoff | float | 0x04 | yes |
+  | 513 | r_glowBloomDesaturation | float | 0x08 | yes |
+  | 514 | r_glowBloomIntensity0 | float | 0x0C | yes (times the glow fade) |
+  | 515 | r_glowBloomIntensity1 | float | 0x10 | no (parsed, lerped, never copied) |
+  | 516 | r_glowRadius0 | float | 0x14 | yes |
+  | 517 | r_glowRadius1 | float | 0x18 | no |
+  | 518 | r_glowSkyBleedIntensity0 | float | 0x1C | no |
+  | 519 | r_glowSkyBleedIntensity1 | float | 0x20 | no |
+  | 520 | r_filmEnable | bool | 0x24 | yes |
+  | 521 | r_filmBrightness | float | 0x28 | yes |
+  | 522 | r_filmContrast | float | 0x2C | yes |
+  | 523 | r_filmDesaturation | float | 0x30 | yes |
+  | 524 | r_filmDesaturationDark | float | 0x34 | yes (absent: = 523) |
+  | 525 | r_filmInvert | bool | 0x38 | yes |
+  | 526 | r_filmLightTint | vec3 | 0x3C | yes |
+  | 527 | r_filmMediumTint | vec3 | 0x48 | yes (absent: (526 + 528) / 2) |
+  | 528 | r_filmDarkTint | vec3 | 0x54 | yes |
+  | 529 | r_primaryLightUseTweaks | bool | 0x60 | yes (gates 530/531; off = 1, 1) |
+  | 530 | r_primaryLightTweakDiffuseStrength | float | 0x64 | yes |
+  | 531 | r_primaryLightTweakSpecularStrength | float | 0x68 | yes |
+
+  Nothing else: fog (`setexpfog`), sun and the `r_*Tweak` dvars are not vision keys in C1. Unknown keys get
+  C1's "unknown dvar" warning and are skipped; the editor keeps them from disk files and writes them back.
+- **How it applies**: C1 keeps a set per vision type (naked, night, missilecam, thermal, pain, an unnamed
+  sixth) in cg: from/to/current (+0x1736C8/+0x173968/+0x173C08, 0x70 each), lerp state (+0x173EA8) and
+  names (+0x173F20). 0x47A5D0 picks the type every frame and copies `current` into the refdef; in the
+  steady state nothing rewrites `current`. An edit goes into from, to and current of the edited type (auto:
+  the one C1 draws), so it shows the same frame and survives a running transition; it lasts until C1
+  applies another set (the editor then says so and offers to re-apply). *Load from zone* runs C1's own
+  CG_SetVisionSetTransition (0x47A1E0) on the main thread, as a VisionSet script call does, with the chosen
+  transition time. "Keep edits ... (session cache)" also patches C1's 4-entry vision cache.
+- **Menu**: C1 has no vision state outside a match; there the editor loads, edits and saves disk files
+  only and writes nothing into the game.
+- **Files**: *Save .vision* writes C1's format (numeric keys, IW's groups and alignment, LF) to
+  `main\vision\<name>.vision`; copy it to `zones/<zone>/rawfile/vision/` to ship it. *Load from disk*
+  reads from there. The zone list comes from the asset hash (rawfiles named `vision/*.vision`).
+- **Command** `k33vision`: `status`, `open`/`close`/`toggle`, `load <name> [ms]`, `loadfile <name>`,
+  `save [name]`, `revert`, `reread`, `mode <auto|naked|night|missilecam|thermal|pain|5>`,
+  `set <key|IW name> <value...>`, `list [filter]`, `dump`, `shot [ms] [noui]` (the whole frame to
+  `main\k33_vision.bmp`). Output also goes to Kernel33.log (`vision>` lines).
+- Window position and size are kept in `main\k33_vision_editor.ini`.
+
 ## Controller (branch `feat/controller`)
 `controller.c` adds gamepad play: SDL2 2.32.10 GameController (static; Xbox, PlayStation, Switch Pro, generic 
 pads, hot-plug; XInput fallback) on its own ~1 kHz thread, pad buttons as real C1 keys (`BUTTON_A`.. `DPAD_RIGHT`, 
