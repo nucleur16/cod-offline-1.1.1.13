@@ -126,6 +126,12 @@ rewardUsableNow( kind, waited )
         return false;
     if ( isDefined( self.lastStand ) )
         return false;
+    // Planting, defusing or capturing: raising the reward weapon drops the
+    // use weapon, and _gameobjects::useHoldThinkLoop gives up on a use whose
+    // weapon is not raised within 1.5 s, so a bomb carrier who called in a
+    // UAV on the site never planted.
+    if ( isDefined( self.claimTrigger ) || self useButtonPressed() )
+        return false;
     if ( kind == "instant" )
         return true;
     if ( !self isOnGround() )
