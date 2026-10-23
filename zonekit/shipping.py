@@ -21,6 +21,10 @@ Which data is per map is declared per zone in zonelist.py (`maps=`):
     table=(<stringtable>, <map column>, <stock zone>)
         the stock zone's table is the prefix (checked cell by cell through C1's cell hashes); every row after it is a
         usermap row, owned by the map in <map column>.
+    stock_edits={<map>: [<column>, ...]}
+        cells of the stock prefix this zone changes on purpose (the stock row of <map>, those columns); every other
+        stock cell must still be the stock zone's. The zone that owns a stringtable makes every change to it: a second
+        zone with the same table would replace this one's (or be replaced) at load.
     arena=(<rawfile>, <stock zone>)
         the stock zone's rawfile is the prefix (checked byte for byte); every { } entry after it is a usermap entry,
         owned by the map its `map "..."` key names.
@@ -164,8 +168,14 @@ def plan(repo, zone_name, m, cfg, stocks, maps):
         with open(os.path.join(zdir, "stringtable", name), encoding="utf-8", newline="") as g:
             rows = codecs.read_csv(g.read(), q.get("enc", "ascii"))
         cols, nstock, hashes = _stock_table_hashes(stocks, stock_zone, name)
-        if cols != int(q["columns"]) or len(rows) < nstock or any(
-                [codecs.st_hash(c) for c in rows[r]] != hashes[r * cols:(r + 1) * cols] for r in range(nstock)):
+        edits = {k.lower(): set(v) for k, v in spec.get("stock_edits", {}).items()}
+
+        def stock_row(r):
+            mine = [codecs.st_hash(c) for c in rows[r]]
+            theirs = hashes[r * cols:(r + 1) * cols]
+            free = edits.get(rows[r][col].decode("latin-1").lower(), ()) if len(rows[r]) > col else ()
+            return len(mine) == len(theirs) and all(a == b or i in free for i, (a, b) in enumerate(zip(mine, theirs)))
+        if cols != int(q["columns"]) or len(rows) < nstock or not all(stock_row(r) for r in range(nstock)):
             raise ShippingError("%s: the first %d rows of %s are not %s's stock table any more; the filter takes the "
                                 "rows after them as the usermap rows" % (zone_name, nstock, name, stock_zone))
         out = rows[:nstock]
