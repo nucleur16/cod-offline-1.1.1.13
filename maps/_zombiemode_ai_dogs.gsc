@@ -282,14 +282,29 @@ dog_round_tracker()
 	}
 }
 
-// T5 :489.  T5 also swaps the AI melee dvars for the round; this server's
-// actor melee reads its own actorMelee* cvars and the hound's meleeAttackDist
-// (zombie_dog_init setMeleeAttackDist), so nothing is swapped here.
+// T5 :489.  T5 also swaps the AI melee dvars for the round: the native
+// actor melee (codol_actor_lifecycle.cpp ActorMelee) reads the same
+// ai_meleeRange / ai_meleeWidth / ai_meleeHeight, and zombie_dog_stop bites a
+// player inside ai_meleeRange (T5 zombie_dog_stop.gsc:86).
 dog_round_start()
 {
 	flag_set( "dog_round" );
 	flag_set( "dog_clips" );
 	level notify( "dog_round_starting" );
+
+	if ( !isDefined( level.melee_range_sav ) )
+	{
+		// T5 :35-37 saves them at init; the defaults of the native cvars.
+		level.melee_range_sav = getDvar( "ai_meleeRange" );
+		level.melee_width_sav = getDvar( "ai_meleeWidth" );
+		level.melee_height_sav = getDvar( "ai_meleeHeight" );
+	}
+	if ( isDefined( level.dog_melee_range ) )
+		setDvar( "ai_meleeRange", level.dog_melee_range );
+	else
+		setDvar( "ai_meleeRange", "100" );
+	setDvar( "ai_meleeWidth", "0" );
+	setDvar( "ai_meleeHeight", "0" );
 }
 
 // T5 :519.
@@ -298,6 +313,14 @@ dog_round_stop()
 	flag_clear( "dog_round" );
 	flag_clear( "dog_clips" );
 	level notify( "dog_round_ending" );
+
+	// T5 :536-538.
+	if ( isDefined( level.melee_range_sav ) )
+	{
+		setDvar( "ai_meleeRange", level.melee_range_sav );
+		setDvar( "ai_meleeWidth", level.melee_width_sav );
+		setDvar( "ai_meleeHeight", level.melee_height_sav );
+	}
 }
 
 // T5 _zombiemode.gsc:4146-4155, round_wait during a hound round: the round

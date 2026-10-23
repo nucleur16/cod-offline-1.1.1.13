@@ -44,8 +44,9 @@ main()
 	{
 		if ( shouldAttackIdle() )
 		{
-			self randomAttackIdle();
-			animscripts\zombie_dog_shared::DoNoteTracks("done");
+			// a bite (T5 :84-93) has run its own clips to their end
+			if ( !self randomAttackIdle() )
+				animscripts\zombie_dog_shared::DoNoteTracks("done");
 		}
 		else
 		{
@@ -88,12 +89,28 @@ randomAttackIdle()
 	else
 		self set_orient_mode("face enemy");
 
+	// T5 animscripts/zombie_dog_stop.gsc:84-93: a hound standing within
+	// ai_meleeRange of its player (100 in a hound round, dog_round_start)
+	// bites from here instead of idling.  MEASURED (t5cap dog clip timeline,
+	// zombie_cod5_sumpf, 2026-10-22): T5 hounds queued 64-71 units from a
+	// frozen player bite (69 % run_attack, 30 % attack idles); CoDOL's idled.
+	if ( isdefined( self.enemy ) && isplayer( self.enemy ) && isalive( self.enemy ) )
+	{
+		range = getDvarFloat( "ai_meleeRange" );
+		if ( distanceSquared( self.origin, self.enemy.origin ) < range * range )
+		{
+			self notify( "dog_combat" );
+			self animscripts\zombie_dog_combat::meleeBiteAttackPlayer( self.enemy );
+			return true;
+		}
+	}
+
 	if ( should_growl() )
 	{
 		// just growl
 		debug_anim_print("dog_stop::main() - Setting stop_attackidle_growl" );
 		self setanimstate( "stop_attackidle_growl" );
-		return;
+		return false;
 	}
 
 	idleChance = 33;
@@ -113,11 +130,13 @@ randomAttackIdle()
 		}
 	}
 
+	// T5 zombie_dog_stop.gsc:110-113: the "idle" share plays the growl too
+	// (the multiplayer dog's plain attackidle is never picked here).
 	rand = randomInt( 100 );
 	if ( rand < idleChance )
 	{
-			debug_anim_print("dog_stop::main() - Setting stop_attackidle" );
-			self setanimstate( "stop_attackidle" );
+			debug_anim_print("dog_stop::main() - Setting stop_attackidle_growl" );
+			self setanimstate( "stop_attackidle_growl" );
 	}
 	else if ( rand < barkChance )
 	{
@@ -129,6 +148,7 @@ randomAttackIdle()
 			debug_anim_print("dog_stop::main() - Setting stop_attackidle_growl " );
 			self setanimstate( "stop_attackidle_growl" );
 	}
+	return false;
 }
 
 shouldAttackIdle()
