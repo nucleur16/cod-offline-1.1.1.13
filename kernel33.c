@@ -1402,6 +1402,8 @@ static void PatchGbkInput(void)
 #include "theatre.c"
 /* codol_quick_native_room_context for the shared movie's Quick Play room checks: see quick_room.c. */
 #include "quick_room.c"
+/* UTF-8 player names and an optional display-name service: see name_display.c. */
+#include "name_display.c"
 
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 #include "launcher_update_bridge.c"
@@ -1436,6 +1438,7 @@ static void __cdecl TakeOver(void)
     InstallDiscord();
     InstallTheatre();
     InstallQuickRoom();
+    InstallNameDisplay();
     K33InstallMainTicks(); /* last: chains in front of voice.c's and discord.c's tick hooks */
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
