@@ -1,0 +1,17 @@
+name: Shared UI baseline
+on:
+  pull_request:
+  push:
+    branches: [main, 'codex/**']
+permissions:
+  contents: read
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tests/test_ui_baseline.py
+      - run: gcc -Wall -Wextra -Werror tests/patch_locale_test.c -o /tmp/locale-selection && /tmp/locale-selection

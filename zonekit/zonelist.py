@@ -71,7 +71,7 @@ ZONES = {
                                                                     "codo.views.MatchSelectModeHomeView"}}),
     # --- client_shipRetail\chinese: the Pack-a-Punch rebuild of a stock zone
     "patch_common_gametype_zm": dict(origin="G:" + CHINESE, install=CHINESE,
-                                     stock=["patch_common_gametype_zm.ff.pre-pap", "common_gametype_zm",
+                                     stock=["patch_common_gametype_zm", "common_gametype_zm",
                                             "zm_prototype_sh"]),
     # --- client_shipRetail\patch, *_postgfx_mp: loaded after code_post_gfx (permanent; images allowed)
     # the controller button icons controller_glyphs.c draws in text: 4 sets x 18 images (64x64 A8R8G8B8, 7 levels,
