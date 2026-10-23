@@ -123,6 +123,8 @@ NAMED = {
     "K33UI_PAD_SET_AIMASSIST": ("Aim assist", "辅助瞄准", "codo.gfx"),
     "K33UI_PAD_SET_DEADZONE": ("Stick deadzone", "摇杆死区", "codo.gfx"),
     "K33UI_PAD_SET_DIVE": ("Dive from sprint", "冲刺时蹲伏键飞扑", "codo.gfx"),
+    "K33UI_PAD_SET_SNAP": ("Menu cursor snap", "菜单光标吸附", "codo.gfx"),
+    "K33UI_PAD_SET_SNAPSTR": ("Snap strength", "吸附强度", "codo.gfx"),
     "K33UI_PAD_ACT_JUMP": ("Jump", "跳跃", "codo.gfx"),
     "K33UI_PAD_ACT_STANCE": ("Crouch/Prone", "蹲伏/卧倒", "codo.gfx"),
     "K33UI_PAD_ACT_RELOAD": ("Reload", "换弹", "codo.gfx"),
@@ -209,6 +211,10 @@ def convert_movie(movie: bytes, stock_movie: bytes, prefix: str, rawname: str, h
     """-> (movie, set of text keys it uses). `have` {key: (en, zh)}: the entries already written; `keys` {(en, zh): key}
     is shared by the movies of one string zone, so equal texts get one key."""
     mt, st = gfx.tags(movie), gfx.tags(stock_movie)
+    # classes Kernel33 added (codo.k33.*: new DoABC tags the stock movie does not have) take no part in the conversion
+    stock_abc = {n for c, _s, _e, n in st if c == gfx.T_DOABC}
+    added = [i for i, (c, _s, _e, n) in enumerate(mt) if c == gfx.T_DOABC and n not in stock_abc]
+    mt_all, mt = mt, [t for i, t in enumerate(mt) if i not in added]
     if len(mt) != len(st):
         raise SystemExit("%s: %d tags, stock %d: the tag lists must line up" % (rawname, len(mt), len(st)))
     used, repl = set(), {}
@@ -250,8 +256,13 @@ def convert_movie(movie: bytes, stock_movie: bytes, prefix: str, rawname: str, h
     if missing:
         raise SystemExit("%s: classes not found: %s" % (rawname, ", ".join(sorted(missing))))
     out = bytearray(movie[:gfx.header_len(movie)])
-    for i, (c, s, e, _n) in enumerate(mt):
-        out += repl.get(i, movie[s:e])
+    j = 0
+    for i, (c, s, e, _n) in enumerate(mt_all):
+        if i in added:
+            out += movie[s:e]
+            continue
+        out += repl.get(j, movie[s:e])
+        j += 1
     struct.pack_into("<I", out, 4, len(out))
     return bytes(out), used
 

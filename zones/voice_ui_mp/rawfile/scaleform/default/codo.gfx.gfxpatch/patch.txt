@@ -1,7 +1,7 @@
 # GFx movie as a patch over a stock movie (zonekit/gfx.py)
 stock patch_ui_mp:scaleform/default/codo.gfx
 stock-sha256 2f143069ed10f3c937e0f5b758591e477f57544f76bdfd3bd2635f77cca5d332
-sha256 d3d8b7de38ad1c3390495e3f80d1ccfa81f9077aaadfafd2f693790d1708b820
+sha256 cd2cc298da27fb31a096d2127de5528ea00e641f69ec8aff520b706aa6e42e46
 header 4746580ad0b24400800003200000025800001e0100
 keep 0
 keep 1
@@ -4555,7 +4555,7 @@ keep 4548
 keep 4549
 new tags/4550_82_Main.bin
 keep 4551
-keep 4552
+new tags/k33_82_components_CodoUIComponent.bin
 keep 4553
 keep 4554
 keep 4555
@@ -6864,6 +6864,7 @@ keep 6857
 keep 6858
 keep 6859
 keep 6860
+new tags/k33_82_codo_k33_PadSnap.bin
 keep 6861
 keep 6862
 keep 6863
@@ -6888,7 +6889,6 @@ as codo.views.MatchMPCTMenuView as/codo/views/MatchMPCTMenuView.as 5c86d9f8f2bc8
 as codo.views.MatchMiniRoomCreatorView as/codo/views/MatchMiniRoomCreatorView.as a649ea3e3bd6f29d5bbb56b34e5149115a259edf154b785d149113f17d6b93ef
 as codo.views.MatchRoomListView as/codo/views/MatchRoomListView.as 60143521a88fe579ffcb6ea3aaa39f23bafcfaab0ebf2e5a1f3fa3e55a2f0614
 as codo.views.MatchSelectModeHomeView as/codo/views/MatchSelectModeHomeView.as e47fd4cf093adc310ae5468cdedf840643370398bea6a12669c5f2eda7ed5041
-as codo.views.OptionView as/codo/views/OptionView.as 9ea117b23ae124102daaec19435cb195100d6dcdc33589b3d5ab917873dc26fe
 as codo.views.QuickMatchChooseNewView as/codo/views/QuickMatchChooseNewView.as 9b0d744dce8ba34ed4a28c4129b3561153da1607427c5b1a17b59b8b0ffc2d94
 as codo.views.ScoreboardBaseView as/codo/views/ScoreboardBaseView.as 541ac8697653999c542f3473969580c1aa640e2b0709393caec3859e16bccd5b
 as codo.views.matchmpctroomcreator_sub.MatchMPCTRoomCreatorView_mpcreator as/codo/views/matchmpctroomcreator_sub/MatchMPCTRoomCreatorView_mpcreator.as 158fe938736975149921c97d30f70eaa248f087ca009ae900f4106d8e4ebc014
@@ -6900,3 +6900,6 @@ as components.homeTempAD.NoDataAD as/components/homeTempAD/NoDataAD.as e6cf03cf1
 as components.list_part.RoomListItemRenderer as/components/list_part/RoomListItemRenderer.as 33d433f9d7660204e109ba8eef1f6185ab51f68ab4dac187155883db10bbbb6d
 as components.scoreboard_part.ScoreboardTeamPanel as/components/scoreboard_part/ScoreboardTeamPanel.as 0e78302799a9bf0c8eb12798a5f97135dc74f947d3901e348424e6b60adb5afb
 as ime.LangBarElement as/ime/LangBarElement.as 8fa9032f2cb798dc1857499c92ed9b6136e2b794841ef1c92cb175902e6f0ea6
+as components.CodoUIComponent as/components/CodoUIComponent.as 9f3cc89ba4727ad13a2b1cf49191d3f704b0b1f3730f8eb517b377c7f1e3713d
+as codo.k33.PadSnap as/codo/k33/PadSnap.as f5451168d78f16510986c45c23f4897166829c64c275b3cacc79144c428e8007
+as codo.views.OptionView as/codo/views/OptionView.as 4db03a52169b41a6c4c575866d1223a6b91b5c986b6cb6f05252a102f2df65f3
