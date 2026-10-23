@@ -438,6 +438,41 @@ static void ThReadSidecar(const WCHAR *demoPath, ThRow *r)
     if (ThSafe(mode)) lstrcpynA(r->mode, mode, sizeof(r->mode));
 }
 
+/* C1's demo envelope (C1 0x72BC80 / 0x72CB00, as codol-classic's website/replay_demo.py reads it): a 32800-byte
+ * header whose first int is the tag (1..3), the record stream, then metadata (640 fixed bytes: tag, start, end, ...;
+ * a table of at most 40 x 24 bytes; one of at most 300 x 8 bytes) and an 8-byte footer {metadata size, tag}. Only a
+ * file with a consistent envelope is listed, so cl_demo_play never gets a file C1 would reject with
+ * EXE_ERR_READING_DEMO (a structure check only: it does not prove the gameplay stream plays). */
+static BOOL ThDemoEnvelope(const WCHAR *path, unsigned *seconds)
+{
+    BOOL ok = FALSE;
+    HANDLE f = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+    if (f == INVALID_HANDLE_VALUE) return FALSE;
+    LARGE_INTEGER size;
+    int head = 0, foot[2], fixed[3], count1 = 0, count2 = 0;
+    DWORD got;
+    if (GetFileSizeEx(f, &size) && size.QuadPart >= 32800 + 640 + 8 + 8 && size.QuadPart < 0x7FFFFFFF &&
+        ReadFile(f, &head, 4, &got, NULL) && got == 4 &&
+        SetFilePointer(f, (LONG)size.QuadPart - 8, NULL, FILE_BEGIN) != INVALID_SET_FILE_POINTER &&
+        ReadFile(f, foot, 8, &got, NULL) && got == 8 && foot[1] >= 1 && foot[1] <= 3 && head == foot[1] &&
+        foot[0] >= 640 + 8 && foot[0] <= (LONG)size.QuadPart - 32800 - 8) {
+        LONG meta = (LONG)size.QuadPart - 8 - foot[0];
+        if (SetFilePointer(f, meta, NULL, FILE_BEGIN) != INVALID_SET_FILE_POINTER &&
+            ReadFile(f, fixed, 12, &got, NULL) && got == 12 && fixed[0] == foot[1] &&
+            SetFilePointer(f, meta + 640, NULL, FILE_BEGIN) != INVALID_SET_FILE_POINTER &&
+            ReadFile(f, &count1, 4, &got, NULL) && got == 4 && count1 >= 0 && count1 <= 40 &&
+            640 + 8 + count1 * 24 <= foot[0] &&
+            SetFilePointer(f, meta + 644 + count1 * 24, NULL, FILE_BEGIN) != INVALID_SET_FILE_POINTER &&
+            ReadFile(f, &count2, 4, &got, NULL) && got == 4 && count2 >= 0 && count2 <= 300 &&
+            640 + 8 + count1 * 24 + count2 * 8 <= foot[0]) {
+            ok = TRUE;
+            if (seconds && fixed[2] > fixed[1]) *seconds = (unsigned)(fixed[2] - fixed[1]) / 1000;
+        }
+    }
+    CloseHandle(f);
+    return ok;
+}
+
 static int ThCompareRows(const void *a, const void *b)
 {
     return -CompareFileTime(&((const ThRow *)a)->written, &((const ThRow *)b)->written);
@@ -468,10 +503,10 @@ static void ThLocalCatalogue(void)
                 K33Sha256Hex(r->file, (DWORD)strlen(r->file), NULL, r->id);
                 WCHAR full[MAX_PATH];
                 lstrcpyW(full, dir);
-                if (lstrlenW(full) + len < MAX_PATH) {
-                    lstrcatW(full, fd.cFileName);
-                    ThReadSidecar(full, r);
-                }
+                if (lstrlenW(full) + len >= MAX_PATH) continue;
+                lstrcatW(full, fd.cFileName);
+                if (!ThDemoEnvelope(full, &r->seconds)) continue;      /* not a C1 film: never offered */
+                ThReadSidecar(full, r);
                 SYSTEMTIME st;
                 FILETIME local;
                 FileTimeToLocalFileTime(&fd.ftLastWriteTime, &local);
@@ -601,7 +636,7 @@ static void ThWatchLocal(const char *id, const ThState *s)
         int base = ThDemoDir(p);
         if (!base || base + 72 >= MAX_PATH) break;
         _snwprintf(p + base, MAX_PATH - base, L"%hs.demo", r->file);
-        if (GetFileAttributesW(p) == INVALID_FILE_ATTRIBUTES) break;
+        if (!ThDemoEnvelope(p, NULL)) break;
         if (!ThIdle(s)) { ThStatus(TH_MENU_FIRST); return; }
         ThSet("playback", "1");
         lstrcpynA(g_thPlayingZone, ThZombieRow(r) ? "zm" : "mp", sizeof(g_thPlayingZone));
