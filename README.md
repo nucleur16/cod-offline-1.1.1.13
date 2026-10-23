@@ -14,11 +14,13 @@ to the exe. See the comments in `kernel33.c` for addresses and reasoning.
    maps"). Copy `output\client_shipRetail\patch\*` into `<game>\client_shipRetail\patch\` (create the
    folder), `output\client_shipRetail\chinese\patch_common_gametype_zm.ff` over the stock one (keep it as
    `.pre-pap`) and `output\main\iw_image_16.iwd` into `<game>\main\`. Among them:
-   - `voice_ui_mp.ff`: the options-screen changes: Options > Controls > Chat (Talk key), Options > Audio > Voice
-     (mode, mic level bar, microphone choice), Options > Graphics > Max FPS and Options > Controller (the pad
-     tab). Keep every codo.gfx change in this one zone: each *_ui_mp patch zone carrying codo.gfx carries the
-     whole movie, and the first one loaded wins.
-   - `controller_ingame.ff`: the in-match pause menu (codoingame.gfx) with gamepad focus navigation.
+   - `voice_ui_mp.ff`: the front-end movies (codo.gfx, codologin.gfx; codol-classic's, every text a localize key, see
+     "English") with Options > Controls > Chat (Talk key), Options > Audio > Voice (mode, mic level bar, microphone
+     choice), Options > Graphics > Max FPS and Options > Controller (the pad tab). Keep every codo.gfx change in this
+     one zone: each zone carrying codo.gfx carries the whole movie, and the first one loaded wins.
+   - `controller_ingame.ff`: the in-match movies: the HUD (codohud.gfx) and the pause menu (codoingame.gfx) with
+     gamepad focus navigation.
+   - `codol_english*.ff` / `codol_chinese*.ff`: the strings of each language (see "English").
    - `controller_glyphs_postgfx_mp.ff`: the gamepad button icons drawn in hints (CONTROLLER.md); install it with
      the DLL. Without it the hints show the pad's button names as text.
 
@@ -215,6 +217,79 @@ The 3D play path's channel check (call of 0x736C10 at 0x73E4DB) decides two more
 `+set codol_soundvoices 0` turns both off at startup. The voice diagnostics (`k33_snddiag`, `CODOL_SNDDIAG`) now
 default to 0; at 1+ they also log `snd policy` totals and `why=limit` refusals to Kernel33.log.
 
+## English (`k33_english`)
+Both languages run the same UI movies, and every text those movies show is a localize key. The language is only which
+string zones load. Kernel33 decides that at startup, from the command line:
+
+    codoMP_client_shipRetail.exe +set dw_username <name>                        English (default)
+    codoMP_client_shipRetail.exe +set dw_username <name> +set k33_english 1     English
+    codoMP_client_shipRetail.exe +set dw_username <name> +set k33_english 0     Chinese
+
+- **Default: English** (no option, or `1`). The last `k33_english` on the line wins; any value but `0`/`1` is ignored.
+- Read by the DLL from the command line only (`kernel33.c`, `CmdLineFlag` / `EnglishZone` / `ChineseZone`): C1 execs
+  `players\config_mp.cfg` before it registers its dvars and applies no `+set` to a dvar it does not know, so the
+  option is not a saved dvar. Nothing writes it to config_mp.cfg, and a config write never changes it; it lasts until
+  the client is started without it.
+- What it switches: `client_shipRetail\patch\codol_english*.ff` load with `1`, `codol_chinese*.ff` with `0`;
+  every other patch zone loads either way. Only one set loads because C1 holds at most 12000 localize assets ("Exceeded
+  limit of 12000 'localize' assets", a fatal error at startup) and a name loaded by both sets takes two. The DLL has no
+  other language-dependent code: GBK text input, fonts, voice, controller, usermaps and the frame cap are the same.
+
+| zone | loads with | what |
+|---|---|---|
+| voice_ui_mp | both | the front end: codo.gfx (lobby, rooms, loadout, store, options; codol-classic's THEATRE screen and SURVIVAL / THEATRE buttons; Options > Voice, Max FPS, Controller) and codologin.gfx |
+| controller_ingame | both | in a match: codohud.gfx (HUD, scoreboard) and codoingame.gfx (pause menu with pad navigation) |
+| codol_english | `1` | 9,700 of C1's strings in English (menus, HUD, weapons, perks, challenges, killstreaks, errors) |
+| codol_english_font | `1` | fonts_ingame.gfx with Latin glyphs drawn for English text |
+| codol_english_ui, codol_english_ui_extra | `1` | the UI movies' K33UI_* keys in English (codo + login, hud + ingame) |
+| codol_english_zombies_base | `1` | zombies weapon, perk, challenge and subtitle strings |
+| codol_english_usermaps | `1` | usermaps_patch's map names and descriptions (those are GBK Chinese), filtered by shipping_maps.txt the same way |
+| codol_chinese_ui, codol_chinese_ui_extra | `0` | the UI movies' K33UI_* keys in Chinese |
+
+The movies are codol-classic's English ones (with Kernel33's Options classes and the pause menu's pad navigation),
+converted by `ui_keys.py`. C1's Scaleform translator replaces a text that starts with `@` by the localize entry of
+that name, both for a text field's text in the movie and whenever code sets `.text` / `.label` (C1's own
+`codo.constants.LocalizationDict` is a list of `"@SF_UI_..."` names). A missing entry shows as `@NAME` and nothing
+fails. ui_keys.py made:
+- every static text whose stock text is Chinese and whose English text differs into `@K33UI_<MOVIE>_<tag>`, one key
+  per distinct English/Chinese pair (309), with the stock Chinese text and codol-classic's English text as entries. The
+  key is the whole text: `@KEY` inside an HTML text's tags is not translated;
+- codol-classic's literals into keys, in the DoABC string pool (`zonekit/abcstr.py`) or, where the literal is also a
+  name in the class or the class needed code changes, in the class's source (MatchMPCTMenuView, MatchRoomListView,
+  MatchSelectModeHomeView are now hand-written, in `zones/voice_ui_mp/.../codo.gfx.gfxpatch/as/codo/views/`). C1's own
+  `SF_UI_*` names are used where C1 has the text (Refresh, Map, Mode, Multiplayer, Zombies, Defaults);
+- `LocalizationDict` C1's class again (codol-classic had put English text in place of six of its names).
+
+**Adding a string** (English and Chinese):
+1. In the `.as` source, show `"@K33UI_<NAME>"` (`.text`, `.label`, a list item's `label`) or, to build a string,
+   `LocalizeUtil.localize("@K33UI_<NAME>")` (`codo.utils.LocalizeUtil`; `LocalizeUtil.replace(text, [a, b])` fills
+   `#A#` `#B#`). OptionView's `k33L("K33UI_<NAME>")` does the same.
+2. Add `"K33UI_<NAME>": ("English", "中文", "codo.gfx")` to `NAMED` in `ui_keys.py` (the movie: codo.gfx /
+   codologin.gfx for codol_*_ui, codohud.gfx / codoingame.gfx for codol_*_ui_extra).
+3. `python ui_keys.py` compiles the changed classes (FFDec), adds the entry to `zones/codol_english_ui*/localize.str`
+   and `zones/codol_chinese_ui*/localize.str` and to their `zone_source` manifests; then `python build_zones.py`.
+   (By hand: one `K33UI_<NAME><TAB>text` line in each localize.str, one `localize,K33UI_<NAME>` line in each manifest.)
+To change a text, edit the localize.str line; ui_keys.py never overwrites an entry that exists.
+
+Other notes:
+- With Chinese text, a field keeps the size codol-classic chose for English (a few are 12 px instead of 16 px).
+- The THEATRE screen is codol-classic's theatre playback: this project has no backend for it (its
+  `codol_theatre_*` dvars), so the list stays empty and WATCH does nothing. The SURVIVAL button sets
+  `codol_survival_direct_home` and opens Survival as in codol-classic; "Fullscreen Windowed" in Options > Video sets
+  `codol_borderless`, which Kernel33 does not implement (it behaves as windowed).
+- 000_codol_party_modes and codol_loading_mode_names name modes C1 does not have (in English, with no Chinese text to
+  fall back to) and load in both languages.
+- `Kernel33.log` says which: `english: on (k33_english 1): 6 codol_english* zone(s) queued`, `english: off
+  (k33_english 0): 6 codol_english* zone(s) skipped, 2 codol_chinese* zone(s) queued`, or, with English on and no
+  English zone installed, `english: on (k33_english 1), but no codol_english*.ff zone is in the patch folder: the
+  game stays Chinese` (missing zones are never an error; a missing string shows as its `@NAME`).
+- Install all of them together: an older `codol_english_ui.ff` / `codol_english_ui_extra.ff` (which carried English
+  movies) would override the shared movies in English mode.
+- The pure check lists `client_shipRetail\chinese\` and `main\` only, never `patch\`, so both states pass it.
+- Launchers: add the option to the client's command line. `3-START-CLIENT.cmd` (game folder) and the lobby's
+  `OFFLINE-DEV.cmd` (`CODOL_CLIENT_ARGS=+set k33_english 0`) pass extra arguments through; they must start
+  `codoMP_client_shipRetail.exe`, since `C1.exe` never loads Kernel33.dll (and then shows the stock Chinese client).
+
 ## Discord Rich Presence (`discord.c`)
 The launcher's `TCLS\CoDOLPresence.exe` helper (a PyInstaller build of the server repo's
 `tools/codol_discord_presence.py`) now runs inside the client: no Python, no second process. It talks
@@ -288,7 +363,8 @@ point at: the manifest records each decoded asset's length (`len=`) and the buil
 ### Where each zone goes
 `client_shipRetail\patch\` (Kernel33 loads `*_ui_mp` zones ahead of the UI zones, `*_postgfx_mp` zones after
 `code_post_gfx` (permanent, images allowed), the rest ahead of `code_pre_gfx`): 000_codol_party_modes, codol_english,
-codol_english_font, codol_english_ui, codol_english_ui_extra, codol_english_zombies_base,
+codol_chinese_ui, codol_chinese_ui_extra, codol_english_font, codol_english_ui, codol_english_ui_extra, codol_english_usermaps,
+codol_english_zombies_base,
 codol_infected_cyborg_postgfx_mp, codol_loading_mode_names, codol_zm_deathmachine_audio, controller_glyphs_postgfx_mp,
 controller_ingame,
 usermaps_patch, usermaps_ui_mp, voice_ui_mp, plus `sound_channels.txt`.
@@ -328,13 +404,13 @@ in the map pack, change it to `ship` and build.
 | codol_english | `tools/codol_english/build_ff.py` (CoD4x_Server, localizedStrings-1.1.1.13) from `codol_english.tsv` |
 | codol_english_font | `build_font_ff.py` (same tools); byte-identical to localizedStrings-1.1.1.13 `zones/` |
 | codol_english_zombies_base | localizedStrings-1.1.1.13 `tools/localize_zone.py` from `strings/codol_english_zombies_base/strings.tsv` (identical) |
-| codol_english_ui | codol-classic (zzVertigo/codol-classic) launcher releases r22-r30: method transplants on the English codo.gfx; the original translation has no source |
-| codol_english_ui_extra | codol-classic `deploy/client-patches/revive-token-mode/build_token_mode.py` |
+| codol_english_ui, codol_english_ui_extra, codol_chinese_ui, codol_chinese_ui_extra | `ui_keys.py`: the K33UI_* entries; the English text is codol-classic's (its English movies, launcher releases r22-r30 and `deploy/client-patches/revive-token-mode/build_token_mode.py`), the Chinese text the stock movies' |
+| codol_english_usermaps | this repository (authored here, no shipped original): usermaps_patch's strings in English |
 | codol_loading_mode_names | codol-classic `launcher/tools/build_loading_mode_names.py` (r21) |
 | codol_zm_deathmachine_audio | codol-classic `deploy/client-patches/build_deathmachine_audio.py` |
 | 000_codol_party_modes | codol-classic branch `codex/party-infected-20261017` (r22) |
 | codol_infected_cyborg_postgfx_mp | codol-classic branch `codex/party-infected-20261017`, `build_infected_cyborg_assets.py` |
-| voice_ui_mp, controller_ingame | this repository: hand-written classes in their `.gfxpatch/as/` (formerly `voice_ui/`, built by build_voice_ui.py / build_ingame_ui.py into `patch/`, now folded into build_zones.py); decompiled from `patch/*.ff` of 3317112 |
+| voice_ui_mp, controller_ingame | codol-classic's English codo.gfx / codologin.gfx / codohud.gfx / codoingame.gfx (formerly codol_english_ui / _extra) made language-neutral by `ui_keys.py`, with this repository's hand-written classes in their `.gfxpatch/as/` (formerly `voice_ui/`, build_voice_ui.py / build_ingame_ui.py) |
 | usermaps_patch, usermaps_ui_mp | the game folder's `usermaps\build_usermaps_patch.py` (now superseded by the sources here) |
 | controller_glyphs_postgfx_mp | this repository (authored here, no shipped original): the former `glyphs/glyphs.bin` icons (Xelu's CC0 prompts) as image assets with C1's `hud_status_dead` material layout |
 | patch_common_gametype_zm | `CodolSoundDumper zm-pap-patch` (CODOL-AssetExplorer + `pap_patch_staging\tool_src`) over the stock zone |

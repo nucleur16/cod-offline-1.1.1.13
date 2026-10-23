@@ -1,5 +1,6 @@
 package codo.views.option_sub
 {
+   // Every string shown is a localize key (K33UI_*): English in codol_english_ui, Chinese in voice_ui_mp.
    // C1's codo.views.option_sub.OptionView_audio (Options > Audio) as decompiled from patch_ui_mp's
    // codo.gfx, with its hidden Voice section turned on for Kernel33's voice chat (voice.c).
    // build_voice_ui.py compiles this with JPEXS FFDec and splices the class's DoABC tag back into
@@ -20,6 +21,7 @@ package codo.views.option_sub
    import codo.constants.CodoVersion;
    import codo.constants.LocalizationSetting;
    import codo.constants.SyncDataID;
+   import codo.utils.LocalizeUtil;
    import components.BaseButton;
    import components.CheckBox;
    import components.CodoComboBox;
@@ -129,7 +131,7 @@ package codo.views.option_sub
          this.myCBVolumeMaster.label = LocalizationSetting.SETTING_VOLUME_MASTER;
          this.myCBSubtitle.label = LocalizationSetting.SETTING_SUBTITLE;
          this.myTFDevice.text = LocalizationSetting.SETTING_SOUND_DEVICE;
-         this.myTFPresets.text = "Voice Mode";
+         this.myTFPresets.text = "@K33UI_VOICE_MODE";
          this.myDefaultBtn.label = LocalizationSetting.DEFAULT_SETTING;
          this.myCancelBtn.label = LocalizationSetting.CLOSE_SETTING;
          this.myCBVolumeVoiceChat.label = LocalizationSetting.SETTING_VOICE_CHAT_VOLUMN;
@@ -233,7 +235,7 @@ package codo.views.option_sub
          this.k33BuildDevice(tempRow);
       }
 
-      // k33: "输入设备" (Input Device): a row under Input Level, a button with the chosen microphone that
+      // k33: "Input Device": a row under Input Level, a button with the chosen microphone that
       // opens a list (Default first); picking one sets k33_voiceInputPick and the Input Level bar then
       // meters that device
       private function k33Text(cSrc:TextField, cText:String, cSize:int, cColor:uint) : TextField
@@ -281,7 +283,7 @@ package codo.views.option_sub
       private function k33BuildDevice(cRow:Number) : void
       {
          // its own row under Voice Mode: label in the Voice Mode label's place, box where the Voice Mode box is
-         var tf:TextField = this.k33Text(this.myTFPresets,"输入设备",int(this.myTFPresets.getTextFormat().size),uint(this.myTFPresets.getTextFormat().color));
+         var tf:TextField = this.k33Text(this.myTFPresets,LocalizeUtil.localize("@K33UI_VOICE_INPUT_DEVICE"),int(this.myTFPresets.getTextFormat().size),uint(this.myTFPresets.getTextFormat().color));
          tf.x = this.myTFPresets.x;
          tf.y = this.myTFPresets.y + cRow;
          this.addChild(tf);
@@ -323,7 +325,7 @@ package codo.views.option_sub
 
       private function k33DevLabel(cName:String) : String
       {
-         var n:String = cName == "Default" ? "默认设备" : cName;
+         var n:String = cName == "Default" ? LocalizeUtil.localize("@K33UI_VOICE_DEFAULT_DEVICE") : cName;
          return n.length > 34 ? n.substr(0,33) + ".." : n;
       }
 
@@ -449,10 +451,10 @@ package codo.views.option_sub
          this.myCBVolumeVoiceMic.selected = CFunctionContainerCommon.Dvar_GetInt("k33_voiceMicMute") == 0;
          this._k33Refreshing = true;
          this.myCBPresets.dataProvider = [{
-            "label":"Push to talk",
+            "label":"@K33UI_VOICE_PTT",
             "id":0
          },{
-            "label":"Voice activation",
+            "label":"@K33UI_VOICE_VAD",
             "id":1
          }];
          this.myCBPresets.selectedDataIndex = CFunctionContainerCommon.Dvar_GetInt("k33_voiceMode") == 1 ? 1 : 0;
@@ -543,7 +545,7 @@ package codo.views.option_sub
             this._k33Drawn = tempKey;
             this.drawLevelBar(this._k33Shown,this._k33Peak,tempThr,tempMic);
          }
-         var tempText:String = tempMic ? String(int(this._k33Shown)) : (CFunctionContainerCommon.Dvar_GetInt("k33_voiceLevel") < 0 ? "no mic" : "off");
+         var tempText:String = tempMic ? String(int(this._k33Shown)) : (CFunctionContainerCommon.Dvar_GetInt("k33_voiceLevel") < 0 ? LocalizeUtil.localize("@K33UI_VOICE_NO_MIC") : LocalizeUtil.localize("@K33UI_VOICE_MIC_OFF"));
          if(this.myMicLevel.text != tempText)
          {
             this.myMicLevel.text = tempText;
