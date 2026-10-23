@@ -1398,6 +1398,9 @@ static void PatchGbkInput(void)
 #include "k33http.c"
 #include "k33json.c"
 
+/* The THEATRE screen (codol-classic's theatre playback): see theatre.c. */
+#include "theatre.c"
+
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 #include "launcher_update_bridge.c"
 static void __cdecl TakeOver(void)
@@ -1429,6 +1432,7 @@ static void __cdecl TakeOver(void)
     InstallVoice();
     InstallController();
     InstallDiscord();
+    InstallTheatre();
     K33InstallMainTicks(); /* last: chains in front of voice.c's and discord.c's tick hooks */
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
