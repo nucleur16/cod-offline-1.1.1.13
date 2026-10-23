@@ -1,3 +1,11 @@
+// PROVENANCE (2026-10-22): mp_highrise is CoDOL 3.5.6.2's (build 3.5.2.6) Highrise, ported to 1.1.1.13
+// by CODOL-AssetExplorer (port-map --game "3.5.6.2\DLC255", ff_init_mp_highrise_V20). The zone ships
+// maps/mp/mp_highrise_fx.gsc and maps/createfx/mp_highrise_fx.gsc (now extracted verbatim from it) but
+// not its level script, so this stays IW4's maps/mp/mp_highrise.gsc (same layout and MapEnts):
+//   * precache: maps/mp/mp_highrise_precache.gsc names exactly the zone's precache_script keys.
+//   * art: maps/createart/mp_highrise_art.gsc (IW4 fog, vision/mp_highrise.vision from common_mp).
+//   * ambient: ambient_mp_highrise ships in the ported zone (CoDOL's own; IW4 used embient_mp_highrise).
+//   * compass: compass_map_mp_highrise ships in the zone.
 #include maps\mp\_utility;
 #include common_scripts\utility;
 
@@ -16,7 +24,7 @@ main()
 	setdvar( "r_lightGridContrast", .9 );
 
 	VisionSetNaked( "mp_highrise" );
-	ambientPlay( "embient_mp_highrise" );
+	ambientPlay( "ambient_mp_highrise" );
 
 	game[ "attackers" ] = "axis";
 	game[ "defenders" ] = "allies";
