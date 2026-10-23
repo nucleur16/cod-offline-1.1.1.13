@@ -350,7 +350,7 @@ package codo.views
          head.y = 0;
          this._k33Panel.addChild(head);
          this._k33Status = this.k33Text("",14,10474463);
-         this._k33Status.x = 60;
+         this._k33Status.x = head.x + head.width + 12; // the English title is wider than "手柄"
          this._k33Status.y = 3;
          this._k33Panel.addChild(this._k33Status);
          this._k33Diagram = new Sprite();
