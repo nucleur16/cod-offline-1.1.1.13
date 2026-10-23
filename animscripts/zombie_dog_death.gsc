@@ -53,7 +53,7 @@ main()
 		self.enemy.syncedMeleeTarget = undefined;
 	}
 
-	death_anim = "death_" + getAnimDirection( self.damageyaw );
+	death_anim = "death_" + getAnimDirection( self t5DamageYaw() );
 
 	// T5 animscripts/zombie_dog_death.gsc:383-395: a hound the wunderwaffe
 	// (or the microwave gun) killed plays one of its five tesla deaths
