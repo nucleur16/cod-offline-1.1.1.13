@@ -412,3 +412,40 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
   - Capture reopens on the chosen device right away.
   - A missing device falls back to the default (logged) and is taken again when IMMNotificationClient reports it back.
 - **Test clients:** a test client with a `k33patch\` folder next to its exe loads its patch zones from there, so a UI build can be tried while the shared `client_shipRetail\patch\` is in use.
+
+## 13. Killstreak control on the pad (2026-10-23)
+What each killstreak's control mode does with the pad, measured on the k33-devtest copy (mp_rust, synthetic pad,
+external reads of clientActive / cg / the usercmd ring at clientActive +0x34B8, 256 x 0x28):
+
+| mode | killstreaks | path in C1 | pad before | pad now |
+|---|---|---|---|---|
+| remote control | Predator missile | CL_CreateCmd 0x490DBE: pm_flags 0x80000 -> 0x490B40 only | **ignored**: 0 of 770 usercmds carried a steering byte, the missile's angles never changed | sticks steer it |
+| linked gunner view | AC-130, chopper gunner | normal path, playerState +0x1EC = link entity | turned at the full on-foot rate (256 deg/s), aim assist on | FOV-scaled turn rate, no aim assist |
+| map location | precision / stealth / Harrier airstrike, mortar | 0x490700 (keyCatchers 8) | selector fine; heading a quarter turn off | heading follows the stick |
+| vehicle | RC-XD | normal path | left stick throttle, right stick steers (unchanged) | unchanged |
+| carried / thrown | sentry, SAM turret, care packages | on foot | unchanged | unchanged |
+
+- **Predator missile.** While pm_flags has 0x80000 CL_CreateCmd skips everything, CL_MouseMove and Kernel33's
+  stick hook included, and calls 0x490B40 (eax = lc, esi = cmd): +attack (boost) and two other kbuttons into
+  the button bits, 0x200000, and the mouse into two signed wire bytes, pitch cmd+0x24 =
+  clamp(my * m_pitch, -1, 1) * 127, yaw cmd+0x25 = clamp(-mx * m_yaw, -1, 1) * 127. The server turns the
+  missile by rate * msec / 1000 * byte / -127 per command (C1 0x40EC50, CoD4x_Server
+  `codol_remote_missile.c`), so a byte is a turn rate. `CtlRemoteMove` (call at 0x490DCF) adds the sticks after
+  C1's mouse: the right stick, or the left one when it is pushed further; the look curve (`gpad_view_curve`),
+  `gpad_view_sensitivity` x `gpad_remote_sensitivity` (new, default 1), `gpad_invert_y`, the mouse's
+  directions. Being a rate, it is frame-time independent by construction (the server multiplies by each
+  command's msec). Measured: stick 0.25 / 0.5 / 0.75 / 1 -> byte 5 / 31 / 73 / 127 (about 1.4 / 8.5 / 20 /
+  35 deg/s), the same byte on every command at 60 fps, 144 fps and uncapped (about 250); half stick down for
+  1.47 s at 60 fps pitched the missile 53.5 -> 65.9 deg (8.5 deg/s); RT = boost (buttons 0x200001). Mouse
+  steering is unchanged and still adds; a mouse turn in the missile counts as keyboard / mouse use.
+- **Linked gunner views** (playerLinkWeaponViewToDelta). C1's mouse is multiplied by the FOV sensitivity scale
+  (clientActive +0x3450, CL_GetMouseMovement 0x48FFB1; 1.18 on foot, 0.82 chopper gunner, 0.65 AC-130); the pad's
+  turn rates now are too in these views, as IW4's consoles do (full right stick: AC-130 256 -> 168 deg/s,
+  chopper gunner 260 -> 211 deg/s). Aim assist is off whenever pm_flags has 0x80000 or playerState +0x1EC names an entity (`CtlRemoteView`).
+- **Location selection.** The heading was a quarter turn off: C1's drag stores atan2(-dx, -dy) of the drag
+  (map y down) and the arrow follows the drag; the hook used atan2(-dy, -dx), so stick up drew the arrow
+  pointing left and stick right pointed it down. It is now atan2(-rx, ry): up 0 (arrow up), right 270, left 90.
+  The selector already moved at the same speed at every frame rate (left stick 0.6: 0.137 map widths/s at 60,
+  144, 500 and uncapped, under a pixel off a straight line); its step now uses the real time between frames
+  (QueryPerformanceCounter, capped at 50 ms) like the look code, and the full-push boost counts that time.
+  A / RT confirm, B takes back a mortar point, then cancels, as before.
