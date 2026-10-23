@@ -181,6 +181,13 @@ blocker_init()
 			continue;
 		}
 
+		// CoDOL's 3.5.x window prefab (zm_theater_sh: 22 of them) also
+		// targets a script_origin with script_noteworthy "c4_point", a C1
+		// marker in front of the boards, not a board: tearing it moved a
+		// script_origin and asked notSolid of it.
+		if ( targets[ j ].classname == "script_origin" )
+			continue;
+
 		targets[ j ] update_states( "repaired" );
 		targets[ j ].destroyed = false;
 		targets[ j ].claimed = false;
@@ -939,6 +946,12 @@ door_think()
 		if ( self.script_noteworthy == "electric_door" )
 		{
 			flag_wait( "power_on" );
+			// zm_theater_sh authors two electric_door triggers on one door
+			// (the lobby->theater pair): both wake on the same flag, and the
+			// first one's door_opened deletes its sibling before the
+			// sibling's thread resumes here.
+			if ( !isDefined( self ) )
+				return;
 		}
 		else if ( self.script_noteworthy == "electric_buyable_door" )
 		{
