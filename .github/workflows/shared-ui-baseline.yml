@@ -13,5 +13,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - run: python tests/test_ui_baseline.py
+      - run: python tests/test_quick_ready_gate.py
       - run: gcc -Wall -Wextra -Werror tests/patch_locale_test.c -o /tmp/locale-selection && /tmp/locale-selection

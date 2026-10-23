@@ -1598,6 +1598,47 @@ import flash.utils.getTimer;
             {
                return;
             }
+            // BEGIN shared Quick all-current-member gate
+            var quickMembersReady:Boolean = false;
+            quickReadyCheck: do
+            {
+               if(quickRoom == null || quickRoom["_localQuickSharedLineage"] != true || quickRoom.forces == null || quickRoom.forces.force0 == null || quickRoom.forces.force1 == null)
+               {
+                  break quickReadyCheck;
+               }
+               var gateCycle:uint = uint(quickRoom["_localQuickReadyCycle"]);
+               var gateMembers:Array = quickRoom.forces.force0.concat(quickRoom.forces.force1);
+               if(gateCycle == 0 || gateMembers.length < queuedRequired || gateMembers.length > 12)
+               {
+                  break quickReadyCheck;
+               }
+               var gateSeen:Array = [];
+               var gateHosts:int = 0;
+               for each(var gateMember in gateMembers)
+               {
+                  if(gateMember == null || gateMember["_localQuickNativeRoleKnown"] != true || String(gateMember.id).length == 0 || gateMember["_localQuickNativeMemberID"] != String(gateMember.id) || gateSeen.indexOf(String(gateMember.id)) >= 0 || gateMember["_localQuickNativeReady"] != true || uint(gateMember["_localQuickReadyCycle"]) != gateCycle)
+                  {
+                     break quickReadyCheck;
+                  }
+                  gateSeen.push(String(gateMember.id));
+                  if(String(gateMember.name) == String(quickRoom.name))
+                  {
+                     if(quickRoom["_localQuickReadyCycleHost"] != String(gateMember.id))
+                     {
+                        break quickReadyCheck;
+                     }
+                     gateHosts++;
+                  }
+               }
+               quickMembersReady = gateHosts == 1;
+            }
+            while(false);
+            // END shared Quick all-current-member gate
+            if(!quickMembersReady)
+            {
+               this.startRankedMatchPassedTimeTimer();
+               return;
+            }
             this.stopRankedMatchPassedTimeTimer();
             this.stopRankedMatchGoRoomTimer();
             this.stopRankedMatchGoGameTimer();
@@ -2190,6 +2231,52 @@ import flash.utils.getTimer;
                      quickHumanIDs.push(String(quickHuman.id));
                   }
                }
+            }
+            // BEGIN shared Quick all-current-member gate
+            var quickMembersReady:Boolean = false;
+            quickReadyCheck: do
+            {
+               if(quickRoom == null || quickRoom["_localQuickSharedLineage"] != true || quickRoom.forces == null || quickRoom.forces.force0 == null || quickRoom.forces.force1 == null)
+               {
+                  break quickReadyCheck;
+               }
+               var gateCycle:uint = uint(quickRoom["_localQuickReadyCycle"]);
+               var gateMembers:Array = quickRoom.forces.force0.concat(quickRoom.forces.force1);
+               if(gateCycle == 0 || gateMembers.length < queuedRequired || gateMembers.length > 12)
+               {
+                  break quickReadyCheck;
+               }
+               var gateSeen:Array = [];
+               var gateHosts:int = 0;
+               for each(var gateMember in gateMembers)
+               {
+                  if(gateMember == null || gateMember["_localQuickNativeRoleKnown"] != true || String(gateMember.id).length == 0 || gateMember["_localQuickNativeMemberID"] != String(gateMember.id) || gateSeen.indexOf(String(gateMember.id)) >= 0 || gateMember["_localQuickNativeReady"] != true || uint(gateMember["_localQuickReadyCycle"]) != gateCycle)
+                  {
+                     break quickReadyCheck;
+                  }
+                  gateSeen.push(String(gateMember.id));
+                  if(String(gateMember.name) == String(quickRoom.name))
+                  {
+                     if(quickRoom["_localQuickReadyCycleHost"] != String(gateMember.id))
+                     {
+                        break quickReadyCheck;
+                     }
+                     gateHosts++;
+                  }
+               }
+               quickMembersReady = gateHosts == 1;
+            }
+            while(false);
+            // END shared Quick all-current-member gate
+            if(quickFilter["_localQuickVoteFinal"] == true && quickFilter["_localQuickSharedBookingStarted"] != true && this.getSyncDP(SyncDataID.IS_ROOM_HOST) && quickMembersReady)
+            {
+               this.stopRankedMatchPassedTimeTimer();
+               this.stopRankedMatchGoRoomTimer();
+               this.stopRankedMatchGoGameTimer();
+               this.changeRankedMatchStatus(RankedMatchStatus.READY_IN_ROOM);
+               quickFilter["_localQuickSharedBookingStarted"] = true;
+               this.startMatchCountDown();
+               return;
             }
             if(quickFilter["_localQuickVoteOpen"] == true && quickFilter["_localQuickVoteFinal"] != true)
             {

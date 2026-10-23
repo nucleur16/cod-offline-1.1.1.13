@@ -277,6 +277,50 @@ package codo.controllers
          var roomMemberObj:RoomMemberObj = this.getRoomMemberObjByID(member);
          if(Boolean(roomMemberObj))
          {
+            // BEGIN shared Quick native Ready cycle evidence
+            do
+            {
+               if(this._roomObj == null || this._roomObj["_localQuickSharedLineage"] != true || !CFunctionContainer.IsRankedMatch() || this._roomObj.name == null || String(this._roomObj.name).length == 0 || roomMemberObj == null || roomMemberObj["_localQuickNativeRoleKnown"] != true || roomMemberObj["_localQuickNativeMemberID"] != member || String(roomMemberObj.id) != member)
+               {
+                  break;
+               }
+               var gateHost:Object = null;
+               var gateHostCount:int = 0;
+               for each(var gateCandidate in this._roomMembers)
+               {
+                  if(gateCandidate != null && gateCandidate["_localQuickNativeRoleKnown"] == true && gateCandidate["_localQuickNativeMemberID"] == String(gateCandidate.id) && String(gateCandidate.name) == String(this._roomObj.name))
+                  {
+                     gateHost = gateCandidate;
+                     gateHostCount++;
+                  }
+               }
+               if(gateHostCount != 1 || Boolean(this.getSyncDP(SyncDataID.IS_ME,[gateHost])) != Boolean(CFunctionContainer.IsRoomHost()))
+               {
+                  break;
+               }
+               if(String(gateHost.id) == member)
+               {
+                  if(!ready && (this._roomObj["_localQuickReadyCycleOpen"] != true || this._roomObj["_localQuickReadyCycleHost"] != member))
+                  {
+                     this._roomObj["_localQuickReadyCycle"] = uint(this._roomObj["_localQuickReadyCycle"]) + 1;
+                     this._roomObj["_localQuickReadyCycleHost"] = member;
+                     this._roomObj["_localQuickReadyCycleOpen"] = true;
+                  }
+                  else if(ready)
+                  {
+                     this._roomObj["_localQuickReadyCycleOpen"] = false;
+                  }
+               }
+               var gateCycle:uint = uint(this._roomObj["_localQuickReadyCycle"]);
+               if(gateCycle > 0 && this._roomObj["_localQuickReadyCycleHost"] == String(gateHost.id))
+               {
+                  // Only an actual native Ready callback stamps this cycle. A
+                  // cached true in a room snapshot cannot acknowledge new results.
+                  roomMemberObj["_localQuickReadyCycle"] = ready ? gateCycle : 0;
+               }
+            }
+            while(false);
+            // END shared Quick native Ready cycle evidence
             roomMemberObj.isReady = ready;
             if(roomMemberObj["_localQuickNativeRoleKnown"] == true && roomMemberObj["_localQuickNativeMemberID"] == member && String(roomMemberObj.id) == member)
             {
@@ -808,6 +852,10 @@ package codo.controllers
                roomMemberObj["_localQuickNativeRoleKnown"] = typeof members[i].isHost == "boolean" && typeof members[i].isReady == "boolean" && String(members[i].id).length > 0 && String(roomMemberObj.id) == String(members[i].id);
                roomMemberObj["_localQuickNativeHost"] = roomMemberObj["_localQuickNativeRoleKnown"] == true && members[i].isHost == true;
                roomMemberObj["_localQuickNativeReady"] = roomMemberObj["_localQuickNativeRoleKnown"] == true && members[i].isReady == true;
+               if(roomMemberObj["_localQuickNativeReady"] != true)
+               {
+                  roomMemberObj["_localQuickReadyCycle"] = 0;
+               }
                if(isRankedMatch)
                {
                   roomMemberObj.isHost = false;

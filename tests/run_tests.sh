@@ -8,6 +8,7 @@ BIN=${K33_MINGW:-/c/msys64/mingw32/bin}
 OUT=${TMP:-/tmp}/k33-tests
 mkdir -p "$OUT"
 python tests/test_ui_baseline.py
+python tests/test_quick_ready_gate.py
 "$BIN/gcc.exe" -Wall -Wextra -Werror tests/patch_locale_test.c -o "$OUT/patch_locale_test.exe"
 "$OUT/patch_locale_test.exe"
 # managed_quick_windows.c needs its .qa section at 0x700000, where C1's room code is: as the first section of an

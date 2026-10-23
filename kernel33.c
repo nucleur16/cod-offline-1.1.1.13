@@ -1395,6 +1395,7 @@ static void PatchGbkInput(void)
 #include "discord.c"
 
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
+#include "news_refresh.c"
 #include "launcher_update_bridge.c"
 static void __cdecl TakeOver(void)
 {
@@ -1416,6 +1417,7 @@ static void __cdecl TakeOver(void)
     PatchScoresOpen();
     PatchInfectedScoreboard();
     PatchManagedQuickJoin();
+    PatchNewsRefresh();
     PatchLoopFxCatchUp();
     PatchPatchDir();
     PatchLocalizePool();
