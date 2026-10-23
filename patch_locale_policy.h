@@ -44,6 +44,9 @@ static int CodolAsciiPrefix(const char *name,const char *prefix)
 static int CodolPatchZoneLocaleAllowed(const char *name,enum CodolPatchLanguage language)
 {
  if(CodolAsciiPrefix(name,"codol_english"))return language==CODOL_PATCH_EN;
- if(CodolAsciiPrefix(name,"codol_chinese"))return language==CODOL_PATCH_ZH;
+ /* The UI movies are shared and every text in them is a localize key, so a launch
+  * with no valid language (CODOL_PATCH_NATIVE) still needs one set of strings:
+  * stock C1 is Chinese, so native loads the Chinese strings. */
+ if(CodolAsciiPrefix(name,"codol_chinese"))return language==CODOL_PATCH_ZH || language==CODOL_PATCH_NATIVE;
  return 1;
 }
