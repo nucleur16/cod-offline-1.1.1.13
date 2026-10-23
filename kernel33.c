@@ -688,6 +688,8 @@ static void LoadPatchDir(void)
         z->name[len - 3] = 0;
         if (!CodolPatchZoneLocaleAllowed(z->name,locale)) {
             if (EnglishZone(z->name)) g_englishSkipped++;
+            else if (CodolPatchZoneRetired(z->name))
+                Log("patch folder: skipped %s: retired duplicate map table", file);
             continue;
         }
         if (lstrcmpiA(z->name, "ffotd_client") == 0) {
