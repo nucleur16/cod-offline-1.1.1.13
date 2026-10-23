@@ -5,6 +5,14 @@ package
    // CtlDeliverSfKeys: key codes 240 up, 241 down, 242 left, 243 right, 244 select; B / Start send Escape.
    // Focus moves to the nearest visible clickable object in the pressed direction; it gets MOUSE_OVER / ROLL_OVER and
    // select sends it MOUSE_DOWN / MOUSE_UP / CLICK. The movie is shared by both languages (k33_english).
+   //   On a pause-menu slider row (InGameMenuSliderBtn: Sensitivity, FOV, Brightness) left / right step the slider
+   //   (FOV 5 degrees to the next multiple of 5, the others a twentieth of their range) instead of moving the focus,
+   //   and select does nothing (a synthetic click would drag the slider to the click's stage x).
+   // k33 FOV row: C1's PauseMenuView (multiplayer, and CyborgPauseMenuView for zombies / co-op) lists Sensitivity
+   //   (and Brightness in fullscreen) under Options. Each time it builds that list, an FOV slider row of the same
+   //   class is put under Sensitivity (the rows below move down a row, the list background grows): labelled with
+   //   C1's own key SF_UI_VIDEO_FOV, ranged by GetFOVRange (65..120 with Kernel33 PatchFov), showing whole degrees,
+   //   setting cg_fov (archived in config_mp.cfg) as it moves. PauseMenuView itself stays C1's compiled class.
    import codo.common.AsyncTaskManager;
    import codo.common.BaseMain;
    import codo.common.CFunctionContainerCommon;
@@ -18,6 +26,11 @@ package
    import codo.constants.LocalizationInGame;
    import codo.constants.MenuType;
    import codo.utils.ScaleformUtil;
+   import codo.common.CFunctionContainerPause;
+   import codo.views.PauseMenuView;
+   import components.ProgressBar;
+   import components.ingamemenu_part.InGameMenuProgressBar;
+   import components.ingamemenu_part.InGameMenuSliderBtn;
    import components.BaseButton;
    import components.ingamemenu_part.InGameMenuBtn;
    import flash.display.DisplayObject;
@@ -72,6 +85,7 @@ package
          AsyncTaskManager.getInstance().GetTaskClass = AsyncTaskNamePause.getClass;
          this.addMemCounter();
          this.stage.addEventListener(KeyboardEvent.KEY_DOWN,this.onKeyDownHandle);
+         this.stage.addEventListener(Event.ADDED,this.k33OnAdded); // k33: FOV row
          this.initTheatrePause();
          if(!ScaleformUtil.isScaleform)
          {
@@ -413,6 +427,15 @@ package
          {
             cur = this.k33Focus;
          }
+         if(cur is InGameMenuSliderBtn && code >= 242)
+         {
+            this.k33Log(code,list.length,cur,cur);
+            if(code != 244)
+            {
+               this.k33StepSlider(cur as InGameMenuSliderBtn,code == 243 ? 1 : -1);
+            }
+            return;
+         }
          if(code == 244)
          {
             this.k33Log(code,list.length,cur,cur);
@@ -497,6 +520,208 @@ package
          this.k33Hover(next,true);
          this.k33ShowRing();
       }
+
+      private static const K33_ROW:Number = 30; // k33: InGameMenuBtn's row height (its height getter)
+
+      private var k33FovRow:InGameMenuSliderBtn = null; // k33
+
+      private var k33FovPending:PauseMenuView = null; // k33
+
+      private var k33FovAnchor:InGameMenuSliderBtn = null; // k33: the Sensitivity row the FOV row sits under
+
+      // k33: a row added to a PauseMenuView: put the FOV row in on the next frame, once the whole list is built
+      private function k33OnAdded(e:Event) : void
+      {
+         var row:InGameMenuBtn = e.target as InGameMenuBtn;
+         if(row == null || row == this.k33FovRow || !(row.parent is PauseMenuView))
+         {
+            return;
+         }
+         if(this.k33FovPending == null)
+         {
+            this.addEventListener(Event.ENTER_FRAME,this.k33FovFrame);
+         }
+         this.k33FovPending = row.parent as PauseMenuView;
+      }
+
+      private function k33FovFrame(e:Event) : void
+      {
+         var view:PauseMenuView = this.k33FovPending;
+         this.removeEventListener(Event.ENTER_FRAME,this.k33FovFrame);
+         this.k33FovPending = null;
+         try
+         {
+            this.k33AddFovRow(view);
+         }
+         catch(err:Error)
+         {
+         }
+      }
+
+      // k33: the menu rows of the view (C1's _menuInstances are private: its InGameMenuBtn children), top to bottom
+      private function k33Rows(view:DisplayObjectContainer) : Array
+      {
+         var rows:Array = [];
+         var i:int = 0;
+         var row:InGameMenuBtn = null;
+         while(i < view.numChildren)
+         {
+            row = view.getChildAt(i) as InGameMenuBtn;
+            if(row != null && row != this.k33FovRow)
+            {
+               rows.push(row);
+            }
+            i++;
+         }
+         rows.sortOn("y",Array.NUMERIC);
+         return rows;
+      }
+
+      private function k33AddFovRow(view:PauseMenuView) : void
+      {
+         var rows:Array = null;
+         var sens:InGameMenuSliderBtn = null;
+         var row:InGameMenuBtn = null;
+         var cls:Class = null;
+         var fov:InGameMenuSliderBtn = null;
+         var slider:InGameMenuProgressBar = null;
+         var range:Object = null;
+         var bg:DisplayObject = null;
+         var i:int = 0;
+         if(view == null || view.stage == null)
+         {
+            return;
+         }
+         rows = this.k33Rows(view);
+         i = 0;
+         while(i < rows.length && sens == null)
+         {
+            sens = rows[i] as InGameMenuSliderBtn;
+            i++;
+         }
+         if(sens != null && sens == this.k33FovAnchor && this.k33FovRow != null && this.k33FovRow.parent == view)
+         {
+            return; // this list already has its FOV row
+         }
+         if(this.k33FovRow != null && this.k33FovRow.parent != null)
+         {
+            this.k33FovRow.parent.removeChild(this.k33FovRow);
+         }
+         this.k33FovRow = null;
+         this.k33FovAnchor = null;
+         if(sens == null)
+         {
+            return;
+         }
+         cls = Object(sens).constructor as Class;
+         fov = new cls() as InGameMenuSliderBtn;
+         if(fov == null)
+         {
+            return;
+         }
+         // the rows under Sensitivity in its column move down a row; the list background grows by one
+         i = 0;
+         while(i < rows.length)
+         {
+            row = rows[i] as InGameMenuBtn;
+            if(row.y > sens.y && Math.abs(row.x - sens.x) < 1)
+            {
+               row.y += K33_ROW;
+            }
+            i++;
+         }
+         bg = view["myMiscListBg"] as DisplayObject;
+         if(bg != null && Math.abs(bg.x + 10 - sens.x) < 1)
+         {
+            bg.height += K33_ROW;
+         }
+         fov.x = sens.x;
+         fov.y = sens.y + K33_ROW;
+         this.k33FovRow = fov; // before addChild: its ADDED event must not schedule another FOV row
+         this.k33FovAnchor = sens;
+         view.addChild(fov);
+         fov.label = "@SF_UI_VIDEO_FOV";
+         slider = fov.mySlider;
+         try
+         {
+            range = CFunctionContainerPause.GetFOVRange();
+         }
+         catch(err:Error)
+         {
+         }
+         slider.minVal = range != null ? Number(range.min) : 65;
+         slider.maxVal = range != null ? Number(range.max) : 120;
+         slider.value = Math.round(CFunctionContainerCommon.Dvar_GetFloat("cg_fov"));
+         slider.myCurrentTF.text = String(Math.round(slider.value));
+         slider.addEventListener(ProgressBar.EVT_VALUE_CHANGE,this.k33OnFovChange);
+      }
+
+      private function k33OnFovChange(e:Event) : void
+      {
+         var slider:InGameMenuProgressBar = e.target as InGameMenuProgressBar;
+         var fov:int = int(Math.round(slider.value));
+         slider.myCurrentTF.text = String(fov);
+         if(fov != int(Math.round(CFunctionContainerCommon.Dvar_GetFloat("cg_fov"))))
+         {
+            CFunctionContainerCommon.setdvar("cg_fov",String(fov));
+         }
+      }
+
+      // k33: pad left / right on a slider row. Its range: FOV from GetFOVRange; C1's own sliders are Sensitivity
+      // (the first slider of the list) and Brightness (any other)
+      private function k33StepSlider(row:InGameMenuSliderBtn, dir:int) : void
+      {
+         var range:Object = null;
+         var step:Number = NaN;
+         var cur:Number = NaN;
+         var next:Number = NaN;
+         var rows:Array = null;
+         var first:InGameMenuSliderBtn = null;
+         var i:int = 0;
+         if(row == null || row.mySlider == null || row.parent == null)
+         {
+            return;
+         }
+         try
+         {
+            if(row == this.k33FovRow)
+            {
+               range = CFunctionContainerPause.GetFOVRange();
+            }
+            else
+            {
+               rows = this.k33Rows(row.parent);
+               while(i < rows.length && first == null)
+               {
+                  first = rows[i] as InGameMenuSliderBtn;
+                  i++;
+               }
+               range = row == first ? CFunctionContainerPause.GetSensitivityRange() : CFunctionContainerPause.GetGammaRange();
+            }
+         }
+         catch(err:Error)
+         {
+         }
+         if(range == null || !(Number(range.max) > Number(range.min)))
+         {
+            return;
+         }
+         cur = row.mySlider.value;
+         if(isNaN(cur))
+         {
+            cur = Number(range.min);
+         }
+         if(row == this.k33FovRow)
+         {
+            step = 5;
+            next = dir > 0 ? (Math.floor(cur / step + 0.001) + 1) * step : (Math.ceil(cur / step - 0.001) - 1) * step;
+         }
+         else
+         {
+            step = (Number(range.max) - Number(range.min)) / 20;
+            next = cur + dir * step;
+         }
+         row.mySlider.value = Math.max(Number(range.min),Math.min(Number(range.max),next));
+      }
    }
 }
-
