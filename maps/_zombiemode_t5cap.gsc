@@ -94,6 +94,11 @@ cap_dog_kill( z, pos )
 	z doDamage( z.health + 50, pos, level.cap_player );
 }
 
+// A script_model takes its tree from the first %anim it plays here.
+cap_pose_prep( m )
+{
+}
+
 // The hound clips by name (codol_getAnim adds no node to the server tree).
 cap_dog_clip( name )
 {
@@ -177,8 +182,25 @@ cap_main( scn )
 		level thread cap_dog_round();
 	if ( getdvarint( "t5cap_crawlers" ) )
 		level thread cap_crawlers();
+	if ( getdvarint( "t5cap_dogdump" ) )
+	{
+		names = cap_dog_clip_names();
+		for ( i = 0; i < names.size; i++ )
+		{
+			a = cap_dog_clip( names[i] );
+			if ( !isdefined( a ) )
+				continue;
+			cap_dump_anim( "dogclip." + names[i], a );
+			line = "M dogclip." + names[i];
+			for ( k = 0; k <= 10; k++ )
+				line += " " + vstr( getmovedelta( a, 0, k / 10 ) );
+			w( line );
+		}
+	}
 	if ( getdvarint( "t5cap_reach" ) )
 		level thread cap_reach();
+	if ( getdvarint( "t5cap_pose" ) )
+		level thread cap_pose();
 	if ( getdvarint( "t5cap_knockdown" ) )
 		level thread cap_knockdowns();
 	if ( getdvar( "t5cap_path" ) != "" )
@@ -480,7 +502,7 @@ cap_dog_clips( t )
 	}
 	if ( line != "" )
 	{
-		if ( issubstr( line, " run_attack:" ) && isalive( self ) )
+		if ( isalive( self ) || getdvarint( "t5cap_eyeall" ) )
 		{
 			e = self geteye();
 			d = e - self.origin;
@@ -528,6 +550,11 @@ cap_dog_events()
 	self thread cap_simple( "dog_running" );
 	self thread cap_simple( "dog_combat" );
 	self thread cap_dog_eye();
+	if ( !isdefined( level.cap_pose_sent ) && getdvarint( "t5cap_pose" ) )
+	{
+		level.cap_pose_sent = true;
+		level notify( "cap_pose_dog", self );
+	}
 	if ( !isdefined( level.cap_reach_sent ) && getdvarint( "t5cap_reach" ) )
 	{
 		level.cap_reach_sent = true;
@@ -768,6 +795,8 @@ cap_dump_anim( name, a )
 	notes[4] = "gravity on";
 	notes[5] = "stop";
 	notes[6] = "blend";
+	notes[7] = "dog_melee";
+	notes[8] = "stop_tracking";
 	for ( n = 0; n < notes.size; n++ )
 	{
 		ts = getnotetracktimes( a, notes[n] );
@@ -893,4 +922,37 @@ cap_reach()
 		}
 	}
 	w( "H reach done" );
+}
+
+// Static hound poses: a script_model with the hound's model holds each clip
+// at fixed times; "T" lines give tags relative to its origin (x forward).
+cap_pose()
+{
+	level waittill( "cap_pose_dog", dog );
+	model = dog.model;
+	p = level.cap_player;
+	m = spawn( "script_model", p.origin + ( 0, 300, 0 ) );
+	m.angles = ( 0, 0, 0 );
+	m setmodel( model );
+	cap_pose_prep( m );
+	w( "H pose model=" + model );
+	tags = strtok( "j_mainroot j_pelvis j_spine4 j_neck j_head tag_eye j_tail0 j_neck_end", " " );
+	clips = strtok( getdvar( "t5cap_poseclips" ), "," );
+	for ( c = 0; c < clips.size; c++ )
+	{
+		a = cap_dog_clip( clips[c] );
+		for ( k = 0; k <= 10; k++ )
+		{
+			m setanim( a, 1, 0, 0 );
+			m setanimtime( a, k / 10 );
+			wait 0.2;
+			line = "T " + clips[c] + " " + ( k / 10 );
+			for ( i = 0; i < tags.size; i++ )
+				line += " " + tags[i] + "=" + vstr( m gettagorigin( tags[i] ) - m.origin );
+			w( line );
+		}
+		m clearanim( a, 0 );
+		wait 0.2;
+	}
+	w( "H pose done" );
 }
