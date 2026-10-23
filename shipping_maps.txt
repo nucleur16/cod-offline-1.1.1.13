@@ -27,3 +27,4 @@ mp_terminal_cls     ship
 # --- in development: not in a released map pack
 mp_abandon_sh       dev     # 2.6.9.7 port (2026-10-22); its map-select image is in iw_image_17.iwd
 zm_sumpf_sh         dev     # Shi No Numa; zm_sumpf_sh.ff and _load.ff are in no released map pack, PaP work ongoing
+zm_factory_sh       dev     # Der Riese, 3.5.6.2 port (2026-10-22); its zones and iw_image_20.iwd are in no released map pack
