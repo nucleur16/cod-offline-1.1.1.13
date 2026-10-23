@@ -626,7 +626,10 @@ static BOOL EnglishZone(const char *name)
     return _strnicmp(name, "codol_english", 13) == 0;
 }
 
-/* True when client_shipRetail\<any folder but patch>\<file> exists, i.e. the name is a stock zone. */
+/* True when client_shipRetail\<language folder>\<file> exists, i.e. the name is a stock zone. A language folder is one
+ * that holds code_pre_gfx_mp.ff (chinese\): other folders there are no zone folder C1 loads from, e.g. a
+ * client_shipRetail\temp\ left by the English zone tools with old copies of codol_english*.ff, which made the patch
+ * folder skip the real ones as "stock". */
 static BOOL StockZoneExists(const char *dir, const char *file)
 {
     char pattern[MAX_PATH];
@@ -641,6 +644,9 @@ static BOOL StockZoneExists(const char *dir, const char *file)
             lstrcmpiA(fd.cFileName, "patch") == 0)
             continue;
         char path[MAX_PATH];
+        _snprintf(path, sizeof(path), "%s%s\\code_pre_gfx_mp.ff", dir, fd.cFileName);
+        path[sizeof(path) - 1] = 0;
+        if (GetFileAttributesA(path) == INVALID_FILE_ATTRIBUTES) continue;
         _snprintf(path, sizeof(path), "%s%s\\%s", dir, fd.cFileName, file);
         path[sizeof(path) - 1] = 0;
         if (GetFileAttributesA(path) != INVALID_FILE_ATTRIBUTES) found = TRUE;
