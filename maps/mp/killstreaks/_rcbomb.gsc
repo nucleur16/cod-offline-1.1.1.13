@@ -14,8 +14,9 @@
 //   _hardpoints stat/XP/dialog/popups -> the C1 reward dispatcher (_killstreaks)
 // Not available on this server and therefore not emulated: _hud::fadeToBlack
 // ForXSec, _treadfx (the FX are precached like T5, the tag consumer is not
-// ported), _medals/_properks/_rank destroyer credit (the "destroyed_killstreak"
-// notify carries it), per-viewer setEnemyModel (see spawnRCBomb).
+// ported), _medals/_properks destroyer credit (the "destroyed_killstreak"
+// notify carries it; the _rank rcbombdestroy XP is awarded in blowup),
+// per-viewer setEnemyModel (see spawnRCBomb).
 #include maps\mp\_utility;
 #include common_scripts\utility;
 
@@ -63,6 +64,11 @@ init()
     // Sets up RC bomb to die from trigger_hurt's. Threaded because there is a
     // 'spread_array_thread()' within it.
     level thread trigger_monitor_init();
+
+    // Developer RC-XD telemetry for the T5 parity measurements
+    // (docs/CODOL_RCXD_T5_PARITY.md); inert unless rccap_scn is set.
+    if ( getDvar( "rccap_scn" ) != "" )
+        level thread maps\mp\killstreaks\_rcbomb_t5cap::init();
 }
 
 loadTreadFx( type )
@@ -569,7 +575,18 @@ blowup( attacker )
 
     if ( isDefined( attacker ) && isPlayer( attacker ) && attacker != self.owner )
     {
-        // T5: rcbombdestroy XP, destroyerRCBomb medal, _properks::destroyedKillstreak,
+        // T5 _rank "rcbombdestroy": 50 XP in team modes, 30 in FFA (or the
+        // gametype's scr_<gametype>_score_rcbombdestroy), scaled by
+        // level.xpScale inside T5 giveRankXP. The local _rank table does not
+        // register it, so the value and the scale are applied here, as the
+        // dogs' "dogkill" is (maps/mp/_dogs.gsc).
+        value = 50;
+        if ( !level.teamBased )
+            value = 30;
+        if ( getDvar( "scr_" + level.gameType + "_score_rcbombdestroy" ) != "" )
+            value = getDvarInt( "scr_" + level.gameType + "_score_rcbombdestroy" );
+        attacker thread maps\mp\gametypes\_rank::giveRankXP( "rcbombdestroy", int( value * level.xpScale ) );
+        // T5 also: destroyerRCBomb medal, _properks::destroyedKillstreak,
         // per-weapon destroyed stat. The dispatcher's destroyed-killstreak
         // credit consumes this single notify.
         attacker notify( "destroyed_killstreak", attacker.weaponUsedToDamage );
