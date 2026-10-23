@@ -8,6 +8,8 @@ package
    //   On a pause-menu slider row (InGameMenuSliderBtn: Sensitivity, FOV, Brightness) left / right step the slider
    //   (FOV 5 degrees to the next multiple of 5, the others a twentieth of their range) instead of moving the focus,
    //   and select does nothing (a synthetic click would drag the slider to the click's stage x).
+   //   Mouse: C1's slider drag does not follow the mouse (InGameMenuProgressBar's move handler uses a constant x),
+   //   so pressing or dragging on a pause-menu slider row sets the value from the mouse's place on the bar here.
    // k33 FOV row: C1's PauseMenuView (multiplayer, and CyborgPauseMenuView for zombies / co-op) lists Sensitivity
    //   (and Brightness in fullscreen) under Options. Each time it builds that list, an FOV slider row of the same
    //   class is put under Sensitivity (the rows below move down a row, the list background grows): labelled with
@@ -86,6 +88,7 @@ package
          this.addMemCounter();
          this.stage.addEventListener(KeyboardEvent.KEY_DOWN,this.onKeyDownHandle);
          this.stage.addEventListener(Event.ADDED,this.k33OnAdded); // k33: FOV row
+         this.stage.addEventListener(MouseEvent.MOUSE_DOWN,this.k33SliderMouseDown,true,1000); // k33: slider drag
          this.initTheatrePause();
          if(!ScaleformUtil.isScaleform)
          {
@@ -667,20 +670,17 @@ package
          }
       }
 
-      // k33: pad left / right on a slider row. Its range: FOV from GetFOVRange; C1's own sliders are Sensitivity
-      // (the first slider of the list) and Brightness (any other)
-      private function k33StepSlider(row:InGameMenuSliderBtn, dir:int) : void
+      // k33: a slider row's range. FOV from GetFOVRange; C1's own sliders are Sensitivity (the first slider of the
+      // list) and Brightness (any other)
+      private function k33SliderRange(row:InGameMenuSliderBtn) : Object
       {
          var range:Object = null;
-         var step:Number = NaN;
-         var cur:Number = NaN;
-         var next:Number = NaN;
          var rows:Array = null;
          var first:InGameMenuSliderBtn = null;
          var i:int = 0;
          if(row == null || row.mySlider == null || row.parent == null)
          {
-            return;
+            return null;
          }
          try
          {
@@ -704,6 +704,20 @@ package
          }
          if(range == null || !(Number(range.max) > Number(range.min)))
          {
+            return null;
+         }
+         return range;
+      }
+
+      // k33: pad left / right on a slider row: FOV 5 degrees to the next multiple of 5, the others a twentieth
+      private function k33StepSlider(row:InGameMenuSliderBtn, dir:int) : void
+      {
+         var range:Object = this.k33SliderRange(row);
+         var step:Number = NaN;
+         var cur:Number = NaN;
+         var next:Number = NaN;
+         if(range == null)
+         {
             return;
          }
          cur = row.mySlider.value;
@@ -722,6 +736,90 @@ package
             next = cur + dir * step;
          }
          row.mySlider.value = Math.max(Number(range.min),Math.min(Number(range.max),next));
+      }
+
+      private var k33DragRow:InGameMenuSliderBtn = null; // k33
+
+      // k33: mouse on a pause-menu slider row. C1's InGameMenuProgressBar drag ignores the mouse position (its
+      // move handler uses a constant x), so the bar does not follow the mouse; press and drag are handled here
+      // instead: the value is the mouse's position along the bar.
+      private function k33SliderMouseDown(e:MouseEvent) : void
+      {
+         var o:DisplayObject = e.target as DisplayObject;
+         var row:InGameMenuSliderBtn = null;
+         while(o != null && o != this.stage && row == null)
+         {
+            row = o as InGameMenuSliderBtn;
+            o = o.parent;
+         }
+         if(row == null || row.mySlider == null || !(row.parent is PauseMenuView) || this.k33SliderRange(row) == null)
+         {
+            return;
+         }
+         e.stopImmediatePropagation();
+         this.k33DragRow = row;
+         this.stage.addEventListener(MouseEvent.MOUSE_MOVE,this.k33SliderMouseMove,true,1000);
+         this.stage.addEventListener(MouseEvent.MOUSE_UP,this.k33SliderMouseUp,true,1000);
+         this.addEventListener(Event.ENTER_FRAME,this.k33SliderDragFrame);
+         this.k33SliderFromMouse(e.stageX);
+      }
+
+      // k33: while the button is held the bar follows the cursor every frame (in a match C1 does not always pass
+      // the movie mouse-move events)
+      private function k33SliderDragFrame(e:Event) : void
+      {
+         if(this.k33DragRow == null || this.k33DragRow.stage == null)
+         {
+            this.k33SliderDragEnd();
+            return;
+         }
+         this.k33SliderFromMouse(this.stage.mouseX);
+      }
+
+      private function k33SliderDragEnd() : void
+      {
+         this.stage.removeEventListener(MouseEvent.MOUSE_MOVE,this.k33SliderMouseMove,true);
+         this.stage.removeEventListener(MouseEvent.MOUSE_UP,this.k33SliderMouseUp,true);
+         this.removeEventListener(Event.ENTER_FRAME,this.k33SliderDragFrame);
+         this.k33DragRow = null;
+      }
+
+      private function k33SliderMouseMove(e:MouseEvent) : void
+      {
+         e.stopImmediatePropagation();
+         this.k33SliderFromMouse(e.stageX);
+      }
+
+      private function k33SliderMouseUp(e:MouseEvent) : void
+      {
+         e.stopImmediatePropagation();
+         this.k33SliderFromMouse(e.stageX);
+         this.k33SliderDragEnd();
+      }
+
+      private function k33SliderFromMouse(stageX:Number) : void
+      {
+         var row:InGameMenuSliderBtn = this.k33DragRow;
+         var range:Object = row != null ? this.k33SliderRange(row) : null;
+         var bar:Rectangle = null;
+         var f:Number = NaN;
+         var v:Number = NaN;
+         if(range == null || row.mySlider.myBg == null)
+         {
+            return;
+         }
+         bar = row.mySlider.myBg.getBounds(this.stage);
+         if(!(bar.width > 1))
+         {
+            return;
+         }
+         f = Math.max(0,Math.min(1,(stageX - bar.x) / bar.width));
+         v = Number(range.min) + f * (Number(range.max) - Number(range.min));
+         if(row == this.k33FovRow)
+         {
+            v = Math.round(v);
+         }
+         row.mySlider.value = v;
       }
    }
 }
