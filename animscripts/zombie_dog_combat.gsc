@@ -296,6 +296,40 @@ doMeleeAfterWait( time )
 // facing: from there the eye-height trace along the facing starts beside
 // or past the target and misses it (MEASURED 2026-10-02, mp_rust: bites
 // within 35 units landed 29 of 86).  Farther out the T5 trace is kept.
+// T5's reach for the hound's bite.  At the dog_melee notetrack (run_attack
+// 0.20) T5's hound has reared up: its eye -- where the melee trace starts --
+// is 0-6 units ahead of its origin and 65-66 up, and the trace reaches
+// ai_meleeRange from there.  C1's run_attack lunges instead: at the same
+// frame the eye is 36 ahead and 62 up.  The server's pose matches C1's own
+// (AssetExplorer anim-pose of zombie_dog_run_attack on zombie_wolf, frame 9:
+// eye 36.4 / 61.9), so C1's clip really differs, and its bites connected
+// from up to ~100 units.  MEASURED (t5cap, Shi No Numa, frozen player): T5
+// bites from 55-65 units landed 8 of 17, 65-75 19 of 67, 75 and over none;
+// these landed 174 of 186 from 55-65.  The bite only connects when T5's eye
+// would have reached the player, unblocked; the C1 trace then decides as
+// before.
+t5BiteReaches( player )
+{
+	if ( !isDefined( player ) )
+		return true;
+	forward = anglesToForward( ( 0, self.angles[1], 0 ) );
+	eye = self.origin + vector_multiply( forward, 3 ) + ( 0, 0, 66 );
+	target = player getEye();
+	if ( distanceSquared( eye, target ) > t5Sq( getDvarFloat( "ai_meleeRange" ) ) )
+		return false;
+	// From T5's eye a hound queued behind another bites into that hound's
+	// body (T5 Melee_Trace hits actors); C1's eye starts past it.
+	trace = bulletTrace( eye, target, true, self );
+	if ( isDefined( trace[ "entity" ] ) && trace[ "entity" ] != player )
+		return false;
+	return true;
+}
+
+t5Sq( v )
+{
+	return v * v;
+}
+
 dogMelee()
 {
 	if ( isDefined( self.enemy ) && distance2D( self.origin, self.enemy.origin ) < 32 )
@@ -318,7 +352,9 @@ handleMeleeBiteAttackNoteTracks( note, player )
 			}
 
 			self animscripts\zombie_dog_attack_log::melee_before( player );
-			hitEnt = self dogMelee();
+			hitEnt = undefined;
+			if ( self t5BiteReaches( player ) )
+				hitEnt = self dogMelee();
 			self animscripts\zombie_dog_attack_log::melee_after( player, hitEnt );
 
 			if ( isdefined( hitEnt ) )
