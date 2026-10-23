@@ -1,7 +1,8 @@
 package codo.views
 {
+   // Every string shown is a localize key (K33UI_PAD_*, k33L): English in codol_english_ui, Chinese in voice_ui_mp.
    // codo.views.OptionView from C1's codo.gfx (decompiled) with Kernel33's Options > Controller tab ("k33"):
-   // C1's hidden "Other" tab (myTabOther) is shown as 手柄 (Controller) and opens a panel built here in code:
+   // C1's hidden "Other" tab (myTabOther) is shown as K33UI_PAD_TAB (Controller) and opens a panel built here in code:
    //   a line-art diagram of the connected pad (Kernel33's family: Xbox 360 / PS3 / Wii U / generic, from
    //   k33_padinfo "family|connected|name"; glyphs/make_diagrams.py) with a callout per button showing what
    //   it does (k33_padbinds "A=cmd;B=cmd;..."), live;
@@ -18,6 +19,7 @@ package codo.views
    import codo.constants.BCEvent;
    import codo.constants.CodoVersion;
    import codo.constants.LocalizationSetting;
+   import codo.utils.LocalizeUtil;
    import codo.constants.SyncDataID;
    import codo.constants.TweenParam;
    import codo.views.option_sub.OptionView_audio;
@@ -42,7 +44,7 @@ package codo.views
 
       private static var POS_Y_ORIGIN:int = 480;
 
-      private static const K33_ACTIONS:Array = [["+gostand","跳跃"],["+stance","蹲伏/卧倒"],["+reload","换弹"],["+activate","使用/拾取"],["weapnext","切换武器"],["weapalt","武器附件"],["+melee","近战"],["+breath_sprint","冲刺/屏息"],["+frag","致命装备"],["+smoke","战术装备"],["+tact","特殊装备"],["gpad_ksnext","选择连杀奖励"],["gpad_ksuse","使用连杀奖励"],["togglemenu","菜单"],["+scores","计分板"],["+talk","语音"]];
+      private static const K33_ACTIONS:Array = [["+gostand","K33UI_PAD_ACT_JUMP"],["+stance","K33UI_PAD_ACT_STANCE"],["+reload","K33UI_PAD_ACT_RELOAD"],["+activate","K33UI_PAD_ACT_USE"],["weapnext","K33UI_PAD_ACT_SWITCH"],["weapalt","K33UI_PAD_ACT_ATTACH"],["+melee","K33UI_PAD_ACT_MELEE"],["+breath_sprint","K33UI_PAD_ACT_SPRINT"],["+frag","K33UI_PAD_ACT_LETHAL"],["+smoke","K33UI_PAD_ACT_TACTICAL"],["+tact","K33UI_PAD_ACT_SPECIAL"],["gpad_ksnext","K33UI_PAD_ACT_KS_SELECT"],["gpad_ksuse","K33UI_PAD_ACT_KS_USE"],["togglemenu","K33UI_PAD_ACT_MENU"],["+scores","K33UI_PAD_ACT_SCORES"],["+talk","K33UI_PAD_ACT_TALK"]];
 
       private static const K33_BUTTONS:Array = ["A","B","X","Y","LB","RB","START","BACK","LS","RS","UP","DOWN","LEFT","RIGHT","LT","RT"];
 
@@ -115,7 +117,7 @@ package codo.views
          this.myTabVideo.label = LocalizationSetting.OPTION_TAB_VIDEO;
          this.myTabAudio.label = LocalizationSetting.OPTION_TAB_AUDIO;
          this.myTabControl.label = LocalizationSetting.OPTION_TAB_CONTROL;
-         this.myTabOther.label = "手柄";
+         this.myTabOther.label = this.k33L("K33UI_PAD_TAB");
          this.myTabOther.visible = true;
          switch(CodoVersion.currentVersion)
          {
@@ -278,6 +280,22 @@ package codo.views
          }
       }
 
+      // k33: localize key -> text in the loaded language (C1's translator resolves "@KEY"; a missing key shows as "@KEY")
+      private function k33L(key:String) : String
+      {
+         return LocalizeUtil.localize("@" + key);
+      }
+
+      // k33: a button name: "@KEY" is localized, "#HOLD#<name>" is "Hold <name>" in the loaded language
+      private function k33BtnText(v:String) : String
+      {
+         if(v.indexOf("#HOLD#") == 0)
+         {
+            return LocalizeUtil.replace(this.k33L("K33UI_PAD_HOLD"),[this.k33BtnText(v.substr(6))]);
+         }
+         return v.charAt(0) == "@" ? LocalizeUtil.localize(v) : v;
+      }
+
       private function k33Text(s:String, size:int, color:uint) : TextField
       {
          var tf:TextField = new TextField();
@@ -342,12 +360,12 @@ package codo.views
          this._k33Panel.x = this.myControlPanel.x;
          this._k33Panel.y = this.myControlPanel.y;
          this.addChild(this._k33Panel);
-         var head:TextField = this.k33Text("手柄",18,16777215);
+         var head:TextField = this.k33Text(this.k33L("K33UI_PAD_TAB"),18,16777215);
          head.x = 0;
          head.y = 0;
          this._k33Panel.addChild(head);
          this._k33Status = this.k33Text("",14,10474463);
-         this._k33Status.x = 60;
+         this._k33Status.x = head.x + head.width + 12; // the title's width depends on the language
          this._k33Status.y = 3;
          this._k33Panel.addChild(this._k33Status);
          this._k33Diagram = new Sprite();
@@ -363,12 +381,12 @@ package codo.views
          this._k33List.y = 40;
          this._k33List.visible = false;
          this._k33Panel.addChild(this._k33List);
-         var pg1:Sprite = this.k33Button("手柄图示",110,24,this.k33OnPage);
+         var pg1:Sprite = this.k33Button(this.k33L("K33UI_PAD_LAYOUT"),110,24,this.k33OnPage);
          pg1.name = "page0";
          pg1.x = 330;
          pg1.y = 0;
          this._k33Panel.addChild(pg1);
-         var pg2:Sprite = this.k33Button("按键设置",110,24,this.k33OnPage);
+         var pg2:Sprite = this.k33Button(this.k33L("K33UI_PAD_BINDS"),110,24,this.k33OnPage);
          pg2.name = "page1";
          pg2.x = 450;
          pg2.y = 0;
@@ -376,13 +394,13 @@ package codo.views
          this._k33Settings = new Sprite();
          this._k33Settings.y = 270;
          this._k33Panel.addChild(this._k33Settings);
-         var title:TextField = this.k33Text("点击动作, 再按要使用的手柄按键 (扳机和摇杆不能绑定)",13,10474463);
+         var title:TextField = this.k33Text(this.k33L("K33UI_PAD_BIND_HINT"),13,10474463);
          this._k33List.addChild(title);
          var i:int = 0;
          while(i < K33_ACTIONS.length)
          {
             var holder:Sprite = new Sprite();
-            var nm:TextField = this.k33Text(K33_ACTIONS[i][1],13,14544626);
+            var nm:TextField = this.k33Text(this.k33L(K33_ACTIONS[i][1]),13,14544626);
             nm.y = 3;
             holder.addChild(nm);
             var row:Sprite = this.k33Button("",145,20,this.k33OnAction);
@@ -394,20 +412,20 @@ package codo.views
             this._k33List.addChild(holder);
             i++;
          }
-         var clr:Sprite = this.k33Button("清除所选",130,24,this.k33OnClearMode);
+         var clr:Sprite = this.k33Button(this.k33L("K33UI_PAD_CLEAR"),130,24,this.k33OnClearMode);
          clr.name = "clear";
          clr.x = 100;
          clr.y = 28 + 8 * 26 + 14;
          this._k33List.addChild(clr);
-         var dflt:Sprite = this.k33Button("恢复默认",130,24,this.k33OnDefault);
+         var dflt:Sprite = this.k33Button(this.k33L("SF_UI_DEFAULT_SETTING"),130,24,this.k33OnDefault);
          dflt.x = 400;
          dflt.y = clr.y;
          this._k33List.addChild(dflt);
-         var s:Array = [["swapsticks","交换摇杆 (左手模式)"],["swaptriggers","交换扳机 (LT 开火)"],["preset","视角手感"],["sens","视角灵敏度"],["invert","反转 Y 轴"],["aim","辅助瞄准"],["deadzone","摇杆死区"],["dive","冲刺时蹲伏键飞扑"]];
+         var s:Array = [["swapsticks","K33UI_PAD_SET_SWAPSTICKS"],["swaptriggers","K33UI_PAD_SET_SWAPTRIGGERS"],["preset","K33UI_PAD_SET_LOOKFEEL"],["sens","K33UI_PAD_SET_SENS"],["invert","K33UI_PAD_SET_INVERT"],["aim","K33UI_PAD_SET_AIMASSIST"],["deadzone","K33UI_PAD_SET_DEADZONE"],["dive","K33UI_PAD_SET_DIVE"]];
          var j:int = 0;
          while(j < s.length)
          {
-            var lab:TextField = this.k33Text(s[j][1],13,14544626);
+            var lab:TextField = this.k33Text(this.k33L(s[j][1]),13,14544626);
             lab.x = j % 2 * 290;
             lab.y = int(j / 2) * 28 + 3;
             this._k33Settings.addChild(lab);
@@ -453,30 +471,30 @@ package codo.views
       {
          var xb:Object = {
             "A":"A","B":"B","X":"X","Y":"Y","LB":"LB","RB":"RB","START":"START","BACK":"BACK","LS":"LS","RS":"RS",
-            "UP":"十字键上","DOWN":"十字键下","LEFT":"十字键左","RIGHT":"十字键右","LT":"LT","RT":"RT","HOLDX":"按住 X"};
-         var ps:Object = {"A":"×","B":"○","X":"□","Y":"△","LB":"L1","RB":"R1","BACK":"SELECT","LS":"L3","RS":"R3","LT":"L2","RT":"R2","HOLDX":"按住 □"};
-         var wu:Object = {"A":"B","B":"A","X":"Y","Y":"X","LB":"L","RB":"R","START":"+","BACK":"-","LS":"左摇杆","RS":"右摇杆","LT":"ZL","RT":"ZR","HOLDX":"按住 Y"};
-         var ge:Object = {"A":"下键","B":"右键","X":"左键","Y":"上键","LB":"L1","RB":"R1","START":"开始","BACK":"返回","LS":"左摇杆","RS":"右摇杆","LT":"L2","RT":"R2","HOLDX":"按住 左键"};
+            "UP":"@K33UI_PAD_BTN_DPAD_UP","DOWN":"@K33UI_PAD_BTN_DPAD_DOWN","LEFT":"@K33UI_PAD_BTN_DPAD_LEFT","RIGHT":"@K33UI_PAD_BTN_DPAD_RIGHT","LT":"LT","RT":"RT","HOLDX":"#HOLD#X"};
+         var ps:Object = {"A":"×","B":"○","X":"□","Y":"△","LB":"L1","RB":"R1","BACK":"SELECT","LS":"L3","RS":"R3","LT":"L2","RT":"R2","HOLDX":"#HOLD#□"};
+         var wu:Object = {"A":"B","B":"A","X":"Y","Y":"X","LB":"L","RB":"R","START":"+","BACK":"-","LS":"@K33UI_PAD_BTN_LSTICK","RS":"@K33UI_PAD_BTN_RSTICK","LT":"ZL","RT":"ZR","HOLDX":"#HOLD#Y"};
+         var ge:Object = {"A":"@K33UI_PAD_BTN_FACE_DOWN","B":"@K33UI_PAD_BTN_FACE_RIGHT","X":"@K33UI_PAD_BTN_FACE_LEFT","Y":"@K33UI_PAD_BTN_FACE_UP","LB":"L1","RB":"R1","START":"@K33UI_PAD_BTN_GENERIC_START","BACK":"@K33UI_PAD_BTN_GENERIC_BACK","LS":"@K33UI_PAD_BTN_LSTICK","RS":"@K33UI_PAD_BTN_RSTICK","LT":"L2","RT":"R2","HOLDX":"#HOLD#@K33UI_PAD_BTN_FACE_LEFT"};
          var t:Object = fam == 1 ? ps : (fam == 2 ? wu : (fam == 3 ? ge : xb));
-         return t[tag] != null ? String(t[tag]) : String(xb[tag]);
+         return this.k33BtnText(t[tag] != null ? String(t[tag]) : String(xb[tag]));
       }
 
       private function k33ActionName(cmd:String) : String
       {
          if(cmd == "+attack")
          {
-            return "开火";
+            return this.k33L("K33UI_PAD_ACT_FIRE");
          }
          if(cmd == "+speed_throw" || cmd == "+toggleads_throw")
          {
-            return "瞄准";
+            return this.k33L("K33UI_PAD_ACT_AIM");
          }
          var i:int = 0;
          while(i < K33_ACTIONS.length)
          {
             if(K33_ACTIONS[i][0] == cmd)
             {
-               return K33_ACTIONS[i][1];
+               return this.k33L(K33_ACTIONS[i][1]);
             }
             i++;
          }
@@ -503,7 +521,7 @@ package codo.views
          {
             this._k33Info = info;
             this._k33Fam = conn || forced ? fam : 3;
-            this._k33Status.text = conn ? (parts.length > 2 ? String(parts[2]) : "") : "未连接手柄";
+            this._k33Status.text = conn ? (parts.length > 2 ? String(parts[2]) : "") : this.k33L("K33UI_PAD_NONE");
             this.k33DrawDiagram(this._k33Fam);
             this._k33Binds = "?";
          }
@@ -682,7 +700,7 @@ package codo.views
             var txt:String = this.k33ButtonName(it.tag,fam) + " " + this.k33ActionName(this.k33Bind(it.tag));
             if(it.tag == "X" && this.k33Bind("HOLDX") != "")
             {
-               txt += ", 按住" + this.k33ActionName(this.k33Bind("HOLDX"));
+               txt += LocalizeUtil.replace(this.k33L("K33UI_PAD_AND_HOLD"),[this.k33ActionName(this.k33Bind("HOLDX"))]);
             }
             var tf:TextField = this.k33Text(txt,12,15398648);
             var lx:Number = onLeft ? 124 - tf.width : this._k33Diagram.x + 440 * K33_DS + 8;
@@ -737,7 +755,7 @@ package codo.views
                }
                j++;
             }
-            this.k33SetLabel(row,this._k33Capture == cmd ? "请按下手柄按键..." : (keys.length > 0 ? keys.join(", ") : "未绑定"));
+            this.k33SetLabel(row,this._k33Capture == cmd ? this.k33L("K33UI_PAD_PRESS") : (keys.length > 0 ? keys.join(", ") : this.k33L("K33UI_PAD_UNBOUND")));
             i++;
          }
       }
@@ -746,14 +764,14 @@ package codo.views
       {
          var s:Sprite = this._k33Settings;
          var start:Number = CFunctionContainerCommon.Dvar_GetFloat("gpad_view_accel_start");
-         this.k33SetLabel(s.getChildByName("swapsticks") as Sprite,CFunctionContainerCommon.Dvar_GetInt("gpad_swap_sticks") != 0 ? "开" : "关");
-         this.k33SetLabel(s.getChildByName("swaptriggers") as Sprite,this.k33Bind("LT") == "+attack" ? "开" : "关");
-         this.k33SetLabel(s.getChildByName("preset") as Sprite,start > 0.5 ? "灵敏" : (start > 0.2 ? "平滑" : "经典"));
+         this.k33SetLabel(s.getChildByName("swapsticks") as Sprite,CFunctionContainerCommon.Dvar_GetInt("gpad_swap_sticks") != 0 ? this.k33L("K33UI_ON") : this.k33L("K33UI_OFF"));
+         this.k33SetLabel(s.getChildByName("swaptriggers") as Sprite,this.k33Bind("LT") == "+attack" ? this.k33L("K33UI_ON") : this.k33L("K33UI_OFF"));
+         this.k33SetLabel(s.getChildByName("preset") as Sprite,this.k33L(start > 0.5 ? "K33UI_PAD_FEEL_RESPONSIVE" : (start > 0.2 ? "K33UI_PAD_FEEL_SMOOTH" : "K33UI_PAD_FEEL_CLASSIC")));
          this.k33SetLabel(s.getChildByName("sens") as Sprite,"<  " + CFunctionContainerCommon.Dvar_GetFloat("gpad_view_sensitivity").toFixed(1) + "  >");
-         this.k33SetLabel(s.getChildByName("invert") as Sprite,CFunctionContainerCommon.Dvar_GetInt("gpad_invert_y") != 0 ? "开" : "关");
-         this.k33SetLabel(s.getChildByName("aim") as Sprite,CFunctionContainerCommon.Dvar_GetFloat("gpad_aimassist") > 0 ? "开" : "关");
+         this.k33SetLabel(s.getChildByName("invert") as Sprite,CFunctionContainerCommon.Dvar_GetInt("gpad_invert_y") != 0 ? this.k33L("K33UI_ON") : this.k33L("K33UI_OFF"));
+         this.k33SetLabel(s.getChildByName("aim") as Sprite,CFunctionContainerCommon.Dvar_GetFloat("gpad_aimassist") > 0 ? this.k33L("K33UI_ON") : this.k33L("K33UI_OFF"));
          this.k33SetLabel(s.getChildByName("deadzone") as Sprite,"<  " + CFunctionContainerCommon.Dvar_GetFloat("gpad_stick_deadzone_min").toFixed(2) + "  >");
-         this.k33SetLabel(s.getChildByName("dive") as Sprite,CFunctionContainerCommon.Dvar_GetInt("gpad_dive") != 0 ? "开" : "关");
+         this.k33SetLabel(s.getChildByName("dive") as Sprite,CFunctionContainerCommon.Dvar_GetInt("gpad_dive") != 0 ? this.k33L("K33UI_ON") : this.k33L("K33UI_OFF"));
       }
 
       private function k33OnAction(e:MouseEvent) : void
@@ -764,7 +782,7 @@ package codo.views
          if(this._k33ClearMode)
          {
             this._k33ClearMode = false;
-            this.k33SetLabel(this._k33List.getChildByName("clear") as Sprite,"清除所选");
+            this.k33SetLabel(this._k33List.getChildByName("clear") as Sprite,this.k33L("K33UI_PAD_CLEAR"));
             CFunctionContainerCommon.setdvar("k33_padclear",cmd);
             this._k33Binds = "?";
             return;
@@ -794,7 +812,7 @@ package codo.views
       private function k33OnClearMode(e:MouseEvent) : void
       {
          this._k33ClearMode = !this._k33ClearMode;
-         this.k33SetLabel(e.currentTarget as Sprite,this._k33ClearMode ? "点击要清除的动作" : "清除所选");
+         this.k33SetLabel(e.currentTarget as Sprite,this._k33ClearMode ? this.k33L("K33UI_PAD_CLEAR_PICK") : this.k33L("K33UI_PAD_CLEAR"));
       }
 
       private function k33OnDefault(e:MouseEvent) : void

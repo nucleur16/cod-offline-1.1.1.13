@@ -562,7 +562,7 @@ static BOOL PatchUnsignedZones(void)
 #define UI_LOAD_CALL_VA        0x005985CDu
 #define POSTGFX_LOAD_CALL_VA   0x005984D2u
 #define DB_LOAD_XASSETS_VA     0x08465768u
-#define PATCHDIR_MAX_FILES     16
+#define PATCHDIR_MAX_FILES     32
 
 typedef struct { const char *name; int allocFlags; int freeFlags; } XZoneInfo;
 typedef void (__cdecl *LoadXAssetsFn)(XZoneInfo *info, unsigned count, int sync);
@@ -589,7 +589,53 @@ static BOOL PatchDirEnabled(void)
     return on;
 }
 
-/* True when client_shipRetail\<any folder but patch>\<file> exists, i.e. the name is a stock zone. */
+/* English (launch option k33_english). Both languages use the same UI movies (voice_ui_mp, controller_ingame: every
+ * text in them is a localize key); the language is which string zones load. English is the patch zones named
+ * codol_english* (build_zones.py: codol_english = localized strings, codol_english_font = the Latin glyphs of
+ * fonts_ingame.gfx, codol_english_ui / codol_english_ui_extra = the UI movies' K33UI_* keys, codol_english_zombies_base
+ * = zombies strings, codol_english_usermaps = the usermaps' names); they load ahead of code_pre_gfx, so their strings
+ * win over the stock Chinese ones. Chinese is C1's own strings plus the zones named codol_chinese* (the UI movies'
+ * K33UI_* keys in Chinese). Only one set loads: C1 holds at most 12000 localize assets, and a name loaded by both sets
+ * would take two. The language is decided once, at startup, from the command line:
+ *     +set k33_english 1    codol_english* load, codol_chinese* are skipped (default, also without the option)
+ *     +set k33_english 0    codol_chinese* load, codol_english* are skipped; every other patch zone loads either way
+ * C1 execs config_mp.cfg before any of this and applies no +set to a dvar it does not know, so the option is read
+ * here and nothing stores it: a config write can never change it. The last setting on the line wins. Nothing else
+ * in the DLL depends on the language (GBK text input, fonts, voice, controller work the same in both). The pure
+ * check lists client_shipRetail\<language>\ and main\ only, never patch\, so both states pass it. */
+static BOOL g_english = TRUE;
+static int g_englishZones, g_englishSkipped, g_chineseZones;
+
+static BOOL CmdLineFlag(const char *name, BOOL def)
+{
+    const char *p = GetCommandLineA();
+    size_t n = strlen(name);
+    BOOL on = def;
+    while (p && (p = strstr(p, name)) != NULL) {
+        BOOL word = p == GetCommandLineA() || p[-1] == ' ' || p[-1] == '\t' || p[-1] == '"';
+        p += n;
+        if (!word || (*p != ' ' && *p != '\t' && *p != '"')) continue;
+        while (*p == ' ' || *p == '\t' || *p == '"') p++;
+        if ((p[0] == '0' || p[0] == '1') && (p[1] == '\0' || p[1] == ' ' || p[1] == '\t' || p[1] == '"'))
+            on = p[0] == '1';
+    }
+    return on;
+}
+
+static BOOL EnglishZone(const char *name)
+{
+    return _strnicmp(name, "codol_english", 13) == 0;
+}
+
+static BOOL ChineseZone(const char *name)
+{
+    return _strnicmp(name, "codol_chinese", 13) == 0;
+}
+
+/* True when client_shipRetail\<language folder>\<file> exists, i.e. the name is a stock zone. A language folder is one
+ * that holds code_pre_gfx_mp.ff (chinese\): other folders there are no zone folder C1 loads from, e.g. a
+ * client_shipRetail\temp\ left by the English zone tools with old copies of codol_english*.ff, which made the patch
+ * folder skip the real ones as "stock". */
 static BOOL StockZoneExists(const char *dir, const char *file)
 {
     char pattern[MAX_PATH];
@@ -604,6 +650,9 @@ static BOOL StockZoneExists(const char *dir, const char *file)
             lstrcmpiA(fd.cFileName, "patch") == 0)
             continue;
         char path[MAX_PATH];
+        _snprintf(path, sizeof(path), "%s%s\\code_pre_gfx_mp.ff", dir, fd.cFileName);
+        path[sizeof(path) - 1] = 0;
+        if (GetFileAttributesA(path) == INVALID_FILE_ATTRIBUTES) continue;
         _snprintf(path, sizeof(path), "%s%s\\%s", dir, fd.cFileName, file);
         path[sizeof(path) - 1] = 0;
         if (GetFileAttributesA(path) != INVALID_FILE_ATTRIBUTES) found = TRUE;
@@ -684,6 +733,15 @@ static void LoadPatchDir(void)
             Log("patch folder: skipped %s: the name belongs to the lobby's FFOTD", file);
             continue;
         }
+        if (EnglishZone(z->name) && !g_english) {
+            Log("patch folder: skipped %s: English is off (k33_english 0)", file);
+            g_englishSkipped++;
+            continue;
+        }
+        if (ChineseZone(z->name) && g_english) {
+            Log("patch folder: skipped %s: English is on (k33_english 1)", file);
+            continue;
+        }
         BOOL dup = FALSE;
         for (int j = 0; j < g_patchZoneCount; j++) dup |= lstrcmpiA(g_patchZones[j].name, z->name) == 0;
         if (dup || StockZoneExists(dir, file)) {
@@ -708,8 +766,21 @@ static void LoadPatchDir(void)
             continue;
         }
         g_patchZoneCount++;
+        g_englishZones += EnglishZone(z->name);
+        g_chineseZones += ChineseZone(z->name);
         Log("patch folder: %s%s (%lu bytes) queued as zone \"%s\"", sub, file, (unsigned long)size, z->name);
     }
+}
+
+static void LogEnglish(void)
+{
+    if (!g_english)
+        Log("english: off (k33_english 0): %d codol_english* zone(s) skipped, %d codol_chinese* zone(s) queued",
+            g_englishSkipped, g_chineseZones);
+    else if (g_englishZones)
+        Log("english: on (k33_english 1): %d codol_english* zone(s) queued", g_englishZones);
+    else
+        Log("english: on (k33_english 1), but no codol_english*.ff zone is in the patch folder: the game stays Chinese");
 }
 
 static int PatchZonesIn(int stage)
@@ -828,6 +899,7 @@ static void PatchPostGfxLoad(void)
 
 static void PatchPatchDir(void)
 {
+    g_english = CmdLineFlag("k33_english", TRUE);
     if (!PatchUnsignedZones()) {
         Log("patch folder: not installed (unsigned zones cannot load from disk)");
         return;
@@ -849,6 +921,7 @@ static void PatchPatchDir(void)
         return;
     }
     LoadPatchDir();
+    LogEnglish();
     if (!g_patchZoneCount) return;
     rel = (LONG)((DWORD_PTR)PatchDirOpenHook - (PATCHDIR_OPEN_JNE_VA + 6));
     WriteCode(jne + 2, &rel, 4);
@@ -1001,6 +1074,42 @@ static void PatchLoopFxCatchUp(void)
     RedirectCall(LOOPFX_CALL_CG_VA, (void *)LoopFxProcessHook);
     RedirectCall(LOOPFX_CALL_CL_VA, (void *)LoopFxProcessHook);
     Log("loop fx: a joining client replays at most %d ms of each loop effect", LOOPFX_REPLAY_MS);
+}
+
+/* Localize asset pool. C1 holds localize entries (asset type 27) in a static pool of 12000: g_poolSize[27] = 12000 @
+ * 0xCD4DD4, DB_XAssetPool[27] = 0x01FF0358 @ 0xCD5094, a {freeHead, entries[12000]} block of 8-byte entries. C1's
+ * own strings (localized_code_post_gfx_mp 7602 names, patch_localized_code_post_gfx_mp 693, the gametype's and the
+ * map's), codol_english's (9705, 1966 of them names C1 does not have) and the UI keys came to over 12000 on a zombies
+ * map in English: "Exceeded limit of 12000 'localize' assets" (0x4CB1DA), a fatal error. The pools
+ * are set up by DB_InitPoolHeaders (0x4CB240: for each type, init[type](DB_XAssetPool[type], g_poolSize[type]); the
+ * localize init 0x4CECC0 threads the free list over size 8-byte entries) at DB_Init, after this runs, and every
+ * other user (DB_AllocXAssetHeader 0x4CB180, the enumerators) reads both tables, so pointing them at a larger
+ * block is all it takes. LOCALIZE_POOL entries: twice the stock size. */
+#define LOCALIZE_TYPE        27
+#define POOL_SIZE_TABLE_VA   0x00CD4D68u
+#define POOL_TABLE_VA        0x00CD5028u
+#define LOCALIZE_STOCK_POOL  0x01FF0358u
+#define LOCALIZE_POOL        24000
+
+static void PatchLocalizePool(void)
+{
+    int *size = (int *)(DWORD_PTR)(POOL_SIZE_TABLE_VA + 4 * LOCALIZE_TYPE);
+    DWORD *pool = (DWORD *)(DWORD_PTR)(POOL_TABLE_VA + 4 * LOCALIZE_TYPE);
+    if (!Readable(size, 4) || !Readable(pool, 4) || *size != 12000 || *pool != LOCALIZE_STOCK_POOL) {
+        Log("localize pool: tables at 0x%08X / 0x%08X do not match, the pool stays at 12000", (unsigned)(DWORD_PTR)size,
+            (unsigned)(DWORD_PTR)pool);
+        return;
+    }
+    void *block = VirtualAlloc(NULL, 4 + (SIZE_T)LOCALIZE_POOL * 8, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    if (!block) {
+        Log("localize pool: VirtualAlloc failed (%lu), the pool stays at 12000", GetLastError());
+        return;
+    }
+    DWORD newPool = (DWORD)(DWORD_PTR)block;
+    int newSize = LOCALIZE_POOL;
+    WriteCode(pool, &newPool, 4);
+    WriteCode(size, &newSize, 4);
+    Log("localize pool: %d entries at %p (C1's: 12000)", newSize, block);
 }
 
 static void PatchGpuRating(void)
@@ -1297,6 +1406,7 @@ static void __cdecl TakeOver(void)
     PatchScoresOpen();
     PatchLoopFxCatchUp();
     PatchPatchDir();
+    PatchLocalizePool();
     PatchUserMaps();
     InstallSoundDiag();
     InstallParityLogger();
