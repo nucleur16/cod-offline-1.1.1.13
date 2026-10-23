@@ -89,6 +89,17 @@ cap_as()
 	return s;
 }
 
+cap_dog_kill( z, pos )
+{
+	z doDamage( z.health + 50, pos, level.cap_player );
+}
+
+// The hound clips by name (codol_getAnim adds no node to the server tree).
+cap_dog_clip( name )
+{
+	return codol_getAnim( "zombie_dog", name );
+}
+
 cap_god()
 {
 	for ( ;; )
@@ -136,6 +147,7 @@ cap_main( scn )
 	p = cap_wait_player();
 	level.cap_player = p;
 	w( "H player_spawn " + vstr( p.origin ) + " yaw=" + p.angles[1] );
+	w( "H dvars ai_meleeRange=" + getdvar( "ai_meleeRange" ) + " ai_meleeWidth=" + getdvar( "ai_meleeWidth" ) + " ai_meleeHeight=" + getdvar( "ai_meleeHeight" ) + " scr_dog_run_distance=" + getdvar( "scr_dog_run_distance" ) );
 
 	// player setup: survives, stays where staged
 	p.maxhealth = 100000;
@@ -165,6 +177,8 @@ cap_main( scn )
 		level thread cap_dog_round();
 	if ( getdvarint( "t5cap_crawlers" ) )
 		level thread cap_crawlers();
+	if ( getdvarint( "t5cap_reach" ) )
+		level thread cap_reach();
 	if ( getdvarint( "t5cap_knockdown" ) )
 		level thread cap_knockdowns();
 	if ( getdvar( "t5cap_path" ) != "" )
@@ -314,6 +328,8 @@ cap_frames()
 				line += " cs=" + cs;
 			}
 			w( line );
+			if ( isdefined( z.animname ) && z.animname == "zombie_dog" )
+				z cap_dog_clips( t );
 		}
 		wait 0.05;
 	}
@@ -346,6 +362,8 @@ cap_ai_events()
 		self thread cap_simple( "swing_hit" );
 	self thread cap_damage();
 	self thread cap_death();
+	if ( isdefined( self.animname ) && self.animname == "zombie_dog" )
+		self thread cap_dog_events();
 	for ( ;; )
 	{
 		r = self cap_runanim();
@@ -411,6 +429,133 @@ cap_death()
 	self waittill( "death" );
 	if ( isdefined( level.cap_fh ) )
 		w( "E " + gettime() + " " + id + " died o=" + vstr( self.origin ) );
+	if ( !isdefined( self.animname ) || self.animname != "zombie_dog" )
+		return;
+	// the dying hound's clips, until it is deleted or 4 s pass
+	for ( i = 0; i < 80 && isdefined( self ) && isdefined( level.cap_fh ); i++ )
+	{
+		self cap_dog_clips( gettime() );
+		wait 0.05;
+	}
+	if ( isdefined( level.cap_fh ) )
+		w( "E " + gettime() + " " + id + " deathlog_end gone=" + !isdefined( self ) );
+}
+
+cap_dog_clip_names()
+{
+	return strtok( "zombie_dog_trot zombie_dog_run zombie_dog_run_lean_l zombie_dog_run_lean_r zombie_dog_run_stop "
+		+ "zombie_dog_run_attack zombie_dog_run_attack_low zombie_dog_run_attack_miss zombie_dog_attack_player_miss_turnl "
+		+ "zombie_dog_attack_player_miss_turnr zombie_dog_idle zombie_dog_attackidle zombie_dog_attackidle_bark "
+		+ "zombie_dog_attackidle_growl zombie_dog_turn_90_left zombie_dog_turn_90_right zombie_dog_turn_180_left "
+		+ "zombie_dog_turn_180_right zombie_dog_run_turn_90_left zombie_dog_run_turn_90_right zombie_dog_run_turn_180_left "
+		+ "zombie_dog_run_turn_180_right zombie_dog_death_front zombie_dog_death_hit_back zombie_dog_death_hit_left "
+		+ "zombie_dog_death_hit_right zombie_dog_tesla_death_a zombie_dog_tesla_death_b zombie_dog_tesla_death_c "
+		+ "zombie_dog_tesla_death_d zombie_dog_tesla_death_e zombie_dog_pain_hit_front zombie_dog_pain_hit_back "
+		+ "zombie_dog_pain_hit_left zombie_dog_pain_hit_right zombie_dog_run_pain_front zombie_dog_traverse_up_40 "
+		+ "zombie_dog_traverse_up_80 zombie_dog_traverse_down_40 zombie_dog_traverse_down_126 zombie_dog_traverse_down_190 "
+		+ "zombie_dog_run_jump_40 zombie_dog_run_jump_window_40 zombie_dog_look_up zombie_dog_look_down zombie_dog_look_left "
+		+ "zombie_dog_look_right zombie_dog_attack_look_up zombie_dog_attack_look_down zombie_dog_attack_look_left "
+		+ "zombie_dog_attack_look_right", " " );
+}
+
+// "D <time> <ent> clip:time ...": every hound clip whose normalized time moved
+// since the last frame (a playing clip), from getanimtime.
+cap_dog_clips( t )
+{
+	if ( !isdefined( level.cap_dognames ) )
+		level.cap_dognames = cap_dog_clip_names();
+	if ( !isdefined( self.cap_ct ) )
+		self.cap_ct = [];
+	names = level.cap_dognames;
+	line = "";
+	for ( i = 0; i < names.size; i++ )
+	{
+		a = cap_dog_clip( names[i] );
+		if ( !isdefined( a ) )
+			continue;
+		ct = self getanimtime( a );
+		if ( isdefined( self.cap_ct[i] ) && self.cap_ct[i] != ct )
+			line += " " + getsubstr( names[i], 11 ) + ":" + int( ct * 1000 ) / 1000;
+		self.cap_ct[i] = ct;
+	}
+	if ( line != "" )
+	{
+		if ( issubstr( line, " run_attack:" ) && isalive( self ) )
+		{
+			e = self geteye();
+			d = e - self.origin;
+			f = anglestoforward( ( 0, self.angles[1], 0 ) );
+			line += " eye=" + int( d[0] * f[0] + d[1] * f[1] ) + "," + int( d[2] );
+		}
+		w( "D " + t + " " + self.cap_id + line );
+	}
+}
+
+// Where the hound's melee trace starts (actor eye) relative to its origin.
+cap_dog_eye()
+{
+	self endon( "death" );
+	for ( n = 0; n < 6; n++ )
+	{
+		self waittill( "dog_combat" );
+		e = self geteye();
+		d = e - self.origin;
+		f = anglestoforward( ( 0, self.angles[1], 0 ) );
+		w( "E " + gettime() + " " + self.cap_id + " eye fwd=" + int( d[0] * f[0] + d[1] * f[1] ) + " z=" + int( d[2] ) );
+	}
+}
+
+cap_mark_visible()
+{
+	self endon( "death" );
+	self waittill( "visible" );
+	self.cap_visible = true;
+}
+
+cap_dog_events()
+{
+	self thread cap_note( "dog_anim", "dnote" );
+	self thread cap_note( "dog_pain_anim", "dnote" );
+	self thread cap_note( "turn", "dnote" );
+	self thread cap_note( "dog_traverse", "dnote" );
+	self thread cap_note( "traverse", "dnote" );
+	self thread cap_note( "stop_anim", "dnote" );
+	self thread cap_note( "combat_idle", "dnote" );
+	self thread cap_note( "dog_prerun", "dnote" );
+	self thread cap_note( "done", "dnote" );
+	self thread cap_simple( "visible" );
+	self thread cap_mark_visible();
+	self thread cap_simple( "dog_running" );
+	self thread cap_simple( "dog_combat" );
+	self thread cap_dog_eye();
+	if ( !isdefined( level.cap_reach_sent ) && getdvarint( "t5cap_reach" ) )
+	{
+		level.cap_reach_sent = true;
+		level notify( "cap_reach_dog", self );
+	}
+	self endon( "death" );
+	wait 0.5;
+	nd = 0;
+	if ( isdefined( self.a ) && isdefined( self.a.nodeath ) )
+		nd = 1;
+	if ( isdefined( self.fire_dog ) && self.fire_dog )
+		nd = 1;
+	w( "E " + gettime() + " " + self.cap_id + " doginfo nodeath=" + nd + " hp=" + self.health + " apr=" + self.animplaybackrate );
+	k = getdvarfloat( "t5cap_dogkill" );
+	if ( k <= 0 )
+		return;
+	for ( i = 0; i < 60 && !isdefined( self.cap_visible ); i++ )
+		wait 0.05;
+	wait k;
+	if ( !isdefined( level.cap_killdir ) )
+		level.cap_killdir = 0;
+	yaws = [];
+	yaws[0] = 0; yaws[1] = 90; yaws[2] = 180; yaws[3] = -90;
+	y = yaws[level.cap_killdir % 4];
+	level.cap_killdir++;
+	pos = self.origin + ( 0, 0, 20 ) + anglestoforward( ( 0, self.angles[1] + y, 0 ) ) * 100;
+	w( "E " + gettime() + " " + self.cap_id + " cap_kill rel=" + y );
+	cap_dog_kill( self, pos );
 }
 
 cap_player_watch()
@@ -718,4 +863,34 @@ cap_knockdowns()
 		}
 		wait 0.5;
 	}
+}
+
+// Melee reach: one hound is set down d units from the frozen player, facing
+// him, and bites (melee along its facing, as zombie_dog_combat does) at once.
+cap_reach()
+{
+	level waittill( "cap_reach_dog", dog );
+	dog endon( "death" );
+	wait 3;
+	p = level.cap_player;
+	for ( d = 30; d <= 110; d += 5 )
+	{
+		for ( r = 0; r < 4; r++ )
+		{
+			yaw = r * 90 + 20;
+			dir = anglestoforward( ( 0, yaw, 0 ) );
+			pos = p.origin - dir * d;
+			dog forceteleport( pos, ( 0, yaw, 0 ) );
+			wait 0.05;
+			dir = vectornormalize( ( p.origin[0] - dog.origin[0], p.origin[1] - dog.origin[1], 0 ) );
+			hit = dog melee( dir );
+			h = 0;
+			if ( isdefined( hit ) && hit == p )
+				h = 1;
+			e = dog geteye();
+			w( "E " + gettime() + " " + dog.cap_id + " reach d=" + int( distance2d( dog.origin, p.origin ) ) + " hit=" + h + " eyefwd=" + int( distance2d( e, dog.origin ) ) + " eyez=" + int( e[2] - dog.origin[2] ) );
+			wait 0.3;
+		}
+	}
+	w( "H reach done" );
 }
