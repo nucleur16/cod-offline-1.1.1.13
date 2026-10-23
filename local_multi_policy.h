@@ -1,0 +1,62 @@
+#pragma once
+#include <wchar.h>
+#include <string.h>
+
+static int CodolLocalMultiArgument(int argc, const wchar_t *const *argv)
+{
+    int enabled=0;
+    for(int i=1;i+1<argc;i++) {
+        if(wcscmp(argv[i],L"+set") || wcscmp(argv[i+1],L"codol_local_test_multi")) continue;
+        enabled=i+2<argc && wcscmp(argv[i+2],L"1")==0;
+    }
+    return enabled;
+}
+
+static int CodolLocalPort(const char *value)
+{
+    unsigned port=0;
+    if(!*value)return 0;
+    for(int i=0;value[i];i++) {
+        if(i>=5 || value[i]<'0' || value[i]>'9')return 0;
+        port=port*10+(unsigned)(value[i]-'0');
+    }
+    return port>0 && port<=65535;
+}
+
+static int CodolLocalTitle(const char *value)
+{
+    /* C1/launcher encode title 1002 as hex "3ea", not decimal. */
+    unsigned nonzero=0;
+    if(!*value)return 0;
+    for(unsigned i=0;value[i];i++) {
+        unsigned char ch=(unsigned char)value[i];
+        if(i>=8 || !((ch>='0'&&ch<='9')||(ch>='a'&&ch<='f')||(ch>='A'&&ch<='F')))return 0;
+        nonzero|=ch!='0';
+    }
+    return nonzero!=0;
+}
+
+/* dwauth.ini's exact five-line C1 contract. Only two literal loopback routes
+ * with the same valid port qualify; no hostname, wildcard or suffix matches. */
+static int CodolLocalMultiRoute(const char *contents, size_t size)
+{
+    char lines[5][64];unsigned line=0,column=0;
+    if(!contents || !size || size>256)return 0;
+    memset(lines,0,sizeof(lines));
+    for(size_t i=0;i<size;i++) {
+        unsigned char ch=(unsigned char)contents[i];
+        if(ch=='\r') { if(i+1>=size || contents[i+1]!='\n')return 0;continue; }
+        if(ch=='\n') {
+            if(!column || line>=5)return 0;
+            line++;column=0;
+            if(line==5 && i+1!=size)return 0;
+        } else {
+            if(line>=5 || ch<33 || ch>126 || column>=63)return 0;
+            lines[line][column++]=(char)ch;
+        }
+    }
+    if(column)line++;
+    return line==5 && strcmp(lines[0],"127.0.0.1")==0 &&
+        strcmp(lines[2],"127.0.0.1")==0 && CodolLocalPort(lines[1]) &&
+        strcmp(lines[1],lines[3])==0 && CodolLocalTitle(lines[4]);
+}
