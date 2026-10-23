@@ -1173,6 +1173,37 @@
     environment	"urban"
 }
 {
+	map			"mp_dome"
+	longname	"MPUI_DOME"
+	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
+    description "MPUI_DESC_MAP_DOME"
+    mapimage    "blank"
+	mapoverlay  "compass_overlay_map_blank"
+    allieschar  "socom_141_desert"
+    axischar    "opforce_airborne"
+    environment	"urban"
+}
+{
+	map			"mp_sd_jardin"
+	longname	"MPUI_SD_PILLARS"
+	gametype	"sd sd2"
+    description "MPUI_DESC_SD_PILLARS"
+    mapimage    "blank"
+	mapoverlay  "compass_overlay_map_blank"
+    allieschar  "socom_141_desert"
+    axischar    "opforce_composite"
+    environment	"desert"
+}
+{
+	map			"mp_hardhat_sh"
+	longname	"MPUI_HARDHAT"
+	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
+    description "MPUI_DESC_MAP_HARDHAT"
+    mapimage    "blank"
+	mapoverlay  "compass_overlay_map_blank"
+    allieschar  "socom_141_desert"
+    axischar    "opforce_airborne"
+    environment	"urban"
 	map			"mp_hunger"
 	longname	"MPUI_HUNGER"
 	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
