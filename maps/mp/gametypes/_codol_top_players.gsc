@@ -184,6 +184,9 @@ pickTopPlayers( count )
 	{
 		if ( !isDefined( player ) || isDefined( player.connectedPostGame ) )
 			continue;
+		// A podium source must have completed a real combat spawn.
+		if ( !isDefined( player.hasSpawned ) || !player.hasSpawned )
+			continue;
 		if ( !isDefined( player.pers["team"] ) || ( player.pers["team"] != "allies" && player.pers["team"] != "axis" ) )
 			continue;
 		ranked[ ranked.size ] = player;
