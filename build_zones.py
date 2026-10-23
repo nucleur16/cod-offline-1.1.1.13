@@ -30,6 +30,9 @@ Options:
   --store-class ZONE:RAWFILE:CLASS
                    compile a class from <rawfile>.gfxpatch\as\<package>\<Class>.as (FFDec) and store its DoABC tag in
                    tags\ and patch.txt, so builds need no FFDec; a class the stock movie does not have is added.
+  --record         with --verify: a zone that does not reproduce its origin gets its build's md5 recorded in its
+                   zone_source csv (">build-md5"); --verify then reports it IDENTICAL to the recorded build. Use it
+                   after reviewing an intentional change, like --candidate's baseline record.
   --compile-as     also compile every .gfxpatch\as\ file whose text is not FFDec's decompile of its stored tag (the
                    hand-written sources of voice_ui_mp and controller_ingame); reproduces the stored tags.
   --fresh-key      a new AES key and timestamp instead of the recorded ones (same zone; different file bytes).
@@ -52,7 +55,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from zonekit import build, container, decompile, shipping, stock, ui_baseline, zoneimage, zonelist  # noqa: E402
+from zonekit import build, container, decompile, gfx, shipping, stock, ui_baseline, zoneimage, zonelist  # noqa: E402
 
 DEFAULT_GAME = r"D:\CoD\CODOL Builds\Call of Duty Online 1.1.1.13"
 DEFAULT_ZZ = r"D:\CoD\CODOL Builds\codol-classic-zz"
@@ -90,6 +93,9 @@ def loader_summary(cli, path, exe):
 def verify(out, zone, m, roots, exe, tmp, cli=None):
     if md5(out) == m.get("origin-md5"):
         return "IDENTICAL (md5 %s, as recorded from %s)" % (md5(out), m.get("origin"))
+    if md5(out) == m.get("build-md5"):
+        return "IDENTICAL to the recorded build (md5 %s; its sources changed on purpose since %s)" % (
+            md5(out), m.get("origin"))
     ship = origin_path(m.get("origin"), m.get("zone"), roots, tmp)
     if ship is None:
         return "DIFFERS from the recorded md5 %s (original not available to compare zone images)" % m.get("origin-md5")
@@ -105,6 +111,23 @@ def verify(out, zone, m, roots, exe, tmp, cli=None):
     a, b = zoneimage.parse(shipped), zoneimage.parse(zone)
     diffs = [i for i, (x, y) in enumerate(zip(a.assets, b.assets)) if x != y]
     return "DIFFERS: %d vs %d assets, %d differing (first %s)" % (len(a.assets), len(b.assets), len(diffs), diffs[:5])
+
+
+def record_build(name, out):
+    """zone_source/<name>.csv: ">build-md5" = this build's md5, the reviewed output of the sources as they are."""
+    path = os.path.join(HERE, "zone_source", name + ".csv")
+    with open(path, "rb") as f:
+        data = f.read()
+    nl = b"\r\n" if b"\r\n" in data else b"\n"
+    line = b">build-md5," + md5(out).encode()
+    lines = data.split(nl)
+    at = [i for i, l in enumerate(lines) if l.startswith(b">build-md5,")]
+    if at:
+        lines[at[0]] = line
+    else:
+        lines.insert([i for i, l in enumerate(lines) if l.startswith(b">origin-md5,")][0] + 1, line)
+    with open(path, "wb") as f:
+        f.write(nl.join(lines))
 
 
 def run_decompile(names, exe, roots, chinese, ffdec, tmp):
@@ -165,10 +188,13 @@ def main(argv=None):
     ap.add_argument("--maps", default=os.environ.get("CODOL_MAPS", "ship"), choices=shipping.MODES)
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--verify", action="store_true")
+    ap.add_argument("--record", action="store_true",
+                    help="with --verify: record each zone that differs from its origin as the reviewed build (>build-md5)")
     ap.add_argument("--decompile", action="store_true")
     ap.add_argument("--assetexplorer")
     ap.add_argument("--fresh-key", action="store_true")
     ap.add_argument("--compile-as", action="store_true")
+    ap.add_argument("--store-class", action="append", default=[])
     ap.add_argument("--candidate", action="store_true", help="build unqualified intentional changes into output_candidate instead of shipping output")
     ap.add_argument("--ffdec", default=os.environ.get("CODOL_FFDEC", DEFAULT_FFDEC))
     a = ap.parse_args(argv)
@@ -177,7 +203,7 @@ def main(argv=None):
     ffdec = a.ffdec if a.ffdec and os.path.isfile(a.ffdec) else None
     roots = {"G": a.game, "Z": a.zz}
     a.out = a.out or os.path.join(HERE, "output_candidate" if a.candidate else "output" if a.maps == "ship" else "output_dev")
-    if not a.candidate and not a.decompile and not a.list and a.maps == "ship":
+    if not a.candidate and not a.decompile and not a.list and not a.store_class and a.maps == "ship":
         try:
             ui_baseline.validate(HERE)
         except (ui_baseline.BaselineError, FileNotFoundError) as e:
@@ -240,6 +266,9 @@ def main(argv=None):
                 line += "; without %s (%s)" % (", ".join(sorted(plan.dropped_maps)), "; ".join(plan.notes))
             if a.verify:
                 v = verify(vout, vzone, m, roots, exe, tmp, a.assetexplorer) if plan else                     verify(out, zone, m, roots, exe, tmp, a.assetexplorer)
+                if a.record and v.startswith("DIFFERS"):
+                    record_build(name, vout if plan else out)
+                    v = "recorded as the reviewed build (was: %s)" % v
                 failed += v.startswith("DIFFERS")
                 line += ": " + ("unfiltered build " if plan else "") + v
             print("%s: %s" % (name, line), flush=True)
