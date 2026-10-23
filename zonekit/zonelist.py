@@ -68,7 +68,10 @@ ZONES = {
                                                                     "codo.views.OptionView",
                                                                     "codo.views.MatchMPCTMenuView",
                                                                     "codo.views.MatchRoomListView",
-                                                                    "codo.views.MatchSelectModeHomeView"}}),
+                                                                    "codo.views.MatchSelectModeHomeView",
+                                                                    "codo.k33.PadSnap", "components.CodoUIComponent"},
+                                     "scaleform/default/codologin.gfx": {"codo.k33.PadSnap",
+                                                                         "components.CodoUIComponent"}}),
     # --- client_shipRetail\chinese: the Pack-a-Punch rebuild of a stock zone
     "patch_common_gametype_zm": dict(origin="G:" + CHINESE, install=CHINESE,
                                      stock=["patch_common_gametype_zm.ff.pre-pap", "common_gametype_zm",

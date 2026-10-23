@@ -27,6 +27,9 @@ Options:
                    usermap zones, main\iw_image_16.iwd as it is).
   --ffdec PATH     JPEXS ffdec-cli.exe. Needed only when a .gfxpatch\as\*.as file changed since its tag was stored
                    (that class is compiled into the movie again) or with --compile-as.
+  --store-class ZONE:RAWFILE:CLASS
+                   compile a class from <rawfile>.gfxpatch\as\<package>\<Class>.as (FFDec) and store its DoABC tag in
+                   tags\ and patch.txt, so builds need no FFDec; a class the stock movie does not have is added.
   --compile-as     also compile every .gfxpatch\as\ file whose text is not FFDec's decompile of its stored tag (the
                    hand-written sources of voice_ui_mp and controller_ingame); reproduces the stored tags.
   --fresh-key      a new AES key and timestamp instead of the recorded ones (same zone; different file bytes).
@@ -49,7 +52,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from zonekit import build, container, decompile, shipping, stock, zoneimage, zonelist  # noqa: E402
+from zonekit import build, container, decompile, gfx, shipping, stock, zoneimage, zonelist  # noqa: E402
 
 DEFAULT_GAME = r"D:\CoD\CODOL Builds\Call of Duty Online 1.1.1.13"
 DEFAULT_ZZ = r"D:\CoD\CODOL Builds\codol-classic-zz"
@@ -166,6 +169,7 @@ def main(argv=None):
     ap.add_argument("--assetexplorer")
     ap.add_argument("--fresh-key", action="store_true")
     ap.add_argument("--compile-as", action="store_true")
+    ap.add_argument("--store-class", action="append", default=[])
     ap.add_argument("--ffdec", default=os.environ.get("CODOL_FFDEC", DEFAULT_FFDEC))
     a = ap.parse_args(argv)
     exe = a.exe or os.path.join(a.game, "C1.exe")
@@ -184,6 +188,20 @@ def main(argv=None):
             print("%-36s %-26s from %s" % (name, m.get("install"), m.get("origin")))
         for state in shipping.STATES:
             print("%s maps (%s): %s" % (state, shipping.MANIFEST, " ".join(maps.by_state(state)) or "-"))
+        return 0
+    for spec in a.store_class:
+        zone, rawfile, cls = spec.split(":")
+        if not ffdec:
+            ap.error("--store-class needs FFDec (--ffdec)")
+        m = build.load(HERE, zone)
+        ref = [q for t, n, q in m.assets if t == "rawfile" and n == rawfile]
+        if not ref or "gfx" not in ref[0]:
+            ap.error("%s has no gfx rawfile %s" % (zone, rawfile))
+        pdir = os.path.join(HERE, "zones", zone, "rawfile", rawfile.replace("/", os.sep) + ".gfxpatch")
+        stock_movie = stock.ZoneSource(exe, [chinese]).rawfile(ref[0]["gfx"])
+        fn = gfx.store_class(pdir, stock_movie, cls, "as/%s.as" % cls.replace(".", "/"), ffdec)
+        print("%s: %s stored as %s" % (zone, cls, fn))
+    if a.store_class:
         return 0
     with tempfile.TemporaryDirectory() as tmp:
         if a.decompile:

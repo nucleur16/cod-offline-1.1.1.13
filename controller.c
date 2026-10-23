@@ -167,6 +167,14 @@ static FARPROC g_ctlRealCursorPos;
 
 static CRITICAL_SECTION g_ctlLock;  /* g_padName and the console-line ring below */
 
+/* ---- menu cursor snapping (padsnap.c, included by kernel33.c after this file) ------------------------ */
+static void PadSnapRegisterDvars(void);
+static void PadSnapInstall(void);
+static void PadSnapFrame(void);                             /* main thread, every frame */
+static void PadSnapPadButtons(DWORD pressed, DWORD held);   /* input thread, menu mode: D-pad presses */
+static BOOL PadSnapCursor(HWND h, float dt);                /* main thread, menu mode: FALSE = free cursor */
+/* ---- end of the padsnap.c hooks' declarations ---------------------------------------------------------- */
+
 static float CtlDvarFloat(const BYTE *d, float def) { return d ? *(volatile const float *)(d + 0xC) : def; }
 
 static const BYTE *CtlRegisterFloat(const char *name, float value, float min, float max, unsigned flags, const char *desc)
@@ -242,6 +250,7 @@ static void CtlRegisterDvars(void)
                                        "Seconds without aim assist after any in-game keyboard / mouse use (20 minimum; may be raised, not lowered)");
     ((const BYTE *(__cdecl *)(const char *, const char *, unsigned, const char *))(DWORD_PTR)0x00624740u)(
         "k33nav", "", 0, "Pause-menu navigator: its last decision (controller_ingame codoingame.gfx, read with gpad_debug)");
+    PadSnapRegisterDvars();   /* padsnap.c */
 }
 
 /* Last-used input device, for the key names C1 shows (CtlCommandKeys) and for aim assist: 1 pad,
@@ -1240,8 +1249,10 @@ static void CtlEvaluate(void)
         float lx, ly;
         CtlStick(p.sThumbLX, p.sThumbLY, &lx, &ly);
         CtlPauseNav(h, pressed, released, act, lx, ly);
-    } else if (h && (pressed | released))
+    } else if (h && (pressed | released)) {
+        if (mode == CTL_MODE_MENU) PadSnapPadButtons(pressed, act);   /* padsnap.c: D-pad jumps */
         CtlMenuButton(h, pressed, released);
+    }
     g_sent = act;
 }
 
@@ -1713,6 +1724,7 @@ static void CtlFrameExtras(void)
     CtlGlyphFrame();
     CtlFrameStance();
     CtlFrameOptions();
+    PadSnapFrame();   /* padsnap.c */
     if (g_ksUpAt && (LONG)(now - g_ksUpAt) >= 0) { g_ksUpAt = 0; CtlRunBinding(g_ksUpIndex, K_DPAD_RIGHT); }
     int gpadInfo = g_lastDevice != 1 ? 0 : CtlKbmCooldownLeft() ? 2 : 1;
     if (g_gpUserinfo && g_c1CbufOk && (g_deviceChanged || gpadInfo != C1DvarInt(g_gpUserinfo, 0))) {  /* userinfo "gpad": at most once a second */
@@ -1803,7 +1815,7 @@ __attribute__((used)) void __cdecl ControllerFrame(void)
     CtlSampleSticks();
     int mode = CtlMode();
     HWND h = *(HWND *)(DWORD_PTR)CTL_MAIN_HWND_VA;
-    if (mode == 1 && h) {
+    if (mode == 1 && h && !PadSnapCursor(h, dt)) {   /* padsnap.c snaps the cursor; else the free cursor */
         float speed = CtlDvarFloat(g_gpCursor, 1100.0f);
         float mag = sqrtf(g_lx * g_lx + g_ly * g_ly);
         if (mag > 0.0f) CtlCursorMove(h, g_lx * mag * speed * dt, -g_ly * mag * speed * dt, CtlFocused());
@@ -2546,6 +2558,7 @@ static void InstallController(void)
         for (unsigned i = 0; i < sizeof(g_ctlTestCmds) / sizeof(g_ctlTestCmds[0]); i++) added += C1AddCommand(&g_ctlTestCmds[i]);
         Log("controller: test commands registered (k33_cmdFile 1 / gpad_testcmds 1)");
     }
+    PadSnapInstall();   /* padsnap.c */
     g_ctlOn = TRUE;
     Log("controller: installed: IN_Frame hooked (0x62DA90), move/look %s (CL_MouseMove call 0x490E2F), key names %s, "
         "%d commands; buttons queue through Sys_QueEvent 0x62EF60", g_ctlMoveOk ? "hooked" : "NOT hooked (bytes differ)",

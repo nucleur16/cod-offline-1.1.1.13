@@ -11,7 +11,9 @@ package codo.views
    //   bind repair leaves the player's binds alone); "clear" (k33_padclear = command);
    //   settings: swap sticks (gpad_swap_sticks), swap triggers (gpad_swaptriggers: the two trigger binds
    //   swap), look feel (gpad_lookpreset), look sensitivity, invert Y, aim assist, deadzone, dive with the
-   //   crouch button while sprinting (gpad_dive), and "default" (gpad_defaultbinds).
+   //   crouch button while sprinting (gpad_dive), the menu cursor's snapping (gpad_menu_snap) and its strength
+   //   (gpad_menu_snap_strength), and "default" (gpad_defaultbinds). The "<  value  >" steppers tell the pad cursor's
+   //   snapping (codo.k33.PadSnap) to stop on either half, since a click's side picks down or up.
    import codo.common.BaseSubElement;
    import codo.common.BaseView;
    import codo.common.CFunctionContainerCommon;
@@ -22,6 +24,7 @@ package codo.views
    import codo.utils.LocalizeUtil;
    import codo.constants.SyncDataID;
    import codo.constants.TweenParam;
+   import codo.k33.PadSnap;
    import codo.views.option_sub.OptionView_audio;
    import codo.views.option_sub.OptionView_control;
    import codo.views.option_sub.OptionView_video;
@@ -421,7 +424,7 @@ package codo.views
          dflt.x = 400;
          dflt.y = clr.y;
          this._k33List.addChild(dflt);
-         var s:Array = [["swapsticks","K33UI_PAD_SET_SWAPSTICKS"],["swaptriggers","K33UI_PAD_SET_SWAPTRIGGERS"],["preset","K33UI_PAD_SET_LOOKFEEL"],["sens","K33UI_PAD_SET_SENS"],["invert","K33UI_PAD_SET_INVERT"],["aim","K33UI_PAD_SET_AIMASSIST"],["deadzone","K33UI_PAD_SET_DEADZONE"],["dive","K33UI_PAD_SET_DIVE"]];
+         var s:Array = [["swapsticks","K33UI_PAD_SET_SWAPSTICKS"],["swaptriggers","K33UI_PAD_SET_SWAPTRIGGERS"],["preset","K33UI_PAD_SET_LOOKFEEL"],["sens","K33UI_PAD_SET_SENS"],["invert","K33UI_PAD_SET_INVERT"],["aim","K33UI_PAD_SET_AIMASSIST"],["deadzone","K33UI_PAD_SET_DEADZONE"],["dive","K33UI_PAD_SET_DIVE"],["snap","K33UI_PAD_SET_SNAP"],["snapstr","K33UI_PAD_SET_SNAPSTR"]];
          var j:int = 0;
          while(j < s.length)
          {
@@ -434,6 +437,10 @@ package codo.views
             val.x = j % 2 * 290 + 160;
             val.y = int(j / 2) * 28;
             this._k33Settings.addChild(val);
+            if(val.name == "sens" || val.name == "deadzone" || val.name == "snapstr")
+            {
+               PadSnap.hint(val,PadSnap.SPLIT_H);
+            }
             j++;
          }
       }
@@ -772,6 +779,8 @@ package codo.views
          this.k33SetLabel(s.getChildByName("aim") as Sprite,CFunctionContainerCommon.Dvar_GetFloat("gpad_aimassist") > 0 ? this.k33L("K33UI_ON") : this.k33L("K33UI_OFF"));
          this.k33SetLabel(s.getChildByName("deadzone") as Sprite,"<  " + CFunctionContainerCommon.Dvar_GetFloat("gpad_stick_deadzone_min").toFixed(2) + "  >");
          this.k33SetLabel(s.getChildByName("dive") as Sprite,CFunctionContainerCommon.Dvar_GetInt("gpad_dive") != 0 ? this.k33L("K33UI_ON") : this.k33L("K33UI_OFF"));
+         this.k33SetLabel(s.getChildByName("snap") as Sprite,CFunctionContainerCommon.Dvar_GetInt("gpad_menu_snap") != 0 ? this.k33L("K33UI_ON") : this.k33L("K33UI_OFF"));
+         this.k33SetLabel(s.getChildByName("snapstr") as Sprite,"<  " + Math.round(CFunctionContainerCommon.Dvar_GetFloat("gpad_menu_snap_strength") * 100) + "%  >");
       }
 
       private function k33OnAction(e:MouseEvent) : void
@@ -858,6 +867,14 @@ package codo.views
                break;
             case "dive":
                CFunctionContainerCommon.setdvar("gpad_dive",CFunctionContainerCommon.Dvar_GetInt("gpad_dive") != 0 ? "0" : "1");
+               break;
+            case "snap":
+               CFunctionContainerCommon.setdvar("gpad_menu_snap",CFunctionContainerCommon.Dvar_GetInt("gpad_menu_snap") != 0 ? "0" : "1");
+               break;
+            case "snapstr":
+               v = CFunctionContainerCommon.Dvar_GetFloat("gpad_menu_snap_strength") + (right ? 0.1 : -0.1);
+               v = Math.max(0,Math.min(1,Math.round(v * 10) / 10));
+               CFunctionContainerCommon.setdvar("gpad_menu_snap_strength",String(v));
          }
          this.k33UpdateSettings();
       }
