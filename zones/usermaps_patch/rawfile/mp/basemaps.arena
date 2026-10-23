@@ -1172,3 +1172,25 @@
     axischar    "opforce_airborne"
     environment	"urban"
 }
+{
+	map			"mp_strike_sh"
+	longname	"MPUI_MP_STRIKE_SH"
+	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
+    description "MPUI_DESC_MP_STRIKE_SH"
+    mapimage    "blank"
+	mapoverlay  "compass_overlay_map_blank"
+    allieschar  "socom_141_desert"
+    axischar    "opforce_composite"
+    environment	"desert"
+}
+{
+	map			"mp_qadeem_sh"
+	longname	"MPUI_QADEEM"
+	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
+    description "MPUI_DESC_MAP_QADEEM"
+    mapimage    "blank"
+	mapoverlay  "compass_overlay_map_blank"
+    allieschar  "socom_141_desert"
+    axischar    "opforce_airborne"
+    environment	"urban"
+}
