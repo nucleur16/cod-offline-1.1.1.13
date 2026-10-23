@@ -52,7 +52,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from zonekit import build, container, decompile, gfx, shipping, stock, zoneimage, zonelist  # noqa: E402
+from zonekit import build, container, decompile, shipping, stock, ui_baseline, zoneimage, zonelist  # noqa: E402
 
 DEFAULT_GAME = r"D:\CoD\CODOL Builds\Call of Duty Online 1.1.1.13"
 DEFAULT_ZZ = r"D:\CoD\CODOL Builds\codol-classic-zz"
@@ -169,14 +169,19 @@ def main(argv=None):
     ap.add_argument("--assetexplorer")
     ap.add_argument("--fresh-key", action="store_true")
     ap.add_argument("--compile-as", action="store_true")
-    ap.add_argument("--store-class", action="append", default=[])
+    ap.add_argument("--candidate", action="store_true", help="build unqualified intentional changes into output_candidate instead of shipping output")
     ap.add_argument("--ffdec", default=os.environ.get("CODOL_FFDEC", DEFAULT_FFDEC))
     a = ap.parse_args(argv)
     exe = a.exe or os.path.join(a.game, "C1.exe")
     chinese = os.path.join(a.game, "client_shipRetail", "chinese")
     ffdec = a.ffdec if a.ffdec and os.path.isfile(a.ffdec) else None
     roots = {"G": a.game, "Z": a.zz}
-    a.out = a.out or os.path.join(HERE, "output" if a.maps == "ship" else "output_dev")
+    a.out = a.out or os.path.join(HERE, "output_candidate" if a.candidate else "output" if a.maps == "ship" else "output_dev")
+    if not a.candidate and not a.decompile and not a.list and a.maps == "ship":
+        try:
+            ui_baseline.validate(HERE)
+        except (ui_baseline.BaselineError, FileNotFoundError) as e:
+            ap.error(str(e))
     try:
         maps = shipping.ShippingMaps.load(HERE, a.maps)
     except shipping.ShippingError as e:
