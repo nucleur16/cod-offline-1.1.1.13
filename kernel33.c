@@ -1393,9 +1393,10 @@ static void PatchGbkInput(void)
 #include "discord.c"
 
 /* Shared plumbing for the features ported from codol-classic's d3d9.dll: a main-thread tick list (k33tick.c, chained
- * after voice.c's and discord.c's Com_EventLoop hooks) and an HTTPS/SHA-256 helper (k33http.c). */
+ * after voice.c's and discord.c's Com_EventLoop hooks), an HTTPS/SHA-256 helper (k33http.c) and a JSON reader (k33json.c). */
 #include "k33tick.c"
 #include "k33http.c"
+#include "k33json.c"
 
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 #include "launcher_update_bridge.c"
