@@ -42,6 +42,7 @@
 #define CTL_CL_PTR_VA          0x016FC318u
 #define CTL_CL_KEY             0x9056BBC8u
 #define CTL_CL_PMFLAGS         0x14
+#define CTL_CL_FOVSCALE        0x3450        /* cgameFOVSensitivityScale, the mouse multiplies by it */
 #define CTL_CL_MAXPITCH        0x3454
 #define CTL_CL_MAXYAW          0x3458
 #define CTL_CL_PITCH           0x34AC
@@ -138,7 +139,7 @@ static CtlKeyName g_ctlKeyNames[160], g_ctlKeyNamesLoc[160];
 static BOOL g_ctlOn, g_ctlKeysOk, g_ctlMoveOk, g_ctlDvarsDone;
 static const BYTE *g_gpEnabled, *g_gpDzMin, *g_gpDzMax, *g_gpSens, *g_gpInvert, *g_gpBtnDz, *g_gpYaw, *g_gpPitch,
     *g_gpYawAds, *g_gpPitchAds, *g_gpCurve, *g_gpAccel, *g_gpCursor, *g_gpDebug, *g_gpUseHold, *g_gpAim,
-    *g_gpAimRange, *g_gpAimSnap, *g_gpGlyphs, *g_gpBindsVer, *g_gpUserinfo, *g_gpKbmCooldown, *g_gpLocSpeed, *g_gpGlyphShift, *g_gpAccelStart, *g_gpHires, *g_gpLookVer, *g_gpDive, *g_gpMoveDigital, *g_gpMoveThreshold, *g_gpCustom, *g_gpSwapSticks,
+    *g_gpAimRange, *g_gpAimSnap, *g_gpGlyphs, *g_gpBindsVer, *g_gpUserinfo, *g_gpKbmCooldown, *g_gpLocSpeed, *g_gpRemoteSens, *g_gpGlyphShift, *g_gpAccelStart, *g_gpHires, *g_gpLookVer, *g_gpDive, *g_gpMoveDigital, *g_gpMoveThreshold, *g_gpCustom, *g_gpSwapSticks,
     *g_k33PadInfo, *g_k33PadBinds, *g_k33PadCapture, *g_k33PadClear;
 static volatile LONG g_padType;            /* 0 Xbox (and XInput), 1 PlayStation, 2 Nintendo, 3 other */
 static int g_locBase = -1;                 /* first pad entry in g_ctlKeyNamesLoc */
@@ -234,6 +235,9 @@ static void CtlRegisterDvars(void)
                                       "Button icons in text: move right by this fraction of their width (centres them in C1's slot)");
     g_gpLocSpeed = CtlRegisterFloat("gpad_locsel_speed", 0.45f, 0.05f, 3.0f, 0x1,
                                     "Killstreak map selector speed with the left stick, map widths per second (doubles over a 0.6 s full push)");
+    g_gpRemoteSens = CtlRegisterFloat("gpad_remote_sensitivity", 1.0f, 0.1f, 3.0f, 0x1,
+                                      "Steering with the sticks in remote-controlled killstreaks (Predator missile): 1 = full stick turns at the "
+                                      "missile's full rate");
     g_gpKbmCooldown = CtlRegisterFloat("gpad_aimassist_kbm_cooldown", 20.0f, 20.0f, 600.0f, 0x1,
                                        "Seconds without aim assist after any in-game keyboard / mouse use (20 minimum; may be raised, not lowered)");
     ((const BYTE *(__cdecl *)(const char *, const char *, unsigned, const char *))(DWORD_PTR)0x00624740u)(
@@ -1468,7 +1472,9 @@ static int g_locLastSet;
  * way round and returned on every call (the cmd pointer is never 0), so the pad never reached the selector. */
 __attribute__((used)) void __cdecl CtlLocSelect(int lc, BYTE *cmd)
 {
-    static DWORD fullSince, lastDbg;
+    static DWORD lastDbg;
+    static float fullFor;   /* seconds of full push, for the speed boost */
+    static LARGE_INTEGER freq, last;
     (void)cmd;
     if (lc != 0 || !CtlEnabled()) return;
     DWORD cgv = *(volatile DWORD *)(DWORD_PTR)(0x016D3B58u + (*(volatile int *)(DWORD_PTR)0x06C3D2ACu) * 4) ^ 0x490B400Cu;
@@ -1482,7 +1488,7 @@ __attribute__((used)) void __cdecl CtlLocSelect(int lc, BYTE *cmd)
         if (*state == ourState) *state = 0;
         ourState = 0;
     }
-    if (!info) { fullSince = 0; prevState = 0; return; }
+    if (!info) { fullFor = 0.0f; prevState = 0; last.QuadPart = 0; return; }
     if (C1DvarInt(g_gpDebug, 0) && GetTickCount() - lastDbg > 1000) {
         lastDbg = GetTickCount();
         Log("controller: location selection active: info 0x%X (directional %d), keyCatchers 0x%X, pad %d, state %d, "
@@ -1513,15 +1519,24 @@ __attribute__((used)) void __cdecl CtlLocSelect(int lc, BYTE *cmd)
         }
     }
     prevState = *state;
-    if (!g_padActive) return;
+    /* dt: the real time since the previous selection step (QueryPerformanceCounter), not C1's whole-millisecond
+     * cls.frametime: at 250 fps that alternated 3 / 4 / 5 ms and the marker's per-frame step varied by 24 %
+     * (measured), a visible shimmer at high frame rates. Capped at 50 ms (a hitch or the first frame). */
+    float dt;
+    {
+        LARGE_INTEGER t;
+        if (!freq.QuadPart) QueryPerformanceFrequency(&freq);
+        QueryPerformanceCounter(&t);
+        double real = last.QuadPart ? (double)(t.QuadPart - last.QuadPart) / (double)freq.QuadPart : 0.0;
+        last = t;
+        dt = real > 0.05 ? 0.05f : (float)real;
+    }
+    if (!g_padActive) { fullFor = 0.0f; return; }
     CtlSampleSticks();
-    int msec = *(volatile int *)(DWORD_PTR)CTL_FRAMEMSEC_VA;
-    float dt = msec > 0 && msec < 200 ? msec * 0.001f : 0.0f;
     float mag = sqrtf(g_lx * g_lx + g_ly * g_ly);
     if (mag > 1.0f) mag = 1.0f;
-    DWORD now = GetTickCount();
-    if (mag > 0.9f) { if (!fullSince) fullSince = now; } else fullSince = 0;
-    float boost = fullSince ? 1.0f + fminf((now - fullSince) / 600.0f, 1.0f) : 1.0f;
+    fullFor = mag > 0.9f ? fullFor + dt : 0.0f;
+    float boost = 1.0f + fminf(fullFor / 0.6f, 1.0f);
     if (mag > 0.0f && dt > 0.0f) {
         float v = CtlDvarFloat(g_gpLocSpeed, 0.45f) * boost * mag * dt;   /* direction * mag^2 */
         float aspect = *(const float *)(cg + 0xBFA24) != 0.0f ? *(const float *)(cg + 0xBFA20) / *(const float *)(cg + 0xBFA24) : 1.0f;
@@ -1534,9 +1549,12 @@ __attribute__((used)) void __cdecl CtlLocSelect(int lc, BYTE *cmd)
         g_locLastSet = 1;
     }
     if ((info & 0x80) && g_rx * g_rx + g_ry * g_ry > 0.25f) {
-        /* the mouse drag's convention: heading of -(second point - selector), map y down */
-        float dx = g_rx, dy = -g_ry;
-        float yaw = atan2f(-dy, -dx) * (180.0f / 3.14159265f);
+        /* The arrow points where the stick points. C1's mouse drag (0x49081C..0x49085E) takes d = second point -
+         * selector (map fractions, y down) and stores vectoyaw((-d.y, -d.x)) = atan2(-d.x, -d.y): drag up 0,
+         * drag left 90, drag right 270, and the arrow follows the drag. The stick is a drag of (rx, -ry). The
+         * first build took atan2(-d.y, -d.x), a quarter turn off: stick up drew the arrow pointing left and
+         * stick right pointed it down (measured: stick up -> heading 90, arrow left). */
+        float yaw = atan2f(-g_rx, g_ry) * (180.0f / 3.14159265f);
         if (yaw < 0.0f) yaw += 360.0f;
         *(float *)(cg + 0xC8B10) = yaw;
     }
@@ -1863,9 +1881,27 @@ static BOOL g_prevAds;
 static float g_preYaw, g_prePitch, g_mouseAccum;
 static DWORD g_mouseAccumAt;
 
+/* A killstreak's remote or linked view: the Predator missile (clientActive pm_flags 0x80000, CL_CreateCmd's
+ * remote-control branch), or the view linked to an entity by playerLinkWeaponViewToDelta (AC-130, chopper
+ * gunner: playerState +0x1EC is the link entity, 0x7FF = none; measured 2047 on foot, the helicopter's number
+ * in the chopper gunner). No aim assist there: IW4's consoles had none in these views. */
+#define CTL_PMF_REMOTE   0x80000
+#define CTL_PS_LINKENT   0x1EC
+static BOOL CtlRemoteView(void)
+{
+    BYTE *cl = (BYTE *)(DWORD_PTR)(*(volatile DWORD *)(DWORD_PTR)CTL_CL_PTR_VA ^ CTL_CL_KEY);
+    if (Readable(cl + CTL_CL_PMFLAGS, 4) && (*(volatile const int *)(cl + CTL_CL_PMFLAGS) & CTL_PMF_REMOTE)) return TRUE;
+    BYTE *cg = ParityCg();
+    if (cg && Readable(cg + CTL_PS_LINKENT, 4)) {
+        int link = *(volatile const int *)(cg + CTL_PS_LINKENT);
+        if (link > 0 && link < 0x7FE) return TRUE;   /* 0 is what a server without the field sends; 0x7FE world */
+    }
+    return FALSE;
+}
+
 static BOOL CtlAimAllowed(void)
 {
-    return CtlDvarFloat(g_gpAim, 1.0f) > 0.0f && g_lastDevice == 1 && CtlKbmCooldownLeft() == 0;
+    return CtlDvarFloat(g_gpAim, 1.0f) > 0.0f && g_lastDevice == 1 && CtlKbmCooldownLeft() == 0 && !CtlRemoteView();
 }
 
 /* Before C1's CL_MouseMove: the view angles, so the mouse's own turn can be measured. */
@@ -2062,6 +2098,14 @@ __attribute__((used)) void __cdecl ControllerMove(int lc, BYTE *cmd, float frame
     pitchRate += (CtlDvarFloat(g_gpPitchAds, 55.0f) - pitchRate) * g_adsLerp;
     yawRate *= sens * slowY;
     pitchRate *= sens * slowP;
+    if (CtlRemoteView()) {
+        /* AC-130 / chopper gunner: the mouse is scaled by C1's FOV sensitivity scale (clientActive +0x3450,
+         * CL_GetMouseMovement 0x48FFB1), and IW4's consoles scale the stick's turn rate the same way
+         * (fovTurnRateScale); the pad's hip / ADS rates were not, so the zoomed gunner views turned too fast
+         * (measured 0.82 in the chopper gunner, 1.18 on foot). */
+        float fs = *(const float *)(cl + CTL_CL_FOVSCALE);
+        if (fs > 0.05f && fs < 2.0f) { yawRate *= fs; pitchRate *= fs; }
+    }
     float maxYaw = *(const float *)(cl + CTL_CL_MAXYAW), maxPitch = *(const float *)(cl + CTL_CL_MAXPITCH);
     if (maxYaw > 0.0f && maxYaw < yawRate) yawRate = maxYaw;      /* cgameMaxYawSpeed (turrets, vehicles) */
     if (maxPitch > 0.0f && maxPitch < pitchRate) pitchRate = maxPitch;
@@ -2132,6 +2176,72 @@ __attribute__((used)) void __cdecl ControllerMove(int lc, BYTE *cmd, float frame
                  *(const int *)(aa + CTL_AA_COUNT), g_lastDevice ? "pad" : "kb/mouse", (unsigned long)(now - g_lastMouseMs), (unsigned long)CtlKbmCooldownLeft());
     }
 }
+
+/* ---- remote-controlled killstreaks (Predator missile) ---------------------------------------------
+ * While clientActive pm_flags has 0x80000 (the server's ControlsLinkTo), CL_CreateCmd (0x490DBE) skips its
+ * whole normal path, CL_MouseMove included, and calls 0x490B40 (eax = lc, esi = cmd) instead: +attack and two
+ * other kbuttons into the button bits, 0x200000 (remote control), and the mouse into two signed wire bytes,
+ * pitch cmd+0x24 = clamp(my * m_pitch, -1, 1) * 127 and yaw cmd+0x25 = clamp(-mx * m_yaw, -1, 1) * 127.
+ * The server (CoD4x_Server codol_remote_missile.c, C1 0x40EC50) turns the missile by
+ * rate * msec / 1000 * byte / -127 per command, so a byte is a turn rate, not an angle. The pad's sticks
+ * went to the view-angle hook only, which this branch never reaches, so the missile ignored them.
+ * CtlRemoteMove runs after 0x490B40 and adds the sticks: the right stick (or the left, whichever is pushed
+ * further), the look response curve, gpad_view_sensitivity x gpad_remote_sensitivity, gpad_invert_y, mouse
+ * convention (stick right = mouse right, stick down = mouse down). A turn rate per command is already
+ * frame-time independent: the server multiplies it by each command's msec. No aim assist here. */
+static int g_remoteDbgP, g_remoteDbgY;
+__attribute__((used)) void __cdecl CtlRemoteMove(int lc, BYTE *cmd)
+{
+    static DWORD lastDbg, mouseAt;
+    static int mouseSum;
+    if (lc != 0 || !cmd || !CtlEnabled()) return;
+    int p = (signed char)cmd[0x24], y = (signed char)cmd[0x25];
+    DWORD now = GetTickCount();
+    if (p || y) {   /* the mouse steered: keyboard / mouse in use (like a mouse turn in CL_MouseMove) */
+        g_lastMouseMs = now;
+        if (now - mouseAt > 300) mouseSum = 0;
+        mouseAt = now;
+        mouseSum += abs(p) + abs(y);
+        if (mouseSum > 40) { CtlNoteKbm(TRUE); CtlSetDevice(0); }
+    }
+    if (!g_padActive || CtlMode() != CTL_MODE_GAME) return;
+    CtlSampleSticks();
+    float sx = g_rx, sy = g_ry;
+    if (g_lx * g_lx + g_ly * g_ly > sx * sx + sy * sy) { sx = g_lx; sy = g_ly; }
+    float mag = sqrtf(sx * sx + sy * sy);
+    if (mag <= 0.0f) return;
+    if (mag > 1.0f) { sx /= mag; sy /= mag; mag = 1.0f; }
+    float shape = powf(mag, CtlDvarFloat(g_gpCurve, 2.0f) - 1.0f) *
+                  CtlDvarFloat(g_gpSens, 1.0f) * CtlDvarFloat(g_gpRemoteSens, 1.0f);
+    float fp = (C1DvarInt(g_gpInvert, 0) ? sy : -sy) * shape;   /* + = mouse down */
+    float fy = -sx * shape;                                       /* - = mouse right */
+    int np = p + (int)lrintf((fp > 1.0f ? 1.0f : fp < -1.0f ? -1.0f : fp) * 127.0f);
+    int ny = y + (int)lrintf((fy > 1.0f ? 1.0f : fy < -1.0f ? -1.0f : fy) * 127.0f);
+    cmd[0x24] = (BYTE)(signed char)(np < -127 ? -127 : np > 127 ? 127 : np);
+    cmd[0x25] = (BYTE)(signed char)(ny < -127 ? -127 : ny > 127 ? 127 : ny);
+    g_remoteDbgP = (signed char)cmd[0x24];
+    g_remoteDbgY = (signed char)cmd[0x25];
+    if (C1DvarInt(g_gpDebug, 0) && now - lastDbg > 500) {
+        lastDbg = now;
+        C1Printf("gamepad: remote control: stick %.2f %.2f -> pitch %d yaw %d (mouse %d %d), buttons 0x%lX\n", sx, sy,
+                 g_remoteDbgP, g_remoteDbgY, p, y, (unsigned long)*(const DWORD *)(cmd + CTL_CMD_BUTTONS));
+    }
+}
+
+__attribute__((used)) DWORD g_ctlRemoteMoveFn = 0x00490B40u;
+void CTL_RemoteMoveHook(void);
+__asm__(
+    ".text\n"
+    ".globl _CTL_RemoteMoveHook\n"
+    "_CTL_RemoteMoveHook:\n"          /* call 0x490B40 at 0x490DCF: eax = lc, esi = cmd, ebx = lc */
+    "    call *_g_ctlRemoteMoveFn\n"
+    "    pushal\n"
+    "    pushl %esi\n"                /* cmd */
+    "    pushl %ebx\n"                /* lc */
+    "    call _CtlRemoteMove\n"
+    "    addl $8, %esp\n"
+    "    popal\n"
+    "    ret\n");
 
 /* ---- commands ------------------------------------------------------------------------------------ */
 
@@ -2422,6 +2532,11 @@ static void InstallController(void)
         BOOL ok = !memcmp((void *)(DWORD_PTR)0x00490DF4u, "\x56\x53", 2) && CallsTarget(0x00490DF6u, 0x00490700u);
         if (ok) RedirectCall(0x00490DF6u, (void *)CTL_LocSelectHook);
         Log("controller: killstreak location selection %s", ok ? "hooked (0x490DF6): left stick, right stick heading, A/RT confirm, B cancel" : "NOT hooked (bytes differ)");
+    }
+    {   /* remote control (Predator missile): mov eax, ebx; call 0x490B40 */
+        BOOL ok = !memcmp((void *)(DWORD_PTR)0x00490DCDu, "\x8b\xc3", 2) && CallsTarget(0x00490DCFu, 0x00490B40u);
+        if (ok) RedirectCall(0x00490DCFu, (void *)CTL_RemoteMoveHook);
+        Log("controller: remote-controlled killstreaks %s", ok ? "hooked (0x490DCF): sticks steer the Predator missile" : "NOT hooked (bytes differ)");
     }
     Log("controller: key names by last-used device %s, keyboard/mouse detection %s", namesOk ? "hooked (0x49393E)" : "NOT hooked",
         queOk ? "hooked (Sys_QueEvent)" : "NOT hooked");
