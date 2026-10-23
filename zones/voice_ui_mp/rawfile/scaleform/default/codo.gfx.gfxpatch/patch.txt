@@ -1,8 +1,8 @@
 # GFx movie as a patch over a stock movie (zonekit/gfx.py)
 stock patch_ui_mp:scaleform/default/codo.gfx
 stock-sha256 2f143069ed10f3c937e0f5b758591e477f57544f76bdfd3bd2635f77cca5d332
-sha256 8186c41312ba90b90f67fa813ad821ccd7b31dcc8480a28fa47f619e8e787074
-header 4746580aa27b4500800003200000025800001e0100
+sha256 d754b81630c229debcec01ace73f57be5f6ececef2474d68072b5feea534a4ee
+header 4746580afead4500800003200000025800001e0100
 keep 0
 keep 1
 keep 2

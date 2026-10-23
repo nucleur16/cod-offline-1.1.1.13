@@ -29,6 +29,9 @@ int main(void)
  assert(!CodolPatchZoneLocaleAllowed("codol_english_ui",CODOL_PATCH_ZH));
  assert(!CodolPatchZoneLocaleAllowed("codol_chinese_ui",CODOL_PATCH_EN));
  assert(CodolPatchZoneLocaleAllowed("codol_english_usermaps",CODOL_PATCH_EN));
+ assert(CodolPatchZoneLocaleAllowed("codol_chinese_ui",CODOL_PATCH_NATIVE));
+ assert(!CodolPatchZoneLocaleAllowed("codol_english_ui",CODOL_PATCH_NATIVE));
+ assert(CodolPatchZoneLocaleAllowed("voice_ui_mp",CODOL_PATCH_NATIVE));
  puts("canonical language selection and shared-zone policy passed");
  return 0;
 }
