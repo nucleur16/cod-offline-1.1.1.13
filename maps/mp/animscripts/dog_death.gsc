@@ -16,6 +16,7 @@
 
 main()
 {
+	if ( isdefined( level.dogcap ) ) self dogcap( "death dy=" + int( self t5DamageYaw() ) );
 	debug_anim_print("dog_death::main()" );
 	self SetAimAnimWeights( 0, 0 );
 

@@ -18,6 +18,7 @@
 
 main()
 {
+	self dogcap( "stop" );
 	debug_anim_print("dog_stop::main()" );
 
 	self endon("killanimscript");

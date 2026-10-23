@@ -441,3 +441,13 @@ getAnimDirection( damageyaw )
 	}
 	return "front";
 }
+
+// Telemetry for the developer capture maps\mp\_codol_dogcap.gsc
+// (docs/CODOL_MP_DOGS_T5_PARITY.md): the animscript states the T5 capture
+// reads by detouring the same functions.  Silent unless the capture set
+// level.dogcap (its state writer).
+dogcap( s )
+{
+	if ( isdefined( level.dogcap ) )
+		[[ level.dogcap ]]( s );
+}

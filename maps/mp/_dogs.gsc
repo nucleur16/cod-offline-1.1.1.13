@@ -166,6 +166,8 @@ init()
 	// CoDOL dev trigger (developer servers only; see dog_test_watcher).
 	thread dog_test_watcher();
 	thread maps\mp\animscripts\dog_attack_log::test_watcher();
+	// Developer capture for the T5 parity measurements (dc_scn unset: idle).
+	thread maps\mp\_codol_dogcap::init();
 
 //	create_dogs();
 }

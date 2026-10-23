@@ -19,6 +19,7 @@
 
 main()
 {
+	if ( isdefined( level.dogcap ) ) self dogcap( "turn v=" + int( length( self getvelocity() ) ) );
 	self endon("killanimscript");
 
 	debug_anim_print("dog_turn::main()" );

@@ -16,6 +16,7 @@
 
 main()
 {
+	if ( isdefined( level.dogcap ) ) self dogcap( "pain dy=" + int( self t5DamageYaw() ) + " v=" + int( length( self getvelocity() ) ) );
 	debug_anim_print("dog_pain::main() " );
 
 	self endon("killanimscript");
