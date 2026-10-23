@@ -1067,6 +1067,42 @@ static void PatchLoopFxCatchUp(void)
     Log("loop fx: a joining client replays at most %d ms of each loop effect", LOOPFX_REPLAY_MS);
 }
 
+/* Localize asset pool. C1 holds localize entries (asset type 27) in a static pool of 12000: g_poolSize[27] = 12000 @
+ * 0xCD4DD4, DB_XAssetPool[27] = 0x01FF0358 @ 0xCD5094, a {freeHead, entries[12000]} block of 8-byte entries. C1's
+ * own strings (localized_code_post_gfx_mp 7602 names, patch_localized_code_post_gfx_mp 693, the gametype's and the
+ * map's), codol_english's (9705, 1966 of them names C1 does not have) and the UI keys came to over 12000 on a zombies
+ * map in English: "Exceeded limit of 12000 'localize' assets" (0x4CB1DA), a fatal error. The pools
+ * are set up by DB_InitPoolHeaders (0x4CB240: for each type, init[type](DB_XAssetPool[type], g_poolSize[type]); the
+ * localize init 0x4CECC0 threads the free list over size 8-byte entries) at DB_Init, after this runs, and every
+ * other user (DB_AllocXAssetHeader 0x4CB180, the enumerators) reads both tables, so pointing them at a larger
+ * block is all it takes. LOCALIZE_POOL entries: twice the stock size. */
+#define LOCALIZE_TYPE        27
+#define POOL_SIZE_TABLE_VA   0x00CD4D68u
+#define POOL_TABLE_VA        0x00CD5028u
+#define LOCALIZE_STOCK_POOL  0x01FF0358u
+#define LOCALIZE_POOL        24000
+
+static void PatchLocalizePool(void)
+{
+    int *size = (int *)(DWORD_PTR)(POOL_SIZE_TABLE_VA + 4 * LOCALIZE_TYPE);
+    DWORD *pool = (DWORD *)(DWORD_PTR)(POOL_TABLE_VA + 4 * LOCALIZE_TYPE);
+    if (!Readable(size, 4) || !Readable(pool, 4) || *size != 12000 || *pool != LOCALIZE_STOCK_POOL) {
+        Log("localize pool: tables at 0x%08X / 0x%08X do not match, the pool stays at 12000", (unsigned)(DWORD_PTR)size,
+            (unsigned)(DWORD_PTR)pool);
+        return;
+    }
+    void *block = VirtualAlloc(NULL, 4 + (SIZE_T)LOCALIZE_POOL * 8, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    if (!block) {
+        Log("localize pool: VirtualAlloc failed (%lu), the pool stays at 12000", GetLastError());
+        return;
+    }
+    DWORD newPool = (DWORD)(DWORD_PTR)block;
+    int newSize = LOCALIZE_POOL;
+    WriteCode(pool, &newPool, 4);
+    WriteCode(size, &newSize, 4);
+    Log("localize pool: %d entries at %p (C1's: 12000)", newSize, block);
+}
+
 static void PatchGpuRating(void)
 {
     /* push desc ; push 1 (archive) ; push 20000 ; push ebx ; push ebx ; push "2658" */
@@ -1350,6 +1386,7 @@ static void __cdecl TakeOver(void)
     PatchScoresOpen();
     PatchLoopFxCatchUp();
     PatchPatchDir();
+    PatchLocalizePool();
     PatchUserMaps();
     InstallSoundDiag();
     InstallParityLogger();
