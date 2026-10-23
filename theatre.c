@@ -656,7 +656,23 @@ static void TheatreTick(void)
     if (g_thQueueLen || !known) return;
 
     if (g_thWatching) {
+        static ThState last;
+        static DWORD stuckSince;
+        if (memcmp(&last, &s, sizeof(s))) {
+            Log("theatre: playback state connection %lu demo %lu handle %08lX allocation %08lX",
+                (unsigned long)s.connection, (unsigned long)s.demo, (unsigned long)s.handle, (unsigned long)s.allocation);
+            last = s;
+            stuckSince = now;
+        }
         if (s.connection || s.allocation) g_thStarted = TRUE;
+        /* a film C1 cannot read (EXE_ERR_READING_DEMO) leaves the viewer connected below CA_LOADING with the error
+         * shown: disconnect it so the front end comes back (a readable film moves on to loading within a frame) */
+        if (g_thStarted && s.connection && s.connection < 7 && now - stuckSince > 5000 && !g_thReturning) {
+            Log("theatre: playback stuck at connection state %lu; disconnecting", (unsigned long)s.connection);
+            ThQueue("disconnect\n");
+            g_thReturning = TRUE;
+            stuckSince = now;
+        }
         if ((g_thStarted && ThIdle(&s)) || (!g_thStarted && now - g_thSubmittedAt > 30000)) {
             g_thWatching = g_thStarted = g_thReturning = FALSE;
             g_thPlayingZone[0] = 0;
