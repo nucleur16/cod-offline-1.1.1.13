@@ -701,15 +701,23 @@ treasure_chest_init()
 }
 
 // T5 :850, the semi-random branch: the list is already shuffled, the first
-// spot marked start_chest is live and every other spot is hidden.
+// spot marked start_chest is live and every other spot is hidden.  A level
+// that sets level.random_pandora_box_start (T5 Kino, zm_theater_sh) takes
+// T5's random branch instead: the first shuffled spot without
+// start_exclude 1.
 init_starting_chest_location()
 {
 	level.chest_index = -1;
+	random_start = is_true( level.random_pandora_box_start );
 
 	for ( i = 0; i < level.chests.size; i++ )
 	{
 		chest = level.chests[ i ];
-		if ( level.chest_index < 0 && isDefined( chest.script_noteworthy ) && isSubStr( chest.script_noteworthy, "start_chest" ) )
+		if ( random_start )
+			starts_here = !isDefined( chest.start_exclude ) || int( chest.start_exclude ) != 1;
+		else
+			starts_here = isDefined( chest.script_noteworthy ) && isSubStr( chest.script_noteworthy, "start_chest" );
+		if ( level.chest_index < 0 && starts_here )
 		{
 			level.chest_index = i;
 			continue;
