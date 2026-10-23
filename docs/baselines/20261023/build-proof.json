@@ -6,16 +6,16 @@
   "client_profiles": [
     {
       "profile": "production",
-      "sha256": "53263be4db1519f1824ea357f421ee500a13c9ea280dd27ac5d1572ad9907d7f",
+      "sha256": "d988790586ba097db56d83d0a2296c7c8f9ebf7d4b110ae62528e38bb369e6d3",
       "exit": 0
     },
     {
       "profile": "local-testing",
-      "sha256": "3b54a114a1642c617680f3aaf570da7e858fc6e4db8b89ae5b1ba7663425ffbf",
+      "sha256": "107bf58c1bab37bc7a1361547f24473aeddcf02c590e5f224a516af03cab70c0",
       "exit": 0
     }
   ],
-  "launcher_host_sha256": "67de9c6d4bbdae5183b3966803ff90ee650d7ffacfd8f237df1b67cf34cf9d57",
+  "launcher_host_sha256": "834fb340a45ff731b696207dabcb9e4852bf5866063ab000c29192dcad2c49ea",
   "native_source_inputs": {
     "borderless.c": "d4b8e2befffd03554bd91e055c9a12cbcaced136d0475538a2dd13b2a3e672d3",
     "build-controller.sh": "e1df460766597e3562d28af1bac37480e5fc8863cf0cb78b505ca839c0d70be2",
@@ -72,7 +72,40 @@
   "current_three_playlists_C1_English": true,
   "current_three_playlists_C1_Chinese": true,
   "shared_frontend_C1_both_languages": true,
-  "delayed_results_ready_fix_C1": "pending",
+  "delayed_results_ready_fix_C1": "passed on prior recorded profile: Chinese host and delayed English guest both entered next native match",
   "full_release_matrix": "pending",
-  "production_changed": false
+  "production_changed": false,
+  "launcher_followup_under_qualification": {
+    "launcher_host_sha256": "834fb340a45ff731b696207dabcb9e4852bf5866063ab000c29192dcad2c49ea",
+    "client_profiles": [
+      {
+        "profile": "production",
+        "sha256": "d988790586ba097db56d83d0a2296c7c8f9ebf7d4b110ae62528e38bb369e6d3",
+        "exit": 0
+      },
+      {
+        "profile": "local-testing",
+        "sha256": "107bf58c1bab37bc7a1361547f24473aeddcf02c590e5f224a516af03cab70c0",
+        "exit": 0
+      }
+    ],
+    "source_inputs_equal_previous_profile": true,
+    "long_identifier_password_and_Unicode_native_edit_test": "passed",
+    "full_game_launcher_handoff": "pending",
+    "new_profile_C1": "pending"
+  },
+  "last_C1_tested_profiles": [
+    {
+      "profile": "production",
+      "sha256": "53263be4db1519f1824ea357f421ee500a13c9ea280dd27ac5d1572ad9907d7f",
+      "exit": 0
+    },
+    {
+      "profile": "local-testing",
+      "sha256": "3b54a114a1642c617680f3aaf570da7e858fc6e4db8b89ae5b1ba7663425ffbf",
+      "exit": 0
+    }
+  ],
+  "last_C1_tested_launcher_host_sha256": "67de9c6d4bbdae5183b3966803ff90ee650d7ffacfd8f237df1b67cf34cf9d57",
+  "current_profile_C1": "pending launcher-pin-only followup"
 }
