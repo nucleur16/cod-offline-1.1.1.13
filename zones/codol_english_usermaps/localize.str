@@ -1,0 +1,22 @@
+# localize entries in zone order: NAME<TAB>value (\n \r \t \\ escaped); values are ascii in the zone
+MPUI_ABANDON_SH	Carnival
+MPUI_ABANDON_SH_MK	Monkey King Carnival
+MPUI_CHA_QUAD	Monastery
+MPUI_DESC_MAP_ABANDON_SH	A mid-sized theme park.
+MPUI_DESC_MAP_CHA_QUAD	A secluded monastery perched on a cliff.
+MPUI_DESC_MAP_MIDEAST	An oasis town square.
+MPUI_DESC_MAP_SEATOWN	Spend an afternoon in a lively seaside town and take on the enemy in frantic close-quarters fights in its narrow streets.
+MPUI_MIDEAST	Oasis
+MPUI_SEATOWN	Seatown
+MPUI_DOME	Dome
+MPUI_DESC_MAP_DOME	A radar station.
+MPUI_SD_PILLARS	Royal Garden
+MPUI_DESC_SD_PILLARS	A garden wired with power lines on the roof of one of New York's hottest buildings. Fighting here takes real skill.
+MPUI_HARDHAT	Hardhat
+MPUI_DESC_MAP_HARDHAT	An abandoned industrial site in the city, full of steel and danger. Come and fight it out!
+MPUI_MP_STRIKE_SH	Strike
+MPUI_DESC_MP_STRIKE_SH	A city in the vast desert of the Middle East. A Call of Duty 4: Modern Warfare competitive map where the fighting never stops: bring your weapons and settle it in Strike.
+MPUI_QADEEM	Qadeem
+MPUI_DESC_MAP_QADEEM	A luxury resort in the Middle East, built around an old coastal fortress. A beautiful coast outside and lavish halls inside, but watch out for heavy enemy fire.
+MPUI_HUNGER	Hunger
+MPUI_DESC_MAP_HUNGER	A large map: an abandoned town to the west, open fields and woods to the east.

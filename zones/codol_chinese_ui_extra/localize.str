@@ -1,0 +1,32 @@
+# localize entries in zone order: NAME<TAB>value (\n \r \t \\ escaped); values are gbk in the zone
+K33UI_HUD_20	标签
+K33UI_HUD_66	死亡
+K33UI_HUD_67	救治
+K33UI_HUD_68	秒杀
+K33UI_HUD_69	击杀
+K33UI_HUD_70	分数
+K33UI_HUD_71	玩家名称
+K33UI_HUD_171	标签标签
+K33UI_HUD_215	这份电路图似乎是用来设计\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9
+K33UI_HUD_216	高阶电路图（第一页）*
+K33UI_HUD_220	任务目标*
+K33UI_HUD_254	队友杀敌数：
+K33UI_HUD_256	难度：
+K33UI_HUD_257	普通
+K33UI_HUD_258	杀敌数：
+K33UI_HUD_259	时间：
+K33UI_HUD_261	行动指南\n注意有些武器带有下挂榴弹筒/霰弹枪。
+K33UI_HUD_262	任务完成！
+K33UI_HUD_500	回合     1
+K33UI_HUD_509	购买复活币
+K33UI_HUD_511	复活币
+K33UI_HUD_512	每局可以复活三次
+K33UI_INGAME_437	本次在线
+K33UI_INGAME_439	获得的XP
+K33UI_INGAME_444	再努力**左右就能升级了哦, 下次升级解锁
+K33UI_INGAME_449	配件名称
+K33UI_INGAME_453	游戏成绩
+K33UI_INGAME_454	获得的GP
+K33UI_INGAME_455	完成
+K33UI_INGAME_466	需要28000升级
+K33UI_INGAME_467	本次上线

@@ -11,3 +11,4 @@
 >xassetlist,0x0,0xffffffff
 rawfile,voice_ui_mp
 rawfile,scaleform/default/codo.gfx,zlib=9,gfx=patch_ui_mp:scaleform/default/codo.gfx
+rawfile,scaleform/default/codologin.gfx,zlib=9,gfx=ui_mp:scaleform/default/codologin.gfx
