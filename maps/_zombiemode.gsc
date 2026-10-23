@@ -56,10 +56,9 @@
 // CoDOL zone carries, and C1 already has a round widget that works.
 //
 // THE ROUND CAP AND THE RESCUE.  CoDOL's zombies end in a helicopter rescue
-// after 8/12/16 survival rounds on Easy/Medium/Hard.  Round 9/13/17 is the
-// extraction itself.  g_difficulty 3 is reserved for a future endless lobby
-// option; the current lobby only offers 0..2.  scr_zm_roundcap can still
-// override the extraction round (0 = endless) for development.
+// after 9/13/17 survival rounds on Easy/Medium/Hard. Difficulty3 is Endless:
+// Normal gameplay rules, recurring hound/boss rounds, no cap or rescue phase.
+// The native map admission requires codol_zombiesEndlessEnabled1 for mode3.
 
 
 #include maps\_zombiemode_utility;
@@ -197,6 +196,7 @@ init_hints()
 	// GScr_SetHintString body): the builtin calls Scr_GetNumParam and passes
 	// numParam-1 to Scr_ConstructMessageString, so &&1 format arguments ARE
 	// supported and the cost can be an argument for these.
+	precacheShader( "white" ); // Solid screen fade for intermission shots.
 	precacheString( &"ZOMBIE_NEED_POWER" );
 	precacheString( &"ZOMBIE_ELECTRIC_SWITCH" );
 	precacheString( &"ZOMBIE_PERK_PACKAPUNCH" );
@@ -231,7 +231,8 @@ init_hints()
 //
 // mp/zombiemode.csv ships in common_gametype_zm.ff, 5 columns x 106 rows:
 // NAME | EASY | MEDIUM | HARD | VETERAN.  The selected C1 room difficulty
-// chooses columns 1/2/3; the future endless option uses Hard's column.
+// chooses columns 1/2/3 for room rules. Zombie AI uses Normal's column
+// throughout; difficulty changes spawn pacing, not the zombie stat curve.
 init_levelvars()
 {
 	level.is_zombie_level = true;
@@ -239,6 +240,7 @@ init_levelvars()
 	level.round_number = 1;
 	level.round_start_time = 0;
 	level.intermission = false;
+	level.zm_spawning_closed = false;
 	level.zombie_total = 0;
 	level.total_zombies_killed = 0;
 	level.hudelem_count = 0;
@@ -246,15 +248,17 @@ init_levelvars()
 	level.enemy_spawns = [];
 	level.zombies = [];
 	level.gameEnded = false;
+	level.zm_end_report_requested = false;
 
-	// C1's room difficulty reaches the match as g_difficulty 0/1/2.
-	// Reserve 3 for a future endless option without exposing it in the lobby.
+	// Retain the room's mode for reporting; table/timing rules have a separate
+	// tier so the fourth option never indexes a Veteran/unsupported column.
 	level.zm_round_mode = getDvarInt( "g_difficulty" );
 	if ( level.zm_round_mode < 0 || level.zm_round_mode > 3 )
 		level.zm_round_mode = 0;
-	level.zm_difficulty = level.zm_round_mode + 1;
-	if ( level.zm_difficulty > 3 )
-		level.zm_difficulty = 3;
+	level.zm_rule_tier = level.zm_round_mode;
+	if ( level.zm_round_mode == 3 )
+		level.zm_rule_tier = 1;
+	level.zm_difficulty = level.zm_rule_tier + 1;
 
 	level.zm_round_cap = 9 + level.zm_round_mode * 4;
 	level.zm_hound_rounds_goal = level.zm_round_mode + 1;
@@ -263,12 +267,16 @@ init_levelvars()
 		level.zm_round_cap = 0;
 		level.zm_hound_rounds_goal = 0;
 	}
-	if ( getDvar( "scr_zm_roundcap" ) != "" )
+	// A stale finite developer override must not turn a selected Endless room
+	// back into an extraction match. Classic modes keep their existing override.
+	if ( level.zm_round_mode != 3 && getDvar( "scr_zm_roundcap" ) != "" )
 		level.zm_round_cap = getDvarInt( "scr_zm_roundcap" );
 	if ( level.zm_round_cap < 0 )
 		level.zm_round_cap = 0;
+	if ( level.zm_round_mode == 3 )
+		codol_checkpointZombiesRound( level.zm_round_mode, level.round_number, 0 );
 
-	column = level.zm_difficulty;
+	column = 2;
 
 	// AI
 	set_zombie_var( "zombie_health_increase",            100,  false, column );
@@ -280,11 +288,13 @@ init_levelvars()
 	set_zombie_var( "zombie_max_ai",                     24,   false, column );
 	set_zombie_var( "zombie_ai_per_player",              6,    false, column );
 	set_zombie_var( "below_world_check",                 -1000 );
+	column = level.zm_difficulty;
 
 	// Round
 	set_zombie_var( "zombie_use_failsafe",               1 );
 	set_zombie_var( "zombie_between_round_time",         10 );
-	set_zombie_var( "zombie_intermission_time",          15 );
+	// A full result flycam; terminal audio can extend this minimum hold.
+	set_zombie_var( "zombie_intermission_time",          30 );
 	set_zombie_var( "game_start_delay",                  0,    false, column );
 
 	// Life and death
@@ -311,42 +321,46 @@ init_levelvars()
 
 	// Player
 	set_zombie_var( "player_starting_health",            100 );
-	set_zombie_var( "player_health_regen_delay",          2400 );
+	set_zombie_var( "player_health_regen_delay",          5000 );
 
-	// The shipped EASY/MEDIUM/HARD rows for spawn delay and health are all
-	// identical.  Add a small tier gradient on top of their actual values;
-	// keep the simultaneous actor cap at 24 to avoid server-frame spikes.
-	if ( level.zm_round_mode == 0 )
+	// Retain the local Normal health and movement baseline; Easy adjusts below.
+	// zombie_max_ai / zombie_ai_per_player are round-budget inputs, not the
+	// simultaneous cap: leave their Normal values alone. The spawner caps
+	// living zombies at 24. Sprinter variants are a separate future feature.
+	level.zombie_vars[ "zombie_health_start" ] = int( level.zombie_vars[ "zombie_health_start" ] * 0.90 );
+	level.zombie_vars[ "zombie_health_increase" ] = int( level.zombie_vars[ "zombie_health_increase" ] * 0.90 );
+	level.zombie_vars[ "zombie_move_speed_multiplier" ] = 7;
+
+	// Easy replenishes the horde slowest; Hard replenishes it fastest.
+	if ( level.zm_rule_tier == 0 )
 	{
-		level.zombie_vars[ "zombie_spawn_delay" ] = level.zombie_vars[ "zombie_spawn_delay" ] * 1.25;
-		level.zombie_vars[ "zombie_health_start" ] = int( level.zombie_vars[ "zombie_health_start" ] * 0.85 );
-		level.zombie_vars[ "zombie_health_increase" ] = int( level.zombie_vars[ "zombie_health_increase" ] * 0.85 );
-		level.zombie_vars[ "zombie_max_ai" ] = int( level.zombie_vars[ "zombie_max_ai" ] * 0.85 );
-		level.zombie_vars[ "zombie_ai_per_player" ] = int( level.zombie_vars[ "zombie_ai_per_player" ] * 0.85 );
-		level.zm_spawn_decay = 0.97;
-		level.zm_spawn_floor = 0.30;
+		// Easy: softer targets and more space between reinforcements.
+		level.zombie_vars[ "zombie_health_start" ] = int( level.zombie_vars[ "zombie_health_start" ] * 0.80 );
+		level.zombie_vars[ "zombie_health_increase" ] = int( level.zombie_vars[ "zombie_health_increase" ] * 0.80 );
+		level.zombie_vars[ "zombie_spawn_delay" ] = level.zombie_vars[ "zombie_spawn_delay" ] * 1.50;
+		level.zm_spawn_decay = 0.98;
+		level.zm_spawn_floor = 0.40;
 	}
-	else if ( level.zm_round_mode >= 2 )
+	else if ( level.zm_rule_tier >= 2 )
 	{
-		level.zombie_vars[ "zombie_spawn_delay" ] = level.zombie_vars[ "zombie_spawn_delay" ] * 0.75;
-		level.zombie_vars[ "zombie_health_start" ] = int( level.zombie_vars[ "zombie_health_start" ] * 1.20 );
-		level.zombie_vars[ "zombie_health_increase" ] = int( level.zombie_vars[ "zombie_health_increase" ] * 1.20 );
-		level.zombie_vars[ "zombie_max_ai" ] = int( level.zombie_vars[ "zombie_max_ai" ] * 1.10 );
-		level.zombie_vars[ "zombie_ai_per_player" ] = int( level.zombie_vars[ "zombie_ai_per_player" ] * 1.20 );
-		level.zombie_vars[ "zombie_move_speed_multiplier" ] = int( level.zombie_vars[ "zombie_move_speed_multiplier" ] * 1.25 );
-		level.zm_spawn_decay = 0.93;
-		level.zm_spawn_floor = 0.12;
+		level.zombie_vars[ "zombie_spawn_delay" ] *= 0.95;
+		level.zm_spawn_decay = 0.96;
+		level.zm_spawn_floor = 0.18;
 	}
 	else
 	{
-		level.zm_spawn_decay = 0.95;
+		level.zombie_vars[ "zombie_spawn_delay" ] *= 1.10;
+		level.zm_spawn_decay = 0.96;
 		level.zm_spawn_floor = 0.20;
 	}
-	codolprintln( "CoDOL zm: difficulty " + level.zm_round_mode + " extraction round " +
-		level.zm_round_cap + " hound rounds " + level.zm_hound_rounds_goal +
-		" spawn delay " + level.zombie_vars[ "zombie_spawn_delay" ] +
-		" health " + level.zombie_vars[ "zombie_health_start" ] +
-		" budget base " + level.zombie_vars[ "zombie_max_ai" ] );
+	// Hard only: five percent faster replenishment, including the late-round
+	// floor. Keep the shared health/movement curve and endless mode unchanged.
+	if ( level.zm_rule_tier == 2 )
+	{
+		level.zombie_vars[ "zombie_spawn_delay" ] /= 1.05;
+		level.zm_spawn_floor /= 1.05;
+	}
+	{}
 
 	flag_init( "all_players_connected" );
 	flag_init( "begin_spawning" );
@@ -412,12 +426,12 @@ resolveStartWeapon()
 		precacheItem( name );
 		if ( getWeaponIndexFromName( name ) > 0 )
 		{
-			codolprintln( "CoDOL zm: starting weapon " + name );
+			{}
 			return name;
 		}
 	}
 
-	codolprintln( "CoDOL zm: no starting weapon is present in the mounted zm zones" );
+	{}
 	return undefined;
 }
 
@@ -451,7 +465,7 @@ Callback_StartGameType()
 	// println is a DEVELOPER builtin and production runs developer 0, so every
 	// println in this tree is compiled out and the chain was invisible in the
 	// log for weeks.  See docs/CODOL_ZOMBIE_SPAWN_20260921.md.
-	codolprintln( "CoDOL zm: Callback_StartGameType entered on " + getDvar( "mapname" ) );
+	{}
 
 	level.isSP = false;
 
@@ -469,11 +483,9 @@ Callback_StartGameType()
 	level.zombie_lethal_grenade = resolveLethalGrenade();
 
 	// Equipment test hooks (idle unless scr_codol_equiptest is set).
-	maps\mp\gametypes\_codol_equiptest::init();
 
 	// Player-damage rule test verbs (idle unless developer and
 	// scr_codol_fftest is set).
-	maps\_zombiemode_fftest::init();
 
 	// Each Cyborg's pistol/lethal/special/trap (mp/cyborgclasstable.csv) and
 	// the grenade_fire registry the item modules below hook into.  Before
@@ -506,6 +518,7 @@ Callback_StartGameType()
 	// spawns triggers, then the spawner, then the loop.
 	maps\_zombiemode_laststand::init();
 	maps\_zombiemode_weapons::init();
+	maps\_zombiemode_weapon_lights::init();
 	// The explosive crossbow and the Scavenger (T5 _zombiemode_weap_crossbow /
 	// _zombiemode_weap_sniper_explosive): after the weapon table, which says
 	// whether this map has them, and after the equipment registry their
@@ -527,7 +540,8 @@ Callback_StartGameType()
 	// they read for the hound structs and the round flow.
 	maps\_zombiemode_ai_dogs::init();
 	maps\_zombiemode_extraction::init();
-	maps\_zombiemode_extractiontest::init();
+	maps\_zombiemode_terminal::init();
+
 	maps\_zombiemode_cortex::init();
 	// The minigun Juggernaut boss: after the spawner, whose zombie template
 	// it spawns from.
@@ -549,7 +563,9 @@ Callback_StartGameType()
 	// collectibles profile bits.  After challenges, before the first player.
 	maps\_zombiemode_intel::init();
 
-	codolprintln( "CoDOL zm: subsystems initialised; starting the round loop" );
+	{}
+
+
 
 	level thread end_game_watcher();
 	level thread start_round_loop();
@@ -559,7 +575,21 @@ Callback_StartGameType()
 
 Callback_CodeEndGame()
 {
+	if ( is_true( level.zm_end_report_requested ) )
+		return;
 	level.gameEnded = true;
+	// Settle before camera respawns and the result-screen disconnect.
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+	{
+		players[ i ] codol_reportZombiesResult( is_true( players[ i ].zm_extracted ),
+			level.zm_round_mode, report_round_number(), level.zm_round_cap,
+			players[ i ].downs, players[ i ].revives, players[ i ].headshots, false );
+	}
+	// Native persistence owns retries after this synchronous result snapshot.
+	// A repeated code-end or end_game notification must not request it twice.
+	level.zm_end_report_requested = true;
+	sendClientMatchData();
 }
 
 Callback_PlayerConnect()
@@ -573,6 +603,11 @@ Callback_PlayerConnect()
 	self.statusicon = "";
 	self waittill( "begin" );
 
+	// A prior aborted frontend transition must not reopen stale results.
+	// C1's g_difficulty enum only accepts0..2. Preserve the authoritative
+	// rule mode independently for AAR; every finite connect overwrites3 too.
+	self setClientDvars( "ui_eog_show", 0, "ui_eog_victory", 0, "hud_drawHud", 1,
+		"ui_eog_zm_mode", "" + level.zm_round_mode );
 	self.connected = true;
 	level.players[ level.players.size ] = self;
 
@@ -590,9 +625,10 @@ Callback_PlayerConnect()
 
 	if ( !isDefined( self.pers ) )
 		self.pers = [];
-	// Solo spare lives come only from buying Quick Revive.  The difficulty
-	// table's starting_lives value must not grant a free self-revive.
+	// Finite modes retain authenticated tokens rather than legacy spare lives.
+	// Endless owns a separate per-match Quick Revive budget, never this counter.
 	self.pers[ "lives" ] = 0;
+	self maps\_zombiemode_endless_revive::on_connect();
 
 	level notify( "connected", self );
 
@@ -636,6 +672,8 @@ onMenuResponse()
 	{
 		self waittill( "menuresponse", menu, response );
 
+
+
 		if ( response != "back" )
 			continue;
 
@@ -646,6 +684,8 @@ onMenuResponse()
 
 Callback_PlayerDisconnect()
 {
+	// Reservations belong to this connection, never to a reusable client slot.
+	self.zm_start_point = undefined;
 	players = [];
 	for ( i = 0; i < level.players.size; i++ )
 	{
@@ -660,6 +700,10 @@ Callback_PlayerDisconnect()
 		self.revivetrigger delete();
 		self.revivetrigger = undefined;
 	}
+	// ClientDisconnect releases the native entity after this callback returns.
+	// Reuse the kill path's delayed, level-owned decision so a leaving last
+	// standing teammate cannot leave the remaining team down until bleedout.
+	level thread all_dead_check();
 }
 
 // T5 _zombiemode.gsc:4544 player_damage_override.  The zombies rule is that a
@@ -668,6 +712,10 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 {
 	if ( level.gameEnded )
 		return;
+
+	if ( codollocaltestallowed() && is_true( self.localtest_god ) )
+		return;
+
 
 	// A dead player still in the CLIENT_DEAD entity handler has no die
 	// function, so finishPlayerDamage on him is the script error "No die
@@ -739,7 +787,7 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 	// Perk-pop damage rules: flak jacket immunity and dive explosion, the
 	// electro counter-shock.  Before the test-client guard so the rules also
 	// run for invulnerable test clients.
-	iDamage = self maps\_zombiemode_perkpops::player_damage_override( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon );
+	iDamage = self maps\_zombiemode_perkpops::player_damage_override( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, iDFlags );
 	if ( iDamage <= 0 )
 		return;
 
@@ -751,13 +799,15 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 
 	// Test clients added by _codol_equiptest (scr_codol_equiptest "addbots")
 	// stand still next to the equipment under test; nothing else sets this.
-	if ( isDefined( self.codolTestInvulnerable ) )
-		return;
 
 	// Already down: T5 lets a downed player be finished only by the bleedout,
 	// never by another hit.  The native path expresses the same rule as a
 	// 500 ms grace window (src/codol/script/codol_script_laststand.c:41-48).
 	if ( self maps\_zombiemode_laststand::player_is_in_laststand() )
+		return;
+
+	iDamage = self maps\_zombiemode_revive_protection::damage_override( iDamage, sMeansOfDeath );
+	if ( iDamage <= 0 )
 		return;
 
 	self.zmLastDamageTime = getTime();
@@ -878,6 +928,8 @@ Callback_PlayerKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, v
 all_dead_check()
 {
 	wait( 0.05 );
+	if ( level.gameEnded )
+		return;
 	maps\_zombiemode_laststand::checkForAllDead();
 }
 
@@ -915,9 +967,16 @@ spawnPlayer()
 	self endon( "disconnect" );
 
 	spawnpoint = getSpawnPoint();
-	if ( !isDefined( spawnpoint ) )
+	// Do not put a joining/respawning player inside another player when all
+	// of this start room's authored points are occupied. The disconnect endon
+	// above and the match-end test also own the retry's lifetime.
+	while ( !isDefined( spawnpoint ) && !level.gameEnded )
 	{
-		codolprintln( "CoDOL zm: no usable spawn point on " + getDvar( "mapname" ) );
+		wait( 0.05 );
+		spawnpoint = getSpawnPoint();
+	}
+	if ( level.gameEnded || !isDefined( spawnpoint ) )
+	{
 		return;
 	}
 
@@ -938,6 +997,8 @@ spawnPlayer()
 	self.statusicon = "";
 	self.laststand = false;
 	self.is_drinking = false;
+	// BO1 clears its trap contact guard on every fresh spawn.
+	self.is_burning = undefined;
 	self.ignoreme = false;
 	self.maxhealth = level.zombie_vars[ "player_starting_health" ];
 	self.health = self.maxhealth;
@@ -948,9 +1009,17 @@ spawnPlayer()
 	self.num_perks = 0;
 
 	self spawn( spawnpoint.origin, spawnpoint.angles );
+	// Enable C1's own status colours; its renderer owns the downed pulse.
+	// Explicit compatibility name: the original C1 method name was stripped.
+	self codol_enableClientStatusColour();
+	// C1 archives hud_drawHud across reconnects. A prior hide (for example,
+	// interrupted gas cleanup) also suppresses its health-driven blood overlay.
+	// Match the MP spawn reset so each new Zombies life restores damage feedback.
+	self setClientDvar( "hud_drawHud", 1 );
 	// A new Zombies spawn never owns a machine perk.  Clear both native perk
 	// slots and the server-only no_slot Zombies perks before rebuilding the
-	// mode's ability floor; Quick Revive must come from a purchase.
+	// mode's ability floor. Finite modes purchase Quick Revive; Endless
+	// supplies it through its own spawn hook below.
 	self clearPerks();
 
 	// ClientSpawn clears the playerState extension's abilities_known flag.
@@ -969,6 +1038,7 @@ spawnPlayer()
 	self powerup_weapon_unlock();
 
 	self giveStartingLoadout();
+	self maps\_zombiemode_endless_revive::on_spawn();
 	self.zmLastDamageTime = getTime();
 	self notify( "zm_regen_restart" );
 	self thread zm_player_health_regen();
@@ -981,15 +1051,9 @@ spawnPlayer()
 }
 
 // The multiplayer tree runs _healthoverlay::playerHealthRegen on each spawn.
-// Zombies has its own gametype root and never starts that thread.  T5 zombies
-// run _gameskill::playerHealthRegen (_zombiemode_load.gsc:970) at the
-// "normal" difficulty fraction 0.75 (_gameskill.gsc:176-:306):
-//   playerHealth_RegularRegenDelay 2400 ms -- after 2.4 s without damage
-//     a player above the cutoff snaps back to full health;
-//   healthOverlayCutoff 0.2 -- a player hit to 20% or less is "very hurt":
-//     nothing comes back until longRegenTime (5000 ms) after the hit, then
-//     10% of max health per 0.05 s.
-// The client draws its own damage overlay; only the health is driven here.
+// Zombies has its own gametype root and never starts that thread, leaving
+// every nonlethal claw hit permanently subtracted.  Keep this health-only
+// variant local to zm; the client already owns its damage overlay.
 zm_player_health_regen()
 {
 	self endon( "death" );
@@ -997,62 +1061,73 @@ zm_player_health_regen()
 	self endon( "player_downed" );
 	self endon( "zm_regen_restart" );
 
-	very_hurt = false;
-	hurt_time = 0;
-
 	for ( ;; )
 	{
-		wait( 0.05 );
-		if ( self.health <= 0 || self.laststand )
+		wait( 0.1 );
+		if ( self.health <= 0 || self.laststand || self.health >= self.maxhealth )
 			continue;
-		if ( self.health >= self.maxhealth )
-		{
-			very_hurt = false;
-			continue;
-		}
-
-		if ( isDefined( self.zmLastDamageTime ) && self.zmLastDamageTime > hurt_time )
-		{
-			hurt_time = self.zmLastDamageTime;
-			if ( self.health / self.maxhealth <= 0.2 )
-				very_hurt = true;
-		}
-
-		if ( getTime() - hurt_time < level.zombie_vars[ "player_health_regen_delay" ] )
+		if ( getTime() - self.zmLastDamageTime < level.zombie_vars[ "player_health_regen_delay" ] )
 			continue;
 
-		if ( very_hurt )
-		{
-			if ( getTime() <= hurt_time + 5000 )
-				continue;
-			health = self.health + int( self.maxhealth * 0.1 );
-		}
-		else
-			health = self.maxhealth;
-
-		if ( health > self.maxhealth )
-			health = self.maxhealth;
-		self.health = health;
+		// Match the multiplayer thread's rapid recovery after its five-second
+		// quiet window; avoid writing through the native damage callback.
+		self.health += 10;
+		if ( self.health > self.maxhealth )
+			self.health = self.maxhealth;
 	}
 }
 
-// zm_zombie_training's MapEnts carry the ordinary multiplayer spawn classnames
-// and exactly one of each: mp_tdm_spawn_allies_start, mp_tdm_spawn_axis_start,
-// mp_tdm_spawn, mp_dm_spawn, mp_global_intermission, info_player_start
-// (docs/CODOL_ZOMBIES_STARTUP_20260915.md section 3.6).  One point per
-// classname means no spawn spreading; picking randomly among whatever exists
-// is honest about that and works unchanged on the other two zm maps.
+// T5 _zombiemode::coop_player_spawn_placement gives each connected player a
+// distinct initial_spawn_points struct and settles it with placeSpawnpoint.
+// The exact C1 Prototype MapEnts have four such points; its MP start classnames
+// each have only one. Selecting that first classname stacked every player.
 getSpawnPoint()
 {
-	// A level that walks its players through stages (zm_zombie_training's
-	// tutorial) places them itself; self is the spawning player.
+	point = undefined;
 	if ( isDefined( level.zm_spawn_point_func ) )
 	{
 		point = self [[ level.zm_spawn_point_func ]]();
-		if ( isDefined( point ) )
+		// Keep Training's explicit stage anchors, including its solo fallback,
+		// and the other maps' own placement contracts. Asylum's callback owns
+		// the persistent west/west2 room; spread only within that same room.
+		if ( isDefined( point ) && getDvar( "mapname" ) != "zm_asylum_sh" )
 			return point;
 	}
 
+	points = [];
+	// A missing Training stage anchor must not select the inherited Prototype
+	// structs outside the lift; retain its original MP-start fallback below.
+	if ( getDvar( "mapname" ) != "zm_zombie_training" )
+		points = get_struct_array( "initial_spawn_points", "targetname" );
+	if ( getDvar( "mapname" ) == "zm_asylum_sh" )
+	{
+		room = undefined;
+		if ( isDefined( point ) )
+			room = maps\_zombiemode_zone_manager::zone_at_point( point.origin );
+		room_points = [];
+		for ( i = 0; i < points.size; i++ )
+		{
+			if ( !isDefined( room ) || !isDefined( points[ i ].origin ) )
+				continue;
+			zone = maps\_zombiemode_zone_manager::zone_at_point( points[ i ].origin );
+			if ( isDefined( zone ) && zone.name == room.name )
+				room_points[ room_points.size ] = points[ i ];
+		}
+		points = room_points;
+	}
+	if ( points.size > 0 )
+		return self reserve_spawn_point( points, true );
+
+	// Older/custom maps without authored initial structs retain their first
+	// available start class (or the callback's room seed), but an occupied
+	// singleton now waits instead of overlapping. Never mix later classes or
+	// manufacture coordinates outside that map's chosen start area.
+	if ( isDefined( point ) )
+	{
+		points = [];
+		points[ 0 ] = point;
+		return self reserve_spawn_point( points, false );
+	}
 	names = [];
 	names[ 0 ] = "mp_tdm_spawn_allies_start";
 	names[ 1 ] = "mp_dm_spawn";
@@ -1063,10 +1138,66 @@ getSpawnPoint()
 	{
 		points = getEntArray( names[ i ], "classname" );
 		if ( points.size > 0 )
-			return points[ randomInt( points.size ) ];
+			return self reserve_spawn_point( points, false );
 	}
 
 	return undefined;
+}
+
+reserve_spawn_point( points, settle )
+{
+	// No wait between selection and reservation: another begin callback can
+	// reserve a point before its native player entity has entered collision.
+	// level.players contains only current connections and disconnect releases
+	// the field explicitly. Retain one's own point for later round respawns,
+	// as T5 retains spectator_respawn, while still checking present occupancy.
+	for ( i = 0; i < points.size; i++ )
+	{
+		point = points[ i ];
+		if ( !isDefined( point.origin ) || !isDefined( point.angles ) )
+			continue;
+		if ( settle && !isDefined( point.zm_start_settled ) )
+		{
+			anchor = spawn( "script_model", point.origin );
+			anchor placeSpawnpoint();
+			point.origin = anchor.origin;
+			anchor delete();
+			point.zm_start_settled = true;
+		}
+	}
+	if ( isDefined( self.zm_start_point ) )
+	{
+		for ( i = 0; i < points.size; i++ )
+		{
+			if ( points[ i ] == self.zm_start_point && self spawn_point_available( points[ i ] ) )
+				return self.zm_start_point;
+		}
+	}
+	for ( i = 0; i < points.size; i++ )
+	{
+		if ( !self spawn_point_available( points[ i ] ) )
+			continue;
+		self.zm_start_point = points[ i ];
+		return points[ i ];
+	}
+	return undefined;
+}
+
+spawn_point_available( point )
+{
+	if ( !isDefined( point.origin ) || !isDefined( point.angles ) )
+		return false;
+	for ( i = 0; i < level.players.size; i++ )
+	{
+		player = level.players[ i ];
+		if ( !isDefined( player ) || player == self || !isDefined( player.zm_start_point ) )
+			continue;
+		if ( player.zm_start_point == point || player.zm_start_point.origin == point.origin )
+			return false;
+	}
+	// Retained native GScr_positionWouldTelefrag checks the standing player
+	// hull against live client bodies; reservations cover the pre-spawn gap.
+	return !positionWouldTelefrag( point.origin );
 }
 
 giveStartingLoadout()
@@ -1140,7 +1271,7 @@ updateRoundHud()
 	if ( is_final_round() )
 		final = 1;
 
-	self setClientDvars( "ui_hud_round", "" + level.round_number,
+	self setClientDvars( "ui_hud_round", "" + report_round_number(),
 		"ui_hud_round_goal", "" + goal,
 		"ui_hud_special_round", "" + special,
 		"ui_hud_final_round", "" + final );
@@ -1149,11 +1280,24 @@ updateRoundHud()
 // The extraction round, after the tier's survival rounds.
 is_final_round()
 {
-	return level.zm_round_cap > 0 && level.round_number >= level.zm_round_cap;
+	return level.zm_round_cap > 0 && level.round_number > level.zm_round_cap;
+}
+
+// Separate extraction is a phase after completed survival waves, not an
+// additional survived round in profile reports or a visible N+1/N HUD.
+report_round_number()
+{
+	if ( is_final_round() ) return level.zm_round_cap;
+	return level.round_number;
 }
 
 publishRoundHud()
 {
+	// Native disconnect freezes ownership before the GSC disconnect callback.
+	// Keep a non-final round checkpoint on the native side; this does not
+	// submit a report, settle rewards, or consume the eventual defeat result.
+	if ( level.zm_round_mode == 3 )
+		codol_checkpointZombiesRound( level.zm_round_mode, report_round_number(), 0 );
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 		players[ i ] updateRoundHud();
@@ -1210,6 +1354,13 @@ round_start()
 	if ( !isDefined( level.round_think_func ) )
 		level.round_think_func = ::round_think;
 
+
+	if ( codollocaltestallowed() && level.round_number > 1 )
+	{
+		level notify( "between_round_over" );
+		wait_network_frame();
+	}
+
 	level thread [[ level.round_think_func ]]();
 }
 
@@ -1260,9 +1411,9 @@ round_think()
 
 		// T5 DT#36173: the per-round barricade reward cap is
 		// min( 50 * round, 500 ).
-		maxreward = 50 * level.round_number;
-		if ( maxreward > 500 )
-			maxreward = 500;
+		maxreward = 500;
+		if ( level.round_number < 10 )
+			maxreward = 50 * level.round_number;
 		level.zombie_vars[ "rebuild_barrier_cap_per_round" ] = maxreward;
 
 		publishRoundHud();
@@ -1273,27 +1424,20 @@ round_think()
 
 		level thread award_grenades_for_survivors();
 
-		// T5 :3913 chalk_one_up runs before the round's spawning starts: the
-		// intro on the first round (1 + 2 + 3 + 0.25 + 2 = 8.25 s, :3708-
-		// :3790), the chalk flash on every later one (0.5 + 2 = 2.5 s).  The
-		// round-over chalk (10 s) is the between-round wait below.
-		if ( is_true( level.first_round ) )
-			wait( 8.25 );
-		else
-			wait( 2.5 );
-
-		codolprintln( "CoDOL zm: round " + level.round_number + " begins with " + players.size + " player(s)" );
+		{}
 
 		level.round_start_time = getTime();
+		if ( codollocaltestallowed() )
+			level.localtest_round_active = true;
 		level thread [[ level.round_spawn_func ]]();
 
 		level notify( "start_of_round" );
 
 		[[ level.round_wait_func ]]();
+		if ( codollocaltestallowed() )
+			level.localtest_round_active = false;
 		if ( isDefined( level.zm_round_budget ) && isDefined( level.zm_round_spawned ) )
-			codolprintln( "CoDOL zm: round " + level.round_number + " accounting: budget " +
-				level.zm_round_budget + " spawned " + level.zm_round_spawned +
-				" remaining " + level.zombie_total + " alive " + get_enemy_count() );
+			{}
 
 		level.first_round = false;
 		level notify( "end_of_round" );
@@ -1306,9 +1450,7 @@ round_think()
 			level.zombie_vars[ "zombie_spawn_delay" ] = level.zm_spawn_floor;
 
 		// T5 :3960.
-		level.zombie_move_speed = level.round_number * level.zombie_vars[ "zombie_move_speed_multiplier" ];
-
-		level.round_number++;
+		advance_round();
 
 		publishRoundHud();
 
@@ -1318,11 +1460,26 @@ round_think()
 	}
 }
 
+// A saturated speed dial has the same movement semantics as the old >100
+// value. Keep the count independent; representable-counter saturation never
+// ends the match, triggers rescue, or wraps it back to round1.
+advance_round()
+{
+	speed = 100;
+	if ( level.round_number < 100 )
+		speed = level.round_number * level.zombie_vars[ "zombie_move_speed_multiplier" ];
+	if ( speed > 100 ) speed = 100;
+	level.zombie_move_speed = speed;
+	if ( level.round_number < 2147483000 )
+		level.round_number++;
+}
+
 // T5 :4130.  Wait for the budget to drain and every spawned zombie to die.
 // flag "end_round_wait" is T5's own escape hatch and is honoured.
 round_wait()
 {
 	level endon( "end_game" );
+	level thread maps\_zombiemode_spawner::zombie_speed_up();
 
 	wait( 1 );
 
@@ -1371,94 +1528,39 @@ award_grenades_for_survivors()
 	}
 }
 
-// T5 :5064 end_game, reduced to what this server can do: stop the loop, stop
-// the spawner, and let the match end.  T5's intermission stats screen needs
-// the leaderboard and stats backends, which do not exist here.
+// Preserve C1's death/extraction POV and stock extraction outcome splash.
+// No BO1 touring camera or T5 GAME OVER / survived-rounds overlay.
 end_game_watcher()
 {
 	level waittill( "end_game" );
-
 	if ( level.intermission )
 		return;
-
-	level.gameEnded = true;
+	// The natural all-down path does not receive the engine code-end callback.
+	// Settle its player results before reporting or starting presentation.
+	Callback_CodeEndGame();
 	level.intermission = true;
-
-	println( "CoDOL zm: game over on round " + level.round_number + " after " +
-		level.total_zombies_killed + " kills\n" );
-
+	maps\_zombiemode_laststand::clear_all_down_countdown();
+	maps\_zombiemode_spawner::stop_spawning();
+	level notify( "intermission" );
 	maps\_zombiemode_spawner::clear_zombies();
-
-	// T5 _zombiemode::player_intermission opens with closeMenu +
-	// closeInGameMenu before parking the player for the intermission.
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
-	{
-		players[ i ] closeMenu();
-		players[ i ] closeInGameMenu();
 		players[ i ] freezeControls( true );
-		players[ i ] thread end_game_text();
-	}
-
-	wait( level.zombie_vars[ "zombie_intermission_time" ] );
-
-	exitLevel( false );
-}
-
-// T5 end_game :5085-:5140: "GAME OVER" over "You survived N rounds", per
-// player.  T5 setText()s the count as a format argument; this VM's hud text
-// takes one value, so the count is the label's &&1 (the same idiom as the
-// perk-pop notice).  A rescue replaces the title: SCRIPT_MISSION_COMPLETE
-// for those aboard, ZOMBIE_DID_NOT_SURVIVE ("You didn't make it out...") for
-// those left behind (both C1 strings; _zombiemode_extraction).
-end_game_text()
-{
-	self endon( "disconnect" );
-
-	title = &"ZOMBIE_GAME_OVER";
+	// Retain the existing terminal music choice. An extraction victory already
+	// owns its cue; this function refuses to replace a terminal victory.
+	maps\_zombiemode_audio::change_zombie_music( "game_over" );
+	// Publish stock AAR flags before the full6/16-second presentation hold.
+	// The frontend consumes them only after BACK_FROM_GAME; no exit-frame race.
+	maps\_zombiemode_terminal::publish_results();
+	// The observed loss returns through a brief same-POV fade/load transition.
+	// Six seconds is a bounded adaptation, not a measured engine load duration.
+	// Successful extraction already flew out for six seconds and held its
+	// stock zrescue_* outcome; do not add a defeat hold to that path.
 	if ( isDefined( level.zm_extraction_result ) && level.zm_extraction_result == "win" )
-	{
-		if ( is_true( self.zm_extracted ) )
-			title = &"SCRIPT_MISSION_COMPLETE";
-		else
-			title = &"ZOMBIE_DID_NOT_SURVIVE";
-	}
-
-	game_over = newClientHudElem( self );
-	game_over.alignX = "center";
-	game_over.alignY = "middle";
-	game_over.horzAlign = "center";
-	game_over.vertAlign = "middle";
-	game_over.y = -130;
-	game_over.foreground = true;
-	game_over.font = "objective";
-	game_over.fontScale = 2.4;
-	game_over.alpha = 0;
-	game_over.color = ( 1, 1, 1 );
-	game_over setText( title );
-	game_over fadeOverTime( 1 );
-	game_over.alpha = 1;
-
-	survived = newClientHudElem( self );
-	survived.alignX = "center";
-	survived.alignY = "middle";
-	survived.horzAlign = "center";
-	survived.vertAlign = "middle";
-	survived.y = -100;
-	survived.foreground = true;
-	survived.font = "objective";
-	survived.fontScale = 1.6;
-	survived.alpha = 0;
-	survived.color = ( 1, 1, 1 );
-	if ( level.round_number < 2 )
-		survived setText( &"ZOMBIE_SURVIVED_ROUND" );
+		maps\_zombiemode_terminal::podium();
 	else
-	{
-		survived.label = &"ZOMBIE_SURVIVED_ROUNDS";
-		survived setValue( level.round_number );
-	}
-	survived fadeOverTime( 1 );
-	survived.alpha = 1;
+		maps\_zombiemode_terminal::defeat();
+	exitLevel( false );
 }
 
 // ==========================================================================

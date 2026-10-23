@@ -250,7 +250,7 @@ spawnDogTags( victim, attacker )
 	tags thread bounce();
 
 	updateBotTags();
-	debugTags( "drop " + victim.name + " (" + tags.victimTeam + ") killed by " + attacker.name + " at " + pos + " obj " + tags.objId );
+	{}
 }
 
 
@@ -311,7 +311,7 @@ onUse( player )
 		if ( isDefined( self.attacker ) )
 			self.attacker thread xpEventPopup( &"SPLASHES_DENIED_KILL", ( 1, 0.5, 0.5 ) );
 
-		debugTags( event + " by " + player.name );
+		{}
 	}
 	else
 	{
@@ -331,7 +331,7 @@ onUse( player )
 		if ( isDefined( game["voice"][player.team] ) )
 			player playLocalSound( game["voice"][player.team] + "killfirm" );
 
-		debugTags( event + " by " + player.name + " (" + player.pers["team"] + ")" );
+		{}
 
 		player maps\mp\gametypes\_gamescore::giveTeamScoreForObjective( player.pers["team"], 1 );
 	}
@@ -475,10 +475,7 @@ updateBotTags()
 
 
 debugTags( text )
-{
-	if ( getDvarInt( "scr_conf_debug" ) > 0 )
-		codolPrintLn( "CoDOL conf: " + text + " | score " + game["teamScores"]["allies"] + ":" + game["teamScores"]["axis"] );
-}
+{}
 
 
 // IW5 maps\mp\gametypes\_rank::xpEventPopup: a short line of text under the

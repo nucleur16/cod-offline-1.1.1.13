@@ -116,7 +116,7 @@ watchDvar()
 
 report( text )
 {
-    codolPrintLn( "CoDOL chtest: " + text );
+    {}
 }
 
 perkRefs()

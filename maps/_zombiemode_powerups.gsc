@@ -74,8 +74,8 @@
 //   start_revive_all              :1383
 //   free_perk_powerup             :2293
 //
-// THE FOUR WEAPON-BACKED PICKUPS.  Each joins the random drop bag only if
-// what it needs resolves in the mounted zones:
+// Weapon-backed pickup implementations. Only enabled registrations below
+// join the drop bag, and only if their content resolves in the mounted zones:
 //   kis_minigun_zm -- T5 :2459 minigun_weapon_powerup and its countdown /
 //     replace / remove / downed helpers, over C1's minigun_zm.
 //   kis_tesla_zm   -- T5 :2643 tesla_weapon_powerup and helpers, over C1's
@@ -87,8 +87,9 @@
 //     table plus the results T5 _zombiemode_powerups.gsc:151 registers into
 //     it, restricted to results whose content exists here (see the PANDORA
 //     section below for which are in and why the rest are not).
-// T5 :425 keeps tesla (and free_perk, bonus points) out of random drops;
-// this port currently includes them, with T5's one-at-a-time rule for tesla.
+// T5 :425 keeps tesla (and free_perk, bonus points) out of random drops.
+// This port includes free_perk and bonus points. Tesla and sentry pickups
+// are disabled by request; their weapon/equipment implementations remain.
 // A kis_* weapon's presence in C1's catalogue alone does not make it an
 // eligible random drop; RC-XD is excluded from the bag.
 // Also not taken: bonfire_sale (no zm map authors the bonfire trigger),
@@ -118,6 +119,8 @@ POWERUP_HUD_TIMER_SCALE = 0.9;
 
 init()
 {
+	// Shared screen overlay; material ships in patch_code_post_gfx_mp.
+	precacheShader( "white" );
 	// T5 :69 init_powerups tuning, read through set_zombie_var so
 	// mp/zombiemode.csv overrides any of them if it carries the row.
 	set_zombie_var( "zombie_powerup_drop_increment",   2000 );
@@ -154,8 +157,6 @@ init()
 	level._effect[ "powerup_grabbed_solo" ]      = loadfx( "misc/fx_zombie_powerup_solo_grab" );
 	level._effect[ "powerup_grabbed_wave_solo" ] = loadfx( "misc/fx_zombie_powerup_solo_wave" );
 	precacheModel( "tag_origin" );
-	// nuke_flash's full-screen fade (T5 _zombiemode_powerups.gsc:1772).
-	precacheShader( "white" );
 
 	powerup_hud_precache();
 
@@ -168,15 +169,14 @@ init()
 	init_powerups();
 	init_pandora();
 
-	level thread powerup_test_watch();
 
 	if ( level.zombie_powerup_array.size < 1 )
 	{
-		codolPrintLn( "CoDOL zm: no kis_* power-up resolved out of the mounted zones; power-ups are off" );
+		{}
 		return;
 	}
 
-	codolPrintLn( "CoDOL zm: " + level.zombie_powerup_array.size + " power-ups resolved out of the mounted zones" );
+	{}
 
 	randomize_powerups();
 
@@ -200,18 +200,17 @@ init_powerups()
 	add_zombie_powerup( "bonus_points_player", "kis_bonus_points_player_zm", "zombie_z_money_icon" );
 	add_zombie_powerup( "bonus_points_team",   "kis_bonus_points_team_zm",   "zombie_z_money_icon" );
 
-	// The four weapon-backed pickups, each gated on its own content.
+	// The weapon-backed pickups, each gated on its own content.
 	precacheItem( "minigun_zm" );
 	if ( codol_isWeaponMounted( "minigun_zm" ) )
 		add_zombie_powerup( "minigun", "kis_minigun_zm", "zombie_pickup_minigun" );
 
-	if ( is_true( level.zm_tesla_ok ) )
-		add_zombie_powerup( "tesla", "kis_tesla_zm", "zombie_pickup_tesla" );
+	// Keep Wunderwaffe (tesla) and sentry out of the registry entirely.
+	// Both random selection and named map/debug drops use this registry.
 
-	if ( is_true( level.zm_sentry_ok ) )
-		add_zombie_powerup( "sentry", "kis_sentry_zm", "sentry_minigun_folded" );
-
-	add_zombie_powerup( "pandora", "kis_pandora_zm", "zombie_pandora" );
+	// zombie_pandora is the skeleton-key model (verified from the shipped
+	// common_gametype_zm geometry). Keep it out of the registry so neither
+	// random rolls nor named map drops can spawn the removed key pickup.
 }
 
 // T5 :554 add_zombie_powerup( name, model, ... ).  See the header: the kis_*
@@ -281,54 +280,42 @@ get_next_powerup()
 	return name;
 }
 
-// T5 :368 get_valid_powerup.  A drawn power-up that cannot legally drop now
-// is skipped, exactly by T5's rules:
-//   carpenter    only once 5 windows are fully torn open;
-//   fire_sale    not while one is on, nor before the box has moved;
-//   all_revive   only while someone is downed;
-//   minigun      not while anyone holds one, and before the power is on only
-//                in a solo game where a life (Quick Revive) was bought;
-//   free_perk, tesla, bonus_points_player / _team never drop with the
-//                regular power-ups (T5 hands them out from other systems).
-// Insta-Kill and Double Points DO drop again while active (T5 has no such
-// skip; a second one refreshes the timer).  CoDOL's own pickups (sentry,
-// pandora) keep their CoDOL gates.  The draw is bounded by two passes of the
-// bag; T5's while( 1 ) cannot stall there because its bag always holds a
-// legal entry.
+// T5 :368.  A drawn power-up that cannot legally fire right now is skipped;
+// the bag is walked at most once so the draw always terminates.
 get_valid_powerup()
 {
-	for ( i = 0; i < level.zombie_powerup_array.size * 2; i++ )
+	for ( i = 0; i < level.zombie_powerup_array.size; i++ )
 	{
 		name = get_next_powerup();
 
 		if ( !isDefined( name ) )
 			continue;
 
-		switch ( name )
-		{
-		case "free_perk":
-		case "tesla":
-		case "bonus_points_player":
-		case "bonus_points_team":
-		case "random_weapon":
-		case "bonfire_sale":
-		case "lose_points_team":
-		case "lose_perk":
-		case "empty_clip":
-			continue;
-		}
-
-		if ( name == "carpenter" && get_num_window_destroyed() < 5 )
+		// T5 :400.  No second insta-kill or double-points while one is up.
+		if ( name == "insta_kill" && is_true( level.zombie_vars[ "zombie_powerup_insta_kill_on" ] ) )
 			continue;
 
-		if ( name == "fire_sale" && ( is_true( level.zombie_vars[ "zombie_powerup_fire_sale_on" ] ) ||
-			!isDefined( level.chest_moves ) || level.chest_moves < 1 ) )
+		if ( name == "double_points" && is_true( level.zombie_vars[ "zombie_powerup_point_doubler_on" ] ) )
 			continue;
 
+		if ( name == "fire_sale" && is_true( level.zombie_vars[ "zombie_powerup_fire_sale_on" ] ) )
+			continue;
+
+		// T5 :430.  Nothing to revive, nothing to carpenter.
 		if ( name == "all_revive" && maps\_zombiemode_laststand::player_num_in_laststand() < 1 )
 			continue;
 
-		if ( name == "minigun" && minigun_no_drop() )
+		if ( name == "carpenter" && !any_barrier_damaged() )
+			continue;
+
+		// T5 :460 minigun_no_drop, first half: not while anyone holds one.
+		// (Its second half -- no drop before the power is on in solo --
+		// reads T5's solo-lives bookkeeping, which this port does not keep.)
+		if ( name == "minigun" && any_player_has( "zombie_powerup_minigun_on" ) )
+			continue;
+
+		// T5 :919 / :2843 tesla_powerup_active: one tesla at a time.
+		if ( name == "tesla" && any_player_has( "zombie_powerup_tesla_on" ) )
 			continue;
 
 		// T5 _zombiemode_auto_turret.gsc:188 keeps at most two turrets up.
@@ -339,40 +326,6 @@ get_valid_powerup()
 	}
 
 	return level.zombie_powerup_array[ 0 ];
-}
-
-// T5 :460 minigun_no_drop.  T5's level.solo_lives_given is the count of
-// Quick Revive lives bought in solo; here that is the solo player's spare
-// life (pers[ "lives" ], _zombiemode_laststand.gsc zm_spare_life).
-minigun_no_drop()
-{
-	if ( any_player_has( "zombie_powerup_minigun_on" ) )
-		return true;
-
-	if ( !flag_exist( "power_on" ) || !flag( "power_on" ) )
-	{
-		players = getPlayers();
-		if ( players.size != 1 )
-			return true;
-		if ( !isDefined( players[ 0 ].pers ) || !isDefined( players[ 0 ].pers[ "lives" ] ) || players[ 0 ].pers[ "lives" ] < 1 )
-			return true;
-	}
-	return false;
-}
-
-// T5 :467 get_num_window_destroyed.
-get_num_window_destroyed()
-{
-	num = 0;
-	if ( !isDefined( level.exterior_goals ) )
-		return 0;
-	for ( i = 0; i < level.exterior_goals.size; i++ )
-	{
-		chunks = level.exterior_goals[ i ].barrier_chunks;
-		if ( isDefined( chunks ) && chunks.size > 0 && all_chunks_destroyed( chunks ) )
-			num++;
-	}
-	return num;
 }
 
 // T5 keeps these in player.zombie_vars[]; this port's players have no such
@@ -423,25 +376,25 @@ any_barrier_damaged()
 // --------------------------------------------------------------------------
 // Arming a drop.  T5 :523 watch_for_drop.
 //
-// The first drop arms once the players' combined score_total passes their
-// starting points plus zombie_powerup_drop_increment (2000).  Every time one
-// is armed the increment grows by 14% and the next threshold is the current
-// total plus the new increment, so drops thin out as the game goes on.
+// T5 sums the points every player has EARNED and raises the drop flag each
+// time the running total passes another zombie_powerup_drop_increment.  The
+// running total is maintained here off the same "zom_kill" notify the round
+// loop already uses, plus the player's own score delta, because this port's
+// _zombiemode_score has no per-award notify to hook.
 // --------------------------------------------------------------------------
 
 watch_for_drop()
 {
 	level endon( "intermission" );
 
-	flag_wait( "begin_spawning" );
-
-	players = getPlayers();
-	score_to_drop = ( players.size * level.zombie_vars[ "zombie_score_start_1p" ] ) + level.zombie_vars[ "zombie_powerup_drop_increment" ];
+	last_total = 0;
 
 	for ( ;; )
 	{
-		players = getPlayers();
+		wait( 1 );
+
 		total = 0;
+		players = getPlayers();
 		for ( i = 0; i < players.size; i++ )
 		{
 			if ( isDefined( players[ i ].score_total ) )
@@ -450,14 +403,20 @@ watch_for_drop()
 				total += players[ i ].score;
 		}
 
-		if ( total > score_to_drop )
+		if ( total <= last_total )
 		{
-			level.zombie_vars[ "zombie_powerup_drop_increment" ] *= 1.14;
-			score_to_drop = total + level.zombie_vars[ "zombie_powerup_drop_increment" ];
-			level.zombie_vars[ "zombie_drop_item" ] = 1;
+			last_total = total;
+			continue;
 		}
 
-		wait( 0.5 );
+		level.zombie_score_since_drop += total - last_total;
+		last_total = total;
+
+		if ( level.zombie_score_since_drop < level.next_drop_threshold )
+			continue;
+
+		level.zombie_score_since_drop = 0;
+		level.zombie_vars[ "zombie_drop_item" ] = 1;
 	}
 }
 
@@ -543,7 +502,7 @@ playable_area_volumes()
 			level.zm_playable_area[ level.zm_playable_area.size ] = ents[ i ];
 	}
 
-	codolPrintLn( "CoDOL zm: " + level.zm_playable_area.size + " player_volume(s) bound the power-up drops" );
+	{}
 	return level.zm_playable_area;
 }
 
@@ -677,45 +636,30 @@ powerup_wobble()
 
 	self thread powerup_glow_on();
 
-	// T5 :1603-:1621: every 2.5-5 s the pickup eases to a new random
-	// tumble -- pitch -60..60, roll -45..45, yaw on by 60..300 degrees.
-	while ( isDefined( self ) )
+	self.angles = ( 0, 0, 0 );
+
+	for ( ;; )
 	{
-		waittime = randomFloatRange( 2.5, 5 );
-		yaw = randomInt( 360 );
-		if ( yaw > 300 )
-			yaw = 300;
-		else if ( yaw < 60 )
-			yaw = 60;
-		yaw = self.angles[ 1 ] + yaw;
-		new_angles = ( -60 + randomInt( 120 ), yaw, -45 + randomInt( 90 ) );
-		self rotateTo( new_angles, waittime, waittime * 0.5, waittime * 0.5 );
-		wait( 0.05 + randomFloat( waittime - 0.15 ) );
+		self rotateTo( self.angles + ( 0, 180, 0 ), 1, 0, 0 );
+		wait( 1 );
+		self.angles = self.angles + ( 0, 180, 0 );
 	}
 }
 
-// T5 :1626 powerup_timeout: solid for 15 s, then 40 hide/show toggles --
-// 15 at 0.5 s, 10 at 0.25 s, 15 at 0.1 s -- about 26.5 s in all.
+// T5 :1626 powerup_timeout.  T5's numbers: alive for 30 s, blinking for the
+// last 5 at 4 Hz.
 powerup_timeout()
 {
 	self endon( "powerup_grabbed" );
-	self endon( "death" );
 
-	wait( 15 );
+	wait( 25 );
 
-	for ( i = 0; i < 40; i++ )
+	for ( i = 0; i < 20; i++ )
 	{
-		if ( i % 2 )
-			self hide();
-		else
-			self show();
-
-		if ( i < 15 )
-			wait( 0.5 );
-		else if ( i < 25 )
-			wait( 0.25 );
-		else
-			wait( 0.1 );
+		self hide();
+		wait( 0.125 );
+		self show();
+		wait( 0.125 );
 	}
 
 	self notify( "powerup_timedout" );
@@ -725,7 +669,7 @@ powerup_timeout()
 }
 
 // T5 :1197 powerup_grab.  A 64-unit proximity test, not a trigger -- T5's
-// own form.
+// own form, and it is what lets a downed player fail to collect.
 powerup_grab()
 {
 	self endon( "powerup_timedout" );
@@ -745,15 +689,13 @@ powerup_grab()
 		{
 			player = players[ i ];
 
-			// T5 :1213-:1221 checks nobody's validity: a downed player
-			// crawling over a power-up takes it -- except a weapon power-up
-			// (minigun, tesla, random weapon; here also the RC car), which a
-			// downed or reviving player cannot hold.  A spectator is not in
-			// the world.
-			if ( !isDefined( player ) || !isAlive( player ) || player.sessionstate != "playing" )
+			if ( !is_player_valid( player ) )
 				continue;
-			if ( is_weapon_powerup( self.powerup_name ) &&
-				( is_true( player.laststand ) || ( player useButtonPressed() && player in_revive_trigger() ) ) )
+
+			// T5 :1215: no weapon power-up for a player who is reviving (a
+			// downed one already fails is_player_valid); the RC car is a
+			// ride of the same kind.
+			if ( is_weapon_powerup( self.powerup_name ) && player useButtonPressed() && player in_revive_trigger() )
 				continue;
 
 			if ( distanceSquared( player.origin, self.origin ) >= range_squared )
@@ -776,14 +718,14 @@ powerup_grab()
 
 			// CHALLENGE_ZM_POWERUPS "pick up &&1 power-ups".
 			player maps\_zombiemode_challenges::zm_challenge_inc( "zm_powerups" );
-			codolPrintLn( "CoDOL zm powerup: " + self.powerup_name + " grabbed by " + player.name + " at " + self.origin );
+			{}
 			player powerup_vo( self.powerup_name );
 			player play_sound_on_ent( "powerup_grabbed" );
 
 			switch ( self.powerup_name )
 			{
 			case "nuke":
-				level thread nuke_powerup( player, self.origin );
+				level thread nuke_powerup( player );
 				break;
 			case "full_ammo":
 				level thread full_ammo_powerup();
@@ -885,108 +827,84 @@ powerup_vo( type )
 // The effects
 // --------------------------------------------------------------------------
 
-// T5 :1677 nuke_powerup.  A white flash for everyone, then -- half a second
-// later -- every zombie is marked and killed in order of distance from the
-// drop, 0.1-0.7 s apart, each losing its head first (unless no_gib).  The
-// kills are the world's (no kill points; a nuked zombie still rolls for a
-// power-up, T5 :3388), and every player is paid 400.
-//
-// NOT TAKEN: T5's misc/fx_zombie_mini_nuke at the drop, flame_death_fx on
-// the first five and the evt_nuked / evt_nuke_flash sounds -- none of them
-// ships in a CoDOL zone (docs/zone_assets/ALL_fx.txt, ALL_sound.txt).
-nuke_powerup( player, location )
+// T5 :1677 nuke_powerup.  Kill every zombie alive and pay the grabber.
+// _zombiemode_score.gsc already carries the "nuke_powerup" event.
+nuke_powerup( player )
 {
 	level notify( "nuke_powerup" );
+	level thread nuke_screen_flash();
 
-	if ( !isDefined( location ) )
+	if ( isDefined( player ) && is_player_valid( player ) )
+		player maps\_zombiemode_score::player_add_points( "nuke_powerup", 400 );
+
+	if ( !isDefined( level.zombies ) )
+		return;
+
+	for ( i = 0; i < level.zombies.size; i++ )
 	{
-		location = ( 0, 0, 0 );
-		if ( isDefined( player ) )
-			location = player.origin;
-	}
-
-	level thread nuke_flash();
-
-	wait( 0.5 );
-
-	zombies = [];
-	if ( isDefined( level.zombies ) )
-	{
-		for ( i = 0; i < level.zombies.size; i++ )
-		{
-			z = level.zombies[ i ];
-			if ( isDefined( z ) && isAlive( z ) )
-				zombies[ zombies.size ] = z;
-		}
-	}
-
-	// T5 get_array_of_closest( location, zombies ).
-	for ( i = 1; i < zombies.size; i++ )
-	{
-		z = zombies[ i ];
-		d = distanceSquared( z.origin, location );
-		j = i - 1;
-		while ( j >= 0 && distanceSquared( zombies[ j ].origin, location ) > d )
-		{
-			zombies[ j + 1 ] = zombies[ j ];
-			j--;
-		}
-		zombies[ j + 1 ] = z;
-	}
-
-	nuked = [];
-	for ( i = 0; i < zombies.size; i++ )
-	{
-		z = zombies[ i ];
-		if ( is_true( z.marked_for_death ) )
+		if ( !isDefined( level.zombies[ i ] ) )
 			continue;
-		if ( isDefined( z.nuke_damage_func ) )
-		{
-			z thread [[ z.nuke_damage_func ]]();
-			continue;
-		}
-		z.marked_for_death = true;
-		z.nuked = true;
-		nuked[ nuked.size ] = z;
-	}
 
-	for ( i = 0; i < nuked.size; i++ )
-	{
-		wait( randomFloatRange( 0.1, 0.7 ) );
-		z = nuked[ i ];
-		if ( !isDefined( z ) || !isAlive( z ) )
-			continue;
-		if ( !is_true( z.isdog ) && !is_true( z.no_gib ) )
-			z maps\_zombiemode_gib::zombie_head_gib();
-		z doDamage( z.health + 666, z.origin );
+		// T5 staggers the kills so the round counter and the death events do
+		// not all land in one frame.
+		level.zombies[ i ] thread nuke_kill_zombie();
+		wait( 0.05 );
 	}
-
-	players = getPlayers();
-	for ( i = 0; i < players.size; i++ )
-		players[ i ] maps\_zombiemode_score::player_add_points( "nuke_powerup", 400 );
 }
 
-// T5 :1758 nuke_flash: the screen fades to white and back.
-nuke_flash()
+// One shared, current HUD overlay reaches every player, including downed
+// teammates, without replacing their map/perk vision or applying flashbang
+// movement/audio effects. A second nuke restarts this same overlay's fade.
+// BO1 _zombiemode_powerups::nuke_flash: 0.2 s rise to 0.8, fade out at
+// 0.5 s over 1.0 s, then destroy at 1.6 s.
+nuke_screen_flash()
 {
-	fadetowhite = newHudElem();
-	fadetowhite.x = 0;
-	fadetowhite.y = 0;
-	fadetowhite.alpha = 0;
-	fadetowhite.horzAlign = "fullscreen";
-	fadetowhite.vertAlign = "fullscreen";
-	fadetowhite.foreground = true;
-	fadetowhite setShader( "white", 640, 480 );
+	level notify( "nuke_screen_flash_restart" );
+	level endon( "nuke_screen_flash_restart" );
 
-	fadetowhite fadeOverTime( 0.2 );
-	fadetowhite.alpha = 0.8;
+	if ( !isDefined( level.zm_nuke_flash_hud ) )
+	{
+		flash = newHudElem();
+		flash.x = 0;
+		flash.y = 0;
+		flash.alignX = "left";
+		flash.alignY = "top";
+		flash.horzAlign = "fullscreen";
+		flash.vertAlign = "fullscreen";
+		flash.foreground = true;
+		flash.archived = false;
+		flash.sort = 100;
+		flash.color = ( 1, 1, 1 );
+		flash.alpha = 0;
+		flash setShader( "white", 640, 480 );
+		level.zm_nuke_flash_hud = flash;
+	}
 
+	flash = level.zm_nuke_flash_hud;
+	flash fadeOverTime( 0.2 );
+	flash.alpha = 0.8;
 	wait( 0.5 );
-	fadetowhite fadeOverTime( 1.0 );
-	fadetowhite.alpha = 0;
-
+	flash fadeOverTime( 1.0 );
+	flash.alpha = 0;
 	wait( 1.1 );
-	fadetowhite destroy();
+	flash destroy();
+	level.zm_nuke_flash_hud = undefined;
+}
+
+nuke_kill_zombie()
+{
+	if ( !isDefined( self ) )
+		return;
+
+	// T5 nuke_powerup: a boss answers with its own nuke_damage_func.
+	if ( isDefined( self.nuke_damage_func ) )
+	{
+		self thread [[ self.nuke_damage_func ]]();
+		return;
+	}
+
+	self.nuked = true;
+	self doDamage( self.health + 100, self.origin );
 }
 
 // T5 :1792 double_points_powerup + :1980 point_doubler_on_hud /
@@ -1071,6 +989,14 @@ check_for_instakill( player, mod, hit_location )
 	self.attacker = player;
 	self.damagemod = "MOD_UNKNOWN";
 	self.damagelocation = hit_location;
+	// The synthetic lethal hit deliberately retains T5's MOD_UNKNOWN point
+	// bonus. Preserve the real hit separately for headshot/weapon tracking:
+	// its native death callback otherwise replaces the original hit metadata.
+	self.zm_instakill_hit = spawnStruct();
+	self.zm_instakill_hit.attacker = player;
+	self.zm_instakill_hit.mod = mod;
+	self.zm_instakill_hit.hit_location = hit_location;
+	self.zm_instakill_hit.weapon = self.damageweapon;
 
 	self doDamage( self.health * 10, self.origin, player, player, 0, "MOD_UNKNOWN" );
 	player notify( "zombie_killed" );
@@ -1089,7 +1015,7 @@ timed_powerup_start( key, on_var, time_var )
 
 	if ( is_true( level.zombie_vars[ on_var ] ) )
 	{
-		codolPrintLn( "CoDOL zm powerup: " + key + " grabbed again; time reset to " + level.zombie_vars[ time_var ] + " s" );
+		{}
 		return false;
 	}
 
@@ -1113,10 +1039,6 @@ full_ammo_powerup()
 	{
 		player = players[ i ];
 		if ( !isDefined( player ) )
-			continue;
-
-		// T5 :1813: a downed player's ammo is left alone.
-		if ( is_true( player.laststand ) )
 			continue;
 
 		weapons = player getWeaponsListAll();
@@ -1175,7 +1097,9 @@ start_fire_sale()
 
 	// T5 :1418 restarts the 30 s on a second grab; the boxes it opened stay
 	// open until the one fire_sale_off below.
-	if ( !timed_powerup_start( "fire_sale", "zombie_powerup_fire_sale_on", "zombie_powerup_fire_sale_time" ) )
+	started = timed_powerup_start( "fire_sale", "zombie_powerup_fire_sale_on", "zombie_powerup_fire_sale_time" );
+	maps\_zombiemode_audio::fire_sale_music_start();
+	if ( !started )
 		return;
 
 	// T5 :1414 toggle_fire_sale_on: every hidden box spot opens for the sale.
@@ -1184,6 +1108,7 @@ start_fire_sale()
 	timed_powerup_wait( "fire_sale" );
 
 	level.zombie_vars[ "zombie_powerup_fire_sale_on" ] = 0;
+	maps\_zombiemode_audio::fire_sale_music_stop();
 	level notify( "fire_sale_off" );
 }
 
@@ -1427,7 +1352,7 @@ powerup_hud_update()
 		if ( !h.shown )
 		{
 			h.shown = true;
-			codolPrintLn( "CoDOL zm powerup HUD: " + kind.key + " shown to " + self.name + " in column " + ( column - 1 ) );
+			{}
 		}
 
 		// T5 Power_up_hud: fast blink under 5 s, slow under 10 s.
@@ -1536,13 +1461,19 @@ weapon_powerup_give( ent_player, kind, time )
 		{
 			ent_player giveMaxAmmo( w.weapon );
 			if ( getDvarInt( "zm_tesla_ammo_debug" ) > 0 )
-				codolPrintLn( "CoDOL zm tesla ammo: top-up " + ent_player.name + " clip " +
-					ent_player getWeaponAmmoClip( w.weapon ) + " stock " + ent_player getWeaponAmmoStock( w.weapon ) );
+				{}
 		}
 		if ( !isDefined( ent_player.zm_powerup_time[ kind ] ) || ent_player.zm_powerup_time[ kind ] < time )
 			ent_player.zm_powerup_time[ kind ] = time;
-		codolPrintLn( "CoDOL zm powerup: " + kind + " topped up for " + ent_player.name );
+		{}
 		return;
+	}
+
+	// Bound health diagnostics to the pickup window; no health/perk changes.
+	if ( kind == "minigun" )
+	{
+		ent_player.zm_minigun_health_trace_until = getTime() + 7000;
+		ent_player weapon_pickup_health_trace( "grant" );
 	}
 
 	// Ends the other weapon power-up, if any (T5's replace_weapon_powerup).
@@ -1563,32 +1494,51 @@ weapon_powerup_give( ent_player, kind, time )
 	{
 		ent_player giveMaxAmmo( w.weapon );
 		if ( getDvarInt( "zm_tesla_ammo_debug" ) > 0 )
-			codolPrintLn( "CoDOL zm tesla ammo: grant " + ent_player.name + " clip " +
-				ent_player getWeaponAmmoClip( w.weapon ) + " stock " + ent_player getWeaponAmmoStock( w.weapon ) +
-				" sustain " + getDvarInt( "player_sustainAmmo" ) );
+			{}
 	}
 	ent_player switchToWeapon( w.weapon );
 
 	ent_player set_powerup_state( w.on_field, true );
 
-	codolPrintLn( "CoDOL zm powerup: " + w.weapon + " given to " + ent_player.name + " (was " + before +
-		"), clip " + ent_player getWeaponAmmoClip( w.weapon ) + " stock " + ent_player getWeaponAmmoStock( w.weapon ) );
+	{}
 
 	level thread weapon_powerup_downed( ent_player, w );
 	level thread weapon_powerup_replace( ent_player, w );
 
-	level thread weapon_powerup_lock_when_held( ent_player, w );
+	// switchToWeapon sends a reliable selection request. Wait for the
+	// authoritative weapon and raise state before locking the player's
+	// controls or starting the pickup's lifetime.
+	ent_player.zm_powerup_time[ kind ] = 0;
+	level thread weapon_powerup_lock_when_held( ent_player, w, time );
+}
 
-	if ( kind == "minigun" )
-		level thread minigun_weapon_powerup_countdown( ent_player, w, time );
-	else
-		level thread tesla_weapon_powerup_countdown( ent_player, w, time );
+// Diagnostic only: the reported Jug/two-hit down was not reproduced with
+// real native damage during the raise. Capture accepted damage plus actual
+// health/perk state for seven seconds after a new Death Machine grant.
+weapon_pickup_health_trace( phase, attacker, damage, mod, weapon )
+{
+	if ( !isDefined( self.zm_minigun_health_trace_until ) || getTime() > self.zm_minigun_health_trace_until )
+		return;
+	if ( !isDefined( damage ) ) damage = 0;
+	if ( !isDefined( mod ) ) mod = "none";
+	if ( !isDefined( weapon ) ) weapon = "none";
+	num = -1;
+	kind = "other";
+	if ( isDefined( attacker ) )
+	{
+		num = attacker getEntityNumber();
+		if ( is_true( attacker.is_zombie ) ) kind = "zombie";
+		if ( isDefined( attacker.animname ) && attacker.animname == "zombie_dog" ) kind = "dog";
+		if ( is_true( attacker.is_boss ) ) kind = "boss";
+	}
+	{}
 }
 
 // T5 locks at the grab (increment_is_drinking).  This engine's switch lock
 // also refuses the client's own request for the power-up weapon, so it waits
-// for the raise to take the weapon into hand (two seconds at most).
-weapon_powerup_lock_when_held( ent_player, w )
+// for the acknowledged raise to finish. A failed switch must not lock the
+// previous gun, leave an invisible power-up owned, or consume its timer.
+weapon_powerup_lock_when_held( ent_player, w, time )
 {
 	ent_player endon( "death" );
 	ent_player endon( "disconnect" );
@@ -1596,12 +1546,32 @@ weapon_powerup_lock_when_held( ent_player, w )
 	ent_player endon( w.over_notify );
 	ent_player endon( "replace_weapon_powerup" );
 
-	for ( i = 0; i < 40 && ent_player getCurrentWeapon() != w.weapon; i++ )
+	for ( i = 0; i < 100; i++ )
+	{
+		if ( ent_player getCurrentWeapon() == w.weapon && !ent_player isSwitchingWeapon() )
+			break;
+		// Retry only until selection is acknowledged; requests during the
+		// raise would restart the client's presentation of the same weapon.
+		if ( i > 0 && i % 5 == 0 && ent_player getCurrentWeapon() != w.weapon )
+			ent_player switchToWeapon( w.weapon );
 		wait( 0.05 );
+	}
 
+	if ( ent_player getCurrentWeapon() != w.weapon || ent_player isSwitchingWeapon() )
+	{
+		level thread weapon_powerup_remove( ent_player, w, "equip was not acknowledged" );
+		return;
+	}
+
+	if ( w.kind == "minigun" )
+		ent_player weapon_pickup_health_trace( "ready" );
 	ent_player powerup_weapon_lock( w.kind );
-	codolPrintLn( "CoDOL zm powerup: " + w.weapon + " hold restrictions on for " + ent_player.name +
-		" (in hand: " + ent_player getCurrentWeapon() + ")" );
+	{}
+
+	if ( w.kind == "minigun" )
+		level thread minigun_weapon_powerup_countdown( ent_player, w, time );
+	else
+		level thread tesla_weapon_powerup_countdown( ent_player, w, time );
 }
 
 // T5 :2502.  Thirty seconds of minigun.
@@ -1660,8 +1630,7 @@ tesla_weapon_powerup_countdown( ent_player, w, time )
 			if ( debug_lines < 32 &&
 				( clip_count != debug_clip || stock_count != debug_stock || current_weapon != debug_weapon ) )
 			{
-				codolPrintLn( "CoDOL zm tesla ammo: poll " + ent_player.name + " clip " + clip_count +
-					" stock " + stock_count + " held " + current_weapon );
+				{}
 				debug_clip = clip_count;
 				debug_stock = stock_count;
 				debug_weapon = current_weapon;
@@ -1705,7 +1674,7 @@ weapon_powerup_replace( ent_player, w )
 	ent_player set_powerup_state( w.on_field, false );
 	ent_player.zm_powerup_weapon_held[ w.kind ] = false;
 
-	codolPrintLn( "CoDOL zm powerup: " + w.weapon + " replaced for " + ent_player.name );
+	{}
 }
 
 // T5 :2547 / :2731.  Take it back and hand the player their gun.
@@ -1733,8 +1702,7 @@ weapon_powerup_remove( ent_player, w, reason )
 	else
 		ent_player takeWeapon( w.weapon );
 
-	codolPrintLn( "CoDOL zm powerup: " + w.weapon + " taken from " + ent_player.name + " (" + reason +
-		"); switched back to " + restored );
+	{}
 }
 
 // T5 :2566-:2597.  The gun held before, else the first primary.  T5's last
@@ -1800,7 +1768,7 @@ weapon_powerup_downed( ent_player, w )
 	ent_player.zm_powerup_weapon_held[ w.kind ] = false;
 	ent_player.has_powerup_weapon = false;
 
-	codolPrintLn( "CoDOL zm powerup: " + w.weapon + " taken from " + ent_player.name + " (downed)" );
+	{}
 }
 
 // ==========================================================================
@@ -1883,7 +1851,7 @@ init_pandora()
 	ray = "not mounted";
 	if ( codol_isWeaponMounted( "ray_gun_zm" ) )
 		ray = weaponType( "ray_gun_zm" ) + "/" + weaponClass( "ray_gun_zm" );
-	codolPrintLn( "CoDOL zm pandora: " + keys.size + " results registered:" + names + " (ray_gun_zm " + ray + ")" );
+	{}
 }
 
 // qb :105.
@@ -1950,7 +1918,7 @@ pandora_powerup( position, forced )
 	if ( !isDefined( result ) )
 		return;
 
-	codolPrintLn( "CoDOL zm pandora: " + self.name + " rolled '" + result.name + "' at " + position );
+	{}
 
 	self thread [[ result.result_func ]]( position );
 }
@@ -2000,7 +1968,7 @@ qb_random_powerup_result( position )
 		}
 
 		playFx( level._effect[ "quantum_bomb_player_position_effect" ], position );
-		codolPrintLn( "CoDOL zm pandora: drops " + name );
+		{}
 		specific_powerup_drop( name, position );
 		return;
 	}
@@ -2028,7 +1996,7 @@ qb_random_bonus_or_lose_points_powerup_result( position )
 		powerup = "bonus_points_player";
 
 	playFx( level._effect[ "quantum_bomb_player_position_effect" ], position );
-	codolPrintLn( "CoDOL zm pandora: drops " + powerup );
+	{}
 	specific_powerup_drop( powerup, position );
 }
 
@@ -2083,7 +2051,7 @@ qb_random_weapon_starburst_result( position )
 		wait_network_frame();
 	}
 
-	codolPrintLn( "CoDOL zm pandora: starburst of " + weapon + " done" );
+	{}
 	weapon_model delete();
 }
 
@@ -2143,7 +2111,7 @@ qb_pack_or_unpack_current_weapon_result( position )
 					// (_zombiemode_weapons::weapon_give).
 					player maps\_zombiemode_weapons::weapon_swap( weapon, keys[ k ] );
 					playFx( level._effect[ "quantum_bomb_player_effect" ], player.origin );
-					codolPrintLn( "CoDOL zm pandora: unpacked " + weapon + " for " + player.name );
+					{}
 					break;
 				}
 			}
@@ -2162,7 +2130,7 @@ qb_pack_or_unpack_current_weapon_result( position )
 			// is replaced.  Swap from it so the raise is heard.
 			player maps\_zombiemode_weapons::weapon_swap( weapon, up );
 			playFx( level._effect[ "quantum_bomb_player_effect" ], player.origin );
-			codolPrintLn( "CoDOL zm pandora: packed " + weapon + " into " + up + " for " + player.name );
+			{}
 		}
 	}
 }
@@ -2189,7 +2157,7 @@ qb_auto_revive_result( position )
 		{
 			player maps\_zombiemode_laststand::revive_success( self );
 			playFx( level._effect[ "quantum_bomb_player_effect" ], player.origin );
-			codolPrintLn( "CoDOL zm pandora: revived " + player.name );
+			{}
 		}
 	}
 }
@@ -2214,7 +2182,7 @@ qb_zombie_speed_buff_result( position )
 		count++;
 	}
 
-	codolPrintLn( "CoDOL zm pandora: " + count + " zombies sprint" );
+	{}
 }
 
 // qb :825.
@@ -2234,7 +2202,7 @@ qb_zombie_add_to_total_result( position )
 
 	level.zombie_total += level.zombie_ai_limit;
 
-	codolPrintLn( "CoDOL zm pandora: " + level.zombie_ai_limit + " more zombies this round" );
+	{}
 }
 
 // qb :763.  Everything within 300 units dies, closest first.
@@ -2271,319 +2239,7 @@ qb_zombie_fling_result( position )
 		}
 	}
 
-	codolPrintLn( "CoDOL zm pandora: fling killed " + killed + " zombies" );
+	{}
 }
 
 // ==========================================================================
-// TEST HOOK, idle unless the dvar is set.  No C1 client is needed:
-//   set scr_zm_powerup_test "drop <clientnum> <powerup> [dx]"
-//       drops <powerup> at the client's feet, where the proximity grab takes it
-//       (or dx units along +x, out of reach: the glow and the timeout).
-//   set scr_zm_powerup_test "pandora <clientnum> <result>"
-//       runs one named pandora result at the client, bypassing the roll.
-//   set scr_zm_powerup_test "fire <clientnum> <seconds> [weapon]"
-//       turns the client to the nearest zombie and holds the fire button
-//       (codol_botPressButtons), re-aiming every 0.1 s.  With a weapon the
-//       client owns, setSpawnWeapon puts it in hand first: a test client
-//       that is not a combat bot sends no usercmd while no button is held,
-//       so a switchToWeapon on it is not carried out on its own.
-//   set scr_zm_powerup_test "zap <clientnum> x"
-//       a tesla_gun_zm projectile hit (doDamage, MOD_PROJECTILE) on the
-//       nearest zombie, through the native damage path.
-//   set scr_zm_powerup_test "state <clientnum> x" / "sentrydiag <clientnum> x"
-//       log the client's held weapon / every active sentry's view.
-//   set scr_zm_powerup_test "press <clientnum> <mask> <seconds> [direction]"
-//       holds C1 usercmd buttons (sprint 2, melee 4, prone 256, dive
-//       8388608, use 40) and direction bits (forward 1) on a test client and
-//       logs its weapon, stance and speed every 0.2 s meanwhile.
-//   set scr_zm_powerup_test "dive <clientnum> x"
-//       sprints the test client forward 1.2 s, then presses dive + prone.
-//   set scr_zm_powerup_test "dmtest <clientnum> <phase> [yaw]"
-//       the Death Machine hold restrictions on a test client: sprint, melee,
-//       dive, a weapon switch and a wall-buy use, each logged; phase "grab"
-//       first drops and grabs the minigun, phase "after" runs them as is.
-//   set scr_zm_powerup_test "switch <clientnum> <weapon>"
-//       switchToWeapon on the client (hold buttons so its usercmd carries it).
-//   set scr_zm_powerup_test "gather <clientnum> <radius>"
-//       forceTeleports every live zombie onto a ring around the client, at
-//       points the client can see, so a test does not wait on pathing.
-// ==========================================================================
-
-powerup_test_watch()
-{
-	setDvar( "scr_zm_powerup_test", "" );
-
-	for ( ;; )
-	{
-		wait( 0.5 );
-
-		request = getDvar( "scr_zm_powerup_test" );
-		if ( request == "" )
-			continue;
-		setDvar( "scr_zm_powerup_test", "" );
-
-		tokens = strTok( request, " " );
-		if ( tokens.size < 3 )
-			continue;
-
-		player = powerup_test_player( int( tokens[ 1 ] ) );
-		if ( !isDefined( player ) || !isAlive( player ) )
-		{
-			codolPrintLn( "CoDOL zm powerup test: no live client " + tokens[ 1 ] );
-			continue;
-		}
-
-		switch ( tokens[ 0 ] )
-		{
-		case "drop":
-			if ( !isDefined( level.zombie_powerups[ tokens[ 2 ] ] ) )
-			{
-				codolPrintLn( "CoDOL zm powerup test: " + tokens[ 2 ] + " is not registered" );
-				break;
-			}
-			// Optional 4th token: drop that many units along +x instead, out
-			// of grab range, to watch the glow and the timeout.
-			offset = ( 0, 0, 0 );
-			if ( tokens.size > 3 )
-				offset = ( float( tokens[ 3 ] ), 0, 0 );
-			codolPrintLn( "CoDOL zm powerup test: dropping " + tokens[ 2 ] + " at " + player.name + " + " + offset );
-			specific_powerup_drop( tokens[ 2 ], player.origin + offset - ( 0, 0, 40 ) );
-			break;
-		case "pandora":
-			if ( !isDefined( level.quantum_bomb_results[ tokens[ 2 ] ] ) )
-			{
-				codolPrintLn( "CoDOL zm powerup test: pandora result " + tokens[ 2 ] + " is not registered" );
-				break;
-			}
-			player thread pandora_powerup( player.origin, tokens[ 2 ] );
-			break;
-		case "fire":
-			if ( tokens.size > 3 && player hasWeapon( tokens[ 3 ] ) )
-				player setSpawnWeapon( tokens[ 3 ] );
-			player thread powerup_test_fire( float( tokens[ 2 ] ) );
-			break;
-		case "state":
-			w = player getCurrentWeapon();
-			codolPrintLn( "CoDOL zm powerup test: " + player.name + " holds " + w + ", primaries " + player getWeaponsListPrimaries().size +
-				", remote " + player isRemoteControlling() );
-			break;
-		case "zap":
-			// A tesla_gun_zm projectile impact on the nearest zombie, delivered
-			// through the native G_Damage path (doDamage with the weapon and
-			// MOD_PROJECTILE), so the actor "damage" notify and the spawner's
-			// tesla hook run exactly as for a real hit.
-			z = get_closest( player.origin, maps\_zombiemode_weap_tesla::tesla_sorted_zombies( player.origin ) );
-			if ( !isDefined( z ) )
-			{
-				codolPrintLn( "CoDOL zm powerup test: no zombie to zap" );
-				break;
-			}
-			codolPrintLn( "CoDOL zm powerup test: tesla projectile hit on zombie " + z getEntityNumber() + " from " + player.name );
-			z doDamage( 1, player.origin, player, player, 0, "MOD_PROJECTILE", 0, "tesla_gun_zm" );
-			break;
-		case "sentrydiag":
-			if ( isDefined( level.zm_sentries ) )
-			{
-				for ( k = 0; k < level.zm_sentries.size; k++ )
-					level.zm_sentries[ k ] maps\_zombiemode_auto_turret::auto_turret_diag( level.zm_sentries[ k ] getTurretTarget( false ) );
-			}
-			break;
-		case "gather":
-			player powerup_test_gather( float( tokens[ 2 ] ) );
-			break;
-		case "press":
-			seconds = 1.0;
-			direction = 0;
-			if ( tokens.size > 3 )
-				seconds = float( tokens[ 3 ] );
-			if ( tokens.size > 4 )
-				direction = int( tokens[ 4 ] );
-			player codol_botPressButtons( int( tokens[ 2 ] ), seconds, direction );
-			player thread powerup_test_sample( tokens[ 2 ], seconds );
-			break;
-		case "dive":
-			player codol_botPressButtons( 2, 1.3, 1 );
-			player thread powerup_test_sample( "2", 1.2 );
-			wait( 1.2 );
-			player codol_botPressButtons( 8388866, 1.0, 1 );
-			player thread powerup_test_sample( "8388866", 1.2 );
-			break;
-		case "dmtest":
-			yaw = undefined;
-			if ( tokens.size > 3 )
-				yaw = float( tokens[ 3 ] );
-			player thread powerup_test_deathmachine( tokens[ 2 ], yaw );
-			break;
-		case "switch":
-			codolPrintLn( "CoDOL zm powerup test: " + player.name + " asks for " + tokens[ 2 ] + " holding " + player getCurrentWeapon() );
-			player switchToWeapon( tokens[ 2 ] );
-			break;
-		}
-	}
-}
-
-powerup_test_player( client_num )
-{
-	players = getPlayers();
-	for ( i = 0; i < players.size; i++ )
-	{
-		if ( players[ i ] getEntityNumber() == client_num )
-			return players[ i ];
-	}
-	return undefined;
-}
-
-powerup_test_fire( seconds )
-{
-	self endon( "disconnect" );
-
-	weapon = self getCurrentWeapon();
-	codolPrintLn( "CoDOL zm powerup test: " + self.name + " fires " + weapon + " for " + seconds + " s" );
-	killed_before = level.total_zombies_killed;
-
-	end_time = getTime() + int( seconds * 1000 );
-	while ( getTime() < end_time )
-	{
-		target = get_closest( self.origin, maps\_zombiemode_weap_tesla::tesla_sorted_zombies( self.origin ) );
-		if ( isDefined( target ) )
-		{
-			eye = self.origin + ( 0, 0, 60 );
-			self setPlayerAngles( vectorToAngles( ( target.origin + ( 0, 0, 40 ) ) - eye ) );
-		}
-		self codol_botPressButtons( 1, 0.15 );
-		wait( 0.1 );
-	}
-
-	weapon = self getCurrentWeapon();
-	ammo = "";
-	if ( weapon != "none" )
-		ammo = " clip " + self getWeaponAmmoClip( weapon ) + " stock " + self getWeaponAmmoStock( weapon );
-	codolPrintLn( "CoDOL zm powerup test: " + self.name + " stopped firing, holding " + weapon + ammo +
-		"; zombies killed meanwhile " + ( level.total_zombies_killed - killed_before ) );
-}
-
-powerup_test_sample( mask, seconds, step )
-{
-	self endon( "disconnect" );
-	if ( !isDefined( step ) )
-		step = 0.2;
-	end_time = getTime() + int( seconds * 1000 );
-	while ( getTime() < end_time )
-	{
-		v = self getVelocity();
-		codolPrintLn( "CoDOL zm powerup test: press " + mask + " " + self.name + " holds " + self getCurrentWeapon() +
-			" stance " + self getStance() + " speed " + int( length( ( v[ 0 ], v[ 1 ], 0 ) ) ) + " vz " + int( v[ 2 ] ) +
-			" at " + self.origin );
-		wait( step );
-	}
-}
-
-// Bit 0x2000 (hold breath, inert without a scope) keeps the test client
-// sending commands between the steps; without them its weapon is put away.
-powerup_test_deathmachine( phase, yaw )
-{
-	self endon( "disconnect" );
-	idle = 8192;
-	// The test client's commands name the weapon its controller last
-	// selected; select the one in hand so the holds do not put it away.
-	if ( self getCurrentWeapon() != "none" )
-		self switchToWeapon( self getCurrentWeapon() );
-	self codol_botPressButtons( idle, 60 );
-	if ( isDefined( yaw ) )
-		self setPlayerAngles( ( 0, yaw, 0 ) );
-	wait( 0.5 );
-
-	if ( phase == "grab" )
-	{
-		specific_powerup_drop( "minigun", self.origin - ( 0, 0, 40 ) );
-		wait( 3.0 );
-	}
-	codolPrintLn( "CoDOL zm dmtest [" + phase + "]: " + self.name + " holds " + self getCurrentWeapon() +
-		", has_powerup_weapon " + is_true( self.has_powerup_weapon ) );
-
-	start = self.origin;
-	self codol_botPressButtons( idle + 2, 1.5, 1 );
-	self thread powerup_test_sample( "dm sprint", 1.4 );
-	wait( 1.5 );
-	self codol_botPressButtons( idle, 60 );
-	codolPrintLn( "CoDOL zm dmtest [" + phase + "]: sprint covered " + int( distance( start, self.origin ) ) + " units in 1.5 s" );
-	self setOrigin( start );
-	wait( 0.6 );
-
-	self codol_botPressButtons( idle + 4, 0.4 );
-	codolPrintLn( "CoDOL zm dmtest [" + phase + "]: melee pressed (see CoDOL melee: fire)" );
-	wait( 1.0 );
-	self codol_botPressButtons( idle, 60 );
-	wait( 0.5 );
-
-	self codol_botPressButtons( idle + 2, 0.8, 1 );
-	wait( 0.7 );
-	self codol_botPressButtons( idle + 8388608 + 256 + 2, 1.2, 1 );
-	self thread powerup_test_sample( "dm dive", 1.0, 0.05 );
-	wait( 1.2 );
-	self codol_botPressButtons( idle, 60 );
-	codolPrintLn( "CoDOL zm dmtest [" + phase + "]: after the dive press, stance " + self getStance() );
-	self setStance( "stand" );
-	self setOrigin( start );
-	wait( 1.0 );
-
-	primaries = self getWeaponsListPrimaries();
-	other = "none";
-	for ( i = 0; i < primaries.size; i++ )
-	{
-		if ( primaries[ i ] != self getCurrentWeapon() )
-			other = primaries[ i ];
-	}
-	held = self getCurrentWeapon();
-	if ( other != "none" )
-	{
-		self switchToWeapon( other );
-		wait( 1.5 );
-	}
-	codolPrintLn( "CoDOL zm dmtest [" + phase + "]: switch " + held + " -> " + other + " asked; holds " + self getCurrentWeapon() );
-
-	all = getEntArray( "weapon_upgrade", "targetname" );
-	trigs = [];
-	for ( i = 0; i < all.size; i++ )
-	{
-		if ( isDefined( all[ i ].zombie_weapon_upgrade ) && !self hasWeapon( all[ i ].zombie_weapon_upgrade ) )
-			trigs[ trigs.size ] = all[ i ];
-	}
-	if ( trigs.size > 0 )
-	{
-		if ( self.score < 5000 )
-			self maps\_zombiemode_score::add_to_player_score( 5000 );
-		self setOrigin( trigs[ 0 ].origin - ( 0, 0, 40 ) );
-		wait( 0.3 );
-		before = self.score;
-		self codol_botPressButtons( idle + 40, 1.0 );
-		wait( 2.0 );
-		codolPrintLn( "CoDOL zm dmtest [" + phase + "]: native use on " + trigs[ 0 ].zombie_weapon_upgrade +
-			" wall buy, score " + before + " -> " + self.score + ", holds " + self getCurrentWeapon() );
-		self setOrigin( start );
-	}
-	self codol_botPressButtons( idle, 60 );
-}
-
-powerup_test_gather( radius )
-{
-	eye = self.origin + ( 0, 0, 60 );
-	moved = 0;
-	zombies = maps\_zombiemode_weap_tesla::tesla_sorted_zombies( self.origin );
-	for ( i = 0; i < zombies.size; i++ )
-	{
-		for ( tries = 0; tries < 12; tries++ )
-		{
-			yaw = ( ( i * 5 + tries ) * 30 ) % 360;
-			spot = groundpos( self.origin + vector_scale( anglesToForward( ( 0, yaw, 0 ) ), radius ) + ( 0, 0, 30 ) );
-			if ( abs( spot[ 2 ] - self.origin[ 2 ] ) > 40 )
-				continue;
-			if ( !bulletTracePassed( eye, spot + ( 0, 0, 40 ), false, self ) )
-				continue;
-			zombies[ i ] forceTeleport( spot, ( 0, yaw + 180, 0 ) );
-			moved++;
-			break;
-		}
-	}
-	codolPrintLn( "CoDOL zm powerup test: gathered " + moved + " of " + zombies.size + " zombies " + radius + " units from " + self.name );
-}

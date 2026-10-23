@@ -1,4 +1,4 @@
-// This function should take care of grain and glow settings for each map, plus anything else that artists 
+// This function should take care of grain and glow settings for each map, plus anything else that artists
 // need to be able to tweak without bothering level designers.
 #include common_scripts\utility;
 #include common_scripts\_artCommon;
@@ -69,7 +69,7 @@ tweakart()
 		if ( GetDvarInt( "scr_art_tweak_message" ) )
 		{
 			SetDevDvar( "scr_art_tweak_message", "0" );
-			IPrintLnBold( "ART TWEAK ENABLED" );
+			{}
 		}
 
 		//translate the slider values to script variables
@@ -89,7 +89,7 @@ tweakart()
 		{
 			IPrintLnBold( "Art settings dumped success!" );
 			SetdevDvar( "scr_art_dump", "0" );
- 		}
+                }
 		wait .1;
 	}
 	#/

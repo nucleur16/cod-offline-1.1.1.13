@@ -53,7 +53,7 @@ init()
 {
 	if ( getWeaponIndexFromName( monkey_weapon() ) <= 0 )
 	{
-		codolprintln( "CoDOL zm monkey: " + monkey_weapon() + " is not loaded on this map; not registered" );
+		{}
 		return;
 	}
 
@@ -70,7 +70,7 @@ init()
 		level.monkey_attract_dist = 1536;
 
 	level.monkey_fuse_ms = getWeaponFuseTime( monkey_weapon() );
-	codolprintln( "CoDOL zm monkey: registered; weapon fuse " + describe_ms( level.monkey_fuse_ms ) + ", lure radius " + level.monkey_attract_dist );
+	{}
 
 	maps\_zombiemode_equipment::register_equipment( monkey_weapon(), ::monkey_fired );
 }
@@ -89,7 +89,7 @@ monkey_fired( player, weapon )
 	thrower = "(gone)";
 	if ( isDefined( player ) )
 		thrower = player.name;
-	codolprintln( "CoDOL zm monkey: thrown by " + thrower + " at " + grenade.origin );
+	{}
 
 	// T5 :54.  A downed player's monkey is taken away.
 	if ( isDefined( player ) && player maps\_zombiemode_laststand::player_is_in_laststand() )
@@ -121,7 +121,7 @@ monkey_fired( player, weapon )
 
 	origin = grenade.origin;
 	info.land_origin = origin;
-	codolprintln( "CoDOL zm monkey: landed at " + origin + " after " + ( getTime() - info.thrown_time ) + " ms (" + landed + ")" );
+	{}
 
 	// Glow.  T5 :96 PlayFxOnTag( monkey_glow, model, "origin_animate_jnt" ).
 	if ( isDefined( level._effect[ "monkey_glow" ] ) )
@@ -209,7 +209,7 @@ monkey_attractor_positions( info )
 		count = self.attractor_positions.size;
 	if ( count == 0 )
 		self.attract_to_origin = true;
-	codolprintln( "CoDOL zm monkey: " + count + " lure positions around " + info.land_origin );
+	{}
 }
 
 monkey_finish( info )
@@ -237,5 +237,5 @@ monkey_finish( info )
 	retargets = 0;
 	if ( isDefined( level.zombie_poi_retargets ) )
 		retargets = level.zombie_poi_retargets;
-	codolprintln( "CoDOL zm monkey: exploded at " + origin + " " + ( getTime() - info.thrown_time ) + " ms after the throw; " + near.size + " zombies were within 256, " + killed + " of them died in the blast; zombie retargets so far " + retargets );
+	{}
 }

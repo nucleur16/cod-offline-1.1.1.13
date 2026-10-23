@@ -55,6 +55,8 @@
 //   "spare_life"   self = the downed player -> true when a solo down self-revives
 //   "use_spare"    self = the solo player self-reviving: spend the spare life
 //   "pistol"       self = the player going down -> the weapon he holds while down
+//   "down_window"  self = downed player -> optional recovery window
+//   "down_end"     self = player whose down has ended (all causes)
 //   "all_down"     level: nobody is left standing
 
 REVIVE_BAR_WIDTH = 120;
@@ -106,7 +108,7 @@ ls_log( text )
 	prefix = "CoDOL laststand";
 	if ( isDefined( level.laststand_vars ) && isDefined( level.laststand_vars[ "log" ] ) )
 		prefix = level.laststand_vars[ "log" ];
-	codolprintln( prefix + ": " + text );
+	{}
 }
 
 is_true( value )
@@ -252,11 +254,15 @@ player_laststand()
 		self thread laststand_partner_hud();
 	}
 
-	if ( solo && !spare_life )
+	down_window = false;
+	if ( has_hook( "down_window" ) )
+		down_window = self [[ level.laststand_funcs[ "down_window" ] ]]();
+
+	if ( solo && !spare_life && !down_window )
 	{
 		self thread laststand_bleedout( 0 );
 	}
-	else if ( solo )
+	else if ( solo && spare_life )
 	{
 		// _zombiemode.gsc:4818 wait_and_revive: the self revive over the
 		// solo revive time.
@@ -267,7 +273,10 @@ player_laststand()
 	else
 	{
 		time = get_var( "bleedout_time" );
-		self laststand_self_hud( &"SCRIPT_COOP_BLEEDING_OUT", time, false );
+		// Solo token revival has its own native popup and hold animation.
+		// Do not draw the teammate/bleed-out bar over that token screen.
+		if ( !solo || !down_window )
+			self laststand_self_hud( &"SCRIPT_COOP_BLEEDING_OUT", time, false );
 		self thread laststand_bleedout( time );
 	}
 
@@ -303,6 +312,9 @@ laststand_end_cleanup()
 	// ClientDisconnect already removes client HUDs and the mode trigger.
 	if ( !isDefined( self ) )
 		return;
+
+	if ( has_hook( "down_end" ) )
+		self [[ level.laststand_funcs[ "down_end" ] ]]();
 
 	self laststand_hud_destroy();
 

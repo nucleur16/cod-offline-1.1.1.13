@@ -73,16 +73,6 @@ init()
 		precacheModel( "lights_indlight_on" );
 	}
 
-	// A level whose switches power separate areas (zm_sumpf_sh: one switch
-	// per hut) runs its own switches in place of the single master switch
-	// below.  No other map sets level.zm_power_func.
-	if ( isDefined( level.zm_power_func ) )
-	{
-		level thread [[ level.zm_power_func ]]();
-		level thread power_lights();
-		return;
-	}
-
 	level thread electric_switch();
 	level thread wait_for_power();
 	level thread power_lights();
@@ -118,7 +108,7 @@ electric_switch()
 		// A map with no switch has no power gate; opening it immediately is
 		// the honest reading, because otherwise every electric door and every
 		// perk machine on that map would be unreachable forever.
-		codolprintln( "CoDOL zm power: no power switch on this map; power is on from the start" );
+		{}
 		flag_set( "power_on" );
 		return;
 	}
@@ -130,7 +120,7 @@ electric_switch()
 	}
 
 	trig = trigs[ 0 ];
-	codolprintln( "CoDOL zm power: switch " + trig.targetname + " ent " + trig getEntityNumber() + " at " + trig.origin + " waiting for a player" );
+	{}
 
 	user = undefined;
 	for ( ;; )
@@ -146,7 +136,7 @@ electric_switch()
 		break;
 	}
 
-	codolprintln( "CoDOL zm power: switch thrown by " + user.name );
+	{}
 
 	for ( i = 0; i < trigs.size; i++ )
 		trigs[ i ] delete();
@@ -213,7 +203,7 @@ wait_for_power()
 	// T5 asylum :1219 "master_switch_activated".
 	level notify( "master_switch_activated" );
 
-	codolprintln( "CoDOL zm power: power on; perk machines notified" );
+	{}
 }
 
 // T5 asylum init_lights :377.  The indicator lamps read off until the power
@@ -266,7 +256,7 @@ asylum_power_on_presentation()
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 		players[ i ] playLocalSound( "zmb_turn_on" );
-	codolprintln( "CoDOL zm power: Verruckt power-on sting played to " + players.size + " players" );
+	{}
 
 	// T5 asylum :1227: the switch sparks wind down 14 s after the flip.
 	wait( 2 );

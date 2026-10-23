@@ -8,10 +8,10 @@ init()
 	level.ps3 = (getDvar( "ps3Game" ) == "true");
 	level.xenon = (getDvar( "xenonGame" ) == "true");
 	level.console = (level.ps3 || level.xenon);
-	
+
 	level.onlineGame = getDvarInt( "onlinegame" );
 	level.rankedMatch = ( !level.onlineGame || !getDvarInt( "xblive_privatematch" ) );
-	
+
 	/#
 	if ( getdvarint( "scr_forcerankedmatch" ) == 1 )
 	{
@@ -27,19 +27,19 @@ init()
 	level.otherTeam["axis"] = "allies";
 
 	level.teamBased = false;
-	
+
 	level.objectiveBased = false;
-	
+
 	level.endGameOnTimeLimit = true;
-	
+
 	level.showingFinalKillcam = false;
-	
+
 	level.tiSpawnDelay = getDvarInt( "scr_tispawndelay" );
-	
+
 	// hack to allow maps with no scripts to run correctly
 	if ( !isDefined( level.tweakablesInitialized ) )
 		maps\mp\gametypes\_tweakables::init();
-	
+
 	precacheString( &"MP_HALFTIME" );
 	precacheString( &"MP_OVERTIME" );
 	precacheString( &"MP_ROUNDEND" );
@@ -47,7 +47,7 @@ init()
 	precacheString( &"MP_SWITCHING_SIDES" );
 	precacheString( &"MP_FRIENDLY_FIRE_WILL_NOT" );
 	precacheString( &"PLATFORM_REVIVE" );
-	
+
 	precacheString( &"MP_OBITUARY_NEUTRAL" );
 	precacheString( &"MP_OBITUARY_FRIENDLY" );
 	precacheString( &"MP_OBITUARY_ENEMY" );
@@ -56,32 +56,32 @@ init()
 		precacheString( &"MP_ENDED_GAME" );
 	else
 		precacheString( &"MP_HOST_ENDED_GAME" );
-	
+
 	level.halftimeType = "halftime";
 	level.halftimeSubCaption = &"MP_SWITCHING_SIDES";
-	
+
 	level.lastStatusTime = 0;
 	level.wasWinning = "none";
-	
+
 	level.lastSlowProcessFrame = 0;
-	
+
 	level.placement["allies"] = [];
 	level.placement["axis"] = [];
 	level.placement["all"] = [];
-	
+
 	level.postRoundTime = 5.0;
-	
+
 	level.playersLookingForSafeSpawn = [];
-	
+
 	registerDvars();
 
 	precacheModel( "vehicle_mig29_desert" );
 	precacheModel( "projectile_cbu97_clusterbomb" );
-	precacheModel( "tag_origin" );	
+	precacheModel( "tag_origin" );
 
 	level.fx_airstrike_afterburner = loadfx ("fire/jet_afterburner");
 	level.fx_airstrike_contrail = loadfx ("smoke/jet_contrail");
-	
+
 	if ( level.console )
 		precacheLeaderboards( "LB_KILLS LB_WINS LB_TOTALXP LB_ACCURACY" );
 
@@ -92,12 +92,12 @@ init()
 	level.aliveCount["allies"] = 0;
 	level.aliveCount["axis"] = 0;
 	level.aliveCount["spectator"] = 0;
-	
+
 	level.livesCount["allies"] = 0;
 	level.livesCount["axis"] = 0;
 
 	level.oneLeftTime = [];
-	
+
 	level.hasSpawned["allies"] = 0;
 	level.hasSpawned["axis"] = 0;
 
@@ -120,7 +120,7 @@ runLevelAndQuit()
 	}
 	wait 0.5;
 	level notify( "game_ended" );
-	exitLevel();	
+	exitLevel();
 }
 #/
 
@@ -128,20 +128,20 @@ runLevelAndQuit()
 registerDvars()
 {
 	makeDvarServerInfo( "ui_bomb_timer", 0 );
-	makeDvarServerInfo( "ui_danger_team", "" );	
+	makeDvarServerInfo( "ui_danger_team", "" );
 	// CoDOL: makeDvarServerInfo only flags an existing dvar and keeps its value
 	// (GScr_MakeDvarServerInfo -> Cvar_AddFlags), so from the second match on it
 	// no longer resets what the last match left.  Reset explicitly.
 	setDvar( "ui_bomb_timer", 0 );
 	setDvar( "ui_danger_team", "" );
-	
+
 	makeDvarServerInfo( "camera_thirdPerson", getDvarInt( "scr_thirdPerson" ) );
 }
 
 SetupCallbacks()
 {
 	level.onXPEvent = ::onXPEvent;
-	
+
 	level.getSpawnPoint = ::blank;
 	level.onSpawnPlayer = ::blank;
 	level.onRespawnDelay = ::blank;
@@ -150,7 +150,7 @@ SetupCallbacks()
 	level.onHalfTime = maps\mp\gametypes\_gamelogic::default_onHalfTime;
 	level.onDeadEvent = maps\mp\gametypes\_gamelogic::default_onDeadEvent;
 	level.onOneLeftEvent = maps\mp\gametypes\_gamelogic::default_onOneLeftEvent;
-	
+
 	level.onPrecacheGametype = ::blank;
 	level.onStartGameType = ::blank;
 	level.onPlayerKilled = ::blank;
@@ -192,16 +192,16 @@ testMenu()
 {
 	self endon ( "death" );
 	self endon ( "disconnect" );
-	
+
 	for ( ;; )
 	{
 		wait ( 10.0 );
-		
+
 		notifyData = spawnStruct();
 		notifyData.titleText = &"MP_CHALLENGE_COMPLETED";
 		notifyData.notifyText = "wheee";
 		notifyData.sound = "mp_challenge_complete";
-	
+
 		self thread maps\mp\gametypes\_hud_message::notifyMessage( notifyData );
 	}
 }
@@ -210,16 +210,16 @@ testShock()
 {
 	self endon ( "death" );
 	self endon ( "disconnect" );
-	
+
 	for ( ;; )
 	{
 		wait ( 3.0 );
 
 		numShots = randomInt( 6 );
-		
+
 		for ( i = 0; i < numShots; i++ )
 		{
-			iPrintLnBold( numShots );
+			{}
 			self shellShock( "frag_grenade_mp", 0.2 );
 			wait ( 0.1 );
 		}
@@ -239,7 +239,7 @@ fakeLag()
 {
 	self endon ( "disconnect" );
 	self.fakeLag = randomIntRange( 50, 150 );
-	
+
 	for ( ;; )
 	{
 		self setClientDvar( "fakelag_target", self.fakeLag );

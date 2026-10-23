@@ -256,7 +256,7 @@ init_weapons()
 	add_zombie_weapon( "c4_zm",						undefined,	"C4",				1000,	1000,	false );
 
 	keys = getArrayKeys( level.zombie_weapons );
-	println( "CoDOL zm: " + keys.size + " zombie weapons resolved out of the mounted zones\n" );
+	{}
 }
 
 // T5 :177,:188,:677-:708.
@@ -528,7 +528,7 @@ init_weapon_upgrade()
 			// The wall names a weapon that is in no mounted zone.  T5 would
 			// AssertEx; here the wall is left inert rather than ending the
 			// match, and it is reported by name.
-			println( "CoDOL zm: wall buy names unknown weapon " + trig.zombie_weapon_upgrade + "\n" );
+			{}
 			continue;
 		}
 
@@ -545,7 +545,7 @@ init_weapon_upgrade()
 		trig thread weapon_spawn_think();
 	}
 
-	println( "CoDOL zm: " + weapon_spawns.size + " wall buys\n" );
+	{}
 }
 
 // T5 :2649, solo purse, minus the hacker/fire-sale/collector branches.
@@ -646,6 +646,35 @@ weapon_show()
 	self play_sound_on_ent( "weapon_show" );
 }
 
+// T5's box applies the weapon's hide tags after every model change. CoDOL's
+// authored world models contain the alternative sights too (for example the
+// SPAS-12 has tag_red_dot and tag_eotech). A plain setModel displays both.
+// Reset first because the box reuses one entity for different weapons. Some
+// shipped T5-derived definitions name tags absent from their CoDOL model;
+// hidePart errors on an absent bone, so intersect with that exact skeleton.
+weapon_model_hide_tags( weapon_name, model_name )
+{
+	self showAllParts();
+	tags = getWeaponHideTags( weapon_name );
+	if ( !isDefined( tags ) || tags.size == 0 )
+		return;
+
+	for ( i = 0; i < getNumParts( model_name ); i++ )
+	{
+		part = getPartName( model_name, i );
+		for ( j = 0; j < tags.size; j++ )
+		{
+			if ( part != tags[ j ] )
+				continue;
+			self hidePart( part );
+			break;
+		}
+	}
+}
+
+// The floating preview must use the awarded weapon's own hide tags. A generic
+// optional-attachment blacklist also removes a sniper's required stock scope.
+
 // ==========================================================================
 // MYSTERY BOX -- T5 :793, :945, :1057, :1742-:1784, :1951, :2365.
 // ==========================================================================
@@ -659,7 +688,7 @@ treasure_chest_init()
 
 	if ( level.chests.size < 1 )
 	{
-		println( "CoDOL zm: no treasure_chest_use on this map; no mystery box\n" );
+		{}
 		return;
 	}
 
@@ -708,7 +737,7 @@ treasure_chest_init()
 	array_thread_1( level.chests, ::treasure_chest_think );
 	level thread maps\_zombiemode_boxtest::init();
 
-	println( "CoDOL zm: " + level.chests.size + " mystery box location(s)\n" );
+	{}
 }
 
 // T5 :850, the semi-random branch: the list is already shuffled, the first
@@ -947,38 +976,44 @@ treasure_chest_timeout()
 }
 
 // T5 :1774,:1784.
-treasure_chest_ChooseRandomWeapon()
+// Preview spins and final rewards share the same eligibility rule. The full
+// registry also contains equipment for wall buys and local developer tools.
+treasure_chest_box_weapons()
 {
 	keys = getArrayKeys( level.zombie_weapons );
+	filtered = [];
+	for ( i = 0; i < keys.size; i++ )
+	{
+		if ( get_is_in_box( keys[ i ] ) )
+			filtered[ filtered.size ] = keys[ i ];
+	}
+	return filtered;
+}
+
+treasure_chest_ChooseRandomWeapon()
+{
+	keys = treasure_chest_box_weapons();
+	if ( keys.size < 1 )
+		return undefined;
 	return keys[ randomInt( keys.size ) ];
 }
 
 treasure_chest_ChooseWeightedRandomWeapon( player )
 {
-	keys = getArrayKeys( level.zombie_weapons );
+	keys = treasure_chest_box_weapons();
 
 	filtered = [];
 	for ( i = 0; i < keys.size; i++ )
 	{
-		if ( !get_is_in_box( keys[ i ] ) )
-			continue;
-
 		if ( isDefined( player ) && is_player_valid( player ) && player has_weapon_or_upgrade( keys[ i ] ) )
 			continue;
 
 		filtered[ filtered.size ] = keys[ i ];
 	}
 
-	// T5 falls back to the unfiltered set when the player owns everything the
-	// box can give.
+	// Owning every eligible gun may relax ownership, never box eligibility.
 	if ( filtered.size < 1 )
-	{
-		for ( i = 0; i < keys.size; i++ )
-		{
-			if ( get_is_in_box( keys[ i ] ) )
-				filtered[ filtered.size ] = keys[ i ];
-		}
-	}
+		filtered = keys;
 
 	if ( filtered.size < 1 )
 		return undefined;
@@ -1118,7 +1153,11 @@ treasure_chest_think()
 		}
 
 		self.grabbed_weapon = weapon;
-		self setHintString( &"ZOMBIE_SWITCH_WEAPON" );
+		// The shipped swap hint advertises weapon cycling, but this trigger
+		// consumes useButtonPressed below. Expand the actual use binding (F
+		// by default), including players who have rebound it. Highlight only
+		// the binding in yellow, then restore white for the rest of the hint.
+		self setHintString( "Press ^3[{+activate}]^7 to Swap Weapon" );
 		self enable_trigger();
 		self thread treasure_chest_timeout();
 
@@ -1197,6 +1236,9 @@ treasure_chest_weapon_spawn( player )
 		self.weapon_model.angles = angles + ( 0, 90, 0 );
 	}
 	self.weapon_model moveTo( origin + ( 0, 0, floatHeight ), 3, 2, 0.9 );
+	// The shipped box jingle belongs to the roll at this box, not the
+	// player's music channel or a moving/deleted preview weapon model.
+	playSoundAtPos( origin, "zmb_music_box" );
 
 	rand = undefined;
 	number_cycles = 40;
@@ -1237,7 +1279,7 @@ treasure_chest_weapon_spawn( player )
 			modeltext = "<none>";
 			if ( isDefined( modelname ) && modelname != "" )
 				modeltext = modelname;
-			codolprintln( "CoDOL zm box final weapon=" + rand + " model=" + modeltext );
+			{}
 		}
 	}
 
@@ -1251,7 +1293,7 @@ treasure_chest_weapon_spawn( player )
 		flag_set( "moving_chest_now" );
 		level.chest_accessed = 0;
 		level.chest_moves++;
-		codolprintln( "CoDOL zm box: teddy bear, the box moves (move " + level.chest_moves + ")" );
+		{}
 		return undefined;
 	}
 
@@ -1443,7 +1485,7 @@ treasure_chest_move()
 	next show_chest();
 	next hide_rubble();
 	flag_clear( "moving_chest_now" );
-	codolprintln( "CoDOL zm box: the box is now at " + next.chest_lid.origin );
+	{}
 }
 
 // _zombiemode_powerups (T5 :1414 toggle_fire_sale_on, :1468

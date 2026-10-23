@@ -48,11 +48,11 @@
 //   sh_env_roadflare_burn.
 //
 // THE FLOW
-//   rounds 1 .. cap-1  the survival waves, with a final-round warning on
+//   rounds 1 .. cap  the survival waves, with a final-round warning on
 //                      the last wave.
-//   round cap          extraction begins, with C1's MPUI_FINAL_ROUND HUD;
+//   after round cap    extraction begins, with C1's MPUI_FINAL_ROUND HUD;
 //                      zombies keep coming, a character radios for evac,
-//                      HQ answers, and one minute later the
+//                      HQ answers, and three minutes later the
 //                      helicopter flies the route to its hover point.
 //   landed             "Go to the extraction point", the waypoint and a
 //                      leave timer.  A player boards by jumping at the
@@ -63,12 +63,13 @@
 //   lift-off           the boarded ride out; the rest are left to the
 //                      horde.  Anyone aboard -> the match is a WIN.
 //
-// Dvars: scr_zm_roundcap overrides the extraction round (default 9/13/17
+// Dvars: scr_zm_roundcap overrides the survival round count (default 9/13/17
 // for Easy/Medium/Hard; 0 = endless rounds, no extraction),
-// scr_zm_extract_arrive (seconds from the call to the landing, default 60),
+// scr_zm_extract_arrive (seconds from the call to the landing, default 180),
 // scr_zm_extract_wait (seconds the helicopter waits, default 60).
 
 #include maps\_zombiemode_utility;
+#using_animtree( "player_3rd_person" );
 
 HELI_VEHICLE = "blackhawk_minigun";
 HELI_MODEL = "vehicle_blackhawk_minigun_hero";
@@ -92,10 +93,11 @@ init()
 
 	precacheShader( "waypoint_extraction" );
 	precacheModel( HELI_MODEL );
+	precacheModel( "tag_origin" );
 
 	level._effect[ "zm_lz_flare" ] = loadfx( "smoke/flare_smoke" );
 
-	level.zm_extract_arrive = dvar_seconds( "scr_zm_extract_arrive", 60 );
+	level.zm_extract_arrive = dvar_seconds( "scr_zm_extract_arrive", 180 );
 	level.zm_extract_wait = dvar_seconds( "scr_zm_extract_wait", 60 );
 
 	// The helicopter flies as C1's own VehicleDef when the zone carries it
@@ -109,11 +111,10 @@ init()
 	}
 
 	level.zm_extraction_routes = find_routes();
-	codolprintln( "CoDOL zm extraction: round cap " + level.zm_round_cap + ", " +
-		level.zm_extraction_routes.size + " rescue route(s) on " + getDvar( "mapname" ) +
-		", helicopter as " + ternary_string( level.zm_extract_vehicle, "vehicle " + HELI_VEHICLE, "script_model" ) );
+	{}
 
 	level thread rescue_round_notices();
+	level thread rescue_arrival_end_game();
 }
 
 dvar_seconds( name, def )
@@ -363,13 +364,16 @@ rescue_round_notices()
 		if ( cap <= 0 )
 			continue;
 
+		// First wave and a documented midpoint adaptation (ceil(cap/2)).
+		// The current survival wave is excluded from the remaining count.
+		middle = int( ( cap + 1 ) / 2 );
+		if ( level.round_number != 1 && level.round_number != middle )
+			continue;
 		remaining = cap - level.round_number;
 		if ( remaining > 1 )
 			notice_all( &"ZOMBIE_ROUNDS_REMAINING", remaining );
 		else if ( remaining == 1 )
 			notice_all( &"ZOMBIE_ROUNDS_FINAL" );
-		else if ( remaining == 0 )
-			notice_all( &"ZOMBIE_RESCUE_BEGIN" );
 	}
 }
 
@@ -383,6 +387,7 @@ notice_all( text, value )
 notice( text, value )
 {
 	self endon( "disconnect" );
+	level endon( "end_game" );
 
 	// One notice at a time: a newer one replaces the one showing.
 	self notify( "zm_rescue_notice" );
@@ -394,15 +399,15 @@ notice( text, value )
 	elem.horzAlign = "center";
 	elem.vertAlign = "top";
 	elem.x = 0;
-	elem.y = 80;
+	elem.y = 25;
 	elem.font = "objective";
 	elem.fontScale = 1.6;
-	elem.color = ( 1, 0.85, 0.3 );
-	elem.glowColor = ( 0.6, 0.3, 0.05 );
+	elem.color = ( 1, 1, 1 );
+	elem.glowColor = ( 0.35, 0.65, 1 );
 	elem.glowAlpha = 0.5;
 	elem.foreground = true;
 	elem.hidewheninmenu = true;
-	elem.alpha = 0;
+	elem.alpha = 1;
 	if ( isDefined( value ) )
 	{
 		elem.label = text;
@@ -413,12 +418,9 @@ notice( text, value )
 
 	self thread notice_destroy_on_replace( elem );
 
-	elem fadeOverTime( 0.5 );
-	elem.alpha = 1;
-	wait( 4.5 );
-	elem fadeOverTime( 1 );
-	elem.alpha = 0;
-	wait( 1 );
+	// Native typewriter fields, not an alpha-only approximation.
+	elem setPulseFX( 40, 4500, 1000 );
+	wait( 5.5 );
 	self notify( "zm_rescue_notice_done" );
 }
 
@@ -441,43 +443,43 @@ extraction_start()
 	if ( is_true( level.zm_extraction_active ) )
 		return;
 	level.zm_extraction_active = true;
+	// Explicit final phase: ordinary start_of_round intentionally is not sent.
+	notice_all( &"ZOMBIE_RESCUE_BEGIN" );
 	level notify( "zm_extraction_start" );
 
-	codolprintln( "CoDOL zm extraction: round " + level.round_number + " begins; calling the rescue" );
+	{}
 
 	if ( level.zm_extraction_routes.size < 1 )
 	{
 		// A map with no rescue route still finishes as a win: there is nowhere
 		// to be picked up, so everyone standing is extracted on the spot.
-		codolprintln( "CoDOL zm extraction: no rescue route on " + getDvar( "mapname" ) + "; extracting everyone standing" );
+		{}
 		players = getPlayers();
 		for ( i = 0; i < players.size; i++ )
 		{
 			if ( is_player_valid( players[ i ] ) )
 				players[ i ] mark_extracted();
 		}
+		record_extracted_results();
 		extraction_finish();
 		return;
 	}
 
 	route = pick_route();
 	level.zm_extraction_route = route;
-	codolprintln( "CoDOL zm extraction: landing zone " + route.lz + ", hover " + route.hover.origin +
-		", " + route.inbound.size + " inbound / " + route.outbound.size + " outbound nodes" );
+	{}
 
 	// The horde does not stop for the rescue.
 	level thread extraction_horde();
 
-	// The rescue music, a character's radio call and HQ's answer.
-	level thread maps\_zombiemode_audio::change_zombie_music( "rescue" );
+	// Reserve the final phase without playing its rescue track early.
+	maps\_zombiemode_audio::change_zombie_music( "rescue_wait" );
 	level thread evac_call_vo();
 
-	// "Rescue team arriving: N minutes".
-	minutes = int( ( level.zm_extract_arrive + 59 ) / 60 );
-	if ( minutes < 1 )
-		minutes = 1;
-	notice_all( &"ZOMBIE_RESCUE_DISTANCE", minutes );
-
+	level.zm_rescue_arrival_deadline = getTime() + int( level.zm_extract_arrive * 1000 );
+	rescue_arrival_hud();
+	level thread rescue_arrival_radio();
+	level thread rescue_countdown_beeps( level.zm_rescue_arrival_deadline, "zm_rescue_arrived" );
 	// The helicopter's own flight is part of the wait: it is launched so it
 	// reaches the hover point at the announced time.
 	flight = route_flight_time( route );
@@ -487,11 +489,13 @@ extraction_start()
 
 	heli = spawn_rescue_heli( route );
 	level.zm_rescue_heli = heli;
+	rescue_landing_waypoint( route );
 	radio_all( "zmby_lz_01_chpr", 0 );
 
 	heli heli_fly_inbound( route );
 
-	codolprintln( "CoDOL zm extraction: the helicopter is over the landing zone" );
+	rescue_arrival_clear();
+	{}
 	extraction_wait( route, heli );
 
 	extraction_leave( route, heli );
@@ -581,13 +585,102 @@ evac_call_vo()
 		callers[ randomInt( callers.size ) ] maps\_zombiemode_audio::create_and_play_dialog( "evac_call", true );
 	}
 
-	wait( 4 );
-	if ( level.zm_extract_arrive >= 150 )
-		radio_all( "zmby_evac3mins_hq_r", 0 );
-	else if ( level.zm_extract_arrive >= 90 )
-		radio_all( "zmby_evac2mins_hq_r", 0 );
-	else
-		radio_all( "zmby_evac1min_hq_r", 0 );
+}
+
+// One authoritative arrival deadline drives the persistent native M:SS HUD
+// and once-only shipped HQ cues. Explicit short test overrides are preserved:
+// thresholds above the configured duration are never announced.
+rescue_arrival_hud()
+{
+	timer = newHudElem();
+	timer.horzAlign = "center";timer.vertAlign = "top";
+	timer.alignX = "center";timer.alignY = "top";
+	timer.x = 0;timer.y = 0;
+	timer.font = "objective";timer.fontScale = 1.4;
+	timer.foreground = true;timer.hidewheninmenu = true;
+	timer.label = &"ZOMBIE_RESCUE_DISTANCE";
+	timer setTimer( level.zm_extract_arrive );
+	level.zm_rescue_arrival_hud = timer;
+}
+
+// Deadline-driven milestones: no 3:00 rescue music, no stale catch-up burst.
+// Explicit shortened local durations skip milestones they never traversed.
+rescue_arrival_radio()
+{
+ level endon( "end_game" );
+ level endon( "zm_rescue_arrived" );
+ thresholds = [];
+ thresholds[0] = 180;
+ thresholds[1] = 120;
+ thresholds[2] = 110;
+ thresholds[3] = 90;
+ thresholds[4] = 60;
+ thresholds[5] = 30;
+ for ( i = 0; i < thresholds.size; i++ )
+ {
+  second = thresholds[i];
+  if ( level.zm_extract_arrive < second ) continue;
+  at = level.zm_rescue_arrival_deadline - second * 1000;
+  if ( second == 180 ) at += 4000;
+  while ( getTime() < at ) wait( 0.05 );
+  // A long frame must not replay several already elapsed radio/music cues.
+  if ( getTime() - at >= 1000 ) continue;
+  rescue_arrival_event( second );
+ }
+}
+
+rescue_arrival_event( second )
+{
+ switch ( second )
+ {
+  case 180: radio_all( "zmby_evac3mins_hq_r", 0 );break;
+  case 120: radio_all( "zmby_evac2mins_hq_r", 0 );break;
+  case 110: maps\_zombiemode_audio::change_zombie_music( "rescue" );break;
+  case 90: radio_all( "zmby_longer_hq_r", 0 );break;
+  case 60: radio_all( "zmby_evac1min_hq_r", 0 );break;
+  case 30: radio_all( "zmby_30seconds_hq_r", 0 );break;
+ }
+}
+
+// Same real local-sound transport and positive-second policy as the downed
+// Game Over timer. One tick per observed decrement, never a catch-up burst,
+// initial-value beep, zero beep, or sound after its owning phase has ended.
+rescue_countdown_beeps( deadline, stop_event )
+{
+ level endon( "end_game" );
+ level endon( stop_event );
+ last_second = int( ( deadline - getTime() + 999 ) / 1000 );
+ if ( !maps\_zombiemode_audio::alias_exists( "ui_mp_timer_countdown" ) ) return;
+ while ( getTime() < deadline )
+ {
+  second = int( ( deadline - getTime() + 999 ) / 1000 );
+  if ( second < last_second && second > 0 )
+  {
+   last_second = second;
+   foreach ( player in getPlayers() )
+    player playLocalSound( "ui_mp_timer_countdown" );
+  }
+  wait( 0.05 );
+ }
+}
+
+rescue_arrival_clear()
+{
+	level notify( "zm_rescue_arrived" );
+	if ( isDefined( level.zm_rescue_arrival_hud ) )
+		level.zm_rescue_arrival_hud destroy();
+	level.zm_rescue_arrival_hud = undefined;
+}
+
+rescue_arrival_end_game()
+{
+	level waittill( "end_game" );
+	rescue_arrival_clear();
+	extraction_hud_clear();
+	foreach ( player in getPlayers() )
+	{
+		player notify( "zm_rescue_notice" );
+	}
 }
 
 // The radio: a 2D line on every player.  Aliases that a zone does not carry
@@ -657,10 +750,10 @@ spawn_rescue_heli( route )
 			heli setMaxPitchRoll( 15, 15 );
 			heli setHoverParams( 20, 10, 5 );
 			heli setCanDamage( false );
-			codolprintln( "CoDOL zm extraction: helicopter vehicle " + HELI_VEHICLE + " spawned at " + start.origin );
+			{}
 		}
 		else
-			codolprintln( "CoDOL zm extraction: spawnHelicopter produced nothing; using the script_model" );
+			{}
 	}
 
 	if ( !isDefined( heli ) )
@@ -671,11 +764,14 @@ spawn_rescue_heli( route )
 		heli.zm_vehicle = false;
 		heli playLoopSound( "blackhawk_engine_high" );
 	}
-	// IW4 _blackhawk build_drive: the rotor loop (common_scripts\_heli_rotors).
-	heli common_scripts\_heli_rotors::spin_rotors();
 
 	heli.targetname = "zm_rescue_heli";
 	heli.riders = [];
+	heli.zm_boarding_models = [];
+	heli thread rescue_rider_lifecycle();
+	level thread rescue_riders_end_game( heli );
+	if ( heli.zm_vehicle )
+		heli thread rescue_gun_fire();
 	return heli;
 }
 
@@ -743,7 +839,7 @@ heli_wait_goal( node, stop )
 			return;
 		if ( getTime() > end )
 		{
-			codolprintln( "CoDOL zm extraction: the helicopter did not reach " + node.origin + " in " + limit + " s; moving on" );
+			{}
 			return;
 		}
 	}
@@ -780,6 +876,21 @@ timeout_local( delay )
 // Over the landing zone: the marker, the timer, boarding.
 // --------------------------------------------------------------------------
 
+rescue_landing_waypoint( route )
+{
+ if ( isDefined( level.zm_lz_waypoint ) ) return;
+ lz = route.lz;
+	wp = newHudElem();
+	wp.x = lz[ 0 ];
+	wp.y = lz[ 1 ];
+	wp.z = lz[ 2 ] + 72;
+	wp.alpha = 1;
+	wp.hidewheninmenu = true;
+	wp setShader( "waypoint_extraction", 8, 8 );
+	wp setWaypoint( true, true );
+	level.zm_lz_waypoint = wp;
+}
+
 extraction_wait( route, heli )
 {
 	level endon( "end_game" );
@@ -793,15 +904,7 @@ extraction_wait( route, heli )
 	level.zm_lz_sound = spawn( "script_origin", lz );
 	level.zm_lz_sound playLoopSound( "sh_env_roadflare_burn" );
 
-	wp = newHudElem();
-	wp.x = lz[ 0 ];
-	wp.y = lz[ 1 ];
-	wp.z = lz[ 2 ] + 72;
-	wp.alpha = 1;
-	wp.hidewheninmenu = true;
-	wp setShader( "waypoint_extraction", 8, 8 );
-	wp setWaypoint( true, true );
-	level.zm_lz_waypoint = wp;
+	rescue_landing_waypoint( route );
 
 	// "Go to the extraction point" and "Rescue team leaving: m:ss".
 	objective = newHudElem();
@@ -810,11 +913,11 @@ extraction_wait( route, heli )
 	objective.horzAlign = "center";
 	objective.vertAlign = "top";
 	objective.x = 0;
-	objective.y = 80;
+	objective.y = 0;
 	objective.font = "objective";
 	objective.fontScale = 1.6;
-	objective.color = ( 1, 0.85, 0.3 );
-	objective.glowColor = ( 0.6, 0.3, 0.05 );
+	objective.color = ( 1, 1, 1 );
+	objective.glowColor = ( 0.35, 0.65, 1 );
 	objective.glowAlpha = 0.5;
 	objective.foreground = true;
 	objective.hidewheninmenu = true;
@@ -827,7 +930,7 @@ extraction_wait( route, heli )
 	timer.horzAlign = "center";
 	timer.vertAlign = "top";
 	timer.x = 0;
-	timer.y = 100;
+	timer.y = 22;
 	timer.font = "objective";
 	timer.fontScale = 1.6;
 	timer.color = ( 1, 1, 1 );
@@ -847,6 +950,7 @@ extraction_wait( route, heli )
 	array_thread_1( getPlayers(), ::board_watch );
 
 	deadline = getTime() + int( level.zm_extract_wait * 1000 );
+	level thread rescue_countdown_beeps( deadline, "zm_extraction_liftoff" );
 	warned = false;
 	all_aboard_since = undefined;
 
@@ -881,8 +985,12 @@ extraction_wait( route, heli )
 		if ( is_true( p.zm_extracted ) || !is_player_valid( p ) )
 			continue;
 		if ( in_landing_zone( p, route, heli ) )
-			p board( heli, "in the landing zone at lift-off" );
+			p thread board( heli, "in the landing zone at lift-off" );
 	}
+	// A boarding clip already started at the deadline gets its authored time;
+	// lift-off must not cut the longest 5.333-second get-in animation in half.
+	while ( rescue_boardings_pending( heli ) )
+		wait( 0.05 );
 
 	level notify( "zm_extraction_liftoff" );
 	extraction_hud_clear();
@@ -895,6 +1003,8 @@ all_valid_extracted()
 	for ( i = 0; i < players.size; i++ )
 	{
 		p = players[ i ];
+		if ( is_true( p.zm_boarding ) )
+			return false;
 		if ( is_true( p.zm_extracted ) )
 		{
 			any = true;
@@ -906,13 +1016,38 @@ all_valid_extracted()
 	return any;
 }
 
+rescue_entry_frame( heli )
+{
+ if ( !isDefined( heli ) ) return undefined;
+ rear = heli getTagOrigin( "side_door_r_jnt" );
+ front = heli getTagOrigin( "tag_gun_r" );
+ left = heli getTagOrigin( "side_door_l_jnt" );
+ up = anglesToUp( heli.angles );
+ outward = rear - left;
+ outward -= up * vectorDot( outward, up );
+ if ( distance( outward, ( 0, 0, 0 ) ) < 1 ) return undefined;
+ outward = vectorNormalize( outward );
+ along = front - rear;
+ along -= up * vectorDot( along, up );
+ along -= outward * vectorDot( along, outward );
+ length = distance( along, ( 0, 0, 0 ) );
+ if ( length < 1 ) return undefined;
+ entry = spawnStruct();entry.rear = rear;entry.outward = outward;
+ entry.along = vectorNormalize( along );entry.length = length;
+ return entry;
+}
+
 in_landing_zone( p, route, heli )
 {
-	if ( distance2D( p.origin, route.lz ) <= LZ_RADIUS && abs_f( p.origin[ 2 ] - route.lz[ 2 ] ) <= 160 )
-		return true;
-	if ( isDefined( heli ) && distance2D( p.origin, heli.origin ) <= BOARD_RADIUS && abs_f( p.origin[ 2 ] - route.lz[ 2 ] ) <= 160 )
-		return true;
-	return false;
+ entry = rescue_entry_frame( heli );
+ if ( !isDefined( entry ) ) return false;
+ delta = p.origin - entry.rear;
+ along = vectorDot( delta, entry.along );
+ outside = vectorDot( delta, entry.outward );
+ // Keep the existing vertical/range limits, but accept only the door's
+ // longitudinal span and exterior half-space. Front/underbody fails here.
+ return along >= 0 && along <= entry.length && outside >= 0 && outside <= BOARD_RADIUS &&
+  abs_f( p.origin[ 2 ] - route.lz[ 2 ] ) <= 160;
 }
 
 abs_f( v )
@@ -937,7 +1072,8 @@ board_watch()
 
 	for ( ;; )
 	{
-		wait( 0.05 );
+		// Positive wait rounds to exactly one VM frame at supported sv_fps1..250.
+		wait( 0.001 );
 
 		if ( is_true( self.zm_extracted ) )
 			break;
@@ -980,30 +1116,294 @@ board_hint()
 	return elem;
 }
 
+// Four distinct cabin locations on vehicle_blackhawk_minigun_hero.
+// The mounted LOD0 mesh has its inner cabin floor at z -115.18 for the
+// front pair and -115.63 for the rear pair; tag_guy1/3/7/9 sit at -96.638.
+// tag_player is a minigun attachment at -123.758, BELOW that floor, and
+// cannot be used as the passenger's feet. These offsets are in the seat
+// tag's frame; the native link carries the complete rotated transform.
+rescue_seat_tag( seat )
+{
+	tags = strTok( "tag_guy1 tag_guy3 tag_guy7 tag_guy9", " " );
+	if ( seat < 0 || seat >= tags.size )
+		return undefined;
+	return tags[ seat ];
+}
+
+rescue_seat_offset( heli, tag )
+{
+	if ( tag == "tag_guy1" || tag == "tag_guy3" )
+		return ( 0, 0, -18.542 );
+	return ( 0, 0, -18.992 );
+}
+
+// Keep the measured cabin stance while retaining mouse/attack input. Freezing
+// controls here also froze the player's aim and the helicopter gunner's input.
+rescue_seat_controls()
+{
+	self endon( "disconnect" );
+	level endon( "end_game" );
+	self allowJump( false );
+	self allowSprint( false );
+	self allowCrouch( true );
+	self allowStand( false );
+	self allowProne( false );
+	self setStance( "crouch" );
+	self freezeControls( false );
+}
+
 // self = player.  Aboard: out of the fight for the horde (the native
 // acquisition honours setDontTarget, as the last stand relies on), immune
 // (_zombiemode::Callback_PlayerDamage), and carried by the helicopter.
 board( heli, why )
 {
-	if ( is_true( self.zm_extracted ) )
+	if ( is_true( self.zm_extracted ) || is_true( self.zm_boarding ) )
 		return;
-
-	self mark_extracted();
 
 	if ( isDefined( heli ) )
 	{
 		if ( !isDefined( heli.riders ) )
 			heli.riders = [];
-		seat = heli.riders.size;
+		seat = rescue_free_seat( heli );
+		tag = rescue_seat_tag( seat );
+		if ( !isDefined( tag ) )
+		{
+			{}
+			return;
+		}
+
+		// The boarding/turret path holsters the current weapon. Retain only
+		// the genuinely held, owned primary for the later character clone.
+		self.zm_rescue_held_primary = undefined;
+		held_primary = self getCurrentPrimaryWeapon();
+		if ( isDefined( held_primary ) && held_primary != "" && held_primary != "none" && self hasWeapon( held_primary ) )
+			self.zm_rescue_held_primary = held_primary;
+
+		offset = rescue_seat_offset( heli, tag );
+		angles = heli getTagAngles( tag );
+		// Initial placement and attachment use the same tag-local transform,
+		// including pitch/roll. Do not add a local offset to a world origin.
+		self setOrigin( heli getTagOrigin( tag ) + anglesToUp( angles ) * offset[ 2 ] );
+		self setPlayerAngles( angles );
+		// Preserve the measured feet-to-tag delta and carry the camera with
+		// helicopter turns. Generic linkTo only updates the linked origin.
+		self playerLinkToDelta( heli, tag, 1, 180, 180, 180, 180, true );
 		heli.riders[ seat ] = self;
-
-		// The cabin: riders sit side by side behind the cockpit.
-		offset = ( -40 - 24 * ( seat % 2 ), 30 - 60 * ( seat % 2 ), -40 );
-		self setOrigin( heli.origin + offset );
-		self linkTo( heli, "tag_origin", offset, ( 0, 0, 0 ) );
+		self.zm_rescue_heli = heli;
+		self.zm_rescue_seat = seat;
+		self.zm_boarding = true;
+		// Protect the actual player through the real boarding animation. The
+		// all-aboard check above still waits for zm_boarding to clear.
+		self mark_extracted();
+		self rescue_boarding_animation( heli, seat, tag, offset );
+		self.zm_boarding = false;
+		self thread rescue_seat_controls();
+		self rescue_mount_gun( heli );
+		{}
 	}
+	self mark_extracted();
 
-	codolprintln( "CoDOL zm extraction: " + self.name + " is aboard (" + why + ")" );
+	{}
+}
+
+rescue_free_seat( heli )
+{
+	for ( i = 0; i < 4; i++ )
+		if ( i >= heli.riders.size || !isDefined( heli.riders[ i ] ) )
+			return i;
+	return -1;
+}
+
+rescue_boardings_pending( heli )
+{
+	if ( !isDefined( heli ) )
+		return false;
+	foreach ( rider in heli.riders )
+		if ( isDefined( rider ) && is_true( rider.zm_boarding ) )
+			return true;
+	return false;
+}
+
+rescue_getin_anim( seat )
+{
+	switch ( seat )
+	{
+		case 0: return %zombie_exfil_heli_getin_01;
+		case 1: return %zombie_exfil_heli_getin_02;
+		case 2: return %zombie_exfil_heli_getin_03;
+		default: return %zombie_exfil_heli_getin_04;
+	}
+}
+
+// C1 carries these four complete character clips in common_gametype_zm.
+// Their getMoveDelta is zero: the jump is authored inside the skeleton,
+// including the eye bone's roughly 200-unit approach. Play the clip itself;
+// do not replace that bone motion with a linear camera move or a teleport.
+rescue_boarding_animation( heli, seat, tag, offset )
+{
+	self endon( "disconnect" );
+	self endon( "death" );
+	level endon( "end_game" );
+	clip = rescue_getin_anim( seat );
+	model = spawn( "script_model", self.origin );
+	model setModel( "tag_origin" );
+	model notSolid();
+	model.weapons = model codol_setCharacterClone( self );
+	// Clip01 approaches along +X; clips02..04 approach along -Y.
+ // Rotate ONLY01 toward the real right-side gunner heading. Keep existing
+ // root translation; this does not claim recovery of the original scene root.
+ scene_angles = ( 0, 0, 0 );
+ if ( seat == 0 )
+ {
+  gun_angles = heli getTagAngles( "tag_player" );
+  seat_angles = heli getTagAngles( tag );
+  scene_angles = ( 0, gun_angles[1] - seat_angles[1], 0 );
+ }
+ model linkTo( heli, tag, offset, scene_angles );
+	heli.zm_boarding_models[ seat ] = model;
+	self.zm_boarding_model = model;
+	self disableWeapons();
+	self freezeControls( true );
+	self hide();
+	model setAnimKnobRestart( clip, 1, 0, 1 );
+	self cameraLinkTo( model, "tag_eye" );
+	{}
+	wait( getAnimLength( clip ) );
+	self cameraUnlink();
+	self show();
+	self enableWeapons();
+	model rescue_remove_boarding_model();
+	heli.zm_boarding_models[ seat ] = undefined;
+	self.zm_boarding_model = undefined;
+}
+
+rescue_remove_boarding_model()
+{
+	if ( isDefined( self.weapons ) )
+		foreach ( weapon in self.weapons )
+			if ( isDefined( weapon ) )
+				weapon delete();
+	self delete();
+}
+
+// The authored Black Hawk has one integrated gun, not four overlapping
+// sentries. Its VehicleDef owns the real bullet weapon and muzzle tags.
+// This is the same native vehicle-turret contract as IW4 _helicopter::heliRide.
+rescue_mount_gun( heli )
+{
+	if ( !isDefined( heli ) || !is_true( heli.zm_vehicle ) || isDefined( heli.zm_rescue_gunner ) )
+		return false;
+	if ( !isAlive( self ) || is_true( self.zm_boarding ) || !is_true( self.zm_extracted ) )
+		return false;
+	heli.zm_rescue_gunner = self;
+	heli.owner = self;
+	self.zm_rescue_gun_active = true;
+	self disableWeapons();
+	self freezeControls( false );
+	self setPlayerAngles( heli getTagAngles( "tag_player" ) );
+	heli VehicleTurretControlOn( self );
+	// tag_player is the gun attachment BELOW the cabin floor. Weapon-view
+ // linking forces the C1 eye onto it; native turret authority does not need
+ // that camera mode. Keep the real cabin feet/eye and normal physical aim.
+ self cameraUnlink();
+ tag = rescue_seat_tag( self.zm_rescue_seat );
+ self playerLinkToDelta( heli, tag, 1, 180, 180, 180, 180, true );
+	{}
+	return true;
+}
+
+rescue_gun_fire()
+{
+	self endon( "death" );
+	self endon( "zm_rescue_cleanup" );
+	level endon( "end_game" );
+	for ( ;; )
+	{
+		// Produced by Helicopter_Think from the real controller's attack input
+		// after the weapon's native refire delay. FireWeapon does normal traces,
+		// Bullet_Fire, refire/event/muzzle/audio publication and authoritative damage.
+		self waittill( "turret_fire" );
+		if ( isDefined( self.zm_rescue_gunner ) && isAlive( self.zm_rescue_gunner ) )
+			self fireWeapon();
+	}
+}
+
+rescue_release_rider( restore_controls )
+{
+	heli = self.zm_rescue_heli;
+	self cameraUnlink();
+	if ( isDefined( heli ) && is_true( self.zm_rescue_gun_active ) )
+	{
+		if ( isDefined( heli.zm_rescue_gunner ) && heli.zm_rescue_gunner == self )
+		{
+			heli VehicleTurretControlOff( self );
+			heli.zm_rescue_gunner = undefined;
+			heli.owner = undefined;
+		}
+	}
+	self.zm_rescue_gun_active = false;
+	self unlink();
+	self show();
+	self enableWeapons();
+	self allowJump( true );
+	self allowSprint( true );
+	self allowCrouch( true );
+	self allowStand( true );
+	self allowProne( true );
+	self.zm_boarding = false;
+	self.zm_rescue_heli = undefined;
+	if ( restore_controls )
+	{
+		self.zm_rescue_held_primary = undefined;
+		self.zm_extracted = false;
+		self.ignoreme = false;
+		self setDontTarget( false );
+		self freezeControls( false );
+	}
+}
+
+rescue_rider_lifecycle()
+{
+	self endon( "zm_rescue_cleanup" );
+	for ( ;; )
+	{
+		for ( i = 0; i < self.riders.size; i++ )
+		{
+			rider = self.riders[ i ];
+			if ( isDefined( rider ) && isAlive( rider ) )
+				continue;
+			if ( isDefined( rider ) )
+				rider rescue_release_rider( true );
+			if ( i < self.zm_boarding_models.size && isDefined( self.zm_boarding_models[ i ] ) )
+				self.zm_boarding_models[ i ] rescue_remove_boarding_model();
+			self.zm_boarding_models[ i ] = undefined;
+			self.riders[ i ] = undefined;
+		}
+		// Native ClientLeft also clears ownership on disconnect. Let another
+		// living passenger use the one gun rather than retain a dead controller.
+		if ( !isDefined( self.zm_rescue_gunner ) )
+		{
+			self.owner = undefined;
+			foreach ( rider in self.riders )
+				if ( isDefined( rider ) && rider rescue_mount_gun( self ) )
+					break;
+		}
+		wait( 0.05 );
+	}
+}
+
+rescue_riders_end_game( heli )
+{
+	level waittill( "end_game" );
+	if ( !isDefined( heli ) )
+		return;
+	heli notify( "zm_rescue_cleanup" );
+	foreach ( rider in heli.riders )
+		if ( isDefined( rider ) )
+			rider rescue_release_rider( false );
+	foreach ( model in heli.zm_boarding_models )
+		if ( isDefined( model ) )
+			model rescue_remove_boarding_model();
 }
 
 mark_extracted()
@@ -1028,6 +1428,11 @@ extraction_hud_clear()
 		level.zm_lz_sound stopLoopSound();
 		level.zm_lz_sound delete();
 	}
+	level.zm_lz_waypoint = undefined;
+	level.zm_lz_objective = undefined;
+	level.zm_lz_timer = undefined;
+	level.zm_lz_flare = undefined;
+	level.zm_lz_sound = undefined;
 }
 
 // --------------------------------------------------------------------------
@@ -1038,12 +1443,33 @@ extraction_leave( route, heli )
 {
 	level endon( "end_game" );
 
-	codolprintln( "CoDOL zm extraction: lift-off with " + count_extracted() + " aboard" );
+	{}
+	maps\_zombiemode_spawner::stop_spawning();
 	radio_all( "zmby_liftoff1_chpr", 0 );
 
 	// The ride out; the match ends a few seconds into it.
 	heli thread heli_fly_outbound( route );
 	wait( 6 );
+	// The flight's real mounted-gun kills/headshots must precede the native
+	// recorder's first immutable extraction event.
+	record_extracted_results();
+}
+
+record_extracted_results()
+{
+	// Called at successful lift-off (or the no-helicopter success fallback),
+	// before the outbound flight. The native recorder freezes its first event.
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+	{
+		if ( is_true( players[ i ].zm_extracted ) )
+		{
+			recorded = players[ i ] codol_reportZombiesResult( true,
+				level.zm_round_mode, maps\_zombiemode::report_round_number(), level.zm_round_cap,
+				players[ i ].downs, players[ i ].revives, players[ i ].headshots, true );
+			{}
+		}
+	}
 }
 
 count_extracted()
@@ -1088,14 +1514,20 @@ extraction_finish()
 		}
 
 		level thread maps\_zombiemode_audio::change_zombie_music( "victory" );
-		codolprintln( "CoDOL zm extraction: WIN -- " + extracted + " extracted, " + left + " left behind, on round " + level.round_number );
+		{}
 	}
 	else
 	{
 		level.zm_extraction_result = "lost";
-		codolprintln( "CoDOL zm extraction: nobody made it aboard; game over" );
+		{}
 	}
 
-	wait( 1 );
+	// Exact C1 win pilot11592,2026-10-19 11:20:19UTC: native
+	// ReceivedSplash zrescue_all_exfil slot0 for3.000000sec.
+	// Preserve its full stock lifetime before returning to the frontend.
+	if ( extracted > 0 )
+		wait( 3 );
+	else
+		wait( 1 );
 	level notify( "end_game" );
 }

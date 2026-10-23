@@ -73,14 +73,11 @@ init()
 
 		level.zombie_roster[ key ] = info;
 		level.zombie_roster_order[ level.zombie_roster_order.size ] = key;
-		codolprintln( "CoDOL zm equipment: " + key + " portrait " + describe( info.portrait ) +
-			" pistol " + describe( info.pistol ) +
-			" lethal " + describe( info.lethal ) + " special " + describe( info.special ) +
-			" trap " + describe( info.trap ) );
+		{}
 	}
 
 	if ( level.zombie_roster_order.size == 0 )
-		codolprintln( "CoDOL zm equipment: " + ROSTER_TABLE + " has no rows; players keep the default kit" );
+		{}
 
 	level thread on_player_connect();
 }
@@ -124,7 +121,7 @@ resolve_item( name )
 	precacheItem( name );
 	if ( getWeaponIndexFromName( name ) > 0 )
 		return name;
-	codolprintln( "CoDOL zm equipment: " + name + " is not loaded on this map" );
+	{}
 	return undefined;
 }
 

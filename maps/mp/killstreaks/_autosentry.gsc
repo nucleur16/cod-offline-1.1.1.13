@@ -13,7 +13,7 @@ init()
 {
 	level.sentryType = [];
 	level.sentryType[ "sentry_minigun" ] 	= "sentry";
-	
+
 	level.killStreakFuncs[ level.sentryType[ "sentry_minigun" ] ] 	= ::tryUseAutoSentry;
 
 	// SAM turret (catalogue ID 21 "sam_turret", activation weapon auto_tow_mp).
@@ -26,9 +26,9 @@ init()
 	// (codol_checkmodel, 2026-09-24), so sight and launch use those two.
 	level.sentryType[ "sam_turret" ] = "sam_turret";
 	level.killStreakFuncs[ level.sentryType[ "sam_turret" ] ] = ::tryUseSAM;
-	
+
 	level.sentrySettings = [];
-	
+
 	level.sentrySettings[ "sentry_minigun" ] = spawnStruct();
 	level.sentrySettings[ "sentry_minigun" ].burstMin = 20;
 	level.sentrySettings[ "sentry_minigun" ].burstMax = 120;
@@ -79,7 +79,7 @@ tryUseAutoSentry( lifeId )
 	result = self giveSentry( "sentry_minigun" );
 	if ( result )
 		self maps\mp\_matchdata::logKillstreakEvent( "sentry", self.origin );
-	
+
 	return ( result );
 }
 
@@ -99,7 +99,7 @@ tryUseAutoGlSentry( lifeId )
 	result = self giveSentry( "sentry_gun" );
 	if ( result )
 		self maps\mp\_matchdata::logKillstreakEvent( "sentry_gl", self.origin );
-		
+
 	return ( result );
 }
 
@@ -109,9 +109,9 @@ giveSentry( sentryType )
 	self.last_sentry = sentryType;
 
 	sentryGun = createSentryForPlayer( sentryType, self );
-	
+
 	self setCarryingSentry( sentryGun, true );
-	
+
 	// if we failed to place the sentry, it will have been deleted at this point
 	if ( isDefined( sentryGun ) )
 		return true;
@@ -129,9 +129,9 @@ setCarryingSentry( sentryGun, allowCancel )
 {
 	self endon ( "death" );
 	self endon ( "disconnect" );
-	
+
 	assert( isReallyAlive( self ) );
-	
+
 	// CoDOL: a placed turret picked up again (allowCancel false) is put back
 	// where it stood on cancel, instead of IW4's no-cancel carry.
 	restoreOrigin = undefined;
@@ -143,7 +143,7 @@ setCarryingSentry( sentryGun, allowCancel )
 	}
 
 	sentryGun sentry_setCarried( self );
-	
+
 	self _disableWeapon();
 
 	self notifyOnPlayerCommand( "place_sentry", "+attack" );
@@ -163,7 +163,7 @@ setCarryingSentry( sentryGun, allowCancel )
 	for ( slot = 1; slot <= 5; slot++ )
 		self notifyOnPlayerCommand( "cancel_sentry", "+actionslot " + slot );
 	self thread sentry_carryHint( allowCancel );
-	
+
 	for ( ;; )
 	{
 		result = waittill_any_return( "place_sentry", "cancel_sentry" );
@@ -182,7 +182,7 @@ setCarryingSentry( sentryGun, allowCancel )
 				self notify( "codol_sentry_carry_done" );
 				return true;
 			}
-				
+
 			sentryGun sentry_setCancelled();
 			self _enableWeapon();
 			self notify( "codol_sentry_carry_done" );
@@ -191,7 +191,7 @@ setCarryingSentry( sentryGun, allowCancel )
 
 		if ( !sentryGun.canBePlaced )
 			continue;
-			
+
 		sentryGun sentry_setPlaced();
 		self _enableWeapon();
 		self notify( "codol_sentry_carry_done" );
@@ -248,10 +248,10 @@ createSentryForPlayer( sentryType, owner )
 
 	sentryGun = spawnTurret( "misc_turret", owner.origin, level.sentrySettings[ sentryType ].weaponInfo );
 	sentryGun.angles = owner.angles;
-	
+
 	sentryGun sentry_initSentry( sentryType, owner );
-	
-	return ( sentryGun );	
+
+	return ( sentryGun );
 }
 
 
@@ -261,10 +261,10 @@ sentry_initSentry( sentryType, owner )
 
 	self setModel( level.sentrySettings[ self.sentryType ].modelBase );
 	self.health = 1000;
-	
+
 	self setCanDamage( true );
 	self makeTurretInoperable();
-	
+
 	self setTurretModeChangeWait( true );
 //	self setConvergenceTime( .25, "pitch" );
 //	self setConvergenceTime( .25, "yaw" );
@@ -283,7 +283,7 @@ sentry_initSentry( sentryType, owner )
 		// and scans level, like the sentry gun. Negative pitch is up.
 		self setScanningPitch( -35.0 );
 	}
-	
+
 	self sentry_setOwner( owner );
 
 	bombSquadTeam = undefined;
@@ -317,7 +317,7 @@ sentry_handleDamage()
 	while ( self.health > 0 )
 	{
 		self waittill( "damage", amount, attacker, dir, point, type, model, tag, part, flags, weapon );
-		
+
 		if ( isDefined( attacker ) && isPlayer( attacker ) && attacker != self.owner && attacker isFriendlyToSentry( self ) && !isDefined( level.nukeDetonated ) )
 		{
 			self.health += amount;
@@ -332,7 +332,7 @@ sentry_handleDamage()
 		// 7x damage for explosives - GRENADES
 		if ( isExplosiveDamage( type ) )
 			self.health -= (amount * 1);
-			
+
 		if ( type == "MOD_MELEE" )
 			self.health = 0;
 
@@ -344,22 +344,22 @@ sentry_handleDamage()
 			{
 				damageAdd = amount*level.armorPiercingMod;
 				self.health -= int(damageAdd);
-			}			
+			}
 		}
-		
+
 		if ( self.health - healthbuffer < 0 )
 		{
 			thread maps\mp\gametypes\_missions::vehicleKilled( self.owner, self, undefined, attacker, amount, type );
 
 			if ( isPlayer( attacker ) && (!isDefined(self.owner) || attacker != self.owner) )
 			{
-				attacker thread maps\mp\gametypes\_rank::giveRankXP( "kill", 100 );				
+				attacker thread maps\mp\gametypes\_rank::giveRankXP( "kill", 100 );
 				attacker notify( "destroyed_killstreak" );
 			}
-		
+
 			if ( isDefined( self.owner ) )
 				self.owner thread leaderDialogOnPlayer( "sentry_destroyed" );
-		
+
 			self notify ( "death" );
 			return;
 		}
@@ -369,16 +369,16 @@ sentry_handleDamage()
 sentry_handleDeath()
 {
 	entNum = self GetEntityNumber();
-	
+
 	self addToTurretList( entNum );
-	
+
 	self waittill ( "death" );
 
 	self removeFromTurretList( entNum );
 	// this handles cases of deletion
 	if ( !isDefined( self ) )
 		return;
-		
+
 	self setModel( level.sentrySettings[ self.sentryType ].modelDestroyed );
 
 	self sentry_setInactive();
@@ -421,11 +421,11 @@ sentry_handleUse()
 {
 	self endon ( "death" );
 	level endon ( "game_ended" );
-	
+
 	for ( ;; )
 	{
 		self waittill ( "trigger", player );
-		
+
 		assert( player == self.owner );
 		assert( !isDefined( self.carriedBy ) );
 
@@ -437,7 +437,7 @@ sentry_handleUse()
 
 		if ( !isReallyAlive( player ) )
 			continue;
-		
+
 		player setCarryingSentry( self, false );
 	}
 }
@@ -447,10 +447,10 @@ sentry_handleOwner()
 {
 	self endon ( "death" );
 	level endon ( "game_ended" );
-	
+
 	self notify ( "sentry_handleOwner" );
 	self endon ( "sentry_handleOwner" );
-	
+
 	self.owner waittill_any( "disconnect", "joined_team", "joined_spectators" );
 
 	self notify( "death" );
@@ -470,7 +470,7 @@ sentry_setOwner( owner )
 
 	self SetSentryOwner( self.owner );
 	self SetTurretMinimapVisible( true );
-	
+
 	// The SAM turret acquires nothing natively: in "sentry" mode a turret
 	// with no turret team never auto-targets (C1 0x57cd16), so it sweeps
 	// and follows only the aircraft sam_attackTargets hands it through
@@ -493,7 +493,7 @@ sentry_setOwner( owner )
 		// (setSentryOwner above, 0x57cde9).
 		self setTurretTeam( "team3" );
 	}
-	
+
 	self thread sentry_handleOwner();
 }
 
@@ -537,15 +537,15 @@ sentry_setCarried( carrier )
 	self sentry_makeNotSolid();
 
 	self.carriedBy = carrier;
-	
+
 	carrier thread updateSentryPlacement( self );
-	
+
 	self thread sentry_onCarrierDeath( carrier );
 	self thread sentry_onCarrierDisconnect( carrier );
 	self thread sentry_onGameEnded();
 
 	self sentry_setInactive();
-	
+
 	self notify ( "carried" );
 }
 
@@ -554,10 +554,10 @@ updateSentryPlacement( sentryGun )
 	self endon ( "death" );
 	self endon ( "disconnect" );
 	level endon ( "game_ended" );
-	
+
 	sentryGun endon ( "placed" );
 	sentryGun endon ( "death" );
-	
+
 	sentryGun.canBePlaced = true;
 	lastCanPlaceSentry = -1; // force initial update
 
@@ -568,7 +568,7 @@ updateSentryPlacement( sentryGun )
 		sentryGun.origin = placement[ "origin" ];
 		sentryGun.angles = placement[ "angles" ];
 		sentryGun.canBePlaced = self isOnGround() && placement[ "result" ];
-	
+
 		if ( sentryGun.canBePlaced != lastCanPlaceSentry )
 		{
 			if ( sentryGun.canBePlaced )
@@ -582,8 +582,8 @@ updateSentryPlacement( sentryGun )
 				self ForceUseHintOn( &"SENTRY_CANNOT_PLACE" );
 			}
 		}
-		
-		lastCanPlaceSentry = sentryGun.canBePlaced;		
+
+		lastCanPlaceSentry = sentryGun.canBePlaced;
 		wait ( 0.05 );
 	}
 }
@@ -594,7 +594,7 @@ sentry_onCarrierDeath( carrier )
 	self endon ( "death" );
 
 	carrier waittill ( "death" );
-	
+
 	if ( self.canBePlaced )
 		self sentry_setPlaced();
 	else
@@ -608,7 +608,7 @@ sentry_onCarrierDisconnect( carrier )
 	self endon ( "death" );
 
 	carrier waittill ( "disconnect" );
-	
+
 	self sentry_delete();
 }
 
@@ -618,7 +618,7 @@ sentry_onGameEnded( carrier )
 	self endon ( "death" );
 
 	level waittill ( "game_ended" );
-	
+
 	self sentry_delete();
 }
 
@@ -642,8 +642,8 @@ sentry_setActive()
 		if ( player == self.owner )
 			self enablePlayerUse( player );
 		else
-			self disablePlayerUse( player );	
-	}	
+			self disablePlayerUse( player );
+	}
 
 	if ( level.teamBased )
 		self maps\mp\_entityheadicons::setTeamHeadIcon( self.team, (0,0,65) );
@@ -683,14 +683,14 @@ isFriendlyToSentry( sentryGun )
 {
 	if ( level.teamBased && self.team == sentryGun.team )
 		return true;
-		
+
 	return false;
 }
 
 
 addToTurretList( entNum )
 {
-	level.turrets[entNum] = self;	
+	level.turrets[entNum] = self;
 }
 
 
@@ -723,9 +723,9 @@ sentry_attackTargets()
 	self.momentum = 0;
 	self.heatLevel = 0;
 	self.overheated = false;
-	
+
 	self thread sentry_heatMonitor();
-	
+
 	for ( ;; )
 	{
 		self waittill_either( "turretstatechange", "cooled" );
@@ -747,28 +747,28 @@ sentry_timeOut()
 {
 	self endon( "death" );
 	level endon ( "game_ended" );
-	
+
 	lifeSpan = SENTRY_TIME_OUT;
-	
+
 	while ( lifeSpan )
 	{
 		wait ( 1.0 );
 		maps\mp\gametypes\_hostmigration::waitTillHostMigrationDone();
-		
+
 		if ( !isDefined( self.carriedBy ) )
 			lifeSpan = max( 0, lifeSpan - 1.0 );
 	}
-	
+
 	if ( isDefined( self.owner ) )
 		self.owner thread leaderDialogOnPlayer( "sentry_gone" );
-	
+
 	self notify ( "death" );
 }
 
 sentry_targetLockSound()
 {
 	self endon ( "death" );
-	
+
 	self playSound( "sentry_gun_beep" );
 	wait ( 0.1 );
 	self playSound( "sentry_gun_beep" );
@@ -779,11 +779,11 @@ sentry_targetLockSound()
 sentry_spinUp()
 {
 	self thread sentry_targetLockSound();
-	
+
 	while ( self.momentum < SENTRY_SPINUP_TIME )
 	{
 		self.momentum += 0.1;
-		
+
 		wait ( 0.1 );
 	}
 }
@@ -810,16 +810,16 @@ sentry_burstFireStart()
 	maxPause = level.sentrySettings[ self.sentryType ].pauseMax;
 
 	for ( ;; )
-	{		
+	{
 		numShots = randomIntRange( minShots, maxShots + 1 );
-		
+
 		for ( i = 0; i < numShots && !self.overheated; i++ )
 		{
 			self shootTurret();
 			self.heatLevel += fireTime;
 			wait ( fireTime );
 		}
-		
+
 		wait ( randomFloatRange( minPause, maxPause ) );
 	}
 }
@@ -851,10 +851,10 @@ sentry_heatMonitor()
 		{
 			self.overheated = true;
 			self thread PlayHeatFX();
-			
+
 			while ( self.heatLevel )
 			{
-				self.heatLevel = max( 0, self.heatLevel - 0.1 );	
+				self.heatLevel = max( 0, self.heatLevel - 0.1 );
 				wait ( 0.1 );
 			}
 
@@ -872,11 +872,11 @@ playHeatFX()
 	self endon( "death" );
 	self endon( "not_overheated" );
 	level endon ( "game_ended" );
-	
+
 	for( ;; )
 	{
 		playFxOnTag( getFx( "sentry_overheat_mp" ), self, "tag_flash" );
-	
+
 		wait( SENTRY_FX_TIME );
 	}
 }
@@ -910,7 +910,7 @@ sam_attackTargets()
 	level endon( "game_ended" );
 
 	self.samTargetEnt = undefined;
-	codolPrintLn( "CoDOL killstreak: sam_turret active at " + self.origin );
+	{}
 
 	for ( ;; )
 	{
@@ -1087,7 +1087,7 @@ sam_fireOnTarget()
 		}
 		else
 		{
-			codolPrintLn( "CoDOL killstreak: sam_turret magicBullet returned no missile" );
+			{}
 		}
 
 		if ( i == 3 )
@@ -1098,9 +1098,9 @@ sam_fireOnTarget()
 
 	// The salvo may already have destroyed the target.
 	if ( isDefined( target ) )
-		codolPrintLn( "CoDOL killstreak: sam_turret fired a salvo at " + target.classname + " " + target getEntityNumber() );
+		{}
 	else
-		codolPrintLn( "CoDOL killstreak: sam_turret fired a salvo; target already gone" );
+		{}
 
 	wait ( 3.0 );
 }

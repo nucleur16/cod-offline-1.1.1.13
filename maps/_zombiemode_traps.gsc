@@ -36,8 +36,8 @@
 //     north and south.
 //   * T5 trap_damage waits on the damage trigger's "trigger" notify.  This
 //     server's actors do not touch-fire trigger_multiples reliably, so the
-//     live trap polls every 0.1 s with isTouching against the same brush,
-//     for zombies and players alike.
+//     live trap polls zombies every 0.1 s against the same brush. Players
+//     use T5's native trigger notifications; do not poll extra player hits.
 //   * T5's 10% "burn instead" branch needs animscripts\zombie_death
 //     flame_death_fx and gib refs, neither of which this zombie has; every
 //     zombie takes the electrocution branch.
@@ -92,8 +92,14 @@ init()
 	level._effect[ "zapper_wall" ] = loadfx( "misc/fx_zombie_zapper_wall_control_on" );
 	level._effect[ "zapper_light_ready" ] = loadfx( "misc/fx_zombie_zapper_light_green" );
 	level._effect[ "zapper_light_notready" ] = loadfx( "misc/fx_zombie_zapper_light_red" );
-	// T5 character_fire_death_torso, the burning-zombie torso fire (C1 name).
-	level._effect[ "zm_trap_fire_torso" ] = loadfx( "env/fire/fx_fire_player_torso" );
+	// C1 drops the bolt identity for these world-space looping effects.
+	// Reserve byte-sized slots during map initialization so their dedicated
+	// FX entities can retain client handles and stop the loops on deletion.
+	codol_reserveEntityFx( level._effect[ "zapper" ] );
+	codol_reserveEntityFx( level._effect[ "zapper_fx" ] );
+	codol_reserveEntityFx( level._effect[ "zapper_wall" ] );
+	codol_reserveEntityFx( level._effect[ "zapper_light_ready" ] );
+	codol_reserveEntityFx( level._effect[ "zapper_light_notready" ] );
 	level._effect[ "elec_torso" ] = loadfx( "env/electrical/fx_elec_player_torso" );
 	level._effect[ "elec_md" ] = loadfx( "env/electrical/fx_elec_player_md" );
 	level._effect[ "elec_sm" ] = loadfx( "env/electrical/fx_elec_player_sm" );
@@ -102,6 +108,7 @@ init()
 	// T5 trap_model_type_init :1185 "default".
 	precacheModel( "zombie_zapper_cagelight_green" );
 	precacheModel( "zombie_zapper_cagelight_red" );
+	precacheModel( "tag_origin" );
 
 	// T5 asylum :32.  shock/electrocution.shock ships in common_gametype_zm.
 	precacheShellShock( "electrocution" );
@@ -142,7 +149,7 @@ trap_usable()
 
 	if ( !isDefined( self.target ) )
 	{
-		codolprintln( "CoDOL zm trap: zombie_trap ent " + self getEntityNumber() + " targets nothing; left alone" );
+		{}
 		return false;
 	}
 
@@ -153,7 +160,7 @@ trap_usable()
 			return true;
 	}
 
-	codolprintln( "CoDOL zm trap: zombie_trap ent " + self getEntityNumber() + " (" + self.target + ") has no trigger_use to buy it from; left alone" );
+	{}
 	return false;
 }
 
@@ -230,21 +237,9 @@ trap_init()
 	self._trap_duration = level.elec_trap_time;
 	self._trap_cooldown_time = level.elec_trap_cooldown_time;
 
-	codolprintln( "CoDOL zm trap: " + self._trap_type + " trap " + self._trap_id + " ent " + self getEntityNumber() +
-		": use triggers " + self._trap_use_trigs.size + ", switches " + self._trap_switches.size +
-		", lights " + self._trap_lights.size + ", audio points " + self._trap_audio_structs.size +
-		", fx points " + self._trap_fx_structs.size + ", box fx " + isDefined( self._trap_box_fx ) +
-		", wall fx " + isDefined( self._trap_wall_fx ) + ", sparks " + isDefined( self._trap_sparks ) +
-		", cost " + self.zombie_cost );
+	{}
 
 	flag_wait( "all_players_connected" );
-
-	// A level that powers machines separately (zm_sumpf_sh: one switch per
-	// hut) names this entity's own power flag; every other map waits on the
-	// one "power_on" flag, exactly as before.
-	power_flag = "power_on";
-	if ( isDefined( self.zm_power_flag ) )
-		power_flag = self.zm_power_flag;
 
 	self trap_lights_red();
 	for ( i = 0; i < self._trap_use_trigs.size; i++ )
@@ -253,7 +248,7 @@ trap_init()
 	if ( !isDefined( self.script_flag_wait ) )
 	{
 		self trap_set_string( &"ZOMBIE_NEED_POWER" );
-		flag_wait( power_flag );
+		flag_wait( "power_on" );
 	}
 	else
 	{
@@ -264,7 +259,7 @@ trap_init()
 
 	self trap_set_string( &"ZOMBIE_BUTTON_BUY_TRAP", self.zombie_cost );
 	self trap_lights_green();
-	codolprintln( "CoDOL zm trap: " + self._trap_id + " is available for " + self.zombie_cost );
+	{}
 
 	for ( i = 0; i < self._trap_use_trigs.size; i++ )
 		self._trap_use_trigs[ i ] thread trap_use_think( self );
@@ -316,7 +311,7 @@ trap_use_think( trap )
 		if ( who.score < trap.zombie_cost )
 		{
 			who maps\_zombiemode_audio::no_cash_vox();
-			codolprintln( "CoDOL zm trap: " + trap._trap_id + " refused to " + who.name + " (" + who.score + " points, costs " + trap.zombie_cost + ")" );
+			{}
 			continue;
 		}
 
@@ -332,7 +327,7 @@ trap_use_think( trap )
 		who.zm_traps_activated++;
 		who notify( "zm_trap_activated", "zombie_trap_" + trap._trap_type );
 
-		codolprintln( "CoDOL zm trap: " + trap._trap_id + " bought by " + who.name + " for " + trap.zombie_cost + "; " + who.score + " points left" );
+		{}
 
 		if ( trap._trap_switches.size )
 		{
@@ -345,7 +340,7 @@ trap_use_think( trap )
 
 		trap._trap_cooling_down = 1;
 		trap trap_set_string( &"ZOMBIE_TRAP_COOLDOWN" );
-		codolprintln( "CoDOL zm trap: " + trap._trap_id + " done; cooling down " + trap._trap_cooldown_time + " s" );
+		{}
 
 		wait( trap._trap_cooldown_time );
 		trap._trap_cooling_down = 0;
@@ -353,7 +348,7 @@ trap_use_think( trap )
 		trap notify( "available" );
 		trap._trap_in_use = 0;
 		trap trap_set_string( &"ZOMBIE_BUTTON_BUY_TRAP", trap.zombie_cost );
-		codolprintln( "CoDOL zm trap: " + trap._trap_id + " is available again" );
+		{}
 	}
 }
 
@@ -388,13 +383,12 @@ trap_lights( model, fx_ref )
 		light setModel( model );
 
 		if ( isDefined( light.zm_trap_fx ) )
-			light.zm_trap_fx delete();
+			light.zm_trap_fx thread trap_delete_fx();
 
 		angles = ( 0, 0, 0 );
 		if ( isDefined( light.angles ) )
 			angles = light.angles;
-		light.zm_trap_fx = spawnFx( level._effect[ fx_ref ], light.origin, anglesToForward( angles ), anglesToUp( angles ) );
-		triggerFx( light.zm_trap_fx );
+		light.zm_trap_fx = trap_spawn_fx( level._effect[ fx_ref ], light.origin, angles );
 	}
 }
 
@@ -426,7 +420,7 @@ trap_activate_electric()
 	self._trap_kills = 0;
 
 	self notify( "trap_activate" );
-	codolprintln( "CoDOL zm trap: " + self._trap_id + " live for " + self._trap_duration + " s" );
+	{}
 
 	// The client script's effects (see header).  A fire trap (T5
 	// trap_activate_fire :545) burns fire_trap_med at the same points.
@@ -440,8 +434,7 @@ trap_activate_electric()
 		angles = ( 0, 0, 0 );
 		if ( isDefined( s.angles ) )
 			angles = s.angles;
-		e = spawnFx( level._effect[ fx_name ], s.origin, anglesToForward( angles ), anglesToUp( angles ) );
-		triggerFx( e );
+		e = trap_spawn_fx( level._effect[ fx_name ], s.origin, angles );
 		fx[ fx.size ] = e;
 	}
 	if ( self._trap_type == "electric" )
@@ -465,10 +458,10 @@ trap_activate_electric()
 	for ( i = 0; i < fx.size; i++ )
 	{
 		if ( isDefined( fx[ i ] ) )
-			fx[ i ] delete();
+			fx[ i ] thread trap_delete_fx();
 	}
 
-	codolprintln( "CoDOL zm trap: " + self._trap_id + " finished; zombies killed " + self._trap_kills );
+	{}
 }
 
 // zombie_cod5_asylum_fx.csc zapper_switch_fx :181: the powerbox and the
@@ -493,8 +486,7 @@ trap_machine_fx()
 		angles = ( 0, 0, 0 );
 		if ( isDefined( pts[ i ].angles ) )
 			angles = pts[ i ].angles;
-		e = spawnFx( level._effect[ refs[ i ] ], pts[ i ].origin, anglesToForward( angles ), anglesToUp( angles ) );
-		triggerFx( e );
+		e = trap_spawn_fx( level._effect[ refs[ i ] ], pts[ i ].origin, angles );
 		made[ made.size ] = e;
 	}
 
@@ -503,8 +495,26 @@ trap_machine_fx()
 	for ( i = 0; i < made.size; i++ )
 	{
 		if ( isDefined( made[ i ] ) )
-			made[ i ] delete();
+			made[ i ] thread trap_delete_fx();
 	}
+}
+
+// C1 ET_FX stores a direct effect handle, including world-space loops.
+// PlayFxOnTag discards the bolt identity for these effect definitions, so
+// neither tagged kill nor deletion of a model carrier can find their loops.
+// init reserved the required byte-sized selectors before client gamestates.
+trap_spawn_fx( effect, origin, angles )
+{
+	carrier = spawnFx( effect, origin, anglesToForward( angles ), anglesToUp( angles ) );
+	triggerFx( carrier );
+	return carrier;
+}
+
+trap_delete_fx()
+{
+	// C1 entity shutdown stops the stored FX handle recursively. Existing
+	// particles finish their authored short lifetimes; no new bolts emit.
+	self delete();
 }
 
 // zombie_cod5_asylum_fx.csc electric_trap_wire_sparks :272: sparks run
@@ -576,10 +586,13 @@ play_electrical_sound( trap )
 	}
 }
 
-// T5 :716, polled (see header).  self = the trap.
+// T5 :716. Players keep its trigger-driven path; only actors need polling.
+// self = the trap.
 trap_damage()
 {
 	self endon( "trap_done" );
+	level endon( "end_game" );
+	self thread trap_player_damage();
 
 	for ( ;; )
 	{
@@ -599,27 +612,32 @@ trap_damage()
 			}
 		}
 
-		players = getPlayers();
-		for ( i = 0; i < players.size; i++ )
-		{
-			p = players[ i ];
-			if ( is_player_valid( p ) && p isTouching( self ) )
-				p thread player_elec_damage( self._trap_type );
-		}
-
 		wait( 0.1 );
 	}
 }
 
-// T5 :809 (and player_fire_damage :858, the same rule; C1 has no setBurn,
-// so a fire trap only skips the electric shellshock).  self = a player
-// standing in a live trap.
+// BO1 _zombiemode_traps::trap_damage: damage a player on a native trigger
+// notification, not from the actor overlap polling loop as well.
+trap_player_damage()
+{
+	self endon( "trap_done" );
+	level endon( "end_game" );
+	for ( ;; )
+	{
+		self waittill( "trigger", player );
+		if ( isDefined( player ) && isPlayer( player ) && is_player_valid( player ) )
+			player thread player_elec_damage( self._trap_type );
+	}
+}
+
+// BO1 _zombiemode_traps::player_elec_damage. self = a player in a live trap.
+// Keep its 50-point hit, <=100-health lethal gate and 0.1-second reentry guard.
 player_elec_damage( trap_type )
 {
 	self endon( "death" );
 	self endon( "disconnect" );
 
-	if ( isDefined( self.is_burning ) || self maps\_zombiemode_laststand::player_is_in_laststand() )
+	if ( !isAlive( self ) || isDefined( self.is_burning ) || self maps\_zombiemode_laststand::player_is_in_laststand() )
 		return;
 
 	// Under zm the native perk lookup resolves the T5 name to C1's no_slot
@@ -638,7 +656,7 @@ player_elec_damage( trap_type )
 	if ( !isDefined( self.zm_trap_shock_logged ) || getTime() - self.zm_trap_shock_logged > 5000 )
 	{
 		self.zm_trap_shock_logged = getTime();
-		codolprintln( "CoDOL zm trap: " + self.name + " walked into a live trap (jugg " + jugg + ", health " + self.health + ")" );
+		{}
 	}
 
 	if ( !jugg || self.health - 100 < 1 )
@@ -663,9 +681,8 @@ zombie_trap_death( trap, param )
 
 	if ( !isDefined( self.animname ) || self.animname != "zombie_dog" )
 	{
-		if ( !isDefined( level.burning_zombies ) )
-			level.burning_zombies = [];
-		if ( isDefined( param ) && param > 90 && level.burning_zombies.size < 6 )
+		playSoundAtPosition( "zmb_zombie_arc", self.origin );
+		if ( randomInt( 100 ) > 50 )
 		{
 			// T5 :905-:911: one zombie in ten burns instead (at most six at a
 			// time) -- ignite, the torso fire, no gib.  C1 names: zmb_ignite,
@@ -700,6 +717,10 @@ zombie_trap_death( trap, param )
 			wait( randomFloat( 1.25 ) );
 			self playSound( "zmb_zombie_arc" );
 		}
+		wait( randomFloat( 1.25 ) );
+		// The lethal hit immediately enters zombie_death, which stops the
+		// actor's sounds. Give this terminal arc its own positional carrier.
+		playSoundAtPosition( "zmb_zombie_arc", self.origin );
 	}
 
 	level notify( "trap_kill", self, trap );
@@ -707,19 +728,6 @@ zombie_trap_death( trap, param )
 	if ( isDefined( trap ) )
 		trap._trap_kills++;
 	self doDamage( self.health + 666, self.origin );
-}
-
-// T5 zombie_flame_watch: a burning zombie leaves the burning list when it dies.
-trap_burning_watch()
-{
-	self waittill( "death" );
-	keep = [];
-	for ( i = 0; i < level.burning_zombies.size; i++ )
-	{
-		if ( isDefined( level.burning_zombies[ i ] ) && level.burning_zombies[ i ] != self )
-			keep[ keep.size ] = level.burning_zombies[ i ];
-	}
-	level.burning_zombies = keep;
 }
 
 // T5 :1000.
@@ -768,4 +776,18 @@ electroctute_death_fx()
 	tags = array_randomize( tags );
 	playFxOnTag( level._effect[ "elec_sm" ], self, tags[ 0 ] );
 	playFxOnTag( level._effect[ "elec_sm" ], self, tags[ 1 ] );
+}
+
+
+// Retain the current upstream helper required by its preserved caller.
+trap_burning_watch()
+{
+	self waittill( "death" );
+	keep = [];
+	for ( i = 0; i < level.burning_zombies.size; i++ )
+	{
+		if ( isDefined( level.burning_zombies[ i ] ) && level.burning_zombies[ i ] != self )
+			keep[ keep.size ] = level.burning_zombies[ i ];
+	}
+	level.burning_zombies = keep;
 }

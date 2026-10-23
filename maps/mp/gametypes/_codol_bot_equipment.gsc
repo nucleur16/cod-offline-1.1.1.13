@@ -23,6 +23,10 @@ onBotSpawned()
     self endon( "disconnect" );
     self endon( "death" );
     level endon( "game_ended" );
+    // Party rules own the full loadout; combat bots must not add a claymore
+    // or bouncing betty after the mode gave them their starting weapon.
+    if ( isDefined( level.partyMode ) && level.partyMode )
+        return;
     if ( getDvar( "scr_codol_botequipment" ) == "" )
         setDvar( "scr_codol_botequipment", 1 );
     // giveLoadout runs before "spawned_player"; let its equipment settle.
@@ -63,7 +67,7 @@ giveBotEquipment()
         }
         self setOffhandEquipment( self getOffhandEquipment( 0 ), self getOffhandEquipment( 1 ), weapon );
         if ( getDvarInt( "developer" ) > 0 )
-            codolPrintLn( "CoDOL bot equipment: " + self.name + " carries " + weapon + " x" + self getAmmoCount( weapon ) );
+            {}
         return weapon;
     }
     return undefined;
@@ -126,7 +130,7 @@ objectivePlantThink( weapon )
             {
                 planted[i] = true;
                 if ( getDvarInt( "developer" ) > 0 )
-                    codolPrintLn( "CoDOL bot equipment: " + self.name + " plants " + weapon + " near objective " + spot );
+                    {}
             }
             break;
         }

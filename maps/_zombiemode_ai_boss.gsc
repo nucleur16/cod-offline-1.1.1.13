@@ -72,8 +72,9 @@
 //     hits a player into this boss's hit (scr_zm_boss_bullet_damage).
 //   * armour: everything but the head (the c_zom_juggernaut_head model, or a
 //     head bone) does scr_zm_boss_armor_scale of its damage; the head takes
-//     full damage.  Health is T5's ape rule over C1's table rows, scaled by
-//     round and player count.  Nuke and tesla only chip it (T5 ape
+//     full damage. Health uses the common Normal curve with local tuning
+//     for round/player count; the retained ape floors are not applied.
+//     Nuke and tesla only chip it (T5 ape
 //     nuke_damage_func / tesla_damage_func).
 //   * melee: within reach the native combat animscript swings, as any zombie
 //     does, for scr_zm_boss_melee_damage.
@@ -89,7 +90,7 @@
 //   scr_zm_boss_last_round      0      0 = no limit
 //   scr_zm_boss_spawn_delay     12     seconds into the round
 //   scr_zm_boss_health          0      fixed health; 0 = computed
-//   scr_zm_boss_armor_scale     0.35   non-head damage factor
+//   scr_zm_boss_armor_scale     0.65   non-head damage factor
 //   scr_zm_boss_bullet_damage   5      one minigun round on a player
 //   scr_zm_boss_melee_damage    90
 //   scr_zm_boss_fire_range      1400
@@ -124,10 +125,14 @@ init()
 	precacheModel( BOSS_GUN_MODEL );
 	precacheItem( BOSS_WEAPON );
 	precacheString( &"ZOMBIE_WARNING_JUGGERNAUT_ARRIVED" );
+	// award_damagedone is only a splash-table cell, with no material asset.
+	precacheShader( "specialty_juggernaut_zombies" );
+	precacheString( &"SPLASHES_ZBOSSDMG" );
+	precacheString( &"SPLASHES_ZBOSSDMG_DESC" );
 
 	if ( getWeaponIndexFromName( BOSS_WEAPON ) <= 0 )
 	{
-		codolprintln( "CoDOL zm boss: " + BOSS_WEAPON + " is not mounted; the juggernaut is disabled" );
+		{}
 		return;
 	}
 
@@ -144,10 +149,8 @@ init()
 	level.zm_boss_ready = true;
 
 	level thread boss_round_watch();
-	level thread boss_dev_watch();
 
-	codolprintln( "CoDOL zm boss: juggernaut ready (first round " + boss_dvar_int( "scr_zm_boss_first_round", 5 ) +
-		", every " + boss_dvar_int( "scr_zm_boss_interval", 5 ) + ")" );
+	{}
 }
 
 boss_dvar_int( name, def )
@@ -196,6 +199,10 @@ boss_round_watch()
 
 boss_round_due( round )
 {
+	// Heavy mechs belong to finite Normal and Hard, never Easy or Endless.
+	if ( level.zm_round_mode == 0 || level.zm_round_mode == 3 )
+		return false;
+
 	if ( boss_dvar_int( "scr_zm_boss_enable", 1 ) <= 0 )
 		return false;
 
@@ -232,14 +239,23 @@ boss_round_spawn( round )
 
 	if ( boss_is_dog_round() )
 	{
-		codolprintln( "CoDOL zm boss: round " + round + " is a dog round; the juggernaut waits" );
+		{}
 		return;
 	}
 
 	if ( is_true( level.intermission ) || is_true( level.gameEnded ) )
 		return;
 
-	boss_spawn();
+	// No invalid fallback when the open area currently has no safe point.
+	// Retry while this round remains active (the endon above cancels it).
+	while ( !is_true( level.intermission ) && !is_true( level.gameEnded ) )
+	{
+		if ( isDefined( level.zm_boss ) && isAlive( level.zm_boss ) )
+			return;
+		if ( isDefined( boss_spawn() ) )
+			return;
+		wait( 2 );
+	}
 }
 
 // --------------------------------------------------------------------------
@@ -262,42 +278,62 @@ boss_spawn_candidates( include_spawners )
 			if ( !maps\_zombiemode_zone_manager::entrance_available( goal ) )
 				continue;
 			inside = maps\_zombiemode_zone_manager::entrance_inside_point( goal );
-			if ( isDefined( inside ) )
+			if ( isDefined( inside ) && boss_zone_is_open( inside ) )
 				points[ points.size ] = inside;
 		}
 	}
 
-	// The round zombies' spawn structs: outside the windows on Prototype and
-	// Asylum (a boss there would need a board-free route in), on the playable
-	// side on zm_zombie_training's start room.  Used when nothing else is
-	// there, and by the stuck recovery, which has to reach the players.
-	if ( ( points.size < 1 || is_true( include_spawners ) ) && isDefined( level.enemy_spawns ) )
-	{
-		for ( i = 0; i < level.enemy_spawns.size; i++ )
-			points[ points.size ] = level.enemy_spawns[ i ].origin;
-	}
-
-	if ( points.size < 1 )
-	{
-		authored = getEnt( "main_juggernaut_spawner", "targetname" );
-		if ( isDefined( authored ) )
-			points[ points.size ] = authored.origin;
-	}
-
+	// Raw zombie/boss spawners can be outside the playable rooms. They are
+	// never an escape hatch for either spawning or stuck recovery.
 	return points;
 }
 
-boss_pick_spawn_point( near_player, include_spawners )
+boss_zone_is_open( point )
 {
-	points = boss_spawn_candidates( include_spawners );
-	if ( points.size < 1 )
-		return undefined;
+	// Authored player volumes can begin above the floor. Classify the
+	// native 72-unit actor hull by its centre, rather than its feet.
+	centre = point + ( 0, 0, 36 );
+	for ( z = 0; z < level.zm_spawn_zones.size; z++ )
+	{
+		zone = level.zm_spawn_zones[ z ];
+		if ( !is_true( zone.enabled ) )
+			continue;
+		for ( v = 0; v < zone.volumes.size; v++ )
+		{
+			mins = zone.volumes[ v ] getAbsMins();
+			maxs = zone.volumes[ v ] getAbsMaxs();
+			if ( centre[ 0 ] >= mins[ 0 ] - 16 && centre[ 0 ] <= maxs[ 0 ] + 16 &&
+				centre[ 1 ] >= mins[ 1 ] - 16 && centre[ 1 ] <= maxs[ 1 ] + 16 &&
+				centre[ 2 ] >= mins[ 2 ] - 16 && centre[ 2 ] <= maxs[ 2 ] + 16 )
+				return true;
+		}
+	}
+	return false;
+}
 
+boss_floor_spawn_point( point )
+{
+	if ( !boss_zone_is_open( point ) )
+		return undefined;
+	trace = bulletTrace( point + ( 0, 0, 32 ), point - ( 0, 0, 128 ), false, undefined );
+	if ( trace[ "fraction" ] <= 0 || trace[ "fraction" ] >= 1 || trace[ "normal" ][ 2 ] < 0.7 )
+		return undefined;
+	floor = trace[ "position" ] + ( 0, 0, 1 );
+	if ( !boss_zone_is_open( floor ) || !canSpawn( floor ) )
+		return undefined;
+	return floor;
+}
+
+boss_pick_from_points( points, near_player )
+{
 	players = getPlayers();
 	best = undefined;
 	best_score = 0;
 	for ( i = 0; i < points.size; i++ )
 	{
+		point = boss_floor_spawn_point( points[ i ] );
+		if ( !isDefined( point ) )
+			continue;
 		nearest = 999999;
 		for ( p = 0; p < players.size; p++ )
 		{
@@ -305,12 +341,14 @@ boss_pick_spawn_point( near_player, include_spawners )
 				continue;
 			if ( isDefined( near_player ) && players[ p ] != near_player )
 				continue;
-			d = distance( points[ i ], players[ p ].origin );
+			if ( !findpath( point, players[ p ].origin ) )
+				continue;
+			d = distance( point, players[ p ].origin );
 			if ( d < nearest )
 				nearest = d;
 		}
-		if ( nearest == 999999 )
-			nearest = 900;
+		if ( nearest == 999999 || nearest < 96 )
+			continue;
 
 		want = 900;
 		if ( isDefined( near_player ) )
@@ -318,11 +356,84 @@ boss_pick_spawn_point( near_player, include_spawners )
 		score = abs( nearest - want );
 		if ( !isDefined( best ) || score < best_score )
 		{
-			best = points[ i ];
+			best = point;
 			best_score = score;
 		}
 	}
 	return best;
+}
+
+boss_open_waypoints()
+{
+	bounds = [];
+	for ( z = 0; z < level.zm_spawn_zones.size; z++ )
+	{
+		zone = level.zm_spawn_zones[ z ];
+		if ( !is_true( zone.enabled ) )
+			continue;
+		for ( v = 0; v < zone.volumes.size; v++ )
+		{
+			box = spawnstruct();
+			box.mins = zone.volumes[ v ] getAbsMins() - ( 16, 16, 16 );
+			box.maxs = zone.volumes[ v ] getAbsMaxs() + ( 16, 16, 16 );
+			bounds[ bounds.size ] = box;
+		}
+	}
+	result = [];
+	if ( bounds.size < 1 )
+		return result;
+	points = codol_getwalkablewaypoints();
+	for ( i = 0; i < points.size; i++ )
+	{
+		point = points[ i ] + ( 0, 0, 36 );
+		for ( b = 0; b < bounds.size; b++ )
+		{
+			box = bounds[ b ];
+			if ( point[ 0 ] < box.mins[ 0 ] || point[ 0 ] > box.maxs[ 0 ] ||
+				point[ 1 ] < box.mins[ 1 ] || point[ 1 ] > box.maxs[ 1 ] ||
+				point[ 2 ] < box.mins[ 2 ] || point[ 2 ] > box.maxs[ 2 ] )
+				continue;
+			result[ result.size ] = points[ i ];
+			break;
+		}
+	}
+	return result;
+}
+
+boss_pick_spawn_point( near_player, include_spawners )
+{
+	best = boss_pick_from_points( boss_spawn_candidates(), near_player );
+	if ( isDefined( best ) )
+		return best;
+	// Authored navigation points inside open rooms are the only fallback.
+	// Keep the old optional argument for callers; it no longer admits yards.
+	points = boss_open_waypoints();
+	return boss_pick_from_points( points, near_player );
+}
+
+boss_actual_placement_valid()
+{
+	if ( !boss_zone_is_open( self.origin ) )
+		return false;
+	// Check native brush contact independently of the candidate AABB test.
+	touching_open_volume = false;
+	for ( z = 0; z < level.zm_spawn_zones.size && !touching_open_volume; z++ )
+	{
+		zone = level.zm_spawn_zones[ z ];
+		if ( !is_true( zone.enabled ) )
+			continue;
+		for ( v = 0; v < zone.volumes.size && !touching_open_volume; v++ )
+			touching_open_volume = self isTouching( zone.volumes[ v ] );
+	}
+	if ( !touching_open_volume )
+		return false;
+	players = getPlayers();
+	for ( p = 0; p < players.size; p++ )
+	{
+		if ( is_player_valid( players[ p ] ) && self canReachPlayer( players[ p ] ) )
+			return true;
+	}
+	return false;
 }
 
 // --------------------------------------------------------------------------
@@ -334,32 +445,36 @@ boss_pick_spawn_point( near_player, include_spawners )
 
 boss_spawn( near_player )
 {
+	// Keep every direct/developer route under the same mode admission guard.
+	if ( level.zm_round_mode == 0 || level.zm_round_mode == 3 )
+		return undefined;
+
 	if ( !is_true( level.zm_boss_ready ) )
 		return undefined;
 
 	if ( isDefined( level.zm_boss ) && isAlive( level.zm_boss ) )
 	{
-		codolprintln( "CoDOL zm boss: a juggernaut is already alive" );
+		{}
 		return undefined;
 	}
 
 	if ( !isDefined( level.zombie_spawner ) )
 	{
-		codolprintln( "CoDOL zm boss: no zombie spawner; cannot spawn the juggernaut" );
+		{}
 		return undefined;
 	}
 
 	origin = boss_pick_spawn_point( near_player );
 	if ( !isDefined( origin ) )
 	{
-		codolprintln( "CoDOL zm boss: no spawn point" );
+		{}
 		return undefined;
 	}
 
 	ai = level.zombie_spawner spawnActor();
 	if ( !isDefined( ai ) )
 	{
-		codolprintln( "CoDOL zm boss: spawnactor returned nothing" );
+		{}
 		return undefined;
 	}
 
@@ -370,10 +485,19 @@ boss_spawn( near_player )
 		facing = vectorToAngles( target.origin - origin );
 		yaw = facing[ 1 ];
 	}
+	ai hide();
 	ai forceTeleport( origin, ( 0, yaw, 0 ) );
-	ai show();
+	// forceTeleport can resolve a solid point to a different origin. Check
+	// the actual actor hull/route before publishing or counting this boss.
+	if ( !ai boss_actual_placement_valid() )
+	{
+		{}
+		ai delete();
+		return undefined;
+	}
 
 	ai boss_setup();
+	ai show();
 
 	level.zm_boss = ai;
 	level.zombies[ level.zombies.size ] = ai;
@@ -383,14 +507,13 @@ boss_spawn( near_player )
 	ai thread boss_damage_watch();
 	ai thread boss_think();
 
-	codolprintln( "CoDOL zm boss: juggernaut spawned at " + ai.origin + " (ent " + ai getEntityNumber() +
-		", " + ai.boss_health_max + " hp, round " + level.round_number + ", " + getPlayers().size + " player(s))" );
+	{}
 	return ai;
 }
 
-closest_valid_player( origin )
+closest_valid_player( origin, seeker )
 {
-	return maps\_zombiemode_spawner::closest_valid_player( origin );
+	return maps\_zombiemode_spawner::closest_valid_player( origin, seeker );
 }
 
 boss_setup()
@@ -463,29 +586,11 @@ boss_setup()
 	if ( isDefined( level.zombie_melee_weapon ) )
 		self.aiweapon = level.zombie_melee_weapon;
 
-	// Health.  T5 ape_zombie_think :811-:847: the round zombie's health times
-	// ape_zombie_health_mult, floored at the min health (C1's two rows), +50%
-	// per extra player, doubled for each juggernaut already killed.
-	players = getPlayers().size;
-	if ( players < 1 )
-		players = 1;
+	// Local balance: the retained ape rows were not a CoDOL juggernaut spec.
+	// Share Normal zombie health, modest co-op scaling, no kill doubling.
 	health = boss_dvar_int( "scr_zm_boss_health", 0 );
 	if ( health <= 0 )
-	{
-		mult = level.zombie_vars[ "ape_health_multiplier" ];
-		if ( !isDefined( mult ) || mult <= 0 )
-			mult = 7;
-		health = int( level.zombie_health * mult );
-		floor_health = level.zombie_vars[ "ape_min_health_solo" ];
-		if ( players > 1 )
-			floor_health = level.zombie_vars[ "ape_min_health_coop" ];
-		if ( health < floor_health )
-			health = floor_health;
-		if ( players > 2 )
-			health = int( health * ( 1 + 0.25 * ( players - 2 ) ) );
-		for ( i = 0; i < level.zm_boss_kills && i < 3; i++ )
-			health = health * 2;
-	}
+		health = boss_health_for_players( getPlayers().size );
 	self.boss_hp = health;
 	self.boss_health_max = health;
 	self boss_sync_health();
@@ -608,7 +713,7 @@ boss_think()
 
 	for ( ;; )
 	{
-		player = closest_valid_player( self.origin );
+		player = closest_valid_player( self.origin, self );
 		if ( !isDefined( player ) )
 		{
 			wait( 0.5 );
@@ -648,7 +753,7 @@ boss_think()
 
 		if ( self.origin[ 2 ] < level.zombie_vars[ "below_world_check" ] )
 		{
-			codolprintln( "CoDOL zm boss: fell out of the world at " + self.origin );
+			{}
 			self.no_powerup_drop = true;
 			self.boss_no_reward = true;
 			self.boss_dying = true;
@@ -670,29 +775,47 @@ boss_stuck_watch()
 	self endon( "death" );
 
 	last = self.origin;
+	last_check = getTime();
 	for ( ;; )
 	{
-		wait( 20 );
+		wait( 1 );
 		if ( is_true( self.boss_firing ) || is_true( self.boss_dying ) )
 		{
 			last = self.origin;
+			last_check = getTime();
 			continue;
 		}
+		// An unreachable boss cannot supply seeker filtering: that would
+		// discard every player before the recovery path gets a chance to run.
 		player = closest_valid_player( self.origin );
 		if ( !isDefined( player ) )
 			continue;
-		if ( distanceSquared( self.origin, last ) < 96 * 96 && distance( self.origin, player.origin ) > 300 )
+		invalid_zone = !boss_zone_is_open( self.origin );
+		stuck = getTime() - last_check >= 20000 && distanceSquared( self.origin, last ) < 96 * 96 &&
+			distance( self.origin, player.origin ) > 300;
+		if ( invalid_zone || stuck )
 		{
-			spot = boss_pick_spawn_point( player, true );
-			if ( isDefined( spot ) && distanceSquared( spot, self.origin ) > 128 * 128 )
+			spot = boss_pick_spawn_point( player );
+			if ( isDefined( spot ) && ( invalid_zone || distanceSquared( spot, self.origin ) > 128 * 128 ) )
 			{
-				codolprintln( "CoDOL zm boss: no progress at " + self.origin + " toward " + player.name +
-					"; moving to " + spot );
+				{}
 				facing = vectorToAngles( player.origin - spot );
 				self forceTeleport( spot, ( 0, facing[ 1 ], 0 ) );
+				if ( !self boss_actual_placement_valid() )
+				{
+					self.no_powerup_drop = true;
+					self.boss_no_reward = true;
+					self.boss_dying = true;
+					self doDamage( self.health + 100, self.origin );
+					return;
+				}
 			}
 		}
-		last = self.origin;
+		if ( getTime() - last_check >= 20000 )
+		{
+			last = self.origin;
+			last_check = getTime();
+		}
 	}
 }
 
@@ -808,8 +931,7 @@ boss_fire_burst( target )
 	self.boss_shots_total = self boss_shots_total_safe() + shots;
 
 	if ( getDvarInt( "developer" ) > 0 )
-		codolprintln( "CoDOL zm boss: burst at " + target.name + " " + shots + " rounds, " +
-			int( distance( self.origin, target.origin ) ) + " units" );
+		{}
 }
 
 boss_shots_total_safe()
@@ -878,8 +1000,7 @@ boss_player_damage( eAttacker, sWeapon, sMeansOfDeath )
 		level.zm_boss_player_hits = 0;
 	level.zm_boss_player_hits++;
 	if ( getDvarInt( "developer" ) > 0 && level.zm_boss_player_hits <= 10 )
-		codolprintln( "CoDOL zm boss: minigun round hit a player (" + diag_val( sWeapon ) + ", " + sMeansOfDeath +
-			") -> " + boss.boss_minigun_damage + " damage from ent " + boss getEntityNumber() );
+		{}
 	return boss;
 }
 
@@ -917,13 +1038,39 @@ boss_is_head_hit( modelName, partName )
 // self.health is held above boss_hp / armour scale, so no armoured hit can
 // kill natively before its reduced share is known; boss_hp reaching zero is
 // what kills it, through doDamage with the player who landed the hit.
-boss_sync_health()
+// Deliberate local tuning, shared by Easy/Normal/Hard. Ordinary firearms
+// can finish each encounter; grenades remain helpful rather than mandatory.
+boss_health_for_players( players )
 {
-	scale = boss_dvar_float( "scr_zm_boss_armor_scale", 0.35 );
+	if ( players < 1 )
+		players = 1;
+	if ( players > 4 )
+		players = 4;
+	// Clamp the input before multiplying; Endless health eventually reaches
+	// the native integer ceiling, which must not wrap this existing boss cap.
+	health = level.zombie_health;
+	if ( health > 10000 ) health = 10000;
+	health = int( health * 7 );
+	if ( health < 2500 )
+		health = 2500;
+	if ( health > 10000 )
+		health = 10000;
+	return int( health * ( 1 + 0.5 * ( players - 1 ) ) );
+}
+
+boss_armor_scale()
+{
+	scale = boss_dvar_float( "scr_zm_boss_armor_scale", 0.65 );
 	if ( scale < 0.05 )
 		scale = 0.05;
 	if ( scale > 1 )
 		scale = 1;
+	return scale;
+}
+
+boss_sync_health()
+{
+	scale = boss_armor_scale();
 	self.health = int( self.boss_hp / scale ) + 100;
 }
 
@@ -951,7 +1098,7 @@ boss_damage_watch()
 		head = boss_is_head_hit( modelName, partName );
 		effective = amount;
 		if ( !head && mod != "MOD_MELEE" )
-			effective = int( amount * boss_dvar_float( "scr_zm_boss_armor_scale", 0.35 ) );
+			effective = int( amount * boss_armor_scale() );
 		if ( effective < 1 )
 			effective = 1;
 
@@ -972,10 +1119,10 @@ boss_damage_watch()
 			attacker maps\_zombiemode_score::player_add_points( "damage", mod, partName );
 
 		self.boss_hp -= effective;
+		attacker maps\_zombiemode_challenges::show_hitmarker( self.boss_hp <= 0 );
 
 		if ( getDvarInt( "developer" ) > 0 )
-			codolprintln( "CoDOL zm boss: hit by " + attacker.name + " " + amount + " -> " + effective +
-				" (" + diag_val( partName ) + ", head " + head + ") health " + self.boss_hp + "/" + self.boss_health_max );
+			{}
 
 		if ( self.boss_hp <= 0 )
 		{
@@ -1021,7 +1168,7 @@ boss_nuke_damage()
 {
 	dmg = int( self.boss_hp * 0.5 );
 	self boss_take( dmg, undefined, "MOD_UNKNOWN" );
-	codolprintln( "CoDOL zm boss: nuke took " + dmg + " (half its health)" );
+	{}
 }
 
 // T5 ape_tesla_damage: a fixed chunk, credited to the arc's player.
@@ -1073,13 +1220,12 @@ boss_death_watch( boss )
 	no_reward = !isDefined( boss ) || is_true( boss.boss_no_reward ) || !isDefined( attacker ) || !isPlayer( attacker );
 	if ( no_reward )
 	{
-		codolprintln( "CoDOL zm boss: juggernaut removed without a player kill" );
+		{}
 		return;
 	}
 
 	level.zm_boss_kills++;
-	codolprintln( "CoDOL zm boss: juggernaut killed by " + attacker.name + " (" + diag_val( boss.damagemod ) +
-		", " + diag_val( boss.damageweapon ) + ") at " + origin );
+	{}
 
 	// The reward: a named power-up (T5 ape_zombie_powerup_drop) and the
 	// extra_boss_damage splash (C1's SPLASHES_ZBOSSDMG) with a share of
@@ -1101,10 +1247,55 @@ boss_death_watch( boss )
 		if ( boss.boss_damage_by[ num ] < boss.boss_health_max * 0.1 && players[ i ] != attacker )
 			continue;
 		players[ i ] maps\_zombiemode_score::add_to_player_score( 500 );
-		players[ i ] ShowHudSplash( "extra_boss_damage", 0 );
+		players[ i ] thread boss_reward_message();
 		if ( getDvarInt( "developer" ) > 0 )
-			codolprintln( "CoDOL zm boss: " + players[ i ].name + " did " + boss.boss_damage_by[ num ] + "; extra_boss_damage splash, +500" );
+			{}
 	}
+}
+
+// C1's reward text with the shipped zombie juggernaut icon. Each message
+// owns its HUD references; death/disconnect/map end cannot leak it.
+boss_reward_message()
+{
+	if ( is_true( level.intermission ) )
+		return;
+	icon = boss_reward_hud( 80, 1 );
+	icon setShader( "specialty_juggernaut_zombies", 48, 48 );
+	title = boss_reward_hud( 115, 1.6 );
+	title setText( &"SPLASHES_ZBOSSDMG" );
+	desc = boss_reward_hud( 135, 1.2 );
+	desc setText( &"SPLASHES_ZBOSSDMG_DESC" );
+	level thread boss_reward_cleanup( self, icon, title, desc );
+}
+
+boss_reward_hud( y, scale )
+{
+	hud = newClientHudElem( self );
+	hud.archived = true;
+	hud.foreground = true;
+	hud.horzAlign = "center";
+	hud.vertAlign = "top";
+	hud.alignX = "center";
+	hud.alignY = "middle";
+	hud.y = y;
+	hud.fontScale = scale;
+	return hud;
+}
+
+boss_reward_cleanup( player, icon, title, desc )
+{
+	for ( i = 0; i < 35; i++ )
+	{
+		if ( !isDefined( player ) || !isAlive( player ) || is_true( level.intermission ) )
+			break;
+		wait( 0.1 );
+	}
+	if ( isDefined( icon ) )
+		icon destroy();
+	if ( isDefined( title ) )
+		title destroy();
+	if ( isDefined( desc ) )
+		desc destroy();
 }
 
 // --------------------------------------------------------------------------
@@ -1193,7 +1384,7 @@ boss_dev_watch()
 			break;
 
 		default:
-			codolprintln( "CoDOL zm boss: unknown verb " + tokens[ 0 ] );
+			{}
 			break;
 		}
 	}
@@ -1216,16 +1407,12 @@ boss_dev_status()
 	b = level.zm_boss;
 	if ( !isDefined( b ) || !isAlive( b ) )
 	{
-		codolprintln( "CoDOL zm boss: status: no juggernaut alive (killed " + level.zm_boss_kills +
-			", rounds fired " + diag_val( level.zm_boss_rounds_fired ) + ", player hits " + diag_val( level.zm_boss_player_hits ) + ")" );
+		{}
 		return;
 	}
 	parts = "";
 	size = b getAttachSize();
 	for ( i = 0; i < size; i++ )
 		parts = parts + " " + b getAttachModelName( i );
-	codolprintln( "CoDOL zm boss: status: ent " + b getEntityNumber() + " health " + b.boss_hp + "/" + b.boss_health_max + " (engine " + b.health + ")" +
-		" model " + b.model + " attached[" + parts + " ] origin " + b.origin + " firing " + is_true( b.boss_firing ) +
-		" muzzle " + b boss_muzzle_origin() + " rounds fired " + diag_val( level.zm_boss_rounds_fired ) +
-		" player hits " + diag_val( level.zm_boss_player_hits ) + " enemies " + get_enemy_count() );
+	{}
 }

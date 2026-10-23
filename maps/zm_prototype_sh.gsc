@@ -30,9 +30,6 @@
 
 main()
 {
-	// Before any wait: this is the level script's precache window.
-	prototype_fog_precache();
-
 	maps\_zombiemode::levelMain( "zm_prototype_sh" );
 	maps\_zombiemode_barrels::main();
 	hideNavigationArrows();

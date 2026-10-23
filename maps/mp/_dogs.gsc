@@ -215,14 +215,14 @@ dog_test_watcher()
 			decoy = spawn( "script_model", (0,0,0) );
 			decoy.targetname = "dog_spawner";
 			decoy setmodel( "tag_origin" );
-			print( "CoDOL dogs: codol_dogsTest 2: planted a non-spawner entity with targetname \"dog_spawner\"\n" );
+			{}
 			probe = decoy isactorspawner();
-			print( "CoDOL dogs: codol_dogsTest 2: isactorspawner() returned " + probe + "\n" );
+			{}
 			nodog = decoy spawnactor();
 			if ( isdefined( nodog ) )
-				print( "CoDOL dogs: codol_dogsTest 2: FAIL - spawnactor() on a non-spawner returned an entity\n" );
+				{}
 			else
-				print( "CoDOL dogs: codol_dogsTest 2: spawnactor() on a non-spawner returned undefined, as required\n" );
+				{}
 		}
 
 		caller = undefined;
@@ -237,11 +237,11 @@ dog_test_watcher()
 
 		if ( !isDefined( caller ) )
 		{
-			print( "CoDOL dogs: codol_dogsTest: no live player to call the dogs for\n" );
+			{}
 			continue;
 		}
 
-		print( "CoDOL dogs: codol_dogsTest: calling dogs for " + caller.name + " (" + caller.team + ")\n" );
+		{}
 		caller thread useKillstreakDogs( 0 );
 	}
 }
@@ -276,19 +276,19 @@ dog_test_verb( tokens )
 				// a dog can join: useKillstreakDogs refuses it, see there.
 				if ( !dog_caller_team_ok( player ) )
 				{
-					print( "CoDOL dogs test: call refused: " + player.name + " is not on a playing team (" + player.team + ")\n" );
+					{}
 					continue;
 				}
-				print( "CoDOL dogs test: call for " + player.name + " (" + player.team + ")\n" );
+				{}
 				used = player useKillstreakDogs( 0 );
-				print( "CoDOL dogs test: useKillstreakDogs returned " + used + "\n" );
+				{}
 			}
 		return;
 	}
 
 	if ( verb == "leave" )
 	{
-		print( "CoDOL dogs test: leave\n" );
+		{}
 		make_all_dogs_leave();
 		return;
 	}
@@ -299,7 +299,7 @@ dog_test_verb( tokens )
 		// point nearest a live dog, and the lowest weight of all spawn points.
 		if ( !isDefined( level.dogs ) )
 		{
-			print( "CoDOL dogs test: spawnweight: no dogs\n" );
+			{}
 			return;
 		}
 		teams = [];
@@ -325,7 +325,7 @@ dog_test_verb( tokens )
 					atDog = codol_rcSpawnWeight( dog.origin, t );
 					break;
 				}
-			print( "CoDOL dogs test: spawnweight " + t + ": at a dog " + atDog + ", worst spawn point " + worst + " at " + worstAt + "\n" );
+			{}
 		}
 		return;
 	}
@@ -341,7 +341,7 @@ dog_test_verb( tokens )
 		dog notify( "attacking" );	// ends dog_patrol without restarting it
 		dog forceteleport( ( float( tokens[1] ), float( tokens[2] ), float( tokens[3] ) ), ( 0, 90, 0 ) );
 		dog setgoalpos( ( float( tokens[4] ), float( tokens[5] ), float( tokens[6] ) ) );
-		print( "CoDOL dogs test: goto: dog " + dog getEntityNumber() + " at " + dog.origin + " -> (" + tokens[4] + " " + tokens[5] + " " + tokens[6] + ")\n" );
+		{}
 		return;
 	}
 
@@ -353,7 +353,7 @@ dog_test_verb( tokens )
 		if ( !isDefined( dog ) )
 			return;
 		dog teleport( ( float( tokens[1] ), float( tokens[2] ), float( tokens[3] ) ) );
-		print( "CoDOL dogs test: embed: dog " + dog getEntityNumber() + " at " + dog.origin + "\n" );
+		{}
 		return;
 	}
 
@@ -361,23 +361,23 @@ dog_test_verb( tokens )
 	{
 		dog = dog_test_first_dog();
 		if ( isDefined( dog ) )
-			print( "CoDOL dogs test: where: dog " + dog getEntityNumber() + " at " + dog.origin + "\n" );
+			{}
 		return;
 	}
 
 	if ( verb == "nodes" && tokens.size > 1 )
 	{
 		nodes = dog_spawn_nodes_for_team( tokens[1] );
-		print( "CoDOL dogs test: " + nodes.size + " spawn nodes for " + tokens[1] + " (authored " + level.dog_spawn_nodes_authored + ")\n" );
+		{}
 		foreach ( node in nodes )
-			print( "CoDOL dogs test:   node " + node.origin + "\n" );
-		print( "CoDOL dogs test: " + level.dogexitnodes.size + " exit nodes\n" );
+			{}
+		{}
 		return;
 	}
 
 	if ( verb == "endgame" )
 	{
-		print( "CoDOL dogs test: endgame (_gamelogic::forceEnd)\n" );
+		{}
 		level thread maps\mp\gametypes\_gamelogic::forceEnd();
 		return;
 	}
@@ -386,16 +386,16 @@ dog_test_verb( tokens )
 	{
 		if ( !isDefined( level.dogs ) )
 		{
-			print( "CoDOL dogs test: state: no dogs (level.dogs undefined)\n" );
+			{}
 			return;
 		}
-		print( "CoDOL dogs test: state: " + level.dogs.size + " dog slots\n" );
+		{}
 		for ( i = 0; i < level.dogs.size; i++ )
 		{
 			dog = level.dogs[i];
 			if ( !isDefined( dog ) )
 			{
-				print( "CoDOL dogs test:   #" + i + " gone\n" );
+				{}
 				continue;
 			}
 			owner = "none";
@@ -408,8 +408,7 @@ dog_test_verb( tokens )
 				if ( isPlayer( dog.enemy ) )
 					enemy = dog.enemy.name + "/" + dog.enemy.team;
 			}
-			print( "CoDOL dogs test:   #" + i + " ent " + dog getEntityNumber() + " alive " + isAlive( dog ) + " health " + dog.health +
-				" team " + dog.aiteam + " owner " + owner + " enemy " + enemy + " flash " + dog getFlashBangedStrength() + " at " + dog.origin + "\n" );
+			{}
 		}
 		return;
 	}
@@ -423,7 +422,7 @@ dog_test_verb( tokens )
 					dog = level.dogs[i];
 		if ( !isDefined( dog ) )
 		{
-			print( "CoDOL dogs test: " + verb + ": no live dog\n" );
+			{}
 			return;
 		}
 
@@ -447,7 +446,7 @@ dog_test_verb( tokens )
 		}
 		if ( who != "world" && !isDefined( attacker ) )
 		{
-			print( "CoDOL dogs test: " + verb + ": no live " + who + " attacker\n" );
+			{}
 			return;
 		}
 
@@ -482,11 +481,11 @@ dog_test_verb( tokens )
 		flash = "n/a";
 		if ( isDefined( dog ) && isAlive( dog ) )
 			flash = dog getFlashBangedStrength();
-		print( "CoDOL dogs test: " + verb + " by " + name + " (FF " + level.friendlyfire + ", hardcore " + level.hardcoreMode + "): health " + before + " -> " + after + ", flash " + flash + "\n" );
+		{}
 		return;
 	}
 
-	print( "CoDOL dogs test: unknown request '" + verb + "'\n" );
+	{}
 }
 
 dog_test_first_dog()
@@ -495,7 +494,7 @@ dog_test_first_dog()
 		foreach ( dog in level.dogs )
 			if ( isDefined( dog ) && isAlive( dog ) )
 				return dog;
-	print( "CoDOL dogs test: no live dog\n" );
+	{}
 	return undefined;
 }
 
@@ -642,7 +641,7 @@ init_node_arrays()
 	if ( level.dogspawnnodes.size == 0 )
 	{
 /#
-		println("DOG PATHING:  Could not find spawn nodes");
+		{}
 #/
 		// pick a random set of spawn nodes so we do not tax the spawn logic to much
 		level.dogspawnnodes = pick_random_nodes( pathnodes, 20 );
@@ -654,7 +653,7 @@ init_node_arrays()
 	if ( level.dogexitnodes.size == 0 )
 	{
 /#
-		println("DOG PATHING:  Could not find exit nodes");
+		{}
 #/
 		// pick a random set of spawn nodes so we do not tax the spawn logic to much
 		level.dogexitnodes = pick_random_nodes( pathnodes, 20 );
@@ -712,19 +711,19 @@ count_preexisting_dogs()
 {
 		dogs = getentarray( "actor_enemy_dog_mp", "classname" );
 
-	 	alive_count = 0;
-	 	for ( i = 0; i < dogs.size; i ++ )
-	 	{
-	 		if ( !isdefined(dogs[i]) )
-	 			continue;
+                alive_count = 0;
+                for ( i = 0; i < dogs.size; i ++ )
+                {
+                        if ( !isdefined(dogs[i]) )
+                                continue;
 
-	 		if ( !isai(dogs[i]) )
-	 			continue;
+                        if ( !isai(dogs[i]) )
+                                continue;
 
-	 		alive_count++;
-	 	}
+                        alive_count++;
+                }
 
-	 	return alive_count;
+                return alive_count;
 }
 
 init_all_preexisting_dogs()
@@ -843,12 +842,12 @@ dog_spawn_nodes_for_team( team )
 
 	if ( nodes.size == 0 )
 	{
-		print( "CoDOL dogs: no authored dog spawn nodes and no usable " + source + " for team " + team + "; using " + level.dogspawnnodes.size + " random path nodes\n" );
+		{}
 		nodes = level.dogspawnnodes;
 	}
 	else
 	{
-		print( "CoDOL dogs: no authored dog spawn nodes; using the " + nodes.size + " path nodes nearest the " + points.size + " " + source + " for team " + team + "\n" );
+		{}
 	}
 
 	level.dog_team_spawn_nodes[team] = nodes;
@@ -908,13 +907,13 @@ dog_manager_spawn_dog( owner, team, spawn_node, index, requiredDeathCount )
 	// undefined; the alive tracker already tolerates undefined level.dogs[].
 	if ( !isdefined( spawn_node ) )
 	{
-		print( "CoDOL dogs: no spawn node for dog " + index + " (no path nodes on this map?); skipping it\n" );
+		{}
 		return undefined;
 	}
 
 	if ( !isdefined( level.dog_spawner ) )
 	{
-		print( "CoDOL dogs: dog spawner is gone; skipping dog " + index + "\n" );
+		{}
 		return undefined;
 	}
 
@@ -922,13 +921,13 @@ dog_manager_spawn_dog( owner, team, spawn_node, index, requiredDeathCount )
 
 	if ( !isdefined( dog ) )
 	{
-		print( "CoDOL dogs: spawnactor produced no dog " + index + " for node at " + spawn_node.origin + " (the CoDOL dogs warning above names the cause); skipping it\n" );
+		{}
 		return undefined;
 	}
 
 	if ( !isdefined( spawn_node.origin ) )
 	{
-		print( "CoDOL dogs: spawn node has no origin; skipping dog " + index + "\n" );
+		{}
 		dog delete();
 		return undefined;
 	}
@@ -1067,7 +1066,7 @@ dog_ensure_nodes()
 		nodes[nodes.size] = node;
 	}
 
-	print( "CoDOL dogs: the map has no path nodes; " + nodes.size + " substitute nodes from the " + source + "\n" );
+	{}
 	if ( nodes.size == 0 )
 		return false;
 
@@ -1123,11 +1122,11 @@ dog_acquire_spawner()
 	}
 
 	if ( isdefined( level.dog_spawner ) )
-		print( "CoDOL dogs: using a map dog_spawner entity (" + candidates.size + " candidates, " + rejected + " rejected)\n" );
+		{}
 	else if ( candidates.size > 0 )
-		print( "CoDOL dogs: none of the " + candidates.size + " map \"dog_spawner\" entities is an actor spawner (the CoDOL dogs warnings above dump them); building one with spawnactorspawner( \"actor_enemy_dog_mp\" )\n" );
+		{}
 	else
-		print( "CoDOL dogs: no map dog_spawner entity; building one with spawnactorspawner( \"actor_enemy_dog_mp\" )\n" );
+		{}
 
 	// CoDOL adaptation. T5's MP maps ship an actor_enemy_dog_mp entity with the
 	// SPAWNER spawnflag and targetname "dog_spawner"; no CoDOL map authors one.
@@ -1143,7 +1142,7 @@ dog_acquire_spawner()
 
 		if ( !isdefined( level.dog_spawner ) )
 		{
-			print( "CoDOL dogs: spawnactorspawner returned no spawner (the CoDOL dogs warning above names the cause); dogs are disabled for this map\n" );
+			{}
 			level.no_dogs = true;
 			return false;
 		}
@@ -1172,7 +1171,7 @@ dog_manager_spawn_more_dogs_on_death( owner, count, team )
 	}
 
 /#
-	iprintln("All dogs spawned");
+	{}
 #/
 	level notify("all dogs spawned");
 }
@@ -1184,7 +1183,7 @@ dog_manager_dog_time_limit()
 	wait( level.dog_time );
 
 /#
-	dog_debug_print( "time limit hit notify dogs leaving" );
+	{}
 #/
 	// this will shut this thread down
 	level notify("dogs leaving");
@@ -1204,7 +1203,7 @@ dog_cleanup_waiter()
 
 	self waittill( "start_tracker", wait_for );
 /#
-	self dog_debug_print("starting dog_manager_dog_alive_tracker reason " + wait_for );
+	{}
 #/
 }
 
@@ -1214,24 +1213,24 @@ dog_manager_dog_alive_tracker( team )
 
 	while (1)
 	{
-	 	alive_count = 0;
-	 	for ( i = 0; i < level.dogs.size; i ++ )
-	 	{
-	 		if ( !isdefined(level.dogs[i]) )
-	 			continue;
+                alive_count = 0;
+                for ( i = 0; i < level.dogs.size; i ++ )
+                {
+                        if ( !isdefined(level.dogs[i]) )
+                                continue;
 
-	 		if ( !isalive(level.dogs[i]) )
-	 			continue;
+                        if ( !isalive(level.dogs[i]) )
+                                continue;
 
-	 		alive_count++;
-	 	}
+                        alive_count++;
+                }
 
-	 	if ( alive_count == 0 )
-	 	{
- 			wait(1);
-	 		dog_manager_delete_dogs();
-	 		level notify("dogs done");
-	 		return;
+                if ( alive_count == 0 )
+                {
+                        wait(1);
+                        dog_manager_delete_dogs();
+                        level notify("dogs done");
+                        return;
 		}
 
 		wait (1);
@@ -1241,11 +1240,11 @@ dog_manager_dog_alive_tracker( team )
 dog_manager_delete_dogs()
 {
 		for ( i = 0; i < level.dogs.size; i ++ )
-	 	{
-	 		if ( !isdefined(level.dogs[i]) )
-	 			continue;
+                {
+                        if ( !isdefined(level.dogs[i]) )
+                                continue;
 
-	 		level.dogs[i] delete();
+                        level.dogs[i] delete();
 		}
 
 		level.dogs = undefined;
@@ -1260,7 +1259,7 @@ dog_manager_game_ended()
 make_all_dogs_leave()
 {
 /#
-	dog_debug_print( "make_all_dogs_leave notify dogs leaving" );
+	{}
 #/
 	level notify("dogs leaving");
 }
@@ -1449,7 +1448,7 @@ Callback_ActorKilled( eInflictor, attacker, iDamage, sMeansOfDeath, sWeapon, vDi
 				value = getDvarInt( "scr_" + level.gameType + "_score_dogkill" );
 			attacker thread maps\mp\gametypes\_rank::giveRankXP( "dogkill", int( value * level.xpScale ) );
 			if ( getDvarInt( "developer" ) > 0 )
-				print( "CoDOL dogs: dog " + self getEntityNumber() + " killed by " + attacker.name + " (" + sWeapon + ", " + sMeansOfDeath + "): dogkill " + int( value * level.xpScale ) + " XP\n" );
+				{}
 
 			// Dogs no longer give team or player score
 		}
@@ -1535,7 +1534,7 @@ dog_leave_failsafe()
 	if ( distance( start_origin, self.origin ) < 10 )
 	{
 /#
-		println( "DOG DELETE FAILSAFE:  Dog appears to be stuck at " + self.origin );
+		{}
 #/
 		self delete();
 		return;
@@ -1543,7 +1542,7 @@ dog_leave_failsafe()
 
 	wait(20);
 /#
-	println( "DOG DELETE FAILSAFE:  Dog has not gotten to it's delete point after 20 seconds.  Currently at " + self.origin );
+	{}
 #/
 	self delete();
 }
@@ -1558,7 +1557,7 @@ dog_patrol_when_no_enemy()
 	{
 		if ( !isdefined(self.enemy) )
 		{
-			self dog_debug_print( "no enemy starting patrol" );
+			{}
 			self thread dog_patrol();
 		}
 
@@ -1589,7 +1588,7 @@ dog_patrol_path_waiter()
 
 	self waittill( "next_patrol_point", wait_for );
 /#
-	self dog_debug_print("ending patrol wait recieved " + wait_for );
+	{}
 #/
 }
 
@@ -1631,7 +1630,7 @@ dog_patrol()
 		if ( !isdefined( node.script_noteworthy ) )
 		{
 /#
-			self dog_debug_print("patroling to node at " + node.origin );
+			{}
 #/
 			self dog_set_goal_node( node );
 			self dog_patrol_path_waiter();
@@ -1646,7 +1645,7 @@ dog_wait_print( wait_for )
 
 	self waittill( wait_for );
 	self notify("kill dog_wait_prints");
-	self dog_debug_print( "PATROL ENDING " + wait_for );
+	{}
 #/
 }
 
@@ -1733,8 +1732,8 @@ dog_usage_monitor()
 
 	// make sure that the dogs have printed everything
 	wait (1);
-	iprintln( msg );
-	println( msg );
+	{}
+	{}
 #/
 }
 
@@ -1790,8 +1789,8 @@ dog_usage_time_alive(index)
 
 	seconds = (level.dog_usage[index].death_time - level.dog_usage[index].spawn_time) / 1000 ;
 /#
-	iprintln( "Dog#" + index + " killed. Alive for: "+ seconds + " seconds. Kills: " + level.dog_usage[index].kills );
-	println( "Dog#" + index + " killed. Alive for: "+ seconds + " seconds. Kills: " + level.dog_usage[index].kills );
+	{}
+	{}
 #/
 }
 
@@ -1963,21 +1962,7 @@ dog_get_closest_node( org, array )
 }
 
 dog_debug_print( message )
-{
-/#
-	if ( level.dog_debug )
-	{
-		if ( isai( self ) )
-		{
-			println( " " + gettime() + " DOG " + self getentnum() + ": " + message );
-		}
-		else
-		{
-			println( " " + gettime() + " DOGS: " + message );
-		}
-	}
-#/
-}
+{}
 
 // ================================================
 

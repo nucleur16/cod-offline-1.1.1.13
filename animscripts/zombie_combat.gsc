@@ -136,11 +136,9 @@ MeleeCombat()
 
 // T5 zombie_melee.gsc:126-:166, the inner note loop.
 //
-// Every "fire" note swings (T5 zombie_melee.gsc:126-:150 calls melee() on
-// each).  The double-swipe clips carry two notes about 0.35-0.4 s apart; a
-// second hit lands when it falls outside Callback_PlayerDamage's 0.4 s
-// per-attacker ignore window, as in T5, where one double swipe can down a
-// player without Juggernog.
+// Each fire note may attempt the native trace until one contact lands.
+// Preserve the accepted one-contact-per-animation rule while using upstream
+// measured T5 hit times below. A missed early note may still land later.
 //
 // T5 hit timing (2026-10-21, docs/CODOL_ZOMBIE_T5_MEASURED.md section 3).
 // C1 re-timed the "fire" notes of several of these clips while keeping their
@@ -154,6 +152,8 @@ MeleeCombat()
 // fractions of the clip and ignores the C1 "fire" notes.
 swing_notetracks( zombie_attack )
 {
+	// Retained private rule: one actual native contact per attack animation.
+	self.zm_swing_contact = false;
 	t5fires = undefined;
 	if ( isDefined( zombie_attack ) )
 		t5fires = maps\_zombiemode::zombie_t5_melee_fire_times( zombie_attack );
@@ -207,14 +207,19 @@ swing_hit()
 	if ( !isDefined( self.enemy ) )
 		return false;
 
-	oldhealth = self.enemy.health;
+	if ( is_true( self.zm_swing_contact ) )
+		return true;
 	self notify( "swing_hit" );	// telemetry (maps/_zombiemode_t5cap.gsc)
-	self land_melee_hit();
+	// The native trace may contact a teammate between this actor and its enemy.
+	// Any contact consumes this animation even when damage is blocked.
+	hit = self land_melee_hit();
+	if ( isDefined( hit ) )
+		self.zm_swing_contact = true;
 
 	if ( !isDefined( self.enemy ) )
 		return false;
 
-	if ( self.enemy.health < oldhealth )
+	if ( isDefined( hit ) )
 		self resetGiveUpTime();
 	else if ( isDefined( level.melee_miss_func ) )
 		self [[ level.melee_miss_func ]]();
@@ -255,7 +260,7 @@ land_melee_hit()
 		return;
 	}
 
-	self melee();
+	return self melee();
 }
 
 // T5 zombie_melee.gsc:60.

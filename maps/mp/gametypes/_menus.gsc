@@ -21,17 +21,17 @@ init()
 		game["menu_changeclass"] = "changeclass";
 		game["menu_onemanarmy"] = "onemanarmy";
 		game["menu_controls"] = "ingame_controls";
-	
+
 		if ( !level.console )
 		{
 			game["menu_muteplayer"] = "muteplayer";
-			precacheMenu(game["menu_muteplayer"]);			
+			precacheMenu(game["menu_muteplayer"]);
 		}
 		else
 		{
 			//game["menu_options"] = "ingame_options";
 			game["menu_leavegame"] = "popup_leavegame";
-	
+
 			if(level.splitscreen)
 			{
 				game["menu_team"] += "_splitscreen";
@@ -49,20 +49,20 @@ init()
 				game["menu_changeclass_custom_splitscreen"] = "changeclass_custom_splitscreen";
 				game["menu_onemanarmy_defaults_splitscreen"] = "onemanarmy_defaults_splitscreen";
 				game["menu_onemanarmy_custom_splitscreen"] = "onemanarmy_custom_splitscreen";
-				
+
 				precacheMenu(game["menu_changeclass_defaults_splitscreen"]);
 				precacheMenu(game["menu_changeclass_custom_splitscreen"]);
 				precacheMenu(game["menu_onemanarmy_defaults_splitscreen"]);
 				precacheMenu(game["menu_onemanarmy_custom_splitscreen"]);
 			}
-	
+
 			precacheMenu(game["menu_controls"]);
 			//precacheMenu(game["menu_options"]);
 			precacheMenu(game["menu_leavegame"]);
-			
+
 			//precacheMenu("status_update");
 		}
-	
+
 		precacheMenu("scoreboard");
 		precacheMenu(game["menu_team"]);
 		precacheMenu(game["menu_class_allies"]);
@@ -74,7 +74,7 @@ init()
 		precacheMenu(game["menu_changeclass"]);
 		precacheMenu(game["menu_initteam_axis"]);
 		// CoDOL: no onemanarmy menu asset; see the provenance note.
-		
+
 		precacheString( &"MP_HOST_ENDED_GAME" );
 		precacheString( &"MP_HOST_ENDGAME_RESPONSE" );
 	}
@@ -97,7 +97,7 @@ isOptionsMenu( menu )
 {
 	if ( menu == game["menu_changeclass"] )
 		return true;
-		
+
 	if ( menu == game["menu_team"] )
 		return true;
 
@@ -114,11 +114,11 @@ isOptionsMenu( menu )
 onMenuResponse()
 {
 	self endon("disconnect");
-	
+
 	for(;;)
 	{
 		self waittill("menuresponse", menu, response);
-		
+
 		if ( response == "back" )
 		{
 			self closepopupMenu();
@@ -133,14 +133,14 @@ onMenuResponse()
 			}
 			continue;
 		}
-		
+
 		if(response == "changeteam")
 		{
 			self closepopupMenu();
 			self closeInGameMenu();
 			self openpopupMenu(game["menu_team"]);
 		}
-	
+
 		if(response == "changeclass_marines" )
 		{
 			self closepopupMenu();
@@ -162,7 +162,7 @@ onMenuResponse()
 
 		if(response == "changeclass_opfor_splitscreen" )
 			self openpopupMenu( "changeclass_opfor_splitscreen" );
-		
+
 		if(response == "endgame")
 		{
 			if(level.splitscreen)
@@ -174,7 +174,7 @@ onMenuResponse()
 					level thread maps\mp\gametypes\_gamelogic::forceEnd();
 				}
 			}
-				
+
 			continue;
 		}
 
@@ -189,7 +189,7 @@ onMenuResponse()
 				self closepopupMenu();
 				self closeInGameMenu();
 				self iprintln( &"MP_HOST_ENDGAME_RESPONSE" );
-			}			
+			}
 			continue;
 		}
 
@@ -237,11 +237,29 @@ onMenuResponse()
 }
 
 
+// Master-issued native team numbers match C1 sessionteam: 1 axis, 2 allies.
+// Free-for-all ignores the side while native keeps the cohort across maps.
+codolQuickAssignedTeam()
+{
+	if ( !level.teamBased )
+		return "none";
+	assignment = self codol_quickpartyteam();
+	if ( assignment == 1 )
+		return "axis";
+	if ( assignment == 2 )
+		return "allies";
+	return "none";
+}
+
 getTeamAssignment()
 {
+	quickTeam = self codolQuickAssignedTeam();
+	if ( quickTeam != "none" )
+		return quickTeam;
+
 	teams[0] = "allies";
 	teams[1] = "axis";
-	
+
 	if ( !level.teamBased )
 		return teams[randomInt(2)];
 
@@ -252,7 +270,7 @@ getTeamAssignment()
 	else
 	{
 		playerCounts = self maps\mp\gametypes\_teams::CountPlayers();
-				
+
 		// if teams are equal return the team with the lowest score
 		if ( playerCounts["allies"] == playerCounts["axis"] )
 		{
@@ -272,7 +290,7 @@ getTeamAssignment()
 			assignment = "axis";
 		}
 	}
-	
+
 	return assignment;
 }
 
@@ -282,7 +300,7 @@ menuAutoAssign()
 	self closeMenus();
 
 	assignment = getTeamAssignment();
-		
+
 	if ( isDefined( self.pers["team"] ) && (self.sessionstate == "playing" || self.sessionstate == "dead") )
 	{
 		if ( assignment == self.pers["team"] )
@@ -302,26 +320,32 @@ menuAutoAssign()
 	self addToTeam( assignment );
 	self.pers["class"] = undefined;
 	self.class = undefined;
-	
+
 	if ( !isAlive( self ) )
 		self.statusicon = "hud_status_dead";
-	
+
 	self notify("end_respawn");
-	
+
 	self beginClassChoice();
 }
 
 
 beginClassChoice( forceNewChoice )
 {
+	if ( isDefined( level.partyMode ) && level.partyMode )
+	{
+		self [[level.class]]( "class0" );
+		return;
+	}
+
 	assert( self.pers["team"] == "axis" || self.pers["team"] == "allies" );
-	
+
 	team = self.pers["team"];
 
 	// menu_changeclass_team is the one where you choose one of the n classes to play as.
 	// menu_class_team is where you can choose to change your team, class, controls, or leave game.
 	self openpopupMenu( game[ "menu_changeclass_" + team ] );
-	
+
 	if ( !isAlive( self ) )
 		self thread maps\mp\gametypes\_playerlogic::predictAboutToSpawnPlayerOverTime( 0.1 );
 }
@@ -336,18 +360,18 @@ beginTeamChoice()
 showMainMenuForTeam()
 {
 	assert( self.pers["team"] == "axis" || self.pers["team"] == "allies" );
-	
+
 	team = self.pers["team"];
-	
+
 	// menu_changeclass_team is the one where you choose one of the n classes to play as.
-	// menu_class_team is where you can choose to change your team, class, controls, or leave game.	
+	// menu_class_team is where you can choose to change your team, class, controls, or leave game.
 	self openpopupMenu( game[ "menu_class_" + team ] );
 }
 
 menuAllies()
 {
 	self closeMenus();
-	
+
 	if(self.pers["team"] != "allies")
 	{
 		if( level.teamBased && !maps\mp\gametypes\_teams::getJoinTeamPermissions( "allies" ) )
@@ -355,11 +379,11 @@ menuAllies()
 			self openpopupMenu(game["menu_team"]);
 			return;
 		}
-		
+
 		// allow respawn when switching teams during grace period.
 		if ( level.inGracePeriod && !self.hasDoneCombat )
 			self.hasSpawned = false;
-			
+
 		if(self.sessionstate == "playing")
 		{
 			self.switching_teams = true;
@@ -374,7 +398,7 @@ menuAllies()
 
 		self notify("end_respawn");
 	}
-	
+
 	self beginClassChoice();
 }
 
@@ -382,7 +406,7 @@ menuAllies()
 menuAxis()
 {
 	self closeMenus();
-	
+
 	if(self.pers["team"] != "axis")
 	{
 		if( level.teamBased && !maps\mp\gametypes\_teams::getJoinTeamPermissions( "axis" ) )
@@ -409,7 +433,7 @@ menuAxis()
 
 		self notify("end_respawn");
 	}
-	
+
 	self beginClassChoice();
 }
 
@@ -417,7 +441,7 @@ menuAxis()
 menuSpectator()
 {
 	self closeMenus();
-	
+
 	if( isDefined( self.pers["team"] ) && self.pers["team"] == "spectator" )
 		return;
 
@@ -441,7 +465,12 @@ menuSpectator()
 menuClass( response )
 {
 	self closeMenus();
-	
+	if ( isDefined( level.partyMode ) && level.partyMode )
+	{
+		self codolSelectPartyClass();
+		return;
+	}
+
 	// clear new status of unlocked classes
 	if ( response == "demolitions_mp,0" && self getPlayerData( "featureNew", "demolitions" ) )
 	{
@@ -472,7 +501,7 @@ menuClass( response )
 		return;
 	}
 
-	if( (isDefined( self.pers["class"] ) && self.pers["class"] == class) && 
+	if( (isDefined( self.pers["class"] ) && self.pers["class"] == class) &&
 		(isDefined( self.pers["primary"] ) && self.pers["primary"] == primary) )
 		return;
 
@@ -511,6 +540,32 @@ menuClass( response )
 	}
 
 	self thread maps\mp\gametypes\_spectating::setSpectatePermissions();
+}
+
+
+codolSelectPartyClass()
+{
+	self closeMenus();
+	// A queued class reply may arrive after the match has ended.
+	// Preserve final teams, class and accounting until the next match.
+	if ( game["state"] == "postgame" )
+		return;
+	if ( !isDefined( self.pers["team"] ) ||
+		( self.pers["team"] != "allies" && self.pers["team"] != "axis" ) )
+		assignment = getTeamAssignment();
+	else
+		assignment = self.pers["team"];
+	if ( !isDefined( self.team ) || self.team != assignment || self.sessionteam == "spectator" )
+		self addToTeam( assignment );
+
+	// Fixed-loadout modes never reissue a kit for an alive class-menu reply.
+	// In OIC that reply otherwise restores the spent bullet during grace.
+	self.selectedClass = true;
+	self.pers["class"] = "class0";
+	self.class = "class0";
+	self.pers["primary"] = 0;
+	if ( game["state"] == "playing" && self.sessionstate != "playing" && !isInKillcam() )
+		self thread maps\mp\gametypes\_playerlogic::spawnClient();
 }
 
 
@@ -556,14 +611,20 @@ codolJoinTeamForClass()
 
 addToTeam( team, firstConnect )
 {
+	// Automatic balancing, class callbacks and explicit team menus must all
+	// respect the same allocation; spectator remains an explicit escape path.
+	quickTeam = self codolQuickAssignedTeam();
+	if ( team != "spectator" && quickTeam != "none" )
+		team = quickTeam;
+
 	// UTS update playerCount remove from team
 	if ( isDefined( self.team ) )
 		self maps\mp\gametypes\_playerlogic::removeFromTeamCount();
-		
+
 	self.pers["team"] = team;
 	// this is the only place self.team should ever be set
 	self.team = team;
-	
+
 	// session team is readonly in ranked matches on console
 	if ( !matchMakingGame() || isDefined( self.pers["isBot"] ) )
 	{
@@ -582,7 +643,7 @@ addToTeam( team, firstConnect )
 
 	// UTS update playerCount add to team
 	if ( game["state"] != "postgame" )
-		self maps\mp\gametypes\_playerlogic::addToTeamCount();	
+		self maps\mp\gametypes\_playerlogic::addToTeamCount();
 
 	self updateObjectiveText();
 

@@ -15,16 +15,16 @@
 //   perk_give_bottle_begin        :1811  -- the bottle weapon per perk.
 //   perk_give_bottle_end          :1882
 //   give_perk                     :1456  -- SetPerk, the juggernog health
-//                                           bump, the solo quick-revive life.
+//                                           bump. CoDOL Quick Revive speeds
+//                                           teammate revival only.
 //   perk_think                    :1566  -- perks are lost on down/death.
 //   vending_weapon_upgrade        :393   -- Pack-a-Punch: pay, take the gun,
 //                                           hand back its _upgraded variant.
 //   vending_weapon_upgrade_cost   :519
 //   wait_for_player_to_take       :538
 //   wait_for_timeout              :595
-//   turn_*_on                     :709-:1005 -- collapsed into the single
-//                                           power notify fan-out that
-//                                           _zombiemode_power.gsc sends.
+//   turn_*_on / perk_fx            -- powered models, startup sound and
+//                                    delayed tagged lights restored below.
 //
 // NOT TAKEN, and why:
 //   2026-09-20: third_person_weapon_upgrade (:283) and do_knuckle_crack /
@@ -88,7 +88,7 @@ init()
 	// docs/zone_assets/ALL_sound.txt; these ship in common_gametype_zm.
 	add_sound( "perk_deny", "evt_perk_deny" );
 	add_sound( "bottle_dispense", "evt_bottle_dispense" );
-	level.zm_solo_quickrevive_buys = 0;
+	perk_machine_power_init();
 
 	vending_triggers = getEntArray( "zombie_vending", "targetname" );
 	// The perks this MAP carries, for _zombiemode_powerups::free_perk_powerup:
@@ -126,6 +126,87 @@ init()
 		getWeaponModel( "m1911_upgraded_zm" ) + " hiding" + hide );
 }
 
+// BO1 _zombiemode_perks::turn_jugger_on / turn_revive_on / turn_sleight_on /
+// turn_doubletap_on and perk_fx. C1 calls the sleight model speedcola_on and
+// ships separate patch glow effects alongside the original machine lights.
+perk_machine_power_definition( target, model, light, glow )
+{
+	definition = spawnStruct();
+	definition.target = target;
+	definition.model = model;
+	definition.light = light;
+	definition.glow = glow;
+	return definition;
+}
+
+perk_machine_power_init()
+{
+	if ( isDefined( level.zm_perk_power_machines ) )
+		return;
+	level.zm_perk_power_machines = [];
+	definitions = [];
+	definitions[ 0 ] = perk_machine_power_definition( "vending_jugg", "zombie_vending_jugg_on",
+		"misc/fx_zombie_cola_jugg_on", "misc/fx_zombie_cola_jugg_on_glow" );
+	definitions[ 1 ] = perk_machine_power_definition( "vending_revive", "zombie_vending_revive_on",
+		"misc/fx_zombie_cola_revive_on", "misc/fx_zombie_cola_revive_on_glow" );
+	definitions[ 2 ] = perk_machine_power_definition( "vending_sleight", "zombie_vending_speedcola_on",
+		"misc/fx_zombie_cola_on", "misc/fx_zombie_cola_on_glow" );
+	definitions[ 3 ] = perk_machine_power_definition( "vending_doubletap", "zombie_vending_doubletap_on",
+		"misc/fx_zombie_cola_dtap_on", "misc/fx_zombie_cola_doubletap_on_glow" );
+
+	for ( i = 0; i < definitions.size; i++ )
+	{
+		definition = definitions[ i ];
+		machines = getEntArray( definition.target, "targetname" );
+		for ( j = 0; j < machines.size; j++ )
+		{
+			machine = machines[ j ];
+			// Target groups can also contain collision brushes. Only swap the
+			// rendered machine; preserve its trigger, clip and authored pose.
+			if ( machine.classname != "script_model" )
+				continue;
+			precacheModel( definition.model );
+			precacheModel( "tag_origin" );
+			machine.zm_perk_on_model = definition.model;
+			machine.zm_perk_light_fx = loadfx( definition.light );
+			machine.zm_perk_glow_fx = loadfx( definition.glow );
+			level.zm_perk_power_machines[ level.zm_perk_power_machines.size ] = machine;
+			machine thread perk_machine_wait_for_power();
+		}
+	}
+}
+
+perk_machine_wait_for_power()
+{
+	// Persistent flag also covers maps whose power starts on and cannot miss
+	// the one-shot per-perk notifications sent by the power module.
+	flag_wait( "power_on" );
+	self perk_machine_power_on();
+}
+
+perk_machine_power_on()
+{
+	if ( is_true( self.zm_perk_machine_powered ) )
+		return;
+	self.zm_perk_machine_powered = true;
+	self setModel( self.zm_perk_on_model );
+	self playSound( "zmb_perks_power_on" );
+	// BO1 perk_fx delays the persistent light until the startup finishes.
+	wait( 3 );
+	// C1's powered machine meshes have an unnamed root bone. Use BO1's
+	// revive_solo_fx carrier pattern instead of tagging the machine itself.
+	// Untagged LinkTo preserves the machine transform without a parent bone.
+	carrier = spawn( "script_model", self.origin );
+	carrier.angles = self.angles;
+	carrier setModel( "tag_origin" );
+	carrier notSolid();
+	carrier linkTo( self );
+	self.zm_perk_light_carrier = carrier;
+	playFxOnTag( self.zm_perk_light_fx, carrier, "tag_origin" );
+	playFxOnTag( self.zm_perk_glow_fx, carrier, "tag_origin" );
+	self.zm_perk_machine_lights_on = true;
+}
+
 // T5 :1083 cost ladder.
 perk_cost( perk, solo )
 {
@@ -135,8 +216,6 @@ perk_cost( perk, solo )
 		return 2500;
 
 	case "specialty_quickrevive":
-		if ( solo )
-			return 500;
 		return 1500;
 
 	case "specialty_fastreload":
@@ -243,8 +322,6 @@ perk_hint( perk, solo )
 	case "specialty_armorvest":
 		return &"ZOMBIE_PERK_JUGGERNAUT";
 	case "specialty_quickrevive":
-		if ( is_true( solo ) )
-			return &"ZOMBIE_PERK_QUICKREVIVE_SOLO";
 		return &"ZOMBIE_PERK_QUICKREVIVE";
 	case "specialty_fastreload":
 		return &"ZOMBIE_PERK_FASTRELOAD";
@@ -296,43 +373,21 @@ vending_trigger_think()
 
 	if ( !isDefined( perk ) )
 	{
-		println( "CoDOL zm: a zombie_vending trigger has no script_noteworthy; ignored\n" );
+		{}
 		return;
 	}
 
-	// Machines start before the first player reaches "begin".  Wait for the
-	// roster before deciding whether Quick Revive is the power-free solo one.
+	// CoDOL Quick Revive is the teammate-revival perk in every roster size.
+	// Self-revival belongs to revive tokens, not the vending machine.
 	flag_wait( "all_players_connected" );
-
-	solo = false;
-	players = getPlayers();
-	if ( players.size == 1 )
-		solo = true;
-
-	cost = perk_cost( perk, solo );
+	cost = perk_cost( perk, false );
 	self.cost = cost;
-
-	// A level that powers machines separately (zm_sumpf_sh: one switch per
-	// hut) names this entity's own power flag; every other map waits on the
-	// one "power_on" flag, exactly as before.
-	power_flag = "power_on";
-	if ( isDefined( self.zm_power_flag ) )
-		power_flag = self.zm_power_flag;
 
 	self setCursorHint( "HINT_NOICON" );
 	self useTriggerRequireLookAt();
 	self setHintString( &"ZOMBIE_NEED_POWER" );
-
-	// Solo Quick Revive is live before power, but a teammate may enter after
-	// the first player.  Keep its hint and price tied to the current roster.
-	if ( perk == "specialty_quickrevive" )
-		self thread quickrevive_hint_think();
-	else
-	{
-		// The power flag survives a notify sent before the roster was ready.
-		flag_wait( power_flag );
-		self setHintString( perk_hint( perk, solo ), cost );
-	}
+	flag_wait( "power_on" );
+	self setHintString( perk_hint( perk, false ), cost );
 
 	for ( ;; )
 	{
@@ -350,18 +405,6 @@ vending_trigger_think()
 		if ( player in_revive_trigger() )
 			continue;
 
-		if ( perk == "specialty_quickrevive" )
-		{
-			solo = getPlayers().size == 1;
-			cost = perk_cost( perk, solo );
-			self.cost = cost;
-			if ( !solo && !flag( power_flag ) )
-			{
-				self play_sound_on_ent( "perk_deny" );
-				continue;
-			}
-		}
-
 		if ( is_true( player.is_drinking ) )
 		{
 			wait( 0.1 );
@@ -372,14 +415,6 @@ vending_trigger_think()
 		{
 			self play_sound_on_ent( "perk_deny" );
 			wait( 0.5 );
-			continue;
-		}
-
-		// A solo player can buy three self-revives in this match.  Count only
-		// machine purchases, not Quick Revive awarded by another source.
-		if ( solo && perk == "specialty_quickrevive" && level.zm_solo_quickrevive_buys >= 3 )
-		{
-			self play_sound_on_ent( "perk_deny" );
 			continue;
 		}
 
@@ -418,36 +453,6 @@ vending_trigger_think()
 
 		player give_perk( perk );
 
-		if ( solo && perk == "specialty_quickrevive" )
-		{
-			level.zm_solo_quickrevive_buys++;
-		}
-	}
-}
-
-// A capped solo machine shows no purchase prompt.  If a teammate enters,
-// it can still serve the cooperative version once the power is on.
-quickrevive_hint_think()
-{
-	// A level that powers machines separately (zm_sumpf_sh: one switch per
-	// hut) names this entity's own power flag; every other map waits on the
-	// one "power_on" flag, exactly as before.
-	power_flag = "power_on";
-	if ( isDefined( self.zm_power_flag ) )
-		power_flag = self.zm_power_flag;
-
-	for ( ;; )
-	{
-		solo = getPlayers().size == 1;
-		cost = perk_cost( "specialty_quickrevive", solo );
-		self.cost = cost;
-		if ( solo && level.zm_solo_quickrevive_buys >= 3 )
-			self setHintString( "" );
-		else if ( !solo && !flag( power_flag ) )
-			self setHintString( &"ZOMBIE_NEED_POWER" );
-		else
-			self setHintString( perk_hint( "specialty_quickrevive", solo ), cost );
-		wait( 0.5 );
 	}
 }
 
@@ -543,14 +548,7 @@ give_perk( perk )
 		self.health = self.maxhealth;
 	}
 
-	// T5: solo quick revive is an extra life rather than a revive.
-	players = getPlayers();
-	if ( players.size == 1 && perk == "specialty_quickrevive" )
-	{
-		if ( !isDefined( self.pers ) )
-			self.pers = [];
-		self.pers[ "lives" ] = 1;
-	}
+	// C1 describes faster teammate revival; do not award a solo spare life.
 
 	self notify( "perk_bought", perk );
 	self thread perk_think( perk );
@@ -562,6 +560,17 @@ perk_think( perk )
 	self endon( "disconnect" );
 
 	self waittill_either( "death", "player_downed" );
+
+	// Preserve perks only after the lobby acknowledges an actual token spend.
+	if ( isDefined( self.revive_token_window ) && self.revive_token_window )
+	{
+		self waittill_either( "player_revived", "bled_out" );
+		if ( isDefined( self.revive_used_token ) && self.revive_used_token )
+		{
+			self thread perk_think( perk );
+			return;
+		}
+	}
 
 	self unsetPerk( perk );
 
@@ -816,7 +825,7 @@ perk_hud_update()
 		if ( isDefined( h.elem ) )
 			h.elem destroy();
 		changed = true;
-		codolPrintLn( "CoDOL zm perk HUD: " + h.shader + " removed from " + self.name );
+		{}
 	}
 
 	// T5 :1632 perk_hud_create for every new one, appended on the right.
@@ -830,7 +839,7 @@ perk_hud_update()
 		kept[ kept.size ] = h;
 		changed = true;
 		h.elem thread perk_hud_flash();
-		codolPrintLn( "CoDOL zm perk HUD: " + h.shader + " shown to " + self.name + " in column " + ( kept.size - 1 ) );
+		{}
 	}
 
 	self.zm_perk_hud = kept;
@@ -891,7 +900,7 @@ perk_hud_clear( reason )
 			self.zm_perk_hud[ i ].elem destroy();
 	}
 	if ( self.zm_perk_hud.size > 0 )
-		codolPrintLn( "CoDOL zm perk HUD: " + self.zm_perk_hud.size + " icons cleared for " + self.name + " (" + reason + ")" );
+		{}
 	self.zm_perk_hud = [];
 }
 

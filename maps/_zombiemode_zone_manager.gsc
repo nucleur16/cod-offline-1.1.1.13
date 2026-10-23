@@ -8,7 +8,6 @@
 init()
 {
 	level.zm_spawn_zones = [];
-	level.zombie_rise_spawners = [];
 	level.zm_zone_mode = getDvar( "mapname" );
 
 	// This VM's filtered getEntArray only accepts native ent_fields; C1's
@@ -44,13 +43,6 @@ init()
 				if ( isDefined( group[ j ].script_noteworthy ) && group[ j ].script_noteworthy == "zombie_spawner" )
 					zone.spawners[ zone.spawners.size ] = group[ j ];
 			}
-			// T5 zone_init :231: the zone's rise points, "<volume target>_rise"
-			// (zm_sumpf_sh's swamp risers; script_noteworthy "find_flesh" lets
-			// a riser skip the barricades, script_string "in_water" picks the
-			// water effects).
-			zone.rise_locations = get_struct_array( volume.target + "_rise", "targetname" );
-			if ( !isDefined( zone.rise_locations ) )
-				zone.rise_locations = [];
 			level.zm_spawn_zones[ level.zm_spawn_zones.size ] = zone;
 		}
 		zone.volumes[ zone.volumes.size ] = volume;
@@ -74,16 +66,6 @@ init()
 			zone.enabled = true;
 	}
 
-	// A level script that declares its zone graph the T5 way (T5
-	// zone_manager manage_zones( init_zones ) plus the level's
-	// add_adjacent_zone calls) names its starting zones here.  Only
-	// zm_sumpf_sh sets either variable; every other map skips this.
-	if ( isDefined( level.zm_zone_initial ) )
-	{
-		for ( i = 0; i < level.zm_zone_initial.size; i++ )
-			enable_zone( level.zm_zone_initial[ i ] );
-	}
-
 	level.enemy_spawns = [];
 	if ( level.zm_spawn_zones.size < 1 )
 	{
@@ -92,12 +74,12 @@ init()
 		level.enemy_spawns = get_struct_array( "zombie_spawner", "script_noteworthy" );
 		if ( !isDefined( level.enemy_spawns ) )
 			level.enemy_spawns = [];
-		codolprintln( "CoDOL zm zones: no live player_volume; using all authored spawners" );
+		{}
 		return;
 	}
 	refresh_spawners();
 	level thread zone_watch();
-	codolprintln( "CoDOL zm zones: " + level.zm_spawn_zones.size + " map-authored player volumes/groups on " + level.zm_zone_mode );
+	{}
 	if ( isDefined( level.exterior_goals ) )
 	{
 		available = 0;
@@ -106,7 +88,7 @@ init()
 			if ( entrance_available( level.exterior_goals[ i ] ) )
 				available++;
 		}
-		codolprintln( "CoDOL zm zones: entrances in open zones " + available + "/" + level.exterior_goals.size );
+		{}
 	}
 }
 
@@ -126,7 +108,7 @@ enable_zone( name )
 	if ( isDefined( zone ) && !zone.enabled )
 	{
 		zone.enabled = true;
-		codolprintln( "CoDOL zm zones: enabled " + name + " (" + zone.spawners.size + " spawners)" );
+		{}
 	}
 }
 
@@ -154,11 +136,6 @@ refresh_spawners()
 			enable_zone( "box_zone" );
 	}
 
-	// A declared graph (add_adjacent_zone below): a set flag opens both
-	// zones it joins, as T5 zone_manager enable_zone does.
-	if ( isDefined( level.zm_zone_adjacency ) )
-		adjacency_enable_zones();
-
 	// Asylum has no recoverable map-specific adjacency script.  An authored
 	// zone becomes reachable when a live player actually enters its volume;
 	// purchased doors govern physical access to that volume.
@@ -180,8 +157,7 @@ refresh_spawners()
 					// Prototype and Training have authored purchase flags.  A
 					// volume may overlap a closed doorway, so touching it alone
 					// must never unlock its spawners.
-					// A map with a declared graph opens zones by flag only.
-					if ( level.zm_zone_mode != "zm_prototype_sh" && !isDefined( level.zm_zone_adjacency ) )
+					if ( level.zm_zone_mode != "zm_prototype_sh" )
 						zone.enabled = true;
 					break;
 				}
@@ -190,7 +166,6 @@ refresh_spawners()
 	}
 
 	new_spawns = [];
-	new_rise = [];
 	active_names = "";
 	for ( i = 0; i < level.zm_spawn_zones.size; i++ )
 	{
@@ -198,19 +173,11 @@ refresh_spawners()
 		active = occupied[ i ];
 		if ( !active && level.zm_zone_mode == "zm_prototype_sh" )
 			active = occupied_adjacent_zone( zone.name, occupied );
-		if ( !active && isDefined( level.zm_zone_adjacency ) )
-			active = adjacency_occupied_neighbour( zone.name, occupied );
 		if ( !zone.enabled || !active )
 			continue;
 		active_names = active_names + zone.name + ",";
 		for ( j = 0; j < zone.spawners.size; j++ )
 			new_spawns[ new_spawns.size ] = zone.spawners[ j ];
-		// T5 create_spawner_list :712: the active zones' rise points.
-		if ( isDefined( zone.rise_locations ) )
-		{
-			for ( j = 0; j < zone.rise_locations.size; j++ )
-				new_rise[ new_rise.size ] = zone.rise_locations[ j ];
-		}
 	}
 
 	// The T5 manager retains the initial room when nobody occupies an
@@ -229,11 +196,10 @@ refresh_spawners()
 	}
 
 	level.enemy_spawns = new_spawns;
-	level.zombie_rise_spawners = new_rise;
 	if ( !isDefined( level.zm_last_active_zone_names ) || active_names != level.zm_last_active_zone_names )
 	{
 		level.zm_last_active_zone_names = active_names;
-		codolprintln( "CoDOL zm zones: active " + active_names + " spawners " + new_spawns.size );
+		{}
 	}
 }
 
@@ -325,7 +291,7 @@ spawners_with_floor( zone )
 		if ( trace[ "fraction" ] < 1 )
 			kept[ kept.size ] = sp;
 		else
-			codolprintln( "CoDOL zm zones: spawner " + sp.origin + " (" + zone.name + ") has no floor below it; not used" );
+			{}
 	}
 	return kept;
 }
@@ -405,7 +371,7 @@ training_group_spawners_by_window()
 			if ( near )
 				kept[ kept.size ] = sp;
 			else
-				codolprintln( "CoDOL zm zones: spawner " + sp.origin + " (" + zone.name + ") is outside the map's zones; not used" );
+				{}
 		}
 		zone.spawners = kept;
 	}
@@ -435,7 +401,7 @@ training_group_spawners_by_window()
 		zone.spawners[ zone.spawners.size ] = sp;
 		added++;
 	}
-	codolprintln( "CoDOL zm zones: Training window spawners grouped by the zone their window opens into: " + added );
+	{}
 }
 
 occupied_adjacent_zone( name, occupied )

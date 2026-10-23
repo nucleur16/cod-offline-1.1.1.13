@@ -82,7 +82,7 @@ init()
 {
 	if ( getWeaponIndexFromName( bhb_weapon() ) <= 0 )
 	{
-		codolprintln( "CoDOL zm black hole: " + bhb_weapon() + " is not loaded on this map; not registered" );
+		{}
 		return;
 	}
 
@@ -112,7 +112,7 @@ init()
 	fuse = "(unknown)";
 	if ( isDefined( level.black_hole_bomb_fuse_ms ) )
 		fuse = "" + level.black_hole_bomb_fuse_ms + " ms";
-	codolprintln( "CoDOL zm black hole: registered; weapon fuse " + fuse + ", pull radius " + level.black_hole_bomb_attract_dist + ", " + level.black_hole_teleport_structs.size + " teleport destinations on " + getDvar( "mapname" ) );
+	{}
 
 	maps\_zombiemode_equipment::register_equipment( bhb_weapon(), ::black_hole_bomb_fired );
 }
@@ -171,7 +171,7 @@ black_hole_bomb_fired( player, weapon )
 	thrower = "(gone)";
 	if ( isDefined( player ) )
 		thrower = player.name;
-	codolprintln( "CoDOL zm black hole: thrown by " + thrower + " at " + grenade.origin );
+	{}
 
 	// T5 :91.
 	if ( isDefined( player ) && player maps\_zombiemode_laststand::player_is_in_laststand() )
@@ -194,13 +194,13 @@ black_hole_bomb_fired( player, weapon )
 	landed = grenade wait_for_rest( info, 10 );
 	if ( !isDefined( grenade ) || info.exploded )
 	{
-		codolprintln( "CoDOL zm black hole: exploded before it came to rest (" + landed + ")" );
+		{}
 		return;
 	}
 
 	origin = grenade.origin;
 	info.land_origin = origin;
-	codolprintln( "CoDOL zm black hole: opened at " + origin + " after " + ( getTime() - info.thrown_time ) + " ms (" + landed + ")" );
+	{}
 
 	// T5 :125-:127, :163.  The bomb itself is the POI: the tosser for the
 	// kill credit, a fresh ground trace under it for every zombie.
@@ -252,7 +252,7 @@ black_hole_bomb_collapse( info )
 	wait( 0.25 );
 	blast = maps\_zombiemode_poi::count_dead( near );
 
-	codolprintln( "CoDOL zm black hole: collapsed at " + origin + " " + ( getTime() - info.thrown_time ) + " ms after the throw; " + info.pulled + " zombies pulled, " + info.kills + " crushed; of " + near.size + " within 256 at the collapse, " + blast + " are dead" );
+	{}
 }
 
 track_grenade( info )
@@ -368,7 +368,7 @@ black_hole_bomb_initial_attract_func( ent_poi )
 			self.deathanim = death;
 	}
 
-	codolprintln( "CoDOL zm black hole: ent " + self getEntityNumber() + " caught by the pull " + int( distance( self.origin, ent_poi.origin ) ) + " units out" );
+	{}
 
 	while ( isDefined( ent_poi ) && isDefined( self.zombie_poi_current ) && self.zombie_poi_current == ent_poi )
 	{
@@ -428,14 +428,20 @@ black_hole_bomb_attract_run()
 // MoveCrawl self.crawl_anim), as _zombiemode_spawner::set_run_anim writes them.
 //
 // T5 plays the pull clips at their own rate: the pull is the clip's root
-// motion, at moveplaybackrate 1 (every zombie move cycle plays at 1).
+// motion.  This server scales every move cycle by self.moveplaybackrate
+// (_zombiemode_spawner apply_move_speed_scale, 0.5 for a round-1 walker), so
+// the pull is put back on the actor's base rate (animplaybackrate) while it
+// lasts, and the saved rate is restored if the zombie escapes.
 set_pull_anim( pull )
 {
 	if ( !isDefined( pull ) )
 		return;
 
 	self._bhb_pull_anim = pull;
-	self.moveplaybackrate = 1;
+	base = 1;
+	if ( isDefined( self.animplaybackrate ) )
+		base = self.animplaybackrate;
+	self.moveplaybackrate = base;
 
 	if ( is_true( self.has_legs ) )
 	{
@@ -527,7 +533,7 @@ black_hole_bomb_event_horizon_death( vec_black_hole_org, grenade )
 	if ( isDefined( grenade ) )
 		grenade notify( "black_hole_bomb_kill" );
 
-	codolprintln( "CoDOL zm black hole: ent " + self getEntityNumber() + " crushed at " + self.origin );
+	{}
 
 	// T5 :687: DoDamage( health + 50, origin + (0,0,50), tosser,
 	// "zombie_black_hole_bomb", "MOD_CRUSH" ), in this server's MP
@@ -577,7 +583,7 @@ black_hole_bomb_escaped_zombie_reset()
 	self._black_hole_attract_walk = 0;
 	self._black_hole_attract_run = 0;
 	self._black_hole_bomb_info = undefined;
-	codolprintln( "CoDOL zm black hole: ent " + self getEntityNumber() + " escaped the pull" );
+	{}
 }
 
 // --------------------------------------------------------------------------
@@ -670,7 +676,7 @@ black_hole_teleport( struct_dest )
 	self enableWeapons();
 	self freezeControls( false );
 
-	codolprintln( "CoDOL zm black hole: " + self.name + " teleported from " + from + " to " + destination );
+	{}
 	self notify( "black_hole_teleported" );
 
 	wait( 1 );

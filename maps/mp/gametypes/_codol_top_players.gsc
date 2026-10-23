@@ -62,7 +62,7 @@ init()
 	// How far behind top_players_camera the shot starts; it dollies in over
 	// the walk-up. 0 keeps the camera still.
 	if ( getDvar( "scr_codol_topplayers_dolly" ) == "" )
-		setDvar( "scr_codol_topplayers_dolly", 64 );
+		setDvar( "scr_codol_topplayers_dolly", 32 );
 
 	precacheModel( "tag_origin" );
 
@@ -185,6 +185,9 @@ pickTopPlayers( count )
 	foreach ( player in level.players )
 	{
 		if ( !isDefined( player ) || isDefined( player.connectedPostGame ) )
+			continue;
+		// A podium source must have completed a real combat spawn.
+		if ( !isDefined( player.hasSpawned ) || !player.hasSpawned )
 			continue;
 		if ( !isDefined( player.pers["team"] ) || ( player.pers["team"] != "allies" && player.pers["team"] != "axis" ) )
 			continue;
@@ -309,7 +312,10 @@ playScene()
 spawnCamera( camera, duration )
 {
 	dolly = getDvarFloat( "scr_codol_topplayers_dolly" );
-	start = camera.origin - anglesToForward( camera.angles ) * dolly;
+	// Camera-only framing design: preserve authored height/heading and the walk.
+	// Advance both endpoints one existing default dolly length; not retail parity.
+	framedOrigin = camera.origin + anglesToForward( camera.angles ) * 32;
+	start = framedOrigin - anglesToForward( camera.angles ) * dolly;
 
 	ent = spawn( "script_model", start );
 	ent setModel( "tag_origin" );
@@ -317,7 +323,7 @@ spawnCamera( camera, duration )
 	ent notSolid();
 
 	if ( dolly != 0 && duration > 0.1 )
-		ent moveTo( camera.origin, duration, duration * 0.25, duration * 0.4 );
+		ent moveTo( framedOrigin, duration, duration * 0.25, duration * 0.4 );
 	return ent;
 }
 
@@ -386,6 +392,15 @@ holdAsSource( camera, cameraOrigin, rank )
 	level endon( "top_players_scene_end" );
 
 	self.topPlayersRank = rank;
+	// spawnPlayer's own fields, for a ranked player who joined a team but
+	// never spawned this match (still on the class menu at the end): from
+	// here on the player is "playing" and alive, and the spawn logic
+	// (_spawnlogic spawnPointUpdate) and the end-of-game awards
+	// (_awards longestlife) read both.
+	if ( !isDefined( self.wasTI ) )
+		self.wasTI = false;
+	if ( !isDefined( self.spawnTime ) )
+		self.spawnTime = getTime();
 
 	self notify( "spawned" );
 	self notify( "end_respawn" );
