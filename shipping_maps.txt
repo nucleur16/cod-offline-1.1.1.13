@@ -28,3 +28,12 @@ mp_terminal_cls     ship
 mp_abandon_sh       dev     # 2.6.9.7 port (2026-10-22); its map-select image is in iw_image_17.iwd
 zm_sumpf_sh         dev     # Shi No Numa; zm_sumpf_sh.ff and _load.ff are in no released map pack, PaP work ongoing
 zm_theater_sh       dev     # Kino der Toten, 3.5.6.2 port (2026-10-22); its zones and iw_image_19.iwd are in no released map pack
+mp_strike_sh        dev     # 3.5.6.2 port (2026-10-22); its map-select image is in iw_image_21.iwd
+mp_qadeem_sh        dev     # 3.5.6.2 port (2026-10-22); its map-select image is in iw_image_21.iwd
+mp_highrise         dev     # 3.5.6.2 port (2026-10-22); stock image sfproto_mp_highrise (iw_image_03.iwd); stock row 26 stays disabled
+mp_dome             dev     # 3.5.6.2 port (2026-10-22); map-select image in iw_image_23.iwd
+mp_sd_jardin        dev     # 3.5.6.2 port (2026-10-22), sd only; map-select image in iw_image_23.iwd
+mp_hardhat_sh       dev     # 3.5.6.2 port (2026-10-22); map-select image in iw_image_23.iwd
+mp_hunger           dev     # 3.5.6.2 port (2026-10-22); map-select image in iw_image_22.iwd
+mp_vacant           dev     # 3.5.6.2 port (2026-10-22); stock sfproto_mp_vacant image
+mp_brl_derail       dev     # 3.5.6.2 port (2026-10-22); stock sfproto_mp_derail image
