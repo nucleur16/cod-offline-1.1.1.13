@@ -114,7 +114,8 @@ mouse via `0x5F3900`, keys via `0x4931E0` / UI_KeyEvent `0x5F3760`.
     acceleration (`gpad_view_accel` deg/s², rising only), invert with `gpad_invert_y`; nothing while
     pm_flags has 0x800.
 - **Menu cursor** (IN_Frame): the left stick moves the cursor (`gpad_menu_cursor_speed` px/s at full
-  deflection, quadratic), with SetCursorPos while the game is in the foreground.
+  deflection, quadratic), with SetCursorPos while the game is in the foreground. It snaps to the movies'
+  controls (magnetism, D-pad / flick jumps, settling): [PADSNAP.md](PADSNAP.md), `padsnap.c`.
 - **Keys**: BUTTON_A, BUTTON_B, BUTTON_X, BUTTON_Y, BUTTON_LSHLDR, BUTTON_RSHLDR, BUTTON_START, BUTTON_BACK,
   BUTTON_LSTICK, BUTTON_RSTICK, BUTTON_LTRIG, BUTTON_RTRIG, DPAD_UP/DOWN/LEFT/RIGHT (IW4 keynums 1-6, 14-23).
   Both key-name tables are copied with these appended (`0x492AAC`, `0x492AB2`, `0x492B5B`, `0x49303C`,

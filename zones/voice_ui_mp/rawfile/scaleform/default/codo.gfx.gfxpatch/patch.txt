@@ -4555,7 +4555,7 @@ keep 4548
 keep 4549
 new tags/4550_82_Main.bin
 keep 4551
-keep 4552
+new tags/k33_82_components_CodoUIComponent.bin
 keep 4553
 new tags/4554_82_components_CodoButton.bin
 keep 4555
@@ -6864,6 +6864,7 @@ keep 6857
 keep 6858
 keep 6859
 keep 6860
+new tags/k33_82_codo_k33_PadSnap.bin
 keep 6861
 keep 6862
 keep 6863
@@ -6896,7 +6897,6 @@ as codo.views.MatchMiniRoomCreatorCyborgsView as/codo/views/MatchMiniRoomCreator
 as codo.views.MatchMiniRoomCreatorView as/codo/views/MatchMiniRoomCreatorView.as afeba84925165f1a0c9f61a2e0eb61d6d2cde84bd6b10477865d712c8c676025
 as codo.views.MatchRoomListView as/codo/views/MatchRoomListView.as 60143521a88fe579ffcb6ea3aaa39f23bafcfaab0ebf2e5a1f3fa3e55a2f0614
 as codo.views.MatchSelectModeHomeView as/codo/views/MatchSelectModeHomeView.as e47fd4cf093adc310ae5468cdedf840643370398bea6a12669c5f2eda7ed5041
-as codo.views.OptionView as/codo/views/OptionView.as 9ea117b23ae124102daaec19435cb195100d6dcdc33589b3d5ab917873dc26fe
 as codo.views.QuickMatchChooseNewView as/codo/views/QuickMatchChooseNewView.as 9b0d744dce8ba34ed4a28c4129b3561153da1607427c5b1a17b59b8b0ffc2d94
 as codo.views.RankedMatchInProgressView as/codo/views/RankedMatchInProgressView.as d47282ae1a3432041a72e407431efd28aaaf4138e9bb024c80507880a9113647
 as codo.views.RankedMatchReadyView as/codo/views/RankedMatchReadyView.as 7843928de384b7d45c63bf13c16493492a3ddbf2239a00a2e2346aa2308d76d0
@@ -6916,3 +6916,6 @@ as components.list_part.RoomListItemRenderer as/components/list_part/RoomListIte
 as components.room_part.RoomInfo as/components/room_part/RoomInfo.as c5cf44707fc8cb53f225aa35b2106d202711014f4b4945e389ee125d1e00670e
 as components.scoreboard_part.ScoreboardTeamPanel as/components/scoreboard_part/ScoreboardTeamPanel.as 0e78302799a9bf0c8eb12798a5f97135dc74f947d3901e348424e6b60adb5afb
 as ime.LangBarElement as/ime/LangBarElement.as 8fa9032f2cb798dc1857499c92ed9b6136e2b794841ef1c92cb175902e6f0ea6
+as components.CodoUIComponent as/components/CodoUIComponent.as 9f3cc89ba4727ad13a2b1cf49191d3f704b0b1f3730f8eb517b377c7f1e3713d
+as codo.k33.PadSnap as/codo/k33/PadSnap.as f5451168d78f16510986c45c23f4897166829c64c275b3cacc79144c428e8007
+as codo.views.OptionView as/codo/views/OptionView.as 4db03a52169b41a6c4c575866d1223a6b91b5c986b6cb6f05252a102f2df65f3

@@ -1,7 +1,7 @@
 # GFx movie as a patch over a stock movie (zonekit/gfx.py)
 stock ui_mp:scaleform/default/codologin.gfx
 stock-sha256 d8fce35a0a7142cf51089b74446c05adaca369bd2d628a4794fa631b7d4d6011
-sha256 17c9d2fd9dfbcc62d296e258e448a7302aec7278df1c676f6aa479400224acfc
+sha256 1cc96b07188cd3148bfe4200badf9847c005bfd46e2ee9ed43c2364cfde91ccd
 header 4746580aaca81100800003200000025800001e0100
 keep 0
 keep 1
@@ -857,7 +857,7 @@ keep 850
 keep 851
 keep 852
 keep 853
-keep 854
+new tags/k33_82_components_CodoUIComponent.bin
 keep 855
 keep 856
 keep 857
@@ -1421,7 +1421,10 @@ keep 1414
 keep 1415
 keep 1416
 keep 1417
+new tags/k33_82_codo_k33_PadSnap.bin
 keep 1418
 keep 1419
 keep 1420
 as codo.common.CFunctionContainer as/codo/common/CFunctionContainer.as e66c58131cd453da02a2db93942378285793a5ad2aea73bc8979a25827e6ddbc
+as components.CodoUIComponent as/components/CodoUIComponent.as 3a351d6ba7e8034902f43e94135b73b545373a47fe59ebddc37a44f6439d8e51
+as codo.k33.PadSnap as/codo/k33/PadSnap.as f5451168d78f16510986c45c23f4897166829c64c275b3cacc79144c428e8007

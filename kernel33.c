@@ -1387,6 +1387,7 @@ static void PatchGbkInput(void)
 
 /* XInput gamepad (feat/controller): see controller.c and CONTROLLER.md. */
 #include "controller.c"
+#include "padsnap.c"     /* the pad's menu cursor snaps to Scaleform controls (after controller.c) */
 
 /* Discord Rich Presence (CoDOLPresence.exe moved into the client): see discord.c. */
 #include "discord.c"
