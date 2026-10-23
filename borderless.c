@@ -31,7 +31,7 @@
 #define BD_CREATE_CALL_VA     0x00A7AC89u   /* call R_CreateWindow in R_InitGraphicsApi */
 #define BD_CREATE_WINDOW_VA   0x00A79CF0u   /* R_CreateWindow (esi = GfxWindowParms) */
 #define BD_CWEX_CALL_VA       0x00A79DBFu   /* call [CreateWindowExA] in R_CreateWindow */
-#define BD_CWEX_IAT_VA        0x09A1D6F4u
+#define BD_CWEX_IAT_VA        0x00B42428u   /* the exe's CreateWindowExA slot (C1.exe: 0x9A1D6F4) */
 #define BD_DVAR_FIND_VA       0x006232C0u   /* Dvar_FindVar(name) -> dvar_t* */
 #define BD_MAIN_HWND_VA       0x02B68104u
 
