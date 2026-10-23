@@ -30,3 +30,9 @@ localize,MPUI_DESC_MAP_QADEEM
 rawfile,vision/mp_terminal_cls.vision,zlib=9
 localize,MPUI_HUNGER
 localize,MPUI_DESC_MAP_HUNGER
+localize,MPUI_DOME
+localize,MPUI_DESC_MAP_DOME
+localize,MPUI_SD_PILLARS
+localize,MPUI_DESC_SD_PILLARS
+localize,MPUI_HARDHAT
+localize,MPUI_DESC_MAP_HARDHAT

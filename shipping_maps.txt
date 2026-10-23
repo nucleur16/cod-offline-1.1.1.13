@@ -33,3 +33,6 @@ mp_brl_derail       dev     # 3.5.6.2 port (2026-10-22); stock sfproto_mp_derail
 mp_strike_sh        dev     # 3.5.6.2 port (2026-10-22); its map-select image is in iw_image_21.iwd
 mp_qadeem_sh        dev     # 3.5.6.2 port (2026-10-22); its map-select image is in iw_image_21.iwd
 mp_highrise         dev     # 3.5.6.2 port (2026-10-22); stock image sfproto_mp_highrise (iw_image_03.iwd); stock row 26 stays disabled
+mp_dome             dev     # 3.5.6.2 port (2026-10-22); map-select image in iw_image_23.iwd
+mp_sd_jardin        dev     # 3.5.6.2 port (2026-10-22), sd only; map-select image in iw_image_23.iwd
+mp_hardhat_sh       dev     # 3.5.6.2 port (2026-10-22); map-select image in iw_image_23.iwd
