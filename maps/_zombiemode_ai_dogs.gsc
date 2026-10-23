@@ -1107,9 +1107,12 @@ dog_death( dog )
 		// T5 :719-722: a burning hound bursts (dog_explode_fx) and is deleted
 		// outright; zombie_dog_death skips its animation (a.nodeath).  The
 		// burst deals no damage in T5.
+		// Deleted here, at the end of its death frame (waittillframeend
+		// above), as T5 deletes it on its death frame; the native free hook
+		// (CODOL_ActorForget) ends its animscript threads.
 		level thread dog_explode_fx( origin );
 		if ( isDefined( dog ) )
-			dog hide();
+			dog delete();
 	}
 	else if ( isDefined( dog ) )
 	{
