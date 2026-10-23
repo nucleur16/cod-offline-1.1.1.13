@@ -70,6 +70,9 @@
 70,MPUI_SUBBASE,MPUI_DESC_MAP_SUBBASE,sfproto_mp_subbase_sh_usermap.tga,mp_subbase_sh,pvp,4,18,,,,,,,,,,,default_1|mainline_1|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1,,0,0,0,0,,,,,,,37
 71,MPUI_TERMINAL,MPUI_DESC_MAP_TERMINAL,sfproto_mp_terminal.tga,mp_terminal_cls,pvp,4,18,,,,,,,,,,,default_1|mainline_1|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1,,0,0,0,0,,,,,,,38
 72,MPUI_ZM_SUMPF,MPUI_DESC_MAP_ZM_SUMPF,sfproto_zm_sumpf.tga,zm_sumpf_sh,zm,1,4,-1,-1,MPUI_NAR_MAP_ZM_SUMPF,MPUI_TAR_MAP_ZM_SUMPF_0,MPUI_TAR_MAP_ZM_SUMPF_1,MPUI_TAR_MAP_ZM_SUMPF_2,MPUI_TAR_MAP_ZM_SUMPF_3,MPUI_HINT_MAP_ZM_SUMPF_0,MPUI_HINT_MAP_ZM_SUMPF_1,MPUI_HINT_MAP_ZM_SUMPF_2,default_0|mainline_0|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_0,,1,1,1,0,,,,,,,204
+73,MPUI_HUNGER,MPUI_DESC_MAP_HUNGER,sfproto_mp_hunger_usermap.tga,mp_hunger,pvp,4,18,,,,,,,,,,,default_1|mainline_1|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1,,0,0,0,0,,,,,,,39
+74,PATCH_VACANT,PATCH_DESC_MAP_VACANT,sfproto_mp_vacant.tga,mp_vacant,pvp,4,18,,,,,,,,,,,default_1|mainline_1|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1,,0,0,0,0,,,,,,,40
+75,MPUI_DERAIL,MPUI_DESC_MAP_DERAIL,sfproto_mp_derail.tga,mp_brl_derail,pvp,4,18,,,,,,,,,,,default_1|mainline_1|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1,,0,0,0,0,,,,,,,41
 76,MPUI_MP_STRIKE_SH,MPUI_DESC_MP_STRIKE_SH,sfproto_mp_strike_sh_usermap.tga,mp_strike_sh,pvp,4,18,,,,,,,,,,,default_1|mainline_1|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1,,0,0,0,0,,,,,,,42
 77,MPUI_QADEEM,MPUI_DESC_MAP_QADEEM,sfproto_mp_qadeem_sh_usermap.tga,mp_qadeem_sh,pvp,4,18,,,,,,,,,,,default_1|mainline_1|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1,,0,0,0,0,,,,,,,43
 78,MPUI_HIGHRISE,MPUI_DESC_MAP_HIGHRISE,sfproto_mp_highrise.tga,mp_highrise,pvp,4,18,,,,,,,,,,,default_1|mainline_1|alpha2_1|alpha3_1|ce2_1|ce3_1|cb1_1|cb2_1|cb3_1,,0,0,0,0,,,,,,,44
