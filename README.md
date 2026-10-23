@@ -215,6 +215,50 @@ The 3D play path's channel check (call of 0x736C10 at 0x73E4DB) decides two more
 `+set codol_soundvoices 0` turns both off at startup. The voice diagnostics (`k33_snddiag`, `CODOL_SNDDIAG`) now
 default to 0; at 1+ they also log `snd policy` totals and `why=limit` refusals to Kernel33.log.
 
+## English (`k33_english`)
+The English translation is the patch zones named `codol_english*`; the game without them is the original Chinese
+client. Kernel33 decides at startup, from the command line, whether to load them:
+
+    codoMP_client_shipRetail.exe +set dw_username <name>                        English (default)
+    codoMP_client_shipRetail.exe +set dw_username <name> +set k33_english 1     English
+    codoMP_client_shipRetail.exe +set dw_username <name> +set k33_english 0     Chinese
+
+- **Default: English** (no option, or `1`). The last `k33_english` on the line wins; any value but `0`/`1` is ignored.
+- Read by the DLL from the command line only (`kernel33.c`, `CmdLineFlag` / `EnglishZone`): C1 execs
+  `players\config_mp.cfg` before it registers its dvars and applies no `+set` to a dvar it does not know, so the
+  option is not a saved dvar. Nothing writes it to config_mp.cfg, and a config write never changes it; it lasts until
+  the client is started without it.
+- What it switches: whether `client_shipRetail\patch\codol_english*.ff` load, nothing else. The DLL has no other
+  language-dependent code: GBK text input, fonts, voice, controller, usermaps and the frame cap are the same in both.
+- The English zones (all from `python build_zones.py`, installed in `client_shipRetail\patch\`):
+
+  | zone | makes English |
+  |---|---|
+  | codol_english | 9,700 localized strings (menus, HUD, weapons, perks, challenges, killstreaks, errors) |
+  | codol_english_font | fonts_ingame.gfx with Latin glyphs drawn for English text |
+  | codol_english_ui | codo.gfx: the whole front end (lobby, rooms, loadout, store, options), with voice_ui_mp's Options classes |
+  | codol_english_ui_extra | codologin.gfx (login), codohud.gfx (HUD, scoreboard), codoingame.gfx (pause menu, with controller_ingame's pad navigation) |
+  | codol_english_zombies_base | zombies weapon, perk, challenge and subtitle strings |
+  | codol_english_usermaps | usermaps_patch's map names and descriptions (those are GBK Chinese), filtered by shipping_maps.txt the same way |
+
+  They load ahead of `code_pre_gfx`, so they win over the stock zones and over the `*_ui_mp` patch zones. That is
+  why codol_english_ui's codo.gfx carries voice_ui_mp's hand-written Options classes (OptionView = the Controller tab,
+  OptionView_audio, OptionView_video, in English) and codol_english_ui_extra's codoingame.gfx carries
+  controller_ingame's MainPause pad navigation: **a change to voice_ui_mp's or controller_ingame's `.as` must be
+  repeated in the English zone's copy** (`zones/codol_english_ui/.../as/codo/views/`,
+  `zones/codol_english_ui_extra/.../as/MainPause.as`), or the English client loses it.
+  000_codol_party_modes and codol_loading_mode_names name modes C1 does not have (in English, with no Chinese
+  text to fall back to) and load in both languages.
+- `Kernel33.log` says which: `english: on (k33_english 1): 6 codol_english* zone(s) queued`, `english: off
+  (k33_english 0): 6 codol_english* zone(s) skipped, the game is the original Chinese`, or, with English on and no
+  English zone installed, `english: on (k33_english 1), but no codol_english*.ff zone is in the patch folder: the
+  game stays Chinese` (missing zones are never an error).
+- The pure check lists `client_shipRetail\chinese\` and `main\` only, never `patch\`, so both states pass it.
+- Launchers: add the option to the client's command line. `3-START-CLIENT.cmd` (game folder) and the lobby's
+  `OFFLINE-DEV.cmd` (`CODOL_CLIENT_ARGS=+set k33_english 0`) pass extra arguments through; they must start
+  `codoMP_client_shipRetail.exe`, since `C1.exe` never loads Kernel33.dll (and then is always Chinese, as it
+  loads no patch zone).
+
 ## Discord Rich Presence (`discord.c`)
 The launcher's `TCLS\CoDOLPresence.exe` helper (a PyInstaller build of the server repo's
 `tools/codol_discord_presence.py`) now runs inside the client: no Python, no second process. It talks
@@ -288,7 +332,7 @@ point at: the manifest records each decoded asset's length (`len=`) and the buil
 ### Where each zone goes
 `client_shipRetail\patch\` (Kernel33 loads `*_ui_mp` zones ahead of the UI zones, `*_postgfx_mp` zones after
 `code_post_gfx` (permanent, images allowed), the rest ahead of `code_pre_gfx`): 000_codol_party_modes, codol_english,
-codol_english_font, codol_english_ui, codol_english_ui_extra, codol_english_zombies_base,
+codol_english_font, codol_english_ui, codol_english_ui_extra, codol_english_usermaps, codol_english_zombies_base,
 codol_infected_cyborg_postgfx_mp, codol_loading_mode_names, codol_zm_deathmachine_audio, controller_glyphs_postgfx_mp,
 controller_ingame,
 usermaps_patch, usermaps_ui_mp, voice_ui_mp, plus `sound_channels.txt`.
@@ -328,8 +372,9 @@ in the map pack, change it to `ship` and build.
 | codol_english | `tools/codol_english/build_ff.py` (CoD4x_Server, localizedStrings-1.1.1.13) from `codol_english.tsv` |
 | codol_english_font | `build_font_ff.py` (same tools); byte-identical to localizedStrings-1.1.1.13 `zones/` |
 | codol_english_zombies_base | localizedStrings-1.1.1.13 `tools/localize_zone.py` from `strings/codol_english_zombies_base/strings.tsv` (identical) |
-| codol_english_ui | codol-classic (zzVertigo/codol-classic) launcher releases r22-r30: method transplants on the English codo.gfx; the original translation has no source |
-| codol_english_ui_extra | codol-classic `deploy/client-patches/revive-token-mode/build_token_mode.py` |
+| codol_english_ui | codol-classic (zzVertigo/codol-classic) launcher releases r22-r30: method transplants on the English codo.gfx; the original translation has no source. OptionView, OptionView_audio and OptionView_video are voice_ui_mp's classes in English here |
+| codol_english_ui_extra | codol-classic `deploy/client-patches/revive-token-mode/build_token_mode.py`; MainPause merged with controller_ingame's here |
+| codol_english_usermaps | this repository (authored here, no shipped original): usermaps_patch's strings in English |
 | codol_loading_mode_names | codol-classic `launcher/tools/build_loading_mode_names.py` (r21) |
 | codol_zm_deathmachine_audio | codol-classic `deploy/client-patches/build_deathmachine_audio.py` |
 | 000_codol_party_modes | codol-classic branch `codex/party-infected-20261017` (r22) |

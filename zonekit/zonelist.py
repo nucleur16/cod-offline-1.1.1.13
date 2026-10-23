@@ -29,12 +29,21 @@ ZONES = {
     "000_codol_party_modes": dict(origin="Z:" + PATCH, install=PATCH),
     "codol_english": dict(origin="Z:" + PATCH, install=PATCH),
     "codol_english_font": dict(origin="Z:" + PATCH, install=PATCH, gfx={"scaleform/fonts_ingame.gfx": FONTS}),
-    "codol_english_ui": dict(origin="Z:" + PATCH, install=PATCH, gfx={"scaleform/default/codo.gfx": CODO}),
+    # the English UI (k33_english, kernel33.c EnglishZone): codo.gfx and codoingame.gfx also carry voice_ui_mp's and
+    # controller_ingame's hand-written classes (English strings), since these zones load ahead of those and win
+    "codol_english_ui": dict(origin="Z:" + PATCH, install=PATCH, gfx={"scaleform/default/codo.gfx": CODO},
+                             handwritten={"scaleform/default/codo.gfx": {"codo.views.option_sub.OptionView_audio",
+                                                                         "codo.views.option_sub.OptionView_video",
+                                                                         "codo.views.OptionView"}}),
     "codol_english_ui_extra": dict(origin="Z:" + PATCH, install=PATCH,
                                    gfx={"scaleform/default/codologin.gfx": LOGIN,
                                         "scaleform/default/codohud.gfx": HUD,
-                                        "scaleform/default/codoingame.gfx": INGAME}),
+                                        "scaleform/default/codoingame.gfx": INGAME},
+                                   handwritten={"scaleform/default/codoingame.gfx": {"MainPause"}}),
     "codol_english_zombies_base": dict(origin="Z:" + PATCH, install=PATCH),
+    # usermaps_patch's map names and descriptions in English (its own are GBK Chinese); ahead of usermaps_patch, so
+    # they win while English is on, filtered like usermaps_patch's (a map that does not ship has no strings here either)
+    "codol_english_usermaps": dict(origin="new", install=PATCH, maps=dict(localize_from="usermaps_patch")),
     "codol_infected_cyborg_postgfx_mp": dict(origin="Z:" + PATCH, install=PATCH,
                                              stock=["code_post_gfx_mp", "patch_code_post_gfx_mp", "common_mp",
                                                     "common_gametype_zm", "patch_common_mp"]),
