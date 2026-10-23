@@ -36,7 +36,7 @@ main()
 		self.enemy.syncedMeleeTarget = undefined;
 	}
 
-	death_anim = "death_" + getAnimDirection( self.damageyaw );
+	death_anim = "death_" + getAnimDirection( self t5DamageYaw() );
 /#
 	println(death_anim);
 #/

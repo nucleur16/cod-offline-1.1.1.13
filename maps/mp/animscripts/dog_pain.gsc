@@ -29,7 +29,7 @@ main()
 
 	speed = length( self getvelocity() );
 
-	pain_anim = getAnimDirection( self.damageyaw );
+	pain_anim = getAnimDirection( self t5DamageYaw() );
 
 	// should only do this while running because the anim is supposed to while running
 	if ( speed > level.dogRunPainSpeed )
