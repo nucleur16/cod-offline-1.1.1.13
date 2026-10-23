@@ -1,14 +1,15 @@
 package codo.views
 {
    // codol-classic's English MatchSelectModeHomeView (FFDec's decompile of its codo.gfx tag): the main screen's
-   // SURVIVAL and THEATRE buttons, built in code. k33: their captions are localize keys (K33UI_SURVIVAL, K33UI_THEATRE)
-   // take the font of a text on this screen that shows Chinese when the strings are Chinese (raven_listHeader's font,
-   // codol-classic's choice and still used when nothing on screen is Chinese, has Latin glyphs only).
+   // SURVIVAL and THEATRE buttons, built in code. k33: their captions are localize keys (K33UI_SURVIVAL, K33UI_THEATRE),
+   // localized before they are set: a code-made text field given "@KEY" loses its embedded font when C1's translator
+   // replaces the text, and shows boxes.
    import codo.common.BaseView;
    import codo.common.CFunctionContainerCommon;
    import codo.common.ParaEvent;
    import codo.constants.AsyncTaskID;
    import codo.constants.BCEvent;
+   import codo.utils.LocalizeUtil;
    import codo.constants.GameInfo;
    import codo.constants.LocalizationDict;
    import codo.constants.SyncDataID;
@@ -16,8 +17,6 @@ package codo.views
    import codo.objects.GroupCountsObj;
    import components.BaseButton;
    import components.PlayModeSelectionBtn;
-   import flash.display.DisplayObject;
-   import flash.display.DisplayObjectContainer;
    import flash.display.Sprite;
    import flash.events.Event;
    import flash.geom.Matrix;
@@ -247,20 +246,15 @@ package codo.views
          headerClass = getDefinitionByName("raven_listHeader") as Class;
          header = new headerClass();
          format = header.txt_header.defaultTextFormat;
-         var cjk:TextField = this.k33CjkText(this); // k33
-         if(cjk != null)
-         {
-            format.font = cjk.getTextFormat(0,1).font;
-         }
          format.size = 24;
          format.color = 16777215;
          format.align = "left";
          format.leftMargin = format.rightMargin = format.indent = format.blockIndent = 0;
          caption = new TextField();
          caption.defaultTextFormat = format;
-         caption.embedFonts = cjk != null ? cjk.embedFonts : header.txt_header.embedFonts;
+         caption.embedFonts = header.txt_header.embedFonts;
          caption.autoSize = "left";
-         caption.text = label;
+         caption.text = LocalizeUtil.localize(label); // k33
          caption.x = (300 - caption.width) / 2;
          caption.y = 12;
          caption.mouseEnabled = false;
@@ -278,32 +272,6 @@ package codo.views
             }
          });
          return container;
-      }
-      
-      // k33: the first text field under c with embedded fonts whose text has a CJK character, or null
-      private function k33CjkText(c:DisplayObjectContainer) : TextField
-      {
-         var i:int = 0;
-         while(i < c.numChildren)
-         {
-            var o:DisplayObject = c.getChildAt(i);
-            var tf:TextField = o as TextField;
-            if(tf != null && tf.embedFonts && tf.text != null && /[\u2E80-\u9FFF]/.test(tf.text))
-            {
-               return tf;
-            }
-            var dc:DisplayObjectContainer = o as DisplayObjectContainer;
-            if(dc != null)
-            {
-               var hit:TextField = this.k33CjkText(dc);
-               if(hit != null)
-               {
-                  return hit;
-               }
-            }
-            i++;
-         }
-         return null;
       }
       
       private function initTheatreModeCards() : void

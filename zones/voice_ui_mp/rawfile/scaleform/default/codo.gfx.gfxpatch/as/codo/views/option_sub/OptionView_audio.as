@@ -283,7 +283,7 @@ package codo.views.option_sub
       private function k33BuildDevice(cRow:Number) : void
       {
          // its own row under Voice Mode: label in the Voice Mode label's place, box where the Voice Mode box is
-         var tf:TextField = this.k33Text(this.myTFPresets,"@K33UI_VOICE_INPUT_DEVICE",int(this.myTFPresets.getTextFormat().size),uint(this.myTFPresets.getTextFormat().color));
+         var tf:TextField = this.k33Text(this.myTFPresets,LocalizeUtil.localize("@K33UI_VOICE_INPUT_DEVICE"),int(this.myTFPresets.getTextFormat().size),uint(this.myTFPresets.getTextFormat().color));
          tf.x = this.myTFPresets.x;
          tf.y = this.myTFPresets.y + cRow;
          this.addChild(tf);

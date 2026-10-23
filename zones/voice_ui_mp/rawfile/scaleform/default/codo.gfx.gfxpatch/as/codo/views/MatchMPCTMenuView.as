@@ -242,7 +242,8 @@ package codo.views
             if(child is TextField)
             {
                var value:String = TextField(child).text.toLowerCase();
-               if(value.indexOf("party") >= 0 || value.indexOf("friend") >= 0)
+               // k33: the party help (K33UI_CODO_1466) in any language, or codol-classic's English words
+               if(TextField(child).text == LocalizeUtil.localize("@K33UI_CODO_1466") || value.indexOf("party") >= 0 || value.indexOf("friend") >= 0)
                {
                   this.theatreHelp.push(child);
                }
@@ -274,7 +275,7 @@ package codo.views
          }
          if(this.theatreHelp.length > 0)
          {
-            TextField(this.theatreHelp[0]).text = "@K33UI_THEATRE_HELP";
+            TextField(this.theatreHelp[0]).text = LocalizeUtil.localize("@K33UI_THEATRE_HELP");
          }
          if(this.theatreHelp.length > 1)
          {
