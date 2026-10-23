@@ -10,4 +10,5 @@
 >blocks,0x0,0x20,0x0,0x0,auto,0x0,0x0,0x0,0x0
 >xassetlist,0x0,0xffffffff
 rawfile,controller_ingame
+rawfile,scaleform/default/codohud.gfx,zlib=9,gfx=patch_common_mp:scaleform/default/codohud.gfx
 rawfile,scaleform/default/codoingame.gfx,zlib=9,gfx=patch_common_mp:scaleform/default/codoingame.gfx

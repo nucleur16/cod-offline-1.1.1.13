@@ -1,51 +1,64 @@
 package
 {
-   // C1's MainPause (document class of scaleform/default/codoingame.gfx, the in-match pause menu) as decompiled
-   // from patch_common_mp's codoingame.gfx, with gamepad focus navigation for Kernel33's controller support
-   // (controller.c CtlPauseNav / CtlDeliverSfKeys). build_ingame_ui.py compiles it with JPEXS FFDec and splices
-   // the class's DoABC tag back into codoingame.gfx. Changes from C1's code are marked "k33".
-   //   Kernel33 hands these key codes straight to this movie (C1 routes in-match keys to the HUD movie, so
-   //   stock C1 gives this menu no keyboard at all; no keyboard produces these codes): 240 up, 241 down,
-   //   242 left, 243 right (D-pad or left stick), 244 select (A). B / Start send Escape, which C1's
-   //   PauseMenuView already treats as back / close.
-   //   Focus moves between the visible, clickable objects (buttonMode sprites such as C1's BaseButton,
-   //   SimpleButtons, anything listening for clicks), to the nearest one in the pressed direction. The focused
-   //   object gets MOUSE_OVER / ROLL_OVER (its own hover look) and a frame; select sends it MOUSE_DOWN /
-   //   MOUSE_UP / CLICK, as a mouse click would.
+   // codol-classic's English codoingame.gfx MainPause (its theatre-playback pause, FFDec's decompile) with Kernel33's
+   // gamepad focus navigation (the "k33" parts, written for controller_ingame) for controller.c CtlPauseNav /
+   // CtlDeliverSfKeys: key codes 240 up, 241 down, 242 left, 243 right, 244 select; B / Start send Escape.
+   // Focus moves to the nearest visible clickable object in the pressed direction; it gets MOUSE_OVER / ROLL_OVER and
+   // select sends it MOUSE_DOWN / MOUSE_UP / CLICK. The movie is shared by both languages (k33_english).
    import codo.common.AsyncTaskManager;
    import codo.common.BaseMain;
    import codo.common.CFunctionContainerCommon;
    import codo.common.CommManagerPause;
+   import codo.common.EventManager;
    import codo.common.FPSMemCounter;
    import codo.common.PageManagerPause;
    import codo.constants.AsyncTaskNamePause;
+   import codo.constants.BCEventPause;
    import codo.constants.CodoPageViewDBPause;
+   import codo.constants.LocalizationInGame;
    import codo.constants.MenuType;
    import codo.utils.ScaleformUtil;
+   import components.BaseButton;
+   import components.ingamemenu_part.InGameMenuBtn;
+   import flash.display.DisplayObject;
+   import flash.display.DisplayObjectContainer;
+   import flash.display.Shape;
+   import flash.events.Event;
    import flash.events.KeyboardEvent;
    import scaleform.gfx.MouseEventEx;
    import flash.geom.Rectangle;
    import flash.events.MouseEvent;
-   import flash.events.Event;
    import flash.display.Sprite;
    import flash.display.SimpleButton;
    import flash.display.InteractiveObject;
-   import flash.display.DisplayObjectContainer;
-   import flash.display.DisplayObject;
    
-   [SWF(width="1280",height="960",backgroundColor="#999999",frameRate="30")]
+   [SWF(frameRate="30",backgroundColor="#999999",width="1280",height="960")]
    public class MainPause extends BaseMain
    {
       
+      private static var originalCyborgPauseClass:Class;
+      
       private var _fpsMemCounter:FPSMemCounter;
+      
+      private var theatreWasOpen:Boolean = false;
       
       public function MainPause()
       {
          super();
       }
       
+      public static function prepareTheatrePauseViews() : void
+      {
+         if(originalCyborgPauseClass == null)
+         {
+            originalCyborgPauseClass = CodoPageViewDBPause.VIEW_PAUSE_CYBORGS.src;
+         }
+         CodoPageViewDBPause.VIEW_PAUSE_CYBORGS.src = CFunctionContainerCommon.Dvar_GetString("codol_theatre_playback") == "1" ? CodoPageViewDBPause.VIEW_PAUSE.src : originalCyborgPauseClass;
+      }
+      
       override protected function onBeforeAddToStage() : void
       {
+         EventManager.getInstance().addEventListener(BCEventPause.EVT_ON_PAUSE_MENU_CREATED,this.blockTheatreLoadout,false,1000);
          this.pageManager = PageManagerPause.getInstance();
          this.pageManager.pages = CodoPageViewDBPause.PAGES;
          this.menuType = MenuType.PAUSE;
@@ -59,6 +72,7 @@ package
          AsyncTaskManager.getInstance().GetTaskClass = AsyncTaskNamePause.getClass;
          this.addMemCounter();
          this.stage.addEventListener(KeyboardEvent.KEY_DOWN,this.onKeyDownHandle);
+         this.initTheatrePause();
          if(!ScaleformUtil.isScaleform)
          {
             this.commManager.cpp_activate();
@@ -100,7 +114,168 @@ package
             this.addChild(this._fpsMemCounter);
          }
       }
-         private var k33Focus:InteractiveObject = null; // k33
+      
+      private function initTheatrePause() : void
+      {
+         this.addEventListener(Event.ENTER_FRAME,this.theatrePauseFrame);
+         this.stage.addEventListener(KeyboardEvent.KEY_DOWN,this.theatrePauseKey,true,1000);
+      }
+      
+      private function isTheatrePause() : Boolean
+      {
+         return CFunctionContainerCommon.Dvar_GetString("codol_theatre_playback") == "1";
+      }
+      
+      private function blockTheatreLoadout(event:Event) : void
+      {
+         if(this.isTheatrePause())
+         {
+            event.stopImmediatePropagation();
+         }
+      }
+      
+      private function resumeTheatre(event:Event = null) : void
+      {
+         if(!this.isTheatrePause())
+         {
+            return;
+         }
+         if(event != null)
+         {
+            event.stopImmediatePropagation();
+         }
+         CommManagerPause.getInstance().closePauseMenu(true);
+         CFunctionContainerCommon.setdvar("918","0");
+      }
+      
+      private function leaveTheatre(event:Event) : void
+      {
+         if(!this.isTheatrePause())
+         {
+            return;
+         }
+         event.stopImmediatePropagation();
+         CFunctionContainerCommon.setdvar("codol_theatre_request","return");
+      }
+      
+      private function theatrePauseKey(event:KeyboardEvent) : void
+      {
+         if(event.keyCode == 27 && this.isTheatrePause() && CommManagerPause.getInstance().bIsInGameMenuOpen)
+         {
+            this.resumeTheatre(event);
+         }
+      }
+      
+      private function theatrePauseFrame(event:Event) : void
+      {
+         if(!this.isTheatrePause())
+         {
+            return;
+         }
+         var open:Boolean = CommManagerPause.getInstance().bIsInGameMenuOpen;
+         if(open)
+         {
+            this.layoutTheatrePause(PageManagerPause.getInstance()._container);
+         }
+         else if(this.theatreWasOpen)
+         {
+            CFunctionContainerCommon.setdvar("918","0");
+         }
+         this.theatreWasOpen = open;
+      }
+      
+      private function layoutTheatrePause(container:DisplayObjectContainer) : void
+      {
+         var view:Object = container;
+         if("myMiscListBg" in view && view.myMiscListBg != null)
+         {
+            var menu:Object = view.getCurrentMenu();
+            if(menu == null || !menu.theatre)
+            {
+               CFunctionContainerCommon.setdvar("codol_theatre_pause_diag","creating");
+               view.gotoMenu({
+                  "id":"theatre",
+                  "theatre":true,
+                  "parentMenu":null,
+                  "lists":[{
+                     "id":"end",
+                     "label":LocalizationInGame.BackToLobby,
+                     "description":LocalizationInGame.BackToLobbyDesc,
+                     "onMiscMenu":true
+                  }]
+               });
+               CFunctionContainerCommon.setdvar("codol_theatre_pause_diag","created");
+            }
+            if(view.myLoadoutListHeader != null)
+            {
+               view.myLoadoutListHeader.visible = false;
+            }
+            if(view.myLoadoutListBg != null)
+            {
+               view.myLoadoutListBg.visible = false;
+            }
+            if(view.myLoadoutPanelHolder != null)
+            {
+               view.myLoadoutPanelHolder.visible = false;
+            }
+            if(view.myQoSBg != null)
+            {
+               view.myQoSBg.visible = false;
+            }
+            if(view.myQoSBtn != null)
+            {
+               view.myQoSBtn.visible = false;
+            }
+            if(view.myQoSLabelTF != null)
+            {
+               view.myQoSLabelTF.visible = false;
+            }
+            if(view.myBackButton != null)
+            {
+               view.myBackButton.visible = true;
+               view.myBackButton.addEventListener(BaseButton.EVT_CLICK,this.resumeTheatre,false,1000);
+            }
+            var edge:Number = Number(view.myMiscListBg.x);
+            var bottom:Number = Number(view.myMiscListBg.y);
+            var i:int = 0;
+            while(i < container.numChildren)
+            {
+               var child:DisplayObject = container.getChildAt(i);
+               if(child is InGameMenuBtn)
+               {
+                  var button:InGameMenuBtn = child as InGameMenuBtn;
+                  var leave:Boolean = button.x >= edge;
+                  button.visible = leave;
+                  if(leave)
+                  {
+                     button.y = view.myMiscListBg.y;
+                     button.addEventListener(BaseButton.EVT_CLICK,this.leaveTheatre,false,1000);
+                     bottom = button.y + button.height;
+                  }
+               }
+               else if(child is Shape && child.x < edge)
+               {
+                  child.visible = false;
+               }
+               i++;
+            }
+            view.myMiscListBg.height = bottom - view.myMiscListBg.y + 35;
+            CFunctionContainerCommon.setdvar("codol_theatre_pause_diag","ready");
+            return;
+         }
+         var j:int = 0;
+         while(j < container.numChildren)
+         {
+            var nested:DisplayObjectContainer = container.getChildAt(j) as DisplayObjectContainer;
+            if(nested != null)
+            {
+               this.layoutTheatrePause(nested);
+            }
+            j++;
+         }
+      }
+
+      private var k33Focus:InteractiveObject = null; // k33
 
       private var k33Ring:Sprite = null; // k33
 

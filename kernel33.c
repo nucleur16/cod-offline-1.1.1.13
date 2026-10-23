@@ -580,21 +580,22 @@ static BOOL PatchDirEnabled(void)
     return on;
 }
 
-/* English (launch option k33_english). The English translation is a set of patch zones, every one named
+/* English (launch option k33_english). Both languages use the same UI movies (voice_ui_mp, controller_ingame: every
+ * text in them is a localize key); the language is which string zones load. English is the patch zones named
  * codol_english* (build_zones.py: codol_english = localized strings, codol_english_font = the Latin glyphs of
- * fonts_ingame.gfx, codol_english_ui / codol_english_ui_extra = the front-end, login, HUD and pause-menu movies,
- * codol_english_zombies_base = zombies strings, codol_english_usermaps = the usermaps' names). They load ahead of
- * code_pre_gfx, so their assets win over the stock Chinese ones and over the *_ui_mp patch zones'
- * (codol_english_ui's codo.gfx and codol_english_ui_extra's codoingame.gfx carry voice_ui_mp's and
- * controller_ingame's classes too). The language is decided once, at startup, from the command line:
- *     +set k33_english 1    the English zones load (default, also without the option)
- *     +set k33_english 0    they are skipped: the original Chinese game, every other patch zone unchanged
+ * fonts_ingame.gfx, codol_english_ui / codol_english_ui_extra = the UI movies' K33UI_* keys, codol_english_zombies_base
+ * = zombies strings, codol_english_usermaps = the usermaps' names); they load ahead of code_pre_gfx, so their strings
+ * win over the stock Chinese ones. Chinese is C1's own strings plus the zones named codol_chinese* (the UI movies'
+ * K33UI_* keys in Chinese). Only one set loads: C1 holds at most 12000 localize assets, and a name loaded by both sets
+ * would take two. The language is decided once, at startup, from the command line:
+ *     +set k33_english 1    codol_english* load, codol_chinese* are skipped (default, also without the option)
+ *     +set k33_english 0    codol_chinese* load, codol_english* are skipped; every other patch zone loads either way
  * C1 execs config_mp.cfg before any of this and applies no +set to a dvar it does not know, so the option is read
  * here and nothing stores it: a config write can never change it. The last setting on the line wins. Nothing else
  * in the DLL depends on the language (GBK text input, fonts, voice, controller work the same in both). The pure
  * check lists client_shipRetail\<language>\ and main\ only, never patch\, so both states pass it. */
 static BOOL g_english = TRUE;
-static int g_englishZones, g_englishSkipped;
+static int g_englishZones, g_englishSkipped, g_chineseZones;
 
 static BOOL CmdLineFlag(const char *name, BOOL def)
 {
@@ -615,6 +616,11 @@ static BOOL CmdLineFlag(const char *name, BOOL def)
 static BOOL EnglishZone(const char *name)
 {
     return _strnicmp(name, "codol_english", 13) == 0;
+}
+
+static BOOL ChineseZone(const char *name)
+{
+    return _strnicmp(name, "codol_chinese", 13) == 0;
 }
 
 /* True when client_shipRetail\<language folder>\<file> exists, i.e. the name is a stock zone. A language folder is one
@@ -723,6 +729,10 @@ static void LoadPatchDir(void)
             g_englishSkipped++;
             continue;
         }
+        if (ChineseZone(z->name) && g_english) {
+            Log("patch folder: skipped %s: English is on (k33_english 1)", file);
+            continue;
+        }
         BOOL dup = FALSE;
         for (int j = 0; j < g_patchZoneCount; j++) dup |= lstrcmpiA(g_patchZones[j].name, z->name) == 0;
         if (dup || StockZoneExists(dir, file)) {
@@ -748,6 +758,7 @@ static void LoadPatchDir(void)
         }
         g_patchZoneCount++;
         g_englishZones += EnglishZone(z->name);
+        g_chineseZones += ChineseZone(z->name);
         Log("patch folder: %s%s (%lu bytes) queued as zone \"%s\"", sub, file, (unsigned long)size, z->name);
     }
 }
@@ -755,8 +766,8 @@ static void LoadPatchDir(void)
 static void LogEnglish(void)
 {
     if (!g_english)
-        Log("english: off (k33_english 0): %d codol_english* zone(s) skipped, the game is the original Chinese",
-            g_englishSkipped);
+        Log("english: off (k33_english 0): %d codol_english* zone(s) skipped, %d codol_chinese* zone(s) queued",
+            g_englishSkipped, g_chineseZones);
     else if (g_englishZones)
         Log("english: on (k33_english 1): %d codol_english* zone(s) queued", g_englishZones);
     else
