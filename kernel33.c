@@ -30,6 +30,8 @@
 #include <winsock2.h> /* before windows.h: discord.c's getinfo socket */
 #include <windows.h>
 #include <imm.h>
+#include <shellapi.h>
+#include "patch_locale_policy.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -306,31 +308,6 @@ static void PatchAltTab(void)
     Log("alt+tab: keyboard hook no longer eats Alt+Tab");
 }
 
-/* Multiple instances, parity-log branch: lets a second client run on the same PC to watch
- * another real player's movement. A static initializer (0xB32060) creates the mutex
- * "Global\{5BD75B76-601A-4...}" and keeps GetLastError() in 0x7F907D8. WinMain then refuses
- * to start a second copy:
- *     0x630C3A  cmp dword [0x7F907D8], 0B7h (ERROR_ALREADY_EXISTS) ; ... ; jne <start>
- * and otherwise shows "<game> is already running." and returns. The jne becomes jmp. Give each
- * copy its own +set dw_username so the lobby sees two players. */
-#define INSTANCE_CHECK_VA 0x00630C3Au
-#define INSTANCE_JNE_OFFSET 0x17
-
-static void PatchMultiInstance(void)
-{
-    static const BYTE kCheck[] = { 0x81, 0x3D, 0xD8, 0x07, 0xF9, 0x07, 0xB7, 0x00, 0x00, 0x00,
-                                   0x8B, 0x45, 0x08, 0x53, 0x56, 0x89, 0x44, 0x24, 0x10,
-                                   0x8B, 0x45, 0x10, 0x57, 0x75, 0x45 };
-    BYTE *check = (BYTE *)(DWORD_PTR)INSTANCE_CHECK_VA;
-    if (!Readable(check, sizeof(kCheck)) || memcmp(check, kCheck, sizeof(kCheck)) != 0) {
-        Log("multi-instance: bytes at 0x%08X do not match, one copy at a time", INSTANCE_CHECK_VA);
-        return;
-    }
-    BYTE jmp = 0xEB;
-    WriteCode(check + INSTANCE_JNE_OFFSET, &jmp, 1);
-    Log("multi-instance: \"already running\" check skipped");
-}
-
 /* Raw mouse input. IN_MouseMove (0x62D990) reads the Windows cursor every frame: GetCursorPos,
  * delta against the last position, recenter. That delta has the Windows pointer curve
  * ("Enhance pointer precision") baked in, and a flick that reaches the window edge before the
@@ -562,7 +539,7 @@ static BOOL PatchUnsignedZones(void)
 #define UI_LOAD_CALL_VA        0x005985CDu
 #define POSTGFX_LOAD_CALL_VA   0x005984D2u
 #define DB_LOAD_XASSETS_VA     0x08465768u
-#define PATCHDIR_MAX_FILES     16
+#define PATCHDIR_MAX_FILES     32
 
 typedef struct { const char *name; int allocFlags; int freeFlags; } XZoneInfo;
 typedef void (__cdecl *LoadXAssetsFn)(XZoneInfo *info, unsigned count, int sync);
@@ -589,7 +566,37 @@ static BOOL PatchDirEnabled(void)
     return on;
 }
 
-/* True when client_shipRetail\<any folder but patch>\<file> exists, i.e. the name is a stock zone. */
+/* English (launch option k33_english). Both languages use the same UI movies (voice_ui_mp, controller_ingame: every
+ * text in them is a localize key); the language is which string zones load. English is the patch zones named
+ * codol_english* (build_zones.py: codol_english = localized strings, codol_english_font = the Latin glyphs of
+ * fonts_ingame.gfx, codol_english_ui / codol_english_ui_extra = the UI movies' K33UI_* keys, codol_english_zombies_base
+ * = zombies strings, codol_english_usermaps = the usermaps' names); they load ahead of code_pre_gfx, so their strings
+ * win over the stock Chinese ones. Chinese is C1's own strings plus the zones named codol_chinese* (the UI movies'
+ * K33UI_* keys in Chinese). Only one set loads: C1 holds at most 12000 localize assets, and a name loaded by both sets
+ * would take two. The language is decided once, at startup, from the command line:
+ *     +set k33_english 1    codol_english* load, codol_chinese* are skipped (default, also without the option)
+ *     +set k33_english 0    codol_chinese* load, codol_english* are skipped; every other patch zone loads either way
+ * C1 execs config_mp.cfg before any of this and applies no +set to a dvar it does not know, so the option is read
+ * here and nothing stores it: a config write can never change it. The last setting on the line wins. Nothing else
+ * in the DLL depends on the language (GBK text input, fonts, voice, controller work the same in both). The pure
+ * check lists client_shipRetail\<language>\ and main\ only, never patch\, so both states pass it. */
+static BOOL g_english = TRUE;
+static int g_englishZones, g_englishSkipped, g_chineseZones;
+
+static BOOL EnglishZone(const char *name)
+{
+    return _strnicmp(name, "codol_english", 13) == 0;
+}
+
+static BOOL ChineseZone(const char *name)
+{
+    return _strnicmp(name, "codol_chinese", 13) == 0;
+}
+
+/* True when client_shipRetail\<language folder>\<file> exists, i.e. the name is a stock zone. A language folder is one
+ * that holds code_pre_gfx_mp.ff (chinese\): other folders there are no zone folder C1 loads from, e.g. a
+ * client_shipRetail\temp\ left by the English zone tools with old copies of codol_english*.ff, which made the patch
+ * folder skip the real ones as "stock". */
 static BOOL StockZoneExists(const char *dir, const char *file)
 {
     char pattern[MAX_PATH];
@@ -604,6 +611,9 @@ static BOOL StockZoneExists(const char *dir, const char *file)
             lstrcmpiA(fd.cFileName, "patch") == 0)
             continue;
         char path[MAX_PATH];
+        _snprintf(path, sizeof(path), "%s%s\\code_pre_gfx_mp.ff", dir, fd.cFileName);
+        path[sizeof(path) - 1] = 0;
+        if (GetFileAttributesA(path) == INVALID_FILE_ATTRIBUTES) continue;
         _snprintf(path, sizeof(path), "%s%s\\%s", dir, fd.cFileName, file);
         path[sizeof(path) - 1] = 0;
         if (GetFileAttributesA(path) != INVALID_FILE_ATTRIBUTES) found = TRUE;
@@ -629,6 +639,11 @@ static int PatchZoneStage(const char *name)
 
 static void LoadPatchDir(void)
 {
+    int localeArgc=0;
+    LPWSTR *localeArgv=CommandLineToArgvW(GetCommandLineW(),&localeArgc);
+    enum CodolPatchLanguage locale=localeArgv ? CodolPatchLanguageFromArgv(localeArgc,(const wchar_t *const*)localeArgv) : CODOL_PATCH_NATIVE;
+    if(localeArgv)LocalFree(localeArgv);
+    g_english = locale == CODOL_PATCH_EN;
     const char *sub = "patch\\";
     char dir[MAX_PATH], pattern[MAX_PATH];
     DWORD n = GetModuleFileNameA(NULL, dir, MAX_PATH);
@@ -680,6 +695,10 @@ static void LoadPatchDir(void)
         if (len - 3 >= sizeof(z->name)) { Log("patch folder: skipped %s: name too long", file); continue; }
         memcpy(z->name, file, len - 3);
         z->name[len - 3] = 0;
+        if (!CodolPatchZoneLocaleAllowed(z->name,locale)) {
+            if (EnglishZone(z->name)) g_englishSkipped++;
+            continue;
+        }
         if (lstrcmpiA(z->name, "ffotd_client") == 0) {
             Log("patch folder: skipped %s: the name belongs to the lobby's FFOTD", file);
             continue;
@@ -708,8 +727,21 @@ static void LoadPatchDir(void)
             continue;
         }
         g_patchZoneCount++;
+        g_englishZones += EnglishZone(z->name);
+        g_chineseZones += ChineseZone(z->name);
         Log("patch folder: %s%s (%lu bytes) queued as zone \"%s\"", sub, file, (unsigned long)size, z->name);
     }
+}
+
+static void LogEnglish(void)
+{
+    if (!g_english)
+        Log("english: off (k33_english 0): %d codol_english* zone(s) skipped, %d codol_chinese* zone(s) queued",
+            g_englishSkipped, g_chineseZones);
+    else if (g_englishZones)
+        Log("english: on (k33_english 1): %d codol_english* zone(s) queued", g_englishZones);
+    else
+        Log("english: on (k33_english 1), but no codol_english*.ff zone is in the patch folder: the game stays Chinese");
 }
 
 static int PatchZonesIn(int stage)
@@ -849,6 +881,7 @@ static void PatchPatchDir(void)
         return;
     }
     LoadPatchDir();
+    LogEnglish();
     if (!g_patchZoneCount) return;
     rel = (LONG)((DWORD_PTR)PatchDirOpenHook - (PATCHDIR_OPEN_JNE_VA + 6));
     WriteCode(jne + 2, &rel, 4);
@@ -1003,6 +1036,42 @@ static void PatchLoopFxCatchUp(void)
     Log("loop fx: a joining client replays at most %d ms of each loop effect", LOOPFX_REPLAY_MS);
 }
 
+/* Localize asset pool. C1 holds localize entries (asset type 27) in a static pool of 12000: g_poolSize[27] = 12000 @
+ * 0xCD4DD4, DB_XAssetPool[27] = 0x01FF0358 @ 0xCD5094, a {freeHead, entries[12000]} block of 8-byte entries. C1's
+ * own strings (localized_code_post_gfx_mp 7602 names, patch_localized_code_post_gfx_mp 693, the gametype's and the
+ * map's), codol_english's (9705, 1966 of them names C1 does not have) and the UI keys came to over 12000 on a zombies
+ * map in English: "Exceeded limit of 12000 'localize' assets" (0x4CB1DA), a fatal error. The pools
+ * are set up by DB_InitPoolHeaders (0x4CB240: for each type, init[type](DB_XAssetPool[type], g_poolSize[type]); the
+ * localize init 0x4CECC0 threads the free list over size 8-byte entries) at DB_Init, after this runs, and every
+ * other user (DB_AllocXAssetHeader 0x4CB180, the enumerators) reads both tables, so pointing them at a larger
+ * block is all it takes. LOCALIZE_POOL entries: twice the stock size. */
+#define LOCALIZE_TYPE        27
+#define POOL_SIZE_TABLE_VA   0x00CD4D68u
+#define POOL_TABLE_VA        0x00CD5028u
+#define LOCALIZE_STOCK_POOL  0x01FF0358u
+#define LOCALIZE_POOL        24000
+
+static void PatchLocalizePool(void)
+{
+    int *size = (int *)(DWORD_PTR)(POOL_SIZE_TABLE_VA + 4 * LOCALIZE_TYPE);
+    DWORD *pool = (DWORD *)(DWORD_PTR)(POOL_TABLE_VA + 4 * LOCALIZE_TYPE);
+    if (!Readable(size, 4) || !Readable(pool, 4) || *size != 12000 || *pool != LOCALIZE_STOCK_POOL) {
+        Log("localize pool: tables at 0x%08X / 0x%08X do not match, the pool stays at 12000", (unsigned)(DWORD_PTR)size,
+            (unsigned)(DWORD_PTR)pool);
+        return;
+    }
+    void *block = VirtualAlloc(NULL, 4 + (SIZE_T)LOCALIZE_POOL * 8, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    if (!block) {
+        Log("localize pool: VirtualAlloc failed (%lu), the pool stays at 12000", GetLastError());
+        return;
+    }
+    DWORD newPool = (DWORD)(DWORD_PTR)block;
+    int newSize = LOCALIZE_POOL;
+    WriteCode(pool, &newPool, 4);
+    WriteCode(size, &newSize, 4);
+    Log("localize pool: %d entries at %p (C1's: 12000)", newSize, block);
+}
+
 static void PatchGpuRating(void)
 {
     /* push desc ; push 1 (archive) ; push 20000 ; push ebx ; push ebx ; push "2658" */
@@ -1139,6 +1208,62 @@ static void PatchFrameCap(void)
     Log("frame cap: the last ms of the wait yields instead of Sleep(1)");
 }
 
+/* Field of view 65..120. C1 keeps the plaintext name cg_fov (the .menu / GSC / Scaleform name):
+ *   CG_RegisterDvars @ 0x44C50A: Dvar_RegisterFloat("cg_fov", 65, 65, 80, 0x41 ARCHIVE|SAVED, "")
+ *     (the max is "fld dword [0xC323B0]" = 80.0f @ 0x44C4DC; dvar_t* at 0x16DA2BC)
+ *   then "582" = cg_fovScale (1, 0.2..2, CHEAT) and "583" = cg_fovMin (1, 1..160, CHEAT).
+ * A value above 80 (menu, console, config_mp.cfg) is clamped to 80. The registration call goes through
+ * FovRegisterHook, which raises the maximum to FOV_MAX; 0.2 and 1 stay as they are.
+ * The Scaleform Options > Graphics slider and the pause menu's FOV slider take their range from the
+ * native GetFOVRange (vtable 0xC636E4, body 0x5B0D80), which returns the constants {min 65, max 80,
+ * val 75}: its "fld qword [0xC84BE0]" (80.0, shared with other code) @ 0x5B0E27 loads FOV_MAX instead.
+ * CG_CalcFov (0x471707..) has no other clamp: fov = cg_fov, lerped to the weapon's ADS fov by the ADS
+ * fraction, times cg_fovScale, floored at cg_fovMin; the view model is drawn with that same fov, as
+ * IW4's is (so it sits further away at a wide fov). The server leaves cg_fov alone (codol_rawfiles
+ * _playerlogic.gsc no longer forces 65). */
+#define FOV_MAX                 120
+#define FOV_REG_CALL_VA         0x0044C50Au
+#define DVAR_REGISTER_FLOAT_VA  0x006244D0u
+#define FOV_RANGE_MAX_LOAD_VA   0x005B0E27u
+
+static const double g_fovRangeMax = FOV_MAX;
+
+typedef void *(__cdecl *DvarRegisterFloatFn)(const char *name, float def, float min, float max, unsigned flags,
+                                             const char *desc);
+
+static void *__cdecl FovRegisterHook(const char *name, float def, float min, float max, unsigned flags,
+                                     const char *desc)
+{
+    if (name && strcmp(name, "cg_fov") == 0 && max < (float)FOV_MAX)
+        max = (float)FOV_MAX;
+    return ((DvarRegisterFloatFn)(DWORD_PTR)DVAR_REGISTER_FLOAT_VA)(name, def, min, max, flags, desc);
+}
+
+static void PatchFov(void)
+{
+    /* push "cg_fov" ; call Dvar_RegisterFloat */
+    static const BYTE kPushName[5] = { 0x68, 0x94, 0x2B, 0xC4, 0x00 };
+    const BYTE *push = (const BYTE *)(DWORD_PTR)(FOV_REG_CALL_VA - 5);
+    if (!Readable(push, 5) || memcmp(push, kPushName, 5) != 0 || !CallsTarget(FOV_REG_CALL_VA, DVAR_REGISTER_FLOAT_VA)) {
+        Log("fov: call at 0x%08X does not match, cg_fov stays 65..80", FOV_REG_CALL_VA);
+    } else {
+        RedirectCall(FOV_REG_CALL_VA, (void *)FovRegisterHook);
+        Log("fov: cg_fov domain 65..%d", FOV_MAX);
+    }
+    /* fld qword [0xC84BE0] (80.0) */
+    static const BYTE kFld[6] = { 0xDD, 0x05, 0xE0, 0x4B, 0xC8, 0x00 };
+    BYTE *fld = (BYTE *)(DWORD_PTR)FOV_RANGE_MAX_LOAD_VA;
+    if (!Readable(fld, sizeof(kFld)) || memcmp(fld, kFld, sizeof(kFld)) != 0) {
+        Log("fov: bytes at 0x%08X do not match, the menu FOV sliders stay 65..80", FOV_RANGE_MAX_LOAD_VA);
+        return;
+    }
+    BYTE code[6] = { 0xDD, 0x05, 0, 0, 0, 0 };
+    DWORD addr = (DWORD)(DWORD_PTR)&g_fovRangeMax;
+    memcpy(code + 2, &addr, 4);
+    WriteCode(fld, code, sizeof(code));
+    Log("fov: GetFOVRange max %d (Options and pause menu sliders)", FOV_MAX);
+}
+
 /* Chinese text input on any system locale. The game's text is GBK: it converts with code page
  * 936 everywhere it converts at all (0x580679, 0x5BD0C6, 0x6A5B5D, 0x70384A, ...). Text typed
  * into the ANSI main window does not reach it as GBK, though: Windows converts it with the
@@ -1244,6 +1369,9 @@ static void PatchGbkInput(void)
         Log("gbk input: bytes at 0x%08X do not match, paste uses the ANSI code page", CLIPBOARD_CALL_VA);
 }
 
+#include "local_multi.c"
+#include "managed_quick.c"
+
 /* Snapshot-parity logger, parity-log branch only: see parity.c. */
 #include "parity.c"
 
@@ -1253,6 +1381,10 @@ static void PatchGbkInput(void)
 
 /* C1 engine helpers shared by the features below: see c1game.c. */
 #include "c1game.c"
+#include "infect_scoreboard.c"
+
+/* Fullscreen Windowed (codol_borderless): see borderless.c. */
+#include "borderless.c"
 
 /* Realtime vision editor (Dear ImGui, vision.c + vision_ui.cpp): dev build only, -DK33_VISION (build-dev.sh links
  * the C++ objects). It rides on the console's D3D and WndProc hooks, so it needs console.c. */
@@ -1275,13 +1407,16 @@ static void PatchGbkInput(void)
 
 /* XInput gamepad (feat/controller): see controller.c and CONTROLLER.md. */
 #include "controller.c"
+#include "padsnap.c"     /* the pad's menu cursor snaps to Scaleform controls (after controller.c) */
 
 /* Discord Rich Presence (CoDOLPresence.exe moved into the client): see discord.c. */
 #include "discord.c"
 
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
+#include "launcher_update_bridge.c"
 static void __cdecl TakeOver(void)
 {
+    if (TryLauncherUpgrade()) ExitProcess(0);
     LoadUnpackedImage();
     MatchC1SectionFlags();
     FillImports();
@@ -1290,13 +1425,18 @@ static void __cdecl TakeOver(void)
     PatchPlainConfig();
     PatchGpuRating();
     PatchFrameCap();
+    PatchFov();
+    PatchBorderless();
     PatchAltTab();
     PatchMultiInstance();
     PatchRawMouse();
     PatchGbkInput();
     PatchScoresOpen();
+    PatchInfectedScoreboard();
+    PatchManagedQuickJoin();
     PatchLoopFxCatchUp();
     PatchPatchDir();
+    PatchLocalizePool();
     PatchUserMaps();
     InstallSoundDiag();
     InstallParityLogger();

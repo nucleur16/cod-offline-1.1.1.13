@@ -10,7 +10,7 @@
 >blocks,0x5eb330,0x6bd24,0x0,0x0,0x3b4155,0x0,0x0,0x21dec0,0x503e8
 >xassetlist,0xffffffff,0xffffffff
 >strings,script_strings.json
->stock,patch_common_gametype_zm.ff.pre-pap,common_gametype_zm,zm_prototype_sh
+>stock,patch_common_gametype_zm,common_gametype_zm,zm_prototype_sh
 techset,",mc_l_sm_r0c0n0s0",file=techset/0000_mc_l_sm_r0c0n0s0.bin
 image,",~mtl_t5_weapon_m1911_mp_s-rgb~5d4c32d3",file=image/0001__mtl_t5_weapon_m1911_mp_s-rgb_5d4c32d3.bin
 image,",mtl_t5_weapon_m1911_n",file=image/0002_mtl_t5_weapon_m1911_n.bin

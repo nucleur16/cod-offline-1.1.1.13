@@ -1,2 +1,34 @@
 # store every file byte-for-byte (kernel33.c is CRLF, build.sh must stay LF)
 * -text
+
+# Native upstream files intentionally retain CRLF bytes.
+*.c whitespace=cr-at-eol
+*.h whitespace=cr-at-eol
+
+# Preserve byte-exact FFDec exports paired with the tested DoABC cache.
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/LobbyController.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/MainMenuAARController.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/MainMenuController.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/MatchController.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/PageNavigationController.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/PartyController.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/objects/ScoreboardObj.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/CyborgInRoomView.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/MatchMPCTMenuView.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/MatchMPCTPlayListView.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/MatchMPDetailView.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/MatchMiniRoomCreatorCyborgsView.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/MatchMiniRoomCreatorView.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/MatchRoomListView.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/MatchSelectModeHomeView.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/RankedMatchInProgressView.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/RankedMatchReadyView.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/SummaryView.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/matchmpctroomcreator_sub/MatchMPCTRoomCreatorView_mpcreator.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/option_sub/OptionView_audio.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/option_sub/OptionView_video.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/components/CodoButton.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/components/LevelChooser.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/components/combobox_part/ComboBoxBtn.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/components/list_part/ListItemRendererBase8.as whitespace=-blank-at-eol,-blank-at-eof
+zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/components/room_part/RoomInfo.as whitespace=-blank-at-eol,-blank-at-eof

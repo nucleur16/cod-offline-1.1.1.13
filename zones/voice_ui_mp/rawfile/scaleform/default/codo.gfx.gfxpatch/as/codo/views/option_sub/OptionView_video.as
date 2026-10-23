@@ -1,5 +1,7 @@
 package codo.views.option_sub
 {
+   // codol-classic's English movie's display-mode fix is in (Brightness follows fullscreen; a display-mode change counts
+   // as a change). Every string shown is a localize key (K33UI_*): English in codol_english_ui, Chinese in voice_ui_mp.
    // C1's codo.views.option_sub.OptionView_video (Options > Graphics) as decompiled from patch_ui_mp's
    // codo.gfx, with a frame-rate cap row for Kernel33 (kernel33.c PatchFrameCap). build_voice_ui.py
    // compiles this with JPEXS FFDec and splices the class's DoABC tag back into codo.gfx. Changes from
@@ -160,7 +162,7 @@ package codo.views.option_sub
          this.myTFDynamicLight.text = LocalizationSetting.DYNAMIC_LIGHT_LIMIT;
          this.myTFFOV.text = LocalizationSetting.VIDEO_FOV;
          this.myPBFOV.step = 1;
-         this.myTFAspectRatio.text = "Max FPS";
+         this.myTFAspectRatio.text = "@K33UI_MAX_FPS";
          this.myTFAntiAliasing.y = this.myTFScreenRefreshRate.y;
          this.myCBAntiAliasing.y = this.myCBScreenRefreshRate.y;
          this.myTFScreenRefreshRate.y = this.myTFAspectRatio.y;
@@ -241,8 +243,8 @@ package codo.views.option_sub
          this._preVideoObj = new VideoObj(settings);
          this.myCBDisplayMode.dataProvider = this._preVideoObj.screenModes;
          this.myCBDisplayMode.selectedDataIndex = this._preVideoObj.idxDisplayMode;
-         this.myPBBrightness.visible = this._preVideoObj.idxDisplayMode != 0;
-         this.myTFBrightness.visible = this._preVideoObj.idxDisplayMode != 0;
+         this.myPBBrightness.visible = this._preVideoObj.ui_r_fullscreen;
+         this.myTFBrightness.visible = this._preVideoObj.ui_r_fullscreen;
          this.myCBResolution.dataProvider = this._preVideoObj.resolutions;
          this.myCBResolution.selectedDataIndex = this._preVideoObj.idxResolution;
          var gammaRange:Object = this.getSyncDP(SyncDataID.GAMMA_RANGE);
@@ -313,6 +315,7 @@ package codo.views.option_sub
          if(this._curVideoObj != null)
          {
             this._curVideoObj.ui_r_fullscreen = this.myCBDisplayMode.selectedValue.id;
+            this._curVideoObj.idxDisplayMode = this.myCBDisplayMode.selectedDataIndex;
          }
       }
       
@@ -379,7 +382,7 @@ package codo.views.option_sub
       
       private function k33FpsLabel(fps:int) : String
       {
-         return fps <= 0 ? "Unlimited" : String(fps);
+         return fps <= 0 ? "@K33UI_FPS_UNLIMITED" : String(fps);
       }
       
       private function k33FillFps() : void
@@ -483,7 +486,7 @@ package codo.views.option_sub
       
       private function isVideoChanged() : Boolean
       {
-         return this._preVideoObj.ui_r_fullscreen != this._curVideoObj.ui_r_fullscreen || this._preVideoObj.ui_r_customMode != this._curVideoObj.ui_r_customMode || this._preVideoObj.ui_r_aspectRatio != this._curVideoObj.ui_r_aspectRatio || this._preVideoObj.ui_r_aaSamples != this._curVideoObj.ui_r_aaSamples || this._preVideoObj.ui_r_displayRefresh != this._curVideoObj.ui_r_displayRefresh || this._preVideoObj.ui_r_vsync != this._curVideoObj.ui_r_vsync || this._preVideoObj.ui_sm_enable != this._curVideoObj.ui_sm_enable || this._preVideoObj.ui_r_specular != this._curVideoObj.ui_r_specular || this._preVideoObj.ui_r_dof_enable != this._curVideoObj.ui_r_dof_enable || this._preVideoObj.ui_r_zFeather != this._curVideoObj.ui_r_zFeather || this._preVideoObj.ui_ragdoll_enable != this._curVideoObj.ui_ragdoll_enable || this._preVideoObj.ui_fx_marks != this._curVideoObj.ui_fx_marks || this._preVideoObj.ui_r_picmip_manual != this._curVideoObj.ui_r_picmip_manual || this._preVideoObj.ui_r_picmip != this._curVideoObj
+         return this._preVideoObj.idxDisplayMode != this._curVideoObj.idxDisplayMode || this._preVideoObj.ui_r_fullscreen != this._curVideoObj.ui_r_fullscreen || this._preVideoObj.ui_r_customMode != this._curVideoObj.ui_r_customMode || this._preVideoObj.ui_r_aspectRatio != this._curVideoObj.ui_r_aspectRatio || this._preVideoObj.ui_r_aaSamples != this._curVideoObj.ui_r_aaSamples || this._preVideoObj.ui_r_displayRefresh != this._curVideoObj.ui_r_displayRefresh || this._preVideoObj.ui_r_vsync != this._curVideoObj.ui_r_vsync || this._preVideoObj.ui_sm_enable != this._curVideoObj.ui_sm_enable || this._preVideoObj.ui_r_specular != this._curVideoObj.ui_r_specular || this._preVideoObj.ui_r_dof_enable != this._curVideoObj.ui_r_dof_enable || this._preVideoObj.ui_r_zFeather != this._curVideoObj.ui_r_zFeather || this._preVideoObj.ui_ragdoll_enable != this._curVideoObj.ui_ragdoll_enable || this._preVideoObj.ui_fx_marks != this._curVideoObj.ui_fx_marks || this._preVideoObj.ui_r_picmip_manual != this._curVideoObj.ui_r_picmip_manual || this._preVideoObj.ui_r_picmip != this._curVideoObj
          .ui_r_picmip || this._preVideoObj.ui_r_picmip_bump != this._curVideoObj.ui_r_picmip_bump || this._preVideoObj.ui_r_picmip_spec != this._curVideoObj.ui_r_picmip_spec || this._preVideoObj.ui_r_ssao != this._curVideoObj.ui_r_ssao || this._preVideoObj.ui_r_dlightlimit != this._curVideoObj.ui_r_dlightlimit || this._preVideoObj.ui_r_glow_allowed != this._curVideoObj.ui_r_glow_allowed || this._preVideoObj.ui_r_distortion != this._curVideoObj.ui_r_distortion;
       }
       
@@ -523,6 +526,7 @@ package codo.views.option_sub
       private function onVideoChangeConfirmed(cEvt:ParaEvent) : void
       {
          this._preVideoObj.ui_r_fullscreen = this._curVideoObj.ui_r_fullscreen;
+         this._preVideoObj.idxDisplayMode = this._curVideoObj.idxDisplayMode;
          this._preVideoObj.ui_r_customMode = this._curVideoObj.ui_r_customMode;
          this._preVideoObj.ui_r_aspectRatio = this._curVideoObj.ui_r_aspectRatio;
          this._preVideoObj.ui_r_aaSamples = this._curVideoObj.ui_r_aaSamples;

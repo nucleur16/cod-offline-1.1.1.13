@@ -7,6 +7,7 @@
 # for the gamepad backend. It is fetched into third_party/ (not committed) and checked against its SHA-256.
 set -e
 cd "$(dirname "$0")"
+. ./build-profile.sh
 BIN=/c/msys64/mingw32/bin
 SDL_VER=2.32.10
 SDL_SHA256=83a5d74012311edc3c0d40ea6faecbe57ad692aa033fa5dc273cc937e3938ff2
@@ -22,8 +23,8 @@ if [ ! -f "$SDL_DIR/lib/libSDL2.a" ]; then
     rm -f "$TGZ"
 fi
 "$BIN/windres.exe" -O coff -i kernel33.rc -o kernel33_res.o
-"$BIN/gcc.exe" -O2 -Wall -shared -s -static -static-libgcc -I"$SDL_DIR/include" -o Kernel33_controller.dll \
+"$BIN/gcc.exe" "$@" -O2 -Wall -shared -s -static -static-libgcc -I"$SDL_DIR/include" -o Kernel33_controller.dll \
     kernel33.c kernel33_res.o kernel33.def \
     -L"$SDL_DIR/lib" -lSDL2 -lsetupapi -lcfgmgr32 -lversion -loleaut32 -luuid \
-    -lopus -lz -limm32 -lgdi32 -lshlwapi -lole32 -lwinmm -lws2_32 -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat
+    -lopus -lz -limm32 -lgdi32 -lshlwapi -lole32 -lwinmm -lws2_32 -ladvapi32 -lshell32 -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat
 echo "built Kernel33_controller.dll (SDL2 $SDL_VER static; not copied anywhere)"

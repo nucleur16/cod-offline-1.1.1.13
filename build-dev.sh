@@ -18,6 +18,10 @@
 # build.sh and the -DK33_NO_CONSOLE variant leave the editor out.
 set -e
 cd "$(dirname "$0")"
+# build-profile.sh (CODOL_LOCAL_TESTING, the launcher pin): the dev build defaults to the local-testing profile, whose
+# second client still needs +set codol_local_test_multi 1 and a loopback dwauth.ini (local_multi.c).
+K33_LOCAL_TESTING=${K33_LOCAL_TESTING:-1}
+. ./build-profile.sh
 BIN=/c/msys64/mingw32/bin
 SDL_VER=2.32.10
 SDL_SHA256=83a5d74012311edc3c0d40ea6faecbe57ad692aa033fa5dc273cc937e3938ff2
@@ -36,7 +40,7 @@ fi
 "$BIN/windres.exe" -O coff -i kernel33.rc -o kernel33_res.o
 CFLAGS="-O2 -Wall -Wextra -Wno-unused-parameter -Wno-cast-function-type -Wno-missing-field-initializers -shared -s -static -static-libgcc -I$SDL_DIR/include"
 LIBS="-L$SDL_DIR/lib -lSDL2 -lsetupapi -lcfgmgr32 -lversion -loleaut32 -luuid \
--lopus -lz -limm32 -lgdi32 -lshlwapi -lole32 -lwinmm -lws2_32 -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat"
+-lopus -lz -limm32 -lgdi32 -lshlwapi -lole32 -lwinmm -lws2_32 -ladvapi32 -lshell32 -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat"
 VOBJ=obj_vision
 VSRC="imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp imgui/imgui_impl_dx9.cpp \
 imgui/imgui_impl_win32.cpp vision_ui.cpp"
@@ -54,8 +58,8 @@ for src in $VSRC; do
     fi
     VOBJS="$VOBJS $o"
 done
-"$BIN/gcc.exe" $CFLAGS -DK33_VISION -o Kernel33_dev.dll kernel33.c kernel33_res.o kernel33.def $VOBJS \
+"$BIN/gcc.exe" "$@" $CFLAGS -DK33_VISION -o Kernel33_dev.dll kernel33.c kernel33_res.o kernel33.def $VOBJS \
     -static-libstdc++ -lstdc++ $LIBS
-"$BIN/gcc.exe" $CFLAGS -DK33_NO_CONSOLE -o Kernel33_noconsole.dll kernel33.c kernel33_res.o kernel33.def $LIBS \
+"$BIN/gcc.exe" "$@" $CFLAGS -DK33_NO_CONSOLE -o Kernel33_noconsole.dll kernel33.c kernel33_res.o kernel33.def $LIBS \
     || { echo "FAILED: the build without console.c (-DK33_NO_CONSOLE) does not link"; exit 1; }
 echo "built Kernel33_dev.dll and Kernel33_noconsole.dll (SDL2 $SDL_VER static; not installed)"

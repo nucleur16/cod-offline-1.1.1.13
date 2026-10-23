@@ -1212,6 +1212,7 @@ __attribute__((used)) void __cdecl VoiceMainTick(void)
 {
     static LONG ticks;
     if (++ticks == 1) Log("voice: first main-thread tick");
+    BorderlessTick();
     if (!g_voiceDvarsDone) {
         if (!C1DvarsReady()) return;
         VoiceRegisterDvars();

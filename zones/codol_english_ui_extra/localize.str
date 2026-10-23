@@ -1,0 +1,32 @@
+# localize entries in zone order: NAME<TAB>value (\n \r \t \\ escaped); values are gbk in the zone
+K33UI_HUD_20	Tag
+K33UI_HUD_66	Deaths
+K33UI_HUD_67	Revives
+K33UI_HUD_68	1-Shot
+K33UI_HUD_69	Kills
+K33UI_HUD_70	Score
+K33UI_HUD_71	Player Name
+K33UI_HUD_171	Tag
+K33UI_HUD_215	Circuit draft\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9
+K33UI_HUD_216	Circuit Diagram 1*
+K33UI_HUD_220	Objectives*
+K33UI_HUD_254	Team Kills
+K33UI_HUD_256	Diff.
+K33UI_HUD_257	Regular
+K33UI_HUD_258	Kills:
+K33UI_HUD_259	Time:
+K33UI_HUD_261	Field Guide\nUnderbarrel: grenades or shotguns.
+K33UI_HUD_262	Complete!
+K33UI_HUD_500	Round 1
+K33UI_HUD_509	Revive
+K33UI_HUD_511	Respawn Token
+K33UI_HUD_512	Revive up to three times per match
+K33UI_INGAME_437	Online
+K33UI_INGAME_439	XP Gain
+K33UI_INGAME_444	** XP to next level. Unlock:
+K33UI_INGAME_449	Attachment
+K33UI_INGAME_453	Match Results
+K33UI_INGAME_454	GP +
+K33UI_INGAME_455	Complete
+K33UI_INGAME_466	28,000 to level up
+K33UI_INGAME_467	This Session
