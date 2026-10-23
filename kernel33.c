@@ -1239,6 +1239,62 @@ static void PatchFrameCap(void)
     Log("frame cap: the last ms of the wait yields instead of Sleep(1)");
 }
 
+/* Field of view 65..120. C1 keeps the plaintext name cg_fov (the .menu / GSC / Scaleform name):
+ *   CG_RegisterDvars @ 0x44C50A: Dvar_RegisterFloat("cg_fov", 65, 65, 80, 0x41 ARCHIVE|SAVED, "")
+ *     (the max is "fld dword [0xC323B0]" = 80.0f @ 0x44C4DC; dvar_t* at 0x16DA2BC)
+ *   then "582" = cg_fovScale (1, 0.2..2, CHEAT) and "583" = cg_fovMin (1, 1..160, CHEAT).
+ * A value above 80 (menu, console, config_mp.cfg) is clamped to 80. The registration call goes through
+ * FovRegisterHook, which raises the maximum to FOV_MAX; 0.2 and 1 stay as they are.
+ * The Scaleform Options > Graphics slider and the pause menu's FOV slider take their range from the
+ * native GetFOVRange (vtable 0xC636E4, body 0x5B0D80), which returns the constants {min 65, max 80,
+ * val 75}: its "fld qword [0xC84BE0]" (80.0, shared with other code) @ 0x5B0E27 loads FOV_MAX instead.
+ * CG_CalcFov (0x471707..) has no other clamp: fov = cg_fov, lerped to the weapon's ADS fov by the ADS
+ * fraction, times cg_fovScale, floored at cg_fovMin; the view model is drawn with that same fov, as
+ * IW4's is (so it sits further away at a wide fov). The server leaves cg_fov alone (codol_rawfiles
+ * _playerlogic.gsc no longer forces 65). */
+#define FOV_MAX                 120
+#define FOV_REG_CALL_VA         0x0044C50Au
+#define DVAR_REGISTER_FLOAT_VA  0x006244D0u
+#define FOV_RANGE_MAX_LOAD_VA   0x005B0E27u
+
+static const double g_fovRangeMax = FOV_MAX;
+
+typedef void *(__cdecl *DvarRegisterFloatFn)(const char *name, float def, float min, float max, unsigned flags,
+                                             const char *desc);
+
+static void *__cdecl FovRegisterHook(const char *name, float def, float min, float max, unsigned flags,
+                                     const char *desc)
+{
+    if (name && strcmp(name, "cg_fov") == 0 && max < (float)FOV_MAX)
+        max = (float)FOV_MAX;
+    return ((DvarRegisterFloatFn)(DWORD_PTR)DVAR_REGISTER_FLOAT_VA)(name, def, min, max, flags, desc);
+}
+
+static void PatchFov(void)
+{
+    /* push "cg_fov" ; call Dvar_RegisterFloat */
+    static const BYTE kPushName[5] = { 0x68, 0x94, 0x2B, 0xC4, 0x00 };
+    const BYTE *push = (const BYTE *)(DWORD_PTR)(FOV_REG_CALL_VA - 5);
+    if (!Readable(push, 5) || memcmp(push, kPushName, 5) != 0 || !CallsTarget(FOV_REG_CALL_VA, DVAR_REGISTER_FLOAT_VA)) {
+        Log("fov: call at 0x%08X does not match, cg_fov stays 65..80", FOV_REG_CALL_VA);
+    } else {
+        RedirectCall(FOV_REG_CALL_VA, (void *)FovRegisterHook);
+        Log("fov: cg_fov domain 65..%d", FOV_MAX);
+    }
+    /* fld qword [0xC84BE0] (80.0) */
+    static const BYTE kFld[6] = { 0xDD, 0x05, 0xE0, 0x4B, 0xC8, 0x00 };
+    BYTE *fld = (BYTE *)(DWORD_PTR)FOV_RANGE_MAX_LOAD_VA;
+    if (!Readable(fld, sizeof(kFld)) || memcmp(fld, kFld, sizeof(kFld)) != 0) {
+        Log("fov: bytes at 0x%08X do not match, the menu FOV sliders stay 65..80", FOV_RANGE_MAX_LOAD_VA);
+        return;
+    }
+    BYTE code[6] = { 0xDD, 0x05, 0, 0, 0, 0 };
+    DWORD addr = (DWORD)(DWORD_PTR)&g_fovRangeMax;
+    memcpy(code + 2, &addr, 4);
+    WriteCode(fld, code, sizeof(code));
+    Log("fov: GetFOVRange max %d (Options and pause menu sliders)", FOV_MAX);
+}
+
 /* Chinese text input on any system locale. The game's text is GBK: it converts with code page
  * 936 everywhere it converts at all (0x580679, 0x5BD0C6, 0x6A5B5D, 0x70384A, ...). Text typed
  * into the ANSI main window does not reach it as GBK, though: Windows converts it with the
@@ -1354,6 +1410,9 @@ static void PatchGbkInput(void)
 /* C1 engine helpers shared by the features below: see c1game.c. */
 #include "c1game.c"
 
+/* Fullscreen Windowed (codol_borderless): see borderless.c. */
+#include "borderless.c"
+
 /* Sound voices: per-alias voice limit and nearest-wins at a channel cap (soundvoices.c), through the voice
  * diagnostics' hooks (sounddiag.c, which also logs refusals to Kernel33.log at k33_snddiag 1+). */
 #include "sounddiag.c"
@@ -1379,6 +1438,8 @@ static void __cdecl TakeOver(void)
     PatchPlainConfig();
     PatchGpuRating();
     PatchFrameCap();
+    PatchFov();
+    PatchBorderless();
     PatchAltTab();
     PatchMultiInstance();
     PatchRawMouse();
