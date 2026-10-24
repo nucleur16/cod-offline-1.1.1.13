@@ -6,7 +6,7 @@
   "retired_playlists": "hidden even if Quick Match is unavailable",
   "classes": {
     "codo.controllers.LobbyController": {
-      "source_sha256": "c5ec55806ea2f83ab4612199f6a4e0124ac793767e77e2d0b42aa834390d531d",
+      "source_sha256": "0c0cb0fe29395dbc7ff7f47ddef54edde2f5d47cbfa81e007b86a0bbcaafcc1b",
       "source": "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/LobbyController.as"
     },
     "codo.controllers.MainMenuAARController": {
@@ -18,7 +18,7 @@
       "source": "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/MainMenuController.as"
     },
     "codo.controllers.MatchController": {
-      "source_sha256": "95c6bf92b6074c83b0eaa38ba955ffb854fb44c0dfb531f4e73a91b386367822",
+      "source_sha256": "d31e7013b1a3a55f64e0b38297d2c0217e5700c8f45b78a73e39e130ef0b8302",
       "source": "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/MatchController.as"
     },
     "codo.controllers.PageNavigationController": {
@@ -123,10 +123,10 @@
     }
   },
   "files": {
-    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/LobbyController.as": "c5ec55806ea2f83ab4612199f6a4e0124ac793767e77e2d0b42aa834390d531d",
+    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/LobbyController.as": "0c0cb0fe29395dbc7ff7f47ddef54edde2f5d47cbfa81e007b86a0bbcaafcc1b",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/MainMenuAARController.as": "115d2d0695b22a5fb95cef3d9b337de7dcd11f63aef3c5bd3c24d4220db99c57",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/MainMenuController.as": "23d7942d88b26e40fa650a3929a14e37c5556a390e69e8f24a213f6c927c2127",
-    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/MatchController.as": "95c6bf92b6074c83b0eaa38ba955ffb854fb44c0dfb531f4e73a91b386367822",
+    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/MatchController.as": "d31e7013b1a3a55f64e0b38297d2c0217e5700c8f45b78a73e39e130ef0b8302",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/PageNavigationController.as": "c7face6bf5a5d059ac7cabb6e1b4b8aed0ddc173bb2d89adfea1c566503df7c0",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/PartyController.as": "b4a1fc4cfc1fa44597684553d8677e488736fafa2e0ae4da0c1a8d67da170e02",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/objects/ScoreboardObj.as": "996f50a4f9ec373b465d7fab6a678e49fd3b27f76e87d50382ab6da9e5262238",
@@ -167,11 +167,11 @@
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6089_82_codo_views_MatchMiniRoomCreatorCyborgsView.bin": "fe072ad6c8c0349e581e9996b3a8d7cc312881297676e097bc53e8615f4d854a",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6103_82_codo_views_MatchSelectModeHomeView.bin": "5e7c8a10184619517cd0c9bb9f8cdba39e33d63bfa9261085236af8d834ee7ba",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6119_82_codo_controllers_MainMenuController.bin": "92e66adf51d888e8b42364180fb9e554baf9c6f867b96f964d453320c2975ef6",
-    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6122_82_codo_controllers_LobbyController.bin": "0b4a4a8bbd36d8dec82145d1a8c9785229748875dd77e3f14b68dc9b7eb18777",
+    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6122_82_codo_controllers_LobbyController.bin": "8e9226264b67262f2c9326ffdbdbb30f80bea7f449f98bedd9e9f14d389e51ff",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6140_82_codo_controllers_PartyController.bin": "783b1f83770e9c8a0d637fb10ecf66dbf4d712e274e5fcd4dfa10936b4beabfe",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6146_82_codo_controllers_MainMenuAARController.bin": "4ed406e9f529f5ee54775e03d050291d37e84c3a372536f88d4dfb81f281474b",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6160_82_codo_controllers_PageNavigationController.bin": "47eab601f13c7ba6befd9ea64f6fed5b61c5ae2d73abc9ef32d124f19b24c508",
-    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6167_82_codo_controllers_MatchController.bin": "707ce39825225ca8265646d0dcbffdd1e5bfddd2b53889c8e0166bdf7ea3e587",
+    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6167_82_codo_controllers_MatchController.bin": "a9a00e9d5d802e500a1de02ad149eac12486ea8d488770c6d828ebcd66ef9f38",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6334_82_codo_views_option_sub_OptionView_video.bin": "de3f4e4d4ede18eec2039c2feb506c4487a54751bf06595b5c51defd79ba726e",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6336_82_codo_views_option_sub_OptionView_audio.bin": "850cca05686f1b63bdbb472ed91d96cf214766045cb7e37cfd86137ddb3250be",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6559_82_components_room_part_RoomInfo.bin": "3ebac6e483247ac7b9dd5cf46a16ba6bb714a0d75b1367fb7698de169a47a5c2",

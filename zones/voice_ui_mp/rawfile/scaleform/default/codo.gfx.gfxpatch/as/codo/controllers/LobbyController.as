@@ -288,7 +288,7 @@ package codo.controllers
                var gateHostCount:int = 0;
                for each(var gateCandidate in this._roomMembers)
                {
-                  if(gateCandidate != null && gateCandidate["_localQuickNativeRoleKnown"] == true && gateCandidate["_localQuickNativeMemberID"] == String(gateCandidate.id) && String(gateCandidate.name) == String(this._roomObj.name))
+                  if(gateCandidate != null && gateCandidate["_localQuickNativeRoleKnown"] == true && gateCandidate["_localQuickNativeMemberID"] == String(gateCandidate.id) && typeof gateCandidate.realName == "string" && gateCandidate.realName.length > 0 && gateCandidate.realName == String(this._roomObj.name))
                   {
                      gateHost = gateCandidate;
                      gateHostCount++;
@@ -332,7 +332,7 @@ package codo.controllers
                var canonicalHostCount:int = 0;
                for each(var candidate in this._roomMembers)
                {
-                  if(candidate != null && candidate["_localQuickNativeRoleKnown"] == true && candidate["_localQuickNativeMemberID"] == String(candidate.id) && String(candidate.name) == String(this._roomObj.name))
+                  if(candidate != null && candidate["_localQuickNativeRoleKnown"] == true && candidate["_localQuickNativeMemberID"] == String(candidate.id) && typeof candidate.realName == "string" && candidate.realName.length > 0 && candidate.realName == String(this._roomObj.name))
                   {
                      canonicalHost = candidate;
                      canonicalHostCount++;

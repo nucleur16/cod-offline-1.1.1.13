@@ -56,7 +56,7 @@ const RankedMatchStatus={READY_IN_ROOM:'ready'};
 const observe = new Function('member','ready','roomMemberObj', OBSERVER);
 const allReady = new Function('quickRoom','queuedRequired', GATE);
 function fresh() {
- const peers=[{id:'1',name:'host'},{id:'2',name:'guest'}];
+ const peers=[{id:'1',name:'host',realName:'host'},{id:'2',name:'guest',realName:'guest'}];
  for (const p of peers) Object.assign(p,{_localQuickNativeRoleKnown:true,
  _localQuickNativeMemberID:p.id,_localQuickNativeReady:true});
  const room={name:'host',_localQuickSharedLineage:true,forces:{force0:[peers[0]],force1:[peers[1]]}};

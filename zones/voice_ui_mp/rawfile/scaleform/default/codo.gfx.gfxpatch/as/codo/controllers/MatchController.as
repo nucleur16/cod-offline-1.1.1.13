@@ -1553,7 +1553,7 @@ import flash.utils.getTimer;
                var acceptedMembers:Array = quickRoom.forces.force0.concat(quickRoom.forces.force1);
                for each(var acceptedMember in acceptedMembers)
                {
-                  if(acceptedMember["_localQuickNativeRoleKnown"] == true && acceptedMember["_localQuickNativeMemberID"] == String(acceptedMember.id) && quickRoom.name != null && String(quickRoom.name).length > 0 && String(acceptedMember.name) == String(quickRoom.name))
+                  if(acceptedMember["_localQuickNativeRoleKnown"] == true && acceptedMember["_localQuickNativeMemberID"] == String(acceptedMember.id) && quickRoom.name != null && String(quickRoom.name).length > 0 && typeof acceptedMember.realName == "string" && acceptedMember.realName.length > 0 && acceptedMember.realName == String(quickRoom.name))
                   {
                      acceptedHost = acceptedMember;
                      acceptedHostCount++;
@@ -1621,7 +1621,7 @@ import flash.utils.getTimer;
                      break quickReadyCheck;
                   }
                   gateSeen.push(String(gateMember.id));
-                  if(String(gateMember.name) == String(quickRoom.name))
+                  if(typeof gateMember.realName == "string" && gateMember.realName.length > 0 && gateMember.realName == String(quickRoom.name))
                   {
                      if(quickRoom["_localQuickReadyCycleHost"] != String(gateMember.id))
                      {
@@ -2180,7 +2180,7 @@ import flash.utils.getTimer;
                var acceptedMembers:Array = quickRoom.forces.force0.concat(quickRoom.forces.force1);
                for each(var acceptedMember in acceptedMembers)
                {
-                  if(acceptedMember["_localQuickNativeRoleKnown"] == true && acceptedMember["_localQuickNativeMemberID"] == String(acceptedMember.id) && quickRoom.name != null && String(quickRoom.name).length > 0 && String(acceptedMember.name) == String(quickRoom.name))
+                  if(acceptedMember["_localQuickNativeRoleKnown"] == true && acceptedMember["_localQuickNativeMemberID"] == String(acceptedMember.id) && quickRoom.name != null && String(quickRoom.name).length > 0 && typeof acceptedMember.realName == "string" && acceptedMember.realName.length > 0 && acceptedMember.realName == String(quickRoom.name))
                   {
                      acceptedHost = acceptedMember;
                      acceptedHostCount++;
@@ -2255,7 +2255,7 @@ import flash.utils.getTimer;
                      break quickReadyCheck;
                   }
                   gateSeen.push(String(gateMember.id));
-                  if(String(gateMember.name) == String(quickRoom.name))
+                  if(typeof gateMember.realName == "string" && gateMember.realName.length > 0 && gateMember.realName == String(quickRoom.name))
                   {
                      if(quickRoom["_localQuickReadyCycleHost"] != String(gateMember.id))
                      {
