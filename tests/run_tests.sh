@@ -10,6 +10,7 @@ OUT=${K33_TEST_OUT:-${TMP:-/tmp}/k33-tests}
 mkdir -p "$OUT"
 python tests/test_ui_baseline.py
 python tests/test_quick_ready_gate.py
+python -B tests/test_tip_stage_lookup.py
 "$BIN/gcc.exe" -O2 -Wall -Wextra -Werror tests/quick_start_policy_test.c -o "$OUT/quick_start_policy.exe"
 "$OUT/quick_start_policy.exe"
 python -B docs/baselines/20261024-gfx-date-time/run_regressions.py \

@@ -1,7 +1,7 @@
 # GFx movie as a patch over a stock movie (zonekit/gfx.py)
 stock patch_ui_mp:scaleform/default/codo.gfx
 stock-sha256 2f143069ed10f3c937e0f5b758591e477f57544f76bdfd3bd2635f77cca5d332
-sha256 47a9e5351409336b9654c79990316340abf6f9fc849af3a52170a449f004b987
+sha256 cdf1400a3b1dd987acb77a49c5741aaa5ca5b73a9df9857a3ef0aa66f7956fb4
 header 4746580a68b64500800003200000025800001e0100
 keep 0
 keep 1
@@ -6010,7 +6010,7 @@ keep 6003
 keep 6004
 keep 6005
 keep 6006
-keep 6007
+new tags/k33_82_codo_views_TipView.bin
 keep 6008
 new tags/6009_82_codo_views_BottomStartGameView.bin
 keep 6010
@@ -6919,3 +6919,4 @@ as codo.k33.PadSnap as/codo/k33/PadSnap.as f5451168d78f16510986c45c23f4897166829
 as codo.views.OptionView as/codo/views/OptionView.as 4db03a52169b41a6c4c575866d1223a6b91b5c986b6cb6f05252a102f2df65f3
 as codo.controllers.LobbyController as/codo/controllers/LobbyController.as 0c0cb0fe29395dbc7ff7f47ddef54edde2f5d47cbfa81e007b86a0bbcaafcc1b
 as codo.controllers.MatchController as/codo/controllers/MatchController.as d31e7013b1a3a55f64e0b38297d2c0217e5700c8f45b78a73e39e130ef0b8302
+as codo.views.TipView as/codo/views/TipView.as 2a462eff264d2a25a9f6be0739941875830a9d95a6434ee641781975539cdc26
