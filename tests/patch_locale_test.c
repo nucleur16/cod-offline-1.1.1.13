@@ -32,6 +32,13 @@ int main(void)
  assert(CodolPatchZoneLocaleAllowed("codol_chinese_ui",CODOL_PATCH_NATIVE));
  assert(!CodolPatchZoneLocaleAllowed("codol_english_ui",CODOL_PATCH_NATIVE));
  assert(CodolPatchZoneLocaleAllowed("voice_ui_mp",CODOL_PATCH_NATIVE));
+ for(int locale=CODOL_PATCH_EN;locale<=CODOL_PATCH_NATIVE;locale++) {
+  assert(!CodolPatchZoneLocaleAllowed("codol_zombies_endless",locale));
+  assert(!CodolPatchZoneLocaleAllowed("CODOL_ZOMBIES_ENDLESS",locale));
+  assert(CodolPatchZoneLocaleAllowed("usermaps_patch",locale));
+  assert(CodolPatchZoneLocaleAllowed("patch_common_gametype_zm",locale));
+  assert(CodolPatchZoneLocaleAllowed("codol_zombies_endless_extra",locale));
+ }
  puts("canonical language selection and shared-zone policy passed");
  return 0;
 }
