@@ -20,6 +20,7 @@ jobs:
       - run: python tests/test_quick_ready_gate.py
       - run: python tests/test_quick_host_real_name.py
       - run: python -B tests/test_tip_stage_lookup.py
+      - run: python -B tests/test_invitations_disabled.py
       - run: gcc -O2 -Wall -Wextra -Werror tests/quick_start_policy_test.c -o /tmp/quick-start-policy && /tmp/quick-start-policy
       - run: python -B docs/baselines/20261024-gfx-date-time/run_regressions.py --output-dir /tmp/gfx-date-time
       - run: gcc -Wall -Wextra -Werror tests/patch_locale_test.c -o /tmp/locale-selection && /tmp/locale-selection

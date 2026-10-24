@@ -4553,21 +4553,7 @@ import flash.utils.getTimer;
       
       private function onProposeRoomMembershipHandle(cEvt:ParaEvent) : void
       {
-         if(!this.isInRoom())
-         {
-            this.showMsg(LocalizationRoom.NOTE_NOT_IN_ROOM,MsgBtnCount.ONE);
-            return;
-         }
-         if(cEvt.myPara.id != null)
-         {
-            CFunctionContainer.ProposePartyMembership(cEvt.myPara.id);
-         }
-         var invitation:InvitationObj = new InvitationObj();
-         invitation.type = InvitationType.GAME_OUTGOING_PROPOSAL;
-         invitation.targetName = cEvt.myPara.name || "";
-         invitation.senderName = invitation.targetName;
-         invitation.receivedTime = this.getSyncDP(SyncDataID.GET_CURRENT_DISPLAY_TIME);
-         this.broadcast(BCEvent.ADD_NEW_INVITATION,invitation);
+         return;
       }
       
       private function onRejectRoomMembershipHandle(cEvt:ParaEvent) : void
