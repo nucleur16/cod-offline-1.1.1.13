@@ -39,10 +39,16 @@ static int CodolAsciiPrefix(const char *name,const char *prefix)
  while(*prefix) { unsigned char a=(unsigned char)*name++,b=(unsigned char)*prefix++;if(a>='A'&&a<='Z')a+=32;if(b>='A'&&b<='Z')b+=32;if(a!=b)return 0; }
  return 1;
 }
+static int CodolPatchZoneRetired(const char *name)
+{
+ return strlen(name)==sizeof("codol_zombies_endless")-1 &&
+        CodolAsciiPrefix(name,"codol_zombies_endless");
+}
 /* Shared tables/rules/images/audio and postgfx assets are language-independent.
- * Only reserved translation/UI overlay names are selected by explicit locale. */
+ * Ignore the retired duplicate table on existing installs in every locale. */
 static int CodolPatchZoneLocaleAllowed(const char *name,enum CodolPatchLanguage language)
 {
+ if(CodolPatchZoneRetired(name))return 0;
  if(CodolAsciiPrefix(name,"codol_english"))return language==CODOL_PATCH_EN;
  /* The UI movies are shared and every text in them is a localize key, so a launch
   * with no valid language (CODOL_PATCH_NATIVE) still needs one set of strings:
