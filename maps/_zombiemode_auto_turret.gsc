@@ -59,11 +59,10 @@
 //     already refuses shots while overheated.
 //   * The turret shoots as itself (TurretTarget_Attacker returns the turret
 //     when it has no user), so its kills pay no points, as T5's do not.
-//   * Placement: 48 units in front of the grabber on the ground.  The
-//     multiplayer sentry lets its owner aim before planting; this power-up
-//     has no carry step.  Face the closest visible zombie on pickup, so the
-//     shipped 55-degree left/right arc can reach a target.  Otherwise keep
-//     the grabber's yaw.  The offset keeps the grabber out of the bounds.
+//   * Placement: the native canPlayerPlaceSentry hull and four feet,
+//     matching the MP sentry's supported floor/slope frame and view yaw.
+//     Retry briefly when the grabber is against a wall or over an edge;
+//     never plant at an unvalidated bullet-trace endpoint.
 
 #include maps\_zombiemode_utility;
 
@@ -81,6 +80,7 @@ init()
 
 	precacheModel( level.zm_sentry_model );
 	precacheModel( level.zm_sentry_model_destroyed );
+	precacheString( &"SENTRY_CANNOT_PLACE" );
 
 	level._effect[ "zm_sentry_explode" ] = loadfx( "explosions/sentry_gun_explosion" );
 
@@ -93,32 +93,59 @@ init()
 
 	level.zm_sentries = [];
 	level.zm_sentry_ok = true;
+	level thread auto_turret_game_end_watch();
+}
+
+// Zombies emits end_game, not the MP game_ended notification. Stop native
+// firing and all active turret workers before intermission parks players.
+auto_turret_game_end_watch()
+{
+	level waittill( "end_game" );
+	turrets = level.zm_sentries;
+	for ( i = 0; i < turrets.size; i++ )
+	{
+		if ( isDefined( turrets[ i ] ) )
+			turrets[ i ] auto_turret_deactivate( "end_game" );
+	}
 }
 
 // The power-up grab.  self is the grabber.
 sentry_powerup( drop_origin )
 {
-	if ( !is_true( level.zm_sentry_ok ) )
+	if ( !is_true( level.zm_sentry_ok ) || is_true( level.intermission ) )
 		return;
 
-	yaw = self.angles[ 1 ];
-	forward = anglesToForward( ( 0, yaw, 0 ) );
-	spot = groundpos( self.origin + vector_scale( forward, 48 ) + ( 0, 0, 32 ) );
-	face = sentry_visible_zombie( spot, undefined );
-	if ( isDefined( face ) )
-	{
-		facing = vectorToAngles( face.origin - spot );
-		yaw = facing[ 1 ];
-	}
+	self endon( "disconnect" );
+	self endon( "death" );
+	level endon( "end_game" );
 
+	// Use the engine's real sentry hull/four-foot placement, as the MP
+	// sentry does. A bullet point trace can hit a prop and gives no support
+	// or slope validation; its miss endpoint is not a grounded position.
+	placement = self canPlayerPlaceSentry();
+	for ( attempt = 0; !placement[ "result" ] && attempt < 100; attempt++ )
+	{
+		wait( 0.1 );
+		placement = self canPlayerPlaceSentry();
+	}
+	if ( !placement[ "result" ] )
+	{
+		self iPrintLn( &"SENTRY_CANNOT_PLACE" );
+		{}
+		return;
+	}
+	spot = placement[ "origin" ];
+	angles = placement[ "angles" ];
+	yaw = angles[ 1 ];
+	face = sentry_visible_zombie( spot, undefined );
 	turret = spawnTurret( "misc_turret", spot, level.zm_sentry_weapon );
 	if ( !isDefined( turret ) )
 	{
-		codolPrintLn( "CoDOL zm sentry: spawnturret returned nothing" );
+		{}
 		return;
 	}
 
-	turret.angles = ( 0, yaw, 0 );
+	turret.angles = angles;
 	turret setModel( level.zm_sentry_model );
 	turret makeUnusable();
 	turret makeTurretInoperable();
@@ -131,8 +158,7 @@ sentry_powerup( drop_origin )
 
 	turret playSound( "sentry_gun_plant" );
 
-	codolPrintLn( "CoDOL zm sentry: placed for " + self.name + " at " + spot +
-		" yaw " + yaw + " visible zombie " + isDefined( face ) );
+	{}
 
 	turret thread auto_turret_activate( self );
 }
@@ -208,7 +234,7 @@ auto_turret_activate( owner )
 
 	self playSound( "zmb_turret_startup" );
 
-	codolPrintLn( "CoDOL zm sentry: active (auto_nonai) for " + level.auto_turret_timeout + " s" );
+	{}
 	level thread auto_turret_lifetime_watch( self, self getEntityNumber() );
 
 	self.curr_time = level.auto_turret_timeout;
@@ -216,7 +242,7 @@ auto_turret_activate( owner )
 	self thread auto_turret_fire();
 	self thread auto_turret_watch_targets();
 	if ( getDvarInt( "zm_sentry_diag" ) > 0 )
-		self thread auto_turret_acquire_diag();
+		{}
 
 	wait( level.auto_turret_timeout );
 
@@ -226,30 +252,7 @@ auto_turret_activate( owner )
 // Two opt-in snapshots after the native target walk has run.  This avoids
 // querying model tags, which can raise a script error when a model is missing.
 auto_turret_acquire_diag()
-{
-	self endon( "turret_deactivated" );
-	self endon( "death" );
-
-	wait( 1 );
-	for ( i = 0; i < 2; i++ )
-	{
-		target = self getTurretTarget( false );
-		near = sentry_visible_zombie( self.origin, self );
-		msg = "CoDOL zm sentry: diag target " + isDefined( target ) +
-			" firing " + self isFiringTurret() + " shots " + self.zm_shots;
-		if ( isDefined( near ) )
-		{
-			facing = vectorToAngles( near.origin - self.origin );
-			msg = msg + " visible zombie " + near getEntityNumber() +
-				" distance " + int( distance( self.origin, near.origin ) ) +
-				" bearing " + facing[ 1 ] + " base yaw " + self.angles[ 1 ];
-		}
-		else
-			msg = msg + " no visible zombie";
-		codolPrintLn( msg );
-		wait( 9 );
-	}
-}
+{}
 
 // T5 :238, plus the removal a dropped (not map-authored) turret needs.
 auto_turret_deactivate( reason )
@@ -272,7 +275,15 @@ auto_turret_deactivate( reason )
 	self stopFiring();
 	self setMode( "sentry_offline" );
 
-	codolPrintLn( "CoDOL zm sentry: deactivated (" + reason + ") after " + self.zm_kills + " kills" );
+	{}
+
+	// Intermission cleanup is quiet; no explosion over the outcome cue.
+	if ( reason == "end_game" )
+	{
+		self notify( "turret_deactivated" );
+		self delete();
+		return;
+	}
 
 	playSoundAtPosition( "zmb_turret_down", self.origin );
 	playFx( level._effect[ "zm_sentry_explode" ], self.origin );
@@ -298,33 +309,13 @@ auto_turret_lifetime_watch( turret, num )
 		wait( 1 );
 
 	if ( !isDefined( turret ) )
-		codolPrintLn( "CoDOL zm sentry: turret entity " + num + " was freed while active" );
+		{}
 }
 
 // set scr_zm_powerup_test "sentrydiag <client> x": what the native
 // acquisition is looking at, for the handback in the header.
 auto_turret_diag( target )
-{
-	near = get_closest( self.origin, maps\_zombiemode_weap_tesla::tesla_sorted_zombies( self.origin ) );
-	msg = "CoDOL zm sentry diag: target " + isDefined( target ) + " firing " + self isFiringTurret();
-	if ( isDefined( target ) )
-		msg = msg + " (entity " + target getEntityNumber() + " health " + target.health + ")";
-	if ( isDefined( self.zm_shots ) )
-		msg = msg + " shots " + self.zm_shots;
-	if ( isDefined( near ) )
-	{
-		// The native validation's own geometry: tag_aim to the target origin
-		// raised 2 units (TurretAuto_AimPoint / TurretAuto_LineOfSight).
-		muzzle = self getTagOrigin( "tag_aim" );
-		sight = sightTracePassed( muzzle, near.origin + ( 0, 0, 2 ), false, self );
-		sight_body = sightTracePassed( muzzle, near.origin + ( 0, 0, 40 ), false, self );
-		msg = msg + " nearest zombie " + near getEntityNumber() + " at " + int( distance( self.origin, near.origin ) ) +
-			" sight(feet+2) " + sight + " sight(body) " + sight_body + " donttarget " + near getDontTarget() + " team " + near.team + " muzzle " + muzzle;
-	}
-	else
-		msg = msg + " no live zombie";
-	codolPrintLn( msg );
-}
+{}
 
 // T5 :250.
 auto_turret_update_timeout()
@@ -389,7 +380,7 @@ auto_turret_watch_targets()
 			if ( logged < 12 )
 			{
 				logged++;
-				codolPrintLn( "CoDOL zm sentry: target zombie died (" + self.zm_kills + " so far)" );
+				{}
 			}
 			last = undefined;
 		}
@@ -408,8 +399,7 @@ auto_turret_watch_targets()
 		if ( logged < 12 )
 		{
 			logged++;
-			codolPrintLn( "CoDOL zm sentry: acquired entity " + target getEntityNumber() + " at distance " +
-				int( distance( self.origin, target.origin ) ) );
+			{}
 		}
 	}
 }

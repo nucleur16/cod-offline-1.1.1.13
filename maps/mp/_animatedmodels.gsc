@@ -95,5 +95,5 @@ codol_reportUnregisteredAnimModel()
 		return;
 
 	level.codol_unregistered_anim_models[ self.model ] = true;
-	println( "CoDOL animated model: no animation registered for \"" + self.model + "\"; prop left static" );
+	{}
 }

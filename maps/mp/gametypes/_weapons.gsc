@@ -10,18 +10,18 @@ attachmentGroup( attachmentName )
 getAttachmentList()
 {
 	attachmentList = [];
-	
+
 	index = 0;
 	attachmentName = tableLookup( "mp/attachmentTable.csv", 9, index, 4 );
-	
+
 	while ( attachmentName != "" )
 	{
 		attachmentList[attachmentList.size] = attachmentName;
-		
+
 		index++;
 		attachmentName = tableLookup( "mp/attachmentTable.csv", 9, index, 4 );
 	}
-	
+
 	return alphabetize( attachmentList );
 }
 
@@ -51,15 +51,15 @@ init()
 		case 2: // disable secondary
 			level.scavenger_secondary = false;
 			break;
-			
+
 		case 3: // disable altmode and secondary
 			level.scavenger_altmode = false;
 			level.scavenger_secondary = false;
-			break;		
+			break;
 	}
-	
-	attachmentList = getAttachmentList();	
-	
+
+	attachmentList = getAttachmentList();
+
 	// walks every row of CoDOL's mp/coWeapStatsTableInGame.csv
 	// attachments are now shown here, they are per weapon settings instead
 
@@ -79,9 +79,9 @@ init()
 		/#
 		if ( getDvar( "scr_dump_weapon_assets" ) != "" )
 		{
-			printLn( "" );
-			printLn( "// " + weapon_name + " real assets" );
-			printLn( "weapon,mp/" + weapon_name + "_mp" );
+			{}
+			{}
+			{}
 		}
 		#/
 
@@ -109,7 +109,7 @@ init()
 			attachments[attachments.size] = attachmentName;
 			/#
 			if ( getDvar( "scr_dump_weapon_assets" ) != "" )
-				println( "weapon,mp/" + weapon_name + "_" + attachmentName + "_mp" );
+				{}
 			#/
 		}
 
@@ -121,21 +121,21 @@ init()
 			{
 				if ( tableLookup( "mp/attachmentCombos.csv", 0, attachments[j], colIndex ) == "no" )
 					continue;
-					
+
 				attachmentCombos[attachmentCombos.size] = attachments[i] + "_" + attachments[j];
 			}
 		}
 
 		/#
 		if ( getDvar( "scr_dump_weapon_assets" ) != "" && attachmentCombos.size )
-			println( "// " + weapon_name + " virtual assets" );
+			{}
 		#/
-		
+
 		foreach ( combo in attachmentCombos )
 		{
 			/#
 			if ( getDvar( "scr_dump_weapon_assets" ) != "" )
-				println( "weapon,mp/" + weapon_name + "_" + combo + "_mp" );
+				{}
 			#/
 
 			level.weaponList[level.weaponList.size] = weapon_name + "_" + combo + "_mp";
@@ -145,22 +145,22 @@ init()
 	foreach ( weaponName in level.weaponList )
 	{
 		precacheItem( weaponName );
-		
+
 		/#
 		if ( getDvar( "scr_dump_weapon_assets" ) != "" )
 		{
 			altWeapon = weaponAltWeaponName( weaponName );
 			if ( altWeapon != "none" )
-				println( "weapon,mp/" + altWeapon );				
+				{}
 		}
 		#/
 	}
 
 	precacheItem( "flare_mp" );
 	precacheItem( "scavenger_bag_mp" );
-	precacheItem( "frag_grenade_short_mp" );	
+	precacheItem( "frag_grenade_short_mp" );
 	precacheItem( "destructible_car" );
-	
+
 	precacheShellShock( "default" );
 	precacheShellShock( "concussion_grenade_mp" );
 	thread maps\mp\_flashgrenades::main();
@@ -171,7 +171,7 @@ init()
 	level.claymoreDetectionMinDist = 20;
 	level.claymoreDetectionGracePeriod = .75;
 	level.claymoreDetonateRadius = 192;
-	
+
 	// this should move to _stinger.gsc
 	level.stingerFXid = loadfx ("explosions/aerial_explosion_large");
 
@@ -192,20 +192,20 @@ init()
 		if ( weapon == "" || stow_model == "" )
 			continue;
 
-		precacheModel( stow_model );		
+		precacheModel( stow_model );
 
 		if ( isSubStr( stow_model, "weapon_stow_" ) )
 			level.stow_offset_array[ weapon ] = stow_model;
 		else
 			level.stow_priority_model_array[ weapon + "_mp" ] = stow_model;
 	}
-	
+
 	precacheModel( "weapon_claymore_bombsquad" );
 	precacheModel( "weapon_c4_bombsquad" );
 	precacheModel( "projectile_m67fraggrenade_bombsquad" );
 	precacheModel( "projectile_semtex_grenade_bombsquad" );
 	precacheModel( "weapon_light_stick_tactical_bombsquad" );
-	
+
 	level.killStreakSpecialCaseWeapons = [];
 	level.killStreakSpecialCaseWeapons["cobra_player_minigun_mp"] = true;
 	level.killStreakSpecialCaseWeapons["artillery_mp"] = true;
@@ -220,13 +220,13 @@ init()
 	level.killStreakSpecialCaseWeapons["cobra_20mm_mp"] = true;
 	level.killStreakSpecialCaseWeapons["sentry_minigun_mp"] = true;
 
-	
+
 	level thread onPlayerConnect();
-	
+
 	level.c4explodethisframe = false;
 
 	array_thread( getEntArray( "misc_turret", "classname" ), ::turret_monitorUse );
-	
+
 //	thread dumpIt();
 }
 
@@ -256,7 +256,7 @@ codolStowModel( model )
 
 dumpIt()
 {
-	
+
 	wait ( 5.0 );
 	/#
 	statsTable = weaponStatsTable();
@@ -306,13 +306,13 @@ dumpIt()
 			iprintln( "REFERENCE           TITLE_" + weaponCapsName + "_Master" );
 			iprintln( "LANG_ENGLISH        ", weaponRealName, ": Master" );
 			*/
-			
+
 			iprintln( "cardtitle_" + weapon_name + "_sharpshooter,PLAYERCARDS_TITLE_" + weaponCapsName + "_SHARPSHOOTER,cardtitle_" + weaponGroupSuffix + "_sharpshooter,1,1,1" );
 			iprintln( "cardtitle_" + weapon_name + "_marksman,PLAYERCARDS_TITLE_" + weaponCapsName + "_MARKSMAN,cardtitle_" + weaponGroupSuffix + "_marksman,1,1,1" );
 			iprintln( "cardtitle_" + weapon_name + "_veteran,PLAYERCARDS_TITLE_" + weaponCapsName + "_VETERAN,cardtitle_" + weaponGroupSuffix + "_veteran,1,1,1" );
 			iprintln( "cardtitle_" + weapon_name + "_expert,PLAYERCARDS_TITLE_" + weaponCapsName + "_EXPERT,cardtitle_" + weaponGroupSuffix + "_expert,1,1,1" );
 			iprintln( "cardtitle_" + weapon_name + "_master,PLAYERCARDS_TITLE_" + weaponCapsName + "_MASTER,cardtitle_" + weaponGroupSuffix + "_master,1,1,1" );
-			
+
 			wait ( 0.05 );
 		}
 	}
@@ -322,13 +322,13 @@ dumpIt()
 bombSquadWaiter()
 {
 	self endon ( "disconnect" );
-	
+
 	for ( ;; )
 	{
 		self waittill ( "grenade_fire", weaponEnt, weaponName );
-		
+
 		team = level.otherTeam[self.team];
-		
+
 		if ( weaponName == "c4_mp" )
 			weaponEnt thread createBombSquadModel( "weapon_c4_bombsquad", "tag_origin", team, self );
 		else if ( weaponName == "claymore_mp" )
@@ -486,9 +486,9 @@ onPlayerSpawned()
 	for(;;)
 	{
 		self waittill("spawned_player");
-		
+
 		self.currentWeaponAtSpawn = self getCurrentWeapon(); // optimization so these threads we start don't have to call it.
-		
+
 		self.empEndTime = 0;
 		self.concussionEndTime = 0;
 		self.hasDoneCombat = false;
@@ -503,17 +503,17 @@ onPlayerSpawned()
 		self thread maps\mp\gametypes\_class::trackRiotShield();
 
 		self.lastHitTime = [];
-		
+
 		self.droppedDeathWeapon = undefined;
 		self.tookWeaponFrom = [];
-		
+
 		self thread updateStowedWeapon();
-		
+
 		self thread updateSavedLastWeapon();
-		
+
 		if ( self hasWeapon( "semtex_mp" ) )
 			self thread monitorSemtex();
-		
+
 		self.currentWeaponAtSpawn = undefined;
 	}
 }
@@ -533,13 +533,13 @@ watchWeaponChange()
 {
 	self endon("death");
 	self endon("disconnect");
-	
+
 	self thread watchStartWeaponChange();
 	self.lastDroppableWeapon = self.currentWeaponAtSpawn;
 	self.hitsThisMag = [];
 
 	weapon = self getCurrentWeapon();
-	
+
 	if ( isCACPrimaryWeapon( weapon ) && !isDefined( self.hitsThisMag[ weapon ] ) )
 		self.hitsThisMag[ weapon ] = weaponClipSize( weapon );
 
@@ -552,7 +552,7 @@ watchWeaponChange()
 	while(1)
 	{
 		self waittill( "weapon_change", newWeapon );
-		
+
 		tokedNewWeapon = StrTok( newWeapon, "_" );
 
 		self.bothBarrels = undefined;
@@ -600,7 +600,7 @@ watchWeaponReload()
 		weaponName = self getCurrentWeapon();
 
 		self.bothBarrels = undefined;
-		
+
 		if ( !isSubStr( codolWeaponBase( weaponName ), "ranger" ) )
 			continue;
 
@@ -620,7 +620,7 @@ watchRangerUsage( rangerName )
 	for ( ;; )
 	{
 		self waittill ( "weapon_fired", weaponName );
-		
+
 		if ( weaponName != rangerName )
 			continue;
 
@@ -633,11 +633,11 @@ watchRangerUsage( rangerName )
 
 			if ( leftAmmo != newLeftAmmo && rightAmmo != newRightAmmo )
 				self.bothBarrels = true;
-			
+
 			if ( !newLeftAmmo || !newRightAmmo )
 				return;
-				
-				
+
+
 			leftAmmo = newLeftAmmo;
 			rightAmmo = newRightAmmo;
 		}
@@ -664,61 +664,61 @@ mayDropWeapon( weapon )
 {
 	if ( weapon == "none" )
 		return false;
-		
+
 	if ( isSubStr( weapon, "ac130" ) )
 		return false;
 
 	invType = WeaponInventoryType( weapon );
 	if ( invType != "primary" )
 		return false;
-	
+
 	return true;
 }
 
 dropWeaponForDeath( attacker )
 {
 	weapon = self.lastDroppableWeapon;
-	
+
 	if ( isdefined( self.droppedDeathWeapon ) )
 		return;
 
 	if ( level.inGracePeriod )
 		return;
-	
+
 	if ( !isdefined( weapon ) )
 	{
 		/#
 		if ( getdvar("scr_dropdebug") == "1" )
-			println( "didn't drop weapon: not defined" );
+			{}
 		#/
 		return;
 	}
-	
+
 	if ( weapon == "none" )
 	{
 		/#
 		if ( getdvar("scr_dropdebug") == "1" )
-			println( "didn't drop weapon: weapon == none" );
+			{}
 		#/
 		return;
 	}
-	
+
 	if ( !self hasWeapon( weapon ) )
 	{
 		/#
 		if ( getdvar("scr_dropdebug") == "1" )
-			println( "didn't drop weapon: don't have it anymore (" + weapon + ")" );
+			{}
 		#/
 		return;
 	}
-	
+
 	if ( !codolIsWeaponBase( weapon, "riotshield_mp" ) )
 	{
 		if ( !(self AnyAmmoForWeaponModes( weapon )) )
 		{
 			/#
 			if ( getdvar("scr_dropdebug") == "1" )
-			  println( "didn't drop weapon: no ammo for weapon modes" );
+			  {}
 			#/
 			return;
 		}
@@ -729,11 +729,11 @@ dropWeaponForDeath( attacker )
 		{
 			/#
 			if ( getdvar("scr_dropdebug") == "1" )
-			  println( "didn't drop weapon: no ammo in clip" );
+			  {}
 			#/
 			return;
 		}
-  
+
 		stockAmmo = self GetWeaponAmmoStock( weapon );
 		stockMax = WeaponMaxAmmo( weapon );
 		if ( stockAmmo > stockMax )
@@ -744,7 +744,7 @@ dropWeaponForDeath( attacker )
 	}
 	else
 	{
-		item = self dropItem( weapon );	
+		item = self dropItem( weapon );
 		if ( !isDefined( item ) )
 			return;
 		item ItemWeaponSetAmmo( 1, 1, 0 );
@@ -752,7 +752,7 @@ dropWeaponForDeath( attacker )
 
 	/#
 	if ( getdvar("scr_dropdebug") == "1" )
-		println( "dropped weapon: " + weapon );
+		{}
 	#/
 
 	self.droppedDeathWeapon = true;
@@ -783,34 +783,34 @@ dropWeaponForDeath( attacker )
 detachIfAttached( model, baseTag )
 {
 	attachSize = self getAttachSize();
-	
+
 	for ( i = 0; i < attachSize; i++ )
 	{
 		attach = self getAttachModelName( i );
-		
+
 		if ( attach != model )
 			continue;
-		
-		tag = self getAttachTagName( i );			
+
+		tag = self getAttachTagName( i );
 		self detach( model, tag );
-		
+
 		if ( tag != baseTag )
 		{
 			attachSize = self getAttachSize();
-			
+
 			for ( i = 0; i < attachSize; i++ )
 			{
 				tag = self getAttachTagName( i );
-				
+
 				if ( tag != baseTag )
 					continue;
-					
+
 				model = self getAttachModelName( i );
 				self detach( model, tag );
-				
+
 				break;
 			}
-		}		
+		}
 		return true;
 	}
 	return false;
@@ -820,7 +820,7 @@ detachIfAttached( model, baseTag )
 deletePickupAfterAWhile()
 {
 	self endon("death");
-	
+
 	wait 60;
 
 	if ( !isDefined( self ) )
@@ -840,27 +840,27 @@ getItemWeaponName()
 watchPickup()
 {
 	self endon("death");
-	
+
 	weapname = self getItemWeaponName();
-	
+
 	while(1)
 	{
 		self waittill( "trigger", player, droppedItem );
-		
+
 		if ( isdefined( droppedItem ) )
 			break;
 		// otherwise, player merely acquired ammo and didn't pick this up
 	}
 	// C1's act_pickupwpn field order waits for this notify.
 	player notify( "pickedupweapon", weapname );
-	
+
 	/#
 	if ( getdvar("scr_dropdebug") == "1" )
-		println( "picked up weapon: " + weapname + ", " + isdefined( self.ownersattacker ) );
+		{}
 	#/
 
 	assert( isdefined( player.tookWeaponFrom ) );
-	
+
 	// make sure the owner information on the dropped item is preserved
 	droppedWeaponName = droppedItem getItemWeaponName();
 	if ( isdefined( player.tookWeaponFrom[ droppedWeaponName ] ) )
@@ -870,7 +870,7 @@ watchPickup()
 		player.tookWeaponFrom[ droppedWeaponName ] = undefined;
 	}
 	droppedItem thread watchPickup();
-	
+
 	// take owner information from self and put it onto player
 	if ( isdefined( self.ownersattacker ) && self.ownersattacker == player )
 	{
@@ -916,7 +916,7 @@ codolGpsTrackPickup( owner, weapon )
 
 	self.codolGpsTrackOwner = owner;
 	self setAbilityModifier( "modOwnerTrack" );
-	codolPrintLn( "CoDOL gps: " + owner.name + " tracks " + self.name + " (" + weapon + ")" );
+	{}
 
 	reason = undefined;
 	for ( ;; )
@@ -941,15 +941,15 @@ codolGpsTrackPickup( owner, weapon )
 	self unsetAbilityModifier( "modOwnerTrack" );
 	if ( !self maps\mp\perks\_perkfunctions::isPainted() )
 		self unsetAbilityModifier( "modRadarArrow" );
-	codolPrintLn( "CoDOL gps: track of " + self.name + " ended (" + reason + ")" );
+	{}
 }
 
 itemRemoveAmmoFromAltModes()
 {
 	origweapname = self getItemWeaponName();
-	
+
 	curweapname = weaponAltWeaponName( origweapname );
-	
+
 	altindex = 1;
 	while ( curweapname != "none" && curweapname != origweapname )
 	{
@@ -973,14 +973,14 @@ handleScavengerBagPickup( scrPlayer )
 
 	destPlayer notify( "scavenger_pickup" );
 	destPlayer playLocalSound( "scavenger_pack_pickup" );
-	
+
 	offhandWeapons = destPlayer getWeaponsListOffhands();
-	
+
 	if ( destPlayer _hasPerk( "specialty_tacticalinsertion" ) && destPlayer getAmmoCount( "flare_mp" ) < 1 )
-		destPlayer _setPerk( "specialty_tacticalinsertion");	
-		
+		destPlayer _setPerk( "specialty_tacticalinsertion");
+
 	foreach ( offhand in offhandWeapons )
-	{		
+	{
 		// C1 Scavenger Pro explicitly excludes resupplying frag/sticky grenades.
 		// Class/offhand enums also cover other equipment, so use recipe identity.
 		baseOffhand = codol_getWeaponBaseName( offhand );
@@ -990,15 +990,15 @@ handleScavengerBagPickup( scrPlayer )
 		destPlayer SetWeaponAmmoClip( offhand, currentClipAmmo + 1);
 	}
 
-	primaryWeapons = destPlayer getWeaponsListPrimaries();	
+	primaryWeapons = destPlayer getWeaponsListPrimaries();
 	foreach ( primary in primaryWeapons )
 	{
 		if ( !isCACPrimaryWeapon( primary ) && !level.scavenger_secondary )
 			continue;
-			
+
 		currentStockAmmo = destPlayer GetWeaponAmmoStock( primary );
 		addStockAmmo = weaponClipSize( primary );
-		
+
 		destPlayer setWeaponAmmoStock( primary, currentStockAmmo + addStockAmmo );
 
 		altWeapon = weaponAltWeaponName( primary );
@@ -1020,14 +1020,14 @@ dropScavengerForDeath( attacker )
 {
 	if ( level.inGracePeriod )
 		return;
-	
- 	if( !isDefined( attacker ) )
- 		return;
 
- 	if( attacker == self )
- 		return;
+        if( !isDefined( attacker ) )
+                return;
 
-	dropBag = self dropScavengerBag( "scavenger_bag_mp" );	
+        if( attacker == self )
+                return;
+
+	dropBag = self dropScavengerBag( "scavenger_bag_mp" );
 	if ( isDefined( dropBag ) )
 		dropBag thread handleScavengerBagPickup( self );
 
@@ -1065,23 +1065,23 @@ watchWeaponUsage( weaponHand )
 	self endon( "death" );
 	self endon( "disconnect" );
 	level endon ( "game_ended" );
-	
+
 	for ( ;; )
-	{	
+	{
 		self waittill ( "weapon_fired", weaponName );
 
 		self.hasDoneCombat = true;
 
 		if ( !maps\mp\gametypes\_weapons::isPrimaryWeapon( weaponName ) && !maps\mp\gametypes\_weapons::isSideArm( weaponName ) )
 			continue;
-		
+
 		if ( isDefined( self.hitsThisMag[ weaponName ] ) )
 			self thread updateMagShots( weaponName );
-			
+
 		totalShots = self maps\mp\gametypes\_persistence::statGetBuffered( "totalShots" ) + 1;
 		hits = self maps\mp\gametypes\_persistence::statGetBuffered( "hits" );
 		self maps\mp\gametypes\_persistence::statSetBuffered( "totalShots", totalShots );
-		self maps\mp\gametypes\_persistence::statSetBuffered( "accuracy", int(hits * 10000 / totalShots) );		
+		self maps\mp\gametypes\_persistence::statSetBuffered( "accuracy", int(hits * 10000 / totalShots) );
 		self maps\mp\gametypes\_persistence::statSetBuffered( "misses", int(totalShots - hits) );
 	}
 }
@@ -1092,11 +1092,11 @@ updateMagShots( weaponName )
 	self endon ( "death" );
 	self endon ( "disconnect" );
 	self endon ( "updateMagShots_" + weaponName );
-	
+
 	self.hitsThisMag[ weaponName ]--;
-	
+
 	wait ( 0.05 );
-	
+
 	self.hitsThisMag[ weaponName ] = weaponClipSize( weaponName );
 }
 
@@ -1108,15 +1108,15 @@ checkHitsThisMag( weaponName )
 
 	self notify ( "updateMagShots_" + weaponName );
 	waittillframeend;
-	
+
 	if ( self.hitsThisMag[ weaponName ] == 0 )
 	{
 		weaponClass = getWeaponClass( weaponName );
-		
+
 		maps\mp\gametypes\_missions::genericChallenge( weaponClass );
 
 		self.hitsThisMag[ weaponName ] = weaponClipSize( weaponName );
-	}	
+	}
 }
 
 
@@ -1138,14 +1138,14 @@ checkHit( weaponName, victim )
 
 	if ( !isDefined( self.lastHitTime[ weaponName ] ) )
 		self.lastHitTime[ weaponName ] = 0;
-		
+
 	// already hit with this weapon on this frame
 	if ( self.lastHitTime[ weaponName ] == getTime() )
 		return;
 
 	self.lastHitTime[ weaponName ] = getTime();
 
-	totalShots = self maps\mp\gametypes\_persistence::statGetBuffered( "totalShots" );		
+	totalShots = self maps\mp\gametypes\_persistence::statGetBuffered( "totalShots" );
 	hits = self maps\mp\gametypes\_persistence::statGetBuffered( "hits" ) + 1;
 
 	if ( hits <= totalShots )
@@ -1251,12 +1251,12 @@ watchGrenadeUsage()
 
 		self.throwingGrenade = weaponName;
 		self.gotPullbackNotify = true;
-		
+
 		if ( weaponName == "c4_mp" )
 			self beginC4Tracking();
 		else
 			self beginGrenadeTracking();
-			
+
 		self.throwingGrenade = undefined;
 	}
 }
@@ -1291,9 +1291,9 @@ AddMissileToSightTraces( team )
 {
 	self.team = team;
 	level.missilesForSightTraces[ level.missilesForSightTraces.size ] = self;
-	
+
 	self waittill( "death" );
-	
+
 	newArray = [];
 	foreach( missile in level.missilesForSightTraces )
 	{
@@ -1313,7 +1313,7 @@ watchMissileUsage()
 		self waittill( "missile_fire", missile, weaponName );
 		// Launchers from a class are composed names ("*a 68 0"): switch on the base.
 		baseWeaponName = codol_getWeaponBaseName( weaponName );
-		
+
 		if ( isSubStr( weaponName, "gl_" ) )
 		{
 			missile.primaryWeapon = self getCurrentPrimaryWeapon();
@@ -1330,7 +1330,7 @@ watchMissileUsage()
 			case "javelin_mp":
 				level notify ( "stinger_fired", self, missile, self.javelinTarget );
 				self thread setAltSceneObj( missile, "tag_origin", 65 );
-				break;			
+				break;
 			default:
 				break;
 		}
@@ -1359,7 +1359,7 @@ watchSentryUsage()
 	for ( ;; )
 	{
 		self waittill( "sentry_placement_finished", sentry );
-		
+
 		self thread setAltSceneObj( sentry, "tag_flash", 65 );
 	}
 }
@@ -1439,7 +1439,7 @@ watchForThrowbacks()
 	for ( ;; )
 	{
 		self waittill( "grenade_fire", grenade, weapname );
-		
+
 		if ( self.gotPullbackNotify )
 		{
 			self.gotPullbackNotify = false;
@@ -1481,7 +1481,7 @@ watchC4()
 			if ( self.c4array.size )
 			{
 				self.c4array = array_removeUndefined( self.c4array );
-				
+
 				if( self.c4array.size >= level.maxPerPlayerExplosives )
 				{
 					self.c4array[0] detonate();
@@ -1571,10 +1571,10 @@ watchClaymores()
 		if ( weapname == "claymore" || weapname == "claymore_mp" )
 		{
 			self.claymorearray = array_removeUndefined( self.claymorearray );
-			
+
 			if( self.claymoreArray.size >= level.maxPerPlayerExplosives )
 				self.claymoreArray[0] detonate();
-			
+
 			self.claymorearray[ self.claymorearray.size ] = claymore;
 			claymore.owner = self;
 			claymore.team = self.team;
@@ -1675,11 +1675,11 @@ claymoreDetonation()
 		if ( player damageConeTrace( self.origin, self ) > 0 )
 			break;
 	}
-	
+
 	self maps\mp\equipment\_pickup::close();
 	self playsound ("claymore_activated");
-	
-	
+
+
 	// C1 Engineer (perk 90) carries modDelayTriggeredExplosive; the IW4 name
 	// specialty_delaymine is C1 Stalker Pro (footsteps), not this delay. C1's
 	// table gives the modifier no value, so T5's rule applies
@@ -1692,7 +1692,7 @@ claymoreDetonation()
 		maps\mp\perks\_codol_equipperks::perkLog( "claymore " + self getEntityNumber() + " triggered by " + player.name + " (modDelayTriggeredExplosive): +" + extra + "s delay" );
 		wait extra;
 	}
-		
+
 	self maps\mp\perks\_codol_equipperks::detonateAsOwner();
 }
 
@@ -1757,7 +1757,7 @@ watchC4AltDetonate()
 				wait( 0.05 );
 			}
 
-			println( "pressTime1: " + buttonTime );
+			{}
 			if ( buttonTime >= 0.5 )
 				continue;
 
@@ -1768,7 +1768,7 @@ watchC4AltDetonate()
 				wait( 0.05 );
 			}
 
-			println( "delayTime: " + buttonTime );
+			{}
 			if ( buttonTime >= 0.5 )
 				continue;
 
@@ -1927,7 +1927,7 @@ c4Damage()
 	{
 		// checking isDefined attacker is defensive but it's too late in the project to risk issues by not having it
 		if ( isDefined( self.owner ) && isDefined( attacker ) && attacker != self.owner )
-			attacker notify( "destroyed_explosive" );		
+			attacker notify( "destroyed_explosive" );
 	}
 
 	self detonate( attacker );
@@ -1944,7 +1944,7 @@ saydamaged( orig, amount )
 {
 	for ( i = 0; i < 60; i++ )
 	{
-		print3d( orig, "damaged! " + amount );
+		{}
 		wait .05;
 	}
 }
@@ -2114,7 +2114,7 @@ getDamageableEnts( pos, radius, doLOS, startRadius )
 
 	if ( !isdefined( startRadius ) )
 		startRadius = 0;
-	
+
 	radiusSq = radius * radius;
 
 	// players
@@ -2175,7 +2175,7 @@ getDamageableEnts( pos, radius, doLOS, startRadius )
 			ents[ ents.size ] = newent;
 		}
 	}
-	
+
 	//sentries
 	sentries = getentarray( "misc_turret", "classname" );
 	foreach ( sentry in sentries )
@@ -2238,7 +2238,7 @@ weaponDamageTracePassed( from, to, startRadius, ent )
 	diff = to - from;
 	if ( lengthsquared( diff ) < startRadius * startRadius )
 		return true;
-	
+
 	dir = vectornormalize( diff );
 	midpos = from + ( dir[ 0 ] * startRadius, dir[ 1 ] * startRadius, dir[ 2 ] * startRadius );
 
@@ -2246,11 +2246,11 @@ weaponDamageTracePassed( from, to, startRadius, ent )
 
 	if ( getdvarint( "scr_damage_debug" ) != 0 )
 	{
-		thread debugprint( from, ".dmg" );
+		{}
 		if ( isdefined( ent ) )
-			thread debugprint( to, "." + ent.classname );
+			{}
 		else
-			thread debugprint( to, ".undefined" );
+			{}
 		if ( trace[ "fraction" ] == 1 )
 		{
 			thread debugline( midpos, to, ( 1, 1, 1 ) );
@@ -2311,13 +2311,7 @@ debugline( a, b, color )
 }
 
 debugprint( pt, txt )
-{
-	for ( i = 0; i < 30 * 20; i++ )
-	{
-		print3d( pt, txt );
-		wait .05;
-	}
-}
+{}
 
 
 onWeaponDamage( eInflictor, sWeapon, meansOfDeath, damage, eAttacker )
@@ -2341,7 +2335,7 @@ onWeaponDamage( eInflictor, sWeapon, meansOfDeath, damage, eAttacker )
 				time *= protectionScale;
 			if ( time <= 0 )
 				break;
-			
+
 			wait( 0.05 );
 			if ( isDefined( eAttacker ) )
 				eAttacker notify( "stun_hit" );
@@ -2368,7 +2362,7 @@ isPrimaryWeapon( weapName )
 {
 	if ( weapName == "none" )
 		return false;
-		
+
 	if ( weaponInventoryType( weapName ) != "primary" )
 		return false;
 
@@ -2385,7 +2379,7 @@ isPrimaryWeapon( weapName )
 
 		default:
 			return false;
-	}	
+	}
 }
 
 
@@ -2393,7 +2387,7 @@ isAltModeWeapon( weapName )
 {
 	if ( weapName == "none" )
 		return false;
-		
+
 	return ( weaponInventoryType( weapName ) == "altmode" );
 }
 
@@ -2401,7 +2395,7 @@ isInventoryWeapon( weapName )
 {
 	if ( weapName == "none" )
 		return false;
-		
+
 	return ( weaponInventoryType( weapName ) == "item" );
 }
 
@@ -2409,7 +2403,7 @@ isRiotShield( weapName )
 {
 	if ( weapName == "none" )
 		return false;
-		
+
 	return ( WeaponType( weapName ) == "riotshield" );
 }
 
@@ -2417,7 +2411,7 @@ isOffhandWeapon( weapName )
 {
 	if ( weapName == "none" )
 		return false;
-		
+
 	return ( weaponInventoryType( weapName ) == "offhand" );
 }
 
@@ -2441,7 +2435,7 @@ isGrenade( weapName )
 
 	if ( weapClass != "grenade" )
 		return false;
-		
+
 	if ( weapType != "offhand" )
 		return false;
 }
@@ -2452,7 +2446,7 @@ getStowOffsetModel( weaponName )
 	assert( isDefined( level.stow_offset_array ) );
 
 	baseName = getBaseWeaponName( weaponName );
-	
+
 	return( level.stow_offset_array[baseName] );
 }
 
@@ -2466,12 +2460,12 @@ stowPriorityWeapon()
 	{
 		weaponName = getBaseWeaponName( weapon_name );
 		weaponList = self getWeaponsListAll();
-		
+
 		foreach ( weapon in weaponList )
 		{
 			if( self getCurrentWeapon() == weapon )
 				continue;
-			
+
 			if ( weaponName == getBaseWeaponName( weapon ) )
 				return weaponName + "_mp";
 		}
@@ -2489,19 +2483,19 @@ updateStowedWeapon()
 
 	self.tag_stowed_back = undefined;
 	self.tag_stowed_hip = undefined;
-	
+
 	team = self.team;
 	class = self.class;
-	
+
 	self thread stowedWeaponsRefresh();
-	
+
 	while ( true )
 	{
 		self waittill( "weapon_change", newWeapon );
-		
+
 		if ( newWeapon == "none" )
 			continue;
-			
+
 		self thread stowedWeaponsRefresh();
 	}
 }
@@ -2511,7 +2505,7 @@ stowedWeaponsRefresh()
 	self endon( "spawned" );
 	self endon( "killed_player" );
 	self endon( "disconnect" );
-	
+
 	detach_all_weapons();
 	stow_on_back();
 	stow_on_hip();
@@ -2572,35 +2566,35 @@ stow_on_back()
 		{
 			if ( weaponName == currentWeapon )
 				continue;
-			
+
 			invType = weaponInventoryType( weaponName );
-			
+
 			if ( invType != "primary" )
 			{
 				if ( invType == "altmode" )
 					continue;
-				
+
 				if ( weaponClass( weaponName ) == "pistol" )
 					continue;
 			}
-			
+
 			if ( WeaponType( weaponName ) == "riotshield" )
 				continue;
-			
+
 			// Don't stow the current on our back when we're using the alt
 			if ( currentIsAlt && weaponAltWeaponName( weaponName ) == currentWeapon )
 				continue;
-				
+
 			stowWeapon = weaponName;
 			stowOffsetModel = getStowOffsetModel( stowWeapon );
-			
+
 			if ( stowWeapon == self.primaryWeapon )
 				stowCamo = self.loadoutPrimaryCamo;
 			else if ( stowWeapon == self.secondaryWeapon )
 				stowCamo = self.loadoutSecondaryCamo;
 			else
 				stowCamo = 0;
-		}		
+		}
 	}
 
 	if ( !isDefined( stowWeapon ) )
@@ -2615,7 +2609,7 @@ stow_on_back()
 	}
 	else
 	{
-		self.tag_stowed_back = getWeaponModel( stowWeapon, stowCamo );	
+		self.tag_stowed_back = getWeaponModel( stowWeapon, stowCamo );
 	}
 
 	if ( isDefined( stowOffsetModel ) )
@@ -2640,7 +2634,7 @@ stow_on_back()
 
 	for ( i = 0; i < hideTagList.size; i++ )
 		self HidePart( hideTagList[ i ], self.tag_stowed_back );
-	
+
 	prof_end( "stow_on_back" );
 }
 
@@ -2657,10 +2651,10 @@ stow_on_hip()
 	{
 		if ( weaponName == currentWeapon )
 			continue;
-			
+
 		if ( weaponName != "c4_mp" && weaponName != "claymore_mp" )
 			continue;
-		
+
 		stowWeapon = weaponName;
 	}
 
@@ -2671,10 +2665,10 @@ stow_on_hip()
 	self attach( self.tag_stowed_hip, "tag_stowed_hip_rear", true );
 
 	hideTagList = GetWeaponHideTags( stowWeapon );
-	
+
 	if ( !isDefined( hideTagList ) )
 		return;
-	
+
 	for ( i = 0; i < hideTagList.size; i++ )
 		self HidePart( hideTagList[ i ], self.tag_stowed_hip );
 }
@@ -2691,7 +2685,7 @@ updateSavedLastWeapon()
 	for ( ;; )
 	{
 		self waittill( "weapon_change", newWeapon );
-	
+
 		if ( newWeapon == "none" )
 		{
 			self.saved_lastWeapon = currentWeapon;
@@ -2705,7 +2699,7 @@ updateSavedLastWeapon()
 			self.saved_lastWeapon = currentWeapon;
 			continue;
 		}
-		
+
 		if ( newWeapon == "onemanarmy_mp" )
 		{
 			self.saved_lastWeapon = currentWeapon;
@@ -2747,24 +2741,24 @@ updateMoveSpeedScale( weaponType )
 	else
 		self.moveSpeedScaler = 1;
 	*/
-	
+
 	if ( !isDefined( weaponType ) || weaponType == "primary" )
 		weaponType = self.primaryWeapon;
 	else if ( weaponType == "secondary" )
 		weaponType = self.secondaryWeapon;
-	
+
 	if( isDefined(self.primaryWeapon ) && codolIsWeaponBase( self.primaryWeapon, "riotshield_mp" ) )
 	{
 		self setMoveSpeedScale( .8 * self.moveSpeedScaler );
 		return;
 	}
-	
+
 	if ( !isDefined( weaponType ) )
 		weapClass = "none";
-	else 
+	else
 		weapClass = weaponClass( weaponType );
-	
-	
+
+
 	switch ( weapClass )
 	{
 		case "rifle":
@@ -2797,7 +2791,7 @@ updateMoveSpeedScale( weaponType )
 
 buildWeaponData( filterPerks )
 {
-	attachmentList = getAttachmentList();		
+	attachmentList = getAttachmentList();
 	statsTable = weaponStatsTable();
 
 	baseWeaponData = [];
@@ -2839,10 +2833,10 @@ buildWeaponData( filterPerks )
 						continue;
 				}
 			}
-			
+
 			if( attachmentName == "" )
 				break;
-			
+
 			attachmentNames[attachmentName] = true;
 		}
 
@@ -2852,7 +2846,7 @@ buildWeaponData( filterPerks )
 		{
 			if ( !isDefined( attachmentNames[attachmentName] ) )
 				continue;
-			
+
 			weaponInfo.variants[weaponInfo.variants.size] = baseName + "_" + attachmentName + "_mp";
 			attachments[attachments.size] = attachmentName;
 		}
@@ -2864,14 +2858,14 @@ buildWeaponData( filterPerks )
 			{
 				if ( tableLookup( "mp/attachmentCombos.csv", 0, attachments[j], colIndex ) == "no" )
 					continue;
-					
+
 				weaponInfo.variants[weaponInfo.variants.size] = baseName + "_" + attachments[i] + "_" + attachments[j] + "_mp";
 			}
 		}
-		
+
 		baseWeaponData[baseName] = weaponInfo;
 	}
-	
+
 	return ( baseWeaponData );
 }
 
@@ -2879,33 +2873,33 @@ monitorSemtex()
 {
 	self endon( "disconnect" );
 	self endon( "death" );
-	
+
 	for( ;; )
 	{
 		self waittill( "grenade_fire", weapon );
 
 		if ( !isSubStr(weapon.model, "semtex" ) )
 			continue;
-			
+
 		weapon waittill( "missile_stuck", stuckTo );
-			
+
 		if ( !isPlayer( stuckTo ) )
 			continue;
-			
+
 		if ( level.teamBased && isDefined( stuckTo.team ) && stuckTo.team == self.team )
 		{
 			weapon.isStuck = "friendly";
 			continue;
 		}
-	
+
 		weapon.isStuck = "enemy";
 		weapon.stuckEnemyEntity = stuckTo;
-		
+
 		stuckTo maps\mp\gametypes\_hud_message::playerCardSplashNotify( "semtex_stuck", self );
-		
+
 		self thread maps\mp\gametypes\_hud_message::SplashNotify( "stuck_semtex", 100 );
 		self notify( "process", "ch_bullseye" );
-	}	
+	}
 }
 
 
@@ -2914,7 +2908,7 @@ turret_monitorUse()
 	for( ;; )
 	{
 		self waittill ( "trigger", player );
-		
+
 		self thread turret_playerThread( player );
 	}
 }
@@ -2925,8 +2919,8 @@ turret_playerThread( player )
 	player endon ( "disconnect" );
 
 	player notify ( "weapon_change", "none" );
-	
+
 	self waittill ( "turret_deactivate" );
-	
+
 	player notify ( "weapon_change", player getCurrentWeapon() );
 }

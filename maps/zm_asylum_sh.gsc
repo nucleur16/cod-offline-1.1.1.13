@@ -31,87 +31,49 @@
 main()
 {
 	maps\_zombiemode::levelMain( "zm_asylum_sh" );
-	level thread asylum_fog();
-
-	asylum_zone_init();
+	level.zm_spawn_point_func = ::asylum_spawn_point;
 }
 
-// --------------------------------------------------------------------------
-// Fog.  T5 maps\createart\zombie_cod5_asylum_art.gsc fog_settings (called
-// once from zombie_cod5_asylum.gsc main) sets height fog (setVolFog); no
-// other T5 script changes it on this map (no hounds; turning the power on
-// changes no fog).  C1 has exponential fog only, so the setting is the T5
-// density at the ground floor where players spawn (z 72, the eight
-// initial_spawn_points; the downstairs path nodes lie at z 64-96, upstairs
-// at z 240-256, which would give 1042):
-// halfway = half_dist * 2 ^ ( ( 72 - base_height ) / half_height ).
-//   start 244.829  half_dist 697.262  half_height 200  base 124  -> 582.3
-// Colour.  Not T5's brown 0.4196 0.3216 0.2510 any more: the map's
-// vision/zm_asylum_sh.vision (MEASURED, zone rawfile) grades after the fog
-// is drawn.  Its film block is in IW5's order (see zm_prototype_sh.gsc):
-// desaturation 523 -0.805 (negative = extra saturation, x1.2 at the fog's
-// luminance, applied before the tint), light tint 526 "1.5 1.57888 1.5",
-// medium 527 "1.15 1.37 1.37", dark 528 "0.701083 0.895233 1.01064" -- every
-// tint lifts green and blue over red.  Modelled per pixel (Rec.709
-// luminance; tint lerped dark -> medium -> light; saturation lerped
-// desaturationDark -> desaturation), the brown grades to an over-saturated
-// yellow-brown 0.44 0.39 0.29 and any greyer fog drifts toward cyan.  The
-// colour below is that model solved backwards for a slightly warm grey
-// 0.42 0.40 0.37 after grading -- roughly target / tint per channel, with
-// the warm offset shrunk by the saturation boost -- at the same luminance as
-// T5's fog: 0.403 0.330 0.303.  (Under the other reading of the tint ids,
-// 527 dark / 528 medium, it grades to a near-neutral 0.35 0.34 0.33.)
-// Distance is unchanged.
-// zm maps do not run maps\mp\_load, whose codolFogDvar sends C1's r_fog
-// (dvar 1464); a previous map may have turned it off, so it is sent here.
-// --------------------------------------------------------------------------
-
-asylum_fog()
+// Asylum's MP start classnames are both in west2_downstairs_zone; the regular
+// mp_tdm_spawn is in west_downstairs_zone beside the Juggernog room. Choose
+// between the two authored rooms, rather than treating team names as sides.
+// Keep a player's assigned room for subsequent spawns. Zone occupancy opens
+// its enemy group in _zombiemode_zone_manager::refresh_spawners.
+asylum_spawn_point()
 {
-	level thread asylum_fog_dvar();
+	if ( isDefined( self.zm_asylum_start_point ) )
+		return self.zm_asylum_start_point;
 
-	setExpFog( 244.829, 582.3, 0.403, 0.330, 0.303, 1, 0 );
-}
-
-asylum_fog_dvar()
-{
-	for ( ;; )
+	names = [];
+	names[ 0 ] = "mp_tdm_spawn_allies_start";
+	names[ 1 ] = "mp_tdm_spawn_axis_start";
+	names[ 2 ] = "mp_tdm_spawn";
+	names[ 3 ] = "mp_dm_spawn";
+	west = [];
+	west2 = [];
+	for ( i = 0; i < names.size; i++ )
 	{
-		level waittill( "connected", player );
-		player setClientDvar( "1464", 1 );
+		points = getEntArray( names[ i ], "classname" );
+		for ( j = 0; j < points.size; j++ )
+		{
+			zone = maps\_zombiemode_zone_manager::zone_at_point( points[ j ].origin );
+			if ( !isDefined( zone ) )
+				continue;
+			if ( zone.name == "west_downstairs_zone" )
+				west[ west.size ] = points[ j ];
+			else if ( zone.name == "west2_downstairs_zone" )
+				west2[ west2.size ] = points[ j ];
+		}
 	}
-}
+	sides = [];
+	if ( west.size > 0 )
+		sides[ sides.size ] = west;
+	if ( west2.size > 0 )
+		sides[ sides.size ] = west2;
+	if ( sides.size < 1 )
+		return undefined;
 
-
-// --------------------------------------------------------------------------
-// Zones.  T5 zombie_cod5_asylum.gsc:85-88 (manage_zones with the two west
-// starting rooms) and asylum_zone_init :131, verbatim.  MEASURED on a
-// zm_asylum_sh probe (scr_codol_pathtest zones): the map's player volumes
-// carry T5's zone names and its doors / debris T5's flags
-// (north_door1, north_upstairs_blocker, upstairs_north_door1/2,
-// magic_box_north/south, south_upstairs_blocker, south_access_1); the two
-// flagless doors between the west rooms are T5's power doors ("power_on").
-// Without the graph a room only spawned while a player stood in it, so the
-// rooms next to the players' never fed zombies.
-// --------------------------------------------------------------------------
-
-asylum_zone_init()
-{
-	level.zm_zone_initial = [];
-	level.zm_zone_initial[ 0 ] = "west_downstairs_zone";
-	level.zm_zone_initial[ 1 ] = "west2_downstairs_zone";
-
-	maps\_zombiemode_zone_manager::add_adjacent_zone( "west_downstairs_zone", "west2_downstairs_zone", "power_on" );
-
-	// path north to power
-	maps\_zombiemode_zone_manager::add_adjacent_zone( "west2_downstairs_zone", "north_downstairs_zone", "north_door1" );
-	maps\_zombiemode_zone_manager::add_adjacent_zone( "north_downstairs_zone", "north_upstairs_zone", "north_upstairs_blocker" );
-	maps\_zombiemode_zone_manager::add_adjacent_zone( "north_upstairs_zone", "north2_upstairs_zone", "upstairs_north_door1" );
-	maps\_zombiemode_zone_manager::add_adjacent_zone( "north2_upstairs_zone", "kitchen_upstairs_zone", "upstairs_north_door2" );
-	maps\_zombiemode_zone_manager::add_adjacent_zone( "kitchen_upstairs_zone", "power_upstairs_zone", "magic_box_north" );
-
-	// path south to power
-	maps\_zombiemode_zone_manager::add_adjacent_zone( "west_downstairs_zone", "south_upstairs_zone", "south_upstairs_blocker" );
-	maps\_zombiemode_zone_manager::add_adjacent_zone( "south_upstairs_zone", "south2_upstairs_zone", "south_access_1" );
-	maps\_zombiemode_zone_manager::add_adjacent_zone( "south2_upstairs_zone", "power_upstairs_zone", "magic_box_south" );
+	points = sides[ randomInt( sides.size ) ];
+	self.zm_asylum_start_point = points[ randomInt( points.size ) ];
+	return self.zm_asylum_start_point;
 }

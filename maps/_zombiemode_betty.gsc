@@ -11,7 +11,7 @@ init()
 	precacheModel( "projectile_bouncing_betty_grenade" );
 	level.zm_betty_explosion = loadFx( "weapon/bouncing_betty/fx_explosion_betty_generic" );
 	maps\_zombiemode_equipment::register_equipment( "bouncingbetty_zm", ::on_betty_thrown );
-	codolprintln( "CoDOL zm betty: bouncingbetty_zm proximity registered" );
+	{}
 }
 
 // Called by the Zombies equipment registry on the engine's grenade_fire.
@@ -43,7 +43,7 @@ wait_for_betty( owner )
 	mine thread planted_betty( owner );
 	owner thread remove_betty_on_disconnect( mine );
 	mine thread remove_betty_on_game_end();
-	codolprintln( "CoDOL zm betty: planted by " + owner.name + " at " + origin );
+	{}
 	self delete();
 }
 
@@ -59,9 +59,14 @@ planted_betty( owner )
 		if ( self betty_has_nearby_zombie() )
 		{
 			self playSound( "betty_activated" );
-			codolprintln( "CoDOL zm betty: triggered at " + self.origin );
+			{}
 			wait( 0.3 );
 			origin = self.origin;
+			// The shipped Betty FX has no sound elements or spawn sounds.
+			// Replacing the missile with a planted model also bypasses the
+			// WeaponDef's projExplosionSound (+0x7c0). Emit that exact C1
+			// alias on an independent temp event: this model is deleted below.
+			playSoundAtPos( origin, "detpack_explo_default" );
 			playFx( level.zm_betty_explosion, origin );
 			// Entity radiusDamage supplies weapon and MOD_EXPLOSIVE to the
 			// normal damage path.  Zombies' player callback excludes this

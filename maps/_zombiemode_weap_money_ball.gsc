@@ -37,7 +37,7 @@ init()
 {
 	if ( getWeaponIndexFromName( MONEY_BALL_WEAPON ) <= 0 )
 	{
-		codolprintln( "CoDOL zm money ball: " + MONEY_BALL_WEAPON + " is not loaded on this map; kill bonus off" );
+		{}
 		return;
 	}
 
@@ -51,7 +51,7 @@ init()
 		level.zombie_kill_weapon_callbacks = [];
 	level.zombie_kill_weapon_callbacks[ MONEY_BALL_WEAPON ] = ::money_ball_kill;
 
-	codolprintln( "CoDOL zm money ball: ready (+" + MONEY_BALL_BONUS + " per zombie killed by " + MONEY_BALL_WEAPON + ")" );
+	{}
 }
 
 // self = the thrown grenade, from _zombiemode_equipment::watch_equipment_fire.
@@ -121,6 +121,5 @@ money_ball_kill( zombie, weapon )
 		self.money_ball_kills = 0;
 	self.money_ball_kills = self.money_ball_kills + 1;
 
-	codolprintln( "CoDOL zm money ball: " + self.name + " killed a zombie with " + weapon +
-		", +" + bonus + " bonus (score " + before + " -> " + self.score + ", money ball kills " + self.money_ball_kills + ")" );
+	{}
 }

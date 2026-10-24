@@ -9,6 +9,7 @@ Called by code after the level's main script function has run.
 ================*/
 CodeCallback_StartGameType()
 {
+	maps\_codol_maintenance_banner::init();
 	if( getDvar( "r_reflectionProbeGenerate" ) == "1" )
 		level waittill( "eternity" );
 
@@ -215,7 +216,7 @@ Called when a gametype is not supported.
 ================*/
 AbortLevel()
 {
-	println("Aborting level - gametype is not supported");
+	{}
 
 	level.callbackStartGameType = ::callbackVoid;
 	level.callbackPlayerConnect = ::callbackVoid;

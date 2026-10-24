@@ -123,10 +123,7 @@ releaseObjective()
 }
 
 debugTask( text )
-{
-	if ( getDvarInt( "developer" ) > 0 && getDvarInt( "scr_codol_bot_objective_debug" ) > 0 )
-		codolPrintLn( "CoDOL bot objective: " + self.name + " (" + self.pers["team"] + ") " + text );
-}
+{}
 
 // Developer trace of the objective state every five seconds.
 debugStatus()
@@ -155,7 +152,7 @@ debugStatus()
 		foreach ( player in level.players )
 			if ( isDefined( player.codolObjKey ) )
 				claims = claims + " " + player getEntityNumber() + ":" + player.codolObjKey;
-		codolPrintLn( "CoDOL bot objective status: " + line + " |" + claims );
+		{}
 	}
 }
 
@@ -673,7 +670,7 @@ startTask( task )
 	state.lastRadius = 0;
 	state.useWaitStart = undefined;
 	self.codolObjState = state;
-	self debugTask( task.kind + " " + task.key + " at " + task.goal );
+	{}
 }
 
 stepTask( task )
@@ -743,7 +740,7 @@ stepTask( task )
 		}
 		else
 		{
-			self debugTask( "bad path to " + task.key );
+			{}
 			self.codolObjBad[task.key] = getTime() + 12000;
 			self.codolObjGoal = undefined;
 			self.codolObjKey = undefined;
@@ -791,7 +788,7 @@ tighten( task )
 		state.tightGoal = task.obj.visuals[0].origin;
 	else if ( state.tight >= 3 )
 	{
-		self debugTask( "cannot reach the trigger of " + task.key );
+		{}
 		self.codolObjBad[task.key] = getTime() + 15000;
 		self.codolObjKey = undefined;
 	}
@@ -821,9 +818,7 @@ debugUse( task )
 	progress = "-";
 	if ( isDefined( task.obj ) && isDefined( task.obj.curProgress ) )
 		progress = "" + task.obj.curProgress;
-	self debugTask( "use " + task.key + " claim " + isDefined( self.claimTrigger ) + " usePressed " + self useButtonPressed() +
-		" touching " + self isTouching( task.trigger ) + " ground " + self isOnGround() + " weaponEnabled " + self isWeaponEnabled() +
-		" progress " + progress + " weapon " + self getCurrentWeapon() );
+	{}
 }
 
 // T5 bot_is_idle: no errand while the bot is engaging. getThreat keeps an
@@ -865,7 +860,7 @@ doUse( task )
 	seconds = task.useTime / 1000.0 / scaler + 1.5;
 	if ( seconds > 30 )
 		seconds = 30;
-	self debugTask( "holds use on " + task.key + " for " + seconds + "s" );
+	{}
 	health = self.health;
 	self pressUseButton( seconds );
 	endTime = getTime() + int( seconds * 1000 );
@@ -884,6 +879,6 @@ doUse( task )
 		}
 	}
 	self pressUseButton( 0 );
-	self debugTask( "released use on " + task.key + ", still open " + self taskStillValid( task ) + ", weapon " + self getCurrentWeapon() );
+	{}
 	wait 0.3;
 }

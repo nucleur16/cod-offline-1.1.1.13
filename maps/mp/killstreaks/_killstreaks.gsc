@@ -18,7 +18,7 @@ init()
 	level.killstreakFuncs = [];
 	level.killstreakSetupFuncs = [];
 	level.killstreakWeapons = [];
-	
+
 	level.killStreakMod = 0;
 
 	thread maps\mp\killstreaks\_ac130::init();
@@ -92,15 +92,7 @@ aerialPathCensus()
 	if ( isDefined( level.mapCenter ) )
 		center = "" + level.mapCenter;
 
-	println( "CoDOL killstreak paths: heli_start " + getEntArray( "heli_start", "targetname" ).size +
-		", heli_loop_start " + getEntArray( "heli_loop_start", "targetname" ).size +
-		", heli_leave " + getEntArray( "heli_leave", "targetname" ).size +
-		", heli_crash_start " + getEntArray( "heli_crash_start", "targetname" ).size +
-		", heli_dest " + getEntArray( "heli_dest", "targetname" ).size +
-		", heli_attack_area " + getEntArray( "heli_attack_area", "targetname" ).size +
-		", minimap_corner " + getEntArray( "minimap_corner", "targetname" ).size +
-		", airstrike height " + heightSource +
-		", mapCenter " + center );
+	{}
 }
 
 
@@ -211,7 +203,7 @@ onPlayerConnect()
 	for ( ;; )
 	{
 		level waittill( "connected", player );
-		
+
 		if( !isDefined ( player.pers[ "killstreaks" ] ) )
 			player.pers[ "killstreaks" ] = [];
 
@@ -220,14 +212,14 @@ onPlayerConnect()
 
 		if( !isDefined ( player.pers[ "kIDs_valid" ] ) )
 			player.pers[ "kIDs_valid" ] = [];
-		
+
 		player.lifeId = 0;
-			
+
 		if ( isDefined( player.pers["deaths"] ) )
 			player.lifeId = player.pers["deaths"];
 
 		player VisionSetMissilecamForPlayer( game["thermal_vision"] );
-	
+
 		player thread onPlayerSpawned();
 		player thread onPlayerChangeKit();
 	}
@@ -285,7 +277,7 @@ killstreakUseWaiterMarkerRestart()
 onPlayerChangeKit()
 {
 	self endon( "disconnect" );
-	
+
 	for ( ;; )
 	{
 		self waittill( "changed_kit" );
@@ -297,13 +289,16 @@ onPlayerChangeKit()
 waitForChangeTeam()
 {
 	self endon ( "disconnect" );
-	
+
 	self notify ( "waitForChangeTeam" );
 	self endon ( "waitForChangeTeam" );
-	
+	if ( !isDefined( self.pers["codolKillstreakTeamGeneration"] ) )
+		self.pers["codolKillstreakTeamGeneration"] = 0;
+
 	for ( ;; )
 	{
 		self waittill ( "joined_team" );
+		self.pers["codolKillstreakTeamGeneration"]++;
 		clearKillstreaks();
 	}
 }
@@ -345,6 +340,8 @@ killstreakTakesKID( streakName )
 		case "airdrop_sam_turret":
 		case "airdrop_predator_missile":
 		case "mortar_mp":
+		case "helicopter":
+		case "helicopter_flares":
 			return true;
 
 		default:
@@ -395,7 +392,7 @@ deadlyKillstreak( streakName )
 // already expect, so no control flow changes.
 killstreakRefused( streakName, reason )
 {
-	codolPrintLn( "CoDOL killstreak: " + streakName + " refused: " + reason );
+	{}
 	return false;
 }
 
@@ -430,7 +427,7 @@ killstreakUsePressed( selectedID )
 
 	if ( isDefined( self.selectingLocation ) )
 		return killstreakRefused( streakName, "a location selection is already open" );
-		
+
 	if ( deadlyKillstreak( streakName ) && level.killstreakRoundDelay && getGametypeNumLives() )
 	{
 		if ( level.gracePeriod - level.inGracePeriod < level.killstreakRoundDelay )
@@ -451,13 +448,13 @@ killstreakUsePressed( selectedID )
 		self iPrintLnBold( &"MP_UNAVAILABLE_USING_TURRET" );
 		return ( false );
 	}
-	
+
 	if ( isDefined( self.lastStand )  && isRideKillstreak( streakName ) )
 	{
 		self iPrintLnBold( &"MP_UNAVILABLE_IN_LASTSTAND" );
 		return ( false );
 	}
-	
+
 	if ( !self isWeaponEnabled() )
 		return killstreakRefused( streakName, "weapon is disabled" );
 
@@ -483,7 +480,7 @@ killstreakUsePressed( selectedID )
 	self.codolRideActivation = undefined;
 	if ( !isDefined( used ) || !used )
 		return killstreakRefused( streakName, "the reward's own use function returned false" );
-	
+
 	// Placement/remote callbacks may yield. A team change can revoke this
 	// reward meanwhile; newly earned rewards may only move it within the queue.
 	stillOwned = false;
@@ -509,8 +506,7 @@ killstreakUsePressed( selectedID )
 		{
 			self codolPublishStreakHudCount( self.pers["cur_kill_streak"], true );
 			if ( getDvarInt( "developer" ) > 0 )
-				codolPrintLn( "CoDOL streak HUD after use: " + self.name + " " + streakName +
-					" raw " + self.pers["cur_kill_streak"] + " hud " + self getKillstreak() );
+				{}
 		}
 		self giveOwnedKillstreakItem();
 	}
@@ -534,10 +530,10 @@ shuffleKillStreaksFILO( streakName, kID )
 	{
 		if ( self.pers["killstreaks"][i].streakName != streakName )
 			continue;
-			
+
 		if ( isDefined( kID ) && self.pers["killstreaks"][i].kID != kID )
 			continue;
-			
+
 		streakIndex = i;
 		break;
 	}
@@ -545,17 +541,17 @@ shuffleKillStreaksFILO( streakName, kID )
 
 	self.pers["killstreaks"][streakIndex] = undefined;
 
-	for( i = streakIndex + 1; i < arraySize; i++ )	
+	for( i = streakIndex + 1; i < arraySize; i++ )
 	{
-		if ( i == arraySize - 1 ) 
-		{	
+		if ( i == arraySize - 1 )
+		{
 			self.pers["killstreaks"][i-1] = self.pers["killstreaks"][i];
 			self.pers["killstreaks"][i] = undefined;
-		}	
+		}
 		else
 		{
 			self.pers["killstreaks"][i-1] = self.pers["killstreaks"][i];
-		}	
+		}
 	}
 }
 
@@ -583,7 +579,7 @@ usedKillstreak( streakName, awardXp )
 		self thread [[ level.onXPEvent ]]( "killstreak_" + streakName );
 
 	self thread maps\mp\gametypes\_missions::useHardpoint( streakName );
-	
+
 	awardref = maps\mp\_awards::getKillstreakAwardRef( streakName );
 	if ( isDefined( awardref ) )
 		self thread incPlayerStat( awardref, 1 );
@@ -593,14 +589,14 @@ usedKillstreak( streakName, awardXp )
 	if ( level.teamBased )
 	{
 		thread leaderDialog( team + "_friendly_" + streakName + "_inbound", team );
-		
+
 		if ( getKillstreakInformEnemy( streakName ) )
 			thread leaderDialog( team + "_enemy_" + streakName + "_inbound", level.otherTeam[ team ] );
 	}
 	else
 	{
 		self thread leaderDialogOnPlayer( team + "_friendly_" + streakName + "_inbound" );
-		
+
 		if ( getKillstreakInformEnemy( streakName ) )
 		{
 			excludeList[0] = self;
@@ -632,7 +628,7 @@ clearKillstreaks()
 getFirstPrimaryWeapon()
 {
 	weaponsList = self getWeaponsListPrimaries();
-	
+
 	assert ( isDefined( weaponsList[0] ) );
 	assert ( !isKillstreakWeapon( weaponsList[0] ) );
 
@@ -640,7 +636,7 @@ getFirstPrimaryWeapon()
 	{
 		assert ( isDefined( weaponsList[1] ) );
 		assert ( !isKillstreakWeapon( weaponsList[1] ) );
-		
+
 		return weaponsList[1];
 	}
 
@@ -671,7 +667,7 @@ killstreakUseWaiter()
 	self.lastKillStreak = 0;
 	if ( !isDefined( self.pers["lastEarnedStreak"] ) )
 		self.pers["lastEarnedStreak"] = undefined;
-		
+
     self.codolPendingRewardID = undefined;
     // Identity of this waiter's life. A reward use that outlives it (see
     // codolActivateReward) must not release a later life's lock or weapon.
@@ -694,7 +690,7 @@ killstreakUseWaiter()
 		else
 			self waittill ( "weapon_change", newWeapon );
         self codolCleanupRewardWeapons();
-		
+
 		if ( !isAlive( self ) )
 			continue;
 
@@ -822,8 +818,7 @@ codolRunRewardUse( selectedID, life, use )
         waittillframeend;
         self.codolRewardUseWeapon = undefined;
         if ( getDvarInt( "developer" ) > 0 )
-            codolPrintLn( "CoDOL killstreak use: " + self.name + " " + streakName + "#" + selectedID +
-                " result " + ( isDefined( result ) && result ) + " holding " + self getCurrentWeapon() );
+            {}
 
         // The weapon belongs to the life that raised the reward weapon. After
         // a death (or a respawn during a ride) the spawn loadout owns it.
@@ -857,7 +852,7 @@ codolRunRewardUse( selectedID, life, use )
                     lastWeapon = getKillstreakWeapon( pressed.streakName );
                 self switchToWeapon( lastWeapon );
                 if ( getDvarInt( "developer" ) > 0 )
-                    codolPrintLn( "CoDOL killstreak use: " + self.name + " " + streakName + " returns to " + lastWeapon );
+                    {}
             }
 
             // give time to switch to the near weapon; when the weapon is none (such as during a "disableWeapon()" period
@@ -893,7 +888,7 @@ finishDeathWaiter()
 {
 	self endon ( "disconnect" );
 	level endon ( "game_ended" );
-	
+
 	self waittill ( "death" );
 	self setKillstreak( 0 );
 	wait ( 0.05 );
@@ -945,10 +940,10 @@ checkKillstreakReward( streakCount )
 			continue;
 		streakName = self.killStreaks[streakVal];
 		actualVal = streakVal + level.killStreakMod;
-		
+
 		if ( actualVal > streakCount )
 			break;
-		
+
 		if ( isDefined( self.pers["lastEarnedStreak"] ) && killStreaks[streakName] <= killStreaks[self.pers["lastEarnedStreak"]] )
 			continue;
 
@@ -958,7 +953,7 @@ checkKillstreakReward( streakCount )
 		if ( isSubStr( streakName, "-rollover" ) )
 			continue;
 		useStreakName = streakName;
-		
+
 		if ( self tryGiveKillstreak( useStreakName, int(max( actualVal, streakCount )) ) )
 		{
 			self thread killstreakEarned( useStreakName );
@@ -977,7 +972,7 @@ killstreakEarned( streakName )
 	if ( self.codolSelectedKillstreaks[0] == streakName )
 	{
 		self.firstKillstreakEarned = getTime();
-	}	
+	}
 	else if ( self.codolSelectedKillstreaks[2] == streakName && isDefined( self.firstKillstreakEarned ) )
 	{
 		if ( getTime() - self.firstKillstreakEarned < 20000 )
@@ -1013,11 +1008,11 @@ giveKillstreak( streakName, isEarned, awardXp, owner )
 	weapon = getKillstreakWeapon( streakName );
 
 	self giveKillstreakWeapon( weapon );
-	
+
 	// shuffle existing killstreaks up a notch
-	for( i = self.pers["killstreaks"].size; i >= 0; i-- )	
-		self.pers["killstreaks"][i + 1] = self.pers["killstreaks"][i]; 	
-	
+	for( i = self.pers["killstreaks"].size; i >= 0; i-- )
+		self.pers["killstreaks"][i + 1] = self.pers["killstreaks"][i];
+
 	self.pers["killstreaks"][0] = spawnStruct();
 	self.pers["killstreaks"][0].streakName = streakName;
 	self.pers["killstreaks"][0].earned = isDefined( isEarned ) && isEarned;
@@ -1044,13 +1039,13 @@ giveKillstreak( streakName, isEarned, awardXp, owner )
 		self.pers["killstreaks"][0].lifeId = -1;
 	else
 		self.pers["killstreaks"][0].lifeId = self.pers["deaths"];
-	
+
     self giveOwnedKillstreakItem( true );
 
-	// probably obsolete unless we bring back the autoshotty	
+	// probably obsolete unless we bring back the autoshotty
 	if ( isdefined( level.killstreakSetupFuncs[ streakName ] ) )
 		self [[ level.killstreakSetupFuncs[ streakName ] ]]();
-		
+
 	if ( isDefined( isEarned ) && isEarned && isDefined( awardXp ) && awardXp )
 		self notify( "received_earned_killstreak" );
 	// C1's act_uavearn field order (mp/cofieldorderbootcamp.csv column 12).
@@ -1265,9 +1260,7 @@ giveOwnedKillstreakItem( skipDialog )
         self giveKillstreakWeapon( weapon );
         if ( !self hasWeapon( weapon ) )
         {
-            println( "CoDOL killstreak: " + reward.streakName + " weapon " + weapon +
-                " was not granted (no publishable index); action slot left empty," +
-                " reward kept pending" );
+            {}
             self _setActionSlot( slot, "" );
             continue;
         }
@@ -1310,7 +1303,7 @@ initRideKillstreak()
 
 	if ( isDefined( self ) )
 		self _enableUsability();
-		
+
 	return result;
 }
 
@@ -1323,7 +1316,7 @@ initRideKillstreak_internal()
 	self thread watchRideLaptopSwitch( self getCurrentWeapon() );
 	laptopWait = self waittill_any_timeout( 1.0, "disconnect", "death", "weapon_switch_started", "codol_ride_laptop_switched" );
 	self notify( "codol_ride_laptop_done" );
-	
+
 	if ( laptopWait == "weapon_switch_started" || laptopWait == "codol_ride_laptop_switched" )
 		return ( "fail" );
 
@@ -1338,21 +1331,21 @@ initRideKillstreak_internal()
 		if ( self.team == "spectator" )
 			return "fail";
 
-		return ( "success" );		
+		return ( "success" );
 	}
-	
+
 	if ( self isEMPed() || self isNuked() )
 	{
 		return ( "fail" );
 	}
-	
+
 	self VisionSetNakedForPlayer( "black_bw", 0.75 );
 	blackOutWait = self waittill_any_timeout( 0.80, "disconnect", "death" );
 
-	if ( blackOutWait != "disconnect" ) 
+	if ( blackOutWait != "disconnect" )
 	{
 		self thread clearRideIntro( 1.0 );
-		
+
 		if ( self.team == "spectator" )
 			return "fail";
 	}
@@ -1362,11 +1355,11 @@ initRideKillstreak_internal()
 
 	if ( self isEMPed() || self isNuked() )
 		return "fail";
-	
+
 	if ( blackOutWait == "disconnect" )
 		return ( "disconnect" );
 	else
-		return ( "success" );		
+		return ( "success" );
 }
 
 
@@ -1394,9 +1387,7 @@ clearRideIntro( delay )
 		wait( delay );
 
 	//self freezeControlsWrapper( false );
-	
+
 	if ( !isDefined( level.nukeVisionInProgress ) )
 		self VisionSetNakedForPlayer( getDvar( "mapname" ), 0 );
 }
-
-

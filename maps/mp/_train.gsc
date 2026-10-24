@@ -13,8 +13,8 @@ init()
 
 train_setup()
 {
-	precacheItem( "train_mp" );	
-	
+	precacheItem( "train_mp" );
+
 	delay_until_first_train = 2;
 	Units_per_second = 1200;// train speed
 	train_cars = 24;
@@ -28,7 +28,7 @@ train_setup()
 	lead_out_dist = 4000;
 
 	train_car_sound_interval = 3;
-	
+
 	flag_init( "train_running" );
 
 	yaw = self.angles[ 1 ];
@@ -49,7 +49,7 @@ train_setup()
 
 	// ****************
 	// Set up the other cars
-	// ****************	
+	// ****************
 	forward = anglestoforward( self.angles );
 	forward *= distance_between_cars;
 	car_separation_vec = forward;
@@ -76,10 +76,10 @@ train_setup()
 
 	// ****************
 	// The start and end points for the train, set from script origins
-	// ****************	
+	// ****************
 	start = getent( self.target, "targetname" );
 	start.origin = ( start.origin[ 0 ], start.origin[ 1 ], self.origin[ 2 ] );
-	
+
 	end = getent( start.target, "targetname" );
 	end.origin = ( end.origin[ 0 ], end.origin[ 1 ], self.origin[ 2 ] );
 	forward = anglestoforward( self.angles );
@@ -96,7 +96,7 @@ train_setup()
 
 	// ****************
 	// set up the earthquakes that play to make the train tracks rattle
-	// ****************	
+	// ****************
 	distance_between_eq_orgs = eq_radius * 0.5;
 	eq_count = track_dist / distance_between_eq_orgs;
 
@@ -122,7 +122,7 @@ train_setup()
 
 	self.origin = start.origin;
 	wait( delay_until_first_train );
-	
+
 	for ( ;; )
 	{
 		hide_trains();
@@ -145,7 +145,7 @@ train_setup()
 		// Now the train goes by
 		self moveto( end.origin + car_separation_vec, travel_time );
 		train_play_sounds( train_car_sound_interval );
-		
+
 		wait( travel_time );
 		hide_trains();
 
@@ -160,18 +160,18 @@ train_setup()
 
 train_play_sound_delayed( alias )
 {
-	wait( randomfloatrange( SOUND_DELAY_MIN, SOUND_DELAY_MAX ) );	
+	wait( randomfloatrange( SOUND_DELAY_MIN, SOUND_DELAY_MAX ) );
 	self playLoopSound( alias );
 }
 
 train_play_sounds( max )
-{	
+{
 	self thread train_play_sound_delayed( "veh_train_eng_dist1_loop" );
 	self thread train_play_sound_delayed( "veh_train_eng_dist2_loop" );
 	self thread train_play_sound_delayed( "veh_train_eng_mid_loop" );
 	self thread train_play_sound_delayed( "veh_train_eng_close1_loop" );
 	self thread train_play_sound_delayed( "veh_train_eng_close2_loop" );
-	
+
 	// dont play sounds on every car
 	count = 0;
 	for ( i = 0; i < self.cars.size; i++ )
@@ -180,7 +180,7 @@ train_play_sounds( max )
 		if ( count < max )
 			continue;
 		count = 0;
-	
+
 		self.cars[ i ] thread train_play_sound_delayed( "veh_train_car_dist_loop" );
 		self.cars[ i ] thread train_play_sound_delayed( "veh_train_car_mid_loop" );
 		self.cars[ i ] thread train_play_sound_delayed( "veh_train_car_close_loop" );
@@ -189,11 +189,11 @@ train_play_sounds( max )
 
 train_stop_sounds( max )
 {
-	self stopLoopSound( "veh_train_eng_dist1_loop" );   
-	self stopLoopSound( "veh_train_eng_dist2_loop" );   
-	self stopLoopSound( "veh_train_eng_mid_loop" );     
-	self stopLoopSound( "veh_train_eng_close1_loop" );  
-	self stopLoopSound( "veh_train_eng_close2_loop" );  
+	self stopLoopSound( "veh_train_eng_dist1_loop" );
+	self stopLoopSound( "veh_train_eng_dist2_loop" );
+	self stopLoopSound( "veh_train_eng_mid_loop" );
+	self stopLoopSound( "veh_train_eng_close1_loop" );
+	self stopLoopSound( "veh_train_eng_close2_loop" );
 
 	count = 0;
 	for ( i = 0; i < self.cars.size; i++ )
@@ -202,7 +202,7 @@ train_stop_sounds( max )
 		if ( count < max )
 			continue;
 		count = 0;
-	
+
 		self.cars[ i ] stopLoopSound( "veh_train_car_dist_loop" );
 		self.cars[ i ] stopLoopSound( "veh_train_car_mid_loop" );
 		self.cars[ i ] stopLoopSound( "veh_train_car_close_loop" );
@@ -249,10 +249,10 @@ train_spawns_dust()
 {
 	if ( !isdefined( level._effect[ "train_dust" ] ) )
 		return;
-		
+
 	range = 40;
 	self endon( "train_stops_killing_players" );
-	
+
 	for ( ;; )
 	{
 		/*
@@ -319,13 +319,13 @@ train_kills_players( train_cars, distance_between_cars )
 		min_x -= dif[ 0 ];
 		max_y -= dif[ 1 ];
 		min_y -= dif[ 1 ];
-		
+
 		// store it for the dust fx
 		self.min_x = min_x;
 		self.max_x = max_x;
 		self.min_y = min_y;
 		self.max_y = max_y;
-		
+
 		//print3d( ( max_x, max_y, self.origin[ 2 ] ), " * " );
 		//print3d( ( min_x, max_y, self.origin[ 2 ] ), " * " );
 		//print3d( ( max_x, min_y, self.origin[ 2 ] ), " * " );
@@ -341,7 +341,7 @@ train_kills_players( train_cars, distance_between_cars )
 				continue;
 			if ( !train_hits( player, min_x, min_y, max_x, max_y ) )
 				continue;
-				
+
 			player playsound( "melee_knife_hit_watermelon" );
 
 			pos = get_damageable_player_pos( player );
@@ -357,9 +357,9 @@ train_kills_players( train_cars, distance_between_cars )
 			pos = get_damageable_grenade_pos( grenade );
 			hit_ents[ hit_ents.size ] = get_damageable_grenade( grenade, pos );
 		}
-	
+
 		foreach ( ent in hit_ents )
-		{				
+		{
 			ent.damage = 5000;
 			ent.pos = self.origin;
 			ent.damageOwner = self;
@@ -373,9 +373,9 @@ train_kills_players( train_cars, distance_between_cars )
 				"train_mp", // sWeapon = string specifying the weapon used (e.g. "claymore_mp")
 				ent.pos, // damagepos = the position damage is coming from
 				vectornormalize(ent.damageCenter - ent.pos) // damagedir = the direction damage is moving in
-			);			
+			);
 		}
-				
+
 		wait( 0.05 );
 	}
 }
@@ -455,7 +455,7 @@ print3d_eq( origin, msg )
 	level endon( "stop_train_debug" + origin );
 	for ( ;; )
 	{
-		Print3d( origin, msg );
+		{}
 		wait( 0.05 );
 	}
 }

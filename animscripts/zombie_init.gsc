@@ -121,17 +121,9 @@ main()
 	self.a.nodeath = false;
 	self.a.meleeState = "right";
 	self.a.painTime = 0;
-	// T5 _zombiemode_spawner.gsc:192 zombie_spawn_init: zombies never play a
-	// hit flinch (zombie_pain.gsc returns on this flag; only the thundergun
-	// and lander knockdowns, through pain_override paths, ever animate).
-	self.a.disablePain = true;
 
 	self.allowpain = true;
 	self.has_legs = true;
-
-	// T5 animscripts\zombie_death.gsc:79 waitForRagdoll: every regular zombie
-	// goes to ragdoll 35% into a death clip that has no start_ragdoll note.
-	self.allow_ragdoll = true;
 
 	self.ignoreSuppression = true;
 	self.suppressionThreshold = 1;
@@ -139,12 +131,11 @@ main()
 	self.noDodgeMove = true;
 	self.disableArrivals = true;
 
-	// T5 animscripts\zombie_init.gsc:316-320 set_anim_playback_rate: only
-	// animplaybackrate is jittered (0.9-1.1, idles, pain, death); every move
-	// cycle plays at moveplaybackrate 1, so a zombie travels at its clip's
-	// own root-motion speed (walk ~36 u/s, run ~109, sprint ~140).
+	// Native fields (Scr_AddClassField, codol_actor_lifecycle.cpp:190-199).
+	// T5 zombie_init.gsc:196 randomises both so a pack of zombies does not
+	// move in lockstep.
 	self.animplaybackrate = 0.9 + randomFloat( 0.2 );
-	self.moveplaybackrate = 1;
+	self.moveplaybackrate = self.animplaybackrate;
 
 	// T5 zombies claw at contact range; the dog's 102 units is a lunge.
 	// T5 _zombiemode_spawner.gsc:3908 zombie_setup_attack_properties sets 64

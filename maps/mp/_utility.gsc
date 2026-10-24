@@ -16,16 +16,16 @@ saveModel()
 	info["viewmodel"] = self getViewModel();
 	attachSize = self getAttachSize();
 	info["attach"] = [];
-	
+
 	assert(info["viewmodel"] != ""); // No viewmodel was associated with the player's model
-	
+
 	for(i = 0; i < attachSize; i++)
 	{
 		info["attach"][i]["model"] = self getAttachModelName(i);
 		info["attach"][i]["tag"] = self getAttachTagName(i);
 		info["attach"][i]["ignoreCollision"] = self getAttachIgnoreCollision(i);
 	}
-	
+
 	return info;
 }
 
@@ -37,14 +37,14 @@ loadModel(info)
 
 	attachInfo = info["attach"];
 	attachSize = attachInfo.size;
-    
+
 	for(i = 0; i < attachSize; i++)
 		self attach(attachInfo[i]["model"], attachInfo[i]["tag"], attachInfo[i]["ignoreCollision"]);
 }
 */
 
-/* 
-============= 
+/*
+=============
 ///ScriptDocBegin
 "Name: delayThread( <delay>, <function>, <arg1>, <arg2>, <arg3>, <arg4> )"
 "Summary: Delaythread is cool! It saves you from having to write extra script for once off commands. Note you don�t have to thread it off. Delaythread is that smart!"
@@ -59,8 +59,8 @@ loadModel(info)
 "Example: delayThread( 3, ::flag_set, "player_can_rappel" );
 "SPMP: both"
 ///ScriptDocEnd
-============= 
-*/ 
+=============
+*/
 delayThread( timer, func, param1, param2, param3, param4, param5 )
 {
 	// to thread it off
@@ -95,13 +95,13 @@ delayThread_proc( func, timer, param1, param2, param3, param4, param5 )
 		thread [[ func ]]( param1, param2 );
 	}
 	else
-	if ( !IsDefined( param4 ) )	
+	if ( !IsDefined( param4 ) )
 	{
 		assertex( !isdefined( param5 ), "Delaythread does not support vars after undefined." );
 		thread [[ func ]]( param1, param2, param3 );
 	}
 	else
-	if ( !IsDefined( param5 ) )	
+	if ( !IsDefined( param5 ) )
 	{
 		thread [[ func ]]( param1, param2, param3, param4 );
 	}
@@ -655,7 +655,7 @@ setPersStat( dataName, value )
 {
 	assertEx( isDefined( dataName ), "Called setPersStat with no dataName defined." );
 	assertEx( isDefined( value ), "Called setPersStat for " + dataName + " with no value defined." );
-	
+
 	self.pers[ dataName ] = value;
 }
 
@@ -665,7 +665,7 @@ initPlayerStat( ref, defaultvalue )
 	{
 		if ( !isDefined( defaultvalue ) )
 			defaultvalue = 0;
-		
+
 		self.stats["stats_" + ref ] = spawnstruct();
 		self.stats["stats_" + ref ].value = defaultvalue;
 	}
@@ -892,7 +892,7 @@ leaderDialogOnPlayer( dialog, group, groupOverride )
 {
 	if ( !isDefined( groupOverride ) )
 		groupOverride = false;
-	
+
 	team = self.pers[ "team" ];
 
 	if ( level.splitscreen )
@@ -914,7 +914,7 @@ leaderDialogOnPlayer( dialog, group, groupOverride )
 				self stopLocalSound( self.leaderDialogActive );
 				self thread playLeaderDialogOnPlayer( dialog, team );
 			}
-			
+
 			return;
 		}
 
@@ -949,7 +949,7 @@ playLeaderDialogOnPlayer( dialog, team )
 		self.leaderDialogGroups[ group ] = undefined;
 		self.leaderDialogGroup = group;
 	}
-	
+
 	assertEx( isDefined( game[ "dialog" ][ dialog ] ), "Dialog " + dialog + " was not defined in game[dialog] array." );
 
 	// Silent catalogue entries still finish their queue item. Returning here
@@ -963,7 +963,7 @@ playLeaderDialogOnPlayer( dialog, team )
 		wait( 3.0 );
 	}
 	self.leaderDialogLocalSound = "";
-	
+
 	self.leaderDialogActive = "";
 	self.leaderDialogGroup = "";
 
@@ -1054,7 +1054,7 @@ getTimePassed()
 {
 	if ( !isDefined( level.startTime ) )
 		return 0;
-	
+
 	if ( level.timerStopped )
 		return( level.timerPauseTime - level.startTime ) - level.discardTime;
 	else
@@ -1141,7 +1141,7 @@ logXPGains()
 		if ( !gain )
 			continue;
 
-		self logString( "xp " + xpTypes[ index ] + ": " + gain );
+		{}
 	}
 }
 
@@ -1156,7 +1156,7 @@ registerRoundSwitchDvar( dvarString, defaultValue, minValue, maxValue )
 	level.roundswitchMin = minValue;
 	level.roundswitchMax = maxValue;
 	level.roundswitch = getDvarInt( dvarString, defaultValue );
-	
+
 	if ( level.roundswitch < minValue )
 		level.roundswitch = minValue;
 	else if ( level.roundswitch > maxValue )
@@ -1188,7 +1188,7 @@ registerTimeLimitDvar( dvarString, defaultValue, minValue, maxValue )
 	makeDvarServerInfo( "ui_timelimit", getTimeLimit() );
 }
 
-registerHalfTimeDvar( dvarString, defaultValue, minValue, maxValue) 
+registerHalfTimeDvar( dvarString, defaultValue, minValue, maxValue)
 {
 	registerWatchDvarInt( "halftime", defaultValue );
 	makeDvarServerInfo( "ui_halftime", getHalfTime() );
@@ -1312,12 +1312,12 @@ strip_suffix( lookupString, stripString )
 _takeWeaponsExcept( saveWeapon )
 {
 	weaponsList = self GetWeaponsListAll();
-	
+
 	foreach ( weapon in weaponsList )
 	{
 		if ( weapon == saveWeapon )
 		{
-			continue;	
+			continue;
 		}
 		else
 		{
@@ -1341,7 +1341,7 @@ saveData()
 	{
 		if ( weaponInventoryType( weapon ) == "exclusive" )
 			continue;
-			
+
 		if ( weaponInventoryType( weapon ) == "altmode" )
 			continue;
 
@@ -1349,17 +1349,17 @@ saveData()
 		saveWeapon.name = weapon;
 		saveWeapon.clipAmmoR = self getWeaponAmmoClip( weapon, "right" );
 		saveWeapon.clipAmmoL = self getWeaponAmmoClip( weapon, "left" );
-		saveWeapon.stockAmmo = self getWeaponAmmoStock( weapon );		
+		saveWeapon.stockAmmo = self getWeaponAmmoStock( weapon );
 		/* save camo? */
-		
+
 		if ( isDefined( self.throwingGrenade ) && self.throwingGrenade == weapon )
 			saveWeapon.stockAmmo--;
-		
+
 		assert( saveWeapon.stockAmmo >= 0 );
-		
+
 		saveData.weapons[saveData.weapons.size] = saveWeapon;
 	}
-	
+
 	self.script_saveData = saveData;
 }
 
@@ -1371,12 +1371,12 @@ restoreData()
 	self setOffhandSecondaryClass( saveData.offhandClass );
 
 	foreach ( weapon in saveData.weapons )
-	{		
+	{
 		//if ( weapon.name == self.loadoutPrimary + "_mp" )
 			self _giveWeapon( weapon.name, int(tableLookup( "mp/camoTable.csv", 1, self.loadoutPrimaryCamo, 0 )) );
 		//else
 		//self _giveWeapon( weapon.name );
-			
+
 		self setWeaponAmmoClip( weapon.name, weapon.clipAmmoR, "right" );
 		if ( codolWeaponHasAttachment( weapon.name, "akimbo" ) )
 			self setWeaponAmmoClip( weapon.name, weapon.clipAmmoL, "left" );
@@ -1393,7 +1393,7 @@ restoreData()
 
 		if ( weapon == "none" )
 			weapon = self getLastWeapon();
-		
+
 		// Can remove this when "spawn" isn't used after final stand
 		self setSpawnWeapon( weapon );
 		self switchToWeapon( weapon );
@@ -1597,14 +1597,14 @@ getScoreLimit()
 	if ( isRoundBased() )
 	{
 		if ( getWatchedDvar( "roundlimit" ) )
-			return ( getWatchedDvar( "roundlimit" ) );			
+			return ( getWatchedDvar( "roundlimit" ) );
 		else
 			return ( getWatchedDvar( "winlimit" ) );
 	}
 	else
 	{
 		return ( getWatchedDvar( "scorelimit" ) );
-	}	
+	}
 }
 
 
@@ -1625,7 +1625,7 @@ getTimeLimit()
 	if ( inOvertime() && ( !isDefined(game[ "inNukeOvertime" ]) || !game[ "inNukeOvertime" ] ) )
 	{
 		timeLimit = int( getDvar( "overtimeTimeLimit" ) );
-		
+
 		if ( isDefined( timeLimit ) )
 			return timeLimit;
 		else
@@ -1661,6 +1661,7 @@ inOvertime()
 
 gameHasStarted()
 {
+	// Initial team spawns arm life/elimination rules; prematch_done alone does not.
 	if ( level.teamBased )
 		return( level.hasSpawned[ "axis" ] && level.hasSpawned[ "allies" ] );
 	else
@@ -1716,7 +1717,7 @@ setUsingRemote( remoteName )
 {
 	if ( isDefined( self.carryIcon) )
 		self.carryIcon.alpha = 0;
-	
+
 	assert( !self isUsingRemote() );
 	self.usingRemote = remoteName;
 
@@ -1727,8 +1728,8 @@ setUsingRemote( remoteName )
 getRemoteName()
 {
 	assert( self isUsingRemote() );
-	
-	return self.usingRemote;	
+
+	return self.usingRemote;
 }
 
 freezeControlsWrapper( frozen )
@@ -1738,7 +1739,7 @@ freezeControlsWrapper( frozen )
 		self freezeControls( true );
 		return;
 	}
-	
+
 	self freezeControls( frozen );
 }
 
@@ -1753,9 +1754,9 @@ clearUsingRemote()
 
 	self.usingRemote = undefined;
 	self _enableOffhandWeapons();
-	
+
 	curWeapon = self getCurrentWeapon();
-	
+
 	// CoDOL: a ride that already took its killstreak weapon and started the
 	// switch back (_rcbomb::restoreWeaponAfterRide) reaches here with the
 	// current weapon "none" AND getLastWeapon() "none"; IW4's unconditional
@@ -1767,9 +1768,9 @@ clearUsingRemote()
 		if ( isDefined( lastWeapon ) && lastWeapon != "none" && self hasWeapon( lastWeapon ) )
 			self switchToWeapon( lastWeapon );
 	}
-	
+
 	self freezeControlsWrapper( false );
-	
+
 	self notify( "stopped_using_remote" );
 }
 
@@ -1825,7 +1826,7 @@ _giveWeapon( weapon, variant, dualWieldOverRide )
 {
 	if ( !isDefined(variant) )
 		variant = 0;
-	
+
 	if ( isSubstr( weapon, "_akimbo" ) || isDefined(dualWieldOverRide) && dualWieldOverRide == true)
 		self giveWeapon(weapon, variant, true);
 	else
@@ -1836,7 +1837,7 @@ _hasPerk( perkName )
 {
 	if ( isDefined( self.perks[perkName] ) )
 		return true;
-	
+
 	return false;
 }
 
@@ -1851,7 +1852,7 @@ _setPerk( perkName )
 
 	if ( isDefined( level.perkSetFuncs[perkName] ) )
 		self thread [[level.perkSetFuncs[perkName]]]();
-	
+
 }
 
 
@@ -1874,15 +1875,15 @@ _clearPerks()
 		if ( isDefined( level.perkUnsetFuncs[perkName] ) )
 			self [[level.perkUnsetFuncs[perkName]]]();
 	}
-	
+
 	self.perks = [];
 	self clearPerks();
 }
 
 // Quick Sort - pass it an array it will come back sorted
-quickSort(array) 
+quickSort(array)
 {
-	return quickSortMid(array, 0, array.size -1 );     
+	return quickSortMid(array, 0, array.size -1 );
 }
 
 quickSortMid(array, start, end)
@@ -1892,33 +1893,33 @@ quickSortMid(array, start, end)
 
 	if (end - start >= 1)
     {
-        pivot = array[start];  
+        pivot = array[start];
 
-        while (k > i)         
+        while (k > i)
         {
-	        while (array[i] <= pivot && i <= end && k > i)  
-	        	i++;                                 
-	        while (array[k] > pivot && k >= start && k >= i) 
-	            k--;                                      
-	        if (k > i)                                 
-	           array = swap(array, i, k);                    
+	        while (array[i] <= pivot && i <= end && k > i)
+                        i++;
+	        while (array[k] > pivot && k >= start && k >= i)
+	            k--;
+	        if (k > i)
+	           array = swap(array, i, k);
         }
-        array = swap(array, start, k);                                               
-        array = quickSortMid(array, start, k - 1); 
-        array = quickSortMid(array, k + 1, end);   
+        array = swap(array, start, k);
+        array = quickSortMid(array, start, k - 1);
+        array = quickSortMid(array, k + 1, end);
     }
 	else
-    	return array;
-    
+        return array;
+
     return array;
 }
 
-swap(array, index1, index2) 
+swap(array, index1, index2)
 {
-	temp = array[index1];          
-	array[index1] = array[index2];     
-	array[index2] = temp;   
-	return array;         
+	temp = array[index1];
+	array[index1] = array[index2];
+	array[index2] = temp;
+	return array;
 }
 
 _suicide()
@@ -1926,14 +1927,14 @@ _suicide()
 	if ( self isUsingRemote() && !isDefined( self.fauxDead ) )
 		self thread maps\mp\gametypes\_damage::PlayerKilled_internal( self, self, self, 10000, "MOD_SUICIDE", "frag_grenade_mp", (0,0,0), "none", 0, 1116, true );
 	else if( !self isUsingRemote() && !isDefined( self.fauxDead ) )
-		self suicide();	
+		self suicide();
 }
 
 isReallyAlive( player )
 {
 	if ( isAlive( player ) && !isDefined( player.fauxDead ) )
 		return true;
-		
+
 	return false;
 }
 
@@ -1976,7 +1977,7 @@ setAltSceneObj( object, tagName, fov, forceLink )
 
 	if ( !getDvarInt( "scr_pipmode" ) && !forceLink )
 		return;
-	
+
 	self endon ( "disconnect" );
 
 	if ( !isReallyAlive( self ) )
@@ -1986,28 +1987,28 @@ setAltSceneObj( object, tagName, fov, forceLink )
 		return;
 
 	self notify ( "altscene" );
-	
+
 	self.altSceneObject = object;
 
 	self AlternateSceneCameraLinkTo( object, tagName, fov );
 	self setClientDvar( "ui_altscene", 1 );
-	
+
 	self thread endSceneOnDeath( object );
 	self thread endSceneOnDeath( self );
-	
+
 	self waittill ( "end_altScene" );
-	
+
 	self.altSceneObject = undefined;
 	self AlternateSceneCameraUnlink();
-	
+
 	if ( !forceLink )
 	{
 		self setClientDvar( "ui_altscene", 2 );
-	
+
 		self endon ( "altscene" );
 		wait ( 2.0 );
 	}
-	self setClientDvar( "ui_altscene", 0 );	
+	self setClientDvar( "ui_altscene", 0 );
 	*/
 }
 
@@ -2015,7 +2016,7 @@ setAltSceneObj( object, tagName, fov, forceLink )
 endSceneOnDeath( object )
 {
 	self endon ( "altscene" );
-	
+
 	object waittill ( "death" );
 	self notify ( "end_altScene" );
 }
@@ -2035,13 +2036,13 @@ registerAdrenalineInfo( type, value )
 {
 	if ( !isDefined( level.adrenalineInfo ) )
 		level.adrenalineInfo = [];
-		
+
 	level.adrenalineInfo[type] = value;
 }
 
 
 giveAdrenaline( type )
-{	
+{
 	/*
 	if ( self.adrenaline >= 1000 )
 		return;
@@ -2051,7 +2052,7 @@ giveAdrenaline( type )
 	printLn( "setting: " + type + " " + level.adrenalineInfo[type] );
 
 	self setAdrenaline( self.adrenaline + level.adrenalineInfo[type] );
-	
+
 	if ( self.adrenaline == 1000 )
 	{
 
@@ -2065,7 +2066,7 @@ setAdrenaline( value )
 {
 	self.adrenaline = min( value, 1000 );
 	self setClientDvar( "ui_adrenaline", self.adrenaline );
-	
+
 	if ( self.adrenaline < 1000 )
 		self.combatHigh = undefined;
 }
@@ -2086,7 +2087,7 @@ arrayInsertion( array, item, index )
 			array[i+1] = array[i];
 		}
 	}
-	
+
 	array[index] = item;
 }
 
@@ -2132,25 +2133,25 @@ getFloatProperty( dvar, defValue )
 statusMenu( duration )
 {
 	self endon ( "disconnect" );
-	
+
 	if ( !isDefined( self._statusMenu ) )
 		self.statusMenu = false;
-		
+
 	if ( self.statusMenu )
 		return;
 
 	self.statusMenu = true;
 
 	self openpopupMenu( "status_update" );
-	
+
 	wait ( duration );
 
 	self closepopupMenu( "status_update" );
 
 	// debounce
 	wait ( 10.0 );
-	
-	self.statusMenu = false;	
+
+	self.statusMenu = false;
 }
 
 isChangingWeapon()
@@ -2162,13 +2163,13 @@ isKillstreakWeapon( weapon )
 {
 	if ( weapon == "none" )
 		return false;
-	
+
 	if ( codol_weaponInventoryType( weapon ) == "exclusive" && weapon != "destructible_car" )
 		return true;
-	
+
 	if ( isSubStr( weapon, "killstreak" ) )
 		return true;
-	
+
 	switch ( weapon )
 	{
 		case "airdrop_sentry_marker_mp":
@@ -2185,7 +2186,7 @@ isKillstreakWeapon( weapon )
 		case "ac130_25mm_mp":			// AC130
 		case "remotemissile_projectile_mp":	// Hellfire
 		case "cobra_20mm_mp":			// Attack Helicopter
-		case "nuke_mp":					// Nuke			
+		case "nuke_mp":					// Nuke
 		// CoDOL: attack dogs.  _damage swaps a dog's bite to dogs_mp and
 		// credits the owner, who never damaged the victim himself; as a
 		// non-streak weapon, _events::killedPlayer then read
@@ -2216,20 +2217,20 @@ getWeaponClass( weapon )
 	}
 	if ( weaponClass == "" )
 		weaponClass = codol_getWeaponClass( weapon );
-	
+
 	if ( isMG( weapon ) )
 		weaponClass = "weapon_mg";
 	else if ( isKillstreakWeapon( weapon ) )
-		weaponClass = "killstreak"; 
+		weaponClass = "killstreak";
 	else if ( isDeathStreakWeapon( weapon ) )
 		weaponClass = "deathstreak";
 	else if ( weapon == "none" ) //airdrop crates
 		weaponClass = "other";
 	else if ( weaponClass == "" )
 		weaponClass = "other";
-	
+
 	assertEx( weaponClass != "", "ERROR: invalid weapon class for weapon " + weapon );
-	
+
 	return weaponClass;
 }
 
@@ -2371,11 +2372,11 @@ limitDecimalPlaces( value, places )
 	modifier = 1;
 	for ( i = 0; i < places; i++ )
 		modifier *= 10;
-	
+
 	newvalue = value * modifier;
 	newvalue = Int( newvalue );
 	newvalue = newvalue / modifier;
-	
+
 	return newvalue;
 }
 
@@ -2383,23 +2384,23 @@ roundDecimalPlaces( value, places, style )
 {
 	if ( !isdefined( style ) )
 		style = "nearest";
-	
+
 	modifier = 1;
 	for ( i = 0; i < places; i++ )
 		modifier *= 10;
-	
+
 	newValue = value * modifier;
-	
+
 	if ( style == "up" )
 		roundedValue = ceil( newValue );
 	else if ( style == "down" )
-		roundedValue = floor( newValue ); 	
+		roundedValue = floor( newValue );
 	else
-		roundedValue = newvalue + 0.5;	
-		
+		roundedValue = newvalue + 0.5;
+
 	newvalue = Int( roundedValue );
 	newvalue = newvalue / modifier;
-	
+
 	return newvalue;
 }
 
@@ -2410,7 +2411,7 @@ playerForClientId( clientId )
 		if ( player.clientId == clientId )
 			return player;
 	}
-	
+
 	return undefined;
 }
 
@@ -2418,31 +2419,31 @@ isRested()
 {
 	if ( !self rankingEnabled() )
 		return false;
-		
+
 	return ( self getPlayerData( "restXPGoal" ) > self getPlayerData( "experience" ) );
 }
 
 stringToFloat( stringVal )
 {
 	floatElements = strtok( stringVal, "." );
-	
+
 	floatVal = int( floatElements[0] );
 	if ( isDefined( floatElements[1] ) )
 	{
 		modifier = 1;
 		for ( i = 0; i < floatElements[1].size; i++ )
 			modifier *= 0.1;
-		
+
 		floatVal += int ( floatElements[1] ) * modifier;
 	}
-	
-	return floatVal;	
+
+	return floatVal;
 }
 
 setSelfUsable(caller)
 {
 	self makeUsable();
-	
+
 	foreach (player in level.players)
 	{
 		if (player != caller )
@@ -2461,18 +2462,18 @@ makeTeamUsable( team )
 _updateTeamUsable( team )
 {
 	self endon ( "death" );
-	
+
 	for ( ;; )
 	{
 		foreach (player in level.players)
 		{
 			if ( player.team == team )
-				self enablePlayerUse( player );	
+				self enablePlayerUse( player );
 			else
-				self disablePlayerUse( player );	
-		}	
+				self disablePlayerUse( player );
+		}
 
-		level waittill ( "joined_team" );		
+		level waittill ( "joined_team" );
 	}
 }
 
@@ -2500,9 +2501,9 @@ _updateEnemyUsable( owner )
 			foreach (player in level.players)
 			{
 				if ( player.team != team )
-					self enablePlayerUse( player );	
+					self enablePlayerUse( player );
 				else
-					self disablePlayerUse( player );	
+					self disablePlayerUse( player );
 			}
 		}
 		else
@@ -2510,13 +2511,13 @@ _updateEnemyUsable( owner )
 			foreach (player in level.players)
 			{
 				if ( player != owner )
-					self enablePlayerUse( player );	
+					self enablePlayerUse( player );
 				else
-					self disablePlayerUse( player );	
+					self disablePlayerUse( player );
 			}
 		}
 
-		level waittill ( "joined_team" );		
+		level waittill ( "joined_team" );
 	}
 }
 
@@ -2525,7 +2526,7 @@ getNextLifeId()
 	lifeId = getMatchData( "lifeCount" );
 	if ( lifeId < level.MaxLives )
 		setMatchData( "lifeCount", lifeId+1 );
-		
+
 	return ( lifeId );
 }
 
@@ -2635,7 +2636,7 @@ levelFlagWaitOpen( flagName )
 		level waittill ( flagName );
 }
 
-getWeaponAttachments( weapon ) 
+getWeaponAttachments( weapon )
 {
 	// Composed names carry item indices, not underscore attachment suffixes.
 	if ( getSubStr( weapon, 0, 1 ) == "*" )
@@ -2643,7 +2644,7 @@ getWeaponAttachments( weapon )
 
 	tokenizedWeapon = strTok( weapon, "_" );
 	attachmentArray = [];
-	
+
 	if( tokenizedWeapon.size < 3 || tokenizedWeapon[1] == "_mp" )
 	{
 		attachmentArray[0] = "none";
@@ -2652,12 +2653,12 @@ getWeaponAttachments( weapon )
 	{
 		attachmentArray[0] = tokenizedWeapon[1];
 		attachmentArray[1] = tokenizedWeapon[2];
-	}	
-	else 		
+	}
+	else
 	{
 		attachmentArray[0] = tokenizedWeapon[1];
 	}
-	
+
 	return attachmentArray;
 }
 
@@ -2667,18 +2668,18 @@ isEMPed()
 		return true;
 	if ( self.team == "spectator" )
 		return false;
-		
+
     if ( level.teamBased )
-    	return ( level.teamEMPed[self.team] );
+        return ( level.teamEMPed[self.team] );
     else
-    	return ( isDefined( level.empPlayer ) && level.empPlayer != self );
+        return ( isDefined( level.empPlayer ) && level.empPlayer != self );
 }
 
 isNuked()
 {
 	if ( self.team == "spectator" )
 		return false;
-		
+
     return ( isDefined( self.nuked ) );
 }
 
@@ -2698,7 +2699,7 @@ getPlayerForGuid( guid )
 		if ( player.guid == guid )
 			return player;
 	}
-	
+
 	return undefined;
 }
 
@@ -2706,16 +2707,16 @@ teamPlayerCardSplash( splash, owner, team )
 {
 	if ( level.hardCoreMode )
 		return;
-		
+
 	foreach ( player in level.players )
 	{
 		if ( isDefined( team ) && player.team != team )
 			continue;
-			
+
 		player thread maps\mp\gametypes\_hud_message::playerCardSplashNotify( splash, owner );
 	}
 }
-	
+
 
 isCACPrimaryWeapon( weapName )
 {
@@ -2754,15 +2755,20 @@ getLastLivingPlayer( team )
 
 	foreach ( player in level.players )
 	{
+		if ( !isDefined( player.pers["team"] ) ||
+			( player.pers["team"] != "allies" && player.pers["team"] != "axis" ) ||
+			( isDefined( player.connectedPostGame ) && player.connectedPostGame ) )
+			continue;
+
 		if ( isDefined( team ) && player.team != team )
 			continue;
 
 		if ( !isReallyAlive( player ) && !player maps\mp\gametypes\_playerlogic::maySpawn() )
 			continue;
-		
+
 		assertEx( !isDefined( livePlayer ), "getLastLivingPlayer() found more than one live player on team." );
-		
-		livePlayer = player;				
+
+		livePlayer = player;
 	}
 
 	return livePlayer;
@@ -2775,9 +2781,15 @@ getPotentialLivingPlayers()
 
 	foreach ( player in level.players )
 	{
+		// Spectators can retain unused lives. They are not round contenders.
+		if ( !isDefined( player.pers["team"] ) ||
+			( player.pers["team"] != "allies" && player.pers["team"] != "axis" ) ||
+			( isDefined( player.connectedPostGame ) && player.connectedPostGame ) )
+			continue;
+
 		if ( !isReallyAlive( player ) && !player maps\mp\gametypes\_playerlogic::maySpawn() )
 			continue;
-		
+
 		livePlayers[livePlayers.size] = player;
 	}
 
@@ -2791,22 +2803,22 @@ waitTillRecoveredHealth( time, interval )
 	self endon("disconnect");
 
 	fullHealthTime = 0;
-	
+
 	if( !isDefined( interval ) )
 		interval = .05;
 
 	if( !isDefined( time ) )
 		time = 0;
-	
+
 	while(1)
 	{
 		if ( self.health != self.maxhealth )
 			fullHealthTime = 0;
 		else
 			fullHealthTime += interval;
-		
+
 		wait interval;
-		
+
 		if ( self.health == self.maxhealth && fullHealthTime >= time )
 			break;
 	}
@@ -2817,38 +2829,38 @@ waitTillRecoveredHealth( time, interval )
 _objective_delete( objID )
 {
 	objective_delete( objID);
-	
-	if ( !isDefined( level.reclaimedReservedObjectives ) ) 
+
+	if ( !isDefined( level.reclaimedReservedObjectives ) )
 	{
 		level.reclaimedReservedObjectives = [];
 		level.reclaimedReservedObjectives[0] = objID;
 	}
 	else
 	{
-		level.reclaimedReservedObjectives[ level.reclaimedReservedObjectives.size ] = objID;		
+		level.reclaimedReservedObjectives[ level.reclaimedReservedObjectives.size ] = objID;
 	}
 }
 
 
 touchingBadTrigger()
 {
-	killTriggers = getEntArray( "trigger_hurt", "classname" );	
+	killTriggers = getEntArray( "trigger_hurt", "classname" );
 	foreach ( trigger in killTriggers )
 	{
 		if ( self isTouching( trigger ) )
 			return true;
 	}
 
-	radTriggers = getEntArray( "radiation", "targetname" );	
+	radTriggers = getEntArray( "radiation", "targetname" );
 	foreach ( trigger in radTriggers )
 	{
 		if ( self isTouching( trigger ) )
 			return true;
 	}
-	
+
 	return false;
 }
-	
+
 setThirdPersonDOF( isEnabled )
 {
 	if ( isEnabled )
@@ -2862,24 +2874,24 @@ setThirdPersonDOF( isEnabled )
 killTrigger( pos, radius, height )
 {
 	trig = spawn( "trigger_radius", pos, 0, radius, height );
-	
+
 	/#
 	if ( getdvar( "scr_killtriggerdebug" ) == "1" )
 		thread killTriggerDebug( pos, radius, height );
 	#/
-	
+
 	for ( ;; )
 	{
 		/#
 		if ( getdvar( "scr_killtriggerradius" ) != "" )
 			radius = int(getdvar( "scr_killtriggerradius" ));
 		#/
-		
+
 		trig waittill( "trigger", player );
-		
+
 		if ( !isPlayer( player ) )
 			continue;
-		
+
 		player suicide();
 	}
 }
@@ -2893,10 +2905,10 @@ killTriggerDebug( pos, radius, height )
 		{
 			angle = i / 20 * 360;
 			nextangle = (i+1) / 20 * 360;
-			
+
 			linepos = pos + (cos(angle) * radius, sin(angle) * radius, 0);
 			nextlinepos = pos + (cos(nextangle) * radius, sin(nextangle) * radius, 0);
-			
+
 			line( linepos, nextlinepos );
 			line( linepos + (0,0,height), nextlinepos + (0,0,height) );
 			line( linepos, linepos + (0,0,height) );

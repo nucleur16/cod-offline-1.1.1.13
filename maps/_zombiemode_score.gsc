@@ -114,7 +114,7 @@ player_add_points( event, mod, hit_location )
 		// T5 assertex( 0, "Unknown point event" ).  An assert here would end
 		// the match on a typo in a caller; an unknown event is worth nothing
 		// and is reported once instead.
-		println( "CoDOL zm: unknown point event " + event );
+		{}
 		return;
 	}
 
@@ -134,11 +134,7 @@ player_add_points( event, mod, hit_location )
 	if ( level.zm_award_count[ event ] == 1 || level.zm_award_count[ event ] % 25 == 0 ||
 		is_true( level.zombie_vars[ "zombie_powerup_point_doubler_on" ] ) )
 	{
-		codolprintln( "CoDOL zm DIAG award: event=" + event +
-			" points=" + player_points +
-			" multiplier=" + multiplier +
-			" count=" + level.zm_award_count[ event ] +
-			" purse=" + self.score );
+		{}
 	}
 
 	self add_to_player_score( player_points );
@@ -261,7 +257,7 @@ player_reduce_points( event )
 		break;
 
 	default:
-		println( "CoDOL zm: unknown point penalty " + event );
+		{}
 		return;
 	}
 

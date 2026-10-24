@@ -92,7 +92,7 @@ watchDvar()
 
 report( message )
 {
-    codolPrintLn( "CoDOL scavtest: " + message );
+    {}
 }
 
 hold()

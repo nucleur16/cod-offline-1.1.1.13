@@ -286,7 +286,7 @@ wait_for_thundergun_fired()
 		if ( !is_thundergun_weapon( weapon ) )
 			continue;
 
-		self thread thundergun_fired();
+		self thread thundergun_fired( weapon );
 		self thread thundergun_viewmodel_fx_fire( weapon );
 
 		forward = self getWeaponForwardDir();
@@ -309,8 +309,12 @@ thundergun_network_choke()
 }
 
 // T5 :88.  self is the player.
-thundergun_fired()
+thundergun_fired( weapon )
 {
+	// Carry the actual weapon_fired name through throttled child threads.
+	if ( !is_thundergun_weapon( weapon ) )
+		return;
+	source = self getEye();
 	// ww: physics hit when firing
 	physicsExplosionCylinder( self.origin, 600, 240, 1 );
 
@@ -329,13 +333,13 @@ thundergun_fired()
 	for ( i = 0; i < fling_enemies.size; i++ )
 	{
 		thundergun_network_choke();
-		fling_enemies[ i ] thread thundergun_fling_zombie( self, fling_vecs[ i ], i );
+		fling_enemies[ i ] thread thundergun_fling_zombie( self, fling_vecs[ i ], i, weapon, source );
 	}
 
 	for ( i = 0; i < knockdown_enemies.size; i++ )
 	{
 		thundergun_network_choke();
-		knockdown_enemies[ i ] thread thundergun_knockdown_zombie( self, knockdown_gib[ i ] );
+		knockdown_enemies[ i ] thread thundergun_knockdown_zombie( self, knockdown_gib[ i ], weapon, source );
 	}
 }
 
@@ -452,9 +456,14 @@ thundergun_centroid()
 	return self.origin + ( 0, 0, 36 );
 }
 
+// Native C1 adaptation: CODOL_Scr_DoDamage uses the MP 2..8 argument
+// contract. Its short3 form defaults headshot/MOD/weapon/inflictor; retain
+// accepted4dba full attribution while keeping upstream selection/FX/ragdoll.
 // T5 :253.  self is the zombie.
-thundergun_fling_zombie( player, fling_vec, index )
+thundergun_fling_zombie( player, fling_vec, index, weapon, source )
 {
+	if ( !isDefined( player ) || !isPlayer( player ) || !is_thundergun_weapon( weapon ) )
+		return;
 	if ( !isDefined( self ) || !isAlive( self ) )
 		return; // guy died on us
 
@@ -469,7 +478,7 @@ thundergun_fling_zombie( player, fling_vec, index )
 	// Marked before the kill: zombie_death_event reads it at frame end and
 	// leaves the payment to "thundergun_fling" below.
 	self.thundergun_death = true;
-	self doDamage( self.health + 666, player.origin, player );
+	self doDamage( self.health + 666, source, player, player, 0, "MOD_PROJECTILE", 0, weapon );
 
 	if ( self.health <= 0 )
 	{
@@ -492,8 +501,10 @@ thundergun_fling_zombie( player, fling_vec, index )
 }
 
 // T5 :287.  self is the zombie.
-thundergun_knockdown_zombie( player, gib )
+thundergun_knockdown_zombie( player, gib, weapon, source )
 {
+	if ( !isDefined( player ) || !isPlayer( player ) || !is_thundergun_weapon( weapon ) )
+		return;
 	self endon( "death" );
 
 	play_sound_if_exists( "vox_thundergun_forcehit", self.origin );
@@ -506,9 +517,9 @@ thundergun_knockdown_zombie( player, gib )
 	health = self.health;
 
 	if ( isDefined( self.thundergun_knockdown_func ) )
-		self [[ self.thundergun_knockdown_func ]]( player, gib );
+		self [[ self.thundergun_knockdown_func ]]( player, gib, weapon, source );
 	else
-		self zombie_knockdown( player, gib );
+		self zombie_knockdown( player, gib, weapon, source );
 
 	// T5 :307-:318 then gibs and hurts once more after the func, whichever
 	// func ran (both hits land in this frame, so the pain script starts
@@ -523,7 +534,7 @@ thundergun_knockdown_zombie( player, gib )
 	self.thundergun_handle_pain_notetracks = ::handle_thundergun_pain_notetracks;
 	if ( !is_true( self.isdog ) )
 		self.thundergun_knockdown = true;
-	self doDamage( level.zombie_vars[ "thundergun_knockdown_damage" ], player.origin, player );
+	self doDamage( level.zombie_vars[ "thundergun_knockdown_damage" ], source, player, player, 0, "MOD_PROJECTILE", 0, weapon );
 	play_sound_if_exists( "fly_thundergun_forcehit", self.origin );
 
 	codolPrintLn( "CoDOL zm thundergun: knocked down zombie " + self getEntityNumber() + " at " + int( dist ) +
@@ -533,7 +544,7 @@ thundergun_knockdown_zombie( player, gib )
 // T5 _zombiemode_spawner.gsc:4940 zombie_knockdown, the regular zombie's
 // thundergun_knockdown_func.  The pain animscript reads
 // .thundergun_knockdown to play the fall instead of returning.
-zombie_knockdown( player, gib )
+zombie_knockdown( player, gib, weapon, source )
 {
 	if ( gib && !is_true( self.gibbed ) )
 	{
@@ -543,7 +554,7 @@ zombie_knockdown( player, gib )
 
 	self.thundergun_handle_pain_notetracks = ::handle_thundergun_pain_notetracks;
 	self.thundergun_knockdown = true;
-	self doDamage( level.zombie_vars[ "thundergun_knockdown_damage" ], player.origin, player );
+	self doDamage( level.zombie_vars[ "thundergun_knockdown_damage" ], source, player, player, 0, "MOD_PROJECTILE", 0, weapon );
 	play_sound_if_exists( "fly_thundergun_forcehit", self.origin );
 }
 

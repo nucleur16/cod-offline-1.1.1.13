@@ -202,7 +202,7 @@ training_setup()
 	// final door start down (closed) -- as authored.
 	training_hud_init();
 
-	codolprintln( "CoDOL zm training: entities prepared (" + names.size + " arrow groups hidden)" );
+	{}
 }
 
 // --------------------------------------------------------------------------
@@ -318,7 +318,7 @@ training_mission()
 	level endon( "end_game" );
 
 	maps\_zombiemode::publishRoundHud();
-	codolprintln( "CoDOL zm training: mission begins with " + getPlayers().size + " player(s)" );
+	{}
 
 	training_stage_lift();
 	training_stage_gate();
@@ -337,7 +337,7 @@ training_set_stage( stage, name )
 	level.zt_stage_name = name;
 	level.zt_skip = false;
 	level notify( "zt_stage", stage );
-	codolprintln( "CoDOL zm training: stage " + stage + " " + name );
+	{}
 	training_respawn_dead();
 }
 
@@ -386,7 +386,7 @@ training_open_lift()
 	if ( isDefined( lift ) )
 		lift playSound( "zmb_door_slide_open" );
 	wait( 1.5 );
-	codolprintln( "CoDOL zm training: lift doors open" );
+	{}
 }
 
 training_slide_leaf( leaf_name, pocket_name )
@@ -395,7 +395,7 @@ training_slide_leaf( leaf_name, pocket_name )
 	pocket = getEnt( pocket_name, "targetname" );
 	if ( pieces.size < 1 || !isDefined( pocket ) )
 	{
-		codolprintln( "CoDOL zm training: lift leaf " + leaf_name + " or pocket " + pocket_name + " missing" );
+		{}
 		return;
 	}
 
@@ -475,7 +475,7 @@ training_stage_gate()
 		blocker connectpaths();
 		blocker delete();
 	}
-	codolprintln( "CoDOL zm training: main gate open" );
+	{}
 }
 
 // ---- 2: the wall gun --------------------------------------------------------
@@ -520,6 +520,58 @@ training_stage_gun()
 
 // ---- 3: the display case ----------------------------------------------------
 
+// The C1 pod is a static cylinder plus three hinged claws, not one skeletal
+// animation. Original tutorial 7QjWY7SD8g8, 35.93--36.99, shows the cylinder
+// sink and the claws fold outward before the live cyborg firing drill.
+// The map's barrier_point lowers the cylinder85 units: its native model top
+// goes from343.256 to258.256, level with the257.2 claw pivots. Each claw is
+// rooted at its hinge and placed at local +Y around the cylinder; roll -90
+// therefore folds it radially outward. Timing is footage-derived reconstruction
+// (roughly.5-second sink/1-second fold), pending exact C1 visual comparison.
+training_open_display()
+{
+	level endon( "end_game" );
+	if ( is_true( level.zt_display_opened ) || is_true( level.gameEnded ) )
+		return;
+
+	base = getEnt( "zombie_barrier", "targetname" );
+	point = getEnt( "barrier_point", "targetname" );
+	claws = getEntArray( "zombie_clip", "targetname" );
+	if ( !isDefined( base ) || !isDefined( point ) || claws.size != 3 )
+	{
+		{}
+		return;
+	}
+
+	level.zt_display_opened = true;
+	level.zt_display_moving = true;
+	level thread training_display_end_cleanup( base, claws );
+	playSoundAtPosition( "cbg_tut_claw_up", base.origin );
+	base moveTo( point.origin, .5 );
+	for ( i = 0; i < claws.size; i++ )
+		claws[ i ] rotateRoll( -90, 1 );
+	wait( 1 );
+	level.zt_display_moving = false;
+	level notify( "zt_display_motion_done" );
+	{}
+}
+
+training_display_end_cleanup( base, claws )
+{
+	level endon( "zt_display_motion_done" );
+	level waittill( "end_game" );
+	// These are authored map entities. Freeze an in-flight transition at its
+	// received transform; never delete the assembly or spawn replacement props.
+	if ( isDefined( base ) )
+		base moveTo( base.origin, .05 );
+	for ( i = 0; i < claws.size; i++ )
+	{
+		if ( isDefined( claws[ i ] ) )
+			claws[ i ] rotateTo( claws[ i ].angles, .05 );
+	}
+	level.zt_display_moving = false;
+}
+
 training_stage_display()
 {
 	training_set_stage( 3, "display" );
@@ -537,7 +589,6 @@ training_stage_display()
 	if ( isDefined( sp ) )
 	{
 		training_marker( sp.origin + ( 0, 0, 40 ) );
-		playSoundAtPosition( "cbg_tut_claw_up", sp.origin );
 		level.zombie_health = level.zombie_vars[ "zombie_health_start" ];
 		ai = maps\_zombiemode_spawner::spawn_zombie( sp );
 	}
@@ -551,11 +602,12 @@ training_stage_display()
 		ai.goalradius = 4;
 		ai setGoalPos( ai.origin );
 		ai.ignoreme = false;
-		codolprintln( "CoDOL zm training: display cyborg ent " + ai getEntityNumber() + " at " + ai.origin );
+		{}
 	}
 	else
-		codolprintln( "CoDOL zm training: the display cyborg did not spawn; the stage continues" );
+		{}
 
+	level thread training_open_display();
 	training_say( &"ZOMBIE_TUTORIAL_NEW_DOOR2_1ST_CYBORG", 5 );
 
 	start = getTime();
@@ -607,7 +659,7 @@ training_stage_display()
 		}
 		wait( 0.25 );
 	}
-	codolprintln( "CoDOL zm training: museum door open" );
+	{}
 }
 
 // ---- 4: the museum ----------------------------------------------------------
@@ -684,7 +736,7 @@ training_stage_museum()
 		wait( 0.25 );
 	}
 	level notify( "zt_museum_done" );
-	codolprintln( "CoDOL zm training: repair-room door open" );
+	{}
 }
 
 // The three exhibits: walking up to a museum button plays its click, the
@@ -714,7 +766,7 @@ training_museum_exhibit( n )
 	button playSound( "cbg_tut_museum_click" );
 	if ( isDefined( voice ) )
 		voice playSound( "cyborg_tutorial_m_vo_00" + n );
-	codolprintln( "CoDOL zm training: museum exhibit " + n );
+	{}
 
 	switch ( n )
 	{
@@ -820,7 +872,7 @@ training_stage_repair()
 		}
 		wait( 3 );
 	}
-	codolprintln( "CoDOL zm training: repair wave of " + zombies.size + " zombies" );
+	{}
 
 	training_wait_dead( zombies, undefined );
 	training_say( &"ZOMBIE_TUTORIAL_NEW_DOOR4_LAST_KILLED", 4 );
@@ -1006,7 +1058,7 @@ training_stage_final_room()
 		while ( !training_player_near( t.origin, 110 ) && !level.zt_skip )
 			wait( 0.25 );
 		level.zt_skip = false;
-		codolprintln( "CoDOL zm training: final-room window " + windows[ i ] + " found" );
+		{}
 	}
 	training_marker( undefined );
 
@@ -1028,7 +1080,7 @@ training_stage_final_room()
 				wait( 0.5 );
 			}
 		}
-		codolprintln( "CoDOL zm training: final-room wave " + wave + " of " + zombies.size + " zombies" );
+		{}
 		training_wait_dead( zombies, wave == 3 );
 		training_say( &"ZOMBIE_TUTORIAL_NEW_DOOR6_KILLING_CYBORG", 3 );
 		wait( 3 );
@@ -1069,7 +1121,7 @@ training_stage_final_room()
 		}
 		wait( 0.25 );
 	}
-	codolprintln( "CoDOL zm training: final-room door open" );
+	{}
 }
 
 training_player_in_final_room()
@@ -1158,7 +1210,7 @@ training_stage_exit()
 	training_raise( "final_door", "final_door_up", undefined );
 	if ( isDefined( rumble ) )
 		rumble stopLoopSound();
-	codolprintln( "CoDOL zm training: final door open; calling the rescue" );
+	{}
 
 	level thread training_leaving_dome();
 	level thread training_lz_lights();
@@ -1188,7 +1240,7 @@ training_marker_clear_on_landing()
 // No horde follows the trainee out of the dome.
 training_extraction_horde()
 {
-	codolprintln( "CoDOL zm training: the rescue runs without a horde" );
+	{}
 }
 
 training_leaving_dome()
@@ -1228,7 +1280,7 @@ training_award_on_liftoff()
 		if ( is_true( players[ i ].zm_extracted ) )
 			players[ i ] maps\_zombiemode_challenges::zm_map_completed( 1 );
 	}
-	codolprintln( "CoDOL zm training: mission complete" );
+	{}
 }
 
 // The zapper room's trap points fire once.
@@ -1271,7 +1323,7 @@ training_door_trigger( door_name )
 		if ( isDefined( triggers[ i ].target ) && triggers[ i ].target == door_name )
 			return triggers[ i ];
 	}
-	codolprintln( "CoDOL zm training: no zombie_door trigger for " + door_name );
+	{}
 	return undefined;
 }
 
@@ -1385,7 +1437,7 @@ training_spawn( sp )
 	ai = maps\_zombiemode_spawner::spawn_zombie( sp );
 	if ( !isDefined( ai ) )
 	{
-		codolprintln( "CoDOL zm training: spawn at " + sp.origin + " failed: " + level.zm_spawn_fail_reason );
+		{}
 		return undefined;
 	}
 	return ai;
@@ -1434,7 +1486,7 @@ training_energy_door( name, point_name, sound_name )
 	pieces = getEntArray( name, "targetname" );
 	if ( pieces.size < 1 )
 	{
-		codolprintln( "CoDOL zm training: no energy door " + name );
+		{}
 		return;
 	}
 
@@ -1477,7 +1529,7 @@ training_energy_door( name, point_name, sound_name )
 	wait( 1.5 );
 	for ( i = 0; i < pieces.size; i++ )
 		pieces[ i ] hide();
-	codolprintln( "CoDOL zm training: energy door " + name + " open (" + pieces.size + " brushes, down " + drop + ")" );
+	{}
 }
 
 // A door that rises to its authored "up" point: every entity of the name
@@ -1488,7 +1540,7 @@ training_raise( name, up_name, sound_name )
 	up = getEnt( up_name, "targetname" );
 	if ( pieces.size < 1 || !isDefined( up ) )
 	{
-		codolprintln( "CoDOL zm training: no door " + name + " / " + up_name );
+		{}
 		return;
 	}
 
@@ -1518,7 +1570,7 @@ training_raise( name, up_name, sound_name )
 			pieces[ i ] connectpaths();
 	}
 	wait( 2 );
-	codolprintln( "CoDOL zm training: " + name + " raised " + rise );
+	{}
 }
 
 // --------------------------------------------------------------------------
@@ -1651,7 +1703,7 @@ training_subtitle_think()
 
 training_skip_door( trig )
 {
-	codolprintln( "CoDOL zm training: test opens door " + trig.target );
+	{}
 	trig maps\_zombiemode_blockers::door_opened();
 }
 
@@ -1660,7 +1712,7 @@ training_skip_give_weapon( weapon )
 	players = getPlayers();
 	if ( players.size > 0 )
 		players[ 0 ] maps\_zombiemode_weapons::weapon_give( weapon );
-	codolprintln( "CoDOL zm training: test gives " + weapon );
+	{}
 }
 
 // _zombiemode_blockers debris_think's purchase branch, unpaid.
@@ -1685,7 +1737,7 @@ training_skip_debris( trig )
 			junk[ i ] delete();
 	}
 	trig maps\_zombiemode_blockers::delete_blocker_triggers();
-	codolprintln( "CoDOL zm training: test clears the debris" );
+	{}
 }
 
 // Developer only (the live server runs developer 0).  scr_zt_test:
@@ -1717,7 +1769,7 @@ training_test_init()
 
 		case "skip":
 			level.zt_skip = true;
-			codolprintln( "CoDOL zt test: skip requested at stage " + level.zt_stage + " " + level.zt_stage_name );
+			{}
 			break;
 
 		case "goto":
@@ -1729,7 +1781,7 @@ training_test_init()
 			if ( isDefined( p ) && anchors.size > 0 )
 			{
 				p setOrigin( anchors[ 0 ].origin );
-				codolprintln( "CoDOL zt test: " + p.name + " to stage " + stage + " at " + p.origin );
+				{}
 			}
 			break;
 
@@ -1749,7 +1801,7 @@ training_test_init()
 				a = ( int( tokens[ 1 ] ), int( tokens[ 2 ] ), int( tokens[ 3 ] ) );
 				b = ( int( tokens[ 4 ] ), int( tokens[ 5 ] ), int( tokens[ 6 ] ) );
 				end = playerPhysicsTrace( a, b );
-				codolprintln( "CoDOL zt test: trace " + a + " -> " + b + " stops at " + end + " (" + int( distance( end, b ) ) + " short)" );
+				{}
 			}
 			break;
 		}
@@ -1777,18 +1829,18 @@ training_test_walk( a, b )
 		}
 		if ( distance( end, next ) > 1 )
 		{
-			codolprintln( "CoDOL zt test: walk " + a + " -> " + b + " blocked at " + cur + " after " + ( i * 16 ) + " units" );
+			{}
 			return;
 		}
 		trace = bulletTrace( next, next - ( 0, 0, 300 ), false, undefined );
 		if ( trace[ "fraction" ] >= 1 )
 		{
-			codolprintln( "CoDOL zt test: walk " + a + " -> " + b + " has no floor at " + next );
+			{}
 			return;
 		}
 		cur = trace[ "position" ] + ( 0, 0, 1 );
 	}
-	codolprintln( "CoDOL zt test: walk " + a + " -> " + b + " reached " + cur );
+	{}
 }
 
 // Floor heights every 16 units from a to b, searched from a's z + 60 down.
@@ -1806,7 +1858,7 @@ training_test_profile( a, b )
 		else
 			line += " " + int( trace[ "position" ][ 2 ] );
 	}
-	codolprintln( line );
+	{}
 }
 
 // The highest floor under (x, y) below z.
@@ -1836,7 +1888,7 @@ training_test_status()
 	line = "CoDOL zt test: stage " + level.zt_stage + " " + level.zt_stage_name + ", " + players.size + " player(s)";
 	for ( i = 0; i < players.size; i++ )
 		line += "; " + players[ i ].name + " " + players[ i ].sessionstate + " at " + players[ i ].origin + " hp " + players[ i ].health + " score " + players[ i ].score;
-	codolprintln( line );
+	{}
 
 	if ( !isDefined( level.zombies ) )
 		return;
@@ -1851,6 +1903,6 @@ training_test_status()
 		phase = "";
 		if ( isDefined( z.zm_path_phase ) )
 			phase = z.zm_path_phase;
-		codolprintln( "CoDOL zt test: zombie ent " + z getEntityNumber() + " at " + z.origin + " phase " + phase + " dist " + d );
+		{}
 	}
 }

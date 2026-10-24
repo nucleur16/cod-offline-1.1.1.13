@@ -34,9 +34,9 @@
 // round ends does not count that round) -- C1's wording is "survive N
 // consecutive rounds", and a down is the one thing the perk above forgives.
 //
-// Past the largest cost the rewards roll over the way the multiplayer
-// killstreaks do (_class.gsc "defcon rollover": streakVal + maxVal*n), so a
-// 3/6 character is rewarded at 3, 6, 9, 12, ...
+// Rewards latch while their effects are owned. Progress stops at completion;
+// it never rolls over like multiplayer killstreaks. A down/death removes the
+// effects and starts earning again (the streak-keeping perk retains progress).
 //
 // HOW THE PROGRESS IS SHOWN.  The multiplayer killstreak HUD, which the
 // zombies chain must not compile (_killstreaks.gsc names multiplayer modules),
@@ -170,8 +170,7 @@ init()
 			pop.icon = undefined;
 
 		level.zombie_perkpop_info[ name ] = pop;
-		codolprintln( "CoDOL zm perkpop: " + name + " row " + pop.id + " streak " + pop.cost +
-			" icon " + describe( pop.icon ) + " effect " + describe( pop.effect ) + " usable " + pop.usable );
+		{}
 	}
 
 	precacheString( &"ZOMBIE_ROUNDSTREAK" );
@@ -320,7 +319,7 @@ on_spawned()
 	self publish_hud();
 }
 
-// The largest streak cost among this player's perk pops: the rollover period.
+// The largest streak cost among this player's perk pops: the completion cap.
 max_cost()
 {
 	best = 0;
@@ -333,14 +332,25 @@ max_cost()
 	return best;
 }
 
-// The streak position inside the current rollover cycle, which is what the
-// HUD previews compare against their targets.
+rewards_complete()
+{
+	for ( i = 0; i < 2; i++ )
+	{
+		slot = self.perkpop_slots[ i ];
+		if ( isDefined( slot ) && !is_true( self.perkpop_active[ slot.pop.effect ] ) )
+			return false;
+	}
+	return true;
+}
+
+// Keep the progress bar complete while the effects are owned. Native spawn
+// can clear the HUD, so every publication reconstructs this from ownership.
 display_streak()
 {
 	s = self.perkpop_streak;
-	period = self max_cost();
-	if ( period > 0 && s > period )
-		s = ( ( s - 1 ) % period ) + 1;
+	cap = self max_cost();
+	if ( self rewards_complete() || s > cap )
+		s = cap;
 	return s;
 }
 
@@ -409,17 +419,23 @@ survived_round()
 		return;
 	}
 
-	self.perkpop_streak++;
-	codolprintln( "CoDOL zm perkpop: " + self.name + " survived a round; streak " + self.perkpop_streak );
+	if ( self rewards_complete() )
+	{
+		self publish_hud();
+		return;
+	}
+	cap = self max_cost();
+	if ( self.perkpop_streak < cap )
+		self.perkpop_streak++;
+	{}
 
-	period = self max_cost();
 	for ( i = 0; i < 2; i++ )
 	{
 		slot = self.perkpop_slots[ i ];
-		if ( !isDefined( slot ) || period <= 0 )
+		if ( !isDefined( slot ) || is_true( self.perkpop_active[ slot.pop.effect ] ) )
 			continue;
 		cost = slot.pop.cost;
-		if ( self.perkpop_streak < cost || ( self.perkpop_streak - cost ) % period != 0 )
+		if ( self.perkpop_streak < cost )
 			continue;
 
 		self award_slot( i, self.perkpop_streak );
@@ -429,25 +445,19 @@ survived_round()
 }
 
 // self = player.  The reward is given the moment it is earned: no item, no
-// action slot.  An effect the player already has stays as it is (they do
-// not stack); the notice is shown either way.
+// action slot. Owned effects cannot be awarded or announced a second time.
 award_slot( index, streak )
 {
 	slot = self.perkpop_slots[ index ];
 	if ( !isDefined( slot ) )
 		return;
 
-	slot.earned++;
 	key = slot.pop.effect;
 	if ( is_true( self.perkpop_active[ key ] ) )
-		codolprintln( "CoDOL zm perkpop: " + self.name + " EARNED " + slot.name + " at streak " + streak +
-			"; " + key + " already active" );
-	else
-	{
-		codolprintln( "CoDOL zm perkpop: " + self.name + " EARNED " + slot.name + " at streak " + streak +
-			"; applied immediately" );
-		self apply_effect( key );
-	}
+		return;
+	slot.earned++;
+	{}
+	self apply_effect( key );
 
 	self thread queue_notice( slot.pop, streak );
 }
@@ -545,8 +555,7 @@ show_notice( pop, streak )
 		elems[ i ].alpha = 1;
 	}
 
-	codolprintln( "CoDOL zm perkpop: " + self.name + " notice " + pop.name + " icon " + describe( pop.icon ) +
-		" streak " + streak );
+	{}
 
 	wait( NOTICE_TIME );
 
@@ -579,8 +588,8 @@ watch_down()
 
 		if ( self keeps_streak() )
 		{
-			codolprintln( "CoDOL zm perkpop: " + self.name + " downed; streak " + self.perkpop_streak +
-				" kept (modLastStandKeepRoundStreak)" );
+			self publish_hud();
+			{}
 			continue;
 		}
 		self reset_streak( "downed" );
@@ -613,7 +622,7 @@ reset_streak( reason )
 {
 	if ( !isDefined( self.perkpop_streak ) || self.perkpop_streak == 0 )
 		return;
-	codolprintln( "CoDOL zm perkpop: " + self.name + " " + reason + "; streak " + self.perkpop_streak + " reset" );
+	{}
 	self.perkpop_streak = 0;
 	if ( isDefined( self.perkpop_slots ) )
 		self publish_hud();
@@ -671,7 +680,7 @@ apply_effect( key )
 		break;
 	}
 
-	codolprintln( "CoDOL zm perkpop: " + self.name + " effect " + key + " APPLIED" + effect_detail( key ) );
+	{}
 }
 
 effect_detail( key )
@@ -710,7 +719,7 @@ remove_effects( reason )
 	{
 		if ( !is_true( self.perkpop_active[ keys[ i ] ] ) )
 			continue;
-		codolprintln( "CoDOL zm perkpop: " + self.name + " effect " + keys[ i ] + " EXPIRED (" + reason + ")" );
+		{}
 	}
 
 	// T5 take_additionalprimaryweapon (_zombiemode.gsc:2107): losing the
@@ -722,8 +731,7 @@ remove_effects( reason )
 		kept = [];
 		for ( i = 0; i < self.laststand_weapons.size - 1; i++ )
 			kept[ kept.size ] = self.laststand_weapons[ i ];
-		codolprintln( "CoDOL zm perkpop: " + self.name + " loses third primary " +
-			self.laststand_weapons[ self.laststand_weapons.size - 1 ] );
+		{}
 		self.laststand_weapons = kept;
 	}
 
@@ -742,7 +750,7 @@ remove_effects( reason )
 
 // Called from _zombiemode::Callback_PlayerDamage.  Returns the damage to
 // apply; 0 means none.
-player_damage_override( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon )
+player_damage_override( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, iDFlags )
 {
 	mod = "";
 	if ( isDefined( sMeansOfDeath ) )
@@ -752,26 +760,29 @@ player_damage_override( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon )
 	if ( isDefined( eAttacker ) && isPlayer( eAttacker ) && eAttacker != self && is_true( eAttacker.perkpop_blasting ) )
 		return 0;
 
-	if ( !isDefined( self.perkpop_active ) )
-		return iDamage;
-
-	if ( is_true( self.perkpop_active[ "flakjacket" ] ) )
+	if ( self has_phd_flopper() )
 	{
 		if ( mod == "MOD_FALLING" )
 		{
-			// The dive forces prone from launch until 100 ms after landing
-			// (codol_dive.c), so a fall hit while prone is a dive landing.
-			if ( self getStance() == "prone" )
+			// BO1 _zombiemode::Callback_PlayerDamage: only an actual dive
+			// landing that would cause fall damage explodes. Native pmove
+			// captures this bit with the landing event, before later substeps
+			// can end the dive. Prone falls and flat dives do not qualify.
+			// CODOL_DAMAGE_DIVE_LANDING (codol_dive.h), server-only.
+			if ( isDefined( iDFlags ) && ( iDFlags & 536870912 ) != 0 && iDamage > 0 )
 				self thread divetonuke_explode();
-			codolprintln( "CoDOL zm perkpop: " + self.name + " flakjacket absorbed " + iDamage + " " + mod );
+			{}
 			return 0;
 		}
 		if ( is_explosive_mod( mod ) )
 		{
-			codolprintln( "CoDOL zm perkpop: " + self.name + " flakjacket absorbed " + iDamage + " " + mod );
+			{}
 			return 0;
 		}
 	}
+
+	if ( !isDefined( self.perkpop_active ) )
+		return iDamage;
 
 	if ( is_true( self.perkpop_active[ "electro" ] ) && isDefined( eAttacker ) && is_true( eAttacker.is_zombie ) )
 	{
@@ -781,6 +792,15 @@ player_damage_override( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon )
 	}
 
 	return iDamage;
+}
+
+// A bought machine perk and the character's survival reward share the
+// effect, but keep their existing independent ownership and loss rules.
+has_phd_flopper()
+{
+	if ( self hasPerk( "specialty_flakjacket" ) )
+		return true;
+	return isDefined( self.perkpop_active ) && is_true( self.perkpop_active[ "flakjacket" ] );
 }
 
 is_explosive_mod( mod )
@@ -802,6 +822,9 @@ is_explosive_mod( mod )
 divetonuke_explode()
 {
 	self endon( "disconnect" );
+	if ( !self has_phd_flopper() || !isAlive( self ) ||
+		self maps\_zombiemode_laststand::player_is_in_laststand() )
+		return;
 	origin = self.origin;
 
 	self.perkpop_blasting = true;
@@ -809,7 +832,8 @@ divetonuke_explode()
 	self.perkpop_blasting = undefined;
 
 	playFx( level._effect[ "perkpop_divetonuke" ], origin );
-	codolprintln( "CoDOL zm perkpop: " + self.name + " flakjacket dive explosion at " + origin );
+	self playSound( "zmb_phdflop_explo" );
+	{}
 }
 
 // KILLSTREAKS_ELECTRO_DESC: "有一定的概率电击击中你的机械僵尸" -- a chance to
@@ -828,7 +852,7 @@ electro_zap( zombie )
 	// attacker is given (MEASURED 2026-09-24: CODOL_Scr_DoDamage ->
 	// G_Damage_60 -> Vec3NormalizeTo, read of 0x0).
 	zombie doDamage( health + 666, self.origin, self );
-	codolprintln( "CoDOL zm perkpop: " + self.name + " electro shocked a robot zombie at " + origin );
+	{}
 }
 
 // KILLSTREAKS_ELECTRO_DESC: "激活附近的饮料机" -- powers the drink machines
@@ -850,7 +874,7 @@ electro_power_machines()
 			continue;
 		m.perkpop_powered = true;
 		level notify( m.script_noteworthy + "_power_on" );
-		codolprintln( "CoDOL zm perkpop: " + self.name + " electro powered the " + m.script_noteworthy + " machine" );
+		{}
 	}
 }
 
@@ -871,6 +895,33 @@ watch_kills()
 	}
 }
 
+// Scavenger supplies ordinary guns only. These finite special weapons must
+// not earn their own ammunition back on kills, including the tesla pickup
+// whose lifetime ends when its clip and stock are exhausted. Match by weapon
+// identity rather than the current power-up flag: box/upgrade variants and
+// weapons waiting for the pickup equip acknowledgement need the same guard.
+scavenger_weapon_eligible( weapon )
+{
+	switch ( weapon )
+	{
+	case "minigun_zm":
+	case "tesla_gun_zm":
+	case "tesla_gun_upgraded_zm":
+	case "ray_gun_zm":
+	case "ray_gun_upgraded_zm":
+	case "thundergun_zm":
+	case "thundergun_upgraded_zm":
+	case "knife_ballistic_zm":
+	case "knife_ballistic_upgraded_zm":
+	case "knife_ballistic_bowie_zm":
+	case "knife_ballistic_bowie_upgraded_zm":
+	case "crossbow_explosive_zm":
+	case "crossbow_explosive_upgraded_zm":
+		return false;
+	}
+	return true;
+}
+
 scavenger_resupply()
 {
 	primaries = self getWeaponsListPrimaries();
@@ -878,6 +929,8 @@ scavenger_resupply()
 	for ( i = 0; i < primaries.size; i++ )
 	{
 		weapon = primaries[ i ];
+		if ( !scavenger_weapon_eligible( weapon ) )
+			continue;
 		stock = self getWeaponAmmoStock( weapon );
 		room = weaponMaxAmmo( weapon ) - stock;
 		add = weaponClipSize( weapon );
@@ -893,8 +946,7 @@ scavenger_resupply()
 		self.perkpop_scavenges = 0;
 	self.perkpop_scavenges++;
 	if ( self.perkpop_scavenges == 1 || self.perkpop_scavenges % 10 == 0 )
-		codolprintln( "CoDOL zm perkpop: " + self.name + " scavenger resupply #" + self.perkpop_scavenges +
-			" gave " + given + " rounds" );
+		{}
 }
 
 // KILLSTREAKS_DISCOUNT_DESC: "返还10%的购买金额" -- 10% of every purchase back
@@ -913,7 +965,7 @@ watch_spent_points()
 		if ( refund <= 0 )
 			continue;
 		self maps\_zombiemode_score::add_to_player_score( refund, false );
-		codolprintln( "CoDOL zm perkpop: " + self.name + " discount refunded " + refund + " of " + points );
+		{}
 	}
 }
 
@@ -947,7 +999,7 @@ barrier_repaired( blocker )
 	if ( isDefined( model ) && model != "" )
 		c4 setModel( model );
 	blocker.perkpop_c4 = c4;
-	codolprintln( "CoDOL zm perkpop: " + self.name + " carpenter planted C4 at " + spot );
+	{}
 
 	c4 thread carpenter_c4_think( self, blocker );
 }
@@ -991,7 +1043,7 @@ carpenter_c4_think( owner, blocker )
 			radiusDamage( origin, 192, 3000, 500 );
 
 		playFx( level._effect[ "perkpop_divetonuke" ], origin );
-		codolprintln( "CoDOL zm perkpop: carpenter C4 detonated at " + origin );
+		{}
 
 		if ( isDefined( blocker ) )
 			blocker.perkpop_c4 = undefined;
@@ -1031,12 +1083,12 @@ test_verb( player, tokens )
 		// this gives it another character's perk pops.
 		if ( tokens.size < 4 || !isDefined( level.zombie_roster[ tokens[ 3 ] ] ) )
 		{
-			codolprintln( "CoDOL zm perkpop test: no roster character " + tokens[ tokens.size - 1 ] );
+			{}
 			break;
 		}
 		player.zombie_perkpop_names = level.zombie_roster[ tokens[ 3 ] ].perkpops;
 		player on_spawned();
-		codolprintln( "CoDOL zm perkpop test: " + player.name + " now carries " + tokens[ 3 ] + "'s perk pops" );
+		{}
 		break;
 
 	case "rounds":
@@ -1058,7 +1110,7 @@ test_verb( player, tokens )
 		slot = player.perkpop_slots[ index ];
 		if ( !isDefined( slot ) )
 		{
-			codolprintln( "CoDOL zm perkpop test: " + player.name + " has no perk pop in slot " + index );
+			{}
 			break;
 		}
 		streak = player.perkpop_streak;
@@ -1070,8 +1122,7 @@ test_verb( player, tokens )
 	case "select":
 		if ( tokens.size < 4 )
 			break;
-		codolprintln( "CoDOL zm perkpop test: " + player.name + " select " + tokens[ 3 ] + " (has " +
-			player hasWeapon( tokens[ 3 ] ) + ", current " + player getCurrentWeapon() + ")" );
+		{}
 		player switchToWeapon( tokens[ 3 ] );
 		if ( is_true( player.isbot ) )
 			player codol_botPressButtons( 64, 3 );
@@ -1089,18 +1140,9 @@ test_verb( player, tokens )
 		mod = "MOD_GRENADE_SPLASH";
 		if ( tokens.size > 3 )
 			mod = tokens[ 3 ];
-		if ( mod == "MOD_FALLING" )
-		{
-			// Prone is what a dive landing leaves; a test client only runs
-			// pmove (which applies the stance) while a hold is active.
-			player setStance( "prone" );
-			if ( is_true( player.isbot ) )
-				player codol_botPressButtons( 64, 1 );
-			wait( 1.2 );
-			codolprintln( "CoDOL zm perkpop test: " + player.name + " stance " + player getStance() );
-		}
+		// A synthetic hit carries no dive provenance and must not explode.
 		result = player player_damage_override( player, player, 50, mod, "none" );
-		codolprintln( "CoDOL zm perkpop test: " + player.name + " " + mod + " 50 -> " + result );
+		{}
 		break;
 
 	case "zombiehit":
@@ -1114,7 +1156,7 @@ test_verb( player, tokens )
 			player player_damage_override( z, z, 10, "MOD_MELEE", "none" );
 			wait( 0.05 );
 		}
-		codolprintln( "CoDOL zm perkpop test: zombie hits done (zombie alive " + ( isDefined( z ) && isDefined( z.health ) && z.health > 0 ) + ")" );
+		{}
 		break;
 
 	case "zkill":
@@ -1124,9 +1166,8 @@ test_verb( player, tokens )
 		break;
 
 	case "dive":
-		// The dive-landing explosion itself.  A test client's stance never
-		// changes (it runs no pmove of its own), so the prone test in
-		// player_damage_override cannot be met on a probe.
+		// Presentation/damage helper only, with ownership validation. This
+		// debug verb does not establish native dive-landing acceptance.
 		player divetonuke_explode();
 		break;
 
@@ -1135,23 +1176,20 @@ test_verb( player, tokens )
 		for ( i = 0; i < primaries.size; i++ )
 		{
 			player setWeaponAmmoStock( primaries[ i ], 0 );
-			codolprintln( "CoDOL zm perkpop test: " + player.name + " " + primaries[ i ] + " stock 0 (max " +
-				weaponMaxAmmo( primaries[ i ] ) + ", clip " + weaponClipSize( primaries[ i ] ) + ")" );
+			{}
 		}
 		break;
 
 	case "ammo":
 		primaries = player getWeaponsListPrimaries();
 		for ( i = 0; i < primaries.size; i++ )
-			codolprintln( "CoDOL zm perkpop test: " + player.name + " " + primaries[ i ] + " stock " +
-				player getWeaponAmmoStock( primaries[ i ] ) );
+			{}
 		break;
 
 	case "keepperk":
 		// C1's streak-keeping zombies perk (coPerkStatsTable row 63, perk1).
 		player setPerk( "specialty_perkpop_zm" );
-		codolprintln( "CoDOL zm perkpop test: " + player.name + " specialty_perkpop_zm " + player hasPerk( "specialty_perkpop_zm" ) +
-			" modLastStandKeepRoundStreak " + player hasAbilityModifier( "modLastStandKeepRoundStreak" ) );
+		{}
 		break;
 
 	case "buy":
@@ -1160,17 +1198,17 @@ test_verb( player, tokens )
 			points = int( tokens[ 3 ] );
 		before = player.score;
 		player maps\_zombiemode_score::minus_to_player_score( points );
-		codolprintln( "CoDOL zm perkpop test: " + player.name + " bought for " + points + ": score " + before + " -> " + player.score );
+		{}
 		break;
 
 	case "repair":
 		barriers = level.exterior_goals;
 		if ( !isDefined( barriers ) || barriers.size == 0 )
 		{
-			codolprintln( "CoDOL zm perkpop test: no exterior_goal on this map" );
+			{}
 			break;
 		}
-		codolprintln( "CoDOL zm perkpop test: board delay 1 -> " + player board_repair_delay( 1 ) );
+		{}
 		player barrier_repaired( barriers[ 0 ] );
 		break;
 
@@ -1187,12 +1225,7 @@ test_verb( player, tokens )
 				charges = charges + slot.name + "=" + slot.earned + " ";
 		}
 		primaries = player getWeaponsListPrimaries();
-		codolprintln( "CoDOL zm perkpop test: " + player.name + " streak " + player.perkpop_streak +
-			" hud " + player getKillstreak() + " ids " + player getKillstreakID( 1 ) + "/" + player getKillstreakID( 2 ) +
-			" targets " + player getKillstreakTarget( 1 ) + "/" + player getKillstreakTarget( 2 ) +
-			" earned " + charges + "active " + active + "current " + player getCurrentWeapon() +
-			" primaries " + primaries.size + " limit " +
-			player maps\_zombiemode_weapons::player_weapon_limit() );
+		{}
 		break;
 	}
 }
@@ -1205,7 +1238,7 @@ test_watch_weapon( seconds )
 	{
 		current = self getCurrentWeapon();
 		if ( current != last )
-			codolprintln( "CoDOL zm perkpop test: " + self.name + " current weapon " + current + " at +" + ( t * 0.1 ) + "s" );
+			{}
 		last = current;
 		wait( 0.1 );
 	}
@@ -1222,6 +1255,6 @@ test_zombie()
 				return z;
 		}
 	}
-	codolprintln( "CoDOL zm perkpop test: no live robot zombie" );
+	{}
 	return undefined;
 }

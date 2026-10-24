@@ -106,7 +106,7 @@ rcbomb_powerup()
 
 	if ( !can_use_rcbomb( self ) )
 	{
-		codolPrintLn( "CoDOL zm rcbomb: " + self.name + " cannot take a car now" );
+		{}
 		return;
 	}
 
@@ -124,7 +124,7 @@ rcbomb_powerup()
 	car = spawnVehicle( "t5_veh_rcbomb_allies", "rcbomb", "rc_car_medium_mp", placement.origin, placement.angles );
 	if ( !isDefined( car ) )
 	{
-		codolPrintLn( "CoDOL zm rcbomb: spawnvehicle rc_car_medium_mp returned nothing" );
+		{}
 		return;
 	}
 
@@ -136,7 +136,7 @@ rcbomb_powerup()
 	car thread maps\mp\killstreaks\_rcbomb_presentation::start();
 
 	self.zm_rcbomb = car;
-	codolPrintLn( "CoDOL zm rcbomb: car " + car getEntityNumber() + " spawned for " + self.name + " at " + placement.origin );
+	{}
 
 	// T5 useRCBomb: the antenna pull before control.
 	wait( 0.9 );
@@ -149,7 +149,7 @@ rcbomb_powerup()
 
 	if ( !is_player_valid( self ) || self isRemoteControlling() || isDefined( car getSeatOccupant( 0 ) ) )
 	{
-		codolPrintLn( "CoDOL zm rcbomb: " + self.name + " could not take the wheel; car removed" );
+		{}
 		car delete();
 		self.zm_rcbomb = undefined;
 		return;
@@ -158,13 +158,13 @@ rcbomb_powerup()
 	car useVehicle( self, 0 );
 	if ( !self isRemoteControlling() )
 	{
-		codolPrintLn( "CoDOL zm rcbomb: native remote control refused for " + self.name + "; car removed" );
+		{}
 		car delete();
 		self.zm_rcbomb = undefined;
 		return;
 	}
 
-	codolPrintLn( "CoDOL zm rcbomb: " + self.name + " is driving car " + car getEntityNumber() );
+	{}
 
 	car.zm_start_origin = car.origin;
 	car thread maps\mp\killstreaks\_rcbomb_presentation::monitor();
@@ -276,8 +276,7 @@ blowup( driver, reason )
 	name = "(gone)";
 	if ( isDefined( driver ) )
 		name = driver.name;
-	codolPrintLn( "CoDOL zm rcbomb: car of " + name + " blew up (" + reason + ") " + moved +
-		" units from where it started; zombies killed by the blast so far: " + ( level.total_zombies_killed - before ) );
+	{}
 
 	wait( 0.95 );
 

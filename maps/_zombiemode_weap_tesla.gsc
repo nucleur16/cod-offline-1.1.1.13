@@ -86,23 +86,9 @@
 
 #include maps\_zombiemode_utility;
 
-#using_animtree ("generic_human");
-
 init()
 {
 	level.zm_tesla_ok = false;
-
-	// T5 _zombiemode.gsc init_anims: the tesla death sets.
-	level._zombie_tesla_death = [];
-	level._zombie_tesla_death[ 0 ] = %ai_zombie_tesla_death_a;
-	level._zombie_tesla_death[ 1 ] = %ai_zombie_tesla_death_b;
-	level._zombie_tesla_death[ 2 ] = %ai_zombie_tesla_death_c;
-	level._zombie_tesla_death[ 3 ] = %ai_zombie_tesla_death_d;
-	level._zombie_tesla_death[ 4 ] = %ai_zombie_tesla_death_e;
-	level._zombie_tesla_crawl_death = [];
-	level._zombie_tesla_crawl_death[ 0 ] = %ai_zombie_tesla_crawl_death_a;
-	level._zombie_tesla_crawl_death[ 1 ] = %ai_zombie_tesla_crawl_death_b;
-	level._effect[ "tesla_shock_eyes" ] = loadfx( "maps/zombie/fx_zombie_tesla_shock_eyes" );
 
 	precacheItem( "tesla_gun_zm" );
 	if ( !codol_isWeaponMounted( "tesla_gun_zm" ) )
@@ -177,11 +163,11 @@ tesla_damage_init( zombie, hit_location, hit_origin, player )
 	if ( !isDefined( player.tesla_network_death_choke ) )
 		player.tesla_network_death_choke = 0;
 
-	codolPrintLn( "CoDOL zm tesla: " + player.name + " hit zombie " + zombie getEntityNumber() + "; chain starts" );
+	{}
 
 	zombie tesla_arc_damage( zombie, player, 1 );
 
-	codolPrintLn( "CoDOL zm tesla: chain by " + player.name + " reached " + player.tesla_enemies_hit + " zombies" );
+	{}
 
 	player.tesla_enemies_hit = 0;
 }
@@ -360,6 +346,7 @@ tesla_do_damage( source_enemy, arc_num, player )
 			self.deathanim = level._zombie_tesla_crawl_death[ randomInt( level._zombie_tesla_crawl_death.size ) ];
 	}
 
+	self tesla_play_death_fx( arc_num );
 	// T5 :284: the arc's originator picks the death direction.
 	origin = player.origin;
 	if ( isDefined( source_enemy ) && source_enemy != self )
@@ -504,10 +491,6 @@ tesla_head_point( ent )
 
 tesla_chest_point( ent )
 {
-	// T5 :187 plays a hound's shock on J_Spine1, a dog's back, not a standing
-	// zombie's chest.
-	if ( is_true( ent.isdog ) )
-		return ent.origin + ( 0, 0, 20 );
 	return ent.origin + ( 0, 0, 48 );
 }
 

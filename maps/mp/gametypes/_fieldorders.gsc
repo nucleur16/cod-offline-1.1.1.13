@@ -135,7 +135,7 @@ init()
 		summary = summary + " " + ref + "(" + foSet.orders.size + " orders, " + foSet.perMatch + "/match)";
 	}
 
-	codolPrintLn( "CoDOL field orders:" + summary + "; splash sounds mp_suitcase_pickup / mp_war_objective_taken (Headquarters')" );
+	{}
 
 	if ( !isDefined( level.foSets[ "cofieldorderbootcamp" ] ) &&
 	     !isDefined( level.foSets[ "cofieldordermponboarding" ] ) )
@@ -289,8 +289,7 @@ foChooseSet()
 	lastTarget = foFinalTarget( bootcamp.ref );
 	if ( lastTarget > 0 && done >= lastTarget )
 	{
-		codolPrintLn( "CoDOL field orders: " + self.name + " has completed " + done + " of "
-			+ bootcamp.ref + "'s " + lastTarget + " orders; no more field orders" );
+		{}
 		return undefined;
 	}
 	return bootcamp;
@@ -356,7 +355,7 @@ foTrace( text )
 	name = "level";
 	if ( isPlayer( self ) )
 		name = self.name;
-	codolPrintLn( "CoDOL field orders trace: " + name + ": " + text );
+	{}
 }
 
 
@@ -387,8 +386,7 @@ foSlotLoop( slot )
 		{
 			// The set's per-match count (cofieldordertable column 2) is
 			// spent: nothing more this match, and C1 has no HUD line for it.
-			codolPrintLn( "CoDOL field orders: " + self.name + " finished this match's "
-				+ self.foSet.perMatch + " " + self.foSet.ref + " orders" );
+			{}
 			return;
 		}
 
@@ -501,9 +499,7 @@ foAssign( slot, order )
 	// field_order_get reads columns 1 and 2 of row fo_splash_ref.
 	self foSplash( "field_order_get", "mp_suitcase_pickup", order.index );
 
-	codolPrintLn( "CoDOL field orders: " + self.name + " slot " + slot + " got " + self.foSet.ref
-		+ " row " + order.index + " " + order.ref + " (" + order.kind + " x" + order.target
-		+ ", " + order.reward + " " + order.rewardType + ")" );
+	{}
 }
 
 
@@ -577,24 +573,14 @@ foComplete( slot )
 	// briefly and slides out.
 	self maps\mp\gametypes\_playerlogic::pulseScriptMenu( "fo_complete_time" );
 
-	// field_order_win's only dynamic line is locString( "@" + column 4,
-	// column 7 ) of row fo_splash_ref, and C1 cannot format it: locString
-	// (0x005E2A80) takes every string argument after the first as an "@"
-	// reference -- it drops the first character of "50" and localizes "0"
-	// (SEH_LocalizeTextMessage 0x005DA400 returns one-character keys as they
-	// are), so a 50 reward read "0 XP" and a 100+ reward failed to localize
-	// ("00") and the line went blank. Only a numeric argument is substituted,
-	// and tablelookupbyrow (0x005E2530) always returns a string. Row 0 ("none")
-	// makes the line fail cleanly to empty; the panel shows the reward
-	// (locString( "@" + column 4, int( getFOReward( i ) ) )) while the order
-	// runs, and giveRankXP's score popup shows the XP it paid.
-	self foSplash( "field_order_win", "mp_war_objective_taken", 0 );
+	// Coupled numeric Field Order menu overlay: publish the actual order row,
+	// whose reward column is converted to a numeric locString argument.
+	self foSplash( "field_order_win", "mp_war_objective_taken", order.index );
 
 	self foGrantReward( order );
 	self thread foCreditChallenge( self.foSet.ref );
 
-	codolPrintLn( "CoDOL field orders: " + self.name + " completed " + self.foSet.ref
-		+ " row " + order.index + " " + order.ref + " (" + order.reward + " " + order.rewardType + ")" );
+	{}
 
 	self notify( "fo_complete_" + slot );
 }

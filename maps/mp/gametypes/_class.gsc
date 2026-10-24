@@ -29,7 +29,7 @@ init()
 	level.classMap["class12"] = 12;
 	level.classMap["class13"] = 13;
 	level.classMap["class14"] = 14;
-	
+
 	level.classMap["custom1"] = 0;
 	level.classMap["custom2"] = 1;
 	level.classMap["custom3"] = 2;
@@ -40,9 +40,9 @@ init()
 	level.classMap["custom8"] = 7;
 	level.classMap["custom9"] = 8;
 	level.classMap["custom10"] = 9;
-	
+
 	level.classMap["copycat"] = -1;
-	
+
 	/#
 	// classes testclients may choose from.
 	level.botClasses = [];
@@ -52,11 +52,11 @@ init()
 	level.botClasses[3] = "class0";
 	level.botClasses[4] = "class0";
 	#/
-	
+
 	level.defaultClass = "CLASS_ASSAULT";
-	
+
 	level.classTableName = "mp/classTable.csv";
-	
+
 	//precacheShader( "waypoint_bombsquad" );
 	precacheShader( "specialty_pistoldeath" );
 	precacheShader( "specialty_finalstand" );
@@ -68,7 +68,7 @@ init()
 getClassChoice( response )
 {
 	assert( isDefined( level.classMap[response] ) );
-	
+
 	return response;
 }
 
@@ -87,10 +87,10 @@ logClassChoice( class, primaryWeapon, specialType, perks )
 	if ( class == self.lastClass )
 		return;
 
-	self logstring( "choseclass: " + class + " weapon: " + primaryWeapon + " special: " + specialType );		
+	{}
 	for( i=0; i<perks.size; i++ )
-		self logstring( "perk" + i + ": " + perks[i] );
-	
+		{}
+
 	self.lastClass = class;
 }
 
@@ -198,7 +198,7 @@ codol_giveEquipment( items )
 		// ported) would make giveWeapon raise a script error and stop the server.
 		if ( !codol_isWeaponMounted( weapon ) )
 		{
-			codolPrintLn( "CoDOL loadout: " + self.name + " equipment " + item + " has no weapon " + weapon + "; skipped" );
+			{}
 			continue;
 		}
 		self giveWeapon( weapon );
@@ -228,7 +228,7 @@ table_getWeapon( tableName, classIndex, weaponIndex )
 table_getWeaponAttachment( tableName, classIndex, weaponIndex, attachmentIndex )
 {
 	tempName = "none";
-	
+
 	if ( weaponIndex == 0 )
 	{
 		if ( !isDefined( attachmentIndex ) || attachmentIndex == 0 )
@@ -243,13 +243,13 @@ table_getWeaponAttachment( tableName, classIndex, weaponIndex, attachmentIndex )
 		else
 			tempName = tableLookup( tableName, 0, "loadoutSecondaryAttachment2", classIndex + 1 );
 	}
-	
+
 	if ( tempName == "" || tempName == "none" )
 		return "none";
 	else
 		return tempName;
-	
-	
+
+
 }
 
 table_getWeaponCamo( tableName, classIndex, weaponIndex )
@@ -291,7 +291,7 @@ table_getDeathstreak( tableName, classIndex )
 getClassIndex( className )
 {
 	assert( isDefined( level.classMap[className] ) );
-	
+
 	return level.classMap[className];
 }
 
@@ -301,7 +301,7 @@ getPerk( perkIndex )
 	if( isSubstr( self.pers["class"], "CLASS_CUSTOM" ) )
 		return cac_getPerk( self.class_num, perkIndex );
 	else
-		return table_getPerk( level.classTableName, self.class_num, perkIndex );	
+		return table_getPerk( level.classTableName, self.class_num, perkIndex );
 }
 
 getWeaponCamo( weaponIndex )
@@ -309,19 +309,19 @@ getWeaponCamo( weaponIndex )
 	if( isSubstr( self.pers["class"], "CLASS_CUSTOM" ) )
 		return cac_getWeaponCamo( self.class_num, weaponIndex );
 	else
-		return table_getWeaponCamo( level.classTableName, self.class_num, weaponIndex );	
+		return table_getWeaponCamo( level.classTableName, self.class_num, weaponIndex );
 }
 */
 
 cloneLoadout()
 {
 	clonedLoadout = [];
-	
+
 	class = self.curClass;
-	
+
 	if ( class == "copycat" )
 		return ( undefined );
-	
+
 	if ( isDefined( self.codolCombatBot ) && self.codolCombatBot )
 	{
 		// Copycat must clone the bot's CSV class, not the human class0 table.
@@ -366,7 +366,7 @@ cloneLoadout()
 	else
 	{
 		class_num = getClassIndex( class );
-		
+
 		loadoutPrimary = table_getWeapon( level.classTableName, class_num, 0 );
 		loadoutPrimaryAttachment = table_getWeaponAttachment( level.classTableName, class_num, 0 , 0);
 		loadoutPrimaryAttachment2 = table_getWeaponAttachment( level.classTableName, class_num, 0, 1 );
@@ -382,7 +382,7 @@ cloneLoadout()
 		loadoutOffhand = table_getOffhand( level.classTableName, class_num );
 		loadoutDeathstreak = table_getDeathstreak( level.classTableName, class_num );
 	}
-	
+
 	clonedLoadout["inUse"] = false;
 	clonedLoadout["loadoutPrimary"] = loadoutPrimary;
 	clonedLoadout["loadoutPrimaryAttachment"] = loadoutPrimaryAttachment;
@@ -402,22 +402,52 @@ cloneLoadout()
 	clonedLoadout["secondaryRecipe"] = self.secondaryWeapon;
 	if ( isDefined( self.codolEquipment ) )
 		clonedLoadout["codolEquipment"] = self.codolEquipment;
-	
+
 	return ( clonedLoadout );
 }
 
 giveLoadout( team, class, allowCopycat )
 {
 	self takeAllWeapons();
+	// Script-owned modes provide their complete loadout.  Reading an unused
+	// class-table/profile weapon first can equip defaultweapon_mp or fail
+	// before Gun Game, Infection, and other mode weapons are issued.
+	if ( isDefined( level.givePartyLoadout ) )
+	{
+		self.codolEquipment = undefined;
+		self.specialty = [];
+		modeWeapon = self [[level.givePartyLoadout]]();
+		self setKillstreaks( "none", "none", "none" );
+		// The character composer normally runs below the C1 class path.
+		// Skipping it leaves party-mode players invisible to other clients.
+		// Weapon switching finishes on a later user command. Compose the
+		// character from the weapon just issued, not a stale current slot.
+		if ( !isDefined( modeWeapon ) )
+			modeWeapon = self getCurrentWeapon();
+		self.loadoutPrimary = getBaseWeaponName( modeWeapon );
+		self.loadoutSecondary = "none";
+		self.loadoutPrimaryCamo = 0;
+		self.loadoutSecondaryCamo = 0;
+		self.pers["primaryWeapon"] = getBaseWeaponName( modeWeapon );
+		self.primaryWeapon = modeWeapon;
+		self.secondaryWeapon = "none";
+		self maps\mp\gametypes\_teams::playerModelForWeapon( self.pers["primaryWeapon"], "none" );
+		if ( isDefined( level.applyPartyAppearance ) )
+			self [[level.applyPartyAppearance]]();
+		self notify( "changed_kit" );
+		self notify( "giveLoadout" );
+		return;
+	}
+
 	botLoadout = isDefined( self.codolCombatBot ) && self.codolCombatBot;
 	profileWeapons = false;
 	primaryRecipe = "none";
 	secondaryRecipe = "none";
 	profileEquipment = undefined;
 	self.codolEquipment = undefined;
-	
+
 	primaryIndex = 0;
-	
+
 	// initialize specialty array
 	self.specialty = [];
 
@@ -479,7 +509,7 @@ giveLoadout( team, class, allowCopycat )
 		loadoutPerk2 = clonedLoadout["loadoutPerk2"];
 		loadoutPerk3 = clonedLoadout["loadoutPerk3"];
 		loadoutOffhand = clonedLoadout["loadoutOffhand"];
-		loadoutDeathStreak = "specialty_copycat";		
+		loadoutDeathStreak = "specialty_copycat";
 	}
 	else if ( isSubstr( class, "custom" ) )
 	{
@@ -512,7 +542,7 @@ giveLoadout( team, class, allowCopycat )
 	{
 		class_num = getClassIndex( class );
 		self.class_num = class_num;
-		
+
 		loadoutPrimary = table_getWeapon( level.classTableName, class_num, 0 );
 		loadoutPrimaryAttachment = table_getWeaponAttachment( level.classTableName, class_num, 0 , 0);
 		loadoutPrimaryAttachment2 = table_getWeaponAttachment( level.classTableName, class_num, 0, 1 );
@@ -535,49 +565,49 @@ giveLoadout( team, class, allowCopycat )
 		isCustomClass = botLoadout || isSubstr( class, "custom" );
 		if ( !profileWeapons )
 		{
-		
+
 		if ( !isValidPrimary( loadoutPrimary ) || (isCustomClass && !self isItemUnlocked( loadoutPrimary )) )
 			loadoutPrimary = table_getWeapon( level.classTableName, 10, 0 );
-		
+
 		if ( !isValidAttachment( loadoutPrimaryAttachment ) || (isCustomClass && !self isItemUnlocked( loadoutPrimary + " " + loadoutPrimaryAttachment )) )
 			loadoutPrimaryAttachment = table_getWeaponAttachment( level.classTableName, 10, 0 , 0);
-		
+
 		if ( !isValidAttachment( loadoutPrimaryAttachment2 ) || (isCustomClass && !self isItemUnlocked( loadoutPrimary + " " + loadoutPrimaryAttachment2 )) )
 			loadoutPrimaryAttachment2 = table_getWeaponAttachment( level.classTableName, 10, 0, 1 );
-		
+
 		if ( !isValidCamo( loadoutPrimaryCamo ) || (isCustomClass && !self isItemUnlocked( loadoutPrimary + " " + loadoutPrimaryCamo )) )
 			loadoutPrimaryCamo = table_getWeaponCamo( level.classTableName, 10, 0 );
-		
+
 		if ( !isValidSecondary( loadoutSecondary ) || (isCustomClass && !self isItemUnlocked( loadoutSecondary )) )
 			loadoutSecondary = table_getWeapon( level.classTableName, 10, 1 );
-		
+
 		if ( !isValidAttachment( loadoutSecondaryAttachment ) || (isCustomClass && !self isItemUnlocked( loadoutSecondary + " " + loadoutSecondaryAttachment )) )
 			loadoutSecondaryAttachment = table_getWeaponAttachment( level.classTableName, 10, 1 , 0);
-		
+
 		if ( !isValidAttachment( loadoutSecondaryAttachment2 ) || (isCustomClass && !self isItemUnlocked( loadoutSecondary + " " + loadoutSecondaryAttachment2 )) )
 			loadoutSecondaryAttachment2 = table_getWeaponAttachment( level.classTableName, 10, 1, 1 );;
-		
+
 		if ( !isValidCamo( loadoutSecondaryCamo ) || (isCustomClass && !self isItemUnlocked( loadoutSecondary + " " + loadoutSecondaryCamo )) )
 			loadoutSecondaryCamo = table_getWeaponCamo( level.classTableName, 10, 1 );
 		}
-		
+
 		if ( !isDefined( profileEquipment ) && (!isValidEquipment( loadoutEquipment ) || (isCustomClass && !self isItemUnlocked( loadoutEquipment ))) )
 			loadoutEquipment = table_getEquipment( level.classTableName, 10, 0 );
-		
+
 		// Custom getters validate CoDOL marketplace type and pk1/pk2/pk3.
 		// IW4's lists put Lightweight in a different slot and omit C1 perks.
 		if ( !isCustomClass && !isValidPerk1( loadoutPerk1 ) )
 			loadoutPerk1 = table_getPerk( level.classTableName, 10, 1 );
-		
+
 		if ( !isCustomClass && !isValidPerk2( loadoutPerk2 ) )
 			loadoutPerk2 = table_getPerk( level.classTableName, 10, 2 );
-		
+
 		if ( !isCustomClass && !isValidPerk3( loadoutPerk3 ) )
 			loadoutPerk3 = table_getPerk( level.classTableName, 10, 3 );
-		
+
 		if ( !isDefined( profileEquipment ) && !isValidOffhand( loadoutOffhand ) )
 			loadoutOffhand = table_getOffhand( level.classTableName, 10 );
-		
+
 		if ( !isCustomClass && !isValidDeathstreak( loadoutDeathstreak ) )
 			loadoutDeathstreak = table_getDeathstreak( level.classTableName, 10 );
 	}
@@ -587,7 +617,7 @@ giveLoadout( team, class, allowCopycat )
 		loadoutPrimaryAttachment2 = "none";
 		loadoutSecondaryAttachment2 = "none";
 	}
-	
+
 	if ( loadoutPerk1 != "specialty_onemanarmy" && loadoutSecondary == "onemanarmy" )
 		loadoutSecondary = table_getWeapon( level.classTableName, 10, 1 );
 
@@ -616,7 +646,7 @@ giveLoadout( team, class, allowCopycat )
 		loadoutKillstreak2 = "none";
 		loadoutKillstreak3 = "none";
 	}
-	
+
 	if ( profileWeapons )
 		secondaryName = secondaryRecipe;
 	else
@@ -628,9 +658,9 @@ giveLoadout( team, class, allowCopycat )
 	self.loadoutPrimary = loadoutPrimary;
 	self.loadoutSecondary = loadoutSecondary;
 	self.loadoutSecondaryCamo = int(tableLookup( "mp/camoTable.csv", 1, loadoutSecondaryCamo, 0 ));
-	
+
 	self SetOffhandPrimaryClass( "other" );
-	
+
 	// Action Slots
     // C1 action slots are independent from all three offhand classes.
     // Selected rewards own1..3, final slot5 owns package rewards; slot4 reserved.
@@ -644,12 +674,12 @@ giveLoadout( team, class, allowCopycat )
 	// A first spawn has no previous perk callback to initialize it. Lightweight
 	// leaves it at 1: its modMoveSpeedScale is applied natively.
 	self.moveSpeedScaler = 1;
-	
+
 	// these special case giving pistol death have to come before
 	// perk loadout to ensure player perk icons arent overwritten
 	if ( level.dieHardMode )
 		self maps\mp\perks\_perks::givePerk( "specialty_pistoldeath" );
-	
+
 	// C1's class tables spell an empty deathstreak "none" (mp/classtable.csv
 	// classes 11+, mp/botclasstable.csv); without this it read as a streak of
 	// 0 deaths and every spawn gave perk "none" and queued a "none" splash.
@@ -662,15 +692,15 @@ giveLoadout( team, class, allowCopycat )
 		// coPerkStatsTable column 6: deaths in a row that earn it (4 for all
 		// four C1 deathstreaks: Copycat, Painkiller, Martyrdom, Final Stand).
 		deathVal = int( tableLookup( "mp/coPerkStatsTable.csv", 1, loadoutDeathStreak, 6 ) );
-				
+
 		// Hardline Pro's modDeathstreakShift (PERKS_DESC_ROLLOVER: deaths
 		// needed for a deathstreak -1). Perks are cleared above and granted
 		// below, so the selected aggregate does not exist yet; the rows the
 		// loadout will grant supply the shift from the table instead.
 		deathVal += self loadoutModifierDelta( "modDeathstreakShift", loadoutPerk1, loadoutPerk2, loadoutPerk3 );
-		
+
 		if ( deathVal <= 0 )
-			codolPrintLn( "CoDOL deathstreak: " + self.name + " " + loadoutDeathStreak + " has no death count in mp/coPerkStatsTable.csv; not granted" );
+			{}
 		else if ( self.pers["cur_death_streak"] == deathVal )
 		{
 			self thread maps\mp\perks\_perks::givePerk( loadoutDeathStreak );
@@ -686,9 +716,9 @@ giveLoadout( team, class, allowCopycat )
 		self loadoutAllPerks( "specialty_null", loadoutPerk1, loadoutPerk2, loadoutPerk3 );
 	else
 		self loadoutAllPerks( loadoutEquipment, loadoutPerk1, loadoutPerk2, loadoutPerk3 );
-		
+
 	self setKillstreaks( loadoutKillstreak1, loadoutKillstreak2, loadoutKillstreak3 );
-		
+
 	// Hacker/Engineer modObjectiveUseTimeScale (1 + 0.5). The C1 texts
 	// (PERKS_DESC_HACKER, PERKS_DESC_ENGINEER) say it makes planting,
 	// defusing and capturing faster, so the value is the rate multiplier
@@ -699,7 +729,7 @@ giveLoadout( team, class, allowCopycat )
 	if ( isDefined( objectiveScale ) && objectiveScale > 0 )
 	{
 		self.objectiveScaler = objectiveScale;
-		codolPrintLn( "CoDOL perks: " + self.name + " objectiveScaler " + objectiveScale );
+		{}
 	}
 
 	if ( self hasPerk( "specialty_extraammo", true ) && getWeaponClass( secondaryName ) != "weapon_projectile" )
@@ -712,7 +742,7 @@ giveLoadout( team, class, allowCopycat )
 		primaryName = buildWeaponName( loadoutPrimary, loadoutPrimaryAttachment, loadoutPrimaryAttachment2 );
 	if ( primaryName != "none" )
 		self _giveWeapon( primaryName, self.loadoutPrimaryCamo );
-	
+
 	// fix changing from a riotshield class to a riotshield class during grace period not giving a shield
 	if ( codolIsWeaponBase( primaryName, "riotshield_mp" ) && level.inGracePeriod )
 		self notify ( "weapon_change", primaryName );
@@ -724,11 +754,11 @@ giveLoadout( team, class, allowCopycat )
 		self setSpawnWeapon( primaryName );
 	else if ( secondaryName != "none" )
 		self setSpawnWeapon( secondaryName );
-	
+
 	self.pers["primaryWeapon"] = getBaseWeaponName( primaryName );
-	
+
 	// Primary Offhand was given by givePerk (it's your perk1)
-	
+
 	// Secondary Offhand
 	if ( isDefined( profileEquipment ) )
 		codol_giveEquipment( profileEquipment );
@@ -739,7 +769,7 @@ giveLoadout( team, class, allowCopycat )
 		self SetOffhandSecondaryClass( "flash" );
 	else
 		self SetOffhandSecondaryClass( "smoke" );
-	
+
 	self giveWeapon( offhandSecondaryWeapon );
 	if( loadOutOffhand == "smoke_grenade" )
 		self setWeaponAmmoClip( offhandSecondaryWeapon, 1 );
@@ -749,7 +779,7 @@ giveLoadout( team, class, allowCopycat )
 		self setWeaponAmmoClip( offhandSecondaryWeapon, 2 );
 	else
 		self setWeaponAmmoClip( offhandSecondaryWeapon, 1 );
-	
+
 	}
 	// Scavenger Pro (modExtraExplosive): one extra starting frag / semtex.
 	self maps\mp\perks\_codol_equipperks::giveExtraExplosive();
@@ -758,12 +788,12 @@ giveLoadout( team, class, allowCopycat )
 	self.secondaryWeapon = secondaryName;
 
 	self maps\mp\gametypes\_teams::playerModelForWeapon( self.pers["primaryWeapon"], getBaseWeaponName( secondaryName ) );
-		
+
 	self maps\mp\gametypes\_weapons::updateMoveSpeedScale( "primary" );
 
 	// cac specialties that require loop threads
 	self maps\mp\perks\_perks::cac_selector();
-	
+
 	self notify ( "changed_kit" );
 	self notify ( "giveLoadout" );
 }
@@ -781,10 +811,10 @@ _detachAll()
 		{
 			self DetachShieldModel( "weapon_riot_shield_mp", "tag_shield_back" );
 		}
-		
+
 		self.hasRiotShield = false;
 	}
-	
+
 	self detachAll();
 }
 
@@ -816,7 +846,7 @@ perkUpgradeOwned( upgradeName )
 	owned = self codol_tryOwnsItem( upgradeName );
 	if ( !isDefined( owned ) )
 	{
-		codolPrintLn( "CoDOL perks: " + self.name + " cannot establish ownership of " + upgradeName + "; Pro not granted" );
+		{}
 		return false;
 	}
 	return owned != 0;
@@ -892,13 +922,13 @@ getPerkUpgrade( perkName )
 	if ( !isDefined( perkName ) || perkName == "" || perkName == "specialty_null" )
 		return "specialty_null";
 	perkUpgrade = tablelookup( "mp/coPerkStatsTable.csv", 1, perkName, 8 );
-	
+
 	if ( perkUpgrade == "" || perkUpgrade == "specialty_null" )
 		return "specialty_null";
-		
+
 	if ( !self perkUpgradeOwned( perkUpgrade ) )
 		return "specialty_null";
-		
+
 	return ( perkUpgrade );
 }
 
@@ -912,7 +942,7 @@ codolOfferedPerk( perkName )
 {
 	if ( perkName != "specialty_pistoldeath" && perkName != "specialty_laststandoffhand" )
 		return perkName;
-	codolPrintLn( "CoDOL perks: " + self.name + " loadout names " + perkName + ", which CoDOL MP does not offer; no perk" );
+	{}
 	return "specialty_null";
 }
 
@@ -938,13 +968,13 @@ loadoutAllPerks( loadoutEquipment, loadoutPerk1, loadoutPerk2, loadoutPerk3 )
 	self maps\mp\perks\_perks::givePerk( basePerk1 );
 	self maps\mp\perks\_perks::givePerk( basePerk2 );
 	self maps\mp\perks\_perks::givePerk( basePerk3 );
-	
+
 	// A player's Pro is the one bought in the lobby (getPerkUpgrade); bot perks
 	// come entirely from the class CSV, so a bot gets only a Pro it names.
 	perkUpgrd[0] = self codolPerkUpgradeFor( loadoutPerk1, basePerk1 );
 	perkUpgrd[1] = self codolPerkUpgradeFor( loadoutPerk2, basePerk2 );
 	perkUpgrd[2] = self codolPerkUpgradeFor( loadoutPerk3, basePerk3 );
-	
+
 	foreach( upgrade in perkUpgrd )
 	{
 		if ( upgrade != "specialty_null" )
@@ -962,9 +992,9 @@ trackRiotShield()
 	// and a name compare only recognise the stock one.
 	self.hasRiotShield = isDefined( self codolOwnedWeaponWithBase( "riotshield_mp" ) );
 	self.hasRiotShieldEquipped = codolIsWeaponBase( self.currentWeaponAtSpawn, "riotshield_mp" );
-	
+
 	// note this function must play nice with _detachAll().
-	
+
 	if ( self.hasRiotShield )
 	{
 		if ( self.hasRiotShieldEquipped )
@@ -976,22 +1006,22 @@ trackRiotShield()
 			self AttachShieldModel( "weapon_riot_shield_mp", "tag_shield_back" );
 		}
 	}
-	
+
 	for ( ;; )
 	{
 		self waittill ( "weapon_change", newWeapon );
-		
+
 		if ( codolIsWeaponBase( newWeapon, "riotshield_mp" ) )
 		{
 			// defensive check in case we somehow get an extra "weapon_change"
 			if ( self.hasRiotShieldEquipped )
 				continue;
-			
+
 			if ( self.hasRiotShield )
 				self MoveShieldModel( "weapon_riot_shield_mp", "tag_shield_back", "tag_weapon_left" );
 			else
 				self AttachShieldModel( "weapon_riot_shield_mp", "tag_weapon_left" );
-			
+
 			self.hasRiotShield = true;
 			self.hasRiotShieldEquipped = true;
 		}
@@ -1003,12 +1033,12 @@ trackRiotShield()
 		{
 			assert( self.hasRiotShield );
 			self.hasRiotShield = isDefined( self codolOwnedWeaponWithBase( "riotshield_mp" ) );
-			
+
 			if ( self.hasRiotShield )
 				self MoveShieldModel( "weapon_riot_shield_mp", "tag_weapon_left", "tag_shield_back" );
 			else
 				self DetachShieldModel( "weapon_riot_shield_mp", "tag_weapon_left" );
-			
+
 			self.hasRiotShieldEquipped = false;
 		}
 		else if ( self.hasRiotShield )
@@ -1030,9 +1060,9 @@ tryAttach( placement ) // deprecated; hopefully we won't need to bring this defe
 		tag = "tag_weapon_left";
 	else
 		tag = "tag_shield_back";
-	
+
 	attachSize = self getAttachSize();
-	
+
 	for ( i = 0; i < attachSize; i++ )
 	{
 		attachedTag = self getAttachTagName( i );
@@ -1041,7 +1071,7 @@ tryAttach( placement ) // deprecated; hopefully we won't need to bring this defe
 			return;
 		}
 	}
-	
+
 	self AttachShieldModel( "weapon_riot_shield_mp", tag );
 }
 
@@ -1051,10 +1081,10 @@ tryDetach( placement ) // deprecated; hopefully we won't need to bring this defe
 		tag = "tag_weapon_left";
 	else
 		tag = "tag_shield_back";
-	
-	
+
+
 	attachSize = self getAttachSize();
-	
+
 	for ( i = 0; i < attachSize; i++ )
 	{
 		attachedModel = self getAttachModelName( i );
@@ -1090,10 +1120,10 @@ buildWeaponName( baseName, attachment1, attachment2 )
 	{
 		if ( level.letterToNumber[attachment1[0]] < level.letterToNumber[attachment2[0]] )
 		{
-			
+
 			attachments[0] = attachment1;
 			attachments[1] = attachment2;
-			
+
 		}
 		else if ( level.letterToNumber[attachment1[0]] == level.letterToNumber[attachment2[0]] )
 		{
@@ -1106,13 +1136,13 @@ buildWeaponName( baseName, attachment1, attachment2 )
 			{
 				attachments[0] = attachment2;
 				attachments[1] = attachment1;
-			}	
+			}
 		}
 		else
 		{
 			attachments[0] = attachment2;
 			attachments[1] = attachment1;
-		}		
+		}
 	}
 	else if ( attachment1 != "none" )
 	{
@@ -1120,9 +1150,9 @@ buildWeaponName( baseName, attachment1, attachment2 )
 	}
 	else if ( attachment2 != "none" )
 	{
-		attachments[0] = attachment2;	
+		attachments[0] = attachment2;
 	}
-	
+
 	foreach ( attachment in attachments )
 	{
 		weaponName += "_" + attachment;
@@ -1138,7 +1168,7 @@ buildWeaponName( baseName, attachment1, attachment2 )
 makeLettersToNumbers()
 {
 	array = [];
-	
+
 	array["a"] = 0;
 	array["b"] = 1;
 	array["c"] = 2;
@@ -1165,7 +1195,7 @@ makeLettersToNumbers()
 	array["x"] = 23;
 	array["y"] = 24;
 	array["z"] = 25;
-	
+
 	return array;
 }
 
@@ -1177,14 +1207,14 @@ codol_validKillstreak( streak, slot )
 {
 	if ( !isDefined( streak ) )
 	{
-		codolPrintLn( "CoDOL loadout: " + self.name + " killstreak slot " + slot + " is undefined; using none" );
+		{}
 		return "none";
 	}
 	if ( streak == "none" || streak == "" || streak == "specialty_null" )
 		return "none";
 	if ( tableLookup( "mp/coKillstreakStatsTable.csv", 1, streak, 4 ) == "" )
 	{
-		codolPrintLn( "CoDOL loadout: " + self.name + " killstreak " + streak + " has no mp/coKillstreakStatsTable.csv row; using none" );
+		{}
 		return "none";
 	}
 	return streak;
@@ -1214,7 +1244,7 @@ setKillstreaks( streak1, streak2, streak3 )
 	if ( !isDefined( modifier ) )
 		modifier = 0;
 	modifier = int( modifier );
-	
+
 	/*if ( streak1 == "none" && streak2 == "none" && streak3 == "none" )
 	{
 		streak1 = "uav";
@@ -1265,9 +1295,9 @@ setKillstreaks( streak1, streak2, streak3 )
 	{
 		if ( !isDefined( killStreaks[streakIndex] ) )
 			continue;
-			
+
 		streakName = killStreaks[streakIndex];
-			
+
 		self.killStreaks[ streakIndex ] = killStreaks[ streakIndex ];
 
 	}
@@ -1307,7 +1337,7 @@ setKillstreaks( streak1, streak2, streak3 )
 			newKillstreaks[ streakVal + (maxVal*rollOver) ] = streakName + "-rollover" + rollOver;
 		}
 	}
-	
+
 	self.killstreaks = newKillstreaks;
 }
 
@@ -1328,12 +1358,12 @@ replenishLoadout() // used by ammo hardpoint.
 		if ( weapon == "claymore_mp" || weapon == "claymore_detonator_mp" )
 			self setWeaponAmmoStock( weapon, 2 );
     }
-	
+
 	if ( self getAmmoCount( level.classGrenades[class]["primary"]["type"] ) < level.classGrenades[class]["primary"]["count"] )
- 		self SetWeaponAmmoClip( level.classGrenades[class]["primary"]["type"], level.classGrenades[class]["primary"]["count"] );
+                self SetWeaponAmmoClip( level.classGrenades[class]["primary"]["type"], level.classGrenades[class]["primary"]["count"] );
 
 	if ( self getAmmoCount( level.classGrenades[class]["secondary"]["type"] ) < level.classGrenades[class]["secondary"]["count"] )
- 		self SetWeaponAmmoClip( level.classGrenades[class]["secondary"]["type"], level.classGrenades[class]["secondary"]["count"] );	
+                self SetWeaponAmmoClip( level.classGrenades[class]["secondary"]["type"], level.classGrenades[class]["secondary"]["count"] );
 }
 
 
@@ -1361,7 +1391,7 @@ onPlayerConnecting()
 fadeAway( waitDelay, fadeDelay )
 {
 	wait waitDelay;
-	
+
 	self fadeOverTime( fadeDelay );
 	self.alpha = 0;
 }
@@ -1476,7 +1506,7 @@ isValidAttachment( refString )
 		case "fmj":
 		case "rof":
 		case "xmags":
-		case "eotech":  
+		case "eotech":
 		case "tactical":
 			return true;
 		default:
@@ -1616,6 +1646,6 @@ isValidWeapon( refString )
 		return true;
 
 	assertMsg( "Replacing invalid weapon/attachment combo: " + refString );
-	
+
 	return false;
 }

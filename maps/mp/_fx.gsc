@@ -52,7 +52,7 @@ script_print_fx()
 {
 	if ( ( !isdefined( self.script_fxid ) ) || ( !isdefined( self.script_fxcommand ) ) || ( !isdefined( self.script_delay ) ) )
 	{
-		println( "Effect at origin ", self.origin, " doesn't have script_fxid/script_fxcommand/script_delay" );
+		{}
 		self delete();
 		return;
 	}
@@ -64,13 +64,13 @@ script_print_fx()
 
 //	println ("^a Command:", self.script_fxcommand, " Effect:", self.script_fxID, " Delay:", self.script_delay, " ", self.origin);
 	if ( self.script_fxcommand == "OneShotfx" )
-		println( "maps\mp\_fx::OneShotfx(\"" + self.script_fxid + "\", " + self.origin + ", " + self.script_delay + ", " + org + ");" );
+		{}
 
 	if ( self.script_fxcommand == "loopfx" )
-		println( "maps\mp\_fx::LoopFx(\"" + self.script_fxid + "\", " + self.origin + ", " + self.script_delay + ", " + org + ");" );
+		{}
 
 	if ( self.script_fxcommand == "loopsound" )
-		println( "maps\mp\_fx::LoopSound(\"" + self.script_fxid + "\", " + self.origin + ", " + self.script_delay + ", " + org + ");" );
+		{}
 }
 
 script_playfx( id, pos, pos2 )
@@ -129,7 +129,7 @@ soundfxDelete( endonNotify )
 	org = spawn( "script_origin", ( 0, 0, 0 ) );
 	org.origin = fxPos;
 	org thread rainLoop( fxId, fxId2 );
-	
+
 	//ent = level thread createfx_showOrigin( fxId, fxPos, undefined, undefined, "rainfx", undefined, fxId2 );
 	//ent.delay = 0;
 	//ent endon ("effect deleted");
@@ -143,11 +143,11 @@ rainLoop( hardRain, lightRain )
 	blend = spawn( "sound_blend", ( 0.0, 0.0, 0.0 ) );
 	blend.origin = self.origin;
 	self thread blendDelete( blend );
-	
+
 	blend2 = spawn( "sound_blend", ( 0.0, 0.0, 0.0 ) );
 	blend2.origin = self.origin;
 	self thread blendDelete( blend2 );
-	
+
 
 // lerp of 0 will play _null only
 	blend setSoundBlend( lightRain + "_null", lightRain, 0 );
@@ -160,7 +160,7 @@ rainLoop( hardRain, lightRain )
 		blendTime *= 20;// internal framerate
 		assert( change == "hard" || change == "light" || change == "none" );
 		assert( blendtime > 0 );
-		
+
 		if ( change == "hard" )
 		{
 			if ( rain == "none" )
