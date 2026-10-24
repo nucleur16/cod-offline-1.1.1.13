@@ -1364,6 +1364,7 @@ static void PatchGbkInput(void)
 
 #include "local_multi.c"
 #include "managed_quick.c"
+#include "quick_start_gate.c"
 
 /* Snapshot-parity logger, parity-log branch only: see parity.c. */
 #include "parity.c"
@@ -1395,6 +1396,8 @@ static void PatchGbkInput(void)
 #include "discord.c"
 
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
+#include "news_refresh.c"
+#include "gfx_date_time.c"
 #include "launcher_update_bridge.c"
 static void __cdecl TakeOver(void)
 {
@@ -1402,6 +1405,7 @@ static void __cdecl TakeOver(void)
     LoadUnpackedImage();
     MatchC1SectionFlags();
     FillImports();
+    PatchGfxDateTime();
     PatchRenderGate();
     PatchDvarRegistrations();
     PatchPlainConfig();
@@ -1416,6 +1420,8 @@ static void __cdecl TakeOver(void)
     PatchScoresOpen();
     PatchInfectedScoreboard();
     PatchManagedQuickJoin();
+    PatchQuickStartGate();
+    PatchNewsRefresh();
     PatchLoopFxCatchUp();
     PatchPatchDir();
     PatchLocalizePool();

@@ -7,6 +7,20 @@ sys.path.insert(0,str(ROOT))
 from zonekit import ui_baseline
 
 class SharedUIBaseline(unittest.TestCase):
+    def test_native_quick_and_date_components_are_pinned_and_mutations_rejected(self):
+        import json
+        contract=json.loads((ROOT/'ui_baseline.json').read_text())
+        names=['kernel33.c','quick_start_gate.c','quick_start_policy.h','quick_start_guards.h',
+               'gfx_date_time.c','gfx_date_time_policy.h','gfx_date_time_guards.h']
+        read=Path.read_bytes
+        for name in names:
+            with self.subTest(name=name):
+                self.assertIn(name,contract['files'])
+                target=ROOT/name
+                with patch.object(Path,'read_bytes',lambda p:read(p)+b'\n' if p==target else read(p)):
+                    with self.assertRaises(ui_baseline.BaselineError):
+                        ui_baseline.validate(ROOT)
+
     def test_recorded_source_and_tags_match(self):
         self.assertEqual(ui_baseline.validate(ROOT)["retired_playlists"],"hidden even if Quick Match is unavailable")
 
