@@ -85,7 +85,7 @@ package components.room_part
             var displayMembers:Array = cDat.forces.force0.concat(cDat.forces.force1);
             for each(var displayMember in displayMembers)
             {
-               if(displayMember != null && displayMember["_localQuickNativeRoleKnown"] == true && String(displayMember.id).length > 0 && displayMember["_localQuickNativeMemberID"] == String(displayMember.id) && displayMember["_localQuickNativeHost"] == true)
+               if(displayMember != null && displayMember["_localQuickNativeRoleKnown"] == true && String(displayMember.id).length > 0 && displayMember["_localQuickNativeMemberID"] == String(displayMember.id) && (cDat.forces.isHost == true ? displayMember.isMe == true : displayMember["_localQuickNativeHost"] == true))
                {
                   displayHost = displayMember;
                   displayHostCount++;

@@ -42,6 +42,10 @@ for(const name of ['Display Host','中文玩家','<b>literal</b>']) {
  }
  f=fresh(name);f.data.forces=null;check(f,f.data.name);
  f=fresh(name);f.data.forces.force1=null;check(f,f.data.name);
+ f=fresh(name);f.data.forces.isHost=true;f.host.isMe=true;
+ f.host._localQuickNativeHost=false;check(f,name);
+ f.guest.isMe=true;check(f,f.data.name);
+ f=fresh(name);f.data.forces.isHost=true;f.host.isMe=false;check(f,f.data.name);
 }
 console.log(JSON.stringify({passed:true,checks,actual_AS_body:true,C1_acceptance:false}));
 '''.replace('BODY',json.dumps(actual))
@@ -55,7 +59,7 @@ class RoomDisplayOwner(unittest.TestCase):
         actual=re.sub(r'for each\(var (\w+) in ([^)]+)\)',r'for (var \1 of \2)',actual)
         result=run(actual)
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
-        self.assertEqual(json.loads(result.stdout)['checks'],42)
+        self.assertEqual(json.loads(result.stdout)['checks'],51)
 
     def test_old_raw_title_fails_private_identity_display_fixture(self):
         result=run('this.myRoomNameTF.text=cDat.name;')
