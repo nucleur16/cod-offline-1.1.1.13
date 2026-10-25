@@ -289,10 +289,11 @@ main()
 	// a hound runs and trots with its head on its path.  MEASURED (t5cap dog
 	// clip timeline, 2026-10-22): no T5 hound frame moved a look additive;
 	// CoDOL's look_up/left/right moved in 208 frames of a chase.
-	// T5 animscripts/zombie_dog_move.gsc:14 leaves the running bark loop
-	// commented out: a hellhound's voice is _zombiemode_ai_dogs'
-	// dog_stalk_audio / dog_behind_audio, not the multiplayer dog's
-	// movement barks (playMovementSounds, kept below for reference).
+	// C1 has no T5 clientscript sound owner, and this port has neither
+	// dog_stalk_audio nor dog_behind_audio. Keep the existing C1 hellhound
+	// close/ambient streams alive while moving. They retain per-listener
+	// playback deadlines across animscript restarts and end with this move.
+	self thread playMovementSounds();
 
 	while ( 1 )
 	{
