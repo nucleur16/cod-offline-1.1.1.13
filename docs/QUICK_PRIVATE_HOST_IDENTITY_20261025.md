@@ -31,6 +31,10 @@ The existing FFDec22 importScript/method-transplant path compiles exactly
 method bodies. Only their two class tags change from the preceding RoomInfo
 candidate; 6863 other tags remain byte-identical. Login and zone marker are
 unchanged. The retained offline native archive reader accepts all three assets.
+An independent ABC reader additionally verifies all metadata, existing pool
+entries and 238 other bodies across both controllers remain exact. The prior
+invitation contract retains protection for every existing body; only the two
+reviewed Quick body hashes are updated, with their original hashes recorded.
 
 Current movie SHA-256:
 `c0ac41b419cfe9f273fcb4d27bc74e0e246fa121896d5d0239de74cd57ff600e`.

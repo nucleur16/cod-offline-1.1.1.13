@@ -7,3 +7,11 @@ Server service6/task18 defaults to refusal. Only the explicit operator setting `
 Run `python -m unittest discover -s tests -p test_invitations_disabled.py`. Node is required for actual AS-body behavior checks. The compiled-tag check needs no private executable or game archive: it verifies original class/method/trait/script tables and every unchanged body against the recorded hashes. The source and final export fixture each passed168 checks in EN/ZH with UI/event doubles; these are not native GFx or real-client acceptance.
 
 This quarantines UI paths. It does not dissolve existing native parties, disable direct join-friend behavior, or block arbitrary external programs from creating native channels. A fresh process is required to load the changed shared movie. Existing password/capacity/admission rules remain in force. No loaded profile or service was changed by this source work.
+
+The subsequent 2026-10-25 private Quick identity correction deliberately changes
+`bind_quickMatchReady` and `onRankedMatchPassedTimeTimerHandle`. Their two body
+pins are updated in place, with exact before/after hashes and method identities
+retained in `reviewed_body_updates_20261025`. An independent ABC comparison first
+verified identical tables, existing constant-pool entries, method inventory and
+all 163 other MatchController bodies. No body was removed from the protected hash
+map. The invitation behavior, default hold and all other pins remain unchanged.
