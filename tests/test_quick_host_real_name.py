@@ -35,7 +35,7 @@ def parts(match, lobby):
     for name in ('bind_quickMatchReady', 'onRankedMatchPassedTimeTimerHandle'):
         text = method(match, name)
         first = text.index('var acceptedHost:Object = null;')
-        end = text.index('var acceptedLocalHost:Boolean', first)
+        end = text.index('if(acceptedHostCount == 1 && acceptedHost["_localQuickNativeReady"] == false)', first)
         hosts.append(javascript(text[first:end]) + '\nreturn {count:acceptedHostCount,host:acceptedHost};')
         gates.append(javascript(text.split('// BEGIN shared Quick all-current-member gate', 1)[1]
             .split('// END shared Quick all-current-member gate', 1)[0]) + '\nreturn quickMembersReady;')
@@ -48,9 +48,9 @@ const assert=require('assert');
 const uint=value=>Number(value)>>>0;
 const SyncDataID={IS_ME:'me',IS_ROOM_HOST:'host'};
 const BCEvent={ROOM_FORCES:'forces'};
-let localHost=true;
+let localHost=true,localPlayerID='';
 const CFunctionContainer={IsRankedMatch:()=>true,IsRoomHost:()=>localHost};
-const CFunctionContainerCommon={Dvar_GetString:()=>'',GetPlayerID:()=>'',setdvar:()=>{throw Error('no result-token fixture');}};
+const CFunctionContainerCommon={Dvar_GetString:()=>'',GetPlayerID:()=>localPlayerID,setdvar:()=>{throw Error('no result-token fixture');}};
 const actual=PARTS;
 const hosts=actual.hosts.map(s=>new Function('quickRoom','const quickFilter={};\n'+s));
 const gates=actual.gates.map(s=>new Function('quickRoom','queuedRequired',s));
@@ -60,8 +60,9 @@ function fresh(locale,asHost=true) {
  const peers=[{id:'4936378376416122282',realName:'LocaleInf1',name:'[qa18] LocaleInf1'},
               {id:'14124485489710931920',realName:'LocaleInf2',name:'[guest] LocaleInf2'}];
  for(const p of peers) Object.assign(p,{_localQuickNativeRoleKnown:true,_localQuickNativeMemberID:p.id,
-  _localQuickNativeReady:false,isReady:false,team:0});
- const room={name:'LocaleInf1',_localQuickSharedLineage:true,forces:{force0:[peers[0]],force1:[peers[1]]}};
+  _localQuickNativeReady:false,_localQuickNativeHost:false,isReady:false,team:0});
+ localPlayerID=peers[asHost?0:1].id;
+ const room={name:asHost?'p69c7b0123456789':'LocaleInf1',_localQuickSharedLineage:true,forces:{force0:[peers[0]],force1:[peers[1]]}};
  const owner={_roomObj:room,_roomMembers:peers,
   getRoomMemberObjByID(id){return peers.find(p=>p.id===id);},
   getSyncDP(key,args){return key===SyncDataID.IS_ROOM_HOST ? asHost : args[0].id===peers[asHost?0:1].id;},
@@ -75,38 +76,49 @@ for(const locale of ['english','chinese']) for(const asHost of [true,false]) {
  // The selectors are extracted independently from both actual methods.
  for(const host of hosts) {
   const picked=host.call(f.owner,f.room);
-  assert.strictEqual(picked.count,1,'clan-tagged native host must be recognized');
+  assert.strictEqual(picked.count,1,'private-title native host and signed-title guest must recognize the canonical owner');
   assert.strictEqual(picked.host.id,f.peers[0].id); checks++;
  }
  f.event(0,false);
  assert.strictEqual(f.room._localQuickReadyCycleHost,f.peers[0].id,'actual callback opens UID-bound cycle');checks++;
  assert.strictEqual(f.room._localQuickHostFalseSeen,true,'second actual callback selector retains host false edge');checks++;
  f.event(0,true);
- for(const gate of gates) assert.strictEqual(gate(f.room,2),false,'one ready human cannot satisfy min2');
+ for(const gate of gates) assert.strictEqual(gate.call(f.owner,f.room,2),false,'one ready human cannot satisfy min2');
  f.event(1,false);f.event(1,true);
- for(const gate of gates) {assert.strictEqual(gate(f.room,2),true,'clan names preserve current all-member ACK');checks++;}
+ for(const gate of gates) {assert.strictEqual(gate.call(f.owner,f.room,2),true,'clan names preserve current all-member ACK');checks++;}
  assert.strictEqual(f.peers[0].name,'[qa18] LocaleInf1','display clan remains unchanged');checks++;
  assert.strictEqual(f.peers[1].name,'[guest] LocaleInf2');checks++;
  f.peers[1].name='LocaleInf1';
  for(const host of hosts) assert.strictEqual(host.call(f.owner,f.room).count,1,'display-name spoof cannot become host');checks++;
  f.peers[1]._localQuickNativeMemberID='stale';
- for(const gate of gates) assert.strictEqual(gate(f.room,2),false,'mismatched native UID rejected');checks++;
+ for(const gate of gates) assert.strictEqual(gate.call(f.owner,f.room,2),false,'mismatched native UID rejected');checks++;
  f.peers[1]._localQuickNativeMemberID=f.peers[1].id;
  f.peers[1]._localQuickReadyCycle--;
- for(const gate of gates) assert.strictEqual(gate(f.room,2),false,'prior epoch is not current ACK');checks++;
+ for(const gate of gates) assert.strictEqual(gate.call(f.owner,f.room,2),false,'prior epoch is not current ACK');checks++;
  f=fresh(locale,asHost);
  for(const bad of [undefined,null,'',5]) {
   f.peers[0].realName=bad;
-  for(const host of hosts) assert.strictEqual(host.call(f.owner,f.room).count,0,'missing/nonstring/empty canonical host fails closed');checks++;
+  for(const host of hosts) assert.strictEqual(host.call(f.owner,f.room).count,asHost?1:0,'only local native owner can be identified without display text');checks++;
  }
  f=fresh(locale,asHost);f.peers[0]._localQuickNativeRoleKnown=false;
  for(const host of hosts) assert.strictEqual(host.call(f.owner,f.room).count,0,'unknown native role rejected');checks++;
  f=fresh(locale,asHost);f.peers[0]._localQuickNativeMemberID='stale';
  for(const host of hosts) assert.strictEqual(host.call(f.owner,f.room).count,0,'host UID mismatch rejected');checks++;
  f=fresh(locale,asHost);f.peers[1].realName=f.peers[0].realName;
- for(const host of hosts) assert.strictEqual(host.call(f.owner,f.room).count,2,'duplicate canonical host must not become accepted single host');checks++;
+ for(const host of hosts) assert.strictEqual(host.call(f.owner,f.room).count,asHost?1:2,'guest name ambiguity fails closed; local host stays bound to native UID');checks++;
  f=fresh(locale,asHost);f.owner.getSyncDP=(key,args)=>key===SyncDataID.IS_ROOM_HOST?asHost:args[0].id===f.peers[asHost?1:0].id;
  for(const host of hosts) assert.strictEqual(host.call(f.owner,f.room).count,0,'IS_ME and native host agreement retained');checks++;
+ f=fresh(locale,asHost);
+ if(asHost) {
+  for(const bad of ['',f.peers[1].id,Number(f.peers[0].id)]) {
+   localPlayerID=bad;
+   for(const host of hosts) assert.strictEqual(host.call(f.owner,f.room).count,0,'missing, wrong or rounded native account UID fails closed');checks++;
+  }
+ } else {
+  f.room.name='p69c7b0123456789';
+  for(const host of hosts) assert.strictEqual(host.call(f.owner,f.room).count,0,'guest needs canonical signed host presentation');checks++;
+  f.event(0,false);assert.strictEqual(f.room._localQuickReadyCycleHost,undefined,'guest private title cannot manufacture a host epoch');checks++;
+ }
 }
 console.log(JSON.stringify({passed:true,checks,actual_AS_bodies:true,real_C1_acceptance:false}));
 '''.replace('PARTS', json.dumps(value))
@@ -143,6 +155,25 @@ class QuickHostRealName(unittest.TestCase):
                         self.assertIn('AssertionError',result.stderr)
                     seen+=1
         self.assertEqual(seen,6,'all six independent host-selector sites need the canonical-name fix')
+
+    def test_each_local_native_UID_selector_is_required_for_private_title(self):
+        value=parts((AS/'MatchController.as').read_text(),(AS/'LobbyController.as').read_text())
+        expression=re.compile(r'String\((\w+)\.id\) == (acceptedLocalOwner|gateLocalOwner|canonicalLocalOwner)')
+        seen=0
+        for group in ('hosts','gates','callback'):
+            texts=value[group] if isinstance(value[group],list) else [value[group]]
+            for index,text in enumerate(texts):
+                for hit in list(expression.finditer(text)):
+                    changed={key:list(part) if isinstance(part,list) else part for key,part in value.items()}
+                    replacement=text[:hit.start()]+'false'+text[hit.end():]
+                    if isinstance(value[group],list):changed[group][index]=replacement
+                    else:changed[group]=replacement
+                    with self.subTest(group=group,index=index,member=hit[1]):
+                        result=execute(changed)
+                        self.assertNotEqual(result.returncode,0,'every local UID contour must fail the private-host fixture when removed')
+                        self.assertIn('AssertionError',result.stderr)
+                    seen+=1
+        self.assertEqual(seen,6)
 
 
 if __name__=='__main__': unittest.main()

@@ -280,15 +280,17 @@ package codo.controllers
             // BEGIN shared Quick native Ready cycle evidence
             do
             {
-               if(this._roomObj == null || this._roomObj["_localQuickSharedLineage"] != true || !CFunctionContainer.IsRankedMatch() || this._roomObj.name == null || String(this._roomObj.name).length == 0 || roomMemberObj == null || roomMemberObj["_localQuickNativeRoleKnown"] != true || roomMemberObj["_localQuickNativeMemberID"] != member || String(roomMemberObj.id) != member)
+               if(this._roomObj == null || this._roomObj["_localQuickSharedLineage"] != true || !CFunctionContainer.IsRankedMatch() || !CFunctionContainer.IsRoomHost() && (this._roomObj.name == null || String(this._roomObj.name).length == 0) || roomMemberObj == null || roomMemberObj["_localQuickNativeRoleKnown"] != true || roomMemberObj["_localQuickNativeMemberID"] != member || String(roomMemberObj.id) != member)
                {
                   break;
                }
                var gateHost:Object = null;
                var gateHostCount:int = 0;
+               var gateLocalHost:Boolean = Boolean(CFunctionContainer.IsRoomHost());
+               var gateLocalOwner:String = gateLocalHost ? String(CFunctionContainerCommon.GetPlayerID()) : "";
                for each(var gateCandidate in this._roomMembers)
                {
-                  if(gateCandidate != null && gateCandidate["_localQuickNativeRoleKnown"] == true && gateCandidate["_localQuickNativeMemberID"] == String(gateCandidate.id) && typeof gateCandidate.realName == "string" && gateCandidate.realName.length > 0 && gateCandidate.realName == String(this._roomObj.name))
+                  if(gateCandidate != null && gateCandidate["_localQuickNativeRoleKnown"] == true && gateCandidate["_localQuickNativeMemberID"] == String(gateCandidate.id) && (gateLocalHost ? String(gateCandidate.id) == gateLocalOwner && Boolean(this.getSyncDP(SyncDataID.IS_ME,[gateCandidate])) : typeof gateCandidate.realName == "string" && gateCandidate.realName.length > 0 && gateCandidate.realName == String(this._roomObj.name)))
                   {
                      gateHost = gateCandidate;
                      gateHostCount++;
@@ -326,13 +328,15 @@ package codo.controllers
             {
                roomMemberObj["_localQuickNativeReady"] = ready;
             }
-            if(this._roomObj != null && this._roomObj["_localQuickSharedLineage"] == true && !ready && this._roomObj.name != null && String(this._roomObj.name).length > 0)
+            if(this._roomObj != null && this._roomObj["_localQuickSharedLineage"] == true && !ready && (CFunctionContainer.IsRoomHost() || this._roomObj.name != null && String(this._roomObj.name).length > 0))
             {
                var canonicalHost:Object = null;
                var canonicalHostCount:int = 0;
+               var canonicalLocalHost:Boolean = Boolean(CFunctionContainer.IsRoomHost());
+               var canonicalLocalOwner:String = canonicalLocalHost ? String(CFunctionContainerCommon.GetPlayerID()) : "";
                for each(var candidate in this._roomMembers)
                {
-                  if(candidate != null && candidate["_localQuickNativeRoleKnown"] == true && candidate["_localQuickNativeMemberID"] == String(candidate.id) && typeof candidate.realName == "string" && candidate.realName.length > 0 && candidate.realName == String(this._roomObj.name))
+                  if(candidate != null && candidate["_localQuickNativeRoleKnown"] == true && candidate["_localQuickNativeMemberID"] == String(candidate.id) && (canonicalLocalHost ? String(candidate.id) == canonicalLocalOwner && Boolean(this.getSyncDP(SyncDataID.IS_ME,[candidate])) : typeof candidate.realName == "string" && candidate.realName.length > 0 && candidate.realName == String(this._roomObj.name)))
                   {
                      canonicalHost = candidate;
                      canonicalHostCount++;

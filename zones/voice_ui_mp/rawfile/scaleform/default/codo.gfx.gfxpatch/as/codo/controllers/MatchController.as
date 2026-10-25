@@ -1548,12 +1548,14 @@ import flash.utils.getTimer;
             }
             var acceptedHost:Object = null;
             var acceptedHostCount:int = 0;
+            var acceptedLocalHost:Boolean = Boolean(this.getSyncDP(SyncDataID.IS_ROOM_HOST));
+            var acceptedLocalOwner:String = acceptedLocalHost ? String(CFunctionContainerCommon.GetPlayerID()) : "";
             if(quickRoom != null && quickRoom.forces != null)
             {
                var acceptedMembers:Array = quickRoom.forces.force0.concat(quickRoom.forces.force1);
                for each(var acceptedMember in acceptedMembers)
                {
-                  if(acceptedMember["_localQuickNativeRoleKnown"] == true && acceptedMember["_localQuickNativeMemberID"] == String(acceptedMember.id) && quickRoom.name != null && String(quickRoom.name).length > 0 && typeof acceptedMember.realName == "string" && acceptedMember.realName.length > 0 && acceptedMember.realName == String(quickRoom.name))
+                  if(acceptedMember["_localQuickNativeRoleKnown"] == true && acceptedMember["_localQuickNativeMemberID"] == String(acceptedMember.id) && (acceptedLocalHost ? String(acceptedMember.id) == acceptedLocalOwner && Boolean(this.getSyncDP(SyncDataID.IS_ME,[acceptedMember])) : quickRoom.name != null && String(quickRoom.name).length > 0 && typeof acceptedMember.realName == "string" && acceptedMember.realName.length > 0 && acceptedMember.realName == String(quickRoom.name)))
                   {
                      acceptedHost = acceptedMember;
                      acceptedHostCount++;
@@ -1573,7 +1575,6 @@ import flash.utils.getTimer;
             {
                quickFilter["_localQuickVoteHostFalse"] = true;
             }
-            var acceptedLocalHost:Boolean = Boolean(this.getSyncDP(SyncDataID.IS_ROOM_HOST));
             if(!acceptedLocalHost && acceptedHostCount == 1 && acceptedHost["_localQuickNativeReady"] == false && quickFilter["_localQuickVoteFinal"] == true && quickFilter["_localQuickSharedBookingStarted"] != true)
             {
                quickFilter["_localQuickVoteFinal"] = false;
@@ -1614,6 +1615,8 @@ import flash.utils.getTimer;
                }
                var gateSeen:Array = [];
                var gateHosts:int = 0;
+               var gateLocalHost:Boolean = Boolean(this.getSyncDP(SyncDataID.IS_ROOM_HOST));
+               var gateLocalOwner:String = gateLocalHost ? String(CFunctionContainerCommon.GetPlayerID()) : "";
                for each(var gateMember in gateMembers)
                {
                   if(gateMember == null || gateMember["_localQuickNativeRoleKnown"] != true || String(gateMember.id).length == 0 || gateMember["_localQuickNativeMemberID"] != String(gateMember.id) || gateSeen.indexOf(String(gateMember.id)) >= 0 || gateMember["_localQuickNativeReady"] != true || uint(gateMember["_localQuickReadyCycle"]) != gateCycle)
@@ -1621,7 +1624,7 @@ import flash.utils.getTimer;
                      break quickReadyCheck;
                   }
                   gateSeen.push(String(gateMember.id));
-                  if(typeof gateMember.realName == "string" && gateMember.realName.length > 0 && gateMember.realName == String(quickRoom.name))
+                  if((gateLocalHost ? String(gateMember.id) == gateLocalOwner && Boolean(this.getSyncDP(SyncDataID.IS_ME,[gateMember])) : quickRoom.name != null && String(quickRoom.name).length > 0 && typeof gateMember.realName == "string" && gateMember.realName.length > 0 && gateMember.realName == String(quickRoom.name)))
                   {
                      if(quickRoom["_localQuickReadyCycleHost"] != String(gateMember.id))
                      {
@@ -2175,12 +2178,14 @@ import flash.utils.getTimer;
             }
             var acceptedHost:Object = null;
             var acceptedHostCount:int = 0;
+            var acceptedLocalHost:Boolean = Boolean(this.getSyncDP(SyncDataID.IS_ROOM_HOST));
+            var acceptedLocalOwner:String = acceptedLocalHost ? String(CFunctionContainerCommon.GetPlayerID()) : "";
             if(quickRoom != null && quickRoom.forces != null)
             {
                var acceptedMembers:Array = quickRoom.forces.force0.concat(quickRoom.forces.force1);
                for each(var acceptedMember in acceptedMembers)
                {
-                  if(acceptedMember["_localQuickNativeRoleKnown"] == true && acceptedMember["_localQuickNativeMemberID"] == String(acceptedMember.id) && quickRoom.name != null && String(quickRoom.name).length > 0 && typeof acceptedMember.realName == "string" && acceptedMember.realName.length > 0 && acceptedMember.realName == String(quickRoom.name))
+                  if(acceptedMember["_localQuickNativeRoleKnown"] == true && acceptedMember["_localQuickNativeMemberID"] == String(acceptedMember.id) && (acceptedLocalHost ? String(acceptedMember.id) == acceptedLocalOwner && Boolean(this.getSyncDP(SyncDataID.IS_ME,[acceptedMember])) : quickRoom.name != null && String(quickRoom.name).length > 0 && typeof acceptedMember.realName == "string" && acceptedMember.realName.length > 0 && acceptedMember.realName == String(quickRoom.name)))
                   {
                      acceptedHost = acceptedMember;
                      acceptedHostCount++;
@@ -2200,7 +2205,6 @@ import flash.utils.getTimer;
             {
                quickFilter["_localQuickVoteHostFalse"] = true;
             }
-            var acceptedLocalHost:Boolean = Boolean(this.getSyncDP(SyncDataID.IS_ROOM_HOST));
             if(!acceptedLocalHost && acceptedHostCount == 1 && acceptedHost["_localQuickNativeReady"] == false && quickFilter["_localQuickVoteFinal"] == true && quickFilter["_localQuickSharedBookingStarted"] != true)
             {
                quickFilter["_localQuickVoteFinal"] = false;
@@ -2248,6 +2252,8 @@ import flash.utils.getTimer;
                }
                var gateSeen:Array = [];
                var gateHosts:int = 0;
+               var gateLocalHost:Boolean = Boolean(this.getSyncDP(SyncDataID.IS_ROOM_HOST));
+               var gateLocalOwner:String = gateLocalHost ? String(CFunctionContainerCommon.GetPlayerID()) : "";
                for each(var gateMember in gateMembers)
                {
                   if(gateMember == null || gateMember["_localQuickNativeRoleKnown"] != true || String(gateMember.id).length == 0 || gateMember["_localQuickNativeMemberID"] != String(gateMember.id) || gateSeen.indexOf(String(gateMember.id)) >= 0 || gateMember["_localQuickNativeReady"] != true || uint(gateMember["_localQuickReadyCycle"]) != gateCycle)
@@ -2255,7 +2261,7 @@ import flash.utils.getTimer;
                      break quickReadyCheck;
                   }
                   gateSeen.push(String(gateMember.id));
-                  if(typeof gateMember.realName == "string" && gateMember.realName.length > 0 && gateMember.realName == String(quickRoom.name))
+                  if((gateLocalHost ? String(gateMember.id) == gateLocalOwner && Boolean(this.getSyncDP(SyncDataID.IS_ME,[gateMember])) : quickRoom.name != null && String(quickRoom.name).length > 0 && typeof gateMember.realName == "string" && gateMember.realName.length > 0 && gateMember.realName == String(quickRoom.name)))
                   {
                      if(quickRoom["_localQuickReadyCycleHost"] != String(gateMember.id))
                      {

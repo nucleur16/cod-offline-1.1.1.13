@@ -13,8 +13,9 @@ The change writes only the text field. It does not mutate the room title, roster
 owner, UID, Ready state or any host-selection policy. In particular, a ranked
 qualification contour exists with every native host flag false; changing Quick
 host authority to require that flag would need stronger evidence. That experiment
-was preserved separately and rejected. Both Quick controller sources and their
-compiled tags remain unchanged in this candidate.
+was preserved separately and rejected. The paired Quick correction is documented
+in `QUICK_PRIVATE_HOST_IDENTITY_20261025.md`; it uses native self UID for a local
+host and retains the signed-title path for guests, preserving all-false roles.
 
 Validation:
 
@@ -23,19 +24,20 @@ Validation:
   data, absent rosters and local-host/all-false-role inputs. Input objects remain unchanged. The original raw-title
   body fails the private-name case.
 - Existing shared UI baseline, Quick host-name and current Ready-cycle tests pass:
-  eleven unittest cases including the new display cases. These use explicit native
+  twelve unittest cases including the coupled identity and display cases. These use explicit native
   callback inputs and are not graphical C1 acceptance.
-- FFDec 25.1.3 compiles the stored RoomInfo tag. Only that class changes in the
-  reconstructed movie; all 6864 other tags remain byte-identical.
+- FFDec 25.1.3 compiles the stored RoomInfo tag. That individual change preserves
+  all 6864 other tags. The subsequent coupled Quick correction compiles three
+  method bodies in two additional tags, preserving this display tag.
 - Build the shared `voice_ui_mp.ff` candidate and unwrap/inspect its three rawfiles.
   The Codo movie matches the compiled candidate; the login movie and zone marker
   match their existing sources. The retained offline native archive-reader fixture
   replays all three assets successfully. That fixture is not a C1 renderer.
 
 Movie SHA-256:
-`bc5b6e29b7e6d49a383d0fe2c3e34d3da69ff1785baf8ce07add301010f66455`.
+`c0ac41b419cfe9f273fcb4d27bc74e0e246fa121896d5d0239de74cd57ff600e`.
 Candidate `voice_ui_mp.ff` SHA-256:
-`9aa50c0d791f5da0e3d9189575e274b23578b9929a8cf7f39e7f8b8cbcb74ec1`.
+`30061852c0d7a6484a00999ef5f88924356cee7fb7b068bbd1ad0166304740c8`.
 
 Incident receipts retain source/tag hashes, original stock identity, compiler
 attempts, the rejected controller experiment, final movie comparison and package
