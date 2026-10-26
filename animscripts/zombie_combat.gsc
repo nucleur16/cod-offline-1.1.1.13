@@ -137,28 +137,25 @@ MeleeCombat()
 // T5 zombie_melee.gsc:126-:166, the inner note loop.
 //
 // Each fire note may attempt the native trace until one contact lands.
-// Preserve the accepted one-contact-per-animation rule while using upstream
-// measured T5 hit times below. A missed early note may still land later.
+// Preserve the accepted one-contact-per-animation rule while landing the
+// hits on the clip's strikes below. A missed early note may still land later.
 //
-// T5 hit timing (2026-10-21, docs/CODOL_ZOMBIE_T5_MEASURED.md section 3).
-// C1 re-timed the "fire" notes of several of these clips while keeping their
-// lengths: MEASURED with getNotetrackTimes in real T5 against the C1 xanims,
-// ai_zombie_attack_v1 hits at 0.462/0.722 of the clip in T5 and 0.204/0.574
-// in C1, attack_forward_v1 at 0.414/0.6 vs 0.214/0.714, walk_attack_v1 at
-// 0.187 vs 0.344, and walk_attack_v2/v4 carry a doubled note 0.1 s apart.  So
-// a zombie hit sooner and more often than T5's (0.85-0.96 swings landing per
-// zombie-second in reach vs T5's 0.75).  A clip with a T5 schedule
-// (_zombiemode.gsc zombie_t5_melee_fire_times) lands its hits at T5's
-// fractions of the clip and ignores the C1 "fire" notes.
+// Hit timing (2026-10-25).  The client plays C1's clips, so the hit lands on
+// C1's "fire" notes, which mark the frame the wrist reaches out in 13 of the
+// 17 clips.  The four whose notes miss the swing carry a strike schedule
+// (_zombiemode.gsc zombie_melee_strike_times) measured from the same xanims;
+// for those the notes are ignored.  The 2026-10-21 pass replaced every
+// clip's notes with T5's fractions, which belong to T5's xanims and put the
+// damage up to a second away from the swing the player sees.
 swing_notetracks( zombie_attack )
 {
 	// Retained private rule: one actual native contact per attack animation.
 	self.zm_swing_contact = false;
-	t5fires = undefined;
+	strikes = undefined;
 	if ( isDefined( zombie_attack ) )
-		t5fires = maps\_zombiemode::zombie_t5_melee_fire_times( zombie_attack );
-	if ( isDefined( t5fires ) )
-		self thread t5_fire_schedule( zombie_attack, t5fires );
+		strikes = maps\_zombiemode::zombie_melee_strike_times( zombie_attack );
+	if ( isDefined( strikes ) )
+		self thread strike_schedule( zombie_attack, strikes );
 
 	for ( ;; )
 	{
@@ -169,18 +166,18 @@ swing_notetracks( zombie_attack )
 
 		if ( note == "end" || note == "finish" || note == "undefined" )
 		{
-			self notify( "t5_swing_done" );
+			self notify( "swing_done" );
 			return;
 		}
 
 		if ( note == "fire" )
 		{
-			if ( isDefined( t5fires ) )
+			if ( isDefined( strikes ) )
 				continue;
 
 			if ( !self swing_hit() )
 			{
-				self notify( "t5_swing_done" );
+				self notify( "swing_done" );
 				return;
 			}
 			continue;
@@ -190,7 +187,7 @@ swing_notetracks( zombie_attack )
 		{
 			if ( !CanContinueToMelee() )
 			{
-				self notify( "t5_swing_done" );
+				self notify( "swing_done" );
 				return;
 			}
 			continue;
@@ -226,13 +223,13 @@ swing_hit()
 	return true;
 }
 
-// T5's "fire" notes for this clip, as fractions of the clip; the clip plays
-// at rate 1 (setFlaggedAnimKnobAllRestart above).
-t5_fire_schedule( zombie_attack, fractions )
+// The clip's strikes, as fractions of the clip; the clip plays at rate 1
+// (setFlaggedAnimKnobAllRestart above), so a fraction is a fixed delay.
+strike_schedule( zombie_attack, fractions )
 {
 	self endon( "death" );
 	self endon( "killanimscript" );
-	self endon( "t5_swing_done" );
+	self endon( "swing_done" );
 
 	length = getAnimLength( zombie_attack );
 	elapsed = 0;
