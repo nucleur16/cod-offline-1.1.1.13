@@ -1364,6 +1364,7 @@ static void PatchGbkInput(void)
 
 #include "local_multi.c"
 #include "managed_quick.c"
+#include "quick_start_gate.c"
 
 /* Snapshot-parity logger, parity-log branch only: see parity.c. */
 #include "parity.c"
@@ -1402,8 +1403,12 @@ static void PatchGbkInput(void)
 
 /* The THEATRE screen (codol-classic's theatre playback): see theatre.c. */
 #include "theatre.c"
+/* UTF-8 player names and an optional display-name service: see name_display.c. */
+#include "name_display.c"
 
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
+#include "news_refresh.c"
+#include "gfx_date_time.c"
 #include "launcher_update_bridge.c"
 static void __cdecl TakeOver(void)
 {
@@ -1411,6 +1416,7 @@ static void __cdecl TakeOver(void)
     LoadUnpackedImage();
     MatchC1SectionFlags();
     FillImports();
+    PatchGfxDateTime();
     PatchRenderGate();
     PatchDvarRegistrations();
     PatchPlainConfig();
@@ -1425,6 +1431,8 @@ static void __cdecl TakeOver(void)
     PatchScoresOpen();
     PatchInfectedScoreboard();
     PatchManagedQuickJoin();
+    PatchQuickStartGate();
+    PatchNewsRefresh();
     PatchLoopFxCatchUp();
     PatchPatchDir();
     PatchLocalizePool();
@@ -1435,6 +1443,7 @@ static void __cdecl TakeOver(void)
     InstallController();
     InstallDiscord();
     InstallTheatre();
+    InstallNameDisplay();
     K33InstallMainTicks(); /* last: chains in front of voice.c's and discord.c's tick hooks */
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
