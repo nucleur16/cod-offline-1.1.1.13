@@ -26,7 +26,7 @@ static void put(void *p,uint32_t v){memcpy(p,&v,4);}
 static void uid(void *p,uint64_t v){memcpy(p,&v,8);}
 static void reset(void){
  memset(room,0,sizeof(room));memset(cache,0,sizeof(cache));memset(events,0,sizeof(events));count=0;denied=0;state=0;identity=123;g_ctpBusy=0;
- put(room,0xc7d66c);put(room+0x10,(uintptr_t)cache);room[0x44f8]=room[0x4501]=room[0x15aa8]=1;
+ put(room,0xc7d66c);put(room+0x10,(uintptr_t)cache);room[0x44f8]=room[0x4501]=1;
  put(room+0x15a80,(uintptr_t)"playlist");room[0x15a8c]=2;room[0x15a8d]=1;room[0x15aac]=3;room[0x15aad]=255;
  cache[0]=cache[1]=cache[2]=1;uid(cache+0x10,69421);uid(cache+0x20,identity);g_ctpReady=original_ready;
 }
@@ -43,7 +43,7 @@ int main(void){
    case 1:room[0x4501]=0;break;
    case 2:room[0x4503]=1;break;
    case 3:put(room+0x44fc,1);break;
-   case 4:room[0x15aa8]=0;break;
+   case 4:room[0x15aa8]=1;break;
    case 5:room[0x15aac]=255;break;
    case 6:room[0x15a8c]=0;break;
    case 7:room[0x15a8d]=2;break;

@@ -31,3 +31,15 @@ gameplay. No candidate is production qualified. Repeated fresh and reused room
 starts must confirm published preview arrival before allocation, matching cards
 on both clients and the actual loaded map. Keep paired components together.
 Evidence: `E:/codol-task-evidence/training-preview-publish-20261026-r1/`.
+
+The first installed pair FAILED to start a real match. Read-only capture of
+the Ready host showed native room+15AA8=0, while the adapter wrongly required1.
+That is the ranked-room gate; training uses the unranked route. The original
+fixture also incorrectly set1, so its26 passing cases did not qualify this scope.
+Correcting the fixture to the captured flag makes the old source fail10 checks.
+The corrected adapter permits0 and refuses1, passing all26 checks. Both profiles
+rebuilt without warnings; only the two local QA clients were relaunched with
+the same executable. Backend/native services were preserved. Actual publication
+delivery, fresh/repeated starts and gameplay remain pending; this is not a live
+acceptance claim. See `live-guard-failure.json`, `native-flag-proof.json` and
+`unranked-local-activation.json`.

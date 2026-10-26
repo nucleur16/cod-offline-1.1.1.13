@@ -33,7 +33,7 @@ static int CtpPublish(void *object)
     if (g_ctpBusy || (uintptr_t)object!=CTP_ROOM || CTP_STATE()!=0 ||
         !Readable(room,0x15b68) || *(const uint32_t *)room!=0x00c7d66cu ||
         !room[0x44f8] || !room[0x4501] || room[0x4503] ||
-        *(const uint32_t *)(room+0x44fc) || !room[0x15aa8] ||
+        *(const uint32_t *)(room+0x44fc) || room[0x15aa8] ||
         *(const uint32_t *)(room+0x15b20) || *(const uint32_t *)(room+0x15b24))return 0;
     const BYTE *info=room+0x15a80;
     const char *mode=*(const char *const *)info;
