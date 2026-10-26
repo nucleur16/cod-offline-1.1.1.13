@@ -79,6 +79,16 @@
 //     without a helicopter (T5 Kino has no rescue at all).
 //   * T5's invisible collision fixes (collision_geo_64x64x128 /
 //     collision_wall_128x128x10): neither model ships in any 1.1.1.13 zone.
+//   * The blue hologram over the lobby's teleporter pad (a DNA-helix figure
+//     and HUD glyphs at player height, the user asked for it gone on
+//     2026-10-25) is not an effect: it is static model 3342 of the zone's
+//     GfxWorld, codo_zm_theater_teleporter_pad at (-2 -1263.5 80.5), bounds
+//     z 101..154, materials mc/mtl_codo_flatscreen_tv_01 (the hologram sheet)
+//     and its flash2 spec.  The model is placed nowhere else.  Neither the
+//     createfx (whose teleporter effects are exploders the server never
+//     fires) nor this script draws it; removing it is a zone rebuild:
+//     port-map ... --drop-model codo_zm_theater_teleporter_pad.  The pad
+//     itself (codo_zm_factory_teleporter_pad, same origin) stays.
 //
 // DELIBERATELY NOT HERE (as zm_sumpf_sh.gsc): maps\mp\_load, the
 // maps/mp/zm_theater_sh_fx.gsc createfx module (C1 draws the zone's createfx
