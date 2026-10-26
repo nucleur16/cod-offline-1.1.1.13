@@ -384,7 +384,12 @@ vending_trigger_think()
 	self.cost = cost;
 
 	self setCursorHint( "HINT_NOICON" );
-	self useTriggerRequireLookAt();
+	// A level script may place a machine whose map carries no trigger_use
+	// (zm_theater_sh: a usable script_origin, made usable there).  The
+	// retained native refuses UseTriggerRequireLookAt on anything but a
+	// trigger_use; a usable entity is already picked by look-at.
+	if ( self.classname == "trigger_use" )
+		self useTriggerRequireLookAt();
 	self setHintString( &"ZOMBIE_NEED_POWER" );
 	flag_wait( "power_on" );
 	self setHintString( perk_hint( perk, false ), cost );

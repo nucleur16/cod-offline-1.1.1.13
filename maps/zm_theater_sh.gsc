@@ -42,6 +42,14 @@
 //                 power (T5 setupCurtains).
 //   turrets       2 auto_turret_trigger (pf33 on the theater's centre
 //                 platform, pf34 in the dining room) -> theater_auto_turrets.
+//   perks         NOT IN THE ZONE: the edit has no zombie_vending and no
+//                 machine models, so theater_perk_machines (below) places
+//                 T5's four (zombie_theater.ents: Quick Revive in the lobby,
+//                 Juggernog by the foyer stairs, Speed Cola in the dining
+//                 room, Double Tap in the alley) at T5's origins and angles,
+//                 before _zombiemode_perks sweeps "zombie_vending".  Mule Kick
+//                 is left out (the user, 2026-10-25; T5 Kino places it from
+//                 script too, place_additionalprimaryweapon_machine).
 //
 // NOT PORTED, and why:
 //   * The ammo crates (7 ammo_cache prefabs: ammobox_collision brush,
@@ -54,7 +62,8 @@
 //     The same port drops the two misc_turret entities
 //     (--drop-entity script_noteworthy=sample_turret, see the turrets below).
 //   * Perk machines and wall buys: CoDOL's edit carries none (no
-//     zombie_vending, no weapon_upgrade, no machine models in the zone).
+//     zombie_vending, no weapon_upgrade, no machine models in the zone);
+//     the perk machines are placed by script instead (perks, above).
 //   * Quad zombies (quad_zombie_spawner structs on the roofs, T5
 //     zombie_theater_quad roof breaks): C1 has no quad species or clips, and
 //     zombies keep C1's cyborg animations; the roof spawners stay unused, as
@@ -81,6 +90,9 @@ main()
 {
 	// Before any wait: this is the level script's precache window.
 	theater_precache();
+
+	// Before levelMain: _zombiemode_perks::init sweeps "zombie_vending".
+	theater_perk_machines();
 
 	// T5 zombie_theater.gsc main: the box starts at a random spot.
 	level.random_pandora_box_start = true;
@@ -127,6 +139,62 @@ theater_precache()
 	level._effect[ "fx_transporter_start" ] = loadfx( "maps/zombie/fx_transporter_start" );
 	level._effect[ "fx_transporter_ambient" ] = loadfx( "maps/zombie/fx_transporter_ambient" );
 	level._effect[ "fx_teleporter_pad_glow" ] = loadfx( "maps/zombie/fx_zombie_teleporter_pad_glow" );
+}
+
+// --------------------------------------------------------------------------
+// Perk machines.  T5 zombie_theater.ents carries four zombie_vending
+// trigger_use, each targeting its machine script_model (and a clip brush for
+// Quick Revive); CoDOL's edit dropped all of them, but kept T5's coordinates,
+// so the machines go back at T5's places.  A level script cannot spawn a
+// trigger_use, so each machine's trigger is a usable script_origin at the
+// trigger's origin carrying the fields _zombiemode_perks and
+// _zombiemode_audio read (script_noteworthy = the perk, target = the model,
+// script_sound / script_label = T5's jingle and sting).  The model is C1's
+// powered machine, the one zm_factory_sh and zm_sumpf_sh place (C1 renames
+// T5's zombie_vending_sleight to zombie_vending_speedcola_on); the unpowered
+// models ship only in other map zones, so the machines stand in their
+// powered skin and _zombiemode_perks lights them when the power comes on.
+// MEASURED, docs/zone_assets/ALL_xmodel.txt: every model is defined in
+// common_gametype_zm (and patch_common_gametype_zm), which zm_theater_sh
+// loads.  No collision brush comes with them.
+//                 perk                     trigger origin       model origin            yaw
+//   Quick Revive  specialty_quickrevive    (527 -1261 106)      (531 -1261.5 79)        270
+//   Speed Cola    specialty_fastreload     (1269 143 29)        (1268.5 141 -18)        180
+//   Double Tap    specialty_rof            (-1730 -375 39)      (-1732 -378.5 0)         90
+//   Juggernog     specialty_armorvest      (-328 -490 53)       (-328.5 -492 5.5)       180
+// --------------------------------------------------------------------------
+
+theater_perk_machines()
+{
+	theater_perk_machine( "specialty_quickrevive", "vending_revive", "zombie_vending_revive_on",
+		( 527, -1261, 106 ), ( 531, -1261.5, 79 ), 270, "mus_perks_revive_jingle", "mus_perks_revive_sting" );
+	theater_perk_machine( "specialty_fastreload", "vending_sleight", "zombie_vending_speedcola_on",
+		( 1269, 143, 29 ), ( 1268.5, 141, -18 ), 180, "mus_perks_speed_jingle", "mus_perks_speed_sting" );
+	theater_perk_machine( "specialty_rof", "vending_doubletap", "zombie_vending_doubletap_on",
+		( -1730, -375, 39 ), ( -1732, -378.5, 0 ), 90, "mus_perks_doubletap_jingle", "mus_perks_doubletap_sting" );
+	theater_perk_machine( "specialty_armorvest", "vending_jugg", "zombie_vending_jugg_on",
+		( -328, -490, 53 ), ( -328.5, -492, 5.5 ), 180, "mus_perks_jugganog_jingle", "mus_perks_jugganog_sting" );
+}
+
+theater_perk_machine( perk, name, model, use_origin, model_origin, yaw, jingle, sting )
+{
+	precacheModel( model );
+
+	machine = spawn( "script_model", model_origin );
+	machine.angles = ( 0, yaw, 0 );
+	machine setModel( model );
+	machine.targetname = name;
+
+	use = spawn( "script_origin", use_origin );
+	use.targetname = "zombie_vending";
+	use.target = name;
+	use.script_noteworthy = perk;
+	use.script_sound = jingle;
+	use.script_label = sting;
+	use setCursorHint( "HINT_NOICON" );
+	use makeUsable();
+
+	codolprintln( "CoDOL zm theater: " + perk + " machine " + model + " at " + model_origin );
 }
 
 // --------------------------------------------------------------------------
