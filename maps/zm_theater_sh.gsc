@@ -88,7 +88,10 @@
 //     createfx (whose teleporter effects are exploders the server never
 //     fires) nor this script draws it; removing it is a zone rebuild:
 //     port-map ... --drop-model codo_zm_theater_teleporter_pad.  The pad
-//     itself (codo_zm_factory_teleporter_pad, same origin) stays.
+//     itself (codo_zm_factory_teleporter_pad, same origin) stays.  Short of
+//     that rebuild, patch_zm_theater_sh.ff (the 2013 machines' zone, below)
+//     redefines codo_zm_theater_teleporter_pad with two materials that draw
+//     $black additively; it loads first, so the static model links to it.
 //
 // DELIBERATELY NOT HERE (as zm_sumpf_sh.gsc): maps\mp\_load, the
 // maps/mp/zm_theater_sh_fx.gsc createfx module (C1 draws the zone's createfx
