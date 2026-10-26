@@ -1401,6 +1401,8 @@ static void PatchGbkInput(void)
 #include "k33http.c"
 #include "k33json.c"
 
+/* The THEATRE screen (codol-classic's theatre playback): see theatre.c. */
+#include "theatre.c"
 /* UTF-8 player names and an optional display-name service: see name_display.c. */
 #include "name_display.c"
 
@@ -1440,6 +1442,7 @@ static void __cdecl TakeOver(void)
     InstallVoice();
     InstallController();
     InstallDiscord();
+    InstallTheatre();
     InstallNameDisplay();
     K33InstallMainTicks(); /* last: chains in front of voice.c's and discord.c's tick hooks */
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
