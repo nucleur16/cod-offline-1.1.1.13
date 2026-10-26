@@ -1401,6 +1401,8 @@ static void PatchGbkInput(void)
 #include "k33http.c"
 #include "k33json.c"
 
+/* codol_quick_native_room_context for the shared movie's Quick Play room checks: see quick_room.c. */
+#include "quick_room.c"
 /* The THEATRE screen (codol-classic's theatre playback): see theatre.c. */
 #include "theatre.c"
 /* UTF-8 player names and an optional display-name service: see name_display.c. */
@@ -1442,6 +1444,7 @@ static void __cdecl TakeOver(void)
     InstallVoice();
     InstallController();
     InstallDiscord();
+    InstallQuickRoom();
     InstallTheatre();
     InstallNameDisplay();
     K33InstallMainTicks(); /* last: chains in front of voice.c's and discord.c's tick hooks */
