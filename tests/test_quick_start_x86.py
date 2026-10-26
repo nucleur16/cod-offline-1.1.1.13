@@ -118,16 +118,21 @@ class NativeQuickGate(unittest.TestCase):
  def test_real_successor_intent_phase1_survives_enter_room_before_phase5(self):
   m=Machine();m.install();m.put(CTRL+0x10,1);m.bridge()
   self.assertEqual(m.events,1);self.assertEqual(m.state(),1)
-  for phase in [1,3,4,5]:m.put(CTRL+0x10,phase);m.tick()
+  for phase,now in [(1,0),(2,20000),(3,80000),(4,90000),(5,100000)]:
+   m.var('qtest_now',now);m.put(CTRL+0x10,phase);m.tick()
   m.native();self.assertEqual(m.searches,1);self.assertEqual(m.get(CTRL+0x10),6)
  def test_phase1_ready_without_bridge_never_grants(self):
   m=Machine();m.install();m.put(CTRL+0x10,1);m.tick()
   for phase in [3,4,5]:m.put(CTRL+0x10,phase);m.tick()
   m.native();self.assertEqual(m.searches,0)
- def test_phase1_intent_unknown_phase2_cannot_be_consumed(self):
+ def test_phase1_intent_real_phase_exit_cannot_be_consumed(self):
   m=Machine();m.install();m.put(CTRL+0x10,1);m.bridge()
-  m.put(CTRL+0x10,2);m.tick();m.put(CTRL+0x10,5);m.native()
+  m.put(CTRL+0x10,0);m.tick();m.put(CTRL+0x10,5);m.native()
   self.assertEqual(m.searches,0)
+ def test_early_intent_cannot_outlive_collection_bound_or_be_renewed(self):
+  m=Machine();m.install();m.put(CTRL+0x10,1);m.bridge()
+  m.var('qtest_now',120000);m.put(CTRL+0x10,2);m.tick();m.bridge()
+  m.put(CTRL+0x10,5);m.native();self.assertEqual(m.searches,0)
  def test_consumed_generation_returning_to_waiting_needs_new_genuine_bridge(self):
   m=Machine();m.install();m.bridge();m.native();self.assertEqual(m.searches,1)
   m.put(CTRL+0x10,1);m.tick();self.assertEqual(m.state(),4)

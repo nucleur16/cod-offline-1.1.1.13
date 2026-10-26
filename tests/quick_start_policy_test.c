@@ -39,7 +39,7 @@ int main(void) {
  memset(&p,0,sizeof(p));s=sample();s.phase=1;
  CHECK(QsgGrant(&p,&s,100));QsgObserve(&p,&s,101);CHECK(p.state==1);
  CHECK(!QsgGrant(&p,&s,102));CHECK(p.born==100);
- s.phase=3;QsgObserve(&p,&s,103);s.phase=4;QsgObserve(&p,&s,104);
+ s.phase=2;QsgObserve(&p,&s,103);s.phase=3;QsgObserve(&p,&s,104);s.phase=4;QsgObserve(&p,&s,105);
  s.phase=5;CHECK(QsgConsume(&p,&s,105));CHECK(!QsgConsume(&p,&s,106));
  memset(&p,0,sizeof(p));s=sample();s.phase=1;QsgObserve(&p,&s,100);
  s.phase=5;CHECK(!QsgConsume(&p,&s,101));
@@ -47,6 +47,6 @@ int main(void) {
  s.identity.room++;QsgObserve(&p,&s,101);CHECK(p.state==3);
  CHECK(!QsgGrant(&p,&s,102));s.phase=5;CHECK(!QsgConsume(&p,&s,103));
  memset(&p,0,sizeof(p));s=sample();s.phase=1;CHECK(QsgGrant(&p,&s,100));
- QsgObserve(&p,&s,30100);CHECK(p.state==3);s.phase=5;CHECK(!QsgConsume(&p,&s,30101));
+ QsgObserve(&p,&s,120100);CHECK(p.state==3);s.phase=5;CHECK(!QsgConsume(&p,&s,120101));
  printf("Quick start policy: %u checks passed\n",checks);return 0;
 }
