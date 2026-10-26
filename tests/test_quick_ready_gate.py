@@ -49,8 +49,9 @@ class QuickReadyGate(unittest.TestCase):
         script = """
 const assert = require('assert');
 const uint = value => Number(value) >>> 0;
-const SyncDataID = {IS_ME:'me'};
+const SyncDataID = {IS_ME:'me',IS_ROOM_HOST:'host'};
 const CFunctionContainer = {IsRankedMatch:()=>ranked, IsRoomHost:()=>localHost};
+const CFunctionContainerCommon = {GetPlayerID:()=>'1'};
 let ranked=true, localHost=true;
 const RankedMatchStatus={READY_IN_ROOM:'ready'};
 const observe = new Function('member','ready','roomMemberObj', OBSERVER);
@@ -60,9 +61,9 @@ function fresh() {
  for (const p of peers) Object.assign(p,{_localQuickNativeRoleKnown:true,
  _localQuickNativeMemberID:p.id,_localQuickNativeReady:true});
  const room={name:'host',_localQuickSharedLineage:true,forces:{force0:[peers[0]],force1:[peers[1]]}};
- const owner={_roomObj:room,_roomMembers:peers,getSyncDP:(_key,args)=>args[0].id==='1'};
+ const owner={_roomObj:room,_roomMembers:peers,getSyncDP:(key,args)=>key===SyncDataID.IS_ROOM_HOST?localHost:args[0].id==='1'};
  const event=(i,value)=>{observe.call(owner,peers[i].id,value,peers[i]);peers[i]._localQuickNativeReady=value;};
- return {peers,room,owner,event,ready:()=>allReady(room,2)};
+ return {peers,room,owner,event,ready:()=>allReady.call(owner,room,2)};
 }
 let f=fresh(); assert(!f.ready(),'prior-match cached true is not current results ACK');
 f.event(0,false); f.event(0,true);
@@ -81,7 +82,9 @@ f.peers[1]._localQuickNativeRoleKnown=true;assert(f.ready());
 f.room.forces.force1.push(f.peers[1]);assert(!f.ready(),'duplicate native member');f.room.forces.force1.pop();
 f.room.forces.force1.push({id:'3',name:'new',_localQuickNativeRoleKnown:true,_localQuickNativeMemberID:'3',_localQuickNativeReady:true});
 assert(!f.ready(),'new member cached true cannot join current ready cohort');f.room.forces.force1.pop();
-f.room.name='guest';assert(!f.ready(),'host swap invalidates frozen host epoch');f.room.name='host';
+f.room.name='guest';assert(f.ready(),'a presentation title cannot change the local native owner');
+localHost=false;assert(!f.ready(),'native owner transfer invalidates the old owner epoch');
+localHost=true;f.room.name='host';
 f.room._localQuickSharedLineage=false;const saved=JSON.stringify(f.room);
 observe.call(f.owner,f.peers[0].id,false,f.peers[0]);assert.strictEqual(JSON.stringify(f.room),saved,'manual room observer is inactive');assert(!f.ready());
 f=fresh();ranked=false;f.event(0,false);assert(!f.room._localQuickReadyCycle,'unranked manual room untouched');

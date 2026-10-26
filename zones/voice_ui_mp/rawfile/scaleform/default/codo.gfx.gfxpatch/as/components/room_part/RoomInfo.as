@@ -76,7 +76,28 @@ package components.room_part
          this.myGameModeTF.visible = !cDat.isPlayList;
          this.myRoomNameTF.visible = !cDat.isPlayList;
          this.myRoomIDTF.visible = !cDat.isPlayList;
-         this.myRoomNameTF.text = cDat.name;
+         // BEGIN room display owner name
+         var displayRoomName:String = String(cDat.name);
+         var displayHost:Object = null;
+         var displayHostCount:int = 0;
+         if(cDat.forces != null && cDat.forces.force0 != null && cDat.forces.force1 != null)
+         {
+            var displayMembers:Array = cDat.forces.force0.concat(cDat.forces.force1);
+            for each(var displayMember in displayMembers)
+            {
+               if(displayMember != null && displayMember["_localQuickNativeRoleKnown"] == true && String(displayMember.id).length > 0 && displayMember["_localQuickNativeMemberID"] == String(displayMember.id) && (cDat.forces.isHost == true ? displayMember.isMe == true : displayMember["_localQuickNativeHost"] == true))
+               {
+                  displayHost = displayMember;
+                  displayHostCount++;
+               }
+            }
+         }
+         if(displayHostCount == 1 && typeof displayHost.realName == "string" && displayHost.realName.length > 0)
+         {
+            displayRoomName = displayHost.realName;
+         }
+         this.myRoomNameTF.text = displayRoomName;
+         // END room display owner name
          this.myLeagueLabelTF.text = cDat.matchType == MatchType.PVP ? "" : LocalizationRoom.ROOM_LEVEL;
          this.myLeagueTF.text = LocalizationRoom.ROOM_LEVELS[cDat.currentLevel];
          this.myPlayersTF.text = cDat["_localQuickSharedLineage"] == true && cDat.currentMaxPlayers == 12 ? "2 ~ 12" : cDat.currentMinPlayers + " ~ " + cDat.currentMaxPlayers;

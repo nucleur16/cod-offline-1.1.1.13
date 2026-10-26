@@ -198,7 +198,7 @@
       "76": "580e6e25c3af66f1a90bc377c0145f44ceddc10030c5f738aee2ef2807e9ac68",
       "77": "cf480833d1ecbf317d64f389e1c789ac735e6c426c449a83c7f64352c06dcc1d",
       "78": "997c1eed68cdde4270b7a080ab4d3803eaaf8da21499e3c9eca93af6e3896f26",
-      "79": "bb66dda412dd1537834eaf6de1c8b6706f8b2c3ee252f1d912c5b293e6089694",
+      "79": "d1dd3b8b726bb53e36c49f66b9df9dc0e71963f6fe86465373070d4d5d24d203",
       "80": "ec8b566ffd6c55209b8b68f16756bf5adaff84b67716a493fae2178c3e5d1a9b",
       "81": "6ea92ec96fb34bd40243f083f3f362e3f91669bcd37c4dcf4168636d8acf3ce6",
       "82": "4bdce973a8f9eaafc5c80899d50cefc1bef5a396b5d981252e872fa4a465d387",
@@ -216,7 +216,7 @@
       "94": "118e4bacc0f859d25de2693c14f016daef112cdff9e3f01130867c8b77d19862",
       "95": "ae039107ea050adccdc7051ce63a0888f68629311fcf269ddf94bf7b6bd8b1d4",
       "96": "340e6f8ff3a98783ca62b1bcf91e5263912b27399d1eebcad95d26f39219e5d0",
-      "97": "8bd9490b4e2ff3de355822b145e9e7759fdd9b054a1ac37998e03254fed8f42c",
+      "97": "bcae1ba5b2970586ac2ae623e1d48dcf979ef2e271c24abbcd5baed827db365a",
       "98": "1d84a97fffcb4165cc1c007536cc83a2fafe0d16efd4e2e00600bc00e5fa4a46",
       "99": "26c2f2f7571dfd4093b0cb84b3d61eaf1b2f145e85e383b77cd6fa9572f7ad3d",
       "100": "fb8d0b34d4f45d9e82923c71c6ead1dbb8cd187963a9984ad8ea4919a9f72b16",
@@ -286,6 +286,20 @@
     },
     "changed_methods": [
       "onProposeRoomMembershipHandle"
+    ],
+    "reviewed_body_updates_20261025": [
+      {
+        "index": "79",
+        "method": "codo.controllers:MatchController/private/bind_quickMatchReady",
+        "before_sha256": "bb66dda412dd1537834eaf6de1c8b6706f8b2c3ee252f1d912c5b293e6089694",
+        "after_sha256": "d1dd3b8b726bb53e36c49f66b9df9dc0e71963f6fe86465373070d4d5d24d203"
+      },
+      {
+        "index": "97",
+        "method": "codo.controllers:MatchController/private/onRankedMatchPassedTimeTimerHandle",
+        "before_sha256": "8bd9490b4e2ff3de355822b145e9e7759fdd9b054a1ac37998e03254fed8f42c",
+        "after_sha256": "bcae1ba5b2970586ac2ae623e1d48dcf979ef2e271c24abbcd5baed827db365a"
+      }
     ]
   },
   {
