@@ -681,19 +681,20 @@ tryJoinTeam( team )
 		if ( maps\mp\gametypes\_codol_bots::isCombatBot( player ) )
 			bots[bots.size] = player;
 	}
-	needed = teamCount - level.teamLimit + 1;
+	// GSC division makes teamLimit a float; -- accepts only an integer.
+	needed = int( teamCount - level.teamLimit + 1 );
 	if ( needed <= 0 )
 		return true;
 	if ( needed > bots.size )
 		return false;
 	// Native kick synchronously disconnects and removes the bot from
 	// level.players. No wait occurs between reserving its seat and joining.
-	for ( i = bots.size - 1; needed > 0; i-- )
+	for ( i = bots.size - 1; i >= 0 && needed > 0; i-- )
 	{
 		kick( bots[i] getEntityNumber(), "Kicked by server" );
 		needed--;
 	}
-	return true;
+	return getJoinTeamPermissions( team );
 }
 
 
