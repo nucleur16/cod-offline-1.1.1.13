@@ -659,6 +659,44 @@ updateFreePlayedTime()
 }
 
 
+// C1 automatically answers its team popup with the retained side. Refusing a
+// full bot-filled side and reopening that popup produces an endless menu echo
+// after HotJoin. A real player can replace training AI, never another human.
+tryJoinTeam( team )
+{
+	if ( getJoinTeamPermissions( team ) )
+		return true;
+	if ( !isPlayer( self ) || self.isbot || maps\mp\gametypes\_codol_bots::isCombatBot( self ) )
+		return false;
+	if ( level.teamLimit <= 0 || ( team != "allies" && team != "axis" ) )
+		return false;
+
+	bots = [];
+	teamCount = 0;
+	foreach ( player in level.players )
+	{
+		if ( !isDefined( player.pers["team"] ) || player.pers["team"] != team )
+			continue;
+		teamCount++;
+		if ( maps\mp\gametypes\_codol_bots::isCombatBot( player ) )
+			bots[bots.size] = player;
+	}
+	needed = teamCount - level.teamLimit + 1;
+	if ( needed <= 0 )
+		return true;
+	if ( needed > bots.size )
+		return false;
+	// Native kick synchronously disconnects and removes the bot from
+	// level.players. No wait occurs between reserving its seat and joining.
+	for ( i = bots.size - 1; needed > 0; i-- )
+	{
+		kick( bots[i] getEntityNumber(), "Kicked by server" );
+		needed--;
+	}
+	return true;
+}
+
+
 getJoinTeamPermissions( team )
 {
 	teamcount = 0;

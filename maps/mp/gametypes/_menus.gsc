@@ -370,15 +370,15 @@ showMainMenuForTeam()
 
 menuAllies()
 {
-	self closeMenus();
-
 	if(self.pers["team"] != "allies")
 	{
-		if( level.teamBased && !maps\mp\gametypes\_teams::getJoinTeamPermissions( "allies" ) )
+		if( level.teamBased && !maps\mp\gametypes\_teams::tryJoinTeam( "allies" ) )
 		{
-			self openpopupMenu(game["menu_team"]);
+			// Keep the current menu usable; reopening it echoes C1's automatic
+			// team reply and repeatedly closes Escape on a denied join.
 			return;
 		}
+		self closeMenus();
 
 		// allow respawn when switching teams during grace period.
 		if ( level.inGracePeriod && !self.hasDoneCombat )
@@ -399,21 +399,21 @@ menuAllies()
 		self notify("end_respawn");
 	}
 
+	else
+		self closeMenus();
 	self beginClassChoice();
 }
 
 
 menuAxis()
 {
-	self closeMenus();
-
 	if(self.pers["team"] != "axis")
 	{
-		if( level.teamBased && !maps\mp\gametypes\_teams::getJoinTeamPermissions( "axis" ) )
+		if( level.teamBased && !maps\mp\gametypes\_teams::tryJoinTeam( "axis" ) )
 		{
-			self openpopupMenu(game["menu_team"]);
 			return;
 		}
+		self closeMenus();
 
 		// allow respawn when switching teams during grace period.
 		if ( level.inGracePeriod && !self.hasDoneCombat )
@@ -434,6 +434,8 @@ menuAxis()
 		self notify("end_respawn");
 	}
 
+	else
+		self closeMenus();
 	self beginClassChoice();
 }
 
@@ -591,7 +593,7 @@ codolJoinTeamForClass()
 
 	assignment = getTeamAssignment();
 
-	if ( level.teamBased && !maps\mp\gametypes\_teams::getJoinTeamPermissions( assignment ) )
+	if ( level.teamBased && !maps\mp\gametypes\_teams::tryJoinTeam( assignment ) )
 	{
 		self beginTeamChoice();
 		return false;
