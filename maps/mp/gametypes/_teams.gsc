@@ -314,7 +314,12 @@ getTeamBalanceSecondsRemaining( startedAt, now )
 
 updateTeamBalanceCountdown()
 {
-    if ( !level.teamBalance || game["state"] != "playing" || getTeamBalance() )
+    // game["state"] is already playing during the loading/countdown phase.
+    // Initial human assignment and bot fill must finish before announcing a
+    // live imbalance. Otherwise a transient 2-versus-0 starts the warning
+    // while the remaining ten clients are still being assigned normally.
+    if ( !level.teamBalance || game["state"] != "playing" ||
+            !gameFlag( "prematch_done" ) || getTeamBalance() )
     {
         level.teamBalanceStartedAt = undefined;
         level.teamBalanceAnnouncedSeconds = undefined;
