@@ -115,6 +115,24 @@ class NativeQuickGate(unittest.TestCase):
     m=Machine();m.install();m.put(CTRL+0x10,phase);m.bridge();self.assertEqual(m.events,1)
     for p in range(phase,6):m.put(CTRL+0x10,p);m.tick()
     m.native();self.assertEqual(m.searches,1)
+ def test_real_successor_intent_phase1_survives_enter_room_before_phase5(self):
+  m=Machine();m.install();m.put(CTRL+0x10,1);m.bridge()
+  self.assertEqual(m.events,1);self.assertEqual(m.state(),1)
+  for phase in [1,3,4,5]:m.put(CTRL+0x10,phase);m.tick()
+  m.native();self.assertEqual(m.searches,1);self.assertEqual(m.get(CTRL+0x10),6)
+ def test_phase1_ready_without_bridge_never_grants(self):
+  m=Machine();m.install();m.put(CTRL+0x10,1);m.tick()
+  for phase in [3,4,5]:m.put(CTRL+0x10,phase);m.tick()
+  m.native();self.assertEqual(m.searches,0)
+ def test_phase1_intent_unknown_phase2_cannot_be_consumed(self):
+  m=Machine();m.install();m.put(CTRL+0x10,1);m.bridge()
+  m.put(CTRL+0x10,2);m.tick();m.put(CTRL+0x10,5);m.native()
+  self.assertEqual(m.searches,0)
+ def test_consumed_generation_returning_to_waiting_needs_new_genuine_bridge(self):
+  m=Machine();m.install();m.bridge();m.native();self.assertEqual(m.searches,1)
+  m.put(CTRL+0x10,1);m.tick();self.assertEqual(m.state(),4)
+  m.put(CTRL+0x10,5);m.native();self.assertEqual(m.searches,1)
+  m.bridge();m.native();self.assertEqual(m.searches,2)
  def test_frame_observer_ret_abi_and_rearms_same_cohort_next_round(self):
   m=Machine();m.install();m.put(CTRL+0x10,3);m.bridge();m.frame_phase=4;m.call('QsgTestFrame',CTRL)
   self.assertEqual(m.state(),1);m.put(CTRL+0x10,5);m.native();self.assertEqual(m.searches,1)

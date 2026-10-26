@@ -31,15 +31,28 @@ static int QsgEligible(const QsgSnapshot *s)
     return s->managed && s->valid && s->host && s->all_ready &&
         s->phase >= 3 && s->phase <= 5;
 }
+static int QsgIntentEligible(const QsgSnapshot *s)
+{
+    /* The genuine AS bridge can precede native's enter-room delay on a
+     * successor. Capture that intent in waiting phase1; native consumption
+     * still requires phase5 and the same complete Ready identity. */
+    return s->managed && s->valid && s->host && s->all_ready &&
+        (s->phase == 1 || (s->phase >= 3 && s->phase <= 5));
+}
 static void QsgObserve(QsgPolicy *p, const QsgSnapshot *s, uint32_t now)
 {
     if (!s->phase_known) {
         if (p->state) p->state=3; /* Missing data is not a proven phase exit. */
         return;
     }
-    if (s->phase < 3 || s->phase > 5) {
+    if (s->phase != 1 && (s->phase < 3 || s->phase > 5)) {
         memset(p, 0, sizeof(*p));
         return;
+    }
+    if (s->phase == 1 && p->state == 2) {
+        /* A completed native start returning to waiting begins another
+         * cycle. It still needs another genuine bridge before consumption. */
+        memset(p, 0, sizeof(*p));
     }
     if (!s->managed) {
         if (p->state) p->state=3; /* Scope drift cannot escape an owned cycle. */
@@ -49,7 +62,7 @@ static void QsgObserve(QsgPolicy *p, const QsgSnapshot *s, uint32_t now)
     /* Stock mmbook advances next-entry after consumption. Only leaving the
      * allowed phase chain rearms a consumed generation. */
     if (p->state != 1) return;
-    if (!QsgEligible(s) || s->phase < p->phase ||
+    if (!QsgIntentEligible(s) || s->phase < p->phase ||
         memcmp(&p->identity, &s->identity, sizeof(p->identity)) ||
         (uint32_t)(now - p->born) >= QSG_INTENT_MS) {
         p->state = 3;
@@ -60,7 +73,7 @@ static void QsgObserve(QsgPolicy *p, const QsgSnapshot *s, uint32_t now)
 static int QsgGrant(QsgPolicy *p, const QsgSnapshot *s, uint32_t now)
 {
     QsgObserve(p, s, now);
-    if (p->state != 4 || !QsgEligible(s)) return 0;
+    if (p->state != 4 || !QsgIntentEligible(s)) return 0;
     p->state = 1;
     p->born = now;
     p->phase = s->phase;

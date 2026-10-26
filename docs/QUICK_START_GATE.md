@@ -16,7 +16,12 @@ that paired release, not a replacement for it.
 The identity binds the actual Quick object, room ID, sorted unique UID cohort,
 room settings, map, mode, alternate mode, final voting entry and previous entry.
 Entry zero is valid. The native map string alone is not the final selection.
-An intent in phase 3 or 4 survives normal progression to 5. It expires after an
+An intent in phase 1, 3 or 4 survives normal progression to 5. Real repeated
+matches showed the genuine AS call arriving in waiting phase 1, before the
+native enter-room delay. This call now retains its exact identity through that
+delay; merely observing Ready in phase 1 grants nothing. A phase regression,
+identity change, missing readiness or duplicate call cannot renew that intent.
+Native consumption remains restricted to phase 5. It expires after an
 explicit 30-second local permission lifetime, is invalidated by an observed
 identity/Ready/host change or phase regression, and can be consumed only once.
 Duplicate and synchronous reentrant bridge calls cannot renew it. Frame
