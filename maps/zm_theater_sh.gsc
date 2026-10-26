@@ -167,6 +167,22 @@ theater_precache()
 // MEASURED, docs/zone_assets/ALL_xmodel.txt: every model is defined in
 // common_gametype_zm (and patch_common_gametype_zm), which zm_theater_sh
 // loads.  No collision brush comes with them.
+//
+// THE 2013 MACHINES (test, user 2026-10-25: "port the older perk machines
+// from 10.0.2.2 and put them in kino").  CoDOL 1.0.2.2 (the 10.0.2.2
+// install) drew the four machines with its own models; 1.1.1.13 still ships
+// them in common_gametype_zm under the same names, but its
+// patch_common_gametype_zm redefines those names with the remodelled
+// machines and C1 keeps the first definition it loads, so the old ones are
+// never drawn.  patch_zm_theater_sh.ff (built by
+// D:\CoD\CODOL Builds\zm_oldperks_staging\tool_src, a new zone C1 and this
+// server mount just ahead of zm_theater_sh) defines them again as
+// zombie_vending_<perk>_on_old, with 1.0.2.2's two light textures that
+// 1.1.1.13 re-encoded (iw_model_20.iwd).  When that zone is installed the
+// machines stand in the 2013 models; scr_zm_theater_oldperks 0 keeps the
+// current ones.  codol_isModelMounted asks the server's own mounted zones,
+// which are the client's (one install folder), so a match without the zone
+// keeps the current models instead of drawing default ones.
 //                 perk                     trigger origin       model origin            yaw
 //   Quick Revive  specialty_quickrevive    (527 -1261 106)      (531 -1261.5 79)        270
 //   Speed Cola    specialty_fastreload     (1269 143 29)        (1268.5 141 -18)        180
@@ -188,12 +204,15 @@ theater_perk_machines()
 
 theater_perk_machine( perk, name, model, use_origin, model_origin, yaw, jingle, sting )
 {
+	if ( getDvar( "scr_zm_theater_oldperks" ) != "0" && codol_isModelMounted( model + "_old" ) )
+		model = model + "_old";
 	precacheModel( model );
 
 	machine = spawn( "script_model", model_origin );
 	machine.angles = ( 0, yaw, 0 );
 	machine setModel( model );
 	machine.targetname = name;
+	machine.zm_perk_model = model;
 
 	use = spawn( "script_origin", use_origin );
 	use.targetname = "zombie_vending";

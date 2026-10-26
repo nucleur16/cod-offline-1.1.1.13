@@ -165,9 +165,16 @@ perk_machine_power_init()
 			// rendered machine; preserve its trigger, clip and authored pose.
 			if ( machine.classname != "script_model" )
 				continue;
-			precacheModel( definition.model );
 			precacheModel( "tag_origin" );
-			machine.zm_perk_on_model = definition.model;
+			// A level may stand a machine in another skin of the same machine
+			// (zm_theater_sh: the 2013 models, zm_perk_model); the power keeps it.
+			if ( isDefined( machine.zm_perk_model ) )
+				machine.zm_perk_on_model = machine.zm_perk_model;
+			else
+			{
+				precacheModel( definition.model );
+				machine.zm_perk_on_model = definition.model;
+			}
 			machine.zm_perk_light_fx = loadfx( definition.light );
 			machine.zm_perk_glow_fx = loadfx( definition.glow );
 			level.zm_perk_power_machines[ level.zm_perk_power_machines.size ] = machine;
