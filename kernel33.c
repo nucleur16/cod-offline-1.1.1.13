@@ -1395,6 +1395,15 @@ static void PatchGbkInput(void)
 /* Discord Rich Presence (CoDOLPresence.exe moved into the client): see discord.c. */
 #include "discord.c"
 
+/* Shared plumbing for the features ported from codol-classic's d3d9.dll: a main-thread tick list (k33tick.c, chained
+ * after voice.c's and discord.c's Com_EventLoop hooks), an HTTPS/SHA-256 helper (k33http.c) and a JSON reader (k33json.c). */
+#include "k33tick.c"
+#include "k33http.c"
+#include "k33json.c"
+
+/* UTF-8 player names and an optional display-name service: see name_display.c. */
+#include "name_display.c"
+
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 #include "news_refresh.c"
 #include "gfx_date_time.c"
@@ -1431,6 +1440,8 @@ static void __cdecl TakeOver(void)
     InstallVoice();
     InstallController();
     InstallDiscord();
+    InstallNameDisplay();
+    K33InstallMainTicks(); /* last: chains in front of voice.c's and discord.c's tick hooks */
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
     ExitProcess(0); /* the CRT entry ends in exit(); not reached */
