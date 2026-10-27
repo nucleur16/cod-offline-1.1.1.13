@@ -469,6 +469,34 @@ nothing. `Kernel33.log` gets `discord:` lines for connection changes and each ne
 With this DLL installed the launcher should stop starting `CoDOLPresence.exe`, or both publish for the
 same process.
 
+## Survival category (`survival_category.c`)
+C1 1.1.1.13 knows three match categories: mp, coop and zm. The category is the string the client gets with a map:
+`preloadmap <map> <category>` from the room, line 2 of the server's `loadingnewmap`, and the gamestate's type.
+Kernel33 adds a fourth, **`survival`** (exact, any case). Survival runs on the multiplayer rules (MP weapons,
+create-a-class, the MP HUD), so it is an mp category with one more gametype zone set:
+- **Zones.** The zone-list builder 0x4CCDF0 queues, in one `DB_LoadXAssets` list after C1's common_mp set:
+  - `patch_common_gametype_survival`, `common_gametype_survival`, `patch_localized_common_gametype_survival`,
+    `localized_common_gametype_survival`;
+  - then C1's own mp set: `patch_common_gametype_mp`, `common_gametype_mp`, `patch_localized_common_gametype_mp`,
+    `localized_common_gametype_mp` (all flags 4);
+  - then the map's own zones as for mp: `patch_<map>`, `<map>`, `ffotd_client`.
+
+  C1 keeps the first definition it links, so the survival zones win where both sets carry a name. Each set is
+  skipped while its `common_gametype_*` zone is loaded (C1's rule). Missing `patch_` zones only print.
+- **Everything else is C1's mp behaviour, unpatched.** That covers the loading-bar estimate (0x4B6380, mp sizes),
+  the constant configstrings (0x612850: `mp/constConfigStrings_mp.csv`, native checksum 0xAD1E1713), and every cgame,
+  UI and room check of "coop"/"zm".
+- **Other categories.** Every other category string runs C1's code unchanged. `tests/test_survival_category_x86.py`
+  runs 0x4CCDF0, 0x4B6380 and 0x612850 stock and patched in Unicorn and compares the zone lists, flags, size
+  estimate, table, checksum and registers:
+  - 17 categories;
+  - 4 maps;
+  - 7 loaded-zone states.
+
+  Run it with `K33_C1_EXE=<C1.exe> sh tests/run_tests.sh`.
+- **Off switch.** `+set codol_survival 0` on the command line installs nothing. `Kernel33.log` says
+  `survival category: ...`.
+
 ## Patch zones (`zones/`, `zone_source/`, `build_zones.py`)
 Every patch zone this project installs next to the stock game, as editable sources, built into `output/` by one
 script. (The ported usermap map zones themselves, mp_*.ff / zm_sumpf_sh.ff, are not part of this repository; they
