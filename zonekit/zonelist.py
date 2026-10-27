@@ -10,6 +10,7 @@ against the md5 recorded when it was made). Where two places carry a zone, the n
 manifest names those blobs by sha1 and the build takes them from the stock zone instead of the repo.
 `gfx` maps a .gfx rawfile to the stock movie it patches ("<stock zone>:<rawfile>").
 `maps` declares the zone's per-usermap data, which shipping_maps.txt filters (zonekit/shipping.py).
+`staging` marks a zone that never installs (a default build leaves it out; name it to build it).
 `handwritten` maps a .gfx rawfile to the classes whose as/ file in the zone is a hand-written source (compiled into
 the stored tag), not FFDec's decompile: --decompile keeps those files instead of exporting over them.
 The usermap map zones themselves (mp_*.ff, zm_sumpf_sh.ff and their _load zones) are not part of this repository.
@@ -86,4 +87,10 @@ ZONES = {
     # the controller button icons controller_glyphs.c draws in text: 4 sets x 18 images (64x64 A8R8G8B8, 7 levels,
     # from the former res/controller_glyphs.bin) and a material each (hud_status_dead's layout, ",2d")
     "controller_glyphs_postgfx_mp": dict(origin="new", install=PATCH),
+    # --- not installed: Survival's own zones (common_gametype_survival, localized_common_gametype_survival) are built
+    # by the CODOL-AssetExplorer port tool, which merges every asset of these (survival_staging\menus): the kiosk and
+    # HUD menus converted from 2.6.9.7 (zonekit/menus.py) with mp/kiosks.csv, and their strings in each language
+    "survival_menus": dict(origin="new", install=CHINESE, staging=True),
+    "survival_localize_chinese": dict(origin="new", install=CHINESE, staging=True),
+    "survival_localize_english": dict(origin="new", install=CHINESE, staging=True),
 }

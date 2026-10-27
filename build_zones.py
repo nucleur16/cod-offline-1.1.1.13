@@ -5,6 +5,9 @@ r"""build_zones.py -- the one build entry point for every zone of this repositor
     python build_zones.py --maps all                   the same with every usermap's UI, into output_dev\
     python build_zones.py voice_ui_mp controller_ingame
                                                        build only these zones
+    python build_zones.py survival_menus survival_localize_chinese survival_localize_english
+                                                       the staging zones (zonelist staging=True), which a default
+                                                       build leaves out: they merge into other zones, never install
     python build_zones.py --list                       list the zones, where each installs and where it came from
     python build_zones.py --verify                     build, then compare each output with the recorded original
     python build_zones.py --decompile [zone ...]       refresh zones\ + zone_source\ from the shipped files
@@ -329,7 +332,9 @@ def main(argv=None):
                 if n in part_of:
                     print("%s is a part of %s: building that (--parts builds it on its own)" % (n, " + ".join(part_of[n])))
         else:
-            names, pack_list = [n for n in known if n not in part_of], all_packs
+            # staging zones (zonelist staging=True) are never installed: they build only when named
+            names = [n for n in known if n not in part_of and not zonelist.ZONES.get(n, {}).get("staging")]
+            pack_list = all_packs
         failed = 0
         src = stock.ZoneSource(exe, [chinese])
         print("usermaps: %s build -> %s (ship: %d maps%s)" % (
