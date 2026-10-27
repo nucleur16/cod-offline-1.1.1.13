@@ -279,7 +279,7 @@ updateTeamBalance()
 		level endon ( "game_ended" );
 		for( ;; )
 		{
-			if( level.teamBalance )
+			if( level.teamBalance && !isDefined( level.forcedTeam ) )
 			{
 				if( !getTeamBalance() )
 				{
@@ -323,6 +323,9 @@ getTeamBalance()
 
 balanceTeams()
 {
+	// A mode with one player team (survival) is never balanced.
+	if ( isDefined( level.forcedTeam ) )
+		return;
 	iPrintLnBold( game["strings"]["autobalance"] );
 	//Create/Clear the team arrays
 	AlliedPlayers = [];

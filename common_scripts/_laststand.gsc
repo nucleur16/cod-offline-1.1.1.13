@@ -838,14 +838,44 @@ revive_bar_fill( from, to, time )
 		end = 1;
 
 	self.bar setShader( "progress_bar_fill", start, REVIVE_BAR_HEIGHT );
+	if ( time > 60 && start != end )
+	{
+		// scaleOverTime takes at most 60 s (survival bleeds out over 120).
+		self thread revive_bar_fill_long( from, to, time );
+		return;
+	}
 	if ( time > 0 && start != end )
 		self.bar scaleOverTime( time, end, REVIVE_BAR_HEIGHT );
+}
+
+// A fill longer than scaleOverTime's 60 s limit, in 60 s legs.
+revive_bar_fill_long( from, to, time )
+{
+	self endon( "death" );
+	while ( time > 60 && isDefined( self ) && isDefined( self.bar ) )
+	{
+		mid = from + ( to - from ) * ( 60 / time );
+		w = int( REVIVE_BAR_WIDTH * mid + 0.5 );
+		if ( w < 1 )
+			w = 1;
+		self.bar scaleOverTime( 60, w, REVIVE_BAR_HEIGHT );
+		wait( 60 );
+		from = mid;
+		time -= 60;
+	}
+	if ( !isDefined( self ) || !isDefined( self.bar ) )
+		return;
+	end = int( REVIVE_BAR_WIDTH * to + 0.5 );
+	if ( end < 1 )
+		end = 1;
+	self.bar scaleOverTime( time, end, REVIVE_BAR_HEIGHT );
 }
 
 revive_bar_destroy()
 {
 	if ( !isDefined( self ) )
 		return;
+	self notify( "death" );
 	if ( isDefined( self.bar ) )
 		self.bar destroy();
 	self destroy();

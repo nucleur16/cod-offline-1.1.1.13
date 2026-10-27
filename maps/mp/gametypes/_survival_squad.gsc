@@ -41,7 +41,7 @@ farthest_location()
 	locs = level.survival_squad_locs;
 	if ( !locs.size )
 		return undefined;
-	avoid = maps\_survival_utility::living_players();
+	avoid = maps\mp\gametypes\_survival_utility::living_players();
 	for ( i = 0; i < level.survival_leaders_alive.size; i++ )
 	{
 		if ( isDefined( level.survival_leaders_alive[ i ] ) && isAlive( level.survival_leaders_alive[ i ] ) )
@@ -93,7 +93,7 @@ spawn_squad( ref, size, scale )
 	leader = undefined;
 	for ( tries = 0; !isDefined( leader ) && tries < 10; tries++ )
 	{
-		leader = maps\_survival_ai::spawn_type( ref, loc.origin, loc.angles, scale );
+		leader = maps\mp\gametypes\_survival_ai::spawn_type( ref, loc.origin, loc.angles, scale );
 		if ( !isDefined( leader ) )
 			wait( 1 );
 	}
@@ -109,7 +109,7 @@ spawn_squad( ref, size, scale )
 		ai = undefined;
 		for ( tries = 0; !isDefined( ai ) && tries < 5; tries++ )
 		{
-			ai = maps\_survival_ai::spawn_type( ref, spot.origin, spot.angles, scale );
+			ai = maps\mp\gametypes\_survival_ai::spawn_type( ref, spot.origin, spot.angles, scale );
 			if ( !isDefined( ai ) )
 				wait( 1 );
 		}
@@ -142,7 +142,7 @@ setup_leader( members )
 	self endon( "survival_demoted" );
 	self.squadmembers = members;
 	level.survival_leaders_alive[ level.survival_leaders_alive.size ] = self;
-	self thread maps\_survival_ai::hunt();
+	self thread maps\mp\gametypes\_survival_ai::hunt();
 	self waittill( "death" );
 	living_leaders();
 	next = undefined;
