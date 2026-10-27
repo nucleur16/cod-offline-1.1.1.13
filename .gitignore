@@ -30,3 +30,8 @@ output_dev/
 
 # Explicit unqualified development builds.
 output_candidate/
+
+# python build_zones.py --parts: every source zone on its own (the layout before zone_packs/)
+output_parts/
+output_dev_parts/
+output_candidate_parts/

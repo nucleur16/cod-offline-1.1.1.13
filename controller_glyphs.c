@@ -7,8 +7,10 @@
  * ((size - 16) * fontHeight + 16) / 32 pixels, so 48 is one line high). C1's zones have no button
  * materials; ours come from a patch zone:
  *
- *   zone       client_shipRetail\patch\controller_glyphs_postgfx_mp.ff (zones/controller_glyphs_postgfx_mp, built by
- *              build_zones.py). A *_postgfx_mp patch zone is appended to the code_post_gfx list (kernel33.c), so it
+ *   zone       client_shipRetail\patch\codol_common_postgfx_mp.ff (zones/controller_glyphs_postgfx_mp, built into that
+ *              consolidated zone by build_zones.py; an install with only the old controller_glyphs_postgfx_mp.ff
+ *              still works: that name is looked up when the new one is not there). A *_postgfx_mp patch zone is
+ *              appended to the code_post_gfx list (kernel33.c), so it
  *              loads once the renderer is up and stays loaded in the front end and in matches. It holds, for each
  *              set (xbox360, ps3, wiiu, generic) and glyph (the 17 kCtlButtons, then "arrow", the killstreak HUD's
  *              yellow selection arrow), an image k33pad_<set>_<glyph> (64x64 A8R8G8B8 with mips, Xelu's CC0
@@ -35,7 +37,9 @@
 
 #define CTL_GLYPH_SETS         4
 #define CTL_GLYPH_ESC_SIZE     56            /* 48 = one text line high; a little more reads better */
-#define CTL_GLYPH_ZONE         "controller_glyphs_postgfx_mp"
+#define CTL_GLYPH_ZONE         "codol_common_postgfx_mp"
+#define CTL_GLYPH_ZONE_OLD     "controller_glyphs_postgfx_mp"   /* before the zones were consolidated */
+static const char *g_glyphZone = CTL_GLYPH_ZONE;
 #define CTL_MATERIAL_REGISTER  0x00A78170u   /* Material_RegisterHandle(name, imageTrack) */
 #define CTL_KEYNUM_TO_STRING   0x00492AF0u   /* Key_KeynumToString(eax = key, edi = translate) */
 #define CTL_BINDING_NAMES      0x00493920u   /* Key_GetBindingNames(eax = buffer, ecx = lc; command) */
@@ -104,7 +108,7 @@ static BOOL CtlGlyphInit(void)
             const BYTE *mat = ((RegFn)(DWORD_PTR)CTL_MATERIAL_REGISTER)(name, 7);
             const char *got = mat && Readable(mat, CTL_MAT_SIZE) ? *(const char *const *)mat : NULL;
             if (!got || !Readable(got, 1) || strcmp(got, name)) {
-                _snprintf(why, sizeof(why), "material %s not found (%s.ff did not load it)", name, CTL_GLYPH_ZONE);
+                _snprintf(why, sizeof(why), "material %s not found (%s.ff did not load it)", name, g_glyphZone);
                 why[sizeof(why) - 1] = 0;
                 CtlGlyphOff(why);
                 return TRUE;
@@ -143,7 +147,7 @@ static BOOL CtlGlyphInit(void)
         g->esc[8] = 0;
     }
     _snprintf(g_glyphWhy, sizeof(g_glyphWhy), "ready: %d sets x %d icons from %s.ff, slots at %p", CTL_GLYPH_SETS,
-              CTL_GLYPH_COUNT, CTL_GLYPH_ZONE, (void *)g_glyphBase);
+              CTL_GLYPH_COUNT, g_glyphZone, (void *)g_glyphBase);
     Log("controller: glyphs %s", g_glyphWhy);
     InterlockedExchange(&g_glyphReady, 1);
     return TRUE;
@@ -155,8 +159,9 @@ static void CtlGlyphFrame(void)
     if (g_glyphReady == 0 && g_ctlDvarsDone && C1DvarsReady()) {
         DWORD now = GetTickCount();
         int zone = PatchZoneState(CTL_GLYPH_ZONE);
+        if (zone < 0 && (zone = PatchZoneState(CTL_GLYPH_ZONE_OLD)) >= 0) g_glyphZone = CTL_GLYPH_ZONE_OLD;
         if (zone < 0) {
-            CtlGlyphOff(CTL_GLYPH_ZONE ".ff is not in the patch folder (or the folder is off)");
+            CtlGlyphOff(CTL_GLYPH_ZONE ".ff (or " CTL_GLYPH_ZONE_OLD ".ff) is not in the patch folder (or the folder is off)");
         } else if (zone == 0) {
             /* queued, not yet handed to the loader */
         } else if (!g_glyphFrontEndAt) {
