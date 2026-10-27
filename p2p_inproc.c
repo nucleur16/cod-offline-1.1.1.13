@@ -108,12 +108,21 @@ static LONG CALLBACK PiFaultHandler(EXCEPTION_POINTERS *ep)
     return EXCEPTION_CONTINUE_EXECUTION;
 }
 
+/* A call into the server's API made from C1's side (p2passetcheck, the stage 3 asset provider) runs on the
+ * server's fiber, between frames, like a frame: its stack, its error longjmps and its fault containment. */
+static void (*volatile g_piCallFn)(void *);
+static void *g_piCallCtx;
+
 static void WINAPI PiServerFiber(void *unused)
 {
     (void)unused;
     for (;;) {
         LONG st = g_piState;
-        if (st == PI_INIT_PENDING) {
+        if (g_piCallFn) {
+            void (*fn)(void *) = g_piCallFn;
+            fn(g_piCallCtx);
+            g_piCallFn = NULL;
+        } else if (st == PI_INIT_PENDING) {
             DWORD t = GetTickCount();
             g_piInitResult = g_piInit(g_piArgs);
             g_piInitMs = GetTickCount() - t;
@@ -209,6 +218,24 @@ static void PiHookSlot(DWORD slot, FARPROC *real, void *hook, const char *name)
     *real = *p;
     FARPROC h = (FARPROC)hook;
     WriteCode(p, &h, 4);
+}
+
+/* Main thread, between frames: run fn(ctx) on the server's fiber. FALSE when no server is running. */
+static BOOL PiRunOnServer(void (*fn)(void *), void *ctx)
+{
+    if (g_piState != PI_RUNNING || !g_piFiber || GetCurrentThreadId() != g_piThread || g_piInTick) return FALSE;
+    unsigned short fcw;
+    unsigned int mxcsr;
+    __asm__ volatile("fnstcw %0" : "=m"(fcw));
+    __asm__ volatile("stmxcsr %0" : "=m"(mxcsr));
+    g_piCallCtx = ctx;
+    g_piCallFn = fn;
+    g_piInTick = 1;
+    SwitchToFiber(g_piFiber);
+    g_piInTick = 0;
+    __asm__ volatile("fldcw %0" : : "m"(fcw));
+    __asm__ volatile("ldmxcsr %0" : : "m"(mxcsr));
+    return g_piCallFn == NULL;
 }
 
 void PI_TickHook(void);
