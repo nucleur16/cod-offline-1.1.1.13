@@ -32,6 +32,7 @@
 #include <imm.h>
 #include <shellapi.h>
 #include "patch_locale_policy.h"
+#include "production_profile.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,6 +58,7 @@ static BOOL g_supportedBuild;
 static BYTE *volatile g_tenBase;
 static SIZE_T g_tenSize;
 
+#if CODOL_DIAGNOSTICS
 static void Log(const char *fmt, ...)
 {
     char path[MAX_PATH], line[512];
@@ -79,6 +81,10 @@ static void Log(const char *fmt, ...)
     WriteFile(h, line, (DWORD)len, &w, NULL);
     CloseHandle(h);
 }
+#else
+/* Shipping has no diagnostic file writer or formatting on hot paths. */
+#define Log(...) ((void)0)
+#endif
 
 static void Fatal(const char *msg)
 {
@@ -1435,7 +1441,9 @@ static void __cdecl TakeOver(void)
     PatchLocalizePool();
     PatchUserMaps();
     InstallSoundDiag();
+#if CODOL_DIAGNOSTICS
     InstallParityLogger();
+#endif
     InstallVoice();
     InstallController();
     InstallDiscord();

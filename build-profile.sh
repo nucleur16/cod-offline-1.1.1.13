@@ -1,7 +1,13 @@
 #!/bin/sh
 # Sourced after entering the source directory; no installation side effects.
 case "${K33_LOCAL_TESTING:-0}" in 0|1) ;; *) echo "K33_LOCAL_TESTING must be 0 or 1" >&2; exit 1;; esac
-set -- "-DCODOL_LOCAL_TESTING=${K33_LOCAL_TESTING:-0}"
+K33_DIAGNOSTICS=${K33_DIAGNOSTICS:-${K33_LOCAL_TESTING:-0}}
+case "$K33_DIAGNOSTICS" in 0|1) ;; *) echo "K33_DIAGNOSTICS must be 0 or 1" >&2; exit 1;; esac
+if [ "${K33_LOCAL_TESTING:-0}" = 0 ] && [ "$K33_DIAGNOSTICS" = 1 ]; then
+    echo "Shipping builds cannot enable diagnostics" >&2
+    exit 1
+fi
+set -- "-DCODOL_LOCAL_TESTING=${K33_LOCAL_TESTING:-0}" "-DCODOL_DIAGNOSTICS=$K33_DIAGNOSTICS"
 if [ -n "${K33_LAUNCHER_HOST_SHA256:-}" ]; then
     case "$K33_LAUNCHER_HOST_SHA256" in *[!0-9a-f]*) echo "Launcher pin must be lowercase SHA-256" >&2; exit 1;; esac
     [ "${#K33_LAUNCHER_HOST_SHA256}" = 64 ] || { echo "Launcher pin must contain 64 hex characters" >&2; exit 1; }
