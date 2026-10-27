@@ -221,9 +221,11 @@ static void PiHookSlot(DWORD slot, FARPROC *real, void *hook, const char *name)
 }
 
 /* Main thread, between frames: run fn(ctx) on the server's fiber. FALSE when no server is running. */
+static volatile LONG g_piYielding;
 static BOOL PiRunOnServer(void (*fn)(void *), void *ctx)
 {
-    if (g_piState != PI_RUNNING || !g_piFiber || GetCurrentThreadId() != g_piThread || g_piInTick) return FALSE;
+    /* not while the server waits mid-frame (PiYield): the fiber would resume in its wait, not run fn */
+    if (g_piState != PI_RUNNING || !g_piFiber || GetCurrentThreadId() != g_piThread || g_piInTick || g_piYielding) return FALSE;
     unsigned short fcw;
     unsigned int mxcsr;
     __asm__ volatile("fnstcw %0" : "=m"(fcw));
@@ -265,6 +267,105 @@ static void PiMemory(SIZE_T *privateMb, SIZE_T *virtualMb)
     ms.dwLength = sizeof(ms);
     *virtualMb = GlobalMemoryStatusEx(&ms) ? (SIZE_T)((ms.ullTotalVirtual - ms.ullAvailVirtual) >> 20) : 0;
 }
+
+
+/* ---- C1's zones, for the hosted server's map loads (stage 3) ---------------------------------------------------
+ * C1's loaded-zone table, as its "zone loaded?" test 0x4CD7D0 reads it: count 0x18FCFBC, a handle byte per slot at
+ * 0x1C402A4, zones at 0x1F0E108 + handle * 0xA8 with the name inline at +0x0C; [0x17C6880] is a zone the test
+ * skips (the one being unloaded). */
+#define C1_ZONE_COUNT_VA    0x018FCFBCu
+#define C1_ZONE_HANDLES_VA  0x01C402A4u
+#define C1_ZONES_VA         0x01F0E108u
+#define C1_ZONE_SKIPPED_VA  0x017C6880u
+#define C1_DB_LOADING_VA    0x02007A60u
+static BOOL PiC1ZoneLoaded(const char *name)
+{
+    int n = *(volatile const int *)(DWORD_PTR)C1_ZONE_COUNT_VA;
+    DWORD skipped = *(volatile const DWORD *)(DWORD_PTR)C1_ZONE_SKIPPED_VA;
+    if (!name || n < 0 || n > 64) return FALSE;
+    for (int i = 0; i < n; i++) {
+        DWORD zone = C1_ZONES_VA + 0xA8u * ((const BYTE *)(DWORD_PTR)C1_ZONE_HANDLES_VA)[i];
+        if (zone == skipped) continue;
+        if (!lstrcmpiA((const char *)(DWORD_PTR)(zone + 0x0C), name)) return TRUE;
+    }
+    return FALSE;
+}
+static unsigned PiC1ZoneSignature(void)
+{
+    int n = *(volatile const int *)(DWORD_PTR)C1_ZONE_COUNT_VA;
+    unsigned h = (unsigned)n * 2654435761u;
+    if (n < 0 || n > 64) return 0;
+    for (int i = 0; i < n; i++) h = h * 31 + ((const BYTE *)(DWORD_PTR)C1_ZONE_HANDLES_VA)[i];
+    return h;
+}
+static void PiLogC1Zones(const char *why)
+{
+    char line[1024]; int used = 0, n = *(volatile const int *)(DWORD_PTR)C1_ZONE_COUNT_VA;
+    line[0] = 0;
+    for (int i = 0; i < n && i < 64 && used < 960; i++) {
+        DWORD zone = C1_ZONES_VA + 0xA8u * ((const BYTE *)(DWORD_PTR)C1_ZONE_HANDLES_VA)[i];
+        used += _snprintf(line + used, sizeof(line) - used, " %s", (const char *)(DWORD_PTR)(zone + 0x0C));
+    }
+    Log("p2p in-process: C1 zones (%s, %d, loading %lu):%s", why, n, *(volatile const DWORD *)(DWORD_PTR)C1_DB_LOADING_VA, line);
+}
+
+/* On the server's fiber: let C1's thread run until the next tick resumes the server here. */
+static void PiYield(void)
+{
+    if (!g_piMainFiber || GetCurrentThreadId() != g_piThread) { Sleep(1); return; }
+    g_piYielding = 1;
+    SwitchToFiber(g_piMainFiber);
+    g_piYielding = 0;
+}
+/* The server's await_zones (codol_asset_host.h), on its fiber during a map load. C1 starts loading a hosted map
+ * itself when it is connected (the server's loadingnewmap); otherwise, after a short grace, preloadmap starts it.
+ * Then the server waits, yielding, until C1 holds the level and its common_gametype zone
+ * and its database is idle. */
+static int __cdecl PiAwaitZones(const char *map, const char *zoneType, unsigned timeoutMs)
+{
+    char level[64], common[64], cmd[192];
+    const char *tail;
+    DWORD t0 = GetTickCount(), started = 0;
+    unsigned signature = PiC1ZoneSignature();
+    BOOL preloaded = FALSE;
+    if (!map || !zoneType) return 0;
+    lstrcpynA(level, map, sizeof(level));
+    if (!strncmp(map, "coop_", 5) && (tail = strchr(map + 5, '_')) && tail[1]) lstrcpynA(level, tail + 1, sizeof(level));
+    _snprintf(common, sizeof(common), "common_gametype_%s", zoneType); common[sizeof(common) - 1] = 0;
+    PiLogC1Zones("map load begins");
+    /* C1 still loading its front end (hosting at start-up): it cannot load a map yet; the server mounts its own */
+    if (!PiC1ZoneLoaded("ui_mp") && !PiC1ZoneLoaded("common_mp")) {
+        Log("p2p in-process: C1 has not loaded its front end; the server mounts its own copy of %s", map);
+        return 0;
+    }
+    for (;;) {
+        DWORD now = GetTickCount();
+        BOOL loading = *(volatile const DWORD *)(DWORD_PTR)C1_DB_LOADING_VA != 0;
+        /* a co-op session zone (coop_<mode>_<level>) is loaded by C1 only when the map string names it; the
+         * server sends the level spelling, so C1 holds the level and gametype zones and the server keeps its own
+         * copy of the session zone */
+        BOOL held = PiC1ZoneLoaded(level) && PiC1ZoneLoaded(common);
+        if (held && !loading) {
+            PiLogC1Zones("held");
+            Log("p2p in-process: C1 holds %s (%s) after %lu ms%s", map, zoneType, now - t0, preloaded ? " (preloadmap)" : "");
+            return 1;
+        }
+        if (!started && (loading || PiC1ZoneSignature() != signature)) started = now;
+        if (!started && !preloaded && now - t0 > 2000) {
+            _snprintf(cmd, sizeof(cmd), "preloadmap %s %s\n", level, zoneType); /* the spelling loadingnewmap uses */ cmd[sizeof(cmd) - 1] = 0;
+            C1CbufAddText(cmd);
+            preloaded = TRUE;
+            Log("p2p in-process: C1 not loading %s, sent preloadmap", map);
+        }
+        if (now - t0 > timeoutMs) {
+            PiLogC1Zones("timed out");
+            Log("p2p in-process: C1 did not hold %s (%s) within %u ms; the server mounts its own copy", map, zoneType, timeoutMs);
+            return 0;
+        }
+        PiYield();
+    }
+}
+static int __cdecl PiZoneHeld(const char *zone) { return PiC1ZoneLoaded(zone); }
 
 /* C1's record of (type, name) for the server (p2p_assets.c PiC1Find); none while C1's database thread links a zone. */
 static const void *PiC1Find(unsigned type, const char *name);
@@ -327,6 +428,9 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         typedef void (__cdecl *Sh1xSetProviderFn)(const void *(__cdecl *)(unsigned, const char *));
         Sh1xSetProviderFn setProvider = (Sh1xSetProviderFn)(void *)GetProcAddress(m, "Sh1xHost_SetC1AssetProvider");
         if (setProvider && c.c1Assets) { setProvider(PiC1Provide); Log("p2p in-process: C1 asset provider installed"); }
+        typedef void (__cdecl *Sh1xSetZoneHostFn)(int (__cdecl *)(const char *, const char *, unsigned), int (__cdecl *)(const char *));
+        Sh1xSetZoneHostFn setZoneHost = (Sh1xSetZoneHostFn)(void *)GetProcAddress(m, "Sh1xHost_SetC1ZoneHost");
+        if (setZoneHost && c.c1Assets) { setZoneHost(PiAwaitZones, PiZoneHeld); Log("p2p in-process: C1 zone host installed"); }
     }
     g_piInit = init; g_piFrame = frame; g_piCmd = cmd; g_piCode = code;
     lstrcpynA(g_piArgs, args, sizeof(g_piArgs));
@@ -392,6 +496,8 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
                 P2PDescriptor(&c, GetCurrentProcessId(), TRUE);
                 if (c.rollout[0]) { P2PRollout(c.rollout, c.port, TRUE); registered = TRUE; }
             }
+        } else if (ready && g_piYielding) {
+            lastAnswer = now; /* the server is waiting on C1's zone loading (PiAwaitZones), not hung */
         } else if (ready && !quitAsked && now - lastAnswer > 20000) {
             Log("p2p in-process: the server stopped answering sh1x_status for 20 s; ending it");
             P2PSetState(P2P_FAILED, "the server stopped answering");
