@@ -77,6 +77,10 @@ init()
 	level.survival_enemies = [];
 	level.survival_bosses = [];
 
+	// IW5 ai_preload: the martyrdom C4 (the dog_splode and martyrdom types).
+	codescripts\character::precacheMounted( "weapon_c4" );
+	level._effect[ "martyrdom_c4_explosion" ] = loadFx( "explosions/grenadeexp_default" );
+
 	// IW5 squad_drop_weapon_rate 1, ai_dropAkimboChance 0: nothing this
 	// server's coop soldier drops needs a rate.
 }
@@ -191,9 +195,8 @@ squad_array( size )
 // Spawning
 // --------------------------------------------------------------------------
 
-// A soldier of AI type `ref` at `origin`.  The authored spawner of the type's
-// classname stands at the map's spawner room; spawn_soldier places the actor
-// where the struct below says.  Returns the actor or undefined.
+// A soldier of AI type `ref` at `origin` (IW5 spawn_ai on the type's
+// classname spawner).  Returns the actor or undefined.
 spawn_type( ref, origin, angles, scale )
 {
 	t = level.survival_ai[ ref ];
@@ -202,27 +205,23 @@ spawn_type( ref, origin, angles, scale )
 		codolprintln( "CoDOL survival: no AI type '" + ref + "'" );
 		return undefined;
 	}
+	if ( is_dog_type( ref ) )
+		return spawn_dog( ref, origin, angles, scale );
 	if ( !isDefined( t.classname ) || t.classname == "" )
 	{
-		// The choppers and dogs: no soldier class (plan section 3).
+		// The choppers: no actor class (plan section 3, the vehicle layer).
 		return undefined;
 	}
 	if ( !isDefined( scale ) )
 		scale = 1.0;
 
-	s = spawnStruct();
-	s.classname = t.classname;
-	s.origin = origin;
-	s.angles = angles;
-	// The survival layer drives him (squad leader / follower), not
-	// _coopmission's soldier_think.
-	s.coop_no_hunt = true;
-	s.script_accuracy = t.accuracy * 0.3;
-	s.survival_spawn = true;
-
-	ai = maps\_coopmission::spawn_soldier( s );
+	kind = spawnStruct();
+	kind.accuracy = t.accuracy * 0.3;
+	ai = maps\_survival_utility::spawn_soldier( t.classname, origin, angles, kind );
 	if ( !isDefined( ai ) )
 		return undefined;
+	ai maps\_survival_utility::arm_soldier();
+	ai maps\_survival_utility::first_pose();
 
 	ai.survival_type = t;
 	ai.survival_ref = ref;
@@ -238,6 +237,82 @@ spawn_type( ref, origin, angles, scale )
 	level.survival_enemies[ level.survival_enemies.size ] = ai;
 	ai thread death_watch();
 	return ai;
+}
+
+is_dog_type( ref )
+{
+	return isSubStr( ref, "dog" ) || isSubStr( ref, "wolf" );
+}
+
+// IW5 spawn_dogs / dog_setup: the survival dog species (aitype\enemy_dog_so,
+// animscripts\coop_dog_*, the shared Spec Ops dog set) on the actor budget.  dog_splode / wolf_splode carry C4 (IW5
+// dog_detonate_c4_near_sentry / martyrdom): they explode where they die.
+spawn_dog( ref, origin, angles, scale )
+{
+	t = level.survival_ai[ ref ];
+	level.survival_dog_wolf = isSubStr( ref, "wolf" );
+	ai = maps\_survival_utility::spawn_soldier( "actor_enemy_dog_so", origin, angles, undefined );
+	level.survival_dog_wolf = undefined;
+	if ( !isDefined( ai ) )
+		return undefined;
+
+	ai.isdog = true;
+	ai.allowdeath = true;
+	ai.ignoreSuppression = true;
+	ai.noDodgeMove = true;
+	ai.ignoreall = false;
+	// IW5 enemy_dog meleeDamage; _survival_mode scales non-bullet damage.
+	ai.meleeDamage = 40;
+	ai.survival_type = t;
+	ai.survival_ref = ref;
+	health = 200;
+	if ( isDefined( t ) )
+		health = t.health * 4;
+	if ( !isDefined( scale ) )
+		scale = 1.0;
+	ai.health = int( health * scale );
+	ai.maxhealth = ai.health;
+	ai.favoriteenemy = closest_player( origin );
+
+	level.survival_enemies[ level.survival_enemies.size ] = ai;
+	ai thread death_watch();
+	if ( isSubStr( ref, "splode" ) )
+		ai thread dog_c4();
+	ai thread dog_hunt();
+	return ai;
+}
+
+// IW5 dog_seek_player: the dog keeps after the nearest standing player.
+dog_hunt()
+{
+	self endon( "death" );
+	for ( ;; )
+	{
+		if ( level.survival_over )
+			return;
+		target = closest_player( self.origin );
+		if ( isDefined( target ) )
+		{
+			self.favoriteenemy = target;
+			self.goalradius = 64;
+			self setGoalPos( target.origin );
+		}
+		wait( 1 );
+	}
+}
+
+// IW5 behavior_special_ai_martyrdom / dog_splode: C4 strapped on, it goes off
+// where he dies (IW5 detonate_c4_when_dead: radius 192, 150 at the centre).
+dog_c4()
+{
+	if ( codescripts\character::modelMounted( "weapon_c4" ) )
+		self attach( "weapon_c4", "j_spine4", true );
+	self waittill( "death", attacker );
+	origin = self.origin + ( 0, 0, 16 );
+	wait( 0.5 );
+	if ( isDefined( level._effect[ "martyrdom_c4_explosion" ] ) )
+		playFx( level._effect[ "martyrdom_c4_explosion" ], origin );
+	radiusDamage( origin, 192, 150, 50 );
 }
 
 death_watch()
@@ -260,10 +335,10 @@ death_watch()
 		value = int( value * 1.25 );
 	if ( isDefined( self.survival_mod ) && self.survival_mod == "MOD_MELEE" )
 		value += 50;
-	killer maps\_coopsurvival::add_credits( value, "kill" );
+	killer maps\_survival::add_credits( value, "kill" );
 }
 
-// _coopmode's CodeCallback_ActorKilled hook (level.coop_actor_killed_func):
+// _survival_mode's CodeCallback_ActorKilled:
 // the hit location and means of death the "death" notify does not carry.
 on_actor_killed( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset )
 {
@@ -298,7 +373,7 @@ hunt()
 	self endon( "survival_hunt" );
 	for ( ;; )
 	{
-		if ( level.coop_mission_over )
+		if ( level.survival_over )
 			return;
 		aggressive = isDefined( level.survival_aggressive ) && level.survival_aggressive;
 		self.goalradius = 900;
@@ -313,7 +388,7 @@ hunt()
 
 closest_player( origin )
 {
-	players = maps\_coopmission::living_players();
+	players = maps\_survival_utility::living_players();
 	best = undefined;
 	bestDist = 0;
 	for ( i = 0; i < players.size; i++ )
@@ -358,7 +433,7 @@ spawn_specials( ref, count, scale )
 	spawned = 0;
 	for ( i = 0; i < count; i++ )
 	{
-		loc = maps\_coopsurvival_squad::farthest_location();
+		loc = maps\_survival_squad::farthest_location();
 		if ( !isDefined( loc ) )
 			break;
 		ai = undefined;
@@ -388,7 +463,7 @@ spawn_bosses( refs, scale )
 		ref = refs[ i ];
 		if ( !isSubStr( ref, "jug_" ) )
 			continue;
-		loc = maps\_coopsurvival_squad::farthest_location();
+		loc = maps\_survival_squad::farthest_location();
 		if ( !isDefined( loc ) )
 			continue;
 		ai = undefined;

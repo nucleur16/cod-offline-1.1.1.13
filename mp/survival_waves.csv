@@ -10,7 +10,7 @@ a0,b1,c2,d3,e4,f5,g6,h7,i8,j9,k10,
 108,jug_regular,Juggernaut,Heavy armored guy,actor_enemy_juggernaut_so_survival,,rpg_mp,500,1,500,1,1
 109,jug_riotshield,Riot Shield Juggernaut,Armory guy behind a riot shield,actor_enemy_juggernaut_riotshield,,rpg_mp,500,1.2,750,1,1
 110,jug_explosive,Explosive Juggernaut,Uses and is weak to explosives,actor_enemy_juggernaut_explosive,,rpg_mp,500,1.2,1000,1,1
-111,jug_minigun,The Terminator,WTFBBQ dead?,actor_enemy_juggernaut,,,1000,1,1000,1,1
+111,jug_minigun,The Terminator,WTFBBQ dead?,actor_enemy_juggernaut_bfg,,,1000,1,1000,1,1
 112,chopper,Enemy Attack Chopper,Enemy Attack Helicopter with mini-gun,,,,1100,1,600,1,
 113,missile_chopper,Missile Chopper,Enemy Attack Helicopter with missiles,,,,1300,1,1000,1,
 114,jug_drop_chopper,MI17 Jugg Dropper,Heli used for bringing in Juggernauts,,,,2200,1,1000,1,

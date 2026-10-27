@@ -1,4 +1,4 @@
-// coop survival: squads of a leader and followers.
+// survival: squads of a leader and followers.
 //
 // Ported from Infinity Ward's Modern Warfare 3 maps\_squad_enemies.gsc (IW5;
 // D:\CoD\COD-GSC-Source\IW5-GSC\scripts\1552.gsc): squad_setup reads the
@@ -9,50 +9,28 @@
 // on their leader.  IW5 spawns through the authored spawner of the squad's
 // classname; here the actor comes from _coopsurvival_ai::spawn_type.
 //
-// Coop module; names no multiplayer module.
+// Names no multiplayer and no coop module.
 
-// IW5 squad_setup( 1 ): the leader structs, minus any "protector" ones.
+// IW5 squad_setup( 1 ): the leader locations.  The CoDOL survival addons
+// authored them as script_structs (script_noteworthy leader, each targeting
+// its followers); maps/<level>_survival.gsc carries them as
+// level.survival_leaders, each with .origin, .angles and .followers.
 setup()
 {
-	level.survival_leaders = [];
+	level.survival_leaders_alive = [];
 	level.survival_squad_locs = [];
-	if ( !isDefined( level.struct ) )
-		return;
-	for ( i = 0; i < level.struct.size; i++ )
+	if ( isDefined( level.survival_leaders ) )
+		level.survival_squad_locs = level.survival_leaders;
+	for ( i = 0; i < level.survival_squad_locs.size; i++ )
 	{
-		s = level.struct[ i ];
-		if ( !isDefined( s.script_noteworthy ) || s.script_noteworthy != "leader" )
-			continue;
-		if ( isDefined( s.targetname ) && isSubStr( s.targetname, "protector" ) )
-			continue;
-		if ( isDefined( s.script_gameobjectname ) && s.script_gameobjectname == "survivalPlus" )
-			continue;
+		s = level.survival_squad_locs[ i ];
 		if ( !isDefined( s.angles ) )
 			s.angles = ( 0, 0, 0 );
-		s.survival_followers = followers_of( s );
-		level.survival_squad_locs[ level.survival_squad_locs.size ] = s;
+		if ( !isDefined( s.followers ) )
+			s.followers = [];
+		s.survival_followers = s.followers;
 	}
 	codolprintln( "CoDOL survival: " + level.survival_squad_locs.size + " squad spawn locations" );
-}
-
-followers_of( leader )
-{
-	out = [];
-	if ( !isDefined( leader.target ) )
-		return out;
-	for ( i = 0; i < level.struct.size; i++ )
-	{
-		s = level.struct[ i ];
-		if ( s == leader )
-			continue;
-		if ( isDefined( s.targetname ) && s.targetname == leader.target )
-		{
-			if ( !isDefined( s.angles ) )
-				s.angles = leader.angles;
-			out[ out.size ] = s;
-		}
-	}
-	return out;
 }
 
 // IW5 spawn_far_squad's pick: repeatedly drop the location closest to each
@@ -63,11 +41,11 @@ farthest_location()
 	locs = level.survival_squad_locs;
 	if ( !locs.size )
 		return undefined;
-	avoid = maps\_coopmission::living_players();
-	for ( i = 0; i < level.survival_leaders.size; i++ )
+	avoid = maps\_survival_utility::living_players();
+	for ( i = 0; i < level.survival_leaders_alive.size; i++ )
 	{
-		if ( isDefined( level.survival_leaders[ i ] ) && isAlive( level.survival_leaders[ i ] ) )
-			avoid[ avoid.size ] = level.survival_leaders[ i ];
+		if ( isDefined( level.survival_leaders_alive[ i ] ) && isAlive( level.survival_leaders_alive[ i ] ) )
+			avoid[ avoid.size ] = level.survival_leaders_alive[ i ];
 	}
 	if ( !avoid.size )
 		return locs[ randomInt( locs.size ) ];
@@ -115,7 +93,7 @@ spawn_squad( ref, size, scale )
 	leader = undefined;
 	for ( tries = 0; !isDefined( leader ) && tries < 10; tries++ )
 	{
-		leader = maps\_coopsurvival_ai::spawn_type( ref, loc.origin, loc.angles, scale );
+		leader = maps\_survival_ai::spawn_type( ref, loc.origin, loc.angles, scale );
 		if ( !isDefined( leader ) )
 			wait( 1 );
 	}
@@ -131,7 +109,7 @@ spawn_squad( ref, size, scale )
 		ai = undefined;
 		for ( tries = 0; !isDefined( ai ) && tries < 5; tries++ )
 		{
-			ai = maps\_coopsurvival_ai::spawn_type( ref, spot.origin, spot.angles, scale );
+			ai = maps\_survival_ai::spawn_type( ref, spot.origin, spot.angles, scale );
 			if ( !isDefined( ai ) )
 				wait( 1 );
 		}
@@ -148,12 +126,12 @@ spawn_squad( ref, size, scale )
 living_leaders()
 {
 	out = [];
-	for ( i = 0; i < level.survival_leaders.size; i++ )
+	for ( i = 0; i < level.survival_leaders_alive.size; i++ )
 	{
-		if ( isDefined( level.survival_leaders[ i ] ) && isAlive( level.survival_leaders[ i ] ) )
-			out[ out.size ] = level.survival_leaders[ i ];
+		if ( isDefined( level.survival_leaders_alive[ i ] ) && isAlive( level.survival_leaders_alive[ i ] ) )
+			out[ out.size ] = level.survival_leaders_alive[ i ];
 	}
-	level.survival_leaders = out;
+	level.survival_leaders_alive = out;
 	return out;
 }
 
@@ -163,8 +141,8 @@ setup_leader( members )
 {
 	self endon( "survival_demoted" );
 	self.squadmembers = members;
-	level.survival_leaders[ level.survival_leaders.size ] = self;
-	self thread maps\_coopsurvival_ai::hunt();
+	level.survival_leaders_alive[ level.survival_leaders_alive.size ] = self;
+	self thread maps\_survival_ai::hunt();
 	self waittill( "death" );
 	living_leaders();
 	next = undefined;
@@ -200,7 +178,7 @@ setup_follower( leader )
 	self.survival_leader = leader;
 	for ( ;; )
 	{
-		if ( level.coop_mission_over )
+		if ( level.survival_over )
 			return;
 		if ( isDefined( level.survival_aggressive ) && level.survival_aggressive )
 			return;

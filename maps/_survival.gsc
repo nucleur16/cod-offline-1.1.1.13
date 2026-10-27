@@ -1,66 +1,51 @@
-// coop survival: the Spec Ops Survival mode (coop_survival_mp_<map>).
+// survival: Spec Ops Survival, the mode (its own match category).
 //
 // Ported from Infinity Ward's Modern Warfare 3 Spec Ops Survival,
-// maps\_so_survival.gsc (IW5; D:\CoD\COD-GSC-Source\IW5-GSC\scripts\1571.gsc
+// maps\_so_survival.gsc (IW5; D:\CoD\COD-GSC-Source\IW5-GSC\scriptso1.gsc
 // in the decompiled dump): survival_init / survival_logic, the loadout from the
 // wave table's 1000.. rows, survival_wave (squads, specials, bosses, the
 // aggressive phase at four left, the end of a wave), the intermission with its
 // ready-up, repeating waves past the table, and the credits.  CoDOL ran the
-// same mode on its own data from 2.x on (common_gametype_survival,
-// coop_survival_<map>.ff); docs/CODOL_SURVIVAL_PLAN.md says what is ported
-// from where and what differs.
+// same mode on its own data from 2.x on (common_gametype_survival); its tables
+// are used as they are.  docs/CODOL_SURVIVAL_PLAN.md says what is ported from
+// where and what differs.
 //
-// Selected by codol_sessionMap coop_survival_*, like _coopmission_defense_crash
-// by its own session.  It sets level.coop_mission_flow, so _coopmission runs
-// no generic phase; _coopmode stays the rules layer (spawn, damage model, last
-// stand) through three hooks: level.coop_loadout_func,
-// level.coop_player_killed_func and level.coop_actor_killed_func.
-//
-// Coop module (maps/, singleplayer namespace); names no multiplayer module.
+// The category (fs_game / codol_zoneType survival) selects this layer:
+// maps/_survival_gametype -> _survival_mode (rules) -> here.  The level is the
+// unchanged multiplayer zone; the mode's per-map data (player starts, squad
+// locations, kiosks, dog and chopper points) is maps/<level>_survival.gsc's.
+// Names no multiplayer and no coop module.
 //
 // Differences from IW5, on purpose:
 //   * the match ends when every player is down or dead, not at the first
 //     death (four-player rooms); a player who died respawns at the next
 //     intermission, and the downed are picked up at the end of a wave, as in
 //     IW5 survival_wave_pickup_downed_players;
-//   * the actor pool is 32 slots (level.coop_max_alive), so reinforcement
+//   * the actor pool is 32 slots (level.survival_max_alive), so reinforcement
 //     waits for room as IW5's "32 - squad" guard does;
-//   * threat bias groups, the chopper and dog bosses and the air support wait
-//     for the engine work listed in the plan (phase 5).
+//   * threat bias groups, the chopper bosses and the air support wait for the
+//     engine work listed in the plan (phase 5).
 
-is_survival()
-{
-	session = getDvar( "codol_sessionMap" );
-	prefix = "coop_survival_";
-	return session.size > prefix.size && getSubStr( session, 0, prefix.size ) == prefix;
-}
-
-// The map part of the session: coop_survival_mp_fav_tropical -> fav_tropical.
+// The level's short name: mp_fav_tropical -> fav_tropical.
 short_map()
 {
-	session = getDvar( "codol_sessionMap" );
-	prefix = "coop_survival_mp_";
-	if ( session.size > prefix.size && getSubStr( session, 0, prefix.size ) == prefix )
-		return getSubStr( session, prefix.size, session.size );
-	return getSubStr( session, 14, session.size );
+	map = getDvar( "mapname" );
+	if ( map.size > 3 && getSubStr( map, 0, 3 ) == "mp_" )
+		return getSubStr( map, 3, map.size );
+	return map;
 }
 
 // --------------------------------------------------------------------------
-// Init: _coopmode::Callback_StartGameType, the precache window.
+// Init: _survival_mode::Callback_StartGameType, the precache window.
 // --------------------------------------------------------------------------
 
 init()
 {
-	if ( !is_survival() )
-		return;
+	maps\_survival_utility::init();
 
-	level.coop_survival = true;
-	level.coop_mission_flow = "survival";
-	level.coop_mission_owns_groups = true;
-	level.coop_mission_owns_markers = true;
-
-	// IW5 level.wave_table: the map's own table (the session zone ships
-	// mp/survival_waves_<map>.csv), else the mode's.
+	// IW5 level.wave_table: the map's own table (common_gametype_survival
+	// ships mp/survival_waves_<map>.csv for every survival map), else the
+	// mode's tier table.
 	level.survival_type_table = "mp/survival_waves.csv";
 	level.survival_wave_table = "mp/survival_waves_" + short_map() + ".csv";
 	if ( tableLookup( level.survival_wave_table, 2, "1", 3 ) == "" )
@@ -78,7 +63,7 @@ init()
 	for ( i = 1000; i <= 1014; i++ )
 	{
 		key = tableLookup( level.survival_loadout_table, 0, "" + i, 1 );
-		item = coop_item( tableLookup( level.survival_loadout_table, 0, "" + i, 2 ) );
+		item = survival_item( tableLookup( level.survival_loadout_table, 0, "" + i, 2 ) );
 		ammo = tableLookup( level.survival_loadout_table, 0, "" + i, 3 );
 		if ( !isDefined( key ) || key == "" )
 			continue;
@@ -98,19 +83,14 @@ init()
 	if ( level.survival_intermission <= 0 )
 		level.survival_intermission = 30;
 
-	level.coop_loadout_func = ::give_loadout;
-	level.coop_player_killed_func = ::player_killed;
-	level.coop_actor_killed_func = maps\_coopsurvival_ai::on_actor_killed;
-	level.coop_player_damage_func = ::armor_soak;
-
-	maps\_coopsurvival_ai::init();
-	maps\_coopsurvival_kiosk::init();
-	codolprintln( "CoDOL survival: " + getDvar( "codol_sessionMap" ) + ", waves " + level.survival_wave_table );
+	maps\_survival_ai::init();
+	maps\_survival_kiosk::init();
+	codolprintln( "CoDOL survival: " + getDvar( "mapname" ) + ", waves " + level.survival_wave_table );
 }
 
-// The later CoDOL tables name multiplayer weapons; a coop match mounts the
-// _so arsenal of common_gametype_coop (plan section 3.3).
-coop_item( name )
+// The later CoDOL tables name multiplayer weapons; survival carries the _so
+// arsenal (plan section 3.3).
+survival_item( name )
 {
 	if ( !isDefined( name ) || name == "" )
 		return "";
@@ -143,7 +123,7 @@ coop_item( name )
 // Players
 // --------------------------------------------------------------------------
 
-// _coopmode's level.coop_loadout_func: IW5 give_loadout from rows 1000..1014,
+// _survival_mode::spawnPlayer: IW5 give_loadout from rows 1000..1014,
 // in place of the coop class.  Returns the primary for the character.
 give_loadout()
 {
@@ -189,7 +169,7 @@ give_loadout()
 	if ( isDefined( self.survival_bought ) )
 	{
 		for ( i = 0; i < self.survival_bought.size; i++ )
-			self maps\_coopmode::coop_give_weapon( self.survival_bought[ i ], false );
+			self maps\_survival_mode::give_weapon( self.survival_bought[ i ], false );
 	}
 	if ( isDefined( primary ) )
 	{
@@ -199,7 +179,7 @@ give_loadout()
 	return primary;
 }
 
-// _coopmode's level.coop_player_killed_func: no timed respawn; the next
+// _survival_mode::Callback_PlayerKilled: no timed respawn; the next
 // intermission brings him back (respawn_dead).  Returns true when handled.
 player_killed()
 {
@@ -209,7 +189,7 @@ player_killed()
 	return true;
 }
 
-// _coopmode's level.coop_player_damage_func: IW5 player_armor_shield, the
+// _survival_mode::Callback_PlayerDamage: IW5 player_armor_shield, the
 // body armor bought at the support kiosk soaks the hit first.
 armor_soak( damage, attacker, mod )
 {
@@ -325,7 +305,7 @@ anyone_standing()
 
 watch_wipe()
 {
-	level endon( "coop_mission_over" );
+	level endon( "survival_over" );
 	for ( ;; )
 	{
 		wait( 1 );
@@ -350,9 +330,9 @@ game_over()
 	// IW5 congrat_min_wave 5: a run of five waves or more is a success for the
 	// lobby's mission report.
 	if ( survived >= 5 )
-		maps\_coopmission::mission_complete( "survived " + survived + " waves" );
+		maps\_survival_utility::match_over( true, "survived " + survived + " waves" );
 	else
-		maps\_coopmission::mission_failed( "survived " + survived + " waves" );
+		maps\_survival_utility::match_over( false, "survived " + survived + " waves" );
 }
 
 // IW5 survival_wave_pickup_downed_players, and the dead come back.
@@ -370,7 +350,7 @@ end_of_wave_players()
 		if ( isDefined( p.survival_dead ) && p.survival_dead )
 		{
 			p.survival_dead = false;
-			p thread maps\_coopmode::spawnPlayer();
+			p thread maps\_survival_mode::spawnPlayer();
 		}
 		// IW5 survival_credits: the wave bonus (IW5 pays it through the
 		// performance summary; CoDOL's hardline_round_reward is 500).
@@ -385,30 +365,15 @@ end_of_wave_players()
 
 main()
 {
-	if ( !is_survival() )
-		return;
+	level thread maps\_survival_test::main();
+	maps\_survival_squad::setup();
 
-	// _coopmission::main runs its init() in the same frame; wait for it.
-	while ( !isDefined( level.coop_max_alive ) || !isDefined( level.coop_alive ) )
-		wait( 0.05 );
-	cap = getDvarInt( "scr_survival_max_alive" );
-	if ( cap <= 0 )
-		cap = 24;
-	if ( cap > 28 )
-		cap = 28;
-	level.coop_max_alive = cap;
-
-	maps\_coopsurvival_squad::setup();
-
-	while ( maps\_coopmission::living_players().size <= 0 )
+	while ( maps\_survival_utility::living_players().size <= 0 )
 		wait( 0.5 );
-
-	if ( !maps\_coopmission::make_template() )
-		return;
 
 	level thread watch_players();
 	level thread watch_wipe();
-	level thread maps\_coopsurvival_kiosk::main();
+	level thread maps\_survival_kiosk::main();
 
 	// IW5 survival_objective: the objective line ("survive"); objective_add
 	// on this server takes a position, so the text is a hud line.
@@ -443,7 +408,7 @@ objective_text( text )
 
 watch_players()
 {
-	level endon( "coop_mission_over" );
+	level endon( "survival_over" );
 	for ( ;; )
 	{
 		players = getPlayers();
@@ -458,10 +423,10 @@ watch_players()
 
 waves()
 {
-	level endon( "coop_mission_over" );
+	level endon( "survival_over" );
 	for ( ;; )
 	{
-		w = maps\_coopsurvival_ai::get_wave( level.survival_wave_num );
+		w = maps\_survival_ai::get_wave( level.survival_wave_num );
 		if ( !isDefined( w ) )
 		{
 			codolprintln( "CoDOL survival: no wave table; nothing to fight" );
@@ -484,9 +449,9 @@ run_wave( w )
 {
 	level.survival_aggressive = false;
 	scale = w.scale;
-	squads = maps\_coopsurvival_ai::squad_array( w.squad_size );
+	squads = maps\_survival_ai::squad_array( w.squad_size );
 	for ( i = 0; i < squads.size; i++ )
-		maps\_coopsurvival_squad::spawn_squad( w.squad_type, squads[ i ], scale );
+		maps\_survival_squad::spawn_squad( w.squad_type, squads[ i ], scale );
 
 	for ( i = 0; i < w.specials.size; i++ )
 	{
@@ -496,14 +461,7 @@ run_wave( w )
 			count = w.special_counts[ i ];
 		if ( count <= 0 )
 			continue;
-		if ( isSubStr( ref, "dog" ) || isSubStr( ref, "wolf" ) )
-		{
-			// No coop dog species yet (plan 3.2): the dogs' place in the wave
-			// is taken by the wave's own squad type, so the wave keeps its size.
-			codolprintln( "CoDOL survival: " + count + " " + ref + " stand in as " + w.squad_type + " (no coop dog species)" );
-			ref = w.squad_type;
-		}
-		level thread maps\_coopsurvival_ai::spawn_specials( ref, count, scale );
+		level thread maps\_survival_ai::spawn_specials( ref, count, scale );
 	}
 
 	// IW5 reenforcement_squad_spawn( 1, squad[0] ): one more squad of the
@@ -520,14 +478,14 @@ run_wave( w )
 	// Let the spawns land before counting.
 	wait( 3 );
 
-	while ( maps\_coopsurvival_ai::living_enemies().size > 4 )
+	while ( maps\_survival_ai::living_enemies().size > 4 )
 		level waittill_timeout( "survival_axis_died", 1 );
-	maps\_coopsurvival_ai::go_aggressive();
+	maps\_survival_ai::go_aggressive();
 
 	for ( ;; )
 	{
 		pending = isDefined( level.survival_boss_pending ) && level.survival_boss_pending;
-		if ( !pending && maps\_coopsurvival_ai::living_enemies().size == 0 )
+		if ( !pending && maps\_survival_ai::living_enemies().size == 0 )
 			break;
 		level waittill_timeout( "survival_axis_died", 1 );
 		// a straggler the graph stranded far from everyone is removed, as
@@ -545,18 +503,18 @@ waittill_timeout( note, time )
 
 reinforce( w, size, scale )
 {
-	level endon( "coop_mission_over" );
+	level endon( "survival_over" );
 	level endon( "survival_wave_cleared" );
-	start = maps\_coopsurvival_squad::living_leaders().size;
+	start = maps\_survival_squad::living_leaders().size;
 	wait( 5 );
 	for ( ;; )
 	{
 		if ( level.survival_aggressive )
 			return;
-		if ( maps\_coopsurvival_squad::living_leaders().size < start &&
-		     level.coop_alive + size <= level.coop_max_alive )
+		if ( maps\_survival_squad::living_leaders().size < start &&
+		     level.survival_alive + size <= level.survival_max_alive )
 		{
-			maps\_coopsurvival_squad::spawn_squad( w.squad_type, size, scale );
+			maps\_survival_squad::spawn_squad( w.squad_type, size, scale );
 			return;
 		}
 		wait( 0.5 );
@@ -569,23 +527,23 @@ boss_spawn( w, scale )
 	// IW5 spawn_boss: a boss_delay wave waits for the aggressive phase.
 	if ( w.boss_delay )
 	{
-		while ( !level.survival_aggressive && !level.coop_mission_over )
+		while ( !level.survival_aggressive && !level.survival_over )
 			wait( 0.5 );
 	}
-	maps\_coopsurvival_ai::spawn_bosses( w.bosses_ai, scale );
+	maps\_survival_ai::spawn_bosses( w.bosses_ai, scale );
 	level.survival_boss_pending = false;
 }
 
 prune_stragglers()
 {
-	enemies = maps\_coopsurvival_ai::living_enemies();
+	enemies = maps\_survival_ai::living_enemies();
 	if ( enemies.size > 2 )
 		return;
 	now = getTime();
 	for ( i = 0; i < enemies.size; i++ )
 	{
 		e = enemies[ i ];
-		d = maps\_coopmission::nearest_player_distance( e.origin );
+		d = maps\_survival_utility::nearest_player_distance( e.origin );
 		if ( !isDefined( d ) || d < 1500 )
 		{
 			e.survival_far_since = undefined;
@@ -596,7 +554,7 @@ prune_stragglers()
 		else if ( now - e.survival_far_since > 45000 )
 		{
 			codolprintln( "CoDOL survival: a straggler at " + e.origin + " (" + int( d ) + " away) is removed" );
-			maps\_coopmission_defense_crash::remove_actor( e );
+			maps\_survival_utility::remove_actor( e );
 		}
 	}
 }
@@ -606,7 +564,7 @@ prune_stragglers()
 // "skip"; the notify is the same).
 intermission()
 {
-	level endon( "coop_mission_over" );
+	level endon( "survival_over" );
 	level.survival_in_intermission = true;
 	level notify( "survival_intermission" );
 	total = level.survival_intermission;
