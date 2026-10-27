@@ -253,6 +253,93 @@ static const void *PiC1Find(unsigned type, const char *name)
     return NULL;
 }
 
+/* C1 WeaponDef (loader 0x4c3c20, 0xBFC bytes): the pointer slots of the server's codol_c1_weapon.c / the
+ * replay_weapon field table: 1 string, 2 sound, 3 31-entry sound array, 4 asset (compared by the name every
+ * C1 asset header starts with), 5 graph points. Script-string handle arrays are skipped (9). */
+static const struct { unsigned offset, count, kind; } kWeaponSlots[] = {
+    {0,4,1},{0x10,11,4},{0x7c,144,1},{0x35c,2,4},{0x364,53,2},{0x438,2,3},{0x440,4,4},{0x450,2,4},{0x52c,6,4},
+    {0x548,1,4},{0x550,1,4},{0x564,1,1},{0x56c,1,1},{0x57c,1,1},{0x684,4,4},{0x758,1,4},{0x7b0,1,4},{0x7b8,2,4},
+    {0x7c0,2,2},{0x8cc,2,4},{0x8ec,1,4},{0x8f0,1,2},{0x9a0,1,1},{0x9a8,1,5},{0x9a4,1,1},{0x9ac,1,5},{0x9fc,2,1},
+    {0xa20,2,1},{0xaa0,2,1},{0xaa8,1,4},{0xac4,1,2},{0xac8,1,4},{0xacc,1,1},{0xadc,9,2},{0xb00,2,2},{0xb48,6,2},
+    {0xb78,1,1},{0xb84,2,1},{0xb90,3,4},{0xbb4,2,5}
+};
+static unsigned PiWeaponKind(unsigned off)
+{
+    /* script-string handles, which belong to the holder's string table: the 32 hide tags at +0x3c and the four
+     * 16-entry name maps at +0x2bc..+0x33b (C1 converts them to its own handles at load) */
+    if ((off >= 0x3c && off < 0x7c) || (off >= 0x2bc && off < 0x33c)) return 9;
+    /* Runtime registrations C1 writes into the pool record once a match registers its weapons (measured in a
+     * match, 0 before): the ammo index +0x568, clip index +0x570 and shared ammo cap index +0x580, each beside
+     * its name slot (+0x564/+0x56c/+0x57c). Loaded data is 0 there. */
+    if (off == 0x568 || off == 0x570 || (off >= 0x580 && off < 0x584)) return 8;
+    for (unsigned i = 0; i < sizeof(kWeaponSlots) / sizeof(kWeaponSlots[0]); i++)
+        if (off >= kWeaponSlots[i].offset && off < kWeaponSlots[i].offset + 4 * kWeaponSlots[i].count) return kWeaponSlots[i].kind;
+    return 0;
+}
+/* The name a C1 asset header starts with (both sides hold records whose first word is the name). */
+static const char *PiAssetName(const void *p)
+{
+    if (!p || !Readable(p, 4)) return NULL;
+    const char *n = *(const char *const *)p;
+    return n && Readable(n, 1) ? n : NULL;
+}
+static BOOL PiWeaponEq(PiCheck *k, const char *name, const BYTE *s, const BYTE *c)
+{
+    char what[200];
+    if (!Readable(s, 0xbfc) || !Readable(c, 0xbfc)) { PiDiff(k, name, "unreadable record"); return FALSE; }
+    for (unsigned off = 0; off < 0xbfc; ) {
+        unsigned kind = PiWeaponKind(off);
+        if (!kind) {
+            if (s[off] != c[off]) {
+                unsigned a = off & ~3u;
+                _snprintf(what, sizeof(what), "byte +0x%03X: %02X vs C1 %02X (dword +0x%03X %08lX vs C1 %08lX)", off, s[off], c[off],
+                          a, (unsigned long)*(const DWORD *)(s + a), (unsigned long)*(const DWORD *)(c + a));
+                if (k->reported < 20) { char ranges[400]; int used = 0; unsigned n = 0, q = off;
+                    ranges[0] = 0;
+                    while (q < 0xbfc) {
+                        if (PiWeaponKind(q) || s[q] == c[q]) { q++; continue; }
+                        unsigned st = q; while (q < 0xbfc && !PiWeaponKind(q) && s[q] != c[q]) q++;
+                        n += q - st;
+                        if (used < 360) used += _snprintf(ranges + used, sizeof(ranges) - used, " %03X-%03X", st, q - 1);
+                    }
+                    Log("p2passetcheck: %s: %u scalar bytes differ:%s", name, n, ranges); }
+                PiDiff(k, name, what);
+                return FALSE;
+            }
+            off++;
+            continue;
+        }
+        if (kind == 9) { off += 2; continue; }
+        if (kind == 8) { off += 1; continue; }
+        const void *sp = *(const void *const *)(s + off), *cp = *(const void *const *)(c + off);
+        BOOL eq = TRUE;
+        const char *sn = NULL, *cn = NULL;
+        if (kind == 1) { sn = sp && Readable(sp, 1) ? sp : NULL; cn = cp && Readable(cp, 1) ? cp : NULL; eq = PiStrEq(sn, cn); }
+        else if (kind == 2 || kind == 4) { sn = PiAssetName(sp); cn = PiAssetName(cp); eq = (!sp == !cp) && PiStrEq(sn, cn); }
+        else if (kind == 3) {
+            if (!sp != !cp) eq = FALSE;
+            else if (sp && Readable(sp, 124) && Readable(cp, 124))
+                for (unsigned i = 0; i < 31 && eq; i++) {
+                    const void *a = ((const void *const *)sp)[i], *b = ((const void *const *)cp)[i];
+                    sn = PiAssetName(a); cn = PiAssetName(b);
+                    eq = (!a == !b) && PiStrEq(sn, cn);
+                }
+        } else if (kind == 5) {
+            unsigned count = *(const unsigned short *)(c + (off == 0x9a8 || off == 0xbb4 ? 0xbb0 : 0xbb2));
+            if (!sp != !cp) eq = FALSE;
+            else if (sp && count && (!Readable(sp, 8 * count) || !Readable(cp, 8 * count) || memcmp(sp, cp, 8 * count))) eq = FALSE;
+        }
+        if (!eq) {
+            _snprintf(what, sizeof(what), "slot +0x%03X kind %u: %s vs C1 %s", off, kind, sn ? sn : (sp ? "(set)" : "null"),
+                      cn ? cn : (cp ? "(set)" : "null"));
+            PiDiff(k, name, what);
+            return FALSE;
+        }
+        off += 4;
+    }
+    return TRUE;
+}
+
 static Sh1xFindAssetFn g_paFind;
 static unsigned g_paType;
 
@@ -283,7 +370,7 @@ static int __cdecl PiCheckOne(void *ctx, const char *name)
     const void *c = PiC1Find(g_paType, name);
     if (!c) { k->c1Missing++; return 1; }
     BOOL eq = g_paType == 11 ? PiSoundEq(k, name, s, c) : g_paType == 36 ? PiRawFileEq(k, name, s, c) :
-              g_paType == 37 ? PiStringTableEq(k, name, s, c) : FALSE;
+              g_paType == 37 ? PiStringTableEq(k, name, s, c) : g_paType == 28 ? PiWeaponEq(k, name, s, c) : FALSE;
     if (eq) k->equal++; else k->differ++;
     return 1;
 }
@@ -310,7 +397,7 @@ static void __cdecl PiCmdAssetCheck(void)
     g_paFind = (Sh1xFindAssetFn)(void *)GetProcAddress(m, "Sh1xHost_FindAsset");
     Sh1xEnumAssetsFn enumerate = (Sh1xEnumAssetsFn)(void *)GetProcAddress(m, "Sh1xHost_EnumerateAssets");
     if (!g_paFind || !enumerate) { C1Printf("p2passetcheck: the server DLL has no asset API (needs feat/iw4-asset-layout)\n"); return; }
-    if (type != 11 && type != 36 && type != 37) { C1Printf("p2passetcheck: type %u is not converted yet (11 sound, 36 rawfile, 37 stringtable)\n", type); return; }
+    if (type != 11 && type != 28 && type != 36 && type != 37) { C1Printf("p2passetcheck: type %u is not converted yet (11 sound, 28 weapon, 36 rawfile, 37 stringtable)\n", type); return; }
     g_paType = type;
     PiCheck k;
     memset(&k, 0, sizeof(k));
