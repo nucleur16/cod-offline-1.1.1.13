@@ -315,6 +315,32 @@ nothing. `Kernel33.log` gets `discord:` lines for connection changes and each ne
 With this DLL installed the launcher should stop starting `CoDOLPresence.exe`, or both publish for the
 same process.
 
+## Survival category (`survival_category.c`)
+C1 1.1.1.13 knows three match categories, mp, coop and zm. The category is the string the client gets with a map
+(`preloadmap <map> <category>` from the room, line 2 of the server's `loadingnewmap`, the gamestate's type). Kernel33
+adds a fourth, **`survival`** (exact, any case), modelled on CoDOL 2.6.9.7's native survival:
+- **Zones.** The zone-list builder 0x4CCDF0 loads `patch_common_gametype_survival`, `common_gametype_survival`,
+  `patch_localized_common_gametype_survival` and `localized_common_gametype_survival` (alloc flags 4, C1's order;
+  missing `patch_` zones only print), then the map's own zones as for mp: `patch_<map>`, `<map>`, `ffotd_client`.
+  No common_gametype_coop and no coop session zone. The loading-bar estimate 0x4B6380 counts no gametype zone for it
+  (the survival zones have no stock size).
+- **Constant configstrings.** 0x612850 loads `mp/constConfigStrings_survival.csv` in place of the mp table. It ships in
+  `codol_common` (source zone `codol_survival_category`): a copy of 1.1.1.13's `mp/constconfigstrings_coop.csv`
+  (1803 rows). 2.6.9.7's own survival table is in 2.6.9.7's configstring layout, 72 slots off C1's in every section,
+  so it cannot be used. The config string checksum of this table is not C1's VM checksum (0x83B094E, which nobody
+  has reproduced) but CRC-32 (zlib `crc32`) over every cell followed by a NUL, row-major
+  (`survival_category_policy.h`). The server computes the same from the same CSV: **0x62BD78F1** for the shipped
+  table. When no loaded zone has the table, C1's default table and checksum stay, and the server refuses the match.
+- Every other category string runs C1's code unchanged: `tests/test_survival_category_x86.py` runs 0x4CCDF0,
+  0x4B6380 and 0x612850 stock and patched in Unicorn over 17 categories, 4 maps and 6 loaded-zone states and
+  compares the zone lists, flags, size estimate, table, checksum and registers (`K33_C1_EXE=<C1.exe> sh
+  tests/run_tests.sh`).
+- `+set codol_survival 0` on the command line installs nothing. `Kernel33.log` says `survival category: ...`.
+- The rest of a survival client is data: `common_gametype_survival` must carry the animlists that serverinfo 2482
+  asks for (`animlists/common_actor_shared`, `common_human`, `common_dog`, as 2.6.9.7's does) and the survival
+  menus. The cgame, UI and room code test `g_gametype` / the room gametype for "coop" and "zm" on their own; this
+  change does not touch them.
+
 ## Patch zones (`zones/`, `zone_source/`, `build_zones.py`)
 Every patch zone this project installs next to the stock game, as editable sources, built into `output/` by one
 script. (The ported usermap map zones themselves, mp_*.ff / zm_sumpf_sh.ff, are not part of this repository; they
@@ -388,7 +414,7 @@ The source zones under `zone_source/` + `zones/` stay as they are (each with its
 
 | installed zone | list | languages | source zones (old installed names) |
 |---|---|---|---|
-| codol_common | ahead of code_pre_gfx | both | 000_codol_party_modes, codol_loading_mode_names, codol_zm_deathmachine_audio, controller_ingame, usermaps_patch (all but its strings) |
+| codol_common | ahead of code_pre_gfx | both | 000_codol_party_modes, codol_loading_mode_names, codol_survival_category, codol_zm_deathmachine_audio, controller_ingame, usermaps_patch (all but its strings) |
 | codol_common_ui_mp | ahead of the UI zones | both | voice_ui_mp, usermaps_ui_mp |
 | codol_common_postgfx_mp | after code_post_gfx | both | codol_field_orders_postgfx_mp, controller_glyphs_postgfx_mp |
 | codol_english_locale | ahead of code_pre_gfx | `k33_english 1` | codol_english, codol_english_font, codol_english_ui, codol_english_ui_extra, codol_english_usermaps, codol_english_zombies_base |

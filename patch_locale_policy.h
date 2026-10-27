@@ -53,6 +53,7 @@ static int CodolPatchZoneRetired(const char *name)
 static const char *const kCodolPatchZoneMerged[][2]={
  {"000_codol_party_modes","codol_common"},
  {"codol_loading_mode_names","codol_common"},
+ {"codol_survival_category","codol_common"},
  {"codol_zm_deathmachine_audio","codol_common"},
  {"controller_ingame","codol_common"},
  {"usermaps_patch","codol_common"},

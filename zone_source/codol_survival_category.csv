@@ -1,0 +1,15 @@
+// codol_survival_category -- built by build_zones.py from zones/codol_survival_category/ (zonekit/manifest.py describes the format)
+// The survival match category's constant configstring table (Kernel33 survival_category.c selects it for the category
+// "survival"). Derived from 1.1.1.13's mp/constconfigstrings_coop.csv (code_post_gfx_mp), whose index layout is C1's.
+>zone,codol_survival_category
+>install,client_shipRetail\patch
+>origin,new
+>origin-md5,3a0f849f640cf08ef006a28e70413f49
+>container,iwffu100
+>filetime,0x01dd65d2,0xb8cf1a00
+>rsa,9d755c0b71c091c4b910af48274d959e09d4bb8a87f5188fdfddf046d4db0c536a06ed5707607b34c4735c3ea0d2e35c1d32a2cc5b2a4fe83f97816d83df2beb562efea0587360566ed66f32dc96b20b5492c85f9044b8fe69703999a827735ce49ea4fefb8bda9dc2c28a4650924a0c2cc5d9d13bf823db7911ef5f27f98f117830f493910961ec9c2e955e78b1e7c916633129e07b860d5e2f7f444a44d4c1bd97af49fe70df622318576c30579c064fcc3c55a9786843ab0dfb460d845838c0caf2498ddf061f811e1d73218cb30f1ece70402d0dc61b9260e7f9815ea70d4ae47c4359324993ef4f199d2048ae35aef93d22000d9ab85f64242dc302fd2b
+>zlib,9
+>blocks,0x0,0x20,0x0,0x0,auto,0x0,0x0,0x0,0x0
+>xassetlist,0x0,0xffffffff
+rawfile,codol_survival_category
+stringtable,mp/constconfigstrings_survival.csv,columns=2
