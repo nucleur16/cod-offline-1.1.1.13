@@ -1447,6 +1447,8 @@ static void PatchGbkInput(void)
 #include "name_display.c"
 /* Player-hosted matches: the sh1x server as a child of the host's client (p2p.c, docs/P2P_HOSTING.md). */
 #include "p2p.c"
+/* The sh1x server inside the client, on the game thread (p2p_inproc.c, feat/p2p-inprocess). */
+#include "p2p_inproc.c"
 /* UDP only with lobby-vouched hosts (hostgate.c): the P2P trust requirement. */
 #include "hostgate.c"
 
@@ -1496,6 +1498,7 @@ static void __cdecl TakeOver(void)
     InstallQuickRoom();
     InstallTheatre();
     InstallNameDisplay();
+    InstallP2PInproc();   /* before InstallP2PHost: +set k33_p2pHost 1 starts a session at once */
     InstallP2PHost();
     K33InstallMainTicks(); /* last: chains in front of voice.c's and discord.c's tick hooks */
     Log("entering game at 0x%08X", GAME_ENTRY_VA);

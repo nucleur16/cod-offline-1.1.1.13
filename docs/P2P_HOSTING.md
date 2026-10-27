@@ -50,6 +50,13 @@ Before anything wider than "the lobby vouches for the host": verify or replace t
 (Kernel33 can pre-validate `svc_gamestate` the way `voice.c` re-implements the `"v"` packet),
 audit rows 15-17, and refuse downloads (row 18) from player hosts.
 
+## Architecture decision (2026-10-27)
+
+The user chose **in-process hosting** (option (b) below, run like a listen server). The sh1x server runs inside
+the host's client on C1's game thread, with no second process or window. Stage 1's child process (option (a))
+stays available as `mode = child` in `p2p_host.ini`. The costs listed under (b) are handled as described in
+"In-process hosting" below, not by going back to (a).
+
 ## Options
 
 ### (a) Kernel33 starts the native server as a child of the host's client (recommended)
@@ -70,7 +77,7 @@ they connect to a dedicated server today.
   and loads the zones a second time. The host's PC carries both. That is acceptable for a host
   who opted in; the lobby can refuse hosts below a memory or CPU floor.
 
-### (b) The server as a DLL or static library loaded into C1
+### (b) The server as a DLL or static library loaded into C1 (chosen; see "In-process hosting")
 
 Both are 32-bit MinGW/MSVC x86, so a DLL is technically loadable. It would run on its own thread.
 It is not recommended for now:
@@ -281,3 +288,91 @@ reach the user's lobby; those probes are stateless.
 Not measured: a host on another machine (refused by design until stage 2), NAT and UPnP mapping,
 the release build (`build.sh`) in a client (it compiles and links), and a host machine with less
 memory.
+
+## In-process hosting (branch `feat/p2p-inprocess`)
+
+`p2p_inproc.c` plus the server's host API (server branch `feat/p2p-inprocess`). `mode = inprocess` is the default.
+
+### How it runs
+- **Server build.** The server repo's makefile target `host-dll` links the dedicated server's objects as
+  `sh1x_host.dll`. Its API (`src/win32/sys_host.c`):
+  - `Sh1xHost_Init(cmdline)`: Sys_Main's start-up without the loop.
+  - `Sh1xHost_Frame()`: one `Com_Frame`.
+  - `Sh1xHost_Command(text)`.
+  - `Sh1xHost_ExitCode()`.
+- **Loading.** Kernel33 copies the DLL to `%TEMP%\k33_sh1x_host_<pid>_<n>.dll` and loads that copy, so each
+  session gets fresh globals. The client's own import table is untouched, and the hostgate does not see the
+  server's sockets: the server has its own Winsock imports.
+- **Ticking.** The server is ticked on the game thread from C1's `Com_EventLoop` call (0x595E9D, chained behind
+  voice and discord). It is also ticked, throttled to every 2 ms, from C1's `Sleep`, `SleepEx` and
+  `PeekMessageA` import slots.
+  - The extra tick sources are required. Without them, C1's own map load (`DB_LoadXFile`, 22 s on
+    mp_killhouse_sh) and its connect phase starve the server.
+  - The first test without them failed: the host's NAT-traversal handshake to its own server timed out
+    ("Unable to connect to host").
+  - With them, the longest gap between ticks while the host loaded the map and connected was 745 ms. No gap
+    exceeded 1 s.
+- **Stack.** The server runs on its own fiber (32 MB reserve). C1's main thread reserves 640 KB, and one server
+  frame overflowed a 2 MB stack in a harness (0xC00000FD).
+- **Floating point.** The fiber is created with `FIBER_FLAG_FLOAT_SWITCH`, so the server's `Sys_SetFloatEnv`
+  stays on its own fiber. The tick also restores the client's x87 control word and MXCSR.
+
+### Containment
+
+| cost | how it is handled | measured |
+|---|---|---|
+| exit / ExitProcess / Sys_Error | the host API turns every engine exit into an end of the server: a longjmp back into the running `Sh1xHost_*` call (server repo change) | `p2pstop` ended the server in 1.75 s and freed udp/17760; the client stayed responsive. A `Sys_Error` (PMem_Init, see below) ended only the server |
+| global exception handlers | the hosted server never installs its crash filter (only WinMain does). Kernel33's vectored handler catches AV, stack overflow, illegal or privileged instruction and integer divide raised on the server fiber in sh1x_host.dll or msvcrt.dll, moves execution onto a rescue stack and switches back to the client's fiber | `p2pfaulttest` (test clients only) made the server read address 1 in `Cbuf_AddText`. Result: `server fault 0xC0000005 ... contained`; the client kept running and logging |
+| watchdogs, console window, error dialog | hosted: no shutdown or load watchdog, which would `_exit` or interrupt the game thread; no win32 console window; no 60 s error dialog wait; `NET_Sleep` polls | no window or extra process seen; the server listens inside the client's pid |
+| globals | each session is a fresh copy of the DLL's .data/.bss | first session ran 20 min |
+| heap | the server allocates through msvcrt.dll and VirtualAlloc, never C1's static CRT heap | - |
+| address space | `codoMP_client_shipRetail.exe` already has LARGE_ADDRESS_AWARE (characteristics 0x122), so the process gets 4 GB on 64-bit Windows; no change was needed | see memory below |
+
+### Measured (2026-10-27, k33-p2ptest, offline lobby copy on 3174, mp_killhouse_sh)
+- **Startup.** `+set k33_p2pHost 1`: `Sh1xHost_Init` took 2.3 s on the game thread. The server answered
+  `sh1x_status` 17.5 s after the session started (the client was loading in parallel), and the lobby
+  registration worked as in stage 1.
+- **Host joins.** The host pressed Ready; the lobby switched the in-process server to `combat`. That switch is
+  one 4.6 s server frame on the game thread. The host connected (`p2phost num 2`).
+- **Second client joins.** A second local client (`p2pjoin`) joined through the lobby
+  (`joining :17760 ... (1 other player(s))`).
+- **Both playing.** rcon `status` every 10 s for 90 s: both active, ping 8-14 ms, last message 0-34 ms.
+- **Game-thread cost of the server**, over 30 s windows:
+
+  | state | mean per tick | max per tick | ticks per 30 s |
+  |---|---|---|---|
+  | idle, at the menu | 30 µs | 6-9 ms | about 38,000 |
+  | 2 players + 2 bots | 184-270 µs | 7-29 ms | 8,000-16,000 |
+  | map loads | - | 4.6-5.6 s (one frame) | - |
+
+- **Memory of the host process, in a match with 2 players**: private 3,113 MB, virtual 3,671 MB of the 4,096 MB
+  that LARGE_ADDRESS_AWARE allows. The joiner (no server) used 1,777 MB private and 2,266 MB virtual. At the
+  menu, the session took the host from 160 MB to 2,366 MB private (the client was loading at the same time).
+  - The server's share is about 1.3 GB:
+    - .bss, about 323 MB (IW3 static arrays);
+    - PMem, a 328 MB block committed at once;
+    - hunk and zone memory, and the assets it loads itself.
+  - **Headroom is about 400 MB.** A larger map than mp_killhouse_sh can exhaust the address space.
+- **Re-hosting in the same client fails.** After `p2pstop`, a second `p2phost` failed cleanly:
+  `Sys_Error: PMem_Init(): not enough virtual memory within a single block available` (contained). The first
+  session's DLL copy, its 328 MB PMem block and its hunk are not released. Hosting again currently needs a
+  client restart.
+
+### Not done yet / next steps
+1. **Reuse the zones and assets the client already loaded.**
+   - Not done. The server's loader (`db_load.cpp`) builds IW3-layout xassets in its own memory. C1's are
+     IW4-layout structures in C1's pools.
+   - Sharing them means pointing the server's asset accessors (`DB_FindXAssetHeader` users: weapons, models,
+     collision maps, rawfiles, string tables) at C1's loaded pools through layout adapters. That is a large
+     reverse-engineering job.
+   - The cheaper first win is memory: size PMem and the hunk to what the hosted map needs, instead of a fixed
+     328 MB block.
+2. **Release a session's memory** so the same client can host again:
+   - VirtualFree PMem and the hunk on a hosted exit;
+   - stop the server's log and capture threads;
+   - FreeLibrary the copy.
+   This needs a `Sh1xHost_Shutdown` in the server repo.
+3. **Map loads hold the client's frame for 4-6 s.** A listen server has the same limit, so the load screen
+   covers it. Moving the zone load off the game thread is the fix if that matters.
+4. **Faults outside sh1x_host.dll and msvcrt.dll are not contained.** For example, a fault in ntdll's heap code
+   after server heap corruption. After a contained fault the session's port stays bound until the client exits.

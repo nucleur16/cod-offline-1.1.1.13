@@ -43,6 +43,8 @@ typedef struct P2PConfig {
     char rollout[MAX_PATH];      /* optional: the lobby's match_rollout.txt */
     char map[64], gametype[32], zoneType[8], sessionMap[64];
     char netIp[64], botDifficulty[16], extra[512];
+    char mode[16];               /* inprocess (default): sh1x_host.dll on the game thread; child: the exe */
+    char dll[MAX_PATH];          /* the server as a DLL (mode inprocess) */
     int port, bots, admission, developer, readyTimeout;
 } P2PConfig;
 
@@ -60,6 +62,8 @@ static BOOL g_p2pInit;
 static HANDLE g_p2pThread;
 static volatile LONG g_p2pStop;
 static char g_p2pArgMap[64], g_p2pArgGametype[32], g_p2pArgZone[8];
+struct P2PConfig;
+static int P2PInprocRun(const struct P2PConfig *c, const char *password, const char *args); /* p2p_inproc.c */
 
 static void P2PSetState(int state, const char *error)
 {
@@ -106,7 +110,10 @@ static void P2PDefaults(P2PConfig *c)
     _snprintf(c->dir, MAX_PATH, "%s\\p2p", root);
     _snprintf(c->exe, MAX_PATH, "%s\\k33p2p_dedrun.exe", c->dir);
     _snprintf(c->home, MAX_PATH, "%s\\home", c->dir);
-    _snprintf(c->scripts, MAX_PATH, "%s\\home\\codol_rawfiles", c->dir);
+    _snprintf(c->dll, MAX_PATH, "%s\\sh1x_host.dll", c->dir);
+    /* The GSC tree installed with the client (main\sh1x_rawfiles, docs/P2P_HOSTING.md). */
+    _snprintf(c->scripts, MAX_PATH, "%s\\main\\sh1x_rawfiles", root);
+    lstrcpyA(c->mode, "inprocess");
     _snprintf(c->state, MAX_PATH, "%s\\state", c->dir);
     _snprintf(c->profile, MAX_PATH, "%s\\resources", c->dir);
     lstrcpyA(c->map, "mp_killhouse_sh");
@@ -144,6 +151,7 @@ static void P2PLoadIni(P2PConfig *c)
             { "zone_type", c->zoneType, sizeof(c->zoneType) }, { "session_map", c->sessionMap, sizeof(c->sessionMap) },
             { "net_ip", c->netIp, sizeof(c->netIp) }, { "bot_difficulty", c->botDifficulty, sizeof(c->botDifficulty) },
             { "extra", c->extra, sizeof(c->extra) },
+            { "mode", c->mode, sizeof(c->mode) }, { "dll", c->dll, MAX_PATH },
         };
         struct { const char *k; int *dst; } ints[] = {
             { "port", &c->port }, { "bots", &c->bots }, { "admission_required", &c->admission },
@@ -172,7 +180,11 @@ static const char *P2PCheck(const P2PConfig *c)
     if (!P2PPathOk(c->exe) || !P2PPathOk(c->basepath) || !P2PPathOk(c->home) || !P2PPathOk(c->scripts) ||
         !P2PPathOk(c->state) || !P2PPathOk(c->profile) || !P2PPathOk(c->rconFile) || !P2PPathOk(c->rollout))
         return "a path holds a quote";
-    if (GetFileAttributesA(c->exe) == INVALID_FILE_ATTRIBUTES) return "server executable not found (exe=)";
+    BOOL inproc = !_stricmp(c->mode, "inprocess");
+    if (!inproc && _stricmp(c->mode, "child")) return "mode must be inprocess or child";
+    if (!P2PPathOk(c->dll)) return "a path holds a quote";
+    if (inproc && GetFileAttributesA(c->dll) == INVALID_FILE_ATTRIBUTES) return "server DLL not found (dll=)";
+    if (!inproc && GetFileAttributesA(c->exe) == INVALID_FILE_ATTRIBUTES) return "server executable not found (exe=)";
     char probe[MAX_PATH + 64];
     _snprintf(probe, sizeof(probe), "%s\\maps\\mp\\gametypes\\_callbacksetup.gsc", c->scripts);
     probe[sizeof(probe) - 1] = 0;
@@ -399,6 +411,7 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
     }
 
     static char cmd[8192];
+    BOOL inproc = !_stricmp(c.mode, "inprocess");
     _snprintf(cmd, sizeof(cmd),
         "\"%s\" +set dedicated 2 +set fs_basepath \"%s\" +set fs_homepath \"%s\" +set net_ip %s +set net_port %d "
         "+set rcon_password \"%s\" +set logfile 2 +set logrcon 1 +set developer %d +set sv_fps 60 "
@@ -409,8 +422,15 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
         "+codol_scriptPath +codol_scriptOverlay +codol_scriptNativeOverlay +map %s %s",
         c.exe, c.basepath, c.home, c.netIp, c.port, password, c.developer, c.scripts, c.scripts, c.scripts,
         c.state, c.state, c.admission ? 1 : 0, c.profile, c.zoneType, c.sessionMap[0] ? c.sessionMap : c.map,
-        c.gametype, c.bots, c.botDifficulty, GetCurrentProcessId(), c.map, c.extra);
+        c.gametype, c.bots, c.botDifficulty, inproc ? 0ul : GetCurrentProcessId(), c.map, c.extra);
     cmd[sizeof(cmd) - 1] = 0;
+    if (inproc) {
+        /* The same command line without the exe: Sh1xHost_Init takes what follows it. */
+        const char *args = strchr(cmd + 1, '"');
+        int r = P2PInprocRun(&c, password, args ? args + 2 : cmd);
+        WSACleanup();
+        return r;
+    }
 
     HANDLE job = CreateJobObjectA(NULL, NULL);
     if (job) {

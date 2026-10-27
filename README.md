@@ -38,6 +38,13 @@ result to `../Kernel33.dll` (`K33_NO_COPY=1` leaves it in this folder). Needs li
 SDL2.dll dependency.
 
 ## Player-hosted matches (branch `feat/p2p-hosting`)
+Since `feat/p2p-inprocess` the server runs **inside the client** by default (`mode = inprocess`):
+`p2p_inproc.c` loads the server's `sh1x_host.dll` (server makefile target `host-dll`) and ticks it on the game
+thread, on its own fiber, with exits and faults contained. `mode = child` runs the separate process as before.
+`build-server.sh` stages an install-shaped tree: `p2p\sh1x_host.dll`, `p2p\k33p2p_dedrun.exe`,
+`p2p\home\main\sh1x_svr_scripts.iwd` and the GSC tree as `main\sh1x_rawfiles\` (p2p.c's default `scripts=`).
+Details and measurements: `docs/P2P_HOSTING.md`, "In-process hosting".
+
 `p2p.c` lets a player host a match from the client: the sh1x match server runs as a child of the
 host's client (`p2phost [map] [gametype] [zonetype]`, `p2pstop`, `p2pstatus`, or `+set k33_p2pHost 1`;
 settings in `p2p\p2p_host.ini`). `hostgate.c` lets the client exchange UDP only with loopback, the lobby
