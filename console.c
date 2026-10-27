@@ -41,6 +41,7 @@
 
 #define COBJMACROS
 #include <ctype.h>
+#include <math.h>
 #include <d3d9.h>
 #include "c1_dvars.h"
 
@@ -95,7 +96,7 @@ typedef struct {
     char name[80];   /* what Tab inserts */
     char value[72];
     char info[100];
-    BYTE kind;       /* 0 dvar, 1 command */
+    BYTE kind;       /* 0 dvar, 1 command, 2 sh1x developer command or argument */
     BYTE prefix;
 } ConSuggest;
 static ConSuggest g_sugg[CON_SUGGEST];
@@ -373,10 +374,213 @@ static BOOL ConIsSetCommand(const char *t)
            !_stricmp(t, "togglep") || !_stricmp(t, "setfromdvar") || !_stricmp(t, "sets") || !_stricmp(t, "setu");
 }
 
+/* ---- sh1x developer commands (feat/dev-cheat-commands) ------------------------------------------------
+ *
+ * The cheat commands live on the server (sh1x codol_dev_cheats.c, g_cmds.c). C1 has none of them, so
+ * Cmd_ExecuteString (0x58CB16) hands an unknown word to CL_ForwardCommandToServer 0x494CE0, which
+ * sends it as a reliable client command while connected (connection state >= 5): typing "noclip" here
+ * already reaches the server. This table only gives them autocomplete, argument hints and help. They
+ * work only on a developer server started with devmap (sv_cheats 1, not a lobby match server).
+ *
+ * Server console commands go through "rcon <command>", a console built-in: one rcon datagram to
+ * 127.0.0.1 only (the connected server's port when it is local, else k33_rconPort, default 17733),
+ * with the password from the first of main\k33_rcon.txt, the p2p host's rcon file and the local
+ * lobby's CODOL\1.1.1.13_server\alpha0022\native_server_rcon.txt that the server accepts. The reply
+ * prints here. A remote server is never contacted: this is for the player who hosts the server. */
+
+typedef struct { const char *name, *usage, *help; } ConDevCmd;
+static const ConDevCmd kDevCmds[] = {
+    { "noclip", "noclip", "fly through walls (C1 pm_type 2; server and prediction run the same free move)" },
+    { "ufo", "ufo", "fly, 6x speed (C1 pm_type 3)" },
+    { "god", "god", "take no damage" },
+    { "demigod", "demigod", "damage never takes the last health point" },
+    { "notarget", "notarget", "bots, actors and turrets ignore you" },
+    { "kill", "kill", "die now (respawn as normal)" },
+    { "give", "give <weapon [model]|health [n]|ammo|all>", "give a weapon (engine or *composed name) and switch to it, or refill" },
+    { "take", "take <weapon|weapons|health [n]|ammo|all>", "remove a weapon, all weapons, ammo or health" },
+    { "setviewpos", "setviewpos <x> <y> <z> [yaw [pitch]]", "teleport" },
+    { "viewpos", "viewpos", "print your position and angles as a setviewpos line" },
+    { "devset", "devset <dvar> <value>", "server movement/bot dvar: jump_height g_speed g_gravity timescale ..." },
+    { "addbot", "addbot [n]", "add training bots (scr_codol_bots)" },
+    { "kickbot", "kickbot [n|all]", "remove training bots" },
+    { "devhelp", "devhelp", "the server's list and whether cheats are on" },
+    { "rcon", "rcon <server command>", "console built-in: run a command on the local server (map, devmap, status, kick ...)" },
+    { "k33dev", "k33dev", "console built-in: this list" },
+};
+#define DEV_CMD_COUNT (sizeof(kDevCmds) / sizeof(kDevCmds[0]))
+
+static const char *const kArgRcon[] = { "status", "devmap", "map", "map_restart", "fast_restart", "map_rotate",
+    "kick", "clientkick", "tempban", "say", "tell", "dumpuser", "serverinfo", "sh1x_status", "dev_cheats",
+    "dev_clientcmd", "sv_botStop", "scr_codol_bots", "sv_botDifficulty", "g_speed", "g_gravity", "jump_height",
+    "timescale", "g_gametype", NULL };
+static const char *const kArgDevset[] = { "jump_height", "g_speed", "g_gravity", "timescale", "player_sprintSpeedScale",
+    "bg_fallDamageMinHeight", "bg_fallDamageMaxHeight", "sv_botStop", "scr_codol_bots", "sv_botDifficulty", NULL };
+static const char *const kArgGive[] = { "health", "ammo", "all", NULL };
+static const char *const kArgTake[] = { "weapons", "health", "ammo", "all", NULL };
+static const char *const kArgKickbot[] = { "all", NULL };
+typedef struct { const char *cmd; const char *const *args; } ConDevArgs;
+static const ConDevArgs kDevArgs[] = {
+    { "rcon", kArgRcon }, { "devset", kArgDevset }, { "give", kArgGive }, { "take", kArgTake }, { "kickbot", kArgKickbot },
+};
+
+static const ConDevCmd *ConDevFind(const char *name)
+{
+    for (unsigned i = 0; i < DEV_CMD_COUNT; i++)
+        if (!_stricmp(kDevCmds[i].name, name)) return &kDevCmds[i];
+    return NULL;
+}
+
+static const char *const *ConDevArgList(const char *cmd)
+{
+    for (unsigned i = 0; i < sizeof(kDevArgs) / sizeof(kDevArgs[0]); i++)
+        if (!_stricmp(kDevArgs[i].cmd, cmd)) return kDevArgs[i].args;
+    return NULL;
+}
+
+static void ConDevDetail(const ConDevCmd *c)
+{
+    int k = 0;
+    _snprintf(g_detail[k++], 200, "^3%s^7  %s", c->usage, strcmp(c->name, "rcon") && strcmp(c->name, "k33dev") ?
+              "^9(server cheat: devmap on a developer server)" : "");
+    _snprintf(g_detail[k++], 200, "^9  %s", c->help);
+    for (int i = 0; i < k; i++) g_detail[i][199] = 0;
+    g_detailCount = k;
+}
+
+static void ConDevHelp(void)
+{
+    ConPrintf("sh1x developer commands - the server runs them; they need a developer server started with devmap\n");
+    ConPrintf("  (sv_cheats 1; refused on lobby match servers; once cheats are on the server records no progression).\n");
+    for (unsigned i = 0; i < DEV_CMD_COUNT; i++) ConPrintf("  ^3%-40s^7 %s\n", kDevCmds[i].usage, kDevCmds[i].help);
+    ConPrintf("  Local toggles: k33_drawFPS 1 (or cg_drawFPS 1), k33_drawViewpos 1; rcon target port k33_rconPort.\n");
+}
+
+/* ---- rcon to the local server ---- */
+
+static const BYTE *volatile g_conRconPortDvar;
+
+/* The connected server's address when it is on this machine: port, else 0. */
+static int ConLocalServerPort(void)
+{
+    if (*(volatile int *)(DWORD_PTR)0x016FC2E8u < 5) return 0; /* connection state: not connected */
+    DWORD enc = *(volatile DWORD *)(DWORD_PTR)0x016F8068u;    /* clc ^ key; netadr at +0x14 (discord.c) */
+    const BYTE *adr = enc ? (const BYTE *)(DWORD_PTR)(enc ^ 0x26F950CCu) + 0x14 : NULL;
+    if (!adr || !Readable(adr, 12)) return 0;
+    int type = *(const int *)adr;
+    if (!(type == 2 /* loopback */ || (type > 2 && adr[4] == 127))) return -1; /* connected, not local */
+    return adr[8] << 8 | adr[9];
+}
+
+typedef struct { int port; char command[CON_INPUT_LEN]; } ConRconJob;
+
+static BOOL ConReadPassword(const char *path, char *out, int n)
+{
+    FILE *f = fopen(path, "rb");
+    if (!f) return FALSE;
+    int len = (int)fread(out, 1, n - 1, f);
+    fclose(f);
+    if (len <= 0) return FALSE;
+    out[len] = 0;
+    while (len && (out[len - 1] == '\r' || out[len - 1] == '\n' || out[len - 1] == ' ')) out[--len] = 0;
+    for (const char *p = out; *p; p++) if (*p == '"' || (BYTE)*p < 0x20) return FALSE;
+    return len > 0;
+}
+
+static int ConRconOnce(int port, const char *password, const char *command, char *out, int outSize)
+{
+    SOCKET s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (s == INVALID_SOCKET) return -1;
+    char pkt[CON_INPUT_LEN + 128];
+    int n = _snprintf(pkt, sizeof(pkt), "\xff\xff\xff\xffrcon \"%s\" %s", password, command);
+    struct sockaddr_in a;
+    memset(&a, 0, sizeof(a));
+    a.sin_family = AF_INET;
+    a.sin_port = htons((u_short)port);
+    a.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    int got = 0;
+    out[0] = 0;
+    if (n > 0 && n < (int)sizeof(pkt) && sendto(s, pkt, n, 0, (struct sockaddr *)&a, sizeof(a)) == n) {
+        DWORD start = GetTickCount(), limit = 1500;
+        for (;;) {
+            DWORD used = GetTickCount() - start;
+            if (used >= limit) break;
+            fd_set rd;
+            FD_ZERO(&rd);
+            FD_SET(s, &rd);
+            DWORD left = got ? 250 : limit - used; /* after the first datagram, only its continuation */
+            struct timeval tv = { (long)(left / 1000), (long)(left % 1000) * 1000 };
+            if (select(0, &rd, NULL, NULL, &tv) <= 0) break;
+            char buf[1500];
+            int r = recv(s, buf, sizeof(buf), 0);
+            if (r <= 4) break;
+            const char *text = buf + 4;
+            int len = r - 4;
+            if (len >= 6 && !memcmp(text, "print\n", 6)) { text += 6; len -= 6; }
+            if (got + len >= outSize) len = outSize - 1 - got;
+            if (len <= 0) break;
+            memcpy(out + got, text, len);
+            got += len;
+            out[got] = 0;
+        }
+    }
+    closesocket(s);
+    return got;
+}
+
+static DWORD WINAPI ConRconThread(LPVOID param)
+{
+    ConRconJob *job = (ConRconJob *)param;
+    WSADATA wsa;
+    WSAStartup(MAKEWORD(2, 2), &wsa);
+    char root[MAX_PATH], files[3][MAX_PATH], password[128];
+    static char reply[16384];
+    DWORD n = GetModuleFileNameA(NULL, root, MAX_PATH);
+    while (n && root[n - 1] != '\\') n--;
+    root[n] = 0;
+    _snprintf(files[0], MAX_PATH, "%smain\\k33_rcon.txt", root);
+    _snprintf(files[1], MAX_PATH, "%sp2p\\state\\native_server_rcon.txt", root);
+    _snprintf(files[2], MAX_PATH, "%sCODOL\\1.1.1.13_server\\alpha0022\\native_server_rcon.txt", root);
+    int tried = 0, answered = 0;
+    for (int i = 0; i < 3 && !answered; i++) {
+        files[i][MAX_PATH - 1] = 0;
+        if (!ConReadPassword(files[i], password, sizeof(password))) continue;
+        tried++;
+        int got = ConRconOnce(job->port, password, job->command, reply, sizeof(reply));
+        if (got <= 0) { ConAppend("rcon: no reply from 127.0.0.1 (is the server running on that port?)\n"); answered = 1; break; }
+        if (strstr(reply, "Bad rcon") || strstr(reply, "bad rcon") || strstr(reply, "Invalid password")) continue;
+        answered = 1;
+        ConAppend(reply);
+        if (reply[strlen(reply) - 1] != '\n') ConAppend("\n");
+    }
+    if (!answered)
+        ConAppend(tried ? "rcon: the server refused every local password (main\\k33_rcon.txt overrides)\n"
+                        : "rcon: no password file (main\\k33_rcon.txt, p2p\\state or the lobby's native_server_rcon.txt)\n");
+    free(job);
+    return 0;
+}
+
+static void ConRcon(const char *command)
+{
+    while (*command == ' ') command++;
+    if (!*command) { ConPrintf("usage: rcon <server command>   (the local server only)\n"); return; }
+    int port = ConLocalServerPort();
+    if (port < 0) { ConPrintf("rcon: the connected server is not on this machine; rcon only talks to a local one\n"); return; }
+    if (!port) port = g_conRconPortDvar ? *(volatile const int *)(g_conRconPortDvar + 0xC) : 17733;
+    if (port <= 0) port = 17733;
+    ConRconJob *job = (ConRconJob *)calloc(1, sizeof(*job));
+    if (!job) return;
+    job->port = port;
+    lstrcpynA(job->command, command, sizeof(job->command));
+    ConPrintf("rcon 127.0.0.1:%d: %s\n", port, job->command);
+    HANDLE t = CreateThread(NULL, 0, ConRconThread, job, 0, NULL);
+    if (t) CloseHandle(t);
+    else free(job);
+}
+
 /* ---- suggestions ---------------------------------------------------------------------------------- */
 
-typedef struct { const char *shown; const BYTE *dvar; const char *cmd; BYTE prefix; } ConMatch;
-static ConMatch g_matches[CON_MAX_DVARS + 1024];
+typedef struct { const char *shown; const BYTE *dvar; const char *cmd; BYTE prefix; const ConDevCmd *dev; const char *argOf; } ConMatch;
+static ConMatch g_matches[CON_MAX_DVARS + 1024 + 64];
 
 static int ConCmpMatch(const void *a, const void *b)
 {
@@ -483,6 +687,49 @@ static void ConUpdateSuggestions(void)
 
     BOOL nameSlot = t.cur == 0 || (t.cur >= 1 && ConIsSetCommand(tok0) &&
                                    (t.cur == 1 || (t.cur == 2 && !_stricmp(tok0, "setfromdvar"))));
+    const char *const *devArgs = t.cur == 1 ? ConDevArgList(tok0) : NULL;
+    if (!nameSlot && !devArgs && t.cur >= 1 && ConDevFind(tok0)) {
+        /* typing a developer command's arguments: its usage */
+        EnterCriticalSection(&g_conLock);
+        ConDevDetail(ConDevFind(tok0));
+        LeaveCriticalSection(&g_conLock);
+        InterlockedExchange(&g_conDirty, 1);
+        return;
+    }
+    if (devArgs) {
+        ConTokenText(&t, t.cur, part, sizeof(part));
+        g_suggTokStart = t.start[t.cur];
+        g_suggTokEnd = t.cur < t.count ? t.end[t.cur] : g_conCursor;
+        int plen = (int)strlen(part), m = 0;
+        for (int i = 0; devArgs[i]; i++) {
+            BYTE prefix = _strnicmp(devArgs[i], part, plen) == 0;
+            if (plen && !prefix && !ConStrIStr(devArgs[i], part)) continue;
+            g_matches[m].shown = devArgs[i];
+            g_matches[m].dvar = NULL;
+            g_matches[m].cmd = devArgs[i];
+            g_matches[m].prefix = prefix;
+            g_matches[m].dev = NULL;
+            g_matches[m].argOf = tok0;
+            m++;
+        }
+        qsort(g_matches, m, sizeof(g_matches[0]), ConCmpMatch);
+        EnterCriticalSection(&g_conLock);
+        g_suggTotal = m;
+        g_suggCount = m < CON_SUGGEST ? m : CON_SUGGEST;
+        for (int i = 0; i < g_suggCount; i++) {
+            ConSuggest *sg = &g_sugg[i];
+            lstrcpynA(sg->name, g_matches[i].shown, sizeof(sg->name));
+            sg->prefix = g_matches[i].prefix;
+            sg->kind = 2;
+            _snprintf(sg->value, sizeof(sg->value), "^9%s argument", !_stricmp(tok0, "rcon") ? "server command" : tok0);
+            sg->value[sizeof(sg->value) - 1] = 0;
+            lstrcpynA(sg->info, "sh1x", sizeof(sg->info));
+        }
+        if (ConDevFind(tok0)) ConDevDetail(ConDevFind(tok0));
+        LeaveCriticalSection(&g_conLock);
+        InterlockedExchange(&g_conDirty, 1);
+        return;
+    }
     if (!nameSlot) {
         /* typing a value: show the dvar it is for */
         char name[96];
@@ -515,6 +762,7 @@ static void ConUpdateSuggestions(void)
         g_matches[m].dvar = d;
         g_matches[m].cmd = NULL;
         g_matches[m].prefix = prefix;
+        g_matches[m].dev = NULL;
         m++;
     }
     if (t.cur == 0) {
@@ -530,6 +778,7 @@ static void ConUpdateSuggestions(void)
             g_matches[m].dvar = NULL;
             g_matches[m].cmd = c->name;
             g_matches[m].prefix = prefix;
+            g_matches[m].dev = NULL;
             m++;
         }
         for (unsigned b = 0; b < BUILTIN_COUNT; b++) {
@@ -539,6 +788,17 @@ static void ConUpdateSuggestions(void)
             g_matches[m].dvar = NULL;
             g_matches[m].cmd = kBuiltins[b];
             g_matches[m].prefix = prefix;
+            g_matches[m].dev = NULL;
+            m++;
+        }
+        for (unsigned b = 0; b < DEV_CMD_COUNT; b++) {
+            BYTE prefix = _strnicmp(kDevCmds[b].name, part, plen) == 0;
+            if (!prefix && !ConStrIStr(kDevCmds[b].name, part)) continue;
+            g_matches[m].shown = kDevCmds[b].name;
+            g_matches[m].dvar = NULL;
+            g_matches[m].cmd = kDevCmds[b].name;
+            g_matches[m].prefix = prefix;
+            g_matches[m].dev = &kDevCmds[b];
             m++;
         }
     }
@@ -561,12 +821,20 @@ static void ConUpdateSuggestions(void)
             if (strcmp(raw, x->shown) != 0) _snprintf(s->info, sizeof(s->info), "%s  [%s]", raw, dom);
             else _snprintf(s->info, sizeof(s->info), "[%s]", dom);
             s->info[sizeof(s->info) - 1] = 0;
+        } else if (x->dev) {
+            s->kind = 2;
+            _snprintf(s->value, sizeof(s->value), "^9%s", x->dev->usage);
+            s->value[sizeof(s->value) - 1] = 0;
+            lstrcpynA(s->info, "sh1x developer command", sizeof(s->info));
         } else {
             s->kind = 1;
             s->value[0] = 0;
             lstrcpynA(s->info, "command", sizeof(s->info));
         }
     }
+    /* a developer command typed in full: its usage and help */
+    if (g_suggCount >= 1 && g_sugg[0].kind == 2 && g_matches[0].dev && _stricmp(g_sugg[0].name, part) == 0)
+        ConDevDetail(g_matches[0].dev);
     /* exactly one dvar typed in full: its details too */
     if (g_suggCount >= 1 && g_sugg[0].kind == 0 && _stricmp(g_sugg[0].name, part) == 0) ConDetailFor(g_matches[0].dvar);
     LeaveCriticalSection(&g_conLock);
@@ -742,6 +1010,7 @@ static void ConCmdList(const char *filter)
         names[n++] = c->name;
     }
     for (unsigned b = 0; b < BUILTIN_COUNT && n < 4096; b++) names[n++] = kBuiltins[b];
+    for (unsigned b = 0; b < DEV_CMD_COUNT && n < 4096; b++) names[n++] = kDevCmds[b].name;
     qsort(names, n, sizeof(names[0]), ConCmpStr);
     int shown = 0;
     for (int i = 0; i < n; i++) {
@@ -783,6 +1052,8 @@ static void ConHelp(void)
     ConPrintf("  Shift+Tab or Shift+~ opens the full log (PgUp/PgDn/wheel scroll, Ctrl+Home/End). Esc closes.\n");
     ConPrintf("  Built-ins: dvarlist [filter], cmdlist [filter], find <text>, clear, condump [file], k33help.\n");
     ConPrintf("  Toggle: the key left of 1, or the virtual key in k33_consoleKey (default 112 = F1, 0 = none).\n");
+    ConPrintf("  sh1x developer commands (noclip, god, give, setviewpos, ...) and rcon to the local server: k33dev.\n");
+    ConPrintf("  HUD: k33_drawFPS 1 (cg_drawFPS 1 works too), k33_drawViewpos 1.\n");
 }
 
 /* ---- executing a line ------------------------------------------------------------------------------- */
@@ -897,6 +1168,14 @@ static void ConExecute(const char *line)
             ConPrintf("k33shot: the console frame %d ms from now goes to main\\k33_console.bmp\n", delay);
             continue;
         }
+        if (!_stricmp(t0, "rcon")) {
+            ConRcon(seg + afterT0);
+            continue;
+        }
+        if (!_stricmp(t0, "k33dev")) {
+            ConDevHelp();
+            continue;
+        }
         if (!_stricmp(t0, "dvarlist") || !_stricmp(t0, "cmdlist") || !_stricmp(t0, "find") || !_stricmp(t0, "condump") ||
             !_stricmp(t0, "k33help")) {
             ConReadToken(seg, &p, t1, sizeof(t1));
@@ -952,9 +1231,12 @@ static void ConExecute(const char *line)
 
 /* ---- keyboard (main thread) ------------------------------------------------------------------------ */
 
+static void ConHudRegister(void);
+
 static void ConRegisterKeyDvar(void)
 {
     g_conKeyDvarTried = TRUE;
+    ConHudRegister();
     const BYTE *d = C1RegisterInt("k33_consoleKey", VK_F1, 0, 255, 0x1 /* archive */,
                                   "Kernel33 console: extra toggle key (Windows virtual-key code; 112 F1, 0 none)");
     if (d) g_conKeyDvar = d;
@@ -1590,7 +1872,7 @@ static int ConRender(int W, int H)
                 const ConSuggest *g = &s->sugg[i];
                 if (s->suggFirst + i == s->suggSel) ConFill(hx0, ry, hx1, ry + lh, RGB(140, 140, 120));
                 ConMatchText(hx0 + pad, ry, g->name, s->part, g->kind ? CON_CMDCOL : CON_DVARCOL, hx0 + pad + nameW);
-                if (g->kind == 0) {
+                if (g->kind != 1) {
                     char v[96];
                     _snprintf(v, sizeof(v), "%s^7", g->value);
                     v[sizeof(v) - 1] = 0;
@@ -1671,6 +1953,79 @@ static void ConTakeSnapshot(void)
 
 typedef struct { float x, y, z, rhw; DWORD color; float u, v; } ConVertex;
 
+/* One textured quad (tex, (0,0)-(u1,v1)) at (x0,y0) w x h on the back buffer, inside a D3DSBT_ALL state
+ * block so the renderer's own state is restored exactly. FALSE when the state block cannot be made. */
+static BOOL ConBlit(IDirect3DDevice9 *dev, IDirect3DSurface9 *bb, IDirect3DTexture9 *tex, float x0, float y0, float w,
+                    float h, float u1, float v1, int W, int H)
+{
+    IDirect3DStateBlock9 *sb = NULL;
+    if (FAILED(IDirect3DDevice9_CreateStateBlock(dev, D3DSBT_ALL, &sb)) || !sb) {
+        return FALSE;
+    }
+    IDirect3DSurface9 *oldRt = NULL, *oldDs = NULL;
+    IDirect3DDevice9_GetRenderTarget(dev, 0, &oldRt);
+    IDirect3DDevice9_GetDepthStencilSurface(dev, &oldDs);
+    IDirect3DDevice9_SetRenderTarget(dev, 0, bb);
+    IDirect3DDevice9_SetDepthStencilSurface(dev, NULL);
+    D3DVIEWPORT9 vp = { 0, 0, (DWORD)W, (DWORD)H, 0.0f, 1.0f };
+    IDirect3DDevice9_SetViewport(dev, &vp);
+
+    if (SUCCEEDED(IDirect3DDevice9_BeginScene(dev))) {
+        IDirect3DDevice9_SetVertexShader(dev, NULL);
+        IDirect3DDevice9_SetPixelShader(dev, NULL);
+        IDirect3DDevice9_SetFVF(dev, D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+        IDirect3DDevice9_SetRenderState(dev, D3DRS_ZENABLE, D3DZB_FALSE);
+        IDirect3DDevice9_SetRenderState(dev, D3DRS_ZWRITEENABLE, FALSE);
+        IDirect3DDevice9_SetRenderState(dev, D3DRS_ALPHABLENDENABLE, TRUE);
+        IDirect3DDevice9_SetRenderState(dev, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+        IDirect3DDevice9_SetRenderState(dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+        IDirect3DDevice9_SetRenderState(dev, D3DRS_BLENDOP, D3DBLENDOP_ADD);
+        IDirect3DDevice9_SetRenderState(dev, D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
+        IDirect3DDevice9_SetRenderState(dev, D3DRS_ALPHATESTENABLE, FALSE);
+        IDirect3DDevice9_SetRenderState(dev, D3DRS_CULLMODE, D3DCULL_NONE);
+        IDirect3DDevice9_SetRenderState(dev, D3DRS_LIGHTING, FALSE);
+        IDirect3DDevice9_SetRenderState(dev, D3DRS_FOGENABLE, FALSE);
+        IDirect3DDevice9_SetRenderState(dev, D3DRS_STENCILENABLE, FALSE);
+        IDirect3DDevice9_SetRenderState(dev, D3DRS_SCISSORTESTENABLE, FALSE);
+        IDirect3DDevice9_SetRenderState(dev, D3DRS_CLIPPLANEENABLE, 0);
+        IDirect3DDevice9_SetRenderState(dev, D3DRS_FILLMODE, D3DFILL_SOLID);
+        IDirect3DDevice9_SetRenderState(dev, D3DRS_COLORWRITEENABLE, 0xF);
+        IDirect3DDevice9_SetRenderState(dev, D3DRS_SRGBWRITEENABLE, FALSE);
+        IDirect3DDevice9_SetRenderState(dev, D3DRS_MULTISAMPLEANTIALIAS, FALSE);
+        IDirect3DDevice9_SetTexture(dev, 0, (IDirect3DBaseTexture9 *)tex);
+        IDirect3DDevice9_SetTexture(dev, 1, NULL);
+        IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+        IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+        IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
+        IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+        IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_TEXCOORDINDEX, 0);
+        IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
+        IDirect3DDevice9_SetTextureStageState(dev, 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
+        IDirect3DDevice9_SetTextureStageState(dev, 1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
+        IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+        IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+        IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+        IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
+        IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
+        IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_SRGBTEXTURE, 0);
+        ConVertex q[4] = {
+            { x0 - 0.5f, y0 - 0.5f, 0, 1, 0xFFFFFFFF, 0, 0 },
+            { x0 + w - 0.5f, y0 - 0.5f, 0, 1, 0xFFFFFFFF, u1, 0 },
+            { x0 - 0.5f, y0 + h - 0.5f, 0, 1, 0xFFFFFFFF, 0, v1 },
+            { x0 + w - 0.5f, y0 + h - 0.5f, 0, 1, 0xFFFFFFFF, u1, v1 },
+        };
+        IDirect3DDevice9_DrawPrimitiveUP(dev, D3DPT_TRIANGLESTRIP, 2, q, sizeof(ConVertex));
+        IDirect3DDevice9_EndScene(dev);
+    }
+    IDirect3DDevice9_SetRenderTarget(dev, 0, oldRt);
+    IDirect3DDevice9_SetDepthStencilSurface(dev, oldDs);
+    if (oldRt) IDirect3DSurface9_Release(oldRt);
+    if (oldDs) IDirect3DSurface9_Release(oldDs);
+    IDirect3DStateBlock9_Apply(sb);
+    IDirect3DStateBlock9_Release(sb);
+    return TRUE;
+}
+
 static void ConDraw(IDirect3DDevice9 *dev)
 {
     static LONG failures;
@@ -1732,74 +2087,182 @@ static void ConDraw(IDirect3DDevice9 *dev)
         }
     }
 
-    IDirect3DStateBlock9 *sb = NULL;
-    if (FAILED(IDirect3DDevice9_CreateStateBlock(dev, D3DSBT_ALL, &sb)) || !sb) {
-        if (InterlockedIncrement(&failures) <= 3) Log("console: CreateStateBlock failed, not drawing");
+    if (!ConBlit(dev, bb, g_tex, 0.0f, 0.0f, (float)W, (float)g_usedH, 1.0f, (float)g_usedH / (float)H, W, H) &&
+        InterlockedIncrement(&failures) <= 3)
+        Log("console: CreateStateBlock failed, not drawing");
+    IDirect3DSurface9_Release(bb);
+out:
+    InterlockedExchange(&g_inDraw, 0);
+}
+
+/* ---- developer HUD: k33_drawFPS / k33_drawViewpos -----------------------------------------------------
+ * C1 registers cg_drawFPS ("591") but nothing reads it, and IW4's viewpos display is gone. These draw a
+ * small box in the top-right corner of every frame while either dvar (or 591) is on, through the same
+ * Present hook as the console: FPS from the Present rate, position/angles/speed from cg's predicted
+ * playerState (cg+0: origin +0x1C, velocity +0x28, viewangles +0x14C; parity.c). Only in a match. */
+
+static const BYTE *volatile g_hudFpsDvar, *volatile g_hudPosDvar, *volatile g_hudC1FpsDvar;
+static IDirect3DTexture9 *g_hudTex;
+static IDirect3DDevice9 *g_hudTexDev;
+static HDC g_hudDc;
+static HBITMAP g_hudDib;
+static DWORD *g_hudBits;
+static HFONT g_hudFont;
+static int g_hudW, g_hudH, g_hudFontH, g_hudUsedW, g_hudUsedH;
+static DWORD g_hudLastBuild, g_hudFpsStart;
+static int g_hudFrames;
+static float g_hudFps;
+
+static BOOL ConHudWanted(int *fps, int *pos)
+{
+    *fps = (g_hudFpsDvar && *(volatile const int *)(g_hudFpsDvar + 0xC)) ||
+           (g_hudC1FpsDvar && *(volatile const BYTE *)(g_hudC1FpsDvar + 0xC));
+    *pos = g_hudPosDvar && *(volatile const int *)(g_hudPosDvar + 0xC);
+    return *fps || *pos;
+}
+
+static void ConHudRegister(void)
+{
+    if (!g_hudFpsDvar)
+        g_hudFpsDvar = C1RegisterInt("k33_drawFPS", 0, 0, 1, 0x1, "Kernel33: draw the frame rate (top right)");
+    if (!g_hudPosDvar)
+        g_hudPosDvar = C1RegisterInt("k33_drawViewpos", 0, 0, 1, 0x1,
+                                     "Kernel33: draw the predicted position, view angles and speed (top right)");
+    if (!g_conRconPortDvar)
+        g_conRconPortDvar = C1RegisterInt("k33_rconPort", 17733, 1, 65535, 0x1,
+                                          "Kernel33 console: rcon port when not connected to a local server");
+    if (!g_hudC1FpsDvar) {
+        const BYTE *d = C1DvarFind("591"); /* cg_drawFPS, bool */
+        if (d && Readable(d, 0x10) && d[8] == 0) g_hudC1FpsDvar = d;
+    }
+}
+
+static BOOL ConHudEnsureDib(int fh)
+{
+    int w = fh * 36, h = fh * 4;
+    if (g_hudDc && g_hudFontH == fh) return TRUE;
+    if (!g_hudDc) g_hudDc = CreateCompatibleDC(NULL);
+    if (!g_hudDc) return FALSE;
+    if (g_hudDib) { DeleteObject(g_hudDib); g_hudDib = NULL; }
+    BITMAPINFO bi;
+    memset(&bi, 0, sizeof(bi));
+    bi.bmiHeader.biSize = sizeof(bi.bmiHeader);
+    bi.bmiHeader.biWidth = w;
+    bi.bmiHeader.biHeight = -h;
+    bi.bmiHeader.biPlanes = 1;
+    bi.bmiHeader.biBitCount = 32;
+    bi.bmiHeader.biCompression = BI_RGB;
+    void *bits = NULL;
+    g_hudDib = CreateDIBSection(g_hudDc, &bi, DIB_RGB_COLORS, &bits, NULL, 0);
+    if (!g_hudDib) return FALSE;
+    g_hudBits = (DWORD *)bits;
+    SelectObject(g_hudDc, g_hudDib);
+    if (g_hudFont) DeleteObject(g_hudFont);
+    g_hudFont = CreateFontA(-fh, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS,
+                            ANTIALIASED_QUALITY, FIXED_PITCH | FF_MODERN, "Consolas");
+    SelectObject(g_hudDc, g_hudFont);
+    SetBkMode(g_hudDc, TRANSPARENT);
+    g_hudW = w;
+    g_hudH = h;
+    g_hudFontH = fh;
+    return TRUE;
+}
+
+/* Renders the lines into the DIB; returns FALSE when there is nothing to show. */
+static BOOL ConHudBuild(int fps, int pos)
+{
+    char lines[3][96];
+    int count = 0;
+    if (fps) _snprintf(lines[count++], 96, "%.0f fps", g_hudFps);
+    if (pos) {
+        BYTE *cg = ConInMatch() ? ParityCg() : NULL;
+        if (cg && Readable(cg, 0x160)) {
+            const float *o = (const float *)(cg + 0x1C), *v = (const float *)(cg + 0x28), *a = (const float *)(cg + 0x14C);
+            _snprintf(lines[count++], 96, "pos %.1f %.1f %.1f", o[0], o[1], o[2]);
+            _snprintf(lines[count++], 96, "ang %.1f %.1f  speed %.0f", a[0], a[1], sqrtf(v[0] * v[0] + v[1] * v[1]));
+        }
+    }
+    if (!count) return FALSE;
+    memset(g_hudBits, 0, (size_t)g_hudW * g_hudH * 4);
+    int pad = g_hudFontH / 4 + 2, lh = g_hudFontH + 2, maxw = 0;
+    for (int i = 0; i < count; i++) {
+        lines[i][95] = 0;
+        SIZE sz;
+        GetTextExtentPoint32A(g_hudDc, lines[i], (int)strlen(lines[i]), &sz);
+        if (sz.cx > maxw) maxw = sz.cx;
+    }
+    g_hudUsedW = maxw + 2 * pad;
+    g_hudUsedH = count * lh + 2 * pad;
+    if (g_hudUsedW > g_hudW) g_hudUsedW = g_hudW;
+    if (g_hudUsedH > g_hudH) g_hudUsedH = g_hudH;
+    SetTextColor(g_hudDc, RGB(255, 255, 255));
+    for (int i = 0; i < count; i++) TextOutA(g_hudDc, pad, pad + i * lh, lines[i], (int)strlen(lines[i]));
+    GdiFlush();
+    /* text pixels opaque, the box translucent black */
+    for (int y = 0; y < g_hudUsedH; y++) {
+        DWORD *row = g_hudBits + (size_t)y * g_hudW;
+        for (int x = 0; x < g_hudUsedW; x++) row[x] = (row[x] & 0xFFFFFF) ? (row[x] & 0xFFFFFF) | 0xFF000000u : 0x90000000u;
+    }
+    return TRUE;
+}
+
+static void ConHudDraw(IDirect3DDevice9 *dev)
+{
+    int fps, pos;
+    DWORD now = GetTickCount();
+    g_hudFrames++;
+    if (!g_hudFpsStart) g_hudFpsStart = now;
+    if (now - g_hudFpsStart >= 500) {
+        g_hudFps = g_hudFrames * 1000.0f / (float)(now - g_hudFpsStart);
+        g_hudFrames = 0;
+        g_hudFpsStart = now;
+    }
+    if (!ConHudWanted(&fps, &pos) || InterlockedExchange(&g_inDraw, 1)) return;
+    if (IDirect3DDevice9_TestCooperativeLevel(dev) != D3D_OK) goto out;
+    IDirect3DSurface9 *bb = NULL;
+    D3DSURFACE_DESC desc;
+    if (FAILED(IDirect3DDevice9_GetBackBuffer(dev, 0, 0, D3DBACKBUFFER_TYPE_MONO, &bb)) || !bb) goto out;
+    IDirect3DSurface9_GetDesc(bb, &desc);
+    int W = (int)desc.Width, H = (int)desc.Height, fh = H / 60;
+    if (fh < 12) fh = 12;
+    if (fh > 32) fh = 32;
+    if (W < 320 || H < 200 || !ConHudEnsureDib(fh)) { IDirect3DSurface9_Release(bb); goto out; }
+    if (g_hudTexDev != dev || !g_hudTex) {
+        if (g_hudTex) { IDirect3DTexture9_Release(g_hudTex); g_hudTex = NULL; }
+        if (g_hudTexDev && g_hudTexDev != dev) IDirect3DDevice9_Release(g_hudTexDev);
+        if (g_hudTexDev != dev) { IDirect3DDevice9_AddRef(dev); g_hudTexDev = dev; }
+        g_hudLastBuild = 0;
+    }
+    if (g_hudTex) {
+        D3DSURFACE_DESC td;
+        IDirect3DTexture9_GetLevelDesc(g_hudTex, 0, &td);
+        if ((int)td.Width != g_hudW || (int)td.Height != g_hudH) { IDirect3DTexture9_Release(g_hudTex); g_hudTex = NULL; }
+    }
+    if (!g_hudTex &&
+        FAILED(IDirect3DDevice9_CreateTexture(dev, g_hudW, g_hudH, 1, 0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &g_hudTex, NULL))) {
+        g_hudTex = NULL;
         IDirect3DSurface9_Release(bb);
         goto out;
     }
-    IDirect3DSurface9 *oldRt = NULL, *oldDs = NULL;
-    IDirect3DDevice9_GetRenderTarget(dev, 0, &oldRt);
-    IDirect3DDevice9_GetDepthStencilSurface(dev, &oldDs);
-    IDirect3DDevice9_SetRenderTarget(dev, 0, bb);
-    IDirect3DDevice9_SetDepthStencilSurface(dev, NULL);
-    D3DVIEWPORT9 vp = { 0, 0, (DWORD)W, (DWORD)H, 0.0f, 1.0f };
-    IDirect3DDevice9_SetViewport(dev, &vp);
-
-    if (SUCCEEDED(IDirect3DDevice9_BeginScene(dev))) {
-        IDirect3DDevice9_SetVertexShader(dev, NULL);
-        IDirect3DDevice9_SetPixelShader(dev, NULL);
-        IDirect3DDevice9_SetFVF(dev, D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1);
-        IDirect3DDevice9_SetRenderState(dev, D3DRS_ZENABLE, D3DZB_FALSE);
-        IDirect3DDevice9_SetRenderState(dev, D3DRS_ZWRITEENABLE, FALSE);
-        IDirect3DDevice9_SetRenderState(dev, D3DRS_ALPHABLENDENABLE, TRUE);
-        IDirect3DDevice9_SetRenderState(dev, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-        IDirect3DDevice9_SetRenderState(dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-        IDirect3DDevice9_SetRenderState(dev, D3DRS_BLENDOP, D3DBLENDOP_ADD);
-        IDirect3DDevice9_SetRenderState(dev, D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
-        IDirect3DDevice9_SetRenderState(dev, D3DRS_ALPHATESTENABLE, FALSE);
-        IDirect3DDevice9_SetRenderState(dev, D3DRS_CULLMODE, D3DCULL_NONE);
-        IDirect3DDevice9_SetRenderState(dev, D3DRS_LIGHTING, FALSE);
-        IDirect3DDevice9_SetRenderState(dev, D3DRS_FOGENABLE, FALSE);
-        IDirect3DDevice9_SetRenderState(dev, D3DRS_STENCILENABLE, FALSE);
-        IDirect3DDevice9_SetRenderState(dev, D3DRS_SCISSORTESTENABLE, FALSE);
-        IDirect3DDevice9_SetRenderState(dev, D3DRS_CLIPPLANEENABLE, 0);
-        IDirect3DDevice9_SetRenderState(dev, D3DRS_FILLMODE, D3DFILL_SOLID);
-        IDirect3DDevice9_SetRenderState(dev, D3DRS_COLORWRITEENABLE, 0xF);
-        IDirect3DDevice9_SetRenderState(dev, D3DRS_SRGBWRITEENABLE, FALSE);
-        IDirect3DDevice9_SetRenderState(dev, D3DRS_MULTISAMPLEANTIALIAS, FALSE);
-        IDirect3DDevice9_SetTexture(dev, 0, (IDirect3DBaseTexture9 *)g_tex);
-        IDirect3DDevice9_SetTexture(dev, 1, NULL);
-        IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
-        IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-        IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
-        IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-        IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_TEXCOORDINDEX, 0);
-        IDirect3DDevice9_SetTextureStageState(dev, 0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
-        IDirect3DDevice9_SetTextureStageState(dev, 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
-        IDirect3DDevice9_SetTextureStageState(dev, 1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
-        IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-        IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-        IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
-        IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
-        IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
-        IDirect3DDevice9_SetSamplerState(dev, 0, D3DSAMP_SRGBTEXTURE, 0);
-        float h = (float)g_usedH, v = (float)g_usedH / (float)H;
-        ConVertex q[4] = {
-            { -0.5f, -0.5f, 0, 1, 0xFFFFFFFF, 0, 0 },
-            { W - 0.5f, -0.5f, 0, 1, 0xFFFFFFFF, 1, 0 },
-            { -0.5f, h - 0.5f, 0, 1, 0xFFFFFFFF, 0, v },
-            { W - 0.5f, h - 0.5f, 0, 1, 0xFFFFFFFF, 1, v },
-        };
-        IDirect3DDevice9_DrawPrimitiveUP(dev, D3DPT_TRIANGLESTRIP, 2, q, sizeof(ConVertex));
-        IDirect3DDevice9_EndScene(dev);
+    if (!g_hudLastBuild || now - g_hudLastBuild >= 100) { /* ten updates a second */
+        g_hudLastBuild = now ? now : 1;
+        if (!ConHudBuild(fps, pos)) { g_hudUsedW = 0; }
+        else {
+            D3DLOCKED_RECT lr;
+            RECT rc = { 0, 0, g_hudW, g_hudUsedH };
+            if (SUCCEEDED(IDirect3DTexture9_LockRect(g_hudTex, 0, &lr, &rc, 0))) {
+                for (int y = 0; y < g_hudUsedH; y++)
+                    memcpy((BYTE *)lr.pBits + (size_t)y * lr.Pitch, g_hudBits + (size_t)y * g_hudW, (size_t)g_hudW * 4);
+                IDirect3DTexture9_UnlockRect(g_hudTex, 0);
+            }
+        }
     }
-    IDirect3DDevice9_SetRenderTarget(dev, 0, oldRt);
-    IDirect3DDevice9_SetDepthStencilSurface(dev, oldDs);
-    if (oldRt) IDirect3DSurface9_Release(oldRt);
-    if (oldDs) IDirect3DSurface9_Release(oldDs);
-    IDirect3DStateBlock9_Apply(sb);
-    IDirect3DStateBlock9_Release(sb);
+    if (g_hudUsedW > 0) {
+        int m = H / 120 + 2;
+        float x0 = (float)(W - m - g_hudUsedW), y0 = (float)m + (g_conOpen ? (float)(g_fontH * 3) : 0.0f);
+        ConBlit(dev, bb, g_hudTex, x0, y0, (float)g_hudUsedW, (float)g_hudUsedH,
+                (float)g_hudUsedW / g_hudW, (float)g_hudUsedH / g_hudH, W, H);
+    }
     IDirect3DSurface9_Release(bb);
 out:
     InterlockedExchange(&g_inDraw, 0);
@@ -1813,6 +2276,7 @@ static HRESULT WINAPI Hook_Present(IDirect3DDevice9 *dev, const RECT *a, const R
     VisDraw(dev); /* the vision editor under the console */
 #endif
     ConDraw(dev);
+    ConHudDraw(dev);
     InterlockedIncrement(&g_inPresent); /* d3d9 may present through the swap chain's vtable */
     HRESULT hr = g_origPresent(dev, a, b, w, r);
     InterlockedDecrement(&g_inPresent);
@@ -1827,11 +2291,14 @@ static HRESULT WINAPI Hook_SCPresent(IDirect3DSwapChain9 *sc, const RECT *a, con
 #else
     BOOL vis = FALSE;
 #endif
-    if ((g_conOpen || vis) && !g_inPresent && SUCCEEDED(IDirect3DSwapChain9_GetDevice(sc, &dev)) && dev) {
+    int hudFps, hudPos;
+    BOOL hud = ConHudWanted(&hudFps, &hudPos);
+    if ((g_conOpen || vis || hud) && !g_inPresent && SUCCEEDED(IDirect3DSwapChain9_GetDevice(sc, &dev)) && dev) {
 #ifdef K33_VISION
         VisDraw(dev);
 #endif
         ConDraw(dev);
+        ConHudDraw(dev);
         IDirect3DDevice9_Release(dev);
     }
     return g_origSCPresent(sc, a, b, w, r, f);
