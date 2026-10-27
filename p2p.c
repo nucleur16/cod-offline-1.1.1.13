@@ -47,6 +47,7 @@ typedef struct P2PConfig {
     char dll[MAX_PATH];          /* the server as a DLL (mode inprocess) */
     int port, bots, admission, developer, readyTimeout;
     int pmemMegs;                /* codol_pmemMegs for the server: its fastfile block (0 = the server default) */
+    int c1Assets;                /* in-process: take C1's records of startup zones (default 1) */
 } P2PConfig;
 
 static struct {
@@ -129,6 +130,7 @@ static void P2PDefaults(P2PConfig *c)
     /* The fastfile block (PMem) held 1.5 MB on mp_killhouse_sh, mp_rust and mp_crash_tropical (sh1x_mem,
      * 2026-10-27); the server default reserves 328 MB of the shared address space. */
     c->pmemMegs = 32;
+    c->c1Assets = 1;
 }
 
 static void P2PLoadIni(P2PConfig *c)
@@ -160,7 +162,7 @@ static void P2PLoadIni(P2PConfig *c)
         };
         struct { const char *k; int *dst; } ints[] = {
             { "port", &c->port }, { "bots", &c->bots }, { "admission_required", &c->admission },
-            { "developer", &c->developer }, { "ready_timeout", &c->readyTimeout }, { "pmem_megs", &c->pmemMegs },
+            { "developer", &c->developer }, { "ready_timeout", &c->readyTimeout }, { "pmem_megs", &c->pmemMegs }, { "c1_assets", &c->c1Assets },
         };
         BOOL known = FALSE;
         for (unsigned i = 0; i < sizeof(strs) / sizeof(strs[0]); i++)

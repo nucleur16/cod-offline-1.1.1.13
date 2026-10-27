@@ -266,6 +266,13 @@ static void PiMemory(SIZE_T *privateMb, SIZE_T *virtualMb)
     *virtualMb = GlobalMemoryStatusEx(&ms) ? (SIZE_T)((ms.ullTotalVirtual - ms.ullAvailVirtual) >> 20) : 0;
 }
 
+/* C1's record of (type, name) for the server (p2p_assets.c PiC1Find); none while C1's database thread links a zone. */
+static const void *PiC1Find(unsigned type, const char *name);
+static const void *__cdecl PiC1Provide(unsigned type, const char *name)
+{
+    if (*(volatile const DWORD *)(DWORD_PTR)0x02007A60u) return NULL;
+    return PiC1Find(type, name);
+}
 static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *args)
 {
     P2PConfig c = *cp;
@@ -314,6 +321,13 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     }
     PiModuleRange(m, &g_piBase, &g_piEnd);
     PiModuleRange(GetModuleHandleA("msvcrt.dll"), &g_crtBase, &g_crtEnd);
+    /* Stage 3 of the server's asset layout: the server takes C1's own records for zones C1 loads once at startup
+     * (the code_post_gfx set) instead of its copies. p2p_host.ini c1_assets = 0 turns it off. */
+    {
+        typedef void (__cdecl *Sh1xSetProviderFn)(const void *(__cdecl *)(unsigned, const char *));
+        Sh1xSetProviderFn setProvider = (Sh1xSetProviderFn)(void *)GetProcAddress(m, "Sh1xHost_SetC1AssetProvider");
+        if (setProvider && c.c1Assets) { setProvider(PiC1Provide); Log("p2p in-process: C1 asset provider installed"); }
+    }
     g_piInit = init; g_piFrame = frame; g_piCmd = cmd; g_piCode = code;
     lstrcpynA(g_piArgs, args, sizeof(g_piArgs));
     if (g_piFiber && g_piState == PI_CRASHED) { DeleteFiber(g_piFiber); g_piFiber = NULL; }
