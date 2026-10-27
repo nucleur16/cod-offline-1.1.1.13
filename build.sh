@@ -9,6 +9,9 @@
 # K33_NO_COPY=1 sh build.sh builds Kernel33.dll here without copying it to ../Kernel33.dll.
 set -e
 cd "$(dirname "$0")"
+# The sh1x server that p2p.c hosts is the submodule server/sh1x (docs/P2P_HOSTING.md); the DLL itself does
+# not compile it, build-server.sh does. Init it (not --recursive: the server has a URL-less gitlink).
+[ -f server/sh1x/makefile ] || git submodule update --init server/sh1x || echo "warning: server/sh1x submodule not initialised (only build-server.sh needs it)"
 . ./build-profile.sh
 BIN=/c/msys64/mingw32/bin
 SDL_VER=2.32.10
@@ -28,7 +31,7 @@ fi
 "$BIN/gcc.exe" "$@" -O2 -Wall -shared -s -static -static-libgcc -I"$SDL_DIR/include" -o Kernel33.dll \
     kernel33.c kernel33_res.o kernel33.def \
     -L"$SDL_DIR/lib" -lSDL2 -lsetupapi -lcfgmgr32 -lversion -loleaut32 -luuid \
-    -lopus -lz -limm32 -lgdi32 -lshlwapi -lole32 -lwinmm -lws2_32 -ladvapi32 -lshell32 -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat
+    -lopus -lz -limm32 -lgdi32 -lshlwapi -lole32 -lwinmm -lws2_32 -liphlpapi -ladvapi32 -lshell32 -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat
 if [ "${K33_NO_COPY:-0}" = 1 ]; then
     echo "built Kernel33.dll (SDL2 $SDL_VER static; not copied)"
 else

@@ -1445,6 +1445,10 @@ static void PatchGbkInput(void)
 #include "theatre.c"
 /* UTF-8 player names and an optional display-name service: see name_display.c. */
 #include "name_display.c"
+/* Player-hosted matches: the sh1x server as a child of the host's client (p2p.c, docs/P2P_HOSTING.md). */
+#include "p2p.c"
+/* UDP only with lobby-vouched hosts (hostgate.c): the P2P trust requirement. */
+#include "hostgate.c"
 
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 #include "news_refresh.c"
@@ -1457,6 +1461,7 @@ static void __cdecl TakeOver(void)
     MatchC1SectionFlags();
     FillImports();
     PatchGfxDateTime();
+    InstallHostGate();
     PatchRenderGate();
     PatchDvarRegistrations();
     PatchPlainConfig();
@@ -1491,6 +1496,7 @@ static void __cdecl TakeOver(void)
     InstallQuickRoom();
     InstallTheatre();
     InstallNameDisplay();
+    InstallP2PHost();
     K33InstallMainTicks(); /* last: chains in front of voice.c's and discord.c's tick hooks */
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();

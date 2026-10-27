@@ -37,6 +37,24 @@ result to `../Kernel33.dll` (`K33_NO_COPY=1` leaves it in this folder). Needs li
 `third_party/` (official SDL2-devel mingw package, SHA-256 checked) and links statically: the DLL has no
 SDL2.dll dependency.
 
+## Player-hosted matches (branch `feat/p2p-hosting`)
+`p2p.c` lets a player host a match from the client: the sh1x match server runs as a child of the
+host's client (`p2phost [map] [gametype] [zonetype]`, `p2pstop`, `p2pstatus`, or `+set k33_p2pHost 1`;
+settings in `p2p\p2p_host.ini`). `hostgate.c` lets the client exchange UDP only with loopback, the lobby
+(dwauth.ini / stun.ini hosts), the UPnP gateway and lobby-vouched hosts. That is a hard requirement
+from the client security audit. Design, trust rules, stages and measurements: `docs/P2P_HOSTING.md`.
+
+The server is the git submodule `server/sh1x` (the sh1x server repo, pinned to its `feat/p2p-hosting`
+commit). `build.sh` / `build-dev.sh` init it; the DLL does not compile it. To build and stage the
+server a client hosts:
+```sh
+git submodule update --init server/sh1x       # never --recursive: the server has a URL-less gitlink
+sh build-server.sh                            # WSL cross-build + staging into ../../k33_p2p_staging
+```
+`build-server.sh` initialises only the server's `bin/home/codol_rawfiles` submodule
+(`core.autocrlf false`). It needs WSL Ubuntu-24.04 with i686-w64-mingw32 and nasm, and the server's
+prebuilt lib/*.a (`K33_SERVER_LIBS`).
+
 ## Parity logger (branch `parity-log`)
 `parity.c` adds a client-side snapshot-parity logger for bringing the server to retail parity. It
 writes to the game's own console log (`main\console_mp-00N.log`) through C1's Com_Printf, one line

@@ -18,6 +18,9 @@
 # build.sh and the -DK33_NO_CONSOLE variant leave the editor out.
 set -e
 cd "$(dirname "$0")"
+# The sh1x server that p2p.c hosts is the submodule server/sh1x (docs/P2P_HOSTING.md); the DLL itself does
+# not compile it, build-server.sh does. Init it (not --recursive: the server has a URL-less gitlink).
+[ -f server/sh1x/makefile ] || git submodule update --init server/sh1x || echo "warning: server/sh1x submodule not initialised (only build-server.sh needs it)"
 # build-profile.sh (CODOL_LOCAL_TESTING, the launcher pin): the dev build defaults to the local-testing profile, whose
 # second client still needs +set codol_local_test_multi 1 and a loopback dwauth.ini (local_multi.c).
 K33_LOCAL_TESTING=${K33_LOCAL_TESTING:-1}
@@ -40,7 +43,7 @@ fi
 "$BIN/windres.exe" -O coff -i kernel33.rc -o kernel33_res.o
 CFLAGS="-O2 -Wall -Wextra -Wno-unused-parameter -Wno-cast-function-type -Wno-missing-field-initializers -shared -s -static -static-libgcc -I$SDL_DIR/include"
 LIBS="-L$SDL_DIR/lib -lSDL2 -lsetupapi -lcfgmgr32 -lversion -loleaut32 -luuid \
--lopus -lz -limm32 -lgdi32 -lshlwapi -lole32 -lwinmm -lws2_32 -ladvapi32 -lshell32 -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat"
+-lopus -lz -limm32 -lgdi32 -lshlwapi -lole32 -lwinmm -lws2_32 -liphlpapi -ladvapi32 -lshell32 -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat"
 VOBJ=obj_vision
 VSRC="imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp imgui/imgui_impl_dx9.cpp \
 imgui/imgui_impl_win32.cpp vision_ui.cpp"
