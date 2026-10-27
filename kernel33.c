@@ -507,6 +507,10 @@ static BOOL PatchUnsignedZones(void)
  *     first entry it links under a name, so their assets win over every stock zone.
  * Files are taken in alphabetical order; each must start IWffu100 version 0x14E. Nothing is held
  * in memory: C1's own streaming reader reads the file on every load.
+ * The project's zones are consolidated, one per list and language (build_zones.py, zone_packs/): codol_common (ahead
+ * of code_pre_gfx), codol_common_ui_mp (UI list), codol_common_postgfx_mp and codol_infected_cyborg_postgfx_mp (after
+ * code_post_gfx), codol_english_locale / codol_chinese_locale (ahead of code_pre_gfx, one language). An old zone name
+ * (patch_locale_policy.h kCodolPatchZoneMerged) is skipped while the zone that replaced it is in the folder.
  * A file named like a stock zone (or ffotd_client) is skipped, so it can never shadow one; to
  * replace a stock zone, put the unsigned build in its stock folder instead.
  * "+set codol_patchdir 0" on the command line turns the folder off.
@@ -695,6 +699,20 @@ static void LoadPatchDir(void)
         if (lstrcmpiA(z->name, "ffotd_client") == 0) {
             Log("patch folder: skipped %s: the name belongs to the lobby's FFOTD", file);
             continue;
+        }
+        {   /* an old zone whose assets a consolidated zone in the folder carries now (patch_locale_policy.h) */
+            const char *into = CodolPatchZoneMergedInto(z->name);
+            BOOL there = FALSE;
+            char want[MAX_PATH];
+            if (into) {
+                _snprintf(want, sizeof(want), "%s.ff", into);
+                want[sizeof(want) - 1] = 0;
+                for (int j = 0; j < count && !there; j++) there = lstrcmpiA(files[j], want) == 0;
+            }
+            if (there) {
+                Log("patch folder: skipped %s: merged into %s", file, want);
+                continue;
+            }
         }
         BOOL dup = FALSE;
         for (int j = 0; j < g_patchZoneCount; j++) dup |= lstrcmpiA(g_patchZones[j].name, z->name) == 0;
