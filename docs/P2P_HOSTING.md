@@ -376,3 +376,21 @@ memory.
    covers it. Moving the zone load off the game thread is the fix if that matters.
 4. **Faults outside sh1x_host.dll and msvcrt.dll are not contained.** For example, a fault in ntdll's heap code
    after server heap corruption. After a contained fault the session's port stays bound until the client exits.
+
+### Asset layout stage 1 and PMem sizing (2026-10-27)
+The server branch `feat/iw4-asset-layout` (`docs/CODOL_IW4_ASSET_LAYOUT.md` there) measured where the
+server's memory goes. Asset reuse and the IW4 layout are planned there in stages.
+
+- **PMem.** The fastfile block was 328 MB, committed up front, but held 1.5 MB. It is now only reserved, and each
+  allocation commits its own pages. Its size is `codol_pmemMegs`; p2p.c passes 32 (`pmem_megs=` in p2p_host.ini).
+- **In-process host, before / after**, mp_killhouse_sh, 2 players:
+
+  | measure | before | after |
+  |---|---|---|
+  | private, in a match | 3,113 MB | 2,783 MB |
+  | address space, in a match | 3,671 MB | 3,416 MB of 4,096 MB |
+  | private, at the menu once ready | 2,366 MB | 1,619 MB |
+
+- **One hosted session per client run (user decision).** After `p2pstop`, a second `p2phost` prints
+  "this client already hosted a match; restart the client to host again". Measured: the stop ended the server
+  with exit code 0 and released udp/17760, and the client stayed responsive.

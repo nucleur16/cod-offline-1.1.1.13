@@ -46,6 +46,7 @@ typedef struct P2PConfig {
     char mode[16];               /* inprocess (default): sh1x_host.dll on the game thread; child: the exe */
     char dll[MAX_PATH];          /* the server as a DLL (mode inprocess) */
     int port, bots, admission, developer, readyTimeout;
+    int pmemMegs;                /* codol_pmemMegs for the server: its fastfile block (0 = the server default) */
 } P2PConfig;
 
 static struct {
@@ -64,6 +65,7 @@ static volatile LONG g_p2pStop;
 static char g_p2pArgMap[64], g_p2pArgGametype[32], g_p2pArgZone[8];
 struct P2PConfig;
 static int P2PInprocRun(const struct P2PConfig *c, const char *password, const char *args); /* p2p_inproc.c */
+static BOOL P2PInprocUsed(void); /* p2p_inproc.c: an in-process session already ran in this client */
 
 static void P2PSetState(int state, const char *error)
 {
@@ -124,6 +126,9 @@ static void P2PDefaults(P2PConfig *c)
     c->port = P2P_DEFAULT_PORT;
     c->admission = 1;
     c->readyTimeout = 180;
+    /* The fastfile block (PMem) held 1.5 MB on mp_killhouse_sh, mp_rust and mp_crash_tropical (sh1x_mem,
+     * 2026-10-27); the server default reserves 328 MB of the shared address space. */
+    c->pmemMegs = 32;
 }
 
 static void P2PLoadIni(P2PConfig *c)
@@ -155,7 +160,7 @@ static void P2PLoadIni(P2PConfig *c)
         };
         struct { const char *k; int *dst; } ints[] = {
             { "port", &c->port }, { "bots", &c->bots }, { "admission_required", &c->admission },
-            { "developer", &c->developer }, { "ready_timeout", &c->readyTimeout },
+            { "developer", &c->developer }, { "ready_timeout", &c->readyTimeout }, { "pmem_megs", &c->pmemMegs },
         };
         BOOL known = FALSE;
         for (unsigned i = 0; i < sizeof(strs) / sizeof(strs[0]); i++)
@@ -412,17 +417,19 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
 
     static char cmd[8192];
     BOOL inproc = !_stricmp(c.mode, "inprocess");
+    char pmem[48] = "";
+    if (c.pmemMegs >= 32 && c.pmemMegs <= 2048) _snprintf(pmem, sizeof(pmem), "+set codol_pmemMegs %d", c.pmemMegs);
     _snprintf(cmd, sizeof(cmd),
         "\"%s\" +set dedicated 2 +set fs_basepath \"%s\" +set fs_homepath \"%s\" +set net_ip %s +set net_port %d "
         "+set rcon_password \"%s\" +set logfile 2 +set logrcon 1 +set developer %d +set sv_fps 60 "
         "+set codol_scriptPath \"%s\" +set codol_scriptOverlay \"%s\" +set codol_scriptNativeOverlay \"%s\" "
         "+set codol_securityKeyPath \"%s\\securitykey.bin\" +set codol_admissionPath \"%s\\game_admissions.txt\" "
         "+set codol_admissionRequired %d +set codol_profilePath \"%s\" +set codol_zoneType %s +set codol_sessionMap %s "
-        "+set g_gametype %s +set scr_codol_bots %d +set sv_botDifficulty %s +set codol_hostParentPid %lu "
+        "+set g_gametype %s +set scr_codol_bots %d +set sv_botDifficulty %s +set codol_hostParentPid %lu %s "
         "+codol_scriptPath +codol_scriptOverlay +codol_scriptNativeOverlay +map %s %s",
         c.exe, c.basepath, c.home, c.netIp, c.port, password, c.developer, c.scripts, c.scripts, c.scripts,
         c.state, c.state, c.admission ? 1 : 0, c.profile, c.zoneType, c.sessionMap[0] ? c.sessionMap : c.map,
-        c.gametype, c.bots, c.botDifficulty, inproc ? 0ul : GetCurrentProcessId(), c.map, c.extra);
+        c.gametype, c.bots, c.botDifficulty, inproc ? 0ul : GetCurrentProcessId(), pmem, c.map, c.extra);
     cmd[sizeof(cmd) - 1] = 0;
     if (inproc) {
         /* The same command line without the exe: Sh1xHost_Init takes what follows it. */
@@ -563,6 +570,7 @@ static void __cdecl P2PCmdHost(void)
     const char *gt = VoiceArgc() > 2 ? VoiceArgv(2) : "";
     const char *zone = VoiceArgc() > 3 ? VoiceArgv(3) : "";
     if ((map[0] && !P2PIdent(map, 63)) || (gt[0] && !P2PIdent(gt, 31))) { C1Printf("p2phost: bad map or gametype\n"); return; }
+    if (P2PInprocUsed()) { C1Printf("p2phost: this client already hosted a match; restart the client to host again\n"); return; }
     if (P2PStart(map, gt, zone)) C1Printf("p2phost: starting the match server (p2pstatus shows when it is ready)\n");
     else C1Printf("p2phost: already hosting; p2pstop first\n");
 }

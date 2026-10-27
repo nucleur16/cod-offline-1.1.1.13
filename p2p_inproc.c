@@ -223,6 +223,8 @@ __asm__(
     "    popal\n"
     "    jmp *_g_piNext\n");
 
+static BOOL P2PInprocUsed(void) { return g_piSession > 0 && (g_piState == PI_ENDED || g_piState == PI_CRASHED); }
+
 /* ---- the session (p2p.c's host thread) --------------------------------------------------------------- */
 
 static void PiMemory(SIZE_T *privateMb, SIZE_T *virtualMb)
@@ -247,6 +249,13 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     }
     LONG st = g_piState;
     if (st == PI_INIT_PENDING || st == PI_RUNNING) { P2PSetState(P2P_FAILED, "a server is already running"); return 1; }
+    /* One hosted session per client run (user, 2026-10-27). A session's server memory (its DLL copy, the PMem block,
+     * the hunk) is not released, and a second session would not fit in the address space. */
+    if (P2PInprocUsed()) {
+        Log("p2p in-process: this client already hosted a match; restart the client to host again");
+        P2PSetState(P2P_FAILED, "restart the client to host again");
+        return 1;
+    }
     /* A private copy: a fresh set of globals for every session. */
     char copy[MAX_PATH], tmp[MAX_PATH];
     GetTempPathA(MAX_PATH, tmp);
