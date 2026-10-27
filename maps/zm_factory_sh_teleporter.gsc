@@ -9,8 +9,9 @@
 // teleporter_powerup, pack_door, pack_door_clip, pad_<n>_wire structs.
 //
 // TAKEN, by T5 function: teleporter_init (cost 1500, delay 2 s, cooldown
-// 5 s), init_pack_door (the door drops 35 / 25 / 60 units as the pads link,
-// its clip connects paths and goes), pad_manager, teleport_pad_think,
+// 5 s), init_pack_door (the door drops in three steps as the pads link,
+// scaled to CoDOL's taller door model, see below; its clip connects paths
+// and goes), pad_manager, teleport_pad_think,
 // teleport_pad_countdown (30 s to reach the mainframe, with a HUD timer in
 // place of T5's _zombiemode_timer), teleport_pad_active_think,
 // player_teleporting, teleport_players (black room for 2 s, then the
@@ -88,6 +89,21 @@ teleport_trigger_invisible( hide )
 
 // --------------------------------------------------------------------------
 // T5 init_pack_door.
+//
+// CHANGED: the drop distances.  T5 lowers the door 35 + 25 + 60 = 120 units,
+// one unit more than its model is tall: zombie_teleporter_mainframe_door's
+// XModel bounds in zombie_cod5_factory.ff are z -120.1 .. -1.3 (119 units).
+// CoDOL's door is a different model, codo_zombie_teleporter_mainframe_door,
+// and it is 167.5 units tall (lod0 vertices z -110.4 .. 57.1, exported from
+// zm_factory_sh.ff), filling the doorway from the PaP room floor (z 103.4)
+// to the top of the opening (about z 270; both MEASURED with bulletTrace on
+// a probe server).  T5's 120 units left the top 47.5 units of the door
+// standing in the doorway, z 103 .. 150.6, while the clip was already gone
+// (players walked through a door that was still visibly half shut; the
+// model's own bullet collision still stopped shots up to z 150).  Each step
+// is scaled by 167.5 / 119 so the door opens the same fraction of the
+// doorway at every link as T5's, and the last step takes it the whole way:
+// 49 + 35 + 85 = 169 units, the top ending at z 101.6, under the floor.
 // --------------------------------------------------------------------------
 init_pack_door()
 {
@@ -96,18 +112,18 @@ init_pack_door()
 		return;
 
 	flag_wait( "teleporter_pad_link_1" );
-	door moveZ( -35, 1.5, 1 );
+	door moveZ( -49, 1.5, 1 );
 	door playSound( "packa_door_2" );
 	door thread packa_door_reminder();
 	wait( 2 );
 
 	flag_wait( "teleporter_pad_link_2" );
-	door moveZ( -25, 1.5, 1 );
+	door moveZ( -35, 1.5, 1 );
 	door playSound( "packa_door_2" );
 	wait( 2 );
 
 	flag_wait( "teleporter_pad_link_3" );
-	door moveZ( -60, 1.5, 1 );
+	door moveZ( -85, 1.5, 1 );
 	door playSound( "packa_door_2" );
 
 	clip = getEntArray( "pack_door_clip", "targetname" );
