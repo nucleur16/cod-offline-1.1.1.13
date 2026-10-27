@@ -572,16 +572,6 @@ coop_give_weapon( weapon, switchTo )
 
 giveStartingLoadout()
 {
-	// A mode with its own loadout (survival: IW5's wave-table loadout) gives
-	// it here and returns the primary the character is composed with.
-	if ( isDefined( level.coop_loadout_func ) )
-	{
-		primary = self [[ level.coop_loadout_func ]]();
-		if ( isDefined( primary ) && !( isDefined( self.isbot ) && self.isbot ) )
-			self codol_applyProfileCharacter( "tf", primary );
-		return;
-	}
-
 	self takeAllWeapons();
 
 	primary = level.coop_primary;
@@ -1089,8 +1079,6 @@ Callback_StartGameType()
 	maps\_coopmission_estate::init();
 	// coop_defense_mp_crash_tropical's own flow (the crash site).
 	maps\_coopmission_defense_crash::init();
-	// coop_survival_mp_<map>: Spec Ops Survival (_coopsurvival.gsc).
-	maps\_coopsurvival::init();
 	maps\_coopcourse::init();
 
 	// The campaign / Spec Ops mission, driven by the map's own entities (the
@@ -1107,7 +1095,6 @@ Callback_StartGameType()
 	level thread maps\_coopmission_take_fav::main();
 	level thread maps\_coopmission_estate::main();
 	level thread maps\_coopmission_defense_crash::main();
-	level thread maps\_coopsurvival::main();
 
 	// Probe harness; inert unless +set scr_coop_test 1.
 	level thread maps\_cooptest::main();
@@ -1215,15 +1202,6 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 		}
 	}
 
-	// A mode's armor (survival's body armor, IW5 player_armor_shield) soaks
-	// the hit before health; it returns what is left of it.
-	if ( isDefined( level.coop_player_damage_func ) )
-	{
-		iDamage = self [[ level.coop_player_damage_func ]]( iDamage, eAttacker, sMeansOfDeath );
-		if ( iDamage <= 0 )
-			return;
-	}
-
 	self.coop_last_damage = getTime();
 	if ( self.health - iDamage > self.maxhealth * level.coop_red_cutoff )
 		self.coop_grace_used = false;
@@ -1249,11 +1227,6 @@ Callback_PlayerKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, v
 	if ( isDefined( level.coop_mission_over ) && level.coop_mission_over )
 		return;
 
-	// A mode that owns death and respawn (survival: back at the next
-	// intermission) takes it from here.
-	if ( isDefined( level.coop_player_killed_func ) && self [[ level.coop_player_killed_func ]]() )
-		return;
-
 	if ( !isDefined( self.coop_lives_left ) )
 		self.coop_lives_left = level.coop_lives;
 	self.coop_lives_left--;
@@ -1273,8 +1246,6 @@ Callback_PlayerKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, v
 Callback_ActorKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset )
 {
 	self maps\_coopmission::onActorKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset );
-	if ( isDefined( level.coop_actor_killed_func ) )
-		self [[ level.coop_actor_killed_func ]]( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset );
 }
 
 // Reached only when the engine decides a player is eligible for last stand.
