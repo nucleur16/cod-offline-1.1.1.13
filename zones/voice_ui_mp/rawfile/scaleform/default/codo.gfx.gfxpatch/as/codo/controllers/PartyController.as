@@ -316,13 +316,7 @@ package codo.controllers
       
       private function onProposePartyMembershipHandle(cEvt:ParaEvent) : void
       {
-         if(this.isPartyMembersMax())
-         {
-            this.showMsg(LocalizationParty.NOTE_PARTY_MAX_MEMBERS,MsgBtnCount.ONE);
-            return;
-         }
-         CFunctionContainer.ProposePartyMembership(cEvt.myPara.id);
-         this.sendSystemNotification(LocalizationParty.NOTE_PROPOSE_PARTY_NEW_MEMBER,[cEvt.myPara.name]);
+         return;
       }
       
       private function onRejectPartyMembershipHandle(cEvt:ParaEvent) : void
@@ -332,24 +326,12 @@ package codo.controllers
       
       private function onTryShowInviteListHandle(cEvt:ParaEvent) : void
       {
-         this.broadcast(BCEvent.TRY_OPEN_FRIENDLIST,{"expand":true});
+         return;
       }
       
       private function onCreatePartyHandle(cEvt:ParaEvent) : void
       {
-         if(this.getSyncDP(SyncDataID.HAS_MP_CHARACTER))
-         {
-            this._partyInfoPlaceholder = new PartyObj(cEvt.myPara);
-            if(this.isInParty())
-            {
-               return;
-            }
-            this.sanitizePartyInfo();
-         }
-         else
-         {
-            this.broadcast(BCEvent.EVT_PROMPT_CHARACTER_CREATION);
-         }
+         return;
       }
       
       private function onModifyPartyHandle(cEvt:ParaEvent) : void
@@ -635,17 +617,7 @@ package codo.controllers
       
       private function onTryOpenPartyHandle(cEvt:ParaEvent) : void
       {
-         if(!this.isInParty())
-         {
-            if(!this.getSyncDP(SyncDataID.IS_IN_ROOM) && !this.getSyncDP(SyncDataID.IS_IN_RANKED_MATCH))
-            {
-               this.broadcast(BCEvent.SHOW_PARTY_CREATOR);
-            }
-         }
-         else
-         {
-            this.broadcast(BCEvent.SHOW_PARTY_LIST);
-         }
+         return;
       }
       
       private function onPartyInfoSanitizedHandle(cEvt:ParaEvent) : void
@@ -673,10 +645,7 @@ package codo.controllers
       
       private function createParty() : void
       {
-         if(!this.isInParty())
-         {
-            this.request(AsyncTaskID.CREATE_PARTY,this._partyInfoPlaceholder,this.onPartyJoined);
-         }
+         return;
       }
       
       private function fillPartyMemberObj(dest:PartyMemberObj, src:Object) : void
@@ -708,14 +677,7 @@ package codo.controllers
       
       private function onInviteUsersToPartyHandle(cEvt:ParaEvent) : void
       {
-         var tempUsersAry:Array = cEvt.myPara.users;
-         for(var i:uint = 0; i < tempUsersAry.length; i++)
-         {
-            if(this.isInParty() && this.getSyncDP(SyncDataID.PARTY_CAN_INVITE_TO_PARTY_BY_USEROBJ,[tempUsersAry[i]]))
-            {
-               this.broadcast(BCEvent.EVT_PROPOSE_PARTY_MEMBERSHIP,tempUsersAry[i]);
-            }
-         }
+         return;
       }
    }
 }

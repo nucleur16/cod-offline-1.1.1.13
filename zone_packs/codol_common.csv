@@ -1,0 +1,14 @@
+// codol_common -- the shared zone ahead of code_pre_gfx (both languages): mode rules and tables, the in-match movies,
+// sounds and the usermaps' create-room data. Built by build_zones.py from the parts below (zonekit/packs.py).
+>zone,codol_common
+>install,client_shipRetail\patch
+>zlib,9
+>filetime,0x01dd65c1,0xf533ac42
+>rsa,abf28715d186151d03a939eb47de9d05759b9682d6ea0efca9b1d41156338f7557f39028d4b2fb84b3b76455a5ca34aca35172cb30b86ece16c8293868f58e9c33b437510ffa8fe7001ec15d749d48aa1801ed2c49d7c37fff5d4b9fc8e8c71e0208853356c2e921ae47ff583a83fae381056deae0c1410924a9f819fc9ca361acf92ef29e65b3890d9691670aa3b4b5a36cd59f45ef76c9c341765d7acffcf2e5d2d18e9c0be39ae242a506e56b0b7f7781676d01b59b8d3ff59cc76918f75676476bdf7faa3fbb6c783adbfadf2f334365262031829fa800fdac50957ecc01dfb8cfb458886d92b11f01f62143db1fda6eb50bf7653ef17c4f6a71049a7d96
+>build-md5,427b0963779bd150429a73f97b7889f1
+>build-md5-all,be9e2f84f94a7c36ab8fef7b867fa0ce
+part,000_codol_party_modes
+part,codol_loading_mode_names
+part,codol_zm_deathmachine_audio
+part,controller_ingame
+part,usermaps_patch,exclude=localize

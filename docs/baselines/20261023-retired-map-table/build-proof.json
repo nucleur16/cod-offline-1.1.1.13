@@ -1,0 +1,80 @@
+{
+  "state": "candidate under combined release qualification",
+  "production_release_qualified": false,
+  "upstream_commit": "1febd14f0228dced12a09230d733069162681035",
+  "current_main": "8bb68ac25ca5192fd6622263c3695152e1b1a831",
+  "upstream_head_and_main_tree_identical": true,
+  "source_pins": {
+    "borderless.c": "d4b8e2befffd03554bd91e055c9a12cbcaced136d0475538a2dd13b2a3e672d3",
+    "build-controller.sh": "e1df460766597e3562d28af1bac37480e5fc8863cf0cb78b505ca839c0d70be2",
+    "build-parity.sh": "41a0052fe166e3126260bf78459816d8a662efb35ce6fd164107b6721931639b",
+    "build-profile.sh": "b00e807c90f65fd54ae0bb09e7fb402ed531bb95b6d2b755872065cdcc5c769f",
+    "build.sh": "9e593ff9072cf718a40b201b6b6868caf96c29cf8ff16f0faf513d46e852c726",
+    "c1game.c": "f96ad2830a7e151a4bdfc4ebdad3663a2aee6fed9b40dffa30f5e93d59bb377f",
+    "c1_tables.h": "d6d3f9b13daf489f85593392808a35336b8981db71f4b64b40ad8b236cc3e8db",
+    "controller.c": "22627b28d34615e67a86d41dc49cf80aebfcc0e92c5c1a7c382ab5c0cbe3251b",
+    "controller_glyphs.c": "f2b0d2eb0eda301f6f7bdf5fa52a95cf18c4077b619956561449709de05088bf",
+    "discord.c": "468fba1e878079407785edaf0000dc6dfebd9deaaba4d36980eb733e80c35b79",
+    "infect_scoreboard.c": "b6af56d8435612c2022a6721a19c17ca940744a3817472ecb0355b802e6fb3ca",
+    "kernel33.c": "26d5e34903c2065b4f2bc5f2120510a6a27a3edbc901d5afc80fe2277061b2ad",
+    "kernel33.def": "1b0cd9fe5a6f9a98f4e154c3059b0500550863ab4a0076506227732db3c91804",
+    "kernel33.rc": "337693a9e33139913a1f5d297f00689a08384beb03a32cf6bcc060464bd1fa05",
+    "launcher_update_bridge.c": "f5d514d0e954543bcb8c9f93ad4f048707f0e905f77e26032f6b02dab3b8d6c5",
+    "local_multi.c": "60998c3d6e3715fd10cbd8ecd9ae88696c6cfa5188b48234f4e26fb4600a3d65",
+    "local_multi_policy.h": "13f42af47730bb6e095b575154c944ef275df6335354e2340bbf7e953472c201",
+    "managed_quick.c": "c2cb661bb400d8f6c2aa76d99013022c0f1c423ea51be79aad259a810d6528f3",
+    "managed_quick_policy.h": "2bd6e13f7870bf0c6d98159dc544a1ce494b833bbf558dd837589869c9df2311",
+    "padsnap.c": "4c5ea40a3f37ebda284b479c502891616d99bfe6d9784100e2300fd136c3dfa2",
+    "parity.c": "260cb429f03fae852ddfbfa3335ca19b7915fc8acd1b857b15facf79a6a44070",
+    "patch_locale_policy.h": "246569f0ee62d57867dac7450ea26913af4ebe046e91758d0e621f63aca0643b",
+    "sounddiag.c": "ac957f65c3e2545f07207a1064e5eab68007c528874eaac28b15720166b2d02a",
+    "soundvoices.c": "01943b849ff4f21e53d43c414bff7831a39c06de48bac42151073858d51c7519",
+    "unpacked.z": "1e25b06a04991fd5ff81a12700b6341ab3ceb07b09d796d0aa7575434419525c",
+    "usermaps.c": "ac23eb093cc33e9327926d444fdc77760b2a48a9c3378535e59c1565f38840d6",
+    "voice.c": "fe376ac0a2138036154ce33d2ee6df590dff404a2acabe2c1b7826b449987521"
+  },
+  "launcher_host_sha256": "834fb340a45ff731b696207dabcb9e4852bf5866063ab000c29192dcad2c49ea",
+  "profiles": [
+    {
+      "profile": "production",
+      "sha256": "c21cd40f469e7df8eeda6f89ba32f9e42474ac1ec121761b0163a172c21f78bb"
+    },
+    {
+      "profile": "local-testing",
+      "sha256": "631ba8c65a09447cde1e1c21af5da19b48c42173872f04acf3939b6ddec471ef"
+    }
+  ],
+  "generated_files": {
+    "main/iw_image_16.iwd": "e89cf550f4b7cf36c2eaa00b41f7520d8c8e50601d681a3fe32fd50953191fbd",
+    "client_shipRetail/chinese/patch_common_gametype_zm.ff": "d6782be634d3f6357d02c4783b1175b7fb7b740580bc00d6deabefeb89ff23fc",
+    "client_shipRetail/patch/000_codol_party_modes.ff": "c97fc50fb44740e8b9e6eeedc37b9ecca0f448e511dfdc643d5b8a34177ac089",
+    "client_shipRetail/patch/codol_chinese_ui.ff": "cc65373e0445dfefbb8263513c97fe92e1a53bfbf9c6064afc1741fb624a0059",
+    "client_shipRetail/patch/codol_chinese_ui_extra.ff": "3830953c065a8007c360c295d611a0a690f1eb1ca66846ab0259feba7a9314ef",
+    "client_shipRetail/patch/codol_english.ff": "e3309ca7f7c6ee557177d3cd4bfb41e2ae60fea6e6ee673976e186d096c1f2ad",
+    "client_shipRetail/patch/codol_english_font.ff": "c173db22419c45f234bae85d30c14d422ac1b721f0e7ee479aa348cacc245497",
+    "client_shipRetail/patch/codol_english_ui.ff": "33c9d6c92eea7efa1f9088b6839cfa6721daf5daee719077b676d04d50433536",
+    "client_shipRetail/patch/codol_english_ui_extra.ff": "5748358582f72f20f050567c0f940ca4a3e2328ba33797a4e0aec50785029ccc",
+    "client_shipRetail/patch/codol_english_usermaps.ff": "973f85d90162bf1860d003fbc2ab7f733d9faf885b83c1578fce0e2d1db90ed6",
+    "client_shipRetail/patch/codol_english_zombies_base.ff": "015cabe1e94c61d8c80cb6f31aa3d3f9828d695090d65ce7f2ede0c4d648128b",
+    "client_shipRetail/patch/codol_field_orders_postgfx_mp.ff": "60ebd74509e5b2d7424866ab99244cd54aec0aee01299975a27557e56ff641ce",
+    "client_shipRetail/patch/codol_infected_cyborg_postgfx_mp.ff": "e9de27186754aa8882ca0013b56c01ffb2ab1f5b9e760e7d48b830a6329d822e",
+    "client_shipRetail/patch/codol_loading_mode_names.ff": "7bc788f4901c480c65ab4f9ca0aca28a0913b70fc8803fb9d7847e5f3ff6123a",
+    "client_shipRetail/patch/codol_zm_deathmachine_audio.ff": "9f1a950c88191f279986518ecbff73da7ea6e8e2b41399855e1888addf247760",
+    "client_shipRetail/patch/controller_glyphs_postgfx_mp.ff": "ac7270d38aedb8723f9652526c3755595e7b0ce6b02dfaa85e3738a11113cda7",
+    "client_shipRetail/patch/controller_ingame.ff": "c11a9ae99948526c092fb851792d486ca7a005f95d2d0e104de42d7eac8150e9",
+    "client_shipRetail/patch/sound_channels.txt": "74fa253aaee475f0bcf315a1c4297eac2e9fc77b94b48217326aa7c7caa940c5",
+    "client_shipRetail/patch/usermaps_patch.ff": "016ce2d3b4df649e2a6d6fffce24b3edce2da1c414e03e1a5e5ea8071052b041",
+    "client_shipRetail/patch/usermaps_ui_mp.ff": "929dec70ae53cbacf56e119d761ab1ed8c219ecacc3d7838c1ab0f9068e32090",
+    "client_shipRetail/patch/voice_ui_mp.ff": "52177e2b72906e9c00e4ca986f16cf5398ab05e8a72e0d726bbeb1ff2a3717e7"
+  },
+  "zone_comparison": "18/19 unfiltered rebuild comparisons; final shipping usermaps_ui_mp byte-identical to preceding accepted shared build",
+  "retired_archive_upgrade_C1": "old codol_zombies_endless.ff left in all four installations; new shared DLL logged retirement for each process",
+  "narrow_C1": "EN/ZH/EN/ZH four-human Zombies natural results and return to same room; no busy modal and distinct spawn views",
+  "remaining": [
+    "MP/Quick current paired candidate",
+    "full social/news matrix",
+    "launcher GUI handoff",
+    "production release gates"
+  ],
+  "production_changed": false
+}

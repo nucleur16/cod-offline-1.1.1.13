@@ -106,3 +106,61 @@ static const BYTE *C1RegisterInt(const char *name, int value, int min, int max, 
 __attribute__((unused)) static int C1DvarInt(const BYTE *d, int def) { return d ? *(volatile const int *)(d + 0xC) : def; }
 
 __attribute__((unused)) static int C1KeyCatchers(void) { return *(volatile int *)(DWORD_PTR)C1_KEYCATCHERS_VA; }
+
+/* ---- dvar strings and queued "set" (theatre.c, quick_room.c, name_display.c) ------------------------------------
+ *   find       Dvar_FindVar 0x6232C0 (name) -> dvar_t*: name +0, type byte +8 (0 bool, 1 float, 5 int, 7 string),
+ *              current value +0xC (a string dvar's is a char*).
+ *   cbuf room  the local client's command buffer {data 0x25094DC, maxsize +4, cursize +8}, the one
+ *              Cbuf_AddText fills. A line that does not fit is dropped by C1 with a print, so C1QueueSet checks first.
+ * A "set" goes through the command buffer, so the dvar changes in C1's own frame (Cbuf_Execute), never inside a hook,
+ * and a dvar that does not exist yet is created as a string dvar, which is what the Scaleform movies read. */
+#define C1_DVAR_FIND_VA    0x006232C0u
+#define C1_CBUF_DATA_VA    0x025094DCu
+
+static const BYTE *C1DvarFind(const char *name)
+{
+    static const BYTE kFind[] = { 0x55, 0x8B, 0xEC, 0x51, 0x53, 0x56, 0x57, 0x68, 0xD0, 0x98, 0xAB, 0x02 };
+    static int ok = -1;
+    if (ok < 0) ok = Readable((void *)(DWORD_PTR)C1_DVAR_FIND_VA, sizeof(kFind)) &&
+                     !memcmp((void *)(DWORD_PTR)C1_DVAR_FIND_VA, kFind, sizeof(kFind));
+    if (!ok || !C1DvarsReady()) return NULL;
+    const BYTE *d = ((const BYTE *(__cdecl *)(const char *))(DWORD_PTR)C1_DVAR_FIND_VA)(name);
+    return d && Readable(d, 0x10) ? d : NULL;
+}
+
+/* A string dvar's value copied into out ("" when it is missing or not a string). Main thread. */
+__attribute__((unused)) static BOOL C1DvarString(const char *name, char *out, int size)
+{
+    out[0] = 0;
+    const BYTE *d = C1DvarFind(name);
+    if (!d || d[8] != 7) return FALSE;
+    const char *s = *(const char *const *)(d + 0xC);
+    if (!s || !Readable(s, 1)) return FALSE;
+    int i = 0;
+    for (; i < size - 1 && Readable(s + i, 1) && s[i]; i++) out[i] = s[i];
+    out[i] = 0;
+    return TRUE;
+}
+
+/* Free bytes in the local client's command buffer (0 when it is not set up). */
+static int C1CbufFree(void)
+{
+    const DWORD *cb = (const DWORD *)(DWORD_PTR)C1_CBUF_DATA_VA;
+    if (!g_c1CbufOk || !Readable(cb, 12) || !cb[0] || cb[1] < 1024 || cb[1] > 0x100000 || cb[2] > cb[1]) return 0;
+    return (int)(cb[1] - cb[2]);
+}
+
+/* Queues set <name> "<value>". The value must not hold a quote or a line break (they are dropped). Main thread. */
+__attribute__((unused)) static BOOL C1QueueSet(const char *name, const char *value)
+{
+    char line[1100];
+    int n = _snprintf(line, sizeof(line) - 2, "set %s \"", name);
+    if (n < 0) return FALSE;
+    for (const char *p = value; p && *p && n < (int)sizeof(line) - 3; p++)
+        if (*p != '"' && *p != '\r' && *p != '\n' && *p != ';') line[n++] = *p;
+    line[n++] = '"';
+    line[n++] = '\n';
+    line[n] = 0;
+    if (C1CbufFree() <= n + 1) return FALSE;
+    return C1CbufAddText(line);
+}
