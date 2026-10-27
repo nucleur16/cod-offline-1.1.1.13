@@ -203,6 +203,7 @@ after_spawn()
 	self survival_abilities();
 	self player_hud();
 	self setThreatBiasGroup( "allies" );
+	self thread camping_think();
 }
 
 // What the class gave, plus a survival life's extras: the downs, the perks
@@ -268,6 +269,8 @@ player_damage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, 
 		return;
 
 	self.survival_last_damage = getTime();
+	if ( isDefined( self.survival_perf ) )
+		self.survival_perf[ "damagetaken" ] += iDamage;
 	if ( self.health - iDamage > self.maxhealth * level.survival_red_cutoff )
 		self.survival_grace_used = false;
 	self [[level.survival_mp_player_damage]]( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime );
@@ -608,9 +611,9 @@ end_of_wave_players()
 			p common_scripts\_laststand::revive_success( p );
 		if ( isDefined( p.survival_dead ) && p.survival_dead )
 			p thread respawn_dead();
-		// IW5 survival_credits: the wave bonus.
+		// IW5 player_performance_think: the personal wave reward.
 		if ( isAlive( p ) )
-			p add_credits( 100 + 25 * level.survival_wave_num, "wave" );
+			p add_credits( p wave_reward(), "wave" );
 	}
 }
 
@@ -663,6 +666,7 @@ waves()
 		update_wave_hud();
 		announce( "Wave " + level.survival_wave_num );
 		level notify( "wave_started", level.survival_wave_num );
+		performance_reset();
 		run_wave( w );
 		level notify( "wave_ended", level.survival_wave_num );
 		announce( "Wave " + level.survival_wave_num + " complete" );
@@ -849,4 +853,139 @@ ready_up( total )
 	self iPrintLn( "Ready" );
 	if ( level.survival_ready >= getPlayers().size )
 		level notify( "survival_all_ready" );
+}
+
+// --------------------------------------------------------------------------
+// The wave reward (IW5 player_performance_init / reward_calculation): per
+// wave, headshots, kills, the damage not taken, the time under 90 s and the
+// wave number, at IW5's coop rates when more than one player is in.
+// Accuracy is left out: this server's MP layer keeps no per-wave shot count.
+// --------------------------------------------------------------------------
+
+performance_reset()
+{
+	coop = getPlayers().size > 1;
+	level.survival_bonus = [];
+	level.survival_bonus[ "damagetaken" ] = 2;
+	level.survival_bonus[ "time" ] = 2;
+	level.survival_bonus[ "wavebonus" ] = 25;
+	level.survival_bonus[ "headshot" ] = 20;
+	level.survival_bonus[ "kill" ] = 10;
+	if ( coop )
+	{
+		level.survival_bonus[ "wavebonus" ] = 50;
+		level.survival_bonus[ "headshot" ] = 50;
+		level.survival_bonus[ "kill" ] = 50;
+	}
+	level.survival_wave_start = getTime();
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+	{
+		p = players[ i ];
+		p.survival_perf = [];
+		p.survival_perf[ "headshot" ] = 0;
+		p.survival_perf[ "kill" ] = 0;
+		p.survival_perf[ "damagetaken" ] = 0;
+	}
+}
+
+// From maps\mp\gametypes\_survival_ai::death_watch.
+perf_kill( headshot )
+{
+	if ( !isDefined( self.survival_perf ) )
+		return;
+	self.survival_perf[ "kill" ]++;
+	if ( headshot )
+		self.survival_perf[ "headshot" ]++;
+}
+
+wave_reward()
+{
+	if ( !isDefined( self.survival_perf ) || !isDefined( level.survival_bonus ) )
+		return 0;
+	b = level.survival_bonus;
+	total = self.survival_perf[ "headshot" ] * b[ "headshot" ];
+	notTaken = 400 - self.survival_perf[ "damagetaken" ] * b[ "damagetaken" ];
+	if ( notTaken > 0 )
+		total += notTaken;
+	total += self.survival_perf[ "kill" ] * b[ "kill" ];
+	seconds = 90 - int( ( getTime() - level.survival_wave_start ) / 1000 );
+	if ( seconds > 0 )
+		total += b[ "time" ] * seconds;
+	total += level.survival_wave_num * b[ "wavebonus" ];
+	return int( total );
+}
+
+// --------------------------------------------------------------------------
+// Camping (IW5 camping_think / camp_response / level_ai_respond): a player
+// who holds one spot (220 units) for about 20 s while not under pressure is
+// camping; every 8 s while he camps the soldiers are handed grenades for him
+// (IW5 throw_grenade_at_player: two each, forced for 8 s).
+// --------------------------------------------------------------------------
+
+camping_think()
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	self notify( "survival_camping" );
+	self endon( "survival_camping" );
+	self.camping = false;
+	self thread camp_response();
+	for ( ;; )
+	{
+		self.camping = false;
+		count = 0;
+		anchor = self.origin;
+		kills = int( self.kills );
+		while ( count <= 20 )
+		{
+			if ( distance( anchor, self.origin ) < 220 )
+				count++;
+			else
+				count -= 2;
+			if ( self.health < 40 )
+				count--;
+			if ( int( self.kills ) - kills > 0 )
+				count += int( self.kills ) - kills;
+			if ( count <= 0 || level.survival_in_intermission || ( isDefined( self.laststand ) && self.laststand ) )
+			{
+				count = 0;
+				anchor = self.origin;
+			}
+			kills = int( self.kills );
+			wait( 1 );
+		}
+		self.camping = true;
+		self.camping_loc = self.origin;
+		self notify( "camping" );
+		while ( distance( anchor, self.origin ) < 260 )
+			wait( 1 );
+		self.camping = false;
+		self notify( "stopped camping" );
+	}
+}
+
+camp_response()
+{
+	self endon( "death" );
+	self endon( "disconnect" );
+	self endon( "survival_camping" );
+	for ( ;; )
+	{
+		wait( 0.05 );
+		if ( !self.camping )
+			continue;
+		enemies = maps\mp\gametypes\_survival_ai::living_enemies();
+		for ( i = 0; i < enemies.size; i++ )
+		{
+			e = enemies[ i ];
+			if ( isDefined( e.isdog ) && e.isdog )
+				continue;
+			e.coop_grenades = 2;
+		}
+		// the shared AI grenade timer is waived for the response
+		level.coop_next_ai_grenade = 0;
+		codolprintln( "CoDOL survival: " + self.name + " is camping at " + self.camping_loc + "; the enemies get grenades" );
+		wait( 8 );
+	}
 }

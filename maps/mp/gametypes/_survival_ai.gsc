@@ -81,6 +81,7 @@ init()
 
 	level.survival_enemies = [];
 	level.survival_bosses = [];
+	loot_init();
 
 	// IW5 ai_preload: the martyrdom C4, the claymores, the gas.
 	codescripts\character::precacheMounted( "weapon_c4" );
@@ -329,7 +330,92 @@ spawn_type( ref, origin, angles, scale )
 	level.survival_enemies[ level.survival_enemies.size ] = ai;
 	ai thread death_watch();
 	ai special_behaviour( ref );
+	if ( !t.boss )
+		ai loot_roll( undefined );
 	return ai;
+}
+
+// --------------------------------------------------------------------------
+// Loot (IW5 maps\_so_survival_loot, scripts/1562.gsc): a soldier may carry a
+// weapon on his back that he drops when he dies.  mp/survival_loot.csv:
+//   0 index  1 ref  2 type  3 name  4 desc  5 chance  6 wave unlock
+//   7 wave lock  8 rank
+// IW5 rolls each spawn against the unlocked rows, at most one drop of a ref
+// every two waves.  (CoDOL's table sets every chance to 0.)
+// --------------------------------------------------------------------------
+
+loot_init()
+{
+	level.survival_loot = [];
+	t = "mp/survival_loot.csv";
+	for ( i = 0; i <= 20; i++ )
+	{
+		ref = tableLookup( t, 0, "" + i, 1 );
+		if ( !isDefined( ref ) || ref == "" || tableLookup( t, 0, "" + i, 2 ) != "weapon" )
+			continue;
+		if ( !codol_isWeaponMounted( ref ) )
+			continue;
+		precacheItem( ref );
+		l = spawnStruct();
+		l.ref = ref;
+		l.chance = float( tableLookup( t, 0, "" + i, 5 ) );
+		l.wave_unlock = int( tableLookup( t, 0, "" + i, 6 ) );
+		l.wave_lock = int( tableLookup( t, 0, "" + i, 7 ) );
+		l.wave_dropped = -999;
+		level.survival_loot[ level.survival_loot.size ] = l;
+	}
+}
+
+loot_roll( chance )
+{
+	wave = level.survival_wave_num;
+	for ( i = 0; i < level.survival_loot.size; i++ )
+	{
+		l = level.survival_loot[ i ];
+		if ( wave < l.wave_unlock || wave >= l.wave_lock || wave - l.wave_dropped < 2 )
+			continue;
+		c = l.chance;
+		if ( isDefined( chance ) )
+			c = chance;
+		if ( c <= randomFloatRange( 0, 1 ) )
+			continue;
+		l.wave_dropped = wave;
+		self thread loot_drop_on_death( l.ref );
+		return true;
+	}
+	return false;
+}
+
+// IW5 loot_drop_on_death: the weapon rides on his back and falls where he
+// dies, with 40% of a clip and half the reserve.
+loot_drop_on_death( weapon )
+{
+	model = getWeaponModel( weapon );
+	carried = undefined;
+	if ( isDefined( model ) && model != "" && isDefined( level.coop_weapon_models[ model ] ) )
+	{
+		carried = spawn( "script_model", self getTagOrigin( "tag_stowed_back" ) );
+		carried setModel( model );
+		carried linkTo( self, "tag_stowed_back", ( 0, 0, 0 ), ( 0, 0, 0 ) );
+	}
+	self waittill( "death" );
+	origin = self.origin + ( 0, 0, 24 );
+	if ( isDefined( carried ) )
+	{
+		origin = carried.origin;
+		carried delete();
+	}
+	item = spawn( "weapon_" + weapon, origin );
+	clip = int( loot_max( 1, 0.4 * weaponClipSize( weapon ) ) );
+	stock = int( loot_max( 1, 0.5 * weaponMaxAmmo( weapon ) ) );
+	item itemWeaponSetAmmo( clip, stock );
+}
+
+loot_max( a, b )
+{
+	if ( a > b )
+		return a;
+	return b;
 }
 
 // IW5 default_ai's attribute dispatch: the special enemies' abilities.
@@ -593,6 +679,7 @@ death_watch()
 	if ( isDefined( self.survival_mod ) && self.survival_mod == "MOD_MELEE" )
 		value += 50;
 	killer maps\mp\gametypes\_survival::add_credits( value, "kill" );
+	killer maps\mp\gametypes\_survival::perf_kill( isDefined( self.survival_hitloc ) && self.survival_hitloc == "head" );
 	killer award_kill();
 }
 
