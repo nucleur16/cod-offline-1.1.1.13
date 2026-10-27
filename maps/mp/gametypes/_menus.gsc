@@ -180,6 +180,13 @@ onMenuResponse()
 
 		if ( response == "endround" )
 		{
+			// sh1x security audit 2026-10-26: any client could send this menu
+			// response (the mr server id is public) and end the match for
+			// everyone. Only the host may, as in IW4x's _menus.gsc; on this
+			// dedicated server isHost() is the locally connected client.
+			if ( !self isHost() )
+				continue;
+
 			if ( !level.gameEnded )
 			{
 				level thread maps\mp\gametypes\_gamelogic::forceEnd();

@@ -343,8 +343,14 @@ get_floor( player )
 
 		if ( menu == "elevator_floor_selector" )
 		{
+			// sh1x security audit 2026-10-26: the response is client text;
+			// only a real floor index may become the destination.
 			if ( response != "none" )
-				self.moveto_floor = int( response );
+			{
+				floor = int( response );
+				if ( floor >= 0 && floor < self get_outer_doorsets().size )
+					self.moveto_floor = floor;
+			}
 
 			break;
 		}
