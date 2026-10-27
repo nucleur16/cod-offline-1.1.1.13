@@ -1449,6 +1449,8 @@ static void PatchGbkInput(void)
 #include "p2p.c"
 /* The sh1x server inside the client, on the game thread (p2p_inproc.c, feat/p2p-inprocess). */
 #include "p2p_inproc.c"
+/* The in-process server's assets against C1's own (p2p_assets.c, asset layout stage 2/3). */
+#include "p2p_assets.c"
 /* UDP only with lobby-vouched hosts (hostgate.c): the P2P trust requirement. */
 #include "hostgate.c"
 

@@ -405,7 +405,8 @@ static void __cdecl PiCmdFaultTest(void)
     InterlockedExchange(&g_piFaultTest, 1);
     C1Printf("p2pfaulttest: the server faults in its next frame\n");
 }
-static C1Cmd g_piCmds[] = { { NULL, "p2pfaulttest", (void *)PiCmdFaultTest } };
+static void __cdecl PiCmdAssetCheck(void); /* p2p_assets.c */
+static C1Cmd g_piCmds[] = { { NULL, "p2pfaulttest", (void *)PiCmdFaultTest }, { NULL, "p2passetcheck", (void *)PiCmdAssetCheck } };
 
 /* TakeOver, after InstallDiscord (voice and discord hook the same call first). */
 static void InstallP2PInproc(void)
@@ -424,7 +425,7 @@ static void InstallP2PInproc(void)
     PiHookSlot(0x00B42134u, &g_piRealSleepEx, (void *)PiSleepEx, "SleepEx");
     PiHookSlot(0x00B42424u, &g_piRealPeek, (void *)PiPeek, "PeekMessageA");
     g_piHooked = TRUE;
-    C1AddCommand(&g_piCmds[0]);
+    for (unsigned i = 0; i < sizeof(g_piCmds) / sizeof(g_piCmds[0]); i++) C1AddCommand(&g_piCmds[i]);
     /* p2pstatus with the in-process numbers */
     for (unsigned i = 0; i < sizeof(g_p2pCmds) / sizeof(g_p2pCmds[0]); i++)
         if (!strcmp(g_p2pCmds[i].name, "p2pstatus")) g_p2pCmds[i].fn = (void *)PiCmdStatus;
