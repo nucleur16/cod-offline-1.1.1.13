@@ -79,6 +79,8 @@ init()
 
 	// IW5 ai_preload: the martyrdom C4 (the dog_splode and martyrdom types).
 	codescripts\character::precacheMounted( "weapon_c4" );
+	codescripts\character::precacheMounted( "weapon_claymore" );
+	precacheShellShock( "concussion_grenade_mp" );
 	level._effect[ "martyrdom_c4_explosion" ] = loadFx( "explosions/grenadeexp_default" );
 
 	// IW5 squad_drop_weapon_rate 1, ai_dropAkimboChance 0: nothing this
@@ -236,7 +238,171 @@ spawn_type( ref, origin, angles, scale )
 
 	level.survival_enemies[ level.survival_enemies.size ] = ai;
 	ai thread death_watch();
+	ai special_behaviour( ref );
 	return ai;
+}
+
+// IW5 default_ai's attribute dispatch: the special enemies' abilities.
+special_behaviour( ref )
+{
+	switch ( ref )
+	{
+	case "martyrdom":
+		self thread martyrdom_ability( 1.5 );
+		break;
+	case "martyrdom_volatile":
+		self thread martyrdom_ability( 0.05 );
+		break;
+	case "chemical":
+	case "hazmat":
+		self thread chemical_ability();
+		break;
+	case "claymore":
+		self thread claymore_planter();
+		break;
+	}
+}
+
+// IW5 martyrdom_ability / detonate_c4_when_dead: C4 strapped to the chest,
+// a red blink, and it goes off where he dies (IW5: 1.5 s fuse, radius 192;
+// the volatile variant at once).
+martyrdom_ability( fuse )
+{
+	if ( codescripts\character::modelMounted( "weapon_c4" ) )
+		self attach( "weapon_c4", "j_spine4", true );
+	self waittill( "death", attacker );
+	origin = self.origin + ( 0, 0, 16 );
+	if ( fuse > 0.05 )
+		playSoundAtPosition( "weap_c4detpack_trigger_plr", origin );
+	wait( fuse );
+	if ( isDefined( level._effect[ "martyrdom_c4_explosion" ] ) )
+		playFx( level._effect[ "martyrdom_c4_explosion" ], origin );
+	playSoundAtPosition( "grenade_explode_metal", origin );
+	radiusDamage( origin, 192, 150, 50 );
+	earthquake( 0.4, 0.6, origin, 600 );
+}
+
+// IW5 chemical_ability / chemical_ability_gas_cloud: the gas tank on his back
+// bursts when he dies, and the cloud hurts whoever stands in it (IW5: radius
+// 160, the radiation shellshock, about 10 s).
+chemical_ability()
+{
+	self waittill( "death", attacker );
+	origin = self.origin + ( 0, 0, 24 );
+	if ( isDefined( level._effect[ "chemical_cloud" ] ) )
+		playFx( level._effect[ "chemical_cloud" ], origin );
+	for ( t = 0; t < 10; t += 0.5 )
+	{
+		players = maps\_survival_utility::living_players();
+		for ( i = 0; i < players.size; i++ )
+		{
+			p = players[ i ];
+			if ( distanceSquared( p.origin, origin ) > 160 * 160 )
+				continue;
+			p doDamage( 6, origin );
+			if ( !isDefined( p.survival_gassed ) || getTime() - p.survival_gassed > 2000 )
+			{
+				p.survival_gassed = getTime();
+				p shellShock( "concussion_grenade_mp", 2 );
+			}
+		}
+		wait( 0.5 );
+	}
+}
+
+// IW5 behavior_special_ai_claymore / mine_locs_attempt_plant: the planter
+// heads for the claymore spot nearest the players and plants one there (IW5
+// claymore_create; the spots are the addon's so_claymore_loc structs).
+claymore_planter()
+{
+	self endon( "death" );
+	if ( !isDefined( level.survival_claymore_spots ) || !level.survival_claymore_spots.size )
+		return;
+	planted = 0;
+	while ( planted < 2 )
+	{
+		wait( 4 + randomFloat( 4 ) );
+		target = closest_player( self.origin );
+		if ( !isDefined( target ) )
+			continue;
+		spot = undefined;
+		best = 0;
+		for ( i = 0; i < level.survival_claymore_spots.size; i++ )
+		{
+			s = level.survival_claymore_spots[ i ];
+			if ( isDefined( s.survival_claymore ) )
+				continue;
+			d = distanceSquared( s.origin, target.origin );
+			if ( d < 300 * 300 )
+				continue;
+			if ( !isDefined( spot ) || d < best )
+			{
+				spot = s;
+				best = d;
+			}
+		}
+		if ( !isDefined( spot ) )
+			continue;
+		self.goalradius = 48;
+		self setGoalPos( spot.origin );
+		for ( t = 0; t < 20 && distanceSquared( self.origin, spot.origin ) > 72 * 72; t++ )
+			wait( 0.5 );
+		if ( distanceSquared( self.origin, spot.origin ) > 96 * 96 )
+			continue;
+		yaw = vectorToAngles( target.origin - spot.origin );
+		spot.survival_claymore = spawn_claymore( self.origin, ( 0, yaw[ 1 ], 0 ) );
+		spot.survival_claymore.survival_spot = spot;
+		planted++;
+		self thread hunt();
+	}
+}
+
+spawn_claymore( origin, angles )
+{
+	c = spawn( "script_model", origin );
+	c.angles = angles;
+	if ( codescripts\character::modelMounted( "weapon_claymore" ) )
+		c setModel( "weapon_claymore" );
+	c thread claymore_watch();
+	return c;
+}
+
+// IW5 claymore_on_trigger: a player in front of it within 150 units, a beat,
+// and it goes off (IW5 claymore_detonate: radius 192).
+claymore_watch()
+{
+	wait( 1 );
+	forward = anglesToForward( self.angles );
+	for ( ;; )
+	{
+		if ( level.survival_over )
+			break;
+		players = maps\_survival_utility::living_players();
+		fired = false;
+		for ( i = 0; i < players.size; i++ )
+		{
+			v = players[ i ].origin - self.origin;
+			if ( lengthSquared( v ) > 150 * 150 )
+				continue;
+			if ( vectorDot( vectorNormalize( ( v[ 0 ], v[ 1 ], 0 ) ), forward ) < 0.5 )
+				continue;
+			fired = true;
+		}
+		if ( fired )
+			break;
+		wait( 0.1 );
+	}
+	if ( !level.survival_over )
+	{
+		playSoundAtPosition( "claymore_activated", self.origin );
+		wait( 0.3 );
+		if ( isDefined( level._effect[ "martyrdom_c4_explosion" ] ) )
+			playFx( level._effect[ "martyrdom_c4_explosion" ], self.origin );
+		radiusDamage( self.origin + ( 0, 0, 12 ), 192, 150, 30 );
+	}
+	if ( isDefined( self.survival_spot ) )
+		self.survival_spot.survival_claymore = undefined;
+	self delete();
 }
 
 is_dog_type( ref )
