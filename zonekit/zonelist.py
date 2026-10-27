@@ -13,6 +13,9 @@ manifest names those blobs by sha1 and the build takes them from the stock zone 
 `handwritten` maps a .gfx rawfile to the classes whose as/ file in the zone is a hand-written source (compiled into
 the stored tag), not FFDec's decompile: --decompile keeps those files instead of exporting over them.
 The usermap map zones themselves (mp_*.ff, zm_sumpf_sh.ff and their _load zones) are not part of this repository.
+The client_shipRetail\patch zones below are source zones: they install inside the consolidated zones of zone_packs/
+(zonekit/packs.py: codol_common, codol_common_ui_mp, codol_common_postgfx_mp, codol_english_locale,
+codol_chinese_locale), except codol_infected_cyborg_postgfx_mp, which installs on its own.
 """
 
 PATCH = "client_shipRetail/patch"

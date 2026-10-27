@@ -516,6 +516,10 @@ static BOOL PatchUnsignedZones(void)
  *     first entry it links under a name, so their assets win over every stock zone.
  * Files are taken in alphabetical order; each must start IWffu100 version 0x14E. Nothing is held
  * in memory: C1's own streaming reader reads the file on every load.
+ * The project's zones are consolidated, one per list and language (build_zones.py, zone_packs/): codol_common (ahead
+ * of code_pre_gfx), codol_common_ui_mp (UI list), codol_common_postgfx_mp and codol_infected_cyborg_postgfx_mp (after
+ * code_post_gfx), codol_english_locale / codol_chinese_locale (ahead of code_pre_gfx, one language). An old zone name
+ * (patch_locale_policy.h kCodolPatchZoneMerged) is skipped while the zone that replaced it is in the folder.
  * A file named like a stock zone (or ffotd_client) is skipped, so it can never shadow one; to
  * replace a stock zone, put the unsigned build in its stock folder instead.
  * "+set codol_patchdir 0" on the command line turns the folder off.
@@ -697,11 +701,27 @@ static void LoadPatchDir(void)
         z->name[len - 3] = 0;
         if (!CodolPatchZoneLocaleAllowed(z->name,locale)) {
             if (EnglishZone(z->name)) g_englishSkipped++;
+            else if (CodolPatchZoneRetired(z->name))
+                Log("patch folder: skipped %s: retired duplicate map table", file);
             continue;
         }
         if (lstrcmpiA(z->name, "ffotd_client") == 0) {
             Log("patch folder: skipped %s: the name belongs to the lobby's FFOTD", file);
             continue;
+        }
+        {   /* an old zone whose assets a consolidated zone in the folder carries now (patch_locale_policy.h) */
+            const char *into = CodolPatchZoneMergedInto(z->name);
+            BOOL there = FALSE;
+            char want[MAX_PATH];
+            if (into) {
+                _snprintf(want, sizeof(want), "%s.ff", into);
+                want[sizeof(want) - 1] = 0;
+                for (int j = 0; j < count && !there; j++) there = lstrcmpiA(files[j], want) == 0;
+            }
+            if (there) {
+                Log("patch folder: skipped %s: merged into %s", file, want);
+                continue;
+            }
         }
         BOOL dup = FALSE;
         for (int j = 0; j < g_patchZoneCount; j++) dup |= lstrcmpiA(g_patchZones[j].name, z->name) == 0;
@@ -1371,6 +1391,7 @@ static void PatchGbkInput(void)
 
 #include "local_multi.c"
 #include "managed_quick.c"
+#include "quick_start_gate.c"
 
 /* Snapshot-parity logger, parity-log branch only: see parity.c. */
 #include "parity.c"
@@ -1412,7 +1433,22 @@ static void PatchGbkInput(void)
 /* Discord Rich Presence (CoDOLPresence.exe moved into the client): see discord.c. */
 #include "discord.c"
 
+/* Shared plumbing for the features ported from codol-classic's d3d9.dll: a main-thread tick list (k33tick.c, chained
+ * after voice.c's and discord.c's Com_EventLoop hooks), an HTTPS/SHA-256 helper (k33http.c) and a JSON reader (k33json.c). */
+#include "k33tick.c"
+#include "k33http.c"
+#include "k33json.c"
+
+/* codol_quick_native_room_context for the shared movie's Quick Play room checks: see quick_room.c. */
+#include "quick_room.c"
+/* The THEATRE screen (codol-classic's theatre playback): see theatre.c. */
+#include "theatre.c"
+/* UTF-8 player names and an optional display-name service: see name_display.c. */
+#include "name_display.c"
+
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
+#include "news_refresh.c"
+#include "gfx_date_time.c"
 #include "launcher_update_bridge.c"
 static void __cdecl TakeOver(void)
 {
@@ -1420,6 +1456,7 @@ static void __cdecl TakeOver(void)
     LoadUnpackedImage();
     MatchC1SectionFlags();
     FillImports();
+    PatchGfxDateTime();
     PatchRenderGate();
     PatchDvarRegistrations();
     PatchPlainConfig();
@@ -1434,6 +1471,8 @@ static void __cdecl TakeOver(void)
     PatchScoresOpen();
     PatchInfectedScoreboard();
     PatchManagedQuickJoin();
+    PatchQuickStartGate();
+    PatchNewsRefresh();
     PatchLoopFxCatchUp();
     PatchPatchDir();
     PatchLocalizePool();
@@ -1449,6 +1488,10 @@ static void __cdecl TakeOver(void)
     InstallVoice();
     InstallController();
     InstallDiscord();
+    InstallQuickRoom();
+    InstallTheatre();
+    InstallNameDisplay();
+    K33InstallMainTicks(); /* last: chains in front of voice.c's and discord.c's tick hooks */
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
     ExitProcess(0); /* the CRT entry ends in exit(); not reached */
