@@ -1,0 +1,283 @@
+# Player-hosted (P2P) matches through Kernel33
+
+Branch `feat/p2p-hosting` (Kernel33, off `origin/dev`) and the server branch of the same name
+(`nucleur16/codol_1.1.1.13_alpha_server`, off `origin/main`). Status: stage 1. Stage 1 was built
+and measured on one PC (see "Stage 1: what was measured"). Nothing here is installed in a
+player's client.
+
+Goal: a player hosts a match from their own client and other players join it. Today every
+match runs on the sh1x server (`codol_dedrun.exe`, CoD4x-derived: `src/`, the retained IW3 asm
+in `src/asmsource/`, CoDOL code in `src/codol/<area>/`, GSC in `bin/home/codol_rawfiles`). The
+Python lobby (alpha0022) places Ready presses on it over loopback rcon and shares
+`securitykey.bin` / `game_admissions.txt` with it through a state folder.
+
+## Hard requirement: only lobby-authenticated hosts
+
+**The client must not exchange game traffic with a host the lobby has not vouched for.** This
+holds until the audit's open items below are resolved; arbitrary or self-announced hosts are out
+of scope until then.
+
+Why: the client security audit (`docs/SECURITY_AUDIT_CLIENT_20261026.md` on Kernel33 branch
+`sec/client-audit-20261026`) found no RCE in Kernel33's own code. It could not clear the native
+C1 paths that a hostile host reaches first:
+
+| audit row | surface | state |
+|---|---|---|
+| 14 | `CL_ParseGamestate` configstring index/length | VMProtect-virtualized, **unverified**. This was one of IW4's worst client RCEs (fixed in IW4x). |
+| 15 | `CL_ParseSnapshot` entity numbers, areamask | bounds only reasoned about, not proven |
+| 16 | native connectionless handlers (infoResponse, statusResponse, connectResponse, print, disconnect) | reasoned about, not reverse-engineered |
+| 17 | BD / DemonWare lobby, party, room and relay packets | **not audited**: the largest residual surface |
+| 18 | zone / IWD parsing of downloaded content | not audited |
+
+A dedicated server we run is trusted code; a player's machine is not. So every stage keeps the
+rule "a host is reachable only after the lobby vouches for it", and stage 1 enforces it in the
+client (`hostgate.c`):
+
+- C1 does all its UDP through two import slots, `WSOCK32!sendto` (0xB42538) and
+  `WS2_32!recvfrom` (0xB424E0). Kernel33 wraps both before the game starts.
+- A datagram from an address that is not vouched is dropped before C1 parses it. A datagram to
+  such an address is not sent.
+- Vouched means: loopback (this PC); the lobby itself, i.e. the hosts in `dwauth.ini` (lines 1
+  and 3) and `stun.ini`, resolved at startup and as C1 resolves them; and addresses added by
+  `HostGateVouch()`. Today's dedicated servers run at the lobby's own address
+  (`CODOL_MM_HOST_IP`), so they pass.
+- Nothing calls `HostGateVouch()` yet. **A player-hosted server on another machine is refused
+  in stage 1.** Stage 2 adds lobby-signed host tickets, the only way into that list.
+- `+set k33_hostGate 1` on the command line switches to log-only for diagnosis. There is no off
+  switch. Every refused address is logged once to `Kernel33.log`.
+
+Before anything wider than "the lobby vouches for the host": verify or replace the row-14 parser
+(Kernel33 can pre-validate `svc_gamestate` the way `voice.c` re-implements the `"v"` packet),
+audit rows 15-17, and refuse downloads (row 18) from player hosts.
+
+## Options
+
+### (a) Kernel33 starts the native server as a child of the host's client (recommended)
+
+Kernel33 runs `codol_dedrun.exe` as a child process on its own UDP port and supervises it: a job
+object, loopback rcon `sh1x_status`, and an exit with the client. The lobby advertises the host's
+address in the session record it already builds (`_common_addr`). Players connect exactly as
+they connect to a dedicated server today.
+
+- **Isolation for free.** The server keeps its own address space, heap, CRT and globals. Nothing
+  collides with C1.
+- **Same binary as the dedicated server.** Every GSC, net and parity fix lands in both. The
+  match server does not fork.
+- **Already compatible with the lobby.** `match_instances.py` already places players on a server
+  it did not start (the rollout file's `extra <port>`). For a remote host it needs an address
+  per instance and a remote rcon/handoff replacement (see "Lobby").
+- **Cost.** A second process uses about 600 MB of memory (the lobby's `CODOL_INSTANCE_MEM_MB`)
+  and loads the zones a second time. The host's PC carries both. That is acceptable for a host
+  who opted in; the lobby can refuse hosts below a memory or CPU floor.
+
+### (b) The server as a DLL or static library loaded into C1
+
+Both are 32-bit MinGW/MSVC x86, so a DLL is technically loadable. It would run on its own thread.
+It is not recommended for now:
+
+- **Fixed addresses.** The retained IW3 asm (`src/asmsource/*.asm`) assumes its own data layout
+  and absolute symbols. A DLL needs relocations, and the asm uses `[abs]` references and
+  `section .data` globals that `ld` relocates. Most of it would relocate, but every hand-written
+  absolute address and every `jmp [imm]` must be audited.
+- **Collisions.** The code collides with C1 at the C level, not by symbol: one process with two
+  CRTs (C1's MSVC CRT and MinGW's msvcrt). There would be two `Sys_*` signal/exception handlers
+  (CoD4x's `sys_win32_crash.c` installs an unhandled-exception filter and `atexit` hooks;
+  Kernel33 already owns a vectored handler), and `Com_Error` uses longjmp across the frame. Any
+  `exit()`/`ExitProcess` in the server (`sys_win32.c:972`, `:1030`, `_exit(3)` in the crash
+  path) would kill the player's client. A "library mode" would have to turn every one of those
+  into a thread exit or an error return.
+- **Memory.** The server's hunk/zone allocations and its zone loader (`db_load.cpp`, the
+  1.1.1.13 zones from `fs_basepath`) would share C1's 2 GB 32-bit address space. C1 already holds
+  1.2-1.6 GB in a match (the DMP files in k33-devtest are about 160 MB of *dump*; the working set
+  is far larger). Two copies of the zones in one 32-bit process will not fit without
+  `/LARGEADDRESSAWARE` and a careful budget.
+- **Crash coupling.** A server fault would take the host's client down.
+
+Revisit (b) only if a second process turns out to be the blocker on low-end hosts. The server
+would then need a `codol_library` target with no `exit`, no global handlers, a host-provided
+filesystem root, and a tick entry point driven by Kernel33.
+
+### (c) C1's own listen-server code
+
+C1 still has a listen server: the room's developer panel offers "Start LS", which runs
+`devmap <map>` in the client itself (`docs/offline_dev.md` in alpha0022, `dw_devpanel.py`), and
+`SV_AddTestClient` exists at 0x5D26E0. That is the stripped retail IW4-style server: no bot AI
+(ERRORS.md, `BOT-DIFFICULTY-SELECTION-IS-THREE-PIECES`), and none of the sh1x server's GSC VM
+work, killstreaks, zombies or co-op. Its scripts are the zone's compiled GSC, not
+`codol_rawfiles`. Using it would mean re-doing in C1 everything the sh1x server already does. It
+also gives up the authority split: the host's client would *be* the server, in the same process
+as an unaudited client. Not recommended. It is still worth one measurement (does "Start LS"
+reach a playable map?) as a fallback for very small hosts.
+
+**Recommendation: (a).** It is the fastest working P2P and keeps one server codebase. It keeps
+the process boundary between an unaudited client and the authoritative simulation, and it leaves
+(b) open later.
+
+## Ports and NAT
+
+- The hosted server listens on UDP port 17760 by default (`p2p_host.ini` `port=`).
+  17733-17741 stay for dedicated servers and lobby-spawned instances. Stage 1 refuses a port that
+  is already bound (exclusive bind test before starting).
+- **UPnP/NAT-PMP (stage 2).** Kernel33 maps the port on the router (IGD `AddPortMapping`, lease
+  renewed while hosting, removed on stop). C1 already does DemonWare NAT detection (STUN to
+  `stun.ini`, the lobby answers it). The host reports the mapped address and NAT type to the
+  lobby with its registration.
+- **Hole punching (stage 3).** C1's bdNATTrav (INTRO REQ type 13 / reply 12, already answered by
+  the server, `codol_network.c`) is DemonWare's introducer protocol. The lobby can introduce the
+  joiner and the host to each other (both send to each other's mapped address after the lobby's
+  "introduce" push). That works for cone NATs.
+- **Relay fallback (stage 3).** For symmetric NAT or CGNAT hosts, the lobby (or a relay sidecar on
+  the VPS) forwards UDP between joiner and host: the joiner connects to `<vps>:<relay port>`, which
+  the hostgate already trusts because it is the lobby's address. That costs latency and VPS
+  bandwidth, but it is always available. A host whose port test fails is listed as "relayed".
+
+## Lobby and matchmaking changes
+
+Stage 1 changes nothing in the lobby: a lobby on the same PC (`CODOL_OFFLINE=1`) places players
+on the hosted server through the rollout file Kernel33 writes. Remote hosts need:
+
+1. **Host registration.** The host's client asks the lobby to host over its authenticated lobby
+   connection (a new instant-message verb next to `mmbook`, or the launcher's HTTPS admission
+   channel). It sends its port, mapped address, NAT result and build hash. The lobby probes the
+   address (a `getstatus` or a bdQoS probe from the VPS), then records the host as an instance
+   with its own address. `match_instances` today assumes `MM_HOST_IP` for every port; it needs
+   `addr` per instance, and `_session_search_record(ds=...)` already takes a per-row address.
+2. **Host ticket (the vouching).** On every placement onto a player host the lobby signs
+   `{host ip:port, session id, expiry, joiner uid}` with its Ed25519 key (alpha0022 already holds
+   `jwt_ed25519_public.pem`). It delivers the ticket to each joiner over the lobby connection.
+   Kernel33 verifies the signature against a compiled-in public key and only then calls
+   `HostGateVouch(host ip)` for that session. The vouch expires with the session.
+3. **Admission keys / securitykey.** Today the server reads the 16-byte session keys from files
+   the lobby writes in a shared folder. A remote host has no shared folder, so the lobby pushes the
+   admission roster (seat uid -> bdSecurityKey candidates, the content of `game_admissions.txt`)
+   to the host's Kernel33 over the authenticated lobby connection. Kernel33 writes it into the
+   server's state folder; the server already re-reads both files. The host's own client generates
+   the room's bdSecurityKey (createSession), so the host-side key is local anyway.
+4. **rcon-free handoff.** The lobby cannot rcon a remote host (rcon is loopback-only by design,
+   and an rcon password on the internet is a liability). The lobby sends the match selection
+   (map, gametype, zone type, session map: the `startgame.txt` record) to the host's Kernel33 the
+   same way. Kernel33 hands it to its child over loopback rcon, as stage 1 already does for
+   status. The lobby's poll of `sh1x_status` becomes a status push from the host's Kernel33.
+5. **Results.** Match reports (`rank_writeback`, the server's report spool) come from an untrusted
+   host and must not be accepted as authoritative XP/GP. Stage 2 options: no progression on player
+   hosts; or progression capped and cross-checked against the joiners' own client-side reports.
+   The lobby stays the only writer of careers.
+
+**The lobby VPS** keeps running dedicated servers and stays the default. Player hosting is an
+extra row type in the room/server list ("hosted by <name>"). The VPS also provides the STUN,
+introducer and relay roles above.
+
+**Offline mode (`CODOL_OFFLINE=1`)** needs no tickets. The lobby is on 127.0.0.1, the host is on
+the same PC, and hostgate already trusts loopback. Stage 1 is exactly this setup: the offline
+lobby's state folder is the hosted server's state folder.
+
+## Authority and anti-cheat
+
+The host runs the authoritative simulation on their own machine. They can change the binary,
+GSC, dvars or memory, so a player-hosted match is only as fair as its host. Mitigations, in order
+of cost:
+
+- A host's build hash is reported at registration. The lobby lists unknown builds as "modified"
+  or refuses them. That is a weak check: a hostile host can lie.
+- No ranked progression from player hosts (see Results). Player hosts are for private and custom
+  matches.
+- The joiner's safety does not depend on the host being honest. The hostgate, plus the audit's
+  parser work, protect the joiner's machine. That protection is the non-negotiable part.
+- Host migration is out of scope. When the host leaves, the match ends (the server follows its
+  client: job object plus `codol_hostParentPid`) and players return to the lobby.
+
+## Staged plan
+
+| stage | what | lobby change | status |
+|---|---|---|---|
+| 1 | Kernel33 hosts the server as a child (`p2p.c`), the server follows its host (`codol_hostParentPid`), the client talks only to vouched hosts (`hostgate.c`), and the same-PC lobby places players through the rollout file | none | **this branch** |
+| 2 | host registration, UPnP, signed host tickets -> `HostGateVouch`, admission roster and match selection pushed through the lobby connection, status push, no ranked progression on player hosts | yes | next |
+| 3 | lobby introducer (bdNATTrav) and the UDP relay on the VPS; room-list rows for hosts; host quality floor | yes | later |
+| 4 | gamestate pre-validation in Kernel33 (audit row 14), snapshot and OOB audit (15-16); only then hosts outside lobby vouching, if ever | no | blocked on audit |
+| - | (b) in-process server; host migration | - | not planned |
+
+Main risks: the unaudited native parsers (above); host machines too small to run client and
+server together (measure memory on low-end hosts); NAT success rates without a relay;
+progression abuse; and stage 2's key push. The stage 2 push must be authenticated end to end:
+anyone who can forge it can admit themselves.
+
+## Stage 1: what it does
+
+`p2p.c` (included in every build; inert until asked):
+
+- `p2phost [map] [gametype] [zonetype]` starts hosting, `p2pstop` stops (rcon `quit`, then the
+  job), `p2pstatus` prints the state, address, pid, ready time and last `sh1x_status` line.
+  `+set k33_p2pHost 1` on the command line starts hosting while the client loads.
+- Settings come from `<exe dir>\p2p\p2p_host.ini` (`key=value`). The defaults keep everything
+  under `<exe dir>\p2p\`. Keys: `exe`, `basepath`, `home`, `scripts`, `state`, `profile`,
+  `rcon_file`, `rollout`, `map`, `gametype`, `zone_type`, `session_map`, `net_ip`, `port`,
+  `bots`, `bot_difficulty`, `admission_required`, `developer`, `ready_timeout`, `extra`. Map,
+  gametype and difficulty must be plain identifiers, the same rule as the lobby handoff, so they
+  can never add console commands.
+- The server runs with `CREATE_NO_WINDOW` in a job object with `KILL_ON_JOB_CLOSE`, plus
+  `+set codol_hostParentPid <client pid>`. The server branch makes it quit cleanly once that
+  process ends.
+- The rcon secret is shared with the lobby through `<state>\native_server_rcon.txt` (read, or
+  created with 16 random bytes). The host thread polls `sh1x_status` over loopback; at the first
+  answer it writes `<state>\p2p_host.txt` and, with `rollout=`, the line `extra <port>` into the
+  lobby's `match_rollout.txt`. Both are removed when the server ends.
+
+`hostgate.c`: see the hard requirement above.
+
+### Setup: the server submodule
+
+The server is a git submodule of this repo at `server/sh1x`
+(`git@github.com:nucleur16/codol_1.1.1.13_alpha_server.git`), pinned to the server's
+`feat/p2p-hosting` commit. Its sources are not copied here. `build.sh` / `build-dev.sh` run
+`git submodule update --init server/sh1x` (not recursive). The server's own submodules: only
+`bin/home/codol_rawfiles` (CODOL-EMU/13-rawfiles) is needed, and only to stage a hosted server.
+`plugins/cod4x_mysql_plugin` is a gitlink with no URL; a bare recursive update stops on it, so
+never use `--recursive`.
+
+```sh
+git submodule update --init server/sh1x
+git -C server/sh1x -c core.autocrlf=false submodule update --init -- bin/home/codol_rawfiles
+git -C server/sh1x/bin/home/codol_rawfiles config core.autocrlf false
+sh build-server.sh            # WSL Ubuntu-24.04 + i686-w64-mingw32, as the server's own docs
+```
+
+`build-server.sh` cross-builds `server/sh1x/bin/codol_dedrun.exe` in WSL (clean `obj/k33-p2p`
+when asked with `K33_SERVER_CLEAN=1`). It stages the exe as `k33p2p_dedrun.exe` (its own image name, so an
+image-name kill of `codol_dedrun.exe` aimed at a dedicated server cannot hit a hosted match; also p2p.c's default `exe=`), the server pack (the server's own
+`tools/codol_stage_server_pack.py`) and the rawfiles into `$K33_P2P_STAGE` (default
+`../../k33_p2p_staging`). The lib/*.a the server links (mbedtls, tomcrypt) come from the server
+repo's own build (`K33_SERVER_LIBS` = a folder that holds them, default `D:\CoD\CoD4x_Server\lib`).
+
+### Stage 1: what was measured
+
+Measured on 2026-10-26/27 on one PC (24 logical CPUs). The setup:
+
+- `D:\CoD\CODOL Builds\k33-p2ptest`: a hardlinked copy of the 1.1.1.13 install with this branch's
+  `Kernel33_dev.dll` (local-testing profile).
+- A copy of the offline lobby (alpha0022 at the offline worktree's HEAD, `CODOL_OFFLINE=1`) on
+  127.0.0.1:3174 with its own state folder. `CODOL_INSTANCE_PORTS=17761` had nothing listening, so
+  only the rollout registration could make it place players on 17760. The map was pinned to MP
+  (`CODOL_FORCE_MAP=mp_killhouse_sh`).
+- The server was built from `server/sh1x` and staged as `k33p2p_dedrun.exe`.
+
+The user's lobby on 3074, the live server on 17733 and the user's own client were not touched.
+C1 sends STUN to the stun.ini host on the fixed port 3074, so the test clients' STUN probes did
+reach the user's lobby; those probes are stateless.
+
+| check | result |
+|---|---|
+| host client started with `+set k33_p2pHost 1` | the server started about 6 s after the client; first `sh1x_status` 33.9 s after the start (cold disk), 23.0 s and 10.6 s on later starts |
+| registration | `extra 17760` in the lobby's `match_rollout.txt`; the lobby's `lobby_status.json` showed 17760 answering |
+| host joins its own server | Ready in a room: the lobby logged `instances: :17760 is free -- switching mp_killhouse_sh/war -> mp_killhouse_sh/combat` and RCONed it; the host client connected (`p2phost num 2 from 127.0.0.1:30002`) and played about 9.5 minutes (snapshots, splashes, PARITY lines) until the match ended and the server restarted the map |
+| second client joins | client B (`p2pjoin`, second local instance): the lobby logged `instances: joining :17760 mp_killhouse_sh/combat (1 other player(s))`; B connected (`num 3`); then both played together, rcon `status` sampled every 10 s for 60 s: both players active, ping 6-22 ms, last message 0-34 ms |
+| resources while both played | host client 1.38 GB working set / 1.79 GB private, 4 % CPU; joiner 1.50 / 1.77 GB, 4.5 %; hosted server 0.53 GB working set / 1.32 GB private, 0.9 % CPU. A second copy of the server's 1.3 GB private memory cannot sit inside C1's 32-bit address space, which is why option (b) waits. |
+| `p2pstatus` | printed state, address, pid, ready time and the live `sh1x_status` (humans=2 bots=2) |
+| `p2pstop` | the server quit with exit code 0 in 0.9 s; `extra 17760` and `p2p_host.txt` removed |
+| host client killed (hard) | the job object ended the server at once (gone within 3 s). The rollout line and descriptor stay behind, because the host thread dies with the client; the lobby drops a silent instance after 10 s, and the next `p2phost` rewrites the line |
+| `codol_hostParentPid` (server branch) | a server started by hand with its parent set to a throwaway process quit cleanly (`host client ... has ended; quitting`, exit code 0) 0.9 s after that process was killed |
+| server fatal error | the lobby switched the hosted server to `zm_zombie_training` (an unpinned room pick): `script compile error, unknown function (maps/_zombiemode_tokens.gsc line 139)`. The process stays alive with its network shut down; the supervisor now treats 20 s without `sh1x_status` after ready as failed and ends it. The compile error itself is a server/rawfiles issue at `origin/main` 32da84d5 + 1c10bb3, not a P2P one |
+| hostgate | both clients ran enforcing all session. Datagrams from 192.168.1.4 (this PC's LAN address, not vouched) to both clients' game ports were refused before C1 saw them (`hostgate: refused datagram from 192.168.1.4:55282`). The lobby, STUN and the hosted server (loopback) worked. The first build also refused UPnP (SSDP 239.255.255.250:1900), which delayed DW login by about 70 s while bdUPnP discovery timed out; SSDP and the default gateway are vouched now and login starts 11 s after launch |
+
+Not measured: a host on another machine (refused by design until stage 2), NAT and UPnP mapping,
+the release build (`build.sh`) in a client (it compiles and links), and a host machine with less
+memory.

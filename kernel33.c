@@ -1412,6 +1412,11 @@ static void PatchGbkInput(void)
 /* Discord Rich Presence (CoDOLPresence.exe moved into the client): see discord.c. */
 #include "discord.c"
 
+/* Player-hosted matches: the sh1x server as a child of the host's client (p2p.c, docs/P2P_HOSTING.md). */
+#include "p2p.c"
+/* UDP only with lobby-vouched hosts (hostgate.c): the P2P trust requirement. */
+#include "hostgate.c"
+
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 #include "launcher_update_bridge.c"
 static void __cdecl TakeOver(void)
@@ -1420,6 +1425,7 @@ static void __cdecl TakeOver(void)
     LoadUnpackedImage();
     MatchC1SectionFlags();
     FillImports();
+    InstallHostGate();
     PatchRenderGate();
     PatchDvarRegistrations();
     PatchPlainConfig();
@@ -1449,6 +1455,7 @@ static void __cdecl TakeOver(void)
     InstallVoice();
     InstallController();
     InstallDiscord();
+    InstallP2PHost();
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
     ExitProcess(0); /* the CRT entry ends in exit(); not reached */
