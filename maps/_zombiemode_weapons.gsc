@@ -758,6 +758,13 @@ spawn_extra_wall_buys()
 	precacheModel( "tag_origin" );
 	for ( i = 0; i < walls.size; i++ )
 		precacheModel( walls[ i ].model );
+	// CoDOL's weapon case on every wall (its own walls on zm_prototype_sh / zm_asylum_sh carry one as a static
+	// model): the rebuilt theater/factory/sumpf zones and the stock asylum/prototype zones define it.  A zone without
+	// it (an older install) keeps the walls without the case instead of drawing a default model.
+	terminal = "codo_weapon_box";
+	terminals = codol_isModelMounted( terminal );
+	if ( terminals )
+		precacheModel( terminal );
 
 	for ( i = 0; i < walls.size; i++ )
 	{
@@ -769,6 +776,14 @@ spawn_extra_wall_buys()
 		model.angles = w.model_angles;
 		model setModel( w.model );
 
+		if ( terminals && isDefined( w.terminal_origin ) )
+		{
+			box = spawn( "script_model", w.terminal_origin );
+			box.angles = w.terminal_angles;
+			box setModel( terminal );
+			model.wall_terminal = box;
+		}
+
 		trig = spawn( "script_model", w.use_origin );
 		trig setModel( "tag_origin" );
 		trig.targetname = "weapon_upgrade";
@@ -776,10 +791,13 @@ spawn_extra_wall_buys()
 		trig.wall_model = model;
 		level.extra_wall_buys[ level.extra_wall_buys.size ] = trig;
 	}
-	codolPrintLn( "CoDOL zm: " + level.extra_wall_buys.size + " of " + walls.size + " T5 wall buys spawned on " + getDvar( "mapname" ) );
+	note = ", no " + terminal + " in the zones";
+	if ( terminals )
+		note = ", each with a " + terminal;
+	codolPrintLn( "CoDOL zm: " + level.extra_wall_buys.size + " of " + walls.size + " T5 wall buys spawned on " + getDvar( "mapname" ) + note );
 }
 
-extra_wall_buy( weapon, use_origin, model, model_origin, model_angles )
+extra_wall_buy( weapon, use_origin, model, model_origin, model_angles, terminal_origin, terminal_angles )
 {
 	s = spawnStruct();
 	s.weapon = weapon;
@@ -787,66 +805,69 @@ extra_wall_buy( weapon, use_origin, model, model_origin, model_angles )
 	s.model = model;
 	s.model_origin = model_origin;
 	s.model_angles = model_angles;
+	s.terminal_origin = terminal_origin;
+	s.terminal_angles = terminal_angles;
 	return s;
 }
 
-// Generated from wallbuys.json (zm_wallbuy_staging tool_src/gen_wallbuys.py); "mapname" -> the walls.
+// Generated from wallbuys.json (zm_perkclip_staging tool_src/wallbuy/gen_wall_table.py); "mapname" -> the walls,
+// each with CoDOL's weapon case (codo_weapon_box, tool_src/wallbuy/terminals.py).
 extra_wall_buy_table( map )
 {
 	w = [];
 	if ( map == "zm_theater_sh" )
 	{
-		w[ w.size ] = extra_wall_buy( "spas12_zm", ( 783, 78.25, 221.5 ), "codo_weapon_spas12_world", ( 781.5, 77.75, 226 ), ( 0, 270, 0 ) );	// theater1: T5 ithaca_zm
-		w[ w.size ] = extra_wall_buy( "mp5k_zm", ( 1041, 1104.5, 38 ), "codo_weapon_mp5k_world", ( 1039, 1094, 40 ), ( 0, 270, 0 ) );	// theater2: T5 mp5k_zm
-		w[ w.size ] = extra_wall_buy( "m14ebr_zm", ( 297.75, -523, 304.5 ), "codo_weapon_m14ebr_world", ( 296.95, -521, 307 ), ( 0, 180, 0 ) );	// theater3: T5 m14_zm
-		w[ w.size ] = extra_wall_buy( "uzi_zm", ( 1885, 419.88, 36.88 ), "codo_weapon_miniuzi_world", ( 1885.5, 431.48, 40.98 ), ( 0, 90, 0 ) );	// theater4: T5 mp40_zm
-		w[ w.size ] = extra_wall_buy( "m16_zm", ( -633.5, 1227, 38.75 ), "codo_weapon_m16_world", ( -630, 1225, 40.95 ), ( 0, 0, 0 ) );	// theater5: T5 m16_zm
-		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( -181, -210.5, 381 ), "grenade_bag", ( -178.5, -210.5, 380.5 ), ( 0, 90, 0 ) );	// theater6: T5 frag_grenade_zm
-		w[ w.size ] = extra_wall_buy( "ranger_zm", ( -389, -1272, 133.5 ), "codo_weapon_ranger_world", ( -391, -1272.6, 137 ), ( 0, 270, 0 ) );	// theater7: T5 rottweil72_zm
-		w[ w.size ] = extra_wall_buy( "tmp_zm", ( 812.75, -323, 372.25 ), "codo_weapon_tmp_world", ( 803.95, -321.5, 377.75 ), ( 0, 180, 0 ) );	// theater8: T5 pm63_zm
-		w[ w.size ] = extra_wall_buy( "ump45_zm", ( -1131, 307.25, 56 ), "codo_weapon_ump45_world", ( -1129, 317.25, 59 ), ( 0, 90, 0 ) );	// theater9: T5 ak74u_zm
-		w[ w.size ] = extra_wall_buy( "pp2000_zm", ( -845.25, -326.99, 132 ), "codo_weapon_pp2000_world", ( -855.05, -324.99, 136 ), ( 0, 180, 0 ) );	// theater10: T5 mpl_zm
+		w[ w.size ] = extra_wall_buy( "spas12_zm", ( 783, 78.25, 221.5 ), "codo_weapon_spas12_world", ( 781.5, 77.75, 226 ), ( 0, 270, 0 ), ( 784.3, 76.05, 204.2 ), ( 0, 270, 0 ) );	// theater1: T5 ithaca_zm
+		w[ w.size ] = extra_wall_buy( "mp5k_zm", ( 1041, 1104.5, 38 ), "codo_weapon_mp5k_world", ( 1039, 1094, 40 ), ( 0, 270, 0 ), ( 1042.3, 1102.3, 20.7 ), ( 0, 270, 0 ) );	// theater2: T5 mp5k_zm
+		w[ w.size ] = extra_wall_buy( "m14ebr_zm", ( 297.75, -523, 304.5 ), "codo_weapon_m14ebr_world", ( 296.95, -521, 307 ), ( 0, 180, 0 ), ( 295.55, -524.3, 287.2 ), ( 0, 180, 0 ) );	// theater3: T5 m14_zm
+		w[ w.size ] = extra_wall_buy( "uzi_zm", ( 1885, 419.88, 36.88 ), "codo_weapon_miniuzi_world", ( 1885.5, 431.48, 40.98 ), ( 0, 90, 0 ), ( 1883.7, 422.07, 19.57 ), ( 0, 90, 0 ) );	// theater4: T5 mp40_zm
+		w[ w.size ] = extra_wall_buy( "m16_zm", ( -633.5, 1227, 38.75 ), "codo_weapon_m16_world", ( -630, 1225, 40.95 ), ( 0, 0, 0 ), ( -631.3, 1228.3, 21.45 ), ( 0, 360, 0 ) );	// theater5: T5 m16_zm
+		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( -181, -210.5, 381 ), "grenade_bag", ( -178.5, -210.5, 380.5 ), ( 0, 90, 0 ), ( -179.7, -213.67, 364.46 ), ( 0, 270, 0 ) );	// theater6: T5 frag_grenade_zm
+		w[ w.size ] = extra_wall_buy( "ranger_zm", ( -389, -1272, 133.5 ), "codo_weapon_ranger_world", ( -391, -1272.6, 137 ), ( 0, 270, 0 ), ( -387.7, -1274.2, 116.2 ), ( 0, 270, 0 ) );	// theater7: T5 rottweil72_zm
+		w[ w.size ] = extra_wall_buy( "tmp_zm", ( 812.75, -323, 372.25 ), "codo_weapon_tmp_world", ( 803.95, -321.5, 377.75 ), ( 0, 180, 0 ), ( 810.55, -324.3, 354.95 ), ( 0, 180, 0 ) );	// theater8: T5 pm63_zm
+		w[ w.size ] = extra_wall_buy( "ump45_zm", ( -1131, 307.25, 56 ), "codo_weapon_ump45_world", ( -1129, 317.25, 59 ), ( 0, 90, 0 ), ( -1132.3, 309.45, 38.7 ), ( 0, 90, 0 ) );	// theater9: T5 ak74u_zm
+		w[ w.size ] = extra_wall_buy( "pp2000_zm", ( -845.25, -326.99, 132 ), "codo_weapon_pp2000_world", ( -855.05, -324.99, 136 ), ( 0, 180, 0 ), ( -847.45, -328.29, 114.7 ), ( 0, 180, 0 ) );	// theater10: T5 mpl_zm
 	}
 	if ( map == "zm_factory_sh" )
 	{
-		w[ w.size ] = extra_wall_buy( "ranger_zm", ( 480, 31, 129 ), "codo_weapon_ranger_world", ( 480.6, 29, 132.5 ), ( 0, 0, 0 ) );	// factory1: T5 zombie_m1carbine
-		w[ w.size ] = extra_wall_buy( "tmp_zm", ( -945, -181.1, 125 ), "codo_weapon_tmp_world", ( -946.5, -189.9, 130.5 ), ( 0, 270, 0 ) );	// factory2: T5 zombie_doublebarrel
-		w[ w.size ] = extra_wall_buy( "m14ebr_zm", ( 61, 521.1, 65 ), "codo_weapon_m14ebr_world", ( 59, 520.3, 67.5 ), ( 0, 270, 0 ) );	// factory3: T5 zombie_gewehr43
-		w[ w.size ] = extra_wall_buy( "mp5k_zm", ( 597.85, -3021.69, 209.5 ), "codo_weapon_mp5k_world", ( 599.65, -3011.15, 211.5 ), ( 0, 91.099, 0 ) );	// factory4: T5 zombie_stg44
-		w[ w.size ] = extra_wall_buy( "m16_zm", ( -51.75, -936.78, 121.7 ), "codo_weapon_m16_world", ( -48.2, -938.68, 123.9 ), ( 0, 1.6, 0 ) );	// factory5: T5 zombie_fg42
-		w[ w.size ] = extra_wall_buy( "ump45_zm", ( -1467.49, -755.3, 256.5 ), "codo_weapon_ump45_world", ( -1477.41, -752.92, 259.5 ), ( 0, 177.851, 0 ) );	// factory6: T5 zombie_type100_smg
-		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( 1593, 984.2, 238.5 ), "grenade_bag", ( 1590.5, 984.2, 238 ), ( 0, 270, 0 ) );	// factory7: T5 stielhandgranate
-		w[ w.size ] = extra_wall_buy( "pp2000_zm", ( -770.7, -1021, 130.2 ), "codo_weapon_pp2000_world", ( -760.9, -1023, 134.2 ), ( 0, 0, 0 ) );	// factory8: T5 zombie_thompson
-		w[ w.size ] = extra_wall_buy( "spas12_zm", ( 1075, -176.2, 115.2 ), "codo_weapon_spas12_world", ( 1076.5, -175.7, 119.7 ), ( 0, 90, 0 ) );	// factory9: T5 zombie_shotgun
-		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( -35.15, -2423.44, 108.5 ), "grenade_bag", ( -37.65, -2423.49, 108 ), ( 0, 271.1, 0 ) );	// factory10: T5 stielhandgranate
-		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( -1419, -473.36, 245.5 ), "grenade_bag", ( -1416.5, -473.36, 245 ), ( 0, 90, 0 ) );	// factory11: T5 stielhandgranate
-		w[ w.size ] = extra_wall_buy( "uzi_zm", ( 719.03, 1041.6, 224.88 ), "codo_weapon_miniuzi_world", ( 718.57, 1030, 228.97 ), ( 0, 270.201, 0 ) );	// factory12: T5 mp40_zm
-		w[ w.size ] = extra_wall_buy( "m14ebr_zm", ( -106, -534.4, 75.5 ), "codo_weapon_m14ebr_world", ( -108, -535.2, 78 ), ( 0, 270, 0 ) );	// factory13: T5 zombie_kar98k
+		w[ w.size ] = extra_wall_buy( "ranger_zm", ( 480, 31, 129 ), "codo_weapon_ranger_world", ( 480.6, 29, 132.5 ), ( 0, 0, 0 ), ( 482.2, 32.3, 111.7 ), ( 0, 360, 0 ) );	// factory1: T5 zombie_m1carbine
+		w[ w.size ] = extra_wall_buy( "tmp_zm", ( -945, -181.1, 125 ), "codo_weapon_tmp_world", ( -946.5, -189.9, 130.5 ), ( 0, 270, 0 ), ( -943.7, -183.3, 107.7 ), ( 0, 270, 0 ) );	// factory2: T5 zombie_doublebarrel
+		w[ w.size ] = extra_wall_buy( "m14ebr_zm", ( 61, 521.1, 65 ), "codo_weapon_m14ebr_world", ( 59, 520.3, 67.5 ), ( 0, 270, 0 ), ( 62.3, 518.9, 47.7 ), ( 0, 270, 0 ) );	// factory3: T5 zombie_gewehr43
+		w[ w.size ] = extra_wall_buy( "mp5k_zm", ( 597.85, -3021.69, 209.5 ), "codo_weapon_mp5k_world", ( 599.65, -3011.15, 211.5 ), ( 0, 91.099, 0 ), ( 596.51, -3019.52, 192.2 ), ( 0, 91.099, 0 ) );	// factory4: T5 zombie_stg44
+		w[ w.size ] = extra_wall_buy( "m16_zm", ( -51.75, -936.78, 121.7 ), "codo_weapon_m16_world", ( -48.2, -938.68, 123.9 ), ( 0, 1.6, 0 ), ( -49.59, -935.42, 104.4 ), ( 0, 1.6, 0 ) );	// factory5: T5 zombie_fg42
+		w[ w.size ] = extra_wall_buy( "ump45_zm", ( -1467.49, -755.3, 256.5 ), "codo_weapon_ump45_world", ( -1477.41, -752.92, 259.5 ), ( 0, 177.851, 0 ), ( -1469.74, -756.51, 239.2 ), ( 0, 177.851, 0 ) );	// factory6: T5 zombie_type100_smg
+		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( 1593, 984.2, 238.5 ), "grenade_bag", ( 1590.5, 984.2, 238 ), ( 0, 270, 0 ), ( 1591.7, 986.4, 221.2 ), ( 0, 90, 0 ) );	// factory7: T5 stielhandgranate
+		w[ w.size ] = extra_wall_buy( "pp2000_zm", ( -770.7, -1021, 130.2 ), "codo_weapon_pp2000_world", ( -760.9, -1023, 134.2 ), ( 0, 0, 0 ), ( -768.5, -1019.7, 112.9 ), ( 0, 360, 0 ) );	// factory8: T5 zombie_thompson
+		w[ w.size ] = extra_wall_buy( "spas12_zm", ( 1075, -176.2, 115.2 ), "codo_weapon_spas12_world", ( 1076.5, -175.7, 119.7 ), ( 0, 90, 0 ), ( 1073.7, -174, 97.9 ), ( 0, 90, 0 ) );	// factory9: T5 zombie_shotgun
+		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( -35.15, -2423.44, 108.5 ), "grenade_bag", ( -37.65, -2423.49, 108 ), ( 0, 271.1, 0 ), ( -36.49, -2421.27, 91.2 ), ( 0, 91.1, 0 ) );	// factory10: T5 stielhandgranate
+		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( -1419, -473.36, 245.5 ), "grenade_bag", ( -1416.5, -473.36, 245 ), ( 0, 90, 0 ), ( -1417.7, -475.56, 228.2 ), ( 0, 270, 0 ) );	// factory11: T5 stielhandgranate
+		w[ w.size ] = extra_wall_buy( "uzi_zm", ( 719.03, 1041.6, 224.88 ), "codo_weapon_miniuzi_world", ( 718.57, 1030, 228.97 ), ( 0, 270.201, 0 ), ( 720.34, 1039.41, 207.57 ), ( 0, 270.201, 0 ) );	// factory12: T5 mp40_zm
+		w[ w.size ] = extra_wall_buy( "m14ebr_zm", ( -106, -534.4, 75.5 ), "codo_weapon_m14ebr_world", ( -108, -535.2, 78 ), ( 0, 270, 0 ), ( -104.7, -536.6, 58.2 ), ( 0, 270, 0 ) );	// factory13: T5 zombie_kar98k
 	}
 	if ( map == "zm_sumpf_sh" )
 	{
-		w[ w.size ] = extra_wall_buy( "m14ebr_zm", ( 10625, 857, -607 ), "codo_weapon_m14ebr_world", ( 10625.8, 855, -604.5 ), ( 0, 0, 0 ) );	// sumpf1: T5 zombie_m1garand
-		w[ w.size ] = extra_wall_buy( "m14ebr_zm", ( 10661, 393.6, -476.25 ), "codo_weapon_m14ebr_world", ( 10663, 394.4, -473.75 ), ( 0, 90, 0 ) );	// sumpf2: T5 zombie_type99_rifle
-		w[ w.size ] = extra_wall_buy( "m16_zm", ( 9543, 697.6, -475 ), "codo_weapon_m16_world", ( 9541, 694.1, -472.8 ), ( 0, 270, 0 ) );	// sumpf3: T5 zombie_gewehr43
-		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( 10608.5, 1332.5, -472.5 ), "grenade_bag", ( 10608.5, 1330, -473 ), ( 0, 0, 0 ) );	// sumpf4: T5 stielhandgranate
-		w[ w.size ] = extra_wall_buy( "ranger_zm", ( 10202, 1332.5, -477 ), "codo_weapon_ranger_world", ( 10201.4, 1334.5, -473.5 ), ( 0, 180, 0 ) );	// sumpf5: T5 zombie_m1carbine
-		w[ w.size ] = extra_wall_buy( "spas12_zm", ( 10514, 201, -608 ), "codo_weapon_spas12_world", ( 10514.5, 199.5, -603.5 ), ( 0, 0, 0 ) );	// sumpf6: T5 zombie_shotgun
-		w[ w.size ] = extra_wall_buy( "pp2000_zm", ( 10147, 486, -609 ), "codo_weapon_pp2000_world", ( 10149, 495.8, -605 ), ( 0, 90, 0 ) );	// sumpf7: T5 zombie_thompson
-		w[ w.size ] = extra_wall_buy( "uzi_zm", ( 8476.65, 3262.24, -605.12 ), "codo_weapon_miniuzi_world", ( 8468.77, 3270.77, -601.02 ), ( 0, 135.2, 0 ) );	// sumpf8: T5 mp40_zm
-		w[ w.size ] = extra_wall_buy( "mp5k_zm", ( 7717.38, -1095.64, -627.5 ), "codo_weapon_mp5k_world", ( 7723.46, -1104.44, -625.5 ), ( 0, 315.4, 0 ) );	// sumpf9: T5 zombie_stg44
-		w[ w.size ] = extra_wall_buy( "ump45_zm", ( 11529.1, 3786.81, -607 ), "codo_weapon_ump45_world", ( 11523.8, 3795.51, -604 ), ( 0, 132.8, 0 ) );	// sumpf10: T5 zombie_bar
+		w[ w.size ] = extra_wall_buy( "m14ebr_zm", ( 10625, 857, -607 ), "codo_weapon_m14ebr_world", ( 10625.8, 855, -604.5 ), ( 0, 0, 0 ), ( 10627.2, 858.3, -624.3 ), ( 0, 360, 0 ) );	// sumpf1: T5 zombie_m1garand
+		w[ w.size ] = extra_wall_buy( "m14ebr_zm", ( 10661, 393.6, -476.25 ), "codo_weapon_m14ebr_world", ( 10663, 394.4, -473.75 ), ( 0, 90, 0 ), ( 10659.7, 395.8, -493.55 ), ( 0, 90, 0 ) );	// sumpf2: T5 zombie_type99_rifle
+		w[ w.size ] = extra_wall_buy( "m16_zm", ( 9543, 697.6, -475 ), "codo_weapon_m16_world", ( 9541, 694.1, -472.8 ), ( 0, 270, 0 ), ( 9544.3, 695.4, -492.3 ), ( 0, 270, 0 ) );	// sumpf3: T5 zombie_gewehr43
+		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( 10608.5, 1332.5, -472.5 ), "grenade_bag", ( 10608.5, 1330, -473 ), ( 0, 0, 0 ), ( 10606.3, 1331.2, -489.8 ), ( 0, 180, 0 ) );	// sumpf4: T5 stielhandgranate
+		w[ w.size ] = extra_wall_buy( "ranger_zm", ( 10202, 1332.5, -477 ), "codo_weapon_ranger_world", ( 10201.4, 1334.5, -473.5 ), ( 0, 180, 0 ), ( 10199.8, 1331.2, -494.3 ), ( 0, 180, 0 ) );	// sumpf5: T5 zombie_m1carbine
+		w[ w.size ] = extra_wall_buy( "spas12_zm", ( 10514, 201, -608 ), "codo_weapon_spas12_world", ( 10514.5, 199.5, -603.5 ), ( 0, 0, 0 ), ( 10516.2, 202.3, -625.3 ), ( 0, 360, 0 ) );	// sumpf6: T5 zombie_shotgun
+		w[ w.size ] = extra_wall_buy( "pp2000_zm", ( 10147, 486, -609 ), "codo_weapon_pp2000_world", ( 10149, 495.8, -605 ), ( 0, 90, 0 ), ( 10145.7, 488.2, -626.3 ), ( 0, 90, 0 ) );	// sumpf7: T5 zombie_thompson
+		w[ w.size ] = extra_wall_buy( "uzi_zm", ( 8476.65, 3262.24, -605.12 ), "codo_weapon_miniuzi_world", ( 8468.77, 3270.77, -601.02 ), ( 0, 135.2, 0 ), ( 8474.17, 3262.87, -622.42 ), ( 0, 135.2, 0 ) );	// sumpf8: T5 mp40_zm
+		w[ w.size ] = extra_wall_buy( "mp5k_zm", ( 7717.38, -1095.64, -627.5 ), "codo_weapon_mp5k_world", ( 7723.46, -1104.44, -625.5 ), ( 0, 315.4, 0 ), ( 7719.86, -1096.26, -644.8 ), ( 0, 315.4, 0 ) );	// sumpf9: T5 zombie_stg44
+		w[ w.size ] = extra_wall_buy( "ump45_zm", ( 11529.15, 3786.81, -607 ), "codo_weapon_ump45_world", ( 11523.83, 3795.51, -604 ), ( 0, 132.8, 0 ), ( 11526.7, 3787.54, -624.3 ), ( 0, 132.8, 0 ) );	// sumpf10: T5 zombie_bar
 	}
 	if ( map == "zm_asylum_sh" )
 	{
-		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( 263, -606.5, 285 ), "grenade_bag", ( 265.5, -606.5, 284.5 ), ( 0, 90, 0 ) );	// asylum1: T5 stielhandgranate
-		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( 443, 694, 111.5 ), "grenade_bag", ( 443, 691.5, 111 ), ( 0, 0, 0 ) );	// asylum2: T5 stielhandgranate
-		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( -825, 725, 277.5 ), "grenade_bag", ( -825, 722.5, 277 ), ( 0, 0, 0 ) );	// asylum3: T5 stielhandgranate
-		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( 917, -633, 109.5 ), "grenade_bag", ( 917, -630.5, 109 ), ( 0, 180, 0 ) );	// asylum4: T5 stielhandgranate
-		w[ w.size ] = extra_wall_buy( "tmp_zm", ( 837, -242.5, 281.25 ), "codo_weapon_tmp_world", ( 838.5, -233.7, 286.75 ), ( 0, 90, 0 ) );	// asylum5: T5 zombie_doublebarrel
+		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( 263, -606.5, 285 ), "grenade_bag", ( 265.5, -606.5, 284.5 ), ( 0, 90, 0 ), ( 264.3, -608.7, 267.7 ), ( 0, 270, 0 ) );	// asylum1: T5 stielhandgranate
+		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( 443, 694, 111.5 ), "grenade_bag", ( 443, 691.5, 111 ), ( 0, 0, 0 ), ( 440.8, 692.7, 94.2 ), ( 0, 180, 0 ) );	// asylum2: T5 stielhandgranate
+		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( -825, 725, 277.5 ), "grenade_bag", ( -825, 722.5, 277 ), ( 0, 0, 0 ), ( -827.2, 723.7, 260.2 ), ( 0, 180, 0 ) );	// asylum3: T5 stielhandgranate
+		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( 917, -633, 109.5 ), "grenade_bag", ( 917, -630.5, 109 ), ( 0, 180, 0 ), ( 919.2, -631.7, 92.2 ), ( 0, 360, 0 ) );	// asylum4: T5 stielhandgranate
+		w[ w.size ] = extra_wall_buy( "tmp_zm", ( 837, -242.5, 281.25 ), "codo_weapon_tmp_world", ( 838.5, -233.7, 286.75 ), ( 0, 90, 0 ), ( 835.7, -240.3, 263.95 ), ( 0, 90, 0 ) );	// asylum5: T5 zombie_doublebarrel
 	}
 	if ( map == "zm_prototype_sh" )
 	{
-		w[ w.size ] = extra_wall_buy( "ump45_zm", ( -220, 1044.5, 196 ), "codo_weapon_ump45_world", ( -222, 1034.5, 199 ), ( 0, 270, 0 ) );	// prototype1: T5 zombie_bar
+		w[ w.size ] = extra_wall_buy( "ump45_zm", ( -220, 1044.5, 196 ), "codo_weapon_ump45_world", ( -222, 1034.5, 199 ), ( 0, 270, 0 ), ( -218.7, 1042.3, 178.7 ), ( 0, 270, 0 ) );	// prototype1: T5 zombie_bar
 	}
 	return w;
 }
