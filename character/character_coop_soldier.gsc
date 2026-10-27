@@ -39,6 +39,10 @@ has_militia()
 	session = session_map();
 	if ( isSubStr( session, "killhouse" ) )
 		return false;
+	// Survival's session zones ship none of the militia set
+	// (docs/CODOL_SURVIVAL_PLAN.md 2.3); its characters pick mounted models.
+	if ( isSubStr( session, "coop_survival_" ) )
+		return false;
 	// The five enemy base levels; every coop playlist zone built on them ships
 	// the militia set.
 	if ( isSubStr( session, "crash_tropical" ) || isSubStr( session, "crash_intro" ) ||
