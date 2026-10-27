@@ -38,6 +38,30 @@
 // The "gravity on" note does what T5's noteTrackGravity does: animmode back
 // to "gravity" so the last frames settle the actor onto the floor behind the
 // sill instead of leaving it hanging where the clip ended.
+//
+// OTHER TRAVERSALS (zm_factory_sh, zm_theater_sh).  Der Riese and Kino also
+// author climb and drop links, not only window sills (MEASURED from the
+// zones' entity strings, begin -> end):
+//   zm_factory_sh  zombie_jump_up_to_climb x6 (+90.6 / +95.6 up, 48.5 fwd:
+//                  the tall walls and fences zombies climb onto),
+//                  zombie_jump_down_72 x7, _96 x2, _127 x5, _184 x3, _190 x2
+//   zm_theater_sh  zombie_jump_down_40/_72/_120/_127/_190/_240/_286
+// T5 runs a separate animscripts\traverse\<animscript>.gsc for each; until
+// 2026-10-26 this module played the window clips for all of them, so a
+// zombie climbing a 96-unit fence did the 40-unit window mount and was then
+// snapped onto the top.  pick_traverse_anim now follows the node's
+// animscript the way T5 does.  Every clip used is C1's own, from the
+// common_zombie animlist (common_gametype_zm; no T5 clip is added), and its
+// root motion matches the link (MEASURED, xanim_probe, common_gametype_zm):
+//   ai_zombie_jump_up_2_climb        +24.3 fwd  +98.4 up   3.73 s
+//   ai_zombie_crawl_jump_up_2_climb  +34.9 fwd  +96.9 up   5.97 s
+//   ai_zombie_jump_down_72/_96       +58.9 fwd  -71.0 / -95.1
+//   ai_zombie_jump_down_127/184/190  +56.7 fwd  -128.0 / -184.9 / -189.9
+//   ai_zombie_crawl_jump_down_72/97/127/184/189  +70..78 fwd, -72..-189
+//   ai_zombie_jump_down_40 +32.0 fwd -38.8; _120 +56.7 -116.1;
+//   _240 / _286 +56.7 -240.0 / -286.2; crawl _240 / _286 +82.9 -240 / -286
+// The climb clip carries no "gravity on" note: gravity comes back when it
+// ends, the clip having lifted the root 3-8 units above the top.
 
 
 #include maps\_zombiemode_utility;
@@ -62,7 +86,7 @@ main( begin_origin, begin_angles, end_origin, animscript )
 		return;
 	}
 
-	anime = pick_traverse_anim();
+	anime = pick_traverse_anim( animscript );
 	if ( !isDefined( anime ) )
 	{
 		codolprintln( "CoDOL zm: ent " + self getEntityNumber() + " traverse: no clip for move speed " + self.zombie_move_speed );
@@ -89,8 +113,76 @@ main( begin_origin, begin_angles, end_origin, animscript )
 	self notify( "zombie_end_traverse" );
 }
 
+// T5 animscripts\traverse\<animscript>::main, by the node's animscript.
+pick_traverse_anim( animscript )
+{
+	if ( isDefined( animscript ) )
+	{
+		anime = pick_climb_or_drop_anim( animscript );
+		if ( isDefined( anime ) )
+			return anime;
+	}
+	return pick_window_anim();
+}
+
+// T5 zombie_jump_up_to_climb::low_wall_zombie / low_wall_crawler and
+// zombie_jump_down_<n>::jump_down_zombie / jump_down_crawler.  C1's list
+// lacks T5's crawl_jump_down_120: crawl_jump_down_97 stands in (a clip that
+// drops short ends on gravity; one that drops too far would sink through the
+// floor in noclip).  T5 has no crawler clip for jump_down_40.  Anything
+// without a clip here (zombie_mantle_over_40, a crawler on jump_down_40,
+// Kino's zombie_wall_crawl_drop) returns undefined: the window clips.
+pick_climb_or_drop_anim( animscript )
+{
+	legs = is_true( self.has_legs );
+	switch ( animscript )
+	{
+	case "zombie_jump_up_to_climb":
+		if ( legs )
+			return %ai_zombie_jump_up_2_climb;
+		return %ai_zombie_crawl_jump_up_2_climb;
+	case "zombie_jump_down_40":
+		if ( legs )
+			return %ai_zombie_jump_down_40;
+		return undefined;
+	case "zombie_jump_down_72":
+		if ( legs )
+			return %ai_zombie_jump_down_72;
+		return %ai_zombie_crawl_jump_down_72;
+	case "zombie_jump_down_96":
+		if ( legs )
+			return %ai_zombie_jump_down_96;
+		return %ai_zombie_crawl_jump_down_97;
+	case "zombie_jump_down_120":
+		if ( legs )
+			return %ai_zombie_jump_down_120;
+		return %ai_zombie_crawl_jump_down_97;
+	case "zombie_jump_down_127":
+		if ( legs )
+			return %ai_zombie_jump_down_127;
+		return %ai_zombie_crawl_jump_down_127;
+	case "zombie_jump_down_184":
+		if ( legs )
+			return %ai_zombie_jump_down_184;
+		return %ai_zombie_crawl_jump_down_184;
+	case "zombie_jump_down_190":
+		if ( legs )
+			return %ai_zombie_jump_down_190;
+		return %ai_zombie_crawl_jump_down_189;
+	case "zombie_jump_down_240":
+		if ( legs )
+			return %ai_zombie_jump_down_240;
+		return %ai_zombie_crawl_jump_down_240;
+	case "zombie_jump_down_286":
+		if ( legs )
+			return %ai_zombie_jump_down_286;
+		return %ai_zombie_crawl_jump_down_286;
+	}
+	return undefined;
+}
+
 // T5 zombie_mantle_over_40::wall_hop_zombie :28.
-pick_traverse_anim()
+pick_window_anim()
 {
 	if ( is_true( self.has_legs ) )
 	{
