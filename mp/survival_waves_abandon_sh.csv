@@ -1,0 +1,20 @@
+0,0,1,easy,3,armored,2,,,,,
+1,0,2,easy,4,dog_reg,2,,,,,
+2,1,3,regular,4,demolitionist,2,,chopper,,,
+3,1,4,regular,3,armored,1,,,,,
+4,0,5,regular,4,dog_reg martyrdom,4 2,jug_regular,,,1,SO_SURVIVAL_WAVE_TITLE_PACK
+5,1,6,regular,2,martyrdom dog_reg armored,3 2 2,,chopper chopper,,,
+6,0,7,hardened,4,demolitionist,3,,,,,
+7,1,8,regular,4,martyrdom dog_reg,2 2,jug_explosive,chopper,,,
+8,1,9,regular,3,martyrdom dog_splode armored,2 2 3,,,,,
+9,1,10,hardened,4,armored demolitionist,2 2,jug_explosive jug_regular,chopper,,1,SO_SURVIVAL_WAVE_TITLE_EXPLOSIVE
+10,0,11,elite,4,armored dog_splode,4 3,,,,,
+11,1,12,hardened,5,martyrdom armored,2 3,jug_explosive jug_regular,,,,
+12,0,13,veteran,5,armored dog_reg,2 2,,chopper chopper,,,
+13,0,14,elite,4,demolitionist,3,jug_explosive,,,,
+14,1,15,elite,4,dog_splode armored,2 3,jug_regular jug_regular jug_explosive,chopper chopper chopper,,1,SO_SURVIVAL_WAVE_TITLE_ASSAULT
+15,1,16,elite,5,martyrdom,2,,chopper chopper,,,
+16,1,17,elite,4,armored,3,jug_explosive jug_explosive,missile_chopper chopper,1,,
+17,1,18,elite,5,demolitionist armored,3 2,jug_regular,missile_chopper,1,,
+18,1,19,elite,5,martyrdom dog_splode,2 2,jug_explosive,chopper chopper,1,,
+19,1,20,elite,6,armored dog_splode demolitionist,2 2 4,jug_regular jug_regular jug_explosive,missile_chopper chopper chopper,1,1,SO_SURVIVAL_WAVE_TITLE_BLITZ
