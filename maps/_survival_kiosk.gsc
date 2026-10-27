@@ -66,6 +66,8 @@ init()
 	level.survival_ladder[ level.survival_ladder.size ] = "barrett_so";
 	for ( i = 0; i < level.survival_ladder.size; i++ )
 		precacheItem( level.survival_ladder[ i ] );
+	// The mortar air support's shell.
+	precacheItem( "mortar_mp" );
 
 	// IW5 _so_survival_perks: the perk pool (mp/survival_perks.csv column 1).
 	level.survival_perk_pool = [];
@@ -406,12 +408,115 @@ give_item( ref, index )
 		return self give_random_perks( 2 );
 	case "locker":
 		return self give_weapon( self next_weapon() );
+	case "mortar_mp":
+		return self mortar_strike();
 	}
 	// The air support and equipment (predator, mortar, SAM, sentry, EMP,
 	// airstrike, nuke): phase 5 of the plan.
 	self iPrintLnBold( "Not available yet" );
 	codolprintln( "CoDOL survival: kiosk item " + ref + " (row " + index + ") is not implemented yet" );
 	return false;
+}
+
+// --------------------------------------------------------------------------
+// Air support: the mortar (IW5 _so_survival_armory's "mortar" air support;
+// CoDOL kiosk row 11).  IW5 lets the buyer mark the spot with a strobe; this
+// server's survival has no strobe weapon yet, so the barrage falls on the
+// enemies nearest him that are clear of every player.  The shells are the
+// real mortar_mp projectiles (codol_launchmortarbomb, the multiplayer mortar's
+// trajectory: 75 degrees, 6000 units, entering 30% into the flight).
+// --------------------------------------------------------------------------
+
+mortar_strike()
+{
+	if ( !codol_isWeaponMounted( "mortar_mp" ) )
+	{
+		self iPrintLnBold( "Not available" );
+		return false;
+	}
+	targets = mortar_targets( 3 );
+	if ( !targets.size )
+	{
+		self iPrintLnBold( "No targets clear of the team" );
+		return false;
+	}
+	self iPrintLnBold( "Mortar strike inbound" );
+	self thread mortar_barrage( targets );
+	return true;
+}
+
+mortar_targets( count )
+{
+	enemies = maps\_survival_ai::living_enemies();
+	players = maps\_survival_utility::living_players();
+	picked = [];
+	for ( n = 0; n < count; n++ )
+	{
+		best = undefined;
+		bestDist = 0;
+		for ( i = 0; i < enemies.size; i++ )
+		{
+			e = enemies[ i ];
+			clear = true;
+			for ( j = 0; j < players.size; j++ )
+			{
+				if ( distanceSquared( players[ j ].origin, e.origin ) < 400 * 400 )
+					clear = false;
+			}
+			for ( j = 0; j < picked.size; j++ )
+			{
+				if ( distanceSquared( picked[ j ], e.origin ) < 300 * 300 )
+					clear = false;
+			}
+			if ( !clear )
+				continue;
+			d = distanceSquared( self.origin, e.origin );
+			if ( !isDefined( best ) || d < bestDist )
+			{
+				best = e;
+				bestDist = d;
+			}
+		}
+		if ( !isDefined( best ) )
+			break;
+		picked[ picked.size ] = best.origin;
+	}
+	return picked;
+}
+
+mortar_barrage( targets )
+{
+	self endon( "disconnect" );
+	wait( 3 );
+	for ( i = 0; i < targets.size; i++ )
+	{
+		yaw = randomInt( 360 );
+		for ( shell = 0; shell < 2; shell++ )
+		{
+			jitter = ( randomFloatRange( -96, 96 ), randomFloatRange( -96, 96 ), 0 );
+			self mortar_shell( targets[ i ] + jitter, yaw );
+			wait( randomFloatRange( 0.6, 1.1 ) );
+		}
+		wait( 1.5 );
+	}
+}
+
+mortar_shell( target, yaw )
+{
+	gravity = codol_getProjectileGravity();
+	distance = 6000;
+	ratio = 0.3;
+	pitch = 75;
+	speed = sqrt( gravity * distance / sin( 2 * pitch ) );
+	horizontal = cos( pitch ) * speed;
+	vertical = sin( pitch ) * speed;
+	elapsed = ( distance / horizontal ) * ratio;
+	forward = anglesToForward( ( 0, yaw, 0 ) );
+	start = target - vectorScale( forward, distance * ( 1 - ratio ) );
+	height = vertical * elapsed - 0.5 * gravity * elapsed * elapsed;
+	start = start + ( 0, 0, height );
+	velocity = vectorScale( forward, horizontal ) + ( 0, 0, vertical - gravity * elapsed );
+	self codol_launchmortarbomb( "mortar_mp", start, velocity );
 }
 
 give_ammo()
@@ -521,4 +626,9 @@ give_weapon( weapon )
 	for ( i = 0; i < primaries.size; i++ )
 		self.survival_bought[ i ] = primaries[ i ];
 	return true;
+}
+
+vectorScale( v, scale )
+{
+	return ( v[ 0 ] * scale, v[ 1 ] * scale, v[ 2 ] * scale );
 }
