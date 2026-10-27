@@ -40,8 +40,20 @@ static BOOL PiStrEq(const char *a, const char *b)
     return strcmp(a, b) == 0;
 }
 
+static struct { char key[96]; unsigned count; } g_paHist[32];
+static unsigned g_paHistN;
+static void PiHist(const char *what)
+{
+    char key[96];
+    unsigned n = 0;
+    while (what[n] && what[n] != ':' && n < sizeof(key) - 1) { key[n] = what[n]; n++; }
+    key[n] = 0;
+    for (unsigned i = 0; i < g_paHistN; i++) if (!strcmp(g_paHist[i].key, key)) { g_paHist[i].count++; return; }
+    if (g_paHistN < 32) { strcpy(g_paHist[g_paHistN].key, key); g_paHist[g_paHistN++].count = 1; }
+}
 static void PiDiff(PiCheck *k, const char *name, const char *what)
 {
+    PiHist(what);
     if (!k->firstDiff[0]) _snprintf(k->firstDiff, sizeof(k->firstDiff) - 1, "%s: %s", name, what);
     if (k->reported < 20) { k->reported++; Log("p2passetcheck: %s differs: %s", name, what); }
 }
@@ -341,7 +353,191 @@ static BOOL PiWeaponEq(PiCheck *k, const char *name, const BYTE *s, const BYTE *
 }
 
 static Sh1xFindAssetFn g_paFind;
+static BOOL g_paGeneric;
 static unsigned g_paType;
+
+/* ---- Generic comparison of C1-layout header copies (server codol_c1Fixups 1) ------------------------------------
+ * The server replays each zone the way C1's loader does and records every pointer word C1 relocates (a fix-up):
+ * Sh1xHost_FindC1Header gives the header as C1 holds it after DB_AddXAsset, with pointer words still serialized,
+ * Sh1xHost_C1PointersIn lists the pointer words of a range and Sh1xHost_ResolveC1Pointer what C1 stores in each:
+ * loaded data (compared recursively, byte for byte), an asset header (compared by name) or a sound alias name
+ * (C1 stores the snd_alias_list_t it finds by it). Every other byte must equal C1's. Any type the replay catalogues. */
+typedef const void *(__cdecl *Sh1xFindC1HeaderFn)(unsigned, const char *, unsigned *);
+typedef const void *(__cdecl *Sh1xResolveC1Fn)(const void *, unsigned *, unsigned *);
+typedef int (__cdecl *Sh1xPointersInFn)(const void *, unsigned, unsigned *, unsigned);
+static Sh1xFindC1HeaderFn g_paHeader;
+static Sh1xResolveC1Fn g_paResolve;
+static Sh1xPointersInFn g_paPointers;
+static unsigned g_paPooled, g_paPointerWords, g_paBytes, g_paScript, g_paRuntime;
+
+static BOOL PiReadableSpan(const void *p, SIZE_T n)
+{
+    const BYTE *a = p, *end = a + n;
+    if (!p || end < a) return FALSE;
+    while (a < end) {
+        MEMORY_BASIC_INFORMATION mbi;
+        if (!VirtualQuery(a, &mbi, sizeof(mbi)) || mbi.State != MEM_COMMIT || (mbi.Protect & (PAGE_NOACCESS | PAGE_GUARD)))
+            return FALSE;
+        a = (const BYTE *)mbi.BaseAddress + mbi.RegionSize;
+    }
+    return TRUE;
+}
+/* The name field of a C1 asset header: GfxImage keeps it at +32, LocalizeEntry at +4, every other type at +0. */
+static unsigned PiNameOffset(unsigned type) { return type == 10 ? 32 : type == 27 ? 4 : 0; }
+static const char *PiSkipComma(const char *n) { return n && *n == ',' ? n + 1 : n; }
+static BOOL PiCString(const BYTE *p, unsigned max)
+{
+    for (unsigned i = 0; i < max; i++) {
+        /* one VirtualQuery per page, not per byte */
+        if ((!i || !((DWORD_PTR)(p + i) & 0xfff)) && !Readable(p + i, 1)) return FALSE;
+        if (!p[i]) return i > 0;
+        if (p[i] < 0x20 && p[i] != '\t' && p[i] != '\n' && p[i] != '\r') return FALSE;
+    }
+    return FALSE;
+}
+static BOOL PiGenEq(PiCheck *k, const char *name, const BYTE *s, const BYTE *c, unsigned size, unsigned depth, const char *path);
+/* Data reached more than once (pooled pointers, e.g. every brush side's plane) is compared once per asset: the
+ * server addresses already compared, tagged with the asset's generation. */
+static struct { const void *at; unsigned gen; } g_paVisited[1 << 18];
+static unsigned g_paGen, g_paRevisits;
+static BOOL PiVisited(const void *at)
+{
+    unsigned h = (unsigned)((DWORD_PTR)at * 2654435761u) >> 14;
+    for (unsigned n = 0; n < 64; n++, h = (h + 1) & ((1 << 18) - 1)) {
+        if (g_paVisited[h].gen != g_paGen) { g_paVisited[h].at = at; g_paVisited[h].gen = g_paGen; return FALSE; }
+        if (g_paVisited[h].at == at) { g_paRevisits++; return TRUE; }
+    }
+    return FALSE;
+}
+static BOOL PiGenPointerEq(PiCheck *k, const char *name, const BYTE *slot, const BYTE *cslot, unsigned depth, const char *path)
+{
+    char what[256];
+    unsigned kind = 0, size = 0;
+    const BYTE *t = g_paResolve(slot, &kind, &size);
+    const BYTE *cp = *(const BYTE *const *)cslot;
+    g_paPointerWords++;
+    if (!t) { _snprintf(what, sizeof(what), "%s: unresolved pointer (kind %u)", path, kind); PiDiff(k, name, what); return FALSE; }
+    if (!cp) { _snprintf(what, sizeof(what), "%s: null in C1 (kind %u)", path, kind & 0xff); PiDiff(k, name, what); return FALSE; }
+    switch (kind & 0xff) {
+    case 1: /* data */
+        if (size) {
+            if (depth >= 16 || PiVisited(t)) return TRUE;
+            return PiGenEq(k, name, t, cp, size, depth + 1, path);
+        }
+        /* a pooled (deduplicated) reference: its extent is not recorded; strings are compared, other data is
+         * compared where it was loaded */
+        g_paPooled++;
+        if (PiCString(t, 4096)) {
+            if (!PiCString(cp, 4096) || strcmp((const char *)t, (const char *)cp)) {
+                _snprintf(what, sizeof(what), "%s: pooled string \"%.60s\" vs C1 \"%.60s\"", path, (const char *)t,
+                          PiCString(cp, 4096) ? (const char *)cp : "?");
+                PiDiff(k, name, what);
+                return FALSE;
+            }
+        }
+        return TRUE;
+    case 2: { /* asset header: by name */
+        unsigned type = (kind >> 8) & 0xff, off = type == 0xff ? 0 : PiNameOffset(type), nk = 0, ns = 0;
+        const char *sn = g_paResolve(t + off, &nk, &ns);
+        const char *cn = Readable(cp + off, 4) ? *(const char *const *)(cp + off) : NULL;
+        if (!cn || !Readable(cn, 1) || !sn || !Readable(sn, 1) || _stricmp(PiSkipComma(sn), PiSkipComma(cn))) {
+            _snprintf(what, sizeof(what), "%s: asset (type %u) %s vs C1 %s", path, type, sn && Readable(sn, 1) ? sn : "?",
+                      cn && Readable(cn, 1) ? cn : "?");
+            PiDiff(k, name, what);
+            return FALSE;
+        }
+        return TRUE;
+    }
+    case 7: { /* a name C1 resolved to the header of that type */
+        unsigned type = (kind >> 8) & 0xff, off = PiNameOffset(type);
+        const char *cn = Readable(cp + off, 4) ? *(const char *const *)(cp + off) : NULL;
+        if (!cn || !Readable(cn, 1) || _stricmp(PiSkipComma((const char *)t), PiSkipComma(cn))) {
+            _snprintf(what, sizeof(what), "%s: named asset (type %u) %s vs C1 %s", path, type, (const char *)t,
+                      cn && Readable(cn, 1) ? cn : "?");
+            PiDiff(k, name, what);
+            return FALSE;
+        }
+        return TRUE;
+    }
+    case 4: { /* sound alias name; C1 holds the snd_alias_list_t */
+        const char *cn = Readable(cp, 4) ? *(const char *const *)cp : NULL;
+        if (!cn || !Readable(cn, 1) || _stricmp(PiSkipComma((const char *)t), PiSkipComma(cn))) {
+            _snprintf(what, sizeof(what), "%s: sound %s vs C1 %s", path, (const char *)t, cn && Readable(cn, 1) ? cn : "?");
+            PiDiff(k, name, what);
+            return FALSE;
+        }
+        return TRUE;
+    }
+    default:
+        _snprintf(what, sizeof(what), "%s: pointer kind %u", path, kind);
+        PiDiff(k, name, what);
+        return FALSE;
+    }
+}
+static BOOL PiGenEq(PiCheck *k, const char *name, const BYTE *s, const BYTE *c, unsigned size, unsigned depth, const char *path)
+{
+    char what[256], sub[160];
+    if (!size) return TRUE;
+    if (!PiReadableSpan(s, size) || !PiReadableSpan(c, size)) {
+        _snprintf(what, sizeof(what), "%s: unreadable %u bytes", path, size); PiDiff(k, name, what); return FALSE;
+    }
+    int n = g_paPointers(s, size, NULL, 0);
+    unsigned *offs = n > 0 ? HeapAlloc(GetProcessHeap(), 0, n * sizeof(unsigned)) : NULL;
+    if (n > 0 && !offs) { PiDiff(k, name, "out of memory"); return FALSE; }
+    if (n > 0) g_paPointers(s, size, offs, (unsigned)n);
+    if (n < 0) n = 0;
+    /* width of each listed word: 4 for a pointer; an annotation (5 script strings, 6 written by C1 itself) covers
+     * its size and is skipped */
+    unsigned *width = n > 0 ? HeapAlloc(GetProcessHeap(), 0, n * sizeof(unsigned)) : NULL;
+    if (n > 0 && !width) { HeapFree(GetProcessHeap(), 0, offs); PiDiff(k, name, "out of memory"); return FALSE; }
+    for (int i = 0; i < n; i++) {
+        unsigned kind = 0, sz = 0;
+        g_paResolve(s + offs[i], &kind, &sz);
+        width[i] = (kind & 0xff) == 5 || (kind & 0xff) == 6 ? (sz & 0x3fffffffu) | 0x40000000u : 4;
+        if ((kind & 0xff) == 5) g_paScript += sz; else if ((kind & 0xff) == 6) g_paRuntime += sz;
+    }
+    /* a listed word that runs past the end (a window into an array) ends the comparison before it */
+    while (n > 0 && offs[n - 1] + (width[n - 1] & 0x3fffffffu) > size) size = offs[--n];
+    g_paBytes += size;
+    BOOL eq = TRUE;
+    unsigned prev = 0;
+    for (int i = 0; i <= n && eq; i++) {
+        if (i < n && offs[i] < prev) continue;
+        unsigned end = i < n ? offs[i] : size;
+        if (end > size) end = size;
+        if (end > prev && memcmp(s + prev, c + prev, end - prev)) {
+            unsigned at = prev;
+            while (s[at] == c[at]) at++;
+            /* the differing ranges of this block, listed words excluded */
+            char ranges[300]; int used = 0; unsigned total = 0, q = at; int j = i;
+            ranges[0] = 0;
+            while (q < size) {
+                while (j < n && offs[j] + (width[j] & 0x3fffffffu) <= q) j++;
+                if (j < n && q >= offs[j]) { q = offs[j] + (width[j] & 0x3fffffffu); continue; }
+                if (s[q] == c[q]) { q++; continue; }
+                unsigned st = q;
+                while (q < size && s[q] != c[q] && !(j < n && q >= offs[j])) q++;
+                total += q - st;
+                if (used < 260) used += _snprintf(ranges + used, sizeof(ranges) - used, " %X-%X", st, q - 1);
+            }
+            _snprintf(what, sizeof(what), "%s+0x%X: %02X vs C1 %02X (dword %08lX vs C1 %08lX; %u bytes differ:%s)", path, at,
+                      s[at], c[at], (unsigned long)*(const DWORD *)(s + (at & ~3u)), (unsigned long)*(const DWORD *)(c + (at & ~3u)),
+                      total, ranges);
+            PiDiff(k, name, what);
+            eq = FALSE;
+            break;
+        }
+        if (i < n && (width[i] & 0x40000000u)) { prev = offs[i] + (width[i] & 0x3fffffffu); continue; }
+        if (i < n && offs[i] + 4 <= size) {
+            _snprintf(sub, sizeof(sub), "%.120s+0x%X>", path, offs[i]);
+            if (!PiGenPointerEq(k, name, s + offs[i], c + offs[i], depth, sub)) { eq = FALSE; break; }
+            prev = offs[i] + 4;
+        }
+    }
+    if (width) HeapFree(GetProcessHeap(), 0, width);
+    if (offs) HeapFree(GetProcessHeap(), 0, offs);
+    return eq;
+}
 
 /* A name repeats once per archive that defines it; each is checked once (FNV-1a set of 32768 slots). */
 static DWORD g_paSeen[32768];
@@ -365,6 +561,16 @@ static int __cdecl PiCheckOne(void *ctx, const char *name)
     if (k->checked && k->checked % 1000 == 0) Log("p2passetcheck: progress %u, next %s", k->checked, name);
     if (*(volatile const DWORD *)(DWORD_PTR)C1_DB_BUSY_VA) { k->busy = 1; return 0; }
     k->checked++;
+    if (g_paGeneric) {
+        unsigned length = 0;
+        const void *hs = g_paHeader(g_paType, name, &length);
+        if (!hs) { k->serverMissing++; return 1; }
+        const void *hc = PiC1Find(g_paType, name);
+        if (!hc) { k->c1Missing++; return 1; }
+        if (!++g_paGen) g_paGen = 1;
+        if (PiGenEq(k, name, hs, hc, length, 0, "")) k->equal++; else k->differ++;
+        return 1;
+    }
     const void *s = g_paFind(g_paType, name);
     if (!s) { k->serverMissing++; return 1; }
     const void *c = PiC1Find(g_paType, name);
@@ -397,8 +603,18 @@ static void __cdecl PiCmdAssetCheck(void)
     g_paFind = (Sh1xFindAssetFn)(void *)GetProcAddress(m, "Sh1xHost_FindAsset");
     Sh1xEnumAssetsFn enumerate = (Sh1xEnumAssetsFn)(void *)GetProcAddress(m, "Sh1xHost_EnumerateAssets");
     if (!g_paFind || !enumerate) { C1Printf("p2passetcheck: the server DLL has no asset API (needs feat/iw4-asset-layout)\n"); return; }
-    if (type != 11 && type != 28 && type != 36 && type != 37) { C1Printf("p2passetcheck: type %u is not converted yet (11 sound, 28 weapon, 36 rawfile, 37 stringtable)\n", type); return; }
+    /* p2passetcheck <type> <name|*> c1: the generic comparison of the server's C1-layout header copies (any type
+     * the replay catalogues; the server needs +set codol_c1Fixups 1). Without it, the converted types' records. */
+    g_paGeneric = VoiceArgc() > 3 && !strcmp(VoiceArgv(3), "c1");
+    g_paHeader = (Sh1xFindC1HeaderFn)(void *)GetProcAddress(m, "Sh1xHost_FindC1Header");
+    g_paResolve = (Sh1xResolveC1Fn)(void *)GetProcAddress(m, "Sh1xHost_ResolveC1Pointer");
+    g_paPointers = (Sh1xPointersInFn)(void *)GetProcAddress(m, "Sh1xHost_C1PointersIn");
+    if (g_paGeneric && (!g_paHeader || !g_paResolve || !g_paPointers)) { C1Printf("p2passetcheck: the server DLL has no C1 header API\n"); return; }
+    if (!g_paGeneric && type != 11 && type != 28 && type != 36 && type != 37) { C1Printf("p2passetcheck: type %u is not converted yet (11 sound, 28 weapon, 36 rawfile, 37 stringtable; or add c1)\n", type); return; }
     g_paType = type;
+    g_paPooled = g_paPointerWords = g_paBytes = g_paScript = g_paRuntime = 0;
+    g_paHistN = 0;
+    g_paRevisits = 0;
     PiCheck k;
     memset(&k, 0, sizeof(k));
     memset(g_paSeen, 0, sizeof(g_paSeen));
@@ -410,10 +626,13 @@ static void __cdecl PiCmdAssetCheck(void)
     if (g_paResult < 0) { C1Printf("p2passetcheck: the server cannot enumerate type %u\n", type); return; }
     char line[512];
     _snprintf(line, sizeof(line) - 1, "p2passetcheck type %u: %u checked, %u equal to C1, %u differ, %u not loaded in C1, "
-              "%u not in the server (%lu ms)%s%s%s", type, k.checked, k.equal, k.differ, k.c1Missing, k.serverMissing,
-              GetTickCount() - t0, k.busy ? "; STOPPED: C1's database is loading a zone, run it again" : "",
+              "%u not in the server (%lu ms)%s%s%s%s", type, k.checked, k.equal, k.differ, k.c1Missing, k.serverMissing,
+              GetTickCount() - t0, g_paGeneric ? " [c1 headers]" : "", k.busy ? "; STOPPED: C1's database is loading a zone, run it again" : "",
               k.firstDiff[0] ? "; first: " : "", k.firstDiff);
     line[sizeof(line) - 1] = 0;
     Log("%s", line);
+    for (unsigned i = 0; i < g_paHistN; i++) Log("p2passetcheck: first difference at %s: %u assets", g_paHist[i].key, g_paHist[i].count);
+    if (g_paGeneric) Log("p2passetcheck: compared %u bytes, %u pointer words (%u pooled), skipped %u script-string and %u C1-written bytes, %u repeat visits",
+                         g_paBytes, g_paPointerWords, g_paPooled, g_paScript, g_paRuntime, g_paRevisits);
     C1Printf("%s\n", line);
 }
