@@ -13,7 +13,10 @@ from zonekit import build, packs  # noqa: E402
 
 PATCH = r"client_shipRetail\patch"
 # source zones that cannot join a pack and still install under their own name
-STANDALONE = {"codol_infected_cyborg_postgfx_mp": "C#-written: its assets point into its own runtime blocks"}
+STANDALONE = {"codol_infected_cyborg_postgfx_mp": "C#-written: its assets point into its own runtime blocks",
+              # the sh1x server mounts mp_*.ff of the patch folder with every MP map: a pack name would hide them
+              "mp_codol_weapons": "mp_*: the sh1x server mounts it too (the MP weapon tables)",
+              "mp_codol_weapons_postgfx_mp": "mp_*: the sh1x server mounts it too; C#-written (the MP weapon art)"}
 
 
 def merged_table():

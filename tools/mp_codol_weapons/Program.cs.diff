@@ -1,0 +1,10 @@
+--- "/d/CoD/CODOL Builds/zm_wallbuy_staging/tool_build/src/Codol.SoundDumper/Program.cs"	2026-10-25 21:58:44.978732000 -0400
++++ Codol.SoundDumper/Program.cs	2026-10-27 04:06:44.145439600 -0400
+@@ -57,6 +57,7 @@
+                 "iw4-zones" or "iw4-assets" or "iw4-convert" or "iw4-diff" or "iw4-match" or "iw4-techcmp" or "iw4-port" or "iw4-impact" or "iw4-imgcheck" => Iw4Commands.Run(command, cli),
+                 // T5 (Black Ops PC)
+                 "zm-wallbuy" => WallbuyCommands.Run(command, cli),
++                "mp-zone-inspect" or "mp-weapons-zone" => MpWeaponCommands.Run(command, cli),
+                 "t5-zones" or "t5-assets" or "t5-zone" or "t5-dump" or "t5-survey" or "t5-port-zone" or "t5-models" or "t5-check" => T5Commands.Run(command, cli),
+                 // IW5 (Modern Warfare 3)
+                 "iw5-zones" or "iw5-assets" or "iw5-port-map" or "iw5-diff" or "iw5-compare" or "iw5-explore" => Iw5Commands.Run(command, cli),
