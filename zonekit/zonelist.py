@@ -46,9 +46,6 @@ ZONES = {
                                              stock=["code_post_gfx_mp", "patch_code_post_gfx_mp", "common_mp",
                                                     "common_gametype_zm", "patch_common_mp"]),
     "codol_loading_mode_names": dict(origin="Z:" + PATCH, install=PATCH),
-    # the survival match category's constant configstring table, mp/constconfigstrings_survival.csv (Kernel33
-    # survival_category.c selects it for the category "survival"); a copy of 1.1.1.13's coop table, C1's index layout
-    "codol_survival_category": dict(origin="new", install=PATCH),
     "codol_zm_deathmachine_audio": dict(origin="Z:" + PATCH, install=PATCH),
     # the in-match movies, shared by both languages (codol-classic's English codohud / codoingame with every text a
     # localize key, the Chinese entries here, the English ones in codol_english_ui_extra) and the pause menu's pad

@@ -1,6 +1,6 @@
-/* Offline x86 fixture for the survival category: survival_category.c (install, byte checks, hooks, callbacks) as it
+/* Offline x86 fixture for the survival category: survival_category.c (install, byte checks, hook, callback) as it
  * ships, with the Windows boundaries as deterministic doubles. tests/test_survival_category_x86.py maps it next to
- * C1.exe in Unicorn and runs C1's own 0x4CCDF0 / 0x4B6380 / 0x612850 through the installed hooks. */
+ * C1.exe in Unicorn and runs C1's own 0x4CCDF0 / 0x4B6380 / 0x612850 with the hook installed and without it. */
 #include <windows.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -18,12 +18,11 @@ static char *TStrstr(const char *h, const char *n)
     }
     return NULL;
 }
-/* C1's image and the fixture's data: the only memory a hook may read */
+/* C1's image: the only memory the install may read */
 static BOOL Readable(const void *p, SIZE_T n)
 {
     uintptr_t v = (uintptr_t)p;
-    return (v >= 0x400000 && v + n <= 0x0A000000) || (v >= 0x20000000 && v + n <= 0x21000000) ||
-           (v >= 0x30000000 && v + n <= 0x31000000);
+    return v >= 0x400000 && v + n <= 0x0A000000;
 }
 static void Log(const char *format, ...) { (void)format; stest_logs++; }
 static void WriteCode(void *dst, const void *src, SIZE_T n) { memcpy(dst, src, n); stest_writes++; }
@@ -34,8 +33,3 @@ static LPSTR TCmdLine(void) { return stest_cmdline; }
 
 __declspec(dllexport) void __cdecl STestInstall(void) { PatchSurvivalCategory(); }
 __declspec(dllexport) long __cdecl STestZoneLists(void) { return g_k33SurvZoneLists; }
-__declspec(dllexport) long __cdecl STestConstTables(void) { return g_k33SurvConstTables; }
-__declspec(dllexport) unsigned __cdecl STestChecksum(const K33SurvStringTableCell *cells, unsigned long n)
-{
-    return K33SurvTableChecksum(cells, n);
-}

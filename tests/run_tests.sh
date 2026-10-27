@@ -21,7 +21,6 @@ python -B docs/baselines/20261024-gfx-date-time/run_regressions.py \
 "$OUT/patch_locale_test.exe"
 "$BIN/gcc.exe" -O2 -Wall -Wextra -Werror tests/survival_category_test.c -o "$OUT/survival_category_test.exe"
 "$OUT/survival_category_test.exe"
-K33_SURVIVAL_TEST_EXE="$OUT/survival_category_test.exe" python -B tests/test_survival_category.py
 # managed_quick_windows.c needs its .qa section at 0x700000, where C1's room code is: as the first section of an
 # image based at 0x6F0000 with 64 KB section alignment (.init is placed first in .text).
 "$BIN/gcc.exe" -O0 -Wall -Wextra -I. -c tests/managed_quick_windows.c -o "$OUT/managed_quick.o"
