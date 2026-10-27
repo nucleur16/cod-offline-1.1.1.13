@@ -91,6 +91,11 @@ TimeUntilSpawn( includeTeamkillDelay )
 
 maySpawn()
 {
+	// Survival: a player who died in a wave waits for the intermission
+	// (maps\mp\gametypes\survival.gsc).
+	if ( isDefined( level.survivalMaySpawn ) && !self [[level.survivalMaySpawn]]() )
+		return false;
+
 	if ( getGametypeNumLives() || isDefined( level.disableSpawning ) )
 	{
 		if ( isDefined( level.disableSpawning ) && level.disableSpawning )

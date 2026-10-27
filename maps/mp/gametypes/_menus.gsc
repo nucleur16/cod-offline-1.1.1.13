@@ -514,7 +514,8 @@ menuClass( response )
 		if ( game["state"] == "postgame" )
 			return;
 
-		if ( level.inGracePeriod && !self.hasDoneCombat ) // used weapons check?
+		if ( ( level.inGracePeriod && !self.hasDoneCombat ) ||
+			( isDefined( level.survivalClassChange ) && self [[level.survivalClassChange]]() ) ) // used weapons check?
 		{
 			self maps\mp\gametypes\_class::setClass( self.pers["class"] );
 			self.tag_stowed_back = undefined;
@@ -616,6 +617,9 @@ addToTeam( team, firstConnect )
 	quickTeam = self codolQuickAssignedTeam();
 	if ( team != "spectator" && quickTeam != "none" )
 		team = quickTeam;
+	// A mode with one player team (survival: every player on allies).
+	if ( team != "spectator" && isDefined( level.forcedTeam ) )
+		team = level.forcedTeam;
 
 	// UTS update playerCount remove from team
 	if ( isDefined( self.team ) )

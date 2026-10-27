@@ -1011,6 +1011,10 @@ placeCarriedKillstreak()
 maintainBots()
 {
     level endon( "game_ended" );
+    // A mode with one player team (survival: the other side is the AI
+    // waves) fills no room with bots.
+    if ( isDefined( level.forcedTeam ) )
+        return;
     if ( getDvar( "scr_codol_botfill" ) == "" )
         setDvar( "scr_codol_botfill", 0 );
     if ( getDvar( "scr_codol_botmax" ) == "" )

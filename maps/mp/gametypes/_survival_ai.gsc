@@ -1,21 +1,24 @@
-// coop survival: the AI types, the wave table and the enemies.
+// survival: the AI types, the wave table and the enemies.
 //
 // Ported from Infinity Ward's Modern Warfare 3 Spec Ops Survival,
 // maps\_so_survival_ai.gsc (IW5; D:\CoD\COD-GSC-Source\IW5-GSC\scripts\1564.gsc
 // in the decompiled dump), as CoDOL's own survival builds carry it: the tables
 // are 2.6.9.7's common_gametype_survival (mp/survival_waves.csv, IW5's layout)
-// and the session zone's mp/survival_waves_<map>.csv.  docs/CODOL_SURVIVAL_PLAN.md
+// and the map's mp/survival_waves_<map>.csv.  docs/CODOL_SURVIVAL_PLAN.md
 // section 2.
 //
-// Coop module (maps/, the singleplayer namespace); it names no multiplayer
-// module.  Enemies are coop soldiers spawned through maps\_coopmission's
-// spawn_soldier, so the shared actor budget, death accounting, nametags and
-// weapons serve them.
+// Survival plays on the multiplayer chain (maps\mp\gametypes\survival.gsc):
+// the soldiers are the survival species' actors (aitype\enemy_so_*, the shared
+// soldier contract) firing the multiplayer weapon the AI table names; the dogs
+// are the multiplayer dog (maps\mp\_dogs, maps\mp\animscripts\dog); the actor
+// damage and death go through the MP dog's callbacks, wrapped here for IW5's
+// juggernaut damage factors.
 //
 // Tables.
 //   AI types (level.survival_type_table, rows 100..199, column 0 the index):
-//     1 ref  2 name  3 desc  4 classname  5 weapon  6 alt weapon (grenade)
-//     7 health  8 speed  9 xp (the credits a kill pays)  10 boss  11 accuracy
+//     1 ref  2 name  3 desc  4 classname  5 weapon (base|attachment|...)
+//     6 alt weapon (grenade)  7 health  8 speed  9 xp (the credits a kill
+//     pays)  10 boss  11 accuracy
 //   Waves (level.survival_wave_table, IW5 get_* accessors, searched by column 2):
 //     0 index  1 boss delay  2 wave  3 squad type  4 squad size  5 specials
 //     6 special counts  7 AI bosses  8 non-AI bosses  9 repeating
@@ -30,6 +33,8 @@ init()
 {
 	level.survival_ai = [];
 	level.survival_ai_refs = [];
+	if ( !isDefined( level.coop_weapon_models ) )
+		level.coop_weapon_models = [];
 	for ( i = 100; i < 200; i++ )
 	{
 		ref = tableLookup( level.survival_type_table, 0, "" + i, 1 );
@@ -39,13 +44,15 @@ init()
 		t.index = i;
 		t.ref = ref;
 		t.classname = tableLookup( level.survival_type_table, 0, "" + i, 4 );
-		t.weapon = tableLookup( level.survival_type_table, 0, "" + i, 5 );
+		t.weapon_spec = tableLookup( level.survival_type_table, 0, "" + i, 5 );
 		t.altweapon = tableLookup( level.survival_type_table, 0, "" + i, 6 );
 		t.health = table_int( level.survival_type_table, i, 7, 150 );
 		t.speed = table_float( level.survival_type_table, i, 8, 1 );
 		t.xp = table_int( level.survival_type_table, i, 9, 100 );
 		t.boss = ( tableLookup( level.survival_type_table, 0, "" + i, 10 ) == "1" );
 		t.accuracy = table_float( level.survival_type_table, i, 11, 1 );
+		// The type's multiplayer weapon, composed with its attachments.
+		t.weapon = compose_weapon( t.weapon_spec );
 		level.survival_ai[ ref ] = t;
 		level.survival_ai_refs[ level.survival_ai_refs.size ] = ref;
 	}
@@ -72,19 +79,16 @@ init()
 	codolprintln( "CoDOL survival: " + level.survival_last_wave + " waves from " + level.survival_wave_table +
 		", " + level.survival_repeat_waves.size + " repeat after them" );
 
-	// The juggernaut boss classes and the dogs are spawned through the same
-	// soldier path; the dog has no coop species yet (plan section 3.2).
 	level.survival_enemies = [];
 	level.survival_bosses = [];
 
-	// IW5 ai_preload: the martyrdom C4 (the dog_splode and martyrdom types).
+	// IW5 ai_preload: the martyrdom C4, the claymores, the gas.
 	codescripts\character::precacheMounted( "weapon_c4" );
 	codescripts\character::precacheMounted( "weapon_claymore" );
+	level.survival_shield_model = "weapon_riot_shield_mp";
+	codescripts\character::precacheMounted( level.survival_shield_model );
 	precacheShellShock( "concussion_grenade_mp" );
 	level._effect[ "martyrdom_c4_explosion" ] = loadFx( "explosions/grenadeexp_default" );
-
-	// IW5 squad_drop_weapon_rate 1, ai_dropAkimboChance 0: nothing this
-	// server's coop soldier drops needs a rate.
 }
 
 table_int( table, row, column, fallback )
@@ -101,6 +105,94 @@ table_float( table, row, column, fallback )
 	if ( !isDefined( v ) || v == "" )
 		return fallback;
 	return float( v );
+}
+
+// --------------------------------------------------------------------------
+// Multiplayer weapons from the tables
+// --------------------------------------------------------------------------
+
+// "base|attachment|..." (the later CoDOL builds' notation) -> the composed
+// multiplayer weapon (codol_getPartyWeapon, the party modes' composer), its
+// world model precached for the soldier's hand.  Attachments the 1.1.1.13
+// marketplace lacks are read without their weapon suffix
+// (mag_extclipmp5k -> mag_extclip), else dropped.  "" when the base is not
+// in the mounted zones.
+compose_weapon( spec )
+{
+	if ( !isDefined( spec ) || spec == "" )
+		return "";
+	parts = strTok( spec, "|" );
+	base = parts[ 0 ];
+	if ( !codol_isWeaponMounted( base ) )
+	{
+		codolprintln( "CoDOL survival: weapon " + base + " is in no mounted zone" );
+		return "";
+	}
+	precacheItem( base );
+	short = base;
+	if ( isSubStr( short, "_mp" ) )
+		short = getSubStr( short, 0, short.size - 3 );
+	a = [];
+	for ( i = 1; i < parts.size; i++ )
+	{
+		name = party_attachment( parts[ i ], short );
+		if ( isDefined( name ) )
+			a[ a.size ] = name;
+	}
+	switch ( a.size )
+	{
+	case 0:
+		weapon = codol_getPartyWeapon( base );
+		break;
+	case 1:
+		weapon = codol_getPartyWeapon( base, a[ 0 ] );
+		break;
+	case 2:
+		weapon = codol_getPartyWeapon( base, a[ 0 ], a[ 1 ] );
+		break;
+	case 3:
+		weapon = codol_getPartyWeapon( base, a[ 0 ], a[ 1 ], a[ 2 ] );
+		break;
+	case 4:
+		weapon = codol_getPartyWeapon( base, a[ 0 ], a[ 1 ], a[ 2 ], a[ 3 ] );
+		break;
+	default:
+		weapon = codol_getPartyWeapon( base, a[ 0 ], a[ 1 ], a[ 2 ], a[ 3 ], a[ 4 ] );
+		break;
+	}
+	precacheItem( weapon );
+	model = getWeaponModel( weapon );
+	if ( isDefined( model ) && model != "" && !isDefined( level.coop_weapon_models[ model ] ) )
+	{
+		precacheModel( model );
+		level.coop_weapon_models[ model ] = true;
+	}
+	return weapon;
+}
+
+party_attachment( name, short )
+{
+	if ( codol_isPartyAttachment( name ) )
+		return name;
+	if ( name.size > short.size && getSubStr( name, name.size - short.size, name.size ) == short )
+	{
+		stem = getSubStr( name, 0, name.size - short.size );
+		if ( codol_isPartyAttachment( stem ) )
+			return stem;
+	}
+	switch ( getSubStr( name, 0, 4 ) )
+	{
+	case "mag_":
+		if ( isSubStr( name, "extclip" ) && codol_isPartyAttachment( "xmags" ) )
+			return "xmags";
+		break;
+	case "eot_":
+	case "red_":
+		if ( codol_isPartyAttachment( "red_normal" ) )
+			return "red_normal";
+		break;
+	}
+	return undefined;
 }
 
 // IW5 wave_populate: one struct per wave row.
@@ -166,9 +258,7 @@ get_wave( num )
 	return w;
 }
 
-// IW5 get_squad_array: the wave's squad size in squads of three (a remainder
-// of one joins the last squad when IW5's merge_squad_member_max is 4, else it
-// takes one from it so no squad is a lone man).
+// IW5 get_squad_array: the wave's squad size in squads of three.
 squad_array( size )
 {
 	a = [];
@@ -210,20 +300,19 @@ spawn_type( ref, origin, angles, scale )
 	if ( is_dog_type( ref ) )
 		return spawn_dog( ref, origin, angles, scale );
 	if ( !isDefined( t.classname ) || t.classname == "" )
-	{
-		// The choppers: no actor class (plan section 3, the vehicle layer).
 		return undefined;
-	}
 	if ( !isDefined( scale ) )
 		scale = 1.0;
 
 	kind = spawnStruct();
 	kind.accuracy = t.accuracy * 0.3;
-	ai = maps\_survival_utility::spawn_soldier( t.classname, origin, angles, kind );
+	if ( t.weapon != "" )
+		kind.weapon = t.weapon;
+	ai = maps\mp\gametypes\_survival_utility::spawn_soldier( t.classname, origin, angles, kind );
 	if ( !isDefined( ai ) )
 		return undefined;
-	ai maps\_survival_utility::arm_soldier();
-	ai maps\_survival_utility::first_pose();
+	ai maps\mp\gametypes\_survival_utility::arm_soldier();
+	ai maps\mp\gametypes\_survival_utility::first_pose();
 
 	ai.survival_type = t;
 	ai.survival_ref = ref;
@@ -235,6 +324,7 @@ spawn_type( ref, origin, angles, scale )
 	// IW5 moveplaybackrate from the speed column.
 	ai.moveplaybackrate = t.speed;
 	ai.ignoreall = false;
+	ai setThreatBiasGroup( "axis" );
 
 	level.survival_enemies[ level.survival_enemies.size ] = ai;
 	ai thread death_watch();
@@ -264,8 +354,8 @@ special_behaviour( ref )
 }
 
 // IW5 martyrdom_ability / detonate_c4_when_dead: C4 strapped to the chest,
-// a red blink, and it goes off where he dies (IW5: 1.5 s fuse, radius 192;
-// the volatile variant at once).
+// and it goes off where he dies (IW5: 1.5 s fuse, radius 192; the volatile
+// variant at once).
 martyrdom_ability( fuse )
 {
 	if ( codescripts\character::modelMounted( "weapon_c4" ) )
@@ -282,9 +372,9 @@ martyrdom_ability( fuse )
 	earthquake( 0.4, 0.6, origin, 600 );
 }
 
-// IW5 chemical_ability / chemical_ability_gas_cloud: the gas tank on his back
-// bursts when he dies, and the cloud hurts whoever stands in it (IW5: radius
-// 160, the radiation shellshock, about 10 s).
+// IW5 chemical_ability / chemical_ability_gas_cloud: the gas tank bursts when
+// he dies, and the cloud hurts whoever stands in it (IW5: radius 160, about
+// 10 s).
 chemical_ability()
 {
 	self waittill( "death", attacker );
@@ -293,7 +383,7 @@ chemical_ability()
 		playFx( level._effect[ "chemical_cloud" ], origin );
 	for ( t = 0; t < 10; t += 0.5 )
 	{
-		players = maps\_survival_utility::living_players();
+		players = maps\mp\gametypes\_survival_utility::living_players();
 		for ( i = 0; i < players.size; i++ )
 		{
 			p = players[ i ];
@@ -311,8 +401,7 @@ chemical_ability()
 }
 
 // IW5 behavior_special_ai_claymore / mine_locs_attempt_plant: the planter
-// heads for the claymore spot nearest the players and plants one there (IW5
-// claymore_create; the spots are the addon's so_claymore_loc structs).
+// heads for the claymore spot nearest the players and plants one there.
 claymore_planter()
 {
 	self endon( "death" );
@@ -363,21 +452,27 @@ spawn_claymore( origin, angles )
 	c.angles = angles;
 	if ( codescripts\character::modelMounted( "weapon_claymore" ) )
 		c setModel( "weapon_claymore" );
+	c.survival_enemy = true;
+	if ( !isDefined( level.survival_claymores ) )
+		level.survival_claymores = [];
+	level.survival_claymores[ level.survival_claymores.size ] = c;
 	c thread claymore_watch();
 	return c;
 }
 
 // IW5 claymore_on_trigger: a player in front of it within 150 units, a beat,
-// and it goes off (IW5 claymore_detonate: radius 192).
+// and it goes off (IW5 claymore_detonate: radius 192).  The survival EMP
+// (maps\mp\gametypes\_survival_kiosk) disarms them.
 claymore_watch()
 {
+	self endon( "survival_disarmed" );
 	wait( 1 );
 	forward = anglesToForward( self.angles );
 	for ( ;; )
 	{
 		if ( level.survival_over )
 			break;
-		players = maps\_survival_utility::living_players();
+		players = maps\mp\gametypes\_survival_utility::living_players();
 		fired = false;
 		for ( i = 0; i < players.size; i++ )
 		{
@@ -398,8 +493,13 @@ claymore_watch()
 		wait( 0.3 );
 		if ( isDefined( level._effect[ "martyrdom_c4_explosion" ] ) )
 			playFx( level._effect[ "martyrdom_c4_explosion" ], self.origin );
-		radiusDamage( self.origin + ( 0, 0, 12 ), 192, 150, 30 );
+		radiusDamage( self.origin + ( 0, 0, 12 ), 192, 150, 30, self );
 	}
+	self remove_claymore();
+}
+
+remove_claymore()
+{
 	if ( isDefined( self.survival_spot ) )
 		self.survival_spot.survival_claymore = undefined;
 	self delete();
@@ -410,25 +510,16 @@ is_dog_type( ref )
 	return isSubStr( ref, "dog" ) || isSubStr( ref, "wolf" );
 }
 
-// IW5 spawn_dogs / dog_setup: the survival dog species (aitype\enemy_dog_so,
-// animscripts\coop_dog_*, the shared Spec Ops dog set) on the actor budget.  dog_splode / wolf_splode carry C4 (IW5
-// dog_detonate_c4_near_sentry / martyrdom): they explode where they die.
+// IW5 spawn_dogs / dog_setup on the multiplayer dog (maps\mp\_dogs: its
+// template, model, bite and T5 state machine).  dog_splode carries C4 (IW5
+// martyrdom): it explodes where it dies.
 spawn_dog( ref, origin, angles, scale )
 {
 	t = level.survival_ai[ ref ];
-	level.survival_dog_wolf = isSubStr( ref, "wolf" );
-	ai = maps\_survival_utility::spawn_soldier( "actor_enemy_dog_so", origin, angles, undefined );
-	level.survival_dog_wolf = undefined;
+	ai = maps\mp\gametypes\_survival_utility::spawn_dog( origin, angles );
 	if ( !isDefined( ai ) )
 		return undefined;
 
-	ai.isdog = true;
-	ai.allowdeath = true;
-	ai.ignoreSuppression = true;
-	ai.noDodgeMove = true;
-	ai.ignoreall = false;
-	// IW5 enemy_dog meleeDamage; _survival_mode scales non-bullet damage.
-	ai.meleeDamage = 40;
 	ai.survival_type = t;
 	ai.survival_ref = ref;
 	health = 200;
@@ -439,6 +530,7 @@ spawn_dog( ref, origin, angles, scale )
 	ai.health = int( health * scale );
 	ai.maxhealth = ai.health;
 	ai.favoriteenemy = closest_player( origin );
+	ai setThreatBiasGroup( "dogs" );
 
 	level.survival_enemies[ level.survival_enemies.size ] = ai;
 	ai thread death_watch();
@@ -467,8 +559,7 @@ dog_hunt()
 	}
 }
 
-// IW5 behavior_special_ai_martyrdom / dog_splode: C4 strapped on, it goes off
-// where he dies (IW5 detonate_c4_when_dead: radius 192, 150 at the centre).
+// IW5 dog_splode: C4 strapped on, it goes off where he dies.
 dog_c4()
 {
 	if ( codescripts\character::modelMounted( "weapon_c4" ) )
@@ -481,6 +572,9 @@ dog_c4()
 	radiusDamage( origin, 192, 150, 50 );
 }
 
+// The kill: credits (IW5 givexp_kill, the type's xp as credits; CoDOL
+// survivalbounties.csv: headshot +25%, melee +50), the boss assist share,
+// and the killer's class killstreaks advance.
 death_watch()
 {
 	self waittill( "death", attacker );
@@ -488,28 +582,42 @@ death_watch()
 	if ( isDefined( self.survival_boss ) )
 		level notify( "survival_boss_died" );
 
-	killer = attacker;
-	if ( isDefined( killer ) && !isPlayer( killer ) && isDefined( killer.owner ) && isPlayer( killer.owner ) )
-		killer = killer.owner;
-	if ( !isDefined( killer ) || !isPlayer( killer ) )
+	killer = credit_owner( attacker );
+	if ( !isDefined( killer ) )
 		return;
-
-	// IW5 givexp_kill: the type's xp, as credits (survival_credit is what the
-	// armory spends).  CoDOL survivalbounties.csv: headshot +25%, melee +50.
-	value = self.survival_type.xp;
+	value = 100;
+	if ( isDefined( self.survival_type ) )
+		value = self.survival_type.xp;
 	if ( isDefined( self.survival_hitloc ) && self.survival_hitloc == "head" )
 		value = int( value * 1.25 );
 	if ( isDefined( self.survival_mod ) && self.survival_mod == "MOD_MELEE" )
 		value += 50;
-	killer maps\_survival::add_credits( value, "kill" );
+	killer maps\mp\gametypes\_survival::add_credits( value, "kill" );
+	killer award_kill();
 }
 
-// _survival_mode's CodeCallback_ActorKilled:
-// the hit location and means of death the "death" notify does not carry.
-on_actor_killed( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset )
+// A player, or the owner of what killed (a sentry, a killstreak vehicle).
+credit_owner( attacker )
 {
-	self.survival_hitloc = sHitLoc;
-	self.survival_mod = sMeansOfDeath;
+	if ( !isDefined( attacker ) )
+		return undefined;
+	if ( isPlayer( attacker ) )
+		return attacker;
+	if ( isDefined( attacker.owner ) && isPlayer( attacker.owner ) )
+		return attacker.owner;
+	return undefined;
+}
+
+// The MP kill streak on an AI kill (as _damage's player kill counts it).
+award_kill()
+{
+	self.kills = int( self.kills ) + 1;
+	if ( !level.survival_killstreaks || !isAlive( self ) )
+		return;
+	if ( !isDefined( self.pers[ "cur_kill_streak" ] ) )
+		self.pers[ "cur_kill_streak" ] = 0;
+	self.pers[ "cur_kill_streak" ]++;
+	self thread maps\mp\killstreaks\_killstreaks::checkKillstreakReward( self.pers[ "cur_kill_streak" ] );
 }
 
 living_enemies()
@@ -526,12 +634,168 @@ living_enemies()
 }
 
 // --------------------------------------------------------------------------
+// The actor callbacks (wrapping the MP dog's, maps\mp\_dogs)
+// --------------------------------------------------------------------------
+
+actor_damage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime )
+{
+	// The waves never hurt each other (IW5 AI friendly fire is off).
+	if ( isDefined( eAttacker ) && eAttacker != self && isAI( eAttacker ) &&
+	     isDefined( eAttacker.aiteam ) && eAttacker.aiteam == self.aiteam )
+		return;
+	if ( isDefined( eAttacker ) && isDefined( eAttacker.survival_enemy ) && eAttacker.survival_enemy && !isPlayer( eAttacker ) )
+		return;
+	if ( isDefined( self.dmg_factor ) )
+		iDamage = self jug_damage( iDamage, eAttacker, sMeansOfDeath, sWeapon, sHitLoc, vDir );
+	if ( iDamage <= 0 )
+		return;
+	self [[level.survival_mp_actor_damage]]( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime );
+	if ( isDefined( self.dmg_factor ) )
+		self notify( "dmg_factored" );
+}
+
+// The hit location and means of death the "death" notify does not carry.
+actor_killed( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, psOffsetTime )
+{
+	self.survival_hitloc = sHitLoc;
+	self.survival_mod = sMeansOfDeath;
+	if ( isDefined( level.survival_mp_actor_killed ) )
+		self [[level.survival_mp_actor_killed]]( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, psOffsetTime );
+}
+
+// IW5 damage_factor: the share of a hit a juggernaut takes, by kind.
+jug_damage( iDamage, eAttacker, sMeansOfDeath, sWeapon, sHitLoc, vDir )
+{
+	f = self.dmg_factor;
+	if ( isDefined( eAttacker ) && isAI( eAttacker ) )
+		factor = f[ "ai_damage" ];
+	else if ( sMeansOfDeath == "MOD_MELEE" )
+	{
+		factor = f[ "melee" ];
+		if ( isDefined( sWeapon ) && isSubStr( sWeapon, "riotshield" ) )
+			factor = f[ "melee_riotshield" ];
+	}
+	else if ( sMeansOfDeath == "MOD_EXPLOSIVE" || sMeansOfDeath == "MOD_GRENADE" || sMeansOfDeath == "MOD_GRENADE_SPLASH" ||
+	          sMeansOfDeath == "MOD_PROJECTILE" || sMeansOfDeath == "MOD_PROJECTILE_SPLASH" )
+		factor = f[ "explosive" ];
+	else if ( isDefined( sHitLoc ) && ( sHitLoc == "head" || sHitLoc == "helmet" ) )
+		factor = f[ "headshot" ];
+	else
+		factor = f[ "bodyshot" ];
+
+	// The riot shield: a bullet into its face is stopped (IW5's shield has
+	// its own collision; here the hit's direction against his facing).
+	if ( isDefined( self.survival_shield ) && isSubStr( sMeansOfDeath, "BULLET" ) && isDefined( vDir ) )
+	{
+		facing = anglesToForward( self.angles );
+		if ( vectorDot( facing, vectorNormalize( ( vDir[ 0 ], vDir[ 1 ], 0 ) ) ) < -0.5 )
+			factor = factor * 0.1;
+	}
+	iDamage = int( iDamage * factor );
+	if ( iDamage < 1 )
+		iDamage = 1;
+	return iDamage;
+}
+
+// IW5 global_jug_behavior and the boss_jug_* factors.
+jug_behaviour( ref )
+{
+	self.dmg_factor = [];
+	self.dmg_factor[ "headshot" ] = 1;
+	self.dmg_factor[ "bodyshot" ] = 1;
+	self.dmg_factor[ "melee" ] = 1;
+	self.dmg_factor[ "melee_riotshield" ] = 1;
+	self.dmg_factor[ "explosive" ] = 1;
+	self.dmg_factor[ "ai_damage" ] = 1;
+	self.minpaindamage = 350;
+	self.goalradius = 128;
+	self setEngagementMinDist( 100, 60 );
+	self setEngagementMaxDist( 512, 768 );
+	switch ( ref )
+	{
+	case "jug_riotshield":
+		jug_factors( 0.75, 0.75, 0.33, 0.33, 1.0, 0.25 );
+		self thread jug_riotshield();
+		break;
+	case "jug_explosive":
+		jug_factors( 0.33, 0.25, 0.25, 0.25, 0.33, 0.25 );
+		break;
+	case "jug_headshot":
+	case "jug_minigun":
+		jug_factors( 1.0, 0.33, 0.25, 0.25, 1.0, 0.25 );
+		break;
+	default:
+		jug_factors( 0.75, 0.33, 0.25, 0.25, 0.33, 0.33 );
+		break;
+	}
+}
+
+jug_factors( head, body, melee, meleeShield, explosive, ai )
+{
+	self.dmg_factor[ "headshot" ] = head;
+	self.dmg_factor[ "bodyshot" ] = body;
+	self.dmg_factor[ "melee" ] = melee;
+	self.dmg_factor[ "melee_riotshield" ] = meleeShield;
+	self.dmg_factor[ "explosive" ] = explosive;
+	self.dmg_factor[ "ai_damage" ] = ai;
+}
+
+// IW5 boss_jug_riotshield / juggernaut_abandon_shield: he carries the shield
+// until half his health is gone, drops it, and fights on as a regular
+// juggernaut.
+jug_riotshield()
+{
+	self endon( "death" );
+	if ( codescripts\character::modelMounted( level.survival_shield_model ) )
+	{
+		self attach( level.survival_shield_model, "tag_weapon_left", true );
+		self.survival_shield = level.survival_shield_model;
+	}
+	full = self.health;
+	for ( ;; )
+	{
+		self waittill( "damage" );
+		if ( self.health / full <= 0.5 )
+			break;
+	}
+	self drop_shield();
+	jug_factors( 0.75, 0.33, 0.25, 0.25, 0.33, 0.33 );
+	self thread jug_shield_on_death();
+}
+
+drop_shield()
+{
+	if ( !isDefined( self.survival_shield ) )
+		return;
+	model = self.survival_shield;
+	self.survival_shield = undefined;
+	origin = self getTagOrigin( "tag_weapon_left" );
+	angles = self getTagAngles( "tag_weapon_left" );
+	self detach( model, "tag_weapon_left" );
+	s = spawn( "script_model", origin );
+	s.angles = angles;
+	s setModel( model );
+	s thread delete_after( 30 );
+}
+
+jug_shield_on_death()
+{
+	self waittill( "death" );
+}
+
+delete_after( time )
+{
+	wait( time );
+	if ( isDefined( self ) )
+		self delete();
+}
+
+// --------------------------------------------------------------------------
 // Behaviour (IW5 default_ai / aggressive_ai)
 // --------------------------------------------------------------------------
 
 // IW5 default_squad_leader / aggressive_squad_leader: the leader heads for
-// the closest player (IW5 setgoalentity, which this server lacks: the goal is
-// refreshed), goal radius 900, or 384 in the aggressive phase.
+// the closest player, goal radius 900, or 384 in the aggressive phase.
 hunt()
 {
 	self endon( "death" );
@@ -545,6 +809,8 @@ hunt()
 		self.goalradius = 900;
 		if ( aggressive )
 			self.goalradius = 384;
+		if ( isDefined( self.dmg_factor ) )
+			self.goalradius = 128;
 		target = closest_player( self.origin );
 		if ( isDefined( target ) )
 			self setGoalPos( target.origin );
@@ -554,7 +820,7 @@ hunt()
 
 closest_player( origin )
 {
-	players = maps\_survival_utility::living_players();
+	players = maps\mp\gametypes\_survival_utility::living_players();
 	best = undefined;
 	bestDist = 0;
 	for ( i = 0; i < players.size; i++ )
@@ -584,6 +850,8 @@ go_aggressive()
 	{
 		e = enemies[ i ];
 		e.survival_leader = undefined;
+		if ( isDefined( e.isdog ) && e.isdog )
+			continue;
 		e thread hunt();
 	}
 	codolprintln( "CoDOL survival: wave " + level.survival_wave_num + " aggressive, " + enemies.size + " left" );
@@ -599,7 +867,7 @@ spawn_specials( ref, count, scale )
 	spawned = 0;
 	for ( i = 0; i < count; i++ )
 	{
-		loc = maps\_survival_squad::farthest_location();
+		loc = maps\mp\gametypes\_survival_squad::farthest_location();
 		if ( !isDefined( loc ) )
 			break;
 		ai = undefined;
@@ -611,16 +879,18 @@ spawn_specials( ref, count, scale )
 		}
 		if ( !isDefined( ai ) )
 			continue;
-		ai thread hunt();
+		if ( !( isDefined( ai.isdog ) && ai.isdog ) )
+			ai thread hunt();
 		spawned++;
 		wait( 0.1 );
 	}
 	return spawned;
 }
 
-// IW5 spawn_boss_ai: the juggernauts (IW5 drops them from an Mi-17 at a
-// drop_path_start path; until the vehicle layer exists they walk in from the
-// farthest location).
+// IW5 spawn_juggernaut: each one comes in on an Mi-17 along a drop path
+// (maps\mp\gametypes\_survival_vehicles::drop_juggernaut); a map without
+// drop paths, or a drop that fails, has him walk in from the farthest
+// location.
 spawn_bosses( refs, scale )
 {
 	level.survival_bosses = [];
@@ -629,24 +899,43 @@ spawn_bosses( refs, scale )
 		ref = refs[ i ];
 		if ( !isSubStr( ref, "jug_" ) )
 			continue;
-		loc = maps\_survival_squad::farthest_location();
-		if ( !isDefined( loc ) )
-			continue;
-		ai = undefined;
-		for ( tries = 0; !isDefined( ai ) && tries < 15; tries++ )
+		if ( maps\mp\gametypes\_survival_vehicles::drop_juggernaut( ref, scale ) )
 		{
-			ai = spawn_type( ref, loc.origin, loc.angles, scale );
-			if ( !isDefined( ai ) )
-				wait( 1 );
+			codolprintln( "CoDOL survival: boss " + ref + " inbound by chopper" );
+			wait( 1 );
+			continue;
+		}
+		ai = undefined;
+		{
+			loc = maps\mp\gametypes\_survival_squad::farthest_location();
+			if ( !isDefined( loc ) )
+				continue;
+			for ( tries = 0; !isDefined( ai ) && tries < 15; tries++ )
+			{
+				ai = spawn_boss( ref, loc.origin, loc.angles, scale );
+				if ( !isDefined( ai ) )
+					wait( 1 );
+			}
 		}
 		if ( !isDefined( ai ) )
 			continue;
-		ai.survival_boss = true;
-		level.survival_bosses[ level.survival_bosses.size ] = ai;
-		ai thread hunt();
 		codolprintln( "CoDOL survival: boss " + ref + " spawned" );
 		wait( 0.5 );
 	}
+}
+
+// A juggernaut with IW5's boss behaviour.
+spawn_boss( ref, origin, angles, scale )
+{
+	ai = spawn_type( ref, origin, angles, scale );
+	if ( !isDefined( ai ) )
+		return undefined;
+	ai.survival_boss = true;
+	ai setThreatBiasGroup( "boss" );
+	ai jug_behaviour( ref );
+	level.survival_bosses[ level.survival_bosses.size ] = ai;
+	ai thread hunt();
+	return ai;
 }
 
 bosses_alive()

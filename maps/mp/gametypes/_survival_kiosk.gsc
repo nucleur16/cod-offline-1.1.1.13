@@ -31,7 +31,8 @@
 // Without the menus (scr_survival_menus 0) a kiosk sells its default item on
 // use: the locker refills ammo and the support case sells armor.
 //
-// Names no multiplayer and no coop module.
+// On the multiplayer chain: the air support is the multiplayer killstreaks
+// (giveKillstreak), the weapons are multiplayer weapons.
 
 init()
 {
@@ -49,23 +50,29 @@ init()
 	codescripts\character::precacheMounted( "coop_evac_case_ammo" );
 	codescripts\character::precacheMounted( "coop_evac_case_support" );
 
-	// The weapons the locker's upgrade ladder hands out (the _so arsenal,
-	// plan section 3.3), cheapest first.
+	// The weapons the locker's upgrade ladder hands out, cheapest first:
+	// multiplayer weapons (user direction 2026-10-27), composed with the
+	// attachments CoDOL's kiosk rows give them.
+	ladder = [];
+	ladder[ ladder.size ] = "usp_mp";
+	ladder[ ladder.size ] = "miniuzi_mp";
+	ladder[ ladder.size ] = "mp5k_mp";
+	ladder[ ladder.size ] = "ump45_mp";
+	ladder[ ladder.size ] = "aa12_mp";
+	ladder[ ladder.size ] = "scar_mp";
+	ladder[ ladder.size ] = "fn2000_mp";
+	ladder[ ladder.size ] = "m21ebr_mp|mag_extclipm21ebr";
+	ladder[ ladder.size ] = "rpd_mp";
+	ladder[ ladder.size ] = "m240_mp";
+	ladder[ ladder.size ] = "cheytac_mp";
+	ladder[ ladder.size ] = "barrett_mp";
 	level.survival_ladder = [];
-	level.survival_ladder[ level.survival_ladder.size ] = "usp_silencer_so";
-	level.survival_ladder[ level.survival_ladder.size ] = "tmp_silencer_so";
-	level.survival_ladder[ level.survival_ladder.size ] = "mp5_silencer_so";
-	level.survival_ladder[ level.survival_ladder.size ] = "ump45_so";
-	level.survival_ladder[ level.survival_ladder.size ] = "aa12_so";
-	level.survival_ladder[ level.survival_ladder.size ] = "m16_basic_so";
-	level.survival_ladder[ level.survival_ladder.size ] = "m16_reflex_so";
-	level.survival_ladder[ level.survival_ladder.size ] = "m14ebr_thermal_so";
-	level.survival_ladder[ level.survival_ladder.size ] = "rpd_so";
-	level.survival_ladder[ level.survival_ladder.size ] = "m240_so";
-	level.survival_ladder[ level.survival_ladder.size ] = "cheytac_so";
-	level.survival_ladder[ level.survival_ladder.size ] = "barrett_so";
-	for ( i = 0; i < level.survival_ladder.size; i++ )
-		precacheItem( level.survival_ladder[ i ] );
+	for ( i = 0; i < ladder.size; i++ )
+	{
+		weapon = maps\mp\gametypes\_survival_ai::compose_weapon( ladder[ i ] );
+		if ( weapon != "" )
+			level.survival_ladder[ level.survival_ladder.size ] = weapon;
+	}
 	// The mortar air support's shell.
 	precacheItem( "mortar_mp" );
 
@@ -109,7 +116,12 @@ item_cost( index )
 		if ( item_ref( i ) == ref )
 			return item_tier( i );
 	}
-	return item_tier( index );
+	// A row priced in 2.6.9.7's card tiers (1..10) and with no survival
+	// credit row: a thousand credits a tier keeps the table's order.
+	tier = item_tier( index );
+	if ( tier > 0 && tier <= 10 )
+		return tier * 1000;
+	return tier;
 }
 
 // The rows a kiosk's menu offers.
@@ -152,7 +164,7 @@ main()
 		e.survival_kind = spot.kind;
 		level.survival_kiosks[ level.survival_kiosks.size ] = e;
 		// IW5 armory_use_monitor's world icon: the compass marks it.
-		objective_add( 7 + level.survival_kiosks.size, "active", e.origin );
+		objective_add( maps\mp\gametypes\_gameobjects::getNextObjID(), "active", e.origin );
 		e thread kiosk_think();
 	}
 	codolprintln( "CoDOL survival: " + level.survival_kiosks.size + " kiosks, menus " + level.survival_menus );
@@ -183,7 +195,7 @@ test_purchases()
 		p = players[ n ];
 		if ( tokens[ 1 ] == "credits" && tokens.size >= 3 )
 		{
-			p maps\_survival::add_credits( int( tokens[ 2 ] ), "test" );
+			p maps\mp\gametypes\_survival::add_credits( int( tokens[ 2 ] ), "test" );
 			continue;
 		}
 		ok = p purchase( int( tokens[ 1 ] ) );
@@ -204,7 +216,7 @@ kiosk_think()
 	self setHintString( self.survival_hint );
 	for ( ;; )
 	{
-		players = maps\_survival_utility::living_players();
+		players = maps\mp\gametypes\_survival_utility::living_players();
 		for ( i = 0; i < players.size; i++ )
 		{
 			p = players[ i ];
@@ -332,9 +344,9 @@ share_credits()
 	{
 		if ( players[ i ] == self )
 			continue;
-		if ( !self maps\_survival::spend_credits( amount ) )
+		if ( !self maps\mp\gametypes\_survival::spend_credits( amount ) )
 			return;
-		players[ i ] maps\_survival::add_credits( amount, "share" );
+		players[ i ] maps\mp\gametypes\_survival::add_credits( amount, "share" );
 	}
 }
 
@@ -359,7 +371,7 @@ purchase( index )
 		return false;
 	if ( !self give_item( ref, index ) )
 		return false;
-	self maps\_survival::spend_credits( cost );
+	self maps\mp\gametypes\_survival::spend_credits( cost );
 	codolprintln( "CoDOL survival: " + self.name + " bought " + ref + " (row " + index + ") for " + cost +
 		", " + self.survival_credit + " left" );
 	return true;
@@ -383,6 +395,9 @@ can_buy( ref, index )
 		return level.survival_max_perks - perks >= need;
 	case "locker":
 		return isDefined( self next_weapon() );
+	case "emp":
+		return maps\mp\gametypes\_survival_vehicles::living_choppers() > 0 ||
+			( isDefined( level.survival_claymores ) && level.survival_claymores.size > 0 );
 	}
 	return true;
 }
@@ -409,13 +424,85 @@ give_item( ref, index )
 	case "locker":
 		return self give_weapon( self next_weapon() );
 	case "mortar_mp":
+		// The multiplayer mortar the buyer aims; the auto-aimed barrage when
+		// the table names no mortar killstreak.
+		if ( self give_streak( "mortar_mp" ) )
+			return true;
 		return self mortar_strike();
+	case "predator_missile":
+	case "sam_turret":
+	case "sentry":
+	case "precision_airstrike":
+	case "airdrop":
+	case "airdrop_sentry_minigun":
+	case "helicopter":
+	case "harrier_airstrike":
+		return self give_streak( ref );
+	case "emp":
+		return self survival_emp();
+	case "team_ammo":
+		return self team_ammo();
+	case "explosive_ammo":
+		self maps\mp\perks\_perks::givePerk( "specialty_explosivebullets" );
+		return true;
 	}
-	// The air support and equipment (predator, mortar, SAM, sentry, EMP,
-	// airstrike, nuke): phase 5 of the plan.
-	self iPrintLnBold( "Not available yet" );
-	codolprintln( "CoDOL survival: kiosk item " + ref + " (row " + index + ") is not implemented yet" );
+	if ( isSubStr( ref, "_mp" ) )
+		return self give_weapon( maps\mp\gametypes\_survival_ai::compose_weapon( ref ) );
+	self iPrintLnBold( "Not available" );
+	codolprintln( "CoDOL survival: kiosk item " + ref + " (row " + index + ") is not sold on this server" );
 	return false;
+}
+
+// IW5 _so_survival_armory's air support: the multiplayer killstreak of the
+// same name, given as a care-package reward (action slot 1) the buyer calls in
+// himself.
+give_streak( name )
+{
+	weapon = maps\mp\killstreaks\_killstreaks::getKillstreakWeapon( name );
+	if ( !isDefined( weapon ) || weapon == "" || !isDefined( level.killstreakFuncs[ name ] ) )
+	{
+		codolprintln( "CoDOL survival: killstreak " + name + " is not in this server's killstreak table" );
+		return false;
+	}
+	self maps\mp\killstreaks\_killstreaks::giveKillstreak( name, false, false, self );
+	self iPrintLnBold( "Air support ready: [{+actionslot 1}]" );
+	return true;
+}
+
+// IW5 survival's EMP: every enemy chopper comes down and the enemies'
+// claymores are disarmed; the team's own sentries and turrets are spared
+// (the multiplayer EMP, which takes down every vehicle, is not used).
+survival_emp()
+{
+	choppers = maps\mp\gametypes\_survival_vehicles::emp_choppers( self );
+	claymores = 0;
+	if ( isDefined( level.survival_claymores ) )
+	{
+		for ( i = 0; i < level.survival_claymores.size; i++ )
+		{
+			c = level.survival_claymores[ i ];
+			if ( !isDefined( c ) )
+				continue;
+			c notify( "survival_disarmed" );
+			c maps\mp\gametypes\_survival_ai::remove_claymore();
+			claymores++;
+		}
+		level.survival_claymores = [];
+	}
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+		players[ i ] playLocalSound( "emp_activate" );
+	codolprintln( "CoDOL survival: " + self.name + "'s EMP: " + choppers + " choppers, " + claymores + " claymores" );
+	return true;
+}
+
+// CoDOL kiosk row 12 (team_ammo): every living teammate refilled.
+team_ammo()
+{
+	players = maps\mp\gametypes\_survival_utility::living_players();
+	for ( i = 0; i < players.size; i++ )
+		players[ i ] give_ammo();
+	return true;
 }
 
 // --------------------------------------------------------------------------
@@ -447,8 +534,8 @@ mortar_strike()
 
 mortar_targets( count )
 {
-	enemies = maps\_survival_ai::living_enemies();
-	players = maps\_survival_utility::living_players();
+	enemies = maps\mp\gametypes\_survival_ai::living_enemies();
+	players = maps\mp\gametypes\_survival_utility::living_players();
 	picked = [];
 	for ( n = 0; n < count; n++ )
 	{
@@ -580,7 +667,7 @@ give_random_perks( count )
 	{
 		k = randomInt( pool.size );
 		perk = pool[ k ];
-		self setPerk( perk );
+		self maps\mp\perks\_perks::givePerk( perk );
 		self.survival_perks[ self.survival_perks.size ] = perk;
 		self iPrintLn( perk );
 		rest = [];
@@ -604,7 +691,8 @@ next_weapon()
 	{
 		for ( j = 0; j < weapons.size; j++ )
 		{
-			if ( weapons[ j ] == level.survival_ladder[ i ] )
+			if ( weapons[ j ] == level.survival_ladder[ i ] ||
+			     maps\mp\_utility::codolWeaponBase( weapons[ j ] ) == maps\mp\_utility::codolWeaponBase( level.survival_ladder[ i ] ) )
 				best = i;
 		}
 	}
@@ -620,7 +708,7 @@ give_weapon( weapon )
 {
 	if ( !isDefined( weapon ) )
 		return false;
-	self maps\_survival_mode::give_weapon( weapon, true );
+	self maps\mp\gametypes\_survival::give_weapon( weapon, true );
 	self.survival_bought = [];
 	primaries = self getWeaponsListPrimaries();
 	for ( i = 0; i < primaries.size; i++ )

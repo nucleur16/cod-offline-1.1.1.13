@@ -1,4 +1,5 @@
 // survival helpers: players, the soldier spawn, the end of the match.
+// (maps\mp\gametypes\, the multiplayer chain survival plays on.)
 //
 // The coop mission layer's spawn contract (_coopmission.gsc spawn_soldier /
 // template_for / arm_soldier) in the survival category, which may not compile
@@ -121,6 +122,47 @@ spawn_soldier( cls, origin, angles, kind )
 	return ai;
 }
 
+// A multiplayer dog (maps\mp\_dogs: the runtime actor_enemy_dog_mp template,
+// its model, bite weapon and T5 state machine) on the axis side, on the same
+// actor budget as the soldiers.
+spawn_dog( origin, angles )
+{
+	if ( level.survival_over )
+		return undefined;
+	if ( level.survival_alive >= level.survival_max_alive )
+		return undefined;
+	if ( !maps\mp\_dogs::dog_acquire_spawner() )
+	{
+		if ( !isDefined( level.survival_dog_warned ) )
+			codolprintln( "CoDOL survival: no dog template (actor_enemy_dog_mp); dogs are skipped" );
+		level.survival_dog_warned = true;
+		return undefined;
+	}
+	dog = level.dog_spawner spawnActor();
+	if ( !isDefined( dog ) )
+	{
+		level.survival_spawn_failures++;
+		return undefined;
+	}
+	if ( !isDefined( angles ) )
+		angles = ( 0, randomInt( 360 ), 0 );
+	dog forceTeleport( origin, angles );
+	dog show();
+	dog maps\mp\_dogs::init_dog();
+	// IW5's survival dogs do not regenerate; the MP regen would also cap
+	// them at the MP dog's health.
+	dog notify( "end_healthregen" );
+	dog.aiteam = "axis";
+	dog.isdog = true;
+	dog.allowdeath = true;
+	dog.ignoreall = false;
+	dog.targetname = "survival_enemy";
+	level.survival_alive++;
+	level.survival_spawned++;
+	dog thread count_death();
+	return dog;
+}
+
 // The soldier's weapon in his hands (the coop contract, _coopmission
 // arm_soldier): the world model on tag_weapon_right and the weapon named in
 // his entity state for C1's fire events.
@@ -151,8 +193,6 @@ count_death()
 	self waittill( "death", attacker );
 	level.survival_alive--;
 	level.survival_killed++;
-	if ( isDefined( attacker ) && isPlayer( attacker ) )
-		attacker.kills = int( attacker.kills ) + 1;
 	level notify( "survival_axis_died" );
 }
 
@@ -182,37 +222,31 @@ match_over( success, reason )
 		return;
 	level.survival_over = true;
 	level.survival_success = success;
+	// The caller may be a thread that ends on "survival_over" (watch_wipe):
+	// the end runs on its own thread, started before the notify.
+	level thread match_end( success, reason );
 	level notify( "survival_over" );
-	codolprintln( "CoDOL survival: over, success " + success + " (" + reason + "), " +
-		level.survival_killed + " killed, " + level.survival_spawned + " spawned" );
-	level thread end_level();
 }
 
-end_level()
+match_end( success, reason )
 {
-	level.gameEnded = true;
-	players = getPlayers();
-	for ( i = 0; i < players.size; i++ )
-	{
-		players[ i ] closeMenu();
-		players[ i ] closeInGameMenu();
-		players[ i ] freezeControls( true );
-	}
-	delay = getDvarInt( "scr_survival_end_delay" );
-	if ( delay <= 0 )
-		delay = 10;
-	wait( delay );
+	codolprintln( "CoDOL survival: over, success " + success + " (" + reason + "), " +
+		level.survival_killed + " killed, " + level.survival_spawned + " spawned" );
 
 	// The mission report (IW5 survival_leaderboard_wave_func): the session as
 	// the client named it (coop_survival_<level>), success at five waves
-	// (IW5 congrat_min_wave).  exitLevel then returns everyone to the lobby
-	// and loads nothing further (codol_coop_progress.c).
+	// (IW5 congrat_min_wave).  The MP end of the match follows; exitLevel
+	// then returns everyone to the lobby (codol_coop_progress.c serves the
+	// survival category as it does coop).
 	mission = "coop_survival_" + getDvar( "mapname" );
-	success = isDefined( level.survival_success ) && level.survival_success;
+	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 	{
 		if ( isDefined( players[ i ] ) )
 			players[ i ] codol_reportCoopMission( mission, success );
 	}
-	exitLevel( false );
+	winner = "axis";
+	if ( success )
+		winner = "allies";
+	level thread maps\mp\gametypes\_gamelogic::endGame( winner, game[ "strings" ][ "allies_eliminated" ] );
 }

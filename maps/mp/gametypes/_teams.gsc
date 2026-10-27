@@ -314,7 +314,8 @@ getTeamBalanceSecondsRemaining( startedAt, now )
 
 updateTeamBalanceCountdown()
 {
-    if ( !level.teamBalance || game["state"] != "playing" || getTeamBalance() )
+    // A mode with one player team (survival) is never balanced.
+    if ( !level.teamBalance || isDefined( level.forcedTeam ) || game["state"] != "playing" || getTeamBalance() )
     {
         level.teamBalanceStartedAt = undefined;
         level.teamBalanceAnnouncedSeconds = undefined;
@@ -366,6 +367,8 @@ getTeamBalance()
 // using them here stranded training bots and interrupted human respawns.
 balanceTeams( roundBoundary )
 {
+	if ( isDefined( level.forcedTeam ) )
+		return;
     if ( !isDefined( roundBoundary ) )
         roundBoundary = false;
 
