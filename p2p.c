@@ -48,6 +48,8 @@ typedef struct P2PConfig {
     int port, bots, admission, developer, readyTimeout;
     int pmemMegs;                /* codol_pmemMegs for the server: its fastfile block (0 = the server default) */
     int c1Assets;                /* in-process: take C1's records of startup zones (default 1) */
+    int c1Preload;               /* in-process: preloadmap when C1 is not loading a hosted map (default 0) */
+    int c1Zones;                 /* in-process: map zones C1 holds are C1-backed, mounted only on demand (default 1) */
 } P2PConfig;
 
 static struct {
@@ -131,6 +133,7 @@ static void P2PDefaults(P2PConfig *c)
      * 2026-10-27); the server default reserves 328 MB of the shared address space. */
     c->pmemMegs = 32;
     c->c1Assets = 1;
+    c->c1Zones = 1;
 }
 
 static void P2PLoadIni(P2PConfig *c)
@@ -162,7 +165,7 @@ static void P2PLoadIni(P2PConfig *c)
         };
         struct { const char *k; int *dst; } ints[] = {
             { "port", &c->port }, { "bots", &c->bots }, { "admission_required", &c->admission },
-            { "developer", &c->developer }, { "ready_timeout", &c->readyTimeout }, { "pmem_megs", &c->pmemMegs }, { "c1_assets", &c->c1Assets },
+            { "developer", &c->developer }, { "ready_timeout", &c->readyTimeout }, { "pmem_megs", &c->pmemMegs }, { "c1_assets", &c->c1Assets }, { "c1_preload", &c->c1Preload }, { "c1_zones", &c->c1Zones },
         };
         BOOL known = FALSE;
         for (unsigned i = 0; i < sizeof(strs) / sizeof(strs[0]); i++)

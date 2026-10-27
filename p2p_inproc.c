@@ -321,6 +321,7 @@ static void PiYield(void)
  * itself when it is connected (the server's loadingnewmap); otherwise, after a short grace, preloadmap starts it.
  * Then the server waits, yielding, until C1 holds the level and its common_gametype zone
  * and its database is idle. */
+static int g_piC1Preload;
 static int __cdecl PiAwaitZones(const char *map, const char *zoneType, unsigned timeoutMs)
 {
     char level[64], common[64], cmd[192];
@@ -351,6 +352,13 @@ static int __cdecl PiAwaitZones(const char *map, const char *zoneType, unsigned 
             return 1;
         }
         if (!started && (loading || PiC1ZoneSignature() != signature)) started = now;
+        /* No C1 load under way after a short grace: C1 is not in this server's match (the first map, or the host
+         * player away). Starting C1's load from the menu (preloadmap) is opt-in (p2p_host.ini c1_preload = 1):
+         * measured, it can leave C1's menu flow crashing in its next room join. Otherwise the server mounts its own. */
+        if (!started && !g_piC1Preload && now - t0 > 2000) {
+            Log("p2p in-process: C1 is not loading %s; the server mounts its own copy", map);
+            return 0;
+        }
         if (!started && !preloaded && now - t0 > 2000) {
             _snprintf(cmd, sizeof(cmd), "preloadmap %s %s\n", level, zoneType); /* the spelling loadingnewmap uses */ cmd[sizeof(cmd) - 1] = 0;
             C1CbufAddText(cmd);
@@ -369,6 +377,8 @@ static int __cdecl PiZoneHeld(const char *zone) { return PiC1ZoneLoaded(zone); }
 
 /* C1's record of (type, name) for the server (p2p_assets.c PiC1Find); none while C1's database thread links a zone. */
 static const void *PiC1Find(unsigned type, const char *name);
+static const void *PiC1FindIn(unsigned type, const char *name, const char *zone);
+static const void *__cdecl PiFindInZone(unsigned type, const char *name, const char *zone) { return PiC1FindIn(type, name, zone); }
 static const void *__cdecl PiC1Provide(unsigned type, const char *name)
 {
     if (*(volatile const DWORD *)(DWORD_PTR)0x02007A60u) return NULL;
@@ -430,7 +440,13 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         if (setProvider && c.c1Assets) { setProvider(PiC1Provide); Log("p2p in-process: C1 asset provider installed"); }
         typedef void (__cdecl *Sh1xSetZoneHostFn)(int (__cdecl *)(const char *, const char *, unsigned), int (__cdecl *)(const char *));
         Sh1xSetZoneHostFn setZoneHost = (Sh1xSetZoneHostFn)(void *)GetProcAddress(m, "Sh1xHost_SetC1ZoneHost");
+        g_piC1Preload = c.c1Preload;
         if (setZoneHost && c.c1Assets) { setZoneHost(PiAwaitZones, PiZoneHeld); Log("p2p in-process: C1 zone host installed"); }
+        /* Zones C1 holds are not mounted: the server asks C1 where a definition is and mounts its own copy of a zone
+         * only when a lookup needs one (p2p_host.ini c1_zones = 0: mount them all, as before). */
+        typedef void (__cdecl *Sh1xSetZoneFindFn)(const void *(__cdecl *)(unsigned, const char *, const char *));
+        Sh1xSetZoneFindFn setZoneFind = (Sh1xSetZoneFindFn)(void *)GetProcAddress(m, "Sh1xHost_SetC1ZoneFind");
+        if (setZoneFind && c.c1Assets && c.c1Zones) { setZoneFind(PiFindInZone); Log("p2p in-process: C1-backed map zones on"); }
     }
     g_piInit = init; g_piFrame = frame; g_piCmd = cmd; g_piCode = code;
     lstrcpynA(g_piArgs, args, sizeof(g_piArgs));
@@ -553,7 +569,9 @@ static void __cdecl PiCmdFaultTest(void)
     C1Printf("p2pfaulttest: the server faults in its next frame\n");
 }
 static void __cdecl PiCmdAssetCheck(void); /* p2p_assets.c */
-static C1Cmd g_piCmds[] = { { NULL, "p2pfaulttest", (void *)PiCmdFaultTest }, { NULL, "p2passetcheck", (void *)PiCmdAssetCheck } };
+static void __cdecl PiCmdSlScan(void); /* p2p_assets.c */
+static C1Cmd g_piCmds[] = { { NULL, "p2pfaulttest", (void *)PiCmdFaultTest }, { NULL, "p2passetcheck", (void *)PiCmdAssetCheck },
+                            { NULL, "p2pslscan", (void *)PiCmdSlScan } };
 
 /* TakeOver, after InstallDiscord (voice and discord hook the same call first). */
 static void InstallP2PInproc(void)

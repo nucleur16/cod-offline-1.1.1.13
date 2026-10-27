@@ -265,6 +265,39 @@ static const void *PiC1Find(unsigned type, const char *name)
     return NULL;
 }
 
+/* C1's header for (type, name) when its linked (first) definition came from the zone named zone: the entry's zone
+ * index +0x10 names a slot of the zone array (0x1F0E108 + index * 0xA8, name at +0x0C). NULL while the database
+ * thread links a zone. */
+static unsigned g_piFindInLogged;
+static const void *PiC1FindIn(unsigned type, const char *name, const char *zone)
+{
+    DWORD h = type;
+    if (!name || !zone || *(volatile const DWORD *)(DWORD_PTR)0x02007A60u) return NULL;
+    for (const char *p = name; *p; p++) {
+        int c = tolower((unsigned char)*p);
+        if (c == 92) c = '/';
+        h = h * 31 + (DWORD)c;
+    }
+    unsigned idx = ((const unsigned short *)(DWORD_PTR)C1_DB_HASHTABLE_VA)[h % 60000u];
+    typedef const char *(__cdecl *NameFn)(const void *);
+    NameFn nameOf = ((const NameFn *)(DWORD_PTR)C1_DB_NAMEFN_VA)[type];
+    for (unsigned guard = 0; idx && guard < 65536; guard++) {
+        const BYTE *e = (const BYTE *)(DWORD_PTR)(C1_DB_ENTRIES_VA + 24u * idx);
+        if (*(const unsigned *)e == type && nameOf) {
+            const char *n = nameOf(e + 8);
+            if (n && PiC1NameEq(n, name)) {
+                const char *in;
+                if (!e[0x10]) return NULL;
+                in = (const char *)(DWORD_PTR)(0x01F0E108u + 0xA8u * e[0x10] + 0x0C);
+                if (g_piFindInLogged < 12) { g_piFindInLogged++; Log("p2p in-process: C1 type %u %s is in zone %u %s (asked %s)", type, name, e[0x10], in, zone); }
+                return lstrcmpiA(in, zone) ? NULL : *(const void *const *)(e + 8);
+            }
+        }
+        idx = *(const unsigned short *)(e + 0x12);
+    }
+    return NULL;
+}
+
 /* C1 WeaponDef (loader 0x4c3c20, 0xBFC bytes): the pointer slots of the server's codol_c1_weapon.c / the
  * replay_weapon field table: 1 string, 2 sound, 3 31-entry sound array, 4 asset (compared by the name every
  * C1 asset header starts with), 5 graph points. Script-string handle arrays are skipped (9). */
@@ -655,4 +688,52 @@ static void __cdecl PiCmdAssetCheck(void)
     if (g_paGeneric) Log("p2passetcheck: compared %u bytes, %u pointer words (%u pooled), skipped %u script-string and %u C1-written bytes, %u repeat visits",
                          g_paBytes, g_paPointerWords, g_paPooled, g_paScript, g_paRuntime, g_paRevisits);
     C1Printf("%s\n", line);
+}
+
+/* p2pslscan <xmodel>: find C1's script-string buffer. For each data dword D in C1's image that points at readable
+ * memory, test whether D + stride * handle + offset gives a name for the model's first bone handles (strides 8/12/16,
+ * offsets 0/4/8); log the candidates with the names they give. A one-off reverse-engineering aid. */
+static BOOL PiNamelike(const char *s)
+{
+    int n = 0;
+    if (!s || !Readable(s, 32)) return FALSE;
+    if (!Readable(s - 1, 1) || s[-1]) return FALSE; /* a string start */
+    if (strncmp(s, "tag_", 4) && strncmp(s, "j_", 2)) return FALSE; /* a bone name */
+    for (; n < 32 && s[n]; n++) if (!((s[n] >= 'a' && s[n] <= 'z') || (s[n] >= '0' && s[n] <= '9') || s[n] == '_')) return FALSE;
+    return n >= 2 && n < 32;
+}
+static void __cdecl PiCmdSlScan(void)
+{
+    static const unsigned strides[] = { 8, 12, 16 }, offsets[] = { 0, 4, 8 };
+    const char *name = VoiceArgc() > 1 ? VoiceArgv(1) : "defaultactor";
+    const BYTE *model = PiC1Find(4, name), *bones;
+    unsigned n, hits = 0;
+    if (!model || !Readable(model, 0x30)) { C1Printf("p2pslscan: no C1 xmodel %s\n", name); return; }
+    bones = *(const BYTE *const *)(model + 0x2c); n = model[4];
+    if (!bones || !Readable(bones, 2 * n) || n < 3) { C1Printf("p2pslscan: %s has no bone names\n", name); return; }
+    Log("p2pslscan: %s bones %u, handles %u %u %u", name, n, ((const WORD *)bones)[0], ((const WORD *)bones)[1], ((const WORD *)bones)[2]);
+    for (DWORD a = 0x00C00000u; a < 0x02800000u && hits < 20; a += 4) {
+        MEMORY_BASIC_INFORMATION mbi;
+        if (!(a & 0xffff)) {
+            if (!VirtualQuery((void *)(DWORD_PTR)a, &mbi, sizeof(mbi)) || mbi.State != MEM_COMMIT) { a = (DWORD)(DWORD_PTR)mbi.BaseAddress + (DWORD)mbi.RegionSize - 4; continue; }
+        }
+        if (!Readable((void *)(DWORD_PTR)a, 4)) continue;
+        DWORD d = *(const DWORD *)(DWORD_PTR)a;
+        if (d < 0x00010000u || d > 0x7fff0000u) continue;
+        for (unsigned si = 0; si < 3; si++) for (unsigned oi = 0; oi < 3; oi++) {
+            BOOL ok = TRUE;
+            for (unsigned b = 0; b < 3 && ok; b++) {
+                DWORD h = ((const WORD *)bones)[b];
+                ok = h && PiNamelike((const char *)(DWORD_PTR)(d + strides[si] * h + offsets[oi]));
+            }
+            if (ok) {
+                DWORD h0 = ((const WORD *)bones)[0], h1 = ((const WORD *)bones)[1];
+                Log("p2pslscan: global 0x%08lX -> 0x%08lX stride %u offset %u: %s %s", (unsigned long)a, (unsigned long)d,
+                    strides[si], offsets[oi], (const char *)(DWORD_PTR)(d + strides[si] * h0 + offsets[oi]),
+                    (const char *)(DWORD_PTR)(d + strides[si] * h1 + offsets[oi]));
+                hits++;
+            }
+        }
+    }
+    C1Printf("p2pslscan: %u candidates (Kernel33.log)\n", hits);
 }
