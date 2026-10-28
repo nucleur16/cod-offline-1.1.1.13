@@ -1400,6 +1400,9 @@ static void PatchGbkInput(void)
 #include <shlwapi.h>
 #include "usermaps.c"
 
+/* The survival match category: its gametype zones and constant configstring table, see survival_category.c. */
+#include "survival_category.c"
+
 /* C1 engine helpers shared by the features below: see c1game.c. */
 #include "c1game.c"
 #include "infect_scoreboard.c"
@@ -1482,6 +1485,7 @@ static void __cdecl TakeOver(void)
     PatchPatchDir();
     PatchLocalizePool();
     PatchUserMaps();
+    PatchSurvivalCategory();
     InstallSoundDiag();
     InstallParityLogger();
 #ifndef K33_NO_CONSOLE
