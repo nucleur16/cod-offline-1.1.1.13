@@ -326,8 +326,8 @@ static int __cdecl PiAwaitZones(const char *map, const char *zoneType, unsigned 
 {
     char level[64], common[64], cmd[192];
     const char *tail;
-    DWORD t0 = GetTickCount(), started = 0;
-    unsigned signature = PiC1ZoneSignature();
+    DWORD t0 = GetTickCount(), started = 0, busy = 0;
+    unsigned signature = PiC1ZoneSignature(), lastSig = signature;
     BOOL preloaded = FALSE;
     if (!map || !zoneType) return 0;
     lstrcpynA(level, map, sizeof(level));
@@ -343,15 +343,27 @@ static int __cdecl PiAwaitZones(const char *map, const char *zoneType, unsigned 
         DWORD now = GetTickCount();
         BOOL loading = *(volatile const DWORD *)(DWORD_PTR)C1_DB_LOADING_VA != 0;
         /* a co-op session zone (coop_<mode>_<level>) is loaded by C1 only when the map string names it; the
-         * server sends the level spelling, so C1 holds the level and gametype zones and the server keeps its own
-         * copy of the session zone */
-        BOOL held = PiC1ZoneLoaded(level) && PiC1ZoneLoaded(common);
+         * server's loadingnewmap sends that spelling (server 2026-10-27), so C1 holds the session zone too */
+        BOOL held = PiC1ZoneLoaded(level) && PiC1ZoneLoaded(common) && PiC1ZoneLoaded(map);
         if (held && !loading) {
             PiLogC1Zones("held");
             Log("p2p in-process: C1 holds %s (%s) after %lu ms%s", map, zoneType, now - t0, preloaded ? " (preloadmap)" : "");
             return 1;
         }
         if (!started && (loading || PiC1ZoneSignature() != signature)) started = now;
+        {
+            unsigned sig = PiC1ZoneSignature();
+            if (loading || sig != lastSig) { busy = now; lastSig = sig; }
+        }
+        /* C1's load stopped without the zones (a zone change that was not this map, or C1 left the match): the
+         * server mounts its own instead of waiting out the timeout, which held its rcon and network for 60 s.
+         * C1 links zone after zone with idle reads between them (a 60 s zm load under memory pressure), so only
+         * 15 s with neither the database busy nor the zone list changing counts. */
+        if (started && !loading && now - (busy ? busy : started) > 15000) {
+            PiLogC1Zones("load stopped");
+            Log("p2p in-process: C1 stopped loading without %s (%s); the server mounts its own copy", map, zoneType);
+            return 0;
+        }
         /* No C1 load under way after a short grace: C1 is not in this server's match (the first map, or the host
          * player away). Starting C1's load from the menu (preloadmap) is opt-in (p2p_host.ini c1_preload = 1):
          * measured, it can leave C1's menu flow crashing in its next room join. Otherwise the server mounts its own. */
@@ -377,8 +389,8 @@ static int __cdecl PiZoneHeld(const char *zone) { return PiC1ZoneLoaded(zone); }
 
 /* C1's record of (type, name) for the server (p2p_assets.c PiC1Find); none while C1's database thread links a zone. */
 static const void *PiC1Find(unsigned type, const char *name);
-static const void *PiC1FindIn(unsigned type, const char *name, const char *zone);
-static const void *__cdecl PiFindInZone(unsigned type, const char *name, const char *zone) { return PiC1FindIn(type, name, zone); }
+static const char *PiC1ZoneOf(unsigned type, const char *name);
+static const char *__cdecl PiZoneOf(unsigned type, const char *name) { return PiC1ZoneOf(type, name); }
 static const void *__cdecl PiC1Provide(unsigned type, const char *name)
 {
     if (*(volatile const DWORD *)(DWORD_PTR)0x02007A60u) return NULL;
@@ -444,9 +456,9 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         if (setZoneHost && c.c1Assets) { setZoneHost(PiAwaitZones, PiZoneHeld); Log("p2p in-process: C1 zone host installed"); }
         /* Zones C1 holds are not mounted: the server asks C1 where a definition is and mounts its own copy of a zone
          * only when a lookup needs one (p2p_host.ini c1_zones = 0: mount them all, as before). */
-        typedef void (__cdecl *Sh1xSetZoneFindFn)(const void *(__cdecl *)(unsigned, const char *, const char *));
+        typedef void (__cdecl *Sh1xSetZoneFindFn)(const char *(__cdecl *)(unsigned, const char *));
         Sh1xSetZoneFindFn setZoneFind = (Sh1xSetZoneFindFn)(void *)GetProcAddress(m, "Sh1xHost_SetC1ZoneFind");
-        if (setZoneFind && c.c1Assets && c.c1Zones) { setZoneFind(PiFindInZone); Log("p2p in-process: C1-backed map zones on"); }
+        if (setZoneFind && c.c1Assets && c.c1Zones) { setZoneFind(PiZoneOf); Log("p2p in-process: C1-backed map zones on"); }
     }
     g_piInit = init; g_piFrame = frame; g_piCmd = cmd; g_piCode = code;
     lstrcpynA(g_piArgs, args, sizeof(g_piArgs));

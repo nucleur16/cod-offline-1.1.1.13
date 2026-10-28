@@ -265,14 +265,14 @@ static const void *PiC1Find(unsigned type, const char *name)
     return NULL;
 }
 
-/* C1's header for (type, name) when its linked (first) definition came from the zone named zone: the entry's zone
- * index +0x10 names a slot of the zone array (0x1F0E108 + index * 0xA8, name at +0x0C). NULL while the database
+/* The zone C1's linked (first) definition of (type, name) came from: the entry's zone index +0x10 names a slot of
+ * the zone array (0x1F0E108 + index * 0xA8, name at +0x0C). NULL for none, a default asset, or while the database
  * thread links a zone. */
 static unsigned g_piFindInLogged;
-static const void *PiC1FindIn(unsigned type, const char *name, const char *zone)
+static const char *PiC1ZoneOf(unsigned type, const char *name)
 {
     DWORD h = type;
-    if (!name || !zone || *(volatile const DWORD *)(DWORD_PTR)0x02007A60u) return NULL;
+    if (!name || *(volatile const DWORD *)(DWORD_PTR)0x02007A60u) return NULL;
     for (const char *p = name; *p; p++) {
         int c = tolower((unsigned char)*p);
         if (c == 92) c = '/';
@@ -289,8 +289,8 @@ static const void *PiC1FindIn(unsigned type, const char *name, const char *zone)
                 const char *in;
                 if (!e[0x10]) return NULL;
                 in = (const char *)(DWORD_PTR)(0x01F0E108u + 0xA8u * e[0x10] + 0x0C);
-                if (g_piFindInLogged < 12) { g_piFindInLogged++; Log("p2p in-process: C1 type %u %s is in zone %u %s (asked %s)", type, name, e[0x10], in, zone); }
-                return lstrcmpiA(in, zone) ? NULL : *(const void *const *)(e + 8);
+                if (g_piFindInLogged < 12) { g_piFindInLogged++; Log("p2p in-process: C1 type %u %s is in zone %u %s", type, name, e[0x10], in); }
+                return in;
             }
         }
         idx = *(const unsigned short *)(e + 0x12);
