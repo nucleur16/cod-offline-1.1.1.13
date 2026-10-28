@@ -7,8 +7,19 @@
 # and checked against its SHA-256. libopus (voice.c) comes from MSYS2: pacman -S mingw-w64-i686-opus.
 #
 # K33_NO_COPY=1 sh build.sh builds Kernel33.dll here without copying it to ../Kernel33.dll.
+#
+# Player-hosted matches (p2p.c, p2p_inproc.c, p2p_assets.c, hostgate.c; docs/P2P_HOSTING.md) are compiled in only
+# with K33_P2P=1 (-DK33_P2P, plus -liphlpapi for hostgate.c and -lpsapi for p2p_inproc.c). The default build leaves every P2P source out: the
+# DLL is the same as one built without them. The server a P2P client hosts is built by build-server.sh.
 set -e
 cd "$(dirname "$0")"
+P2P_FLAGS=""
+P2P_LIBS=""
+if [ "${K33_P2P:-0}" = 1 ]; then
+    P2P_FLAGS="-DK33_P2P"
+    P2P_LIBS="-liphlpapi -lpsapi"
+    echo "K33_P2P=1: player-hosted matches compiled in (p2p commands, in-process server, hostgate UDP filter)"
+fi
 . ./build-profile.sh
 BIN=/c/msys64/mingw32/bin
 SDL_VER=2.32.10
@@ -25,10 +36,10 @@ if [ ! -f "$SDL_DIR/lib/libSDL2.a" ]; then
     rm -f "$TGZ"
 fi
 "$BIN/windres.exe" -O coff -i kernel33.rc -o kernel33_res.o
-"$BIN/gcc.exe" "$@" -O2 -Wall -shared -s -static -static-libgcc -I"$SDL_DIR/include" -o Kernel33.dll \
+"$BIN/gcc.exe" "$@" $P2P_FLAGS -O2 -Wall -shared -s -static -static-libgcc -I"$SDL_DIR/include" -o Kernel33.dll \
     kernel33.c kernel33_res.o kernel33.def \
     -L"$SDL_DIR/lib" -lSDL2 -lsetupapi -lcfgmgr32 -lversion -loleaut32 -luuid \
-    -lopus -lz -limm32 -lgdi32 -lshlwapi -lole32 -lwinmm -lws2_32 -ladvapi32 -lshell32 -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat
+    -lopus -lz -limm32 -lgdi32 -lshlwapi -lole32 -lwinmm -lws2_32 $P2P_LIBS -ladvapi32 -lshell32 -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat
 if [ "${K33_NO_COPY:-0}" = 1 ]; then
     echo "built Kernel33.dll (SDL2 $SDL_VER static; not copied)"
 else

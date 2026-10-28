@@ -1426,6 +1426,19 @@ static void PatchGbkInput(void)
 /* UTF-8 player names and an optional display-name service: see name_display.c. */
 #include "name_display.c"
 
+/* Player-hosted matches (docs/P2P_HOSTING.md), compiled in only with -DK33_P2P (K33_P2P=1 sh build.sh). Without
+ * it none of this is in the DLL: no p2p commands, no in-process server, no hostgate UDP filter, no hooks. */
+#ifdef K33_P2P
+/* The sh1x server as a child of the host's client (p2p.c, mode = child). */
+#include "p2p.c"
+/* The sh1x server inside the client, on the game thread (p2p_inproc.c, mode = inprocess). */
+#include "p2p_inproc.c"
+/* The in-process server's assets against C1's own (p2p_assets.c, asset layout stage 2/3). */
+#include "p2p_assets.c"
+/* UDP only with lobby-vouched hosts (hostgate.c): the P2P trust requirement. */
+#include "hostgate.c"
+#endif
+
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 #include "news_refresh.c"
 #include "gfx_date_time.c"
@@ -1437,6 +1450,9 @@ static void __cdecl TakeOver(void)
     MatchC1SectionFlags();
     FillImports();
     PatchGfxDateTime();
+#ifdef K33_P2P
+    InstallHostGate();
+#endif
     PatchRenderGate();
     PatchDvarRegistrations();
     PatchPlainConfig();
@@ -1465,6 +1481,10 @@ static void __cdecl TakeOver(void)
     InstallQuickRoom();
     InstallTheatre();
     InstallNameDisplay();
+#ifdef K33_P2P
+    InstallP2PInproc();   /* before InstallP2PHost: +set k33_p2pHost 1 starts a session at once */
+    InstallP2PHost();
+#endif
     K33InstallMainTicks(); /* last: chains in front of voice.c's and discord.c's tick hooks */
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
