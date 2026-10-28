@@ -1,0 +1,29 @@
+// mp_codol_weapons -- built by build_zones.py from zones/mp_codol_weapons/ (zonekit/manifest.py describes the format)
+// The MP weapon tables CoDOL changes, whole: Kernel33 loads this zone ahead of code_pre_gfx (mp_*, no suffix), so its
+// stringtables win over patch_code_post_gfx_mp's and the gametype zones' copies in every session, and the sh1x server
+// mounts it (mp_*.ff of the patch folder) with every MP map, ranked ahead of stock. Stringtables only (images, materials
+// and fx crash C1 this early); the art is in mp_codol_weapons_postgfx_mp. Generated from the stock tables by
+// mp_m14_staging\tool_src\gen_mp_codol_weapons.py: each table is the effective stock one plus rows for m14ebr_mp.
+// m14ebr_mp (C1's unfinished M14 EBR, item 1057): base gun rows (coweapmodels, the zombies M14's receiver), the
+// released AR attachments it lacked (red_reflex, for_gripafg, for_griphandstop, bip_ar, sra_riflelaser,
+// sto_ar15fix/prs/ubr), class-editor slots (coweaponuislottable, the M21 EBR's), released (comarketplaceitems col 6).
+>zone,mp_codol_weapons
+>install,client_shipRetail\patch
+>origin,new
+>origin-md5,22e724382b185632b699b54cd583a04d
+>container,iwffu100
+>filetime,0x01dd65ec,0x4d796674
+>rsa,b877b3f2aa3253de2525776239c7a26cc932bbdfc76a320fb3f8fa310dbdde6943cd5f38546db8fa238ec2cf202d65da9c0a4d7e7f28bb3aec39f7892d5cae4f24ec77fd95f9741de3296aab0b7cf520e871ea451304800226afdb1b9eb429c1ffd4e4c60558c01ebc388d3a07ab946034ac5331c8c4e4bdcc46ca203414926359ff0254cc83fcb0a3e8ce9153fce2fa4db520869bce0e52bddf82bca8087aeb4a6bed471ffd9a00c79809f44323d81ebb3f825b0ac81c8bd747badd642e5fbe177e4070a89d19b2028526885d3235ec04ddcdb57bf580f0bfc3e031c273028c03b000c3089140ea9a22afd515ceda3b3e80cab9fc3260d9b53c9abb23cceebc
+>zlib,9
+>blocks,0x0,0x20,0x0,0x0,auto,0x0,0x0,0x0,0x0
+>xassetlist,0x0,0xffffffff
+rawfile,mp_codol_weapons
+stringtable,mp/coweaponattachmenttable.csv,columns=4,emptyptr=null
+stringtable,mp/comarketplaceitems.csv,columns=11,emptyptr=null
+stringtable,mp/coweaponuislottable.csv,columns=3,emptyptr=null
+stringtable,mp/coweapmodels/m14ebr_mp.csv,columns=4,emptyptr=null
+stringtable,mp/coweapitems/bas.csv,columns=6,emptyptr=null
+stringtable,mp/coweapitems/bip.csv,columns=6,emptyptr=null
+stringtable,mp/coweapitems/sco.csv,columns=6,emptyptr=null
+stringtable,mp/coweapitems/sra.csv,columns=6,emptyptr=null
+stringtable,mp/coweapitems/sto.csv,columns=6,emptyptr=null

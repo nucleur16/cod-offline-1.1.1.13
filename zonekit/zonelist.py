@@ -86,4 +86,11 @@ ZONES = {
     # the controller button icons controller_glyphs.c draws in text: 4 sets x 18 images (64x64 A8R8G8B8, 7 levels,
     # from the former res/controller_glyphs.bin) and a material each (hud_status_dead's layout, ",2d")
     "controller_glyphs_postgfx_mp": dict(origin="new", install=PATCH),
+    # --- client_shipRetail\patch, mp_*: the MP weapon zones (the sh1x server mounts mp_*.ff of the patch folder with
+    # every MP map, so client and server read the same tables and models); standalone, not part of a pack
+    # the weapon tables, whole (ahead of code_pre_gfx: stringtables only), from mp_m14_staging gen_mp_codol_weapons.py
+    "mp_codol_weapons": dict(origin="new", install=PATCH),
+    # the art (after code_post_gfx, permanent: models, materials, images): the M14 EBR's base gun, cut from the zombies
+    # M14 by mp_m14_staging's CodolSoundDumper mp-weapons-zone (C#-written: its assets point into its own blocks)
+    "mp_codol_weapons_postgfx_mp": dict(origin="new", install=PATCH, stock=["common_gametype_mp", "common_gametype_zm"]),
 }

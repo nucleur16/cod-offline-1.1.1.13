@@ -548,6 +548,8 @@ The source zones under `zone_source/` + `zones/` stay as they are (each with its
 | codol_english_locale | ahead of code_pre_gfx | `k33_english 1` | codol_english, codol_english_font, codol_english_ui, codol_english_ui_extra, codol_english_usermaps, codol_english_zombies_base |
 | codol_chinese_locale | ahead of code_pre_gfx | `k33_english 0` (and no valid language) | codol_chinese_ui, codol_chinese_ui_extra, usermaps_patch's GBK strings |
 | codol_infected_cyborg_postgfx_mp | after code_post_gfx | both | itself: C#-written, its assets point into its own runtime blocks, so they cannot move into another zone |
+| mp_codol_weapons | ahead of code_pre_gfx | both | itself (stringtables only): the MP weapon tables, whole -- an `mp_*` name, so the sh1x server mounts it too |
+| mp_codol_weapons_postgfx_mp | after code_post_gfx | both | itself: the MP weapon art (C#-written), `mp_*` for the server as well |
 
 - Every asset keeps its list: graphics (images, materials, menus) only in `*_ui_mp` / `*_postgfx_mp` zones (an image
   ahead of code_pre_gfx crashes C1 at startup, AV read 0x0000000C).
@@ -566,6 +568,13 @@ The source zones under `zone_source/` + `zones/` stay as they are (each with its
   and that every asset of every old zone is in exactly one new zone (or shadowed); it also checks codo.gfx's
   endless LevelChooser and comaplist column 23. `tests/test_zone_packs.py` (portable, CI) checks the packs against
   Kernel33's table. `--verify` compares each pack with its recorded `>build-md5` (`>build-md5-all` for `--maps all`).
+- The `mp_*` zones stay on their own: the sh1x server mounts `mp_*.ff` of the patch folder (`codol_patchZonePath`)
+  with every MP map, ranked ahead of stock, so client and server read the same weapon tables and models. A zone in
+  a pack would be invisible to the server. mp_codol_weapons carries each table it changes whole (the effective stock
+  table plus the new rows) because C1 links the first stringtable of a name, and it loads ahead of every stock zone
+  in every session; its tables come from mp_m14_staging `tool_src\gen_mp_codol_weapons.py`.
+  mp_codol_weapons_postgfx_mp is written by mp_m14_staging's `CodolSoundDumper mp-weapons-zone` (decompiled here);
+  it holds the M14 EBR's base gun (m14ebr_mp), cut from the zombies M14, in C1's 22 camo rows.
 - To add a source zone: give it a zone_source manifest as before and add a `part,<zone>` line to the pack of its list
   and language (and its old name to kCodolPatchZoneMerged if it was ever installed on its own).
 
