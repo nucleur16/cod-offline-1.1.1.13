@@ -391,6 +391,17 @@ static int __cdecl PiZoneHeld(const char *zone) { return PiC1ZoneLoaded(zone); }
 static const void *PiC1Find(unsigned type, const char *name);
 static const char *PiC1ZoneOf(unsigned type, const char *name);
 static const char *__cdecl PiZoneOf(unsigned type, const char *name) { return PiC1ZoneOf(type, name); }
+/* C1's script strings: a static array of 16-byte entries at 0x02627E00, the text 4 bytes into each (found by
+ * p2pslscan 2026-10-27: defaultactor's bone handles 570 and 3938 give tag_origin and j_mainroot; the code at
+ * 0x004410B4 holds the address as an immediate). */
+#define C1_SL_BUFFER_VA 0x02627E00u
+static const char *__cdecl PiScriptString(unsigned handle)
+{
+    const char *s;
+    if (!handle || handle > 0xffffu) return NULL;
+    s = (const char *)(DWORD_PTR)(C1_SL_BUFFER_VA + 16u * handle + 4u);
+    return Readable(s, 1) ? s : NULL;
+}
 static const void *__cdecl PiC1Provide(unsigned type, const char *name)
 {
     if (*(volatile const DWORD *)(DWORD_PTR)0x02007A60u) return NULL;
@@ -459,6 +470,9 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         typedef void (__cdecl *Sh1xSetZoneFindFn)(const char *(__cdecl *)(unsigned, const char *));
         Sh1xSetZoneFindFn setZoneFind = (Sh1xSetZoneFindFn)(void *)GetProcAddress(m, "Sh1xHost_SetC1ZoneFind");
         if (setZoneFind && c.c1Assets && c.c1Zones) { setZoneFind(PiZoneOf); Log("p2p in-process: C1-backed map zones on"); }
+        typedef void (__cdecl *Sh1xSetScriptStringsFn)(const char *(__cdecl *)(unsigned));
+        Sh1xSetScriptStringsFn setStrings = (Sh1xSetScriptStringsFn)(void *)GetProcAddress(m, "Sh1xHost_SetC1ScriptStrings");
+        if (setStrings && c.c1Assets && c.c1Zones) setStrings(PiScriptString);
     }
     g_piInit = init; g_piFrame = frame; g_piCmd = cmd; g_piCode = code;
     lstrcpynA(g_piArgs, args, sizeof(g_piArgs));
