@@ -985,7 +985,9 @@ camp_response()
 		}
 		// the shared AI grenade timer is waived for the response
 		level.coop_next_ai_grenade = 0;
-		codolprintln( "CoDOL survival: " + self.name + " is camping at " + self.camping_loc + "; the enemies get grenades" );
+		if ( !isDefined( self.camping_logged ) || self.camping_logged != self.camping_loc )
+			codolprintln( "CoDOL survival: " + self.name + " is camping at " + self.camping_loc + "; the enemies get grenades" );
+		self.camping_logged = self.camping_loc;
 		wait( 8 );
 	}
 }

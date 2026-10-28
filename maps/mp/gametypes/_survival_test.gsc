@@ -94,6 +94,39 @@ main()
 				codolprintln( "CoDOL survivaltest: hurt " + p.name + " " + tokens[ 2 ] + ": hp " + p.health + " laststand " + down + " alive " + isAlive( p ) );
 			}
 			break;
+		case "class":
+			players = getPlayers();
+			if ( tokens.size > 2 && int( tokens[ 1 ] ) < players.size )
+			{
+				p = players[ int( tokens[ 1 ] ) ];
+				before = p getCurrentWeapon();
+				// A training bot's loadout is its bot class (mp/botclasstable):
+				// the class index picks it, as a player's pick picks his class.
+				if ( isDefined( p.codolCombatBot ) && p.codolCombatBot )
+				{
+					p.codolBotClass = level.classMap[ tokens[ 2 ] ] % 9;
+					p.pers[ "codolBotClass" ] = p.codolBotClass;
+				}
+				p maps\mp\gametypes\_menus::menuClass( tokens[ 2 ] );
+				waittillframeend;
+				codolprintln( "CoDOL survivaltest: " + p.name + " class " + p.pers[ "class" ] + " weapon " + before + " -> " + p getCurrentWeapon() );
+			}
+			break;
+		case "squad":
+			if ( tokens.size > 2 )
+			{
+				ais = maps\mp\gametypes\_survival_squad::spawn_squad( tokens[ 1 ], int( tokens[ 2 ] ), 1.0 );
+				codolprintln( "CoDOL survivaltest: squad " + tokens[ 1 ] + ": " + ais.size );
+			}
+			break;
+		case "spawn":
+			if ( tokens.size > 1 )
+			{
+				loc = maps\mp\gametypes\_survival_squad::farthest_location();
+				ai = maps\mp\gametypes\_survival_ai::spawn_type( tokens[ 1 ], loc.origin, loc.angles, 1.0 );
+				codolprintln( "CoDOL survivaltest: spawned " + tokens[ 1 ] + ": " + isDefined( ai ) );
+			}
+			break;
 		case "bring":
 			players = getPlayers();
 			enemies = maps\mp\gametypes\_survival_ai::living_enemies();
