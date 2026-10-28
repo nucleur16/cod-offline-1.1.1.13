@@ -90,7 +90,7 @@ ZONES = {
     # every MP map, so client and server read the same tables and models); standalone, not part of a pack
     # the weapon tables, whole (ahead of code_pre_gfx: stringtables only), from mp_m14_staging gen_mp_codol_weapons.py
     "mp_codol_weapons": dict(origin="new", install=PATCH),
-    # the art (after code_post_gfx, permanent: models, materials, images): the M14 EBR's base gun, cut from the zombies
-    # M14 by mp_m14_staging's CodolSoundDumper mp-weapons-zone (C#-written: its assets point into its own blocks)
+    # the art (after code_post_gfx, permanent: models, materials, images): the M14 EBR's base gun, the zombies M14
+    # models with their default parts hidden, by mp_m14_staging's CodolSoundDumper mp-weapons-zone (C#-written)
     "mp_codol_weapons_postgfx_mp": dict(origin="new", install=PATCH, stock=["common_gametype_mp", "common_gametype_zm"]),
 }
