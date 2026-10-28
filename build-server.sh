@@ -27,12 +27,19 @@ OBJ=obj/k33-p2p
 [ "${K33_SERVER_CLEAN:-0}" = 1 ] && rm -rf "$SRV/$OBJ"
 WIN=$(cd "$SRV" && pwd -W)
 case "$WIN" in [A-Za-z]:*) WSLDIR="/mnt/$(echo "$WIN" | cut -c1 | tr A-Z a-z)$(echo "$WIN" | cut -c3-)";; *) WSLDIR="$WIN";; esac
-wsl -d Ubuntu-24.04 -- bash -lc "cd '$WSLDIR' && make -j8 OS=Windows_NT CC=i686-w64-mingw32-gcc CPP=i686-w64-mingw32-g++ AR=i686-w64-mingw32-ar OBJ_DIR=$OBJ bin/codol_dedrun.exe"
+wsl -d Ubuntu-24.04 -- bash -lc "cd '$WSLDIR' && make -j8 OS=Windows_NT CC=i686-w64-mingw32-gcc CPP=i686-w64-mingw32-g++ AR=i686-w64-mingw32-ar OBJ_DIR=$OBJ bin/codol_dedrun.exe host-dll"
+# The staging folder mirrors the client install: copy its contents over the install root (a test install only).
+#   p2p/sh1x_host.dll                the in-process server (mode inprocess, the default)
+#   p2p/k33p2p_dedrun.exe            the same server as a child process (mode child); its own image name, so an
+#                                    image-name kill of codol_dedrun.exe never reaches a hosted match
+#   p2p/home/main/sh1x_svr_scripts.iwd   the server pack (waypoints, bot tables)
+#   main/sh1x_rawfiles/              the GSC tree the server was built with (p2p.c's default scripts=)
 STAGE=${K33_P2P_STAGE:-../../k33_p2p_staging}
-mkdir -p "$STAGE/home/main"
-cp "$SRV/bin/codol_dedrun.exe" "$STAGE/k33p2p_dedrun.exe"   # own image name: an image-name kill of codol_dedrun.exe must not reach it
-python "$SRV/tools/codol_stage_server_pack.py" --repo "$SRV" --home-main "$STAGE/home/main"
-rm -rf "$STAGE/codol_rawfiles"
-cp -r "$SRV/bin/home/codol_rawfiles" "$STAGE/codol_rawfiles"
-rm -rf "$STAGE/codol_rawfiles/.git"
-echo "staged the sh1x server $(git -C "$SRV" rev-parse --short HEAD) in $STAGE (exe, home/main pack, codol_rawfiles)"
+mkdir -p "$STAGE/p2p/home/main" "$STAGE/main"
+cp "$SRV/bin/sh1x_host.dll" "$STAGE/p2p/sh1x_host.dll"
+cp "$SRV/bin/codol_dedrun.exe" "$STAGE/p2p/k33p2p_dedrun.exe"
+python "$SRV/tools/codol_stage_server_pack.py" --repo "$SRV" --home-main "$STAGE/p2p/home/main"
+rm -rf "$STAGE/main/sh1x_rawfiles"
+cp -r "$SRV/bin/home/codol_rawfiles" "$STAGE/main/sh1x_rawfiles"
+rm -rf "$STAGE/main/sh1x_rawfiles/.git"
+echo "staged the sh1x server $(git -C "$SRV" rev-parse --short HEAD) in $STAGE (p2p/sh1x_host.dll, p2p/k33p2p_dedrun.exe, p2p/home/main pack, main/sh1x_rawfiles)"

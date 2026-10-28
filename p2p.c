@@ -43,7 +43,13 @@ typedef struct P2PConfig {
     char rollout[MAX_PATH];      /* optional: the lobby's match_rollout.txt */
     char map[64], gametype[32], zoneType[8], sessionMap[64];
     char netIp[64], botDifficulty[16], extra[512];
+    char mode[16];               /* inprocess (default): sh1x_host.dll on the game thread; child: the exe */
+    char dll[MAX_PATH];          /* the server as a DLL (mode inprocess) */
     int port, bots, admission, developer, readyTimeout;
+    int pmemMegs;                /* codol_pmemMegs for the server: its fastfile block (0 = the server default) */
+    int c1Assets;                /* in-process: take C1's records of startup zones (default 1) */
+    int c1Preload;               /* in-process: preloadmap when C1 is not loading a hosted map (default 0) */
+    int c1Zones;                 /* in-process: map zones C1 holds are C1-backed, mounted only on demand (default 1) */
 } P2PConfig;
 
 static struct {
@@ -60,6 +66,9 @@ static BOOL g_p2pInit;
 static HANDLE g_p2pThread;
 static volatile LONG g_p2pStop;
 static char g_p2pArgMap[64], g_p2pArgGametype[32], g_p2pArgZone[8];
+struct P2PConfig;
+static int P2PInprocRun(const struct P2PConfig *c, const char *password, const char *args); /* p2p_inproc.c */
+static BOOL P2PInprocUsed(void); /* p2p_inproc.c: an in-process session already ran in this client */
 
 static void P2PSetState(int state, const char *error)
 {
@@ -106,7 +115,10 @@ static void P2PDefaults(P2PConfig *c)
     _snprintf(c->dir, MAX_PATH, "%s\\p2p", root);
     _snprintf(c->exe, MAX_PATH, "%s\\k33p2p_dedrun.exe", c->dir);
     _snprintf(c->home, MAX_PATH, "%s\\home", c->dir);
-    _snprintf(c->scripts, MAX_PATH, "%s\\home\\codol_rawfiles", c->dir);
+    _snprintf(c->dll, MAX_PATH, "%s\\sh1x_host.dll", c->dir);
+    /* The GSC tree installed with the client (main\sh1x_rawfiles, docs/P2P_HOSTING.md). */
+    _snprintf(c->scripts, MAX_PATH, "%s\\main\\sh1x_rawfiles", root);
+    lstrcpyA(c->mode, "inprocess");
     _snprintf(c->state, MAX_PATH, "%s\\state", c->dir);
     _snprintf(c->profile, MAX_PATH, "%s\\resources", c->dir);
     lstrcpyA(c->map, "mp_killhouse_sh");
@@ -117,6 +129,11 @@ static void P2PDefaults(P2PConfig *c)
     c->port = P2P_DEFAULT_PORT;
     c->admission = 1;
     c->readyTimeout = 180;
+    /* The fastfile block (PMem) held 1.5 MB on mp_killhouse_sh, mp_rust and mp_crash_tropical (sh1x_mem,
+     * 2026-10-27); the server default reserves 328 MB of the shared address space. */
+    c->pmemMegs = 32;
+    c->c1Assets = 1;
+    c->c1Zones = 1;
 }
 
 static void P2PLoadIni(P2PConfig *c)
@@ -144,10 +161,11 @@ static void P2PLoadIni(P2PConfig *c)
             { "zone_type", c->zoneType, sizeof(c->zoneType) }, { "session_map", c->sessionMap, sizeof(c->sessionMap) },
             { "net_ip", c->netIp, sizeof(c->netIp) }, { "bot_difficulty", c->botDifficulty, sizeof(c->botDifficulty) },
             { "extra", c->extra, sizeof(c->extra) },
+            { "mode", c->mode, sizeof(c->mode) }, { "dll", c->dll, MAX_PATH },
         };
         struct { const char *k; int *dst; } ints[] = {
             { "port", &c->port }, { "bots", &c->bots }, { "admission_required", &c->admission },
-            { "developer", &c->developer }, { "ready_timeout", &c->readyTimeout },
+            { "developer", &c->developer }, { "ready_timeout", &c->readyTimeout }, { "pmem_megs", &c->pmemMegs }, { "c1_assets", &c->c1Assets }, { "c1_preload", &c->c1Preload }, { "c1_zones", &c->c1Zones },
         };
         BOOL known = FALSE;
         for (unsigned i = 0; i < sizeof(strs) / sizeof(strs[0]); i++)
@@ -172,7 +190,11 @@ static const char *P2PCheck(const P2PConfig *c)
     if (!P2PPathOk(c->exe) || !P2PPathOk(c->basepath) || !P2PPathOk(c->home) || !P2PPathOk(c->scripts) ||
         !P2PPathOk(c->state) || !P2PPathOk(c->profile) || !P2PPathOk(c->rconFile) || !P2PPathOk(c->rollout))
         return "a path holds a quote";
-    if (GetFileAttributesA(c->exe) == INVALID_FILE_ATTRIBUTES) return "server executable not found (exe=)";
+    BOOL inproc = !_stricmp(c->mode, "inprocess");
+    if (!inproc && _stricmp(c->mode, "child")) return "mode must be inprocess or child";
+    if (!P2PPathOk(c->dll)) return "a path holds a quote";
+    if (inproc && GetFileAttributesA(c->dll) == INVALID_FILE_ATTRIBUTES) return "server DLL not found (dll=)";
+    if (!inproc && GetFileAttributesA(c->exe) == INVALID_FILE_ATTRIBUTES) return "server executable not found (exe=)";
     char probe[MAX_PATH + 64];
     _snprintf(probe, sizeof(probe), "%s\\maps\\mp\\gametypes\\_callbacksetup.gsc", c->scripts);
     probe[sizeof(probe) - 1] = 0;
@@ -399,18 +421,28 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
     }
 
     static char cmd[8192];
+    BOOL inproc = !_stricmp(c.mode, "inprocess");
+    char pmem[48] = "";
+    if (c.pmemMegs >= 32 && c.pmemMegs <= 2048) _snprintf(pmem, sizeof(pmem), "+set codol_pmemMegs %d", c.pmemMegs);
     _snprintf(cmd, sizeof(cmd),
         "\"%s\" +set dedicated 2 +set fs_basepath \"%s\" +set fs_homepath \"%s\" +set net_ip %s +set net_port %d "
         "+set rcon_password \"%s\" +set logfile 2 +set logrcon 1 +set developer %d +set sv_fps 60 "
         "+set codol_scriptPath \"%s\" +set codol_scriptOverlay \"%s\" +set codol_scriptNativeOverlay \"%s\" "
         "+set codol_securityKeyPath \"%s\\securitykey.bin\" +set codol_admissionPath \"%s\\game_admissions.txt\" "
         "+set codol_admissionRequired %d +set codol_profilePath \"%s\" +set codol_zoneType %s +set codol_sessionMap %s "
-        "+set g_gametype %s +set scr_codol_bots %d +set sv_botDifficulty %s +set codol_hostParentPid %lu "
+        "+set g_gametype %s +set scr_codol_bots %d +set sv_botDifficulty %s +set codol_hostParentPid %lu %s "
         "+codol_scriptPath +codol_scriptOverlay +codol_scriptNativeOverlay +map %s %s",
         c.exe, c.basepath, c.home, c.netIp, c.port, password, c.developer, c.scripts, c.scripts, c.scripts,
         c.state, c.state, c.admission ? 1 : 0, c.profile, c.zoneType, c.sessionMap[0] ? c.sessionMap : c.map,
-        c.gametype, c.bots, c.botDifficulty, GetCurrentProcessId(), c.map, c.extra);
+        c.gametype, c.bots, c.botDifficulty, inproc ? 0ul : GetCurrentProcessId(), pmem, c.map, c.extra);
     cmd[sizeof(cmd) - 1] = 0;
+    if (inproc) {
+        /* The same command line without the exe: Sh1xHost_Init takes what follows it. */
+        const char *args = strchr(cmd + 1, '"');
+        int r = P2PInprocRun(&c, password, args ? args + 2 : cmd);
+        WSACleanup();
+        return r;
+    }
 
     HANDLE job = CreateJobObjectA(NULL, NULL);
     if (job) {
@@ -543,6 +575,7 @@ static void __cdecl P2PCmdHost(void)
     const char *gt = VoiceArgc() > 2 ? VoiceArgv(2) : "";
     const char *zone = VoiceArgc() > 3 ? VoiceArgv(3) : "";
     if ((map[0] && !P2PIdent(map, 63)) || (gt[0] && !P2PIdent(gt, 31))) { C1Printf("p2phost: bad map or gametype\n"); return; }
+    if (P2PInprocUsed()) { C1Printf("p2phost: this client already hosted a match; restart the client to host again\n"); return; }
     if (P2PStart(map, gt, zone)) C1Printf("p2phost: starting the match server (p2pstatus shows when it is ready)\n");
     else C1Printf("p2phost: already hosting; p2pstop first\n");
 }
