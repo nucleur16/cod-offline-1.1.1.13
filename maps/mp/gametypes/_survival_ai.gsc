@@ -51,8 +51,7 @@ init()
 		t.xp = table_int( level.survival_type_table, i, 9, 100 );
 		t.boss = ( tableLookup( level.survival_type_table, 0, "" + i, 10 ) == "1" );
 		t.accuracy = table_float( level.survival_type_table, i, 11, 1 );
-		// The type's multiplayer weapon, composed with its attachments.
-		t.weapon = compose_weapon( t.weapon_spec );
+		t.weapon = "";
 		level.survival_ai[ ref ] = t;
 		level.survival_ai_refs[ level.survival_ai_refs.size ] = ref;
 	}
@@ -78,6 +77,34 @@ init()
 	}
 	codolprintln( "CoDOL survival: " + level.survival_last_wave + " waves from " + level.survival_wave_table +
 		", " + level.survival_repeat_waves.size + " repeat after them" );
+
+	// Only the types this level's waves name get their weapons composed and
+	// precached (the server preloads only their aitypes too).
+	used = [];
+	for ( i = 1; i <= level.survival_last_wave; i++ )
+	{
+		w = level.survival_waves[ i ];
+		if ( !isDefined( w ) )
+			continue;
+		used[ w.squad_type ] = true;
+		for ( j = 0; j < w.specials.size; j++ )
+			used[ w.specials[ j ] ] = true;
+		for ( j = 0; j < w.bosses_ai.size; j++ )
+			used[ w.bosses_ai[ j ] ] = true;
+		for ( j = 0; j < w.bosses_nonai.size; j++ )
+			used[ w.bosses_nonai[ j ] ] = true;
+	}
+	n = 0;
+	for ( i = 0; i < level.survival_ai_refs.size; i++ )
+	{
+		t = level.survival_ai[ level.survival_ai_refs[ i ] ];
+		if ( !isDefined( used[ t.ref ] ) )
+			continue;
+		// The type's multiplayer weapon, composed with its attachments.
+		t.weapon = compose_weapon( t.weapon_spec );
+		n++;
+	}
+	codolprintln( "CoDOL survival: " + n + " AI types used by this level's waves" );
 
 	level.survival_enemies = [];
 	level.survival_bosses = [];
