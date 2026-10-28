@@ -56,10 +56,10 @@ ZONES = {
     # the usermaps' front-end data, filtered by shipping_maps.txt (zonekit/shipping.py): only "ship" maps' rows,
     # arena entries, strings, vision files and map-select images are in a shipping build
     "usermaps_patch": dict(origin="G:" + PATCH, install=PATCH, older="Z:" + PATCH,
-                           # stock_edits: Asylum and Prototype offer endless Zombies (column 23; Cam's
+                           # stock_edits: every zombies map offers endless (Asylum and Prototype first, then the Der Riese, Shi No Numa and Kino backports) (column 23; Cam's
                            # codol_zombies_endless zone, folded in here: two zones with mp/comaplist.csv replace each other)
                            maps=dict(table=("mp/comaplist.csv", 4, "patch_code_post_gfx_mp"),
-                                     stock_edits={"zm_asylum_sh": [23], "zm_prototype_sh": [23]},
+                                     stock_edits={"zm_asylum_sh": [23], "zm_prototype_sh": [23], "zm_factory_sh": [23], "zm_sumpf_sh": [23], "zm_theater_sh": [23]},
                                      arena=("mp/basemaps.arena", "code_post_gfx_mp"),
                                      assets=["rawfile:vision/{map}.vision"], localize=True)),
     "usermaps_ui_mp": dict(origin="G:" + PATCH, install=PATCH, older="Z:" + PATCH,
