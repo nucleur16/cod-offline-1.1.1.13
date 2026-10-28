@@ -171,6 +171,24 @@ below 100).
   `clear`, `condump [file]` (to `main\`), `k33help`.
 - `+set k33_console 0` on the command line leaves the console out entirely.
 
+### sh1x developer commands (branch `feat/dev-cheat-commands`)
+The cheat commands run on the sh1x server (`src/codol/player/codol_dev_cheats.c` there). C1 forwards any word it
+does not know to the server (Cmd_ExecuteString 0x58CB16 -> CL_ForwardCommandToServer 0x494CE0), so typing
+`noclip` here already reaches it; the console adds autocomplete, argument lists and usage for them
+(`k33dev` lists them): `noclip ufo god demigod notarget kill give take setviewpos viewpos devset addbot kickbot
+devhelp`. They work only on a developer server whose map was started with `devmap` (sv_cheats 1; lobby match
+servers refuse, and a server that had cheats on records no progression until restarted).
+
+- `rcon <command>`: a console built-in for the server you host: one rcon datagram to 127.0.0.1 only (the connected
+  server's port when it is local, else `k33_rconPort`, default 17733), password from `main\k33_rcon.txt`,
+  `p2p\state
+ative_server_rcon.txt` or the local lobby's `CODOL.1.1.13_serverlpha0022
+ative_server_rcon.txt`,
+  whichever the server accepts. Its reply prints in the console. Admin and map commands: `rcon status`,
+  `rcon devmap mp_killhouse_sh`, `rcon map_restart`, `rcon kick <name>`, `rcon dev_clientcmd bots god`.
+- HUD: `k33_drawFPS 1` (or C1's own `cg_drawFPS 1`, which nothing else reads) and `k33_drawViewpos 1` draw the frame
+  rate and the predicted position, view angles and speed in the top-right corner, in a match.
+
 ### Dvar name table (`c1_dvars.h`, `gen_dvars.py`)
 C1 registers most dvars under numbers ("591" = cg_drawFPS, "1848" = com_maxfps). `gen_dvars.py`
 decodes every `Dvar_Register*` call in C1.exe and in `iw4x.exe` (stack simulation), groups them by
