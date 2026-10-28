@@ -188,9 +188,7 @@ servers refuse, and a server that had cheats on records no progression until res
 
 - `rcon <command>`: a console built-in for the server you host: one rcon datagram to 127.0.0.1 only (the connected
   server's port when it is local, else `k33_rconPort`, default 17733), password from `main\k33_rcon.txt`,
-  `p2p\state
-ative_server_rcon.txt` or the local lobby's `CODOL.1.1.13_serverlpha0022
-ative_server_rcon.txt`,
+  `p2p\state\native_server_rcon.txt` or the local lobby's `CODOL\1.1.1.13_server\alpha0022\native_server_rcon.txt`,
   whichever the server accepts. Its reply prints in the console. Admin and map commands: `rcon status`,
   `rcon devmap mp_killhouse_sh`, `rcon map_restart`, `rcon kick <name>`, `rcon dev_clientcmd bots god`.
 - HUD: `k33_drawFPS 1` (or C1's own `cg_drawFPS 1`, which nothing else reads) and `k33_drawViewpos 1` draw the frame
