@@ -358,8 +358,8 @@ static int __cdecl PiAwaitZones(const char *map, const char *zoneType, unsigned 
         /* C1's load stopped without the zones (a zone change that was not this map, or C1 left the match): the
          * server mounts its own instead of waiting out the timeout, which held its rcon and network for 60 s.
          * C1 links zone after zone with idle reads between them (a 60 s zm load under memory pressure), so only
-         * 15 s with neither the database busy nor the zone list changing counts. */
-        if (started && !loading && now - (busy ? busy : started) > 15000) {
+         * 30 s with neither the database busy nor the zone list changing counts (a zm load paused 15+ s, measured). */
+        if (started && !loading && now - (busy ? busy : started) > 30000) {
             PiLogC1Zones("load stopped");
             Log("p2p in-process: C1 stopped loading without %s (%s); the server mounts its own copy", map, zoneType);
             return 0;

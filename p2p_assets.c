@@ -317,6 +317,9 @@ static unsigned PiWeaponKind(unsigned off)
      * match, 0 before): the ammo index +0x568, clip index +0x570 and shared ammo cap index +0x580, each beside
      * its name slot (+0x564/+0x56c/+0x57c). Loaded data is 0 there. */
     if (off == 0x568 || off == 0x570 || (off >= 0x580 && off < 0x584)) return 8;
+    /* +0xb7c: the alternate (launcher) weapon's registered index, written at registration on grenade-launcher
+     * weapons (measured 0x0d/0x46/0x47; 0 as loaded) */
+    if (off >= 0xb7c && off < 0xb80) return 8;
     for (unsigned i = 0; i < sizeof(kWeaponSlots) / sizeof(kWeaponSlots[0]); i++)
         if (off >= kWeaponSlots[i].offset && off < kWeaponSlots[i].offset + 4 * kWeaponSlots[i].count) return kWeaponSlots[i].kind;
     return 0;
