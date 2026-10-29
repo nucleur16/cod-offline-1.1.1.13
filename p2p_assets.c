@@ -317,6 +317,9 @@ static unsigned PiWeaponKind(unsigned off)
      * match, 0 before): the ammo index +0x568, clip index +0x570 and shared ammo cap index +0x580, each beside
      * its name slot (+0x564/+0x56c/+0x57c). Loaded data is 0 there. */
     if (off == 0x568 || off == 0x570 || (off >= 0x580 && off < 0x584)) return 8;
+    /* +0xb7c: the alternate (launcher) weapon's registered index, written at registration on grenade-launcher
+     * weapons (measured 0x0d/0x46/0x47; 0 as loaded) */
+    if (off >= 0xb7c && off < 0xb80) return 8;
     for (unsigned i = 0; i < sizeof(kWeaponSlots) / sizeof(kWeaponSlots[0]); i++)
         if (off >= kWeaponSlots[i].offset && off < kWeaponSlots[i].offset + 4 * kWeaponSlots[i].count) return kWeaponSlots[i].kind;
     return 0;
@@ -693,11 +696,21 @@ static void __cdecl PiCmdAssetCheck(void)
 /* p2pslscan <xmodel>: find C1's script-string buffer. For each data dword D in C1's image that points at readable
  * memory, test whether D + stride * handle + offset gives a name for the model's first bone handles (strides 8/12/16,
  * offsets 0/4/8); log the candidates with the names they give. A one-off reverse-engineering aid. */
+/* A readable-range test with the last region cached (VirtualQuery per probe made a full scan take minutes). */
+static BOOL PiRangeReadable(DWORD p, DWORD n)
+{
+    static DWORD lo, hi;
+    MEMORY_BASIC_INFORMATION mbi;
+    if (p >= lo && p + n <= hi && p + n >= p) return TRUE;
+    if (!VirtualQuery((void *)(DWORD_PTR)p, &mbi, sizeof(mbi)) || mbi.State != MEM_COMMIT ||
+        (mbi.Protect & (PAGE_NOACCESS | PAGE_GUARD))) return FALSE;
+    lo = (DWORD)(DWORD_PTR)mbi.BaseAddress; hi = lo + (DWORD)mbi.RegionSize;
+    return p + n <= hi && p + n >= p;
+}
 static BOOL PiNamelike(const char *s)
 {
     int n = 0;
-    if (!s || !Readable(s, 32)) return FALSE;
-    if (!Readable(s - 1, 1) || s[-1]) return FALSE; /* a string start */
+    /* (no string-start test: a RefString header precedes the text, its last byte is nonzero) */
     if (strncmp(s, "tag_", 4) && strncmp(s, "j_", 2)) return FALSE; /* a bone name */
     for (; n < 32 && s[n]; n++) if (!((s[n] >= 'a' && s[n] <= 'z') || (s[n] >= '0' && s[n] <= '9') || s[n] == '_')) return FALSE;
     return n >= 2 && n < 32;
@@ -707,33 +720,41 @@ static void __cdecl PiCmdSlScan(void)
     static const unsigned strides[] = { 8, 12, 16 }, offsets[] = { 0, 4, 8 };
     const char *name = VoiceArgc() > 1 ? VoiceArgv(1) : "defaultactor";
     const BYTE *model = PiC1Find(4, name), *bones;
-    unsigned n, hits = 0;
+    unsigned n, hits = 0, maxh = 0;
+    DWORD t0 = GetTickCount();
     if (!model || !Readable(model, 0x30)) { C1Printf("p2pslscan: no C1 xmodel %s\n", name); return; }
     bones = *(const BYTE *const *)(model + 0x2c); n = model[4];
     if (!bones || !Readable(bones, 2 * n) || n < 3) { C1Printf("p2pslscan: %s has no bone names\n", name); return; }
+    for (unsigned b = 0; b < 3; b++) if (((const WORD *)bones)[b] > maxh) maxh = ((const WORD *)bones)[b];
     Log("p2pslscan: %s bones %u, handles %u %u %u", name, n, ((const WORD *)bones)[0], ((const WORD *)bones)[1], ((const WORD *)bones)[2]);
-    for (DWORD a = 0x00C00000u; a < 0x02800000u && hits < 20; a += 4) {
+    for (DWORD region = 0x00400000u; region < 0x03000000u && hits < 20; ) {
         MEMORY_BASIC_INFORMATION mbi;
-        if (!(a & 0xffff)) {
-            if (!VirtualQuery((void *)(DWORD_PTR)a, &mbi, sizeof(mbi)) || mbi.State != MEM_COMMIT) { a = (DWORD)(DWORD_PTR)mbi.BaseAddress + (DWORD)mbi.RegionSize - 4; continue; }
-        }
-        if (!Readable((void *)(DWORD_PTR)a, 4)) continue;
-        DWORD d = *(const DWORD *)(DWORD_PTR)a;
-        if (d < 0x00010000u || d > 0x7fff0000u) continue;
-        for (unsigned si = 0; si < 3; si++) for (unsigned oi = 0; oi < 3; oi++) {
-            BOOL ok = TRUE;
-            for (unsigned b = 0; b < 3 && ok; b++) {
-                DWORD h = ((const WORD *)bones)[b];
-                ok = h && PiNamelike((const char *)(DWORD_PTR)(d + strides[si] * h + offsets[oi]));
+        if (!VirtualQuery((void *)(DWORD_PTR)region, &mbi, sizeof(mbi))) break;
+        DWORD lo = (DWORD)(DWORD_PTR)mbi.BaseAddress, hi = lo + (DWORD)mbi.RegionSize;
+        if (mbi.State == MEM_COMMIT && !(mbi.Protect & (PAGE_NOACCESS | PAGE_GUARD)) &&
+            (mbi.Protect & (PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READWRITE | PAGE_READONLY))) {
+            for (DWORD a = lo; a + 4 <= hi && hits < 20; a += 4) {
+                DWORD d = *(const DWORD *)(DWORD_PTR)a;
+                if (d < 0x00010000u || d > 0x7fff0000u) continue;
+                if (!PiRangeReadable(d, 16 * maxh + 48)) continue;
+                for (unsigned si = 0; si < 3; si++) for (unsigned oi = 0; oi < 3; oi++) {
+                    BOOL ok = TRUE;
+                    for (unsigned b = 0; b < 3 && ok; b++) {
+                        DWORD h = ((const WORD *)bones)[b];
+                        ok = h && PiNamelike((const char *)(DWORD_PTR)(d + strides[si] * h + offsets[oi]));
+                    }
+                    if (ok) {
+                        DWORD h0 = ((const WORD *)bones)[0], h1 = ((const WORD *)bones)[1];
+                        Log("p2pslscan: global 0x%08lX -> 0x%08lX stride %u offset %u: %s %s", (unsigned long)a, (unsigned long)d,
+                            strides[si], offsets[oi], (const char *)(DWORD_PTR)(d + strides[si] * h0 + offsets[oi]),
+                            (const char *)(DWORD_PTR)(d + strides[si] * h1 + offsets[oi]));
+                        hits++;
+                    }
+                }
             }
-            if (ok) {
-                DWORD h0 = ((const WORD *)bones)[0], h1 = ((const WORD *)bones)[1];
-                Log("p2pslscan: global 0x%08lX -> 0x%08lX stride %u offset %u: %s %s", (unsigned long)a, (unsigned long)d,
-                    strides[si], offsets[oi], (const char *)(DWORD_PTR)(d + strides[si] * h0 + offsets[oi]),
-                    (const char *)(DWORD_PTR)(d + strides[si] * h1 + offsets[oi]));
-                hits++;
-            }
         }
+        region = hi > region ? hi : region + 0x1000;
     }
+    Log("p2pslscan: %u candidates in %lu ms", hits, GetTickCount() - t0);
     C1Printf("p2pslscan: %u candidates (Kernel33.log)\n", hits);
 }

@@ -394,3 +394,48 @@ server's memory goes. Asset reuse and the IW4 layout are planned there in stages
 - **One hosted session per client run (user decision).** After `p2pstop`, a second `p2phost` prints
   "this client already hosted a match; restart the client to host again". Measured: the stop ended the server
   with exit code 0 and released udp/17760, and the client stayed responsive.
+
+### Shared zones and assets (M2, 2026-10-28)
+Server `feat/iw4-asset-layout` 944b522c (pinned here), Kernel33 `feat/p2p-inprocess`.
+
+**What is shared.** A hosted map change waits until C1 holds the map's zones. The server then mounts no zone that
+C1 already holds: the level, `common_gametype_*`, their patch and localized zones, and the co-op session zone.
+Every asset the match needs from those zones comes from C1's own records, read by name:
+- weapons, attachments, xmodels (skeleton, geometry, lod surfaces), materials, physics presets and collision
+  maps, xanims, fx, sound alias lists and curves, vehicles;
+- the level's clipMap and its dynamic entities, ComWorld, the glass map and groups, addon MapEnts;
+- rawfiles and string tables.
+Script strings in C1's records are read through C1's table at `0x02627E00 + 16 * handle + 4`
+(`Sh1xHost_SetC1ScriptStrings`).
+
+The server keeps its own copy of the zone as the fallback. A lookup that has no record path, or a zone C1 has
+stopped holding, mounts the copy in place and logs `CoDOL C1-backed <zone>: type N 'name' ... (from <callers>)`.
+Nothing the server keeps points into C1's pools: names, glass pieces, sound lists and curves are copied into the
+zone's archive and freed with it. C1 unloads the old level only after the server's ShutdownGame.
+
+Switches: `c1_zones` in p2p_host.ini (default 1; 0 mounts every zone as before). `c1_preload` (default 0) makes
+the server send `preloadmap` when C1 is not loading the map.
+
+**Measured** (k33-p2ptest; hosted rotation killhouse -> rust -> zm_factory -> coop crash_tropical, `c1_zones` 1
+vs 0; private memory and address space after each load):
+
+| map | private | address space |
+|---|---|---|
+| mp_rust | 1,786 vs 1,823 MB | 2,740 vs 2,924 MB |
+| zm_factory_sh | 2,096 vs 2,116 MB | 2,869 vs 3,192 MB |
+| coop crash_tropical | 2,331 vs 2,370 MB | 3,127 vs 3,490 MB |
+
+A 3-cycle soak of rust, zm, coop and survival (`mp_abandon_sh`) ran 12 loads with the host connected
+throughout. Every C1-held zone was shared (7/7 rust, 5/5 zm, 6/6 coop, 7/7 survival). The one exception was a
+zm load where C1's loading paused, so the server mounted its own copy. Private memory and address space stayed
+flat across cycles.
+
+**Remaining caveats.**
+- **The first map** of a hosted session (hosting from the menu) is mounted from the server's copy, because C1 is
+  not loading a map then. `c1_preload 1` makes C1 load it, but that led to C1 menu crashes in earlier tests.
+- **Survival** works hosted, but only `mp_abandon_sh` was measured.
+- **If C1's load pauses** for 30 s without a zone change, the server stops waiting and mounts its own copy.
+- **Loading clients.** A C1 client loading a map stays CS_CONNECTED and silent. It now gets `sv_connectTimeout`
+  instead of 16 s (also on the deploy line), because zm loads take 20-85 s under memory pressure.
+- **Diagnostics.** `p2passetcheck` only checks assets the server still defines itself. C1-held definitions have
+  no server copy to compare.
