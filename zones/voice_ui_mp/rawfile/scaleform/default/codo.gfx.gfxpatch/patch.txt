@@ -1,7 +1,7 @@
 # GFx movie as a patch over a stock movie (zonekit/gfx.py)
 stock patch_ui_mp:scaleform/default/codo.gfx
 stock-sha256 2f143069ed10f3c937e0f5b758591e477f57544f76bdfd3bd2635f77cca5d332
-sha256 732c92e286191a52a8130281e8190ce49802797b711a7c2af993ba3fe956b8bc
+sha256 bfff199bdbc3db86010d0adb9d35bfe8b9893c4ffa193ba19e35c82a1d767abf
 header 4746580a68b64500800003200000025800001e0100
 keep 0
 keep 1
@@ -6924,4 +6924,4 @@ as components.room_part.RoomInfo as/components/room_part/RoomInfo.as 433d733e336
 as codo.controllers.MatchController as/codo/controllers/MatchController.as b0bd6f786fa7059bb3448061c2288918c498137ad5ceca24cb2d50535994446a
 as codo.k33.LocalMatchControls as/codo/k33/LocalMatchControls.as 7a84b0e9419938344059ff88b66ff0bf5e73737884491364338b1461a62965ae
 as codo.views.InRoomBaseView as/codo/views/InRoomBaseView.as ac429b3a627be0238842a3c83cdf4a8a54a46bd2536c36d7176bf9983dc2bddb
-as codo.controllers.LobbyController as/codo/controllers/LobbyController.as 9447e52933cb086b0a2fca862f2aea8468ab9412ab85324bb5a61bbb5dd8b3f0
+as codo.controllers.LobbyController as/codo/controllers/LobbyController.as fffbb0c60d79c984156beac1ea769ff11b0d1fb110b791e0ef366824799abbb0

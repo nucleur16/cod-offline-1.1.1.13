@@ -11,7 +11,9 @@ function body(name) {
   while (depth && end < source.length) { if (source[end] === '{') depth++; if (source[end] === '}') depth--; end++; }
   return source.slice(open + 1, end - 1).replace(/var (\w+):[A-Za-z0-9_]+/g, 'var $1');
 }
-let now = 1000, dvars = {}, commands = [];
+let now = 1000, dvars = {}, commands = [], readyCalls = [];
+global.CFunctionContainer = {SetReadyState: value => readyCalls.push(value)};
+global.BCEvent = {ROOM_STATE_CHANGED: 'room-state'};
 global.ScaleformUtil = {isScaleform: true};
 global.MapType = {COOP: 'story', COOP_SPEC: 'spec', COOP_SURVIVAL: 'survival'};
 global.MsgBtnCount = {ONE: 1};
@@ -27,15 +29,15 @@ global.Timer = class {
   stop() { this.running = false; }
 };
 function room() {
-  now = 1000; commands = []; dvars = {ui_p2p_state: 'starting', ui_p2p_ready: '0', ui_p2p_enabled: '1'};
+  now = 1000; commands = []; readyCalls = []; dvars = {ui_p2p_state: 'starting', ui_p2p_ready: '0', ui_p2p_enabled: '1'};
   const c = {_campaignHostTimer: null, _campaignHostMap: '', _campaignHostRequestedMap: '', _campaignHostStartPara: null,
-    _campaignHostWaitStart: 0, owner: true, leaving: false, requests: [], errors: [],
+    _campaignHostWaitStart: 0, owner: true, leaving: false, requests: [], errors: [], ready: false, broadcasts: [],
     _roomMembers: [{}], _roomObj: {isPlayList: false, mapType: MapType.COOP, currentMatchMode: {id: 'coop'},
-      currentMap: {id: 'coop_prolog_mp_downtown'}, currentMaxPlayers: 4, currentMinPlayers: 1},
-    isRoomHost() {return this.owner;}, isRoomInfoReady() {return true;}, isLeavingRoom() {return this.leaving;},
+      forces: {enableChangeMapBtn:true}, currentMap: {id: 'coop_prolog_mp_downtown'}, currentMaxPlayers: 4, currentMinPlayers: 1},
+    isReady() {return this.ready;}, broadcast(id, value) {this.broadcasts.push(id);}, isRoomHost() {return this.owner;}, isRoomInfoReady() {return true;}, isLeavingRoom() {return this.leaving;},
     getSyncDP() {return false;}, request(id, args) {this.requests.push({id, args});}, showMsg(message) {this.errors.push(message);}};
-  for (const name of ['isLocalCampaignRoom', 'cancelCampaignHostStart', 'beginCampaignLocalHost', 'onCampaignHostReady', 'onStartMatchHandle', 'isLocalHostRoom', 'localHostCategory', 'localHostGameType'])
-    c[name] = new Function(name === 'beginCampaignLocalHost' ? 'startPara,waitForStart' : 'cEvt', body(name));
+  for (const name of ['isLocalCampaignRoom', 'cancelCampaignHostStart', 'beginCampaignLocalHost', 'onCampaignHostReady', 'onStartMatchHandle', 'isLocalHostRoom', 'localHostCategory', 'localHostGameType', 'onChangeReadyStateHandle', 'applyRoomReadyState'])
+    c[name] = new Function(name === 'beginCampaignLocalHost' ? 'startPara,waitForStart,action' : name === 'applyRoomReadyState' ? 'readyToSet' : 'cEvt', (name === 'beginCampaignLocalHost' ? 'if(action===undefined)action="start";\n' : '') + body(name));
   // Execute the actual automatic room-entry branch, with the preceding native room hydration omitted.
   const start = source.indexOf('this.broadcast(BCEvent.ROOM_INFO_ONLY,this._roomObj);');
   const entry = source.slice(start, source.indexOf('\n      }', start)).replace('this.broadcast(BCEvent.ROOM_INFO_ONLY,this._roomObj);', '');
@@ -108,3 +110,24 @@ c.onCampaignHostReady(); assert.equal(c.requests.length, 0); assert.equal(c.erro
 dvars.ui_p2p_error = ''; dvars.ui_p2p_ready = '1'; c.onCampaignHostReady();
 assert.equal(c.requests.length, 1); assert.equal(c.errors.length, 0); assert(!c._campaignHostTimer.running);
 console.log('Transient local-route publication retries retain pending start and recover when matching host becomes ready');
+
+// The visible normal-room Ready control must defer its actual native Ready bit, not invent START_MATCH.
+c = room(); c.onChangeReadyStateHandle({});
+assert.equal(readyCalls.length, 0); assert.equal(c.requests.length, 0); assert(c._campaignHostTimer.running); assert.equal(c._roomObj.forces.enableChangeMapBtn, true);
+dvars.ui_p2p_ready = '1'; dvars.ui_p2p_map = 'wrong_map'; c.onCampaignHostReady(); assert.equal(readyCalls.length, 0);
+dvars.ui_p2p_map = c._roomObj.currentMap.id; c.onCampaignHostReady();
+assert.deepEqual(readyCalls, [true]); assert.equal(c.requests.length, 0); assert.deepEqual(c.broadcasts, ['room-state']); assert.equal(c._roomObj.forces.enableChangeMapBtn, false);
+c.onCampaignHostReady(); assert.equal(readyCalls.length, 1);
+for (const cancel of [x => x.owner = false, x => x.leaving = true, x => x._roomObj.currentMap.id = 'coop_training_mp_killhouse_sh', x => dvars.ui_p2p_enabled = '0']) {
+  c = room(); c.onChangeReadyStateHandle({}); cancel(c); c.onCampaignHostReady(); assert.equal(readyCalls.length, 0); assert.equal(c.requests.length, 0); assert(!c._campaignHostTimer.running);
+}
+c = room(); c.onChangeReadyStateHandle({}); dvars.ui_p2p_error = 'No host route'; c.onCampaignHostReady(); assert.equal(readyCalls.length, 0); assert.equal(c.requests.length, 0); assert.equal(c.errors.length, 1);
+c = room(); c.ready = true; c.onChangeReadyStateHandle({}); assert.deepEqual(readyCalls, [false]); assert.equal(commands.length, 0); assert.equal(c._roomObj.forces.enableChangeMapBtn, true);
+c = room(); c._roomObj.mapType = 'mp'; c._roomObj.currentMap.id = 'mp_killhouse_sh'; c._roomObj.currentMatchMode.id = 'war'; dvars.ui_p2p_enabled = '0'; c.onChangeReadyStateHandle({}); assert.deepEqual(readyCalls, [true]); assert.equal(commands.length, 0);
+console.log('Visible Ready handler defers native Ready exactly once to matching host, preserves map-controls/broadcast, immediate unready, disabled normal flow, and cancels failures/disable/leave/map changes');
+
+for (const [map,mode,readyMap] of [['mp_killhouse_sh','war','mp_killhouse_sh'],['zm_factory_sh','zm','zm_factory_sh'],['coop_survival_mp_fav_tropical','coop','mp_fav_tropical']]) {
+  c = room(); c._roomObj.currentMap.id = map; c._roomObj.currentMatchMode.id = mode; c.onChangeReadyStateHandle({}); assert.equal(readyCalls.length, 0);
+  dvars.ui_p2p_ready = '1'; dvars.ui_p2p_map = readyMap; c.onCampaignHostReady(); assert.deepEqual(readyCalls, [true]); assert.equal(c.requests.length, 0);
+}
+c = room(); c.onChangeReadyStateHandle({}); now += 180000; c.onCampaignHostReady(); assert.equal(readyCalls.length, 0); assert.equal(c.requests.length, 0); assert.equal(c.errors.length, 1);
