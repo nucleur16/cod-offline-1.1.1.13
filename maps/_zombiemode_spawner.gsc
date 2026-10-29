@@ -2602,33 +2602,68 @@ get_closest_non_destroyed_chunk( org, chunks )
 	return best;
 }
 
-// T5 :917 should_attack_player_thru_boards, reduced to its question: is a
-// player close enough on the other side of this barrier to swipe at.  T5's
-// version additionally traces; the native melee() traces for itself, so this
-// only decides whether to play the reach-through clip instead of a taunt.
+// T5 spawner should_attack_player_thru_boards / window_notetracks.
+// A board is expected to stop an ordinary melee trace. The authored window
+// fire note therefore owns the T5 reach/inside-window/floor checks and enters
+// the existing native damage callback, not a timer or a generic note pump.
 should_attack_player_thru_boards()
 {
-	players = getPlayers();
+    if ( !is_true( self.has_legs ) || !isDefined( self.attacking_node ) )
+        return false;
+    node = self.attacking_node;
+    if ( isDefined( node.barrier_chunks ) )
+        for ( i = 0; i < node.barrier_chunks.size; i++ )
+            if ( isDefined( node.barrier_chunks[ i ].unbroken ) && node.barrier_chunks[ i ].unbroken )
+                return false;
+    players = getPlayers();
+    self.window_melee_targets = [];
+    for ( i = 0; i < players.size; i++ )
+        if ( is_player_valid( players[ i ] ) && distance2d( self.origin, players[ i ].origin ) <= 90 &&
+             abs( self.origin[ 2 ] - players[ i ].origin[ 2 ] ) < 90 )
+            self.window_melee_targets[ self.window_melee_targets.size ] = players[ i ];
+    if ( self.window_melee_targets.size < 1 || !isDefined( level._zombie_window_attack ) || level._zombie_window_attack.size < 1 )
+        return false;
+    self.window_melee_node = node;
+    self.window_melee_contact = false;
+    reach = level._zombie_window_attack[ randomInt( level._zombie_window_attack.size ) ];
+    self animscripted( "windowattack", self.origin, self.angles, reach, "normal", %body, self.animplaybackrate, 0.3 );
+    self animscripts\zombie_shared::DoNoteTracksForTime( getAnimLength( reach ), "windowattack", ::window_attack_notetrack );
+    self.window_melee_targets = undefined;
+    self.window_melee_node = undefined;
+    return true;
+}
 
-	for ( i = 0; i < players.size; i++ )
-	{
-		if ( !is_player_valid( players[ i ] ) )
-			continue;
-
-		if ( distanceSquared( self.origin, players[ i ].origin ) < 16384 )
-		{
-			if ( isDefined( level._zombie_window_attack ) && level._zombie_window_attack.size > 0 )
-			{
-				reach = level._zombie_window_attack[ randomInt( level._zombie_window_attack.size ) ];
-				// T5 :471 animScripted( "window_melee", self.origin, self.angles, reach, "normal", undefined, 1, 0.3 ).
-				self animscripted( "windowattack", self.origin, self.angles, reach, "normal", %body, self.animplaybackrate, 0.3 );
-				self animscripts\zombie_shared::DoNoteTracksForTime( getAnimLength( reach ), "windowattack" );
-			}
-			return true;
-		}
-	}
-
-	return false;
+window_attack_notetrack( note )
+{
+    if ( note != "fire" || !isAlive( self ) || is_true( self.window_melee_contact ) ||
+         !isDefined( self.window_melee_node ) || !isDefined( self.attacking_node ) ||
+         self.window_melee_node != self.attacking_node || !isDefined( self.window_melee_targets ) )
+        return;
+    node = self.window_melee_node;
+    // The blocker repair path uses the authored node when no separate target
+    // marker exists; use that same real window anchor here.
+    anchor = node;
+    if ( isDefined( node.trigger_location ) )
+        anchor = node.trigger_location;
+    if ( !isDefined( self.meleeDamage ) || self.meleeDamage <= 0 )
+        return;
+    for ( i = 0; i < self.window_melee_targets.size; i++ )
+    {
+        player = self.window_melee_targets[ i ];
+        // Recheck at the actual strike, not only when choosing the clip.
+        if ( !is_player_valid( player ) || distance2d( self.origin, player.origin ) >= 90 ||
+             abs( self.origin[ 2 ] - player.origin[ 2 ] ) >= 90 ||
+             distance2d( anchor.origin, player.origin ) >= 51 ||
+             abs( anchor.origin[ 2 ] - player.origin[ 2 ] ) >= 51 )
+            continue;
+        // Retain this server's one-contact-per-animation rule. Native player
+        // damage still owns laststand, invulnerability and attacker cooldown.
+        self.window_melee_contact = true;
+        // Native MP positional ABI: attacker, inflictor, headshot, MOD. T5's
+        // SP-shaped five-argument call cannot be copied into this VM.
+        player doDamage( self.meleeDamage, self.origin, self, self, 0, "MOD_MELEE" );
+        return;
+    }
 }
 
 // T5 :960 do_a_taunt.

@@ -178,6 +178,8 @@ blockertest_buy( verb, clientnum, entnum )
 		" " + trig.origin + ") score before " + before + " cost " + cost );
 
 	player codol_botPressButtons( 40, 2 );
+	wait( 0.1 );
+	codolprintln( "CoDOL blockertest: gates use " + player useButtonPressed() + " alive " + isAlive( player ) + " valid " + is_player_valid( player ) + " revive " + player in_revive_trigger() + " state " + player.sessionstate );
 	if ( verb == "fire" )
 	{
 		wait( 0.1 );
