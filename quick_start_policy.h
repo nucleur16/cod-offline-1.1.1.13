@@ -6,6 +6,7 @@
  * constrain that permission; they never create it. 30s is an explicit local
  * permission lifetime, covering the stock 10s enter-room delay. */
 #define QSG_INTENT_MS 30000u
+#define QSG_EARLY_INTENT_MS 120000u
 #define QSG_MAX_MEMBERS 12u
 typedef struct {
     uint32_t controller;
@@ -22,7 +23,7 @@ typedef struct {
 } QsgSnapshot;
 typedef struct {
     unsigned state; /* 0 unrelated, 1 pending, 2 consumed, 3 invalidated, 4 waiting */
-    uint32_t born, phase;
+    uint32_t born, phase, valid_for_ms;
     QsgIdentity identity;
 } QsgPolicy;
 
@@ -31,15 +32,28 @@ static int QsgEligible(const QsgSnapshot *s)
     return s->managed && s->valid && s->host && s->all_ready &&
         s->phase >= 3 && s->phase <= 5;
 }
+static int QsgIntentEligible(const QsgSnapshot *s)
+{
+    /* The genuine AS bridge can precede native's enter-room delay on a
+     * successor. Capture that intent in waiting phase1; native consumption
+     * still requires phase5 and the same complete Ready identity. */
+    return s->managed && s->valid && s->host && s->all_ready &&
+        s->phase >= 1 && s->phase <= 5;
+}
 static void QsgObserve(QsgPolicy *p, const QsgSnapshot *s, uint32_t now)
 {
     if (!s->phase_known) {
         if (p->state) p->state=3; /* Missing data is not a proven phase exit. */
         return;
     }
-    if (s->phase < 3 || s->phase > 5) {
+    if (s->phase < 1 || s->phase > 5) {
         memset(p, 0, sizeof(*p));
         return;
+    }
+    if (s->phase == 1 && p->state == 2) {
+        /* A completed native start returning to waiting begins another
+         * cycle. It still needs another genuine bridge before consumption. */
+        memset(p, 0, sizeof(*p));
     }
     if (!s->managed) {
         if (p->state) p->state=3; /* Scope drift cannot escape an owned cycle. */
@@ -49,9 +63,9 @@ static void QsgObserve(QsgPolicy *p, const QsgSnapshot *s, uint32_t now)
     /* Stock mmbook advances next-entry after consumption. Only leaving the
      * allowed phase chain rearms a consumed generation. */
     if (p->state != 1) return;
-    if (!QsgEligible(s) || s->phase < p->phase ||
+    if (!QsgIntentEligible(s) || s->phase < p->phase ||
         memcmp(&p->identity, &s->identity, sizeof(p->identity)) ||
-        (uint32_t)(now - p->born) >= QSG_INTENT_MS) {
+        (uint32_t)(now - p->born) >= p->valid_for_ms) {
         p->state = 3;
         return;
     }
@@ -60,9 +74,14 @@ static void QsgObserve(QsgPolicy *p, const QsgSnapshot *s, uint32_t now)
 static int QsgGrant(QsgPolicy *p, const QsgSnapshot *s, uint32_t now)
 {
     QsgObserve(p, s, now);
-    if (p->state != 4 || !QsgEligible(s)) return 0;
+    if (p->state != 4 || !QsgIntentEligible(s)) return 0;
     p->state = 1;
     p->born = now;
+    /* Exact native frame passes through phase2 and can retain its stock
+     * 90-second collection wait plus 10-second enter-room countdown. Early
+     * genuine intent covers that bounded sequence; ordinary phase3+ intent
+     * retains the existing 30-second lifetime. No duplicate extends either. */
+    p->valid_for_ms = s->phase <= 2 ? QSG_EARLY_INTENT_MS : QSG_INTENT_MS;
     p->phase = s->phase;
     p->identity = s->identity;
     return 1;
