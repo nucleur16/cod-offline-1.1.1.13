@@ -80,3 +80,5 @@ These are native instruction and dump tests, not live popup acceptance. The
 parent owns the runtime integration/build/deployment and subsequent live test.
 
 Parent integration: both complete producer spans and five native helper/caller guards are checked before either write. The correction installs before the C1 game entry. Shipping profile (LOCAL_TESTING=0, DIAGNOSTICS=0) built DLL SHA256 `06374ACA4052059809260A245AD635A5F7A1E17D41B1DA8BF92FE7CF8AC8A347`, retaining the console worker and all previous fixes. The native files are pinned in ui_baseline.json; shared baseline and prior quit routing regressions also pass.
+
+Live client acceptance (2026-10-29): after reopening with the installed corrected DLL, the user confirmed “Popup opens; Back to Game works.” This verifies the original progress/confirmation popup opens and Back to Game returns safely to the menu. Actual final Quit confirmation was not part of this acceptance check.
