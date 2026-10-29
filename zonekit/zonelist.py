@@ -73,6 +73,7 @@ ZONES = {
                         handwritten={"scaleform/default/codo.gfx": {"codo.views.option_sub.OptionView_audio",
                                                                     "codo.views.option_sub.OptionView_video",
                                                                     "codo.views.OptionView",
+                                                                    "codo.views.ServerMessageView",
                                                                     "codo.views.MatchMPCTMenuView",
                                                                     "codo.views.MatchRoomListView",
                                                                     "codo.views.MatchSelectModeHomeView",
