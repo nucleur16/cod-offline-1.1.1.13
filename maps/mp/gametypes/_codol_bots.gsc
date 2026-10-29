@@ -1091,7 +1091,7 @@ removeBots( bots, count )
             bot = bots[i];
             if ( !isDefined( bot ) || ( pass == 0 && isAlive( bot ) ) )
                 continue;
-            kick( bot getEntityNumber() );
+            kick( bot getEntityNumber(), "Kicked by server" );
             bots[i] = undefined;
             count--;
         }

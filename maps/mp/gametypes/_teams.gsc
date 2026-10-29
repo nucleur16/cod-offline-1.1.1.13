@@ -317,7 +317,12 @@ updateTeamBalanceCountdown()
     // Survival uses one player team and must not be balanced.
     if ( isDefined( level.forcedTeam ) )
         return;
-    if ( !level.teamBalance || game["state"] != "playing" || getTeamBalance() )
+    // game["state"] is already playing during the loading/countdown phase.
+    // Initial human assignment and bot fill must finish before announcing a
+    // live imbalance. Otherwise a transient 2-versus-0 starts the warning
+    // while the remaining ten clients are still being assigned normally.
+    if ( !level.teamBalance || game["state"] != "playing" ||
+            !gameFlag( "prematch_done" ) || getTeamBalance() )
     {
         level.teamBalanceStartedAt = undefined;
         level.teamBalanceAnnouncedSeconds = undefined;
@@ -662,6 +667,45 @@ updateFreePlayedTime()
 	self.timePlayed["allies"] = 0;
 	self.timePlayed["axis"] = 0;
 	self.timePlayed["other"] = 0;
+}
+
+
+// C1 automatically answers its team popup with the retained side. Refusing a
+// full bot-filled side and reopening that popup produces an endless menu echo
+// after HotJoin. A real player can replace training AI, never another human.
+tryJoinTeam( team )
+{
+	if ( getJoinTeamPermissions( team ) )
+		return true;
+	if ( !isPlayer( self ) || self.isbot || maps\mp\gametypes\_codol_bots::isCombatBot( self ) )
+		return false;
+	if ( level.teamLimit <= 0 || ( team != "allies" && team != "axis" ) )
+		return false;
+
+	bots = [];
+	teamCount = 0;
+	foreach ( player in level.players )
+	{
+		if ( !isDefined( player.pers["team"] ) || player.pers["team"] != team )
+			continue;
+		teamCount++;
+		if ( maps\mp\gametypes\_codol_bots::isCombatBot( player ) )
+			bots[bots.size] = player;
+	}
+	// GSC division makes teamLimit a float; -- accepts only an integer.
+	needed = int( teamCount - level.teamLimit + 1 );
+	if ( needed <= 0 )
+		return true;
+	if ( needed > bots.size )
+		return false;
+	// Native kick synchronously disconnects and removes the bot from
+	// level.players. No wait occurs between reserving its seat and joining.
+	for ( i = bots.size - 1; i >= 0 && needed > 0; i-- )
+	{
+		kick( bots[i] getEntityNumber(), "Kicked by server" );
+		needed--;
+	}
+	return getJoinTeamPermissions( team );
 }
 
 
