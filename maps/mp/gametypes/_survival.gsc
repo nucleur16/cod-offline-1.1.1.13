@@ -53,6 +53,44 @@ dvar_bool( name, value )
 	return getDvarInt( name ) != 0;
 }
 
+// The authored tables packaged in common_gametype_survival. IW5 Survival
+// uses a level table when supplied, otherwise its shared difficulty tier.
+// These two levels have authored placements but no level-specific table.
+wave_table_for_map( mapname )
+{
+	switch ( mapname )
+	{
+	case "mp_abandon_sh":
+		return "mp/survival_waves_abandon_sh.csv";
+	case "mp_ambush_sh":
+		return "mp/survival_waves_ambush_sh.csv";
+	case "mp_crash_tropical":
+		return "mp/survival_waves_crash_tropical.csv";
+	case "mp_cross_fire":
+		return "mp/survival_waves_cross_fire.csv";
+	case "mp_fav_tropical":
+		return "mp/survival_waves_fav_tropical.csv";
+	case "mp_firingrange":
+		return "mp/survival_waves_firingrange.csv";
+	case "mp_hardhat_sh":
+		return "mp/survival_waves_hardhat_sh.csv";
+	case "mp_highrise":
+		return "mp/survival_waves_highrise.csv";
+	case "mp_seatown":
+		return "mp/survival_waves_seatown.csv";
+	case "mp_storm_spring":
+		return "mp/survival_waves_storm_spring.csv";
+	case "mp_subbase_sh":
+		return "mp/survival_waves_subbase_sh.csv";
+	case "mp_terminal_cls":
+		return "mp/survival_waves_terminal_cls.csv";
+	case "mp_qadeem_sh":
+	case "mp_strike_sh":
+		return "mp/survival_waves_tier_1.csv";
+	}
+	return "mp/survival_waves_tier_1.csv";
+}
+
 // --------------------------------------------------------------------------
 // Precache: maps\mp\gametypes\survival::main, the gametype's precache window.
 // --------------------------------------------------------------------------
@@ -61,15 +99,11 @@ precache()
 {
 	maps\mp\gametypes\_survival_utility::init();
 
-	// IW5 level.wave_table: the map's own table (common_gametype_survival
-	// ships mp/survival_waves_<map>.csv for the survival maps), else the
-	// mode's tier table.
+	// tableLookup is not an asset-existence probe: a missing StringTable is
+	// fatal before it can return an empty cell. Select a shipped wave table
+	// before the first lookup. Qadeem and Strike use the real shared tier.
 	level.survival_type_table = "mp/survival_waves.csv";
-	level.survival_wave_table = "mp/survival_waves_" + short_map() + ".csv";
-	if ( tableLookup( level.survival_wave_table, 2, "1", 3 ) == "" )
-		level.survival_wave_table = "mp/survival_waves_tier_1.csv";
-	if ( tableLookup( level.survival_wave_table, 2, "1", 3 ) == "" )
-		level.survival_wave_table = level.survival_type_table;
+	level.survival_wave_table = wave_table_for_map( getDvar( "mapname" ) );
 
 	precacheString( &"MPUI_ROUND_X" );
 	precacheString( &"CGAME_SB_SCORE" );
