@@ -144,14 +144,7 @@ package codo.controllers
                this.setUIViewerMode(Common.UIVIEWER_MODE_NONE,Common.UIVIEWER_POS_CENTER);
                break;
             case CodoPageViewDB.PAGE_POPUP_SUMMARY:
-               if(!CFunctionContainer.AS_IsFirstLogin())
-               {
-                  PageManagerMain.getInstance().showPage(CodoPageViewDB.PAGE_POPUP_SUMMARY);
-               }
-               else
-               {
-                  this.gotoPage(CodoPageViewDB.PAGE_QUIT);
-               }
+               PageManagerMain.getInstance().showPage(CodoPageViewDB.PAGE_POPUP_SUMMARY);
                break;
             case CodoPageViewDB.PAGE_MAIN_LOGIN:
                PageManagerMain.getInstance().showPage(CodoPageViewDB.PAGE_MAIN_LOGIN);
