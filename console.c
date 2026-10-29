@@ -65,14 +65,19 @@
 
 /* ---- state ------------------------------------------------------------------------------------ */
 
-static CRITICAL_SECTION g_conLock;
+static CRITICAL_SECTION g_conLock, g_conUiLock;
+static HANDLE g_conWorkEvent;
+static volatile LONG g_conHistoryDirty;
+static volatile LONG g_conRequestedW, g_conRequestedH;
+static DWORD WINAPI ConRasterWorker(void *unused);
 static BOOL g_conReady, g_conCaptureOk, g_conDvarsOk, g_conDrawOk;
 static volatile LONG g_conOpen, g_conDirty = 1;
 static char g_conLines[CON_LINES][CON_LINE_LEN];
 static int g_conHead, g_conCount;
 static char g_conPartial[CON_LINE_LEN];
 static int g_conPartialLen;
-static int g_conScroll, g_conRows = 20;
+static int g_conScroll;
+static volatile LONG g_conRows = 20;
 static volatile LONG g_conBlink = 1;
 static volatile LONG g_conShot; /* "k33shot": save the next rendered overlay to main\k33_console.bmp */
 static volatile LONG g_conExpanded;   /* Shift+Tab / Shift+~: the full log; collapsed by default */
@@ -212,8 +217,9 @@ static void ConAppend(const char *text)
             g_conPartial[g_conPartialLen++] = *p;
         }
     }
+    BOOL visible = g_conExpanded || (g_resUntil && (LONG)(GetTickCount() - g_resUntil) < 0);
     LeaveCriticalSection(&g_conLock);
-    InterlockedExchange(&g_conDirty, 1);
+    if (visible) InterlockedExchange(&g_conDirty, 1);
 }
 
 __attribute__((used)) void __cdecl ConCapture(const char *text)
@@ -674,7 +680,7 @@ static void ConUpdateSuggestions(void)
 {
     ConTokens t;
     char tok0[96], part[96];
-    int dcount = ConSnapshotDvars();
+    int dcount;
     ConTokenize(g_conInput, g_conInputLen, g_conCursor, &t);
     ConTokenText(&t, 0, tok0, sizeof(tok0));
 
@@ -684,6 +690,15 @@ static void ConUpdateSuggestions(void)
     g_detailCount = 0;
     g_suggCycling = FALSE;
     LeaveCriticalSection(&g_conLock);
+
+    /* An empty opening prompt has no matches: do not take C1's reader
+     * lock or traverse every dvar just to show the console. */
+    if (!g_conInputLen) {
+        g_suggTokStart = g_suggTokEnd = 0;
+        InterlockedExchange(&g_conDirty, 1);
+        return;
+    }
+    dcount = ConSnapshotDvars();
 
     BOOL nameSlot = t.cur == 0 || (t.cur >= 1 && ConIsSetCommand(tok0) &&
                                    (t.cur == 1 || (t.cur == 2 && !_stricmp(tok0, "setfromdvar"))));
@@ -930,24 +945,49 @@ static char *ConHistoryPath(char *path)
     return path;
 }
 
+/* Disk I/O belongs to the raster worker, never the input/render thread. */
 static void ConLoadHistory(void)
 {
     char path[MAX_PATH], line[CON_INPUT_LEN + 4];
-    g_conHistLoaded = TRUE;
+    char loaded[CON_HISTORY][CON_INPUT_LEN];
+    int count = 0;
     FILE *f = fopen(ConHistoryPath(path), "rb");
-    if (!f) return;
-    while (fgets(line, sizeof(line), f)) {
-        size_t l = strlen(line);
+    size_t bytes = 0;
+    while (f && bytes < 1024 * 1024 && fgets(line, sizeof(line), f)) {
+        size_t l = strlen(line); bytes += l;
         while (l && (line[l - 1] == '\n' || line[l - 1] == '\r')) line[--l] = 0;
         if (!l) continue;
-        if (g_conHistCount == CON_HISTORY) {
-            memmove(g_conHist[0], g_conHist[1], sizeof(g_conHist[0]) * (CON_HISTORY - 1));
-            g_conHistCount--;
+        if (count == CON_HISTORY) {
+            memmove(loaded[0], loaded[1], sizeof(loaded[0]) * (CON_HISTORY - 1)); count--;
         }
-        lstrcpynA(g_conHist[g_conHistCount++], line, CON_INPUT_LEN);
+        lstrcpynA(loaded[count++], line, CON_INPUT_LEN);
     }
+    if (f) fclose(f);
+    EnterCriticalSection(&g_conUiLock);
+    /* Commands typed during the disk read remain newer than saved history. */
+    int current = g_conHistCount;
+    if (count + current > CON_HISTORY) {
+        int discard = count + current - CON_HISTORY;
+        memmove(loaded, loaded + discard, (size_t)(count - discard) * CON_INPUT_LEN); count -= discard;
+    }
+    memcpy(loaded + count, g_conHist, (size_t)current * CON_INPUT_LEN); count += current;
+    memcpy(g_conHist, loaded, (size_t)count * CON_INPUT_LEN);
+    g_conHistCount = count; g_conHistPos = count; g_conHistLoaded = TRUE;
+    LeaveCriticalSection(&g_conUiLock);
+}
+
+static void ConSaveHistory(void)
+{
+    char lines[CON_HISTORY][CON_INPUT_LEN], path[MAX_PATH];
+    if (!TryEnterCriticalSection(&g_conUiLock)) return;
+    int count = g_conHistCount;
+    memcpy(lines, g_conHist, (size_t)count * CON_INPUT_LEN);
+    InterlockedExchange(&g_conHistoryDirty, 0);
+    LeaveCriticalSection(&g_conUiLock);
+    FILE *f = fopen(ConHistoryPath(path), "wb");
+    if (!f) return;
+    for (int i = 0; i < count; i++) fprintf(f, "%s\r\n", lines[i]);
     fclose(f);
-    g_conHistPos = g_conHistCount;
 }
 
 static void ConAddHistory(const char *line)
@@ -963,11 +1003,8 @@ static void ConAddHistory(const char *line)
     }
     lstrcpynA(g_conHist[g_conHistCount++], line, CON_INPUT_LEN);
     g_conHistPos = g_conHistCount;
-    char path[MAX_PATH];
-    FILE *f = fopen(ConHistoryPath(path), "wb");
-    if (!f) return;
-    for (int i = 0; i < g_conHistCount; i++) fprintf(f, "%s\r\n", g_conHist[i]);
-    fclose(f);
+    InterlockedExchange(&g_conHistoryDirty, 1);
+    if (g_conWorkEvent) SetEvent(g_conWorkEvent);
 }
 
 /* ---- built-in commands ----------------------------------------------------------------------------- */
@@ -1269,7 +1306,6 @@ static void ConSetOpen(BOOL open)
         g_conScroll = 0;
     }
     if (open) {
-        if (!g_conHistLoaded) ConLoadHistory();
         if (!g_conBanner) {
             g_conBanner = TRUE;
             ConPrintf("Kernel33 developer console (dev branch): type k33help. %u readable dvar names; "
@@ -1519,7 +1555,7 @@ static void ConImeSync(HWND hwnd, UINT msg)
     }
 }
 
-static LRESULT CALLBACK ConsoleWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+static LRESULT CALLBACK ConWndProcOwned(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
     WNDPROC game = (WNDPROC)(DWORD_PTR)GAME_WNDPROC_VA;
     if (!g_conKeyDvarTried && (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) &&
@@ -1617,6 +1653,16 @@ static LRESULT CALLBACK ConsoleWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
     return game(hwnd, msg, wp, lp);
 }
 
+/* Editing/completion and C1 dvar access remain on their existing owner thread.
+ * The worker holds this lock only for a bounded snapshot, never GDI or I/O. */
+static LRESULT CALLBACK ConsoleWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    EnterCriticalSection(&g_conUiLock);
+    LRESULT result = ConWndProcOwned(hwnd, msg, wp, lp);
+    LeaveCriticalSection(&g_conUiLock);
+    return result;
+}
+
 /* ---- drawing (render thread) ------------------------------------------------------------------------ */
 
 typedef HRESULT(WINAPI *PresentFn)(IDirect3DDevice9 *, const RECT *, const RECT *, HWND, const RGNDATA *);
@@ -1637,6 +1683,7 @@ static IDirect3DTexture9 *g_tex;
 static int g_texW, g_texH;
 static HDC g_dc;
 static HBITMAP g_dib;
+static HGDIOBJ g_conStockBitmap;
 static DWORD *g_bits;
 static int g_dibW, g_dibH, g_usedH, g_fontH;
 static HFONT g_font;
@@ -1716,10 +1763,12 @@ static BOOL ConEnsureDib(int w, int h)
     int fh = h / 64; /* IW4's consoleFont is 16 px on a 1024-line screen */
     if (fh < 12) fh = 12;
     if (fh > 32) fh = 32;
-    if (g_dc && g_dibW == w && g_dibH == h && g_fontH == fh) return TRUE;
+    if (g_dc && g_dib && g_bits && g_dibW == w && g_dibH == h && g_fontH == fh) return TRUE;
     if (!g_dc) g_dc = CreateCompatibleDC(NULL);
     if (!g_dc) return FALSE;
-    if (g_dib) { DeleteObject(g_dib); g_dib = NULL; }
+    if (g_dib) { SelectObject(g_dc, g_conStockBitmap); DeleteObject(g_dib); g_dib = NULL; }
+    g_bits = NULL;
+    g_dibW = g_dibH = g_fontH = 0;
     BITMAPINFO bi;
     memset(&bi, 0, sizeof(bi));
     bi.bmiHeader.biSize = sizeof(bi.bmiHeader);
@@ -1732,8 +1781,9 @@ static BOOL ConEnsureDib(int w, int h)
     g_dib = CreateDIBSection(g_dc, &bi, DIB_RGB_COLORS, &bits, NULL, 0);
     if (!g_dib) return FALSE;
     g_bits = (DWORD *)bits;
-    SelectObject(g_dc, g_dib);
-    if (g_font) DeleteObject(g_font);
+    HGDIOBJ previousBitmap = SelectObject(g_dc, g_dib);
+    if (!g_conStockBitmap) g_conStockBitmap = previousBitmap;
+    if (g_font) { SelectObject(g_dc, GetStockObject(SYSTEM_FONT)); DeleteObject(g_font); }
     g_font = CreateFontA(-fh, 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS,
                          ANTIALIASED_QUALITY, FIXED_PITCH | FF_MODERN, "Consolas");
     SelectObject(g_dc, g_font);
@@ -1913,10 +1963,11 @@ static int ConRender(int W, int H)
     return used;
 }
 
-static void ConTakeSnapshot(void)
+static BOOL ConTakeSnapshot(void)
 {
     ConSnap *s = &g_snap;
-    EnterCriticalSection(&g_conLock);
+    if (!TryEnterCriticalSection(&g_conUiLock)) return FALSE;
+    if (!TryEnterCriticalSection(&g_conLock)) { LeaveCriticalSection(&g_conUiLock); return FALSE; }
     s->expanded = g_conExpanded != 0;
     s->blink = g_conBlink;
     s->cycling = g_suggCycling;
@@ -1949,6 +2000,68 @@ static void ConTakeSnapshot(void)
     s->resCount = g_resCount;
     memcpy(s->res, g_res, sizeof(g_res[0]) * g_resCount);
     LeaveCriticalSection(&g_conLock);
+    LeaveCriticalSection(&g_conUiLock);
+    return TRUE;
+}
+
+/* Slot ownership: FREE -> WRITING -> READY -> READING -> FREE.
+ * Neither producer nor consumer ever waits for the other; stale READY frames
+ * may be reclaimed, but READING pixels cannot be resized or overwritten. */
+#include "console_mailbox.h"
+static ConRasterFrame g_conFrames[2];
+static DWORD g_conUploadedSerial;
+
+static void ConSaveShot(int W, int used)
+{
+    LONG shot = g_conShot;
+    if (!shot || (LONG)(GetTickCount() - (DWORD)shot) < 0 ||
+        InterlockedCompareExchange(&g_conShot, 0, shot) != shot || used <= 0) return;
+    char path[MAX_PATH];
+    DWORD n = GetModuleFileNameA(NULL, path, MAX_PATH);
+    while (n && path[n - 1] != '\\') n--;
+    lstrcpynA(path + n, "main\\k33_console.bmp", MAX_PATH - n);
+    FILE *f = fopen(path, "wb");
+    if (!f) return;
+    BITMAPFILEHEADER fh = { 0x4D42, 0, 0, 0, sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) };
+    BITMAPINFOHEADER ih = { sizeof(ih), W, -used, 1, 32, BI_RGB, 0, 0, 0, 0, 0 };
+    fh.bfSize = fh.bfOffBits + (DWORD)W * used * 4;
+    fwrite(&fh, sizeof(fh), 1, f); fwrite(&ih, sizeof(ih), 1, f);
+    fwrite(g_bits, 4, (size_t)W * used, f); fclose(f);
+}
+
+static DWORD WINAPI ConRasterWorker(void *unused)
+{
+    (void)unused;
+    ConLoadHistory();
+    DWORD serial = 0, lastRaster = 0;
+    for (;;) {
+        WaitForSingleObject(g_conWorkEvent, 16);
+        if (g_conHistoryDirty) ConSaveHistory();
+        if (!g_conOpen) continue;
+        LONG blink = !((GetTickCount() >> 8) & 1);
+        if (InterlockedExchange(&g_conBlink, blink) != blink) InterlockedExchange(&g_conDirty, 1);
+        int W = g_conRequestedW, H = g_conRequestedH;
+        if (W < 320 || H < 200 || W > 8192 || H > 8192 || (size_t)W * H > 16777216) continue;
+        if ((DWORD)(GetTickCount() - lastRaster) < 16) continue;
+        if (!InterlockedExchange(&g_conDirty, 0)) continue;
+        if (!ConTakeSnapshot()) { InterlockedExchange(&g_conDirty, 1); continue; }
+        ConRasterFrame *frame = ConFrameAcquire(g_conFrames);
+        if (!frame) { InterlockedExchange(&g_conDirty, 1); continue; }
+        if (!ConEnsureDib(W, H)) { ConFrameRelease(frame); InterlockedExchange(&g_conDirty, 1); continue; }
+        int used = ConRender(W, H);
+        size_t size = (size_t)W * used * sizeof(DWORD);
+        if (size > frame->capacity) {
+            uint32_t *pixels = realloc(frame->pixels, size);
+            if (!pixels) { ConFrameRelease(frame); InterlockedExchange(&g_conDirty, 1); continue; }
+            frame->pixels = pixels; frame->capacity = size;
+        }
+        memcpy(frame->pixels, g_bits, size);
+        frame->w = W; frame->h = H; frame->used = used; frame->serial = ++serial;
+        lastRaster = GetTickCount();
+        ConSaveShot(W, used);
+        ConFramePublish(frame);
+    }
+    return 0;
 }
 
 typedef struct { float x, y, z, rhw; DWORD color; float u, v; } ConVertex;
@@ -2029,7 +2142,7 @@ static BOOL ConBlit(IDirect3DDevice9 *dev, IDirect3DSurface9 *bb, IDirect3DTextu
 static void ConDraw(IDirect3DDevice9 *dev)
 {
     static LONG failures;
-    if (!g_conOpen || InterlockedExchange(&g_inDraw, 1)) return;
+    if (!g_conOpen || !g_conWorkEvent || InterlockedExchange(&g_inDraw, 1)) return;
     if (IDirect3DDevice9_TestCooperativeLevel(dev) != D3D_OK) goto out;
 
     IDirect3DSurface9 *bb = NULL;
@@ -2051,43 +2164,39 @@ static void ConDraw(IDirect3DDevice9 *dev)
         }
         g_texW = W;
         g_texH = H;
+        g_usedH = 0;
+        g_conUploadedSerial = 0;
         InterlockedExchange(&g_conDirty, 1);
     }
-    {
-        LONG blink = !((GetTickCount() >> 8) & 1); /* IW4 blinks the cursor every 256 ms */
-        if (InterlockedExchange(&g_conBlink, blink) != blink) InterlockedExchange(&g_conDirty, 1);
+    LONG oldW = InterlockedExchange(&g_conRequestedW, W);
+    LONG oldH = InterlockedExchange(&g_conRequestedH, H);
+    if (oldW != W || oldH != H)
+        InterlockedExchange(&g_conDirty, 1);
+    if (g_conWorkEvent) SetEvent(g_conWorkEvent);
+    ConRasterFrame *held[2] = { NULL, NULL }, *newest = NULL;
+    for (int i = 0; i < 2; i++) {
+        ConRasterFrame *frame = &g_conFrames[i];
+        if (!ConFrameRead(frame)) continue;
+        held[i] = frame;
+        if (frame->w == W && frame->h == H && frame->used > 0 &&
+            (LONG)(frame->serial - g_conUploadedSerial) > 0 &&
+            (!newest || (LONG)(frame->serial - newest->serial) > 0)) newest = frame;
     }
-    if (InterlockedExchange(&g_conDirty, 0)) {
-        if (!ConEnsureDib(W, H)) { IDirect3DSurface9_Release(bb); goto out; }
-        ConTakeSnapshot();
-        g_usedH = ConRender(W, H);
-        LONG shot = g_conShot;
-        if (shot && (LONG)(GetTickCount() - (DWORD)shot) >= 0 && InterlockedCompareExchange(&g_conShot, 0, shot) == shot &&
-            g_usedH > 0) {
-            char path[MAX_PATH];
-            DWORD n = GetModuleFileNameA(NULL, path, MAX_PATH);
-            while (n && path[n - 1] != '\\') n--;
-            lstrcpynA(path + n, "main\\k33_console.bmp", MAX_PATH - n);
-            FILE *f = fopen(path, "wb");
-            if (f) {
-                BITMAPFILEHEADER fh2 = { 0x4D42, 0, 0, 0, sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) };
-                BITMAPINFOHEADER ih = { sizeof(ih), W, -g_usedH, 1, 32, BI_RGB, 0, 0, 0, 0, 0 };
-                fh2.bfSize = fh2.bfOffBits + (DWORD)W * g_usedH * 4;
-                fwrite(&fh2, sizeof(fh2), 1, f);
-                fwrite(&ih, sizeof(ih), 1, f);
-                fwrite(g_bits, 4, (size_t)W * g_usedH, f);
-                fclose(f);
-            }
-        }
+    /* At most one upload per Present, even if both CPU slots were READY. */
+    if (newest) {
         D3DLOCKED_RECT lr;
-        RECT rc = { 0, 0, W, g_usedH };
-        if (g_usedH > 0 && SUCCEEDED(IDirect3DTexture9_LockRect(g_tex, 0, &lr, &rc, 0))) {
-            for (int y = 0; y < g_usedH; y++) memcpy((BYTE *)lr.pBits + (size_t)y * lr.Pitch, g_bits + (size_t)y * W, (size_t)W * 4);
+        RECT rc = { 0, 0, W, newest->used };
+        if (SUCCEEDED(IDirect3DTexture9_LockRect(g_tex, 0, &lr, &rc, 0))) {
+            for (int y = 0; y < newest->used; y++)
+                memcpy((BYTE *)lr.pBits + (size_t)y * lr.Pitch, newest->pixels + (size_t)y * W, (size_t)W * 4);
             IDirect3DTexture9_UnlockRect(g_tex, 0);
-        }
+            g_usedH = newest->used;
+            g_conUploadedSerial = newest->serial;
+        } else InterlockedExchange(&g_conDirty, 1);
     }
+    for (int i = 0; i < 2; i++) if (held[i]) ConFrameRelease(held[i]);
 
-    if (!ConBlit(dev, bb, g_tex, 0.0f, 0.0f, (float)W, (float)g_usedH, 1.0f, (float)g_usedH / (float)H, W, H) &&
+    if (g_usedH > 0 && !ConBlit(dev, bb, g_tex, 0.0f, 0.0f, (float)W, (float)g_usedH, 1.0f, (float)g_usedH / (float)H, W, H) &&
         InterlockedIncrement(&failures) <= 3)
         Log("console: CreateStateBlock failed, not drawing");
     IDirect3DSurface9_Release(bb);
@@ -2400,6 +2509,14 @@ static void InstallConsole(void)
         return;
     }
     InitializeCriticalSection(&g_conLock);
+    InitializeCriticalSection(&g_conUiLock);
+    g_conWorkEvent = CreateEventA(NULL, FALSE, FALSE, NULL);
+    if (g_conWorkEvent) {
+        HANDLE worker = CreateThread(NULL, 0, ConRasterWorker, NULL, 0, NULL);
+        if (worker) CloseHandle(worker);
+        else { CloseHandle(g_conWorkEvent); g_conWorkEvent = NULL; }
+    }
+    if (!g_conWorkEvent) Log("console: raster worker unavailable; overlay drawing disabled");
     ConInitNames();
     g_conReady = TRUE;
 
