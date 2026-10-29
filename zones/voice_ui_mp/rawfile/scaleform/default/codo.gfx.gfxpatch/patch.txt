@@ -1,7 +1,7 @@
 # GFx movie as a patch over a stock movie (zonekit/gfx.py)
 stock patch_ui_mp:scaleform/default/codo.gfx
 stock-sha256 2f143069ed10f3c937e0f5b758591e477f57544f76bdfd3bd2635f77cca5d332
-sha256 bfff199bdbc3db86010d0adb9d35bfe8b9893c4ffa193ba19e35c82a1d767abf
+sha256 ddeacad2377f9c63c5de0f82dd6e526593a04c89c5bb73727ce78f50b150875c
 header 4746580a68b64500800003200000025800001e0100
 keep 0
 keep 1
@@ -4906,7 +4906,7 @@ keep 4899
 keep 4900
 keep 4901
 keep 4902
-keep 4903
+new tags/k33_82_components_list_part_InviteItemRenderer.bin
 keep 4904
 keep 4905
 keep 4906
@@ -6921,7 +6921,8 @@ as codo.controllers.RightClickMenuController as/codo/controllers/RightClickMenuC
 as codo.controllers.PartyController as/codo/controllers/PartyController.as 4e7a5943db9ab688bd0d2ad8e03dbad6fffdd7f9b055e5752c567607f7c33ec0
 as codo.views.SocialSideBarView as/codo/views/SocialSideBarView.as 55a5418ca94fdc46c8cb3cdabd9dd6c33b5a4526d7a80850cf4b2b4b737b56d8
 as components.room_part.RoomInfo as/components/room_part/RoomInfo.as 433d733e3367ee97b3e8ddff3476b945064c25f36225adc71d4f377335d59867
-as codo.controllers.MatchController as/codo/controllers/MatchController.as b0bd6f786fa7059bb3448061c2288918c498137ad5ceca24cb2d50535994446a
 as codo.k33.LocalMatchControls as/codo/k33/LocalMatchControls.as 7a84b0e9419938344059ff88b66ff0bf5e73737884491364338b1461a62965ae
 as codo.views.InRoomBaseView as/codo/views/InRoomBaseView.as ac429b3a627be0238842a3c83cdf4a8a54a46bd2536c36d7176bf9983dc2bddb
 as codo.controllers.LobbyController as/codo/controllers/LobbyController.as fffbb0c60d79c984156beac1ea769ff11b0d1fb110b791e0ef366824799abbb0
+as components.list_part.InviteItemRenderer as/components/list_part/InviteItemRenderer.as 992e558cfe8fcd37b349a4faf53dff3a7a2ff68960b32a94be0f787a8f75e808
+as codo.controllers.MatchController as/codo/controllers/MatchController.as e232a84d14346b799e205b3d027f26b5f2820940b015851b8b7b8f876525f49a

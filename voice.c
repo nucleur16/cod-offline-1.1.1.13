@@ -828,9 +828,11 @@ static void VoiceRegisterDvars(void)
     g_dvVoice = reg("codol_voice", 1, 0, 1, 0x1, "Voice chat: 1 on, 0 off (+set codol_voice 0 on the command line installs nothing)");
     g_dvVolume = reg("k33_voiceVolume", 100, 0, 400, 0x1, "Voice chat playback volume in percent");
     g_dvBitrate = reg("k33_voiceBitrate", 24000, 6000, 64000, 0x1, "Opus voice bitrate (bits per second)");
+#if CODOL_DIAGNOSTICS
     g_dvLoopback = reg("k33_voiceLoopback", 0, 0, 1, 0, "Play your own voice back locally instead of sending it");
     g_dvDebug = reg("k33_voiceDebug", 0, 0, 2, 0, "Voice chat diagnostics in the console");
     g_dvTone = reg("k33_voiceTone", 0, 0, 2, 0, "Transmit a 440 Hz test tone instead of the microphone (2: in bursts)");
+#endif
     g_dvMode = reg("k33_voiceMode", 0, 0, 1, 0x1, "Voice chat transmit mode: 0 push-to-talk, 1 voice activation (open mic gated by level)");
     g_dvThreshold = reg("k33_voiceThreshold", 30, 0, 100, 0x1,
                         "Voice activation level, 0..100 = -60..0 dBFS (RMS); k33voice shows the live mic level");
@@ -1128,6 +1130,7 @@ static void VoiceAnnounce(void)
  * of <exe dir>\k33_cmd_<pid>.txt are executed (Cbuf) and the file is deleted. */
 static void VoiceCmdFile(void)
 {
+#if CODOL_LOCAL_TESTING
     static int enabled = -1;
     static DWORD last;
     static char path[MAX_PATH];
@@ -1156,6 +1159,7 @@ static void VoiceCmdFile(void)
     if (got && buf[got - 1] != '\n') { buf[got++] = '\n'; buf[got] = 0; }
     Log("voice: command file: %s", buf);
     C1CbufAddText(buf);
+#endif
 }
 
 /* Once per Com_EventLoop pass (main thread). */
@@ -1251,17 +1255,21 @@ __attribute__((used)) void __cdecl VoiceMainTick(void)
     if (hang != g_vadHangMs) InterlockedExchange(&g_vadHangMs, hang);
     if (vad != (g_vadArmed != 0)) {
         InterlockedExchange(&g_vadArmed, vad);
+#if CODOL_DIAGNOSTICS
         if (VoiceDvarInt(g_dvDebug, 0) || g_lastTalkPrint < 3) {
             g_lastTalkPrint++;
             C1Printf("voice: voice activation %s\n", vad ? "armed (open mic)" : "off");
         }
+#endif
     }
     if (key != (g_txForce != 0)) {
         InterlockedExchange(&g_txForce, key);
+#if CODOL_DIAGNOSTICS
         if (VoiceDvarInt(g_dvDebug, 0) || g_lastTalkPrint < 3) {
             g_lastTalkPrint++;
             C1Printf("voice: %s\n", key ? "talking" : "stopped talking");
         }
+#endif
     }
     BOOL talk = key || vad;
     BOOL open = talk || meter;
@@ -1271,7 +1279,7 @@ __attribute__((used)) void __cdecl VoiceMainTick(void)
         static DWORD warned;
         if (!warned || GetTickCount() - warned > 30000) {
             warned = GetTickCount();
-            C1Printf("^1voice: no microphone could be opened (see Kernel33.log)\n");
+            C1Printf("^1voice: microphone unavailable\n");
         }
     }
     if (VoiceDvarInt(g_dvDebug, 0)) {
@@ -1412,6 +1420,7 @@ static void __cdecl VoiceCmdStatus(void)
 /* Test automation: "k33ready [0|1]" presses the room's Ready button the way the Scaleform
  * SetReadyState callback does (AS_SetReadyState::Call 0x6AEFF0 reads the bool at args[0]+8). Only
  * with "+set k33_cmdFile 1" on the command line. */
+#if CODOL_LOCAL_TESTING
 static void __cdecl VoiceCmdReady(void)
 {
     static const BYTE kReady[] = { 0x55, 0x8B, 0xEC, 0xB8, 0x01, 0x00, 0x00, 0x00, 0x84, 0x05, 0xA8, 0xB0, 0x2E, 0x08 };
@@ -1485,11 +1494,18 @@ static void __cdecl VoiceCmdMouse(void)
     Log("voice: k33mouse %ld %ld %s", g_fakeCursor.x, g_fakeCursor.y, VoiceArgc() >= 4 ? VoiceArgv(3) : "");
 }
 
+#endif
 static C1Cmd g_voiceCmds[] = {
+#if CODOL_LOCAL_TESTING
     { NULL, "k33mouse", (void *)VoiceCmdMouse },
+    { NULL, "k33ready", (void *)VoiceCmdReady },
+#endif
     { NULL, "+talk", (void *)VoiceCmdTalkDown },   { NULL, "-talk", (void *)VoiceCmdTalkUp },
-    { NULL, "toggletalk", (void *)VoiceCmdToggle }, { NULL, "k33voice", (void *)VoiceCmdStatus },
-    { NULL, "k33voicemute", (void *)VoiceCmdMute }, { NULL, "k33ready", (void *)VoiceCmdReady },
+    { NULL, "toggletalk", (void *)VoiceCmdToggle },
+#if CODOL_DIAGNOSTICS
+    { NULL, "k33voice", (void *)VoiceCmdStatus },
+#endif
+    { NULL, "k33voicemute", (void *)VoiceCmdMute },
 };
 
 /* Link the nodes into C1's command list. Done before the game entry: the list head 0x24F6424 is

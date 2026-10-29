@@ -693,7 +693,7 @@ import flash.utils.getTimer;
          var visiblePlaylists:Array = [];
          for each(var choice in choices)
          {
-            if(choice != null && (choice.type == PlayListType.COMBAT && (choice.id == 0 || choice.id == 2) && choice.combatTrainingType == CombatType.CT || choice.name == "Quick Match" && choice.type == PlayListType.RANKED && choice.minPartySize == 1 && (choice.maxPartySize == 1 || choice.maxPartySize == 6) && choice.maxRoomSize == 12))
+            if(choice != null && (choice.type == PlayListType.COMBAT && (choice.id == 0 || choice.id == 2) && choice.combatTrainingType == CombatType.CT))
             {
                visiblePlaylists.push(choice);
             }
@@ -887,7 +887,11 @@ import flash.utils.getTimer;
       private function getXPLeagueFactor(ctType:int, league:int, playListObj:PlayListObj = null) : Number
       {
          var factor:Number = NaN;
-         if(playListObj != null && playListObj.type == PlayListType.RANKED)
+         if(playListObj != null && playListObj.type == PlayListType.COMBAT && (playListObj.name == "Boot Camp" || playListObj.name == "Bot Training"))
+         {
+            factor = playListObj.name == "Boot Camp" ? 1 : 0.5;
+         }
+         else if(playListObj != null && playListObj.type == PlayListType.RANKED)
          {
             factor = 1;
          }
@@ -906,7 +910,11 @@ import flash.utils.getTimer;
       private function getGPLeagueFactor(ctType:int, league:int, playListObj:PlayListObj = null) : Number
       {
          var factor:Number = NaN;
-         if(playListObj != null && playListObj.type == PlayListType.RANKED)
+         if(playListObj != null && playListObj.type == PlayListType.COMBAT && (playListObj.name == "Boot Camp" || playListObj.name == "Bot Training"))
+         {
+            factor = playListObj.name == "Boot Camp" ? 1 : 0.5;
+         }
+         else if(playListObj != null && playListObj.type == PlayListType.RANKED)
          {
             factor = 1;
          }
