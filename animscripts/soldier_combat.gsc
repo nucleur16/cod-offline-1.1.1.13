@@ -252,6 +252,8 @@ tuning()
 // Rounds in one burst at this range.
 role_burst( dist )
 {
+	if ( projectile_weapon() )
+		return 1;
 	n = 1;
 	switch ( self.coop_role )
 	{
@@ -293,6 +295,13 @@ role_burst( dist )
 // Seconds between rounds inside a burst.
 role_fire_delay()
 {
+	if ( projectile_weapon() )
+	{
+		delay = weaponFireTime( self.coop_weapon );
+		if ( delay < 0.05 )
+			delay = 0.05;
+		return delay;
+	}
 	switch ( self.coop_role )
 	{
 	case "lmg":
@@ -424,6 +433,8 @@ fire_anim_for( shots )
 {
 	if ( !isDefined( self.a.array ) )
 		set_anim_array( "stand" );
+	if ( projectile_weapon() )
+		return animArrayPickRandom( "single" );
 	switch ( self.coop_role )
 	{
 	case "lmg":
@@ -560,7 +571,9 @@ fire_shot( enemy )
 		target = miss_point( enemy, target, start );
 
 	// Past the aim point, so a miss carries on into whatever is behind him.
-	end = start + vectorNormalize( target - start ) * ( distance( start, target ) + 384 );
+	end = target;
+	if ( !projectile_weapon() )
+		end = start + vectorNormalize( target - start ) * ( distance( start, target ) + 384 );
 	self codol_actorShoot( self.coop_weapon, start, end );
 
 	if ( isDefined( self.coop_stat_shots ) )
@@ -677,7 +690,7 @@ Reload()
 	reloadAnim = animArrayPickRandom( "reload" );
 	stop_aiming();
 	self setFlaggedAnimKnobAllRestart( "reloadanim", reloadAnim, %body, 1, 0.2, 1 );
-	DoNoteTracksForTime( getAnimLength( reloadAnim ), "reloadanim" );
+	DoNoteTracksForTime( reload_duration( reloadAnim ), "reloadanim" );
 	self codol_actorReloadComplete();
 	self.a.burstShots = 0;
 	start_aiming( 0.2 );

@@ -206,6 +206,8 @@ try_run_reaction()
 try_run_reload()
 {
 	self endon( "killanimscript" );
+	if ( projectile_weapon() )
+		return false;
 	if ( self.a.movement != "run" || isDefined( self.coop_rng_dir ) || isDefined( self.coop_cqb ) )
 		return false;
 	if ( animscripts\soldier_combat::clip_remaining() > animscripts\soldier_combat::role_clip() * 0.5 )

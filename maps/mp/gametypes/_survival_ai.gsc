@@ -375,7 +375,17 @@ spawn_type( ref, origin, angles, scale )
 	kind.accuracy = attributes.accuracy;
 	kind.health = attributes.health;
 	if ( t.weapon != "" )
+	{
 		kind.weapon = t.weapon;
+		// Authored later-build aitypes used generic SMG/AR roles. Keep their
+		// actual launcher primary instead of inheriting automatic-gun pacing.
+		if ( weaponType( t.weapon ) == "projectile" )
+		{
+			kind.role = "grenadelauncher";
+			if ( weaponClass( t.weapon ) == "rocketlauncher" )
+				kind.role = "rpg";
+		}
+	}
 	ai = maps\mp\gametypes\_survival_utility::spawn_soldier( t.classname, origin, angles, kind );
 	if ( !isDefined( ai ) )
 		return undefined;

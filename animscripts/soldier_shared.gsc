@@ -346,6 +346,8 @@ animset_rpg_crouch()
 // from the authored role -- the coop "rpg" role carries a rifle, and an
 // automatic shotgun (aa12) aims and fires like a rifle in IW4.  A mission or
 // aitype may force a family with self.coop_anim_kind.
+// A rifle-held grenade launcher (M79) stays in the rifle animation family;
+// only the native rocketlauncher class uses shoulder-fired RPG clips (IW4).
 weapon_kind()
 {
 	if ( isDefined( self.coop_anim_kind ) )
@@ -369,6 +371,27 @@ weapon_kind()
 	}
 	self.coop_anim_kind = kind;
 	return kind;
+}
+
+projectile_weapon()
+{
+	return isDefined( self.coop_weapon ) && self.coop_weapon != "" &&
+		weaponType( self.coop_weapon ) == "projectile";
+}
+
+// The supported pose animation must finish, and a launcher cannot refill
+// sooner than its real weapon definition's reload time. Ordinary guns retain
+// their existing actor animation timing.
+reload_duration( clip )
+{
+	duration = getAnimLength( clip );
+	if ( projectile_weapon() )
+	{
+		weaponTime = weaponReloadTime( self.coop_weapon );
+		if ( weaponTime > duration )
+			duration = weaponTime;
+	}
+	return duration;
 }
 
 can_crouch()

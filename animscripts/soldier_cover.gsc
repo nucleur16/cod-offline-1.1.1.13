@@ -289,6 +289,9 @@ aim_set( cover, mode, pose )
 	keys = getArrayKeys( base );
 	for ( i = 0; i < keys.size; i++ )
 		a[ keys[ i ] ] = base[ keys[ i ] ];
+	// Rifle cover additive/shot clips cannot hold a shoulder-fired launcher.
+	if ( kind == "rpg" )
+		return a;
 
 	if ( mode == "lean" && isDefined( cover[ "lean_aim_straight" ] ) )
 	{
@@ -547,13 +550,15 @@ cover_reaction( cover )
 cover_reload( reloadAnim )
 {
 	self endon( "killanimscript" );
+	if ( projectile_weapon() )
+		reloadAnim = animArrayPickRandom( "reload" );
 	if ( !isDefined( reloadAnim ) )
 		return false;
 	trace_anim( "cover reload" );
 	stat_bump( "cover_reload" );
 	self.safeToChangeScript = false;
 	self setFlaggedAnimKnobAllRestart( "reloadanim", reloadAnim, %body, 1, 0.2, 1 );
-	DoNoteTracksForTime( getAnimLength( reloadAnim ), "reloadanim" );
+	DoNoteTracksForTime( reload_duration( reloadAnim ), "reloadanim" );
 	self codol_actorReloadComplete();
 	self.a.burstShots = 0;
 	return true;
@@ -814,7 +819,7 @@ corner_step_out_and_shoot( dir, cover, hideYaw )
 	// IW4 returnToCover, the reload variant when the clip ran low.
 	backKey = mode + "_to_alert";
 	reloading = false;
-	if ( mode == "B" && needs_reload( 0.3 ) && isDefined( cover[ "B_to_alert_reload" ] ) && randomInt( 4 ) < 3 )
+	if ( mode == "B" && !projectile_weapon() && needs_reload( 0.3 ) && isDefined( cover[ "B_to_alert_reload" ] ) && randomInt( 4 ) < 3 )
 	{
 		backKey = "B_to_alert_reload";
 		reloading = true;

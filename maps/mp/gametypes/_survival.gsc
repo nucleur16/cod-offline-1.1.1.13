@@ -784,6 +784,8 @@ run_wave( w )
 
 waittill_timeout( note, time )
 {
+	if ( time <= 0 )
+		return;
 	self endon( note );
 	wait( time );
 }
@@ -880,6 +882,8 @@ intermission()
 	total = level.survival_intermission;
 	wait( 5 );
 	total -= 5;
+	if ( total < 0 )
+		total = 0;
 	level.survival_ready = 0;
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
