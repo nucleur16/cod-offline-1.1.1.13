@@ -37,6 +37,27 @@ result to `../Kernel33.dll` (`K33_NO_COPY=1` leaves it in this folder). Needs li
 `third_party/` (official SDL2-devel mingw package, SHA-256 checked) and links statically: the DLL has no
 SDL2.dll dependency.
 
+## Player-hosted matches (gated off: `K33_P2P=1`)
+The P2P hosting code (`p2p.c`, `p2p_inproc.c`, `p2p_assets.c`, `hostgate.c`) is on main **compiled out by default**.
+A plain `sh build.sh` leaves all four files out; the DLL is the same as one built without them (verified:
+identical apart from the PE timestamps). With the gate off there are no p2p commands, no in-process server and no
+hostgate UDP filter. To build a hosting client:
+```sh
+K33_P2P=1 K33_NO_COPY=1 PATH=/c/msys64/mingw32/bin:$PATH sh build.sh   # -DK33_P2P, + -liphlpapi -lpsapi
+git submodule update --init server/sh1x                                  # never --recursive (URL-less gitlink)
+sh build-server.sh                                                       # WSL cross-build + staging of the server
+```
+With `K33_P2P=1` the DLL behaves as on `dev`:
+- `p2phost [map] [gametype] [zonetype]`, `p2pstop`, `p2pstatus`, `+set k33_p2pHost 1`; settings in `p2p\p2p_host.ini`.
+  The default `mode = inprocess` runs the server's `sh1x_host.dll` inside the client on the game thread.
+  `mode = child` runs `k33p2p_dedrun.exe` as a child process.
+- `hostgate.c` filters UDP (enforcing by default; `+set k33_hostGate 1` logs only). It allows loopback, the lobby
+  (dwauth.ini / stun.ini hosts), the UPnP gateway and lobby-vouched hosts.
+
+That trust rule is a hard requirement of `docs/SECURITY_AUDIT_CLIENT_20261026.md`: C1's gamestate parser and the
+DemonWare layer are unaudited. A player-hosted server on another machine is refused until the lobby's signed host
+tickets exist. Design, stages and measurements: `docs/P2P_HOSTING.md`. The server is the submodule `server/sh1x`.
+
 ## Parity logger (branch `parity-log`)
 `parity.c` adds a client-side snapshot-parity logger for bringing the server to retail parity. It
 writes to the game's own console log (`main\console_mp-00N.log`) through C1's Com_Printf, one line
