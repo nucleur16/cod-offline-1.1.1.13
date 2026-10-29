@@ -7,7 +7,10 @@ including the transition from queue placement to joining. Ordinary lobby notices
 retain the original bottom-left position. These are not two simultaneous tickers.
 Queue and joining text use x880/y80 (a viewport at approximately x820/y60
 at1280x720), below the upper-right buttons. Other announcements retain x32/y905.
-A new queue heartbeat replaces the current queue animation immediately. Entering
+A changed queue status replaces the current animation immediately. Identical
+heartbeats refresh the existing message expiry without restarting its slide;
+the full text can cross the viewport even when its animation exceeds ten seconds.
+Entering
 a match removes capacity messages and retains ordinary messages; returning to the
 front end restores its native geometry.
 
@@ -15,9 +18,9 @@ Only bind_showServerMessage, onSetIsInGameHandle and tryStartAnimation change.
 An independent ABC reader verifies all class/method/script metadata, existing pool
 entries and other method bodies stay exact. Only one movie tag and one rawfile
 asset change. Source assembly retains every modified asset byte and increases
-native block4 allocation by93 bytes over the previous upper-left candidate.
+native block4 allocation by77 bytes over the previous upper-right candidate.
 The source-generated voice_ui_mp.ff hash is
-16cd5794dd688fd9c46dcd2cd495fc4d791440d57ea3c4904264854df41ba829.
+1c4c3c86a5a029a7fb1c2bc98664a61f5e7088fb363fd86c737ae1d6372154c1.
 
 The shared source baseline also records the existing kernel33.c hash from the
 already compiled and real-client tested queue/background r12 build. No C source

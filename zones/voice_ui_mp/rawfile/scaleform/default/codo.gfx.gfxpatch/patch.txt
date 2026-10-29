@@ -1,7 +1,7 @@
 # GFx movie as a patch over a stock movie (zonekit/gfx.py)
 stock patch_ui_mp:scaleform/default/codo.gfx
 stock-sha256 2f143069ed10f3c937e0f5b758591e477f57544f76bdfd3bd2635f77cca5d332
-sha256 b3a64f193f29729fb9968da231d9f41a50f5ea5dbabd9547437d64619f5368f6
+sha256 4715887486332f17bbbd39a8dee50b06229e032de27b52b50b2fb757d72c4c60
 header 4746580a68b64500800003200000025800001e0100
 keep 0
 keep 1
@@ -6923,4 +6923,4 @@ as codo.controllers.MatchController as/codo/controllers/MatchController.as 3479a
 as codo.views.SocialSideBarView as/codo/views/SocialSideBarView.as 55a5418ca94fdc46c8cb3cdabd9dd6c33b5a4526d7a80850cf4b2b4b737b56d8
 as components.room_part.RoomInfo as/components/room_part/RoomInfo.as 433d733e3367ee97b3e8ddff3476b945064c25f36225adc71d4f377335d59867
 as components.list_part.InviteItemRenderer as/components/list_part/InviteItemRenderer.as 992e558cfe8fcd37b349a4faf53dff3a7a2ff68960b32a94be0f787a8f75e808
-as codo.views.ServerMessageView as/codo/views/ServerMessageView.as 3c501ae18f8548be734ce01341f01c5431c0630aca943d99ccc66abb01b76102
+as codo.views.ServerMessageView as/codo/views/ServerMessageView.as b1a950d0486e460174da8787675165218558e9095b1ce9612b6c31db0cc80181

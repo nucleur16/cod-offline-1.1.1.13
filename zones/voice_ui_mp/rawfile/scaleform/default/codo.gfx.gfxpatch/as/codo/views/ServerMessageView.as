@@ -96,6 +96,17 @@ package codo.views
          var message:String = cRes.data.message.indexOf("@SF_UI_") >= 0 ? LocalizeUtil.localize(cRes.data.message) : cRes.data.message;
          var msg:String = sender + message;
          var type:uint = ServerMessageType.IDIP;
+         if((msg.indexOf("Server queue ") == 0 || msg.indexOf("Match server starting.") == 0) && this.myMsgTF.text == msg)
+         {
+            for(var messageIndex:int = 0; messageIndex < this._serverMsgToShow.length; messageIndex++)
+            {
+               if(this._serverMsgToShow[messageIndex].type == type && this._serverMsgToShow[messageIndex].message == msg)
+               {
+                  this._serverMsgToShow[messageIndex].duration = timeStamp;
+                  return;
+               }
+            }
+         }
          var capacityWasShowing:Boolean = (this.myMsgTF.text.indexOf("Server queue ") == 0 || this.myMsgTF.text.indexOf("Match server starting.") == 0);
          this.removeExistingIDIPMessages();
          if(capacityWasShowing || msg.indexOf("Server queue ") == 0 || msg.indexOf("Match server starting.") == 0)
