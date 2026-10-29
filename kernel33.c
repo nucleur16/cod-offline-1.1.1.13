@@ -143,8 +143,11 @@ static void LoadUnpackedImage(void)
 static void FillImports(void)
 {
     int failed = 0;
+    Log("imports: start (thread %lu)", GetCurrentThreadId());
     for (unsigned i = 0; i < sizeof(kC1Imports) / sizeof(kC1Imports[0]); i++) {
         const C1Import *imp = &kC1Imports[i];
+        if (i == 0 || lstrcmpiA(imp->dll, kC1Imports[i - 1].dll) != 0)
+            Log("imports: %s (%s)", imp->dll, GetModuleHandleA(imp->dll) ? "already loaded" : "loading");
         HMODULE m = ((HMODULE(WINAPI *)(LPCSTR))g_loadLibraryA)(imp->dll);
         FARPROC f = m ? ((FARPROC(WINAPI *)(HMODULE, LPCSTR))g_getProcAddress)(m, imp->name) : NULL;
         if (!f) {
@@ -1607,9 +1610,29 @@ static LONG CALLBACK FaultHandler(EXCEPTION_POINTERS *ep)
 
     if (InterlockedIncrement(&logged) <= 4) {
         DWORD ret = Readable(sp, 4) ? sp[0] : 0;
-        Log("AV %s 0x%08lX at eip=0x%08lX [esp]=0x%08lX",
+        Log("AV %s 0x%08lX at eip=0x%08lX [esp]=0x%08lX (thread %lu)",
             er->ExceptionInformation[0] == 8 ? "exec" : er->ExceptionInformation[0] ? "write" : "read",
-            (unsigned long)er->ExceptionInformation[1], (unsigned long)c->Eip, (unsigned long)ret);
+            (unsigned long)er->ExceptionInformation[1], (unsigned long)c->Eip, (unsigned long)ret,
+            GetCurrentThreadId());
+        {
+            MEMORY_BASIC_INFORMATION mbi;
+            if (ret && VirtualQuery((LPCVOID)(DWORD_PTR)ret, &mbi, sizeof(mbi)))
+                Log("  [esp] region base 0x%08lX alloc 0x%08lX type 0x%lX protect 0x%lX",
+                    (unsigned long)(DWORD_PTR)mbi.BaseAddress, (unsigned long)(DWORD_PTR)mbi.AllocationBase,
+                    (unsigned long)mbi.Type, (unsigned long)mbi.Protect);
+        }
+        /* Name the module behind eip and the top stack words, so a crash in a foreign DLL says which. */
+        for (int k = -1; k < 8; k++) {
+            DWORD a = k < 0 ? c->Eip : Readable(sp + k, 4) ? sp[k] : 0;
+            HMODULE mod;
+            char name[MAX_PATH];
+            if (a && GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                                        GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                                        (LPCSTR)(DWORD_PTR)a, &mod) &&
+                GetModuleFileNameA(mod, name, sizeof(name)))
+                Log("  %s 0x%08lX = %s+0x%lX", k < 0 ? "eip" : "stack", (unsigned long)a, name,
+                    (unsigned long)(a - (DWORD)(DWORD_PTR)mod));
+        }
     }
     return EXCEPTION_CONTINUE_SEARCH;
 }
@@ -1650,7 +1673,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved)
 
         char exe[MAX_PATH];
         GetModuleFileNameA(NULL, exe, MAX_PATH);
-        Log("---- attach pid %lu %s (build %08lX%s)", GetCurrentProcessId(), exe,
+        Log("---- attach pid %lu %s (build %08lX%s) [kernel33 diag/import-crash 2]", GetCurrentProcessId(), exe,
             (unsigned long)nt->FileHeader.TimeDateStamp,
             g_supportedBuild ? "" : ", NOT 1.1.1.13: passing through untouched");
         if (g_supportedBuild) AddVectoredExceptionHandler(1, FaultHandler);
