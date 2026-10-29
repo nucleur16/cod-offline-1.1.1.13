@@ -38,6 +38,11 @@ SPAWNER -- makes this a spawner instead of a guy
 // drops a candidate.
 role_weapons( role )
 {
+	// Spec Ops Survival plays on the multiplayer chain and its constant window
+	// (MP weapons, docs/CODOL_SURVIVAL_PLAN.md): its soldiers fire the
+	// multiplayer weapon of the role when the AI table names none.
+	if ( getDvar( "g_gametype" ) == "survival" )
+		return mp_role_weapons( role );
 	names = [];
 	switch ( role )
 	{
@@ -67,6 +72,41 @@ role_weapons( role )
 		break;
 	}
 	names[ names.size ] = "m16_basic_so";
+	return names;
+}
+
+// The multiplayer weapon of each role (IW5 survival's AI table weapons).
+mp_role_weapons( role )
+{
+	names = [];
+	switch ( role )
+	{
+	case "smg":
+		names[ 0 ] = "mp5k_mp";
+		names[ 1 ] = "ump45_mp";
+		break;
+	case "lmg":
+		names[ 0 ] = "m240_mp";
+		names[ 1 ] = "rpd_mp";
+		break;
+	case "shgn":
+		names[ 0 ] = "aa12_mp";
+		names[ 1 ] = "spas12_mp";
+		break;
+	case "snpr":
+		names[ 0 ] = "cheytac_mp";
+		names[ 1 ] = "barrett_mp";
+		break;
+	case "pistol":
+		names[ 0 ] = "usp_mp";
+		names[ 1 ] = "beretta_mp";
+		break;
+	default:
+		names[ 0 ] = "scar_mp";
+		names[ 1 ] = "m4_mp";
+		break;
+	}
+	names[ names.size ] = "m4_mp";
 	return names;
 }
 
@@ -162,7 +202,12 @@ soldier_setup( role )
 	if ( !isDefined( level.coop_role_weapon ) )
 		level.coop_role_weapon = [];
 	weapon = level.coop_role_weapon[ role ];
-	if ( !isDefined( weapon ) )
+	// A spawner's own weapon (survival's AI table, column 5), when the
+	// window carries it.
+	if ( isDefined( kind ) && isDefined( kind.weapon ) && kind.weapon != "" &&
+	     ( codol_isWeaponPublished( kind.weapon ) || codol_isWeaponMounted( kind.weapon ) ) )
+		weapon = kind.weapon;
+	else if ( !isDefined( weapon ) )
 	{
 		weapon = resolve_role_weapon( role );
 		if ( !isDefined( weapon ) )
@@ -247,7 +292,9 @@ precache()
 	// The cause was native: G_ModelIndex gave weapon_m82 the slot IW3's
 	// constant table names for it, overwriting weapon_cheytac, which a
 	// precache moments earlier had put there -- fixed in _g_utils_mp.asm.)
-	level.coop_weapon_models = [];
+	// (A mode may have recorded its own weapons' models before this runs.)
+	if ( !isDefined( level.coop_weapon_models ) )
+		level.coop_weapon_models = [];
 	roles = [];
 	roles[ 0 ] = "ar";
 	roles[ 1 ] = "smg";

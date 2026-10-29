@@ -314,6 +314,9 @@ getTeamBalanceSecondsRemaining( startedAt, now )
 
 updateTeamBalanceCountdown()
 {
+    // Survival uses one player team and must not be balanced.
+    if ( isDefined( level.forcedTeam ) )
+        return;
     if ( !level.teamBalance || game["state"] != "playing" || getTeamBalance() )
     {
         level.teamBalanceStartedAt = undefined;
@@ -366,6 +369,9 @@ getTeamBalance()
 // using them here stranded training bots and interrupted human respawns.
 balanceTeams( roundBoundary )
 {
+    // Survival uses one player team and must not be balanced.
+    if ( isDefined( level.forcedTeam ) )
+        return;
     if ( !isDefined( roundBoundary ) )
         roundBoundary = false;
 

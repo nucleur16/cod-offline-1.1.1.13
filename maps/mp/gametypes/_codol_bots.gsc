@@ -1010,6 +1010,9 @@ placeCarriedKillstreak()
 //       scr_codol_botmax (default 11), adding and kicking as players come and go.
 maintainBots()
 {
+    // Survival enemies are actors; room-fill bots must never join the player team.
+    if ( isDefined( level.forcedTeam ) )
+        return;
     level endon( "game_ended" );
     if ( getDvar( "scr_codol_botfill" ) == "" )
         setDvar( "scr_codol_botfill", 0 );
