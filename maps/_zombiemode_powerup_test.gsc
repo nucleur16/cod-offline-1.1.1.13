@@ -4,7 +4,7 @@
 // Commands use scr_zm_powerup_test: drop/pandora/fire/state/zap/sentrydiag/
 // gather/press/dive/dmtest/switch <clientnum> <argument> [extra].
 #include maps\_zombiemode_utility;
-#include common_scripts\utility;
+// The ZM utility owns all helpers below; importing common utility too duplicates VM exports.
 
 main()
 {
