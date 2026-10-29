@@ -1,6 +1,10 @@
 # Capacity queue ticker
 
 The existing server-message ticker displays capacity queue position and rough ETA.
+Queue and server-preparation/joining status share one upper-right view below
+Settings and Exit. A status update replaces the previous animation immediately,
+including the transition from queue placement to joining. Ordinary lobby notices
+retain the original bottom-left position. These are not two simultaneous tickers.
 Queue text in the front end uses y110, above the language selector that covered
 the original y905 line at1280x720. Other announcements keep their original position.
 A new queue heartbeat replaces the current queue animation immediately. Entering
