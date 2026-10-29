@@ -47,6 +47,11 @@ def author(source):
  # the0.24-scale enemy label. Give the wallet its own equally sized text row:
  #28 baseline units below the unchanged enemy row, within the bottom anchor.
  struct.pack_into('<f',raw,8,-30.0)
+ # C1 recomputes rect from rectClient plus the parent menu origin at
+ #0x608D07..0x608D36. Parent scorebarY=-20; clientY=-10 yields Y=-30.
+ # Editing cached rectY alone leaves the numeric template clientY=-40,
+ # resetting credits toY=-60 beside the enemy line atY=-58.
+ struct.pack_into('<f',raw,0x1c,-10.0)
  struct.pack_into('<f',raw,menus.W13+0x30,0.24)
  wallet['raw']=raw.hex()
  wallet['p']['324']=stmt(survival())

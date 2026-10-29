@@ -136,6 +136,8 @@ class Expression:
 def window(node):
     raw = bytes.fromhex(node['raw']); p = node['p']
     return dict(name=p.get('0', ''), rect=list(struct.unpack_from('<4f', raw, 4)),
+                client_rect=list(struct.unpack_from('<4f', raw, 0x18)),
+                client_align=list(raw[0x28:0x2a]),
                 align=list(raw[20:22]), color=list(struct.unpack_from('<4f', raw, 0x50)),
                 backcolor=list(struct.unpack_from('<4f', raw, 0x60)),
                 material=p.get('160', {}).get('name', ''), ownerdraw=struct.unpack_from('<i', raw, 0x38)[0])
@@ -154,6 +156,13 @@ def decoded(node, values=None, localization=None):
             mp = m['p']; menu['visible'] = evaluator.statement(mp['228']) if '228' in mp else True
             for i, item in enumerate(mp.get('284', [])):
                 it = window(item); p = item['p']; r = bytes.fromhex(item['raw'])
+                # C1 Item_SetScreenCoords 608D07..D36 discards the cached
+                # rectangle and rebuilds it from rectClient + parent origin.
+                it['cached_rect']=list(it['rect'])
+                it['cached_align']=list(it['align']);it['align']=list(it['client_align'])
+                it['rect']=list(it['client_rect'])
+                it['rect'][0]+=menu['rect'][0];it['rect'][1]+=menu['rect'][1]
+                if p.get('320'):evaluator.unknown.add('item geometry expressions require engine evaluation: '+str(i))
                 it.update(index=i, text=p.get('228', ''), scale=struct.unpack_from('<f', r, 0xd4)[0],
                           textalign=struct.unpack_from('<i', r, 0xc8)[0],
                           textoffset=list(struct.unpack_from('<2f', r, 0xcc)),
@@ -162,7 +171,7 @@ def decoded(node, values=None, localization=None):
                           visibility=menus.expr(p['324']) if '324' in p else '', source=item)
                 if '332' in p: it['text'] = evaluator.statement(p['332'])
                 if it['text'] is not None: it['text'] = str(it['text'])
-                if it['text'].startswith('@') if isinstance(it['text'], str) else False:
+                if isinstance(it['text'],str) and it['text'].startswith('@'):
                     it['text'] = evaluator.localize.get(it['text'][1:], it['text'])
                 if it['ownerdraw']: evaluator.unknown.add('native ownerdraw: ' + str(it['ownerdraw']))
                 if it['material'] not in ('', ',white', 'white'): evaluator.unknown.add('material placeholder: ' + it['material'])

@@ -75,11 +75,20 @@ class InspectorTests(unittest.TestCase):
             report=json.loads(png.with_suffix('.report.json').read_text())
             self.assertFalse(any('Text bounds overlap' in w for w in report['preview_warnings']))
             old=json.loads(source.read_text());item=old['p']['8'][0]['p']['284'][3]
-            raw=bytearray.fromhex(item['raw']);struct.pack_into('<f',raw,8,-36);struct.pack_into('<f',raw,0xd4,.63);item['raw']=raw.hex()
+            raw=bytearray.fromhex(item['raw']);struct.pack_into('<f',raw,8,-36);struct.pack_into('<f',raw,0x1c,-16);struct.pack_into('<f',raw,0xd4,.63);item['raw']=raw.hex()
             legacy=Path(tmp)/'legacy.json';legacy.write_text(json.dumps(old));png=Path(tmp)/'legacy.png'
             subprocess.run([sys.executable,str(ROOT/'tools/ui_inspector.py'),str(legacy),'--snapshot',str(png)],check=True,capture_output=True)
             report=json.loads(png.with_suffix('.report.json').read_text())
             self.assertTrue(any('Text bounds overlap' in w for w in report['preview_warnings']))
+
+    def test_runtime_rect_client_overrides_stale_cached_rect(self):
+        source=ROOT/'zones/survival_hud_postgfx_mp/components/survival_status.json'
+        data=json.loads(source.read_text());item=data['p']['8'][0]['p']['284'][3]
+        raw=bytearray.fromhex(item['raw']);struct.pack_into('<f',raw,8,-30);struct.pack_into('<f',raw,0x1c,-40);item['raw']=raw.hex()
+        result=ui.decoded(data,ui.DEFAULT_DVARS);wallet=result['menus'][0]['items'][3]
+        self.assertEqual(wallet['cached_rect'][1],-30)
+        self.assertEqual(wallet['rect'][1],-60,'C1 runtime layout must ignore a cached-only edit')
+        self.assertEqual(result['menus'][0]['items'][1]['rect'][1],-58)
 
 
 if __name__=='__main__':unittest.main()

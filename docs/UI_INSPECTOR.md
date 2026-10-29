@@ -101,3 +101,14 @@ images. Dynamic text requires CoD's initialization callbacks. Real SDK capture
 also produced the CoDOL HUD root's uniform gray frames; those are recorded as
 uninitialized content, not accepted HUD screenshots. The SDK sample control
 produced visible nonuniform frames, proving the capture renderer itself works.
+
+### C1 runtime rectangle handling
+
+Decoded child items are positioned from `window.rectClient` plus the parent menu
+origin. Their serialized `window.rect` is a cached result; C1 rewrites it during
+layout (original instructions608D07..608D36). The inspector retains both values
+in its report and renders the recomputed position. This caught the repeated
+Survival overlap: cached walletY-30 was overwritten from clientY-40 plus parent
+Y-20, producingY-60 next to enemiesY-58. The corrected clientY-10 producesY-30.
+The regression explicitly recreates the stale-cache case, rather than validating
+only the already-edited cached rectangle.

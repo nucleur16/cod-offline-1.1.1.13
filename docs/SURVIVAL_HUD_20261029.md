@@ -88,3 +88,41 @@ the enemy/divider, all original MP items and their geometry remain intact.
 Focused tests check a conservative 64-unit font envelope plus 4 units for the
 style7 outline/shadow across480â€“2160pixel heights. The rebuilt candidate needs
 one final live spacing check; no deployment or game restart is part of this edit.
+
+
+## Authoritative client rectangle correction
+
+The user reported overlap again with the smaller credit text. The installed
+postgfx pack (291863 bytes, SHA256
+`730F4B6491689C3F310EBF288645F3089E4C27FFCC8C1A057DF4E64091772703`)
+contains exactly the previous generated MenuList, so the issue was present in
+the packaged fields, rather than a missing rebuild. No live C1 process was
+available for memory inspection; the last console records a successful postgfx
+load at 02:33:16 on October29. This does not itself prove which menu pointers
+that finished session used.
+
+The earlier spacing change edited only the cached `window.rect.y` at item+8.
+C1's actual layout writer at `0x608D07..0x608D36` first copies `rectClient`
+(item+0x18) into `rect` (item+4), then adds the parent menu origin. The wallet's
+unchanged clientY was -40, versus the enemy's -38. With the scorebar parent's
+Y -20, C1 therefore put credits at -60 and enemies at -58: a two-unit gap,
+regardless of the cached creditY -30. The previous preview and test only read
+the cached rectangle and missed this reset. Native/script audit found no
+second bottom-left credit producer; the script creates top-right wave/armor
+and publishes the wallet dvar.
+
+Only the wallet's authoritative clientY now changes to -10. The parent adds
+-20, giving the intended Y -30 and 28-unit gap below enemies at -58. Its cached
+Y -30 and scale0.24 remain. Enemy/divider fields and every original MP item's
+geometry remain unchanged. There are no wallet float expressions that would
+subsequently override this position. The existing text alignment12 also
+remains: C1's baseline handlers use the same zero-height baseline here as
+alignment0; it was not identified as the overlap cause.
+
+A focused Unicorn test executes the exact C1 layout-writer instruction bytes,
+checks them against the installed C1 executable when available, reproduces the
+old creditY -60, and verifies the corrected creditY -30 and enemyY -58. The
+spacing test now derives positions from client rectangles and the parent,
+instead of trusting cached positions. Candidate rebuilt successfully; actual
+live spacing acceptance remains pending. No desktop input, game writes,
+deployment, restart or commit was performed by this investigation.
