@@ -36,3 +36,6 @@ output_candidate/
 output_parts/
 output_dev_parts/
 output_candidate_parts/
+
+# Retained diagnostic staging output.
+staged-*/
