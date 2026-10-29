@@ -13,9 +13,16 @@ from matplotlib.collections import PolyCollection  # noqa: E402
 import numpy as np  # noqa: E402
 
 
-def load(path):
+def load(path, skip="hidden"):
+    """vertices, triangles, material index per triangle; triangles drawn with a material whose name contains `skip`
+    (the M14's mc/mtl_wea_m14ebr_hidden, which C1 never draws in a lit pass) are left out"""
     verts, tris, mats = [], [], []
+    names = {}
     lines = open(path, encoding="latin-1").read().split("\n")
+    for line in lines:
+        if line.startswith("MATERIAL "):
+            parts = line.split('"')
+            names[int(line.split()[1])] = parts[1] if len(parts) > 1 else ""
     i = 0
     n = len(lines)
     while i < n:
@@ -39,6 +46,8 @@ def load(path):
                 if t.startswith("VERT "):
                     face.append(int(t.split()[1]))
                 i += 1
+            if skip and skip in names.get(mat, ""):
+                continue
             tris.append(face)
             mats.append(mat)
             continue

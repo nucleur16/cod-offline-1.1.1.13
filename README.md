@@ -607,7 +607,8 @@ The source zones under `zone_source/` + `zones/` stay as they are (each with its
   table plus the new rows) because C1 links the first stringtable of a name, and it loads ahead of every stock zone
   in every session; its tables come from mp_m14_staging `tool_src\gen_mp_codol_weapons.py`.
   mp_codol_weapons_postgfx_mp is written by mp_m14_staging's `CodolSoundDumper mp-weapons-zone` (decompiled here);
-  it holds the M14 EBR's base gun (m14ebr_mp), cut from the zombies M14, in C1's 22 camo rows.
+  it holds the M14 EBR's base gun (m14ebr_mp): the zombies M14 models with their merged default parts hidden, in
+  C1's 22 camo rows.
 - To add a source zone: give it a zone_source manifest as before and add a `part,<zone>` line to the pack of its list
   and language (and its old name to kCodolPatchZoneMerged if it was ever installed on its own).
 

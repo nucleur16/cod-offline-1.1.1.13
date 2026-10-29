@@ -14,15 +14,16 @@ namespace Codol.SoundDumper;
 /// attachments with no body). The zombies M14 (m14ebr_zm) draws codo_weapon_m14ebr_viewmodel / _world: that gun merged
 /// into one model -- the M14 receiver (material mc/mtl_wea_m21ebr_m21ebr_blk: the M21 EBR's texture, the M14's shorter
 /// mesh) plus the default parts, with every attachment tag of an MP receiver (tag_ironsight included, which the M21
-/// receiver lacks). This zone cuts the receiver surfaces out of those two models into base guns of their own:
-///   wea_m14ebr_m14ebr_blk(_vmgun) and wea_m14ebr_m14ebr_01 .. _21(_vmgun), one per C1 camo row, each drawing the
-///   receiver with mc/mtl_wea_m14ebr_m14ebr_[camo]: a copy of the M21 EBR's camo material of that row (same texture
-///   layout) under its own name.
-/// The receiver geometry is carried inline (new XModelSurfs wea_m14ebr_m14ebr_vmgun10 / _lod010 / _lod110 / _lod210:
-/// the zombies model streams its surfaces from models/codo_weapon_m14ebr_* in iw_model_*.iwd, all parts together).
-/// Everything the models lead to (materials, image headers, the techset and its shaders) is copied in, so the zone is
-/// complete on its own: it loads at startup (Kernel33: *_postgfx_mp, after code_post_gfx) and stays loaded, and the
-/// sh1x server mounts it with every MP map (mp_*.ff of the patch folder).
+/// receiver lacks).
+/// The base guns wea_m14ebr_m14ebr_blk(_vmgun) and wea_m14ebr_m14ebr_01 .. _21(_vmgun), one per C1 camo row, are copies
+/// of those two models on the same streamed surfaces (models/codo_weapon_m14ebr_* in iw_model_*.iwd: the zombies M14's
+/// own draw path). The receiver surfaces take mc/mtl_wea_m14ebr_m14ebr_[camo], a copy of the M21 EBR's camo material of
+/// that row; the merged default parts take mc/mtl_wea_m14ebr_hidden, a copy of stock mc/shadowcaster (techset
+/// mc_shadowcaster: no lit or depth technique, so C1 does not draw it in a view), and C1 attaches its own parts at their
+/// tags. (The first build cut the receiver surfaces out into inline geometry; C1 drew that wrong in first person.)
+/// Everything the models lead to is in the zone (byte-identical to the stock copies of the same names), so it is complete
+/// on its own: it loads at startup (Kernel33: *_postgfx_mp, after code_post_gfx) and stays loaded, and the sh1x server
+/// mounts it with every MP map (mp_*.ff of the patch folder).
 internal static partial class MpWeaponCommands
 {
     private const int TypeXModelSurfs = 3, TypeXModel = 4, TypeMaterial = 5;
@@ -31,6 +32,7 @@ internal static partial class MpWeaponCommands
     private const uint LodNumSurfs = 4, LodSurfIndex = 6, LodModelSurfs = 8, LodSurfsName = 12, ModelBoneInfo = 0x138;
     private const uint SurfsName = 0, SurfsSurfs = 4, SurfsNumSurfs = 8;
     private const string ReceiverMaterial = "mc/mtl_wea_m21ebr_m21ebr_blk";
+    private const string HiddenMaterial = "mc/mtl_wea_m14ebr_hidden";
 
     private static Dictionary<(int, string), uint> NamedAssets(ZoneImage image)
     {
@@ -67,15 +69,10 @@ internal static partial class MpWeaponCommands
         var namesMp = NamedAssets(mp);
         Console.WriteLine($"common_gametype_zm: {zm.Assets.Count} assets; common_gametype_mp: {mp.Assets.Count} assets");
 
-        using var install = Codol.Assets.Game.GameInstallation.Open(game);
-        var warnings = new List<string>();
-        int inlined = StreamedSurfaceInliner.Inline(zm, install.ModelArchives, warnings,
-            n => n.StartsWith("codo_weapon_m14ebr_", StringComparison.OrdinalIgnoreCase));
-        Console.WriteLine($"inlined {inlined} streamed surface sets of the zombies M14 ({string.Join("; ", warnings)})");
-        if (inlined != 4)
-        {
-            throw new InvalidOperationException($"expected the 4 surface sets of codo_weapon_m14ebr_viewmodel/_world, inlined {inlined}");
-        }
+        // the hidden material: stock mc/shadowcaster (techset mc_shadowcaster: only the shadow-map technique, so C1 draws
+        // no lit or depth pass for a surface that has it). zm_prototype_sh and the MP maps define it; renamed here.
+        var proto = CaptureFile(Path.Combine(zones, "zm_prototype_sh.ff"), exe).Image;
+        var namesProto = NamedAssets(proto);
 
         var context = new PortContext(build, zm, build)
         {
@@ -101,80 +98,54 @@ internal static partial class MpWeaponCommands
             materials[camo] = material;
         }
         log.Add("22 receiver materials mc/mtl_wea_m14ebr_m14ebr_blk.._21 (copies of mc/mtl_wea_m21ebr_m21ebr_*)");
-
-        var models = new List<uint>();
-        foreach (var (sourceName, baseName, surfsSuffix) in new[]
+        if (!namesProto.TryGetValue((TypeMaterial, "mc/shadowcaster"), out uint shadowSource))
         {
-            ("codo_weapon_m14ebr_viewmodel", "wea_m14ebr_m14ebr_{0}_vmgun", new[] { "vmgun10" }),
-            ("codo_weapon_m14ebr_world", "wea_m14ebr_m14ebr_{0}", new[] { "lod010", "lod110", "lod210" }),
+            throw new InvalidOperationException("zm_prototype_sh has no material mc/shadowcaster");
+        }
+        uint hidden = context.CopySourceAsset(proto, shadowSource);
+        target.SetPointer(hidden, context.NewString(HiddenMaterial), PointerEncoding.Inline);
+        log.Add($"{HiddenMaterial}: a copy of mc/shadowcaster (zm_prototype_sh) for the merged default parts");
+
+        // The base guns are the zombies models themselves, on the same streamed surfaces (models/codo_weapon_m14ebr_* in
+        // iw_model_*.iwd, the path the zombies M14 draws through): the receiver surfaces (material mc/mtl_wea_m21ebr_
+        // m21ebr_blk) take the camo material, the merged default parts (iron sight, mag, grip, muzzle, stock -- C1 attaches
+        // its own at their tags) take the hidden one. An earlier build cut the receiver surfaces out into inline geometry
+        // and first person drew it wrong (2026-10-27: front of the gun missing, muzzle floating).
+        var models = new List<uint>();
+        foreach (var (sourceName, baseName) in new[]
+        {
+            ("codo_weapon_m14ebr_viewmodel", "wea_m14ebr_m14ebr_{0}_vmgun"),
+            ("codo_weapon_m14ebr_world", "wea_m14ebr_m14ebr_{0}"),
         })
         {
             if (!namesZm.TryGetValue((TypeXModel, sourceName), out uint sourceModel))
             {
                 throw new InvalidOperationException($"common_gametype_zm has no model {sourceName}");
             }
-            // which surfaces of each lod are the receiver (by the source model's material list)
-            int lods = zm.Memory.U8(sourceModel + 297);
+            int total = zm.Memory.U8(sourceModel + ModelNumSurfs);
             uint sourceMats = zm.Pointer(sourceModel + ModelMaterials);
-            var keep = new List<List<int>>();
-            for (uint lod = 0; lod < lods; lod++)
+            var receiver = new bool[total];
+            for (int k = 0; k < total; k++)
             {
-                uint li = sourceModel + ModelLodInfo + LodStride * lod;
-                int n = zm.Memory.U16(li + LodNumSurfs), first = zm.Memory.U16(li + LodSurfIndex);
-                var picked = new List<int>();
-                for (int k = 0; k < n; k++)
-                {
-                    uint m = zm.Pointer(sourceMats + 4 * (uint)(first + k));
-                    if (NameOf(zm, m, TypeMaterial)?.TrimStart(',') == ReceiverMaterial)
-                    {
-                        picked.Add(k);
-                    }
-                }
-                if (picked.Count == 0)
-                {
-                    throw new InvalidOperationException($"{sourceName} lod {lod}: no surface draws {ReceiverMaterial}");
-                }
-                keep.Add(picked);
+                uint m = zm.Pointer(sourceMats + 4 * (uint)k);
+                receiver[k] = NameOf(zm, m, TypeMaterial)?.TrimStart(',') == ReceiverMaterial;
             }
+            if (!receiver.Any(r => r))
+            {
+                throw new InvalidOperationException($"{sourceName}: no surface draws {ReceiverMaterial}");
+            }
+            log.Add($"{sourceName}: surfaces {string.Join(",", Enumerable.Range(0, total).Where(k => receiver[k]))} of {total} keep the receiver (camo), the rest are hidden");
 
             uint model = context.CopySourceAsset(zm, sourceModel);
             var mem = target.Memory;
-            int total = keep.Sum(k => k.Count);
-            int index = 0;
-            for (uint lod = 0; lod < lods; lod++)
+            for (uint lod = 0; lod < 4; lod++)
             {
-                uint li = model + ModelLodInfo + LodStride * lod;
-                uint record = target.Pointer(li + LodModelSurfs);
-                uint surfaces = target.Pointer(record + SurfsSurfs);
-                int count = mem.U16(record + SurfsNumSurfs);
-                if (surfaces == 0 || count != mem.U16(li + LodNumSurfs))
+                uint record = target.Pointer(model + ModelLodInfo + LodStride * lod + LodModelSurfs);
+                if (record != 0 && (mem.U32(record + SurfsSurfs) != 0 || mem.U16(record + SurfsNumSurfs) != 0))
                 {
-                    throw new InvalidOperationException($"{sourceName} lod {lod}: surfaces not inline ({count} in the record)");
+                    throw new InvalidOperationException($"{sourceName} lod {lod}: its surfaces are not streamed");
                 }
-                var picked = keep[(int)lod];
-                uint array = context.NewObject(XSurfaceSize * (uint)picked.Count, 16);
-                for (int j = 0; j < picked.Count; j++)
-                {
-                    uint from = surfaces + XSurfaceSize * (uint)picked[j];
-                    uint to = array + XSurfaceSize * (uint)j;
-                    mem.Write(to, mem.ReadBytes(from, (int)XSurfaceSize));
-                    foreach (uint field in target.Pointers.Enumerate(from, XSurfaceSize).ToList())
-                    {
-                        target.SetPointer(to + (field - from), mem.U32(field), PointerEncoding.Unknown);
-                    }
-                }
-                string surfsName = "wea_m14ebr_m14ebr_" + surfsSuffix[lod];
-                uint nameString = context.NewString(surfsName);
-                target.SetPointer(record + SurfsName, nameString, PointerEncoding.Inline);
-                target.SetPointer(record + SurfsSurfs, array, PointerEncoding.Inline);
-                mem.WU16(record + SurfsNumSurfs, (ushort)picked.Count);
-                target.SetPointer(li + LodSurfsName, nameString, PointerEncoding.Unknown);
-                mem.WU16(li + LodNumSurfs, (ushort)picked.Count);
-                mem.WU16(li + LodSurfIndex, (ushort)index);
-                log.Add($"{sourceName} lod {lod}: surfaces {string.Join(",", picked)} of {count} -> {surfsName}");
-                index += picked.Count;
             }
-            mem.Write(model + ModelNumSurfs, new[] { (byte)total });
 
             for (int camo = 0; camo < 22; camo++)
             {
@@ -201,15 +172,15 @@ internal static partial class MpWeaponCommands
                     }
                 }
                 uint mats = context.NewObject(4 * (uint)total, 4);
-                for (uint s = 0; s < total; s++)
+                for (int k = 0; k < total; k++)
                 {
-                    target.SetPointer(mats + 4 * s, materials[camo], PointerEncoding.Unknown);
+                    target.SetPointer(mats + 4 * (uint)k, receiver[k] ? materials[camo] : hidden, PointerEncoding.Unknown);
                 }
                 target.SetPointer(variant + ModelMaterials, mats, PointerEncoding.Inline);
                 target.SetPointer(variant, context.NewString(string.Format(baseName, Camo(camo))), PointerEncoding.Inline);
                 models.Add(variant);
             }
-            log.Add($"{sourceName} -> {string.Format(baseName, "blk")} .. {string.Format(baseName, "21")} ({total} surfaces, {lods} lods)");
+            log.Add($"{sourceName} -> {string.Format(baseName, "blk")} .. {string.Format(baseName, "21")}");
         }
 
         // the writer places each shared object at its first pointer and aliases it at the others
