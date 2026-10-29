@@ -100,6 +100,16 @@ def asset_blob(zdir, t, name, q, loc, stocks, p, ffdec, compile_as, log):
     elif tid == 10:
         levels, w, h = codecs.read_image_files(os.path.join(zdir, "image", name), int(q["levels"]))
         blob = codecs.encode_image(name, levels, w, h, q)
+    elif tid == 25 and "src" in q:
+        from . import menus
+        with open(os.path.join(zdir, q["src"]), encoding="utf-8") as g:
+            node = json.load(g)
+        if node["p"].get("0") != name:
+            raise BuildError("menufile %s: %s holds %s" % (name, q["src"], node["p"].get("0")))
+        try:
+            blob = menus.encode_menulist(node)
+        except menus.MenuError as e:
+            raise BuildError("menufile %s: %s" % (name, e))
     elif tid == 37:
         enc = q.get("enc", "ascii")
         with open(os.path.join(zdir, "stringtable", name), encoding="utf-8", newline="") as g:

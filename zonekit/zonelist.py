@@ -96,4 +96,9 @@ ZONES = {
     # the art (after code_post_gfx, permanent: models, materials, images): the M14 EBR's base gun, the zombies M14
     # models with their default parts hidden, by mp_m14_staging's CodolSoundDumper mp-weapons-zone (C#-written)
     "mp_codol_weapons_postgfx_mp": dict(origin="new", install=PATCH, stock=["common_gametype_mp", "common_gametype_zm"]),
+    # Historical Survival staging sources remain reproducible; the integrated
+    # shipping kiosks use patch_common_gametype_survival instead.
+    "survival_menus": dict(origin="new", install=CHINESE, staging=True),
+    "survival_localize_chinese": dict(origin="new", install=CHINESE, staging=True),
+    "survival_localize_english": dict(origin="new", install=CHINESE, staging=True),
 }
