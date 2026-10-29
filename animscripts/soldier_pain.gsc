@@ -22,6 +22,12 @@ main()
 	if ( !isDefined( self.allowpain ) || !self.allowpain )
 		return;
 
+
+    // IW4 selects crawlingPain before its ordinary flinch. A lethal hit
+    // never reaches this live pain entry and is never revived for a clip.
+    if ( animscripts\soldier_death::try_wounded() )
+        return;
+
 	now = getTime();
 	if ( isDefined( self.a.painTime ) && now - self.a.painTime < 1500 )
 		return;

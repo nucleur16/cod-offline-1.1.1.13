@@ -15,6 +15,9 @@ main()
 {
 	self notify( "stopScript" );
 	self endon( "killanimscript" );
+	// A helper endon terminates its own call frame; the owning behavior must
+	// also end on death so it cannot evaluate a cancelled helper result.
+	self endon( "death" );
 
 	self orientmode( "face default" );
 	self animmode( "normal", false );

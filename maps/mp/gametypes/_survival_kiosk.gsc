@@ -807,7 +807,10 @@ choose_class_menu()
 		return;
 	}
 	self.survival_in_kiosk = true;
-	self openMenu( game["menu_changeclass"] );
+	// C1's generic "changeclass" opens the legacy script menu. The team
+	// variant enters cpp_openChooseClassMenu in the real pause movie.
+	self setClientDvar( "survival_class_purchase", 1 );
+	self openpopupMenu( game["menu_changeclass_" + self.pers["team"]] );
 	self freezeControls( true );
 	self thread class_purchase_interrupt( "death" );
 	self thread class_purchase_interrupt( "player_downed" );
@@ -839,10 +842,12 @@ class_purchase_cancel_response()
 
 cancel_class_purchase()
 {
+	self setClientDvar( "survival_class_purchase", 0 );
 	self.survival_class_purchase_cost = undefined;
 	self.survival_class_change = false;
 	self.survival_in_kiosk = false;
 	self closeMenu();
+	self closeInGameMenu();
 	self freezeControls( false );
 	self notify( "survival_class_purchase_finished" );
 }
@@ -851,6 +856,14 @@ cancel_class_purchase()
 // validation, wallet debit, consumption of the intent and normal class apply.
 class_menu_response( response )
 {
+	// The pause movie reports Escape/back after a kiosk selector closes.
+	// A selection and its close can arrive in the same reliable stream.
+	if ( response == "back" || response == "quit" )
+	{
+		if ( isDefined( self.survival_class_purchase_cost ) )
+			self cancel_class_purchase();
+		return;
+	}
 	if ( isDefined( self.survival_class_purchase_cost ) )
 	{
 		if ( !self class_purchase_live() || !isDefined( response ) ||
@@ -875,6 +888,7 @@ class_menu_response( response )
 			return;
 		}
 		self.survival_class_purchase_cost = undefined;
+		self setClientDvar( "survival_class_purchase", 0 );
 		self.survival_in_kiosk = false;
 		self closeMenu();
 		self freezeControls( false );

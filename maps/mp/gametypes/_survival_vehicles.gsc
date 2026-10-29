@@ -125,6 +125,12 @@ spawn_heli( origin, angles, vehicle, model )
 	if ( !isDefined( heli ) )
 		return undefined;
 	heli.team = "axis";
+	heli setVehicleTeam( "axis" );
+	// The native ownerless factory has no player whose team could choose the
+	// hostile icon. Resolve this actual VehicleDef's enemy material explicitly.
+	heli codol_vehicleSetCompassIcon( "enemy" );
+	// Reuse the original IW4-style vehicles-tree rotor loop (b625a14).
+	heli common_scripts\_heli_rotors::spin_rotors();
 	heli.survival_enemy = true;
 	heli setMaxPitchRoll( 25, 35 );
 	heli Vehicle_SetSpeed( 60, 25 );

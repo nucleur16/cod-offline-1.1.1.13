@@ -26,8 +26,6 @@ main()
 
 	stop_aiming();
 	trace_anim( "death by " + self.damageMod + " at " + self.damageLocation + " pose " + self.a.pose + " moving " + self.a.movement );
-	if ( try_long_death() )
-		return;
 	deathAnim = get_death_anim();
 
 	self animmode( "gravity" );
@@ -51,6 +49,15 @@ ragdoll_after( delay )
 
 get_death_anim()
 {
+    if ( isDefined( self.coop_wounded_death_anim ) )
+        return self.coop_wounded_death_anim;
+    if ( isDefined( self.coop_wounded_kind ) )
+    {
+        if ( self.coop_wounded_kind == "crawl" )
+            return pick( list2( %dying_crawl_death_v1, %dying_crawl_death_v2 ) );
+        return pick( list4( %dying_back_death_v1, %dying_back_death_v2, %dying_back_death_v3, %dying_back_death_v4 ) );
+    }
+
 	if ( !isDefined( self.a.pose ) )
 		self.a.pose = "stand";
 	if ( !isDefined( self.damageLocation ) )
@@ -322,15 +329,15 @@ cover_death_anim()
 	return undefined;
 }
 
-// IW4 pain.gsc crawlingPain / death.gsc's dying deaths: a soldier killed by
-// a bullet away from the players sometimes goes down wounded -- onto his back
-// (dying_stand_2_back, the dying_back idle and twitches) or onto his front
-// and crawls (dying_stand_2_crawl, dying_crawl) -- before he dies
-// (dying_back_death_*, dying_crawl_death_*).  The game already counts him
-// dead; IW4's wounded pistol fire from the back is not played (a dead actor
-// fires nothing here).  scr_coop_ai_long_death 0 turns it off.
-try_long_death()
+// IW4 pain.gsc crawlingPain is selected by the PAIN script while the soldier
+// still has low positive health. Native wounded state holds combat movement,
+// but preserves damage, live actor identity, targeting and wave membership.
+// A finishing hit or the sequence's real bleedout damage causes death once.
+try_wounded()
 {
+    self endon( "death" );
+    if ( !isAlive( self ) || self.health > 100 || self.health >= self.maxhealth * 0.4 )
+        return false;
 	self endon( "killanimscript" );
 	if ( getDvar( "scr_coop_ai_long_death" ) == "0" )
 		return false;
@@ -372,32 +379,39 @@ try_long_death()
 	// IW4 isCrawlDeltaAllowed: room on the ground for the fall.
 	if ( !may_move( self.origin, delta_end( self.origin, self.angles[ 1 ], getMoveDelta( down, 0, 1 ) ) ) )
 		return false;
-	trace_anim( "long death (" + kind + ")" );
-	stat_bump( "long_death" );
+    if ( !self codol_actorBeginWounded() )
+        return false;
+    self.coop_wounded_kind = kind;
+	trace_anim( "wounded (" + kind + ")" );
+	stat_bump( "wounded" );
 	self animmode( "gravity" );
 	self orientmode( "face current" );
-	self setFlaggedAnimKnobAllRestart( "deathanim", down, %body, 1, 0.1, 1 );
-	DoNoteTracksForTime( getAnimLength( down ), "deathanim" );
+	self setFlaggedAnimKnobAllRestart( "painanim", down, %body, 1, 0.1, 1 );
+	DoNoteTracksForTime( getAnimLength( down ), "painanim" );
 	if ( crawl )
 	{
 		cycles = 1 + randomInt( 3 );
-		self setFlaggedAnimKnobAll( "deathanim", %dying_crawl, %body, 1, 0.2, 1 );
-		DoNoteTracksForTime( getAnimLength( %dying_crawl ) * cycles, "deathanim" );
+		self setFlaggedAnimKnobAll( "painanim", %dying_crawl, %body, 1, 0.2, 1 );
+		DoNoteTracksForTime( getAnimLength( %dying_crawl ) * cycles, "painanim" );
 		final = pick( list2( %dying_crawl_death_v1, %dying_crawl_death_v2 ) );
 	}
 	else
 	{
-		self setFlaggedAnimKnobAll( "deathanim", %dying_back_idle, %body, 1, 0.2, 1 );
-		DoNoteTracksForTime( 1.0 + randomFloat( 1.5 ), "deathanim" );
+		self setFlaggedAnimKnobAll( "painanim", %dying_back_idle, %body, 1, 0.2, 1 );
+		DoNoteTracksForTime( 1.0 + randomFloat( 1.5 ), "painanim" );
 		twitch = pick( list2( %dying_back_twitch_a, %dying_back_twitch_b ) );
-		self setFlaggedAnimKnobAllRestart( "deathanim", twitch, %body, 1, 0.2, 1 );
-		DoNoteTracksForTime( getAnimLength( twitch ), "deathanim" );
+		self setFlaggedAnimKnobAllRestart( "painanim", twitch, %body, 1, 0.2, 1 );
+		DoNoteTracksForTime( getAnimLength( twitch ), "painanim" );
 		final = pick( list4( %dying_back_death_v1, %dying_back_death_v2, %dying_back_death_v3, %dying_back_death_v4 ) );
 	}
-	self setFlaggedAnimKnobAllRestart( "deathanim", final, %body, 1, 0.2, 1 );
-	length = getAnimLength( final );
-	if ( !animHasNotetrack( final, "start_ragdoll" ) )
-		self thread ragdoll_after( length * 0.8 );
-	DoNoteTracksForTime( length, "deathanim" );
-	return true;
+    self.coop_wounded_death_anim = final;
+    self codol_actorFinishWounded();
+    // A refused real damage (e.g. script invulnerability) is not death.
+    if ( isAlive( self ) )
+    {
+        self.coop_wounded_kind = undefined;
+        self.coop_wounded_death_anim = undefined;
+        self animmode( "normal", false );
+    }
+    return true;
 }

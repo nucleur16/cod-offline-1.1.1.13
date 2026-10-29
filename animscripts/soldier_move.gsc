@@ -47,6 +47,9 @@
 main()
 {
 	self endon( "killanimscript" );
+	// A helper endon terminates its own call frame; the owning behavior must
+	// also end on death so it cannot evaluate a cancelled helper result.
+	self endon( "death" );
 
 	init_transitions();
 	watch_player_grenades();
