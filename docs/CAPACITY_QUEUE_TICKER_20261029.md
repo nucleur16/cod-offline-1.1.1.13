@@ -1,6 +1,10 @@
 # Capacity queue ticker
 
 The existing server-message ticker displays capacity queue position and rough ETA.
+Queue and server-preparation/joining status share one upper-right view below
+Settings and Exit. A status update replaces the previous animation immediately,
+including the transition from queue placement to joining. Ordinary lobby notices
+retain the original bottom-left position. These are not two simultaneous tickers.
 Queue text in the front end uses y110, above the language selector that covered
 the original y905 line at1280x720. Other announcements keep their original position.
 A new queue heartbeat replaces the current queue animation immediately. Entering
@@ -33,12 +37,12 @@ entry are included alongside those classes. The protected baseline is the union
 of both inventories; the current kernel33.c and InviteItemRenderer hashes take
 precedence over the older remote values.
 
-The assembled merged codo.gfx is 4,579,619 bytes with SHA256
-`9093ee7b1c3c6cefe29eb3832005d6854c15e2c5da4be6bed4bf58dc73d8f27a`.
+The assembled merged codo.gfx is 4,579,910 bytes with SHA256
+`47e1240b47601997ada67dc5bd128e3991ae4a83c510f61e7d63401904339d71`.
 The shared UI candidate is
 `output_remote_ui_merge_candidate/client_shipRetail/patch/codol_common_ui_mp.ff`,
-2,075,964 bytes, SHA256
-`015ac666bebb53cc4555af24e62a2a41f119413d6200c2580e0c3ff863c9cfd8`.
+2,076,133 bytes, SHA256
+`d748c5ae4b3d5834520249b1c1ee641ddd7d7f9af396218f2314fc8c0785c22c`.
 Direct baseline validation, all five baseline tests, all seven invitation tests,
 and the actual-body localhost controller tests passed. The shared-zone build
 completed successfully. Runtime UI acceptance remains pending; no deployment or

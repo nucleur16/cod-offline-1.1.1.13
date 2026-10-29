@@ -96,9 +96,9 @@ package codo.views
          var message:String = cRes.data.message.indexOf("@SF_UI_") >= 0 ? LocalizeUtil.localize(cRes.data.message) : cRes.data.message;
          var msg:String = sender + message;
          var type:uint = ServerMessageType.IDIP;
-         var capacityWasShowing:Boolean = this.myMsgTF.text.indexOf("Server queue ") == 0;
+         var capacityWasShowing:Boolean = (this.myMsgTF.text.indexOf("Server queue ") == 0 || this.myMsgTF.text.indexOf("Match server starting.") == 0);
          this.removeExistingIDIPMessages();
-         if(capacityWasShowing)
+         if(capacityWasShowing || msg.indexOf("Server queue ") == 0 || msg.indexOf("Match server starting.") == 0)
          {
             this.tryStopAnimation();
             this._currentServerMsgIndex = -1;
@@ -143,10 +143,10 @@ package codo.views
          this._isInGame = cEvt.myPara;
          if(this._isInGame)
          {
-            var capacityWasShowing:Boolean = this.myMsgTF.text.indexOf("Server queue ") == 0;
+            var capacityWasShowing:Boolean = (this.myMsgTF.text.indexOf("Server queue ") == 0 || this.myMsgTF.text.indexOf("Match server starting.") == 0);
             for(var queueIndex:int = 0; queueIndex < this._serverMsgToShow.length; )
             {
-               if(this._serverMsgToShow[queueIndex].message.indexOf("Server queue ") == 0)
+               if((this._serverMsgToShow[queueIndex].message.indexOf("Server queue ") == 0 || this._serverMsgToShow[queueIndex].message.indexOf("Match server starting.") == 0))
                {
                   this._serverMsgToShow.splice(queueIndex,1);
                }
@@ -171,8 +171,8 @@ package codo.views
          }
          else
          {
-            this.x = POS_ORIGIN_X;
-            this.y = this.myMsgTF.text.indexOf("Server queue ") == 0 ? 110 : POS_ORIGIN_Y;
+            this.x = (this.myMsgTF.text.indexOf("Server queue ") == 0 || this.myMsgTF.text.indexOf("Match server starting.") == 0) ? 880 : POS_ORIGIN_X;
+            this.y = (this.myMsgTF.text.indexOf("Server queue ") == 0 || this.myMsgTF.text.indexOf("Match server starting.") == 0) ? 80 : POS_ORIGIN_Y;
             POS_X_START = 372;
          }
       }
@@ -267,8 +267,8 @@ package codo.views
          this.myMsgTF.htmlText = this._serverMsgToShow[this._currentServerMsgIndex].message;
          if(!this._isInGame)
          {
-            this.x = POS_ORIGIN_X;
-            this.y = this._serverMsgToShow[this._currentServerMsgIndex].message.indexOf("Server queue ") == 0 ? 110 : POS_ORIGIN_Y;
+            this.x = (this._serverMsgToShow[this._currentServerMsgIndex].message.indexOf("Server queue ") == 0 || this._serverMsgToShow[this._currentServerMsgIndex].message.indexOf("Match server starting.") == 0) ? 880 : POS_ORIGIN_X;
+            this.y = (this._serverMsgToShow[this._currentServerMsgIndex].message.indexOf("Server queue ") == 0 || this._serverMsgToShow[this._currentServerMsgIndex].message.indexOf("Match server starting.") == 0) ? 80 : POS_ORIGIN_Y;
             POS_X_START = 372;
          }
          var timer:Timer = this._serverMsgToShow[this._currentServerMsgIndex].timer;
