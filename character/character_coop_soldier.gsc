@@ -36,6 +36,9 @@ session_map()
 
 has_militia()
 {
+	// Survival mounts its own enemies beside MP, never a coop session zone.
+	if ( getDvar( "codol_zoneType" ) == "survival" )
+		return false;
 	session = session_map();
 	if ( isSubStr( session, "killhouse" ) )
 		return false;
