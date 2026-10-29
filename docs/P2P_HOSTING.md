@@ -480,6 +480,14 @@ decoded surface comparisons. The deployed `main/iw_model_18.iwd` adds 196
 missing images (1,782 verified decoded surfaces); all 296 streamed dependencies
 now resolve. Its JSON manifest and verification report are retained in `p2p/`.
 
+The first live join also exposed a separate `Too many precached menus` failure
+in `_hud_message::initNotifyMessage`. Survival legitimately fills C1's fixed
+32-slot menu bank. Native popup closes now check the client's loading/deferred
+state first; active unregistered splash closes temporarily borrow and restore
+a slot through ordered reliable menu commands. The inherited table and true
+precache limit stay intact. The pinned server includes this fix and its full-bank
+and reliable-stream regressions.
+
 ### Campaign localhost default
 
 Campaign story rooms (`MapType.COOP`, native mode `coop`) start a localhost host
@@ -489,10 +497,12 @@ the native bridge resolves the level while retaining that mission/session ID.
 It never substitutes a generic campaign map. Campaign supplies only its room context and the enable state. Native hosting
 infers its remaining configuration; lobby RCON owns bot settings.
 
-For every enabled local-host room, pressing the normal Start Match button waits for `ui_p2p_ready=1` and an
+For every enabled local-host room, pressing the normal Start Match or Ready button waits for `ui_p2p_ready=1` and an
 exact `ui_p2p_map` session match before issuing the original START_MATCH task.
 Startup errors or a 180-second timeout display a room error and leave Start
 available to retry. Leaving the room, changing its mission or losing host status
 cancels the pending launch. A failed local launch never falls back to requesting
 a different server. Native authentication/admission and the existing room start
 transaction remain responsible for joining the selected local server.
+The visible Ready path keeps native Ready false until the host is ready, then
+applies the original room-state change once. Unready remains immediate.
