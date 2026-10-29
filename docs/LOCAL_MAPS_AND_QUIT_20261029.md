@@ -45,3 +45,5 @@ The compiled ABI audit and its before artifact are in
 `docs/baselines/20261029-quit-confirmation/`. New live-client popup/map-play
 acceptance remains pending. Runtime hashes, map selection and image provenance
 are recorded in the local install manifest, outside Git.
+
+Live follow-up: the routing change did not qualify the popup. A captured native crash subsequently proved SummaryView activation reached hideAllAchievementInfo, where the C1 tracer omitted an inclocal register operand. The engine producer correction and exact native tests are documented in GFX_LOCAL_OPERANDS_20261029.md.

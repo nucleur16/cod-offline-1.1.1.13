@@ -1,0 +1,121 @@
+[
+  {
+    "frame": 0,
+    "address": "0x3a6c7380",
+    "abc": "components/BaseButton",
+    "method_body": 21,
+    "method": "components:BaseButton/protected:onMouseClickHandle"
+  },
+  {
+    "frame": 1,
+    "address": "0x3a6c73c8",
+    "abc": "codo/views/MenuPanelView",
+    "method_body": 7,
+    "method": "codo.views:MenuPanelView/private:onBtnClickHandle"
+  },
+  {
+    "frame": 2,
+    "address": "0x3a6c7410",
+    "abc": "codo/views/MenuPanelView",
+    "method_body": 6,
+    "method": "codo.views:MenuPanelView/protected:broadcast"
+  },
+  {
+    "frame": 3,
+    "address": "0x3a6c7458",
+    "abc": "codo/common/EventManager",
+    "method_body": 3,
+    "method": "codo.common:EventManager/broadcast"
+  },
+  {
+    "frame": 4,
+    "address": "0x3a6c74a0",
+    "abc": "codo/controllers/MainMenuController",
+    "method_body": 24,
+    "method": "codo.controllers:MainMenuController/private/onGotoQuitHandle"
+  },
+  {
+    "frame": 5,
+    "address": "0x3a6c74e8",
+    "abc": "codo/common/BaseController",
+    "method_body": 5,
+    "method": "codo.common:BaseController/protected:gotoPage"
+  },
+  {
+    "frame": 6,
+    "address": "0x3a6c7530",
+    "abc": "codo/common/BaseController",
+    "method_body": 9,
+    "method": "codo.common:BaseController/protected:broadcast"
+  },
+  {
+    "frame": 7,
+    "address": "0x3a6c7578",
+    "abc": "codo/common/EventManager",
+    "method_body": 3,
+    "method": "codo.common:EventManager/broadcast"
+  },
+  {
+    "frame": 8,
+    "address": "0x3a6c75c0",
+    "abc": "codo/controllers/PageNavigationController",
+    "method_body": 4,
+    "method": "codo.controllers:PageNavigationController/private/onGotoPageByPageObjHandle"
+  },
+  {
+    "frame": 9,
+    "address": "0x3a6c7608",
+    "abc": "codo/controllers/PageNavigationController",
+    "method_body": 2,
+    "method": "codo.controllers:PageNavigationController/gotoPageByPageObj"
+  },
+  {
+    "frame": 10,
+    "address": "0x3a6c7650",
+    "abc": "codo/common/PageManagerMain",
+    "method_body": 7,
+    "method": "codo.common:PageManagerMain/showPage"
+  },
+  {
+    "frame": 11,
+    "address": "0x3a6c7698",
+    "abc": "codo/common/BaseView",
+    "method_body": 8,
+    "method": "codo.common:BaseView/state/set"
+  },
+  {
+    "frame": 12,
+    "address": "0x3a6c76e0",
+    "abc": "codo/common/StateMachineBase",
+    "method_body": 3,
+    "method": "codo.common:StateMachineBase/state/set"
+  },
+  {
+    "frame": 13,
+    "address": "0x3a6c7728",
+    "abc": "codo/common/BaseView",
+    "method_body": 13,
+    "method": "codo.common:BaseView/private:onActivated"
+  },
+  {
+    "frame": 14,
+    "address": "0x3a6c7770",
+    "abc": "codo/views/SummaryView",
+    "method_body": 3,
+    "method": "codo.views:SummaryView/protected/enableData"
+  },
+  {
+    "frame": 15,
+    "address": "0x3a6c77b8",
+    "abc": "codo/views/SummaryView",
+    "method_body": 9,
+    "method": "codo.views:SummaryView/private/summaryData/set"
+  },
+  {
+    "frame": 16,
+    "address": "0x3a6c7800",
+    "abc": "codo/views/SummaryView",
+    "method_body": 15,
+    "method": "codo.views:SummaryView/private/hideAllAchievementInfo"
+  }
+]

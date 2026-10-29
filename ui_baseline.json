@@ -215,7 +215,7 @@
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_k33_PadSnap.bin": "cd05585c5fccd21324efc7c5ccd6dea1b39aa7be3216c894e17fb64299f95850",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/components/CodoUIComponent.as": "9f3cc89ba4727ad13a2b1cf49191d3f704b0b1f3730f8eb517b377c7f1e3713d",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_components_CodoUIComponent.bin": "2290376ce2045110aff688efca3f7853254c279d87ca20110ddeb9b7e8748817",
-    "kernel33.c": "1021e3945c000bee059619f173b9756df13b2884f31092267cacec72c2928bc2",
+    "kernel33.c": "222839a8861ea956aeb7abc10c8e04ff41b72f028bb150129d11d0ff16ce2304",
     "news_refresh.c": "fef7dbd876744a8b190101bea4fb410cbcaff11ded5e77bbb9f238a3433afdbe",
     "news_refresh_policy.h": "123a5a359b87ea3f2fa917acea5e06b9a7c1e3c7af8ae5413704d1122f7e711f",
     "news_refresh_guards.h": "f185c6991e2935b8f26efeec285a3b1e9120efd01a2dbbeed1870a5b1f82f251",
@@ -239,7 +239,9 @@
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/k33/LocalMatchControls.as": "7a84b0e9419938344059ff88b66ff0bf5e73737884491364338b1461a62965ae",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_k33_LocalMatchControls.bin": "b896520e914a5e62332f9b1b8c2ad9091d97c52ab7eed5a6d2a63c4c6aaa7657",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/InRoomBaseView.as": "ac429b3a627be0238842a3c83cdf4a8a54a46bd2536c36d7176bf9983dc2bddb",
-    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_views_InRoomBaseView.bin": "47546111693e7e16b9320a938624c4bade1b2b1e40b55e6bdcdf6748e845b046"
+    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_views_InRoomBaseView.bin": "47546111693e7e16b9320a938624c4bade1b2b1e40b55e6bdcdf6748e845b046",
+    "gfx_local_operands.c": "8dcaf96f5f29c30fb74cb7a0dd5a82199de727205fa047bce4bdee95dcc3708e",
+    "gfx_local_operands_policy.h": "b82942103e219c4917f0b5b51240125b760e5853d94135a9b5e7c58c25128eec"
   },
   "production_release_qualified": false,
   "required_acceptance": [

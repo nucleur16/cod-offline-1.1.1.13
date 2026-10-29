@@ -1478,6 +1478,7 @@ static void PatchGbkInput(void)
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 #include "news_refresh.c"
 #include "gfx_date_time.c"
+#include "gfx_local_operands.c"
 #include "launcher_update_bridge.c"
 static void __cdecl TakeOver(void)
 {
@@ -1486,6 +1487,7 @@ static void __cdecl TakeOver(void)
     MatchC1SectionFlags();
     FillImports();
     PatchGfxDateTime();
+    PatchGfxLocalOperands();
     InstallHostGate();
     PatchRenderGate();
     PatchDvarRegistrations();
