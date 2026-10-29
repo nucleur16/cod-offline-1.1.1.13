@@ -107,7 +107,7 @@ main()
 					p.codolBotClass = level.classMap[ tokens[ 2 ] ] % 9;
 					p.pers[ "codolBotClass" ] = p.codolBotClass;
 				}
-				p maps\mp\gametypes\_menus::menuClass( tokens[ 2 ] );
+				p [[level.class]]( tokens[ 2 ] );
 				waittillframeend;
 				codolprintln( "CoDOL survivaltest: " + p.name + " class " + p.pers[ "class" ] + " weapon " + before + " -> " + p getCurrentWeapon() );
 			}

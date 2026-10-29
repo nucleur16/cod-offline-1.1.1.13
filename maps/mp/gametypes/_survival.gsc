@@ -167,6 +167,9 @@ init()
 	setThreatBias( "boss", "allies", 2000 );
 	setThreatBias( "dogs", "allies", 1000 );
 	setThreatBias( "axis", "allies", 0 );
+	// Start the native team radar now; _uav keeps the Survival-only baseline
+	// when a purchased support aircraft expires. No item/award is created.
+	maps\mp\killstreaks\_uav::updateTeamUAVStatus( "allies" );
 }
 
 // The actor callbacks are the MP dog's (maps\mp\_dogs::init, threaded from
@@ -212,6 +215,9 @@ after_class_change()
 	self endon( "disconnect" );
 	waittillframeend;
 	self survival_abilities();
+	// The normal class loadout rebuild clears action slots. Re-publish owned
+	// support after it, without earning or buying another reward.
+	self maps\mp\killstreaks\_killstreaks::giveOwnedKillstreakItem( true );
 }
 
 // survival::onSpawnPlayer runs before the MP class is given; the survival

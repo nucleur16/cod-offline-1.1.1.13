@@ -408,6 +408,10 @@ spawn_type( ref, origin, angles, scale )
 	// IW5 moveplaybackrate from the speed column.
 	ai.moveplaybackrate = attributes.speed;
 	ai.ignoreall = false;
+	// Survival squads pursue the players instead of settling into the MP
+	// map's static cover network. Keep real native combat at weapon range.
+	ai.coop_no_cover = true;
+	ai codol_actorUseCover( false );
 	ai setThreatBiasGroup( "axis" );
 
 	level.survival_enemies[ level.survival_enemies.size ] = ai;
@@ -1000,8 +1004,10 @@ delete_after( time )
 // Behaviour (IW5 default_ai / aggressive_ai)
 // --------------------------------------------------------------------------
 
-// IW5 default_squad_leader / aggressive_squad_leader: the leader heads for
-// the closest player, goal radius 900, or 384 in the aggressive phase.
+// A Survival leader keeps approaching the nearest living player. The IW5
+// 900-unit default radius assumed its own combat advance; our native soldier
+// handles firing at actual weapon range, so an unseen player needs a close
+// movement goal rather than stopping outside short-weapon engagement range.
 hunt()
 {
 	self endon( "death" );
@@ -1011,16 +1017,11 @@ hunt()
 	{
 		if ( level.survival_over )
 			return;
-		aggressive = isDefined( level.survival_aggressive ) && level.survival_aggressive;
-		self.goalradius = 900;
-		if ( aggressive )
-			self.goalradius = 384;
-		if ( isDefined( self.dmg_factor ) )
-			self.goalradius = 128;
+		self.goalradius = 128;
 		target = closest_player( self.origin );
 		if ( isDefined( target ) )
 			self setGoalPos( target.origin );
-		wait( 2 + randomFloat( 2 ) );
+		wait( 1 );
 	}
 }
 

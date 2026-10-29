@@ -36,6 +36,13 @@
 
 init()
 {
+	// Keep C1's real class callback and UI. A kiosk transaction is accepted
+	// before that callback mutates the selected class or applies its loadout.
+	if ( !isDefined( level.survival_kiosk_class_handler ) )
+	{
+		level.survival_kiosk_class_handler = level.class;
+		level.class = ::class_menu_response;
+	}
 	level.survival_kiosk_table = "mp/kiosks.csv";
 	// Original CoDOL kiosk icons (table column 6, rows 0/3/10). The locker
 	// sells both ammunition and perks; the support case sells killstreaks.
@@ -457,6 +464,14 @@ purchase( index )
 	}
 	if ( !self can_buy( ref, index ) )
 		return false;
+	if ( ref == "locker" )
+	{
+		// Opening is free. Reserve only the intent/quoted price; the actual
+		// native class response commits a valid, affordable selection once.
+		self.survival_class_purchase_cost = cost;
+		self thread choose_class_menu();
+		return true;
+	}
 	if ( !self give_item( ref, index ) )
 		return false;
 	self maps\mp\gametypes\_survival::spend_credits( cost );
@@ -482,7 +497,7 @@ can_buy( ref, index )
 			need = 2;
 		return level.survival_max_perks - perks >= need;
 	case "locker":
-		return isDefined( self next_weapon() );
+		return self class_purchase_live() && !isDefined( self.survival_class_purchase_cost );
 	case "emp":
 		return maps\mp\gametypes\_survival_vehicles::living_choppers() > 0 ||
 			( isDefined( level.survival_claymores ) && level.survival_claymores.size > 0 );
@@ -510,7 +525,8 @@ give_item( ref, index )
 	case "two_perks":
 		return self give_random_perks( 2 );
 	case "locker":
-		return self give_weapon( self next_weapon() );
+		// Transactions must use purchase -> native class menu -> response.
+		return false;
 	case "mortar_mp":
 		// The multiplayer mortar the buyer aims; the auto-aimed barrage when
 		// the table names no mortar killstreak.
@@ -767,6 +783,115 @@ give_random_perks( count )
 		pool = rest;
 	}
 	return true;
+}
+
+// The locker opens the same C1 custom-class menu used from Escape. No list
+// of classes or weapons is fabricated by the kiosk.
+class_purchase_live()
+{
+	return !level.survival_over && game["state"] != "postgame" &&
+		isAlive( self ) && self.sessionstate == "playing" &&
+		!( isDefined( self.laststand ) && self.laststand );
+}
+
+choose_class_menu()
+{
+	self endon( "disconnect" );
+	self endon( "death" );
+	// Let the purchasing menu handler return before closing its session.
+	waittillframeend;
+	self close_menu();
+	if ( !self class_purchase_live() || !isDefined( self.survival_class_purchase_cost ) )
+	{
+		self cancel_class_purchase();
+		return;
+	}
+	self.survival_in_kiosk = true;
+	self openMenu( game["menu_changeclass"] );
+	self freezeControls( true );
+	self thread class_purchase_interrupt( "death" );
+	self thread class_purchase_interrupt( "player_downed" );
+	self thread class_purchase_interrupt( "disconnect" );
+	self thread class_purchase_cancel_response();
+}
+
+class_purchase_interrupt( event )
+{
+	self endon( "survival_class_purchase_finished" );
+	self waittill( event );
+	self cancel_class_purchase();
+}
+
+class_purchase_cancel_response()
+{
+	self endon( "survival_class_purchase_finished" );
+	self endon( "disconnect" );
+	for ( ;; )
+	{
+		self waittill( "menuresponse", menu, response );
+		if ( menu == game["menu_changeclass"] && ( response == "back" || response == "quit" ) )
+		{
+			self cancel_class_purchase();
+			return;
+		}
+	}
+}
+
+cancel_class_purchase()
+{
+	self.survival_class_purchase_cost = undefined;
+	self.survival_class_change = false;
+	self.survival_in_kiosk = false;
+	self closeMenu();
+	self freezeControls( false );
+	self notify( "survival_class_purchase_finished" );
+}
+
+// Invoked synchronously through the MP class callback. No wait separates
+// validation, wallet debit, consumption of the intent and normal class apply.
+class_menu_response( response )
+{
+	if ( isDefined( self.survival_class_purchase_cost ) )
+	{
+		if ( !self class_purchase_live() || !isDefined( response ) ||
+			response.size < 6 || getSubStr( response, 0, 6 ) != "custom" ||
+			!isDefined( level.classMap[ response ] ) ||
+			!maps\mp\gametypes\_class::codol_hasLoadoutClass( level.classMap[ response ] ) )
+		{
+			self cancel_class_purchase();
+			return;
+		}
+		// Selecting the class already equipped has no effect and no charge.
+		if ( isDefined( self.pers["class"] ) && self.pers["class"] == response )
+		{
+			self cancel_class_purchase();
+			return;
+		}
+		cost = self.survival_class_purchase_cost;
+		if ( !self maps\mp\gametypes\_survival::spend_credits( cost ) )
+		{
+			self iPrintLnBold( "Not enough credits (" + cost + ")" );
+			self cancel_class_purchase();
+			return;
+		}
+		self.survival_class_purchase_cost = undefined;
+		self.survival_in_kiosk = false;
+		self closeMenu();
+		self freezeControls( false );
+		self notify( "survival_class_purchase_finished" );
+		// The chosen profile replaces the previous primary loadout. Bought
+		// perks/armor/support retain their ordinary Survival lifecycle.
+		self.survival_bought = [];
+		self.survival_class_change = true;
+		self [[level.survival_kiosk_class_handler]]( response );
+		if ( self.survival_class_change )
+			self thread maps\mp\gametypes\_survival::after_class_change();
+		// MP's grace-period branch can short-circuit class_change_now().
+		// Never leave its one-shot immediate-apply permission behind.
+		self.survival_class_change = false;
+		return;
+	}
+	self [[level.survival_kiosk_class_handler]]( response );
 }
 
 // The locker's loadout change: the next weapon up the ladder from the best

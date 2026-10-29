@@ -311,6 +311,10 @@ UAVTracker()
 updateTeamUAVStatus( team )
 {
 	activeUAVs = level.activeUAVs[team];
+	// A mode-owned radar baseline, separate from purchased UAV entities and
+	// rewards. Expiring or shooting down support must not turn it off.
+	if ( team == "allies" && getDvar( "codol_zoneType" ) == "survival" && activeUAVs < 1 )
+		activeUAVs = 1;
 	activeCounterUAVs = level.activeCounterUAVs[level.otherTeam[team]];
 
 	if ( !activeCounterUAVs )

@@ -167,9 +167,9 @@ setup_leader( members )
 	}
 }
 
-// IW5 follow_leader_regular / setup_follower_advanced: stay near the leader
-// (goal radius 200, IW5's follower radius), and spread to 600 once anyone in
-// the squad has an enemy (IW5 enlarge_follower_goalradius_upon_seeing_player).
+// Follow a living leader into the fight. Do not stop another 600 units
+// behind him merely because one squad member can see a player: native
+// soldier combat independently retains each actor's real firing range.
 setup_follower( leader )
 {
 	self endon( "death" );
@@ -184,9 +184,7 @@ setup_follower( leader )
 			return;
 		if ( !isDefined( leader ) || !isAlive( leader ) )
 			return;
-		self.goalradius = 200;
-		if ( isDefined( self.enemy ) || isDefined( leader.enemy ) )
-			self.goalradius = 600;
+		self.goalradius = 128;
 		self setGoalPos( leader.origin );
 		wait( 1.5 );
 	}
