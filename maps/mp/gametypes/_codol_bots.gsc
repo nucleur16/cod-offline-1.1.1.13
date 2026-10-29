@@ -1049,6 +1049,31 @@ maintainBots()
 			availableBots--;
 		if ( availableBots < 0 )
 			availableBots = 0;
+		// Authenticated local development controls own an exact count only
+		// while set; empty resumes the normal playlist fill policy below.
+		devTarget = getDvar( "scr_codol_devbot_target" );
+		if ( devTarget != "" )
+		{
+			devCapacity = 16 - humans;
+			if ( devCapacity > 16 )
+				devCapacity = 16;
+			if ( devCapacity > availableBots )
+				devCapacity = availableBots;
+			if ( devCapacity < 0 )
+				devCapacity = 0;
+			desired = getDvarInt( "scr_codol_devbot_target" );
+			if ( desired < 0 )
+				desired = 0;
+			if ( desired > devCapacity )
+				desired = devCapacity;
+			if ( desired > bots.size )
+				spawnBots( desired - bots.size );
+			else if ( desired < bots.size )
+				removeBots( bots, bots.size - desired );
+			wait 1;
+			continue;
+		}
+
 		fill = getDvarInt( "scr_codol_botfill" );
         if ( fill > 0 )
         {
