@@ -45,3 +45,22 @@ NaN/infinities/signed zero/numeric results, both service/ranked branches and
 unchanged call arguments. Mutation tests reject unrelated factor changes and
 an incorrect Survival map. The original 168 invitation-hold behavior checks
 and their disable-gate mutation test still pass.
+
+## Reviewed production-main integration (2026-10-29)
+
+The next review layer integrates main `cd7149d` while retaining the Survival
+default. Independent FFDec exports of the exact before/after ABCs show only
+three changed methods: `listPlayListNew` hides the ranked Quick Match choice;
+`getXPLeagueFactor` and `getGPLeagueFactor` publish Boot Camp at 1.0 and Bot
+Training at 0.5. Other factor paths and every other resolved source line remain
+identical. Method/trait/class/script tables and all 165 body identities match.
+
+The original ABI contract and Survival review are unchanged. Its post-review
+ABC is now frozen explicitly; it is also the exact input to the new review.
+`reviewed_integration_20261029.json` records before/after hashes for all 51
+protected bodies whose raw bytes changed, retaining every one of the original
+164 protected pins. Compressed before/after ABCs and independently exported
+sources make the chain reviewable without private game assets. The test checks
+both historical and current pins, exact metadata, complete resolved-source
+equivalence outside the three approved edits, 22 behavior checks, and rejection
+of an unrelated semantic mutation. This does not claim native GFx acceptance.

@@ -58,7 +58,8 @@ static int g_piInitResult;
 static DWORD g_piInitMs, g_piFirstFrameMs;
 static volatile DWORD g_piFaultCode, g_piFaultEip;
 static BYTE g_piRescueStack[64 * 1024] __attribute__((aligned(16)));
-static DWORD_PTR g_piNext;          /* what the Com_EventLoop call reached before us */
+/* The assembly tail jump reads this even when shipping removes Log(). */
+static DWORD_PTR g_piNext __attribute__((used)); /* prior Com_EventLoop target */
 static BOOL g_piHooked;
 static LONG g_piSession;
 /* frame cost on the game thread */

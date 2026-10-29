@@ -134,7 +134,7 @@
       "source": "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/components/combobox_part/ComboBoxBtn.as"
     },
     "components.list_part.InviteItemRenderer": {
-      "source_sha256": "992e558cfe8fcd37b349a4faf53dff3a7a2ff68960b32a94be0f787a8f75e808",
+      "source_sha256": "fe66635e5071b2e466203a4dd89eecee1700648ae3185627cbc9f64236848e2f",
       "source": "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/components/list_part/InviteItemRenderer.as"
     },
     "components.list_part.ListItemRendererBase8": {
@@ -211,7 +211,7 @@
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_k33_PadSnap.bin": "cd05585c5fccd21324efc7c5ccd6dea1b39aa7be3216c894e17fb64299f95850",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/components/CodoUIComponent.as": "9f3cc89ba4727ad13a2b1cf49191d3f704b0b1f3730f8eb517b377c7f1e3713d",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_components_CodoUIComponent.bin": "2290376ce2045110aff688efca3f7853254c279d87ca20110ddeb9b7e8748817",
-    "kernel33.c": "97260aa63d56a748bc1499555777ef20a3d2e6aa2ac6e5856cc2473e7c16884d",
+    "kernel33.c": "1021e3945c000bee059619f173b9756df13b2884f31092267cacec72c2928bc2",
     "news_refresh.c": "fef7dbd876744a8b190101bea4fb410cbcaff11ded5e77bbb9f238a3433afdbe",
     "news_refresh_policy.h": "123a5a359b87ea3f2fa917acea5e06b9a7c1e3c7af8ae5413704d1122f7e711f",
     "news_refresh_guards.h": "f185c6991e2935b8f26efeec285a3b1e9120efd01a2dbbeed1870a5b1f82f251",
@@ -223,7 +223,7 @@
     "gfx_date_time_guards.h": "427f560edf29b1ceb5c828b22a5bc8a57d66ba8c31ea434b178b9e1bc2397a37",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/TipView.as": "2a462eff264d2a25a9f6be0739941875830a9d95a6434ee641781975539cdc26",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_views_TipView.bin": "2139e90e6130c90b7d3fc6eca0995caaf0ca28bb7b00708392f1ca7e900610e4",
-    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/patch.txt": "1c49484748b659d9740d392a064cdf6c8346e148c06b09553164d0ac71ae46ca",
+    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/patch.txt": "036de23a3a8a3f9f696dec3c4f4a5e350e608b9a2a1e4f29fb651152ea0040cb",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/RightClickMenuController.as": "6025ec44b21edf6eabcd53ba41ff41a19fe8fd876c12c53dc98d9f743ba9f01f",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_controllers_RightClickMenuController.bin": "7d6715f1c8a7c364ea8e62981e61b3f051d5e329b8982507faa532ef7cb63119",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/SocialSideBarView.as": "55a5418ca94fdc46c8cb3cdabd9dd6c33b5a4526d7a80850cf4b2b4b737b56d8",
@@ -232,8 +232,8 @@
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_k33_LocalMatchControls.bin": "b896520e914a5e62332f9b1b8c2ad9091d97c52ab7eed5a6d2a63c4c6aaa7657",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/InRoomBaseView.as": "ac429b3a627be0238842a3c83cdf4a8a54a46bd2536c36d7176bf9983dc2bddb",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_views_InRoomBaseView.bin": "47546111693e7e16b9320a938624c4bade1b2b1e40b55e6bdcdf6748e845b046",
-    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/components/list_part/InviteItemRenderer.as": "992e558cfe8fcd37b349a4faf53dff3a7a2ff68960b32a94be0f787a8f75e808",
-    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_components_list_part_InviteItemRenderer.bin": "ce8845ecf0f52c3df2095d7a2603c84ad43d50deb1bac4d5a9d953da22603d5c"
+    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/components/list_part/InviteItemRenderer.as": "fe66635e5071b2e466203a4dd89eecee1700648ae3185627cbc9f64236848e2f",
+    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_components_list_part_InviteItemRenderer.bin": "7cb3a579f99f9b995f336b7b95d65ba120925aa7bf3e03802921d377439f218d"
   },
   "production_release_qualified": false,
   "required_acceptance": [
