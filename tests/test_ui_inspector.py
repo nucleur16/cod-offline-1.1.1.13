@@ -1,6 +1,5 @@
 import importlib.util
 import json
-import os
 import struct
 import subprocess
 import sys
@@ -62,6 +61,7 @@ class InspectorTests(unittest.TestCase):
         self.assertEqual(ui.gfx_uncompress(header+zlib.compress(body)),b'GFX'+header[3:]+body)
 
     def test_offscreen_screenshot_and_overlap_regression(self):
+        if importlib.util.find_spec('PyQt5') is None:self.skipTest('PyQt5 needed for offscreen GUI rendering')
         try:from PIL import Image
         except ImportError:self.skipTest('Pillow needed for rendered-pixel validation')
         with tempfile.TemporaryDirectory() as tmp:
