@@ -27,6 +27,8 @@ package codo.controllers
 
       private var _campaignHostTimer:Timer;
       private var _campaignHostMap:String = "";
+      private var _campaignHostSelectedMap:String = "";
+      private var _campaignHostContext:String = "";
       private var _campaignHostRequestedMap:String = "";
       private var _campaignHostStartPara:Object;
       private var _campaignHostWaitStart:int = 0;
@@ -578,8 +580,13 @@ package codo.controllers
                return;
             }
          }
-         if(this.isLocalCampaignRoom())
+         if(!this._roomObj.isPlayList && this.isRoomHost() && (this.isLocalCampaignRoom() || CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") == "1"))
          {
+            if(!this.isLocalHostRoom())
+            {
+               this.showMsg("Localhost hosting requires a valid selected room map and game type.",MsgBtnCount.ONE);
+               return;
+            }
             this.beginCampaignLocalHost(cEvt.myPara,true);
             return;
          }
@@ -588,7 +595,28 @@ package codo.controllers
 
       private function isLocalCampaignRoom() : Boolean
       {
-         return ScaleformUtil.isScaleform && this.isRoomHost() && this._roomObj != null && !this._roomObj.isPlayList && this._roomObj.mapType == MapType.COOP && this._roomObj.currentMatchMode.id == "coop" && /^[a-z][a-z0-9_]{0,63}$/.test(this._roomObj.currentMap.id);
+         return ScaleformUtil.isScaleform && this.isRoomHost() && this._roomObj != null && !this._roomObj.isPlayList && this._roomObj.mapType == MapType.COOP && this._roomObj.currentMatchMode.id == "coop" && this.localHostCategory() == "coop" && /^[a-z][a-z0-9_]{0,63}$/.test(this._roomObj.currentMap.id);
+      }
+
+      private function localHostCategory() : String
+      {
+         var map:String = this._roomObj.currentMap.id;
+         var mode:String = this._roomObj.currentMatchMode.id;
+         if(mode == "survival" || map.indexOf("coop_survival_") == 0) return "survival";
+         if(mode == "zm" || map.indexOf("zm_") == 0) return "zm";
+         if(map.indexOf("coop_") == 0) return "coop";
+         return "mp";
+      }
+
+      private function localHostGameType() : String
+      {
+         var category:String = this.localHostCategory();
+         return category == "survival" || category == "zm" ? category : this._roomObj.currentMatchMode.id;
+      }
+
+      private function isLocalHostRoom() : Boolean
+      {
+         return ScaleformUtil.isScaleform && this.isRoomHost() && this._roomObj != null && !this._roomObj.isPlayList && /^[a-z][a-z0-9_]{0,63}$/.test(this._roomObj.currentMap.id) && /^[a-z][a-z0-9_]{0,31}$/.test(this.localHostGameType());
       }
 
       private function cancelCampaignHostStart() : void
@@ -598,6 +626,8 @@ package codo.controllers
             this._campaignHostTimer.stop();
          }
          this._campaignHostMap = "";
+         this._campaignHostSelectedMap = "";
+         this._campaignHostContext = "";
          this._campaignHostStartPara = null;
       }
 
@@ -610,13 +640,15 @@ package codo.controllers
          }
          this._campaignHostRequestedMap = selectedMission;
          // Keep the actual coop mission/session spelling; native hosting resolves its MP level.
-         CFunctionContainerCommon.execnow("p2p_room " + selectedMission + " coop coop");
-         CFunctionContainerCommon.execnow("p2p_localhost 1");
+         CFunctionContainerCommon.execnow("p2p_room " + selectedMission + " " + this.localHostGameType() + " " + this.localHostCategory());
+         if(this.isLocalCampaignRoom()) CFunctionContainerCommon.execnow("p2p_localhost 1");
          if(!waitForStart)
          {
             return;
          }
-         this._campaignHostMap = selectedMission;
+         this._campaignHostSelectedMap = selectedMission;
+         this._campaignHostContext = this.localHostGameType() + " " + this.localHostCategory();
+         this._campaignHostMap = selectedMission.indexOf("coop_survival_") == 0 ? selectedMission.substr(14) : selectedMission;
          this._campaignHostStartPara = startPara;
          this._campaignHostWaitStart = getTimer();
          if(this._campaignHostTimer == null)
@@ -629,7 +661,7 @@ package codo.controllers
 
       private function onCampaignHostReady(evt:TimerEvent) : void
       {
-         if(!this.isLocalCampaignRoom() || this._roomObj.currentMap.id != this._campaignHostMap || this.isLeavingRoom())
+         if(!this.isLocalHostRoom() || this._roomObj.currentMap.id != this._campaignHostSelectedMap || this.isLeavingRoom() || this.localHostGameType() + " " + this.localHostCategory() != this._campaignHostContext || CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") != "1")
          {
             this.cancelCampaignHostStart();
             return;
@@ -644,10 +676,10 @@ package codo.controllers
             return;
          }
          var nativeError:String = CFunctionContainerCommon.Dvar_GetString("ui_p2p_error");
-         if(nativeState == "failed" || nativeError.length > 0 || getTimer() - this._campaignHostWaitStart >= 180000)
+         if(nativeState == "failed" || nativeError.length > 0 && nativeError != "Waiting to publish the local host route." || getTimer() - this._campaignHostWaitStart >= 180000)
          {
             this.cancelCampaignHostStart();
-            this.showMsg("Campaign localhost hosting failed: " + (nativeError.length > 0 ? nativeError : "the selected mission server did not become ready within 180 seconds. Please try again."),MsgBtnCount.ONE);
+            this.showMsg("Localhost hosting failed: " + (nativeError.length > 0 ? nativeError : "the selected mission server did not become ready within 180 seconds. Please try again."),MsgBtnCount.ONE);
          }
       }
       

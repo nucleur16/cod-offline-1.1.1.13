@@ -449,15 +449,36 @@ additional hosting settings in the UI, and F3 remains the vision editor.
 
 The user's command is `p2p_localhost 1` or `p2p_localhost 0`. The movie supplies
 room context internally through `p2p_room`. The host handles saved paths, port,
-process lifetime and readiness. When an in-process host has already run,
-automatic hosting uses the separate server process. Changed room selections
+process lifetime and readiness. Normal lobby hosting always starts the separate
+server process on the host worker; it never loads the server through C1's frame
+fiber. Changed room selections
 retire the old host before starting the new one. Startup state/errors appear
-below the toggle. The INI and lobby admission/rollout flow are preserved.
+below the toggle. The INI and lobby admission flow are preserved.
+
+Before startup, native code atomically publishes owner-bound intent in
+`p2p_host.<uid16hex>.txt` in the backend state directory, refreshing it every two
+seconds. Enabled intent selects only that owner's ready server with the exact
+map, session, gametype and category. Starting, failed or stale intent blocks
+Start; it cannot fall back to an already running standalone dedicated server.
+Party guests use their room owner's intent. Disabled hosting restores public
+server allocation; private local ports never enter that allocation pool.
+Readiness requires `running=1`, `parked=0` and the full requested match identity.
+A transient file replacement failure with a concurrent state reader pauses
+Ready and retries at most twice per second; successful publication clears it.
 
 Survival uses `map=mp_*`, `session_map=mp_*` and `gametype=survival`. Historical
 prefixed room IDs are accepted as input but are stripped before loading the
 level. Its scripts and authored entity placements load through the Survival
 ruleset. The installed map catalogue continues to gate availability.
+
+The installed minimal Survival zone also needs its streamed images. The reported
+client crash was a missing `~coop_evac_case_spc-rgb&coop_~abeda9c9.iwi` while
+loading `common_gametype_survival`. `tools/build_survival_image_repair.py` ports
+only references absent from the target using the existing AssetExplorer image
+porter and original donor assets, with encrypted archive CRC readback and
+decoded surface comparisons. The deployed `main/iw_model_18.iwd` adds 196
+missing images (1,782 verified decoded surfaces); all 296 streamed dependencies
+now resolve. Its JSON manifest and verification report are retained in `p2p/`.
 
 ### Campaign localhost default
 
@@ -468,7 +489,7 @@ the native bridge resolves the level while retaining that mission/session ID.
 It never substitutes a generic campaign map. Campaign supplies only its room context and the enable state. Native hosting
 infers its remaining configuration; lobby RCON owns bot settings.
 
-Pressing the room's normal Start Match button waits for `ui_p2p_ready=1` and an
+For every enabled local-host room, pressing the normal Start Match button waits for `ui_p2p_ready=1` and an
 exact `ui_p2p_map` session match before issuing the original START_MATCH task.
 Startup errors or a 180-second timeout display a room error and leave Start
 available to retry. Leaving the room, changing its mission or losing host status

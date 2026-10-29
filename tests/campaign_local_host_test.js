@@ -27,14 +27,14 @@ global.Timer = class {
   stop() { this.running = false; }
 };
 function room() {
-  now = 1000; commands = []; dvars = {ui_p2p_state: 'starting', ui_p2p_ready: '0'};
+  now = 1000; commands = []; dvars = {ui_p2p_state: 'starting', ui_p2p_ready: '0', ui_p2p_enabled: '1'};
   const c = {_campaignHostTimer: null, _campaignHostMap: '', _campaignHostRequestedMap: '', _campaignHostStartPara: null,
     _campaignHostWaitStart: 0, owner: true, leaving: false, requests: [], errors: [],
     _roomMembers: [{}], _roomObj: {isPlayList: false, mapType: MapType.COOP, currentMatchMode: {id: 'coop'},
       currentMap: {id: 'coop_prolog_mp_downtown'}, currentMaxPlayers: 4, currentMinPlayers: 1},
     isRoomHost() {return this.owner;}, isRoomInfoReady() {return true;}, isLeavingRoom() {return this.leaving;},
     getSyncDP() {return false;}, request(id, args) {this.requests.push({id, args});}, showMsg(message) {this.errors.push(message);}};
-  for (const name of ['isLocalCampaignRoom', 'cancelCampaignHostStart', 'beginCampaignLocalHost', 'onCampaignHostReady', 'onStartMatchHandle'])
+  for (const name of ['isLocalCampaignRoom', 'cancelCampaignHostStart', 'beginCampaignLocalHost', 'onCampaignHostReady', 'onStartMatchHandle', 'isLocalHostRoom', 'localHostCategory', 'localHostGameType'])
     c[name] = new Function(name === 'beginCampaignLocalHost' ? 'startPara,waitForStart' : 'cEvt', body(name));
   // Execute the actual automatic room-entry branch, with the preceding native room hydration omitted.
   const start = source.indexOf('this.broadcast(BCEvent.ROOM_INFO_ONLY,this._roomObj);');
@@ -72,3 +72,39 @@ assert.equal(c.requests.length, 0); assert.equal(c.errors.length, 1); assert(c.e
 c = room(); c.onStartMatchHandle({myPara: parameters}); dvars.ui_p2p_error = 'different server is stopping'; c.onCampaignHostReady();
 assert.equal(c.requests.length, 0); assert.equal(c.errors.length, 1, 'native refusal never falls through to remote StartMatch');
 console.log('Campaign actual AS bodies: owner/story scope, exact mission context + enable-only commands, idempotent auto-host, ready/map gate, single start, failure, timeout and cancellation pass');
+
+for (const [map, mode, expectedMap, category] of [
+  ['mp_killhouse_sh', 'war', 'mp_killhouse_sh', 'mp'],
+  ['zm_factory_sh', 'zm', 'zm_factory_sh', 'zm'],
+  ['coop_survival_mp_cross_fire', 'coop', 'mp_cross_fire', 'survival'],
+  ['mp_fav_tropical', 'survival', 'mp_fav_tropical', 'survival']]) {
+  c = room(); c._roomObj.mapType = category; c._roomObj.currentMap.id = map; c._roomObj.currentMatchMode.id = mode;
+  c.onStartMatchHandle({myPara: parameters});
+  assert.deepEqual(commands, ['p2p_room ' + map + ' ' + (category === 'survival' ? 'survival' : mode) + ' ' + category]);
+  assert.equal(c.requests.length, 0, 'enabled local room never requests preexisting dedicated server');
+  dvars.ui_p2p_ready = '1'; dvars.ui_p2p_map = 'wrong_map'; c.onCampaignHostReady(); assert.equal(c.requests.length, 0);
+  dvars.ui_p2p_map = expectedMap; c.onCampaignHostReady(); assert.equal(c.requests.length, 1);
+}
+c = room(); c._roomObj.mapType = 'mp'; c._roomObj.currentMap.id = 'mp_killhouse_sh'; c._roomObj.currentMatchMode.id = 'war';
+c.onStartMatchHandle({myPara: parameters}); dvars.ui_p2p_enabled = '0'; c.onCampaignHostReady(); assert.equal(c.requests.length, 0); assert(!c._campaignHostTimer.running);
+c = room(); c._roomObj.currentMap.id = 'invalid;quit'; c.onStartMatchHandle({myPara: parameters}); assert.equal(c.requests.length, 0); assert.equal(c.errors.length, 1);
+c = room(); c.onStartMatchHandle({myPara: parameters}); c._roomObj.currentMatchMode.id = 'war'; c.onCampaignHostReady(); assert.equal(c.requests.length, 0); assert(!c._campaignHostTimer.running);
+c = room(); c._roomObj.mapType = 'mp'; c._roomObj.currentMap.id = 'mp_killhouse_sh'; c._roomObj.currentMatchMode.id = 'war'; dvars.ui_p2p_enabled = '0';
+c.onStartMatchHandle({myPara: parameters}); assert.equal(commands.length, 0); assert.equal(c.requests.length, 1, 'disabled hosting retains the ordinary lobby route');
+console.log('All normal enabled local rooms gate StartMatch on exact ready host; Survival normalizes its legacy session ID; disable/mode changes cancel; invalid local context cannot fall back');
+
+// Native Survival can retain the story-shaped room metadata. It must never inherit Campaign auto-enable.
+c = room(); c._roomObj.mapType = MapType.COOP; c._roomObj.currentMap.id = 'coop_survival_mp_fav_tropical'; c._roomObj.currentMatchMode.id = 'coop'; dvars.ui_p2p_enabled = '0';
+c.enterCampaignRoom(); assert.equal(commands.length, 0, 'legacy Survival room does not auto-enable localhost');
+c.onStartMatchHandle({myPara: parameters}); assert.equal(commands.length, 0); assert.equal(c.requests.length, 1, 'disabled legacy Survival keeps ordinary lobby flow');
+c = room(); c._roomObj.mapType = MapType.COOP; c._roomObj.currentMap.id = 'coop_survival_mp_fav_tropical'; c._roomObj.currentMatchMode.id = 'coop';
+c.onStartMatchHandle({myPara: parameters}); assert.deepEqual(commands, ['p2p_room coop_survival_mp_fav_tropical survival survival']); assert.equal(c.requests.length, 0);
+dvars.ui_p2p_ready = '1'; dvars.ui_p2p_map = 'mp_fav_tropical'; c.onCampaignHostReady(); assert.equal(c.requests.length, 1);
+console.log('Story-shaped legacy Survival metadata respects its own enabled toggle and never receives Campaign default enable');
+
+c = room(); c.onStartMatchHandle({myPara: parameters});
+dvars.ui_p2p_state = 'ready'; dvars.ui_p2p_error = 'Waiting to publish the local host route.'; dvars.ui_p2p_ready = '0'; dvars.ui_p2p_map = c._roomObj.currentMap.id;
+c.onCampaignHostReady(); assert.equal(c.requests.length, 0); assert.equal(c.errors.length, 0); assert(c._campaignHostTimer.running, 'transient local-route publication waits without cancelling start');
+dvars.ui_p2p_error = ''; dvars.ui_p2p_ready = '1'; c.onCampaignHostReady();
+assert.equal(c.requests.length, 1); assert.equal(c.errors.length, 0); assert(!c._campaignHostTimer.running);
+console.log('Transient local-route publication retries retain pending start and recover when matching host becomes ready');

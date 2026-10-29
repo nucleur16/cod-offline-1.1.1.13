@@ -26,6 +26,7 @@ package codo.views
    import flash.events.Event;
    import flash.events.FocusEvent;
    import flash.events.KeyboardEvent;
+   import flash.geom.Rectangle;
    import flash.text.TextField;
    
    public class InRoomBaseView extends BaseView
@@ -81,9 +82,18 @@ package codo.views
       override protected function onInit() : void
       {
          this.localMatchControls = new LocalMatchControls();
-         this.localMatchControls.x = 900;
-         this.localMatchControls.y = 790;
+         // The global Rooms chat covers the hidden room-chat slot.
+         // Keep this compact control above its title, without moving stock UI.
+         this.localMatchControls.x = this.myInputTF.x;
+         this.localMatchControls.y = this.myChatTitleTF.y - 110;
          this.addChild(this.localMatchControls);
+         // Non-shipping builds can show a developer panel in the Zombies left pane.
+         if(!this.getSyncDP(SyncDataID.IS_SHIP_BUILD) && this.myDevPanel != null)
+         {
+            var devBounds:Rectangle = this.myDevPanel.getBounds(this);
+            if(devBounds.intersects(this.localMatchControls.getBounds(this)))
+               this.localMatchControls.x = devBounds.right + 12;
+         }
          this.myMatchInfo.startVisualByState();
          this.myStartDSBtn.label = LocalizationRoom.START_DS;
          this.myStartLSBtn.label = LocalizationRoom.START_LS;

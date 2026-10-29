@@ -11,6 +11,8 @@ mkdir -p "$OUT"
 python tests/test_ui_baseline.py
 python tests/test_quick_ready_gate.py
 node tests/campaign_local_host_test.js
+node tests/local_match_controls_test.js
+node tests/local_match_layout_test.js
 python -B tests/test_tip_stage_lookup.py
 python -B tests/test_invitations_disabled.py
 python -B tests/test_zone_packs.py
@@ -22,6 +24,12 @@ python -B docs/baselines/20261024-gfx-date-time/run_regressions.py \
 "$OUT/patch_locale_test.exe"
 "$BIN/gcc.exe" -O2 -Wall -Wextra -Werror tests/survival_category_test.c -o "$OUT/survival_category_test.exe"
 "$OUT/survival_category_test.exe"
+"$BIN/gcc.exe" -std=c99 -O2 -Wall -Wextra -Werror tests/test_p2p_match_options.c -o "$OUT/p2p_match_options_test.exe"
+"$OUT/p2p_match_options_test.exe"
+"$BIN/gcc.exe" -std=c99 -O2 -Wall -Wextra -Werror tests/test_p2p_status.c -o "$OUT/p2p_status_test.exe"
+"$OUT/p2p_status_test.exe"
+"$BIN/gcc.exe" -std=c99 -O2 -Wall -Wextra -Werror tests/test_p2p_intent_heartbeat.c -o "$OUT/p2p_intent_heartbeat_test.exe"
+"$OUT/p2p_intent_heartbeat_test.exe"
 # managed_quick_windows.c needs its .qa section at 0x700000, where C1's room code is: as the first section of an
 # image based at 0x6F0000 with 64 KB section alignment (.init is placed first in .text).
 "$BIN/gcc.exe" -O0 -Wall -Wextra -I. -c tests/managed_quick_windows.c -o "$OUT/managed_quick.o"

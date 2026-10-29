@@ -25,6 +25,8 @@
 #include <wincrypt.h>
 #include <ws2tcpip.h>
 #include "p2p_match_options.h"
+#include "p2p_status.h"
+#include "p2p_intent_heartbeat.h"
 
 #define P2P_DEFAULT_PORT 17760
 #define P2P_STATUS_MS    2000
@@ -398,7 +400,7 @@ static void P2PRollout(const char *file, int port, BOOL add)
 static void P2PDescriptor(const P2PConfig *c, DWORD pid, BOOL ready)
 {
     char path[MAX_PATH];
-    _snprintf(path, MAX_PATH, "%s\\p2p_host.txt", c->state);
+    _snprintf(path, MAX_PATH, "%s\\p2p_runtime.txt", c->state);
     path[MAX_PATH - 1] = 0;
     if (!ready) { DeleteFileA(path); return; }
     FILE *f = fopen(path, "wb");
@@ -488,6 +490,8 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
     memset(&si, 0, sizeof(si));
     memset(&pi, 0, sizeof(pi));
     si.cb = sizeof(si);
+    si.dwFlags = STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_HIDE;
     DWORD t0 = GetTickCount();
     EnterCriticalSection(&g_p2pLock);
     g_p2p.startTick = t0;
@@ -532,12 +536,14 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
         if (now - lastPoll < (ready ? P2P_STATUS_MS : 1000)) continue;
         lastPoll = now;
         char reply[2048], line[512];
-        if (P2PRcon(c.port, password, "sh1x_status", reply, sizeof(reply), 400) > 0 && P2PStatusLine(reply, line, sizeof(line))) {
+        if (P2PRcon(c.port, password, "sh1x_status", reply, sizeof(reply), 400) > 0 &&
+            P2PStatusLine(reply, line, sizeof(line)) &&
+            P2PStatusMatches(line,c.map,c.sessionMap,c.gametype,c.zoneType)) {
             lastAnswer = now;
             EnterCriticalSection(&g_p2pLock);
             lstrcpynA(g_p2p.status, line, sizeof(g_p2p.status));
             if (!ready) g_p2p.readyMs = now - t0;
-            if (!ready) g_p2p.state = P2P_READY;
+            g_p2p.state = P2P_READY;
             LeaveCriticalSection(&g_p2pLock);
             if (!ready) {
                 ready = TRUE;
@@ -559,6 +565,11 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
             if (job) TerminateJobObject(job, 1); else TerminateProcess(pi.hProcess, 1);
             WaitForSingleObject(pi.hProcess, 5000);
             break;
+        } else if (ready) {
+            /* Stop releasing lobby Start while the previously ready match is
+             * loading/recovering or has stopped answering. A later exact
+             * status restores READY; the existing 20-second failure gate stays. */
+            P2PSetState(P2P_STARTING, NULL);
         }
     }
     DWORD code = 0;
@@ -609,14 +620,58 @@ static char g_p2pLobbyMap[64], g_p2pLobbyError[256];
 static P2PRoomContext g_p2pRoom;
 static P2PConfig g_p2pLobbyNext;
 static BOOL g_p2pLobbyPending, g_p2pEnabled, g_p2pHasRoom;
+static P2PConfig g_p2pIntentConfig;
+static unsigned long long g_p2pIntentUid;
+static DWORD g_p2pIntentAt;
+static P2PIntentHeartbeat g_p2pIntentHeartbeat;
+static BOOL P2PWriteIntent(const char *path, const char *text)
+{
+    char tmp[MAX_PATH+40];
+    _snprintf(tmp,sizeof(tmp),"%s.%lu.tmp",path,GetCurrentProcessId());
+    tmp[sizeof(tmp)-1]=0;
+    FILE *file=fopen(tmp,"wb");
+    if (!file) return FALSE;
+    BOOL ok=fputs(text,file)>=0;
+    if (fclose(file)) ok=FALSE;
+    if (ok) ok=MoveFileExA(tmp,path,MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH);
+    if (!ok) DeleteFileA(tmp);
+    return ok;
+}
+/* An explicit, owner-bound route request, including pending/failed states.
+ * The legacy runtime descriptor is deliberately separate: worker cleanup
+ * must never erase enabled intent and send a failed host to a dedicated exe. */
+static BOOL P2PPublishIntent(const char *state, BOOL ready)
+{
+    char path[MAX_PATH],legacy[MAX_PATH],text[1024];DWORD serverPid;
+    if (!g_p2pIntentUid) return !g_p2pEnabled;
+    P2PConfig c=g_p2pIntentConfig;
+    if (!c.state[0]) { P2PDefaults(&c);P2PLoadIni(&c); }
+    if (GetFileAttributesA(c.state)==INVALID_FILE_ATTRIBUTES) P2PMakeDirs(c.state);
+    int length=_snprintf(path,sizeof(path),"%s\\p2p_host.%016llx.txt",c.state,g_p2pIntentUid);
+    if (length<0 || length>=(int)sizeof(path)) return FALSE;
+    length=_snprintf(legacy,sizeof(legacy),"%s\\p2p_host.txt",c.state);
+    if (length<0 || length>=(int)sizeof(legacy)) return FALSE;
+    EnterCriticalSection(&g_p2pLock);serverPid=g_p2p.pid;LeaveCriticalSection(&g_p2pLock);
+    _snprintf(text,sizeof(text),
+        "uid=%016llx\nenabled=%d\nready=%d\nstate=%s\nport=%d\nnet_ip=127.0.0.1\n"
+        "client_pid=%lu\nserver_pid=%lu\nmap=%s\nsession_map=%s\ngametype=%s\ntype=%s\n",
+        g_p2pIntentUid,g_p2pEnabled ? 1:0,ready ? 1:0,state,c.port,GetCurrentProcessId(),serverPid,
+        g_p2pRoom.map,g_p2pRoom.session,g_p2pRoom.gametype,g_p2pRoom.category);
+    text[sizeof(text)-1]=0;
+    BOOL ok=P2PWriteIntent(path,text);
+    if (ok) P2PWriteIntent(legacy,text); /* compatibility; routing prefers the UID file */
+    if (ok) g_p2pIntentAt=GetTickCount();
+    return ok;
+}
 static void P2PLobbyTick(void)
 {
     static char previous[1024];
+    static char previousNative[1024];
     char snapshot[1024], error[256], number[24]; int state;
     if (!g_p2pInit || !C1DvarsReady()) return;
     if (g_p2pLobbyPending && (!g_p2pThread || WaitForSingleObject(g_p2pThread,0)==WAIT_OBJECT_0)) {
         P2PConfig next=g_p2pLobbyNext;
-        if (!_stricmp(next.mode,"inprocess") && P2PInprocUsed()) lstrcpyA(next.mode,"child");
+        lstrcpyA(next.mode,"child");
         g_p2pLobbyPending=FALSE;
         const char *bad=P2PCheck(&next);
         if (bad) { lstrcpynA(g_p2pLobbyError,bad,sizeof(g_p2pLobbyError));P2PSetState(P2P_FAILED,bad); }
@@ -626,9 +681,26 @@ static void P2PLobbyTick(void)
     state=g_p2pLobbyPending ? P2P_STOPPING : g_p2p.state;
     lstrcpynA(error,g_p2pLobbyError[0] ? g_p2pLobbyError : g_p2p.error,sizeof(error));
     LeaveCriticalSection(&g_p2pLock);
+    if (!g_p2pEnabled) g_p2pIntentUid=NdLocalUid();
+    if (!g_p2pEnabled && !g_p2pIntentConfig.state[0]) {
+        P2PDefaults(&g_p2pIntentConfig);P2PLoadIni(&g_p2pIntentConfig);
+    }
     _snprintf(snapshot,sizeof(snapshot),"%d|%u|%d|%s|%s",state,g_p2pLobbyRequest,g_p2pEnabled,g_p2pLobbyMap,error);
     snapshot[sizeof(snapshot)-1]=0;
-    if (!strcmp(snapshot,previous)) return;
+    DWORD now=GetTickCount();
+    if (P2PIntentHeartbeatDue(&g_p2pIntentHeartbeat,now,g_p2pIntentAt,strcmp(snapshot,previousNative)!=0)) {
+        BOOL published=P2PPublishIntent(error[0] ? "failed":kP2PState[state],g_p2pEnabled && state==P2P_READY && !error[0]);
+        P2PIntentHeartbeatResult(&g_p2pIntentHeartbeat,now,published);
+    }
+    lstrcpynA(previousNative,snapshot,sizeof(previousNative));
+    if (g_p2pIntentHeartbeat.failed && !error[0])
+        lstrcpyA(error,"Waiting to publish the local host route.");
+    /* The UI snapshot includes publication errors, so a later successful
+     * heartbeat clears its temporary error and restores Ready without a toggle. */
+    _snprintf(snapshot,sizeof(snapshot),"%d|%u|%d|%s|%s",state,g_p2pLobbyRequest,g_p2pEnabled,g_p2pLobbyMap,error);
+    snapshot[sizeof(snapshot)-1]=0;
+    BOOL changed=strcmp(snapshot,previous)!=0;
+    if (!changed) return;
     BOOL done=C1QueueSet("ui_p2p_enabled",g_p2pEnabled ? "1":"0");
     done=C1QueueSet("ui_p2p_state",kP2PState[state]) && done;
     done=C1QueueSet("ui_p2p_error",error) && done;
@@ -647,17 +719,23 @@ static void P2PHostCurrentRoom(void)
     lstrcpyA(c.map,g_p2pRoom.map);lstrcpyA(c.sessionMap,g_p2pRoom.session);
     lstrcpyA(c.gametype,g_p2pRoom.gametype);lstrcpyA(c.zoneType,g_p2pRoom.category);
     lstrcpyA(c.netIp,"127.0.0.1");
+    /* Client assets and its UI remain on their own thread. Normal localhost
+     * hosting uses the isolated background process, never C1's frame fiber. */
+    lstrcpyA(c.mode,"child");g_p2pIntentConfig=c;
+    if (!g_p2pIntentUid) { lstrcpyA(g_p2pLobbyError,"Player identity is not ready for local hosting.");return; }
     EnterCriticalSection(&g_p2pLock);
     BOOL busy=g_p2p.state==P2P_STARTING || g_p2p.state==P2P_READY || g_p2p.state==P2P_STOPPING;
     BOOL same=busy && g_p2p.state!=P2P_STOPPING && !g_p2pLobbyPending &&
         !strcmp(g_p2pLobbyMap,c.sessionMap) && !strcmp(g_p2p.cfg.gametype,c.gametype) && !strcmp(g_p2p.cfg.zoneType,c.zoneType);
     LeaveCriticalSection(&g_p2pLock);
-    if (!same && !_stricmp(c.mode,"inprocess") && P2PInprocUsed()) lstrcpyA(c.mode,"child");
     const char *bad=P2PCheck(&c);
     if (bad) { lstrcpynA(g_p2pLobbyError,bad,sizeof(g_p2pLobbyError));return; }
     g_p2pLobbyError[0]=0;
     if (same) return;
     lstrcpyA(g_p2pLobbyMap,c.sessionMap);++g_p2pLobbyRequest;
+    if (!P2PPublishIntent("starting",FALSE)) {
+        lstrcpyA(g_p2pLobbyError,"Cannot publish local host route. Toggle hosting to retry.");return;
+    }
     if (busy) {
         g_p2pLobbyNext=c;g_p2pLobbyPending=TRUE;
         InterlockedExchange(&g_p2pStop,1);
@@ -684,6 +762,7 @@ static void __cdecl P2PCmdLocalhost(void)
     const char *value=VoiceArgc()==2 ? VoiceArgv(1):"";
     if (strcmp(value,"0") && strcmp(value,"1")) { C1Printf("p2p_localhost 1 or 0\n");return; }
     g_p2pEnabled=!strcmp(value,"1");g_p2pLobbyError[0]=0;
+    if (g_p2pEnabled) g_p2pIntentUid=NdLocalUid();
     if (g_p2pEnabled) P2PHostCurrentRoom();
     else { g_p2pLobbyPending=FALSE;InterlockedExchange(&g_p2pStop,1); }
     P2PLobbyTick();

@@ -1,0 +1,561 @@
+{
+  "source": "patch_ui_mp:scaleform/default/codo.gfx (1.1.1.13)",
+  "swf_sha256": "0996aa0a798fbb2ba61b6d1cfc8733477f1768113aaaa8976d1e0795e869a104",
+  "stage": [
+    0,
+    0,
+    1280.0,
+    960.0
+  ],
+  "rooms": {
+    "inRoomView": {
+      "sprite_id": 3507,
+      "positions": {
+        "my3DClickArea": [
+          -4.0,
+          500.0
+        ],
+        "my3DRender_stage_bg": [
+          0.0,
+          0.0
+        ],
+        "my3DRender_stage": [
+          0.0,
+          0.0
+        ],
+        "my3DRender_chara": [
+          0.0,
+          0.0
+        ],
+        "my3DRender_scanline": [
+          0.0,
+          0.0
+        ],
+        "myRoomInfo": [
+          367.2,
+          935.1
+        ],
+        "myPilotCB": [
+          802.15,
+          900.0
+        ],
+        "myPilotTFLabel": [
+          678.15,
+          905.0
+        ],
+        "myDifficultyCB": [
+          802.15,
+          868.0
+        ],
+        "myDifficultyTFLabel": [
+          678.15,
+          874.0
+        ],
+        "myModeCB": [
+          715.15,
+          868.0
+        ],
+        "myModePLTFLabel": [
+          677.15,
+          874.0
+        ],
+        "myMapVoting": [
+          369.15,
+          824.0
+        ],
+        "mySumBtn": [
+          926.0,
+          25.0
+        ],
+        "myMatchInfo": [
+          597.0,
+          122.0
+        ],
+        "myForce_0": [
+          925.0,
+          490.0
+        ],
+        "myForce_1": [
+          925.0,
+          490.0
+        ],
+        "myForceBtn": [
+          1113.0,
+          455.0
+        ],
+        "myForceBtn_1": [
+          1028.0,
+          442.0
+        ],
+        "myForceBtn_0": [
+          926.0,
+          448.0
+        ],
+        "myChangeForceBtn": [
+          948.0,
+          827.0
+        ],
+        "myChatBg": [
+          26.0,
+          563.0
+        ],
+        "myChatTitleTF": [
+          41.0,
+          562.0
+        ],
+        "myScrollBar": [
+          296.0,
+          596.0
+        ],
+        "myHistoryTF": [
+          37.0,
+          596.0
+        ],
+        "myInputTF": [
+          33.0,
+          844.65
+        ],
+        "mySendBtn": [
+          239.0,
+          843.0
+        ],
+        "myDevPanel": [
+          995.45,
+          185.0
+        ],
+        "myDevDSRoomList": [
+          1012.0,
+          234.0
+        ],
+        "myRefreshDSBtn": [
+          1191.7,
+          207.75
+        ],
+        "myStartLSBtn": [
+          1114.9,
+          405.9
+        ],
+        "myStartDSBtn": [
+          1044.45,
+          405.9
+        ]
+      },
+      "input_bounds": [
+        31.0,
+        842.65,
+        300.95,
+        865.1
+      ],
+      "reserved_hidden_chat_slot": [
+        31.0,
+        560.0,
+        300.95,
+        865.1
+      ],
+      "visible_controls": {
+        "myRoomInfo": [
+          365.4,
+          793.8,
+          869.25,
+          1079.66931192
+        ],
+        "myPilotCB": [
+          801.15,
+          899.0,
+          870.65,
+          963.0
+        ],
+        "myPilotTFLabel": [
+          676.15,
+          903.0,
+          715.6,
+          923.8
+        ],
+        "myDifficultyCB": [
+          801.15,
+          867.0,
+          870.65,
+          931.0
+        ],
+        "myDifficultyTFLabel": [
+          676.15,
+          872.0,
+          744.65,
+          892.8
+        ],
+        "myModeCB": [
+          714.15,
+          867.0,
+          870.15,
+          1202.0
+        ],
+        "myModePLTFLabel": [
+          675.15,
+          872.0,
+          711.8,
+          892.8
+        ],
+        "myMapVoting": [
+          365.15,
+          820.0,
+          655.15,
+          911.0
+        ],
+        "mySumBtn": [
+          926.0,
+          25.0,
+          1051.65,
+          71.5
+        ],
+        "myMatchInfo": [
+          596.0,
+          110.5,
+          800.0,
+          193.4
+        ],
+        "myForce_0": [
+          925.0,
+          490.0,
+          1228.999939,
+          795.0
+        ],
+        "myForce_1": [
+          925.0,
+          490.0,
+          1228.999939,
+          795.0
+        ],
+        "myForceBtn_1": [
+          1078.0,
+          456.0,
+          1182.0,
+          480.2
+        ],
+        "myForceBtn_0": [
+          970.0,
+          457.15,
+          1074.0,
+          481.35
+        ],
+        "myChangeForceBtn": [
+          948.0,
+          827.0,
+          1216.99994,
+          860.99994
+        ],
+        "myDevPanel": [
+          1006.45,
+          193.0,
+          1218.5,
+          438.0
+        ],
+        "myDevDSRoomList": [
+          1012.0,
+          234.0,
+          1215.999939,
+          386.5
+        ],
+        "myRefreshDSBtn": [
+          1191.7,
+          207.75,
+          1214.7014040000001,
+          228.747925
+        ],
+        "myStartLSBtn": [
+          1114.9,
+          405.9,
+          1176.8944760000002,
+          429.89993999999996
+        ],
+        "myStartDSBtn": [
+          1044.45,
+          405.9,
+          1106.4444760000001,
+          429.89993999999996
+        ]
+      },
+      "external_image_instances_without_local_bounds": [
+        "my3DRender_stage_bg",
+        "my3DRender_stage",
+        "my3DRender_chara",
+        "my3DRender_scanline",
+        "myForceBtn",
+        "myChatBg"
+      ]
+    },
+    "inRoomView_cyborg": {
+      "sprite_id": 3356,
+      "positions": {
+        "myRoomInfo": [
+          417.0,
+          747.5
+        ],
+        "myDifficultySelector": [
+          449.0,
+          876.0
+        ],
+        "myRoomNameTF": [
+          526.65,
+          722.1
+        ],
+        "myDifficultyTF": [
+          794.7,
+          788.0
+        ],
+        "myRoomIDTF": [
+          475.65,
+          725.95
+        ],
+        "myMatchInfo": [
+          601.0,
+          134.0
+        ],
+        "myForce_0": [
+          920.0,
+          681.0
+        ],
+        "mySummaryBtn": [
+          925.0,
+          25.0
+        ],
+        "myChatTitleTF": [
+          46.0,
+          561.0
+        ],
+        "myChatBg": [
+          22.0,
+          566.0
+        ],
+        "myScrollBar": [
+          291.0,
+          601.0
+        ],
+        "myHistoryTF": [
+          32.0,
+          603.85
+        ],
+        "myInputTF": [
+          32.0,
+          841.0
+        ],
+        "mySendBtn": [
+          235.0,
+          838.5
+        ],
+        "myDevPanel": [
+          9.0,
+          248.9
+        ],
+        "myDevDSRoomList": [
+          26.0,
+          298.0
+        ],
+        "myRefreshDSBtn": [
+          205.25,
+          271.65
+        ],
+        "myStartDSBtn": [
+          58.65,
+          470.0
+        ],
+        "myStartLSBtn": [
+          128.45,
+          470.0
+        ]
+      },
+      "input_bounds": [
+        30.0,
+        839.0,
+        292.95,
+        864.0
+      ],
+      "reserved_hidden_chat_slot": [
+        30.0,
+        559.0,
+        292.95,
+        864.0
+      ],
+      "visible_controls": {
+        "myRoomInfo": [
+          416.998596,
+          747.5,
+          849.001404,
+          851.5
+        ],
+        "myDifficultySelector": [
+          449.0,
+          876.0,
+          819.0,
+          932.4
+        ],
+        "myRoomNameTF": [
+          496.95,
+          720.1,
+          817.45,
+          747.3000000000001
+        ],
+        "myDifficultyTF": [
+          765.0,
+          786.0,
+          818.5500000000001,
+          810.2
+        ],
+        "myRoomIDTF": [
+          445.95,
+          723.95,
+          493.04999999999995,
+          746.5500000000001
+        ],
+        "myMatchInfo": [
+          600.0,
+          122.5,
+          804.0,
+          205.4
+        ],
+        "myForce_0": [
+          925.0,
+          713.0,
+          1226.0033,
+          850.0
+        ],
+        "mySummaryBtn": [
+          928.0,
+          35.0,
+          1053.0,
+          76.00005999999999
+        ],
+        "myDevPanel": [
+          20.0,
+          256.9,
+          232.05,
+          501.9
+        ],
+        "myDevDSRoomList": [
+          26.0,
+          298.0,
+          229.999939,
+          450.5
+        ],
+        "myRefreshDSBtn": [
+          205.25,
+          271.65,
+          228.251404,
+          292.647925
+        ],
+        "myStartDSBtn": [
+          58.65,
+          470.0,
+          120.644476,
+          493.99994
+        ],
+        "myStartLSBtn": [
+          128.45,
+          470.0,
+          190.44447599999998,
+          493.99994
+        ]
+      },
+      "external_image_instances_without_local_bounds": []
+    }
+  },
+  "global_rooms_chat": [
+    50.0,
+    560.0,
+    334.042682007,
+    868.45
+  ],
+  "global_rooms_chat_position_source": {
+    "class": "codo.views.ChattingMainGroupView",
+    "x": "GameInfo.PANEL_GAP = 50",
+    "y": "POS_Y_ORIGIN = 876",
+    "child_symbol": "chattingMainGroupView"
+  },
+  "global_start_ready": {
+    "16": [
+      1025.0,
+      15.0,
+      1223.0169700000001,
+      76.25
+    ],
+    "878": [
+      1025.0,
+      877.0,
+      1223.0169700000001,
+      938.25
+    ]
+  },
+  "caption_font_metrics": [
+    {
+      "locale": "stock",
+      "font": "FZLanTingHei-R-GBK",
+      "width_at_14px": {
+        "LOCAL HOSTING: DISABLED": 187.0859,
+        "LOCAL HOSTING: ENABLED": 182.2734
+      },
+      "line_height_at_14px": 18.4844
+    },
+    {
+      "locale": "stock",
+      "font": "FZZongYi-M05S",
+      "width_at_14px": {
+        "LOCAL HOSTING: DISABLED": 190.8047,
+        "LOCAL HOSTING: ENABLED": 186.9766
+      },
+      "line_height_at_14px": 17.3906
+    },
+    {
+      "locale": "stock",
+      "font": "Agency FB",
+      "width_at_14px": {
+        "LOCAL HOSTING: DISABLED": 115.1445,
+        "LOCAL HOSTING: ENABLED": 111.5488
+      },
+      "line_height_at_14px": 17.4453
+    },
+    {
+      "locale": "stock",
+      "font": "Agency FB",
+      "width_at_14px": {
+        "LOCAL HOSTING: DISABLED": 125.6309,
+        "LOCAL HOSTING: ENABLED": 121.9668
+      },
+      "line_height_at_14px": 18.6484
+    },
+    {
+      "locale": "english",
+      "font": "FZLanTingHei-R-GBK",
+      "width_at_14px": {
+        "LOCAL HOSTING: DISABLED": 164.1035,
+        "LOCAL HOSTING: ENABLED": 157.3421
+      },
+      "line_height_at_14px": 18.4844
+    },
+    {
+      "locale": "english",
+      "font": "FZZongYi-M05S",
+      "width_at_14px": {
+        "LOCAL HOSTING: DISABLED": 168.1504,
+        "LOCAL HOSTING: ENABLED": 161.445
+      },
+      "line_height_at_14px": 17.3906
+    },
+    {
+      "locale": "english",
+      "font": "Agency FB",
+      "width_at_14px": {
+        "LOCAL HOSTING: DISABLED": 115.1445,
+        "LOCAL HOSTING: ENABLED": 111.5488
+      },
+      "line_height_at_14px": 17.4453
+    },
+    {
+      "locale": "english",
+      "font": "Agency FB",
+      "width_at_14px": {
+        "LOCAL HOSTING: DISABLED": 125.6309,
+        "LOCAL HOSTING: ENABLED": 121.9668
+      },
+      "line_height_at_14px": 18.6484
+    }
+  ]
+}

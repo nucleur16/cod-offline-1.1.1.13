@@ -31,12 +31,12 @@ package codo.k33
          this.toggle.buttonMode=true; this.toggle.mouseChildren=false;
          this.toggle.graphics.beginFill(0x28475B);
          this.toggle.graphics.lineStyle(1,0x6A8FA4);
-         this.toggle.graphics.drawRect(0,0,322,30);
+         this.toggle.graphics.drawRect(0,0,260,30);
          this.toggle.graphics.endFill();
          this.caption=new TextField();
          this.caption.defaultTextFormat=fmt;
          this.caption.embedFonts=sample.txt_header.embedFonts;
-         this.caption.x=8; this.caption.y=3; this.caption.width=306; this.caption.height=26;
+         this.caption.x=8; this.caption.y=3; this.caption.width=244; this.caption.height=26;
          this.caption.selectable=false; this.caption.mouseEnabled=false;
          this.toggle.addChild(this.caption);
          this.toggle.addEventListener(MouseEvent.CLICK,this.toggleLocal);
@@ -45,7 +45,7 @@ package codo.k33
          fmt.size=12;
          this.status.defaultTextFormat=fmt;
          this.status.embedFonts=sample.txt_header.embedFonts;
-         this.status.y=34; this.status.width=322; this.status.height=44;
+         this.status.y=34; this.status.width=260; this.status.height=44;
          this.status.wordWrap=true; this.status.selectable=false; this.status.mouseEnabled=false;
          this.addChild(this.status);
          this.visible=false;
