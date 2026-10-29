@@ -311,7 +311,7 @@ import flash.utils.getTimer;
          var filter:QuickMatchFilterObj = new QuickMatchFilterObj();
          filter.type = RoomListType.COOP;
          filter.league = 1;
-         filter.map = TutorialMap.SURVIVAL;
+         filter.map = "coop_survival_mp_fav_tropical";
          filter.mode = "coop";
          filter.minPlayer = 1;
          filter.maxPlayer = 2;

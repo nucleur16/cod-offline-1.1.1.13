@@ -155,7 +155,11 @@ def plan(repo, zone_name, m, cfg, stocks, maps):
     kept_refs, dropped_refs = set(), set()
 
     def owner(mapname, where):
-        keep = maps.ships(mapname, "%s: %s" % (zone_name, where))
+        if mapname.startswith("coop_survival_"):
+            # Survival rows describe MP levels, never a session .ff archive.
+            keep = mapname[len("coop_survival_"):] in spec.get("survival_levels", ())
+        else:
+            keep = maps.ships(mapname, "%s: %s" % (zone_name, where))
         if not keep:
             p.dropped_maps.add(mapname.lower())
         return keep

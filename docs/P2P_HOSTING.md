@@ -341,8 +341,8 @@ memory.
 
   | state | mean per tick | max per tick | ticks per 30 s |
   |---|---|---|---|
-  | idle, at the menu | 30 µs | 6-9 ms | about 38,000 |
-  | 2 players + 2 bots | 184-270 µs | 7-29 ms | 8,000-16,000 |
+  | idle, at the menu | 30 Âµs | 6-9 ms | about 38,000 |
+  | 2 players + 2 bots | 184-270 Âµs | 7-29 ms | 8,000-16,000 |
   | map loads | - | 4.6-5.6 s (one frame) | - |
 
 - **Memory of the host process, in a match with 2 players**: private 3,113 MB, virtual 3,671 MB of the 4,096 MB
@@ -439,3 +439,34 @@ flat across cycles.
   instead of 16 s (also on the deploy line), because zm loads take 20-85 s under memory pressure.
 - **Diagnostics.** `p2passetcheck` only checks assets the server still defines itself. C1-held definitions have
   no server copy to compare.
+
+## In-game local match options (2026-10-28)
+
+In the developer build, press **F3** (or the configured `k33_visionKey`) and
+expand **Start local match**. This shares the existing ImGui input/window and
+works from the lobby. Choose the server process, access interface, UDP port,
+map identifier, native gametype, zone type, bot count and difficulty, then
+press **Start hosting**. The panel displays startup errors and the current
+host state; after **Ready for lobby joins**, choose the same map/mode in the
+lobby and press its normal Ready button. The existing rollout/admission path
+assigns players to the host. **Stop hosting** uses the existing shutdown path.
+
+Options are session-only. Paths, profile, state, rollout and admission policy
+still come from `p2p/p2p_host.ini`; **Reload saved options** restores its values.
+**This PC only** binds 127.0.0.1; **LAN** binds all interfaces and still needs a
+reachable advertised address and the same lobby's admissions. It does not
+configure a remote lobby or router. In-process hosting can run once per client
+session; after stopping, restart C1 or select a separate server process. Child
+hosting requires the executable configured by `exe=` to be installed.
+
+The UI publishes a request under the host lock, and the existing main-thread
+callback dispatcher consumes it. Starting or stopping never runs C1 code from
+the render thread. The INI is not rewritten, and existing console commands and
+startup autostart retain their original configuration behavior.
+
+The **Survival** category fixes its native gametype to `survival`, loads MP maps
+through the `survival` category, and offers only maps listed in the deployed
+`p2p/survival_maps.txt` catalogue. Deployment generates that file from installed
+maps and authored Survival placements/scripts. An absent catalogue disables
+Survival Start; `p2phost` also rejects uncatalogued Survival maps. Hosting accepts
+the full `survival` category name without truncating it to seven characters.

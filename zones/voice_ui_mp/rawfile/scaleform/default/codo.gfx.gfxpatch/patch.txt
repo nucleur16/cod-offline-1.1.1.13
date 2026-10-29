@@ -1,7 +1,7 @@
 # GFx movie as a patch over a stock movie (zonekit/gfx.py)
 stock patch_ui_mp:scaleform/default/codo.gfx
 stock-sha256 2f143069ed10f3c937e0f5b758591e477f57544f76bdfd3bd2635f77cca5d332
-sha256 c0ac41b419cfe9f273fcb4d27bc74e0e246fa121896d5d0239de74cd57ff600e
+sha256 006c7bd7cf757b4128b62163a307d12ef1d99b394d9ac12d0c4f07b33696eda4
 header 4746580a68b64500800003200000025800001e0100
 keep 0
 keep 1
@@ -6919,6 +6919,6 @@ as codo.controllers.LobbyController as/codo/controllers/LobbyController.as 25036
 as codo.views.TipView as/codo/views/TipView.as 2a462eff264d2a25a9f6be0739941875830a9d95a6434ee641781975539cdc26
 as codo.controllers.RightClickMenuController as/codo/controllers/RightClickMenuController.as 6025ec44b21edf6eabcd53ba41ff41a19fe8fd876c12c53dc98d9f743ba9f01f
 as codo.controllers.PartyController as/codo/controllers/PartyController.as 4e7a5943db9ab688bd0d2ad8e03dbad6fffdd7f9b055e5752c567607f7c33ec0
-as codo.controllers.MatchController as/codo/controllers/MatchController.as d3e00c0c63abd3c9de478151f12c68268bc260388c644e050d5f545dfd107742
 as codo.views.SocialSideBarView as/codo/views/SocialSideBarView.as 55a5418ca94fdc46c8cb3cdabd9dd6c33b5a4526d7a80850cf4b2b4b737b56d8
 as components.room_part.RoomInfo as/components/room_part/RoomInfo.as 433d733e3367ee97b3e8ddff3476b945064c25f36225adc71d4f377335d59867
+as codo.controllers.MatchController as/codo/controllers/MatchController.as b0bd6f786fa7059bb3448061c2288918c498137ad5ceca24cb2d50535994446a

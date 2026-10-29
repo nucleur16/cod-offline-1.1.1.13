@@ -22,6 +22,9 @@
  * Threads: the commands run on C1's main thread (Cbuf) and only print and signal; the host thread does
  * the process work, the rcon polling and the files. g_p2p is shared under g_p2pLock.
  */
+#ifdef K33_VISION
+#include "p2p_ui_api.h"
+#endif
 #include <wincrypt.h>
 #include <ws2tcpip.h>
 
@@ -41,7 +44,7 @@ typedef struct P2PConfig {
     char profile[MAX_PATH];      /* codol_profilePath: the lobby's resources folder */
     char rconFile[MAX_PATH];
     char rollout[MAX_PATH];      /* optional: the lobby's match_rollout.txt */
-    char map[64], gametype[32], zoneType[8], sessionMap[64];
+    char map[64], gametype[32], zoneType[16], sessionMap[64];
     char netIp[64], botDifficulty[16], extra[512];
     char mode[16];               /* inprocess (default): sh1x_host.dll on the game thread; child: the exe */
     char dll[MAX_PATH];          /* the server as a DLL (mode inprocess) */
@@ -65,7 +68,9 @@ static CRITICAL_SECTION g_p2pLock;
 static BOOL g_p2pInit;
 static HANDLE g_p2pThread;
 static volatile LONG g_p2pStop;
-static char g_p2pArgMap[64], g_p2pArgGametype[32], g_p2pArgZone[8];
+static char g_p2pArgMap[64], g_p2pArgGametype[32], g_p2pArgZone[16];
+static P2PConfig g_p2pOverride;
+static BOOL g_p2pHasOverride;
 struct P2PConfig;
 static int P2PInprocRun(const struct P2PConfig *c, const char *password, const char *args); /* p2p_inproc.c */
 static BOOL P2PInprocUsed(void); /* p2p_inproc.c: an in-process session already ran in this client */
@@ -178,13 +183,37 @@ static void P2PLoadIni(P2PConfig *c)
     Log("p2p: settings from %s", path);
 }
 
+/* Installed, authored Survival maps published with the rawfiles deployment. */
+static int P2PSurvivalMaps(char (*maps)[64], int maximum, const char *wanted)
+{
+    P2PConfig c; P2PDefaults(&c);
+    char path[MAX_PATH]; _snprintf(path, sizeof(path), "%s\\survival_maps.txt", c.dir);
+    path[sizeof(path)-1] = 0;
+    FILE *f = fopen(path, "rb");
+    if (!f) return 0;
+    int count = 0, found = 0; char line[256];
+    while (fgets(line, sizeof(line), f)) {
+        char *comment = strchr(line, '#'); if (comment) *comment = 0;
+        P2PTrim(line);
+        if (!P2PIdent(line, 63)) continue;
+        if (wanted && !strcmp(line, wanted)) found = 1;
+        if (maps && count < maximum) lstrcpynA(maps[count++], line, 64);
+    }
+    fclose(f);
+    return wanted ? found : count;
+}
+
 /* -> NULL when usable, else what is wrong. */
 static const char *P2PCheck(const P2PConfig *c)
 {
     if (c->port < 1024 || c->port > 65535) return "port must be 1024..65535";
     if (!P2PIdent(c->map, 63) || !P2PIdent(c->sessionMap[0] ? c->sessionMap : c->map, 63)) return "bad map name";
     if (!P2PIdent(c->gametype, 31)) return "bad gametype";
-    if (strcmp(c->zoneType, "mp") && strcmp(c->zoneType, "coop") && strcmp(c->zoneType, "zm")) return "zone type must be mp, coop or zm";
+    if (strcmp(c->zoneType, "mp") && strcmp(c->zoneType, "coop") && strcmp(c->zoneType, "zm") && strcmp(c->zoneType, "survival")) return "zone type must be mp, coop, zm or survival";
+    if (!strcmp(c->zoneType, "survival")) {
+        if (strcmp(c->gametype, "survival")) return "Survival requires gametype survival";
+        if (!P2PSurvivalMaps(NULL, 0, c->map)) return "Survival map is absent from p2p/survival_maps.txt (installed maps with placements)";
+    }
     if (!P2PIdent(c->botDifficulty, 15)) return "bad bot difficulty";
     for (const char *p = c->netIp; *p; p++) if (!((*p >= '0' && *p <= '9') || *p == '.')) return "net_ip must be an IPv4 address";
     if (!P2PPathOk(c->exe) || !P2PPathOk(c->basepath) || !P2PPathOk(c->home) || !P2PPathOk(c->scripts) ||
@@ -391,6 +420,7 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
     P2PConfig c;
     P2PDefaults(&c);
     P2PLoadIni(&c);
+    if (g_p2pHasOverride) c = g_p2pOverride;
     if (g_p2pArgMap[0]) { lstrcpyA(c.map, g_p2pArgMap); c.sessionMap[0] = 0; }
     if (g_p2pArgGametype[0]) lstrcpyA(c.gametype, g_p2pArgGametype);
     if (g_p2pArgZone[0]) lstrcpyA(c.zoneType, g_p2pArgZone);
@@ -550,13 +580,15 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
 }
 
 /* Main thread or TakeOver. -> FALSE when a server is already being hosted. */
-static BOOL P2PStart(const char *map, const char *gametype, const char *zone)
+static BOOL P2PStartConfigured(const char *map, const char *gametype, const char *zone, const P2PConfig *override)
 {
     if (g_p2pThread) {
         if (WaitForSingleObject(g_p2pThread, 0) != WAIT_OBJECT_0) return FALSE;
         CloseHandle(g_p2pThread);
         g_p2pThread = NULL;
     }
+    g_p2pHasOverride = override != NULL;
+    if (override) g_p2pOverride = *override;
     lstrcpynA(g_p2pArgMap, map ? map : "", sizeof(g_p2pArgMap));
     lstrcpynA(g_p2pArgGametype, gametype ? gametype : "", sizeof(g_p2pArgGametype));
     lstrcpynA(g_p2pArgZone, zone ? zone : "", sizeof(g_p2pArgZone));
@@ -566,6 +598,88 @@ static BOOL P2PStart(const char *map, const char *gametype, const char *zone)
     if (!g_p2pThread) { P2PSetState(P2P_FAILED, "no host thread"); return FALSE; }
     return TRUE;
 }
+
+static BOOL P2PStart(const char *map, const char *gametype, const char *zone)
+{
+    return P2PStartConfigured(map, gametype, zone, NULL);
+}
+
+#ifdef K33_VISION
+/* Render-thread UI publishes requests; the existing main-thread dispatcher starts/stops them. */
+static P2PConfig g_p2pUiConfig;
+static int g_p2pUiRequest;
+int P2PUiListSurvivalMaps(char (*maps)[64], int maximum)
+{
+    return maximum > 0 ? P2PSurvivalMaps(maps, maximum, NULL) : 0;
+}
+void P2PUiDefaults(P2PUiOptions *o)
+{
+    P2PConfig c; P2PDefaults(&c); P2PLoadIni(&c);
+    memset(o, 0, sizeof(*o));
+    lstrcpynA(o->map, c.map, sizeof(o->map));
+    lstrcpynA(o->gametype, c.gametype, sizeof(o->gametype));
+    lstrcpynA(o->difficulty, c.botDifficulty, sizeof(o->difficulty));
+    o->zone = !strcmp(c.zoneType, "survival") ? 3 : !strcmp(c.zoneType, "zm") ? 2 : !strcmp(c.zoneType, "coop") ? 1 : 0;
+    o->child = !_stricmp(c.mode, "child");
+    o->lan = strcmp(c.netIp, "127.0.0.1") != 0;
+    o->port = c.port; o->bots = c.bots;
+}
+void P2PUiGetState(P2PUiState *s)
+{
+    memset(s, 0, sizeof(*s));
+    if (!g_p2pInit) { s->busy = 1; lstrcpyA(s->status, "Host controls are initializing"); return; }
+    EnterCriticalSection(&g_p2pLock);
+    s->busy = g_p2p.state == P2P_STARTING || g_p2p.state == P2P_READY || g_p2p.state == P2P_STOPPING;
+    s->ready = g_p2p.state == P2P_READY;
+    s->pending = g_p2pUiRequest != 0;
+    _snprintf(s->status, sizeof(s->status), "%s%s%s", kP2PState[g_p2p.state], g_p2p.error[0] ? ": " : "", g_p2p.error);
+    s->status[sizeof(s->status)-1] = 0;
+    LeaveCriticalSection(&g_p2pLock);
+    s->restartRequired = P2PInprocUsed();
+}
+int P2PUiStart(const P2PUiOptions *o)
+{
+    P2PUiState state; P2PUiGetState(&state);
+    if (state.busy || state.pending || (!o->child && state.restartRequired)) return 0;
+    P2PConfig c; P2PDefaults(&c); P2PLoadIni(&c);
+    if (o->zone < 0 || o->zone > 3 || o->bots < 0 || o->bots > 17) return 0;
+    memcpy(c.map, o->map, sizeof(c.map)); c.map[sizeof(c.map)-1] = 0;
+    memcpy(c.gametype, o->gametype, sizeof(c.gametype)); c.gametype[sizeof(c.gametype)-1] = 0;
+    memcpy(c.botDifficulty, o->difficulty, sizeof(c.botDifficulty)); c.botDifficulty[sizeof(c.botDifficulty)-1] = 0;
+    c.sessionMap[0] = 0;
+    if (o->zone == 3) lstrcpyA(c.gametype, "survival");
+    lstrcpyA(c.zoneType, o->zone == 3 ? "survival" : o->zone == 2 ? "zm" : o->zone == 1 ? "coop" : "mp");
+    lstrcpyA(c.mode, o->child ? "child" : "inprocess");
+    lstrcpyA(c.netIp, o->lan ? "0.0.0.0" : "127.0.0.1");
+    c.port = o->port; c.bots = o->bots;
+    const char *bad = P2PCheck(&c);
+    if (bad) { P2PSetState(P2P_FAILED, bad); return 0; }
+    EnterCriticalSection(&g_p2pLock);
+    BOOL busy = g_p2p.state == P2P_STARTING || g_p2p.state == P2P_READY || g_p2p.state == P2P_STOPPING;
+    if (busy || g_p2pUiRequest || (!o->child && P2PInprocUsed())) { LeaveCriticalSection(&g_p2pLock); return 0; }
+    g_p2pUiConfig = c; g_p2pUiRequest = 1;
+    LeaveCriticalSection(&g_p2pLock);
+    return 1;
+}
+void P2PUiStop(void)
+{
+    if (!g_p2pInit) return;
+    EnterCriticalSection(&g_p2pLock);
+    if (!g_p2pUiRequest) g_p2pUiRequest = 2;
+    LeaveCriticalSection(&g_p2pLock);
+}
+static void P2PUiTick(void)
+{
+    P2PConfig c;
+    EnterCriticalSection(&g_p2pLock);
+    int request = g_p2pUiRequest;
+    if (request == 1) c = g_p2pUiConfig;
+    g_p2pUiRequest = 0;
+    LeaveCriticalSection(&g_p2pLock);
+    if (request == 1) P2PStartConfigured(NULL, NULL, NULL, &c);
+    else if (request == 2) InterlockedExchange(&g_p2pStop, 1);
+}
+#endif
 
 /* ---- commands ------------------------------------------------------------------------------ */
 
@@ -612,6 +726,9 @@ static void InstallP2PHost(void)
 {
     if (!g_p2pInit) { InitializeCriticalSection(&g_p2pLock); g_p2pInit = TRUE; }
     C1GameInit();
+#ifdef K33_VISION
+    K33OnMainTick(P2PUiTick);
+#endif
     int added = 0;
     for (unsigned i = 0; i < sizeof(g_p2pCmds) / sizeof(g_p2pCmds[0]); i++) added += C1AddCommand(&g_p2pCmds[i]);
     const char *cl = GetCommandLineA();

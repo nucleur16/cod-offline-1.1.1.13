@@ -59,7 +59,8 @@ ZONES = {
                            # stock_edits: every zombies map offers endless (Asylum and Prototype first, then the Der Riese, Shi No Numa and Kino backports) (column 23; Cam's
                            # codol_zombies_endless zone, folded in here: two zones with mp/comaplist.csv replace each other)
                            maps=dict(table=("mp/comaplist.csv", 4, "patch_code_post_gfx_mp"),
-                                     stock_edits={"zm_asylum_sh": [23], "zm_prototype_sh": [23], "zm_factory_sh": [23], "zm_sumpf_sh": [23], "zm_theater_sh": [23]},
+                                     survival_levels=['mp_fav_tropical', 'mp_abandon_sh', 'mp_ambush_sh', 'mp_crash_tropical', 'mp_cross_fire', 'mp_firingrange', 'mp_hardhat_sh', 'mp_highrise', 'mp_qadeem_sh', 'mp_seatown', 'mp_storm_spring', 'mp_strike_sh', 'mp_subbase_sh', 'mp_terminal_cls'],
+                                     stock_edits={"coop_survival_mp_fav_tropical": list(range(32)), "zm_asylum_sh": [23], "zm_prototype_sh": [23], "zm_factory_sh": [23], "zm_sumpf_sh": [23], "zm_theater_sh": [23]},
                                      arena=("mp/basemaps.arena", "code_post_gfx_mp"),
                                      assets=["rawfile:vision/{map}.vision"], localize=True)),
     "usermaps_ui_mp": dict(origin="G:" + PATCH, install=PATCH, older="Z:" + PATCH,
