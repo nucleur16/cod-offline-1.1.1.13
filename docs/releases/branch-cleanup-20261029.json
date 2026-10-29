@@ -39,14 +39,14 @@
       "branch": "sec/client-audit-20261026",
       "sha": "f5581c5413eebb50a18f9f293b4a0edd30d6b733",
       "ref": "refs/heads/sec/client-audit-20261026"
-    }
-  ],
-  "preserved": [
+    },
     {
       "branch": "codex/resident-client-integration-20261029",
       "sha": "9aed480945f9bd9bd6b8b2119857634727a3fe95",
-      "reason": "not yet included in published main"
-    },
+      "ref": "refs/heads/codex/resident-client-integration-20261029"
+    }
+  ],
+  "preserved": [
     {
       "branch": "dev",
       "sha": "dc259f53f3300a369faf13695579b5f5dc9ba42f",
@@ -54,9 +54,9 @@
     },
     {
       "branch": "main",
-      "sha": "18ee51ad54a5fcbd7b846b253d9557d28019d23a",
+      "sha": "eb5bb2959abaa2015f2946a2702d29a92dd908af",
       "reason": "explicitly preserved"
     }
   ],
-  "main": "18ee51ad54a5fcbd7b846b253d9557d28019d23a"
+  "main": "eb5bb2959abaa2015f2946a2702d29a92dd908af"
 }

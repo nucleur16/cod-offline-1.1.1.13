@@ -62,3 +62,8 @@ This checkpoint does not include the subsequent Survival icon/native changes
 being developed in parallel. Integrate their committed source and advance the
 native gitlink before final release acceptance. No deployment or push is part
 of this checkpoint.
+
+## Final client consolidation, 2026-10-29
+All original preserved client tips and the subsequent resident queue-ticker branch through9aed480 are included in published main. Nine remote feature/integration heads were deleted with exact-tip leases only after ancestry verification. Live heads at cleanup were main and dev; dev remains dc259f53f3300a369faf13695579b5f5dc9ba42f and its worktree was not modified. Cleanup receipts are in docs/releases/branch-cleanup-20261029.json. Local branches, preservation refs and dirty worktrees remain available.
+
+The native gitlink now pins f0ec9a49 (rawfiles12d97c7), including Survival ammo ownership, dog target admission, projectile fire, wave rules, hazards and diagnostics. Shipping DLL5cb74df0 includes the measured C1 actor-mode predicate fix; nine actual-image scanner/category tests pass. The shared UI additionally merges the current ServerMessageView while retaining existing localhost, invitation and lobby controls. Source/AS tests and zone builds pass; final live C1 crosshair appearance and newer ticker UI remain separate acceptance checks. Native/rawfiles repository branch consolidation was additionally requested and is tracked in those repositories.
