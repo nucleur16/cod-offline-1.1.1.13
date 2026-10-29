@@ -1697,29 +1697,32 @@ init_standard_zombie_anims()
 	level._zombie_stumpy_melee[ "zombie" ][ 0 ] = %ai_zombie_walk_on_hands_shot_a;
 	level._zombie_stumpy_melee[ "zombie" ][ 1 ] = %ai_zombie_walk_on_hands_shot_b;
 
-	// T5's "fire" notetracks for the melee clips, as fractions of the clip.
-	// MEASURED 2026-10-21 in real T5 (Plutonium t5cap "dump",
-	// getNotetrackTimes on zombie_cod5_prototype).  C1 ships the same clips
-	// at the same lengths with several notes moved; zombie_combat.gsc lands
-	// the hits on these instead (docs/CODOL_ZOMBIE_T5_MEASURED.md section 3).
-	level._zombie_t5_melee_fire = [];
-	zombie_t5_melee_fire( level._zombie_melee[ "zombie" ][ 0 ], array5( 0.097, 0.325, 0.534, 0.623, 0.744 ) );
-	zombie_t5_melee_fire( level._zombie_melee[ "zombie" ][ 1 ], array1( 0.258 ) );
-	zombie_t5_melee_fire( level._zombie_melee[ "zombie" ][ 2 ], array2( 0.042, 0.7 ) );
-	zombie_t5_melee_fire( level._zombie_melee[ "zombie" ][ 3 ], array2( 0.462, 0.722 ) );
-	zombie_t5_melee_fire( level._zombie_melee[ "zombie" ][ 4 ], array2( 0.414, 0.6 ) );
-	zombie_t5_melee_fire( level._zombie_melee[ "zombie" ][ 5 ], array2( 0.26, 0.42 ) );
-	zombie_t5_melee_fire( level._zombie_walk_melee[ "zombie" ][ 0 ], array1( 0.187 ) );
-	zombie_t5_melee_fire( level._zombie_walk_melee[ "zombie" ][ 1 ], array1( 0.595 ) );
-	zombie_t5_melee_fire( level._zombie_walk_melee[ "zombie" ][ 2 ], array1( 0.378 ) );
-	zombie_t5_melee_fire( level._zombie_walk_melee[ "zombie" ][ 3 ], array1( 0.431 ) );
-	zombie_t5_melee_fire( level._zombie_run_melee[ "zombie" ][ 0 ], array1( 0.666 ) );
-	zombie_t5_melee_fire( level._zombie_run_melee[ "zombie" ][ 1 ], array1( 0.227 ) );
-	zombie_t5_melee_fire( level._zombie_run_melee[ "zombie" ][ 2 ], array1( 0.107 ) );
-	zombie_t5_melee_fire( level._zombie_melee_crawl[ "zombie" ][ 0 ], array2( 0.303, 0.683 ) );
-	zombie_t5_melee_fire( level._zombie_melee_crawl[ "zombie" ][ 1 ], array1( 0.279 ) );
-	zombie_t5_melee_fire( level._zombie_stumpy_melee[ "zombie" ][ 0 ], array1( 0.223 ) );
-	zombie_t5_melee_fire( level._zombie_stumpy_melee[ "zombie" ][ 1 ], array1( 0.369 ) );
+	// Hit times for the clips whose own "fire" notes miss the swing the client
+	// shows, as fractions of the clip.  Every other clip lands its hits on its
+	// "fire" notes, as T5's zombie_melee.gsc:134 does.
+	//
+	// MEASURED 2026-10-25 from C1's own xanims (CodolSoundDumper anim-pose on
+	// c_zom_ger_body1, wrist reach and speed per frame): in 13 of the 17 clips
+	// the "fire" notes sit within one frame of a wrist's peak forward reach, so
+	// the notes are the strike.  These four are the exceptions:
+	//   attack_v6        notes at frames 3 and 49 of 70, strikes at 15 (left)
+	//                    and 32 (right); frame 3 is the arm pulling back and
+	//                    nothing moves at 49.
+	//   walk_attack_v2   a doubled note at 9 and 12 for the strike at 12; the
+	//                    early one landed the hit 0.1 s before the swing.
+	//   walk_attack_v4   the same at 2 and 5 for the strike at 5-6.
+	//   run_attack_v3    no "fire" note at all (C1 names the frame-3 note
+	//                    "fire_spray"), so it never hit; strikes at 3 (right)
+	//                    and 19 (left).
+	// The 2026-10-21 table that replaced every clip's notes with T5's
+	// fractions is gone: those fractions describe T5's xanims, not the C1 clips
+	// the client plays, and put the hit up to 1 s off the swing
+	// (docs/CODOL_ZOMBIE_T5_MEASURED.md section 3).
+	level._zombie_melee_strike = [];
+	zombie_melee_strike( level._zombie_melee[ "zombie" ][ 2 ], array2( 0.2143, 0.4571 ) );	// frames 15, 32 of 70
+	zombie_melee_strike( level._zombie_walk_melee[ "zombie" ][ 1 ], array2( 0.2857, 0.7619 ) );	// frames 12, 32 of 42
+	zombie_melee_strike( level._zombie_walk_melee[ "zombie" ][ 3 ], array2( 0.1136, 0.4091 ) );	// frames 5, 18 of 44
+	zombie_melee_strike( level._zombie_run_melee[ "zombie" ][ 2 ], array2( 0.1071, 0.6786 ) );	// frames 3, 19 of 28
 
 	// The self.deathanim pool.  T5 :1270.
 	level._zombie_deaths = [];
@@ -1817,23 +1820,25 @@ init_standard_zombie_anims()
 		[[ level.zombie_anim_override ]]();
 }
 
-// T5 melee hit schedule (see the melee tables above).
-zombie_t5_melee_fire( clip, fractions )
+// Melee strike schedule (see the melee tables above).
+zombie_melee_strike( clip, fractions )
 {
 	entry = spawnStruct();
 	entry.clip = clip;
 	entry.fractions = fractions;
-	level._zombie_t5_melee_fire[ level._zombie_t5_melee_fire.size ] = entry;
+	level._zombie_melee_strike[ level._zombie_melee_strike.size ] = entry;
 }
 
-zombie_t5_melee_fire_times( clip )
+// The strike fractions for a clip, or undefined when its own "fire" notes are
+// the strike.  scr_zm_melee_strikes -1 uses the notes for every clip.
+zombie_melee_strike_times( clip )
 {
-	if ( !isDefined( level._zombie_t5_melee_fire ) || getDvarInt( "scr_zm_t5_melee_timing" ) < 0 )
+	if ( !isDefined( level._zombie_melee_strike ) || getDvarInt( "scr_zm_melee_strikes" ) < 0 )
 		return undefined;
-	for ( i = 0; i < level._zombie_t5_melee_fire.size; i++ )
+	for ( i = 0; i < level._zombie_melee_strike.size; i++ )
 	{
-		if ( level._zombie_t5_melee_fire[ i ].clip == clip )
-			return level._zombie_t5_melee_fire[ i ].fractions;
+		if ( level._zombie_melee_strike[ i ].clip == clip )
+			return level._zombie_melee_strike[ i ].fractions;
 	}
 	return undefined;
 }
@@ -1849,14 +1854,5 @@ array2( a, b )
 {
 	r = array1( a );
 	r[ 1 ] = b;
-	return r;
-}
-
-array5( a, b, c, d, e )
-{
-	r = array2( a, b );
-	r[ 2 ] = c;
-	r[ 3 ] = d;
-	r[ 4 ] = e;
 	return r;
 }
