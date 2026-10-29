@@ -136,7 +136,10 @@ static HWND WINAPI BorderlessCreateWindowExA(DWORD ex, LPCSTR cls, LPCSTR title,
         w = g_bdMonitor.right - g_bdMonitor.left;
         h = g_bdMonitor.bottom - g_bdMonitor.top;
     }
-    return real(ex, cls, title, style, x, y, w, h, parent, menu, inst, param);
+    QbgPrepareWindow(&ex, &x, &y);
+    HWND window = real(ex, cls, title, style, x, y, w, h, parent, menu, inst, param);
+    QbgCreatedWindow(window);
+    return window;
 }
 
 void BorderlessCreateStub(void);

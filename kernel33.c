@@ -138,6 +138,8 @@ static void LoadUnpackedImage(void)
     Log("unpacked image: 0x%lX bytes inflated over 0x%08X", (unsigned long)UNPACKED_SIZE, UNPACKED_VA);
 }
 
+#include "qa_background_window.c"
+
 static void FillImports(void)
 {
     int failed = 0;
@@ -150,6 +152,7 @@ static void FillImports(void)
             failed++;
             continue;
         }
+        f = QbgImport(imp, f);
         WriteCode((void *)(DWORD_PTR)imp->slot, &f, sizeof(f));
     }
     Log("imports: %d slots filled, %d unresolved",
@@ -1424,6 +1427,7 @@ static void __cdecl TakeOver(void)
     PatchFrameCap();
     PatchFov();
     PatchBorderless();
+    if (!QbgStartupReady(g_bdInstalled)) ExitProcess(0x51424701u);
     PatchAltTab();
     PatchMultiInstance();
     PatchRawMouse();
