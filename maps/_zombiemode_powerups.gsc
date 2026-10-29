@@ -119,6 +119,8 @@ POWERUP_HUD_TIMER_SCALE = 0.9;
 
 init()
 {
+	// Explicit developer opt-in; preserved historical diagnostic tools.
+	level thread maps\_zombiemode_powerup_test::main();
 	// Shared screen overlay; material ships in patch_code_post_gfx_mp.
 	precacheShader( "white" );
 	// T5 :69 init_powerups tuning, read through set_zombie_var so
