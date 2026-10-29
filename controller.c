@@ -227,7 +227,9 @@ static void CtlRegisterDvars(void)
     g_gpDive = C1RegisterInt("gpad_dive", 1, 0, 1, 0x1,
                              "The pad button bound to +stance (B by default) dives while sprinting (C1's dolphin dive, toggleprone during a sprint); 0 = always +stance");
     g_gpCursor = CtlRegisterFloat("gpad_menu_cursor_speed", 1100.0f, 50.0f, 5000.0f, 0x1, "Menu cursor speed at full deflection, pixels/s");
+#if CODOL_DIAGNOSTICS
     g_gpDebug = C1RegisterInt("gpad_debug", 0, 0, 2, 0, "Gamepad diagnostics in the console (1 state twice a second, 2 also every button)");
+#endif
     g_gpUseHold = C1RegisterInt("gpad_use_hold_time", 250, 0, 2000, 0x1,
                                 "Hold X this long (ms) for BUTTON_X_HOLD (+activate: pickups, use prompts); a shorter tap is BUTTON_X (reload); 0 = no split");
     g_gpAim = CtlRegisterFloat("gpad_aimassist", 1.0f, 0.0f, 1.0f, 0x1,
@@ -271,9 +273,13 @@ static BOOL CtlEnabled(void) { return !g_ctlDvarsDone || C1DvarInt(g_gpEnabled, 
 /* "+set k33_cmdFile 1" (a test client next to the player's game): never the real pad, never the real cursor. */
 static BOOL CtlTestMode(void)
 {
+#if defined(CODOL_LOCAL_TESTING) && CODOL_LOCAL_TESTING == 1
     static int t = -1;
     if (t < 0) { const char *cl = GetCommandLineA(); t = cl && strstr(cl, "k33_cmdFile 1") != NULL; }
     return t;
+#else
+    return FALSE;
+#endif
 }
 
 static BOOL CtlFocused(void)
@@ -295,6 +301,7 @@ static int g_dbgHead, g_dbgCount;
 static void CtlDebugf(int level, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 static void CtlDebugf(int level, const char *fmt, ...)
 {
+#if CODOL_DIAGNOSTICS
     if (level > 0 && C1DvarInt(g_gpDebug, 0) < level) return;
     char line[160];
     va_list ap;
@@ -308,10 +315,14 @@ static void CtlDebugf(int level, const char *fmt, ...)
         g_dbgCount++;
     }
     LeaveCriticalSection(&g_ctlLock);
+#else
+    (void)level; (void)fmt;
+#endif
 }
 
 static void CtlDrainDebug(void)
 {
+#if CODOL_DIAGNOSTICS
     char line[160];
     for (;;) {
         EnterCriticalSection(&g_ctlLock);
@@ -322,6 +333,7 @@ static void CtlDrainDebug(void)
         LeaveCriticalSection(&g_ctlLock);
         C1Print(C1_PRINT_CHANNEL, line);
     }
+#endif
 }
 
 /* IW4's GPad_ConvertStickToFloat: radial deadzone, rescaled so the stick still reaches 1. */
@@ -2363,7 +2375,7 @@ static void __cdecl CtlCmdNotifyTest(void)
 static void __cdecl CtlCmdCursor(void)
 {
     HWND h = *(HWND *)(DWORD_PTR)CTL_MAIN_HWND_VA;
-    if (!CtlTestMode() || !h || VoiceArgc() < 3 || !CtlInstallTestFakes()) { C1Printf("usage (test clients): gpad_cursor <x> <y> [click]\n"); return; }
+    if (!CtlTestMode() || !h || VoiceArgc() < 3 || !CtlInstallTestFakes()) { C1Printf("usage (test clients): gpad_cursor <x> <y> [click|rightclick]\n"); return; }
     g_ctlCursor.x = atoi(VoiceArgv(1));
     g_ctlCursor.y = atoi(VoiceArgv(2));
     g_ctlCursorFake = TRUE;
@@ -2373,7 +2385,20 @@ static void __cdecl CtlCmdCursor(void)
     if (VoiceArgc() > 3 && !_stricmp(VoiceArgv(3), "click")) {
         PostMessageA(h, WM_LBUTTONDOWN, MK_LBUTTON, lp);
         PostMessageA(h, WM_LBUTTONUP, 0, lp);
+    } else if (VoiceArgc() > 3 && !_stricmp(VoiceArgv(3), "rightclick")) {
+        PostMessageA(h, WM_RBUTTONDOWN, MK_RBUTTON, lp);
+        PostMessageA(h, WM_RBUTTONUP, 0, lp);
     }
+}
+
+/* QA only: deliver the ordinary Escape key to this client's own window.
+ * Do not use global input or activate a background game to exercise its menus. */
+static void __cdecl CtlCmdEscape(void)
+{
+    HWND h = *(HWND *)(DWORD_PTR)CTL_MAIN_HWND_VA;
+    if (!CtlTestMode() || !h) return;
+    PostMessageA(h, WM_KEYDOWN, VK_ESCAPE, 0x00010001);
+    PostMessageA(h, WM_KEYUP, VK_ESCAPE, 0xc0010001);
 }
 
 static void __cdecl CtlCmdTestMouse(void)
@@ -2408,11 +2433,15 @@ static void __cdecl CtlCmdAaDump(void)
 }
 
 static C1Cmd g_ctlCmds[] = {
+#if CODOL_DIAGNOSTICS
     { NULL, "gpad_status", (void *)CtlCmdStatus },
+#endif
     { NULL, "gpad_defaultbinds", (void *)CtlCmdDefaults },
     { NULL, "gpad_ksnext", (void *)CtlCmdKsNext },
     { NULL, "gpad_ksuse", (void *)CtlCmdKsUse },
+#if CODOL_DIAGNOSTICS
     { NULL, "gpad_glyphdump", (void *)CtlCmdGlyphDump },
+#endif
     { NULL, "gpad_lookpreset", (void *)CtlCmdLookPreset },
     { NULL, "gpad_swaptriggers", (void *)CtlCmdSwapTriggers },
 };
@@ -2428,13 +2457,18 @@ static C1Cmd g_ctlTestCmds[] = {
     { NULL, "gpad_notifytest", (void *)CtlCmdNotifyTest },
     { NULL, "gpad_looktest", (void *)CtlCmdLookTest },
     { NULL, "gpad_cursor", (void *)CtlCmdCursor },
+    { NULL, "gpad_escape", (void *)CtlCmdEscape },
     { NULL, "gpad_glyphtest", (void *)CtlCmdGlyphTest },
 };
 
 static BOOL CtlTestCmdsEnabled(void)
 {
+#if defined(CODOL_LOCAL_TESTING) && CODOL_LOCAL_TESTING == 1
     const char *cl = GetCommandLineA();
     return CtlTestMode() || (cl && (strstr(cl, "gpad_testcmds 1") || strstr(cl, "gpad_testcmds \"1\"")));
+#else
+    return FALSE;
+#endif
 }
 
 /* ---- install ------------------------------------------------------------------------------------- */

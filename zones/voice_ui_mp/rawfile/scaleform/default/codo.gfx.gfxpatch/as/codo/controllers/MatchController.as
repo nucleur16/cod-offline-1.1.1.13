@@ -693,7 +693,7 @@ import flash.utils.getTimer;
          var visiblePlaylists:Array = [];
          for each(var choice in choices)
          {
-            if(choice != null && (choice.type == PlayListType.COMBAT && (choice.id == 0 || choice.id == 2) && choice.combatTrainingType == CombatType.CT || choice.name == "Quick Match" && choice.type == PlayListType.RANKED && choice.minPartySize == 1 && (choice.maxPartySize == 1 || choice.maxPartySize == 6) && choice.maxRoomSize == 12))
+            if(choice != null && (choice.type == PlayListType.COMBAT && (choice.id == 0 || choice.id == 2) && choice.combatTrainingType == CombatType.CT))
             {
                visiblePlaylists.push(choice);
             }

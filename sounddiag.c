@@ -216,9 +216,13 @@ static int SdChannelActive(int ch)
 
 static int SdLevel(void)
 {
+#if CODOL_DIAGNOSTICS
     const BYTE *d = g_sdDvar;
     int v = d ? *(volatile const int *)(d + 0xC) : g_sdStartLevel;
     return v < 0 ? 0 : v > 2 ? 2 : v;
+#else
+    return 0;
+#endif
 }
 
 /* main thread, from the play path: register the dvar once C1 has registered its own */
@@ -229,11 +233,13 @@ static void SdRegisterDvar(void)
         *(volatile const int *)(DWORD_PTR)SDIAG_DVAR_COUNT_VA <= 100)
         return;
     g_sdDvarTried = 1;
+#if CODOL_DIAGNOSTICS
     const BYTE *d = ((RegisterIntFn)(DWORD_PTR)SDIAG_DVAR_REG_VA)(
         "k33_snddiag", g_sdStartLevel, 0, 2, 0,
         "Kernel33 sound voice diagnostics in Kernel33.log: 0 off, 1 refusals (+ snapshots around them), 2 + snapshot every 5 s");
     if (d && SdReadable(d, 0x10)) g_sdDvar = d;
     Log("snddiag: dvar k33_snddiag %s", g_sdDvar ? "registered" : "could not be registered, startup value kept");
+#endif
     SvRegisterDvars();
 }
 
@@ -580,7 +586,11 @@ static void InstallSoundDiag(void)
     };
     static const BYTE kRegisterInt[] = { 0x55, 0x8B, 0xEC, 0x83, 0xE4, 0xF8, 0x64, 0xA1, 0x2C, 0x00, 0x00, 0x00 };
 
+#if CODOL_DIAGNOSTICS
     g_sdStartLevel = SdStartLevel();
+#else
+    g_sdStartLevel = 0;
+#endif
     g_svOn = SvStartupOn();
     if (!g_sdStartLevel && !g_svOn) { Log("snddiag: off (k33_snddiag 0, codol_soundvoices 0 at startup), no hooks installed"); return; }
     for (unsigned i = 0; i < sizeof(kChecks) / sizeof(kChecks[0]); i++) {
@@ -607,10 +617,12 @@ static void InstallSoundDiag(void)
                  SdReadable((void *)(DWORD_PTR)SDIAG_DVAR_COUNT_VA, 4);
     InitializeCriticalSection(&g_sdLock);
     g_sdMainThread = GetCurrentThreadId();
+#if CODOL_DIAGNOSTICS
     HANDLE t = CreateThread(NULL, 0, SdThread, NULL, 0, NULL);
     if (!t) { Log("snddiag: no log thread, not installed"); return; }
     SetThreadPriority(t, THREAD_PRIORITY_BELOW_NORMAL);
     CloseHandle(t);
+#endif
     for (unsigned i = 0; i < sizeof(kSites) / sizeof(kSites[0]); i++) RedirectCall(kSites[i].site, (void *)kSites[i].stub);
     Log("snddiag: 6 hooks installed (cap checks 0x%08X/0x%08X/0x%08X, allocators 0x%08X/0x%08X/0x%08X), k33_snddiag %d at startup%s",
         SDIAG_CAP2D_CALL_VA, SDIAG_CAP3D_CALL_VA, SDIAG_CAPSTR_CALL_VA, SDIAG_AL2D_CALL_VA, SDIAG_AL3D_CALL_VA,

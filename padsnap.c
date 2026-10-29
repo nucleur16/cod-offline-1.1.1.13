@@ -88,7 +88,9 @@ static void PadSnapRegisterDvars(void)
     g_psOn = C1RegisterInt("gpad_menu_snap", 1, 0, 1, 0x1, "Menus: the pad's cursor snaps to buttons, list rows and sliders (1 on)");
     g_psStrength = CtlRegisterFloat("gpad_menu_snap_strength", 0.6f, 0.0f, 1.0f, 0x1,
                                     "Menu cursor magnetism: how much it slows down and pulls toward a control, and how far it settles (0 = D-pad / flick jumps only)");
+#if CODOL_DIAGNOSTICS
     g_psDebug = C1RegisterInt("gpad_menu_snap_debug", 0, 0, 2, 0, "Menu cursor snapping diagnostics (1 decisions, 2 also every target list)");
+#endif
     g_psScan = C1RegisterInt("k33_snapscan", 0, 0, 2, 0, "Kernel33 -> codo.k33.PadSnap: publish the controls (1), with their classes (2)");
     g_psN = reg("k33_snapn", "", 0, "codo.k33.PadSnap: seq targets chunks stageW stageH mouseX mouseY ms nodes hidden movie (read only)");
     reg("k33_snaperr", "", 0, "codo.k33.PadSnap: its last ActionScript error (read only)");
@@ -683,8 +685,10 @@ static C1Cmd g_psTestCmds[] = {
 static void PadSnapInstall(void)
 {
     int added = 0;
+#if CODOL_DIAGNOSTICS
     for (unsigned i = 0; i < sizeof(g_psCmds) / sizeof(g_psCmds[0]); i++) added += C1AddCommand(&g_psCmds[i]);
     if (CtlTestCmdsEnabled())
         for (unsigned i = 0; i < sizeof(g_psTestCmds) / sizeof(g_psTestCmds[0]); i++) added += C1AddCommand(&g_psTestCmds[i]);
+#endif
     Log("padsnap: menu cursor snapping installed (%d commands)", added);
 }

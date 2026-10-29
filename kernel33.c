@@ -32,6 +32,7 @@
 #include <imm.h>
 #include <shellapi.h>
 #include "patch_locale_policy.h"
+#include "production_profile.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,6 +58,7 @@ static BOOL g_supportedBuild;
 static BYTE *volatile g_tenBase;
 static SIZE_T g_tenSize;
 
+#if CODOL_DIAGNOSTICS
 static void Log(const char *fmt, ...)
 {
     char path[MAX_PATH], line[512];
@@ -79,6 +81,10 @@ static void Log(const char *fmt, ...)
     WriteFile(h, line, (DWORD)len, &w, NULL);
     CloseHandle(h);
 }
+#else
+/* Shipping has no diagnostic file writer or formatting on hot paths. */
+#define Log(...) ((void)0)
+#endif
 
 static void Fatal(const char *msg)
 {
@@ -132,6 +138,8 @@ static void LoadUnpackedImage(void)
     Log("unpacked image: 0x%lX bytes inflated over 0x%08X", (unsigned long)UNPACKED_SIZE, UNPACKED_VA);
 }
 
+#include "qa_background_window.c"
+
 static void FillImports(void)
 {
     int failed = 0;
@@ -144,6 +152,7 @@ static void FillImports(void)
             failed++;
             continue;
         }
+        f = QbgImport(imp, f);
         WriteCode((void *)(DWORD_PTR)imp->slot, &f, sizeof(f));
     }
     Log("imports: %d slots filled, %d unresolved",
@@ -1385,6 +1394,7 @@ static void PatchGbkInput(void)
 #include "quick_start_gate.c"
 #include "quick_collection_default.c"
 #include "room_join_error.c"
+#include "client_queue_wait.c"
 #include "initial_room_owner.c"
 #include "training_preview_publish.c"
 #include "room_roster_roles.c"
@@ -1449,6 +1459,7 @@ static void __cdecl TakeOver(void)
     PatchFrameCap();
     PatchFov();
     PatchBorderless();
+    if (!QbgStartupReady(g_bdInstalled)) ExitProcess(0x51424701u);
     PatchAltTab();
     PatchMultiInstance();
     PatchRawMouse();
@@ -1460,6 +1471,7 @@ static void __cdecl TakeOver(void)
     PatchQuickCollectionDefault();
     PatchTrainingPreviewPublish();
     PatchRoomJoinError();
+    PatchCapacityQueueWait();
     PatchInitialRoomOwner();
     PatchRoomRosterRoles();
     PatchNewsRefresh();
@@ -1468,7 +1480,9 @@ static void __cdecl TakeOver(void)
     PatchLocalizePool();
     PatchUserMaps();
     InstallSoundDiag();
+#if CODOL_DIAGNOSTICS
     InstallParityLogger();
+#endif
     InstallVoice();
     InstallController();
     InstallDiscord();
