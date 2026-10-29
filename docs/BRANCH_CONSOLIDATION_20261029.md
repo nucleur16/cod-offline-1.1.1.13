@@ -15,7 +15,7 @@ maximal targets were `7e837c4`, `3fe348c`, `ecf2e9d`, `78aa881`, `7180c4c`,
 ## Reviewed resolutions
 
 - Preserve current built-in localhost hosting, its room toggle/Ready/context
-  API, and native gitlink `2ab8b419`. Main's older optional P2P implementation
+  API, and native gitlink `a239d365` including startup and crate markers. Main's older optional P2P implementation
   must not replace these or duplicate their includes and registrations.
 - Include main's independent room roles, training previews, Quick policy,
   production diagnostics and opt-in QA startup-window safeguards.
