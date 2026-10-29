@@ -17,7 +17,7 @@
 // Tables.
 //   AI types (level.survival_type_table, rows 100..199, column 0 the index):
 //     1 ref  2 name  3 desc  4 classname  5 weapon (base|attachment|...)
-//     6 alt weapon (grenade)  7 health  8 speed  9 xp (the credits a kill
+//     6 alt weapon (grenade or boss secondary)  7 health  8 speed  9 xp (the credits a kill
 //     pays)  10 boss  11 accuracy
 //   Waves (level.survival_wave_table, IW5 get_* accessors, searched by column 2):
 //     0 index  1 boss delay  2 wave  3 squad type  4 squad size  5 specials
@@ -52,6 +52,7 @@ init()
 		t.boss = ( tableLookup( level.survival_type_table, 0, "" + i, 10 ) == "1" );
 		t.accuracy = table_float( level.survival_type_table, i, 11, 1 );
 		t.weapon = "";
+		t.grenade = "";
 		level.survival_ai[ ref ] = t;
 		level.survival_ai_refs[ level.survival_ai_refs.size ] = ref;
 	}
@@ -102,6 +103,7 @@ init()
 			continue;
 		// The type's multiplayer weapon, composed with its attachments.
 		t.weapon = compose_weapon( t.weapon_spec );
+		t.grenade = type_grenade( t.altweapon );
 		n++;
 	}
 	codolprintln( "CoDOL survival: " + n + " AI types used by this level's waves" );
@@ -117,6 +119,10 @@ init()
 	codescripts\character::precacheMounted( level.survival_shield_model );
 	precacheShellShock( "concussion_grenade_mp" );
 	level._effect[ "martyrdom_c4_explosion" ] = loadFx( "explosions/grenadeexp_default" );
+	// IW5 chemical tank smoke is not a C1 asset. Use C1's real MP tabun
+	// effect and shock, already shipped by common_gametype_mp/code_post_gfx.
+	level._effect[ "chemical_cloud" ] = loadFx( "weapon/grenade/fx_gas_poison_mp" );
+	precacheShellShock( "tabun_gas_mp" );
 }
 
 table_int( table, row, column, fallback )
@@ -133,6 +139,18 @@ table_float( table, row, column, fallback )
 	if ( !isDefined( v ) || v == "" )
 		return fallback;
 	return float( v );
+}
+
+// Column 6 also contains juggernaut RPG secondaries. Only an actual native
+// grenade definition may enter codol_actorThrowGrenade's offhand path.
+type_grenade( weapon )
+{
+	if ( !isDefined( weapon ) || weapon == "" || !codol_isWeaponMounted( weapon ) )
+		return "";
+	precacheItem( weapon );
+	if ( weaponType( weapon ) != "grenade" )
+		return "";
+	return weapon;
 }
 
 // --------------------------------------------------------------------------
@@ -253,7 +271,7 @@ tokens( text )
 }
 
 // IW5 update_wave: past the table the repeating rows cycle, harder each pass
-// (IW5 grows the AI through the repeat count; here health and accuracy scale).
+// (IW5 grows health, speed and accuracy through independent repeat factors).
 get_wave( num )
 {
 	if ( isDefined( level.survival_waves[ num ] ) )
@@ -269,7 +287,7 @@ get_wave( num )
 	{
 		past = num - level.survival_last_wave - 1;
 		base = level.survival_repeat_waves[ past % level.survival_repeat_waves.size ];
-		pass = int( past / level.survival_repeat_waves.size ) + 1;
+		pass = num - level.survival_last_wave;
 	}
 	w = spawnStruct();
 	w.num = num;
@@ -281,7 +299,9 @@ get_wave( num )
 	w.bosses_ai = base.bosses_ai;
 	w.bosses_nonai = base.bosses_nonai;
 	w.repeating = true;
-	w.scale = 1.0 + 0.15 * pass;
+	// IW5 update_wave increments survival_waves_repeated on EACH generated
+	// wave, not once per cycle: health +10%, speed +5%, accuracy +20%.
+	w.scale = 1.0 + 0.1 * pass;
 	level.survival_waves[ num ] = w;
 	return w;
 }
@@ -315,6 +335,24 @@ squad_array( size )
 // Spawning
 // --------------------------------------------------------------------------
 
+type_attributes( t, scale )
+{
+	if ( !isDefined( scale ) )
+		scale = 1.0;
+	repeated = ( scale - 1.0 ) * 10;
+	a = spawnStruct();
+	a.health = int( t.health * scale );
+	a.speed = t.speed * ( 1.0 + 0.05 * repeated );
+	if ( a.speed > 1.5 )
+		a.speed = 1.5;
+	// Keep this MP soldier contract's base accuracy and safe ceiling; use
+	// IW5's independent repeated-wave multiplier instead of health's scale.
+	a.accuracy = t.accuracy * 0.3 * ( 1.0 + 0.2 * repeated );
+	if ( a.accuracy > 0.6 )
+		a.accuracy = 0.6;
+	return a;
+}
+
 // A soldier of AI type `ref` at `origin` (IW5 spawn_ai on the type's
 // classname spawner).  Returns the actor or undefined.
 spawn_type( ref, origin, angles, scale )
@@ -333,7 +371,9 @@ spawn_type( ref, origin, angles, scale )
 		scale = 1.0;
 
 	kind = spawnStruct();
-	kind.accuracy = t.accuracy * 0.3;
+	attributes = type_attributes( t, scale );
+	kind.accuracy = attributes.accuracy;
+	kind.health = attributes.health;
 	if ( t.weapon != "" )
 		kind.weapon = t.weapon;
 	ai = maps\mp\gametypes\_survival_utility::spawn_soldier( t.classname, origin, angles, kind );
@@ -344,13 +384,19 @@ spawn_type( ref, origin, angles, scale )
 
 	ai.survival_type = t;
 	ai.survival_ref = ref;
-	ai.health = int( t.health * scale );
+	ai.health = attributes.health;
 	ai.maxhealth = ai.health;
-	ai.accuracy = t.accuracy * 0.3 * scale;
-	if ( ai.accuracy > 0.6 )
-		ai.accuracy = 0.6;
+	ai.accuracy = attributes.accuracy;
+	// Empty means no grenades, including early shotgun/pistol infantry.
+	// The shared soldier throw anim releases this actual native grenade.
+	ai.survival_grenade = t.grenade;
+	if ( t.grenade == "tabun_gas_mp" )
+		ai.survival_grenade_on_explode = ::chemical_grenade;
+	ai.coop_grenades = 0;
+	if ( t.grenade != "" )
+		ai.coop_grenades = 2;
 	// IW5 moveplaybackrate from the speed column.
-	ai.moveplaybackrate = t.speed;
+	ai.moveplaybackrate = attributes.speed;
 	ai.ignoreall = false;
 	ai setThreatBiasGroup( "axis" );
 
@@ -467,50 +513,91 @@ special_behaviour( ref )
 }
 
 // IW5 martyrdom_ability / detonate_c4_when_dead: C4 strapped to the chest,
-// and it goes off where he dies (IW5: 1.5 s fuse, radius 192; the volatile
-// variant at once).
+// and it goes off where he dies (IW5's radius 192; this port retains its
+// 1.5 s warning fuse, with the volatile variant at once).
 martyrdom_ability( fuse )
 {
 	if ( codescripts\character::modelMounted( "weapon_c4" ) )
 		self attach( "weapon_c4", "j_spine4", true );
 	self waittill( "death", attacker );
 	origin = self.origin + ( 0, 0, 16 );
+	// Capture the death position before native corpse cleanup. The fuse and
+	// explosion belong to the level, not the entity that just died.
+	level thread detonate_c4( origin, fuse );
+}
+
+detonate_c4( origin, fuse )
+{
+	charge = spawn( "script_model", origin );
+	charge.survival_enemy = true;
+	if ( codescripts\character::modelMounted( "weapon_c4" ) )
+		charge setModel( "weapon_c4" );
 	if ( fuse > 0.05 )
 		playSoundAtPosition( "weap_c4detpack_trigger_plr", origin );
 	wait( fuse );
+	if ( level.survival_over )
+	{
+		charge delete();
+		return;
+	}
 	if ( isDefined( level._effect[ "martyrdom_c4_explosion" ] ) )
 		playFx( level._effect[ "martyrdom_c4_explosion" ], origin );
 	playSoundAtPosition( "grenade_explode_metal", origin );
-	radiusDamage( origin, 192, 150, 50 );
+	// IW5 detonate_c4_when_dead: native radial damage, 192 units, 100/50.
+	radiusDamage( origin, 192, 100, 50, charge );
 	earthquake( 0.4, 0.6, origin, 600 );
+	charge delete();
 }
 
 // IW5 chemical_ability / chemical_ability_gas_cloud: the gas tank bursts when
-// he dies, and the cloud hurts whoever stands in it (IW5: radius 160, about
-// 10 s).
+// he dies. Keep IW5's six-second lifetime with C1's real MP poison effect,
+// damage/shock and a 160-unit exposure radius.
 chemical_ability()
 {
 	self waittill( "death", attacker );
 	origin = self.origin + ( 0, 0, 24 );
-	if ( isDefined( level._effect[ "chemical_cloud" ] ) )
-		playFx( level._effect[ "chemical_cloud" ], origin );
-	for ( t = 0; t < 10; t += 0.5 )
+	level thread chemical_cloud( origin );
+}
+
+// The native actor throw returns the real missile. Like T5 _tabun, wait
+// for explode without a death endon (explode and death occur together).
+chemical_grenade()
+{
+	self waittill( "explode", origin );
+	level thread chemical_cloud( origin );
+}
+
+chemical_cloud( origin )
+{
+	canister = spawn( "script_model", origin );
+	canister.survival_enemy = true;
+	fx = spawnFx( level._effect[ "chemical_cloud" ], origin );
+	triggerFx( fx );
+	for ( t = 0; t < 6 && !level.survival_over; t += 0.5 )
 	{
 		players = maps\mp\gametypes\_survival_utility::living_players();
 		for ( i = 0; i < players.size; i++ )
 		{
 			p = players[ i ];
+			if ( isDefined( p.laststand ) && p.laststand )
+				continue;
 			if ( distanceSquared( p.origin, origin ) > 160 * 160 )
 				continue;
-			p doDamage( 6, origin );
+			if ( p hasAbilityModifier( "modGasMask" ) )
+				continue;
+			if ( !bulletTracePassed( origin, p.origin + ( 0, 0, 32 ), false, p ) )
+				continue;
+			p doDamage( 6, origin, canister, canister, 0, "MOD_GAS", 0, "tabun_gas_mp" );
 			if ( !isDefined( p.survival_gassed ) || getTime() - p.survival_gassed > 2000 )
 			{
 				p.survival_gassed = getTime();
-				p shellShock( "concussion_grenade_mp", 2 );
+				p shellShock( "tabun_gas_mp", 1.5 );
 			}
 		}
 		wait( 0.5 );
 	}
+	fx delete();
+	canister delete();
 }
 
 // IW5 behavior_special_ai_claymore / mine_locs_attempt_plant: the planter
@@ -635,13 +722,10 @@ spawn_dog( ref, origin, angles, scale )
 
 	ai.survival_type = t;
 	ai.survival_ref = ref;
-	health = 200;
-	if ( isDefined( t ) )
-		health = t.health * 4;
-	if ( !isDefined( scale ) )
-		scale = 1.0;
-	ai.health = int( health * scale );
+	attributes = type_attributes( t, scale );
+	ai.health = attributes.health;
 	ai.maxhealth = ai.health;
+	ai.moveplaybackrate = attributes.speed;
 	ai.favoriteenemy = closest_player( origin );
 	ai setThreatBiasGroup( "dogs" );
 
@@ -679,15 +763,12 @@ dog_c4()
 		self attach( "weapon_c4", "j_spine4", true );
 	self waittill( "death", attacker );
 	origin = self.origin + ( 0, 0, 16 );
-	wait( 0.5 );
-	if ( isDefined( level._effect[ "martyrdom_c4_explosion" ] ) )
-		playFx( level._effect[ "martyrdom_c4_explosion" ], origin );
-	radiusDamage( origin, 192, 150, 50 );
+	level thread detonate_c4( origin, 0.5 );
 }
 
 // The kill: credits (IW5 givexp_kill, the type's xp as credits; CoDOL
 // survivalbounties.csv: headshot +25%, melee +50), the boss assist share,
-// and the killer's class killstreaks advance.
+// without advancing the killer's ordinary MP class killstreaks.
 death_watch()
 {
 	self waittill( "death", attacker );
@@ -722,16 +803,12 @@ credit_owner( attacker )
 	return undefined;
 }
 
-// The MP kill streak on an AI kill (as _damage's player kill counts it).
+// Scoreboard kills remain separate from purchased Survival support.
 award_kill()
 {
 	self.kills = int( self.kills ) + 1;
-	if ( !level.survival_killstreaks || !isAlive( self ) )
-		return;
-	if ( !isDefined( self.pers[ "cur_kill_streak" ] ) )
-		self.pers[ "cur_kill_streak" ] = 0;
-	self.pers[ "cur_kill_streak" ]++;
-	self thread maps\mp\killstreaks\_killstreaks::checkKillstreakReward( self.pers[ "cur_kill_streak" ] );
+	// Survival support is bought at kiosks. Normal MP class streaks do not
+	// advance, even if a class or earlier match carried a streak counter.
 }
 
 living_enemies()

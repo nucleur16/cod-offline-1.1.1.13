@@ -453,7 +453,7 @@ shoot_from_here( maxTime )
 		shotAny = true;
 		self clearAnim( %add_fire, 0.2 );
 		self setAnimLimited( %add_idle, 1, 0.2 );
-		if ( self.a.burstShots >= animscripts\soldier_combat::role_clip() )
+		if ( animscripts\soldier_combat::clip_remaining() <= 0 )
 			break;
 		wait( animscripts\soldier_combat::role_pause() * 0.7 );
 	}
@@ -488,6 +488,8 @@ blind_fire( clips )
 	elapsed = 0;
 	for ( i = 0; i < times.size; i++ )
 	{
+		if ( animscripts\soldier_combat::clip_remaining() <= 0 )
+			break;
 		at = times[ i ] * len;
 		if ( at > elapsed )
 		{
@@ -550,9 +552,10 @@ cover_reload( reloadAnim )
 	trace_anim( "cover reload" );
 	stat_bump( "cover_reload" );
 	self.safeToChangeScript = false;
-	self.a.burstShots = 0;
 	self setFlaggedAnimKnobAllRestart( "reloadanim", reloadAnim, %body, 1, 0.2, 1 );
 	DoNoteTracksForTime( getAnimLength( reloadAnim ), "reloadanim" );
+	self codol_actorReloadComplete();
+	self.a.burstShots = 0;
 	return true;
 }
 
@@ -573,7 +576,7 @@ bored_of_node( seenTime )
 needs_reload( threshold )
 {
 	clip = animscripts\soldier_combat::role_clip();
-	return self.a.burstShots >= clip * ( 1 - threshold );
+	return animscripts\soldier_combat::clip_remaining() <= clip * threshold;
 }
 
 // ---------------------------------------------------------------------------
@@ -821,7 +824,10 @@ corner_step_out_and_shoot( dir, cover, hideYaw )
 	self setFlaggedAnimKnobAllRestart( "hide", backAnim, %body, 1, 0.2, 1 );
 	DoNoteTracksForTime( getAnimLength( backAnim ), "hide" );
 	if ( reloading )
+	{
+		self codol_actorReloadComplete();
 		self.a.burstShots = 0;
+	}
 	go_to_cover( cover[ "alert_idle" ], hideYaw );
 	self.coop_in_cover = dir;
 	return true;

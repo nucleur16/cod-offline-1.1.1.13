@@ -21,8 +21,8 @@
 //     common_scripts\_laststand) in place of MP's Final Stand;
 //   * the waves, the intermission (the dead come back, the class menu applies
 //     at once), the credits and the HUD;
-//   * the AI kill rewards: credits, and the class's killstreaks advance on
-//     enemy kills (scr_survival_killstreaks).
+//   * AI kill credits. MP loadout streaks are disabled; purchased Survival
+//     support remains available from the support kiosk.
 //
 // Differences from IW5, on purpose:
 //   * the match ends when every player is down or dead, not at the first
@@ -120,12 +120,14 @@ precache()
 
 	// IW5 survival downs the player and a partner revives him.
 	level.survival_laststand = dvar_bool( "scr_survival_laststand", true );
-	// The class's killstreaks advance on AI kills.
-	level.survival_killstreaks = dvar_bool( "scr_survival_killstreaks", true );
+	// Survival rewards come from its economy, never MP loadout progression.
+	level.survival_killstreaks = false;
 
 	// IW4/IW5 maps\_gameskill regular: what an AI bullet does to a player.
 	level.survival_ai_damage_scale = dvar_float( "scr_survival_ai_damage_scale", 0.18 );
 	level.survival_ai_damage_cap = dvar_float( "scr_survival_ai_damage_cap", 30 );
+	// Separate from MP dog weapon damage: three unarmored bites at 100 HP.
+	level.survival_dog_damage_cap = dvar_float( "scr_survival_dog_damage_cap", 35 );
 	level.survival_world_damage_scale = dvar_float( "scr_survival_world_damage_scale", 0.5 );
 	level.survival_invul_pre = dvar_float( "scr_survival_invul_pre", 0.35 );
 	level.survival_invul_on = dvar_float( "scr_survival_invul_on", 0.5 );
@@ -291,6 +293,10 @@ player_damage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, 
 			if ( iDamage <= 0 )
 				return;
 		}
+		else if ( sMeansOfDeath == "MOD_MELEE" && isDefined( eAttacker.isdog ) && eAttacker.isdog )
+		{
+			iDamage = dog_melee_damage( iDamage );
+		}
 		else if ( sMeansOfDeath != "MOD_MELEE" )
 		{
 			iDamage = int( iDamage * level.survival_world_damage_scale );
@@ -310,6 +316,18 @@ player_damage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, 
 	if ( self.health - iDamage > self.maxhealth * level.survival_red_cutoff )
 		self.survival_grace_used = false;
 	self [[level.survival_mp_player_damage]]( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime );
+}
+
+// The actual dog melee arrives through the AI weapon's native damage callback.
+// Do not scale MP dogs or explosive-dog splash; armor still absorbs this bite.
+dog_melee_damage( damage )
+{
+	cap = int( level.survival_dog_damage_cap );
+	if ( cap < 1 )
+		cap = 35;
+	if ( damage > cap )
+		return cap;
+	return damage;
 }
 
 // An enemy of the players: an axis actor, an axis vehicle or turret, or what

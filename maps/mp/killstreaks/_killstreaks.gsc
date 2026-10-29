@@ -233,6 +233,15 @@ onPlayerSpawned()
 	for ( ;; )
 	{
 		self waittill( "spawned_player" );
+		// Discard rewards carried from a loadout/session only at Survival entry.
+		// Subsequent lives preserve deliberate support-kiosk purchases.
+		if ( codolSurvivalRules() && !isDefined( self.codolSurvivalStreaksInitialized ) )
+		{
+			self clearKillstreaks();
+			self.pers["cur_kill_streak"] = 0;
+			self.pers["lastEarnedStreak"] = undefined;
+			self.codolSurvivalStreaksInitialized = true;
+		}
 		// Publish script progression after the native spawn clears playerState.
 		if ( isDefined( self.pers["cur_kill_streak"] ) )
 			self codolPublishStreakHudCount( self.pers["cur_kill_streak"] );
@@ -402,7 +411,7 @@ killstreakUsePressed( selectedID )
     if ( !isDefined( selectedID ) && isDefined( self.pers["killstreaks"][0] ) )
         selectedID = self.pers["killstreaks"][0].kID;
     reward = self codolRewardByID( selectedID );
-    if ( !isDefined( reward ) )
+    if ( !codolRewardAllowed( reward ) )
         return false;
     streakName = reward.streakName;
     lifeId = reward.lifeId;
@@ -786,6 +795,9 @@ codolSwitchedRewardWeapon( usedWeapon )
 // This waiter still waits for the use, so the lock keeps its meaning.
 codolActivateReward( selectedID )
 {
+    reward = self codolRewardByID( selectedID );
+    if ( !codolRewardAllowed( reward ) )
+        return;
     if ( isDefined( self.codolRewardActivationBusy ) && self.codolRewardActivationBusy )
         return;
     self.codolRewardActivationBusy = true;
@@ -897,8 +909,16 @@ finishDeathWaiter()
 }
 
 
+// Category-independent: Survival runs on the shared MP rules chain.
+codolSurvivalRules()
+{
+	return getDvar( "g_gametype" ) == "survival";
+}
+
 checkKillstreakReward( streakCount )
 {
+	if ( codolSurvivalRules() )
+		return;
 	self codolPublishStreakHudCount( streakCount );
 	self notify( "got_killstreak", streakCount );
 
@@ -1003,6 +1023,9 @@ tryGiveKillstreak( streakName, streakVal )
 
 giveKillstreak( streakName, isEarned, awardXp, owner )
 {
+	// Kiosk support explicitly uses isEarned=false. Only MP progression is barred.
+	if ( codolSurvivalRules() && isDefined( isEarned ) && isEarned )
+		return;
 	self endon ( "disconnect" );
 
 	weapon = getKillstreakWeapon( streakName );
@@ -1159,6 +1182,14 @@ getKillstreakBaseRef( streakName )
 
 
 // Records retain kID/lifeId ownership; only activation presentation is per-slot.
+// Keep purchased support usable; stale loadout/earned records cannot activate.
+codolRewardAllowed( reward )
+{
+    if ( !isDefined( reward ) )
+        return false;
+    return !( codolSurvivalRules() && isDefined( reward.earned ) && reward.earned );
+}
+
 codolRewardByID( id )
 {
     if ( !isDefined( id ) )
@@ -1184,6 +1215,8 @@ codolRewardForSlot( slot )
 codolPublishStreakHudCount( streakCount, rewardConsumed )
 {
 	hudCount = streakCount;
+	if ( codolSurvivalRules() )
+		hudCount = 0;
 	if ( isDefined( self.codolStreakSpan ) && self.codolStreakSpan > 0 && hudCount > self.codolStreakSpan )
 		hudCount = self.codolStreakSpan;
 	self setKillstreak( hudCount );

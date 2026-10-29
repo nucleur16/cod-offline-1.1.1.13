@@ -1469,6 +1469,10 @@ turn_toward( point, threshold )
 
 grenade_weapon()
 {
+	// Survival's AI table owns its offhand: empty for easy infantry, frag
+	// for regular troops, tabun for chemical/hazmat. Coop keeps its role pool.
+	if ( isDefined( self.survival_grenade ) )
+		return self.survival_grenade;
 	if ( !isDefined( level.coop_ai_grenade ) )
 	{
 		level.coop_ai_grenade = "";
@@ -1593,7 +1597,9 @@ throw_grenade( enemy, throwAnim )
 		if ( !isDefined( flight ) )
 			flight = 0.9 + distance2d( hand, target ) / 700;
 		v = grenade_velocity( hand, target, flight );
-		self codol_actorThrowGrenade( grenade_weapon(), hand, v, flight + 0.6 + randomFloat( 0.6 ) );
+		grenade = self codol_actorThrowGrenade( grenade_weapon(), hand, v, flight + 0.6 + randomFloat( 0.6 ) );
+		if ( isDefined( grenade ) && isDefined( self.survival_grenade_on_explode ) )
+			grenade thread [[self.survival_grenade_on_explode]]();
 		if ( getDvarInt( "scr_coop_test" ) )
 			codolprintln( "CoDOL coop soldier: ent " + self getEntityNumber() + " throws a grenade at ent " +
 				enemy getEntityNumber() + " (" + int( distance( self.origin, enemy.origin ) ) + " units, flight " + flight + " s)" );

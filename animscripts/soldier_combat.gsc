@@ -391,6 +391,8 @@ role_accuracy()
 
 role_clip()
 {
+	if ( isAI( self ) )
+		return self codol_actorClipCapacity();
 	switch ( self.coop_role )
 	{
 	case "lmg":
@@ -403,6 +405,13 @@ role_clip()
 		return 15;
 	}
 	return 30;
+}
+
+clip_remaining()
+{
+	if ( isAI( self ) )
+		return self codol_actorClipRemaining();
+	return role_clip() - self.a.burstShots;
 }
 
 // IW4 shoot_behavior / combat_utility FireUntilOutOfAmmo: full-auto
@@ -626,6 +635,9 @@ ShootAtEnemy()
 		}
 
 		shots = role_burst( distance( self.origin, enemy.origin ) );
+		remaining = clip_remaining();
+		if ( shots > remaining )
+			shots = remaining;
 		fireAnim = fire_anim_for( shots );
 
 		// IW4 showFireHideAimIdle: the idle additive gives way to the fire one.
@@ -648,7 +660,7 @@ ShootAtEnemy()
 		if ( isDefined( self.coop_stat_bursts ) )
 			self.coop_stat_bursts++;
 
-		if ( self.a.burstShots >= role_clip() )
+		if ( clip_remaining() <= 0 )
 			Reload();
 
 		self.safeToChangeScript = true;
@@ -662,10 +674,11 @@ Reload()
 {
 	self endon( "killanimscript" );
 
-	self.a.burstShots = 0;
 	reloadAnim = animArrayPickRandom( "reload" );
 	stop_aiming();
 	self setFlaggedAnimKnobAllRestart( "reloadanim", reloadAnim, %body, 1, 0.2, 1 );
 	DoNoteTracksForTime( getAnimLength( reloadAnim ), "reloadanim" );
+	self codol_actorReloadComplete();
+	self.a.burstShots = 0;
 	start_aiming( 0.2 );
 }

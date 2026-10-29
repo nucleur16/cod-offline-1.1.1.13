@@ -208,15 +208,16 @@ try_run_reload()
 	self endon( "killanimscript" );
 	if ( self.a.movement != "run" || isDefined( self.coop_rng_dir ) || isDefined( self.coop_cqb ) )
 		return false;
-	if ( !isDefined( self.a.burstShots ) || self.a.burstShots < animscripts\soldier_combat::role_clip() * 0.5 )
+	if ( animscripts\soldier_combat::clip_remaining() > animscripts\soldier_combat::role_clip() * 0.5 )
 		return false;
 	if ( isDefined( self.enemy ) && isDefined( self.coop_rng_seen ) && self.coop_rng_seen )
 		return false;
 	trace_anim( "run reload" );
 	stat_bump( "run_reload" );
-	self.a.burstShots = 0;
 	self setFlaggedAnimKnobAll( "reloadanim", %run_lowready_reload, %body, 1, 0.2, self.moveplaybackrate );
 	DoNoteTracksForTime( getAnimLength( %run_lowready_reload ), "reloadanim" );
+	self codol_actorReloadComplete();
+	self.a.burstShots = 0;
 	return true;
 }
 
