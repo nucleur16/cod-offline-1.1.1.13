@@ -367,10 +367,15 @@ hurtPlayersThink()
 
 // Shared IW4 maps/_load calls _specialops::specialops_remove_unused before
 // map initialization. CoDOL MP shares geometry with named co-op missions;
-// its MP loader must apply the same non-specialops selection explicitly.
+// the MP and Survival loader must apply the same non-specialops selection.
 codolRemoveMissionEntities()
 {
-    if ( getDvar( "codol_zoneType" ) != "mp" || getDvar( "specialops" ) == "1" )
+    category = getDvar( "codol_zoneType" );
+    if ( category != "mp" && category != "survival" )
+        return;
+    // Survival always uses the MP world, even if a previous campaign left
+    // its legacy specialops dvar set. Co-op owns its separate mission filter.
+    if ( category == "mp" && getDvar( "specialops" ) == "1" )
         return;
 
     entities = getentarray();
@@ -394,7 +399,7 @@ codolRemoveMissionEntities()
             removed++;
         }
     }
-    printLn( "CoDOL MP mission cleanup: removed " + removed + " mission-only entities" );
+    printLn( "CoDOL " + category + " mission cleanup: removed " + removed + " mission-only entities" );
 }
 
 // Sends each player the map's fog switch, C1 dvar "1464" (r_fog, default 1; the 1.1.1.13 client knows its dvars by

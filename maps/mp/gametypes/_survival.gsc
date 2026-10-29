@@ -73,6 +73,7 @@ precache()
 
 	precacheString( &"MPUI_ROUND_X" );
 	precacheString( &"CGAME_SB_SCORE" );
+	precacheString( &"SO_SURVIVAL_CREDITS" );
 	precacheString( &"MPUI_TAR_MAP_SURVIVAL_GLOBAL_OBJ" );
 
 	level.survival_wave_num = getDvarInt( "scr_survival_start_wave" );
@@ -192,6 +193,7 @@ on_spawn()
 	if ( !isDefined( self.survival_armor ) )
 		self.survival_armor = 0;
 	self.score = self.survival_credit;
+	self setClientDvar( "surHUD_credits", self.survival_credit );
 	self thread after_spawn();
 }
 
@@ -499,7 +501,9 @@ player_hud()
 	self.survival_hud_wave.label = &"MPUI_ROUND_X";
 	self.survival_hud_wave setValue( level.survival_wave_num );
 	self.survival_hud_credits = self hud_line( 128, ( 0.6, 1, 0.6 ) );
-	self.survival_hud_credits.label = &"CGAME_SB_SCORE";
+	self.survival_hud_credits.label = &"SO_SURVIVAL_CREDITS";
+	// Spendable credits stay visible while an interactive kiosk is open.
+	self.survival_hud_credits.hidewheninmenu = false;
 	self.survival_hud_credits setValue( self.survival_credit );
 	self.survival_hud_armor = self hud_line( 146, ( 0.6, 0.8, 1 ) );
 	self update_armor_hud();

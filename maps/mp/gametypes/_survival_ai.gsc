@@ -773,6 +773,11 @@ actor_killed( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHit
 {
 	self.survival_hitloc = sHitLoc;
 	self.survival_mod = sMeansOfDeath;
+	// IW5/T5 soldier death drops the held weapon before the corpse transition.
+	// The native item path supplies pickup ammo, physics and drop-ring cleanup;
+	// Dogs have no carried gun; their damage weapon is a bite definition.
+	if ( !isDefined( self.isdog ) || !self.isdog )
+		self codol_actorDropWeapon();
 	if ( isDefined( level.survival_mp_actor_killed ) )
 		self [[level.survival_mp_actor_killed]]( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, psOffsetTime );
 }

@@ -269,6 +269,7 @@ menu_state( kind )
 	for ( i = 0; i < rows.size; i++ )
 	{
 		r = rows[ i ];
+		self setClientDvar( "surHUD_cost_" + r, item_cost( r ) );
 		if ( item_cost( r ) <= self.survival_credit && item_tier( r ) > tier )
 			tier = item_tier( r );
 		owned = 0;
@@ -289,9 +290,12 @@ menu_session( kiosk )
 {
 	self endon( "survival_kiosk_closed" );
 	self menu_state( kiosk.survival_kind );
-	self openPopupMenu( kiosk.survival_kind );
+	// C1 popup (u) is visual-only; q/openMenu acquires UI keycatcher 0x10 for mouse clicks.
+	self openMenu( kiosk.survival_kind );
 	self freezeControls( true );
-	self thread menu_interrupt();
+	self thread menu_interrupt( "player_downed" );
+	self thread menu_interrupt( "death" );
+	self thread menu_credit_updates( kiosk.survival_kind );
 	for ( ;; )
 	{
 		self waittill( "menuresponse", menu, response );
@@ -309,23 +313,31 @@ menu_session( kiosk )
 }
 
 // IW5 armory_downed_interrupt: going down closes it.
-menu_interrupt()
+menu_interrupt( event )
 {
 	self endon( "survival_kiosk_closed" );
 	self endon( "disconnect" );
-	self waittill_any2( "player_downed", "death" );
+	self waittill( event );
 	self close_menu();
 }
 
-waittill_any2( a, b )
+// Turret kills, shared credits and wave rewards can change the balance while
+// the kiosk is open. Refresh affordability from the authoritative wallet too.
+menu_credit_updates( kind )
 {
-	self endon( a );
-	self waittill( b );
+	self endon( "survival_kiosk_closed" );
+	self endon( "disconnect" );
+	self endon( "death" );
+	for ( ;; )
+	{
+		self waittill( "credit_updated" );
+		self menu_state( kind );
+	}
 }
 
 close_menu()
 {
-	self closePopupMenu();
+	self closeMenu();
 	self freezeControls( false );
 	self.survival_in_kiosk = false;
 	self notify( "survival_kiosk_closed" );
