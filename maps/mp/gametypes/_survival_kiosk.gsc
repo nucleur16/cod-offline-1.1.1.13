@@ -37,6 +37,14 @@
 init()
 {
 	level.survival_kiosk_table = "mp/kiosks.csv";
+	// Original CoDOL kiosk icons (table column 6, rows 0/3/10). The locker
+	// sells both ammunition and perks; the support case sells killstreaks.
+	level.survival_kiosk_ammo_icon = item_icon( 0 );
+	level.survival_kiosk_perk_icon = item_icon( 3 );
+	level.survival_kiosk_support_icon = item_icon( 10 );
+	precacheShader( level.survival_kiosk_ammo_icon );
+	precacheShader( level.survival_kiosk_perk_icon );
+	precacheShader( level.survival_kiosk_support_icon );
 	level.survival_menus = ( getDvar( "scr_survival_menus" ) == "" || getDvarInt( "scr_survival_menus" ) != 0 );
 	if ( level.survival_menus )
 	{
@@ -94,6 +102,11 @@ init()
 item_ref( index )
 {
 	return tableLookup( level.survival_kiosk_table, 0, "" + index, 1 );
+}
+
+item_icon( index )
+{
+	return tableLookup( level.survival_kiosk_table, 0, "" + index, 6 );
 }
 
 item_tier( index )
@@ -163,13 +176,76 @@ main()
 			e setModel( model );
 		e.survival_kind = spot.kind;
 		level.survival_kiosks[ level.survival_kiosks.size ] = e;
-		// IW5 armory_use_monitor's world icon: the compass marks it.
-		objective_add( maps\mp\gametypes\_gameobjects::getNextObjID(), "active", e.origin );
+		e create_markers();
 		e thread kiosk_think();
 	}
 	codolprintln( "CoDOL survival: " + level.survival_kiosks.size + " kiosks, menus " + level.survival_menus );
+	level thread markers_lifecycle();
 	if ( getDvarInt( "scr_survival_test" ) != 0 )
 		level thread test_purchases();
+}
+
+// IW5 _so_survival_armory::armory_use_monitor: an archived world HUD
+// shader with the native waypoint icon flags. The compass objective uses
+// the same original CoDOL service icon, at the actual authored crate origin.
+create_markers()
+{
+	icon = level.survival_kiosk_support_icon;
+	if ( self.survival_kind == "kiosk_locker" )
+		icon = level.survival_kiosk_ammo_icon;
+	self.survival_objective = maps\mp\gametypes\_gameobjects::getNextObjID();
+	objective_add( self.survival_objective, "active", self.origin );
+	objective_icon( self.survival_objective, icon );
+	self.survival_world_icon = world_icon( self.origin, icon, 48 );
+	// CoDOL has two physical kiosks, not IW5's three armories. Advertise the
+	// locker's perk service above the same crate without inventing a placement.
+	if ( self.survival_kind == "kiosk_locker" )
+	{
+		self.survival_perk_icon = world_icon( self.origin, level.survival_kiosk_perk_icon, 72 );
+		self thread marker_rotation();
+	}
+}
+
+marker_rotation()
+{
+	level endon( "survival_over" );
+	// One real compass anchor advertises the two services of the same locker.
+	// Each update changes only that objective's material, never its position.
+	for ( ;; )
+	{
+		wait( 2 );
+		objective_icon( self.survival_objective, level.survival_kiosk_perk_icon );
+		wait( 2 );
+		objective_icon( self.survival_objective, level.survival_kiosk_ammo_icon );
+	}
+}
+
+world_icon( origin, material, height )
+{
+	icon = newHudElem();
+	icon.archived = true;
+	icon.x = origin[ 0 ];
+	icon.y = origin[ 1 ];
+	icon.z = origin[ 2 ] + height;
+	icon.alpha = 0.75;
+	icon setShader( material, 12, 12 );
+	icon setWaypoint( 1, 1, 0 );
+	return icon;
+}
+
+markers_lifecycle()
+{
+	level waittill( "survival_over" );
+	for ( i = 0; i < level.survival_kiosks.size; i++ )
+	{
+		kiosk = level.survival_kiosks[ i ];
+		if ( !isDefined( kiosk ) )
+			continue;
+		objective_delete( kiosk.survival_objective );
+		kiosk.survival_world_icon destroy();
+		if ( isDefined( kiosk.survival_perk_icon ) )
+			kiosk.survival_perk_icon destroy();
+	}
 }
 
 // Probe harness (only with +set scr_survival_test 1): scr_survival_buy
