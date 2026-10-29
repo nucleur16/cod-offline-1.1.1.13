@@ -24,6 +24,9 @@ restarted, replaced, or retired. No exploit payload was sent to a game client.
   is recorded independently; a timestamp or matching hook does not establish
   equality with every distributed executable. The embedded `unpacked.z` is only
   the high-address loader range, not a complete replacement for the C1 text.
+  This reference has a `.tvm0` section; the earlier audit's VMProtect/`.vmp0`
+  attribution is not confirmed for it. Missing plaintext string references do
+  not by themselves establish virtualization, reachability or missing bounds.
 
 ## Public disclosures and applicability
 
