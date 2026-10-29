@@ -1372,6 +1372,7 @@ static void PatchGbkInput(void)
 #include "managed_quick.c"
 #include "quick_start_gate.c"
 #include "room_join_error.c"
+#include "client_queue_wait.c"
 #include "initial_room_owner.c"
 #include "training_preview_publish.c"
 #include "room_roster_roles.c"
@@ -1433,6 +1434,7 @@ static void __cdecl TakeOver(void)
     PatchQuickStartGate();
     PatchTrainingPreviewPublish();
     PatchRoomJoinError();
+    PatchCapacityQueueWait();
     PatchInitialRoomOwner();
     PatchRoomRosterRoles();
     PatchNewsRefresh();
