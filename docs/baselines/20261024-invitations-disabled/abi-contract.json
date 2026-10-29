@@ -128,12 +128,12 @@
       "6": "7551179f2a8dfc19dba274da730d7dd4977448e9b2d5764eca50f953fc3f030c",
       "7": "e571c9ead72a87adc06a991eb9405becf3f1c11027b2a75071d04404367a6ddd",
       "8": "03357b03005002743962356a363817c5d6bb784001cd0053cd0628c558839560",
-      "9": "fa8bbef85a682f3382714f780c59ce9484503aba3dafca546cc450cba91547cd",
+      "9": "882de5928ec6f966b084d6718b74ffb138c165e11266a4d1569e7846a3a6ab09",
       "10": "3c4619834d9077673be7785d7adadbd6834ca92e1b06d899088bd8c59b96d771",
-      "11": "4f8278d390b23112a0050cd38de6fd1a9cf3c359e8099f20c30b34c217ec2846",
+      "11": "938c833f4d18cdfd3ac61181ea50b4373c2cfa5dded928675b52896f1663214c",
       "12": "4457b81c7a5dc599edb0b437c8cafaacceb84c1fd27869219e3cd89bda577694",
       "13": "a784d1e2405f1b30142a1203c248a6786353bee295c18358259c3ac88fcbc8fa",
-      "14": "cad5f2a1ae745d066fb54c50b11b4653f565633397cdc233e8647b19fd00759a",
+      "14": "ba6aa6bbcf8593c1f63f4295d1ee80e4582860553b90a5cd734031d352069bde",
       "15": "579ac6cf29a4f36f4047dec4aab3c743cebf086ccb7689597e03f91af6796b32",
       "16": "0c3f018b2d77d9fdc25feadfa3e2c74e280f6296e661d219414ff993e16b424e",
       "17": "dde55e5b5240b918a1b2da805e4e8bcd9f634c7f49befb6e6ef99872887eedc2",
@@ -163,7 +163,7 @@
       "41": "a007b6758e39870acf7ca41acada887c635bf94ad536763aa70b28cb44449bfa",
       "42": "be26d781bc08a0393df5b677221a764c84898fb6d2bd551799212a842556ea1b",
       "43": "261bdf5f6c70ab1ce74908a5dab0e2de1efae430127e7f79aee45d9d98204f02",
-      "44": "d256ccb647d0eac97f881d02ecf751d6ebad943c96cdb3764ffd80ad85e5782f",
+      "44": "d86c965722e7ee7b2cdd08a6d27f7eb3c9a7b0f46919b68030421352e9a5f0bc",
       "45": "d501261146ab44093b0f9a60a55ca7b31cdda8e50cb18ebd7e73da92835affcf",
       "46": "f57f52fabef1e1cd01938498c46fdc9a0864118433725002861a5c0407d3a3b0",
       "47": "5ceb5ce7e2f6f38c810b02af5f3a62d742e4531ef71f6c6d032496eede8d4e1d",
@@ -184,98 +184,98 @@
       "62": "3f4ab4a710117697313ee0000a7328468ead12a1b54226370facc1816e4e9f48",
       "63": "97c9d5cdc17b8e838dd48afd2f06817ffdc26e7a1be246ab68451bfc90708a41",
       "64": "de8796ddca1f780cd14f4599db2c6a8207a2c9b61b6ebdcbf0918b9ff76f4382",
-      "65": "e0268ad42f217387d8f8984b4ec3b8efeb7902d53ca48cc7c40bb7981084794d",
-      "66": "df87e5596b85c3c896bc68676c3227c524274530cc2956d84e9f35fde9b65e23",
-      "67": "c0518715d2d98624eb2fc07db9876529a33c249a9672ac70e7b4965749ef725e",
-      "68": "43433b8efb8ef5b171a883decb9e69a2919159eab03d55d0ad47ba4f9b20536d",
+      "65": "9afbb22c8f795fac10b273f326fc51a5c2504735033aab44dbf19bbbd77ea1e2",
+      "66": "1f5a44fb39970b2c3a5954cd9277879bf8313022da0e8f04d413a7f26de8d162",
+      "67": "3e0a5650091697e9fee13bb488f189f774603018f13f01c2c034b7dac5e282ab",
+      "68": "71c517fb6d43409b896e1a4cf1f58f249bb4db7a8aebf23bb34ddcfa506dea38",
       "69": "1cf0a7d3f7e0b69219da77939b30d1dd2c1b7c2478cd2d49d59c3f21c81a44be",
-      "70": "435b1d1d6d0739916e17a73ce3d3f54a4782753064df9724a113f3e133e30b6d",
+      "70": "84465c1fd6a8c1cfa3ced02163117ef13806c748910d0e0542579476217294e1",
       "71": "eb3921ad3177546d717d63946f7d648a9d29593cfd3cbb1f30cde6e1d8877eec",
-      "72": "1c3dad980748d4cfaa5fff345e3bf5a198dae794d2bd5b9acccffc17946b6b05",
-      "73": "1655799cf81b72af57a2c2fd2eb54559f4616d87978893bd2937cb493ba3814c",
+      "72": "5b272e432c0c9cbdb28ffc2f8e1323343a2efe4d9e988546156384a72e2e6754",
+      "73": "9ae95510a4dc44f59559dd3d654293a6cbab74ca0a963cb225ebe6ca26c0e1ce",
       "74": "879d06b5a1754e471e42183e44cbb7575cac9b28b7539c1e958b167440825455",
-      "75": "95fbc702a6cfda9d8604121bc9312fb77b7c608efeeaf7805d110b6c92108a4a",
-      "76": "580e6e25c3af66f1a90bc377c0145f44ceddc10030c5f738aee2ef2807e9ac68",
-      "77": "cf480833d1ecbf317d64f389e1c789ac735e6c426c449a83c7f64352c06dcc1d",
-      "78": "997c1eed68cdde4270b7a080ab4d3803eaaf8da21499e3c9eca93af6e3896f26",
-      "79": "d1dd3b8b726bb53e36c49f66b9df9dc0e71963f6fe86465373070d4d5d24d203",
-      "80": "ec8b566ffd6c55209b8b68f16756bf5adaff84b67716a493fae2178c3e5d1a9b",
+      "75": "6082fcf071557d4d2cd5b6a6ba9c748abeea9000b902989a6f045fa21026e134",
+      "76": "3b9a529cd18d1ee082e829530d20949440b97446d3f98c8350a06a03a6ba9d8c",
+      "77": "fdaf80d3fb7cd14b1f204f04d9867c814b6824f418ae43ad5ab888a4246a90b0",
+      "78": "0b7958065f332a99ad002a3093812946f0cf44156e7d822055d8ccc8281c4e04",
+      "79": "99a1a89254a6a52698293ead805b0175e687f3cbd797d5ebf6a3d8ae762ac01c",
+      "80": "75262591d909d5bfdccdc13a1e030bd2461c60764b3c2a75c8a347980b98b1eb",
       "81": "6ea92ec96fb34bd40243f083f3f362e3f91669bcd37c4dcf4168636d8acf3ce6",
       "82": "4bdce973a8f9eaafc5c80899d50cefc1bef5a396b5d981252e872fa4a465d387",
       "83": "20f712d850e8cc663032d56804d34a8288cae799627116bb787dde2cb61069d2",
       "84": "000314487e857d04ee3295b8bad2e695d9f080201d07c1d3ee97eebc87d76e53",
       "85": "53234d1ba1ee1deb400c56e1a8d12d6519c8c05469e4121d627d0c4641510fed",
-      "86": "3beccbd6fa14671310ac9e7b1a098e015956af55705d6804626b207395ca0395",
+      "86": "fbfc6b9514894a8cb3fa223346a81690893d41860613b11e168422e135f18189",
       "87": "67ae728c3505005b7669a55c57dc1f90e08faf3217d828c986dc145035f06890",
       "88": "26763fc1268057c81b904328cf13352e77bc9ae156962a6648078df2c2f58dfb",
       "89": "ed085bc102c4d74d0b94535088385481cf81c97db5dcbe03bcc0423b78eccd5d",
       "90": "d83abe34092c5dd37aa85bee2a1b61734600642e8473acaadd7c86edc8926058",
-      "91": "fd10118d97eda1cd555577a94f367a3036bb507e9459564f7db3ef9a327edb20",
+      "91": "b931f6beaa026c7cc349b0f5e8f1ac6bac13bd6c2d9049345021aaeb257f0eac",
       "92": "3d981c33e78df542de060b29611bcebade0d772ca771a274cc3847dd91d25b99",
       "93": "e944f52254c855c331854eb0cfd48b4b42e6c593a90cbf105ea88738fb79b318",
-      "94": "118e4bacc0f859d25de2693c14f016daef112cdff9e3f01130867c8b77d19862",
+      "94": "bcbae65740f16812b1dc15f7f280ea4e7e86b0c0caf37709623b70ca277526d6",
       "95": "ae039107ea050adccdc7051ce63a0888f68629311fcf269ddf94bf7b6bd8b1d4",
       "96": "340e6f8ff3a98783ca62b1bcf91e5263912b27399d1eebcad95d26f39219e5d0",
-      "97": "bcae1ba5b2970586ac2ae623e1d48dcf979ef2e271c24abbcd5baed827db365a",
+      "97": "fcefd8e1b6c5b9f45c2ef1fc9d6663d99231d64b92c6f85978c13bc22a2179e8",
       "98": "1d84a97fffcb4165cc1c007536cc83a2fafe0d16efd4e2e00600bc00e5fa4a46",
-      "99": "26c2f2f7571dfd4093b0cb84b3d61eaf1b2f145e85e383b77cd6fa9572f7ad3d",
-      "100": "fb8d0b34d4f45d9e82923c71c6ead1dbb8cd187963a9984ad8ea4919a9f72b16",
-      "101": "c840711bb8fb603a494c69c0e2850272084b04ddd2f9fe9b95881374dbb45287",
+      "99": "371acb76031b073a2ef8b8829f4f080f1929b03aaab4262247d5a90c71df55bd",
+      "100": "362c9d97d24411199745648fd2dedbc5ad5f16107b93cce282cd4147fc2d2d95",
+      "101": "819ae087689f3e1b4d1f944225c13843b932101c6ce5673b68de13eb5523f989",
       "102": "be385a459e4a07123aea2ac0844b0b8901789db564e6d962966bfef3303324e7",
       "103": "7e1a17675e43bdaffd165b4e55260248727b9592de8f06d461e75b1882015701",
-      "104": "a0e5677284e2aa67cab3f9533d799fbf2a31e780e9152bc001b53c61b58fc550",
-      "105": "855445f3c291323ca5df3fcedcb7f04098d1a25b5e337be50956ac330f008cf0",
-      "106": "c3585cfaa1a9f8bcf73d8d78940046e9518a17f4c60d0096a394182366157872",
+      "104": "b78fc2065499d4ae95971f16c3fac63ec6b00e20825386d2622ae2f58cc8d5ec",
+      "105": "0bea42b627423ccef00452ca86edd079f27316105485954a79506e334d7a424f",
+      "106": "d4299c8243527c5bcb080725b8239db05588f1a01db77113205f201d291ffd39",
       "107": "a9dd47f29e70b92c81ebf964395b2f6f9ca31cb7f40f9c5ef5db47c2dfb893aa",
-      "108": "ab10477b1cebe78cf27275dcd829546b4a26ee128ebfa8dfc1437454141172e6",
-      "109": "08c79b8c4a05a3d5cf9df87ae4ecb99b2b76c68aaf764c524c79941630a4a335",
+      "108": "f0f2edbc44eeec2f6b26ed6580032dd27f0f6a0c567cb0d5e4c196bba51dc2b4",
+      "109": "9a80a27f182c811acc1ce488d71991c28522498213a817af87f270efee876e35",
       "110": "3b66c9cf58735d8b63c218dc641a8ded6692a8ef23a24c3d6a1be1b6dcb5e5e1",
       "111": "501336ba0d78d15cd6e8cd9c22bb90f3493fd646b45e5713b95c095cc3ce6070",
       "112": "d0fdaf18393ee23988f6f30af3520860486b40a1528b27ab229b10c91b2ed669",
-      "113": "0426ef1e90287eaecb85a4a185719111af27c0b8adfa147511cc672b1d019e45",
-      "114": "30ba154a9e961f2d5694a7e615974b352e2b19aaa66158b20fd3c04de0725e10",
-      "115": "d4bd28c1be0f7a67f1d77949d63cb2522a5e4f10089999b04004b33d943ab877",
+      "113": "41f1464447b8076009cd81c3fe5871f89fb250f940c2febb8f4af951a5731847",
+      "114": "876a483e4a366fe4934a14f451fdbd5c188718871567ea24c55acb4897eb9ec2",
+      "115": "16bbf92aee8bf69ffbf8860689946a1fb0e9bc678aa5264fdef9b6a3446f8289",
       "116": "d2c43c3907d060255c405bfbdf2df68a321adc4f8022e7bb6721083e27c2dd91",
       "117": "5107cbce99385032772d3c7923b3120f42252d15d893ffdb7ed43ed7e1888cff",
-      "118": "1bc2de99ed247c01cd0295a3a3c0265a749d6651c0f4eb7608a0577f04315386",
-      "119": "8551f544cd599c676e392438c1cd13d2d4c3046a3341b1d2c9d98346ecb31193",
-      "120": "06bc84fdca9c1d96382b71e641fc22fdc173a69b262dd039d1c7ad26d399c521",
-      "121": "36dd00539ee9af0989ca2b0b3014f4bd696b251bf17dc0f5ab3c5f6fedb864fe",
-      "123": "acbd5f9a95b681bb6826c2ee60085c34c5ed29d458383ee442e6ae097b2ca1ec",
-      "124": "cc50add254dd0198459f878e97b94fba897730efbf1c7acefb501a3f0672fe31",
-      "125": "bf7e31655356771df46fb3f7ccdd6ee913ccef3473686950762fbc29bcac75b1",
+      "118": "99bdf9bbab46f24074e1ade14813e927dfed73e1dec078193f0e2f2c5fd2553b",
+      "119": "ffe8173bdbc52f69a5d50807ad2b0f125db173ef0db4c0c3078534b9a6f68119",
+      "120": "18a78dcf345f0a0537a5ed146f15eff4d2b5fb085e287d63f29338d75604e531",
+      "121": "fd926df773942573420c8191ba333075d5813c9f75027e6d5da3d4eb13b78524",
+      "123": "805c86d6b355a088a0ab07fa0774708a68867dc7dff42775ad8353d9fd2c06be",
+      "124": "ccbc9e187e32d304a5b03f3733e7315c79c7c6e5840a636d556d329f10e88ce0",
+      "125": "4df8253c18536bd3ebccf9151c8aa08fe30e9c8707b9fb7bdcebe18fe70351b8",
       "126": "9ae7c6c7a55e1264090ffb1ed2be0907ae271d14c94a23d478492b247939f406",
-      "127": "3348ae71330803cac9524fde7a0cd8596848c308b63f2ef490b4a41420c98115",
-      "128": "e1cbc80b00ad6eaf9e2678eb07877c991763c020c440f557931648225253a61a",
-      "129": "150ceeee166ff4d83852c36061626565594a30d5eb1fb9553b3fa68770128409",
-      "130": "0749867b2180aa3c2400a58ee32c96e550c039a818c7450660d70e531099a4be",
+      "127": "f33765f0ad350be46e4de248a7b34980ac995147f69f96c07ead5827e153a478",
+      "128": "f5a4f795ec302559a5b58f20f11fe8cbd8c1e8e6571de999491d3a7888acd5bd",
+      "129": "a9cb7da77aade074baf70570df258babb50566bb3b2f935e8ab81e011585d43e",
+      "130": "178561d16e44f80639b65cd85be45182aab7cca92e8da3a0f221d402d757eca6",
       "131": "bb9b70ca5fc5aed7784c1324cc10b06b999b5c48c2c09600152f2ce4af5d9e3a",
       "132": "16f1f22b006d74cfb1081159eff94a974bea7e78506f5e7d480e876539592863",
-      "133": "f5f807769d519fb31c2bbf3e2f5d9c4c686fb0f74b2b42ddcc6b65f02d47c768",
+      "133": "d0bb381b7975dc5023984e81e009d6664e9bf9cac851eaae3758182b78734463",
       "134": "9fafdefba08750d67dc251da028d827f68a188902ebded6dcff28dc936be01ba",
       "135": "9f514cc03448d55ad48fcbbdde87aef66ec64f2e7a2ff43aad383d44514caade",
-      "136": "948e5347c923bf84f6054786179faf32f1dafc7c73cd4a71544f40ea099c924e",
-      "137": "24bfe4a975d5feb4d9314847d04c8ba7495583e35da2f318446804d376bb6b78",
-      "138": "6c4e9925706929e135e83f7277c80cbd4a4cca61871098bcb06e3c767c647d8b",
+      "136": "c5d3316e371cf86b15cb4f7e8364ccd6fdc2869e0a4885cbef5752ea87dfe12a",
+      "137": "1e16db27e2a0be7506582510dfd875f7743180f5c768f40dc396a09a0d7bcf6a",
+      "138": "ebc67a215728ec52b09f44790c5dc4f4c4342fd19becedbed7d4dcf7fa2b4dba",
       "139": "deb4abbc0c5299832b2ab002d1a5117ff4e1aaf7ac57ca26f0a4b53cc1004f81",
-      "140": "ccbdd532b5562f37ade3c14c96c891e5640ac92aaad480edfe47a92dd948442b",
+      "140": "6e1b2b6b58d4e8297b5c7b9325203236f512ad08e7488f3b22e48279395f406e",
       "141": "9f0093031408b5f16f88de0a176244b879bced2587fd38066881ab295adf8d7b",
       "142": "6f476b711259e18dd1aab04db90915b845f273e2b155b056babc1f0f136b849e",
       "143": "dac52c97ca7f2378d7018f36869e2e3f46962f6076de40c6df1de07ad0e48f03",
-      "144": "ec750c7180b175fbacf206484a58c538ef8b1fd2102f91a88abf1398aa6518c6",
-      "145": "4b292b838caadbcda91dedab5e565314c5d2bc24fc1c3da36d4190d147bc3178",
-      "146": "9fe9110f636361a4c7527dc3a4239f148c6a24bc6b00b211e371d16ff62ded9a",
-      "147": "daa15689e4b421108f44a9cbae3568f5495215d74eda418eef7fa2db2653ab71",
-      "148": "ab8b2a273a425b18d8eaa400adc72948db841e84620d66014e7f0a0eef85f8db",
-      "149": "1b8620d9aaaaee552b7e823ff95a2819bda987bd9b7d448fdc8dbc0eda2a3c02",
+      "144": "bb0dcc65ee01f66b0f77fc850a13ed57830da69d5dd461464d167ab6120039b3",
+      "145": "9b870fdf9c5f002d9219f2502c3a391dfd422831ec792f28660cd290f3e20eb0",
+      "146": "e2be1bab8e792069b8fb8aff7cb38bf82a39e3b61b8590636ecb34c5d1b83fc8",
+      "147": "ede691695d31409a6f3d43eb7184e536ed7cd66d420a515f63386a4b6c08715b",
+      "148": "a0120b2ccaef14c0929676429452c754930fcf629aec20bf74f091b2714730f9",
+      "149": "2e530f20a1646fd5bb19b0d73eacbf74994d6c46196048436e314f85ba7d1864",
       "150": "3cf7226fa0ea4528aeaf576f27ec01c20529a13831ddb6a427fa39ac92dffb1a",
       "151": "77529b4f4446bc2f33b74f463ba33b4e2f2c03fe06fd27732e4bef2790f093b2",
       "152": "1af37830e83c9ad79ebd317180c60a50366da84cdf750d47019dda6205ed0011",
-      "153": "15eb9ca492924d519e9f94a660484dda485a183521c5b926b5acc77e4a227bc1",
-      "154": "1eba385ae8b065e05263980bb6e0fa5005a8baf0f53937c7a433a002ac925dd2",
+      "153": "ca15e77b45087db6bcf2122ff2a6bece125f2456949e19262cd74574af77ac8e",
+      "154": "2f2f6df147ff9d30f161ca0b03c50380c4847fe6e9f91cc0c5f28fe55c9ff41b",
       "155": "322f68df691f867ce878cea57120c137d30eb8955d1b46cf0d66073f6100880e",
       "156": "d982b62e6b3c45a1e721fe61a38ccded76fd8a70c693c645fc5d9b5b1164c4bb",
-      "157": "ec7af78ac591895f9a539c9acabe82c86369a619709b8cd5acf390f8b14c16d2",
+      "157": "59ded6f13197c6f02dd254714b5cc3b8972f7c47dbb2b7b5523633e318dea7e1",
       "158": "928de345e0bf0affc5adc8db0d448de3ec3a9956c523caddb7786614d6d9faa0",
       "159": "22c20abfa20bf38a96aa833c0c664178c54cd1ed356995f599ec02684915f57b",
       "160": "70cf519e41e7ba5b0652866e8f113d8258704bc80b31a7c6b1920f457d0bb6f3",
@@ -299,6 +299,350 @@
         "method": "codo.controllers:MatchController/private/onRankedMatchPassedTimeTimerHandle",
         "before_sha256": "8bd9490b4e2ff3de355822b145e9e7759fdd9b054a1ac37998e03254fed8f42c",
         "after_sha256": "bcae1ba5b2970586ac2ae623e1d48dcf979ef2e271c24abbcd5baed827db365a"
+      }
+    ],
+    "reviewed_body_updates_20261028": [
+      {
+        "index": "9",
+        "method": "codo.controllers:MatchController/private/onSetQuickMatchTypeHandle",
+        "before_sha256": "fa8bbef85a682f3382714f780c59ce9484503aba3dafca546cc450cba91547cd",
+        "after_sha256": "882de5928ec6f966b084d6718b74ffb138c165e11266a4d1569e7846a3a6ab09"
+      },
+      {
+        "index": "11",
+        "method": "codo.controllers:MatchController/private/gotoSurvivalQuickMatchHandle",
+        "before_sha256": "4f8278d390b23112a0050cd38de6fd1a9cf3c359e8099f20c30b34c217ec2846",
+        "after_sha256": "938c833f4d18cdfd3ac61181ea50b4373c2cfa5dded928675b52896f1663214c"
+      },
+      {
+        "index": "14",
+        "method": "codo.controllers:MatchController/private/setMatchTypeByRoom",
+        "before_sha256": "cad5f2a1ae745d066fb54c50b11b4653f565633397cdc233e8647b19fd00759a",
+        "after_sha256": "ba6aa6bbcf8593c1f63f4295d1ee80e4582860553b90a5cd734031d352069bde"
+      },
+      {
+        "index": "44",
+        "method": "codo.controllers:MatchController/private/listPlayListNew",
+        "before_sha256": "d256ccb647d0eac97f881d02ecf751d6ebad943c96cdb3764ffd80ad85e5782f",
+        "after_sha256": "d86c965722e7ee7b2cdd08a6d27f7eb3c9a7b0f46919b68030421352e9a5f0bc"
+      },
+      {
+        "index": "65",
+        "method": "codo.controllers:MatchController/private/getXPLeagueFactor",
+        "before_sha256": "e0268ad42f217387d8f8984b4ec3b8efeb7902d53ca48cc7c40bb7981084794d",
+        "after_sha256": "9afbb22c8f795fac10b273f326fc51a5c2504735033aab44dbf19bbbd77ea1e2"
+      },
+      {
+        "index": "66",
+        "method": "codo.controllers:MatchController/private/getXPLeagueFactors",
+        "before_sha256": "df87e5596b85c3c896bc68676c3227c524274530cc2956d84e9f35fde9b65e23",
+        "after_sha256": "1f5a44fb39970b2c3a5954cd9277879bf8313022da0e8f04d413a7f26de8d162"
+      },
+      {
+        "index": "67",
+        "method": "codo.controllers:MatchController/private/getGPLeagueFactor",
+        "before_sha256": "c0518715d2d98624eb2fc07db9876529a33c249a9672ac70e7b4965749ef725e",
+        "after_sha256": "3e0a5650091697e9fee13bb488f189f774603018f13f01c2c034b7dac5e282ab"
+      },
+      {
+        "index": "68",
+        "method": "codo.controllers:MatchController/private/getGPLeagueFactors",
+        "before_sha256": "43433b8efb8ef5b171a883decb9e69a2919159eab03d55d0ad47ba4f9b20536d",
+        "after_sha256": "71c517fb6d43409b896e1a4cf1f58f249bb4db7a8aebf23bb34ddcfa506dea38"
+      },
+      {
+        "index": "70",
+        "method": "codo.controllers:MatchController/private/getDelayToShowButton",
+        "before_sha256": "435b1d1d6d0739916e17a73ce3d3f54a4782753064df9724a113f3e133e30b6d",
+        "after_sha256": "84465c1fd6a8c1cfa3ced02163117ef13806c748910d0e0542579476217294e1"
+      },
+      {
+        "index": "72",
+        "method": "codo.controllers:MatchController/onRoomJoined",
+        "before_sha256": "1c3dad980748d4cfaa5fff345e3bf5a198dae794d2bd5b9acccffc17946b6b05",
+        "after_sha256": "5b272e432c0c9cbdb28ffc2f8e1323343a2efe4d9e988546156384a72e2e6754"
+      },
+      {
+        "index": "73",
+        "method": "codo.controllers:MatchController/onRoomCreated",
+        "before_sha256": "1655799cf81b72af57a2c2fd2eb54559f4616d87978893bd2937cb493ba3814c",
+        "after_sha256": "9ae95510a4dc44f59559dd3d654293a6cbab74ca0a963cb225ebe6ca26c0e1ce"
+      },
+      {
+        "index": "75",
+        "method": "codo.controllers:MatchController/private/bind_rankedMatchInProgressInRoom",
+        "before_sha256": "95fbc702a6cfda9d8604121bc9312fb77b7c608efeeaf7805d110b6c92108a4a",
+        "after_sha256": "6082fcf071557d4d2cd5b6a6ba9c748abeea9000b902989a6f045fa21026e134"
+      },
+      {
+        "index": "76",
+        "method": "codo.controllers:MatchController/private/bind_startMatchCountingDown",
+        "before_sha256": "580e6e25c3af66f1a90bc377c0145f44ceddc10030c5f738aee2ef2807e9ac68",
+        "after_sha256": "3b9a529cd18d1ee082e829530d20949440b97446d3f98c8350a06a03a6ba9d8c"
+      },
+      {
+        "index": "77",
+        "method": "codo.controllers:MatchController/private/bind_startMatchComplete",
+        "before_sha256": "cf480833d1ecbf317d64f389e1c789ac735e6c426c449a83c7f64352c06dcc1d",
+        "after_sha256": "fdaf80d3fb7cd14b1f204f04d9867c814b6824f418ae43ad5ab888a4246a90b0"
+      },
+      {
+        "index": "78",
+        "method": "codo.controllers:MatchController/private/bind_roomListDP",
+        "before_sha256": "997c1eed68cdde4270b7a080ab4d3803eaaf8da21499e3c9eca93af6e3896f26",
+        "after_sha256": "0b7958065f332a99ad002a3093812946f0cf44156e7d822055d8ccc8281c4e04"
+      },
+      {
+        "index": "79",
+        "method": "codo.controllers:MatchController/private/bind_quickMatchReady",
+        "before_sha256": "d1dd3b8b726bb53e36c49f66b9df9dc0e71963f6fe86465373070d4d5d24d203",
+        "after_sha256": "99a1a89254a6a52698293ead805b0175e687f3cbd797d5ebf6a3d8ae762ac01c"
+      },
+      {
+        "index": "80",
+        "method": "codo.controllers:MatchController/private/bind_groupCounts",
+        "before_sha256": "ec8b566ffd6c55209b8b68f16756bf5adaff84b67716a493fae2178c3e5d1a9b",
+        "after_sha256": "75262591d909d5bfdccdc13a1e030bd2461c60764b3c2a75c8a347980b98b1eb"
+      },
+      {
+        "index": "86",
+        "method": "codo.controllers:MatchController/private/startRankedMatchGoGameTimer",
+        "before_sha256": "3beccbd6fa14671310ac9e7b1a098e015956af55705d6804626b207395ca0395",
+        "after_sha256": "fbfc6b9514894a8cb3fa223346a81690893d41860613b11e168422e135f18189"
+      },
+      {
+        "index": "91",
+        "method": "codo.controllers:MatchController/private/leaveRoom",
+        "before_sha256": "fd10118d97eda1cd555577a94f367a3036bb507e9459564f7db3ef9a327edb20",
+        "after_sha256": "b931f6beaa026c7cc349b0f5e8f1ac6bac13bd6c2d9049345021aaeb257f0eac"
+      },
+      {
+        "index": "94",
+        "method": "codo.controllers:MatchController/private/startMatchCountDown",
+        "before_sha256": "118e4bacc0f859d25de2693c14f016daef112cdff9e3f01130867c8b77d19862",
+        "after_sha256": "bcbae65740f16812b1dc15f7f280ea4e7e86b0c0caf37709623b70ca277526d6"
+      },
+      {
+        "index": "97",
+        "method": "codo.controllers:MatchController/private/onRankedMatchPassedTimeTimerHandle",
+        "before_sha256": "bcae1ba5b2970586ac2ae623e1d48dcf979ef2e271c24abbcd5baed827db365a",
+        "after_sha256": "fcefd8e1b6c5b9f45c2ef1fc9d6663d99231d64b92c6f85978c13bc22a2179e8"
+      },
+      {
+        "index": "99",
+        "method": "codo.controllers:MatchController/private/onRankedMatchGoRoomTimerCompleteHandle",
+        "before_sha256": "26c2f2f7571dfd4093b0cb84b3d61eaf1b2f145e85e383b77cd6fa9572f7ad3d",
+        "after_sha256": "371acb76031b073a2ef8b8829f4f080f1929b03aaab4262247d5a90c71df55bd"
+      },
+      {
+        "index": "100",
+        "method": "codo.controllers:MatchController/private/onRankedMatchGoGameTimerHandle",
+        "before_sha256": "fb8d0b34d4f45d9e82923c71c6ead1dbb8cd187963a9984ad8ea4919a9f72b16",
+        "after_sha256": "362c9d97d24411199745648fd2dedbc5ad5f16107b93cce282cd4147fc2d2d95"
+      },
+      {
+        "index": "101",
+        "method": "codo.controllers:MatchController/private/onRankedMatchGoGameTimerCompleteHandle",
+        "before_sha256": "c840711bb8fb603a494c69c0e2850272084b04ddd2f9fe9b95881374dbb45287",
+        "after_sha256": "819ae087689f3e1b4d1f944225c13843b932101c6ce5673b68de13eb5523f989"
+      },
+      {
+        "index": "104",
+        "method": "codo.controllers:MatchController/private/onLeaveRoomHandle",
+        "before_sha256": "a0e5677284e2aa67cab3f9533d799fbf2a31e780e9152bc001b53c61b58fc550",
+        "after_sha256": "b78fc2065499d4ae95971f16c3fac63ec6b00e20825386d2622ae2f58cc8d5ec"
+      },
+      {
+        "index": "105",
+        "method": "codo.controllers:MatchController/private/onRankedMatchCanceled",
+        "before_sha256": "855445f3c291323ca5df3fcedcb7f04098d1a25b5e337be50956ac330f008cf0",
+        "after_sha256": "0bea42b627423ccef00452ca86edd079f27316105485954a79506e334d7a424f"
+      },
+      {
+        "index": "106",
+        "method": "codo.controllers:MatchController/private/onRoomLeftHandle",
+        "before_sha256": "c3585cfaa1a9f8bcf73d8d78940046e9518a17f4c60d0096a394182366157872",
+        "after_sha256": "d4299c8243527c5bcb080725b8239db05588f1a01db77113205f201d291ffd39"
+      },
+      {
+        "index": "108",
+        "method": "codo.controllers:MatchController/private/onCreateRoomHandle",
+        "before_sha256": "ab10477b1cebe78cf27275dcd829546b4a26ee128ebfa8dfc1437454141172e6",
+        "after_sha256": "f0f2edbc44eeec2f6b26ed6580032dd27f0f6a0c567cb0d5e4c196bba51dc2b4"
+      },
+      {
+        "index": "109",
+        "method": "codo.controllers:MatchController/private/onPartyEveryoneIsReadyHandle",
+        "before_sha256": "08c79b8c4a05a3d5cf9df87ae4ecb99b2b76c68aaf764c524c79941630a4a335",
+        "after_sha256": "9a80a27f182c811acc1ce488d71991c28522498213a817af87f270efee876e35"
+      },
+      {
+        "index": "113",
+        "method": "codo.controllers:MatchController/private/onQuickMatchHandle",
+        "before_sha256": "0426ef1e90287eaecb85a4a185719111af27c0b8adfa147511cc672b1d019e45",
+        "after_sha256": "41f1464447b8076009cd81c3fe5871f89fb250f940c2febb8f4af951a5731847"
+      },
+      {
+        "index": "114",
+        "method": "codo.controllers:MatchController/private/onQuickMatchMpHandle",
+        "before_sha256": "30ba154a9e961f2d5694a7e615974b352e2b19aaa66158b20fd3c04de0725e10",
+        "after_sha256": "876a483e4a366fe4934a14f451fdbd5c188718871567ea24c55acb4897eb9ec2"
+      },
+      {
+        "index": "115",
+        "method": "codo.controllers:MatchController/private/onMatchRoomListFilterChangedHandle",
+        "before_sha256": "d4bd28c1be0f7a67f1d77949d63cb2522a5e4f10089999b04004b33d943ab877",
+        "after_sha256": "16bbf92aee8bf69ffbf8860689946a1fb0e9bc678aa5264fdef9b6a3446f8289"
+      },
+      {
+        "index": "118",
+        "method": "codo.controllers:MatchController/private/onBackToRoomHandle",
+        "before_sha256": "1bc2de99ed247c01cd0295a3a3c0265a749d6651c0f4eb7608a0577f04315386",
+        "after_sha256": "99bdf9bbab46f24074e1ade14813e927dfed73e1dec078193f0e2f2c5fd2553b"
+      },
+      {
+        "index": "119",
+        "method": "codo.controllers:MatchController/private/onShowLobbySummaryTimerComplete",
+        "before_sha256": "8551f544cd599c676e392438c1cd13d2d4c3046a3341b1d2c9d98346ecb31193",
+        "after_sha256": "ffe8173bdbc52f69a5d50807ad2b0f125db173ef0db4c0c3078534b9a6f68119"
+      },
+      {
+        "index": "120",
+        "method": "codo.controllers:MatchController/private/clearEOGDvars",
+        "before_sha256": "06bc84fdca9c1d96382b71e641fc22fdc173a69b262dd039d1c7ad26d399c521",
+        "after_sha256": "18a78dcf345f0a0537a5ed146f15eff4d2b5fb085e287d63f29338d75604e531"
+      },
+      {
+        "index": "121",
+        "method": "codo.controllers:MatchController/private/onOnlyRoomInfoHandle",
+        "before_sha256": "36dd00539ee9af0989ca2b0b3014f4bd696b251bf17dc0f5ab3c5f6fedb864fe",
+        "after_sha256": "fd926df773942573420c8191ba333075d5813c9f75027e6d5da3d4eb13b78524"
+      },
+      {
+        "index": "123",
+        "method": "codo.controllers:MatchController/private/onRejectRoomMembershipHandle",
+        "before_sha256": "acbd5f9a95b681bb6826c2ee60085c34c5ed29d458383ee442e6ae097b2ca1ec",
+        "after_sha256": "805c86d6b355a088a0ab07fa0774708a68867dc7dff42775ad8353d9fd2c06be"
+      },
+      {
+        "index": "124",
+        "method": "codo.controllers:MatchController/private/tryJoinRoomHandle",
+        "before_sha256": "cc50add254dd0198459f878e97b94fba897730efbf1c7acefb501a3f0672fe31",
+        "after_sha256": "ccbc9e187e32d304a5b03f3733e7315c79c7c6e5840a636d556d329f10e88ce0"
+      },
+      {
+        "index": "125",
+        "method": "codo.controllers:MatchController/private/onConfirmEnterJoinRoomPasswordHandle",
+        "before_sha256": "bf7e31655356771df46fb3f7ccdd6ee913ccef3473686950762fbc29bcac75b1",
+        "after_sha256": "4df8253c18536bd3ebccf9151c8aa08fe30e9c8707b9fb7bdcebe18fe70351b8"
+      },
+      {
+        "index": "127",
+        "method": "codo.controllers:MatchController/private/joinRoomHandle",
+        "before_sha256": "3348ae71330803cac9524fde7a0cd8596848c308b63f2ef490b4a41420c98115",
+        "after_sha256": "f33765f0ad350be46e4de248a7b34980ac995147f69f96c07ead5827e153a478"
+      },
+      {
+        "index": "128",
+        "method": "codo.controllers:MatchController/private/onEnableAutoListRoomHandle",
+        "before_sha256": "e1cbc80b00ad6eaf9e2678eb07877c991763c020c440f557931648225253a61a",
+        "after_sha256": "f5a4f795ec302559a5b58f20f11fe8cbd8c1e8e6571de999491d3a7888acd5bd"
+      },
+      {
+        "index": "129",
+        "method": "codo.controllers:MatchController/private/onListRoomHandle",
+        "before_sha256": "150ceeee166ff4d83852c36061626565594a30d5eb1fb9553b3fa68770128409",
+        "after_sha256": "a9cb7da77aade074baf70570df258babb50566bb3b2f935e8ab81e011585d43e"
+      },
+      {
+        "index": "130",
+        "method": "codo.controllers:MatchController/private/joinChannel",
+        "before_sha256": "0749867b2180aa3c2400a58ee32c96e550c039a818c7450660d70e531099a4be",
+        "after_sha256": "178561d16e44f80639b65cd85be45182aab7cca92e8da3a0f221d402d757eca6"
+      },
+      {
+        "index": "133",
+        "method": "codo.controllers:MatchController/private/onCoopTutorialStarted",
+        "before_sha256": "f5f807769d519fb31c2bbf3e2f5d9c4c686fb0f74b2b42ddcc6b65f02d47c768",
+        "after_sha256": "d0bb381b7975dc5023984e81e009d6664e9bf9cac851eaae3758182b78734463"
+      },
+      {
+        "index": "136",
+        "method": "codo.controllers:MatchController/private/getSortingFlag",
+        "before_sha256": "948e5347c923bf84f6054786179faf32f1dafc7c73cd4a71544f40ea099c924e",
+        "after_sha256": "c5d3316e371cf86b15cb4f7e8364ccd6fdc2869e0a4885cbef5752ea87dfe12a"
+      },
+      {
+        "index": "137",
+        "method": "codo.controllers:MatchController/private/dispatchRooms",
+        "before_sha256": "24bfe4a975d5feb4d9314847d04c8ba7495583e35da2f318446804d376bb6b78",
+        "after_sha256": "1e16db27e2a0be7506582510dfd875f7743180f5c768f40dc396a09a0d7bcf6a"
+      },
+      {
+        "index": "138",
+        "method": "codo.controllers:MatchController/private/customizeSort",
+        "before_sha256": "6c4e9925706929e135e83f7277c80cbd4a4cca61871098bcb06e3c767c647d8b",
+        "after_sha256": "ebc67a215728ec52b09f44790c5dc4f4c4342fd19becedbed7d4dcf7fa2b4dba"
+      },
+      {
+        "index": "140",
+        "method": "codo.controllers:MatchController/private/listRoomNow",
+        "before_sha256": "ccbdd532b5562f37ade3c14c96c891e5640ac92aaad480edfe47a92dd948442b",
+        "after_sha256": "6e1b2b6b58d4e8297b5c7b9325203236f512ad08e7488f3b22e48279395f406e"
+      },
+      {
+        "index": "144",
+        "method": "codo.controllers:MatchController/private/onChangeRoomInfoHandle",
+        "before_sha256": "ec750c7180b175fbacf206484a58c538ef8b1fd2102f91a88abf1398aa6518c6",
+        "after_sha256": "bb0dcc65ee01f66b0f77fc850a13ed57830da69d5dd461464d167ab6120039b3"
+      },
+      {
+        "index": "145",
+        "method": "codo.controllers:MatchController/private/goRoom",
+        "before_sha256": "4b292b838caadbcda91dedab5e565314c5d2bc24fc1c3da36d4190d147bc3178",
+        "after_sha256": "9b870fdf9c5f002d9219f2502c3a391dfd422831ec792f28660cd290f3e20eb0"
+      },
+      {
+        "index": "146",
+        "method": "codo.controllers:MatchController/private/changeRankedMatchStatus",
+        "before_sha256": "9fe9110f636361a4c7527dc3a4239f148c6a24bc6b00b211e371d16ff62ded9a",
+        "after_sha256": "e2be1bab8e792069b8fb8aff7cb38bf82a39e3b61b8590636ecb34c5d1b83fc8"
+      },
+      {
+        "index": "147",
+        "method": "codo.controllers:MatchController/private/dispatchRankedMatchStatus",
+        "before_sha256": "daa15689e4b421108f44a9cbae3568f5495215d74eda418eef7fa2db2653ab71",
+        "after_sha256": "ede691695d31409a6f3d43eb7184e536ed7cd66d420a515f63386a4b6c08715b"
+      },
+      {
+        "index": "148",
+        "method": "codo.controllers:MatchController/private/isMapUnlocked",
+        "before_sha256": "ab8b2a273a425b18d8eaa400adc72948db841e84620d66014e7f0a0eef85f8db",
+        "after_sha256": "a0120b2ccaef14c0929676429452c754930fcf629aec20bf74f091b2714730f9"
+      },
+      {
+        "index": "149",
+        "method": "codo.controllers:MatchController/private/checkPartyCanPlayPlaylist",
+        "before_sha256": "1b8620d9aaaaee552b7e823ff95a2819bda987bd9b7d448fdc8dbc0eda2a3c02",
+        "after_sha256": "2e530f20a1646fd5bb19b0d73eacbf74994d6c46196048436e314f85ba7d1864"
+      },
+      {
+        "index": "153",
+        "method": "codo.controllers:MatchController/private/checkInPartySize",
+        "before_sha256": "15eb9ca492924d519e9f94a660484dda485a183521c5b926b5acc77e4a227bc1",
+        "after_sha256": "ca15e77b45087db6bcf2122ff2a6bece125f2456949e19262cd74574af77ac8e"
+      },
+      {
+        "index": "154",
+        "method": "codo.controllers:MatchController/private/onGotoMPCTChildPageHandle",
+        "before_sha256": "1eba385ae8b065e05263980bb6e0fa5005a8baf0f53937c7a433a002ac925dd2",
+        "after_sha256": "2f2f6df147ff9d30f161ca0b03c50380c4847fe6e9f91cc0c5f28fe55c9ff41b"
+      },
+      {
+        "index": "157",
+        "method": "codo.controllers:MatchController/cppRefreshPlaylistPlayerCount",
+        "before_sha256": "ec7af78ac591895f9a539c9acabe82c86369a619709b8cd5acf390f8b14c16d2",
+        "after_sha256": "59ded6f13197c6f02dd254714b5cc3b8972f7c47dbb2b7b5523633e318dea7e1"
       }
     ]
   },
