@@ -98,6 +98,7 @@ factory_precache()
 {
 	precacheShellShock( "electrocution" );
 	precacheShellShock( "explosion" );
+	maps\zm_factory_sh_teleporter::precache();
 
 	// Exploder effects: T5 plays them from the createfx exploders; the
 	// server plays them itself (factory_exploder).  The paths are the zone's

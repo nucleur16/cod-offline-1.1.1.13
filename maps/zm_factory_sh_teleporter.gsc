@@ -25,15 +25,53 @@
 //
 // CHANGED: SetInvisibleToPlayer is not a builtin here, so a "hidden" pad
 // keeps an empty hint and ignores use (pad.factory_usable).  SetTransported
-// (T5's first-person charge effect) is not a builtin either; the charge plays
-// T5's own 2D teleport sounds instead.
+// (T5's first-person charge effect, an engine screen effect with no xanim
+// behind it) is not a builtin and C1 has no equivalent; the charge plays
+// C1's own player teleport effect, maps/zombie/fx_portable_teleporter_player
+// (common_gametype_zm, the effect C1's teleporter_zm puts on a teleported
+// player), on each player as the charge takes them and at their landing
+// spot, and fades the view to the zone's flare vision over the last 0.3 s
+// before the black room.  The black room takes T5's CSC black_box_start
+// vision, "default" (common_mp, mounted by every match).  The aftereffects
+// are T5's whole CSC set except the FOV one (cg_fov is the client's):
+// explosion and electrocution shellshock, cheat_bw_invert_contrast,
+// zombie_turned, the four-step contrast "flashy" sequence and flare, with
+// T5's CSC timings (all the visions ship in common_mp or zm_factory_sh).
+//
+// STANCE (user, 2026-10-26: "when the player is in the teleporter enforce
+// standing up").  T5 lets a player teleport crouched or prone (its black
+// room takes stance offsets).  Here every player the charge takes is stood
+// up (setStance "stand") and held standing (allowCrouch / allowProne false)
+// while on the pad during the charge and until they land at the mainframe;
+// a player who steps off the pad before the beam fires is released at once,
+// and the hold is also lifted on death, last stand or disconnect.
+//
+// AUDIO.  T5 plays the teleporter's audio from CSC (zombie_cod5_factory_amb
+// .csc) on the client notifies this script sends, and the players' lines
+// from teleporter_vo.  C1 runs no CSC, so the server plays each at T5's
+// moment; see the AUDIO section below for every T5 alias -> C1 alias.
 //
 // NOT TAKEN: the "teleporting too often after round 20" hound punishment
-// (T5 special_dog_spawn; _zombiemode_ai_dogs has no out-of-round spawn), the
-// teleporter VO (create_and_play_dialog level lines are not in C1), the
-// black room flashback images and the FOV aftereffect (CSC).
+// (T5 special_dog_spawn; _zombiemode_ai_dogs has no out-of-round spawn) and
+// its sam_nospawn line (in no C1 zone); the tele_help_<n> / packapunch_see
+// trigger lines (the edit has neither trigger and C1 has no tele_help /
+// perk_packa_see character line); the pole_fx_<n> spark poles (no pole_fx
+// structs or createfx entries in the edit, although pole_spark ships in
+// zm_factory_sh); the black room flashback images (CSC) and the FOV
+// aftereffect.
 
 #include maps\_zombiemode_utility;
+
+// The PA's one-line-at-a-time hold (T5 pa_play_dialog waits for the line's
+// sound to end; script cannot read a C1 line's length, and the ancr lines
+// are short announcements).
+PA_HOLD = 3;
+
+// Level precache window: called from zm_factory_sh factory_precache.
+precache()
+{
+	level._effect[ "factory_teleport_player" ] = loadfx( "maps/zombie/fx_portable_teleporter_player" );
+}
 
 init()
 {
@@ -47,6 +85,9 @@ init()
 	level.is_cooldown = false;
 	level.active_timer = -1;
 	level.teleport_time = 0;
+
+	level.factory_pa_speaking = false;
+	level.factory_sound_ok = [];
 
 	flag_init( "teleporter_pad_link_1" );
 	flag_init( "teleporter_pad_link_2" );
@@ -227,6 +268,8 @@ teleport_pad_think( index )
 		codolprintln( "CoDOL zm factory teleporter: pad " + index + " powered by " + user.name + "; 30 s to the mainframe" );
 
 		trigger thread teleport_pad_countdown( index, 30 );
+		// T5 teleporter_vo( "countdown", trigger ): the players at the pad.
+		trigger thread teleporter_vo_near( "countdown", user );
 
 		while ( level.teleport[ index ] == "timer_on" )
 			wait( 0.05 );
@@ -270,6 +313,9 @@ teleport_pad_countdown( index, time )
 	if ( level.active_timer < 0 )
 		level.active_timer = index;
 	level.countdown++;
+
+	// T5 ClientNotify( "pac" + index ): the PA countdown.
+	self thread pa_countdown( index );
 
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
@@ -343,10 +389,17 @@ teleport_pad_active_think( index )
 player_teleporting( index )
 {
 	time_since_last_teleport = getTime() - level.teleport_time;
+	level.factory_charge_over = false;
 
 	maps\zm_factory_sh::factory_exploder( 202 + index * 100 );
 	maps\zm_factory_sh::factory_exploder( 105 );
 
+	// T5 ClientNotify( "tpw" + index ): the pad's and the mainframe's warmup
+	// and cooldown sounds.
+	level thread teleport_warmup_audio( index );
+
+	// T5 teleport_pad_player_fx (SetTransported), with the stance hold.
+	self thread teleport_pad_player_fx( level.teleport_delay );
 	self thread teleport_2d_audio();
 	self thread teleport_nuke( 20, 300 );
 
@@ -356,6 +409,9 @@ player_teleporting( index )
 	maps\zm_factory_sh::factory_exploder( 201 + index * 100 );
 
 	self teleport_players();
+
+	// T5 ClientNotify( "tpc" + index ): the PA's "teleport finished".
+	level thread pa_teleport_finish();
 
 	if ( !level.is_cooldown )
 		level thread pad_manager();
@@ -391,8 +447,8 @@ teleport_2d_audio()
 		{
 			if ( isDefined( players[ i ] ) && self player_is_near_pad( players[ i ] ) )
 			{
-				players[ i ] playLocalSound( "teleport_2d_fnt" );
-				players[ i ] playLocalSound( "teleport_2d_rear" );
+				players[ i ] factory_local_sound( "teleport_2d_fnt" );
+				players[ i ] factory_local_sound( "teleport_2d_rear" );
 			}
 		}
 	}
@@ -422,6 +478,7 @@ teleport_players()
 		if ( !isDefined( players[ i ] ) || !self player_is_near_pad( players[ i ] ) || !isAlive( players[ i ] ) )
 			continue;
 		touching[ touching.size ] = i;
+		players[ i ].factory_teleporting = true;
 		if ( !isDefined( image_room[ i ] ) )
 			continue;
 
@@ -434,6 +491,7 @@ teleport_players()
 		else if ( p getStance() == "crouch" )
 			desired = desired + crouch_offset;
 
+		factory_teleport_fx( p.origin );
 		p.teleport_origin = spawn( "script_origin", p.origin );
 		p.teleport_origin.angles = p.angles;
 		p linkTo( p.teleport_origin );
@@ -441,8 +499,14 @@ teleport_players()
 		p freezeControls( true );
 		wait_network_frame();
 		if ( isDefined( p ) && isDefined( p.teleport_origin ) )
+		{
+			// T5 setClientSysState "black_box_start": the plain vision.
+			p visionSetNakedForPlayer( "default", 0 );
 			p.teleport_origin.angles = image_room[ i ].angles;
+		}
 	}
+	// The charge is over: a held player the beam did not take is released.
+	level.factory_charge_over = true;
 
 	wait( 2 );
 
@@ -491,8 +555,13 @@ teleport_players()
 		{
 			player setOrigin( core_pos[ slot ].origin );
 			player setPlayerAngles( core_pos[ slot ].angles );
+			factory_teleport_fx( core_pos[ slot ].origin );
 		}
+		// T5 setClientSysState "black_box_end": back to the level's vision.
+		player visionSetNakedForPlayer( factory_level_vision(), 0 );
 		player freezeControls( false );
+		player.factory_teleporting = undefined;
+		player teleport_stance_release();
 		player thread teleport_aftereffects();
 	}
 
@@ -557,14 +626,24 @@ teleport_core_think()
 
 				maps\zm_factory_sh::factory_exploder( 102 + i );
 
+				pad = getEnt( "trigger_teleport_pad_" + i, "targetname" );
+				pad stop_countdown();
+
+				// T5 ClientNotify( "scd" + i ) (the PA's "pad <n> active")
+				// and ClientNotify( "tp" + i ) (the pad's power loop).
+				level thread pa_link_success( i, level.active_links == 3 );
+				level thread telepad_power_loop( i );
+
 				if ( level.active_links == 3 )
 				{
 					maps\zm_factory_sh::factory_exploder( 101 );
+					// T5 ClientNotify( "pap1" ): linkall_2d and the homepad
+					// loops; teleporter_vo( "linkall", trigger ).
+					level thread linkall_audio();
+					trigger thread teleporter_vo_near( "linkall", who );
 					earthquake( 0.3, 2.0, trigger.origin, 3700 );
 				}
 
-				pad = getEnt( "trigger_teleport_pad_" + i, "targetname" );
-				pad stop_countdown();
 				level.active_timer = -1;
 			}
 		}
@@ -647,12 +726,12 @@ teleporter_wire_wait( index )
 	}
 }
 
-// T5 teleport_aftereffects: one at random.  T5's vision aftereffects run in
-// CSC; the server plays them with the zone's own flare / zombie_turned
-// visions for T5's 4 s.
+// T5 teleport_aftereffects: one at random from T5's set (minus the FOV one,
+// see the header).  T5's vision aftereffects run in CSC with these visions
+// and timings (zombie_cod5_factory_teleporter.csc).
 teleport_aftereffects()
 {
-	switch ( randomInt( 4 ) )
+	switch ( randomInt( 6 ) )
 	{
 	case 0:
 		self shellShock( "explosion", 4 );
@@ -661,21 +740,453 @@ teleport_aftereffects()
 		self shellShock( "electrocution", 4 );
 		break;
 	case 2:
-		self thread teleport_aftereffect_vision( "flare" );
+		self thread teleport_aftereffect_vision( "cheat_bw_invert_contrast" );
+		break;
+	case 3:
+		self thread teleport_aftereffect_vision( "zombie_turned" );
+		break;
+	case 4:
+		self thread teleport_aftereffect_flashy();
 		break;
 	default:
-		self thread teleport_aftereffect_vision( "zombie_turned" );
+		self thread teleport_aftereffect_vision( "flare" );
 		break;
 	}
 }
 
+factory_level_vision()
+{
+	if ( isDefined( level.zm_vision ) )
+		return level.zm_vision;
+	return "zm_factory_sh";
+}
+
+// T5 CSC teleport_aftereffect_bw / red / flare_vision.
 teleport_aftereffect_vision( vision )
 {
 	self endon( "disconnect" );
-	self visionSetNakedForPlayer( vision, 0.5 );
-	wait( 4 );
-	restore = "zm_factory_sh";
-	if ( isDefined( level.zm_vision ) )
-		restore = level.zm_vision;
-	self visionSetNakedForPlayer( restore, 1 );
+	self visionSetNakedForPlayer( vision, 0.4 );
+	wait( 1.25 );
+	self visionSetNakedForPlayer( factory_level_vision(), 1 );
+}
+
+// T5 CSC teleport_aftereffect_flashy_vision.
+teleport_aftereffect_flashy()
+{
+	self endon( "disconnect" );
+	self visionSetNakedForPlayer( "cheat_bw_invert_contrast", 0.1 );
+	wait( 0.4 );
+	self visionSetNakedForPlayer( "cheat_bw_contrast", 0.1 );
+	wait( 0.4 );
+	self visionSetNakedForPlayer( "cheat_invert_contrast", 0.1 );
+	wait( 0.4 );
+	self visionSetNakedForPlayer( "cheat_contrast", 0.1 );
+	wait( 0.4 );
+	self visionSetNakedForPlayer( factory_level_vision(), 5 );
+}
+
+// --------------------------------------------------------------------------
+// The player during the charge: T5 teleport_pad_player_fx, which calls
+// SetTransported( delay ) every frame on each player near the pad (and
+// SetTransported( 0 ) on the others).  Here a player near the pad is stood
+// up and held standing, gets C1's player teleport effect once, and in the
+// last 0.3 s of the charge fades to flare (the white-out into the black
+// room); one who walks off is released and their view restored.  On
+// fx_done the players still near the pad are the ones teleport_players
+// takes; it releases them as they land.
+// --------------------------------------------------------------------------
+teleport_pad_player_fx( delay )
+{
+	self endon( "fx_done" );
+
+	start = getTime();
+	flashed = [];
+	for ( ;; )
+	{
+		late = ( getTime() - start ) >= ( delay - 0.3 ) * 1000;
+		players = getPlayers();
+		for ( i = 0; i < players.size; i++ )
+		{
+			p = players[ i ];
+			if ( !isDefined( p ) )
+				continue;
+			num = p getEntityNumber();
+			near = self player_is_near_pad( p ) && isAlive( p ) && !is_true( p.laststand );
+			if ( near )
+			{
+				if ( !is_true( p.factory_stance_held ) )
+				{
+					p teleport_stance_hold();
+					factory_teleport_fx( p.origin );
+				}
+				if ( late && !isDefined( flashed[ num ] ) )
+				{
+					flashed[ num ] = true;
+					p visionSetNakedForPlayer( "flare", 0.3 );
+				}
+			}
+			else if ( is_true( p.factory_stance_held ) && !is_true( p.factory_teleporting ) )
+			{
+				p teleport_stance_release();
+				if ( isDefined( flashed[ num ] ) )
+				{
+					flashed[ num ] = undefined;
+					p visionSetNakedForPlayer( factory_level_vision(), 0.3 );
+				}
+			}
+		}
+		wait( 0.05 );
+	}
+}
+
+// self = player.  Stand, and stay standing until teleport_stance_release.
+teleport_stance_hold()
+{
+	if ( is_true( self.factory_stance_held ) )
+		return;
+	self.factory_stance_held = true;
+	if ( self getStance() != "stand" )
+		self setStance( "stand" );
+	self allowCrouch( false );
+	self allowProne( false );
+	self thread teleport_stance_watch();
+	factory_sound_log( "stance hold " + self.name + " (was " + self getStance() + ")" );
+}
+
+teleport_stance_release()
+{
+	if ( !is_true( self.factory_stance_held ) )
+		return;
+	self.factory_stance_held = undefined;
+	self notify( "factory_stance_release" );
+	self allowCrouch( true );
+	self allowProne( true );
+	factory_sound_log( "stance release " + self.name );
+}
+
+// Lifts the hold if the player dies or goes down while it is on, and, once
+// the charge is over (teleport_players has marked the players it takes),
+// from a player the beam did not take.
+teleport_stance_watch()
+{
+	self endon( "disconnect" );
+	self endon( "factory_stance_release" );
+
+	for ( ;; )
+	{
+		wait( 0.05 );
+		if ( !isAlive( self ) || is_true( self.laststand ) || self.sessionstate != "playing" )
+		{
+			self.factory_teleporting = undefined;
+			self teleport_stance_release();
+			return;
+		}
+		if ( is_true( level.factory_charge_over ) && !is_true( self.factory_teleporting ) )
+		{
+			self teleport_stance_release();
+			self visionSetNakedForPlayer( factory_level_vision(), 0.3 );
+			return;
+		}
+	}
+}
+
+factory_teleport_fx( origin )
+{
+	if ( isDefined( level._effect[ "factory_teleport_player" ] ) )
+		playFx( level._effect[ "factory_teleport_player" ], origin );
+}
+
+// --------------------------------------------------------------------------
+// AUDIO.  T5 alias (zombie_cod5_factory_amb.csc / teleporter.gsc) -> C1
+// alias, MEASURED in the zones a zm_factory_sh match mounts (CodolSoundDumper
+// zone-aliases on client_shipRetail\chinese, 2026-10-26):
+//
+//   PA countdown ("pac"), pa_countdown:
+//     pa_buzz                     pa_buzz              zm_factory_sh
+//     pa_audio_link_start         link_count_start_00  localized_common_gametype_zm
+//     pa_audio_link_20/15/10..1   link_count_<n>_00    localized_common_gametype_zm
+//     clock_tick_1sec             clock_tick_1sec      zm_factory_sh
+//     pa_audio_link_fail          link_count_no_00     localized_common_gametype_zm
+//   Link ("scd"), pa_countdown_success:
+//     pa_audio_act_pad_0/1/2      pad_active_1/2/3_00  localized_common_gametype_zm
+//     (third link)                pad_active_all_00    localized_common_gametype_zm
+//   Pad power loop ("tp"), telepad_loop: power_loop (zm_factory_sh)
+//   All linked ("pap1"): linkall_2d, homepad_power_loop, break_arc
+//   Teleport ("tpw"), teleportation_audio: <script_sound>_warmup /
+//     _cooldown = pad_ / pad2l_ / pad2r_warmup / _cooldown, the homepad's
+//     top_spark1..4_warmup and lever_pull_warmup (zm_factory_sh)
+//   "t2d": teleport_2d_fnt / teleport_2d_rear (zm_factory_sh)
+//   After the teleport ("tpc"), pa_teleport:
+//     pa_teleport_finish          teleport_end_00      localized_common_gametype_zm
+//   teleporter_vo "countdown" (tele_count) and "linkall" (tele_linkall):
+//     the speaker's <code>_teleporter line (hh_teleporter / lb_teleporter,
+//     localized_common_gametype_zm; the only teleporter lines C1 has),
+//     through _zombiemode_audio create_and_play_dialog.
+//
+// HOW EACH PLAYS.  Every PA line in C1 is a 2D alias (flags 0x4700, as the
+// characters' *_2d twins), so where T5 plays them at each pa_system speaker
+// struct (the edit has none) the server plays them as a local sound on every
+// player; pa_buzz and clock_tick_1sec go the same way (T5's clock tick is a
+// CSC playsound at the world origin, i.e. everywhere).  linkall_2d and the
+// teleport_2d pair are 2D in both games.  The pad and mainframe sounds are
+// positional (playSoundAtPosition, or playLoopSound on a script_origin) where
+// C1's own createfx puts them: the zone's maps/createfx/zm_factory_sh_fx.gsc
+// carries T5's audio exploders "tp<n>", "tpw<n>" and "801" (the homepad
+// loops), but in the original level's frame: each sits (1050, 700, 1080)
+// from where the CoDOL edit has the same object (MEASURED: the tpw top-spark
+// rings centre on the three pads within 8 units, tp1's tower loops land on
+// exploder 103's power_loop origins, 801's break_arc on the power station's
+// sparks and homepad_power_loop on the mainframe), so they are translated
+// back.  Pad cooldowns play at the pad's own warmup origins (exploders
+// 202 / 302 / 402), as T5's telepad structs play warmup and cooldown from
+// one struct.
+// --------------------------------------------------------------------------
+
+factory_old_frame( origin )
+{
+	return origin + ( -1050, -700, -1080 );
+}
+
+factory_sound_ok( alias )
+{
+	if ( !isDefined( level.factory_sound_ok ) )
+		level.factory_sound_ok = [];
+	if ( !isDefined( level.factory_sound_ok[ alias ] ) )
+	{
+		level.factory_sound_ok[ alias ] = soundExists( alias );
+		if ( !level.factory_sound_ok[ alias ] )
+			codolprintln( "CoDOL zm factory sound: alias " + alias + " is in no mounted zone" );
+	}
+	return level.factory_sound_ok[ alias ];
+}
+
+factory_sound_log( text )
+{
+	if ( getDvarInt( "scr_codol_factory_soundlog" ) > 0 )
+		codolprintln( "CoDOL zm factory sound: " + text );
+}
+
+// self = player.
+factory_local_sound( alias )
+{
+	if ( !factory_sound_ok( alias ) )
+		return;
+	self playLocalSound( alias );
+	factory_sound_log( "local " + alias + " -> " + self.name );
+}
+
+// A 2D sound to every player (T5's CSC playsound on each client).
+factory_sound_all( alias )
+{
+	if ( !factory_sound_ok( alias ) )
+		return;
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+	{
+		if ( isDefined( players[ i ] ) )
+			players[ i ] playLocalSound( alias );
+	}
+	factory_sound_log( "all " + alias + " (" + players.size + " players)" );
+}
+
+factory_sound_at( alias, origin )
+{
+	if ( !factory_sound_ok( alias ) )
+		return;
+	playSoundAtPosition( alias, origin );
+	factory_sound_log( "at " + alias + " " + origin );
+}
+
+factory_sound_at_delayed( alias, origin, delay )
+{
+	if ( delay > 0 )
+		wait( delay );
+	factory_sound_at( alias, origin );
+}
+
+factory_loop_at( alias, origin )
+{
+	if ( !factory_sound_ok( alias ) )
+		return;
+	ent = spawn( "script_origin", origin );
+	ent playLoopSound( alias );
+	factory_sound_log( "loop " + alias + " " + origin );
+}
+
+// T5 pa_play_dialog: one PA line at a time; a line asked for while one
+// plays is dropped.
+pa_play_dialog( alias )
+{
+	if ( level.factory_pa_speaking )
+	{
+		factory_sound_log( "pa busy, dropped " + alias );
+		return;
+	}
+	level.factory_pa_speaking = true;
+	factory_sound_all( alias );
+	wait( PA_HOLD );
+	level.factory_pa_speaking = false;
+}
+
+// T5 pa_countdown, self = the pad trigger.  The link's stop_countdown ends
+// it, so the count and the failure line only play while the pad waits.
+pa_countdown( index )
+{
+	self endon( "stop_countdown" );
+
+	factory_sound_all( "pa_buzz" );
+	level thread pa_play_dialog( "link_count_start_00" );
+
+	for ( count = 30; count > 0; count-- )
+	{
+		if ( count == 20 || count == 15 || count <= 10 )
+			factory_sound_all( "link_count_" + count + "_00" );
+		factory_sound_all( "clock_tick_1sec" );
+		wait( 1 );
+	}
+	factory_sound_all( "pa_buzz" );
+	wait( 1.2 );
+	codolprintln( "CoDOL zm factory teleporter: PA link failed, pad " + index );
+	level thread pa_play_dialog( "link_count_no_00" );
+}
+
+// T5 pa_countdown_success.  On the third link the PA follows with
+// pad_active_all_00, C1's "all pads linked" line (T5 has none to play; its
+// pa_audio_link_yes is commented out).
+pa_link_success( index, all )
+{
+	factory_sound_all( "pa_buzz" );
+	wait( 1.2 );
+	// The link line wins over a countdown line still holding the PA.
+	level.factory_pa_speaking = false;
+	pa_play_dialog( "pad_active_" + ( index + 1 ) + "_00" );
+	if ( all )
+		pa_play_dialog( "pad_active_all_00" );
+}
+
+// T5 pa_teleport: a second after the teleport.
+pa_teleport_finish()
+{
+	wait( 1 );
+	factory_sound_all( "pa_buzz" );
+	wait( 1.2 );
+	pa_play_dialog( "teleport_end_00" );
+}
+
+// T5 teleport_pad_init / telepad_loop: the pad's loopers start at its link
+// (createfx exploder "tp<n>").  tp1 / tp2's tower loops are exploders 103 /
+// 104's power_loop already; these are the remaining ones (tp0's one looper
+// is where C1's createfx puts it, at the mainframe).
+telepad_power_loop( index )
+{
+	switch ( index )
+	{
+	case 0:
+		factory_loop_at( "power_loop", factory_old_frame( ( 989.5, 1203, 1389.5 ) ) );
+		break;
+	case 1:
+		factory_loop_at( "power_loop", factory_old_frame( ( 1346.5, -2492, 1400 ) ) );
+		break;
+	default:
+		factory_loop_at( "power_loop", factory_old_frame( ( -733.2, -413, 1432.5 ) ) );
+		break;
+	}
+}
+
+// T5 linkall_2d and homepad_loop (createfx exploder "801").
+linkall_audio()
+{
+	factory_sound_all( "linkall_2d" );
+	factory_loop_at( "homepad_power_loop", factory_old_frame( ( 989.5, 1203, 1389.5 ) ) );
+	factory_loop_at( "break_arc", factory_old_frame( ( 545.5, 1038.5, 1261 ) ) );
+}
+
+// T5 teleportation_audio ("tpw" + index): the telepad's structs play warmup
+// and, 2 s later, cooldown; the homepad's play both 2 s in, as the players
+// arrive.  The pad warmups at the pad itself are exploders 202 / 302 / 402
+// (zm_factory_sh factory_exploder); the rest are here.
+teleport_warmup_audio( index )
+{
+	switch ( index )
+	{
+	case 0:
+		factory_sound_at( "top_spark1_warmup", factory_old_frame( ( 2378, 1901.5, 1469 ) ) );
+		factory_sound_at( "top_spark2_warmup", factory_old_frame( ( 2378.5, 2033.5, 1469 ) ) );
+		factory_sound_at( "top_spark3_warmup", factory_old_frame( ( 2242, 2030, 1469 ) ) );
+		factory_sound_at( "top_spark4_warmup", factory_old_frame( ( 2246, 1903, 1469 ) ) );
+		factory_sound_at( "lever_pull_warmup", factory_old_frame( ( 2199, 1891.5, 1325 ) ) );
+		level thread factory_sound_at_delayed( "pad_cooldown", ( 1261.96, 1275.22, 199 ), 2 );
+		level thread factory_sound_at_delayed( "pad2l_cooldown", ( 1341.91, 1272.5, 230.268 ), 2 );
+		level thread factory_sound_at_delayed( "pad2r_cooldown", ( 1187.61, 1276.14, 228.89 ), 2 );
+		break;
+	case 1:
+		factory_sound_at( "top_spark1_warmup", factory_old_frame( ( 1277.5, -2423, 1429.5 ) ) );
+		factory_sound_at( "top_spark2_warmup", factory_old_frame( ( 1274, -2555.5, 1429.5 ) ) );
+		factory_sound_at( "top_spark3_warmup", factory_old_frame( ( 1420, -2550, 1429.5 ) ) );
+		factory_sound_at( "top_spark4_warmup", factory_old_frame( ( 1415.5, -2424, 1429.5 ) ) );
+		factory_sound_at( "lever_pull_warmup", factory_old_frame( ( 1428, -2416.5, 1338.5 ) ) );
+		level thread factory_sound_at_delayed( "pad_cooldown", ( 301.049, -3195, 188.777 ), 2 );
+		level thread factory_sound_at_delayed( "pad2r_cooldown", ( 383.125, -3209.61, 221.102 ), 2 );
+		level thread factory_sound_at_delayed( "pad2l_cooldown", ( 217.579, -3215.59, 222.48 ), 2 );
+		break;
+	default:
+		factory_sound_at( "top_spark1_warmup", factory_old_frame( ( -662.4, -346.8, 1467.5 ) ) );
+		factory_sound_at( "top_spark2_warmup", factory_old_frame( ( -788.5, -332.7, 1467.5 ) ) );
+		factory_sound_at( "top_spark3_warmup", factory_old_frame( ( -788.5, -494.2, 1467.5 ) ) );
+		factory_sound_at( "top_spark4_warmup", factory_old_frame( ( -663.5, -481.3, 1467.5 ) ) );
+		factory_sound_at( "lever_pull_warmup", factory_old_frame( ( -663.1, -469.2, 1376.5 ) ) );
+		level thread factory_sound_at_delayed( "pad_cooldown", ( -1782.5, -1114.83, 229.734 ), 2 );
+		level thread factory_sound_at_delayed( "pad2r_cooldown", ( -1783.9, -1195.21, 270.891 ), 2 );
+		level thread factory_sound_at_delayed( "pad2l_cooldown", ( -1782.64, -1022.24, 272.269 ), 2 );
+		break;
+	}
+
+	// The homepad (the mainframe), the same for every pad.
+	wait( 2 );
+	home_spark = factory_old_frame( ( 1063, 1176.5, 1375.5 ) );
+	factory_sound_at( "top_spark1_warmup", home_spark );
+	factory_sound_at( "top_spark2_warmup", home_spark );
+	factory_sound_at( "top_spark3_warmup", home_spark );
+	factory_sound_at( "top_spark4_warmup", home_spark );
+	factory_sound_at( "pad2r_warmup", factory_old_frame( ( 891.5, 1081, 1166.5 ) ) );
+	factory_sound_at( "pad2r_cooldown", factory_old_frame( ( 891.5, 1081, 1166.5 ) ) );
+	factory_sound_at( "pad2l_warmup", factory_old_frame( ( 1092, 1083.5, 1166.5 ) ) );
+	factory_sound_at( "pad2l_cooldown", factory_old_frame( ( 1092, 1083.5, 1166.5 ) ) );
+	factory_sound_at( "pad_warmup", factory_old_frame( ( 992, 1237.5, 1521.5 ) ) );
+	factory_sound_at( "pad_cooldown", factory_old_frame( ( 992, 1237.5, 1521.5 ) ) );
+}
+
+// T5 teleporter_vo: the players within 64 units of the trigger say the
+// line (tele_count 3 s after the countdown starts, tele_linkall at once);
+// C1's one teleporter line per character stands for both.  The trigger's
+// user is always a candidate (C1's pad and core triggers are big brushes
+// whose centre is more than 64 units from much of the floor they cover).
+// _zombiemode_audio lets one player speak at a time.
+teleporter_vo_near( type, user )
+{
+	pre_wait = 0;
+	if ( type == "countdown" )
+		pre_wait = 3;
+
+	speakers = [];
+	players = getPlayers();
+	for ( i = 0; i < players.size; i++ )
+	{
+		p = players[ i ];
+		if ( !isDefined( p ) )
+			continue;
+		if ( p == user || distance( p.origin, self.origin ) < 64 )
+			speakers[ speakers.size ] = p;
+	}
+	if ( pre_wait > 0 )
+		wait( pre_wait );
+	for ( i = 0; i < speakers.size; i++ )
+	{
+		if ( isDefined( speakers[ i ] ) && speakers[ i ] maps\_zombiemode_audio::create_and_play_dialog( "teleporter" ) )
+		{
+			factory_sound_log( "vox teleporter (" + type + ") by " + speakers[ i ].name );
+			return;
+		}
+	}
+	factory_sound_log( "vox teleporter (" + type + "): no speaker said the line" );
 }

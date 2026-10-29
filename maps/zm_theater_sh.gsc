@@ -195,6 +195,7 @@ theater_precache()
 
 theater_perk_machines()
 {
+	precacheModel( "tag_origin" );
 	theater_perk_machine( "specialty_quickrevive", "vending_revive", "zombie_vending_revive_on",
 		( 527, -1261, 106 ), ( 531, -1261.5, 79 ), 270, "mus_perks_revive_jingle", "mus_perks_revive_sting" );
 	theater_perk_machine( "specialty_fastreload", "vending_sleight", "zombie_vending_speedcola_on",
@@ -226,7 +227,104 @@ theater_perk_machine( perk, name, model, use_origin, model_origin, yaw, jingle, 
 	use setCursorHint( "HINT_NOICON" );
 	use makeUsable();
 
+	theater_perk_machine_clip( machine, model );
+
 	codolprintln( "CoDOL zm theater: " + perk + " machine " + model + " at " + model_origin );
+}
+
+// --------------------------------------------------------------------------
+// Machine collision.  T5 zombie_theater.ents gives only Quick Revive a clip
+// brush (*299, targetname vending_revive); the other three machines collided
+// through clip compiled into T5's world.  CoDOL's Kino has neither, and a
+// level script cannot add a brush model to the map's clipMap (C1 predicts a
+// brush entity against its own clipMap's inline model, solid 0xffffff).  What
+// C1 does predict for any other entity is the packed box of entityState
+// solid: square in x/y, centred on the entity, axis-aligned (CG_ClipMoveToEntity
+// 0x4856d0, bounds 0x485360).  So each machine's footprint is covered by
+// square boxes, codol_setClipBox( halfWidth, height ) on invisible tag_origin
+// script_models: the server blocks players and zombies with exactly the box
+// the client predicts (contents 0x2000000, in both clip masks, not in the
+// use trace, so the perk stays usable), and disconnectPaths cuts the zombie
+// and bot links that run through the machine.
+//
+// MEASURED (D:\CoD\CODOL Builds\zm_perkclip_staging\tool_src PerkBounds:
+// LOD0 vertex bounds in model space; x is the machine's width, y its depth):
+//   2013 machines (common_gametype_zm, = the _old models)
+//     revive       x -25.27..25.97  y -16.44..14.14  z 0..84.24
+//     speedcola    x -25.27..25.97  y -14.67..13.08  z 0.27..84.24
+//     doubletap    x -25.45..25.45  y -13.53..12.67  z 0..84.14
+//     jugg         x -13.58..13.58  y -17.46..12.45  z 0..83.76
+//   current machines (patch_common_gametype_zm), all four
+//                  x -33.53..33.53  y -29.51..14.70  z 0.22..89.19
+// --------------------------------------------------------------------------
+
+theater_perk_machine_bounds( model )
+{
+	b = [];
+	switch ( model )
+	{
+	case "zombie_vending_revive_on_old":
+		b[ 0 ] = ( -25.27, -16.44, 0 ); b[ 1 ] = ( 25.97, 14.14, 84.24 ); break;
+	case "zombie_vending_speedcola_on_old":
+		b[ 0 ] = ( -25.27, -14.67, 0 ); b[ 1 ] = ( 25.97, 13.08, 84.24 ); break;
+	case "zombie_vending_doubletap_on_old":
+		b[ 0 ] = ( -25.45, -13.53, 0 ); b[ 1 ] = ( 25.45, 12.67, 84.14 ); break;
+	case "zombie_vending_jugg_on_old":
+		b[ 0 ] = ( -13.58, -17.46, 0 ); b[ 1 ] = ( 13.58, 12.45, 83.76 ); break;
+	default:
+		b[ 0 ] = ( -33.53, -29.51, 0 ); b[ 1 ] = ( 33.53, 14.70, 89.19 ); break;
+	}
+	return b;
+}
+
+theater_perk_machine_clip( machine, model )
+{
+	b = theater_perk_machine_bounds( model );
+	yaw = machine.angles[ 1 ];
+	c = cos( yaw );
+	s = sin( yaw );
+	// world bounds of the four rotated footprint corners (the yaws are
+	// multiples of 90, so this is the footprint itself)
+	lo = ( 100000, 100000, 0 );
+	hi = ( -100000, -100000, 0 );
+	for ( i = 0; i < 4; i++ )
+	{
+		x = b[ i & 1 ][ 0 ];
+		y = b[ int( i / 2 ) ][ 1 ];
+		wx = x * c - y * s;
+		wy = x * s + y * c;
+		lo = ( min( lo[ 0 ], wx ), min( lo[ 1 ], wy ), 0 );
+		hi = ( max( hi[ 0 ], wx ), max( hi[ 1 ], wy ), 0 );
+	}
+	sizex = hi[ 0 ] - lo[ 0 ];
+	sizey = hi[ 1 ] - lo[ 1 ];
+	half = int( ceil( min( sizex, sizey ) * 0.5 - 0.01 ) );
+	height = int( ceil( b[ 1 ][ 2 ] - 0.01 ) );
+	span = max( sizex, sizey );
+	count = int( ceil( span / ( 2 * half ) - 0.01 ) );
+	if ( count < 1 )
+		count = 1;
+
+	machine.zm_perk_clips = [];
+	for ( n = 0; n < count; n++ )
+	{
+		// box centres from one end of the long axis to the other
+		t = 0.5;
+		if ( count > 1 )
+			t = n / ( count - 1 );
+		along = ( half + t * ( span - 2 * half ) );
+		if ( sizex >= sizey )
+			offset = ( lo[ 0 ] + along, ( lo[ 1 ] + hi[ 1 ] ) * 0.5, 0 );
+		else
+			offset = ( ( lo[ 0 ] + hi[ 0 ] ) * 0.5, lo[ 1 ] + along, 0 );
+		clip = spawn( "script_model", machine.origin + offset );
+		clip setModel( "tag_origin" );
+		clip.targetname = machine.targetname + "_clip";
+		clip codol_setClipBox( half, height );
+		clip disconnectPaths();
+		machine.zm_perk_clips[ n ] = clip;
+		codolprintln( "CoDOL zm theater: " + machine.targetname + " clip box " + n + " at " + clip.origin + " half " + half + " height " + height );
+	}
 }
 
 // --------------------------------------------------------------------------
