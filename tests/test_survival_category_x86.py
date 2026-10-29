@@ -39,7 +39,7 @@ FBASE = FP.OPTIONAL_HEADER.ImageBase
 FEND = FBASE + FP.OPTIONAL_HEADER.SizeOfImage
 TABLES, STUBS, STACK = 0x30000000, 0x31000000, 0x32000000
 STOP = STUBS + 0xF00
-SITES = [(0x4CCEB5, 6)]
+SITES = [(0x4CCEB5, 6), (0x8458F2A, 7)]
 UNTOUCHED = [(0x4B6380, 0x400), (0x612850, 0x70), (0x4CCDF0, 0xC5), (0x4CCEBB, 0x480)]
 DB_LOAD, DB_FIND, CHECKSUM, SPRINTF, PRINTERR = 0x8465768, 0x4CB8E0, 0x83B094E, 0x6286A0, 0x8308DBD
 ZONE_COUNT, ZONE_ORDER, ZONES, ZONE_SELF = 0x18FCFBC, 0x1C402A4, 0x1F0E108, 0x17C6880
@@ -290,7 +290,7 @@ class SurvivalCategory(unittest.TestCase):
     def test_byte_mismatch_or_switch_installs_nothing(self):
         M.patched(False)
         writes = M.get(EXPORT['stest_writes'])
-        for at in (0x4CCEB5, 0x4CCEC5, 0x4CCECE, 0x4CD03E, 0x4CD053, 0x4CD0DC, 0x4CD0E8):
+        for at in (0x4CCEB5, 0x4CCEC5, 0x4CCECE, 0x4CD03E, 0x4CD053, 0x4CD0DC, 0x4CD0E8, 0x8458F2A, 0x8458F36, 0x43C4BE, 0x43C4C4):
             with self.subTest(site=hex(at)):
                 b = M.get(at, 1)
                 M.put(at, b ^ 0xFF, 1)
@@ -305,7 +305,7 @@ class SurvivalCategory(unittest.TestCase):
         self.assertEqual(M.get(EXPORT['stest_writes']), writes)
         M.u.mem_write(EXPORT['stest_cmdline'], b'codoMP_client_shipRetail.exe +set codol_survivalx 0\0')
         M.call('STestInstall')
-        self.assertEqual(M.get(EXPORT['stest_writes']), writes + 1)
+        self.assertEqual(M.get(EXPORT['stest_writes']), writes + 2)
         M.patched(False)
 
 

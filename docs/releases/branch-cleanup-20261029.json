@@ -1,0 +1,62 @@
+{
+  "deleted": [
+    {
+      "branch": "feat/mp-m14",
+      "sha": "b06cb8d9cca23aedbd33bada41958fc48cbcaf7c",
+      "ref": "refs/heads/feat/mp-m14"
+    },
+    {
+      "branch": "feat/p2p-hosting",
+      "sha": "7e26e69adfbd51c4ec6e4f825caf287949844e49",
+      "ref": "refs/heads/feat/p2p-hosting"
+    },
+    {
+      "branch": "feat/p2p-inprocess",
+      "sha": "1fae4a530f042bdeb3b4def75b357414a5d489be",
+      "ref": "refs/heads/feat/p2p-inprocess"
+    },
+    {
+      "branch": "feat/survival-category",
+      "sha": "4f373b595d4dec2693376102a9c890ab3c90f4a3",
+      "ref": "refs/heads/feat/survival-category"
+    },
+    {
+      "branch": "feat/survival-menus",
+      "sha": "3fe348ce45af3fcbd8db74111330cc58d237ce21",
+      "ref": "refs/heads/feat/survival-menus"
+    },
+    {
+      "branch": "fix/hosted-survival-start-20261028",
+      "sha": "27c0b61a36e4ddc61d12a125f4b3b98b7f28ec10",
+      "ref": "refs/heads/fix/hosted-survival-start-20261028"
+    },
+    {
+      "branch": "integration/all-branches-20261029",
+      "sha": "34a82e76639f27b71537846fdb2cc2a1a16cef08",
+      "ref": "refs/heads/integration/all-branches-20261029"
+    },
+    {
+      "branch": "sec/client-audit-20261026",
+      "sha": "f5581c5413eebb50a18f9f293b4a0edd30d6b733",
+      "ref": "refs/heads/sec/client-audit-20261026"
+    }
+  ],
+  "preserved": [
+    {
+      "branch": "codex/resident-client-integration-20261029",
+      "sha": "773c29c40a6494cce72a5bf0ef3715fd5fc09145",
+      "reason": "not yet included in published main"
+    },
+    {
+      "branch": "dev",
+      "sha": "dc259f53f3300a369faf13695579b5f5dc9ba42f",
+      "reason": "explicitly preserved"
+    },
+    {
+      "branch": "main",
+      "sha": "34a82e76639f27b71537846fdb2cc2a1a16cef08",
+      "reason": "explicitly preserved"
+    }
+  ],
+  "main": "34a82e76639f27b71537846fdb2cc2a1a16cef08"
+}

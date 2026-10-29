@@ -14,6 +14,7 @@ node tests/campaign_local_host_test.js
 node tests/local_match_controls_test.js
 node tests/local_match_layout_test.js
 python -B tests/test_survival_kiosk_menus.py
+python -B tests/test_survival_wave_overrides.py
 python -B tests/test_tip_stage_lookup.py
 python -B tests/test_invitations_disabled.py
 python -B tests/test_zone_packs.py
@@ -53,6 +54,7 @@ if [ -n "${K33_C1_EXE:-}" ]; then
         -Wl,--entry,0 -Wl,--image-base,0x20000000 tests/survival_category_x86_fixture.c \
         -o "$OUT/survival-category-x86.dll"
     python -B tests/test_survival_category_x86.py --fixture "$OUT/survival-category-x86.dll" --image "$K33_C1_EXE"
+    python -B tests/test_survival_crosshair_x86.py --fixture "$OUT/survival-category-x86.dll" --image "$K33_C1_EXE"
 else
     echo "survival category C1 x86 proof not run (set K33_C1_EXE to 1.1.1.13's C1.exe)"
 fi

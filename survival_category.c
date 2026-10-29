@@ -66,6 +66,8 @@ static void PatchSurvivalCategory(void)
         { K33_SURV_ZONE_MP_VA, { 0x68, 0x38, 0xE9, 0xC4, 0x00, 0xE8 }, 6 },         /* push "common_gametype_mp" */
         { 0x004CD053u, { 0x8B, 0x85, 0x1C, 0xFE, 0xFF, 0xFF }, 6 },                 /* mov eax, [ebp-0x1E4] */
         { 0x004CD0DCu, { 0x83, 0xC0, 0x04, 0xEB, 0x06, 0x8B, 0x85, 0x1C, 0xFE, 0xFF, 0xFF, 0x53, 0x50 }, 13 },
+        { 0x0043C4BEu, {0x81,0xf2,0xad,0xbe,0x58,0x39,0x83,0xc2,0x20},9 }, /* cgs key and category offset */
+        { K33_SURV_CROSSHAIR_HOOK_VA, {0x84,0x84,0x24,0x04,0,0,0,0x0f,0x84,0x2a,0x31,0xea,0xff},13 },
     };
     if (!SurvivalCategoryEnabled()) {
         Log("survival category: off (codol_survival 0)");
@@ -77,6 +79,8 @@ static void PatchSurvivalCategory(void)
             return;
         }
     SurvivalJump(K33_SURV_ZONE_HOOK_VA, K33SurvivalZoneHook, 6);
+    SurvivalJump(K33_SURV_CROSSHAIR_HOOK_VA, K33SurvivalCrosshairHook, 7);
+    Log("survival category: native actor crosshair mode predicate enabled; team/range/dead/FX filters retained");
     Log("survival category: \"%s\" loads %s (+patch_, localized_) ahead of the mp gametype zones",
         K33_SURVIVAL_CATEGORY, K33_SURVIVAL_GAMETYPE_ZONE);
 }

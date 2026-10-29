@@ -63,4 +63,36 @@ __asm__(
     "1:  movl $4, %esi\n"                   /* the gametype zones' alloc flags, as 0x4CCECE sets them */
     "    jmp *_g_k33SurvZoneMp\n");         /* then C1's mp branch, as for any category that is not zm/coop */
 
+
+/* C1 scanner's mode result: stock is (category == coop). Survival uses the
+ * same real actor classification; do not change the authoritative category. */
+#define K33_SURV_CROSSHAIR_HOOK_VA 0x08458F2Au
+#define K33_SURV_CROSSHAIR_RESUME_VA 0x08458F31u
+__attribute__((used)) unsigned g_k33SurvCrosshairResume=K33_SURV_CROSSHAIR_RESUME_VA;
+__attribute__((used)) int __cdecl K33SurvivalCrosshairMode(void)
+{
+    unsigned index=*(const unsigned *)0x06C3D2B0u;
+    const char *cgs;
+    if(!Readable((const void *)(0x016D3B58u+index*4),4))return 0;
+    cgs=(const char *)(*(const unsigned *)(0x016D3B58u+index*4)^0x3958BEADu);
+    return Readable(cgs+0x20,9) && K33IsSurvivalCategory(cgs+0x20);
+}
+void K33SurvivalCrosshairHook(void);
+__asm__(
+    ".text\n"
+    ".globl _K33SurvivalCrosshairHook\n"
+    "_K33SurvivalCrosshairHook:\n"
+    " pushal\n"
+    " call _K33SurvivalCrosshairMode\n"
+    " testl %eax,%eax\n"
+    " jnz 1f\n"
+    " popal\n"
+    " testb %al,4(%esp)\n" /* replaced stock predicate, unchanged for every other mode */
+    " jmp *_g_k33SurvCrosshairResume\n"
+    "1: popal\n"
+    " pushl %eax\n"
+    " movl $1,%eax\n"
+    " testb %al,%al\n" /* true mode predicate; original actor filters follow */
+    " popl %eax\n"
+    " jmp *_g_k33SurvCrosshairResume\n");
 #endif

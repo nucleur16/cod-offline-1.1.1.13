@@ -22,7 +22,8 @@ static char *TStrstr(const char *h, const char *n)
 static BOOL Readable(const void *p, SIZE_T n)
 {
     uintptr_t v = (uintptr_t)p;
-    return v >= 0x400000 && v + n <= 0x0A000000;
+    return (v >= 0x400000 && v + n <= 0x0A000000) ||
+           (v >= 0x30000000 && v + n <= 0x31000000);
 }
 static void Log(const char *format, ...) { (void)format; stest_logs++; }
 static void WriteCode(void *dst, const void *src, SIZE_T n) { memcpy(dst, src, n); stest_writes++; }
