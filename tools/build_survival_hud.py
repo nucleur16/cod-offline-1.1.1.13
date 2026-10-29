@@ -1,0 +1,60 @@
+"""Preserve C1's native HUD, hiding its MP score and streak menus in Survival.
+
+Input is MenuCommands' resolved 1.1.1.13 patch_common_mp zone-menus dump.
+The checked-in original is retained so future rebuilds need no game extraction.
+"""
+import copy
+import json
+from pathlib import Path
+import struct
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from zonekit import menus
+
+ROOT = Path(__file__).resolve().parents[1]
+DIR = ROOT / 'zones/controller_ingame/menufile'
+
+def operator(name):
+    return {'kind': 'expressionEntry', 'raw': struct.pack('<III', 0, menus.OP_1113[name], 0).hex(), 'p': {}}
+
+def string(value):
+    return {'kind': 'expressionEntry', 'raw': struct.pack('<III', 1, 2, 0).hex(), 'p': {'8': value}}
+
+def scoped(expression, survival):
+    old = expression['p']['4'] if expression else [
+        {'kind':'expressionEntry', 'raw':struct.pack('<III', 1, 0, 1).hex(), 'p':{}}]
+    entries = [operator('('), operator('dvarstring'), string('g_gametype'), operator(')'),
+               operator('==' if survival else '!='), string('survival'), operator('&&'), operator('(')] + old + [operator(')')]
+    return {'kind':'Statement', 'raw':struct.pack('<IIIII',len(entries),0,0,0,0).hex(), 'p':{'4':entries}}
+
+def author(original):
+    result = copy.deepcopy(original)
+    for name in ('killstreaks_hd', 'scorebar_hd'):
+        candidates = [m for m in result['p']['8'] if m['p']['0'] == name]
+        if len(candidates) != 1:
+            raise ValueError('Expected exactly one C1 ' + name + ' menu')
+        menu = candidates[0]
+        if name == 'killstreaks_hd':
+            menu['p']['228'] = scoped(menu['p']['228'], False)
+        else:
+            # Reuse the stock HUD registration and common visibility filters.
+            # Only the MP items disappear; the authored Survival items occupy
+            # this same loaded menu rather than opening a popup for the HUD.
+            for item in menu['p']['284']:
+                item['p']['324'] = scoped(item['p'].get('324'), False)
+            component = json.loads((DIR.parent/'components/survival_status.json').read_text())
+            menu['p']['284'].extend(copy.deepcopy(component['p']['8'][0]['p']['284']))
+            raw = bytearray.fromhex(menu['raw'])
+            struct.pack_into('<I',raw,0xB0,len(menu['p']['284']))
+            menu['raw'] = raw.hex()
+    return result
+
+def main():
+    original = json.loads((DIR / 'survival_hud_visibility.original.json').read_text())
+    result = author(original)
+    (DIR / 'survival_hud_visibility.json').write_text(json.dumps(result, indent=1) + '\n', newline='\n')
+    (DIR / 'survival_hud_visibility.txt').write_text(menus.listing(result), newline='\n')
+    (DIR / 'survival_hud_visibility.bin').write_bytes(menus.encode_menulist(result))
+
+if __name__ == '__main__':
+    main()

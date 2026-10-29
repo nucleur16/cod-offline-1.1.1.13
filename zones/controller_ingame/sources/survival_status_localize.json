@@ -1,0 +1,10 @@
+{
+  "english": {
+    "SO_SURVIVAL_ENEMIES_LEFT": "&&1 enemies left",
+    "SO_SURVIVAL_ENEMY_LEFT": "&&1 enemy left"
+  },
+  "chinese": {
+    "SO_SURVIVAL_ENEMIES_LEFT": "还剩 &&1 名敌人",
+    "SO_SURVIVAL_ENEMY_LEFT": "还剩 &&1 名敌人"
+  }
+}

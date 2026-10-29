@@ -68,7 +68,7 @@ def author(original):
     return node
 
 def main():
-    required={'SO_SURVIVAL_CREDITS'}
+    required={'SO_SURVIVAL_CREDITS','SO_SURVIVAL_ENEMIES_LEFT','SO_SURVIVAL_ENEMY_LEFT'}
     for name in ('kiosk_locker','kiosk_killstreak'):
         node=author(json.loads((ZONE/'sources'/(name+'.json')).read_text()))
         required.update(re.findall(r'@([A-Z][A-Z0-9_]+)', json.dumps(node)))

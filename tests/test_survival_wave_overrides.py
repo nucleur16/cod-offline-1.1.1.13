@@ -7,7 +7,8 @@ class SurvivalWaveOverrides(unittest.TestCase):
     def test_existing_menus_and_localization_remain_with_full_wave_tables(self):
         data=manifest.read((ROOT/'zone_source/patch_common_gametype_survival.csv').read_text())
         self.assertEqual(sum(t=='menufile' for t,n,p in data.assets),2)
-        self.assertEqual(sum(t=='localize' for t,n,p in data.assets),11)
+        self.assertEqual(sum(t=='localize' for t,n,p in data.assets),13)
+        self.assertTrue({'SO_SURVIVAL_ENEMIES_LEFT','SO_SURVIVAL_ENEMY_LEFT'} <= {n for t,n,p in data.assets if t=='localize'})
         tables=[(n,p) for t,n,p in data.assets if t=='stringtable']
         self.assertEqual(len(tables),11)
         for name,params in tables:
