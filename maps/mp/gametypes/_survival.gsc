@@ -558,11 +558,10 @@ player_hud()
 	self.survival_hud_wave = self hud_line( 110, ( 1, 1, 1 ) );
 	self.survival_hud_wave.label = &"MPUI_ROUND_X";
 	self.survival_hud_wave setValue( level.survival_wave_num );
-	self.survival_hud_credits = self hud_line( 128, ( 0.6, 1, 0.6 ) );
-	self.survival_hud_credits.label = &"SO_SURVIVAL_CREDITS";
-	// Spendable credits stay visible while an interactive kiosk is open.
-	self.survival_hud_credits.hidewheninmenu = false;
-	self.survival_hud_credits setValue( self.survival_credit );
+	// The authored later CoDOL scorebar component reads surHUD_credits;
+	// kiosk headers show the same wallet while their interactive menu is open.
+	// Do not draw a second upper-right copy of the native credit counter.
+	self setClientDvar( "surHUD_credits", self.survival_credit );
 	self.survival_hud_armor = self hud_line( 146, ( 0.6, 0.8, 1 ) );
 	self update_armor_hud();
 }
@@ -585,6 +584,40 @@ update_wave_hud()
 		if ( isDefined( players[ i ].survival_hud_wave ) )
 			players[ i ].survival_hud_wave setValue( level.survival_wave_num );
 		players[ i ] setClientDvar( "surHUD_wave", level.survival_wave_num );
+	}
+}
+
+
+// The authored later HUD uses surHUD_enemy for singular/plural labels. Count
+// real living infantry, dogs, specials and juggernauts plus attack choppers;
+// cosmetic transports, corpses and future/unspawned actors are not enemies yet.
+hud_enemy_count()
+{
+	count = 0;
+	if ( isDefined( level.survival_enemies ) )
+		count = maps\mp\gametypes\_survival_ai::living_enemies().size;
+	if ( isDefined( level.survival_choppers ) )
+		count += maps\mp\gametypes\_survival_vehicles::living_choppers();
+	return count;
+}
+
+hud_enemy_updates()
+{
+	level endon( "survival_over" );
+	for ( ;; )
+	{
+		count = hud_enemy_count();
+		players = getPlayers();
+		for ( i = 0; i < players.size; i++ )
+		{
+			p = players[ i ];
+			if ( !isDefined( p.survival_hud_enemy ) || p.survival_hud_enemy != count )
+			{
+				p.survival_hud_enemy = count;
+				p setClientDvar( "surHUD_enemy", count );
+			}
+		}
+		wait( 0.25 );
 	}
 }
 
@@ -702,6 +735,7 @@ main()
 	level thread maps\mp\gametypes\_survival_test::main();
 	maps\mp\gametypes\_survival_squad::setup();
 	maps\mp\gametypes\_survival_vehicles::init();
+	level thread hud_enemy_updates();
 
 	while ( maps\mp\gametypes\_survival_utility::living_players().size <= 0 )
 		wait( 0.5 );

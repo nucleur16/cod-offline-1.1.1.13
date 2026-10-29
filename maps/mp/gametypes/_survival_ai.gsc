@@ -474,7 +474,8 @@ loot_roll( chance )
 }
 
 // IW5 loot_drop_on_death: the weapon rides on his back and falls where he
-// dies, with 40% of a clip and half the reserve.
+// dies. Keep the authored bonus clip; all enemy weapon drops have zero
+// reserve (user rule), including this separately carried bonus weapon.
 loot_drop_on_death( weapon )
 {
 	model = getWeaponModel( weapon );
@@ -494,8 +495,7 @@ loot_drop_on_death( weapon )
 	}
 	item = spawn( "weapon_" + weapon, origin );
 	clip = int( loot_max( 1, 0.4 * weaponClipSize( weapon ) ) );
-	stock = int( loot_max( 1, 0.5 * weaponMaxAmmo( weapon ) ) );
-	item itemWeaponSetAmmo( clip, stock );
+	item itemWeaponSetAmmo( clip, 0 );
 }
 
 loot_max( a, b )
