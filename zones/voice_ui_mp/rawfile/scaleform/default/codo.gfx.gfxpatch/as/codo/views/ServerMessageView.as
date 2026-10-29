@@ -17,32 +17,32 @@ package codo.views
    import flash.text.TextField;
    import flash.text.TextFieldAutoSize;
    import flash.utils.Timer;
-   
+
    public class ServerMessageView extends BaseView
    {
       private static const POS_ORIGIN_X:Number = 32;
-      
+
       private static const POS_ORIGIN_Y:Number = 905;
-      
+
       private static var POS_X_START:int = 372;
-      
+
       private static const POS_X_END:int = 4;
-      
+
       private static const PIXELS_PER_SECOND:uint = 75;
-      
+
       public var myMsgTF:TextField;
-      
+
       private var _serverMsgToShow:Array = [];
-      
+
       private var _currentServerMsgIndex:int = -1;
-      
+
       private var _isInGame:Boolean = false;
-      
+
       public function ServerMessageView()
       {
          super();
       }
-      
+
       override protected function onInit() : void
       {
          this.myMsgTF.autoSize = TextFieldAutoSize.LEFT;
@@ -50,7 +50,7 @@ package codo.views
          this.x = POS_ORIGIN_X;
          this.y = POS_ORIGIN_Y;
       }
-      
+
       override protected function onInitListener() : void
       {
          this.listen(BCEventCommon.EVT_NOTE_NOT_BUY_TRY_ON_ITEM,this.onNotBuyTryOnItemHandle);
@@ -58,14 +58,14 @@ package codo.views
          this.listen(BCEventCommon.EVT_HIDE_SERVER_MESSAGE,this.onHideServerMessageHandle);
          this.listen(BCEventCommon.EVT_IS_IN_GAME,this.onSetIsInGameHandle);
       }
-      
+
       override protected function enableData() : void
       {
          this.bind(AsyncTaskID.SHOW_SERVER_MESSAGE,this.bind_showServerMessage);
          this.bind(AsyncTaskID.HIDE_SERVER_MESSAGE,this.bind_hideServerMessage);
          this.testServerMessage();
       }
-      
+
       private function testServerMessage() : void
       {
          if(!ScaleformUtil.isScaleform)
@@ -82,7 +82,7 @@ package codo.views
             }});
          }
       }
-      
+
       private function bind_showServerMessage(cRes:Object) : void
       {
          var now:Number = Number(new Date().valueOf());
@@ -109,12 +109,12 @@ package codo.views
             "duration":timeStamp
          });
       }
-      
+
       private function bind_hideServerMessage(cRes:Object) : void
       {
          this.hide();
       }
-      
+
       private function onShowServerMessageCompleteHandle(event:TimerEvent) : void
       {
          for(var i:int = 0; i < this._serverMsgToShow.length; i++)
@@ -127,17 +127,17 @@ package codo.views
             }
          }
       }
-      
+
       private function onShowServerMessageHandle(cEvt:ParaEvent) : void
       {
          this.show(cEvt.myPara);
       }
-      
+
       private function onHideServerMessageHandle(cEvt:ParaEvent) : void
       {
          this.hide();
       }
-      
+
       private function onSetIsInGameHandle(cEvt:ParaEvent) : void
       {
          this._isInGame = cEvt.myPara;
@@ -176,7 +176,7 @@ package codo.views
             POS_X_START = 372;
          }
       }
-      
+
       private function onNotBuyTryOnItemHandle(cEvt:ParaEvent) : void
       {
          var msg:String = LocalizeUtil.localize(LocalizationServer.NOTIFY_HAVNT_BUY_TRYON_ITEM);
@@ -188,7 +188,7 @@ package codo.views
             "duration":duration
          });
       }
-      
+
       private function isServerMsgRepetitive(serverMsg:ServerMessageObj) : Boolean
       {
          var temp:Object = null;
@@ -202,7 +202,7 @@ package codo.views
          }
          return false;
       }
-      
+
       private function removeExistingIDIPMessages() : void
       {
          for(var i:int = 0; i < this._serverMsgToShow.length; )
@@ -217,7 +217,7 @@ package codo.views
             }
          }
       }
-      
+
       private function show(cServerMsg:Object) : void
       {
          var serverMsgObj:ServerMessageObj = new ServerMessageObj(cServerMsg);
@@ -240,12 +240,12 @@ package codo.views
             this.tryStartAnimation();
          }
       }
-      
+
       private function hide() : void
       {
          this.tryStopAnimation();
       }
-      
+
       private function tryStartAnimation() : void
       {
          var now:Number = NaN;
@@ -292,7 +292,7 @@ package codo.views
             }
          }
       }
-      
+
       private function tryStopAnimation() : void
       {
          TweenLite.killTweensOf(this.myMsgTF);
@@ -304,4 +304,3 @@ package codo.views
       }
    }
 }
-
