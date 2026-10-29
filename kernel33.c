@@ -1486,7 +1486,8 @@ static void __cdecl TakeOver(void)
     MatchC1SectionFlags();
     FillImports();
     PatchGfxDateTime();
-    InstallHostGate();
+    if (!InstallHostGate())
+        Fatal("Required network safety checks could not be installed. Please repair or update the client.");
     PatchRenderGate();
     PatchDvarRegistrations();
     PatchPlainConfig();

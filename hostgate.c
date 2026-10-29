@@ -23,16 +23,19 @@
  *     (docs/P2P_HOSTING.md); nothing calls it yet, so a remote player-hosted server is refused.
  * The lobby's TCP connection (connect/send/recv) is not touched.
  *
- * k33_hostGate on the command line: 2 (default) enforce, 1 log only (diagnosis; logs what enforcing
- * would drop). There is no off switch in a release build. Each refused address is logged once to
+ * k33_hostGate on the command line: 2 (default) enforce; explicit local-testing builds alone may
+ * use 1 (log only). Shipping builds always enforce. Each refused address is logged once to
  * Kernel33.log (the first 64 addresses).
  */
 
 #include <iphlpapi.h>
+#include "production_profile.h"
 
+#ifndef HG_SLOT_RECVFROM /* Native fixture supplies its own import table. */
 #define HG_SLOT_RECVFROM      0x00B424E0u
 #define HG_SLOT_SENDTO        0x00B42538u
 #define HG_SLOT_GETHOSTBYNAME 0x00B42530u
+#endif
 #define HG_MAX                128
 #define HG_SSDP               0xFAFFFFEFu /* 239.255.255.250, network order */
 
@@ -96,7 +99,8 @@ static void HostGateRefused(DWORD ip, int out, int port)
 
 static int WINAPI HostGateRecvFrom(SOCKET s, char *buf, int len, int flags, struct sockaddr *from, int *fromlen)
 {
-    for (;;) {
+    /* Yield even if a hostile sender keeps the receive queue permanently full. */
+    for (int dropped = 0; dropped < 64; ++dropped) {
         struct sockaddr_storage own;
         int ownLen = sizeof(own);
         struct sockaddr *f = from ? from : (struct sockaddr *)&own;
@@ -122,6 +126,8 @@ static int WINAPI HostGateRecvFrom(SOCKET s, char *buf, int len, int flags, stru
             if (select(0, &rd, NULL, NULL, &tv) <= 0) { WSASetLastError(WSAEWOULDBLOCK); return SOCKET_ERROR; }
         }
     }
+    WSASetLastError(WSAEWOULDBLOCK);
+    return SOCKET_ERROR;
 }
 
 static int WINAPI HostGateSendTo(SOCKET s, const char *buf, int len, int flags, const struct sockaddr *to, int tolen)
@@ -237,26 +243,32 @@ static void HostGateAllowGateways(void)
 }
 
 /* TakeOver, after FillImports and before the game entry. */
-static void InstallHostGate(void)
+static BOOL InstallHostGate(void)
 {
     InitializeCriticalSection(&g_hgLock);
+#if CODOL_LOCAL_TESTING
     const char *cl = GetCommandLineA();
     if (cl && (strstr(cl, "k33_hostGate 1") || strstr(cl, "k33_hostGate \"1\""))) g_hgMode = 1;
+#endif
     FARPROC *slotRecv = (FARPROC *)(DWORD_PTR)HG_SLOT_RECVFROM;
     FARPROC *slotSend = (FARPROC *)(DWORD_PTR)HG_SLOT_SENDTO;
     FARPROC *slotHost = (FARPROC *)(DWORD_PTR)HG_SLOT_GETHOSTBYNAME;
     HMODULE ws2 = GetModuleHandleA("ws2_32.dll"), ws1 = GetModuleHandleA("wsock32.dll");
     if (!Readable(slotRecv, 4) || !Readable(slotSend, 4) || !Readable(slotHost, 4) || !*slotRecv || !*slotSend || !*slotHost) {
-        Log("hostgate: socket import slots unreadable; NOT installed - this client must not join player-hosted servers");
-        return;
+        Log("hostgate: required socket import slots unavailable; refusing startup");
+        return FALSE;
     }
     /* The slots must hold what FillImports put there: the real Winsock functions. */
     FARPROC wantRecv = ws2 ? GetProcAddress(ws2, "recvfrom") : NULL;
     FARPROC wantSend = ws1 ? GetProcAddress(ws1, "sendto") : NULL;
     FARPROC wantSend2 = ws2 ? GetProcAddress(ws2, "sendto") : NULL;
-    if (*slotRecv != wantRecv || (*slotSend != wantSend && *slotSend != wantSend2)) {
-        Log("hostgate: socket import slots hold other functions; NOT installed");
-        return;
+    FARPROC wantHost = ws1 ? GetProcAddress(ws1, "gethostbyname") : NULL;
+    FARPROC wantHost2 = ws2 ? GetProcAddress(ws2, "gethostbyname") : NULL;
+    if (!wantRecv || *slotRecv != wantRecv ||
+        (*slotSend != wantSend && *slotSend != wantSend2) ||
+        (*slotHost != wantHost && *slotHost != wantHost2)) {
+        Log("hostgate: required socket imports do not match; refusing startup");
+        return FALSE;
     }
     HostGateReadLobbyNames();
     HostGateAllowGateways();
@@ -267,8 +279,13 @@ static void InstallHostGate(void)
     WriteCode(slotRecv, &r, 4);
     WriteCode(slotSend, &s, 4);
     WriteCode(slotHost, &h, 4);
+    if (*slotRecv != r || *slotSend != s || *slotHost != h) {
+        Log("hostgate: required socket filter write failed; refusing startup");
+        return FALSE;
+    }
     HANDLE t = CreateThread(NULL, 0, HostGateResolveThread, NULL, 0, NULL);
     if (t) CloseHandle(t);
     Log("hostgate: %s; UDP only with loopback, the lobby (%d names from dwauth.ini/stun.ini) and lobby-vouched hosts",
         g_hgMode >= 2 ? "enforcing" : "LOG ONLY (k33_hostGate 1)", g_hgNameCount);
+    return TRUE;
 }
