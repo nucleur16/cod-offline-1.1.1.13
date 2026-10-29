@@ -56,6 +56,8 @@ package
       private var _fpsMemCounter:FPSMemCounter;
       
       private var theatreWasOpen:Boolean = false;
+
+      private var survivalClassMenuSeenOpen:Boolean = false;
       
       public function MainPause()
       {
@@ -90,6 +92,7 @@ package
          this.stage.addEventListener(Event.ADDED,this.k33OnAdded); // k33: FOV row
          this.stage.addEventListener(MouseEvent.MOUSE_DOWN,this.k33SliderMouseDown,true,1000); // k33: slider drag
          this.initTheatrePause();
+         this.addEventListener(Event.ENTER_FRAME,this.survivalClassMenuFrame);
          if(!ScaleformUtil.isScaleform)
          {
             this.commManager.cpp_activate();
@@ -141,6 +144,29 @@ package
       private function isTheatrePause() : Boolean
       {
          return CFunctionContainerCommon.Dvar_GetString("codol_theatre_playback") == "1";
+      }
+
+      // The existing pause controller owns class display, selection and its
+      // normal immediate indicator. Only report a cancelled paid selector:
+      // closing this Scaleform menu otherwise has no GSC menu response.
+      private function survivalClassMenuFrame(event:Event) : void
+      {
+         if(CFunctionContainerCommon.Dvar_GetString("g_gametype") != "survival" ||
+            CFunctionContainerCommon.Dvar_GetString("survival_class_purchase") != "1")
+         {
+            this.survivalClassMenuSeenOpen = false;
+            return;
+         }
+         if(CommManagerPause.getInstance().bIsInGameMenuOpen)
+         {
+            this.survivalClassMenuSeenOpen = true;
+         }
+         else if(this.survivalClassMenuSeenOpen)
+         {
+            this.survivalClassMenuSeenOpen = false;
+            CFunctionContainerCommon.setdvar("survival_class_purchase","0");
+            CFunctionContainerCommon.ScriptMenuResponse("changeclass","back");
+         }
       }
       
       private function blockTheatreLoadout(event:Event) : void
