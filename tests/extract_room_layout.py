@@ -93,5 +93,5 @@ if args.game:
                    'line_height_at_14px':round((f.ascent+abs(f.descent)+f.leading)*14/font3.EM,4)})
  fixture['caption_font_metrics']=metrics
 Path(args.out).parent.mkdir(parents=True,exist_ok=True)
-Path(args.out).write_text(json.dumps(fixture,indent=2)+'\n',encoding='utf-8')
+Path(args.out).write_text(json.dumps(fixture,indent=2)+'\n',encoding='utf-8',newline='\n')
 print('Extracted both room timelines and global Start/Ready geometry from stock SWF XML')
