@@ -76,6 +76,8 @@ ZONES = {
                                                                     "codo.views.MatchMPCTMenuView",
                                                                     "codo.views.MatchRoomListView",
                                                                     "codo.views.MatchSelectModeHomeView",
+                                                                    "codo.views.InRoomBaseView",
+                                                                    "codo.k33.LocalMatchControls",
                                                                     "codo.k33.PadSnap", "components.CodoUIComponent"},
                                      "scaleform/default/codologin.gfx": {"codo.k33.PadSnap",
                                                                          "components.CodoUIComponent"}}),

@@ -20,6 +20,8 @@
 typedef void (*K33TickFn)(void);
 static K33TickFn g_k33Ticks[K33_MAX_TICKS];
 static int g_k33TickCount;
+/* Installed before this dispatcher; its frame hook must remain in the chain. */
+void PI_TickHook(void);
 __attribute__((used)) DWORD g_k33TickNext;   /* what the hooked call reached before us */
 
 __attribute__((unused)) static BOOL K33OnMainTick(K33TickFn fn)
@@ -61,7 +63,7 @@ static void K33InstallMainTicks(void)
     memcpy(&rel, call + 1, 4);
     DWORD target = VOICE_EVENTLOOP_CALL_VA + 5 + (DWORD)rel;
     if (target != VOICE_EVENTLOOP_FUNC_VA && target != (DWORD)(DWORD_PTR)VOICE_TickHook &&
-        target != (DWORD)(DWORD_PTR)DISCORD_TickHook) {
+        target != (DWORD)(DWORD_PTR)DISCORD_TickHook && target != (DWORD)(DWORD_PTR)PI_TickHook) {
         Log("ticks: Com_EventLoop call 0x%08X reaches unknown 0x%08lX; %d ported feature(s) not ticked",
             VOICE_EVENTLOOP_CALL_VA, (unsigned long)target, g_k33TickCount);
         return;

@@ -6,7 +6,6 @@
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_dx9.h"
 #include "vision_api.h"
-#include "p2p_ui_api.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -185,67 +184,6 @@ static bool NameList(const char *id, char (*names)[VIS_NAME_LEN], int count, con
     return activated;
 }
 
-static void DrawLocalMatch(void)
-{
-    if (!ImGui::CollapsingHeader("Start local match", ImGuiTreeNodeFlags_DefaultOpen)) return;
-    static P2PUiOptions options;
-    static bool initialized;
-    if (!initialized) { P2PUiDefaults(&options); initialized = true; }
-    P2PUiState state; P2PUiGetState(&state);
-    ImGui::TextWrapped("Host a match here, then choose the same map and mode in the lobby and press Ready. The lobby assigns players to the hosted server when it is ready.");
-    ImGui::TextWrapped("Host: %s", state.status);
-    ImGui::BeginDisabled(state.busy || state.pending);
-    ImGui::Combo("Hosting", &options.child, "In this client\0Separate server process\0");
-    ImGui::Combo("Access", &options.lan, "This PC only\0LAN (all interfaces)\0");
-    if (options.lan) ImGui::TextWrapped("LAN players need this lobby's admission and your host's reachable address. This setting opens the listening interface; it does not configure routing.");
-    ImGui::InputInt("UDP port", &options.port);
-    ImGui::Combo("Category", &options.zone, "Multiplayer (mp)\0Cooperative (coop)\0Zombies (zm)\0Survival\0");
-    int availableSurvivalMaps = -1;
-    if (options.zone == 3) {
-        static char maps[64][64];
-        static int mapCount;
-        static DWORD refreshed;
-        if (!refreshed || GetTickCount() - refreshed >= 2000) {
-            mapCount = P2PUiListSurvivalMaps(maps, 64);
-            refreshed = GetTickCount();
-        }
-        availableSurvivalMaps = mapCount;
-        bool available = false;
-        for (int i = 0; i < availableSurvivalMaps; i++) if (!strcmp(maps[i], options.map)) available = true;
-        if (!available && availableSurvivalMaps > 0) snprintf(options.map, sizeof(options.map), "%s", maps[0]);
-        if (ImGui::BeginCombo("Survival map", availableSurvivalMaps ? options.map : "No installed maps with placements")) {
-            for (int i = 0; i < availableSurvivalMaps; i++)
-                if (ImGui::Selectable(maps[i], !strcmp(maps[i], options.map))) snprintf(options.map, sizeof(options.map), "%s", maps[i]);
-            ImGui::EndCombo();
-        }
-        ImGui::TextWrapped("Survival uses multiplayer maps with Survival scripts and authored entity placements. Only deployed maps from p2p/survival_maps.txt appear here.");
-        if (!availableSurvivalMaps) ImGui::TextWrapped("Deploy Survival scripts, placements and its map catalogue before starting.");
-    } else {
-        ImGui::InputText("Map", options.map, sizeof(options.map));
-        ImGui::InputText("Game type", options.gametype, sizeof(options.gametype));
-    }
-    ImGui::SliderInt("Bots", &options.bots, 0, 17);
-    const char *levels[] = {"recruit", "regular", "hardened", "veteran"};
-    if (ImGui::BeginCombo("Bot difficulty", options.difficulty)) {
-        for (const char *level : levels)
-            if (ImGui::Selectable(level, strcmp(level, options.difficulty) == 0)) snprintf(options.difficulty, sizeof(options.difficulty), "%s", level);
-        ImGui::EndCombo();
-    }
-    ImGui::BeginDisabled((!options.child && state.restartRequired) || availableSurvivalMaps == 0);
-    if (ImGui::Button("Start hosting")) P2PUiStart(&options);
-    ImGui::EndDisabled();
-    ImGui::SameLine();
-    if (ImGui::Button("Reload saved options")) P2PUiDefaults(&options);
-    ImGui::EndDisabled();
-    if (!options.child && state.restartRequired && !state.busy) ImGui::TextWrapped("Restart this client before hosting in it again, or select a separate server process.");
-    if (state.ready) ImGui::TextColored(ImVec4(0.6f, 1, 0.6f, 1), "Ready for lobby joins.");
-    ImGui::BeginDisabled(!state.busy || state.pending);
-    if (ImGui::Button("Stop hosting")) P2PUiStop();
-    ImGui::EndDisabled();
-    ImGui::TextDisabled("Options apply to this session; saved paths and admission settings come from p2p/p2p_host.ini.");
-    ImGui::Separator();
-}
-
 static void DrawEditor(void)
 {
     VisUiState st;
@@ -273,7 +211,7 @@ static void DrawEditor(void)
         ImGui::SetNextWindowPos(ImVec2(vp->Size.x - size.x - 10 > 0 ? vp->Size.x - size.x - 10 : 0, 10), ImGuiCond_Always);
     }
     bool open = true;
-    if (!ImGui::Begin("Local match / Vision editor (Kernel33)###k33vision", &open, ImGuiWindowFlags_NoCollapse)) {
+    if (!ImGui::Begin("Vision editor (Kernel33)###k33vision", &open, ImGuiWindowFlags_NoCollapse)) {
         ImGui::End();
         if (!open) VisApi_Close();
         return;
@@ -281,7 +219,6 @@ static void DrawEditor(void)
     if (!open) VisApi_Close();
     winPos = ImGui::GetWindowPos();
     winSize = ImGui::GetWindowSize();
-    DrawLocalMatch();
     if (!st.ok) {
         ImGui::TextWrapped("C1's vision code did not match this build: the editor is off (see Kernel33.log).");
         ImGui::End();

@@ -22,11 +22,9 @@
  * Threads: the commands run on C1's main thread (Cbuf) and only print and signal; the host thread does
  * the process work, the rcon polling and the files. g_p2p is shared under g_p2pLock.
  */
-#ifdef K33_VISION
-#include "p2p_ui_api.h"
-#endif
 #include <wincrypt.h>
 #include <ws2tcpip.h>
+#include "p2p_match_options.h"
 
 #define P2P_DEFAULT_PORT 17760
 #define P2P_STATUS_MS    2000
@@ -214,7 +212,6 @@ static const char *P2PCheck(const P2PConfig *c)
         if (strcmp(c->gametype, "survival")) return "Survival requires gametype survival";
         if (!P2PSurvivalMaps(NULL, 0, c->map)) return "Survival map is absent from p2p/survival_maps.txt (installed maps with placements)";
     }
-    if (!P2PIdent(c->botDifficulty, 15)) return "bad bot difficulty";
     for (const char *p = c->netIp; *p; p++) if (!((*p >= '0' && *p <= '9') || *p == '.')) return "net_ip must be an IPv4 address";
     if (!P2PPathOk(c->exe) || !P2PPathOk(c->basepath) || !P2PPathOk(c->home) || !P2PPathOk(c->scripts) ||
         !P2PPathOk(c->state) || !P2PPathOk(c->profile) || !P2PPathOk(c->rconFile) || !P2PPathOk(c->rollout))
@@ -328,6 +325,7 @@ static int P2PRcon(int port, const char *password, const char *command, char *ou
             if (got + len >= outSize) len = outSize - 1 - got;
             memcpy(out + got, text, len);
             got += len;
+            out[got] = 0;
             if (strstr(out, "sh1x_status ") && memchr(out, '\n', got)) { /* one line is all we ask for */
                 out[got] = 0;
                 if (strstr(strstr(out, "sh1x_status "), "\n")) break;
@@ -460,11 +458,11 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
         "+set codol_scriptPath \"%s\" +set codol_scriptOverlay \"%s\" +set codol_scriptNativeOverlay \"%s\" "
         "+set codol_securityKeyPath \"%s\\securitykey.bin\" +set codol_admissionPath \"%s\\game_admissions.txt\" "
         "+set codol_admissionRequired %d +set codol_profilePath \"%s\" +set codol_zoneType %s +set codol_sessionMap %s "
-        "+set g_gametype %s +set scr_codol_bots %d +set sv_botDifficulty %s +set codol_hostParentPid %lu %s "
+        "+set g_gametype %s +set codol_hostParentPid %lu %s "
         "+codol_scriptPath +codol_scriptOverlay +codol_scriptNativeOverlay +map %s %s",
         c.exe, c.basepath, c.home, c.netIp, c.port, password, c.developer, c.scripts, c.scripts, c.scripts,
         c.state, c.state, c.admission ? 1 : 0, c.profile, c.zoneType, c.sessionMap[0] ? c.sessionMap : c.map,
-        c.gametype, c.bots, c.botDifficulty, inproc ? 0ul : GetCurrentProcessId(), pmem, c.map, c.extra);
+        c.gametype, inproc ? 0ul : GetCurrentProcessId(), pmem, c.map, c.extra);
     cmd[sizeof(cmd) - 1] = 0;
     if (inproc) {
         /* The same command line without the exe: Sh1xHost_Init takes what follows it. */
@@ -604,82 +602,92 @@ static BOOL P2PStart(const char *map, const char *gametype, const char *zone)
     return P2PStartConfigured(map, gametype, zone, NULL);
 }
 
-#ifdef K33_VISION
-/* Render-thread UI publishes requests; the existing main-thread dispatcher starts/stops them. */
-static P2PConfig g_p2pUiConfig;
-static int g_p2pUiRequest;
-int P2PUiListSurvivalMaps(char (*maps)[64], int maximum)
+/* Scaleform calls the normal main-thread console dispatcher. Publish only
+ * copied state through C1's own dvars; never touch the movie from the host thread. */
+static unsigned g_p2pLobbyRequest;
+static char g_p2pLobbyMap[64], g_p2pLobbyError[256];
+static P2PRoomContext g_p2pRoom;
+static P2PConfig g_p2pLobbyNext;
+static BOOL g_p2pLobbyPending, g_p2pEnabled, g_p2pHasRoom;
+static void P2PLobbyTick(void)
 {
-    return maximum > 0 ? P2PSurvivalMaps(maps, maximum, NULL) : 0;
-}
-void P2PUiDefaults(P2PUiOptions *o)
-{
-    P2PConfig c; P2PDefaults(&c); P2PLoadIni(&c);
-    memset(o, 0, sizeof(*o));
-    lstrcpynA(o->map, c.map, sizeof(o->map));
-    lstrcpynA(o->gametype, c.gametype, sizeof(o->gametype));
-    lstrcpynA(o->difficulty, c.botDifficulty, sizeof(o->difficulty));
-    o->zone = !strcmp(c.zoneType, "survival") ? 3 : !strcmp(c.zoneType, "zm") ? 2 : !strcmp(c.zoneType, "coop") ? 1 : 0;
-    o->child = !_stricmp(c.mode, "child");
-    o->lan = strcmp(c.netIp, "127.0.0.1") != 0;
-    o->port = c.port; o->bots = c.bots;
-}
-void P2PUiGetState(P2PUiState *s)
-{
-    memset(s, 0, sizeof(*s));
-    if (!g_p2pInit) { s->busy = 1; lstrcpyA(s->status, "Host controls are initializing"); return; }
+    static char previous[1024];
+    char snapshot[1024], error[256], number[24]; int state;
+    if (!g_p2pInit || !C1DvarsReady()) return;
+    if (g_p2pLobbyPending && (!g_p2pThread || WaitForSingleObject(g_p2pThread,0)==WAIT_OBJECT_0)) {
+        P2PConfig next=g_p2pLobbyNext;
+        if (!_stricmp(next.mode,"inprocess") && P2PInprocUsed()) lstrcpyA(next.mode,"child");
+        g_p2pLobbyPending=FALSE;
+        const char *bad=P2PCheck(&next);
+        if (bad) { lstrcpynA(g_p2pLobbyError,bad,sizeof(g_p2pLobbyError));P2PSetState(P2P_FAILED,bad); }
+        else if (!P2PStartConfigured(NULL,NULL,NULL,&next)) lstrcpyA(g_p2pLobbyError,"Host is still closing. Toggle hosting to retry.");
+    }
     EnterCriticalSection(&g_p2pLock);
-    s->busy = g_p2p.state == P2P_STARTING || g_p2p.state == P2P_READY || g_p2p.state == P2P_STOPPING;
-    s->ready = g_p2p.state == P2P_READY;
-    s->pending = g_p2pUiRequest != 0;
-    _snprintf(s->status, sizeof(s->status), "%s%s%s", kP2PState[g_p2p.state], g_p2p.error[0] ? ": " : "", g_p2p.error);
-    s->status[sizeof(s->status)-1] = 0;
+    state=g_p2pLobbyPending ? P2P_STOPPING : g_p2p.state;
+    lstrcpynA(error,g_p2pLobbyError[0] ? g_p2pLobbyError : g_p2p.error,sizeof(error));
     LeaveCriticalSection(&g_p2pLock);
-    s->restartRequired = P2PInprocUsed();
+    _snprintf(snapshot,sizeof(snapshot),"%d|%u|%d|%s|%s",state,g_p2pLobbyRequest,g_p2pEnabled,g_p2pLobbyMap,error);
+    snapshot[sizeof(snapshot)-1]=0;
+    if (!strcmp(snapshot,previous)) return;
+    BOOL done=C1QueueSet("ui_p2p_enabled",g_p2pEnabled ? "1":"0");
+    done=C1QueueSet("ui_p2p_state",kP2PState[state]) && done;
+    done=C1QueueSet("ui_p2p_error",error) && done;
+    done=C1QueueSet("ui_p2p_map",g_p2pLobbyMap) && done;
+    done=C1QueueSet("ui_p2p_ready",g_p2pEnabled && state==P2P_READY && !error[0] ? "1":"0") && done;
+    done=C1QueueSet("ui_p2p_busy",state==P2P_STARTING || state==P2P_READY || state==P2P_STOPPING ? "1":"0") && done;
+    _snprintf(number,sizeof(number),"%u",g_p2pLobbyRequest);
+    done=C1QueueSet("ui_p2p_request",number) && done;
+    if (done) lstrcpynA(previous,snapshot,sizeof(previous));
 }
-int P2PUiStart(const P2PUiOptions *o)
-{
-    P2PUiState state; P2PUiGetState(&state);
-    if (state.busy || state.pending || (!o->child && state.restartRequired)) return 0;
-    P2PConfig c; P2PDefaults(&c); P2PLoadIni(&c);
-    if (o->zone < 0 || o->zone > 3 || o->bots < 0 || o->bots > 17) return 0;
-    memcpy(c.map, o->map, sizeof(c.map)); c.map[sizeof(c.map)-1] = 0;
-    memcpy(c.gametype, o->gametype, sizeof(c.gametype)); c.gametype[sizeof(c.gametype)-1] = 0;
-    memcpy(c.botDifficulty, o->difficulty, sizeof(c.botDifficulty)); c.botDifficulty[sizeof(c.botDifficulty)-1] = 0;
-    c.sessionMap[0] = 0;
-    if (o->zone == 3) lstrcpyA(c.gametype, "survival");
-    lstrcpyA(c.zoneType, o->zone == 3 ? "survival" : o->zone == 2 ? "zm" : o->zone == 1 ? "coop" : "mp");
-    lstrcpyA(c.mode, o->child ? "child" : "inprocess");
-    lstrcpyA(c.netIp, o->lan ? "0.0.0.0" : "127.0.0.1");
-    c.port = o->port; c.bots = o->bots;
-    const char *bad = P2PCheck(&c);
-    if (bad) { P2PSetState(P2P_FAILED, bad); return 0; }
-    EnterCriticalSection(&g_p2pLock);
-    BOOL busy = g_p2p.state == P2P_STARTING || g_p2p.state == P2P_READY || g_p2p.state == P2P_STOPPING;
-    if (busy || g_p2pUiRequest || (!o->child && P2PInprocUsed())) { LeaveCriticalSection(&g_p2pLock); return 0; }
-    g_p2pUiConfig = c; g_p2pUiRequest = 1;
-    LeaveCriticalSection(&g_p2pLock);
-    return 1;
-}
-void P2PUiStop(void)
-{
-    if (!g_p2pInit) return;
-    EnterCriticalSection(&g_p2pLock);
-    if (!g_p2pUiRequest) g_p2pUiRequest = 2;
-    LeaveCriticalSection(&g_p2pLock);
-}
-static void P2PUiTick(void)
+static void P2PHostCurrentRoom(void)
 {
     P2PConfig c;
+    if (!g_p2pHasRoom) { lstrcpyA(g_p2pLobbyError,"Choose a match lobby first.");return; }
+    P2PDefaults(&c);P2PLoadIni(&c);
+    lstrcpyA(c.map,g_p2pRoom.map);lstrcpyA(c.sessionMap,g_p2pRoom.session);
+    lstrcpyA(c.gametype,g_p2pRoom.gametype);lstrcpyA(c.zoneType,g_p2pRoom.category);
+    lstrcpyA(c.netIp,"127.0.0.1");
     EnterCriticalSection(&g_p2pLock);
-    int request = g_p2pUiRequest;
-    if (request == 1) c = g_p2pUiConfig;
-    g_p2pUiRequest = 0;
+    BOOL busy=g_p2p.state==P2P_STARTING || g_p2p.state==P2P_READY || g_p2p.state==P2P_STOPPING;
+    BOOL same=busy && g_p2p.state!=P2P_STOPPING && !g_p2pLobbyPending &&
+        !strcmp(g_p2pLobbyMap,c.sessionMap) && !strcmp(g_p2p.cfg.gametype,c.gametype) && !strcmp(g_p2p.cfg.zoneType,c.zoneType);
     LeaveCriticalSection(&g_p2pLock);
-    if (request == 1) P2PStartConfigured(NULL, NULL, NULL, &c);
-    else if (request == 2) InterlockedExchange(&g_p2pStop, 1);
+    if (!same && !_stricmp(c.mode,"inprocess") && P2PInprocUsed()) lstrcpyA(c.mode,"child");
+    const char *bad=P2PCheck(&c);
+    if (bad) { lstrcpynA(g_p2pLobbyError,bad,sizeof(g_p2pLobbyError));return; }
+    g_p2pLobbyError[0]=0;
+    if (same) return;
+    lstrcpyA(g_p2pLobbyMap,c.sessionMap);++g_p2pLobbyRequest;
+    if (busy) {
+        g_p2pLobbyNext=c;g_p2pLobbyPending=TRUE;
+        InterlockedExchange(&g_p2pStop,1);
+    } else {
+        EnterCriticalSection(&g_p2pLock);g_p2p.cfg=c;LeaveCriticalSection(&g_p2pLock);
+        if (!P2PStartConfigured(NULL,NULL,NULL,&c)) lstrcpyA(g_p2pLobbyError,"Host is still closing. Toggle hosting to retry.");
+    }
 }
-#endif
+/* Internal room context is separate from the user's one-bit hosting switch. */
+static void __cdecl P2PCmdRoom(void)
+{
+    const char *args[3];P2PRoomContext room;
+    int count=VoiceArgc()-1;
+    if (count!=3) { lstrcpyA(g_p2pLobbyError,"Choose a match lobby first.");P2PLobbyTick();return; }
+    for (int i=0;i<3;++i) args[i]=VoiceArgv(i+1);
+    const char *bad=P2PParseRoomContext(count,args,&room);
+    if (bad) { lstrcpynA(g_p2pLobbyError,bad,sizeof(g_p2pLobbyError));P2PLobbyTick();return; }
+    g_p2pRoom=room;g_p2pHasRoom=TRUE;
+    if (g_p2pEnabled) P2PHostCurrentRoom();
+    P2PLobbyTick();
+}
+static void __cdecl P2PCmdLocalhost(void)
+{
+    const char *value=VoiceArgc()==2 ? VoiceArgv(1):"";
+    if (strcmp(value,"0") && strcmp(value,"1")) { C1Printf("p2p_localhost 1 or 0\n");return; }
+    g_p2pEnabled=!strcmp(value,"1");g_p2pLobbyError[0]=0;
+    if (g_p2pEnabled) P2PHostCurrentRoom();
+    else { g_p2pLobbyPending=FALSE;InterlockedExchange(&g_p2pStop,1); }
+    P2PLobbyTick();
+}
 
 /* ---- commands ------------------------------------------------------------------------------ */
 
@@ -696,6 +704,9 @@ static void __cdecl P2PCmdHost(void)
 
 static void __cdecl P2PCmdStop(void)
 {
+    g_p2pEnabled = FALSE;
+    g_p2pLobbyPending = FALSE;
+    g_p2pLobbyError[0] = 0;
     if (!g_p2pThread || WaitForSingleObject(g_p2pThread, 0) == WAIT_OBJECT_0) { C1Printf("p2pstop: not hosting\n"); return; }
     InterlockedExchange(&g_p2pStop, 1);
     C1Printf("p2pstop: stopping the match server\n");
@@ -715,6 +726,8 @@ static void __cdecl P2PCmdStatus(void)
 }
 
 static C1Cmd g_p2pCmds[] = {
+    { NULL, "p2p_room", (void *)P2PCmdRoom },
+    { NULL, "p2p_localhost", (void *)P2PCmdLocalhost },
     { NULL, "p2phost", (void *)P2PCmdHost },
     { NULL, "p2pstop", (void *)P2PCmdStop },
     { NULL, "p2pstatus", (void *)P2PCmdStatus },
@@ -726,9 +739,7 @@ static void InstallP2PHost(void)
 {
     if (!g_p2pInit) { InitializeCriticalSection(&g_p2pLock); g_p2pInit = TRUE; }
     C1GameInit();
-#ifdef K33_VISION
-    K33OnMainTick(P2PUiTick);
-#endif
+    K33OnMainTick(P2PLobbyTick);
     int added = 0;
     for (unsigned i = 0; i < sizeof(g_p2pCmds) / sizeof(g_p2pCmds[0]); i++) added += C1AddCommand(&g_p2pCmds[i]);
     const char *cl = GetCommandLineA();

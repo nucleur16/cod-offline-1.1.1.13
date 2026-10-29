@@ -55,7 +55,7 @@ mkdir -p "$VOBJ"
 VOBJS=""
 for src in $VSRC; do
     o="$VOBJ/$(basename "${src%.cpp}").o"
-    if [ ! -f "$o" ] || [ "$src" -nt "$o" ] || [ vision_api.h -nt "$o" ] || [ p2p_ui_api.h -nt "$o" ] || [ imgui/imconfig.h -nt "$o" ] || [ build-dev.sh -nt "$o" ]; then
+    if [ ! -f "$o" ] || [ "$src" -nt "$o" ] || [ vision_api.h -nt "$o" ] || [ p2p_match_options.h -nt "$o" ] || [ imgui/imconfig.h -nt "$o" ] || [ build-dev.sh -nt "$o" ]; then
         echo "g++ $src"
         "$BIN/g++.exe" $CXXFLAGS -c "$src" -o "$o"
     fi

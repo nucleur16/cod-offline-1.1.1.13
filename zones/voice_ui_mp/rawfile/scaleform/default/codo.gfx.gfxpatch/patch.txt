@@ -1,7 +1,7 @@
 # GFx movie as a patch over a stock movie (zonekit/gfx.py)
 stock patch_ui_mp:scaleform/default/codo.gfx
 stock-sha256 2f143069ed10f3c937e0f5b758591e477f57544f76bdfd3bd2635f77cca5d332
-sha256 006c7bd7cf757b4128b62163a307d12ef1d99b394d9ac12d0c4f07b33696eda4
+sha256 2ba44dcb516ffc2b6de31ebea6043770e503a3b9f2fa541e3d914a273500811e
 header 4746580a68b64500800003200000025800001e0100
 keep 0
 keep 1
@@ -6035,7 +6035,7 @@ keep 6028
 keep 6029
 keep 6030
 keep 6031
-keep 6032
+new tags/k33_82_codo_views_InRoomBaseView.bin
 new tags/6033_82_codo_views_CyborgInRoomView.bin
 keep 6034
 new tags/6035_82_codo_views_ScoreboardBaseView.bin
@@ -6865,6 +6865,7 @@ keep 6858
 keep 6859
 keep 6860
 new tags/k33_82_codo_k33_PadSnap.bin
+new tags/k33_82_codo_k33_LocalMatchControls.bin
 keep 6861
 keep 6862
 keep 6863
@@ -6915,10 +6916,12 @@ as ime.LangBarElement as/ime/LangBarElement.as 8fa9032f2cb798dc1857499c92ed9b613
 as components.CodoUIComponent as/components/CodoUIComponent.as 9f3cc89ba4727ad13a2b1cf49191d3f704b0b1f3730f8eb517b377c7f1e3713d
 as codo.k33.PadSnap as/codo/k33/PadSnap.as f5451168d78f16510986c45c23f4897166829c64c275b3cacc79144c428e8007
 as codo.views.OptionView as/codo/views/OptionView.as 4db03a52169b41a6c4c575866d1223a6b91b5c986b6cb6f05252a102f2df65f3
-as codo.controllers.LobbyController as/codo/controllers/LobbyController.as 25036e20b0cc0e030152212426aa500e5274a2224cebc6b0f5f9f212f5641dc1
 as codo.views.TipView as/codo/views/TipView.as 2a462eff264d2a25a9f6be0739941875830a9d95a6434ee641781975539cdc26
 as codo.controllers.RightClickMenuController as/codo/controllers/RightClickMenuController.as 6025ec44b21edf6eabcd53ba41ff41a19fe8fd876c12c53dc98d9f743ba9f01f
 as codo.controllers.PartyController as/codo/controllers/PartyController.as 4e7a5943db9ab688bd0d2ad8e03dbad6fffdd7f9b055e5752c567607f7c33ec0
 as codo.views.SocialSideBarView as/codo/views/SocialSideBarView.as 55a5418ca94fdc46c8cb3cdabd9dd6c33b5a4526d7a80850cf4b2b4b737b56d8
 as components.room_part.RoomInfo as/components/room_part/RoomInfo.as 433d733e3367ee97b3e8ddff3476b945064c25f36225adc71d4f377335d59867
 as codo.controllers.MatchController as/codo/controllers/MatchController.as b0bd6f786fa7059bb3448061c2288918c498137ad5ceca24cb2d50535994446a
+as codo.views.InRoomBaseView as/codo/views/InRoomBaseView.as ee603a0c3d8a5e731cd1cab2ec60dd7f990c13ddf088d0d695866c4fb40587eb
+as codo.controllers.LobbyController as/codo/controllers/LobbyController.as 2f125b6983fc59de52dc24ad362cbcb3dcc979cb26d66bce3f290456a3c2b6e0
+as codo.k33.LocalMatchControls as/codo/k33/LocalMatchControls.as 02f36998df21431c6d6142186acb57ad31704c805301e626282330f41f89801e

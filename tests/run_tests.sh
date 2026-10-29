@@ -10,6 +10,7 @@ OUT=${K33_TEST_OUT:-${TMP:-/tmp}/k33-tests}
 mkdir -p "$OUT"
 python tests/test_ui_baseline.py
 python tests/test_quick_ready_gate.py
+node tests/campaign_local_host_test.js
 python -B tests/test_tip_stage_lookup.py
 python -B tests/test_invitations_disabled.py
 python -B tests/test_zone_packs.py

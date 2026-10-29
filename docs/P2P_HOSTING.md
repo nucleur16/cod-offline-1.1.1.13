@@ -341,8 +341,8 @@ memory.
 
   | state | mean per tick | max per tick | ticks per 30 s |
   |---|---|---|---|
-  | idle, at the menu | 30 Âµs | 6-9 ms | about 38,000 |
-  | 2 players + 2 bots | 184-270 Âµs | 7-29 ms | 8,000-16,000 |
+  | idle, at the menu | 30 ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âµs | 6-9 ms | about 38,000 |
+  | 2 players + 2 bots | 184-270 ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âµs | 7-29 ms | 8,000-16,000 |
   | map loads | - | 4.6-5.6 s (one frame) | - |
 
 - **Memory of the host process, in a match with 2 players**: private 3,113 MB, virtual 3,671 MB of the 4,096 MB
@@ -440,33 +440,38 @@ flat across cycles.
 - **Diagnostics.** `p2passetcheck` only checks assets the server still defines itself. C1-held definitions have
   no server copy to compare.
 
-## In-game local match options (2026-10-28)
+## Match-lobby local hosting (2026-10-28)
 
-In the developer build, press **F3** (or the configured `k33_visionKey`) and
-expand **Start local match**. This shares the existing ImGui input/window and
-works from the lobby. Choose the server process, access interface, UDP port,
-map identifier, native gametype, zone type, bot count and difficulty, then
-press **Start hosting**. The panel displays startup errors and the current
-host state; after **Ready for lobby joins**, choose the same map/mode in the
-lobby and press its normal Ready button. The existing rollout/admission path
-assigns players to the host. **Stop hosting** uses the existing shutdown path.
+Multiplayer, Zombies and Survival room owners have one Scaleform toggle:
+**LOCAL HOSTING: ENABLED / DISABLED**. It uses the lobby's selected map and
+mode; bot settings stay under the existing lobby/RCON controls. There are no
+additional hosting settings in the UI, and F3 remains the vision editor.
 
-Options are session-only. Paths, profile, state, rollout and admission policy
-still come from `p2p/p2p_host.ini`; **Reload saved options** restores its values.
-**This PC only** binds 127.0.0.1; **LAN** binds all interfaces and still needs a
-reachable advertised address and the same lobby's admissions. It does not
-configure a remote lobby or router. In-process hosting can run once per client
-session; after stopping, restart C1 or select a separate server process. Child
-hosting requires the executable configured by `exe=` to be installed.
+The user's command is `p2p_localhost 1` or `p2p_localhost 0`. The movie supplies
+room context internally through `p2p_room`. The host handles saved paths, port,
+process lifetime and readiness. When an in-process host has already run,
+automatic hosting uses the separate server process. Changed room selections
+retire the old host before starting the new one. Startup state/errors appear
+below the toggle. The INI and lobby admission/rollout flow are preserved.
 
-The UI publishes a request under the host lock, and the existing main-thread
-callback dispatcher consumes it. Starting or stopping never runs C1 code from
-the render thread. The INI is not rewritten, and existing console commands and
-startup autostart retain their original configuration behavior.
+Survival uses `map=mp_*`, `session_map=mp_*` and `gametype=survival`. Historical
+prefixed room IDs are accepted as input but are stripped before loading the
+level. Its scripts and authored entity placements load through the Survival
+ruleset. The installed map catalogue continues to gate availability.
 
-The **Survival** category fixes its native gametype to `survival`, loads MP maps
-through the `survival` category, and offers only maps listed in the deployed
-`p2p/survival_maps.txt` catalogue. Deployment generates that file from installed
-maps and authored Survival placements/scripts. An absent catalogue disables
-Survival Start; `p2phost` also rejects uncatalogued Survival maps. Hosting accepts
-the full `survival` category name without truncating it to seven characters.
+### Campaign localhost default
+
+Campaign story rooms (`MapType.COOP`, native mode `coop`) start a localhost host
+when their selected room information arrives. The ActionScript sends the exact
+selected `coop_<mission>_mp_<level>` session identifier to `p2p_room`, then enables `p2p_localhost 1`;
+the native bridge resolves the level while retaining that mission/session ID.
+It never substitutes a generic campaign map. Campaign supplies only its room context and the enable state. Native hosting
+infers its remaining configuration; lobby RCON owns bot settings.
+
+Pressing the room's normal Start Match button waits for `ui_p2p_ready=1` and an
+exact `ui_p2p_map` session match before issuing the original START_MATCH task.
+Startup errors or a 180-second timeout display a room error and leave Start
+available to retry. Leaving the room, changing its mission or losing host status
+cancels the pending launch. A failed local launch never falls back to requesting
+a different server. Native authentication/admission and the existing room start
+transaction remain responsible for joining the selected local server.
