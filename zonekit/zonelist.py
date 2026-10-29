@@ -53,6 +53,8 @@ ZONES = {
     "controller_ingame": dict(origin="R:3317112:patch", install=PATCH,
                               gfx={"scaleform/default/codohud.gfx": HUD, "scaleform/default/codoingame.gfx": INGAME},
                               handwritten={"scaleform/default/codoingame.gfx": {"MainPause"}}),
+    # Native HUD menus reference materials/defaults initialized by code_post_gfx.
+    "survival_hud_postgfx_mp": dict(origin="new", install=PATCH),
     # the usermaps' front-end data, filtered by shipping_maps.txt (zonekit/shipping.py): only "ship" maps' rows,
     # arena entries, strings, vision files and map-select images are in a shipping build
     "usermaps_patch": dict(origin="G:" + PATCH, install=PATCH, older="Z:" + PATCH,

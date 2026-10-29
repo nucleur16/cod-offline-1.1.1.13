@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from zonekit import menus
 
 ROOT = Path(__file__).resolve().parents[1]
-DIR = ROOT / 'zones/controller_ingame/menufile'
+DIR = ROOT / 'zones/survival_hud_postgfx_mp/menufile'
 
 def operator(name):
     return {'kind': 'expressionEntry', 'raw': struct.pack('<III', 0, menus.OP_1113[name], 0).hex(), 'p': {}}

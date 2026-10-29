@@ -8,8 +8,8 @@ import copy,json,struct,sys
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from zonekit import menus
 ROOT=Path(__file__).resolve().parents[1]
-SOURCE=ROOT/'zones/controller_ingame/sources/survival_scorebar_2697.json'
-OUT=ROOT/'zones/controller_ingame/components'
+SOURCE=ROOT/'zones/survival_hud_postgfx_mp/sources/survival_scorebar_2697.json'
+OUT=ROOT/'zones/survival_hud_postgfx_mp/components'
 def op(name):return {'kind':'expressionEntry','raw':struct.pack('<III',0,menus.OP_1113[name],0).hex(),'p':{}}
 def string(value):return {'kind':'expressionEntry','raw':struct.pack('<III',1,2,0).hex(),'p':{'8':value}}
 def stmt(es):return {'kind':'Statement','raw':struct.pack('<IIIII',len(es),0,0,0,0).hex(),'p':{'4':es}}
@@ -43,9 +43,12 @@ def author(source):
  # absent from the installed C1/common Survival zones. Preserve its1px rect.
  items[0]['p']['160']={'asset':'material','name':',white'}
  wallet=items[3];raw=bytearray.fromhex(wallet['raw'])
- # At original y-60 the now-permanent wallet would overlap enemy text-58.
- # Use y-36, the later scorebar's own card-counter line, retaining x/font/size.
- struct.pack_into('<f',raw,8,-36.0);wallet['raw']=raw.hex()
+ # The numeric template used0.63 scale, too tall for its22-unit gap below
+ # the0.24-scale enemy label. Give the wallet its own equally sized text row:
+ #28 baseline units below the unchanged enemy row, within the bottom anchor.
+ struct.pack_into('<f',raw,8,-30.0)
+ struct.pack_into('<f',raw,menus.W13+0x30,0.24)
+ wallet['raw']=raw.hex()
  wallet['p']['324']=stmt(survival())
  wallet['p']['332']=stmt([op('('),op('locstring'),string('@SO_SURVIVAL_CREDITS'),op(')'),op('+'),string(': '),op('+'),op('('),op('string')]+dvar('surHUD_credits')+[op(')')])
  menu['p']['228']=stmt(survival()+[op('&&'),op('!'),op('ui_active'),op('&&'),op('!'),op('spectatingfree'),op('&&'),op('!'),op('spectatingclient')])

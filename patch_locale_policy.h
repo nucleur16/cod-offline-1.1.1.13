@@ -60,6 +60,7 @@ static const char *const kCodolPatchZoneMerged[][2]={
  {"usermaps_ui_mp","codol_common_ui_mp"},
  {"codol_field_orders_postgfx_mp","codol_common_postgfx_mp"},
  {"controller_glyphs_postgfx_mp","codol_common_postgfx_mp"},
+ {"survival_hud_postgfx_mp","codol_common_postgfx_mp"},
  {"codol_english","codol_english_locale"},
  {"codol_english_font","codol_english_locale"},
  {"codol_english_ui","codol_english_locale"},

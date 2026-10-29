@@ -67,3 +67,21 @@ of this checkpoint.
 All original preserved client tips and the subsequent resident queue-ticker branch through9aed480 are included in published main. Nine remote feature/integration heads were deleted with exact-tip leases only after ancestry verification. Live heads at cleanup were main and dev; dev remains dc259f53f3300a369faf13695579b5f5dc9ba42f and its worktree was not modified. Cleanup receipts are in docs/releases/branch-cleanup-20261029.json. Local branches, preservation refs and dirty worktrees remain available.
 
 The native gitlink now pins f0ec9a49 (rawfiles12d97c7), including Survival ammo ownership, dog target admission, projectile fire, wave rules, hazards and diagnostics. Shipping DLL5cb74df0 includes the measured C1 actor-mode predicate fix; nine actual-image scanner/category tests pass. The shared UI additionally merges the current ServerMessageView while retaining existing localhost, invitation and lobby controls. Source/AS tests and zone builds pass; final live C1 crosshair appearance and newer ticker UI remain separate acceptance checks. Native/rawfiles repository branch consolidation was additionally requested and is tracked in those repositories.
+
+## Published final union and runtime acceptance
+
+Native main855fffbc now includes all reviewed native branch histories, the coupled
+Zombies services and safe Windows resident reader. Its rawfiles pin21e928e
+contains the final diagnostic include correction; real Prototype and Theater
+startup passed after the failed-first compile was retained in the release receipt.
+Survival Favela completed the native wave2 probe (6 spawned/killed, zero failures),
+and Killhouse MP started with a training bot. Resident/warm modes stay disabled
+by default and this release does not claim new resident production qualification.
+
+The user confirmed the Survival red crosshair works. A real C1 Survival join
+confirmed the lower-left enemy/credit panel replaces the MP score panel and
+killstreak HUD is hidden. The user reported credit/enemy text overlap; the
+follow-up layout reduces the oversized credit font and separates the baselines.
+The HUD MenuList now loads in codol_common_postgfx_mp after graphics defaults
+exist, preserving the original pre-gfx controller movie stage. Native/final
+qualification details and historical diagnostics remain in the server receipt.
