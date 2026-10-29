@@ -44,7 +44,7 @@
   "preserved": [
     {
       "branch": "codex/resident-client-integration-20261029",
-      "sha": "773c29c40a6494cce72a5bf0ef3715fd5fc09145",
+      "sha": "9aed480945f9bd9bd6b8b2119857634727a3fe95",
       "reason": "not yet included in published main"
     },
     {
@@ -54,9 +54,9 @@
     },
     {
       "branch": "main",
-      "sha": "34a82e76639f27b71537846fdb2cc2a1a16cef08",
+      "sha": "18ee51ad54a5fcbd7b846b253d9557d28019d23a",
       "reason": "explicitly preserved"
     }
   ],
-  "main": "34a82e76639f27b71537846fdb2cc2a1a16cef08"
+  "main": "18ee51ad54a5fcbd7b846b253d9557d28019d23a"
 }
