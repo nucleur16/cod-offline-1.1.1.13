@@ -1383,6 +1383,11 @@ static void PatchGbkInput(void)
 #include "local_multi.c"
 #include "managed_quick.c"
 #include "quick_start_gate.c"
+#include "quick_collection_default.c"
+#include "room_join_error.c"
+#include "initial_room_owner.c"
+#include "training_preview_publish.c"
+#include "room_roster_roles.c"
 
 /* Snapshot-parity logger, parity-log branch only: see parity.c. */
 #include "parity.c"
@@ -1452,6 +1457,11 @@ static void __cdecl TakeOver(void)
     PatchInfectedScoreboard();
     PatchManagedQuickJoin();
     PatchQuickStartGate();
+    PatchQuickCollectionDefault();
+    PatchTrainingPreviewPublish();
+    PatchRoomJoinError();
+    PatchInitialRoomOwner();
+    PatchRoomRosterRoles();
     PatchNewsRefresh();
     PatchLoopFxCatchUp();
     PatchPatchDir();
