@@ -232,6 +232,12 @@ package codo.views
       private function show(cServerMsg:Object) : void
       {
          var serverMsgObj:ServerMessageObj = new ServerMessageObj(cServerMsg);
+         // A match hides the view. Queue/join messages must restore it after
+         // returning to either multiplayer or Zombies without reloading codo.
+         if(!this._isInGame && (serverMsgObj.message.indexOf("Server queue ") == 0 || serverMsgObj.message.indexOf("Match server starting.") == 0))
+         {
+            this.visible = true;
+         }
          if(this.isServerMsgRepetitive(serverMsgObj))
          {
             return;

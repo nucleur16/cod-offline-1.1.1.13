@@ -86,7 +86,7 @@
       "source": "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/RankedMatchReadyView.as"
     },
     "codo.views.ServerMessageView": {
-      "source_sha256": "b1a950d0486e460174da8787675165218558e9095b1ce9612b6c31db0cc80181",
+      "source_sha256": "880f204b39a3f19ccf4c8a58a5ddb8a0fd7391690e9236efc3d893e176fcd702",
       "source": "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/ServerMessageView.as"
     },
     "codo.views.SocialSideBarView": {
@@ -219,15 +219,15 @@
     "gfx_date_time_guards.h": "427f560edf29b1ceb5c828b22a5bc8a57d66ba8c31ea434b178b9e1bc2397a37",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/TipView.as": "2a462eff264d2a25a9f6be0739941875830a9d95a6434ee641781975539cdc26",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_views_TipView.bin": "2139e90e6130c90b7d3fc6eca0995caaf0ca28bb7b00708392f1ca7e900610e4",
-    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/patch.txt": "a573261a7f11463c8c001e1bf640cc3ab83dc2f451a1c93a9326a3a022309b92",
+    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/patch.txt": "47e3981c5870597e30a6b5d2683499bb1031dea288741222c2659f2fba5316bd",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/RightClickMenuController.as": "6025ec44b21edf6eabcd53ba41ff41a19fe8fd876c12c53dc98d9f743ba9f01f",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_controllers_RightClickMenuController.bin": "7d6715f1c8a7c364ea8e62981e61b3f051d5e329b8982507faa532ef7cb63119",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/SocialSideBarView.as": "55a5418ca94fdc46c8cb3cdabd9dd6c33b5a4526d7a80850cf4b2b4b737b56d8",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_views_SocialSideBarView.bin": "93a73b27a50de8d59bea959f74b2180ad596fe875768d0dc0ede93d4c541edd9",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/components/list_part/InviteItemRenderer.as": "992e558cfe8fcd37b349a4faf53dff3a7a2ff68960b32a94be0f787a8f75e808",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_components_list_part_InviteItemRenderer.bin": "ce8845ecf0f52c3df2095d7a2603c84ad43d50deb1bac4d5a9d953da22603d5c",
-    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/ServerMessageView.as": "b1a950d0486e460174da8787675165218558e9095b1ce9612b6c31db0cc80181",
-    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_views_ServerMessageView.bin": "f82d82dc9981fad8269db64e8a70152fe98578bb750638968d06cfc3f732c5b0"
+    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/ServerMessageView.as": "880f204b39a3f19ccf4c8a58a5ddb8a0fd7391690e9236efc3d893e176fcd702",
+    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_views_ServerMessageView.bin": "00be89f0db06468361432c82414eccc7fccbf11a5d3ad1d719aa5c2b4eac958a"
   },
   "production_release_qualified": false,
   "required_acceptance": [
