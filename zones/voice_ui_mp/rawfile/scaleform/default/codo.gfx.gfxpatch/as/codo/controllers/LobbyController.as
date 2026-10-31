@@ -22,6 +22,12 @@ package codo.controllers
    {
       private var _roomObj:RoomObj = new RoomObj();
       
+      // Matchmaking owns training map/mode choices even after native commit
+      // changes isPlayList to false. The room-scoped, unarchived dvar also
+      // survives the movie being unloaded for a match. Keep Ready unchanged.
+      private var _trainingRoomIndex:String = "";
+      private var _trainingPlaylist:int = -1;
+
       private var _roomMembers:Array = [];
       
       private var _dedicatedServers:Array = [];
@@ -400,6 +406,12 @@ package codo.controllers
          return Boolean(CFunctionContainer.IsRoomHost());
       }
       
+      private function isManagedTrainingRoom() : Boolean
+      {
+         return this._trainingPlaylist >= 0 && this._roomObj != null &&
+            String(this._roomObj.index) == this._trainingRoomIndex;
+      }
+
       private function isGameStartCountingDown() : Boolean
       {
          return CFunctionContainerCommon.Dvar_GetFloat("dw_gameStartCountingDown") > 0;
@@ -414,7 +426,7 @@ package codo.controllers
          var readyToSet:Boolean = !this.isReady();
          if(this.isRoomHost())
          {
-            this._roomObj.forces.enableChangeMapBtn = !this._roomObj.isPlayList && !readyToSet;
+            this._roomObj.forces.enableChangeMapBtn = !this.isManagedTrainingRoom() && !this._roomObj.isPlayList && !readyToSet;
             this.broadcast(BCEvent.ROOM_STATE_CHANGED,this._roomObj);
          }
          CFunctionContainer.SetReadyState(readyToSet);
@@ -595,6 +607,10 @@ package codo.controllers
          var levels:Array = null;
          var i:int = 0;
          if(cEvt.myPara.data == null || !this.isRoomHost())
+         {
+            return;
+         }
+         if(this.isManagedTrainingRoom() && (cEvt.myPara.type == "map" || cEvt.myPara.type == "mode"))
          {
             return;
          }
@@ -817,6 +833,30 @@ package codo.controllers
             this._roomObj.currentMatchMode.description = obj.currentMatchMode.description || "";
             this._roomObj.mapType = this.getSyncDP(SyncDataID.GET_MAP_TYPE,[this._roomObj.currentMap.id]);
          }
+         var trainingKey:String = "v1|" + String(obj.index) + "|" + String(obj.name) + "|";
+         var trainingContext:String = CFunctionContainerCommon.Dvar_GetString("codol_training_room_context");
+         this._trainingRoomIndex = "";
+         this._trainingPlaylist = -1;
+         if(!obj.isPlayList && obj.matchType == MatchType.PVP &&
+            (trainingContext == trainingKey + "0" || trainingContext == trainingKey + "2"))
+         {
+            this._trainingRoomIndex = String(obj.index);
+            this._trainingPlaylist = trainingContext == trainingKey + "0" ? 0 : 2;
+         }
+         if(obj.isPlayList)
+         {
+            var trainingChoice:PlayListObj = this.getCurrentPlayList();
+            if(trainingChoice != null && trainingChoice.type == PlayListType.COMBAT &&
+               trainingChoice.combatTrainingType == CombatType.CT &&
+               (trainingChoice.id == 0 || trainingChoice.id == 2))
+            {
+               this._trainingRoomIndex = String(this._roomObj.index);
+               this._trainingPlaylist = trainingChoice.id;
+            }
+         }
+         CFunctionContainerCommon.setdvar("codol_training_room_context",
+            this.isManagedTrainingRoom() ? trainingKey + String(this._trainingPlaylist) : "");
+         this._roomObj["_managedTrainingPlaylist"] = this.isManagedTrainingRoom() ? this._trainingPlaylist : -1;
          this.broadcast(BCEvent.ROOM_INFO_ONLY,this._roomObj);
       }
       
@@ -1015,7 +1055,7 @@ package codo.controllers
                      j++;
                   }
                }
-               forceInfo.showMode = !this._roomObj.isPlayList && forceInfo.isHost && !isCT && !isZm && !isCoop;
+               forceInfo.showMode = !this.isManagedTrainingRoom() && !this._roomObj.isPlayList && forceInfo.isHost && !isCT && !isZm && !isCoop;
                if(forceInfo.showMode)
                {
                   forceInfo.modes = this.getSyncDP(SyncDataID.LIST_MODE,[MatchType.PVP]);
@@ -1035,7 +1075,7 @@ package codo.controllers
             i++;
          }
          forceInfo.showMapAlbum = true;
-         forceInfo.enableChangeMapBtn = !this._roomObj.isPlayList && forceInfo.isHost && !forceInfo.isReady;
+         forceInfo.enableChangeMapBtn = !this.isManagedTrainingRoom() && !this._roomObj.isPlayList && forceInfo.isHost && !forceInfo.isReady;
          this.refreshRoomVoting(false);
          if(forceInfo.force0.length > 1)
          {
@@ -1208,6 +1248,10 @@ package codo.controllers
       
       private function resetRoom() : void
       {
+         CFunctionContainerCommon.setdvar("codol_training_room_context","");
+         this._trainingRoomIndex = "";
+         this._trainingPlaylist = -1;
+         this._roomObj["_managedTrainingPlaylist"] = -1;
          this._roomObj.name = "";
          this._roomObj.index = 0;
          this._roomObj.currentMap.id = "";

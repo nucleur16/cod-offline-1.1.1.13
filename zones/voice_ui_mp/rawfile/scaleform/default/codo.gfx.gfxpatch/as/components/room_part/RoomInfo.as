@@ -96,6 +96,31 @@ package components.room_part
          {
             displayRoomName = displayHost.realName;
          }
+         // Internal launcher account aliases are identities, not room titles.
+         // Automatic training keeps its playlist label through native commit.
+         if(cDat["_managedTrainingPlaylist"] === 0 || cDat["_managedTrainingPlaylist"] === 2)
+         {
+            displayRoomName = cDat["_managedTrainingPlaylist"] === 0 ? "Boot Camp" : "Bot Training";
+         }
+         else if(/^p[0-9a-f]{12,16}$/i.test(displayRoomName))
+         {
+            var aliasOwner:Object = null;
+            var aliasOwners:int = 0;
+            if(cDat.forces != null && cDat.forces.force0 != null && cDat.forces.force1 != null)
+            {
+               for each(var aliasMember in cDat.forces.force0.concat(cDat.forces.force1))
+               {
+                  if(aliasMember != null && cDat.forces.isHost == true && aliasMember.isMe == true)
+                  {
+                     aliasOwner = aliasMember;
+                     aliasOwners++;
+                  }
+               }
+            }
+            displayRoomName = aliasOwners == 1 && typeof aliasOwner.realName == "string" &&
+               aliasOwner.realName.length > 0 && !/^p[0-9a-f]{12,16}$/i.test(aliasOwner.realName) ?
+               aliasOwner.realName : "Matchmaking";
+         }
          this.myRoomNameTF.text = displayRoomName;
          // END room display owner name
          this.myLeagueLabelTF.text = cDat.matchType == MatchType.PVP ? "" : LocalizationRoom.ROOM_LEVEL;
