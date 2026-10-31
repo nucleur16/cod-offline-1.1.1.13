@@ -1,4 +1,4 @@
-"""Temporary invitation hold and original compiled-class metadata protection."""
+"""Temporary invitation hold and reviewed compiled-class metadata protection."""
 from pathlib import Path
 import hashlib,importlib.util,json,shutil,struct,unittest
 ROOT=Path(__file__).resolve().parents[1]
@@ -21,7 +21,7 @@ class InvitationsDisabled(unittest.TestCase):
         self.assertNotEqual(result.returncode,0)
         self.assertIn('disabled invitation gate removed',result.stderr)
 
-    def test_original_metadata_and_every_other_compiled_body_remain_exact(self):
+    def test_reviewed_metadata_and_pinned_compiled_bodies_remain_exact(self):
         patch=ROOT/'zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch'
         for row in json.loads((DOC/'abi-contract.json').read_text(encoding='utf-8')):
             with self.subTest(cls=row['class_name']):

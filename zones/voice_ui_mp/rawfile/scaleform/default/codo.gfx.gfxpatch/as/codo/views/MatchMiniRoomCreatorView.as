@@ -224,6 +224,7 @@ package codo.views
          if(this._currentMatchType == QuickMatchType.MP && (cEvt == null || cEvt.currentTarget == this.myOptionCB_2))
          {
             modeID = this.myOptionCB_2.selectedValue != null ? this.myOptionCB_2.selectedValue.id : "";
+            this.refreshMPMaps(modeID);
             maxPlayers = this.getSyncDP(SyncDataID.LIST_MAX_PLAYER);
             if(modeID == "gun" || modeID == "oic" || modeID == "shrp")
             {
@@ -254,7 +255,29 @@ package codo.views
             this.myOptionCB_1.selectedDataIndex = selectedIndex >= 0 && selectedIndex < this.myOptionCB_1.dataProvider.length ? selectedIndex : 0;
             this.myOptionCB_1.enabled = this.myOptionCB_1.dataProvider.length > 1;
          }
-         this.showMapInfo(this._optionMap.selectedValue);
+         if(this._optionMap.selectedValue != null)
+         {
+            this.showMapInfo(this._optionMap.selectedValue);
+         }
+      }
+
+      private function refreshMPMaps(modeID:String) : void
+      {
+         var selectedID:String = this._optionMap.selectedValue != null ? String(this._optionMap.selectedValue.id) : "";
+         var maps:Array = this.getSyncDP(SyncDataID.LIST_MAP,[MatchType.PVP,false,0,false,modeID]);
+         var selectedIndex:int = maps.length > 0 ? 0 : -1;
+         var i:int = 0;
+         while(i < maps.length)
+         {
+            if(String(maps[i].id) == selectedID)
+            {
+               selectedIndex = i;
+               break;
+            }
+            i++;
+         }
+         this.mapDP = maps;
+         this._optionMap.selectedDataIndex = selectedIndex;
       }
       
       private function onRoomNameChangedHandle(cEvt:Event) : void
@@ -383,7 +406,7 @@ package codo.views
             this.myOptionCB_2.dataProvider = modeDP;
             this.myOptionCB_2.selectedDataIndex = 0;
          }
-         this.mapDP = this.getSyncDP(SyncDataID.LIST_MAP,[MatchType.PVP]);
+         this.refreshMPMaps(this.myOptionCB_2.selectedValue != null ? String(this.myOptionCB_2.selectedValue.id) : "");
          this.myOptionCB_2.addEventListener(CodoComboBox.EVT_CHANGE,this.onMapChangedHandle);
          this.onMapChangedHandle(null);
       }
@@ -398,10 +421,10 @@ package codo.views
       
       private function set mapDP(mapDP:Array) : void
       {
-         if(mapDP != null && mapDP.length > 0)
+         if(mapDP != null)
          {
             this._optionMap.dataProvider = mapDP;
-            this._optionMap.selectedDataIndex = 0;
+            this._optionMap.selectedDataIndex = mapDP.length > 0 ? 0 : -1;
          }
       }
    }

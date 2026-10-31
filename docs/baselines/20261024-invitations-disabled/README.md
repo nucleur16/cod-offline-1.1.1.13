@@ -15,3 +15,16 @@ retained in `reviewed_body_updates_20261025`. An independent ABC comparison firs
 verified identical tables, existing constant-pool entries, method inventory and
 all 163 other MatchController bodies. No body was removed from the protected hash
 map. The invitation behavior, default hold and all other pins remain unchanged.
+
+The 2026-10-31 Pillars map/mode change recompiles MatchController to add a
+private predicate and optional provider arguments. Its current class tables
+and all 166 bodies are pinned. The complete prior contract is retained under
+`reviewed_class_update_20261031`; the other three classes' contracts are
+unchanged. The baseline already had three stale body pins (listPlayListNew,
+getXPLeagueFactor, getGPLeagueFactor); their recorded and actual baseline
+hashes are explicitly retained there. Actual baseline/candidate exports were
+compared with quoted literals preserved: all 158 unrelated MatchController
+methods, including invitation producers, retain identical tokens. The new
+movie passes the same invitation behavior fixture. See
+`../20261031-pillars/compiled-audit.json` for the bounded comparison; this is
+offline evidence, not client gameplay acceptance.

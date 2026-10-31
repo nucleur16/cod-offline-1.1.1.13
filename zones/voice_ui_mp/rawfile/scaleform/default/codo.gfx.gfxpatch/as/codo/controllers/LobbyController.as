@@ -416,6 +416,11 @@ package codo.controllers
       {
          return CFunctionContainerCommon.Dvar_GetFloat("dw_gameStartCountingDown") > 0;
       }
+
+      private function isSupportedMapMode(mapID:String, modeID:String) : Boolean
+      {
+         return mapID != "mp_sd_jardin" || modeID == "sd";
+      }
       
       private function onChangeReadyStateHandle(cEvt:ParaEvent) : void
       {
@@ -424,6 +429,11 @@ package codo.controllers
             return;
          }
          var readyToSet:Boolean = !this.isReady();
+         if(readyToSet && !this.isSupportedMapMode(this._roomObj.currentMap.id,this._roomObj.currentMatchMode.id))
+         {
+            this.showMsg("This map supports Search & Destroy only.",MsgBtnCount.ONE);
+            return;
+         }
          if(this.isRoomHost())
          {
             this._roomObj.forces.enableChangeMapBtn = !this.isManagedTrainingRoom() && !this._roomObj.isPlayList && !readyToSet;
@@ -569,6 +579,11 @@ package codo.controllers
          {
             return;
          }
+         if(!this.isSupportedMapMode(this._roomObj.currentMap.id,this._roomObj.currentMatchMode.id))
+         {
+            this.showMsg("This map supports Search & Destroy only.",MsgBtnCount.ONE);
+            return;
+         }
          var max:uint = this._roomObj.currentMaxPlayers;
          var min:uint = this._roomObj.currentMinPlayers;
          var current:uint = this._roomMembers.length;
@@ -611,6 +626,11 @@ package codo.controllers
             return;
          }
          if(this.isManagedTrainingRoom() && (cEvt.myPara.type == "map" || cEvt.myPara.type == "mode"))
+         {
+            return;
+         }
+         if(cEvt.myPara.type == "map" && !this.isSupportedMapMode(cEvt.myPara.data.id,this._roomObj.currentMatchMode.id) ||
+            cEvt.myPara.type == "mode" && !this.isSupportedMapMode(this._roomObj.currentMap.id,String(cEvt.myPara.data)))
          {
             return;
          }
@@ -961,7 +981,13 @@ package codo.controllers
          else if(this.isRoomHost())
          {
             this._roomObj.forces.maps.splice(0);
-            this._roomObj.forces.maps = this.getSyncDP(SyncDataID.LIST_SAME_TYPE_MAP,[this._roomObj.currentMap.id]);
+            this._roomObj.forces.maps = this.getSyncDP(SyncDataID.LIST_SAME_TYPE_MAP,[this._roomObj.currentMap.id,this._roomObj.currentMatchMode.id]);
+            if(!this.isSupportedMapMode(this._roomObj.currentMap.id,this._roomObj.currentMatchMode.id))
+            {
+               // Preserve an already incompatible room's actual card. Ready
+               // stays refused until the host explicitly repairs its choice.
+               this._roomObj.forces.maps.unshift(this.getSyncDP(SyncDataID.MAP_OBJ,[this._roomObj.currentMap.id]));
+            }
             i = 0;
             while(i < this._roomObj.forces.maps.length)
             {
@@ -1058,8 +1084,8 @@ package codo.controllers
                forceInfo.showMode = !this.isManagedTrainingRoom() && !this._roomObj.isPlayList && forceInfo.isHost && !isCT && !isZm && !isCoop;
                if(forceInfo.showMode)
                {
-                  forceInfo.modes = this.getSyncDP(SyncDataID.LIST_MODE,[MatchType.PVP]);
-                  forceInfo.selectedModeIndex = 0;
+                  forceInfo.modes = this.getSyncDP(SyncDataID.LIST_MODE,[MatchType.PVP,false,false,this._roomObj.currentMap.id]);
+                  forceInfo.selectedModeIndex = this._roomObj.currentMap.id == "mp_sd_jardin" ? -1 : 0;
                   j = 0;
                   while(j < forceInfo.modes.length)
                   {

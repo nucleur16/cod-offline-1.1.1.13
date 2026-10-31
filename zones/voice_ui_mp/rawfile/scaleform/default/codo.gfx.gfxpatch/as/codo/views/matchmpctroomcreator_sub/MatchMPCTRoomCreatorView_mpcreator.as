@@ -157,6 +157,11 @@ package codo.views.matchmpctroomcreator_sub
             this.alpha = 1;
             this.mouseEnabled = true;
             this.mouseChildren = true;
+            if(this._mapAlbum != null && this._optionMap != null)
+            {
+               this._mapAlbum.data = this._optionMap.dataProvider;
+               this._mapAlbum.currentIndex = this._optionMap.selectedDataIndex;
+            }
          }
          else
          {
@@ -188,6 +193,7 @@ package codo.views.matchmpctroomcreator_sub
          if(this._currentMatchType == QuickMatchType.MP && (cEvt == null || cEvt.currentTarget == this.myOptionCB_2))
          {
             modeID = this.myOptionCB_2.selectedValue != null ? this.myOptionCB_2.selectedValue.id : "";
+            this.refreshMPMaps(modeID);
             maxPlayers = this.getSyncDP(SyncDataID.LIST_MAX_PLAYER);
             if(modeID == "gun" || modeID == "oic" || modeID == "shrp")
             {
@@ -218,7 +224,29 @@ package codo.views.matchmpctroomcreator_sub
             this.myOptionCB_1.selectedDataIndex = selectedIndex >= 0 && selectedIndex < this.myOptionCB_1.dataProvider.length ? selectedIndex : 0;
             this.myOptionCB_1.enabled = this.myOptionCB_1.dataProvider.length > 1;
          }
-         this._mapAlbum.currentIndex = this._optionMap.selectedDataIndex;
+         if(this.mouseEnabled && this._mapAlbum != null)
+         {
+            this._mapAlbum.currentIndex = this._optionMap.selectedDataIndex;
+         }
+      }
+
+      private function refreshMPMaps(modeID:String) : void
+      {
+         var selectedID:String = this._optionMap.selectedValue != null ? String(this._optionMap.selectedValue.id) : "";
+         var maps:Array = this.getSyncDP(SyncDataID.LIST_MAP,[MatchType.PVP,false,0,false,modeID]);
+         var selectedIndex:int = maps.length > 0 ? 0 : -1;
+         var i:int = 0;
+         while(i < maps.length)
+         {
+            if(String(maps[i].id) == selectedID)
+            {
+               selectedIndex = i;
+               break;
+            }
+            i++;
+         }
+         this.mapDP = maps;
+         this._optionMap.selectedDataIndex = selectedIndex;
       }
       
       private function onRoomNameChangedHandle(cEvt:Event) : void
@@ -277,7 +305,7 @@ package codo.views.matchmpctroomcreator_sub
             this.myOptionCB_2.dataProvider = modeDP;
             this.myOptionCB_2.selectedDataIndex = 0;
          }
-         this.mapDP = this.getSyncDP(SyncDataID.LIST_MAP,[MatchType.PVP]);
+         this.refreshMPMaps(this.myOptionCB_2.selectedValue != null ? String(this.myOptionCB_2.selectedValue.id) : "");
          this.myOptionCB_2.addEventListener(CodoComboBox.EVT_CHANGE,this.onMapChangedHandle);
          this.onMapChangedHandle(null);
       }
@@ -291,15 +319,24 @@ package codo.views.matchmpctroomcreator_sub
       
       private function set mapDP(mapDP:Array) : void
       {
-         if(mapDP != null && mapDP.length > 0)
+         if(mapDP != null)
          {
             this._optionMap.dataProvider = mapDP;
-            this._optionMap.selectedDataIndex = 0;
+            this._optionMap.selectedDataIndex = mapDP.length > 0 ? 0 : -1;
+            if(this.mouseEnabled && this._mapAlbum != null)
+            {
+               this._mapAlbum.data = mapDP;
+               this._mapAlbum.currentIndex = this._optionMap.selectedDataIndex;
+            }
          }
       }
       
       private function onMapAlbumChangeHandle(cEvt:ParaEvent) : void
       {
+         if(!this.mouseEnabled || cEvt.myPara.index < 0 || cEvt.myPara.index >= this._optionMap.dataProvider.length)
+         {
+            return;
+         }
          this._optionMap.selectedDataIndex = cEvt.myPara.index;
       }
       
