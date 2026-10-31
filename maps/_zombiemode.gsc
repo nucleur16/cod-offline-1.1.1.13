@@ -255,6 +255,10 @@ init_levelvars()
 	level.zm_round_mode = getDvarInt( "g_difficulty" );
 	if ( level.zm_round_mode < 0 || level.zm_round_mode > 3 )
 		level.zm_round_mode = 0;
+	// Kino has no finite rescue objective. Match the map's Endless-only room
+	// availability even if a stale direct launch supplies a finite rule tier.
+	if ( getDvar( "mapname" ) == "zm_theater_sh" )
+		level.zm_round_mode = 3;
 	level.zm_rule_tier = level.zm_round_mode;
 	if ( level.zm_round_mode == 3 )
 		level.zm_rule_tier = 1;
