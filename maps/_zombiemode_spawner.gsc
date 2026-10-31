@@ -86,6 +86,8 @@ init()
 	// Dismemberment and the blue blood (_zombiemode_gib.gsc).
 	maps\_zombiemode_gib::init();
 
+	maps\_zombiemode_kino_risers::init();
+
 	init_spawn_points();
 	init_spawner();
 
@@ -462,6 +464,19 @@ spawn_zombie( spawn_point )
 		return undefined;
 	}
 
+	// T5 rise selection happens before actor admission and round accounting.
+	kino_riser = maps\_zombiemode_kino_risers::is_riser( spawn_point );
+	rise_context = undefined;
+	if ( kino_riser )
+	{
+		rise_context = maps\_zombiemode_kino_risers::prepare( spawn_point );
+		if ( !isDefined( rise_context ) )
+		{
+			level.zm_spawn_fail_reason = "Kino riser has no active owned floor-valid rise location";
+			return undefined;
+		}
+	}
+
 	ai = level.zombie_spawner spawnActor();
 	if ( !isDefined( ai ) )
 	{
@@ -480,7 +495,9 @@ spawn_zombie( spawn_point )
 	// walk outside that window instead of 700-2400 units away.
 	ai.zm_spawn_time = getTime();
 	ai.zm_spawn_near = false;
-	near = near_window_spawn( spawn_point );
+	near = undefined;
+	if ( !kino_riser )
+		near = near_window_spawn( spawn_point );
 	if ( isDefined( near ) )
 	{
 		origin = near.origin;
@@ -488,8 +505,13 @@ spawn_zombie( spawn_point )
 		ai.zm_spawn_near = true;
 	}
 
-	ai forceTeleport( origin, angles );
-	ai show();
+	if ( kino_riser )
+		ai hide();
+	else
+	{
+		ai forceTeleport( origin, angles );
+		ai show();
+	}
 
 	ai.targetname = "zombie";
 	ai.animname = "zombie";
@@ -497,6 +519,8 @@ spawn_zombie( spawn_point )
 	// .target; here the spawner is a struct, so the AI keeps the struct and
 	// pick_entrance_node reads the target from it (T5 zombie_think :461).
 	ai.zm_spawn_point = spawn_point;
+	if ( kino_riser )
+		ai.script_string = spawn_point.script_string;
 	ai.zm_spawn_entrance = spawn_entrance_key( spawn_point );
 	ai.zm_entered = false;
 	ai.is_zombie = true;
@@ -555,10 +579,20 @@ spawn_zombie( spawn_point )
 	// cannot pose the model alone before the first movement cycle.
 	ai setAnimKnobAll( %zombie_stationary_idle_v7, %body, 1, 0.1, 1 );
 
+	if ( kino_riser && !ai maps\_zombiemode_kino_risers::begin( rise_context ) )
+	{
+		level.zm_spawn_fail_reason = "Kino riser capsule/alignment/clip validation failed";
+		ai delete();
+		return undefined;
+	}
+
 	level.zombies[ level.zombies.size ] = ai;
 
 	ai play_sound_on_ent( "zombie_spawn" );
-	ai thread zombie_eye_glow();
+	if ( kino_riser )
+		ai thread delayed_zombie_eye_glow( 0.5 );
+	else
+		ai thread zombie_eye_glow();
 	ai thread play_ambient_zombie_vocals();
 
 	level thread zombie_death_event( ai );
@@ -1462,9 +1496,21 @@ zombie_think()
 	// boards there, and only then seeks flesh.  The old loop went straight for
 	// the player, so with the entrance 100+ units to the side the zombie
 	// walked into the outer wall next to the window and stood there.
+	// T5 zombie_think: finish a genuine rise before deciding on teardown.
+	// Only authored Kino risers enter this branch; chasers/windows retain818.
+	rise_result = undefined;
+	if ( maps\_zombiemode_kino_risers::is_riser( self.zm_spawn_point ) )
+	{
+		rise_result = self maps\_zombiemode_kino_risers::run();
+		if ( !is_true( self.kino_rise_completed ) )
+			return;
+	}
 	node = undefined;
-	if ( !self kino_untargeted_chaser() )
-		node = self pick_entrance_node();
+	if ( !isDefined( rise_result ) || rise_result != "find_flesh" )
+	{
+		if ( !self kino_untargeted_chaser() )
+			node = self pick_entrance_node();
+	}
 	if ( isDefined( node ) )
 	{
 		self.first_node = node;
