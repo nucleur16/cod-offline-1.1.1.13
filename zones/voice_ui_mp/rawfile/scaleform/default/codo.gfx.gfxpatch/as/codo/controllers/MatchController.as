@@ -505,7 +505,7 @@ import flash.utils.getTimer;
          return MatchService.getInstance().isInRoom;
       }
       
-      private function listSameTypeMap(mapID:String) : Array
+      private function listSameTypeMap(mapID:String, modeID:String = null) : Array
       {
          var matchType:String = null;
          var i:int = 0;
@@ -526,7 +526,7 @@ import flash.utils.getTimer;
          {
             coopType = CoopMapType.GetCoopSubType(mapID);
          }
-         var maps:Array = this.listMap(matchType,false,coopType);
+         var maps:Array = this.listMap(matchType,false,coopType,false,modeID);
          if(matchType == MatchType.COOP)
          {
             i = maps.length - 1;
@@ -542,7 +542,12 @@ import flash.utils.getTimer;
          return maps;
       }
       
-      private function listMap(matchType:String, insertAny:Boolean = false, coop:uint = 0, coopList:Boolean = false) : Array
+      private function isSupportedMapMode(mapID:String, modeID:String) : Boolean
+      {
+         return mapID != "mp_sd_jardin" || modeID == "sd";
+      }
+
+      private function listMap(matchType:String, insertAny:Boolean = false, coop:uint = 0, coopList:Boolean = false, modeID:String = null) : Array
       {
          var i:int = 0;
          var maps:Array = MatchService.getInstance().listMap(matchType);
@@ -594,6 +599,18 @@ import flash.utils.getTimer;
                }
             }
          }
+         if(matchType == MatchType.PVP && modeID != null)
+         {
+            i = maps.length - 1;
+            while(i >= 0)
+            {
+               if(!this.isSupportedMapMode(maps[i].id,modeID))
+               {
+                  maps.splice(i,1);
+               }
+               i--;
+            }
+         }
          if(insertAny)
          {
             maps.unshift(new MapObj({"name":LocalizationRoom.ANY}));
@@ -601,13 +618,18 @@ import flash.utils.getTimer;
          return maps;
       }
       
-      private function listMode(matchType:String, isCombat:Boolean = false, insertAny:Boolean = false) : Array
+      private function listMode(matchType:String, isCombat:Boolean = false, insertAny:Boolean = false, mapID:String = null) : Array
       {
          var modes:Array = MatchService.getInstance().listMatchMode(matchType);
          var newModes:Array = [];
          var i:int = 0;
          while(i < modes.length)
          {
+            if(!this.isSupportedMapMode(mapID,modes[i].id))
+            {
+               i++;
+               continue;
+            }
             if(isCombat)
             {
                if(modes[i].id == "combat")
@@ -3015,6 +3037,11 @@ import flash.utils.getTimer;
       
       private function onCreateRoomHandle(cEvt:ParaEvent) : void
       {
+         if(!this.isSupportedMapMode(cEvt.myPara.map,cEvt.myPara.mode))
+         {
+            this.showMsg("This map supports Search & Destroy only.",MsgBtnCount.ONE);
+            return;
+         }
          if(this._currentMatchType == QuickMatchType.CYBORG)
          {
             if(this.checkInPartyAsNotHost())
@@ -3105,6 +3132,11 @@ import flash.utils.getTimer;
             return;
          }
          var filter:QuickMatchFilterObj = cEvt.myPara.filter;
+         if(!this.isSupportedMapMode(filter.map,filter.mode))
+         {
+            this.showMsg("This map supports Search & Destroy only.",MsgBtnCount.ONE);
+            return;
+         }
          var maxPlayer:int = Math.max(1,filter.mode == "combat" && filter.map.length > 0 ? filter.maxPlayer / 2 : filter.maxPlayer);
          if(this.checkInPartySize(maxPlayer))
          {

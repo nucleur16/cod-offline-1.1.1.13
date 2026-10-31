@@ -1,0 +1,104 @@
+{
+  "baseline_commit": "9bdaed789a383e4726c2dabf017bb0c38a120b15",
+  "baseline_movie_sha256": "07b602f7a0c97a061a269d4d16e10e9d7c1bfcf42c9feadabecba22d39692393",
+  "candidate_movie_sha256": "88b736a3c7976524a1af19dc96fce401b9f2ee88e1af920b387de6ab51718ff9",
+  "tag_count": 6865,
+  "changed_tags": [
+    {
+      "index": 4709,
+      "class": "codo/views/matchmpctroomcreator_sub/MatchMPCTRoomCreatorView_mpcreator",
+      "before_sha256": "d97b4016f224fdf9d922623e4ca7327e66d1e833c6ca1fcd86aff3f56ff5e332",
+      "after_sha256": "74f234663294455df6df88ceb52a2db89b2a225b32a3e5ccea9c1ea21f14607c"
+    },
+    {
+      "index": 4812,
+      "class": "codo/views/MatchMiniRoomCreatorView",
+      "before_sha256": "093fe29ef89c475eba98a5e5dd84967abefe9110665add29e8c786da051ff6b4",
+      "after_sha256": "ce0988920908c97dc002b96c3b9b45c5661fcdff115ff60c862e157c7a277749"
+    },
+    {
+      "index": 5188,
+      "class": "codo/views/matchmpctroomcreator_sub/MatchMPCTRoomCreatorView_ctcreator",
+      "before_sha256": "8e6bebc7b7d740f0ac6364e7420f4efcfa87f47c7b7b2eb8e0ba0569e93b305e",
+      "after_sha256": "a30bf4aa157750f9c00e6ba44d690e1c527c5d48f1b296b2ced22b8b80f8ee78"
+    },
+    {
+      "index": 6122,
+      "class": "codo/controllers/LobbyController",
+      "before_sha256": "10ad44e4ef3851e0b67e8ea3a8b04eb781be25302d460e761b02c8028fc524ab",
+      "after_sha256": "dcf2ba38ef405ca78750f5024993ab31d5a03385f903e3a57a440b04efe7c013"
+    },
+    {
+      "index": 6167,
+      "class": "codo/controllers/MatchController",
+      "before_sha256": "6b5d7ad93fbcb8e615dec3d009898ba57be61c7aa30c06aad02aff7e86fc6e47",
+      "after_sha256": "15b6971310f1e94b6ebe3d25296981bfe322c7504367b20b5629b854cd9f3e92"
+    }
+  ],
+  "unchanged_tags": 6860,
+  "method_audit": [
+    {
+      "class": "codo/controllers/MatchController",
+      "changed_or_added_methods": [
+        "isSupportedMapMode",
+        "listMap",
+        "listMode",
+        "listSameTypeMap",
+        "onCreateRoomHandle",
+        "onQuickMatchHandle"
+      ],
+      "unchanged_methods": 158,
+      "quoted_literals_preserved": true
+    },
+    {
+      "class": "codo/controllers/LobbyController",
+      "changed_or_added_methods": [
+        "isSupportedMapMode",
+        "onChangeReadyStateHandle",
+        "onChangeRoomInfoHandle",
+        "onStartMatchHandle",
+        "refreshRoomMaps",
+        "refreshRoomStatus"
+      ],
+      "unchanged_methods": 70,
+      "quoted_literals_preserved": true
+    },
+    {
+      "class": "codo/views/MatchMiniRoomCreatorView",
+      "changed_or_added_methods": [
+        "onMapChangedHandle",
+        "refreshMPData",
+        "refreshMPMaps",
+        "set mapDP"
+      ],
+      "unchanged_methods": 19,
+      "quoted_literals_preserved": true
+    },
+    {
+      "class": "codo/views/matchmpctroomcreator_sub/MatchMPCTRoomCreatorView_mpcreator",
+      "changed_or_added_methods": [
+        "onMapAlbumChangeHandle",
+        "onMapChangedHandle",
+        "refreshMPData",
+        "refreshMPMaps",
+        "set active",
+        "set mapDP"
+      ],
+      "unchanged_methods": 12,
+      "quoted_literals_preserved": true
+    },
+    {
+      "class": "codo/views/matchmpctroomcreator_sub/MatchMPCTRoomCreatorView_ctcreator",
+      "changed_or_added_methods": [
+        "onMapAlbumChangeHandle",
+        "onMapCBChangedHandle",
+        "set active",
+        "setMaps"
+      ],
+      "unchanged_methods": 9,
+      "quoted_literals_preserved": true
+    }
+  ],
+  "unrelated_compiled_method_tokens_equal": true,
+  "actual_client_gameplay": false
+}
