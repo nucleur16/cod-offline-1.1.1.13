@@ -781,6 +781,39 @@ heli_fly_inbound( route )
 {
 	for ( i = 1; i < route.inbound.size; i++ )
 		self heli_fly_to( route.inbound[ i ], i == route.inbound.size - 1 );
+	if ( getDvar( "mapname" ) == "zm_factory_sh" )
+		self factory_wait_landing_frame( route );
+}
+
+// Factory's positional goal can arrive with the cabin still turning (the
+// measured B route was 130 degrees short of its authored hover yaw). Start
+// the boarding window only once that door faces the actual landing marker.
+// Native flight and authored coordinates stay unchanged; a failed settle
+// has a bounded wait and a single operator diagnostic, never a hung rescue.
+factory_wait_landing_frame( route )
+{
+	self endon( "death" );
+	level endon( "end_game" );
+	marker = spawnStruct();
+	marker.origin = route.lz;
+	yaw = struct_angles( route.hover )[ 1 ];
+	deadline = getTime() + 5000;
+	for ( ;; )
+	{
+		delta = self.angles[ 1 ] - yaw;
+		while ( delta > 180 )
+			delta -= 360;
+		while ( delta < -180 )
+			delta += 360;
+		if ( abs_f( delta ) <= 3 && in_landing_zone( marker, route, self ) )
+			return;
+		if ( getTime() >= deadline )
+		{
+			codolprintln( "CoDOL zm Factory rescue: landing alignment did not settle within 5 seconds" );
+			return;
+		}
+		wait( 0.05 );
+	}
 }
 
 heli_fly_outbound( route )
@@ -1044,9 +1077,15 @@ in_landing_zone( p, route, heli )
  delta = p.origin - entry.rear;
  along = vectorDot( delta, entry.along );
  outside = vectorDot( delta, entry.outward );
- // Keep the existing vertical/range limits, but accept only the door's
- // longitudinal span and exterior half-space. Front/underbody fails here.
- return along >= 0 && along <= entry.length && outside >= 0 && outside <= BOARD_RADIUS &&
+ // Factory's authored route A marker is 19 units behind the mounted
+ // right door's rear plane (actual native tags/ground trace, 2026-10-31).
+ // Allow one player-width at either end on this map so its own landing
+ // marker can board. Keep the exterior half-space, range and height gates;
+ // all other maps retain their exact door span and underbody rejection.
+ margin = 0;
+ if ( getDvar( "mapname" ) == "zm_factory_sh" )
+  margin = 32;
+ return along >= 0 - margin && along <= entry.length + margin && outside >= 0 && outside <= BOARD_RADIUS &&
   abs_f( p.origin[ 2 ] - route.lz[ 2 ] ) <= 160;
 }
 

@@ -386,6 +386,12 @@ init_levelvars()
 levelMain( visionName )
 {
 	level.isSP = false;
+	// Fog is a map policy, shared by every Zombies startup and late join.
+	// Keep Shi No Numa's authored atmosphere; clear distance fog elsewhere.
+	// C1 applies local fog volumes as well, so the recipient's r_fog switch
+	// below also disables those on the maps that request clear visibility.
+	if ( getDvar( "mapname" ) != "zm_sumpf_sh" )
+		setExpFog( 0, 1, 0, 0, 0, 0, 0 );
 
 	if ( isDefined( visionName ) && visionName != "" )
 	{
@@ -608,6 +614,10 @@ Callback_PlayerConnect()
 	// rule mode independently for AAR; every finite connect overwrites3 too.
 	self setClientDvars( "ui_eog_show", 0, "ui_eog_victory", 0, "hud_drawHud", 1,
 		"ui_eog_zm_mode", "" + level.zm_round_mode );
+	fog = 0;
+	if ( getDvar( "mapname" ) == "zm_sumpf_sh" )
+		fog = 1;
+	self setClientDvar( "1464", fog );
 	self.connected = true;
 	level.players[ level.players.size ] = self;
 

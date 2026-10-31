@@ -66,6 +66,16 @@ init()
 			zone.enabled = true;
 	}
 
+	// T5 manage_zones(initial_zone): maps that declare a zone graph unlock
+	// the initial room here and every later room through their door flags.
+	// Occupancy can overlap a closed doorway and must not grant a purchase.
+	level.zm_declared_zone_graph = isDefined( level.zm_zone_initial ) && level.zm_zone_initial.size > 0;
+	if ( level.zm_declared_zone_graph )
+	{
+		for ( i = 0; i < level.zm_zone_initial.size; i++ )
+			enable_zone( level.zm_zone_initial[ i ] );
+	}
+
 	level.enemy_spawns = [];
 	if ( level.zm_spawn_zones.size < 1 )
 	{
@@ -124,6 +134,9 @@ zone_watch()
 
 refresh_spawners()
 {
+	if ( level.zm_declared_zone_graph && isDefined( level.zm_zone_adjacency ) )
+		adjacency_enable_zones();
+
 	// These are the map's actual purchased-door/debris flags.  The exact
 	// prototype graph is T5 zombie_cod5_prototype::prototype_zone_init.
 	// Training carries these flag names only on Prototype's leftover debris
@@ -154,10 +167,10 @@ refresh_spawners()
 				if ( players[ j ] isTouching( zone.volumes[ k ] ) )
 				{
 					occupied[ i ] = true;
-					// Prototype and Training have authored purchase flags.  A
-					// volume may overlap a closed doorway, so touching it alone
-					// must never unlock its spawners.
-					if ( level.zm_zone_mode != "zm_prototype_sh" )
+					// Prototype and declared graphs have purchase flags. A volume
+					// may overlap a closed doorway, so touching it alone must
+					// never unlock its spawners. Legacy occupancy maps stay as-is.
+					if ( level.zm_zone_mode != "zm_prototype_sh" && !level.zm_declared_zone_graph )
 						zone.enabled = true;
 					break;
 				}
@@ -173,6 +186,8 @@ refresh_spawners()
 		active = occupied[ i ];
 		if ( !active && level.zm_zone_mode == "zm_prototype_sh" )
 			active = occupied_adjacent_zone( zone.name, occupied );
+		if ( !active && level.zm_declared_zone_graph && isDefined( level.zm_zone_adjacency ) )
+			active = adjacency_occupied_neighbour( zone.name, occupied );
 		if ( !zone.enabled || !active )
 			continue;
 		active_names = active_names + zone.name + ",";

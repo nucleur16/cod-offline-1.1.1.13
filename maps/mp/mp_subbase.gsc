@@ -3,6 +3,8 @@ main()
 	maps\mp\mp_subbase_precache::main();
 	maps\createart\mp_subbase_art::main();
 	maps\mp\mp_subbase_fx::main();
+	// Reset on each connection, including late joins; _load restores fog on other MP maps.
+	level.codolFog = 0;
 	maps\mp\_load::main();
 
 	maps\mp\_compass::setupMiniMap( "compass_map_mp_subbase" );

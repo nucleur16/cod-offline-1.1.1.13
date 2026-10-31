@@ -33,28 +33,9 @@ main()
 	maps\_zombiemode::levelMain( "zm_prototype_sh" );
 	maps\_zombiemode_barrels::main();
 	hideNavigationArrows();
-	level thread prototype_fog();
 }
 
-// Outpost already has its authored local createfx fog, sky and map vision.
-// Do not layer the unrecovered global distance-fog approximation over them:
-// it adds a uniform veil to the skyline. Publish zero maximum opacity to
-// clear that extra layer while leaving r_fog enabled for authored effects.
-// Same-view C1 rendering is still required to qualify the visibility change.
-prototype_fog()
-{
-	level thread prototype_fog_dvar();
-	setExpFog( 1600, 4800, 0.616, 0.539, 0.452, 0, 0 );
-}
-
-prototype_fog_dvar()
-{
-	for ( ;; )
-	{
-		level waittill( "connected", player );
-		player setClientDvar( "1464", 1 );
-	}
-}
+// Fog policy is centralized in _zombiemode for startup and late joins.
 
 // The yellow floor arrows.  MEASURED from the zone MapEnts
 // (alpha0022 resources/map_spawns.proposed.json, zm_prototype_sh): 14

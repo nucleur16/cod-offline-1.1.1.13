@@ -85,7 +85,6 @@ main()
 	// T5 places the players on initial_spawn_points in the receiver.
 	level.zm_spawn_point_func = ::factory_spawn_point;
 
-	level thread factory_fog();
 	level thread factory_power_watch();
 	level thread factory_bridge();
 	level thread factory_jump_from_bridge();
@@ -391,30 +390,6 @@ factory_point( s )
 	if ( isDefined( s.angles ) )
 		point.angles = s.angles;
 	return point;
-}
-
-// --------------------------------------------------------------------------
-// Fog.  T5 maps\createart\zombie_cod5_factory_art.gsc: height fog start
-// 814.911, half plane 1763.99, half height 541.494, base -451.652, colour
-// 0.5 0.5 0.55.  C1 has exponential fog only, so the halfway distance is T5's
-// density at the factory floor (z 100): 1763.99 * 2 ^ ( 551.65 / 541.494 )
-// = 3574.  The colour is T5's divided by vision/zm_factory_sh.vision's medium
-// tint (1.056 1.058 1.11), so it grades back to T5's grey.  zm maps do not
-// run maps\mp\_load, whose codolFogDvar sends C1's r_fog (dvar 1464).
-// --------------------------------------------------------------------------
-factory_fog()
-{
-	level thread factory_fog_dvar();
-	setExpFog( 815, 3574, 0.47, 0.47, 0.50, 1, 0 );
-}
-
-factory_fog_dvar()
-{
-	for ( ;; )
-	{
-		level waittill( "connected", player );
-		player setClientDvar( "1464", 1 );
-	}
 }
 
 // --------------------------------------------------------------------------

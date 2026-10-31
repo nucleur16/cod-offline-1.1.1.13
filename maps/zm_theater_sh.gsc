@@ -130,7 +130,6 @@ main()
 	level thread theater_box_lights();
 	level thread theater_teleporter();
 	level thread theater_auto_turrets();
-	level thread theater_fog();
 	level thread theater_test_watch();
 }
 
@@ -406,46 +405,8 @@ theater_point( s )
 	return point;
 }
 
-// --------------------------------------------------------------------------
-// Fog.  T5 clientscripts\zombie_theater_fx.csc level_fog_init /
-// dog_start_monitor / dog_stop_monitor set height fog (setVolFog); C1 has
-// exponential fog only, so each setting is T5's density at the floor of the
-// lobby and the theater (z 100): halfway = half_dist * 2 ^ ( ( 100 -
-// base_height ) / half_height ).
-//   normal  start 155.625  half_dist 2332.79  half_height 677.241  base 23.2733  -> 2525, grey 0.64
-//   hounds  start 0        half_dist 302.622  half_height 306.395  base 344.622  -> 174, opacity 0.65
-// T5's hound fog is blue-grey (0.46 0.56 0.62); as on zm_sumpf_sh it is
-// taken as a neutral grey, which C1 does not tint blue.
-// --------------------------------------------------------------------------
-
-theater_fog()
-{
-	level thread theater_fog_dvar();
-
-	setExpFog( 155.625, 2525, 0.64, 0.64, 0.64, 1, 0 );
-
-	// _zombiemode_ai_dogs owns the flag; it may be created after main().
-	while ( !flag_exist( "dog_round" ) )
-		wait( 0.5 );
-	for ( ;; )
-	{
-		flag_wait( "dog_round" );
-		setExpFog( 0, 174, 0.55, 0.57, 0.58, 0.65, 7 );
-		flag_waitopen( "dog_round" );
-		setExpFog( 155.625, 2525, 0.64, 0.64, 0.64, 1, 7 );
-	}
-}
-
-// zm maps do not run maps\mp\_load, whose codolFogDvar sends C1's r_fog
-// (dvar 1464); a previous map may have turned it off (zm_sumpf_sh.gsc).
-theater_fog_dvar()
-{
-	for ( ;; )
-	{
-		level waittill( "connected", player );
-		player setClientDvar( "1464", 1 );
-	}
-}
+// Fog policy is applied by _zombiemode::levelMain and Callback_PlayerConnect:
+// Kino, including hound rounds, keeps distance fog disabled.
 
 // --------------------------------------------------------------------------
 // Curtains.  T5 zombie_theater_movie_screen.gsc setupCurtains: with the
@@ -461,6 +422,11 @@ theater_curtains()
 {
 	curtains = getEnt( "theater_curtains", "targetname" );
 	clip = getEnt( "theater_curtains_clip", "targetname" );
+
+	// The closed clip must cut its graph links before power. Otherwise the
+	// route planner sends zombies through the solid curtain until it opens.
+	if ( isDefined( clip ) )
+		clip disconnectPaths();
 
 	flag_wait( "power_on" );
 
