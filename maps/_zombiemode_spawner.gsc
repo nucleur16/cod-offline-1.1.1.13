@@ -1419,6 +1419,22 @@ zombie_damage_watch()
 	}
 }
 
+// T5 zombie_think gives an authored target priority over zombie_chaser.
+// Kino's untargeted authored chasers hunt directly, as in BO1, without
+// selecting a window first. Riser emergence is a separate sequence.
+kino_untargeted_chaser()
+{
+	if ( getDvar( "mapname" ) != "zm_theater_sh" )
+		return false;
+
+	spawn_point = self.zm_spawn_point;
+	if ( !isDefined( spawn_point ) || !isDefined( spawn_point.script_string ) ||
+		spawn_point.script_string != "zombie_chaser" )
+		return false;
+
+	return !isDefined( spawn_point.target ) || spawn_point.target == "";
+}
+
 // T5 _zombiemode_spawner.gsc:3922 find_flesh plus the animscript handoff in
 // T5's zombie_think (:415), which the previous pass deferred.
 //
@@ -1446,7 +1462,9 @@ zombie_think()
 	// boards there, and only then seeks flesh.  The old loop went straight for
 	// the player, so with the entrance 100+ units to the side the zombie
 	// walked into the outer wall next to the window and stood there.
-	node = self pick_entrance_node();
+	node = undefined;
+	if ( !self kino_untargeted_chaser() )
+		node = self pick_entrance_node();
 	if ( isDefined( node ) )
 	{
 		self.first_node = node;
