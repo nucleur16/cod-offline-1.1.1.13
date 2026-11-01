@@ -125,6 +125,8 @@ NOTICE_Y = 72;
 
 init()
 {
+	// C1 Carpenter places C4; weapon_c4 is mounted by sentry_zm.
+	precacheModel( "weapon_c4" );
 	level.zombie_perkpop_info = [];
 
 	// Every perk pop any roster character carries.  Only those are precached.
@@ -995,9 +997,7 @@ barrier_repaired( blocker )
 	spot = groundpos( blocker.origin + vector_scale( flat, 24 ) + ( 0, 0, 32 ) );
 
 	c4 = spawn( "script_model", spot );
-	model = getWeaponModel( "semtex_grenade_zm" );
-	if ( isDefined( model ) && model != "" )
-		c4 setModel( model );
+	c4 setModel( "weapon_c4" );
 	blocker.perkpop_c4 = c4;
 	{}
 
@@ -1020,7 +1020,7 @@ carpenter_c4_think( owner, blocker )
 			for ( i = 0; i < level.zombies.size; i++ )
 			{
 				z = level.zombies[ i ];
-				if ( !isDefined( z ) )
+				if ( !isDefined( z ) || !isAlive( z ) )
 					continue;
 				if ( distanceSquared( z.origin, self.origin ) < 96 * 96 )
 				{
