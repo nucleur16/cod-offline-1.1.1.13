@@ -140,6 +140,32 @@ player_add_points( event, mod, hit_location )
 	self add_to_player_score( player_points );
 }
 
+// C1 common_gametype_zm impacts/double_points uses gfx_double_points and
+// specialty_2x_zombies_empty: the yellow 2x over a struck cyborg in the
+// original reference. This is separate from the persistent Double Points HUD.
+// self is the struck zombie; use the actual damage point without a guessed
+// body offset. A shotgun's pellets share one impact per zombie/server frame.
+double_points_impact( point, amount, mod )
+{
+	if ( !isDefined( amount ) || amount <= 0 || !isDefined( point ) ||
+		!isDefined( mod ) ||
+		!is_true( level.zombie_vars[ "zombie_powerup_point_doubler_on" ] ) )
+		return;
+
+	if ( mod != "MOD_RIFLE_BULLET" && mod != "MOD_PISTOL_BULLET" &&
+		mod != "MOD_HEAD_SHOT" )
+		return;
+
+	if ( !isDefined( level._effect[ "double_points_impact" ] ) )
+		return;
+
+	now = getTime();
+	if ( isDefined( self.zm_double_points_impact_time ) && self.zm_double_points_impact_time == now )
+		return;
+	self.zm_double_points_impact_time = now;
+	playFx( level._effect[ "double_points_impact" ], point );
+}
+
 get_points_multiplier()
 {
 	multiplier = level.zombie_vars[ "zombie_point_scalar" ];

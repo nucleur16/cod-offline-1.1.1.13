@@ -36,6 +36,12 @@ makeType( destructibleType )
 		case "toy_tubetv_tv1":
 			toy_tubetv_( "tv1" );
 			break;
+		case "toy_tubetvsound_tv1":
+			// CoDOL mp_nuked's test-pattern TV uses this type with the same
+			// destructible_tubetv_tv1 include and com_tv1_d broken model.
+			// Keep the authored type as the cache key so setup can find it.
+			toy_tubetv_( "tv1", destructibleType );
+			break;
 		case "toy_tubetv_tv2":
 			toy_tubetv_( "tv2" );
 			break;
@@ -569,12 +575,14 @@ toy_dt_mirror( size )
 		destructible_state( "tag_origin", "dt_mirror" + size + "_des", 150, undefined );
 }
 
-toy_tubetv_( version )
+toy_tubetv_( version, destructibleType )
 {
 	//---------------------------------------------------------------------
 	// Tube TV
 	//---------------------------------------------------------------------
-	destructible_create( "toy_tubetv_" + version, "tag_origin", 1, undefined, 32 );
+	if ( !isdefined( destructibleType ) )
+		destructibleType = "toy_tubetv_" + version;
+	destructible_create( destructibleType, "tag_origin", 1, undefined, 32 );
 		destructible_splash_damage_scaler( 1 );
 			destructible_fx( "tag_fx", "explosions/tv_explosion" );
 			destructible_sound( "tv_shot_burst" );

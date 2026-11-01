@@ -84,6 +84,9 @@ init()
 	level._effect[ "zombie_eye_glow" ] = loadfx( "maps/zombie/zm_eye_lensflare_blue" );
 
 	// Dismemberment and the blue blood (_zombiemode_gib.gsc).
+	// C1 common_gametype_zm: one-shot gfx_double_points impact.
+	level._effect[ "double_points_impact" ] = loadfx( "impacts/double_points" );
+
 	maps\_zombiemode_gib::init();
 
 	maps\_zombiemode_kino_risers::init();
@@ -1419,6 +1422,8 @@ zombie_damage_watch()
 		// argument, codol_equipment_lifecycle.c CODOL_AddDamageWeaponArgument),
 		// read by zombie_death_event for level.zombie_kill_weapon_callbacks.
 		self.damageweapon = weapon;
+
+		self maps\_zombiemode_score::double_points_impact( point, amount, mod );
 
 		// BEGIN tesla hook -- T5 _zombiemode_spawner.gsc:3548 zombie_damage:
 		// a tesla projectile hit starts the chain lightning (the weapon's

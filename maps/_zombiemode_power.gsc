@@ -72,10 +72,57 @@ init()
 		precacheModel( "lights_indlight" );
 		precacheModel( "lights_indlight_on" );
 	}
+	init_power_monitors();
 
 	level thread electric_switch();
 	level thread wait_for_power();
 	level thread power_lights();
+}
+
+// C1 1.1.1.13 zm_prototype_sh.ff authors its two hanging monitors as
+// destructible_toy models codo_ma_flatscreen_tv_wallmount_02_off and _03_off.
+// The same zone carries their powered and broken variants. These are model
+// states, not ambient createfx emitters; leaving the authored _off models in
+// place keeps both screens black after the switch is used.
+init_power_monitors()
+{
+	level.zm_power_monitors = [];
+	if ( getDvar( "mapname" ) != "zm_prototype_sh" )
+		return;
+
+	monitors = getEntArray( "destructible_toy", "targetname" );
+	for ( i = 0; i < monitors.size; i++ )
+	{
+		monitor = monitors[ i ];
+		if ( monitor.classname != "script_model" || !isDefined( monitor.model ) )
+			continue;
+
+		on_model = undefined;
+		if ( monitor.model == "codo_ma_flatscreen_tv_wallmount_02_off" )
+			on_model = "codo_ma_flatscreen_tv_wallmount_02";
+		else if ( monitor.model == "codo_ma_flatscreen_tv_wallmount_03_off" )
+			on_model = "codo_ma_flatscreen_tv_wallmount_03";
+		if ( !isDefined( on_model ) )
+			continue;
+
+		precacheModel( on_model );
+		monitor.zm_power_monitor_off_model = monitor.model;
+		monitor.zm_power_monitor_on_model = on_model;
+		level.zm_power_monitors[ level.zm_power_monitors.size ] = monitor;
+	}
+}
+
+power_monitors_on()
+{
+	for ( i = 0; i < level.zm_power_monitors.size; i++ )
+	{
+		monitor = level.zm_power_monitors[ i ];
+		// Destruction before power remains destruction. Do not restore a
+		// broken/replaced screen or otherwise restart its destructible state.
+		if ( isDefined( monitor ) && isDefined( monitor.model ) &&
+			monitor.model == monitor.zm_power_monitor_off_model )
+			monitor setModel( monitor.zm_power_monitor_on_model );
+	}
 }
 
 // The switch trigger: T5 theater's name, else T5 asylum's.
@@ -218,6 +265,8 @@ power_lights()
 	}
 
 	flag_wait( "power_on" );
+
+	power_monitors_on();
 
 	for ( i = 0; i < lamps.size; i++ )
 	{
