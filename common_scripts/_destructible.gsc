@@ -3143,6 +3143,16 @@ destructible_animation_think( action_v, eModel, damageType, partIndex )
 	{
 		if ( IsDefined( mpAnim ) )
 			self self_func( "scriptModelPlayAnim", mpAnim );
+		else if ( animType == "setanim" && codol_tire_flatten_anim( animName ) )
+		{
+			// CoDOL: the authored tire actions have no mpAnim override. Use the
+			// native script-model tree/journal so all sparse wheel clips survive
+			// subsequent hits and a viewer entering PVS after several tires pop.
+			eModel SetAnim( animName, 1.0, 1.0, animRate );
+			if ( !IsDefined( self.codol_tire_animsApplied ) )
+				self.codol_tire_animsApplied = [];
+			self.codol_tire_animsApplied[ self.codol_tire_animsApplied.size ] = animName;
+		}
 		return groupNum;
 	}
 
@@ -3162,8 +3172,25 @@ destructible_animation_think( action_v, eModel, damageType, partIndex )
 	return undefined;
 }
 
+codol_tire_flatten_anim( animation )
+{
+	return animation == %vehicle_80s_sedan1_flattire_LF ||
+		animation == %vehicle_80s_sedan1_flattire_LB ||
+		animation == %vehicle_80s_sedan1_flattire_RF ||
+		animation == %vehicle_80s_sedan1_flattire_RB;
+}
+
 clear_anims( eModel )
 {
+	// CoDOL: clear the sparse wheel goals before the existing explosion
+	// override. ScriptModelClearAnim alone only clears the legacy state arm.
+	if ( !isSP() && IsDefined( self.codol_tire_animsApplied ) )
+	{
+		foreach ( animation in self.codol_tire_animsApplied )
+			eModel ClearAnim( animation, 0 );
+		self.codol_tire_animsApplied = undefined;
+	}
+
 	//clear all previously blended anims if the vehicle is exploding so the explosion doesn't have to blend with anything
 	if ( IsDefined( self.animsApplied ) )
 	{
