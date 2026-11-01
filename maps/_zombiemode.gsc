@@ -98,6 +98,7 @@ init()
 	init_levelvars();
 	init_anims();
 	init_hints();
+	maps\_zombiemode_teammate_pointers::init();
 }
 
 // --------------------------------------------------------------------------
@@ -585,6 +586,7 @@ Callback_StartGameType()
 
 Callback_CodeEndGame()
 {
+	maps\_zombiemode_teammate_pointers::shutdown();
 	if ( is_true( level.zm_end_report_requested ) )
 		return;
 	level.gameEnded = true;
@@ -612,6 +614,7 @@ Callback_PlayerConnect()
 	// not to load.  The empty string is the documented zero index.
 	self.statusicon = "";
 	self waittill( "begin" );
+	maps\_zombiemode_teammate_pointers::remove_player( self );
 
 	// A prior aborted frontend transition must not reopen stale results.
 	// C1's g_difficulty enum only accepts0..2. Preserve the authoritative
@@ -698,6 +701,7 @@ onMenuResponse()
 
 Callback_PlayerDisconnect()
 {
+	maps\_zombiemode_teammate_pointers::remove_player( self );
 	// Reservations belong to this connection, never to a reusable client slot.
 	self.zm_start_point = undefined;
 	players = [];
@@ -924,6 +928,7 @@ is_capped_explosive_mod( sMeansOfDeath )
 Callback_PlayerKilled( eInflictor, eAttacker, iDamage, sMeansOfDeath, sWeapon, vDir, sHitLoc, timeOffset, deathAnimDuration )
 {
 	self.sessionstate = "dead";
+	maps\_zombiemode_teammate_pointers::remove_player( self );
 	self.deaths++;
 	self.laststand = false;
 
@@ -979,6 +984,7 @@ respawnPlayer()
 spawnPlayer()
 {
 	self endon( "disconnect" );
+	maps\_zombiemode_teammate_pointers::remove_player( self );
 
 	spawnpoint = getSpawnPoint();
 	// Do not put a joining/respawning player inside another player when all
@@ -1062,6 +1068,7 @@ spawnPlayer()
 	self.old_score = self.score;
 
 	self updateRoundHud();
+	self maps\_zombiemode_teammate_pointers::on_spawn();
 }
 
 // The multiplayer tree runs _healthoverlay::playerHealthRegen on each spawn.
