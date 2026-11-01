@@ -66,11 +66,19 @@ def main():
     assert old_image[:4] == b"\xff" * 4
     assert old_image[36:].startswith(b"loadscreen_zm_factory_sh\0")
     assert len(material) == 208
+    # The embedded source supplies exactly one level. Bit 1 disables mipmaps:
+    # Image_CountMipmaps/Image_Setup otherwise request the complete chain.
+    # Stock C1 inline 2D images use flags 3 for a single level too. Keep the
+    # original no-picmip/no-mipmap bits, without BO1's unrelated high bits.
+    load_flags = flags & 3
+    assert load_flags == 3
     new_image = codecs.encode_image("loadscreen_zm_theater_original_bo1", [screen.tobytes("raw", "BGRA")],
-                                   width, height, {"hdr": old_image[4:32].hex(), "lflags": "0x1"})
-    decoded_name, decoded_levels, _ = codecs.decode_image(new_image)
+                                   width, height, {"hdr": old_image[4:32].hex(), "lflags": hex(load_flags)})
+    decoded_name, decoded_levels, decoded_params = codecs.decode_image(new_image)
     assert decoded_name == "loadscreen_zm_theater_original_bo1"
     assert decoded_levels == [screen.tobytes("raw", "BGRA")]
+    assert int(decoded_params["lflags"], 0) == 3
+    assert int(decoded_params["levels"]) == 1
     image.assets[2] = (5, image.assets[2][1], material[:123] + new_image + material[200:])
     marker, data, params = codecs.decode_rawfile(image.assets[3][2])
     assert marker == "zm_factory_sh_load" and not data
@@ -95,6 +103,7 @@ def main():
                    source_image_sha256=BO1_IMAGE_SHA256, source_image_size=len(original),
                    source_texture_dimensions=[width, height], output_texture_dimensions=[width, height],
                    decoded_pixel_sha256=pixel_sha256, decoded_pixels_preserved_exactly=True,
+                   image_levels=1, image_load_flags=load_flags, mipmaps_disabled=True,
                    drawn_overlays=False, AI_generated_or_edited=False,
                    preview_display_dimensions=[1280, 720],
                    display_aspect_reference="Original main/video/zombie_theater_load.bik, 1280x720")
