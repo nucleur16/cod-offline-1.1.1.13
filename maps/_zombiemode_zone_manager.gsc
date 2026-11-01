@@ -76,6 +76,15 @@ init()
 			enable_zone( level.zm_zone_initial[ i ] );
 	}
 
+	// Factory always owns a purchased-door graph. Callback startup can reach
+	// this manager before its level main has published that data; never use
+	// the legacy occupancy-unlocks path for its overlapping closed rooms.
+	if ( level.zm_zone_mode == "zm_factory_sh" && !level.zm_declared_zone_graph )
+	{
+		level.zm_declared_zone_graph = true;
+		enable_zone( "receiver_zone" );
+	}
+
 	level.enemy_spawns = [];
 	if ( level.zm_spawn_zones.size < 1 )
 	{

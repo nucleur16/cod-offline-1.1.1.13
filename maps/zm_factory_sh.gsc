@@ -75,12 +75,16 @@ main()
 	// Entity fields the trigger modules read (before levelMain).
 	factory_t5_values();
 
+	// Declare the initial zone and purchased-door graph before any level
+	// initialization can yield or start the zone manager. Overlapping closed
+	// room volumes must never select the legacy occupancy-unlocks fallback.
+	factory_zone_init();
+
 	maps\_zombiemode::levelMain( "zm_factory_sh" );
 
 	// T5 zombie_cod5_factory.gsc init_sounds.
 	add_sound( "door_slide_open", "door_slide_open" );
 
-	factory_zone_init();
 
 	// T5 places the players on initial_spawn_points in the receiver.
 	level.zm_spawn_point_func = ::factory_spawn_point;
