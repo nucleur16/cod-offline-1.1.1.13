@@ -55,6 +55,7 @@ main()
 	{}
 
 	self endon("killanimscript");
+	self endon("death");
 	self SetAimAnimWeights( 0, 0 );
 
 /#
@@ -277,6 +278,8 @@ doMeleeAfterWait( time )
 	self endon("death");
 
 	wait(time);
+	if ( !isAlive( self ) )
+		return;
 
 	// not useing angles on the melee hit so it will always hit
 	self animscripts\zombie_dog_attack_log::melee_before( self.enemy );
@@ -320,6 +323,10 @@ t5BiteReaches( player )
 	// From T5's eye a hound queued behind another bites into that hound's
 	// body (T5 Melee_Trace hits actors); C1's eye starts past it.
 	trace = bulletTrace( eye, target, true, self );
+	// World hits have no entity, just like a clear ray. Preserve the
+	// fraction so a nose animated past cover cannot bite back through it.
+	if ( !isDefined( trace[ "entity" ] ) && trace[ "fraction" ] < 1 )
+		return false;
 	if ( isDefined( trace[ "entity" ] ) && trace[ "entity" ] != player )
 		return false;
 	return true;
@@ -332,8 +339,29 @@ t5Sq( v )
 
 dogMelee()
 {
+	// A pending notetrack must not let a dead hound start another trace.
+	if ( !isAlive( self ) )
+		return undefined;
+
 	if ( isDefined( self.enemy ) && distance2D( self.origin, self.enemy.origin ) < 32 )
 		return self melee();
+
+	// C1's raised clip moves tag_eye ahead of the touching bodies. Once
+	// the eye passes a target still in front of the dog, retaining the
+	// facing argument sends the native trace farther away from that target.
+	// Use the existing target-directed trace for this measured geometry.
+	if ( isDefined( self.enemy ) )
+	{
+		eye = self getEye();
+		forward = anglesToForward( ( 0, self.angles[1], 0 ) );
+		to_enemy = self.enemy.origin - self.origin;
+		from_eye = self.enemy.origin - eye;
+		to_enemy = ( to_enemy[0], to_enemy[1], 0 );
+		from_eye = ( from_eye[0], from_eye[1], 0 );
+		if ( distance2D( self.origin, self.enemy.origin ) <= distance2D( self.origin, eye ) &&
+			vectorDot( to_enemy, forward ) >= 0 && vectorDot( from_eye, forward ) <= 0 )
+			return self melee();
+	}
 
 	return self melee( anglesToForward( self.angles ) );
 }
