@@ -52,7 +52,11 @@ static QsgSnapshot QsgRead(void *expected)
     if (!QsgString(s.identity.mode,sizeof(s.identity.mode),*(const uint32_t *)info)) {
         s.managed=1; return s;
     }
-    if (strcmp(s.identity.mode,"playlist") && info[0xc]!=11) return s;
+    /* Public numbered playlists also use mode="playlist". Only the native
+     * managed-Quick discriminator owns this permission policy; other playlists
+     * retain the stock timer and StartGame path. An already-owned cycle still
+     * fails closed on scope drift in QsgObserve. */
+    if (info[0xc]!=11) return s;
     s.managed=1;
     if (strcmp(s.identity.mode,"playlist") || info[0xc]!=11 ||
         info[0xd]!=2 || info[0xe]!=12 || info[0x28]!=1) return s;
