@@ -100,6 +100,17 @@ class Machine:
   assert self.u.reg_read(UC_X86_REG_EDI)==0x23456789
 
 class NativeQuickGate(unittest.TestCase):
+ def test_public_playlist_retains_native_start_without_quick_intent(self):
+  # Actual editor C1 capture: mode=playlist, tail discriminator=2, two
+  # admitted members, no Quick Ready/AS intent. The stock timer owns start.
+  m=Machine();m.install();m.put(ROOM+0x15a8c,2,1)
+  m.ready(0,0);m.ready(1,0);m.tick();m.native()
+  self.assertEqual(m.searches,1);self.assertEqual(m.get(CTRL+0x10),6)
+ def test_unrelated_playlist_discriminators_do_not_enter_quick_policy(self):
+  for discriminator in [0,1,2,3,10,12,255]:
+   with self.subTest(discriminator=discriminator):
+    m=Machine();m.install();m.put(ROOM+0x15a8c,discriminator,1)
+    m.tick();m.native();self.assertEqual(m.searches,1)
  def test_old_native_starts_without_any_genuine_bridge(self):
   m=Machine();m.ready(1,0);m.native();self.assertEqual(m.searches,1);self.assertEqual(m.get(CTRL+0x10),6)
  def test_delayed_results_135_seconds_creates_no_search_until_bridge(self):
