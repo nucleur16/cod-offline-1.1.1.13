@@ -369,6 +369,12 @@ dogMelee()
 handleMeleeBiteAttackNoteTracks( note, player )
 {
 	self animscripts\zombie_dog_attack_log::note( note );
+	// Perception may retarget while the clip waits for a note. Finish the
+	// old attack before aiming or tracing against a different live enemy.
+	if ( !isDefined( player ) || !isAlive( player ) ||
+		!isDefined( self.enemy ) || self.enemy != player )
+		return true;
+
 	switch ( note )
 	{
 		case "dog_melee":
