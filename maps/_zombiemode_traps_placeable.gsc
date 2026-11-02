@@ -158,6 +158,12 @@ place_trap( grenade, player, weapon )
 // above; the probe place/grid test hooks call it directly.
 spawn_trap( origin, player, weapon )
 {
+	// A thrown device may settle after the terminal callback. The placement
+	// owner still deletes the grenade, but must not create or credit a new
+	// active device once the match is over.
+	if ( is_true( level.gameEnded ) || is_true( level.intermission ) )
+		return;
+
 	trace = bulletTrace( origin + ( 0, 0, 16 ), origin - ( 0, 0, 64 ), false, undefined );
 	if ( trace[ "fraction" ] < 1 )
 		origin = trace[ "position" ];
@@ -255,7 +261,7 @@ trap_owner_add( trap )
 // self = trap.  True while the trap should keep running.
 trap_alive()
 {
-	if ( is_true( level.intermission ) )
+	if ( is_true( level.gameEnded ) || is_true( level.intermission ) )
 		return false;
 	return getTime() < self.zm_trap_end;
 }

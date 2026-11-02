@@ -823,8 +823,10 @@ dog_init( favorite_enemy )
 	self.favoriteenemy = favorite_enemy;
 	self.zm_dog_round = level.dog_round_count;
 
-	self dog_fx_eye_glow();
-	self dog_fx_trail();
+	// Select the variant now: a kill during the publication delay must keep
+	// the same burning/ash death behavior as an ordinary hound.
+	self dog_select_trail();
+	self thread dog_attached_fx();
 
 	level thread dog_death( self );
 	self thread maps\_zombiemode_spawner::zombie_damage_watch();
@@ -895,9 +897,22 @@ dog_fx_eye_glow()
 	playFxOnTag( level._effect[ "dog_eye_glow" ], self, "j_eyeball_le" );
 }
 
+// Like the Tesla carrier, a new dog needs to reach a snapshot before its
+// attached-effect events. Entity events emitted on its creation frame can
+// be discarded by a client that has not received that entity yet.
+dog_attached_fx()
+{
+	self endon( "death" );
+	wait( 0.1 );
+	if ( !isDefined( self ) || !isAlive( self ) )
+		return;
+	self dog_fx_eye_glow();
+	self dog_fx_trail();
+}
+
 // T5 :618 dog_fx_trail: half the hounds burn and explode on death, the rest
 // trail ash.
-dog_fx_trail()
+dog_select_trail()
 {
 	if ( randomInt( 100 ) > level.dog_fire_trail_percent )
 	{
@@ -910,7 +925,10 @@ dog_fx_trail()
 		self.fx_dog_trail_type = level._effect[ "dog_trail_fire" ];
 		self.fx_dog_trail_sound = "zmb_hellhound_loop_fire";
 	}
+}
 
+dog_fx_trail()
+{
 	playFxOnTag( self.fx_dog_trail_type, self, "tag_origin" );
 	self playLoopSound( self.fx_dog_trail_sound );
 }
