@@ -55,3 +55,7 @@ tests/party_session_capacity_guard_fixture_O0
 tests/party_session_capacity_guard_fixture_O2
 tests/party_session_refresh_guard_fixture_O0
 tests/party_session_refresh_guard_fixture_O2
+
+# Isolated production parity build/cache, never source publication
+/output-parity/
+/production-parity-evidence/

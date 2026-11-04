@@ -10,7 +10,7 @@ SOURCE=ROOT/'zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/co
 class TrainingControls(unittest.TestCase):
  def test_training_commit_return_ready_and_custom_room_boundaries(self):
   source=SOURCE.read_text(encoding='utf8')
-  methods={n:javascript(body(source,n)) for n in ('isManagedTrainingRoom','isSupportedMapMode','initRoomInfo','onChangeRoomInfoHandle','onChangeReadyStateHandle','resetRoom')}
+  methods={n:javascript(body(source,n)) for n in ('isManagedTrainingRoom','isSupportedMapMode','initRoomInfo','onChangeRoomInfoHandle','onChangeReadyStateHandle','applyRoomReadyState','resetRoom')}
   methods={n:re.sub(r'var (\w+):(PlayListObj|RoomObj)',r'var \1',s) for n,s in methods.items()}
   script=r'''
 const assert=require('assert');
@@ -26,8 +26,8 @@ function fresh(id) {
  const c={_trainingRoomIndex:'',_trainingPlaylist:-1,
   _roomObj:{index:0,currentMatchMode:{},currentMap:{},forces:{votes:{},maps:[],difficulties:[],pilots:[]}},
   resetRoomVoting:()=>{},getCurrentPlayList:()=>({id,type:0,combatTrainingType:0}),getSyncDP:()=>0,
-  broadcast:()=>{},isRoomHost:()=>true,isRoomInfoReady:()=>true,isReady:()=>ready};
- for(const [name,text] of Object.entries(methods)) c[name]=name==='isSupportedMapMode'?new Function('mapID','modeID',text):new Function(name==='initRoomInfo'?'obj':name.startsWith('on')?'cEvt':'unused',text);
+  broadcast:()=>{},isRoomHost:()=>true,isRoomInfoReady:()=>true,isReady:()=>ready,isLocalCampaignRoom:()=>false,cancelCampaignHostStart:()=>{}};
+ for(const [name,text] of Object.entries(methods)) c[name]=name==='isSupportedMapMode'?new Function('mapID','modeID',text):new Function(name==='initRoomInfo'?'obj':name==='applyRoomReadyState'?'readyToSet':name.startsWith('on')?'cEvt':'unused',text);
  return c;
 }
 function info(playlist,index=263) {return {name:'p15db7b2eb48e32',index,password:'',isPlayList:playlist,

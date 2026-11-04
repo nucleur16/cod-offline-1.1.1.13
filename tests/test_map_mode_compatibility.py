@@ -28,7 +28,7 @@ FILES = {
 
 
 def lowered(text):
-    return re.sub(r'var (\w+):\w+', r'var \1', javascript(text))
+    return re.sub(r'(?<![.\w])(_optionMap|_currentMatchType)', r'this.\1', re.sub(r'var (\w+):\w+', r'var \1', javascript(text)))
 
 
 class MapModeCompatibility(unittest.TestCase):
@@ -36,7 +36,7 @@ class MapModeCompatibility(unittest.TestCase):
         sources = {key: (AS / path).read_text(encoding='utf-8-sig') for key, path in FILES.items()}
         wanted = {
             'match': ['isSupportedMapMode', 'listMap', 'listMode', 'listSameTypeMap', 'onCreateRoomHandle', 'onQuickMatchHandle'],
-            'lobby': ['isSupportedMapMode', 'isManagedTrainingRoom', 'onChangeRoomInfoHandle', 'onChangeReadyStateHandle', 'onStartMatchHandle', 'refreshRoomMaps'],
+            'lobby': ['isSupportedMapMode', 'isManagedTrainingRoom', 'onChangeRoomInfoHandle', 'onChangeReadyStateHandle', 'applyRoomReadyState', 'onStartMatchHandle', 'refreshRoomMaps'],
             'mp': ['set active', 'set mapDP', 'refreshMPMaps', 'refreshMPData', 'onMapChangedHandle', 'onMapAlbumChangeHandle', 'getRoomCreatorParams'],
             'mini': ['set mapDP', 'refreshMPMaps', 'refreshMPData', 'onMapChangedHandle'],
             'ct': ['set active', 'setMaps', 'onMapCBChangedHandle', 'onMapAlbumChangeHandle', 'getRoomCreatorParams'],
@@ -52,6 +52,7 @@ class MapModeCompatibility(unittest.TestCase):
         script = r'''
 const assert=require('assert');
 const M=METHODS;
+globalThis.CFunctionContainerCommon={Dvar_GetString:()=>'',setdvar:()=>{}};
 const uint=x=>Number(x)>>>0,int=x=>Number(x)|0;
 const MatchType={PVP:'pvp',ZM:'zm',COOP:'coop'},QuickMatchType={MP:1,COOP:2,CYBORG:3,TRAINING:4};
 const CoopMapType={ANY:0,STORY:1,SPEC_OPS:2,SURVIVAL:3,GetCoopSubType:()=>0};
@@ -116,7 +117,7 @@ function sync(key,args=[]) {
  throw Error('Unexpected creator provider '+key);
 }
 function creator(group,album=new Album()) {
- const c={_currentMatchType:1,mouseEnabled:true,_mapAlbum:album,getSyncDP:sync,myPasswordTF:{text:''},myRoomNameTF:{text:'QA'},showMapInfo:m=>{c.preview=m.id;}};
+ const c={_currentMatchType:1,mouseEnabled:true,_mapAlbum:album,localCreateOption:{visible:false,selected:false},updateLocalOption:()=>{},getSyncDP:sync,myPasswordTF:{text:''},myRoomNameTF:{text:'QA'},showMapInfo:m=>{c.preview=m.id;}};
  for(let i=0;i<4;i++)c['myOptionCB_'+i]=new Combo();c._optionMap=c.myOptionCB_3;
  for(const name of ['refreshMPMaps','refreshMPData','onMapChangedHandle'])c[name]=method(c,group,name,name==='refreshMPMaps'?'modeID':'cEvt');
  if(group==='mp') {
@@ -168,13 +169,14 @@ ct.setMaps();assert.strictEqual(album.data,mp._optionMap.dataProvider,'cached in
 
 '''
         # Function constructors resolve globals in Node's global realm.
-        script = script.replace("const M=METHODS;", "const M=METHODS;\nglobalThis.QuickMatchFilterObj=function(){};")
+        script = script.replace("const M=METHODS;", "const M=METHODS;\nglobalThis.QuickMatchFilterObj=function(){};globalThis.CFunctionContainerCommon={Dvar_GetString:()=>'',setdvar:()=>{}};")
         script += r'''
 let edits=[],readyWrites=[],startWrites=0,notices=0;
+globalThis.CFunctionContainerCommon={Dvar_GetString:()=>'',setdvar:()=>{}};
 const CFunctionContainer={ChangeRoomInfo:(d,t)=>edits.push({d,t}),SetReadyState:r=>readyWrites.push(r)};
 function lobby(map=S,mode='war') {
- const c={_trainingPlaylist:-1,_trainingRoomIndex:'',_roomObj:{index:318,name:'QA',isPlayList:false,currentMap:{id:map},currentMatchMode:{id:mode},currentMinPlayers:1,currentMaxPlayers:6,currentLevel:1,forces:{maps:[],votes:{},showMode:true}},_roomMembers:[{}],isRoomInfoReady:()=>true,isRoomHost:()=>true,isReady:()=>false,broadcast:()=>{},showMsg:()=>notices++,request:()=>startWrites++,getSyncDP:(k,a)=>k==='LIST_SAME_TYPE_MAP'?provider.listSameTypeMap(...a):k==='MAP_OBJ'?maps.find(m=>m.id===a[0]):k==='LIST_DIFFICULTY'?[]:false};
- for(const n of Object.keys(M.lobby))c[n]=method(c,'lobby',n,n==='isSupportedMapMode'?'mapID,modeID':'cEvt');return c;
+ const c={_trainingPlaylist:-1,_trainingRoomIndex:'',_roomObj:{index:318,name:'QA',isPlayList:false,currentMap:{id:map},currentMatchMode:{id:mode},currentMinPlayers:1,currentMaxPlayers:6,currentLevel:1,forces:{maps:[],votes:{},showMode:true}},_roomMembers:[{}],isRoomInfoReady:()=>true,isRoomHost:()=>true,isReady:()=>false,isLocalCampaignRoom:()=>false,cancelCampaignHostStart:()=>{},broadcast:()=>{},showMsg:()=>notices++,request:()=>startWrites++,getSyncDP:(k,a)=>k==='LIST_SAME_TYPE_MAP'?provider.listSameTypeMap(...a):k==='MAP_OBJ'?maps.find(m=>m.id===a[0]):k==='LIST_DIFFICULTY'?[]:false};
+ for(const n of Object.keys(M.lobby))c[n]=method(c,'lobby',n,n==='isSupportedMapMode'?'mapID,modeID':n==='applyRoomReadyState'?'readyToSet':'cEvt');return c;
 }
 for(const mode of ids.concat(['sd2','bogus',''])) {
  const c=lobby(S,mode);edits=[];readyWrites=[];startWrites=0;
@@ -214,7 +216,7 @@ console.log(JSON.stringify({passed:true,checks,control_events:events,source:SOUR
         # the same realm as Function constructors without rewriting policy.
         expose = 'Object.assign(globalThis,{uint,int,MatchType,QuickMatchType,CoopMapType,SyncDataID,BCEventCommon,SanitizedType,MsgBtnCount,AsyncTaskID,BCEvent,CodoComboBox,StringUtil,ScaleformUtil,MapObj,ModeObj,MatchService,LocalizationRoom,RoomListType});\n'
         script = script.replace('const provider={};', expose + 'const provider={};')
-        script = script.replace('function lobby(map=S,mode=', 'globalThis.CFunctionContainer=CFunctionContainer;\nfunction lobby(map=S,mode=')
+        script = script.replace('function lobby(map=S,mode=', 'globalThis.CFunctionContainer=CFunctionContainer;globalThis.CFunctionContainerCommon=CFunctionContainerCommon;\nfunction lobby(map=S,mode=')
         node = shutil.which('node')
         self.assertIsNotNone(node)
         result = subprocess.run([node], input=script, capture_output=True, text=True, encoding='utf-8')

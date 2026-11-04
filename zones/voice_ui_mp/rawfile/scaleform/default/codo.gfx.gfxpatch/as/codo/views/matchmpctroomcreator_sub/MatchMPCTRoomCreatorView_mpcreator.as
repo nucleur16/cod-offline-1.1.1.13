@@ -209,4 +209,169 @@ package codo.views.matchmpctroomcreator_sub
          {
             modeID = this.myOptionCB_2.selectedValue != null ? this.myOptionCB_2.selectedValue.id : "";
             this.refreshMPMaps(modeID);
-            maxPlayers = this.getSyncDP(SyncDataID.LIST_MAX_PLAYER);
+            maxPlayers = super.getSyncDP(SyncDataID.LIST_MAX_PLAYER);
+            if(modeID == "gun" || modeID == "oic" || modeID == "shrp")
+            {
+               this.myOptionCB_1.dataProvider = [{
+                  "name":6,
+                  "id":6
+               }];
+               this.myOptionCB_1.selectedDataIndex = 0;
+               this.myOptionCB_1.enabled = false;
+            }
+            else if(modeID == "infect" && maxPlayers != null && maxPlayers.length > 0)
+            {
+               this.myOptionCB_1.dataProvider = maxPlayers;
+               this.myOptionCB_1.selectedDataIndex = maxPlayers.length - 1;
+               this.myOptionCB_1.enabled = true;
+            }
+            else if(maxPlayers != null && this.myOptionCB_1.dataProvider.length != maxPlayers.length)
+            {
+               this.myOptionCB_1.dataProvider = maxPlayers;
+               this.myOptionCB_1.selectedDataIndex = 0;
+               this.myOptionCB_1.enabled = true;
+            }
+         }
+         if(this._currentMatchType == QuickMatchType.COOP)
+         {
+            selectedIndex = this.myOptionCB_1.selectedDataIndex;
+            this.myOptionCB_1.dataProvider = super.getSyncDP(SyncDataID.LIST_DIFFICULTY,[this._optionMap.selectedValue]);
+            this.myOptionCB_1.selectedDataIndex = selectedIndex >= 0 && selectedIndex < this.myOptionCB_1.dataProvider.length ? selectedIndex : 0;
+            this.myOptionCB_1.enabled = this.myOptionCB_1.dataProvider.length > 1;
+         }
+         if(this.mouseEnabled && this._mapAlbum != null)
+         {
+            this._mapAlbum.currentIndex = this._optionMap.selectedDataIndex;
+         }
+      }
+
+      private function refreshMPMaps(modeID:String) : void
+      {
+         var selectedID:String = this._optionMap.selectedValue != null ? String(this._optionMap.selectedValue.id) : "";
+         var maps:Array = super.getSyncDP(SyncDataID.LIST_MAP,[MatchType.PVP,false,0,false,modeID]);
+         var selectedIndex:int = maps.length > 0 ? 0 : -1;
+         var i:int = 0;
+         while(i < maps.length)
+         {
+            if(String(maps[i].id) == selectedID)
+            {
+               selectedIndex = i;
+               break;
+            }
+            i++;
+         }
+         this.mapDP = maps;
+         this._optionMap.selectedDataIndex = selectedIndex;
+      }
+      
+      private function onRoomNameChangedHandle(cEvt:Event) : void
+      {
+         if(this.myRoomNameTF.text.length > 0)
+         {
+            this.myRoomNameTF.text = StringUtil.limitStringToRealLength(this.myRoomNameTF.text,STRING_LEN_ROOM_NAME_MAX);
+         }
+      }
+      
+      private function onRoomNameSanitizedHandle(cEvt:ParaEvent) : void
+      {
+         if(cEvt.myPara.type == SanitizedType.ROOM_NAME && Boolean(cEvt.myPara.sanitized))
+         {
+            this.myRoomNameTF.text = cEvt.myPara.content;
+            this.showMsg(LocalizationRoom.NOTE_SANITIZED_ROOM_NAME,MsgBtnCount.ONE);
+         }
+      }
+      
+      private function refreshCoopData() : void
+      {
+         var preSelectedIndex:int = 0;
+         this._optionMap = this.myOptionCB_2;
+         this._optionMap.addEventListener(CodoComboBox.EVT_CHANGE,this.onMapChangedHandle);
+         this.myOptionCB_0.removeEventListener(CodoComboBox.EVT_CHANGE,this.onMapChangedHandle);
+         var coopTypes:Array = super.getSyncDP(SyncDataID.LIST_COOP_TYPE);
+         if(coopTypes != null && coopTypes.length > 0)
+         {
+            preSelectedIndex = this.myOptionCB_0.selectedDataIndex;
+            this.myOptionCB_0.dataProvider = coopTypes;
+            this.myOptionCB_0.selectedDataIndex = preSelectedIndex >= 0 && preSelectedIndex < this.myOptionCB_0.dataProvider.length ? preSelectedIndex : 0;
+         }
+      }
+      
+      private function refreshMPData() : void
+      {
+         this._optionMap = this.myOptionCB_3;
+         this._optionMap.addEventListener(CodoComboBox.EVT_CHANGE,this.onMapChangedHandle);
+         this.myOptionCB_0.removeEventListener(CodoComboBox.EVT_CHANGE,this.onMapChangedHandle);
+         var leagues:Array = super.getSyncDP(SyncDataID.LIST_LEAGUE,[true]);
+         if(leagues != null && leagues.length > 0)
+         {
+            this.myOptionCB_0.dataProvider = leagues;
+            this.myOptionCB_0.selectedDataIndex = 0;
+         }
+         var maxPlayers:Array = super.getSyncDP(SyncDataID.LIST_MAX_PLAYER);
+         if(maxPlayers != null && maxPlayers.length > 0)
+         {
+            this.myOptionCB_1.enabled = true;
+            this.myOptionCB_1.dataProvider = maxPlayers;
+            this.myOptionCB_1.selectedDataIndex = 0;
+         }
+         var modeDP:Array = super.getSyncDP(SyncDataID.LIST_MODE,[MatchType.PVP]);
+         if(modeDP != null && modeDP.length > 0)
+         {
+            this.myOptionCB_2.dataProvider = modeDP;
+            this.myOptionCB_2.selectedDataIndex = 0;
+         }
+         this.refreshMPMaps(this.myOptionCB_2.selectedValue != null ? String(this.myOptionCB_2.selectedValue.id) : "");
+         this.myOptionCB_2.addEventListener(CodoComboBox.EVT_CHANGE,this.onMapChangedHandle);
+         this.onMapChangedHandle(null);
+      }
+      
+      private function refreshCyborgsData() : void
+      {
+         this._optionMap = this.myOptionCB_0;
+         this._optionMap.addEventListener(CodoComboBox.EVT_CHANGE,this.onMapChangedHandle);
+         this.mapDP = super.getSyncDP(SyncDataID.LIST_MAP,[MatchType.ZM]);
+      }
+      
+      private function set mapDP(mapDP:Array) : void
+      {
+         if(mapDP != null)
+         {
+            this._optionMap.dataProvider = mapDP;
+            this._optionMap.selectedDataIndex = mapDP.length > 0 ? 0 : -1;
+            if(this.mouseEnabled && this._mapAlbum != null)
+            {
+               this._mapAlbum.data = mapDP;
+               this._mapAlbum.currentIndex = this._optionMap.selectedDataIndex;
+            }
+         }
+      }
+      
+      private function onMapAlbumChangeHandle(cEvt:ParaEvent) : void
+      {
+         if(!this.mouseEnabled || cEvt.myPara.index < 0 || cEvt.myPara.index >= this._optionMap.dataProvider.length)
+         {
+            return;
+         }
+         this._optionMap.selectedDataIndex = cEvt.myPara.index;
+      }
+      
+      private function getRoomCreatorParams() : Object
+      {
+         var room:Object = {};
+         var local:Boolean = this.localCreateOption.visible && this.localCreateOption.selected;
+         CFunctionContainerCommon.setdvar("ui_p2p_create",local ? "1" : "0");
+         room.name = this.myRoomNameTF.text;
+         room.password = this.myPasswordTF.text;
+         room.map = this._optionMap.selectedValue.id;
+         room.mode = this._currentMatchType == QuickMatchType.CYBORG ? "zm" : (this._currentMatchType == QuickMatchType.COOP ? "coop" : this.myOptionCB_2.selectedValue.id);
+         room.difficulty = this._currentMatchType == QuickMatchType.CYBORG ? 0 : (this._currentMatchType == QuickMatchType.COOP ? this.myOptionCB_1.selectedValue.id : this.myOptionCB_0.selectedValue.id);
+         room.minPlayer = local ? 1 : this._optionMap.selectedValue.minPlayer;
+         room.maxPlayer = this._currentMatchType == QuickMatchType.COOP || this._currentMatchType == QuickMatchType.CYBORG ? this._optionMap.selectedValue.maxPlayer : this.myOptionCB_1.selectedValue.id;
+         return {
+            "type":QuickMatchType.MP,
+            "room":room
+         };
+      }
+   }
+}
+

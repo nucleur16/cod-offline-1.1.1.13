@@ -16,8 +16,8 @@ function scale(r,x,y){return [r[0]*x,r[1]*y,r[2]*x,r[3]*y];}
 assert(creator.includes('localCreateOption.x = this.myCreateBtn.x - 163;'));
 assert(creator.includes('localCreateOption.y = this.myCreateBtn.y + 6;'));
 assert(option.includes('drawRect(0,0,150,this.blueTheme ? 28 : 40)'));
-assert(mpct.includes('this.localCreateOption.x = this.myOptionLabelTF_2.x + 528;'));
-assert(mpct.includes('this.localCreateOption.y = this.myOptionLabelTF_2.y + 70;'));
+assert(mpct.includes('this.localCreateOption.x = this.myOptionLabelTF_2.x + 492;'));
+assert(mpct.includes('this.localCreateOption.y = this.myOptionLabelTF_2.y + 65;'));
 assert(!option.includes('drawRoundRect'),'no foreign framed button beside stock Create Room');
 const rectangles={
  mp:[stock.create[0]-88-.5,stock.create[1]-270-.5,stock.create[0]-88+150+.5,stock.create[1]-270+40+.5],
