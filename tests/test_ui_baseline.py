@@ -13,7 +13,9 @@ class SharedUIBaseline(unittest.TestCase):
         names=['kernel33.c','quick_start_gate.c','quick_start_policy.h','quick_start_guards.h',
                'gfx_date_time.c','gfx_date_time_policy.h','gfx_date_time_guards.h',
                'kernel_call_guard.c','kernel_room_context.c','kernel_room_guards.h',
-               'kernel_room_policy.h','production_profile.h','build-profile.sh']
+               'kernel_room_policy.h','production_profile.h','build-profile.sh',
+               'kernel_name_policy.h','kernel_name_guards.h','kernel_name_network.c',
+               'kernel_name_render.c','kernel_name_display.c']
         read=Path.read_bytes
         for name in names:
             with self.subTest(name=name):

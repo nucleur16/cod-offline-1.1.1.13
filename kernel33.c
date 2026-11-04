@@ -185,7 +185,20 @@ static void FillImports(void)
     int failed = 0;
     for (unsigned i = 0; i < sizeof(kC1Imports) / sizeof(kC1Imports[0]); i++) {
         const C1Import *imp = &kC1Imports[i];
-        HMODULE m = ((HMODULE(WINAPI *)(LPCSTR))g_loadLibraryA)(imp->dll);
+        HMODULE m;
+#if CODOL_KERNEL_NAME_DISPLAY
+        if (!lstrcmpiA(imp->dll, "d3d9.dll")) {
+            /* Full cutover bypasses the retired local proxy. Resolve only the
+             * Windows copy, and let the guarded binders verify its path. */
+            wchar_t system[MAX_PATH];
+            UINT n = GetSystemDirectoryW(system, MAX_PATH);
+            if (!n || n >= MAX_PATH - 10) Fatal("Kernel33 could not resolve Windows Direct3D.");
+            lstrcatW(system, L"\\d3d9.dll");
+            m = LoadLibraryW(system);
+            if (!m) Fatal("Kernel33 could not load Windows Direct3D.");
+        } else
+#endif
+        m = ((HMODULE(WINAPI *)(LPCSTR))g_loadLibraryA)(imp->dll);
         FARPROC f = m ? ((FARPROC(WINAPI *)(HMODULE, LPCSTR))g_getProcAddress)(m, imp->name) : NULL;
         if (!f) {
             Log("import %s!%s unresolved (slot 0x%08lX)", imp->dll, imp->name, (unsigned long)imp->slot);
@@ -1453,6 +1466,9 @@ static void PatchGbkInput(void)
 #include "news_refresh.c"
 #include "gfx_date_time.c"
 #include "launcher_update_bridge.c"
+#if CODOL_KERNEL_NAME_DISPLAY
+#include "kernel_name_display.c"
+#endif
 #if CODOL_KERNEL_ROOM_CONTEXT
 #include "kernel_room_context.c"
 #endif
@@ -1494,6 +1510,9 @@ static void __cdecl TakeOver(void)
     InstallSoundDiag();
 #if CODOL_DIAGNOSTICS
     InstallParityLogger();
+#endif
+#if CODOL_KERNEL_NAME_DISPLAY
+    if(!InstallKernelNameDisplay())Fatal("Kernel33 name-display migration checks failed. Restore the qualified client package.");
 #endif
     InstallVoice();
     InstallController();

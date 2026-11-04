@@ -24,6 +24,12 @@ developer ImGui console, developer panel and their input hook. Its normal replay
 name-display and native room integration remain. Development must be selected
 explicitly and must use a separate output directory.
 
+The full proxy-free prototype additionally selects `K33_KERNEL_NAME_DISPLAY=1`
+with `K33_KERNEL_ROOM_CONTEXT=1 K33_NO_COPY=1`. It explicitly loads Windows D3D
+and moves the retained name hooks into Kernel33; see
+`docs/KERNEL_NAME_MIGRATION.md`. Both flags remain disabled for shipping until
+the exact combined candidate passes real-client qualification.
+
 The shared frontend hides Quick Match from the playlist menu for this release.
 Its native catalogue and room/training paths retain their existing geometry.
 The reviewed MatchController predicate and quiet profile pins are recorded in

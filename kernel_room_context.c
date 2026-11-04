@@ -86,6 +86,9 @@ static int KrcQueue(void *unused,const char *value,int recovery,const KrpSample 
 static const KrpBackend g_krcBackend={NULL,KrcAvailable,KrcPublished,KrcCurrent,KrcQueue};
 __attribute__((used)) void __cdecl KernelRoomMainTick(void)
 {
+#if CODOL_KERNEL_NAME_DISPLAY
+    KernelNameMainTick();
+#endif
     KrpTick(&g_krcPublisher,GetTickCount(),&g_krcBackend);
 }
 void KRC_MainTickHook(void);

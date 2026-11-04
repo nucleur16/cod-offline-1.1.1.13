@@ -48,11 +48,12 @@ preserved. Its mutation checks include the migration binder, policy, guards and
 profile controls. This pins provenance; it does not authorize migration-on in
 a public client release.
 
-Complete proxy migration remains unfinished. Name-display UTF-8/alias hooks,
-borderless persistence parity, retired replay/console removal, system D3D
-loading, Windows native fault/lock behavior and actual client room/join/results/
-repeat lifecycle must pass together before cutover. Do not publish the opt-in
-DLL or delete a working proxy based on these offline results.
+The opt-in name-display companion now implements all nine UTF8/alias/HUD hooks
+and explicit Windows system-D3D loading; see `KERNEL_NAME_MIGRATION.md`. Full
+proxy-free qualification remains unfinished. Borderless persistence parity,
+retired replay/console removal, Windows native fault/lock behavior and actual
+client room/join/results/repeat lifecycle must pass together before cutover.
+Do not publish the opt-in DLL or delete a working proxy from offline results.
 
 Offline source tests require explicitly supplied retained legacy headers and
 owned private image. No private binary is added to the repository. Build the

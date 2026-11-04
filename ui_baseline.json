@@ -211,7 +211,7 @@
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_k33_PadSnap.bin": "cd05585c5fccd21324efc7c5ccd6dea1b39aa7be3216c894e17fb64299f95850",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/components/CodoUIComponent.as": "9f3cc89ba4727ad13a2b1cf49191d3f704b0b1f3730f8eb517b377c7f1e3713d",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_components_CodoUIComponent.bin": "2290376ce2045110aff688efca3f7853254c279d87ca20110ddeb9b7e8748817",
-    "kernel33.c": "b2e700941cb83d16adcc44d63a073b765e16632f4066527456206b2b627ce6a0",
+    "kernel33.c": "33043c57bb2b969574b73d325d4169e940074506e33779073aaec044a74256d7",
     "news_refresh.c": "fef7dbd876744a8b190101bea4fb410cbcaff11ded5e77bbb9f238a3433afdbe",
     "news_refresh_policy.h": "123a5a359b87ea3f2fa917acea5e06b9a7c1e3c7af8ae5413704d1122f7e711f",
     "news_refresh_guards.h": "f185c6991e2935b8f26efeec285a3b1e9120efd01a2dbbeed1870a5b1f82f251",
@@ -236,11 +236,16 @@
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/matchmpctroomcreator_sub/MatchMPCTRoomCreatorView_ctcreator.as": "8c5fb04506cf9f60bf8edc14983b2bba8d66f4e3a3c30792f78eef6744b8390e",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_views_matchmpctroomcreator_sub_MatchMPCTRoomCreatorView_ctcreator.bin": "a30bf4aa157750f9c00e6ba44d690e1c527c5d48f1b296b2ced22b8b80f8ee78",
     "kernel_call_guard.c": "e8a96da4f65c8d8de5f3e458ef66a0889f898826df478be29c91a291f13873bb",
-    "kernel_room_context.c": "05392762b71a740f5addb74bf7bf0abcf11b78258a6dbcd73f6f6685c33b9994",
+    "kernel_room_context.c": "192dbfa8e85f8a457cc462d930114bac33c38ed9698b2628f9facd0a58812605",
     "kernel_room_guards.h": "dee04c90ea3ed76c63e95d6d401a24b3f4f79e50611bd82c5fd0b19986eddc24",
     "kernel_room_policy.h": "cd260c16b26b5b1acef077ab3912967bf0741e85fdc444534907e30b9aef27c2",
-    "production_profile.h": "5fab99dd01fd98f171ebbac4f264c3d39038cc92d322e1f30bd45795b17ea55f",
-    "build-profile.sh": "dcbe17a6bb796aaa3e0bce904687926e9cb30c248fa72c40e088c5141326e827"
+    "production_profile.h": "f76e191121f1c21128148011e2add1cd18a33bfadcac275161e258bb7398f525",
+    "build-profile.sh": "5cb996ec29f6126937ef8ee730e535264d7da9421bb261c268e76fd1ce5ba1d4",
+    "kernel_name_policy.h": "f318ca86778489b37fa72cdce3b69a7633eb03ac0c96abd5662a242bc29af922",
+    "kernel_name_guards.h": "9f9d865f3c9d5fc671a7c862c88987f2b28b375293298bbc1a662b3a4f8198b3",
+    "kernel_name_network.c": "b4988c958826e159bf6f657d9d66e728ec96621c903b69b706faf486d63727fb",
+    "kernel_name_render.c": "02f4c868bc80a91f97ecc3839116bc38c21bce44af1f244aab4a5395c9d704ca",
+    "kernel_name_display.c": "fa2def1ca5526c379b3e169532d3b994acbd176c08d30cd6275dcb80f9239bf0"
   },
   "production_release_qualified": false,
   "required_acceptance": [

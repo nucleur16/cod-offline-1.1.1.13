@@ -10,6 +10,15 @@
 /* Keep the migration opt-in until complete proxy/name-display parity passes. */
 #define CODOL_KERNEL_ROOM_CONTEXT 0
 #endif
+#ifndef CODOL_KERNEL_NAME_DISPLAY
+#define CODOL_KERNEL_NAME_DISPLAY 0
+#endif
+#if CODOL_KERNEL_NAME_DISPLAY != 0 && CODOL_KERNEL_NAME_DISPLAY != 1
+#error Kernel name-display migration flag must be zero or one
+#endif
+#if CODOL_KERNEL_NAME_DISPLAY && !CODOL_KERNEL_ROOM_CONTEXT
+#error Kernel name display requires the main-thread room-context binder
+#endif
 #if CODOL_KERNEL_ROOM_CONTEXT != 0 && CODOL_KERNEL_ROOM_CONTEXT != 1
 #error Kernel room-context migration flag must be zero or one
 #endif
