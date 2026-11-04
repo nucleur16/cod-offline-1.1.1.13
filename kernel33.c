@@ -1453,6 +1453,9 @@ static void PatchGbkInput(void)
 #include "news_refresh.c"
 #include "gfx_date_time.c"
 #include "launcher_update_bridge.c"
+#if CODOL_KERNEL_ROOM_CONTEXT
+#include "kernel_room_context.c"
+#endif
 static void __cdecl TakeOver(void)
 {
     if (TryLauncherUpgrade()) ExitProcess(0);
@@ -1495,6 +1498,9 @@ static void __cdecl TakeOver(void)
     InstallVoice();
     InstallController();
     InstallDiscord();
+#if CODOL_KERNEL_ROOM_CONTEXT
+    if(!InstallKernelRoomContext())Fatal("Kernel33 native room migration checks failed. Restore the qualified client package.");
+#endif
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
     ExitProcess(0); /* the CRT entry ends in exit(); not reached */

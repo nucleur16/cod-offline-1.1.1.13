@@ -11,6 +11,14 @@ command-file transport is available only in this separately compiled profile.
 `K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=1` enables development diagnostics.
 Shipping with diagnostics, or values other than zero/one, is rejected.
 
+The room-context migration remains opt-in (`K33_KERNEL_ROOM_CONTEXT=0` by
+default). A migration build requires `K33_NO_COPY=1` and cannot use the build
+script's installation copy. Its runtime binder rejects a non-system Direct3D
+proxy so the legacy and Kernel33 publishers cannot run together. Names and
+complete proxy parity, actual Windows exception dispatch and client lifecycle
+acceptance remain release gates. Do not turn this switch on in a public release
+merely because the standalone policy/binder fixtures pass.
+
 The paired launcher proxy defaults to `PROFILE=shipping` and excludes the
 developer ImGui console, developer panel and their input hook. Its normal replay,
 name-display and native room integration remain. Development must be selected

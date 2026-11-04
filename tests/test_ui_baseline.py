@@ -11,7 +11,9 @@ class SharedUIBaseline(unittest.TestCase):
         import json
         contract=json.loads((ROOT/'ui_baseline.json').read_text())
         names=['kernel33.c','quick_start_gate.c','quick_start_policy.h','quick_start_guards.h',
-               'gfx_date_time.c','gfx_date_time_policy.h','gfx_date_time_guards.h']
+               'gfx_date_time.c','gfx_date_time_policy.h','gfx_date_time_guards.h',
+               'kernel_call_guard.c','kernel_room_context.c','kernel_room_guards.h',
+               'kernel_room_policy.h','production_profile.h','build-profile.sh']
         read=Path.read_bytes
         for name in names:
             with self.subTest(name=name):

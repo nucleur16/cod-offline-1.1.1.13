@@ -211,7 +211,7 @@
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_k33_PadSnap.bin": "cd05585c5fccd21324efc7c5ccd6dea1b39aa7be3216c894e17fb64299f95850",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/components/CodoUIComponent.as": "9f3cc89ba4727ad13a2b1cf49191d3f704b0b1f3730f8eb517b377c7f1e3713d",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_components_CodoUIComponent.bin": "2290376ce2045110aff688efca3f7853254c279d87ca20110ddeb9b7e8748817",
-    "kernel33.c": "e49053d82eb7f58075615f39ad87680bed73650e32d216523b9824280d295fd3",
+    "kernel33.c": "b2e700941cb83d16adcc44d63a073b765e16632f4066527456206b2b627ce6a0",
     "news_refresh.c": "fef7dbd876744a8b190101bea4fb410cbcaff11ded5e77bbb9f238a3433afdbe",
     "news_refresh_policy.h": "123a5a359b87ea3f2fa917acea5e06b9a7c1e3c7af8ae5413704d1122f7e711f",
     "news_refresh_guards.h": "f185c6991e2935b8f26efeec285a3b1e9120efd01a2dbbeed1870a5b1f82f251",
@@ -234,7 +234,13 @@
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_views_ServerMessageView.bin": "00be89f0db06468361432c82414eccc7fccbf11a5d3ad1d719aa5c2b4eac958a",
     "minigun_pair_native.c.inc": "ec3341020ca0afb09fe21e265867240ec218dfc7c5f959f8d0be65904a33ce33",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/matchmpctroomcreator_sub/MatchMPCTRoomCreatorView_ctcreator.as": "8c5fb04506cf9f60bf8edc14983b2bba8d66f4e3a3c30792f78eef6744b8390e",
-    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_views_matchmpctroomcreator_sub_MatchMPCTRoomCreatorView_ctcreator.bin": "a30bf4aa157750f9c00e6ba44d690e1c527c5d48f1b296b2ced22b8b80f8ee78"
+    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_views_matchmpctroomcreator_sub_MatchMPCTRoomCreatorView_ctcreator.bin": "a30bf4aa157750f9c00e6ba44d690e1c527c5d48f1b296b2ced22b8b80f8ee78",
+    "kernel_call_guard.c": "e8a96da4f65c8d8de5f3e458ef66a0889f898826df478be29c91a291f13873bb",
+    "kernel_room_context.c": "05392762b71a740f5addb74bf7bf0abcf11b78258a6dbcd73f6f6685c33b9994",
+    "kernel_room_guards.h": "dee04c90ea3ed76c63e95d6d401a24b3f4f79e50611bd82c5fd0b19986eddc24",
+    "kernel_room_policy.h": "cd260c16b26b5b1acef077ab3912967bf0741e85fdc444534907e30b9aef27c2",
+    "production_profile.h": "5fab99dd01fd98f171ebbac4f264c3d39038cc92d322e1f30bd45795b17ea55f",
+    "build-profile.sh": "dcbe17a6bb796aaa3e0bce904687926e9cb30c248fa72c40e088c5141326e827"
   },
   "production_release_qualified": false,
   "required_acceptance": [
