@@ -114,6 +114,10 @@ static void PiActiveBetweenFrames(void)
         else result=0;
         if(!result||!PiActivePermission()||g_piPrincipalCurrent()!=1){result=0;goto done;}
         AcquireSRWLockExclusive(&g_p2paLock);result=PiActiveClock(&wall,&mono)&&P2PACommit(&g_p2pa.policy,&g_p2pa.command,result,wall,mono);ReleaseSRWLockExclusive(&g_p2paLock);
+        /* Commit clock observation can block. The original bootstrap budget
+         * must still be live after it, before the ACTIVE state replaces that
+         * gate and makes obsolete startup timer observations harmless. */
+        if(result&&first&&!PiActivePermission())result=0;
         if(result&&first&&InterlockedCompareExchange(&g_p2paMode,P2PA_ACTIVE,P2PA_PROMOTING)!=P2PA_PROMOTING)result=0;
         if(result&&InterlockedCompareExchange(&g_p2paMode,0,0)!=P2PA_ACTIVE)result=0;
         if(result)InterlockedExchange(&g_piPrincipalFresh,1);

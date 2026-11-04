@@ -36,12 +36,14 @@ static void active_between_frame_case(const char *scenario)
     if(!strcmp(scenario,"active-abort-owned"))active_case=1;
     if(!strcmp(scenario,"active-native-two"))active_case=2;
     if(!strcmp(scenario,"active-install-budget"))active_case=3;
+    if(!strcmp(scenario,"active-commit-bootstrap-boundary"))commit_clock_hook=1;
     if(!strcmp(scenario,"active-expired-bootstrap"))clock_ms+=25000;
     require_clock_lock=1;g_p2pa.phase=1;fixture_fiber=1;PiActiveBetweenFrames();fixture_fiber=0;require_clock_lock=0;
     assert(g_p2pa.phase==3);
-    if(active_case==1||active_case==2||!strcmp(scenario,"active-expired-bootstrap")) {
+    if(active_case==1||active_case==2||commit_clock_hook||!strcmp(scenario,"active-expired-bootstrap")) {
         assert(!g_p2pa.result&&g_p2paMode==P2PA_DEAD&&principal_faulted());
         if(!strcmp(scenario,"active-expired-bootstrap"))assert(!active_calls);
+        if(commit_clock_hook)assert(clock_ms>=25000&&active_calls==1);
     } else {
         assert(g_p2pa.result==1&&g_p2paMode==P2PA_ACTIVE&&!principal_faulted()&&active_calls==1);
         assert(g_p2pa.policy.deadline==39000&&g_p2pa.policy.hard_deadline==110000);

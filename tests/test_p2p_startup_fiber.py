@@ -118,7 +118,7 @@ def main():
                    'cancel-script','cancel-principal','cancel-current','parent-current','deadline-current','pipe-pid-current',
                    'timeout-owned','cancel-wins','wrong-thread','runtime-expiry','wall-expiry','wall-expiry-latch','init-fail','cancel-yield']
         scenarios+=['active-success','active-abort-owned','active-native-two','active-expired-bootstrap','active-parent-loss']
-        scenarios+=['active-install-budget']
+        scenarios+=['active-install-budget','active-commit-bootstrap-boundary']
         scenarios+=['active-io-success','active-io-timeout','active-io-parent','active-io-foreign']
         if okay:
             for scenario in scenarios:
@@ -135,6 +135,11 @@ def main():
             'static void PiActiveBootstrapExpired(void) {}\n',1)
         controls=[('old-current','cancel-current',functions.replace(current,old,1)),
                   ('no-client-time-latches','wall-expiry-latch',no_time_latches)]
+        promotion=selected['PiActiveBetweenFrames']
+        late_promotion=promotion.replace('if(result&&first&&!PiActivePermission())result=0;','',1)
+        assert late_promotion!=promotion
+        controls.append(('late-bootstrap-promotion','active-commit-bootstrap-boundary',
+                         functions.replace(promotion,late_promotion,1)))
         for label,scenario,mutated in controls:
             (scratch/'actual_startup_functions.inc').write_text(mutated)
             negative=scratch/('startup-fiber-'+label);bad_compile=command[:-1]+[str(negative)]
