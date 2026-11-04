@@ -245,7 +245,9 @@
     "kernel_name_guards.h": "9f9d865f3c9d5fc671a7c862c88987f2b28b375293298bbc1a662b3a4f8198b3",
     "kernel_name_network.c": "b4988c958826e159bf6f657d9d66e728ec96621c903b69b706faf486d63727fb",
     "kernel_name_render.c": "02f4c868bc80a91f97ecc3839116bc38c21bce44af1f244aab4a5395c9d704ca",
-    "kernel_name_display.c": "fa2def1ca5526c379b3e169532d3b994acbd176c08d30cd6275dcb80f9239bf0"
+    "kernel_name_display.c": "fa2def1ca5526c379b3e169532d3b994acbd176c08d30cd6275dcb80f9239bf0",
+    "borderless.c": "54edab00f4b10a610287b886f301f87a0cdd39e4a8da9007c8a0818b918e08eb",
+    "kernel_video_mode.c": "0fbb16f81b1602405d8c7b678292d62ef9821cdc5918fd6030c78445ef30d0a5"
   },
   "production_release_qualified": false,
   "required_acceptance": [

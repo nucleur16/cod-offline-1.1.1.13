@@ -26,9 +26,10 @@ class Machine:
  def __init__(self):
   self.u=Uc(UC_ARCH_X86,UC_MODE_32);self.pages=set();self.names={};self.api={}
   self.map(base,pe.OPTIONAL_HEADER.SizeOfImage);self.write(base,pe.get_memory_mapped_image());self.map(STACK,0x20000);self.map(STUB,0x10000);self.map(MEM,0x20000)
-  self.now=0;self.protects=0;self.flushes=0;self.fail_protect=set();self.fail_flush=set();self.fail_thread=False;self.terminated=None;self.tls=0;self.allocated=MEM+0x10000;self.worker=0
+  self.now=0;self.protects=0;self.protections={};self.flushes=0;self.fail_protect=set();self.fail_flush=set();self.fail_thread=False;self.terminated=None;self.tls=0;self.allocated=MEM+0x10000;self.worker=0
   self.body=b'{"identity":"Alpha","uid":"42","name":"\\u4e2d\\u6587"}';self.status=200;self.response_at=0;self.request_path='';self.http_calls=[];self.http_fail=None;self.http_advance=0;self.closed=[]
   self.native_calls=[];self.lock=0;self.deny=None;self.setevent=True;self.events=0;self.waits=0
+  self.files={};self.file_opens=0;self.file_fail=None;self.file_handles={};self.renames=[];self.deleted=[]
   for lib in pe.DIRECTORY_ENTRY_IMPORT:
    for item in lib.imports:self.put(item.address,self.address(item.name.decode()))
   for at,body in guards:
@@ -70,6 +71,7 @@ class Machine:
   if at not in self.names:return
   name=self.names[at];sp=u.reg_read(UC_X86_REG_ESP);arg=lambda n:self.get(sp+4*n)
   if name=='GetCurrentProcess':self.ret(0xffffffff);return
+  if name=='GetCurrentProcessId':self.ret(0x12345678);return
   if name=='GetTickCount':self.ret(self.now);return
   if name=='GetModuleFileNameW':t='E:\\AWS Test\\codoMP_client_shipRetail.exe';self.write(arg(2),(t+'\0').encode('utf-16le'));self.ret(len(t),12);return
   if name=='GetModuleHandleW':self.ret(0x400000,4);return
@@ -84,7 +86,12 @@ class Machine:
    page=arg(1)&~4095
    if page not in self.pages:self.ret(0,12);return
    self.write(arg(2),struct.pack('<7I',page,page,4,4096,0x1000,4,0x20000));self.ret(28,12);return
-  if name=='VirtualProtect':self.protects+=1;self.put(arg(4),0x20);self.ret(int(self.protects not in self.fail_protect),16);return
+  if name=='VirtualProtect':
+   self.protects+=1
+   if self.protects in self.fail_protect:self.ret(0,16);return
+   page=arg(1)&~4095;self.put(arg(4),self.protections.get(page,0x20))
+   for p in range(page,(arg(1)+arg(2)+4095)&~4095,4096):self.protections[p]=arg(3)
+   self.ret(1,16);return
   if name=='FlushInstructionCache':self.flushes+=1;self.ret(int(self.flushes not in self.fail_flush),12);return
   if name=='TerminateProcess':self.terminated=arg(2);u.emu_stop();return
   if name=='TlsAlloc':self.ret(7);return
@@ -97,6 +104,27 @@ class Machine:
   if name=='CreateEventW':self.ret(33,16);return
   if name=='CreateThread':self.worker=arg(3);self.ret(0 if self.fail_thread else 34,24);return
   if name=='CloseHandle':self.ret(1,4);return
+  if name in ('lstrcpyW','lstrcatW'):
+   text=(self.text(arg(1),True) if name=='lstrcatW' else '')+self.text(arg(2),True);self.write(arg(1),(text+'\0').encode('utf-16le'));self.ret(arg(1),8);return
+  if name=='lstrlenW':self.ret(len(self.text(arg(1),True)),4);return
+  if name=='wcsrchr':
+   text=self.text(arg(1),True);offset=text.rfind(chr(arg(2)));self.ret(arg(1)+offset*2 if offset>=0 else 0);return
+  if name=='CreateFileW':
+   self.file_opens+=1;path=self.text(arg(1),True);read=arg(5)==3
+   if self.file_fail=='open' or read and path not in self.files:self.ret(0xffffffff,28);return
+   handle=44 if read else 45;self.file_handles[handle]=path
+   if not read:self.files[path]=b''
+   self.ret(handle,28);return
+  if name=='ReadFile':
+   content=self.files[self.file_handles[arg(1)]][:arg(3)];self.write(arg(2),content);self.put(arg(4),len(content));self.ret(int(self.file_fail!='read'),20);return
+  if name=='WriteFile':
+   content=bytes(u.mem_read(arg(2),arg(3)));self.files[self.file_handles[arg(1)]]=content;self.put(arg(4),len(content)-(self.file_fail=='short-write'));self.ret(int(self.file_fail!='write'),20);return
+  if name=='FlushFileBuffers':self.ret(int(self.file_fail!='flush'),4);return
+  if name=='MoveFileExW':
+   source,target=self.text(arg(1),True),self.text(arg(2),True);self.renames.append((source,target,arg(3)))
+   if self.file_fail=='rename':self.ret(0,12);return
+   self.files[target]=self.files.pop(source);self.ret(1,12);return
+  if name=='DeleteFileW':path=self.text(arg(1),True);self.deleted.append(path);self.files.pop(path,None);self.ret(1,4);return
   if name=='SetEvent':self.events+=1;self.ret(int(self.setevent),4);return
   if name=='WaitForSingleObject':self.waits+=1;self.ret(0 if self.waits==1 else 0xffffffff,8);return
   if name.startswith('AcquireSRWLock'):self.lock+=1;self.ret(0,4);return
@@ -153,7 +181,7 @@ class Machine:
 
 class Tests(unittest.TestCase):
  def test_install_exact_guard_and_every_guard_byte_mutation(self):
-  m=Machine();self.assertEqual(m.invoke('Install'),1);self.assertTrue(m.worker);self.assertEqual(m.protects,18)
+  m=Machine();self.assertEqual(m.invoke('Install'),1);self.assertTrue(m.worker);self.assertEqual(m.protects,18);self.assertEqual(set(m.protections.values()),{0x20})
   for index,(at,body) in enumerate(patch_guards):
    replacement=bytes(m.u.mem_read(at,len(body)));target=(at+5+struct.unpack('<i',replacement[1:5])[0])&0xffffffff
    self.assertEqual(target,m.get(exports['hooks']+index*4));self.assertEqual(replacement[0],0xe9 if index in (0,3,4) else 0xe8)
@@ -162,10 +190,10 @@ class Tests(unittest.TestCase):
     m=Machine();m.write(at+offset,bytes([byte^1]));self.assertEqual(m.invoke('Install'),0);self.assertEqual(m.protects,0)
  def test_install_transaction_faults_restore_every_original_site(self):
   for fail in range(1,19):
-   m=Machine();before=m.original();m.fail_protect={fail};self.assertEqual(m.invoke('Install'),0);self.assertEqual(m.original(),before)
+   m=Machine();before=m.original();m.fail_protect={fail};self.assertEqual(m.invoke('Install'),0);self.assertEqual(m.original(),before);self.assertTrue(all(p==0x20 for p in m.protections.values()))
   for mode in ('flush','worker'):
    m=Machine();before=m.original();m.fail_flush={1} if mode=='flush' else set();m.fail_thread=mode=='worker'
-   self.assertEqual(m.invoke('Install'),0);self.assertEqual(m.original(),before)
+   self.assertEqual(m.invoke('Install'),0);self.assertEqual(m.original(),before);self.assertEqual(set(m.protections.values()),{0x20})
   m=Machine();m.fail_flush={1,2};self.assertIsNone(m.invoke('Install'));self.assertEqual(m.terminated,0x4b4e4402)
  def test_exact_local_identity_ttl_clan_and_uid_fallback(self):
   m=Machine();self.assertEqual(m.invoke('Install'),1);m.seed();source=m.string('Alpha');self.assertEqual(m.text(m.invoke('Alias',source)),'中文'.encode())
@@ -232,6 +260,22 @@ class Tests(unittest.TestCase):
   for body in (b'x'*4097,b'{"identity":"Other","uid":"42","name":"Alias"}'):
    m=Machine();m.body=body;m.write(MEM+0x400,b'Alpha\0'+b'\0'*58+struct.pack('<QQI',42,1,0));self.assertEqual(m.invoke('Fetch',MEM+0x400,MEM+0x600),0);self.assertEqual(m.closed,[3,2,1])
   m=Machine();m.http_advance=2000;m.write(MEM+0x400,b'Alpha\0'+b'\0'*58+struct.pack('<QQI',42,1,0));self.assertEqual(m.invoke('Fetch',MEM+0x400,MEM+0x600),0)
+ def test_legacy_video_mode_fallback_atomic_write_failures_and_no_frame_io(self):
+  path='E:\\AWS Test\\codol_video_mode.cfg'
+  for content,expected in [(b'0\n',0),(b'1\n',1),(b'x',1),(b'',1)]:
+   m=Machine();m.files[path]=content;self.assertEqual(m.invoke('VideoLoad',1),expected)
+   for _ in range(10):self.assertEqual(m.invoke('VideoLoad',1),expected)
+   self.assertEqual(m.file_opens,1)
+  m=Machine();self.assertEqual(m.invoke('VideoLoad',0),0);m.invoke('VideoSave',1);self.assertEqual(m.files[path],b'1\n');self.assertEqual(m.renames,[(path+'.tmp.12345678',path,9)])
+  opens=m.file_opens
+  for _ in range(100):m.invoke('VideoSave',1)
+  self.assertEqual(m.file_opens,opens);m.invoke('VideoSave',0);self.assertEqual(m.files[path],b'0\n')
+  for failure in ('open','write','short-write','flush','rename'):
+   m=Machine();m.files[path]=b'0\n';m.invoke('VideoLoad',0);m.file_fail=failure;m.invoke('VideoSave',1);self.assertEqual(m.files[path],b'0\n')
+   if failure!='open':self.assertEqual(m.deleted,[path+'.tmp.12345678'])
+   opens=m.file_opens
+   for now in (1,249,999):m.now=now;m.invoke('VideoSave',1)
+   self.assertEqual(m.file_opens,opens);m.now=1000;m.file_fail=None;m.invoke('VideoSave',1);self.assertEqual(m.files[path],b'1\n')
 
 if __name__=='__main__':
  started=time.perf_counter();suite=unittest.defaultTestLoader.loadTestsFromTestCase(Tests);result=unittest.TextTestRunner(verbosity=2).run(suite)

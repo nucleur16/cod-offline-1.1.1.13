@@ -37,6 +37,9 @@
 #define BD_DVAR_FIND_VA       0x006232C0u   /* Dvar_FindVar(name) -> dvar_t* */
 #define BD_MAIN_HWND_VA       0x02B68104u
 #define BD_REGISTER_BOOL_VA   0x00624370u   /* Dvar_RegisterBool(name, value, flags, desc) */
+#if CODOL_KERNEL_NAME_DISPLAY
+#include "kernel_video_mode.c"
+#endif
 
 __attribute__((used)) DWORD g_bdCreateWindowFn = BD_CREATE_WINDOW_VA;
 static void *g_bdCreateWindowExPtr;          /* the IAT-style slot the patched call reads */
@@ -181,7 +184,11 @@ static void BorderlessTick(void)
     static int coverRestarts;   /* restarts for "no longer covers its monitor" in a row: at most 2 */
     if (!g_bdInstalled) return;
     if (!g_bdDvar && C1DvarsReady()) {
-        int cur = BdDvarValue("codol_borderless", 0) != 0;
+        int fallback=0;
+#if CODOL_KERNEL_NAME_DISPLAY
+        fallback=KvLoad(0);
+#endif
+        int cur = BdDvarValue("codol_borderless", fallback) != 0;
         typedef const BYTE *(__cdecl *RegisterBoolFn)(const char *, BYTE, unsigned, const char *);
         const BYTE *d = ((RegisterBoolFn)(DWORD_PTR)BD_REGISTER_BOOL_VA)(
             "codol_borderless", (BYTE)cur, 0x1, "Fullscreen Windowed: a borderless window covering the monitor (with r_fullscreen 0)");
@@ -190,6 +197,9 @@ static void BorderlessTick(void)
         if (!g_bdDvar) g_bdDvar = (const BYTE *)1;   /* do not try again; read it by name */
     }
     HWND h = *(HWND *)(DWORD_PTR)BD_MAIN_HWND_VA;
+#if CODOL_KERNEL_NAME_DISPLAY
+    if(g_bdDvar && g_bdDvar!=(const BYTE *)1)KvSave(BorderlessWanted());
+#endif
     if (!h || !IsWindow(h) || g_bdWindowBorderless < 0) return;
     RECT mon;
     BOOL haveMon = BdMonitorRect(MonitorFromWindow(h, MONITOR_DEFAULTTONEAREST), &mon);

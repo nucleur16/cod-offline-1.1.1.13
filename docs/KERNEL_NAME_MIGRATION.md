@@ -37,15 +37,20 @@ Qualification evidence, recorded separately from gameplay:
 
 - Portable compiled C policy: 6 passing methods, 10,000 independent Python
   JSON/Unicode oracle cases, truncation/UTF8/surrogate/TTL/generation controls.
-- Compiled x86 fixture interpreted in Unicorn: 8 passing methods. Every byte in
+- Compiled x86 fixture interpreted in Unicorn: 9 passing methods. Every byte in
   all 16 exact native guard regions is mutated; every protection stage, flush
   and thread-start rollback is faulted. Legacy thunks exercise actual compiled
   C callbacks, original custom helper ABI, GFx thiscall argument positions,
   continuations, preserved registers/flags, English fallback, Chinese encoding,
   one-request backpressure, worker wake/refresh and stale identity rejection.
+  Overlapping patch-page protection restoration is modeled. Legacy video-mode
+  fallback reads once, honors an existing native dvar, writes atomically via a
+  per-PID temporary file and retries failures at most once per second. Open,
+  short-write, write, flush and rename failures preserve the old file; unchanged
+  mode performs no file I/O per frame.
 - Full baseline/default/room/full-cutover DLL builds pass. After relocation
   normalization the default executable code/data/resources remain byte-identical
-  to the baseline. Full cutover adds 25,600 bytes and Windows WINHTTP only.
+  to the baseline. Latest full cutover adds 27,136 bytes and Windows WINHTTP only.
 - 32 profile expectations pass, including rejected name-without-room flags and
   rejected installation-copy path. Source/AS campaign: 19/19 passing methods.
 - Two private source mutants independently bypassing the row UID check and

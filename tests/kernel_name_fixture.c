@@ -9,6 +9,9 @@ static int LauncherBridgeHash(const wchar_t *path,char hash[65])
 {(void)path;memcpy(hash,"a5a7b44e66ca72da785eae4319126c23491586dc88dde499e8e6c9cf4bd6a976",65);return 1;}
 static int KrcSystemD3D(void){return 1;}
 #include "../kernel_name_display.c"
+#include "../kernel_video_mode.c"
+__declspec(dllexport) int VideoLoad(int fallback){return KvLoad(fallback);}
+__declspec(dllexport) void VideoSave(int enabled){KvSave(enabled);}
 __declspec(dllexport) int Install(void){return InstallKernelNameDisplay();}
 __declspec(dllexport) void Tick(void){KernelNameMainTick();}
 __declspec(dllexport) unsigned Busy(void){return g_kndBusy;}

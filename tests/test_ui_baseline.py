@@ -15,7 +15,7 @@ class SharedUIBaseline(unittest.TestCase):
                'kernel_call_guard.c','kernel_room_context.c','kernel_room_guards.h',
                'kernel_room_policy.h','production_profile.h','build-profile.sh',
                'kernel_name_policy.h','kernel_name_guards.h','kernel_name_network.c',
-               'kernel_name_render.c','kernel_name_display.c']
+               'kernel_name_render.c','kernel_name_display.c','borderless.c','kernel_video_mode.c']
         read=Path.read_bytes
         for name in names:
             with self.subTest(name=name):
