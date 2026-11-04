@@ -1,0 +1,184 @@
+# localize entries in zone order: NAME<TAB>value (\n \r \t \\ escaped); values are ascii in the zone
+KIOSKS_AIRSUPPORT_AIRSTRIKE	Precision Airstrike
+KIOSKS_AIRSUPPORT_AIRSTRIKE_DESC	Precision airstrike on a chosen location
+KIOSKS_AIRSUPPORT_ASSAULT	Attack Helicopter
+KIOSKS_AIRSUPPORT_ASSAULT_DESC	Call in an attack helicopter
+KIOSKS_AIRSUPPORT_DELTA	Delta Squad
+KIOSKS_AIRSUPPORT_DELTA_DESC	Call in a heli-dropped Delta squad
+KIOSKS_AIRSUPPORT_MORTAR	Mortar
+KIOSKS_AIRSUPPORT_MORTAR_DESC	Call in mortar fire support
+KIOSKS_AIRSUPPORT_PREDATOR	Predator Missile
+KIOSKS_AIRSUPPORT_PREDATOR_DESC	One remote-controlled Predator missile strike\nHint: follow the on-screen prompt at the bottom right
+KIOSKS_AIRSUPPORT_RIOT	Riot Squad
+KIOSKS_AIRSUPPORT_RIOT_DESC	Call in a heli-dropped riot shield squad
+KIOSKS_AMMO_CRATE	Ammo Crate
+KIOSKS_AMMO_CRATE_DESC	Call in an airdropped ammo crate
+KIOSKS_AMMO_REFILL	Ammo Refill
+KIOSKS_AMMO_REFILL_DESC	Refill your ammo
+KIOSKS_ARMORY_FULL	Full
+KIOSKS_ARMORY_OWNED	Owned
+KIOSKS_ARMORY_UPGRADE	Upgrade
+KIOSKS_ATTACHMENT_ACOG_SCOPE	ACOG Scope
+KIOSKS_ATTACHMENT_EOTECH	Holographic Sight
+KIOSKS_ATTACHMENT_GRENADE_LAUNCHER	EGM Grenade Launcher
+KIOSKS_ATTACHMENT_GRENADE_LAUNCHER1	MBGL1 Grenade Launcher
+KIOSKS_ATTACHMENT_GRENADE_LAUNCHER2	M320 Grenade Launcher
+KIOSKS_ATTACHMENT_GRIP	Grip
+KIOSKS_ATTACHMENT_RED_DOT_SIGHT	Red Dot Sight
+KIOSKS_ATTACHMENT_SHOTGUN	Shotgun Attachment
+KIOSKS_BACKHINT	Back (ESC)
+KIOSKS_CANCEL	Cancel
+KIOSKS_COINS_HINT	Hint: earn coins by helping survivors and teammates and by killing zombies
+KIOSKS_CONTINUE	Continue
+KIOSKS_COST	Cost
+KIOSKS_DOGTAG_HINT	Hint: rescue survivors, revive teammates and kill armored zombies to earn dog tags
+KIOSKS_DPAD_RIGHT_SLOT_FULL	You have no free slot
+KIOSKS_EQUIPMENT_BODYARMOR	Body Armor
+KIOSKS_EQUIPMENT_BODYARMOR_DESC	Adds 100 armor points\nHint: raises your defense
+KIOSKS_EQUIPMENT_C4	C4 x5 (max 10)
+KIOSKS_EQUIPMENT_CLAYMORE	Claymore x5 (max 10)
+KIOSKS_EQUIPMENT_EMP	EMP
+KIOSKS_EQUIPMENT_EMP_DESC	Releases a disruptive electromagnetic pulse in the atmosphere
+KIOSKS_EQUIPMENT_JUGARMOR	Juggernaut Armor
+KIOSKS_EQUIPMENT_JUGARMOR_DESC	Heavy wearable armor
+KIOSKS_EQUIPMENT_LASTSTAND	Self Revive
+KIOSKS_EQUIPMENT_LASTSTAND_DESC	Get back up after you go down
+KIOSKS_EQUIPMENT_RPG	RPG-7 x2 (max 4)
+KIOSKS_EQUIPMENT_SENTRY	Sentry Gun
+KIOSKS_EQUIPMENT_SENTRY_DESC	Sentry turret armed with a minigun
+KIOSKS_EQUIPMENT_SENTRY_GL	Grenade Sentry
+KIOSKS_EQUIPMENT_SENTRY_GL_DESC	Sentry turret armed with a grenade launcher
+KIOSKS_EVAC	Support Kiosk
+KIOSKS_EXPLOSIVE_AMMO	Explosive Ammo
+KIOSKS_EXPLOSIVE_AMMO_DESC	Your bullets do 50% more damage\nHint: no need to buy it twice
+KIOSKS_KILLSTREAK	Killstreak Kiosk
+KIOSKS_LOADOUT_CHANGE	Change Loadout
+KIOSKS_LOADOUT_CHANGE_DESC	Pick a new loadout
+KIOSKS_LOCKER	Locker Kiosk
+KIOSKS_MENU_SHARE_HINT	Share $500
+KIOSKS_MENU_SHARE_SENDING	Sending...
+KIOSKS_ONE_PERK	One Perk
+KIOSKS_ONE_PERK_DESC	Get one random perk
+KIOSKS_OPTION_CHOOSE_CONTENT	Choose Content Pack
+KIOSKS_OPTION_DLC	Expansion Content
+KIOSKS_OPTION_ON_DISK	On-Disc Content
+KIOSKS_PERKS_FULL	All perks purchased
+KIOSKS_RECOMMAND	Recommended
+KIOSKS_REPAIR_CHOPPER	Repair Chopper
+KIOSKS_REPAIR_CHOPPER_DESC	Restore 1/5 Chopper Armor
+KIOSKS_SAM_TURRET	SAM Turret
+KIOSKS_SAM_TURRET_DESC	Automatic anti-air missile launcher
+KIOSKS_TEAM_REVIVE	Team Revive
+KIOSKS_TEAM_REVIVE_DESC	Revive every player
+KIOSKS_TWO_PERKS	Two Perks
+KIOSKS_TWO_PERKS_DESC	Get two random perks
+KIOSKS_UNLOCKED	Unlocked
+KIOSKS_USE_EVAC	Press ^2[{+activate}]^7 to use the Support Kiosk
+KIOSKS_USE_KILLSTREAK	Hold ^2[{+activate}]^7 to use the Killstreak Kiosk
+KIOSKS_USE_LOCKER	Hold ^2[{+activate}]^7 to use the Locker Kiosk
+KIOSKS_USE_PERK	Hold ^2[{+activate}]^7 to use the Perk Kiosk
+KIOSKS_USE_TURRET	Hold ^2[{+activate}]^7 to use the Turret Kiosk
+KIOSKS_WARNING	Warning
+KIOSKS_WEAPON_ASSAULT_RIFLE_DESC	Assault Rifle
+KIOSKS_WEAPON_AT4_DESC	More accurate rocket launcher
+KIOSKS_WEAPON_LMG_DESC	Light Machine Gun
+KIOSKS_WEAPON_M79_DESC	Grenade launcher
+KIOSKS_WEAPON_MINIGUN	Chaingun
+KIOSKS_WEAPON_MINIGUN_DESC	Extremely rapid fire machine gun
+KIOSKS_WEAPON_RPG_DESC	Shoulder-fired Rocket-Propelled Grenade launcher
+KIOSKS_WEAPON_SNIPER_DESC	Sniper Rifle
+SO_SURVIVAL_AMMO_REMAINING	Ammo left: &&1
+SO_SURVIVAL_ARMOR_POINTS	&&1
+SO_SURVIVAL_CARDS	Cards Collected
+SO_SURVIVAL_CARD_TIPS	Trade cards of the same rank at ##4 for supplies; jokers count as any rank
+SO_SURVIVAL_CREDITS	Credits
+SO_SURVIVAL_CREDITS_MINUS	-&&1
+SO_SURVIVAL_CREDITS_PLUS	+&&1
+SO_SURVIVAL_DECK_EXCHANGE_HINT	Trade for support items at the marked location
+SO_SURVIVAL_DECK_HINT	[{+scores}]
+SO_SURVIVAL_DIALOG_TEXT_CHOPPER_1	^1Enemy Little Bird inbound.^7
+SO_SURVIVAL_DIALOG_TEXT_CHOPPER_2	^1Enemy attack helicopter in your vicinity.^7
+SO_SURVIVAL_DIALOG_TEXT_CHOPPER_3	^1Enemy helicopter is about to make a strafing run.^7
+SO_SURVIVAL_DIALOG_TEXT_CHOPPER_MANY_1	^1Intel shows multiple enemy rotary-wing aircraft in your airspace.^7
+SO_SURVIVAL_DIALOG_TEXT_CHOPPER_MANY_2	^1Enemy air support closing in from all directions.^7
+SO_SURVIVAL_DIALOG_TEXT_CHOPPER_MANY_3	^1Heads up, an enemy helicopter squadron is inbound.^7
+SO_SURVIVAL_DIALOG_TEXT_CLAYMORE_UPDATE_1	^1Be advised, enemy claymores near your position.^7
+SO_SURVIVAL_DIALOG_TEXT_CLAYMORE_UPDATE_2	^1Enemy has deployed claymores in your area of operations.^7
+SO_SURVIVAL_DIALOG_TEXT_CLAYMORE_UPDATE_3	^1Hostiles have planted claymores around you.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_ARMORED_1	^1Enemy has deployed elite riot units.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_ARMORED_2	^1Squad, intel shows an enemy stronghold near you.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_ARMORED_3	^1A large enemy force is moving on your position.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_CHEMICAL_1	^1Chemical agents detected in your area.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_CHEMICAL_2	^1Enemy is moving chemical agents near you.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_CHEMICAL_3	^1Squad, hostiles are carrying chemical bombs.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_CLAYMORE_1	^1Enemy is deploying tactical explosives. Watch your step.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_CLAYMORE_2	^1Be advised, the enemy is equipped with claymores.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_DOG_1	^1Thermal scan shows dogs in your area.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_DOG_2	^1Enemy attack dogs closing on your position.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_DOG_3	^1Enemy dogs nearby. Listen for them.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_DOG_SPLODE_1	^1Dogs strapped with explosives near you.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_DOG_SPLODE_2	^1Be advised, enemy dogs are carrying explosives.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_DOG_SPLODE_3	^1Squad, the enemy has strapped C4 to their dogs.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_GENERIC_1	^1Hostiles approaching your area of operations.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_GENERIC_2	^1Hostiles closing in from multiple directions.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_GENERIC_3	^1A large enemy force is moving to your position.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_JUGG_1	^1Enemy Juggernaut approaching. Get ready.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_JUGG_2	^1Enemy Juggernaut closing in. Heavy weapons recommended.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_JUGG_MANY_1	^1Enemy helicopters are dropping Juggernauts.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_JUGG_MANY_2	^1Be advised, multiple Juggernauts have been airdropped.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_JUGG_MANY_3	^1Enemy Juggernauts inbound by air. Stay mobile.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_MARTYRDOM_1	^1Suicide bombers. Keep your distance.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_MARTYRDOM_2	^1Reports of hostiles with C4 strapped to their chests.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_SNIPER_1	^1We have reports of enemy marksmen in your area.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_SNIPER_2	^1Enemy snipers deployed. Watch your surroundings.^7
+SO_SURVIVAL_DIALOG_TEXT_ENEMY_SNIPER_3	^1They brought in snipers. Keep your head down.^7
+SO_SURVIVAL_DIALOG_TEXT_MISSION_INTRO_1	Squad, your way out is cut off. Survive by any means necessary.
+SO_SURVIVAL_DIALOG_TEXT_MISSION_INTRO_2	Be advised, you are on your own now. Good hunting.^7
+SO_SURVIVAL_DIALOG_TEXT_MISSION_INTRO_3	^1Squad, an entire enemy force is closing on you.
+SO_SURVIVAL_ENEMIES_LEFT	&&1 enemies left
+SO_SURVIVAL_ENEMY_LEFT	&&1 enemy left
+SO_SURVIVAL_GAME_OVER	Game Over
+SO_SURVIVAL_HELI_TARGET_WARN	^1        Enemy aircraft inbound, take cover\n^2(aim with the right mouse button to shoot it down)
+SO_SURVIVAL_LAST_WAVE	Final Wave
+SO_SURVIVAL_LOW_AMMO_HINT	^2Out of ammo? Resupply and buy other items at^7 ##5^2!^7
+SO_SURVIVAL_NEXT_CP	Next care package:
+SO_SURVIVAL_NEXT_KILLSTREAK	Next killstreak:
+SO_SURVIVAL_NEXT_WAVE	Wave &&1 incoming
+SO_SURVIVAL_NUM_CARDS	&&1
+SO_SURVIVAL_NUM_CARDS_UNIT	 matching cards
+SO_SURVIVAL_PERFORMANCE_ACCURACY	Accuracy:
+SO_SURVIVAL_PERFORMANCE_BEST_SCORE	Best Score
+SO_SURVIVAL_PERFORMANCE_CREDIT_MINUS	-&&1
+SO_SURVIVAL_PERFORMANCE_CREDIT_PLUS	+&&1
+SO_SURVIVAL_PERFORMANCE_DAMAGETAKEN	Damage Taken:
+SO_SURVIVAL_PERFORMANCE_HEADSHOT	Headshots:
+SO_SURVIVAL_PERFORMANCE_KILLS	Kills:
+SO_SURVIVAL_PERFORMANCE_NEW_BEST_SCORE	New Best Score!
+SO_SURVIVAL_PERFORMANCE_PERCENT	&&1%
+SO_SURVIVAL_PERFORMANCE_POINT	&&1
+SO_SURVIVAL_PERFORMANCE_REWARD	Reward:
+SO_SURVIVAL_PERFORMANCE_TIME	Time:
+SO_SURVIVAL_PERFORMANCE_TOTAL_SCORE	Total Score
+SO_SURVIVAL_PERFORMANCE_WAVEBONUS	Wave Bonus:
+SO_SURVIVAL_PERFORMANCE_WAVE_SCORE	Wave Score
+SO_SURVIVAL_PERFORMANCE_WAVE_SCORE_VALUE	+&&1
+SO_SURVIVAL_READY_UP_WAIT	Waiting for other players
+SO_SURVIVAL_SPEND_CARDS	Spend cards at the kiosks for items and ammo
+SO_SURVIVAL_SURVIVAL_OBJECTIVE	Survive...
+SO_SURVIVAL_SURVIVED_TO_WAVE	Survived to wave &&1!
+SO_SURVIVAL_TITLE_ASSAULT	Next wave: Full Assault
+SO_SURVIVAL_TITLE_BLITZ	Next wave: Final Blitz
+SO_SURVIVAL_TITLE_EXPLOSIVE	Next wave: Explosives
+SO_SURVIVAL_TITLE_HEAVY	Next wave: Heavy Choppers
+SO_SURVIVAL_TURRET_CARDS	Hold ^2[{+activate}]^7 and spend two matching cards to use the turret
+SO_SURVIVAL_TURRET_COST	You need two matching cards to use the turret
+SO_SURVIVAL_WAVE_PERFORMANCE	Score - &&1
+SO_SURVIVAL_WAVE_PERFORMANCE_ACCURACY	Accuracy: &&1%
+SO_SURVIVAL_WAVE_PERFORMANCE_CAMPING	Camping time: &&1
+SO_SURVIVAL_WAVE_PERFORMANCE_DAMAGE	Damage taken: &&1
+SO_SURVIVAL_WAVE_PERFORMANCE_HEADSHOT	Headshots: &&1
+SO_SURVIVAL_WAVE_PERFORMANCE_TIME	Time: &&1
+SO_SURVIVAL_WAVE_SUCCESS_TITLE	Wave &&1 eliminated!
+SO_SURVIVAL_WAVE_TIME	Wave &&1
+SO_SURVIVAL_WAVE_TITLE	Enemies incoming!
+SO_SURVIVAL_WAVE_TITLE_PACK	Next wave: Mixed Pack

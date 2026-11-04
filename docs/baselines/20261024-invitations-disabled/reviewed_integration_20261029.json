@@ -1,0 +1,270 @@
+{
+  "before_commit": "27c0b61",
+  "integrated_main": "cd7149d",
+  "class_name": "codo.controllers.MatchController",
+  "artifacts": {
+    "MatchController.before-integration-20261029.abc.zlib": "f25b8f3eda1c96b22f56edeb9900d6bd7d133e6d242919ebccaa2ddaf763c8f8",
+    "MatchController.before-integration-20261029.as.zlib": "3b90f8471d13e16e7b852c13b3895124cd710a441bda94426b77ba006def54a0",
+    "MatchController.after-integration-20261029.abc.zlib": "49595ad8c010c33c5ffcab320af1d9bc56bd4982f7aebb7b4bf8f53daa484882",
+    "MatchController.after-integration-20261029.as.zlib": "4c5c034d49878e7d9574f37909e4d93e5c3e6043ca775e724dc4c8680d43591a"
+  },
+  "before_abc_sha256": "f25b8f3eda1c96b22f56edeb9900d6bd7d133e6d242919ebccaa2ddaf763c8f8",
+  "after_abc_sha256": "49595ad8c010c33c5ffcab320af1d9bc56bd4982f7aebb7b4bf8f53daa484882",
+  "protected_body_updates": {
+    "44": {
+      "method": "codo.controllers:MatchController/private/listPlayListNew",
+      "before_sha256": "d86c965722e7ee7b2cdd08a6d27f7eb3c9a7b0f46919b68030421352e9a5f0bc",
+      "after_sha256": "9f16ad21d28d9c83fd0b74a842f7cf406ffcdc88c3e705ccf918a30c5a670311"
+    },
+    "45": {
+      "method": "codo.controllers:MatchController/private/listPlayList",
+      "before_sha256": "d501261146ab44093b0f9a60a55ca7b31cdda8e50cb18ebd7e73da92835affcf",
+      "after_sha256": "a11631daf6977f5f6f84bea51bd26ba860bc17a4e8f6716724cb48796af64869"
+    },
+    "51": {
+      "method": "codo.controllers:MatchController/private/listRoomListFilterStatus",
+      "before_sha256": "99178bb3a2bba7d483a5c469f616a7cda43325f08ff0497f7333bfdd8b4a71cc",
+      "after_sha256": "1323e4cc55a4f3e56b88e70b258ea46712e1623de38786a7c455e22602219c9d"
+    },
+    "56": {
+      "method": "codo.controllers:MatchController/private/getMapCoopType",
+      "before_sha256": "1e9e0477582f2cf2650af03418f92da66f7a6628c740bb259ac1f5274b0eb0bf",
+      "after_sha256": "0c391d324141422f98e5c2b00530eabb1607747173cb95a08b577c9a48083bf8"
+    },
+    "57": {
+      "method": "codo.controllers:MatchController/private/getGameRulesByModeID",
+      "before_sha256": "8c74640c4e201ea9ac68942db7d9acb61fdd8c12edb12a8dbb058001d3f0d20d",
+      "after_sha256": "976a67031c31d9aed7f85685cca6e78e1c534d1606d364a39bfa056da6c3c160"
+    },
+    "58": {
+      "method": "codo.controllers:MatchController/private/getSpectatingByModeID",
+      "before_sha256": "8e5190b5675b2e012c52e4bf93a115dead52ddd963a686f0fd9b6f8734786742",
+      "after_sha256": "4d7c0524cc485cd9ead7cf970bc6e7660c0e14c2984bc15ffa5a927918f47fde"
+    },
+    "59": {
+      "method": "codo.controllers:MatchController/private/getGamePlayOptions",
+      "before_sha256": "e06138934991e070ee6fd3e6c744966341213cfa267888a878ec7af08b5c0ab7",
+      "after_sha256": "2a43693fd7e4c012240226d62c0e5bd851e5c2483391a99c31ed2cbab7001d26"
+    },
+    "60": {
+      "method": "codo.controllers:MatchController/private/getMapObj",
+      "before_sha256": "f56a685996f4cba4d292f87bfd7aaa7a31e1caeea37f0f02441b35736c218ebf",
+      "after_sha256": "175083896af59ecfc4a17a3582b416fd0f89f085882ad6946d7c2a928e9d2fd9"
+    },
+    "61": {
+      "method": "codo.controllers:MatchController/private/getMatchModeObj",
+      "before_sha256": "2cac66a84b006f7b087a4acde6a87fbce783306bc56070db95e2d9123e2fa919",
+      "after_sha256": "e984c7c2fbc142227b9c48aff330373096d61751ec97d7082e46c1a6065fe5ce"
+    },
+    "62": {
+      "method": "codo.controllers:MatchController/private/getPlayListObj",
+      "before_sha256": "3f4ab4a710117697313ee0000a7328468ead12a1b54226370facc1816e4e9f48",
+      "after_sha256": "8baaba9ce652ad588a573ad5ccdeb53461fe6eea7bf94f6291cf57a44bfd28ea"
+    },
+    "63": {
+      "method": "codo.controllers:MatchController/private/getCTBonus",
+      "before_sha256": "97c9d5cdc17b8e838dd48afd2f06817ffdc26e7a1be246ab68451bfc90708a41",
+      "after_sha256": "6b60e5857cee7f7841a8d11e5308ff43d3d2b89fbe16ee65445f902aaff6e523"
+    },
+    "64": {
+      "method": "codo.controllers:MatchController/private/getMPBonus",
+      "before_sha256": "de8796ddca1f780cd14f4599db2c6a8207a2c9b61b6ebdcbf0918b9ff76f4382",
+      "after_sha256": "5abd0cfa5b578459fdb03f371d738285f6ad444694e790e34291a243bd047311"
+    },
+    "65": {
+      "method": "codo.controllers:MatchController/private/getXPLeagueFactor",
+      "before_sha256": "9afbb22c8f795fac10b273f326fc51a5c2504735033aab44dbf19bbbd77ea1e2",
+      "after_sha256": "5df3d94b4b0ffdd0256b1fcf21a715e4e7b16ac96262046e3677290525fcc4b7"
+    },
+    "66": {
+      "method": "codo.controllers:MatchController/private/getXPLeagueFactors",
+      "before_sha256": "1f5a44fb39970b2c3a5954cd9277879bf8313022da0e8f04d413a7f26de8d162",
+      "after_sha256": "b528d3b93799363c3115053adb8e24d576060338cf079b817bc56d43a9d952d6"
+    },
+    "67": {
+      "method": "codo.controllers:MatchController/private/getGPLeagueFactor",
+      "before_sha256": "3e0a5650091697e9fee13bb488f189f774603018f13f01c2c034b7dac5e282ab",
+      "after_sha256": "157625f336cd9c123d71f6f20ff6ce2bb6670a1b8c2ffb34de087cf5966dac53"
+    },
+    "68": {
+      "method": "codo.controllers:MatchController/private/getGPLeagueFactors",
+      "before_sha256": "71c517fb6d43409b896e1a4cf1f58f249bb4db7a8aebf23bb34ddcfa506dea38",
+      "after_sha256": "56d425200ea087baebef656513bd6546b4be58ae8299712ccb161e3cde2238f7"
+    },
+    "69": {
+      "method": "codo.controllers:MatchController/private/getLeagueName",
+      "before_sha256": "1cf0a7d3f7e0b69219da77939b30d1dd2c1b7c2478cd2d49d59c3f21c81a44be",
+      "after_sha256": "f044aff489e0efc7c6ccf1e8efa3bdf8f071c0217793daff1d11954624561cec"
+    },
+    "70": {
+      "method": "codo.controllers:MatchController/private/getDelayToShowButton",
+      "before_sha256": "84465c1fd6a8c1cfa3ced02163117ef13806c748910d0e0542579476217294e1",
+      "after_sha256": "e765080401e0924363be6fb300664eaca77ab306fb3a07aa63a84656bf0d6f7b"
+    },
+    "72": {
+      "method": "codo.controllers:MatchController/onRoomJoined",
+      "before_sha256": "5b272e432c0c9cbdb28ffc2f8e1323343a2efe4d9e988546156384a72e2e6754",
+      "after_sha256": "1c82e2ab5f78b6e576aeff687d885252727e34aca1fb8656a92f054f5b9190ef"
+    },
+    "73": {
+      "method": "codo.controllers:MatchController/onRoomCreated",
+      "before_sha256": "9ae95510a4dc44f59559dd3d654293a6cbab74ca0a963cb225ebe6ca26c0e1ce",
+      "after_sha256": "d0cd3b1be3fbd15cb0b4ff94b4f7ff92f78f42a04bfdf5b912b1fc310eb150da"
+    },
+    "75": {
+      "method": "codo.controllers:MatchController/private/bind_rankedMatchInProgressInRoom",
+      "before_sha256": "6082fcf071557d4d2cd5b6a6ba9c748abeea9000b902989a6f045fa21026e134",
+      "after_sha256": "eab8c7e415e43b0219bbedf0255928f5d7cd79ea8eb4626fb6935868fb9c871d"
+    },
+    "76": {
+      "method": "codo.controllers:MatchController/private/bind_startMatchCountingDown",
+      "before_sha256": "3b9a529cd18d1ee082e829530d20949440b97446d3f98c8350a06a03a6ba9d8c",
+      "after_sha256": "ea91e278ba2a14a2b3cbf5f08ba28c3148dd1d4a12c2b23548cd48d4bbb3760a"
+    },
+    "77": {
+      "method": "codo.controllers:MatchController/private/bind_startMatchComplete",
+      "before_sha256": "fdaf80d3fb7cd14b1f204f04d9867c814b6824f418ae43ad5ab888a4246a90b0",
+      "after_sha256": "2bbfdb8192d9d0e2aea4e4a909d82807696f31c0553551ca5782ac3a4fd19a27"
+    },
+    "78": {
+      "method": "codo.controllers:MatchController/private/bind_roomListDP",
+      "before_sha256": "0b7958065f332a99ad002a3093812946f0cf44156e7d822055d8ccc8281c4e04",
+      "after_sha256": "f7f641fe761dc4359677d9f704c476a674112119bb8e558a9e565306d04baa7c"
+    },
+    "79": {
+      "method": "codo.controllers:MatchController/private/bind_quickMatchReady",
+      "before_sha256": "99a1a89254a6a52698293ead805b0175e687f3cbd797d5ebf6a3d8ae762ac01c",
+      "after_sha256": "923c98b723eb0837d31c56f87ddf197395240893a1d88dde530feb19ec565a95"
+    },
+    "86": {
+      "method": "codo.controllers:MatchController/private/startRankedMatchGoGameTimer",
+      "before_sha256": "fbfc6b9514894a8cb3fa223346a81690893d41860613b11e168422e135f18189",
+      "after_sha256": "9777871d555666523e6d00f02734eeb0789df10807e374615a8454e0bd4be5b4"
+    },
+    "91": {
+      "method": "codo.controllers:MatchController/private/leaveRoom",
+      "before_sha256": "b931f6beaa026c7cc349b0f5e8f1ac6bac13bd6c2d9049345021aaeb257f0eac",
+      "after_sha256": "697246e308712ecaeadc508de6067f908d608d3bf4f90b7874819f8a6da74f3d"
+    },
+    "97": {
+      "method": "codo.controllers:MatchController/private/onRankedMatchPassedTimeTimerHandle",
+      "before_sha256": "fcefd8e1b6c5b9f45c2ef1fc9d6663d99231d64b92c6f85978c13bc22a2179e8",
+      "after_sha256": "9e722c583d4256c93ce6a734dd11d3e31d56469db4cabbca863cb5a2a4768cde"
+    },
+    "99": {
+      "method": "codo.controllers:MatchController/private/onRankedMatchGoRoomTimerCompleteHandle",
+      "before_sha256": "371acb76031b073a2ef8b8829f4f080f1929b03aaab4262247d5a90c71df55bd",
+      "after_sha256": "73ed5db95be60b245d4d1ac52ea2e9a57ec98f47962bb0a1a8bc98782c85c92f"
+    },
+    "100": {
+      "method": "codo.controllers:MatchController/private/onRankedMatchGoGameTimerHandle",
+      "before_sha256": "362c9d97d24411199745648fd2dedbc5ad5f16107b93cce282cd4147fc2d2d95",
+      "after_sha256": "fc2bbc3c2e755c0f77f8735ab474bc6b28780f9d392b3c86946cacdff45adf00"
+    },
+    "101": {
+      "method": "codo.controllers:MatchController/private/onRankedMatchGoGameTimerCompleteHandle",
+      "before_sha256": "819ae087689f3e1b4d1f944225c13843b932101c6ce5673b68de13eb5523f989",
+      "after_sha256": "5a3ec4d4396f83793413a4276a3086c299101dc9469b3f607fde60fe6972b39b"
+    },
+    "104": {
+      "method": "codo.controllers:MatchController/private/onLeaveRoomHandle",
+      "before_sha256": "b78fc2065499d4ae95971f16c3fac63ec6b00e20825386d2622ae2f58cc8d5ec",
+      "after_sha256": "382c39f0d272ad3ecf8635e32cd5203a82781c7eeae607c5f4c55b27412fd47f"
+    },
+    "105": {
+      "method": "codo.controllers:MatchController/private/onRankedMatchCanceled",
+      "before_sha256": "0bea42b627423ccef00452ca86edd079f27316105485954a79506e334d7a424f",
+      "after_sha256": "c0d16cc732362d17507f98b05a75e41ac589b7bc657aa0926a6ea6c75ca3e21b"
+    },
+    "106": {
+      "method": "codo.controllers:MatchController/private/onRoomLeftHandle",
+      "before_sha256": "d4299c8243527c5bcb080725b8239db05588f1a01db77113205f201d291ffd39",
+      "after_sha256": "e332a384f90928eeb369800505102e20362572805b1eca3f5ad76f40db708223"
+    },
+    "109": {
+      "method": "codo.controllers:MatchController/private/onPartyEveryoneIsReadyHandle",
+      "before_sha256": "9a80a27f182c811acc1ce488d71991c28522498213a817af87f270efee876e35",
+      "after_sha256": "6bf8ccdf0c17b36904674caa3f51e9a0d7719488d21bb08ccb9421857a20d837"
+    },
+    "113": {
+      "method": "codo.controllers:MatchController/private/onQuickMatchHandle",
+      "before_sha256": "41f1464447b8076009cd81c3fe5871f89fb250f940c2febb8f4af951a5731847",
+      "after_sha256": "9371e90ac06ea4f9c0d7de273fa0a6ee3f3a790cfc0315942b9b21ea64130fc4"
+    },
+    "114": {
+      "method": "codo.controllers:MatchController/private/onQuickMatchMpHandle",
+      "before_sha256": "876a483e4a366fe4934a14f451fdbd5c188718871567ea24c55acb4897eb9ec2",
+      "after_sha256": "1db114334b8af45a830d2df72b2cf801e58ed788453bbfe751c36ccd1ae21078"
+    },
+    "118": {
+      "method": "codo.controllers:MatchController/private/onBackToRoomHandle",
+      "before_sha256": "99bdf9bbab46f24074e1ade14813e927dfed73e1dec078193f0e2f2c5fd2553b",
+      "after_sha256": "caebfde9508a2f86bce693915153058fc94fbeae4157e506aa718bd7055b0096"
+    },
+    "119": {
+      "method": "codo.controllers:MatchController/private/onShowLobbySummaryTimerComplete",
+      "before_sha256": "ffe8173bdbc52f69a5d50807ad2b0f125db173ef0db4c0c3078534b9a6f68119",
+      "after_sha256": "64c0834530e7a617618b0791545b12cc549f19d214b09653265f696436ac42b2"
+    },
+    "120": {
+      "method": "codo.controllers:MatchController/private/clearEOGDvars",
+      "before_sha256": "18a78dcf345f0a0537a5ed146f15eff4d2b5fb085e287d63f29338d75604e531",
+      "after_sha256": "95f40603913951517a2ff5bd075f6428570fd8cf9796bb1242ccad4d3a99bd5f"
+    },
+    "121": {
+      "method": "codo.controllers:MatchController/private/onOnlyRoomInfoHandle",
+      "before_sha256": "fd926df773942573420c8191ba333075d5813c9f75027e6d5da3d4eb13b78524",
+      "after_sha256": "1337ecc510b57c29e8db8e269295056289a7c84ed32a085f2c56ec4744817143"
+    },
+    "129": {
+      "method": "codo.controllers:MatchController/private/onListRoomHandle",
+      "before_sha256": "a9cb7da77aade074baf70570df258babb50566bb3b2f935e8ab81e011585d43e",
+      "after_sha256": "2d2d663d1c7488828e7cca7f07b9cdbbfb62d2108c1b1c140eecf3df9f11f947"
+    },
+    "133": {
+      "method": "codo.controllers:MatchController/private/onCoopTutorialStarted",
+      "before_sha256": "d0bb381b7975dc5023984e81e009d6664e9bf9cac851eaae3758182b78734463",
+      "after_sha256": "1f3fd1088a1434a14bd4de40591fd5e9917bf1ee03a5e1ad750ed97ac11d0d50"
+    },
+    "137": {
+      "method": "codo.controllers:MatchController/private/dispatchRooms",
+      "before_sha256": "1e16db27e2a0be7506582510dfd875f7743180f5c768f40dc396a09a0d7bcf6a",
+      "after_sha256": "24bfe4a975d5feb4d9314847d04c8ba7495583e35da2f318446804d376bb6b78"
+    },
+    "138": {
+      "method": "codo.controllers:MatchController/private/customizeSort",
+      "before_sha256": "ebc67a215728ec52b09f44790c5dc4f4c4342fd19becedbed7d4dcf7fa2b4dba",
+      "after_sha256": "589d95c885d31150d0e9cc8108157469b036c88cf997284652e213f94bd1a3c0"
+    },
+    "144": {
+      "method": "codo.controllers:MatchController/private/onChangeRoomInfoHandle",
+      "before_sha256": "bb0dcc65ee01f66b0f77fc850a13ed57830da69d5dd461464d167ab6120039b3",
+      "after_sha256": "a55e20d4d927ae07a07dce4550e93ec05da01e8876eaa0fb8cf9bd56c6addfe1"
+    },
+    "145": {
+      "method": "codo.controllers:MatchController/private/goRoom",
+      "before_sha256": "9b870fdf9c5f002d9219f2502c3a391dfd422831ec792f28660cd290f3e20eb0",
+      "after_sha256": "e6ea38a543ac91cdd073ae0095adef914925ad406df57f34ad2062f00ef82830"
+    },
+    "147": {
+      "method": "codo.controllers:MatchController/private/dispatchRankedMatchStatus",
+      "before_sha256": "ede691695d31409a6f3d43eb7184e536ed7cd66d420a515f63386a4b6c08715b",
+      "after_sha256": "daa15689e4b421108f44a9cbae3568f5495215d74eda418eef7fa2db2653ab71"
+    },
+    "149": {
+      "method": "codo.controllers:MatchController/private/checkPartyCanPlayPlaylist",
+      "before_sha256": "2e530f20a1646fd5bb19b0d73eacbf74994d6c46196048436e314f85ba7d1864",
+      "after_sha256": "1b8620d9aaaaee552b7e823ff95a2819bda987bd9b7d448fdc8dbc0eda2a3c02"
+    },
+    "153": {
+      "method": "codo.controllers:MatchController/private/checkInPartySize",
+      "before_sha256": "ca15e77b45087db6bcf2122ff2a6bece125f2456949e19262cd74574af77ac8e",
+      "after_sha256": "15eb9ca492924d519e9f94a660484dda485a183521c5b926b5acc77e4a227bc1"
+    },
+    "157": {
+      "method": "codo.controllers:MatchController/cppRefreshPlaylistPlayerCount",
+      "before_sha256": "59ded6f13197c6f02dd254714b5cc3b8972f7c47dbb2b7b5523633e318dea7e1",
+      "after_sha256": "603dbc604089746c905f79f2571caf98e3de07b6055bfc56012b519c9513eb23"
+    }
+  }
+}

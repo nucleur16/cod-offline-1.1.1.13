@@ -17,6 +17,7 @@ package codo.controllers
    import flash.events.TimerEvent;
    import flash.filters.GlowFilter;
    import flash.utils.Timer;
+   import flash.utils.getTimer;
    
    public class LobbyController extends BaseController
    {
@@ -29,6 +30,15 @@ package codo.controllers
       private var _trainingPlaylist:int = -1;
 
       private var _roomMembers:Array = [];
+
+      private var _campaignHostTimer:Timer;
+      private var _campaignHostMap:String = "";
+      private var _campaignHostSelectedMap:String = "";
+      private var _campaignHostContext:String = "";
+      private var _campaignHostRequestedMap:String = "";
+      private var _campaignHostStartPara:Object;
+      private var _campaignHostWaitStart:int = 0;
+      private var _localHostPendingAction:String = "";
       
       private var _dedicatedServers:Array = [];
       
@@ -100,13 +110,13 @@ package codo.controllers
          {
             return false;
          }
-         var isRoomPage:Boolean = this.getSyncDP(SyncDataID.CURRENT_PAGE_ID) == PageID.INROOM;
+         var isRoomPage:Boolean = super.getSyncDP(SyncDataID.CURRENT_PAGE_ID) == PageID.INROOM;
          var isBlur:Boolean = CFunctionContainerCommon.Dvar_GetFloat("r_blur") > 0;
-         var canClose:Boolean = this.getSyncDP(SyncDataID.CAN_CLOSE_LOBBY_CHARACTER_VIEW);
-         var isCyborg:Boolean = this.getSyncDP(SyncDataID.IS_CYBORG);
+         var canClose:Boolean = super.getSyncDP(SyncDataID.CAN_CLOSE_LOBBY_CHARACTER_VIEW);
+         var isCyborg:Boolean = super.getSyncDP(SyncDataID.IS_CYBORG);
          var isCoop:Boolean = this._roomObj.currentMatchMode.id == "coop";
          var clicked:Boolean = false;
-         var stage:DisplayObjectContainer = this.getSyncDP(SyncDataID.GET_STAGE);
+         var stage:DisplayObjectContainer = super.getSyncDP(SyncDataID.GET_STAGE);
          if(stage != null)
          {
             this._stageMouseX = stage.mouseX < 0 || stage.mouseY < 0 ? xPos : stage.mouseX;
@@ -130,9 +140,9 @@ package codo.controllers
          {
             return true;
          }
-         var hasPopup:Boolean = this.getSyncDP(SyncDataID.HAS_POPUP);
-         var hasSystemMsg:Boolean = this.getSyncDP(SyncDataID.IS_SYSTEM_MSG_SHOWING);
-         var passToView:Boolean = (selected || this.getSyncDP(SyncDataID.CAN_CLOSE_LOBBY_CHARACTER_VIEW) || forceHide) && !hasPopup && !hasSystemMsg;
+         var hasPopup:Boolean = super.getSyncDP(SyncDataID.HAS_POPUP);
+         var hasSystemMsg:Boolean = super.getSyncDP(SyncDataID.IS_SYSTEM_MSG_SHOWING);
+         var passToView:Boolean = (selected || super.getSyncDP(SyncDataID.CAN_CLOSE_LOBBY_CHARACTER_VIEW) || forceHide) && !hasPopup && !hasSystemMsg;
          if(passToView)
          {
             Logger.print("LobbyController:::cppSelectCharacter character/selected/xPos/yPos: " + character + "/" + selected + "/" + xPos + "/" + yPos);
@@ -231,7 +241,7 @@ package codo.controllers
                "flee":stats.matchResult[3]
             };
             roomMemberObj.careerStats.currentLevelInfo.currentLevel = roomMemberObj.level;
-            roomMemberObj.careerStats.currentLevelInfo.currentLevelName = this.getSyncDP(SyncDataID.LEVEL_NAME,[roomMemberObj.level]);
+            roomMemberObj.careerStats.currentLevelInfo.currentLevelName = super.getSyncDP(SyncDataID.LEVEL_NAME,[roomMemberObj.level]);
             roomMemberObj.careerStats.customStats = [{
                "label":LocalizationCareer.CAREER_TIMEPLAYED,
                "value":TimeUtil.timeToString(stats.timePlayed)
@@ -296,13 +306,13 @@ package codo.controllers
                var gateLocalOwner:String = gateLocalHost ? String(CFunctionContainerCommon.GetPlayerID()) : "";
                for each(var gateCandidate in this._roomMembers)
                {
-                  if(gateCandidate != null && gateCandidate["_localQuickNativeRoleKnown"] == true && gateCandidate["_localQuickNativeMemberID"] == String(gateCandidate.id) && (gateLocalHost ? String(gateCandidate.id) == gateLocalOwner && Boolean(this.getSyncDP(SyncDataID.IS_ME,[gateCandidate])) : typeof gateCandidate.realName == "string" && gateCandidate.realName.length > 0 && gateCandidate.realName == String(this._roomObj.name)))
+                  if(gateCandidate != null && gateCandidate["_localQuickNativeRoleKnown"] == true && gateCandidate["_localQuickNativeMemberID"] == String(gateCandidate.id) && (gateLocalHost ? String(gateCandidate.id) == gateLocalOwner && Boolean(super.getSyncDP(SyncDataID.IS_ME,[gateCandidate])) : typeof gateCandidate.realName == "string" && gateCandidate.realName.length > 0 && gateCandidate.realName == String(this._roomObj.name)))
                   {
                      gateHost = gateCandidate;
                      gateHostCount++;
                   }
                }
-               if(gateHostCount != 1 || Boolean(this.getSyncDP(SyncDataID.IS_ME,[gateHost])) != Boolean(CFunctionContainer.IsRoomHost()))
+               if(gateHostCount != 1 || Boolean(super.getSyncDP(SyncDataID.IS_ME,[gateHost])) != Boolean(CFunctionContainer.IsRoomHost()))
                {
                   break;
                }
@@ -342,13 +352,13 @@ package codo.controllers
                var canonicalLocalOwner:String = canonicalLocalHost ? String(CFunctionContainerCommon.GetPlayerID()) : "";
                for each(var candidate in this._roomMembers)
                {
-                  if(candidate != null && candidate["_localQuickNativeRoleKnown"] == true && candidate["_localQuickNativeMemberID"] == String(candidate.id) && (canonicalLocalHost ? String(candidate.id) == canonicalLocalOwner && Boolean(this.getSyncDP(SyncDataID.IS_ME,[candidate])) : typeof candidate.realName == "string" && candidate.realName.length > 0 && candidate.realName == String(this._roomObj.name)))
+                  if(candidate != null && candidate["_localQuickNativeRoleKnown"] == true && candidate["_localQuickNativeMemberID"] == String(candidate.id) && (canonicalLocalHost ? String(candidate.id) == canonicalLocalOwner && Boolean(super.getSyncDP(SyncDataID.IS_ME,[candidate])) : typeof candidate.realName == "string" && candidate.realName.length > 0 && candidate.realName == String(this._roomObj.name)))
                   {
                      canonicalHost = candidate;
                      canonicalHostCount++;
                   }
                }
-               if(canonicalHostCount == 1 && String(canonicalHost.id) == member && Boolean(this.getSyncDP(SyncDataID.IS_ME,[canonicalHost])) == Boolean(CFunctionContainer.IsRoomHost()))
+               if(canonicalHostCount == 1 && String(canonicalHost.id) == member && Boolean(super.getSyncDP(SyncDataID.IS_ME,[canonicalHost])) == Boolean(CFunctionContainer.IsRoomHost()))
                {
                   this._roomObj["_localQuickHostFalseSeen"] = true;
                   // Keep the actual host false edge through a delayed results
@@ -362,7 +372,7 @@ package codo.controllers
                   }
                }
             }
-            if(this.getSyncDP(SyncDataID.IS_ME,[roomMemberObj]))
+            if(super.getSyncDP(SyncDataID.IS_ME,[roomMemberObj]))
             {
                this._roomObj.forces.isReady = ready;
             }
@@ -434,6 +444,25 @@ package codo.controllers
             this.showMsg("This map supports Search & Destroy only.",MsgBtnCount.ONE);
             return;
          }
+         if(!readyToSet)
+         {
+            this.cancelCampaignHostStart();
+         }
+         else if(!this._roomObj.isPlayList && this.isRoomHost() && (this.isLocalCampaignRoom() || CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") == "1"))
+         {
+            if(!this.isLocalHostRoom())
+            {
+               this.showMsg("Localhost hosting requires a valid selected room map and game type.",MsgBtnCount.ONE);
+               return;
+            }
+            this.beginCampaignLocalHost(null,true,"ready");
+            return;
+         }
+         this.applyRoomReadyState(readyToSet);
+      }
+
+      private function applyRoomReadyState(readyToSet:Boolean) : void
+      {
          if(this.isRoomHost())
          {
             this._roomObj.forces.enableChangeMapBtn = !this.isManagedTrainingRoom() && !this._roomObj.isPlayList && !readyToSet;
@@ -536,6 +565,8 @@ package codo.controllers
       
       private function bind_onRoomLeft(cRes:Object) : void
       {
+         this.cancelCampaignHostStart();
+         this._campaignHostRequestedMap = "";
          var directSurvival:Boolean = CFunctionContainerCommon.Dvar_GetString("codol_survival_direct_home") == "1";
          CFunctionContainerCommon.setdvar("codol_survival_direct_home","0");
          this.resetRoom();
@@ -546,10 +577,10 @@ package codo.controllers
          MatchService.getInstance().isInRoom = false;
          this.broadcast(BCEvent.EVT_ON_ROOM_LEFT);
          this.broadcast(BCEvent.LOADOUT_TRANSITION);
-         var currentPage:String = this.getSyncDP(SyncDataID.CURRENT_PAGE_ID);
+         var currentPage:String = super.getSyncDP(SyncDataID.CURRENT_PAGE_ID);
          if(currentPage == null || currentPage == PageID.INROOM)
          {
-            this.gotoPage(directSurvival ? CodoPageViewDB.PAGE_MAIN_PLAY_MODE_SELECTION_NEW : (this.getSyncDP(SyncDataID.CURRENT_MATCH_TYPE) == QuickMatchType.COOP ? CodoPageViewDB.PAGE_MAIN_MATCH_QUICK_COOP : CodoPageViewDB.PAGE_MAIN_HOME));
+            this.gotoPage(directSurvival ? CodoPageViewDB.PAGE_MAIN_PLAY_MODE_SELECTION_NEW : (super.getSyncDP(SyncDataID.CURRENT_MATCH_TYPE) == QuickMatchType.COOP ? CodoPageViewDB.PAGE_MAIN_MATCH_QUICK_COOP : CodoPageViewDB.PAGE_MAIN_HOME));
          }
       }
       
@@ -587,7 +618,7 @@ package codo.controllers
          var max:uint = this._roomObj.currentMaxPlayers;
          var min:uint = this._roomObj.currentMinPlayers;
          var current:uint = this._roomMembers.length;
-         if(this.getSyncDP(SyncDataID.IS_SHIP_BUILD))
+         if(super.getSyncDP(SyncDataID.IS_SHIP_BUILD))
          {
             msg = current < min ? LocalizationRoom.ERROR_ROOM_NOT_ENOUGH : (current > max ? LocalizationRoom.ERROR_ROOM_TOO_MANY : "");
             if(msg.length > 0)
@@ -596,7 +627,111 @@ package codo.controllers
                return;
             }
          }
+         if(!this._roomObj.isPlayList && this.isRoomHost() && (this.isLocalCampaignRoom() || CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") == "1"))
+         {
+            if(!this.isLocalHostRoom())
+            {
+               this.showMsg("Localhost hosting requires a valid selected room map and game type.",MsgBtnCount.ONE);
+               return;
+            }
+            this.beginCampaignLocalHost(cEvt.myPara,true);
+            return;
+         }
          this.request(AsyncTaskID.START_MATCH,cEvt.myPara);
+      }
+
+      private function isLocalCampaignRoom() : Boolean
+      {
+         return ScaleformUtil.isScaleform && this.isRoomHost() && this._roomObj != null && !this._roomObj.isPlayList && this._roomObj.mapType == MapType.COOP && this._roomObj.currentMatchMode.id == "coop" && this.localHostCategory() == "coop" && /^[a-z][a-z0-9_]{0,63}$/.test(this._roomObj.currentMap.id);
+      }
+
+      private function localHostCategory() : String
+      {
+         var map:String = this._roomObj.currentMap.id;
+         var mode:String = this._roomObj.currentMatchMode.id;
+         if(mode == "survival" || map.indexOf("coop_survival_") == 0) return "survival";
+         if(mode == "zm" || map.indexOf("zm_") == 0) return "zm";
+         if(map.indexOf("coop_") == 0) return "coop";
+         return "mp";
+      }
+
+      private function localHostGameType() : String
+      {
+         var category:String = this.localHostCategory();
+         return category == "survival" || category == "zm" ? category : this._roomObj.currentMatchMode.id;
+      }
+
+      private function isLocalHostRoom() : Boolean
+      {
+         return ScaleformUtil.isScaleform && this.isRoomHost() && this._roomObj != null && !this._roomObj.isPlayList && /^[a-z][a-z0-9_]{0,63}$/.test(this._roomObj.currentMap.id) && /^[a-z][a-z0-9_]{0,31}$/.test(this.localHostGameType());
+      }
+
+      private function cancelCampaignHostStart() : void
+      {
+         if(this._campaignHostTimer != null)
+         {
+            this._campaignHostTimer.stop();
+         }
+         this._campaignHostMap = "";
+         this._campaignHostSelectedMap = "";
+         this._campaignHostContext = "";
+         this._campaignHostStartPara = null;
+         this._localHostPendingAction = "";
+      }
+
+      private function beginCampaignLocalHost(startPara:Object, waitForStart:Boolean, action:String = "start") : void
+      {
+         var selectedMission:String = this._roomObj.currentMap.id;
+         if(!waitForStart && this._campaignHostRequestedMap == selectedMission)
+         {
+            return;
+         }
+         this._campaignHostRequestedMap = selectedMission;
+         // Keep the actual coop mission/session spelling; native hosting resolves its MP level.
+         CFunctionContainerCommon.execnow("p2p_room " + selectedMission + " " + this.localHostGameType() + " " + this.localHostCategory());
+         if(this.isLocalCampaignRoom()) CFunctionContainerCommon.execnow("p2p_localhost 1");
+         if(!waitForStart)
+         {
+            return;
+         }
+         this._campaignHostSelectedMap = selectedMission;
+         this._campaignHostContext = this.localHostGameType() + " " + this.localHostCategory();
+         this._campaignHostMap = selectedMission.indexOf("coop_survival_") == 0 ? selectedMission.substr(14) : selectedMission;
+         this._campaignHostStartPara = startPara;
+         this._localHostPendingAction = action;
+         this._campaignHostWaitStart = getTimer();
+         if(this._campaignHostTimer == null)
+         {
+            this._campaignHostTimer = new Timer(250);
+            this._campaignHostTimer.addEventListener(TimerEvent.TIMER,this.onCampaignHostReady);
+         }
+         this._campaignHostTimer.start();
+      }
+
+      private function onCampaignHostReady(evt:TimerEvent) : void
+      {
+         if(!this.isLocalHostRoom() || this._roomObj.currentMap.id != this._campaignHostSelectedMap || this.isLeavingRoom() || this.localHostGameType() + " " + this.localHostCategory() != this._campaignHostContext || CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") != "1")
+         {
+            this.cancelCampaignHostStart();
+            return;
+         }
+         var nativeMap:String = CFunctionContainerCommon.Dvar_GetString("ui_p2p_map");
+         var nativeState:String = CFunctionContainerCommon.Dvar_GetString("ui_p2p_state");
+         if(CFunctionContainerCommon.Dvar_GetString("ui_p2p_ready") == "1" && nativeMap == this._campaignHostMap)
+         {
+            var startPara:Object = this._campaignHostStartPara;
+            var action:String = this._localHostPendingAction;
+            this.cancelCampaignHostStart();
+            if(action == "ready") this.applyRoomReadyState(true);
+            else this.request(AsyncTaskID.START_MATCH,startPara);
+            return;
+         }
+         var nativeError:String = CFunctionContainerCommon.Dvar_GetString("ui_p2p_error");
+         if(nativeState == "failed" || nativeError.length > 0 && nativeError != "Waiting to publish the local host route." || getTimer() - this._campaignHostWaitStart >= 180000)
+         {
+            this.cancelCampaignHostStart();
+            this.showMsg("Localhost hosting failed: " + (nativeError.length > 0 ? nativeError : "the selected mission server did not become ready within 180 seconds. Please try again."),MsgBtnCount.ONE);
+         }
       }
       
       private function onChangeTeamHandle(cEvt:ParaEvent) : void
@@ -646,7 +781,7 @@ package codo.controllers
             changedInfo.minPlayer = int(mode == "coop" || mode == "zm" ? cEvt.myPara.data.minPlayer : this._roomObj.currentMinPlayers);
             changedInfo.maxPlayer = int(mode == "coop" || mode == "zm" ? cEvt.myPara.data.maxPlayer : this._roomObj.currentMaxPlayers);
             isAvailableLevel = false;
-            levels = this.getSyncDP(SyncDataID.LIST_DIFFICULTY,[{"id":changedInfo.map}]);
+            levels = super.getSyncDP(SyncDataID.LIST_DIFFICULTY,[{"id":changedInfo.map}]);
             i = 0;
             while(i < levels.length)
             {
@@ -745,7 +880,7 @@ package codo.controllers
       private function broadcastAvatarRefreshInTeam() : void
       {
          var faction:uint = Common.LOADOUT_TYPE_TF;
-         if(this.getSyncDP(SyncDataID.IS_CYBORG))
+         if(super.getSyncDP(SyncDataID.IS_CYBORG))
          {
             faction = Common.LOADOUT_TYPE_ZM;
          }
@@ -851,7 +986,7 @@ package codo.controllers
             this._roomObj.currentMap.imageURL = obj.currentMap.imageURL || "";
             this._roomObj.currentMatchMode.name = obj.currentMatchMode.name || "";
             this._roomObj.currentMatchMode.description = obj.currentMatchMode.description || "";
-            this._roomObj.mapType = this.getSyncDP(SyncDataID.GET_MAP_TYPE,[this._roomObj.currentMap.id]);
+            this._roomObj.mapType = super.getSyncDP(SyncDataID.GET_MAP_TYPE,[this._roomObj.currentMap.id]);
          }
          var trainingKey:String = "v1|" + String(obj.index) + "|" + String(obj.name) + "|";
          var trainingContext:String = CFunctionContainerCommon.Dvar_GetString("codol_training_room_context");
@@ -878,6 +1013,10 @@ package codo.controllers
             this.isManagedTrainingRoom() ? trainingKey + String(this._trainingPlaylist) : "");
          this._roomObj["_managedTrainingPlaylist"] = this.isManagedTrainingRoom() ? this._trainingPlaylist : -1;
          this.broadcast(BCEvent.ROOM_INFO_ONLY,this._roomObj);
+         if(this.isLocalCampaignRoom())
+         {
+            this.beginCampaignLocalHost(null,false);
+         }
       }
       
       private function initRoomMembers(members:Array) : void
@@ -890,7 +1029,7 @@ package codo.controllers
          var k:int = 0;
          if(ScaleformUtil.isScaleform)
          {
-            isRankedMatch = this.getSyncDP(SyncDataID.IS_IN_RANKED_MATCH);
+            isRankedMatch = super.getSyncDP(SyncDataID.IS_IN_RANKED_MATCH);
             oldRoomMembers = this._roomMembers.concat();
             this._roomMembers.splice(0);
             i = 0;
@@ -926,8 +1065,8 @@ package codo.controllers
                   roomMemberObj.isReady = false;
                }
                roomMemberObj.isOnline = true;
-               roomMemberObj.isInMyParty = this.getSyncDP(SyncDataID.IS_IN_MY_PARTY,[roomMemberObj]);
-               roomMemberObj.isMe = this.getSyncDP(SyncDataID.IS_ME,[roomMemberObj]);
+               roomMemberObj.isInMyParty = super.getSyncDP(SyncDataID.IS_IN_MY_PARTY,[roomMemberObj]);
+               roomMemberObj.isMe = super.getSyncDP(SyncDataID.IS_ME,[roomMemberObj]);
                if(roomMemberObj.isMe)
                {
                   this.refreshMyAvatar(roomMemberObj);
@@ -981,12 +1120,12 @@ package codo.controllers
          else if(this.isRoomHost())
          {
             this._roomObj.forces.maps.splice(0);
-            this._roomObj.forces.maps = this.getSyncDP(SyncDataID.LIST_SAME_TYPE_MAP,[this._roomObj.currentMap.id,this._roomObj.currentMatchMode.id]);
+            this._roomObj.forces.maps = super.getSyncDP(SyncDataID.LIST_SAME_TYPE_MAP,[this._roomObj.currentMap.id,this._roomObj.currentMatchMode.id]);
             if(!this.isSupportedMapMode(this._roomObj.currentMap.id,this._roomObj.currentMatchMode.id))
             {
                // Preserve an already incompatible room's actual card. Ready
                // stays refused until the host explicitly repairs its choice.
-               this._roomObj.forces.maps.unshift(this.getSyncDP(SyncDataID.MAP_OBJ,[this._roomObj.currentMap.id]));
+               this._roomObj.forces.maps.unshift(super.getSyncDP(SyncDataID.MAP_OBJ,[this._roomObj.currentMap.id]));
             }
             i = 0;
             while(i < this._roomObj.forces.maps.length)
@@ -1002,7 +1141,7 @@ package codo.controllers
          else
          {
             this._roomObj.forces.maps.splice(0);
-            this._roomObj.forces.maps.push(this.getSyncDP(SyncDataID.MAP_OBJ,[this._roomObj.currentMap.id]));
+            this._roomObj.forces.maps.push(super.getSyncDP(SyncDataID.MAP_OBJ,[this._roomObj.currentMap.id]));
             this._roomObj.forces.selectedMapIndex = 0;
          }
       }
@@ -1024,7 +1163,7 @@ package codo.controllers
          var forceInfo:RoomInfoObj = this._roomObj.forces;
          var playListObj:PlayListObj = this.getCurrentPlayList();
          var showBoth:Boolean = mode != "gun" && mode != "oic" && mode != "shrp" && mode != "infect" && (this._roomObj.isPlayList && (!isCT || playListObj != null && playListObj.combatTrainingType > 0) || !isCT && !isCoop && !isZm && !isDm);
-         var party:Boolean = !this.getSyncDP(SyncDataID.IS_IN_PARTY) || this.getSyncDP(SyncDataID.IS_PARTY_HOST);
+         var party:Boolean = !super.getSyncDP(SyncDataID.IS_IN_PARTY) || super.getSyncDP(SyncDataID.IS_PARTY_HOST);
          forceInfo.force0.splice(0);
          forceInfo.force1.splice(0);
          forceInfo.forceMaxPlayer = isCoop || isZm || isDm || isCT ? int(this._roomObj.currentMaxPlayers) : int(this._roomObj.currentMaxPlayers / 2);
@@ -1039,13 +1178,13 @@ package codo.controllers
             {
                forceInfo.force1.push(this._roomMembers[i]);
             }
-            if(this.getSyncDP(SyncDataID.IS_ME,[this._roomMembers[i]]))
+            if(super.getSyncDP(SyncDataID.IS_ME,[this._roomMembers[i]]))
             {
                forceInfo.isInForce0 = mode == "gun" || mode == "oic" || mode == "shrp" || mode == "infect" || this._roomMembers[i].team == 0;
                forceInfo.isHost = this.isRoomHost();
                forceInfo.isReady = this._roomMembers[i].isReady;
-               isSpecOps = this.getSyncDP(SyncDataID.GET_MAP_COOP_TYPE,[this._roomObj.currentMap]) == CoopMapType.SPEC_OPS;
-               isCyborgs = this.getSyncDP(SyncDataID.IS_CYBORG);
+               isSpecOps = super.getSyncDP(SyncDataID.GET_MAP_COOP_TYPE,[this._roomObj.currentMap]) == CoopMapType.SPEC_OPS;
+               isCyborgs = super.getSyncDP(SyncDataID.IS_CYBORG);
                forceInfo.showPilot = !this._roomObj.isPlayList && forceInfo.isHost && isSpecOps && this.isAC130(this._roomObj.currentMap);
                if(forceInfo.showPilot)
                {
@@ -1068,7 +1207,7 @@ package codo.controllers
                forceInfo.showDifficulty = !this._roomObj.isPlayList && forceInfo.isHost && (isSpecOps || isCyborgs);
                if(forceInfo.showDifficulty)
                {
-                  forceInfo.difficulties = this.getSyncDP(SyncDataID.LIST_DIFFICULTY,[this._roomObj.currentMap]);
+                  forceInfo.difficulties = super.getSyncDP(SyncDataID.LIST_DIFFICULTY,[this._roomObj.currentMap]);
                   forceInfo.selectedDifficultyIndex = 0;
                   j = 0;
                   while(j < forceInfo.difficulties.length)
@@ -1084,7 +1223,7 @@ package codo.controllers
                forceInfo.showMode = !this.isManagedTrainingRoom() && !this._roomObj.isPlayList && forceInfo.isHost && !isCT && !isZm && !isCoop;
                if(forceInfo.showMode)
                {
-                  forceInfo.modes = this.getSyncDP(SyncDataID.LIST_MODE,[MatchType.PVP,false,false,this._roomObj.currentMap.id]);
+                  forceInfo.modes = super.getSyncDP(SyncDataID.LIST_MODE,[MatchType.PVP,false,false,this._roomObj.currentMap.id]);
                   forceInfo.selectedModeIndex = this._roomObj.currentMap.id == "mp_sd_jardin" ? -1 : 0;
                   j = 0;
                   while(j < forceInfo.modes.length)
@@ -1164,7 +1303,7 @@ package codo.controllers
                }
             }
          }
-         var managedNewBallot:Boolean = playListObj.name == "Quick Match" && playListObj.type == 1 && playListObj.minPartySize == 1 && playListObj.maxPartySize == 6 && playListObj.maxRoomSize == 12 && this._roomObj["_localQuickSharedLineage"] == true && this._roomObj["_localQuickVoteFinal"] != null && int(this._roomObj["_localQuickVoteFinal"]) == -1 && CFunctionContainer.IsRankedMatch() && !this.getSyncDP(SyncDataID.IS_RANKED_MATCH_READY);
+         var managedNewBallot:Boolean = playListObj.name == "Quick Match" && playListObj.type == 1 && playListObj.minPartySize == 1 && playListObj.maxPartySize == 6 && playListObj.maxRoomSize == 12 && this._roomObj["_localQuickSharedLineage"] == true && this._roomObj["_localQuickVoteFinal"] != null && int(this._roomObj["_localQuickVoteFinal"]) == -1 && CFunctionContainer.IsRankedMatch() && !super.getSyncDP(SyncDataID.IS_RANKED_MATCH_READY);
          if(!fromVote && voteObj.show && !managedNewBallot)
          {
             return;
@@ -1176,7 +1315,7 @@ package codo.controllers
          {
             return;
          }
-         voteObj.enable = !this.getSyncDP(SyncDataID.IS_RANKED_MATCH_READY);
+         voteObj.enable = !super.getSyncDP(SyncDataID.IS_RANKED_MATCH_READY);
          var i:int = 0;
          while(i < this._roomMembers.length)
          {
@@ -1262,14 +1401,14 @@ package codo.controllers
          }
          if(idxEntry >= 0 && idxEntry < playListObj.entries.length)
          {
-            return this.getSyncDP(SyncDataID.MAP_OBJ,[playListObj.entries[idxEntry].map]);
+            return super.getSyncDP(SyncDataID.MAP_OBJ,[playListObj.entries[idxEntry].map]);
          }
          return null;
       }
       
       private function getCurrentPlayList() : PlayListObj
       {
-         return this.getSyncDP(SyncDataID.PLAY_LIST_OBJ,[this._roomObj.playListID]);
+         return super.getSyncDP(SyncDataID.PLAY_LIST_OBJ,[this._roomObj.playListID]);
       }
       
       private function resetRoom() : void
@@ -1453,7 +1592,7 @@ package codo.controllers
          {
             if(roomMemberObj.careerStats == null)
             {
-               roomMemberObj.careerStats = this.getSyncDP(SyncDataID.CAREER_STATS);
+               roomMemberObj.careerStats = super.getSyncDP(SyncDataID.CAREER_STATS);
                if(!this._isCareerStatsSet)
                {
                   this._isCareerStatsSet = true;
@@ -1503,11 +1642,11 @@ package codo.controllers
          {
             return;
          }
-         var isFriend:Boolean = this.getSyncDP(SyncDataID.IS_FRIEND,[roomMemberObj]);
+         var isFriend:Boolean = super.getSyncDP(SyncDataID.IS_FRIEND,[roomMemberObj]);
          roomMemberObj.menuSelections.splice(0);
          if(!this.isBootCampPlayList())
          {
-            if(roomMemberObj.isMe ? this.getSyncDP(SyncDataID.IS_NOTIFIED,[UINotifications.WEAPON_CUSTOMIZATION]) : true)
+            if(roomMemberObj.isMe ? super.getSyncDP(SyncDataID.IS_NOTIFIED,[UINotifications.WEAPON_CUSTOMIZATION]) : true)
             {
                roomMemberObj.menuSelections.push({
                   "label":LocalizationRoom.LOBBY_CHARACTER_MENU_WEAPON_LOADOUT,
@@ -1517,7 +1656,7 @@ package codo.controllers
                   "reserve":{}
                });
             }
-            if(roomMemberObj.isMe ? this.getSyncDP(SyncDataID.IS_NOTIFIED,[UINotifications.AVATAR_CUSTOMIZATION]) : true)
+            if(roomMemberObj.isMe ? super.getSyncDP(SyncDataID.IS_NOTIFIED,[UINotifications.AVATAR_CUSTOMIZATION]) : true)
             {
                roomMemberObj.menuSelections.push({
                   "label":LocalizationRoom.LOBBY_CHARACTER_OUTFIT,
@@ -1656,7 +1795,7 @@ package codo.controllers
                                     if(grandchild.visible)
                                     {
                                        hit = true;
-                                       if(this.getSyncDP(SyncDataID.IS_DEV_BUILD))
+                                       if(super.getSyncDP(SyncDataID.IS_DEV_BUILD))
                                        {
                                           this.addGlowFilterTimer(child);
                                        }

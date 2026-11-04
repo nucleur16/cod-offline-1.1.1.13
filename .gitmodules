@@ -1,0 +1,4 @@
+[submodule "server/sh1x"]
+	path = server/sh1x
+	url = git@github.com:nucleur16/codol_1.1.1.13_alpha_server.git
+	branch = feat/iw4-asset-layout

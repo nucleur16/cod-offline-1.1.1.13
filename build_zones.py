@@ -5,6 +5,9 @@ r"""build_zones.py -- the one build entry point for every zone of this repositor
     python build_zones.py --maps all                   the same with every usermap's UI, into output_dev\
     python build_zones.py voice_ui_mp controller_ingame
                                                        build only these zones
+    python build_zones.py survival_menus survival_localize_chinese survival_localize_english
+                                                       the staging zones (zonelist staging=True), which a default
+                                                       build leaves out: they merge into other zones, never install
     python build_zones.py --list                       list the zones, where each installs and where it came from
     python build_zones.py --verify                     build, then compare each output with the recorded original
     python build_zones.py --decompile [zone ...]       refresh zones\ + zone_source\ from the shipped files
@@ -55,7 +58,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from zonekit import build, container, decompile, gfx, shipping, stock, ui_baseline, zoneimage, zonelist  # noqa: E402
+from zonekit import build, container, decompile, gfx, packs, shipping, stock, ui_baseline, zoneimage, zonelist  # noqa: E402
 
 DEFAULT_GAME = r"D:\CoD\CODOL Builds\Call of Duty Online 1.1.1.13"
 DEFAULT_ZZ = r"D:\CoD\CODOL Builds\codol-classic-zz"
@@ -177,6 +180,71 @@ def copy_files(out_root, game, check, maps):
             print(line)
 
 
+def build_zones(names, out_root, a, exe, src, maps, roots, ffdec, tmp):
+    """Build source zones as zones of their own (the standalone ones, or every one with --parts) -> failures."""
+    failed = 0
+    for name in names:
+        t0 = time.time()
+        try:
+            out, zone, m, plan = build.build(HERE, name, exe, src, out_root, fresh_key=a.fresh_key, ffdec=ffdec,
+                                             compile_as=a.compile_as, log=print, maps=maps)
+            if a.verify and plan:
+                # the recorded original carries every map: compare the unfiltered build with it
+                vdir = os.path.join(tmp, "unfiltered")
+                vout, vzone, _m, _p = build.build(HERE, name, exe, src, vdir, fresh_key=a.fresh_key, ffdec=ffdec,
+                                                  compile_as=a.compile_as, log=print)
+        except build.BuildError as e:
+            failed += 1
+            print("%s: FAILED: %s" % (name, e), flush=True)
+            continue
+        line = "%s (%d bytes, %.1fs)" % (os.path.relpath(out, out_root), os.path.getsize(out), time.time() - t0)
+        if plan:
+            line += "; without %s (%s)" % (", ".join(sorted(plan.dropped_maps)), "; ".join(plan.notes))
+        if a.verify:
+            v = verify(vout, vzone, m, roots, exe, tmp, a.assetexplorer) if plan else \
+                verify(out, zone, m, roots, exe, tmp, a.assetexplorer)
+            if a.record and v.startswith("DIFFERS"):
+                record_build(name, vout if plan else out)
+                v = "recorded as the reviewed build (was: %s)" % v
+            failed += v.startswith("DIFFERS")
+            line += ": " + ("unfiltered build " if plan else "") + v
+        print("%s: %s" % (name, line), flush=True)
+    return failed
+
+
+def build_one_pack(pack, a, exe, src, maps, ffdec):
+    """zone_packs/<pack>.csv -> <out>/<install>/<pack>.ff (zonekit/packs.py) -> 1 on failure."""
+    t0 = time.time()
+    try:
+        out, zone, m, rep = packs.build_pack(HERE, pack, exe, src, a.out, maps, fresh_key=a.fresh_key, ffdec=ffdec,
+                                             compile_as=a.compile_as, log=print)
+    except (build.BuildError, packs.PackError) as e:
+        print("%s: FAILED: %s" % (pack, e), flush=True)
+        return 1
+    line = "%s (%d bytes, %.1fs; %s list, %s): %s" % (
+        os.path.relpath(out, a.out), os.path.getsize(out), time.time() - t0, packs.stage(pack),
+        "/".join(sorted(packs.locales(pack))), ", ".join("%s %d%s" % (p, n, "" if n == t else " of %d" % t)
+                                                        for p, n, t in rep["parts"]))
+    if rep["dropped_maps"]:
+        line += "; without %s" % ", ".join(sorted(rep["dropped_maps"]))
+    for t, name, part, first in rep["shadowed"]:
+        line += "\n    shadowed: %s %s of %s (%s, loaded first, carries it; the old install never used this one)" % (
+            t, name, part, first)
+    if a.verify:
+        key = packs.md5_key(a.maps)
+        got, want = md5(out), packs.load(HERE, pack).get(key)
+        if got == want:
+            line += "\n    IDENTICAL to the recorded build (md5 %s)" % got
+        elif a.record:
+            packs.set_settings(HERE, pack, {key: [got]})
+            line += "\n    recorded as the reviewed build (%s %s, was %s)" % (key, got, want)
+        else:
+            print("%s: %s\n    DIFFERS from the recorded %s %s (md5 %s)" % (pack, line, key, want, got), flush=True)
+            return 1
+    print("%s: %s" % (pack, line), flush=True)
+    return 0
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0], epilog=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -195,6 +263,8 @@ def main(argv=None):
     ap.add_argument("--fresh-key", action="store_true")
     ap.add_argument("--compile-as", action="store_true")
     ap.add_argument("--store-class", action="append", default=[])
+    ap.add_argument("--parts", action="store_true",
+                    help="build every source zone on its own (the layout before zone_packs/) into output_parts\\")
     ap.add_argument("--candidate", action="store_true", help="build unqualified intentional changes into output_candidate instead of shipping output")
     ap.add_argument("--ffdec", default=os.environ.get("CODOL_FFDEC", DEFAULT_FFDEC))
     a = ap.parse_args(argv)
@@ -202,7 +272,8 @@ def main(argv=None):
     chinese = os.path.join(a.game, "client_shipRetail", "chinese")
     ffdec = a.ffdec if a.ffdec and os.path.isfile(a.ffdec) else None
     roots = {"G": a.game, "Z": a.zz}
-    a.out = a.out or os.path.join(HERE, "output_candidate" if a.candidate else "output" if a.maps == "ship" else "output_dev")
+    a.out = a.out or os.path.join(HERE, ("output_candidate" if a.candidate else "output" if a.maps == "ship" else "output_dev")
+                                  + ("_parts" if a.parts else ""))
     if not a.candidate and not a.decompile and not a.list and not a.store_class and a.maps == "ship":
         try:
             ui_baseline.validate(HERE)
@@ -213,10 +284,21 @@ def main(argv=None):
     except shipping.ShippingError as e:
         ap.error(str(e))
     known = sorted(f[:-4] for f in os.listdir(os.path.join(HERE, "zone_source")) if f.endswith(".csv"))
+    try:
+        part_of = packs.part_index(HERE)
+    except packs.PackError as e:
+        ap.error(str(e))
+    all_packs = packs.names(HERE)
     if a.list:
+        for pack in all_packs:
+            m = packs.load(HERE, pack)
+            print("%-36s %-26s %s list, %s: %s" % (pack, m.get("install"), packs.stage(pack),
+                                                   "/".join(sorted(packs.locales(pack))),
+                                                   " + ".join(p for p, _f, _q in packs.parts(m))))
         for name in known:
             m = build.load(HERE, name)
-            print("%-36s %-26s from %s" % (name, m.get("install"), m.get("origin")))
+            print("%-36s %-26s from %s%s" % (name, m.get("install"), m.get("origin"),
+                                             " (part of %s)" % " + ".join(part_of[name]) if name in part_of else ""))
         for state in shipping.STATES:
             print("%s maps (%s): %s" % (state, shipping.MANIFEST, " ".join(maps.by_state(state)) or "-"))
         return 0
@@ -238,42 +320,37 @@ def main(argv=None):
         if a.decompile:
             names = a.zones or list(zonelist.ZONES)
             return 1 if run_decompile(names, exe, roots, chinese, ffdec, tmp) else 0
-        names = a.zones or known
-        unknown = [n for n in names if n not in known]
+        unknown = [n for n in a.zones if n not in known and n not in all_packs]
         if unknown:
-            ap.error("no zone_source for %s (python build_zones.py --list)" % ", ".join(unknown))
+            ap.error("no zone_source or zone_packs for %s (python build_zones.py --list)" % ", ".join(unknown))
+        if a.parts:
+            names, pack_list = ([n for n in a.zones if n in known] if a.zones else known), []
+        elif a.zones:
+            names = [n for n in a.zones if n in known and n not in part_of]
+            pack_list = sorted(set([n for n in a.zones if n in all_packs] + [q for n in a.zones if n in part_of for q in part_of[n]]))
+            for n in a.zones:
+                if n in part_of:
+                    print("%s is a part of %s: building that (--parts builds it on its own)" % (n, " + ".join(part_of[n])))
+        else:
+            # staging zones (zonelist staging=True) are never installed: they build only when named
+            names = [n for n in known if n not in part_of and not zonelist.ZONES.get(n, {}).get("staging")]
+            pack_list = all_packs
         failed = 0
         src = stock.ZoneSource(exe, [chinese])
         print("usermaps: %s build -> %s (ship: %d maps%s)" % (
             "shipping" if a.maps == "ship" else "ALL-MAPS (dev, not for players)", a.out, len(maps.by_state("ship")),
             "" if a.maps == "ship" else ", dev: %d maps" % len(maps.by_state("dev"))), flush=True)
-        for name in names:
-            t0 = time.time()
-            try:
-                out, zone, m, plan = build.build(HERE, name, exe, src, a.out, fresh_key=a.fresh_key, ffdec=ffdec,
-                                                 compile_as=a.compile_as, log=print, maps=maps)
-                if a.verify and plan:
-                    # the recorded original carries every map: compare the unfiltered build with it
-                    vdir = os.path.join(tmp, "unfiltered")
-                    vout, vzone, _m, _p = build.build(HERE, name, exe, src, vdir, fresh_key=a.fresh_key, ffdec=ffdec,
-                                                      compile_as=a.compile_as, log=print)
-            except build.BuildError as e:
-                failed += 1
-                print("%s: FAILED: %s" % (name, e), flush=True)
-                continue
-            line = "%s (%d bytes, %.1fs)" % (os.path.relpath(out, a.out), os.path.getsize(out), time.time() - t0)
-            if plan:
-                line += "; without %s (%s)" % (", ".join(sorted(plan.dropped_maps)), "; ".join(plan.notes))
-            if a.verify:
-                v = verify(vout, vzone, m, roots, exe, tmp, a.assetexplorer) if plan else                     verify(out, zone, m, roots, exe, tmp, a.assetexplorer)
-                if a.record and v.startswith("DIFFERS"):
-                    record_build(name, vout if plan else out)
-                    v = "recorded as the reviewed build (was: %s)" % v
-                failed += v.startswith("DIFFERS")
-                line += ": " + ("unfiltered build " if plan else "") + v
-            print("%s: %s" % (name, line), flush=True)
+        if a.verify and not a.parts and not a.zones:
+            # every source zone that went into a pack still verifies against the file it came from
+            print("source zones of the packs (built into a temporary folder, not installed):", flush=True)
+            failed += build_zones(sorted(part_of), os.path.join(tmp, "parts"), a, exe, src, maps, roots, ffdec, tmp)
+            print("installed zones:", flush=True)
+        failed += build_zones(names, a.out, a, exe, src, maps, roots, ffdec, tmp)
+        for pack in pack_list:
+            failed += build_one_pack(pack, a, exe, src, maps, ffdec)
         if not a.zones:
             copy_files(a.out, a.game, a.verify, maps)
+        names = names + pack_list
     print("\n%d zones, %d failed" % (len(names), failed))
     return 1 if failed else 0
 

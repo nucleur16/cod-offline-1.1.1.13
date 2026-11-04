@@ -12,43 +12,43 @@ package components.list_part
    import flash.events.Event;
    import flash.text.TextField;
    import flash.utils.Dictionary;
-   
+
    public class InviteItemRenderer extends ListItemRendererBase
    {
-      
+
       public static const EVT_ACCEPT_INVITE:String = "evt_accept_invite";
-      
+
       public static const EVT_REFUSE_INVITE:String = "evt_refuse_invite";
-      
+
       private static const TEXTCOLOUR_DES_MP:uint = 7648707;
-      
+
       private static const TEXTCOLOUR_DES_CY:uint = 14908984;
-      
+
       private static var CATEGORY_ICON_INDEX:Dictionary = new Dictionary();
-      
+
       public var myTypeIcons:MovieClip;
-      
+
       public var myCloseBtn:CodoGrowButtonNoTint;
-      
+
       public var myAcceptBtn:CodoGrowButtonNoTint;
-      
+
       public var myRefuseBtn:CodoGrowButtonNoTint;
-      
+
       public var myTypeTF:TextField;
-      
+
       public var myTimeTF:TextField;
-      
+
       public var myNameTF:TextField;
-      
+
       public var myBgFocus:MovieClip;
-      
+
       public var myBg:Sprite;
-      
+
       public function InviteItemRenderer()
       {
          super();
       }
-      
+
       override protected function onInit() : void
       {
          CATEGORY_ICON_INDEX[InvitationType.FRIEND_OUTGOING_PROPOSAL] = 1;
@@ -62,14 +62,14 @@ package components.list_part
          this.onStyleChangeForMatchType();
          this.setToNormal();
       }
-      
+
       override protected function onInitListener() : void
       {
          this.myAcceptBtn.addEventListener(BaseButton.EVT_CLICK,this.onAcceptClickHandle);
          this.myRefuseBtn.addEventListener(BaseButton.EVT_CLICK,this.onRefuseClickHandle);
          this.myCloseBtn.addEventListener(BaseButton.EVT_CLICK,this.onRefuseClickHandle);
       }
-      
+
       override protected function onGetData() : void
       {
          var dat:Object = this.getData();
@@ -114,27 +114,27 @@ package components.list_part
                this.myTypeIcons.gotoAndStop(CATEGORY_ICON_INDEX[InvitationType.OTHERS]);
          }
       }
-      
+
       private function onAcceptClickHandle(cEvt:Event) : void
       {
          this.dispatchEvent(new ParaEvent(EVT_ACCEPT_INVITE,this.getData()));
       }
-      
+
       private function onRefuseClickHandle(cEvt:Event) : void
       {
          this.dispatchEvent(new ParaEvent(EVT_REFUSE_INVITE,this.getData()));
       }
-      
+
       override protected function setToNormal(cTween:Boolean = true) : void
       {
          this.myBgFocus.visible = false;
       }
-      
+
       override protected function setToRollOver(cTween:Boolean = true) : void
       {
          this.myBgFocus.visible = true;
       }
-      
+
       override public function onStyleChangeForMatchType() : void
       {
          this.myBgFocus.gotoAndStop(this.currentMatchType + 1);
@@ -149,4 +149,3 @@ package components.list_part
       }
    }
 }
-

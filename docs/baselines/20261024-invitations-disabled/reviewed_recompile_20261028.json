@@ -1,0 +1,36 @@
+{
+  "source_commit": "e1a6cf2",
+  "before_commit": "e1a6cf2^",
+  "class_name": "codo.controllers.MatchController",
+  "before_abc_sha256": "98a99dae05f3eab8bcf154d5e6e98c307c9f3337a31fc3c134ccc8ad98961bb0",
+  "after_abc_sha256": "f25b8f3eda1c96b22f56edeb9900d6bd7d133e6d242919ebccaa2ddaf763c8f8",
+  "before_tag_sha256": "23d4e12c3b8b1c28124d97396c5b421c16080c62cd03d07d3c52d090cc3c6c96",
+  "after_tag_sha256": "5e6c51dfdf7b9da41909210f097ad47a6be1a57d3f8a1a0989177735fd253ffa",
+  "metadata_tables_identical": true,
+  "method_body_count": 165,
+  "protected_body_count": 164,
+  "raw_body_updates": 57,
+  "resolved_source_changes": [
+    {
+      "method": "gotoSurvivalQuickMatchHandle",
+      "before": "filter.map = TutorialMap.SURVIVAL;",
+      "after": "filter.map = \"coop_survival_mp_fav_tropical\";",
+      "reason": "Required supported Survival button default, replacing unavailable Afghan"
+    },
+    {
+      "methods": [
+        "getXPLeagueFactor",
+        "getGPLeagueFactor"
+      ],
+      "before": "var factor:Number = NaN;",
+      "after": "var factor:Number = Number(NaN);",
+      "reason": "Equivalent Number coercion; either branch overwrites factor before return"
+    }
+  ],
+  "decompiler": "JPEXS FFDec v24.1.2 nightly build3406, -config decompile=true -selectclass codo.controllers.MatchController -export script",
+  "artifacts": {
+    "MatchController.before-20261028.abc.zlib": "98a99dae05f3eab8bcf154d5e6e98c307c9f3337a31fc3c134ccc8ad98961bb0",
+    "MatchController.before-20261028.as.zlib": "6f3126ea7da7faaee3809c4b9c87b509345f63a8e9b38ec9abb81667420a0f49",
+    "MatchController.after-20261028.as.zlib": "b3b745a5e113717d269f94dc46b1e913dd2b4aadb478b4ef236c0e1f6867d375"
+  }
+}

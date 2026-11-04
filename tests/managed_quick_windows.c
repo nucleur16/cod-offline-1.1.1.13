@@ -105,9 +105,29 @@ int main(void) {
  CHECK(CodolLocalMultiRoute(valid,strlen(valid)));
  const char *actual="127.0.0.1\r\n23174\r\n127.0.0.1\r\n23174\r\n3ea\r\n";
  CHECK(CodolLocalMultiRoute(actual,strlen(actual)));
+ const char *isolated="127.0.0.3\r\n3074\r\n127.0.0.3\r\n3074\r\n3ea\r\n";
+ CHECK(CodolLocalMultiRoute(isolated,strlen(isolated)));
+ const char *isolatedLF="127.0.0.3\n3074\n127.0.0.3\n3074\n3ea\n";
+ CHECK(CodolLocalMultiRoute(isolatedLF,strlen(isolatedLF)));
  CHECK(CodolLocalTitle("3EA"));CHECK(!CodolLocalTitle("3ez"));CHECK(!CodolLocalTitle("000"));CHECK(!CodolLocalTitle("123456789"));
  const char *invalid[]={"localhost\n23174\n127.0.0.1\n23174\n1002\n","127.0.0.1\n23174\n8.8.8.8\n23174\n1002\n","127.0.0.1\n23174\n127.0.0.1\n23175\n1002\n","127.0.0.1\n0\n127.0.0.1\n0\n1002\n","127.0.0.1\n65536\n127.0.0.1\n65536\n1002\n","127.0.0.1.example\n23174\n127.0.0.1\n23174\n1002\n","127.0.0.1\n23174\n127.0.0.1\n23174\n1002\nextra\n"};
  for(unsigned i=0;i<sizeof(invalid)/sizeof(invalid[0]);i++)CHECK(!CodolLocalMultiRoute(invalid[i],strlen(invalid[i])));
+ const char *isolatedInvalid[]={
+  "127.0.0.1\n3074\n127.0.0.3\n3074\n3ea\n",
+  "127.0.0.3\n3074\n127.0.0.1\n3074\n3ea\n",
+  "127.0.0.2\n3074\n127.0.0.2\n3074\n3ea\n",
+  "127.0.0.4\n3074\n127.0.0.4\n3074\n3ea\n",
+  "127.0.0.3.example\n3074\n127.0.0.3.example\n3074\n3ea\n",
+  "127.0.0.30\n3074\n127.0.0.30\n3074\n3ea\n",
+  "127.000.000.003\n3074\n127.000.000.003\n3074\n3ea\n",
+  "2130706435\n3074\n2130706435\n3074\n3ea\n",
+  "localhost\n3074\nlocalhost\n3074\n3ea\n",
+  "0.0.0.0\n3074\n0.0.0.0\n3074\n3ea\n",
+  "127.0.0.3\n3074\n127.0.0.3\n3075\n3ea\n",
+  "127.0.0.3\n0\n127.0.0.3\n0\n3ea\n",
+  "127.0.0.3\n3074\n127.0.0.3\n3074\n3ea\nextra\n"};
+ for(unsigned i=0;i<sizeof(isolatedInvalid)/sizeof(isolatedInvalid[0]);i++)
+  CHECK(!CodolLocalMultiRoute(isolatedInvalid[i],strlen(isolatedInvalid[i])));
  const wchar_t *args[]={L"game",L"+set",L"codol_local_test_multi",L"1",L"+set",L"codol_local_test_multi",L"0"};
  CHECK(CodolLocalMultiArgument(4,args));CHECK(!CodolLocalMultiArgument(7,args));CHECK(!CodolLocalMultiArgument(3,args));CHECK(!CodolLocalMultiArgument(1,args));
  printf("{\"checks\":%u,\"failures\":%u,\"actual_x86_windows\":true,\"live_client\":false}\n",checks,failures);

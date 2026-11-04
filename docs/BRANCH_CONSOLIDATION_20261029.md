@@ -1,0 +1,87 @@
+# Client branch consolidation checkpoint
+
+Integration branch: `integration/all-branches-20261029`, based on Survival fix
+`27c0b61`. Before fetching, all 70 local/tracking refs were copied under
+`refs/preserve/consolidation-20261028-230102/`, with an additional ref for the
+detached usermap worktree at `78aa881`. Fetch used `--no-prune`; existing dirty
+and conflicted worktrees were not changed. No original branch was deleted.
+
+All 71 preserved heads are ancestors of this checkpoint. Main `cd7149d` also
+brings the former room-production, Quick-intent and gated-P2P heads. The other
+maximal targets were `7e837c4`, `3fe348c`, `ecf2e9d`, `78aa881`, `7180c4c`,
+`24ddd36`, `8b7faed`, `fff3760`, `1ce2d12`, `f71f694`, `717a726`, `a5bcb53`,
+`3c9a5de`, and `57a373d`. No merge used the `ours` merge strategy.
+
+## Reviewed resolutions
+
+- Preserve current built-in localhost hosting, its room toggle/Ready/context
+  API, and native gitlink `a239d365` including startup and crate markers. Main's older optional P2P implementation
+  must not replace these or duplicate their includes and registrations.
+- Include main's independent room roles, training previews, Quick policy,
+  production diagnostics and opt-in QA startup-window safeguards.
+- Merge MatchController source and recompile its tag; preserve current lobby
+  classes and the new InviteItemRenderer in the same shared movie. The ABI
+  review records the exact three intended production-main source changes,
+  all 51 repooled protected bodies, and the immutable preceding review chain.
+- Retain the later M14 models with default parts hidden; the low-memory trial
+  contains older competing binary layouts, not additional model identities.
+- Retain current complete map catalogues, Survival rows, Zombies availability,
+  and existing authored arena ordering. Older union snapshots contain subsets
+  or reorder these same rows. No map was removed to resolve a conflict.
+- Preserve evolved shared sound diagnostics and voice-limit integration,
+  including quiet shipping defaults. Both old diagnostic heads share the same
+  original sounddiag blob, predating these improvements.
+- Preserve historical Survival staging zones and their menu serializer beside
+  the current shipping kiosk implementation. Staging zones remain staging.
+- Trial merge resolutions only combine already-present registrations or an
+  older DLL. Keep one registration per feature and rebuild current binaries.
+- Mark the assembly-read `g_piNext` variable as used: production diagnostics
+  removing its only C read otherwise made the optimized shipping DLL fail to
+  link. This does not change the hook's target or runtime control flow.
+
+## Validation
+
+- Shipping, developer/vision, and no-console DLL profiles built successfully.
+- MatchController and InviteItemRenderer compiled through FFDec; shared UI
+  baseline tests passed with both baseline inventories retained.
+- Invitation hold/review tests: 7 passed, including 168 original behavior checks,
+  99 historical resolved-method checks and 22 production integration checks.
+- Local-host toggle, Campaign/Ready routing, and measured room layout Node
+  fixtures passed. Survival kiosk unittest and six zone-pack tests passed.
+- Current shared UI and Survival kiosk candidate zones built: 2/2 successful.
+- Windows managed-Quick fixture passed 293 checks without a live client.
+- Linux ASAN/UBSAN executions of the unchanged P2P status and intent-heartbeat
+  fixtures passed.
+- The complete Windows runner stops when Windows explicitly blocks
+  `p2p_status_test.exe` as virus/potentially unwanted software. This is recorded
+  as a limitation, not a passing full suite. No protection settings were
+  changed and no renamed version of the blocked binary was executed.
+- Private-image x86 and live GFx/gameplay acceptance are separate checks.
+
+This checkpoint does not include the subsequent Survival icon/native changes
+being developed in parallel. Integrate their committed source and advance the
+native gitlink before final release acceptance. No deployment or push is part
+of this checkpoint.
+
+## Final client consolidation, 2026-10-29
+All original preserved client tips and the subsequent resident queue-ticker branch through9aed480 are included in published main. Nine remote feature/integration heads were deleted with exact-tip leases only after ancestry verification. Live heads at cleanup were main and dev; dev remains dc259f53f3300a369faf13695579b5f5dc9ba42f and its worktree was not modified. Cleanup receipts are in docs/releases/branch-cleanup-20261029.json. Local branches, preservation refs and dirty worktrees remain available.
+
+The native gitlink now pins f0ec9a49 (rawfiles12d97c7), including Survival ammo ownership, dog target admission, projectile fire, wave rules, hazards and diagnostics. Shipping DLL5cb74df0 includes the measured C1 actor-mode predicate fix; nine actual-image scanner/category tests pass. The shared UI additionally merges the current ServerMessageView while retaining existing localhost, invitation and lobby controls. Source/AS tests and zone builds pass; final live C1 crosshair appearance and newer ticker UI remain separate acceptance checks. Native/rawfiles repository branch consolidation was additionally requested and is tracked in those repositories.
+
+## Published final union and runtime acceptance
+
+Native main855fffbc now includes all reviewed native branch histories, the coupled
+Zombies services and safe Windows resident reader. Its rawfiles pin21e928e
+contains the final diagnostic include correction; real Prototype and Theater
+startup passed after the failed-first compile was retained in the release receipt.
+Survival Favela completed the native wave2 probe (6 spawned/killed, zero failures),
+and Killhouse MP started with a training bot. Resident/warm modes stay disabled
+by default and this release does not claim new resident production qualification.
+
+The user confirmed the Survival red crosshair works. A real C1 Survival join
+confirmed the lower-left enemy/credit panel replaces the MP score panel and
+killstreak HUD is hidden. The user reported credit/enemy text overlap; the
+follow-up layout reduces the oversized credit font and separates the baselines.
+The HUD MenuList now loads in codol_common_postgfx_mp after graphics defaults
+exist, preserving the original pre-gfx controller movie stage. Native/final
+qualification details and historical diagnostics remain in the server receipt.
