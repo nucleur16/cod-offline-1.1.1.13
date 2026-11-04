@@ -27,6 +27,7 @@
 #include "p2p_match_options.h"
 #include "p2p_status.h"
 #include "p2p_intent_heartbeat.h"
+#include "p2p_client_identity.h"
 
 #define P2P_DEFAULT_PORT 17760
 #define P2P_STATUS_MS    2000
@@ -53,6 +54,7 @@ typedef struct P2PConfig {
     int c1Assets;                /* in-process: take C1's records of startup zones (default 1) */
     int c1Preload;               /* in-process: preloadmap when C1 is not loading a hosted map (default 0) */
     int c1Zones;                 /* in-process: map zones C1 holds are C1-backed, mounted only on demand (default 1) */
+    unsigned long startupGeneration; /* zero is exclusively the legacy startup protocol */
 } P2PConfig;
 
 static struct {
@@ -68,12 +70,55 @@ static CRITICAL_SECTION g_p2pLock;
 static BOOL g_p2pInit;
 static HANDLE g_p2pThread;
 static volatile LONG g_p2pStop;
+/* Main-thread commands own issuance. Workers inspect copied state only: no C1
+ * memory, UI dvars or caller-provided owner booleans authorize an attempt. */
+static unsigned long g_p2pStartupCounter, g_p2pStartupActive;
+static BOOL g_p2pStartupExhausted, g_p2pStartupEnabled, g_p2pStartupRoom;
+static unsigned long long g_p2pStartupOwner;
+static void P2PInprocCancelStartup(void); /* deny-only API, safe while native frame is yielded */
+static BOOL P2PStartupAttemptCurrent(unsigned long generation)
+{
+    int mode=P2PStartupProtocolMode();
+    if (mode==0) return generation==0;
+    if (mode!=1 || !generation || !g_p2pInit) return FALSE;
+    EnterCriticalSection(&g_p2pLock);
+    BOOL current=!g_p2pStartupExhausted && generation==g_p2pStartupActive &&
+        g_p2pStartupEnabled && g_p2pStartupRoom && g_p2pStartupOwner &&
+        g_p2p.state!=P2P_FAILED && g_p2p.state!=P2P_EXITED &&
+        !InterlockedCompareExchange(&g_p2pStop,0,0);
+    LeaveCriticalSection(&g_p2pLock);
+    return current;
+}
+static void P2PStartupInvalidate(void)
+{
+    EnterCriticalSection(&g_p2pLock);
+    g_p2pStartupActive=0;
+    if (g_p2pStartupCounter==0xfffffffful) g_p2pStartupExhausted=TRUE;
+    else ++g_p2pStartupCounter;
+    InterlockedExchange(&g_p2pStop,1);
+    LeaveCriticalSection(&g_p2pLock);
+    if(P2PStartupProtocolMode()!=0)P2PInprocCancelStartup();
+}
+static unsigned long P2PStartupIssue(void)
+{
+    unsigned long generation=0;
+    EnterCriticalSection(&g_p2pLock);
+    if (g_p2pStartupCounter==0xfffffffful) g_p2pStartupExhausted=TRUE;
+    if (!g_p2pStartupExhausted && g_p2pStartupEnabled && g_p2pStartupRoom && g_p2pStartupOwner) {
+        generation=++g_p2pStartupCounter;
+        g_p2pStartupActive=generation;
+        InterlockedExchange(&g_p2pStop,0);
+    }
+    LeaveCriticalSection(&g_p2pLock);
+    return generation;
+}
 static char g_p2pArgMap[64], g_p2pArgGametype[32], g_p2pArgZone[16];
 static P2PConfig g_p2pOverride;
 static BOOL g_p2pHasOverride;
 struct P2PConfig;
 static int P2PInprocRun(const struct P2PConfig *c, const char *password, const char *args); /* p2p_inproc.c */
 static BOOL P2PInprocUsed(void); /* p2p_inproc.c: an in-process session already ran in this client */
+static BOOL P2PInprocPrincipalFresh(void); /* game-thread native principal observation */
 
 static void P2PSetState(int state, const char *error)
 {
@@ -438,6 +483,9 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
     if (g_p2pArgMap[0]) { lstrcpyA(c.map, g_p2pArgMap); c.sessionMap[0] = 0; }
     if (g_p2pArgGametype[0]) lstrcpyA(c.gametype, g_p2pArgGametype);
     if (g_p2pArgZone[0]) lstrcpyA(c.zoneType, g_p2pArgZone);
+    if (!P2PStartupAttemptCurrent(c.startupGeneration)) {
+        P2PSetState(P2P_FAILED,"The local startup attempt is no longer current.");WSACleanup();return 1;
+    }
     if (!c.rconFile[0]) _snprintf(c.rconFile, MAX_PATH, "%s\\native_server_rcon.txt", c.state);
     EnterCriticalSection(&g_p2pLock);
     g_p2p.cfg = c;
@@ -613,6 +661,7 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
 /* Main thread or TakeOver. -> FALSE when a server is already being hosted. */
 static BOOL P2PStartConfigured(const char *map, const char *gametype, const char *zone, const P2PConfig *override)
 {
+    if (!P2PStartupAttemptCurrent(override ? override->startupGeneration:0)) return FALSE;
     if (g_p2pThread) {
         if (WaitForSingleObject(g_p2pThread, 0) != WAIT_OBJECT_0) return FALSE;
         CloseHandle(g_p2pThread);
@@ -646,6 +695,37 @@ static P2PConfig g_p2pIntentConfig;
 static unsigned long long g_p2pIntentUid;
 static DWORD g_p2pIntentAt;
 static P2PIntentHeartbeat g_p2pIntentHeartbeat;
+static BOOL P2PStartupBusy(void)
+{
+    return g_p2pThread && WaitForSingleObject(g_p2pThread,0)!=WAIT_OBJECT_0;
+}
+static void P2PStartupSnapshot(void)
+{
+    EnterCriticalSection(&g_p2pLock);
+    g_p2pStartupEnabled=g_p2pEnabled;
+    g_p2pStartupRoom=g_p2pHasRoom;
+    g_p2pStartupOwner=g_p2pIntentUid;
+    LeaveCriticalSection(&g_p2pLock);
+}
+/* Arming records selected local intent. Only a subsequent explicit Ready/Start
+ * command can issue a generation and create the native host thread. */
+static void P2PArmCurrentRoom(void)
+{
+    P2PConfig c;
+    P2PDefaults(&c);P2PLoadIni(&c);
+    lstrcpyA(c.map,g_p2pRoom.map);lstrcpyA(c.sessionMap,g_p2pRoom.session);
+    lstrcpyA(c.gametype,g_p2pRoom.gametype);lstrcpyA(c.zoneType,g_p2pRoom.category);
+    lstrcpyA(c.netIp,"127.0.0.1");lstrcpyA(c.mode,"inprocess");
+    g_p2pIntentConfig=c;
+    lstrcpyA(g_p2pLobbyMap,c.sessionMap);
+    P2PStartupSnapshot();
+    const char *bad=P2PStartupProtocolMode()!=1 ? "The local startup protocol configuration is invalid.":
+        !g_p2pHasRoom ? "Choose a match lobby first.":
+        !g_p2pIntentUid ? "Player identity is not ready for local hosting.":
+        P2PInprocUsed() ? "Restart the client before hosting another Local Play match.":P2PCheck(&c);
+    if (bad) { lstrcpynA(g_p2pLobbyError,bad,sizeof(g_p2pLobbyError));P2PSetState(P2P_FAILED,bad); }
+    else { g_p2pLobbyError[0]=0;P2PSetState(P2PStartupBusy() ? P2P_STOPPING:P2P_IDLE,""); }
+}
 static BOOL P2PWriteIntent(const char *path, const char *text)
 {
     char tmp[MAX_PATH+40];
@@ -691,7 +771,21 @@ static void P2PLobbyTick(void)
     static char previousNative[1024];
     char snapshot[1024], error[256], number[24]; int state;
     if (!g_p2pInit || !C1DvarsReady()) return;
-    if (g_p2pLobbyPending && (!g_p2pThread || WaitForSingleObject(g_p2pThread,0)==WAIT_OBJECT_0)) {
+    int protocol=P2PStartupProtocolMode();
+    if (protocol!=0) {
+        unsigned long long uid=P2PLocalUid();
+        if (uid!=g_p2pIntentUid) {
+            P2PStartupInvalidate();
+            if (g_p2pEnabled) {
+                lstrcpyA(g_p2pLobbyError,"Player identity changed. Choose the local room again.");
+                P2PPublishIntent("failed",FALSE); /* retire the previous owner's ready route */
+                g_p2pHasRoom=FALSE;
+            }
+            g_p2pIntentUid=uid;P2PStartupSnapshot();
+        }
+        g_p2pLobbyPending=FALSE;
+    }
+    if (protocol==0 && g_p2pLobbyPending && (!g_p2pThread || WaitForSingleObject(g_p2pThread,0)==WAIT_OBJECT_0)) {
         P2PConfig next=g_p2pLobbyNext;
         lstrcpyA(next.mode,"inprocess");
         g_p2pLobbyPending=FALSE;
@@ -703,17 +797,25 @@ static void P2PLobbyTick(void)
     state=g_p2pLobbyPending ? P2P_STOPPING : g_p2p.state;
     lstrcpynA(error,g_p2pLobbyError[0] ? g_p2pLobbyError : g_p2p.error,sizeof(error));
     LeaveCriticalSection(&g_p2pLock);
+    BOOL currentAttempt=protocol==0 || P2PStartupAttemptCurrent(g_p2pIntentConfig.startupGeneration);
+    BOOL currentReady=currentAttempt && (protocol==0 || P2PInprocPrincipalFresh());
+    if (protocol!=0 && !currentAttempt && !error[0] && state!=P2P_FAILED && state!=P2P_EXITED)
+        state=P2PStartupBusy() ? P2P_STOPPING:P2P_IDLE;
+    if(protocol!=0&&currentAttempt&&!currentReady&&state==P2P_READY)state=P2P_STARTING;
+    if (protocol<0 && g_p2pEnabled) {
+        state=P2P_FAILED;lstrcpyA(error,"The local startup protocol configuration is invalid.");
+    }
     if (g_p2pEnabled && state==P2P_EXITED && P2PInprocUsed() && !error[0])
         lstrcpyA(error,"Restart the client before hosting another Local Play match.");
-    if (!g_p2pEnabled) g_p2pIntentUid=NdLocalUid();
+    if (!g_p2pEnabled) g_p2pIntentUid=P2PLocalUid();
     if (!g_p2pEnabled && !g_p2pIntentConfig.state[0]) {
         P2PDefaults(&g_p2pIntentConfig);P2PLoadIni(&g_p2pIntentConfig);
     }
-    _snprintf(snapshot,sizeof(snapshot),"%d|%u|%d|%s|%s",state,g_p2pLobbyRequest,g_p2pEnabled,g_p2pLobbyMap,error);
+    _snprintf(snapshot,sizeof(snapshot),"%d|%u|%d|%s|%s|%d",state,g_p2pLobbyRequest,g_p2pEnabled,g_p2pLobbyMap,error,protocol);
     snapshot[sizeof(snapshot)-1]=0;
     DWORD now=GetTickCount();
     if (P2PIntentHeartbeatDue(&g_p2pIntentHeartbeat,now,g_p2pIntentAt,strcmp(snapshot,previousNative)!=0)) {
-        BOOL published=P2PPublishIntent(error[0] ? "failed":kP2PState[state],g_p2pEnabled && state==P2P_READY && !error[0]);
+        BOOL published=P2PPublishIntent(error[0] ? "failed":kP2PState[state],g_p2pEnabled && currentReady && state==P2P_READY && !error[0]);
         P2PIntentHeartbeatResult(&g_p2pIntentHeartbeat,now,published);
     }
     lstrcpynA(previousNative,snapshot,sizeof(previousNative));
@@ -721,15 +823,17 @@ static void P2PLobbyTick(void)
         lstrcpyA(error,"Waiting to publish the local host route.");
     /* The UI snapshot includes publication errors, so a later successful
      * heartbeat clears its temporary error and restores Ready without a toggle. */
-    _snprintf(snapshot,sizeof(snapshot),"%d|%u|%d|%s|%s",state,g_p2pLobbyRequest,g_p2pEnabled,g_p2pLobbyMap,error);
+    _snprintf(snapshot,sizeof(snapshot),"%d|%u|%d|%s|%s|%d",state,g_p2pLobbyRequest,g_p2pEnabled,g_p2pLobbyMap,error,protocol);
     snapshot[sizeof(snapshot)-1]=0;
     BOOL changed=strcmp(snapshot,previous)!=0;
     if (!changed) return;
     BOOL done=C1QueueSet("ui_p2p_enabled",g_p2pEnabled ? "1":"0");
+    _snprintf(number,sizeof(number),"%d",protocol);
+    done=C1QueueSet("ui_p2p_startup_protocol",number) && done;
     done=C1QueueSet("ui_p2p_state",kP2PState[state]) && done;
     done=C1QueueSet("ui_p2p_error",error) && done;
     done=C1QueueSet("ui_p2p_map",g_p2pLobbyMap) && done;
-    done=C1QueueSet("ui_p2p_ready",g_p2pEnabled && state==P2P_READY && !error[0] ? "1":"0") && done;
+    done=C1QueueSet("ui_p2p_ready",g_p2pEnabled && currentReady && state==P2P_READY && !error[0] ? "1":"0") && done;
     done=C1QueueSet("ui_p2p_busy",state==P2P_STARTING || state==P2P_READY || state==P2P_STOPPING ? "1":"0") && done;
     _snprintf(number,sizeof(number),"%u",g_p2pLobbyRequest);
     done=C1QueueSet("ui_p2p_request",number) && done;
@@ -782,18 +886,84 @@ static void __cdecl P2PCmdRoom(void)
     for (int i=0;i<3;++i) args[i]=VoiceArgv(i+1);
     const char *bad=P2PParseRoomContext(count,args,&room);
     if (bad) { lstrcpynA(g_p2pLobbyError,bad,sizeof(g_p2pLobbyError));P2PLobbyTick();return; }
+    if (P2PStartupProtocolMode()!=0) P2PStartupInvalidate();
     g_p2pRoom=room;g_p2pHasRoom=TRUE;
-    if (g_p2pEnabled) P2PHostCurrentRoom();
+    if (P2PStartupProtocolMode()!=0) { P2PStartupSnapshot();if (g_p2pEnabled) P2PArmCurrentRoom(); }
+    else if (g_p2pEnabled) P2PHostCurrentRoom();
     P2PLobbyTick();
 }
 static void __cdecl P2PCmdLocalhost(void)
 {
     const char *value=VoiceArgc()==2 ? VoiceArgv(1):"";
     if (strcmp(value,"0") && strcmp(value,"1")) { C1Printf("p2p_localhost 1 or 0\n");return; }
+    if (P2PStartupProtocolMode()!=0) {
+        P2PStartupInvalidate();
+        g_p2pEnabled=!strcmp(value,"1");g_p2pLobbyPending=FALSE;g_p2pLobbyError[0]=0;
+        unsigned long long uid=P2PLocalUid();
+        if (uid!=g_p2pIntentUid && g_p2pIntentUid) {
+            P2PPublishIntent("failed",FALSE);g_p2pHasRoom=FALSE;
+        }
+        g_p2pIntentUid=uid;P2PStartupSnapshot();
+        if (g_p2pEnabled) P2PArmCurrentRoom();
+        else P2PSetState(P2PStartupBusy() ? P2P_STOPPING:P2P_IDLE,"");
+        P2PLobbyTick();return;
+    }
     g_p2pEnabled=!strcmp(value,"1");g_p2pLobbyError[0]=0;
-    if (g_p2pEnabled) g_p2pIntentUid=NdLocalUid();
+    if (g_p2pEnabled) g_p2pIntentUid=P2PLocalUid();
     if (g_p2pEnabled) P2PHostCurrentRoom();
     else { g_p2pLobbyPending=FALSE;InterlockedExchange(&g_p2pStop,1); }
+    P2PLobbyTick();
+}
+
+static void __cdecl P2PCmdStartIntent(void)
+{
+    const char *args[3];P2PRoomContext selected;
+    int mode=P2PStartupProtocolMode();
+    if (mode==0) return; /* old UI/startup owns the unchanged legacy route */
+    if (mode!=1 || VoiceArgc()!=5 ||
+        (strcmp(VoiceArgv(1),"ready") && strcmp(VoiceArgv(1),"start"))) {
+        lstrcpyA(g_p2pLobbyError,"The local start intent is invalid.");P2PLobbyTick();return;
+    }
+    for (int i=0;i<3;++i) args[i]=VoiceArgv(i+2);
+    const char *bad=P2PParseRoomContext(3,args,&selected);
+    if (bad || !g_p2pEnabled || !g_p2pHasRoom || !g_p2pIntentUid || P2PLocalUid()!=g_p2pIntentUid ||
+        strcmp(selected.map,g_p2pRoom.map) || strcmp(selected.session,g_p2pRoom.session) ||
+        strcmp(selected.gametype,g_p2pRoom.gametype) || strcmp(selected.category,g_p2pRoom.category)) {
+        lstrcpyA(g_p2pLobbyError,"The local start intent does not match the owned room.");P2PLobbyTick();return;
+    }
+    /* Ready followed by Start is the same attempt. No room rewrite, renewed
+     * lease, second worker or reset is permitted by a duplicate UI request. */
+    if (P2PStartupAttemptCurrent(g_p2pIntentConfig.startupGeneration)) { P2PLobbyTick();return; }
+    if (P2PStartupBusy()) {
+        lstrcpyA(g_p2pLobbyError,"Host is still closing. Wait before retrying.");P2PLobbyTick();return;
+    }
+    /* A terminal worker must never become current again while arming clears
+     * its old failure state. A retry owns a separately issued token. */
+    P2PStartupInvalidate();
+    P2PArmCurrentRoom();
+    if (g_p2pLobbyError[0]) { P2PLobbyTick();return; }
+    unsigned long generation=P2PStartupIssue();
+    if (!generation) {
+        lstrcpyA(g_p2pLobbyError,"The local startup generation is exhausted. Restart the client.");P2PLobbyTick();return;
+    }
+    P2PConfig c=g_p2pIntentConfig;c.startupGeneration=generation;g_p2pIntentConfig=c;
+    ++g_p2pLobbyRequest;
+    P2PSetState(P2P_STARTING,"");
+    if (!P2PPublishIntent("starting",FALSE) || !P2PStartConfigured(NULL,NULL,NULL,&c)) {
+        P2PStartupInvalidate();
+        lstrcpyA(g_p2pLobbyError,"Cannot start the selected local host. Choose the room again to retry.");
+        P2PSetState(P2P_FAILED,g_p2pLobbyError);
+    }
+    P2PLobbyTick();
+}
+static void __cdecl P2PCmdCancelStart(void)
+{
+    if (P2PStartupProtocolMode()==0) return;
+    P2PStartupInvalidate();g_p2pLobbyPending=FALSE;g_p2pLobbyError[0]=0;
+    /* Retain selected enabled intent, so cancellation cannot fall through to
+     * a dedicated server while native/SDK cleanup is still pending. */
+    P2PSetState(P2PStartupBusy() ? P2P_STOPPING:P2P_IDLE,"");
+    P2PPublishIntent(P2PStartupBusy() ? "stopping":"idle",FALSE);
     P2PLobbyTick();
 }
 
@@ -801,6 +971,7 @@ static void __cdecl P2PCmdLocalhost(void)
 
 static void __cdecl P2PCmdHost(void)
 {
+    if (P2PStartupProtocolMode()!=0) { C1Printf("p2phost: use the selected room Ready or Start control\n");return; }
     const char *map = VoiceArgc() > 1 ? VoiceArgv(1) : "";
     const char *gt = VoiceArgc() > 2 ? VoiceArgv(2) : "";
     const char *zone = VoiceArgc() > 3 ? VoiceArgv(3) : "";
@@ -812,9 +983,11 @@ static void __cdecl P2PCmdHost(void)
 
 static void __cdecl P2PCmdStop(void)
 {
+    if (P2PStartupProtocolMode()!=0) P2PStartupInvalidate();
     g_p2pEnabled = FALSE;
     g_p2pLobbyPending = FALSE;
     g_p2pLobbyError[0] = 0;
+    if (P2PStartupProtocolMode()!=0) { P2PStartupSnapshot();P2PLobbyTick(); }
     if (!g_p2pThread || WaitForSingleObject(g_p2pThread, 0) == WAIT_OBJECT_0) { C1Printf("p2pstop: not hosting\n"); return; }
     InterlockedExchange(&g_p2pStop, 1);
     C1Printf("p2pstop: stopping the match server\n");
@@ -836,6 +1009,8 @@ static void __cdecl P2PCmdStatus(void)
 static C1Cmd g_p2pCmds[] = {
     { NULL, "p2p_room", (void *)P2PCmdRoom },
     { NULL, "p2p_localhost", (void *)P2PCmdLocalhost },
+    { NULL, "p2p_start_intent", (void *)P2PCmdStartIntent },
+    { NULL, "p2p_cancel_start", (void *)P2PCmdCancelStart },
     { NULL, "p2phost", (void *)P2PCmdHost },
     { NULL, "p2pstop", (void *)P2PCmdStop },
     { NULL, "p2pstatus", (void *)P2PCmdStatus },
@@ -853,5 +1028,5 @@ static void InstallP2PHost(void)
     const char *cl = GetCommandLineA();
     BOOL autostart = cl && (strstr(cl, "k33_p2pHost 1") || strstr(cl, "k33_p2pHost \"1\""));
     Log("p2p: %d commands (p2phost, p2pstop, p2pstatus)%s", added, autostart ? "; hosting at startup (k33_p2pHost 1)" : "");
-    if (autostart) P2PStart(NULL, NULL, NULL);
+    if (autostart && P2PStartupProtocolMode()==0) P2PStart(NULL, NULL, NULL);
 }

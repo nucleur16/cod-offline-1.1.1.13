@@ -36,7 +36,7 @@ class MapModeCompatibility(unittest.TestCase):
         sources = {key: (AS / path).read_text(encoding='utf-8-sig') for key, path in FILES.items()}
         wanted = {
             'match': ['isSupportedMapMode', 'listMap', 'listMode', 'listSameTypeMap', 'onCreateRoomHandle', 'onQuickMatchHandle'],
-            'lobby': ['isSupportedMapMode', 'isManagedTrainingRoom', 'onChangeRoomInfoHandle', 'onChangeReadyStateHandle', 'applyRoomReadyState', 'onStartMatchHandle', 'refreshRoomMaps'],
+            'lobby': ['usesLocalStartupProtocol', 'isSupportedMapMode', 'isManagedTrainingRoom', 'onChangeRoomInfoHandle', 'onChangeReadyStateHandle', 'applyRoomReadyState', 'onStartMatchHandle', 'refreshRoomMaps'],
             'mp': ['set active', 'set mapDP', 'refreshMPMaps', 'refreshMPData', 'onMapChangedHandle', 'onMapAlbumChangeHandle', 'getRoomCreatorParams'],
             'mini': ['set mapDP', 'refreshMPMaps', 'refreshMPData', 'onMapChangedHandle'],
             'ct': ['set active', 'setMaps', 'onMapCBChangedHandle', 'onMapAlbumChangeHandle', 'getRoomCreatorParams'],

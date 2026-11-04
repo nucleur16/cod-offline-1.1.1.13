@@ -438,6 +438,11 @@ package codo.controllers
          {
             return;
          }
+         if(this.usesLocalStartupProtocol() && this._localHostPendingAction != "")
+         {
+            this.cancelCampaignHostStart();
+            return;
+         }
          var readyToSet:Boolean = !this.isReady();
          if(readyToSet && !this.isSupportedMapMode(this._roomObj.currentMap.id,this._roomObj.currentMatchMode.id))
          {
@@ -566,6 +571,8 @@ package codo.controllers
       private function bind_onRoomLeft(cRes:Object) : void
       {
          this.cancelCampaignHostStart();
+         if(this.usesLocalStartupProtocol() && CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") == "1")
+            CFunctionContainerCommon.execnow("p2p_localhost 0");
          this._campaignHostRequestedMap = "";
          var directSurvival:Boolean = CFunctionContainerCommon.Dvar_GetString("codol_survival_direct_home") == "1";
          CFunctionContainerCommon.setdvar("codol_survival_direct_home","0");
@@ -666,7 +673,20 @@ package codo.controllers
          return ScaleformUtil.isScaleform && this.isRoomHost() && this._roomObj != null && !this._roomObj.isPlayList && /^[a-z][a-z0-9_]{0,63}$/.test(this._roomObj.currentMap.id) && /^[a-z][a-z0-9_]{0,31}$/.test(this.localHostGameType());
       }
 
+      private function usesLocalStartupProtocol() : Boolean
+      {
+         var mode:String = CFunctionContainerCommon.Dvar_GetString("ui_p2p_startup_protocol");
+         return mode.length > 0 && mode != "0";
+      }
+
       private function cancelCampaignHostStart() : void
+      {
+         if(this.usesLocalStartupProtocol() && CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") == "1")
+            CFunctionContainerCommon.execnow("p2p_cancel_start");
+         this.completeCampaignHostWait();
+      }
+
+      private function completeCampaignHostWait() : void
       {
          if(this._campaignHostTimer != null)
          {
@@ -682,14 +702,19 @@ package codo.controllers
       private function beginCampaignLocalHost(startPara:Object, waitForStart:Boolean, action:String = "start") : void
       {
          var selectedMission:String = this._roomObj.currentMap.id;
+         var protocol:Boolean = this.usesLocalStartupProtocol();
+         if(protocol && waitForStart && this._localHostPendingAction != "") return;
          if(!waitForStart && this._campaignHostRequestedMap == selectedMission)
          {
             return;
          }
          this._campaignHostRequestedMap = selectedMission;
          // Keep the actual coop mission/session spelling; native hosting resolves its MP level.
-         CFunctionContainerCommon.execnow("p2p_room " + selectedMission + " " + this.localHostGameType() + " " + this.localHostCategory());
-         if(this.isLocalCampaignRoom()) CFunctionContainerCommon.execnow("p2p_localhost 1");
+         if(!protocol || !waitForStart)
+         {
+            CFunctionContainerCommon.execnow("p2p_room " + selectedMission + " " + this.localHostGameType() + " " + this.localHostCategory());
+            if(this.isLocalCampaignRoom()) CFunctionContainerCommon.execnow("p2p_localhost 1");
+         }
          if(!waitForStart)
          {
             return;
@@ -700,6 +725,8 @@ package codo.controllers
          this._campaignHostStartPara = startPara;
          this._localHostPendingAction = action;
          this._campaignHostWaitStart = getTimer();
+         if(protocol)
+            CFunctionContainerCommon.execnow("p2p_start_intent " + action + " " + selectedMission + " " + this.localHostGameType() + " " + this.localHostCategory());
          if(this._campaignHostTimer == null)
          {
             this._campaignHostTimer = new Timer(250);
@@ -710,6 +737,7 @@ package codo.controllers
 
       private function onCampaignHostReady(evt:TimerEvent) : void
       {
+         if(this._localHostPendingAction == "") return;
          if(!this.isLocalHostRoom() || this._roomObj.currentMap.id != this._campaignHostSelectedMap || this.isLeavingRoom() || this.localHostGameType() + " " + this.localHostCategory() != this._campaignHostContext || CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") != "1")
          {
             this.cancelCampaignHostStart();
@@ -721,7 +749,7 @@ package codo.controllers
          {
             var startPara:Object = this._campaignHostStartPara;
             var action:String = this._localHostPendingAction;
-            this.cancelCampaignHostStart();
+            this.completeCampaignHostWait();
             if(action == "ready") this.applyRoomReadyState(true);
             else this.request(AsyncTaskID.START_MATCH,startPara);
             return;

@@ -59,6 +59,12 @@ package codo.k33
          var gt:String=this.gameType();
          if(!/^[a-z0-9_]+$/.test(map) || !/^[a-z0-9_]+$/.test(gt))
          {
+            var protocol:String=CFunctionContainerCommon.Dvar_GetString("ui_p2p_startup_protocol");
+            if(protocol.length>0 && protocol!="0" && this.localSelection)
+            {
+               CFunctionContainerCommon.execnow("p2p_cancel_start");
+               return;
+            }
             this.lastContext="";
             return;
          }

@@ -10,7 +10,7 @@ SOURCE=ROOT/'zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/co
 class TrainingControls(unittest.TestCase):
  def test_training_commit_return_ready_and_custom_room_boundaries(self):
   source=SOURCE.read_text(encoding='utf8')
-  methods={n:javascript(body(source,n)) for n in ('isManagedTrainingRoom','isSupportedMapMode','initRoomInfo','onChangeRoomInfoHandle','onChangeReadyStateHandle','applyRoomReadyState','resetRoom')}
+  methods={n:javascript(body(source,n)) for n in ('usesLocalStartupProtocol','isManagedTrainingRoom','isSupportedMapMode','initRoomInfo','onChangeRoomInfoHandle','onChangeReadyStateHandle','applyRoomReadyState','resetRoom')}
   methods={n:re.sub(r'var (\w+):(PlayListObj|RoomObj)',r'var \1',s) for n,s in methods.items()}
   script=r'''
 const assert=require('assert');

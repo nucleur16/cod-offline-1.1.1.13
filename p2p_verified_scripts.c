@@ -205,3 +205,7 @@ refused:
     }
     return 0;
 }
+
+/* New duplex startup is an explicit, isolated protocol. Legacy preparation
+ * above remains unchanged; it cannot silently accept a principal envelope. */
+#include "p2p_startup_bridge.c"
