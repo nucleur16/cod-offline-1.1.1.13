@@ -99,7 +99,7 @@ static BOOL PiActiveTransfer(void *buffer,DWORD size,BOOL write,int revoke_ack,D
 /* Only the top of PiServerFiber calls this. Yielded Init/Frame cannot reach it. */
 static void PiActiveBetweenFrames(void)
 {
-    uint64_t wall,mono;int result=0;BOOL first;
+    uint64_t wall,mono,offered_deadline=0;int result=0;BOOL first;
     if(InterlockedCompareExchange(&g_p2pa.phase,2,1)!=1)return;
     if(g_p2pa.command.operation==P2PA_REVOKE) {
         if(g_piPrincipalQuarantine)g_piPrincipalQuarantine();
@@ -109,8 +109,10 @@ static void PiActiveBetweenFrames(void)
         first=InterlockedCompareExchange(&g_p2paMode,0,0)==P2PA_BOOTSTRAP;
         if(first&&InterlockedCompareExchange(&g_p2paMode,P2PA_PROMOTING,P2PA_BOOTSTRAP)!=P2PA_BOOTSTRAP)goto done;
         if(!PiActivePermission()||!g_piPrincipalCurrent||g_piPrincipalCurrent()!=1)goto done;
-        AcquireSRWLockExclusive(&g_p2paLock);result=PiActiveClock(&wall,&mono)&&P2PAPrepare(&g_p2pa.policy,&g_p2pa.command,wall,mono);ReleaseSRWLockExclusive(&g_p2paLock);
-        if(result&&g_piStartupPrincipals)result=g_piStartupPrincipals(g_p2pa.command.principals,g_p2pa.command.length)==1;
+        AcquireSRWLockExclusive(&g_p2paLock);result=PiActiveClock(&wall,&mono)&&P2PAPrepare(&g_p2pa.policy,&g_p2pa.command,wall,mono);
+        if(result)offered_deadline=g_p2pa.policy.offered_deadline;
+        ReleaseSRWLockExclusive(&g_p2paLock);
+        if(result&&g_piActivePrincipals)result=g_piActivePrincipals(g_p2pa.command.principals,g_p2pa.command.length,offered_deadline)==1;
         else result=0;
         if(!result||!PiActivePermission()||g_piPrincipalCurrent()!=1){result=0;goto done;}
         AcquireSRWLockExclusive(&g_p2paLock);result=PiActiveClock(&wall,&mono)&&P2PACommit(&g_p2pa.policy,&g_p2pa.command,result,wall,mono);ReleaseSRWLockExclusive(&g_p2paLock);
@@ -173,7 +175,7 @@ static BOOL PiActiveStart(void)
 {
     char selected[2];HANDLE worker;
     if(!GetEnvironmentVariableA("CODOL_P2P_ACTIVE_PIPE",selected,sizeof(selected)))return TRUE;
-    if(InterlockedCompareExchange(&g_p2paStarted,1,0)||!P2PSCurrent(&g_piStartup))return FALSE;
+    if(!g_piActivePrincipals||InterlockedCompareExchange(&g_p2paStarted,1,0)||!P2PSCurrent(&g_piStartup))return FALSE;
     g_p2pa.boot=g_piStartup.active_bootstrap;P2PAInitPolicy(&g_p2pa.policy,&g_p2pa.boot);
     if(g_p2pa.boot.valid!=1)return FALSE;
     worker=CreateThread(NULL,0,PiActiveWorker,NULL,0,NULL);

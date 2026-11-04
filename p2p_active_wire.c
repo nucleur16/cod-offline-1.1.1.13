@@ -44,18 +44,18 @@ int P2PAMakeHello(const p2pa_bootstrap_t *boot,const unsigned char nonce[32],uns
 int P2PAParseControl(const p2pa_bootstrap_t *boot,const unsigned char hello[P2PA_HELLO_SIZE],
     const void *raw,size_t n,p2p_startup_sha256_fn sha,p2pa_control_t *out)
 {
-    static const unsigned char domain[]="CODOL-P2P-ACTIVE-CONTROL-V1";
+    static const unsigned char domain[]="CODOL-P2P-ACTIVE-CONTROL-V2";
     const unsigned char *p=(const unsigned char *)raw,*bundle;
     unsigned op,len;unsigned char hash[32],input[sizeof(domain)+P2PA_HELLO_SIZE+240+656];size_t at;
     if(!out)return 0;
     memset(out,0,sizeof(*out));
     if(!boot||boot->valid!=1||!hello||!p||!sha||n<P2PA_CONTROL_HEADER||n>P2PA_MAX_CONTROL||
-       memcmp(p,"CPACv1\0\0",8)||p2pa_u32(p+12)!=n||p2pa_u32(p+204)||
+       memcmp(p,"CPACv2\0\0",8)||p2pa_u32(p+12)!=n||
        memcmp(p+24,hello+16,32)||memcmp(p+56,boot->binding,32)||memcmp(p+88,boot->manifest,32))return 0;
     op=p2pa_u32(p+8);len=p2pa_u32(p+200);bundle=p+P2PA_CONTROL_HEADER;
     if(!p2pa_u64(p+16)||!p2pa_nonzero(p+120,16)||!p2pa_nonzero(p+136,32)||
        !p2pa_u64(p+168)||!p2pa_u64(p+176)||!p2pa_nonzero(p+184,16)||n!=P2PA_CONTROL_HEADER+len||
-       (op!=P2PA_UPDATE&&op!=P2PA_REVOKE)||(op==P2PA_REVOKE&&len)||
+       (op!=P2PA_UPDATE&&op!=P2PA_REVOKE)||(op==P2PA_REVOKE&&(len||p2pa_u32(p+204)))||
        (op==P2PA_UPDATE&&(!p2pa_bundle(bundle,len)||len!=boot->length||
         memcmp(bundle,boot->principals,40)||memcmp(bundle+64,boot->principals+64,len-64)||
         p2pa_u64(bundle+56)>p2pa_u64(p+168))))return 0;
@@ -64,6 +64,7 @@ int P2PAParseControl(const p2pa_bootstrap_t *boot,const unsigned char hello[P2PA
     memcpy(input+at,p,240);at+=240;if(len)memcpy(input+at,bundle,len);at+=len;
     if(!sha(input,at,hash)||memcmp(hash,p+240,32))return 0;
     out->operation=op;out->length=len;out->sequence=p2pa_u64(p+16);
+    out->owner_deadline_low=p2pa_u32(p+204);
     out->hard_expires=p2pa_u64(p+168);out->path_epoch=p2pa_u64(p+176);
     memcpy(out->binding,p+240,32);memcpy(out->active_id,p+120,16);memcpy(out->handoff_id,p+136,32);memcpy(out->path_id,p+184,16);
     if(op==P2PA_UPDATE){out->principals=bundle;out->native_sequence=p2pa_u64(bundle+40);out->issued=p2pa_u64(bundle+48);out->expires=p2pa_u64(bundle+56);}
@@ -86,28 +87,37 @@ int P2PAObserve(p2pa_policy_t *policy,uint64_t wall,uint64_t mono)
 }
 int P2PAPrepare(p2pa_policy_t *policy,const p2pa_control_t *control,uint64_t wall,uint64_t mono)
 {
+    uint32_t delta;uint64_t owner_deadline;
     if(!policy||!control||!P2PAObserve(policy,wall,mono)||policy->sequence==UINT64_MAX||
        control->sequence!=policy->sequence+1)return 0;
     if(policy->active&&(control->hard_expires!=policy->hard_expires||memcmp(control->active_id,policy->active_id,16)||
        memcmp(control->handoff_id,policy->handoff_id,32)))return 0;
-    if(control->operation==P2PA_REVOKE)return 1;
+    if(control->operation==P2PA_REVOKE)return control->owner_deadline_low==0;
     if(!(control->operation==P2PA_UPDATE&&policy->native_sequence!=UINT64_MAX&&
         control->native_sequence==policy->native_sequence+1&&control->expires>wall&&
         control->hard_expires>=control->expires&&control->issued<=wall+((wall<=UINT64_MAX-2000)?2000:0)&&
         (wall<control->issued||wall-control->issued<=5000)&&control->hard_expires-wall<=UINT64_MAX-mono))return 0;
+    /* The retained SDK's global QPC cap survives IPC latency even when UTC is
+     * flat. Low32 is a bounded future delta, including a valid zero at wrap. */
+    delta=(uint32_t)(control->owner_deadline_low-(uint32_t)mono);
+    if(!delta||delta>30000u||mono>UINT64_MAX-delta)return 0;
+    owner_deadline=mono+delta;
     /* Capture the earliest offered budgets before native installation. Rechecks
      * may observe a flat wall clock while monotonic time advances; they must
      * not turn elapsed install/ACK time into additional authorization. */
     if(!policy->offered_sequence) {
         policy->offered_sequence=control->sequence;policy->offered_native=control->native_sequence;
         policy->offered_expires=control->expires;policy->offered_hard=control->hard_expires;
+        policy->offered_owner_deadline=owner_deadline;
         policy->offered_deadline=mono+control->expires-wall;
         policy->offered_hard_deadline=policy->active?policy->hard_deadline:mono+control->hard_expires-wall;
         if(policy->offered_deadline>policy->offered_hard_deadline)policy->offered_deadline=policy->offered_hard_deadline;
+        if(policy->offered_deadline>owner_deadline)policy->offered_deadline=owner_deadline;
         memcpy(policy->offered_binding,control->binding,32);
     }
     return policy->offered_sequence==control->sequence&&policy->offered_native==control->native_sequence&&
         policy->offered_expires==control->expires&&policy->offered_hard==control->hard_expires&&
+        policy->offered_owner_deadline==owner_deadline&&
         !memcmp(policy->offered_binding,control->binding,32)&&mono<policy->offered_deadline&&mono<policy->offered_hard_deadline;
 }
 int P2PACommit(p2pa_policy_t *policy,const p2pa_control_t *control,int result,uint64_t wall,uint64_t mono)
@@ -123,7 +133,7 @@ int P2PACommit(p2pa_policy_t *policy,const p2pa_control_t *control,int result,ui
 int P2PAMakeAck(const p2pa_control_t *control,const unsigned char nonce[32],int result,uint64_t native_seq,unsigned char out[P2PA_ACK_SIZE])
 {
     if(!control||!nonce||!out||!p2pa_nonzero(nonce,32)||!control->sequence||!native_seq)return 0;
-    memset(out,0,P2PA_ACK_SIZE);memcpy(out,"CPAKv1\0\0",8);p2pa_put64(out+8,control->sequence);
+    memset(out,0,P2PA_ACK_SIZE);memcpy(out,"CPAKv2\0\0",8);p2pa_put64(out+8,control->sequence);
     memcpy(out+16,nonce,32);memcpy(out+48,control->binding,32);p2pa_put32(out+80,result==1?1:0);
     p2pa_put32(out+84,control->operation);p2pa_put64(out+88,native_seq);return 1;
 }

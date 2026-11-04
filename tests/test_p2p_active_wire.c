@@ -14,7 +14,7 @@ int main(int argc,char **argv)
 {
     unsigned char *scripts,*bundle,*nonce,*hello,*raw,*expected,*bad,actual[192],ack[96];
     size_t sn,bn,nn,hn,n,an,i; p2p_startup_view_t view; p2pa_bootstrap_t boot;
-    p2pa_control_t command; p2pa_policy_t policy,copy;
+    p2pa_control_t command,variant; p2pa_policy_t policy,copy;
     CHECK(argc==10);scripts=readfile(argv[1],&sn);bundle=readfile(argv[2],&bn);nonce=readfile(argv[3],&nn);hello=readfile(argv[4],&hn);
     CHECK(nn==32&&hn==192);memset(&view,0,sizeof(view));view.valid=1;view.scripts=scripts;view.scripts_length=sn;
     view.principals=bundle;view.principals_length=bn;memset(view.nonce,'s',32);memset(view.binding,'b',32);
@@ -38,6 +38,33 @@ int main(int argc,char **argv)
             CHECK(copy.deadline==mono+command.expires-wall);
             CHECK(copy.hard_deadline==mono+command.hard_expires-wall);
             copy=policy;CHECK(!P2PACommit(&copy,&command,1,wall,mono+30000));CHECK(copy.dead);
+            /* Pure policy cases operate on decoded typed metadata; they do
+             * not substitute for signature/wire validation. */
+            variant=command;variant.owner_deadline_low=(uint32_t)mono;
+            P2PAInitPolicy(&copy,&boot);CHECK(!P2PAPrepare(&copy,&variant,wall,mono));
+            variant.owner_deadline_low=(uint32_t)(mono+30001);
+            P2PAInitPolicy(&copy,&boot);CHECK(!P2PAPrepare(&copy,&variant,wall,mono));
+            variant.owner_deadline_low=(uint32_t)(mono-1);
+            P2PAInitPolicy(&copy,&boot);CHECK(!P2PAPrepare(&copy,&variant,wall,mono));
+            variant.owner_deadline_low=(uint32_t)(mono+1000);
+            P2PAInitPolicy(&copy,&boot);CHECK(P2PAPrepare(&copy,&variant,wall,mono));
+            CHECK(copy.offered_deadline==mono+1000);
+            CHECK(P2PAPrepare(&copy,&variant,wall,mono+500));
+            CHECK(P2PACommit(&copy,&variant,1,wall,mono+500));CHECK(copy.deadline==mono+1000);
+            CHECK(!P2PAObserve(&copy,wall,mono+1000));
+            P2PAInitPolicy(&copy,&boot);CHECK(P2PAPrepare(&copy,&variant,wall,mono));
+            CHECK(!P2PACommit(&copy,&variant,1,wall,mono+1000));CHECK(copy.dead);
+            /* A low32 value of zero is a valid future deadline across wrap. */
+            variant.owner_deadline_low=0;
+            P2PAInitPolicy(&copy,&boot);CHECK(P2PAPrepare(&copy,&variant,wall,UINT64_C(0x100000000)-100));
+            CHECK(copy.offered_owner_deadline==UINT64_C(0x100000000));
+            CHECK(P2PACommit(&copy,&variant,1,wall,UINT64_C(0x100000000)-1));
+            CHECK(!P2PAObserve(&copy,wall,UINT64_C(0x100000000)));
+            variant.expires=variant.hard_expires=wall+50;variant.issued=wall;
+            variant.owner_deadline_low=49; /* +150 would overflow full uint64. */
+            P2PAInitPolicy(&copy,&boot);CHECK(!P2PAPrepare(&copy,&variant,wall,UINT64_MAX-100));
+            variant=command;variant.operation=P2PA_REVOKE;variant.owner_deadline_low=1;
+            P2PAInitPolicy(&copy,&boot);CHECK(!P2PAPrepare(&copy,&variant,wall,mono));
         }
         CHECK(P2PACommit(&policy,&command,1,wall,mono));
         CHECK(P2PAMakeAck(&command,hello+16,1,policy.native_sequence,ack));

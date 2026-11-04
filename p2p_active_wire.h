@@ -1,4 +1,4 @@
-/* Private retained-SDK active-control v1. Parsing is not authorization. */
+/* Private retained-SDK active-control v2. Parsing is not authorization. */
 #ifndef CODOL_P2P_ACTIVE_WIRE_H
 #define CODOL_P2P_ACTIVE_WIRE_H
 #include "p2p_startup_wire.h"
@@ -14,6 +14,7 @@ typedef struct {
 } p2pa_bootstrap_t;
 typedef struct {
     unsigned operation,length;
+    uint32_t owner_deadline_low;
     uint64_t sequence,native_sequence,issued,expires,hard_expires,path_epoch;
     unsigned char binding[32],active_id[16],handoff_id[32],path_id[16];
     const unsigned char *principals;
@@ -21,7 +22,7 @@ typedef struct {
 typedef struct {
     unsigned active,dead,clock_seen;
     uint64_t sequence,native_sequence,last_wall,last_mono,expires,deadline,hard_expires,hard_deadline;
-    uint64_t offered_sequence,offered_native,offered_expires,offered_hard,offered_deadline,offered_hard_deadline;
+    uint64_t offered_sequence,offered_native,offered_expires,offered_hard,offered_deadline,offered_hard_deadline,offered_owner_deadline;
     unsigned char offered_binding[32];
     unsigned char active_id[16],handoff_id[32];
 } p2pa_policy_t;

@@ -64,10 +64,12 @@ static BOOL g_piHooked;
 static LONG g_piSession;
 #if CODOL_LOCAL_TESTING
 typedef int (__cdecl *Sh1xPrincipalCurrentFn)(void);
+typedef int (__cdecl *Sh1xActivePrincipalInstallFn)(const void *,unsigned,uint64_t);
 typedef void (__cdecl *Sh1xPrincipalQuarantineFn)(void);
 static P2PStartupBridge g_piStartup; /* one process-lifetime context, never stack-owned */
 static volatile LONG g_piStartupSelected,g_piPrincipalFresh;
 static P2PVSInstallFn g_piStartupScripts,g_piStartupPrincipals;
+static Sh1xActivePrincipalInstallFn g_piActivePrincipals;
 static Sh1xPrincipalCurrentFn g_piPrincipalCurrent;
 static Sh1xPrincipalQuarantineFn g_piPrincipalQuarantine;
 #include "p2p_active_bridge.c"
@@ -631,6 +633,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     if(startup_mode==1) {
         P2PVSInstallFn scripts=(P2PVSInstallFn)(void *)GetProcAddress(m,"Sh1xHost_UseVerifiedScripts");
         P2PVSInstallFn principals=(P2PVSInstallFn)(void *)GetProcAddress(m,"Sh1xHost_InstallRelayPrincipals");
+        Sh1xActivePrincipalInstallFn active_principals=(Sh1xActivePrincipalInstallFn)(void *)GetProcAddress(m,"Sh1xHost_InstallActiveRelayPrincipals");
         Sh1xPrincipalCurrentFn current=(Sh1xPrincipalCurrentFn)(void *)GetProcAddress(m,"Sh1xHost_RelayPrincipalsCurrent");
         Sh1xPrincipalQuarantineFn quarantine=(Sh1xPrincipalQuarantineFn)(void *)GetProcAddress(m,"Sh1xHost_QuarantineRelayPrincipals");
         if(!scripts||!principals||!current||!quarantine||!P2PSCurrent(&g_piStartup)) {
@@ -640,6 +643,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
             FreeLibrary(m);DeleteFileA(copy);return 1;
         }
         g_piStartupScripts=scripts;g_piStartupPrincipals=principals;
+        g_piActivePrincipals=active_principals;
         g_piPrincipalCurrent=current;g_piPrincipalQuarantine=quarantine;
         InterlockedExchange(&g_piPrincipalFresh,0);
         InterlockedExchange(&g_piStartupSelected,1);

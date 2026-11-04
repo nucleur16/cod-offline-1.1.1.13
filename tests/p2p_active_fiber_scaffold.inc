@@ -4,6 +4,7 @@ typedef int SRWLOCK;
 typedef struct { int64_t QuadPart; } LARGE_INTEGER;
 static int require_clock_lock;
 static int commit_clock_hook,commit_clock_calls;
+static int (*g_piActivePrincipals)(const void *,unsigned,uint64_t);
 static void AcquireSRWLockExclusive(SRWLOCK *p){(void)p;++lock_depth;}
 static void ReleaseSRWLockExclusive(SRWLOCK *p){(void)p;assert(lock_depth>0);--lock_depth;}
 static BOOL QueryPerformanceFrequency(LARGE_INTEGER *p){p->QuadPart=1000;return TRUE;}

@@ -55,6 +55,8 @@ def main():
     run=function(sources['p2p_inproc.c'],'P2PInprocRun')
     assert run.index('InterlockedIncrement(&g_piSession)')<run.index('InterlockedExchange(&g_piState, PI_INIT_PENDING)')
     assert 'g_piSession = 0'not in run and 'g_piSession=0'not in run
+    assert 'GetProcAddress(m,"Sh1xHost_InstallActiveRelayPrincipals")' in run
+    assert 'g_piActivePrincipals=active_principals;' in run
     bridge=sources['p2p_startup_bridge.c'];start=bridge.index('typedef struct {');end=bridge.index('} P2PStartupBridge;',start)+len('} P2PStartupBridge;')
     globals_begin=native_host.index('static int sys_hosted;');globals_end=native_host.index('int Sys_IsHosted(',globals_begin)
     active=(root/'p2p_active_bridge.c').read_text()
@@ -65,14 +67,14 @@ def main():
         selected[name]=function(bridge,name)
     selected['P2PStartupAttemptCurrent']=function(sources['p2p.c'],'P2PStartupAttemptCurrent')
     selected['P2PStartupInvalidate']=function(sources['p2p.c'],'P2PStartupInvalidate')
-    for name in ('Sh1xHost_UseVerifiedScripts','Sh1xHost_InstallRelayPrincipals','Sh1xHost_RelayPrincipalsCurrent','Sh1xHost_QuarantineRelayPrincipals'):
+    for name in ('CODOL_HostSourceControlAllowed','Sh1xHost_UseVerifiedScripts','Sh1xHost_InstallRelayPrincipals','Sh1xHost_InstallActiveRelayPrincipals','Sh1xHost_RelayPrincipalsCurrent','Sh1xHost_QuarantineRelayPrincipals'):
         selected[name]=function(native_host,name)
     for name in ('PiStartupPrincipalCheck','PiInstallStartup','PiAbortStartupWorker','PiServerFiber','P2PInprocUsed','P2PInprocPrincipalFresh','P2PInprocCancelStartup'):
         selected[name]=function(sources['p2p_inproc.c'],name)
     active_names=['PiActiveClock','PiActiveDeny','PiActiveBootstrapExpired','PiActivePeer','PiActivePermission','PiActiveIoCurrent','PiActiveTransfer','PiActiveBetweenFrames']
     for name in active_names:selected[name]=function(active,name)
     order=['P2PSAtomicCAS','P2PSWallMillis','P2PStartupProtocolMode','P2PStartupAttemptCurrent','P2PSParentAlive','P2PSRefuse','P2PSCurrent','P2PSClose','P2PSAcknowledge',
-           'Sh1xHost_UseVerifiedScripts','Sh1xHost_InstallRelayPrincipals','Sh1xHost_RelayPrincipalsCurrent','Sh1xHost_QuarantineRelayPrincipals',
+           'CODOL_HostSourceControlAllowed','Sh1xHost_UseVerifiedScripts','Sh1xHost_InstallRelayPrincipals','Sh1xHost_InstallActiveRelayPrincipals','Sh1xHost_RelayPrincipalsCurrent','Sh1xHost_QuarantineRelayPrincipals',
            'PiStartupPrincipalCheck','PiInstallStartup','PiAbortStartupWorker','PiServerFiber','P2PInprocUsed','P2PInprocPrincipalFresh',
            'P2PInprocCancelStartup','P2PStartupInvalidate']
     at=order.index('PiStartupPrincipalCheck');order[at:at]=active_names
@@ -96,6 +98,9 @@ def main():
         binary=scratch/'startup-fiber'
         template=(root/'tests/test_p2p_startup_fiber.c').read_text()
         template=template.replace('static int CODOL_HostMatchInitialize(void)','int CODOL_HostMatchInitialize(void)')
+        template=template.replace('if(!init_result)host_state=1;','if(!init_result){host_state=1;sys_hosted=1;}')
+        template=template.replace('monotime.tv_sec=10;monotime.tv_nsec=0;',
+            'monotime.tv_sec=10;monotime.tv_nsec=0;\n    if(!strcmp(argv[1],"active-owner-wrap")){monotime.tv_sec=4294967;monotime.tv_nsec=200000000;}')
         template=template.replace('static BOOL CloseHandle(HANDLE handle)',
             (root/'tests/p2p_active_io_scaffold.inc').read_text()+'\nstatic BOOL CloseHandle(HANDLE handle)')
         template=template.replace('assert(handle==(HANDLE)77);++closed;', 'assert(handle==(HANDLE)77);assert(!io_pending);++closed;')
@@ -119,6 +124,8 @@ def main():
                    'timeout-owned','cancel-wins','wrong-thread','runtime-expiry','wall-expiry','wall-expiry-latch','init-fail','cancel-yield']
         scenarios+=['active-success','active-abort-owned','active-native-two','active-expired-bootstrap','active-parent-loss']
         scenarios+=['active-install-budget','active-commit-bootstrap-boundary']
+        scenarios+=['active-missing-export','active-missing-native-peer','active-owner-transit',
+                    'active-owner-expired-stage','active-owner-native-delay','active-owner-wrap']
         scenarios+=['active-io-success','active-io-timeout','active-io-parent','active-io-foreign']
         if okay:
             for scenario in scenarios:
@@ -140,6 +147,10 @@ def main():
         assert late_promotion!=promotion
         controls.append(('late-bootstrap-promotion','active-commit-bootstrap-boundary',
                          functions.replace(promotion,late_promotion,1)))
+        fallback=promotion.replace('else result=0;',
+            'else if(result&&g_piStartupPrincipals)result=g_piStartupPrincipals(g_p2pa.command.principals,g_p2pa.command.length)==1;else result=0;',1)
+        assert fallback!=promotion
+        controls.append(('active-startup-fallback','active-missing-export',functions.replace(promotion,fallback,1)))
         for label,scenario,mutated in controls:
             (scratch/'actual_startup_functions.inc').write_text(mutated)
             negative=scratch/('startup-fiber-'+label);bad_compile=command[:-1]+[str(negative)]
@@ -163,6 +174,23 @@ def main():
             result=subprocess.run([bad_command[-1],'active-install-budget',str(args.vectors/'request.bin'),str(args.vectors/'envelope.bin')],env=environment,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
             results.append(dict(negative_control='late-install-budget-refresh',exit_code=result.returncode,output=result.stdout))
             okay=okay and result.returncode!=0 and 'g_p2pa.policy.deadline==39000' in result.stdout
+        wire_controls=[
+            ('ignore-sdk-owner-cap','active-owner-transit',actual_wire.replace(
+                'if(policy->offered_deadline>owner_deadline)policy->offered_deadline=owner_deadline;',
+                '/* MUTANT omitted SDK cap */',1)),
+            ('low32-as-absolute','active-owner-wrap',actual_wire.replace(
+                'owner_deadline=mono+delta;','owner_deadline=(uint64_t)control->owner_deadline_low;',1))]
+        for label,scenario,mutated in wire_controls:
+            assert mutated!=actual_wire
+            path=scratch/(label+'.c');path.write_text(mutated)
+            bad_command=[str(path)if part==str(root/'p2p_active_wire.c')else part for part in command]
+            bad_command[-1]=str(scratch/label)
+            compiled=execute(bad_command);okay=okay and compiled
+            if compiled:
+                result=subprocess.run([bad_command[-1],scenario,str(args.vectors/'request.bin'),str(args.vectors/'envelope.bin')],
+                    env=environment,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+                results.append(dict(negative_control=label,scenario=scenario,exit_code=result.returncode,output=result.stdout))
+                okay=okay and result.returncode!=0 and 'Assertion' in result.stdout
     paths=inputs+[root/'tests/test_p2p_startup_fiber.py',root/'tests/test_p2p_startup_fiber.c',
         root/'p2p_startup_wire.c',root/'p2p_startup_ownership.h',native/'src/win32/sys_host.c',
         native/'src/codol/net/codol_network.c',native/'src/codol/net/codol_principal_binding.c',native/'src/codol/script/codol_verified_sources.c']

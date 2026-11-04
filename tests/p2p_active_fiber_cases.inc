@@ -1,12 +1,14 @@
 static int active_case,active_calls;
 static uint64_t active_u64(const unsigned char *p){uint64_t n=0;unsigned i;for(i=0;i<8;i++)n|=(uint64_t)p[i]<<(8*i);return n;}
 static void active_put64(unsigned char *p,uint64_t n){unsigned i;for(i=0;i<8;i++)p[i]=(unsigned char)(n>>(8*i));}
-static int fixture_active_installer(const void *p,unsigned n)
+static int fixture_active_installer(const void *p,unsigned n,uint64_t owner_deadline)
 {
     assert(fixture_fiber&&fixture_thread==11&&!host_in_call&&!lock_depth);++active_calls;
-    int result=active_case==2?2:Sh1xHost_InstallRelayPrincipals(p,n);
+    assert(owner_deadline==g_p2pa.policy.offered_deadline);
+    int result=active_case==2?2:Sh1xHost_InstallActiveRelayPrincipals(p,n,owner_deadline);
     if(active_case==1)PiActiveDeny(0); /* Cancellation races successful install. */
     if(active_case==3)monotime.tv_sec+=5; /* Wall flat during actual native install. */
+    if(active_case==4)monotime.tv_sec+=1; /* Consume entire explicit owner cap. */
     return result;
 }
 static void active_between_frame_case(const char *scenario)
@@ -23,7 +25,8 @@ static void active_between_frame_case(const char *scenario)
         else assert(okay&&io_completes==7&&!io_cancels);
         puts("PASS actual active transfer fragment/cancel/drain/retained-parent boundary");return;
     }
-    unsigned char packet[656];uint64_t wall,mono;
+    unsigned char packet[656];uint64_t wall,mono,owner_deadline;unsigned i;
+    cvar_t key={0},id={0},maxclients={0};
     unsigned n=g_p2pa.boot.length;assert(n<=sizeof(packet));memcpy(packet,g_p2pa.boot.principals,n);
     active_put64(packet+40,active_u64(packet+40)+1);active_put64(packet+48,1000000);active_put64(packet+56,1029000);
     memset(&g_p2pa.command,0,sizeof(g_p2pa.command));g_p2pa.command.operation=P2PA_UPDATE;
@@ -32,20 +35,52 @@ static void active_between_frame_case(const char *scenario)
     memset(g_p2pa.command.active_id,'a',16);memset(g_p2pa.command.handoff_id,'h',32);
     g_p2pa.command.principals=packet;g_p2pa.command.length=n;g_p2pa.pipe=(HANDLE)77;
     g_p2paConnected=1;P2PAInitPolicy(&g_p2pa.policy,&g_p2pa.boot);
-    g_piStartupPrincipals=fixture_active_installer;
+    /* Authenticate each real native peer through actual Receive/Bind. The
+     * existing handshake/DATA cryptography is an explicit deterministic double. */
+    key.string="session-key-path";id.string="4600000000000000";
+    key_path=&key;session_id=&id;strcpy(configured_path,key.string);strcpy(configured_id,id.string);
+    sessions_loaded=1;maxclients.integer=18;sv_maxclients=&maxclients;
+    for(i=80;i<n;i+=32) {
+        netadr_t endpoint={0};endpoint.type=NA_IP;memcpy(endpoint.ip,packet+i+8,4);
+        endpoint.port=BigShort((short)(packet[i+12]|(unsigned)packet[i+13]<<8));
+        associate(&endpoint,(byte)(i/32),active_u64(packet+i));
+    }
+    assert(PiActiveClock(&wall,&mono));owner_deadline=mono+29000;
+    if(!strncmp(scenario,"active-owner-",13))owner_deadline=mono+1000;
+    g_p2pa.command.owner_deadline_low=(uint32_t)owner_deadline;
+    g_piActivePrincipals=fixture_active_installer;
+    if(!strcmp(scenario,"active-missing-export"))g_piActivePrincipals=NULL;
+    if(!strcmp(scenario,"active-missing-native-peer"))peers[0].authenticated=0;
     if(!strcmp(scenario,"active-abort-owned"))active_case=1;
     if(!strcmp(scenario,"active-native-two"))active_case=2;
     if(!strcmp(scenario,"active-install-budget"))active_case=3;
+    if(!strcmp(scenario,"active-owner-native-delay"))active_case=4;
+    if(!strcmp(scenario,"active-owner-transit")||!strcmp(scenario,"active-owner-expired-stage")) {
+        assert(P2PAPrepare(&g_p2pa.policy,&g_p2pa.command,wall,mono));
+        if(!strcmp(scenario,"active-owner-transit"))monotime.tv_nsec+=500000000;
+        else monotime.tv_sec+=1;
+    }
     if(!strcmp(scenario,"active-commit-bootstrap-boundary"))commit_clock_hook=1;
     if(!strcmp(scenario,"active-expired-bootstrap"))clock_ms+=25000;
     require_clock_lock=1;g_p2pa.phase=1;fixture_fiber=1;PiActiveBetweenFrames();fixture_fiber=0;require_clock_lock=0;
     assert(g_p2pa.phase==3);
-    if(active_case==1||active_case==2||commit_clock_hook||!strcmp(scenario,"active-expired-bootstrap")) {
+    if(active_case==1||active_case==2||active_case==4||commit_clock_hook||
+       !strcmp(scenario,"active-expired-bootstrap")||!strcmp(scenario,"active-missing-export")||
+       !strcmp(scenario,"active-missing-native-peer")||!strcmp(scenario,"active-owner-expired-stage")) {
         assert(!g_p2pa.result&&g_p2paMode==P2PA_DEAD&&principal_faulted());
         if(!strcmp(scenario,"active-expired-bootstrap"))assert(!active_calls);
+        if(!strcmp(scenario,"active-missing-export")||!strcmp(scenario,"active-owner-expired-stage"))assert(!active_calls);
         if(commit_clock_hook)assert(clock_ms>=25000&&active_calls==1);
     } else {
         assert(g_p2pa.result==1&&g_p2paMode==P2PA_ACTIVE&&!principal_faulted()&&active_calls==1);
+        if(!strncmp(scenario,"active-owner-",13)) {
+            assert(g_p2pa.policy.deadline==owner_deadline);
+            assert(principal_policy.mono_start+principal_policy.lifetime==owner_deadline);
+            if(!strcmp(scenario,"active-owner-wrap"))assert(owner_deadline>UINT32_MAX);
+            monotime.tv_sec=owner_deadline/1000;monotime.tv_nsec=(owner_deadline%1000)*1000000;
+            assert(!PiActivePermission()&&principal_faulted()&&g_p2paMode==P2PA_DEAD);
+            puts("PASS actual client/native owner cap across staged delay/low32 wrap with UTC flat");return;
+        }
         assert(g_p2pa.policy.deadline==39000&&g_p2pa.policy.hard_deadline==110000);
         assert(PiActiveClock(&wall,&mono));
         fixture_fiber=1;assert(Sh1xHost_RelayPrincipalsCurrent()==1);fixture_fiber=0;
@@ -57,6 +92,7 @@ static void active_between_frame_case(const char *scenario)
             parent_alive=0;assert(!PiActivePermission());assert(principal_faulted());
         } else {
             g_p2pa.command.operation=P2PA_REVOKE;g_p2pa.command.sequence=2;
+            g_p2pa.command.owner_deadline_low=0;
             PiActiveDeny(1);g_p2pa.phase=1;fixture_fiber=1;PiActiveBetweenFrames();fixture_fiber=0;
             assert(g_p2pa.result==1&&g_p2paMode==P2PA_DEAD&&g_p2pa.policy.native_sequence==2);
         }
