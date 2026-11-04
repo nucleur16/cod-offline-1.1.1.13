@@ -215,7 +215,7 @@
     "news_refresh.c": "fef7dbd876744a8b190101bea4fb410cbcaff11ded5e77bbb9f238a3433afdbe",
     "news_refresh_policy.h": "123a5a359b87ea3f2fa917acea5e06b9a7c1e3c7af8ae5413704d1122f7e711f",
     "news_refresh_guards.h": "f185c6991e2935b8f26efeec285a3b1e9120efd01a2dbbeed1870a5b1f82f251",
-    "quick_start_gate.c": "5d0c22748ba7466ed92755f545d0a255d80ed60c44396b221b77438cec09a5fd",
+    "quick_start_gate.c": "7bc579e2e19ddbf9709878cdb1540cf9c9c29ff66ab10f94105750d260c0c224",
     "quick_start_policy.h": "1d7a4b9a4650fe99869a3d8bbd3ad14772ceb3fd5f761d3d682dd06a98e2ea66",
     "quick_start_guards.h": "ef5f78630dbee8a384cb2d820f30f10e9d401d4c4c4b1b80a190ed9553e8af95",
     "gfx_date_time.c": "8a0e2175c405a7f5aca4487792b99c9835070df67f71ff8b11c39f3723255489",

@@ -100,6 +100,46 @@ class Machine:
   assert self.u.reg_read(UC_X86_REG_EDI)==0x23456789
 
 class NativeQuickGate(unittest.TestCase):
+ def test_all_public_discriminators_preserve_native_start(self):
+  for discriminator in range(256):
+   if discriminator==11:continue
+   with self.subTest(discriminator=discriminator):
+    m=Machine();m.install();m.put(ROOM+0x15a8c,discriminator,1)
+    m.ready(0,0);m.ready(1,0);m.tick();m.native()
+    self.assertEqual(m.searches,1)
+    self.assertEqual(m.get(CTRL+0x10),6)
+ def test_repeated_rounds_require_one_fresh_bridge_each(self):
+  m=Machine();m.install()
+  for cycle in range(128):
+   m.var('qtest_now',cycle*1000)
+   m.put(CTRL+0x10,6);m.tick()
+   m.put(CTRL+0x10,5);m.tick();m.native()
+   self.assertEqual(m.searches,cycle,'a reused ready cohort must not start itself')
+   m.bridge();m.native()
+   self.assertEqual(m.searches,cycle+1)
+   m.put(CTRL+0x10,5);m.bridge();m.native()
+   self.assertEqual(m.searches,cycle+1,'duplicate Ready must not grant again')
+ def test_intent_lifetime_boundaries_across_tick_wrap(self):
+  for born in [0,1,0x7fffffff,0xfffffff0,0xffffffff]:
+   for elapsed in [0,1,29999,30000,30001,0x7fffffff]:
+    with self.subTest(born=born,elapsed=elapsed):
+     m=Machine();m.install();m.var('qtest_now',born);m.bridge()
+     m.var('qtest_now',(born+elapsed)&0xffffffff);m.native()
+     self.assertEqual(m.searches,int(elapsed<30000))
+ def test_all_supported_cohort_sizes_and_duplicate_members(self):
+  for count in range(2,13):
+   with self.subTest(count=count):
+    m=Machine();m.install();m.put(ROOM+0x15a70,count)
+    for index in range(count):
+     m.put(ROOM+0x13f20+index*0x170,index+1,8);m.ready(index,1)
+    m.bridge();m.native();self.assertEqual(m.searches,1)
+   for duplicate in range(1,count):
+    with self.subTest(count=count,duplicate=duplicate):
+     m=Machine();m.install();m.put(ROOM+0x15a70,count)
+     for index in range(count):
+      m.put(ROOM+0x13f20+index*0x170,index+1,8);m.ready(index,1)
+     m.put(ROOM+0x13f20+duplicate*0x170,1,8)
+     m.bridge();m.native();self.assertEqual(m.searches,0)
  def test_public_playlist_retains_native_start_without_quick_intent(self):
   # Actual editor C1 capture: mode=playlist, tail discriminator=2, two
   # admitted members, no Quick Ready/AS intent. The stock timer owns start.
