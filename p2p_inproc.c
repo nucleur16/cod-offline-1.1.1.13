@@ -582,6 +582,9 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         }
         if (now - lastPoll < (ready ? P2P_STATUS_MS : 1000) || st != PI_RUNNING) continue;
         lastPoll = now;
+        /* A late matching reply must not reopen Ready once shutdown starts.
+         * It also must not reset quitAt on every failed startup poll. */
+        if (quitAsked) continue;
         char reply[2048], line[512];
         if (P2PRcon(c.port, password, "sh1x_status", reply, sizeof(reply), 400) > 0 &&
             P2PStatusLine(reply, line, sizeof(line)) &&
@@ -589,7 +592,8 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
             lastAnswer = now;
             EnterCriticalSection(&g_p2pLock);
             lstrcpynA(g_p2p.status, line, sizeof(g_p2p.status));
-            if (!ready) { g_p2p.readyMs = now - t0; g_p2p.state = P2P_READY; }
+            if (!ready) g_p2p.readyMs = now - t0;
+            g_p2p.state = P2P_READY;
             LeaveCriticalSection(&g_p2pLock);
             if (!ready) {
                 ready = TRUE;
@@ -601,6 +605,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
                 if (c.rollout[0]) { P2PRollout(c.rollout, c.port, TRUE); registered = TRUE; }
             }
         } else if (ready && g_piYielding) {
+            P2PSetState(P2P_STARTING, NULL);
             lastAnswer = now; /* the server is waiting on C1's zone loading (PiAwaitZones), not hung */
         } else if (ready && !quitAsked && now - lastAnswer > 20000) {
             Log("p2p in-process: the server stopped answering sh1x_status for 20 s; ending it");
@@ -614,6 +619,10 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
             InterlockedExchange(&g_piQuit, 1);
             quitAsked = TRUE;
             quitAt = now;
+        } else if (ready) {
+            /* Match loading, an ended/parked map, or a missed response revokes
+             * readiness immediately; only fresh exact status restores it. */
+            P2PSetState(P2P_STARTING, NULL);
         }
     }
     st = g_piState;
