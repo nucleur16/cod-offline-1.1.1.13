@@ -6,6 +6,9 @@
 #define P2PA_CONTROL_HEADER 272u
 #define P2PA_MAX_CONTROL 928u
 #define P2PA_ACK_SIZE 96u
+#define P2PA_QUERY_HEADER 144u
+#define P2PA_MAX_QUERY 800u
+#define P2PA_QUERY_REPLY 96u
 #define P2PA_UPDATE 1u
 #define P2PA_REVOKE 2u
 typedef struct {
@@ -19,6 +22,11 @@ typedef struct {
     unsigned char binding[32],active_id[16],handoff_id[32],path_id[16];
     const unsigned char *principals;
 } p2pa_control_t;
+typedef struct {
+    const unsigned char *principals;
+    unsigned length;
+    unsigned char nonce[32],binding[32];
+} p2pa_query_t;
 typedef struct {
     unsigned active,dead,clock_seen;
     uint64_t sequence,native_sequence,last_wall,last_mono,expires,deadline,hard_expires,hard_deadline;
@@ -36,4 +44,7 @@ int P2PAObserve(p2pa_policy_t *,uint64_t wall,uint64_t mono);
 int P2PAPrepare(p2pa_policy_t *,const p2pa_control_t *,uint64_t wall,uint64_t mono);
 int P2PACommit(p2pa_policy_t *,const p2pa_control_t *,int native_result,uint64_t wall,uint64_t mono);
 int P2PAMakeAck(const p2pa_control_t *,const unsigned char[32],int,uint64_t,unsigned char[P2PA_ACK_SIZE]);
+int P2PAParseQuery(const p2pa_bootstrap_t *,const unsigned char[P2PA_HELLO_SIZE],
+    const void *,size_t,p2p_startup_sha256_fn,p2pa_query_t *);
+int P2PAMakeQueryReply(const p2pa_query_t *,int,uint64_t,uint64_t,unsigned char[P2PA_QUERY_REPLY]);
 #endif

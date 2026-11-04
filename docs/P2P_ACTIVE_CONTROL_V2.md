@@ -107,3 +107,29 @@ actual receive/bind claim using explicit deterministic handshake/DATA doubles,
 then execute the real active installer and its actual private SHA256. Delayed
 staging, flat-UTC owner expiry, low32 wrap and missing-export/native-peer cases
 are included. These are not Windows game qualification.
+
+## Current native scope query
+
+CPAQ is separate from CPAC and consumes no control/native update sequence.
+Request: LE32 length256..800, magic8 `CPAQv1\0\0`, totalU32@8,
+CPRBLengthU32@12, queryNonce32@16, HELLO nonce32@48, bundleSHA25632@80,
+queryBinding32@112, expected CURRENT CPRB@144. Binding is SHA256 of ASCII
+`CODOL-P2P-NATIVE-OBSERVE-V1` plus NUL, full HELLO192, request bytes0..111,
+then CPRB. Current issuance may be20s old; the query never dry-runs an installer.
+
+CPAR reply is96 raw bytes: magic8 `CPARv1\0\0`, queryNonce32@8,
+queryBinding32@40, resultI32@72, reservedU32@76=0, actual original native
+deadlineQPCU64@80 and final observedQPCU64@88. Only the owner fiber invokes the
+actual `Sh1xHost_ObserveRelayPrincipals` four-argument export and can produce a
+successful reply. Expected header/ordered grants must exactly match the actual
+live native policy. The reported deadline includes any installed owner cap;
+the response does not install, renew, set Ready or fabricate native peer proof.
+
+Queries share the same bounded immutable mailbox and retained parent/pipe and
+deadline checks. The worker cannot replace a fiber-owned packet. A failed
+query terminally denies and closes without a reply: runtime failure is EOF.
+CPAR0 remains a valid portable refusal representation, but adds no runtime
+deny-I/O exception. Only the existing explicit REVOKE denial ACK has that
+exception. Parent/control/deadline loss denies before potentially blocking I/O
+cancellation/drain. The SDK must freshly bracket QPC and check nonce/binding,
+original deadline and exact retained child before accepting a successful CPAR.

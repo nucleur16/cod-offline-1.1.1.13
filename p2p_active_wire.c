@@ -137,3 +137,37 @@ int P2PAMakeAck(const p2pa_control_t *control,const unsigned char nonce[32],int 
     memcpy(out+16,nonce,32);memcpy(out+48,control->binding,32);p2pa_put32(out+80,result==1?1:0);
     p2pa_put32(out+84,control->operation);p2pa_put64(out+88,native_seq);return 1;
 }
+int P2PAParseQuery(const p2pa_bootstrap_t *boot,const unsigned char hello[P2PA_HELLO_SIZE],
+    const void *raw,size_t n,p2p_startup_sha256_fn sha,p2pa_query_t *out)
+{
+    static const unsigned char domain[]="CODOL-P2P-NATIVE-OBSERVE-V1";
+    const unsigned char *p=raw,*bundle;unsigned length;size_t at;
+    unsigned char hash[32],input[sizeof(domain)+P2PA_HELLO_SIZE+112+656];
+    if(!out)return 0;
+    memset(out,0,sizeof(*out));
+    if(!boot||boot->valid!=1||!hello||!p||!sha||n<P2PA_QUERY_HEADER+112||n>P2PA_MAX_QUERY||
+       memcmp(p,"CPAQv1\0\0",8)||p2pa_u32(p+8)!=n||!p2pa_nonzero(p+16,32)||
+       memcmp(p+48,hello+16,32))return 0;
+    length=p2pa_u32(p+12);bundle=p+P2PA_QUERY_HEADER;
+    if(n!=P2PA_QUERY_HEADER+length||!p2pa_bundle(bundle,length)||length!=boot->length||
+       memcmp(bundle,boot->principals,40)||memcmp(bundle+64,boot->principals+64,length-64))return 0;
+    if(!sha(bundle,length,hash)||memcmp(hash,p+80,32))return 0;
+    memcpy(input,domain,sizeof(domain));at=sizeof(domain);
+    memcpy(input+at,hello,P2PA_HELLO_SIZE);at+=P2PA_HELLO_SIZE;
+    memcpy(input+at,p,112);at+=112;memcpy(input+at,bundle,length);at+=length;
+    if(!sha(input,at,hash)||memcmp(hash,p+112,32))return 0;
+    out->principals=bundle;out->length=length;
+    memcpy(out->nonce,p+16,32);memcpy(out->binding,p+112,32);return 1;
+}
+int P2PAMakeQueryReply(const p2pa_query_t *query,int result,uint64_t deadline,uint64_t observed,
+    unsigned char out[P2PA_QUERY_REPLY])
+{
+    if(!out)return 0;
+    memset(out,0,P2PA_QUERY_REPLY);
+    if(!query||!p2pa_nonzero(query->nonce,32)||!p2pa_nonzero(query->binding,32)||
+       (result==1&&deadline<=observed))return 0;
+    memcpy(out,"CPARv1\0\0",8);memcpy(out+8,query->nonce,32);memcpy(out+40,query->binding,32);
+    p2pa_put32(out+72,result==1?1:0);
+    if(result==1){p2pa_put64(out+80,deadline);p2pa_put64(out+88,observed);}
+    return 1;
+}

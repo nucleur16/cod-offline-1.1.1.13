@@ -67,17 +67,19 @@ def main():
         selected[name]=function(bridge,name)
     selected['P2PStartupAttemptCurrent']=function(sources['p2p.c'],'P2PStartupAttemptCurrent')
     selected['P2PStartupInvalidate']=function(sources['p2p.c'],'P2PStartupInvalidate')
-    for name in ('CODOL_HostSourceControlAllowed','Sh1xHost_UseVerifiedScripts','Sh1xHost_InstallRelayPrincipals','Sh1xHost_InstallActiveRelayPrincipals','Sh1xHost_RelayPrincipalsCurrent','Sh1xHost_QuarantineRelayPrincipals'):
+    for name in ('CODOL_HostSourceControlAllowed','Sh1xHost_UseVerifiedScripts','Sh1xHost_InstallRelayPrincipals','Sh1xHost_InstallActiveRelayPrincipals','Sh1xHost_ObserveRelayPrincipals','Sh1xHost_RelayPrincipalsCurrent','Sh1xHost_QuarantineRelayPrincipals'):
         selected[name]=function(native_host,name)
     for name in ('PiStartupPrincipalCheck','PiInstallStartup','PiAbortStartupWorker','PiServerFiber','P2PInprocUsed','P2PInprocPrincipalFresh','P2PInprocCancelStartup'):
         selected[name]=function(sources['p2p_inproc.c'],name)
-    active_names=['PiActiveClock','PiActiveDeny','PiActiveBootstrapExpired','PiActivePeer','PiActivePermission','PiActiveIoCurrent','PiActiveTransfer','PiActiveBetweenFrames']
+    active_names=['PiActiveClock','PiActiveDeny','PiActiveBootstrapExpired','PiActivePeer','PiActivePermission','PiActiveIoCurrent','PiActiveTransfer','PiActiveBetweenFrames','PiActiveStagePacket','PiActiveMakeReply']
     for name in active_names:selected[name]=function(active,name)
     order=['P2PSAtomicCAS','P2PSWallMillis','P2PStartupProtocolMode','P2PStartupAttemptCurrent','P2PSParentAlive','P2PSRefuse','P2PSCurrent','P2PSClose','P2PSAcknowledge',
-           'CODOL_HostSourceControlAllowed','Sh1xHost_UseVerifiedScripts','Sh1xHost_InstallRelayPrincipals','Sh1xHost_InstallActiveRelayPrincipals','Sh1xHost_RelayPrincipalsCurrent','Sh1xHost_QuarantineRelayPrincipals',
+           'CODOL_HostSourceControlAllowed','Sh1xHost_UseVerifiedScripts','Sh1xHost_InstallRelayPrincipals','Sh1xHost_InstallActiveRelayPrincipals','Sh1xHost_ObserveRelayPrincipals','Sh1xHost_RelayPrincipalsCurrent','Sh1xHost_QuarantineRelayPrincipals',
            'PiStartupPrincipalCheck','PiInstallStartup','PiAbortStartupWorker','PiServerFiber','P2PInprocUsed','P2PInprocPrincipalFresh',
            'P2PInprocCancelStartup','P2PStartupInvalidate']
     at=order.index('PiStartupPrincipalCheck');order[at:at]=active_names
+    for name in ('p2pa_u32','p2pa_u64'):selected[name]=function((root/'p2p_active_wire.c').read_text(),name)
+    order[0:0]=['p2pa_u32','p2pa_u64']
     clock=(native/'tests/test_codol_principal_clock.c').read_text();clock=clock[:clock.index('int main(void)')]
     results=[];okay=True;environment=dict(os.environ,ASAN_OPTIONS='detect_leaks=0')
     def execute(command,expected=0):
@@ -126,6 +128,9 @@ def main():
         scenarios+=['active-install-budget','active-commit-bootstrap-boundary']
         scenarios+=['active-missing-export','active-missing-native-peer','active-owner-transit',
                     'active-owner-expired-stage','active-owner-native-delay','active-owner-wrap']
+        scenarios+=['active-query-success','active-query-old-issued','active-query-wrong-scope','active-query-missing-export',
+                    'active-query-native-two','active-query-cancel','active-query-parent-loss','active-query-owned-memory',
+                    'active-scope-after-update']
         scenarios+=['active-io-success','active-io-timeout','active-io-parent','active-io-foreign']
         if okay:
             for scenario in scenarios:
@@ -151,6 +156,20 @@ def main():
             'else if(result&&g_piStartupPrincipals)result=g_piStartupPrincipals(g_p2pa.command.principals,g_p2pa.command.length)==1;else result=0;',1)
         assert fallback!=promotion
         controls.append(('active-startup-fallback','active-missing-export',functions.replace(promotion,fallback,1)))
+        literal=promotion.replace('observation,sizeof(observation))==1&&','observation,sizeof(observation))>=1&&',1)
+        assert literal!=promotion
+        controls.append(('query-nonliteral-native','active-query-native-two',functions.replace(promotion,literal,1)))
+        stale=promotion.replace('observation,sizeof(observation))==1&&\n           PiActivePermission()',
+            'observation,sizeof(observation))==1',1)
+        assert stale!=promotion
+        controls.append(('query-missing-post-parent','active-query-parent-loss',functions.replace(promotion,stale,1)))
+        stage=selected['PiActiveStagePacket'];reuse=stage.replace('InterlockedCompareExchange(&g_p2pa.phase,0,0)!=0||','',1)
+        assert reuse!=stage
+        controls.append(('query-mailbox-reuse','active-query-owned-memory',functions.replace(stage,reuse,1)))
+        advance=promotion.replace('g_p2pa.native_observed=observed;result=1;',
+            'g_p2pa.native_observed=observed;result=1;++g_p2pa.policy.sequence;',1)
+        assert advance!=promotion
+        controls.append(('query-advances-control-seq','active-query-success',functions.replace(promotion,advance,1)))
         for label,scenario,mutated in controls:
             (scratch/'actual_startup_functions.inc').write_text(mutated)
             negative=scratch/('startup-fiber-'+label);bad_compile=command[:-1]+[str(negative)]
