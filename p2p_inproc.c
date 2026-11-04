@@ -70,11 +70,12 @@ static volatile LONG g_piStartupSelected,g_piPrincipalFresh;
 static P2PVSInstallFn g_piStartupScripts,g_piStartupPrincipals;
 static Sh1xPrincipalCurrentFn g_piPrincipalCurrent;
 static Sh1xPrincipalQuarantineFn g_piPrincipalQuarantine;
+#include "p2p_active_bridge.c"
 
 static BOOL PiStartupPrincipalCheck(void)
 {
-    BOOL okay=P2PSCurrent(&g_piStartup)&&g_piPrincipalCurrent&&g_piPrincipalCurrent()==1&&
-        P2PSCurrent(&g_piStartup);
+    BOOL okay=PiActivePermission()&&g_piPrincipalCurrent&&g_piPrincipalCurrent()==1&&
+        PiActivePermission();
     InterlockedExchange(&g_piPrincipalFresh,okay?1:0);
     if(!okay) {
         if(g_piPrincipalQuarantine)g_piPrincipalQuarantine(); /* deny-only atomic API */
@@ -186,6 +187,9 @@ static void WINAPI PiServerFiber(void *unused)
     (void)unused;
     for (;;) {
         LONG st = g_piState;
+#if CODOL_LOCAL_TESTING
+        if(st==PI_RUNNING)PiActiveBetweenFrames();
+#endif
         if (g_piCallFn) {
             void (*fn)(void *) = g_piCallFn;
             fn(g_piCallCtx);
@@ -344,7 +348,7 @@ static BOOL P2PInprocPrincipalFresh(void)
     if(mode==0)return TRUE;
 #if CODOL_LOCAL_TESTING
     return mode==1&&g_piStartupSelected&&InterlockedCompareExchange(&g_piPrincipalFresh,0,0)&&
-        P2PSCurrent(&g_piStartup);
+        PiActivePermission();
 #else
     return FALSE;
 #endif
@@ -353,6 +357,7 @@ static void P2PInprocCancelStartup(void)
 {
 #if CODOL_LOCAL_TESTING
     if(g_piStartupSelected) {
+        PiActiveDeny(0);
         InterlockedExchange(&g_piStartup.aborted,1);
         InterlockedExchange(&g_piPrincipalFresh,0);
         /* The native release-store latch is safe even while this same game
@@ -714,6 +719,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
             PiAbortStartupWorker();
             P2PSetState(P2P_FAILED,"Local Play startup was not completed.");return 1;
         }
+        if(!PiActiveStart()){PiActiveDeny(0);P2PSetState(P2P_FAILED,"Local Play active control was unavailable.");return 1;}
     }
 #endif
 
@@ -725,7 +731,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         if (st == PI_ENDED || st == PI_CRASHED) break;
         DWORD now = GetTickCount();
 #if CODOL_LOCAL_TESTING
-        if(startup_mode==1&&(!P2PSCurrent(&g_piStartup)||
+        if(startup_mode==1&&(!PiActivePermission()||
             !InterlockedCompareExchange(&g_piPrincipalFresh,0,0))) {
             if(g_piPrincipalQuarantine)g_piPrincipalQuarantine();
             if(!quitAsked) {

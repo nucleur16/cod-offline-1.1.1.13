@@ -5,6 +5,7 @@
 #include <wincrypt.h>
 #include "p2p_startup_wire.c"
 #include "p2p_startup_ownership.h"
+#include "p2p_active_wire.h"
 
 static BOOL P2PStartupAttemptCurrent(unsigned long generation); /* p2p.c */
 static LONG P2PSAtomicCAS(volatile LONG *where,LONG value,LONG expected)
@@ -17,6 +18,7 @@ typedef struct {
     BYTE *packet;
     DWORD packet_size;
     p2p_startup_view_t view;
+    p2pa_bootstrap_t active_bootstrap; /* value copy before packet reclamation */
     ULONGLONG expires_ms;
     DWORD scope_started,scope_lifetime;
     volatile LONG phase;
@@ -198,7 +200,7 @@ static BOOL P2PSFetch(const char *map,const char *gametype,const char *category,
     bridge->packet=HeapAlloc(GetProcessHeap(),0,size);bridge->packet_size=size;
     if(!bridge->packet||!P2PSTransfer(bridge,bridge->packet,size,FALSE)||
         !P2PStartupParseEnvelope(request,request_size,bridge->packet,size,P2PSSha256,&bridge->view)||
-        !P2PSCurrent(bridge))goto failed;
+        !P2PSCurrent(bridge)||!P2PACaptureBootstrap(&bridge->view,&bridge->active_bootstrap))goto failed;
     {
         ULONGLONG wall,expires=(ULONGLONG)p2ps_le32(bridge->view.principals+56)|
             (ULONGLONG)p2ps_le32(bridge->view.principals+60)<<32;
