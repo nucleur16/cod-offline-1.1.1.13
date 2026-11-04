@@ -1,10 +1,10 @@
 /*
- * p2p.c - player-hosted matches (branch feat/p2p-hosting, stage 1 of docs/P2P_HOSTING.md).
+ * p2p.c - player-hosted matches (docs/P2P_HOSTING.md).
  *
- * The host's client runs the sh1x match server (codol_dedrun.exe, built from CoD4x_Server) as its own
- * child process: Kernel33 starts it, watches it over loopback rcon (sh1x_status) and takes it down with
- * the client. The server keeps its own address space, heap and IW3 globals; nothing of it is loaded into
- * C1 (see the design doc for why the in-process options wait).
+ * The verified-script local path loads sh1x_host.dll in the hosting C1 process
+ * and drives its server fiber from the game thread. The legacy child-process
+ * path is retained in source but refused for P2P hosting until it can install
+ * the same immutable script inventory.
  *
  *   p2phost [map] [gametype] [zonetype]   start hosting (defaults from p2p\p2p_host.ini)
  *   p2pstop                               rcon quit, then end the server's job
@@ -220,13 +220,21 @@ static const char *P2PCheck(const P2PConfig *c)
         return "a path holds a quote";
     BOOL inproc = !_stricmp(c->mode, "inprocess");
     if (!inproc && _stricmp(c->mode, "child")) return "mode must be inprocess or child";
+    if (c->admission != 1)
+        return "P2P hosting requires DW admission";
+    if (!P2PVerifiedScriptsAllowsMode(inproc))
+        return "P2P hosting requires the verified script service and a local-testing in-process host";
+    /* This field is appended after the required +set options. Keep the local
+     * trial's two known lifecycle switches, but never let it override an
+     * admission, script or network cvar (or inject another console command). */
+    if (c->extra[0] && strcmp(c->extra,
+            "+set codol_exitToLobby 1 +set codol_oneShotMatch 1"))
+        return "P2P extra commands are not permitted by the local host policy";
     if (!P2PPathOk(c->dll)) return "a path holds a quote";
     if (inproc && GetFileAttributesA(c->dll) == INVALID_FILE_ATTRIBUTES) return "server DLL not found (dll=)";
     if (!inproc && GetFileAttributesA(c->exe) == INVALID_FILE_ATTRIBUTES) return "server executable not found (exe=)";
-    char probe[MAX_PATH + 64];
-    _snprintf(probe, sizeof(probe), "%s\\maps\\mp\\gametypes\\_callbacksetup.gsc", c->scripts);
-    probe[sizeof(probe) - 1] = 0;
-    if (GetFileAttributesA(probe) == INVALID_FILE_ATTRIBUTES) return "GSC root not found (scripts=)";
+    /* The selected service supplies the complete verified inventory from
+     * memory. There is no loose-file fallback for a player-hosted game. */
     return NULL;
 }
 
@@ -295,7 +303,7 @@ static BOOL P2PPortFree(const char *ip, int port)
     return ok;
 }
 
-/* One rcon command over loopback; the reply text (all datagrams within timeoutMs) into out. */
+/* One rcon command over loopback; accept replies only from that server socket. */
 static int P2PRcon(int port, const char *password, const char *command, char *out, int outSize, DWORD timeoutMs)
 {
     SOCKET s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -308,7 +316,13 @@ static int P2PRcon(int port, const char *password, const char *command, char *ou
     a.sin_port = htons((u_short)port);
     a.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     int got = 0;
-    if (n > 0 && sendto(s, pkt, n, 0, (struct sockaddr *)&a, sizeof(a)) == n && out && outSize > 1) {
+    /* A connected UDP socket filters replies by source address and port. An
+     * unconnected recv could accept a forged sh1x_status readiness line. */
+    if (connect(s, (struct sockaddr *)&a, sizeof(a)) == SOCKET_ERROR) {
+        closesocket(s);
+        return -1;
+    }
+    if (n > 0 && n < (int)sizeof(pkt) && send(s, pkt, n, 0) == n && out && outSize > 1) {
         DWORD start = GetTickCount();
         for (;;) {
             DWORD left = timeoutMs - (GetTickCount() - start);
@@ -453,17 +467,25 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
     static char cmd[8192];
     BOOL inproc = !_stricmp(c.mode, "inprocess");
     char pmem[48] = "";
+    char relayArg[MAX_PATH + 96] = "";
+    char relayPath[MAX_PATH + 64];
     if (c.pmemMegs >= 32 && c.pmemMegs <= 2048) _snprintf(pmem, sizeof(pmem), "+set codol_pmemMegs %d", c.pmemMegs);
+    /* The explicit local Host/Guest trial arms this short-lived file before
+     * forwarding any Guest packet. Normal solo hosting leaves it absent. */
+    _snprintf(relayPath, sizeof(relayPath), "%s\\p2p_relay_identity.txt", c.state);
+    relayPath[sizeof(relayPath)-1] = 0;
+    _snprintf(relayArg, sizeof(relayArg), "+set codol_relayIdentityPath \"%s\"", relayPath);
+    relayArg[sizeof(relayArg)-1] = 0;
     _snprintf(cmd, sizeof(cmd),
         "\"%s\" +set dedicated 2 +set fs_basepath \"%s\" +set fs_homepath \"%s\" +set net_ip %s +set net_port %d "
         "+set rcon_password \"%s\" +set logfile 2 +set logrcon 1 +set developer %d +set sv_fps 60 "
         "+set codol_scriptPath \"%s\" +set codol_scriptOverlay \"%s\" +set codol_scriptNativeOverlay \"%s\" "
         "+set codol_securityKeyPath \"%s\\securitykey.bin\" +set codol_admissionPath \"%s\\game_admissions.txt\" "
-        "+set codol_admissionRequired %d +set codol_profilePath \"%s\" +set codol_zoneType %s +set codol_sessionMap %s "
+        "+set codol_admissionRequired %d %s +set codol_profilePath \"%s\" +set codol_zoneType %s +set codol_sessionMap %s "
         "+set g_gametype %s +set codol_hostParentPid %lu %s "
         "+codol_scriptPath +codol_scriptOverlay +codol_scriptNativeOverlay +map %s %s",
         c.exe, c.basepath, c.home, c.netIp, c.port, password, c.developer, c.scripts, c.scripts, c.scripts,
-        c.state, c.state, c.admission ? 1 : 0, c.profile, c.zoneType, c.sessionMap[0] ? c.sessionMap : c.map,
+        c.state, c.state, c.admission ? 1 : 0, relayArg, c.profile, c.zoneType, c.sessionMap[0] ? c.sessionMap : c.map,
         c.gametype, inproc ? 0ul : GetCurrentProcessId(), pmem, c.map, c.extra);
     cmd[sizeof(cmd) - 1] = 0;
     if (inproc) {
@@ -671,7 +693,7 @@ static void P2PLobbyTick(void)
     if (!g_p2pInit || !C1DvarsReady()) return;
     if (g_p2pLobbyPending && (!g_p2pThread || WaitForSingleObject(g_p2pThread,0)==WAIT_OBJECT_0)) {
         P2PConfig next=g_p2pLobbyNext;
-        lstrcpyA(next.mode,"child");
+        lstrcpyA(next.mode,"inprocess");
         g_p2pLobbyPending=FALSE;
         const char *bad=P2PCheck(&next);
         if (bad) { lstrcpynA(g_p2pLobbyError,bad,sizeof(g_p2pLobbyError));P2PSetState(P2P_FAILED,bad); }
@@ -681,6 +703,8 @@ static void P2PLobbyTick(void)
     state=g_p2pLobbyPending ? P2P_STOPPING : g_p2p.state;
     lstrcpynA(error,g_p2pLobbyError[0] ? g_p2pLobbyError : g_p2p.error,sizeof(error));
     LeaveCriticalSection(&g_p2pLock);
+    if (g_p2pEnabled && state==P2P_EXITED && P2PInprocUsed() && !error[0])
+        lstrcpyA(error,"Restart the client before hosting another Local Play match.");
     if (!g_p2pEnabled) g_p2pIntentUid=NdLocalUid();
     if (!g_p2pEnabled && !g_p2pIntentConfig.state[0]) {
         P2PDefaults(&g_p2pIntentConfig);P2PLoadIni(&g_p2pIntentConfig);
@@ -715,13 +739,18 @@ static void P2PHostCurrentRoom(void)
 {
     P2PConfig c;
     if (!g_p2pHasRoom) { lstrcpyA(g_p2pLobbyError,"Choose a match lobby first.");return; }
+    if (P2PInprocUsed()) {
+        lstrcpyA(g_p2pLobbyError,"Restart the client before hosting another Local Play match.");
+        P2PSetState(P2P_FAILED,g_p2pLobbyError);
+        return;
+    }
     P2PDefaults(&c);P2PLoadIni(&c);
     lstrcpyA(c.map,g_p2pRoom.map);lstrcpyA(c.sessionMap,g_p2pRoom.session);
     lstrcpyA(c.gametype,g_p2pRoom.gametype);lstrcpyA(c.zoneType,g_p2pRoom.category);
     lstrcpyA(c.netIp,"127.0.0.1");
-    /* Client assets and its UI remain on their own thread. Normal localhost
-     * hosting uses the isolated background process, never C1's frame fiber. */
-    lstrcpyA(c.mode,"child");g_p2pIntentConfig=c;
+    /* Verified scripts are installed into the same-process host before its
+     * first frame. The child path cannot receive this immutable inventory. */
+    lstrcpyA(c.mode,"inprocess");g_p2pIntentConfig=c;
     if (!g_p2pIntentUid) { lstrcpyA(g_p2pLobbyError,"Player identity is not ready for local hosting.");return; }
     EnterCriticalSection(&g_p2pLock);
     BOOL busy=g_p2p.state==P2P_STARTING || g_p2p.state==P2P_READY || g_p2p.state==P2P_STOPPING;

@@ -1466,6 +1466,11 @@ static void PatchGbkInput(void)
 #include "theatre.c"
 /* UTF-8 player names and an optional display-name service: see name_display.c. */
 #include "name_display.c"
+/* Local verified SDK -> immutable hosted-script source handoff. */
+#include "p2p_verified_scripts.c"
+#include "local_log_flush.c"
+#include "localized_substitution.c"
+#include "localized_numeric.c"
 /* Player-hosted matches: the sh1x server as a child of the host's client (p2p.c, docs/P2P_HOSTING.md). */
 #include "p2p.c"
 /* The sh1x server inside the client, on the game thread (p2p_inproc.c, feat/p2p-inprocess). */
@@ -1474,6 +1479,28 @@ static void PatchGbkInput(void)
 #include "p2p_assets.c"
 /* UDP only with lobby-vouched hosts (hostgate.c): the P2P trust requirement. */
 #include "hostgate.c"
+/* Reject malformed top-level DemonWare packet lengths in the exact C1 parser. */
+#include "bd_packet_guard.c"
+/* Reject C1 snapshot entity and delta-field writes beyond their bounds. */
+#include "snapshot_guard.c"
+/* Bound the exact C1 bulk record loop to its 19-record destination. */
+#include "bulk_count_guard.c"
+/* Bind the state-3 challenge reply to C1's pending destination. */
+#include "challenge_sender_guard.c"
+/* Bound exact C1 joinParty counts and party-builder stack records. */
+#include "join_party_guard.c"
+/* Bound memberJoin's configured slot scan to the exact 19-entry party array. */
+#include "member_join_guard.c"
+/* Reject impossible server-info slot totals before they reach party state. */
+#include "server_info_capacity_guard.c"
+/* Bound local session-update slots before they reach party state. */
+#include "session_capacity_guard.c"
+/* Bound the party refresh dvar loop to the exact 19-entry array. */
+#include "party_slot_loop_guard.c"
+/* Bound both game and party session creation to the 19-slot table. */
+#include "party_session_capacity_guard.c"
+/* Bound session refresh counts before they become array limits. */
+#include "party_session_refresh_guard.c"
 
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 #include "news_refresh.c"
@@ -1485,9 +1512,45 @@ static void __cdecl TakeOver(void)
     LoadUnpackedImage();
     MatchC1SectionFlags();
     FillImports();
+    if (!InstallBoundedLocalizedSubstitution())
+        Fatal("Required text safety checks could not be installed. Please repair or update the client.");
+    if (!InstallBoundedLocalizedNumeric())
+        Fatal("Required numeric text safety checks could not be installed. Please repair or update the client.");
     PatchGfxDateTime();
     if (!InstallHostGate())
         Fatal("Required network safety checks could not be installed. Please repair or update the client.");
+    if (!InstallBdPacketLengthGuard())
+        Fatal("Required packet length checks could not be installed. Please repair or update the client.");
+    if (!InstallSnapshotBoundsGuards())
+        Fatal("Required snapshot bounds could not be installed. Please repair or update the client.");
+#if CODOL_DIAGNOSTICS
+    if (!InstallSnapshotInvalidFrameDiagnostic())
+        Fatal("Local snapshot diagnostic could not be installed.");
+#endif
+    if (!InstallBulkCountGuard())
+        Fatal("Required packet record bounds could not be installed. Please repair or update the client.");
+    if (!InstallChallengeSenderGuard())
+        Fatal("Required challenge sender checks could not be installed. Please repair or update the client.");
+    if (!InstallConnectSenderGuard())
+        Fatal("Required connection sender checks could not be installed. Please repair or update the client.");
+    if (!InstallJoinPartyCountGuard())
+        Fatal("Required party packet bounds could not be installed. Please repair or update the client.");
+    if (!InstallJoinPartyBuilderGuard())
+        Fatal("Required party record bounds could not be installed. Please repair or update the client.");
+    if (!InstallJoinPartyFillGuard())
+        Fatal("Required party fill bounds could not be installed. Please repair or update the client.");
+    if (!InstallMemberJoinSlotGuard())
+        Fatal("Required member packet bounds could not be installed. Please repair or update the client.");
+    if (!InstallServerInfoCapacityGuard())
+        Fatal("Required server slot bounds could not be installed. Please repair or update the client.");
+    if (!InstallSessionCapacityGuard())
+        Fatal("Required session slot bounds could not be installed. Please repair or update the client.");
+    if (!InstallPartySlotLoopGuard())
+        Fatal("Required party slot loop bounds could not be installed. Please repair or update the client.");
+    if (!InstallPartySessionCapacityGuard())
+        Fatal("Required party session bounds could not be installed. Please repair or update the client.");
+    if (!InstallPartySessionRefreshGuard())
+        Fatal("Required party refresh bounds could not be installed. Please repair or update the client.");
     PatchRenderGate();
     PatchDvarRegistrations();
     PatchPlainConfig();
@@ -1534,6 +1597,17 @@ static void __cdecl TakeOver(void)
     InstallNameDisplay();
     InstallP2PInproc();   /* before InstallP2PHost: +set k33_p2pHost 1 starts a session at once */
     InstallP2PHost();
+#if CODOL_LOCAL_TESTING
+    /* The exact voice-send hook can be unavailable after the network safety
+     * patch. Keep the task-owned command file on the shared main tick so
+     * unfocused C1 tests do not depend on voice transport bytes. */
+    if (!K33OnMainTick(VoiceCmdFile))
+        Fatal("Local command-file tick could not be installed.");
+#endif
+#if CODOL_DIAGNOSTICS
+    K33OnMainTick(SnapshotGuardReport);
+#endif
+    InstallK33LogFlush();
     K33InstallMainTicks(); /* last: chains in front of voice.c's and discord.c's tick hooks */
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();

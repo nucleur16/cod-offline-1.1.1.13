@@ -305,7 +305,13 @@ static void PiLogC1Zones(const char *why)
     line[0] = 0;
     for (int i = 0; i < n && i < 64 && used < 960; i++) {
         DWORD zone = C1_ZONES_VA + 0xA8u * ((const BYTE *)(DWORD_PTR)C1_ZONE_HANDLES_VA)[i];
-        used += _snprintf(line + used, sizeof(line) - used, " %s", (const char *)(DWORD_PTR)(zone + 0x0C));
+        size_t remaining = sizeof(line) - (size_t)used;
+        int written = _snprintf(line + used, remaining, " %s", (const char *)(DWORD_PTR)(zone + 0x0C));
+        if (written < 0 || (size_t)written >= remaining) {
+            line[sizeof(line) - 1] = 0;
+            break;
+        }
+        used += written;
     }
     Log("p2p in-process: C1 zones (%s, %d, loading %lu):%s", why, n, *(volatile const DWORD *)(DWORD_PTR)C1_DB_LOADING_VA, line);
 }
@@ -318,11 +324,20 @@ static void PiYield(void)
     SwitchToFiber(g_piMainFiber);
     g_piYielding = 0;
 }
+static DWORD g_piPhaseLast;
+static void __cdecl PiHostPhaseYield(const char *phase)
+{
+    DWORD now = GetTickCount();
+    Log("p2p in-process: map phase %s after %lu ms", phase ? phase : "unknown", now - g_piPhaseLast);
+    g_piPhaseLast = now;
+    PiYield();
+}
 /* The server's await_zones (codol_asset_host.h), on its fiber during a map load. C1 starts loading a hosted map
  * itself when it is connected (the server's loadingnewmap); otherwise, after a short grace, preloadmap starts it.
  * Then the server waits, yielding, until C1 holds the level and its common_gametype zone
  * and its database is idle. */
 static int g_piC1Preload;
+static volatile LONG g_piFirstMapAwait;
 static int __cdecl PiAwaitZones(const char *map, const char *zoneType, unsigned timeoutMs)
 {
     char level[64], common[64], cmd[192];
@@ -331,6 +346,7 @@ static int __cdecl PiAwaitZones(const char *map, const char *zoneType, unsigned 
     unsigned signature = PiC1ZoneSignature(), lastSig = signature;
     BOOL preloaded = FALSE;
     if (!map || !zoneType) return 0;
+    BOOL firstMap = InterlockedExchange(&g_piFirstMapAwait, 0) != 0;
     lstrcpynA(level, map, sizeof(level));
     if (!strncmp(map, "coop_", 5) && (tail = strchr(map + 5, '_')) && tail[1]) lstrcpynA(level, tail + 1, sizeof(level));
     _snprintf(common, sizeof(common), "common_gametype_%s", zoneType); common[sizeof(common) - 1] = 0;
@@ -350,6 +366,14 @@ static int __cdecl PiAwaitZones(const char *map, const char *zoneType, unsigned 
             PiLogC1Zones("held");
             Log("p2p in-process: C1 holds %s (%s) after %lu ms%s", map, zoneType, now - t0, preloaded ? " (preloadmap)" : "");
             return 1;
+        }
+        /* During the first server map load, no player has connected to this
+         * new host yet. If C1 is idle in its menu, its own map load cannot
+         * begin until the server answers. Do not spend the usual two-second
+         * late-client grace here; subsequent map changes retain that grace. */
+        if (firstMap && !g_piC1Preload && !loading) {
+            Log("p2p in-process: first host map has no C1 zone load; mounting the server copy now");
+            return 0;
         }
         if (!started && (loading || PiC1ZoneSignature() != signature)) started = now;
         {
@@ -425,6 +449,15 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         P2PSetState(P2P_FAILED, "restart the client to host again");
         return 1;
     }
+    void *verified_scripts = NULL;
+    unsigned verified_size = 0;
+    char script_error[160];
+    if (!P2PVerifiedScriptsFetch(c.sessionMap[0] ? c.sessionMap : c.map, c.gametype,
+                                c.zoneType, &verified_scripts, &verified_size, script_error, sizeof(script_error))) {
+        Log("p2p in-process: %s; hosting refused before loading the server", script_error);
+        P2PSetState(P2P_FAILED, script_error);
+        return 1;
+    }
     /* A private copy: a fresh set of globals for every session. */
     char copy[MAX_PATH], tmp[MAX_PATH];
     GetTempPathA(MAX_PATH, tmp);
@@ -432,6 +465,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     _snprintf(copy, MAX_PATH, "%sk33_sh1x_host_%lu_%ld.dll", tmp, GetCurrentProcessId(), n);
     copy[MAX_PATH - 1] = 0;
     if (!CopyFileA(c.dll, copy, FALSE)) {
+        P2PVerifiedScriptsFree(verified_scripts, verified_size);
         Log("p2p in-process: cannot copy %s to %s (%lu)", c.dll, copy, GetLastError());
         P2PSetState(P2P_FAILED, "cannot copy the server DLL");
         return 1;
@@ -441,8 +475,10 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     DWORD t0 = GetTickCount();
     HMODULE m = LoadLibraryExA(copy, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
     if (!m) {
+        P2PVerifiedScriptsFree(verified_scripts, verified_size);
         Log("p2p in-process: LoadLibrary %s failed (%lu)", copy, GetLastError());
         P2PSetState(P2P_FAILED, "the server DLL did not load");
+        DeleteFileA(copy);
         return 1;
     }
     Sh1xInitFn init = (Sh1xInitFn)(void *)GetProcAddress(m, "Sh1xHost_Init");
@@ -450,9 +486,27 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     Sh1xCmdFn cmd = (Sh1xCmdFn)(void *)GetProcAddress(m, "Sh1xHost_Command");
     Sh1xCodeFn code = (Sh1xCodeFn)(void *)GetProcAddress(m, "Sh1xHost_ExitCode");
     if (!init || !frame || !cmd || !code) {
+        P2PVerifiedScriptsFree(verified_scripts, verified_size);
         Log("p2p in-process: %s lacks the Sh1xHost_* API (build the server's host-dll target)", c.dll);
         P2PSetState(P2P_FAILED, "the server DLL has no host API");
+        FreeLibrary(m);
+        DeleteFileA(copy);
         return 1;
+    }
+    {
+        int installed = P2PVerifiedScriptsInstall(m, verified_scripts, verified_size,
+                                                 script_error, sizeof(script_error));
+        P2PVerifiedScriptsFree(verified_scripts, verified_size);
+        verified_scripts = NULL;
+        if (!installed) {
+            /* No Init/frame has run. The selected script service cannot fall
+             * back to loose files or an unverified previous release. */
+            Log("p2p in-process: %s; hosting refused", script_error);
+            P2PSetState(P2P_FAILED, script_error);
+            FreeLibrary(m);
+            DeleteFileA(copy);
+            return 1;
+        }
     }
     PiModuleRange(m, &g_piBase, &g_piEnd);
     PiModuleRange(GetModuleHandleA("msvcrt.dll"), &g_crtBase, &g_crtEnd);
@@ -474,13 +528,18 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         typedef void (__cdecl *Sh1xSetScriptStringsFn)(const char *(__cdecl *)(unsigned));
         Sh1xSetScriptStringsFn setStrings = (Sh1xSetScriptStringsFn)(void *)GetProcAddress(m, "Sh1xHost_SetC1ScriptStrings");
         if (setStrings && c.c1Assets && c.c1Zones) setStrings(PiScriptString);
+        typedef void (__cdecl *Sh1xSetYieldFn)(void (__cdecl *)(const char *));
+        Sh1xSetYieldFn setYield = (Sh1xSetYieldFn)(void *)GetProcAddress(m, "Sh1xHost_SetYield");
+        if (setYield) { setYield(PiHostPhaseYield); Log("p2p in-process: cooperative map-phase yield installed"); }
     }
     g_piInit = init; g_piFrame = frame; g_piCmd = cmd; g_piCode = code;
+    InterlockedExchange(&g_piFirstMapAwait, 1);
     lstrcpynA(g_piArgs, args, sizeof(g_piArgs));
     if (g_piFiber && g_piState == PI_CRASHED) { DeleteFiber(g_piFiber); g_piFiber = NULL; }
     if (g_piFiber && g_piState == PI_ENDED) { DeleteFiber(g_piFiber); g_piFiber = NULL; }
     g_piCalls = g_piTotalUs = g_piMaxUs = g_piWinCalls = g_piWinTotalUs = g_piWinMaxUs = 0;
     g_piInitMs = g_piFirstFrameMs = 0;
+    g_piPhaseLast = GetTickCount();
     g_piFaultCode = 0;
     InterlockedExchange(&g_piQuit, 0);
     EnterCriticalSection(&g_p2pLock);
@@ -524,7 +583,9 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         if (now - lastPoll < (ready ? P2P_STATUS_MS : 1000) || st != PI_RUNNING) continue;
         lastPoll = now;
         char reply[2048], line[512];
-        if (P2PRcon(c.port, password, "sh1x_status", reply, sizeof(reply), 400) > 0 && P2PStatusLine(reply, line, sizeof(line))) {
+        if (P2PRcon(c.port, password, "sh1x_status", reply, sizeof(reply), 400) > 0 &&
+            P2PStatusLine(reply, line, sizeof(line)) &&
+            P2PStatusMatches(line, c.map, c.sessionMap, c.gametype, c.zoneType)) {
             lastAnswer = now;
             EnterCriticalSection(&g_p2pLock);
             lstrcpynA(g_p2p.status, line, sizeof(g_p2p.status));

@@ -36,8 +36,9 @@ static int CodolLocalTitle(const char *value)
     return nonzero!=0;
 }
 
-/* dwauth.ini's exact five-line C1 contract. Only two literal loopback routes
- * with the same valid port qualify; no hostname, wildcard or suffix matches. */
+/* dwauth.ini's exact five-line C1 contract. Both hosts must equal the same
+ * explicit local-test literal (normal .1 or isolated .3) and valid port.
+ * No hostname, wildcard, suffix match or general loopback range is accepted. */
 static int CodolLocalMultiRoute(const char *contents, size_t size)
 {
     char lines[5][64];unsigned line=0,column=0;
@@ -56,7 +57,7 @@ static int CodolLocalMultiRoute(const char *contents, size_t size)
         }
     }
     if(column)line++;
-    return line==5 && strcmp(lines[0],"127.0.0.1")==0 &&
-        strcmp(lines[2],"127.0.0.1")==0 && CodolLocalPort(lines[1]) &&
+    return line==5 && (strcmp(lines[0],"127.0.0.1")==0 || strcmp(lines[0],"127.0.0.3")==0) &&
+        strcmp(lines[2],lines[0])==0 && CodolLocalPort(lines[1]) &&
         strcmp(lines[1],lines[3])==0 && CodolLocalTitle(lines[4]);
 }
