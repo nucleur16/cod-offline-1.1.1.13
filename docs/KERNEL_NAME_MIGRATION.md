@@ -15,7 +15,14 @@ flush, restore protection and read back; failures roll back every original byte.
 An irrecoverable rollback aborts this process before game entry.
 
 The implementation uses fixed buffers, a bounded strict UTF8/JSON parser, a
-single HTTP worker and lazy per-thread render buffers. Only immutable canonical
+single HTTP worker and lazy FLS render buffers. Each successful allocation has
+a minimal HeapFree destructor on fiber/thread exit; failed assignment frees
+immediately. The callback's actual module is pinned before FLS slot ownership
+or hooks are published, so it cannot become an unloaded callback target. Failed
+startup frees the slot before game entry; no heap cleanup runs from DllMain.
+FLS and module pinning are Windows OS imports; FLS shares Vista's minimum with
+the already-used SRW locks and introduces no new redistributable dependency.
+Only immutable canonical
 identity and the already-populated local UID caches select the display alias.
 It preserves clan prefixes, the 63-byte UTF8 limit, 30-second request refresh,
 60-second alias expiry and stale-response generation rejection. The retired
@@ -37,7 +44,7 @@ Qualification evidence, recorded separately from gameplay:
 
 - Portable compiled C policy: 6 passing methods, 10,000 independent Python
   JSON/Unicode oracle cases, truncation/UTF8/surrogate/TTL/generation controls.
-- Compiled x86 fixture interpreted in Unicorn: 9 passing methods. Every byte in
+- Compiled x86 fixture interpreted in Unicorn: 10 passing methods. Every byte in
   all 16 exact native guard regions is mutated; every protection stage, flush
   and thread-start rollback is faulted. Legacy thunks exercise actual compiled
   C callbacks, original custom helper ABI, GFx thiscall argument positions,
@@ -48,6 +55,9 @@ Qualification evidence, recorded separately from gameplay:
   per-PID temporary file and retries failures at most once per second. Open,
   short-write, write, flush and rename failures preserve the old file; unchanged
   mode performs no file I/O per frame.
+  FLS lifecycle uses128separate compiled allocation/destructor cycles with
+  zero remaining allocations. Allocation/assignment/slot/pin failures, repeat
+  startup rollback, no callback double free and reuse within a thread pass.
 - Full baseline/default/room/full-cutover DLL builds pass. After relocation
   normalization the default executable code/data/resources remain byte-identical
   to the baseline. Latest full cutover adds 27,136 bytes and Windows WINHTTP only.

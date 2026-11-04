@@ -26,7 +26,8 @@ class Machine:
  def __init__(self):
   self.u=Uc(UC_ARCH_X86,UC_MODE_32);self.pages=set();self.names={};self.api={}
   self.map(base,pe.OPTIONAL_HEADER.SizeOfImage);self.write(base,pe.get_memory_mapped_image());self.map(STACK,0x20000);self.map(STUB,0x10000);self.map(MEM,0x20000)
-  self.now=0;self.protects=0;self.protections={};self.flushes=0;self.fail_protect=set();self.fail_flush=set();self.fail_thread=False;self.terminated=None;self.tls=0;self.allocated=MEM+0x10000;self.worker=0
+  self.now=0;self.protects=0;self.protections={};self.flushes=0;self.fail_protect=set();self.fail_flush=set();self.fail_thread=False;self.terminated=None;self.fls=0;self.allocated=MEM+0x10000;self.worker=0
+  self.fls_callback=0;self.fail_fls_alloc=False;self.fail_fls_set=False;self.fail_alloc=False;self.allocations={};self.frees=[];self.slot_frees=0;self.fail_pin=False;self.pinned=False
   self.body=b'{"identity":"Alpha","uid":"42","name":"\\u4e2d\\u6587"}';self.status=200;self.response_at=0;self.request_path='';self.http_calls=[];self.http_fail=None;self.http_advance=0;self.closed=[]
   self.native_calls=[];self.lock=0;self.deny=None;self.setevent=True;self.events=0;self.waits=0
   self.files={};self.file_opens=0;self.file_fail=None;self.file_handles={};self.renames=[];self.deleted=[]
@@ -75,6 +76,10 @@ class Machine:
   if name=='GetTickCount':self.ret(self.now);return
   if name=='GetModuleFileNameW':t='E:\\AWS Test\\codoMP_client_shipRetail.exe';self.write(arg(2),(t+'\0').encode('utf-16le'));self.ret(len(t),12);return
   if name=='GetModuleHandleW':self.ret(0x400000,4);return
+  if name=='GetModuleHandleExW':
+   assert arg(1)==5 and base<=arg(2)<base+pe.OPTIONAL_HEADER.SizeOfImage
+   if not self.fail_pin:self.put(arg(3),base);self.pinned=True
+   self.ret(int(not self.fail_pin),12);return
   if name=='ReadProcessMemory':
    try:
     if self.deny is not None and arg(2)<=self.deny<arg(2)+arg(4):raise ValueError()
@@ -94,13 +99,17 @@ class Machine:
    self.ret(1,16);return
   if name=='FlushInstructionCache':self.flushes+=1;self.ret(int(self.flushes not in self.fail_flush),12);return
   if name=='TerminateProcess':self.terminated=arg(2);u.emu_stop();return
-  if name=='TlsAlloc':self.ret(7);return
-  if name=='TlsFree':self.ret(1,4);return
-  if name=='TlsGetValue':self.ret(self.tls,4);return
-  if name=='TlsSetValue':self.tls=arg(2);self.ret(1,8);return
+  if name=='FlsAlloc':assert self.pinned;self.fls_callback=arg(1);self.ret(0xffffffff if self.fail_fls_alloc else 7,4);return
+  if name=='FlsFree':assert not self.fls;self.slot_frees+=1;self.fls_callback=0;self.ret(1,4);return
+  if name=='FlsGetValue':self.ret(self.fls,4);return
+  if name=='FlsSetValue':
+   if not self.fail_fls_set:self.fls=arg(2)
+   self.ret(int(not self.fail_fls_set),8);return
   if name=='GetProcessHeap':self.ret(1);return
-  if name=='HeapAlloc':self.ret(self.allocated,12);return
-  if name=='HeapFree':self.ret(1,12);return
+  if name=='HeapAlloc':
+   if self.fail_alloc:self.ret(0,12);return
+   out=self.allocated;self.allocations[out]=arg(3);self.allocated+=(arg(3)+15)&~15;self.ret(out,12);return
+  if name=='HeapFree':self.frees.append(arg(3));assert arg(3) in self.allocations;del self.allocations[arg(3)];self.ret(1,12);return
   if name=='CreateEventW':self.ret(33,16);return
   if name=='CreateThread':self.worker=arg(3);self.ret(0 if self.fail_thread else 34,24);return
   if name=='CloseHandle':self.ret(1,4);return
@@ -166,17 +175,20 @@ class Machine:
     b=self.body[self.response_at:self.response_at+arg(3)];self.response_at+=len(b);self.write(arg(2),b);self.put(arg(4),len(b));self.ret(1,16);return
    self.ret(1,widths[name]);return
   raise AssertionError('Unmodeled API '+name)
- def invoke(self,name,*values):
+ def invoke(self,name,*values,callee_cleanup=0):
   sp=STACK+0xf000;self.put(sp,STOP)
   for i,value in enumerate(values):self.put(sp+4+4*i,value)
   self.u.reg_write(UC_X86_REG_ESP,sp);self.u.emu_start(exports[name] if isinstance(name,str) else name,STOP,count=1000000)
   if self.terminated is not None:return None
   assert self.u.reg_read(UC_X86_REG_EIP)==STOP,(name,hex(self.u.reg_read(UC_X86_REG_EIP)))
-  assert self.u.reg_read(UC_X86_REG_ESP)==sp+4
+  assert self.u.reg_read(UC_X86_REG_ESP)==sp+4+callee_cleanup
   assert self.lock==0
   return self.u.reg_read(UC_X86_REG_EAX)
  def seed(self,alias='中文'):
   self.invoke('Seed',self.string('Alpha',MEM+0x1000),42,0,self.string(alias,MEM+0x1100),self.now)
+ def thread_exit(self):
+  value=self.fls;self.fls=0
+  if value:self.invoke(self.fls_callback,value,callee_cleanup=4)
  def original(self):return [bytes(self.u.mem_read(at,len(body))) for at,body in patch_guards]
 
 class Tests(unittest.TestCase):
@@ -202,6 +214,20 @@ class Tests(unittest.TestCase):
   m.write(MEM+0x400,struct.pack('<Q',43));self.assertEqual(m.invoke('Member',MEM+0x1000,MEM+0x400),MEM+0x1000)
   m.write(0xcea9f8,b'\0'*8);m.write(0x6c44f27,b'\1');m.write(0x6c44f58,struct.pack('<Q',42));self.assertEqual(m.text(m.invoke('Alias',m.string('Alpha'))),'中文'.encode())
   m.now=60000;self.assertEqual(m.invoke('Alias',MEM+0x1000),MEM+0x1000)
+ def test_fls_exit_destructor_churn_and_failed_allocation_assignment(self):
+  m=Machine();m.map(MEM,0x100000);self.assertEqual(m.invoke('Install'),1);m.seed();self.assertTrue(m.fls_callback)
+  for thread in range(128):
+   source=m.string('Alpha');self.assertEqual(m.text(m.invoke('Alias',source)),'中文'.encode());self.assertEqual(sum(m.allocations.values()),1088)
+   self.assertEqual(m.text(m.invoke('Alias',source)),'中文'.encode());self.assertEqual(len(m.allocations),1)
+   m.thread_exit();self.assertEqual(m.allocations,{});self.assertEqual(len(m.frees),thread+1)
+  m.invoke(m.fls_callback,0,callee_cleanup=4);self.assertEqual(len(m.frees),128)
+  for failure in ('allocation','assignment'):
+   m=Machine();m.invoke('Install');m.seed();m.fail_alloc=failure=='allocation';m.fail_fls_set=failure=='assignment';source=m.string('Alpha')
+   self.assertEqual(m.invoke('Alias',source),source);self.assertEqual(m.allocations,{});self.assertEqual(len(m.frees),int(failure=='assignment'));self.assertEqual(m.fls,0);m.thread_exit();self.assertEqual(len(m.frees),int(failure=='assignment'))
+  m=Machine();m.fail_fls_alloc=True;self.assertEqual(m.invoke('Install'),0);self.assertEqual(m.protects,0);self.assertEqual(m.slot_frees,0)
+  m=Machine();m.fail_thread=True;self.assertEqual(m.invoke('Install'),0);self.assertEqual(m.slot_frees,1);self.assertEqual(m.fls_callback,0);self.assertEqual(m.allocations,{})
+  self.assertEqual(m.invoke('Install'),0);self.assertEqual(m.slot_frees,2);self.assertEqual(m.fls_callback,0);self.assertEqual(m.frees,[])
+  m=Machine();m.fail_pin=True;self.assertEqual(m.invoke('Install'),0);self.assertEqual(m.fls_callback,0);self.assertEqual(m.protects,0)
  def test_chinese_native_buffers_and_english_unchanged(self):
   m=Machine();m.invoke('Install');m.seed();text=m.string(b'\x14MP_CONNECTED\x15'+ '中文'.encode());expected=b'\x14MP_CONNECTED\x15'+'中文'.encode('cp936')
   self.assertEqual(m.text(m.invoke('HUD',text)),expected);self.assertEqual(m.text(text),b'\x14MP_CONNECTED\x15'+'中文'.encode())

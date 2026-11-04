@@ -14,11 +14,16 @@ loop predecessor. This prevents simultaneous legacy-proxy and Kernel33 room
 publishers. Installation failures restore the prior call before entry; an
 unrecoverable rollback aborts startup rather than entering with a partial hook.
 
-Native calls use a per-call, thread-local x86 SEH registration. Access and
-in-page faults restore the wrapper's stack/frame and preserved registers;
-unwind/noncontinuable/unrelated exceptions continue searching. This replaces
-the retained C++ reader's `__try` boundaries without installing a process-wide
-exception hook. Actual Windows dispatch acceptance remains required.
+Native calls use a per-call, thread-local x86 SEH registration. A recognized
+continuable access/in-page fault now terminates the client with exit code
+`0x4b524301`, with fast-fail7 fallback if self termination fails. It does not
+rewrite CONTEXT, return false, log, allocate or guess which native locks to
+release. Exact Cbuf_AddText and Dvar_FindVar can acquire locks before faulting;
+continuing after abandoning them is unsafe. This repairs the inherited r45
+fault policy, not its underlying native fault: the client deliberately crashes
+instead of continuing corrupted global state. Ordinary null/false returns
+continue normally; unwind/noncontinuable/unrelated exceptions continue search.
+Actual Windows dispatcher and fail-fast behavior remain required acceptance.
 
 Evidence so far:
 
@@ -27,10 +32,12 @@ Evidence so far:
   backpressure, recovery, changed rooms, read failures, capacity boundaries,
   tick wrap and serial exhaustion are covered. A private mutation removing
   backpressure fails that proof.
-- Compiled x86 call-boundary fixture: all five test methods pass, including
-  actual Unicorn memory faults with altered native stacks under every supported
-  calling convention. Windows exception dispatch/CONTEXT application is an
-  explicit boundary double.
+- Compiled x86 call-boundary fixture: ten test methods pass, including actual
+  native Cbuf fault at0x58baf2 after lock acquisition, nested recovery-lock
+  depth2, native Dvar_FindVar fault at0x623305, normal successful/null return
+  lock balance, all five calling conventions, altered native stacks, in-page
+  failure, unrelated exception search and fail-fast fallback. Faults never
+  continue normally or issue invented unlocks. Windows dispatch is doubled.
 - Compiled x86 binder fixture: all eight methods pass. It executes the exact
   retained Cbuf_AddText instructions, tests every startup guard-byte mutation,
   trusted System32/SysWOW64 paths versus local proxy rejection, predecessor

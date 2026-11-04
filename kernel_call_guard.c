@@ -1,7 +1,9 @@
-/* x86 call boundary for migrated native readers. The exception registration
+/* x86 call boundary for migrated native calls. The exception registration
  * belongs to this calling thread and exists only during the guarded call.
  * Unlike a process-wide VEH, it cannot consume another thread's exception.
- * No allocation, log, input, network or process-lifetime handler is introduced.
+ * Native calls can hold locks or partially mutate globals when they fault.
+ * Recognized faults terminate this client; they NEVER become ordinary false
+ * returns or attempt to release unknown locks. No logger/allocator is entered.
  * Include in Kernel33's translation unit; compile/execute offline fixtures
  * before enabling any migration binder. */
 typedef struct {
@@ -14,20 +16,21 @@ int __cdecl KRC_CallGuarded(uint32_t argument,uint32_t function,unsigned convent
 static __attribute__((used)) EXCEPTION_DISPOSITION __cdecl KrcCallException(
     EXCEPTION_RECORD *record,void *frame,CONTEXT *context,void *dispatcher)
 {
-    (void)dispatcher;
+    (void)dispatcher;(void)frame;(void)context;
     if(record->ExceptionFlags || (record->ExceptionCode!=EXCEPTION_ACCESS_VIOLATION &&
                                  record->ExceptionCode!=EXCEPTION_IN_PAGE_ERROR))
         return ExceptionContinueSearch;
-    context->Eip=(DWORD)(uintptr_t)KRC_CallFailed;
-    context->Esp=(DWORD)(uintptr_t)frame;
-    context->Ebp=((KrcExceptionFrame *)frame)->saved_ebp;
-    return ExceptionContinueExecution;
+    TerminateProcess(GetCurrentProcess(),0x4b524301u);
+    /* TerminateProcess(self) does not return on success. A fail-fast trap is
+     * the fallback if the API unexpectedly fails; never resume the game. */
+    __asm__ volatile("int $0x29" : : "c"(7) : "memory");
+    __builtin_unreachable();
 }
 
 /* convention: 0=thiscall byte result; 1=stdcall BOOL; 2=stdcall void;
  * 3=cdecl pointer result; 4=engine AddText (EAX=text, ECX=local-client0).
- * Saved EBX/ESI/EDI/EBP and the original caller stack survive both paths.
- * The handler restores ESP to the registration record before this epilogue. */
+ * Saved EBX/ESI/EDI/EBP and caller stack survive ordinary native returns.
+ * Invalid convention returns zero without calling native. Faults terminate. */
 __asm__(
     ".text\n"
     ".globl _KRC_CallGuarded\n"

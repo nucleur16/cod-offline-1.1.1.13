@@ -8,7 +8,7 @@ static SRWLOCK g_kndLock=SRWLOCK_INIT;
 static KnpCache g_kndCache;
 static KnpIdentity g_kndRequest;
 static HANDLE g_kndEvent;
-static DWORD g_kndTls=TLS_OUT_OF_INDEXES,g_kndNextSample;
+static DWORD g_kndFls=FLS_OUT_OF_INDEXES,g_kndNextSample;
 static int g_kndReady,g_kndSampled,g_kndPending,g_kndBusy;
 static int KrcSystemD3D(void);
 
@@ -27,15 +27,21 @@ static int KndCString(const char *text,char *out,size_t capacity)
     uint64_t available=end-(uintptr_t)text;size_t size=available<capacity?(size_t)available:capacity;
     return KndRead((uint32_t)(uintptr_t)text,out,size) && memchr(out,0,size)!=NULL;
 }
+static VOID CALLBACK KndFreeBuffers(PVOID value)
+{
+    /* FLS owns successful allocations until fiber/thread exit or FlsFree.
+     * No renderer/cache/logger work may run in this lifetime callback. */
+    if(value)HeapFree(GetProcessHeap(),0,value);
+}
 static KndBuffers *KndThreadBuffers(void)
 {
     KndBuffers *buffers;
-    if(g_kndTls==TLS_OUT_OF_INDEXES)return NULL;
-    buffers=(KndBuffers *)TlsGetValue(g_kndTls);
+    if(g_kndFls==FLS_OUT_OF_INDEXES)return NULL;
+    buffers=(KndBuffers *)FlsGetValue(g_kndFls);
     if(buffers)return buffers;
     buffers=(KndBuffers *)HeapAlloc(GetProcessHeap(),HEAP_ZERO_MEMORY,sizeof(*buffers));
     if(!buffers)return NULL;
-    if(!TlsSetValue(g_kndTls,buffers)){HeapFree(GetProcessHeap(),0,buffers);return NULL;}
+    if(!FlsSetValue(g_kndFls,buffers)){KndFreeBuffers(buffers);return NULL;}
     return buffers;
 }
 #include "kernel_name_network.c"
@@ -120,7 +126,7 @@ static int KndPatchNames(KndPatch *patches,unsigned count)
 }
 static int InstallKernelNameDisplay(void)
 {
-    wchar_t path[MAX_PATH];char hash[65];HANDLE worker;
+    wchar_t path[MAX_PATH];char hash[65];HANDLE worker;HMODULE owner=NULL;
     DWORD length=GetModuleFileNameW(NULL,path,MAX_PATH);
     KndPatch patches[]={
         {0x5aa780u,knd_SOURCE,sizeof(knd_SOURCE),KND_Source,0xe9,{0},0},
@@ -136,11 +142,17 @@ static int InstallKernelNameDisplay(void)
     if(!length || length>=MAX_PATH || (uintptr_t)GetModuleHandleW(NULL)!=0x400000u || !KrcSystemD3D() ||
        !LauncherBridgeHash(path,hash) || strcmp(hash,"a5a7b44e66ca72da785eae4319126c23491586dc88dde499e8e6c9cf4bd6a976") ||
        !KndAllGuards())return 0;
-    g_kndTls=TlsAlloc();if(g_kndTls==TLS_OUT_OF_INDEXES)return 0;
+    if(g_kndFls!=FLS_OUT_OF_INDEXES)return 0;
+    /* Hook targets and the FLS destructor require process lifetime. Pin the
+     * actual callback's module before publishing any slot or native branch.
+     * Do not use DLL_THREAD_DETACH or loader-detach cleanup for heap buffers. */
+    if(!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS|GET_MODULE_HANDLE_EX_FLAG_PIN,
+                          (LPCWSTR)(uintptr_t)KndFreeBuffers,&owner) || !owner)return 0;
+    g_kndFls=FlsAlloc(KndFreeBuffers);if(g_kndFls==FLS_OUT_OF_INDEXES)return 0;
     g_kndEvent=CreateEventW(NULL,FALSE,FALSE,NULL);
-    if(!g_kndEvent){TlsFree(g_kndTls);g_kndTls=TLS_OUT_OF_INDEXES;return 0;}
-    if(!KndPatchNames(patches,count)){CloseHandle(g_kndEvent);g_kndEvent=NULL;TlsFree(g_kndTls);g_kndTls=TLS_OUT_OF_INDEXES;return 0;}
+    if(!g_kndEvent){FlsFree(g_kndFls);g_kndFls=FLS_OUT_OF_INDEXES;return 0;}
+    if(!KndPatchNames(patches,count)){CloseHandle(g_kndEvent);g_kndEvent=NULL;FlsFree(g_kndFls);g_kndFls=FLS_OUT_OF_INDEXES;return 0;}
     worker=CreateThread(NULL,0,KndWorker,NULL,0,NULL);
-    if(!worker){KndRollback(patches,count);CloseHandle(g_kndEvent);g_kndEvent=NULL;TlsFree(g_kndTls);g_kndTls=TLS_OUT_OF_INDEXES;return 0;}
+    if(!worker){KndRollback(patches,count);CloseHandle(g_kndEvent);g_kndEvent=NULL;FlsFree(g_kndFls);g_kndFls=FLS_OUT_OF_INDEXES;return 0;}
     CloseHandle(worker);g_kndReady=1;return 1;
 }
