@@ -321,17 +321,23 @@ static void SdRefused(int pool, int why, DWORD params, int channel)
 __attribute__((used)) int __cdecl SndDiagHasRoom(int ok, DWORD params, int channel, int pool)
 {
     if (!g_sdDvarTried) SdRegisterDvar();
+#if CODOL_DIAGNOSTICS
     LONG before = g_svLimitRefused;
+#endif
     ok = SndVoicesHasRoom(ok & 0xFF, params, channel, pool);
+#if CODOL_DIAGNOSTICS
     if (!ok) SdRefused(pool, g_svLimitRefused != before ? 2 : 0, params, channel);
+#endif
     return ok;
 }
 
 __attribute__((used)) void __cdecl SndDiagAllocFailed(DWORD params, int channel, int pool)
 {
+#if CODOL_DIAGNOSTICS
     if (channel < 0 || channel >= SDIAG_MAX_CHANNELS) channel = -1;
     int full = channel >= 0 && SdChannelActive(channel) >= SdChannelInt(channel, SDIAG_CH_CAP);
     SdRefused(pool, full ? 0 : 1, params, channel);
+#endif
 }
 
 void SNDDIAG_HasRoom2D(void);

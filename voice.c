@@ -177,7 +177,9 @@ static int VoicePull(VoiceTalker *t, float *out, float *tmp)
         VoiceTalkerReset(t);
         return 0;
     } else {
+#if CODOL_DIAGNOSTICS
         InterlockedIncrement(&g_statLostFrames);
+#endif
         if (n->have && n->seq == (unsigned short)(t->next + 1))
             got = opus_decode_float(t->dec, n->data, n->len, tmp, VOICE_FRAME, 1); /* FEC */
         else
@@ -510,7 +512,9 @@ static void VoiceEncodePcm(const float *pcm, BOOL last)
     int n = opus_encode_float(g_enc, pcm, VOICE_FRAME, out, sizeof(out));
     if (n > 0) {
         VoiceQueueFrame(out, n, last);
+#if CODOL_DIAGNOSTICS
         InterlockedIncrement(&g_statCapFrames);
+#endif
     }
 }
 
@@ -567,7 +571,9 @@ static void VoiceProcessFrame(void)
             for (int i = 0; i < g_prerollCount; i++) VoiceEncodePcm(g_preroll[(first + i) % VOICE_PREROLL], FALSE);
             g_prerollCount = 0;
             InterlockedExchange(&g_txActive, 1);
+#if CODOL_DIAGNOSTICS
             InterlockedIncrement(&g_statSpurts);
+#endif
             if (VoiceDvarInt(g_dvDebug, 0)) Log("voice: transmit on (level %d, threshold %d, %s)", level, thr, g_txForce ? "key" : "voice activation");
         }
         VoiceEncodePcm(g_capFrame, FALSE);
@@ -749,7 +755,9 @@ static void VoiceRenderTick(void)
         for (int i = 0; i < VOICE_TALKERS; i++)
             if (g_talkers[i].queued || g_talkers[i].started) voices += VoicePull(&g_talkers[i], g_mix, g_tmp);
         LeaveCriticalSection(&g_voiceLock);
+#if CODOL_DIAGNOSTICS
         if (voices) InterlockedIncrement(&g_statPlayed);
+#endif
 
         /* resample 48 kHz -> device rate and write */
         UINT32 n = 0;
@@ -925,7 +933,9 @@ static void VoiceSendQueued(const BYTE *adr)
         if (adr) {
             const DWORD *a = (const DWORD *)adr;
             ((OobDataFn)(DWORD_PTR)VOICE_OOBDATA_VA)(0, pkt, len, a[0], a[1], a[2], a[3], a[4], a[5]);
+#if CODOL_DIAGNOSTICS
             InterlockedIncrement(&g_statSent);
+#endif
         }
     }
 }
@@ -1314,7 +1324,9 @@ __attribute__((used)) void __cdecl VoiceOnPacket(const BYTE *msg, const DWORD *f
     unsigned short seq = (unsigned short)(p[3] | (p[4] << 8));
     if (talker >= VOICE_TALKERS || count < 1 || count > 8) return;
     int off = 6;
+#if CODOL_DIAGNOSTICS
     InterlockedIncrement(&g_statRecv);
+#endif
     EnterCriticalSection(&g_voiceLock);
     for (int i = 0; i < count; i++) {
         if (off >= avail) break;

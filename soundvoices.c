@@ -161,11 +161,15 @@ static int SndVoicesHasRoom(int ok, DWORD params, int channel, int pool)
         if (count >= limit) {
             if (!scored) { score = is3d ? SvScoreAt((const float *)(DWORD_PTR)(params + SV_P_ORIGIN)) : -*(const float *)(DWORD_PTR)(params + SV_P_VOLUME); scored = TRUE; }
             if (worst < 0 || !(worstScore > score)) {
+#if CODOL_DIAGNOSTICS
                 InterlockedIncrement(&g_svLimitRefused);
+#endif
                 return 0;
             }
             SvStopVoice(worst);
+#if CODOL_DIAGNOSTICS
             InterlockedIncrement(&g_svLimitTook);
+#endif
             ok = SvChannelHasRoom(channel);
         }
     }
@@ -184,7 +188,9 @@ static int SndVoicesHasRoom(int ok, DWORD params, int channel, int pool)
             if (!scored) { score = is3d ? SvScoreAt((const float *)(DWORD_PTR)(params + SV_P_ORIGIN)) : -*(const float *)(DWORD_PTR)(params + SV_P_VOLUME); scored = TRUE; }
             if (worstScore > score) {
                 SvStopVoice(worst);
+#if CODOL_DIAGNOSTICS
                 InterlockedIncrement(&g_svNearestTook);
+#endif
                 ok = SvChannelHasRoom(channel);
             }
         }
