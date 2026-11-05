@@ -8,6 +8,7 @@ permissions:
 jobs:
   baseline:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -16,14 +17,58 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: python tests/test_ui_baseline.py
-      - run: python tests/test_quick_ready_gate.py
-      - run: python tests/test_quick_host_real_name.py
-      - run: python tests/test_room_display_owner.py
-      - run: python -B tests/test_tip_stage_lookup.py
-      - run: python -B tests/test_invitations_disabled.py
-      - run: python -B tests/test_invitations_current_transition.py
-      - run: python -B tests/test_zone_packs.py
-      - run: gcc -O2 -Wall -Wextra -Werror tests/quick_start_policy_test.c -o /tmp/quick-start-policy && /tmp/quick-start-policy
-      - run: python -B docs/baselines/20261024-gfx-date-time/run_regressions.py --output-dir /tmp/gfx-date-time
-      - run: gcc -Wall -Wextra -Werror tests/patch_locale_test.c -o /tmp/locale-selection && /tmp/locale-selection
+      - id: native_check_01
+        continue-on-error: true
+        run: python tests/test_ui_baseline.py
+      - id: native_check_02
+        continue-on-error: true
+        run: python tests/test_quick_ready_gate.py
+      - id: native_check_03
+        continue-on-error: true
+        run: python tests/test_quick_host_real_name.py
+      - id: native_check_04
+        continue-on-error: true
+        run: python tests/test_room_display_owner.py
+      - id: native_check_05
+        continue-on-error: true
+        run: python -B tests/test_tip_stage_lookup.py
+      - id: native_check_06
+        continue-on-error: true
+        run: python -B tests/test_invitations_disabled.py
+      - id: native_check_07
+        continue-on-error: true
+        run: python -B tests/test_invitations_current_transition.py
+      - id: native_check_08
+        continue-on-error: true
+        run: python -B tests/test_zone_packs.py
+      - id: native_check_09
+        continue-on-error: true
+        run: python -B tests/test_zone_pack_install_identity.py
+      - id: native_check_10
+        continue-on-error: true
+        run: gcc -O2 -Wall -Wextra -Werror tests/quick_start_policy_test.c -o /tmp/quick-start-policy && /tmp/quick-start-policy
+      - id: native_check_11
+        continue-on-error: true
+        run: python -B docs/baselines/20261024-gfx-date-time/run_regressions.py --output-dir /tmp/gfx-date-time
+      - id: native_check_12
+        continue-on-error: true
+        run: gcc -Wall -Wextra -Werror tests/patch_locale_test.c -o /tmp/locale-selection && /tmp/locale-selection
+      - name: Require every native source check to succeed
+        if: ${{ !cancelled() }}
+        env:
+          NATIVE_QUALIFICATION_STEPS: ${{ toJSON(steps) }}
+        run: |
+          python - <<'PY'
+          import json, os
+          expected = ['native_check_01', 'native_check_02', 'native_check_03', 'native_check_04', 'native_check_05', 'native_check_06', 'native_check_07', 'native_check_08', 'native_check_09', 'native_check_10', 'native_check_11', 'native_check_12']
+          steps = json.loads(os.environ['NATIVE_QUALIFICATION_STEPS'])
+          bad = []
+          for key in expected:
+              outcome = steps.get(key, {}).get('outcome', 'missing')
+              print(key + ': ' + outcome)
+              if outcome != 'success':
+                  bad.append(key)
+          if bad:
+              raise SystemExit('Native qualification failed or did not run: ' + ', '.join(bad))
+          print('All 12 native source check commands passed.')
+          PY
