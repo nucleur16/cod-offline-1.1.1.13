@@ -1,9 +1,9 @@
 # GFx movie as a patch over a stock movie (zonekit/gfx.py)
 stock patch_ui_mp:scaleform/default/codo.gfx
 stock-sha256 2f143069ed10f3c937e0f5b758591e477f57544f76bdfd3bd2635f77cca5d332
-# PENDING SOURCE UNION: the following digest is historical D45, NOT the combined movie.
-# Keep this strict guard until an approved exact-source rebuild supplies the real combined digest.
-sha256 9911596a195ed7a74a03bc0acf36ebfe81b84313f454a88a0d3a7b48eb909b75
+# Method-only OptionView stored-tag update; original-header GFX DATA provenance.
+# Whole-class baseline remains HOLD; this digest is not FF/game/release acceptance.
+sha256 3af9cc109a53d1927103c243b5b667398ee0f079bc1171a6bd7fb50123115e34
 header 4746580a68b64500800003200000025800001e0100
 keep 0
 keep 1
@@ -6915,7 +6915,7 @@ as components.scoreboard_part.ScoreboardTeamPanel as/components/scoreboard_part/
 as ime.LangBarElement as/ime/LangBarElement.as 8fa9032f2cb798dc1857499c92ed9b6136e2b794841ef1c92cb175902e6f0ea6
 as components.CodoUIComponent as/components/CodoUIComponent.as 9f3cc89ba4727ad13a2b1cf49191d3f704b0b1f3730f8eb517b377c7f1e3713d
 as codo.k33.PadSnap as/codo/k33/PadSnap.as f5451168d78f16510986c45c23f4897166829c64c275b3cacc79144c428e8007
-as codo.views.OptionView as/codo/views/OptionView.as 4db03a52169b41a6c4c575866d1223a6b91b5c986b6cb6f05252a102f2df65f3
+as codo.views.OptionView as/codo/views/OptionView.as a1c80dbb7032cea656d5e1801ac9552dc6bc19eaa4e9a4219e12a669801e4aa0
 as codo.views.TipView as/codo/views/TipView.as 2a462eff264d2a25a9f6be0739941875830a9d95a6434ee641781975539cdc26
 as codo.controllers.RightClickMenuController as/codo/controllers/RightClickMenuController.as 6025ec44b21edf6eabcd53ba41ff41a19fe8fd876c12c53dc98d9f743ba9f01f
 as codo.controllers.PartyController as/codo/controllers/PartyController.as 4e7a5943db9ab688bd0d2ad8e03dbad6fffdd7f9b055e5752c567607f7c33ec0

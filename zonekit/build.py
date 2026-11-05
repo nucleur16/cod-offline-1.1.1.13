@@ -137,6 +137,8 @@ def compile_as_files(pdir, movie, stock_movie, ffdec, all_sources, log):
         edited = gfx.source_sha(path) != digest
         if not edited and not all_sources:
             continue
+        if cls.replace('.', '/') == 'codo/views/OptionView':
+            raise BuildError('codo.views.OptionView requires the reviewed method-only producer; generic compile/export is refused')
         if not ffdec or not os.path.isfile(ffdec):
             raise BuildError("%s changed since its compiled tag was stored: FFDec (--ffdec) is needed" % rel)
         if not edited:

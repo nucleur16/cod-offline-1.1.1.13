@@ -245,6 +245,8 @@ def with_stock_class(movie: bytes, stock: bytes, cls: str) -> bytes:
 def compile_as(movie: bytes, cls: str, as_path: str, ffdec: str) -> bytes:
     """`movie` with class `cls` compiled from `as_path` by FFDec; only that class's DoABC tag is taken from FFDec's
     output, every other tag is checked to be unchanged."""
+    if cls.replace(".", "/") == "codo/views/OptionView":
+        raise SystemExit("OptionView requires the reviewed method-only producer; whole-class recompilation is forbidden")
     want = cls.replace(".", "/")
     with tempfile.TemporaryDirectory() as tmp:
         src, dst = os.path.join(tmp, "in.swf"), os.path.join(tmp, "out.swf")
@@ -312,6 +314,8 @@ def store_class(dirpath: str, stock: bytes, cls: str, rel: str, ffdec: str) -> s
     patch.txt line becomes "new" (a class the stock movie
     does not have is added after the movie's last DoABC tag, ahead of its SymbolClass tag), and the "as" and
     "sha256" lines are updated. Returns the tag file name."""
+    if cls.replace(".", "/") == "codo/views/OptionView":
+        raise SystemExit("OptionView requires the reviewed method-only producer; whole-class recompilation is forbidden")
     path = os.path.join(dirpath, rel)
     lines = open(os.path.join(dirpath, "patch.txt")).read().splitlines()
     movie = build_patch(dirpath, stock)
