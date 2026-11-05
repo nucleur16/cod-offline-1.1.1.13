@@ -16,7 +16,7 @@ each in Kernel33's alphabetical order, the first asset linked under a (type, nam
   1. the same assets reach the game, byte for byte, in the same list, except the
      twelve explicitly reviewed Chinese party/loading values in party_locale_contract.py;
   2. no new zone of a list carries an asset another zone of that list (or itself) also carries;
-  3. every asset of every old zone is in exactly one new zone, unless no language ever used it (an earlier zone
+  3. every asset of every old zone is in exactly one eligible new zone per language that used it, unless no language ever used it (an earlier zone
      carried the same name: reported as shadowed);
 plus the two features this consolidation must keep: the endless difficulty button in codo.gfx's LevelChooser (Cam's
 #18) and comaplist column 23 (endless Zombies) on zm_asylum_sh and zm_prototype_sh.
@@ -100,6 +100,13 @@ def script_string_identity(image):
             tuple(image.string_ptrs), tuple(image.strings))
 
 
+def ownership_conflicts(md, where_by_language, used_by_language):
+    """One owner in each effective language; mutually exclusive packs may share bytes."""
+    return [(lang, where_by_language[lang].get(md, set())) for lang in LANGS
+            if md in used_by_language[lang]
+            and len(where_by_language[lang].get(md, set())) != 1]
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--maps", default="ship", choices=shipping.MODES)
@@ -167,6 +174,7 @@ def main(argv=None):
 
     # 1 + 2: per language, exact winners (including the bounded reviewed translation) and no duplicates.
     used_somewhere = set()
+    used_by_language = {}
     for lang in LANGS:
         o_order, n_order = load_order(list(old), lang), load_order(list(new), lang)
         o_eff, n_eff = effective(o_order, old), effective(n_order, new)
@@ -177,7 +185,8 @@ def main(argv=None):
             problems.append(str(error))
         if lang in ('zh', 'native'):
             print('%s: expected twelve reviewed Chinese party/loading values; all other identities unchanged' % lang)
-        used_somewhere |= {v[2] for v in o_eff.values()}
+        used_by_language[lang] = {v[2] for v in o_eff.values()}
+        used_somewhere |= used_by_language[lang]
         dup = collections.Counter()
         for ph, z in n_order:
             for tid, name, blob in new[z]:
@@ -199,11 +208,16 @@ def main(argv=None):
         for k in dups[:10]:
             problems.append("%s: %s list carries %s %s more than once" % (lang, k[0], zoneimage.type_name(k[1]), k[2]))
 
-    # 3: every old asset in exactly one new zone (or shadowed everywhere)
+    # 3: one eligible new owner per effective language (or shadowed everywhere)
     where = collections.defaultdict(set)
     for z, items in new.items():
         for _tid, _n, blob in items:
             where[h(blob)].add(z)
+    where_by_language = {lang: collections.defaultdict(set) for lang in LANGS}
+    for lang in LANGS:
+        for _phase, zone in load_order(list(new), lang):
+            for _tid, _name, blob in new[zone]:
+                where_by_language[lang][h(blob)].add(zone)
     counts = collections.Counter()
     shadowed = []
     for z, items in old.items():
@@ -216,10 +230,10 @@ def main(argv=None):
                     problems.append("%s %s of %s was never used, yet new %s carries it" % (
                         zoneimage.type_name(tid), name, z, ", ".join(sorted(places))))
                 continue
-            if len(places) != 1:
-                problems.append("%s %s of %s is in %d new zones (%s)" % (zoneimage.type_name(tid), name, z,
-                                                                       len(places), ", ".join(sorted(places))))
-            counts[(z, next(iter(places)) if places else "-")] += 1
+            for lang, eligible in ownership_conflicts(md, where_by_language, used_by_language):
+                problems.append("%s: %s %s of %s is in %d eligible new zones (%s)" % (
+                    lang, zoneimage.type_name(tid), name, z, len(eligible), ", ".join(sorted(eligible))))
+            counts[(z, ", ".join(sorted(places)) if places else "-")] += 1
     print("\nold zone -> new zone (assets):")
     for (z, n), c in sorted(counts.items()):
         print("  %-34s -> %-34s %5d" % (z, n, c))
