@@ -11,6 +11,7 @@ F=module('invitation_hold_behavior',DOC/'behavior_fixture.py')
 A=module('invitation_hold_abc',DOC/'abc_reader.py')
 R=module('invitation_recompile_review',DOC/'recompile_review.py')
 I=module('invitation_integration_review',DOC/'integration_review.py')
+C=module('invitation_current_transition',ROOT/'docs/baselines/20261105-invitations-current-transition/current_transition.py')
 
 class InvitationsDisabled(unittest.TestCase):
     def test_actual_shared_source_behaviors_and_unrelated_social_paths(self):
@@ -33,6 +34,12 @@ class InvitationsDisabled(unittest.TestCase):
                 header=6 if struct.unpack_from('<H',tag)[0]&63==63 else 2
                 self.assertEqual(struct.unpack_from('<H',tag)[0]>>6,82)
                 abc=A.read(tag[tag.index(b'\0',header+4)+1:])
+                if row['class_name']==C.CLASS:
+                    # Historical pins remain checked against their immutable
+                    # endpoint. The current compiled class has its own exact
+                    # source/compiler/ABI/body/denial transition gate.
+                    C.verify_current(ROOT,tag)
+                    abc=A.read(C.historical_parent())
                 self.assertEqual(hashlib.sha256(abc['tables']).hexdigest(),row['tables_sha256'])
                 self.assertEqual(len(abc['bodies']),row['method_count'])
                 for index,pin in row['unchanged_bodies'].items():
@@ -81,7 +88,8 @@ class InvitationsDisabled(unittest.TestCase):
         row=next(r for r in json.loads((DOC/'abi-contract.json').read_text()) if r['class_name']==review['class_name'])
         tag=(ROOT/'zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch'/row['tag_relative']).read_bytes()
         header=6 if struct.unpack_from('<H',tag)[0]&63==63 else 2
-        self.assertEqual(tag[tag.index(b'\0',header+4)+1:],after)
+        C.verify_current(ROOT,tag)
+        self.assertEqual(C.historical_parent(),after)
         old,new=A.read(before),A.read(after)
         self.assertEqual(old['tables'],new['tables'])
         self.assertEqual(old['bodies'].keys(),new['bodies'].keys())

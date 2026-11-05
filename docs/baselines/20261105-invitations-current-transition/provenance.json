@@ -1,0 +1,21 @@
+{
+  "compiler_receipt_path": "E:\\codol-p2p-client-union-evidence-20261104\\ui-compile-receipt.json",
+  "compiler_receipt_sha256": "a97281996ff169c340154af5c466ab9f18905a1e9aec1a9497a5e4e62ed024e4",
+  "compiler_row": {
+    "class": "codo.controllers.MatchController",
+    "source": "as/codo/controllers/MatchController.as",
+    "source_sha256": "8b4f3aedfe9972da3d8b8ed4f0dea17428c87578f2f2b4b233e4cf1433163598",
+    "tag": "tags/6167_82_codo_controllers_MatchController.bin"
+  },
+  "compiler_movie_sha256": "971e2142969d78247258afda55143683a212376fede771a6847eea1da3f2e18a",
+  "compiled_export_path": "E:\\codol-p2p-client-union-evidence-20261104\\compiled-export\\codo\\controllers\\MatchController.as",
+  "compiled_export_sha256": "f8c3f9fbbda381f0f66c6145408035ea97de7620bc0d0473059eec0075b56346",
+  "historical_integration_review_sha256": "99d38ae87648b6a87fb72635a6026742b22832612497da941a6637df552f3cd8",
+  "prior_UI_ABI_receipt_path": "E:/codol-p2p-ui-abi-review-20261104/match-invitation-current-abi.json",
+  "prior_UI_ABI_receipt_sha256": "28ac8b024d52308bf49bc79c8c3ed36face5ded363f8a36cbc942f82cb2eca14",
+  "actual_aaa_combined_movie_sha256": "1ed809660e57c6894f1d24d34288d29e714a6fbac005d3a03c66706395fc4158",
+  "independent_aaa_data_receipt_sha256": "0a92b1d5bb4a731a2491fc3e9b523bbfeac7107b904cb7eb1f614ea7a920e11c",
+  "current_product_source_not_changed": true,
+  "new_compile_or_decompile": false,
+  "raw_constructor_and_47resolved_text_changes_not_waived": true
+}
