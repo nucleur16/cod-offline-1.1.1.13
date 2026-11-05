@@ -89,6 +89,17 @@ def effective(order, assets, first_wins=True):
     return eff
 
 
+def is_patch_install(value):
+    """One exact install identity; manifests may use either separator."""
+    return isinstance(value, str) and value.replace("\\", "/") == "client_shipRetail/patch"
+
+
+def script_string_identity(image):
+    """Keep standalone xanim/script-string bindings, not just asset blobs."""
+    return (image.string_count_field, image.strings_ptr_field,
+            tuple(image.string_ptrs), tuple(image.strings))
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--maps", default="ship", choices=shipping.MODES)
@@ -105,38 +116,51 @@ def main(argv=None):
     part_of = packs.part_index(ROOT)
     pack_names = packs.names(ROOT)
     known = sorted(f[:-4] for f in os.listdir(os.path.join(ROOT, "zone_source")) if f.endswith(".csv"))
-    patch_zones = [z for z in known if build.load(ROOT, z).get("install") == r"client_shipRetail\patch"]
+    patch_zones = [z for z in known if is_patch_install(build.load(ROOT, z).get("install"))]
     standalone = [z for z in patch_zones if z not in part_of]
     problems = []
 
     # --- the old patch folder: every patch-folder source zone as its own zone
     old = {}
+    old_script_strings = {}
     if a.old:
         for z in patch_zones:
             p = os.path.join(a.old, z + ".ff")
             if not os.path.isfile(p):
                 problems.append("old folder has no %s.ff" % z)
                 continue
-            old[z] = named(read_zone(p, exe))
+            image = read_zone(p, exe)
+            old[z] = named(image)
+            old_script_strings[z] = script_string_identity(image)
     else:
         maps = shipping.ShippingMaps.load(ROOT, a.maps)
         src = stock.ZoneSource(exe, [os.path.join(a.game, "client_shipRetail", "chinese")])
         for z in patch_zones:
             m = build.load(ROOT, z)
             img, _plan = build.assemble_filtered(ROOT, z, m, src, maps=maps, log=lambda *x: None)
-            old[z] = named(zoneimage.parse(img))
+            image = zoneimage.parse(img)
+            old[z] = named(image)
+            old_script_strings[z] = script_string_identity(image)
     # --- the new patch folder: the packs and the zones that still ship on their own
     new = {}
+    new_script_strings = {}
     for z in pack_names + standalone:
         p = os.path.join(new_dir, z + ".ff")
         if not os.path.isfile(p):
             problems.append("%s has no %s.ff (run build_zones.py%s)" % (new_dir, z, "" if a.maps == "ship" else
                                                                         " --maps all"))
             continue
-        new[z] = named(read_zone(p, exe))
+        image = read_zone(p, exe)
+        new[z] = named(image)
+        new_script_strings[z] = script_string_identity(image)
     if problems:
         print("\n".join(problems))
         return 1
+    for z in standalone:
+        if old_script_strings[z] != new_script_strings[z]:
+            problems.append("%s: standalone script strings/header/pointers differ" % z)
+        elif old_script_strings[z][0]:
+            print("%s: %d standalone script strings match" % (z, old_script_strings[z][0]))
     markers = {h(codecs.encode_rawfile(p, b"", {})) for p in pack_names}
     unnamed = sum(1 for zs in (old, new) for items in zs.values() for _t, n, _b in items if n is None)
     print("rawfiles, localize entries and stringtables are keyed by name, the other %d assets by content" % unnamed)
