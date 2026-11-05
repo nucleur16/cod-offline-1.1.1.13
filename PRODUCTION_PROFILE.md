@@ -11,10 +11,24 @@ command-file transport is available only in this separately compiled profile.
 `K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=1` enables development diagnostics.
 Shipping with diagnostics, or values other than zero/one, is rejected.
 
+The room-context migration remains opt-in (`K33_KERNEL_ROOM_CONTEXT=0` by
+default). A migration build requires `K33_NO_COPY=1` and cannot use the build
+script's installation copy. Its runtime binder rejects a non-system Direct3D
+proxy so the legacy and Kernel33 publishers cannot run together. Names and
+complete proxy parity, actual Windows exception dispatch and client lifecycle
+acceptance remain release gates. Do not turn this switch on in a public release
+merely because the standalone policy/binder fixtures pass.
+
 The paired launcher proxy defaults to `PROFILE=shipping` and excludes the
 developer ImGui console, developer panel and their input hook. Its normal replay,
 name-display and native room integration remain. Development must be selected
 explicitly and must use a separate output directory.
+
+The full proxy-free prototype additionally selects `K33_KERNEL_NAME_DISPLAY=1`
+with `K33_KERNEL_ROOM_CONTEXT=1 K33_NO_COPY=1`. It explicitly loads Windows D3D
+and moves the retained name hooks into Kernel33; see
+`docs/KERNEL_NAME_MIGRATION.md`. Both flags remain disabled for shipping until
+the exact combined candidate passes real-client qualification.
 
 The shared frontend hides Quick Match from the playlist menu for this release.
 Its native catalogue and room/training paths retain their existing geometry.

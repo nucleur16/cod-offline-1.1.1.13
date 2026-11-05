@@ -1,5 +1,11 @@
 # Player-hosted (P2P) matches through Kernel33
 
+Security follow-up: [public-RCE review and host-filter repairs](P2P_PUBLIC_RCE_AUDIT_20261028.md).
+Remote player hosts remain unqualified. Lobby authentication is necessary but
+does not make host-controlled packets safe for C1's unresolved native parsers.
+The newer local-hosting integration and isolated backend prototypes do not clear
+those parsers or authorize retiring production dedicated capacity.
+
 Branch `feat/p2p-hosting` (Kernel33, off `origin/dev`) and the server branch of the same name
 (`nucleur16/codol_1.1.1.13_alpha_server`, off `origin/main`). Status: stage 1. Stage 1 was built
 and measured on one PC (see "Stage 1: what was measured"). Nothing here is installed in a
@@ -43,8 +49,9 @@ client (`hostgate.c`):
   (`CODOL_MM_HOST_IP`), so they pass.
 - Nothing calls `HostGateVouch()` yet. **A player-hosted server on another machine is refused
   in stage 1.** Stage 2 adds lobby-signed host tickets, the only way into that list.
-- `+set k33_hostGate 1` on the command line switches to log-only for diagnosis. There is no off
-  switch. Every refused address is logged once to `Kernel33.log`.
+- Only an explicit local-testing build accepts `+set k33_hostGate 1` for log-only
+  diagnosis. Shipping always enforces; installation failure stops client startup.
+  Every refused address is logged once to `Kernel33.log`.
 
 Before anything wider than "the lobby vouches for the host": verify or replace the row-14 parser
 (Kernel33 can pre-validate `svc_gamestate` the way `voice.c` re-implements the `"v"` packet),

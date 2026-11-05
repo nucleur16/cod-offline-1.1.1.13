@@ -1,7 +1,7 @@
-/* Exact C1 Bot Training: publish native card state before genuine host Ready.
+/* Exact C1 training: publish native card state before genuine host Ready.
  * Discovery does not carry this choice; the later mmbook commit is too late
  * to choose a dedicated map. Preserve Ready, card, session and roster fields.
- * Opt-in until the paired backend/client has real-client qualification. */
+ * Both training playlists use the same authenticated native transport. */
 #ifndef CTP_ROOM
 #define CTP_ROOM ((uintptr_t)0x082d5470u)
 #endif
@@ -10,6 +10,9 @@
 #endif
 #ifndef CTP_STATE
 #define CTP_STATE() (*(const int *)(uintptr_t)0x016fc2e8u)
+#endif
+#ifndef CTP_POOL
+#define CTP_POOL ((uintptr_t)0x028a8ec0u)
 #endif
 #ifndef CTP_SEND
 typedef void (__attribute__((thiscall)) *CtpTransportFn)(void *,const void *);
@@ -27,6 +30,24 @@ typedef void (__attribute__((thiscall)) *CtpReady)(void *,unsigned);
 static CtpReady g_ctpReady;
 static int g_ctpBusy;
 
+static int CtpTrainingEntry(unsigned ordinal,unsigned entry)
+{
+    /* AS_GetPlayList exports active ordinals, not source block IDs. The
+     * measured a5a/d821 pool has a 0x3778 stride, rotation count at +0x3740
+     * and active flag at +0x376d. Disabling Versus Training moves Bot
+     * Training from ordinal 2 to 1. Read the actual pool on every Ready. */
+    unsigned active=0;
+    for(unsigned slot=0;slot<=3;slot++) {
+        const BYTE *row=(const BYTE *)(CTP_POOL+slot*0x3778u);
+        if(!Readable(row+0x3740,0x2e))return 0;
+        uint32_t entries=0;memcpy(&entries,row+0x3740,4);
+        if(!entries || !row[0x376d])continue;
+        if(active++!=ordinal)continue;
+        return (slot==1 || slot==3) && entries<=255 && entry<entries;
+    }
+    return 0;
+}
+
 static int CtpPublish(void *object)
 {
     const BYTE *room=(const BYTE *)object;
@@ -37,7 +58,7 @@ static int CtpPublish(void *object)
         *(const uint32_t *)(room+0x15b20) || *(const uint32_t *)(room+0x15b24))return 0;
     const BYTE *info=room+0x15a80;
     const char *mode=*(const char *const *)info;
-    if (info[0xc]!=2 || info[0xd]!=1 || info[0x2c]>=9 ||
+    if (info[0xd]!=1 || !CtpTrainingEntry(info[0xc],info[0x2c]) ||
         !mode || !Readable(mode,9) ||
         (memcmp(mode,"playlist",9) && memcmp(mode,"combat",7)))return 0;
     uintptr_t address=*(const uint32_t *)(room+0x10);
@@ -61,8 +82,6 @@ static void __attribute__((fastcall,noinline)) CtpReadyHook(void *room,void *unu
 
 static void PatchTrainingPreviewPublish(void)
 {
-    char enabled[8];
-    if (GetEnvironmentVariableA("CODOL_TRAINING_PREVIEW_PUBLISH",enabled,sizeof(enabled))!=1 || enabled[0]!='1')return;
     static const BYTE entry[]={0x55,0x8b,0xec,0x83,0xec,0x0c};
     static const BYTE sender[]={0x55,0x8b,0xec,0x8b,0x45,0x08,0x50,0x51,0xb8,0x02,0x00,0x00,0x00};
     void *target=(void *)(uintptr_t)0x0070eb70u;
@@ -86,5 +105,5 @@ static void PatchTrainingPreviewPublish(void)
     DWORD ignored;
     if(!VirtualProtect(target,sizeof(patch),protection,&ignored))Log("training preview: protection restore failed");
     FlushInstructionCache(GetCurrentProcess(),target,sizeof(patch));
-    Log("training preview: native host card publishes before Ready; paired local qualification");
+    Log("training preview: Boot Camp and Bot Training publish native host card before Ready");
 }

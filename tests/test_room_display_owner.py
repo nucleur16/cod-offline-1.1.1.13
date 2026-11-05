@@ -32,20 +32,20 @@ for(const name of ['Display Host','中文玩家','<b>literal</b>']) {
  let f=fresh(name);check(f,name);
  f.host.name='unrelated clan formatting';check(f,name);
  f.guest.realName='p69c7b0123456789';check(f,name);
- f.host._localQuickNativeMemberID='stale';check(f,f.data.name);
- f=fresh(name);f.host._localQuickNativeRoleKnown=false;check(f,f.data.name);
- f=fresh(name);f.host._localQuickNativeHost=false;check(f,f.data.name);
- f=fresh(name);f.guest._localQuickNativeHost=true;check(f,f.data.name);
- f=fresh(name);f.data.forces.force1.push(f.host);check(f,f.data.name);
+ f.host._localQuickNativeMemberID='stale';check(f,"Matchmaking");
+ f=fresh(name);f.host._localQuickNativeRoleKnown=false;check(f,"Matchmaking");
+ f=fresh(name);f.host._localQuickNativeHost=false;check(f,"Matchmaking");
+ f=fresh(name);f.guest._localQuickNativeHost=true;check(f,"Matchmaking");
+ f=fresh(name);f.data.forces.force1.push(f.host);check(f,"Matchmaking");
  for(const missing of [undefined,null,'',5]) {
-  f=fresh(name);f.host.realName=missing;check(f,f.data.name);
+  f=fresh(name);f.host.realName=missing;check(f,"Matchmaking");
  }
- f=fresh(name);f.data.forces=null;check(f,f.data.name);
- f=fresh(name);f.data.forces.force1=null;check(f,f.data.name);
+ f=fresh(name);f.data.forces=null;check(f,"Matchmaking");
+ f=fresh(name);f.data.forces.force1=null;check(f,"Matchmaking");
  f=fresh(name);f.data.forces.isHost=true;f.host.isMe=true;
  f.host._localQuickNativeHost=false;check(f,name);
- f.guest.isMe=true;check(f,f.data.name);
- f=fresh(name);f.data.forces.isHost=true;f.host.isMe=false;check(f,f.data.name);
+ f.guest.isMe=true;check(f,"Matchmaking");
+ f=fresh(name);f.data.forces.isHost=true;f.host.isMe=false;check(f,"Matchmaking");
 }
 console.log(JSON.stringify({passed:true,checks,actual_AS_body:true,C1_acceptance:false}));
 '''.replace('BODY',json.dumps(actual))
@@ -56,6 +56,7 @@ class RoomDisplayOwner(unittest.TestCase):
         source=SOURCE.read_text()
         actual=source.split('// BEGIN room display owner name',1)[1].split('// END room display owner name',1)[0]
         actual=re.sub(r'var (\w+):(String|Object|int|Array)',r'var \1',actual)
+        actual=actual.replace('for each(var aliasMember in cDat.forces.force0.concat(cDat.forces.force1))','for (var aliasMember of cDat.forces.force0.concat(cDat.forces.force1))')
         actual=re.sub(r'for each\(var (\w+) in ([^)]+)\)',r'for (var \1 of \2)',actual)
         result=run(actual)
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)

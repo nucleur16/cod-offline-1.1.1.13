@@ -10,7 +10,7 @@ K33UI_HUD_171	标签标签
 K33UI_HUD_215	这份电路图似乎是用来设计\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9
 K33UI_HUD_216	高阶电路图（第一页）*
 K33UI_HUD_220	任务目标*
-K33UI_HUD_254	队友杀敌数：
+K33UI_HUD_254	队友击杀数：
 K33UI_HUD_256	难度：
 K33UI_HUD_257	普通
 K33UI_HUD_258	杀敌数：
@@ -30,3 +30,17 @@ K33UI_INGAME_454	获得的GP
 K33UI_INGAME_455	完成
 K33UI_INGAME_466	需要28000升级
 K33UI_INGAME_467	本次上线
+
+# Custom party/loading labels: same keys, native GBK Chinese values.
+CODOL_MODE_INFECT_NAME	感染模式
+CODOL_MODE_INFECT_DESC	在机械感染者的袭击中生存。阵亡的幸存者将加入感染者阵营。
+CODOL_MODE_GUN_NAME	枪械游戏
+CODOL_MODE_GUN_DESC	击败敌人以晋级并更换武器。
+CODOL_MODE_OIC_NAME	弹无虚发
+CODOL_MODE_OIC_DESC	在弹药有限的条件下生存。
+CODOL_MODE_SHRP_NAME	神射手
+CODOL_MODE_SHRP_DESC	使用不断轮换的武器作战。
+CODOL_LOADING_MODE_GUN	枪械游戏
+CODOL_LOADING_MODE_OIC	弹无虚发
+CODOL_LOADING_MODE_SHRP	神射手
+CODOL_LOADING_MODE_INFECT	感染模式

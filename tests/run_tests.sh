@@ -8,6 +8,12 @@ cd "$(dirname "$0")/.."
 BIN=${K33_MINGW:-/c/msys64/mingw32/bin}
 OUT=${K33_TEST_OUT:-${TMP:-/tmp}/k33-tests}
 mkdir -p "$OUT"
+for PROFILE in 0 1; do
+    "$BIN/gcc.exe" -std=c99 -O2 -Wall -Wextra -Werror -Wno-cast-function-type \
+        -DCODOL_LOCAL_TESTING=$PROFILE tests/hostgate_windows_fixture.c \
+        -o "$OUT/hostgate-$PROFILE.exe" -lws2_32 -liphlpapi
+    python tests/test_hostgate_windows.py "$OUT/hostgate-$PROFILE.exe"
+done
 python tests/test_ui_baseline.py
 python tests/test_quick_ready_gate.py
 node tests/campaign_local_host_test.js
@@ -20,6 +26,7 @@ python -B tests/test_survival_status_component.py
 python -B tests/test_tip_stage_lookup.py
 python -B tests/test_invitations_disabled.py
 python -B tests/test_zone_packs.py
+python -B tests/test_party_locales.py
 "$BIN/gcc.exe" -O2 -Wall -Wextra -Werror tests/quick_start_policy_test.c -o "$OUT/quick_start_policy.exe"
 "$OUT/quick_start_policy.exe"
 python -B docs/baselines/20261024-gfx-date-time/run_regressions.py \

@@ -2,14 +2,15 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
-const source = fs.readFileSync(path.join(__dirname, '../zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/LobbyController.as'), 'utf8');
+const asRoot = process.env.P2P_AS_ROOT || path.join(__dirname, '../zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as');
+const source = fs.readFileSync(path.join(asRoot, 'codo/controllers/LobbyController.as'), 'utf8');
 function body(name) {
   const start = source.indexOf('function ' + name + '(');
   assert(start >= 0, name + ' exists');
   const open = source.indexOf('{', start);
   let depth = 1, end = open + 1;
   while (depth && end < source.length) { if (source[end] === '{') depth++; if (source[end] === '}') depth--; end++; }
-  return source.slice(open + 1, end - 1).replace(/var (\w+):[A-Za-z0-9_]+/g, 'var $1');
+  return source.slice(open + 1, end - 1).replace(/var (\w+):[A-Za-z0-9_]+/g, 'var $1').replace(/super\.getSyncDP\(/g, 'this.getSyncDP(');
 }
 let now = 1000, dvars = {}, commands = [], readyCalls = [];
 global.CFunctionContainer = {SetReadyState: value => readyCalls.push(value)};
@@ -19,7 +20,8 @@ global.MapType = {COOP: 'story', COOP_SPEC: 'spec', COOP_SURVIVAL: 'survival'};
 global.MsgBtnCount = {ONE: 1};
 global.AsyncTaskID = {START_MATCH: 'start'};
 global.SyncDataID = {IS_SHIP_BUILD: 'ship'};
-global.CFunctionContainerCommon = {execnow: command => commands.push(command), Dvar_GetString: key => dvars[key] || ''};
+global.int = x => Number(x)|0;
+global.CFunctionContainerCommon = {execnow: command => commands.push(command), Dvar_GetString: key => dvars[key] || '', setdvar: (key, value) => {dvars[key]=value;}};
 global.getTimer = () => now;
 global.TimerEvent = {TIMER: 'timer'};
 global.Timer = class {
@@ -33,11 +35,11 @@ function room() {
   const c = {_campaignHostTimer: null, _campaignHostMap: '', _campaignHostRequestedMap: '', _campaignHostStartPara: null,
     _campaignHostWaitStart: 0, owner: true, leaving: false, requests: [], errors: [], ready: false, broadcasts: [],
     _roomMembers: [{}], _roomObj: {isPlayList: false, mapType: MapType.COOP, currentMatchMode: {id: 'coop'},
-      forces: {enableChangeMapBtn:true}, currentMap: {id: 'coop_prolog_mp_downtown'}, currentMaxPlayers: 4, currentMinPlayers: 1},
+      forces: {enableChangeMapBtn:true}, currentMap: {id: 'coop_prolog_mp_downtown'}, currentMaxPlayers: 4, currentMinPlayers: 1,currentLevel:1},
     isReady() {return this.ready;}, broadcast(id, value) {this.broadcasts.push(id);}, isRoomHost() {return this.owner;}, isRoomInfoReady() {return true;}, isLeavingRoom() {return this.leaving;},
     getSyncDP() {return false;}, request(id, args) {this.requests.push({id, args});}, showMsg(message) {this.errors.push(message);}};
-  for (const name of ['isLocalCampaignRoom', 'cancelCampaignHostStart', 'beginCampaignLocalHost', 'onCampaignHostReady', 'onStartMatchHandle', 'isLocalHostRoom', 'localHostCategory', 'localHostGameType', 'onChangeReadyStateHandle', 'applyRoomReadyState'])
-    c[name] = new Function(name === 'beginCampaignLocalHost' ? 'startPara,waitForStart,action' : name === 'applyRoomReadyState' ? 'readyToSet' : 'cEvt', (name === 'beginCampaignLocalHost' ? 'if(action===undefined)action="start";\n' : '') + body(name));
+  for (const name of ['isLocalCampaignRoom', 'usesLocalStartupProtocol', 'localHostContext', 'completeCampaignHostWait', 'cancelCampaignHostStart', 'beginCampaignLocalHost', 'onCampaignHostReady', 'onStartMatchHandle', 'isLocalHostRoom', 'localHostCategory', 'localHostGameType', 'onChangeReadyStateHandle', 'applyRoomReadyState','isSupportedMapMode','isManagedTrainingRoom'])
+    c[name] = new Function(name === 'beginCampaignLocalHost' ? 'startPara,waitForStart,action' : name === 'applyRoomReadyState' ? 'readyToSet' : name==='isSupportedMapMode'?'mapID,modeID':'cEvt', (name === 'beginCampaignLocalHost' ? 'if(action===undefined)action="start";\n' : '') + body(name));
   // Execute the actual automatic room-entry branch, with the preceding native room hydration omitted.
   const start = source.indexOf('this.broadcast(BCEvent.ROOM_INFO_ONLY,this._roomObj);');
   const entry = source.slice(start, source.indexOf('\n      }', start)).replace('this.broadcast(BCEvent.ROOM_INFO_ONLY,this._roomObj);', '');
@@ -131,3 +133,75 @@ for (const [map,mode,readyMap] of [['mp_killhouse_sh','war','mp_killhouse_sh'],[
   dvars.ui_p2p_ready = '1'; dvars.ui_p2p_map = readyMap; c.onCampaignHostReady(); assert.deepEqual(readyCalls, [true]); assert.equal(c.requests.length, 0);
 }
 c = room(); c.onChangeReadyStateHandle({}); now += 180000; c.onCampaignHostReady(); assert.equal(readyCalls.length, 0); assert.equal(c.requests.length, 0); assert.equal(c.errors.length, 1);
+
+// The new protocol uses only a genuine Ready/Start action as startup intent.
+// These execute the same AS bodies above; native authority is not mocked Ready.
+c = room(); dvars.ui_p2p_startup_protocol = '1'; c._localHostPendingAction = '';
+c.enterCampaignRoom();
+assert.deepEqual(commands, ['p2p_room coop_prolog_mp_downtown coop coop', 'p2p_localhost 1']);
+assert.equal(c._campaignHostTimer, null, 'Create arms without a startup wait or DW Ready');
+commands = []; c.onChangeReadyStateHandle({});
+assert.deepEqual(commands, ['p2p_start_intent ready coop_prolog_mp_downtown coop coop']);
+assert.deepEqual(readyCalls, []); assert.equal(c.requests.length, 0);
+const firstWait = c._campaignHostWaitStart;
+now += 500; c.onStartMatchHandle({myPara: parameters});
+assert.equal(commands.length, 1, 'duplicate pending Start cannot rewrite context or renew the attempt');
+assert.equal(c._campaignHostWaitStart, firstWait);
+c.onChangeReadyStateHandle({});
+assert.deepEqual(commands, ['p2p_start_intent ready coop_prolog_mp_downtown coop coop', 'p2p_cancel_start']);
+assert(!c._campaignHostTimer.running); assert.deepEqual(readyCalls, [], 'second pending Ready cancels without inventing unready');
+c.onCampaignHostReady(); assert.equal(commands.length, 2, 'stale timer after cancellation is inert');
+c.onChangeReadyStateHandle({});
+assert.equal(commands[2], 'p2p_start_intent ready coop_prolog_mp_downtown coop coop');
+dvars.ui_p2p_ready = '1'; dvars.ui_p2p_map = c._roomObj.currentMap.id;
+c.onCampaignHostReady(); assert.deepEqual(readyCalls, [true]);
+assert.equal(commands.length, 3, 'success clears only UI wait and does not revoke live native startup');
+c.onCampaignHostReady(); assert.equal(commands.length, 3, 'stale success callback cannot revoke');
+c.onStartMatchHandle({myPara: parameters});
+assert.equal(commands[3], 'p2p_start_intent start coop_prolog_mp_downtown coop coop');
+c.onCampaignHostReady(); assert.equal(c.requests.length, 1); assert.equal(commands.length, 4);
+c.ready = true; c.onChangeReadyStateHandle({});
+assert.equal(commands[4], 'p2p_cancel_start'); assert.deepEqual(readyCalls, [true, false]);
+for (const mutation of [x => x.owner = false, x => x.leaving = true, x => x._roomObj.currentMap.id = 'mp_rust', x => x._roomObj.currentMatchMode.id = 'war']) {
+  c = room(); dvars.ui_p2p_startup_protocol='1'; c._localHostPendingAction='';
+  c.onChangeReadyStateHandle({}); mutation(c); c.onCampaignHostReady();
+  assert.equal(commands.at(-1), 'p2p_cancel_start'); assert.deepEqual(readyCalls, []); assert.equal(c.requests.length, 0);
+}
+c = room(); dvars.ui_p2p_startup_protocol='-1'; c._localHostPendingAction='';
+c.onChangeReadyStateHandle({}); dvars.ui_p2p_state='failed'; dvars.ui_p2p_error='invalid protocol'; c.onCampaignHostReady();
+assert.deepEqual(readyCalls, []); assert.equal(c.requests.length, 0); assert.equal(commands.at(-1), 'p2p_cancel_start');
+for (const [map, mode, category] of [['mp_killhouse_sh','war','mp'],['zm_factory_sh','zm','zm'],['coop_survival_mp_cross_fire','coop','survival']]) {
+  c = room(); dvars.ui_p2p_startup_protocol='1'; c._localHostPendingAction='';
+  c._roomObj.currentMap.id=map; c._roomObj.currentMatchMode.id=mode;
+  c.onChangeReadyStateHandle({});
+  assert.deepEqual(commands, ['p2p_start_intent ready '+map+' '+(category==='survival'?'survival':mode)+' '+category]);
+  assert.deepEqual(readyCalls, []);
+}
+console.log('New startup protocol: Create arms; genuine Ready/Start produces intent; duplicate waits preserve deadline; pending Ready cancels; success never revokes; stale callbacks/context/owner/leave and malformed mode fail closed');
+
+// Execute the actual leave handler through its room-reset boundary. The rest
+// belongs to unrelated lobby/avatar/navigation rendering, not native lifetime.
+c = room(); dvars.ui_p2p_startup_protocol='1'; c._localHostPendingAction='';
+c.onChangeReadyStateHandle({}); commands=[];
+new Function('cRes',body('bind_onRoomLeft').split('this.resetRoom();')[0]).call(c,{});
+assert.deepEqual(commands,['p2p_cancel_start','p2p_localhost 0']);
+assert(!c._campaignHostTimer.running); assert.equal(c._campaignHostRequestedMap,'');
+console.log('Actual room-leave prefix cancels pending native attempt and explicitly deselects its local route before reset');
+
+c=room();dvars.ui_p2p_startup_protocol='2';c._localHostPendingAction='';
+c._roomObj.currentMap.id='zm_factory_sh';c._roomObj.currentMatchMode.id='zm';c._roomObj.currentLevel=0;
+c.onChangeReadyStateHandle({});
+assert.deepEqual(commands,['p2p_start_intent ready zm_factory_sh zm zm 1 0']);
+dvars.ui_p2p_ready='1';dvars.ui_p2p_map='zm_factory_sh';c._roomObj.currentLevel=3;c.onCampaignHostReady();
+assert.equal(commands.at(-1),'p2p_cancel_start');assert.deepEqual(readyCalls,[],'same map with a different tier cannot consume old Ready');
+c.onChangeReadyStateHandle({});assert.equal(commands.at(-1),'p2p_start_intent ready zm_factory_sh zm zm 1 3');
+c.onCampaignHostReady();assert.deepEqual(readyCalls,[true]);
+for(const bad of [-1,4,1.5,NaN,Infinity,'3',true,undefined]) {
+ c=room();dvars.ui_p2p_startup_protocol='2';c._localHostPendingAction='';
+ c._roomObj.currentMap.id='zm_factory_sh';c._roomObj.currentMatchMode.id='zm';c._roomObj.currentLevel=bad;
+ c.onChangeReadyStateHandle({});assert.deepEqual(commands,['p2p_cancel_start']);assert.deepEqual(readyCalls,[]);
+}
+c=room();dvars.ui_p2p_startup_protocol='2';c._localHostPendingAction='';
+c._roomObj.currentMap.id='mp_rust';c._roomObj.currentMatchMode.id='war';c._roomObj.currentLevel=17;
+c.onChangeReadyStateHandle({});assert.deepEqual(commands,['p2p_start_intent ready mp_rust war mp 0 -1']);
+console.log('V2 Ready intent preserves genuine0/Endless3, revokes same-map changed tier, refuses malformed tier and keeps MP league absent');

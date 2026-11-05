@@ -20,9 +20,9 @@ package codo.views
 
    public class ServerMessageView extends BaseView
    {
-      private static const POS_ORIGIN_X:Number = 32;
+      private static const POS_ORIGIN_X:Number = 880;
 
-      private static const POS_ORIGIN_Y:Number = 905;
+      private static const POS_ORIGIN_Y:Number = 80;
 
       private static var POS_X_START:int = 372;
 
@@ -232,6 +232,12 @@ package codo.views
       private function show(cServerMsg:Object) : void
       {
          var serverMsgObj:ServerMessageObj = new ServerMessageObj(cServerMsg);
+         // A match hides the view. Queue/join messages must restore it after
+         // returning to either multiplayer or Zombies without reloading codo.
+         if(!this._isInGame)
+         {
+            this.visible = true;
+         }
          if(this.isServerMsgRepetitive(serverMsgObj))
          {
             return;

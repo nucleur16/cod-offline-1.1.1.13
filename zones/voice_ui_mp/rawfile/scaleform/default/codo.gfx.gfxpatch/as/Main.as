@@ -75,12 +75,7 @@ package
          // Decompilation skipped
       }
       
-      public static function handleTheatreSession(result:Object) : Boolean
-      {
-         // Decompilation skipped
-      }
-      
-      override protected function onBeforeAddToStage() : void
+override protected function onBeforeAddToStage() : void
       {
          // Decompilation skipped
       }

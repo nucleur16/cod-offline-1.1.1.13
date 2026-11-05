@@ -24,17 +24,17 @@ mp_shipment_long    ship
 mp_subbase_sh       ship
 mp_terminal_cls     ship
 
-# --- in development: not in a released map pack
-mp_abandon_sh       dev     # 2.6.9.7 port (2026-10-22); its map-select image is in iw_image_17.iwd
-zm_sumpf_sh         dev     # Shi No Numa; zm_sumpf_sh.ff and _load.ff are in no released map pack, PaP work ongoing
-mp_dome             dev     # 3.5.6.2 port (2026-10-22); map-select image in iw_image_23.iwd
-mp_sd_jardin        dev     # 3.5.6.2 port (2026-10-22), sd only; map-select image in iw_image_23.iwd
-mp_hardhat_sh       dev     # 3.5.6.2 port (2026-10-22); map-select image in iw_image_23.iwd
-mp_strike_sh        dev     # 3.5.6.2 port (2026-10-22); its map-select image is in iw_image_21.iwd
-mp_qadeem_sh        dev     # 3.5.6.2 port (2026-10-22); its map-select image is in iw_image_21.iwd
-mp_highrise         dev     # 3.5.6.2 port (2026-10-22); stock image sfproto_mp_highrise (iw_image_03.iwd); stock row 26 stays disabled
-mp_hunger           dev     # 3.5.6.2 port (2026-10-22); map-select image in iw_image_22.iwd
-mp_vacant           dev     # 3.5.6.2 port (2026-10-22); stock sfproto_mp_vacant image
-mp_brl_derail       dev     # 3.5.6.2 port (2026-10-22); stock sfproto_mp_derail image
-zm_factory_sh       dev     # Der Riese, 3.5.6.2 port (2026-10-22); its zones and iw_image_20.iwd are in no released map pack
-zm_theater_sh       dev     # Kino der Toten, 3.5.6.2 port (2026-10-22); its zones and iw_image_19.iwd are in no released map pack
+# --- 2026-10-31 map pack: ship only with the matching client assets
+mp_abandon_sh       ship
+zm_sumpf_sh         ship
+mp_dome             ship
+mp_sd_jardin        ship
+mp_hardhat_sh       ship
+mp_strike_sh        ship
+mp_qadeem_sh        ship
+mp_highrise         ship
+mp_hunger           dev     # Explicitly excluded from the 2026-10-31 release (also known as mp_hunger_sh)
+mp_vacant           ship
+mp_brl_derail       dev     # Explicitly excluded from the 2026-10-31 release
+zm_factory_sh       ship
+zm_theater_sh       ship

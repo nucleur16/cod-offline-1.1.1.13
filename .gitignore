@@ -39,3 +39,23 @@ output_candidate_parts/
 
 # Retained diagnostic staging output.
 staged-*/
+
+# Task-local disassembly dependency, never part of the client patch.
+analysis_deps/
+candidate-local/
+tests/member_join_guard_fixture_O0
+tests/member_join_guard_fixture_O2
+tests/server_info_capacity_guard_fixture_O0
+tests/server_info_capacity_guard_fixture_O2
+tests/session_capacity_guard_fixture_O0
+tests/session_capacity_guard_fixture_O2
+tests/party_slot_loop_guard_fixture_O0
+tests/party_slot_loop_guard_fixture_O2
+tests/party_session_capacity_guard_fixture_O0
+tests/party_session_capacity_guard_fixture_O2
+tests/party_session_refresh_guard_fixture_O0
+tests/party_session_refresh_guard_fixture_O2
+
+# Isolated production parity build/cache, never source publication
+/output-parity/
+/production-parity-evidence/

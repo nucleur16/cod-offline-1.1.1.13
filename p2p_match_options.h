@@ -3,6 +3,7 @@
 #include <string.h>
 typedef struct {
     char map[64], session[64], gametype[32], category[16];
+    int difficultyPresent,difficulty;
 } P2PRoomContext;
 static int P2PMatchIdent(const char *s, size_t maximum)
 {
@@ -16,6 +17,7 @@ static int P2PMatchIdent(const char *s, size_t maximum)
 static const char *P2PParseRoomContext(int argc, const char *const *argv, P2PRoomContext *out)
 {
     P2PRoomContext next = {0}; const char *base;
+    next.difficulty=-1;
     if (argc != 3) return "Choose a match lobby first.";
     if (!P2PMatchIdent(argv[0],63) || !P2PMatchIdent(argv[1],31)) return "Invalid selected map or mode.";
     if (strcmp(argv[2],"mp") && strcmp(argv[2],"zm") && strcmp(argv[2],"coop") && strcmp(argv[2],"survival"))
@@ -42,6 +44,21 @@ static const char *P2PParseRoomContext(int argc, const char *const *argv, P2PRoo
         strcpy(next.gametype,"survival");
         strcpy(next.session,next.map); /* Rules on the unchanged MP level. */
     } else if (!strcmp(next.category,"coop")) strcpy(next.gametype,"coop");
+    *out=next;return NULL;
+}
+/* UI hints only. The owned SDK independently compares the authenticated room.
+ * MP currentLevel is a league; it must never become a Zombies/bot tier. */
+static const char *P2PParseRoomContextV2(int argc,const char *const *argv,P2PRoomContext *out)
+{
+    P2PRoomContext next;const char *bad;
+    if(argc!=5)return "The selected match options are missing.";
+    bad=P2PParseRoomContext(3,argv,&next);if(bad)return bad;
+    if(!strcmp(argv[3],"0")&&!strcmp(argv[4],"-1")) { next.difficultyPresent=0;next.difficulty=-1; }
+    else if(!strcmp(argv[3],"1")&&argv[4]&&argv[4][0]>='0'&&argv[4][0]<='3'&&!argv[4][1]) {
+        next.difficultyPresent=1;next.difficulty=argv[4][0]-'0';
+    } else return "The selected match difficulty is invalid.";
+    if((!strcmp(next.category,"zm")&&!next.difficultyPresent)||
+       (!strcmp(next.category,"mp")&&next.difficultyPresent))return "The selected difficulty does not belong to this mode.";
     *out=next;return NULL;
 }
 #endif
