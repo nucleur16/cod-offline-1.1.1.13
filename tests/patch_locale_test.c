@@ -44,6 +44,9 @@ int main(void)
  assert(!strcmp(CodolPatchZoneMergedInto("voice_ui_mp"),"codol_common_ui_mp"));
  assert(!strcmp(CodolPatchZoneMergedInto("VOICE_UI_MP"),"codol_common_ui_mp"));
  assert(!strcmp(CodolPatchZoneMergedInto("000_codol_party_modes"),"codol_common"));
+ assert(!strcmp(CodolPatchZoneMergedInto("codol_loading_mode_names"),"codol_common"));
+ assert(!strcmp(CodolPatchZoneMergedInto("CODOL_LOADING_MODE_NAMES"),"codol_common"));
+ assert(!CodolPatchZoneMergedInto("codol_loading_mode_names_extra"));
  assert(!strcmp(CodolPatchZoneMergedInto("usermaps_patch"),"codol_common"));
  assert(!strcmp(CodolPatchZoneMergedInto("controller_glyphs_postgfx_mp"),"codol_common_postgfx_mp"));
  assert(!strcmp(CodolPatchZoneMergedInto("codol_english"),"codol_english_locale"));

@@ -26,6 +26,7 @@ python -B tests/test_survival_status_component.py
 python -B tests/test_tip_stage_lookup.py
 python -B tests/test_invitations_disabled.py
 python -B tests/test_zone_packs.py
+python -B tests/test_party_locales.py
 "$BIN/gcc.exe" -O2 -Wall -Wextra -Werror tests/quick_start_policy_test.c -o "$OUT/quick_start_policy.exe"
 "$OUT/quick_start_policy.exe"
 python -B docs/baselines/20261024-gfx-date-time/run_regressions.py \

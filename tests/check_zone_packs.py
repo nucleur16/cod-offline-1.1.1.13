@@ -12,7 +12,8 @@ tests/test_zone_packs.py is the portable half. Run build_zones.py first: this re
 For each language Kernel33 can select (en, zh, native: patch_locale_policy.h) it loads the old and the new patch
 folder the way C1 does -- the code_pre_gfx list's patch zones, then the code_post_gfx list's, then the UI list's,
 each in Kernel33's alphabetical order, the first asset linked under a (type, name) kept -- and requires:
-  1. the same assets reach the game, byte for byte, in the same list;
+  1. the same assets reach the game, byte for byte, in the same list, except the
+     twelve explicitly reviewed Chinese party/loading values in party_locale_contract.py;
   2. no new zone of a list carries an asset another zone of that list (or itself) also carries;
   3. every asset of every old zone is in exactly one new zone, unless no language ever used it (an earlier zone
      carried the same name: reported as shadowed);
@@ -32,6 +33,7 @@ import tempfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 from zonekit import build, codecs, container, gfx, packs, shipping, stock, zoneimage  # noqa: E402
+from party_locale_contract import expected_effective  # noqa: E402
 
 DEFAULT_GAME = r"D:\CoD\CODOL Builds\Call of Duty Online 1.1.1.13"
 PHASES = ("pre_gfx", "post_gfx", "ui")          # the order C1 loads the three lists in
@@ -134,11 +136,17 @@ def main(argv=None):
     unnamed = sum(1 for zs in (old, new) for items in zs.values() for _t, n, _b in items if n is None)
     print("rawfiles, localize entries and stringtables are keyed by name, the other %d assets by content" % unnamed)
 
-    # 1 + 2: per language, the same winners and no duplicates in a list
+    # 1 + 2: per language, exact winners (including the bounded reviewed translation) and no duplicates.
     used_somewhere = set()
     for lang in LANGS:
         o_order, n_order = load_order(list(old), lang), load_order(list(new), lang)
         o_eff, n_eff = effective(o_order, old), effective(n_order, new)
+        try:
+            o_eff = expected_effective(o_eff, lang, codecs.encode_localize)
+        except ValueError as error:
+            problems.append(str(error))
+        if lang in ('zh', 'native'):
+            print('%s: expected twelve reviewed Chinese party/loading values; all other identities unchanged' % lang)
         used_somewhere |= {v[2] for v in o_eff.values()}
         dup = collections.Counter()
         for ph, z in n_order:
