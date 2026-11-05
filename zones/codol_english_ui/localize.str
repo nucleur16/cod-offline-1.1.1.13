@@ -290,7 +290,7 @@ K33UI_CODO_3314	Message
 K33UI_CODO_3316	Purchase Info
 K33UI_CODO_3346	Choose one
 K33UI_CODO_3348	Select
-K33UI_CODO_3351	Sample descriptionSample descriptionSample descriptionSample description\nSample description
+K33UI_CODO_3351	No description.
 K33UI_CODO_3352	Character Name
 K33UI_CODO_3354	Height
 K33UI_CODO_3355	6'3"
@@ -313,10 +313,10 @@ K33UI_CODO_3717	MP:
 K33UI_CODO_3719	Undead
 K33UI_CODO_3726	Find more intel*
 K33UI_CODO_3727	Game Over*
-K33UI_CODO_3739	Answer\nAnswer
+K33UI_CODO_3739	Answer
 K33UI_CODO_3741	Q1.
 K33UI_CODO_3742	Question
-K33UI_CODO_3744	Question\nQuestion\nQuestion
+K33UI_CODO_3744	Question
 K33UI_CODO_3745	Survey
 K33UI_CODO_3776	Example text
 K33UI_CODO_3779	Plyr
@@ -336,7 +336,7 @@ K33UI_CODO_3907	Mode
 K33UI_CODO_3908	Friend Name
 K33UI_CODO_3921	Level Required:
 K33UI_CODO_3936	Select Character
-K33UI_CODO_3945	Sample description\nSample description\nSample description\nSample description
+K33UI_CODO_3945	No description.
 K33UI_CODO_3948	Task Force 141
 K33UI_CODO_3969	You can renew
 K33UI_CODO_3971	Details
@@ -352,7 +352,7 @@ K33UI_CODO_4452	Light
 K33UI_CODO_4488	Hot Sellers*
 K33UI_CODO_4499	Description
 K33UI_CODO_4530	Enter username
-K33UI_CODO_4531	Enter username\n\nEnter username\nEnter username
+K33UI_CODO_4531	Enter username
 K33UI_CODO_4546	Loading, please wait...
 K33UI_LOGIN_17	999GP
 K33UI_LOGIN_345	Play
