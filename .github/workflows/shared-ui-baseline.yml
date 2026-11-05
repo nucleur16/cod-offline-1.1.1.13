@@ -43,7 +43,7 @@ jobs:
         run: python -B tests/test_zone_packs.py
       - id: native_check_09
         continue-on-error: true
-        run: python -B tests/test_zone_pack_install_identity.py
+        run: python -B -m unittest discover -s tests -p "test_zone_pack_*.py"
       - id: native_check_10
         continue-on-error: true
         run: gcc -O2 -Wall -Wextra -Werror tests/quick_start_policy_test.c -o /tmp/quick-start-policy && /tmp/quick-start-policy
