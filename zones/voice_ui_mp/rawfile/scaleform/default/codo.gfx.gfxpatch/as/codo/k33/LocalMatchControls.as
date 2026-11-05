@@ -43,6 +43,17 @@ package codo.k33
          return this.room != null && this.room.forces != null && this.room.forces.isHost;
       }
 
+      private function difficultyIntent():String
+      {
+         // MP currentLevel is a league. A UI slot is only a hint: the SDK
+         // compares its independently authenticated, current room selection.
+         if(this.category()=="mp") return "0 -1";
+         if(this.room==null || !("currentLevel" in this.room) || typeof this.room.currentLevel!="number") return "";
+         var tier:Number=Number(this.room.currentLevel);
+         if(!isFinite(tier) || tier<0 || tier>3 || int(tier)!=tier) return "";
+         return "1 "+int(tier);
+      }
+
       public function setRoom(value:Object):void
       {
          this.room=value;
@@ -69,6 +80,16 @@ package codo.k33
             return;
          }
          var context:String=map+" "+gt+" "+this.category();
+         if(CFunctionContainerCommon.Dvar_GetString("ui_p2p_startup_protocol")=="2")
+         {
+            var intent:String=this.difficultyIntent();
+            if(intent=="")
+            {
+               if(this.localSelection) CFunctionContainerCommon.execnow("p2p_cancel_start");
+               return;
+            }
+            context+=" "+intent;
+         }
          if(context==this.lastContext) return;
          var first:Boolean=this.lastContext=="";
          if(first)

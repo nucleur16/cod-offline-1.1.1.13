@@ -86,7 +86,7 @@ static int fixture_frame(void);
 static void fixture_cmd(const char *);
 static void SwitchToFiber(void *fiber){(void)fiber;longjmp(back_to_main,1);}
 static void *g_piMainFiber=(void *)1;
-static volatile LONG g_piState,g_piQuit,g_piFaultTest,g_piStartupSelected=1,g_piPrincipalFresh;
+static volatile LONG g_piState,g_piQuit,g_piFaultTest,g_piStartupSelected=1,g_piPrincipalFresh,g_piMatchFresh;
 static LONG g_piSession=1; /* Actual Run reserves before module/fiber dispatch; runner checks source ordering. */
 static char g_piArgs[32]="fixture";
 static int g_piInitResult;
@@ -98,6 +98,8 @@ static void (*g_piCallFn)(void *);
 static void *g_piCallCtx;
 static int (*g_piStartupScripts)(const void *,unsigned)=fixture_scripts;
 static int (*g_piStartupPrincipals)(const void *,unsigned)=fixture_principals;
+static int (*g_piStartupOptions)(const void *,unsigned);
+static int (*g_piObserveOptions)(const void *,unsigned);
 static int (*g_piPrincipalCurrent)(void)=fixture_current;
 static void (*g_piPrincipalQuarantine)(void)=fixture_quarantine;
 #include "actual_startup_declarations.inc"
@@ -182,6 +184,7 @@ int main(int argc,char **argv)
     g_piStartup.pipe=(HANDLE)77;g_piStartup.started=clock_ms;g_piStartup.attempt=1;
     g_piStartup.packet=p;g_piStartup.packet_size=(DWORD)pn;g_piStartup.phase=P2PS_FETCHED;g_piStartup.fetch_claimed=1;
     assert(P2PStartupParseEnvelope(q,qn,p,pn,sha256,&g_piStartup.view));free(q);
+    g_piStartup.protocol=(int)g_piStartup.view.protocol;
     /* Golden native principal lease is wall1000000ms/mono10000ms. */
     realtime.tv_sec=1000;realtime.tv_nsec=0;monotime.tv_sec=10;monotime.tv_nsec=0;
     g_piStartup.expires_ms=1025000;g_piStartup.scope_started=clock_ms;g_piStartup.scope_lifetime=25000;

@@ -679,6 +679,17 @@ package codo.controllers
          return mode.length > 0 && mode != "0";
       }
 
+      private function localHostContext() : String
+      {
+         var context:String = this.localHostGameType() + " " + this.localHostCategory();
+         if(CFunctionContainerCommon.Dvar_GetString("ui_p2p_startup_protocol") != "2") return context;
+         if(this.localHostCategory() == "mp") return context + " 0 -1";
+         if(this._roomObj == null || !("currentLevel" in this._roomObj) || typeof this._roomObj.currentLevel != "number") return "";
+         var tier:Number = Number(this._roomObj.currentLevel);
+         if(!isFinite(tier) || tier < 0 || tier > 3 || int(tier) != tier) return "";
+         return context + " 1 " + int(tier);
+      }
+
       private function cancelCampaignHostStart() : void
       {
          if(this.usesLocalStartupProtocol() && CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") == "1")
@@ -703,6 +714,8 @@ package codo.controllers
       {
          var selectedMission:String = this._roomObj.currentMap.id;
          var protocol:Boolean = this.usesLocalStartupProtocol();
+         var context:String = this.localHostContext();
+         if(context == "") { this.cancelCampaignHostStart(); return; }
          if(protocol && waitForStart && this._localHostPendingAction != "") return;
          if(!waitForStart && this._campaignHostRequestedMap == selectedMission)
          {
@@ -712,7 +725,7 @@ package codo.controllers
          // Keep the actual coop mission/session spelling; native hosting resolves its MP level.
          if(!protocol || !waitForStart)
          {
-            CFunctionContainerCommon.execnow("p2p_room " + selectedMission + " " + this.localHostGameType() + " " + this.localHostCategory());
+            CFunctionContainerCommon.execnow("p2p_room " + selectedMission + " " + context);
             if(this.isLocalCampaignRoom()) CFunctionContainerCommon.execnow("p2p_localhost 1");
          }
          if(!waitForStart)
@@ -720,13 +733,13 @@ package codo.controllers
             return;
          }
          this._campaignHostSelectedMap = selectedMission;
-         this._campaignHostContext = this.localHostGameType() + " " + this.localHostCategory();
+         this._campaignHostContext = context;
          this._campaignHostMap = selectedMission.indexOf("coop_survival_") == 0 ? selectedMission.substr(14) : selectedMission;
          this._campaignHostStartPara = startPara;
          this._localHostPendingAction = action;
          this._campaignHostWaitStart = getTimer();
          if(protocol)
-            CFunctionContainerCommon.execnow("p2p_start_intent " + action + " " + selectedMission + " " + this.localHostGameType() + " " + this.localHostCategory());
+            CFunctionContainerCommon.execnow("p2p_start_intent " + action + " " + selectedMission + " " + context);
          if(this._campaignHostTimer == null)
          {
             this._campaignHostTimer = new Timer(250);
@@ -738,7 +751,7 @@ package codo.controllers
       private function onCampaignHostReady(evt:TimerEvent) : void
       {
          if(this._localHostPendingAction == "") return;
-         if(!this.isLocalHostRoom() || this._roomObj.currentMap.id != this._campaignHostSelectedMap || this.isLeavingRoom() || this.localHostGameType() + " " + this.localHostCategory() != this._campaignHostContext || CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") != "1")
+         if(!this.isLocalHostRoom() || this._roomObj.currentMap.id != this._campaignHostSelectedMap || this.isLeavingRoom() || this.localHostContext() != this._campaignHostContext || CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") != "1")
          {
             this.cancelCampaignHostStart();
             return;

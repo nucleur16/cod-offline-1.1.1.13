@@ -10,10 +10,11 @@ function body(name) {
 }
 let commands=[],dvars={ui_p2p_create:'0',ui_p2p_enabled:'0'};
 global.CFunctionContainerCommon={Dvar_GetString:n=>dvars[n]||'',setdvar:(n,v)=>{dvars[n]=v},execnow:c=>commands.push(c)};
-function control(map,gt,host=true){
+global.int=x=>Number(x)|0;
+function control(map,gt,host=true,level=1){
  const c={room:null,lastContext:'',localSelection:false,visible:false};
- for(const n of ['mapID','category','gameType','owner','setRoom'])c[n]=new Function(n==='setRoom'?'value':'',body(n));
- c.enter=()=>c.setRoom({currentMap:{id:map},currentMatchMode:{id:gt},forces:{isHost:host}});
+ for(const n of ['mapID','category','gameType','owner','difficultyIntent','setRoom'])c[n]=new Function(n==='setRoom'?'value':'',body(n));
+ c.enter=()=>c.setRoom({currentMap:{id:map},currentMatchMode:{id:gt},forces:{isHost:host},currentLevel:level});
  return c;
 }
 dvars.ui_p2p_create='1';
@@ -49,3 +50,17 @@ assert.deepEqual(commands,['p2p_room mp_rust war mp'],'valid changed context rem
 commands=[];c.room.forces.isHost=false;c.setRoom(c.room);
 assert.deepEqual(commands,['p2p_localhost 0'],'owner loss invalidates through genuine disable');
 console.log('New mode room bridge only arms, invalid changed context cancels and retains selection, and owner loss disables');
+
+commands=[];dvars={ui_p2p_startup_protocol:'2',ui_p2p_create:'1',ui_p2p_enabled:'0'};
+c=control('zm_factory_sh','zm',true,0);c.enter();
+assert.deepEqual(commands,['p2p_room zm_factory_sh zm zm 1 0','p2p_localhost 1'],'real tier0 stays0');
+commands=[];dvars.ui_p2p_enabled='1';c.room.currentLevel=3;c.setRoom(c.room);
+assert.deepEqual(commands,['p2p_room zm_factory_sh zm zm 1 3'],'same-map difficulty change rewrites exact context and revokes old native attempt');
+commands=[];c.setRoom(c.room);assert.deepEqual(commands,[],'unchanged exact context remains idempotent');
+for(const bad of [-1,4,1.5,NaN,Infinity,'3',true,undefined]) {
+ commands=[];c.room.currentLevel=bad;c.setRoom(c.room);
+ assert.deepEqual(commands,['p2p_cancel_start'],'invalid or missing actual tier cannot reuse pending intent');
+}
+commands=[];dvars.ui_p2p_create='1';c=control('mp_rust','war',true,17);c.enter();
+assert.deepEqual(commands,['p2p_room mp_rust war mp 0 -1','p2p_localhost 1'],'MP league is not a difficulty');
+console.log('V2 tier0/Endless3 presence, same-map edits, malformed tiers and independent MP league domain pass');

@@ -32,6 +32,7 @@ static void PiActiveDeny(int revoke)
     InterlockedExchange(&g_p2paMode,P2PA_DEAD);
     if(g_piPrincipalQuarantine)g_piPrincipalQuarantine();
     InterlockedExchange(&g_piPrincipalFresh,0);InterlockedExchange(&g_piQuit,1);
+    InterlockedExchange(&g_piMatchFresh,0);
 }
 static void PiActiveBootstrapExpired(void)
 {

@@ -19,11 +19,12 @@ typedef struct {
     DWORD packet_size;
     p2p_startup_view_t view;
     p2pa_bootstrap_t active_bootstrap; /* value copy before packet reclamation */
+    BYTE match_options[P2P_STARTUP_MATCH_OPTIONS_SIZE]; /* immutable copy, never a packet view */
     ULONGLONG expires_ms;
     DWORD scope_started,scope_lifetime;
     volatile LONG phase;
     volatile LONG aborted;
-    int scripts_result,principals_result;
+    int scripts_result,principals_result,options_result,protocol;
 } P2PStartupBridge;
 static HANDLE g_p2psParent;
 static ULONG g_p2psParentPid;
@@ -39,7 +40,7 @@ static int P2PStartupProtocolMode(void)
 {
     char value[4];DWORD size=GetEnvironmentVariableA("CODOL_P2P_STARTUP_IPC_V1",value,sizeof(value));
     if(!size||(size==1&&value[0]=='0'))return 0;
-    return size==1&&value[0]=='1'?1:-1;
+    return size==1&&(value[0]=='1'||value[0]=='2')?value[0]-'0':-1;
 }
 static BOOL P2PSParentAlive(void)
 {
@@ -76,7 +77,8 @@ static BOOL P2PSCurrent(const P2PStartupBridge *bridge)
     typedef BOOL (WINAPI *ServerPidFn)(HANDLE,PULONG);
     ServerPidFn server_pid;ULONG actual=0;ULONGLONG wall;
     if(!bridge||InterlockedCompareExchange((volatile LONG *)&bridge->aborted,0,0)||
-        P2PStartupProtocolMode()!=1||!P2PStartupAttemptCurrent(bridge->attempt)||
+        (bridge->protocol!=1&&bridge->protocol!=2)||P2PStartupProtocolMode()!=bridge->protocol||
+        !P2PStartupAttemptCurrent(bridge->attempt)||
         !P2PSParentAlive()||GetTickCount()-bridge->started>=P2PVS_TIMEOUT_MS)return P2PSRefuse(bridge);
     if(bridge->expires_ms&&(!P2PSWallMillis(&wall)||wall>=bridge->expires_ms||
         GetTickCount()-bridge->scope_started>=bridge->scope_lifetime))return P2PSRefuse(bridge);
@@ -163,9 +165,9 @@ static void P2PSClose(P2PStartupBridge *bridge,BOOL abort)
     }
 }
 static BOOL P2PSFetch(const char *map,const char *gametype,const char *category,
-    unsigned long attempt,P2PStartupBridge *bridge,char *error,unsigned error_size)
+    int present,int difficulty,unsigned long attempt,P2PStartupBridge *bridge,char *error,unsigned error_size)
 {
-    unsigned char nonce[32],request[P2P_STARTUP_MAX_REQUEST];
+    unsigned char nonce[32],request[P2P_STARTUP_V2_MAX_REQUEST];
     char name[128];DWORD name_size,size;size_t request_size=0;
     const char *failure="Local Play startup could not be verified.";
     /* A zero-initialized static context may retry only a failed fetch that was
@@ -178,10 +180,13 @@ static BOOL P2PSFetch(const char *map,const char *gametype,const char *category,
     bridge->pipe=INVALID_HANDLE_VALUE;bridge->packet=NULL;bridge->packet_size=0;
     bridge->expires_ms=0;bridge->scope_started=bridge->scope_lifetime=0;
     ZeroMemory(&bridge->view,sizeof(bridge->view));
-    bridge->phase=0;bridge->aborted=0;bridge->scripts_result=bridge->principals_result=0;
+    bridge->phase=0;bridge->aborted=0;bridge->scripts_result=bridge->principals_result=bridge->options_result=0;
+    bridge->protocol=P2PStartupProtocolMode();ZeroMemory(bridge->match_options,sizeof(bridge->match_options));
     bridge->attempt=attempt;bridge->started=GetTickCount();
-    if(P2PStartupProtocolMode()!=1||!P2PSCaptureParent()||!P2PSCurrent(bridge)||
-        !P2PSNonce(nonce)||!P2PStartupMakeRequest(map,gametype,category,nonce,request,sizeof(request),&request_size))goto failed;
+    if((bridge->protocol!=1&&bridge->protocol!=2)||!P2PSCaptureParent()||!P2PSCurrent(bridge)||!P2PSNonce(nonce))goto failed;
+    if(bridge->protocol==2) {
+        if(!P2PStartupMakeRequestV2(map,gametype,category,present,difficulty,nonce,request,sizeof(request),&request_size))goto failed;
+    } else if(!P2PStartupMakeRequest(map,gametype,category,nonce,request,sizeof(request),&request_size))goto failed;
     name_size=GetEnvironmentVariableA("CODOL_VERIFIED_SCRIPT_PIPE",name,sizeof(name));
     if(!name_size||name_size>=sizeof(name)||!P2PVSPipeName(name))goto failed;
     for(;;) {
@@ -196,11 +201,14 @@ static BOOL P2PSFetch(const char *map,const char *gametype,const char *category,
     size=(DWORD)request_size;
     if(!P2PSTransfer(bridge,&size,4,TRUE)||!P2PSTransfer(bridge,request,size,TRUE)||
         !P2PSTransfer(bridge,&size,4,FALSE)||
-        size<152+48+112||size>P2P_STARTUP_MAX_ENVELOPE)goto failed;
+        size<(bridge->protocol==2?192+48+112+352:152+48+112)||
+        size>(bridge->protocol==2?P2P_STARTUP_V2_MAX_ENVELOPE:P2P_STARTUP_MAX_ENVELOPE))goto failed;
     bridge->packet=HeapAlloc(GetProcessHeap(),0,size);bridge->packet_size=size;
     if(!bridge->packet||!P2PSTransfer(bridge,bridge->packet,size,FALSE)||
         !P2PStartupParseEnvelope(request,request_size,bridge->packet,size,P2PSSha256,&bridge->view)||
-        !P2PSCurrent(bridge)||!P2PACaptureBootstrap(&bridge->view,&bridge->active_bootstrap))goto failed;
+        bridge->view.protocol!=(unsigned)bridge->protocol||!P2PSCurrent(bridge)||
+        !P2PACaptureBootstrap(&bridge->view,&bridge->active_bootstrap))goto failed;
+    if(bridge->protocol==2)memcpy(bridge->match_options,bridge->view.options,sizeof(bridge->match_options));
     {
         ULONGLONG wall,expires=(ULONGLONG)p2ps_le32(bridge->view.principals+56)|
             (ULONGLONG)p2ps_le32(bridge->view.principals+60)<<32;
@@ -224,10 +232,13 @@ static BOOL P2PSAcknowledge(P2PStartupBridge *bridge)
 {
     unsigned char ack[P2P_STARTUP_ACK_SIZE];BOOL okay=FALSE;
     if(InterlockedCompareExchange(&bridge->phase,0,0)==P2PS_FIBER_DONE&&P2PSCurrent(bridge)&&
-        P2PStartupMakeAck(&bridge->view,bridge->scripts_result,bridge->principals_result,ack))
+        (bridge->protocol==2?
+         P2PStartupMakeAckV2(&bridge->view,bridge->scripts_result,bridge->principals_result,bridge->options_result,ack):
+         P2PStartupMakeAck(&bridge->view,bridge->scripts_result,bridge->principals_result,ack)))
         okay=P2PSTransfer(bridge,ack,sizeof(ack),TRUE);
     SecureZeroMemory(ack,sizeof(ack));
-    P2PSClose(bridge,!okay||bridge->scripts_result!=1||bridge->principals_result!=1);
+    P2PSClose(bridge,!okay||bridge->scripts_result!=1||bridge->principals_result!=1||
+        (bridge->protocol==2&&bridge->options_result!=1));
     return okay;
 }
 #else

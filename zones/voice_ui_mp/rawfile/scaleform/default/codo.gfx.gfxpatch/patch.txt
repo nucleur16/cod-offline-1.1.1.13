@@ -1,7 +1,7 @@
 # GFx movie as a patch over a stock movie (zonekit/gfx.py)
 stock patch_ui_mp:scaleform/default/codo.gfx
 stock-sha256 2f143069ed10f3c937e0f5b758591e477f57544f76bdfd3bd2635f77cca5d332
-sha256 732c0aa3fdc2bc25947fa25f3ea1e7926c0dc2c57c62a3e9e1583f8e6837271a
+sha256 9911596a195ed7a74a03bc0acf36ebfe81b84313f454a88a0d3a7b48eb909b75
 header 4746580a68b64500800003200000025800001e0100
 keep 0
 keep 1
@@ -6928,5 +6928,5 @@ as codo.controllers.MatchController as/codo/controllers/MatchController.as 8b4f3
 as codo.views.MatchMiniRoomCreatorView as/codo/views/MatchMiniRoomCreatorView.as 1378af250ddc6eece34d66ff1993261cf859ca1bb6b1f4846fe996c23a100367
 as codo.views.matchmpctroomcreator_sub.MatchMPCTRoomCreatorView_mpcreator as/codo/views/matchmpctroomcreator_sub/MatchMPCTRoomCreatorView_mpcreator.as 944696d6f200b04222edfba6bf1f9bc0ee8223785df74d1c85cb616d801e9237
 as codo.views.ServerMessageView as/codo/views/ServerMessageView.as 4bf3db5fbc6557c450dad000bee38a8435e80343ca5c6d8ee3b937114c62581a
-as codo.controllers.LobbyController as/codo/controllers/LobbyController.as 6646619857421f83125d191bf8dcb661cd8da6fa7ef5ddf80a7300f08cadeb3a
-as codo.k33.LocalMatchControls as/codo/k33/LocalMatchControls.as cd118e8ec7ed54ea351a6c1db8ef9586f2c74e8db703f6a4e595e9c090361008
+as codo.controllers.LobbyController as/codo/controllers/LobbyController.as 0202c624b1400a66c090b32780ceca7d16295bf90e2f6bf85fd3d4216a7d2874
+as codo.k33.LocalMatchControls as/codo/k33/LocalMatchControls.as 90ead07da30d11af9151bb02a7d94dc94dd8de20aef45a1a67b6559c16a370b6

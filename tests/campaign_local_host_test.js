@@ -20,6 +20,7 @@ global.MapType = {COOP: 'story', COOP_SPEC: 'spec', COOP_SURVIVAL: 'survival'};
 global.MsgBtnCount = {ONE: 1};
 global.AsyncTaskID = {START_MATCH: 'start'};
 global.SyncDataID = {IS_SHIP_BUILD: 'ship'};
+global.int = x => Number(x)|0;
 global.CFunctionContainerCommon = {execnow: command => commands.push(command), Dvar_GetString: key => dvars[key] || '', setdvar: (key, value) => {dvars[key]=value;}};
 global.getTimer = () => now;
 global.TimerEvent = {TIMER: 'timer'};
@@ -34,10 +35,10 @@ function room() {
   const c = {_campaignHostTimer: null, _campaignHostMap: '', _campaignHostRequestedMap: '', _campaignHostStartPara: null,
     _campaignHostWaitStart: 0, owner: true, leaving: false, requests: [], errors: [], ready: false, broadcasts: [],
     _roomMembers: [{}], _roomObj: {isPlayList: false, mapType: MapType.COOP, currentMatchMode: {id: 'coop'},
-      forces: {enableChangeMapBtn:true}, currentMap: {id: 'coop_prolog_mp_downtown'}, currentMaxPlayers: 4, currentMinPlayers: 1},
+      forces: {enableChangeMapBtn:true}, currentMap: {id: 'coop_prolog_mp_downtown'}, currentMaxPlayers: 4, currentMinPlayers: 1,currentLevel:1},
     isReady() {return this.ready;}, broadcast(id, value) {this.broadcasts.push(id);}, isRoomHost() {return this.owner;}, isRoomInfoReady() {return true;}, isLeavingRoom() {return this.leaving;},
     getSyncDP() {return false;}, request(id, args) {this.requests.push({id, args});}, showMsg(message) {this.errors.push(message);}};
-  for (const name of ['isLocalCampaignRoom', 'usesLocalStartupProtocol', 'completeCampaignHostWait', 'cancelCampaignHostStart', 'beginCampaignLocalHost', 'onCampaignHostReady', 'onStartMatchHandle', 'isLocalHostRoom', 'localHostCategory', 'localHostGameType', 'onChangeReadyStateHandle', 'applyRoomReadyState','isSupportedMapMode','isManagedTrainingRoom'])
+  for (const name of ['isLocalCampaignRoom', 'usesLocalStartupProtocol', 'localHostContext', 'completeCampaignHostWait', 'cancelCampaignHostStart', 'beginCampaignLocalHost', 'onCampaignHostReady', 'onStartMatchHandle', 'isLocalHostRoom', 'localHostCategory', 'localHostGameType', 'onChangeReadyStateHandle', 'applyRoomReadyState','isSupportedMapMode','isManagedTrainingRoom'])
     c[name] = new Function(name === 'beginCampaignLocalHost' ? 'startPara,waitForStart,action' : name === 'applyRoomReadyState' ? 'readyToSet' : name==='isSupportedMapMode'?'mapID,modeID':'cEvt', (name === 'beginCampaignLocalHost' ? 'if(action===undefined)action="start";\n' : '') + body(name));
   // Execute the actual automatic room-entry branch, with the preceding native room hydration omitted.
   const start = source.indexOf('this.broadcast(BCEvent.ROOM_INFO_ONLY,this._roomObj);');
@@ -186,3 +187,21 @@ new Function('cRes',body('bind_onRoomLeft').split('this.resetRoom();')[0]).call(
 assert.deepEqual(commands,['p2p_cancel_start','p2p_localhost 0']);
 assert(!c._campaignHostTimer.running); assert.equal(c._campaignHostRequestedMap,'');
 console.log('Actual room-leave prefix cancels pending native attempt and explicitly deselects its local route before reset');
+
+c=room();dvars.ui_p2p_startup_protocol='2';c._localHostPendingAction='';
+c._roomObj.currentMap.id='zm_factory_sh';c._roomObj.currentMatchMode.id='zm';c._roomObj.currentLevel=0;
+c.onChangeReadyStateHandle({});
+assert.deepEqual(commands,['p2p_start_intent ready zm_factory_sh zm zm 1 0']);
+dvars.ui_p2p_ready='1';dvars.ui_p2p_map='zm_factory_sh';c._roomObj.currentLevel=3;c.onCampaignHostReady();
+assert.equal(commands.at(-1),'p2p_cancel_start');assert.deepEqual(readyCalls,[],'same map with a different tier cannot consume old Ready');
+c.onChangeReadyStateHandle({});assert.equal(commands.at(-1),'p2p_start_intent ready zm_factory_sh zm zm 1 3');
+c.onCampaignHostReady();assert.deepEqual(readyCalls,[true]);
+for(const bad of [-1,4,1.5,NaN,Infinity,'3',true,undefined]) {
+ c=room();dvars.ui_p2p_startup_protocol='2';c._localHostPendingAction='';
+ c._roomObj.currentMap.id='zm_factory_sh';c._roomObj.currentMatchMode.id='zm';c._roomObj.currentLevel=bad;
+ c.onChangeReadyStateHandle({});assert.deepEqual(commands,['p2p_cancel_start']);assert.deepEqual(readyCalls,[]);
+}
+c=room();dvars.ui_p2p_startup_protocol='2';c._localHostPendingAction='';
+c._roomObj.currentMap.id='mp_rust';c._roomObj.currentMatchMode.id='war';c._roomObj.currentLevel=17;
+c.onChangeReadyStateHandle({});assert.deepEqual(commands,['p2p_start_intent ready mp_rust war mp 0 -1']);
+console.log('V2 Ready intent preserves genuine0/Endless3, revokes same-map changed tier, refuses malformed tier and keeps MP league absent');

@@ -69,13 +69,13 @@ def main():
     selected['P2PStartupInvalidate']=function(sources['p2p.c'],'P2PStartupInvalidate')
     for name in ('CODOL_HostSourceControlAllowed','Sh1xHost_UseVerifiedScripts','Sh1xHost_InstallRelayPrincipals','Sh1xHost_InstallActiveRelayPrincipals','Sh1xHost_ObserveRelayPrincipals','Sh1xHost_RelayPrincipalsCurrent','Sh1xHost_QuarantineRelayPrincipals'):
         selected[name]=function(native_host,name)
-    for name in ('PiStartupPrincipalCheck','PiInstallStartup','PiAbortStartupWorker','PiServerFiber','P2PInprocUsed','P2PInprocPrincipalFresh','P2PInprocCancelStartup'):
+    for name in ('PiStartupPrincipalCheck','PiStartupOptionsCheck','PiInstallStartup','PiAbortStartupWorker','PiServerFiber','P2PInprocUsed','P2PInprocPrincipalFresh','P2PInprocCancelStartup'):
         selected[name]=function(sources['p2p_inproc.c'],name)
     active_names=['PiActiveClock','PiActiveDeny','PiActiveBootstrapExpired','PiActivePeer','PiActivePermission','PiActiveIoCurrent','PiActiveTransfer','PiActiveBetweenFrames','PiActiveStagePacket','PiActiveMakeReply']
     for name in active_names:selected[name]=function(active,name)
     order=['P2PSAtomicCAS','P2PSWallMillis','P2PStartupProtocolMode','P2PStartupAttemptCurrent','P2PSParentAlive','P2PSRefuse','P2PSCurrent','P2PSClose','P2PSAcknowledge',
            'CODOL_HostSourceControlAllowed','Sh1xHost_UseVerifiedScripts','Sh1xHost_InstallRelayPrincipals','Sh1xHost_InstallActiveRelayPrincipals','Sh1xHost_ObserveRelayPrincipals','Sh1xHost_RelayPrincipalsCurrent','Sh1xHost_QuarantineRelayPrincipals',
-           'PiStartupPrincipalCheck','PiInstallStartup','PiAbortStartupWorker','PiServerFiber','P2PInprocUsed','P2PInprocPrincipalFresh',
+           'PiStartupPrincipalCheck','PiStartupOptionsCheck','PiInstallStartup','PiAbortStartupWorker','PiServerFiber','P2PInprocUsed','P2PInprocPrincipalFresh',
            'P2PInprocCancelStartup','P2PStartupInvalidate']
     at=order.index('PiStartupPrincipalCheck');order[at:at]=active_names
     for name in ('p2pa_u32','p2pa_u64'):selected[name]=function((root/'p2p_active_wire.c').read_text(),name)

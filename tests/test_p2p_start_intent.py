@@ -73,7 +73,7 @@ static int mode=1,thread_done=1,native_used,starts,checks,publications;
 static int published_ready,argc_,lock_depth;
 static unsigned long long uid=42;
 static unsigned long clock_now=10000;
-static const char *argv_[6];
+static const char *argv_[8];
 static char published_state[32],ui_ready[8],ui_state[32];
 static int P2PStartupProtocolMode(void) {return mode;}
 static LONG InterlockedCompareExchange(volatile LONG *p,LONG value,LONG expected) {LONG old=*p;if(old==expected)*p=value;return old;}
@@ -125,6 +125,12 @@ static void args(int n,const char *a,const char *b,const char *c,const char *d,c
 static void room(void) {args(4,"p2p_room","mp_killhouse_sh","war","mp",NULL);P2PCmdRoom();}
 static void enable(const char *value) {args(2,"p2p_localhost",value,NULL,NULL,NULL);P2PCmdLocalhost();}
 static void start(const char *action) {args(5,"p2p_start_intent",action,"mp_killhouse_sh","war","mp");P2PCmdStartIntent();}
+static void room2(const char *present,const char *tier) {
+    argc_=6;argv_[0]="p2p_room";argv_[1]="zm_factory_sh";argv_[2]="zm";argv_[3]="zm";argv_[4]=present;argv_[5]=tier;P2PCmdRoom();
+}
+static void start2(const char *present,const char *tier) {
+    argc_=7;argv_[0]="p2p_start_intent";argv_[1]="ready";argv_[2]="zm_factory_sh";argv_[3]="zm";argv_[4]="zm";argv_[5]=present;argv_[6]=tier;P2PCmdStartIntent();
+}
 static void reset(void) {
     memset(&g_p2p,0,sizeof(g_p2p));memset(&g_p2pRoom,0,sizeof(g_p2pRoom));
     memset(&g_p2pIntentConfig,0,sizeof(g_p2pIntentConfig));memset(&g_p2pIntentHeartbeat,0,sizeof(g_p2pIntentHeartbeat));
@@ -187,6 +193,21 @@ int main(void) {
     room();enable("1");assert(starts==1&&g_p2p.cfg.startupGeneration==0);
     P2PCmdCancelStart();assert(g_p2pEnabled&&!g_p2pStop); /* new commands inert legacy */
     start("ready");assert(starts==1);
+    reset();mode=2;room2("1","0");enable("1");start2("1","0");token=g_p2pStartupActive;
+    assert(token&&starts==1&&g_p2pIntentConfig.difficultyPresent==1&&g_p2pIntentConfig.difficulty==0);
+    start2("1","0");assert(starts==1&&g_p2pStartupActive==token);
+    room2("1","3");assert(!P2PStartupAttemptCurrent(token)&&g_p2pStop&&!published_ready);
+    assert(g_p2pIntentConfig.difficultyPresent==1&&g_p2pIntentConfig.difficulty==3);
+    thread_done=1;start2("1","0");assert(starts==1&&!g_p2pStartupActive);
+    start2("1","3");assert(starts==2&&P2PStartupAttemptCurrent(g_p2pStartupActive));
+    const char *bad_tiers[]={"-1","4","03","3.0","3;quit"};
+    for(unsigned i=0;i<sizeof(bad_tiers)/sizeof(bad_tiers[0]);++i) {
+        token=g_p2pStartupActive;room2("1",bad_tiers[i]);assert(!P2PStartupAttemptCurrent(token)&&g_p2pLobbyError[0]);
+    }
+    P2PRoomContext parsed;const char *mp[]={"mp_rust","war","mp","0","-1"};
+    assert(!P2PParseRoomContextV2(5,mp,&parsed)&&!parsed.difficultyPresent&&parsed.difficulty==-1);
+    mp[3]="1";mp[4]="1";assert(P2PParseRoomContextV2(5,mp,&parsed));
+    room2("0","-1");assert(g_p2pLobbyError[0]&&!g_p2pStartupActive);
     assert(!lock_depth);
     puts("Actual native commands/tick/token: arm-only, explicit start, duplicate idempotency, stale context/owner, cancel/disable, no busy restart, spent guard, malformed intent, ULONG exhaustion, gen0 refusal and legacy mode PASS");
     return 0;

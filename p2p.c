@@ -55,6 +55,7 @@ typedef struct P2PConfig {
     int c1Preload;               /* in-process: preloadmap when C1 is not loading a hosted map (default 0) */
     int c1Zones;                 /* in-process: map zones C1 holds are C1-backed, mounted only on demand (default 1) */
     unsigned long startupGeneration; /* zero is exclusively the legacy startup protocol */
+    int difficultyPresent,difficulty; /* v2 UI intent; authenticated by the retained SDK */
 } P2PConfig;
 
 static struct {
@@ -80,7 +81,7 @@ static BOOL P2PStartupAttemptCurrent(unsigned long generation)
 {
     int mode=P2PStartupProtocolMode();
     if (mode==0) return generation==0;
-    if (mode!=1 || !generation || !g_p2pInit) return FALSE;
+    if ((mode!=1&&mode!=2) || !generation || !g_p2pInit) return FALSE;
     EnterCriticalSection(&g_p2pLock);
     BOOL current=!g_p2pStartupExhausted && generation==g_p2pStartupActive &&
         g_p2pStartupEnabled && g_p2pStartupRoom && g_p2pStartupOwner &&
@@ -715,11 +716,13 @@ static void P2PArmCurrentRoom(void)
     P2PDefaults(&c);P2PLoadIni(&c);
     lstrcpyA(c.map,g_p2pRoom.map);lstrcpyA(c.sessionMap,g_p2pRoom.session);
     lstrcpyA(c.gametype,g_p2pRoom.gametype);lstrcpyA(c.zoneType,g_p2pRoom.category);
+    c.difficultyPresent=g_p2pRoom.difficultyPresent;c.difficulty=g_p2pRoom.difficulty;
     lstrcpyA(c.netIp,"127.0.0.1");lstrcpyA(c.mode,"inprocess");
     g_p2pIntentConfig=c;
     lstrcpyA(g_p2pLobbyMap,c.sessionMap);
     P2PStartupSnapshot();
-    const char *bad=P2PStartupProtocolMode()!=1 ? "The local startup protocol configuration is invalid.":
+    int protocol=P2PStartupProtocolMode();
+    const char *bad=(protocol!=1&&protocol!=2) ? "The local startup protocol configuration is invalid.":
         !g_p2pHasRoom ? "Choose a match lobby first.":
         !g_p2pIntentUid ? "Player identity is not ready for local hosting.":
         P2PInprocUsed() ? "Restart the client before hosting another Local Play match.":P2PCheck(&c);
@@ -880,12 +883,12 @@ static void P2PHostCurrentRoom(void)
 /* Internal room context is separate from the user's one-bit hosting switch. */
 static void __cdecl P2PCmdRoom(void)
 {
-    const char *args[3];P2PRoomContext room;
-    int count=VoiceArgc()-1;
-    if (count!=3) { lstrcpyA(g_p2pLobbyError,"Choose a match lobby first.");P2PLobbyTick();return; }
-    for (int i=0;i<3;++i) args[i]=VoiceArgv(i+1);
-    const char *bad=P2PParseRoomContext(count,args,&room);
-    if (bad) { lstrcpynA(g_p2pLobbyError,bad,sizeof(g_p2pLobbyError));P2PLobbyTick();return; }
+    const char *args[5];P2PRoomContext room;
+    int count=VoiceArgc()-1,protocol=P2PStartupProtocolMode(),wanted=protocol==2?5:3;
+    if (count!=wanted) { if(protocol==2)P2PStartupInvalidate();lstrcpyA(g_p2pLobbyError,"Choose a match lobby first.");P2PLobbyTick();return; }
+    for (int i=0;i<wanted;++i) args[i]=VoiceArgv(i+1);
+    const char *bad=protocol==2?P2PParseRoomContextV2(count,args,&room):P2PParseRoomContext(count,args,&room);
+    if (bad) { if(protocol==2)P2PStartupInvalidate();lstrcpynA(g_p2pLobbyError,bad,sizeof(g_p2pLobbyError));P2PLobbyTick();return; }
     if (P2PStartupProtocolMode()!=0) P2PStartupInvalidate();
     g_p2pRoom=room;g_p2pHasRoom=TRUE;
     if (P2PStartupProtocolMode()!=0) { P2PStartupSnapshot();if (g_p2pEnabled) P2PArmCurrentRoom(); }
@@ -917,18 +920,22 @@ static void __cdecl P2PCmdLocalhost(void)
 
 static void __cdecl P2PCmdStartIntent(void)
 {
-    const char *args[3];P2PRoomContext selected;
+    const char *args[5];P2PRoomContext selected;
     int mode=P2PStartupProtocolMode();
     if (mode==0) return; /* old UI/startup owns the unchanged legacy route */
-    if (mode!=1 || VoiceArgc()!=5 ||
+    int wanted=mode==2?5:3;
+    if ((mode!=1&&mode!=2) || VoiceArgc()!=wanted+2 ||
         (strcmp(VoiceArgv(1),"ready") && strcmp(VoiceArgv(1),"start"))) {
+        if(mode==2)P2PStartupInvalidate();
         lstrcpyA(g_p2pLobbyError,"The local start intent is invalid.");P2PLobbyTick();return;
     }
-    for (int i=0;i<3;++i) args[i]=VoiceArgv(i+2);
-    const char *bad=P2PParseRoomContext(3,args,&selected);
+    for (int i=0;i<wanted;++i) args[i]=VoiceArgv(i+2);
+    const char *bad=mode==2?P2PParseRoomContextV2(wanted,args,&selected):P2PParseRoomContext(wanted,args,&selected);
     if (bad || !g_p2pEnabled || !g_p2pHasRoom || !g_p2pIntentUid || P2PLocalUid()!=g_p2pIntentUid ||
         strcmp(selected.map,g_p2pRoom.map) || strcmp(selected.session,g_p2pRoom.session) ||
-        strcmp(selected.gametype,g_p2pRoom.gametype) || strcmp(selected.category,g_p2pRoom.category)) {
+        strcmp(selected.gametype,g_p2pRoom.gametype) || strcmp(selected.category,g_p2pRoom.category) ||
+        (mode==2&&(selected.difficultyPresent!=g_p2pRoom.difficultyPresent||selected.difficulty!=g_p2pRoom.difficulty))) {
+        if(mode==2)P2PStartupInvalidate();
         lstrcpyA(g_p2pLobbyError,"The local start intent does not match the owned room.");P2PLobbyTick();return;
     }
     /* Ready followed by Start is the same attempt. No room rewrite, renewed
