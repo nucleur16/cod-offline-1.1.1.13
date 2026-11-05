@@ -190,6 +190,7 @@ def run_decompile(names, exe, roots, chinese, ffdec, tmp):
 def copy_files(out_root, game, check, maps):
     """files/ -> the output as they are, except the per-map ones (shipping.FILES), which keep only the maps `maps`
     ships. --verify compares the unfiltered file with the install."""
+    failed = 0
     fdir = os.path.join(HERE, "files")
     for root, _d, files in os.walk(fdir):
         for fn in files:
@@ -205,10 +206,13 @@ def copy_files(out_root, game, check, maps):
             line = "%s (%s)" % (rel, "copied" if not dropped else "without " + ", ".join(sorted(dropped)))
             if check:
                 ship = os.path.join(game, rel)
+                identical = os.path.isfile(ship) and md5(ship) == md5(src)
+                failed += not identical
                 line += ": " + ("IDENTICAL (md5 %s)%s" % (md5(src), " before the filter" if dropped else "")
-                                if os.path.isfile(ship) and md5(ship) == md5(src)
+                                if identical
                                 else "differs from / missing in the install")
             print(line)
+    return failed
 
 
 def build_zones(names, out_root, a, exe, src, maps, roots, ffdec, tmp):
@@ -380,7 +384,7 @@ def main(argv=None):
         for pack in pack_list:
             failed += build_one_pack(pack, a, exe, src, maps, ffdec)
         if not a.zones:
-            copy_files(a.out, a.game, a.verify, maps)
+            failed += copy_files(a.out, a.game, a.verify, maps)
         names = names + pack_list
     print("\n%d zones, %d failed" % (len(names), failed))
     return 1 if failed else 0
