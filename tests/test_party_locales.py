@@ -24,10 +24,20 @@ def strings(zone):
     return result
 
 
-def old_winners():
-    return {(27,key.lower()):('pre_gfx','000_codol_party_modes',
-        hashlib.md5(codecs.encode_localize(key,value[0].encode('ascii'))).hexdigest())
-        for key,value in PARTY_LOCALE.items()}
+def old_winners(language='en', baseline='source-parts'):
+    # Independently model source alphabetical first-wins, including extra's
+    # four loading translations that precede codol_loading_mode_names.
+    source = {'000_codol_party_modes': strings('000_codol_party_modes'),
+              'codol_loading_mode_names': strings('codol_loading_mode_names')}
+    if language != 'en' and baseline == 'source-parts':
+        source['codol_chinese_ui_extra'] = strings('codol_chinese_ui_extra')
+    result = {}
+    for zone in sorted(source):
+        for key, value in source[zone].items():
+            if key not in PARTY_LOCALE:continue
+            blob = codecs.encode_localize(key,value.encode('ascii' if zone != 'codol_chinese_ui_extra' else 'gbk'))
+            result.setdefault((27,key.lower()),('pre_gfx',zone,hashlib.md5(blob).hexdigest()))
+    return result
 
 
 class PartyLocales(unittest.TestCase):
@@ -75,6 +85,7 @@ class PartyLocales(unittest.TestCase):
         before=old_winners();before[(37,'mp/comaplist.csv')]=('pre_gfx','shared','unchanged-table')
         self.assertEqual(expected_effective(before,'en',codecs.encode_localize),before)
         for locale in ('zh','native'):
+            before=old_winners(locale);before[(37,'mp/comaplist.csv')]=('pre_gfx','shared','unchanged-table')
             after=expected_effective(before,locale,codecs.encode_localize)
             self.assertEqual(after[(37,'mp/comaplist.csv')],before[(37,'mp/comaplist.csv')])
             changed={k for k in before if before[k]!=after[k]}
@@ -87,12 +98,38 @@ class PartyLocales(unittest.TestCase):
         for key in PARTY_LOCALE:
             k=(27,key.lower())
             for mode in ('missing','changed','stage'):
-                before=old_winners()
+                before=old_winners('zh')
                 if mode=='missing':del before[k]
                 elif mode=='changed':before[k]=('pre_gfx','old','wrong-blob')
                 else:before[k]=('ui','old',before[k][2])
                 with self.subTest(key=key,mode=mode), self.assertRaises(ValueError):
                     expected_effective(before,'zh',codecs.encode_localize)
+
+    def test_source_loading_keys_have_exact_chinese_extra_winners(self):
+        for language in ('zh','native'):
+            before=old_winners(language)
+            for name in PARTY_LOCALE:
+                zone=before[(27,name.lower())][1]
+                self.assertEqual(zone,'codol_chinese_ui_extra' if name.startswith('CODOL_LOADING_MODE_') else '000_codol_party_modes')
+            expected_effective(before,language,codecs.encode_localize)
+
+    def test_pre_migration_profile_is_separate_and_not_auto_accepted(self):
+        for language in ('en','zh','native'):
+            before=old_winners(language,'pre-migration')
+            expected_effective(before,language,codecs.encode_localize,'pre-migration')
+            if language != 'en':
+                with self.assertRaises(ValueError):expected_effective(before,language,codecs.encode_localize)
+                with self.assertRaises(ValueError):expected_effective(old_winners(language),language,codecs.encode_localize,'pre-migration')
+
+    def test_wrong_winning_zone_and_unknown_profiles_are_refused(self):
+        for language in ('en','zh','native'):
+            for name in PARTY_LOCALE:
+                before=old_winners(language);key=(27,name.lower());phase,_zone,digest=before[key]
+                before[key]=(phase,'unexpected-zone',digest)
+                with self.subTest(language=language,key=name), self.assertRaises(ValueError):
+                    expected_effective(before,language,codecs.encode_localize)
+        with self.assertRaises(ValueError):expected_effective(old_winners(),'en',codecs.encode_localize,'unknown')
+        with self.assertRaises(ValueError):expected_effective(old_winners(),'unknown',codecs.encode_localize)
 
 
 if __name__=='__main__':unittest.main()

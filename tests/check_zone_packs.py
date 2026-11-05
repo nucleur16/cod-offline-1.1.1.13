@@ -3,7 +3,8 @@ r"""check_zone_packs.py -- prove the consolidated patch zones (zone_packs/) load
 
     python tests/check_zone_packs.py                  shipping build: output\ against the source zones
     python tests/check_zone_packs.py --maps all       all-maps build: output_dev\
-    python tests/check_zone_packs.py --old DIR        compare with these old .ff files instead of a fresh --parts build
+    python tests/check_zone_packs.py --old DIR --old-party-locale-profile pre-migration
+                                                      compare with pre-migration .ff files instead of fresh parts
                                                       (e.g. an install's client_shipRetail\patch)
 
 Needs the game (C1.exe for the zone key, client_shipRetail\chinese for the stock movies), so it is not part of CI;
@@ -94,7 +95,11 @@ def main(argv=None):
     ap.add_argument("--game", default=os.environ.get("CODOL_GAME", DEFAULT_GAME))
     ap.add_argument("--new", help="the built patch folder (default output[_dev]\\client_shipRetail\\patch)")
     ap.add_argument("--old", help="old .ff files to compare with (default: the source zones built as before)")
+    ap.add_argument("--old-party-locale-profile", choices=('source-parts', 'pre-migration'),
+                    help="required with --old: exact twelve-key legacy winner baseline")
     a = ap.parse_args(argv)
+    if bool(a.old) != bool(a.old_party_locale_profile):
+        ap.error('--old and --old-party-locale-profile must be supplied together')
     exe = os.path.join(a.game, "C1.exe")
     new_dir = a.new or os.path.join(ROOT, "output" if a.maps == "ship" else "output_dev", "client_shipRetail", "patch")
     part_of = packs.part_index(ROOT)
@@ -142,7 +147,8 @@ def main(argv=None):
         o_order, n_order = load_order(list(old), lang), load_order(list(new), lang)
         o_eff, n_eff = effective(o_order, old), effective(n_order, new)
         try:
-            o_eff = expected_effective(o_eff, lang, codecs.encode_localize)
+            o_eff = expected_effective(o_eff, lang, codecs.encode_localize,
+                                      a.old_party_locale_profile or 'source-parts')
         except ValueError as error:
             problems.append(str(error))
         if lang in ('zh', 'native'):
