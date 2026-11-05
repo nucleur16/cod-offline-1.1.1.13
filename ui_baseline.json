@@ -350,8 +350,24 @@
       "exact combined DLL/profile rebuild",
       "exact combined shared movie/FF rebuild and derived hash",
       "inherited D45 pins/compiled source metadata must reconcile with real rebuild, not waived",
-      "M1911/Theatre source additions and asset qualification",
-      "proxy-free Kernel33-only real-client qualification"
-    ]
+      "M1911/Theatre exact-source generated asset qualification",
+      "proxy-free Kernel33-only real-client qualification",
+      "full Kernel33 room/name cutover and reviewed legacy proxy retirement before public release"
+    ],
+    "source_assets": [
+      {
+        "feature": "M1911 opposite-arm tracks",
+        "authority": "b07970de8e0767741155c827af2563adf188e474",
+        "source_incorporated": true,
+        "generated_FF_rebuilt": false
+      },
+      {
+        "feature": "Theatre single-level loading artwork",
+        "authority": "c0e85bdf2218a7560d29778e7b1a81e57b01c820",
+        "source_incorporated": true,
+        "generated_FF_rebuilt": false
+      }
+    ],
+    "kernel33_only_release_end_state_complete": false
   }
 }
