@@ -100,16 +100,17 @@ class MethodSource(unittest.TestCase):
         workflow=(ROOT/'.github/workflows/shared-ui-baseline.yml').read_text(encoding='utf-8')
         code=workflow.split("          python - <<'PY'\n",1)[1].split('          PY',1)[0]
         code='\n'.join(line[10:]for line in code.splitlines())
-        complete={'native_check_%02d'%i:{'outcome':'success'}for i in range(1,14)}
-        for missing in (None,1,7,12,13):
+        complete={'native_check_%02d'%i:{'outcome':'success'}for i in range(1,15)}
+        for missing in (None,1,7,12,13,14):
             rows=dict(complete)
             if missing:rows.pop('native_check_%02d'%missing)
             with self.subTest(missing=missing),patch.dict(os.environ,NATIVE_QUALIFICATION_STEPS=json.dumps(rows)),contextlib.redirect_stdout(io.StringIO()):
                 if missing:
                     with self.assertRaisesRegex(SystemExit,'failed or did not run'):exec(compile(code,'<real-CI-outcome-gate>','exec'),{})
                 else:exec(compile(code,'<real-CI-outcome-gate>','exec'),{})
-        for outcome in ('failure','skipped','cancelled'):
-            rows=dict(complete);rows['native_check_13']={'outcome':outcome}
-            with patch.dict(os.environ,NATIVE_QUALIFICATION_STEPS=json.dumps(rows)),contextlib.redirect_stdout(io.StringIO()),self.assertRaises(SystemExit):exec(compile(code,'<real-CI-outcome-gate>','exec'),{})
+        for check in ('native_check_13','native_check_14'):
+            for outcome in ('failure','skipped','cancelled'):
+                rows=dict(complete);rows[check]={'outcome':outcome}
+                with patch.dict(os.environ,NATIVE_QUALIFICATION_STEPS=json.dumps(rows)),contextlib.redirect_stdout(io.StringIO()),self.assertRaises(SystemExit):exec(compile(code,'<real-CI-outcome-gate>','exec'),{})
 
 if __name__=='__main__':unittest.main()
