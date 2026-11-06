@@ -50,14 +50,21 @@ __asm__(
     "    popal\n"
     "    jmp *_g_k33TickNext\n");
 
-static void K33InstallMainTicks(void)
+__attribute__((unused)) static BOOL K33HasMainTick(K33TickFn fn)
 {
-    if (!g_k33TickCount) return;
+    for (int i = 0; i < g_k33TickCount; i++)
+        if (g_k33Ticks[i] == fn) return TRUE;
+    return FALSE;
+}
+
+static BOOL K33InstallMainTicks(void)
+{
+    if (!g_k33TickCount) return FALSE;
     const BYTE *call = (const BYTE *)(DWORD_PTR)VOICE_EVENTLOOP_CALL_VA;
     if (!Readable(call, 5) || call[0] != 0xE8) {
         Log("ticks: Com_EventLoop call 0x%08X differs; %d ported feature(s) not ticked", VOICE_EVENTLOOP_CALL_VA,
             g_k33TickCount);
-        return;
+        return FALSE;
     }
     LONG rel;
     memcpy(&rel, call + 1, 4);
@@ -66,10 +73,15 @@ static void K33InstallMainTicks(void)
         target != (DWORD)(DWORD_PTR)DISCORD_TickHook && target != (DWORD)(DWORD_PTR)PI_TickHook) {
         Log("ticks: Com_EventLoop call 0x%08X reaches unknown 0x%08lX; %d ported feature(s) not ticked",
             VOICE_EVENTLOOP_CALL_VA, (unsigned long)target, g_k33TickCount);
-        return;
+        return FALSE;
     }
     g_k33TickNext = target;
     RedirectCall(VOICE_EVENTLOOP_CALL_VA, (void *)K33_MainTickHook);
+    if (!CallsTarget(VOICE_EVENTLOOP_CALL_VA, (DWORD)(DWORD_PTR)K33_MainTickHook)) {
+        Log("ticks: main-thread dispatcher readback differs; migration remains unqualified");
+        return FALSE;
+    }
     Log("ticks: %d ported feature tick(s) on Com_EventLoop call 0x%08X (chained to 0x%08lX)", g_k33TickCount,
         VOICE_EVENTLOOP_CALL_VA, (unsigned long)target);
+    return TRUE;
 }

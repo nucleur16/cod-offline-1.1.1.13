@@ -1679,7 +1679,14 @@ static void __cdecl TakeOver(void)
     K33OnMainTick(SnapshotGuardReport);
 #endif
     InstallK33LogFlush();
+    /* Full migration must not enter C1 after silently dropping its ported
+     * Theatre callback or the dispatcher. Defaults retain the legacy path. */
+#if CODOL_KERNEL_NAME_DISPLAY
+    if (!K33HasMainTick(TheatreTick) || !K33InstallMainTicks())
+        Fatal("Kernel33 main-thread migration checks failed. Restore the qualified client package.");
+#else
     K33InstallMainTicks(); /* last: chains in front of the retained client tick hooks */
+#endif
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
     ExitProcess(0); /* the CRT entry ends in exit(); not reached */
