@@ -1075,7 +1075,9 @@ typedef void (__cdecl *LoopFxProcessFn)(int localClient);
 
 static void __cdecl LoopFxProcessHook(int localClient)
 {
+#if CODOL_DIAGNOSTICS
     static LONG logged;
+#endif
     DWORD idx = *(volatile DWORD *)(DWORD_PTR)LOOPFX_CG_INDEX_VA;
     const BYTE *cg = NULL;
     if (idx < LOOPFX_CG_SLOTS_MAX && Readable((const void *)(DWORD_PTR)(LOOPFX_CG_TABLE_VA + idx * 4), 4))
@@ -1083,26 +1085,39 @@ static void __cdecl LoopFxProcessHook(int localClient)
     if (cg && (unsigned)localClient < 4 && Readable(cg + LOOPFX_CG_TIME_OFF, 4)) {
         int now = *(const volatile int *)(cg + LOOPFX_CG_TIME_OFF);
         BYTE *t = (BYTE *)(DWORD_PTR)(LOOPFX_TABLE_VA + (DWORD)localClient * LOOPFX_TABLE_STRIDE);
-        int count = *(int *)t, moved = 0;
+        int count = *(int *)t;
+#if CODOL_DIAGNOSTICS
+        int moved = 0;
+#endif
         int *next = (int *)(t + 4);
+#if CODOL_DIAGNOSTICS
         long long skipped = 0, worst = 0;
+#endif
         for (int i = 0; i < count && i < LOOPFX_MAX; i++) {
             int period = *(int *)(t + 0x104 + i * 8);
             long long behind = (long long)now - LOOPFX_REPLAY_MS - next[i];
             if (period <= 0 || behind <= 0) continue;
             long long steps = behind / period + 1;
+#if CODOL_DIAGNOSTICS
             if (behind > worst) worst = behind;
+#endif
             next[i] = (int)(next[i] + steps * period);
+#if CODOL_DIAGNOSTICS
             skipped += steps;
             moved++;
+#endif
         }
+#if CODOL_DIAGNOSTICS
         if (moved && InterlockedIncrement(&logged) <= 8)
             Log("loop fx: %d of %d effects were up to %lld ms behind cg time %d; skipped %lld replays", moved, count,
                 worst + LOOPFX_REPLAY_MS, now, skipped);
+#endif
     } else {
+#if CODOL_DIAGNOSTICS
         static LONG warned;
         if (InterlockedIncrement(&warned) == 1)
             Log("loop fx: cg slot %lu (local client %d) not usable, catch-up not limited", (unsigned long)idx, localClient);
+#endif
     }
     ((LoopFxProcessFn)(DWORD_PTR)LOOPFX_PROCESS_VA)(localClient);
 }
@@ -1730,7 +1745,9 @@ static BOOL WINAPI Hook_VirtualProtect(LPVOID a, SIZE_T n, DWORD p, PDWORD old)
 
 static LONG CALLBACK FaultHandler(EXCEPTION_POINTERS *ep)
 {
+#if CODOL_DIAGNOSTICS
     static volatile LONG logged;
+#endif
     EXCEPTION_RECORD *er = ep->ExceptionRecord;
     CONTEXT *c = ep->ContextRecord;
     if (er->ExceptionCode != EXCEPTION_ACCESS_VIOLATION) return EXCEPTION_CONTINUE_SEARCH;
@@ -1761,6 +1778,7 @@ static LONG CALLBACK FaultHandler(EXCEPTION_POINTERS *ep)
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
+#if CODOL_DIAGNOSTICS
     if (InterlockedIncrement(&logged) <= 4) {
         DWORD ret = Readable(sp, 4) ? sp[0] : 0;
         Log("AV %s 0x%08lX at eip=0x%08lX [esp]=0x%08lX (thread %lu)",
@@ -1787,6 +1805,7 @@ static LONG CALLBACK FaultHandler(EXCEPTION_POINTERS *ep)
                     (unsigned long)(a - (DWORD)(DWORD_PTR)mod));
         }
     }
+#endif
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
