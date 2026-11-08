@@ -39,5 +39,17 @@
     "p2p_guest_binding.c": {
       "P2PGConnectDispatchTick": "9031abbeb7732f3ace65dbc5b6f1e8f1f5607749caf87f77ed3817dc808e2a68"
     }
-  }
+  },
+  "development_surface_sections": [
+    {
+      "label": "test-only patch-directory override",
+      "before": "    {   /* test clients (\"+set k33_cmdFile 1\") with a k33patch\\ folder next to the exe load that one instead,\n         * so a UI build can be tried while the shared client_shipRetail\\patch\\ is in use */\n        const char *cl = GetCommandLineA();\n        char test[MAX_PATH];\n        memcpy(test, dir, n);\n        lstrcpynA(test + n, \"k33patch\\\\\", MAX_PATH - n);\n        DWORD at = GetFileAttributesA(test);\n        if (cl && strstr(cl, \"k33_cmdFile 1\") && at != INVALID_FILE_ATTRIBUTES && (at & FILE_ATTRIBUTE_DIRECTORY)) {\n            lstrcpynA(pdir, test, sizeof(pdir));\n            Log(\"patch folder: test client: using %s\", pdir);\n        }\n    }\n",
+      "after": "#if CODOL_LOCAL_TESTING\n    {   /* test clients (\"+set k33_cmdFile 1\") with a k33patch\\ folder next to the exe load that one instead,\n         * so a UI build can be tried while the shared client_shipRetail\\patch\\ is in use */\n        const char *cl = GetCommandLineA();\n        char test[MAX_PATH];\n        memcpy(test, dir, n);\n        lstrcpynA(test + n, \"k33patch\\\\\", MAX_PATH - n);\n        DWORD at = GetFileAttributesA(test);\n        if (cl && strstr(cl, \"k33_cmdFile 1\") && at != INVALID_FILE_ATTRIBUTES && (at & FILE_ATTRIBUTE_DIRECTORY)) {\n            lstrcpynA(pdir, test, sizeof(pdir));\n            Log(\"patch folder: test client: using %s\", pdir);\n        }\n    }\n#endif\n"
+    },
+    {
+      "label": "development-only log-flush command registration",
+      "before": "    InstallK33LogFlush();\n",
+      "after": "#if CODOL_LOCAL_TESTING\n    InstallK33LogFlush();\n#endif\n"
+    }
+  ]
 }

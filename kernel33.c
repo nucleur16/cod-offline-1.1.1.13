@@ -719,6 +719,7 @@ static void LoadPatchDir(void)
     char pdir[MAX_PATH];   /* where the patch files are: client_shipRetail\patch\ */
     _snprintf(pdir, sizeof(pdir), "%s%s", dir, sub);
     pdir[sizeof(pdir) - 1] = 0;
+#if CODOL_LOCAL_TESTING
     {   /* test clients ("+set k33_cmdFile 1") with a k33patch\ folder next to the exe load that one instead,
          * so a UI build can be tried while the shared client_shipRetail\patch\ is in use */
         const char *cl = GetCommandLineA();
@@ -731,6 +732,7 @@ static void LoadPatchDir(void)
             Log("patch folder: test client: using %s", pdir);
         }
     }
+#endif
     _snprintf(pattern, sizeof(pattern), "%s*.ff", pdir);
     pattern[sizeof(pattern) - 1] = 0;
 
@@ -1698,7 +1700,9 @@ static void __cdecl TakeOver(void)
 #if CODOL_DIAGNOSTICS
     K33OnMainTick(SnapshotGuardReport);
 #endif
+#if CODOL_LOCAL_TESTING
     InstallK33LogFlush();
+#endif
     /* Full migration must not enter C1 after silently dropping its ported
      * Theatre callback or the dispatcher. Defaults retain the legacy path. */
 #if CODOL_KERNEL_NAME_DISPLAY

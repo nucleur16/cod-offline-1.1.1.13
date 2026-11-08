@@ -93,4 +93,48 @@ class NativeR46Source(unittest.TestCase):
    for state in ('failure','skipped','cancelled'):
     trial=dict(complete);trial['native_check_%02d'%i]={'outcome':state}
     with self.subTest(check=i,state=state),self.assertRaises(SystemExit):execute(trial)
+
+class ProductionTestSurfaces(unittest.TestCase):
+ def setUp(self):
+  self.kernel=(ROOT/'kernel33.c').read_text()
+  self.rows=CONTRACT['development_surface_sections']
+ def current_contract(self,text):
+  if len(self.rows)!=2 or any(text.count(row['after'])!=1 for row in self.rows):return False
+  shipping=gate_project(text,'CODOL_LOCAL_TESTING',False)
+  local=gate_project(text,'CODOL_LOCAL_TESTING',True)
+  return ('k33patch' not in function(shipping,'LoadPatchDir') and 'InstallK33LogFlush();' not in shipping and
+          all(row['before'] in local for row in self.rows) and
+          'CodolPatchLanguageFromArgv' in function(shipping,'LoadPatchDir') and
+          'ReadFile(f, hdr, sizeof(hdr), &got, NULL)' in function(shipping,'LoadPatchDir') and
+          'CloseHandle(f)' in function(shipping,'LoadPatchDir'))
+ def test_production_omits_test_directory_probe_and_development_command_registration(self):
+  self.assertTrue(self.current_contract(self.kernel))
+  for flags in ('0000','0010','0011'):
+   with self.subTest(profile=flags):
+    shipping=gate_project(self.kernel,'CODOL_LOCAL_TESTING',False)
+    self.assertNotIn('GetFileAttributesA(test)',function(shipping,'LoadPatchDir'))
+    self.assertNotIn('InstallK33LogFlush();',shipping)
+ def test_local_profile_retains_original_test_override_and_logflush_call(self):
+  local=gate_project(self.kernel,'CODOL_LOCAL_TESTING',True)
+  for row in self.rows:self.assertIn(row['before'],local)
+  self.assertEqual(local.count('InstallK33LogFlush();'),1)
+  self.assertIn('GetFileAttributesA(test)',function(local,'LoadPatchDir'))
+ def test_ungated_baseline_and_either_reintroduced_surface_are_rejected(self):
+  baseline=self.kernel
+  for row in self.rows:baseline=baseline.replace(row['after'],row['before'],1)
+  self.assertFalse(self.current_contract(baseline))
+  for row in self.rows:
+   mutant=self.kernel.replace(row['after'],row['before'],1)
+   with self.subTest(surface=row['label']):self.assertFalse(self.current_contract(mutant))
+  for row in self.rows:
+   mutant=self.kernel.replace(row['after'],row['after'].replace('#if CODOL_LOCAL_TESTING','#if CODOL_DIAGNOSTICS',1),1)
+   with self.subTest(wrong_gate=row['label']):self.assertFalse(self.current_contract(mutant))
+ def test_logflush_functional_body_is_local_only_and_shipping_refuses(self):
+  body=function((ROOT/'local_log_flush.c').read_text(),'K33LfExecuteExchange')
+  shipping=gate_project(body,'CODOL_LOCAL_TESTING',False)
+  self.assertIn('return K33LfFail(LF_SHIPPING);',shipping)
+  for token in ('K33LfPolicy()', 'K33LfPipe()', 'K33LfGuard()', 'K33LfNative(expected)'):
+   self.assertNotIn(token,shipping)
+   self.assertIn(token,gate_project(body,'CODOL_LOCAL_TESTING',True))
+
 if __name__=='__main__':unittest.main(verbosity=2)
