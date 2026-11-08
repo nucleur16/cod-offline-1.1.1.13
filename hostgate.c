@@ -49,12 +49,16 @@ static HgGetHostByNameFn g_hgGetHostByName;
 static CRITICAL_SECTION g_hgLock;
 static DWORD g_hgAllowed[HG_MAX];      /* network-order IPv4 */
 static int g_hgAllowedCount;
+#if CODOL_DIAGNOSTICS
 static DWORD g_hgRefused[64];
 static int g_hgRefusedCount;
+#endif
 static char g_hgNames[24][128];        /* lobby host names from dwauth.ini / stun.ini */
 static int g_hgNameCount;
 static int g_hgMode = 2;
+#if CODOL_DIAGNOSTICS
 static volatile LONG g_hgDropsIn, g_hgDropsOut;
+#endif
 
 static void HostGateAllow(DWORD ip, const char *why)
 {
@@ -82,6 +86,7 @@ static BOOL HostGateOk(DWORD ip)
     return ok;
 }
 
+#if CODOL_DIAGNOSTICS
 static void HostGateRefused(DWORD ip, int out, int port)
 {
     InterlockedIncrement(out ? &g_hgDropsOut : &g_hgDropsIn);
@@ -96,6 +101,9 @@ static void HostGateRefused(DWORD ip, int out, int port)
     Log("hostgate: %s %s %s:%d - not a lobby-vouched host", g_hgMode >= 2 ? "refused" : "WOULD refuse",
         out ? "datagram to" : "datagram from", inet_ntoa(a), port);
 }
+#else
+#define HostGateRefused(...) ((void)0)
+#endif
 
 static int WINAPI HostGateRecvFrom(SOCKET s, char *buf, int len, int flags, struct sockaddr *from, int *fromlen)
 {

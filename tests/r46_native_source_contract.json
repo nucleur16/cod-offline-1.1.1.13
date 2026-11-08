@@ -1,0 +1,43 @@
+{
+  "dev_gate_sections": [
+    {
+      "after": "#if CODOL_LOCAL_TESTING\nstatic volatile LONG g_piFaultTest;  /* p2pfaulttest: test clients only */\n#endif",
+      "before": "static volatile LONG g_piFaultTest;  /* p2pfaulttest: test clients only */",
+      "label": "fault flag storage"
+    },
+    {
+      "after": "#if CODOL_LOCAL_TESTING\n            /* p2pfaulttest: a real fault inside the server's code (Cbuf_AddText reading address 1). */\n            if (g_piFaultTest) { g_piFaultTest = 0; g_piCmd((const char *)1); }\n#endif",
+      "before": "            /* p2pfaulttest: a real fault inside the server's code (Cbuf_AddText reading address 1). */\n            if (g_piFaultTest) { g_piFaultTest = 0; g_piCmd((const char *)1); }",
+      "label": "fault flag frame check and injection"
+    },
+    {
+      "after": "#if CODOL_LOCAL_TESTING\n/* Test clients only (+set k33_cmdFile 1): make the running server fault, to check the containment. */\nstatic void __cdecl PiCmdFaultTest(void)\n{\n    const char *cl = GetCommandLineA();\n    if (!cl || !strstr(cl, \"k33_cmdFile 1\")) { C1Printf(\"p2pfaulttest: test clients only (+set k33_cmdFile 1)\\n\"); return; }\n    if (g_piState != PI_RUNNING) { C1Printf(\"p2pfaulttest: no in-process server running\\n\"); return; }\n    InterlockedExchange(&g_piFaultTest, 1);\n    C1Printf(\"p2pfaulttest: the server faults in its next frame\\n\");\n}\nstatic void __cdecl PiCmdAssetCheck(void); /* p2p_assets.c */\nstatic void __cdecl PiCmdSlScan(void); /* p2p_assets.c */\nstatic C1Cmd g_piCmds[] = { { NULL, \"p2pfaulttest\", (void *)PiCmdFaultTest }, { NULL, \"p2passetcheck\", (void *)PiCmdAssetCheck },\n                            { NULL, \"p2pslscan\", (void *)PiCmdSlScan } };\n#endif",
+      "before": "/* Test clients only (+set k33_cmdFile 1): make the running server fault, to check the containment. */\nstatic void __cdecl PiCmdFaultTest(void)\n{\n    const char *cl = GetCommandLineA();\n    if (!cl || !strstr(cl, \"k33_cmdFile 1\")) { C1Printf(\"p2pfaulttest: test clients only (+set k33_cmdFile 1)\\n\"); return; }\n    if (g_piState != PI_RUNNING) { C1Printf(\"p2pfaulttest: no in-process server running\\n\"); return; }\n    InterlockedExchange(&g_piFaultTest, 1);\n    C1Printf(\"p2pfaulttest: the server faults in its next frame\\n\");\n}\nstatic void __cdecl PiCmdAssetCheck(void); /* p2p_assets.c */\nstatic void __cdecl PiCmdSlScan(void); /* p2p_assets.c */\nstatic C1Cmd g_piCmds[] = { { NULL, \"p2pfaulttest\", (void *)PiCmdFaultTest }, { NULL, \"p2passetcheck\", (void *)PiCmdAssetCheck },\n                            { NULL, \"p2pslscan\", (void *)PiCmdSlScan } };",
+      "label": "fault function, diagnostic command declarations and registration array"
+    },
+    {
+      "after": "#if CODOL_LOCAL_TESTING\n    for (unsigned i = 0; i < sizeof(g_piCmds) / sizeof(g_piCmds[0]); i++) C1AddCommand(&g_piCmds[i]);\n#endif",
+      "before": "    for (unsigned i = 0; i < sizeof(g_piCmds) / sizeof(g_piCmds[0]); i++) C1AddCommand(&g_piCmds[i]);",
+      "label": "diagnostic command registration"
+    }
+  ],
+  "function_whitespace_hashes": {
+    "challenge_sender_guard.c": {
+      "ChallengeSenderGuard": "50bd9cea58eaedead5ed5fe624c0de9624cf6ccaff627e2a48a48b396e8cb893",
+      "ConnectSenderCompare": "b7cdb9748e4cc5ed7234a955c41dd8a1775d53dcbb7327a6bfe1ede73be35fd8",
+      "InstallChallengeSenderGuard": "0a65c1a2253f538074c63902a9ecd4e10cfd03a0425eee0e1df1a51e021f6a2f",
+      "InstallConnectSenderGuard": "65b074d90f1efd6d650eb7c3261105f4d0d4efe7849c1de6473415a1b9c81e67"
+    },
+    "hostgate.c": {
+      "HostGateAllow": "523afd50569e84aafa67e537f279ff7729c20a35b0016a4d5cd55a1de85d775e",
+      "HostGateOk": "2e8b1bee2071d238c8298840bcd651cead117c60f8840c8b51030cd80dd05741",
+      "HostGateRecvFrom": "38e9a4ef98a592b942d7a3f2fb43f768d77d74ed6bf90027a7d8988bb18768d2",
+      "HostGateSendTo": "67d348ab2b185c4acb7c4f4bcb402d3d9befde5d97b7b59f9b47cd0028f245fe",
+      "HostGateVouch": "8314d16a803f635136d1de7a3bcc6f6499952caf7dc7921d2b29de0fa01f2e2b",
+      "InstallHostGate": "ee89e405cbf4c0bf7408194806d162d343b5c41d02611610b86b9cca5d819714"
+    },
+    "p2p_guest_binding.c": {
+      "P2PGConnectDispatchTick": "9031abbeb7732f3ace65dbc5b6f1e8f1f5607749caf87f77ed3817dc808e2a68"
+    }
+  }
+}

@@ -114,6 +114,7 @@ int main(void)
     expected[5] = 0;
     expected[6] = 0;
     expected[7] = 1;
+    expected[8] = 0x39; expected[9] = 0x30; /* port WORD, independent of opaque+0x14 */
     expected[0x14] = 0x61;
     expected[0x15] = 0x45;
     memcpy(g_client + 0x14, expected, sizeof(expected));
@@ -133,6 +134,18 @@ int main(void)
     memcpy(source, expected, sizeof(source));
     check(source, 1, 1, 1);
     check_connect(source, expected, 1, 1, 1);
+    source[8] ^= 1;
+    check(source, 0, 1, 1);
+    check_connect(source, expected, 0, 1, 1);
+    source[8] ^= 1;
+    expected[0] = source[0] = 5; /* preserve non-type4 comparator semantics */
+    memcpy(g_client + 0x14, expected, sizeof(expected));
+    source[8] ^= 1;
+    check(source, 1, 1, 1);
+    check_connect(source, expected, 1, 1, 1);
+    source[8] ^= 1;
+    expected[0] = source[0] = 4;
+    memcpy(g_client + 0x14, expected, sizeof(expected));
     source[4] ^= 1;
     check(source, 0, 1, 0);
     check_connect(source, expected, 0, 1, 0);

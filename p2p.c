@@ -71,6 +71,9 @@ static CRITICAL_SECTION g_p2pLock;
 static BOOL g_p2pInit;
 static HANDLE g_p2pThread;
 static volatile LONG g_p2pStop;
+static int P2PGuestRouteMode(void);
+static DWORD WINAPI P2PGuestThread(LPVOID);
+static void P2PGuestTick(void);
 /* Main-thread commands own issuance. Workers inspect copied state only: no C1
  * memory, UI dvars or caller-provided owner booleans authorize an attempt. */
 static unsigned long g_p2pStartupCounter, g_p2pStartupActive;
@@ -675,7 +678,9 @@ static BOOL P2PStartConfigured(const char *map, const char *gametype, const char
     lstrcpynA(g_p2pArgZone, zone ? zone : "", sizeof(g_p2pArgZone));
     InterlockedExchange(&g_p2pStop, 0);
     P2PSetState(P2P_STARTING, "");
-    g_p2pThread = CreateThread(NULL, 0, P2PHostThread, NULL, 0, NULL);
+    int guest=P2PGuestRouteMode();
+    if(guest<0){P2PSetState(P2P_FAILED,"The Guest binding route is unavailable.");return FALSE;}
+    g_p2pThread = CreateThread(NULL, 0, guest==1?P2PGuestThread:P2PHostThread, NULL, 0, NULL);
     if (!g_p2pThread) { P2PSetState(P2P_FAILED, "no host thread"); return FALSE; }
     return TRUE;
 }
@@ -700,6 +705,8 @@ static BOOL P2PStartupBusy(void)
 {
     return g_p2pThread && WaitForSingleObject(g_p2pThread,0)!=WAIT_OBJECT_0;
 }
+#include "p2p_guest_binding.c"
+
 static void P2PStartupSnapshot(void)
 {
     EnterCriticalSection(&g_p2pLock);
@@ -725,6 +732,8 @@ static void P2PArmCurrentRoom(void)
     const char *bad=(protocol!=1&&protocol!=2) ? "The local startup protocol configuration is invalid.":
         !g_p2pHasRoom ? "Choose a match lobby first.":
         !g_p2pIntentUid ? "Player identity is not ready for local hosting.":
+        P2PGuestRouteMode()<0 ? "The Guest binding route is unavailable.":
+        P2PGuestRouteMode()==1 ? NULL:
         P2PInprocUsed() ? "Restart the client before hosting another Local Play match.":P2PCheck(&c);
     if (bad) { lstrcpynA(g_p2pLobbyError,bad,sizeof(g_p2pLobbyError));P2PSetState(P2P_FAILED,bad); }
     else { g_p2pLobbyError[0]=0;P2PSetState(P2PStartupBusy() ? P2P_STOPPING:P2P_IDLE,""); }
@@ -747,6 +756,8 @@ static BOOL P2PWriteIntent(const char *path, const char *text)
  * must never erase enabled intent and send a failed host to a dedicated exe. */
 static BOOL P2PPublishIntent(const char *state, BOOL ready)
 {
+    int guest=P2PGuestRouteMode();
+    if(guest!=0)return guest==1; /* binding-only Guest has no Host intent route */
     char path[MAX_PATH],legacy[MAX_PATH],text[1024];DWORD serverPid;
     if (!g_p2pIntentUid) return !g_p2pEnabled;
     P2PConfig c=g_p2pIntentConfig;
@@ -773,7 +784,16 @@ static void P2PLobbyTick(void)
     static char previous[1024];
     static char previousNative[1024];
     char snapshot[1024], error[256], number[24]; int state;
-    if (!g_p2pInit || !C1DvarsReady()) return;
+    if (!g_p2pInit) return;
+    int guest=P2PGuestRouteMode();
+    if(guest!=0) {
+        static LONG guest_denied;
+        if(guest<0&&InterlockedCompareExchange(&guest_denied,1,0)==0) {
+            P2PStartupInvalidate();P2PSetState(P2P_FAILED,"Guest route changed or is unavailable.");
+        }
+        P2PGuestTick();return; /* no Host Ready/route publication from Guest */
+    }
+    if(!C1DvarsReady())return;
     int protocol=P2PStartupProtocolMode();
     if (protocol!=0) {
         unsigned long long uid=P2PLocalUid();

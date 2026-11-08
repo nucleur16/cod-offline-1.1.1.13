@@ -13,6 +13,7 @@ static LONG P2PSAtomicCAS(volatile LONG *where,LONG value,LONG expected)
 typedef struct {
     volatile LONG fetch_claimed;
     HANDLE pipe;
+    HANDLE retire_event; /* optional deny-only Guest wait handle; Host always NULL */
     DWORD started;
     unsigned long attempt;
     BYTE *packet;
@@ -79,7 +80,8 @@ static BOOL P2PSCurrent(const P2PStartupBridge *bridge)
     if(!bridge||InterlockedCompareExchange((volatile LONG *)&bridge->aborted,0,0)||
         (bridge->protocol!=1&&bridge->protocol!=2)||P2PStartupProtocolMode()!=bridge->protocol||
         !P2PStartupAttemptCurrent(bridge->attempt)||
-        !P2PSParentAlive()||GetTickCount()-bridge->started>=P2PVS_TIMEOUT_MS)return P2PSRefuse(bridge);
+        !P2PSParentAlive()||(bridge->retire_event&&WaitForSingleObject(bridge->retire_event,0)!=WAIT_TIMEOUT)||
+        GetTickCount()-bridge->started>=P2PVS_TIMEOUT_MS)return P2PSRefuse(bridge);
     if(bridge->expires_ms&&(!P2PSWallMillis(&wall)||wall>=bridge->expires_ms||
         GetTickCount()-bridge->scope_started>=bridge->scope_lifetime))return P2PSRefuse(bridge);
     if(bridge->pipe==INVALID_HANDLE_VALUE)return TRUE;
@@ -177,7 +179,7 @@ static BOOL P2PSFetch(const char *map,const char *gametype,const char *category,
         if(error&&error_size)lstrcpynA(error,failure,error_size);
         return FALSE;
     }
-    bridge->pipe=INVALID_HANDLE_VALUE;bridge->packet=NULL;bridge->packet_size=0;
+    bridge->pipe=INVALID_HANDLE_VALUE;bridge->retire_event=NULL;bridge->packet=NULL;bridge->packet_size=0;
     bridge->expires_ms=0;bridge->scope_started=bridge->scope_lifetime=0;
     ZeroMemory(&bridge->view,sizeof(bridge->view));
     bridge->phase=0;bridge->aborted=0;bridge->scripts_result=bridge->principals_result=bridge->options_result=0;

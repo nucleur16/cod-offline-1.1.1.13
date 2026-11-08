@@ -21,8 +21,12 @@ static void *g_challengeSenderReject;
  * source's six dwords are at EBP-0xC68. The displaced six-byte MOV loads the
  * encoded client pointer into EDI. Both C1 comparators receive pointers in
  * ECX/EDX and return zero on equality. Use both: for address type 4 the
- * base comparator checks +4..+7 while the second checks +0x14. Rejected
- * packets take the dispatcher's existing zero-result return at 0x496716. */
+ * base comparator checks +4..+7 while the second checks +0x14.
+ * Explicit IPv4 WORD+8 equality is also required: the exact sockaddr-family2
+ * converter0x61DEB0 sets type4/ip+4/port+8, whereas +0x14 is opaque extra data.
+ * TEST $0 restores every defined success flag from the original TEST of zero;
+ * POPAL still restores every saved register, and caller stack cleanup is unchanged.
+ * Rejected packets take the dispatcher's existing zero-result return at 0x496716. */
 static void __attribute__((naked)) ChallengeSenderGuard(void)
 {
     __asm__ volatile(
@@ -40,6 +44,13 @@ static void __attribute__((naked)) ChallengeSenderGuard(void)
         "movl %5, %%eax\n\t"
         "call *%%eax\n\t"
         "testl %%eax, %%eax\n\t"
+        "jne 1f\n\t"
+        "cmpl $4, 0x14(%%edi)\n\t"
+        "jne 3f\n\t"
+        "movzwl 0x1c(%%edi), %%eax\n\t"
+        "cmpw -0xc60(%%ebp), %%ax\n\t"
+        "jne 1f\n\t"
+        "3: testl $0, %%eax\n\t"
         "1: popal\n\t"
         "jne 2f\n\t"
         "jmp *%0\n\t"
@@ -94,6 +105,12 @@ static int __attribute__((naked)) ConnectSenderCompare(
         "call *%%eax\n\t"
         "testl %%eax, %%eax\n\t"
         "jne 1f\n\t"
+        "cmpl $4, 4(%%esp)\n\t"
+        "jne 2f\n\t"
+        "movzwl 0xc(%%esp), %%eax\n\t"
+        "cmpw 0x24(%%esp), %%ax\n\t"
+        "jne 1f\n\t"
+        "2: testl $0, %%eax\n\t"
         "movl $1, %%eax\n\t"
         "ret\n\t"
         "1: xorl %%eax, %%eax\n\t"

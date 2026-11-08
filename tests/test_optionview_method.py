@@ -100,15 +100,15 @@ class MethodSource(unittest.TestCase):
         workflow=(ROOT/'.github/workflows/shared-ui-baseline.yml').read_text(encoding='utf-8')
         code=workflow.split("          python - <<'PY'\n",1)[1].split('          PY',1)[0]
         code='\n'.join(line[10:]for line in code.splitlines())
-        complete={'native_check_%02d'%i:{'outcome':'success'}for i in range(1,16)}
-        for missing in (None,1,7,12,13,14,15):
+        complete={'native_check_%02d'%i:{'outcome':'success'}for i in range(1,18)}
+        for missing in (None,1,7,12,13,14,15,16,17):
             rows=dict(complete)
             if missing:rows.pop('native_check_%02d'%missing)
             with self.subTest(missing=missing),patch.dict(os.environ,NATIVE_QUALIFICATION_STEPS=json.dumps(rows)),contextlib.redirect_stdout(io.StringIO()):
                 if missing:
                     with self.assertRaisesRegex(SystemExit,'failed or did not run'):exec(compile(code,'<real-CI-outcome-gate>','exec'),{})
                 else:exec(compile(code,'<real-CI-outcome-gate>','exec'),{})
-        for check in ('native_check_13','native_check_14','native_check_15'):
+        for check in ('native_check_13','native_check_14','native_check_15','native_check_16','native_check_17'):
             for outcome in ('failure','skipped','cancelled'):
                 rows=dict(complete);rows[check]={'outcome':outcome}
                 with patch.dict(os.environ,NATIVE_QUALIFICATION_STEPS=json.dumps(rows)),contextlib.redirect_stdout(io.StringIO()),self.assertRaises(SystemExit):exec(compile(code,'<real-CI-outcome-gate>','exec'),{})

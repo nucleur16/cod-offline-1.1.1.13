@@ -105,7 +105,10 @@ static void PacketTests(void)
     char buf[16];struct sockaddr_storage source;int size=sizeof(source);
     allow_at=1;
     assert(HostGateRecvFrom(receiver,buf,sizeof(buf),0,(struct sockaddr *)&source,&size)==1);
-    assert(receives==2 && consume==2 && g_hgDropsIn==1);
+    assert(receives==2 && consume==2);
+#if CODOL_DIAGNOSTICS
+    assert(g_hgDropsIn==1);
+#endif
     receives=consume=0;allow_at=2;size=sizeof(source);
     assert(HostGateRecvFrom(receiver,buf,sizeof(buf),MSG_PEEK,(struct sockaddr *)&source,&size)==1);
     assert(receives==3 && consume==1);

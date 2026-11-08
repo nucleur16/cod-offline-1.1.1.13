@@ -802,7 +802,10 @@ static void LoadPatchDir(void)
             continue;
         }
         BYTE hdr[12];
-        DWORD got = 0, size = GetFileSize(f, NULL);
+        DWORD got = 0;
+#if CODOL_DIAGNOSTICS
+        DWORD size = GetFileSize(f, NULL);
+#endif
         BOOL ok = ReadFile(f, hdr, sizeof(hdr), &got, NULL) && got == sizeof(hdr);
         CloseHandle(f);
         if (!ok || memcmp(hdr, "IWffu100", 8) != 0 || *(DWORD *)(hdr + 8) != 0x14E) {
@@ -1684,7 +1687,9 @@ static void __cdecl TakeOver(void)
 #if !CODOL_KERNEL_NAME_DISPLAY
     InstallNameDisplay();
 #endif
+#if CODOL_LOCAL_TESTING
     InstallP2PInproc();   /* before InstallP2PHost: +set k33_p2pHost 1 starts a session at once */
+#endif
     InstallP2PHost();
 #if CODOL_LOCAL_TESTING
     if (!K33OnMainTick(VoiceCmdFile))

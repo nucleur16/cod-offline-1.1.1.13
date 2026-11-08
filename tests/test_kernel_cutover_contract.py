@@ -36,6 +36,22 @@ def checked(text):
             < body.index('return TRUE;'))
 
 
+def room_profile(body, room, local):
+    out=[];enabled=True;stack=[]
+    for line in body.splitlines(True):
+        token=line.strip()
+        if token.startswith('#if'):
+            if token!='#if CODOL_KERNEL_ROOM_CONTEXT && !CODOL_LOCAL_TESTING':raise AssertionError('unexpected target condition')
+            stack.append(enabled);enabled=enabled and room and not local
+        elif token=='#endif':
+            if not stack:raise AssertionError('unbalanced target condition')
+            enabled=stack.pop()
+        elif token.startswith('#'):raise AssertionError('unexpected target directive')
+        elif enabled:out.append(line)
+    if stack:raise AssertionError('unclosed target condition')
+    return ''.join(out)
+
+
 class CutoverContract(unittest.TestCase):
     def setUp(self):
         self.kernel = (ROOT / 'kernel33.c').read_text(encoding='utf8')
@@ -60,10 +76,13 @@ class CutoverContract(unittest.TestCase):
 
     def test_whitelist_is_closed_and_unchanged(self):
         body = function(self.tick, 'static BOOL K33InstallMainTicks(void)')
-        self.assertEqual(body.count('target !='), 4)
-        for name in ('VOICE_EVENTLOOP_FUNC_VA', 'VOICE_TickHook', 'DISCORD_TickHook', 'PI_TickHook'):
-            self.assertIn(name, body)
-        self.assertNotIn('KRC_MainTickHook', body)
+        for room,local in ((False,False),(True,False),(False,True),(True,True)):
+            active=room_profile(body,room,local)
+            self.assertEqual(active.count('target !='), 4+int(room and not local))
+            for name in ('VOICE_EVENTLOOP_FUNC_VA', 'VOICE_TickHook', 'DISCORD_TickHook', 'PI_TickHook'):
+                self.assertIn(name, active)
+            self.assertEqual('KRC_MainTickHook' in active, room and not local)
+        with self.assertRaises(AssertionError):room_profile(body.replace('#if CODOL_KERNEL_ROOM_CONTEXT && !CODOL_LOCAL_TESTING','#if 1'),True,False)
 
     def test_membership_uses_actual_callback_list(self):
         body = function(self.tick, 'static BOOL K33HasMainTick(K33TickFn fn)')

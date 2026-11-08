@@ -29,6 +29,9 @@ typedef struct {
     uint32_t options_length,protocol;
 } p2p_startup_view_t;
 
+/* Strict existing v1/v2 request validators; no recipient authority. */
+int P2PStartupRequestProtocol(const void *,size_t);
+
 int P2PStartupMakeRequest(const char *map,const char *gametype,const char *category,
     const unsigned char nonce[32],void *output,size_t capacity,size_t *length);
 int P2PStartupMakeRequestV2(const char *map,const char *gametype,const char *category,

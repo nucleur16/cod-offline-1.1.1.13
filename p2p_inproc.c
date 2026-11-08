@@ -45,7 +45,9 @@ static const char *const kPiState[] = { "none", "starting", "running", "ended", 
 
 static volatile LONG g_piState;
 static volatile LONG g_piQuit;
+#if CODOL_LOCAL_TESTING
 static volatile LONG g_piFaultTest;  /* p2pfaulttest: test clients only */
+#endif
 static Sh1xInitFn g_piInit;
 static Sh1xFrameFn g_piFrame;
 static Sh1xCmdFn g_piCmd;
@@ -254,8 +256,10 @@ static void WINAPI PiServerFiber(void *unused)
 #if CODOL_LOCAL_TESTING
             if(g_piStartupSelected)PiStartupPrincipalCheck();
 #endif
+#if CODOL_LOCAL_TESTING
             /* p2pfaulttest: a real fault inside the server's code (Cbuf_AddText reading address 1). */
             if (g_piFaultTest) { g_piFaultTest = 0; g_piCmd((const char *)1); }
+#endif
             if (g_piQuit == 1) { g_piCmd("quit\n"); g_piQuit = 2; }
             if (!g_piFrame()) InterlockedExchange(&g_piState, PI_ENDED);
 #if CODOL_LOCAL_TESTING
@@ -902,6 +906,7 @@ static void __cdecl PiCmdStatus(void)
              (unsigned long)priv, (unsigned long)virt);
 }
 
+#if CODOL_LOCAL_TESTING
 /* Test clients only (+set k33_cmdFile 1): make the running server fault, to check the containment. */
 static void __cdecl PiCmdFaultTest(void)
 {
@@ -915,6 +920,7 @@ static void __cdecl PiCmdAssetCheck(void); /* p2p_assets.c */
 static void __cdecl PiCmdSlScan(void); /* p2p_assets.c */
 static C1Cmd g_piCmds[] = { { NULL, "p2pfaulttest", (void *)PiCmdFaultTest }, { NULL, "p2passetcheck", (void *)PiCmdAssetCheck },
                             { NULL, "p2pslscan", (void *)PiCmdSlScan } };
+#endif
 
 /* TakeOver, after InstallDiscord (voice and discord hook the same call first). */
 static void InstallP2PInproc(void)
@@ -933,7 +939,9 @@ static void InstallP2PInproc(void)
     PiHookSlot(0x00B42134u, &g_piRealSleepEx, (void *)PiSleepEx, "SleepEx");
     PiHookSlot(0x00B42424u, &g_piRealPeek, (void *)PiPeek, "PeekMessageA");
     g_piHooked = TRUE;
+#if CODOL_LOCAL_TESTING
     for (unsigned i = 0; i < sizeof(g_piCmds) / sizeof(g_piCmds[0]); i++) C1AddCommand(&g_piCmds[i]);
+#endif
     /* p2pstatus with the in-process numbers */
     for (unsigned i = 0; i < sizeof(g_p2pCmds) / sizeof(g_p2pCmds[0]); i++)
         if (!strcmp(g_p2pCmds[i].name, "p2pstatus")) g_p2pCmds[i].fn = (void *)PiCmdStatus;

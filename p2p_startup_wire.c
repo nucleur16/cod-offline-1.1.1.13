@@ -79,6 +79,13 @@ static int p2ps_v2_request_valid(const unsigned char *p,size_t n)
     return a<=64&&b<=64&&c<=64&&n==64+a+b+c&&
         p2ps_identifier(p+64,a)&&p2ps_identifier(p+64+a,b)&&p2ps_identifier(p+64+a+b,c);
 }
+int P2PStartupRequestProtocol(const void *request,size_t size)
+{
+    const unsigned char *q=request;
+    if(p2ps_request_valid(q,size))return 1;
+    if(p2ps_v2_request_valid(q,size))return 2;
+    return 0;
+}
 static int p2ps_fixed_identifier(const unsigned char *p,size_t n)
 {
     size_t end=0,i;while(end<n&&p[end])++end;
