@@ -350,8 +350,8 @@ package codo.views
          var tf:TextField = b.getChildByName("label") as TextField;
          if(tf != null && tf.text != s)
          {
-            var w:Number = tf.x + tf.width / 2; tf.text = s;
-            tf.x = w - tf.width / 2;
+            var w:Number = tf.x + tf.width / 2; var h:Number = tf.y + tf.height / 2; tf.text = s;
+            tf.x = w - tf.width / 2; tf.y = h - tf.height / 2;
          }
       }
 

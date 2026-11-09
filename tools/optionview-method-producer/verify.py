@@ -38,38 +38,8 @@ def decode(code):
     return [(r['op'],r['value'])for r in all_rows],debug
 
 def center_semantics(before,after,candidate_expanded):
-    old,new=unique39(before),unique39(after);a,b=A.method(old,'k33SetLabel'),A.method(new,'k33SetLabel')
-    need(a['exceptions']==b['exceptions']==0 and a['init_scope']==b['init_scope']and a['max_scope']==b['max_scope'],'target exception/scope drift')
-    need(a['regs']==4 and b['regs']==5 and a['max_stack']==3 and b['max_stack']==4,'exact target local/stack budget')
-    oi,od=decode(a['code']);ni,nd=decode(b['code'])
-    prop={}
-    for op,i in oi:
-        if op in('getproperty','setproperty'):
-            name=A.qname(old,i)
-            if name in('text','x','width'):prop[name]=i
-    need(set(prop)=={'text','x','width'},'exact old target property identities')
-    text,x,width=(prop[k]for k in('text','x','width'))
-    first=next(i for i,r in enumerate(oi)if r==('setproperty',text));guard=first-2
-    need(oi[guard:first]==[('getlocal',3),('getlocal',2)],'old setter boundary')
-    need(len(ni)>guard and len([1 for op,_ in ni if op in('ifne','iffalse')])==3,'exact null/equality branch count')
-    for i,(op,val)in enumerate(oi[:guard]):
-        expected=(op,len(ni)-1 if op in('ifne','iffalse')and val==len(oi)-1 else val)
-        need(ni[i]==expected,'null/text-equality guard prefix changed')
-    body=[('getlocal',3),('getproperty',x),('getlocal',3),('getproperty',width),('byte',2),('divide',None),('add',None)]
-    tail=[('setlocal',4),('getlocal',3),('getlocal',2),('setproperty',text),('getlocal',3),('getlocal',4),('getlocal',3),('getproperty',width),('byte',2),('divide',None),('subtract',None),('setproperty',x),('return',None)]
-    conversions=[[],[('convert_d',None)]]
-    for i in range(1,len(old['values']['multiname'])):
-        try:
-            if A.qname(old,i)=='Number':conversions.append([('coerce',i)])
-        except ValueError:pass
-    need(any(ni[guard:]==body+c+tail for c in conversions),'expected saved tf.x+tf.width/2 BEFORE text then center-tf.width/2 required')
-    need(nd[:len(od)]==od and len(nd)==len(od)+1,'existing target debug declarations changed')
-    kind,index,reg,line=nd[-1];expected_line=next(i for i,s in enumerate(candidate_expanded.splitlines(),1)if re.search(r'\bvar w:Number\s*=',s))
-    need(kind==1 and reg==3 and new['values']['string'][index]=='w'and line==expected_line,'exact new center debug local')
-    # No arbitrary unused pool growth can hide in the allowed target delta.
-    for name,pool in old['pools'].items():
-        need(new['pools'][name]==pool,'line-neutral candidate requires every pool exact')
-    return dict(target='k33SetLabel',guard_prefix_exact=True,old_bodies=39,new_bodies=39,other_bodies_exact=38,locals4_to5=True,stack3_to4=True,exceptions0=True,center_before_setter=True,center_after_setter=True)
+    import sys,vertical_contract
+    return vertical_contract.center_semantics(sys.modules[__name__],before,after,candidate_expanded)
 
 def compiled(before_tag,after_tag,expanded):
     before,after=abc(before_tag),abc(after_tag);unique39(before);unique39(after)
@@ -99,18 +69,5 @@ def tokens(text):
         if not m[0].startswith(('//','/*')):found.append(m[0])
     need(not text[end:].strip(),'unrecognized source suffix');return found
 def exported(text):
-    need(type(text)is str and len(text.encode())<=262144,'bounded exported source')
-    need(re.search(r'package\s+codo\.views\s*\{',text)and re.search(r'\bclass\s+OptionView\b',text),'exact exported class')
-    need(len(re.findall(r'\bfunction\s+k33SetLabel\s*\(',text))==1,'unique exported setter')
-    params,body=function_source(text);decls=re.findall(r'\bvar\s+(\w+)\s*:\s*(TextField|Number)\b',body)
-    tf=[n for n,t in decls if t=='TextField'];center=[n for n,t in decls if t=='Number'];need(len(tf)==len(center)==1,'exact two setter locals')
-    names={params[0]:'b',params[1]:'s',tf[0]:'tf',center[0]:'center'};actual=[names.get(t,t)for t in tokens(body)]
-    # Finite decompiler layouts: typed locals may be hoisted to null/NaN.
-    variants=[]
-    for hoist_tf in(False,True):
-        for hoist_center in(False,True):
-            prefix=('var tf:TextField=null;'if hoist_tf else'')+('var center:Number=NaN;'if hoist_center else'')
-            template=prefix+'if(b==null){return;}'+('tf='if hoist_tf else'var tf:TextField=')+'b.getChildByName("label") as TextField;if(tf!=null&&tf.text!=s){'+('center='if hoist_center else'var center:Number=')+'tf.x+tf.width/2;tf.text=s;tf.x=center-tf.width/2;}'
-            variants.extend([tokens(template),tokens(template+'return;')])
-    need(actual in variants,'exported setter guard/call/order/arithmetic differs; no generic cast/control-flow waiver')
-    return dict(class_name='codo.views.OptionView',setter_finite_roundtrip=True,other_methods_protected_by_ABC=True)
+    import sys,vertical_contract
+    return vertical_contract.exported(sys.modules[__name__],text)

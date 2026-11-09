@@ -14,6 +14,33 @@ def function(path,name):
     return next(n for n in ast.parse(path.read_text(encoding='utf-8')).body if isinstance(n,ast.FunctionDef)and n.name==name)
 
 class MethodSource(unittest.TestCase):
+    def test_actual_vertical_centers_and_budget_are_verified(self):
+        output,proof=R.reproduce()
+        semantic=proof['checks']['semantic']
+        self.assertTrue(semantic['both_centers_before_single_setter'])
+        self.assertTrue(semantic['both_centers_restored'])
+        self.assertTrue(semantic['locals4_to6'])
+
+    def test_actual_height_reference_cannot_be_substituted_with_width(self):
+        original=(D/'original.tag.bin').read_bytes()
+        current=(R.PATCH/'tags/5988_82_codo_views_OptionView.bin').read_bytes()
+        raw=S.abc(current);parsed=V.unique39(raw);target,_=T.target(parsed)
+        row=next(z for z in V.L.parse(raw)['bodies']if z['method']==target)
+        # Actual target's two height reads must remain distinct from width.
+        needle=b'\x66'+V.L.u30(170);replacement=b'\x66'+V.L.u30(169)
+        self.assertEqual(row['code'].count(needle),2)
+        at=row['begin']+raw[row['begin']:row['end']].index(row['code'])
+        changed=raw[:at]+row['code'].replace(needle,replacement)+raw[at+len(row['code']):]
+        bad=current[:-len(raw)]+changed
+        with self.assertRaisesRegex(ValueError,'saved x/y'):
+            V.compiled(original,bad,R.expanded_source())
+
+    def test_export_without_y_restore_is_refused(self):
+        source=R.expanded_source()
+        self.assertEqual(source.count('tf.y = h - tf.height / 2;'),1)
+        with self.assertRaises(ValueError):
+            V.exported(source.replace('tf.y = h - tf.height / 2;','',1))
+
     def test_actual_tag_reproduces_only_target_and_preserves_original38(self):
         output,proof=R.reproduce()
         self.assertTrue(proof['original_pools_tables_and_other38_byteexact'])
@@ -91,7 +118,12 @@ class MethodSource(unittest.TestCase):
         self.assertEqual(r['whole_class_baseline'],'HOLD');self.assertFalse(r['FF_rebuilt']);self.assertFalse(r['game_or_release_ready'])
         self.assertNotEqual(r['output_movie_sha256'],r['diagnostic_FWS_sha256'])
         lines=(R.PATCH/'patch.txt').read_text(encoding='utf-8').splitlines()
-        self.assertIn('sha256 '+r['output_movie_sha256'],lines)
+        # The factor DATA successor composes over this reviewed vertical movie;
+        # keep this component's original digest rather than relabel its proof.
+        factor=json.loads((ROOT/'tools/training-factor-producer/recipe.json').read_bytes())
+        self.assertEqual(factor['vertical_component_movie_sha256'],r['output_movie_sha256'])
+        self.assertEqual(factor['vertical_component_tag_sha256'],r['output_tag_sha256'])
+        self.assertIn('sha256 '+factor['output_movie_sha256'],lines)
         self.assertIn('as codo.views.OptionView as/codo/views/OptionView.as '+r['candidate_source_include_digest'],lines)
         self.assertFalse(any(D.is_relative_to(p)for p in [ROOT/'zones']))
 

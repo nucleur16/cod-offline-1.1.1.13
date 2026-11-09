@@ -1,0 +1,29 @@
+{
+  "FF_rebuilt": false,
+  "Root_DATA_reassessment_sha256": "6fc546fed7c1ab753b1bb326b71758d310e81308c1f7928399982bffc280cd97",
+  "Root_initializer_packet_sha256": "ea3cce825c390d3ca28e178612bd6cff38b374408a232462c443c0e9aa0f8e8f",
+  "actual_export_sha256": "e77e8831dca5a6679da555e80ba54cf506ee4f0d332b8274187503693c8cc852",
+  "bytecode_DATA_transform_not_Source_compiler": true,
+  "format": "reviewed-two-training-factor-DATA-successor-v1",
+  "historical_transition_sha256": "ca644ff7819f0e970c1ce8f50982c45009bd5bf9f85e04857a58872762e52c57",
+  "installed": false,
+  "original_one_export_owner_HOLD_preserved": true,
+  "original_tag_sha256": "352ca72c0d9110e1be2126467776167402bcf20bce30c65ec5d4a5dcba960c53",
+  "output_movie_sha256": "5dfe517c983d2e4ad8fe8254914bf9dfc67e4c040ccafd542f27a0a29520b846",
+  "output_tag_sha256": "f653ccba172d6a97cfdf65c535e9e94c6e6bd7bca301343759460c0a70703a1c",
+  "rendered": false,
+  "source_after_sha256": "68997250fac46bf059c8d028e27f3cfcccd5ef4f0f667a53b618679e1edc1615",
+  "source_before_sha256": "8b4f3aedfe9972da3d8b8ed4f0dea17428c87578f2f2b4b233e4cf1433163598",
+  "source_peer_sha256": "a5449f461f6822f8f904e33833f252ea5c15cd497c5c6b3457f1c91bb77b3bc9",
+  "tools": {
+    "abc_list_reader.py": "9af328ce82bc46b4296086b9bbf81e46923c043aa6e3826034199630e29396ea",
+    "abc_reader.py": "29fa6c9f3df69a0995bd6e3eecad4b89ad7e753945f0759d025c9dad2cdccf6d",
+    "export_contract.py": "192565232a95b71a52714e66651e6c4ba3c2456fd97b055ff19aee655ea58297",
+    "method_producer.py": "15d52cebb3a713e8b82e8ea13f454f04ae0d23923922c402f3ee6f6e83caae91",
+    "reproduce.py": "e8ce96f6b005be7b55b1d2a39e68f46cbab1bb8c195a1a4f7a853e2dcb10a099",
+    "swf_data.py": "e9cb8b39f70d053a82a8fe9a6018321e0b96edfa87c47a839a0eff48a5714285"
+  },
+  "unchanged_other_methods": 164,
+  "vertical_component_movie_sha256": "dfdac47bcead1047bbd9625f41977a3fe0ed2570c608567e58fcf8c96d1c9836",
+  "vertical_component_tag_sha256": "2a41d1ba645cd58e648c9d397abf73c2b4bb7e7d48edcd849ff825a98b6e9c81"
+}

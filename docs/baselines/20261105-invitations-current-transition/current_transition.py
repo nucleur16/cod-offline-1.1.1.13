@@ -63,7 +63,7 @@ def verify_abi(before,after):
     need(sorted(changed)==['listMap','listMode','listSameTypeMap']and added==['isSupportedMapMode'],'exact reviewed private ABI transition inventory')
     return dict(private_optional_signatures=sorted(changed),private_helper=added,old_methods=len(oldmethods),current_methods=len(newmethods),existing_public_protected_ABI_exact=True)
 
-def verify_current(root,tag,*,source=None):
+def verify_prior_current(root,tag,*,source=None):
     root=Path(root);contract=read_contract()
     need(contract['format']=='invitations-current-transition-v1','reviewed transition schema')
     current=extract(tag);baseline=historical_parent()
@@ -83,6 +83,12 @@ def verify_current(root,tag,*,source=None):
     invitation_contract(old,new,source,resolved,contract['invitation_denial_code_hex'])
     need(sha((LEGACY/'abi-contract.json').read_bytes())==contract['historical_abi_contract_sha256'],'historical ABI receipt must remain immutable')
     return dict(**proof,current_body_count=len(new['bodies']),current_abc_sha256=sha(current),protected_invitation_noop=True,historical_parent_sha256=sha(baseline))
+
+def verify_current(root,tag,*,source=None):
+    successor=module('current_training_factor_successor',Path(root)/'tools/training-factor-producer/reproduce.py')
+    import types
+    return successor.verify_successor(root,tag,source=source,prior=types.SimpleNamespace(**globals()))
+
 
 def interface(data):
     parsed = G.parse(data)

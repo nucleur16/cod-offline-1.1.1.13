@@ -123,4 +123,44 @@ class InvitationsDisabled(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'Survival default'):
             R.resolved_equivalence(before,after.replace('coop_survival_mp_fav_tropical','mp_unavailable',1))
 
+class TrainingFactorMethod(unittest.TestCase):
+    """Two DATA-method successor; all historical invitation endpoints stay pinned."""
+    def producer(self):
+        return module('training_factor_method_tests',ROOT/'tools/training-factor-producer/reproduce.py')
+
+    def test_actual_stored_two_body_transformation_reproduces(self):
+        P=self.producer();tag,proof=P.reproduce()
+        self.assertTrue(proof['transform']['original_tables_pools_and_other164_exact'])
+        self.assertTrue(proof['readback']['combat_full_rate'])
+        self.assertFalse(proof['compiler_invoked'])
+
+    def test_current_protected_endpoint_accepts_only_reviewed_successor(self):
+        P=self.producer();tag,_=P.reproduce();proof=C.verify_current(ROOT,tag)
+        self.assertTrue(proof['protected_invitation_noop'])
+        self.assertTrue(proof['unchanged_other164'])
+        self.assertEqual(proof['current_body_count'],166)
+        changed=bytearray(tag);changed[-1]^=1
+        with self.assertRaises(ValueError):C.verify_current(ROOT,bytes(changed))
+
+    def test_changed_source_and_unreviewed_readback_refused(self):
+        P=self.producer();source=(P.PATCH/'as/codo/controllers/MatchController.as').read_bytes()
+        with self.assertRaisesRegex(ValueError,'source producer'):P.reproduce(source+b'\n')
+        text=(P.HERE/'actual-export.as.DATA').read_text(encoding='utf-8')
+        _,body=P.C.function(text,'getXPLeagueFactor')
+        for a,b in [('factor = 1;','factor = 0.5;'),('PlayListType.COMBAT','PlayListType.RANKED'),('Number(NaN)','Number(0)')]:
+            with self.subTest(a=a),self.assertRaises(ValueError):P.C.verify(text.replace(body,body.replace(a,b,1),1))
+
+    def test_generic_routes_refuse_both_factor_class_name_forms_before_IO(self):
+        import ast,types,os
+        for function in ('compile_as','store_class'):
+            tree=ast.parse((ROOT/'zonekit/gfx.py').read_text(encoding='utf-8'))
+            fn=next(n for n in tree.body if isinstance(n,ast.FunctionDef)and n.name==function)
+            def forbidden(*a,**k):raise AssertionError('generic IO reached')
+            env=dict(os=os,open=forbidden,tempfile=types.SimpleNamespace(TemporaryDirectory=forbidden))
+            exec(compile(ast.Module(body=[fn],type_ignores=[]),'<actual-factor-route>','exec'),env)
+            for name in ('codo.controllers.MatchController','codo/controllers/MatchController'):
+                with self.subTest(function=function,name=name),self.assertRaisesRegex(SystemExit,'method-only'):
+                    if function=='compile_as':env[function](b'movie',name,'source','tool')
+                    else:env[function]('owned',b'movie',name,'source','tool')
+
 if __name__=='__main__':unittest.main()

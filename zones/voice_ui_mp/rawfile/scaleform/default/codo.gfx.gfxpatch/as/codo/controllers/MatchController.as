@@ -909,9 +909,9 @@ import flash.utils.getTimer;
       private function getXPLeagueFactor(ctType:int, league:int, playListObj:PlayListObj = null) : Number
       {
          var factor:Number = NaN;
-         if(playListObj != null && playListObj.type == PlayListType.COMBAT && (playListObj.name == "Boot Camp" || playListObj.name == "Bot Training"))
+         if(playListObj != null && playListObj.type == PlayListType.COMBAT)
          {
-            factor = playListObj.name == "Boot Camp" ? 1 : 0.5;
+            factor = 1;
          }
          else if(playListObj != null && playListObj.type == PlayListType.RANKED)
          {
@@ -932,9 +932,9 @@ import flash.utils.getTimer;
       private function getGPLeagueFactor(ctType:int, league:int, playListObj:PlayListObj = null) : Number
       {
          var factor:Number = NaN;
-         if(playListObj != null && playListObj.type == PlayListType.COMBAT && (playListObj.name == "Boot Camp" || playListObj.name == "Bot Training"))
+         if(playListObj != null && playListObj.type == PlayListType.COMBAT)
          {
-            factor = playListObj.name == "Boot Camp" ? 1 : 0.5;
+            factor = 1;
          }
          else if(playListObj != null && playListObj.type == PlayListType.RANKED)
          {
