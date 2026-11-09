@@ -76,7 +76,7 @@ class NativeR46Source(unittest.TestCase):
   self.assertIn('x==p2pg_u16(v->packet+516)',body);self.assertIn('x<1024u||x>65535u',body)
  def test_strict_actual_CI_gate_rejects_every_missing_or_failed_new_step(self):
   workflow=(ROOT/'.github/workflows/shared-ui-baseline.yml').read_text();code=workflow.split("          python - <<'PY'\n",1)[1].split('          PY',1)[0];code='\n'.join(line[10:]for line in code.splitlines())
-  complete={'native_check_%02d'%i:{'outcome':'success'}for i in range(1,18)}
+  complete={'native_check_%02d'%i:{'outcome':'success'}for i in range(1,19)}
   def execute(steps):
    fake=types.SimpleNamespace(environ={'NATIVE_QUALIFICATION_STEPS':json.dumps(steps)});safe=dict(vars(builtins))
    def importer(name,*a,**k):
@@ -86,10 +86,10 @@ class NativeR46Source(unittest.TestCase):
    safe['__import__']=importer
    with contextlib.redirect_stdout(io.StringIO()):exec(compile(code,'<real workflow gate over RAM>','exec'),{'__builtins__':safe})
   execute(complete)
-  for i in range(1,18):
+  for i in range(1,19):
    trial=dict(complete);del trial['native_check_%02d'%i]
    with self.subTest(missing=i),self.assertRaises(SystemExit):execute(trial)
-  for i in (16,17):
+  for i in (16,17,18):
    for state in ('failure','skipped','cancelled'):
     trial=dict(complete);trial['native_check_%02d'%i]={'outcome':state}
     with self.subTest(check=i,state=state),self.assertRaises(SystemExit):execute(trial)

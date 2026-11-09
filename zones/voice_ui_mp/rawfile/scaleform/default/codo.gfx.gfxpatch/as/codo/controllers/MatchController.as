@@ -715,7 +715,7 @@ import flash.utils.getTimer;
          var visiblePlaylists:Array = [];
          for each(var choice in choices)
          {
-            if(choice != null && (choice.type == PlayListType.COMBAT && (choice.id == 0 || choice.id == 2) && choice.combatTrainingType == CombatType.CT))
+            if(choice != null && (choice.type == PlayListType.COMBAT && choice.combatTrainingType == CombatType.CT))
             {
                visiblePlaylists.push(choice);
             }

@@ -39,6 +39,19 @@ class SharedUIBaseline(unittest.TestCase):
             with self.subTest(name=name),patch.object(Path,'read_bytes',lambda p:read(p)+b'\n' if p==target else read(p)):
                 with self.assertRaises(ui_baseline.BaselineError):ui_baseline.validate(ROOT)
 
+    def test_selector_producer_inputs_and_actual_export_are_individually_pinned(self):
+        import json,hashlib
+        contract=json.loads((ROOT/'ui_baseline.json').read_text(encoding='utf-8'))
+        names=('selector_producer.py','current_endpoint.py','selector_export_contract.py','abc_reader.py',
+               'abc_list_reader.py','swf_data.py','recipe.json','Source.before.as.DATA',
+               'factor-endpoint.tag.DATA','actual-export.as.DATA')
+        read=Path.read_bytes
+        for name in names:
+            rel='tools/playlist-selector-producer/'+name;target=ROOT/rel
+            self.assertEqual(contract['files'][rel],hashlib.sha256(read(target)).hexdigest())
+            with self.subTest(name=name),patch.object(Path,'read_bytes',lambda p:read(p)+b'\n' if p==target else read(p)):
+                with self.assertRaises(ui_baseline.BaselineError):ui_baseline.validate(ROOT)
+
     def test_recorded_source_and_tags_match(self):
         self.assertEqual(ui_baseline.validate(ROOT)["retired_playlists"],"hidden even if Quick Match is unavailable")
 

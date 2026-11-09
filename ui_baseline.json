@@ -18,7 +18,7 @@
       "source": "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/MainMenuController.as"
     },
     "codo.controllers.MatchController": {
-      "source_sha256": "68997250fac46bf059c8d028e27f3cfcccd5ef4f0f667a53b618679e1edc1615",
+      "source_sha256": "03f65de60ecabfb78295023ebc1fa9db373b39d58c72f33e2a64eaffc3435886",
       "source": "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/MatchController.as"
     },
     "codo.controllers.PageNavigationController": {
@@ -158,7 +158,7 @@
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/LobbyController.as": "0202c624b1400a66c090b32780ceca7d16295bf90e2f6bf85fd3d4216a7d2874",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/MainMenuAARController.as": "115d2d0695b22a5fb95cef3d9b337de7dcd11f63aef3c5bd3c24d4220db99c57",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/MainMenuController.as": "23d7942d88b26e40fa650a3929a14e37c5556a390e69e8f24a213f6c927c2127",
-    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/MatchController.as": "68997250fac46bf059c8d028e27f3cfcccd5ef4f0f667a53b618679e1edc1615",
+    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/MatchController.as": "03f65de60ecabfb78295023ebc1fa9db373b39d58c72f33e2a64eaffc3435886",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/PageNavigationController.as": "0b7618052a8f51042f7af84c74926c8db3c691594102b138070fad8bf01b8ad2",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/PartyController.as": "4e7a5943db9ab688bd0d2ad8e03dbad6fffdd7f9b055e5752c567607f7c33ec0",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/objects/ScoreboardObj.as": "996f50a4f9ec373b465d7fab6a678e49fd3b27f76e87d50382ab6da9e5262238",
@@ -203,7 +203,7 @@
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6140_82_codo_controllers_PartyController.bin": "59e0634bfe054c428141a4f609780d19dfb06bd333d3983ba96a4b7300525087",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6146_82_codo_controllers_MainMenuAARController.bin": "4ed406e9f529f5ee54775e03d050291d37e84c3a372536f88d4dfb81f281474b",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6160_82_codo_controllers_PageNavigationController.bin": "d2c66aceb0da22f0b4e1834b7710b4baafb9cc1a86556f941c6057c882946b8a",
-    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6167_82_codo_controllers_MatchController.bin": "f653ccba172d6a97cfdf65c535e9e94c6e6bd7bca301343759460c0a70703a1c",
+    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6167_82_codo_controllers_MatchController.bin": "97a7299d7f54528611ba73da9b1201976fa80cc182c5d9f7c21d9b297a3596e8",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6334_82_codo_views_option_sub_OptionView_video.bin": "de3f4e4d4ede18eec2039c2feb506c4487a54751bf06595b5c51defd79ba726e",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6336_82_codo_views_option_sub_OptionView_audio.bin": "850cca05686f1b63bdbb472ed91d96cf214766045cb7e37cfd86137ddb3250be",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/6559_82_components_room_part_RoomInfo.bin": "ddad4f48e79e57089f1a9639d462b51241d84e62fe27abef85b934aa246f5a66",
@@ -231,7 +231,7 @@
     "gfx_date_time_guards.h": "427f560edf29b1ceb5c828b22a5bc8a57d66ba8c31ea434b178b9e1bc2397a37",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/TipView.as": "2a462eff264d2a25a9f6be0739941875830a9d95a6434ee641781975539cdc26",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_views_TipView.bin": "2139e90e6130c90b7d3fc6eca0995caaf0ca28bb7b00708392f1ca7e900610e4",
-    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/patch.txt": "efd0f88610b8f738d97d239d787027e222b7e44ba4f537612246a22c635e335b",
+    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/patch.txt": "6cfd048341ca332bb2fc0236cdbdcb66e7929c88bdcc9f8fb8eb23f650555bfd",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/RightClickMenuController.as": "6025ec44b21edf6eabcd53ba41ff41a19fe8fd876c12c53dc98d9f743ba9f01f",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/k33_82_codo_controllers_RightClickMenuController.bin": "7d6715f1c8a7c364ea8e62981e61b3f051d5e329b8982507faa532ef7cb63119",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/SocialSideBarView.as": "55a5418ca94fdc46c8cb3cdabd9dd6c33b5a4526d7a80850cf4b2b4b737b56d8",
@@ -261,7 +261,18 @@
     "kernel_name_render.c": "02f4c868bc80a91f97ecc3839116bc38c21bce44af1f244aab4a5395c9d704ca",
     "kernel_name_display.c": "fbacc6fe851073318a4c553c76c6d79ba70c4e121b631a0143cc27c4d24b489f",
     "borderless.c": "54edab00f4b10a610287b886f301f87a0cdd39e4a8da9007c8a0818b918e08eb",
-    "kernel_video_mode.c": "0fbb16f81b1602405d8c7b678292d62ef9821cdc5918fd6030c78445ef30d0a5"
+    "kernel_video_mode.c": "0fbb16f81b1602405d8c7b678292d62ef9821cdc5918fd6030c78445ef30d0a5",
+    "docs/baselines/20261105-invitations-current-transition/current_transition.py": "a3076007b0f9cadf2d9183bb6a640e4d5ffb26171d01aa196d8602edb0436917",
+    "tools/playlist-selector-producer/selector_producer.py": "023a7d473b161217333bc8f6e5991cd26d1a2cfa747dd7ee25bd6a6922f0ff08",
+    "tools/playlist-selector-producer/current_endpoint.py": "b438a775619ebc1acd3a5b79e7757b2ef6569259f520e13481fca237dee67436",
+    "tools/playlist-selector-producer/selector_export_contract.py": "4a1853e3d2aaea13ff9ba0a8801065a6ad79274e5d40e919fe8a81d471d27f3f",
+    "tools/playlist-selector-producer/abc_reader.py": "29fa6c9f3df69a0995bd6e3eecad4b89ad7e753945f0759d025c9dad2cdccf6d",
+    "tools/playlist-selector-producer/abc_list_reader.py": "9af328ce82bc46b4296086b9bbf81e46923c043aa6e3826034199630e29396ea",
+    "tools/playlist-selector-producer/swf_data.py": "e9cb8b39f70d053a82a8fe9a6018321e0b96edfa87c47a839a0eff48a5714285",
+    "tools/playlist-selector-producer/recipe.json": "62ac6aecb22182ded29733e05ff35316e29e2f067f0bbd97794de6606d68ade6",
+    "tools/playlist-selector-producer/Source.before.as.DATA": "68997250fac46bf059c8d028e27f3cfcccd5ef4f0f667a53b618679e1edc1615",
+    "tools/playlist-selector-producer/factor-endpoint.tag.DATA": "f653ccba172d6a97cfdf65c535e9e94c6e6bd7bca301343759460c0a70703a1c",
+    "tools/playlist-selector-producer/actual-export.as.DATA": "e8517b97bea2927675bdaa2d9895136ba6a215f664d5966fcfd956fc42aff632"
   },
   "production_release_qualified": false,
   "required_acceptance": [

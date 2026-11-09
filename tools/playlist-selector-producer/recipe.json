@@ -1,0 +1,23 @@
+{
+  "format": "reviewed-active-ordinal-selector-DATA-successor-v1",
+  "source_before_sha256": "68997250fac46bf059c8d028e27f3cfcccd5ef4f0f667a53b618679e1edc1615",
+  "source_after_sha256": "03f65de60ecabfb78295023ebc1fa9db373b39d58c72f33e2a64eaffc3435886",
+  "prior_tag_sha256": "f653ccba172d6a97cfdf65c535e9e94c6e6bd7bca301343759460c0a70703a1c",
+  "output_tag_sha256": "97a7299d7f54528611ba73da9b1201976fa80cc182c5d9f7c21d9b297a3596e8",
+  "prior_movie_sha256": "5dfe517c983d2e4ad8fe8254914bf9dfc67e4c040ccafd542f27a0a29520b846",
+  "output_movie_sha256": "38dd0456193d9025f5831de44f9d2deb70d433f42ea7b8d0f76b7236f558ea37",
+  "vertical_tag_sha256": "2a41d1ba645cd58e648c9d397abf73c2b4bb7e7d48edcd849ff825a98b6e9c81",
+  "actual_export_sha256": "e8517b97bea2927675bdaa2d9895136ba6a215f664d5966fcfd956fc42aff632",
+  "actual_export_status": "ROOT_ADMITTED_EXISTING_FFDEC_READBACK_VERIFIED_NOT_COMPILER_OR_RUNTIME",
+  "tools": {
+    "selector_producer.py": "023a7d473b161217333bc8f6e5991cd26d1a2cfa747dd7ee25bd6a6922f0ff08",
+    "current_endpoint.py": "b438a775619ebc1acd3a5b79e7757b2ef6569259f520e13481fca237dee67436",
+    "selector_export_contract.py": "4a1853e3d2aaea13ff9ba0a8801065a6ad79274e5d40e919fe8a81d471d27f3f",
+    "abc_reader.py": "29fa6c9f3df69a0995bd6e3eecad4b89ad7e753945f0759d025c9dad2cdccf6d",
+    "abc_list_reader.py": "9af328ce82bc46b4296086b9bbf81e46923c043aa6e3826034199630e29396ea",
+    "swf_data.py": "e9cb8b39f70d053a82a8fe9a6018321e0b96edfa87c47a839a0eff48a5714285"
+  },
+  "compiler_invoked": false,
+  "rendered": false,
+  "installed": false
+}

@@ -68,6 +68,9 @@ jobs:
       - id: native_check_17
         continue-on-error: true
         run: gcc -std=c99 -O2 -Wall -Wextra -Werror tests/test_guest_binding_wire.c p2p_startup_wire.c p2p_guest_binding_wire.c -o /tmp/guest-binding-wire && /tmp/guest-binding-wire
+      - id: native_check_18
+        continue-on-error: true
+        run: python -I -S -B tests/test_playlist_active_ordinal_selector.py
       - name: Require every native source check to succeed
         if: ${{ !cancelled() }}
         env:
@@ -75,7 +78,7 @@ jobs:
         run: |
           python - <<'PY'
           import json, os
-          expected = ['native_check_01', 'native_check_02', 'native_check_03', 'native_check_04', 'native_check_05', 'native_check_06', 'native_check_07', 'native_check_08', 'native_check_09', 'native_check_10', 'native_check_11', 'native_check_12', 'native_check_13', 'native_check_14', 'native_check_15', 'native_check_16', 'native_check_17']
+          expected = ['native_check_01', 'native_check_02', 'native_check_03', 'native_check_04', 'native_check_05', 'native_check_06', 'native_check_07', 'native_check_08', 'native_check_09', 'native_check_10', 'native_check_11', 'native_check_12', 'native_check_13', 'native_check_14', 'native_check_15', 'native_check_16', 'native_check_17', 'native_check_18']
           steps = json.loads(os.environ['NATIVE_QUALIFICATION_STEPS'])
           bad = []
           for key in expected:
@@ -85,5 +88,5 @@ jobs:
                   bad.append(key)
           if bad:
               raise SystemExit('Native qualification failed or did not run: ' + ', '.join(bad))
-          print('All 17 native source check commands passed.')
+          print('All 18 native source check commands passed.')
           PY

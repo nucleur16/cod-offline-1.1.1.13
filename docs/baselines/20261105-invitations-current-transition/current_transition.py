@@ -85,7 +85,7 @@ def verify_prior_current(root,tag,*,source=None):
     return dict(**proof,current_body_count=len(new['bodies']),current_abc_sha256=sha(current),protected_invitation_noop=True,historical_parent_sha256=sha(baseline))
 
 def verify_current(root,tag,*,source=None):
-    successor=module('current_training_factor_successor',Path(root)/'tools/training-factor-producer/reproduce.py')
+    successor=module('current_playlist_selector_successor',Path(root)/'tools/playlist-selector-producer/current_endpoint.py')
     import types
     return successor.verify_successor(root,tag,source=source,prior=types.SimpleNamespace(**globals()))
 
