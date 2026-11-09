@@ -67,7 +67,7 @@ jobs:
         run: python -I -S -B tests/test_r46_native_source_integration.py
       - id: native_check_17
         continue-on-error: true
-        run: gcc -std=c99 -O2 -Wall -Wextra -Werror tests/test_guest_binding_wire.c p2p_startup_wire.c p2p_guest_binding_wire.c -o /tmp/guest-binding-wire && /tmp/guest-binding-wire
+        run: gcc -std=c99 -O2 -Wall -Wextra -Werror tests/test_guest_binding_wire.c p2p_startup_wire.c p2p_guest_binding_wire.c -o /tmp/guest-binding-wire && /tmp/guest-binding-wire && python -I -S -B tests/test_p2p_inproc_lifecycle.py
       - id: native_check_18
         continue-on-error: true
         run: python -I -S -B tests/test_playlist_active_ordinal_selector.py

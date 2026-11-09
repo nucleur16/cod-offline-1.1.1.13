@@ -113,6 +113,52 @@ int main(void) {
 }
 '''
 
+RETIREMENT_PREFIX = r'''
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <assert.h>
+typedef uint32_t DWORD;
+enum {PI_NONE,PI_INIT_PENDING,PI_RUNNING,PI_ENDED,PI_CRASHED};
+enum {P2P_IDLE,P2P_STARTING,P2P_READY,P2P_STOPPING,P2P_EXITED,P2P_FAILED};
+static struct {int state;DWORD exitCode,pid;char error[256];} g_p2p;
+static int startup_mode;
+static DWORD g_piFaultCode;static int g_piInitResult,g_p2pLock;
+static int mockCode(void){return 0;}
+static int (*g_piCode)(void)=mockCode;
+static DWORD GetCurrentProcessId(void){return 1234;}
+static void EnterCriticalSection(int *x){(void)x;}
+static void LeaveCriticalSection(int *x){(void)x;}
+static void lstrcpynA(char *out,const char *in,size_t n){snprintf(out,n,"%s",in);}
+static void classify(int st,int incoming,int init_error){
+ memset(&g_p2p,0,sizeof g_p2p);g_p2p.state=incoming;g_piInitResult=init_error;
+'''
+RETIREMENT_SUFFIX = r'''
+}
+int main(void){
+ (void)GetCurrentProcessId; (void)startup_mode;
+ classify(PI_RUNNING,P2P_STOPPING,0);
+ assert(g_p2p.state==P2P_FAILED && g_p2p.pid==1234); /* old exact epilogue RED */
+ classify(PI_INIT_PENDING,P2P_STARTING,0);assert(g_p2p.state==P2P_FAILED && g_p2p.pid==1234);
+ classify(PI_RUNNING,P2P_FAILED,0);assert(g_p2p.state==P2P_FAILED && g_p2p.pid==1234);
+ classify(PI_ENDED,P2P_STOPPING,0);assert(g_p2p.state==P2P_EXITED && !g_p2p.pid);
+ classify(PI_CRASHED,P2P_READY,0);assert(g_p2p.state==P2P_FAILED && !g_p2p.pid);
+ classify(PI_ENDED,P2P_STARTING,1);assert(g_p2p.state==P2P_FAILED && !g_p2p.pid);
+ puts("PASS six exact-source retirement epilogue cases; native/OS doubles");
+ return 0;
+}
+'''
+
+def retirement_fixture(source):
+    assignment=source.index("    g_p2p.exitCode = st == PI_CRASHED")
+    begin=source.rfind("    EnterCriticalSection(&g_p2pLock);",0,assignment)
+    marker="    LeaveCriticalSection(&g_p2pLock);"
+    end=source.index(marker,assignment)+len(marker)
+    if not 0 <= begin < assignment < end:
+        raise AssertionError("unique native retirement epilogue")
+    return RETIREMENT_PREFIX+source[begin:end]+RETIREMENT_SUFFIX
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source",type=Path,default=Path(__file__).resolve().parents[1])
@@ -120,14 +166,20 @@ def main():
     args=parser.parse_args()
     source=(args.source/"p2p_inproc.c").read_text()
     start=source.index("    BOOL ready = FALSE, registered = FALSE, quitAsked = FALSE;")
-    end=source.index("\n    st = g_piState;\n    if (registered)",start)
+    end=source.index("\n    st = g_piState;\n",start)
     with tempfile.TemporaryDirectory(prefix="p2p-inproc-lifecycle-") as tmp:
         folder=Path(tmp)
         fixture=folder/"fixture.c"
         fixture.write_text(PREFIX+source[start:end]+SUFFIX)
         binary=folder/"fixture"
-        subprocess.run([args.cc,"-std=c99","-O1","-g","-Wall","-Wextra","-Werror","-fsanitize=address,undefined","-fno-omit-frame-pointer","-fno-pie","-no-pie","-I",str(args.source),str(fixture),"-o",str(binary)],check=True)
-        subprocess.run([str(binary)],check=True)
+        subprocess.run([args.cc,"-std=c99","-O1","-g","-Wall","-Wextra","-Werror","-fsanitize=address,undefined","-fno-omit-frame-pointer","-fno-pie","-no-pie","-I",str(args.source),str(fixture),"-o",str(binary)],check=True,timeout=30)
+        subprocess.run([str(binary)],check=True,timeout=10)
+        retirement=folder/"retirement.c"
+        retirement.write_text(retirement_fixture(source))
+        for local_testing in (0,1):
+            executable=folder/("retirement-%d"%local_testing)
+            subprocess.run([args.cc,"-std=c99","-O1","-g","-Wall","-Wextra","-Werror","-fsanitize=address,undefined","-fno-omit-frame-pointer","-fno-pie","-no-pie","-DCODOL_LOCAL_TESTING=%d"%local_testing,str(retirement),"-o",str(executable)],check=True,timeout=30)
+            subprocess.run([str(executable)],check=True,timeout=10)
 
 if __name__=="__main__":
     main()

@@ -874,6 +874,13 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     EnterCriticalSection(&g_p2pLock);
     g_p2p.exitCode = st == PI_CRASHED ? g_piFaultCode : (DWORD)g_piCode();
     if (st == PI_CRASHED) { g_p2p.state = P2P_FAILED; lstrcpynA(g_p2p.error, "the server crashed (contained)", sizeof(g_p2p.error)); }
+    else if (st != PI_ENDED) {
+        /* A quit timeout can leave the original game-thread fiber live.
+         * Worker completion is not native host retirement. Keep ownership
+         * visible and require client restart; never unload/reset it here. */
+        g_p2p.state = P2P_FAILED;
+        lstrcpynA(g_p2p.error,"The local host did not stop. Restart the client before hosting again.",sizeof(g_p2p.error));
+    }
     else if (g_p2p.state != P2P_FAILED) g_p2p.state = P2P_EXITED;
     if (g_piInitResult) {
         g_p2p.state=P2P_FAILED;
@@ -883,7 +890,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
 #endif
             lstrcpynA(g_p2p.error,"Sh1xHost_Init failed",sizeof(g_p2p.error));
     }
-    g_p2p.pid = 0;
+    g_p2p.pid = (st == PI_ENDED || st == PI_CRASHED) ? 0 : GetCurrentProcessId();
     LeaveCriticalSection(&g_p2pLock);
     if (st == PI_CRASHED)
         Log("p2p in-process: server fault 0x%08lX at 0x%08lX (%s+0x%lX) contained; the client continues. "
