@@ -1852,11 +1852,13 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved)
         IMAGE_NT_HEADERS *nt = (IMAGE_NT_HEADERS *)(base + ((IMAGE_DOS_HEADER *)base)->e_lfanew);
         g_supportedBuild = base == (BYTE *)0x400000 && nt->FileHeader.TimeDateStamp == BUILD_TIMESTAMP;
 
+#if CODOL_DIAGNOSTICS
         char exe[MAX_PATH];
         GetModuleFileNameA(NULL, exe, MAX_PATH);
         Log("---- attach pid %lu %s (build %08lX%s) [kernel33 diag/import-crash 2]", GetCurrentProcessId(), exe,
             (unsigned long)nt->FileHeader.TimeDateStamp,
             g_supportedBuild ? "" : ", NOT 1.1.1.13: passing through untouched");
+#endif
         if (g_supportedBuild) AddVectoredExceptionHandler(1, FaultHandler);
     }
     return TRUE;
