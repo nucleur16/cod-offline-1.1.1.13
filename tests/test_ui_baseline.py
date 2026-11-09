@@ -25,6 +25,20 @@ class SharedUIBaseline(unittest.TestCase):
                     with self.assertRaises(ui_baseline.BaselineError):
                         ui_baseline.validate(ROOT)
 
+    def test_reviewed_center_and_factor_files_remain_individually_pinned(self):
+        # Each accepted successor pin remains a refusal boundary, not a global refresh.
+        import json,hashlib
+        contract=json.loads((ROOT/'ui_baseline.json').read_text(encoding='utf-8'))
+        base='zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/'
+        names=('as/codo/controllers/MatchController.as','tags/6167_82_codo_controllers_MatchController.bin',
+               'as/codo/views/OptionView.as','tags/5988_82_codo_views_OptionView.bin','patch.txt')
+        read=Path.read_bytes
+        for name in names:
+            target=ROOT/(base+name)
+            self.assertEqual(contract['files'][base+name],hashlib.sha256(read(target)).hexdigest())
+            with self.subTest(name=name),patch.object(Path,'read_bytes',lambda p:read(p)+b'\n' if p==target else read(p)):
+                with self.assertRaises(ui_baseline.BaselineError):ui_baseline.validate(ROOT)
+
     def test_recorded_source_and_tags_match(self):
         self.assertEqual(ui_baseline.validate(ROOT)["retired_playlists"],"hidden even if Quick Match is unavailable")
 

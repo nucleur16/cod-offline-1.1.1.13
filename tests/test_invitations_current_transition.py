@@ -17,8 +17,8 @@ class CurrentInvitationTransition(unittest.TestCase):
         self.assertTrue(result['protected_invitation_noop']);self.assertTrue(result['existing_public_protected_ABI_exact'])
         self.assertEqual(result['old_methods'],165);self.assertEqual(result['current_methods'],166)
     def test_current_tag_or_source_drift_refuses(self):
-        with self.assertRaisesRegex(ValueError,'unreviewed current compiled'):C.verify_current(ROOT,self.tag[:-1]+bytes([self.tag[-1]^1]))
-        with self.assertRaisesRegex(ValueError,'producer/source identity'):C.verify_current(ROOT,self.tag,source=self.source+b'\n// unreviewed source')
+        with self.assertRaisesRegex(ValueError,'unreviewed factor successor supplied'):C.verify_current(ROOT,self.tag[:-1]+bytes([self.tag[-1]^1]))
+        with self.assertRaisesRegex(ValueError,'factor source producer differs'):C.verify_current(ROOT,self.tag,source=self.source+b'\n// unreviewed source')
     def test_invitation_code_mutation_is_rejected_without_hash_shortcut(self):
         altered=copy.deepcopy(self.new);body=next(b for b in altered['bodies'].values()if b['name'].endswith('/onProposeRoomMembershipHandle'));body['code']=b'\x47'
         with self.assertRaisesRegex(ValueError,'denial bytecode'):C.invitation_contract(self.old,altered,self.source,self.resolved,self.code)
