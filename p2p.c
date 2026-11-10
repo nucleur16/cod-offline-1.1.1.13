@@ -58,6 +58,11 @@ typedef struct P2PConfig {
     int difficultyPresent,difficulty; /* v2 UI intent; authenticated by the retained SDK */
 } P2PConfig;
 
+static DWORD g_p2pMainThread;
+static BOOL g_p2pLaunchPending;
+static P2PConfig g_p2pPendingConfig;
+static BOOL P2PEnsureInprocActivation(void); /* p2p_inproc.c; local hook readiness only */
+
 static struct {
     int state;
     DWORD pid;
@@ -96,6 +101,7 @@ static BOOL P2PStartupAttemptCurrent(unsigned long generation)
 static void P2PStartupInvalidate(void)
 {
     EnterCriticalSection(&g_p2pLock);
+    g_p2pLaunchPending=FALSE;
     g_p2pStartupActive=0;
     if (g_p2pStartupCounter==0xfffffffful) g_p2pStartupExhausted=TRUE;
     else ++g_p2pStartupCounter;
@@ -480,10 +486,8 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
     (void)unused;
     WSADATA wsa;
     WSAStartup(MAKEWORD(2, 2), &wsa);
-    P2PConfig c;
-    P2PDefaults(&c);
-    P2PLoadIni(&c);
-    if (g_p2pHasOverride) c = g_p2pOverride;
+    if (!g_p2pHasOverride) { P2PSetState(P2P_FAILED,"No frozen host configuration.");WSACleanup();return 1; }
+    P2PConfig c = g_p2pOverride;
     if (g_p2pArgMap[0]) { lstrcpyA(c.map, g_p2pArgMap); c.sessionMap[0] = 0; }
     if (g_p2pArgGametype[0]) lstrcpyA(c.gametype, g_p2pArgGametype);
     if (g_p2pArgZone[0]) lstrcpyA(c.zoneType, g_p2pArgZone);
@@ -665,23 +669,46 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
 /* Main thread or TakeOver. -> FALSE when a server is already being hosted. */
 static BOOL P2PStartConfigured(const char *map, const char *gametype, const char *zone, const P2PConfig *override)
 {
+    /* All Cbuf/UI/tick requests converge here. No IPC/background thread may patch C1. */
+    if (!g_p2pMainThread || GetCurrentThreadId()!=g_p2pMainThread || g_p2pLaunchPending) return FALSE;
     if (!P2PStartupAttemptCurrent(override ? override->startupGeneration:0)) return FALSE;
     if (g_p2pThread) {
         if (WaitForSingleObject(g_p2pThread, 0) != WAIT_OBJECT_0) return FALSE;
         CloseHandle(g_p2pThread);
         g_p2pThread = NULL;
     }
-    g_p2pHasOverride = override != NULL;
-    if (override) g_p2pOverride = *override;
-    lstrcpynA(g_p2pArgMap, map ? map : "", sizeof(g_p2pArgMap));
-    lstrcpynA(g_p2pArgGametype, gametype ? gametype : "", sizeof(g_p2pArgGametype));
-    lstrcpynA(g_p2pArgZone, zone ? zone : "", sizeof(g_p2pArgZone));
-    InterlockedExchange(&g_p2pStop, 0);
-    P2PSetState(P2P_STARTING, "");
     int guest=P2PGuestRouteMode();
     if(guest<0){P2PSetState(P2P_FAILED,"The Guest binding route is unavailable.");return FALSE;}
-    g_p2pThread = CreateThread(NULL, 0, guest==1?P2PGuestThread:P2PHostThread, NULL, 0, NULL);
-    if (!g_p2pThread) { P2PSetState(P2P_FAILED, "no host thread"); return FALSE; }
+    P2PConfig selected;
+    if(override) selected=*override;
+    else { P2PDefaults(&selected);P2PLoadIni(&selected); }
+    if(map && *map){lstrcpynA(selected.map,map,sizeof(selected.map));selected.sessionMap[0]=0;}
+    if(gametype && *gametype)lstrcpynA(selected.gametype,gametype,sizeof(selected.gametype));
+    if(zone && *zone)lstrcpynA(selected.zoneType,zone,sizeof(selected.zoneType));
+    if(guest==0) {
+        const char *bad=P2PCheck(&selected);
+        if(bad){P2PSetState(P2P_FAILED,bad);return FALSE;}
+        if(!_stricmp(selected.mode,"inprocess")) {
+            if(P2PInprocUsed()) {
+                P2PSetState(P2P_FAILED,"Restart the client before hosting another match.");return FALSE;
+            }
+            if(!g_k33TickInstalled) {
+                /* Explicit TakeOver autostart waits for the ORIGINAL dispatcher.
+                 * Never invert its chain with a late Com_EventLoop redirect. */
+                g_p2pPendingConfig=selected;g_p2pLaunchPending=TRUE;
+                InterlockedExchange(&g_p2pStop,0);P2PSetState(P2P_STARTING,"");return TRUE;
+            }
+            if(!P2PStartupAttemptCurrent(selected.startupGeneration) || !P2PEnsureInprocActivation()) {
+                P2PSetState(P2P_FAILED,"Local host frame activation is unavailable. Restart the client.");return FALSE;
+            }
+        } /* Retained explicit child route has NO Pi activation or Pi-once dependency. */
+    }
+    /* The worker must not reread a changed INI or switch mode after activation. */
+    g_p2pHasOverride=TRUE;g_p2pOverride=selected;
+    g_p2pArgMap[0]=g_p2pArgGametype[0]=g_p2pArgZone[0]=0;
+    InterlockedExchange(&g_p2pStop,0);P2PSetState(P2P_STARTING,"");
+    g_p2pThread=CreateThread(NULL,0,guest==1?P2PGuestThread:P2PHostThread,NULL,0,NULL);
+    if(!g_p2pThread){P2PSetState(P2P_FAILED,"no host thread");return FALSE;}
     return TRUE;
 }
 
@@ -703,7 +730,7 @@ static DWORD g_p2pIntentAt;
 static P2PIntentHeartbeat g_p2pIntentHeartbeat;
 static BOOL P2PStartupBusy(void)
 {
-    return g_p2pThread && WaitForSingleObject(g_p2pThread,0)!=WAIT_OBJECT_0;
+    return g_p2pLaunchPending || (g_p2pThread && WaitForSingleObject(g_p2pThread,0)!=WAIT_OBJECT_0);
 }
 #include "p2p_guest_binding.c"
 
@@ -794,6 +821,12 @@ static void P2PLobbyTick(void)
         P2PGuestTick();return; /* no Host Ready/route publication from Guest */
     }
     if(!C1DvarsReady())return;
+    if(g_p2pLaunchPending) {
+        P2PConfig selected=g_p2pPendingConfig;g_p2pLaunchPending=FALSE;
+        if(InterlockedCompareExchange(&g_p2pStop,0,0) || !P2PStartupAttemptCurrent(selected.startupGeneration) ||
+           !P2PStartConfigured(NULL,NULL,NULL,&selected))
+            P2PSetState(P2P_FAILED,"Queued local host activation was refused.");
+    }
     int protocol=P2PStartupProtocolMode();
     if (protocol!=0) {
         unsigned long long uid=P2PLocalUid();
@@ -893,6 +926,7 @@ static void P2PHostCurrentRoom(void)
         lstrcpyA(g_p2pLobbyError,"Cannot publish local host route. Toggle hosting to retry.");return;
     }
     if (busy) {
+        g_p2pLaunchPending=FALSE; /* replace a queued pre-entry request, never launch its stale room */
         g_p2pLobbyNext=c;g_p2pLobbyPending=TRUE;
         InterlockedExchange(&g_p2pStop,1);
     } else {
@@ -934,7 +968,7 @@ static void __cdecl P2PCmdLocalhost(void)
     g_p2pEnabled=!strcmp(value,"1");g_p2pLobbyError[0]=0;
     if (g_p2pEnabled) g_p2pIntentUid=P2PLocalUid();
     if (g_p2pEnabled) P2PHostCurrentRoom();
-    else { g_p2pLobbyPending=FALSE;InterlockedExchange(&g_p2pStop,1); }
+    else { g_p2pLaunchPending=FALSE;g_p2pLobbyPending=FALSE;InterlockedExchange(&g_p2pStop,1); }
     P2PLobbyTick();
 }
 
@@ -1010,6 +1044,7 @@ static void __cdecl P2PCmdHost(void)
 
 static void __cdecl P2PCmdStop(void)
 {
+    g_p2pLaunchPending=FALSE;
     if (P2PStartupProtocolMode()!=0) P2PStartupInvalidate();
     g_p2pEnabled = FALSE;
     g_p2pLobbyPending = FALSE;
@@ -1047,6 +1082,7 @@ static C1Cmd g_p2pCmds[] = {
  * start hosting at once with +set k33_p2pHost 1, so the server loads its map while the client starts. */
 static void InstallP2PHost(void)
 {
+    g_p2pMainThread=GetCurrentThreadId(); /* TakeOver calls the original C1 entry on this thread. */
     if (!g_p2pInit) { InitializeCriticalSection(&g_p2pLock); g_p2pInit = TRUE; }
     C1GameInit();
     K33OnMainTick(P2PLobbyTick);

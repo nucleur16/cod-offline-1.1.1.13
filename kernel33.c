@@ -1690,7 +1690,7 @@ static void __cdecl TakeOver(void)
     InstallNameDisplay();
 #endif
 #if CODOL_LOCAL_TESTING
-    InstallP2PInproc();   /* before InstallP2PHost: +set k33_p2pHost 1 starts a session at once */
+    InstallP2PInprocDiagnostics(); /* QA commands only; no frame/IAT/VEH activation at startup. */
 #endif
     InstallP2PHost();
 #if CODOL_LOCAL_TESTING

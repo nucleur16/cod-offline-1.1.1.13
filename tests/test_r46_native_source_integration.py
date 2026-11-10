@@ -36,9 +36,20 @@ def gate_project(text,macro,value):
 class NativeR46Source(unittest.TestCase):
  def test_profile_defaults_and_kernel_only_optin_remain(self):
   profile=(ROOT/'production_profile.h').read_text();self.assertIn('#define CODOL_LOCAL_TESTING 0',profile);self.assertIn('#define CODOL_KERNEL_ROOM_CONTEXT 0',profile);self.assertIn('#define CODOL_KERNEL_NAME_DISPLAY 0',profile)
-  kernel=(ROOT/'kernel33.c').read_text();self.assertNotIn('InstallP2PInproc();',gate_project(kernel,'CODOL_LOCAL_TESTING',False));self.assertIn('InstallP2PInproc();',gate_project(kernel,'CODOL_LOCAL_TESTING',True));self.assertIn('K33OnMainTick(P2PLobbyTick)',(ROOT/'p2p.c').read_text());self.assertNotIn('Direct3DCreate9',(ROOT/'k33tick.c').read_text())
+  kernel=(ROOT/'kernel33.c').read_text();shipping=gate_project(kernel,'CODOL_LOCAL_TESTING',False);local=gate_project(kernel,'CODOL_LOCAL_TESTING',True)
+  self.assertNotIn('InstallP2PInproc();',shipping);self.assertNotIn('InstallP2PInproc();',local)
+  self.assertNotIn('InstallP2PInprocDiagnostics();',shipping);self.assertIn('InstallP2PInprocDiagnostics();',local)
+  host=(ROOT/'p2p.c').read_text();start=function(host,'P2PStartConfigured')
+  self.assertIn('K33OnMainTick(P2PLobbyTick)',host);self.assertLess(start.index('P2PEnsureInprocActivation()'),start.index('CreateThread('))
+  self.assertNotIn('Direct3DCreate9',(ROOT/'k33tick.c').read_text())
  def test_development_command_storage_fault_and_registration_all_gated(self):
-  text=(ROOT/'p2p_inproc.c').read_text();edits=CONTRACT['dev_gate_sections'];self.assertEqual(len(edits),4)
+  text=(ROOT/'p2p_inproc.c').read_text();edits=[dict(row)for row in CONTRACT['dev_gate_sections']];self.assertEqual(len(edits),4)
+  # The SAME registration guard now surrounds the separate QA-only function.
+  # Keep all four surfaces and their ungated mutation negatives, not a waiver.
+  self.assertEqual(edits[-1]['label'],'diagnostic command registration')
+  diagnostics=function(text,'InstallP2PInprocDiagnostics')
+  self.assertIn('C1AddCommand(&g_piCmds[i])',diagnostics)
+  edits[-1]=dict(edits[-1],before=diagnostics,after='#if CODOL_LOCAL_TESTING\n'+diagnostics+'\n#endif')
   for row in edits:self.assertEqual(text.count(row['after']),1)
   shipping=gate_project(text,'CODOL_LOCAL_TESTING',False);development=gate_project(text,'CODOL_LOCAL_TESTING',True)
   for symbol in ('g_piFaultTest','PiCmdFaultTest','g_piCmds'):self.assertNotIn(symbol,shipping);self.assertIn(symbol,development)
@@ -76,7 +87,7 @@ class NativeR46Source(unittest.TestCase):
   self.assertIn('x==p2pg_u16(v->packet+516)',body);self.assertIn('x<1024u||x>65535u',body)
  def test_strict_actual_CI_gate_rejects_every_missing_or_failed_new_step(self):
   workflow=(ROOT/'.github/workflows/shared-ui-baseline.yml').read_text();code=workflow.split("          python - <<'PY'\n",1)[1].split('          PY',1)[0];code='\n'.join(line[10:]for line in code.splitlines())
-  complete={'native_check_%02d'%i:{'outcome':'success'}for i in range(1,19)}
+  complete={'native_check_%02d'%i:{'outcome':'success'}for i in range(1,20)}
   def execute(steps):
    fake=types.SimpleNamespace(environ={'NATIVE_QUALIFICATION_STEPS':json.dumps(steps)});safe=dict(vars(builtins))
    def importer(name,*a,**k):
@@ -86,10 +97,10 @@ class NativeR46Source(unittest.TestCase):
    safe['__import__']=importer
    with contextlib.redirect_stdout(io.StringIO()):exec(compile(code,'<real workflow gate over RAM>','exec'),{'__builtins__':safe})
   execute(complete)
-  for i in range(1,19):
+  for i in range(1,20):
    trial=dict(complete);del trial['native_check_%02d'%i]
    with self.subTest(missing=i),self.assertRaises(SystemExit):execute(trial)
-  for i in (16,17,18):
+  for i in (16,17,18,19):
    for state in ('failure','skipped','cancelled'):
     trial=dict(complete);trial['native_check_%02d'%i]={'outcome':state}
     with self.subTest(check=i,state=state),self.assertRaises(SystemExit):execute(trial)

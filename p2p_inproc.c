@@ -63,6 +63,7 @@ static BYTE g_piRescueStack[64 * 1024] __attribute__((aligned(16)));
 /* The assembly tail jump reads this even when shipping removes Log(). */
 static DWORD_PTR g_piNext __attribute__((used)); /* prior Com_EventLoop target */
 static BOOL g_piHooked;
+static BOOL PiProductCurrent(void);
 static LONG g_piSession;
 #if CODOL_LOCAL_TESTING
 typedef int (__cdecl *Sh1xPrincipalCurrentFn)(void);
@@ -281,6 +282,11 @@ __attribute__((used)) void __cdecl PiTick(void)
     LONG st = g_piState;
     if (st != PI_INIT_PENDING && st != PI_RUNNING) return;
     if (g_piInTick) return;
+    if(GetCurrentThreadId()!=g_p2pMainThread)return;
+    if(!PiProductCurrent()) {
+        /* Unknown callback/import mutation: never resume the retained server. */
+        InterlockedExchange(&g_piQuit,1);InterlockedExchange(&g_piState,PI_CRASHED);return;
+    }
     if (g_piLastTickQpc && g_piQpf) {
         LARGE_INTEGER n;
         QueryPerformanceCounter(&n);
@@ -337,14 +343,6 @@ static BOOL WINAPI PiPeek(LPMSG m, HWND h, UINT a, UINT b, UINT r)
     return ((BOOL(WINAPI *)(LPMSG, HWND, UINT, UINT, UINT))g_piRealPeek)(m, h, a, b, r);
 }
 
-static void PiHookSlot(DWORD slot, FARPROC *real, void *hook, const char *name)
-{
-    FARPROC *p = (FARPROC *)(DWORD_PTR)slot;
-    if (!Readable(p, 4) || !*p) { Log("p2p in-process: import slot %s unreadable", name); return; }
-    *real = *p;
-    FARPROC h = (FARPROC)hook;
-    WriteCode(p, &h, 4);
-}
 
 /* Main thread, between frames: run fn(ctx) on the server's fiber. FALSE when no server is running. */
 static volatile LONG g_piYielding;
@@ -586,7 +584,7 @@ static const void *__cdecl PiC1Provide(unsigned type, const char *name)
 static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *args)
 {
     P2PConfig c = *cp;
-    if (!g_piHooked) {
+    if (!g_piHooked || !PiProductCurrent()) {
         Log("p2p in-process: the frame hook is not installed; not hosting");
         P2PSetState(P2P_FAILED, "no frame hook");
         return 1;
@@ -929,29 +927,163 @@ static C1Cmd g_piCmds[] = { { NULL, "p2pfaulttest", (void *)PiCmdFaultTest }, { 
                             { NULL, "p2pslscan", (void *)PiCmdSlScan } };
 #endif
 
-/* TakeOver, after InstallDiscord (voice and discord hook the same call first). */
-static void InstallP2PInproc(void)
+/* Product activation runs only on the captured C1 main thread and appends Pi
+ * AFTER all existing dispatcher callbacks. The event-loop CALL is never changed. */
+#include "p2p_activation_transaction.h"
+typedef struct {
+    FARPROC original[3];
+    DWORD protection[3], next;
+    DWORD restore_protection[3];
+    int writable[3];
+    BYTE call[5];
+    K33TickFn ticks[K33_MAX_TICKS];
+    int count;
+    PVOID handler;
+} PiActivationWindows;
+static PiActivation g_piActivation;
+static PiActivationWindows g_piActivationWindows;
+static const DWORD g_piActivationSlots[3] = { 0x00B42184u, 0x00B42134u, 0x00B42424u };
+
+static FARPROC PiActivationHook(unsigned index)
 {
-    LARGE_INTEGER f;
-    QueryPerformanceFrequency(&f);
-    g_piQpf = f.QuadPart;
-    const BYTE *call = (const BYTE *)(DWORD_PTR)VOICE_EVENTLOOP_CALL_VA;
-    if (!Readable(call, 5) || call[0] != 0xE8) { Log("p2p in-process: Com_EventLoop call differs; in-process hosting off"); return; }
-    LONG rel;
-    memcpy(&rel, call + 1, 4);
-    g_piNext = VOICE_EVENTLOOP_CALL_VA + 5 + (DWORD)rel;
-    RedirectCall(VOICE_EVENTLOOP_CALL_VA, (void *)PI_TickHook);
-    AddVectoredExceptionHandler(1, PiFaultHandler);
-    PiHookSlot(0x00B42184u, &g_piRealSleep, (void *)PiSleep, "Sleep");
-    PiHookSlot(0x00B42134u, &g_piRealSleepEx, (void *)PiSleepEx, "SleepEx");
-    PiHookSlot(0x00B42424u, &g_piRealPeek, (void *)PiPeek, "PeekMessageA");
-    g_piHooked = TRUE;
-#if CODOL_LOCAL_TESTING
-    for (unsigned i = 0; i < sizeof(g_piCmds) / sizeof(g_piCmds[0]); i++) C1AddCommand(&g_piCmds[i]);
-#endif
-    /* p2pstatus with the in-process numbers */
-    for (unsigned i = 0; i < sizeof(g_p2pCmds) / sizeof(g_p2pCmds[0]); i++)
-        if (!strcmp(g_p2pCmds[i].name, "p2pstatus")) g_p2pCmds[i].fn = (void *)PiCmdStatus;
-    Log("p2p in-process: frame hook at 0x%08X (chained to 0x%08lX), fault containment on", VOICE_EVENTLOOP_CALL_VA,
-        (unsigned long)g_piNext);
+    return index == 0 ? (FARPROC)PiSleep : index == 1 ? (FARPROC)PiSleepEx : (FARPROC)PiPeek;
 }
+static int PiActivationChain(PiActivationWindows *w, int appended)
+{
+    const BYTE *call=(const BYTE *)(DWORD_PTR)VOICE_EVENTLOOP_CALL_VA;
+    if (!g_k33TickInstalled ||
+        !Readable(call,5) || memcmp(call,w->call,5) || g_k33TickNext!=w->next ||
+        g_k33TickCount!=w->count+appended) return 0;
+    for (int i=0;i<w->count;++i) if(g_k33Ticks[i]!=w->ticks[i])return 0;
+    return !appended || g_k33Ticks[w->count]==PiTick;
+}
+static int PiActivationPrepare(void *context)
+{
+    PiActivationWindows *w=(PiActivationWindows *)context;
+    const BYTE *call=(const BYTE *)(DWORD_PTR)VOICE_EVENTLOOP_CALL_VA;
+    LARGE_INTEGER frequency;
+    HMODULE kernel=GetModuleHandleA("kernel32.dll"), user=GetModuleHandleA("user32.dll");
+    const char *names[3]={"Sleep","SleepEx","PeekMessageA"};
+    if (!g_p2pMainThread || GetCurrentThreadId()!=g_p2pMainThread || !g_k33TickInstalled ||
+        !kernel || !user || !QueryPerformanceFrequency(&frequency) || frequency.QuadPart<=0 ||
+        !Readable(call,5) || !CallsTarget(VOICE_EVENTLOOP_CALL_VA,(DWORD)(DWORD_PTR)K33_MainTickHook) ||
+        K33HasMainTick(PiTick) || g_k33TickCount>=K33_MAX_TICKS) return 0;
+    /* Preserve known retained room/voice/discord chain; never double-run an old PI hook. */
+    if(g_k33TickNext!=VOICE_EVENTLOOP_FUNC_VA &&
+       g_k33TickNext!=(DWORD)(DWORD_PTR)VOICE_TickHook &&
+       g_k33TickNext!=(DWORD)(DWORD_PTR)DISCORD_TickHook
+#if CODOL_KERNEL_ROOM_CONTEXT
+       && g_k33TickNext!=(DWORD)(DWORD_PTR)KRC_MainTickHook
+#endif
+       )return 0;
+    memcpy(w->call,call,5);w->next=g_k33TickNext;w->count=g_k33TickCount;
+    for(int i=0;i<w->count;++i)w->ticks[i]=g_k33Ticks[i];
+    for(unsigned i=0;i<3;++i) {
+        FARPROC *slot=(FARPROC *)(DWORD_PTR)g_piActivationSlots[i];
+        MEMORY_BASIC_INFORMATION memory;
+        FARPROC genuine=GetProcAddress(i==2?user:kernel,names[i]);
+        if(!genuine || !Readable(slot,sizeof(*slot)) || *slot!=genuine ||
+           VirtualQuery(slot,&memory,sizeof(memory))!=sizeof(memory) || memory.State!=MEM_COMMIT ||
+           (memory.Protect&(PAGE_GUARD|PAGE_NOACCESS)))return 0;
+        w->original[i]=genuine;w->protection[i]=memory.Protect;
+    }
+    g_piRealSleep=w->original[0];g_piRealSleepEx=w->original[1];g_piRealPeek=w->original[2];
+    g_piQpf=frequency.QuadPart;
+    return PiActivationChain(w,0);
+}
+static int PiActivationHandler(void *context,int install)
+{
+    PiActivationWindows *w=(PiActivationWindows *)context;
+    if(install) {
+        if(w->handler)return 0;
+        w->handler=AddVectoredExceptionHandler(1,PiFaultHandler);
+        return w->handler!=NULL;
+    }
+    if(!w->handler)return 1;
+    if(!RemoveVectoredExceptionHandler(w->handler))return 0;
+    w->handler=NULL;return 1;
+}
+static int PiActivationSlot(void *context,unsigned index,int install)
+{
+    PiActivationWindows *w=(PiActivationWindows *)context;
+    if(index>=3 || GetCurrentThreadId()!=g_p2pMainThread)return 0;
+    FARPROC *slot=(FARPROC *)(DWORD_PTR)g_piActivationSlots[index];
+    FARPROC desired=install?PiActivationHook(index):w->original[index];
+    FARPROC expected=install?w->original[index]:PiActivationHook(index);
+    DWORD old=0,ignored=0;MEMORY_BASIC_INFORMATION memory;int ok=1;
+    if(!Readable(slot,sizeof(*slot)) || VirtualQuery(slot,&memory,sizeof(memory))!=sizeof(memory))return 0;
+    /* Already-original on rollback means failed operation had no pointer effect.
+     * Never replace a third party's function pointer. */
+    if(!install && *slot==desired) {
+        if(w->writable[index]) {
+            if(memory.Protect!=PAGE_READWRITE || !VirtualProtect(slot,sizeof(*slot),w->restore_protection[index],&ignored))return 0;
+            w->writable[index]=0;
+            if(VirtualQuery(slot,&memory,sizeof(memory))!=sizeof(memory))return 0;
+        }
+        return memory.Protect==w->protection[index]; /* preserve unknown foreign rights */
+    }
+    if(*slot!=expected)return 0;
+    if(w->writable[index]) {
+        if(install || memory.Protect!=PAGE_READWRITE)return 0;
+    } else {
+        if(memory.Protect!=w->protection[index] || !VirtualProtect(slot,sizeof(*slot),PAGE_READWRITE,&old))return 0;
+        w->writable[index]=1;w->restore_protection[index]=old;
+        if(old!=w->protection[index]) {
+            /* A rights mutation raced the precheck: do NOT publish a pointer.
+             * Restore exactly the returned prior rights, not our stale sample. */
+            if(VirtualProtect(slot,sizeof(*slot),old,&ignored))w->writable[index]=0;
+            return 0;
+        }
+    }
+    if(InterlockedCompareExchangePointer((PVOID volatile *)slot,(PVOID)desired,(PVOID)expected)!=(PVOID)expected)ok=0;
+    if(!VirtualProtect(slot,sizeof(*slot),w->restore_protection[index],&ignored))ok=0;
+    else w->writable[index]=0;
+    if(!Readable(slot,sizeof(*slot)) || *slot!=desired ||
+       VirtualQuery(slot,&memory,sizeof(memory))!=sizeof(memory) || memory.Protect!=w->protection[index])ok=0;
+    return ok;
+}
+static int PiActivationTick(void *context,int install)
+{
+    PiActivationWindows *w=(PiActivationWindows *)context;
+    if(GetCurrentThreadId()!=g_p2pMainThread)return 0;
+    if(install) {
+        if(!PiActivationChain(w,0) || !K33OnMainTick(PiTick))return 0;
+        return PiActivationChain(w,1);
+    }
+    if(PiActivationChain(w,0))return 1;
+    if(!PiActivationChain(w,1))return 0; /* unknown mutation retained, never delete another callback */
+    g_k33TickCount=w->count;g_k33Ticks[w->count]=NULL;
+    return PiActivationChain(w,0);
+}
+static int PiActivationReadback(void *context)
+{
+    PiActivationWindows *w=(PiActivationWindows *)context;
+    if(!w->handler || !PiActivationChain(w,1))return 0;
+    for(unsigned i=0;i<3;++i) {
+        FARPROC *slot=(FARPROC *)(DWORD_PTR)g_piActivationSlots[i];MEMORY_BASIC_INFORMATION memory;
+        if(w->writable[i] || !Readable(slot,sizeof(*slot)) || *slot!=PiActivationHook(i) ||
+           VirtualQuery(slot,&memory,sizeof(memory))!=sizeof(memory) || memory.Protect!=w->protection[i])return 0;
+    }
+    return 1;
+}
+static const PiActivationOps g_piActivationOps={&g_piActivationWindows,
+    PiActivationPrepare,PiActivationHandler,PiActivationSlot,PiActivationTick,PiActivationReadback};
+static BOOL PiProductCurrent(void)
+{
+    return PiActivationCurrent(&g_piActivation,&g_piActivationOps)!=0;
+}
+static BOOL P2PEnsureInprocActivation(void)
+{
+    if(GetCurrentThreadId()!=g_p2pMainThread)return FALSE;
+    if(!PiActivationEnsure(&g_piActivation,&g_piActivationOps))return FALSE;
+    g_piHooked=TRUE; /* only complete transaction; never a diagnostic success bit */
+    return TRUE;
+}
+#if CODOL_LOCAL_TESTING
+static void InstallP2PInprocDiagnostics(void)
+{
+    for(unsigned i=0;i<sizeof(g_piCmds)/sizeof(g_piCmds[0]);++i)C1AddCommand(&g_piCmds[i]);
+    for(unsigned i=0;i<sizeof(g_p2pCmds)/sizeof(g_p2pCmds[0]);++i)
+        if(!strcmp(g_p2pCmds[i].name,"p2pstatus"))g_p2pCmds[i].fn=(void *)PiCmdStatus;
+}
+#endif

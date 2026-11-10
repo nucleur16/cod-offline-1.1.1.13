@@ -41,8 +41,8 @@ def room_profile(body, room, local):
     for line in body.splitlines(True):
         token=line.strip()
         if token.startswith('#if'):
-            if token!='#if CODOL_KERNEL_ROOM_CONTEXT && !CODOL_LOCAL_TESTING':raise AssertionError('unexpected target condition')
-            stack.append(enabled);enabled=enabled and room and not local
+            if token!='#if CODOL_KERNEL_ROOM_CONTEXT':raise AssertionError('unexpected target condition')
+            stack.append(enabled);enabled=enabled and room
         elif token=='#endif':
             if not stack:raise AssertionError('unbalanced target condition')
             enabled=stack.pop()
@@ -78,11 +78,11 @@ class CutoverContract(unittest.TestCase):
         body = function(self.tick, 'static BOOL K33InstallMainTicks(void)')
         for room,local in ((False,False),(True,False),(False,True),(True,True)):
             active=room_profile(body,room,local)
-            self.assertEqual(active.count('target !='), 4+int(room and not local))
+            self.assertEqual(active.count('target !='), 4+int(room))
             for name in ('VOICE_EVENTLOOP_FUNC_VA', 'VOICE_TickHook', 'DISCORD_TickHook', 'PI_TickHook'):
                 self.assertIn(name, active)
-            self.assertEqual('KRC_MainTickHook' in active, room and not local)
-        with self.assertRaises(AssertionError):room_profile(body.replace('#if CODOL_KERNEL_ROOM_CONTEXT && !CODOL_LOCAL_TESTING','#if 1'),True,False)
+            self.assertEqual('KRC_MainTickHook' in active, room)
+        with self.assertRaises(AssertionError):room_profile(body.replace('#if CODOL_KERNEL_ROOM_CONTEXT','#if 1'),True,False)
 
     def test_membership_uses_actual_callback_list(self):
         body = function(self.tick, 'static BOOL K33HasMainTick(K33TickFn fn)')
@@ -93,8 +93,16 @@ class CutoverContract(unittest.TestCase):
     def test_hook_order_and_renderer_boundary_remain(self):
         start = self.kernel.index('    InstallVoice();')
         tail = self.kernel[start:self.kernel.index('    Log("entering game', start)]
-        self.assertLess(tail.index('InstallKernelRoomContext()'), tail.index('InstallP2PInproc()'))
-        self.assertLess(tail.index('InstallP2PInproc()'), tail.index('K33HasMainTick(TheatreTick)'))
+        self.assertLess(tail.index('InstallKernelRoomContext()'), tail.index('InstallP2PInprocDiagnostics()'))
+        self.assertLess(tail.index('InstallP2PInprocDiagnostics()'), tail.index('InstallP2PHost()'))
+        self.assertLess(tail.index('InstallP2PHost()'), tail.index('K33HasMainTick(TheatreTick)'))
+        self.assertNotIn('InstallP2PInproc();',tail)
+        host=(ROOT/'p2p.c').read_text();start=function(host,'static BOOL P2PStartConfigured(')
+        self.assertLess(start.index('P2PEnsureInprocActivation()'),start.index('CreateThread('))
+        pi=(ROOT/'p2p_inproc.c').read_text();activation=function(pi,'static int PiActivationTick(')
+        self.assertIn('K33OnMainTick(PiTick)',activation)
+        self.assertNotIn('RedirectCall(',activation)
+        self.assertIn('g_k33Ticks[i]!=w->ticks[i]',function(pi,'static int PiActivationChain('))
         self.assertNotIn('Direct3DCreate9', function(self.tick, 'static BOOL K33InstallMainTicks(void)'))
 
 

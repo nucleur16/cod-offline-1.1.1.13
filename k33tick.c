@@ -12,7 +12,8 @@
  * there; it refuses an unknown target, so it never hides a hook it does not know.
  *
  * K33OnMainTick(fn) registers a callback (at most K33_MAX_TICKS, before InstallMainTicks or later: the list is only
- * read on the main thread and only appended before the game runs).
+ * read on the main thread. Product Pi may append ON THAT SAME THREAD after
+ * installation; this preserves all existing callback order and the retained chain).
  */
 
 #define K33_MAX_TICKS 8
@@ -20,10 +21,11 @@
 typedef void (*K33TickFn)(void);
 static K33TickFn g_k33Ticks[K33_MAX_TICKS];
 static int g_k33TickCount;
+static BOOL g_k33TickInstalled;
 /* Installed before this dispatcher; its frame hook must remain in the chain. */
 void PI_TickHook(void);
-#if CODOL_KERNEL_ROOM_CONTEXT && !CODOL_LOCAL_TESTING
-/* Production skips the legacy PI layer; retain the verified room/name tick chain. */
+#if CODOL_KERNEL_ROOM_CONTEXT
+/* Both profiles retain the verified room/name chain before on-demand Pi activation. */
 void KRC_MainTickHook(void);
 #endif
 __attribute__((used)) DWORD g_k33TickNext;   /* what the hooked call reached before us */
@@ -74,7 +76,7 @@ static BOOL K33InstallMainTicks(void)
     memcpy(&rel, call + 1, 4);
     DWORD target = VOICE_EVENTLOOP_CALL_VA + 5 + (DWORD)rel;
     if (target != VOICE_EVENTLOOP_FUNC_VA && target != (DWORD)(DWORD_PTR)VOICE_TickHook &&
-#if CODOL_KERNEL_ROOM_CONTEXT && !CODOL_LOCAL_TESTING
+#if CODOL_KERNEL_ROOM_CONTEXT
         target != (DWORD)(DWORD_PTR)KRC_MainTickHook &&
 #endif
         target != (DWORD)(DWORD_PTR)DISCORD_TickHook && target != (DWORD)(DWORD_PTR)PI_TickHook) {
@@ -88,6 +90,7 @@ static BOOL K33InstallMainTicks(void)
         Log("ticks: main-thread dispatcher readback differs; migration remains unqualified");
         return FALSE;
     }
+    g_k33TickInstalled = TRUE;
     Log("ticks: %d ported feature tick(s) on Com_EventLoop call 0x%08X (chained to 0x%08lX)", g_k33TickCount,
         VOICE_EVENTLOOP_CALL_VA, (unsigned long)target);
     return TRUE;
