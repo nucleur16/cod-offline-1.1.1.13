@@ -116,9 +116,11 @@ static int WINAPI HostGateRecvFrom(SOCKET s, char *buf, int len, int flags, stru
         int r = g_hgRecvFrom(s, buf, len, flags, f, fl);
         if (r == SOCKET_ERROR || !fl || *fl < (int)sizeof(struct sockaddr_in) || f->sa_family != AF_INET) return r;
         const struct sockaddr_in *in = (const struct sockaddr_in *)f;
-        if (HostGateOk(in->sin_addr.s_addr)) return r;
+        int production=P2PProductionGuestAddress(in->sin_addr.s_addr,ntohs(in->sin_port));
+        if(production>0)return r;
+        if(production==0&&HostGateOk(in->sin_addr.s_addr)) return r;
         HostGateRefused(in->sin_addr.s_addr, 0, ntohs(in->sin_port));
-        if (g_hgMode < 2) return r;
+        if (production == 0 && g_hgMode < 2) return r;
         if (flags & MSG_PEEK) { /* drop it for real, then look again */
             char sink[1];
             int sl = sizeof(own);
@@ -140,11 +142,13 @@ static int WINAPI HostGateRecvFrom(SOCKET s, char *buf, int len, int flags, stru
 
 static int WINAPI HostGateSendTo(SOCKET s, const char *buf, int len, int flags, const struct sockaddr *to, int tolen)
 {
+    P2PProductionBorrowSend(s);
     if (to && tolen >= (int)sizeof(struct sockaddr_in) && to->sa_family == AF_INET) {
         const struct sockaddr_in *in = (const struct sockaddr_in *)to;
-        if (!HostGateOk(in->sin_addr.s_addr)) {
+        int production=P2PProductionGuestAddress(in->sin_addr.s_addr,ntohs(in->sin_port));
+        if (production<0 || (production==0&&!HostGateOk(in->sin_addr.s_addr))) {
             HostGateRefused(in->sin_addr.s_addr, 1, ntohs(in->sin_port));
-            if (g_hgMode >= 2) return len;
+            if (production < 0 || g_hgMode >= 2) return len;
         }
     }
     return g_hgSendTo(s, buf, len, flags, to, tolen);
@@ -291,6 +295,7 @@ static BOOL InstallHostGate(void)
         Log("hostgate: required socket filter write failed; refusing startup");
         return FALSE;
     }
+    if(!P2PProductionInstallSocketHooks())return FALSE;
     HANDLE t = CreateThread(NULL, 0, HostGateResolveThread, NULL, 0, NULL);
     if (t) CloseHandle(t);
     Log("hostgate: %s; UDP only with loopback, the lobby (%d names from dwauth.ini/stun.ini) and lobby-vouched hosts",

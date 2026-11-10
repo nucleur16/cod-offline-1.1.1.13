@@ -1,6 +1,7 @@
 package codo.k33
 {
    import flash.display.Sprite;
+   import codo.utils.LocalizeUtil;
    import flash.events.MouseEvent;
    import flash.text.TextField;
    import flash.text.TextFormat;
@@ -24,7 +25,7 @@ package codo.k33
          this.caption.y=7;
          this.caption.width=108;
          this.caption.height=25;
-         this.caption.text="Local Play";
+         this.caption.text=LocalizeUtil.localize("@K33UI_LOCAL_PLAY");
          this.caption.selectable=false;
          this.caption.mouseEnabled=false;
          this.addChild(this.caption);

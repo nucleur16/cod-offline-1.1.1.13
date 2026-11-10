@@ -29,7 +29,7 @@ if [ ! -f "$SDL_DIR/lib/libSDL2.a" ]; then
 fi
 "$BIN/windres.exe" -O coff -i kernel33.rc -o kernel33_res.o
 "$BIN/gcc.exe" "$@" -O2 -Wall -shared -s -static -static-libgcc -I"$SDL_DIR/include" -o Kernel33.dll \
-    kernel33.c kernel33_res.o kernel33.def \
+    -I. kernel33.c production/p2p_production_receiver.c production/p2p_production_wire.c shared/p2p_win_pipe.c kernel33_res.o kernel33.def \
     -L"$SDL_DIR/lib" -lSDL2 -lsetupapi -lcfgmgr32 -lversion -loleaut32 -luuid \
     -lopus -lz -lwinhttp -limm32 -lgdi32 -lshlwapi -lole32 -lwinmm -lws2_32 -liphlpapi -lpsapi -ladvapi32 -lshell32 -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat
 if [ "${K33_NO_COPY:-0}" = 1 ]; then

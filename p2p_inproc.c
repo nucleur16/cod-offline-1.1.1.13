@@ -212,6 +212,18 @@ static void WINAPI PiServerFiber(void *unused)
     (void)unused;
     for (;;) {
         LONG st = g_piState;
+        if(P2PProductionMode()>0) {
+            if(st==PI_RUNNING)P2PProductionOwnerTick(1);
+            else if(st==PI_INIT_PENDING) {
+                P2PProductionOwnerTick(1);
+                if(!P2PR_CurrentPermission()){InterlockedExchange(&g_piState,PI_ENDED);SwitchToFiber(g_piMainFiber);continue;}
+                if(!P2PProductionHostInstalled()) { SwitchToFiber(g_piMainFiber);continue; }
+            }
+            if((st==PI_RUNNING||st==PI_INIT_PENDING)&&!P2PProductionHostCurrent()) {
+                InterlockedExchange(&g_piQuit,1);
+                if(st==PI_INIT_PENDING){InterlockedExchange(&g_piState,PI_ENDED);SwitchToFiber(g_piMainFiber);continue;}
+            }
+        }
 #if CODOL_LOCAL_TESTING
         if(st==PI_RUNNING) {
             if(g_piStartupSelected&&g_piStartup.protocol==2&&!PiStartupOptionsCheck())PiActiveDeny(0);
@@ -379,6 +391,7 @@ __asm__(
 static BOOL P2PInprocUsed(void) { return g_piSession > 0 && (g_piState == PI_ENDED || g_piState == PI_CRASHED); }
 static BOOL P2PInprocPrincipalFresh(void)
 {
+    if(P2PProductionMode()!=0)return P2PProductionHostCurrent();
     int mode=P2PStartupProtocolMode();
     if(mode==0)return TRUE;
 #if CODOL_LOCAL_TESTING
@@ -391,6 +404,7 @@ static BOOL P2PInprocPrincipalFresh(void)
 }
 static void P2PInprocCancelStartup(void)
 {
+    P2PProductionCancel();
 #if CODOL_LOCAL_TESTING
     if(g_piStartupSelected) {
         PiActiveDeny(0);
@@ -613,7 +627,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         }
     } else
 #endif
-    if (!P2PVerifiedScriptsFetch(c.sessionMap[0] ? c.sessionMap : c.map, c.gametype,
+    if (P2PProductionMode()==0 && !P2PVerifiedScriptsFetch(c.sessionMap[0] ? c.sessionMap : c.map, c.gametype,
                                 c.zoneType, &verified_scripts, &verified_size, script_error, sizeof(script_error))) {
         Log("p2p in-process: %s; hosting refused before loading the server", script_error);
         P2PSetState(P2P_FAILED, script_error);
@@ -625,7 +639,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     LONG n = InterlockedIncrement(&g_piSession);
     _snprintf(copy, MAX_PATH, "%sk33_sh1x_host_%lu_%ld.dll", tmp, GetCurrentProcessId(), n);
     copy[MAX_PATH - 1] = 0;
-    if (!CopyFileA(c.dll, copy, FALSE)) {
+    if (P2PProductionMode()==0 && !CopyFileA(c.dll, copy, FALSE)) {
 #if CODOL_LOCAL_TESTING
         if((startup_mode==1||startup_mode==2)){PiAbortStartupWorker();InterlockedExchange(&g_piState,PI_ENDED);}
 #endif
@@ -637,7 +651,9 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     SIZE_T priv0, virt0, priv1, virt1;
     PiMemory(&priv0, &virt0);
     DWORD t0 = GetTickCount();
-    HMODULE m = LoadLibraryExA(copy, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+    if(P2PProductionMode()>0&&!P2PR_CurrentPermission())return 1;
+    HMODULE m = P2PProductionMode()>0?LoadLibraryExW(P2PProductionHostPath(),NULL,LOAD_WITH_ALTERED_SEARCH_PATH):
+        LoadLibraryExA(copy, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
     if (!m) {
 #if CODOL_LOCAL_TESTING
         if((startup_mode==1||startup_mode==2)){PiAbortStartupWorker();InterlockedExchange(&g_piState,PI_ENDED);}
@@ -645,7 +661,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         P2PVerifiedScriptsFree(verified_scripts, verified_size);
         Log("p2p in-process: LoadLibrary %s failed (%lu)", copy, GetLastError());
         P2PSetState(P2P_FAILED, "the server DLL did not load");
-        DeleteFileA(copy);
+        if(P2PProductionMode()==0)DeleteFileA(copy);
         return 1;
     }
     Sh1xInitFn init;
@@ -654,6 +670,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
 #else
     init=(Sh1xInitFn)(void *)GetProcAddress(m,"Sh1xHost_Init");
 #endif
+    if(P2PProductionMode()>0)init=(Sh1xInitFn)(void *)GetProcAddress(m,"Sh1xHost_InitWithMatchOptions");
     Sh1xFrameFn frame = (Sh1xFrameFn)(void *)GetProcAddress(m, "Sh1xHost_Frame");
     Sh1xCmdFn cmd = (Sh1xCmdFn)(void *)GetProcAddress(m, "Sh1xHost_Command");
     Sh1xCodeFn code = (Sh1xCodeFn)(void *)GetProcAddress(m, "Sh1xHost_ExitCode");
@@ -665,7 +682,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         Log("p2p in-process: %s lacks the Sh1xHost_* API (build the server's host-dll target)", c.dll);
         P2PSetState(P2P_FAILED, "the server DLL has no host API");
         FreeLibrary(m);
-        DeleteFileA(copy);
+        if(P2PProductionMode()==0)DeleteFileA(copy);
         return 1;
     }
 #if CODOL_LOCAL_TESTING
@@ -683,7 +700,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
             /* No native installer has run, so this unused module may close. */
             PiAbortStartupWorker();InterlockedExchange(&g_piState,PI_ENDED);
             P2PSetState(P2P_FAILED,"The Local Play host is unavailable.");
-            FreeLibrary(m);DeleteFileA(copy);return 1;
+            FreeLibrary(m);if(P2PProductionMode()==0)DeleteFileA(copy);return 1;
         }
         g_piStartupScripts=scripts;g_piStartupPrincipals=principals;
         g_piStartupOptions=options;g_piObserveOptions=observe_options;
@@ -695,7 +712,9 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         InterlockedExchange(&g_piStartupSelected,1);
     } else
 #endif
-    {
+    if(P2PProductionMode()>0) {
+        if(!P2PProductionLoadHost(m)) {P2PProductionCancel();P2PSetState(P2P_FAILED,"Production host API is unavailable.");return 1;}
+    } else {
         int installed = P2PVerifiedScriptsInstall(m, verified_scripts, verified_size,
                                                  script_error, sizeof(script_error));
         P2PVerifiedScriptsFree(verified_scripts, verified_size);
@@ -706,7 +725,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
             Log("p2p in-process: %s; hosting refused", script_error);
             P2PSetState(P2P_FAILED, script_error);
             FreeLibrary(m);
-            DeleteFileA(copy);
+            if(P2PProductionMode()==0)DeleteFileA(copy);
             return 1;
         }
     }
@@ -814,6 +833,10 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
             g_piMaxGapUs = 0;
             g_piWinCalls = g_piWinTotalUs = g_piWinMaxUs = 0;
             lastStats = now;
+        }
+        if(P2PProductionMode()>0) {
+            if(!P2PR_CurrentPermission()&&!quitAsked){quitAsked=TRUE;quitAt=now;InterlockedExchange(&g_piQuit,1);}
+            continue;
         }
         if (now - lastPoll < (ready ? P2P_STATUS_MS : 1000) || st != PI_RUNNING) continue;
         lastPoll = now;

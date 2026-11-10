@@ -2,6 +2,13 @@ package codo.k33
 {
    import codo.common.CFunctionContainerCommon;
    import flash.display.Sprite;
+   import flash.display.DisplayObject;
+   import flash.display.DisplayObjectContainer;
+   import flash.events.Event;
+   import flash.events.MouseEvent;
+   import flash.geom.Rectangle;
+   import flash.text.TextField;
+   import flash.text.TextFormat;
 
    // The existing room view creates this invisible bridge after Create Room succeeds.
    public class LocalMatchControls extends Sprite
@@ -10,10 +17,96 @@ package codo.k33
       private var lastContext:String="";
       private var localSelection:Boolean=false;
 
-      public function LocalMatchControls()
+      private var choice:LocalCreateRoomOption;
+      private var choiceCallback:Function;
+      private var observedProtocol:String="";
+      private var pendingChoice:Boolean=false;
+      private var lastRoomKey:String="";
+
+      public function LocalMatchControls(sample:TextField=null,onChoice:Function=null)
       {
          super();
          this.visible=false;
+         if(sample==null){sample=new TextField();sample.defaultTextFormat=new TextFormat("_sans",14,0xFFFFFF);}
+         this.choice=new LocalCreateRoomOption(sample);this.addChild(this.choice);
+         this.choiceCallback=onChoice;
+         this.choice.addEventListener(MouseEvent.CLICK,this.onLocalChoice);
+         this.addEventListener(Event.ENTER_FRAME,this.onProtocolFrame);
+      }
+
+      public function anchorBesideReadyArea(area:DisplayObject,container:DisplayObjectContainer):void
+      {
+         // Only the new control moves. Stock Ready, its label and all siblings
+         // retain their transforms. Real multi-resolution adjacency needs render QA.
+         if(area==null || container==null)return;
+         var bounds:Rectangle=area.getBounds(container);
+         this.x=bounds.right+12;this.y=bounds.bottom-32;
+      }
+
+      private function onProtocolFrame(event:Event):void
+      {
+         var mode:String=CFunctionContainerCommon.Dvar_GetString("ui_p2p_startup_protocol");
+         if(mode!=this.observedProtocol){this.observedProtocol=mode;this.setRoom(this.room);}
+         if(this.pendingChoice && this.localSelection && this.room!=null &&
+            CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled")=="1" &&
+            CFunctionContainerCommon.Dvar_GetString("ui_p2p_map")==this.nativeMapID())
+         {
+            this.pendingChoice=false;
+            if(this.choiceCallback!=null)this.choiceCallback(true);
+         }
+      }
+
+      private function resetProductionChoice():void
+      {
+         if(this.localSelection)CFunctionContainerCommon.execnow("p2p_localhost 0");
+         this.localSelection=false;this.lastContext="";this.choice.selected=false;this.pendingChoice=false;
+      }
+
+      private function nativeMapID():String
+      {
+         var map:String=this.mapID();
+         return map.indexOf("coop_survival_")==0 ? map.substr(14) : map;
+      }
+
+      private function intentRoomKey(value:Object):String
+      {
+         if(value==null || value.index==null || value.name==null)return "";
+         var index:String=String(value.index),name:String=String(value.name);
+         return /^(0|[1-9][0-9]{0,19})$/.test(index) && name.length>0 ? index+"|"+name.length+":"+name : "";
+      }
+
+      private function onLocalChoice(event:MouseEvent):void
+      {
+         if(CFunctionContainerCommon.Dvar_GetString("ui_p2p_startup_protocol")!="3" || this.room==null || this.lastContext=="")return;
+         this.localSelection=this.choice.selected;
+         CFunctionContainerCommon.execnow("p2p_room "+this.lastContext);
+         CFunctionContainerCommon.execnow("p2p_localhost "+(this.localSelection?"1":"0"));
+         this.pendingChoice=this.localSelection;
+         if(!this.localSelection && this.choiceCallback!=null)this.choiceCallback(false);
+      }
+
+      private function setProductionRoom(value:Object):void
+      {
+         var roomKey:String=this.intentRoomKey(value);
+         if(this.lastRoomKey!="" && roomKey!=this.lastRoomKey)this.resetProductionChoice();
+         this.lastRoomKey=roomKey;
+         this.room=value;
+         if(value==null || roomKey=="" || value.isPlayList==true){this.resetProductionChoice();this.visible=false;return;}
+         var map:String=this.mapID(),gt:String=this.gameType(),intent:String=this.difficultyIntent();
+         if(!/^[a-z][a-z0-9_]{0,63}$/.test(map) || !/^[a-z][a-z0-9_]{0,31}$/.test(gt) || intent=="")
+         {this.resetProductionChoice();this.visible=false;return;}
+         var context:String=map+" "+gt+" "+this.category()+" "+intent;
+         if(this.lastContext!="" && context!=this.lastContext)this.resetProductionChoice();
+         if(this.lastContext=="")
+         {
+            // A genuine local Create Room choice may seed its own host view.
+            // Guests start unchecked and require their own explicit click.
+            this.localSelection=this.owner() && CFunctionContainerCommon.Dvar_GetString("ui_p2p_create")=="1";
+            CFunctionContainerCommon.setdvar("ui_p2p_create","0");
+            CFunctionContainerCommon.execnow("p2p_room "+context);
+            if(this.localSelection)CFunctionContainerCommon.execnow("p2p_localhost 1");
+         }
+         this.lastContext=context;this.choice.selected=this.localSelection;this.visible=true;
       }
 
       private function mapID():String
@@ -56,6 +149,7 @@ package codo.k33
 
       public function setRoom(value:Object):void
       {
+         if(CFunctionContainerCommon.Dvar_GetString("ui_p2p_startup_protocol")=="3"){this.setProductionRoom(value);return;}
          this.room=value;
          this.visible=false;
          if(!this.owner() || this.room.isPlayList==true || this.category()=="coop")

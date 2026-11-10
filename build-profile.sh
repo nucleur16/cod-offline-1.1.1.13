@@ -23,3 +23,11 @@ if [ -n "${K33_LAUNCHER_HOST_SHA256:-}" ]; then
     [ "${#K33_LAUNCHER_HOST_SHA256}" = 64 ] || { echo "Launcher pin must contain 64 hex characters" >&2; exit 1; }
     set -- "$@" "-DCODOL_LAUNCHER_BRIDGE_HOST_SHA256=\"$K33_LAUNCHER_HOST_SHA256\""
 fi
+
+# Public exact-package pins, generated after the qualified Launcher/Host builds.
+# Omission compiles the explicit zero-format refusal policy.
+if [ -n "${K33_P2P_PRODUCTION_POLICY_HEADER:-}" ]; then
+    [ "$K33_P2P_PRODUCTION_POLICY_HEADER" = production/p2p_production_policy.generated.h ] || { echo "Production policy must use the fixed source path" >&2; exit 1; }
+    [ -f "$K33_P2P_PRODUCTION_POLICY_HEADER" ] || { echo "Production policy header is missing" >&2; exit 1; }
+    set -- "$@" "-DCODOL_P2P_PRODUCTION_POLICY_HEADER=\"$K33_P2P_PRODUCTION_POLICY_HEADER\""
+fi

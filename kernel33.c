@@ -1547,6 +1547,7 @@ static void PatchGbkInput(void)
 #include "localized_substitution.c"
 #include "localized_numeric.c"
 /* Player-hosted matches: the sh1x server as a child of the host's client (p2p.c, docs/P2P_HOSTING.md). */
+#include "p2p_production_kernel.h"
 #include "p2p.c"
 /* The sh1x server inside the client, on the game thread (p2p_inproc.c, feat/p2p-inprocess). */
 #include "p2p_inproc.c"
@@ -1554,6 +1555,7 @@ static void PatchGbkInput(void)
 #include "p2p_assets.c"
 /* UDP only with lobby-vouched hosts (hostgate.c): the P2P trust requirement. */
 #include "hostgate.c"
+#include "p2p_production_kernel.c"
 /* Reject malformed top-level DemonWare packet lengths in the exact C1 parser. */
 #include "bd_packet_guard.c"
 /* Reject C1 snapshot entity and delta-field writes beyond their bounds. */

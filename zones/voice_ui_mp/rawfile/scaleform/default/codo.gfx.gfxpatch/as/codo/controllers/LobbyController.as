@@ -443,7 +443,9 @@ package codo.controllers
             this.cancelCampaignHostStart();
             return;
          }
-         var readyToSet:Boolean = !this.isReady();
+         var explicitLocal:Boolean = this.isProductionLocalRoom() && cEvt.myPara != null && cEvt.myPara.localPlay === true;
+         if(explicitLocal && this.isReady())this.applyRoomReadyState(false);
+         var readyToSet:Boolean = explicitLocal || !this.isReady();
          if(readyToSet && !this.isSupportedMapMode(this._roomObj.currentMap.id,this._roomObj.currentMatchMode.id))
          {
             this.showMsg("This map supports Search & Destroy only.",MsgBtnCount.ONE);
@@ -453,9 +455,9 @@ package codo.controllers
          {
             this.cancelCampaignHostStart();
          }
-         else if(!this._roomObj.isPlayList && this.isRoomHost() && (this.isLocalCampaignRoom() || CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") == "1"))
+         else if(this.isProductionLocalRoom() || !this._roomObj.isPlayList && this.isRoomHost() && (this.isLocalCampaignRoom() || CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") == "1"))
          {
-            if(!this.isLocalHostRoom())
+            if(!this.isProductionLocalRoom() && !this.isLocalHostRoom())
             {
                this.showMsg("Localhost hosting requires a valid selected room map and game type.",MsgBtnCount.ONE);
                return;
@@ -636,7 +638,7 @@ package codo.controllers
          }
          if(!this._roomObj.isPlayList && this.isRoomHost() && (this.isLocalCampaignRoom() || CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") == "1"))
          {
-            if(!this.isLocalHostRoom())
+            if(!this.isProductionLocalRoom() && !this.isLocalHostRoom())
             {
                this.showMsg("Localhost hosting requires a valid selected room map and game type.",MsgBtnCount.ONE);
                return;
@@ -673,6 +675,27 @@ package codo.controllers
          return ScaleformUtil.isScaleform && this.isRoomHost() && this._roomObj != null && !this._roomObj.isPlayList && /^[a-z][a-z0-9_]{0,63}$/.test(this._roomObj.currentMap.id) && /^[a-z][a-z0-9_]{0,31}$/.test(this.localHostGameType());
       }
 
+      private var _campaignHostRoomKey:String = "";
+      private var _campaignHostGeneration:String = "";
+
+      private function localIntentRoomKey() : String
+      {
+         // initRoomInfo assigns these actual native room-model fields. This
+         // binds UI intent only; signed backend context remains the authority.
+         if(this._roomObj == null || this._roomObj.index == null || this._roomObj.name == null)return "";
+         var index:String=String(this._roomObj.index),name:String=String(this._roomObj.name);
+         return /^(0|[1-9][0-9]{0,19})$/.test(index) && name.length>0 ? index+"|"+name.length+":"+name : "";
+      }
+
+      private function isProductionLocalRoom() : Boolean
+      {
+         return CFunctionContainerCommon.Dvar_GetString("ui_p2p_startup_protocol") == "3" &&
+            CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") == "1" &&
+            ScaleformUtil.isScaleform && this._roomObj != null && !this._roomObj.isPlayList && this.localIntentRoomKey() != "" &&
+            /^[a-z][a-z0-9_]{0,63}$/.test(this._roomObj.currentMap.id) &&
+            /^[a-z][a-z0-9_]{0,31}$/.test(this.localHostGameType());
+      }
+
       private function usesLocalStartupProtocol() : Boolean
       {
          var mode:String = CFunctionContainerCommon.Dvar_GetString("ui_p2p_startup_protocol");
@@ -682,7 +705,7 @@ package codo.controllers
       private function localHostContext() : String
       {
          var context:String = this.localHostGameType() + " " + this.localHostCategory();
-         if(CFunctionContainerCommon.Dvar_GetString("ui_p2p_startup_protocol") != "2") return context;
+         if(CFunctionContainerCommon.Dvar_GetString("ui_p2p_startup_protocol") != "2" && CFunctionContainerCommon.Dvar_GetString("ui_p2p_startup_protocol") != "3") return context;
          if(this.localHostCategory() == "mp") return context + " 0 -1";
          if(this._roomObj == null || !("currentLevel" in this._roomObj) || typeof this._roomObj.currentLevel != "number") return "";
          var tier:Number = Number(this._roomObj.currentLevel);
@@ -708,6 +731,8 @@ package codo.controllers
          this._campaignHostContext = "";
          this._campaignHostStartPara = null;
          this._localHostPendingAction = "";
+         this._campaignHostRoomKey = "";
+         this._campaignHostGeneration = "";
       }
 
       private function beginCampaignLocalHost(startPara:Object, waitForStart:Boolean, action:String = "start") : void
@@ -733,6 +758,8 @@ package codo.controllers
             return;
          }
          this._campaignHostSelectedMap = selectedMission;
+         this._campaignHostRoomKey = this.localIntentRoomKey();
+         this._campaignHostGeneration = "";
          this._campaignHostContext = context;
          this._campaignHostMap = selectedMission.indexOf("coop_survival_") == 0 ? selectedMission.substr(14) : selectedMission;
          this._campaignHostStartPara = startPara;
@@ -751,14 +778,19 @@ package codo.controllers
       private function onCampaignHostReady(evt:TimerEvent) : void
       {
          if(this._localHostPendingAction == "") return;
-         if(!this.isLocalHostRoom() || this._roomObj.currentMap.id != this._campaignHostSelectedMap || this.isLeavingRoom() || this.localHostContext() != this._campaignHostContext || CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") != "1")
+         if((!this.isProductionLocalRoom() && !this.isLocalHostRoom()) || this.localIntentRoomKey() != this._campaignHostRoomKey || this._roomObj.currentMap.id != this._campaignHostSelectedMap || this.isLeavingRoom() || this.localHostContext() != this._campaignHostContext || CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") != "1")
          {
             this.cancelCampaignHostStart();
             return;
          }
          var nativeMap:String = CFunctionContainerCommon.Dvar_GetString("ui_p2p_map");
          var nativeState:String = CFunctionContainerCommon.Dvar_GetString("ui_p2p_state");
-         if(CFunctionContainerCommon.Dvar_GetString("ui_p2p_ready") == "1" && nativeMap == this._campaignHostMap)
+         var production:Boolean = CFunctionContainerCommon.Dvar_GetString("ui_p2p_startup_protocol") == "3";
+         var generation:String = CFunctionContainerCommon.Dvar_GetString("ui_p2p_generation");
+         if(production && this._campaignHostGeneration == "" && generation != "" && generation != "0" && nativeMap == this._campaignHostMap)
+            this._campaignHostGeneration = generation;
+         var initialGate:Boolean = production && this._campaignHostGeneration != "" && generation == this._campaignHostGeneration && CFunctionContainerCommon.Dvar_GetString("ui_p2p_initial_handoff") == "1";
+         if((production ? initialGate : CFunctionContainerCommon.Dvar_GetString("ui_p2p_ready") == "1") && nativeMap == this._campaignHostMap)
          {
             var startPara:Object = this._campaignHostStartPara;
             var action:String = this._localHostPendingAction;
