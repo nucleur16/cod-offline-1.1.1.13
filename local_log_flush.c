@@ -129,8 +129,16 @@ static int K33LfPolicy(void)
 static int K33LfPipe(void)
 {
     char name[128],text[16];ULONG expected=0,actual=0;
-    DWORD a=GetEnvironmentVariableA("CODOL_VERIFIED_SCRIPT_PIPE",name,sizeof(name));
-    DWORD b=GetEnvironmentVariableA("CODOL_VERIFIED_SCRIPT_PARENT_PID",text,sizeof(text));
+    /* A separate original-child identity endpoint avoids consuming/busy-opening
+     * the signed startup CPSQ transaction. Invalid explicit selection never
+     * falls back to another pipe. The legacy absent-variable route is unchanged. */
+    DWORD a,b,probe_error;
+    SetLastError(ERROR_SUCCESS);
+    a=GetEnvironmentVariableA("CODOL_LOCAL_LOG_IDENTITY_PIPE",name,sizeof(name));
+    probe_error=GetLastError();
+    if (!a && probe_error==ERROR_ENVVAR_NOT_FOUND)
+        a=GetEnvironmentVariableA("CODOL_VERIFIED_SCRIPT_PIPE",name,sizeof(name));
+    b=GetEnvironmentVariableA("CODOL_VERIFIED_SCRIPT_PARENT_PID",text,sizeof(text));
     if (!a || a>=sizeof(name) || !b || b>=sizeof(text) || !P2PVSPipeName(name) || !P2PVSPid(text,&expected)) return K33LfFail(LF_PIPE_ENV);
     typedef BOOL (WINAPI *ServerPid)(HANDLE,PULONG);
     ServerPid server=(ServerPid)GetProcAddress(GetModuleHandleA("kernel32.dll"),"GetNamedPipeServerProcessId");

@@ -164,6 +164,7 @@ int main(int argc,char **argv)
     strcpy(prefix,"codol_");strcat(prefix,nonce);*(char **)(fake_dvar+12)=prefix;
     *(void **)entry=stream;_snprintf((char *)entry+0x1c,256,"%s_console_mp.log",prefix);
     char pipe_name[128];_snprintf(pipe_name,sizeof(pipe_name),"\\\\.\\pipe\\CoDOLVerifiedScripts-%032lx",(unsigned long)GetCurrentProcessId());
+    SetEnvironmentVariableA("CODOL_LOCAL_LOG_IDENTITY_PIPE",NULL);
     SetEnvironmentVariableA("CODOL_VERIFIED_SCRIPTS_REQUIRED","1");
     SetEnvironmentVariableA("CODOL_VERIFIED_SCRIPT_PIPE",pipe_name);
     SetEnvironmentVariableA("CODOL_VERIFIED_SCRIPT_PARENT_PID",pid);
@@ -173,6 +174,17 @@ int main(int argc,char **argv)
     OVERLAPPED connection;ZeroMemory(&connection,sizeof(connection));connection.hEvent=CreateEventA(NULL,TRUE,FALSE,NULL);
     assert(!ConnectNamedPipe(pipe,&connection) && GetLastError()==ERROR_IO_PENDING);
     if(!strncmp(which,"exchange",8)) { exchange_tests(which,pid,nonce,pipe,&connection);goto cleanup; }
+    if(!strcmp(which,"identitygood")) {
+        SetEnvironmentVariableA("CODOL_LOCAL_LOG_IDENTITY_PIPE",pipe_name);
+        SetEnvironmentVariableA("CODOL_VERIFIED_SCRIPT_PIPE","\\\\.\\pipe\\CoDOLVerifiedScripts-00000000000000000000000000000000");
+    }
+    if(!strcmp(which,"identityempty"))SetEnvironmentVariableA("CODOL_LOCAL_LOG_IDENTITY_PIPE","");
+    if(!strcmp(which,"identitybad"))SetEnvironmentVariableA("CODOL_LOCAL_LOG_IDENTITY_PIPE","\\\\.\\pipe\\other");
+    if(!strcmp(which,"identitymissing"))SetEnvironmentVariableA("CODOL_LOCAL_LOG_IDENTITY_PIPE","\\\\.\\pipe\\CoDOLVerifiedScripts-00000000000000000000000000000000");
+    if(!strcmp(which,"identitywrongserver")) {
+        SetEnvironmentVariableA("CODOL_LOCAL_LOG_IDENTITY_PIPE",pipe_name);
+        SetEnvironmentVariableA("CODOL_VERIFIED_SCRIPT_PARENT_PID","1");
+    }
     if(!strcmp(which,"badpid"))strcpy(pid,"1");
     if(!strcmp(which,"leadingpid"))strcpy(pid,"01");
     if(!strcmp(which,"overflowpid"))strcpy(pid,"4294967296");
@@ -199,12 +211,14 @@ int main(int argc,char **argv)
     if(!strcmp(which,"nullstream"))*(void **)entry=NULL;
     if(!strcmp(which,"flusherror"))flush_error=1;
     if(!strcmp(which,"receiptpartial"))partial_write=1;
-    int good=!strcmp(which,"good") || !strcmp(which,"runtimeiat"),ok=K33LfExecute(pid,nonce);
+    int good=!strcmp(which,"good") || !strcmp(which,"runtimeiat") || !strcmp(which,"identitygood"),ok=K33LfExecute(pid,nonce);
     assert(ok==good);
     assert(flush_calls==(good || !strcmp(which,"flusherror") || !strcmp(which,"receiptpartial") ? 1:0));
     assert(log_lock.RecursionCount==0);
     struct {const char *test;K33LfStage stage;} stages[]={
         {"good",LF_SUCCESS},{"runtimeiat",LF_SUCCESS},{"arbitraryiat",LF_GUARD_LOCK},
+        {"identitygood",LF_SUCCESS},{"identityempty",LF_PIPE_ENV},{"identitybad",LF_PIPE_ENV},
+        {"identitymissing",LF_PIPE_OPEN},{"identitywrongserver",LF_PIPE_OWNER},
         {"wrongimport",LF_GUARD_LOCK_IMPORT},{"nullimport",LF_GUARD_LOCK_IMPORT},
         {"guardlocktail",LF_GUARD_LOCK},{"badpid",LF_PID},{"leadingpid",LF_PID},{"overflowpid",LF_PID},
         {"badnonce",LF_NONCE},{"longnonce",LF_NONCE},{"pathnonce",LF_NONCE},{"prefix",LF_PREFIX_VALUE},

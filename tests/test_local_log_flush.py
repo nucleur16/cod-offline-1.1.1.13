@@ -20,7 +20,8 @@ def main():
            'multioff','wrongroute','mixedroute','receiptpartial','runtimeiat','arbitraryiat',
            'wrongimport','nullimport','guardlocktail','exchangegood','exchangerepeat','exchangebad',
            'exchangeempty','exchangeshort','exchangelong','exchangepath','exchangewrongserver',
-           'exchangeguard','exchangepreexisting','exchangepartial')
+           'exchangeguard','exchangepreexisting','exchangepartial',
+           'identitygood','identityempty','identitybad','identitymissing','identitywrongserver')
     shipping=len(sys.argv)>3 and sys.argv[3]=='shipping'
     if shipping:cases=('good',)
     for case in cases:
@@ -34,7 +35,7 @@ def main():
                                    '0' if case=='multioff' else '1'],cwd=root,capture_output=True,
                                    text=True,check=True,timeout=8)
             receipts=list((root/'main').glob('*.json'))
-            if case in ('good','runtimeiat') and not shipping:
+            if case in ('good','runtimeiat','identitygood') and not shipping:
                 assert len(receipts)==1
                 body=json.loads(receipts[0].read_text(encoding='ascii'))
                 assert set(body)=={'version','pid','nonce','prefix','flushed','c1_reference_sha256','abi'}
