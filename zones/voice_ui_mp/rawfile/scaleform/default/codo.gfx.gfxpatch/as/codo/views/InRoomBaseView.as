@@ -81,12 +81,13 @@ package codo.views
       
       override protected function onInit() : void
       {
-         this.localMatchControls = new LocalMatchControls();
+         this.localMatchControls = new LocalMatchControls(this.myInputTF,this.onLocalPlaySelected);
          // The global Rooms chat covers the hidden room-chat slot.
          // Keep this compact control above its title, without moving stock UI.
          this.localMatchControls.x = this.myInputTF.x;
          this.localMatchControls.y = this.myChatTitleTF.y - 110;
          this.addChild(this.localMatchControls);
+         this.localMatchControls.anchorBesideReadyArea(this.myForce_0,this);
          // Non-shipping builds can show a developer panel in the Zombies left pane.
          if(!this.getSyncDP(SyncDataID.IS_SHIP_BUILD) && this.myDevPanel != null)
          {
@@ -140,6 +141,14 @@ package codo.views
          this.broadcast(BCEvent.EVT_CONTROLLER_CHECK_AVATAR_REFRESH_IN_TEAM);
       }
       
+      private function onLocalPlaySelected(selected:Boolean) : void
+      {
+         // Explicit Guest opt-in uses the same existing Ready event. Native
+         // signed context decides the role; this flag is local intent only.
+         if(selected && this._roomObj != null && !this._roomObj.forces.isHost)
+            this.broadcast(BCEvent.EVT_CHANGE_READY_STATE,{"localPlay":true});
+      }
+
       protected function onStartDSClickHandle(cEvt:Event) : void
       {
          var selectedIndex:int = this.myDevDSRoomList.selectedDataIndex;

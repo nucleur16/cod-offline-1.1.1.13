@@ -47,6 +47,7 @@ ZONES = {
                                                     "common_gametype_zm", "patch_common_mp"]),
     "codol_loading_mode_names": dict(origin="Z:" + PATCH, install=PATCH),
     "codol_zm_deathmachine_audio": dict(origin="Z:" + PATCH, install=PATCH),
+    "codol_zm_m1911_arms_diag": dict(origin="new", install=PATCH),
     # the in-match movies, shared by both languages (codol-classic's English codohud / codoingame with every text a
     # localize key, the Chinese entries here, the English ones in codol_english_ui_extra) and the pause menu's pad
     # navigation; ahead of code_pre_gfx, so they stay loaded in a match
@@ -79,7 +80,11 @@ ZONES = {
                                                                     "codo.views.MatchMPCTMenuView",
                                                                     "codo.views.MatchRoomListView",
                                                                     "codo.views.MatchSelectModeHomeView",
+                                                                    "codo.views.MatchMiniRoomCreatorView",
+                                                                    "codo.views.matchmpctroomcreator_sub.MatchMPCTRoomCreatorView_mpcreator",
+                                                                    "codo.views.MatchMiniRoomCreatorCyborgsView",
                                                                     "codo.views.InRoomBaseView",
+                                                                    "codo.k33.LocalCreateRoomOption",
                                                                     "codo.k33.LocalMatchControls",
                                                                     "codo.k33.PadSnap", "components.CodoUIComponent"},
                                      "scaleform/default/codologin.gfx": {"codo.k33.PadSnap",

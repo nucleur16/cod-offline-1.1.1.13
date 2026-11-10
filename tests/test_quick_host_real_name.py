@@ -26,6 +26,10 @@ def method(source, name):
 
 
 def javascript(text):
+    # The fixture receiver supplies BaseController's synchronous dispatch.
+    # A standalone Function cannot use AS super syntax; keep the same call,
+    # receiver and arguments rather than substituting a native role shortcut.
+    text = text.replace('super.getSyncDP(', 'this.getSyncDP(')
     text = re.sub(r'var (\w+):(Object|Boolean|String|Array|int|uint|Number|RoomMemberObj)', r'var \1', text)
     return re.sub(r'for each\(var (\w+) in ([^)]+)\)', r'for (var \1 of \2)', text)
 
@@ -129,6 +133,63 @@ console.log(JSON.stringify({passed:true,checks,actual_AS_bodies:true,real_C1_acc
 
 
 class QuickHostRealName(unittest.TestCase):
+    def test_inherited_dispatch_keeps_receiver_identity_and_false_role(self):
+        value = parts((AS/'MatchController.as').read_text(), (AS/'LobbyController.as').read_text())
+        script = r'''
+const assert=require('assert');
+const actual=PARTS;
+const uint=value=>Number(value)>>>0;
+const SyncDataID={IS_ME:'me',IS_ROOM_HOST:'host'};
+const BCEvent={ROOM_FORCES:'forces'};
+let localHost=false,localPlayerID='';
+const CFunctionContainer={IsRankedMatch:()=>true,IsRoomHost:()=>localHost};
+const CFunctionContainerCommon={Dvar_GetString:()=>'',GetPlayerID:()=>localPlayerID,setdvar:()=>{throw Error('unexpected token');}};
+const hosts=actual.hosts.map(s=>new Function('quickRoom','const quickFilter={};\n'+s));
+const gates=actual.gates.map(s=>new Function('quickRoom','queuedRequired',s));
+const callback=new Function('member','ready',actual.callback);
+for(const asHost of [true,false]) {
+ localHost=asHost;
+ const peers=[{id:'4936378376416122282',realName:'中文主持人',name:'[clan] 中文主持人'},
+              {id:'14124485489710931920',realName:'Guest',name:'[guest] Guest'}];
+ for(const p of peers) Object.assign(p,{_localQuickNativeRoleKnown:true,_localQuickNativeMemberID:p.id,
+  _localQuickNativeReady:false,_localQuickNativeHost:false,isReady:false,team:0});
+ const localMember=peers[asHost?0:1];
+ localPlayerID=localMember.id;
+ const room={name:asHost?'p69c7b0123456789':'中文主持人',_localQuickSharedLineage:true,
+  forces:{force0:[peers[0]],force1:[peers[1]]}};
+ const calls=[];
+ const owner={_roomObj:room,_roomMembers:peers,
+  getRoomMemberObjByID:id=>peers.find(p=>p.id===id),broadcast:()=>{},
+  getSyncDP(key,args) {
+   assert.strictEqual(this,owner,'inherited dispatch must retain the controller receiver');
+   calls.push(key);
+   if(key===SyncDataID.IS_ROOM_HOST) {assert.strictEqual(args,undefined);return asHost;}
+   assert.strictEqual(key,SyncDataID.IS_ME);
+   assert(Array.isArray(args) && args.length===1 && peers.includes(args[0]),'dispatch must receive the actual member object');
+   return args[0]===localMember;
+  }};
+ for(const host of hosts) {
+  const picked=host.call(owner,room);assert.strictEqual(picked.count,1);assert.strictEqual(picked.host,peers[0]);
+ }
+ for(const index of [0,1]) {callback.call(owner,peers[index].id,false);callback.call(owner,peers[index].id,true);}
+ for(const gate of gates) {
+  assert.strictEqual(gate.call(owner,room,2),true);
+  assert.strictEqual(gate.call(owner,room,3),false,'two humans cannot satisfy a three-human gate');
+ }
+ assert(calls.includes(SyncDataID.IS_ROOM_HOST) && calls.includes(SyncDataID.IS_ME));
+ peers[1]._localQuickNativeMemberID='stale';
+ for(const gate of gates) assert.strictEqual(gate.call(owner,room,2),false);
+ if(asHost) {
+  localPlayerID=peers[1].id;
+  for(const host of hosts) assert.strictEqual(host.call(owner,room).count,0,'wrong local identity cannot replace the host');
+ }
+}
+console.log(JSON.stringify({passed:true,receiver_and_member_arguments:true,host_and_guest:true}));
+'''.replace('PARTS', json.dumps(value))
+        result = subprocess.run([shutil.which('node'), '-e', script], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertTrue(json.loads(result.stdout)['passed'])
+
     def test_native_clan_format_and_identity_cycle_guards_actual_AS(self):
         value = parts((AS/'MatchController.as').read_text(), (AS/'LobbyController.as').read_text())
         result = execute(value)

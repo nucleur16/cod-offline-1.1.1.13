@@ -1,5 +1,18 @@
 # Native Quick start permission (2026-10-24)
 
+Public playlist scope correction (2026-11-02): numbered public playlists also
+use the native `playlist` mode string. That string alone does not identify a
+managed Quick cycle. The guard now enters its permission policy only for the
+existing native managed-Quick discriminator 11. Other discriminators retain
+the native timer and StartGame path without requiring Quick Ready callbacks.
+An already observed managed cycle still fails closed if its scope changes.
+This does not enable Quick Match or change its catalogue visibility.
+
+The added exact-x86 regression uses the observed public-room discriminator 2,
+two members and zero Ready flags. It fails against the previous guard and
+passes with the scope correction. The actual two-client dedicated handoff is
+qualified separately; this offline result alone is not gameplay acceptance.
+
 The shared EN/ZH frontend waits for genuine Ready callbacks from every member
 in the current results generation. The native Quick controller separately
 entered state 6 and called StartGame after its own 10-second enter-room timer,

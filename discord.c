@@ -226,6 +226,7 @@ __attribute__((used)) void __cdecl DiscordMainTick(void)
             g.port = (unsigned short)(adr[8] << 8 | adr[9]);
             g.local = type == 2 /* NA_LOOPBACK */ || (type > 2 && adr[4] == 127);
         }
+#if CODOL_DIAGNOSTICS
         static char logged[128];
         char line[128];
         _snprintf(line, sizeof(line), "%s %s %lld", g.map, g.mode, activeSince);
@@ -236,6 +237,7 @@ __attribute__((used)) void __cdecl DiscordMainTick(void)
                 ip[0], ip[1], ip[2], ip[3], g.port, type,
                 g.local ? "local: player count from getinfo" : "remote");
         }
+#endif
     }
     EnterCriticalSection(&g_dcLock);
     g_dcGame = g;

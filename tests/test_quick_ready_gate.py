@@ -26,6 +26,7 @@ def body(source, name):
 
 
 def javascript(text):
+    text = text.replace("super.", "this.")
     text = re.sub(r"var (\w+):(Object|Boolean|String|Array|int|uint|Number)", r"var \1", text)
     return re.sub(r"for each\(var (\w+) in ([^)]+)\)", r"for (var \1 of \2)", text)
 
@@ -38,7 +39,7 @@ class QuickReadyGate(unittest.TestCase):
         lobby = (AS / "LobbyController.as").read_text()
         observer = javascript(lobby.split("// BEGIN shared Quick native Ready cycle evidence",1)[1].split("// END shared Quick native Ready cycle evidence",1)[0])
         gate = javascript(match.split("// BEGIN shared Quick all-current-member gate",1)[1].split("// END shared Quick all-current-member gate",1)[0]) + "\nreturn quickMembersReady;"
-        timer_source = body(match, "onRankedMatchPassedTimeTimerHandle")
+        timer_source = body(match, "onRankedMatchPassedTimeTimerHandle").replace("super.", "this.")
         start = timer_source.index('if(quickFilter["_localQuickVoteFinal"] == true && quickFilter["_localQuickSharedBookingStarted"] != true && this.getSyncDP(SyncDataID.IS_ROOM_HOST) && quickMembersReady)')
         begin = timer_source.index("{", start)
         end, depth = begin + 1, 1

@@ -140,15 +140,66 @@ static void LoadUnpackedImage(void)
 
 #include "qa_background_window.c"
 
+static void PatchActiveHandFiringMarker(void)
+{
+    static const BYTE expected[] = {
+        0x81, 0xA3, 0xEC, 0x00, 0x00, 0x00, 0xFF, 0xFD, 0xFF, 0xFF, 0x83, 0x7B,
+        0x04, 0x06, 0x8B, 0xB3, 0xEC, 0x00, 0x00, 0x00, 0x74, 0x3E, 0xF7, 0x43,
+        0x0C, 0x00, 0x04, 0x00, 0x00, 0x75, 0x35, 0x8B, 0x83, 0x78, 0x02, 0x00,
+        0x00, 0x85, 0xC0, 0x74, 0x14, 0x83, 0xF8, 0x06, 0x74, 0x0F, 0x8B, 0x83,
+        0x94, 0x02, 0x00, 0x00, 0x85, 0xC0, 0x74, 0x05, 0x83, 0xF8, 0x06, 0x75,
+        0x17, 0x8B, 0xC7, 0xE8, 0x53, 0xFC, 0xFF, 0xFF, 0x85, 0xC0, 0x74, 0x0C,
+        0x81, 0xCE, 0x00, 0x02, 0x00, 0x00, 0x89, 0xB3, 0xEC, 0x00, 0x00, 0x00,
+    };
+    static const BYTE replacement[] = {
+        0x80, 0xA3, 0xED, 0x00, 0x00, 0x00, 0xFD, 0x8B, 0xB3, 0xEC, 0x00, 0x00,
+        0x00, 0x83, 0x7B, 0x04, 0x06, 0x74, 0x41, 0xF6, 0x43, 0x0D, 0x04, 0x75,
+        0x3B, 0x8B, 0x83, 0x78, 0x02, 0x00, 0x00, 0x85, 0xC0, 0x74, 0x1B, 0x3C,
+        0x06, 0x74, 0x17, 0x80, 0xBB, 0x5C, 0x03, 0x00, 0x00, 0x01, 0x75, 0x24,
+        0x8B, 0x83, 0x94, 0x02, 0x00, 0x00, 0x85, 0xC0, 0x74, 0x04, 0x3C, 0x06,
+        0x75, 0x16, 0x8B, 0xC7, 0xE8, 0x52, 0xFC, 0xFF, 0xFF, 0x85, 0xC0, 0x74,
+        0x0B, 0x66, 0x81, 0xCE, 0x00, 0x02, 0x89, 0xB3, 0xEC, 0x00, 0x00, 0x00,
+    };
+    BYTE *site = (BYTE *)(DWORD_PTR)0x00416289u;
+    if (sizeof(expected) != 84 || sizeof(replacement) != sizeof(expected)) {
+        Log("active hand firing marker: invalid replacement size, not installed");
+        return;
+    }
+    if (!Readable(site, sizeof(expected))) {
+        Log("active hand firing marker: unreadable region, not installed");
+        return;
+    }
+    if (!memcmp(site, replacement, sizeof(replacement))) return;
+    if (memcmp(site, expected, sizeof(expected))) {
+        Log("active hand firing marker: C1 bytes differ, not installed");
+        return;
+    }
+    WriteCode(site, replacement, sizeof(replacement));
+    Log("active hand firing marker: inactive secondary readiness excluded");
+}
+
+#include "minigun_pair_native.c.inc"
+
 static void FillImports(void)
 {
     int failed = 0;
     Log("imports: start (thread %lu)", GetCurrentThreadId());
     for (unsigned i = 0; i < sizeof(kC1Imports) / sizeof(kC1Imports[0]); i++) {
         const C1Import *imp = &kC1Imports[i];
-        if (i == 0 || lstrcmpiA(imp->dll, kC1Imports[i - 1].dll) != 0)
-            Log("imports: %s (%s)", imp->dll, GetModuleHandleA(imp->dll) ? "already loaded" : "loading");
-        HMODULE m = ((HMODULE(WINAPI *)(LPCSTR))g_loadLibraryA)(imp->dll);
+        HMODULE m;
+#if CODOL_KERNEL_NAME_DISPLAY
+        if (!lstrcmpiA(imp->dll, "d3d9.dll")) {
+            /* Full cutover bypasses the retired local proxy. Resolve only the
+             * Windows copy, and let the guarded binders verify its path. */
+            wchar_t system[MAX_PATH];
+            UINT n = GetSystemDirectoryW(system, MAX_PATH);
+            if (!n || n >= MAX_PATH - 10) Fatal("Kernel33 could not resolve Windows Direct3D.");
+            lstrcatW(system, L"\\d3d9.dll");
+            m = LoadLibraryW(system);
+            if (!m) Fatal("Kernel33 could not load Windows Direct3D.");
+        } else
+#endif
+        m = ((HMODULE(WINAPI *)(LPCSTR))g_loadLibraryA)(imp->dll);
         FARPROC f = m ? ((FARPROC(WINAPI *)(HMODULE, LPCSTR))g_getProcAddress)(m, imp->name) : NULL;
         if (!f) {
             Log("import %s!%s unresolved (slot 0x%08lX)", imp->dll, imp->name, (unsigned long)imp->slot);
@@ -668,6 +719,7 @@ static void LoadPatchDir(void)
     char pdir[MAX_PATH];   /* where the patch files are: client_shipRetail\patch\ */
     _snprintf(pdir, sizeof(pdir), "%s%s", dir, sub);
     pdir[sizeof(pdir) - 1] = 0;
+#if CODOL_LOCAL_TESTING
     {   /* test clients ("+set k33_cmdFile 1") with a k33patch\ folder next to the exe load that one instead,
          * so a UI build can be tried while the shared client_shipRetail\patch\ is in use */
         const char *cl = GetCommandLineA();
@@ -680,6 +732,7 @@ static void LoadPatchDir(void)
             Log("patch folder: test client: using %s", pdir);
         }
     }
+#endif
     _snprintf(pattern, sizeof(pattern), "%s*.ff", pdir);
     pattern[sizeof(pattern) - 1] = 0;
 
@@ -751,7 +804,10 @@ static void LoadPatchDir(void)
             continue;
         }
         BYTE hdr[12];
-        DWORD got = 0, size = GetFileSize(f, NULL);
+        DWORD got = 0;
+#if CODOL_DIAGNOSTICS
+        DWORD size = GetFileSize(f, NULL);
+#endif
         BOOL ok = ReadFile(f, hdr, sizeof(hdr), &got, NULL) && got == sizeof(hdr);
         CloseHandle(f);
         if (!ok || memcmp(hdr, "IWffu100", 8) != 0 || *(DWORD *)(hdr + 8) != 0x14E) {
@@ -1024,7 +1080,9 @@ typedef void (__cdecl *LoopFxProcessFn)(int localClient);
 
 static void __cdecl LoopFxProcessHook(int localClient)
 {
+#if CODOL_DIAGNOSTICS
     static LONG logged;
+#endif
     DWORD idx = *(volatile DWORD *)(DWORD_PTR)LOOPFX_CG_INDEX_VA;
     const BYTE *cg = NULL;
     if (idx < LOOPFX_CG_SLOTS_MAX && Readable((const void *)(DWORD_PTR)(LOOPFX_CG_TABLE_VA + idx * 4), 4))
@@ -1032,26 +1090,39 @@ static void __cdecl LoopFxProcessHook(int localClient)
     if (cg && (unsigned)localClient < 4 && Readable(cg + LOOPFX_CG_TIME_OFF, 4)) {
         int now = *(const volatile int *)(cg + LOOPFX_CG_TIME_OFF);
         BYTE *t = (BYTE *)(DWORD_PTR)(LOOPFX_TABLE_VA + (DWORD)localClient * LOOPFX_TABLE_STRIDE);
-        int count = *(int *)t, moved = 0;
+        int count = *(int *)t;
+#if CODOL_DIAGNOSTICS
+        int moved = 0;
+#endif
         int *next = (int *)(t + 4);
+#if CODOL_DIAGNOSTICS
         long long skipped = 0, worst = 0;
+#endif
         for (int i = 0; i < count && i < LOOPFX_MAX; i++) {
             int period = *(int *)(t + 0x104 + i * 8);
             long long behind = (long long)now - LOOPFX_REPLAY_MS - next[i];
             if (period <= 0 || behind <= 0) continue;
             long long steps = behind / period + 1;
+#if CODOL_DIAGNOSTICS
             if (behind > worst) worst = behind;
+#endif
             next[i] = (int)(next[i] + steps * period);
+#if CODOL_DIAGNOSTICS
             skipped += steps;
             moved++;
+#endif
         }
+#if CODOL_DIAGNOSTICS
         if (moved && InterlockedIncrement(&logged) <= 8)
             Log("loop fx: %d of %d effects were up to %lld ms behind cg time %d; skipped %lld replays", moved, count,
                 worst + LOOPFX_REPLAY_MS, now, skipped);
+#endif
     } else {
+#if CODOL_DIAGNOSTICS
         static LONG warned;
         if (InterlockedIncrement(&warned) == 1)
             Log("loop fx: cg slot %lu (local client %d) not usable, catch-up not limited", (unsigned long)idx, localClient);
+#endif
     }
     ((LoopFxProcessFn)(DWORD_PTR)LOOPFX_PROCESS_VA)(localClient);
 }
@@ -1430,12 +1501,12 @@ static void PatchGbkInput(void)
 
 /* Realtime vision editor (Dear ImGui, vision.c + vision_ui.cpp): dev build only, -DK33_VISION (build-dev.sh links
  * the C++ objects). It rides on the console's D3D and WndProc hooks, so it needs console.c. */
-#if defined(K33_VISION) && !defined(K33_NO_CONSOLE)
+#if CODOL_DIAGNOSTICS && defined(K33_VISION) && !defined(K33_NO_CONSOLE)
 #include "vision.c"
 #endif
 /* Developer console overlay (dev branch): see console.c. Builds without it (-DK33_NO_CONSOLE, or delete
  * these three lines and the InstallConsole() call) still compile and link. */
-#ifndef K33_NO_CONSOLE
+#if CODOL_DIAGNOSTICS && !defined(K33_NO_CONSOLE)
 #include "console.c"
 #endif
 
@@ -1461,12 +1532,22 @@ static void PatchGbkInput(void)
 #include "k33json.c"
 
 /* codol_quick_native_room_context for the shared movie's Quick Play room checks: see quick_room.c. */
+#if !CODOL_KERNEL_ROOM_CONTEXT
 #include "quick_room.c"
+#endif
 /* The THEATRE screen (codol-classic's theatre playback): see theatre.c. */
 #include "theatre.c"
 /* UTF-8 player names and an optional display-name service: see name_display.c. */
+#if !CODOL_KERNEL_NAME_DISPLAY
 #include "name_display.c"
+#endif
+/* Local verified SDK -> immutable hosted-script source handoff. */
+#include "p2p_verified_scripts.c"
+#include "local_log_flush.c"
+#include "localized_substitution.c"
+#include "localized_numeric.c"
 /* Player-hosted matches: the sh1x server as a child of the host's client (p2p.c, docs/P2P_HOSTING.md). */
+#include "p2p_production_kernel.h"
 #include "p2p.c"
 /* The sh1x server inside the client, on the game thread (p2p_inproc.c, feat/p2p-inprocess). */
 #include "p2p_inproc.c"
@@ -1474,22 +1555,90 @@ static void PatchGbkInput(void)
 #include "p2p_assets.c"
 /* UDP only with lobby-vouched hosts (hostgate.c): the P2P trust requirement. */
 #include "hostgate.c"
+#include "p2p_production_kernel.c"
+/* Reject malformed top-level DemonWare packet lengths in the exact C1 parser. */
+#include "bd_packet_guard.c"
+/* Reject C1 snapshot entity and delta-field writes beyond their bounds. */
+#include "snapshot_guard.c"
+/* Bound the exact C1 bulk record loop to its 19-record destination. */
+#include "bulk_count_guard.c"
+/* Bind the state-3 challenge reply to C1's pending destination. */
+#include "challenge_sender_guard.c"
+/* Bound exact C1 joinParty counts and party-builder stack records. */
+#include "join_party_guard.c"
+/* Bound memberJoin's configured slot scan to the exact 19-entry party array. */
+#include "member_join_guard.c"
+/* Reject impossible server-info slot totals before they reach party state. */
+#include "server_info_capacity_guard.c"
+/* Bound local session-update slots before they reach party state. */
+#include "session_capacity_guard.c"
+/* Bound the party refresh dvar loop to the exact 19-entry array. */
+#include "party_slot_loop_guard.c"
+/* Bound both game and party session creation to the 19-slot table. */
+#include "party_session_capacity_guard.c"
+/* Bound session refresh counts before they become array limits. */
+#include "party_session_refresh_guard.c"
 
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 #include "news_refresh.c"
 #include "gfx_date_time.c"
 #include "gfx_local_operands.c"
 #include "launcher_update_bridge.c"
+#if CODOL_KERNEL_NAME_DISPLAY
+#include "kernel_name_display.c"
+#endif
+#if CODOL_KERNEL_ROOM_CONTEXT
+#include "kernel_room_context.c"
+#endif
 static void __cdecl TakeOver(void)
 {
     if (TryLauncherUpgrade()) ExitProcess(0);
     LoadUnpackedImage();
     MatchC1SectionFlags();
     FillImports();
+    if (!InstallBoundedLocalizedSubstitution())
+        Fatal("Required text safety checks could not be installed. Please repair or update the client.");
+    if (!InstallBoundedLocalizedNumeric())
+        Fatal("Required numeric text safety checks could not be installed. Please repair or update the client.");
     PatchGfxDateTime();
     PatchGfxLocalOperands();
-    InstallHostGate();
+    if (!InstallHostGate())
+        Fatal("Required network safety checks could not be installed. Please repair or update the client.");
+    if (!InstallBdPacketLengthGuard())
+        Fatal("Required packet length checks could not be installed. Please repair or update the client.");
+    if (!InstallSnapshotBoundsGuards())
+        Fatal("Required snapshot bounds could not be installed. Please repair or update the client.");
+#if CODOL_DIAGNOSTICS
+    if (!InstallSnapshotInvalidFrameDiagnostic())
+        Fatal("Local snapshot diagnostic could not be installed.");
+#endif
+    if (!InstallBulkCountGuard())
+        Fatal("Required packet record bounds could not be installed. Please repair or update the client.");
+    if (!InstallChallengeSenderGuard())
+        Fatal("Required challenge sender checks could not be installed. Please repair or update the client.");
+    if (!InstallConnectSenderGuard())
+        Fatal("Required connection sender checks could not be installed. Please repair or update the client.");
+    if (!InstallJoinPartyCountGuard())
+        Fatal("Required party packet bounds could not be installed. Please repair or update the client.");
+    if (!InstallJoinPartyBuilderGuard())
+        Fatal("Required party record bounds could not be installed. Please repair or update the client.");
+    if (!InstallJoinPartyFillGuard())
+        Fatal("Required party fill bounds could not be installed. Please repair or update the client.");
+    if (!InstallMemberJoinSlotGuard())
+        Fatal("Required member packet bounds could not be installed. Please repair or update the client.");
+    if (!InstallServerInfoCapacityGuard())
+        Fatal("Required server slot bounds could not be installed. Please repair or update the client.");
+    if (!InstallSessionCapacityGuard())
+        Fatal("Required session slot bounds could not be installed. Please repair or update the client.");
+    if (!InstallPartySlotLoopGuard())
+        Fatal("Required party slot loop bounds could not be installed. Please repair or update the client.");
+    if (!InstallPartySessionCapacityGuard())
+        Fatal("Required party session bounds could not be installed. Please repair or update the client.");
+    if (!InstallPartySessionRefreshGuard())
+        Fatal("Required party refresh bounds could not be installed. Please repair or update the client.");
     PatchRenderGate();
+    PatchActiveHandFiringMarker();
+    PatchMinigunPairCoexistence();
     PatchDvarRegistrations();
     PatchPlainConfig();
     PatchGpuRating();
@@ -1521,21 +1670,49 @@ static void __cdecl TakeOver(void)
 #if CODOL_DIAGNOSTICS
     InstallParityLogger();
 #endif
-#ifndef K33_NO_CONSOLE
+#if CODOL_DIAGNOSTICS && !defined(K33_NO_CONSOLE)
     InstallConsole();
 #endif
-#if defined(K33_VISION) && !defined(K33_NO_CONSOLE)
+#if CODOL_DIAGNOSTICS && defined(K33_VISION) && !defined(K33_NO_CONSOLE)
     InstallVision();
+#endif
+#if CODOL_KERNEL_NAME_DISPLAY
+    if(!InstallKernelNameDisplay())Fatal("Kernel33 name-display migration checks failed. Restore the qualified client package.");
 #endif
     InstallVoice();
     InstallController();
     InstallDiscord();
+#if CODOL_KERNEL_ROOM_CONTEXT
+    if(!InstallKernelRoomContext())Fatal("Kernel33 native room migration checks failed. Restore the qualified client package.");
+#else
     InstallQuickRoom();
+#endif
     InstallTheatre();
+#if !CODOL_KERNEL_NAME_DISPLAY
     InstallNameDisplay();
-    InstallP2PInproc();   /* before InstallP2PHost: +set k33_p2pHost 1 starts a session at once */
+#endif
+#if CODOL_LOCAL_TESTING
+    InstallP2PInprocDiagnostics(); /* QA commands only; no frame/IAT/VEH activation at startup. */
+#endif
     InstallP2PHost();
-    K33InstallMainTicks(); /* last: chains in front of voice.c's and discord.c's tick hooks */
+#if CODOL_LOCAL_TESTING
+    if (!K33OnMainTick(VoiceCmdFile))
+        Fatal("Local command-file tick could not be installed.");
+#endif
+#if CODOL_DIAGNOSTICS
+    K33OnMainTick(SnapshotGuardReport);
+#endif
+#if CODOL_LOCAL_TESTING
+    InstallK33LogFlush();
+#endif
+    /* Full migration must not enter C1 after silently dropping its ported
+     * Theatre callback or the dispatcher. Defaults retain the legacy path. */
+#if CODOL_KERNEL_NAME_DISPLAY
+    if (!K33HasMainTick(TheatreTick) || !K33InstallMainTicks())
+        Fatal("Kernel33 main-thread migration checks failed. Restore the qualified client package.");
+#else
+    K33InstallMainTicks(); /* last: chains in front of the retained client tick hooks */
+#endif
     Log("entering game at 0x%08X", GAME_ENTRY_VA);
     ((void(*)(void))(DWORD_PTR)GAME_ENTRY_VA)();
     ExitProcess(0); /* the CRT entry ends in exit(); not reached */
@@ -1579,7 +1756,9 @@ static BOOL WINAPI Hook_VirtualProtect(LPVOID a, SIZE_T n, DWORD p, PDWORD old)
 
 static LONG CALLBACK FaultHandler(EXCEPTION_POINTERS *ep)
 {
+#if CODOL_DIAGNOSTICS
     static volatile LONG logged;
+#endif
     EXCEPTION_RECORD *er = ep->ExceptionRecord;
     CONTEXT *c = ep->ContextRecord;
     if (er->ExceptionCode != EXCEPTION_ACCESS_VIOLATION) return EXCEPTION_CONTINUE_SEARCH;
@@ -1610,6 +1789,7 @@ static LONG CALLBACK FaultHandler(EXCEPTION_POINTERS *ep)
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
+#if CODOL_DIAGNOSTICS
     if (InterlockedIncrement(&logged) <= 4) {
         DWORD ret = Readable(sp, 4) ? sp[0] : 0;
         Log("AV %s 0x%08lX at eip=0x%08lX [esp]=0x%08lX (thread %lu)",
@@ -1636,6 +1816,7 @@ static LONG CALLBACK FaultHandler(EXCEPTION_POINTERS *ep)
                     (unsigned long)(a - (DWORD)(DWORD_PTR)mod));
         }
     }
+#endif
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
@@ -1673,11 +1854,13 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved)
         IMAGE_NT_HEADERS *nt = (IMAGE_NT_HEADERS *)(base + ((IMAGE_DOS_HEADER *)base)->e_lfanew);
         g_supportedBuild = base == (BYTE *)0x400000 && nt->FileHeader.TimeDateStamp == BUILD_TIMESTAMP;
 
+#if CODOL_DIAGNOSTICS
         char exe[MAX_PATH];
         GetModuleFileNameA(NULL, exe, MAX_PATH);
         Log("---- attach pid %lu %s (build %08lX%s) [kernel33 diag/import-crash 2]", GetCurrentProcessId(), exe,
             (unsigned long)nt->FileHeader.TimeDateStamp,
             g_supportedBuild ? "" : ", NOT 1.1.1.13: passing through untouched");
+#endif
         if (g_supportedBuild) AddVectoredExceptionHandler(1, FaultHandler);
     }
     return TRUE;

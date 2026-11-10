@@ -321,25 +321,35 @@ static void SdRefused(int pool, int why, DWORD params, int channel)
 __attribute__((used)) int __cdecl SndDiagHasRoom(int ok, DWORD params, int channel, int pool)
 {
     if (!g_sdDvarTried) SdRegisterDvar();
+#if CODOL_DIAGNOSTICS
     LONG before = g_svLimitRefused;
+#endif
     ok = SndVoicesHasRoom(ok & 0xFF, params, channel, pool);
+#if CODOL_DIAGNOSTICS
     if (!ok) SdRefused(pool, g_svLimitRefused != before ? 2 : 0, params, channel);
+#endif
     return ok;
 }
 
+#if CODOL_DIAGNOSTICS
 __attribute__((used)) void __cdecl SndDiagAllocFailed(DWORD params, int channel, int pool)
 {
+#if CODOL_DIAGNOSTICS
     if (channel < 0 || channel >= SDIAG_MAX_CHANNELS) channel = -1;
     int full = channel >= 0 && SdChannelActive(channel) >= SdChannelInt(channel, SDIAG_CH_CAP);
     SdRefused(pool, full ? 0 : 1, params, channel);
+#endif
 }
+#endif
 
 void SNDDIAG_HasRoom2D(void);
 void SNDDIAG_HasRoom3D(void);
 void SNDDIAG_HasRoomStream(void);
+#if CODOL_DIAGNOSTICS
 void SNDDIAG_Alloc2D(void);
 void SNDDIAG_Alloc3D(void);
 void SNDDIAG_AllocStream(void);
+#endif
 
 /* SND_ChannelHasRoom keeps its register interface (edx = channel in, al out; it clobbers ecx/edx itself, and its
  * callers only test al), the allocators theirs (edi / [esp+4] in, eax out). ebx/esi/edi/ebp survive the C calls. */
@@ -372,6 +382,7 @@ __asm__(
     "    addl $20, %esp\n"
     "    addl $8, %esp\n"
     "    ret\n"
+#if CODOL_DIAGNOSTICS
     ".globl _SNDDIAG_Alloc2D\n"
     "_SNDDIAG_Alloc2D:\n"                 /* 0x73E20E: edi = channel, [esp+4] = params */
     "    pushl 4(%esp)\n"
@@ -414,7 +425,9 @@ __asm__(
     "    call _SndDiagAllocFailed\n"
     "    addl $12, %esp\n"
     "    popl %eax\n"
-    "4:  ret\n");
+    "4:  ret\n"
+#endif
+);
 
 static char g_sdOut[32768];
 static int g_sdOutLen;
@@ -580,9 +593,15 @@ static void InstallSoundDiag(void)
         { SDIAG_CAP2D_CALL_VA, SDIAG_HASROOM_VA, SNDDIAG_HasRoom2D, "2d cap" },
         { SDIAG_CAP3D_CALL_VA, SDIAG_HASROOM_VA, SNDDIAG_HasRoom3D, "3d cap" },
         { SDIAG_CAPSTR_CALL_VA, SDIAG_HASROOM_VA, SNDDIAG_HasRoomStream, "stream cap" },
+#if CODOL_DIAGNOSTICS
         { SDIAG_AL2D_CALL_VA, SDIAG_ALLOC2D_VA, SNDDIAG_Alloc2D, "2d alloc" },
         { SDIAG_AL3D_CALL_VA, SDIAG_ALLOC3D_VA, SNDDIAG_Alloc3D, "3d alloc" },
         { SDIAG_ALSTR_CALL_VA, SDIAG_ALLOCSTREAM_VA, SNDDIAG_AllocStream, "stream alloc" },
+#else
+        { SDIAG_AL2D_CALL_VA, SDIAG_ALLOC2D_VA, 0, "2d alloc" },
+        { SDIAG_AL3D_CALL_VA, SDIAG_ALLOC3D_VA, 0, "3d alloc" },
+        { SDIAG_ALSTR_CALL_VA, SDIAG_ALLOCSTREAM_VA, 0, "stream alloc" },
+#endif
     };
     static const BYTE kRegisterInt[] = { 0x55, 0x8B, 0xEC, 0x83, 0xE4, 0xF8, 0x64, 0xA1, 0x2C, 0x00, 0x00, 0x00 };
 
@@ -615,7 +634,9 @@ static void InstallSoundDiag(void)
     g_sdDvarOk = SdReadable((void *)(DWORD_PTR)SDIAG_DVAR_REG_VA, sizeof(kRegisterInt)) &&
                  !memcmp((void *)(DWORD_PTR)SDIAG_DVAR_REG_VA, kRegisterInt, sizeof(kRegisterInt)) &&
                  SdReadable((void *)(DWORD_PTR)SDIAG_DVAR_COUNT_VA, 4);
+#if CODOL_DIAGNOSTICS
     InitializeCriticalSection(&g_sdLock);
+#endif
     g_sdMainThread = GetCurrentThreadId();
 #if CODOL_DIAGNOSTICS
     HANDLE t = CreateThread(NULL, 0, SdThread, NULL, 0, NULL);
@@ -623,7 +644,11 @@ static void InstallSoundDiag(void)
     SetThreadPriority(t, THREAD_PRIORITY_BELOW_NORMAL);
     CloseHandle(t);
 #endif
-    for (unsigned i = 0; i < sizeof(kSites) / sizeof(kSites[0]); i++) RedirectCall(kSites[i].site, (void *)kSites[i].stub);
+    for (unsigned i = 0; i < sizeof(kSites) / sizeof(kSites[0]); i++)
+#if !CODOL_DIAGNOSTICS
+        if (kSites[i].stub)
+#endif
+            RedirectCall(kSites[i].site, (void *)kSites[i].stub);
     Log("snddiag: 6 hooks installed (cap checks 0x%08X/0x%08X/0x%08X, allocators 0x%08X/0x%08X/0x%08X), k33_snddiag %d at startup%s",
         SDIAG_CAP2D_CALL_VA, SDIAG_CAP3D_CALL_VA, SDIAG_CAPSTR_CALL_VA, SDIAG_AL2D_CALL_VA, SDIAG_AL3D_CALL_VA,
         SDIAG_ALSTR_CALL_VA, g_sdStartLevel, g_sdDvarOk ? "" : ", no dvar (Dvar_RegisterInt bytes differ)");

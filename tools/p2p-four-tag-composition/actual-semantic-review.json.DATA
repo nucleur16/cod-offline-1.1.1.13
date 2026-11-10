@@ -1,0 +1,67 @@
+{
+  "format": 1,
+  "verdict": "ACCEPT_FOUR_P2P_CLASS_TAG_DATA_SEMANTICS",
+  "compiled_manifest_sha256": "be046632e72a42b6f9c6645f085b24121523eb232b47ce54287c7607ec754dc7",
+  "owner_nonce": "8c3211bea4d4dc9345eb1ce1df0a55b7ffb4f0561c986e193d4c8ccf7f8afd06",
+  "source_body_cases_pass": 19,
+  "actual_ABC_checked": true,
+  "non_target_tags_exact": true,
+  "native_handoff_contract_current": true,
+  "actual_actions_authorized": false,
+  "class_body_counts": [
+    {
+      "class_name": "codo.k33.LocalCreateRoomOption",
+      "methods": 8
+    },
+    {
+      "class_name": "codo.k33.LocalMatchControls",
+      "methods": 16
+    },
+    {
+      "class_name": "codo.views.InRoomBaseView",
+      "methods": 35
+    },
+    {
+      "class_name": "codo.controllers.LobbyController",
+      "methods": 91
+    }
+  ],
+  "total_movie_tags": 6867,
+  "non_target_tags_preserved": 6863,
+  "unapproved_existing_method_or_trait_changes": 0,
+  "origin": {
+    "reused_R4_Java_controls": 2,
+    "finite_original_InRoom_ABC_updates": 1,
+    "current_R5_Java_Lobby_compilations": 1,
+    "current_R5_combined_exports": 1
+  },
+  "checks": [
+    "Actual four tags/QNames/lazy flags, full constant-resolved method/namespace/trait/signature/body inventories verified; no missing or unapproved old methods/traits",
+    "All6863 non-target complete tag bytes, SymbolClass linkage, order/count and original geometry/fps remain exact; only approved four class tags change",
+    "All19 named behavior cases passed using manifest-selected actual decompiled methods, including historical prior-Host callback counterexample; this is Source-body execution, not AS VM",
+    "Actual ABC resolves codo.common.CFunctionContainerCommon/public Dvar_GetString with original generation/room and initial_handoff path plus retained legacy-ready path; two still-valid ABC foreign-gate/namespace mutants refuse",
+    "Finite InRoom preserves33 raw old bodies/old signatures/private namespace and exact protected tail; three original branches relocate+19, maxstack4, private Bool-to-void callback verified",
+    "Current Native initial-release source pins remain exact; current2 Java terminals and prior2 terminal/source/tag qualification are explicit"
+  ],
+  "evidence": {
+    "actual_inspection": {
+      "path": "E:\\codol-task-evidence\\r46-production-p2p-AS3-owner-independent-qa-r1-20261110\\actual-compiled-inspection.json",
+      "sha256": "dc695ce6a485f3b16c6e5f69be309ee78f4b0a2d6b953a5f781bb00ef16c7af6"
+    },
+    "actual_body_cases": {
+      "path": "E:\\codol-task-evidence\\r46-production-p2p-AS3-owner-independent-qa-r1-20261110\\R5-actual-runs.json",
+      "sha256": "ea476c017d0d736a068cb03d5b953bc0dedd4fc32e819cb51e0f33f69c2d83f6"
+    },
+    "ABC_negative": {
+      "path": "E:\\codol-task-evidence\\r46-production-p2p-AS3-owner-independent-qa-r1-20261110\\actual-critical-ABC-controls.json",
+      "sha256": "6d141d7dc2d75002a1a3d8affb85d8504a2d1c2acf7455da586c413ba8fd5e9a"
+    },
+    "finite_peer_sha256": "c092f3dde1c99a9f426abb1c68616de8b06a7f857042c0937eb2e4b5f6050b51",
+    "reuse_peer_sha256": "e8f490592c7c24d21057763c3acd9276bd462df95ffd7a9df74d80624e38548e"
+  },
+  "limits": [
+    "Mixed actual tag DATA semantics acceptance only; reviewer launched no Java, original client, native game/server, GUI or network actor and changed no WT/installed asset",
+    "No AVM/render/native socket/DTLS/gameplay/reward or release approval; real candidate FF asset verification remains the separately Root-admitted parts step"
+  ],
+  "runtime_authority": false
+}

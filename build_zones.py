@@ -118,17 +118,48 @@ def verify(out, zone, m, roots, exe, tmp, cli=None):
 
 def record_build(name, out):
     """zone_source/<name>.csv: ">build-md5" = this build's md5, the reviewed output of the sources as they are."""
+    import csv
+    import io
     path = os.path.join(HERE, "zone_source", name + ".csv")
     with open(path, "rb") as f:
         data = f.read()
     nl = b"\r\n" if b"\r\n" in data else b"\n"
+    remainder = data.replace(b"\r\n", b"")
+    if b"\r" in remainder or (nl == b"\r\n" and b"\n" in remainder):
+        raise ValueError("%s: mixed manifest line endings need review" % name)
     line = b">build-md5," + md5(out).encode()
     lines = data.split(nl)
-    at = [i for i, l in enumerate(lines) if l.startswith(b">build-md5,")]
+    body = [(i, l.decode("utf-8")) for i, l in enumerate(lines)
+            if not l.startswith(b"//") and l.strip()]
+    reader = csv.reader(io.StringIO("\n".join(l for _, l in body), newline=""))
+    settings = {">build-md5": [], ">origin-md5": [], ">origin": []}
+    previous = 0
+    for row in reader:
+        first, last = previous, reader.line_num - 1
+        previous = reader.line_num
+        if row and row[0] in settings:
+            if first != last or last >= len(body):
+                raise ValueError("%s: multiline metadata setting needs review" % name)
+            settings[row[0]].append((body[last][0], row[1:]))
+    at = settings[">build-md5"]
+    if len(at) > 1:
+        raise ValueError("%s: duplicate build-md5 settings need review" % name)
     if at:
-        lines[at[0]] = line
+        lines[at[0][0]] = line
     else:
-        lines.insert([i for i, l in enumerate(lines) if l.startswith(b">origin-md5,")][0] + 1, line)
+        anchors = settings[">origin-md5"]
+        if len(anchors) > 1:
+            raise ValueError("%s: duplicate origin-md5 settings need review" % name)
+        if anchors:
+            values = anchors[0][1]
+            if len(values) != 1 or len(values[0]) != 32 or any(c not in "0123456789abcdefABCDEF" for c in values[0]):
+                raise ValueError("%s: origin-md5 must be one 32-digit hexadecimal hash" % name)
+        if not anchors:
+            origins = settings[">origin"]
+            if len(origins) != 1 or origins[0][1] != ["new"]:
+                raise ValueError("%s: missing origin-md5; only an authored origin=new can add a build record" % name)
+            anchors = origins
+        lines.insert(anchors[0][0] + 1, line)
     with open(path, "wb") as f:
         f.write(nl.join(lines))
 
@@ -159,6 +190,7 @@ def run_decompile(names, exe, roots, chinese, ffdec, tmp):
 def copy_files(out_root, game, check, maps):
     """files/ -> the output as they are, except the per-map ones (shipping.FILES), which keep only the maps `maps`
     ships. --verify compares the unfiltered file with the install."""
+    failed = 0
     fdir = os.path.join(HERE, "files")
     for root, _d, files in os.walk(fdir):
         for fn in files:
@@ -174,10 +206,13 @@ def copy_files(out_root, game, check, maps):
             line = "%s (%s)" % (rel, "copied" if not dropped else "without " + ", ".join(sorted(dropped)))
             if check:
                 ship = os.path.join(game, rel)
+                identical = os.path.isfile(ship) and md5(ship) == md5(src)
+                failed += not identical
                 line += ": " + ("IDENTICAL (md5 %s)%s" % (md5(src), " before the filter" if dropped else "")
-                                if os.path.isfile(ship) and md5(ship) == md5(src)
+                                if identical
                                 else "differs from / missing in the install")
             print(line)
+    return failed
 
 
 def build_zones(names, out_root, a, exe, src, maps, roots, ffdec, tmp):
@@ -349,7 +384,7 @@ def main(argv=None):
         for pack in pack_list:
             failed += build_one_pack(pack, a, exe, src, maps, ffdec)
         if not a.zones:
-            copy_files(a.out, a.game, a.verify, maps)
+            failed += copy_files(a.out, a.game, a.verify, maps)
         names = names + pack_list
     print("\n%d zones, %d failed" % (len(names), failed))
     return 1 if failed else 0

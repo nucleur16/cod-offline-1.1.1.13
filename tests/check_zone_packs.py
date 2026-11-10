@@ -3,7 +3,8 @@ r"""check_zone_packs.py -- prove the consolidated patch zones (zone_packs/) load
 
     python tests/check_zone_packs.py                  shipping build: output\ against the source zones
     python tests/check_zone_packs.py --maps all       all-maps build: output_dev\
-    python tests/check_zone_packs.py --old DIR        compare with these old .ff files instead of a fresh --parts build
+    python tests/check_zone_packs.py --old DIR --old-party-locale-profile pre-migration
+                                                      compare with pre-migration .ff files instead of fresh parts
                                                       (e.g. an install's client_shipRetail\patch)
 
 Needs the game (C1.exe for the zone key, client_shipRetail\chinese for the stock movies), so it is not part of CI;
@@ -12,9 +13,10 @@ tests/test_zone_packs.py is the portable half. Run build_zones.py first: this re
 For each language Kernel33 can select (en, zh, native: patch_locale_policy.h) it loads the old and the new patch
 folder the way C1 does -- the code_pre_gfx list's patch zones, then the code_post_gfx list's, then the UI list's,
 each in Kernel33's alphabetical order, the first asset linked under a (type, name) kept -- and requires:
-  1. the same assets reach the game, byte for byte, in the same list;
+  1. the same assets reach the game, byte for byte, in the same list, except the
+     twelve explicitly reviewed Chinese party/loading values in party_locale_contract.py;
   2. no new zone of a list carries an asset another zone of that list (or itself) also carries;
-  3. every asset of every old zone is in exactly one new zone, unless no language ever used it (an earlier zone
+  3. every asset of every old zone is in exactly one eligible new zone per language that used it, unless no language ever used it (an earlier zone
      carried the same name: reported as shadowed);
 plus the two features this consolidation must keep: the endless difficulty button in codo.gfx's LevelChooser (Cam's
 #18) and comaplist column 23 (endless Zombies) on zm_asylum_sh and zm_prototype_sh.
@@ -32,6 +34,7 @@ import tempfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 from zonekit import build, codecs, container, gfx, packs, shipping, stock, zoneimage  # noqa: E402
+from party_locale_contract import expected_effective  # noqa: E402
 
 DEFAULT_GAME = r"D:\CoD\CODOL Builds\Call of Duty Online 1.1.1.13"
 PHASES = ("pre_gfx", "post_gfx", "ui")          # the order C1 loads the three lists in
@@ -86,60 +89,104 @@ def effective(order, assets, first_wins=True):
     return eff
 
 
+def is_patch_install(value):
+    """One exact install identity; manifests may use either separator."""
+    return isinstance(value, str) and value.replace("\\", "/") == "client_shipRetail/patch"
+
+
+def script_string_identity(image):
+    """Keep standalone xanim/script-string bindings, not just asset blobs."""
+    return (image.string_count_field, image.strings_ptr_field,
+            tuple(image.string_ptrs), tuple(image.strings))
+
+
+def ownership_conflicts(md, where_by_language, used_by_language):
+    """One owner in each effective language; mutually exclusive packs may share bytes."""
+    return [(lang, where_by_language[lang].get(md, set())) for lang in LANGS
+            if md in used_by_language[lang]
+            and len(where_by_language[lang].get(md, set())) != 1]
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--maps", default="ship", choices=shipping.MODES)
     ap.add_argument("--game", default=os.environ.get("CODOL_GAME", DEFAULT_GAME))
     ap.add_argument("--new", help="the built patch folder (default output[_dev]\\client_shipRetail\\patch)")
     ap.add_argument("--old", help="old .ff files to compare with (default: the source zones built as before)")
+    ap.add_argument("--old-party-locale-profile", choices=('source-parts', 'pre-migration'),
+                    help="required with --old: exact twelve-key legacy winner baseline")
     a = ap.parse_args(argv)
+    if bool(a.old) != bool(a.old_party_locale_profile):
+        ap.error('--old and --old-party-locale-profile must be supplied together')
     exe = os.path.join(a.game, "C1.exe")
     new_dir = a.new or os.path.join(ROOT, "output" if a.maps == "ship" else "output_dev", "client_shipRetail", "patch")
     part_of = packs.part_index(ROOT)
     pack_names = packs.names(ROOT)
     known = sorted(f[:-4] for f in os.listdir(os.path.join(ROOT, "zone_source")) if f.endswith(".csv"))
-    patch_zones = [z for z in known if build.load(ROOT, z).get("install") == r"client_shipRetail\patch"]
+    patch_zones = [z for z in known if is_patch_install(build.load(ROOT, z).get("install"))]
     standalone = [z for z in patch_zones if z not in part_of]
     problems = []
 
     # --- the old patch folder: every patch-folder source zone as its own zone
     old = {}
+    old_script_strings = {}
     if a.old:
         for z in patch_zones:
             p = os.path.join(a.old, z + ".ff")
             if not os.path.isfile(p):
                 problems.append("old folder has no %s.ff" % z)
                 continue
-            old[z] = named(read_zone(p, exe))
+            image = read_zone(p, exe)
+            old[z] = named(image)
+            old_script_strings[z] = script_string_identity(image)
     else:
         maps = shipping.ShippingMaps.load(ROOT, a.maps)
         src = stock.ZoneSource(exe, [os.path.join(a.game, "client_shipRetail", "chinese")])
         for z in patch_zones:
             m = build.load(ROOT, z)
             img, _plan = build.assemble_filtered(ROOT, z, m, src, maps=maps, log=lambda *x: None)
-            old[z] = named(zoneimage.parse(img))
+            image = zoneimage.parse(img)
+            old[z] = named(image)
+            old_script_strings[z] = script_string_identity(image)
     # --- the new patch folder: the packs and the zones that still ship on their own
     new = {}
+    new_script_strings = {}
     for z in pack_names + standalone:
         p = os.path.join(new_dir, z + ".ff")
         if not os.path.isfile(p):
             problems.append("%s has no %s.ff (run build_zones.py%s)" % (new_dir, z, "" if a.maps == "ship" else
                                                                         " --maps all"))
             continue
-        new[z] = named(read_zone(p, exe))
+        image = read_zone(p, exe)
+        new[z] = named(image)
+        new_script_strings[z] = script_string_identity(image)
     if problems:
         print("\n".join(problems))
         return 1
+    for z in standalone:
+        if old_script_strings[z] != new_script_strings[z]:
+            problems.append("%s: standalone script strings/header/pointers differ" % z)
+        elif old_script_strings[z][0]:
+            print("%s: %d standalone script strings match" % (z, old_script_strings[z][0]))
     markers = {h(codecs.encode_rawfile(p, b"", {})) for p in pack_names}
     unnamed = sum(1 for zs in (old, new) for items in zs.values() for _t, n, _b in items if n is None)
     print("rawfiles, localize entries and stringtables are keyed by name, the other %d assets by content" % unnamed)
 
-    # 1 + 2: per language, the same winners and no duplicates in a list
+    # 1 + 2: per language, exact winners (including the bounded reviewed translation) and no duplicates.
     used_somewhere = set()
+    used_by_language = {}
     for lang in LANGS:
         o_order, n_order = load_order(list(old), lang), load_order(list(new), lang)
         o_eff, n_eff = effective(o_order, old), effective(n_order, new)
-        used_somewhere |= {v[2] for v in o_eff.values()}
+        try:
+            o_eff = expected_effective(o_eff, lang, codecs.encode_localize,
+                                      a.old_party_locale_profile or 'source-parts')
+        except ValueError as error:
+            problems.append(str(error))
+        if lang in ('zh', 'native'):
+            print('%s: expected twelve reviewed Chinese party/loading values; all other identities unchanged' % lang)
+        used_by_language[lang] = {v[2] for v in o_eff.values()}
+        used_somewhere |= used_by_language[lang]
         dup = collections.Counter()
         for ph, z in n_order:
             for tid, name, blob in new[z]:
@@ -161,11 +208,16 @@ def main(argv=None):
         for k in dups[:10]:
             problems.append("%s: %s list carries %s %s more than once" % (lang, k[0], zoneimage.type_name(k[1]), k[2]))
 
-    # 3: every old asset in exactly one new zone (or shadowed everywhere)
+    # 3: one eligible new owner per effective language (or shadowed everywhere)
     where = collections.defaultdict(set)
     for z, items in new.items():
         for _tid, _n, blob in items:
             where[h(blob)].add(z)
+    where_by_language = {lang: collections.defaultdict(set) for lang in LANGS}
+    for lang in LANGS:
+        for _phase, zone in load_order(list(new), lang):
+            for _tid, _name, blob in new[zone]:
+                where_by_language[lang][h(blob)].add(zone)
     counts = collections.Counter()
     shadowed = []
     for z, items in old.items():
@@ -178,10 +230,10 @@ def main(argv=None):
                     problems.append("%s %s of %s was never used, yet new %s carries it" % (
                         zoneimage.type_name(tid), name, z, ", ".join(sorted(places))))
                 continue
-            if len(places) != 1:
-                problems.append("%s %s of %s is in %d new zones (%s)" % (zoneimage.type_name(tid), name, z,
-                                                                       len(places), ", ".join(sorted(places))))
-            counts[(z, next(iter(places)) if places else "-")] += 1
+            for lang, eligible in ownership_conflicts(md, where_by_language, used_by_language):
+                problems.append("%s: %s %s of %s is in %d eligible new zones (%s)" % (
+                    lang, zoneimage.type_name(tid), name, z, len(eligible), ", ".join(sorted(eligible))))
+            counts[(z, ", ".join(sorted(places)) if places else "-")] += 1
     print("\nold zone -> new zone (assets):")
     for (z, n), c in sorted(counts.items()):
         print("  %-34s -> %-34s %5d" % (z, n, c))

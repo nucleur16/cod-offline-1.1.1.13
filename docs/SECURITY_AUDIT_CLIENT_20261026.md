@@ -151,44 +151,62 @@ file. All `_snprintf` in this file use `sizeof(dst)` with explicit NUL. (The
 ## Game-image (native) review
 
 ### 12. Reliable server commands — **bound present (VERIFIED(dis))**
-`CL_ParseServerMessage`'s reliable-command handler at **0x00497360** reads the
-command sequence with `MSG_ReadLong` (0x0059F3A0) and enforces the IW-family
-"server command overflow" window before executing: at **0x00497527–0x00497539**
-it computes `lea -0x100(lastExecuted)` and `cmp` against the new sequence,
-dropping the message (`CL_ParseServerMessage: ignoring illegible message`,
-string 0xC481D8) when the gap exceeds **0x100 = MAX_RELIABLE_COMMANDS (256)**.
-The classic "Server command overflow" guard is intact.
+**October 31 correction against the exact C1 image** (SHA256
+`d8211b2bb030a055cac9cd641bf518968bff3fd58ab51c6e950465124734ba60`):
+`0x00497360` is a packet path that dispatches `0xffffffff` connectionless
+packets to `0x00497080`; its comparison at `0x00497527–0x00497539` is not the
+reliable-command ring guard. The reliable-command handler starts at
+**0x00487730**. It compares incoming sequence `edi` with
+`[client+0x4014c]-0x100` at `0x00487743–0x00487751`, taking the drop/error
+path when the sequence is too old, and rejects sequence greater than
+`[client+0x4014c]` at `0x004877a3–0x004877b7`. The ring slot is selected by
+`sequence & 0xff` at `0x004877ba–0x004877d5`. This proves the 256-slot index
+and sequence checks at that entry; it does not prove every downstream command
+parser is memory safe. The previous address and direction-of-bound description
+were inaccurate.
 
 ### 13. MSG primitives — **bound present (VERIFIED(dis))**
-`MSG_ReadByte` at **0x0049D934** checks the read cursor against the message size
-(`cmp 0x10(%esi),%eax; jge` plus a `js` sign check) before fetching
-`(buf+readcount)`, returning `-1` past the end. Message-level reads are bounded
-against the declared packet length, so a short/truncated packet cannot walk off
-the buffer. (This is the standard IW `MSG_ReadByte`/`ReadBits` shape.)
+**October 31 exact-image correction:** `0x0049D934` is an inlined byte read
+inside the snapshot region, not the `MSG_ReadByte` function. It checks
+`readcount` against the declared message size and rejects a negative cursor
+before loading one byte. The standalone byte reader at **0x005A00F0** performs
+the equivalent checks for the main and split buffers and returns `-1` at the
+end of the message. `MSG_ReadLong` at **0x0059F3A0** similarly checks four
+bytes before reading. These are bounded primitives for a valid `msg_t`; they
+do not prove every parser uses them correctly or that individual decoded
+indices, lengths, and destinations are bounded.
 
 ### 14. `CL_ParseGamestate` configstring index/length — **OPAQUE / UNVERIFIED**
 The strings `CL_ParseGamestate: begin parse of gamestate` (0xC49358),
 `bad command byte %d` (0xC49388) and `bad clientNum %i` (0xC493B0) are present
 and correctly located, **but have no plaintext `push imm32` / `mov reg,imm32`
-xref anywhere in the on-disk code section.** Combined with VMProtect being
-present (`.vmp0`), the most likely explanation is that `CL_ParseGamestate` (and
-plausibly the configstring writer) is among the **virtualized** functions, so
-its configstring index bound (`index < MAX_CONFIGSTRINGS`) and configstring
+xref anywhere in the on-disk code section.** The exact image contains a
+`.tvm0` section and protected call targets, but absent plaintext xrefs do not
+prove which routine is protected. Its configstring index bound
+(`index < MAX_CONFIGSTRINGS`) and configstring
 length bound (into `gameState.stringData`) **could not be confirmed statically**
 with the available tooling. This is historically one of the two worst IW4 client
 RCEs (OOB write of `gameState.stringOffsets[index]` / stringData overflow). It
 must be treated as **unverified** and is the top follow-up item (see below).
 
-### 15. `CL_ParseSnapshot` entity-number / areamask — **REASONED**
+### 15. `CL_ParseSnapshot` entity-number / areamask — **PARTLY OBSERVED / UNVERIFIED**
+**October 31 update:** The exact-image follow-up in
+`P2P_PUBLIC_RCE_AUDIT_20261028.md` confirmed a 1025th full-snapshot entity
+write beyond the static array and three field-run bounds defects. Local
+`snapshot_guard.c` now checks these four sites; its private-page x86 fixture
+passes, but no updated DLL or hostile-packet C1 run has been verified.
+The historical assessment below remains the October 26 baseline. Other
+snapshot fields and areamask handling are still open.
+
 The snapshot region (~0x0049D800, referencing the
 `non-SNAPFLAG_BASELINE … Discarding packet` string 0xC48F70 at 0x0049D99D and
-`CG_ReadNextSnapshot: way out of range` 0xC450BC at cgame 0x0046D9AE) uses the
-bounded MSG readers from row 13, so the *message cursor* cannot overrun. The
-individual field bounds — delta-entity / packet-entity number `< MAX_GENTITIES`
-(0x800) and areamask length `<= sizeof(areamask)` — were **not** proven
-instruction-by-instruction in this pass; the per-entity delta code path is large
-and partly threads into high (0x83xxxxx) VMProtect trampolines. Treat as
-reasoned-safe-at-the-cursor-level, field bounds unconfirmed.
+`CG_ReadNextSnapshot: way out of range` 0xC450BC at cgame 0x0046D9AE) contains
+at least one bounded inlined byte read (row 13). The individual field bounds —
+delta-entity / packet-entity number `< MAX_GENTITIES` (0x800) and areamask
+length `<= sizeof(areamask)` — and the other cursor paths were **not** proven
+instruction-by-instruction in this pass. The per-entity delta code path is
+large and partly threads into high protected call targets. Treat snapshot
+parsing as unverified beyond the one observed read.
 
 ### 16. Other connectionless packets — **REASONED / native**
 `CL_ConnectionlessPacket` (the function containing the `"v"` handler at

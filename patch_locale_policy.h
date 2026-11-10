@@ -49,7 +49,11 @@ static int CodolPatchZoneRetired(const char *name)
  * patch folder, so an install that kept the old files never loads an asset twice (two zones with one
  * stringtable/rawfile replace each other), and an install that has only the old names (codol-classic-zz) still
  * loads them. tests/test_zone_packs.py checks this table against zone_packs/. usermaps_patch's strings went to
- * codol_chinese_locale and its tables to codol_common: it is replaced once codol_common is there. */
+ * codol_chinese_locale and its tables to codol_common: it is replaced once codol_common is there.
+ * Likewise the old party/loading files retain only their non-localize assets in codol_common; their English
+ * text moves to codol_english_locale and Chinese text lives in codol_chinese_locale. Keep both old-name mappings
+ * to codol_common: complete new packages must skip retained old 000_* English strings before either locale links.
+ * Old-only folders retain the legacy fallback; they are not a qualified bilingual r46 package. */
 static const char *const kCodolPatchZoneMerged[][2]={
  {"000_codol_party_modes","codol_common"},
  {"codol_loading_mode_names","codol_common"},

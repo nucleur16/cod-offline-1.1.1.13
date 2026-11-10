@@ -298,10 +298,10 @@ static int CtlKeyBinding(int key) { return *(volatile const int *)(DWORD_PTR)(CT
 static char g_dbgRing[32][160];
 static int g_dbgHead, g_dbgCount;
 
+#if CODOL_DIAGNOSTICS
 static void CtlDebugf(int level, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 static void CtlDebugf(int level, const char *fmt, ...)
 {
-#if CODOL_DIAGNOSTICS
     if (level > 0 && C1DvarInt(g_gpDebug, 0) < level) return;
     char line[160];
     va_list ap;
@@ -315,10 +315,11 @@ static void CtlDebugf(int level, const char *fmt, ...)
         g_dbgCount++;
     }
     LeaveCriticalSection(&g_ctlLock);
-#else
-    (void)level; (void)fmt;
-#endif
 }
+#else
+/* Erase diagnostic arguments too: some read volatile native key bindings. */
+#define CtlDebugf(...) ((void)0)
+#endif
 
 static void CtlDrainDebug(void)
 {

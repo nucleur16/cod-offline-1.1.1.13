@@ -323,7 +323,7 @@ import flash.utils.getTimer;
       {
          if(cEvt.myPara.type == SanitizedType.ROOM_NAME && !cEvt.myPara.sanitized)
          {
-            if(this.getSyncDP(SyncDataID.IS_IN_ROOM))
+            if(super.getSyncDP(SyncDataID.IS_IN_ROOM))
             {
                return;
             }
@@ -333,7 +333,7 @@ import flash.utils.getTimer;
       
       private function getDefaultRoomName() : String
       {
-         return ScaleformUtil.isScaleform ? this.getSyncDP(SyncDataID.REAL_PLAYER_NAME) : LocalizationRoom.ROOM_DEFAULT_NAME;
+         return ScaleformUtil.isScaleform ? super.getSyncDP(SyncDataID.REAL_PLAYER_NAME) : LocalizationRoom.ROOM_DEFAULT_NAME;
       }
       
       private function setMatchTypeByRoom() : void
@@ -505,7 +505,7 @@ import flash.utils.getTimer;
          return MatchService.getInstance().isInRoom;
       }
       
-      private function listSameTypeMap(mapID:String) : Array
+      private function listSameTypeMap(mapID:String, modeID:String = null) : Array
       {
          var matchType:String = null;
          var i:int = 0;
@@ -526,7 +526,7 @@ import flash.utils.getTimer;
          {
             coopType = CoopMapType.GetCoopSubType(mapID);
          }
-         var maps:Array = this.listMap(matchType,false,coopType);
+         var maps:Array = this.listMap(matchType,false,coopType,false,modeID);
          if(matchType == MatchType.COOP)
          {
             i = maps.length - 1;
@@ -542,7 +542,12 @@ import flash.utils.getTimer;
          return maps;
       }
       
-      private function listMap(matchType:String, insertAny:Boolean = false, coop:uint = 0, coopList:Boolean = false) : Array
+      private function isSupportedMapMode(mapID:String, modeID:String) : Boolean
+      {
+         return mapID != "mp_sd_jardin" || modeID == "sd";
+      }
+
+      private function listMap(matchType:String, insertAny:Boolean = false, coop:uint = 0, coopList:Boolean = false, modeID:String = null) : Array
       {
          var i:int = 0;
          var maps:Array = MatchService.getInstance().listMap(matchType);
@@ -594,6 +599,18 @@ import flash.utils.getTimer;
                }
             }
          }
+         if(matchType == MatchType.PVP && modeID != null)
+         {
+            i = maps.length - 1;
+            while(i >= 0)
+            {
+               if(!this.isSupportedMapMode(maps[i].id,modeID))
+               {
+                  maps.splice(i,1);
+               }
+               i--;
+            }
+         }
          if(insertAny)
          {
             maps.unshift(new MapObj({"name":LocalizationRoom.ANY}));
@@ -601,13 +618,18 @@ import flash.utils.getTimer;
          return maps;
       }
       
-      private function listMode(matchType:String, isCombat:Boolean = false, insertAny:Boolean = false) : Array
+      private function listMode(matchType:String, isCombat:Boolean = false, insertAny:Boolean = false, mapID:String = null) : Array
       {
          var modes:Array = MatchService.getInstance().listMatchMode(matchType);
          var newModes:Array = [];
          var i:int = 0;
          while(i < modes.length)
          {
+            if(!this.isSupportedMapMode(mapID,modes[i].id))
+            {
+               i++;
+               continue;
+            }
             if(isCombat)
             {
                if(modes[i].id == "combat")
@@ -693,7 +715,7 @@ import flash.utils.getTimer;
          var visiblePlaylists:Array = [];
          for each(var choice in choices)
          {
-            if(choice != null && (choice.type == PlayListType.COMBAT && (choice.id == 0 || choice.id == 2) && choice.combatTrainingType == CombatType.CT))
+            if(choice != null && (choice.type == PlayListType.COMBAT && choice.combatTrainingType == CombatType.CT))
             {
                visiblePlaylists.push(choice);
             }
@@ -887,9 +909,9 @@ import flash.utils.getTimer;
       private function getXPLeagueFactor(ctType:int, league:int, playListObj:PlayListObj = null) : Number
       {
          var factor:Number = NaN;
-         if(playListObj != null && playListObj.type == PlayListType.COMBAT && (playListObj.name == "Boot Camp" || playListObj.name == "Bot Training"))
+         if(playListObj != null && playListObj.type == PlayListType.COMBAT)
          {
-            factor = playListObj.name == "Boot Camp" ? 1 : 0.5;
+            factor = 1;
          }
          else if(playListObj != null && playListObj.type == PlayListType.RANKED)
          {
@@ -910,9 +932,9 @@ import flash.utils.getTimer;
       private function getGPLeagueFactor(ctType:int, league:int, playListObj:PlayListObj = null) : Number
       {
          var factor:Number = NaN;
-         if(playListObj != null && playListObj.type == PlayListType.COMBAT && (playListObj.name == "Boot Camp" || playListObj.name == "Bot Training"))
+         if(playListObj != null && playListObj.type == PlayListType.COMBAT)
          {
-            factor = playListObj.name == "Boot Camp" ? 1 : 0.5;
+            factor = 1;
          }
          else if(playListObj != null && playListObj.type == PlayListType.RANKED)
          {
@@ -947,7 +969,7 @@ import flash.utils.getTimer;
       
       private function getDelayToShowButton() : Number
       {
-         return !!this.getSyncDP(SyncDataID.IS_SHIP_BUILD) ? MatchService.getInstance().delayToShowButton : 5000;
+         return !!super.getSyncDP(SyncDataID.IS_SHIP_BUILD) ? MatchService.getInstance().delayToShowButton : 5000;
       }
       
       private function onQuickMatchDebug(cRes:Object) : void
@@ -991,7 +1013,7 @@ import flash.utils.getTimer;
             this._currentQuickMatchFilter["_localQuickSharedMap"] = null;
             this._currentQuickMatchFilter["_localQuickSharedMode"] = null;
          }
-         var quickOldRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var quickOldRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          if(quickOldRoom != null)
          {
             quickOldRoom["_localQuickSharedLineage"] = false;
@@ -1035,7 +1057,7 @@ import flash.utils.getTimer;
             this._currentQuickMatchFilter["_localQuickSharedMap"] = null;
             this._currentQuickMatchFilter["_localQuickSharedMode"] = null;
          }
-         var quickOldRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var quickOldRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          if(quickOldRoom != null)
          {
             quickOldRoom["_localQuickSharedLineage"] = false;
@@ -1062,7 +1084,7 @@ import flash.utils.getTimer;
       private function bind_rankedMatchInProgressInRoom(cRes:Object) : void
       {
          var queuedHumanIDs:Array = [];
-         var queuedRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var queuedRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          var queuedEntry:Object = this._currentQuickMatchFilter != null ? this.getPlayListObj(this._currentQuickMatchFilter.playListID) : null;
          var queuedRequired:int = queuedEntry != null && queuedEntry.name == "Quick Match" && queuedEntry.type == 1 && queuedEntry.minPartySize == 1 && queuedEntry.maxPartySize == 6 && queuedEntry.maxRoomSize == 12 && queuedEntry.minRoomSize == 1 ? 1 : 2;
          if(queuedRoom != null && queuedRoom.forces != null && queuedRoom.forces.force0 != null && queuedRoom.forces.force1 != null)
@@ -1112,13 +1134,13 @@ import flash.utils.getTimer;
          var durableReturn:String = CFunctionContainerCommon.Dvar_GetString("codol_quick_return");
          var durablePlaylist:PlayListObj = durableSaved.length == 5 ? this.getPlayListObj(int(durableSaved[3])) : null;
          var durableOwn:Boolean = false;
-         var durableRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var durableRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          if(durableRoom != null && durableRoom.forces != null)
          {
             var durableMembers:Array = durableRoom.forces.force0.concat(durableRoom.forces.force1);
             for each(var durableMember in durableMembers)
             {
-               if(Boolean(this.getSyncDP(SyncDataID.IS_ME,[durableMember])))
+               if(Boolean(super.getSyncDP(SyncDataID.IS_ME,[durableMember])))
                {
                   durableOwn = true;
                }
@@ -1166,7 +1188,7 @@ import flash.utils.getTimer;
                this.enableLeaveRoom(true);
             }
          }
-         var quickRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var quickRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          var quickFilter:Object = this._currentQuickMatchFilter;
          var quickEntry:PlayListObj = quickFilter != null ? this.getPlayListObj(quickFilter.playListID) : null;
          var quickOwnMember:Boolean = false;
@@ -1175,7 +1197,7 @@ import flash.utils.getTimer;
             var quickMembers:Array = quickRoom.forces.force0.concat(quickRoom.forces.force1);
             for each(var quickMember in quickMembers)
             {
-               if(Boolean(this.getSyncDP(SyncDataID.IS_ME,[quickMember])))
+               if(Boolean(super.getSyncDP(SyncDataID.IS_ME,[quickMember])))
                {
                   quickOwnMember = true;
                }
@@ -1355,7 +1377,7 @@ import flash.utils.getTimer;
       private function bind_quickMatchReady(cRes:Object) : void
       {
          var queuedHumanIDs:Array = [];
-         var queuedRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var queuedRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          var queuedEntry:Object = this._currentQuickMatchFilter != null ? this.getPlayListObj(this._currentQuickMatchFilter.playListID) : null;
          var queuedRequired:int = queuedEntry != null && queuedEntry.name == "Quick Match" && queuedEntry.type == 1 && queuedEntry.minPartySize == 1 && queuedEntry.maxPartySize == 6 && queuedEntry.maxRoomSize == 12 && queuedEntry.minRoomSize == 1 ? 1 : 2;
          if(queuedRoom != null && queuedRoom.forces != null && queuedRoom.forces.force0 != null && queuedRoom.forces.force1 != null)
@@ -1387,13 +1409,13 @@ import flash.utils.getTimer;
          var durableReturn:String = CFunctionContainerCommon.Dvar_GetString("codol_quick_return");
          var durablePlaylist:PlayListObj = durableSaved.length == 5 ? this.getPlayListObj(int(durableSaved[3])) : null;
          var durableOwn:Boolean = false;
-         var durableRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var durableRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          if(durableRoom != null && durableRoom.forces != null)
          {
             var durableMembers:Array = durableRoom.forces.force0.concat(durableRoom.forces.force1);
             for each(var durableMember in durableMembers)
             {
-               if(Boolean(this.getSyncDP(SyncDataID.IS_ME,[durableMember])))
+               if(Boolean(super.getSyncDP(SyncDataID.IS_ME,[durableMember])))
                {
                   durableOwn = true;
                }
@@ -1448,7 +1470,7 @@ import flash.utils.getTimer;
             this.startRankedMatchPassedTimeTimer();
             return;
          }
-         var quickRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var quickRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          var quickFilter:Object = this._currentQuickMatchFilter;
          var quickEntry:PlayListObj = quickFilter != null ? this.getPlayListObj(quickFilter.playListID) : null;
          var quickOwnMember:Boolean = false;
@@ -1457,7 +1479,7 @@ import flash.utils.getTimer;
             var quickMembers:Array = quickRoom.forces.force0.concat(quickRoom.forces.force1);
             for each(var quickMember in quickMembers)
             {
-               if(Boolean(this.getSyncDP(SyncDataID.IS_ME,[quickMember])))
+               if(Boolean(super.getSyncDP(SyncDataID.IS_ME,[quickMember])))
                {
                   quickOwnMember = true;
                }
@@ -1556,21 +1578,21 @@ import flash.utils.getTimer;
             }
             var acceptedHost:Object = null;
             var acceptedHostCount:int = 0;
-            var acceptedLocalHost:Boolean = Boolean(this.getSyncDP(SyncDataID.IS_ROOM_HOST));
+            var acceptedLocalHost:Boolean = Boolean(super.getSyncDP(SyncDataID.IS_ROOM_HOST));
             var acceptedLocalOwner:String = acceptedLocalHost ? String(CFunctionContainerCommon.GetPlayerID()) : "";
             if(quickRoom != null && quickRoom.forces != null)
             {
                var acceptedMembers:Array = quickRoom.forces.force0.concat(quickRoom.forces.force1);
                for each(var acceptedMember in acceptedMembers)
                {
-                  if(acceptedMember["_localQuickNativeRoleKnown"] == true && acceptedMember["_localQuickNativeMemberID"] == String(acceptedMember.id) && (acceptedLocalHost ? String(acceptedMember.id) == acceptedLocalOwner && Boolean(this.getSyncDP(SyncDataID.IS_ME,[acceptedMember])) : quickRoom.name != null && String(quickRoom.name).length > 0 && typeof acceptedMember.realName == "string" && acceptedMember.realName.length > 0 && acceptedMember.realName == String(quickRoom.name)))
+                  if(acceptedMember["_localQuickNativeRoleKnown"] == true && acceptedMember["_localQuickNativeMemberID"] == String(acceptedMember.id) && (acceptedLocalHost ? String(acceptedMember.id) == acceptedLocalOwner && Boolean(super.getSyncDP(SyncDataID.IS_ME,[acceptedMember])) : quickRoom.name != null && String(quickRoom.name).length > 0 && typeof acceptedMember.realName == "string" && acceptedMember.realName.length > 0 && acceptedMember.realName == String(quickRoom.name)))
                   {
                      acceptedHost = acceptedMember;
                      acceptedHostCount++;
                   }
                }
             }
-            if(acceptedHostCount == 1 && Boolean(this.getSyncDP(SyncDataID.IS_ME,[acceptedHost])) != Boolean(this.getSyncDP(SyncDataID.IS_ROOM_HOST)))
+            if(acceptedHostCount == 1 && Boolean(super.getSyncDP(SyncDataID.IS_ME,[acceptedHost])) != Boolean(super.getSyncDP(SyncDataID.IS_ROOM_HOST)))
             {
                acceptedHostCount = 0;
                acceptedHost = null;
@@ -1623,7 +1645,7 @@ import flash.utils.getTimer;
                }
                var gateSeen:Array = [];
                var gateHosts:int = 0;
-               var gateLocalHost:Boolean = Boolean(this.getSyncDP(SyncDataID.IS_ROOM_HOST));
+               var gateLocalHost:Boolean = Boolean(super.getSyncDP(SyncDataID.IS_ROOM_HOST));
                var gateLocalOwner:String = gateLocalHost ? String(CFunctionContainerCommon.GetPlayerID()) : "";
                for each(var gateMember in gateMembers)
                {
@@ -1632,7 +1654,7 @@ import flash.utils.getTimer;
                      break quickReadyCheck;
                   }
                   gateSeen.push(String(gateMember.id));
-                  if((gateLocalHost ? String(gateMember.id) == gateLocalOwner && Boolean(this.getSyncDP(SyncDataID.IS_ME,[gateMember])) : quickRoom.name != null && String(quickRoom.name).length > 0 && typeof gateMember.realName == "string" && gateMember.realName.length > 0 && gateMember.realName == String(quickRoom.name)))
+                  if((gateLocalHost ? String(gateMember.id) == gateLocalOwner && Boolean(super.getSyncDP(SyncDataID.IS_ME,[gateMember])) : quickRoom.name != null && String(quickRoom.name).length > 0 && typeof gateMember.realName == "string" && gateMember.realName.length > 0 && gateMember.realName == String(quickRoom.name)))
                   {
                      if(quickRoom["_localQuickReadyCycleHost"] != String(gateMember.id))
                      {
@@ -1660,7 +1682,7 @@ import flash.utils.getTimer;
             }
             this.changeRankedMatchStatus(RankedMatchStatus.READY_IN_ROOM);
             this.enableLeaveRoom(true);
-            if(this.getSyncDP(SyncDataID.IS_ROOM_HOST) && quickFilter["_localQuickSharedBookingStarted"] != true)
+            if(super.getSyncDP(SyncDataID.IS_ROOM_HOST) && quickFilter["_localQuickSharedBookingStarted"] != true)
             {
                quickFilter["_localQuickSharedBookingStarted"] = true;
                this.startMatchCountDown();
@@ -1708,7 +1730,7 @@ import flash.utils.getTimer;
       private function restartStartMatchCountDown() : void
       {
          this.hideMsg();
-         if(this.getSyncDP(SyncDataID.IS_ROOM_HOST))
+         if(super.getSyncDP(SyncDataID.IS_ROOM_HOST))
          {
             this.startMatchCountDown();
          }
@@ -1903,7 +1925,7 @@ import flash.utils.getTimer;
             this._currentQuickMatchFilter["_localQuickSharedMap"] = null;
             this._currentQuickMatchFilter["_localQuickSharedMode"] = null;
          }
-         var quickOldRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var quickOldRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          if(quickOldRoom != null)
          {
             quickOldRoom["_localQuickSharedLineage"] = false;
@@ -1917,7 +1939,7 @@ import flash.utils.getTimer;
       
       private function leaveRoomWithParty() : void
       {
-         if(this.getSyncDP(SyncDataID.IS_SYSTEM_MSG_SHOWING))
+         if(super.getSyncDP(SyncDataID.IS_SYSTEM_MSG_SHOWING))
          {
             this.hideMsg();
          }
@@ -1926,7 +1948,7 @@ import flash.utils.getTimer;
       
       private function leaveRoomAlone() : void
       {
-         if(this.getSyncDP(SyncDataID.IS_SYSTEM_MSG_SHOWING))
+         if(super.getSyncDP(SyncDataID.IS_SYSTEM_MSG_SHOWING))
          {
             this.hideMsg();
          }
@@ -1939,7 +1961,7 @@ import flash.utils.getTimer;
          {
             return;
          }
-         if(this.getSyncDP(SyncDataID.IS_ROOM_HOST) && this.goGameCountingDown >= 0)
+         if(super.getSyncDP(SyncDataID.IS_ROOM_HOST) && this.goGameCountingDown >= 0)
          {
             CFunctionContainer.StartMatchCountDown();
             if(!ScaleformUtil.isScaleform)
@@ -1965,7 +1987,7 @@ import flash.utils.getTimer;
       {
          this.broadcast(BCEvent.EVT_RANKED_MATCH_PASSED_TIME_TIMER,cEvt.target.currentCount);
          var queuedHumanIDs:Array = [];
-         var queuedRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var queuedRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          var queuedEntry:Object = this._currentQuickMatchFilter != null ? this.getPlayListObj(this._currentQuickMatchFilter.playListID) : null;
          var queuedRequired:int = queuedEntry != null && queuedEntry.name == "Quick Match" && queuedEntry.type == 1 && queuedEntry.minPartySize == 1 && queuedEntry.maxPartySize == 6 && queuedEntry.maxRoomSize == 12 && queuedEntry.minRoomSize == 1 ? 1 : 2;
          if(queuedRoom != null && queuedRoom.forces != null && queuedRoom.forces.force0 != null && queuedRoom.forces.force1 != null)
@@ -1997,13 +2019,13 @@ import flash.utils.getTimer;
          var durableReturn:String = CFunctionContainerCommon.Dvar_GetString("codol_quick_return");
          var durablePlaylist:PlayListObj = durableSaved.length == 5 ? this.getPlayListObj(int(durableSaved[3])) : null;
          var durableOwn:Boolean = false;
-         var durableRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var durableRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          if(durableRoom != null && durableRoom.forces != null)
          {
             var durableMembers:Array = durableRoom.forces.force0.concat(durableRoom.forces.force1);
             for each(var durableMember in durableMembers)
             {
-               if(Boolean(this.getSyncDP(SyncDataID.IS_ME,[durableMember])))
+               if(Boolean(super.getSyncDP(SyncDataID.IS_ME,[durableMember])))
                {
                   durableOwn = true;
                }
@@ -2055,7 +2077,7 @@ import flash.utils.getTimer;
                this.enableLeaveRoom(true);
             }
          }
-         var quickRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var quickRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          var quickFilter:Object = this._currentQuickMatchFilter;
          var quickEntry:PlayListObj = quickFilter != null ? this.getPlayListObj(quickFilter.playListID) : null;
          var quickOwnMember:Boolean = false;
@@ -2064,7 +2086,7 @@ import flash.utils.getTimer;
             var quickMembers:Array = quickRoom.forces.force0.concat(quickRoom.forces.force1);
             for each(var quickMember in quickMembers)
             {
-               if(Boolean(this.getSyncDP(SyncDataID.IS_ME,[quickMember])))
+               if(Boolean(super.getSyncDP(SyncDataID.IS_ME,[quickMember])))
                {
                   quickOwnMember = true;
                }
@@ -2177,7 +2199,7 @@ import flash.utils.getTimer;
                   this.changeRankedMatchStatus(RankedMatchStatus.BACK_FROM_GAME);
                   this.enableLeaveRoom(true);
                   CFunctionContainer.SetReadyState(false);
-                  if(this.getSyncDP(SyncDataID.IS_ROOM_HOST))
+                  if(super.getSyncDP(SyncDataID.IS_ROOM_HOST))
                   {
                      CFunctionContainer.ChangeRoomInfo({"mode":"playlist"},"mode");
                   }
@@ -2186,21 +2208,21 @@ import flash.utils.getTimer;
             }
             var acceptedHost:Object = null;
             var acceptedHostCount:int = 0;
-            var acceptedLocalHost:Boolean = Boolean(this.getSyncDP(SyncDataID.IS_ROOM_HOST));
+            var acceptedLocalHost:Boolean = Boolean(super.getSyncDP(SyncDataID.IS_ROOM_HOST));
             var acceptedLocalOwner:String = acceptedLocalHost ? String(CFunctionContainerCommon.GetPlayerID()) : "";
             if(quickRoom != null && quickRoom.forces != null)
             {
                var acceptedMembers:Array = quickRoom.forces.force0.concat(quickRoom.forces.force1);
                for each(var acceptedMember in acceptedMembers)
                {
-                  if(acceptedMember["_localQuickNativeRoleKnown"] == true && acceptedMember["_localQuickNativeMemberID"] == String(acceptedMember.id) && (acceptedLocalHost ? String(acceptedMember.id) == acceptedLocalOwner && Boolean(this.getSyncDP(SyncDataID.IS_ME,[acceptedMember])) : quickRoom.name != null && String(quickRoom.name).length > 0 && typeof acceptedMember.realName == "string" && acceptedMember.realName.length > 0 && acceptedMember.realName == String(quickRoom.name)))
+                  if(acceptedMember["_localQuickNativeRoleKnown"] == true && acceptedMember["_localQuickNativeMemberID"] == String(acceptedMember.id) && (acceptedLocalHost ? String(acceptedMember.id) == acceptedLocalOwner && Boolean(super.getSyncDP(SyncDataID.IS_ME,[acceptedMember])) : quickRoom.name != null && String(quickRoom.name).length > 0 && typeof acceptedMember.realName == "string" && acceptedMember.realName.length > 0 && acceptedMember.realName == String(quickRoom.name)))
                   {
                      acceptedHost = acceptedMember;
                      acceptedHostCount++;
                   }
                }
             }
-            if(acceptedHostCount == 1 && Boolean(this.getSyncDP(SyncDataID.IS_ME,[acceptedHost])) != Boolean(this.getSyncDP(SyncDataID.IS_ROOM_HOST)))
+            if(acceptedHostCount == 1 && Boolean(super.getSyncDP(SyncDataID.IS_ME,[acceptedHost])) != Boolean(super.getSyncDP(SyncDataID.IS_ROOM_HOST)))
             {
                acceptedHostCount = 0;
                acceptedHost = null;
@@ -2260,7 +2282,7 @@ import flash.utils.getTimer;
                }
                var gateSeen:Array = [];
                var gateHosts:int = 0;
-               var gateLocalHost:Boolean = Boolean(this.getSyncDP(SyncDataID.IS_ROOM_HOST));
+               var gateLocalHost:Boolean = Boolean(super.getSyncDP(SyncDataID.IS_ROOM_HOST));
                var gateLocalOwner:String = gateLocalHost ? String(CFunctionContainerCommon.GetPlayerID()) : "";
                for each(var gateMember in gateMembers)
                {
@@ -2269,7 +2291,7 @@ import flash.utils.getTimer;
                      break quickReadyCheck;
                   }
                   gateSeen.push(String(gateMember.id));
-                  if((gateLocalHost ? String(gateMember.id) == gateLocalOwner && Boolean(this.getSyncDP(SyncDataID.IS_ME,[gateMember])) : quickRoom.name != null && String(quickRoom.name).length > 0 && typeof gateMember.realName == "string" && gateMember.realName.length > 0 && gateMember.realName == String(quickRoom.name)))
+                  if((gateLocalHost ? String(gateMember.id) == gateLocalOwner && Boolean(super.getSyncDP(SyncDataID.IS_ME,[gateMember])) : quickRoom.name != null && String(quickRoom.name).length > 0 && typeof gateMember.realName == "string" && gateMember.realName.length > 0 && gateMember.realName == String(quickRoom.name)))
                   {
                      if(quickRoom["_localQuickReadyCycleHost"] != String(gateMember.id))
                      {
@@ -2282,7 +2304,7 @@ import flash.utils.getTimer;
             }
             while(false);
             // END shared Quick all-current-member gate
-            if(quickFilter["_localQuickVoteFinal"] == true && quickFilter["_localQuickSharedBookingStarted"] != true && this.getSyncDP(SyncDataID.IS_ROOM_HOST) && quickMembersReady)
+            if(quickFilter["_localQuickVoteFinal"] == true && quickFilter["_localQuickSharedBookingStarted"] != true && super.getSyncDP(SyncDataID.IS_ROOM_HOST) && quickMembersReady)
             {
                this.stopRankedMatchPassedTimeTimer();
                this.stopRankedMatchGoRoomTimer();
@@ -2297,9 +2319,9 @@ import flash.utils.getTimer;
                quickFilter["_localQuickVoteTicks"] = int(quickFilter["_localQuickVoteTicks"]) + 1;
                var voteElapsedMS:Number = getTimer() - Number(quickFilter["_localQuickVoteStartMS"]);
                this.broadcast(BCEvent.EVT_RANKED_MATCH_GO_GAME_TIMER,Math.max(0,Math.ceil((30000 - voteElapsedMS) / 1000)));
-               if(voteElapsedMS >= 30000 && this.getSyncDP(SyncDataID.IS_ROOM_HOST) && acceptedHostCount == 1 && quickHumanIDs.length >= queuedRequired && quickHumanIDs.length <= 12)
+               if(voteElapsedMS >= 30000 && super.getSyncDP(SyncDataID.IS_ROOM_HOST) && acceptedHostCount == 1 && quickHumanIDs.length >= queuedRequired && quickHumanIDs.length <= 12)
                {
-                  if(this.getSyncDP(SyncDataID.IS_ROOM_HOST))
+                  if(super.getSyncDP(SyncDataID.IS_ROOM_HOST))
                   {
                      var votePool:Array = [{
                         "map":"mp_afghan",
@@ -2777,7 +2799,7 @@ import flash.utils.getTimer;
          }
          this.changeRankedMatchStatus(RankedMatchStatus.READY_IN_ROOM);
          this.startMatchCountDown();
-         if(!this.getSyncDP(SyncDataID.IS_ROOM_HOST) && this._currentRankedMatchStatus == RankedMatchStatus.READY_IN_ROOM)
+         if(!super.getSyncDP(SyncDataID.IS_ROOM_HOST) && this._currentRankedMatchStatus == RankedMatchStatus.READY_IN_ROOM)
          {
             this.startRankedMatchGoGameTimer(ScaleformUtil.isScaleform ? int(this.goGameCountingDown) : 5);
          }
@@ -2818,9 +2840,9 @@ import flash.utils.getTimer;
       private function onRankedMatchGoGameTimerCompleteHandle(cEvt:TimerEvent = null) : void
       {
          var canStart:Boolean = false;
-         if(this.getSyncDP(SyncDataID.IS_ROOM_HOST))
+         if(super.getSyncDP(SyncDataID.IS_ROOM_HOST))
          {
-            canStart = this.getSyncDP(SyncDataID.IS_SHIP_BUILD);
+            canStart = super.getSyncDP(SyncDataID.IS_SHIP_BUILD);
             if(!canStart)
             {
                canStart = this.goGameCountingDown >= 0;
@@ -2859,7 +2881,7 @@ import flash.utils.getTimer;
          var label1:String = null;
          this.cancelListRoom();
          var cancelRanked:Boolean = this.isRankedMatchInProgress() ? true : false;
-         var withParty:Boolean = cancelRanked && this.getSyncDP(SyncDataID.IS_PARTY_HOST);
+         var withParty:Boolean = cancelRanked && super.getSyncDP(SyncDataID.IS_PARTY_HOST);
          if(this.isRankedMatchInProgress())
          {
             this.cancelRankedMatch();
@@ -2868,7 +2890,7 @@ import flash.utils.getTimer;
                this.onRankedMatchCanceled();
             }
          }
-         else if(this.getSyncDP(SyncDataID.IS_PARTY_HOST))
+         else if(super.getSyncDP(SyncDataID.IS_PARTY_HOST))
          {
             msg = LocalizationRoom.NOTE_LEAVE_ROOM_LONE_OR_WITH_PARTY;
             label0 = LocalizationRoom.LEAVE_ROOM_WITH_PARTY;
@@ -2916,7 +2938,7 @@ import flash.utils.getTimer;
             this._currentQuickMatchFilter["_localQuickSharedMap"] = null;
             this._currentQuickMatchFilter["_localQuickSharedMode"] = null;
          }
-         var quickOldRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var quickOldRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          if(quickOldRoom != null)
          {
             quickOldRoom["_localQuickSharedLineage"] = false;
@@ -2994,7 +3016,7 @@ import flash.utils.getTimer;
          {
             externalResume["_localQuickExternalResumeRequested"] = false;
             externalResume["_localQuickExternal"] = false;
-            if(!this.getSyncDP(SyncDataID.IS_IN_PARTY) || this.getSyncDP(SyncDataID.IS_PARTY_HOST))
+            if(!super.getSyncDP(SyncDataID.IS_IN_PARTY) || super.getSyncDP(SyncDataID.IS_PARTY_HOST))
             {
                this.broadcast(BCEvent.EVT_QUICK_MATCH,{"filter":externalResume});
             }
@@ -3015,6 +3037,11 @@ import flash.utils.getTimer;
       
       private function onCreateRoomHandle(cEvt:ParaEvent) : void
       {
+         if(!this.isSupportedMapMode(cEvt.myPara.map,cEvt.myPara.mode))
+         {
+            this.showMsg("This map supports Search & Destroy only.",MsgBtnCount.ONE);
+            return;
+         }
          if(this._currentMatchType == QuickMatchType.CYBORG)
          {
             if(this.checkInPartyAsNotHost())
@@ -3050,7 +3077,7 @@ import flash.utils.getTimer;
                return;
             }
             var playlistObj:PlayListObj = this.getPlayListObj(this._currentQuickMatchFilter.playListID);
-            if(!(playlistObj != null && playlistObj.name == "Quick Match" && playlistObj.type == 1 && playlistObj.minPartySize == 1 && playlistObj.maxPartySize == 6 && playlistObj.maxRoomSize == 12) || !this.getSyncDP(SyncDataID.IS_IN_PARTY) || !this.getSyncDP(SyncDataID.IS_PARTY_HOST) || this.isInRoom() || this.isInRankedMatch())
+            if(!(playlistObj != null && playlistObj.name == "Quick Match" && playlistObj.type == 1 && playlistObj.minPartySize == 1 && playlistObj.maxPartySize == 6 && playlistObj.maxRoomSize == 12) || !super.getSyncDP(SyncDataID.IS_IN_PARTY) || !super.getSyncDP(SyncDataID.IS_PARTY_HOST) || this.isInRoom() || this.isInRankedMatch())
             {
                this.onRankedMatchCanceled();
                return;
@@ -3084,7 +3111,7 @@ import flash.utils.getTimer;
       {
          if(this._currentQuickMatchFilter != null && this._currentQuickMatchFilter["_localQuickPartyReady"] == "pending")
          {
-            if(this.getSyncDP(SyncDataID.IS_IN_PARTY) && this.getSyncDP(SyncDataID.IS_PARTY_HOST))
+            if(super.getSyncDP(SyncDataID.IS_IN_PARTY) && super.getSyncDP(SyncDataID.IS_PARTY_HOST))
             {
                return;
             }
@@ -3105,6 +3132,11 @@ import flash.utils.getTimer;
             return;
          }
          var filter:QuickMatchFilterObj = cEvt.myPara.filter;
+         if(!this.isSupportedMapMode(filter.map,filter.mode))
+         {
+            this.showMsg("This map supports Search & Destroy only.",MsgBtnCount.ONE);
+            return;
+         }
          var maxPlayer:int = Math.max(1,filter.mode == "combat" && filter.map.length > 0 ? filter.maxPlayer / 2 : filter.maxPlayer);
          if(this.checkInPartySize(maxPlayer))
          {
@@ -3145,7 +3177,7 @@ import flash.utils.getTimer;
             this._currentQuickMatchFilter["_localQuickSharedMap"] = null;
             this._currentQuickMatchFilter["_localQuickSharedMode"] = null;
          }
-         var quickOldRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var quickOldRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          if(quickOldRoom != null)
          {
             quickOldRoom["_localQuickSharedLineage"] = false;
@@ -3166,7 +3198,7 @@ import flash.utils.getTimer;
                this.joinChannel(ServerChannel.CHANNEL_8);
             }
          }
-         if(playlistObj != null && playlistObj.name == "Quick Match" && playlistObj.type == 1 && playlistObj.minPartySize == 1 && playlistObj.maxPartySize == 6 && playlistObj.maxRoomSize == 12 && this._currentQuickMatchFilter.type == RoomListType.RANKED && this.getSyncDP(SyncDataID.IS_IN_PARTY) && this.getSyncDP(SyncDataID.IS_PARTY_HOST))
+         if(playlistObj != null && playlistObj.name == "Quick Match" && playlistObj.type == 1 && playlistObj.minPartySize == 1 && playlistObj.maxPartySize == 6 && playlistObj.maxRoomSize == 12 && this._currentQuickMatchFilter.type == RoomListType.RANKED && super.getSyncDP(SyncDataID.IS_IN_PARTY) && super.getSyncDP(SyncDataID.IS_PARTY_HOST))
          {
             this._currentQuickMatchFilter["_localQuickPartyReady"] = "pending";
             this._currentQuickMatchFilter["_localQuickPartyCancel"] = this.onRankedMatchCanceled;
@@ -3251,7 +3283,7 @@ import flash.utils.getTimer;
       private function onBackToRoomHandle(cEvt:ParaEvent) : void
       {
          var queuedHumanIDs:Array = [];
-         var queuedRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var queuedRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          var queuedEntry:Object = this._currentQuickMatchFilter != null ? this.getPlayListObj(this._currentQuickMatchFilter.playListID) : null;
          var queuedRequired:int = queuedEntry != null && queuedEntry.name == "Quick Match" && queuedEntry.type == 1 && queuedEntry.minPartySize == 1 && queuedEntry.maxPartySize == 6 && queuedEntry.maxRoomSize == 12 && queuedEntry.minRoomSize == 1 ? 1 : 2;
          if(queuedRoom != null && queuedRoom.forces != null && queuedRoom.forces.force0 != null && queuedRoom.forces.force1 != null)
@@ -3283,7 +3315,7 @@ import flash.utils.getTimer;
                ackDigit++;
             }
             var ackPlaylist:PlayListObj = ackSaved.length == 5 ? this.getPlayListObj(int(ackSaved[3])) : null;
-            var ackRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+            var ackRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
             var ackFilter:Object = this._currentQuickMatchFilter;
             var ackOwn:Boolean = false;
             if(ackRoom != null && ackRoom.forces != null && ackRoom.forces.force0 != null && ackRoom.forces.force1 != null)
@@ -3291,7 +3323,7 @@ import flash.utils.getTimer;
                var ackMembers:Array = ackRoom.forces.force0.concat(ackRoom.forces.force1);
                for each(var ackMember in ackMembers)
                {
-                  if(ackMember != null && ackMember["_localQuickNativeRoleKnown"] == true && ackMember["_localQuickNativeMemberID"] == String(ackMember.id) && Boolean(this.getSyncDP(SyncDataID.IS_ME,[ackMember])))
+                  if(ackMember != null && ackMember["_localQuickNativeRoleKnown"] == true && ackMember["_localQuickNativeMemberID"] == String(ackMember.id) && Boolean(super.getSyncDP(SyncDataID.IS_ME,[ackMember])))
                   {
                      ackOwn = true;
                   }
@@ -3317,7 +3349,7 @@ import flash.utils.getTimer;
          if(cEvt.type == BCEvent.LOBBY_CLOSE_SUMMARY && this._currentQuickMatchFilter != null && this._currentQuickMatchFilter["_localQuickManagedSummary"] == true)
          {
             var quickFilter:Object = this._currentQuickMatchFilter;
-            var quickRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+            var quickRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
             var durableNative:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_native_room_context").split("|");
             var durableOwner:String = CFunctionContainerCommon.GetPlayerID();
             var durableKey:String = durableNative.length == 3 ? String(durableNative[2]) : "";
@@ -3386,7 +3418,7 @@ import flash.utils.getTimer;
                this.changeRankedMatchStatus(RankedMatchStatus.BACK_FROM_GAME);
                this.enableLeaveRoom(true);
                CFunctionContainer.SetReadyState(false);
-               if(this.getSyncDP(SyncDataID.IS_ROOM_HOST))
+               if(super.getSyncDP(SyncDataID.IS_ROOM_HOST))
                {
                   CFunctionContainer.ChangeRoomInfo({"mode":"playlist"},"mode");
                }
@@ -3402,7 +3434,7 @@ import flash.utils.getTimer;
                return;
             }
             externalFilter["_localQuickExternalSummary"] = false;
-            if(this.getSyncDP(SyncDataID.IS_IN_PARTY) && !this.getSyncDP(SyncDataID.IS_PARTY_HOST))
+            if(super.getSyncDP(SyncDataID.IS_IN_PARTY) && !super.getSyncDP(SyncDataID.IS_PARTY_HOST))
             {
                return;
             }
@@ -3410,14 +3442,14 @@ import flash.utils.getTimer;
             {
                return;
             }
-            var externalRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+            var externalRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
             var externalOwn:Boolean = false;
             if(externalRoom != null && !externalRoom.isPlayList && externalRoom.forces != null)
             {
                var externalMembers:Array = externalRoom.forces.force0.concat(externalRoom.forces.force1);
                for each(var externalMember in externalMembers)
                {
-                  if(Boolean(this.getSyncDP(SyncDataID.IS_ME,[externalMember])))
+                  if(Boolean(super.getSyncDP(SyncDataID.IS_ME,[externalMember])))
                   {
                      externalOwn = true;
                   }
@@ -3428,7 +3460,7 @@ import flash.utils.getTimer;
                return;
             }
             externalFilter["_localQuickExternalResumeRequested"] = true;
-            this.leaveRoom(true,false,Boolean(this.getSyncDP(SyncDataID.IS_IN_PARTY)) && Boolean(this.getSyncDP(SyncDataID.IS_PARTY_HOST)));
+            this.leaveRoom(true,false,Boolean(super.getSyncDP(SyncDataID.IS_IN_PARTY)) && Boolean(super.getSyncDP(SyncDataID.IS_PARTY_HOST)));
             return;
          }
          durableNative = CFunctionContainerCommon.Dvar_GetString("codol_quick_native_room_context").split("|");
@@ -3449,13 +3481,13 @@ import flash.utils.getTimer;
          var durableReturn:String = CFunctionContainerCommon.Dvar_GetString("codol_quick_return");
          var durablePlaylist:PlayListObj = durableSaved.length == 5 ? this.getPlayListObj(int(durableSaved[3])) : null;
          var durableOwn:Boolean = false;
-         var durableRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var durableRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          if(durableRoom != null && durableRoom.forces != null)
          {
             var durableMembers:Array = durableRoom.forces.force0.concat(durableRoom.forces.force1);
             for each(var durableMember in durableMembers)
             {
-               if(Boolean(this.getSyncDP(SyncDataID.IS_ME,[durableMember])))
+               if(Boolean(super.getSyncDP(SyncDataID.IS_ME,[durableMember])))
                {
                   durableOwn = true;
                }
@@ -3503,7 +3535,7 @@ import flash.utils.getTimer;
                this.enableLeaveRoom(true);
             }
          }
-         quickRoom = this.getSyncDP(SyncDataID.ROOM_INFO);
+         quickRoom = super.getSyncDP(SyncDataID.ROOM_INFO);
          quickFilter = this._currentQuickMatchFilter;
          var quickEntry:PlayListObj = quickFilter != null ? this.getPlayListObj(quickFilter.playListID) : null;
          var quickOwnMember:Boolean = false;
@@ -3512,7 +3544,7 @@ import flash.utils.getTimer;
             var quickMembers:Array = quickRoom.forces.force0.concat(quickRoom.forces.force1);
             for each(var quickMember in quickMembers)
             {
-               if(Boolean(this.getSyncDP(SyncDataID.IS_ME,[quickMember])))
+               if(Boolean(super.getSyncDP(SyncDataID.IS_ME,[quickMember])))
                {
                   quickOwnMember = true;
                }
@@ -3607,7 +3639,7 @@ import flash.utils.getTimer;
                if(this.isInRoom())
                {
                   CFunctionContainer.RefreshInRoom();
-                  quickRoom = this.getSyncDP(SyncDataID.ROOM_INFO);
+                  quickRoom = super.getSyncDP(SyncDataID.ROOM_INFO);
                   quickFilter = this._currentQuickMatchFilter;
                   quickEntry = quickFilter != null ? this.getPlayListObj(quickFilter.playListID) : null;
                   quickOwnMember = false;
@@ -3616,7 +3648,7 @@ import flash.utils.getTimer;
                      quickMembers = quickRoom.forces.force0.concat(quickRoom.forces.force1);
                      for each(quickMember in quickMembers)
                      {
-                        if(Boolean(this.getSyncDP(SyncDataID.IS_ME,[quickMember])))
+                        if(Boolean(super.getSyncDP(SyncDataID.IS_ME,[quickMember])))
                         {
                            quickOwnMember = true;
                         }
@@ -3689,7 +3721,7 @@ import flash.utils.getTimer;
                   {
                      if(coopType == CoopMapType.SPEC_OPS)
                      {
-                        if(!this.getSyncDP(SyncDataID.IS_NOTIFIED,[UINotifications.SPEC_OPS]))
+                        if(!super.getSyncDP(SyncDataID.IS_NOTIFIED,[UINotifications.SPEC_OPS]))
                         {
                            coopType = int(CoopMapType.STORY);
                         }
@@ -3721,7 +3753,7 @@ import flash.utils.getTimer;
                      }
                      else
                      {
-                        if(!this.getSyncDP(SyncDataID.IS_NOTIFIED,[UINotifications.ZM_ONBOARD]))
+                        if(!super.getSyncDP(SyncDataID.IS_NOTIFIED,[UINotifications.ZM_ONBOARD]))
                         {
                            this.broadcast(BCEvent.ADD_NEW_UNLOCK,UINotifications.ZM_ONBOARD);
                         }
@@ -3730,12 +3762,12 @@ import flash.utils.getTimer;
                   }
                   else if(mapID.length > 0)
                   {
-                     if(!this.getSyncDP(SyncDataID.IS_MP_TUTORIAL_COMPLETE))
+                     if(!super.getSyncDP(SyncDataID.IS_MP_TUTORIAL_COMPLETE))
                      {
                         this.setBindData(AsyncTaskID.TUTORIAL_TYPE,Common.TUTORIAL_MP);
                         this.gotoPage(CodoPageViewDB.PAGE_TUTORIAL_CHOOSER);
                      }
-                     else if(!this.getSyncDP(SyncDataID.IS_NOTIFIED,[UINotifications.MP_ONBOARD]))
+                     else if(!super.getSyncDP(SyncDataID.IS_NOTIFIED,[UINotifications.MP_ONBOARD]))
                      {
                         this.broadcast(BCEvent.ADD_NEW_UNLOCK,UINotifications.MP_ONBOARD);
                         this.gotoPage(CodoPageViewDB.PAGE_MAIN_HOME);
@@ -3751,7 +3783,7 @@ import flash.utils.getTimer;
                   }
                   this.onPlayMainMenuSound(null);
                }
-               if((this.getSyncDP(SyncDataID.EOG_IS_DATA_UPDATED) || isCyborg) && mapID != "zm_zombie_training" && CFunctionContainerCommon.Dvar_GetInt("ui_eog_show") == 1)
+               if((super.getSyncDP(SyncDataID.EOG_IS_DATA_UPDATED) || isCyborg) && mapID != "zm_zombie_training" && CFunctionContainerCommon.Dvar_GetInt("ui_eog_show") == 1)
                {
                   Logger.print("MatchController::show eog:" + CFunctionContainerCommon.Dvar_GetInt("ui_eog_show"));
                   this.broadcast(BCEvent.EVT_ENABLE_PREV_MATCH_SUMMARY,{"isCyborg":isCyborg});
@@ -3766,7 +3798,7 @@ import flash.utils.getTimer;
                }
                if(matchType == QuickMatchType.COOP && coopType == CoopMapType.STORY)
                {
-                  tempDat = this.getSyncDP(SyncDataID.CAREER_UNLOCK_OBJ_LEVEL_UP);
+                  tempDat = super.getSyncDP(SyncDataID.CAREER_UNLOCK_OBJ_LEVEL_UP);
                   if(tempDat.length > 0)
                   {
                      this.broadcast(BCEvent.EVT_ON_UNLOCKED_OBJ_LISTED,tempDat);
@@ -3793,7 +3825,7 @@ import flash.utils.getTimer;
       private function onShowLobbySummaryTimerComplete(evt:TimerEvent) : void
       {
          var queuedHumanIDs:Array = [];
-         var queuedRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var queuedRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          var queuedEntry:Object = this._currentQuickMatchFilter != null ? this.getPlayListObj(this._currentQuickMatchFilter.playListID) : null;
          var queuedRequired:int = queuedEntry != null && queuedEntry.name == "Quick Match" && queuedEntry.type == 1 && queuedEntry.minPartySize == 1 && queuedEntry.maxPartySize == 6 && queuedEntry.maxRoomSize == 12 && queuedEntry.minRoomSize == 1 ? 1 : 2;
          if(queuedRoom != null && queuedRoom.forces != null && queuedRoom.forces.force0 != null && queuedRoom.forces.force1 != null)
@@ -3825,13 +3857,13 @@ import flash.utils.getTimer;
          var durableReturn:String = CFunctionContainerCommon.Dvar_GetString("codol_quick_return");
          var durablePlaylist:PlayListObj = durableSaved.length == 5 ? this.getPlayListObj(int(durableSaved[3])) : null;
          var durableOwn:Boolean = false;
-         var durableRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var durableRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          if(durableRoom != null && durableRoom.forces != null)
          {
             var durableMembers:Array = durableRoom.forces.force0.concat(durableRoom.forces.force1);
             for each(var durableMember in durableMembers)
             {
-               if(Boolean(this.getSyncDP(SyncDataID.IS_ME,[durableMember])))
+               if(Boolean(super.getSyncDP(SyncDataID.IS_ME,[durableMember])))
                {
                   durableOwn = true;
                }
@@ -3879,7 +3911,7 @@ import flash.utils.getTimer;
                this.enableLeaveRoom(true);
             }
          }
-         var quickRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var quickRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          var quickFilter:Object = this._currentQuickMatchFilter;
          var quickEntry:PlayListObj = quickFilter != null ? this.getPlayListObj(quickFilter.playListID) : null;
          var quickOwnMember:Boolean = false;
@@ -3888,7 +3920,7 @@ import flash.utils.getTimer;
             var quickMembers:Array = quickRoom.forces.force0.concat(quickRoom.forces.force1);
             for each(var quickMember in quickMembers)
             {
-               if(Boolean(this.getSyncDP(SyncDataID.IS_ME,[quickMember])))
+               if(Boolean(super.getSyncDP(SyncDataID.IS_ME,[quickMember])))
                {
                   quickOwnMember = true;
                }
@@ -3967,7 +3999,7 @@ import flash.utils.getTimer;
       private function onOnlyRoomInfoHandle(cEvt:ParaEvent) : void
       {
          var queuedHumanIDs:Array = [];
-         var queuedRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var queuedRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          var queuedEntry:Object = this._currentQuickMatchFilter != null ? this.getPlayListObj(this._currentQuickMatchFilter.playListID) : null;
          var queuedRequired:int = queuedEntry != null && queuedEntry.name == "Quick Match" && queuedEntry.type == 1 && queuedEntry.minPartySize == 1 && queuedEntry.maxPartySize == 6 && queuedEntry.maxRoomSize == 12 && queuedEntry.minRoomSize == 1 ? 1 : 2;
          if(queuedRoom != null && queuedRoom.forces != null && queuedRoom.forces.force0 != null && queuedRoom.forces.force1 != null)
@@ -3999,13 +4031,13 @@ import flash.utils.getTimer;
          var durableReturn:String = CFunctionContainerCommon.Dvar_GetString("codol_quick_return");
          var durablePlaylist:PlayListObj = durableSaved.length == 5 ? this.getPlayListObj(int(durableSaved[3])) : null;
          var durableOwn:Boolean = false;
-         var durableRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var durableRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          if(durableRoom != null && durableRoom.forces != null)
          {
             var durableMembers:Array = durableRoom.forces.force0.concat(durableRoom.forces.force1);
             for each(var durableMember in durableMembers)
             {
-               if(Boolean(this.getSyncDP(SyncDataID.IS_ME,[durableMember])))
+               if(Boolean(super.getSyncDP(SyncDataID.IS_ME,[durableMember])))
                {
                   durableOwn = true;
                }
@@ -4053,7 +4085,7 @@ import flash.utils.getTimer;
                this.enableLeaveRoom(true);
             }
          }
-         var quickRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+         var quickRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
          var quickFilter:Object = this._currentQuickMatchFilter;
          var quickEntry:PlayListObj = quickFilter != null ? this.getPlayListObj(quickFilter.playListID) : null;
          var quickOwnMember:Boolean = false;
@@ -4062,7 +4094,7 @@ import flash.utils.getTimer;
             var quickMembers:Array = quickRoom.forces.force0.concat(quickRoom.forces.force1);
             for each(var quickMember in quickMembers)
             {
-               if(Boolean(this.getSyncDP(SyncDataID.IS_ME,[quickMember])))
+               if(Boolean(super.getSyncDP(SyncDataID.IS_ME,[quickMember])))
                {
                   quickOwnMember = true;
                }
@@ -4179,7 +4211,7 @@ import flash.utils.getTimer;
                   this.changeRankedMatchStatus(RankedMatchStatus.BACK_FROM_GAME);
                   this.enableLeaveRoom(true);
                   CFunctionContainer.SetReadyState(false);
-                  if(this.getSyncDP(SyncDataID.IS_ROOM_HOST))
+                  if(super.getSyncDP(SyncDataID.IS_ROOM_HOST))
                   {
                      CFunctionContainer.ChangeRoomInfo({"mode":"playlist"},"mode");
                   }
@@ -4207,7 +4239,7 @@ import flash.utils.getTimer;
             this._currentQuickMatchFilter.type = RoomListType.RANKED;
             if(this._currentQuickMatchFilter != null && this._currentQuickMatchFilter["_localQuickSharedSelecting"] != true && this._currentQuickMatchFilter["_localQuickSharedRoomSeen"] != true && this._currentQuickMatchFilter["_localQuickSharedReturning"] != true && CFunctionContainerCommon.Dvar_GetInt("ui_eog_show") != 1)
             {
-               if(this.getSyncDP(SyncDataID.IS_ROOM_HOST))
+               if(super.getSyncDP(SyncDataID.IS_ROOM_HOST))
                {
                   if(quickFilter["_localQuickSharedSelecting"] == true)
                   {
@@ -4675,7 +4707,7 @@ import flash.utils.getTimer;
       
       private function skipTutorial() : void
       {
-         if(!this.getSyncDP(SyncDataID.HAS_MP_CHARACTER))
+         if(!super.getSyncDP(SyncDataID.HAS_MP_CHARACTER))
          {
             this.gotoPage(CodoPageViewDB.PAGE_MAIN_PLAY_MODE_SELECTION_NEW);
             CFunctionContainerCommon.setdvar("ui_onboard_continue","0");
@@ -4906,7 +4938,7 @@ import flash.utils.getTimer;
                this._currentQuickMatchFilter["_localQuickSharedMap"] = null;
                this._currentQuickMatchFilter["_localQuickSharedMode"] = null;
             }
-            var quickOldRoom:Object = this.getSyncDP(SyncDataID.ROOM_INFO);
+            var quickOldRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
             if(quickOldRoom != null)
             {
                quickOldRoom["_localQuickSharedLineage"] = false;
@@ -4989,14 +5021,14 @@ import flash.utils.getTimer;
       private function checkPartyCanPlayPlaylist(playlistObj:PlayListObj) : Boolean
       {
          var members:Array = null;
-         if(this.getSyncDP(SyncDataID.IS_PARTY_HOST))
+         if(super.getSyncDP(SyncDataID.IS_PARTY_HOST))
          {
             if(playlistObj.minPartySize == 0 && playlistObj.maxPartySize == 0)
             {
                this.showMsg(LocalizeUtil.localize(LocalizationRoom.LIST_LOCKPARTY),MsgBtnCount.ONE);
                return false;
             }
-            members = this.getSyncDP(SyncDataID.PARTY_MEMBER);
+            members = super.getSyncDP(SyncDataID.PARTY_MEMBER);
             if(members.length < playlistObj.minPartySize)
             {
                this.showMsg(LocalizeUtil.param(LocalizationParty.PARTY_MEM_LESS_THAN_PLAYLIST,[members.length,playlistObj.minPartySize]),MsgBtnCount.ONE);
@@ -5014,7 +5046,7 @@ import flash.utils.getTimer;
       private function checkPlaylistPartyOnly(playlistObj:PlayListObj) : Boolean
       {
          Logger.print("MatchController:::checkPlaylistPartyOnly playlistObj.partyOnly: " + playlistObj.partyOnly);
-         if(!this.getSyncDP(SyncDataID.IS_IN_PARTY) && playlistObj.partyOnly)
+         if(!super.getSyncDP(SyncDataID.IS_IN_PARTY) && playlistObj.partyOnly)
          {
             this.showMsg(LocalizationParty.PARTY_ONLY_PLAYLIST,MsgBtnCount.ONE);
             return false;
@@ -5024,7 +5056,7 @@ import flash.utils.getTimer;
       
       private function checkInParty(isCyborg:Boolean = false) : Boolean
       {
-         if(this.getSyncDP(SyncDataID.IS_IN_PARTY))
+         if(super.getSyncDP(SyncDataID.IS_IN_PARTY))
          {
             this.showMsg(isCyborg ? LocalizationParty.NOTE_NO_CYBORG_TUTORIAL_WITH_PARTY : LocalizationParty.NOTE_IN_A_PARTY,MsgBtnCount.ONE);
             return true;
@@ -5034,7 +5066,7 @@ import flash.utils.getTimer;
       
       private function checkInPartyAsNotHost() : Boolean
       {
-         if(this.getSyncDP(SyncDataID.IS_IN_PARTY) && !this.getSyncDP(SyncDataID.IS_PARTY_HOST))
+         if(super.getSyncDP(SyncDataID.IS_IN_PARTY) && !super.getSyncDP(SyncDataID.IS_PARTY_HOST))
          {
             this.showMsg(LocalizationParty.NOTE_IN_A_PARTY_AS_NOT_HOST,MsgBtnCount.ONE);
             return true;
@@ -5045,9 +5077,9 @@ import flash.utils.getTimer;
       private function checkInPartySize(maxPlayer:int) : Boolean
       {
          var members:Array = null;
-         if(this.getSyncDP(SyncDataID.IS_IN_PARTY))
+         if(super.getSyncDP(SyncDataID.IS_IN_PARTY))
          {
-            members = this.getSyncDP(SyncDataID.PARTY_MEMBER);
+            members = super.getSyncDP(SyncDataID.PARTY_MEMBER);
             if(members.length > maxPlayer)
             {
                this.showMsg(LocalizeUtil.param(LocalizationParty.NOTE_PARTY_NUM_TOO_MUCH,[members.length,maxPlayer]),MsgBtnCount.ONE);

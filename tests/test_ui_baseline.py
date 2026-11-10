@@ -11,7 +11,11 @@ class SharedUIBaseline(unittest.TestCase):
         import json
         contract=json.loads((ROOT/'ui_baseline.json').read_text())
         names=['kernel33.c','quick_start_gate.c','quick_start_policy.h','quick_start_guards.h',
-               'gfx_date_time.c','gfx_date_time_policy.h','gfx_date_time_guards.h']
+               'gfx_date_time.c','gfx_date_time_policy.h','gfx_date_time_guards.h',
+               'kernel_call_guard.c','kernel_room_context.c','kernel_room_guards.h',
+               'kernel_room_policy.h','production_profile.h','build-profile.sh',
+               'kernel_name_policy.h','kernel_name_guards.h','kernel_name_network.c',
+               'kernel_name_render.c','kernel_name_display.c','borderless.c','kernel_video_mode.c']
         read=Path.read_bytes
         for name in names:
             with self.subTest(name=name):
@@ -20,6 +24,33 @@ class SharedUIBaseline(unittest.TestCase):
                 with patch.object(Path,'read_bytes',lambda p:read(p)+b'\n' if p==target else read(p)):
                     with self.assertRaises(ui_baseline.BaselineError):
                         ui_baseline.validate(ROOT)
+
+    def test_reviewed_center_and_factor_files_remain_individually_pinned(self):
+        # Each accepted successor pin remains a refusal boundary, not a global refresh.
+        import json,hashlib
+        contract=json.loads((ROOT/'ui_baseline.json').read_text(encoding='utf-8'))
+        base='zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/'
+        names=('as/codo/controllers/MatchController.as','tags/6167_82_codo_controllers_MatchController.bin',
+               'as/codo/views/OptionView.as','tags/5988_82_codo_views_OptionView.bin','patch.txt')
+        read=Path.read_bytes
+        for name in names:
+            target=ROOT/(base+name)
+            self.assertEqual(contract['files'][base+name],hashlib.sha256(read(target)).hexdigest())
+            with self.subTest(name=name),patch.object(Path,'read_bytes',lambda p:read(p)+b'\n' if p==target else read(p)):
+                with self.assertRaises(ui_baseline.BaselineError):ui_baseline.validate(ROOT)
+
+    def test_selector_producer_inputs_and_actual_export_are_individually_pinned(self):
+        import json,hashlib
+        contract=json.loads((ROOT/'ui_baseline.json').read_text(encoding='utf-8'))
+        names=('selector_producer.py','current_endpoint.py','selector_export_contract.py','abc_reader.py',
+               'abc_list_reader.py','swf_data.py','recipe.json','Source.before.as.DATA',
+               'factor-endpoint.tag.DATA','actual-export.as.DATA')
+        read=Path.read_bytes
+        for name in names:
+            rel='tools/playlist-selector-producer/'+name;target=ROOT/rel
+            self.assertEqual(contract['files'][rel],hashlib.sha256(read(target)).hexdigest())
+            with self.subTest(name=name),patch.object(Path,'read_bytes',lambda p:read(p)+b'\n' if p==target else read(p)):
+                with self.assertRaises(ui_baseline.BaselineError):ui_baseline.validate(ROOT)
 
     def test_recorded_source_and_tags_match(self):
         self.assertEqual(ui_baseline.validate(ROOT)["retired_playlists"],"hidden even if Quick Match is unavailable")

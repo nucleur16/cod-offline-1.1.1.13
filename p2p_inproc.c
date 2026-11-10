@@ -45,7 +45,9 @@ static const char *const kPiState[] = { "none", "starting", "running", "ended", 
 
 static volatile LONG g_piState;
 static volatile LONG g_piQuit;
+#if CODOL_LOCAL_TESTING
 static volatile LONG g_piFaultTest;  /* p2pfaulttest: test clients only */
+#endif
 static Sh1xInitFn g_piInit;
 static Sh1xFrameFn g_piFrame;
 static Sh1xCmdFn g_piCmd;
@@ -61,7 +63,75 @@ static BYTE g_piRescueStack[64 * 1024] __attribute__((aligned(16)));
 /* The assembly tail jump reads this even when shipping removes Log(). */
 static DWORD_PTR g_piNext __attribute__((used)); /* prior Com_EventLoop target */
 static BOOL g_piHooked;
+static BOOL PiProductCurrent(void);
 static LONG g_piSession;
+#if CODOL_LOCAL_TESTING
+typedef int (__cdecl *Sh1xPrincipalCurrentFn)(void);
+typedef int (__cdecl *Sh1xActivePrincipalInstallFn)(const void *,unsigned,uint64_t);
+typedef int (__cdecl *Sh1xPrincipalObserveFn)(const void *,unsigned,void *,unsigned);
+typedef void (__cdecl *Sh1xPrincipalQuarantineFn)(void);
+static P2PStartupBridge g_piStartup; /* one process-lifetime context, never stack-owned */
+static volatile LONG g_piStartupSelected,g_piPrincipalFresh,g_piMatchFresh;
+static P2PVSInstallFn g_piStartupScripts,g_piStartupPrincipals;
+static P2PVSInstallFn g_piStartupOptions,g_piObserveOptions;
+static Sh1xActivePrincipalInstallFn g_piActivePrincipals;
+static Sh1xPrincipalObserveFn g_piObservePrincipals;
+static Sh1xPrincipalCurrentFn g_piPrincipalCurrent;
+static Sh1xPrincipalQuarantineFn g_piPrincipalQuarantine;
+#include "p2p_active_bridge.c"
+
+static BOOL PiStartupPrincipalCheck(void)
+{
+    BOOL okay=PiActivePermission()&&g_piPrincipalCurrent&&g_piPrincipalCurrent()==1&&
+        PiActivePermission();
+    InterlockedExchange(&g_piPrincipalFresh,okay?1:0);
+    if(!okay) {
+        if(g_piPrincipalQuarantine)g_piPrincipalQuarantine(); /* deny-only atomic API */
+        InterlockedExchange(&g_piQuit,1);
+    }
+    return okay;
+}
+static BOOL PiStartupOptionsCheck(void)
+{
+    BOOL okay=g_piStartup.protocol==1||
+        (g_piStartup.protocol==2&&PiActivePermission()&&g_piObserveOptions&&
+         g_piObserveOptions(g_piStartup.match_options,sizeof(g_piStartup.match_options))==1&&PiActivePermission());
+    InterlockedExchange(&g_piMatchFresh,okay?1:0);
+    if(!okay) {
+        if(g_piPrincipalQuarantine)g_piPrincipalQuarantine();
+        InterlockedExchange(&g_piPrincipalFresh,0);InterlockedExchange(&g_piQuit,1);
+    }
+    return okay;
+}
+static BOOL PiInstallStartup(void)
+{
+    BOOL okay=FALSE;
+    if(!P2PSClaimForFiber(&g_piStartup.phase,P2PSAtomicCAS))return FALSE;
+    /* Only this fiber can now read the inventory. Worker timeout retains it;
+     * native installers clone it before the final DONE publication. */
+    if(P2PSCurrent(&g_piStartup)&&g_piStartupScripts&&g_piStartupPrincipals) {
+        g_piStartup.scripts_result=g_piStartupScripts(g_piStartup.view.scripts,g_piStartup.view.scripts_length);
+        if(g_piStartup.scripts_result==1&&P2PSCurrent(&g_piStartup))
+            g_piStartup.principals_result=g_piStartupPrincipals(g_piStartup.view.principals,g_piStartup.view.principals_length);
+        if(g_piStartup.protocol==2&&g_piStartup.scripts_result==1&&g_piStartup.principals_result==1&&
+           P2PSCurrent(&g_piStartup)&&g_piStartupOptions)
+            g_piStartup.options_result=g_piStartupOptions(g_piStartup.match_options,sizeof(g_piStartup.match_options));
+        okay=g_piStartup.scripts_result==1&&g_piStartup.principals_result==1&&
+            (g_piStartup.protocol==1||(g_piStartup.protocol==2&&g_piStartup.options_result==1))&&PiStartupPrincipalCheck();
+    }
+    if(!okay&&g_piPrincipalQuarantine)g_piPrincipalQuarantine();
+    InterlockedExchange(&g_piStartup.phase,P2PS_FIBER_DONE); /* final inventory access */
+    return okay;
+}
+static void PiAbortStartupWorker(void)
+{
+    if(g_piPrincipalQuarantine)g_piPrincipalQuarantine();
+    P2PSClose(&g_piStartup,TRUE);
+    InterlockedExchange(&g_piPrincipalFresh,0);
+    InterlockedExchange(&g_piMatchFresh,0);
+    InterlockedExchange(&g_piQuit,1);
+}
+#endif
 /* frame cost on the game thread */
 static LONGLONG g_piQpf;
 static volatile LONGLONG g_piCalls, g_piTotalUs, g_piMaxUs, g_piWinCalls, g_piWinTotalUs, g_piWinMaxUs;
@@ -93,6 +163,26 @@ static void __cdecl PiRescue(void)
     for (;;) SwitchToFiber(g_piMainFiber);
 }
 
+#if CODOL_KERNEL_ROOM_CONTEXT
+#include "p2p_exception_policy.h"
+/* Definition remains in the byte-identical repaired kernel_call_guard.c,
+ * included later by kernel_room_context.c in this translation unit. */
+static EXCEPTION_DISPOSITION __cdecl KrcCallException(EXCEPTION_RECORD *,void *,CONTEXT *,void *);
+static int PiReadSehRegistration(uint32_t address,uint32_t words[2],void *unused)
+{
+    SIZE_T got=0;(void)unused;
+    return ReadProcessMemory(GetCurrentProcess(),(const void *)(uintptr_t)address,
+                             words,2*sizeof(*words),&got) && got==2*sizeof(*words);
+}
+static int PiMigrationGuardActive(void)
+{
+    uint32_t head;
+    __asm__ volatile("movl %%fs:0, %0" : "=r"(head));
+    return PiSehRequiresThreadDispatch(head,(uint32_t)(uintptr_t)KrcCallException,
+                                      PiReadSehRegistration,NULL);
+}
+#endif
+
 static LONG CALLBACK PiFaultHandler(EXCEPTION_POINTERS *ep)
 {
     DWORD code = ep->ExceptionRecord->ExceptionCode;
@@ -102,6 +192,9 @@ static LONG CALLBACK PiFaultHandler(EXCEPTION_POINTERS *ep)
         return EXCEPTION_CONTINUE_SEARCH;
     DWORD_PTR eip = ep->ContextRecord->Eip;
     if (!(eip >= g_piBase && eip < g_piEnd) && !(eip >= g_crtBase && eip < g_crtEnd)) return EXCEPTION_CONTINUE_SEARCH;
+#if CODOL_KERNEL_ROOM_CONTEXT
+    if (PiMigrationGuardActive()) return EXCEPTION_CONTINUE_SEARCH;
+#endif
     g_piFaultCode = code;
     g_piFaultEip = (DWORD)eip;
     ep->ContextRecord->Esp = ((DWORD)(DWORD_PTR)(g_piRescueStack + sizeof(g_piRescueStack) - 64)) & ~15u;
@@ -119,27 +212,72 @@ static void WINAPI PiServerFiber(void *unused)
     (void)unused;
     for (;;) {
         LONG st = g_piState;
+        if(P2PProductionMode()>0) {
+            if(st==PI_RUNNING)P2PProductionOwnerTick(1);
+            else if(st==PI_INIT_PENDING) {
+                P2PProductionOwnerTick(1);
+                if(!P2PR_CurrentPermission()){InterlockedExchange(&g_piState,PI_ENDED);SwitchToFiber(g_piMainFiber);continue;}
+                if(!P2PProductionHostInstalled()) { SwitchToFiber(g_piMainFiber);continue; }
+            }
+            if((st==PI_RUNNING||st==PI_INIT_PENDING)&&!P2PProductionHostCurrent()) {
+                InterlockedExchange(&g_piQuit,1);
+                if(st==PI_INIT_PENDING){InterlockedExchange(&g_piState,PI_ENDED);SwitchToFiber(g_piMainFiber);continue;}
+            }
+        }
+#if CODOL_LOCAL_TESTING
+        if(st==PI_RUNNING) {
+            if(g_piStartupSelected&&g_piStartup.protocol==2&&!PiStartupOptionsCheck())PiActiveDeny(0);
+            PiActiveBetweenFrames();
+        }
+#endif
         if (g_piCallFn) {
             void (*fn)(void *) = g_piCallFn;
             fn(g_piCallCtx);
             g_piCallFn = NULL;
         } else if (st == PI_INIT_PENDING) {
             DWORD t = GetTickCount();
-            g_piInitResult = g_piInit(g_piArgs);
+#if CODOL_LOCAL_TESTING
+            if(g_piStartupSelected&&(!PiInstallStartup()||!PiStartupPrincipalCheck()))
+                g_piInitResult=-8;
+            else
+#endif
+                g_piInitResult = g_piInit(g_piArgs);
+#if CODOL_LOCAL_TESTING
+            if(g_piStartupSelected&&g_piInitResult) {
+                if(g_piPrincipalQuarantine)g_piPrincipalQuarantine();
+                InterlockedExchange(&g_piPrincipalFresh,0);
+            }
+#endif
             g_piInitMs = GetTickCount() - t;
             InterlockedExchange(&g_piState, g_piInitResult == 0 ? PI_RUNNING : PI_ENDED);
             if (g_piInitResult == 0) {
                 /* The +map on the command line loads in the first frame: one long frame now, while the host
                  * has just asked to host, rather than at an arbitrary later client frame. */
                 t = GetTickCount();
+#if CODOL_LOCAL_TESTING
+                if(g_piStartupSelected&&!PiStartupPrincipalCheck())g_piCmd("quit\n");
+#endif
                 if (!g_piFrame()) InterlockedExchange(&g_piState, PI_ENDED);
+#if CODOL_LOCAL_TESTING
+                /* The first map executes in Frame, not Init. Read actual
+                 * engine rules only after that call returns on this fiber. */
+                if(g_piStartupSelected&&g_piState==PI_RUNNING&&g_piStartup.protocol==2)PiStartupOptionsCheck();
+#endif
                 g_piFirstFrameMs = GetTickCount() - t;
             }
         } else if (st == PI_RUNNING) {
+#if CODOL_LOCAL_TESTING
+            if(g_piStartupSelected)PiStartupPrincipalCheck();
+#endif
+#if CODOL_LOCAL_TESTING
             /* p2pfaulttest: a real fault inside the server's code (Cbuf_AddText reading address 1). */
             if (g_piFaultTest) { g_piFaultTest = 0; g_piCmd((const char *)1); }
+#endif
             if (g_piQuit == 1) { g_piCmd("quit\n"); g_piQuit = 2; }
             if (!g_piFrame()) InterlockedExchange(&g_piState, PI_ENDED);
+#if CODOL_LOCAL_TESTING
+            if(g_piStartupSelected&&g_piState==PI_RUNNING&&g_piStartup.protocol==2)PiStartupOptionsCheck();
+#endif
         }
         SwitchToFiber(g_piMainFiber);
     }
@@ -156,6 +294,11 @@ __attribute__((used)) void __cdecl PiTick(void)
     LONG st = g_piState;
     if (st != PI_INIT_PENDING && st != PI_RUNNING) return;
     if (g_piInTick) return;
+    if(GetCurrentThreadId()!=g_p2pMainThread)return;
+    if(!PiProductCurrent()) {
+        /* Unknown callback/import mutation: never resume the retained server. */
+        InterlockedExchange(&g_piQuit,1);InterlockedExchange(&g_piState,PI_CRASHED);return;
+    }
     if (g_piLastTickQpc && g_piQpf) {
         LARGE_INTEGER n;
         QueryPerformanceCounter(&n);
@@ -212,14 +355,6 @@ static BOOL WINAPI PiPeek(LPMSG m, HWND h, UINT a, UINT b, UINT r)
     return ((BOOL(WINAPI *)(LPMSG, HWND, UINT, UINT, UINT))g_piRealPeek)(m, h, a, b, r);
 }
 
-static void PiHookSlot(DWORD slot, FARPROC *real, void *hook, const char *name)
-{
-    FARPROC *p = (FARPROC *)(DWORD_PTR)slot;
-    if (!Readable(p, 4) || !*p) { Log("p2p in-process: import slot %s unreadable", name); return; }
-    *real = *p;
-    FARPROC h = (FARPROC)hook;
-    WriteCode(p, &h, 4);
-}
 
 /* Main thread, between frames: run fn(ctx) on the server's fiber. FALSE when no server is running. */
 static volatile LONG g_piYielding;
@@ -254,6 +389,34 @@ __asm__(
     "    jmp *_g_piNext\n");
 
 static BOOL P2PInprocUsed(void) { return g_piSession > 0 && (g_piState == PI_ENDED || g_piState == PI_CRASHED); }
+static BOOL P2PInprocPrincipalFresh(void)
+{
+    if(P2PProductionMode()!=0)return P2PProductionHostCurrent();
+    int mode=P2PStartupProtocolMode();
+    if(mode==0)return TRUE;
+#if CODOL_LOCAL_TESTING
+    return (mode==1||mode==2)&&g_piStartupSelected&&InterlockedCompareExchange(&g_piPrincipalFresh,0,0)&&
+        (mode==1||InterlockedCompareExchange(&g_piMatchFresh,0,0))&&
+        PiActivePermission();
+#else
+    return FALSE;
+#endif
+}
+static void P2PInprocCancelStartup(void)
+{
+    P2PProductionCancel();
+#if CODOL_LOCAL_TESTING
+    if(g_piStartupSelected) {
+        PiActiveDeny(0);
+        InterlockedExchange(&g_piStartup.aborted,1);
+        InterlockedExchange(&g_piPrincipalFresh,0);
+        /* The native release-store latch is safe even while this same game
+         * thread is on C1's other fiber inside a yielded native Frame. */
+        if(g_piPrincipalQuarantine)g_piPrincipalQuarantine();
+        InterlockedExchange(&g_piQuit,1);
+    }
+#endif
+}
 
 /* ---- the session (p2p.c's host thread) --------------------------------------------------------------- */
 
@@ -305,7 +468,13 @@ static void PiLogC1Zones(const char *why)
     line[0] = 0;
     for (int i = 0; i < n && i < 64 && used < 960; i++) {
         DWORD zone = C1_ZONES_VA + 0xA8u * ((const BYTE *)(DWORD_PTR)C1_ZONE_HANDLES_VA)[i];
-        used += _snprintf(line + used, sizeof(line) - used, " %s", (const char *)(DWORD_PTR)(zone + 0x0C));
+        size_t remaining = sizeof(line) - (size_t)used;
+        int written = _snprintf(line + used, remaining, " %s", (const char *)(DWORD_PTR)(zone + 0x0C));
+        if (written < 0 || (size_t)written >= remaining) {
+            line[sizeof(line) - 1] = 0;
+            break;
+        }
+        used += written;
     }
     Log("p2p in-process: C1 zones (%s, %d, loading %lu):%s", why, n, *(volatile const DWORD *)(DWORD_PTR)C1_DB_LOADING_VA, line);
 }
@@ -318,11 +487,20 @@ static void PiYield(void)
     SwitchToFiber(g_piMainFiber);
     g_piYielding = 0;
 }
+static DWORD g_piPhaseLast;
+static void __cdecl PiHostPhaseYield(const char *phase)
+{
+    DWORD now = GetTickCount();
+    Log("p2p in-process: map phase %s after %lu ms", phase ? phase : "unknown", now - g_piPhaseLast);
+    g_piPhaseLast = now;
+    PiYield();
+}
 /* The server's await_zones (codol_asset_host.h), on its fiber during a map load. C1 starts loading a hosted map
  * itself when it is connected (the server's loadingnewmap); otherwise, after a short grace, preloadmap starts it.
  * Then the server waits, yielding, until C1 holds the level and its common_gametype zone
  * and its database is idle. */
 static int g_piC1Preload;
+static volatile LONG g_piFirstMapAwait;
 static int __cdecl PiAwaitZones(const char *map, const char *zoneType, unsigned timeoutMs)
 {
     char level[64], common[64], cmd[192];
@@ -331,6 +509,7 @@ static int __cdecl PiAwaitZones(const char *map, const char *zoneType, unsigned 
     unsigned signature = PiC1ZoneSignature(), lastSig = signature;
     BOOL preloaded = FALSE;
     if (!map || !zoneType) return 0;
+    BOOL firstMap = InterlockedExchange(&g_piFirstMapAwait, 0) != 0;
     lstrcpynA(level, map, sizeof(level));
     if (!strncmp(map, "coop_", 5) && (tail = strchr(map + 5, '_')) && tail[1]) lstrcpynA(level, tail + 1, sizeof(level));
     _snprintf(common, sizeof(common), "common_gametype_%s", zoneType); common[sizeof(common) - 1] = 0;
@@ -350,6 +529,14 @@ static int __cdecl PiAwaitZones(const char *map, const char *zoneType, unsigned 
             PiLogC1Zones("held");
             Log("p2p in-process: C1 holds %s (%s) after %lu ms%s", map, zoneType, now - t0, preloaded ? " (preloadmap)" : "");
             return 1;
+        }
+        /* During the first server map load, no player has connected to this
+         * new host yet. If C1 is idle in its menu, its own map load cannot
+         * begin until the server answers. Do not spend the usual two-second
+         * late-client grace here; subsequent map changes retain that grace. */
+        if (firstMap && !g_piC1Preload && !loading) {
+            Log("p2p in-process: first host map has no C1 zone load; mounting the server copy now");
+            return 0;
         }
         if (!started && (loading || PiC1ZoneSignature() != signature)) started = now;
         {
@@ -411,7 +598,7 @@ static const void *__cdecl PiC1Provide(unsigned type, const char *name)
 static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *args)
 {
     P2PConfig c = *cp;
-    if (!g_piHooked) {
+    if (!g_piHooked || !PiProductCurrent()) {
         Log("p2p in-process: the frame hook is not installed; not hosting");
         P2PSetState(P2P_FAILED, "no frame hook");
         return 1;
@@ -425,13 +612,38 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         P2PSetState(P2P_FAILED, "restart the client to host again");
         return 1;
     }
+    void *verified_scripts = NULL;
+    unsigned verified_size = 0;
+    char script_error[160];
+#if CODOL_LOCAL_TESTING
+    int startup_mode=P2PStartupProtocolMode();
+    if(startup_mode<0||!P2PStartupAttemptCurrent(c.startupGeneration)) {
+        P2PSetState(P2P_FAILED,"Local Play start is no longer current.");return 1;
+    }
+    if((startup_mode==1||startup_mode==2)) {
+        if(!P2PSFetch(c.sessionMap[0]?c.sessionMap:c.map,c.gametype,c.zoneType,
+            c.difficultyPresent,c.difficulty,c.startupGeneration,&g_piStartup,script_error,sizeof(script_error))) {
+            P2PSetState(P2P_FAILED,script_error);return 1;
+        }
+    } else
+#endif
+    if (P2PProductionMode()==0 && !P2PVerifiedScriptsFetch(c.sessionMap[0] ? c.sessionMap : c.map, c.gametype,
+                                c.zoneType, &verified_scripts, &verified_size, script_error, sizeof(script_error))) {
+        Log("p2p in-process: %s; hosting refused before loading the server", script_error);
+        P2PSetState(P2P_FAILED, script_error);
+        return 1;
+    }
     /* A private copy: a fresh set of globals for every session. */
     char copy[MAX_PATH], tmp[MAX_PATH];
     GetTempPathA(MAX_PATH, tmp);
     LONG n = InterlockedIncrement(&g_piSession);
     _snprintf(copy, MAX_PATH, "%sk33_sh1x_host_%lu_%ld.dll", tmp, GetCurrentProcessId(), n);
     copy[MAX_PATH - 1] = 0;
-    if (!CopyFileA(c.dll, copy, FALSE)) {
+    if (P2PProductionMode()==0 && !CopyFileA(c.dll, copy, FALSE)) {
+#if CODOL_LOCAL_TESTING
+        if((startup_mode==1||startup_mode==2)){PiAbortStartupWorker();InterlockedExchange(&g_piState,PI_ENDED);}
+#endif
+        P2PVerifiedScriptsFree(verified_scripts, verified_size);
         Log("p2p in-process: cannot copy %s to %s (%lu)", c.dll, copy, GetLastError());
         P2PSetState(P2P_FAILED, "cannot copy the server DLL");
         return 1;
@@ -439,20 +651,83 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     SIZE_T priv0, virt0, priv1, virt1;
     PiMemory(&priv0, &virt0);
     DWORD t0 = GetTickCount();
-    HMODULE m = LoadLibraryExA(copy, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+    if(P2PProductionMode()>0&&!P2PR_CurrentPermission())return 1;
+    HMODULE m = P2PProductionMode()>0?LoadLibraryExW(P2PProductionHostPath(),NULL,LOAD_WITH_ALTERED_SEARCH_PATH):
+        LoadLibraryExA(copy, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
     if (!m) {
+#if CODOL_LOCAL_TESTING
+        if((startup_mode==1||startup_mode==2)){PiAbortStartupWorker();InterlockedExchange(&g_piState,PI_ENDED);}
+#endif
+        P2PVerifiedScriptsFree(verified_scripts, verified_size);
         Log("p2p in-process: LoadLibrary %s failed (%lu)", copy, GetLastError());
         P2PSetState(P2P_FAILED, "the server DLL did not load");
+        if(P2PProductionMode()==0)DeleteFileA(copy);
         return 1;
     }
-    Sh1xInitFn init = (Sh1xInitFn)(void *)GetProcAddress(m, "Sh1xHost_Init");
+    Sh1xInitFn init;
+#if CODOL_LOCAL_TESTING
+    init=(Sh1xInitFn)(void *)GetProcAddress(m,startup_mode==2?"Sh1xHost_InitWithMatchOptions":"Sh1xHost_Init");
+#else
+    init=(Sh1xInitFn)(void *)GetProcAddress(m,"Sh1xHost_Init");
+#endif
+    if(P2PProductionMode()>0)init=(Sh1xInitFn)(void *)GetProcAddress(m,"Sh1xHost_InitWithMatchOptions");
     Sh1xFrameFn frame = (Sh1xFrameFn)(void *)GetProcAddress(m, "Sh1xHost_Frame");
     Sh1xCmdFn cmd = (Sh1xCmdFn)(void *)GetProcAddress(m, "Sh1xHost_Command");
     Sh1xCodeFn code = (Sh1xCodeFn)(void *)GetProcAddress(m, "Sh1xHost_ExitCode");
     if (!init || !frame || !cmd || !code) {
+#if CODOL_LOCAL_TESTING
+        if((startup_mode==1||startup_mode==2)){PiAbortStartupWorker();InterlockedExchange(&g_piState,PI_ENDED);}
+#endif
+        P2PVerifiedScriptsFree(verified_scripts, verified_size);
         Log("p2p in-process: %s lacks the Sh1xHost_* API (build the server's host-dll target)", c.dll);
         P2PSetState(P2P_FAILED, "the server DLL has no host API");
+        FreeLibrary(m);
+        if(P2PProductionMode()==0)DeleteFileA(copy);
         return 1;
+    }
+#if CODOL_LOCAL_TESTING
+    if((startup_mode==1||startup_mode==2)) {
+        P2PVSInstallFn scripts=(P2PVSInstallFn)(void *)GetProcAddress(m,"Sh1xHost_UseVerifiedScripts");
+        P2PVSInstallFn principals=(P2PVSInstallFn)(void *)GetProcAddress(m,"Sh1xHost_InstallRelayPrincipals");
+        P2PVSInstallFn options=startup_mode==2?(P2PVSInstallFn)(void *)GetProcAddress(m,"Sh1xHost_UseVerifiedMatchOptions"):NULL;
+        P2PVSInstallFn observe_options=startup_mode==2?(P2PVSInstallFn)(void *)GetProcAddress(m,"Sh1xHost_ObserveMatchOptions"):NULL;
+        Sh1xActivePrincipalInstallFn active_principals=(Sh1xActivePrincipalInstallFn)(void *)GetProcAddress(m,"Sh1xHost_InstallActiveRelayPrincipals");
+        Sh1xPrincipalObserveFn observe_principals=(Sh1xPrincipalObserveFn)(void *)GetProcAddress(m,"Sh1xHost_ObserveRelayPrincipals");
+        Sh1xPrincipalCurrentFn current=(Sh1xPrincipalCurrentFn)(void *)GetProcAddress(m,"Sh1xHost_RelayPrincipalsCurrent");
+        Sh1xPrincipalQuarantineFn quarantine=(Sh1xPrincipalQuarantineFn)(void *)GetProcAddress(m,"Sh1xHost_QuarantineRelayPrincipals");
+        if(!scripts||!principals||!current||!quarantine||
+           (startup_mode==2&&(!options||!observe_options))||!P2PSCurrent(&g_piStartup)) {
+            /* No native installer has run, so this unused module may close. */
+            PiAbortStartupWorker();InterlockedExchange(&g_piState,PI_ENDED);
+            P2PSetState(P2P_FAILED,"The Local Play host is unavailable.");
+            FreeLibrary(m);if(P2PProductionMode()==0)DeleteFileA(copy);return 1;
+        }
+        g_piStartupScripts=scripts;g_piStartupPrincipals=principals;
+        g_piStartupOptions=options;g_piObserveOptions=observe_options;
+        g_piActivePrincipals=active_principals;
+        g_piObservePrincipals=observe_principals;
+        g_piPrincipalCurrent=current;g_piPrincipalQuarantine=quarantine;
+        InterlockedExchange(&g_piPrincipalFresh,0);
+        InterlockedExchange(&g_piMatchFresh,startup_mode==1?1:0);
+        InterlockedExchange(&g_piStartupSelected,1);
+    } else
+#endif
+    if(P2PProductionMode()>0) {
+        if(!P2PProductionLoadHost(m)) {P2PProductionCancel();P2PSetState(P2P_FAILED,"Production host API is unavailable.");return 1;}
+    } else {
+        int installed = P2PVerifiedScriptsInstall(m, verified_scripts, verified_size,
+                                                 script_error, sizeof(script_error));
+        P2PVerifiedScriptsFree(verified_scripts, verified_size);
+        verified_scripts = NULL;
+        if (!installed) {
+            /* No Init/frame has run. The selected script service cannot fall
+             * back to loose files or an unverified previous release. */
+            Log("p2p in-process: %s; hosting refused", script_error);
+            P2PSetState(P2P_FAILED, script_error);
+            FreeLibrary(m);
+            if(P2PProductionMode()==0)DeleteFileA(copy);
+            return 1;
+        }
     }
     PiModuleRange(m, &g_piBase, &g_piEnd);
     PiModuleRange(GetModuleHandleA("msvcrt.dll"), &g_crtBase, &g_crtEnd);
@@ -474,13 +749,18 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         typedef void (__cdecl *Sh1xSetScriptStringsFn)(const char *(__cdecl *)(unsigned));
         Sh1xSetScriptStringsFn setStrings = (Sh1xSetScriptStringsFn)(void *)GetProcAddress(m, "Sh1xHost_SetC1ScriptStrings");
         if (setStrings && c.c1Assets && c.c1Zones) setStrings(PiScriptString);
+        typedef void (__cdecl *Sh1xSetYieldFn)(void (__cdecl *)(const char *));
+        Sh1xSetYieldFn setYield = (Sh1xSetYieldFn)(void *)GetProcAddress(m, "Sh1xHost_SetYield");
+        if (setYield) { setYield(PiHostPhaseYield); Log("p2p in-process: cooperative map-phase yield installed"); }
     }
     g_piInit = init; g_piFrame = frame; g_piCmd = cmd; g_piCode = code;
+    InterlockedExchange(&g_piFirstMapAwait, 1);
     lstrcpynA(g_piArgs, args, sizeof(g_piArgs));
     if (g_piFiber && g_piState == PI_CRASHED) { DeleteFiber(g_piFiber); g_piFiber = NULL; }
     if (g_piFiber && g_piState == PI_ENDED) { DeleteFiber(g_piFiber); g_piFiber = NULL; }
     g_piCalls = g_piTotalUs = g_piMaxUs = g_piWinCalls = g_piWinTotalUs = g_piWinMaxUs = 0;
     g_piInitMs = g_piFirstFrameMs = 0;
+    g_piPhaseLast = GetTickCount();
     g_piFaultCode = 0;
     InterlockedExchange(&g_piQuit, 0);
     EnterCriticalSection(&g_p2pLock);
@@ -489,7 +769,29 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     LeaveCriticalSection(&g_p2pLock);
     Log("p2p in-process: %s loaded at %p (%lu KB image); hosting %s %s on %s:%d on the game thread", copy, (void *)m,
         (unsigned long)((g_piEnd - g_piBase) >> 10), c.map, c.gametype, c.netIp, c.port);
+#if CODOL_LOCAL_TESTING
+    if((startup_mode==1||startup_mode==2)&&!P2PSCurrent(&g_piStartup)) {
+        PiAbortStartupWorker();InterlockedExchange(&g_piState,PI_ENDED);
+        P2PSetState(P2P_FAILED,"Local Play start was cancelled.");return 1;
+    }
+#endif
     InterlockedExchange(&g_piState, PI_INIT_PENDING);
+
+#if CODOL_LOCAL_TESTING
+    if((startup_mode==1||startup_mode==2)) {
+        /* This worker waits for the actual same-game-thread installers, never
+         * blocks that fiber on a pipe response, and never guesses success. */
+        while(InterlockedCompareExchange(&g_piStartup.phase,0,0)!=P2PS_FIBER_DONE&&
+            g_piState!=PI_CRASHED&&P2PSCurrent(&g_piStartup)&&!g_p2pStop)Sleep(5);
+        if(!P2PSAcknowledge(&g_piStartup)||g_piStartup.scripts_result!=1||
+            g_piStartup.principals_result!=1||(startup_mode==2&&g_piStartup.options_result!=1)||
+            !P2PSCurrent(&g_piStartup)) {
+            PiAbortStartupWorker();
+            P2PSetState(P2P_FAILED,"Local Play startup was not completed.");return 1;
+        }
+        if(!PiActiveStart()){PiActiveDeny(0);P2PSetState(P2P_FAILED,"Local Play active control was unavailable.");return 1;}
+    }
+#endif
 
     BOOL ready = FALSE, registered = FALSE, quitAsked = FALSE;
     DWORD lastPoll = 0, lastAnswer = 0, lastStats = GetTickCount(), quitAt = 0;
@@ -498,6 +800,17 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         st = g_piState;
         if (st == PI_ENDED || st == PI_CRASHED) break;
         DWORD now = GetTickCount();
+#if CODOL_LOCAL_TESTING
+        if((startup_mode==1||startup_mode==2)&&(!PiActivePermission()||
+            !InterlockedCompareExchange(&g_piPrincipalFresh,0,0))) {
+            if(g_piPrincipalQuarantine)g_piPrincipalQuarantine();
+            if(!quitAsked) {
+                quitAsked=TRUE;quitAt=now;
+                P2PSetState(P2P_STOPPING,"Local Play authorization ended.");
+                InterlockedExchange(&g_piQuit,1);
+            }
+        }
+#endif
         if (g_p2pStop && !quitAsked) {
             quitAsked = TRUE;
             quitAt = now;
@@ -521,14 +834,24 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
             g_piWinCalls = g_piWinTotalUs = g_piWinMaxUs = 0;
             lastStats = now;
         }
+        if(P2PProductionMode()>0) {
+            if(!P2PR_CurrentPermission()&&!quitAsked){quitAsked=TRUE;quitAt=now;InterlockedExchange(&g_piQuit,1);}
+            continue;
+        }
         if (now - lastPoll < (ready ? P2P_STATUS_MS : 1000) || st != PI_RUNNING) continue;
         lastPoll = now;
+        /* A late matching reply must not reopen Ready once shutdown starts.
+         * It also must not reset quitAt on every failed startup poll. */
+        if (quitAsked) continue;
         char reply[2048], line[512];
-        if (P2PRcon(c.port, password, "sh1x_status", reply, sizeof(reply), 400) > 0 && P2PStatusLine(reply, line, sizeof(line))) {
+        if (P2PRcon(c.port, password, "sh1x_status", reply, sizeof(reply), 400) > 0 &&
+            P2PStatusLine(reply, line, sizeof(line)) &&
+            P2PStatusMatches(line, c.map, c.sessionMap, c.gametype, c.zoneType)) {
             lastAnswer = now;
             EnterCriticalSection(&g_p2pLock);
             lstrcpynA(g_p2p.status, line, sizeof(g_p2p.status));
-            if (!ready) { g_p2p.readyMs = now - t0; g_p2p.state = P2P_READY; }
+            if (!ready) g_p2p.readyMs = now - t0;
+            g_p2p.state = P2P_READY;
             LeaveCriticalSection(&g_p2pLock);
             if (!ready) {
                 ready = TRUE;
@@ -540,6 +863,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
                 if (c.rollout[0]) { P2PRollout(c.rollout, c.port, TRUE); registered = TRUE; }
             }
         } else if (ready && g_piYielding) {
+            P2PSetState(P2P_STARTING, NULL);
             lastAnswer = now; /* the server is waiting on C1's zone loading (PiAwaitZones), not hung */
         } else if (ready && !quitAsked && now - lastAnswer > 20000) {
             Log("p2p in-process: the server stopped answering sh1x_status for 20 s; ending it");
@@ -553,17 +877,41 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
             InterlockedExchange(&g_piQuit, 1);
             quitAsked = TRUE;
             quitAt = now;
+        } else if (ready) {
+            /* Match loading, an ended/parked map, or a missed response revokes
+             * readiness immediately; only fresh exact status restores it. */
+            P2PSetState(P2P_STARTING, NULL);
         }
     }
     st = g_piState;
+#if CODOL_LOCAL_TESTING
+    if((startup_mode==1||startup_mode==2)) {
+        if(g_piPrincipalQuarantine)g_piPrincipalQuarantine();
+        InterlockedExchange(&g_piPrincipalFresh,0);
+    }
+#endif
     if (registered) P2PRollout(c.rollout, c.port, FALSE);
     P2PDescriptor(&c, 0, FALSE);
     EnterCriticalSection(&g_p2pLock);
     g_p2p.exitCode = st == PI_CRASHED ? g_piFaultCode : (DWORD)g_piCode();
     if (st == PI_CRASHED) { g_p2p.state = P2P_FAILED; lstrcpynA(g_p2p.error, "the server crashed (contained)", sizeof(g_p2p.error)); }
+    else if (st != PI_ENDED) {
+        /* A quit timeout can leave the original game-thread fiber live.
+         * Worker completion is not native host retirement. Keep ownership
+         * visible and require client restart; never unload/reset it here. */
+        g_p2p.state = P2P_FAILED;
+        lstrcpynA(g_p2p.error,"The local host did not stop. Restart the client before hosting again.",sizeof(g_p2p.error));
+    }
     else if (g_p2p.state != P2P_FAILED) g_p2p.state = P2P_EXITED;
-    if (g_piInitResult) { g_p2p.state = P2P_FAILED; lstrcpynA(g_p2p.error, "Sh1xHost_Init failed", sizeof(g_p2p.error)); }
-    g_p2p.pid = 0;
+    if (g_piInitResult) {
+        g_p2p.state=P2P_FAILED;
+#if CODOL_LOCAL_TESTING
+        if((startup_mode==1||startup_mode==2))lstrcpynA(g_p2p.error,"Local Play did not start. Restart the client before retrying.",sizeof(g_p2p.error));
+        else
+#endif
+            lstrcpynA(g_p2p.error,"Sh1xHost_Init failed",sizeof(g_p2p.error));
+    }
+    g_p2p.pid = (st == PI_ENDED || st == PI_CRASHED) ? 0 : GetCurrentProcessId();
     LeaveCriticalSection(&g_p2pLock);
     if (st == PI_CRASHED)
         Log("p2p in-process: server fault 0x%08lX at 0x%08lX (%s+0x%lX) contained; the client continues. "
@@ -586,6 +934,7 @@ static void __cdecl PiCmdStatus(void)
              (unsigned long)priv, (unsigned long)virt);
 }
 
+#if CODOL_LOCAL_TESTING
 /* Test clients only (+set k33_cmdFile 1): make the running server fault, to check the containment. */
 static void __cdecl PiCmdFaultTest(void)
 {
@@ -599,28 +948,165 @@ static void __cdecl PiCmdAssetCheck(void); /* p2p_assets.c */
 static void __cdecl PiCmdSlScan(void); /* p2p_assets.c */
 static C1Cmd g_piCmds[] = { { NULL, "p2pfaulttest", (void *)PiCmdFaultTest }, { NULL, "p2passetcheck", (void *)PiCmdAssetCheck },
                             { NULL, "p2pslscan", (void *)PiCmdSlScan } };
+#endif
 
-/* TakeOver, after InstallDiscord (voice and discord hook the same call first). */
-static void InstallP2PInproc(void)
+/* Product activation runs only on the captured C1 main thread and appends Pi
+ * AFTER all existing dispatcher callbacks. The event-loop CALL is never changed. */
+#include "p2p_activation_transaction.h"
+typedef struct {
+    FARPROC original[3];
+    DWORD protection[3], next;
+    DWORD restore_protection[3];
+    int writable[3];
+    BYTE call[5];
+    K33TickFn ticks[K33_MAX_TICKS];
+    int count;
+    PVOID handler;
+} PiActivationWindows;
+static PiActivation g_piActivation;
+static PiActivationWindows g_piActivationWindows;
+static const DWORD g_piActivationSlots[3] = { 0x00B42184u, 0x00B42134u, 0x00B42424u };
+
+static FARPROC PiActivationHook(unsigned index)
 {
-    LARGE_INTEGER f;
-    QueryPerformanceFrequency(&f);
-    g_piQpf = f.QuadPart;
-    const BYTE *call = (const BYTE *)(DWORD_PTR)VOICE_EVENTLOOP_CALL_VA;
-    if (!Readable(call, 5) || call[0] != 0xE8) { Log("p2p in-process: Com_EventLoop call differs; in-process hosting off"); return; }
-    LONG rel;
-    memcpy(&rel, call + 1, 4);
-    g_piNext = VOICE_EVENTLOOP_CALL_VA + 5 + (DWORD)rel;
-    RedirectCall(VOICE_EVENTLOOP_CALL_VA, (void *)PI_TickHook);
-    AddVectoredExceptionHandler(1, PiFaultHandler);
-    PiHookSlot(0x00B42184u, &g_piRealSleep, (void *)PiSleep, "Sleep");
-    PiHookSlot(0x00B42134u, &g_piRealSleepEx, (void *)PiSleepEx, "SleepEx");
-    PiHookSlot(0x00B42424u, &g_piRealPeek, (void *)PiPeek, "PeekMessageA");
-    g_piHooked = TRUE;
-    for (unsigned i = 0; i < sizeof(g_piCmds) / sizeof(g_piCmds[0]); i++) C1AddCommand(&g_piCmds[i]);
-    /* p2pstatus with the in-process numbers */
-    for (unsigned i = 0; i < sizeof(g_p2pCmds) / sizeof(g_p2pCmds[0]); i++)
-        if (!strcmp(g_p2pCmds[i].name, "p2pstatus")) g_p2pCmds[i].fn = (void *)PiCmdStatus;
-    Log("p2p in-process: frame hook at 0x%08X (chained to 0x%08lX), fault containment on", VOICE_EVENTLOOP_CALL_VA,
-        (unsigned long)g_piNext);
+    return index == 0 ? (FARPROC)PiSleep : index == 1 ? (FARPROC)PiSleepEx : (FARPROC)PiPeek;
 }
+static int PiActivationChain(PiActivationWindows *w, int appended)
+{
+    const BYTE *call=(const BYTE *)(DWORD_PTR)VOICE_EVENTLOOP_CALL_VA;
+    if (!g_k33TickInstalled ||
+        !Readable(call,5) || memcmp(call,w->call,5) || g_k33TickNext!=w->next ||
+        g_k33TickCount!=w->count+appended) return 0;
+    for (int i=0;i<w->count;++i) if(g_k33Ticks[i]!=w->ticks[i])return 0;
+    return !appended || g_k33Ticks[w->count]==PiTick;
+}
+static int PiActivationPrepare(void *context)
+{
+    PiActivationWindows *w=(PiActivationWindows *)context;
+    const BYTE *call=(const BYTE *)(DWORD_PTR)VOICE_EVENTLOOP_CALL_VA;
+    LARGE_INTEGER frequency;
+    HMODULE kernel=GetModuleHandleA("kernel32.dll"), user=GetModuleHandleA("user32.dll");
+    const char *names[3]={"Sleep","SleepEx","PeekMessageA"};
+    if (!g_p2pMainThread || GetCurrentThreadId()!=g_p2pMainThread || !g_k33TickInstalled ||
+        !kernel || !user || !QueryPerformanceFrequency(&frequency) || frequency.QuadPart<=0 ||
+        !Readable(call,5) || !CallsTarget(VOICE_EVENTLOOP_CALL_VA,(DWORD)(DWORD_PTR)K33_MainTickHook) ||
+        K33HasMainTick(PiTick) || g_k33TickCount>=K33_MAX_TICKS) return 0;
+    /* Preserve known retained room/voice/discord chain; never double-run an old PI hook. */
+    if(g_k33TickNext!=VOICE_EVENTLOOP_FUNC_VA &&
+       g_k33TickNext!=(DWORD)(DWORD_PTR)VOICE_TickHook &&
+       g_k33TickNext!=(DWORD)(DWORD_PTR)DISCORD_TickHook
+#if CODOL_KERNEL_ROOM_CONTEXT
+       && g_k33TickNext!=(DWORD)(DWORD_PTR)KRC_MainTickHook
+#endif
+       )return 0;
+    memcpy(w->call,call,5);w->next=g_k33TickNext;w->count=g_k33TickCount;
+    for(int i=0;i<w->count;++i)w->ticks[i]=g_k33Ticks[i];
+    for(unsigned i=0;i<3;++i) {
+        FARPROC *slot=(FARPROC *)(DWORD_PTR)g_piActivationSlots[i];
+        MEMORY_BASIC_INFORMATION memory;
+        FARPROC genuine=GetProcAddress(i==2?user:kernel,names[i]);
+        if(!genuine || !Readable(slot,sizeof(*slot)) || *slot!=genuine ||
+           VirtualQuery(slot,&memory,sizeof(memory))!=sizeof(memory) || memory.State!=MEM_COMMIT ||
+           (memory.Protect&(PAGE_GUARD|PAGE_NOACCESS)))return 0;
+        w->original[i]=genuine;w->protection[i]=memory.Protect;
+    }
+    g_piRealSleep=w->original[0];g_piRealSleepEx=w->original[1];g_piRealPeek=w->original[2];
+    g_piQpf=frequency.QuadPart;
+    return PiActivationChain(w,0);
+}
+static int PiActivationHandler(void *context,int install)
+{
+    PiActivationWindows *w=(PiActivationWindows *)context;
+    if(install) {
+        if(w->handler)return 0;
+        w->handler=AddVectoredExceptionHandler(1,PiFaultHandler);
+        return w->handler!=NULL;
+    }
+    if(!w->handler)return 1;
+    if(!RemoveVectoredExceptionHandler(w->handler))return 0;
+    w->handler=NULL;return 1;
+}
+static int PiActivationSlot(void *context,unsigned index,int install)
+{
+    PiActivationWindows *w=(PiActivationWindows *)context;
+    if(index>=3 || GetCurrentThreadId()!=g_p2pMainThread)return 0;
+    FARPROC *slot=(FARPROC *)(DWORD_PTR)g_piActivationSlots[index];
+    FARPROC desired=install?PiActivationHook(index):w->original[index];
+    FARPROC expected=install?w->original[index]:PiActivationHook(index);
+    DWORD old=0,ignored=0;MEMORY_BASIC_INFORMATION memory;int ok=1;
+    if(!Readable(slot,sizeof(*slot)) || VirtualQuery(slot,&memory,sizeof(memory))!=sizeof(memory))return 0;
+    /* Already-original on rollback means failed operation had no pointer effect.
+     * Never replace a third party's function pointer. */
+    if(!install && *slot==desired) {
+        if(w->writable[index]) {
+            if(memory.Protect!=PAGE_READWRITE || !VirtualProtect(slot,sizeof(*slot),w->restore_protection[index],&ignored))return 0;
+            w->writable[index]=0;
+            if(VirtualQuery(slot,&memory,sizeof(memory))!=sizeof(memory))return 0;
+        }
+        return memory.Protect==w->protection[index]; /* preserve unknown foreign rights */
+    }
+    if(*slot!=expected)return 0;
+    if(w->writable[index]) {
+        if(install || memory.Protect!=PAGE_READWRITE)return 0;
+    } else {
+        if(memory.Protect!=w->protection[index] || !VirtualProtect(slot,sizeof(*slot),PAGE_READWRITE,&old))return 0;
+        w->writable[index]=1;w->restore_protection[index]=old;
+        if(old!=w->protection[index]) {
+            /* A rights mutation raced the precheck: do NOT publish a pointer.
+             * Restore exactly the returned prior rights, not our stale sample. */
+            if(VirtualProtect(slot,sizeof(*slot),old,&ignored))w->writable[index]=0;
+            return 0;
+        }
+    }
+    if(InterlockedCompareExchangePointer((PVOID volatile *)slot,(PVOID)desired,(PVOID)expected)!=(PVOID)expected)ok=0;
+    if(!VirtualProtect(slot,sizeof(*slot),w->restore_protection[index],&ignored))ok=0;
+    else w->writable[index]=0;
+    if(!Readable(slot,sizeof(*slot)) || *slot!=desired ||
+       VirtualQuery(slot,&memory,sizeof(memory))!=sizeof(memory) || memory.Protect!=w->protection[index])ok=0;
+    return ok;
+}
+static int PiActivationTick(void *context,int install)
+{
+    PiActivationWindows *w=(PiActivationWindows *)context;
+    if(GetCurrentThreadId()!=g_p2pMainThread)return 0;
+    if(install) {
+        if(!PiActivationChain(w,0) || !K33OnMainTick(PiTick))return 0;
+        return PiActivationChain(w,1);
+    }
+    if(PiActivationChain(w,0))return 1;
+    if(!PiActivationChain(w,1))return 0; /* unknown mutation retained, never delete another callback */
+    g_k33TickCount=w->count;g_k33Ticks[w->count]=NULL;
+    return PiActivationChain(w,0);
+}
+static int PiActivationReadback(void *context)
+{
+    PiActivationWindows *w=(PiActivationWindows *)context;
+    if(!w->handler || !PiActivationChain(w,1))return 0;
+    for(unsigned i=0;i<3;++i) {
+        FARPROC *slot=(FARPROC *)(DWORD_PTR)g_piActivationSlots[i];MEMORY_BASIC_INFORMATION memory;
+        if(w->writable[i] || !Readable(slot,sizeof(*slot)) || *slot!=PiActivationHook(i) ||
+           VirtualQuery(slot,&memory,sizeof(memory))!=sizeof(memory) || memory.Protect!=w->protection[i])return 0;
+    }
+    return 1;
+}
+static const PiActivationOps g_piActivationOps={&g_piActivationWindows,
+    PiActivationPrepare,PiActivationHandler,PiActivationSlot,PiActivationTick,PiActivationReadback};
+static BOOL PiProductCurrent(void)
+{
+    return PiActivationCurrent(&g_piActivation,&g_piActivationOps)!=0;
+}
+static BOOL P2PEnsureInprocActivation(void)
+{
+    if(GetCurrentThreadId()!=g_p2pMainThread)return FALSE;
+    if(!PiActivationEnsure(&g_piActivation,&g_piActivationOps))return FALSE;
+    g_piHooked=TRUE; /* only complete transaction; never a diagnostic success bit */
+    return TRUE;
+}
+#if CODOL_LOCAL_TESTING
+static void InstallP2PInprocDiagnostics(void)
+{
+    for(unsigned i=0;i<sizeof(g_piCmds)/sizeof(g_piCmds[0]);++i)C1AddCommand(&g_piCmds[i]);
+    for(unsigned i=0;i<sizeof(g_p2pCmds)/sizeof(g_p2pCmds[0]);++i)
+        if(!strcmp(g_p2pCmds[i].name,"p2pstatus"))g_p2pCmds[i].fn=(void *)PiCmdStatus;
+}
+#endif

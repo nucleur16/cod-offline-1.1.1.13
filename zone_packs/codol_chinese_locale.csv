@@ -1,12 +1,12 @@
 // codol_chinese_locale -- every Chinese string zone in one (k33_english 0, or no valid language; ahead of code_pre_gfx):
-// the UI movies' K33UI_* keys and the usermaps' GBK names (usermaps_patch's strings). Built by build_zones.py.
+// the UI movies' K33UI_* keys, custom party/loading text, and usermap GBK names. Built by build_zones.py.
 >zone,codol_chinese_locale
 >install,client_shipRetail\patch
 >zlib,9
 >filetime,0x01dd65c1,0xf519626a
 >rsa,3249ece79be422320735cb465920e6b2247e48711401d3b4d0fea796ac1460d3d5be5c7e118bd2620f88d1dcf3b46f8aede63eb2120bbe7f7f00c1945d9a197b78dcca11a32a3fc5285a704294687acd6ee78c74bedb8ec1b8f8beec2a28e93090413e4643cb5ff73186aa43877fc38b2623416569828291c30baf20671dbedf793a6e376d2d82d75f1ee66d17204d0b7f9012deab741ffe35818365d5728b3ce48ebf80c2ed1661a678a04ef444fee125e563afef8d17462abed0625e2b3c92bf05315c9efd866453f3ce64b76a68d70fb548c0bc94e443b53cb2e187465b93498115ad3094d57b4feb172ca6e1b04dd9a6941df5dabfb37996297665b8a100
->build-md5,09548379a33622ac7452633f39a18d68
->build-md5-all,1de3a9975b50b6ffa51594db04158fe6
+>build-md5,f7346b6857ef12f8e6c81df29aade491
+>build-md5-all,0c29bb0ff0c5325c2c0a6c8a3af9fbb5
 part,codol_chinese_ui
 part,codol_chinese_ui_extra
 part,usermaps_patch,only=localize

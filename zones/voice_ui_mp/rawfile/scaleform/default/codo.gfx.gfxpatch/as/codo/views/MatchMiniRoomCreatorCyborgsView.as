@@ -1,6 +1,7 @@
 package codo.views
 {
    import codo.common.ParaEvent;
+   import codo.common.CFunctionContainerCommon;
    import codo.constants.BCEvent;
    import codo.constants.LocalizationRoom;
    import codo.constants.MatchType;
@@ -28,14 +29,14 @@ package codo.views
       override protected function onMapChangedHandle(cEvt:ParaEvent) : void
       {
          var selectedIndex:int = 0;
-         if(this._currentMatchType == QuickMatchType.CYBORG)
+         if(_currentMatchType == QuickMatchType.CYBORG)
          {
             selectedIndex = this.myOptionCB_1.selectedDataIndex;
-            this.myDifficultySelector.diffData = this.getSyncDP(SyncDataID.LIST_DIFFICULTY,[this._optionMap.selectedValue]);
+            this.myDifficultySelector.diffData = super.getSyncDP(SyncDataID.LIST_DIFFICULTY,[_optionMap.selectedValue]);
             this.myDifficultySelector.selectedIndex = selectedIndex >= 0 && selectedIndex < this.myDifficultySelector.diffData.length ? uint(selectedIndex) : 0;
             this.myDifficultySelector.enabled = this.myDifficultySelector.diffData.length > 1;
          }
-         this.showMapInfo(this._optionMap.selectedValue);
+         this.showMapInfo(_optionMap.selectedValue);
       }
       
       override protected function onCreateRoomBtnClickHandle(cEvt:ParaEvent) : void
@@ -43,12 +44,12 @@ package codo.views
          var room:Object = {};
          room.name = this.myRoomNameTF.text;
          room.password = this.myPasswordTF.text;
-         room.map = this._optionMap.selectedValue.id;
+         room.map = _optionMap.selectedValue.id;
          room.mode = MatchType.ZM;
-         this.getSyncDP(SyncDataID.LIST_DIFFICULTY,[this._optionMap.selectedValue]);
+         super.getSyncDP(SyncDataID.LIST_DIFFICULTY,[_optionMap.selectedValue]);
          room.difficulty = int(this.myDifficultySelector.diffData[this.myDifficultySelector.selectedIndex].id);
-         room.minPlayer = this._optionMap.selectedValue.minPlayer;
-         room.maxPlayer = this._optionMap.selectedValue.maxPlayer;
+         room.minPlayer = CFunctionContainerCommon.Dvar_GetString("ui_p2p_create") == "1" ? 1 : _optionMap.selectedValue.minPlayer;
+         room.maxPlayer = _optionMap.selectedValue.maxPlayer;
          this.broadcast(BCEvent.EVT_CREATE_ROOM,room);
       }
    }
