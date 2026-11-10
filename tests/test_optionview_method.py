@@ -126,7 +126,13 @@ class MethodSource(unittest.TestCase):
         selector=json.loads((ROOT/'tools/playlist-selector-producer/recipe.json').read_bytes())
         self.assertEqual(selector['prior_movie_sha256'],factor['output_movie_sha256'])
         self.assertEqual(selector['vertical_tag_sha256'],r['output_tag_sha256'])
-        self.assertIn('sha256 '+selector['output_movie_sha256'],lines)
+        import importlib.util
+        path=ROOT/'tools/p2p-four-tag-composition/composition.py'
+        spec=importlib.util.spec_from_file_location('optionview_four_tag_composition',path)
+        composition=importlib.util.module_from_spec(spec);spec.loader.exec_module(composition)
+        proof=composition.verify(ROOT,selector['output_movie_sha256'])
+        self.assertTrue(proof['inverse_exact']);self.assertEqual(proof['non_target_tags_exact'],6863)
+        self.assertIn('sha256 '+proof['current_movie_sha256'],lines)
         self.assertIn('as codo.views.OptionView as/codo/views/OptionView.as '+r['candidate_source_include_digest'],lines)
         self.assertFalse(any(D.is_relative_to(p)for p in [ROOT/'zones']))
 
@@ -147,5 +153,70 @@ class MethodSource(unittest.TestCase):
             for outcome in ('failure','skipped','cancelled'):
                 rows=dict(complete);rows[check]={'outcome':outcome}
                 with patch.dict(os.environ,NATIVE_QUALIFICATION_STEPS=json.dumps(rows)),contextlib.redirect_stdout(io.StringIO()),self.assertRaises(SystemExit):exec(compile(code,'<real-CI-outcome-gate>','exec'),{})
+
+class FourTagComposition(unittest.TestCase):
+    def setUp(self):
+        import importlib.util
+        path=ROOT/'tools/p2p-four-tag-composition/composition.py'
+        spec=importlib.util.spec_from_file_location('four_tag_composition_tests',path)
+        self.C=importlib.util.module_from_spec(spec);spec.loader.exec_module(self.C)
+        self.contract=json.loads((path.parent/'composition.json').read_bytes())
+        self.patch=ROOT/self.C.PATCH/'patch.txt'
+
+    def changed_read(self,path,bad,reason):
+        read=Path.read_bytes
+        with patch.object(Path,'read_bytes',lambda p:bad if p==path else read(p)):
+            with self.assertRaisesRegex(ValueError,reason):self.C.verify(ROOT,self.C.PRIOR_SHA)
+
+    def test_actual_whole_movie_inverse_preserves_all_other6863_tags(self):
+        p=self.C.verify(ROOT,self.C.PRIOR_SHA)
+        self.assertEqual((p['qualified_classes'],p['non_target_tags_exact'],p['total_tags']),(4,6863,6867))
+        self.assertTrue(p['inverse_exact']);self.assertFalse(p['runtime_or_release_ready'])
+
+    def test_protected_OptionView_and_MatchController_mutants_refuse(self):
+        for name in ('5988_82_codo_views_OptionView.bin','6167_82_codo_controllers_MatchController.bin'):
+            path=ROOT/self.C.PATCH/'tags'/name;raw=path.read_bytes()
+            with self.subTest(name=name):self.changed_read(path,raw[:-1]+bytes([raw[-1]^1]),'non-target tag payload unchanged')
+
+    def test_each_unqualified_four_tag_mutation_refuses(self):
+        for row in self.contract['classes']:
+            path=ROOT/self.C.PATCH/row['tag'];raw=path.read_bytes()
+            with self.subTest(cls=row['class_name']):self.changed_read(path,raw[:-1]+bytes([raw[-1]^1]),'qualified target tag identity')
+
+    def test_qualified_Source_drift_refuses(self):
+        for row in self.contract['classes']:
+            path=ROOT/self.C.PATCH/row['source']
+            with self.subTest(cls=row['class_name']):self.changed_read(path,path.read_bytes()+b'\n','composition DATA identity')
+
+    def test_original_keep_order_and_stock_binding_are_required(self):
+        raw=self.patch.read_bytes()
+        for a,b,why in ((b'keep 0\n',b'keep 1\n','operations/order'),(b'stock patch_ui_mp:',b'stock ui_mp:','stock reference')):
+            with self.subTest(a=a):
+                self.assertIn(a,raw);self.changed_read(self.patch,raw.replace(a,b,1),why)
+
+    def test_foreign_current_digest_or_header_geometry_refuses(self):
+        raw=self.patch.read_bytes()
+        changed=raw.replace(self.C.OUTPUT_SHA.encode(),b'0'*64,1)
+        self.changed_read(self.patch,changed,'predecessor/current movie identities')
+        line=next(x for x in raw.splitlines()if x.startswith(b'header '))
+        changed=raw.replace(line,line[:-2]+(b'01'if line[-2:]!=b'01'else b'02'),1)
+        self.changed_read(self.patch,changed,'header/version/geometry/fps')
+
+    def test_extra_metadata_and_non_target_Source_repins_refuse(self):
+        raw=self.patch.read_bytes()
+        self.changed_read(self.patch,raw+b'format unrestricted\n','closed unique patch metadata')
+        line=next(x for x in raw.splitlines()if x.startswith(b'as codo.views.OptionView '))
+        self.changed_read(self.patch,raw.replace(line,line[:-64]+b'0'*64,1),'non-target Source metadata unchanged')
+
+    def test_original_predecessor_identity_cannot_be_relabelled(self):
+        with self.assertRaisesRegex(ValueError,'immutable selector predecessor'):self.C.verify(ROOT,self.C.OUTPUT_SHA)
+        path=self.C.HERE/'selector-predecessor.gfx.zlib.DATA';raw=path.read_bytes()
+        self.changed_read(path,raw[:-1]+bytes([raw[-1]^1]),'composition DATA identity')
+
+    def test_duplicate_Source_and_trailing_metadata_bytes_refuse(self):
+        raw=self.patch.read_bytes();line=next(x for x in raw.splitlines()if x.startswith(b'as '))
+        self.changed_read(self.patch,raw+line+b'\n','unique canonical Source row')
+        self.changed_read(self.patch,raw+b'# unqualified metadata drift\n','exact qualified patch metadata bytes')
+
 
 if __name__=='__main__':unittest.main()

@@ -62,7 +62,9 @@ def verify_successor(root,tag,*,source=None,prior):
     for name,pin in recipe['tools'].items():exact(HERE/name,pin)
     lines=(root/prior.PATCH/'patch.txt').read_text(encoding='utf-8').splitlines()
     need(lines.count('as codo.controllers.MatchController as/codo/controllers/MatchController.as '+P.SOURCE_SHA)==1,'exact selector Source recipe row')
-    need(lines.count('sha256 '+P.OUTPUT_MOVIE_SHA)==1,'exact selector composed movie digest')
+    exact(root/'tools/p2p-four-tag-composition/composition.py','4ebb6c48d8eac250d0627faca78637f36e4330ec4a1b2e4d51b671c64588ec7a')
+    composition=prior.module('qualified_four_tag_composition',root/'tools/p2p-four-tag-composition/composition.py')
+    proof['movie_composition']=composition.verify(root,P.OUTPUT_MOVIE_SHA)
     # No Source-only candidate may masquerade as an actual decompiler readback.
     pin=recipe['actual_export_sha256']
     need(type(pin)is str and re.fullmatch('[0-9a-f]{64}',pin),'Root-admitted selector readback still UNBOUND')

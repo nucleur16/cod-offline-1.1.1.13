@@ -1,0 +1,44 @@
+{
+  "actual_semantic_peer_sha256": "4d3c0c3f73560346ae33dc94042da21b97d001fe5b730f345e974271fc8b4e09",
+  "classes": [
+    {
+      "class_name": "codo.k33.LocalCreateRoomOption",
+      "prior_tag_sha256": "7b3d94bb1ed68c03ffebf3ccfdf8d8c6e5a098a4f11e1f2fd60f7cf9a5d91a4a",
+      "source": "as/codo/k33/LocalCreateRoomOption.as",
+      "source_sha256": "4a94b4b34b07b4e79aef9823a3576f7728a9343a262e0418e2a715594a8aa2cd",
+      "tag": "tags/k33_82_codo_k33_LocalCreateRoomOption.bin",
+      "tag_sha256": "89e278ff51fe2d6fc0f0ae2d52125531ce24ec94b107b18712780719ab7408b4"
+    },
+    {
+      "class_name": "codo.k33.LocalMatchControls",
+      "prior_tag_sha256": "bcc2dfb9c8b20f9001ef1eee5b454c56183ffd44d3f23c2d33a950b49130dedf",
+      "source": "as/codo/k33/LocalMatchControls.as",
+      "source_sha256": "0c82f458da92abb55b7ae1df20f7263661cb9f05f5a6e8ae4e5133a1c33030dc",
+      "tag": "tags/k33_82_codo_k33_LocalMatchControls.bin",
+      "tag_sha256": "f5eb5936f51f90abab6c4654461f05807b5bf8f1505904be71675985b132aeba"
+    },
+    {
+      "class_name": "codo.views.InRoomBaseView",
+      "prior_tag_sha256": "47546111693e7e16b9320a938624c4bade1b2b1e40b55e6bdcdf6748e845b046",
+      "source": "as/codo/views/InRoomBaseView.as",
+      "source_sha256": "ab52ae1458a6b6be7e7f2a52af715ca743297b95b6f7509054ad4727ec89cd3d",
+      "tag": "tags/k33_82_codo_views_InRoomBaseView.bin",
+      "tag_sha256": "be4a03d8c0f00114aa4386cbb536f7fd95d07cdeed0c1f70b9ef0082059afdb4"
+    },
+    {
+      "class_name": "codo.controllers.LobbyController",
+      "prior_tag_sha256": "a5dd2c651c3f73667bd51634156de54d2e791c21cbe717f9b58ce28141a677e0",
+      "source": "as/codo/controllers/LobbyController.as",
+      "source_sha256": "196931fce41a2edb3255a907a45f990b58ac09e04bfa8be12a799f8aa8fc2e43",
+      "tag": "tags/6122_82_codo_controllers_LobbyController.bin",
+      "tag_sha256": "c416aae7816b53da1499b652d9faadab1639bd695a6d92133a8ae38611e9387b"
+    }
+  ],
+  "compiled_manifest_sha256": "be046632e72a42b6f9c6645f085b24121523eb232b47ce54287c7607ec754dc7",
+  "current_patch_sha256": "ed50d0026746f22f678e583391690a5187c786d2d65067a301f4f645df7245ab",
+  "format": "reviewed-four-P2P-tag-composition-v1",
+  "output_movie_sha256": "bc9c8515ca326a31e1006bfeb8338a441cd2d5677d6a56d0b31eb46ef294e9a9",
+  "predecessor_zlib_sha256": "73a6353370a2d691b75e6f905890cb7203bf626d28c83575b188cafd3fbc6c22",
+  "prior_movie_sha256": "38dd0456193d9025f5831de44f9d2deb70d433f42ea7b8d0f76b7236f558ea37",
+  "prior_patch_sha256": "6cfd048341ca332bb2fc0236cdbdcb66e7929c88bdcc9f8fb8eb23f650555bfd"
+}
