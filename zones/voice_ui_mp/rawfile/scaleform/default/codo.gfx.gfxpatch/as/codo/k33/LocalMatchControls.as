@@ -71,7 +71,8 @@ package codo.k33
       private function intentRoomKey(value:Object):String
       {
          if(value==null || value.index==null || value.name==null)return "";
-         var index:String=String(value.index),name:String=String(value.name);
+         var index:String=String(value.index);
+         var name:String=String(value.name);
          return /^(0|[1-9][0-9]{0,19})$/.test(index) && name.length>0 ? index+"|"+name.length+":"+name : "";
       }
 
@@ -92,7 +93,9 @@ package codo.k33
          this.lastRoomKey=roomKey;
          this.room=value;
          if(value==null || roomKey=="" || value.isPlayList==true){this.resetProductionChoice();this.visible=false;return;}
-         var map:String=this.mapID(),gt:String=this.gameType(),intent:String=this.difficultyIntent();
+         var map:String=this.mapID();
+         var gt:String=this.gameType();
+         var intent:String=this.difficultyIntent();
          if(!/^[a-z][a-z0-9_]{0,63}$/.test(map) || !/^[a-z][a-z0-9_]{0,31}$/.test(gt) || intent=="")
          {this.resetProductionChoice();this.visible=false;return;}
          var context:String=map+" "+gt+" "+this.category()+" "+intent;

@@ -34,6 +34,10 @@ static const char *kPiState[]={"none","starting","running","ended","crashed"};
 typedef struct {DWORD delta; int response,stop,yielding,expected;} Step;
 static Step steps[40];
 static int count,index_next,current_response,queries;
+/* Explicit producer leaves: the actual monitor is extracted below. */
+static int production_mode,production_permission;
+static int P2PProductionMode(void){return production_mode;}
+static int P2PR_CurrentPermission(void){return production_permission;}
 static DWORD clock_now;
 static const char *scenario;
 static void Sleep(int unused) {
@@ -82,6 +86,7 @@ static void reset(const char *name) {
     memset(steps,0,sizeof(steps));memset(&g_p2p,0,sizeof(g_p2p));
     g_p2p.state=P2P_STARTING;g_piState=PI_RUNNING;g_piQuit=0;
     g_p2pStop=0;g_piYielding=0;clock_now=0;count=0;index_next=0;queries=0;scenario=name;
+    production_mode=0;production_permission=0;
 }
 static void add(int response,int stop,int yielding,int expected) {
     steps[count++]=(Step){2000,response,stop,yielding,expected};
@@ -108,7 +113,15 @@ int main(void) {
     for(int n=0;n<10;++n)add(0,0,0,P2P_STARTING);
     for(int n=0;n<24;++n)add(0,0,0,P2P_FAILED);
     assert(monitor()<count);assert(g_piQuit);assert(clock_now==56000);
-    puts("PASS: five actual monitor-loop lifecycle/recovery scenarios");
+    reset("production monitor does not use legacy RCON readiness");
+    production_mode=1;production_permission=1;
+    add(1,0,0,P2P_STARTING);add(1,0,0,P2P_STARTING);
+    assert(monitor()==count);assert(!g_piQuit);assert(!queries);
+    reset("production permission loss requests quit under original bound");
+    production_mode=1;production_permission=0;
+    for(int n=0;n<24;++n)add(1,0,0,P2P_STARTING);
+    assert(monitor()<count);assert(g_piQuit);assert(!queries);assert(clock_now==34000);
+    puts("PASS: seven actual monitor-loop lifecycle/recovery scenarios; production leaves modeled");
     return 0;
 }
 '''
@@ -149,6 +162,75 @@ int main(void){
 }
 '''
 
+# Explicit WinSock/engine doubles; only the two actual packet-filter bodies
+# execute. This proves source control flow, not Windows ABI or network behavior.
+HOSTGATE_PREFIX = r'''
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+typedef uint32_t DWORD;typedef uint32_t SOCKET;typedef uint32_t u_long;
+typedef struct {unsigned n;} fd_set;
+struct sockaddr {uint16_t sa_family;char data[14];};
+struct in_addr {uint32_t s_addr;};
+struct sockaddr_in {uint16_t sin_family,sin_port;struct in_addr sin_addr;char zero[8];};
+struct sockaddr_storage {uint16_t family;char rest[126];};
+struct timeval {long sec,usec;};
+enum {AF_INET=2,SOCKET_ERROR=-1,MSG_PEEK=2,FIONREAD=1,WSAEWOULDBLOCK=10035};
+#define WINAPI
+#define FD_ZERO(p) ((p)->n=0)
+#define FD_SET(s,p) ((p)->n=(s))
+static int g_hgMode,decision,trusted,sent,received,refused,borrowed,last_error;
+static struct sockaddr_in source;
+static int recv_leaf(SOCKET s,char*b,int n,int flags,struct sockaddr*f,int*length){(void)s;(void)b;(void)n;(void)flags;++received;memcpy(f,&source,sizeof source);*length=sizeof source;return 7;}
+static int send_leaf(SOCKET s,const char*b,int n,int flags,const struct sockaddr*t,int z){(void)s;(void)b;(void)flags;(void)t;(void)z;++sent;return n;}
+static int (*g_hgRecvFrom)(SOCKET,char*,int,int,struct sockaddr*,int*)=recv_leaf;
+static int (*g_hgSendTo)(SOCKET,const char*,int,int,const struct sockaddr*,int)=send_leaf;
+static unsigned ntohs(unsigned n){return n;}
+static int ioctlsocket(SOCKET s,long cmd,u_long*v){(void)s;(void)cmd;*v=0;return 0;}
+static int select(int n,fd_set*r,void*w,void*x,struct timeval*t){(void)n;(void)r;(void)w;(void)x;(void)t;return 0;}
+static void WSASetLastError(int e){last_error=e;}
+static int P2PProductionGuestAddress(DWORD ip,unsigned port){(void)ip;(void)port;return decision;}
+static int HostGateOk(DWORD ip){(void)ip;return trusted;}
+static void HostGateRefused(DWORD ip,int out,int port){(void)ip;(void)out;(void)port;++refused;}
+static void P2PProductionBorrowSend(SOCKET s){(void)s;++borrowed;}
+'''
+HOSTGATE_SUFFIX = r'''
+static int failures,cases;
+static void one(int mode,int production,int allow,const char*name){
+ char buffer[16];struct sockaddr_in from;int length=sizeof from,result;
+ int accepted=production>0||(production==0&&(allow||mode<2));
+ g_hgMode=mode;decision=production;trusted=allow;sent=received=refused=borrowed=last_error=0;
+ result=HostGateSendTo(17,buffer,7,0,(struct sockaddr*)&source,sizeof source);++cases;
+ if(result!=7||sent!=accepted||borrowed!=1){printf("FAIL %s send: accepted=%d actual-wire-sends=%d return=%d\n",name,accepted,sent,result);++failures;}
+ result=HostGateRecvFrom(17,buffer,sizeof buffer,0,(struct sockaddr*)&from,&length);++cases;
+ if((accepted&&result!=7)||(!accepted&&(result!=SOCKET_ERROR||last_error!=WSAEWOULDBLOCK))){printf("FAIL %s recv: accepted=%d delivered=%d\n",name,accepted,result);++failures;}
+}
+int main(void){memset(&source,0,sizeof source);source.sin_family=AF_INET;source.sin_port=45011;source.sin_addr.s_addr=0xc633640b;
+ one(1,-1,0,"production-negative/legacy-mode1");one(2,-1,0,"production-negative/legacy-mode2");
+ one(1,0,0,"unselected-legacy-mode1");one(2,0,0,"unselected-legacy-mode2");
+ one(2,0,1,"unselected-vouched-legacy-mode2");one(2,1,0,"production-exact-endpoint");
+ printf("RESULT %d actual function cases, %d failures; explicit WinSock/engine doubles, no network\n",cases,failures);return failures;
+}
+'''
+
+
+def hostgate_fixture(source):
+    def body(name):
+        begin = source.index('static int WINAPI '+name+'(')
+        first = source.index('{', begin)
+        depth = 0
+        for end in range(first, len(source)):
+            if source[end] == '{':
+                depth += 1
+            elif source[end] == '}':
+                depth -= 1
+                if depth == 0:
+                    return source[begin:end+1]
+        raise AssertionError('HostGate function end '+name)
+    return HOSTGATE_PREFIX+'\n'.join(body(name) for name in
+        ('HostGateRecvFrom', 'HostGateSendTo'))+HOSTGATE_SUFFIX
+
+
 def retirement_fixture(source):
     assignment=source.index("    g_p2p.exitCode = st == PI_CRASHED")
     begin=source.rfind("    EnterCriticalSection(&g_p2pLock);",0,assignment)
@@ -180,6 +262,12 @@ def main():
             executable=folder/("retirement-%d"%local_testing)
             subprocess.run([args.cc,"-std=c99","-O1","-g","-Wall","-Wextra","-Werror","-fsanitize=address,undefined","-fno-omit-frame-pointer","-fno-pie","-no-pie","-DCODOL_LOCAL_TESTING=%d"%local_testing,str(retirement),"-o",str(executable)],check=True,timeout=30)
             subprocess.run([str(executable)],check=True,timeout=10)
+
+        hostgate=folder/"hostgate.c"
+        hostgate.write_text(hostgate_fixture((args.source/"hostgate.c").read_text()))
+        gate_binary=folder/"hostgate"
+        subprocess.run([args.cc,"-std=c11","-O1","-g","-Wall","-Wextra","-Wpedantic","-Werror","-fsanitize=address,undefined","-fno-omit-frame-pointer","-fno-pie","-no-pie",str(hostgate),"-o",str(gate_binary)],check=True,timeout=30)
+        subprocess.run([str(gate_binary)],check=True,timeout=10)
 
 if __name__=="__main__":
     main()

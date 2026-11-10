@@ -683,7 +683,8 @@ package codo.controllers
          // initRoomInfo assigns these actual native room-model fields. This
          // binds UI intent only; signed backend context remains the authority.
          if(this._roomObj == null || this._roomObj.index == null || this._roomObj.name == null)return "";
-         var index:String=String(this._roomObj.index),name:String=String(this._roomObj.name);
+         var index:String=String(this._roomObj.index);
+         var name:String=String(this._roomObj.name);
          return /^(0|[1-9][0-9]{0,19})$/.test(index) && name.length>0 ? index+"|"+name.length+":"+name : "";
       }
 
