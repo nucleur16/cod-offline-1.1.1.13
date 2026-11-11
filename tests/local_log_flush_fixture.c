@@ -53,6 +53,17 @@ static void *fixture_at(DWORD va)
 #define K33LF_AT(va) fixture_at(va)
 #define K33LF_WRITE fixture_write
 #endif
+#if CODOL_LOCAL_TESTING
+/* Same absent-selection file leaf as before. An explicit route belongs to the
+ * separate inherited-route fixture and may never silently use this fallback. */
+static HANDLE LocalQaOpenDwauth(const char *path)
+{
+    char value[16];SetLastError(ERROR_SUCCESS);
+    DWORD n=GetEnvironmentVariableA("CODOL_LOCAL_QA_DWAUTH_HANDLE",value,sizeof(value));
+    assert(!n && GetLastError()==ERROR_ENVVAR_NOT_FOUND);
+    return CreateFileA(path,GENERIC_READ,FILE_SHARE_READ,NULL,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,NULL);
+}
+#endif
 #define K33LF_FIXTURE 1
 #include "../local_log_flush.c"
 

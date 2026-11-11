@@ -116,7 +116,7 @@ static int K33LfPolicy(void)
     while (size && path[size-1]!='\\') size--;
     if (!size || size+sizeof("dwauth.ini")>sizeof(path)) return K33LfFail(LF_POLICY_PATH);
     memcpy(path+size,"dwauth.ini",sizeof("dwauth.ini"));
-    HANDLE file=CreateFileA(path,GENERIC_READ,FILE_SHARE_READ,NULL,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,NULL);
+    HANDLE file=LocalQaOpenDwauth(path);
     if (file==INVALID_HANDLE_VALUE) return K33LfFail(LF_POLICY_OPEN);
     DWORD bytes=GetFileSize(file,NULL),got=0;
     int ok=bytes>0 && bytes<=sizeof(data) && ReadFile(file,data,bytes,&got,NULL) && got==bytes;

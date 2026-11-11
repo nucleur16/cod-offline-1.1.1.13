@@ -283,9 +283,15 @@ static void WINAPI PiServerFiber(void *unused)
     }
 }
 
+#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_GAP_STATE */
 static LONGLONG g_piLastTickQpc, g_piMaxGapUs;
+#else /* K33_SHIPPING_TIMING_GAP_STATE */
+static LONGLONG g_piLastTickQpc;
+#endif /* K33_SHIPPING_TIMING_GAP_STATE */
 static volatile LONG g_piInTick;
+#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_GAP_COUNT */
 static volatile LONG g_piGapsOver1s;
+#endif /* K33_SHIPPING_TIMING_GAP_COUNT */
 
 /* Main (game) thread: once per C1 Com_EventLoop pass, and from C1's waits (Sleep, SleepEx, PeekMessageA), so
  * the server keeps running while C1 loads a map or sits in a loop that skips Com_EventLoop. */
@@ -299,6 +305,7 @@ __attribute__((used)) void __cdecl PiTick(void)
         /* Unknown callback/import mutation: never resume the retained server. */
         InterlockedExchange(&g_piQuit,1);InterlockedExchange(&g_piState,PI_CRASHED);return;
     }
+#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_GAP_SAMPLE */
     if (g_piLastTickQpc && g_piQpf) {
         LARGE_INTEGER n;
         QueryPerformanceCounter(&n);
@@ -306,6 +313,7 @@ __attribute__((used)) void __cdecl PiTick(void)
         if (st == PI_RUNNING && gap > g_piMaxGapUs) g_piMaxGapUs = gap;
         if (st == PI_RUNNING && gap > 1000000) InterlockedIncrement(&g_piGapsOver1s);
     }
+#endif /* K33_SHIPPING_TIMING_GAP_SAMPLE */
     if (!g_piMainFiber) {
         g_piMainFiber = IsThreadAFiber() ? PiCurrentFiber() : ConvertThreadToFiberEx(NULL, FIBER_FLAG_FLOAT_SWITCH);
         if (!g_piMainFiber) { Log("p2p in-process: ConvertThreadToFiber failed (%lu)", GetLastError()); InterlockedExchange(&g_piState, PI_ENDED); return; }
@@ -320,8 +328,14 @@ __attribute__((used)) void __cdecl PiTick(void)
     unsigned int mxcsr;
     __asm__ volatile("fnstcw %0" : "=m"(fcw));
     __asm__ volatile("stmxcsr %0" : "=m"(mxcsr));
+#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_SAMPLE_DECL */
     LARGE_INTEGER a, b;
+#else /* K33_SHIPPING_TIMING_SAMPLE_DECL */
+    LARGE_INTEGER b;
+#endif /* K33_SHIPPING_TIMING_SAMPLE_DECL */
+#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_SAMPLE_START */
     QueryPerformanceCounter(&a);
+#endif /* K33_SHIPPING_TIMING_SAMPLE_START */
     g_piInTick = 1;
     SwitchToFiber(g_piFiber);
     g_piInTick = 0;
@@ -329,11 +343,13 @@ __attribute__((used)) void __cdecl PiTick(void)
     __asm__ volatile("fldcw %0" : : "m"(fcw));
     __asm__ volatile("ldmxcsr %0" : : "m"(mxcsr));
     g_piLastTickQpc = b.QuadPart;
+#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_SAMPLE_TOTALS */
     if (st == PI_RUNNING && g_piQpf) {
         LONGLONG us = (b.QuadPart - a.QuadPart) * 1000000 / g_piQpf;
         g_piCalls++; g_piTotalUs += us; if (us > g_piMaxUs) g_piMaxUs = us;
         g_piWinCalls++; g_piWinTotalUs += us; if (us > g_piWinMaxUs) g_piWinMaxUs = us;
     }
+#endif /* K33_SHIPPING_TIMING_SAMPLE_TOTALS */
 }
 
 /* From C1's waits: at most one tick per 2 ms (a server frame is due every 16.7 ms at sv_fps 60). */
@@ -758,7 +774,9 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     lstrcpynA(g_piArgs, args, sizeof(g_piArgs));
     if (g_piFiber && g_piState == PI_CRASHED) { DeleteFiber(g_piFiber); g_piFiber = NULL; }
     if (g_piFiber && g_piState == PI_ENDED) { DeleteFiber(g_piFiber); g_piFiber = NULL; }
+#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_START_TOTALS */
     g_piCalls = g_piTotalUs = g_piMaxUs = g_piWinCalls = g_piWinTotalUs = g_piWinMaxUs = 0;
+#endif /* K33_SHIPPING_TIMING_START_TOTALS */
     g_piInitMs = g_piFirstFrameMs = 0;
     g_piPhaseLast = GetTickCount();
     g_piFaultCode = 0;
@@ -794,7 +812,11 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
 #endif
 
     BOOL ready = FALSE, registered = FALSE, quitAsked = FALSE;
+#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_MONITOR_DECL */
     DWORD lastPoll = 0, lastAnswer = 0, lastStats = GetTickCount(), quitAt = 0;
+#else /* K33_SHIPPING_TIMING_MONITOR_DECL */
+    DWORD lastPoll = 0, lastAnswer = 0, quitAt = 0;
+#endif /* K33_SHIPPING_TIMING_MONITOR_DECL */
     for (;;) {
         Sleep(250);
         st = g_piState;
@@ -821,6 +843,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
             Log("p2p in-process: the server did not end within 30 s of quit (state %s)", kPiState[st]);
             break;
         }
+#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_MONITOR_TOTALS */
         if (st == PI_RUNNING && now - lastStats >= 30000 && !g_piWinCalls) {
             Log("p2p in-process: no server ticks in the last %lu s (the game thread is blocked or skips every tick source)",
                 (now - lastStats) / 1000);
@@ -834,6 +857,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
             g_piWinCalls = g_piWinTotalUs = g_piWinMaxUs = 0;
             lastStats = now;
         }
+#endif /* K33_SHIPPING_TIMING_MONITOR_TOTALS */
         if(P2PProductionMode()>0) {
             if(!P2PR_CurrentPermission()&&!quitAsked){quitAsked=TRUE;quitAt=now;InterlockedExchange(&g_piQuit,1);}
             continue;

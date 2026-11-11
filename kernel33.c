@@ -180,6 +180,9 @@ static void PatchActiveHandFiringMarker(void)
 
 #include "minigun_pair_native.c.inc"
 
+#if defined(CODOL_LOCAL_TESTING) && CODOL_LOCAL_TESTING == 1
+static FARPROC LocalQaRouteImport(const C1Import *imp,FARPROC original);
+#endif
 static void FillImports(void)
 {
     int failed = 0;
@@ -207,6 +210,9 @@ static void FillImports(void)
             continue;
         }
         f = QbgImport(imp, f);
+#if defined(CODOL_LOCAL_TESTING) && CODOL_LOCAL_TESTING == 1
+        f = LocalQaRouteImport(imp,f);
+#endif
         WriteCode((void *)(DWORD_PTR)imp->slot, &f, sizeof(f));
     }
     Log("imports: %d slots filled, %d unresolved",

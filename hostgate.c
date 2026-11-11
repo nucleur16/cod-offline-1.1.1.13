@@ -187,6 +187,16 @@ static void HostGateReadLobbyNames(void)
     while (n && root[n - 1] != '\\') n--;
     root[n] = 0;
     for (int fi = 0; fi < 2; fi++) {
+#if defined(CODOL_LOCAL_TESTING) && CODOL_LOCAL_TESTING == 1
+        if(fi==0&&LocalQaRouteState()!=1){
+            char data[257];DWORD size=0;
+            if(LocalQaReadRoute(data,256,&size)&&CodolLocalMultiRoute(data,size)){
+                data[size]=0;char* end=strchr(data,'\n');if(end)*end=0;
+                P2PTrim(data);DWORD ip=inet_addr(data);if(ip!=INADDR_NONE)HostGateAllow(ip,"dwauth.ini");
+            }
+            continue; // malformed explicit selection never reads the shared route
+        }
+#endif
         char path[MAX_PATH + 16];
         _snprintf(path, sizeof(path), "%s%s", root, files[fi]);
         path[sizeof(path) - 1] = 0;

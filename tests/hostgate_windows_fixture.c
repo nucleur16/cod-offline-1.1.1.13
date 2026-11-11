@@ -36,6 +36,30 @@ static void P2PTrim(char *s)
 static HANDLE TestThread(LPSECURITY_ATTRIBUTES a,SIZE_T b,LPTHREAD_START_ROUTINE c,
                          LPVOID d,DWORD e,LPDWORD f)
 { (void)a;(void)b;(void)c;(void)d;(void)e;(void)f;return NULL; }
+#if CODOL_LOCAL_TESTING
+/* This historical installation fixture models only ABSENT route selection.
+ * New inherited-route logic is exercised separately by the actual-body fixture
+ * and still needs real Windows/C1 acceptance. Never ignore an explicit value. */
+static int LocalQaRouteState(void)
+{
+    char value[16];SetLastError(ERROR_SUCCESS);
+    DWORD n=GetEnvironmentVariableA("CODOL_LOCAL_QA_DWAUTH_HANDLE",value,sizeof(value));
+    assert(!n && GetLastError()==ERROR_ENVVAR_NOT_FOUND);
+    return 1;
+}
+static int CodolLocalMultiRoute(const char *data,size_t bytes)
+{
+    (void)data;(void)bytes;
+    assert(!"explicit inherited route is outside this absent-selection fixture");
+    return 0;
+}
+static int LocalQaReadRoute(char *data,DWORD capacity,DWORD *bytes)
+{
+    (void)data;(void)capacity;(void)bytes;
+    assert(!"explicit inherited route is outside this absent-selection fixture");
+    return 0;
+}
+#endif
 #define CreateThread TestThread
 #include "../hostgate.c"
 #undef CreateThread

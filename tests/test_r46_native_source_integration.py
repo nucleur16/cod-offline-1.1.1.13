@@ -13,7 +13,7 @@ def pinned_function(file,name,body):return hashlib.sha256(' '.join(body.split())
 def gate_project(text,macro,value):
  out=[];enabled=True;stack=[]
  for line in text.splitlines(True):
-  token=line.strip()
+  token=re.sub(r'(?:\s*/\*(?:[^*]|\*(?!/))*\*/)+\s*$','',line.strip()).strip()
   if token.startswith('#if '):
    exact=token=='#if '+macro;stack.append((enabled,exact));enabled=enabled and (value if exact else True)
    if not exact and enabled:out.append(line)
@@ -33,6 +33,24 @@ def gate_project(text,macro,value):
   elif enabled:out.append(line)
  if stack:raise AssertionError('unclosed condition')
  return ''.join(out)
+class GateProjectComments(unittest.TestCase):
+ def test_trailing_block_comments_preserve_both_macro_projections(self):
+  text=('#if CODOL_LOCAL_TESTING /* section */ /* second ** tag */\n'
+        'diagnostic_only();\n'
+        '#else /* section */\n'
+        'shipping_only();\n'
+        '#endif /* section */\n')
+  self.assertEqual(gate_project(text,'CODOL_LOCAL_TESTING',False),'shipping_only();\n')
+  self.assertEqual(gate_project(text,'CODOL_LOCAL_TESTING',True),'diagnostic_only();\n')
+ def test_interior_comment_does_not_erase_compound_condition(self):
+  text=('#if CODOL_LOCAL_TESTING /* interior */ && OTHER /* trailing */\n'
+        'compound_true();\n'
+        '#else\n'
+        'compound_false();\n'
+        '#endif\n')
+  for value in (False,True):
+   self.assertEqual(gate_project(text,'CODOL_LOCAL_TESTING',value),text)
+
 class NativeR46Source(unittest.TestCase):
  def test_profile_defaults_and_kernel_only_optin_remain(self):
   profile=(ROOT/'production_profile.h').read_text();self.assertIn('#define CODOL_LOCAL_TESTING 0',profile);self.assertIn('#define CODOL_KERNEL_ROOM_CONTEXT 0',profile);self.assertIn('#define CODOL_KERNEL_NAME_DISPLAY 0',profile)
