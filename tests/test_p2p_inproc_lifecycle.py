@@ -21,6 +21,8 @@ typedef size_t SIZE_T;
 #define TRUE 1
 #define FALSE 0
 #define P2P_STATUS_MS 2000u
+/* This monitor fixture declares the full QA statistics profile explicitly. */
+#define CODOL_DIAGNOSTICS 1
 enum { PI_NONE, PI_INIT_PENDING, PI_RUNNING, PI_ENDED, PI_CRASHED };
 enum { P2P_IDLE, P2P_STARTING, P2P_READY, P2P_STOPPING, P2P_EXITED, P2P_FAILED };
 typedef struct {char map[64],sessionMap[64],gametype[32],zoneType[16],rollout[32]; int port,readyTimeout;} P2PConfig;
