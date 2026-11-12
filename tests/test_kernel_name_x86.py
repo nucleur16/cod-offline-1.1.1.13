@@ -168,7 +168,7 @@ class Machine:
    if name==self.http_fail:self.ret(0,widths[name]);return
    if name=='WinHttpOpen':self.ret(1,20);return
    if name=='WinHttpConnect':assert self.text(arg(2),True)=='codol.kewkew.org' and arg(3)==443;self.ret(2,16);return
-   if name=='WinHttpOpenRequest':self.request_path=self.text(arg(3),True);assert arg(7)&0x800000;self.ret(3,28);return
+   if name=='WinHttpOpenRequest':self.request_path=self.text(arg(3),True);assert arg(7)&0x800000;self.response_at=0;self.ret(3,28);return
    if name=='WinHttpSetOption':assert arg(2)==88 and self.get(arg(3))==0;self.ret(1,16);return
    if name=='WinHttpQueryHeaders':self.put(arg(4),self.status);self.ret(1,24);return
    if name=='WinHttpReadData':
