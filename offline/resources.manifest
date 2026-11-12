@@ -1,0 +1,33 @@
+# Resources embedded in the offline lobby (offline/tools/gen_resources.py -> dw_embedded.cpp).
+# Names are those of the Python lobby's resources/ folder. `name = path` takes the bytes elsewhere.
+#
+# Deliberately NOT embedded (the product differs from the Python lobby's test tree here):
+#   wallet.json            holds balances keyed by real player ids
+#   purchased_items.txt    19 legacy purchases the Python lobby seeds into every new account
+#   map_spawns.proposed.json and the repository-root weapon tables: only the retired Python match
+#                          server read them
+#   broadcast.info, ffotd_client.ff: not in the Python repository; without them the ticker is empty
+#                          and the client skips the FFOTD (BD_NO_FILE), as against a fresh Python lobby
+
+# publisher files the client fetches at login (service 10 task 7)
+mp_playlists_shipRetail_cb2.info
+configs_s.info
+questionnaire.info
+activities.info
+mp_rewardlists.info
+# per-player files and their new-account seeds (service 10 task 3)
+blacklist
+mpdata.level1.proposed
+mpdata_s.level1.proposed
+mpdata_s.unlockall.proposed
+# structured data definitions of mpdata / mpdata_s
+playerdata_defs.proposed.json
+# rank table, challenges, weapon levels
+unlock_tables.proposed.json
+progression_tables.json
+# store
+marketplace_catalogue.json
+unlock_flags.json
+items_cha.txt
+items_cha_default.proposed
+items_cha_unlockall.proposed

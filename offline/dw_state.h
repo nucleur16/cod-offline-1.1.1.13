@@ -29,6 +29,7 @@ struct SessionState;     /* dw_session.cpp */
 struct ProfilesState;    /* dw_profiles.cpp */
 struct MarketState;      /* dw_marketplace.cpp */
 struct CareerState;      /* dw_career.cpp */
+struct PlayerDataState;  /* dw_playerdata.cpp (created on first use, freed by ProfilesFree) */
 
 struct ServerState {
     std::map<std::pair<int, uint64_t>, std::vector<Bytes> > chat; /* (channelType, channelId) -> payloads */
@@ -38,7 +39,8 @@ struct ServerState {
     ProfilesState *profiles;
     MarketState *market;
     CareerState *career;
-    ServerState() : store(NULL), rooms(NULL), session(NULL), profiles(NULL), market(NULL), career(NULL) {}
+    PlayerDataState *playerdata;
+    ServerState() : store(NULL), rooms(NULL), session(NULL), profiles(NULL), market(NULL), career(NULL), playerdata(NULL) {}
 };
 
 /* ---- module lifecycle (StateInit calls these in this order; StateFree in reverse) ---- */
@@ -56,10 +58,24 @@ void OnUidLatched(Server &s, Conn &c);
 std::string EnsureBlob(Server &s, uint64_t uid);
 /* The player's level (1-based) as the marketplace gates on it (dw_marketplace._player_level). */
 int PlayerLevel(Server &s, uint64_t uid);
+/* A room start is about to hand `uid` to the match host: write the player's match blob
+ * (mpdata_s.<uid>) into Config::matchProfile. -> note, "" when there is nothing to say. */
+std::string ExportMatchBlob(Server &s, uint64_t uid);
+/* MC-4: while a match is dispatched only this account may re-point the shared (unkeyed) mpdata_s;
+ * 0 lifts the restriction (player_profiles.set_mirror_owner). */
+void SetMirrorOwner(Server &s, uint64_t uid);
 
 /* ---- dw_career.cpp (career/rank_writeback.py) ---- */
 /* Fold any waiting match_report.json into the profiles. uid 0 = no per-uid target. -> note or "". */
 std::string RankWritebackMaybeApply(Server &s, uint64_t uid, bool background);
+/* ---- dw_career.cpp (career/progression.py), called by dw_profiles.cpp ---- */
+/* progression.credit: apply one match's progression deltas ({challenges, weapons, weapon_uses,
+ * collectibles, coop_completed, coop_failed}) to `prof` in place. -> the "  [progression: ...]" note
+ * suffix of add_xp, "" when there is nothing to say. */
+std::string ProgressionCredit(Server &s, Json &prof, const Json &deltas);
+/* progression.mastery_progress: {challengeId: weaponLevel} for every weapon of the profile that has
+ * a mastery challenge; merged over the stored challenge progress when mpdata_s is rendered. */
+void ProgressionMastery(Server &s, const Json &prof, std::map<int, double> &out);
 
 /* ---- dw_session.cpp (demonware/dw_session.py) ---- */
 const Vals *Desc(Server &s, Conn *c, bool ownOnly = false);

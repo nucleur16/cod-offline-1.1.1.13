@@ -97,15 +97,25 @@ struct Reply {
 };
 
 /* ---- embedder interface ---- */
+/* The room owner's Local Play intent, as Kernel33 publishes it (p2p_local_play_api.h,
+ * docs/P2P_DEFERRED_HOST_START.md): ticking LOCAL PLAY arms a host and starts nothing. */
 struct LocalRoute {
-    bool enabled;     /* the owner ticked Local Play for the current room */
-    int port;         /* UDP port of the embedded host on 127.0.0.1 */
-    std::string map, sessionMap, gametype, category;
-    LocalRoute() : enabled(false), port(0) {}
+    uint64_t ownerUid; /* the player the intent is bound to; 0 = none */
+    bool enabled;      /* LOCAL PLAY is ticked */
+    bool armed;        /* enabled, valid, nothing running: the host starts when the match launches */
+    bool launched;     /* this selection's host start was issued */
+    bool ready;        /* the host answers with exactly this selection */
+    bool failed;       /* the choice cannot be hosted (see error) */
+    int port;          /* UDP port of the embedded host on 127.0.0.1 */
+    std::string map, sessionMap, gametype, category; /* category = the intent's type: mp / coop / zm / survival */
+    std::string state; /* idle armed starting ready stopping exited failed */
+    std::string error;
+    LocalRoute() : ownerUid(0), enabled(false), armed(false), launched(false), ready(false), failed(false), port(0) {}
 };
 struct StartInfo { /* what a room start resolved to */
     uint64_t uid;
-    std::string playerName, map, sessionMap, gametype, zoneType;
+    std::string playerName, map, sessionMap, gametype, zoneType; /* zoneType: mp / coop / zm / survival */
+    std::string roomMap, roomGametype; /* the strings the client's dwRoomInfo was given (SET_MAP) */
     std::string hostIp;
     int hostPort;
     Bytes securityKey; /* the client's 16-byte bdSecurityKey */
@@ -119,6 +129,11 @@ struct Host {
     virtual double Mono();    /* monotonic seconds */
     /* -> false when the embedder has no local host (the standalone server). */
     virtual bool GetLocalRoute(uint64_t uid, LocalRoute &out) { (void)uid; (void)out; return false; }
+    /* The lobby is handing START_GAME for exactly this selection to the local owner: raise the host
+     * launch (K33LocalPlayLaunch). -> false when the owner's intent is not this enabled, armed
+     * selection: START_GAME must then be withheld. Starts nothing by itself. */
+    virtual bool LocalPlayLaunch(uint64_t ownerUid, const std::string &sessionMap, const std::string &gametype,
+                                 const std::string &type) { (void)ownerUid; (void)sessionMap; (void)gametype; (void)type; return true; }
     /* A room start was answered with START_GAME. Runs on the server thread: copy and return. */
     virtual void OnStartGame(const StartInfo &info) { (void)info; }
 };
@@ -136,6 +151,7 @@ struct Config {
     int stunPort, stunAltPort; /* the changed-address STUN replies advertise */
     int stunMappedPort;      /* the "your address" port in STUN replies (the Python lobby: always 3074) */
     bool differential;       /* reproduce the Python lobby's defaults exactly (tests) */
+    double joinreqRelayGap = 3.0; /* seconds between two relays of a joiner's join-request storm to a room host; 0 = relay every batch */
     Config();
 };
 

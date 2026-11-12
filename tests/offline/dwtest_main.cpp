@@ -5,7 +5,12 @@
  *
  *   dwtest --port 3274 --alt-port 3278 --resources <dir> --profile <dir> --state <dir>
  *          [--match-profile <dir>] [--zone-dir <dir>] [--mm-port N] [--fixed-time T] [--differential]
- *          [--log <file>] [--selftest]
+ *          [--log <file>] [--joinreq-gap S] [--selftest]
+ *   dwtest --resources <dir> --profile <empty scratch dir> [--match-profile <dir>] --selftest-store
+ *   dwtest [--resources <dir>] [--state <dir>] --selftest-rooms
+ *   dwtest --resources <pristine resources> --profile <empty scratch dir> --selftest-market
+ *   dwtest --resources <dir> --profile <empty scratch dir> --match-profile <empty scratch dir> --selftest-career
+ *   dwtest [--fixed-time T] [--differential] [--wb-background] [--wb-create <uid>] --writeback <resources> <profile> <match> <uid>
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,6 +32,12 @@ struct TestHost : dw::Host {
     }
     virtual double Mono() { return GetTickCount64() / 1000.0; }
 };
+
+int DwStoreSelfTest(const dw::Config &cfg); /* dwtest_store.cpp */
+int DwRoomsSelfTest(const dw::Config &cfg); /* dwtest_rooms.cpp */
+int DwMarketSelfTest(const dw::Config &cfg); /* dwtest_market.cpp */
+int DwCareerSelfTest(const dw::Config &cfg); /* dwtest_career.cpp */
+int DwWritebackRun(const dw::Config &cfg, const char *uid, bool background, const char *createUid); /* dwtest_career.cpp */
 
 static volatile long g_stop;
 static BOOL WINAPI OnCtrl(DWORD) { InterlockedExchange(&g_stop, 1); return TRUE; }
@@ -62,9 +73,21 @@ int main(int argc, char **argv)
     dw::NetConfig net;
     TestHost host;
     host.log = stdout;
+    bool wbBackground = false;
+    const char *wbCreate = "0";
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i], *v = i + 1 < argc ? argv[i + 1] : "";
         if (!strcmp(a, "--selftest")) return SelfTest();
+        else if (!strcmp(a, "--selftest-store")) return DwStoreSelfTest(cfg); /* uses the folders given before it */
+        else if (!strcmp(a, "--selftest-rooms")) return DwRoomsSelfTest(cfg); /* scratch folders unless given before it */
+        else if (!strcmp(a, "--selftest-market")) return DwMarketSelfTest(cfg); /* needs --resources and --profile before it */
+        else if (!strcmp(a, "--selftest-career")) return DwCareerSelfTest(cfg); /* needs --resources, --profile, --match-profile */
+        else if (!strcmp(a, "--wb-background")) wbBackground = true;
+        else if (!strcmp(a, "--wb-create")) { wbCreate = v; i++; } /* start from a fresh level-1 profile of this uid */
+        else if (!strcmp(a, "--writeback") && i + 4 < argc) { /* apply the reports waiting in <match-dir>, print the result */
+            cfg.resources = argv[i + 1]; cfg.profile = argv[i + 2]; cfg.matchProfile = argv[i + 3];
+            return DwWritebackRun(cfg, argv[i + 4], wbBackground, wbCreate);
+        }
         else if (!strcmp(a, "--differential")) cfg.differential = true;
         else if (!strcmp(a, "--port")) { net.port = atoi(v); i++; }
         else if (!strcmp(a, "--alt-port")) { net.altPort = atoi(v); i++; }
@@ -74,6 +97,7 @@ int main(int argc, char **argv)
         else if (!strcmp(a, "--match-profile")) { cfg.matchProfile = v; i++; }
         else if (!strcmp(a, "--zone-dir")) { cfg.zoneDir = v; i++; }
         else if (!strcmp(a, "--mm-port")) { cfg.mmHostPort = atoi(v); i++; }
+        else if (!strcmp(a, "--joinreq-gap")) { cfg.joinreqRelayGap = atof(v); i++; } /* CODOL_JOINREQ_RELAY_MINGAP */
         else if (!strcmp(a, "--fixed-time")) { cfg.fixedTime = _atoi64(v); i++; }
         else if (!strcmp(a, "--log")) { host.log = fopen(v, "ab"); i++; }
         else { fprintf(stderr, "unknown argument %s\n", a); return 2; }

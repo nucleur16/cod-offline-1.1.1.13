@@ -21,6 +21,7 @@ import re
 import socket
 import sys
 import time
+import zlib
 
 sys.path.insert(0, os.environ.get("PYLOBBY_DIR", "."))
 from demonware.a22_tiger import tiger          # noqa: E402
@@ -113,12 +114,21 @@ class Peer:
     def send(self, conn, data):
         self.socks[conn].sendall(data)
 
-    def collect(self, quiet):
+    def collect(self, quiet, expect=None, patience=5.0):
         """Read every open connection until all have been silent for `quiet` seconds.
-        -> {conn: [frame, ...]} where frame = ("keepalive",) | ("plain", bytes) | ("enc", mc, plaintext)."""
+        -> {conn: [frame, ...]} where frame = ("keepalive",) | ("plain", bytes) | ("enc", mc, plaintext).
+
+        `expect` names the connection a task request was just sent on: its reply is waited for (up to
+        `patience` seconds) before the quiet period may end. MEASURED: the Python lobby creates its
+        SQLite database inside the first storage task that carries a uid and answers that one request
+        after ~360 ms, which a 250 ms quiet window reports as a missing reply plus a shifted next one."""
         out = {}
-        deadline = time.time() + quiet
-        while time.time() < deadline:
+        start = time.time()
+        deadline = start + quiet
+        while True:
+            now = time.time()
+            if now >= deadline and (expect is None or expect in out or expect not in self.socks or now >= start + patience):
+                break
             got = False
             for conn, s in list(self.socks.items()):
                 s.settimeout(0.02)
@@ -199,6 +209,34 @@ def plan(events):
     return steps
 
 
+def mpdata_s_view(pt):
+    """A GETFILE reply carrying a rendered mpdata_s -> a comparable form, else None (compare raw).
+
+    Both lobbies stamp `challegeUpdateTime` (inflated byte 0x170, an int of Unix seconds) with the
+    second of the serve on every mpdata / mpdata_s GETFILE (progression.blob_updates), so two servers
+    that read the clock either side of a second boundary differ in those 4 bytes, the CRC32 at byte 0
+    and the deflate stream behind them. Only a blob that is the canonical encoding (zlib level 1 of a
+    CRC-correct 32768-byte v11 / 0x096B8F57 buffer) is normalised: reply header + the inflated buffer
+    with the CRC and the timestamp blanked. Anything else is compared byte for byte."""
+    if len(pt) < 37 or pt[31] != 19 or pt[32] != 8:
+        return None
+    n = int.from_bytes(pt[33:37], "little")
+    blob = bytes(pt[37:37 + n])
+    if len(blob) != n:
+        return None
+    try:
+        buf = bytearray(zlib.decompress(blob))
+    except zlib.error:
+        return None
+    if len(buf) != 32768 or buf[4:12] != (11).to_bytes(4, "little") + (0x096B8F57).to_bytes(4, "little"):
+        return None
+    if zlib.compress(bytes(buf), 1) != blob or zlib.crc32(bytes(buf[4:])) != int.from_bytes(buf[0:4], "little"):
+        return None
+    buf[0:4] = b"CRC!"
+    buf[0x170:0x174] = b"TIME"
+    return bytes(pt[:33]) + b"mpdata_s, canonical, inflated:" + bytes(buf)
+
+
 # (svc, task) -> how many leading plaintext bytes are compared; None = everything.
 # Plaintext = DEADBEEF(4) type(1) [10 txn(8)] [8 err(4)] [3 task] [8 n(4)] [8 total(4)] records...
 def mask(svc, task, frames):
@@ -211,6 +249,11 @@ def mask(svc, task, frames):
             out.append(f)
             continue
         mc, pt = f[1], bytearray(f[2])
+        if (svc, task) == (10, 3):
+            secure = mpdata_s_view(pt)
+            if secure is not None:
+                out.append(("enc", secure))
+                continue
         cut = len(pt)
         while cut > len(pt) - 7 and cut > 5 and pt[cut - 1] == (mc & 0xFF):
             cut -= 1
@@ -218,6 +261,56 @@ def mask(svc, task, frames):
         if (svc, task) == (12, 6) and len(pt) >= 37:
             pt[33:37] = b"TIME"          # getServerTime's Unix seconds
         out.append(("enc", bytes(pt)))
+    return out
+
+
+def calm(by_conn, conn, stale=()):
+    """Drop the idle keepalives of OTHER connections. MEASURED: both servers send a bare u32 0 after 20 s
+    of silence, each on its own clock, so the frame lands beside whichever request happens to be in
+    flight on one side and the next one on the other. The keepalive echo on the request's own
+    connection is still compared.
+
+    `stale` = the connections this replay has sent nothing on for ~10 minutes. Both servers close a
+    connection that has been silent for 600 s (dw-capture.py CONN_IDLE_CLOSE, "silent 600s -- closing";
+    Server::Tick), again each on its own clock, so that close is dropped the same way. A close of any
+    other connection is still compared."""
+    out = {}
+    for c, frames in by_conn.items():
+        keep = [f for f in frames if c == conn or (f != ("keepalive",) and not (f == ("closed",) and c in stale))]
+        if keep:
+            out[c] = keep
+    return out
+
+
+_NEVER = b"\x09" + b"\xff" * 7 + b"\x7f"   # the Int64 that follows the expiry in every inventory record
+
+
+def rental_skew(a, b):
+    """MARKETPLACE getInventory (80/10) and getPlayerData (80/30): a RENTAL's expiry is `now + days`
+    read off each server's own clock when the purchase was made, so two servers that handled the
+    purchase either side of a second boundary serve expiries one second apart from then on. In an
+    inventory record ([10 instance][8 item][8 qty][8 xp][8 expiry][9 7FFF..][6 0][8 0]) an expiry
+    that is non-zero on both sides and at most 2 s apart is taken as equal; everything else,
+    a permanent (0) against a rental included, is still compared byte for byte. -> b, reconciled."""
+    out = {}
+    for c, fb in b.items():
+        fa = a.get(c, [])
+        frames = []
+        for i, f in enumerate(fb):
+            x = fa[i] if i < len(fa) else None
+            if f[0] == "enc" and x and x[0] == "enc" and len(x[1]) == len(f[1]) and x[1] != f[1]:
+                pa, pb = x[1], bytearray(f[1])
+                p = pa.find(_NEVER)
+                while p >= 5:
+                    if pb[p:p + 9] == _NEVER and pa[p - 5] == 8 == pb[p - 5]:
+                        ea = int.from_bytes(pa[p - 4:p], "little")
+                        eb = int.from_bytes(pb[p - 4:p], "little")
+                        if ea and eb and abs(ea - eb) <= 2:
+                            pb[p - 4:p] = pa[p - 4:p]
+                    p = pa.find(_NEVER, p + 9)
+                f = ("enc", bytes(pb))
+            frames.append(f)
+        out[c] = frames
     return out
 
 
@@ -245,10 +338,12 @@ def replay(args):
     peers = [Peer(args.a)] + ([Peer(args.b)] if args.b else [])
     total = diffs = mcdiffs = 0
     stats = {}
+    spoke = {}   # conn -> when this replay last sent on it
     for kind, conn, data in steps:
         if kind == "open":
             for p in peers:
                 p.open(conn)
+            spoke[conn] = time.time()
             continue
         if kind == "close":
             for p in peers:
@@ -260,8 +355,10 @@ def replay(args):
         got = []
         for p in peers:
             p.send(conn, data)
+        stale = {c for c, t0 in spoke.items() if c != conn and time.time() - t0 >= 590}
+        spoke[conn] = time.time()
         for p in peers:
-            got.append(p.collect(args.quiet))
+            got.append(p.collect(args.quiet, conn if req else None))
         total += 1
         key = (req[0], req[1]) if req else label.split()[0]
         st = stats.setdefault(key, [0, 0])
@@ -273,8 +370,10 @@ def replay(args):
                     print("     A conn#%d << %s" % (c, fmt_frame(f)))
         if len(peers) == 2:
             sv, tk = (req[0], req[1]) if req else (-1, -1)
-            a = {c: mask(sv, tk, f) for c, f in got[0].items()}
-            b = {c: mask(sv, tk, f) for c, f in got[1].items()}
+            a = calm({c: mask(sv, tk, f) for c, f in got[0].items()}, conn, stale)
+            b = calm({c: mask(sv, tk, f) for c, f in got[1].items()}, conn, stale)
+            if (sv, tk) in ((80, 10), (80, 30)):
+                b = rental_skew(a, b)
             if a == b and {c: mcs(f) for c, f in got[0].items()} != {c: mcs(f) for c, f in got[1].items()}:
                 mcdiffs += 1
             if a != b:

@@ -304,7 +304,9 @@ static void OfflineP2PConfig(P2PConfig *c)
     lstrcpyA(c->netIp, "127.0.0.1");
     lstrcpyA(c->mode, "inprocess");
     c->admission = 1;
-    c->extra[0] = 0;
+    /* P2PCheck permits exactly one extra string (the two match-lifecycle switches); anything else an
+     * older p2p_host.ini carries would refuse hosting, so it is dropped rather than passed on. */
+    if (strcmp(c->extra, "+set codol_exitToLobby 1 +set codol_oneShotMatch 1")) c->extra[0] = 0;
 }
 
 /* Main thread, every frame: publish the Local Play state for the lobby thread, and start the embedded

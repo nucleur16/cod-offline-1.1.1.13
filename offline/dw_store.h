@@ -56,12 +56,13 @@ public:
     void WalletSet(uint64_t uid, int currency, int64_t amount);
 
     /* inventory */
-    bool InventoryExists(uint64_t uid); /* the account has an inventory of its own */
-    std::vector<InvRow> InventoryList(uint64_t uid, bool includeShared = true);
+    bool InventoryExists(uint64_t uid); /* the account has rows of its own (else it inherits the shared ones) */
+    /* Ordered by item id; a per-uid row wins over a shared one. now != 0 drops rows that have expired. */
+    std::vector<InvRow> InventoryList(uint64_t uid, bool includeShared = true, int64_t now = 0);
     bool InventoryGet(uint64_t uid, int64_t itemId, InvRow &out);
     void InventoryGrant(uint64_t uid, int64_t itemId, int64_t quantity, int64_t expiresAt, const std::string &source,
                         int64_t skuId, bool stack);
-    /* -> the remaining quantity, or -1 when the player does not hold the item */
+    /* -> the remaining quantity, or -1 (nothing consumed) when the item is not held or the stack is short */
     int64_t InventoryConsume(uint64_t uid, int64_t itemId, int64_t quantity, bool removeAtZero);
     void InventoryReplace(uint64_t uid, const std::vector<InvRow> &rows, const std::string &source);
     bool InventoryRevoke(uint64_t uid, int64_t itemId);
