@@ -14,6 +14,12 @@ for PROFILE in 0 1; do
         -o "$OUT/hostgate-$PROFILE.exe" -lws2_32 -liphlpapi
     python tests/test_hostgate_windows.py "$OUT/hostgate-$PROFILE.exe"
 done
+# Offline mode (docs/OFFLINE_LOBBY.md): the Kernel33 side in an owned fixture; tests/offline/ holds the
+# lobby's own differential tests against the Python lobby (they need a private copy of it).
+"$BIN/gcc.exe" -std=gnu99 -O2 -Wall -Wextra -Werror -Wno-unused-function -Wno-cast-function-type -I. \
+    tests/offline_lobby_fixture.c -o "$OUT/offline_lobby_fixture.exe"
+rm -rf "$OUT/offline-lobby"
+python tests/test_offline_lobby_windows.py "$OUT/offline_lobby_fixture.exe" "$OUT/offline-lobby"
 python tests/test_ui_baseline.py
 python tests/test_quick_ready_gate.py
 node tests/campaign_local_host_test.js

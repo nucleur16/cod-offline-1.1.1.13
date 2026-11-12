@@ -28,7 +28,9 @@
 
 #define OFL_DEFAULT_PORT     3074   /* what C1's bdNetStartParams uses for NAT traversal (0x00A50454) */
 #define OFL_DEFAULT_ALT_PORT 3078
+#ifndef OFL_NATTRAV_PORT_VA /* the Windows fixture supplies its own site */
 #define OFL_NATTRAV_PORT_VA  0x00A50454u /* mov ecx, 0xC02 ; mov [edi+14h], cx  (m_natTravPort) */
+#endif
 
 static struct {
     int requested;               /* 0 unknown, 1 on, -1 off */
