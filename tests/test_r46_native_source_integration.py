@@ -179,4 +179,30 @@ class ProductionTestSurfaces(unittest.TestCase):
   self.assertEqual(diagnostic.count('InterlockedIncrement(&reloads)'),1)
   self.assertEqual(shipping.count('((UiModeFn)(DWORD_PTR)UI_MODE_VA)'),2)
 
+
+ def test_parity_debug_blocks_are_diagnostic_only_and_shared_cgame_is_preserved(self):
+  text=(ROOT/'parity.c').read_text(encoding='utf-8')
+  digest=lambda value:hashlib.sha256(' '.join(value.split()).encode()).hexdigest()
+  def valid(value):
+   try:
+    shipping=gate_project(value,'CODOL_DIAGNOSTICS',False)
+    diagnostic=gate_project(value,'CODOL_DIAGNOSTICS',True)
+   except AssertionError:return False
+   return (value.count('#if CODOL_DIAGNOSTICS\n')==2 and
+           digest(shipping)=='e77bede52cf1ca517b9b1081f03513cb1fcebfdcc286b6c0628b7d990f54b95c' and
+           digest(diagnostic)=='6f84ad3127191a21fa3b3a4ecbf29c63b8e2832229e174128cce666dd00ab30f')
+  self.assertTrue(valid(text))
+  shipping=gate_project(text,'CODOL_DIAGNOSTICS',False)
+  self.assertIn('static BYTE *ParityCg(void)',shipping)
+  for symbol in ('ParityEvents','ParityPredCheck','ParitySnapshot','ParityDefaultAsset','g_phEvents','g_parityQueue','InstallParityLogger'):
+   self.assertNotIn(symbol,shipping)
+  # Removing either gate must reintroduce debug code; common-helper drift must also fail.
+  begin='#if CODOL_DIAGNOSTICS\n';end='#endif /* CODOL_DIAGNOSTICS */\n'
+  for index in (0,1):
+   starts=[match.start()for match in re.finditer(re.escape(begin),text)]
+   at=starts[index];stop=text.index(end,at)
+   mutant=text[:at]+text[at+len(begin):stop]+text[stop+len(end):]
+   with self.subTest(ungated=index):self.assertFalse(valid(mutant))
+  self.assertFalse(valid(text.replace('enc ^ CG_KEY','enc | CG_KEY',1)))
+
 if __name__=='__main__':unittest.main(verbosity=2)

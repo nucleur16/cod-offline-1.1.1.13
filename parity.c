@@ -97,6 +97,7 @@
 #define CS_COUNT               ((CS_DATA_VA - CS_OFFSETS_VA) / 4)
 #define CS_DATA_LIMIT          0x40000u
 
+#if CODOL_DIAGNOSTICS
 static int g_parityStartLevel = 1;
 static const BYTE *volatile g_parityDvar;
 static DWORD g_mainThread;
@@ -215,6 +216,7 @@ static void ParityTick(void)
     if (g_parityQueueCount || g_parityQueueDropped) ParityFlush();
 }
 
+#endif /* CODOL_DIAGNOSTICS */
 static BYTE *ParityCg(void)
 {
     /* The index is not the local client number: CG_Init's allocator (0x44E138..0x44E167) picks a
@@ -229,6 +231,7 @@ static BYTE *ParityCg(void)
     return Readable(cg, CG_SNAP + 8) && Readable(cg + CG_TIME, 4) ? cg : NULL;
 }
 
+#if CODOL_DIAGNOSTICS
 /* messageNum of the snapshot in each of cg's two snapshot buffers (CG_ReadNextSnapshot 0x46D9F5
  * fills cg+0x35E8 / cg+0x35E8+0x556B0 with CL_GetSnapshot(num)); snapshot_t has no messageNum. */
 static const BYTE *volatile g_snapBuf[2];
@@ -1013,3 +1016,4 @@ static void InstallParityLogger(void)
     Log("parity: logger active, %d hooks installed, %d skipped, parity_log %d at startup%s", g_parityHooks,
         g_paritySkipped, g_parityStartLevel, g_csReadable ? "" : ", configstring lookup off");
 }
+#endif /* CODOL_DIAGNOSTICS */
