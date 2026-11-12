@@ -247,6 +247,30 @@ class Tests(unittest.TestCase):
   m.waits=0;m.invoke('WorkerOnce');self.assertEqual(m.invoke('Alias',MEM+0x1000),MEM+0x1000)
   m=Machine();m.invoke('Install');m.setevent=False;m.invoke('Tick');self.assertEqual(m.invoke('Busy'),0)
   m.now=999;m.invoke('Tick');self.assertEqual(m.events,1);m.now=1249;m.setevent=True;m.invoke('Tick');self.assertEqual(m.events,2)
+ def test_theatre_generation_transition_zero_wrap_rejects_pending_name_reply(self):
+  # The worker keeps its original request identity. A newer Theatre generation
+  # invalidates that reply even when canonical name and UID are unchanged.
+  for previous,current in ((0,1),(1,0),(0xffffffff,0),(0,0xffffffff)):
+   with self.subTest(previous=previous,current=current):
+    m=Machine();self.assertEqual(m.invoke('Install'),1)
+    m.invoke('TheatreSession',previous);m.invoke('Tick');self.assertEqual(m.events,1)
+    m.invoke('TheatreSession',current);m.now=250;m.invoke('Tick')
+    m.waits=0;self.assertEqual(m.invoke('WorkerOnce'),0)
+    source=m.string('Alpha');self.assertEqual(m.invoke('Alias',source),source)
+    m.now=500;m.invoke('Tick');self.assertEqual(m.events,2)
+    m.waits=0;self.assertEqual(m.invoke('WorkerOnce'),0)
+    self.assertEqual(m.text(m.invoke('Alias',m.string('Alpha'))),'中文'.encode())
+
+ def test_unchanged_zero_and_max_theatre_generation_keep_pending_name_reply(self):
+  # Zero is a real initial/wrapped generation, not an unavailable sentinel.
+  for generation in (0,1,0xffffffff):
+   with self.subTest(generation=generation):
+    m=Machine();self.assertEqual(m.invoke('Install'),1)
+    m.invoke('TheatreSession',generation);m.invoke('Tick')
+    m.invoke('TheatreSession',generation);m.now=250;m.invoke('Tick')
+    self.assertEqual(m.events,1);self.assertEqual(m.invoke('WorkerOnce'),0)
+    self.assertEqual(m.text(m.invoke('Alias',m.string('Alpha'))),'中文'.encode())
+
  def test_utf8_conversion_native_custom_abi_and_gfx_thiscall(self):
   m=Machine();source=m.string('ASCII');out=MEM+0x500;m.u.reg_write(UC_X86_REG_ESI,0xabcdef);self.assertEqual(m.invoke('Convert',out,source),out)
   at,registers,sp=m.native_calls[-1];self.assertEqual(at,0x5c7340);self.assertEqual(registers[UC_X86_REG_ESI],out);self.assertEqual(m.get(sp+4),source);self.assertEqual(m.u.reg_read(UC_X86_REG_ESI),0xabcdef)

@@ -111,6 +111,14 @@ static CRITICAL_SECTION g_thLock;
 static char g_thPendingToken[44];        /* from the broadcast hook (any thread), under g_thLock */
 static char g_thToken[44];               /* main thread from here on */
 static unsigned g_thSession, g_thRevision;
+
+/* The main-thread Theatre flow owns this counter. Zero and unsigned wrap are
+ * valid generations; expose the current value without interpreting it. */
+__attribute__((unused)) static unsigned ThSessionGeneration(void)
+{
+    return g_thSession;
+}
+
 static char g_thFilter[8] = "all";
 static int g_thPage;
 static BOOL g_thBusy, g_thWatching, g_thStarted, g_thReturning;

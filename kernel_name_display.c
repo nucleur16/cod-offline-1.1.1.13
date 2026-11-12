@@ -57,9 +57,8 @@ static void KernelNameMainTick(void)
     for(size_t i=0;valid && canonical[i];++i)
         if(i>=63 || (unsigned char)canonical[i]<33 || (unsigned char)canonical[i]>126)valid=0;
     AcquireSRWLockExclusive(&g_kndLock);
-    /* Public r44/r45 retired the Theatre-session receiver, so its generation
-     * input is always zero. Canonical/UID changes still advance our generation. */
-    KnpIdentityUpdate(&g_kndCache,valid?canonical:"",valid?uid:0,0,now);
+    /* The retained dispatcher runs TheatreTick before this room/name chain. */
+    KnpIdentityUpdate(&g_kndCache,valid?canonical:"",valid?uid:0,ThSessionGeneration(),now);
     if(valid && !g_kndBusy && (uint32_t)(now-g_kndCache.next_request)<0x80000000u) {
         g_kndRequest=g_kndCache.identity;g_kndPending=g_kndBusy=1;g_kndCache.next_request=now+30000;
         if(!SetEvent(g_kndEvent)){g_kndPending=g_kndBusy=0;g_kndCache.next_request=now+1000;}
