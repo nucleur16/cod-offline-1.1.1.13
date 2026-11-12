@@ -517,13 +517,17 @@ typedef unsigned char (__cdecl *GfxUnusableFn)(void);
 
 static void __cdecl ScoresOpenHook(int localClient, int mode)
 {
+#if CODOL_DIAGNOSTICS
     static LONG reloads;
+#endif
     if (!*(volatile DWORD *)(DWORD_PTR)HUD_MOVIE_VA && !*(volatile DWORD *)(DWORD_PTR)HUD_MOVIE_DEF_VA &&
         *(volatile DWORD *)(DWORD_PTR)SCALEFORM_ON_VA && !((GfxUnusableFn)(DWORD_PTR)GFX_UNUSABLE_VA)()) {
         ((UiModeFn)(DWORD_PTR)UI_MODE_VA)(localClient, UI_MODE_HUD);
+#if CODOL_DIAGNOSTICS
         if (InterlockedIncrement(&reloads) <= 8)
             Log("scoreboard: HUD movie was not loaded (focus lost while loading?), reloaded it: %s",
                 *(volatile DWORD *)(DWORD_PTR)HUD_MOVIE_VA ? "ok" : "still missing");
+#endif
     }
     ((UiModeFn)(DWORD_PTR)UI_MODE_VA)(localClient, mode);
 }

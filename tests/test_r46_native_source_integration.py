@@ -166,4 +166,17 @@ class ProductionTestSurfaces(unittest.TestCase):
    self.assertNotIn(token,shipping)
    self.assertIn(token,gate_project(body,'CODOL_LOCAL_TESTING',True))
 
+ def test_scoreboard_repair_keeps_functional_calls_without_shipping_diagnostic_counter(self):
+  body=function((ROOT/'kernel33.c').read_text(),'ScoresOpenHook')
+  shipping=gate_project(body,'CODOL_DIAGNOSTICS',False)
+  diagnostic=gate_project(body,'CODOL_DIAGNOSTICS',True)
+  digest=lambda text:hashlib.sha256(' '.join(text.split()).encode()).hexdigest()
+  # Golden preimage identities pin the entire existing repair/control flow;
+  # a removed/reordered UI call or changed condition cannot pass this check.
+  self.assertEqual(digest(shipping),'5086067800d27c3d30fab20d6bf98390b7220ff23099b8173ad4cf3e7c47ad16')
+  self.assertEqual(digest(diagnostic),'814390d3fd06c211ba5569a8211ab1dbb450ae02741e65e979c738788936fcee')
+  self.assertNotIn('reloads',shipping);self.assertNotIn('InterlockedIncrement',shipping)
+  self.assertEqual(diagnostic.count('InterlockedIncrement(&reloads)'),1)
+  self.assertEqual(shipping.count('((UiModeFn)(DWORD_PTR)UI_MODE_VA)'),2)
+
 if __name__=='__main__':unittest.main(verbosity=2)
