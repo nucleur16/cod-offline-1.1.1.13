@@ -155,15 +155,29 @@ Fixtures (run on this branch):
   loopback destination only, and that datagram is still sent. The fixture did not compile at d0b0756 (it lacked
   the production socket symbols); its stubs are added here.
 - `ui_baseline.json` was re-recorded (`python -m zonekit.ui_baseline --record`); `tests/test_ui_baseline.py` passes.
-- **Open, needs review:** `tests/test_invitations_disabled.py` (3 of 11 cases) now fails with `separate
-  predecessor/current movie identities`. `tools/p2p-four-tag-composition` pins the reviewed movie and the reviewed
-  sources of four P2P classes; three of them (`LobbyController`, `LocalMatchControls`, `LocalCreateRoomOption`)
-  changed here. That contract carries a semantic review record, so it was not re-pinned mechanically: it has to be
-  reviewed and re-pinned for this change. The test passes on d0b0756.
-- `tests/test_p2p_match_options.c` does not compile with the runner's `-Werror` at d0b0756 (unused function in
-  `p2p_match_options.h`) and was not touched.
-- `tests/campaign_local_host_test.js` fails at d0b0756 already (it does not know `isProductionLocalRoom`) and still
-  does; its waiting-gate cases describe the superseded behaviour for protocols 0-2.
+- The movie pin chain (branch `k33-tests-green`). `tools/p2p-four-tag-composition` pins the reviewed movie and the
+  reviewed sources of four P2P classes; three of them (`LobbyController`, `LocalMatchControls`,
+  `LocalCreateRoomOption`) changed here, so `tests/test_invitations_disabled.py` failed with `separate
+  predecessor/current movie identities`. The four-tag contract and its semantic review record were not re-pinned.
+  A successor stage, `tools/p2p-deferred-host-composition`, preserves the three sources, three tags and `patch.txt`
+  of the four-tag endpoint as DATA witnesses, so that stage still proves its own endpoint, and then proves the tree's
+  movie over it: only those three tags differ, and the inverse restores the predecessor. Its record,
+  `automated-diff-review.json.DATA`, is an **automated** review of the source and stored-tag difference, not a human
+  one and not the independent QA the four-tag record came from. `resolved_abc.py` compares the old and new tags
+  method by method with every operand resolved; the stage recomputes that on every run. Result: one method and one
+  trait added per class, nothing removed, and the only other methods that differ beyond compiler spelling are the
+  edited ones (`onChangeReadyStateHandle`, `onStartMatchHandle`, `onCampaignHostReady`, `onProtocolFrame`).
+  **Finding:** 35 `LobbyController` and 8 `LocalMatchControls` methods with unchanged source were stored with other
+  instructions (explicit `Boolean()`/`String()`/`int()` conversions as calls instead of convert opcodes; builtin
+  members such as `indexOf`/`splice` late-bound instead of AS3-namespace QNames), so the tags of this change came
+  from another compiler build or configuration than the predecessor's. Not run: any compiler, decompiler or AS VM.
+- `tests/test_p2p_match_options.c` now exercises `P2PParseRoomContextV2` (it did not compile with the runner's
+  `-Werror` at d0b0756 because that function was unused).
+- `tests/campaign_local_host_test.js` (stale since before d0b0756) drives the room's own handlers again: Ready and
+  Start proceed at once in protocols 0-2 with the failure watch, and protocol 3 keeps its waiting gate.
+- **Open:** `tests/test_r46_native_source_integration.py` (CI only, not in `tests/run_tests.sh`) pins a whitespace
+  hash of `HostGateSendTo` in `tests/r46_native_source_contract.json`; the launch observation added to that function
+  here changes it. That pin was left for a review of the native change.
 
 Live (2026-11-12, own shadow client and own lobby copy on 127.0.0.1, user `edtest`, protocol 0, mp_killhouse_sh
 Team Deathmatch, dev-profile DLL of this branch):

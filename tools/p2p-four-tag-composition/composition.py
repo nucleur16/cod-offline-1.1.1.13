@@ -2,9 +2,16 @@
 
 The retained predecessor is a bounded DATA witness, never loaded or compiled.
 All original selector/ABI/invitation checks remain in current_endpoint.py.
+
+This endpoint (OUTPUT_SHA) is no longer the tree's movie: three of its four
+classes were recompiled later. Its contract, pins and review record are not
+repinned. The files of this endpoint that changed since are read from the
+successor's preserved DATA witnesses (endpoint() below, each still checked
+against this stage's own pins), this exact endpoint is reconstructed as
+before, and the tree's movie is then proved by the pinned successor stage.
 """
 from pathlib import Path
-import hashlib,json,re,struct,sys,zlib
+import hashlib,importlib.util,json,re,struct,sys,types,zlib
 
 HERE=Path(__file__).resolve().parent
 PARENT=HERE.parent/'playlist-selector-producer'
@@ -16,6 +23,8 @@ PRIOR_SHA='38dd0456193d9025f5831de44f9d2deb70d433f42ea7b8d0f76b7236f558ea37'
 OUTPUT_SHA='bc9c8515ca326a31e1006bfeb8338a441cd2d5677d6a56d0b31eb46ef294e9a9'
 PATCH=Path('zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch')
 MAX=16*1024*1024
+NEXT=HERE.parent/'p2p-deferred-host-composition'/'composition.py'
+NEXT_SHA='f98e1b5d3bf6c313008c16a30e2a8b4cfcd96ccb53885ad420a5ecdb4f68cacc'
 
 def need(value,label):
     if not value:raise ValueError(label)
@@ -61,7 +70,13 @@ def verify(root,prior_sha):
     need(sha(before)==PRIOR_SHA,'reconstructed exact selector predecessor')
     prior_patch=exact(HERE/'patch.before.txt.DATA',contract['prior_patch_sha256'])
     oldmeta,oldsrc,oldops=parse_patch(prior_patch)
-    current_patch=(Path(root)/PATCH/'patch.txt').read_bytes()
+    exact(NEXT,NEXT_SHA)
+    spec=importlib.util.spec_from_file_location('qualified_three_tag_successor',NEXT)
+    successor=importlib.util.module_from_spec(spec);spec.loader.exec_module(successor)
+    def endpoint(rel):
+        # This endpoint's bytes: the successor's witness where the tree has moved on, else the tree.
+        raw=successor.held(rel);return(Path(root)/PATCH/rel).read_bytes()if raw is None else raw
+    current_patch=endpoint('patch.txt')
     meta,sources,ops=parse_patch(current_patch)
     need(ops==oldops,'all 6867 original patch operations/order exact')
     need(meta['stock']==oldmeta['stock']and meta['stock-sha256']==oldmeta['stock-sha256'],'original stock reference and digest exact')
@@ -77,7 +92,7 @@ def verify(root,prior_sha):
         if cls.replace('.','/')in allowed:
             expected=allowed[cls.replace('.','/')]
             need(row==(expected['source'],expected['source_sha256']),'qualified four Source metadata exact')
-            exact(Path(root)/PATCH/row[0],row[1])
+            need(sha(endpoint(row[0]))==row[1],'composition DATA identity: '+Path(row[0]).name)
         else:need(row==oldsrc[cls],'non-target Source metadata unchanged')
     actual_receipt=json.loads(exact(HERE/'actual-semantic-review.json.DATA',contract['actual_semantic_peer_sha256']))
     need(actual_receipt['verdict']=='ACCEPT_FOUR_P2P_CLASS_TAG_DATA_SEMANTICS'and actual_receipt['actual_ABC_checked']is True and actual_receipt['non_target_tags_exact']is True and actual_receipt['source_body_cases_pass']==19,'actual four-tag semantic qualification')
@@ -88,7 +103,7 @@ def verify(root,prior_sha):
         old=before[t['begin']:t['end']];name=t['name']
         if op[0]=='keep':
             need(name not in allowed,'qualified class must use an explicit stored tag');out.append(old);continue
-        now=(Path(root)/PATCH/op[1]).read_bytes()
+        now=endpoint(op[1])
         if name in allowed:
             r=allowed[name]
             need(op[1]==r['tag']and sha(old)==r['prior_tag_sha256']and sha(now)==r['tag_sha256'],'qualified target tag identity')
@@ -109,4 +124,7 @@ def verify(root,prior_sha):
     restored=bytearray(current[:S.header_len(current)]+b''.join(reverse));struct.pack_into('<I',restored,4,len(restored))
     need(bytes(restored)==before and sha(restored)==PRIOR_SHA,'four-tag inverse restores exact selector endpoint')
     need(sha(current_patch)==contract['current_patch_sha256'],'exact qualified patch metadata bytes')
-    return dict(prior_movie_sha256=PRIOR_SHA,current_movie_sha256=OUTPUT_SHA,qualified_classes=4,non_target_tags_exact=6863,total_tags=6867,inverse_exact=True,original_selector_contract_preserved=True,actual_ABC_checked=True,compiler_invoked=False,runtime_or_release_ready=False)
+    proof=dict(prior_movie_sha256=PRIOR_SHA,current_movie_sha256=OUTPUT_SHA,qualified_classes=4,non_target_tags_exact=6863,total_tags=6867,inverse_exact=True,original_selector_contract_preserved=True,actual_ABC_checked=True,compiler_invoked=False,runtime_or_release_ready=False)
+    # The tree's movie: proved by the successor over this reconstructed endpoint.
+    proof['successor']=successor.verify(root,OUTPUT_SHA,before=current,prior=types.SimpleNamespace(**globals()))
+    return proof

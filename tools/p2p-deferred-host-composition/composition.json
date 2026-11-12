@@ -1,0 +1,44 @@
+{
+  "classes": [
+    {
+      "class_name": "codo.k33.LocalCreateRoomOption",
+      "prior_source_data": "LocalCreateRoomOption.before.as.DATA",
+      "prior_source_sha256": "4a94b4b34b07b4e79aef9823a3576f7728a9343a262e0418e2a715594a8aa2cd",
+      "prior_tag_data": "LocalCreateRoomOption.before.tag.DATA",
+      "prior_tag_sha256": "89e278ff51fe2d6fc0f0ae2d52125531ce24ec94b107b18712780719ab7408b4",
+      "source": "as/codo/k33/LocalCreateRoomOption.as",
+      "source_sha256": "c4f59c3eeb858a3a8c4fa191b47879522a172759932a77ae253fe8b25fa29c8a",
+      "tag": "tags/k33_82_codo_k33_LocalCreateRoomOption.bin",
+      "tag_sha256": "fd7d704c39f022dd62537cc197ee99214eb147f5191ebf8facbf6b7673869c14"
+    },
+    {
+      "class_name": "codo.k33.LocalMatchControls",
+      "prior_source_data": "LocalMatchControls.before.as.DATA",
+      "prior_source_sha256": "0c82f458da92abb55b7ae1df20f7263661cb9f05f5a6e8ae4e5133a1c33030dc",
+      "prior_tag_data": "LocalMatchControls.before.tag.DATA",
+      "prior_tag_sha256": "f5eb5936f51f90abab6c4654461f05807b5bf8f1505904be71675985b132aeba",
+      "source": "as/codo/k33/LocalMatchControls.as",
+      "source_sha256": "8e1fe34cc4eff0f92bca71207d2926443ebb25285683946c80f93ed89b10f29d",
+      "tag": "tags/k33_82_codo_k33_LocalMatchControls.bin",
+      "tag_sha256": "da567fed803d7b368cf3a7bf69f442f05804ffc185f052fd26d0714269a34899"
+    },
+    {
+      "class_name": "codo.controllers.LobbyController",
+      "prior_source_data": "LobbyController.before.as.DATA",
+      "prior_source_sha256": "196931fce41a2edb3255a907a45f990b58ac09e04bfa8be12a799f8aa8fc2e43",
+      "prior_tag_data": "LobbyController.before.tag.DATA",
+      "prior_tag_sha256": "c416aae7816b53da1499b652d9faadab1639bd695a6d92133a8ae38611e9387b",
+      "source": "as/codo/controllers/LobbyController.as",
+      "source_sha256": "a582ae0a9756f2e25ac2c6c313bad6576f2efd16fab179f1b7167a41b0e0ced2",
+      "tag": "tags/6122_82_codo_controllers_LobbyController.bin",
+      "tag_sha256": "2dd35d50233a7ce16ad185db83236f40941afe62313a359fa3f71cefa4fa551c"
+    }
+  ],
+  "current_patch_sha256": "93b36eac8f589276434b7d944a06da289ca50e3bd018f5c723c0f17808969dc6",
+  "format": "automated-diff-reviewed-three-P2P-tag-composition-v1",
+  "output_movie_sha256": "7fedff5bda30dc0bd8a484735e1dcce3d389e7fb68b825f28680aa8bc70ce6a5",
+  "prior_movie_sha256": "bc9c8515ca326a31e1006bfeb8338a441cd2d5677d6a56d0b31eb46ef294e9a9",
+  "prior_patch_sha256": "ed50d0026746f22f678e583391690a5187c786d2d65067a301f4f645df7245ab",
+  "resolved_abc_sha256": "829ab29122505798b58d10c4b26e0008ba395a92bbf05da8f0ef7da7222550d1",
+  "review_sha256": "6297c63fdc8af4a649c22f816453e99739fc2ae9983d159f1f2c760ebcb20641"
+}

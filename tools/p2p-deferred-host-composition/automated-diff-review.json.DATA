@@ -1,0 +1,199 @@
+{
+  "format": 1,
+  "verdict": "ACCEPT_THREE_P2P_CLASS_TAG_DATA_DELTA_BY_AUTOMATED_REVIEW",
+  "reviewer": {
+    "kind": "automated",
+    "human": false,
+    "agent": "Claude Code agent, model claude-fable-5-2",
+    "session": "https://claude.ai/code/session_018mKcuw4VVDYoX6MDsXa4HH",
+    "date": "2026-11-12",
+    "statement": "This record was produced by an automated review of the ActionScript difference d0b0756..d319a61 and of the stored tag bytes of the three classes. No human reviewed, approved or signed it. It is not an independent owner QA of the kind recorded in tools/p2p-four-tag-composition/actual-semantic-review.json.DATA and it does not extend that record's claims to this endpoint."
+  },
+  "change": {
+    "commit": "d319a61ea9291aa5f7e792041d56457d432d9f47",
+    "parent": "d0b0756d101fc54b4b822e13036e8d125853b6e0",
+    "subject": "Start the Local Play host at the match launch; add Kernel33 screenshots",
+    "design": "docs/P2P_DEFERRED_HOST_START.md"
+  },
+  "prior_movie_sha256": "bc9c8515ca326a31e1006bfeb8338a441cd2d5677d6a56d0b31eb46ef294e9a9",
+  "output_movie_sha256": "7fedff5bda30dc0bd8a484735e1dcce3d389e7fb68b825f28680aa8bc70ce6a5",
+  "predecessor_review": {
+    "path": "tools/p2p-four-tag-composition/actual-semantic-review.json.DATA",
+    "sha256": "4d3c0c3f73560346ae33dc94042da21b97d001fe5b730f345e974271fc8b4e09",
+    "status": "unchanged and still bound to the four-tag endpoint bc9c8515 only"
+  },
+  "classes": [
+    {
+      "class_name": "codo.k33.LocalCreateRoomOption",
+      "source_change": [
+        "Added the public setter `label` (writes caption.text only when the value differs). No existing member was edited.",
+        "Purpose stated in the source comment: the room reuses this box read-only to show the armed choice and its launch state."
+      ],
+      "resolved_delta": {
+        "bodies_before": 8,
+        "bodies_after": 9,
+        "methods_added": [
+          "codo.k33:LocalCreateRoomOption/label/set"
+        ],
+        "methods_removed": [],
+        "methods_changed": [],
+        "methods_identical": 7,
+        "methods_changed_beyond_compiler_spelling": [],
+        "traits_added": [
+          "('instance', (('qname', 7, '22:', 'label'), 3, 0, 0, ('method', 'codo.k33:LocalCreateRoomOption/label/set')))"
+        ],
+        "traits_removed": []
+      },
+      "unchanged_source_methods_recompiled_with_another_spelling": 0
+    },
+    {
+      "class_name": "codo.k33.LocalMatchControls",
+      "source_change": [
+        "Added `import codo.utils.LocalizeUtil` and the private method `refreshStatus`.",
+        "`onProtocolFrame` gained one trailing call, `this.refreshStatus()`; its existing statements are unchanged.",
+        "`refreshStatus`: in startup protocol 3 it only sets choice.mouseEnabled=true and returns. Otherwise it makes the helper and its checkbox non-interactive, shows the helper only when a room is set, the Create Room selection was Local Play, the viewer is the owner and ui_p2p_enabled is 1, ticks the box, and sets its caption to HOST ERROR (ui_p2p_error non-empty or ui_p2p_state failed), STARTING HOST... (ui_p2p_launching 1) or the localized @K33UI_LOCAL_PLAY.",
+        "It reads dvars and sets display properties only; it sends no command."
+      ],
+      "resolved_delta": {
+        "bodies_before": 16,
+        "bodies_after": 17,
+        "methods_added": [
+          "codo.k33:LocalMatchControls/private/refreshStatus"
+        ],
+        "methods_removed": [],
+        "methods_changed": [
+          "codo.k33:LocalMatchControls/private/category",
+          "codo.k33:LocalMatchControls/private/difficultyIntent",
+          "codo.k33:LocalMatchControls/private/gameType",
+          "codo.k33:LocalMatchControls/private/intentRoomKey",
+          "codo.k33:LocalMatchControls/private/mapID",
+          "codo.k33:LocalMatchControls/private/nativeMapID",
+          "codo.k33:LocalMatchControls/private/onProtocolFrame",
+          "codo.k33:LocalMatchControls/private/setProductionRoom",
+          "codo.k33:LocalMatchControls/setRoom"
+        ],
+        "methods_identical": 6,
+        "methods_changed_beyond_compiler_spelling": [
+          "codo.k33:LocalMatchControls/private/onProtocolFrame"
+        ],
+        "traits_added": [
+          "('instance', (('qname', 7, '5:codo.k33:LocalMatchControls', 'refreshStatus'), 1, 0, 0, ('method', 'codo.k33:LocalMatchControls/private/refreshStatus')))"
+        ],
+        "traits_removed": []
+      },
+      "unchanged_source_methods_recompiled_with_another_spelling": 8
+    },
+    {
+      "class_name": "codo.controllers.LobbyController",
+      "source_change": [
+        "Added the private method `beginDeferredLocalHost(startPara, action)`: refuses (p2p_cancel_start path) when the V2 context is malformed; in protocols 1/2 sends `p2p_start_intent <action> <map> <context>`, in protocol 0 sends `p2p_room <map> <context>` (plus `p2p_localhost 1` for an owned story room); records the selection, room key and context; sets the pending action to \"launch\"; starts the 250 ms timer; then applies Ready or requests START_MATCH immediately.",
+        "`onChangeReadyStateHandle`: the early pending-attempt cancel now excludes the pending action \"launch\"; the local branch calls beginCampaignLocalHost(null,true,\"ready\") only when isProductionLocalRoom() and beginDeferredLocalHost(null,\"ready\") otherwise.",
+        "`onStartMatchHandle`: the local branch calls beginCampaignLocalHost(myPara,true) only when isProductionLocalRoom() and beginDeferredLocalHost(myPara,\"start\") otherwise.",
+        "`onCampaignHostReady`: a new leading block for the pending action \"launch\" (cancel on a changed room/owner/map/context/leave/disable; on ui_p2p_state failed or a non-transient ui_p2p_error cancel, take Ready back if set and show the message; end the watch when ui_p2p_ready is 1 or after 600000 ms). The previous body follows it unchanged and is reached only for the pending actions ready/start, which only beginCampaignLocalHost sets.",
+        "`beginCampaignLocalHost`, `isProductionLocalRoom`, `cancelCampaignHostStart`, `completeCampaignHostWait`, `localHostContext`, the room-entry auto-enable and `bind_onRoomLeft` have no source change."
+      ],
+      "resolved_delta": {
+        "bodies_before": 91,
+        "bodies_after": 92,
+        "methods_added": [
+          "codo.controllers:LobbyController/private/beginDeferredLocalHost"
+        ],
+        "methods_removed": [],
+        "methods_changed": [
+          "codo.controllers:LobbyController/cppRefreshRoomMemberStats",
+          "codo.controllers:LobbyController/cppSelectCharacter",
+          "codo.controllers:LobbyController/cppSetCharacterAvatarSlots",
+          "codo.controllers:LobbyController/cppSetMemberReadyState",
+          "codo.controllers:LobbyController/cppSetMemberVote",
+          "codo.controllers:LobbyController/private/addGlowFilterTimer",
+          "codo.controllers:LobbyController/private/beginCampaignLocalHost",
+          "codo.controllers:LobbyController/private/bind_onRoomLeft",
+          "codo.controllers:LobbyController/private/broadcastAvatarRefreshInTeam",
+          "codo.controllers:LobbyController/private/filterOnTeam",
+          "codo.controllers:LobbyController/private/getRoomInfo",
+          "codo.controllers:LobbyController/private/initRoomInfo",
+          "codo.controllers:LobbyController/private/initRoomMembers",
+          "codo.controllers:LobbyController/private/isLocalCampaignRoom",
+          "codo.controllers:LobbyController/private/isLocalHostRoom",
+          "codo.controllers:LobbyController/private/isManagedTrainingRoom",
+          "codo.controllers:LobbyController/private/isProductionLocalRoom",
+          "codo.controllers:LobbyController/private/isReady",
+          "codo.controllers:LobbyController/private/isRoomHost",
+          "codo.controllers:LobbyController/private/localHostCategory",
+          "codo.controllers:LobbyController/private/localHostContext",
+          "codo.controllers:LobbyController/private/localIntentRoomKey",
+          "codo.controllers:LobbyController/private/me/get",
+          "codo.controllers:LobbyController/private/onCampaignHostReady",
+          "codo.controllers:LobbyController/private/onChangeReadyStateHandle",
+          "codo.controllers:LobbyController/private/onChangeRoomInfoHandle",
+          "codo.controllers:LobbyController/private/onChangeTeamHandle",
+          "codo.controllers:LobbyController/private/onGlowFilterTimerComplete",
+          "codo.controllers:LobbyController/private/onStartMatchHandle",
+          "codo.controllers:LobbyController/private/onVoteMapHandle",
+          "codo.controllers:LobbyController/private/refreshMyAvatar",
+          "codo.controllers:LobbyController/private/refreshMyWeaponItems",
+          "codo.controllers:LobbyController/private/refreshRoomMaps",
+          "codo.controllers:LobbyController/private/refreshRoomStatus",
+          "codo.controllers:LobbyController/private/refreshRoomVoting",
+          "codo.controllers:LobbyController/private/resetRoom",
+          "codo.controllers:LobbyController/private/setFinalVoting",
+          "codo.controllers:LobbyController/private/setMenuSelections"
+        ],
+        "methods_identical": 52,
+        "methods_changed_beyond_compiler_spelling": [
+          "codo.controllers:LobbyController/private/onCampaignHostReady",
+          "codo.controllers:LobbyController/private/onChangeReadyStateHandle",
+          "codo.controllers:LobbyController/private/onStartMatchHandle"
+        ],
+        "traits_added": [
+          "('instance', (('qname', 7, '5:codo.controllers:LobbyController', 'beginDeferredLocalHost'), 1, 0, 0, ('method', 'codo.controllers:LobbyController/private/beginDeferredLocalHost')))"
+        ],
+        "traits_removed": []
+      },
+      "unchanged_source_methods_recompiled_with_another_spelling": 35
+    }
+  ],
+  "unchanged_class": "codo.views.InRoomBaseView (the fourth class of the predecessor stage): source and stored tag are byte-identical to the four-tag endpoint",
+  "compiled_findings": [
+    "Each class gained exactly one method body and exactly one instance trait, the one its source adds (beginDeferredLocalHost; refreshStatus; the label setter). No method or trait was removed. Body counts 91->92, 16->17, 8->9.",
+    "With every operand resolved to text and branches to instruction ordinals, and with the two compiler spellings below folded, the only pre-existing methods whose compiled form differs are the ones whose source was edited: LobbyController onChangeReadyStateHandle, onStartMatchHandle, onCampaignHostReady; LocalMatchControls onProtocolFrame; none in LocalCreateRoomOption. beginCampaignLocalHost and isProductionLocalRoom (the production protocol 3 path) are in the unchanged set of that comparison.",
+    "FINDING, not explained by the source difference: 35 LobbyController methods and 8 LocalMatchControls methods whose source is unchanged were stored with different instructions. Two spellings account for all of them: (a) an explicit conversion Boolean(x)/String(x)/int(x)/uint(x)/Number(x) was `x; convert_*` (String: coerce_s) and is now `findpropstrict T; x; callproperty T,1`; (b) a builtin member such as indexOf/splice/push/test/toFixed was the QName in the AS3 namespace and is now a late-bound multiname whose open namespace set contains that namespace. So the three tags were compiled by a different compiler build or configuration than the predecessor tags; the commit does not record which.",
+    "Those two spellings are treated as the same statement by this comparison, not proved equivalent by it. Known difference of (a) for String: the old coerce_s kept a null operand null, the new call yields the text \"null\"; the new form is the literal meaning of the source `String(x)`. Whether a null can reach such a conversion in the affected methods was not analysed.",
+    "The strict (unfolded) and folded method deltas of all three classes are in classes[].resolved_delta; composition.verify recomputes them from the preserved predecessor tags and the tree tags and refuses a mismatch."
+  ],
+  "source_findings": [
+    "The source difference is confined to the Ready/Start routing of startup protocols 0-2 and to the read-only display of the armed choice; it matches docs/P2P_DEFERRED_HOST_START.md (\"Ready / Start: proceed at once\", \"UI keeps its gate for protocol 3\").",
+    "Protocol 3 routing is reached through the unchanged isProductionLocalRoom() test and the unchanged beginCampaignLocalHost(); the waiting branch of onCampaignHostReady (generation capture, ui_p2p_initial_handoff, the 180 s limit) follows the new block textually unchanged.",
+    "The new code sends only the commands p2p_start_intent, p2p_room, p2p_localhost 1 and (through the existing cancel helper) p2p_cancel_start, built from the same validated map/context strings as before. Its other outward calls are ones the classes already made (Dvar_GetString, the START_MATCH request, SetReadyState through applyRoomReadyState, showMsg); LocalizeUtil.localize is new to LocalMatchControls. No dvar is written.",
+    "Observation: a silently revoked launch watch (owner change, changed map/context, untick, leave) cancels the native permission but does not take Ready back; only a failed start does.",
+    "Observation: in protocols 0-2 refreshStatus sets mouseEnabled/mouseChildren false on the whole helper on every protocol frame; the protocol 3 branch re-enables only the checkbox. A protocol change during one client run would leave the helper non-interactive; the protocol is fixed per run.",
+    "Observation: the captions STARTING HOST... and HOST ERROR are literal English text, not localization keys."
+  ],
+  "executed_checks": [
+    {
+      "check": "tools/p2p-deferred-host-composition/composition.py verify (through tools/p2p-four-tag-composition/composition.py)",
+      "result": "four-tag endpoint bc9c8515 reconstructed from preserved witnesses; tree movie 7fedff5b reconstructed; 6864 other tags byte-identical; inverse restores the predecessor; resolved method deltas recomputed"
+    },
+    {
+      "check": "node tests/local_play_deferred_test.js",
+      "result": "pass (actual source bodies of beginDeferredLocalHost, onCampaignHostReady, refreshStatus in Node; not an AS VM)"
+    },
+    {
+      "check": "node tests/campaign_local_host_test.js",
+      "result": "pass (actual source bodies through onChangeReadyStateHandle/onStartMatchHandle/room entry/leave for protocols 0, 1, 2 and the retained protocol 3 gate; not an AS VM)"
+    },
+    {
+      "check": "node tests/local_match_controls_test.js; node tests/local_match_layout_test.js; node tests/local_create_room_option_test.js",
+      "result": "pass"
+    }
+  ],
+  "limits": [
+    "Stored tag DATA and source text only. No compiler, decompiler, Java, Scaleform/AVM, game client, server or lobby was run for this record; the compilation that produced the three tags was neither witnessed nor repeated, and no decompiler readback of them was compared with the source.",
+    "The Node cases execute source bodies with doubled native/timer/display boundaries. They do not execute the compiled bytecode.",
+    "Private namespaces are compared by their text. The folded comparison ignores the open namespace set of late-bound names and the max_stack value, and drops debug line records.",
+    "The production protocol 3 path was reviewed as unchanged source plus unchanged (folded) compiled methods; the paired SDK is not in this repository and nothing was exercised against it.",
+    "No rendering, gameplay, network, reward or release statement. The FF asset built from this movie is not covered."
+  ],
+  "actual_actions_authorized": false,
+  "runtime_authority": false
+}
