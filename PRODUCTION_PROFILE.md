@@ -51,3 +51,7 @@ a never-visible owned Windows window. Left/right click and ordinary Escape are
 available only in the separately built, launch-guarded QA profile; shipping and
 QA launches without that guard deliver no input. The test checks the foreground
 window remains unchanged. It does not certify the game's menu response.
+
+## Offline mode
+
+`K33_OFFLINE=1` (`CODOL_OFFLINE_LOBBY=1`) is a separate opt-in build flag: it compiles the in-client lobby (`offline/`, `offline_lobby.c`, `docs/OFFLINE_LOBBY.md`). It enables no diagnostics and changes nothing unless the player also switches offline mode on at run time (`+set k33_offline 1` or `k33_offline.ini`). Without the flag none of that code is built or linked.
