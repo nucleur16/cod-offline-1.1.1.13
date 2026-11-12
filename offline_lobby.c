@@ -19,9 +19,10 @@
  *   5. lets Local Play host with the GSC tree installed with the client and points the embedded
  *      match host's state / profile folders at the offline store (OfflineP2PConfig).
  *
- * The lobby thread never touches C1. It learns the Local Play state from a snapshot the main-thread
- * tick publishes (OfflineLobbyTick), and a room start it answers is handed to that tick, which starts
- * the embedded host through p2p.c on the main thread.
+ * The lobby thread never touches C1. It reads the owner's Local Play intent with K33LocalPlayIntent()
+ * and, when it hands START_GAME to the owner, raises the host launch with K33LocalPlayLaunch()
+ * (p2p_local_play_api.h, docs/P2P_DEFERRED_HOST_START.md rule 5): both are safe on any thread and
+ * start nothing themselves - p2p.c's main-thread tick validates the request and starts the host.
  */
 #if CODOL_OFFLINE_LOBBY
 #include "offline/dw_api.h"
@@ -41,9 +42,7 @@ static struct {
     char profile[MAX_PATH], state[MAX_PATH], match[MAX_PATH], resources[MAX_PATH], zones[MAX_PATH], logPath[MAX_PATH];
     FARPROC createFileA, getCommandLineA;
     char *commandLine;
-    CRITICAL_SECTION lock;       /* guards route (main thread writes, lobby thread reads) and the log file */
-    DwOfflineRoute route;
-    volatile LONG startPending;
+    CRITICAL_SECTION lock;       /* guards the log file (lobby thread and main thread) */
     FILE *log;
 } g_ofl;
 
@@ -133,11 +132,36 @@ static void OflLog(const char *line) /* any thread */
 
 static int OflLocalRoute(unsigned long long uid, DwOfflineRoute *out) /* lobby thread */
 {
-    (void)uid; /* one player: the room owner is this client */
-    EnterCriticalSection(&g_ofl.lock);
-    *out = g_ofl.route;
-    LeaveCriticalSection(&g_ofl.lock);
+    K33LocalPlayIntentInfo in;
+    (void)uid; /* the lobby compares the owner itself */
+    memset(&in, 0, sizeof(in));
+    in.size = sizeof(in);
+    if (!K33LocalPlayIntent(&in)) return 0;
+    memset(out, 0, sizeof(*out));
+    out->ownerUid = in.owner_uid;
+    out->enabled = in.enabled;
+    out->armed = in.armed;
+    out->launched = in.launched;
+    out->ready = in.ready;
+    out->failed = in.failed;
+    out->port = in.port;
+    lstrcpynA(out->map, in.map, sizeof(out->map));
+    lstrcpynA(out->sessionMap, in.session_map, sizeof(out->sessionMap));
+    lstrcpynA(out->gametype, in.gametype, sizeof(out->gametype));
+    lstrcpynA(out->category, in.type, sizeof(out->category));
+    lstrcpynA(out->state, in.state, sizeof(out->state));
+    lstrcpynA(out->error, in.error, sizeof(out->error));
     return 1;
+}
+
+static int OflLaunch(unsigned long long owner, const char *sessionMap, const char *gametype, const char *type) /* lobby thread */
+{
+    int ok = K33LocalPlayLaunch(owner, sessionMap, gametype, type);
+    char line[256];
+    _snprintf(line, sizeof(line), "kernel33: Local Play launch %s for %s %s (%s)", ok ? "raised" : "REFUSED", sessionMap, gametype, type);
+    line[sizeof(line) - 1] = 0;
+    OflLog(line);
+    return ok;
 }
 
 static void OflStartGame(const DwOfflineStartInfo *info) /* lobby thread */
@@ -147,7 +171,6 @@ static void OflStartGame(const DwOfflineStartInfo *info) /* lobby thread */
               info->zoneType, info->hostPort, info->local ? "" : " (NOT local)");
     line[sizeof(line) - 1] = 0;
     OflLog(line);
-    if (info->local) InterlockedExchange(&g_ofl.startPending, 1);
 }
 
 /* A file C1 opens for reading, served from memory: a delete-on-close temporary holding `text`. */
@@ -276,6 +299,7 @@ static BOOL InstallOfflineLobby(void)
     cfg.hostPort = p2p.port;
     cfg.log = OflLog;
     cfg.localRoute = OflLocalRoute;
+    cfg.launch = OflLaunch;
     cfg.startGame = OflStartGame;
     if (g_ofl.port != OFL_DEFAULT_PORT && !OflPatchNatTravPort(g_ofl.port)) {
         Log("offline lobby: port %d needs C1's NAT traversal port patched and its bytes differ; use port %d", g_ofl.port, OFL_DEFAULT_PORT);
@@ -309,36 +333,6 @@ static void OfflineP2PConfig(P2PConfig *c)
     if (strcmp(c->extra, "+set codol_exitToLobby 1 +set codol_oneShotMatch 1")) c->extra[0] = 0;
 }
 
-/* Main thread, every frame: publish the Local Play state for the lobby thread, and start the embedded
- * host for a room start the lobby answered if the player's click has not already done so. */
-static void OfflineLobbyTick(void)
-{
-    if (!g_ofl.active || !g_p2pInit) return;
-    DwOfflineRoute r;
-    memset(&r, 0, sizeof(r));
-    r.enabled = g_p2pEnabled && g_p2pHasRoom;
-    EnterCriticalSection(&g_p2pLock);
-    int state = g_p2p.state;
-    r.port = g_p2p.cfg.port ? g_p2p.cfg.port : (g_p2pIntentConfig.port ? g_p2pIntentConfig.port : P2P_DEFAULT_PORT);
-    LeaveCriticalSection(&g_p2pLock);
-    if (g_p2pHasRoom) {
-        lstrcpynA(r.map, g_p2pRoom.map, sizeof(r.map));
-        lstrcpynA(r.sessionMap, g_p2pRoom.session, sizeof(r.sessionMap));
-        lstrcpynA(r.gametype, g_p2pRoom.gametype, sizeof(r.gametype));
-        lstrcpynA(r.category, g_p2pRoom.category, sizeof(r.category));
-    }
-    EnterCriticalSection(&g_ofl.lock);
-    g_ofl.route = r;
-    LeaveCriticalSection(&g_ofl.lock);
-    if (InterlockedExchange(&g_ofl.startPending, 0) && r.enabled && P2PSelectedProtocolMode() == 0 &&
-        (state == P2P_IDLE || state == P2P_EXITED || state == P2P_FAILED) && !P2PStartupBusy())
-        P2PHostCurrentRoom();
-}
-
-static void InstallOfflineLobbyTick(void)
-{
-    if (g_ofl.active && !K33OnMainTick(OfflineLobbyTick)) Log("offline lobby: no main-thread tick slot; Local Play state will not reach the lobby");
-}
 #else
 static BOOL OfflineLobbyActive(void) { return FALSE; }
 #endif

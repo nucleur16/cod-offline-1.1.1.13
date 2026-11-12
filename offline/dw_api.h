@@ -2,7 +2,7 @@
  * dw_api.h - the C boundary of the offline Demonware lobby (offline/, docs/OFFLINE_LOBBY.md).
  *
  * This is the only header Kernel33's C sources include. No C++ type, exception or object crosses it.
- * The lobby runs on its own thread (dw_net.cpp's select loop); the three callbacks are invoked on
+ * The lobby runs on its own thread (dw_net.cpp's select loop); the callbacks are invoked on
  * THAT thread and must only copy data (they may not call into C1).
  */
 #ifndef K33_DW_API_H
@@ -11,10 +11,15 @@
 extern "C" {
 #endif
 
+/* The room owner's Local Play intent (the fields of K33LocalPlayIntentInfo, p2p_local_play_api.h). */
 typedef struct DwOfflineRoute {
-    int enabled;             /* the room owner ticked Local Play */
+    unsigned long long ownerUid;
+    int enabled;             /* LOCAL PLAY is ticked */
+    int armed, launched, ready, failed;
     int port;                /* UDP port of the embedded match host on 127.0.0.1 */
     char map[64], sessionMap[64], gametype[32], category[16];
+    char state[16];          /* idle armed starting ready stopping exited failed */
+    char error[256];
 } DwOfflineRoute;
 
 typedef struct DwOfflineStartInfo {
@@ -35,6 +40,9 @@ typedef struct DwOfflineConfig {
     int hostPort;             /* the embedded match host's UDP port */
     void (*log)(const char *line);
     int (*localRoute)(unsigned long long uid, DwOfflineRoute *out);
+    /* The lobby hands START_GAME for this selection to the local owner: raise the host launch.
+     * -> 0 when the owner's intent is not this enabled, armed selection (START_GAME is withheld). */
+    int (*launch)(unsigned long long ownerUid, const char *sessionMap, const char *gametype, const char *type);
     void (*startGame)(const DwOfflineStartInfo *info);
 } DwOfflineConfig;
 

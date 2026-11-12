@@ -1721,9 +1721,6 @@ static void __cdecl TakeOver(void)
     InstallP2PInprocDiagnostics(); /* QA commands only; no frame/IAT/VEH activation at startup. */
 #endif
     InstallP2PHost();
-#if CODOL_OFFLINE_LOBBY
-    InstallOfflineLobbyTick();
-#endif
 #if CODOL_LOCAL_TESTING
     if (!K33OnMainTick(VoiceCmdFile))
         Fatal("Local command-file tick could not be installed.");

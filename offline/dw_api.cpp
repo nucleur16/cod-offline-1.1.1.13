@@ -22,13 +22,25 @@ struct ApiHost : dw::Host {
         if (!cb.localRoute(uid, &r)) return false;
         r.map[sizeof(r.map) - 1] = r.sessionMap[sizeof(r.sessionMap) - 1] = 0;
         r.gametype[sizeof(r.gametype) - 1] = r.category[sizeof(r.category) - 1] = 0;
+        r.state[sizeof(r.state) - 1] = r.error[sizeof(r.error) - 1] = 0;
+        out.ownerUid = r.ownerUid;
         out.enabled = r.enabled != 0;
+        out.armed = r.armed != 0;
+        out.launched = r.launched != 0;
+        out.ready = r.ready != 0;
+        out.failed = r.failed != 0;
+        out.state = r.state;
+        out.error = r.error;
         out.port = r.port;
         out.map = r.map;
         out.sessionMap = r.sessionMap;
         out.gametype = r.gametype;
         out.category = r.category;
         return true;
+    }
+    virtual bool LocalPlayLaunch(uint64_t ownerUid, const std::string &sessionMap, const std::string &gametype, const std::string &type)
+    {
+        return cb.launch && cb.launch(ownerUid, sessionMap.c_str(), gametype.c_str(), type.c_str()) != 0;
     }
     virtual void OnStartGame(const dw::StartInfo &info)
     {

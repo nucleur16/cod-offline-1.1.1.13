@@ -25,28 +25,25 @@ static BOOL Readable(const void *p, SIZE_T n)
 }
 static void WriteCode(void *dst, const void *src, SIZE_T n) { memcpy(dst, src, n); }
 
-/* p2p.c, reduced to what offline_lobby.c reads. */
-#define P2P_DEFAULT_PORT 17760
-enum { P2P_IDLE, P2P_STARTING, P2P_READY, P2P_STOPPING, P2P_EXITED, P2P_FAILED };
-typedef struct { char map[64], session[64], gametype[32], category[16]; int difficultyPresent, difficulty; } P2PRoomContext;
+/* p2p.c, reduced to what offline_lobby.c reads and calls. */
 typedef struct P2PConfig {
     char state[MAX_PATH], profile[MAX_PATH], rconFile[MAX_PATH], rollout[MAX_PATH], netIp[64], mode[16], extra[512];
     int port, admission;
 } P2PConfig;
-static struct { int state; P2PConfig cfg; } g_p2p;
-static CRITICAL_SECTION g_p2pLock;
-static BOOL g_p2pInit, g_p2pEnabled, g_p2pHasRoom;
-static P2PRoomContext g_p2pRoom;
-static P2PConfig g_p2pIntentConfig;
-static int hosted, protocol_mode;
 static void P2PDefaults(P2PConfig *c) { memset(c, 0, sizeof(*c)); c->port = 17761; lstrcpyA(c->state, "X:\\lobby\\state"); }
 static void P2PLoadIni(P2PConfig *c) { lstrcpyA(c->profile, "X:\\lobby\\resources"); lstrcpyA(c->rollout, "X:\\lobby\\rollout.txt"); lstrcpyA(c->extra, "+set x 1"); }
-static int P2PSelectedProtocolMode(void) { return protocol_mode; }
-static BOOL P2PStartupBusy(void) { return FALSE; }
-static void P2PHostCurrentRoom(void) { ++hosted; }
-typedef void (*K33TickFn)(void);
-static K33TickFn registered_tick;
-static BOOL K33OnMainTick(K33TickFn fn) { registered_tick = fn; return TRUE; }
+/* p2p_local_play_api.h doubles: the published intent and the launch request. */
+#include "../p2p_local_play_api.h"
+static K33LocalPlayIntentInfo intent;
+static int intent_published, launch_calls, launch_answer;
+static char launch_seen[160];
+int K33LocalPlayIntent(K33LocalPlayIntentInfo *out) { if (!intent_published) return 0; *out = intent; return 1; }
+int K33LocalPlayLaunch(unsigned long long owner_uid, const char *session_map, const char *gametype, const char *type)
+{
+    ++launch_calls;
+    _snprintf(launch_seen, sizeof(launch_seen), "%llu/%s/%s/%s", owner_uid, session_map, gametype, type);
+    return launch_answer;
+}
 
 /* The NAT traversal constant of C1 (0x00A50454) is a local double here. */
 static BYTE nat_site[9] = { 0xB9, 0x02, 0x0C, 0x00, 0x00, 0x66, 0x89, 0x4F, 0x14 };
@@ -82,8 +79,6 @@ int main(int argc, char **argv)
 {
     assert(argc >= 2);
     const char *test = argv[1];
-    InitializeCriticalSection(&g_p2pLock);
-    g_p2pInit = TRUE;
     if (!strcmp(test, "badbytes")) nat_site[1] = 0x03;
     if (!strcmp(test, "nolisten")) listen_fails = 1;
 
@@ -113,7 +108,7 @@ int main(int argc, char **argv)
 
     int port = !strcmp(test, "ini") ? 3999 : 3074;
     assert(InstallOfflineLobby() && OfflineLobbyActive() && start_calls == 1);
-    assert(started.port == port && started.hostPort == 17761 && started.localRoute && started.startGame && started.log);
+    assert(started.port == port && started.hostPort == 17761 && started.localRoute && started.launch && started.startGame && started.log);
     assert(strstr(started.profile, "k33_offline\\profile") && strstr(started.state, "k33_offline\\state") &&
            strstr(started.matchProfile, "k33_offline\\match"));
     /* 3074 is C1's own NAT traversal port: only another port patches the constant. */
@@ -155,35 +150,24 @@ int main(int argc, char **argv)
     assert(!strcmp(c.state, started.state) && !strcmp(c.profile, started.matchProfile) && !c.rollout[0] && !c.extra[0] &&
            !strcmp(c.netIp, "127.0.0.1") && !strcmp(c.mode, "inprocess") && c.admission == 1);
 
-    /* Local Play: the lobby thread sees the main thread's snapshot; a room start it answered starts
-     * the embedded host once, on the main thread, and only while Local Play is selected. */
-    InstallOfflineLobbyTick();
-    assert(registered_tick == OfflineLobbyTick);
+    /* Local Play: the lobby reads Kernel33's published intent and raises the launch through the
+     * p2p_local_play_api.h calls only; nothing here starts a host or reads an intent file. */
     DwOfflineRoute route;
-    OfflineLobbyTick();
-    assert(started.localRoute(1, &route) && !route.enabled);
+    assert(!started.localRoute(1, &route)); /* nothing published yet */
+    intent_published = 1;
+    intent.size = sizeof(intent); intent.owner_uid = 77; intent.enabled = 1; intent.armed = 1; intent.port = 17761;
+    lstrcpyA(intent.map, "mp_rust"); lstrcpyA(intent.session_map, "mp_rust"); lstrcpyA(intent.gametype, "war");
+    lstrcpyA(intent.type, "mp"); lstrcpyA(intent.state, "armed");
+    assert(started.localRoute(77, &route) && route.ownerUid == 77 && route.enabled && route.armed && !route.ready && !route.launched &&
+           !route.failed && route.port == 17761 && !strcmp(route.sessionMap, "mp_rust") && !strcmp(route.gametype, "war") &&
+           !strcmp(route.category, "mp") && !strcmp(route.state, "armed"));
+    launch_answer = 0;
+    assert(!started.launch(77, "mp_rust", "war", "mp") && launch_calls == 1 && !strcmp(launch_seen, "77/mp_rust/war/mp"));
+    launch_answer = 1;
+    assert(started.launch(77, "mp_rust", "war", "mp") == 1 && launch_calls == 2);
     DwOfflineStartInfo info; memset(&info, 0, sizeof(info)); info.local = 1; info.hostPort = 17761;
-    started.startGame(&info);
-    OfflineLobbyTick();
-    assert(hosted == 0); /* not selected: nothing is hosted */
-    g_p2pEnabled = g_p2pHasRoom = TRUE;
-    lstrcpyA(g_p2pRoom.map, "mp_rust"); lstrcpyA(g_p2pRoom.session, "mp_rust"); lstrcpyA(g_p2pRoom.gametype, "war"); lstrcpyA(g_p2pRoom.category, "mp");
-    g_p2pIntentConfig.port = 17761;
-    OfflineLobbyTick();
-    assert(started.localRoute(1, &route) && route.enabled && route.port == 17761 && !strcmp(route.sessionMap, "mp_rust") &&
-           !strcmp(route.gametype, "war") && !strcmp(route.category, "mp"));
-    assert(hosted == 0);
-    started.startGame(&info);
-    OfflineLobbyTick(); OfflineLobbyTick();
-    assert(hosted == 1);
-    g_p2p.state = P2P_READY; /* already hosting (the player's own click): no second start */
-    started.startGame(&info);
-    OfflineLobbyTick();
-    assert(hosted == 1);
-    g_p2p.state = P2P_IDLE; protocol_mode = 2; /* a launcher-managed protocol owns its own start */
-    started.startGame(&info);
-    OfflineLobbyTick();
-    assert(hosted == 1);
+    started.startGame(&info); /* a log line only */
+    assert(launch_calls == 2);
     puts("offline lobby fixture passed");
     return 0;
 }
