@@ -11,7 +11,7 @@
 namespace dw {
 
 Config::Config()
-    : mmHostIp("127.0.0.1"), mmHostPort(17760), mmHostUid(1000001), fixedTime(0), stunPort(3074), stunAltPort(3078),
+    : mmHostIp("127.0.0.1"), mmHostPort(17760), mmHostUid(1000001), fixedTime(0), stunPort(3074), stunAltPort(3078), stunMappedPort(3074),
       differential(false) {}
 
 int64_t Host::Now() { return (int64_t)time(NULL); }
@@ -368,7 +368,7 @@ bool StunReply(const Config &cfg, const Bytes &data, Bytes &out, int &via, std::
     static const unsigned char ip[4] = { 127, 0, 0, 1 }, alt[4] = { 127, 0, 0, 2 };
     if (data.size() < 3) return false;
     int t = (unsigned char)data[0];
-    unsigned port = (unsigned)cfg.stunPort;
+    unsigned port = (unsigned)cfg.stunMappedPort, changed = (unsigned)cfg.stunPort;
     via = 0;
     out.assign(1, (char)0);
     out += data.substr(1, 2); /* protocol version echoed */
@@ -380,7 +380,7 @@ bool StunReply(const Config &cfg, const Bytes &data, Bytes &out, int &via, std::
         out.append((const char *)ip, 4);
         out += (char)(port & 0xFF); out += (char)(port >> 8);
         out.append((const char *)alt, 4);
-        out += (char)(port & 0xFF); out += (char)(port >> 8);
+        out += (char)(changed & 0xFF); out += (char)(changed >> 8);
         via = flag;
         what = Fmt("NAT discovery 20->21 flag=%d", flag);
         return true;

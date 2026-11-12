@@ -133,7 +133,8 @@ struct Config {
     int mmHostPort;
     uint64_t mmHostUid;
     int64_t fixedTime;       /* != 0: getServerTime and every clock read answer this (tests) */
-    int stunPort, stunAltPort; /* what STUN replies advertise */
+    int stunPort, stunAltPort; /* the changed-address STUN replies advertise */
+    int stunMappedPort;      /* the "your address" port in STUN replies (the Python lobby: always 3074) */
     bool differential;       /* reproduce the Python lobby's defaults exactly (tests) */
     Config();
 };

@@ -35,16 +35,20 @@ HEXL = re.compile(rb"^    [0-9a-f]{4}  ((?:[0-9a-f]{2} ?)+)")
 
 
 def extract(path, lo, hi, out):
-    events, cur = [], None
+    events, cur, base = [], None, 0
     with open(path, "rb") as fh:
         for n, line in enumerate(fh, 1):
             if n < lo:
                 continue
             if hi and n > hi:
                 break
+            if b"=== TCP listening" in line:      # a lobby restart: connection numbers start over
+                base += 100000
+                cur = None
+                continue
             m = RECV.match(line)
             if m:
-                cur = {"t": "send", "conn": int(m.group(2)), "want": int(m.group(3)), "hex": ""}
+                cur = {"t": "send", "conn": base + int(m.group(2)), "want": int(m.group(3)), "hex": ""}
                 events.append(cur)
                 continue
             m = HEXL.match(line)
@@ -53,12 +57,12 @@ def extract(path, lo, hi, out):
                 continue
             m = OPEN.match(line)
             if m:
-                events.append({"t": "open", "conn": int(m.group(1))})
+                events.append({"t": "open", "conn": base + int(m.group(1))})
                 cur = None
                 continue
             m = CLOSED.match(line)
             if m:
-                events.append({"t": "close", "conn": int(m.group(1))})
+                events.append({"t": "close", "conn": base + int(m.group(1))})
                 cur = None
     bad = [e for e in events if e["t"] == "send" and len(e["hex"]) != e["want"] * 2]
     for e in events:
@@ -198,23 +202,34 @@ def plan(events):
 # (svc, task) -> how many leading plaintext bytes are compared; None = everything.
 # Plaintext = DEADBEEF(4) type(1) [10 txn(8)] [8 err(4)] [3 task] [8 n(4)] [8 total(4)] records...
 def mask(svc, task, frames):
+    """Normalise one connection's frames for comparison: the messageCount (which only shifts when one
+    side sent a push the other did not, and is reported separately) and its padding run are dropped,
+    and fields that legitimately differ between two runs are blanked."""
     out = []
     for f in frames:
-        if f[0] == "enc" and (svc, task) == (12, 6) and len(f[2]) >= 37:
-            pt = bytearray(f[2])
-            pt[33:37] = b"TIME"          # getServerTime's Unix seconds
-            out.append(("enc", f[1], bytes(pt)))
-        else:
+        if f[0] != "enc":
             out.append(f)
+            continue
+        mc, pt = f[1], bytearray(f[2])
+        cut = len(pt)
+        while cut > len(pt) - 7 and cut > 5 and pt[cut - 1] == (mc & 0xFF):
+            cut -= 1
+        pt = pt[:cut]
+        if (svc, task) == (12, 6) and len(pt) >= 37:
+            pt[33:37] = b"TIME"          # getServerTime's Unix seconds
+        out.append(("enc", bytes(pt)))
     return out
+
+
+def mcs(frames):
+    return [f[1] for f in frames if f[0] == "enc"]
 
 
 def fmt_frame(f):
     if f[0] != "enc":
         return f[0] + ("" if len(f) < 2 else " %dB %s" % (len(f[1]), f[1][:24].hex()))
-    pt = f[2]
-    kind = pt[4]
-    return "enc mc=%d type=%d %dB %s" % (f[1], kind, len(pt), pt[5:69].hex())
+    pt = f[-1]
+    return "enc type=%d %dB %s" % (pt[4], len(pt), pt[5:69].hex())
 
 
 def first_diff(a, b):
@@ -228,7 +243,7 @@ def replay(args):
     with open(args.session) as fh:
         steps = plan(json.load(fh))
     peers = [Peer(args.a)] + ([Peer(args.b)] if args.b else [])
-    total = diffs = 0
+    total = diffs = mcdiffs = 0
     stats = {}
     for kind, conn, data in steps:
         if kind == "open":
@@ -257,8 +272,11 @@ def replay(args):
                 for f in frames:
                     print("     A conn#%d << %s" % (c, fmt_frame(f)))
         if len(peers) == 2:
-            a = {c: mask(req[0], req[1], f) if req else f for c, f in got[0].items()}
-            b = {c: mask(req[0], req[1], f) if req else f for c, f in got[1].items()}
+            sv, tk = (req[0], req[1]) if req else (-1, -1)
+            a = {c: mask(sv, tk, f) for c, f in got[0].items()}
+            b = {c: mask(sv, tk, f) for c, f in got[1].items()}
+            if a == b and {c: mcs(f) for c, f in got[0].items()} != {c: mcs(f) for c, f in got[1].items()}:
+                mcdiffs += 1
             if a != b:
                 diffs += 1
                 st[1] += 1
@@ -274,16 +292,17 @@ def replay(args):
                         print("     A: %s" % (fmt_frame(xa) if xa else "-"))
                         print("     B: %s" % (fmt_frame(xb) if xb else "-"))
                         if xa and xb and xa[0] == xb[0] == "enc":
-                            d = first_diff(xa[2], xb[2])
+                            d = first_diff(xa[1], xb[1])
                             print("     first difference at plaintext byte %d: A %s | B %s" % (
-                                d, xa[2][d:d + 24].hex(), xb[2][d:d + 24].hex()))
+                                d, xa[1][max(0, d - 8):d + 32].hex(), xb[1][max(0, d - 8):d + 32].hex()))
                 if args.stop:
                     break
     if len(peers) == 2:
         print("\n(svc, task): requests / differing")
         for k in sorted(stats, key=str):
             print("  %-14s %5d / %d" % (k, stats[k][0], stats[k][1]))
-        print("TOTAL %d requests, %d differ" % (total, diffs))
+        print("TOTAL %d requests, %d differ (%d more identical except for the messageCount)" % (
+            total, diffs, mcdiffs))
         return 1 if diffs else 0
     return 0
 
