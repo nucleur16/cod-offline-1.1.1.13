@@ -449,6 +449,12 @@ flat across cycles.
 
 ## Match-lobby local hosting (2026-10-28)
 
+**Superseded in part (2026-11-12, `docs/P2P_DEFERRED_HOST_START.md`).** Enabling local hosting no longer starts
+the server, room changes no longer restart it, and Ready/Start no longer wait for it: the choice is only armed
+(`state=armed launch=deferred`) and the embedded server starts when the match launches for the owner's client.
+The readiness rule below still holds for guests and for a host that is already running; the lobby additionally
+has to hand the match to the owner of an armed intent. The paragraphs below describe the earlier behaviour.
+
 Multiplayer, Zombies and Survival room owners have one Scaleform toggle:
 **LOCAL HOSTING: ENABLED / DISABLED**. It uses the lobby's selected map and
 mode; bot settings stay under the existing lobby/RCON controls. There are no
@@ -504,6 +510,8 @@ the native bridge resolves the level while retaining that mission/session ID.
 It never substitutes a generic campaign map. Campaign supplies only its room context and the enable state. Native hosting
 infers its remaining configuration; lobby RCON owns bot settings.
 
+(Earlier behaviour; startup protocols 0-2 now proceed at once, see `docs/P2P_DEFERRED_HOST_START.md`. The
+production protocol 3 keeps this gate.)
 For every enabled local-host room, pressing the normal Start Match or Ready button waits for `ui_p2p_ready=1` and an
 exact `ui_p2p_map` session match before issuing the original START_MATCH task.
 Startup errors or a 180-second timeout display a room error and leave Start

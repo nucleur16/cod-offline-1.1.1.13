@@ -60,6 +60,14 @@ static int LocalQaReadRoute(char *data,DWORD capacity,DWORD *bytes)
     return 0;
 }
 #endif
+/* The production direct-v1 socket module (p2p_production_kernel.c, included after hostgate.c in the
+ * DLL) has its own fixtures; here no production session exists. */
+static int P2PProductionGuestAddress(DWORD ip,unsigned port) {(void)ip;(void)port;return 0;}
+static void P2PProductionBorrowSend(SOCKET s) {(void)s;}
+static int P2PProductionInstallSocketHooks(void) {return 1;}
+/* p2p.c: the armed Local Play host's launch is observed on loopback datagrams only. */
+static unsigned launch_observed,launch_port;
+static void P2PLaunchObserve(unsigned port) {++launch_observed;launch_port=port;}
 #define CreateThread TestThread
 #include "../hostgate.c"
 #undef CreateThread
@@ -116,8 +124,12 @@ static void PacketTests(void)
     struct sockaddr_in address;memset(&address,0,sizeof(address));
     address.sin_family=AF_INET;address.sin_port=htons(17760);address.sin_addr.s_addr=inet_addr("192.0.2.55");
     assert(HostGateSendTo(INVALID_SOCKET,"x",1,0,(struct sockaddr *)&address,sizeof(address))==1 && sends==0);
+    assert(!launch_observed); /* a refused, non-loopback destination is never a Local Play launch */
+    address.sin_addr.s_addr=inet_addr("192.0.2.56");
+    assert(HostGateSendTo(INVALID_SOCKET,"x",1,0,(struct sockaddr *)&address,sizeof(address))==1 && sends==1 && !launch_observed);
     address.sin_addr.s_addr=inet_addr("127.0.0.1");
-    assert(HostGateSendTo(INVALID_SOCKET,"x",1,0,(struct sockaddr *)&address,sizeof(address))==1 && sends==1);
+    assert(HostGateSendTo(INVALID_SOCKET,"x",1,0,(struct sockaddr *)&address,sizeof(address))==1 && sends==2);
+    assert(launch_observed==1 && launch_port==17760); /* observed, and the datagram is sent unchanged */
     /* A real loopback socket supplies readable queue state to the drain loop. */
     SOCKET receiver=socket(AF_INET,SOCK_DGRAM,0),sender=socket(AF_INET,SOCK_DGRAM,0);
     assert(receiver!=INVALID_SOCKET && sender!=INVALID_SOCKET);

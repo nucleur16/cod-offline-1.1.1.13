@@ -438,7 +438,7 @@ package codo.controllers
          {
             return;
          }
-         if(this.usesLocalStartupProtocol() && this._localHostPendingAction != "")
+         if(this.usesLocalStartupProtocol() && this._localHostPendingAction != "" && this._localHostPendingAction != "launch")
          {
             this.cancelCampaignHostStart();
             return;
@@ -462,7 +462,8 @@ package codo.controllers
                this.showMsg("Localhost hosting requires a valid selected room map and game type.",MsgBtnCount.ONE);
                return;
             }
-            this.beginCampaignLocalHost(null,true,"ready");
+            if(this.isProductionLocalRoom()) this.beginCampaignLocalHost(null,true,"ready");
+            else this.beginDeferredLocalHost(null,"ready");
             return;
          }
          this.applyRoomReadyState(readyToSet);
@@ -643,7 +644,8 @@ package codo.controllers
                this.showMsg("Localhost hosting requires a valid selected room map and game type.",MsgBtnCount.ONE);
                return;
             }
-            this.beginCampaignLocalHost(cEvt.myPara,true);
+            if(this.isProductionLocalRoom()) this.beginCampaignLocalHost(cEvt.myPara,true);
+            else this.beginDeferredLocalHost(cEvt.myPara,"start");
             return;
          }
          this.request(AsyncTaskID.START_MATCH,cEvt.myPara);
@@ -776,9 +778,64 @@ package codo.controllers
          this._campaignHostTimer.start();
       }
 
+      private function beginDeferredLocalHost(startPara:Object, action:String) : void
+      {
+         // Local Play (protocols 0-2) no longer waits here for a running host. The room flow
+         // proceeds at once; Kernel33 starts the embedded server when the match launches for
+         // this client and the client's connect waits for it (docs/P2P_DEFERRED_HOST_START.md).
+         // The timer below only watches for a start that failed.
+         var selectedMission:String = this._roomObj.currentMap.id;
+         var context:String = this.localHostContext();
+         if(context == "") { this.cancelCampaignHostStart(); return; }
+         this._campaignHostRequestedMap = selectedMission;
+         if(this.usesLocalStartupProtocol())
+            CFunctionContainerCommon.execnow("p2p_start_intent " + action + " " + selectedMission + " " + context);
+         else
+         {
+            CFunctionContainerCommon.execnow("p2p_room " + selectedMission + " " + context);
+            if(this.isLocalCampaignRoom()) CFunctionContainerCommon.execnow("p2p_localhost 1");
+         }
+         this._campaignHostSelectedMap = selectedMission;
+         this._campaignHostRoomKey = this.localIntentRoomKey();
+         this._campaignHostGeneration = "";
+         this._campaignHostContext = context;
+         this._campaignHostMap = selectedMission.indexOf("coop_survival_") == 0 ? selectedMission.substr(14) : selectedMission;
+         this._campaignHostStartPara = null;
+         this._localHostPendingAction = "launch";
+         this._campaignHostWaitStart = getTimer();
+         if(this._campaignHostTimer == null)
+         {
+            this._campaignHostTimer = new Timer(250);
+            this._campaignHostTimer.addEventListener(TimerEvent.TIMER,this.onCampaignHostReady);
+         }
+         this._campaignHostTimer.start();
+         if(action == "ready") this.applyRoomReadyState(true);
+         else this.request(AsyncTaskID.START_MATCH,startPara);
+      }
+
       private function onCampaignHostReady(evt:TimerEvent) : void
       {
          if(this._localHostPendingAction == "") return;
+         if(this._localHostPendingAction == "launch")
+         {
+            // Nothing is withheld in this mode. A changed room, a lost host seat or leaving
+            // revokes the pending launch; a failed start is reported and Ready is taken back.
+            if(!this.isLocalHostRoom() || this.localIntentRoomKey() != this._campaignHostRoomKey || this._roomObj.currentMap.id != this._campaignHostSelectedMap || this.isLeavingRoom() || this.localHostContext() != this._campaignHostContext || CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") != "1")
+            {
+               this.cancelCampaignHostStart();
+               return;
+            }
+            var launchError:String = CFunctionContainerCommon.Dvar_GetString("ui_p2p_error");
+            if(CFunctionContainerCommon.Dvar_GetString("ui_p2p_state") == "failed" || launchError.length > 0 && launchError != "Waiting to publish the local host route.")
+            {
+               this.cancelCampaignHostStart();
+               if(this.isReady()) this.applyRoomReadyState(false);
+               this.showMsg("Localhost hosting failed: " + (launchError.length > 0 ? launchError : "the local host did not start. Please try again."),MsgBtnCount.ONE);
+            }
+            else if(CFunctionContainerCommon.Dvar_GetString("ui_p2p_ready") == "1" || getTimer() - this._campaignHostWaitStart >= 600000)
+               this.completeCampaignHostWait();
+            return;
+         }
          if((!this.isProductionLocalRoom() && !this.isLocalHostRoom()) || this.localIntentRoomKey() != this._campaignHostRoomKey || this._roomObj.currentMap.id != this._campaignHostSelectedMap || this.isLeavingRoom() || this.localHostContext() != this._campaignHostContext || CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") != "1")
          {
             this.cancelCampaignHostStart();

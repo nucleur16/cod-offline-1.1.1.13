@@ -2386,6 +2386,7 @@ static HRESULT WINAPI Hook_Present(IDirect3DDevice9 *dev, const RECT *a, const R
 #endif
     ConDraw(dev);
     ConHudDraw(dev);
+    ShotBeforePresent(dev); /* k33shot.c: a pending screenshot or statistics request */
     InterlockedIncrement(&g_inPresent); /* d3d9 may present through the swap chain's vtable */
     HRESULT hr = g_origPresent(dev, a, b, w, r);
     InterlockedDecrement(&g_inPresent);
@@ -2402,12 +2403,13 @@ static HRESULT WINAPI Hook_SCPresent(IDirect3DSwapChain9 *sc, const RECT *a, con
 #endif
     int hudFps, hudPos;
     BOOL hud = ConHudWanted(&hudFps, &hudPos);
-    if ((g_conOpen || vis || hud) && !g_inPresent && SUCCEEDED(IDirect3DSwapChain9_GetDevice(sc, &dev)) && dev) {
+    if ((g_conOpen || vis || hud || ShotWanted()) && !g_inPresent && SUCCEEDED(IDirect3DSwapChain9_GetDevice(sc, &dev)) && dev) {
 #ifdef K33_VISION
         VisDraw(dev);
 #endif
         ConDraw(dev);
         ConHudDraw(dev);
+        ShotBeforePresent(dev);
         IDirect3DDevice9_Release(dev);
     }
     return g_origSCPresent(sc, a, b, w, r, f);

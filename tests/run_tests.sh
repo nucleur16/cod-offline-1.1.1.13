@@ -18,6 +18,7 @@ python tests/test_ui_baseline.py
 python tests/test_quick_ready_gate.py
 node tests/campaign_local_host_test.js
 node tests/local_match_controls_test.js
+node tests/local_play_deferred_test.js
 node tests/local_match_layout_test.js
 python -B tests/test_survival_kiosk_menus.py
 python -B tests/test_survival_wave_overrides.py

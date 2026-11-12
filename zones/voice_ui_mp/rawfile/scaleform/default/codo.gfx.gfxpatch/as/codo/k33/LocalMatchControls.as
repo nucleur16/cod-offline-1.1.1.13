@@ -1,6 +1,7 @@
 package codo.k33
 {
    import codo.common.CFunctionContainerCommon;
+   import codo.utils.LocalizeUtil;
    import flash.display.Sprite;
    import flash.display.DisplayObject;
    import flash.display.DisplayObjectContainer;
@@ -54,6 +55,26 @@ package codo.k33
             this.pendingChoice=false;
             if(this.choiceCallback!=null)this.choiceCallback(true);
          }
+         this.refreshStatus();
+      }
+
+      private function refreshStatus():void
+      {
+         // Protocols 0-2: the owner's room shows the Create Room choice read-only. Ticking it only
+         // arms: no server runs until the match launches, when Kernel33 reports the embedded
+         // host's start here (ui_p2p_launching) and the client's connect waits for it.
+         if(CFunctionContainerCommon.Dvar_GetString("ui_p2p_startup_protocol")=="3"){this.choice.mouseEnabled=true;return;}
+         var shown:Boolean=this.room!=null && this.localSelection && this.owner() &&
+            CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled")=="1";
+         this.choice.mouseEnabled=false;
+         this.mouseEnabled=false;this.mouseChildren=false;
+         this.visible=shown;
+         if(!shown)return;
+         this.choice.selected=true;
+         this.choice.label=CFunctionContainerCommon.Dvar_GetString("ui_p2p_error").length>0 ||
+            CFunctionContainerCommon.Dvar_GetString("ui_p2p_state")=="failed" ? "HOST ERROR" :
+            (CFunctionContainerCommon.Dvar_GetString("ui_p2p_launching")=="1" ? "STARTING HOST..." :
+            LocalizeUtil.localize("@K33UI_LOCAL_PLAY"));
       }
 
       private function resetProductionChoice():void

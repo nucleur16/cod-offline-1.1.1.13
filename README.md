@@ -354,6 +354,19 @@ client: C1's GetCursorPos / GetForegroundWindow / GetActiveWindow import slots r
 position and the game window, and the click is posted (e.g. `k33mouse 1441 47 click` opens Options
 at 1680x1050).
 
+**Screenshots and frame statistics (diagnostic profile only, `k33shot.c`).** For harnesses on a machine whose
+display is off (a screen copy of a windowed Direct3D 9 game is black then, the back buffer is not) and for anything
+that must not take input focus. `k33_screenshot <file.png|file.bmp>` writes the next presented frame's back buffer
+(after Kernel33's overlays; a multisampled buffer is resolved first). `k33_framestats <file.txt>` writes, for the
+next complete frame, one line per pair of colour target and depth buffer: size, format, usage, draw calls and
+primitives (`DrawPrimitive` / `DrawIndexedPrimitive`); a shadow-map pass shows as draws into a depth buffer that has
+not the back buffer's size. From outside the process, a test client (`+set k33_shotFile 1`, or the existing
+`+set k33_cmdFile 1`) polls `<exe dir>\k33_shot.req` and `<exe dir>\k33_stats.req` on the presenting thread, at
+most 20 times a second: one line, the output path; the request file is deleted when read, the output is written to
+`<path>.tmp` and renamed. It uses the developer console's Present hooks (`console.c`), so `k33_console 0` turns it
+off too; the four draw-path device entries are hooked on the first statistics request, not before. Built only with
+`K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=1` (`PRODUCTION_PROFILE.md`); the default `build.sh` DLL has none of it.
+
 **HUD (hud menu ownerdraws).** C1's `ui_mp/hud_720.txt` (common_mp) still has IW4's voice items,
 `talking` (ownerdraw 266) and `talker1`..`talker4` (193..196), but C1's CG_OwnerDraw (0x459E10) had
 lost their code (193-196 return, 266 falls to the default). `voice.c` hooks CG_OwnerDraw's entry and

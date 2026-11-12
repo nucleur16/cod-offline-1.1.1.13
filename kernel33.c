@@ -1517,6 +1517,7 @@ static void PatchGbkInput(void)
 /* Developer console overlay (dev branch): see console.c. Builds without it (-DK33_NO_CONSOLE, or delete
  * these three lines and the InstallConsole() call) still compile and link. */
 #if CODOL_DIAGNOSTICS && !defined(K33_NO_CONSOLE)
+#include "k33shot.c" /* screenshots and draw statistics on the console's Present hooks; diagnostics only */
 #include "console.c"
 #endif
 
@@ -1682,6 +1683,7 @@ static void __cdecl TakeOver(void)
 #endif
 #if CODOL_DIAGNOSTICS && !defined(K33_NO_CONSOLE)
     InstallConsole();
+    InstallShot();
 #endif
 #if CODOL_DIAGNOSTICS && defined(K33_VISION) && !defined(K33_NO_CONSOLE)
     InstallVision();

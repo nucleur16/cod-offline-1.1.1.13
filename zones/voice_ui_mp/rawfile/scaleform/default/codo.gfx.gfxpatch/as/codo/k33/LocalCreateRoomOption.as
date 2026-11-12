@@ -46,6 +46,12 @@ package codo.k33
          this.redraw();
       }
 
+      // The room reuses this box read-only to show the armed choice and its launch state.
+      public function set label(value:String):void
+      {
+         if(this.caption.text!=value)this.caption.text=value;
+      }
+
       public function set multiplayerTheme(value:Boolean):void
       {
          this.blueTheme=value;

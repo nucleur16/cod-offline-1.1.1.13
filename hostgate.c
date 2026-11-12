@@ -145,6 +145,9 @@ static int WINAPI HostGateSendTo(SOCKET s, const char *buf, int len, int flags, 
     P2PProductionBorrowSend(s);
     if (to && tolen >= (int)sizeof(struct sockaddr_in) && to->sa_family == AF_INET) {
         const struct sockaddr_in *in = (const struct sockaddr_in *)to;
+        /* The armed Local Play host starts when C1 first talks to its loopback port (p2p.c,
+         * docs/P2P_DEFERRED_HOST_START.md). Observation only: the datagram is sent as before. */
+        if ((ntohl(in->sin_addr.s_addr) >> 24) == 127) P2PLaunchObserve(ntohs(in->sin_port));
         int production=P2PProductionGuestAddress(in->sin_addr.s_addr,ntohs(in->sin_port));
         if (production<0 || (production==0&&!HostGateOk(in->sin_addr.s_addr))) {
             HostGateRefused(in->sin_addr.s_addr, 1, ntohs(in->sin_port));

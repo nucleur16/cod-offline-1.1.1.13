@@ -1,5 +1,14 @@
 # Local hosting in the match lobby
 
+**2026-11-12, deferred host start (`docs/P2P_DEFERRED_HOST_START.md`).** Selecting Local Play no longer starts the
+embedded host and Ready no longer waits for it. The Create Room choice arms the host; in the room the owner sees
+the same box, ticked and read-only, above the bottom Ready control (`LocalMatchControls.refreshStatus`: caption
+`LOCAL PLAY`, `STARTING HOST...` while Kernel33 reports `ui_p2p_launching=1`, `HOST ERROR` on a native error).
+`LobbyController.beginDeferredLocalHost` sends the room context (protocol 0) or the start intent (1/2), applies
+Ready or issues START_MATCH at once, and keeps only a failure watch. Protocol 3 keeps its gated path.
+`node tests/local_play_deferred_test.js` executes those bodies. Everything below that says "starts the embedded
+host" or "Ready waits" describes the behaviour before this change.
+
 November 4 local candidate: the owner has a `LOCAL PLAY` checkbox immediately
 above the stock bottom Ready control in Multiplayer, Zombies and Survival rooms. It is
 hidden in Campaign and playlists. Selecting it highlights the button and

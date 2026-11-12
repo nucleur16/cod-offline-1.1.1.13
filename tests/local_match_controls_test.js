@@ -36,7 +36,7 @@ commands=[];c=control('mp_killhouse_sh;quit','war');c.enter();assert.deepEqual(c
 commands=[];c=control('mp_killhouse_sh','war',false);c.enter();assert.deepEqual(commands,[]);
 commands=[];c=control('coop_spec_mp_fav_tropical','coop');c.enter();assert.deepEqual(commands,[],'Campaign stays on its own route');
 commands=[];c=control('mp_killhouse_sh','war');c.setRoom({currentMap:{id:'mp_killhouse_sh'},currentMatchMode:{id:'war'},forces:{isHost:true},isPlayList:true});assert.deepEqual(commands,[]);
-assert(!source.includes('MouseEvent') && !source.includes('drawRect'),'room overlay removed');
+assert(source.includes('refreshStatus') && !source.includes('drawRect'),'the room shows the armed choice read-only (local_play_deferred_test.js) and draws nothing itself');
 console.log('Create Room choice transfers once to MP/Zombies/Survival native room context; default, map change, leave and exclusions pass');
 
 commands=[];dvars={ui_p2p_startup_protocol:'1',ui_p2p_create:'1',ui_p2p_enabled:'0'};
