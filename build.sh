@@ -27,9 +27,17 @@ if [ ! -f "$SDL_DIR/lib/libSDL2.a" ]; then
     tar xzf "$TGZ" -C third_party "SDL2-$SDL_VER/i686-w64-mingw32/include" "SDL2-$SDL_VER/i686-w64-mingw32/lib/libSDL2.a"
     rm -f "$TGZ"
 fi
+# Offline mode (K33_OFFLINE=1, docs/OFFLINE_LOBBY.md): the C++ lobby in offline/ is compiled with g++ into
+# obj_offline/ and linked statically (libstdc++ included). Without the flag none of it is built or linked.
+OFFLINE_LINK=""
+if [ "${K33_OFFLINE:-0}" = 1 ]; then
+    . ./build-offline.inc.sh
+    k33_offline_objects obj_offline
+    OFFLINE_LINK="$OFFLINE_OBJS -static-libstdc++ -lstdc++"
+fi
 "$BIN/windres.exe" -O coff -i kernel33.rc -o kernel33_res.o
 "$BIN/gcc.exe" "$@" -O2 -Wall -shared -s -static -static-libgcc -I"$SDL_DIR/include" -o Kernel33.dll \
-    -I. kernel33.c production/p2p_production_receiver.c production/p2p_production_wire.c shared/p2p_win_pipe.c kernel33_res.o kernel33.def \
+    -I. kernel33.c production/p2p_production_receiver.c production/p2p_production_wire.c shared/p2p_win_pipe.c kernel33_res.o kernel33.def $OFFLINE_LINK \
     -L"$SDL_DIR/lib" -lSDL2 -lsetupapi -lcfgmgr32 -lversion -loleaut32 -luuid \
     -lopus -lz -lwinhttp -limm32 -lgdi32 -lshlwapi -lole32 -lwinmm -lws2_32 -liphlpapi -lpsapi -ladvapi32 -lshell32 -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat
 if [ "${K33_NO_COPY:-0}" = 1 ]; then

@@ -22,6 +22,13 @@
 #if CODOL_KERNEL_ROOM_CONTEXT != 0 && CODOL_KERNEL_ROOM_CONTEXT != 1
 #error Kernel room-context migration flag must be zero or one
 #endif
+#ifndef CODOL_OFFLINE_LOBBY
+/* The in-client lobby (offline_lobby.c, docs/OFFLINE_LOBBY.md): its own opt-in build flag. */
+#define CODOL_OFFLINE_LOBBY 0
+#endif
+#if CODOL_OFFLINE_LOBBY != 0 && CODOL_OFFLINE_LOBBY != 1
+#error Offline lobby flag must be zero or one
+#endif
 #if (CODOL_LOCAL_TESTING != 0 && CODOL_LOCAL_TESTING != 1) || (CODOL_DIAGNOSTICS != 0 && CODOL_DIAGNOSTICS != 1)
 #error Client profile flags must be zero or one
 #endif

@@ -62,7 +62,7 @@ static volatile LONG g_hgDropsIn, g_hgDropsOut;
 
 static void HostGateAllow(DWORD ip, const char *why)
 {
-    if (!ip || ip == INADDR_NONE) return;
+    if (!ip || ip == INADDR_NONE || OfflineLobbyActive()) return;
     EnterCriticalSection(&g_hgLock);
     for (int i = 0; i < g_hgAllowedCount; i++)
         if (g_hgAllowed[i] == ip) { LeaveCriticalSection(&g_hgLock); return; }
@@ -78,7 +78,9 @@ __attribute__((unused)) static void HostGateVouch(DWORD ip) { HostGateAllow(ip, 
 
 static BOOL HostGateOk(DWORD ip)
 {
-    if ((ntohl(ip) >> 24) == 127 || ip == HG_SSDP) return TRUE;
+    if ((ntohl(ip) >> 24) == 127) return TRUE;
+    if (OfflineLobbyActive()) return FALSE; /* offline mode: loopback only, nothing else is ever vouched */
+    if (ip == HG_SSDP) return TRUE;
     BOOL ok = FALSE;
     EnterCriticalSection(&g_hgLock);
     for (int i = 0; i < g_hgAllowedCount && !ok; i++) ok = g_hgAllowed[i] == ip;
@@ -295,8 +297,10 @@ static BOOL InstallHostGate(void)
         Log("hostgate: required socket imports do not match; refusing startup");
         return FALSE;
     }
-    HostGateReadLobbyNames();
-    HostGateAllowGateways();
+    if (!OfflineLobbyActive()) { /* offline mode vouches no lobby name and no gateway */
+        HostGateReadLobbyNames();
+        HostGateAllowGateways();
+    }
     g_hgRecvFrom = (HgRecvFromFn)(void *)*slotRecv;
     g_hgSendTo = (HgSendToFn)(void *)*slotSend;
     g_hgGetHostByName = (HgGetHostByNameFn)(void *)*slotHost;

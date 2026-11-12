@@ -68,6 +68,9 @@ static int P2PProductionInstallSocketHooks(void) {return 1;}
 /* p2p.c: the armed Local Play host's launch is observed on loopback datagrams only. */
 static unsigned launch_observed,launch_port;
 static void P2PLaunchObserve(unsigned port) {++launch_observed;launch_port=port;}
+/* Offline mode (offline_lobby.c): the "offline" scenario turns it on before the gate is used. */
+static BOOL fixture_offline;
+static BOOL OfflineLobbyActive(void) { return fixture_offline; }
 #define CreateThread TestThread
 #include "../hostgate.c"
 #undef CreateThread
@@ -155,9 +158,30 @@ static void PacketTests(void)
     assert(HostGateRecvFrom(receiver,buf,sizeof(buf),0,(struct sockaddr *)&source,&size)==1 && receives==1);
     closesocket(sender);closesocket(receiver);
 }
+/* Offline mode vouches loopback and nothing else: no SSDP group, no gateway, no lobby name, and a
+ * later vouch (a host ticket) is ignored. With it off, the SSDP group stays reachable as before. */
+static void OfflineTests(void)
+{
+    InitializeCriticalSection(&g_hgLock);
+    g_hgRecvFrom=FakeRecv;g_hgSendTo=FakeSend;
+    assert(HostGateOk(HG_SSDP));
+    fixture_offline=TRUE;
+    assert(HostGateOk(inet_addr("127.0.0.1")) && HostGateOk(inet_addr("127.0.0.2")));
+    assert(!HostGateOk(HG_SSDP));
+    HostGateVouch(inet_addr("192.0.2.56"));
+    HostGateAllow(inet_addr("192.0.2.57"),"dwauth.ini");
+    assert(!HostGateOk(inet_addr("192.0.2.56")) && !HostGateOk(inet_addr("192.0.2.57")) && g_hgAllowedCount==0);
+    struct sockaddr_in address;memset(&address,0,sizeof(address));
+    address.sin_family=AF_INET;address.sin_port=htons(1900);address.sin_addr.s_addr=HG_SSDP;
+    g_hgMode=2;
+    assert(HostGateSendTo(INVALID_SOCKET,"x",1,0,(struct sockaddr *)&address,sizeof(address))==1 && sends==0);
+    address.sin_addr.s_addr=inet_addr("127.0.0.1");
+    assert(HostGateSendTo(INVALID_SOCKET,"x",1,0,(struct sockaddr *)&address,sizeof(address))==1 && sends==1);
+}
 int main(int argc,char **argv)
 {
     WSADATA w;assert(!WSAStartup(MAKEWORD(2,2),&w));assert(argc>=2);
-    if (!strcmp(argv[1],"packets")) PacketTests();else InstallTest(argv[1]);
+    if (!strcmp(argv[1],"offline")) OfflineTests();
+    else if (!strcmp(argv[1],"packets")) PacketTests();else InstallTest(argv[1]);
     puts("hostgate fixture passed");WSACleanup();return 0;
 }
