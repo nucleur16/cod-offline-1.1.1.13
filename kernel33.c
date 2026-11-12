@@ -183,6 +183,11 @@ static void PatchActiveHandFiringMarker(void)
 #if defined(CODOL_LOCAL_TESTING) && CODOL_LOCAL_TESTING == 1
 static FARPROC LocalQaRouteImport(const C1Import *imp,FARPROC original);
 #endif
+/* Offline mode (offline_lobby.c): FALSE unless compiled in AND switched on by the player. */
+static BOOL OfflineLobbyActive(void);
+#if CODOL_OFFLINE_LOBBY
+static FARPROC OfflineRouteImport(const C1Import *imp, FARPROC original);
+#endif
 static void FillImports(void)
 {
     int failed = 0;
@@ -212,6 +217,9 @@ static void FillImports(void)
         f = QbgImport(imp, f);
 #if defined(CODOL_LOCAL_TESTING) && CODOL_LOCAL_TESTING == 1
         f = LocalQaRouteImport(imp,f);
+#endif
+#if CODOL_OFFLINE_LOBBY
+        f = OfflineRouteImport(imp, f);
 #endif
         WriteCode((void *)(DWORD_PTR)imp->slot, &f, sizeof(f));
     }
@@ -1567,6 +1575,8 @@ static void PatchGbkInput(void)
 /* UDP only with lobby-vouched hosts (hostgate.c): the P2P trust requirement. */
 #include "hostgate.c"
 #include "p2p_production_kernel.c"
+/* Offline mode: the Demonware lobby inside the client (offline_lobby.c, offline/, docs/OFFLINE_LOBBY.md). */
+#include "offline_lobby.c"
 /* Reject malformed top-level DemonWare packet lengths in the exact C1 parser. */
 #include "bd_packet_guard.c"
 /* Reject C1 snapshot entity and delta-field writes beyond their bounds. */
@@ -1613,6 +1623,10 @@ static void __cdecl TakeOver(void)
         Fatal("Required numeric text safety checks could not be installed. Please repair or update the client.");
     PatchGfxDateTime();
     PatchGfxLocalOperands();
+#if CODOL_OFFLINE_LOBBY
+    if (!InstallOfflineLobby())
+        Fatal("Offline mode was requested but the built-in lobby could not start. See Kernel33.log.");
+#endif
     if (!InstallHostGate())
         Fatal("Required network safety checks could not be installed. Please repair or update the client.");
     if (!InstallBdPacketLengthGuard())

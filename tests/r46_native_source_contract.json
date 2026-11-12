@@ -29,12 +29,12 @@
       "InstallConnectSenderGuard": "65b074d90f1efd6d650eb7c3261105f4d0d4efe7849c1de6473415a1b9c81e67"
     },
     "hostgate.c": {
-      "HostGateAllow": "523afd50569e84aafa67e537f279ff7729c20a35b0016a4d5cd55a1de85d775e",
-      "HostGateOk": "2e8b1bee2071d238c8298840bcd651cead117c60f8840c8b51030cd80dd05741",
+      "HostGateAllow": "4a19190b5f158f3d4feb5281e12ffae8ad829dde3f883b4ea66bf1f966a25bfd",
+      "HostGateOk": "cb3dfd543f4f46f20390317db1cddebe8850f06619e7169c3035b26f5bd486b4",
       "HostGateRecvFrom": "44db6cb4dd47db833e00aed2276e26859d731dda4c01d3da1f55ab4e8c0fad79",
       "HostGateSendTo": "79efaa22445bb387168aa88cc27b885bd2a9b8ce28c6bb37a452fc40d64cdc38",
       "HostGateVouch": "8314d16a803f635136d1de7a3bcc6f6499952caf7dc7921d2b29de0fa01f2e2b",
-      "InstallHostGate": "d9db90d0adab9b42598e208c5d93e0b5493ad32fb3631006523466b205ed7828"
+      "InstallHostGate": "211a3c9746437be5b2ec0a8ff1a42ccd29988bb2f71a388481e23d696f00a5dc"
     },
     "p2p_guest_binding.c": {
       "P2PGConnectDispatchTick": "9031abbeb7732f3ace65dbc5b6f1e8f1f5607749caf87f77ed3817dc808e2a68"

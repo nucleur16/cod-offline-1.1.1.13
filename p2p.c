@@ -244,13 +244,18 @@ static void P2PDefaults(P2PConfig *c)
     c->c1Zones = 1;
 }
 
+#if CODOL_OFFLINE_LOBBY
+static void OfflineP2PConfig(P2PConfig *c); /* offline_lobby.c: the offline store's state/profile folders */
+#else
+#define OfflineP2PConfig(c) ((void)0)
+#endif
 static void P2PLoadIni(P2PConfig *c)
 {
     char path[MAX_PATH];
     _snprintf(path, MAX_PATH, "%s\\p2p_host.ini", c->dir);
     path[MAX_PATH - 1] = 0;
     FILE *f = fopen(path, "rb");
-    if (!f) { Log("p2p: no %s, defaults used", path); return; }
+    if (!f) { Log("p2p: no %s, defaults used", path); OfflineP2PConfig(c); return; }
     char line[1024];
     while (fgets(line, sizeof(line), f)) {
         char *hash = strchr(line, '#');
@@ -284,6 +289,7 @@ static void P2PLoadIni(P2PConfig *c)
     }
     fclose(f);
     Log("p2p: settings from %s", path);
+    OfflineP2PConfig(c);
 }
 
 /* Installed, authored Survival maps published with the rawfiles deployment. */
@@ -325,7 +331,9 @@ static const char *P2PCheck(const P2PConfig *c)
     if (!inproc && _stricmp(c->mode, "child")) return "mode must be inprocess or child";
     if (c->admission != 1)
         return "P2P hosting requires DW admission";
-    if (!P2PVerifiedScriptsAllowsMode(inproc))
+    /* Offline mode hosts for this one player on loopback with the GSC tree installed with the client
+     * (docs/OFFLINE_LOBBY.md); every other host needs the verified script service. */
+    if (!(OfflineLobbyActive() && inproc) && !P2PVerifiedScriptsAllowsMode(inproc))
         return "P2P hosting requires the verified script service and a local-testing in-process host";
     /* This field is appended after the required +set options. Keep the local
      * trial's two known lifecycle switches, but never let it override an

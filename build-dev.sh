@@ -40,6 +40,14 @@ if [ ! -f "$SDL_DIR/lib/libSDL2.a" ]; then
     tar xzf "$TGZ" -C third_party "SDL2-$SDL_VER/i686-w64-mingw32/include" "SDL2-$SDL_VER/i686-w64-mingw32/lib/libSDL2.a"
     rm -f "$TGZ"
 fi
+# Offline mode (K33_OFFLINE=1, docs/OFFLINE_LOBBY.md): the C++ lobby in offline/ is compiled with g++ into
+# obj_offline/ and linked statically (libstdc++ included). Without the flag none of it is built or linked.
+OFFLINE_LINK=""
+if [ "${K33_OFFLINE:-0}" = 1 ]; then
+    . ./build-offline.inc.sh
+    k33_offline_objects obj_offline
+    OFFLINE_LINK="$OFFLINE_OBJS -static-libstdc++ -lstdc++"
+fi
 "$BIN/windres.exe" -O coff -i kernel33.rc -o kernel33_res.o
 CFLAGS="-O2 -Wall -Wextra -Wno-unused-parameter -Wno-cast-function-type -Wno-missing-field-initializers -shared -s -static -static-libgcc -I$SDL_DIR/include"
 LIBS="-L$SDL_DIR/lib -lSDL2 -lsetupapi -lcfgmgr32 -lversion -loleaut32 -luuid \
@@ -61,8 +69,8 @@ for src in $VSRC; do
     fi
     VOBJS="$VOBJS $o"
 done
-"$BIN/gcc.exe" "$@" $CFLAGS -DK33_VISION -o Kernel33_dev.dll kernel33.c kernel33_res.o kernel33.def $VOBJS \
+"$BIN/gcc.exe" "$@" $CFLAGS -DK33_VISION -o Kernel33_dev.dll kernel33.c kernel33_res.o kernel33.def $VOBJS $OFFLINE_OBJS \
     -static-libstdc++ -lstdc++ $LIBS
-"$BIN/gcc.exe" "$@" $CFLAGS -DK33_NO_CONSOLE -o Kernel33_noconsole.dll kernel33.c kernel33_res.o kernel33.def $LIBS \
+"$BIN/gcc.exe" "$@" $CFLAGS -DK33_NO_CONSOLE -o Kernel33_noconsole.dll kernel33.c kernel33_res.o kernel33.def $OFFLINE_LINK $LIBS \
     || { echo "FAILED: the build without console.c (-DK33_NO_CONSOLE) does not link"; exit 1; }
 echo "built Kernel33_dev.dll and Kernel33_noconsole.dll (SDL2 $SDL_VER static; not installed)"

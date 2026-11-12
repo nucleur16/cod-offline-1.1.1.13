@@ -643,7 +643,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         }
     } else
 #endif
-    if (P2PProductionMode()==0 && !P2PVerifiedScriptsFetch(c.sessionMap[0] ? c.sessionMap : c.map, c.gametype,
+    if (P2PProductionMode()==0 && !OfflineLobbyActive() && !P2PVerifiedScriptsFetch(c.sessionMap[0] ? c.sessionMap : c.map, c.gametype,
                                 c.zoneType, &verified_scripts, &verified_size, script_error, sizeof(script_error))) {
         Log("p2p in-process: %s; hosting refused before loading the server", script_error);
         P2PSetState(P2P_FAILED, script_error);
@@ -730,7 +730,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
 #endif
     if(P2PProductionMode()>0) {
         if(!P2PProductionLoadHost(m)) {P2PProductionCancel();P2PSetState(P2P_FAILED,"Production host API is unavailable.");return 1;}
-    } else {
+    } else if (!OfflineLobbyActive()) { /* offline mode: the host compiles the installed GSC tree (codol_scriptPath) */
         int installed = P2PVerifiedScriptsInstall(m, verified_scripts, verified_size,
                                                  script_error, sizeof(script_error));
         P2PVerifiedScriptsFree(verified_scripts, verified_size);
