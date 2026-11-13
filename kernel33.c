@@ -640,15 +640,46 @@ static BOOL PatchDirEnabled(void)
  * = zombies strings, codol_english_usermaps = the usermaps' names); they load ahead of code_pre_gfx, so their strings
  * win over the stock Chinese ones. Chinese is C1's own strings plus the zones named codol_chinese* (the UI movies'
  * K33UI_* keys in Chinese). Only one set loads: C1 holds at most 12000 localize assets, and a name loaded by both sets
- * would take two. The language is decided once, at startup, from the command line:
- *     +set k33_english 1    codol_english* load, codol_chinese* are skipped (default, also without the option)
- *     +set k33_english 0    codol_chinese* load, codol_english* are skipped; every other patch zone loads either way
- * C1 execs config_mp.cfg before any of this and applies no +set to a dvar it does not know, so the option is read
- * here and nothing stores it: a config write can never change it. The last setting on the line wins. Nothing else
- * in the DLL depends on the language (GBK text input, fonts, voice, controller work the same in both). The pure
- * check lists client_shipRetail\<language>\ and main\ only, never patch\, so both states pass it. */
+ * would take two. The language the client starts in is decided once, here, before the game runs:
+ *     +set k33_language <name>   the language of codol_<name>_locale.ff (en = codol_english*, zh = codol_chinese*)
+ *     +set k33_english 1 | 0     the older spelling of en | zh (and +set codol_patchlang en | zh)
+ *     seta k33_language "<name>" the saved choice in players\config_mp.cfg, when the command line names none
+ *     nothing                    English
+ * (patch_locale_policy.h CodolStartupLanguage). C1 execs config_mp.cfg before any of this and applies no +set to a
+ * dvar it does not know, so both are read here, from the command line and from the plaintext config file itself
+ * (PatchPlainConfig); k33_language becomes a real, archived dvar later (locale_switch.c), which is what writes the
+ * saved line. The startup language's zones load ahead of code_pre_gfx as before. Every other language's
+ * codol_<name>_locale zone is queued after the code_post_gfx zones instead of being skipped (at most
+ * LANG_RESIDENT_MAX of them, and only when locale_switch.c's C1 sites all match): there its strings are duplicates
+ * of names C1 already holds, the linker discards them and locale_switch.c keeps them, which is what makes a
+ * language change possible without a restart. Nothing else in the DLL depends on the language (GBK text input,
+ * fonts, voice, controller work the same in all). The pure check lists client_shipRetail\<language>\ and main\
+ * only, never patch\, so every state passes it. */
 static BOOL g_english = TRUE;
 static int g_englishZones, g_englishSkipped, g_chineseZones;
+#define LANG_RESIDENT_MAX 3   /* C1 holds 33 zones (0x4CC824); a match has about 26 with one resident language */
+static char g_lang[CODOL_LANG_NAME_MAX] = "en";             /* the language this client started in */
+static char g_langs[CODOL_LANG_MAX][CODOL_LANG_NAME_MAX];   /* k33_languageList, sorted */
+static int g_langCount, g_langResident;
+static unsigned g_langZones;                                /* bit i: g_langs[i] has a zone in the patch folder */
+static BOOL LocaleSwitchCheck(void);                        /* locale_switch.c */
+
+/* players\config_mp.cfg next to the exe, for its saved k33_language line (at most 1 MB; NULL when there is none).
+ * An encrypted config (one written before PatchPlainConfig) has no such text and yields no language. */
+static char *ReadSavedConfig(DWORD *length)
+{
+    char path[MAX_PATH];
+    DWORD n = GetModuleFileNameA(NULL, path, MAX_PATH), got = 0;
+    while (n && path[n - 1] != '\\') n--;
+    lstrcpynA(path + n, "players\\config_mp.cfg", MAX_PATH - n);
+    HANDLE f = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+    if (f == INVALID_HANDLE_VALUE) return NULL;
+    char *text = (char *)HeapAlloc(GetProcessHeap(), 0, 0x100000);
+    if (text && !ReadFile(f, text, 0x100000, &got, NULL)) got = 0;
+    CloseHandle(f);
+    *length = got;
+    return text;
+}
 
 static BOOL EnglishZone(const char *name)
 {
@@ -709,8 +740,13 @@ static void LoadPatchDir(void)
     int localeArgc=0;
     LPWSTR *localeArgv=CommandLineToArgvW(GetCommandLineW(),&localeArgc);
     enum CodolPatchLanguage locale=localeArgv ? CodolPatchLanguageFromArgv(localeArgc,(const wchar_t *const*)localeArgv) : CODOL_PATCH_NATIVE;
+    DWORD savedLength = 0;
+    char *saved = ReadSavedConfig(&savedLength);
+    enum CodolLanguageSource langSource = CodolStartupLanguage(localeArgv ? localeArgc : 0, (const wchar_t *const*)localeArgv,
+                                                               saved, savedLength, g_lang);
     if(localeArgv)LocalFree(localeArgv);
-    g_english = locale == CODOL_PATCH_EN;
+    if (saved) HeapFree(GetProcessHeap(), 0, saved);
+    g_english = strcmp(g_lang, "en") == 0;
     const char *sub = "patch\\";
     char dir[MAX_PATH], pattern[MAX_PATH];
     DWORD n = GetModuleFileNameA(NULL, dir, MAX_PATH);
@@ -752,6 +788,41 @@ static void LoadPatchDir(void)
     FindClose(h);
     qsort(files, count, sizeof(files[0]), CompareNames);
 
+    {   /* the languages: zh is C1's own (it needs no zone), every other one is a zone in the folder */
+        char owner[CODOL_LANG_NAME_MAX], name[MAX_PATH];
+        CodolLanguageListAdd(g_langs, &g_langCount, "zh");
+        for (int pass = 0; pass < 2; pass++)
+            for (int i = 0; i < count; i++) {
+                size_t len = strlen(files[i]);
+                if (len < 4 || lstrcmpiA(files[i] + len - 3, ".ff") != 0) continue;
+                memcpy(name, files[i], len - 3);
+                name[len - 3] = 0;
+                if (CodolPatchZoneRetired(name) || !CodolPatchZoneLanguage(name, owner)) continue;
+                if (!pass) {
+                    if (CodolLanguageListAdd(g_langs, &g_langCount, owner) < 0)
+                        Log("language: more than %d languages in the patch folder, \"%s\" is ignored", CODOL_LANG_MAX, owner);
+                } else {
+                    int at = CodolLanguageListFind(g_langs, g_langCount, owner);
+                    if (at >= 0) g_langZones |= 1u << at;
+                }
+            }
+        int at = CodolLanguageListFind(g_langs, g_langCount, g_lang);
+        static const char *const kSource[] = { "the default", "+set k33_language", "+set k33_english / codol_patchlang",
+                                               "the saved k33_language" };
+        if (strcmp(g_lang, "zh") != 0 && (at < 0 || !(g_langZones >> at & 1u))) {
+            /* no zone of that language: English when it is installed, else C1's own text (LogEnglish says so for en) */
+            int en = CodolLanguageListFind(g_langs, g_langCount, "en");
+            const char *use = en >= 0 && (g_langZones >> en & 1u) ? "en" : "zh";
+            Log("language: \"%s\" (%s) has no zone in the patch folder; starting in \"%s\"", g_lang, kSource[langSource], use);
+            lstrcpynA(g_lang, use, sizeof(g_lang));
+            if (!strcmp(g_lang, "en")) g_english = TRUE;
+        } else {
+            Log("language: \"%s\" (%s%s)", g_lang, kSource[langSource],
+                langSource == CODOL_LANG_ALIAS && locale == CODOL_PATCH_NATIVE ? ": no valid language, C1's own" : "");
+        }
+        (void)kSource; (void)langSource; (void)locale;   /* only logged (Log is compiled out of shipping builds) */
+    }
+
     for (int i = 0; i < count; i++) {
         const char *file = files[i];
         size_t len = strlen(file);
@@ -764,11 +835,21 @@ static void LoadPatchDir(void)
         if (len - 3 >= sizeof(z->name)) { Log("patch folder: skipped %s: name too long", file); continue; }
         memcpy(z->name, file, len - 3);
         z->name[len - 3] = 0;
-        if (!CodolPatchZoneLocaleAllowed(z->name,locale)) {
-            if (EnglishZone(z->name)) g_englishSkipped++;
-            else if (CodolPatchZoneRetired(z->name))
-                Log("patch folder: skipped %s: retired duplicate map table", file);
-            continue;
+        BOOL resident = FALSE;   /* another language's locale zone: after code_post_gfx, for locale_switch.c */
+        if (!CodolPatchZoneAllowedFor(z->name, g_lang)) {
+            char owner[CODOL_LANG_NAME_MAX], want[64];
+            /* only the language's one zone, under its own name (codol_english_locale, not a codol_en_locale beside it) */
+            resident = !CodolPatchZoneRetired(z->name) && CodolLocaleZoneLanguage(z->name, owner) &&
+                       _snprintf(want, sizeof(want), "codol_%s_locale", CodolLanguageZoneStem(owner)) > 0 &&
+                       lstrcmpiA(want, z->name) == 0 &&
+                       CodolLanguageListFind(g_langs, g_langCount, owner) >= 0 && g_langResident < LANG_RESIDENT_MAX &&
+                       LocaleSwitchCheck();
+            if (!resident) {
+                if (EnglishZone(z->name)) g_englishSkipped++;
+                else if (CodolPatchZoneRetired(z->name))
+                    Log("patch folder: skipped %s: retired duplicate map table", file);
+                continue;
+            }
         }
         if (lstrcmpiA(z->name, "ffotd_client") == 0) {
             Log("patch folder: skipped %s: the name belongs to the lobby's FFOTD", file);
@@ -796,7 +877,7 @@ static void LoadPatchDir(void)
         }
 
         _snprintf(z->path, sizeof(z->path), "%s%s", pdir, file);
-        z->stage = PatchZoneStage(z->name);
+        z->stage = resident ? PATCH_POST_GFX : PatchZoneStage(z->name);
         z->path[sizeof(z->path) - 1] = 0;
         HANDLE f = CreateFileA(z->path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
         if (f == INVALID_HANDLE_VALUE) {
@@ -815,6 +896,12 @@ static void LoadPatchDir(void)
             continue;
         }
         g_patchZoneCount++;
+        if (resident) {
+            g_langResident++;
+            Log("patch folder: %s%s queued as zone \"%s\" after code_post_gfx: a language to switch to (locale_switch.c)",
+                sub, file, z->name);
+            continue;
+        }
         g_englishZones += EnglishZone(z->name);
         g_chineseZones += ChineseZone(z->name);
         Log("patch folder: %s%s (%lu bytes) queued as zone \"%s\"", sub, file, (unsigned long)size, z->name);
@@ -1528,6 +1615,7 @@ static void PatchGbkInput(void)
 /* Shared plumbing for the features ported from codol-classic's d3d9.dll: a main-thread tick list (k33tick.c, chained
  * after voice.c's and discord.c's Com_EventLoop hooks), an HTTPS/SHA-256 helper (k33http.c) and a JSON reader (k33json.c). */
 #include "k33tick.c"
+#include "locale_switch.c" /* k33_language: the language, changed while the game runs (after voice.c, k33tick.c) */
 #include "k33http.c"
 #include "k33json.c"
 
@@ -1695,6 +1783,7 @@ static void __cdecl TakeOver(void)
     InstallP2PInprocDiagnostics(); /* QA commands only; no frame/IAT/VEH activation at startup. */
 #endif
     InstallP2PHost();
+    InstallLocaleSwitch();
 #if CODOL_LOCAL_TESTING
     if (!K33OnMainTick(VoiceCmdFile))
         Fatal("Local command-file tick could not be installed.");
