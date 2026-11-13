@@ -537,7 +537,7 @@ through Kernel33's `k33_shot.req` in `D:\CoD\k33work\m14surv\shots\`):
 | Leave that room | `p2p: the owner left the room (lobby); disarmed`; intent `state=idle`, no selection, nothing running |
 | Spec Ops > Boot Camp > Start > Ready | `coop_training_mp_killhouse_sh/coop/coop -> armed`, host up, in the mission (`g04`) |
 | sockets of the client (netstat, by pid) | lobby and STUN on 127.0.0.1 / 127.0.0.2 only; the match host on 127.0.0.1:17760 and, after the `net_ip6 ::1` change, `[::1]:17760` (before it: `[::]:17760`, TCP and UDP); C1's own game socket `0.0.0.0:30001` |
-| outbound traffic seen | no connection to any lobby host (`dwauth.ini` / `stun.ini` on disk point at 192.0.2.1 and were not used). `hostgate: refused datagram to 239.255.255.250:1900` (C1's UPnP search, refused, 7 times in one run). One UDP socket of the process is connected to `116.130.229.213:8000`: it is not C1's (C1's `sendto` goes through the host gate) - one of the Tencent DLLs the client loads (`TenProxy` / `TerSafe` / `GbSpy` / `BugTrace`); whether a datagram left was not measured |
+| outbound traffic seen | no connection to any lobby host (`dwauth.ini` / `stun.ini` on disk point at 192.0.2.1 and were not used). `hostgate: refused datagram to 239.255.255.250:1900` (C1's UPnP search, refused, 7 times in one run). One UDP socket of the process is connected to `116.130.229.213:8000`: it is not C1's (C1's `sendto` goes through the host gate) - found later to be C1's own Tencent QoS (`ied-tqos.qq.com`), refused since by the egress gate ("Network egress" below) |
 
 Not shown live on this branch: the ticker line of a refused start on screen; a refused start in a
 playlist room; a second match in one client run (after the first match the client came back to a room
@@ -622,6 +622,63 @@ read with the Python lobby's codec from a copy of `players\edtest\mpdata`):
 * After leaving a zombies room, the Spec Ops room list showed that room as still waiting; not
   investigated.
 
+
+## Network egress: nothing leaves loopback (`src/egress_gate.c`)
+
+The process - C1, every DLL it loads from the install, the embedded match host and Windows' own HTTP
+stacks inside it - reaches 127.0.0.0/8 and ::1 only. The gate is installed from `DllMain` (before
+any other module of the install is loaded: the exe imports `Kernel33.dll` alone) in **every build
+profile**; there is no dvar, ini key or command-line switch for it. If one of its required hooks cannot
+be installed the client does not start.
+
+* **Layer A, the entry points** (hooked inline, in the system DLL itself, so the caller does not matter -
+  an import slot, a `GetProcAddress` result, a pointer captured earlier, another system DLL):
+  ws2_32 `connect` / `WSAConnect` / `WSAConnectByName*` / `WSAConnectByList` / `WSAJoinLeaf` /
+  `ConnectEx` (handed out by `WSAIoctl`) / `sendto` / `WSASendTo` / `WSASendMsg` (a destination that is
+  not loopback is refused: a connect fails with `WSAENETUNREACH`, a datagram is reported sent and
+  dropped); `bind` (an "any" or LAN address is bound to loopback instead; a socket that sends or
+  connects unbound is bound to loopback first - nothing listens on the network, no firewall prompt);
+  `setsockopt` multicast joins (refused); every name lookup (`gethostbyname`, `getaddrinfo`,
+  `GetAddrInfoW/ExA/ExW`, `gethostbyaddr`, `getnameinfo`, `WSAAsyncGetHostBy*`,
+  `WSALookupServiceBegin*`, dnsapi `DnsQuery_*` / `DnsQueryEx`): literals, `localhost` and this PC's
+  own name pass (Windows answers them from the adapters), any other name fails at once with no DNS /
+  LLMNR / NetBIOS query; WinINet `InternetConnect*` / `InternetOpenUrl*` / `InternetCheckConnection*` /
+  `InternetAttemptConnect`, WinHTTP `WinHttpConnect` / proxy and WPAD lookups, `Netbios`, the ICMP
+  echo functions, and `ShellExecute*` of a web address. DLLs that load later (WinINet, ...) are hooked
+  from the loader's DLL notification.
+* **Layer B, the backstop**: `ntdll!NtDeviceIoControlFile`. At start-up the gate performs each kind of
+  socket operation once against 127.77.33.1 and learns which AFD ioctl carries the destination where
+  (five on Windows 11 26200); an AFD ioctl with a non-loopback destination is then failed with
+  `STATUS_NETWORK_UNREACHABLE`. It fires only if layer A missed a path, and says so in the log; in
+  every run so far it never fired.
+* **The log**: `<exe dir>\Kernel33_egress.log` (every profile; restarted above 512 KB): one line per
+  distinct refused destination with the module that asked (the first caller outside Windows and
+  Kernel33's own import-slot wrappers), one line per loopback address and module, every bind moved to
+  loopback, and a summary at exit.
+* Not covered, by nature: other processes, and a UNC path or remote pipe name handed to a file API
+  (the SMB redirector is kernel code). Nothing in the install's modules names either.
+
+**What tried to talk to where** (static scan of every PE in the install, then live runs of the
+diagnostic and the shipping build, 2026-11-12, shadow `D:\CoD\k33work\ofl3\client`):
+
+| who | what | before | now |
+|---|---|---|---|
+| C1, Tencent QoS (`tqos_*`; the call at `0x00725DC5` right before `Live_Init`) | `gethostbyname("ied-tqos.qq.com")` at start-up, then a UDP socket connected to the result | the socket of the process connected to `116.130.229.213:8000` seen in the last live run (C1's own `sendto` goes through the host gate, so the datagrams of a connected socket did not show there) | lookup refused (`by C1@0x00A535D2`), no socket is created |
+| C1 / the lobby's `configs_s.info` | `[adnews] url = http://127.0.0.1:8787/feed/news` and the promotion / hot-item banner URLs (the Python lobby's admin UI) fetched by C1's libcurl at every front-end entry (`tcp connect 127.0.0.1:8787 by C1@0x009C9875`) | a refused loopback connect per front-end entry | the lobby serves its own `configs_s.info` without those sections (`src/offline/resources/`, embedded): no connection at all; the News pane stays on "Loading, please wait..." as before |
+| C1, DemonWare UPnP (bdUPnP) | SSDP search to `239.255.255.250:1900` | refused by the host gate | still refused by the host gate (2 per run); `bind 0.0.0.0:30001` of C1's game socket is moved to `127.0.0.1:30001` |
+| C1, DemonWare | `WSALookupServiceBegin` enumeration on the default name space (from `gethostbyname("")`) | - | passed (this PC's addresses, no query on the wire) |
+| embedded match host (`k33_sh1x_host_<pid>_<n>.dll`) | `getaddrinfo(<this PC's name>)`, UDP to the client and the lobby on 127.0.0.1 | its IPv6 sockets were on `[::]` until `net_ip6 ::1` | loopback only; its heartbeat thread (`SV_SendHeartbeatThread`) never asked for a master server in these runs |
+| Kernel33's rcon / status probes (`P2PRcon`) | unbound UDP sockets connected to the host | bound by Windows to `0.0.0.0:<ephemeral>` (seen with netstat) | bound to `127.0.0.1` first |
+| TerSafe.dll, TenProxy.dll, GbSpy.dll (loaded by C1), steam_api.dll | anti-cheat / login proxy / crash spy | - | no socket, lookup or HTTP call at all in any run; kept loaded (C1 calls into them), every attempt they could make is refused by the gate |
+| TenSLX.dll, BugTrace.dll (WinINet, `qq.com` URLs), SteamAPIUpdater.dll, UpdateDLLWrapper.dll | Tencent login, crash reporter, updaters | - | never loaded by this client (TenProtect's start routine, which loads them, is replaced by Kernel33's `TakeOver`) |
+
+Live proof (diagnostic build: start, login, menus, Multiplayer front end with the store list, Create
+Room, Ready, a Killhouse match with three training bots to its time limit, the report folded
+(`+43 GP`), back to the lobby, leave the room, quit): `Kernel33_egress.log` lists one refused
+destination (`ied-tqos.qq.com`), no backstop refusal, 20659 loopback operations and one moved bind;
+a once-a-second netstat watch of the pid (`ofl3\logs\t1e_netwatch.log`) saw 18 socket lines, every one
+on 127.0.0.1 / 127.0.0.2 / ::1. The shipping build's run to the menus logged the same refusal and the
+same loopback lines.
 
 ## Dead or unreachable now that the client is offline only (left in the tree for a cleanup job)
 
