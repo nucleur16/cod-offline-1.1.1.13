@@ -181,7 +181,7 @@
     "src/kernel/kernel_room_guards.h": "dee04c90ea3ed76c63e95d6d401a24b3f4f79e50611bd82c5fd0b19986eddc24",
     "src/kernel/kernel_room_policy.h": "cd260c16b26b5b1acef077ab3912967bf0741e85fdc444534907e30b9aef27c2",
     "src/kernel/kernel_video_mode.c": "0fbb16f81b1602405d8c7b678292d62ef9821cdc5918fd6030c78445ef30d0a5",
-    "src/kernel33.c": "e480d285b5208f14c658a6e64ac2e5624bead649f5c6160406f8ed5eb2a0ed81",
+    "src/kernel33.c": "e9d081c1d6ba1c0b0e6427e9c5dc8121d52e494cf5544d78efb6abdfae278cdc",
     "src/minigun_pair_native.c.inc": "ec3341020ca0afb09fe21e265867240ec218dfc7c5f959f8d0be65904a33ce33",
     "src/patch_locale_policy.h": "cbd8cb82601f2a54c74ee4046bfb4321fa5589b707cd0cc0e3d04a21db61ed43",
     "src/production_profile.h": "91fa430f74a28541affce5e1d68769fe161bcf5b3e0351ca24a1a6954bfbfaee",
