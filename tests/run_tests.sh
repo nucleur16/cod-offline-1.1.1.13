@@ -33,6 +33,8 @@ python -B docs/baselines/20261024-gfx-date-time/run_regressions.py \
     --cc "$BIN/gcc.exe" --output-dir "$OUT/gfx-date-time"
 "$BIN/gcc.exe" -Wall -Wextra -Werror tests/patch_locale_test.c -o "$OUT/patch_locale_test.exe"
 "$OUT/patch_locale_test.exe"
+"$BIN/gcc.exe" -std=c99 -O2 -Wall -Wextra -Werror tests/locale_switch_policy_test.c -o "$OUT/locale_switch_policy_test.exe"
+"$OUT/locale_switch_policy_test.exe"
 "$BIN/gcc.exe" -O2 -Wall -Wextra -Werror tests/survival_category_test.c -o "$OUT/survival_category_test.exe"
 "$OUT/survival_category_test.exe"
 "$BIN/gcc.exe" -std=c99 -O2 -Wall -Wextra -Werror tests/test_p2p_match_options.c -o "$OUT/p2p_match_options_test.exe"

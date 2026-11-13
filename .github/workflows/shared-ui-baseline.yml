@@ -74,6 +74,9 @@ jobs:
       - id: native_check_19
         continue-on-error: true
         run: gcc -std=c99 -O2 -Wall -Wextra -Werror tests/p2p_activation_transaction_test.c -o /tmp/p2p-activation-transaction && /tmp/p2p-activation-transaction
+      - id: native_check_20
+        continue-on-error: true
+        run: gcc -std=c99 -O2 -Wall -Wextra -Werror tests/locale_switch_policy_test.c -o /tmp/locale-switch-policy && /tmp/locale-switch-policy
       - name: Require every native source check to succeed
         if: ${{ !cancelled() }}
         env:
@@ -81,7 +84,7 @@ jobs:
         run: |
           python - <<'PY'
           import json, os
-          expected = ['native_check_01', 'native_check_02', 'native_check_03', 'native_check_04', 'native_check_05', 'native_check_06', 'native_check_07', 'native_check_08', 'native_check_09', 'native_check_10', 'native_check_11', 'native_check_12', 'native_check_13', 'native_check_14', 'native_check_15', 'native_check_16', 'native_check_17', 'native_check_18', 'native_check_19']
+          expected = ['native_check_01', 'native_check_02', 'native_check_03', 'native_check_04', 'native_check_05', 'native_check_06', 'native_check_07', 'native_check_08', 'native_check_09', 'native_check_10', 'native_check_11', 'native_check_12', 'native_check_13', 'native_check_14', 'native_check_15', 'native_check_16', 'native_check_17', 'native_check_18', 'native_check_19', 'native_check_20']
           steps = json.loads(os.environ['NATIVE_QUALIFICATION_STEPS'])
           bad = []
           for key in expected:
@@ -91,5 +94,5 @@ jobs:
                   bad.append(key)
           if bad:
               raise SystemExit('Native qualification failed or did not run: ' + ', '.join(bad))
-          print('All 19 native source check commands passed.')
+          print('All 20 native source check commands passed.')
           PY
