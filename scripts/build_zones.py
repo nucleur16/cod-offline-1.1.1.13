@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 r"""build_zones.py -- the one build entry point for every zone of this repository.
 
-    python build_zones.py                              build every zone in zone_source/ into output\ (shipping build)
-    python build_zones.py --maps all                   the same with every usermap's UI, into output_dev\
-    python build_zones.py voice_ui_mp controller_ingame
+    python scripts/build_zones.py                              build every zone in zone_source/ into output\ (shipping build)
+    python scripts/build_zones.py --maps all                   the same with every usermap's UI, into output_dev\
+    python scripts/build_zones.py voice_ui_mp controller_ingame
                                                        build only these zones
-    python build_zones.py survival_menus survival_localize_chinese survival_localize_english
+    python scripts/build_zones.py survival_menus survival_localize_chinese survival_localize_english
                                                        the staging zones (zonelist staging=True), which a default
                                                        build leaves out: they merge into other zones, never install
-    python build_zones.py --list                       list the zones, where each installs and where it came from
-    python build_zones.py --verify                     build, then compare each output with the recorded original
-    python build_zones.py --decompile [zone ...]       refresh zones\ + zone_source\ from the shipped files
+    python scripts/build_zones.py --list                       list the zones, where each installs and where it came from
+    python scripts/build_zones.py --verify                     build, then compare each output with the recorded original
+    python scripts/build_zones.py --decompile [zone ...]       refresh zones\ + zone_source\ from the shipped files
 
 Usermaps: shipping_maps.txt lists every usermap as "ship" or "dev" (zonekit/shipping.py). The default build is the
 shipping build: the usermap zones (usermaps_patch, usermaps_ui_mp) and files\...\sound_channels.txt carry only the
@@ -56,7 +56,7 @@ import sys
 import tempfile
 import time
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # the repository root (this file is in scripts/)
 sys.path.insert(0, HERE)
 from zonekit import build, container, decompile, gfx, packs, shipping, stock, ui_baseline, zoneimage, zonelist  # noqa: E402
 
@@ -357,7 +357,7 @@ def main(argv=None):
             return 1 if run_decompile(names, exe, roots, chinese, ffdec, tmp) else 0
         unknown = [n for n in a.zones if n not in known and n not in all_packs]
         if unknown:
-            ap.error("no zone_source or zone_packs for %s (python build_zones.py --list)" % ", ".join(unknown))
+            ap.error("no zone_source or zone_packs for %s (python scripts/build_zones.py --list)" % ", ".join(unknown))
         if a.parts:
             names, pack_list = ([n for n in a.zones if n in known] if a.zones else known), []
         elif a.zones:

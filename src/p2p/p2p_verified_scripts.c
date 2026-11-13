@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "production_profile.h"
+#include "../production_profile.h"
 
 #ifndef P2PVS_TIMEOUT_MS
 #define P2PVS_TIMEOUT_MS 30000u

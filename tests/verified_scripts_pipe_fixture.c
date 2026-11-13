@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "../p2p_verified_scripts.c"
+#include "../src/p2p/p2p_verified_scripts.c"
 
 static BYTE packet[128], copied[128];
 static DWORD packet_size;

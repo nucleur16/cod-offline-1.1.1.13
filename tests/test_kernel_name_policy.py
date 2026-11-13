@@ -80,6 +80,6 @@ if __name__=='__main__':
  start=time.perf_counter();result=unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(Policy))
  report={'passed':result.wasSuccessful(),'methods':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),
          'counts':COUNTS,'seconds':time.perf_counter()-start,'library_sha256':hashlib.sha256(args.library.read_bytes()).hexdigest(),
-         'source_sha256':hashlib.sha256((Path(__file__).resolve().parents[1]/'kernel_name_policy.h').read_bytes()).hexdigest(),
+         'source_sha256':hashlib.sha256((Path(__file__).resolve().parents[1]/'src/kernel/kernel_name_policy.h').read_bytes()).hexdigest(),
          'boundary':'Compiled portable C JSON/UTF8/cache policy, independent Python oracle. No HTTP worker, native thunk, renderer or game acceptance.'}
  args.output.write_text(json.dumps(report,indent=2)+'\n');raise SystemExit(not result.wasSuccessful())

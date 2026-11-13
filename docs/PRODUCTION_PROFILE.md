@@ -9,7 +9,7 @@ features remain enabled. Fatal startup failures still report an error.
 `K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=0` builds quiet local QA: the approved
 command-file transport is available only in this separately compiled profile.
 `K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=1` enables development diagnostics.
-That profile alone compiles `k33shot.c` (with the developer console it rides on): the `k33_screenshot` and
+That profile alone compiles `src/console/k33shot.c` (with the developer console it rides on): the `k33_screenshot` and
 `k33_framestats` commands and, on a test client only (`+set k33_shotFile 1` or `+set k33_cmdFile 1`), the
 `k33_shot.req` / `k33_stats.req` request files. Shipping and quiet-QA DLLs contain none of it: no command, no
 request-file polling, no Direct3D hook.
@@ -25,7 +25,7 @@ merely because the standalone policy/binder fixtures pass.
 
 The paired launcher proxy (a separate project, not in this repository) defaults
 to `PROFILE=shipping` and excludes its own developer console overlay, developer
-panel and their input hook. Kernel33's in-game console is `console.c`: it draws
+panel and their input hook. Kernel33's in-game console is `src/console/console.c`: it draws
 itself with GDI and Direct3D 9 and uses no GUI library. Its normal replay,
 name-display and native room integration remain. Development must be selected
 explicitly and must use a separate output directory.
@@ -56,4 +56,4 @@ window remains unchanged. It does not certify the game's menu response.
 
 ## Offline mode
 
-`K33_OFFLINE=1` (`CODOL_OFFLINE_LOBBY=1`) is a separate opt-in build flag: it compiles the in-client lobby (`offline/`, `offline_lobby.c`, `docs/OFFLINE_LOBBY.md`). It enables no diagnostics and changes nothing unless the player also switches offline mode on at run time (`+set k33_offline 1` or `k33_offline.ini`). Without the flag none of that code is built or linked.
+`K33_OFFLINE=1` (`CODOL_OFFLINE_LOBBY=1`) is a separate opt-in build flag: it compiles the in-client lobby (`src/offline/`, `src/offline_lobby.c`, `docs/OFFLINE_LOBBY.md`). It enables no diagnostics and changes nothing unless the player also switches offline mode on at run time (`+set k33_offline 1` or `k33_offline.ini`). Without the flag none of that code is built or linked.

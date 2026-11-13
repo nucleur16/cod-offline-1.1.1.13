@@ -1,6 +1,6 @@
 import pathlib,re,unittest
 ROOT=pathlib.Path(__file__).resolve().parents[1]
-SOURCE=(ROOT/'console.c').read_text()
+SOURCE=(ROOT/'src/console/console.c').read_text()
 def body(name):
     start=SOURCE.index('\n{',SOURCE.index(name))+2
     depth=1;pos=start

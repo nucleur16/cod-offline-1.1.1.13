@@ -16,7 +16,7 @@ args=ap.parse_args();ROOT=Path(__file__).resolve().parents[1];out=args.out.resol
 def linux(path):
     value=str(path.resolve());return '/mnt/'+value[0].lower()+value[2:].replace('\\','/')
 
-source=(ROOT/'p2p_inproc.c').read_text()
+source=(ROOT/'src/p2p/p2p_inproc.c').read_text()
 start=source.index('#if CODOL_KERNEL_ROOM_CONTEXT\n#include "p2p_exception_policy.h"')
 end=source.index('/* A call into the server',start)
 body=source[start:end]
@@ -124,8 +124,8 @@ suite=unittest.TestSuite([unittest.defaultTestLoader.loadTestsFromTestCase(env['
 result=unittest.TextTestRunner(verbosity=2).run(suite)
 report={'passed':result.wasSuccessful(),'methods':result.testsRun,'skipped':len(result.skipped),
     'failures':len(result.failures),'errors':len(result.errors),'fixture_sha256':hashlib.sha256(fixture.read_bytes()).hexdigest(),
-    'guard_source_sha256':hashlib.sha256((ROOT/'kernel_call_guard.c').read_bytes()).hexdigest(),
-    'pi_source_sha256':hashlib.sha256((ROOT/'p2p_inproc.c').read_bytes()).hexdigest(),
+    'guard_source_sha256':hashlib.sha256((ROOT/'src/kernel/kernel_call_guard.c').read_bytes()).hexdigest(),
+    'pi_source_sha256':hashlib.sha256((ROOT/'src/p2p/p2p_inproc.c').read_bytes()).hexdigest(),
     'exact_native_image_supplied':bool(args.image),
     'boundary':'Actual compiled Pi VEH and unchanged migration SEH, real Unicorn AV; Windows dispatch/API/thread/fiber modeled; exact native Cbuf/Dvar image tests require their separate existing proof. No Windows executable launch.'}
 (out/'pi-fault-dispatch-receipt.json').write_text(json.dumps(report,indent=2)+'\n')

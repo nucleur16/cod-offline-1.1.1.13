@@ -1,4 +1,4 @@
-#include "../p2p_intent_heartbeat.h"
+#include "../src/p2p/p2p_intent_heartbeat.h"
 #include <assert.h>
 #include <limits.h>
 #include <stdio.h>

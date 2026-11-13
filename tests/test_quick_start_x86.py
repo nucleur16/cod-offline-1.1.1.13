@@ -28,7 +28,7 @@ ROOM=0x82d5470; CTRL=0x6000000; RECORD=0x6001000
 SLOT=0x6c44f0c; STACK=0x30000000; STOP=STACK+0x10000
 ROOT=Path(__file__).resolve().parents[1]
 import re
-GUARDS=[(int(a,16),int(n)) for a,n in re.findall(r'\{0x([0-9A-F]+)u,(\d+)u,', (ROOT/'quick_start_guards.h').read_text())]
+GUARDS=[(int(a,16),int(n)) for a,n in re.findall(r'\{0x([0-9A-F]+)u,(\d+)u,', (ROOT/'src/rooms/quick_start_guards.h').read_text())]
 
 class Machine:
  def __init__(self):
@@ -254,7 +254,7 @@ if __name__=='__main__':
  result=unittest.TextTestRunner(verbosity=2).run(suite)
  report=dict(passed=result.wasSuccessful(),methods=result.testsRun,failures=len(result.failures),errors=len(result.errors),
   image_sha256=hashlib.sha256(IMAGE).hexdigest(),fixture_sha256=hashlib.sha256(FIXTURE).hexdigest(),
-  source_sha256={p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in ['quick_start_gate.c','quick_start_policy.h','quick_start_guards.h','tests/quick_start_x86_fixture.c','tests/test_quick_start_x86.py']},
+  source_sha256={p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in ['src/rooms/quick_start_gate.c','src/rooms/quick_start_policy.h','src/rooms/quick_start_guards.h','tests/quick_start_x86_fixture.c','tests/test_quick_start_x86.py']},
   limits='Offline exact x86; timer/OS/frame-body/event/StartGame boundaries doubled; no live C1 acceptance')
  Path(A.output).write_text(json.dumps(report,indent=2)+'\n')
  raise SystemExit(not result.wasSuccessful())

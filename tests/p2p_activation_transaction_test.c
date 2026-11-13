@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include "../p2p_activation_transaction.h"
+#include "../src/p2p/p2p_activation_transaction.h"
 typedef struct {
     int slots[3], callbacks[5], count, chain, next;
     int handler, prepare_count, acquire_count, release_count, writes, tick_adds, worker;

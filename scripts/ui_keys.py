@@ -26,7 +26,7 @@ Adding a string: use "@K33UI_<NAME>" (for .text / .label / a list label) or Loca
 Chinese text and the movie, and run this (it compiles the class, adds the entries to the English and Chinese zones and
 their manifests).
 
-    python ui_keys.py           convert (needs FFDec when a hand-written class changed) and update zones\ + zone_source\
+    python scripts/ui_keys.py           convert (needs FFDec when a hand-written class changed) and update zones\ + zone_source\
 """
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ import re
 import struct
 import sys
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # the repository root (this file is in scripts/)
 sys.path.insert(0, HERE)
 from zonekit import abcstr, build, codecs, gfx, manifest, stock, zonelist  # noqa: E402
 

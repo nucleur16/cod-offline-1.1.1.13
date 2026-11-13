@@ -43,7 +43,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <d3d9.h>
-#include "c1_dvars.h"
+#include "../c1_dvars.h"
 
 #define CON_LOGPRINT_VA       0x00594010u
 /* Com_Printf, Cbuf_AddText, the command list, Dvar_RegisterInt and the dvar count: c1game.c */

@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "../production_profile.h"
+#include "../src/production_profile.h"
 
 static int write_number, fail_write;
 static BYTE *test_table;
@@ -72,7 +72,7 @@ static void P2PLaunchObserve(unsigned port) {++launch_observed;launch_port=port;
 static BOOL fixture_offline;
 static BOOL OfflineLobbyActive(void) { return fixture_offline; }
 #define CreateThread TestThread
-#include "../hostgate.c"
+#include "../src/p2p/hostgate.c"
 #undef CreateThread
 
 static int receives,sends,consume,allow_at;

@@ -11,8 +11,8 @@ is a COM_FATAL at client startup.
 shipping_maps.txt (repository root) lists every usermap with its state:
 
     <map> <state>       # comment
-    state: ship   in the shipping build (python build_zones.py; output\)
-           dev    only in the all-maps build (python build_zones.py --maps all; output_dev\)
+    state: ship   in the shipping build (python scripts/build_zones.py; output\)
+           dev    only in the all-maps build (python scripts/build_zones.py --maps all; output_dev\)
 
 Every usermap a filtered asset names must be listed: an unlisted map fails the build, so a new map's UI can only
 ship after someone writes "ship" next to it.

@@ -18,7 +18,7 @@ static void WriteCode(void *p, const void *src, size_t n) { memcpy(p, src, n); }
 static void Log(const char *ignored) { (void)ignored; }
 
 #define SERVER_INFO_CAPACITY_CALL_VA ((uintptr_t)g_call_entry)
-#include "../server_info_capacity_guard.c"
+#include "../src/guards/server_info_capacity_guard.c"
 
 static int __attribute__((naked, noinline)) FixtureDispatch(void *state __attribute__((unused)),
                                                               int public_count __attribute__((unused)))

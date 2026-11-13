@@ -13,7 +13,7 @@
 #include LEGACY_ROOM_SAMPLE_HEADER
 #include LEGACY_ROOM_QUEUE_HEADER
 #ifndef KRP_POLICY_HEADER
-#define KRP_POLICY_HEADER "../kernel_room_policy.h"
+#define KRP_POLICY_HEADER "../src/kernel/kernel_room_policy.h"
 #endif
 #include KRP_POLICY_HEADER
 

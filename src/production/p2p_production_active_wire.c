@@ -1,4 +1,4 @@
-#include "p2p_active_wire.h"
+#include "../p2p/p2p_active_wire.h"
 #include <string.h>
 
 static uint32_t p2pa_u32(const unsigned char *p)

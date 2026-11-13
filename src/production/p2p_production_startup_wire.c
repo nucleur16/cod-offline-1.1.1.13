@@ -1,4 +1,4 @@
-#include "p2p_startup_wire.h"
+#include "../p2p/p2p_startup_wire.h"
 #include <string.h>
 
 static uint16_t p2ps_le16(const unsigned char *p)

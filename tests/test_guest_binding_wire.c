@@ -1,6 +1,6 @@
 /* Portable C contract, no OS/SDK/game IO. Hash callback is explicitly FAKE:
  * this checks framing/currentness fields, never signing/authentication. */
-#include "../p2p_guest_binding_wire.h"
+#include "../src/p2p/p2p_guest_binding_wire.h"
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>

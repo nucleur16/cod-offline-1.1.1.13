@@ -3,7 +3,7 @@
 #include "p2p_production_kernel.h"
 #include <wchar.h>
 #include <stdlib.h>
-#include "shared/p2p_win_pipe.h"
+#include "../shared/p2p_win_pipe.h"
 #include "p2p_production_socket.inc"
 #ifdef CODOL_P2P_PRODUCTION_POLICY_HEADER
 #include CODOL_P2P_PRODUCTION_POLICY_HEADER

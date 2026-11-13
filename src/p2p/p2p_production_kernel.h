@@ -1,6 +1,6 @@
 #ifndef CODOL_P2P_PRODUCTION_KERNEL_H
 #define CODOL_P2P_PRODUCTION_KERNEL_H
-#include "production/p2p_production_receiver.h"
+#include "../production/p2p_production_receiver.h"
 static int P2PProductionMode(void);
 static int P2PSelectedProtocolMode(void);
 static int P2PProductionStart(void);

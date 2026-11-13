@@ -1491,14 +1491,14 @@ static void PatchGbkInput(void)
 }
 
 #include "local_multi.c"
-#include "managed_quick.c"
-#include "quick_start_gate.c"
-#include "quick_collection_default.c"
-#include "room_join_error.c"
-#include "client_queue_wait.c"
-#include "initial_room_owner.c"
-#include "training_preview_publish.c"
-#include "room_roster_roles.c"
+#include "rooms/managed_quick.c"
+#include "rooms/quick_start_gate.c"
+#include "rooms/quick_collection_default.c"
+#include "rooms/room_join_error.c"
+#include "rooms/client_queue_wait.c"
+#include "rooms/initial_room_owner.c"
+#include "rooms/training_preview_publish.c"
+#include "rooms/room_roster_roles.c"
 
 /* Snapshot-parity logger, parity-log branch only: see parity.c. */
 #include "parity.c"
@@ -1508,7 +1508,7 @@ static void PatchGbkInput(void)
 #include "usermaps.c"
 
 /* The survival match category: its gametype zones and constant configstring table, see survival_category.c. */
-#include "survival_category.c"
+#include "rooms/survival_category.c"
 
 /* C1 engine helpers shared by the features below: see c1game.c. */
 #include "c1game.c"
@@ -1520,21 +1520,21 @@ static void PatchGbkInput(void)
 /* Developer console overlay (dev branch): see console.c. Builds without it (-DK33_NO_CONSOLE, or delete
  * these three lines and the InstallConsole() call) still compile and link. */
 #if CODOL_DIAGNOSTICS && !defined(K33_NO_CONSOLE)
-#include "k33shot.c" /* screenshots and draw statistics on the console's Present hooks; diagnostics only */
-#include "console.c"
+#include "console/k33shot.c" /* screenshots and draw statistics on the console's Present hooks; diagnostics only */
+#include "console/console.c"
 #endif
 
 /* Sound voices: per-alias voice limit and nearest-wins at a channel cap (soundvoices.c), through the voice
  * diagnostics' hooks (sounddiag.c, which also logs refusals to Kernel33.log at k33_snddiag 1+). */
-#include "sounddiag.c"
-#include "soundvoices.c"
+#include "audio/sounddiag.c"
+#include "audio/soundvoices.c"
 
 /* In-game voice chat (feat/voicechat): see voice.c. */
-#include "voice.c"
+#include "audio/voice.c"
 
-/* XInput gamepad (feat/controller): see controller.c and CONTROLLER.md. */
-#include "controller.c"
-#include "padsnap.c"     /* the pad's menu cursor snaps to Scaleform controls (after controller.c) */
+/* XInput gamepad (feat/controller): see controller.c and docs/CONTROLLER.md. */
+#include "controller/controller.c"
+#include "controller/padsnap.c"     /* the pad's menu cursor snaps to Scaleform controls (after controller.c) */
 
 /* Discord Rich Presence (CoDOLPresence.exe moved into the client): see discord.c. */
 #include "discord.c"
@@ -1547,7 +1547,7 @@ static void PatchGbkInput(void)
 
 /* codol_quick_native_room_context for the shared movie's Quick Play room checks: see quick_room.c. */
 #if !CODOL_KERNEL_ROOM_CONTEXT
-#include "quick_room.c"
+#include "rooms/quick_room.c"
 #endif
 /* The THEATRE screen (codol-classic's theatre playback): see theatre.c. */
 #include "theatre.c"
@@ -1556,55 +1556,55 @@ static void PatchGbkInput(void)
 #include "name_display.c"
 #endif
 /* Local verified SDK -> immutable hosted-script source handoff. */
-#include "p2p_verified_scripts.c"
+#include "p2p/p2p_verified_scripts.c"
 #include "local_log_flush.c"
-#include "localized_substitution.c"
-#include "localized_numeric.c"
+#include "gfx/localized_substitution.c"
+#include "gfx/localized_numeric.c"
 /* Player-hosted matches: the sh1x server as a child of the host's client (p2p.c, docs/P2P_HOSTING.md). */
-#include "p2p_production_kernel.h"
-#include "p2p.c"
+#include "p2p/p2p_production_kernel.h"
+#include "p2p/p2p.c"
 /* The sh1x server inside the client, on the game thread (p2p_inproc.c, feat/p2p-inprocess). */
-#include "p2p_inproc.c"
+#include "p2p/p2p_inproc.c"
 /* The in-process server's assets against C1's own (p2p_assets.c, asset layout stage 2/3). */
-#include "p2p_assets.c"
+#include "p2p/p2p_assets.c"
 /* UDP only with lobby-vouched hosts (hostgate.c): the P2P trust requirement. */
-#include "hostgate.c"
-#include "p2p_production_kernel.c"
+#include "p2p/hostgate.c"
+#include "p2p/p2p_production_kernel.c"
 /* Offline mode: the Demonware lobby inside the client (offline_lobby.c, offline/, docs/OFFLINE_LOBBY.md). */
 #include "offline_lobby.c"
 /* Reject malformed top-level DemonWare packet lengths in the exact C1 parser. */
-#include "bd_packet_guard.c"
+#include "guards/bd_packet_guard.c"
 /* Reject C1 snapshot entity and delta-field writes beyond their bounds. */
-#include "snapshot_guard.c"
+#include "guards/snapshot_guard.c"
 /* Bound the exact C1 bulk record loop to its 19-record destination. */
-#include "bulk_count_guard.c"
+#include "guards/bulk_count_guard.c"
 /* Bind the state-3 challenge reply to C1's pending destination. */
-#include "challenge_sender_guard.c"
+#include "guards/challenge_sender_guard.c"
 /* Bound exact C1 joinParty counts and party-builder stack records. */
-#include "join_party_guard.c"
+#include "guards/join_party_guard.c"
 /* Bound memberJoin's configured slot scan to the exact 19-entry party array. */
-#include "member_join_guard.c"
+#include "guards/member_join_guard.c"
 /* Reject impossible server-info slot totals before they reach party state. */
-#include "server_info_capacity_guard.c"
+#include "guards/server_info_capacity_guard.c"
 /* Bound local session-update slots before they reach party state. */
-#include "session_capacity_guard.c"
+#include "guards/session_capacity_guard.c"
 /* Bound the party refresh dvar loop to the exact 19-entry array. */
-#include "party_slot_loop_guard.c"
+#include "guards/party_slot_loop_guard.c"
 /* Bound both game and party session creation to the 19-slot table. */
-#include "party_session_capacity_guard.c"
+#include "guards/party_session_capacity_guard.c"
 /* Bound session refresh counts before they become array limits. */
-#include "party_session_refresh_guard.c"
+#include "guards/party_session_refresh_guard.c"
 
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
-#include "news_refresh.c"
-#include "gfx_date_time.c"
-#include "gfx_local_operands.c"
+#include "gfx/news_refresh.c"
+#include "gfx/gfx_date_time.c"
+#include "gfx/gfx_local_operands.c"
 #include "launcher_update_bridge.c"
 #if CODOL_KERNEL_NAME_DISPLAY
-#include "kernel_name_display.c"
+#include "kernel/kernel_name_display.c"
 #endif
 #if CODOL_KERNEL_ROOM_CONTEXT
-#include "kernel_room_context.c"
+#include "kernel/kernel_room_context.c"
 #endif
 static void __cdecl TakeOver(void)
 {

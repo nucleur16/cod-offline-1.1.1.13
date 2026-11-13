@@ -1,6 +1,6 @@
 /* Exercise the production console mailbox with concurrent producer/reclaimer
  * and a deliberately slow reader. No game/device/window is required. */
-#include "../console_mailbox.h"
+#include "../src/console/console_mailbox.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>

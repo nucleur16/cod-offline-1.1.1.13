@@ -301,7 +301,7 @@ def harvest(path, wrappers, text_lo, text_hi):
 
 # ---- inputs ------------------------------------------------------------------------------------
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # the repository root (this file is in scripts/)
 ROOT = os.path.dirname(HERE)
 C1_EXE = os.path.join(ROOT, 'C1.exe')
 DOC_MD = os.path.join(ROOT, 'CODOL', '1.1.1.13_server', 'alpha0022', 'docs', 'dvars_c1exe.md')
@@ -640,7 +640,7 @@ def main():
             c_str(n), c_str(name), TYPE_IDS[ty] if ty else -1, conf, bits,
             c_str(None if default is None else str(default)), c_str(dom), c_str(desc or '')))
     lines += ['};', '#define C1_DVAR_NAME_COUNT (sizeof(kC1DvarNames) / sizeof(kC1DvarNames[0]))', '']
-    with open(os.path.join(HERE, 'c1_dvars.h'), 'w', newline='\n', encoding='latin1') as f:
+    with open(os.path.join(HERE, 'src', 'c1_dvars.h'), 'w', newline='\n', encoding='latin1') as f:
         f.write('\n'.join(lines))
     stats = collections.Counter(r[7] for r in rows)
     print('c1_dvars.h: %d of %d numeric dvars named (%d at conf >= 85); by source %s' % (

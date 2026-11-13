@@ -46,7 +46,7 @@ static BOOL WINAPI position(HWND window,HWND after,int x,int y,int w,int h,UINT 
 #define GetCurrentProcessId current_pid
 #define GetFocus focus
 #define GetPropA get_property
-#include "qa_background_window.c"
+#include "../src/qa_background_window.c"
 #define CHECK(test) do { if(!(test)){printf("FAIL line %d: %s\n",__LINE__,#test);return 1;} }while(0)
 static void reset(const char *enabled,const char *name)
 {

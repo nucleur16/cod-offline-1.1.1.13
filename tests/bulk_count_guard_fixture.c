@@ -45,7 +45,7 @@ static void WriteCode(void *p, const void *src, SIZE_T n)
     memcpy(p, src, n);
 }
 static void Log(const char *unused, ...) { (void)unused; }
-#include "../bulk_count_guard.c"
+#include "../src/guards/bulk_count_guard.c"
 
 static int __attribute__((noinline)) Run(void)
 {

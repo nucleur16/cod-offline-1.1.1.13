@@ -12,7 +12,7 @@ import re
 import capstone
 import pefile
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # the repository root (this file is in scripts/)
 ROOT = os.path.dirname(HERE)
 
 
@@ -69,7 +69,7 @@ def main():
     ]
     lines += ['    { 0x%08X, "%s", "%s" },' % imp for imp in imports]
     lines += ["};", ""]
-    with open(os.path.join(HERE, "c1_tables.h"), "w", newline="\n") as f:
+    with open(os.path.join(HERE, "src", "c1_tables.h"), "w", newline="\n") as f:
         f.write("\n".join(lines))
     print("c1_tables.h: %d imports" % len(imports))
 

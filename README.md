@@ -3,13 +3,48 @@
 Runs the packed 1.1.1.13 client the way C1.exe runs, without TenProtect executing, and applies
 client fixes (render gate, dvar defaults, plaintext config, Alt+Tab, raw mouse input, scoreboard,
 patch-folder zones). Each patch checks the original bytes first and logs to `Kernel33.log` next
-to the exe. See the comments in `kernel33.c` for addresses and reasoning.
+to the exe. See the comments in `src/kernel33.c` for addresses and reasoning.
+
+## Repository layout
+```
+src/            everything compiled into Kernel33.dll (C, plus the C++ offline lobby)
+  kernel33.c      the DLL itself: a unity build, it #includes the other .c files below
+  kernel33.def, kernel33.rc, unpacked.z   exports, and the resource embedded in the DLL (scripts/make_exe.py writes unpacked.z)
+  c1game.c, c1_dvars.h, c1_tables.h, production_profile.h, patch_locale_policy.h, k33tick.c, k33http.c, k33json.c
+                  shared helpers, generated tables and the build profile
+  *.c             features with no family of their own: borderless, discord, usermaps, theatre, name display,
+                  parity logger, scoreboard fix, launcher bridge, offline-mode glue, local-testing helpers
+  console/        the in-game developer console (console.c) and screenshots on its hooks (k33shot.c)
+  controller/     gamepad: controller.c, button glyphs, the menu cursor snapping (padsnap.c)
+  audio/          voice chat and the sound-voice policy / diagnostics
+  p2p/            player-hosted matches: p2p*.c/.h and the host gate (hostgate.c)
+  production/     the production P2P receiver and wire formats (separate objects, linked by scripts/build.sh)
+  shared/         the Windows pipe shared with it
+  guards/         bounds guards for C1's packet and party parsers (*_guard.c)
+  gfx/            Scaleform / localization / news repairs (gfx_*, localized_*, news_refresh*)
+  kernel/         the room-context and name-display migration (kernel_*), opt-in
+  rooms/          lobby rooms, Quick Match and the survival category
+  offline/        offline mode: the Demonware lobby in C++ (built only with K33_OFFLINE=1)
+scripts/        build.sh and its variants (build-dev, build-controller, build-parity, build-server; build-profile.sh and
+                build-offline.inc.sh are sourced by them), and the Python helpers: build_zones.py (patch zones),
+                make_exe.py, gen_dvars.py, gen_tables.py, ui_keys.py
+docs/           design notes, audits, baselines (docs/baselines/), CONTROLLER.md, PADSNAP.md, PRODUCTION_PROFILE.md
+tests/          source tests and their fixtures (sh tests/run_tests.sh; see "Tests")
+tools/          one-off producers and inspectors for the UI movies and zones
+zonekit/        the Python package behind scripts/build_zones.py
+zones/, zone_source/, zone_packs/, files/   the patch zones' sources, manifests, packs and loose files
+server/sh1x     the match server (git submodule)
+ui_baseline.json, shipping_maps.txt     the pinned shared-UI baseline and the list of usermaps that ship
+build/          every DLL build output (not tracked); third_party/ holds the fetched SDL2 (not tracked)
+```
+Every script works from any directory (`sh scripts/build.sh` from the root is the usual way). The `Kernel33.dll` in
+the root is an old committed build, not what the scripts write: they write `build/Kernel33.dll`.
 
 ## Install
-1. `python make_exe.py` renames the packed exe's `Kernel32.dll` import to `Kernel33.dll` (needs C1.exe
-   and `codoMP_client_shipRetail.exe.bak`; also writes `unpacked.z`).
-2. Put `Kernel33.dll` next to `codoMP_client_shipRetail.exe` (TenProxy.dll + TerSafe.dll must still be there).
-3. `python build_zones.py` builds every patch zone into `output\` with the install's layout (see "Patch
+1. `python scripts/make_exe.py` renames the packed exe's `Kernel32.dll` import to `Kernel33.dll` (needs C1.exe
+   and `codoMP_client_shipRetail.exe.bak`; also writes `src/unpacked.z`).
+2. Put `Kernel33.dll` (`build/Kernel33.dll`, see "Build") next to `codoMP_client_shipRetail.exe` (TenProxy.dll + TerSafe.dll must still be there).
+3. `python scripts/build_zones.py` builds every patch zone into `output\` with the install's layout (see "Patch
    zones" below); it is the shipping build, with only the usermaps `shipping_maps.txt` marks `ship` (see "Shipping
    maps"). Copy `output\client_shipRetail\patch\*` into `<game>\client_shipRetail\patch\` (create the
    folder; remove the old zone names listed under "Consolidated zones"), `output\client_shipRetail\chinese\patch_common_gametype_zm.ff`
@@ -29,11 +64,12 @@ to the exe. See the comments in `kernel33.c` for addresses and reasoning.
 
 ## Build (MSYS2 mingw32)
 ```sh
-PATH=/c/msys64/mingw32/bin:$PATH sh build.sh
+PATH=/c/msys64/mingw32/bin:$PATH sh scripts/build.sh
 ```
-`unpacked.z` (C1.exe's decompressed code range) is embedded as a resource; `build.sh` copies the
-result to `../Kernel33.dll` (`K33_NO_COPY=1` leaves it in this folder). Needs libopus
-(`pacman -S mingw-w64-i686-opus`) and SDL2 2.32.10, which `build.sh` downloads once into the gitignored
+`src/unpacked.z` (C1.exe's decompressed code range) is embedded as a resource; `scripts/build.sh` writes
+`build/Kernel33.dll` and copies it to `../Kernel33.dll`, next to the repository folder (`K33_NO_COPY=1` skips the
+copy). Every build output goes to the untracked `build/` folder. Needs libopus
+(`pacman -S mingw-w64-i686-opus`) and SDL2 2.32.10, which `scripts/build.sh` downloads once into the gitignored
 `third_party/` (official SDL2-devel mingw package, SHA-256 checked) and links statically: the DLL has no
 SDL2.dll dependency.
 
@@ -55,7 +91,7 @@ python -B tests/test_kernel_cutover_contract.py
 python -B tests/test_quiet_diagnostic_paths.py
 python -I -S -B tests/test_r46_native_source_integration.py
 python -I -S -B tests/test_playlist_active_ordinal_selector.py
-gcc -std=c99 -O2 -Wall -Wextra -Werror tests/test_guest_binding_wire.c p2p_startup_wire.c p2p_guest_binding_wire.c -o /tmp/guest-binding-wire && /tmp/guest-binding-wire
+gcc -std=c99 -O2 -Wall -Wextra -Werror tests/test_guest_binding_wire.c src/p2p/p2p_startup_wire.c src/p2p/p2p_guest_binding_wire.c -o /tmp/guest-binding-wire && /tmp/guest-binding-wire
 gcc -std=c99 -O2 -Wall -Wextra -Werror tests/p2p_activation_transaction_test.c -o /tmp/p2p-activation-transaction && /tmp/p2p-activation-transaction
 python -I -S -B tests/test_p2p_inproc_lifecycle.py        # Linux gcc + ASan/UBSan
 ```
@@ -67,31 +103,31 @@ pass with Linux gcc (`gcc -O2 -Wall -Wextra -Werror tests/quick_start_policy_tes
 
 ## Player-hosted matches (branch `feat/p2p-hosting`)
 Since `feat/p2p-inprocess` the server runs **inside the client** by default (`mode = inprocess`):
-`p2p_inproc.c` loads the server's `sh1x_host.dll` (server makefile target `host-dll`) and ticks it on the game
+`src/p2p/p2p_inproc.c` loads the server's `sh1x_host.dll` (server makefile target `host-dll`) and ticks it on the game
 thread, on its own fiber, with exits and faults contained. `mode = child` runs the separate process as before.
-`build-server.sh` stages an install-shaped tree: `p2p\sh1x_host.dll`, `p2p\k33p2p_dedrun.exe`,
-`p2p\home\main\sh1x_svr_scripts.iwd` and the GSC tree as `main\sh1x_rawfiles\` (p2p.c's default `scripts=`).
+`scripts/build-server.sh` stages an install-shaped tree: `p2p\sh1x_host.dll`, `p2p\k33p2p_dedrun.exe`,
+`p2p\home\main\sh1x_svr_scripts.iwd` and the GSC tree as `main\sh1x_rawfiles\` (`src/p2p/p2p.c`'s default `scripts=`).
 Details and measurements: `docs/P2P_HOSTING.md`, "In-process hosting".
 
-`p2p.c` lets a player host a match from the client: the sh1x match server runs as a child of the
+`src/p2p/p2p.c` lets a player host a match from the client: the sh1x match server runs as a child of the
 host's client (`p2phost [map] [gametype] [zonetype]`, `p2pstop`, `p2pstatus`, or `+set k33_p2pHost 1`;
-settings in `p2p\p2p_host.ini`). `hostgate.c` lets the client exchange UDP only with loopback, the lobby
+settings in `p2p\p2p_host.ini`). `src/p2p/hostgate.c` lets the client exchange UDP only with loopback, the lobby
 (dwauth.ini / stun.ini hosts), the UPnP gateway and lobby-vouched hosts. That is a hard requirement
 from the client security audit. Design, trust rules, stages and measurements: `docs/P2P_HOSTING.md`.
 
 The server is the git submodule `server/sh1x` (the sh1x server repo, pinned to its `feat/p2p-hosting`
-commit). `build.sh` / `build-dev.sh` init it; the DLL does not compile it. To build and stage the
+commit). `scripts/build.sh` / `scripts/build-dev.sh` init it; the DLL does not compile it. To build and stage the
 server a client hosts:
 ```sh
 git submodule update --init server/sh1x       # never --recursive: the server has a URL-less gitlink
-sh build-server.sh                            # WSL cross-build + staging into ../../k33_p2p_staging
+sh scripts/build-server.sh                    # WSL cross-build + staging into ../../k33_p2p_staging
 ```
-`build-server.sh` initialises only the server's `bin/home/codol_rawfiles` submodule
+`scripts/build-server.sh` initialises only the server's `bin/home/codol_rawfiles` submodule
 (`core.autocrlf false`). It needs WSL Ubuntu-24.04 with i686-w64-mingw32 and nasm, and the server's
 prebuilt lib/*.a (`K33_SERVER_LIBS`).
 
 ## Parity logger (branch `parity-log`)
-`parity.c` adds a client-side snapshot-parity logger for bringing the server to retail parity. It
+`src/parity.c` adds a client-side snapshot-parity logger for bringing the server to retail parity. It
 writes to the game's own console log (`main\console_mp-00N.log`) through C1's Com_Printf, one line
 per finding:
 ```
@@ -119,8 +155,8 @@ higher limits), registered with the archive flag so the console can change it. S
 `+set parity_log N` on the command line, else the environment variable `CODOL_PARITY_LOG`, else 1.
 A startup value of 0 installs no hooks at all.
 
-Build without touching the live DLL: `PATH=/c/msys64/mingw32/bin:$PATH sh build-parity.sh` writes
-`Kernel33_parity.dll`; copy it over `../Kernel33.dll` (keep a backup) to use it.
+Build without touching the live DLL: `PATH=/c/msys64/mingw32/bin:$PATH sh scripts/build-parity.sh` writes
+`build/Kernel33_parity.dll`; copy it over `../Kernel33.dll` (keep a backup) to use it.
 
 ### Several clients on one PC (branch `parity-log`)
 The branch also skips WinMain's "is already running." check (0x630C3A; the game's mutex
@@ -157,7 +193,7 @@ To see the frame rate in a match: `set 2614 1` (C1's loss/ping/FPS debug graphs;
 below 100).
 
 ## Developer console (branch `dev`)
-`dev` is `main` plus `console.c`, an in-game console for C1, which has none left: IW4's
+`dev` is `main` plus `src/console/console.c`, an in-game console for C1, which has none left: IW4's
 `toggleconsole`/`clear`/`condump`, the console field and `Con_DrawConsole` were removed, and
 `CL_KeyEvent` (0x493240) no longer tests the `~` key. The console is an overlay instead:
 
@@ -222,8 +258,8 @@ servers refuse, and a server that had cheats on records no progression until res
 - HUD: `k33_drawFPS 1` (or C1's own `cg_drawFPS 1`, which nothing else reads) and `k33_drawViewpos 1` draw the frame
   rate and the predicted position, view angles and speed in the top-right corner, in a match.
 
-### Dvar name table (`c1_dvars.h`, `gen_dvars.py`)
-C1 registers most dvars under numbers ("591" = cg_drawFPS, "1848" = com_maxfps). `gen_dvars.py`
+### Dvar name table (`src/c1_dvars.h`, `scripts/gen_dvars.py`)
+C1 registers most dvars under numbers ("591" = cg_drawFPS, "1848" = com_maxfps). `scripts/gen_dvars.py`
 decodes every `Dvar_Register*` call in C1.exe and in `iw4x.exe` (stack simulation), groups them by
 registration function (IW4 names from `iw4x.pdb` via cdb), aligns each C1 function with its IW4
 counterpart by the longest common subsequence of type/default/domain, and merges the names with
@@ -233,21 +269,21 @@ description, with a confidence; below 85 the name is a positional guess and the 
 Numbers without a name display as they are. Command names are not hashed in this build (all
 `Cmd_AddCommand` names are plaintext), so commands are listed as registered.
 
-Build without touching the live DLL: `sh build-dev.sh` writes `Kernel33_dev.dll` (console + controller +
-voice + usermaps + parity + frame cap, SDL2 and libopus static, as `build.sh`) and also links
-`Kernel33_noconsole.dll` (`-DK33_NO_CONSOLE`), failing if the shared code depends on `console.c`.
+Build without touching the live DLL: `sh scripts/build-dev.sh` writes `build/Kernel33_dev.dll` (console + controller +
+voice + usermaps + parity + frame cap, SDL2 and libopus static, as `scripts/build.sh`) and also links
+`build/Kernel33_noconsole.dll` (`-DK33_NO_CONSOLE`), failing if the shared code depends on `src/console/console.c`.
 
 ## Controller (branch `feat/controller`)
-`controller.c` adds gamepad play: SDL2 2.32.10 GameController (static; Xbox, PlayStation, Switch Pro, generic 
+`src/controller/controller.c` adds gamepad play: SDL2 2.32.10 GameController (static; Xbox, PlayStation, Switch Pro, generic 
 pads, hot-plug; XInput fallback) on its own ~1 kHz thread, pad buttons as real C1 keys (`BUTTON_A`.. `DPAD_RIGHT`, 
 bindable and saved in config_mp.cfg, queued through C1's Sys_QueEvent), analog move/look in CL_MouseMove, a 
-stick-driven cursor for the Scaleform menus (A click, B Escape) and `gpad_*` dvars. See `CONTROLLER.md` for C1's 
-input path, the dvars, commands, default binds, what was verified and the phase 2/3 plan. `build.sh` builds it
-into Kernel33.dll; `PATH=/c/msys64/mingw32/bin:$PATH sh build-controller.sh` writes a side copy,
-`Kernel33_controller.dll`, and copies nothing.
+stick-driven cursor for the Scaleform menus (A click, B Escape) and `gpad_*` dvars. See `docs/CONTROLLER.md` for C1's 
+input path, the dvars, commands, default binds, what was verified and the phase 2/3 plan. `scripts/build.sh` builds it
+into Kernel33.dll; `PATH=/c/msys64/mingw32/bin:$PATH sh scripts/build-controller.sh` writes a side copy,
+`build/Kernel33_controller.dll`, and copies nothing.
 
 ## Voice chat
-`voice.c` puts back in-game voice chat, which C1 stripped (no capture, no codec, no `+talk`; the "v"
+`src/audio/voice.c` puts back in-game voice chat, which C1 stripped (no capture, no codec, no `+talk`; the "v"
 packet branch only printed "voice communication is disabled"). It uses Opus (libopus, linked
 statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
 (`src/codol/net/codol_voice.c` on its `feat/voicechat` branch).
@@ -279,7 +315,7 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
   above it, a white marker at the level, a decaying peak tick, and the number where the sliders show
   theirs; dimmed with "no mic" when there is no capture device; while the tab is shown it keeps
   `k33_voiceMeter` set so the mic is open for metering, nothing is sent). Subtitles moves up beside
-  Output. That edit is not same-length, so `build_zones.py` compiles the class with JPEXS FFDec
+  Output. That edit is not same-length, so `scripts/build_zones.py` compiles the class with JPEXS FFDec
   (`ffdec-cli`, `$CODOL_FFDEC`) when the .as changes and splices only its DoABC tag into codo.gfx, checking
   every other tag is unchanged (zonekit/gfx.py; the compiled tag is stored, so FFDec is needed only after an edit).
 - **Options > Controls > Chat**: C1's own options screen (codo.gfx `OptionView_control_chat`) already
@@ -308,12 +344,12 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
   threshold, live mic level and gate state, who is talking), `k33voicemute <client>` (toggle a
   client-side mute).
 - **UI**: the Scaleform callbacks `EnableVoiceTalk` (voice on/off) and `SetVoiceMicMute` (mic mute,
-  stored in `k33_voiceMicMute`), both `ret 4` stubs in C1, now reach `voice.c`.
+  stored in `k33_voiceMicMute`), both `ret 4` stubs in C1, now reach `src/audio/voice.c`.
 - C1 applies no command-line `+set` to dvars registered this late and runs no `+command`, so
-  `voice.c` re-issues `+set <its dvar> <n>` and honours `+toggletalk` itself.
+  `src/audio/voice.c` re-issues `+set <its dvar> <n>` and honours `+toggletalk` itself.
 
-Built by `build.sh` (libopus linked statically: `pacman -S mingw-w64-i686-opus`). The Controls-menu
-push-to-talk row comes from voice_ui_mp's codo.gfx (`python build_zones.py voice_ui_mp` writes
+Built by `scripts/build.sh` (libopus linked statically: `pacman -S mingw-w64-i686-opus`). The Controls-menu
+push-to-talk row comes from voice_ui_mp's codo.gfx (`python scripts/build_zones.py voice_ui_mp` writes
 `output\client_shipRetail\patch\codol_common_ui_mp.ff`, the zone it is part of).
 
 Test automation (only with `+set k33_cmdFile 1` on the command line): the lines of
@@ -324,7 +360,7 @@ client: C1's GetCursorPos / GetForegroundWindow / GetActiveWindow import slots r
 position and the game window, and the click is posted (e.g. `k33mouse 1441 47 click` opens Options
 at 1680x1050).
 
-**Screenshots and frame statistics (diagnostic profile only, `k33shot.c`).** For harnesses on a machine whose
+**Screenshots and frame statistics (diagnostic profile only, `src/console/k33shot.c`).** For harnesses on a machine whose
 display is off (a screen copy of a windowed Direct3D 9 game is black then, the back buffer is not) and for anything
 that must not take input focus. `k33_screenshot <file.png|file.bmp>` writes the next presented frame's back buffer
 (after Kernel33's overlays; a multisampled buffer is resolved first). `k33_framestats <file.txt>` writes, for the
@@ -333,24 +369,24 @@ primitives (`DrawPrimitive` / `DrawIndexedPrimitive`); a shadow-map pass shows a
 not the back buffer's size. From outside the process, a test client (`+set k33_shotFile 1`, or the existing
 `+set k33_cmdFile 1`) polls `<exe dir>\k33_shot.req` and `<exe dir>\k33_stats.req` on the presenting thread, at
 most 20 times a second: one line, the output path; the request file is deleted when read, the output is written to
-`<path>.tmp` and renamed. It uses the developer console's Present hooks (`console.c`), so `k33_console 0` turns it
+`<path>.tmp` and renamed. It uses the developer console's Present hooks (`src/console/console.c`), so `k33_console 0` turns it
 off too; the four draw-path device entries are hooked on the first statistics request, not before. Built only with
-`K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=1` (`PRODUCTION_PROFILE.md`); the default `build.sh` DLL has none of it.
+`K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=1` (`docs/PRODUCTION_PROFILE.md`); the default `scripts/build.sh` DLL has none of it.
 
 **HUD (hud menu ownerdraws).** C1's `ui_mp/hud_720.txt` (common_mp) still has IW4's voice items,
 `talking` (ownerdraw 266) and `talker1`..`talker4` (193..196), but C1's CG_OwnerDraw (0x459E10) had
-lost their code (193-196 return, 266 falls to the default). `voice.c` hooks CG_OwnerDraw's entry and
+lost their code (193-196 return, 266 falls to the default). `src/audio/voice.c` hooks CG_OwnerDraw's entry and
 draws them like IW4's CG_DrawPlayerTalking / CG_DrawTalkerNum with C1's own calls
 (Material_RegisterHandle "voice_on", UI_DrawHandlePic, UI_DrawText), at the menu's own rects and
 text scale and under its visibility rules. `talking` shows while you transmit and dims when the mic
 is silent; `talkerN` lists the players heard in the last 500 ms with their names (configstring
 1280 + clientNum), mutes excluded. With `k33_voiceLoopback 1` you appear in the list yourself.
 
-**Shared C1 helpers.** `c1game.c` holds what features share: Com_Printf, Cbuf_AddText, the command
+**Shared C1 helpers.** `src/c1game.c` holds what features share: Com_Printf, Cbuf_AddText, the command
 list (Cmd_AddCommand), Dvar_RegisterInt and keyCatchers, each byte-checked once. Voice prints go to
 C1's own console and console_mp.log through Com_Printf.
 
-### Sound voices (`soundvoices.c`, through `sounddiag.c`'s hooks)
+### Sound voices (`src/audio/soundvoices.c`, through `src/audio/sounddiag.c`'s hooks)
 The 3D play path's channel check (call of 0x736C10 at 0x73E4DB) decides two more things before C1 takes a voice:
 - **Alias limit** (`k33_sndAliasLimit`, default 4, 0 = off): a one-shot alias on a channel of priority <= 1 holds at
   most that many 3D voices; one more play takes its farthest copy's voice when nearer, else it is not started.
@@ -374,7 +410,7 @@ string zones load. Kernel33 decides that at startup, from the command line:
 - Existing launchers may still use `+set codol_patchlang en` or `+set codol_patchlang zh`. An explicit valid
   `k33_english` takes precedence over that compatibility alias, regardless of argument order. Both selectors use
   one parsed language choice; they cannot independently filter out both sets of string zones.
-- Read by the DLL from the command line only (`patch_locale_policy.h`, `CodolPatchLanguageFromArgv`): C1 execs
+- Read by the DLL from the command line only (`src/patch_locale_policy.h`, `CodolPatchLanguageFromArgv`): C1 execs
   `players\config_mp.cfg` before it registers its dvars and applies no `+set` to a dvar it does not know, so the
   option is not a saved dvar. Nothing writes it to config_mp.cfg, and a config write never changes it; it lasts until
   the client is started without it.
@@ -397,7 +433,7 @@ string zones load. Kernel33 decides that at startup, from the command line:
 | codol_chinese_ui, codol_chinese_ui_extra | `0` | the UI movies' K33UI_* keys in Chinese |
 
 The movies are codol-classic's English ones (with Kernel33's Options classes and the pause menu's pad navigation),
-converted by `ui_keys.py`. C1's Scaleform translator replaces a text that starts with `@` by the localize entry of
+converted by `scripts/ui_keys.py`. C1's Scaleform translator replaces a text that starts with `@` by the localize entry of
 that name, both for a text field's text in the movie and whenever code sets `.text` / `.label` (C1's own
 `codo.constants.LocalizationDict` is a list of `"@SF_UI_..."` names). A missing entry shows as `@NAME` and nothing
 fails. ui_keys.py made:
@@ -414,10 +450,10 @@ fails. ui_keys.py made:
 1. In the `.as` source, show `"@K33UI_<NAME>"` (`.text`, `.label`, a list item's `label`) or, to build a string,
    `LocalizeUtil.localize("@K33UI_<NAME>")` (`codo.utils.LocalizeUtil`; `LocalizeUtil.replace(text, [a, b])` fills
    `#A#` `#B#`). OptionView's `k33L("K33UI_<NAME>")` does the same.
-2. Add `"K33UI_<NAME>": ("English", "中文", "codo.gfx")` to `NAMED` in `ui_keys.py` (the movie: codo.gfx /
+2. Add `"K33UI_<NAME>": ("English", "中文", "codo.gfx")` to `NAMED` in `scripts/ui_keys.py` (the movie: codo.gfx /
    codologin.gfx for codol_*_ui, codohud.gfx / codoingame.gfx for codol_*_ui_extra).
-3. `python ui_keys.py` compiles the changed classes (FFDec), adds the entry to `zones/codol_english_ui*/localize.str`
-   and `zones/codol_chinese_ui*/localize.str` and to their `zone_source` manifests; then `python build_zones.py`.
+3. `python scripts/ui_keys.py` compiles the changed classes (FFDec), adds the entry to `zones/codol_english_ui*/localize.str`
+   and `zones/codol_chinese_ui*/localize.str` and to their `zone_source` manifests; then `python scripts/build_zones.py`.
    (By hand: one `K33UI_<NAME><TAB>text` line in each localize.str, one `localize,K33UI_<NAME>` line in each manifest.)
 To change a text, edit the localize.str line; ui_keys.py never overwrites an entry that exists.
 
@@ -440,7 +476,7 @@ Other notes:
   `OFFLINE-DEV.cmd` (`CODOL_CLIENT_ARGS=+set k33_english 0`) pass extra arguments through; they must start
   `codoMP_client_shipRetail.exe`, since `C1.exe` never loads Kernel33.dll (and then shows the stock Chinese client).
 
-## Discord Rich Presence (`discord.c`)
+## Discord Rich Presence (`src/discord.c`)
 The launcher's `TCLS\CoDOLPresence.exe` helper (a PyInstaller build of the server repo's
 `tools/codol_discord_presence.py`) now runs inside the client: no Python, no second process. It talks
 to Discord's local IPC pipe (`\\.\pipe\discord-ipc-0..9`) as application 1554730441825718272 and shows
@@ -457,7 +493,7 @@ nothing. `Kernel33.log` gets `discord:` lines for connection changes and each ne
 With this DLL installed the launcher should stop starting `CoDOLPresence.exe`, or both publish for the
 same process.
 
-## Survival category (`survival_category.c`)
+## Survival category (`src/rooms/survival_category.c`)
 C1 1.1.1.13 knows three match categories: mp, coop and zm. The category is the string the client gets with a map:
 `preloadmap <map> <category>` from the room, line 2 of the server's `loadingnewmap`, and the gamestate's type.
 Kernel33 adds a fourth, **`survival`** (exact, any case). Survival runs on the multiplayer rules (MP weapons,
@@ -485,13 +521,13 @@ create-a-class, the MP HUD), so it is an mp category with one more gametype zone
 - **Off switch.** `+set codol_survival 0` on the command line installs nothing. `Kernel33.log` says
   `survival category: ...`.
 
-## Patch zones (`zones/`, `zone_source/`, `build_zones.py`)
+## Patch zones (`zones/`, `zone_source/`, `scripts/build_zones.py`)
 Every patch zone this project installs next to the stock game, as editable sources, built into `output/` by one
 script. (The ported usermap map zones themselves, mp_*.ff / zm_sumpf_sh.ff, are not part of this repository; they
 ship in the CODOL 1.1.1.13 map pack.)
 
 ```
-build_zones.py                the only build entry point: zone_source + zones -> output\, files/ copied
+scripts/build_zones.py        the only build entry point: zone_source + zones -> output\, files/ copied
 zone_source/<zone>.csv        the build manifest: >settings, then one "type,name[,param=..]" line per asset, in order
 zones/<zone>/                 the zone's contents
   rawfile/<name>              rawfiles as files (.txt, .arena, .vision, .atr, ...)
@@ -517,13 +553,13 @@ shipping_maps.txt             the usermaps whose UI ships ("ship") and the ones 
 ### Build
 Python 3.10+ with `pycryptodome` (`pip install pycryptodome`).
 ```
-python build_zones.py                                   # every zone -> output\ (shipping build: "ship" maps only)
-python build_zones.py --maps all                        # every zone with every usermap -> output_dev\ (local testing)
-python build_zones.py codol_common_ui_mp voice_ui_mp    # some zones (a source zone builds the zone it is part of)
-python build_zones.py --parts                           # every source zone on its own -> output_parts\ (the old layout)
-python build_zones.py --list                            # the zones, their install folder and origin
-python build_zones.py --verify                          # build and compare each with the original it came from
-python build_zones.py --decompile [zone ...]            # refresh zones\ + zone_source\ from the shipped files
+python scripts/build_zones.py                                   # every zone -> output\ (shipping build: "ship" maps only)
+python scripts/build_zones.py --maps all                        # every zone with every usermap -> output_dev\ (local testing)
+python scripts/build_zones.py codol_common_ui_mp voice_ui_mp    # some zones (a source zone builds the zone it is part of)
+python scripts/build_zones.py --parts                           # every source zone on its own -> output_parts\ (the old layout)
+python scripts/build_zones.py --list                            # the zones, their install folder and origin
+python scripts/build_zones.py --verify                          # build and compare each with the original it came from
+python scripts/build_zones.py --decompile [zone ...]            # refresh zones\ + zone_source\ from the shipped files
 ```
 Inputs (read, never written): `--game` (default `D:\CoD\CODOL Builds\Call of Duty Online 1.1.1.13`): `C1.exe` for
 the zone key and `client_shipRetail\chinese` for the stock zones the gfx patches and `@stock:` blobs come from;
@@ -609,7 +645,7 @@ build_zones.py`, `output\`) leaves out each `dev` map's:
   that iwd fails at startup, so an image must not ship before its map),
 - sound channel fixes (`files\...\sound_channels.txt`).
 
-`python build_zones.py --maps all` (or `CODOL_MAPS=all`) keeps every listed map and writes `output_dev\`, so a
+`python scripts/build_zones.py --maps all` (or `CODOL_MAPS=all`) keeps every listed map and writes `output_dev\`, so a
 local test build never lands in the folder that ships. A map that the zones name but `shipping_maps.txt` does not
 list fails both builds. `--verify` compares the unfiltered build with the recorded original (the installed zones
 carry every map) and prints what the shipping build left out; `--list` prints both lists. Which assets are per map
@@ -625,13 +661,13 @@ in the map pack, change it to `ship` and build.
 | codol_english | `tools/codol_english/build_ff.py` (CoD4x_Server, localizedStrings-1.1.1.13) from `codol_english.tsv` |
 | codol_english_font | `build_font_ff.py` (same tools); byte-identical to localizedStrings-1.1.1.13 `zones/` |
 | codol_english_zombies_base | localizedStrings-1.1.1.13 `tools/localize_zone.py` from `strings/codol_english_zombies_base/strings.tsv` (identical) |
-| codol_english_ui, codol_english_ui_extra, codol_chinese_ui, codol_chinese_ui_extra | `ui_keys.py`: the K33UI_* entries; the English text is codol-classic's (its English movies, launcher releases r22-r30 and `deploy/client-patches/revive-token-mode/build_token_mode.py`), the Chinese text the stock movies' |
+| codol_english_ui, codol_english_ui_extra, codol_chinese_ui, codol_chinese_ui_extra | `scripts/ui_keys.py`: the K33UI_* entries; the English text is codol-classic's (its English movies, launcher releases r22-r30 and `deploy/client-patches/revive-token-mode/build_token_mode.py`), the Chinese text the stock movies' |
 | codol_english_usermaps | this repository (authored here, no shipped original): usermaps_patch's strings in English |
 | codol_loading_mode_names | codol-classic `launcher/tools/build_loading_mode_names.py` (r21) |
 | codol_zm_deathmachine_audio | codol-classic `deploy/client-patches/build_deathmachine_audio.py` |
 | 000_codol_party_modes | codol-classic branch `codex/party-infected-20261017` (r22) |
 | codol_infected_cyborg_postgfx_mp | codol-classic branch `codex/party-infected-20261017`, `build_infected_cyborg_assets.py` |
-| voice_ui_mp, controller_ingame | codol-classic's English codo.gfx / codologin.gfx / codohud.gfx / codoingame.gfx (formerly codol_english_ui / _extra) made language-neutral by `ui_keys.py`, with this repository's hand-written classes in their `.gfxpatch/as/` (formerly `voice_ui/`, build_voice_ui.py / build_ingame_ui.py) |
+| voice_ui_mp, controller_ingame | codol-classic's English codo.gfx / codologin.gfx / codohud.gfx / codoingame.gfx (formerly codol_english_ui / _extra) made language-neutral by `scripts/ui_keys.py`, with this repository's hand-written classes in their `.gfxpatch/as/` (formerly `voice_ui/`, build_voice_ui.py / build_ingame_ui.py) |
 | usermaps_patch, usermaps_ui_mp | the game folder's `usermaps\build_usermaps_patch.py` (now superseded by the sources here) |
 | controller_glyphs_postgfx_mp | this repository (authored here, no shipped original): the former `glyphs/glyphs.bin` icons (Xelu's CC0 prompts) as image assets with C1's `hud_status_dead` material layout |
 | patch_common_gametype_zm | `CodolSoundDumper zm-pap-patch` (CODOL-AssetExplorer + `pap_patch_staging\tool_src`) over the stock zone |

@@ -1,8 +1,8 @@
 # Kernel33 room-context migration candidate
 
-`kernel_room_policy.h` ports room-context publication, double-read sampling,
+`src/kernel/kernel_room_policy.h` ports room-context publication, double-read sampling,
 bounded native command-buffer enqueue and same-lock recovery into fixed-buffer
-C. `kernel_room_context.c` binds it to the exact supported client functions and
+C. `src/kernel/kernel_room_context.c` binds it to the exact supported client functions and
 chains the existing main-thread event-loop hooks. No network worker, command
 file, log path or per-frame allocation is added.
 

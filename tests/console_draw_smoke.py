@@ -4,7 +4,7 @@ import pathlib
 import subprocess
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-s = (ROOT / 'console.c').read_text()
+s = (ROOT / 'src/console/console.c').read_text()
 a = s.index('static void ConDraw(')
 b = s.index('/* ---- developer HUD:', a)
 prefix = r'''

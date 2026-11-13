@@ -6,7 +6,7 @@ layout changes). The Authenticode signature is invalidated, which Windows does n
 for an exe.
 
 unpacked.z holds the packer section as C1.exe has it, i.e. after TenProtect's loader has
-decompressed the game code into it (VA 0x08849000-0x09A10000), zlib-compressed. build.sh embeds
+decompressed the game code into it (VA 0x08849000-0x09A10000), zlib-compressed. scripts/build.sh embeds
 it in Kernel33.dll as a resource, and the DLL inflates it over the packed exe's memory instead of
 letting TenProtect run.
 
@@ -20,11 +20,12 @@ import zlib
 
 import pefile
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # the repository root (this file is in scripts/)
+ROOT = os.path.dirname(REPO)  # the game folder the repository sits in
 SRC = os.path.join(ROOT, "codoMP_client_shipRetail.exe.bak")
 DST = os.path.join(ROOT, "codoMP_client_shipRetail.exe")
 C1 = os.path.join(ROOT, "C1.exe")
-IMG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "unpacked.z")
+IMG = os.path.join(REPO, "src", "unpacked.z")
 BUILD_TIMESTAMP = 0x5314DEF0  # 1.1.1.13, identical to C1.exe
 UNPACKED_VA, UNPACKED_END = 0x08849000, 0x09A10000  # must match kernel33.c
 

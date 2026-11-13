@@ -18,7 +18,7 @@ To reproduce after updating server scripts/data:
     python tools/sync_survival_wave_tables.py --rawfiles <native-tree>/bin/home/codol_rawfiles
     python tests/test_survival_wave_overrides.py
     python tests/test_survival_kiosk_menus.py
-    python build_zones.py patch_common_gametype_survival --candidate --out output_survival_progression
+    python scripts/build_zones.py patch_common_gametype_survival --candidate --out output_survival_progression
 
 The table test checks all twenty waves, gas and repeat values and C1 StringTable
 codec round trips. The actual built candidate was decrypted and parsed with

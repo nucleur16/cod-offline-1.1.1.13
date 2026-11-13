@@ -1,5 +1,5 @@
 /* Actual portable codec, independent Python vectors. No native/Windows load. */
-#include "../p2p_startup_wire.h"
+#include "../src/p2p/p2p_startup_wire.h"
 #include "mbedtls/sha256.h"
 #include <assert.h>
 #include <stdio.h>

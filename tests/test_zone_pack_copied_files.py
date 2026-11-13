@@ -28,7 +28,7 @@ class CopiedFileVerificationTests(unittest.TestCase):
             ShippingMaps=SimpleNamespace(load=lambda *args: maps),
             filter_file=self.filter_file,
         )
-        source = Path(__file__).resolve().parents[1] / "build_zones.py"
+        source = Path(__file__).resolve().parents[1] / "scripts/build_zones.py"
         tree = ast.parse(source.read_bytes())
         nodes = [n for n in tree.body if isinstance(n, ast.FunctionDef)
                  and n.name in ("md5", "copy_files", "main")]

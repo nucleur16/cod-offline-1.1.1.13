@@ -38,7 +38,7 @@ def contract(body):
     return (shipping==prefix+'    return EXCEPTION_CONTINUE_SEARCH;\n}\n' and hashlib.sha256(' '.join(shipping.split()).encode()).hexdigest()==EXPECTED_FAULT_SHIPPING)
 
 class FaultProfile(unittest.TestCase):
-    def setUp(self):self.body=fault((ROOT/'kernel33.c').read_text(encoding='utf-8'))
+    def setUp(self):self.body=fault((ROOT/'src/kernel33.c').read_text(encoding='utf-8'))
     def test_shipping_has_no_diagnostic_memory_or_module_probes(self):self.assertTrue(contract(self.body))
     def test_diagnostic_profile_retains_counter_and_module_annotation(self):
         active=project(self.body,True)
@@ -75,7 +75,7 @@ def loop_contract(body):
     return hashlib.sha256(' '.join(shipping.split()).encode()).hexdigest()==EXPECTED_LOOPFX_SHIPPING
 
 class LoopFxProfile(unittest.TestCase):
-    def setUp(self):self.body=loopfx((ROOT/'kernel33.c').read_text(encoding='utf-8'))
+    def setUp(self):self.body=loopfx((ROOT/'src/kernel33.c').read_text(encoding='utf-8'))
     def test_shipping_retains_exact_catchup_and_original_call_without_statistics(self):self.assertTrue(loop_contract(self.body))
     def test_diagnostic_profile_retains_bounded_statistic_reporting(self):
         active=project(self.body,True)

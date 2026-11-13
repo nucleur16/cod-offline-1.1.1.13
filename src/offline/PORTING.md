@@ -5,7 +5,7 @@ into `offline/`. The design itself is in `docs/OFFLINE_LOBBY.md`.
 
 ## What this is
 
-`offline/*.cpp` is a faithful C++ port of the Python lobby, compiled into Kernel33.dll and into
+`src/offline/*.cpp` is a faithful C++ port of the Python lobby, compiled into Kernel33.dll and into
 `tests/offline/dwtest.exe` (a loopback test server). "Faithful" means: the bytes the client receives
 are the bytes the Python lobby would send for the same request sequence. Log text (`Reply::note`)
 is free-form and never compared.

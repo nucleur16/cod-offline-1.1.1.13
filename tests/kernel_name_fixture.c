@@ -17,8 +17,8 @@ __attribute__((unused)) static unsigned ThSessionGeneration(void)
     return g_thSession;
 }
 
-#include "../kernel_name_display.c"
-#include "../kernel_video_mode.c"
+#include "../src/kernel/kernel_name_display.c"
+#include "../src/kernel/kernel_video_mode.c"
 __declspec(dllexport) int VideoLoad(int fallback){return KvLoad(fallback);}
 __declspec(dllexport) void VideoSave(int enabled){KvSave(enabled);}
 __declspec(dllexport) int Install(void){return InstallKernelNameDisplay();}

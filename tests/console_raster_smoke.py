@@ -4,7 +4,7 @@ import pathlib
 import subprocess
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-s = (ROOT / 'console.c').read_text()
+s = (ROOT / 'src/console/console.c').read_text()
 render = s[s.index('static HDC g_dc;'):s.index('static BOOL ConTakeSnapshot(')]
 suggest = s[s.index('typedef struct {\n    char name[80];'):s.index('} ConSuggest;') + len('} ConSuggest;')]
 start = s.index('static const char *ConStrIStr(')

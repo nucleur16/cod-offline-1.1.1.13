@@ -1,10 +1,10 @@
 # Controller support for C1 (branch `feat/controller`)
 
-Gamepad play for codoMP_client_shipRetail.exe 1.1.1.13, added by Kernel33 (`controller.c`, included by
-`kernel33.c` after `voice.c`, installed by `InstallController()` in `TakeOver`). Every patch is
+Gamepad play for codoMP_client_shipRetail.exe 1.1.1.13, added by Kernel33 (`src/controller/controller.c`, included by
+`src/kernel33.c` after `src/audio/voice.c`, installed by `InstallController()` in `TakeOver`). Every patch is
 byte-checked against the running exe; a mismatch is logged to `Kernel33.log` and that part stays off.
 
-Build: `PATH=/c/msys64/mingw32/bin:$PATH sh build-controller.sh` writes `Kernel33_controller.dll` and copies
+Build: `PATH=/c/msys64/mingw32/bin:$PATH sh scripts/build-controller.sh` writes `build/Kernel33_controller.dll` and copies
 it nowhere. Kill switch: `+set gpad_enabled 0` on the command line installs nothing; `gpad_enabled 0` at run
 time stops all pad input.
 
@@ -83,7 +83,7 @@ mouse via `0x5F3900`, keys via `0x4931E0` / UI_KeyEvent `0x5F3760`.
 
 - **Backend: SDL2 2.32.10 GameController**, linked statically from the official
   `SDL2-devel-2.32.10-mingw.tar.gz` (i686 `libSDL2.a`, SHA-256
-  `83a5d74012311edc3c0d40ea6faecbe57ad692aa033fa5dc273cc937e3938ff2`; `build-controller.sh` fetches it into
+  `83a5d74012311edc3c0d40ea6faecbe57ad692aa033fa5dc273cc937e3938ff2`; `scripts/build-controller.sh` fetches it into
   `third_party/` and checks it). Link line:
   `-Ithird_party/SDL2-2.32.10/i686-w64-mingw32/include ... -Lthird_party/SDL2-2.32.10/i686-w64-mingw32/lib -lSDL2
   -lsetupapi -lcfgmgr32 -lversion -loleaut32 -luuid ... -limm32 -lgdi32 -lole32 -lwinmm` (no SDL2.dll).
@@ -115,7 +115,7 @@ mouse via `0x5F3900`, keys via `0x4931E0` / UI_KeyEvent `0x5F3760`.
     pm_flags has 0x800.
 - **Menu cursor** (IN_Frame): the left stick moves the cursor (`gpad_menu_cursor_speed` px/s at full
   deflection, quadratic), with SetCursorPos while the game is in the foreground. It snaps to the movies'
-  controls (magnetism, D-pad / flick jumps, settling): [PADSNAP.md](PADSNAP.md), `padsnap.c`.
+  controls (magnetism, D-pad / flick jumps, settling): [PADSNAP.md](PADSNAP.md), `src/controller/padsnap.c`.
 - **Keys**: BUTTON_A, BUTTON_B, BUTTON_X, BUTTON_Y, BUTTON_LSHLDR, BUTTON_RSHLDR, BUTTON_START, BUTTON_BACK,
   BUTTON_LSTICK, BUTTON_RSTICK, BUTTON_LTRIG, BUTTON_RTRIG, DPAD_UP/DOWN/LEFT/RIGHT (IW4 keynums 1-6, 14-23).
   Both key-name tables are copied with these appended (`0x492AAC`, `0x492AB2`, `0x492B5B`, `0x49303C`,
@@ -278,7 +278,7 @@ work), which fails C1's client pure check (0x617FA0, "WIN_FILE_CORRUPT") on ever
 ## 9. Phase 3: button icons (2026-10-20)
 Pad keys in hints and prompts are drawn as icons, IW4's way: C1's text renderer still understands IW4's
 inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB26E / 0xAAB8B2 step over it,
-0xAAA7D0 draws it at `((size - 16) * fontHeight + 16) / 32` px). Source: `controller_glyphs.c`.
+0xAAA7D0 draws it at `((size - 16) * fontHeight + 16) / 32` px). Source: `src/controller/controller_glyphs.c`.
 
 - **Art**: Xelu's FREE Controllers & Keyboard Prompts (Nicolae "Xelu" Berbece / Those Awesome Guys,
   https://thoseawesomeguys.com/prompts/, public domain under CC0 1.0; attribution not required, given with
@@ -286,7 +286,7 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
   generic set Others/Positional Prompts (face buttons) plus Steam Deck (the rest). Hold-X is the set's left face
   button inside a ring; the killstreak arrow is Others/Arrows/Directional_Arrow_Straight, recoloured.
 - **Zone**: the icons are real C1 assets in the patch zone `controller_glyphs_postgfx_mp.ff`
-  (`zones/controller_glyphs_postgfx_mp/`, built by `build_zones.py`; install it in `client_shipRetail\patch\`
+  (`zones/controller_glyphs_postgfx_mp/`, built by `scripts/build_zones.py`; install it in `client_shipRetail\patch\`
   with the DLL). Per set (xbox360, ps3, wiiu, generic) and glyph (a b x y lb rb start back ls rs dpad_up
   dpad_down dpad_left dpad_right lt rt x_hold arrow): an image `k33pad_<set>_<glyph>`, 64x64 A8R8G8B8 with 7 mip
   levels, its pixels in the zone (`image/<name>.png` + `.mips.png` in the sources), and a material of the same
@@ -393,7 +393,7 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
 ## 12. Options > Controller, microphone choice (2026-10-21)
 - **The tab:**
   - `zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/OptionView.as` is C1's `codo.views.OptionView`. Its hidden "Other" tab (`myTabOther`) is shown as 手柄 and opens a panel built in code.
-  - It is compiled by FFDec and spliced into the same codo.gfx in `voice_ui_mp.ff` (`build_zones.py`), so there is still one UI zone.
+  - It is compiled by FFDec and spliced into the same codo.gfx in `voice_ui_mp.ff` (`scripts/build_zones.py`), so there is still one UI zone.
 - **Page 手柄图示 (diagram):**
   - A line-art diagram for the pad family (glyph family: Xbox 360 / PS3 / Wii U / generic), pre-generated in `zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/k33_pad_diagrams.as.inc` (original line art; inserted at `// @K33DIAGRAMS@` when the class is compiled).
   - Each button has a live callout with what it does, read from `k33_padbinds`.
@@ -401,14 +401,14 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
   - With no pad, the generic diagram shows with 未连接手柄 ("no controller connected"); `gpad_glyphs 1..4` forces a family.
   - Scaleform note: drawCircle / drawRoundRect stroke a line from the pen to their start, so the pen is moved first.
 - **Page 按键设置 (bindings):**
-  - Click an action, then press a pad button. The tab sets `k33_padcapture`; `controller.c` catches the next pad button in menu mode, binds it, unbinds the action's other pad buttons, and sets `gpad_binds_custom 1`.
+  - Click an action, then press a pad button. The tab sets `k33_padcapture`; `src/controller/controller.c` catches the next pad button in menu mode, binds it, unbinds the action's other pad buttons, and sets `gpad_binds_custom 1`.
   - `gpad_binds_custom 1` stops the bind repair and the "no pad key bound" defaults.
   - Hold X binds BUTTON_X_HOLD. Triggers and sticks are not bindable.
   - 清除所选 clears an action (`k33_padclear`). 恢复默认 runs `gpad_defaultbinds`, which also resets `gpad_binds_custom`.
   - The dive follows whichever pad button is bound to +stance.
 - **Published state:** `k33_padinfo` ("family|connected|name|forced") and `k33_padbinds` ("A=cmd;...;HOLDX=cmd").
 - **Microphone (Options > Audio > 语音, 输入设备):**
-  - `voice.c` lists the active capture endpoints and their friendly names (GBK, code page 936).
+  - `src/audio/voice.c` lists the active capture endpoints and their friendly names (GBK, code page 936).
   - It publishes `k33_voiceInputList` ("Default;name;...") and `k33_voiceInputIndex`, and turns the dropdown's pick (`k33_voiceInputPick`) into the archived `k33_voiceInputDevice` (endpoint ID; empty = the Windows default communications device).
   - Capture reopens on the chosen device right away.
   - A missing device falls back to the default (logged) and is taken again when IMMNotificationClient reports it back.

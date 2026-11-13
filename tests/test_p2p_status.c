@@ -1,4 +1,4 @@
-#include "../p2p_status.h"
+#include "../src/p2p/p2p_status.h"
 #include <stdio.h>
 
 /* One row per case: the status line, the requested match and the expected verdict.

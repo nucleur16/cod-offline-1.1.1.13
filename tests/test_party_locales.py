@@ -75,7 +75,7 @@ class PartyLocales(unittest.TestCase):
         self.assertIn('codol_chinese_ui_extra', {p for p,_,_ in packs.parts(packs.load(str(ROOT),'codol_chinese_locale'))})
 
     def test_legacy_shared_names_still_merge_into_the_shared_table_pack(self):
-        header=(ROOT/'patch_locale_policy.h').read_text(encoding='utf-8')
+        header=(ROOT/'src/patch_locale_policy.h').read_text(encoding='utf-8')
         body=header.split('kCodolPatchZoneMerged[][2]={',1)[1].split('};',1)[0]
         merged=dict(re.findall(r'\{"([^"]+)","([^"]+)"\}',body))
         for name in ('000_codol_party_modes','codol_loading_mode_names'):

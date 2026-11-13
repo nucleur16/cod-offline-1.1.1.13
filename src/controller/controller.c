@@ -1,6 +1,6 @@
 /*
  * controller.c - gamepad support for C1 (feat/controller). Included by kernel33.c after voice.c.
- * See CONTROLLER.md for what C1 still has, the addresses and the phased plan.
+ * See docs/CONTROLLER.md for what C1 still has, the addresses and the phased plan.
  *
  * C1 is IW4 PC with its gamepad layer removed: no XInput, no gamepad keys, no CL_GamepadMove. What
  * this file adds, all byte-checked (a mismatch is logged to Kernel33.log and that part stays off):

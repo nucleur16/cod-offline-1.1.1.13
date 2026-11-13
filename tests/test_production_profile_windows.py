@@ -19,8 +19,8 @@ def linux(p):return '/mnt/'+p.drive[0].lower()+'/'+p.as_posix()[3:]
 def main():
     p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);a=p.parse_args()
     assert os.name=='nt' and not a.output.exists();a.output.mkdir(parents=True)
-    header=ROOT/'production_profile.h'
-    functions='\n'.join([body(ROOT/'controller.c','CtlTestMode'),body(ROOT/'controller.c','CtlTestCmdsEnabled'),body(ROOT/'voice.c','VoiceCmdFile')])
+    header=ROOT/'src/production_profile.h'
+    functions='\n'.join([body(ROOT/'src/controller/controller.c','CtlTestMode'),body(ROOT/'src/controller/controller.c','CtlTestCmdsEnabled'),body(ROOT/'src/audio/voice.c','VoiceCmdFile')])
     source='''#include <windows.h>
 #include <stdio.h>
 #include <string.h>

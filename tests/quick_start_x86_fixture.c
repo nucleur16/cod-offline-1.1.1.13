@@ -39,7 +39,7 @@ static BOOL TTerminate(HANDLE h,UINT c) {(void)h;(void)c;qtest_terminated++;retu
 #define GetTickCount TTime
 #define GetCurrentProcess TProcess
 #define TerminateProcess TTerminate
-#include "../quick_start_gate.c"
+#include "../src/rooms/quick_start_gate.c"
 __declspec(dllexport) void QsgTestInstall(void) {PatchQuickStartGate();}
 __declspec(dllexport) int QsgTestAllow(void *p) {return QsgAllow(p);}
 __declspec(dllexport) void QsgTestTick(void *p) {QsgTick(p);}

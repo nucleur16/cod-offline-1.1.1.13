@@ -1,6 +1,6 @@
 /* Execute the same production CAS helpers with actual competing threads.
  * This tests inventory ownership, not Windows kernel I/O or native teardown. */
-#include "../p2p_startup_ownership.h"
+#include "../src/p2p/p2p_startup_ownership.h"
 #include <assert.h>
 #include <pthread.h>
 #include <stdio.h>

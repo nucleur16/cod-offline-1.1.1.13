@@ -18,7 +18,7 @@ static void WriteCode(void *p, const void *src, size_t n) { memcpy(p, src, n); }
 static void Log(const char *ignored) { (void)ignored; }
 
 #define PARTY_SESSION_CAPACITY_STORE_VA ((uintptr_t)g_entry)
-#include "../party_session_capacity_guard.c"
+#include "../src/guards/party_session_capacity_guard.c"
 
 static int __attribute__((naked, noinline)) FixtureDispatch(
     void *session __attribute__((unused)), int private_count __attribute__((unused)),

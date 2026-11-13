@@ -1,6 +1,6 @@
 /* Independent Python bytes, actual startup/query codec and actual SHA256.
  * Reply times are supplied fixture values, not native observation evidence. */
-#include "../p2p_active_wire.h"
+#include "../src/p2p/p2p_active_wire.h"
 #include "mbedtls/sha256.h"
 #include <assert.h>
 #include <stdio.h>

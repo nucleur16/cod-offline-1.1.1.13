@@ -150,7 +150,7 @@ class Guard(unittest.TestCase):
 if __name__=='__main__':
  result=unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(Guard))
  report={'passed':result.wasSuccessful(),'methods':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),
-         'fixture_sha256':hashlib.sha256(data).hexdigest(),'source_sha256':hashlib.sha256((Path(__file__).resolve().parents[1]/'kernel_call_guard.c').read_bytes()).hexdigest(),
+         'fixture_sha256':hashlib.sha256(data).hexdigest(),'source_sha256':hashlib.sha256((Path(__file__).resolve().parents[1]/'src/kernel/kernel_call_guard.c').read_bytes()).hexdigest(),
          'native_fault_policy':'Terminate client without lock cleanup or continuation; does not repair underlying fault','exact_native_image_supplied':bool(args.image),
          'boundary':'Compiled x86 call/handler and real Unicorn memory faults; Windows exception dispatch/CONTEXT application modeled. No actual Windows/game execution.'}
  args.output.write_text(json.dumps(report,indent=2)+'\n');raise SystemExit(not result.wasSuccessful())

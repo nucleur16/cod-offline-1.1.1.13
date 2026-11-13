@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Differential test of the match-report write-back: career/rank_writeback.py against offline/dw_career.cpp.
+"""Differential test of the match-report write-back: career/rank_writeback.py against src/offline/dw_career.cpp.
 
     export DWDIFF_ROOT=/d/CoD/k33work/offl PYLOBBY_SRC=/d/CoD/k33work/dw-emu
     DWTEST_OBJ=obj_offline_test4 DWTEST_OUT=$DWDIFF_ROOT/slot4/dwtest.exe sh tests/offline/build_dwtest.sh
     python tests/offline/writeback_diff.py --dwtest $DWDIFF_ROOT/slot4/dwtest.exe [--slot 4] [-k name] [-v]
 
 The captures hold no match reports, so the scenarios below are synthetic match_report.json files built
-from the report schema (offline/dw_career.h). For every scenario, on a fresh level-1 profile of a fake
+from the report schema (src/offline/dw_career.h). For every scenario, on a fresh level-1 profile of a fake
 uid:
 
   1. the Python lobby's own rank_writeback.maybe_apply() folds the reports, in a private copy of the
@@ -20,7 +20,7 @@ unlock-flag set and weapon XP derived from the profile, and the inflated mpdata_
 
 THE PORT'S SIDE IS READ BACK FROM ITS FILES. Every step is its own dwtest process, and the port keeps
 no profile document: a step rebuilds the career from the player's mpdata_s file and the account.txt
-career lines the step before wrote (offline/dw_store.h), credits the report and writes both again. So
+career lines the step before wrote (src/offline/dw_store.h), credits the report and writes both again. So
 a scenario that matches also proves that nothing of the career is lost between two runs of the client.
 Two members of the Python profile are not part of that career and are not compared: `history` (the
 Python lobby's credit log, a database table) and `seeded_from` (where the profile came from: for the

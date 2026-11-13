@@ -26,7 +26,7 @@
  *      player is shown, stored and reported as level 1, and loadout unlocks keep their levels.
  *
  * The player's career is the game's own profile blobs in <exe dir>\players\<profile name>\
- * (offline/dw_store.h); there is no database.
+ * (src/offline/dw_store.h); there is no database.
  *
  * The lobby thread never touches C1. It reads the owner's Local Play intent with K33LocalPlayIntent()
  * and, when it hands START_GAME to the owner, raises the host launch with K33LocalPlayLaunch()
@@ -399,7 +399,7 @@ static BOOL OflLoopbackTcpFree(int port)
  * (OfflineHostPortRelease), so nothing else on this PC - a second offline client in particular - can
  * take the port between now and the match launch. An explicit host_port is used as it is.
  * A free one: the system's choice of a UDP port first; if that port cannot also be had for TCP
- * (Windows excludes port blocks per protocol, offline/dw_net.cpp), ports drawn at random from the
+ * (Windows excludes port blocks per protocol, src/offline/dw_net.cpp), ports drawn at random from the
  * dynamic range. */
 static void OflChooseHostPort(int configured)
 {

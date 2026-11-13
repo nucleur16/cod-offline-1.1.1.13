@@ -6,7 +6,7 @@ buttons, settles on the one under it when the stick is let go, and jumps from co
 or a flick. The in-match pause menu keeps its focus navigation (CONTROLLER.md section 8); nothing here runs in a
 match.
 
-Sources: `padsnap.c` (Kernel33, included after `controller.c`, which calls it from five marked places),
+Sources: `src/controller/padsnap.c` (Kernel33, included after `src/controller/controller.c`, which calls it from five marked places),
 `zones/voice_ui_mp/rawfile/scaleform/default/{codo,codologin}.gfx.gfxpatch/as/codo/k33/PadSnap.as` (the target
 publisher, one source compiled into both movies), `.../as/components/CodoUIComponent.as` (one line that starts it),
 `.../codo.gfx.gfxpatch/as/codo/views/OptionView.as` (the two Options rows).
@@ -97,7 +97,7 @@ New localize keys (ui_keys.py NAMED, English + Chinese): `K33UI_PAD_SET_SNAP`, `
 FFDec and stores the tag (`tags/`, the `new` / `as` / `sha256` lines of patch.txt), so builds need no FFDec. FFDec
 only compiles over an existing class, so a new class is compiled over a donor class in a scratch copy and its code
 is put in a new DoABC tag ahead of the SymbolClass tag (`zonekit/gfx.py` `store_class`). A class already stored
-keeps its tag file name. `ui_keys.py` leaves such added classes alone; both new classes are in zonelist's
+keeps its tag file name. `scripts/ui_keys.py` leaves such added classes alone; both new classes are in zonelist's
 `handwritten` sets.
 
 ## 5. Verified (2026-10-23, k33-fovtest copy, synthetic pad, English and Chinese)

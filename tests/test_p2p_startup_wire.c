@@ -1,6 +1,6 @@
 /* Actual portable C framing with an independent Python-produced fixture.
  * No Windows process, native host or remote service is launched. */
-#include "../p2p_startup_wire.h"
+#include "../src/p2p/p2p_startup_wire.h"
 #include "mbedtls/sha256.h"
 #include <assert.h>
 #include <stdio.h>

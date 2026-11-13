@@ -26,7 +26,7 @@ static void Log(const char *ignored) { (void)ignored; }
 
 #define MEMBER_JOIN_CALL_VA ((uintptr_t)g_call_entry)
 #define MEMBER_JOIN_ORIGINAL_VA ((uintptr_t)FixtureOriginal)
-#include "../member_join_guard.c"
+#include "../src/guards/member_join_guard.c"
 
 static int dispatch(void *party)
 {

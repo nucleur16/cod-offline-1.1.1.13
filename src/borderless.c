@@ -38,7 +38,7 @@
 #define BD_MAIN_HWND_VA       0x02B68104u
 #define BD_REGISTER_BOOL_VA   0x00624370u   /* Dvar_RegisterBool(name, value, flags, desc) */
 #if CODOL_KERNEL_NAME_DISPLAY
-#include "kernel_video_mode.c"
+#include "kernel/kernel_video_mode.c"
 #endif
 
 __attribute__((used)) DWORD g_bdCreateWindowFn = BD_CREATE_WINDOW_VA;

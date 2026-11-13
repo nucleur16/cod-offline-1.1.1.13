@@ -1,7 +1,7 @@
 /*
  * dw_stubs.cpp - placeholders for modules that are not part of a build.
  *
- * build-offline.inc.sh defines DW_HAVE_<FILE> for every offline/dw_<file>.cpp it compiles (and not
+ * build-offline.inc.sh defines DW_HAVE_<FILE> for every src/offline/dw_<file>.cpp it compiles (and not
  * for a file listed in OFFLINE_SKIP), so a partial build - one service under test, or the port in
  * progress - still links. A task answered from here is the Python lobby's empty-success
  * fall-through. A complete build compiles every module and none of these.

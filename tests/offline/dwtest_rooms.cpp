@@ -1,6 +1,6 @@
 /*
  * dwtest --selftest-rooms: the offline product's room start (the non-differential match handoff
- * policy of offline/dw_rooms.cpp) against a fake embedder.
+ * policy of src/offline/dw_rooms.cpp) against a fake embedder.
  *
  * For an mp room, a zombies room, a survival room and a coop room:
  *   create room -> createSession -> Ready with Local Play OFF  => only the echo relay comes back: no
@@ -15,8 +15,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <windows.h>
-#include "../../offline/dw.h"
-#include "../../offline/dw_handoff.h"
+#include "../../src/offline/dw.h"
+#include "../../src/offline/dw_handoff.h"
 
 namespace {
 

@@ -13,7 +13,7 @@ static void timeout(void *p,float value){memcpy((BYTE *)p+0x10,&value,4);changes
 #define CQW_NOW() 1793227000ULL
 #define CQW_ELAPSED(p) test_elapsed
 #define CQW_TIMEOUT(p,v) timeout(p,v)
-#include "client_queue_wait.c"
+#include "../src/rooms/client_queue_wait.c"
 #define room test_room
 #define elapsed test_elapsed
 static const char marker[]="Q09ET0xfUVVFVUVfV0FJVF9WMQ==";

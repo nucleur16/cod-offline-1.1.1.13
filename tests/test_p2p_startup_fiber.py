@@ -44,33 +44,33 @@ def main():
     parser.add_argument('--vectors',type=Path,default=Path('/mnt/e/codol-p2p-startup-ipc-evidence-20261104/vectors-v1'))
     parser.add_argument('--native-libs',type=Path,default=Path('/mnt/c/Users/zz/Documents/ChatGPT/Call of Duty Online 1.1.1.13 Work/re/p2p-native-parity-20261104/lib-native'))
     args=parser.parse_args();root=Path(__file__).resolve().parents[1];native=args.native.resolve();out=args.evidence.resolve();out.mkdir(parents=True,exist_ok=True)
-    inputs=[root/name for name in ('p2p.c','p2p_inproc.c','p2p_startup_bridge.c','p2p_startup_wire.c','p2p_startup_ownership.h')]
-    inputs += [root/name for name in ('p2p_active_bridge.c','p2p_active_wire.c','p2p_active_wire.h',
+    inputs=[root/name for name in ('src/p2p/p2p.c','src/p2p/p2p_inproc.c','src/p2p/p2p_startup_bridge.c','src/p2p/p2p_startup_wire.c','src/p2p/p2p_startup_ownership.h')]
+    inputs += [root/name for name in ('src/p2p/p2p_active_bridge.c','src/p2p/p2p_active_wire.c','src/p2p/p2p_active_wire.h',
         'tests/p2p_active_fiber_cases.inc','tests/p2p_active_fiber_scaffold.inc','tests/p2p_active_io_scaffold.inc')]
     inputs+=[native/name for name in ('src/win32/sys_host.c','src/codol/net/codol_network.c',
         'src/codol/net/codol_principal_binding.c','src/codol/script/codol_verified_sources.c')]
     before={str(path):hashlib.sha256(path.read_bytes()).hexdigest()for path in inputs}
-    sources={name:(root/name).read_text() for name in ('p2p.c','p2p_inproc.c','p2p_startup_bridge.c')}
+    sources={name:(root/name).read_text() for name in ('src/p2p/p2p.c','src/p2p/p2p_inproc.c','src/p2p/p2p_startup_bridge.c')}
     native_host=(native/'src/win32/sys_host.c').read_text()
-    run=function(sources['p2p_inproc.c'],'P2PInprocRun')
+    run=function(sources['src/p2p/p2p_inproc.c'],'P2PInprocRun')
     assert run.index('InterlockedIncrement(&g_piSession)')<run.index('InterlockedExchange(&g_piState, PI_INIT_PENDING)')
     assert 'g_piSession = 0'not in run and 'g_piSession=0'not in run
     assert 'GetProcAddress(m,"Sh1xHost_InstallActiveRelayPrincipals")' in run
     assert 'g_piActivePrincipals=active_principals;' in run
-    bridge=sources['p2p_startup_bridge.c'];start=bridge.index('typedef struct {');end=bridge.index('} P2PStartupBridge;',start)+len('} P2PStartupBridge;')
+    bridge=sources['src/p2p/p2p_startup_bridge.c'];start=bridge.index('typedef struct {');end=bridge.index('} P2PStartupBridge;',start)+len('} P2PStartupBridge;')
     globals_begin=native_host.index('static int sys_hosted;');globals_end=native_host.index('int Sys_IsHosted(',globals_begin)
-    active=(root/'p2p_active_bridge.c').read_text()
+    active=(root/'src/p2p/p2p_active_bridge.c').read_text()
     active_globals=active[active.index('enum {'):active.index('static BOOL PiActiveClock')]
     declarations='#include "p2p_active_wire.h"\n'+bridge[start:end]+'\n'+native_host[globals_begin:globals_end]+'\n'+active_globals
     selected={}
     for name in ('P2PSAtomicCAS','P2PSWallMillis','P2PStartupProtocolMode','P2PSParentAlive','P2PSRefuse','P2PSCurrent','P2PSClose','P2PSAcknowledge'):
         selected[name]=function(bridge,name)
-    selected['P2PStartupAttemptCurrent']=function(sources['p2p.c'],'P2PStartupAttemptCurrent')
-    selected['P2PStartupInvalidate']=function(sources['p2p.c'],'P2PStartupInvalidate')
+    selected['P2PStartupAttemptCurrent']=function(sources['src/p2p/p2p.c'],'P2PStartupAttemptCurrent')
+    selected['P2PStartupInvalidate']=function(sources['src/p2p/p2p.c'],'P2PStartupInvalidate')
     for name in ('CODOL_HostSourceControlAllowed','Sh1xHost_UseVerifiedScripts','Sh1xHost_InstallRelayPrincipals','Sh1xHost_InstallActiveRelayPrincipals','Sh1xHost_ObserveRelayPrincipals','Sh1xHost_RelayPrincipalsCurrent','Sh1xHost_QuarantineRelayPrincipals'):
         selected[name]=function(native_host,name)
     for name in ('PiStartupPrincipalCheck','PiStartupOptionsCheck','PiInstallStartup','PiAbortStartupWorker','PiServerFiber','P2PInprocUsed','P2PInprocPrincipalFresh','P2PInprocCancelStartup'):
-        selected[name]=function(sources['p2p_inproc.c'],name)
+        selected[name]=function(sources['src/p2p/p2p_inproc.c'],name)
     active_names=['PiActiveClock','PiActiveDeny','PiActiveBootstrapExpired','PiActivePeer','PiActivePermission','PiActiveIoCurrent','PiActiveTransfer','PiActiveBetweenFrames','PiActiveStagePacket','PiActiveMakeReply']
     for name in active_names:selected[name]=function(active,name)
     order=['P2PSAtomicCAS','P2PSWallMillis','P2PStartupProtocolMode','P2PStartupAttemptCurrent','P2PSParentAlive','P2PSRefuse','P2PSCurrent','P2PSClose','P2PSAcknowledge',
@@ -78,7 +78,7 @@ def main():
            'PiStartupPrincipalCheck','PiStartupOptionsCheck','PiInstallStartup','PiAbortStartupWorker','PiServerFiber','P2PInprocUsed','P2PInprocPrincipalFresh',
            'P2PInprocCancelStartup','P2PStartupInvalidate']
     at=order.index('PiStartupPrincipalCheck');order[at:at]=active_names
-    for name in ('p2pa_u32','p2pa_u64'):selected[name]=function((root/'p2p_active_wire.c').read_text(),name)
+    for name in ('p2pa_u32','p2pa_u64'):selected[name]=function((root/'src/p2p/p2p_active_wire.c').read_text(),name)
     order[0:0]=['p2pa_u32','p2pa_u64']
     clock=(native/'tests/test_codol_principal_clock.c').read_text();clock=clock[:clock.index('int main(void)')]
     results=[];okay=True;environment=dict(os.environ,ASAN_OPTIONS='detect_leaks=0')
@@ -95,7 +95,7 @@ def main():
         (out/'actual_startup_declarations.inc').write_text(declarations)
         (scratch/'actual_startup_functions.inc').write_text(functions)
         (scratch/'principal_clock_io.inc').write_text(clock)
-        includes=['-I'+str(scratch),'-I'+str(root),'-I'+str(native/'src'),'-I'+str(native/'tests')]
+        includes=['-I'+str(scratch),'-I'+str(root/'src'/'p2p'),'-I'+str(native/'src'),'-I'+str(native/'tests')]
         includes+=['-I'+str(path)for path in sorted((native/'src/codol').iterdir())if path.is_dir()]
         binary=scratch/'startup-fiber'
         template=(root/'tests/test_p2p_startup_fiber.c').read_text()
@@ -117,7 +117,7 @@ def main():
         (scratch/'startup-fiber.c').write_text(template)
         command=['gcc','-m32','-std=gnu11','-O1','-g','-D_GNU_SOURCE','-DCODOL_SERVER',
             '-ffunction-sections','-fdata-sections','-fsanitize=address,undefined','-fno-omit-frame-pointer','-fno-pie','-no-pie']+includes+[
-            str(scratch/'startup-fiber.c'),str(root/'p2p_startup_wire.c'),str(root/'p2p_active_wire.c'),
+            str(scratch/'startup-fiber.c'),str(root/'src/p2p/p2p_startup_wire.c'),str(root/'src/p2p/p2p_active_wire.c'),
             str(native/'src/codol/net/codol_principal_binding.c'),str(native/'src/codol/script/codol_verified_sources.c'),
             '-L'+str(args.native_libs),'-lmbedcrypto','-Wl,--gc-sections','-o',str(binary)]
         okay=execute(command)
@@ -181,12 +181,12 @@ def main():
         # Actual native install advances mono with flat wall. Recomputing lease
         # budgets at commit must fail the same between-Frame regression.
         (scratch/'actual_startup_functions.inc').write_text(functions)
-        actual_wire=(root/'p2p_active_wire.c').read_text()
+        actual_wire=(root/'src/p2p/p2p_active_wire.c').read_text()
         late_wire=actual_wire.replace('policy->deadline=policy->offered_deadline;policy->hard_deadline=policy->offered_hard_deadline;',
             'policy->deadline=mono+control->expires-wall;policy->hard_deadline=mono+control->hard_expires-wall;',1)
         assert late_wire!=actual_wire
         (scratch/'late_active_wire.c').write_text(late_wire)
-        bad_command=[str(scratch/'late_active_wire.c') if part==str(root/'p2p_active_wire.c') else part for part in command]
+        bad_command=[str(scratch/'late_active_wire.c') if part==str(root/'src/p2p/p2p_active_wire.c') else part for part in command]
         bad_command[-1]=str(scratch/'active-late-install')
         late_compiled=execute(bad_command);okay=okay and late_compiled
         if late_compiled:
@@ -202,7 +202,7 @@ def main():
         for label,scenario,mutated in wire_controls:
             assert mutated!=actual_wire
             path=scratch/(label+'.c');path.write_text(mutated)
-            bad_command=[str(path)if part==str(root/'p2p_active_wire.c')else part for part in command]
+            bad_command=[str(path)if part==str(root/'src/p2p/p2p_active_wire.c')else part for part in command]
             bad_command[-1]=str(scratch/label)
             compiled=execute(bad_command);okay=okay and compiled
             if compiled:
@@ -211,7 +211,7 @@ def main():
                 results.append(dict(negative_control=label,scenario=scenario,exit_code=result.returncode,output=result.stdout))
                 okay=okay and result.returncode!=0 and 'Assertion' in result.stdout
     paths=inputs+[root/'tests/test_p2p_startup_fiber.py',root/'tests/test_p2p_startup_fiber.c',
-        root/'p2p_startup_wire.c',root/'p2p_startup_ownership.h',native/'src/win32/sys_host.c',
+        root/'src/p2p/p2p_startup_wire.c',root/'src/p2p/p2p_startup_ownership.h',native/'src/win32/sys_host.c',
         native/'src/codol/net/codol_network.c',native/'src/codol/net/codol_principal_binding.c',native/'src/codol/script/codol_verified_sources.c']
     report=dict(okay=okay,scope=__doc__,functions_sha256={name:hashlib.sha256(value.encode()).hexdigest()for name,value in selected.items()},
         source_files=[dict(path=str(path),sha256=hashlib.sha256(path.read_bytes()).hexdigest())for path in paths],

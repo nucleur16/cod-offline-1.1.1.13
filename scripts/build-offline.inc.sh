@@ -1,6 +1,8 @@
 #!/bin/sh
-# Sourced by build.sh, build-dev.sh and tests/offline/build_dwtest.sh: compiles the offline Demonware
-# lobby (offline/*.cpp, docs/OFFLINE_LOBBY.md) with g++ into an object folder. No exceptions, no RTTI: nothing C++ unwinds into C1 or Kernel33's C frames.
+# Sourced by scripts/build.sh, scripts/build-dev.sh (from src/) and tests/offline/build_dwtest.sh (from the
+# repository root, with K33_OFFLINE_SRC=src/offline K33_OFFLINE_INC=scripts/build-offline.inc.sh): compiles the
+# offline Demonware lobby (src/offline/*.cpp, docs/OFFLINE_LOBBY.md) with g++ into an object folder.
+# No exceptions, no RTTI: nothing C++ unwinds into C1 or Kernel33's C frames.
 #
 #   k33_offline_objects <objdir>   -> OFFLINE_OBJS (rebuilt when a source or header is newer)
 #
@@ -10,13 +12,15 @@ BIN=${BIN:-/c/msys64/mingw32/bin}
 PATH="$BIN:$PATH"   # g++ loads cc1plus and its DLLs from its own folder
 export PATH
 OFFLINE_CXXFLAGS="-std=gnu++11 -O2 -Wall -Wextra -Wno-unused-parameter -fno-exceptions -fno-rtti -fno-threadsafe-statics -ffunction-sections -fdata-sections"
+K33_OFFLINE_SRC=${K33_OFFLINE_SRC:-offline}
+K33_OFFLINE_INC=${K33_OFFLINE_INC:-../scripts/build-offline.inc.sh}
 k33_offline_objects() {
     _dir=$1
     mkdir -p "$_dir"
     OFFLINE_OBJS=""
     _have=""
     _srcs=""
-    for _src in offline/*.cpp; do
+    for _src in "$K33_OFFLINE_SRC"/*.cpp; do
         _base=$(basename "$_src")
         case " ${OFFLINE_SKIP:-} " in *" $_base "*) continue;; esac
         _srcs="$_srcs $_src"
@@ -28,7 +32,7 @@ k33_offline_objects() {
         rm -f "$_dir/dw_stubs.o"
         echo "$_have" > "$_dir/.have"
     fi
-    _newest=$(ls -t offline/*.h build-offline.inc.sh | head -1)
+    _newest=$(ls -t "$K33_OFFLINE_SRC"/*.h "$K33_OFFLINE_INC" | head -1)
     for _src in $_srcs; do
         _o="$_dir/$(basename "${_src%.cpp}").o"
         if [ ! -f "$_o" ] || [ "$_src" -nt "$_o" ] || [ "$_newest" -nt "$_o" ]; then

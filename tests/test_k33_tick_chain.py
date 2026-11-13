@@ -3,7 +3,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-source = (Path(__file__).resolve().parents[1] / 'k33tick.c').read_text()
+source = (Path(__file__).resolve().parents[1] / 'src/k33tick.c').read_text()
 start = source.index('static BOOL K33InstallMainTicks(void)')
 body_start = source.index('{', start)
 depth = 1

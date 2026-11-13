@@ -1,4 +1,4 @@
-#include "../kernel_name_policy.h"
+#include "../src/kernel/kernel_name_policy.h"
 static KnpCache cache;
 static KnpIdentity request;
 int Name(const char *text){return KnpValidName(text,NULL);}

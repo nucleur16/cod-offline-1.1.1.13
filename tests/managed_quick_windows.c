@@ -3,14 +3,14 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdarg.h>
-#include "local_multi_policy.h"
+#include "../src/local_multi_policy.h"
 static BOOL Readable(const void *p,SIZE_T n) {
  MEMORY_BASIC_INFORMATION m;
  return VirtualQuery(p,&m,sizeof(m)) && m.State==MEM_COMMIT &&
   !(m.Protect&(PAGE_NOACCESS|PAGE_GUARD)) && (const BYTE *)p+n<=(const BYTE *)m.BaseAddress+m.RegionSize;
 }
 static void Log(const char *format,...) {(void)format;}
-#include "managed_quick.c"
+#include "../src/rooms/managed_quick.c"
 static unsigned checks,failures;
 #define CHECK(x) do { checks++;if(!(x)){failures++;printf("FAIL line %u: %s\n",__LINE__,#x);} } while(0)
 static unsigned calls;static void *seenRoom;static BYTE seen[0x48];

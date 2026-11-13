@@ -23,12 +23,12 @@ the moment the match the room started launches for the owner's client; the clien
 Two inputs raise the same one-word request; the main-thread tick (`P2PLaunchTick`) consumes it and starts the armed
 selection exactly once. Neither input starts anything by itself and neither runs on a thread that touches C1.
 
-1. **C1's first datagram to the armed loopback port** (`hostgate.c` `HostGateSendTo` -> `P2PLaunchObserve`). C1 does
+1. **C1's first datagram to the armed loopback port** (`src/p2p/hostgate.c` `HostGateSendTo` -> `P2PLaunchObserve`). C1 does
    all its UDP through the hostgate's `sendto` wrapper. When the lobby's start-game handoff reaches the client, C1
    enters its connecting screen and immediately sends to the match server's address, which for the owner is
    `127.0.0.1:<port>` of its own armed host. Measured (below): this is the first native event of the launch on the
    client and it is reliable, because it is the connect itself. Observation only: the datagram is sent unchanged.
-2. **The lobby's call** `K33LocalPlayLaunch(owner_uid, session_map, gametype, type)` (`p2p_local_play_api.h`), for
+2. **The lobby's call** `K33LocalPlayLaunch(owner_uid, session_map, gametype, type)` (`src/p2p/p2p_local_play_api.h`), for
    the lobby that runs inside Kernel33.dll: it knows the launch before any datagram exists. The console command
    `p2p_launch` is the same input for the UI or a test.
 
@@ -100,7 +100,7 @@ logic is being ported into Kernel33.dll in C++ and rule 5 belongs there).
 
 ## Native interface
 
-`p2p_local_play_api.h` (C and C++):
+`src/p2p/p2p_local_play_api.h` (C and C++):
 
 ```c
 int K33LocalPlayIntent(K33LocalPlayIntentInfo *out);          /* any thread: the last published snapshot */
@@ -142,7 +142,7 @@ still requires the verified-script service in a local-testing in-process build.
 
 Fixtures (run on this branch):
 
-- `python3 tests/test_p2p_start_intent.py` (WSL, gcc -m32 ASan/UBSan): the actual `p2p.c` bodies. Arm-only tick in
+- `python3 tests/test_p2p_start_intent.py` (WSL, gcc -m32 ASan/UBSan): the actual `src/p2p/p2p.c` bodies. Arm-only tick in
   every protocol; no start from frames, from a foreign-port datagram, or from a datagram without the choice or
   (1/2) without the owner's intent; one start per launch; lobby-call launch and its refusals; cancel / untick /
   re-room / owner-change revocation; the changed-room stop; the empty-host stop; the failed-launch disconnect; and

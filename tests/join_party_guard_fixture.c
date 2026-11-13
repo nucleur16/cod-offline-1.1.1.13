@@ -49,7 +49,7 @@ static void Log(const char *ignored) { (void)ignored; }
 #define JOIN_PARTY_FILL_WRITE ((uintptr_t)FixtureFillWrite)
 #define JOIN_PARTY_FILL_SKIP ((uintptr_t)FixtureFillSkip)
 #define JOIN_PARTY_FILL_ERROR ((uintptr_t)FixtureFillError)
-#include "../join_party_guard.c"
+#include "../src/guards/join_party_guard.c"
 
 static int __attribute__((naked, used)) FixtureDispatch(
     int subparties __attribute__((unused)), int players __attribute__((unused)))

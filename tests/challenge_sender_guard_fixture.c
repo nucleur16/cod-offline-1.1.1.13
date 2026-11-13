@@ -67,7 +67,7 @@ static void Log(const char *ignored) { (void)ignored; }
 #define CHALLENGE_COMPARE_BASE_VA ((uintptr_t)FixtureBaseCompare)
 #define CHALLENGE_COMPARE_EXTRA_VA ((uintptr_t)FixtureExtraCompare)
 #define CONNECT_SENDER_CALL_VA ((uintptr_t)g_connectCall)
-#include "../challenge_sender_guard.c"
+#include "../src/guards/challenge_sender_guard.c"
 
 static int __attribute__((naked, used)) FixtureDispatch(const BYTE *source)
 {

@@ -94,7 +94,7 @@ checks.append('negative-hardcoded-one-hour-fails-half-hour-DST')
 for disabled in (False,True):
  a=Fixed();initialize(a);a.disabled=disabled;settime(a,a.epoch*1000.,True)
  assert a.hm()==([15.,57.] if disabled else [16.,57.]);checks.append('explicit-disabled-DST-'+str(disabled))
-guards=Path(__file__).resolve().parents[3]/'gfx_date_time_guards.h'
+guards=Path(__file__).resolve().parents[3]/'src'/'gfx'/'gfx_date_time_guards.h'
 regions=[(int(v,16),int(n)) for v,n in re.findall(r'\{0x([0-9A-F]+)u,(\d+)u,',guards.read_text())]
 def patch(a):
  a.uc.mem_write(0xce7d38,b'\0'*8);a.call(exported('BridgePatch'),b'');return a.uc.reg_read(UC_X86_REG_EAX)

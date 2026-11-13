@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = (ROOT / 'p2p.c').read_text()
+SOURCE = (ROOT / 'src/p2p/p2p.c').read_text()
 
 
 def function(name):
@@ -321,7 +321,7 @@ def main():
         subprocess.run(['gcc','-m32','-std=gnu99','-O1','-g','-Wall','-Wextra','-Werror',
                         '-Wno-unused-function','-Wno-unused-parameter','-Wno-unused-variable',
                         '-fno-pie','-no-pie','-fsanitize=address,undefined','-fno-omit-frame-pointer',
-                        '-I',str(ROOT),str(source),'-o',str(binary)],check=True)
+                        '-I',str(ROOT/'src'/'p2p'),str(source),'-o',str(binary)],check=True)
         subprocess.run([str(binary)],check=True,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))
 
 
