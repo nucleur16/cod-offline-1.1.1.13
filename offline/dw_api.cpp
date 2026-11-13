@@ -97,6 +97,7 @@ extern "C" int DwOfflineStartServer(const DwOfflineConfig *config)
     rt->cfg.state = Str(config->state);
     rt->cfg.matchProfile = Str(config->matchProfile);
     rt->cfg.zoneDir = Str(config->zoneDir);
+    rt->cfg.gameDir = Str(config->gameDir);
     rt->cfg.mmHostIp = "127.0.0.1";
     rt->cfg.mmHostPort = config->hostPort;
     /* stunPort / stunAltPort are set by the listener to the ports it obtained. stunMappedPort (the

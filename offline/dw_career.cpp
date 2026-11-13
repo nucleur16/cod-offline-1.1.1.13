@@ -369,6 +369,10 @@ std::vector<int64_t> CareerGrantedFlagIds(Server &s, const Json &prof)
     for (size_t i = 0; i < c.flags.size(); i++) {
         const FlagRow &f = c.flags[i];
         if (!f.id || f.name == kHideFlag) continue;
+        if (f.name == "cf_ch_zm_prototype_sh_1") { /* challenges.ALWAYS_GRANTED_FLAGS (dw_marketplace.cpp) */
+            got.insert(f.id);
+            continue;
+        }
         if (!f.challenge.empty()) {
             const CareerChallenge *ch = CareerChallengeGet(s, f.challenge);
             if (!ch) continue;

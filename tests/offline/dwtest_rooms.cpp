@@ -17,6 +17,7 @@
 #include <windows.h>
 #include "../../offline/dw.h"
 #include "../../offline/dw_handoff.h"
+#include "../../offline/dw_rooms.h"
 
 namespace {
 
@@ -110,7 +111,8 @@ bool RoomPush(const Frame &f, int &typeId, dw::Bytes &body)
     return !r.eof;
 }
 
-dw::Bytes Descriptor(const char *name, uint64_t uid, uint64_t rid, const char *gametype, const char *map, const dw::Bytes &key)
+dw::Bytes Descriptor(const char *name, uint64_t uid, uint64_t rid, const char *gametype, const char *map, const dw::Bytes &key,
+                     int difficulty = 0)
 {
     dw::Bytes d = dw::w_blob(dw::Bytes(37, '\x11')) + dw::w_u32(0) + dw::w_u32(6) + dw::w_str(name) + dw::w_str(name);
     static const int32_t head[7] = { 0, 0, 406, 0, 12345, 0, 255 }; /* mode, -, version, -, criterion, -, league 255 */
@@ -118,7 +120,7 @@ dw::Bytes Descriptor(const char *name, uint64_t uid, uint64_t rid, const char *g
     for (int i = 0; i < 7; i++) d += dw::w_i32(0);
     d += dw::w_blob(key) + dw::w_u64(uid) + dw::w_blob(dw::Bytes(56, '\0')) + dw::w_u64(rid);
     d += dw::w_i32((int32_t)dw::Crc32(gametype, strlen(gametype))) + dw::w_i32((int32_t)dw::Crc32(map, strlen(map)));
-    d += dw::w_i32(0) + dw::w_i32(0) + dw::w_i32(0);
+    d += dw::w_i32(0) + dw::w_i32(difficulty) + dw::w_i32(0); /* desc[25], desc[26] = the Zombies difficulty, desc[27] */
     return d;
 }
 
@@ -290,6 +292,116 @@ void RunCase(const dw::Config &cfg, const Case &t, int n)
     server.Close(c);
 }
 
+/* The selection of a room (offline/dw_handoff.cpp HandoffSelect), as ported from the Python lobby's
+ * fix/hosted-survival-spawn-20261028: Survival as its own category on an MP level with placements,
+ * usermaps in the installed set, the room latch's category, the Zombies difficulty. */
+struct Pick {
+    dw::Server server;
+    dw::Conn *c;
+    uint32_t mc;
+    uint64_t rid;
+    FakeHost *host;
+    Pick(const dw::Config &cfg, FakeHost *h) : server(cfg, h), c(server.Open()), mc(0x40), rid(0), host(h)
+    {
+        c->uid = 0x1122334455667788ULL;
+        Send(server, c, mc, 11, 13, dw::Bytes());
+        std::vector<Frame> f = Drain(c);
+        rid = f.size() == 1 && f[0].vals.size() > 5 ? f[0].vals[5].u : 0;
+    }
+    dw::Selection Select(const char *gametype, const char *map, int difficulty = 0)
+    {
+        Send(server, c, mc, 21, 1, Descriptor("Tester", c->uid, rid, gametype, map, dw::Bytes(16, '\x33'), difficulty));
+        Drain(c);
+        return dw::ResolveSelection(server, c, "join");
+    }
+};
+
+void Touch(const std::string &path)
+{
+    size_t cut = path.find_last_of("/\\");
+    if (cut != std::string::npos) dw::MakeDirs(path.substr(0, cut));
+    dw::WriteFileAtomic(path, "x");
+}
+
+bool Is(const dw::Selection &s, const char *map, const char *session, const char *gametype, const char *type)
+{
+    bool ok = s.map == map && s.sessionMap == session && s.gametype == gametype && s.type == type && s.category == type;
+    if (!ok) printf("       got %s\n", s.Summary().c_str());
+    return ok;
+}
+
+void SelectionChecks(const dw::Config &base, const std::string &scratch)
+{
+    const char *T = "select";
+    FakeHost host;
+    {   /* no game install known: every supported Survival level counts (the standalone lobby) */
+        Pick p(base, &host);
+        Check(Is(p.Select("coop", "coop_survival_mp_cross_fire"), "mp_cross_fire", "mp_cross_fire", "survival", "survival"), T,
+              "the coop_survival_<level> descriptor is Survival on that MP level");
+        Check(Is(p.Select("coop", "coop_survival_mp_afghan"), "mp_fav_tropical", "mp_fav_tropical", "survival", "survival"), T,
+              "a level without survival data plays the first supported level");
+        Check(Is(p.Select("coop", "coop_survival_mp_afghan"), "mp_fav_tropical", "mp_fav_tropical", "survival", "survival"), T,
+              "... and it is not a rotation: the second resolution is the same level");
+        Check(Is(p.Select("survival", "mp_storm_spring"), "mp_storm_spring", "mp_storm_spring", "survival", "survival"), T,
+              "a room that names gametype survival is Survival on its MP level");
+        Check(Is(p.Select("coop", "coop_training_mp_killhouse_sh"), "mp_killhouse_sh", "coop_training_mp_killhouse_sh", "coop", "coop"), T,
+              "a co-op mission is still co-op");
+        dw::Selection zm = p.Select("zm", "zm_asylum_sh", 2);
+        Check(Is(zm, "zm_asylum_sh", "zm_asylum_sh", "zm", "zm") && zm.difficulty == 2, T, "Zombies carries the room's difficulty (desc[26])");
+        Check(p.Select("zm", "zm_asylum_sh", 7).difficulty == 0, T, "a difficulty outside 0..2 is easy");
+        Check(p.Select("war", "mp_rust").difficulty == -1, T, "no difficulty outside Zombies");
+        /* the room latch of another category is some earlier room */
+        std::string zmGt = "zm", warGt = "war";
+        dw::HandoffLatchRoom(p.server, "zm_prototype_sh", &zmGt, 4, "test");
+        Check(Is(p.Select("war", "mp_crash_tropical"), "mp_killhouse_sh", "mp_killhouse_sh", "war", "mp"), T,
+              "a zm room latch does not answer an mp room whose map is the ctor default");
+        dw::HandoffLatchRoom(p.server, "mp_crash_tropical", &warGt, 12, "test");
+        Check(Is(p.Select("war", "mp_crash_tropical"), "mp_crash_tropical", "mp_crash_tropical", "war", "mp"), T,
+              "a latch of the same category still names the room's map");
+    }
+    {   /* a game install: usermaps join the vocabulary; Survival needs zone + placement script (+ Kernel33's list) */
+        dw::Config cfg = base;
+        cfg.gameDir = dw::PathJoin(scratch, "game");
+        const std::string zones = dw::PathJoin(dw::PathJoin(cfg.gameDir, "client_shipRetail"), "chinese");
+        const std::string surv = dw::PathJoin(dw::PathJoin(dw::PathJoin(dw::PathJoin(dw::PathJoin(cfg.gameDir, "main"), "sh1x_rawfiles"), "maps"), "mp"), "survival");
+        const std::string gts = dw::PathJoin(dw::PathJoin(dw::PathJoin(dw::PathJoin(dw::PathJoin(cfg.gameDir, "main"), "sh1x_rawfiles"), "maps"), "mp"), "gametypes");
+        cfg.zoneDir = zones;
+        static const char *const stock[] = { "mp_rust", "mp_rust_load", "mp_fav_tropical", "mp_cross_fire", "mp_highrise", "mp_brl_derail",
+                                              "zm_sumpf_sh", "mp_playlists", "patch_mp_rust" };
+        for (size_t i = 0; i < sizeof(stock) / sizeof(stock[0]); i++) Touch(dw::PathJoin(zones, std::string(stock[i]) + ".ff"));
+        Touch(dw::PathJoin(dw::PathJoin(dw::PathJoin(cfg.gameDir, "usermaps"), "mp_seatown"), "mp_seatown.ff"));
+        dw::MakeDirs(dw::PathJoin(dw::PathJoin(cfg.gameDir, "usermaps"), "not_a_map"));
+        {
+            Pick p(cfg, &host);
+            dw::Selection none = p.Select("coop", "coop_survival_mp_fav_tropical");
+            Check(!none.error.empty() && none.type == "survival", T, "Survival without the installed gametype script names no level and says why");
+        }
+        Touch(dw::PathJoin(gts, "survival.gsc"));
+        Touch(dw::PathJoin(surv, "mp_cross_fire.gsc"));
+        Touch(dw::PathJoin(surv, "mp_seatown.gsc"));
+        Touch(dw::PathJoin(surv, "mp_storm_spring.gsc")); /* placements, but no zone */
+        {
+            Pick p(cfg, &host);
+            Check(Is(p.Select("war", "mp_seatown"), "mp_seatown", "mp_seatown", "war", "mp"), T, "a usermaps folder's map resolves as the room's map");
+            Check(Is(p.Select("war", "mp_brl_derail"), "mp_brl_derail", "mp_brl_derail", "war", "mp"), T, "a level zone needs no _load zone");
+            Check(Is(p.Select("zm", "zm_sumpf_sh", 1), "zm_sumpf_sh", "zm_sumpf_sh", "zm", "zm"), T, "an installed zm zone outside the playlists resolves");
+            std::vector<std::string> levels = dw::HandoffSurvivalLevels(p.server);
+            Check(levels.size() == 2 && levels[0] == "mp_cross_fire" && levels[1] == "mp_seatown", T,
+                  "Survival levels: the supported list cut to zone + placement script (placements without the zone do not count)");
+            Check(Is(p.Select("coop", "coop_survival_mp_fav_tropical"), "mp_cross_fire", "mp_cross_fire", "survival", "survival"), T,
+                  "a supported level without its placement script plays the first installed one");
+            Check(Is(p.Select("coop", "coop_survival_mp_seatown"), "mp_seatown", "mp_seatown", "survival", "survival"), T,
+                  "a usermap with placements hosts Survival");
+        }
+        dw::WriteFileAtomic(dw::PathJoin(dw::PathJoin(cfg.gameDir, "p2p"), "survival_maps.txt"), "# hostable\r\nmp_seatown\r\nmp_highrise # no script\r\n");
+        {
+            Pick p(cfg, &host);
+            std::vector<std::string> levels = dw::HandoffSurvivalLevels(p.server);
+            Check(levels.size() == 1 && levels[0] == "mp_seatown", T, "Kernel33's p2p/survival_maps.txt narrows the levels to what the host accepts");
+        }
+    }
+}
+
 } // namespace
 
 int DwRoomsSelfTest(const dw::Config &given)
@@ -311,11 +423,14 @@ int DwRoomsSelfTest(const dw::Config &given)
     static const Case cases[] = {
         { "mp", "war", "mp_rust", "mp_rust", "mp_rust", "war", "mp", "mp_rust", "war" },
         { "zm", "zm", "zm_asylum_sh", "zm_asylum_sh", "zm_asylum_sh", "zm", "zm", "zm_asylum_sh", "zm" },
-        { "survival", "coop", "coop_survival_mp_afghan", "mp_afghan", "mp_afghan", "survival", "survival", "coop_survival_mp_afghan", "coop" },
+        /* C1's survival button: a coop descriptor naming coop_survival_<level>. The host and the client both get the MP
+         * level's own spelling with gametype survival; mp_afghan has no survival data, so the first supported level. */
+        { "survival", "coop", "coop_survival_mp_afghan", "mp_fav_tropical", "mp_fav_tropical", "survival", "survival", "mp_fav_tropical", "survival" },
         { "coop", "coop", "coop_training_mp_killhouse_sh", "mp_killhouse_sh", "coop_training_mp_killhouse_sh", "coop", "coop",
           "coop_training_mp_killhouse_sh", "coop" },
     };
     for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) RunCase(cfg, cases[i], (int)i);
+    SelectionChecks(cfg, scratch);
     printf("%s (%d checks, %d failed)\n", g_fail ? "SELFTEST-ROOMS FAIL" : "SELFTEST-ROOMS PASS", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

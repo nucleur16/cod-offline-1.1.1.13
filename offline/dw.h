@@ -120,7 +120,8 @@ struct StartInfo { /* what a room start resolved to */
     int hostPort;
     Bytes securityKey; /* the client's 16-byte bdSecurityKey */
     bool local;
-    StartInfo() : uid(0), hostPort(0), local(false) {}
+    int difficulty;    /* Zombies: 0 easy / 1 normal / 2 hard; -1 for every other category */
+    StartInfo() : uid(0), hostPort(0), local(false), difficulty(-1) {}
 };
 struct Host {
     virtual ~Host() {}
@@ -149,6 +150,8 @@ struct Config {
     std::string state;       /* securitykey.bin, game_admissions.txt (shared with the match server) */
     std::string matchProfile;/* the match server's codol_profilePath: mpdata_s.<uid>, match_report.json */
     std::string zoneDir;     /* the client's zone folder (map availability); may be empty */
+    std::string gameDir;     /* the game install (the folder holding client_shipRetail\, usermaps\, main\, p2p\);
+                              * empty = unknown: no usermaps, every supported Survival level counts as installed */
     std::string mmHostIp;
     int mmHostPort;
     uint64_t mmHostUid;

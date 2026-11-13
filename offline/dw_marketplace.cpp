@@ -403,6 +403,14 @@ static bool ProgressionFlagIds(Server &s, MarketState &m, const Json &profile, i
     for (size_t i = 0; i < m.progFlags.size(); i++) {
         const MpFlagRow &f = m.progFlags[i];
         if (!f.id || f.name == kHideFlag) continue;
+        /* challenges.ALWAYS_GRANTED_FLAGS (Python 50fc5ef): cf_ch_zm_prototype_sh_1 (668) is the
+         * notification un_zm_prototype_sh, which C1's Zombies button tests: set, it opens the room
+         * list and room creator; unset, every click starts the first-play tutorial room. Nothing
+         * credits that challenge, so it is granted with no progress. */
+        if (f.name == "cf_ch_zm_prototype_sh_1") {
+            got.insert(f.id);
+            continue;
+        }
         if (!f.challenge.empty()) {
             const MpChallenge *c = FindChallenge(m, f.challenge);
             if (!c) continue;

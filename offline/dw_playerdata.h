@@ -108,6 +108,16 @@ std::set<int> PdEquippedItemIds(Server &s, const Bytes &storedMpdata);
 
 /* ---- the character item table (catalogue/model_configstrings.cha_item_names) ----
  * itemId -> (itemName, part) from items_cha.txt, items_cha_unlockall.proposed and the measured ids. */
+/* ---- the weapon attachment table (catalogue/weapon_loadout.attach_table) ----
+ * mp/coWeaponAttachmentTable.csv as the client and the match server read it: weapon -> attachment ->
+ * the weapon level that unlocks it (0 = from the start). Resource weapon_attachments.txt. The Python
+ * lobby uses it for the legality checks of its profile tools (store/playerdata_validate.py), not on
+ * any request path; here it backs the same two questions. -> 1 yes, 0 no, -1 cannot tell. */
+int PdWeaponRegistered(Server &s, const std::string &weapon);
+int PdAttachmentLegal(Server &s, const std::string &weapon, const std::string &attachment, int *level = NULL);
+/* The whole table, one "weapon,attachment,level" line per row in the resource's order. */
+std::string PdAttachTableDump(Server &s);
+
 struct PdItemName { std::string name, part; };
 const std::map<int, PdItemName> &PdItemNames(Server &s);
 

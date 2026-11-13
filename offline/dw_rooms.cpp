@@ -283,6 +283,16 @@ static std::string JoinreqGate(Server &s, Conn &c, uint64_t rid, const std::set<
 Selection ResolveSelection(Server &s, Conn *c, const char *when)
 {
     Selection sel = HandoffSelect(s, Desc(s, c));
+    if (s.cfg.differential && !sel.error.empty()) {
+        /* dw_rooms._resolve_selection: select() raised -> the fixed fallback record */
+        std::string why = "select() raised ValueError('" + sel.error + "')";
+        sel = Selection();
+        sel.map = sel.sessionMap = "mp_killhouse_sh";
+        sel.gametype = "combat";
+        sel.type = sel.category = "mp";
+        sel.source = "exception";
+        sel.chain.push_back(why);
+    }
     sel.playerName = LivePlayerName(s, c);
     /* The round-robin advances ONCE per match, at the READY press only: the join resolutions inside
      * the same match keep seeing the index this match was resolved with. */
@@ -362,6 +372,10 @@ MatchRoute RouteMatch(Server &s, Conn &c, const Selection &sel)
     } else {
         LocalRoute in;
         std::string unsafe, session, gametype, type;
+        if (!sel.error.empty()) { /* nothing playable was selected (a Survival room with no installed level) */
+            r.note = "local play: START_GAME withheld: " + sel.error;
+            return r;
+        }
         if (!s.host->GetLocalRoute(uid, in) || !in.enabled) {
             r.note = "LOCAL PLAY IS OFF -- no match host to join, START_GAME withheld (tick Local Play and press Start again)";
             return r;
@@ -429,6 +443,7 @@ bool NotifyLocalStart(Server &s, Conn &c, const Selection &sel, const MatchRoute
     HostSelection(sel, info.sessionMap, info.gametype, info.zoneType);
     info.roomMap = sel.sessionMap;
     info.roomGametype = sel.gametype;
+    info.difficulty = sel.difficulty;
     info.hostIp = route.ip;
     info.hostPort = route.port;
     info.securityKey = key;

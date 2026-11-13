@@ -135,6 +135,30 @@ void Tables(Server &s)
     std::vector<int64_t> at1 = CareerGrantedFlagIds(s, p1), at31 = CareerGrantedFlagIds(s, p31);
     CHECK(std::binary_search(at1.begin(), at1.end(), 1) && !std::binary_search(at1.begin(), at1.end(), 31));
     CHECK(std::binary_search(at31.begin(), at31.end(), 31) && at31.size() > at1.size());
+    /* cf_ch_zm_prototype_sh_1 (668), the flag behind C1's Zombies room list and room creator, is granted with no progress */
+    CHECK(std::binary_search(at1.begin(), at1.end(), 668));
+
+    /* the weapon attachment table (Python feat/mp-m14): m14ebr_mp has its stock rows and the eight the
+     * Kernel33 patch zone mp_codol_weapons adds, with their unlock levels; nothing else moved */
+    {
+        int level = -1;
+        static const char *const added[] = { "bip_ar", "for_gripafg", "for_griphandstop", "red_reflex", "sra_riflelaser", "sto_ar15fix",
+                                             "sto_ar15prs", "sto_ar15ubr" };
+        static const int levels[] = { 0, 0, 0, 1, 14, 7, 0, 0 };
+        CHECK(PdWeaponRegistered(s, "m14ebr_mp") == 1 && PdWeaponRegistered(s, "m4_mp") == 1 && PdWeaponRegistered(s, "beretta_mp") == 0);
+        for (size_t i = 0; i < sizeof(added) / sizeof(added[0]); i++)
+            CHECK(PdAttachmentLegal(s, "m14ebr_mp", added[i], &level) == 1 && level == levels[i]);
+        CHECK(PdAttachmentLegal(s, "m14ebr_mp", "sto_m14ebr", &level) == 1 && level == 9);
+        CHECK(PdAttachmentLegal(s, "m14ebr_mp", "gre_m203he") == 0 && PdAttachmentLegal(s, "m4_mp", "red_reflex") == 0 &&
+              PdAttachmentLegal(s, "aa12_mp", "red_reflex") == 1 && PdAttachmentLegal(s, "no_such_mp", "red_reflex") == -1);
+        std::string dump = PdAttachTableDump(s);
+        size_t rows = 0;
+        for (size_t at = dump.find("m14ebr_mp,"); at != std::string::npos; at = dump.find("m14ebr_mp,", at + 1)) rows++;
+        CHECK(rows == 58);
+        /* the lobby's other tables name the same weapon: marketplace item 1057, the primary weapon-XP curve */
+        const CareerWeapon *m14 = CareerWeaponGet(s, "m14ebr_mp");
+        CHECK(m14 && m14->item == 1057);
+    }
     Json big = Parsed("{\"level\": 70, \"challenges\": {}}");
     for (int id = 0; id < 1000; id++) big["challenges"][Fmt("%d", id)] = Json(1e9);
     std::vector<int64_t> all = CareerGrantedFlagIds(s, big);

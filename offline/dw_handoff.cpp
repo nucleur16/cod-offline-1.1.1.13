@@ -3,7 +3,11 @@
  * Port of handoff/map_handoff.py (select, identify_playlist, the playlist / room latches, the
  * round-robin) and handoff/startgame_map.py (dwRoomInfo, JoinResponse, the push-7 envelope, the
  * inbound room-info scan), with the Python lobby's default switches: CODOL_MAP_POLICY=room,
- * CODOL_MAP_PREFER=mp_killhouse_sh, CODOL_MAP_TYPES=mp,coop,zm, CODOL_MAP_ROTATE=1.
+ * CODOL_MAP_PREFER=mp_killhouse_sh, CODOL_MAP_TYPES=mp,coop,zm,survival, CODOL_MAP_ROTATE=1.
+ * Ported at the Python branch fix/hosted-survival-spawn-20261028 (58db75a): usermaps and zm room
+ * picks and the Zombies difficulty (f8235cd), level zones without a _load zone and the category
+ * check of the room latch (91c483c), Survival as its own category on an MP level with authored
+ * placements (8789d5f, 3742464, 9853181, 5b85e01).
  *
  * map_selection.state.json and map_rotation.state.json are module state here (HandoffState): they
  * do not survive a restart, and neither does the room that wrote them.
@@ -22,12 +26,23 @@ namespace dw {
 static const char kDefaultTargetMap[] = "mp_killhouse_sh";
 static const char kCtorDefaultMap[] = "mp_crash_tropical"; /* dwRoomInfo ctor (C1 0x7089e0): "no map named" */
 static const uint32_t kCrcPlaylist = 3615625517u;           /* crc32("playlist"): the mode-1 sentinel */
-enum { D_MAXPLAYERS = 2, D_NAME = 3, D_MODE = 5, D_LEAGUE = 11, D_GT_CRC = 23, D_MAP_CRC = 24, COOP_LEAGUE_SENTINEL = 255 };
+/* desc[26] is the Zombies room creator's difficulty (0 easy / 1 normal / 2 hard). MEASURED by the
+ * Python lobby 2026-10-20: zm_sumpf_sh on hard sent desc[24..27] = crc, 0, 2, 0; easy rooms 0, 0, 0. */
+enum { D_MAXPLAYERS = 2, D_NAME = 3, D_MODE = 5, D_LEAGUE = 11, D_GT_CRC = 23, D_MAP_CRC = 24, D_DIFFICULTY = 26, COOP_LEAGUE_SENTINEL = 255 };
 static const double kPlaylistFreshSeconds = 300.0, kRoomLatchTtl = 1800.0;
 
 /* Gametype names the room UI can pick but no playlist declares (measured: "war"). */
 static const char *const kExtraGametypes[] = { "war", "dm", "tdm", "sd", "dom", "sab", "ctf", "koth", "arena", "gtnw",
-                                               "oneflag", "hq", "vip", "dd", "conf", "infect", "gun", "shrp" };
+                                               "oneflag", "hq", "vip", "dd", "conf", "infect", "gun", "shrp", "survival" };
+/* SURVIVAL IS ITS OWN CATEGORY (map_handoff.SURVIVAL_LEVELS). C1's survival button sends a coop
+ * descriptor whose desc[24] is crc32("coop_survival_<level>"); a room may also name gametype
+ * "survival" on the MP level. The match host runs it as category "survival": g_gametype survival on
+ * the unchanged MP level, with the level's placements maps/mp/survival/<level>.gsc. Only levels
+ * with that data can host it; a request for another level (mp_afghan has none in any CoDOL build)
+ * plays the first installed supported level. */
+static const char *const kSurvivalLevels[] = { "mp_fav_tropical", "mp_cross_fire", "mp_crash_tropical", "mp_firingrange",
+                                               "mp_storm_spring", "mp_seatown", "mp_ambush_sh", "mp_abandon_sh", "mp_highrise",
+                                               "mp_terminal_cls", "mp_subbase_sh", "mp_hardhat_sh", "mp_qadeem_sh", "mp_strike_sh" };
 /* Session-map spellings the coop-category flows put in desc[24] (measured: coop_survival_mp_afghan). */
 static const char *const kCoopSessionPrefixes[] = { "coop_training_", "coop_prolog_", "coop_survival_", "coop_spec_",
                                                     "coop_spec1_", "coop_defense_", "coop_take_" };
@@ -65,8 +80,9 @@ struct PlaylistMeta {
 struct DescFields {
     bool ok;
     int64_t maxplayers, mode, league; /* -1 = the field is not a number */
+    int64_t difficulty;               /* desc[26]; -1 = the descriptor is too short or the field is not a number */
     uint32_t gtCrc, mapCrc;
-    DescFields() : ok(false), maxplayers(-1), mode(-1), league(-1), gtCrc(0), mapCrc(0) {}
+    DescFields() : ok(false), maxplayers(-1), mode(-1), league(-1), difficulty(-1), gtCrc(0), mapCrc(0) {}
 };
 
 struct HandoffState {
@@ -76,8 +92,9 @@ struct HandoffState {
     std::map<int, Rotation> playlists;
     std::map<int, PlaylistMeta> meta;
     bool zonesLoaded;
-    int64_t zoneDirMtime;
-    std::set<std::string> zones;
+    int64_t zoneDirMtime, usermapsMtime, gameZonesMtime;
+    std::set<std::string> zones, usermaps;
+    int zonesGen, crcGen; /* the crc vocabulary is rebuilt when the installed set changes (a new usermap) */
     /* map_selection.state.json */
     int latchPlaylist;                    /* 0 = none */
     double latchPlaylistTime;
@@ -91,7 +108,7 @@ struct HandoffState {
     /* the newest full descriptor any connection sent */
     DescFields logDesc;
     HandoffState()
-        : loaded(false), zonesLoaded(false), zoneDirMtime(0), latchPlaylist(0), latchPlaylistTime(0), hasRoomLatch(false),
+        : loaded(false), zonesLoaded(false), zoneDirMtime(0), usermapsMtime(0), gameZonesMtime(0), zonesGen(0), crcGen(-1), latchPlaylist(0), latchPlaylistTime(0), hasRoomLatch(false),
           roomHasGametype(false), roomMaxPlayers(0), roomTime(0) {}
 };
 
@@ -176,7 +193,7 @@ std::string BaseMap(const std::string &playlistMap)
 static std::string ZoneCategory(const std::string &gametype)
 {
     if (gametype.empty()) return "";
-    if (gametype == "coop" || gametype == "zm") return gametype;
+    if (gametype == "coop" || gametype == "zm" || gametype == "survival") return gametype;
     return "mp";
 }
 
@@ -211,29 +228,63 @@ static void ManifestZones(Server &s, std::set<std::string> &out)
     ZoneBases(names, out);
 }
 
-/* map_handoff.installed_maps: the zone folder when it holds fastfiles, else the manifest. */
+static std::string Lowered(std::string v)
+{
+    for (size_t i = 0; i < v.size(); i++)
+        if (v[i] >= 'A' && v[i] <= 'Z') v[i] = (char)(v[i] + 32);
+    return v;
+}
+
+/* map_handoff.usermaps: maps ported from other CoDOL builds. They are installed as
+ * <game>/usermaps/<map>/<map>.ff (Kernel33 usermaps.c hands C1 that file for a zone missing under
+ * client_shipRetail), or by the map pack in the game's own client_shipRetail/chinese: every mp_ /
+ * zm_ zone there that is not a _load zone and not the playlist table. A level zone needs no
+ * <map>_load.ff (stock mp_crash_intro ships none, nor does the mp_brl_derail port). */
+static void Usermaps(Server &s, std::set<std::string> &out)
+{
+    if (s.cfg.gameDir.empty()) return;
+    std::string dir = PathJoin(s.cfg.gameDir, "usermaps");
+    std::vector<std::string> names = ListDir(dir);
+    for (size_t i = 0; i < names.size(); i++)
+        if (FileExists(PathJoin(PathJoin(dir, names[i]), names[i] + ".ff"))) out.insert(names[i]);
+    std::vector<std::string> files = ListDir(PathJoin(PathJoin(s.cfg.gameDir, "client_shipRetail"), "chinese"));
+    for (size_t i = 0; i < files.size(); i++) {
+        std::string f = Lowered(files[i]);
+        if (!(StartsWith(f, "mp_") || StartsWith(f, "zm_")) || !EndsWith(f, ".ff") || EndsWith(f, "_load.ff")) continue;
+        f.erase(f.size() - 3);
+        if (f != "mp_playlists") out.insert(f);
+    }
+}
+
+/* map_handoff.installed_maps: the zone folder when it holds fastfiles, else the manifest; plus the
+ * usermaps. */
 static const std::set<std::string> &InstalledMaps(Server &s)
 {
     HandoffState &h = H(s);
     int64_t mtime = s.cfg.zoneDir.empty() ? 0 : FileMtime(s.cfg.zoneDir);
-    if (h.zonesLoaded && mtime == h.zoneDirMtime) return h.zones;
-    std::set<std::string> zones;
+    int64_t um = s.cfg.gameDir.empty() ? 0 : FileMtime(PathJoin(s.cfg.gameDir, "usermaps"));
+    int64_t gz = s.cfg.gameDir.empty() ? 0 : FileMtime(PathJoin(PathJoin(s.cfg.gameDir, "client_shipRetail"), "chinese"));
+    if (h.zonesLoaded && mtime == h.zoneDirMtime && um == h.usermapsMtime && gz == h.gameZonesMtime) return h.zones;
+    std::set<std::string> zones, usermaps;
     if (!s.cfg.zoneDir.empty()) {
         std::vector<std::string> files = ListDir(s.cfg.zoneDir), names;
         for (size_t i = 0; i < files.size(); i++) {
             const std::string &f = files[i];
             if (f.size() < 3) continue;
-            std::string ext = f.substr(f.size() - 3);
-            for (size_t k = 0; k < ext.size(); k++)
-                if (ext[k] >= 'A' && ext[k] <= 'Z') ext[k] = (char)(ext[k] + 32);
-            if (ext == ".ff") names.push_back(f.substr(0, f.size() - 3));
+            if (Lowered(f.substr(f.size() - 3)) == ".ff") names.push_back(f.substr(0, f.size() - 3));
         }
         ZoneBases(names, zones);
     }
     if (zones.empty()) ManifestZones(s, zones);
+    Usermaps(s, usermaps);
+    zones.insert(usermaps.begin(), usermaps.end());
+    if (!h.zonesLoaded || zones != h.zones) h.zonesGen++;
     h.zones.swap(zones);
+    h.usermaps.swap(usermaps);
     h.zonesLoaded = true;
     h.zoneDirMtime = mtime;
+    h.usermapsMtime = um;
+    h.gameZonesMtime = gz;
     return h.zones;
 }
 
@@ -243,14 +294,65 @@ bool HandoffZoneInstalled(Server &s, const std::string &name)
     return inst.empty() || inst.count(name) || inst.count(BaseMap(name));
 }
 
+/* map_handoff.available_survival_levels. With no game install known (the standalone lobby, the
+ * differential tests) every supported level counts. The product also honours Kernel33's own list of
+ * hostable Survival maps, <game>/p2p/survival_maps.txt (p2p.c P2PCheck refuses a level that is not on
+ * it), when that file is installed - so the level picked here is one the embedded host accepts. */
+std::vector<std::string> HandoffSurvivalLevels(Server &s)
+{
+    std::vector<std::string> out;
+    const size_t n = sizeof(kSurvivalLevels) / sizeof(kSurvivalLevels[0]);
+    if (s.cfg.gameDir.empty()) {
+        out.assign(kSurvivalLevels, kSurvivalLevels + n);
+        return out;
+    }
+    std::string scripts = PathJoin(PathJoin(s.cfg.gameDir, "main"), "sh1x_rawfiles");
+    std::string mp = PathJoin(PathJoin(scripts, "maps"), "mp");
+    if (!FileExists(PathJoin(PathJoin(mp, "gametypes"), "survival.gsc"))) return out;
+    std::set<std::string> listed;
+    bool haveList = false;
+    Bytes text;
+    if (!s.cfg.differential && ReadFile(PathJoin(PathJoin(s.cfg.gameDir, "p2p"), "survival_maps.txt"), text)) {
+        haveList = true;
+        size_t at = 0;
+        while (at < text.size()) {
+            size_t e = text.find('\n', at);
+            if (e == std::string::npos) e = text.size();
+            std::string ln = text.substr(at, e - at);
+            at = e + 1;
+            size_t hash = ln.find('#');
+            if (hash != std::string::npos) ln.erase(hash);
+            ln = PyStrip(ln);
+            if (!ln.empty()) listed.insert(ln);
+        }
+    }
+    for (size_t i = 0; i < n; i++) {
+        std::string level = kSurvivalLevels[i];
+        if (!FileExists(PathJoin(PathJoin(mp, "survival"), level + ".gsc"))) continue;
+        if (!FileExists(PathJoin(PathJoin(PathJoin(s.cfg.gameDir, "client_shipRetail"), "chinese"), level + ".ff")) &&
+            !FileExists(PathJoin(PathJoin(PathJoin(s.cfg.gameDir, "usermaps"), level), level + ".ff")))
+            continue;
+        if (haveList && !listed.count(level)) continue;
+        out.push_back(level);
+    }
+    return out;
+}
+
 /* ---- the playlist file: the name<->crc32 dictionary and the rotations (_load_playlists) ---- */
 
 static void LoadPlaylists(Server &s)
 {
     HandoffState &h = H(s);
-    if (h.loaded) return;
+    const std::set<std::string> &inst = InstalledMaps(s);
+    /* keyed on the installed set as well: a map folder added under usermaps enters the crc
+     * vocabulary without a restart */
+    if (h.loaded && h.crcGen == h.zonesGen) return;
     Bytes text;
     if (!s.Resource("mp_playlists_shipRetail_cb2.info", text)) return; /* Python: an empty table, retried next call */
+    h.crc.clear();
+    h.order.clear();
+    h.playlists.clear();
+    h.meta.clear();
     std::set<std::string> names;
     bool haveCur = false;
     int cur = 0;
@@ -313,7 +415,6 @@ static void LoadPlaylists(Server &s)
     names.insert("playlist");
     /* The room vocabulary first, so that anything the .info declares overwrites it. */
     for (size_t i = 0; i < sizeof(kExtraGametypes) / sizeof(kExtraGametypes[0]); i++) h.crc[NameCrc(kExtraGametypes[i])] = kExtraGametypes[i];
-    const std::set<std::string> &inst = InstalledMaps(s);
     for (std::set<std::string>::const_iterator it = inst.begin(); it != inst.end(); ++it) {
         const std::string &z = *it;
         if (!(StartsWith(z, "mp_") || StartsWith(z, "zm_") || StartsWith(z, "coop_")) || z == "mp_playlists") continue;
@@ -326,6 +427,7 @@ static void LoadPlaylists(Server &s)
     }
     for (std::set<std::string>::const_iterator it = names.begin(); it != names.end(); ++it) h.crc[NameCrc(*it)] = *it;
     h.loaded = true;
+    h.crcGen = h.zonesGen;
 }
 
 static std::string CrcName(HandoffState &h, uint32_t crc)
@@ -347,6 +449,7 @@ static DescFields FieldsOf(const Vals *vals)
     if (IsNumber(v[D_MAXPLAYERS])) d.maxplayers = (int64_t)(v[D_MAXPLAYERS].u & 0xFFFFFFFFu);
     if (IsNumber(v[D_MODE])) d.mode = (int64_t)(v[D_MODE].u & 0xFFFFFFFFu);
     if (IsNumber(v[D_LEAGUE])) d.league = (int64_t)(v[D_LEAGUE].u & 0xFFFFFFFFu);
+    if (v.size() > (size_t)D_DIFFICULTY && IsNumber(v[D_DIFFICULTY])) d.difficulty = (int64_t)(v[D_DIFFICULTY].u & 0xFFFFFFFFu);
     d.gtCrc = (uint32_t)v[D_GT_CRC].u;
     d.mapCrc = (uint32_t)v[D_MAP_CRC].u;
     d.ok = true;
@@ -583,13 +686,28 @@ Selection HandoffSelect(Server &s, const Vals *desc)
     bool roomHasGt = !roomGt.empty();
     if (!roomMap.empty()) {
         chain.push_back("room: " + roomMap + " -- the descriptor named the room's own map");
-    } else if (d.ok && d.league == COOP_LEAGUE_SENTINEL && RoomLatchLive(s) && HandoffZoneInstalled(s, h.roomMap)) {
-        roomMap = h.roomMap;
-        roomGt = h.roomGametype;
-        roomHasGt = h.roomHasGametype && !roomGt.empty();
-        chain.push_back("room: " + roomMap + " -- the typeId-15 dwRoomInfo the client broadcast");
     } else {
-        chain.push_back("room: no room selection on the wire -- falling through to the rotation");
+        bool latch = d.ok && d.league == COOP_LEAGUE_SENTINEL && RoomLatchLive(s);
+        /* THE LATCH MUST BE THE SAME CATEGORY AS THE DESCRIPTOR (Python 2026-10-23: a war room whose
+         * desc[24] did not decode fell through to a zm room latch broadcast 202 s earlier and loaded
+         * zm_theater_sh). A latch of another category is some earlier room, never this one. */
+        if (latch) {
+            std::string dCat = ZoneCategory(CrcName(h, d.gtCrc));
+            std::string lCat = h.roomHasGametype ? ZoneCategory(h.roomGametype) : std::string();
+            if (!dCat.empty() && !lCat.empty() && lCat != dCat) {
+                chain.push_back("room: IGNORING the typeId-15 latch " + h.roomMap + " (gametype=" + h.roomGametype + "): the descriptor is a " +
+                                dCat + " room");
+                latch = false;
+            }
+        }
+        if (latch && HandoffZoneInstalled(s, h.roomMap)) {
+            roomMap = h.roomMap;
+            roomGt = h.roomGametype;
+            roomHasGt = h.roomHasGametype && !roomGt.empty();
+            chain.push_back("room: " + roomMap + " -- the typeId-15 dwRoomInfo the client broadcast");
+        } else {
+            chain.push_back("room: no room selection on the wire -- falling through to the rotation");
+        }
     }
 
     /* 3. gametype */
@@ -663,13 +781,45 @@ Selection HandoffSelect(Server &s, const Vals *desc)
     }
     if (sessionMap.empty()) sessionMap = mapName;
 
+    /* Every entry path carries Survival's category: the coop_survival_<level> descriptor of C1's
+     * survival button, a room that names gametype survival, a latch. The MP level's own spelling is
+     * the map identity for both the host and the client (there is no Survival session zone). */
+    if (StartsWith(sessionMap, "coop_survival_") || gametype == "survival") {
+        std::string level = BaseMap(sessionMap);
+        std::vector<std::string> avail = HandoffSurvivalLevels(s);
+        ztype = "survival";
+        gametype = "survival";
+        if (std::find(avail.begin(), avail.end(), level) != avail.end()) {
+            mapName = sessionMap = level;
+            chain.push_back("type: survival -- MP level " + level + " (the selected MP level has authored survival placements)");
+        } else if (!avail.empty()) {
+            /* not a rotation: the selection is resolved more than once per match and must not move */
+            mapName = sessionMap = avail[0];
+            chain.push_back("type: survival -- MP level " + avail[0] + " (" + level + " unavailable; default survival level)");
+        } else {
+            sel.error = "No installed Survival level has both its MP archive and survival placement script";
+            mapName = sessionMap = level;
+            chain.push_back("type: survival -- " + sel.error);
+        }
+    }
+
+    /* Zombies: the room creator's difficulty; anything else on the wire is easy. */
+    if (ztype == "zm") {
+        if (d.ok && d.difficulty >= 0 && d.difficulty <= 2) {
+            static const char *const names[] = { "easy", "normal", "hard" };
+            sel.difficulty = (int)d.difficulty;
+            chain.push_back(Fmt("difficulty: %d (%s) from desc[%d]", sel.difficulty, names[sel.difficulty], (int)D_DIFFICULTY));
+        } else {
+            sel.difficulty = 0;
+            chain.push_back("difficulty: not 0..2 on the wire -- easy (0)");
+        }
+    }
+
     sel.map = mapName;
     sel.sessionMap = sessionMap;
     sel.type = ztype;
     sel.gametype = gametype;
-    /* The embedded host's category: its Survival rules are a category of their own, named on the
-     * wire only by the coop_survival_ session-map spelling (p2p_match_options.h). */
-    sel.category = StartsWith(sessionMap, "coop_survival_") ? "survival" : ztype;
+    sel.category = ztype;
     sel.playlist = pl;
     sel.playlistName = meta ? meta->nameEn : std::string();
     sel.source = source.empty() ? "default" : source;

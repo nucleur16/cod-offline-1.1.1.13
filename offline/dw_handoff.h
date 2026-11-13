@@ -16,14 +16,16 @@ struct Selection {
     std::string map;        /* level zone: mp_killhouse_sh */
     std::string sessionMap; /* playlist spelling, what the client's dwRoomInfo gets: coop_training_mp_killhouse_sh */
     std::string gametype;   /* rules name: war / combat / coop / zm */
-    std::string type;       /* zone category the Python lobby announces: mp / coop / zm */
-    std::string category;   /* the embedded host's category: mp / coop / zm / survival */
+    std::string type;       /* zone category: mp / coop / zm / survival */
+    std::string category;   /* the embedded host's category; the same word as `type` */
+    int difficulty;         /* Zombies: desc[26], 0 easy / 1 normal / 2 hard; -1 for every other category */
+    std::string error;      /* not empty: the selection cannot be played (Python: select() raised) */
     int playlist;           /* -1 = none */
     std::string playlistName, source, playerName;
     bool resolved, rotated;
     int rotationIndex;      /* -1 = not a round-robin pick */
     std::vector<std::string> chain; /* every resolution step, for the log */
-    Selection() : playlist(-1), resolved(false), rotated(false), rotationIndex(-1) {}
+    Selection() : difficulty(-1), playlist(-1), resolved(false), rotated(false), rotationIndex(-1) {}
     std::string Summary() const;
 };
 
@@ -46,6 +48,10 @@ void HandoffObserveDescriptor(Server &s, int task, const Vals &args);
 bool HandoffLatchRoom(Server &s, const std::string &map, const std::string *gametype, int maxPlayers, const std::string &why);
 /* -> true and the latched room gametype when a live room latch holds one. */
 bool HandoffRoomLatchGametype(Server &s, std::string &gametype);
+/* The levels the Survival category can be played on, in the Python lobby's order
+ * (map_handoff.available_survival_levels): the supported list, cut down to the levels whose zone and
+ * authored placement script are installed when Config::gameDir is known. */
+std::vector<std::string> HandoffSurvivalLevels(Server &s);
 /* Advance the playlist round-robin after a start (READY press only). -> note or "". */
 std::string HandoffRotationAdvance(Server &s, const Selection &sel);
 /* The zone-availability check: <Config::zoneDir>/<name>.ff, else the shipped zone manifest. */

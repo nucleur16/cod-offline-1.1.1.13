@@ -34,6 +34,8 @@ for T in net store career rooms; do
         --selftest-$T > "$OUT/dwtest-$T.log" 2>&1 || { tail -30 "$OUT/dwtest-$T.log"; exit 1; }
     tail -1 "$OUT/dwtest-$T.log"
 done
+# The lobby's weapon attachment table against the mp_codol_weapons zone the client reads (the M14 EBR).
+python -B tests/offline/test_m14_attach_table.py "$OUT/dwtest.exe"
 python tests/test_ui_baseline.py
 python tests/test_quick_ready_gate.py
 node tests/campaign_local_host_test.js

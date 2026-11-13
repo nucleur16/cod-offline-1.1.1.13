@@ -67,6 +67,7 @@ static struct {
     char runtime[MAX_PATH];      /* <exe dir>\p2p\offline: what the lobby and the embedded match host exchange */
     char legacy[MAX_PATH];       /* <exe dir>\k33_offline\profile: the store of the first offline builds */
     char resources[MAX_PATH], zones[MAX_PATH], logPath[MAX_PATH];
+    char game[MAX_PATH];         /* <exe dir>, without the trailing backslash */
     FARPROC createFileA, getCommandLineA;
     char *commandLine;
     CRITICAL_SECTION lock;       /* guards the log file (lobby thread and main thread) */
@@ -473,6 +474,9 @@ static BOOL InstallOfflineLobby(void)
     cfg.state = g_ofl.runtime;
     cfg.matchProfile = g_ofl.runtime;
     cfg.zoneDir = g_ofl.zones;
+    lstrcpynA(g_ofl.game, dir, MAX_PATH);
+    if (g_ofl.game[0] && g_ofl.game[strlen(g_ofl.game) - 1] == '\\') g_ofl.game[strlen(g_ofl.game) - 1] = 0;
+    cfg.gameDir = g_ofl.game; /* usermaps, the Survival placements and Kernel33's list of hostable Survival maps */
     cfg.port = g_ofl.wantPort;
     cfg.altPort = g_ofl.wantAltPort;
     cfg.hostPort = g_ofl.hostPort;

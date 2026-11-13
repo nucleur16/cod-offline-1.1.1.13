@@ -23,6 +23,8 @@
 #include <windows.h>
 #include "../../offline/dw.h"
 #include "../../offline/dw_net.h"
+#include "../../offline/dw_handoff.h"
+#include "../../offline/dw_playerdata.h"
 
 struct TestHost : dw::Host {
     FILE *log;
@@ -178,6 +180,39 @@ static int NetSelfTest(const dw::Config &base)
     return fail ? 1 : 0;
 }
 
+/* --select-file <file>: the selection of a room, one request per line, for tests/offline/select_diff.py:
+ *     latch <map> <gametype|->                                     the typeId-15 room latch
+ *     select <gametype> <map> <league> <mode> <maxplayers> <desc26> the descriptor's fields (names are crc32'd)
+ * -> one line per select: map session_map gametype type difficulty source resolved error */
+static int SelectFile(const dw::Config &cfg, dw::Host *host, const char *path)
+{
+    dw::Server server(cfg, host);
+    FILE *f = fopen(path, "rb");
+    if (!f) return 2;
+    char line[512], a[64], b[64];
+    long league, mode, maxp, diff;
+    while (fgets(line, sizeof(line), f)) {
+        if (sscanf(line, "latch %63s %63s", a, b) == 2) {
+            std::string gt = b;
+            dw::HandoffLatchRoom(server, a, strcmp(b, "-") ? &gt : NULL, 12, "test");
+        } else if (sscanf(line, "select %63s %63s %ld %ld %ld %ld", a, b, &league, &mode, &maxp, &diff) == 6) {
+            dw::Vals v;
+            for (int i = 0; i < 28; i++) v.push_back(dw::Val(dw::T_INT32, (uint64_t)0));
+            v[2].u = (uint64_t)maxp;
+            v[5].u = (uint64_t)mode;
+            v[11].u = (uint64_t)league;
+            v[23].u = !strcmp(a, "playlist") ? 3615625517u : dw::Crc32(a, strlen(a));
+            v[24].u = (b[0] >= '0' && b[0] <= '9') ? (uint64_t)atol(b) : dw::Crc32(b, strlen(b));
+            v[26].u = (uint64_t)(uint32_t)diff;
+            dw::Selection s = dw::HandoffSelect(server, &v);
+            printf("%s %s %s %s %d %s %d %s\n", s.map.c_str(), s.sessionMap.c_str(), s.gametype.c_str(), s.type.c_str(), s.difficulty,
+                   s.source.c_str(), s.resolved ? 1 : 0, s.error.empty() ? "-" : "ERROR");
+        }
+    }
+    fclose(f);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     dw::Config cfg;
@@ -195,6 +230,13 @@ int main(int argc, char **argv)
         else if (!strcmp(a, "--selftest-market")) return DwMarketSelfTest(cfg); /* needs --resources and --profile before it */
         else if (!strcmp(a, "--selftest-career")) return DwCareerSelfTest(cfg); /* needs --resources, --profile, --match-profile */
         else if (!strcmp(a, "--career")) return DwCareerDump(cfg); /* needs --profile before it */
+        else if (!strcmp(a, "--select-file")) return SelectFile(cfg, &host, v);
+        else if (!strcmp(a, "--attach-table")) { /* the weapon attachment table as "weapon,attachment,level" lines */
+            dw::Server server(cfg, &host);
+            std::string text = dw::PdAttachTableDump(server);
+            fwrite(text.data(), 1, text.size(), stdout);
+            return text.empty() ? 1 : 0;
+        }
         else if (!strcmp(a, "--local-name")) { cfg.localName = v; i++; }
         else if (!strcmp(a, "--legacy-store")) { cfg.legacyStore = v; i++; }
         else if (!strcmp(a, "--wb-background")) wbBackground = true;
@@ -211,6 +253,7 @@ int main(int argc, char **argv)
         else if (!strcmp(a, "--state")) { cfg.state = v; i++; }
         else if (!strcmp(a, "--match-profile")) { cfg.matchProfile = v; i++; }
         else if (!strcmp(a, "--zone-dir")) { cfg.zoneDir = v; i++; }
+        else if (!strcmp(a, "--game-dir")) { cfg.gameDir = v; i++; }
         else if (!strcmp(a, "--mm-port")) { cfg.mmHostPort = atoi(v); i++; }
         else if (!strcmp(a, "--joinreq-gap")) { cfg.joinreqRelayGap = atof(v); i++; } /* CODOL_JOINREQ_RELAY_MINGAP */
         else if (!strcmp(a, "--fixed-time")) { cfg.fixedTime = _atoi64(v); i++; }

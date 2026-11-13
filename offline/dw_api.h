@@ -37,6 +37,8 @@ typedef struct DwOfflineConfig {
     const char *state;        /* securitykey.bin, game_admissions.txt: shared with the embedded match host */
     const char *matchProfile; /* the match host's codol_profilePath: mpdata_s.<uid>, match_report.json */
     const char *zoneDir;      /* the client's zone folder (map availability), or NULL */
+    const char *gameDir;      /* the game install: usermaps\<map>\, main\sh1x_rawfiles (Survival placements),
+                                 p2p\survival_maps.txt; or NULL */
     int port;                 /* loopback TCP + UDP port of the lobby; 0 = a free port (the normal case) */
     int altPort;              /* alternate STUN port; 0 = a free port */
     int hostPort;             /* the embedded match host's UDP port */

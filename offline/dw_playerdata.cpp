@@ -558,4 +558,78 @@ std::set<int> PdEquippedItemIds(Server &s, const Bytes &storedMpdata)
     return ids;
 }
 
+/* ---- the weapon attachment table ---- */
+
+typedef std::vector<std::pair<std::string, int> > AttachRow;
+struct AttachTable {
+    bool loaded;
+    std::vector<std::pair<std::string, AttachRow> > rows; /* the table's own order */
+    std::map<std::string, size_t> index;
+    AttachTable() : loaded(false) {}
+};
+
+static const AttachTable &AttachTableOf(Server &s)
+{
+    static AttachTable t; /* one process, one table: the resource does not change while it runs */
+    if (t.loaded) return t;
+    t.loaded = true;
+    Bytes text;
+    if (!s.Resource("weapon_attachments.txt", text)) return t;
+    size_t at = 0;
+    while (at < text.size()) {
+        size_t e = text.find('\n', at);
+        if (e == std::string::npos) e = text.size();
+        std::string ln = text.substr(at, e - at);
+        at = e + 1;
+        while (!ln.empty() && (ln[ln.size() - 1] == '\r' || ln[ln.size() - 1] == ' ')) ln.erase(ln.size() - 1);
+        size_t sp = ln.find(' ');
+        std::string weapon = ln.substr(0, sp);
+        if (weapon.empty()) continue;
+        AttachRow row;
+        while (sp != std::string::npos) {
+            size_t b = sp + 1;
+            sp = ln.find(' ', b);
+            std::string item = ln.substr(b, sp == std::string::npos ? std::string::npos : sp - b);
+            if (item.empty()) continue;
+            size_t eq = item.find('=');
+            int level = eq == std::string::npos ? 0 : atoi(item.c_str() + eq + 1);
+            row.push_back(std::make_pair(item.substr(0, eq), level));
+        }
+        t.index[weapon] = t.rows.size();
+        t.rows.push_back(std::make_pair(weapon, row));
+    }
+    return t;
+}
+
+int PdWeaponRegistered(Server &s, const std::string &weapon)
+{
+    const AttachTable &t = AttachTableOf(s);
+    if (t.rows.empty() || weapon.empty()) return -1;
+    return t.index.count(weapon) ? 1 : 0;
+}
+
+int PdAttachmentLegal(Server &s, const std::string &weapon, const std::string &attachment, int *level)
+{
+    const AttachTable &t = AttachTableOf(s);
+    std::map<std::string, size_t>::const_iterator w = t.index.find(weapon);
+    if (w == t.index.end() || attachment.empty()) return -1;
+    const AttachRow &row = t.rows[w->second].second;
+    for (size_t i = 0; i < row.size(); i++)
+        if (row[i].first == attachment) {
+            if (level) *level = row[i].second;
+            return 1;
+        }
+    return 0;
+}
+
+std::string PdAttachTableDump(Server &s)
+{
+    const AttachTable &t = AttachTableOf(s);
+    std::string out;
+    for (size_t i = 0; i < t.rows.size(); i++)
+        for (size_t k = 0; k < t.rows[i].second.size(); k++)
+            out += t.rows[i].first + "," + t.rows[i].second[k].first + "," + Fmt("%d", t.rows[i].second[k].second) + "\n";
+    return out;
+}
+
 } // namespace dw
