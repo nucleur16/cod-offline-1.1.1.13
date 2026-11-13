@@ -111,6 +111,9 @@ static void WriteCode(void *dst, const void *src, SIZE_T n)
     FlushInstructionCache(GetCurrentProcess(), dst, n);
 }
 
+/* Nothing in this process reaches a non-loopback address (every build profile; docs/OFFLINE_LOBBY.md). */
+#include "egress_gate.c"
+
 /* ---- the C1.exe reproduction ------------------------------------------------------------ */
 
 /* The image travels inside this DLL as RCDATA 1 ("unpacked.z": 16-byte header, then zlib). */
@@ -1609,6 +1612,9 @@ static void PatchGbkInput(void)
 #endif
 static void __cdecl TakeOver(void)
 {
+    if (!EgressGateArm())
+        Fatal("The offline network gate could not be installed, so the client does not start. "
+              "See Kernel33_egress.log (next to the game's exe).");
     if (TryLauncherUpgrade()) ExitProcess(0);
     LoadUnpackedImage();
     MatchC1SectionFlags();
@@ -1882,6 +1888,9 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved)
             g_supportedBuild ? "" : ", NOT 1.1.1.13: passing through untouched");
 #endif
         if (g_supportedBuild) AddVectoredExceptionHandler(1, FaultHandler);
+        if (g_supportedBuild) EgressGateAttach(); /* before any other module of the install is loaded */
+    } else if (reason == DLL_PROCESS_DETACH) {
+        if (g_supportedBuild) EgressGateSummary();
     }
     return TRUE;
 }

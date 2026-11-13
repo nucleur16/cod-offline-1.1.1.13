@@ -7,7 +7,8 @@ The files come from the Python lobby's resources/ folder (CODOL-EMU 1.1.1.13 Dem
 tables harvested from the client's own zones, seed blobs, the publisher .info files). The list is
 src/offline/resources.manifest - one name per line, `name = other/path` to take the bytes from another
 path under the lobby root, `name = py:<module path>:<symbol>` to take a table the Python lobby keeps as
-a string constant in a module (rendered by RENDERERS below). Each file is stored zlib-compressed
+a string constant in a module (rendered by RENDERERS below), `name = repo:<path>` to take a file of THIS
+repository (where the product differs from the Python lobby on purpose). Each file is stored zlib-compressed
 unless that does not make it smaller.
 
 A file dropped into <store>\\resources\\ at run time overrides its embedded copy (Server::Resource).
@@ -55,6 +56,8 @@ def read_source(root, src):
         import runpy
         _, path, symbol = src.split(":", 2)
         return RENDERERS[symbol](runpy.run_path(os.path.join(root, path))[symbol])
+    if src.startswith("repo:"):
+        root, src = os.path.dirname(os.path.dirname(OFFLINE)), src[5:]
     with open(os.path.join(root, src), "rb") as fh:
         return fh.read()
 
