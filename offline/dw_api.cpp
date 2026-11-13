@@ -38,9 +38,22 @@ struct ApiHost : dw::Host {
         out.category = r.category;
         return true;
     }
-    virtual bool LocalPlayLaunch(uint64_t ownerUid, const std::string &sessionMap, const std::string &gametype, const std::string &type)
+    virtual bool LocalPlayStart(uint64_t ownerUid, const std::string &sessionMap, const std::string &gametype, const std::string &type,
+                                int difficulty, bool launch, int &port, std::string &error)
     {
-        return cb.launch && cb.launch(ownerUid, sessionMap.c_str(), gametype.c_str(), type.c_str()) != 0;
+        char why[256] = "";
+        int p = 0;
+        if (!cb.start) { error = "no embedded match host"; return false; }
+        int ok = cb.start(ownerUid, sessionMap.c_str(), gametype.c_str(), type.c_str(), difficulty, launch ? 1 : 0, &p, why, (int)sizeof(why));
+        why[sizeof(why) - 1] = 0;
+        port = p;
+        error = why;
+        if (!ok && error.empty()) error = "the embedded match host refused the selection";
+        return ok != 0;
+    }
+    virtual void LocalPlayLeave(uint64_t ownerUid)
+    {
+        if (cb.leave) cb.leave(ownerUid);
     }
     virtual void OnStartGame(const dw::StartInfo &info)
     {
@@ -55,6 +68,7 @@ struct ApiHost : dw::Host {
         strncpy(o.zoneType, info.zoneType.c_str(), sizeof(o.zoneType) - 1);
         o.hostPort = info.hostPort;
         o.local = info.local ? 1 : 0;
+        o.difficulty = info.difficulty;
         cb.startGame(&o);
     }
 };

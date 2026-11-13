@@ -37,6 +37,7 @@ struct ConnRoom {
     bool inRoom;
     uint64_t room;
     std::map<uint64_t, double> joinreqRelayed; /* room id -> when a join-request batch was last relayed */
+    std::string armed; /* the selection last handed to the embedder for this connection's own room */
     int mpTasks, invPushes, tickPushes;
     bool invPushed;
     double invPushAt, tickPushAt;
@@ -97,11 +98,18 @@ struct MatchRoute {
     bool local;      /* the embedded host on 127.0.0.1 (the offline product) */
     std::string ip;
     int port;
+    bool owner;      /* the local route is this player's own host (launch it), not somebody else's (join it) */
     std::string note;
-    std::string launchSession, launchGametype, launchType; /* the owner's armed selection, as its intent spells it */
-    MatchRoute() : start(false), local(false), port(0) {}
+    std::string reason; /* why nothing is started, in words for the player ("" when start) */
+    std::string launchSession, launchGametype, launchType; /* the selection as the embedded host is told it */
+    MatchRoute() : start(false), local(false), port(0), owner(false) {}
 };
 MatchRoute RouteMatch(Server &s, Conn &c, const Selection &sel);
+/* A room the local player owns changed (its descriptor, its dwRoomInfo): tell the embedder the
+ * selection, so its host is armed for what the room shows now. Quiet; never starts anything. */
+void ArmOwnRoom(Server &s, Conn &c, const char *why);
+/* dw_pushes.cpp: one line on the client's lobby ticker (push 35). */
+void PushLobbyNotice(Server &s, Conn &c, const std::string &text);
 /* After the security key and the roster are on disk: export the profile and tell the embedder. */
 /* -> false when the embedder refused the launch: START_GAME must then be withheld. */
 bool NotifyLocalStart(Server &s, Conn &c, const Selection &sel, const MatchRoute &route, const Bytes &key, std::string &note);

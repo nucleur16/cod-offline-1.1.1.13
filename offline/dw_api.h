@@ -14,7 +14,7 @@ extern "C" {
 /* The room owner's Local Play intent (the fields of K33LocalPlayIntentInfo, p2p_local_play_api.h). */
 typedef struct DwOfflineRoute {
     unsigned long long ownerUid;
-    int enabled;             /* LOCAL PLAY is ticked */
+    int enabled;             /* local hosting is on */
     int armed, launched, ready, failed;
     int port;                /* UDP port of the embedded match host on 127.0.0.1 */
     char map[64], sessionMap[64], gametype[32], category[16];
@@ -27,6 +27,7 @@ typedef struct DwOfflineStartInfo {
     char playerName[64], map[64], sessionMap[64], gametype[32], zoneType[16];
     int hostPort;
     int local;
+    int difficulty;          /* Zombies: 0..2; -1 for every other category */
 } DwOfflineStartInfo;
 
 typedef struct DwOfflineConfig {
@@ -44,9 +45,13 @@ typedef struct DwOfflineConfig {
     int hostPort;             /* the embedded match host's UDP port */
     void (*log)(const char *line);
     int (*localRoute)(unsigned long long uid, DwOfflineRoute *out);
-    /* The lobby hands START_GAME for this selection to the local owner: raise the host launch.
-     * -> 0 when the owner's intent is not this enabled, armed selection (START_GAME is withheld). */
-    int (*launch)(unsigned long long ownerUid, const char *sessionMap, const char *gametype, const char *type);
+    /* The selection the lobby resolved for the room the local player owns (K33LocalPlayAuto): arm the
+     * embedded host for it; with `launch`, START_GAME is being handed to the owner now.
+     * -> 1 and *port; 0 and `error` when it cannot be hosted (START_GAME is withheld). */
+    int (*start)(unsigned long long ownerUid, const char *sessionMap, const char *gametype, const char *type, int difficulty,
+                 int launch, int *port, char *error, int errorSize);
+    /* The owner left its room (K33LocalPlayLeave). */
+    void (*leave)(unsigned long long ownerUid);
     void (*startGame)(const DwOfflineStartInfo *info);
 } DwOfflineConfig;
 

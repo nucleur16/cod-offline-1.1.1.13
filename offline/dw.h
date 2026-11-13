@@ -101,7 +101,7 @@ struct Reply {
  * docs/P2P_DEFERRED_HOST_START.md): ticking LOCAL PLAY arms a host and starts nothing. */
 struct LocalRoute {
     uint64_t ownerUid; /* the player the intent is bound to; 0 = none */
-    bool enabled;      /* LOCAL PLAY is ticked */
+    bool enabled;      /* local hosting is on (always, in offline mode) */
     bool armed;        /* enabled, valid, nothing running: the host starts when the match launches */
     bool launched;     /* this selection's host start was issued */
     bool ready;        /* the host answers with exactly this selection */
@@ -130,11 +130,21 @@ struct Host {
     virtual double Mono();    /* monotonic seconds */
     /* -> false when the embedder has no local host (the standalone server). */
     virtual bool GetLocalRoute(uint64_t uid, LocalRoute &out) { (void)uid; (void)out; return false; }
-    /* The lobby is handing START_GAME for exactly this selection to the local owner: raise the host
-     * launch (K33LocalPlayLaunch). -> false when the owner's intent is not this enabled, armed
-     * selection: START_GAME must then be withheld. Starts nothing by itself. */
-    virtual bool LocalPlayLaunch(uint64_t ownerUid, const std::string &sessionMap, const std::string &gametype,
-                                 const std::string &type) { (void)ownerUid; (void)sessionMap; (void)gametype; (void)type; return true; }
+    /* Every room the local player owns is hosted by the embedded server (K33LocalPlayAuto). The
+     * lobby names the selection it resolved for the owner's room: the embedder arms its host for
+     * exactly that selection and, with `launch`, raises the launch (START_GAME is being handed to
+     * the owner now). -> true and the host's loopback port; false and why when that selection cannot
+     * be hosted: START_GAME must then be withheld, and no other server is ever substituted. Starts
+     * nothing on the caller's thread. */
+    virtual bool LocalPlayStart(uint64_t ownerUid, const std::string &sessionMap, const std::string &gametype, const std::string &type,
+                                int difficulty, bool launch, int &port, std::string &error)
+    {
+        (void)ownerUid; (void)sessionMap; (void)gametype; (void)type; (void)difficulty; (void)launch; (void)port;
+        error = "no embedded match host";
+        return false;
+    }
+    /* The owner left its room: nothing stays armed, a launched host is stopped. */
+    virtual void LocalPlayLeave(uint64_t ownerUid) { (void)ownerUid; }
     /* A room start was answered with START_GAME. Runs on the server thread: copy and return. */
     virtual void OnStartGame(const StartInfo &info) { (void)info; }
 };

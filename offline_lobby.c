@@ -206,14 +206,26 @@ static int OflLocalRoute(unsigned long long uid, DwOfflineRoute *out) /* lobby t
     return 1;
 }
 
-static int OflLaunch(unsigned long long owner, const char *sessionMap, const char *gametype, const char *type) /* lobby thread */
+/* The lobby's selection for the room the local player owns: every such room is hosted by the embedded
+ * server (there is nothing to tick in offline mode). Arms the host for it; with `launch` the lobby is
+ * handing START_GAME to the owner now. */
+static int OflStart(unsigned long long owner, const char *sessionMap, const char *gametype, const char *type, int difficulty,
+                    int launch, int *port, char *error, int errorSize) /* lobby thread */
 {
-    int ok = K33LocalPlayLaunch(owner, sessionMap, gametype, type);
-    char line[256];
-    _snprintf(line, sizeof(line), "kernel33: Local Play launch %s for %s %s (%s)", ok ? "raised" : "REFUSED", sessionMap, gametype, type);
-    line[sizeof(line) - 1] = 0;
-    OflLog(line);
+    int ok = K33LocalPlayAuto(owner, sessionMap, gametype, type, difficulty, launch, port, error, errorSize);
+    if (launch || !ok) {
+        char line[512];
+        _snprintf(line, sizeof(line), "kernel33: local host %s for %s %s (%s)%s%s", !ok ? "REFUSED" : "launch raised", sessionMap, gametype, type,
+                  ok ? "" : ": ", ok ? "" : (error ? error : ""));
+        line[sizeof(line) - 1] = 0;
+        OflLog(line);
+    }
     return ok;
+}
+
+static void OflLeave(unsigned long long owner) /* lobby thread */
+{
+    K33LocalPlayLeave(owner);
 }
 
 static void OflStartGame(const DwOfflineStartInfo *info) /* lobby thread */
@@ -482,7 +494,8 @@ static BOOL InstallOfflineLobby(void)
     cfg.hostPort = g_ofl.hostPort;
     cfg.log = OflLog;
     cfg.localRoute = OflLocalRoute;
-    cfg.launch = OflLaunch;
+    cfg.start = OflStart;
+    cfg.leave = OflLeave;
     cfg.startGame = OflStartGame;
     int port = DwOfflineStartServer(&cfg);
     if (!port) {

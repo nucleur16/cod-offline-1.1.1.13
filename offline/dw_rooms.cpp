@@ -96,6 +96,11 @@ static std::string RoomLeave(Server &s, Conn &c, uint64_t rid, const char *why)
     RoomsState &st = Rooms(s);
     ConnRoom &cr = ConnState(s, c);
     Room *r = RoomFind(s, rid);
+    /* The owner leaves its room: nothing stays armed for it and a launched host is stopped. */
+    if (!s.cfg.differential && r && r->hasHost && MemberIdx(*r, r->host) == c.idx) {
+        s.host->LocalPlayLeave(r->host);
+        cr.armed.clear();
+    }
     if (cr.inRoom && cr.room == rid) {
         cr.inRoom = false;
         c.room = 0;
@@ -280,6 +285,84 @@ static std::string JoinreqGate(Server &s, Conn &c, uint64_t rid, const std::set<
 
 /* ---- the selection ---- */
 
+/* The selection as the embedded host is told it (p2p_match_options.h): Survival runs on the
+ * unchanged MP level with gametype survival; the room's MP mode names are the native ones. */
+static void HostSelection(const Selection &sel, std::string &session, std::string &gametype, std::string &type)
+{
+    type = sel.category;
+    session = sel.sessionMap.empty() ? sel.map : sel.sessionMap;
+    gametype = sel.gametype;
+    if (type == "survival") {
+        gametype = "survival";
+        session = sel.map;
+    } else if (type == "mp") {
+        if (gametype == "tdm") gametype = "war";
+        else if (gametype == "ffa") gametype = "dm";
+        else if (gametype == "hq") gametype = "koth";
+    }
+}
+
+static bool Ident(const std::string &v, size_t max)
+{
+    if (v.empty() || v.size() > max || v[0] < 'a' || v[0] > 'z') return false;
+    for (size_t i = 0; i < v.size(); i++)
+        if (!((v[i] >= 'a' && v[i] <= 'z') || (v[i] >= '0' && v[i] <= '9') || v[i] == '_')) return false;
+    return true;
+}
+
+/* The player who owns the room this connection is in; the connection's own uid when it is in none. */
+static uint64_t RoomOwner(Server &s, Conn &c)
+{
+    ConnRoom &cr = ConnState(s, c);
+    if (cr.inRoom) {
+        Room *r = RoomFind(s, cr.room);
+        if (r && r->hasHost) return r->host;
+    }
+    return ConnUid(s, c);
+}
+
+/* match_instances.localhost_selection (Python 2089907, 58db75a): the room owner's CURRENT room
+ * context - what the room UI told Kernel33 the room shows (p2p_room) - beats the lobby's own
+ * persisted room state, which may still name another room. Only the owner's own context counts
+ * (another player's is not a global pin), and only a coherent one: a level of the right kind for its
+ * category, mp / survival on the level's own spelling, co-op on a session spelling of its level.
+ * The Python lobby also drops a context older than 15 s (its intent file's age); in-process the
+ * snapshot is the owner's live state, and the lobby clears it when the owner leaves the room
+ * (Host::LocalPlayLeave), so a context of an earlier room cannot be met here. */
+static void LocalhostSelection(Server &s, Conn *c, Selection &sel)
+{
+    if (s.cfg.differential || !c) return;
+    LocalRoute in;
+    uint64_t owner = RoomOwner(s, *c);
+    if (!owner || !s.host->GetLocalRoute(owner, in) || !in.enabled || in.ownerUid != owner) return;
+    if (in.map.empty() || in.gametype.empty() || in.category.empty()) return; /* no room context */
+    std::string session = in.sessionMap.empty() ? in.map : in.sessionMap;
+    if (!Ident(in.map, 63) || !Ident(session, 63) || !Ident(in.gametype, 31)) return;
+    const std::string &type = in.category;
+    if (type != "mp" && type != "coop" && type != "zm" && type != "survival") return;
+    if (type == "zm" ? in.map.compare(0, 3, "zm_") != 0 : in.map.compare(0, 3, "mp_") != 0) return;
+    if ((type == "mp" || type == "survival") && in.map != session) return;
+    if (type == "survival" && in.gametype != "survival") return;
+    if (type == "coop" && (in.gametype != "coop" || BaseMap(session) != in.map)) return;
+    std::string hs, hg, ht;
+    HostSelection(sel, hs, hg, ht);
+    if (sel.error.empty() && sel.map == in.map && hs == session && hg == in.gametype && ht == type) return; /* the same room */
+    sel.map = in.map;
+    sel.sessionMap = session;
+    sel.gametype = in.gametype;
+    sel.type = sel.category = type;
+    sel.source = "localhost";
+    sel.resolved = true;
+    sel.playlist = -1;
+    sel.playlistName.clear();
+    sel.rotated = false;
+    sel.rotationIndex = -1;
+    sel.error.clear();
+    if (type != "zm") sel.difficulty = -1;
+    else if (sel.difficulty < 0) sel.difficulty = 0;
+    sel.chain.push_back("current room: " + session + "/" + in.gametype + " (" + type + ") from the owner's explicit localhost context");
+}
+
 Selection ResolveSelection(Server &s, Conn *c, const char *when)
 {
     Selection sel = HandoffSelect(s, Desc(s, c));
@@ -293,6 +376,7 @@ Selection ResolveSelection(Server &s, Conn *c, const char *when)
         sel.source = "exception";
         sel.chain.push_back(why);
     }
+    LocalhostSelection(s, c, sel);
     sel.playerName = LivePlayerName(s, c);
     /* The round-robin advances ONCE per match, at the READY press only: the join resolutions inside
      * the same match keep seeing the index this match was resolved with. */
@@ -302,6 +386,27 @@ Selection ResolveSelection(Server &s, Conn *c, const char *when)
     if (!advance.empty()) line += "\n        rotation: " + advance;
     s.Log(line);
     return sel;
+}
+
+/* The owner's room changed: hand the embedder the selection (see the policy below). Only a selection
+ * the room really named - not the last-resort pin - and only when it differs from the last one. */
+void ArmOwnRoom(Server &s, Conn &c, const char *why)
+{
+    if (s.cfg.differential) return;
+    ConnRoom &cr = ConnState(s, c);
+    uint64_t uid = ConnUid(s, c);
+    if (!uid || !cr.inRoom || RoomOwner(s, c) != uid) return;
+    Selection sel = HandoffSelect(s, Desc(s, &c));
+    LocalhostSelection(s, &c, sel);
+    if (!sel.error.empty() || sel.source == "pin" || sel.source == "default" || !HandoffSelectionSafe(sel, NULL)) return;
+    std::string session, gametype, type, err;
+    HostSelection(sel, session, gametype, type);
+    std::string key = session + "/" + gametype + "/" + type + Fmt("/%d", sel.difficulty);
+    if (key == cr.armed) return;
+    cr.armed = key;
+    int port = 0;
+    bool ok = s.host->LocalPlayStart(uid, session, gametype, type, sel.difficulty, false, port, err);
+    s.Log(Fmt("conn#%d    local host: room selection %s (%s) -> %s", c.idx, key.c_str(), why, ok ? Fmt("armed, 127.0.0.1:%d", port).c_str() : err.c_str()));
 }
 
 /* Look inside an inbound batch for the client's OWN dwRoomInfo (the host's map click) and latch it. */
@@ -329,36 +434,24 @@ static std::string ObserveRoomInfo(Server &s, const Bytes &blob)
  *    answers sh1x_status. place() then takes its "no server answered yet" arm: the selection is
  *    unchanged, START_GAME addresses the instance (Config::mmHostIp : mmHostPort) and the player's
  *    seat is reserved for 60 s. No RCON is sent, nothing is spawned.
- *  - the product: the owner's Local Play intent decides (docs/P2P_DEFERRED_HOST_START.md, "What the
- *    lobby must do"). Ticking LOCAL PLAY only arms a host; Kernel33 starts it when the match
- *    launches. There is no public server to fall back to, and another server is never substituted:
- *      1. no intent / not ticked          -> withhold START_GAME (nothing to join)
- *      2. failed, stopping, exited, idle  -> withhold
- *      3. the intent's selection differs from the room's -> withhold
- *      4. ready                           -> hand off to 127.0.0.1:<port> (the host already runs it)
- *      5. armed / starting, not ready     -> the owner: hand off to 127.0.0.1:<port> without probing
- *         or dispatching anything, and raise the launch (Host::LocalPlayLaunch) at that moment;
- *         withhold if it is refused. Anybody else: withhold until 4 holds.
+ *  - the product: EVERY room the local player owns is hosted by the embedded server. There is no
+ *    choice to tick and nothing to fall back to (docs/P2P_DEFERRED_HOST_START.md, "Offline mode").
+ *    On a start the lobby names the selection it resolved - the one SET_MAP is about to give the
+ *    client - to the embedder (Host::LocalPlayStart -> K33LocalPlayAuto), which arms its host for
+ *    exactly that selection, whatever was armed before:
+ *      - accepted: START_GAME addresses 127.0.0.1:<port>; nothing is probed and no map is
+ *        dispatched (the host boots straight into the selection). The launch is raised when the
+ *        security key and the admission roster are on disk (NotifyLocalStart); if that is refused
+ *        the whole start is withheld.
+ *      - refused (an unknown category or map, a missing zone or server, a host that already ran in
+ *        this client run, a Survival room with no installed level): START_GAME is withheld with the
+ *        reason, which also goes to the player (the UI's host error and a ticker line). No other
+ *        server is ever substituted.
+ *    A player in a room somebody else owns is handed off only to that owner's host once it answers
+ *    with this selection (rule 4 of the document); until then that press is withheld.
  *    Withholding pushes no START_GAME and no SET_MAP (a JoinResponse would blank the room card): the
- *    room stays usable and the player can tick Local Play and press Start again.
+ *    room stays usable.
  * ============================================================================================ */
-
-/* The selection as the embedded host is told it (p2p_match_options.h): Survival runs on the
- * unchanged MP level with gametype survival; the room's MP mode names are the native ones. */
-static void HostSelection(const Selection &sel, std::string &session, std::string &gametype, std::string &type)
-{
-    type = sel.category;
-    session = sel.sessionMap.empty() ? sel.map : sel.sessionMap;
-    gametype = sel.gametype;
-    if (type == "survival") {
-        gametype = "survival";
-        session = sel.map;
-    } else if (type == "mp") {
-        if (gametype == "tdm") gametype = "war";
-        else if (gametype == "ffa") gametype = "dm";
-        else if (gametype == "hq") gametype = "koth";
-    }
-}
 
 MatchRoute RouteMatch(Server &s, Conn &c, const Selection &sel)
 {
@@ -370,53 +463,47 @@ MatchRoute RouteMatch(Server &s, Conn &c, const Selection &sel)
         r.port = s.cfg.mmHostPort;
         r.note = Fmt("instances: no server answered sh1x_status yet -- dispatching to :%d (not sent: differential)", r.port);
     } else {
-        LocalRoute in;
-        std::string unsafe, session, gametype, type;
+        std::string unsafe, session, gametype, type, why;
         if (!sel.error.empty()) { /* nothing playable was selected (a Survival room with no installed level) */
-            r.note = "local play: START_GAME withheld: " + sel.error;
+            r.reason = sel.error;
+            r.note = "local host: START_GAME withheld: " + sel.error;
             return r;
         }
-        if (!s.host->GetLocalRoute(uid, in) || !in.enabled) {
-            r.note = "LOCAL PLAY IS OFF -- no match host to join, START_GAME withheld (tick Local Play and press Start again)";
-            return r;
-        }
-        if (in.failed || in.state == "failed" || in.state == "stopping" || in.state == "exited" || in.state == "idle") {
-            r.note = "local play: the host choice is " + (in.state.empty() ? std::string("failed") : in.state) +
-                     (in.error.empty() ? "" : " (" + in.error + ")") + " -- START_GAME withheld";
+        if (!HandoffSelectionSafe(sel, &unsafe)) {
+            r.reason = "The room's map or mode is not a valid name.";
+            r.note = "local host: START_GAME withheld: " + unsafe;
             return r;
         }
         HostSelection(sel, session, gametype, type);
-        /* The intent names the level the host loads (map) and the room's spelling (session map); a
-         * co-op / Survival room's two spellings differ, so either may carry the room's. */
-        bool sameMap = in.sessionMap == session || in.sessionMap == sel.sessionMap || (!in.map.empty() && in.map == sel.map && in.sessionMap == sel.map);
-        if (!sameMap || in.gametype != gametype || in.category != type) {
-            r.note = Fmt("local play: the armed selection %s/%s/%s is not this room's %s/%s/%s -- START_GAME withheld",
-                         in.sessionMap.c_str(), in.gametype.c_str(), in.category.c_str(), session.c_str(), gametype.c_str(), type.c_str());
-            return r;
-        }
-        if (in.port < 1 || in.port > 65535 || !HandoffSelectionSafe(sel, &unsafe)) {
-            r.note = "local play: START_GAME withheld: " + (unsafe.empty() ? Fmt("bad host port %d", in.port) : unsafe);
-            return r;
-        }
-        bool running = in.ready && in.state == "ready";
-        if (!running) {
-            if (!(in.armed || in.state == "armed" || in.state == "starting")) {
-                r.note = "local play: the host is neither armed nor ready (" + in.state + ") -- START_GAME withheld";
+        uint64_t owner = RoomOwner(s, c);
+        int port = 0;
+        if (owner && owner != uid) {
+            /* somebody else's room: only that owner's host, and only once it runs this selection */
+            LocalRoute in;
+            bool running = s.host->GetLocalRoute(owner, in) && in.enabled && in.ownerUid == owner && in.ready && in.state == "ready" &&
+                           !in.failed && in.sessionMap == session && in.gametype == gametype && in.category == type;
+            if (!running || in.port < 1 || in.port > 65535) {
+                r.reason = "The room owner's match host is not running this match yet.";
+                r.note = "local host: the room owner has not launched the host for this selection yet -- START_GAME withheld for this guest";
                 return r;
             }
-            if (in.ownerUid && uid != in.ownerUid) {
-                r.note = "local play: the owner has not launched the host yet -- START_GAME withheld for this guest";
+            port = in.port;
+        } else {
+            if (!s.host->LocalPlayStart(uid, session, gametype, type, sel.difficulty, false, port, why) || port < 1 || port > 65535) {
+                r.reason = why.empty() ? Fmt("bad host port %d", port) : why;
+                r.note = "local host: START_GAME withheld: " + r.reason;
                 return r;
             }
+            r.owner = true;
         }
         r.start = r.local = true;
         r.ip = "127.0.0.1";
-        r.port = in.port;
-        r.launchSession = in.sessionMap;
-        r.launchGametype = in.gametype;
-        r.launchType = in.category;
-        r.note = Fmt("local play: %s on 127.0.0.1:%d <- %s/%s/%s", running ? "joining the running host" : "owner launches; the host starts with the owner's map load",
-                     r.port, in.sessionMap.c_str(), in.gametype.c_str(), in.category.c_str());
+        r.port = port;
+        r.launchSession = session;
+        r.launchGametype = gametype;
+        r.launchType = type;
+        r.note = Fmt("local host: %s on 127.0.0.1:%d <- %s/%s/%s", r.owner ? "the owner's room; the host starts with the owner's map load" : "joining the owner's running host",
+                     r.port, session.c_str(), gametype.c_str(), type.c_str());
     }
     if (uid) Rooms(s).reserved[uid] = s.host->Mono();
     return r;
@@ -432,9 +519,14 @@ bool NotifyLocalStart(Server &s, Conn &c, const Selection &sel, const MatchRoute
     MatchClaim(s, c, sel, claim); /* bookkeeping only: the single player may always re-point their own host */
     std::string blob = ExportMatchBlob(s, uid);
     if (!blob.empty()) note += " | " + blob;
-    if (!s.host->LocalPlayLaunch(uid, route.launchSession, route.launchGametype, route.launchType)) {
-        note += " | local play: the launch was REFUSED (the owner's intent is no longer this armed selection) -- START_GAME withheld";
-        return false;
+    if (route.owner) {
+        int port = 0;
+        std::string why;
+        if (!s.host->LocalPlayStart(uid, route.launchSession, route.launchGametype, route.launchType, sel.difficulty, true, port, why) ||
+            port != route.port) {
+            note += " | local host: the launch was REFUSED (" + (why.empty() ? std::string("the host port changed") : why) + ") -- START_GAME withheld";
+            return false;
+        }
     }
     StartInfo info;
     info.uid = uid;
@@ -442,7 +534,7 @@ bool NotifyLocalStart(Server &s, Conn &c, const Selection &sel, const MatchRoute
     info.map = sel.map;
     HostSelection(sel, info.sessionMap, info.gametype, info.zoneType);
     info.roomMap = sel.sessionMap;
-    info.roomGametype = sel.gametype;
+    info.roomGametype = route.launchGametype.empty() ? sel.gametype : route.launchGametype;
     info.difficulty = sel.difficulty;
     info.hostIp = route.ip;
     info.hostPort = route.port;
@@ -509,14 +601,20 @@ static std::string ReadyPress(Server &s, Conn &c, uint64_t rid, uint32_t trailer
     Selection sel = ResolveSelection(s, &c, "ready");
     MatchRoute route = RouteMatch(s, c, sel);
     std::string note = " | " + route.note;
-    if (!route.start) return note;
+    if (!route.start) {
+        if (!s.cfg.differential && !route.reason.empty()) PushLobbyNotice(s, c, "Match not started: " + route.reason);
+        return note;
+    }
 
     Bytes rec, key;
     std::string why;
     bool built = BuildStartgameRecord(s, c, Desc(s, &c), route.ip, route.port, rec, why, key);
     if (!built && route.local) return note + " | [READY] cannot build StartGame: " + why + " -- local match NOT started";
     /* The launch is raised before anything is pushed: a refused launch withholds the whole start. */
-    if (route.local && !NotifyLocalStart(s, c, sel, route, key, note)) return note;
+    if (route.local && !NotifyLocalStart(s, c, sel, route, key, note)) {
+        PushLobbyNotice(s, c, "Match not started: the local match host refused the launch.");
+        return note;
+    }
 
     /* START_GAME carries no map: the client reads it from dwRoom+0x15a88, which only a dwRoomInfo
      * writes - so the map goes first. session_map, not map: the string picks the ZONE SET the
@@ -524,11 +622,15 @@ static std::string ReadyPress(Server &s, Conn &c, uint64_t rid, uint32_t trailer
      * is the shape a HOST client accepts; typeId 15 (sender = the room record's admin id) the one a
      * joiner does. */
     const std::string &map = sel.sessionMap.empty() ? sel.map : sel.sessionMap;
+    /* A local host is told the native mode name (tdm -> war, ffa -> dm, hq -> koth) and answers with
+     * it; the client's dwRoomInfo gets that same name (match_instances._localhost_placement, Python
+     * 8381ddd: the selection sent on is the host's). */
+    const std::string &gt = route.local && !route.launchGametype.empty() ? route.launchGametype : sel.gametype;
     if (!map.empty()) {
-        Bytes jr = BuildJoinResponseRecord(map, sel.gametype), mr = BuildRoomInfoRecord(map, sel.gametype);
-        c.Queue(MapPushPayload(jr, rid, 0, kSenderName, trailer), Fmt("push 7 SET_MAP(joinresp) %s/%s, %uB", map.c_str(), sel.gametype.c_str(), (unsigned)jr.size()));
-        c.Queue(MapPushPayload(mr, rid, ROOM_ID, kSenderName, trailer), Fmt("push 7 SET_MAP %s/%s, %uB", map.c_str(), sel.gametype.c_str(), (unsigned)mr.size()));
-        note += Fmt(" | SET_MAP -> %s gametype=%s playlist=%d %s", map.c_str(), sel.gametype.c_str(), sel.playlist, sel.resolved ? "RESOLVED" : "DEFAULTED");
+        Bytes jr = BuildJoinResponseRecord(map, gt), mr = BuildRoomInfoRecord(map, gt);
+        c.Queue(MapPushPayload(jr, rid, 0, kSenderName, trailer), Fmt("push 7 SET_MAP(joinresp) %s/%s, %uB", map.c_str(), gt.c_str(), (unsigned)jr.size()));
+        c.Queue(MapPushPayload(mr, rid, ROOM_ID, kSenderName, trailer), Fmt("push 7 SET_MAP %s/%s, %uB", map.c_str(), gt.c_str(), (unsigned)mr.size()));
+        note += Fmt(" | SET_MAP -> %s gametype=%s playlist=%d %s", map.c_str(), gt.c_str(), sel.playlist, sel.resolved ? "RESOLVED" : "DEFAULTED");
     }
     if (!built) return note + " | [READY] cannot build StartGame: " + why;
     c.Queue(Push7(SENDER_USER_ID, kSenderName, rid, rec, trailer), Fmt("push 7 START_GAME, %uB", (unsigned)rec.size()));
@@ -551,7 +653,9 @@ static Reply RoomMessages(Server &s, Conn &c, const Vals &args)
 
     if (known && blobV) {
         const Bytes &blob = blobV->s;
-        rep.note += ObserveRoomInfo(s, blob); /* read it before relaying it: the host's map click lives in here */
+        std::string latched = ObserveRoomInfo(s, blob); /* read it before relaying it: the host's map click lives in here */
+        rep.note += latched;
+        if (latched.find("LATCHED") != std::string::npos) ArmOwnRoom(s, c, "room info");
         std::set<int> types = RoomBatchTypeIds(blob);
         /* The echo keeps the historical envelope sender, except for a batch carrying the client's
          * typeId-18 AVATAR record: the receiver (0x007135F6) looks the envelope sender up in its

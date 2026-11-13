@@ -582,10 +582,14 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
 
     static char cmd[8192];
     BOOL inproc = !_stricmp(c.mode, "inprocess");
-    char pmem[48] = "";
+    char pmem[96] = "";
     char relayArg[MAX_PATH + 96] = "";
     char relayPath[MAX_PATH + 64];
     if (c.pmemMegs >= 32 && c.pmemMegs <= 2048) _snprintf(pmem, sizeof(pmem), "+set codol_pmemMegs %d", c.pmemMegs);
+    /* Zombies: the room's difficulty is g_difficulty to the server's _zombiemode.gsc (the lobby's
+     * selection, K33LocalPlayAuto); left unset it stays 0 and every room plays on easy. */
+    if (!strcmp(c.zoneType, "zm") && c.difficultyPresent && c.difficulty >= 0 && c.difficulty <= 2)
+        _snprintf(pmem + strlen(pmem), sizeof(pmem) - strlen(pmem), " +set g_difficulty %d", c.difficulty);
     /* The explicit local Host/Guest trial arms this short-lived file before
      * forwarding any Guest packet. Normal solo hosting leaves it absent. */
     _snprintf(relayPath, sizeof(relayPath), "%s\\p2p_relay_identity.txt", c.state);
@@ -871,6 +875,75 @@ static BOOL P2PPublishIntent(const char *state, BOOL ready)
 }
 static void P2PHostCurrentRoom(void);
 static void P2PStartIntentLaunch(BOOL prepared);
+static void P2PArmLegacyRoom(void);
+/* ---- offline mode: every owned room is a Local Play room (K33LocalPlayAuto / K33LocalPlayLeave) ----
+ * The in-process lobby knows the room's selection for every kind of room (created, matchmade,
+ * playlist, Survival, co-op), with or without the room UI's p2p_room; it posts that selection here
+ * from its own thread. One slot, the newest request wins; the main-thread tick applies it. */
+enum { P2P_AUTO_NONE, P2P_AUTO_ROOM, P2P_AUTO_LEAVE, P2P_AUTO_ERROR };
+static struct {
+    int kind;
+    BOOL launch;
+    unsigned long long owner;
+    P2PRoomContext room;
+    char error[256];
+} g_p2pAuto; /* under g_p2pLock */
+static BOOL P2PAutoMode(void)
+{
+    return OfflineLobbyActive() && P2PSelectedProtocolMode()==0 && P2PProductionMode()==0;
+}
+static BOOL P2PRoomSame(const P2PRoomContext *a,const P2PRoomContext *b)
+{
+    return !strcmp(a->map,b->map) && !strcmp(a->session,b->session) && !strcmp(a->gametype,b->gametype) &&
+        !strcmp(a->category,b->category) && a->difficultyPresent==b->difficultyPresent && a->difficulty==b->difficulty;
+}
+/* Main thread: the lobby's newest word about the owner's room. */
+static void P2PAutoTick(void)
+{
+    int kind;BOOL launch;unsigned long long owner;P2PRoomContext room;char error[256];
+    if (!P2PAutoMode()) return;
+    EnterCriticalSection(&g_p2pLock);
+    kind=g_p2pAuto.kind;launch=g_p2pAuto.launch;owner=g_p2pAuto.owner;room=g_p2pAuto.room;
+    lstrcpynA(error,g_p2pAuto.error,sizeof(error));
+    g_p2pAuto.kind=P2P_AUTO_NONE;g_p2pAuto.launch=FALSE;
+    LeaveCriticalSection(&g_p2pLock);
+    /* There is no choice offline: hosting is on. The owner is whoever is logged in. */
+    if (!g_p2pEnabled) { g_p2pEnabled=TRUE;g_p2pLobbyError[0]=0; }
+    if (!g_p2pArmed && !g_p2pLaunched) g_p2pIntentUid=P2PLocalUid();
+    if (kind==P2P_AUTO_NONE) return;
+    if (kind==P2P_AUTO_LEAVE) {
+        /* as clearing the box did: nothing stays armed, a launched host is asked to quit */
+        if (g_p2pHasRoom || g_p2pArmed || g_p2pLaunched)
+            Log("p2p: the owner left the room (lobby); disarmed%s",g_p2pLaunched ? ", stopping the local host":"");
+        P2PDisarm();g_p2pHasRoom=FALSE;g_p2pLaunchPending=FALSE;g_p2pLobbyPending=FALSE;g_p2pLobbyError[0]=0;
+        memset(&g_p2pRoom,0,sizeof(g_p2pRoom));g_p2pLobbyMap[0]=0;
+        InterlockedExchange(&g_p2pStop,1);
+        return;
+    }
+    if (kind==P2P_AUTO_ERROR) {
+        lstrcpynA(g_p2pLobbyError,error,sizeof(g_p2pLobbyError));
+        Log("p2p: the room cannot be hosted (lobby): %s",error);
+        return;
+    }
+    if (!g_p2pIntentUid) g_p2pIntentUid=owner;
+    if (!(g_p2pHasRoom && P2PRoomSame(&room,&g_p2pRoom) && (g_p2pArmed || g_p2pLaunched) && !g_p2pLobbyError[0])) {
+        g_p2pRoom=room;g_p2pHasRoom=TRUE;
+        P2PArmLegacyRoom();
+        Log("p2p: room %s %s (%s) from the lobby: %s",room.session,room.gametype,room.category,
+            g_p2pLobbyError[0] ? g_p2pLobbyError : g_p2pLaunched ? "its host already runs" : "armed");
+    }
+    if (!launch) return;
+    if (g_p2pLobbyError[0] || !g_p2pArmed) {
+        /* The lobby validated this selection and has handed START_GAME to the client, which is now on
+         * its connecting screen with nothing to talk to: end that connect, the error is published. */
+        Log("p2p: the local host cannot be started for the launched match (%s); ending the client's connect",
+            g_p2pLobbyError[0] ? g_p2pLobbyError : "not armed");
+        if (!g_p2pLobbyError[0]) lstrcpyA(g_p2pLobbyError,"The local host could not be started.");
+        C1CbufAddText("disconnect\n");
+        return;
+    }
+    if (!g_p2pLaunched) InterlockedCompareExchange(&g_p2pLaunchSignal,P2P_LAUNCH_EXPLICIT,P2P_LAUNCH_NONE);
+}
 /* Main thread, once per frame: the armed selection's single host start. A datagram or a lobby call
  * alone grants nothing: the choice must be enabled, armed, error-free and (protocol 1/2) backed by
  * the owner's own matching Ready/Start intent. */
@@ -946,6 +1019,7 @@ static void P2PLobbyTick(void)
             P2PSetState(P2P_FAILED,"Queued local host activation was refused.");
     }
     int protocol=P2PSelectedProtocolMode();
+    P2PAutoTick();
     P2PLaunchTick(protocol);
     if (protocol!=0) {
         unsigned long long uid=P2PLocalUid();
@@ -1049,6 +1123,7 @@ static void P2PHostCurrentRoom(void)
     P2PDefaults(&c);P2PLoadIni(&c);
     lstrcpyA(c.map,g_p2pRoom.map);lstrcpyA(c.sessionMap,g_p2pRoom.session);
     lstrcpyA(c.gametype,g_p2pRoom.gametype);lstrcpyA(c.zoneType,g_p2pRoom.category);
+    c.difficultyPresent=g_p2pRoom.difficultyPresent;c.difficulty=g_p2pRoom.difficulty;
     lstrcpyA(c.netIp,"127.0.0.1");
     /* Verified scripts are installed into the same-process host before its
      * first frame. The child path cannot receive this immutable inventory. */
@@ -1122,6 +1197,8 @@ static void __cdecl P2PCmdRoom(void)
     if (bad) { if((protocol==2||protocol==3))P2PStartupInvalidate();lstrcpynA(g_p2pLobbyError,bad,sizeof(g_p2pLobbyError));P2PLobbyTick();return; }
     if (P2PSelectedProtocolMode()!=0) { P2PStartupInvalidate();P2PDisarm(); }
     g_p2pRoom=room;g_p2pHasRoom=TRUE;
+    /* Offline mode: the room the UI shows is armed whether or not anything was ticked. */
+    if (P2PAutoMode()) { g_p2pEnabled=TRUE;if (!g_p2pIntentUid) g_p2pIntentUid=P2PLocalUid(); }
     if (P2PSelectedProtocolMode()!=0) { P2PStartupSnapshot();if (g_p2pEnabled) P2PArmCurrentRoom(); }
     else if (g_p2pEnabled) P2PArmLegacyRoom();
     P2PLobbyTick();
@@ -1140,6 +1217,12 @@ static void __cdecl P2PCmdLocalhost(void)
         g_p2pIntentUid=uid;P2PStartupSnapshot();
         if (g_p2pEnabled) P2PArmCurrentRoom();
         else P2PSetState(P2PStartupBusy() ? P2P_STOPPING:P2P_IDLE,"");
+        P2PLobbyTick();return;
+    }
+    if (P2PAutoMode() && !strcmp(value,"0")) {
+        /* Offline mode has no off: the room UI's untick (or its reset on leaving a room) changes
+         * nothing. The lobby disarms when the owner leaves the room (K33LocalPlayLeave). */
+        Log("p2p: p2p_localhost 0 ignored: local hosting is always on in offline mode");
         P2PLobbyTick();return;
     }
     g_p2pEnabled=!strcmp(value,"1");g_p2pLobbyError[0]=0;
@@ -1265,6 +1348,52 @@ int K33LocalPlayLaunch(unsigned long long owner_uid,const char *session_map,cons
     if (!now.armed) return 0;
     InterlockedCompareExchange(&g_p2pLaunchSignal,P2P_LAUNCH_EXPLICIT,P2P_LAUNCH_NONE);
     return 1;
+}
+
+int K33LocalPlayAuto(unsigned long long owner_uid,const char *session_map,const char *gametype,const char *type,int difficulty,int launch,int *port,char *error,int error_size)
+{
+    const char *args[3]={session_map,gametype,type};
+    const char *bad;P2PRoomContext room;P2PConfig c;K33LocalPlayIntentInfo now;BOOL same=FALSE;
+    if (error && error_size>0) error[0]=0;
+    if (port) *port=0;
+    if (!g_p2pInit || !P2PAutoMode()) { /* not this client's mode: nothing is posted */
+        if (error && error_size>0) lstrcpynA(error,"Local hosting is not available in this session.",error_size);
+        return 0;
+    }
+    if (!owner_uid || !session_map || !gametype || !type) bad="No room selection.";
+    else bad=P2PParseRoomContext(3,args,&room);
+    if (!bad) {
+        if (!strcmp(room.category,"zm") && difficulty>=0 && difficulty<=2) { room.difficultyPresent=1;room.difficulty=difficulty; }
+        P2PDefaults(&c);P2PLoadIni(&c);
+        lstrcpyA(c.map,room.map);lstrcpyA(c.sessionMap,room.session);
+        lstrcpyA(c.gametype,room.gametype);lstrcpyA(c.zoneType,room.category);
+        lstrcpyA(c.netIp,"127.0.0.1");lstrcpyA(c.mode,"inprocess");
+        if (port) *port=c.port;
+        /* the launched host of exactly this selection is simply joined again */
+        same=K33LocalPlayIntent(&now) && now.enabled && now.launched && !now.failed && !strcmp(now.session_map,room.session) &&
+            !strcmp(now.gametype,room.gametype) && !strcmp(now.type,room.category);
+        if (!same) bad=P2PInprocUsed() ? "Restart the client before hosting another Local Play match.":P2PCheck(&c);
+    }
+    EnterCriticalSection(&g_p2pLock);
+    if (bad) {
+        g_p2pAuto.kind=P2P_AUTO_ERROR;g_p2pAuto.launch=FALSE;g_p2pAuto.owner=owner_uid;
+        lstrcpynA(g_p2pAuto.error,bad,sizeof(g_p2pAuto.error));
+    } else {
+        /* a launch already posted for this same selection is not taken back by a later arm */
+        BOOL keep=g_p2pAuto.kind==P2P_AUTO_ROOM && g_p2pAuto.launch && g_p2pAuto.owner==owner_uid && P2PRoomSame(&g_p2pAuto.room,&room);
+        g_p2pAuto.kind=P2P_AUTO_ROOM;g_p2pAuto.launch=launch || keep;g_p2pAuto.owner=owner_uid;g_p2pAuto.room=room;
+        g_p2pAuto.error[0]=0;
+    }
+    LeaveCriticalSection(&g_p2pLock);
+    if (bad && error && error_size>0) lstrcpynA(error,bad,error_size);
+    return bad ? 0:1;
+}
+void K33LocalPlayLeave(unsigned long long owner_uid)
+{
+    if (!g_p2pInit || !P2PAutoMode()) return;
+    EnterCriticalSection(&g_p2pLock);
+    g_p2pAuto.kind=P2P_AUTO_LEAVE;g_p2pAuto.launch=FALSE;g_p2pAuto.owner=owner_uid;g_p2pAuto.error[0]=0;
+    LeaveCriticalSection(&g_p2pLock);
 }
 
 /* ---- commands ------------------------------------------------------------------------------ */

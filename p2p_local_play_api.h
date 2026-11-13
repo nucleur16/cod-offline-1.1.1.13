@@ -41,6 +41,22 @@ int K33LocalPlayIntent(K33LocalPlayIntentInfo *out);
  * Never substitute another server for a refused Local Play room. */
 int K33LocalPlayLaunch(unsigned long long owner_uid, const char *session_map, const char *gametype, const char *type);
 
+/* Offline mode: every room the local player owns is hosted by the embedded server; there is no
+ * choice to tick. The in-process lobby tells Kernel33 the selection it resolved for the owner's room
+ * (and is about to tell the client): Kernel33 arms the host for exactly that selection, replacing
+ * whatever was armed, and with `launch` also raises the launch (the lobby is handing START_GAME to
+ * the owner now). `difficulty` is the Zombies room's (0..2), -1 for none.
+ * -> 1: accepted; *port is the loopback UDP port the host serves on. The work is done by p2p.c's
+ *       main-thread tick; nothing is started on the caller's thread.
+ * -> 0: this selection cannot be hosted; `error` says why (an unknown category or map, a missing
+ *       server, a host that already ran in this client run, ...). The lobby must withhold START_GAME;
+ *       no other server is ever substituted. The same text is published to the UI (ui_p2p_error).
+ * Any thread. */
+int K33LocalPlayAuto(unsigned long long owner_uid, const char *session_map, const char *gametype, const char *type,
+                     int difficulty, int launch, int *port, char *error, int error_size);
+/* The owner left the room: nothing stays armed and a launched host is stopped. Any thread. */
+void K33LocalPlayLeave(unsigned long long owner_uid);
+
 #ifdef __cplusplus
 }
 #endif

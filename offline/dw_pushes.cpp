@@ -106,6 +106,21 @@ static void MaybePushTicker(Server &s, Conn &c, ConnRoom &cr, int task)
     c.Queue(msg, note + Fmt(" (%s; push #%d)", forced ? "MANUAL" : "front-end entry", cr.tickPushes));
 }
 
+/* A lobby notice of this run (not a stored one): `<MSG P=<priority> T=<expiry epoch> />text`, the
+ * markup the ticker's reader takes (notices/lobby_notices.encode_broadcast). One line, shown for a
+ * minute. Used for what has no other way to the screen: a room start the embedded host refused. */
+void PushLobbyNotice(Server &s, Conn &c, const std::string &text)
+{
+    std::string body;
+    for (size_t i = 0; i < text.size(); i++) body += (text[i] == '\r' || text[i] == '\n' || text[i] == '\t') ? ' ' : text[i];
+    for (size_t at = body.find("/>"); at != std::string::npos; at = body.find("/>")) body.replace(at, 2, "/ >");
+    if (body.empty()) return;
+    Bytes data = Fmt("<MSG P=1 T=%lld />", (long long)(s.Now() + 60)) + body;
+    std::string note;
+    Bytes msg = BuildTickerPush(data, note);
+    c.Queue(msg, note + " (lobby notice: " + body.substr(0, 96) + ")");
+}
+
 void AfterTask(Server &s, Conn &c, int service, int task)
 {
     if (service != MARKETPLACE_SERVICE) return;

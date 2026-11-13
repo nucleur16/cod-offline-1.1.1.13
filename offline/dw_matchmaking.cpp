@@ -129,6 +129,7 @@ Reply MatchmakingTask(Server &s, Conn &c, int task, const Vals &args)
         const Bytes *key = FirstBlobOfSize(args, 16);
         if (key) rep.note += "  clientSecurityKey=" + KeyFp(*key) + SeckeyObserve(s, &c, *key); /* SK-1: THE live key carrier */
         rep.results.push_back(w_blob(SessionId()));
+        ArmOwnRoom(s, c, "createSession");
         return rep;
     }
 
@@ -140,6 +141,7 @@ Reply MatchmakingTask(Server &s, Conn &c, int task, const Vals &args)
             Vals desc(vals.begin() + 2, vals.end());
             SetDesc(s, &c, desc);
             const Bytes *key = FirstBlobOfSize(desc, 16); /* the second live key carrier */
+            ArmOwnRoom(s, c, "updateSession");
             return Reply::Ok(Fmt("updateSession -> descriptor refreshed (%u fields)", (unsigned)desc.size()) +
                              (key ? SeckeyObserve(s, &c, *key) : std::string()));
         }

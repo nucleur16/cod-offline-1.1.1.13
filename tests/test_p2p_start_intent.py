@@ -75,6 +75,7 @@ static P2PIntentHeartbeat g_p2pIntentHeartbeat;
 static int mode=1,thread_done=1,native_used,starts,checks,publications;
 static int published_ready,argc_,lock_depth;
 static unsigned long long uid=42;
+static const char *check_answer; /* what P2PCheck says about a configuration; NULL = usable */
 static unsigned long clock_now=10000;
 static const char *argv_[8];
 static char published_state[32],ui_ready[8],ui_state[32];
@@ -116,7 +117,7 @@ static HANDLE CreateThread(void *a,size_t b,DWORD (*c)(void *),void *d,int e,voi
 }
 static void P2PDefaults(P2PConfig *c) {memset(c,0,sizeof(*c));strcpy(c->state,"fixture");c->port=17760;}
 static void P2PLoadIni(P2PConfig *c) {(void)c;assert(!lock_depth);}
-static const char *P2PCheck(const P2PConfig *c) {(void)c;++checks;return NULL;}
+static const char *P2PCheck(const P2PConfig *c) {(void)c;++checks;return check_answer;}
 static BOOL P2PInprocUsed(void) {return native_used;}
 static unsigned long long P2PLocalUid(void) {assert(!lock_depth);return uid;}
 static BOOL principal_fresh=TRUE;
@@ -140,14 +141,21 @@ static BOOL P2PIdent(const char *s,size_t max) {return P2PMatchIdent(s,max);}
 static void P2PLobbyTick(void);
 static void P2PHostCurrentRoom(void);
 static void P2PStartIntentLaunch(BOOL prepared);
+static void P2PArmLegacyRoom(void);
+/* Offline mode (always on in the product): every owned room is hosted locally. */
+static int offline_on;
+static BOOL OfflineLobbyActive(void) {return offline_on;}
+enum { P2P_AUTO_NONE, P2P_AUTO_ROOM, P2P_AUTO_LEAVE, P2P_AUTO_ERROR };
+static struct {int kind;BOOL launch;unsigned long long owner;P2PRoomContext room;char error[256];} g_p2pAuto;
 '''
 
 NAMES = ['P2PSetState', 'P2PLaunchObserve', 'P2PDisarm', 'P2PArmLaunch', 'P2PLaunchLabel',
          'P2PStartupAttemptCurrent', 'P2PStartupInvalidate', 'P2PStartupIssue',
          'P2PStartConfigured', 'P2PStart', 'P2PStartupBusy', 'P2PStartupSnapshot',
-         'P2PArmCurrentRoom', 'P2PLaunchTick', 'P2PLaunchAbort', 'P2PLaunchWatch', 'P2PLobbyTick', 'P2PHostCurrentRoom',
+         'P2PArmCurrentRoom', 'P2PAutoMode', 'P2PRoomSame', 'P2PAutoTick', 'P2PLaunchTick', 'P2PLaunchAbort', 'P2PLaunchWatch', 'P2PLobbyTick', 'P2PHostCurrentRoom',
          'P2PArmLegacyRoom', 'P2PCmdRoom', 'P2PCmdLocalhost', 'P2PCmdStartIntent', 'P2PStartIntentLaunch',
-         'P2PCmdCancelStart', 'P2PCmdLaunch', 'K33LocalPlayIntent', 'K33LocalPlayLaunch', 'P2PCmdHost', 'P2PCmdStop']
+         'P2PCmdCancelStart', 'P2PCmdLaunch', 'K33LocalPlayIntent', 'K33LocalPlayLaunch',
+         'K33LocalPlayAuto', 'K33LocalPlayLeave', 'P2PCmdHost', 'P2PCmdStop']
 
 MAIN = r'''
 static void args(int n,const char *a,const char *b,const char *c,const char *d,const char *e) {
@@ -175,6 +183,7 @@ static void reset(void) {
     g_p2pEnabled=g_p2pHasRoom=g_p2pLobbyPending=0;g_p2pIntentUid=uid=42;
     g_p2pThread=0;g_p2pStop=0;g_p2pLobbyError[0]=0;g_p2pLobbyMap[0]=0;
     disconnects=0;starts=checks=publications=native_used=published_ready=0;thread_done=1;mode=1;principal_fresh=TRUE;
+    offline_on=0;check_answer=NULL;memset(&g_p2pAuto,0,sizeof(g_p2pAuto));
     ui_ready[0]=ui_state[0]=published_state[0]=0;
 }
 int main(void) {
@@ -289,6 +298,74 @@ int main(void) {
     g_p2p.state=P2P_FAILED;strcpy(g_p2p.error,"the server stopped answering");P2PLobbyTick();assert(!disconnects);
     reset();mode=0;room();enable("1");g_p2p.state=P2P_FAILED;P2PLobbyTick();assert(!disconnects); /* never launched */
 
+    /* OFFLINE MODE: every room the local player owns is hosted; nothing is ticked and nothing unticks it.
+     * The in-process lobby names the room's selection (K33LocalPlayAuto) from its own thread; the tick applies it. */
+    {K33LocalPlayIntentInfo info;int port=0;char why[256];
+     reset();mode=0;offline_on=1;P2PLobbyTick();
+     assert(g_p2pEnabled&&!g_p2pArmed&&!starts&&K33LocalPlayIntent(&info)&&info.enabled&&!info.armed); /* on, with no room yet */
+     /* the room UI's context alone arms, with no p2p_localhost 1 from anybody */
+     room();assert(g_p2pArmed&&!g_p2pLaunched&&!starts&&!strcmp(published_state,"armed")&&g_p2pLaunchPort==17760);
+     enable("0");assert(g_p2pEnabled&&g_p2pArmed&&!g_p2pStop); /* there is no off */
+     launch();assert(starts==1&&!strcmp(g_p2p.cfg.map,"mp_killhouse_sh")); /* C1's connect to the armed port starts it */
+     /* the lobby's selection, with no room UI at all (a playlist room): armed by the tick, launched by the lobby */
+     reset();mode=0;offline_on=1;P2PLobbyTick();
+     assert(K33LocalPlayAuto(42,"mp_rust","tdm","mp",-1,0,&port,why,sizeof(why))==1&&port==17760&&!why[0]);
+     assert(!g_p2pArmed&&!starts); /* nothing happens on the caller's thread */
+     P2PLobbyTick();
+     assert(g_p2pArmed&&!g_p2pLaunched&&!starts&&g_p2pHasRoom&&!strcmp(g_p2pRoom.session,"mp_rust")&&!strcmp(g_p2pRoom.gametype,"war"));
+     assert(K33LocalPlayIntent(&info)&&info.armed&&info.owner_uid==42&&!strcmp(info.session_map,"mp_rust")&&!strcmp(info.type,"mp"));
+     for(int i=0;i<5;++i)P2PLobbyTick();
+     assert(!starts); /* armed is not started */
+     assert(K33LocalPlayAuto(42,"mp_rust","tdm","mp",-1,1,&port,why,sizeof(why))==1);P2PLobbyTick();
+     assert(starts==1&&g_p2pLaunched&&!strcmp(g_p2p.cfg.map,"mp_rust")&&!strcmp(g_p2p.cfg.gametype,"war")&&!disconnects);
+     assert(K33LocalPlayAuto(42,"mp_rust","tdm","mp",-1,1,&port,why,sizeof(why))==1);P2PLobbyTick();
+     assert(starts==1); /* the launched host of this selection is joined again, not restarted */
+     /* arm and launch in one step, replacing what the room UI had armed: the lobby's selection is what the client loads */
+     reset();mode=0;offline_on=1;room();
+     assert(K33LocalPlayAuto(42,"coop_survival_mp_fav_tropical","coop","survival",-1,1,&port,why,sizeof(why))==1);
+     P2PLobbyTick();
+     assert(starts==1&&!strcmp(g_p2p.cfg.map,"mp_fav_tropical")&&!strcmp(g_p2p.cfg.sessionMap,"mp_fav_tropical")&&
+            !strcmp(g_p2p.cfg.gametype,"survival")&&!strcmp(g_p2p.cfg.zoneType,"survival"));
+     /* Zombies carries the room's difficulty */
+     reset();mode=0;offline_on=1;
+     assert(K33LocalPlayAuto(42,"zm_asylum_sh","zm","zm",2,1,&port,why,sizeof(why))==1);P2PLobbyTick();
+     assert(starts==1&&g_p2p.cfg.difficultyPresent==1&&g_p2p.cfg.difficulty==2&&!strcmp(g_p2p.cfg.zoneType,"zm"));
+     /* an arm posted after a launch for the same selection does not take the launch back */
+     reset();mode=0;offline_on=1;
+     assert(K33LocalPlayAuto(42,"mp_rust","war","mp",-1,1,&port,why,sizeof(why))==1&&K33LocalPlayAuto(42,"mp_rust","war","mp",-1,0,&port,why,sizeof(why))==1);
+     P2PLobbyTick();assert(starts==1);
+     /* refusals: an unknown category, a map of the wrong kind, a failed check, a host that already ran - never another server */
+     reset();mode=0;offline_on=1;P2PLobbyTick();
+     assert(!K33LocalPlayAuto(42,"mp_rust","war","campaign",-1,1,&port,why,sizeof(why))&&!strcmp(why,"Invalid match category."));
+     assert(!K33LocalPlayAuto(42,"mp_rust","zm","zm",0,1,&port,why,sizeof(why))&&!strcmp(why,"Zombies needs a Zombies map."));
+     assert(!K33LocalPlayAuto(42,"mp_rust;quit","war","mp",-1,1,&port,why,sizeof(why))&&why[0]);
+     assert(!K33LocalPlayAuto(0,"mp_rust","war","mp",-1,1,&port,why,sizeof(why))&&why[0]);
+     check_answer="server DLL not found (dll=)";
+     assert(!K33LocalPlayAuto(42,"mp_rust","war","mp",-1,1,&port,why,sizeof(why))&&!strcmp(why,"server DLL not found (dll=)"));
+     P2PLobbyTick();
+     assert(!starts&&!disconnects&&!strcmp(g_p2pLobbyError,"server DLL not found (dll=)")&&!strcmp(published_state,"failed")); /* and the UI is told */
+     check_answer=NULL;native_used=1;
+     assert(!K33LocalPlayAuto(42,"mp_rust","war","mp",-1,1,&port,why,sizeof(why))&&strstr(why,"Restart the client"));
+     /* a selection that passed on the lobby's thread but cannot be armed on the main thread ends the client's connect */
+     reset();mode=0;offline_on=1;P2PLobbyTick();
+     assert(K33LocalPlayAuto(42,"mp_rust","war","mp",-1,1,&port,why,sizeof(why))==1);
+     native_used=1;P2PLobbyTick();
+     assert(!starts&&disconnects==1&&g_p2pLobbyError[0]);
+     /* the owner leaves the room: nothing stays armed; a launched host is stopped */
+     reset();mode=0;offline_on=1;room();assert(g_p2pArmed);
+     K33LocalPlayLeave(42);assert(g_p2pArmed);P2PLobbyTick();
+     assert(!g_p2pArmed&&!g_p2pHasRoom&&g_p2pEnabled&&!g_p2pLaunchPort);
+     launch();assert(!starts); /* a datagram to the old port after the leave starts nothing */
+     assert(K33LocalPlayIntent(&info)&&info.enabled&&!info.armed&&!info.session_map[0]);
+     reset();mode=0;offline_on=1;room();launch();assert(starts==1);g_p2p.state=P2P_READY;
+     K33LocalPlayLeave(42);P2PLobbyTick();assert(g_p2pStop&&!g_p2pLaunched&&!g_p2pArmed);
+     /* online builds and the launcher-managed protocols never take the lobby's calls */
+     reset();mode=0;offline_on=0;assert(!K33LocalPlayAuto(42,"mp_rust","war","mp",-1,1,&port,why,sizeof(why))&&why[0]);
+     P2PLobbyTick();assert(!g_p2pEnabled&&!starts);
+     reset();mode=1;offline_on=1;assert(!K33LocalPlayAuto(42,"mp_rust","war","mp",-1,1,&port,why,sizeof(why)));
+     enable("1");enable("0");assert(!g_p2pEnabled); /* their untick still unticks */
+    }
+
     reset();mode=2;room2("1","0");enable("1");go2("1","0");token=g_p2pStartupActive;
     assert(token&&starts==1&&g_p2pIntentConfig.difficultyPresent==1&&g_p2pIntentConfig.difficulty==0);
     go2("1","0");assert(starts==1&&g_p2pStartupActive==token);
@@ -305,7 +382,7 @@ int main(void) {
     mp[3]="1";mp[4]="1";assert(P2PParseRoomContextV2(5,mp,&parsed));
     room2("0","-1");assert(g_p2pLobbyError[0]&&!g_p2pStartupActive);
     assert(!lock_depth);
-    puts("Actual native commands/tick/token: arm-only, deferred launch (datagram and lobby call), cancel/untick/room/owner revocation, empty-host stop, explicit start, duplicate idempotency, stale context/owner, cancel/disable, no busy restart, spent guard, malformed intent, ULONG exhaustion, gen0 refusal and legacy mode PASS");
+    puts("Actual native commands/tick/token: arm-only, deferred launch (datagram and lobby call), offline always-on hosting (lobby selection, refusals, leave), cancel/untick/room/owner revocation, empty-host stop, explicit start, duplicate idempotency, stale context/owner, cancel/disable, no busy restart, spent guard, malformed intent, ULONG exhaustion, gen0 refusal and legacy mode PASS");
     return 0;
 }
 '''

@@ -45,18 +45,28 @@ static void P2PLoadIni(P2PConfig *c)
     lstrcpyA(c->profile, "X:\\lobby\\resources"); lstrcpyA(c->rollout, "X:\\lobby\\rollout.txt"); lstrcpyA(c->extra, "+set x 1");
     OfflineP2PConfig(c); /* as p2p.c's P2PLoadIni ends */
 }
-/* p2p_local_play_api.h doubles: the published intent and the launch request. */
+/* p2p_local_play_api.h doubles: the published intent, the lobby's room selection and its leave. */
 #include "../p2p_local_play_api.h"
 static K33LocalPlayIntentInfo intent;
-static int intent_published, launch_calls, launch_answer;
-static char launch_seen[160];
+static int intent_published, auto_calls, auto_answer, leave_calls;
+static char auto_seen[200];
+static unsigned long long leave_seen;
 int K33LocalPlayIntent(K33LocalPlayIntentInfo *out) { if (!intent_published) return 0; *out = intent; return 1; }
 int K33LocalPlayLaunch(unsigned long long owner_uid, const char *session_map, const char *gametype, const char *type)
 {
-    ++launch_calls;
-    _snprintf(launch_seen, sizeof(launch_seen), "%llu/%s/%s/%s", owner_uid, session_map, gametype, type);
-    return launch_answer;
+    (void)owner_uid; (void)session_map; (void)gametype; (void)type;
+    abort(); /* the in-DLL lobby names its selection with K33LocalPlayAuto; it never raises a bare launch */
 }
+int K33LocalPlayAuto(unsigned long long owner_uid, const char *session_map, const char *gametype, const char *type, int difficulty,
+                     int launch, int *port, char *error, int error_size)
+{
+    ++auto_calls;
+    _snprintf(auto_seen, sizeof(auto_seen), "%llu/%s/%s/%s/%d/%d", owner_uid, session_map, gametype, type, difficulty, launch);
+    if (!auto_answer) { lstrcpynA(error, "Restart the client before hosting another Local Play match.", error_size); return 0; }
+    *port = 17999;
+    return 1;
+}
+void K33LocalPlayLeave(unsigned long long owner_uid) { ++leave_calls; leave_seen = owner_uid; }
 
 /* The NAT traversal constant of C1 (0x00A50454) is a local double here. */
 static BYTE nat_site[9] = { 0xB9, 0x02, 0x0C, 0x00, 0x00, 0x66, 0x89, 0x4F, 0x14 };
@@ -184,7 +194,7 @@ int main(int argc, char **argv)
     const int port = ini3999 ? 3999 : ini3074 ? 3074 : FIXTURE_FREE_PORT;
     assert(started.port == (ini3999 ? 3999 : ini3074 ? 3074 : 0) && started.altPort == (ini3999 ? 4003 : 0));
     assert(g_ofl.port == port && g_ofl.altPort == (ini3999 ? 4003 : FIXTURE_FREE_ALT));
-    assert(started.localRoute && started.launch && started.startGame && started.log);
+    assert(started.localRoute && started.start && started.leave && started.startGame && started.log);
     /* 3074 is C1's own NAT traversal port: any other port is written into the constant. */
     DWORD imm; memcpy(&imm, nat_site + 1, 4);
     assert(imm == (DWORD)(port == 3074 ? 0xC02 : port));
@@ -272,9 +282,10 @@ int main(int argc, char **argv)
     }
     if (busy != INVALID_SOCKET) closesocket(busy);
 
-    /* Local Play: the lobby reads Kernel33's published intent and raises the launch through the
-     * p2p_local_play_api.h calls only; nothing here starts a host or reads an intent file. The port
-     * in the intent is the port of this run (p2p.c publishes its P2PLoadIni'd configuration). */
+    /* Local hosting: the lobby reads Kernel33's published snapshot, names the selection of the owner's
+     * room (armed; with a launch when it hands START_GAME over) and says when the owner left, through
+     * the p2p_local_play_api.h calls only; nothing here starts a host or reads an intent file. The
+     * port in the snapshot is the port of this run (p2p.c publishes its P2PLoadIni'd configuration). */
     DwOfflineRoute route;
     assert(!started.localRoute(1, &route)); /* nothing published yet */
     intent_published = 1;
@@ -284,13 +295,20 @@ int main(int argc, char **argv)
     assert(started.localRoute(77, &route) && route.ownerUid == 77 && route.enabled && route.armed && !route.ready && !route.launched &&
            !route.failed && route.port == c.port && !strcmp(route.sessionMap, "mp_rust") && !strcmp(route.gametype, "war") &&
            !strcmp(route.category, "mp") && !strcmp(route.state, "armed"));
-    launch_answer = 0;
-    assert(!started.launch(77, "mp_rust", "war", "mp") && launch_calls == 1 && !strcmp(launch_seen, "77/mp_rust/war/mp"));
-    launch_answer = 1;
-    assert(started.launch(77, "mp_rust", "war", "mp") == 1 && launch_calls == 2);
+    int hostPort = 0;
+    char why[256] = "x";
+    auto_answer = 0;
+    assert(!started.start(77, "zm_asylum_sh", "zm", "zm", 2, 1, &hostPort, why, sizeof(why)) && auto_calls == 1 &&
+           !strcmp(auto_seen, "77/zm_asylum_sh/zm/zm/2/1") && !strcmp(why, "Restart the client before hosting another Local Play match."));
+    assert(strstr(all_log, "REFUSED") == NULL); /* the refusal goes to the lobby's own log file, not Kernel33.log */
+    auto_answer = 1;
+    assert(started.start(77, "mp_rust", "war", "mp", -1, 0, &hostPort, why, sizeof(why)) == 1 && auto_calls == 2 && hostPort == 17999 &&
+           !strcmp(auto_seen, "77/mp_rust/war/mp/-1/0"));
+    started.leave(77);
+    assert(leave_calls == 1 && leave_seen == 77);
     DwOfflineStartInfo info; memset(&info, 0, sizeof(info)); info.local = 1; info.hostPort = c.port;
     started.startGame(&info); /* a log line only */
-    assert(launch_calls == 2);
+    assert(auto_calls == 2 && leave_calls == 1);
     puts("offline lobby fixture passed");
     return 0;
 }

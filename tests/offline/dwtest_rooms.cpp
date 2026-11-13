@@ -1,13 +1,18 @@
 /*
  * dwtest --selftest-rooms: the offline product's room start (the non-differential match handoff
- * policy of offline/dw_rooms.cpp) against a fake embedder.
+ * policy of offline/dw_rooms.cpp) against a fake embedder, and the room selection it starts from.
  *
- * For an mp room, a zombies room, a survival room and a coop room:
- *   create room -> createSession -> Ready with Local Play OFF  => only the echo relay comes back: no
- *       SET_MAP, no START_GAME, the embedder is not told to start anything;
- *   Ready again with Local Play ON => SET_MAP (typeId 5 and 15) name the room's map, START_GAME
- *       (typeId 3) addresses 127.0.0.1:<the embedded host's port>, OnStartGame runs exactly once with
- *       the right map / gametype / zone, and securitykey.bin + game_admissions.txt are in Config::state.
+ * Every room the local player owns is hosted by the embedded server; nothing is ticked. For an mp
+ * room (and one whose mode the UI spells "tdm"), a zombies room, a survival room and a coop room:
+ *   create room -> createSession     => the embedder is told the room's selection (armed, no launch);
+ *   Ready                            => SET_MAP (typeId 5 and 15) name the room's map, START_GAME
+ *       (typeId 3) addresses 127.0.0.1:<the embedded host's port>, the launch is raised once for the
+ *       selection, OnStartGame runs exactly once, securitykey.bin + game_admissions.txt are written;
+ *   Ready while the embedder refuses (a host that already ran, an unknown map, ...) or refuses the
+ *       launch => no SET_MAP, no START_GAME, a ticker line with the reason, the room stays usable;
+ *   the owner's own room context (p2p_room) beats the lobby's resolution; another player's does not;
+ *   a guest of the room is handed off only to the owner's running host of this selection;
+ *   the owner leaves             => the embedder is told (nothing stays armed).
  *
  * Self-contained: without --resources / --state before the flag it works in a scratch folder under
  * %TEMP% with a three-line playlist file (the gametype names "coop" and "zm" come from that file).
@@ -22,26 +27,41 @@
 namespace {
 
 struct FakeHost : dw::Host {
-    bool enabled, refuse;
-    int port, starts, asked, launches;
+    bool refuse, refuseLaunch, haveIntent;
+    int port, starts, asked, arms, launches, leaves;
     dw::StartInfo last;
-    dw::LocalRoute intent; /* the owner's published Local Play intent (p2p_local_play_api.h) */
-    std::string launched;  /* the last launch call's "session/gametype/type" */
-    FakeHost() : enabled(false), refuse(false), port(28999), starts(0), asked(0), launches(0) {}
+    dw::LocalRoute intent; /* Kernel33's published snapshot (p2p_local_play_api.h): the owner's room context and host state */
+    std::string told;      /* the last LocalPlayStart selection: "session/gametype/type/difficulty" */
+    uint64_t toldOwner, leftOwner;
+    FakeHost() : refuse(false), refuseLaunch(false), haveIntent(false), port(28999), starts(0), asked(0), arms(0), launches(0), leaves(0),
+                 toldOwner(0), leftOwner(0) {}
     virtual double Mono() { return GetTickCount64() / 1000.0; }
     virtual bool GetLocalRoute(uint64_t, dw::LocalRoute &out)
     {
         asked++;
+        if (!haveIntent) return false;
         out = intent;
-        out.enabled = enabled;
+        out.enabled = true;
         out.port = port;
         return true;
     }
-    virtual bool LocalPlayLaunch(uint64_t owner, const std::string &session, const std::string &gametype, const std::string &type)
+    virtual bool LocalPlayStart(uint64_t owner, const std::string &session, const std::string &gametype, const std::string &type, int difficulty,
+                                bool launch, int &outPort, std::string &error)
     {
-        launches++;
-        launched = session + "/" + gametype + "/" + type;
-        return !refuse && owner == intent.ownerUid;
+        (launch ? launches : arms)++;
+        told = session + "/" + gametype + "/" + type + dw::Fmt("/%d", difficulty);
+        toldOwner = owner;
+        if (refuse || (launch && refuseLaunch)) {
+            error = "Restart the client before hosting another Local Play match.";
+            return false;
+        }
+        outPort = port;
+        return true;
+    }
+    virtual void LocalPlayLeave(uint64_t owner)
+    {
+        leaves++;
+        leftOwner = owner;
     }
     virtual void OnStartGame(const dw::StartInfo &info)
     {
@@ -158,73 +178,59 @@ void RunCase(const dw::Config &cfg, const Case &t, int n)
     dw::RemoveFile(keyPath); /* so that the start below has to write it */
     dw::RemoveFile(rosterPath);
 
+    const std::string want = std::string(t.sessionMap) + "/" + t.gametype + "/" + t.zone + (strcmp(t.zone, "zm") ? "/-1" : "/0");
+    Check(host.arms == 1 && host.launches == 0 && host.told == want && host.toldOwner == uid, t.room,
+          "createSession: the embedder is told the owner's room selection, without a launch");
+    if (host.told != want) printf("       told %s, want %s\n", host.told.c_str(), want.c_str());
+
     const dw::Bytes ready("\x0c\x00\x00\x00\x02\x02\x00\x00\x00\x08\x00\x00\x00\x80\x08\x00", 16);
     const dw::Bytes press = dw::w_u64(rid) + dw::w_blob(ready) + dw::w_u32(0);
-
-    /* 1. Local Play off: nothing to join. */
-    host.enabled = false;
-    Send(server, c, mc, 11, 4, press);
-    f = Drain(c);
-    int pushes = 0, synth = 0, typeId = 0;
-    dw::Bytes body;
-    for (size_t i = 0; i < f.size(); i++)
-        if (f[i].type == 2) {
-            pushes++;
-            if (RoomPush(f[i], typeId, body) && (typeId == 3 || typeId == 5 || typeId == 15)) synth++;
-        }
-    Check(f.size() == 2 && f[0].type == 1 && pushes == 1, t.room, "route off: the reply and the echo relay only");
-    Check(synth == 0, t.room, "route off: no SET_MAP / START_GAME push");
-    Check(host.starts == 0 && host.asked == 1, t.room, "route off: the embedder is asked once and not started");
-    Check(!dw::FileExists(keyPath), t.room, "route off: securitykey.bin is not written");
-    Check(c->room == rid, t.room, "route off: the connection is still in its room");
-
-    /* 1b. Ticked, but the intent does not allow this start (docs/P2P_DEFERRED_HOST_START.md rules
-     * 2, 3 and a refused launch): START_GAME is withheld each time and nothing is launched early. */
-    host.enabled = true;
-    host.intent.ownerUid = uid;
-    host.intent.armed = true;
-    host.intent.state = "armed";
-    host.intent.map = t.map;
-    host.intent.sessionMap = t.sessionMap;
-    host.intent.gametype = t.gametype;
-    host.intent.category = t.zone;
-    struct Withheld {
-        static int Pushes(dw::Server &server, dw::Conn *c, uint32_t &mc, const dw::Bytes &press)
+    struct Pressed { /* what one Ready press pushed back */
+        int synth, ticker;
+        std::string tickerText;
+        static Pressed Press(dw::Server &server, dw::Conn *c, uint32_t &mc, const dw::Bytes &press)
         {
             Send(server, c, mc, 11, 4, press);
             std::vector<Frame> f = Drain(c);
-            int synth = 0, typeId = 0;
+            Pressed out;
+            out.synth = out.ticker = 0;
+            int typeId = 0;
             dw::Bytes body;
-            for (size_t i = 0; i < f.size(); i++)
-                if (f[i].type == 2 && RoomPush(f[i], typeId, body) && (typeId == 3 || typeId == 5 || typeId == 15)) synth++;
-            return synth;
+            for (size_t i = 0; i < f.size(); i++) {
+                if (f[i].type != 2) continue;
+                if (RoomPush(f[i], typeId, body) && (typeId == 3 || typeId == 5 || typeId == 15)) out.synth++;
+                if (!f[i].vals.empty() && f[i].vals[0].u == 35) {
+                    out.ticker++;
+                    for (size_t k = 0; k < f[i].vals.size(); k++)
+                        if (f[i].vals[k].tag == dw::T_BLOB) out.tickerText = f[i].vals[k].s;
+                }
+            }
+            return out;
         }
     };
-    host.intent.failed = true;
-    host.intent.state = "failed";
-    Check(Withheld::Pushes(server, c, mc, press) == 0 && host.launches == 0 && host.starts == 0, t.room, "a failed host choice withholds START_GAME");
-    host.intent.failed = false;
-    host.intent.state = "idle";
-    Check(Withheld::Pushes(server, c, mc, press) == 0 && host.launches == 0, t.room, "an idle intent withholds START_GAME");
-    host.intent.state = "armed";
-    host.intent.sessionMap = "mp_other_map";
-    host.intent.map = "mp_other_map";
-    Check(Withheld::Pushes(server, c, mc, press) == 0 && host.launches == 0, t.room, "another armed selection withholds START_GAME");
-    host.intent.sessionMap = t.sessionMap;
-    host.intent.map = t.map;
-    host.intent.gametype = "sab";
-    Check(Withheld::Pushes(server, c, mc, press) == 0 && host.launches == 0, t.room, "another armed gametype withholds START_GAME");
-    host.intent.gametype = t.gametype;
-    host.intent.ownerUid = uid + 1;
-    Check(Withheld::Pushes(server, c, mc, press) == 0 && host.launches == 0, t.room, "a guest of an armed, unlaunched host is withheld");
-    host.intent.ownerUid = uid;
+    int typeId = 0;
+    dw::Bytes body;
+
+    /* 1. The embedder cannot host this selection (here: a host already ran in this client run). Nothing is
+     * started, nothing else is substituted, and the player is told why. */
     host.refuse = true;
-    Check(Withheld::Pushes(server, c, mc, press) == 0 && host.launches == 1 && host.starts == 0, t.room, "a refused launch withholds START_GAME");
+    Pressed no = Pressed::Press(server, c, mc, press);
+    Check(no.synth == 0 && host.starts == 0 && host.launches == 0, t.room, "a refused selection withholds SET_MAP and START_GAME");
+    Check(no.ticker == 1 && no.tickerText.find("<MSG P=1 T=") != dw::Bytes::npos &&
+          no.tickerText.find("Match not started: Restart the client before hosting another Local Play match.") != dw::Bytes::npos, t.room,
+          "a refused selection: the reason goes to the player's ticker");
+    Check(!dw::FileExists(keyPath), t.room, "a refused selection: securitykey.bin is not written");
+    Check(c->room == rid, t.room, "a refused selection: the connection is still in its room");
     host.refuse = false;
+    host.refuseLaunch = true; /* accepted when armed, refused at the launch */
+    no = Pressed::Press(server, c, mc, press);
+    Check(no.synth == 0 && host.launches == 1 && host.starts == 0 && no.ticker == 1, t.room, "a refused launch withholds START_GAME");
+    host.refuseLaunch = false;
     dw::RemoveFile(keyPath);
     dw::RemoveFile(rosterPath);
+    const int launchesBefore = host.launches;
 
-    /* 2. Armed for exactly this room: the same press hands the match to the owner and launches. */
+    /* 2. The normal press, with nothing ticked anywhere: the match is handed to the owner and launched. */
     Send(server, c, mc, 11, 4, press);
     f = Drain(c);
     int nStart = 0, nJoinResp = 0, nRoomInfo = 0, nRelay = 0;
@@ -261,15 +267,14 @@ void RunCase(const dw::Config &cfg, const Case &t, int n)
                 nRoomInfo++;
             }
             std::string gt = r.Cstr(), map = r.Cstr();
-            Check(gt == t.roomGametype && map == t.roomMap, t.room, "SET_MAP names the room's gametype and session map");
+            Check(gt == t.roomGametype && map == t.roomMap, t.room, "SET_MAP names the session map and the host's mode name");
         } else {
             nRelay++;
         }
     }
-    Check(nStart == 1 && nJoinResp == 1 && nRoomInfo == 1 && nRelay == 1, t.room, "route on: relay, SET_MAP x2, START_GAME x1");
-    Check(host.starts == 1, t.room, "route on: OnStartGame runs exactly once");
-    Check(host.launches == 2 && host.launched == std::string(t.sessionMap) + "/" + t.gametype + "/" + t.zone, t.room,
-          "route on: the launch is raised once, for the armed selection");
+    Check(nStart == 1 && nJoinResp == 1 && nRoomInfo == 1 && nRelay == 1, t.room, "start: relay, SET_MAP x2, START_GAME x1");
+    Check(host.starts == 1, t.room, "start: OnStartGame runs exactly once");
+    Check(host.launches == launchesBefore + 1 && host.told == want && host.toldOwner == uid, t.room, "start: the launch is raised once, for the room's selection");
     if (host.starts == 1) {
         const dw::StartInfo &i = host.last;
         Check(i.map == t.map && i.sessionMap == t.sessionMap && i.gametype == t.gametype && i.zoneType == t.zone, t.room,
@@ -284,11 +289,57 @@ void RunCase(const dw::Config &cfg, const Case &t, int n)
     Check(dw::ReadFile(keyPath, onDisk) && onDisk == key, t.room, "the start writes securitykey.bin");
     Check(dw::ReadFile(rosterPath, roster) && roster.find(dw::Hex(key.data(), 16)) != dw::Bytes::npos, t.room,
           "the start puts the seat's key on game_admissions.txt");
-    /* 3. The host answers with this selection (rule 4): a later press joins it. */
-    host.intent.armed = false;
+
+    /* 3. The owner's CURRENT room context (what the room UI told Kernel33 the room shows) beats the lobby's own
+     * resolution; another player's context is not a pin, and an incoherent one is ignored. */
+    host.haveIntent = true;
+    host.intent = dw::LocalRoute();
+    host.intent.ownerUid = uid + 7;
+    host.intent.map = host.intent.sessionMap = "mp_killhouse_sh";
+    host.intent.gametype = "sd";
+    host.intent.category = "mp";
+    Pressed::Press(server, c, mc, press);
+    Check(host.told == want, t.room, "another player's room context does not move this room");
+    host.intent.ownerUid = uid;
+    Pressed::Press(server, c, mc, press);
+    Check(host.told == "mp_killhouse_sh/sd/mp/-1" && host.last.map == "mp_killhouse_sh" && host.last.roomGametype == "sd", t.room,
+          "the owner's own room context is the selection that is hosted and announced");
+    host.intent.map = "zm_asylum_sh"; /* an mp context on a zombies level is not coherent */
+    Pressed::Press(server, c, mc, press);
+    Check(host.told == want, t.room, "an incoherent room context is ignored");
+    host.haveIntent = false;
+
+    /* 4. A guest of the room: only the owner's host, and only once it runs this selection. */
+    dw::Conn *g = server.Open();
+    uint32_t gmc = 0x40;
+    g->uid = uid + 100;
+    Send(server, g, gmc, 11, 11, dw::w_u64(rid));
+    Drain(g);
+    const int armsBefore = host.arms, launchesNow = host.launches, startsNow = host.starts;
+    Pressed guest = Pressed::Press(server, g, gmc, press);
+    Check(guest.synth == 0 && host.arms == armsBefore && host.launches == launchesNow && guest.ticker == 1, t.room,
+          "a guest is withheld while the owner's host does not run this selection, and never arms a host");
+    host.haveIntent = true;
+    host.intent = dw::LocalRoute();
+    host.intent.ownerUid = uid;
     host.intent.launched = host.intent.ready = true;
     host.intent.state = "ready";
-    Check(Withheld::Pushes(server, c, mc, press) == 3 && host.starts == 2, t.room, "a ready host is joined on 127.0.0.1");
+    host.intent.map = t.map;
+    host.intent.sessionMap = t.sessionMap;
+    host.intent.gametype = t.gametype;
+    host.intent.category = t.zone;
+    Send(server, g, gmc, 21, 1, Descriptor("Guest", g->uid, rid, t.descGametype, t.descMap, key));
+    Drain(g);
+    guest = Pressed::Press(server, g, gmc, press);
+    Check(guest.synth == 3 && host.starts == startsNow + 1 && host.launches == launchesNow && host.arms == armsBefore, t.room,
+          "a guest joins the owner's running host of this selection on 127.0.0.1, without a launch");
+    host.haveIntent = false;
+    server.Close(g);
+
+    /* 5. The owner leaves: nothing stays armed. */
+    Send(server, c, mc, 11, 2, dw::w_u64(rid));
+    Drain(c);
+    Check(host.leaves == 1 && host.leftOwner == uid, t.room, "the owner leaving its room tells the embedder");
     server.Close(c);
 }
 
@@ -422,6 +473,8 @@ int DwRoomsSelfTest(const dw::Config &given)
     }
     static const Case cases[] = {
         { "mp", "war", "mp_rust", "mp_rust", "mp_rust", "war", "mp", "mp_rust", "war" },
+        /* the room UI's name of Team Deathmatch: the host is told, and the client's dwRoomInfo gets, the native name */
+        { "mp-tdm", "tdm", "mp_rust", "mp_rust", "mp_rust", "war", "mp", "mp_rust", "war" },
         { "zm", "zm", "zm_asylum_sh", "zm_asylum_sh", "zm_asylum_sh", "zm", "zm", "zm_asylum_sh", "zm" },
         /* C1's survival button: a coop descriptor naming coop_survival_<level>. The host and the client both get the MP
          * level's own spelling with gametype survival; mp_afghan has no survival data, so the first supported level. */
