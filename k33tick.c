@@ -16,7 +16,7 @@
  * installation; this preserves all existing callback order and the retained chain).
  */
 
-#define K33_MAX_TICKS 8
+#define K33_MAX_TICKS 12 /* 8 until the language and HUD style ticks: a local-testing build with every optional tick plus Product Pi needs 9 */
 
 typedef void (*K33TickFn)(void);
 static K33TickFn g_k33Ticks[K33_MAX_TICKS];

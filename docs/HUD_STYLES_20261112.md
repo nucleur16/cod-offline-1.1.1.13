@@ -231,6 +231,6 @@ Measured means read from the user's own installs or the built files; inferred is
   `codol_english_hud_styles`, `codol_chinese_hud_styles`), required by tests/test_zone_packs.py. Both files are
   pinned by `ui_baseline.json`, which is not re-recorded here.
 - `hud_style.c` takes one `K33OnMainTick` slot. A local-testing build then registers seven before Product Pi's
-  on-demand one (K33_MAX_TICKS is 8): another feature adding a tick needs the limit raised.
+  on-demand one. K33_MAX_TICKS was 8 and is 12 since the language switch and this feature each took a slot.
 - `zone_packs/codol_common_postgfx_mp.csv` has its new build md5 recorded; the two locale packs gained a part and
   were left unrecorded (they already differed from their recorded md5 before this change).
