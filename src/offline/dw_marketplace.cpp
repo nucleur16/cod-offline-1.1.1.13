@@ -51,6 +51,7 @@ const char *const kProByBase[][2] = {
 
 /* ---- catalogue/zm_characters: the Zombies roster (mp/cyborgclasstable.csv, four characters) ---- */
 /* core_grant_item_ids(): the four identities and all their parts, sorted. */
+const int kReleasedUnsoldWeapons[] = { 1057 }; /* m14ebr_mp: released by mp_codol_weapons, no sku (see LoadItemIds) */
 const int kZmCoreGrant[] = { 107, 171, 177, 178, 179, 180, 181, 182, 183, 184, 186, 278, 279, 280,
                              281, 282, 283, 284, 409, 410, 411, 412, 413, 423 };
 /* non_core_item_ids(): the zm heads the roster does not list (zmlubu, zmtightgirl, zmchao, zmhiphop). */
@@ -725,6 +726,13 @@ static std::vector<int64_t> LoadItemIds(Server &s, uint64_t uid, const MpOwnedRo
     }
     for (size_t i = 0; i < sizeof(kZmCoreGrant) / sizeof(kZmCoreGrant[0]); i++)
         if (have.insert(kZmCoreGrant[i]).second) ids.push_back(kZmCoreGrant[i]);
+    /* The product only (not the Python lobby): a weapon the Kernel33 patch zone mp_codol_weapons
+     * releases but the client's store tables have no sku for cannot be bought, so nobody could ever
+     * own it. The M14 EBR (m14ebr_mp, item 1057, product 1365 with no sku) is owned by every
+     * offline profile. */
+    if (!s.cfg.differential)
+        for (size_t i = 0; i < sizeof(kReleasedUnsoldWeapons) / sizeof(kReleasedUnsoldWeapons[0]); i++)
+            if (have.insert(kReleasedUnsoldWeapons[i]).second) ids.push_back(kReleasedUnsoldWeapons[i]);
     std::set<int64_t> drop(kZmNonCore, kZmNonCore + sizeof(kZmNonCore) / sizeof(kZmNonCore[0]));
     for (std::set<int64_t>::iterator h = m.hidden.begin(); h != m.hidden.end(); ++h) {
         if (!equipped.count(*h)) drop.insert(*h);

@@ -5,6 +5,21 @@ client fixes (render gate, dvar defaults, plaintext config, Alt+Tab, raw mouse i
 patch-folder zones). Each patch checks the original bytes first and logs to `Kernel33.log` next
 to the exe. See the comments in `src/kernel33.c` for addresses and reasoning.
 
+## This fork is offline only
+
+There is no online mode. The Demonware lobby runs inside `Kernel33.dll` (`src/offline/`,
+`docs/OFFLINE_LOBBY.md`) and every match is hosted by the embedded match server on 127.0.0.1; the
+client contacts no lobby, website or launcher.
+
+* **Start:** run `codoMP_client_shipRetail.exe` - no arguments are needed. `+set dw_username <name>`
+  picks the profile (default `Player`, or `name =` in the optional `k33_offline.ini`).
+* **Profile:** `<exe dir>\players\<name>\` - `mpdata` (classes), `mpdata_s` (rank, XP, stats) and
+  `account.txt` (wallet, purchases). Deleting `mpdata_s` is a new career.
+* **Playing:** create a room of any kind (Multiplayer, matchmaking, Zombies, Survival, Spec Ops) and
+  press Ready; the match starts on the built-in server. Needs `p2p\sh1x_host.dll`, `main\sh1x_rawfiles`
+  and `p2p\survival_maps.txt` beside the game. One hosted match per client run.
+* If the built-in lobby cannot start, the client stops and says so (`Kernel33.log` has the reason).
+
 ## Repository layout
 ```
 src/            everything compiled into Kernel33.dll (C, plus the C++ offline lobby)
@@ -24,7 +39,7 @@ src/            everything compiled into Kernel33.dll (C, plus the C++ offline l
   gfx/            Scaleform / localization / news repairs (gfx_*, localized_*, news_refresh*)
   kernel/         the room-context and name-display migration (kernel_*), opt-in
   rooms/          lobby rooms, Quick Match and the survival category
-  offline/        offline mode: the Demonware lobby in C++ (built only with K33_OFFLINE=1)
+  offline/        the Demonware lobby in C++ (part of every build)
 scripts/        build.sh and its variants (build-dev, build-controller, build-parity, build-server; build-profile.sh and
                 build-offline.inc.sh are sourced by them), and the Python helpers: build_zones.py (patch zones),
                 make_exe.py, gen_dvars.py, gen_tables.py, ui_keys.py

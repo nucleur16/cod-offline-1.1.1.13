@@ -1,55 +1,54 @@
-# Offline mode: the lobby inside Kernel33
+# Offline only: the lobby inside Kernel33
 
-Branches `k33-offline-lobby` (the port, on `main` d319a61) and `k33-offline-2` (on `main` b145bbc:
-no level gates on playing, a free lobby port, the career as the game's own files in `players\`).
-Status: built, tested offline (unit fixtures, self-tests and differential tests against the Python
-lobby) and run in a live shadow client from a brand-new level-1 profile: login on a free port with
-3074 / 3078 / 17760 held by something else, Create Room at level 1, Local Play, match on the embedded
-host, write-back into the profile files, restart and read-back. Sections "How it was tested" and
-"What still needs the live client" say exactly what was and was not exercised.
+**This fork of Kernel33 is offline only.** There is no online mode and no switch: every build contains
+the lobby and every run uses it. The client never contacts a Demonware lobby, a website or a launcher.
 
-Goal: a player with the game install, Kernel33 and the staged in-process match server
-(`p2p\sh1x_host.dll`, `main\sh1x_rawfiles`) starts the client with no lobby process, no Python, no
-website and no launcher; logs in as a local profile; sees menus, store and loadouts with a
-persistent local career; creates a room (multiplayer, zombies, survival), ticks Local Play, starts,
-plays on the embedded server with bots, and gets rank / XP / unlocks written back afterwards.
+* **Start it:** run `codoMP_client_shipRetail.exe` with no arguments (optionally
+  `+set dw_username <name>` to pick the profile). The game needs the install, `Kernel33.dll` and the
+  staged in-process match server (`p2p\sh1x_host.dll`, `main\sh1x_rawfiles`, `p2p\survival_maps.txt`).
+* **The profile** is the folder `<exe dir>\players\<name>\` (`mpdata`, `mpdata_s`, `account.txt`); the name
+  is `dw_username`, else `name` of the optional `k33_offline.ini`, else `Player`.
+* **Every match is hosted by the embedded server** on 127.0.0.1. There is no LOCAL PLAY choice: every
+  room the player owns (Create Room, matchmaking / playlists, Zombies, Survival, Spec Ops) starts on it.
+
+Branches: `k33-offline-lobby` (the port), `k33-offline-2` (no level gates on playing, a free lobby port,
+the career as the game's own files in `players\`), `k33-offline-m14-survival` (the Python lobby's M14 and
+Survival branches, always-local hosting, offline only). Sections "How it was tested" and "What still
+needs the live client" say exactly what was and was not exercised.
 
 The lobby logic is a C++ port of the Python Demonware emulator
-(`CODOL-EMU/1.1.1.13-Demonware-Emulator-Python`, called "the Python lobby" below). Python remains
-only the reference, the oracle of the differential tests and the language of build-time generators.
+(`CODOL-EMU/1.1.1.13-Demonware-Emulator-Python`, called "the Python lobby" below): its `main` (c641e5e)
+for the first port, then `feat/mp-m14` (2d37c1e) and `fix/hosted-survival-spawn-20261028` (58db75a, which
+contains `feat/survival-category`) - see "Ported from the Python lobby's M14 and Survival branches".
+Python remains only the reference, the oracle of the differential tests and the language of build-time
+generators.
 
-## Switching it on
+## Starting it
 
-Offline mode is two switches, both off by default.
+Nothing has to be switched on. `sh scripts/build.sh` always compiles `src/offline/*.cpp` with g++ and
+links them statically (the `K33_OFFLINE` build flag of earlier branches is gone; `CODOL_OFFLINE_LOBBY`
+is fixed at 1 in `production_profile.h` and survives only so that a test fixture can compile one source
+file without the lobby). At run time the lobby is started before C1's entry point in every run; the
+`+set k33_offline 1` argument and the `enabled =` ini line of earlier builds are ignored (they are
+neither needed nor an off switch).
 
-1. **Build flag.** `K33_OFFLINE=1 sh scripts/build.sh` (or `scripts/build-dev.sh`) defines `CODOL_OFFLINE_LOBBY=1`,
-   compiles `src/offline/*.cpp` with g++ into `build/obj_offline/` and links them statically (libstdc++
-   included; the DLL's import list does not change). Without the flag none of that code is compiled
-   or linked and `OfflineLobbyActive()` is a constant `FALSE`. The flag is independent of
-   `K33_LOCAL_TESTING` / `K33_DIAGNOSTICS`: it adds a feature and enables no diagnostics.
-2. **Run-time switch**, read once before C1's imports are filled:
-   * `+set k33_offline 1` on the command line, or
-   * `<exe dir>\k33_offline.ini` with `enabled = 1`.
+`<exe dir>\k33_offline.ini` is an **optional** settings file:
 
-   | ini key | default | meaning |
-   |---|---|---|
-   | `enabled` | `0` | `1` switches offline mode on |
-   | `name` | `Player` | profile name used when the command line has no `+set dw_username` (letters, digits, `_ - .`, at most 31, no leading or trailing dot). The name is the career's folder under `players\` |
-   | `port` | `0` | `0` = a free loopback port (the normal case). A number is an explicit lobby port, for tests |
-   | `alt_port` | `0` | the same for the alternate NAT-discovery port |
-   | `host_port` | `0` | `0` = the embedded match host's configured UDP port (`p2p\p2p_host.ini`, 17760) when it is free, else a free one. A number is used as it is, for tests |
-   | `level_gates` | `0` | `1` leaves C1's level gates on playing in place |
-   | `players` | `<exe dir>\players` | where the players' folders are |
-   | `runtime` | `<exe dir>\p2p\offline` | the run-time folder the lobby shares with the embedded match host |
+| ini key | default | meaning |
+|---|---|---|
+| `name` | `Player` | profile name used when the command line has no `+set dw_username` (letters, digits, `_ - .`, at most 31, no leading or trailing dot). The name is the career's folder under `players\` |
+| `port` | `0` | `0` = a free loopback port (the normal case). A number is an explicit lobby port, for tests |
+| `alt_port` | `0` | the same for the alternate NAT-discovery port |
+| `host_port` | `0` | `0` = the embedded match host's configured UDP port (`p2p\p2p_host.ini`, 17760) when it is free, else a free one. A number is used as it is, for tests |
+| `level_gates` | `0` | `1` leaves C1's level gates on playing in place |
+| `players` | `<exe dir>\players` | where the players' folders are |
+| `runtime` | `<exe dir>\p2p\offline` | the run-time folder the lobby shares with the embedded match host |
 
-With the run-time switch off, a build with the flag behaves exactly like one without it: no import
-is wrapped, no thread is started, no byte of C1 is written, no socket is opened, no folder is created,
-the host gate and Local Play follow their normal rules (`off` cases of
-`tests/offline_lobby_fixture.c`).
-
-If offline mode is requested and cannot be provided (no free port can be had, an explicit port is
-taken, C1's bytes at the NAT-port site differ, the client was started by a launcher-managed Local
-Play session), the client stops with a message instead of silently logging on to the real lobby.
+If the lobby cannot be provided (no free port can be had, an explicit port is taken, C1's bytes at the
+NAT-port site differ, the client was started by a launcher-managed Local Play session), the client
+stops with a message box naming `Kernel33.log`, where the reason is. It never falls back to another
+lobby: the route files on disk are not read, the host gate vouches loopback only, and `k33http.c` (the
+HTTP client under the optional theatre / display-name services) accepts loopback URLs only.
 
 ## What happens at start-up (`src/offline_lobby.c`)
 
@@ -97,18 +96,21 @@ All of it in `TakeOver`, before C1's entry point:
 7. **The host gate stays on loopback.** `src/p2p/hostgate.c` vouches no lobby name, no default gateway, not
    the SSDP group, and ignores any later vouch while offline mode is active: UDP is exchanged with
    `127.0.0.0/8` only.
-8. **Local Play.** `P2PLoadIni` ends in `OfflineP2PConfig`, which points the embedded match host's
+8. **The match host.** `P2PLoadIni` ends in `OfflineP2PConfig`, which points the embedded match host's
    `state` and `profile` folders at the run-time folder, whatever `p2p_host.ini` says, sets this
    run's port, forces `127.0.0.1`, in-process mode and admission, and clears `rollout` / `extra`.
-   `P2PCheck` and `P2PInprocRun` accept hosting without the verified script service **only** while
-   offline mode is active: the host then compiles the GSC tree installed with the client
-   (`codol_scriptPath`).
+   `P2PCheck` and `P2PInprocRun` accept hosting without the verified script service: the host compiles
+   the GSC tree installed with the client (`codol_scriptPath`). The host is told `+set net_ip6 ::1`, so
+   its IPv6 sockets are on loopback too (without it the server also bound `[::]:17760` - seen live).
+   Hosting is always enabled: `p2p_localhost 0` is ignored and nothing has to be ticked ("The match
+   handoff" below).
 
-The lobby thread never calls into C1. It reads the owner's Local Play intent with
-`K33LocalPlayIntent()` and raises the host launch with `K33LocalPlayLaunch()` (`src/p2p/p2p_local_play_api.h`,
-`docs/P2P_DEFERRED_HOST_START.md`); both are safe on any thread and start nothing themselves. No
-intent file is read by anything in offline mode (p2p.c still writes its `p2p_host.<uid>.txt`; nobody
-consumes it).
+The lobby thread never calls into C1. It reads Kernel33's published local-host snapshot with
+`K33LocalPlayIntent()`, names the selection of the owner's room with `K33LocalPlayAuto()` (arm, and
+launch when START_GAME is handed over) and reports a left room with `K33LocalPlayLeave()`
+(`p2p_local_play_api.h`, `docs/P2P_DEFERRED_HOST_START.md`); all are safe on any thread and start
+nothing themselves. No intent file is read by anything (p2p.c still writes its `p2p_host.<uid>.txt`;
+nobody consumes it).
 
 ## Level gates
 
@@ -305,21 +307,74 @@ Python match server used. The only thing read from the install at run time is wh
 Python: a room start picks a match-server instance, sends `map` over RCON, writes `startgame.txt` and
 `mpdata_s.<uid>`, pushes START_GAME at the instance and later folds `match_report.json` back.
 
-Offline: there is no external server, and the policy is the lobby rule of
-`docs/P2P_DEFERRED_HOST_START.md` (one function, `RouteMatch` in `dw_rooms.cpp`). On a room start the
-lobby reads the owner's intent. Not ticked, failed / stopping / exited / idle, or armed for another
-selection than the room's: START_GAME is withheld (and so is SET_MAP), the room stays usable, no
-other server is ever substituted. Ready with this selection: hand off to `127.0.0.1:<port>`. Armed
-(rule 5), for the owner: write `securitykey.bin` and the admission roster, export the player's
-`mpdata_s.<uid>`, call `K33LocalPlayLaunch(owner, session_map, gametype, type)` and, only if it
-returns 1, push START_GAME addressed to `127.0.0.1:<port>` - no status probe, no map dispatch. The
-port is the intent's, i.e. the match host port of this run. The room's selection is compared with the
-intent in the host's own spelling (Survival = gametype `survival` on the MP level; `tdm`/`ffa`/`hq` =
-`war`/`dm`/`koth`). After the match the embedded server writes `match_report.json`; the lobby's tick
-folds it into the career (XP, rank, challenges, weapon levels, GP for rank-ups), which rewrites
+Offline: there is no external server and no choice. **Every room the local player owns is hosted by
+the embedded server** (one function, `RouteMatch` in `dw_rooms.cpp`; the native half is "Offline mode"
+in `docs/P2P_DEFERRED_HOST_START.md`):
+
+* While the owner is in its room the lobby hands Kernel33 the room's selection whenever the
+  descriptor (createSession / updateSession) or the room's dwRoomInfo changes (`ArmOwnRoom` ->
+  `K33LocalPlayAuto(..., launch = 0)`): the host is armed for what the room shows; nothing runs. The
+  room UI's own `p2p_room` does the same for the rooms it knows. Changing the map or mode re-arms.
+* On Ready / Start the lobby resolves the selection - the one SET_MAP is about to give the client -
+  and names it to Kernel33 again. Accepted: write `securitykey.bin` and the admission roster, export
+  the player's `mpdata_s.<uid>`, raise the launch (`launch = 1`) and push SET_MAP + START_GAME addressed
+  to `127.0.0.1:<host port>` - no status probe, no map dispatch (the host boots straight into the
+  selection). Refused - an unknown category or map, a missing zone or server DLL, a Survival room with
+  no installed level, a host that already ran in this client run - START_GAME and SET_MAP are withheld
+  and the room stays usable. Another server is never substituted.
+* What the player sees when a start is refused: the room's own message box, `Localhost hosting failed:
+  <reason>` (the patched room UI watches `ui_p2p_error` after Ready in every non-playlist room; seen
+  live with the server DLL moved away). The lobby also pushes `Match not started: <reason>` as a ticker
+  line (push 35) for the rooms that UI does not watch (playlist rooms); that line was not seen on
+  screen in the room view and is unverified. A host that fails after the launch ends C1's connect
+  (`disconnect`), so the player is back in the lobby (unchanged, `P2PLaunchAbort`).
+* The owner leaves the room (LEAVE ROOM, or the connection closes): `K33LocalPlayLeave` - nothing stays
+  armed and a launched host is stopped.
+* The selection's spelling for the host: Survival is gametype `survival` on the MP level; the room UI's
+  `tdm` / `ffa` / `hq` are `war` / `dm` / `koth`, and that native name is also what SET_MAP carries. A
+  Zombies room's difficulty (desc[26]) reaches the host as `+set g_difficulty`.
+* The owner's current room context as the room UI told Kernel33 (`p2p_room`) beats the lobby's own
+  persisted room state when the two differ (Python 2089907); another player's context, or one that is
+  not coherent for its category, is ignored.
+
+After the match the embedded server writes `match_report.json`; the lobby's tick folds it into the
+career (XP, rank, challenges, weapon levels, GP for rank-ups), which rewrites
 `players\<name>\mpdata_s` and `account.txt` in that same step. The file contracts with the match
 server (`securitykey.bin`, `game_admissions.txt`, `mpdata_s.<uid>`, `match_report.json`) are
 unchanged, so the server needs no change.
+
+## Ported from the Python lobby's M14 and Survival branches
+
+Reference: the Python lobby's `origin/feat/mp-m14`, `origin/feat/survival-category` and
+`origin/fix/hosted-survival-spawn-20261028` (which contains the second), all ahead of its `main`.
+
+| Python commit | what | here |
+|---|---|---|
+| 2d37c1e (`feat/mp-m14`) catalogue: m14ebr_mp's attachment rows | one table, `catalogue/weapon_tables.py` `_ATTACH_RAW`, read only by the Python profile tools' legality check (`store/playerdata_validate.py`); nothing on a request path | **ported as data**: embedded resource `weapon_attachments.txt` (rendered from the module constant by `gen_resources.py`), with the tools' two lookups `PdWeaponRegistered` / `PdAttachmentLegal` in `dw_playerdata.cpp`. No request path reads it, as in Python. `tests/offline/test_m14_attach_table.py`: all 1915 rows of 52 weapons equal `zones/mp_codol_weapons` (the table the client and the host read); m14ebr_mp has its 58 |
+| 8789d5f survival is its own category | coop descriptor naming `coop_survival_<level>` -> type / gametype `survival` on a level with survival data | **ported** (`dw_handoff.cpp` `HandoffSelect`) |
+| 3742464 every level with survival data | the fourteen supported levels | **ported** (`kSurvivalLevels`, the Python constant) |
+| 9853181 align with installed MP maps and placements | only levels whose zone and `main\sh1x_rawfiles\maps\mp\survival\<level>.gsc` are installed; another level -> the first available (not a rotation); every entry path (rooms, latch) carries the category | **ported** (`HandoffSurvivalLevels`). Product only: also cut to Kernel33's `p2p\survival_maps.txt` when installed, the list `P2PCheck` enforces. No level at all: the start is withheld with the reason (Python falls back to its killhouse record; reproduced under the differential flag) |
+| 5b85e01 load MP map identity directly | session map = the MP level's own spelling; `survival` in the gametype vocabulary and the zone categories | **ported**: SET_MAP carries `<level>` / `survival` |
+| 50fc5ef always grant cf_ch_zm_prototype_sh_1 | flag 668 in every granted-flag set, so the Zombies button opens the room list and creator | **ported** (`dw_marketplace.cpp`, `dw_career.cpp`) |
+| f8235cd usermaps, zm room picks, Zombies difficulty | usermaps and map-pack zones in the installed set and the crc vocabulary; desc[26] -> `set g_difficulty` before `map` | **ported**: `Usermaps` / `InstalledMaps` (the vocabulary is rebuilt when the set changes), `Selection::difficulty`; the RCON line becomes `+set g_difficulty` on the embedded host's command line (`p2p.c`) |
+| 91c483c level zones need no _load.ff; latch of another category | | **ported** |
+| 2ee8a84 survival in CODOL_MAP_TYPES (launchers) | launcher / Docker env | **not applicable**: the port has no zone-type gate. The differential reference (`tests/offline/run_pylobby.sh`) is started with it |
+| 704b58a route enabled localhost rooms only to their owner's ready server | intent files `p2p_host.<uid>.txt`, 15 s staleness, `sh1x_status` probe, block instead of substituting | **already equivalent, by other means**: the offline rule is stricter (always the owner's host, never another server), reads the in-process snapshot, and - per the deferred start - does not wait for a ready host. The file polling, the staleness window and the probe are not reintroduced |
+| 8381ddd canonical multiplayer mode names | `tdm` / `ffa` / `hq` compared as `war` / `dm` / `koth`; the selection sent on carries the host's gametype | compare: **already equivalent**; the host's name in SET_MAP: **ported** |
+| 2089907 localhost joins from the owner's room context | the owner's fresh, coherent UI context overrides the persisted room state | **ported** (`LocalhostSelection`): in-process, the owner's published context; a guest is handed off only to the owner's running host of that selection |
+| 58db75a reject stale or unrelated context (selftest only) | another user's context is not a pin; a stale one is ignored | **ported as tests** (`dwtest --selftest-rooms`: another player's and an incoherent context). Staleness has no file age in-process: the lobby clears the context when the owner leaves the room |
+| `fix/reaper-fixed-ports` | dedicated-server instance management | not applicable offline; not looked at further |
+
+**The M14 EBR offline.** The Kernel33 patch zones `mp_codol_weapons` / `mp_codol_weapons_postgfx_mp`
+release m14ebr_mp (marketplace item 1057, shown as "MK14") with its tables and art. The store tables
+have no sku for it (product 1365), so it could never be bought; the offline lobby therefore puts item
+1057 in every profile's inventory (`kReleasedUnsoldWeapons`, product only - the Python lobby does not).
+Its attachments are sold and level-gated by the client's own tables as for any weapon.
+
+**The embedded server** (`server/sh1x`, pinned 1e945cab; the installed `sh1x_host.dll` and
+`main\sh1x_rawfiles` of the test shadow are newer): it hosted category `survival` (mp_qadeem_sh), `mp`
+(war and the playlist's `combat`), `zm` (with `g_difficulty 2`) and `coop` from these hand-offs with no
+server change. The pinned submodule is not checked out in this worktree and was not inspected.
 
 ## Request inventory
 
@@ -342,7 +397,7 @@ Python lobby answers an empty success on purpose and so does the port.
 | 10 | 6 | LISTALLPUBFILES | real | **ported** |
 | 10 | 7 | GETPUBFILE playlists, `configs_s`, `questionnaire`, `activities`, `mp_rewardlists`, `broadcast`, `ffotd_client.ff` | real | **ported**; `broadcast.info` and `ffotd_client.ff` are not shipped (BD_NO_FILE, as against a fresh Python lobby) |
 | 11 | 2, 4, 11, 13, 15 | leave, message batch + relay + Ready, join, create, member list | real | **ported**; the join-fix variant (off by default in Python) is not |
-| 11 | pushes | relay, SET_MAP (typeId 5 / 15), START_GAME (typeId 3) | real | **ported**; START_GAME follows the Local Play intent |
+| 11 | pushes | relay, SET_MAP (typeId 5 / 15), START_GAME (typeId 3) | real | **ported**; START_GAME always addresses the embedded host |
 | 12 | 6 | getServerTime | real | **ported** |
 | 21 | 1, 12 | createSession, updateSession (descriptor, security key) | real | **ported** |
 | 21 | 3 | delete session | empty success | as Python |
@@ -356,7 +411,7 @@ Python lobby answers an empty success on purpose and so does the port.
 | 80 | 20 | coupon list | empty success | as Python |
 | 80 | 26 | purchaseSkus | real | **ported** (the optional receipt record, off by default, is not) |
 | 80 | 30, 32, 2, 1 | getPlayerData, getBalance, deposit | real | **ported**; the unlock-flag set is by the player's real level |
-| 80 | pushes | inventory refresh (40), ticker (35) | off by default / needs notices | **ported**; never fire without an operator trigger or notice |
+| 80 | pushes | inventory refresh (40), ticker (35) | off by default / needs notices | **ported**; never fire without an operator trigger or notice. The ticker push also carries the reason of a withheld room start |
 | 102 | 1, 3 | chat channel state, chat send | stored, empty success | as Python |
 | - | - | rank write-back from `match_report.json` (XP, rank, GP, lifetime, challenges, weapon levels, co-op, intel) | real | **ported** |
 | - | - | website admission (`/admit`, launch tokens), operator status file, wire tap, notices table and its editor, multi-instance placement / spawning, RCON dispatch, SQLite and its migration tools, zone readers and table generators, fastfile writer | real | **not needed offline**, not ported |
@@ -406,19 +461,39 @@ choice of port), `--selftest-store` (259 checks: folders and
 their names, wallet / inventory, the three files and nothing else, the career read back from
 `mpdata_s`, a deleted `account.txt`, a deleted `mpdata_s`, an unreadable one, the seed's own
 `objectives` value, the legacy import), `--selftest-market` (needs the Python lobby's resources),
-`--selftest-career` (115), `--selftest-rooms` (128: the Local Play policy - withheld when off /
-failed / idle / other selection / guest / refused launch; armed and ready hand-offs for mp, zm,
-survival and co-op rooms). `dwtest --profile <copy of a players folder> --career` prints the careers
-of a folder as the lobby reads them.
+`--selftest-career` (129, with the always-granted Zombies flag and the weapon attachment table),
+`--selftest-rooms` (178: for mp, mp-tdm, zm, survival and coop rooms - the selection is handed to the
+embedder at createSession; Ready starts on 127.0.0.1 with one launch and nothing ticked; a refused
+selection and a refused launch are withheld with a ticker line; the owner's room context beats the
+lobby's, another player's and an incoherent one do not; a guest is handed off only to the owner's
+running host; the owner leaving tells the embedder; and the selection itself: Survival levels, usermaps,
+the latch's category, the Zombies difficulty). `dwtest --profile <copy of a players folder> --career`
+prints the careers of a folder as the lobby reads them.
 
-**Kernel33 side**: `tests/offline_lobby_fixture.c` (15 scenarios: the switch; a free lobby port in
+**Differential tests of this branch** (private copy of the Python lobby at
+`fix/hosted-survival-spawn-20261028`, loopback ports 3184 / 3284, 2026-11-12):
+
+| test | result |
+|---|---|
+| `tests/offline/select_diff.py`: 45 descriptors (rooms, playlists, co-op, Survival by descriptor and by gametype, Zombies difficulties, usermaps, room latches of each category) x 2 installs (none; a made-up one with usermaps and Survival placements), Python `select()` against `HandoffSelect` | 90 selections, 0 differ |
+| `difftest.sh`, the login capture | 209 requests, 0 differ |
+| `difftest.sh`, the 64-connection capture | 2210 requests, 13 differ: 12 x `(11, 4)` (the 860-byte join-request storm against the 3 s relay throttle, timing, as before) and one idle 24-byte plain frame; every `(80, x)` (the flag set with 668 included), `(21, x)`, `(10, x)`, `(4, x)` row is 0 |
+| `tests/offline/test_m14_attach_table.py` | 1915 rows, lobby == `zones/mp_codol_weapons` |
+
+The always-local hand-off and the ticker line are product policy with no Python counterpart; they are
+covered by the self-tests and the native fixture, not by a differential test.
+
+**Kernel33 side**: `tests/test_p2p_start_intent.py` (WSL, gcc -m32 ASan/UBSan, the actual `p2p.c`
+bodies: hosting always on, `p2p_room` arms without a tick, `p2p_localhost 0` ignored, the lobby's
+selection armed and launched, replacing the room UI's; refusals; the leave; the checkbox protocols
+unchanged) and `tests/offline_lobby_fixture.c` (16 scenarios: no switch needed and the old one ignored; a free lobby port in
 the in-memory route files and in the NAT constant; explicit ports; the profile name and a name that
 is not a folder; the players and run-time folders; the gates lifted, kept by the ini, and a call site
 that differs; the match host port free, busy, explicit, reserved until released; a refused start
-that holds nothing; launcher sessions refused; the Local Play API calls) and the `offline` scenario
+that holds nothing; launcher sessions refused; the local-host API calls) and the `offline` scenario
 of `tests/hostgate_windows_fixture.c`, both in `tests/run_tests.sh`.
 
-**Live** (2026-11-12, own link-based shadow client `D:\CoD\k33work\ofl2\client`, `K33_OFFLINE=1
+**Live, the earlier branches** (when offline mode still had a build flag, a run-time switch and the LOCAL PLAY tick; 2026-11-12, own link-based shadow client `D:\CoD\k33work\ofl2\client`, `K33_OFFLINE=1
 K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=1` build of `k33-offline-2`; no Python, no lobby process, no
 server process, no `p2p_host.ini`; the shadow's `dwauth.ini` / `stun.ini` on disk point at an
 unroutable address on purpose; pictures through Kernel33's `k33_shot.req`):
@@ -439,7 +514,36 @@ unroutable address on purpose; pictures through Kernel33's `k33_shot.req`):
 | Spec Ops, Survival (no match started) | the co-op Rooms panel and its Create Room are usable at level 1; Survival opens its room at level 1 |
 | final build; the store of the first offline builds copied into the shadow as `k33_offline\` (level 13, 24 GP), no `players\edtest` | `player_profiles: imported 1 career(s) of the old store ...: 953451679202073159 (level 13) -> edtest`; the menus show level 13 and 24 GP (and, at that level, the store items and the Character / Class tabs C1 gates by level are open); Create Room, LOCAL PLAY, Ready: host on `127.0.0.1:17760`, `server ready after 14359 ms` |
 
-**XP from a real match was not obtained**: the test client's player is driven by posted clicks and
+**Live, this branch** (2026-11-12, own shadow `D:\CoD\k33work\m14surv\client` with real copies of every
+small or writable file, diagnostic build of the merged tree (`src/` layout), started with **no offline
+argument**: `codoMP_client_shipRetail.exe +set dw_username edtest` plus the test harness dvars; pictures
+through Kernel33's `k33_shot.req` in `D:\CoD\k33work\m14surv\shots\`):
+
+| step | result |
+|---|---|
+| start, brand-new profile | `offline lobby: ACTIVE on 127.0.0.1:58787 (free port)`, login, first-run prompts, main menu (`a05`) |
+| Survival button | room on Favela with no box anywhere; lobby: `room selection mp_fav_tropical/survival/survival (createSession) -> armed` (`b01`) |
+| next map in the room | `updateSession` -> `mp_qadeem_sh/survival/survival -> armed`; intent file `state=armed map=mp_qadeem_sh type=survival` |
+| Ready | `local host launch raised for mp_qadeem_sh survival (survival)`, `server ready after 20985 ms ... gametype=survival type=survival humans=1`; class chosen in the pause menu, spawned: `Wave 1`, `4 enemies left` (`b05`); four kills, then killed: `Defeat!` (`b06`) |
+| report | `+0 XP ... +19 GP (balance 19) (report gameended)`; `mpdata_s` rewritten; `account.txt`: `career.kills = 4`, `career.coop_missions = {"coop_survival_mp_qadeem_sh": {"completed": 0, "failed": 1}}`; Statistics screen shows 19 GP (`b07`); `server ended` |
+| hand-written report (labelled as such, 400000 XP, m14ebr_mp weapon XP) | `level 1->29 ... 23 weapon level(s) ... +86800 GP` |
+| class editor after a restart | Inventory lists **MK14** (the M14 EBR) first, shop row "MK14 ... Owned" (`c09`); Customize: MK14 LV 24, shop attachments Angled Foregrip, Hand Stop, FMJ Rounds, RMR Red Dot Sight, Reflex ... (`c10`) |
+| buy Angled Foregrip (7 days, 2000 GP), Buy and Equip | `purchaseSkus ... sku 2316 -> wat/for_gripafg`, "Purchase successful!", `wallet.1 = 84819`, `item = 2223 ...`; the gun shows the grip (`c13`) |
+| Create Room (Killhouse, Team Deathmatch), nothing ticked, Ready | `room selection mp_killhouse_sh/war/mp -> armed`, launch raised, `server ready`; pause menu class 1 = MK14 LV 24 with the grip (`c20`); spawned holding the M14 (`c21`) |
+| Back to Lobby | `LEAVE ROOM`, `p2p: the owner left the room (lobby); disarmed, stopping the local host`, `server ended`; report folded (`+21 GP`) |
+| Matchmaking > Search (playlist 1, no room UI context) | room `mp_killhouse_sh/combat/mp -> armed` from the lobby alone; Ready: host up, spawned with the M14 (`d02`) |
+| Zombies > Create Room, Hard, nothing ticked | `zm_prototype_sh/zm/zm/2 -> armed`; Ready: `Round 1/17` (`e06`); `rcon g_difficulty` on the host: `2` |
+| server DLL moved away, Create Room, Ready | message box `Localhost hosting failed: server DLL not found (dll=)` (`f01`); lobby: `START_GAME withheld`, ticker push sent; room still usable (`f02`) |
+| Leave that room | `p2p: the owner left the room (lobby); disarmed`; intent `state=idle`, no selection, nothing running |
+| Spec Ops > Boot Camp > Start > Ready | `coop_training_mp_killhouse_sh/coop/coop -> armed`, host up, in the mission (`g04`) |
+| sockets of the client (netstat, by pid) | lobby and STUN on 127.0.0.1 / 127.0.0.2 only; the match host on 127.0.0.1:17760 and, after the `net_ip6 ::1` change, `[::1]:17760` (before it: `[::]:17760`, TCP and UDP); C1's own game socket `0.0.0.0:30001` |
+| outbound traffic seen | no connection to any lobby host (`dwauth.ini` / `stun.ini` on disk point at 192.0.2.1 and were not used). `hostgate: refused datagram to 239.255.255.250:1900` (C1's UPnP search, refused, 7 times in one run). One UDP socket of the process is connected to `116.130.229.213:8000`: it is not C1's (C1's `sendto` goes through the host gate) - one of the Tencent DLLs the client loads (`TenProxy` / `TerSafe` / `GbSpy` / `BugTrace`); whether a datagram left was not measured |
+
+Not shown live on this branch: the ticker line of a refused start on screen; a refused start in a
+playlist room; a second match in one client run (after the first match the client came back to a room
+view with placeholder texts whose Ready did nothing - not investigated); Survival on a usermap.
+
+**XP from a real match was not obtained** (earlier branches): the test client's player is driven by posted clicks and
 key messages and made no multiplayer kill (the bots of this server build stand idle), and zombies
 kills carry no XP in the server's report. The XP / rank path of the live run is therefore the
 hand-written report above plus the 33 differential scenarios; everything else of the write-back (GP,
@@ -498,21 +602,51 @@ read with the Python lobby's codec from a copy of `players\edtest\mpdata`):
 ## What still needs the live client
 
 * **XP from kills in a real match** (see above).
-* **Survival and co-op matches** live: the rooms open at level 1, but in the shadow used the Survival
-  room and the Spec Ops create-room panel show no LOCAL PLAY box, so no match was started there (the
-  handoff policy for them is unit-tested only).
-* **Store purchase** live (differential-tested).
+* **XP from kills on this branch**: the Survival match's four kills carried no XP in the server's
+  report either (`+0 XP`).
 * **Two offline clients at once on one PC**: the ports are proven free and distinct per listener
   (self-test, and live against dummy sockets on the default ports), but two real clients were not
   started together.
 * **A second match in one client run**: unchanged limitation of the in-process host (one hosted
   session per client run).
-* **Shipping profile with `K33_OFFLINE=1`** (`K33_LOCAL_TESTING=0`): builds; not run live.
-* The LOCAL PLAY label rendered as `@K33UI_LOCAL...` in the shadow used (its zones lack that
-  string); unrelated to the lobby.
+* **Shipping profile** (`K33_LOCAL_TESTING=0`): builds; not run live.
+* **The LOCAL PLAY box of the Create Room dialogs is still drawn** (an unlabelled `@K33UI_LOC...` box
+  in the test shadow). It is inert offline: ticked or not, the room is hosted locally (ticking still
+  sets the room's minimum players to 1 and shows the read-only box in the room). Removing it needs an
+  ActionScript change: `MatchMiniRoomCreatorView` and `MatchMPCTRoomCreatorView_mpcreator` set
+  `localCreateOption.visible` from the room type alone (no dvar is read), so `visible = false` there and
+  `minPlayer = 1` for every created room, plus dropping `LocalMatchControls`' box from `InRoomBaseView`;
+  that is an FFDec recompile of the patched `codo.gfx` with a pin-chain successor stage and was left
+  for a follow-up.
+* The room view after a finished match (placeholder texts, Ready without effect), see above.
 * After leaving a zombies room, the Spec Ops room list showed that room as still waiting; not
   investigated.
 
+
+## Dead or unreachable now that the client is offline only (left in the tree for a cleanup job)
+
+Nothing below was deleted; none of it can take the client online.
+
+* `src/p2p/hostgate.c`: `HostGateReadLobbyNames`, `HostGateAllowGateways`, `HostGateAllow` / `HostGateVouch`,
+  the resolve thread's name list and the SSDP exception - all behind `!OfflineLobbyActive()`, which is
+  never true once C1 runs. The non-offline scenarios of `tests/hostgate_windows_fixture.c` test them.
+* The Local Play checkbox protocols: startup IPC 1 / 2 (`p2p_start_intent`, `p2p_cancel_start`,
+  `p2p_startup_*`, `p2p_active_*`), the production protocol 3 (`p2p_production_*`, `src/production/`,
+  `src/shared/p2p_win_pipe.c`, the retained SDK), the Guest binding route (`p2p_guest_binding*`): a
+  client started by such a launcher session is refused at start-up (`InstallOfflineLobby`).
+  `K33LocalPlayLaunch` has no caller left (the lobby uses `K33LocalPlayAuto`).
+* The verified-script service path (`p2p_verified_scripts.c`): hosting never asks for it.
+* The intent files `p2p_host.<uid>.txt` / `p2p_host.txt` and `P2PRollout`: written, read by nobody.
+* `src/launcher_update_bridge.c` (inert without a compiled launcher pin), `src/gfx/news_refresh*` (the
+  news pane stays on "Loading, please wait..."), invitations / friends / clan UI paths (answered empty
+  by the lobby), `src/kernel/kernel_name_network.c` (opt-in build flag, names `codol.kewkew.org`).
+* `src/theatre.c` and `src/name_display.c`'s service: their URLs are refused by `k33http.c` unless
+  loopback, so the THEATRE button's recording service cannot be reached.
+* `src/discord.c` talks to the local Discord client over its named pipe (no socket of its own); it is
+  the one feature left that can make something else (Discord) show the player online.
+* The Python lobby's `CODOL_*` online knobs were never ported; `scripts/build-controller.sh` does not
+  link `src/offline` (it did not link `src/production` before either, i.e. it was already stale).
+* In the UI: the LOCAL PLAY boxes (above), the DEV PANEL of the room view.
 
 ## Not done
 
@@ -530,9 +664,9 @@ read with the Python lobby's codec from a copy of `players\edtest\mpdata`):
 
 1. **Hosting without the verified script service in offline mode.** `P2PCheck` / `P2PInprocRun`
    accept the installed GSC tree when (and only when) offline mode is active: one player, loopback
-   only, admission still required. Without this, Local Play cannot run self-contained at all (no
-   `sh1x_host.dll` on this machine exports `Sh1xHost_UseVerifiedScripts`). This is a policy change,
-   compiled only with `K33_OFFLINE=1`.
+   only, admission still required. Without this, local hosting cannot run self-contained at all (no
+   `sh1x_host.dll` on this machine exports `Sh1xHost_UseVerifiedScripts`). Since the client is offline
+   only, this is now the rule of every build.
 2. **Which gates are lifted.** Playing is: rooms, room creation, playlists, co-op and zombies room
    types, maps. The store, avatar and weapon customisation and stat tracking keep their levels, and
    so does every loadout unlock. Moving a row is one line of `kOflPlayNotifications`.
@@ -543,6 +677,6 @@ read with the Python lobby's codec from a copy of `players\edtest\mpdata`):
    start with an empty wallet and inventory plus the default items.
 6. **UPnP**: offline mode vouches no gateway and no SSDP group. No delay was seen live; if a client
    is ever seen waiting on UPnP, the alternative is to vouch the gateway as online mode does.
-7. **LOCAL PLAY stays an explicit tick** in offline mode; a room started without it is withheld with a
-   log line and no on-screen message.
+7. **No LOCAL PLAY choice** (owner, 2026-11-12): every owned room is hosted locally; see "The match
+   handoff". **The M14 EBR is owned by every profile** (it has no sku to buy it with).
 8. **Tracked `Kernel33.dll`** was not rebuilt or committed; the offline profile is opt-in.

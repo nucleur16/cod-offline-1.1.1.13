@@ -98,6 +98,42 @@ meaning (the host answers with this selection); `armed` is never `ready`.
 branch. It was used only to live-test this branch on a throwaway local copy; it is **not** a deliverable (the lobby
 logic is being ported into Kernel33.dll in C++ and rule 5 belongs there).
 
+## Offline mode: every owned room is hosted, with no choice (branch `k33-offline-m14-survival`)
+
+This fork is offline only (`docs/OFFLINE_LOBBY.md`): the lobby runs inside Kernel33.dll and there is no
+other server. The owner decided that local hosting is then not a choice: **no tick, no untick**.
+Everything above about the deferred start still holds - arming starts nothing, the host starts at the
+launch, a failed launch ends the connect - but what arms, and what the lobby does, changes while the
+in-DLL lobby is active and the protocol is 0 (`P2PAutoMode`; the launcher protocols 1-3 cannot occur,
+a client started by them is refused at start-up):
+
+* Hosting is always enabled. `p2p_room` (the room UI's context) arms by itself; `p2p_localhost 1` is
+  not needed and `p2p_localhost 0` is ignored. `ui_p2p_enabled` is 1 as soon as the tick runs.
+* The lobby is the authority on the selection, for every kind of room (also the ones whose UI sends no
+  `p2p_room`: playlist / matchmaking rooms). It calls, from its own thread,
+  `K33LocalPlayAuto(owner, session_map, gametype, type, difficulty, launch, &port, error)`:
+  validated at once on the caller's thread (`P2PParseRoomContext`, `P2PCheck`, one hosted session per
+  client run), then posted to a one-slot request the main-thread tick applies (`P2PAutoTick`): the room
+  context is replaced, `P2PArmLegacyRoom` arms, and with `launch` the explicit launch signal is raised.
+  A launch posted for a selection is not taken back by a later arm of the same selection; the launched
+  host of exactly that selection is simply joined again.
+* Rule 5 has no "off" case any more. The lobby's rule: owner -> `K33LocalPlayAuto`; accepted ->
+  START_GAME to `127.0.0.1:port`; refused -> withhold with the reason, never another server. A guest
+  (not possible with one local player, kept for completeness) -> rule 4 only.
+* `K33LocalPlayLeave(owner)`: the owner left the room - disarm, forget the room context, stop a launched
+  host (what unticking did).
+* Feedback: the reason of a refusal is published as `ui_p2p_error` (state `failed`), which the patched
+  room UI shows as `Localhost hosting failed: <reason>` after Ready; the lobby adds a ticker line. A
+  selection that was accepted on the lobby's thread but cannot be armed on the main thread (the state
+  changed in between) ends the client's connect with `disconnect`, like a failed launched host.
+* The LOCAL PLAY boxes of the patched movie are still drawn in the Create Room dialogs and are inert
+  (`docs/OFFLINE_LOBBY.md` says what an ActionScript change would be). No ActionScript was changed, so
+  the movie pin chain is untouched.
+* The host's command line gains `+set g_difficulty <0..2>` for a Zombies room and `+set net_ip6 ::1` for
+  a loopback host.
+
+Fixture: `tests/test_p2p_start_intent.py` (offline block). Live: see `docs/OFFLINE_LOBBY.md`.
+
 ## Native interface
 
 `src/p2p/p2p_local_play_api.h` (C and C++):
@@ -107,6 +143,8 @@ int K33LocalPlayIntent(K33LocalPlayIntentInfo *out);          /* any thread: the
 int K33LocalPlayLaunch(unsigned long long owner_uid, const char *session_map,
                        const char *gametype, const char *type); /* any thread: raise the launch request */
 ```
+
+`K33LocalPlayAuto` / `K33LocalPlayLeave` (offline mode, above) are in the same header.
 
 `K33LocalPlayIntent` copies, under `g_p2pLock`, the snapshot the main-thread tick last published (owner uid, enabled,
 armed, launched, ready, failed, port, protocol, selection, state, error). `K33LocalPlayLaunch` returns 1 when the

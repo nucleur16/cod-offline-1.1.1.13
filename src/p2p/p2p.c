@@ -590,6 +590,10 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
      * selection, K33LocalPlayAuto); left unset it stays 0 and every room plays on easy. */
     if (!strcmp(c.zoneType, "zm") && c.difficultyPresent && c.difficulty >= 0 && c.difficulty <= 2)
         _snprintf(pmem + strlen(pmem), sizeof(pmem) - strlen(pmem), " +set g_difficulty %d", c.difficulty);
+    /* A loopback host stays on loopback for IPv6 too: without this the server also binds [::]:<port>
+     * (TCP and UDP, every interface - seen with netstat), next to its 127.0.0.1 sockets. */
+    if (!strcmp(c.netIp, "127.0.0.1"))
+        _snprintf(pmem + strlen(pmem), sizeof(pmem) - strlen(pmem), " +set net_ip6 ::1");
     /* The explicit local Host/Guest trial arms this short-lived file before
      * forwarding any Guest packet. Normal solo hosting leaves it absent. */
     _snprintf(relayPath, sizeof(relayPath), "%s\\p2p_relay_identity.txt", c.state);

@@ -56,4 +56,4 @@ window remains unchanged. It does not certify the game's menu response.
 
 ## Offline mode
 
-`K33_OFFLINE=1` (`CODOL_OFFLINE_LOBBY=1`) is a separate opt-in build flag: it compiles the in-client lobby (`src/offline/`, `src/offline_lobby.c`, `docs/OFFLINE_LOBBY.md`). It enables no diagnostics and changes nothing unless the player also switches offline mode on at run time (`+set k33_offline 1` or `k33_offline.ini`). Without the flag none of that code is built or linked.
+The in-client lobby (`src/offline/`, `src/offline_lobby.c`, `docs/OFFLINE_LOBBY.md`) is part of every profile and always active: this fork is offline only. `K33_OFFLINE` no longer exists; `CODOL_OFFLINE_LOBBY` is fixed at 1 in `production_profile.h` (a test fixture may define it 0 to compile one source file alone). It enables no diagnostics.
