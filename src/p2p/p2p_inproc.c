@@ -404,7 +404,9 @@ __asm__(
     "    popal\n"
     "    jmp *_g_piNext\n");
 
-static BOOL P2PInprocUsed(void) { return g_piSession > 0 && (g_piState == PI_ENDED || g_piState == PI_CRASHED); }
+static volatile LONG g_piRetireFailed; /* p2p_inproc_retire.c */
+/* A spent session blocks the next one only when it could not be taken down (p2p_inproc_retire.c). */
+static BOOL P2PInprocUsed(void) { return g_piSession > 0 && (g_piState == PI_ENDED || g_piState == PI_CRASHED) && g_piRetireFailed; }
 static BOOL P2PInprocPrincipalFresh(void)
 {
     if(P2PProductionMode()!=0)return P2PProductionHostCurrent();
@@ -606,6 +608,7 @@ static const char *__cdecl PiScriptString(unsigned handle)
     s = (const char *)(DWORD_PTR)(C1_SL_BUFFER_VA + 16u * handle + 4u);
     return Readable(s, 1) ? s : NULL;
 }
+#include "p2p_inproc_retire.c"
 static const void *__cdecl PiC1Provide(unsigned type, const char *name)
 {
     if (*(volatile const DWORD *)(DWORD_PTR)0x02007A60u) return NULL;
@@ -680,6 +683,8 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         if(P2PProductionMode()==0)DeleteFileA(copy);
         return 1;
     }
+    /* What the copy takes from the process is tracked from here on, for its teardown (p2p_inproc_retire.c). */
+    BOOL tracked = P2PProductionMode()==0 && PiTrackInstall(m);
     Sh1xInitFn init;
 #if CODOL_LOCAL_TESTING
     init=(Sh1xInitFn)(void *)GetProcAddress(m,startup_mode==2?"Sh1xHost_InitWithMatchOptions":"Sh1xHost_Init");
@@ -811,7 +816,8 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     }
 #endif
 
-    BOOL ready = FALSE, registered = FALSE, quitAsked = FALSE;
+    BOOL ready = FALSE, registered = FALSE, quitAsked = FALSE, hadHuman = FALSE;
+    int emptyPolls = 0;
 #if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_MONITOR_DECL */
     DWORD lastPoll = 0, lastAnswer = 0, lastStats = GetTickCount(), quitAt = 0;
 #else /* K33_SHIPPING_TIMING_MONITOR_DECL */
@@ -872,6 +878,15 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
             P2PStatusLine(reply, line, sizeof(line)) &&
             P2PStatusMatches(line, c.map, c.sessionMap, c.gametype, c.zoneType)) {
             lastAnswer = now;
+            if (OfflineLobbyActive() && tracked && PiMatchOverPoll(line, &hadHuman, &emptyPolls)) {
+                /* offline: one match per session; the room is re-armed for the next Ready (p2p.c) */
+                InterlockedExchange(&g_piMatchOver, 1);
+                quitAsked = TRUE;
+                quitAt = now;
+                P2PSetState(P2P_STOPPING, NULL);
+                InterlockedExchange(&g_piQuit, 1);
+                continue;
+            }
             EnterCriticalSection(&g_p2pLock);
             lstrcpynA(g_p2p.status, line, sizeof(g_p2p.status));
             if (!ready) g_p2p.readyMs = now - t0;
@@ -944,6 +959,13 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
             (unsigned long)(g_piFaultEip - (g_piFaultEip >= g_piBase && g_piFaultEip < g_piEnd ? g_piBase : g_crtBase)));
     Log("p2p in-process: server %s (init %d, exit code %d) after %lu ms; %lld frames on the game thread, mean %lld us, max %lld us",
         kPiState[st], g_piInitResult, g_piCode(), GetTickCount() - t0, g_piCalls, g_piCalls ? g_piTotalUs / g_piCalls : 0, g_piMaxUs);
+    /* Take the spent session down so that the next match can load a fresh copy (p2p_inproc_retire.c). */
+    if (st == PI_ENDED || st == PI_CRASHED) {
+        if (!tracked || !PiRetire(m, copy)) {
+            InterlockedExchange(&g_piRetireFailed, 1);
+            Log("p2p in-process: the session stays loaded; restart the client to host again");
+        }
+    }
     return 0;
 }
 

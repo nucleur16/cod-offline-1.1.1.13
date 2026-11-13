@@ -230,7 +230,10 @@ void RunCase(const dw::Config &cfg, const Case &t, int n)
     dw::RemoveFile(rosterPath);
     const int launchesBefore = host.launches;
 
-    /* 2. The normal press, with nothing ticked anywhere: the match is handed to the owner and launched. */
+    /* 2. The normal press, with nothing ticked anywhere: the match is handed to the owner and launched. The owner
+     * of a multiplayer room that names its own map is not sent the JoinResponse (it would empty the room's
+     * roster, which the room view shows after the match); every other start is. */
+    const int wantJoinResp = strcmp(t.zone, "mp") ? 1 : 0;
     Send(server, c, mc, 11, 4, press);
     f = Drain(c);
     int nStart = 0, nJoinResp = 0, nRoomInfo = 0, nRelay = 0;
@@ -240,7 +243,7 @@ void RunCase(const dw::Config &cfg, const Case &t, int n)
         r.Bits(9);
         if (typeId == 3) {
             nStart++;
-            Check(nJoinResp == 1 && nRoomInfo == 1, t.room, "SET_MAP is pushed before START_GAME");
+            Check(nJoinResp == wantJoinResp && nRoomInfo == 1, t.room, "SET_MAP is pushed before START_GAME");
             dw::Bytes addr;
             uint32_t len = (uint32_t)r.Bits(32);
             for (uint32_t k = 0; k < len && !r.eof; k++) addr += (char)r.Bits(8);
@@ -272,7 +275,8 @@ void RunCase(const dw::Config &cfg, const Case &t, int n)
             nRelay++;
         }
     }
-    Check(nStart == 1 && nJoinResp == 1 && nRoomInfo == 1 && nRelay == 1, t.room, "start: relay, SET_MAP x2, START_GAME x1");
+    Check(nStart == 1 && nJoinResp == wantJoinResp && nRoomInfo == 1 && nRelay == 1, t.room,
+          wantJoinResp ? "start: relay, SET_MAP x2, START_GAME x1" : "start: relay, SET_MAP (room info only), START_GAME x1");
     Check(host.starts == 1, t.room, "start: OnStartGame runs exactly once");
     Check(host.launches == launchesBefore + 1 && host.told == want && host.toldOwner == uid, t.room, "start: the launch is raised once, for the room's selection");
     if (host.starts == 1) {

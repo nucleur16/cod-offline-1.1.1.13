@@ -607,8 +607,6 @@ read with the Python lobby's codec from a copy of `players\edtest\mpdata`):
 * **Two offline clients at once on one PC**: the ports are proven free and distinct per listener
   (self-test, and live against dummy sockets on the default ports), but two real clients were not
   started together.
-* **A second match in one client run**: unchanged limitation of the in-process host (one hosted
-  session per client run).
 * **Shipping profile** (`K33_LOCAL_TESTING=0`): builds; not run live.
 * **The LOCAL PLAY box of the Create Room dialogs is still drawn** (an unlabelled `@K33UI_LOC...` box
   in the test shadow). It is inert offline: ticked or not, the room is hosted locally (ticking still
@@ -618,10 +616,69 @@ read with the Python lobby's codec from a copy of `players\edtest\mpdata`):
   `minPlayer = 1` for every created room, plus dropping `LocalMatchControls`' box from `InRoomBaseView`;
   that is an FFDec recompile of the patched `codo.gfx` with a pin-chain successor stage and was left
   for a follow-up.
-* The room view after a finished match (placeholder texts, Ready without effect), see above.
 * After leaving a zombies room, the Spec Ops room list showed that room as still waiting; not
   investigated.
 
+
+## Consecutive matches in one client run (`src/p2p/p2p_inproc_retire.c`)
+
+Every match is a fresh server; the spent one is taken down completely, so the next Ready (same room,
+another map, another category) starts a new one in the same client run.
+
+* **Why it could not run twice.** The in-process server cannot be re-initialised (its globals are spent
+  after a quit: server `win32/sys_host.c`), so p2p.c always loaded a fresh copy of `sh1x_host.dll` per
+  session - but the spent copy stayed: its 228 MB image, the hunk and zone memory it `VirtualAlloc`s
+  (measured: about 730 MB private and 1.2 GB of address space per session) and its threads. A second
+  copy does not fit in the 32-bit address space next to C1, so the client refused ("Restart the client
+  before hosting another Local Play match").
+* **The teardown.** Right after `LoadLibrary` of the copy and before `Sh1xHost_Init`, the copy's own import
+  table is pointed at wrappers that record what the server takes from the process (`VirtualAlloc` /
+  `VirtualFree`, `CreateThread`, `_beginthread`, events, files, mappings and views, sockets) and put its
+  `malloc` family on a private heap (a block carries a tag, so a pointer msvcrt allocated still goes back
+  to msvcrt). When the session ends: the game thread is off the server's fiber, the fiber is deleted, the
+  server's remaining threads are ended - each only while it sits in a system call, so no lock of the
+  process heap or the CRT is left owned - its sockets, views and handles are closed, the copy is unloaded,
+  its remaining regions are released, its heap destroyed and the temporary file deleted. If a thread never
+  reaches a wait, nothing is unloaded and the old rule (restart the client) applies for that run.
+* **When a session ends.** Offline, the host is started with `codol_oneShotMatch 1` and `codol_exitToLobby 1`
+  (server `g_sv_main.c` `ExitLevel`: the finished map stays loaded instead of rotating); the status poll ends
+  the session once the player who was on it has left (no human for three polls, ~6 s). Before, the server
+  rotated to the next map at the level exit, C1 followed it for a second, and that map's `disconnect` report
+  credited a **loss** after every match (seen in every earlier live report pair); a Zombies server rotated to
+  another level (`zm_asylum_sh`) whose load stalled the host until the 20 s status watchdog ended it ("Server
+  quit"). The room stays armed (`P2PMatchOverTick`); the next Ready launches a fresh host. A host nobody joins
+  is stopped after 120 s as before, now without the "Restart the client" error.
+* **The room view after the match.** The lobby's typeId-5 JoinResponse (sent with SET_MAP at Ready) must carry
+  an empty roster (a member in it is C1 `Com_Error 702`, Python `docs/join_fix_702.md`); it empties the
+  owner's own member list, which the room view showed after the match as the card's placeholder texts
+  ("Example text", "MAP NAME") with a Ready that sends nothing. The owner of a multiplayer or Zombies room
+  whose descriptor / room info already names the map is no longer sent it (`ReadyPress`, `Selection::roomMap`):
+  its START_GAME reads its own dwRoomInfo (seen live: `map: mp_killhouse_sh type: war`, `map: zm_prototype_sh
+  type: zm`). Co-op, Survival and playlist rooms still get it (their session map is spelled differently), so
+  their room card is still blank after a match; leaving and re-creating the room works.
+
+**Live** (2026-11-13, shadow `ofl3\client`, diagnostic build, one client run; pictures `ofl3\shots	2_e*`,
+`t2_f*`): Create Room Killhouse TDM, Ready, spawn, match to its time limit, report folded (+13 GP),
+`session taken down`; the same room, map changed to Overgrown, Ready, spawn, match end (+2 GP), taken down;
+Leave, Zombies, Create Room, Ready, spawn in Outpost round 1, killed, "Defeat!" (+2 GP), taken down. Every
+report is a single `gameended` report (no `disconnect` loss). A separate run: Zombies twice from the same
+room (the room card intact between them). Process memory (Get-Process, private / virtual):
+
+| point | private MB | virtual MB |
+|---|---:|---:|
+| main menu after login | 1221 | 1802 |
+| room view after match 1 (Killhouse) | 1512 | 2074 |
+| room view after match 2 (Overgrown) | 1524 | 2081 |
+| main menu before match 3 | 1534 | 2085 |
+| Zombies summary after match 3 | 1504 | 2144 |
+
+Each teardown released 255-290 MB private and 395-460 MB of address space (`session taken down: ... process
+private 1591 -> 1330 MB, address space 2389 -> 1994 MB`); what stays after the first match is C1's own (the
+map zones it holds until the next load). The server image, hunk and threads do not accumulate.
+
+Seen in these runs and not caused by the change: on a busy PC (three other clients running) C1's own load of
+`common_gametype_mp` took 49-74 s on the game thread, during which the in-process server is not ticked; the
+client's connect then timed out ("Unable to connect to host") - twice, both on the first match after start-up.
 
 ## Network egress: nothing leaves loopback (`src/egress_gate.c`)
 

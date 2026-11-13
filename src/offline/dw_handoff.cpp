@@ -823,6 +823,7 @@ Selection HandoffSelect(Server &s, const Vals *desc)
     sel.playlist = pl;
     sel.playlistName = meta ? meta->nameEn : std::string();
     sel.source = source.empty() ? "default" : source;
+    sel.roomMap = source == "room";
     sel.resolved = resolved;
     sel.rotated = rotated;
     sel.rotationIndex = rotationIx;

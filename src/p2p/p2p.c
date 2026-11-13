@@ -134,7 +134,8 @@ static P2PConfig g_p2pOverride;
 static BOOL g_p2pHasOverride;
 struct P2PConfig;
 static int P2PInprocRun(const struct P2PConfig *c, const char *password, const char *args); /* p2p_inproc.c */
-static BOOL P2PInprocUsed(void); /* p2p_inproc.c: an in-process session already ran in this client */
+static BOOL P2PInprocUsed(void); /* p2p_inproc.c: an in-process session ran and could not be taken down */
+static volatile LONG g_piMatchOver; /* p2p_inproc_retire.c: the hosted match ended; its session is being taken down */
 static BOOL P2PInprocPrincipalFresh(void); /* game-thread native principal observation */
 
 static void P2PSetState(int state, const char *error)
@@ -582,7 +583,7 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
 
     static char cmd[8192];
     BOOL inproc = !_stricmp(c.mode, "inprocess");
-    char pmem[96] = "";
+    char pmem[256] = "";
     char relayArg[MAX_PATH + 96] = "";
     char relayPath[MAX_PATH + 64];
     if (c.pmemMegs >= 32 && c.pmemMegs <= 2048) _snprintf(pmem, sizeof(pmem), "+set codol_pmemMegs %d", c.pmemMegs);
@@ -594,6 +595,14 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
      * (TCP and UDP, every interface - seen with netstat), next to its 127.0.0.1 sockets. */
     if (!strcmp(c.netIp, "127.0.0.1"))
         _snprintf(pmem + strlen(pmem), sizeof(pmem) - strlen(pmem), " +set net_ip6 ::1");
+    /* Offline: one match per session. At its level exit the server keeps the finished map instead of rotating
+     * (server g_sv_main.c ExitLevel: "a managed worker keeps the finished map loaded until clients leave"); the
+     * player goes back to the lobby, the session ends and is taken down (p2p_inproc_retire.c), and the next
+     * Ready starts a fresh one. Without it the client followed the rotation into the next map for a second and
+     * that map's "disconnect" report credited a loss. */
+    if (OfflineLobbyActive())
+        _snprintf(pmem + strlen(pmem), sizeof(pmem) - strlen(pmem), " +set codol_oneShotMatch 1 +set codol_exitToLobby 1");
+    pmem[sizeof(pmem) - 1] = 0;
     /* The explicit local Host/Guest trial arms this short-lived file before
      * forwarding any Guest packet. Normal solo hosting leaves it absent. */
     _snprintf(relayPath, sizeof(relayPath), "%s\\p2p_relay_identity.txt", c.state);
@@ -997,8 +1006,19 @@ static void P2PLaunchWatch(int state, DWORD now)
     if (now - g_p2pEmptySince < P2P_LAUNCH_EMPTY_MS) return;
     g_p2pEmptySince = 0;
     Log("p2p: nobody is on the launched local host after %u s; stopping it", P2P_LAUNCH_EMPTY_MS / 1000u);
-    lstrcpyA(g_p2pLobbyError, "No player joined the local match. Restart the client to host again.");
     InterlockedExchange(&g_p2pStop, 1);
+    InterlockedExchange(&g_piMatchOver, 1); /* the room stays armed: the next Ready starts a fresh host */
+}
+/* Main thread: the launched host's match is over (its session ends and is taken down, p2p_inproc_retire.c).
+ * The owner is still in the room: it is armed again for the next Ready, which starts a fresh host. */
+static void P2PMatchOverTick(void)
+{
+    if (!InterlockedExchange(&g_piMatchOver, 0)) return;
+    if (!g_p2pLaunched) return;
+    Log("p2p: the local match is over; the room is armed again for the next Ready");
+    g_p2pLobbyError[0] = 0;
+    if (g_p2pHasRoom && g_p2pEnabled) P2PArmLaunch(g_p2pIntentConfig.port);
+    else P2PDisarm();
 }
 static void P2PLobbyTick(void)
 {
@@ -1024,6 +1044,7 @@ static void P2PLobbyTick(void)
     }
     int protocol=P2PSelectedProtocolMode();
     P2PAutoTick();
+    P2PMatchOverTick();
     P2PLaunchTick(protocol);
     if (protocol!=0) {
         unsigned long long uid=P2PLocalUid();
