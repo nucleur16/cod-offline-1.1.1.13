@@ -276,6 +276,15 @@ input path, the dvars, commands, default binds, what was verified and the phase 
 into Kernel33.dll; `PATH=/c/msys64/mingw32/bin:$PATH sh build-controller.sh` writes a side copy,
 `Kernel33_controller.dll`, and copies nothing.
 
+Button hints: `gpad_glyphs` (archived) is the player's choice of what hints show, and an explicit choice overrides
+the detection: 0 automatic (icons of the detected pad type, the bindings of the last-used device), 1 Xbox 360,
+2 PS3, 3 Wii U, 4 generic (1-4: always that pad's buttons, also while playing on keyboard and mouse; before, they
+only picked the icon family), 5 text names only, 6 always keyboard / mouse. It changes labels only: aim assist, the
+userinfo dvar `gpad` and the menu cursor keep following the device really in use. Kernel33 publishes the result
+as `k33_glyphinfo` ("family|device|textOnly|glyphs") and bumps `k33_glyphSerial` on every change, so the Scaleform
+menus know when to re-read their key labels. The mapping is `controller_glyph_policy.h`
+(`tests/controller_glyph_policy_test.c`); CONTROLLER.md section 14 has the semantics and what refreshes live.
+
 ## Voice chat
 `voice.c` puts back in-game voice chat, which C1 stripped (no capture, no codec, no `+talk`; the "v"
 packet branch only printed "voice communication is disabled"). It uses Opus (libopus, linked

@@ -143,6 +143,9 @@ mouse via `0x5F3900`, keys via `0x4931E0` / UI_KeyEvent `0x5F3760`.
 | `gpad_view_accel` | 1200 | deg/s²; 0 = instant |
 | `gpad_button_deadzone` | 0.13 | trigger press threshold |
 | `gpad_menu_cursor_speed` | 1100 | px/s |
+| `gpad_glyphs` | 0 | what button hints show (section 14): 0 automatic, 1 Xbox 360, 2 PS3, 3 Wii U, 4 generic, 5 text names only, 6 keyboard / mouse |
+| `k33_glyphinfo` (not archived, read only) | "" | what hints show now: `family\|device\|textOnly\|glyphs` (section 14) |
+| `k33_glyphSerial` (not archived, read only) | 0 | counts every change of the family, device or text-only state in `k33_glyphinfo` (section 14) |
 | `gpad_debug` (not archived) | 0 | 1 state twice a second, 2 also every button / click |
 
 ### Commands
@@ -244,7 +247,7 @@ work), which fails C1's client pure check (0x617FA0, "WIN_FILE_CORRUPT") on ever
   any key or mouse button through Sys_QueEvent, mouse look of 0.5 deg in 300 ms, or the pointer moving 12 px).
   Pad names by SDL controller type: Xbox (A, B, X, Y, LB, RB, LT, RT, LS, RS, Start, Back), PlayStation
   (Cross, Circle, Square, Triangle, L1, R1, L2, R2, L3, R3, Options, Touchpad), Nintendo (positional);
-  `gpad_glyphs` overrides. C1's zones ship no button icon materials (only `dpad_*` killstreak icons), so
+  `gpad_glyphs` overrides the family and, since section 14, the device as well. C1's zones ship no button icon materials (only `dpad_*` killstreak icons), so
   Scaleform shows these as text; hints drawn by C1's text renderer get icons (section 9).
 - **Aim assist (pad only)**: C1's AimAssist_UpdateScreenTargets fills aaGlob 0x1501A80 (targets at +0x134,
   0x34 each, count +0xE34, view origin / angles +0xD0 / +0xDC). Slowdown 0.4 hip / 0.5 ADS in a 90x90 box,
@@ -311,8 +314,9 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
   (0x55A8B6) keep the text names: Scaleform has no IW4 icon escape, so it keeps the family names below.
 - **Set**: `gpad_glyphs` 0 by SDL controller type (Xbox 360 / One / Series and XInput -> Xbox 360; PS3/4/5 ->
   PS3; Switch Pro / Joy-Cons / a name with "Wii U" -> Wii U; anything else -> generic), 1 Xbox 360, 2 PS3,
-  3 Wii U, 4 generic, 5 text names only. Text names (Scaleform, mode 5) follow the same family; generic text
-  is "Button South/East/West/North", L1/R1/L2/R2.
+  3 Wii U, 4 generic, 5 text names only, 6 keyboard / mouse (family by SDL type, as 0). Text names (Scaleform,
+  mode 5) follow the same family; generic text is "Button South/East/West/North", L1/R1/L2/R2. Since section 14
+  the values 1..4 and 6 also fix which device's bindings a hint names.
 - The spectator hint asks for `+toggleads_throw` before `+speed_throw`; with the pad in use a keyboard-only
   `+toggleads_throw` no longer wins, so the hint shows LT (or L2 / ZL) instead of "MOUSE2".
 - If any check fails the icons stay off and every hint keeps the text names; `gpad_glyphdump [material]`
@@ -406,7 +410,8 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
   - Hold X binds BUTTON_X_HOLD. Triggers and sticks are not bindable.
   - 清除所选 clears an action (`k33_padclear`). 恢复默认 runs `gpad_defaultbinds`, which also resets `gpad_binds_custom`.
   - The dive follows whichever pad button is bound to +stance.
-- **Published state:** `k33_padinfo` ("family|connected|name|forced") and `k33_padbinds` ("A=cmd;...;HOLDX=cmd").
+- **Published state:** `k33_padinfo` ("family|connected|name|forced|glyphs"; the fifth field, the `gpad_glyphs`
+  value in effect, was added in section 14) and `k33_padbinds` ("A=cmd;...;HOLDX=cmd").
 - **Microphone (Options > Audio > 语音, 输入设备):**
   - `voice.c` lists the active capture endpoints and their friendly names (GBK, code page 936).
   - It publishes `k33_voiceInputList` ("Default;name;...") and `k33_voiceInputIndex`, and turns the dropdown's pick (`k33_voiceInputPick`) into the archived `k33_voiceInputDevice` (endpoint ID; empty = the Windows default communications device).
@@ -450,3 +455,80 @@ external reads of clientActive / cg / the usercmd ring at clientActive +0x34B8, 
   144, 500 and uncapped, under a pixel off a straight line); its step now uses the real time between frames
   (QueryPerformanceCounter, capped at 50 ms) like the look code, and the full-push boost counts that time.
   A / RT confirm, B takes back a mortar point, then cancels, as before.
+
+## 14. Button-glyph override (`gpad_glyphs` 0..6)
+The player's choice of what button hints show. An explicit choice overrides the detection **for display**; it
+never changes what the game does with the input. The mapping is the pure function `CtlGlyphPolicy` in
+`controller_glyph_policy.h` (tested by `tests/controller_glyph_policy_test.c`); `controller.c` reaches it
+through `CtlDisplayNow` / `CtlPadFamily` / `CtlDisplayPad`.
+
+| `gpad_glyphs` | family shown | bindings a hint names | pad keys drawn as |
+|---|---|---|---|
+| 0 automatic (default) | detected pad type (SDL) | last-used device | icons |
+| 1 Xbox 360 | Xbox | the pad's, always | icons |
+| 2 PS3 | PlayStation | the pad's, always | icons |
+| 3 Wii U | Nintendo | the pad's, always | icons |
+| 4 generic | generic | the pad's, always | icons |
+| 5 text names only | detected pad type | last-used device | text names |
+| 6 keyboard / mouse | detected pad type | keyboard / mouse, always | icons |
+
+- 0 and 5 are unchanged. 6 is new. A value outside 0..6 cannot be set (the dvar's range) and would act as 0.
+- **Behaviour change for 1..4.** Before, 1..4 only chose the icon family and the device still followed the last
+  input. Now they mean "always show this pad's buttons": a player who has `gpad_glyphs` 1..4 saved in
+  `config_mp.cfg` sees pad icons while playing on keyboard and mouse. Set 0 for the old automatic behaviour.
+- "Bindings a hint names" is the first choice only, as before: a command bound on the other device only still
+  shows that key (`CtlCommandKeys`' second pass). So in mode 6 a command with only a pad bind still shows the pad
+  button, as an icon of the detected family; in modes 1..4 a command with only a keyboard bind shows that key.
+- With no pad connected the detected type is Xbox (`g_padType` 0), as before.
+- **Display only.** The last-used device (`g_lastDevice`, `CtlSetDevice`) is untouched and still drives everything
+  that is not a label: aim assist (`CtlAimAllowed`), the userinfo dvar `gpad`, the pointer watch, the menu cursor's
+  snap scan (`padsnap.c`), `gpad_status` / `gpad_aadump`. With `gpad_glyphs 1` on keyboard and mouse there is no
+  aim assist and the server sees `gpad 0`; with `gpad_glyphs 6` on the pad aim assist works and the server sees
+  `gpad 1`. The readers of the display helper are `CtlCommandKeys` (the device, with its spectator-hint and
+  killstreak-HUD special cases), `CtlApplyPadNames` (the family's text names), `CtlGlyphFrame` / `CtlGlyphPrepare`
+  (the icon set), the published state below, and one line each in `gpad_status` / `gpad_glyphdump`.
+
+### Published for the menus and the HUD
+Set through C1's command path like `k33_padinfo`; "read only" is by convention (flags 0; Kernel33 never reads
+them back).
+
+- `k33_glyphinfo` (string): `family|device|textOnly|glyphs`, one digit each. family 0 Xbox, 1 PlayStation,
+  2 Nintendo, 3 generic; device 0 keyboard / mouse, 1 pad; textOnly 0 / 1; glyphs = `gpad_glyphs` (0..6).
+  Example: `1|1|0|2` = PS3 forced. Empty until the first client frame with dvars.
+- `k33_glyphSerial` (int, 0..1000000000): 0 until the first publish, then +1 on every change of family, device
+  or textOnly (it wraps to 1). It does not move when `gpad_glyphs` changes without changing those three
+  (0 -> 6 while already on keyboard and mouse; `k33_glyphinfo`'s last digit still updates). Both are set by one
+  command line, so a reader that sees a new serial also sees the matching `k33_glyphinfo`. The state is checked
+  every client frame; C1 runs the `set` on its next command-buffer pass. A menu polls
+  `Dvar_GetInt("k33_glyphSerial")` and re-queries its key labels when the number differs from the one it last saw.
+- `k33_padinfo`: a fifth field, the `gpad_glyphs` value: `family|connected|name|forced|glyphs`. `forced` is still
+  1 only for 1..4. OptionView.as splits on `|` and reads fields 0..3 by index, so a build of it that does not know
+  the fifth field ignores it. The display device is deliberately not in this string: OptionView redraws its
+  diagram and rebuilds its bind list whenever the string changes, and in modes 0 and 5 the device flips with every
+  keyboard <-> pad change (also while a bind capture is waiting for a pad button).
+
+### What refreshes when
+From the callers of Key_GetBindingNames `0x493920`, UI_GetKeyBindingLocalizedString `0x604A40` and the `[{cmd}]`
+conversion `0x603E50` in C1.exe 1.1.1.13 (SHA-256 `d990610732258b1d...16115390d`), read in the code; nothing here
+was traced at run time.
+
+| what | refresh | why |
+|---|---|---|
+| icon family inside any drawn text | next frame | the slot the escape points at is refilled on the render thread at draw time (section 9) |
+| cgame's own hint drawers (`0x456130`, `0x456270`, `0x456370` the RC-XD lines, `0x457120`, `0x457610`, `0x457800`, `0x4579A0`) | next frame, keyboard <-> pad included | each converts into a stack buffer every time it draws |
+| HUD element strings (`0x448E40`, `0x449710`) | next frame | converted in the hudelem draw path (inferred from their callers `0x44994E`, `0x44AF18`, `0x44B122`) |
+| centre-print lines (`0x439170`) and game-message lines (`0x448E10`) | the next line printed | converted once when printed and stored (`0x4391D4` copies the result into the line); a line already on screen keeps its key names until it expires, a few seconds. An icon in it still follows the family |
+| text names (mode 5) <-> icons | next frame for per-frame text; stored lines keep what they were printed with | the escape or the name is chosen when the string is built |
+| Scaleform (Controls screen, pause menu, Scaleform HUD) and GSC | when their script asks again | they ask through `0x5B080D` / `0x55A8B6` and keep the answer: poll `k33_glyphSerial`, or reopen the view |
+| Options > Controller diagram | within 250 ms | `k33_padinfo` is republished when it changes |
+
+Not handled: re-converting stored centre-print / game-message lines (it would need every line's source string;
+they expire in seconds). The Scaleform natives that call Key_GetCommandAssignment `0x492E30` directly (`0x5B06CC`,
+`0x5B0746`, `0x5B091E`, `0x5B09E9`) and `0x4551C3`, `0x604F89` are not hooked, as before: they return every
+device's keys, whatever `gpad_glyphs` says.
+
+### Verified / not verified
+- Built with the production profile (`K33_NO_COPY=1 sh build.sh`) and syntax-checked with the diagnostics profile;
+  `tests/controller_glyph_policy_test.c` passes (105 checks).
+- Not run in a game: every row of the refresh table, the `set` of the two new dvars, and the menus that will
+  read them.
