@@ -155,6 +155,29 @@ NAMED = {
     "K33UI_PAD_BTN_FACE_UP": ("Up", "上键", "codo.gfx"),
     "K33UI_PAD_BTN_GENERIC_START": ("Start", "开始", "codo.gfx"),
     "K33UI_PAD_BTN_GENERIC_BACK": ("Back", "返回", "codo.gfx"),
+    # Options > Graphics (OptionView_video) and the pause menu's Options list (codoingame.gfx MainPause): the
+    # Language / Button icons / HUD style rows (docs/UI_STYLE_OPTIONS_20261112.md). Both movies show these keys;
+    # they are entered once, here (codol_*_ui), not also in codol_*_ui_extra: both string zones are parts of the
+    # same codol_<language>_locale pack, which is loaded whole, and an entry loaded twice takes two of C1's slots.
+    "K33UI_LANGUAGE": ("Language", "语言", "codo.gfx"),
+    "K33UI_GLYPHS": ("Button icons", "按键图标", "codo.gfx"),
+    "K33UI_HUD_STYLE": ("HUD style", "HUD 样式", "codo.gfx"),
+    "K33UI_LANG_NAME_EN": ("English", "English", "codo.gfx"),
+    "K33UI_LANG_NAME_ZH": ("中文 (Chinese)", "中文", "codo.gfx"),
+    "K33UI_LANG_RESTART": ("Restart the game to apply the language", "重启游戏后语言生效", "codo.gfx"),
+    "K33UI_LANG_SWITCHING": ("Switching language...", "正在切换语言...", "codo.gfx"),
+    "K33UI_GLYPHS_AUTO": ("Auto", "自动", "codo.gfx"),
+    "K33UI_GLYPHS_XBOX": ("Xbox", "Xbox", "codo.gfx"),
+    "K33UI_GLYPHS_PS": ("PlayStation", "PlayStation", "codo.gfx"),
+    "K33UI_GLYPHS_NINTENDO": ("Wii U / Switch", "Wii U / Switch", "codo.gfx"),
+    "K33UI_GLYPHS_GENERIC": ("Generic", "通用", "codo.gfx"),
+    "K33UI_GLYPHS_TEXT": ("Text only", "仅文字", "codo.gfx"),
+    "K33UI_GLYPHS_KBM": ("Keyboard & mouse", "键盘和鼠标", "codo.gfx"),
+    "K33UI_HUD_STYLE_STOCK": ("Classic (1.1.1.13)", "经典 (1.1.1.13)", "codo.gfx"),
+    "K33UI_HUD_STYLE_V12": ("Version 1.2", "1.2 版", "codo.gfx"),
+    "K33UI_HUD_STYLE_V26": ("Version 2.6", "2.6 版", "codo.gfx"),
+    "K33UI_HUD_STYLE_V33": ("Version 3.3", "3.3 版", "codo.gfx"),
+    "K33UI_HUD_STYLE_V35": ("Version 3.5", "3.5 版", "codo.gfx"),
 }
 
 

@@ -27,10 +27,12 @@ src/            everything compiled into Kernel33.dll (C, plus the C++ offline l
   kernel33.def, kernel33.rc, unpacked.z   exports, and the resource embedded in the DLL (scripts/make_exe.py writes unpacked.z)
   c1game.c, c1_dvars.h, c1_tables.h, production_profile.h, patch_locale_policy.h, k33tick.c, k33http.c, k33json.c
                   shared helpers, generated tables and the build profile
+  locale_switch.c, locale_switch_policy.h   the language changed while the game runs (k33_language)
   *.c             features with no family of their own: borderless, discord, usermaps, theatre, name display,
                   parity logger, scoreboard fix, launcher bridge, offline-mode glue, local-testing helpers
   console/        the in-game developer console (console.c) and screenshots on its hooks (k33shot.c)
-  controller/     gamepad: controller.c, button glyphs, the menu cursor snapping (padsnap.c)
+  controller/     gamepad: controller.c, button glyphs (what hints show: controller_glyph_policy.h), the menu cursor
+                  snapping (padsnap.c)
   audio/          voice chat and the sound-voice policy / diagnostics
   p2p/            player-hosted matches: p2p*.c/.h and the host gate (hostgate.c)
   production/     the production P2P receiver and wire formats (separate objects, linked by scripts/build.sh)
@@ -111,8 +113,9 @@ gcc -std=c99 -O2 -Wall -Wextra -Werror tests/p2p_activation_transaction_test.c -
 python -I -S -B tests/test_p2p_inproc_lifecycle.py        # Linux gcc + ASan/UBSan
 ```
 
-`tests/run_tests.sh` already runs `tests/quick_start_policy_test.c`, `tests/patch_locale_test.c` and
-`docs/baselines/20261024-gfx-date-time/run_regressions.py` with the Windows compiler; the same three also build and
+`tests/run_tests.sh` already runs `tests/quick_start_policy_test.c`, `tests/controller_glyph_policy_test.c`,
+`tests/patch_locale_test.c`, `tests/locale_switch_policy_test.c` (`-std=c99`) and
+`docs/baselines/20261024-gfx-date-time/run_regressions.py` with the Windows compiler; they also build and
 pass with Linux gcc (`gcc -O2 -Wall -Wextra -Werror tests/quick_start_policy_test.c -o /tmp/q && /tmp/q`, likewise
 `tests/patch_locale_test.c`, and `python -B docs/baselines/20261024-gfx-date-time/run_regressions.py --output-dir /tmp/gfx`).
 
@@ -297,6 +300,15 @@ input path, the dvars, commands, default binds, what was verified and the phase 
 into Kernel33.dll; `PATH=/c/msys64/mingw32/bin:$PATH sh scripts/build-controller.sh` writes a side copy,
 `build/Kernel33_controller.dll`, and copies nothing.
 
+Button hints: `gpad_glyphs` (archived) is the player's choice of what hints show, and an explicit choice overrides
+the detection: 0 automatic (icons of the detected pad type, the bindings of the last-used device), 1 Xbox 360,
+2 PS3, 3 Wii U, 4 generic (1-4: always that pad's buttons, also while playing on keyboard and mouse; before, they
+only picked the icon family), 5 text names only, 6 always keyboard / mouse. It changes labels only: aim assist, the
+userinfo dvar `gpad` and the menu cursor keep following the device really in use. Kernel33 publishes the result
+as `k33_glyphinfo` ("family|device|textOnly|glyphs") and bumps `k33_glyphSerial` on every change, so the Scaleform
+menus know when to re-read their key labels. The mapping is `src/controller/controller_glyph_policy.h`
+(`tests/controller_glyph_policy_test.c`); docs/CONTROLLER.md section 14 has the semantics and what refreshes live.
+
 ## Voice chat
 `src/audio/voice.c` puts back in-game voice chat, which C1 stripped (no capture, no codec, no `+talk`; the "v"
 packet branch only printed "voice communication is disabled"). It uses Opus (libopus, linked
@@ -413,28 +425,41 @@ The 3D play path's channel check (call of 0x736C10 at 0x73E4DB) decides two more
 `+set codol_soundvoices 0` turns both off at startup. The voice diagnostics (`k33_snddiag`, `CODOL_SNDDIAG`) now
 default to 0; at 1+ they also log `snd policy` totals and `why=limit` refusals to Kernel33.log.
 
-## English (`k33_english`)
-Both languages run the same UI movies, and every text those movies show is a localize key. The language is only which
-string zones load. Kernel33 decides that at startup, from the command line:
+## English (`k33_language`, `k33_english`)
+Every language runs the same UI movies, and every text those movies show is a localize key. The language is only which
+strings a key resolves to. It is chosen at startup and can be changed while the game runs
+(docs/LANGUAGE_SWITCH_20261112.md):
 
-    codoMP_client_shipRetail.exe +set dw_username <name>                        English (default)
-    codoMP_client_shipRetail.exe +set dw_username <name> +set k33_english 1     English
-    codoMP_client_shipRetail.exe +set dw_username <name> +set k33_english 0     Chinese
+    codoMP_client_shipRetail.exe +set dw_username <name>                        the saved language, else English
+    codoMP_client_shipRetail.exe +set dw_username <name> +set k33_language en   English
+    codoMP_client_shipRetail.exe +set dw_username <name> +set k33_language zh   Chinese
+    codoMP_client_shipRetail.exe +set dw_username <name> +set k33_english 1     English (the older spelling)
+    codoMP_client_shipRetail.exe +set dw_username <name> +set k33_english 0     Chinese (the older spelling)
 
-- **Default: English** (no option, or `1`). The last `k33_english` on the line wins; any value but `0`/`1` is ignored.
-- Existing launchers may still use `+set codol_patchlang en` or `+set codol_patchlang zh`. An explicit valid
-  `k33_english` takes precedence over that compatibility alias, regardless of argument order. Both selectors use
-  one parsed language choice; they cannot independently filter out both sets of string zones.
-- Read by the DLL from the command line only (`src/patch_locale_policy.h`, `CodolPatchLanguageFromArgv`): C1 execs
-  `players\config_mp.cfg` before it registers its dvars and applies no `+set` to a dvar it does not know, so the
-  option is not a saved dvar. Nothing writes it to config_mp.cfg, and a config write never changes it; it lasts until
-  the client is started without it.
-- What it switches: `client_shipRetail\patch\codol_english*.ff` load with `1`, `codol_chinese*.ff` with `0`
-  (since the consolidation one zone each, codol_english_locale and codol_chinese_locale; the table below names the
-  source zones they are built from);
-  every other patch zone loads either way. Only one set loads because C1 holds at most 12000 localize assets ("Exceeded
-  limit of 12000 'localize' assets", a fatal error at startup) and a name loaded by both sets takes two. The DLL has no
-  other language-dependent code: GBK text input, fonts, voice, controller, usermaps and the frame cap are the same.
+- **A language is a name**: `en` (the `codol_english*` zones), `zh` (C1's own text plus the `codol_chinese*` zones),
+  and any other `codol_<name>_locale.ff` put into `client_shipRetail\patch\` is the language `<name>`. `english` /
+  `chinese` are accepted for `en` / `zh`.
+- **At startup** (`src/patch_locale_policy.h`, `CodolStartupLanguage`): the last valid `+set k33_language <name>`; else
+  `+set k33_english 0|1` (the last one on the line; any value but `0`/`1` is ignored) or `+set codol_patchlang en|zh`
+  (an explicit valid `k33_english` wins over it, regardless of order); else the saved choice; else English. A language
+  without a zone in the patch folder starts as English, or as Chinese when English is not installed either.
+- **Saved**: `k33_language` is an archived dvar, so C1 writes `seta k33_language "<name>"` to `players\config_mp.cfg`.
+  C1 execs that file before the DLL's dvars exist and applies no `+set` to a dvar it does not know, so the DLL reads
+  both itself, before the game starts: the command line, and that line of the (plaintext) config file.
+- **While the game runs**: `k33_language` (set it from a menu with `setdvar`, or `k33_setlanguage <name>` in the
+  console) changes the language at once, in menus and in a match; `k33_languageList` (`en;zh`) names what is installed,
+  `k33_languageSerial` counts completed changes (a movie re-creates its text when it changes) and `k33_languageState`
+  is 2 when the change can only apply after a restart (a C1 site did not match, or the language's zone is not one
+  `codol_<name>_locale.ff`). Fonts do not change until restart.
+- What the startup language decides: `client_shipRetail\patch\codol_english*.ff` load ahead of code_pre_gfx with `en`,
+  `codol_chinese*.ff` with `zh` (since the consolidation one zone each, codol_english_locale and codol_chinese_locale;
+  the table below names the source zones they are built from); every other patch zone loads either way. The other
+  languages' locale zones load too, after code_post_gfx, where C1 discards nearly all of their strings as duplicates
+  and Kernel33 keeps them for a language change (`src/locale_switch.c`): they cost no localize asset. (C1's localize
+  pool holds 24000 entries here, `PatchLocalizePool`; the limit that matters is C1's 59,999 asset entries of all
+  types, of which an English client uses 47,530 in a small match, which is why the second language's strings are not
+  C1 assets.) The DLL has no other language-dependent code: GBK text input, fonts, voice, controller, usermaps and
+  the frame cap are the same.
 
 | zone | loads with | what |
 |---|---|---|
@@ -480,8 +505,10 @@ Other notes:
   `codol_borderless`, which Kernel33 does not implement (it behaves as windowed).
 - 000_codol_party_modes and codol_loading_mode_names name modes C1 does not have (in English, with no Chinese text to
   fall back to) and load in both languages.
-- `Kernel33.log` says which: `english: on (k33_english 1): 1 codol_english* zone(s) queued`, `english: off
-  (k33_english 0): 1 codol_english* zone(s) skipped, 1 codol_chinese* zone(s) queued`, or, with English on and no
+- `Kernel33.log` says which: `language: "en" (the default)` (or `+set k33_language`, `+set k33_english /
+  codol_patchlang`, `the saved k33_language`), then `english: on (k33_english 1): 1 codol_english* zone(s) queued`,
+  `english: off (k33_english 0): 0 codol_english* zone(s) skipped, 1 codol_chinese* zone(s) queued` (the English zone
+  is not skipped but queued after code_post_gfx as a language to switch to), or, with English on and no
   English zone installed, `english: on (k33_english 1), but no codol_english*.ff zone is in the patch folder: the
   game stays Chinese` (missing zones are never an error; a missing string shows as its `@NAME`).
 - Install all of them together: an older `codol_english_ui.ff` / `codol_english_ui_extra.ff` (which carried English
@@ -612,8 +639,8 @@ The source zones under `zone_source/` + `zones/` stay as they are (each with its
 | codol_common | ahead of code_pre_gfx | both | 000_codol_party_modes, codol_loading_mode_names, codol_zm_deathmachine_audio, controller_ingame, usermaps_patch (all but its strings) |
 | codol_common_ui_mp | ahead of the UI zones | both | voice_ui_mp, usermaps_ui_mp |
 | codol_common_postgfx_mp | after code_post_gfx | both | codol_field_orders_postgfx_mp, controller_glyphs_postgfx_mp |
-| codol_english_locale | ahead of code_pre_gfx | `k33_english 1` | codol_english, codol_english_font, codol_english_ui, codol_english_ui_extra, codol_english_usermaps, codol_english_zombies_base |
-| codol_chinese_locale | ahead of code_pre_gfx | `k33_english 0` (and no valid language) | codol_chinese_ui, codol_chinese_ui_extra, usermaps_patch's GBK strings |
+| codol_english_locale | ahead of code_pre_gfx (after code_post_gfx when another language starts) | `k33_language en` | codol_english, codol_english_font, codol_english_ui, codol_english_ui_extra, codol_english_usermaps, codol_english_zombies_base |
+| codol_chinese_locale | ahead of code_pre_gfx (after code_post_gfx when another language starts) | `k33_language zh` (and no valid language) | codol_chinese_ui, codol_chinese_ui_extra, usermaps_patch's GBK strings |
 | codol_infected_cyborg_postgfx_mp | after code_post_gfx | both | itself: C#-written, its assets point into its own runtime blocks, so they cannot move into another zone |
 | mp_codol_weapons | ahead of code_pre_gfx | both | itself (stringtables only): the MP weapon tables, whole -- an `mp_*` name, so the sh1x server mounts it too |
 | mp_codol_weapons_postgfx_mp | after code_post_gfx | both | itself: the MP weapon art (C#-written), `mp_*` for the server as well |

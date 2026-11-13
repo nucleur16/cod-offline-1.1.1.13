@@ -23,8 +23,8 @@
  *              '^', '%' or '&': a zone pointer can hold any of them. Each glyph therefore has a slot at an address
  *              whose four bytes are letters or digits (base 0xHHHH0000, + (0x41 + glyph) * 0x100 + 0x44)
  *              holding a copy of the set's zone material (its 0x60-byte header: it points at the zone's own
- *              technique set, texture table and image). Hints carry the slot; the set in use (gpad_glyphs, or the
- *              pad's SDL type) is copied into the slot on the render thread, where C1 draws the icon (the calls
+ *              technique set, texture table and image). Hints carry the slot; the set in use (gpad_glyphs 1..4, else
+ *              the pad's SDL type: controller_glyph_policy.h) is copied into the slot on the render thread, where C1 draws the icon (the calls
  *              0xAAB320 / 0xAAB92D to 0xAAA7D0 come here first): a set change is live.
  *   names      Key_GetBindingNames 0x493920 (every "[{+attack}]" in hints, prompts and old-style menus)
  *              converts a key with Key_KeynumToString at 0x49397C and 0x4A19A1. Those calls come here: a pad
@@ -171,7 +171,8 @@ static void CtlGlyphFrame(void)
             if (!CtlGlyphInit() && ++g_glyphTries >= 30) CtlGlyphOff(g_glyphWhy);
         }
     }
-    LONG set = C1DvarInt(g_gpGlyphs, 0) == 5 || g_glyphReady != 1 ? -1 : CtlPadFamily();
+    CtlGlyphDisplay disp = CtlDisplayNow();
+    LONG set = disp.text_only || g_glyphReady != 1 ? -1 : disp.family;
     if (set != g_glyphSet) {
         InterlockedExchange(&g_glyphSet, set);
         static const char *const kSet[] = { "Xbox 360", "PS3", "Wii U", "generic" };
@@ -385,8 +386,9 @@ static void CtlInstallGlyphs(BOOL namesOk)
 static void __cdecl CtlCmdGlyphDump(void)
 {
     static const char *const kSet[] = { "Xbox 360", "PS3", "Wii U", "generic" };
-    C1Printf("glyphs: %s; set %s (gpad_glyphs %d, pad family %d)\n", g_glyphWhy,
-             g_glyphSet < 0 ? "text names" : kSet[g_glyphSet], C1DvarInt(g_gpGlyphs, 0), (int)g_padType);
+    C1Printf("glyphs: %s; set %s (gpad_glyphs %d, pad family %d); hints name %s\n", g_glyphWhy,
+             g_glyphSet < 0 ? "text names" : kSet[g_glyphSet], C1DvarInt(g_gpGlyphs, 0), (int)g_padType,
+             CtlDisplayPad() ? "pad buttons" : "keyboard / mouse keys");
     if (g_glyphReady != 1) return;
     int s = g_glyphSet < 0 ? CtlPadFamily() : (int)g_glyphSet;
     for (int b = 0; b < CTL_GLYPH_COUNT; b++) {

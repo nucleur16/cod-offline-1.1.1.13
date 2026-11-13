@@ -3,7 +3,7 @@ stock patch_ui_mp:scaleform/default/codo.gfx
 stock-sha256 2f143069ed10f3c937e0f5b758591e477f57544f76bdfd3bd2635f77cca5d332
 # Method-only OptionView stored-tag update; original-header GFX DATA provenance.
 # Whole-class baseline remains HOLD; this digest is not FF/game/release acceptance.
-sha256 7fedff5bda30dc0bd8a484735e1dcce3d389e7fb68b825f28680aa8bc70ce6a5
+sha256 229d3cf85b3e395890c07b22923faa31f9bb5cb372c039f91e24bbb0ec8d1b7c
 header 4746580a68b64500800003200000025800001e0100
 keep 0
 keep 1
@@ -6903,7 +6903,6 @@ as codo.views.ScoreboardBaseView as/codo/views/ScoreboardBaseView.as 541ac869765
 as codo.views.SummaryView as/codo/views/SummaryView.as 0e2866e484e085be128c14dc7b58e3180b1d739fe900e04762f12148430c73b1
 as codo.views.option_sub.OptionView_audio as/codo/views/option_sub/OptionView_audio.as bd11696b3f0c4c5e96feae902434c0e0e317ea7a4b624a858e6eda55c0497860
 as codo.views.option_sub.OptionView_control_chat as/codo/views/option_sub/OptionView_control_chat.as 62b0364bf158cbc8cc8f7f4f27c6b2e103692f94b0110ca9f4bdf2930e9c4362
-as codo.views.option_sub.OptionView_video as/codo/views/option_sub/OptionView_video.as c1cea72f9756f1ff81ec6a283cc3ebc0d755de98497166cc10633245a9225a55
 as codo.views.summary_sub.LobbySummaryView_scoreboardPanel as/codo/views/summary_sub/LobbySummaryView_scoreboardPanel.as 6d755b9fe05a0c5ddb4ea101ac48d7783723c54405bd634ba2f894d7a48631b0
 as components.CodoButton as/components/CodoButton.as dedcc37aff499b1a1123657f95c9f33f9187764429e45bf17750d0bc53628528
 as components.LevelChooser as/components/LevelChooser.as e3eb7121705bd8eb43b2c0f97b69337f95374ca37d3249827c87f7677e95f0ff
@@ -6932,3 +6931,4 @@ as codo.views.ServerMessageView as/codo/views/ServerMessageView.as 4bf3db5fbc655
 as codo.k33.LocalCreateRoomOption as/codo/k33/LocalCreateRoomOption.as c4f59c3eeb858a3a8c4fa191b47879522a172759932a77ae253fe8b25fa29c8a
 as codo.k33.LocalMatchControls as/codo/k33/LocalMatchControls.as 8e1fe34cc4eff0f92bca71207d2926443ebb25285683946c80f93ed89b10f29d
 as codo.controllers.LobbyController as/codo/controllers/LobbyController.as a582ae0a9756f2e25ac2c6c313bad6576f2efd16fab179f1b7167a41b0e0ced2
+as codo.views.option_sub.OptionView_video as/codo/views/option_sub/OptionView_video.as 832c5218a7118ef59e74f21c1a400178fd4bc06f6deaad885ebfdc43e0c72b90
