@@ -1,16 +1,17 @@
 # Selectable HUD styles (`k33_hudStyle`)
 
-The combat HUD of 1.1.1.13 can show the layout of a later Call of Duty Online build (2.6.9.7), switched live.
+The combat HUD of 1.1.1.13 can show the layout of a later Call of Duty Online build (2.6.9.7 or 3.3.3.3), switched
+live.
 
 | `k33_hudStyle` | id | build | state |
 |---|---|---|---|
 | 0 | `stock` | 1.1.1.13 | the game's own HUD |
 | 1 | `v12` | 1.2.1.12 | not shipped: a visual duplicate of v26 (see below) |
 | 2 | `v26` | 2.6.9.7 | shipped |
-| 3 | `v33` | 3.3.3.3 | not shipped (blocked, see below) |
-| 4 | `v35` | 3.5.2.6 | not shipped (blocked, see below) |
+| 3 | `v33` | 3.3.3.3 | shipped (its own operators read from its executable, see "3.3.3.3") |
+| 4 | `v35` | 3.5.2.6 | not shipped: no unpacked 3.5.2.6 executable exists on disk (see below) |
 
-`k33_hudStyleList` in this build: `0:stock;2:v26`.
+`k33_hudStyleList` in this build: `0:stock;2:v26;3:v33`.
 
 Runtime-checked on 2026-11-12 in the offline fork's client (own test folder, Team Deathmatch on Crash, 1920x1080
 window): see "Live check". The static evidence is what the generator and the tests check without a client.
@@ -24,7 +25,7 @@ The weapon bar, score bar, minimap, killstreak column and perk display of every 
   them to 1.1.1.13's own menu of the same name. The stock items stay, each behind
   `dvarint("k33_hudStyle") != 2 && {its own rule}`; a style's items sit behind
   `dvarint("k33_hudStyle") == N && {their own rule}`. The menu's own visibility becomes
-  `(stock style && {1.1.1.13's rule}) || (style 2 && {2.6.9.7's rule})`.
+  `(stock style && {1.1.1.13's rule}) || (style 2 && {2.6.9.7's rule}) || (style 3 && {3.3.3.3's rule})`.
   `{..}` is a whole statement used as one operand, the form the stock menus use for their sub-expressions, so no
   wrapped expression is re-parenthesised.
 - C1 evaluates these expressions every frame. `set k33_hudStyle 2` therefore changes the HUD in the same frame:
@@ -43,12 +44,12 @@ to hide them in Survival, so those two menus are not shipped a second time: `too
 `styled()` passes its own authoring through `fold_survival()`, and the survival zone's menufile carries both
 gates. `hud_styles_postgfx_mp` carries the two menus the survival zone does not own:
 
-| menu | zone that carries it | items: stock + v26 |
+| menu | zone that carries it | items: stock + v26 + v33 |
 |---|---|---|
-| `weaponbar_hd` | hud_styles_postgfx_mp | 25 + 30 |
-| `minimap_fullscreen` | hud_styles_postgfx_mp | 16 + 17 |
-| `killstreaks_hd` | survival_hud_postgfx_mp | 69 + 83 |
-| `scorebar_hd` | survival_hud_postgfx_mp | 33 (+4 Survival panel) + 43 |
+| `weaponbar_hd` | hud_styles_postgfx_mp | 25 + 30 + 30 |
+| `minimap_fullscreen` | hud_styles_postgfx_mp | 16 + 17 + 17 |
+| `killstreaks_hd` | survival_hud_postgfx_mp | 69 + 83 + 121 |
+| `scorebar_hd` | survival_hud_postgfx_mp | 33 (+4 Survival panel) + 43 + 62 |
 
 Survival behaves as before in every style: `killstreaks_hd` is hidden by its menu, the stock score items by each
 item, and the Survival panel's four items do not depend on the style. A style's own score-panel items carry
@@ -61,8 +62,10 @@ names them.
 
 ### Menus 1.1.1.13 does not have
 
-`weaponbar_hd_extend`, `reloadbar` and `kd_rate_bar` exist only in the later builds. 1.1.1.13 draws the menus its
-own `hud_720.txt` lists, so their items join a menu it does draw (`weaponbar_hd`, `weaponbar_hd`, `scorebar_hd`),
+`weaponbar_hd_extend`, `reloadbar` and `kd_rate_bar` (and 3.3.3.3's `extra_info` and `killstreaks_hd2`) exist only in
+the later builds. 1.1.1.13 draws the menus its
+own `hud_720.txt` lists, so their items join a menu it does draw (`weaponbar_hd`, `weaponbar_hd`, `scorebar_hd`;
+`scorebar_hd` and `killstreaks_hd` for 3.3.3.3's two),
 each with its own menu's visibility as an extra operand and moved by the difference of the two menus' origins
 (the generator refuses a menu whose rect size or alignment differs from the host's, and an item whose position
 is an expression when the origins differ).
@@ -81,6 +84,20 @@ dropped item with its reason).
 | `kd_rate_bar` (score / kills / deaths / assists bar) | 16 of 20 | scorebar_hd |
 | `killstreaks_hd` (streak pips, five slots with plates and key hints) | 83 of 83 | killstreaks_hd |
 | `minimap_fullscreen` (115x115 frame and compass layers) | 17 of 17 | minimap_fullscreen |
+
+| 3.3.3.3 menu | kept | lands in |
+|---|---|---|
+| `weaponbar_hd` | 26 of 26 | weaponbar_hd |
+| `weaponbar_hd_extend` | 1 of 4 | weaponbar_hd |
+| `reloadbar` | 1 of 1 | weaponbar_hd |
+| `scorebar_hd` | 32 of 59 (17 Survival / Evac, 10 co-op gunner) | scorebar_hd |
+| `kd_rate_bar` | 21 of 25 (the revives caption and value, twice) | scorebar_hd |
+| `extra_info` (team juggernaut / danger captions) | 9 of 9 | scorebar_hd |
+| `killstreaks_hd2` (streak segments, slot plates, key hints) | 121 of 124 (the three ace-streak items) | killstreaks_hd |
+| `minimap_fullscreen` | 17 of 17 | minimap_fullscreen |
+
+3.3.3.3's `exp_bar` and `perk_sidebar_hud` are not hosted: 1.1.1.13 draws no XP bar on its combat HUD, and the perk
+sidebar reads the timed-perk system (below).
 
 ### The ammo display (ownerDraw 5)
 
@@ -225,43 +242,75 @@ Still open:
    `codol_english_locale.ff` and `codol_chinese_locale.ff` over the test install's, and a `Kernel33.dll` built from
    this branch (`K33_LOCAL_TESTING=1` for the log lines and `k33_cmdFile`).
 2. Start with `+set k33_cmdFile 1`; `Kernel33.log` must have
-   `hud style: k33_hudStyle registered (k33_hudStyleList 0:stock;2:v26), value 0`.
-3. In a private Team Deathmatch, write `set k33_hudStyle 2` into `<exe dir>\k33_cmd_<pid>.txt` (or use the pause
+   `hud style: k33_hudStyle registered (k33_hudStyleList 0:stock;2:v26;3:v33), value 0`.
+3. In a private Team Deathmatch, write `set k33_hudStyle 2` (then 3) into `<exe dir>\k33_cmd_<pid>.txt` (or use the pause
    menu's HUD style control): the weapon bar, score bar, minimap frame and killstreak column switch to the
-   2.6.9.7 layout within half a second, without a reload. `set k33_hudStyle 0`: stock. Fire a few rounds: the
+   2.6.9.7 (3.3.3.3) layout within half a second, without a reload. `set k33_hudStyle 0`: stock. Fire a few rounds: the
    big clip count and the gauge drop in the same frame as the reserve; reload refills both. With an akimbo weapon
    the clip count is both hands.
-4. `set k33_hudStyle 1` (or 3): the stock HUD, the dvar back at 0, one line
-   `hud style: k33_hudStyle 1 is not in this build (0:stock;2:v26); showing the stock HUD`.
+4. `set k33_hudStyle 1` (or 4): the stock HUD, the dvar back at 0, one line
+   `hud style: k33_hudStyle 1 is not in this build (0:stock;2:v26;3:v33); showing the stock HUD`.
 5. Quit and start again: the last shipped value is still set (archived).
 6. Repeat step 3 in Survival: the enemy / credit panel is the same in all three, the MP score panel and the
    killstreak column stay hidden.
 
-## Why 3.3.3.3 and 3.5.2.6 are not shipped
+## 3.3.3.3 (v33) and 3.5.2.6 (v35)
 
-Their operator numbering was inferred by aligning the menus each build shares with 2.6.9.7: the same menu, the same
-statement place, the same number of entries and the same operands give one operator pair per position
-(`scratchpad .../scripts/opalign.py`; the dumps are the same `zone-menus` dumps as for v26).
+### Operator numbering
 
-- 3.3.3.3: identical to 2.6.9.7 up to 97 (`spectatingfree`), then 2.6.9.7 + 2 from `keybinding` (107) through
-  `getweaponfiretype` (241). 151 operator numbers paired; 2 conflicting pairs, each a single statement
-  (`demofollowcamera` / `demofreecamera`). So the table does extend rather than reorder: two operators inserted
-  around 98..106, new ones appended from 242.
-- 3.5.2.6 (its common_mp dumps with the same tool): identical up to 96, +1 at 97, +8 from `keybinding` (113).
+Inferred first by aligning the menus each build shares with 2.6.9.7 (the same statement place, entry count and
+operands give one operator pair per position; `scratchpad .../scripts/opalign.py`), then confirmed for 3.3.3.3 by
+its evaluator, which is readable (3.3.3.3's `codoMP_client_shipRetail.exe` is not packed; it only has no operator
+name table):
 
-What stays unresolved are the operators new in 3.x (numbers past 2.6.9.7's table). No shared menu pairs them with
-a name, and the executables cannot be read (3.3.3.3 has no operator names in the file, 3.5.2.6 is packed). They
-sit exactly in the HUD:
+- 3.3.3.3: the switch at 0x00575DF1 (`lea eax, [ecx - 0x1E]; cmp eax, 0xF4; jmp [eax*4 + 0x00578090]`, 245 cases).
+  Identical to 2.6.9.7 up to 97 (`spectatingfree`), two operators inserted at 98 / 99, 2.6.9.7 + 2 from
+  `keybinding` (107) through `getweaponfiretype` (241), then 3.x's own 242..273 (`OPS_3333`).
+- 3.5.2.6 (from the menu alignment only): identical up to 96, +1 at 97, +8 from `keybinding` (113).
 
-| build | weapon bar | killstreaks_hd2 | score bar | all HUD menus |
-|---|---|---|---|---|
-| 3.3.3.3 | 26 of 26 items blocked (the menu's own visibility uses 258, 273) | 102 of 124 (255, 256, 271) | 45 of 59 (10 operators, 242..265) | 191 of 277 items |
-| 3.5.2.6 | 38 of 38 blocked (menu visibility 260; also 275, 276, 278) | 128 of 128 (257, 258, 273, 279) | 26 of 47 (260, 266, 267, 291) | 195 of 314 items |
+### What 3.3.3.3's own operators do, and what they become
 
-The minimap, reload warning and kill/death bar would convert, but a style without its weapon bar and killstreak
-column is half a style, so neither ships. What would unblock them: the names of those operators (an unpacked 3.x
-client or a memory dump of its operator table); then the same generator takes a `v33` / `v35` entry in `STYLES`,
-and the 0x68-byte materials are no obstacle (the HUD art is re-authored from exported images as for v26).
+Each case was disassembled (`v33bin/ops242.txt` and the helpers it calls in the scratch folder). A constant is
+exact in 1.1.1.13 when the state the case reads cannot exist there.
+
+| op | case (helper) | what it does in 3.3.3.3 | in 1.1.1.13 |
+|---|---|---|---|
+| 242..252 | 0x577C7F.. (0x572240 / 0x5722A0 / 0x572310 ..) | per-squad-member records of the Survival / Evac / co-op-gunner panels (exists, health float, two byte fields, a dword, timers, text width) | their items are dropped: Survival / Evac panels (Kernel33's own survival panel stays) |
+| 253 | 0x577C0D | mapname starts with `coop_gun_` | 0; the ten co-op-gunner items it gates are dropped as never shown |
+| 254 | 0x577E68 (0x574DC0) | XP fraction of the XP bar | not used by a hosted menu (`exp_bar` only) |
+| 255 | 0x576F85 (0x570BC0) | killstreak slot N's glow 0..100, an animation that rises when the slot becomes usable and falls back | 100, its resting value (the glow animation is not reproduced) |
+| 256 | 0x577153 (0x573440) | two int arguments (count, empty): the segment material `hud_killstreak_bar_{empty,full}_{2,1}`, `_2` for a count of 3 or less | `select((A) <= 3, .._2, .._1)` with C1's own operators, the empty/full choice folded (B is a constant in every use) |
+| 257, 258, 270 | 0x574C60 / 0x574CF0 / 0x574D60 | only for gametypes `asym*` / `borg*` (robot-axis flag, cg + 0x3508), else 0 | 0 |
+| 259..263, 266, 268, 269, 272 | 0x5716E0 .. 0x5758A0 | not used by a hosted menu | - |
+| 264 | 0x577EA1 | `g_gametype` starts with `asym` | 0 |
+| 265 | 0x571D80 | playerdata `aarRoundNumber` + 1; every use is under 264 | 1 |
+| 267 | 0x5719B0 | the team juggernaut's name; every use is under `g_gametype == "tjugg"` | "" |
+| 271 | 0x575810 | the ace streak's icon when playerdata `acestreak` > 0 | its item is dropped with the ace-streak items (`getplayerdata("acestreak")`: a 3.x streak no 1.1.1.13 menu reads) |
+| 273 | 0x575910 | weaponDef + 0x47C of the weapon in hand; its one use is `|| ui_gametype != "clash"` | 0 (any value gives the same result: 1.1.1.13 has no clash mode) |
+
+`tests/test_hud_styles.py` `test_v33_own_operators` checks that no 3.x operator is left in the built menus and
+that each used one went through its rewrite.
+
+### Ownerdraws
+
+3.3.3.3's `CG_OwnerDraw` (switch at 0x0044D8A8, byte table 0x0044E3B0, jump table 0x0044E294) against C1's
+(0x00459E10): the hosted menus use the same numbers as 2.6.9.7's (5, 83, 103, 104, 120, 150..175, 284, 294, 297).
+Its ammo display (ownerDraw 5, 0x004490A0) has the same layout constants as 1.2.1.12's, so the same three items
+replace it; its one addition, a heat value instead of the clip for weapons with weaponDef + 0x47C == 5, has no
+weapon in 1.1.1.13. 297 (the zombies charge attack) stays out as for v26.
+
+### Materials
+
+3.3.3.3's materials are 0x68 bytes with the name at +0x10, the texture count at +0x50, the technique set at +0x58
+and the texture table at +0x5C (measured on common_mp; CodolSoundDumper `zone-materials` reads both layouts). The
+four segment materials are in `common_marketplace_lite`, not common_mp. 12 images are carried as `k33hud33_*`;
+the others are pixel-equal to v26's and share its `k33hud26_*` assets (weapon bar frame, score bars, kill/death
+plate, minimap ping). The score bars use the same white art tinted with 1.1.1.13's team colours as v26.
+
+### 3.5.2.6
+
+Not shipped. Its executable is packed and no unpacked 3.5.2.6 image is on disk (only 1.1.1.x databases were
+found), so its own operators (from 3.5.2.6 + 8 onward; menu visibility of its weapon bar uses one) cannot be read.
 
 ## Live check
 
@@ -295,6 +344,11 @@ Captures are in the session scratch folder (`hud_impl/shots`), not in the reposi
   choice) and the material name read at +8 when +0 is null. 1.2.1.12 has a loose `main\` folder without IWDs,
   which hides its packaged images from `export-textures`: `--images v12=DIR` names a folder that holds only the
   client exe and a link to the install's `IIPS` folder.
+- 3.3.3.3: `extract --styles v26,v33 --v33 DIR --images v33=VIEW`, where VIEW holds 3.3.3.3's client exe and a
+  junction to its `IIPS` folder (as for v12; the install itself is never written). The dumper additionally needs
+  `zone-materials` to read the 3.x Material layout (name at +0x10, count +0x50, technique set +0x58, table
+  +0x5C) and 1.2.1.12 / 3.x material names in `MenuCommands.cs`. Set `CODOL_CACHE_DIR` to a private folder: the
+  first run indexes 238 zones (about 5 minutes) and a cold `export-textures` can otherwise look hung.
 - Adding or removing a shipped style changes three places that the test compares: the sources, `HUD_STYLE_LIST` in
   `hud_style.c`, and the expected list in `tests/test_hud_styles.py`.
 

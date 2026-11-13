@@ -1,4 +1,4 @@
-k33_hudStyleList 0:stock;2:v26
+k33_hudStyleList 0:stock;2:v26;3:v33
 v26 weaponbar_hd[4] -> weaponbar_hd: ownerDraw 5 written as clip count, clip bar and reserve count
 v26 weaponbar_hd -> weaponbar_hd: 26 of 26 items
 v26 weaponbar_hd_extend[1] -> weaponbar_hd: dropped: operator canChargeAttackIconShow has no 1.1.1.13 equivalent
@@ -57,3 +57,66 @@ v26 rewrite: fontEnum 12 -> 7 (1.1.1.13 has no font 12; in 1.2.1.12 it is a copy
 v26 rewrite: localvarint("isCombat") -> dvarstring("ui_gametype") == "combat" (what the later onOpen stores in it)
 v26 rewrite: isevac -> 0 (a mode 1.1.1.13 does not have)
 v26 rewrite: player("assists") -> dvarint("k33_hudAssists") (hud_style.c, from the score records)
+v33 weaponbar_hd[4] -> weaponbar_hd: ownerDraw 5 written as clip count, clip bar and reserve count
+v33 weaponbar_hd -> weaponbar_hd: 26 of 26 items
+v33 weaponbar_hd_extend[1] -> weaponbar_hd: dropped: operator canChargeAttackIconShow has no 1.1.1.13 equivalent
+v33 weaponbar_hd_extend[2] chargeAttackAnime -> weaponbar_hd: dropped: ownerDraw 297: no stock 1.1.1.13 HUD menu uses it
+v33 weaponbar_hd_extend[3] -> weaponbar_hd: dropped: operator canChargeAttackIconShow has no 1.1.1.13 equivalent
+v33 weaponbar_hd_extend -> weaponbar_hd: 1 of 4 items
+v33 reloadbar -> weaponbar_hd: 1 of 1 items
+v33 scorebar_hd[28] -> scorebar_hd: dropped: a Survival / Evac item of 3.3.3.3 (1.1.1.13: the survival HUD's own panel)
+v33 scorebar_hd[29] -> scorebar_hd: dropped: a Survival / Evac item of 3.3.3.3 (1.1.1.13: the survival HUD's own panel)
+v33 scorebar_hd[30] -> scorebar_hd: dropped: a Survival / Evac item of 3.3.3.3 (1.1.1.13: the survival HUD's own panel)
+v33 scorebar_hd[31] -> scorebar_hd: dropped: a Survival / Evac item of 3.3.3.3 (1.1.1.13: the survival HUD's own panel)
+v33 scorebar_hd[32] -> scorebar_hd: dropped: a Survival / Evac item of 3.3.3.3 (1.1.1.13: the survival HUD's own panel)
+v33 scorebar_hd[33] -> scorebar_hd: dropped: a Survival / Evac item of 3.3.3.3 (1.1.1.13: the survival HUD's own panel)
+v33 scorebar_hd[34] -> scorebar_hd: dropped: a Survival / Evac item of 3.3.3.3 (1.1.1.13: the survival HUD's own panel)
+v33 scorebar_hd[35] -> scorebar_hd: dropped: a Survival / Evac item of 3.3.3.3 (1.1.1.13: the survival HUD's own panel)
+v33 scorebar_hd[36] -> scorebar_hd: dropped: a Survival / Evac item of 3.3.3.3 (1.1.1.13: the survival HUD's own panel)
+v33 scorebar_hd[37] -> scorebar_hd: dropped: a Survival / Evac item of 3.3.3.3 (1.1.1.13: the survival HUD's own panel)
+v33 scorebar_hd[38] -> scorebar_hd: dropped: a Survival / Evac item of 3.3.3.3 (1.1.1.13: the survival HUD's own panel)
+v33 scorebar_hd[39] -> scorebar_hd: dropped: a Survival / Evac item of 3.3.3.3 (1.1.1.13: the survival HUD's own panel)
+v33 scorebar_hd[40] -> scorebar_hd: dropped: a Survival / Evac item of 3.3.3.3 (1.1.1.13: the survival HUD's own panel)
+v33 scorebar_hd[41] -> scorebar_hd: dropped: a Survival / Evac item of 3.3.3.3 (1.1.1.13: the survival HUD's own panel)
+v33 scorebar_hd[42] -> scorebar_hd: dropped: a Survival / Evac item of 3.3.3.3 (1.1.1.13: the survival HUD's own panel)
+v33 scorebar_hd[43] -> scorebar_hd: dropped: a Survival / Evac item of 3.3.3.3 (1.1.1.13: the survival HUD's own panel)
+v33 scorebar_hd[44] -> scorebar_hd: dropped: a Survival / Evac item of 3.3.3.3 (1.1.1.13: the survival HUD's own panel)
+v33 scorebar_hd[45] -> scorebar_hd: dropped: only on 3.x co-op gunner maps (its visibility is 3.3.3.3 operator 253, mapname starts with "coop_gun_": always 0 in 1.1.1.13)
+v33 scorebar_hd[46] -> scorebar_hd: dropped: only on 3.x co-op gunner maps (its visibility is 3.3.3.3 operator 253, mapname starts with "coop_gun_": always 0 in 1.1.1.13)
+v33 scorebar_hd[47] -> scorebar_hd: dropped: only on 3.x co-op gunner maps (its visibility is 3.3.3.3 operator 253, mapname starts with "coop_gun_": always 0 in 1.1.1.13)
+v33 scorebar_hd[48] -> scorebar_hd: dropped: only on 3.x co-op gunner maps (its visibility is 3.3.3.3 operator 253, mapname starts with "coop_gun_": always 0 in 1.1.1.13)
+v33 scorebar_hd[49] -> scorebar_hd: dropped: only on 3.x co-op gunner maps (its visibility is 3.3.3.3 operator 253, mapname starts with "coop_gun_": always 0 in 1.1.1.13)
+v33 scorebar_hd[50] -> scorebar_hd: dropped: only on 3.x co-op gunner maps (its visibility is 3.3.3.3 operator 253, mapname starts with "coop_gun_": always 0 in 1.1.1.13)
+v33 scorebar_hd[51] -> scorebar_hd: dropped: only on 3.x co-op gunner maps (its visibility is 3.3.3.3 operator 253, mapname starts with "coop_gun_": always 0 in 1.1.1.13)
+v33 scorebar_hd[52] -> scorebar_hd: dropped: only on 3.x co-op gunner maps (its visibility is 3.3.3.3 operator 253, mapname starts with "coop_gun_": always 0 in 1.1.1.13)
+v33 scorebar_hd[53] -> scorebar_hd: dropped: only on 3.x co-op gunner maps (its visibility is 3.3.3.3 operator 253, mapname starts with "coop_gun_": always 0 in 1.1.1.13)
+v33 scorebar_hd[54] -> scorebar_hd: dropped: only on 3.x co-op gunner maps (its visibility is 3.3.3.3 operator 253, mapname starts with "coop_gun_": always 0 in 1.1.1.13)
+v33 scorebar_hd -> scorebar_hd: 32 of 59 items
+v33 kd_rate_bar[9] -> scorebar_hd: dropped: the label of player("revives"), which 1.1.1.13 has no field for
+v33 kd_rate_bar[10] -> scorebar_hd: dropped: player("revives"): not a field of 1.1.1.13's operator
+v33 kd_rate_bar[18] -> scorebar_hd: dropped: the label of player("revives"), which 1.1.1.13 has no field for
+v33 kd_rate_bar[19] -> scorebar_hd: dropped: player("revives"): not a field of 1.1.1.13's operator
+v33 kd_rate_bar -> scorebar_hd: 21 of 25 items
+v33 extra_info -> scorebar_hd: 9 of 9 items
+v33 killstreaks_hd2[120] -> killstreaks_hd: dropped: getplayerdata("acestreak"): no stock 1.1.1.13 HUD menu makes this call
+v33 killstreaks_hd2[121] -> killstreaks_hd: dropped: getplayerdata("acestreak"): no stock 1.1.1.13 HUD menu makes this call
+v33 killstreaks_hd2[123] -> killstreaks_hd: dropped: getplayerdata("acestreak"): no stock 1.1.1.13 HUD menu makes this call
+v33 killstreaks_hd2 -> killstreaks_hd: 121 of 124 items
+v33 minimap_fullscreen -> minimap_fullscreen: 17 of 17 items
+v33 rewrite: 3.3.3.3 operator 258 -> 0 (read from its case in 3.3.3.3)
+v33 rewrite: 3.3.3.3 operator 273 -> 0 (read from its case in 3.3.3.3)
+v33 rewrite: getweaponfiretype -> dvarstring("k33_hudFireType") (hud_style.c, from the weapon def)
+v33 rewrite: fontEnum 11 -> 7 (1.1.1.13 has no font 11; in 1.2.1.12 it is a copy of fonts/normalFont)
+v33 rewrite: fontEnum 14 -> 7 (1.1.1.13 has no font 14; in 1.2.1.12 it is a copy of fonts/normalFont)
+v33 rewrite: istrain -> 0 (a mode 1.1.1.13 does not have)
+v33 rewrite: issurvival -> dvarstring("g_gametype") == "survival"
+v33 rewrite: 3.3.3.3 operator 264 -> 0 (read from its case in 3.3.3.3)
+v33 rewrite: fontEnum 12 -> 7 (1.1.1.13 has no font 12; in 1.2.1.12 it is a copy of fonts/normalFont)
+v33 rewrite: isevac -> 0 (a mode 1.1.1.13 does not have)
+v33 rewrite: localvarint("isCombat") -> dvarstring("ui_gametype") == "combat" (what the later onOpen stores in it)
+v33 rewrite: 3.3.3.3 operator 265 -> 1 (read from its case in 3.3.3.3)
+v33 rewrite: player("assists") -> dvarint("k33_hudAssists") (hud_style.c, from the score records)
+v33 rewrite: 3.3.3.3 operator 253 -> 0 (read from its case in 3.3.3.3)
+v33 rewrite: 3.3.3.3 operator 267 -> '' (read from its case in 3.3.3.3)
+v33 rewrite: 3.3.3.3 operator 255 -> 100 (read from its case in 3.3.3.3)
+v33 rewrite: 3.3.3.3 operator 256 -> select((A) <= 3, ..._2, ..._1) of empty / full by B (the killstreak bar segment material, read from its case 0x00573440)

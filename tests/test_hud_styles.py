@@ -181,8 +181,8 @@ class HudStyles(unittest.TestCase):
         self.assertEqual(hs.STYLE_NUMBERS, {"stock": 0, "v12": 1, "v26": 2, "v33": 3, "v35": 4})
         # v12 is not shipped: in a client its converted HUD could not be told from v26's (same art, layout
         # differences of a few units; docs/HUD_STYLES_20261112.md)
-        self.assertEqual(hs.shipped(), [(2, "v26")])
-        self.assertEqual(hs.style_list(), "0:stock;2:v26")
+        self.assertEqual(hs.shipped(), [(2, "v26"), (3, "v33")])
+        self.assertEqual(hs.style_list(), "0:stock;2:v26;3:v33")
         c = (ROOT / "src" / "hud_style.c").read_text(encoding="utf-8")
         self.assertIn('#define HUD_STYLE_LIST      "%s"' % hs.style_list(), c)
         self.assertIn('#define HUD_STYLE_DVAR      "%s"' % hs.DVAR, c)
@@ -348,6 +348,34 @@ class HudStyles(unittest.TestCase):
                      "v26 minimap_fullscreen -> minimap_fullscreen: 17 of 17 items", "v26 kd_rate_bar -> scorebar_hd: 16 of 20 items"):
             self.assertIn(line, text)
 
+    def test_v33_own_operators(self):
+        """3.3.3.3's operators 242..273 never reach 1.1.1.13: each kept use is the value or expression read from its
+        case in 3.3.3.3's evaluator (V33_OPS, V33_KILLSTREAK_BAR), the others' items are dropped with a reason."""
+        text = "\n".join(self.report)
+        self.assertEqual(hs.OPS_3333[107], "keybinding")
+        self.assertEqual(hs.OPS_3333[241], "getweaponfiretype")
+        self.assertEqual(hs.OPS_3333[:98], menus.OPS_2697[:98])
+        for zone_txt in (hs.ZDIR / "menufile/hud_styles.txt", hs.SURVIVAL_DIR / "survival_hud_visibility.txt"):
+            self.assertNotIn("v33op", zone_txt.read_text(encoding="utf-8"))
+        used = set()
+        hs.walk_ops(list(json.loads((hs.SRC / "menus_v33.json").read_text(encoding="utf-8"))["menus"].values()), used)
+        self.assertTrue({253, 255, 258, 264, 265, 267, 273} <= used)
+        for a, (_argc, value) in hs.V33_OPS.items():
+            if a not in used:       # read from its case, but no hosted 3.3.3.3 menu uses it
+                continue
+            self.assertIn("v33 rewrite: 3.3.3.3 operator %d -> %r" % (a, value), text)
+        # operator 256: the killstreak bar segment, selected in 1.1.1.13 by the streak's kill count (<= 3: "_2")
+        listing = (hs.SURVIVAL_DIR / "survival_hud_visibility.txt").read_text(encoding="utf-8")
+        for kind in ("empty", "full"):
+            self.assertIn('<= 3 , "k33hud33_hud_killstreak_bar_%s_2" , "k33hud33_hud_killstreak_bar_%s_1" )' % (kind, kind),
+                          listing)
+        self.assertRegex(text, r"v33 scorebar_hd\[45\] -> scorebar_hd: dropped: only on 3\.x co-op gunner maps")
+        self.assertRegex(text, r'v33 killstreaks_hd2\[121\] -> killstreaks_hd: dropped: getplayerdata\("acestreak"\)')
+        for line in ("v33 weaponbar_hd -> weaponbar_hd: 26 of 26 items", "v33 killstreaks_hd2 -> killstreaks_hd: 121 of 124 items",
+                     "v33 minimap_fullscreen -> minimap_fullscreen: 17 of 17 items", "v33 kd_rate_bar -> scorebar_hd: 21 of 25 items",
+                     "v33 scorebar_hd -> scorebar_hd: 32 of 59 items", "v33 extra_info -> scorebar_hd: 9 of 9 items"):
+            self.assertIn(line, text)
+
     def test_the_isCombat_rewrite_is_what_the_later_onOpen_stores(self):
         for _n, style in hs.shipped():
             cfg = hs.STYLES[style]
@@ -368,7 +396,7 @@ class HudStyles(unittest.TestCase):
         ox, oy = struct.unpack_from("<2f", host, 4)
         items = [it for it in wb["p"][ITEMS] if struct.unpack_from("<i", bytes.fromhex(it["raw"]), 0x38)[0] in hs.HUD_OWNERDRAWS]
         self.assertEqual(sorted(struct.unpack_from("<i", bytes.fromhex(it["raw"]), 0x38)[0] for it in items),
-                         [hs.OD_CLIP, hs.OD_CLIP_BAR])
+                         [hs.OD_CLIP] * len(hs.shipped()) + [hs.OD_CLIP_BAR] * len(hs.shipped()))   # one set per style
         for it in items:
             raw = bytes.fromhex(it["raw"])
             self.assertEqual(struct.unpack_from("<i", raw, W + 0x14)[0], 8)        # an ownerdraw item
@@ -428,7 +456,8 @@ class HudStyles(unittest.TestCase):
                 tinted += 1
                 colour = tuple(round(v, 3) for v in struct.unpack_from("<4f", bytes.fromhex(it["raw"]), 0x50))
                 self.assertIn(colour, stock_colours)
-        self.assertEqual(tinted, 4)
+        # v26: the two bars' top and bottom (4); v33: its six (two own-team pairs and the other team's pair)
+        self.assertEqual(tinted, 4 + 6)
 
     def test_zone_is_packed_after_code_post_gfx_and_ahead_of_the_survival_hud(self):
         pack = packs.load(str(ROOT), "codol_common_postgfx_mp")

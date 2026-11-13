@@ -1539,6 +1539,165 @@
      ]
     }
    }
+  },
+  "v33": {
+   "materials": {
+    "1kd_rate_bg": {
+     "action": "carry",
+     "asset": "k33hud26_1kd_rate_bg",
+     "why": "1.1.1.13 has no material of this name; image 1kd_rate_bg as k33hud26_1kd_rate_bg"
+    },
+    "1score_bar_bar1": {
+     "action": "carry",
+     "asset": "k33hud26_1score_bar_bar1",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar1 as k33hud26_1score_bar_bar1"
+    },
+    "1score_bar_bar1_bottom": {
+     "action": "carry",
+     "asset": "k33hud26_1score_bar_bar1_bottom",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar1_bottom as k33hud26_1score_bar_bar1_bottom"
+    },
+    "1score_bar_bar2": {
+     "action": "carry",
+     "asset": "k33hud26_1score_bar_bar2",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar2 as k33hud26_1score_bar_bar2"
+    },
+    "1score_bar_bar2_bottom": {
+     "action": "carry",
+     "asset": "k33hud26_1score_bar_bar2_bottom",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar2_bottom as k33hud26_1score_bar_bar2_bottom"
+    },
+    "1score_bar_bg": {
+     "action": "carry",
+     "asset": "k33hud26_1score_bar_bg",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bg as k33hud26_1score_bar_bg"
+    },
+    "ac130_overlay_grain": {
+     "action": "stock",
+     "why": "1.1.1.13 common_mp has it with the same image"
+    },
+    "asym_score_bar_blue": {
+     "action": "carry",
+     "asset": "k33hud33_asym_score_bar_blue",
+     "why": "1.1.1.13 has no material of this name; image asym_score_bar_blue as k33hud33_asym_score_bar_blue"
+    },
+    "asym_score_bar_orange": {
+     "action": "carry",
+     "asset": "k33hud33_asym_score_bar_orange",
+     "why": "1.1.1.13 has no material of this name; image asym_score_bar_orange as k33hud33_asym_score_bar_orange"
+    },
+    "asym_score_bg": {
+     "action": "carry",
+     "asset": "k33hud33_asym_score_bg",
+     "why": "1.1.1.13 has no material of this name; image asym_score_bg as k33hud33_asym_score_bg"
+    },
+    "choppergunner_score_bg": {
+     "action": "carry",
+     "asset": "k33hud33_choppergunner_score_bg",
+     "why": "1.1.1.13 has no material of this name; image choppergunner_score_bg as k33hud33_choppergunner_score_bg"
+    },
+    "compass_map_default": {
+     "action": "stock",
+     "why": "1.1.1.13 common_mp has it with the same image"
+    },
+    "compassping_player": {
+     "action": "carry",
+     "asset": "k33hud26_compassping_player",
+     "why": "1.1.1.13's compassping_player differs; image compassping_player as k33hud26_compassping_player"
+    },
+    "dpad_killstreak_nuke": {
+     "action": "stock",
+     "why": "no image of this name in 3.3.3.3 to compare; 1.1.1.13's own HUD menus draw a material of this name"
+    },
+    "fire_type_bg": {
+     "action": "carry",
+     "asset": "k33hud33_fire_type_bg",
+     "why": "1.1.1.13 has no material of this name; image fire_type_bg as k33hud33_fire_type_bg"
+    },
+    "hud_killstreak_bar_empty_1": {
+     "action": "carry",
+     "asset": "k33hud33_hud_killstreak_bar_empty_1",
+     "why": "1.1.1.13 has no material of this name; image hud_killstreak_bar_empty_1 as k33hud33_hud_killstreak_bar_empty_1"
+    },
+    "hud_killstreak_bar_empty_2": {
+     "action": "carry",
+     "asset": "k33hud33_hud_killstreak_bar_empty_2",
+     "why": "1.1.1.13 has no material of this name; image hud_killstreak_bar_empty_2 as k33hud33_hud_killstreak_bar_empty_2"
+    },
+    "hud_killstreak_bar_full_1": {
+     "action": "carry",
+     "asset": "k33hud33_hud_killstreak_bar_full_1",
+     "why": "1.1.1.13 has no material of this name; image hud_killstreak_bar_full_1 as k33hud33_hud_killstreak_bar_full_1"
+    },
+    "hud_killstreak_bar_full_2": {
+     "action": "carry",
+     "asset": "k33hud33_hud_killstreak_bar_full_2",
+     "why": "1.1.1.13 has no material of this name; image hud_killstreak_bar_full_2 as k33hud33_hud_killstreak_bar_full_2"
+    },
+    "hud_suitcase_bomb": {
+     "action": "stock",
+     "why": "1.1.1.13 common_mp has it with the same image"
+    },
+    "hud_teamjugg_icon_allies": {
+     "action": "carry",
+     "asset": "k33hud33_hud_teamjugg_icon_allies",
+     "why": "1.1.1.13 has no material of this name; image hud_teamjugg_icon_allies as k33hud33_hud_teamjugg_icon_allies"
+    },
+    "minimap_scanlines": {
+     "action": "stock",
+     "why": "1.1.1.13 common_mp has it with the same image"
+    },
+    "objective_line": {
+     "action": "stock",
+     "why": "1.1.1.13 common_mp has it with the same image"
+    },
+    "scanlines_stencil": {
+     "action": "stock",
+     "why": "no image of this name in 3.3.3.3 to compare; 1.1.1.13's own HUD menus draw a material of this name"
+    },
+    "specialty_bg_1": {
+     "action": "carry",
+     "asset": "k33hud33_specialty_bg_1",
+     "why": "1.1.1.13 has no material of this name; image specialty_bg_1 as k33hud33_specialty_bg_1"
+    },
+    "specialty_bg_disable_1": {
+     "action": "carry",
+     "asset": "k33hud33_specialty_bg_disable_1",
+     "why": "1.1.1.13 has no material of this name; image specialty_bg_disable_1 as k33hud33_specialty_bg_disable_1"
+    },
+    "stencil_base": {
+     "action": "stock",
+     "why": "a reference in 3.3.3.3 too; 1.1.1.13 common_mp has it"
+    },
+    "stencil_fill": {
+     "action": "stock",
+     "why": "no image of this name in 3.3.3.3 to compare; 1.1.1.13's own HUD menus draw a material of this name"
+    },
+    "weaponbar_bg": {
+     "action": "carry",
+     "asset": "k33hud26_weaponbar_bg",
+     "why": "1.1.1.13 has no material of this name; image weaponbar_bg as k33hud26_weaponbar_bg"
+    },
+    "white": {
+     "action": "stock",
+     "why": "a reference in 3.3.3.3 too; 1.1.1.13 code_post_gfx_mp has it"
+    }
+   },
+   "tables": {
+    "mp/coKillstreakStatsTable.csv,0,15": {
+     "rows_by": 1,
+     "shared": 23,
+     "differ": 0,
+     "only_3.3.3.3": [
+      "consumable",
+      "juggernaut",
+      "juggernaut_kingpin",
+      "locker",
+      "missile_drone",
+      "super_katana"
+     ]
+    }
+   }
   }
  }
 }
