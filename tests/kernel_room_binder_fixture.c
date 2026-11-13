@@ -6,9 +6,9 @@
 int __cdecl __ms_vsnprintf(char *out,size_t size,const char *format,va_list args)
 {return _vsnprintf(out,size,format,args);}
 __declspec(dllexport) int fixture_image=1;
-static int LauncherBridgeHash(const wchar_t *path,char out[65])
+static BOOL K33Sha256Hex(const void *data,DWORD size,const WCHAR *path,char out[65])
 {
-    (void)path;
+    (void)data;(void)size;(void)path;
     const char *hash=fixture_image==1?"a5a7b44e66ca72da785eae4319126c23491586dc88dde499e8e6c9cf4bd6a976":
                      fixture_image==2?"d8211b2bb030a055cac9cd641bf518968bff3fd58ab51c6e950465124734ba60":
                      "0000000000000000000000000000000000000000000000000000000000000000";

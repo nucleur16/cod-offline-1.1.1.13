@@ -1594,7 +1594,6 @@ static void PatchGbkInput(void)
 #include "gfx/news_refresh.c"
 #include "gfx/gfx_date_time.c"
 #include "gfx/gfx_local_operands.c"
-#include "launcher_update_bridge.c"
 #if CODOL_KERNEL_NAME_DISPLAY
 #include "kernel/kernel_name_display.c"
 #endif
@@ -1606,7 +1605,6 @@ static void __cdecl TakeOver(void)
     if (!EgressGateArm())
         Fatal("The offline network gate could not be installed, so the client does not start. "
               "See Kernel33_egress.log (next to the game's exe).");
-    if (TryLauncherUpgrade()) ExitProcess(0);
     LoadUnpackedImage();
     MatchC1SectionFlags();
     FillImports();

@@ -14,7 +14,7 @@
  * The lobby's LOCAL PLAY choice (p2p_localhost 1) only ARMS a host: it records and publishes the intent
  * ("state=armed launch=deferred") and starts nothing. The server is started when the match the room started
  * launches for this client (docs/P2P_DEFERRED_HOST_START.md): hostgate's sendto wrapper sees C1's first
- * datagram to the armed loopback port, or the in-process lobby calls K33LocalPlayLaunch().
+ * datagram to the armed loopback port, or the in-process lobby posts the launch (K33LocalPlayAuto).
  *
  * Every path and setting comes from <exe dir>\p2p\p2p_host.ini (key=value, '#' comments); the defaults
  * keep everything under <exe dir>\p2p\. The server is in a job object with KILL_ON_JOB_CLOSE, so it
@@ -1346,7 +1346,7 @@ static void __cdecl P2PCmdCancelStart(void)
 }
 
 /* "p2p_launch": the explicit launch input on the main thread (the UI or a test; the in-process
- * lobby calls K33LocalPlayLaunch). It carries no selection and grants nothing by itself: it only
+ * lobby posts its launch with K33LocalPlayAuto). It carries no selection and grants nothing by itself: it only
  * tells the armed, enabled choice that its match is starting now. */
 static void __cdecl P2PCmdLaunch(void)
 {
@@ -1364,17 +1364,6 @@ int K33LocalPlayIntent(K33LocalPlayIntentInfo *out)
     *out=g_p2pApi;
     LeaveCriticalSection(&g_p2pLock);
     return out->size==sizeof(*out);
-}
-int K33LocalPlayLaunch(unsigned long long owner_uid,const char *session_map,const char *gametype,const char *type)
-{
-    K33LocalPlayIntentInfo now;
-    if (!owner_uid || !session_map || !gametype || !type || !K33LocalPlayIntent(&now)) return 0;
-    if (!now.enabled || now.failed || now.owner_uid!=owner_uid || strcmp(now.session_map,session_map) ||
-        strcmp(now.gametype,gametype) || strcmp(now.type,type)) return 0;
-    if (now.launched) return 1; /* this selection's host start was already issued */
-    if (!now.armed) return 0;
-    InterlockedCompareExchange(&g_p2pLaunchSignal,P2P_LAUNCH_EXPLICIT,P2P_LAUNCH_NONE);
-    return 1;
 }
 
 int K33LocalPlayAuto(unsigned long long owner_uid,const char *session_map,const char *gametype,const char *type,int difficulty,int launch,int *port,char *error,int error_size)

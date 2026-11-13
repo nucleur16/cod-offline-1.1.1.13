@@ -35,12 +35,6 @@ typedef struct K33LocalPlayIntentInfo {
  * intent file <state>\p2p_host.<uid16hex>.txt, without the two-second file heartbeat. */
 int K33LocalPlayIntent(K33LocalPlayIntentInfo *out);
 
-/* The lobby is handing START_GAME for exactly this selection to the local owner. -> 1 when the
- * launch request was raised (or that selection's host was already started), 0 when the owner's
- * current intent is not this enabled, armed selection: the lobby must then withhold START_GAME.
- * Never substitute another server for a refused Local Play room. */
-int K33LocalPlayLaunch(unsigned long long owner_uid, const char *session_map, const char *gametype, const char *type);
-
 /* Offline mode: every room the local player owns is hosted by the embedded server; there is no
  * choice to tick. The in-process lobby tells Kernel33 the selection it resolved for the owner's room
  * (and is about to tell the client): Kernel33 arms the host for exactly that selection, replacing

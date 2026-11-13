@@ -14,7 +14,7 @@ class SharedUIBaseline(unittest.TestCase):
                'src/gfx/gfx_date_time.c','src/gfx/gfx_date_time_policy.h','src/gfx/gfx_date_time_guards.h',
                'src/kernel/kernel_call_guard.c','src/kernel/kernel_room_context.c','src/kernel/kernel_room_guards.h',
                'src/kernel/kernel_room_policy.h','src/production_profile.h','scripts/build-profile.sh',
-               'src/kernel/kernel_name_policy.h','src/kernel/kernel_name_guards.h','src/kernel/kernel_name_network.c',
+               'src/kernel/kernel_name_policy.h','src/kernel/kernel_name_guards.h',
                'src/kernel/kernel_name_render.c','src/kernel/kernel_name_display.c','src/borderless.c','src/kernel/kernel_video_mode.c']
         read=Path.read_bytes
         for name in names:

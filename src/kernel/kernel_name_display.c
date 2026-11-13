@@ -1,15 +1,16 @@
 /* Kernel33 ownership of the retained name-only UI/roster/HUD paths. Install
  * before game entry; no render proxy, developer mapping or thread suspension.
- * This prototype remains opt-in and must pass proxy-free client qualification. */
+ * This prototype remains opt-in and must pass proxy-free client qualification.
+ * The client is offline only: the display-name service fetch (kernel_name_network.c,
+ * codol.kewkew.org) was removed, so no alias is ever fetched; an alias in g_kndCache
+ * comes only from KnpReply's callers (tests). */
 #include "kernel_name_policy.h"
 #include "kernel_name_guards.h"
 typedef struct {char alias[64],hud[1024];} KndBuffers;
 static SRWLOCK g_kndLock=SRWLOCK_INIT;
 static KnpCache g_kndCache;
-static KnpIdentity g_kndRequest;
-static HANDLE g_kndEvent;
 static DWORD g_kndFls=FLS_OUT_OF_INDEXES,g_kndNextSample;
-static int g_kndReady,g_kndSampled,g_kndPending,g_kndBusy;
+static int g_kndReady,g_kndSampled;
 static int KrcSystemD3D(void);
 
 static int KndRead(uint32_t address,void *out,size_t size)
@@ -44,7 +45,6 @@ static KndBuffers *KndThreadBuffers(void)
     if(!FlsSetValue(g_kndFls,buffers)){KndFreeBuffers(buffers);return NULL;}
     return buffers;
 }
-#include "kernel_name_network.c"
 #include "kernel_name_render.c"
 
 static void KernelNameMainTick(void)
@@ -59,10 +59,6 @@ static void KernelNameMainTick(void)
     AcquireSRWLockExclusive(&g_kndLock);
     /* The retained dispatcher runs TheatreTick before this room/name chain. */
     KnpIdentityUpdate(&g_kndCache,valid?canonical:"",valid?uid:0,ThSessionGeneration(),now);
-    if(valid && !g_kndBusy && (uint32_t)(now-g_kndCache.next_request)<0x80000000u) {
-        g_kndRequest=g_kndCache.identity;g_kndPending=g_kndBusy=1;g_kndCache.next_request=now+30000;
-        if(!SetEvent(g_kndEvent)){g_kndPending=g_kndBusy=0;g_kndCache.next_request=now+1000;}
-    }
     ReleaseSRWLockExclusive(&g_kndLock);
 }
 typedef struct {
@@ -125,7 +121,7 @@ static int KndPatchNames(KndPatch *patches,unsigned count)
 }
 static int InstallKernelNameDisplay(void)
 {
-    wchar_t path[MAX_PATH];char hash[65];HANDLE worker;HMODULE owner=NULL;
+    wchar_t path[MAX_PATH];char hash[65];HMODULE owner=NULL;
     DWORD length=GetModuleFileNameW(NULL,path,MAX_PATH);
     KndPatch patches[]={
         {0x5aa780u,knd_SOURCE,sizeof(knd_SOURCE),KND_Source,0xe9,{0},0},
@@ -139,7 +135,7 @@ static int InstallKernelNameDisplay(void)
         {0x4447ddu,knd_ATTACKER,sizeof(knd_ATTACKER),KND_Obituary,0xe8,{0},0}};
     unsigned count=sizeof(patches)/sizeof(patches[0]);
     if(!length || length>=MAX_PATH || (uintptr_t)GetModuleHandleW(NULL)!=0x400000u || !KrcSystemD3D() ||
-       !LauncherBridgeHash(path,hash) || strcmp(hash,"a5a7b44e66ca72da785eae4319126c23491586dc88dde499e8e6c9cf4bd6a976") ||
+       !K33Sha256Hex(NULL,0,path,hash) || strcmp(hash,"a5a7b44e66ca72da785eae4319126c23491586dc88dde499e8e6c9cf4bd6a976") ||
        !KndAllGuards())return 0;
     if(g_kndFls!=FLS_OUT_OF_INDEXES)return 0;
     /* Hook targets and the FLS destructor require process lifetime. Pin the
@@ -148,10 +144,6 @@ static int InstallKernelNameDisplay(void)
     if(!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS|GET_MODULE_HANDLE_EX_FLAG_PIN,
                           (LPCWSTR)(uintptr_t)KndFreeBuffers,&owner) || !owner)return 0;
     g_kndFls=FlsAlloc(KndFreeBuffers);if(g_kndFls==FLS_OUT_OF_INDEXES)return 0;
-    g_kndEvent=CreateEventW(NULL,FALSE,FALSE,NULL);
-    if(!g_kndEvent){FlsFree(g_kndFls);g_kndFls=FLS_OUT_OF_INDEXES;return 0;}
-    if(!KndPatchNames(patches,count)){CloseHandle(g_kndEvent);g_kndEvent=NULL;FlsFree(g_kndFls);g_kndFls=FLS_OUT_OF_INDEXES;return 0;}
-    worker=CreateThread(NULL,0,KndWorker,NULL,0,NULL);
-    if(!worker){KndRollback(patches,count);CloseHandle(g_kndEvent);g_kndEvent=NULL;FlsFree(g_kndFls);g_kndFls=FLS_OUT_OF_INDEXES;return 0;}
-    CloseHandle(worker);g_kndReady=1;return 1;
+    if(!KndPatchNames(patches,count)){FlsFree(g_kndFls);g_kndFls=FLS_OUT_OF_INDEXES;return 0;}
+    g_kndReady=1;return 1;
 }

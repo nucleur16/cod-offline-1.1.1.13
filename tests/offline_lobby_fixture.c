@@ -52,11 +52,6 @@ static int intent_published, auto_calls, auto_answer, leave_calls;
 static char auto_seen[200];
 static unsigned long long leave_seen;
 int K33LocalPlayIntent(K33LocalPlayIntentInfo *out) { if (!intent_published) return 0; *out = intent; return 1; }
-int K33LocalPlayLaunch(unsigned long long owner_uid, const char *session_map, const char *gametype, const char *type)
-{
-    (void)owner_uid; (void)session_map; (void)gametype; (void)type;
-    abort(); /* the in-DLL lobby names its selection with K33LocalPlayAuto; it never raises a bare launch */
-}
 int K33LocalPlayAuto(unsigned long long owner_uid, const char *session_map, const char *gametype, const char *type, int difficulty,
                      int launch, int *port, char *error, int error_size)
 {
