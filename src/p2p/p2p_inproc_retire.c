@@ -407,16 +407,21 @@ fail_unloaded:
     return FALSE;
 }
 
-/* p2p_inproc.c's status poll: the session is over once the player who was on it has left (humans=0 for three polls,
- * about 6 s). The server keeps its finished map until then (codol_oneShotMatch, p2p.c), so a level exit alone is not
- * the end: a player still on the scoreboard or still loading would be dropped with "Server quit". */
-static BOOL PiMatchOverPoll(const char *line, BOOL *hadHuman, int *emptyPolls)
+/* p2p_inproc.c's status poll (every 2 s): the session is over once the match has ended (the level exit, ended=1: the
+ * server then keeps its finished map, codol_oneShotMatch in p2p.c) and the player has left (no human for three polls),
+ * or once nobody has been on it for a minute (the player went back to the lobby mid-match). A level exit alone is not
+ * the end - a player still on the scoreboard would be dropped with "Server quit" - and a short gap is not either: during
+ * the match's own map_restart ("waiting for teams", seen live) the server counted no human for several seconds.
+ * *state: bit 0 a human was on it, bit 1 the level exit was seen; *emptyPolls counts consecutive empty polls. */
+static BOOL PiMatchOverPoll(const char *line, int *state, int *emptyPolls)
 {
     const char *h = strstr(line, " humans="), *e = strstr(line, " ended=");
     int humans = h ? atoi(h + 8) : -1, ended = e ? atoi(e + 7) : 0;
-    if (humans > 0) { *hadHuman = TRUE; *emptyPolls = 0; return FALSE; }
-    if (!*hadHuman || humans != 0) return FALSE;
-    if (++*emptyPolls < 3) return FALSE;
-    Log("p2p in-process: the player left the %s match; ending the session", ended ? "finished" : "running");
-    return TRUE;
+    if (ended) *state |= 2;
+    if (humans > 0) { *state |= 1; *emptyPolls = 0; return FALSE; }
+    if (!(*state & 1) || humans != 0) return FALSE;
+    ++*emptyPolls;
+    if ((*state & 2) && *emptyPolls >= 3) { Log("p2p in-process: the match ended and its player left; ending the session"); return TRUE; }
+    if (*emptyPolls >= 30) { Log("p2p in-process: nobody has been on the match for a minute; ending the session"); return TRUE; }
+    return FALSE;
 }

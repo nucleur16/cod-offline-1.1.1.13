@@ -248,6 +248,7 @@ static void P2PDefaults(P2PConfig *c)
 #if CODOL_OFFLINE_LOBBY
 static void OfflineP2PConfig(P2PConfig *c); /* offline_lobby.c: the offline run-time folder and this run's host port */
 static void OfflineHostPortRelease(void);   /* offline_lobby.c: the host port stops being held reserved */
+static void OfflineHostPortReserve(void);   /* offline_lobby.c: held again after a session was taken down */
 #else
 #define OfflineP2PConfig(c) ((void)0)
 #define OfflineHostPortRelease() ((void)0)
@@ -625,6 +626,7 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
         /* The same command line without the exe: Sh1xHost_Init takes what follows it. */
         const char *args = strchr(cmd + 1, '"');
         int r = P2PInprocRun(&c, password, args ? args + 2 : cmd);
+        if (OfflineLobbyActive() && !P2PInprocUsed()) OfflineHostPortReserve(); /* until the next match's launch */
         WSACleanup();
         return r;
     }

@@ -543,11 +543,25 @@ Not shown live on this branch: the ticker line of a refused start on screen; a r
 playlist room; a second match in one client run (after the first match the client came back to a room
 view with placeholder texts whose Ready did nothing - not investigated); Survival on a usermap.
 
-**XP from a real match was not obtained** (earlier branches): the test client's player is driven by posted clicks and
-key messages and made no multiplayer kill (the bots of this server build stand idle), and zombies
-kills carry no XP in the server's report. The XP / rank path of the live run is therefore the
-hand-written report above plus the 33 differential scenarios; everything else of the write-back (GP,
-lifetime members, kill counters, challenge progress) came from the embedded server's own reports.
+**XP from a real match** (2026-11-13, shadow `ofl3\client`, diagnostic build): Killhouse TDM against three
+training bots armed from the server pack's `mp/botclasstable.csv` (below). The player holds fire (a console
+`bind k +attack` and posted key presses) while the bots are moved, one direction after another, into the
+line of fire around him over loopback rcon (`codol_setpos <bot> x y z`, a server command that needs no
+cheats; the script is `D:\CoD\k33work\ofl3\ofl3_xp2.py`). Result, the server's own report: kills 0,
+assists 1, score 20, `"xp": {"kill_xp": 25, "total": 25}` - folded at once: `+25 XP level 1->1 (total 25, 25
+into rank, 1975 to next) | +100 GP`. The after-action Statistics shows Combat XP 25 (`ofl3\shots\t3_d04.png`);
+`players\edtest\mpdata_s` read back by `dwtest --career` gives `total_xp 25`; the rank bar shows 25/2000 after
+returning to the lobby (`t3_e01_c.png`) and after a restart (`t3_e02_c.png`). Nothing on the Kernel33 or lobby
+side was missing: the server measures XP as the session rank-experience delta (`_rank.gsc` giveRankXP ->
+`codol_match_report.c` `client_total_xp`) and the lobby folds it. A kill (rather than an assist) was not
+landed: the bot moved into the crosshair is shot but rarely finished by the burst.
+Not tried: `codol_explodeprobe <player> frag_grenade_mp` (a player-owned grenade): it crashed the level both
+times (`Invalid animation condition client` on the bot's death, then a `_weapons.gsc` runtime error
+`cannot set field of removed entity`); it is a developer probe, not a game path.
+
+**Zombies kills carry no XP**: a Zombies match with 5 kills reported `"xp": {"total": 0}` and the "Defeat!"
+screen shows `MP: 0 ZM: 0` - the Zombies scripts award points (score 2840) but never rank XP. A server-side gap
+(its Zombies GSC would have to call the rank script's XP award); nothing in Kernel33 or the lobby drops it.
 
 One of the six starts of the first build of this branch refused offline mode with `could not get a
 free loopback port`. Cause, found afterwards: that build took the system's choice of a TCP port
@@ -594,16 +608,21 @@ read with the Python lobby's codec from a copy of `players\edtest\mpdata`):
   defect that matches the report's words; that it is the path the report came from is an inference.
 * **Bots** (seen in the host log, not on screen): `CoDOL bot class N: mp/botclasstable.csv has no
   member loadoutPrimary; answering none` for every member, then `CoDOL weapon '_mp' is not in any
-  mounted zone; using defaultweapon_mp`: in this shadow the bots are handed the default weapon.
-  Whether a dedicated host run finds that table was not checked.
+  mounted zone; using defaultweapon_mp`. Cause, found 2026-11-13: the server reads the loose
+  `mp/botclasstable.csv` with `FS_ReadFile` (server `codol_bot_loadout.c`), which the server pack
+  `p2p\home\main\sh1x_svr_scripts.iwd` carries (`loadoutPrimary,ak104,vector,mg4,...`); without the pack it
+  finds only the stock stringtable of C1's zones, whose rows are named differently. The pack is staged by
+  `scripts/build-server.sh` and is in the real install, but the test shadows were made without the contents
+  of `p2p\home` - so this was a shadow defect. With the pack copied in, the bots spawn with their classes
+  (`*a 52 10 118 3 ...`), move and fight (team scores in the thousands). Kernel33 builds no zone with that
+  table and needed no change.
 * Not done: a sweep of every primary weapon, and the comparison with a dedicated `codol_dedrun` run.
 
 
 ## What still needs the live client
 
-* **XP from kills in a real match** (see above).
-* **XP from kills on this branch**: the Survival match's four kills carried no XP in the server's
-  report either (`+0 XP`).
+* **XP from a kill** (an assist's 25 XP arrived, see above), and XP from Zombies / Survival kills (none
+  is awarded by the server's scripts).
 * **Two offline clients at once on one PC**: the ports are proven free and distinct per listener
   (self-test, and live against dummy sockets on the default ports), but two real clients were not
   started together.
@@ -642,7 +661,12 @@ another map, another category) starts a new one in the same client run.
   reaches a wait, nothing is unloaded and the old rule (restart the client) applies for that run.
 * **When a session ends.** Offline, the host is started with `codol_oneShotMatch 1` and `codol_exitToLobby 1`
   (server `g_sv_main.c` `ExitLevel`: the finished map stays loaded instead of rotating); the status poll ends
-  the session once the player who was on it has left (no human for three polls, ~6 s). Before, the server
+  the session once that level exit was seen and the player has left (no human for three polls, ~6 s), or
+  once nobody has been on it for a minute (back to the lobby mid-match). A short empty gap alone does not
+  end it: during the match's own `map_restart` ("waiting for teams") the server counted no human for several
+  seconds (seen live: a session ended there by an earlier rule). After the teardown the lobby holds the host
+  port again until the next launch (`OfflineHostPortReserve`), so another program cannot take it between two
+  matches (seen live: another client on this PC took 17760 and the next Init failed). Before, the server
   rotated to the next map at the level exit, C1 followed it for a second, and that map's `disconnect` report
   credited a **loss** after every match (seen in every earlier live report pair); a Zombies server rotated to
   another level (`zm_asylum_sh`) whose load stalled the host until the 20 s status watchdog ended it ("Server

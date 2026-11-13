@@ -427,6 +427,17 @@ static void OfflineHostPortRelease(void)
     if (s != -1) closesocket((SOCKET)(ULONG)s);
 }
 
+/* p2p.c, after a host session ended and was taken down: hold this run's host port again until the next launch,
+ * so that another program cannot take it between two matches. Any thread. */
+static void OfflineHostPortReserve(void)
+{
+    if (g_ofl.wantHostPort || g_ofl.hostPort < 1 || g_ofl.hostPort > 65535) return;
+    SOCKET s = OflBindLoopbackUdp(g_ofl.hostPort);
+    if (s == INVALID_SOCKET) { Log("offline lobby: the match host port %d could not be held again after the match", g_ofl.hostPort); return; }
+    LONG old = InterlockedExchange(&g_ofl.hostSock, (LONG)s);
+    if (old != -1) closesocket((SOCKET)(ULONG)old);
+}
+
 /* TakeOver, after FillImports and before the host gate. -> FALSE when the lobby cannot be provided:
  * the caller stops the client with the reason (there is no other lobby to fall back to). */
 static BOOL InstallOfflineLobby(void)

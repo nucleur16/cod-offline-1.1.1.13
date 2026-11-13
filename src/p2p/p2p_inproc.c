@@ -816,7 +816,8 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     }
 #endif
 
-    BOOL ready = FALSE, registered = FALSE, quitAsked = FALSE, hadHuman = FALSE;
+    BOOL ready = FALSE, registered = FALSE, quitAsked = FALSE;
+    int matchState = 0;
     int emptyPolls = 0;
 #if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_MONITOR_DECL */
     DWORD lastPoll = 0, lastAnswer = 0, lastStats = GetTickCount(), quitAt = 0;
@@ -878,7 +879,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
             P2PStatusLine(reply, line, sizeof(line)) &&
             P2PStatusMatches(line, c.map, c.sessionMap, c.gametype, c.zoneType)) {
             lastAnswer = now;
-            if (OfflineLobbyActive() && tracked && PiMatchOverPoll(line, &hadHuman, &emptyPolls)) {
+            if (OfflineLobbyActive() && tracked && PiMatchOverPoll(line, &matchState, &emptyPolls)) {
                 /* offline: one match per session; the room is re-armed for the next Ready (p2p.c) */
                 InterlockedExchange(&g_piMatchOver, 1);
                 quitAsked = TRUE;
