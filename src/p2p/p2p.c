@@ -257,6 +257,26 @@ static int P2PSurvivalMaps(char (*maps)[64], int maximum, const char *wanted)
     return wanted ? found : count;
 }
 
+/* The server pack scripts/build-server.sh stages next to the host DLL: <home>\main\sh1x_svr_scripts.iwd
+ * (waypoints, node maps and mp/botclasstable.csv). The host reads mp/botclasstable.csv with FS_ReadFile
+ * (sh1x codol_bot_loadout.c), never from a mounted stringtable. Without the pack the host still runs,
+ * but every bot class answers "none" for its whole loadout and character: bots spawn with
+ * defaultweapon_mp and no body, head or shadow - only their names are drawn - and route over the
+ * level's raw node_* records. Refuse to host instead of starting that match. A loose
+ * mp\botclasstable.csv in the home (a server developer's layout) counts as the pack. */
+static BOOL P2PServerPackPresent(const P2PConfig *c)
+{
+    static const char *const files[] = { "main\\sh1x_svr_scripts.iwd", "main\\mp\\botclasstable.csv" };
+    char path[MAX_PATH + 64];
+    for (unsigned i = 0; i < sizeof(files) / sizeof(files[0]); i++) {
+        _snprintf(path, sizeof(path), "%s\\%s", c->home, files[i]);
+        path[sizeof(path) - 1] = 0;
+        DWORD a = GetFileAttributesA(path);
+        if (a != INVALID_FILE_ATTRIBUTES && !(a & FILE_ATTRIBUTE_DIRECTORY)) return TRUE;
+    }
+    return FALSE;
+}
+
 /* -> NULL when usable, else what is wrong. */
 static const char *P2PCheck(const P2PConfig *c)
 {
@@ -289,6 +309,8 @@ static const char *P2PCheck(const P2PConfig *c)
     if (!P2PPathOk(c->dll)) return "a path holds a quote";
     if (inproc && GetFileAttributesA(c->dll) == INVALID_FILE_ATTRIBUTES) return "server DLL not found (dll=)";
     if (!inproc && GetFileAttributesA(c->exe) == INVALID_FILE_ATTRIBUTES) return "server executable not found (exe=)";
+    if (!P2PServerPackPresent(c))
+        return "server pack missing: p2p\\home\\main\\sh1x_svr_scripts.iwd (bot classes, waypoints)";
     return NULL;
 }
 
