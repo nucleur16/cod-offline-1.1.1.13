@@ -60,11 +60,6 @@ static int LocalQaReadRoute(char *data,DWORD capacity,DWORD *bytes)
     return 0;
 }
 #endif
-/* The production direct-v1 socket module (p2p_production_kernel.c, included after hostgate.c in the
- * DLL) has its own fixtures; here no production session exists. */
-static int P2PProductionGuestAddress(DWORD ip,unsigned port) {(void)ip;(void)port;return 0;}
-static void P2PProductionBorrowSend(SOCKET s) {(void)s;}
-static int P2PProductionInstallSocketHooks(void) {return 1;}
 /* p2p.c: the armed Local Play host's launch is observed on loopback datagrams only. */
 static unsigned launch_observed,launch_port;
 static void P2PLaunchObserve(unsigned port) {++launch_observed;launch_port=port;}

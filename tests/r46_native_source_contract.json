@@ -31,13 +31,10 @@
     "src/p2p/hostgate.c": {
       "HostGateAllow": "4a19190b5f158f3d4feb5281e12ffae8ad829dde3f883b4ea66bf1f966a25bfd",
       "HostGateOk": "cb3dfd543f4f46f20390317db1cddebe8850f06619e7169c3035b26f5bd486b4",
-      "HostGateRecvFrom": "44db6cb4dd47db833e00aed2276e26859d731dda4c01d3da1f55ab4e8c0fad79",
-      "HostGateSendTo": "79efaa22445bb387168aa88cc27b885bd2a9b8ce28c6bb37a452fc40d64cdc38",
+      "HostGateRecvFrom": "38e9a4ef98a592b942d7a3f2fb43f768d77d74ed6bf90027a7d8988bb18768d2",
+      "HostGateSendTo": "e212fff50738a5d172532361f1d059cdf77fdf30b55ac36337d4fa51780b1221",
       "HostGateVouch": "8314d16a803f635136d1de7a3bcc6f6499952caf7dc7921d2b29de0fa01f2e2b",
-      "InstallHostGate": "211a3c9746437be5b2ec0a8ff1a42ccd29988bb2f71a388481e23d696f00a5dc"
-    },
-    "src/p2p/p2p_guest_binding.c": {
-      "P2PGConnectDispatchTick": "9031abbeb7732f3ace65dbc5b6f1e8f1f5607749caf87f77ed3817dc808e2a68"
+      "InstallHostGate": "c48cf3d7744b9fd76b8527948c13e5a873a6905f0206a81eb597164fb245b935"
     }
   },
   "development_surface_sections": [

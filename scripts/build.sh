@@ -44,7 +44,7 @@ OFFLINE_LINK="$OFFLINE_OBJS -static-libstdc++ -lstdc++"
 # ld derives a DLL's default image base from the output file name as it is written on the command line. 0x69100000
 # is the one "Kernel33.dll" always got; it is pinned so the DLL does not change with the output folder.
 "$BIN/gcc.exe" "$@" -O2 -Wall -shared -s -static -static-libgcc -I"$SDL_DIR/include" -o "$OUT/Kernel33.dll" \
-    -I. kernel33.c production/p2p_production_receiver.c production/p2p_production_wire.c shared/p2p_win_pipe.c "$OUT/kernel33_res.o" kernel33.def $OFFLINE_LINK \
+    -I. kernel33.c "$OUT/kernel33_res.o" kernel33.def $OFFLINE_LINK \
     -L"$SDL_DIR/lib" -lSDL2 -lsetupapi -lcfgmgr32 -lversion -loleaut32 -luuid \
     -lopus -lz -lwinhttp -limm32 -lgdi32 -lshlwapi -lole32 -lwinmm -lws2_32 -liphlpapi -lpsapi -ladvapi32 -lshell32 -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat -Wl,--image-base,0x69100000
 if [ "${K33_NO_COPY:-0}" = 1 ]; then

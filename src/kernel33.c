@@ -1550,13 +1550,10 @@ static void PatchGbkInput(void)
 #if !CODOL_KERNEL_NAME_DISPLAY
 #include "name_display.c"
 #endif
-/* Local verified SDK -> immutable hosted-script source handoff. */
-#include "p2p/p2p_verified_scripts.c"
 #include "local_log_flush.c"
 #include "gfx/localized_substitution.c"
 #include "gfx/localized_numeric.c"
 /* Player-hosted matches: the sh1x server as a child of the host's client (p2p.c, docs/P2P_HOSTING.md). */
-#include "p2p/p2p_production_kernel.h"
 #include "p2p/p2p.c"
 /* The sh1x server inside the client, on the game thread (p2p_inproc.c, feat/p2p-inprocess). */
 #include "p2p/p2p_inproc.c"
@@ -1564,7 +1561,6 @@ static void PatchGbkInput(void)
 #include "p2p/p2p_assets.c"
 /* UDP only with lobby-vouched hosts (hostgate.c): the P2P trust requirement. */
 #include "p2p/hostgate.c"
-#include "p2p/p2p_production_kernel.c"
 /* Offline mode: the Demonware lobby inside the client (offline_lobby.c, offline/, docs/OFFLINE_LOBBY.md). */
 #include "offline_lobby.c"
 /* Reject malformed top-level DemonWare packet lengths in the exact C1 parser. */

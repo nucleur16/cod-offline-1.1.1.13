@@ -38,6 +38,40 @@ static const char *K33LfStageName(void)
 
 #if CODOL_LOCAL_TESTING
 #include "local_multi_policy.h"
+/* The launcher's CODOL_VERIFIED_SCRIPTS_REQUIRED flag (the verified-script service itself was removed with
+ * p2p_verified_scripts.c): zero is absent/off, one is explicitly selected, minus one is malformed. */
+static int K33LfVerifiedFlag(void)
+{
+    char value[4];
+    DWORD size = GetEnvironmentVariableA("CODOL_VERIFIED_SCRIPTS_REQUIRED", value, sizeof(value));
+    if (!size || (size == 1 && value[0] == '0')) return 0;
+    return size == 1 && value[0] == '1' ? 1 : -1;
+}
+/* The launcher's identity pipe name and parent pid, as p2p_verified_scripts.c accepted them. */
+static int K33LfPipeName(const char *name)
+{
+    static const char prefix[] = "\\\\.\\pipe\\CoDOLVerifiedScripts-";
+    unsigned n;
+    if (strncmp(name, prefix, sizeof(prefix)-1) || strlen(name) != sizeof(prefix)-1+32) return 0;
+    for (n = sizeof(prefix)-1; name[n]; ++n)
+        if (!((name[n] >= '0' && name[n] <= '9') || (name[n] >= 'a' && name[n] <= 'f'))) return 0;
+    return 1;
+}
+static int K33LfPid(const char *text, ULONG *pid)
+{
+    unsigned long value = 0;
+    const char *s = text;
+    if (!*s || *s == '0') return 0;
+    for (; *s; ++s) {
+        unsigned digit;
+        if (*s < '0' || *s > '9') return 0;
+        digit = (unsigned)(*s-'0');
+        if (value > (0xfffffffful-digit)/10ul) return 0;
+        value = value*10ul+digit;
+    }
+    *pid = value;
+    return value != 0;
+}
 
 #define K33LF_LOG_HANDLE 0x02574660u
 #define K33LF_FILES 0x02AAA320u
@@ -110,7 +144,7 @@ static int K33LfPolicy(void)
     int selected=argv && CodolLocalMultiArgument(argc,(const wchar_t *const *)argv);
     if (argv) LocalFree(argv);
     if (!selected) return K33LfFail(LF_MULTI);
-    if (P2PVerifiedScriptsMode()!=1) return K33LfFail(LF_VERIFIED_FLAG);
+    if (K33LfVerifiedFlag()!=1) return K33LfFail(LF_VERIFIED_FLAG);
     char path[MAX_PATH],data[256];DWORD size=GetModuleFileNameA(NULL,path,sizeof(path));
     if (!size || size>=sizeof(path)) return K33LfFail(LF_POLICY_PATH);
     while (size && path[size-1]!='\\') size--;
@@ -139,7 +173,7 @@ static int K33LfPipe(void)
     if (!a && probe_error==ERROR_ENVVAR_NOT_FOUND)
         a=GetEnvironmentVariableA("CODOL_VERIFIED_SCRIPT_PIPE",name,sizeof(name));
     b=GetEnvironmentVariableA("CODOL_VERIFIED_SCRIPT_PARENT_PID",text,sizeof(text));
-    if (!a || a>=sizeof(name) || !b || b>=sizeof(text) || !P2PVSPipeName(name) || !P2PVSPid(text,&expected)) return K33LfFail(LF_PIPE_ENV);
+    if (!a || a>=sizeof(name) || !b || b>=sizeof(text) || !K33LfPipeName(name) || !K33LfPid(text,&expected)) return K33LfFail(LF_PIPE_ENV);
     typedef BOOL (WINAPI *ServerPid)(HANDLE,PULONG);
     ServerPid server=(ServerPid)GetProcAddress(GetModuleHandleA("kernel32.dll"),"GetNamedPipeServerProcessId");
     if (!server) return K33LfFail(LF_PIPE_API);
@@ -249,7 +283,7 @@ static int K33LfExecuteExchange(const char *pid_text,const char *nonce,const cha
 #if CODOL_LOCAL_TESTING
     ULONG pid=0;char expected[39];
     g_k33LfStage=LF_NOT_RUN;
-    if (!pid_text || !P2PVSPid(pid_text,&pid) || pid!=GetCurrentProcessId()) return K33LfFail(LF_PID);
+    if (!pid_text || !K33LfPid(pid_text,&pid) || pid!=GetCurrentProcessId()) return K33LfFail(LF_PID);
     if (!K33LfNonce(nonce)) return K33LfFail(LF_NONCE);
     if (exchange && !K33LfNonce(exchange)) return K33LfFail(LF_EXCHANGE);
     if (!K33LfPolicy() || !K33LfPipe() || !K33LfGuard()) return 0;

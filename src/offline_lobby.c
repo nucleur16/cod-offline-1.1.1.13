@@ -21,7 +21,7 @@
  *      are usable by a level-1 profile (OflLiftGates). The career itself is not touched: a level-1
  *      player is shown, stored and reported as level 1, and loadout unlocks keep their levels.
  * If the lobby cannot start (no free port, an explicit port that is taken, C1's bytes at a patch site
- * differ, a launcher-managed session) the client stops with the reason; it never contacts another lobby.
+ * differ, a client started by a launcher Local Play session) the client stops with the reason; it never contacts another lobby.
  *
  * The player's career is the game's own profile blobs in <exe dir>\players\<profile name>\
  * (src/offline/dw_store.h); there is no database.
@@ -445,7 +445,8 @@ static BOOL InstallOfflineLobby(void)
     OflReadSettings();
     InitializeCriticalSection(&g_ofl.lock);
     if (!g_ofl.createFileA || !g_ofl.getCommandLineA) { Log("offline lobby: C1's file/command-line imports were not found"); return FALSE; }
-    /* Launcher-managed Local Play (the SDK pipe protocols, the production host) is a different product. */
+    /* A launcher Local Play session (the SDK pipe protocols 1-3, the production host; their code was removed
+     * from this client) is a different product: such a client is refused rather than run offline. */
     if (GetEnvironmentVariableA("CODOL_P2P_PRODUCTION_PIPE", NULL, 0) || GetEnvironmentVariableA("CODOL_P2P_STARTUP_IPC_V1", NULL, 0) ||
         GetEnvironmentVariableA("CODOL_LOCAL_QA_DWAUTH_HANDLE", NULL, 0)) {
         Log("offline lobby: refused, this client was started by a launcher-managed Local Play session (not supported: this client is offline only)");

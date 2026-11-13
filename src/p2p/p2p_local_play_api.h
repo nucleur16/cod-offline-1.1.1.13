@@ -25,7 +25,7 @@ typedef struct K33LocalPlayIntentInfo {
     int ready;                     /* the host answers with exactly this selection */
     int failed;                    /* the choice cannot be hosted (see error) */
     int port;                      /* loopback UDP port the host will listen / listens on */
-    int protocol;                  /* 0 legacy, 1/2 local startup IPC (the production protocol never arms here) */
+    int protocol;                  /* always 0: the launcher startup protocols 1-3 were removed */
     char map[64], session_map[64], gametype[32], type[16];
     char state[16];                /* idle armed starting ready stopping exited failed */
     char error[256];

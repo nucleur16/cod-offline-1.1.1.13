@@ -25,9 +25,9 @@ typedef size_t SIZE_T;
 #define CODOL_DIAGNOSTICS 1
 enum { PI_NONE, PI_INIT_PENDING, PI_RUNNING, PI_ENDED, PI_CRASHED };
 enum { P2P_IDLE, P2P_STARTING, P2P_READY, P2P_STOPPING, P2P_EXITED, P2P_FAILED };
-typedef struct {char map[64],sessionMap[64],gametype[32],zoneType[16],rollout[32]; int port,readyTimeout;} P2PConfig;
+typedef struct {char map[64],sessionMap[64],gametype[32],zoneType[16]; int port,readyTimeout;} P2PConfig;
 static struct { int state; DWORD readyMs; char status[512]; } g_p2p;
-static LONG g_piState,g_piQuit,g_p2pStop,g_piYielding;
+static LONG g_piState,g_piQuit,g_p2pStop,g_piYielding,g_piMatchOver;
 static int g_p2pLock;
 static long long g_piWinCalls,g_piWinTotalUs,g_piWinMaxUs,g_piMaxGapUs;
 static long g_piGapsOver1s;
@@ -36,10 +36,11 @@ static const char *kPiState[]={"none","starting","running","ended","crashed"};
 typedef struct {DWORD delta; int response,stop,yielding,expected;} Step;
 static Step steps[40];
 static int count,index_next,current_response,queries;
-/* Explicit producer leaves: the actual monitor is extracted below. */
-static int production_mode,production_permission;
-static int P2PProductionMode(void){return production_mode;}
-static int P2PR_CurrentPermission(void){return production_permission;}
+/* Explicit leaves: the actual monitor is extracted below. Offline mode (always on in the product)
+ * ends the session when the hosted match is over (p2p_inproc_retire.c PiMatchOverPoll). */
+static int offline_on,match_over_at,polls;
+static BOOL OfflineLobbyActive(void){return offline_on;}
+static int PiMatchOverPoll(const char *line,int *state,int *empty){(void)line;(void)state;(void)empty;return match_over_at&&++polls>=match_over_at;}
 static DWORD clock_now;
 static const char *scenario;
 static void Sleep(int unused) {
@@ -54,7 +55,6 @@ static void Sleep(int unused) {
     g_p2pStop=s.stop;g_piYielding=s.yielding;
 }
 static DWORD GetTickCount(void) {return clock_now;}
-static DWORD GetCurrentProcessId(void) {return 1234;}
 static void EnterCriticalSection(int *p) {(void)p;}
 static void LeaveCriticalSection(int *p) {(void)p;}
 static void lstrcpynA(char *out,const char *in,size_t size) {snprintf(out,size,"%s",in);}
@@ -62,8 +62,6 @@ static void Log(const char *fmt,...) {(void)fmt;}
 static void P2PSetState(int state,const char *error) {(void)error;g_p2p.state=state;}
 static void InterlockedExchange(LONG *target,LONG value) {*target=value;}
 static void PiMemory(SIZE_T *a,SIZE_T *b) {*a=*b=0;}
-static void P2PDescriptor(const P2PConfig *c,DWORD pid,BOOL ready) {(void)c;(void)pid;(void)ready;}
-static void P2PRollout(const char *path,int port,BOOL ready) {(void)path;(void)port;(void)ready;}
 static int P2PRcon(int port,const char *pw,const char *cmd,char *out,size_t size,int timeout) {
     (void)port;(void)pw;(void)cmd;(void)timeout;++queries;
     if(!current_response)return 0;
@@ -74,21 +72,21 @@ static int P2PStatusLine(const char *reply,char *line,size_t size) {
     size_t n=strlen(reply);if(n>=size)return 0;memcpy(line,reply,n+1);return 1;
 }
 static int monitor(void) {
-    P2PConfig c={"mp_rust","mp_rust","war","mp","",17760,2};
+    P2PConfig c={"mp_rust","mp_rust","war","mp",17760,2};
     const char *password="fixture";
     LONG st=PI_RUNNING;
     DWORD t0=0;
     SIZE_T priv0=0,virt0=0,priv1=0,virt1=0;
+    BOOL tracked=TRUE;
 '''
 SUFFIX = r'''
-    (void)registered;
     return index_next;
 }
 static void reset(const char *name) {
     memset(steps,0,sizeof(steps));memset(&g_p2p,0,sizeof(g_p2p));
     g_p2p.state=P2P_STARTING;g_piState=PI_RUNNING;g_piQuit=0;
     g_p2pStop=0;g_piYielding=0;clock_now=0;count=0;index_next=0;queries=0;scenario=name;
-    production_mode=0;production_permission=0;
+    offline_on=0;match_over_at=0;polls=0;g_piMatchOver=0;
 }
 static void add(int response,int stop,int yielding,int expected) {
     steps[count++]=(Step){2000,response,stop,yielding,expected};
@@ -115,15 +113,15 @@ int main(void) {
     for(int n=0;n<10;++n)add(0,0,0,P2P_STARTING);
     for(int n=0;n<24;++n)add(0,0,0,P2P_FAILED);
     assert(monitor()<count);assert(g_piQuit);assert(clock_now==56000);
-    reset("production monitor does not use legacy RCON readiness");
-    production_mode=1;production_permission=1;
-    add(1,0,0,P2P_STARTING);add(1,0,0,P2P_STARTING);
-    assert(monitor()==count);assert(!g_piQuit);assert(!queries);
-    reset("production permission loss requests quit under original bound");
-    production_mode=1;production_permission=0;
-    for(int n=0;n<24;++n)add(1,0,0,P2P_STARTING);
-    assert(monitor()<count);assert(g_piQuit);assert(!queries);assert(clock_now==34000);
-    puts("PASS: seven actual monitor-loop lifecycle/recovery scenarios; production leaves modeled");
+    reset("offline: the match is over, the session is ended once");
+    offline_on=1;match_over_at=2;
+    add(1,0,0,P2P_READY);add(1,0,0,P2P_STOPPING);add(1,0,0,P2P_STOPPING);
+    assert(monitor()==count);assert(g_piQuit&&g_piMatchOver);assert(queries==2);
+    reset("a match-over status outside offline mode is only status");
+    match_over_at=1;
+    add(1,0,0,P2P_READY);add(1,0,0,P2P_READY);
+    assert(monitor()==count);assert(!g_piQuit&&!g_piMatchOver);
+    puts("PASS: seven actual monitor-loop lifecycle/recovery scenarios (offline match over included)");
     return 0;
 }
 '''
@@ -137,7 +135,6 @@ typedef uint32_t DWORD;
 enum {PI_NONE,PI_INIT_PENDING,PI_RUNNING,PI_ENDED,PI_CRASHED};
 enum {P2P_IDLE,P2P_STARTING,P2P_READY,P2P_STOPPING,P2P_EXITED,P2P_FAILED};
 static struct {int state;DWORD exitCode,pid;char error[256];} g_p2p;
-static int startup_mode;
 static DWORD g_piFaultCode;static int g_piInitResult,g_p2pLock;
 static int mockCode(void){return 0;}
 static int (*g_piCode)(void)=mockCode;
@@ -151,7 +148,7 @@ static void classify(int st,int incoming,int init_error){
 RETIREMENT_SUFFIX = r'''
 }
 int main(void){
- (void)GetCurrentProcessId; (void)startup_mode;
+ (void)GetCurrentProcessId;
  classify(PI_RUNNING,P2P_STOPPING,0);
  assert(g_p2p.state==P2P_FAILED && g_p2p.pid==1234); /* old exact epilogue RED */
  classify(PI_INIT_PENDING,P2P_STARTING,0);assert(g_p2p.state==P2P_FAILED && g_p2p.pid==1234);
@@ -181,36 +178,35 @@ enum {AF_INET=2,SOCKET_ERROR=-1,MSG_PEEK=2,FIONREAD=1,WSAEWOULDBLOCK=10035};
 #define WINAPI
 #define FD_ZERO(p) ((p)->n=0)
 #define FD_SET(s,p) ((p)->n=(s))
-static int g_hgMode,decision,trusted,sent,received,refused,borrowed,last_error;
+static int g_hgMode,trusted,sent,received,refused,last_error;
 static struct sockaddr_in source;
 static int recv_leaf(SOCKET s,char*b,int n,int flags,struct sockaddr*f,int*length){(void)s;(void)b;(void)n;(void)flags;++received;memcpy(f,&source,sizeof source);*length=sizeof source;return 7;}
 static int send_leaf(SOCKET s,const char*b,int n,int flags,const struct sockaddr*t,int z){(void)s;(void)b;(void)flags;(void)t;(void)z;++sent;return n;}
 static int (*g_hgRecvFrom)(SOCKET,char*,int,int,struct sockaddr*,int*)=recv_leaf;
 static int (*g_hgSendTo)(SOCKET,const char*,int,int,const struct sockaddr*,int)=send_leaf;
 static unsigned ntohs(unsigned n){return n;}
+static uint32_t ntohl(uint32_t n){return n;}
 static int ioctlsocket(SOCKET s,long cmd,u_long*v){(void)s;(void)cmd;*v=0;return 0;}
 static int select(int n,fd_set*r,void*w,void*x,struct timeval*t){(void)n;(void)r;(void)w;(void)x;(void)t;return 0;}
 static void WSASetLastError(int e){last_error=e;}
-static int P2PProductionGuestAddress(DWORD ip,unsigned port){(void)ip;(void)port;return decision;}
 static int HostGateOk(DWORD ip){(void)ip;return trusted;}
 static void HostGateRefused(DWORD ip,int out,int port){(void)ip;(void)out;(void)port;++refused;}
-static void P2PProductionBorrowSend(SOCKET s){(void)s;++borrowed;}
+static void P2PLaunchObserve(unsigned port){(void)port;}
 '''
 HOSTGATE_SUFFIX = r'''
 static int failures,cases;
-static void one(int mode,int production,int allow,const char*name){
+static void one(int mode,int allow,const char*name){
  char buffer[16];struct sockaddr_in from;int length=sizeof from,result;
- int accepted=production>0||(production==0&&(allow||mode<2));
- g_hgMode=mode;decision=production;trusted=allow;sent=received=refused=borrowed=last_error=0;
+ int accepted=allow||mode<2;
+ g_hgMode=mode;trusted=allow;sent=received=refused=last_error=0;
  result=HostGateSendTo(17,buffer,7,0,(struct sockaddr*)&source,sizeof source);++cases;
- if(result!=7||sent!=accepted||borrowed!=1){printf("FAIL %s send: accepted=%d actual-wire-sends=%d return=%d\n",name,accepted,sent,result);++failures;}
+ if(result!=7||sent!=accepted||refused!=!allow){printf("FAIL %s send: accepted=%d actual-wire-sends=%d return=%d\n",name,accepted,sent,result);++failures;}
  result=HostGateRecvFrom(17,buffer,sizeof buffer,0,(struct sockaddr*)&from,&length);++cases;
  if((accepted&&result!=7)||(!accepted&&(result!=SOCKET_ERROR||last_error!=WSAEWOULDBLOCK))){printf("FAIL %s recv: accepted=%d delivered=%d\n",name,accepted,result);++failures;}
 }
 int main(void){memset(&source,0,sizeof source);source.sin_family=AF_INET;source.sin_port=45011;source.sin_addr.s_addr=0xc633640b;
- one(1,-1,0,"production-negative/legacy-mode1");one(2,-1,0,"production-negative/legacy-mode2");
- one(1,0,0,"unselected-legacy-mode1");one(2,0,0,"unselected-legacy-mode2");
- one(2,0,1,"unselected-vouched-legacy-mode2");one(2,1,0,"production-exact-endpoint");
+ one(1,0,"untrusted-log-only-mode1");one(2,0,"untrusted-enforced-mode2");
+ one(2,1,"trusted-mode2");one(1,1,"trusted-mode1");
  printf("RESULT %d actual function cases, %d failures; explicit WinSock/engine doubles, no network\n",cases,failures);return failures;
 }
 '''
@@ -249,7 +245,7 @@ def main():
     parser.add_argument("--cc",default="gcc")
     args=parser.parse_args()
     source=(args.source/"src/p2p/p2p_inproc.c").read_text()
-    start=source.index("    BOOL ready = FALSE, registered = FALSE, quitAsked = FALSE;")
+    start=source.index("    BOOL ready = FALSE, quitAsked = FALSE;")
     end=source.index("\n    st = g_piState;\n",start)
     with tempfile.TemporaryDirectory(prefix="p2p-inproc-lifecycle-") as tmp:
         folder=Path(tmp)

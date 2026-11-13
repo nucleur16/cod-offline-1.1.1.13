@@ -106,9 +106,9 @@ python -B tests/test_kernel_cutover_contract.py
 python -B tests/test_quiet_diagnostic_paths.py
 python -I -S -B tests/test_r46_native_source_integration.py
 python -I -S -B tests/test_playlist_active_ordinal_selector.py
-gcc -std=c99 -O2 -Wall -Wextra -Werror tests/test_guest_binding_wire.c src/p2p/p2p_startup_wire.c src/p2p/p2p_guest_binding_wire.c -o /tmp/guest-binding-wire && /tmp/guest-binding-wire
 gcc -std=c99 -O2 -Wall -Wextra -Werror tests/p2p_activation_transaction_test.c -o /tmp/p2p-activation-transaction && /tmp/p2p-activation-transaction
 python -I -S -B tests/test_p2p_inproc_lifecycle.py        # Linux gcc + ASan/UBSan
+python -I -S -B tests/test_p2p_start_intent.py            # Linux gcc -m32 + ASan/UBSan: p2p.c's arm/launch/offline tick
 ```
 
 `tests/run_tests.sh` already runs `tests/quick_start_policy_test.c`, `tests/patch_locale_test.c` and

@@ -18,12 +18,5 @@ if [ "${K33_KERNEL_ROOM_CONTEXT:-0}" = 1 ] && [ "${K33_NO_COPY:-0}" != 1 ]; then
     exit 1
 fi
 # The in-client lobby (offline/, docs/OFFLINE_LOBBY.md) is part of every build: this client is offline only.
+# Arguments given to scripts/build.sh are kept: they reach gcc ahead of the profile defines.
 set -- "$@" "-DCODOL_LOCAL_TESTING=${K33_LOCAL_TESTING:-0}" "-DCODOL_DIAGNOSTICS=$K33_DIAGNOSTICS" "-DCODOL_KERNEL_ROOM_CONTEXT=${K33_KERNEL_ROOM_CONTEXT:-0}" "-DCODOL_KERNEL_NAME_DISPLAY=${K33_KERNEL_NAME_DISPLAY:-0}"
-
-# Public exact-package pins, generated after the qualified Launcher/Host builds.
-# Omission compiles the explicit zero-format refusal policy.
-if [ -n "${K33_P2P_PRODUCTION_POLICY_HEADER:-}" ]; then
-    [ "$K33_P2P_PRODUCTION_POLICY_HEADER" = production/p2p_production_policy.generated.h ] || { echo "Production policy must use the fixed source path" >&2; exit 1; }
-    [ -f "$K33_P2P_PRODUCTION_POLICY_HEADER" ] || { echo "Production policy header is missing" >&2; exit 1; }
-    set -- "$@" "-DCODOL_P2P_PRODUCTION_POLICY_HEADER=\"$K33_P2P_PRODUCTION_POLICY_HEADER\""
-fi
