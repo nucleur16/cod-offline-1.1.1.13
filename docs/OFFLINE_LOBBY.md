@@ -657,7 +657,7 @@ another map, another category) starts a new one in the same client run.
   type: zm`). Co-op, Survival and playlist rooms still get it (their session map is spelled differently), so
   their room card is still blank after a match; leaving and re-creating the room works.
 
-**Live** (2026-11-13, shadow `ofl3\client`, diagnostic build, one client run; pictures `ofl3\shots	2_e*`,
+**Live** (2026-11-13, shadow `ofl3\client`, diagnostic build, one client run; pictures `ofl3\shots\t2_e*`,
 `t2_f*`): Create Room Killhouse TDM, Ready, spawn, match to its time limit, report folded (+13 GP),
 `session taken down`; the same room, map changed to Overgrown, Ready, spawn, match end (+2 GP), taken down;
 Leave, Zombies, Create Room, Ready, spawn in Outpost round 1, killed, "Defeat!" (+2 GP), taken down. Every
