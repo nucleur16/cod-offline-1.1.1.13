@@ -5,12 +5,12 @@
  *                 levels, the mastery bridge, coop missions, story intel and the unlock-flag set, over
  *                 resources/progression_tables.json.
  *   write-back    career/rank_writeback.py: fold the match server's match_report.json (and its spool)
- *                 into players/<uid>.json, pay GP, re-render mpdata_s, archive the report. The report
- *                 schema and the file life cycle are in dw_career.h.
+ *                 into the career profile (which rewrites the player's mpdata_s file at once), pay
+ *                 GP, archive the report. The report schema and the file life cycle are in dw_career.h.
  *
  * Where the Python lobby looks in resources\ for reports, this looks in Config::matchProfile (the
- * match server's profile folder); the retry state (match_report.state.json) and the ledger live in the
- * Store (kv "rank_writeback.state", reports.json).
+ * match server's profile folder); the retry state and the ledger of applied reports are the Store's
+ * match_report.state.json in that same folder (kv "rank_writeback.state", the report ids).
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -874,7 +874,7 @@ std::string CreditGp(Server &s, uint64_t uid, int64_t amount)
     return Fmt("+%lld GP (balance %lld)", (long long)amount, (long long)balance);
 }
 
-/* _apply_to_profile: credit `amount` XP and the row's counters to players/<uid>.json, re-render the
+/* _apply_to_profile: credit `amount` XP and the row's counters to the career profile, re-render the
  * blob the client reads, pay the GP. `entry` NULL = the legacy aggregate over every human row (a
  * report whose rows name no account). */
 bool ApplyToProfile(Server &s, uint64_t uid, int64_t amount, const std::string &reason, const Json &rep, const Entry *entry,

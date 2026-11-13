@@ -1,12 +1,19 @@
 /*
- * dw_profiles.cpp - per-player progression: players/<uid>.json and its render into "mpdata_s".
+ * dw_profiles.cpp - per-player progression: the career profile and its render into "mpdata_s".
  * Port of store/player_profiles.py, the rank arithmetic and RankState of career/rank_service.py and
  * the blob side of career/progression.py (blob_updates, collectibles).
  *
+ * THE FILE IS THE CAREER. The Python lobby keeps players\<uid>.json as the authority and renders it
+ * into mpdata_s before serving. Here the player's mpdata_s file (dw_store.h) is the authority and
+ * the profile is its in-memory form: ProfileLoad builds it from the blob (ProfileFromBlob) the first
+ * time a uid is asked for, and ProfileSave renders it straight back (RenderOwnBlob). The few members
+ * the blob has no field for (weapon XP counters, the rank-up GP mark, ...) are the "extras", kept as
+ * account.txt's career lines; they are void without the blob, so deleting mpdata_s is a new career.
+ *
  * Where the Python lobby keeps three copies of a rendered blob (resources\mpdata_s.<uid>, the SQLite
  * storage_files row and the shared resources\mpdata_s), the store holds two: the per-player
- * "mpdata_s" storage file and the shared one (uid 0), which is what a connection without a latched
- * uid is served.
+ * "mpdata_s" file and the shared one (uid 0, memory only), which is what a connection without a
+ * latched uid is served.
  */
 #include <stdlib.h>
 #include <string.h>
@@ -39,8 +46,13 @@ struct ProfilesState {
     bool challengesTried;
     std::vector<int> challengeIds;   /* every id of mp/allchallengestable.csv */
     std::vector<char> isChallenge;   /* [kChallengeCount] */
+    std::vector<std::string> weaponNames; /* every weapon of progression_tables.json */
+    bool masteryTried;
+    std::vector<char> isMastery;     /* [kChallengeCount]: the slot mirrors a weapon level, it is never stored progress */
+    bool seedTried;
+    std::map<std::string, int64_t> seedLifetime; /* the lifetime members the shipped level-1 seed blob carries non-zero */
     uint64_t mirrorOwner;
-    ProfilesState() : rankTried(false), rankVersion(2), challengesTried(false), mirrorOwner(0) {}
+    ProfilesState() : rankTried(false), rankVersion(2), challengesTried(false), masteryTried(false), seedTried(false), mirrorOwner(0) {}
 };
 
 void ProfilesInit(Server &s) { s.st->profiles = new ProfilesState(); }
@@ -207,6 +219,11 @@ static int64_t IntOr(const Json &v, int64_t dflt)
 
 /* ---- the store (load / save / blank / seed) ---- */
 
+/* The profile <-> file mapping, defined below the DDL render it shares its tables with. */
+static Json ProfileExtrasOf(Server &s, const Json &prof);
+static bool ProfileFromBlob(Server &s, uint64_t uid, const Bytes &stored, const Json &extras, Json &prof);
+static bool RenderOwnBlob(Server &s, uint64_t uid, const Json &prof);
+
 /* prof['lifetime']: a dict of str -> non-negative int; an unfamiliar member name is KEPT (the key
  * set is open on purpose), only unusable values are dropped. */
 static void FixLifetime(Json &prof)
@@ -264,7 +281,11 @@ bool ProfileSave(Server &s, Json &prof)
         std::vector<Json> &h = prof["history"].items();
         h.erase(h.begin(), h.begin() + (long)(h.size() - 50));
     }
-    return GetStore(s).ProfileWrite(uid, prof);
+    /* The profile in memory, its extras into account.txt, and the career into the player's mpdata_s
+     * at once: the file never lags the profile, so a stop at any moment loses nothing. */
+    if (!GetStore(s).ProfileWrite(uid, prof, ProfileExtrasOf(s, prof))) return false;
+    /* A store that keeps nothing on disk (tests) has no file to fall behind. */
+    return RenderOwnBlob(s, uid, prof) || s.cfg.profile.empty();
 }
 
 bool ProfileLoad(Server &s, uint64_t uid, Json &prof, bool create)
@@ -273,7 +294,12 @@ bool ProfileLoad(Server &s, uint64_t uid, Json &prof, bool create)
     if (!uid) return false;
     Store &store = GetStore(s);
     Json d;
-    if (store.ProfileRead(uid, d) && IntOr(d.get("format"), 0) == kFormat) {
+    Bytes own;
+    bool have = store.ProfileRead(uid, d) && IntOr(d.get("format"), 0) == kFormat;
+    /* Not asked for in this run yet: THE PLAYER'S mpdata_s FILE IS THE CAREER (rank, XP, lifetime
+     * stats, challenge progress), completed by the account.txt career lines. */
+    bool fromBlob = !have && store.GetStorageFile(uid, kBlobName, own) && ProfileFromBlob(s, uid, own, store.ProfileExtras(uid), d);
+    if (have || fromBlob) {
         d["uid"] = Fmt("%llu", (unsigned long long)uid);
         int64_t xp = std::max<int64_t>(0, IntOr(d.get("total_xp"), 0));
         d["total_xp"] = Json((long long)xp);
@@ -281,21 +307,23 @@ bool ProfileLoad(Server &s, uint64_t uid, Json &prof, bool create)
         if (!d.get("history").isArray()) d["history"] = Json::MakeArray();
         FixLifetime(d);
         prof = d;
+        /* Remembered for the run. The blob it came from is already the file; account.txt is written
+         * only if it was missing (a blob dropped into the folder by hand). */
+        if (fromBlob) store.ProfileWrite(uid, prof, ProfileExtrasOf(s, prof));
         return true;
     }
     if (!create) return false;
-    /* A NEW ACCOUNT STARTS AT LEVEL 1. The one exception is a per-uid mpdata_s already in the store
-     * (an operator's explicit choice for this uid), which is honoured. The shared blob and the
-     * shipped seed are deliberately not read: the shared one describes whoever played last. */
+    /* A NEW ACCOUNT STARTS AT LEVEL 1, with no career extras. An mpdata_s that is there but is not a
+     * profile this build can read is moved aside (mpdata_s.unreadable), never overwritten in place.
+     * The shared blob and the shipped seed are deliberately not read: the shared one describes
+     * whoever played last. */
+    if (!own.empty() && !Ranks(s).empty() && PlayerDataDef(s, kBlobName)) {
+        s.Log(Fmt("player_profiles: mpdata_s of %llu is not a readable profile -- moved aside, the career starts at level 1",
+                  (unsigned long long)uid));
+        store.QuarantineStorageFile(uid, kBlobName);
+    }
     prof = ProfileBlank(s, uid);
-    int64_t xp = 0;
-    std::string how = kNewAccount;
-    Bytes own;
-    if (store.GetStorageFile(uid, kBlobName, own) && XpFromBlob(s, own, xp)) how = Fmt("%s.%llu", kBlobName, (unsigned long long)uid);
-    else xp = 0;
-    prof["total_xp"] = Json((long long)std::max<int64_t>(0, xp));
-    prof["level"] = LevelForXp(s, xp);
-    prof["seeded_from"] = how;
+    prof["seeded_from"] = kNewAccount;
     ProfileSave(s, prof);
     return true;
 }
@@ -418,6 +446,27 @@ static void LoadChallenges(Server &s, ProfilesState &st)
         st.challengeIds.push_back((int)id);
         st.isChallenge[(size_t)id] = 1;
     }
+    const Json::Members &ws = doc.get("weapons").members();
+    for (size_t i = 0; i < ws.size(); i++) st.weaponNames.push_back(ws[i].first);
+}
+
+/* The challenge slots that mirror a weapon's level (progression.mastery_progress: "derived, never
+ * stored"): what such a slot holds is not stored progress and is never read back into a profile. */
+static const std::vector<char> &MasterySlots(Server &s)
+{
+    ProfilesState &st = State(s);
+    if (st.masteryTried) return st.isMastery;
+    st.masteryTried = true;
+    if (!st.challengesTried) LoadChallenges(s, st);
+    st.isMastery.assign((size_t)kChallengeCount, 0);
+    Json all = Json::MakeObject(), weapons = Json::MakeObject();
+    for (size_t i = 0; i < st.weaponNames.size(); i++) weapons[st.weaponNames[i]] = 1;
+    all["weapons"] = weapons;
+    std::map<int, double> ids;
+    ProgressionMastery(s, all, ids);
+    for (std::map<int, double>::iterator it = ids.begin(); it != ids.end(); ++it)
+        if (it->first >= 0 && it->first < kChallengeCount) st.isMastery[(size_t)it->first] = 1;
+    return st.isMastery;
 }
 
 /* The two indexed arrays progression owns, with the byte offset their first and last element must
@@ -492,6 +541,166 @@ static std::string RenderStats(Server &s, Bytes &stored, const Json &prof)
         stored.swap(out);
     }
     return note;
+}
+
+/* ---- THE FILE IS THE CAREER: profile <-> mpdata_s ----
+ *
+ * What the blob holds of a profile, exactly (so it is read back from the blob and never stored twice):
+ *   total_xp     rank + experience, up to the top of the last rank
+ *   lifetime     the kLifetimeDdl members, 1 .. 2^31-1 (but see SeedLifetime)
+ *   challenges   the slots of the challenge table that are not a weapon-mastery mirror, non-zero and
+ *                exact as a float
+ * Everything else a profile carries is an EXTRA (account.txt "career.<member>"): the kills / deaths /
+ * assists / matches counters, the weapon XP and use counters, the rank-up GP mark, story intel, co-op
+ * missions, the name, and whatever part of the three members above does not fit the blob. The clock
+ * members (created / updated) and the credit history are not kept. */
+
+/* What the shipped level-1 seed holds in a lifetime member (its `objectives` is 100000). The render
+ * stamps only the members a profile HAS (player_profiles._render_lifetime), so a member the profile
+ * lacks keeps the seed's value in the blob for good: a blob value equal to the seed's is therefore
+ * "the profile does not have this member", and a profile total that happens to equal it is an extra. */
+static int64_t SeedLifetime(Server &s, const char *key)
+{
+    ProfilesState &st = State(s);
+    if (!st.seedTried) {
+        st.seedTried = true;
+        Bytes raw;
+        PdBlob blob;
+        if (s.Resource(kSeedBlob, raw) && blob.Load(s, raw) && blob.def->key == kBlobName)
+            for (size_t i = 0; i < sizeof(kLifetimeDdl) / sizeof(kLifetimeDdl[0]); i++) {
+                const PdField *f = DdlField(*blob.def, kLifetimeDdl[i]);
+                int64_t v = f ? blob.GetInt(*f) : 0;
+                if (v) st.seedLifetime[kLifetimeDdl[i]] = v;
+            }
+    }
+    std::map<std::string, int64_t>::iterator it = st.seedLifetime.find(key);
+    return it == st.seedLifetime.end() ? 0 : it->second;
+}
+
+static bool LifetimeInBlob(Server &s, const PdDef &def, const std::string &key, const Json &value)
+{
+    int64_t n;
+    if (!PyInt(value, n) || n <= 0 || n > kI32Max) return false;
+    for (size_t i = 0; i < sizeof(kLifetimeDdl) / sizeof(kLifetimeDdl[0]); i++) {
+        if (key != kLifetimeDdl[i]) continue;
+        const PdField *f = DdlField(def, key);
+        /* several of the counters are float members: past 2^24 the blob rounds, the extras keep the count */
+        return f && (f->kind != PD_FLOAT || (int64_t)(float)n == n) && n != SeedLifetime(s, kLifetimeDdl[i]);
+    }
+    return false;
+}
+
+static bool ChallengeInBlob(Server &s, const std::string &key, const Json &value)
+{
+    ProfilesState &st = State(s);
+    const std::vector<char> &mastery = MasterySlots(s); /* loads the challenge table too */
+    int64_t id;
+    double v;
+    if (key.empty() || key.find_first_not_of("0123456789") != std::string::npos || key.size() > 4 || (key.size() > 1 && key[0] == '0')) return false;
+    if (!PyInt(Json(key), id) || id < 0 || id >= kChallengeCount || !st.isChallenge[(size_t)id] || mastery[(size_t)id]) return false;
+    return (value.isNumber() || value.isBool()) && PyFloat(value, v) && v != 0 && (double)(float)v == v;
+}
+
+static Json ProfileExtrasOf(Server &s, const Json &prof)
+{
+    static const char *const notKept[] = { "format", "uid", "level", "created", "updated", "seeded_from", "history" };
+    const PdDef *def = PlayerDataDef(s, kBlobName);
+    const bool layout = def && ProgressionLayoutOk(*def);
+    Json extras = Json::MakeObject(), blank = ProfileBlank(s, 1);
+    const Json::Members &m = prof.members();
+    for (size_t i = 0; i < m.size(); i++) {
+        const std::string &k = m[i].first;
+        const Json &v = m[i].second;
+        bool skip = false;
+        for (size_t n = 0; n < sizeof(notKept) / sizeof(notKept[0]); n++) skip = skip || k == notKept[n];
+        if (skip) continue;
+        if (k == "total_xp") {
+            int idx;
+            int64_t in, xp = IntOr(v, 0);
+            if (XpToRank(s, xp, idx, in) && RankToXp(s, idx + 1, in) != xp) extras[k] = v; /* above the last rank's ceiling */
+            continue;
+        }
+        if (k == "lifetime" || k == "challenges") {
+            Json rest = Json::MakeObject();
+            const Json::Members &sub = v.members();
+            for (size_t n = 0; n < sub.size(); n++) {
+                bool inBlob = k == "lifetime" ? def && LifetimeInBlob(s, *def, sub[n].first, sub[n].second)
+                                              : layout && ChallengeInBlob(s, sub[n].first, sub[n].second);
+                if (!inBlob) rest[sub[n].first] = sub[n].second;
+            }
+            if (!rest.members().empty()) extras[k] = rest;
+            continue;
+        }
+        if (blank.has(k) && blank.get(k) == v) continue; /* a blank profile's own value: nothing to remember */
+        extras[k] = v;
+    }
+    return extras;
+}
+
+static bool ProfileFromBlob(Server &s, uint64_t uid, const Bytes &stored, const Json &extras, Json &prof)
+{
+    PdBlob blob;
+    if (Ranks(s).empty() || !blob.Load(s, stored) || blob.def->key != kBlobName) return false;
+    const PdField *rank = blob.def->Find("rank"), *xp = blob.def->Find("experience");
+    if (!rank || !xp) return false;
+    prof = ProfileBlank(s, uid);
+    prof["seeded_from"] = "the mpdata_s file";
+    int64_t total = RankToXp(s, blob.GetInt(*rank), blob.GetInt(*xp));
+    prof["total_xp"] = Json((long long)total);
+    Json lifetime = Json::MakeObject(), challenges = Json::MakeObject();
+    for (size_t i = 0; i < sizeof(kLifetimeDdl) / sizeof(kLifetimeDdl[0]); i++) {
+        const PdField *f = DdlField(*blob.def, kLifetimeDdl[i]);
+        int64_t v = f ? blob.GetInt(*f) : 0;
+        if (v > 0 && v != SeedLifetime(s, kLifetimeDdl[i])) lifetime[kLifetimeDdl[i]] = Json((long long)v);
+    }
+    if (ProgressionLayoutOk(*blob.def)) {
+        ProfilesState &st = State(s);
+        const std::vector<char> &mastery = MasterySlots(s);
+        for (size_t i = 0; i < st.challengeIds.size(); i++) {
+            int id = st.challengeIds[i];
+            const PdField *f = mastery[(size_t)id] ? NULL : blob.def->Find(Fmt("challenges[%d]", id));
+            double v = f ? blob.Get(*f) : 0;
+            if (v == 0 || v != v) continue;
+            const bool whole = v == (double)(int64_t)v && v > -9e15 && v < 9e15;
+            challenges[Fmt("%d", id)] = whole ? Json((long long)v) : Json(v);
+        }
+    }
+    /* The extras complete it. Without a readable blob they are never used (ProfileLoad). */
+    const Json::Members &em = extras.members();
+    for (size_t i = 0; i < em.size(); i++) {
+        const std::string &k = em[i].first;
+        if (k == "lifetime" || k == "challenges") {
+            Json &dst = k == "lifetime" ? lifetime : challenges;
+            const Json::Members &sub = em[i].second.members();
+            for (size_t n = 0; n < sub.size(); n++) dst[sub[n].first] = sub[n].second;
+        } else if (k == "total_xp") {
+            int idx, idx2;
+            int64_t in, in2, more = IntOr(em[i].second, 0);
+            /* XP above the last rank: valid only while the blob still shows that ceiling */
+            if (more > total && XpToRank(s, more, idx, in) && XpToRank(s, total, idx2, in2) && idx == idx2 && in == in2)
+                prof["total_xp"] = Json((long long)more);
+        } else {
+            prof[k] = em[i].second;
+        }
+    }
+    prof["lifetime"] = lifetime;
+    prof["challenges"] = challenges;
+    return true;
+}
+
+/* The player's own mpdata_s for this profile, written now: the rank triple, the lifetime members and
+ * the challenge progress into the file as it is (so every member the lobby does not author survives),
+ * or into the shipped level-1 seed when there is no file yet. The shared copy is not touched here. */
+static bool RenderOwnBlob(Server &s, uint64_t uid, const Json &prof)
+{
+    Store &store = GetStore(s);
+    Bytes src, out;
+    PdBlob blob;
+    bool haveDst = store.GetStorageFile(uid, kBlobName, src);
+    if ((!haveDst && !s.Resource(kSeedBlob, src)) || Ranks(s).empty() || !blob.Load(s, src) || blob.def->key != kBlobName) return false;
+    if (!SetRankFields(s, blob, IntOr(prof.get("total_xp"), 0)) || !blob.Store(out)) return false;
+    RenderStats(s, out, prof);
+    return store.PutStorageFile(uid, kBlobName, out, "render");
 }
 
 /* ---- the shared (unkeyed) blob ----
@@ -648,8 +857,6 @@ std::string ProfileAddXp(Server &s, uint64_t uid, int64_t amount, const std::str
     }
     if (!ProfileSave(s, prof))
         return Fmt("player_profiles: SAVE FAILED for %llu -- %lld XP NOT persisted", (unsigned long long)uid, (long long)amount);
-    /* the credit as its own row: the profile keeps the last 50, the account history more */
-    if (amount) GetStore(s).AddHistory(uid, amount, reason, total, level);
     int idx;
     int64_t inRank;
     XpToRank(s, total, idx, inRank);
@@ -664,14 +871,91 @@ std::string ProfileAddXp(Server &s, uint64_t uid, int64_t amount, const std::str
 std::string AbsorbBlob(Server &s, uint64_t uid)
 {
     if (!uid) return "";
+    Store &store = GetStore(s);
     Bytes blob;
-    int64_t have;
-    if (!GetStore(s).GetStorageFile(uid, kBlobName, blob) || !XpFromBlob(s, blob, have)) return "";
+    int64_t have = 0;
     Json prof;
+    if (!store.GetStorageFile(uid, kBlobName, blob)) return "";
+    if (!XpFromBlob(s, blob, have)) {
+        /* Not a profile. The upload replaced the player's career file, so put the career back. */
+        if (store.ProfileRead(uid, prof)) {
+            store.DeleteStorageFile(uid, kBlobName);
+            RenderOwnBlob(s, uid, prof);
+        }
+        return "";
+    }
     if (!ProfileLoad(s, uid, prof)) return "";
     int64_t total = IntOr(prof.get("total_xp"), 0);
-    if (have <= total) return "";
+    if (have <= total) {
+        if (have < total) RenderOwnBlob(s, uid, prof); /* the file is the career: it never shows less than the profile */
+        return "";
+    }
     return ProfileAddXp(s, uid, have - total, "client-uploaded mpdata_s", "", Json(), Json(), Json(), NULL);
+}
+
+/* ---- the store of the first offline builds ----
+ * <legacy>/players/<uid>.json (the career as JSON), accounts/<uid>.json (wallet, inventory) and
+ * storage/<uid>/mpdata, mpdata_s. Each career is rendered into the players folder once; a player
+ * who already has an mpdata_s there is left alone. The old store is not changed apart from the
+ * marker file that says it was imported. */
+std::string ProfilesImportLegacy(Server &s)
+{
+    const std::string &root = s.cfg.legacyStore;
+    if (root.empty() || s.cfg.profile.empty()) return "";
+    const std::string marker = PathJoin(root, "IMPORTED.txt");
+    if (FileExists(marker)) return "";
+    Store &store = GetStore(s);
+    std::vector<std::string> names = ListDir(PathJoin(root, "players"));
+    std::sort(names.begin(), names.end());
+    std::string done;
+    int imported = 0, kept = 0;
+    for (size_t i = 0; i < names.size(); i++) {
+        const std::string &n = names[i];
+        if (n.size() <= 5 || n.size() > 25 || n.compare(n.size() - 5, 5, ".json")) continue;
+        const std::string key = n.substr(0, n.size() - 5);
+        if (key.find_first_not_of("0123456789") != std::string::npos) continue;
+        uint64_t uid = strtoull(key.c_str(), 0, 10);
+        Bytes text, blob;
+        Json prof, acct;
+        if (!uid || !ReadFile(PathJoin(PathJoin(root, "players"), n), text) || !Json::Parse(text, prof) || !prof.isObject()) continue;
+        /* The folder: the name the career was played under, when it is free; else the uid. */
+        store.BindFolder(uid, prof.get("name").str());
+        if (store.GetStorageFile(uid, kBlobName, blob)) { kept++; continue; } /* this player already has a career file */
+        const std::string old = PathJoin(PathJoin(root, "storage"), key);
+        int64_t xp;
+        /* the old blobs first, so that every member the lobby does not author comes across as it was */
+        if (ReadFile(PathJoin(old, kBlobName), blob) && XpFromBlob(s, blob, xp)) store.PutStorageFile(uid, kBlobName, blob, "import");
+        if (!store.GetStorageFile(uid, "mpdata", blob) && ReadFile(PathJoin(old, "mpdata"), blob)) store.PutStorageFile(uid, "mpdata", blob, "import");
+        if (ReadFile(PathJoin(PathJoin(root, "accounts"), n), text) && Json::Parse(text, acct) && acct.isObject()) {
+            const Json::Members &w = acct.get("wallet").members();
+            for (size_t k = 0; k < w.size(); k++) {
+                int cur = atoi(w[k].first.c_str());
+                if (cur > 0 && !store.WalletHas(uid, cur)) store.WalletSet(uid, cur, w[k].second.asInt());
+            }
+            const std::vector<Json> &inv = acct.get("inventory").items();
+            std::vector<InvRow> rows;
+            for (size_t k = 0; k < inv.size() && !store.InventoryExists(uid); k++) {
+                InvRow r;
+                r.itemId = inv[k].get("item_id").asInt();
+                r.quantity = inv[k].get("quantity").asInt(1);
+                r.expiresAt = inv[k].get("expires_at").asInt();
+                r.acquiredAt = inv[k].get("acquired_at").asReal();
+                r.skuId = inv[k].get("sku_id").asInt();
+                if (r.itemId) rows.push_back(r);
+            }
+            if (!rows.empty()) store.InventoryReplace(uid, rows, "import");
+        }
+        prof["uid"] = key;
+        prof["format"] = kFormat;
+        if (!ProfileSave(s, prof)) continue;
+        imported++;
+        done += Fmt("%s%s (level %lld) -> %s", done.empty() ? "" : ", ", key.c_str(), (long long)prof.get("level").asInt(), store.FolderOf(uid).c_str());
+    }
+    WriteFileAtomic(marker, Fmt("The careers of this folder were imported into %s (%d imported, %d already there).\r\n"
+                                "Nothing reads this folder any more; it can be deleted.\r\n", s.cfg.profile.c_str(), imported, kept));
+    if (!imported && !kept) return "";
+    return Fmt("player_profiles: imported %d career(s) of the old store %s%s%s%s", imported, root.c_str(), done.empty() ? "" : ": ", done.c_str(),
+               kept ? Fmt(" (%d already had a career file)", kept).c_str() : "");
 }
 
 } // namespace dw

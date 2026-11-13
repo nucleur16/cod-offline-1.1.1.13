@@ -1,0 +1,44 @@
+--- a/scripts/codol/maps/mp/gametypes/_menus.gsc
++++ b/scripts/codol/maps/mp/gametypes/_menus.gsc
+@@ -473,6 +473,13 @@
+ 		return;
+ 	}
+ 
++	// CoDOL: a human has no stock classes, only the loadouts of the profile
++	// (weaponClasses[]). C1 itself can answer the class menu with "class0"
++	// (its own hard-coded "cmd mr %i 13 class0", C1 0x0071A06E), and IW4's
++	// classMap gave that player column 1 of mp/classTable.csv - the stock
++	// FAMAS / SPAS-12 class - instead of the class the profile holds.
++	response = self codolProfileClass( response );
++
+ 	// clear new status of unlocked classes
+ 	if ( response == "demolitions_mp,0" && self getPlayerData( "featureNew", "demolitions" ) )
+ 	{
+@@ -546,6 +553,27 @@
+ }
+ 
+ 
++/*
++	CoDOL: "classN" from a human names the profile's loadout N ("custom<N+1>"),
++	never a column of the stock class table. Bots keep their own class path, and
++	the fixed-loadout modes never get here (menuClass returns before).
++*/
++codolProfileClass( response )
++{
++	if ( isDefined( self.pers["isBot"] ) || ( isDefined( self.codolCombatBot ) && self.codolCombatBot ) )
++		return response;
++	if ( isDefined( self.isbot ) && self.isbot )
++		return response;
++	if ( getSubStr( response, 0, 5 ) != "class" )
++		return response;
++	index = int( getSubStr( response, 5 ) );
++	if ( response != "class" + index )
++		return response;
++	if ( !maps\mp\gametypes\_class::codol_hasLoadoutClass( index ) )
++		return response;
++	return "custom" + ( index + 1 );
++}
++
+ codolSelectPartyClass()
+ {
+ 	self closeMenus();

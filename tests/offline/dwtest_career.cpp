@@ -397,4 +397,37 @@ int DwWritebackRun(const Config &base, const char *uidText, bool background, con
     return 0;
 }
 
+/* ---- dwtest --career: what a players folder holds, read the way the lobby reads it at login ---- */
+
+int DwCareerDump(const Config &base)
+{
+    Config cfg = base;
+    cfg.matchProfile.clear(); /* read only: no report is folded, nothing but a missing account.txt is written */
+    QuietHost host;
+    Server s(cfg, &host);
+    Store &store = GetStore(s);
+    std::vector<uint64_t> uids = ProfileListUids(s);
+    Json out = Json::MakeObject();
+    for (size_t i = 0; i < uids.size(); i++) {
+        Json prof, row = Json::MakeObject(), wallet = Json::MakeObject();
+        if (!ProfileLoad(s, uids[i], prof, false)) continue;
+        std::map<int, int64_t> bal = store.WalletBalances(uids[i]);
+        for (std::map<int, int64_t>::iterator it = bal.begin(); it != bal.end(); ++it) wallet[Fmt("%d", it->first)] = Json((long long)it->second);
+        int idx = 0;
+        int64_t in = 0;
+        XpToRank(s, prof.get("total_xp").asInt(), idx, in);
+        row["folder"] = store.FolderOf(uids[i]);
+        row["level"] = prof.get("level");
+        row["total_xp"] = prof.get("total_xp");
+        row["xp_into_rank"] = Json((long long)in);
+        row["xp_to_next"] = Json((long long)(RankXpToNext(s, idx) - in));
+        row["wallet"] = wallet;
+        row["inventory_rows"] = Json((long long)store.InventoryList(uids[i], false).size());
+        row["profile"] = prof;
+        out[UidText(uids[i])] = row;
+    }
+    printf("%s\n", out.dump(1).c_str());
+    return 0;
+}
+
 #endif /* DW_HAVE_CAREER */

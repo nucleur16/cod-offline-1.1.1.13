@@ -64,7 +64,7 @@ struct Runtime {
     dw::Config cfg;
     dw::NetConfig net;
     HANDLE thread;
-    volatile long stop, port, failed;
+    volatile long stop, port, altPort, failed;
 };
 Runtime *g_rt;
 
@@ -72,7 +72,7 @@ DWORD WINAPI ListenerThread(LPVOID)
 {
     Runtime *rt = g_rt;
     dw::Server *server = new dw::Server(rt->cfg, &rt->host);
-    int rc = dw::NetRun(*server, rt->net, &rt->stop, &rt->port);
+    int rc = dw::NetRun(*server, rt->net, &rt->stop, &rt->port, &rt->altPort);
     if (rc) InterlockedExchange(&rt->failed, 1);
     delete server;
     return (DWORD)rc;
@@ -85,23 +85,29 @@ std::string Str(const char *s) { return s ? s : ""; }
 extern "C" int DwOfflineStartServer(const DwOfflineConfig *config)
 {
     if (g_rt || !config || !config->profile || !config->state) return 0;
-    if (config->port < 1024 || config->port > 65535) return 0;
+    /* 0 = a free port (dw_net.cpp); an explicit one must be an unprivileged port */
+    if (config->port && (config->port < 1024 || config->port > 65535)) return 0;
+    if (config->altPort && (config->altPort < 1024 || config->altPort > 65535)) return 0;
     Runtime *rt = new Runtime();
     rt->host.cb = *config;
     rt->cfg.resources = Str(config->resources);
     rt->cfg.profile = Str(config->profile);
+    rt->cfg.localName = Str(config->playerName);
+    rt->cfg.legacyStore = Str(config->legacyStore);
     rt->cfg.state = Str(config->state);
     rt->cfg.matchProfile = Str(config->matchProfile);
     rt->cfg.zoneDir = Str(config->zoneDir);
     rt->cfg.mmHostIp = "127.0.0.1";
     rt->cfg.mmHostPort = config->hostPort;
+    /* stunPort / stunAltPort are set by the listener to the ports it obtained. stunMappedPort (the
+     * "your address" port of a STUN reply) stays the Python lobby's constant 3074 whatever port the
+     * lobby itself listens on: it describes the client, not the lobby. */
     rt->cfg.stunPort = config->port;
-    rt->cfg.stunMappedPort = config->port;
     rt->cfg.stunAltPort = config->altPort;
     rt->net.port = config->port;
     rt->net.altPort = config->altPort;
     rt->net.stun = true;
-    rt->stop = rt->port = rt->failed = 0;
+    rt->stop = rt->port = rt->altPort = rt->failed = 0;
     g_rt = rt;
     rt->thread = CreateThread(NULL, 0, ListenerThread, NULL, 0, NULL);
     if (!rt->thread) { g_rt = NULL; delete rt; return 0; }
@@ -127,6 +133,12 @@ extern "C" void DwOfflineStopServer(void)
         g_rt = NULL;
         delete rt;
     }
+}
+
+extern "C" int DwOfflineAltPort(void)
+{
+    Runtime *rt = g_rt;
+    return rt ? (int)InterlockedCompareExchange(&rt->altPort, 0, 0) : 0;
 }
 
 extern "C" int DwOfflineRunning(void)

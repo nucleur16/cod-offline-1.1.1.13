@@ -31,12 +31,14 @@ typedef struct DwOfflineStartInfo {
 
 typedef struct DwOfflineConfig {
     const char *resources;    /* optional override folder for the embedded resources, or NULL */
-    const char *profile;      /* the persistent store */
+    const char *profile;      /* the players folder: <profile>\<name>\mpdata, mpdata_s, account.txt (dw_store.h) */
+    const char *playerName;   /* the local player's profile name = its folder under `profile`; NULL = name it by uid */
+    const char *legacyStore;  /* optional: a k33_offline\profile store of the first offline builds, imported once */
     const char *state;        /* securitykey.bin, game_admissions.txt: shared with the embedded match host */
     const char *matchProfile; /* the match host's codol_profilePath: mpdata_s.<uid>, match_report.json */
     const char *zoneDir;      /* the client's zone folder (map availability), or NULL */
-    int port;                 /* loopback TCP + UDP port of the lobby */
-    int altPort;              /* alternate STUN port */
+    int port;                 /* loopback TCP + UDP port of the lobby; 0 = a free port (the normal case) */
+    int altPort;              /* alternate STUN port; 0 = a free port */
     int hostPort;             /* the embedded match host's UDP port */
     void (*log)(const char *line);
     int (*localRoute)(unsigned long long uid, DwOfflineRoute *out);
@@ -47,8 +49,11 @@ typedef struct DwOfflineConfig {
 } DwOfflineConfig;
 
 /* Starts the listener thread and waits (at most 3 s) until it is bound.
- * -> the TCP port, or 0 when the lobby could not listen (the caller must then refuse offline mode). */
+ * -> the TCP port it listens on (the port asked for, or the free one obtained), or 0 when the lobby
+ *    could not listen (the caller must then refuse offline mode). */
 int DwOfflineStartServer(const DwOfflineConfig *config);
+/* The alternate STUN port of the running listener, 0 when there is none. */
+int DwOfflineAltPort(void);
 /* Asks the listener to stop and waits for it (at most 5 s). */
 void DwOfflineStopServer(void);
 int DwOfflineRunning(void);

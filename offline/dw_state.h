@@ -54,8 +54,12 @@ void RoomsInit(Server &s);     void RoomsFree(Server &s);
 void OnUidLatched(Server &s, Conn &c);
 
 /* ---- dw_profiles.cpp (store/player_profiles.py) ---- */
-/* Render players/<uid>.json into the store's "mpdata_s" storage file. -> note, "" when current. */
+/* Bring the player's "mpdata_s" up to the profile before it is served, and keep the shared copy in
+ * step (the file itself is already written by every ProfileSave). -> note, "" when current. */
 std::string EnsureBlob(Server &s, uint64_t uid);
+/* Config::legacyStore: import the JSON careers of the first offline builds into the players folder,
+ * once (a marker file is left in the old store). -> a log line, "" when there was nothing to do. */
+std::string ProfilesImportLegacy(Server &s);
 /* The player's level (1-based) as the marketplace gates on it (dw_marketplace._player_level). */
 int PlayerLevel(Server &s, uint64_t uid);
 /* A room start is about to hand `uid` to the match host: write the player's match blob

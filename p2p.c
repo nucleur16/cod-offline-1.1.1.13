@@ -245,9 +245,11 @@ static void P2PDefaults(P2PConfig *c)
 }
 
 #if CODOL_OFFLINE_LOBBY
-static void OfflineP2PConfig(P2PConfig *c); /* offline_lobby.c: the offline store's state/profile folders */
+static void OfflineP2PConfig(P2PConfig *c); /* offline_lobby.c: the offline run-time folder and this run's host port */
+static void OfflineHostPortRelease(void);   /* offline_lobby.c: the host port stops being held reserved */
 #else
 #define OfflineP2PConfig(c) ((void)0)
+#define OfflineHostPortRelease() ((void)0)
 #endif
 static void P2PLoadIni(P2PConfig *c)
 {
@@ -557,6 +559,7 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
 
     const char *bad = P2PCheck(&c);
     if (bad) { Log("p2p: not hosting: %s", bad); P2PSetState(P2P_FAILED, bad); WSACleanup(); return 1; }
+    OfflineHostPortRelease(); /* offline mode kept the port bound until now so that it is still free */
     if (!P2PPortFree(c.netIp, c.port)) {
         Log("p2p: not hosting: udp %s:%d is in use", c.netIp, c.port);
         P2PSetState(P2P_FAILED, "the UDP port is in use");

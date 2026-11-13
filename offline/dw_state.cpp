@@ -12,6 +12,9 @@ void StateInit(Server &s)
     CareerInit(s);
     MarketInit(s);
     RoomsInit(s);
+    /* Config::legacyStore: the careers of the first offline builds, once (dw_profiles.cpp). */
+    std::string imported = ProfilesImportLegacy(s);
+    if (!imported.empty()) s.Log(imported);
 }
 
 void StateFree(Server &s)

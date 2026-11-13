@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include "../../offline/dw.h"
 #include "../../offline/dw_json.h"
+#include "../../offline/dw_profiles.h"
 #include "../../offline/dw_store.h"
 
 namespace market_selftest {
@@ -86,7 +87,7 @@ static void CheckProfile(dw::Server &s, unsigned uid, long long xp, const dw::Js
     prof["total_xp"] = dw::Json(xp);
     prof["challenges"] = challenges;
     prof["weapons"] = weapons;
-    dw::GetStore(s).ProfileWrite(uid, prof);
+    dw::ProfileSave(s, prof);
     dw::Conn &c = *s.Open();
     c.uid = uid;
     dw::Reply pd = Task(s, c, 30);

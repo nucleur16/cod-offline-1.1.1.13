@@ -11,6 +11,11 @@
  *   dwtest --resources <pristine resources> --profile <empty scratch dir> --selftest-market
  *   dwtest --resources <dir> --profile <empty scratch dir> --match-profile <empty scratch dir> --selftest-career
  *   dwtest [--fixed-time T] [--differential] [--wb-background] [--wb-create <uid>] --writeback <resources> <profile> <match> <uid>
+ *   dwtest [--resources <dir>] --profile <a COPY of a players folder> --career      print every career in it as the lobby reads it
+ *   --local-name <name>   the profile name of the account that logs in (Config::localName)
+ *   --legacy-store <dir>  a k33_offline\profile store of the first offline builds to import (Config::legacyStore)
+ *   dwtest --selftest-net                 the listener on free ports (what the client uses): two at once, their STUN sockets
+ *   A test SERVER is always given its private ports: --port 0 is not offered.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,6 +43,7 @@ int DwRoomsSelfTest(const dw::Config &cfg); /* dwtest_rooms.cpp */
 int DwMarketSelfTest(const dw::Config &cfg); /* dwtest_market.cpp */
 int DwCareerSelfTest(const dw::Config &cfg); /* dwtest_career.cpp */
 int DwWritebackRun(const dw::Config &cfg, const char *uid, bool background, const char *createUid); /* dwtest_career.cpp */
+int DwCareerDump(const dw::Config &cfg); /* dwtest_career.cpp */
 
 static volatile long g_stop;
 static BOOL WINAPI OnCtrl(DWORD) { InterlockedExchange(&g_stop, 1); return TRUE; }
@@ -67,6 +73,111 @@ static int SelfTest()
     return ok ? 0 : 1;
 }
 
+/* ---- dwtest --selftest-net: the listener on FREE ports (NetConfig port 0 / altPort 0) ----
+ * The only test that asks the operating system for ports; it never names one, so it cannot collide
+ * with a lobby (3074), a match server or another test. Loopback only. */
+struct NetRunArgs {
+    dw::Server *server;
+    dw::NetConfig net;
+    volatile long stop, port, alt, rc;
+};
+static DWORD WINAPI NetRunThread(LPVOID p)
+{
+    NetRunArgs *a = (NetRunArgs *)p;
+    InterlockedExchange(&a->rc, dw::NetRun(*a->server, a->net, &a->stop, &a->port, &a->alt) + 1);
+    return 0;
+}
+static bool NetWait(NetRunArgs &a)
+{
+    for (int i = 0; i < 500 && !InterlockedCompareExchange(&a.port, 0, 0) && !InterlockedCompareExchange(&a.rc, 0, 0); i++) Sleep(10);
+    return InterlockedCompareExchange(&a.port, 0, 0) != 0;
+}
+/* One STUN probe from a fresh socket: -> the port the answer came from (0 = none), *ip its address. */
+static int StunProbe(int port, const char *req, int len, unsigned *ip, char *first)
+{
+    SOCKET s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    sockaddr_in to, from;
+    memset(&to, 0, sizeof(to));
+    to.sin_family = AF_INET;
+    to.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    to.sin_port = htons((u_short)port);
+    int got = 0, flen = sizeof(from);
+    char buf[64];
+    sendto(s, req, len, 0, (sockaddr *)&to, sizeof(to));
+    fd_set rd;
+    FD_ZERO(&rd);
+    FD_SET(s, &rd);
+    timeval tv = { 2, 0 };
+    if (select(0, &rd, NULL, NULL, &tv) > 0 && recvfrom(s, buf, sizeof(buf), 0, (sockaddr *)&from, &flen) > 0) {
+        got = ntohs(from.sin_port);
+        *ip = ntohl(from.sin_addr.s_addr);
+        *first = buf[0];
+    }
+    closesocket(s);
+    return got;
+}
+static int NetSelfTest(const dw::Config &base)
+{
+    WSADATA wsa;
+    WSAStartup(MAKEWORD(2, 2), &wsa);
+    TestHost host; /* silent unless a listener fails */
+    int checks = 0, fail = 0, rounds = 40;
+#define NCHECK(cond) do { checks++; if (!(cond)) { fail++; printf("  FAIL line %d (round %d): %s\n", __LINE__, round, #cond); } } while (0)
+    for (int round = 0; round < rounds; round++) {
+        dw::Config cfg = base;
+        cfg.profile.clear();
+        cfg.matchProfile.clear();
+        cfg.state.clear();
+        dw::Server s1(cfg, &host), s2(cfg, &host), s3(cfg, &host);
+        NetRunArgs a, b, c;
+        a.stop = a.port = a.alt = a.rc = b.stop = b.port = b.alt = b.rc = c.stop = c.port = c.alt = c.rc = 0;
+        a.server = &s1; b.server = &s2; c.server = &s3;
+        a.net.port = a.net.altPort = b.net.port = b.net.altPort = 0; /* two lobbies on one PC, both on free ports */
+        /* every other round the second one may not take the system's choice (the path a port the system
+         * offers for TCP and refuses for UDP leads to: Windows' per-protocol excluded port ranges) */
+        b.net.pickOwn = (round & 1) != 0;
+        host.log = stdout;
+        HANDLE ta = CreateThread(NULL, 0, NetRunThread, &a, 0, NULL), tb = CreateThread(NULL, 0, NetRunThread, &b, 0, NULL);
+        bool up = NetWait(a) && NetWait(b);
+        host.log = NULL;
+        NCHECK(up);
+        if (up) {
+            int pa = (int)a.port, pb = (int)b.port, aa = (int)a.alt, ab = (int)b.alt;
+            NCHECK(pa >= 1024 && pb >= 1024 && pa != pb && aa >= 1024 && ab >= 1024 && aa != pa && ab != pb && aa != ab);
+            NCHECK(s1.cfg.stunPort == pa && s1.cfg.stunAltPort == aa && s2.cfg.stunPort == pb && s2.cfg.stunAltPort == ab);
+            /* the client's NAT discovery finds every socket it needs on the ports that were obtained */
+            unsigned ip = 0;
+            char type = 0;
+            NCHECK(StunProbe(pa, "\x1e\x02\x00", 3, &ip, &type) == pa && ip == 0x7F000001 && type == 31);       /* IP discovery */
+            NCHECK(StunProbe(pa, "\x14\x02\x00\x00", 4, &ip, &type) == pa && ip == 0x7F000001 && type == 21);   /* NAT test 1 */
+            NCHECK(StunProbe(pa, "\x14\x02\x00\x03", 4, &ip, &type) == aa && ip == 0x7F000002 && type == 21);   /* changed IP and port */
+            NCHECK(StunProbe(pa, "\x14\x02\x00\x02", 4, &ip, &type) == aa && ip == 0x7F000001 && type == 21);   /* changed port */
+            NCHECK(StunProbe(pb, "\x1e\x02\x00", 3, &ip, &type) == pb && type == 31);
+            SOCKET t = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+            sockaddr_in to;
+            memset(&to, 0, sizeof(to));
+            to.sin_family = AF_INET;
+            to.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+            to.sin_port = htons((u_short)pa);
+            NCHECK(connect(t, (sockaddr *)&to, sizeof(to)) == 0);
+            closesocket(t);
+            /* an EXPLICIT port that is taken is refused, never replaced by another one */
+            c.net.port = pa; c.net.altPort = 0;
+            HANDLE tc = CreateThread(NULL, 0, NetRunThread, &c, 0, NULL);
+            NCHECK(!NetWait(c) && WaitForSingleObject(tc, 5000) == WAIT_OBJECT_0 && c.rc == 3);
+            CloseHandle(tc);
+        }
+        InterlockedExchange(&a.stop, 1);
+        InterlockedExchange(&b.stop, 1);
+        NCHECK(WaitForSingleObject(ta, 5000) == WAIT_OBJECT_0 && WaitForSingleObject(tb, 5000) == WAIT_OBJECT_0);
+        CloseHandle(ta);
+        CloseHandle(tb);
+    }
+#undef NCHECK
+    printf("%d rounds, %d checks, %d failed\n%s\n", rounds, checks, fail, fail ? "SELFTEST-NET FAIL" : "SELFTEST-NET PASS");
+    return fail ? 1 : 0;
+}
+
 int main(int argc, char **argv)
 {
     dw::Config cfg;
@@ -78,10 +189,14 @@ int main(int argc, char **argv)
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i], *v = i + 1 < argc ? argv[i + 1] : "";
         if (!strcmp(a, "--selftest")) return SelfTest();
+        else if (!strcmp(a, "--selftest-net")) return NetSelfTest(cfg);
         else if (!strcmp(a, "--selftest-store")) return DwStoreSelfTest(cfg); /* uses the folders given before it */
         else if (!strcmp(a, "--selftest-rooms")) return DwRoomsSelfTest(cfg); /* scratch folders unless given before it */
         else if (!strcmp(a, "--selftest-market")) return DwMarketSelfTest(cfg); /* needs --resources and --profile before it */
         else if (!strcmp(a, "--selftest-career")) return DwCareerSelfTest(cfg); /* needs --resources, --profile, --match-profile */
+        else if (!strcmp(a, "--career")) return DwCareerDump(cfg); /* needs --profile before it */
+        else if (!strcmp(a, "--local-name")) { cfg.localName = v; i++; }
+        else if (!strcmp(a, "--legacy-store")) { cfg.legacyStore = v; i++; }
         else if (!strcmp(a, "--wb-background")) wbBackground = true;
         else if (!strcmp(a, "--wb-create")) { wbCreate = v; i++; } /* start from a fresh level-1 profile of this uid */
         else if (!strcmp(a, "--writeback") && i + 4 < argc) { /* apply the reports waiting in <match-dir>, print the result */

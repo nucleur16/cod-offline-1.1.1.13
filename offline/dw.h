@@ -140,7 +140,12 @@ struct Host {
 
 struct Config {
     std::string resources;   /* optional override folder for served/embedded resources */
-    std::string profile;     /* the persistent store (players, storage, accounts) */
+    std::string profile;     /* the players folder: one folder per player holding the game's own profile
+                              * blobs, <profile>/<name>/mpdata and mpdata_s, and account.txt (dw_store.h) */
+    std::string localName;   /* the local player's profile name: the folder of the first account that logs
+                              * in and has none yet. Empty = every folder is named by its decimal uid. */
+    std::string legacyStore; /* optional: the JSON store of the first offline builds (k33_offline\profile);
+                              * its careers are imported once into `profile` (Store::ImportLegacy) */
     std::string state;       /* securitykey.bin, game_admissions.txt (shared with the match server) */
     std::string matchProfile;/* the match server's codol_profilePath: mpdata_s.<uid>, match_report.json */
     std::string zoneDir;     /* the client's zone folder (map availability); may be empty */

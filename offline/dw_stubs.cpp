@@ -28,6 +28,7 @@ int PlayerLevel(Server &, uint64_t) { return 1; }
 std::string ExportMatchBlob(Server &, uint64_t) { return ""; }
 void SetMirrorOwner(Server &, uint64_t) {}
 bool ProfileLoad(Server &, uint64_t, Json &, bool) { return false; } /* dw_profiles.h; no profile */
+std::string ProfilesImportLegacy(Server &) { return ""; }
 #endif
 #ifndef DW_HAVE_PLAYERDATA
 std::set<int> PdEquippedItemIds(Server &, const Bytes &) { return std::set<int>(); } /* dw_playerdata.h; nothing equipped */

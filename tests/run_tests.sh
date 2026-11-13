@@ -17,9 +17,23 @@ done
 # Offline mode (docs/OFFLINE_LOBBY.md): the Kernel33 side in an owned fixture; tests/offline/ holds the
 # lobby's own differential tests against the Python lobby (they need a private copy of it).
 "$BIN/gcc.exe" -std=gnu99 -O2 -Wall -Wextra -Werror -Wno-unused-function -Wno-cast-function-type -I. \
-    tests/offline_lobby_fixture.c -o "$OUT/offline_lobby_fixture.exe"
+    tests/offline_lobby_fixture.c -o "$OUT/offline_lobby_fixture.exe" -lws2_32
 rm -rf "$OUT/offline-lobby"
 python tests/test_offline_lobby_windows.py "$OUT/offline_lobby_fixture.exe" "$OUT/offline-lobby"
+# The lobby itself (offline/*.cpp) as the standalone dwtest.exe, on the resources embedded in it: the
+# crypto, the listener on free ports (two at once, loopback only), the players-folder store (the career
+# read back from mpdata_s), the rank write-back and the Local Play room policy. Each needs its own
+# empty scratch folders.
+rm -f "$OUT/dwtest.exe" # a failed build must not leave an older one to be tested
+DWTEST_OBJ="$OUT/dwtest-obj" DWTEST_OUT="$OUT/dwtest.exe" sh tests/offline/build_dwtest.sh | grep -v '^g++' || true
+"$OUT/dwtest.exe" --selftest
+for T in net store career rooms; do
+    rm -rf "$OUT/dwtest-$T"
+    mkdir -p "$OUT/dwtest-$T/players" "$OUT/dwtest-$T/match" "$OUT/dwtest-$T/state"
+    "$OUT/dwtest.exe" --profile "$OUT/dwtest-$T/players" --match-profile "$OUT/dwtest-$T/match" --state "$OUT/dwtest-$T/state" \
+        --selftest-$T > "$OUT/dwtest-$T.log" 2>&1 || { tail -30 "$OUT/dwtest-$T.log"; exit 1; }
+    tail -1 "$OUT/dwtest-$T.log"
+done
 python tests/test_ui_baseline.py
 python tests/test_quick_ready_gate.py
 node tests/campaign_local_host_test.js

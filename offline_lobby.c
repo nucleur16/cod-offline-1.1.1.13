@@ -11,13 +11,22 @@
  * behaves exactly as before against the real lobby.
  *
  * What offline mode does, all before C1's own entry point runs:
- *   1. starts the lobby (offline/, C++) on its own thread, bound to 127.0.0.1 only;
- *   2. answers C1's reads of dwauth.ini and stun.ini from memory, so C1 logs on to that listener
- *      (the files on disk are neither read nor written);
+ *   1. starts the lobby (offline/, C++) on its own thread, bound to 127.0.0.1 only, on a FREE port
+ *      the operating system picks (so it runs next to another lobby or a second client on this PC);
+ *   2. answers C1's reads of dwauth.ini and stun.ini from memory with that port, and points C1's NAT
+ *      traversal port constant at it, so C1 logs on to that listener (the files on disk are neither
+ *      read nor written);
  *   3. gives C1 a profile name when the command line has none (+set dw_username <name>);
  *   4. keeps the host gate on loopback: no lobby name, no gateway and no SSDP group is vouched;
- *   5. lets Local Play host with the GSC tree installed with the client and points the embedded
- *      match host's state / profile folders at the offline store (OfflineP2PConfig).
+ *   5. lets Local Play host with the GSC tree installed with the client, gives the embedded match host
+ *      a UDP port that is free (kept reserved until the host binds it) and points its state / profile
+ *      folders at the offline run-time folder (OfflineP2PConfig);
+ *   6. lifts C1's level gates on playing: the room list, Create Room, the playlists and the map list
+ *      are usable by a level-1 profile (OflLiftGates). The career itself is not touched: a level-1
+ *      player is shown, stored and reported as level 1, and loadout unlocks keep their levels.
+ *
+ * The player's career is the game's own profile blobs in <exe dir>\players\<profile name>\
+ * (offline/dw_store.h); there is no database.
  *
  * The lobby thread never touches C1. It reads the owner's Local Play intent with K33LocalPlayIntent()
  * and, when it hands START_GAME to the owner, raises the host launch with K33LocalPlayLaunch()
@@ -27,24 +36,42 @@
 #if CODOL_OFFLINE_LOBBY
 #include "offline/dw_api.h"
 
-#define OFL_DEFAULT_PORT     3074   /* what C1's bdNetStartParams uses for NAT traversal (0x00A50454) */
-#define OFL_DEFAULT_ALT_PORT 3078
-#ifndef OFL_NATTRAV_PORT_VA /* the Windows fixture supplies its own site */
+#define OFL_C1_NATTRAV_PORT  3074   /* what C1's bdNetStartParams uses for NAT traversal (0x00A50454) */
+#ifndef OFL_NATTRAV_PORT_VA /* the Windows fixture supplies its own sites */
 #define OFL_NATTRAV_PORT_VA  0x00A50454u /* mov ecx, 0xC02 ; mov [edi+14h], cx  (m_natTravPort) */
 #endif
+/* AS_IsNotificationUnlocked (0x005AB300, the Scaleform binding of every lobby UI lock) calls
+ * IsNotificationUnlocked(name) (0x005B5EB0, its only caller - MEASURED): mp/uiNotifications.csv row ->
+ * unlock flag -> a membership test against the unlock-flag set the lobby serves. */
+#ifndef OFL_NOTIFY_CALL_VA
+#define OFL_NOTIFY_CALL_VA   0x005AB321u /* call IsNotificationUnlocked */
+#define OFL_NOTIFY_FN_VA     0x005B5EB0u /* bool __cdecl IsNotificationUnlocked(const char *name) -> al */
+#endif
+/* AS_IsMapUnlocked (0x005AC260) answers "unlocked" for every map while C1's own bool dvar "2653"
+ * is set (registered at 0x005EB25D, default 0, no flags; read by name at 0x005AC266). */
+#define OFL_UNLOCK_MAPS_DVAR "2653"
 
 static struct {
     int requested;               /* 0 unknown, 1 on, -1 off */
     BOOL active;                 /* the listener is up and C1 is routed to it */
-    int port, altPort;
-    char name[32];               /* profile name for a command line without dw_username */
-    char root[MAX_PATH];         /* <exe dir>\k33_offline */
-    char profile[MAX_PATH], state[MAX_PATH], match[MAX_PATH], resources[MAX_PATH], zones[MAX_PATH], logPath[MAX_PATH];
+    int wantPort, wantAltPort;   /* k33_offline.ini port / alt_port; 0 = a free port (the default) */
+    int wantHostPort;            /* k33_offline.ini host_port; 0 = the configured one if free, else a free one */
+    int keepGates;               /* k33_offline.ini level_gates = 1: leave C1's level gates in place */
+    int port, altPort;           /* what the lobby listens on */
+    int hostPort;                /* the embedded match host's UDP port in this run; 0 = p2p_host.ini's */
+    volatile LONG hostSock;      /* the socket that keeps hostPort reserved until the host starts, or -1 */
+    BOOL gatesLifted;
+    char name[32];               /* ini profile name, for a command line without dw_username */
+    char player[32];             /* the profile name in use = the folder under players\; "" = not a usable folder name */
+    char players[MAX_PATH];      /* <exe dir>\players */
+    char runtime[MAX_PATH];      /* <exe dir>\p2p\offline: what the lobby and the embedded match host exchange */
+    char legacy[MAX_PATH];       /* <exe dir>\k33_offline\profile: the store of the first offline builds */
+    char resources[MAX_PATH], zones[MAX_PATH], logPath[MAX_PATH];
     FARPROC createFileA, getCommandLineA;
     char *commandLine;
     CRITICAL_SECTION lock;       /* guards the log file (lobby thread and main thread) */
     FILE *log;
-} g_ofl;
+} g_ofl = { .hostSock = -1 };
 
 static void OflExeDir(char *out)
 {
@@ -59,15 +86,34 @@ static BOOL OflCommandLineSwitch(const char *cl)
     return cl && (strstr(cl, "k33_offline 1") || strstr(cl, "k33_offline \"1\""));
 }
 
+/* A profile name is also the player's folder under players\: letters, digits, _ - . only. */
 static BOOL OflNameOk(const char *s)
 {
     size_t n = strlen(s);
-    if (!n || n > 31) return FALSE;
+    if (!n || n > 31 || s[0] == '.' || s[n - 1] == '.') return FALSE;
     for (size_t i = 0; i < n; i++)
         if (!((s[i] >= 'a' && s[i] <= 'z') || (s[i] >= 'A' && s[i] <= 'Z') || (s[i] >= '0' && s[i] <= '9') ||
               s[i] == '_' || s[i] == '-' || s[i] == '.')) return FALSE;
     return TRUE;
 }
+
+/* The value of `+set dw_username <name>` on a command line. -> FALSE when there is none. */
+static BOOL OflCommandLineName(const char *cl, char *out, size_t cap)
+{
+    const char *p = cl ? strstr(cl, "dw_username") : NULL;
+    size_t n = 0;
+    out[0] = 0;
+    if (!p) return FALSE;
+    p += 11;
+    while (*p == ' ' || *p == '\t') p++;
+    BOOL quoted = *p == '"';
+    if (quoted) p++;
+    while (*p && (quoted ? *p != '"' : (*p != ' ' && *p != '\t')) && n + 1 < cap) out[n++] = *p++;
+    out[n] = 0;
+    return TRUE;
+}
+
+static BOOL OflPortOk(int p) { return p >= 1024 && p <= 65535; }
 
 /* Decide once, before FillImports. The ini is optional; the command line wins for the switch. */
 static void OflReadSwitch(void)
@@ -76,11 +122,11 @@ static void OflReadSwitch(void)
     char dir[MAX_PATH], path[MAX_PATH + 32], line[512];
     int enabled = 0;
     OflExeDir(dir);
-    g_ofl.port = OFL_DEFAULT_PORT;
-    g_ofl.altPort = OFL_DEFAULT_ALT_PORT;
     lstrcpyA(g_ofl.name, "Player");
-    _snprintf(g_ofl.root, MAX_PATH, "%sk33_offline", dir);
-    g_ofl.root[MAX_PATH - 1] = 0;
+    _snprintf(g_ofl.players, MAX_PATH, "%splayers", dir);
+    _snprintf(g_ofl.runtime, MAX_PATH, "%sp2p\\offline", dir);
+    _snprintf(g_ofl.legacy, MAX_PATH, "%sk33_offline\\profile", dir);
+    g_ofl.players[MAX_PATH - 1] = g_ofl.runtime[MAX_PATH - 1] = g_ofl.legacy[MAX_PATH - 1] = 0;
     _snprintf(path, sizeof(path), "%sk33_offline.ini", dir);
     path[sizeof(path) - 1] = 0;
     FILE *f = fopen(path, "rb");
@@ -98,11 +144,16 @@ static void OflReadSwitch(void)
             while (*val == ' ' || *val == '\t') val++;
             e = val + strlen(val);
             while (e > val && (e[-1] == ' ' || e[-1] == '\t' || e[-1] == '\r' || e[-1] == '\n')) *--e = 0;
+            BOOL pathOk = *val && !strchr(val, '"') && strlen(val) < MAX_PATH - 32;
             if (!_stricmp(key, "enabled")) enabled = !strcmp(val, "1");
             else if (!_stricmp(key, "name")) { if (OflNameOk(val)) lstrcpyA(g_ofl.name, val); }
-            else if (!_stricmp(key, "port")) { int p = atoi(val); if (p >= 1024 && p <= 65535) g_ofl.port = p; }
-            else if (!_stricmp(key, "alt_port")) { int p = atoi(val); if (p >= 1024 && p <= 65535) g_ofl.altPort = p; }
-            else if (!_stricmp(key, "root")) { if (*val && !strchr(val, '"') && strlen(val) < MAX_PATH - 32) lstrcpyA(g_ofl.root, val); }
+            /* explicit ports are for tests; the default (0) is whatever is free */
+            else if (!_stricmp(key, "port")) { int p = atoi(val); if (OflPortOk(p)) g_ofl.wantPort = p; }
+            else if (!_stricmp(key, "alt_port")) { int p = atoi(val); if (OflPortOk(p)) g_ofl.wantAltPort = p; }
+            else if (!_stricmp(key, "host_port")) { int p = atoi(val); if (OflPortOk(p)) g_ofl.wantHostPort = p; }
+            else if (!_stricmp(key, "level_gates")) g_ofl.keepGates = !strcmp(val, "1");
+            else if (!_stricmp(key, "players")) { if (pathOk) lstrcpyA(g_ofl.players, val); }
+            else if (!_stricmp(key, "runtime")) { if (pathOk) lstrcpyA(g_ofl.runtime, val); }
         }
         fclose(f);
     }
@@ -199,7 +250,7 @@ static const char *OflBaseName(const char *path)
 
 /* C1's CRT fopen reaches CreateFileA through slot 0xB421D8 (local_multi.c). dwauth.ini is the five-line
  * route C1 logs on with (auth host, auth port, lobby host, lobby port, title id in hex); stun.ini is
- * up to ten NAT-discovery hosts (C1 0x00630CE2 / 0x00630D70). */
+ * up to ten NAT-discovery hosts (C1 0x00630CE2 / 0x00630D70). Both ports are the one the lobby got. */
 static HANDLE WINAPI OflCreateFileA(LPCSTR path, DWORD access, DWORD share, LPSECURITY_ATTRIBUTES security, DWORD disposition,
                                     DWORD flags, HANDLE templateFile)
 {
@@ -218,17 +269,20 @@ static HANDLE WINAPI OflCreateFileA(LPCSTR path, DWORD access, DWORD share, LPSE
         path, access, share, security, disposition, flags, templateFile);
 }
 
-/* The profile name IS the career (C1 derives the player id from dw_username). */
+/* C1's command line in offline mode: the profile name when it has none (the name IS the career: C1
+ * derives the player id from dw_username), and the dvar that opens the map list (OflLiftGates). */
 static LPSTR WINAPI OflGetCommandLineA(void)
 {
     LPSTR real = ((LPSTR(WINAPI *)(void))g_ofl.getCommandLineA)();
-    if (!g_ofl.active || !real || strstr(real, "dw_username")) return real;
+    BOOL name = real && !strstr(real, "dw_username");
+    if (!g_ofl.active || !real || (!name && !g_ofl.gatesLifted)) return real;
     if (!g_ofl.commandLine) {
-        size_t n = strlen(real) + 64;
+        size_t n = strlen(real) + 96;
         char *text = (char *)HeapAlloc(GetProcessHeap(), 0, n);
         if (!text) return real;
-        _snprintf(text, n, "%s +set dw_username %s", real, g_ofl.name);
-        text[n - 1] = 0;
+        lstrcpyA(text, real);
+        if (name) { lstrcatA(text, " +set dw_username "); lstrcatA(text, g_ofl.name); }
+        if (g_ofl.gatesLifted) lstrcatA(text, " +set " OFL_UNLOCK_MAPS_DVAR " 1");
         g_ofl.commandLine = text;
     }
     return g_ofl.commandLine;
@@ -243,8 +297,8 @@ static FARPROC OfflineRouteImport(const C1Import *imp, FARPROC original)
     return original;
 }
 
-/* A lobby port other than 3074: C1 sends its NAT-discovery probes to m_natTravPort, a constant in
- * bdNetStartParams' constructor. Point it at the offline listener. */
+/* C1 sends its NAT-discovery probes to m_natTravPort, a constant 3074 in bdNetStartParams'
+ * constructor. Point it at the offline listener's port. */
 static BOOL OflPatchNatTravPort(int port)
 {
     static const BYTE expected[] = { 0xB9, 0x02, 0x0C, 0x00, 0x00, 0x66, 0x89, 0x4F, 0x14 };
@@ -253,6 +307,125 @@ static BOOL OflPatchNatTravPort(int port)
     DWORD imm = (DWORD)port;
     WriteCode(site + 1, &imm, sizeof(imm));
     return TRUE;
+}
+
+/* ---- level gates ----
+ *
+ * Every lock of the lobby UI is one question, AS_IsNotificationUnlocked("<notification>"): is the
+ * unlock flag of that row of mp/uiNotifications.csv in the set the lobby served. The flags are
+ * uf_rank_N (the player's level) or a challenge. The notifications below are the ones that stand
+ * between a player and PLAYING: seeing the room list, creating a room, the playlists, the co-op and
+ * zombies room types. In offline mode they answer "unlocked" whatever the level; the question is
+ * answered here and nothing is added to the unlock-flag set, because uf_rank_5 / 10 / 15 are also the
+ * flags of loadout slots (perk 3, killstreak 1, ...) and those keep their levels. Left as C1 has them:
+ * un_weapon_customization, un_avatar_customization, un_mp_stattrack, un_marketplace (not about
+ * playing a match), and every row without a flag. */
+static const char *const kOflPlayNotifications[] = {
+    "un_room_list",           /* Rooms                   uf_rank_5  */
+    "un_mp_room_creation",    /* Create Room             uf_rank_5  */
+    "un_training_playlist",   /*                         uf_rank_5  */
+    "un_combat_training",     /* bot training            uf_rank_10 */
+    "un_noob_tdm",            /*                         uf_rank_10 */
+    "un_mp_playlist",         /* the playlists           uf_rank_15 */
+    "un_specops",             /* Spec Ops challenge tab  cf_ch_coop_take_mp_estate_tropical */
+    "un_coop_room_creation",  /* co-op rooms             cf_ch_coop_take_mp_estate_tropical */
+    "un_zm_asylum_sh",        /* zombies maps            cf_ch_zm_asylum_sh_1 */
+    "un_zm_prototype_sh",     /*                         cf_ch_zm_prototype_sh_1 */
+};
+
+static unsigned char __cdecl OflNotificationUnlocked(const char *name)
+{
+    if (name && Readable(name, 1))
+        for (unsigned i = 0; i < sizeof(kOflPlayNotifications) / sizeof(kOflPlayNotifications[0]); i++)
+            if (!strcmp(name, kOflPlayNotifications[i])) return 1;
+    return ((unsigned char(__cdecl *)(const char *))(DWORD_PTR)OFL_NOTIFY_FN_VA)(name);
+}
+
+/* -> FALSE when C1's call site is not the measured one (nothing is written; the gates stay). */
+static BOOL OflLiftGates(void)
+{
+    BYTE *site = (BYTE *)(DWORD_PTR)OFL_NOTIFY_CALL_VA;
+    LONG rel;
+    if (!Readable(site, 5) || site[0] != 0xE8) return FALSE;
+    memcpy(&rel, site + 1, 4);
+    if ((DWORD_PTR)site + 5 + rel != (DWORD_PTR)OFL_NOTIFY_FN_VA) return FALSE;
+    rel = (LONG)((DWORD_PTR)OflNotificationUnlocked - ((DWORD_PTR)site + 5));
+    WriteCode(site + 1, &rel, sizeof(rel));
+    g_ofl.gatesLifted = TRUE; /* and OflGetCommandLineA sets the map-list dvar */
+    return TRUE;
+}
+
+/* ---- the embedded match host's UDP port ---- */
+
+static SOCKET OflBindLoopbackUdp(int port)
+{
+    SOCKET s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (s == INVALID_SOCKET) return s;
+    BOOL excl = TRUE;
+    setsockopt(s, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, (const char *)&excl, sizeof(excl));
+    struct sockaddr_in a;
+    memset(&a, 0, sizeof(a));
+    a.sin_family = AF_INET;
+    a.sin_port = htons((u_short)port);
+    a.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    if (bind(s, (struct sockaddr *)&a, sizeof(a)) != 0) { closesocket(s); return INVALID_SOCKET; }
+    return s;
+}
+
+static int OflBoundPort(SOCKET s)
+{
+    struct sockaddr_in a;
+    int n = sizeof(a);
+    return getsockname(s, (struct sockaddr *)&a, &n) == 0 ? ntohs(a.sin_port) : 0;
+}
+
+/* The sh1x host also listens on TCP at its port. Can that be bound right now? */
+static BOOL OflLoopbackTcpFree(int port)
+{
+    SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (s == INVALID_SOCKET) return TRUE; /* cannot tell */
+    struct sockaddr_in a;
+    memset(&a, 0, sizeof(a));
+    a.sin_family = AF_INET;
+    a.sin_port = htons((u_short)port);
+    a.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    BOOL ok = bind(s, (struct sockaddr *)&a, sizeof(a)) == 0;
+    closesocket(s);
+    return ok;
+}
+
+/* The port the embedded host will serve on in this run: p2p_host.ini's (17760 by default) when it is
+ * free, else a free one. The socket that proved it free is KEPT until the host is about to bind
+ * (OfflineHostPortRelease), so nothing else on this PC - a second offline client in particular - can
+ * take the port between now and the match launch. An explicit host_port is used as it is.
+ * A free one: the system's choice of a UDP port first; if that port cannot also be had for TCP
+ * (Windows excludes port blocks per protocol, offline/dw_net.cpp), ports drawn at random from the
+ * dynamic range. */
+static void OflChooseHostPort(int configured)
+{
+    if (g_ofl.wantHostPort) { g_ofl.hostPort = g_ofl.wantHostPort; return; }
+    g_ofl.hostPort = configured;
+    SOCKET s = OflBindLoopbackUdp(configured);
+    if (s == INVALID_SOCKET) {
+        unsigned seed = GetTickCount() ^ (GetCurrentProcessId() * 2654435761u);
+        for (int attempt = 0; attempt < 64 && s == INVALID_SOCKET; attempt++) {
+            seed = seed * 1103515245u + 12345u;
+            s = OflBindLoopbackUdp(attempt ? 49152 + (int)((seed >> 8) % 16384) : 0);
+            if (s != INVALID_SOCKET && !OflLoopbackTcpFree(OflBoundPort(s))) { closesocket(s); s = INVALID_SOCKET; }
+        }
+    }
+    if (s == INVALID_SOCKET) return; /* no port at all: the launch reports its own failure */
+    int port = OflBoundPort(s);
+    if (!port) { closesocket(s); return; }
+    g_ofl.hostPort = port;
+    InterlockedExchange(&g_ofl.hostSock, (LONG)s);
+}
+
+/* p2p.c, immediately before the host's own port check: give the reserved port up. Any thread. */
+static void OfflineHostPortRelease(void)
+{
+    LONG s = InterlockedExchange(&g_ofl.hostSock, -1);
+    if (s != -1) closesocket((SOCKET)(ULONG)s);
 }
 
 /* TakeOver, after FillImports and before the host gate. -> FALSE when offline mode was requested and
@@ -268,61 +441,81 @@ static BOOL InstallOfflineLobby(void)
         Log("offline lobby: refused, this client was started by a launcher-managed Local Play session");
         return FALSE;
     }
-    char dir[MAX_PATH];
+    WSADATA wsa;
+    if (WSAStartup(MAKEWORD(2, 2), &wsa)) { Log("offline lobby: no sockets"); return FALSE; }
+    char dir[MAX_PATH], parent[MAX_PATH];
     OflExeDir(dir);
-    _snprintf(g_ofl.profile, MAX_PATH, "%s\\profile", g_ofl.root);
-    _snprintf(g_ofl.state, MAX_PATH, "%s\\state", g_ofl.root);
-    _snprintf(g_ofl.match, MAX_PATH, "%s\\match", g_ofl.root);
-    _snprintf(g_ofl.resources, MAX_PATH, "%s\\resources", g_ofl.root);
-    _snprintf(g_ofl.logPath, MAX_PATH, "%s\\lobby.log", g_ofl.root);
+    /* The profile name: the command line's dw_username, else the ini's. It is the career's folder. */
+    if (!OflCommandLineName(((LPSTR(WINAPI *)(void))g_ofl.getCommandLineA)(), g_ofl.player, sizeof(g_ofl.player)))
+        lstrcpyA(g_ofl.player, g_ofl.name);
+    if (!OflNameOk(g_ofl.player)) g_ofl.player[0] = 0; /* not a folder name: the lobby names the folder by the player id */
+    _snprintf(g_ofl.resources, MAX_PATH, "%s\\resources", g_ofl.runtime);
+    _snprintf(g_ofl.logPath, MAX_PATH, "%s\\lobby.log", g_ofl.runtime);
     _snprintf(g_ofl.zones, MAX_PATH, "%sclient_shipRetail\\chinese", dir);
-    g_ofl.profile[MAX_PATH - 1] = g_ofl.state[MAX_PATH - 1] = g_ofl.match[MAX_PATH - 1] = 0;
     g_ofl.resources[MAX_PATH - 1] = g_ofl.logPath[MAX_PATH - 1] = g_ofl.zones[MAX_PATH - 1] = 0;
-    CreateDirectoryA(g_ofl.root, NULL);
-    CreateDirectoryA(g_ofl.profile, NULL);
-    CreateDirectoryA(g_ofl.state, NULL);
-    CreateDirectoryA(g_ofl.match, NULL);
+    lstrcpynA(parent, g_ofl.runtime, MAX_PATH);
+    char *cut = strrchr(parent, '\\');
+    if (cut) { *cut = 0; CreateDirectoryA(parent, NULL); } /* <exe dir>\p2p */
+    CreateDirectoryA(g_ofl.runtime, NULL);
+    CreateDirectoryA(g_ofl.players, NULL);
     g_ofl.log = fopen(g_ofl.logPath, "wb"); /* one session per file; NULL just means no lobby log */
 
     P2PConfig p2p;
     P2PDefaults(&p2p);
-    P2PLoadIni(&p2p); /* its port: the match host's UDP port (state/profile are overridden below) */
+    P2PLoadIni(&p2p); /* its port: the match host's configured UDP port */
+    OflChooseHostPort(p2p.port);
     DwOfflineConfig cfg;
     memset(&cfg, 0, sizeof(cfg));
     cfg.resources = GetFileAttributesA(g_ofl.resources) != INVALID_FILE_ATTRIBUTES ? g_ofl.resources : NULL;
-    cfg.profile = g_ofl.profile;
-    cfg.state = g_ofl.state;
-    cfg.matchProfile = g_ofl.match;
+    cfg.profile = g_ofl.players;
+    cfg.playerName = g_ofl.player[0] ? g_ofl.player : NULL;
+    cfg.legacyStore = GetFileAttributesA(g_ofl.legacy) != INVALID_FILE_ATTRIBUTES ? g_ofl.legacy : NULL;
+    cfg.state = g_ofl.runtime;
+    cfg.matchProfile = g_ofl.runtime;
     cfg.zoneDir = g_ofl.zones;
-    cfg.port = g_ofl.port;
-    cfg.altPort = g_ofl.altPort;
-    cfg.hostPort = p2p.port;
+    cfg.port = g_ofl.wantPort;
+    cfg.altPort = g_ofl.wantAltPort;
+    cfg.hostPort = g_ofl.hostPort;
     cfg.log = OflLog;
     cfg.localRoute = OflLocalRoute;
     cfg.launch = OflLaunch;
     cfg.startGame = OflStartGame;
-    if (g_ofl.port != OFL_DEFAULT_PORT && !OflPatchNatTravPort(g_ofl.port)) {
-        Log("offline lobby: port %d needs C1's NAT traversal port patched and its bytes differ; use port %d", g_ofl.port, OFL_DEFAULT_PORT);
-        return FALSE;
-    }
     int port = DwOfflineStartServer(&cfg);
     if (!port) {
-        Log("offline lobby: could not listen on 127.0.0.1:%d (is another lobby running on this PC?)", g_ofl.port);
+        if (g_ofl.wantPort) Log("offline lobby: could not listen on 127.0.0.1:%d (k33_offline.ini port; is it in use?)", g_ofl.wantPort);
+        else Log("offline lobby: could not get a free loopback port to listen on");
+        OfflineHostPortRelease();
         return FALSE;
     }
+    if (port != OFL_C1_NATTRAV_PORT && !OflPatchNatTravPort(port)) {
+        Log("offline lobby: C1's NAT traversal port constant is not where it was measured; port %d cannot be used", port);
+        DwOfflineStopServer();
+        OfflineHostPortRelease();
+        return FALSE;
+    }
+    g_ofl.port = port;
+    g_ofl.altPort = DwOfflineAltPort();
     g_ofl.active = TRUE;
-    Log("offline lobby: ACTIVE on 127.0.0.1:%d (store %s); C1 is routed to it in memory, dwauth.ini / stun.ini on disk are not used",
-        port, g_ofl.root);
+    Log("offline lobby: ACTIVE on 127.0.0.1:%d%s (stun alt %d), match host udp %d%s; C1 is routed to it in memory, dwauth.ini / stun.ini on disk are not used",
+        port, g_ofl.wantPort ? "" : " (free port)", g_ofl.altPort, g_ofl.hostPort,
+        g_ofl.wantHostPort ? " (k33_offline.ini)" : g_ofl.hostPort != p2p.port ? " (free port: the configured one is in use)" : "");
+    Log("offline lobby: profile \"%s\" in %s\\%s; run-time files in %s", g_ofl.player[0] ? g_ofl.player : "(named by player id)", g_ofl.players,
+        g_ofl.player[0] ? g_ofl.player : "<player id>", g_ofl.runtime);
+    if (g_ofl.keepGates) Log("offline lobby: level gates kept (k33_offline.ini level_gates = 1)");
+    else if (OflLiftGates()) Log("offline lobby: level gates on playing lifted (rooms, Create Room, playlists, co-op and zombies rooms, maps); the career and loadout unlocks are untouched");
+    else Log("offline lobby: C1's notification lock is not where it was measured; its level gates stay");
     return TRUE;
 }
 
 /* P2PLoadIni: the embedded match host shares its state and profile folders with the offline lobby,
- * whatever p2p_host.ini says (an install that also plays online points them at the real lobby). */
+ * whatever p2p_host.ini says (an install that also plays online points them at the real lobby), and
+ * serves on the port chosen for this run. */
 static void OfflineP2PConfig(P2PConfig *c)
 {
     if (!g_ofl.active) return;
-    lstrcpynA(c->state, g_ofl.state, MAX_PATH);
-    lstrcpynA(c->profile, g_ofl.match, MAX_PATH);
+    lstrcpynA(c->state, g_ofl.runtime, MAX_PATH);
+    lstrcpynA(c->profile, g_ofl.runtime, MAX_PATH);
+    if (g_ofl.hostPort) c->port = g_ofl.hostPort;
     c->rconFile[0] = 0;   /* <state>\native_server_rcon.txt, created on first use */
     c->rollout[0] = 0;    /* no external lobby to register with */
     lstrcpyA(c->netIp, "127.0.0.1");

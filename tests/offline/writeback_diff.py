@@ -15,11 +15,21 @@ uid:
   2. `dwtest --differential --writeback` folds the same bytes through the C++ port;
 
 and the results are compared: every profile (total XP, level, counters, lifetime, challenge / weapon /
-coop / intel progress, history), the GP wallet, the retry state, how the report files were archived,
-the unlock-flag set and weapon XP derived from the profile, and the inflated mpdata_s buffers.
+coop / intel progress), the GP wallet, the retry state, how the report files were archived, the
+unlock-flag set and weapon XP derived from the profile, and the inflated mpdata_s buffers.
+
+THE PORT'S SIDE IS READ BACK FROM ITS FILES. Every step is its own dwtest process, and the port keeps
+no profile document: a step rebuilds the career from the player's mpdata_s file and the account.txt
+career lines the step before wrote (offline/dw_store.h), credits the report and writes both again. So
+a scenario that matches also proves that nothing of the career is lost between two runs of the client.
+Two members of the Python profile are not part of that career and are not compared: `history` (the
+Python lobby's credit log, a database table) and `seeded_from` (where the profile came from: for the
+port that is the file). And where the Python lobby has not rendered a blob yet (it renders when the
+profile is served), the port already has one - the file is the career from the first moment - so
+there is nothing to compare that buffer with.
 
 CLOCKS. Both sides run at the same pinned time (time.time patched / --fixed-time), so NOTHING is
-blanked: the clock-derived values - the profile's created / updated / history[].ts and the secure
+blanked: the clock-derived values - the profile's created / updated and the secure
 DDL's challegeUpdateTime at byte 0x0170 (with the CRC32 at byte 0 that covers it) - must be equal too.
 A buffer mismatch is reported field by field through the Python tree's playerdata_editor.
 
@@ -260,9 +270,10 @@ def py_worker(pylobby, scen_dir, steps_path):
         prof = player_profiles.load(uid, players, res, create=False)
         if prof is None:
             continue
-        # players/<uid>.json is the file whose schema the port's store shares. The credit history is
-        # the database's profile_history table (load() answers [] and the JSON mirror therefore only
-        # ever holds the latest credit); the port keeps the last 50 rows in the profile itself.
+        # players/<uid>.json is the Python lobby's profile document; the port has no such file and
+        # rebuilds the same value from mpdata_s + account.txt. The credit history is the database's
+        # profile_history table (load() answers [] and the JSON mirror therefore only ever holds the
+        # latest credit); the port does not keep one, and compare() leaves it out.
         with open(os.path.join(players, "%s.json" % uid), encoding="utf-8") as fh:
             mirror = json.load(fh)
         out["mirror_differs"][uid] = sorted(k for k in set(prof) | set(mirror)
@@ -345,6 +356,9 @@ def blob_field_diff(pylobby, a_hex, b_hex):
     return out[:12]
 
 
+NOT_THE_CAREER = ("history", "seeded_from")     # see the module text: not kept by the port, on purpose
+
+
 def compare(pylobby, py, cc):
     """-> list of difference lines (empty = the scenario matches)."""
     diffs = []
@@ -354,6 +368,8 @@ def compare(pylobby, py, cc):
     for uid in sorted(set(pp) & set(cp)):
         a, b = norm(pp[uid]), norm(cp[uid])
         for key in sorted(set(a) | set(b)):
+            if key in NOT_THE_CAREER:
+                continue
             if a.get(key, "<absent>") != b.get(key, "<absent>"):
                 diffs.append("profile %s.%s: python %r, c++ %r" % (uid, key, a.get(key, "<absent>"), b.get(key, "<absent>")))
         if py["mirror_differs"].get(uid):
@@ -365,7 +381,9 @@ def compare(pylobby, py, cc):
             diffs.append("unlock flags %s: only python %s, only c++ %s" % (uid, sorted(fa - fb)[:10], sorted(fb - fa)[:10]))
         if py["weapon_xp"].get(uid) != cc["weapon_xp"].get(uid):
             diffs.append("weapon xp by item %s: python %r, c++ %r" % (uid, py["weapon_xp"].get(uid), cc["weapon_xp"].get(uid)))
-        if py["blobs"].get(uid, "") != cc["blobs"].get(uid, ""):
+        if not cc["blobs"].get(uid, ""):
+            diffs.append("c++: %s has a profile and no mpdata_s file" % uid)
+        elif py["blobs"].get(uid, "") and py["blobs"][uid] != cc["blobs"][uid]:   # python renders only when it serves
             for line in blob_field_diff(pylobby, py["blobs"].get(uid, ""), cc["blobs"].get(uid, "")):
                 diffs.append("mpdata_s %s: %s" % (uid, line))
         if cc["exported_matches_store"].get(uid) is False:

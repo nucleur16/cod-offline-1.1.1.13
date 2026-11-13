@@ -2,9 +2,10 @@
  * dw_profiles.h - the per-player career profile (store/player_profiles.py) and the rank table
  * arithmetic it needs (career/rank_service.py).
  *
- * players/<uid>.json is the ONE authority: `total_xp` is the only number that matters, the
- * (rank, experience) pair is derived from it and rendered into the "mpdata_s" storage file whenever
- * the lobby is about to serve it. MEASURED encoding of that blob: stored `rank` is ONE-BASED
+ * The player's "mpdata_s" file is the career (dw_store.h). The profile is its in-memory form, the
+ * JSON value of player_profiles.py: `total_xp` is the only number that matters for rank, the
+ * (rank, experience) pair is derived from it, and every ProfileSave renders the profile straight back
+ * into the file. MEASURED encoding of that blob: stored `rank` is ONE-BASED
  * (GetRank @0x0058EFE0 does `dec eax`), `experience` is XP *within* the rank
  * (LiveStorage_GetExperience @0x0058EEB0 adds the rank's minXP itself), rankVersion = 2.
  *
@@ -33,10 +34,12 @@ int64_t RankupGp(int64_t fromLevel, int64_t toLevel);
 bool XpFromBlob(Server &s, const Bytes &stored, int64_t &totalXp);
 
 /* ---- the store ---- */
-/* The profile for this uid: uid / total_xp / level normalised. A uid with no profile gets a blank
+/* The profile for this uid: uid / total_xp / level normalised. The first time in a run it is built
+ * from the player's mpdata_s file and the account.txt career lines. A uid with neither gets a blank
  * level-1 one (written at once) unless create is false. -> false when there is none. */
 bool ProfileLoad(Server &s, uint64_t uid, Json &prof, bool create = true);
-/* Normalises (format, level, updated, lifetime, history <= 50) and writes players/<uid>.json. */
+/* Normalises (format, level, updated, lifetime, history <= 50), remembers the profile and writes it
+ * out: the career into the player's mpdata_s, what that blob cannot hold into account.txt. */
 bool ProfileSave(Server &s, Json &prof);
 Json ProfileBlank(Server &s, uint64_t uid);
 std::vector<uint64_t> ProfileListUids(Server &s);

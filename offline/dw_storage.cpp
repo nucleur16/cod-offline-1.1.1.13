@@ -6,7 +6,7 @@
  * how the client fetches its own mpdata / mpdata_s profile and the playlist / FFOTD public files, and
  * how it uploads its classes blob back. Two things here are load-bearing beyond "reading a file":
  *   - GETFILE of mpdata_s is the fold point for progression: it applies any pending match report and
- *     re-renders the blob from players/<uid>.json before serving;
+ *     brings the player's mpdata_s file up to the career profile before serving it;
  *   - the uid on a GETFILE is where the server learns who it is talking to (the latch in dw_core.cpp).
  *
  * Where the Python lobby keeps per-uid files as resources\<name>.<uid> and SQLite rows, they live in
@@ -275,9 +275,9 @@ Reply GetFile(Server &s, Conn &c, int task, const Val *nameVal)
     Store &store = GetStore(s);
     std::string wb;
     Bytes data;
-    /* R4: before mpdata_s goes out, fold any waiting match report into the profile, then RENDER
-     * players/<uid>.json into the store's mpdata_s so the blob about to go on the wire is the
-     * profile, whoever wrote it last. mpdata too, so a match's story intel is in the profile before
+    /* R4: before mpdata_s goes out, fold any waiting match report into the profile, then make sure
+     * the player's mpdata_s is that profile, so the blob about to go on the wire is the career,
+     * whoever wrote the file last. mpdata too, so a match's story intel is in the profile before
      * Collectibles() sets its bits below. */
     if (task == 3 && (name == "mpdata_s" || name == "mpdata")) {
         std::string n = RankWritebackMaybeApply(s, uid, false);

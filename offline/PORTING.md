@@ -16,7 +16,7 @@ is free-form and never compared.
 |---|---|
 | `dw.h` | public core: `Bytes`, `Val`/`Vals` (parsed tagged values), `w_*` writers, `Reply`, `Config`, `Host`, `Conn`, `Server`, file helpers |
 | `dw_json.h` | ordered JSON value (`Json`), lenient readers, `dump`/`Parse` |
-| `dw_store.h` | the persistent store interface (replaces SQLite `store/lobby_db.py`) |
+| `dw_store.h` | what is kept on disk: one folder per player with the game's own `mpdata` / `mpdata_s` and `account.txt` (no database; replaces SQLite `store/lobby_db.py`) |
 | `dw_state.h` | `ServerState` and EVERY cross-module function declaration |
 | `dw_stubs.cpp` | placeholder definitions per module, under `#ifndef DW_HAVE_<MODULE>` |
 | `dw_core.cpp` | framing, auth, dispatch (`BuildTaskReply`), STUN, services 12 / 6 / 71 / 102 |
