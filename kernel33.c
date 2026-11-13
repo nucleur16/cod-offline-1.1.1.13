@@ -1625,6 +1625,7 @@ static void PatchGbkInput(void)
 #endif
 /* The THEATRE screen (codol-classic's theatre playback): see theatre.c. */
 #include "theatre.c"
+#include "hud_style.c"   /* k33_hudStyle / k33_hudStyleList: the selectable HUD style (docs/HUD_STYLES_20261112.md) */
 /* UTF-8 player names and an optional display-name service: see name_display.c. */
 #if !CODOL_KERNEL_NAME_DISPLAY
 #include "name_display.c"
@@ -1776,6 +1777,7 @@ static void __cdecl TakeOver(void)
     InstallQuickRoom();
 #endif
     InstallTheatre();
+    InstallHudStyle();
 #if !CODOL_KERNEL_NAME_DISPLAY
     InstallNameDisplay();
 #endif

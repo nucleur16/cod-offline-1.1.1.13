@@ -1,0 +1,4 @@
+# localize entries in zone order: NAME<TAB>value (\n \r \t \\ escaped); values are ascii in the zone
+MPUI_DIE_CAPS	D
+MPUI_KILL_CAPS	K
+MPUI_SCORE_CAPS	SCORE

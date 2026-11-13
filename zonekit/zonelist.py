@@ -54,8 +54,16 @@ ZONES = {
     "controller_ingame": dict(origin="R:3317112:patch", install=PATCH,
                               gfx={"scaleform/default/codohud.gfx": HUD, "scaleform/default/codoingame.gfx": INGAME},
                               handwritten={"scaleform/default/codoingame.gfx": {"MainPause"}}),
-    # Native HUD menus reference materials/defaults initialized by code_post_gfx.
+    # Native HUD menus reference materials/defaults initialized by code_post_gfx. Its menufile also carries the
+    # HUD styles' items for killstreaks_hd and scorebar_hd (one copy of a menu: tools/build_survival_hud.py styled()).
     "survival_hud_postgfx_mp": dict(origin="new", install=PATCH),
+    # The selectable HUD styles (k33_hudStyle, hud_style.c): later builds' native HUD items inside C1's weaponbar_hd
+    # and minimap_fullscreen, each gated on the dvar, with the `2d` materials and A8R8G8B8 images they draw
+    # (k33hud<NN>_*). tools/build_hud_styles.py writes it from sources/; docs/HUD_STYLES_20261112.md.
+    "hud_styles_postgfx_mp": dict(origin="new", install=PATCH),
+    # the "@KEY" texts of those items that 1.1.1.13 has no localize entry for, per language
+    "codol_english_hud_styles": dict(origin="new", install=PATCH),
+    "codol_chinese_hud_styles": dict(origin="new", install=PATCH),
     # the usermaps' front-end data, filtered by shipping_maps.txt (zonekit/shipping.py): only "ship" maps' rows,
     # arena entries, strings, vision files and map-select images are in a shipping build
     "usermaps_patch": dict(origin="G:" + PATCH, install=PATCH, older="Z:" + PATCH,

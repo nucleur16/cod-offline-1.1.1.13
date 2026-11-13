@@ -1,0 +1,4 @@
+# localize entries in zone order: NAME<TAB>value (\n \r \t \\ escaped); values are gbk in the zone
+MPUI_DIE_CAPS	亡
+MPUI_KILL_CAPS	杀
+MPUI_SCORE_CAPS	得分

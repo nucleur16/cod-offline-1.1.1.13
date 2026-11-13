@@ -601,9 +601,9 @@ The source zones under `zone_source/` + `zones/` stay as they are (each with its
 |---|---|---|---|
 | codol_common | ahead of code_pre_gfx | both | 000_codol_party_modes, codol_loading_mode_names, codol_zm_deathmachine_audio, controller_ingame, usermaps_patch (all but its strings) |
 | codol_common_ui_mp | ahead of the UI zones | both | voice_ui_mp, usermaps_ui_mp |
-| codol_common_postgfx_mp | after code_post_gfx | both | codol_field_orders_postgfx_mp, controller_glyphs_postgfx_mp |
-| codol_english_locale | ahead of code_pre_gfx (after code_post_gfx when another language starts) | `k33_language en` | codol_english, codol_english_font, codol_english_ui, codol_english_ui_extra, codol_english_usermaps, codol_english_zombies_base |
-| codol_chinese_locale | ahead of code_pre_gfx (after code_post_gfx when another language starts) | `k33_language zh` (and no valid language) | codol_chinese_ui, codol_chinese_ui_extra, usermaps_patch's GBK strings |
+| codol_common_postgfx_mp | after code_post_gfx | both | codol_field_orders_postgfx_mp, controller_glyphs_postgfx_mp, hud_styles_postgfx_mp, survival_hud_postgfx_mp |
+| codol_english_locale | ahead of code_pre_gfx (after code_post_gfx when another language starts) | `k33_language en` | codol_english, codol_english_font, codol_english_ui, codol_english_ui_extra, codol_english_usermaps, codol_english_zombies_base, codol_english_hud_styles |
+| codol_chinese_locale | ahead of code_pre_gfx (after code_post_gfx when another language starts) | `k33_language zh` (and no valid language) | codol_chinese_ui, codol_chinese_ui_extra, usermaps_patch's GBK strings, codol_chinese_hud_styles |
 | codol_infected_cyborg_postgfx_mp | after code_post_gfx | both | itself: C#-written, its assets point into its own runtime blocks, so they cannot move into another zone |
 | mp_codol_weapons | ahead of code_pre_gfx | both | itself (stringtables only): the MP weapon tables, whole -- an `mp_*` name, so the sh1x server mounts it too |
 | mp_codol_weapons_postgfx_mp | after code_post_gfx | both | itself: the MP weapon art (C#-written), `mp_*` for the server as well |
@@ -675,6 +675,7 @@ in the map pack, change it to `ship` and build.
 | voice_ui_mp, controller_ingame | codol-classic's English codo.gfx / codologin.gfx / codohud.gfx / codoingame.gfx (formerly codol_english_ui / _extra) made language-neutral by `ui_keys.py`, with this repository's hand-written classes in their `.gfxpatch/as/` (formerly `voice_ui/`, build_voice_ui.py / build_ingame_ui.py) |
 | usermaps_patch, usermaps_ui_mp | the game folder's `usermaps\build_usermaps_patch.py` (now superseded by the sources here) |
 | controller_glyphs_postgfx_mp | this repository (authored here, no shipped original): the former `glyphs/glyphs.bin` icons (Xelu's CC0 prompts) as image assets with C1's `hud_status_dead` material layout |
+| hud_styles_postgfx_mp, codol_english_hud_styles, codol_chinese_hud_styles | `tools/build_hud_styles.py` (authored here, no shipped original): the native HUD menus, HUD images and three labels of the user's own Call of Duty Online 1.2.1.12 and 2.6.9.7 installs, read with CODOL-AssetExplorer's CodolSoundDumper (`extract`), converted to 1.1.1.13 and gated on `k33_hudStyle`; the English labels are plain translations. `docs/HUD_STYLES_20261112.md` |
 | patch_common_gametype_zm | `CodolSoundDumper zm-pap-patch` (CODOL-AssetExplorer + `pap_patch_staging\tool_src`) over the stock zone |
 
 ### Known gaps
