@@ -40,8 +40,8 @@ src/            everything compiled into Kernel33.dll (C, plus the C++ offline l
   kernel/         the room-context and name-display migration (kernel_*), opt-in
   rooms/          lobby rooms, Quick Match and the survival category
   offline/        the Demonware lobby in C++ (part of every build)
-scripts/        build.sh and its variants (build-dev, build-controller, build-parity, build-server; build-profile.sh and
-                build-offline.inc.sh are sourced by them), and the Python helpers: build_zones.py (patch zones),
+scripts/        build.sh and its variants (build-dev, build-server; build-profile.sh and
+                build-offline.inc.sh are sourced by build.sh), and the Python helpers: build_zones.py (patch zones),
                 make_exe.py, gen_dvars.py, gen_tables.py, ui_keys.py
 docs/           design notes, audits, baselines (docs/baselines/), CONTROLLER.md, PADSNAP.md, PRODUCTION_PROFILE.md
 tests/          source tests and their fixtures (sh tests/run_tests.sh; see "Tests")
@@ -131,7 +131,7 @@ settings in `p2p\p2p_host.ini`). `src/p2p/hostgate.c` lets the client exchange U
 from the client security audit. Design, trust rules, stages and measurements: `docs/P2P_HOSTING.md`.
 
 The server is the git submodule `server/sh1x` (the sh1x server repo, pinned to its `feat/p2p-hosting`
-commit). `scripts/build.sh` / `scripts/build-dev.sh` init it; the DLL does not compile it. To build and stage the
+commit). `scripts/build.sh` inits it; the DLL does not compile it. To build and stage the
 server a client hosts:
 ```sh
 git submodule update --init server/sh1x       # never --recursive: the server has a URL-less gitlink
@@ -170,8 +170,8 @@ higher limits), registered with the archive flag so the console can change it. S
 `+set parity_log N` on the command line, else the environment variable `CODOL_PARITY_LOG`, else 1.
 A startup value of 0 installs no hooks at all.
 
-Build without touching the live DLL: `PATH=/c/msys64/mingw32/bin:$PATH sh scripts/build-parity.sh` writes
-`build/Kernel33_parity.dll`; copy it over `../Kernel33.dll` (keep a backup) to use it.
+The logger is compiled only into the diagnostic profile: `K33_NO_COPY=1 K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=1 sh
+scripts/build.sh` (or `sh scripts/build-dev.sh`) writes it without touching the live DLL.
 
 ### Several clients on one PC (branch `parity-log`)
 The branch also skips WinMain's "is already running." check (0x630C3A; the game's mutex
@@ -284,9 +284,9 @@ description, with a confidence; below 85 the name is a positional guess and the 
 Numbers without a name display as they are. Command names are not hashed in this build (all
 `Cmd_AddCommand` names are plaintext), so commands are listed as registered.
 
-Build without touching the live DLL: `sh scripts/build-dev.sh` writes `build/Kernel33_dev.dll` (console + controller +
-voice + usermaps + parity + frame cap, SDL2 and libopus static, as `scripts/build.sh`) and also links
-`build/Kernel33_noconsole.dll` (`-DK33_NO_CONSOLE`), failing if the shared code depends on `src/console/console.c`.
+Build without touching the live DLL: `sh scripts/build-dev.sh` runs `scripts/build.sh` in the diagnostic profile and
+writes `build/Kernel33_dev.dll` (console + k33shot + parity logger on top of everything the shipping DLL has) and
+`build/Kernel33_noconsole.dll` (`-DK33_NO_CONSOLE`), failing if the diagnostic code depends on `src/console/console.c`.
 
 ## Controller (branch `feat/controller`)
 `src/controller/controller.c` adds gamepad play: SDL2 2.32.10 GameController (static; Xbox, PlayStation, Switch Pro, generic 
@@ -294,8 +294,7 @@ pads, hot-plug; XInput fallback) on its own ~1 kHz thread, pad buttons as real C
 bindable and saved in config_mp.cfg, queued through C1's Sys_QueEvent), analog move/look in CL_MouseMove, a 
 stick-driven cursor for the Scaleform menus (A click, B Escape) and `gpad_*` dvars. See `docs/CONTROLLER.md` for C1's 
 input path, the dvars, commands, default binds, what was verified and the phase 2/3 plan. `scripts/build.sh` builds it
-into Kernel33.dll; `PATH=/c/msys64/mingw32/bin:$PATH sh scripts/build-controller.sh` writes a side copy,
-`build/Kernel33_controller.dll`, and copies nothing.
+into Kernel33.dll (`K33_NO_COPY=1` leaves the installed DLL alone).
 
 ## Voice chat
 `src/audio/voice.c` puts back in-game voice chat, which C1 stripped (no capture, no codec, no `+talk`; the "v"

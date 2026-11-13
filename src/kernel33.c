@@ -468,19 +468,10 @@ static void AttachRawMouse(HWND hwnd)
     Log("raw mouse: attached to window %p", hwnd);
 }
 
-/* An overlay that owns the mouse: no view turn, no menu cursor and no recentering while it is open, so the
- * Windows cursor moves freely over it. Nothing sets it at present (the in-game console takes the keyboard only). */
-static volatile LONG g_k33OverlayMouse;
-
 static int __cdecl MouseEventHook(int x, int y, int dx, int dy)
 {
     HWND hwnd = *(HWND *)(DWORD_PTR)MAIN_HWND_VA;
     if (hwnd && hwnd != g_rawHwnd) AttachRawMouse(hwnd);
-    if (g_k33OverlayMouse) {
-        InterlockedExchange(&g_rawDx, 0);
-        InterlockedExchange(&g_rawDy, 0);
-        return 0;
-    }
     if (g_rawActive) {
         dx = InterlockedExchange(&g_rawDx, 0);
         dy = InterlockedExchange(&g_rawDy, 0);
