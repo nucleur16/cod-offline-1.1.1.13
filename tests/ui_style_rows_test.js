@@ -399,4 +399,4 @@ for(const k of used){
 }
 assert.strictEqual(en.K33UI_LANG_NAME_EN,'English');assert.strictEqual(zh.K33UI_LANG_NAME_EN,'English');
 assert(en.K33UI_LANG_NAME_ZH.startsWith('中文')&&zh.K33UI_LANG_NAME_ZH==='中文','each language in its own name');
-console.log('UI style rows: shared logic identical in both movies; Language row off (no row, no gap, no dvar read) and its logic with the switch on; Graphics drop-downs (fill, pick, hold, read-back, unlisted values, empty lists, re-localise); '+used.size+' localize keys passed');
+console.log('UI style rows: shared logic identical in both movies; Language row on, and with the switch off no row, no gap, no dvar read; Graphics drop-downs (fill, pick, hold, read-back, unlisted values, empty lists, re-localise); '+used.size+' localize keys passed');
