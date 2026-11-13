@@ -5,7 +5,8 @@ the lobby and every run uses it. The client never contacts a Demonware lobby, a 
 
 * **Start it:** run `codoMP_client_shipRetail.exe` with no arguments (optionally
   `+set dw_username <name>` to pick the profile). The game needs the install, `Kernel33.dll` and the
-  staged in-process match server (`p2p\sh1x_host.dll`, `main\sh1x_rawfiles`, `p2p\survival_maps.txt`).
+  staged in-process match server (`p2p\sh1x_host.dll`, `p2p\home\main\sh1x_svr_scripts.iwd`,
+  `main\sh1x_rawfiles`, `p2p\survival_maps.txt`).
 * **The profile** is the folder `<exe dir>\players\<name>\` (`mpdata`, `mpdata_s`, `account.txt`); the name
   is `dw_username`, else `name` of the optional `k33_offline.ini`, else `Player`.
 * **Every match is hosted by the embedded server** on 127.0.0.1. There is no LOCAL PLAY choice: every
@@ -592,10 +593,17 @@ read with the Python lobby's codec from a copy of `players\edtest\mpdata`):
   hard-coded `cmd mr %i 13 class0` (`0x0071A06E`), but menu slot 13 is not the class menu on this
   host (the reply does nothing), and when C1 sends it was not determined. So the patch fixes a real
   defect that matches the report's words; that it is the path the report came from is an inference.
-* **Bots** (seen in the host log, not on screen): `CoDOL bot class N: mp/botclasstable.csv has no
-  member loadoutPrimary; answering none` for every member, then `CoDOL weapon '_mp' is not in any
-  mounted zone; using defaultweapon_mp`: in this shadow the bots are handed the default weapon.
-  Whether a dedicated host run finds that table was not checked.
+* **Bots without bodies** (fixed): `CoDOL bot class N: mp/botclasstable.csv has no member loadoutPrimary;
+  answering none` for every member, `CoDOL appearance: character N has no available models`, then
+  `publication failed; keeping appearance`: the bots spawned with `defaultweapon_mp` and only their names
+  were drawn (no body, head, world weapon or shadow). Cause: the test shadow had no server pack
+  `p2p\home\main\sh1x_svr_scripts.iwd`. The host reads `mp/botclasstable.csv` with `FS_ReadFile` from
+  that pack (sh1x `codol_bot_loadout.c`), so without it every class answered `none`; the same run also
+  routed bots over the level's raw `node_*` records (732 on mp_killhouse_sh) because the pack's waypoint
+  and node files were missing too. With the pack in place the warnings are gone and the bots carry
+  their class weapons and characters. `P2PCheck` now refuses to host when neither the pack nor a loose
+  `p2p\home\main\mp\botclasstable.csv` exists ("server pack missing"), so a shadow or an install
+  without it fails visibly instead of starting a match with invisible bots.
 * Not done: a sweep of every primary weapon, and the comparison with a dedicated `codol_dedrun` run.
 
 
