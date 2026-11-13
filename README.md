@@ -447,19 +447,24 @@ strings a key resolves to. It is chosen at startup and can be changed while the 
   C1 execs that file before the DLL's dvars exist and applies no `+set` to a dvar it does not know, so the DLL reads
   both itself, before the game starts: the command line, and that line of the (plaintext) config file.
 - **While the game runs**: `k33_language` (set it from a menu with `setdvar`, or `k33_setlanguage <name>` in the
-  console) changes the language at once, in menus and in a match; `k33_languageList` (`en;zh`) names what is installed,
-  `k33_languageSerial` counts completed changes (a movie re-creates its text when it changes) and `k33_languageState`
-  is 2 when the change can only apply after a restart (a C1 site did not match, or the language's zone is not one
-  `codol_<name>_locale.ff`). Fonts do not change until restart.
-- What the startup language decides: `client_shipRetail\patch\codol_english*.ff` load ahead of code_pre_gfx with `en`,
-  `codol_chinese*.ff` with `zh` (since the consolidation one zone each, codol_english_locale and codol_chinese_locale;
-  the table below names the source zones they are built from); every other patch zone loads either way. The other
-  languages' locale zones load too, after code_post_gfx, where C1 discards nearly all of their strings as duplicates
-  and Kernel33 keeps them for a language change (`src/locale_switch.c`): they cost no localize asset. (C1's localize
-  pool holds 24000 entries here, `PatchLocalizePool`; the limit that matters is C1's 59,999 asset entries of all
-  types, of which an English client uses 47,530 in a small match, which is why the second language's strings are not
-  C1 assets.) The DLL has no other language-dependent code: GBK text input, fonts, voice, controller, usermaps and
-  the frame cap are the same.
+  console) changes the language, in menus and in a match: the shown language's `codol_<name>_locale` zone is unloaded
+  (its strings, asset entries, localize slots and zone memory are freed) and the chosen one's is loaded, with C1's own
+  zone loader, in about 20-200 ms. `k33_languageList` (`en;zh`) names what is installed, `k33_languageState` is 1 while
+  the switch runs (one or a few frames), back to 0 when it is done, and 2 when it can only apply after a restart;
+  `k33_languageSerial` counts completed switches (a movie re-creates its text when it changes). A switch is refused
+  (state 2) when a C1 site did not match, when the language zone is not the top block of its memory stack, or when
+  too few asset entries / localize slots are free; it never half-happens.
+- What the startup language decides: `client_shipRetail\patch\codol_<name>_locale.ff` of that language loads as the
+  last zone of the code_post_gfx list, the others' only when chosen (`src/locale_switch.c`; when a C1 site differs it
+  loads ahead of code_pre_gfx and the others are skipped, as before the switch existed). Its strings take the pool
+  slots of the names C1's own zones already hold, so a language costs no asset entry beyond the names only it has:
+  an English client uses the same 40,342 of C1's 59,999 asset entries at the front end as one without the switch, and 49,210-49,235 in a Killhouse
+  match against its 49,222 (measured, docs/LANGUAGE_SWITCH_20261112.md). The Latin font movie
+  (`codol_english_font`) is part of `codol_common` and loads in every language. The DLL has no other
+  language-dependent code: GBK text input, voice, controller, usermaps and the frame cap are the same.
+- Test builds (`K33_LOCAL_TESTING=1`): `k33_langstat [label]` logs entry, localize and memory-stack use;
+  `k33_langcycle <n>` switches n times; `k33_langforce` lets the next switch unload a zone that is not the top of its
+  stack (measurement only: it corrupts the stack and ends the client, see the doc).
 
 | zone | loads with | what |
 |---|---|---|
@@ -636,11 +641,11 @@ The source zones under `zone_source/` + `zones/` stay as they are (each with its
 
 | installed zone | list | languages | source zones (old installed names) |
 |---|---|---|---|
-| codol_common | ahead of code_pre_gfx | both | 000_codol_party_modes, codol_loading_mode_names, codol_zm_deathmachine_audio, controller_ingame, usermaps_patch (all but its strings) |
+| codol_common | ahead of code_pre_gfx | both | 000_codol_party_modes, codol_loading_mode_names, codol_zm_deathmachine_audio, controller_ingame, codol_english_font (the Latin font movie, every language), usermaps_patch (all but its strings) |
 | codol_common_ui_mp | ahead of the UI zones | both | voice_ui_mp, usermaps_ui_mp |
 | codol_common_postgfx_mp | after code_post_gfx | both | codol_field_orders_postgfx_mp, controller_glyphs_postgfx_mp, hud_styles_postgfx_mp, survival_hud_postgfx_mp |
-| codol_english_locale | ahead of code_pre_gfx (after code_post_gfx when another language starts) | `k33_language en` | codol_english, codol_english_font, codol_english_ui, codol_english_ui_extra, codol_english_usermaps, codol_english_zombies_base, codol_english_hud_styles |
-| codol_chinese_locale | ahead of code_pre_gfx (after code_post_gfx when another language starts) | `k33_language zh` (and no valid language) | codol_chinese_ui, codol_chinese_ui_extra, usermaps_patch's GBK strings, codol_chinese_hud_styles |
+| codol_english_locale | last of the code_post_gfx list (ahead of code_pre_gfx when a C1 site differs); unloaded and loaded on a switch | `k33_language en` | codol_english, codol_english_ui, codol_english_ui_extra, codol_english_usermaps, codol_english_zombies_base, codol_english_hud_styles |
+| codol_chinese_locale | as codol_english_locale | `k33_language zh` (and no valid language) | codol_chinese_ui, codol_chinese_ui_extra, usermaps_patch's GBK strings, codol_chinese_hud_styles |
 | codol_infected_cyborg_postgfx_mp | after code_post_gfx | both | itself: C#-written, its assets point into its own runtime blocks, so they cannot move into another zone |
 | mp_codol_weapons | ahead of code_pre_gfx | both | itself (stringtables only): the MP weapon tables, whole -- an `mp_*` name, so the sh1x server mounts it too |
 | mp_codol_weapons_postgfx_mp | after code_post_gfx | both | itself: the MP weapon art (C#-written), `mp_*` for the server as well |

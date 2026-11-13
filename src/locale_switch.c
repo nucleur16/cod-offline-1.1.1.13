@@ -261,13 +261,13 @@ __asm__(
  * and keep that), so for the language zone, and only when LrUnloadZone asked, createDefault is 0: its entries and
  * slots are freed at once (0x4CDAD1), which is what the request is. */
 static const char *LrZoneName(unsigned zone);
-/* Test builds log every unload C1 does: which zone, with createDefault or not, from which thread. */
+/* Test builds log the language zone's unload (C1's own unloads pass through untouched and unlogged). */
 __attribute__((used)) void __cdecl LrUnloadSeen(unsigned zone, unsigned createDefault, DWORD caller)
 {
 #if CODOL_LOCAL_TESTING
-    Log("language: C1 unloads zone %u \"%s\" (createDefault %u%s, thread %lu, return 0x%08lX)", zone,
-        zone < LS_ZONE_MAX ? LrZoneName(zone) : "?", createDefault & 0xFF,
-        (LONG)zone == g_lrUnloadZone ? " -> 0: the language zone" : "", GetCurrentThreadId(), caller);
+    if ((LONG)zone == g_lrUnloadZone)
+        Log("language: zone %u \"%s\" unloads with createDefault %u -> 0 (thread %lu, from 0x%08lX)", zone,
+            zone < LS_ZONE_MAX ? LrZoneName(zone) : "?", createDefault & 0xFF, GetCurrentThreadId(), caller);
 #else
     (void)zone; (void)createDefault; (void)caller;
 #endif
@@ -541,7 +541,7 @@ static void __cdecl LrMapLoadHook(XZoneInfo *info, unsigned count, int sync)
     ((LoadXAssetsFn)(DWORD_PTR)DB_LOAD_XASSETS_VA)(all, count + 1, sync);
 }
 
-static const char *LrGateText(enum LrGateAnswer a)
+__attribute__((unused)) static const char *LrGateText(enum LrGateAnswer a)
 {
     switch (a) {
     case LR_GATE_NO_HOOKS: return "no live switch in this client";
@@ -645,25 +645,6 @@ static void LrSwitchTick(void)
 /* Main thread, every frame: a changed k33_language is a request. */
 static void LocaleSwitchTick(void)
 {
-#if CODOL_LOCAL_TESTING
-    {   /* test builds: the zone table whenever it changed (which alloc flags C1 uses, and when) */
-        static DWORD seen;
-        DWORD sig = LrZoneSignature();
-        if (sig != seen) {
-            char line[1600];
-            unsigned n = 0, count = *(volatile unsigned *)(DWORD_PTR)LS_ZONE_COUNT_VA;
-            const BYTE *order = (const BYTE *)(DWORD_PTR)LS_ZONE_ORDER_VA;
-            seen = sig;
-            line[0] = 0;
-            for (unsigned i = 0; i < count && i < LS_ZONE_MAX && n < sizeof(line) - 90; i++)
-                n += _snprintf(line + n, sizeof(line) - n, " %u:%s/%lX/%lu", order[i], LrZoneName(order[i]),
-                               *(const DWORD *)(DWORD_PTR)(LS_ZONES_VA + order[i] * LS_ZONE_SIZE + 0x4C),
-                               *(const DWORD *)(DWORD_PTR)(LS_ZONES_VA + order[i] * LS_ZONE_SIZE + 0x50));
-            Log("language: zones (slot:name/flags/stack), idle %d, loaded flags 0x%lX:%s", LrDbIdle(),
-                *(volatile DWORD *)(DWORD_PTR)LR_LOADED_FLAGS_VA, line);
-        }
-    }
-#endif
     if (!g_lsDvarsDone) {
         if (C1DvarsReady()) LsRegisterDvars();
         return;

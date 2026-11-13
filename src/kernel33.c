@@ -658,7 +658,7 @@ static BOOL PatchDirEnabled(void)
 /* English (launch option k33_english). Both languages use the same UI movies (voice_ui_mp, controller_ingame: every
  * text in them is a localize key); the language is which string zones load. English is the patch zones named
  * codol_english* (build_zones.py: codol_english = localized strings, codol_english_font = the Latin glyphs of
- * fonts_ingame.gfx, codol_english_ui / codol_english_ui_extra = the UI movies' K33UI_* keys, codol_english_zombies_base
+ * fonts_ingame.gfx (packed into codol_common since the language can change), codol_english_ui / codol_english_ui_extra = the UI movies' K33UI_* keys, codol_english_zombies_base
  * = zombies strings, codol_english_usermaps = the usermaps' names); they load ahead of code_pre_gfx, so their strings
  * win over the stock Chinese ones. Chinese is C1's own strings plus the zones named codol_chinese* (the UI movies'
  * K33UI_* keys in Chinese). Only one set loads: C1 holds at most 12000 localize assets, and a name loaded by both sets
@@ -670,12 +670,13 @@ static BOOL PatchDirEnabled(void)
  * (patch_locale_policy.h CodolStartupLanguage). C1 execs config_mp.cfg before any of this and applies no +set to a
  * dvar it does not know, so both are read here, from the command line and from the plaintext config file itself
  * (PatchPlainConfig); k33_language becomes a real, archived dvar later (locale_switch.c), which is what writes the
- * saved line. The startup language's zones load ahead of code_pre_gfx as before. Every other language's
- * codol_<name>_locale zone is queued after the code_post_gfx zones instead of being skipped (at most
- * LANG_RESIDENT_MAX of them, and only when locale_switch.c's C1 sites all match): there its strings are duplicates
- * of names C1 already holds, the linker discards them and locale_switch.c keeps them, which is what makes a
- * language change possible without a restart. Nothing else in the DLL depends on the language (GBK text input,
- * fonts, voice, controller work the same in all). The pure check lists client_shipRetail\<language>\ and main\
+ * saved line. When every C1 site locale_switch.c uses matches, a language's one codol_<name>_locale zone is that
+ * file's to load and unload: the startup language's loads as the last zone of the code_post_gfx list (its strings go
+ * into the slots of the names C1 already holds, locale_switch.c LrLink), another language's is not queued at all and
+ * loads only when it is chosen, after the shown one was unloaded. Otherwise (a site differs, or only old-style
+ * codol_english_* zones are installed) the startup language's zones load ahead of code_pre_gfx as before and the
+ * others are skipped. The Latin font movie is in codol_common (every language). Nothing else in the DLL depends on
+ * the language (GBK text input, voice, controller work the same in all). The pure check lists client_shipRetail\<language>\ and main\
  * only, never patch\, so every state passes it. */
 static BOOL g_english = TRUE;
 static int g_englishZones, g_englishSkipped, g_chineseZones;
