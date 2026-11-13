@@ -1,0 +1,1610 @@
+{
+ "c1_ownerdraws": [
+  5,
+  61,
+  71,
+  72,
+  80,
+  81,
+  83,
+  97,
+  103,
+  104,
+  112,
+  113,
+  120,
+  145,
+  150,
+  152,
+  155,
+  156,
+  158,
+  159,
+  160,
+  161,
+  165,
+  168,
+  175,
+  176,
+  179,
+  180,
+  181,
+  183,
+  184,
+  186,
+  187,
+  188,
+  190,
+  191,
+  193,
+  194,
+  195,
+  196,
+  199,
+  266,
+  279,
+  280,
+  283,
+  284,
+  288,
+  289,
+  293,
+  294
+ ],
+ "c1_calls": [
+  [
+   "debugprint",
+   "Splash"
+  ],
+  [
+   "dvarbool(static)",
+   "camera_thirdPerson"
+  ],
+  [
+   "dvarbool(static)",
+   "cg_miniMapHide"
+  ],
+  [
+   "dvarbool(static)",
+   "cg_thirdPersonSpectator"
+  ],
+  [
+   "dvarbool(static)",
+   "cg_topPlayersCards"
+  ],
+  [
+   "dvarbool(static)",
+   "cg_weaponBarHide"
+  ],
+  [
+   "dvarbool(static)",
+   "cl_ingame"
+  ],
+  [
+   "dvarbool(static)",
+   "credits_active"
+  ],
+  [
+   "dvarbool(static)",
+   "g_hardcore"
+  ],
+  [
+   "dvarbool(static)",
+   "onlinegame"
+  ],
+  [
+   "dvarbool(static)",
+   "onlineunrankedgameandhost"
+  ],
+  [
+   "dvarbool(static)",
+   "scr_game_spectatetype"
+  ],
+  [
+   "dvarbool(static)",
+   "scr_gameended"
+  ],
+  [
+   "dvarbool(static)",
+   "so_survival"
+  ],
+  [
+   "dvarbool(static)",
+   "solo_play"
+  ],
+  [
+   "dvarbool(static)",
+   "splitscreen"
+  ],
+  [
+   "dvarbool(static)",
+   "surHUD_show_armory"
+  ],
+  [
+   "dvarbool(static)",
+   "surHUD_show_challenge"
+  ],
+  [
+   "dvarbool(static)",
+   "surHUD_show_credits"
+  ],
+  [
+   "dvarbool(static)",
+   "surHUD_show_enemy"
+  ],
+  [
+   "dvarbool(static)",
+   "surHUD_show_performance"
+  ],
+  [
+   "dvarbool(static)",
+   "surHUD_show_unlock"
+  ],
+  [
+   "dvarbool(static)",
+   "surHUD_show_wave"
+  ],
+  [
+   "dvarbool(static)",
+   "sv_running"
+  ],
+  [
+   "dvarbool(static)",
+   "ui_allow_teamchange"
+  ],
+  [
+   "dvarbool(static)",
+   "ui_eog_objective_vis"
+  ],
+  [
+   "dvarbool(static)",
+   "ui_eog_teamheading_vis"
+  ],
+  [
+   "dvarbool(static)",
+   "ui_hide_playercards"
+  ],
+  [
+   "dvarbool(static)",
+   "ui_multiplayer"
+  ],
+  [
+   "dvarbool(static)",
+   "ui_promotion"
+  ],
+  [
+   "dvarbool(static)",
+   "ui_splash_bonus_title_vis"
+  ],
+  [
+   "dvarbool(static)",
+   "ui_unlockallloadout"
+  ],
+  [
+   "dvarbool(static)",
+   "xblive_privatematch"
+  ],
+  [
+   "dvarfloat(static)",
+   "surHUD_challenge_progress0"
+  ],
+  [
+   "dvarfloat(static)",
+   "surHUD_challenge_progress1"
+  ],
+  [
+   "dvarfloat(static)",
+   "ui_nuke_end_milliseconds"
+  ],
+  [
+   "dvarint",
+   "surHUD_performance_"
+  ],
+  [
+   "dvarint",
+   "surHUD_performance_credit_"
+  ],
+  [
+   "dvarint",
+   "surHUD_performance_p2_"
+  ],
+  [
+   "dvarint",
+   "surHUD_unlock_hint_0"
+  ],
+  [
+   "dvarint",
+   "surHUD_unlock_hint_1"
+  ],
+  [
+   "dvarint",
+   "surHUD_unlock_hint_2"
+  ],
+  [
+   "dvarint",
+   "surHUD_unlock_hint_armory"
+  ],
+  [
+   "dvarint(static)",
+   "fo_splash_ref"
+  ],
+  [
+   "dvarint(static)",
+   "g_compassShowEnemies"
+  ],
+  [
+   "dvarint(static)",
+   "g_ui_no_hud_winlose"
+  ],
+  [
+   "dvarint(static)",
+   "intel_splash_ref"
+  ],
+  [
+   "dvarint(static)",
+   "player_current_floor"
+  ],
+  [
+   "dvarint(static)",
+   "scr_gameended"
+  ],
+  [
+   "dvarint(static)",
+   "so_survival"
+  ],
+  [
+   "dvarint(static)",
+   "specialops"
+  ],
+  [
+   "dvarint(static)",
+   "splitscreen"
+  ],
+  [
+   "dvarint(static)",
+   "surHUD_challenge_reward0"
+  ],
+  [
+   "dvarint(static)",
+   "surHUD_challenge_reward1"
+  ],
+  [
+   "dvarint(static)",
+   "surHUD_credits"
+  ],
+  [
+   "dvarint(static)",
+   "surHUD_credits_delta"
+  ],
+  [
+   "dvarint(static)",
+   "surHUD_enemy"
+  ],
+  [
+   "dvarint(static)",
+   "surHUD_performance_reward"
+  ],
+  [
+   "dvarint(static)",
+   "surHUD_wave"
+  ],
+  [
+   "dvarint(static)",
+   "sv_running"
+  ],
+  [
+   "dvarint(static)",
+   "ui_DMKillScore"
+  ],
+  [
+   "dvarint(static)",
+   "ui_ac130usetime"
+  ],
+  [
+   "dvarint(static)",
+   "ui_bomb_timer"
+  ],
+  [
+   "dvarint(static)",
+   "ui_bombtimer_a"
+  ],
+  [
+   "dvarint(static)",
+   "ui_bombtimer_b"
+  ],
+  [
+   "dvarint(static)",
+   "ui_bombtimer_c"
+  ],
+  [
+   "dvarint(static)",
+   "ui_eog_playercount"
+  ],
+  [
+   "dvarint(static)",
+   "ui_eog_victory"
+  ],
+  [
+   "dvarint(static)",
+   "ui_halftime"
+  ],
+  [
+   "dvarint(static)",
+   "ui_hasCinematic"
+  ],
+  [
+   "dvarint(static)",
+   "ui_hud_final_round"
+  ],
+  [
+   "dvarint(static)",
+   "ui_hud_round"
+  ],
+  [
+   "dvarint(static)",
+   "ui_hud_round_goal"
+  ],
+  [
+   "dvarint(static)",
+   "ui_hud_special_round"
+  ],
+  [
+   "dvarint(static)",
+   "ui_inhostmigration"
+  ],
+  [
+   "dvarint(static)",
+   "ui_multiplayer"
+  ],
+  [
+   "dvarint(static)",
+   "ui_nuke_timer"
+  ],
+  [
+   "dvarint(static)",
+   "ui_overtime"
+  ],
+  [
+   "dvarint(static)",
+   "ui_r_picmip_manual"
+  ],
+  [
+   "dvarint(static)",
+   "ui_scorelimit"
+  ],
+  [
+   "dvarint(static)",
+   "ui_timelimit"
+  ],
+  [
+   "dvarstring(static)",
+   "fo_table"
+  ],
+  [
+   "dvarstring(static)",
+   "g_gametype"
+  ],
+  [
+   "dvarstring(static)",
+   "gameMode"
+  ],
+  [
+   "dvarstring(static)",
+   "perk_splash_ref"
+  ],
+  [
+   "dvarstring(static)",
+   "quick_msg_cur_menu"
+  ],
+  [
+   "dvarstring(static)",
+   "surHUD_challenge_label0"
+  ],
+  [
+   "dvarstring(static)",
+   "surHUD_challenge_label1"
+  ],
+  [
+   "dvarstring(static)",
+   "surHUD_unlock_hint_armory"
+  ],
+  [
+   "dvarstring(static)",
+   "ui_cdkeyvalid"
+  ],
+  [
+   "dvarstring(static)",
+   "ui_challenge_1_ref"
+  ],
+  [
+   "dvarstring(static)",
+   "ui_challenge_2_ref"
+  ],
+  [
+   "dvarstring(static)",
+   "ui_challenge_3_ref"
+  ],
+  [
+   "dvarstring(static)",
+   "ui_challenge_4_ref"
+  ],
+  [
+   "dvarstring(static)",
+   "ui_challenge_5_ref"
+  ],
+  [
+   "dvarstring(static)",
+   "ui_challenge_6_ref"
+  ],
+  [
+   "dvarstring(static)",
+   "ui_challenge_7_ref"
+  ],
+  [
+   "dvarstring(static)",
+   "ui_danger_team"
+  ],
+  [
+   "dvarstring(static)",
+   "ui_deadquote"
+  ],
+  [
+   "dvarstring(static)",
+   "ui_eog_objective_title"
+  ],
+  [
+   "dvarstring(static)",
+   "ui_hide_pausemenu_minimap"
+  ],
+  [
+   "dvarstring(static)",
+   "ui_splash_bonus_title"
+  ],
+  [
+   "dvarstring(static)",
+   "ui_text_endreason"
+  ],
+  [
+   "dvarstring(static)",
+   "zm_eog_msg"
+  ],
+  [
+   "dvarstring(static)",
+   "zm_eog_title"
+  ],
+  [
+   "dvarsubbool",
+   "ui_eog_ch0"
+  ],
+  [
+   "dvarsubbool",
+   "ui_eog_ch1"
+  ],
+  [
+   "dvarsubbool",
+   "ui_eog_ch2"
+  ],
+  [
+   "dvarsubfloat",
+   "ui_eog_ch0"
+  ],
+  [
+   "dvarsubfloat",
+   "ui_eog_ch1"
+  ],
+  [
+   "dvarsubfloat",
+   "ui_eog_ch2"
+  ],
+  [
+   "dvarsubfloat",
+   "ui_eog_r8"
+  ],
+  [
+   "dvarsubfloat",
+   "ui_eog_xp"
+  ],
+  [
+   "dvarsubint",
+   "ui_eog_ch0"
+  ],
+  [
+   "dvarsubint",
+   "ui_eog_ch1"
+  ],
+  [
+   "dvarsubint",
+   "ui_eog_ch2"
+  ],
+  [
+   "dvarsubint",
+   "ui_eog_r1"
+  ],
+  [
+   "dvarsubint",
+   "ui_eog_r2"
+  ],
+  [
+   "dvarsubint",
+   "ui_eog_r3"
+  ],
+  [
+   "dvarsubint",
+   "ui_eog_r4"
+  ],
+  [
+   "dvarsubint",
+   "ui_eog_r5"
+  ],
+  [
+   "dvarsubint",
+   "ui_eog_r6"
+  ],
+  [
+   "dvarsubint",
+   "ui_eog_r7"
+  ],
+  [
+   "dvarsubint",
+   "ui_eog_r8"
+  ],
+  [
+   "dvarsubint",
+   "ui_eog_r9"
+  ],
+  [
+   "dvarsubint",
+   "ui_eog_xp"
+  ],
+  [
+   "dvarsubstring",
+   "ui_eog_ch0"
+  ],
+  [
+   "dvarsubstring",
+   "ui_eog_ch1"
+  ],
+  [
+   "dvarsubstring",
+   "ui_eog_ch2"
+  ],
+  [
+   "dvarsubstring",
+   "ui_eog_r1"
+  ],
+  [
+   "dvarsubstring",
+   "ui_eog_r2"
+  ],
+  [
+   "dvarsubstring",
+   "ui_eog_r3"
+  ],
+  [
+   "dvarsubstring",
+   "ui_eog_r4"
+  ],
+  [
+   "dvarsubstring",
+   "ui_eog_r5"
+  ],
+  [
+   "dvarsubstring",
+   "ui_eog_r6"
+  ],
+  [
+   "dvarsubstring",
+   "ui_eog_r7"
+  ],
+  [
+   "dvarsubstring",
+   "ui_eog_r8"
+  ],
+  [
+   "dvarsubstring",
+   "ui_eog_r9"
+  ],
+  [
+   "getperk",
+   "equipment"
+  ],
+  [
+   "getperk",
+   "perk1"
+  ],
+  [
+   "getperk",
+   "perk2"
+  ],
+  [
+   "getperk",
+   "perk3"
+  ],
+  [
+   "getperk",
+   "perk4"
+  ],
+  [
+   "getperk",
+   "upgrade1"
+  ],
+  [
+   "getperk",
+   "upgrade2"
+  ],
+  [
+   "getperk",
+   "upgrade3"
+  ],
+  [
+   "getplayerdata",
+   "customClasses"
+  ],
+  [
+   "getplayerdata",
+   "inventory"
+  ],
+  [
+   "getplayerdata",
+   "prestige"
+  ],
+  [
+   "getplayerdata",
+   "weaponClasses"
+  ],
+  [
+   "getplayerdata",
+   "weapons"
+  ],
+  [
+   "getprofiledata",
+   "subtitles"
+  ],
+  [
+   "hudfade",
+   "dpad"
+  ],
+  [
+   "hudfade",
+   "weapon"
+  ],
+  [
+   "isitemunlocked",
+   "demolitions"
+  ],
+  [
+   "isitemunlocked",
+   "sniper"
+  ],
+  [
+   "keybinding",
+   "+actionslot 1"
+  ],
+  [
+   "keybinding",
+   "+actionslot 2"
+  ],
+  [
+   "keybinding",
+   "+actionslot 3"
+  ],
+  [
+   "keybinding",
+   "+actionslot 4"
+  ],
+  [
+   "keybinding",
+   "+actionslot 5"
+  ],
+  [
+   "keybinding",
+   "+frag"
+  ],
+  [
+   "keybinding",
+   "+smoke"
+  ],
+  [
+   "keybinding",
+   "+tact"
+  ],
+  [
+   "keybinding",
+   "weapalt"
+  ],
+  [
+   "localvarbool",
+   "ishost"
+  ],
+  [
+   "localvarbool",
+   "ui_brightness_hint_display"
+  ],
+  [
+   "localvarbool",
+   "ui_hideBack"
+  ],
+  [
+   "localvarbool",
+   "ui_showApply"
+  ],
+  [
+   "localvarbool",
+   "ui_showAudioApply"
+  ],
+  [
+   "localvarbool",
+   "ui_showPicApply"
+  ],
+  [
+   "localvarint",
+   "challenge_update_time"
+  ],
+  [
+   "localvarint",
+   "classIndex"
+  ],
+  [
+   "localvarint",
+   "dirt_update_time"
+  ],
+  [
+   "localvarint",
+   "surHUD_armory_unlock_animate"
+  ],
+  [
+   "localvarint",
+   "surHUD_ch_animate"
+  ],
+  [
+   "localvarint",
+   "surHUD_credits_animate"
+  ],
+  [
+   "localvarint",
+   "surHUD_performance_animate"
+  ],
+  [
+   "localvarint",
+   "surHUD_unlock_animate"
+  ],
+  [
+   "localvarint",
+   "timer_mark"
+  ],
+  [
+   "localvarint",
+   "ui_ac130timer"
+  ],
+  [
+   "localvarint",
+   "ui_fo_complete_time"
+  ],
+  [
+   "localvarint",
+   "ui_highlight"
+  ],
+  [
+   "localvarint",
+   "ui_showApply"
+  ],
+  [
+   "localvarint",
+   "ui_showAudioApply"
+  ],
+  [
+   "localvarint",
+   "ui_showPicApply"
+  ],
+  [
+   "localvarint",
+   "ui_show_cancel"
+  ],
+  [
+   "localvarint",
+   "ui_show_fo"
+  ],
+  [
+   "localvarint",
+   "ui_show_killedBy"
+  ],
+  [
+   "localvarint",
+   "ui_show_perks"
+  ],
+  [
+   "localvarint",
+   "ui_show_youKilled"
+  ],
+  [
+   "localvarstring",
+   "chLevelToUnlock"
+  ],
+  [
+   "localvarstring",
+   "classTable"
+  ],
+  [
+   "localvarstring",
+   "loadoutClassName"
+  ],
+  [
+   "localvarstring",
+   "loadoutLethal"
+  ],
+  [
+   "localvarstring",
+   "loadoutPerk1"
+  ],
+  [
+   "localvarstring",
+   "loadoutPerk2"
+  ],
+  [
+   "localvarstring",
+   "loadoutPerk3"
+  ],
+  [
+   "localvarstring",
+   "loadoutPrimary"
+  ],
+  [
+   "localvarstring",
+   "loadoutPrimaryAttachment2"
+  ],
+  [
+   "localvarstring",
+   "loadoutSecondary"
+  ],
+  [
+   "localvarstring",
+   "loadoutSecondaryAttachment2"
+  ],
+  [
+   "localvarstring",
+   "loadoutSpecial"
+  ],
+  [
+   "localvarstring",
+   "loadoutTactical"
+  ],
+  [
+   "localvarstring",
+   "specialtyRef"
+  ],
+  [
+   "localvarstring",
+   "specialtyUpgradeRef"
+  ],
+  [
+   "localvarstring",
+   "splashRef"
+  ],
+  [
+   "localvarstring",
+   "tempName"
+  ],
+  [
+   "localvarstring",
+   "ui_choicegroup"
+  ],
+  [
+   "localvarstring",
+   "ui_defcon_splashMaterial"
+  ],
+  [
+   "localvarstring",
+   "ui_ksHint"
+  ],
+  [
+   "localvarstring",
+   "ui_team"
+  ],
+  [
+   "locstring",
+   "@"
+  ],
+  [
+   "locstring",
+   "@FO_COMPLETE"
+  ],
+  [
+   "locstring",
+   "@MENU_UPLOADING_STATS"
+  ],
+  [
+   "locstring",
+   "@MPUI_ACCOLADES"
+  ],
+  [
+   "locstring",
+   "@MPUI_ASSISTS"
+  ],
+  [
+   "locstring",
+   "@MPUI_CHALLENGES"
+  ],
+  [
+   "locstring",
+   "@MPUI_CHALLENGES_UNLOCK"
+  ],
+  [
+   "locstring",
+   "@MPUI_FINAL_ROUND"
+  ],
+  [
+   "locstring",
+   "@MPUI_GP_NO_COLON"
+  ],
+  [
+   "locstring",
+   "@MPUI_KILLS"
+  ],
+  [
+   "locstring",
+   "@MPUI_KILLSTREAKS"
+  ],
+  [
+   "locstring",
+   "@MPUI_MATCHBONUS"
+  ],
+  [
+   "locstring",
+   "@MPUI_RECORD"
+  ],
+  [
+   "locstring",
+   "@MPUI_ROUND_X"
+  ],
+  [
+   "locstring",
+   "@MPUI_ROUND_XY"
+  ],
+  [
+   "locstring",
+   "@MPUI_SPECIAL_ROUND"
+  ],
+  [
+   "locstring",
+   "@MPUI_TOTAL_EARNED_PRE"
+  ],
+  [
+   "locstring",
+   "@MPUI_XP_NO_COLON"
+  ],
+  [
+   "locstring",
+   "@MPUI_XP_SCALE"
+  ],
+  [
+   "locstring",
+   "@MPUI_X_SLASH_Y"
+  ],
+  [
+   "locstring",
+   "@MPUI_X_SLASH_Y_XP"
+  ],
+  [
+   "locstring",
+   "@MP_BOMB_A_COLON_N_N"
+  ],
+  [
+   "locstring",
+   "@MP_BOMB_B_COLON_N_N"
+  ],
+  [
+   "locstring",
+   "@MP_BOMB_COLON_N_N"
+  ],
+  [
+   "locstring",
+   "@MP_DEFEAT"
+  ],
+  [
+   "locstring",
+   "@MP_ESC_BACK_TO_LOBBY"
+  ],
+  [
+   "locstring",
+   "@MP_TIE"
+  ],
+  [
+   "locstring",
+   "@MP_VICTORY"
+  ],
+  [
+   "locstring",
+   "@SO_SURVIVAL_CREDITS"
+  ],
+  [
+   "locstring",
+   "@SO_SURVIVAL_CREDITS_MINUS"
+  ],
+  [
+   "locstring",
+   "@SO_SURVIVAL_CREDITS_PLUS"
+  ],
+  [
+   "locstring",
+   "@SO_SURVIVAL_ENEMIES_LEFT"
+  ],
+  [
+   "locstring",
+   "@SO_SURVIVAL_ENEMY_LEFT"
+  ],
+  [
+   "locstring",
+   "@SO_SURVIVAL_PERFORMANCE_ACCURACY"
+  ],
+  [
+   "locstring",
+   "@SO_SURVIVAL_PERFORMANCE_CREDIT_MINUS"
+  ],
+  [
+   "locstring",
+   "@SO_SURVIVAL_PERFORMANCE_CREDIT_PLUS"
+  ],
+  [
+   "locstring",
+   "@SO_SURVIVAL_PERFORMANCE_DAMAGETAKEN"
+  ],
+  [
+   "locstring",
+   "@SO_SURVIVAL_PERFORMANCE_HEADSHOT"
+  ],
+  [
+   "locstring",
+   "@SO_SURVIVAL_PERFORMANCE_KILLS"
+  ],
+  [
+   "locstring",
+   "@SO_SURVIVAL_PERFORMANCE_PERCENT"
+  ],
+  [
+   "locstring",
+   "@SO_SURVIVAL_PERFORMANCE_POINT"
+  ],
+  [
+   "locstring",
+   "@SO_SURVIVAL_PERFORMANCE_REWARD"
+  ],
+  [
+   "locstring",
+   "@SO_SURVIVAL_PERFORMANCE_TIME"
+  ],
+  [
+   "locstring",
+   "@SO_SURVIVAL_PERFORMANCE_WAVEBONUS"
+  ],
+  [
+   "locstring",
+   "@SO_SURVIVAL_WAVE_TIME"
+  ],
+  [
+   "marinesfield",
+   "score"
+  ],
+  [
+   "menuisopen",
+   "pc_options_Audio"
+  ],
+  [
+   "menuisopen",
+   "pc_options_advanced_video"
+  ],
+  [
+   "menuisopen",
+   "pc_options_controls"
+  ],
+  [
+   "menuisopen",
+   "pc_options_video"
+  ],
+  [
+   "menuisopen",
+   "pc_options_voice"
+  ],
+  [
+   "menuisopen",
+   "scoreboard"
+  ],
+  [
+   "opforfield",
+   "score"
+  ],
+  [
+   "otherteam",
+   "score"
+  ],
+  [
+   "player",
+   "clipammo"
+  ],
+  [
+   "player",
+   "fragAmmo"
+  ],
+  [
+   "player",
+   "killstreak"
+  ],
+  [
+   "player",
+   "killstreakID0"
+  ],
+  [
+   "player",
+   "killstreakID1"
+  ],
+  [
+   "player",
+   "killstreakID2"
+  ],
+  [
+   "player",
+   "killstreakID3"
+  ],
+  [
+   "player",
+   "killstreakID4"
+  ],
+  [
+   "player",
+   "killstreakTarget"
+  ],
+  [
+   "player",
+   "killstreakTarget1"
+  ],
+  [
+   "player",
+   "killstreakTarget2"
+  ],
+  [
+   "player",
+   "killstreakTarget3"
+  ],
+  [
+   "player",
+   "killstreakTarget4"
+  ],
+  [
+   "player",
+   "score"
+  ],
+  [
+   "player",
+   "smokeAmmo"
+  ],
+  [
+   "player",
+   "tactAmmo"
+  ],
+  [
+   "tablelookup",
+   "mp/allChallengesTable.csv"
+  ],
+  [
+   "tablelookup",
+   "mp/classTable.csv"
+  ],
+  [
+   "tablelookup",
+   "mp/coEquipmentStatsTable.csv"
+  ],
+  [
+   "tablelookup",
+   "mp/coKillstreakStatsTable.csv"
+  ],
+  [
+   "tablelookup",
+   "mp/coMarketplaceItems.csv"
+  ],
+  [
+   "tablelookup",
+   "mp/coPerkStatsTable.csv"
+  ],
+  [
+   "tablelookup",
+   "mp/coWeapItemsWEA.csv"
+  ],
+  [
+   "tablelookup",
+   "mp/dailyChallengesTable.csv"
+  ],
+  [
+   "tablelookup",
+   "mp/quickMessagesTable.csv"
+  ],
+  [
+   "tablelookup",
+   "mp/rankIconTable.csv"
+  ],
+  [
+   "tablelookup",
+   "mp/rankTable.csv"
+  ],
+  [
+   "tablelookup",
+   "mp/ranktable.csv"
+  ],
+  [
+   "tablelookup",
+   "mp/weeklyChallengesTable.csv"
+  ],
+  [
+   "tablelookupbyrow",
+   "mp/callsignBackground.csv"
+  ],
+  [
+   "tablelookupbyrow",
+   "mp/callsignIcon.csv"
+  ],
+  [
+   "tablelookupbyrow",
+   "mp/callsignTitle.csv"
+  ],
+  [
+   "tablelookupbyrow",
+   "mp/coCollectibles.csv"
+  ],
+  [
+   "tablelookupbyrow",
+   "mp/splashTable.csv"
+  ],
+  [
+   "team",
+   "name"
+  ],
+  [
+   "team",
+   "score"
+  ],
+  [
+   "usingabilitymodifier",
+   "modBlastShield"
+  ]
+ ],
+ "c1_menu_keys": [
+  "AC130_HUD_BOTTOM_BLOCK",
+  "AC130_HUD_LEFT_BLOCK",
+  "AC130_HUD_RIGHT_BLOCK",
+  "AC130_HUD_TOP_BAR",
+  "AC130_HUD_WEAPON_105MM",
+  "AC130_HUD_WEAPON_25MM",
+  "AC130_HUD_WEAPON_40MM",
+  "AC130_RELOADING",
+  "CGAME_FOLLOWING",
+  "FO_COMPLETE",
+  "MENU_CONTESTED",
+  "MENU_SAB_DANGER",
+  "MENU_SAB_NEUTRAL",
+  "MENU_SAB_SAFE",
+  "MPUI_FINAL_ROUND",
+  "MPUI_FIRST_HALF",
+  "MPUI_LOSING_CAPS",
+  "MPUI_ROUND_X",
+  "MPUI_ROUND_XY",
+  "MPUI_SECOND_HALF",
+  "MPUI_SPECIAL_ROUND",
+  "MPUI_SPECTATOR",
+  "MPUI_TIED_CAPS",
+  "MPUI_WINNING_CAPS",
+  "MP_1ST",
+  "MP_2ND",
+  "MP_3RD",
+  "MP_BOMB_A_COLON_N_N",
+  "MP_BOMB_B_COLON_N_N",
+  "MP_BOMB_COLON_N_N",
+  "MP_FINAL_KILLCAM",
+  "MP_KILLCAM",
+  "MP_KILLED_BY",
+  "MP_OVERTIME",
+  "MP_ROUND_KILLCAM",
+  "MP_TOO_CLOSE_NOFIRE",
+  "MP_TOO_CLOSE_NOLOCK",
+  "PLATFORM_PREDATOR_MISSILE_AIM",
+  "PLATFORM_PREDATOR_MISSILE_BOOST",
+  "PLATFORM_PRESS_BUTTON_TO_CONFIRM_TARGET",
+  "PLATFORM_UI_AC130_CHANGE_WEAPON",
+  "PLATFORM_UI_AC130_TOGGLE_THERMAL",
+  "PLATFORM_USE_BUTTONLOOK_TO_AIM",
+  "SO_SURVIVAL_CREDITS",
+  "SO_SURVIVAL_CREDITS_MINUS",
+  "SO_SURVIVAL_CREDITS_PLUS",
+  "SO_SURVIVAL_ENEMIES_LEFT",
+  "SO_SURVIVAL_ENEMY_LEFT",
+  "SO_SURVIVAL_PERFORMANCE_ACCURACY",
+  "SO_SURVIVAL_PERFORMANCE_CREDIT_MINUS",
+  "SO_SURVIVAL_PERFORMANCE_CREDIT_PLUS",
+  "SO_SURVIVAL_PERFORMANCE_DAMAGETAKEN",
+  "SO_SURVIVAL_PERFORMANCE_HEADSHOT",
+  "SO_SURVIVAL_PERFORMANCE_KILLS",
+  "SO_SURVIVAL_PERFORMANCE_PERCENT",
+  "SO_SURVIVAL_PERFORMANCE_POINT",
+  "SO_SURVIVAL_PERFORMANCE_REWARD",
+  "SO_SURVIVAL_PERFORMANCE_TIME",
+  "SO_SURVIVAL_PERFORMANCE_WAVEBONUS",
+  "SO_SURVIVAL_WAVE_PERFORMANCE",
+  "SO_SURVIVAL_WAVE_TIME",
+  "SPECIAL_OPS_NEW_MISSION_UNLOCK",
+  "SPECIAL_OPS_NEW_SURVIVAL_UNLOCK",
+  "SPECIAL_OPS_PERFORMANCE_PARTNER",
+  "SPECIAL_OPS_PERFORMANCE_YOU"
+ ],
+ "c1_localize": {
+  "MENU_CONTESTED": false,
+  "MENU_SAB_DANGER": false,
+  "MENU_SAB_NEUTRAL": false,
+  "MENU_SAB_SAFE": false,
+  "MPUI_COMBAT_TRAINING": true,
+  "MPUI_DIE_CAPS": false,
+  "MPUI_KILL_CAPS": false,
+  "MPUI_LOSING_CAPS": true,
+  "MPUI_SCORE_CAPS": false,
+  "MPUI_TIED_CAPS": true,
+  "MPUI_WINNING_CAPS": true,
+  "MP_BOMB_A_COLON_N_N": true,
+  "MP_BOMB_B_COLON_N_N": true,
+  "MP_BOMB_COLON_N_N": true
+ },
+ "localize": {
+  "MPUI_DIE_CAPS": {
+   "english": "D",
+   "chinese": "亡",
+   "from": "1.2.1.12"
+  },
+  "MPUI_KILL_CAPS": {
+   "english": "K",
+   "chinese": "杀",
+   "from": "1.2.1.12"
+  },
+  "MPUI_SCORE_CAPS": {
+   "english": "SCORE",
+   "chinese": "得分",
+   "from": "1.2.1.12"
+  }
+ },
+ "styles": {
+  "v12": {
+   "materials": {
+    "1kd_rate_bg": {
+     "action": "carry",
+     "asset": "k33hud12_1kd_rate_bg",
+     "why": "1.1.1.13 has no material of this name; image 1kd_rate_bg as k33hud12_1kd_rate_bg"
+    },
+    "1score_bar_bar1": {
+     "action": "carry",
+     "asset": "k33hud12_1score_bar_bar1",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar1 as k33hud12_1score_bar_bar1"
+    },
+    "1score_bar_bar1_bottom": {
+     "action": "carry",
+     "asset": "k33hud12_1score_bar_bar1_bottom",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar1_bottom as k33hud12_1score_bar_bar1_bottom"
+    },
+    "1score_bar_bar2": {
+     "action": "carry",
+     "asset": "k33hud12_1score_bar_bar2",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar2 as k33hud12_1score_bar_bar2"
+    },
+    "1score_bar_bar2_bottom": {
+     "action": "carry",
+     "asset": "k33hud12_1score_bar_bar2_bottom",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar2_bottom as k33hud12_1score_bar_bar2_bottom"
+    },
+    "1score_bar_bg": {
+     "action": "carry",
+     "asset": "k33hud12_1score_bar_bg",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bg as k33hud12_1score_bar_bg"
+    },
+    "ac130_overlay_grain": {
+     "action": "stock",
+     "why": "1.1.1.13 common_mp has it with the same image"
+    },
+    "compass_map_default": {
+     "action": "stock",
+     "why": "1.1.1.13 common_mp has it with the same image"
+    },
+    "compassping_player": {
+     "action": "carry",
+     "asset": "k33hud12_compassping_player",
+     "why": "1.1.1.13's compassping_player differs; image compassping_player as k33hud12_compassping_player"
+    },
+    "dpad_killstreak_nuke": {
+     "action": "stock",
+     "why": "no image of this name in 1.2.1.12 to compare; 1.1.1.13's own HUD menus draw a material of this name"
+    },
+    "hud_killstreak_bar_empty": {
+     "action": "carry",
+     "asset": "k33hud12_hud_killstreak_bar_empty",
+     "why": "1.1.1.13's hud_killstreak_bar_empty differs; image hud_killstreak_bar_empty as k33hud12_hud_killstreak_bar_empty"
+    },
+    "hud_killstreak_bar_full": {
+     "action": "carry",
+     "asset": "k33hud12_hud_killstreak_bar_full",
+     "why": "1.1.1.13's hud_killstreak_bar_full differs; image hud_killstreak_bar_full as k33hud12_hud_killstreak_bar_full"
+    },
+    "hud_suitcase_bomb": {
+     "action": "stock",
+     "why": "1.1.1.13 common_mp has it with the same image"
+    },
+    "minimap_scanlines": {
+     "action": "stock",
+     "why": "1.1.1.13 common_mp has it with the same image"
+    },
+    "objective_line": {
+     "action": "stock",
+     "why": "1.1.1.13 common_mp has it with the same image"
+    },
+    "scanlines_stencil": {
+     "action": "stock",
+     "why": "no image of this name in 1.2.1.12 to compare; 1.1.1.13's own HUD menus draw a material of this name"
+    },
+    "specialty_bg": {
+     "action": "carry",
+     "asset": "k33hud12_specialty_bg",
+     "why": "1.1.1.13 has no material of this name; image specialty_bg as k33hud12_specialty_bg"
+    },
+    "specialty_bg_disable": {
+     "action": "carry",
+     "asset": "k33hud12_specialty_bg_disable",
+     "why": "1.1.1.13 has no material of this name; image specialty_bg_disable as k33hud12_specialty_bg_disable"
+    },
+    "stencil_base": {
+     "action": "stock",
+     "why": "a reference in 1.2.1.12 too; 1.1.1.13 common_mp has it"
+    },
+    "stencil_fill": {
+     "action": "stock",
+     "why": "no image of this name in 1.2.1.12 to compare; 1.1.1.13's own HUD menus draw a material of this name"
+    },
+    "weaponbar_bg": {
+     "action": "carry",
+     "asset": "k33hud12_weaponbar_bg",
+     "why": "1.1.1.13 has no material of this name; image weaponbar_bg as k33hud12_weaponbar_bg"
+    },
+    "weaponbar_key_bg": {
+     "action": "carry",
+     "asset": "k33hud12_weaponbar_key_bg",
+     "why": "1.1.1.13 has no material of this name; image weaponbar_key_bg as k33hud12_weaponbar_key_bg"
+    },
+    "white": {
+     "action": "stock",
+     "why": "a reference in 1.2.1.12 too; 1.1.1.13 code_post_gfx_mp has it"
+    }
+   },
+   "tables": {
+    "mp/coKillstreakStatsTable.csv,0,15": {
+     "rows_by": 1,
+     "shared": 48,
+     "differ": 0,
+     "only_1.2.1.12": [
+      "locker"
+     ]
+    }
+   }
+  },
+  "v26": {
+   "materials": {
+    "1kd_rate_bg": {
+     "action": "carry",
+     "asset": "k33hud12_1kd_rate_bg",
+     "why": "1.1.1.13 has no material of this name; image 1kd_rate_bg as k33hud12_1kd_rate_bg"
+    },
+    "1score_bar_bar1": {
+     "action": "carry",
+     "asset": "k33hud12_1score_bar_bar1",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar1 as k33hud12_1score_bar_bar1"
+    },
+    "1score_bar_bar1_bottom": {
+     "action": "carry",
+     "asset": "k33hud12_1score_bar_bar1_bottom",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar1_bottom as k33hud12_1score_bar_bar1_bottom"
+    },
+    "1score_bar_bar2": {
+     "action": "carry",
+     "asset": "k33hud12_1score_bar_bar2",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar2 as k33hud12_1score_bar_bar2"
+    },
+    "1score_bar_bar2_bottom": {
+     "action": "carry",
+     "asset": "k33hud12_1score_bar_bar2_bottom",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar2_bottom as k33hud12_1score_bar_bar2_bottom"
+    },
+    "1score_bar_bg": {
+     "action": "carry",
+     "asset": "k33hud12_1score_bar_bg",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bg as k33hud12_1score_bar_bg"
+    },
+    "ac130_overlay_grain": {
+     "action": "stock",
+     "why": "1.1.1.13 common_mp has it with the same image"
+    },
+    "compass_map_default": {
+     "action": "stock",
+     "why": "1.1.1.13 common_mp has it with the same image"
+    },
+    "compassping_player": {
+     "action": "carry",
+     "asset": "k33hud12_compassping_player",
+     "why": "1.1.1.13's compassping_player differs; image compassping_player as k33hud12_compassping_player"
+    },
+    "dpad_killstreak_nuke": {
+     "action": "stock",
+     "why": "no image of this name in 2.6.9.7 to compare; 1.1.1.13's own HUD menus draw a material of this name"
+    },
+    "hud_killstreak_bar_empty": {
+     "action": "carry",
+     "asset": "k33hud12_hud_killstreak_bar_empty",
+     "why": "1.1.1.13's hud_killstreak_bar_empty differs; image hud_killstreak_bar_empty as k33hud12_hud_killstreak_bar_empty"
+    },
+    "hud_killstreak_bar_full": {
+     "action": "carry",
+     "asset": "k33hud12_hud_killstreak_bar_full",
+     "why": "1.1.1.13's hud_killstreak_bar_full differs; image hud_killstreak_bar_full as k33hud12_hud_killstreak_bar_full"
+    },
+    "hud_suitcase_bomb": {
+     "action": "stock",
+     "why": "1.1.1.13 common_mp has it with the same image"
+    },
+    "minimap_scanlines": {
+     "action": "stock",
+     "why": "1.1.1.13 common_mp has it with the same image"
+    },
+    "objective_line": {
+     "action": "stock",
+     "why": "1.1.1.13 common_mp has it with the same image"
+    },
+    "scanlines_stencil": {
+     "action": "stock",
+     "why": "no image of this name in 2.6.9.7 to compare; 1.1.1.13's own HUD menus draw a material of this name"
+    },
+    "specialty_bg": {
+     "action": "carry",
+     "asset": "k33hud12_specialty_bg",
+     "why": "1.1.1.13 has no material of this name; image specialty_bg as k33hud12_specialty_bg"
+    },
+    "specialty_bg_disable": {
+     "action": "carry",
+     "asset": "k33hud12_specialty_bg_disable",
+     "why": "1.1.1.13 has no material of this name; image specialty_bg_disable as k33hud12_specialty_bg_disable"
+    },
+    "stencil_base": {
+     "action": "stock",
+     "why": "a reference in 2.6.9.7 too; 1.1.1.13 common_mp has it"
+    },
+    "stencil_fill": {
+     "action": "stock",
+     "why": "no image of this name in 2.6.9.7 to compare; 1.1.1.13's own HUD menus draw a material of this name"
+    },
+    "weaponbar_bg": {
+     "action": "carry",
+     "asset": "k33hud12_weaponbar_bg",
+     "why": "1.1.1.13 has no material of this name; image weaponbar_bg as k33hud12_weaponbar_bg"
+    },
+    "weaponbar_key_bg": {
+     "action": "carry",
+     "asset": "k33hud12_weaponbar_key_bg",
+     "why": "1.1.1.13 has no material of this name; image weaponbar_key_bg as k33hud12_weaponbar_key_bg"
+    },
+    "white": {
+     "action": "stock",
+     "why": "a reference in 2.6.9.7 too; 1.1.1.13 code_post_gfx_mp has it"
+    }
+   },
+   "tables": {
+    "mp/coKillstreakStatsTable.csv,0,15": {
+     "rows_by": 1,
+     "shared": 47,
+     "differ": 0,
+     "only_2.6.9.7": [
+      "juggernaut",
+      "locker",
+      "super_katana"
+     ]
+    }
+   }
+  }
+ }
+}

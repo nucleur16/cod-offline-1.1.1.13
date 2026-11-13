@@ -1,0 +1,82 @@
+k33_hudStyleList 0:stock;1:v12;2:v26
+v12 weaponbar_hd -> weaponbar_hd: 24 of 24 items
+v12 weaponbar_hd_extend[1] -> weaponbar_hd: dropped: operator canChargeAttackIconShow has no 1.1.1.13 equivalent
+v12 weaponbar_hd_extend[2] chargeAttackAnime -> weaponbar_hd: dropped: ownerDraw 297: no stock 1.1.1.13 HUD menu uses it
+v12 weaponbar_hd_extend[3] -> weaponbar_hd: dropped: operator canChargeAttackIconShow has no 1.1.1.13 equivalent
+v12 weaponbar_hd_extend[4] HintZMElcBg -> weaponbar_hd: dropped: operator canChargeAttackIconShow has no 1.1.1.13 equivalent
+v12 weaponbar_hd_extend -> weaponbar_hd: 1 of 5 items
+v12 reloadbar -> weaponbar_hd: 1 of 1 items
+v12 scorebar_hd[15] -> scorebar_hd: dropped: a Survival / Evac item of 1.2.1.12 (1.1.1.13: the survival HUD's own panel)
+v12 scorebar_hd[16] -> scorebar_hd: dropped: a Survival / Evac item of 1.2.1.12 (1.1.1.13: the survival HUD's own panel)
+v12 scorebar_hd[17] -> scorebar_hd: dropped: a Survival / Evac item of 1.2.1.12 (1.1.1.13: the survival HUD's own panel)
+v12 scorebar_hd[18] -> scorebar_hd: dropped: a Survival / Evac item of 1.2.1.12 (1.1.1.13: the survival HUD's own panel)
+v12 scorebar_hd -> scorebar_hd: 26 of 30 items
+v12 kd_rate_bar[7] -> scorebar_hd: dropped: the label of player("assists"), which 1.1.1.13 has no field for
+v12 kd_rate_bar[8] -> scorebar_hd: dropped: player("assists"): not a field of 1.1.1.13's operator
+v12 kd_rate_bar[9] -> scorebar_hd: dropped: the label of player("revives"), which 1.1.1.13 has no field for
+v12 kd_rate_bar[10] -> scorebar_hd: dropped: player("revives"): not a field of 1.1.1.13's operator
+v12 kd_rate_bar -> scorebar_hd: 7 of 11 items
+v12 killstreaks_hd -> killstreaks_hd: 83 of 83 items
+v12 minimap_fullscreen -> minimap_fullscreen: 17 of 17 items
+v12 rewrite: fontEnum 11 -> 0 (1.1.1.13 has no font 11; 0 picks one by scale)
+v12 rewrite: fontEnum 14 -> 0 (1.1.1.13 has no font 14; 0 picks one by scale)
+v12 rewrite: fontEnum 12 -> 0 (1.1.1.13 has no font 12; 0 picks one by scale)
+v26 weaponbar_hd[2] -> weaponbar_hd: dropped: the plate behind the fire-mode text, getweaponfiretype(), which 1.1.1.13 has no operator for
+v26 weaponbar_hd[3] -> weaponbar_hd: dropped: operator getweaponfiretype has no 1.1.1.13 equivalent
+v26 weaponbar_hd -> weaponbar_hd: 24 of 26 items
+v26 weaponbar_hd_extend[1] -> weaponbar_hd: dropped: operator canChargeAttackIconShow has no 1.1.1.13 equivalent
+v26 weaponbar_hd_extend[2] chargeAttackAnime -> weaponbar_hd: dropped: ownerDraw 297: no stock 1.1.1.13 HUD menu uses it
+v26 weaponbar_hd_extend[3] -> weaponbar_hd: dropped: operator canChargeAttackIconShow has no 1.1.1.13 equivalent
+v26 weaponbar_hd_extend -> weaponbar_hd: 1 of 4 items
+v26 reloadbar -> weaponbar_hd: 1 of 1 items
+v26 scorebar_hd[16] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[17] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[18] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[19] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[20] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[21] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[22] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[23] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[24] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[25] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[26] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[27] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[28] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[29] -> scorebar_hd: dropped: operator #246 (not in the 2.6.9.7 table) has no 1.1.1.13 equivalent
+v26 scorebar_hd[30] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[31] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[32] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[33] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[34] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[35] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[36] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[37] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[38] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[39] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[40] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[41] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[42] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[43] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[44] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[45] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[46] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[47] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[48] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd[49] -> scorebar_hd: dropped: a Survival / Evac item of 2.6.9.7 (1.1.1.13: the survival HUD's own panel)
+v26 scorebar_hd -> scorebar_hd: 27 of 61 items
+v26 kd_rate_bar[7] -> scorebar_hd: dropped: the label of player("assists"), which 1.1.1.13 has no field for
+v26 kd_rate_bar[8] -> scorebar_hd: dropped: player("assists"): not a field of 1.1.1.13's operator
+v26 kd_rate_bar[9] -> scorebar_hd: dropped: the label of player("revives"), which 1.1.1.13 has no field for
+v26 kd_rate_bar[10] -> scorebar_hd: dropped: player("revives"): not a field of 1.1.1.13's operator
+v26 kd_rate_bar[18] -> scorebar_hd: dropped: the label of player("revives"), which 1.1.1.13 has no field for
+v26 kd_rate_bar[19] -> scorebar_hd: dropped: player("revives"): not a field of 1.1.1.13's operator
+v26 kd_rate_bar -> scorebar_hd: 14 of 20 items
+v26 killstreaks_hd -> killstreaks_hd: 83 of 83 items
+v26 minimap_fullscreen -> minimap_fullscreen: 17 of 17 items
+v26 rewrite: fontEnum 11 -> 0 (1.1.1.13 has no font 11; 0 picks one by scale)
+v26 rewrite: fontEnum 14 -> 0 (1.1.1.13 has no font 14; 0 picks one by scale)
+v26 rewrite: istrain -> 0 (a mode 1.1.1.13 does not have)
+v26 rewrite: issurvival -> dvarstring("g_gametype") == "survival"
+v26 rewrite: fontEnum 12 -> 0 (1.1.1.13 has no font 12; 0 picks one by scale)
+v26 rewrite: localvarint("isCombat") -> dvarstring("ui_gametype") == "combat" (what the later onOpen stores in it)
+v26 rewrite: isevac -> 0 (a mode 1.1.1.13 does not have)

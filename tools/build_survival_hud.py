@@ -2,6 +2,8 @@
 
 Input is MenuCommands' resolved 1.1.1.13 patch_common_mp zone-menus dump.
 The checked-in original is retained so future rebuilds need no game extraction.
+The written menufile also carries the selectable HUD styles' items for these two
+menus (styled(); docs/HUD_STYLES_20261112.md).
 """
 import copy
 import json
@@ -49,9 +51,19 @@ def author(original):
             menu['raw'] = raw.hex()
     return result
 
+def styled(original):
+    """author(), then the selectable HUD styles (tools/build_hud_styles.py, k33_hudStyle) folded into the same two
+    menus: C1 keeps the first menu it links under a name, so killstreaks_hd and scorebar_hd exist once, here, with
+    both the Survival gate and the style gate."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('build_hud_styles', ROOT / 'tools/build_hud_styles.py')
+    styles = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(styles)
+    return styles.fold_survival(author(original), original)
+
 def main():
     original = json.loads((DIR / 'survival_hud_visibility.original.json').read_text())
-    result = author(original)
+    result = styled(original)
     (DIR / 'survival_hud_visibility.json').write_text(json.dumps(result, indent=1) + '\n', newline='\n')
     (DIR / 'survival_hud_visibility.txt').write_text(menus.listing(result), newline='\n')
     (DIR / 'survival_hud_visibility.bin').write_bytes(menus.encode_menulist(result))

@@ -44,7 +44,9 @@ class SurvivalHud(unittest.TestCase):
                 restored['p']['8'][i]['p']['284'] = restored['p']['8'][i]['p']['284'][:count]
                 restored['p']['8'][i]['raw'] = stock['raw']
         self.assertEqual(restored, original)
-        self.assertEqual((hud.DIR/'survival_hud_visibility.bin').read_bytes(), hud.menus.encode_menulist(result))
+        # the written menufile is that authoring with the HUD styles folded in (tests/test_hud_styles.py)
+        self.assertEqual((hud.DIR/'survival_hud_visibility.bin').read_bytes(),
+                         hud.menus.encode_menulist(hud.styled(original)))
 
 if __name__ == '__main__':
     unittest.main()
