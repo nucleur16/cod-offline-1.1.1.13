@@ -1605,10 +1605,13 @@ static void PatchGbkInput(void)
 /* Fullscreen Windowed (codol_borderless): see borderless.c. */
 #include "borderless.c"
 
-/* Developer console overlay (dev branch): see console.c. Builds without it (-DK33_NO_CONSOLE, or delete
- * these three lines and the InstallConsole() call) still compile and link. */
-#if CODOL_DIAGNOSTICS && !defined(K33_NO_CONSOLE)
+/* Console overlay: see console.c and docs/OFFLINE_CONSOLE_20261112.md. Every profile of this offline client has
+ * it (it was diagnostics-only); k33shot.c stays diagnostics-only. Builds without it (-DK33_NO_CONSOLE) still
+ * compile and link. */
+#if !defined(K33_NO_CONSOLE)
+#if CODOL_DIAGNOSTICS
 #include "console/k33shot.c" /* screenshots and draw statistics on the console's Present hooks; diagnostics only */
+#endif
 #include "console/console.c"
 #endif
 
@@ -1781,9 +1784,11 @@ static void __cdecl TakeOver(void)
 #if CODOL_DIAGNOSTICS
     InstallParityLogger();
 #endif
-#if CODOL_DIAGNOSTICS && !defined(K33_NO_CONSOLE)
+#if !defined(K33_NO_CONSOLE)
     InstallConsole();
+#if CODOL_DIAGNOSTICS
     InstallShot();
+#endif
 #endif
 #if CODOL_KERNEL_NAME_DISPLAY
     if(!InstallKernelNameDisplay())Fatal("Kernel33 name-display migration checks failed. Restore the qualified client package.");

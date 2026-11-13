@@ -30,7 +30,8 @@ src/            everything compiled into Kernel33.dll (C, plus the C++ offline l
   locale_switch.c, locale_switch_policy.h   the language changed while the game runs (k33_language)
   *.c             features with no family of their own: borderless, discord, usermaps, theatre, name display,
                   parity logger, scoreboard fix, launcher bridge, offline-mode glue, local-testing helpers
-  console/        the in-game developer console (console.c) and screenshots on its hooks (k33shot.c)
+  console/        the in-game console (console.c, every build), its route to the hosted match server
+                  (console_server.c, sh1x_cmds.h) and the diagnostics-only screenshots on its hooks (k33shot.c)
   controller/     gamepad: controller.c, button glyphs (what hints show: controller_glyph_policy.h), the menu cursor
                   snapping (padsnap.c)
   audio/          voice chat and the sound-voice policy / diagnostics
@@ -106,6 +107,7 @@ python -B -m unittest discover -s tests -p "test_zone_pack_*.py"
 python -B tests/test_optionview_method.py
 python -B tests/test_kernel_cutover_contract.py
 python -B tests/test_quiet_diagnostic_paths.py
+python -B tests/test_offline_console.py                   # also run by tests/run_tests.sh
 python -I -S -B tests/test_r46_native_source_integration.py
 python -I -S -B tests/test_playlist_active_ordinal_selector.py
 gcc -std=c99 -O2 -Wall -Wextra -Werror tests/test_guest_binding_wire.c src/p2p/p2p_startup_wire.c src/p2p/p2p_guest_binding_wire.c -o /tmp/guest-binding-wire && /tmp/guest-binding-wire
@@ -210,8 +212,28 @@ disables the whole Graphics tab in a room ("temporarily disabled"); set it from 
 To see the frame rate in a match: `set 2614 1` (C1's loss/ping/FPS debug graphs; the FPS number is readable
 below 100).
 
-## Developer console (branch `dev`)
-`dev` is `main` plus `src/console/console.c`, an in-game console for C1, which has none left: IW4's
+## Console
+**Every build of this offline client has the console** (`sh scripts/build.sh`, shipping profile included; it used to
+be compiled only with `K33_LOCAL_TESTING=1`). It opens with the key left of 1 or F1, and during a match it is also the
+console of the match server this client hosts: server commands and dvars complete and run from it, their output
+prints in it, and the server's cheat commands (`god`, `noclip`, `give`, ...) work once `codol_dev_cheats on` was
+typed. The rules, the command list and what was measured are in `docs/OFFLINE_CONSOLE_20261112.md`; the short form:
+
+- a name the client has (a C1 command or dvar) runs on the client; `sv <line>` (alias `rcon`) runs a line on the
+  match server; a name only the server has runs there without the prefix; before a match those say `no match running`;
+- `cmdlist`, `dvarlist` and `find` list both sides (`sv` marks the server's); Tab completion includes the server's
+  names, with live dvar values while a match runs;
+- cheats: `codol_dev_cheats on` (server command, so host only; that match then records no progression), then
+  `god demigod notarget noclip ufo kill give take setviewpos viewpos devset addbot kickbot devhelp`. `k33dev` lists
+  them with their arguments. After each one the console prints the server's `dev_cheats` state line;
+- `python scripts/gen_sh1x_cmds.py` regenerates `src/console/sh1x_cmds.h` from the `server/sh1x` submodule after the
+  submodule moves; `tests/test_offline_console.py` fails until it is done, and when the console's cheat table and the
+  server's differ.
+
+Not in the shipping profile: `k33shot`, `k33_screenshot` / `k33_framestats` and their request files, `k33_rconPort`
+and the rcon to a server other than the hosted one (they stay with `K33_LOCAL_TESTING=1`).
+
+`src/console/console.c` is an in-game console for C1, which has none left: IW4's
 `toggleconsole`/`clear`/`condump`, the console field and `Con_DrawConsole` were removed, and
 `CL_KeyEvent` (0x493240) no longer tests the `~` key. The console is an overlay instead:
 
@@ -223,7 +245,8 @@ below 100).
   Under that, only what the last command printed. Shift+Tab or Shift+`~` opens the full-height log
   (con_outputWindowColor, IW4's scroll bar, the version string bottom right). Engine and PARITY lines
   appear only there.
-- `k33shot [ms]` writes the console overlay as rendered, that many ms later, to `main\k33_console.bmp`.
+- `k33shot [ms]` (diagnostics builds only) writes the console overlay as rendered, that many ms later, to
+  `main\k33_console.bmp`.
 - **Toggle**: the key left of 1 (`~` on US layouts, by scan code) or the virtual key in the archived
   dvar `k33_consoleKey` (default 112 = F1, 0 = none). Works at the Scaleform menus and in game. Esc
   closes it (first Esc only closes the hint box).
@@ -260,19 +283,22 @@ below 100).
   `clear`, `condump [file]` (to `main\`), `k33help`.
 - `+set k33_console 0` on the command line leaves the console out entirely.
 
-### sh1x developer commands (branch `feat/dev-cheat-commands`)
+### sh1x developer commands and the match server (`docs/OFFLINE_CONSOLE_20261112.md`)
 The cheat commands run on the sh1x server (`src/codol/player/codol_dev_cheats.c` there). C1 forwards any word it
 does not know to the server (Cmd_ExecuteString 0x58CB16 -> CL_ForwardCommandToServer 0x494CE0), so typing
-`noclip` here already reaches it; the console adds autocomplete, argument lists and usage for them
-(`k33dev` lists them): `noclip ufo god demigod notarget kill give take setviewpos viewpos devset addbot kickbot
-devhelp`. They work only on a developer server whose map was started with `devmap` (sv_cheats 1; lobby match
-servers refuse, and a server that had cheats on records no progression until restarted).
+`noclip` here reaches it as this player's command; the console adds autocomplete, argument lists and usage for them
+(`k33dev` lists them): `god demigod notarget noclip ufo kill give take setviewpos viewpos devset addbot kickbot
+devhelp`, the same names and usage strings as the pinned server (a test compares them). The server decides: cheats
+need sv_cheats on, which the host switches with the server command `codol_dev_cheats on` (the map starts with it
+off), and a server that had cheats on records no progression until it ends. Typed in the console,
+`codol_dev_cheats on` first sets the server's own `codol_devServer 1` (over the same loopback rcon), the switch that
+lets a server with lobby admission accept cheats; the host's start-up is unchanged.
 
-- `rcon <command>`: a console built-in for the server you host: one rcon datagram to 127.0.0.1 only (the connected
-  server's port when it is local, else `k33_rconPort`, default 17733), password from `main\k33_rcon.txt`,
-  `p2p\state\native_server_rcon.txt` or the local lobby's `CODOL\1.1.1.13_server\alpha0022\native_server_rcon.txt`,
-  whichever the server accepts. Its reply prints in the console. Admin and map commands: `rcon status`,
-  `rcon devmap mp_killhouse_sh`, `rcon map_restart`, `rcon kick <name>`, `rcon dev_clientcmd bots god`.
+- `sv <command>` (alias `rcon`): a console built-in for the server this client hosts: one rcon datagram to
+  127.0.0.1, to the port and with the password of the host session that is running, nothing else. Its reply prints
+  in the console. `sv status`, `sv dev_cheats`, `sv codol_dev_clients`, `sv sv_botStop 1`, `sv dev_clientcmd bots god`.
+  A diagnostics build (`K33_LOCAL_TESTING=1`) keeps the older `rcon` to another server on this machine when the
+  client hosts nothing (`k33_rconPort`, `main\k33_rcon.txt`).
 - HUD: `k33_drawFPS 1` (or C1's own `cg_drawFPS 1`, which nothing else reads) and `k33_drawViewpos 1` draw the frame
   rate and the predicted position, view angles and speed in the top-right corner, in a match.
 
@@ -287,9 +313,8 @@ description, with a confidence; below 85 the name is a positional guess and the 
 Numbers without a name display as they are. Command names are not hashed in this build (all
 `Cmd_AddCommand` names are plaintext), so commands are listed as registered.
 
-Build without touching the live DLL: `sh scripts/build-dev.sh` writes `build/Kernel33_dev.dll` (console + controller +
-voice + usermaps + parity + frame cap, SDL2 and libopus static, as `scripts/build.sh`) and also links
-`build/Kernel33_noconsole.dll` (`-DK33_NO_CONSOLE`), failing if the shared code depends on `src/console/console.c`.
+A build without the console: `K33_NO_COPY=1 sh scripts/build.sh -DK33_NO_CONSOLE` (everything else must only need
+`src/c1game.c`; that build links).
 
 ## Controller (branch `feat/controller`)
 `src/controller/controller.c` adds gamepad play: SDL2 2.32.10 GameController (static; Xbox, PlayStation, Switch Pro, generic 

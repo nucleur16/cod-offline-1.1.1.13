@@ -1134,3 +1134,24 @@ static void InstallP2PInprocDiagnostics(void)
         if(!strcmp(g_p2pCmds[i].name,"p2pstatus"))g_p2pCmds[i].fn=(void *)PiCmdStatus;
 }
 #endif
+
+/* ---- the console's route to the hosted server (console/console_server.c, docs/OFFLINE_CONSOLE_20261112.md) ----
+ * Self-contained block (feat/offline-console): reads p2p.c's g_p2p under its lock, changes nothing, keeps
+ * nothing. 1 while a host session of this client is starting or ready on loopback: its UDP port, the file that
+ * holds its rcon password and a number that differs from one session to the next (the tick it started at). The
+ * console asks again for every command, so a host that was torn down or started again is seen as such; it never
+ * calls into or holds a pointer into sh1x_host.dll. 0: this client hosts nothing ("no match running"). */
+__attribute__((unused)) static int P2PConsoleHost(int *port, char *rconFile, DWORD *session)
+{
+    if (!g_p2pInit) return 0;
+    EnterCriticalSection(&g_p2pLock);
+    int alive = (g_p2p.state == P2P_STARTING || g_p2p.state == P2P_READY) && g_p2p.startTick &&
+                g_p2p.cfg.port > 0 && g_p2p.cfg.rconFile[0] && !strcmp(g_p2p.cfg.netIp, "127.0.0.1");
+    if (alive) {
+        *port = g_p2p.cfg.port;
+        lstrcpynA(rconFile, g_p2p.cfg.rconFile, MAX_PATH);
+        *session = g_p2p.startTick;
+    }
+    LeaveCriticalSection(&g_p2pLock);
+    return alive;
+}
