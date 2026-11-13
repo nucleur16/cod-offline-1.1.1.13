@@ -1,17 +1,17 @@
 #pragma once
 /* locale_switch_policy.h - the pure part of locale_switch.c (docs/LANGUAGE_SWITCH_20261112.md), tested by
- * tests/locale_switch_policy_test.c on any compiler: the string tables a language is shown from, which table a
- * string that C1 threw away belongs in, what a lookup uses before C1's own entry, and what a request does. */
+ * tests/locale_switch_policy_test.c on any compiler: the index of the loaded language zone's strings, what C1's
+ * linker does with one of them, whether a switch may start now, and what a request does. */
 #include <stddef.h>
 #include <string.h>
 
-/* One string, laid out as C1's LocalizeEntry {value, name}: a pointer to a slot is what DB_FindXAssetHeader(27, name)
- * returns, so C1's callers (mov eax, [eax]) read a slot exactly as they read a pool entry. */
+/* One string, laid out as C1's LocalizeEntry {value, name} (a localize pool slot is exactly this). */
 typedef struct LsSlot { const char *value; const char *name; } LsSlot;
 
-/* Open addressing, insert only, never resized: a slot that was published stays where it is and keeps its strings,
- * so a reader needs no lock and a pointer handed to C1 never dangles. name is written last (LS_PUBLISH): a reader
- * that sees a name sees its value. One writer at a time (locale_switch.c holds a lock around LsInsert). */
+/* Open addressing, insert only, never resized. name is written last (LS_PUBLISH): a reader that sees a name sees
+ * its value. One writer at a time (C1's database thread while it links the language zone); the table is emptied
+ * (LsTableInit over zeroed slots) only on the main thread while the database is idle. The strings are not copies:
+ * they are the zone's own memory and are valid exactly as long as the zone is loaded. */
 typedef struct LsTable { LsSlot *slots; unsigned mask; unsigned count; } LsTable;
 
 #ifndef LS_PUBLISH
@@ -81,45 +81,54 @@ static int LsInsert(LsTable *t, const char *name, const char *value)
     return -1;
 }
 
-/* Which table keeps a localize string that C1's linker is about to throw away because a zone with the same alloc
- * flags already holds the name (DB_LinkXAssetEntry 0x4CC623). fresh / holder: the language (list index) of the zone
- * the string comes from and of the zone that holds the name, -1 for a zone of no language (stock, shared).
- *   - from a language's zone that is not the startup language's: that language's table. This is how a second
- *     language gets into memory at all: its zone loads after every stock code zone, so nearly every string of it
- *     is such a duplicate and costs no asset entry.
- *   - from a zone of no language, displaced by a language's zone (the startup language's at startup; a second
- *     language's for the names of zones that load later with the code zones' flags, common_mp): the stock table,
- *     the text C1 itself would show there.
- *   - anything else (stock displaced by stock, the startup language's own zones): not kept. */
-enum { LS_ROUTE_NONE = -1, LS_ROUTE_STOCK = -2 };
-static int LsCaptureRoute(int fresh, int holder, int startup)
+/* What C1's linker does with a localize string of the language zone whose name another zone already holds
+ * (DB_LinkXAssetEntry 0x4CC61B, where C1 compares the two zones' alloc flags). The language zone has an alloc flag
+ * of its own, so C1 would keep both: the holder active and the new one as an override entry behind it, one asset
+ * entry and one pool slot more per name (7,739 for English). Instead the holder's pool slot gets the language's
+ * string in place (locale_switch.c remembers the holder's own string for the unload), and:
+ *   - the holder's zone has alloc flag 1 (a code zone: never unloaded): the new entry is thrown away, as C1 does
+ *     for two zones with the same flags. No entry, no slot.
+ *   - the holder's zone can be unloaded (UI 2, gametype/map 4, load screen 8): the new entry is also chained as
+ *     an override, C1's own way, so the name survives that zone's unload (C1 promotes the override into the
+ *     holder's slot, 0x4CDBF0). That is the entry C1 uses today for the same pair, the other way round.
+ * Anything else (another asset type, a zone that is not the language zone, the language zone's own duplicate) is
+ * C1's own decision. */
+enum LrLink { LR_LINK_C1 = 0, LR_LINK_DISCARD = 1, LR_LINK_OVERRIDE = 2 };
+#define LR_LOCALIZE_TYPE 27
+static enum LrLink LrLinkDecision(int type, int freshIsLanguageZone, int holderIsLanguageZone, unsigned holderAllocFlags)
 {
-    if (fresh >= 0) return fresh != startup ? fresh : LS_ROUTE_NONE;
-    return holder >= 0 ? LS_ROUTE_STOCK : LS_ROUTE_NONE;
+    if (type != LR_LOCALIZE_TYPE || !freshIsLanguageZone || holderIsLanguageZone) return LR_LINK_C1;
+    return holderAllocFlags == 1 ? LR_LINK_DISCARD : LR_LINK_OVERRIDE;
 }
 
-/* A lookup, in the order locale_switch.c asks:
- *   1. LsOwnTable: the shown language's captured strings (it has none while it is the startup language: those are
- *      C1's own entries).
- *   2. C1's entry. LsEntryForeign: it belongs to a language's zone that is not the one shown (the startup
- *      language's while another is shown; a second language's name that reached the pool because no zone held it
- *      yet). Then, LsForeignAnswer: the displaced stock string, else the first-linked entry of a zone of no
- *      language chained under it, else nothing: exactly what a client started in the shown language resolves. */
-static LsSlot *LsOwnTable(const LsTable *tables, int count, int shown, int startup, const char *name)
+/* May the language zone be unloaded and another loaded in this frame? Everything is read before anything is
+ * touched. LR_GATE_WAIT: ask again next frame (the database is loading). The LR_GATE_NO_* answers end the request
+ * as "saved, applies on restart". */
+typedef struct LrGate {
+    int armed;          /* every C1 site checked and hooked */
+    int oldStyle;       /* the startup language came from zones that are not one codol_<name>_locale: C1 owns them */
+    int dbIdle;         /* C1's "database idle, results taken" event is set */
+    int replaceMode;    /* C1's linker is in its replace mode (0x19A2F6C != 0) */
+    int loaded;         /* a language zone is loaded now */
+    int onTop;          /* ... and its memory is the top block of its PMem stack (freeing it pops the stack) */
+    int zones, zoneMax; /* zones loaded, C1's limit */
+    unsigned freeEntries, needEntries; /* asset entries: free now / what the new zone may take */
+    unsigned freeSlots, needSlots;     /* localize pool slots, the same */
+} LrGate;
+enum LrGateAnswer { LR_GATE_GO, LR_GATE_WAIT, LR_GATE_NO_HOOKS, LR_GATE_NO_OLD_STYLE, LR_GATE_NO_REPLACE_MODE,
+                    LR_GATE_NO_STACK, LR_GATE_NO_ZONES, LR_GATE_NO_ENTRIES, LR_GATE_NO_SLOTS };
+static enum LrGateAnswer LrGateDecide(const LrGate *g)
 {
-    if (shown < 0 || shown >= count || shown == startup) return NULL;
-    return LsFind(&tables[shown], name);
-}
-
-static int LsEntryForeign(int owner, int shown)
-{
-    return owner >= 0 && owner != shown;
-}
-
-static void *LsForeignAnswer(const LsTable *stock, const char *name, void *chained)
-{
-    LsSlot *s = LsFind(stock, name);
-    return s ? (void *)s : chained;
+    if (!g->armed) return LR_GATE_NO_HOOKS;
+    if (g->oldStyle) return LR_GATE_NO_OLD_STYLE;
+    if (!g->dbIdle) return LR_GATE_WAIT;
+    if (g->replaceMode) return LR_GATE_NO_REPLACE_MODE;
+    if (g->loaded && !g->onTop) return LR_GATE_NO_STACK;
+    /* the unload gives back the old zone's slot, entries and pool slots first; none of that is counted on */
+    if (!g->loaded && g->zones >= g->zoneMax) return LR_GATE_NO_ZONES;
+    if (g->freeEntries < g->needEntries) return LR_GATE_NO_ENTRIES;
+    if (g->freeSlots < g->needSlots) return LR_GATE_NO_SLOTS;
+    return LR_GATE_GO;
 }
 
 /* k33_languageState */
@@ -127,7 +136,7 @@ enum LsState { LS_STATE_IDLE = 0, LS_STATE_SWITCHING = 1, LS_STATE_RESTART = 2 }
 
 enum LsAction {
     LS_ACT_NONE,      /* the request is the language on screen */
-    LS_ACT_LIVE,      /* show it now */
+    LS_ACT_LIVE,      /* unload the language zone and load the requested one (when LrGateDecide lets it) */
     LS_ACT_RESTART,   /* keep the request saved; it applies on the next start */
     LS_ACT_REVERT     /* not an installed language: put k33_language back */
 };
@@ -135,17 +144,15 @@ enum LsAction {
 typedef struct LsWorld {
     int armed;        /* every C1 site checked and hooked */
     int count;        /* installed languages */
-    int startup;      /* index of the language the client started in (-1: none of the list) */
     int shown;        /* index of the language on screen */
-    unsigned ready;   /* bit i: language i's strings are in memory */
+    unsigned ready;   /* bit i: language i can be loaded (one codol_<name>_locale zone, or zh: C1's own text) */
 } LsWorld;
 
-/* Decided before anything is touched: a request either changes the language completely (one store) or not at all. */
+/* Decided before anything is touched. */
 static enum LsAction LsDecide(const LsWorld *w, int request)
 {
     if (request < 0 || request >= w->count) return LS_ACT_REVERT;
     if (request == w->shown) return LS_ACT_NONE;
     if (!w->armed) return LS_ACT_RESTART;
-    if (request == w->startup || (w->ready >> request & 1u)) return LS_ACT_LIVE;
-    return LS_ACT_RESTART;
+    return (w->ready >> request & 1u) ? LS_ACT_LIVE : LS_ACT_RESTART;
 }

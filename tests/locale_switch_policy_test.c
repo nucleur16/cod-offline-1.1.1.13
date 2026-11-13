@@ -48,58 +48,48 @@ int main(void)
         assert(LsInsert(&t, "key_3", "x") == 0);                    /* a full table still knows what it has */
     }
 
-    /* which table keeps a string C1 throws away (languages: 0 = en, 1 = fr, 2 = zh) */
-    assert(LsCaptureRoute(2, 0, 0) == 2);                /* zh's zone, name held by the startup language en */
-    assert(LsCaptureRoute(2, -1, 0) == 2);               /* zh's zone, name held by a stock zone */
-    assert(LsCaptureRoute(1, 2, 0) == 1);                /* fr's zone, name held by zh's zone */
-    assert(LsCaptureRoute(-1, 0, 0) == LS_ROUTE_STOCK);  /* a stock string the startup language displaced */
-    assert(LsCaptureRoute(-1, 2, 0) == LS_ROUTE_STOCK);  /* a later stock zone's string a second language displaced */
-    assert(LsCaptureRoute(-1, -1, 0) == LS_ROUTE_NONE);  /* stock displaced by stock: C1's first one is in the pool */
-    assert(LsCaptureRoute(0, 0, 0) == LS_ROUTE_NONE);    /* the startup language's own duplicate */
-    assert(LsCaptureRoute(0, -1, 0) == LS_ROUTE_NONE);
-    assert(LsCaptureRoute(-1, -1, -1) == LS_ROUTE_NONE);
-    assert(LsCaptureRoute(1, -1, -1) == 1);              /* started in C1's own language: every zone is a second one */
+    /* the link decision for a string of the language zone whose name another zone holds (locale_switch.c LrLink) */
+    assert(LrLinkDecision(27, 1, 0, 1) == LR_LINK_DISCARD);     /* held by a code zone (flag 1): in place, no entry */
+    assert(LrLinkDecision(27, 1, 0, 2) == LR_LINK_OVERRIDE);    /* held by the UI (2): in place, and C1's override kept */
+    assert(LrLinkDecision(27, 1, 0, 4) == LR_LINK_OVERRIDE);    /* gametype / map */
+    assert(LrLinkDecision(27, 1, 0, 8) == LR_LINK_OVERRIDE);
+    assert(LrLinkDecision(27, 1, 1, 1) == LR_LINK_C1);          /* the language zone's own duplicate */
+    assert(LrLinkDecision(27, 0, 0, 1) == LR_LINK_C1);          /* another zone's string: C1 decides */
+    assert(LrLinkDecision(28, 1, 0, 1) == LR_LINK_C1);          /* another asset type (the font movie, rawfiles) */
+    assert(LR_LINK_C1 == 0);                                    /* the asm hook falls through to C1's compare on 0 */
 
-    /* a lookup: the shown language's captured string first (never for the startup language) */
+    /* may a switch start now (everything read before anything is touched) */
     {
-        LsTable tables[3];
-        int marker;
-        memset(tables, 0, sizeof(tables));
-        tables[2] = t;
-        assert(LsInsert(&stock, "MENU_OK", "stock ok") == 1 && LsInsert(&stock, "MENU_BACK", "stock back") == 1);
-        assert(!strcmp(LsOwnTable(tables, 3, 2, 0, "menu_ok")->value, "OK"));
-        assert(!LsOwnTable(tables, 3, 2, 0, "MENU_BACK"));           /* zh has no such string: C1 is asked */
-        assert(!LsOwnTable(tables, 3, 2, 2, "MENU_OK"));             /* the startup language: C1's own entries */
-        assert(!LsOwnTable(tables, 3, 1, 0, "MENU_OK"));             /* a language with no table */
-        assert(!LsOwnTable(tables, 3, -1, 0, "MENU_OK") && !LsOwnTable(tables, 3, 3, 0, "MENU_OK"));
-        /* then C1's entry, unless it belongs to a language that is not the one shown */
-        assert(!LsEntryForeign(-1, 0) && !LsEntryForeign(-1, -1));   /* a stock entry */
-        assert(!LsEntryForeign(0, 0) && !LsEntryForeign(2, 2));      /* the shown language's own entry */
-        assert(LsEntryForeign(0, 2) && LsEntryForeign(2, 0) && LsEntryForeign(0, -1));
-        /* for such an entry: the displaced stock string, else the stock entry chained under it, else nothing */
-        assert(!strcmp(((LsSlot *)LsForeignAnswer(&stock, "menu_back", &marker))->value, "stock back"));
-        assert(LsForeignAnswer(&stock, "GAMETYPE_ONLY", &marker) == &marker);
-        assert(LsForeignAnswer(&stock, "ONE_LANGUAGE_ONLY", NULL) == NULL);
-        assert(LsForeignAnswer(&none, "MENU_OK", NULL) == NULL);
+        LrGate g = { 1, 0, 1, 0, 1, 1, 20, 33, 19657, 4096, 12789, 4096 };
+        assert(LrGateDecide(&g) == LR_GATE_GO);
+        g.dbIdle = 0; assert(LrGateDecide(&g) == LR_GATE_WAIT); g.dbIdle = 1;
+        g.onTop = 0; assert(LrGateDecide(&g) == LR_GATE_NO_STACK);           /* a mid-stack free rewinds the stack */
+        g.loaded = 0; assert(LrGateDecide(&g) == LR_GATE_GO);                /* nothing to unload (zh, C1's own) */
+        g.zones = 33; assert(LrGateDecide(&g) == LR_GATE_NO_ZONES);
+        g.loaded = 1; g.onTop = 1; assert(LrGateDecide(&g) == LR_GATE_GO);   /* the unload frees a zone slot first */
+        g.zones = 20;
+        g.freeEntries = 4095; assert(LrGateDecide(&g) == LR_GATE_NO_ENTRIES); g.freeEntries = 19657;
+        g.freeSlots = 100; assert(LrGateDecide(&g) == LR_GATE_NO_SLOTS); g.freeSlots = 12789;
+        g.replaceMode = 1; assert(LrGateDecide(&g) == LR_GATE_NO_REPLACE_MODE); g.replaceMode = 0;
+        g.oldStyle = 1; assert(LrGateDecide(&g) == LR_GATE_NO_OLD_STYLE); g.oldStyle = 0;
+        g.armed = 0; assert(LrGateDecide(&g) == LR_GATE_NO_HOOKS);
+        g.dbIdle = 0; assert(LrGateDecide(&g) == LR_GATE_NO_HOOKS);         /* a client without hooks never waits */
     }
 
-    /* requests (languages: 0 = en startup, 1 = fr not loaded, 2 = zh loaded) */
+    /* requests (languages: 0 = en on screen, 1 = fr without a zone of its own, 2 = zh) */
     {
-        LsWorld w = { 1, 3, 0, 0, 1u << 2 };
+        LsWorld w = { 1, 3, 0, (1u << 0) | (1u << 2) };
         assert(LsDecide(&w, 0) == LS_ACT_NONE);
         assert(LsDecide(&w, 2) == LS_ACT_LIVE);
         assert(LsDecide(&w, 1) == LS_ACT_RESTART);
         assert(LsDecide(&w, -1) == LS_ACT_REVERT && LsDecide(&w, 3) == LS_ACT_REVERT);
-        w.shown = 2;                                   /* zh on screen */
-        assert(LsDecide(&w, 2) == LS_ACT_NONE);
-        assert(LsDecide(&w, 0) == LS_ACT_LIVE);        /* back to the startup language: always in memory */
-        assert(LsDecide(&w, 1) == LS_ACT_RESTART);
+        w.shown = 2;
+        assert(LsDecide(&w, 2) == LS_ACT_NONE && LsDecide(&w, 0) == LS_ACT_LIVE && LsDecide(&w, 1) == LS_ACT_RESTART);
         w.armed = 0;                                   /* a C1 site did not match: nothing is live */
         w.shown = 0;
         assert(LsDecide(&w, 2) == LS_ACT_RESTART && LsDecide(&w, 0) == LS_ACT_NONE && LsDecide(&w, 9) == LS_ACT_REVERT);
         w.armed = 1;
-        w.startup = -1;                                /* started in a language without a zone (stock only) */
-        w.shown = -1;
+        w.shown = -1;                                  /* started in a language that is not in the list */
         w.ready = 0;
         assert(LsDecide(&w, 0) == LS_ACT_RESTART && LsDecide(&w, 2) == LS_ACT_RESTART);
         w.count = 0;
@@ -108,6 +98,6 @@ int main(void)
     assert(LS_STATE_IDLE == 0 && LS_STATE_SWITCHING == 1 && LS_STATE_RESTART == 2);   /* the menus read these numbers */
     free(slots);
     free(stockSlots);
-    puts("language tables, capture routing, lookup order and request decisions passed");
+    puts("language index, link decision, switch gate and request decisions passed");
     return 0;
 }

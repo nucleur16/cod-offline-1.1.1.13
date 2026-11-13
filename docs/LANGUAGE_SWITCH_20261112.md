@@ -1,193 +1,199 @@
-# Language switch while the game runs (`k33_language`), 2026-11-12
+# Language switch while the game runs (`k33_language`), 2026-11-12 / 2026-11-13
 
-`src/locale_switch.c`, `src/locale_switch_policy.h`, `src/patch_locale_policy.h`, the patch-folder code in `src/kernel33.c`.
-Client: CoDOL 1.1.1.13 (`C1.exe`, PE timestamp 5314DEF0). Status: **builds and passes its source tests; not yet
-run in a client** (see "Not verified").
+`src/locale_switch.c`, `src/locale_switch_policy.h`, `src/patch_locale_policy.h`, the patch-folder code in
+`src/kernel33.c`, `zone_packs/codol_common.csv`, `zone_packs/codol_english_locale.csv`.
+Client: CoDOL 1.1.1.13 (`C1.exe`, PE timestamp 5314DEF0). Status: **ran in a test client** (offline lobby,
+local-testing + diagnostics DLL, 2026-11-13): 48 switches at the front end, 24 in a hosted Killhouse match, 24 at the
+front end after that match, 24 in a hosted zombies match on Mech Factory, and a switch before a map load. See
+"Measured".
+
+A switch **unloads** the language zone on screen (C1 frees its strings' memory, asset entries and localize pool slots)
+and **loads** the chosen language's zone with C1's own zone loader. Nothing of a language that is not on screen is in
+memory. This replaces the first implementation (every language resident in DLL tables, eleven lookup sites
+redirected), which is removed. That one never ran in a client and could not have: its byte check of
+`DB_FindXAssetHeader` compared the packed file's import reference (`8B 1D 50 D3 A1 09`) while the running client has
+`8B 1D 64 21 B4 00`, so every start logged `bytes at 0x004CB8E0 differ` and the switch stayed off; with that check
+corrected it installed, but its owner map waited for C1's idle event and gave up after 120 s in the one run measured
+(`the database was not idle within 120 s of startup; no live switch in this session`; a Chinese start of the same
+build did map them). Its cost, measured: +4 entries for an English start; for a Chinese start the 1,019 English-only
+names were C1 entries for the whole session (+1,027 entries at the front end, +789 in a Killhouse match, +1,019
+localize slots), whether the player ever switched or not. Neither is near the 59,999 limit in the states measured;
+the present mechanism costs nothing.
 
 ## Contract (what a menu or a script may rely on)
 
 | name | type | meaning |
 |---|---|---|
-| `k33_language` | string, archived | The requested language: a name of `k33_languageList`. Set it (`setdvar` from a movie, the console, `k33_setlanguage`) to change the language. `English`/`Chinese`/any case are accepted and stored as the list's spelling. A name that is not in the list is logged and put back. After startup it always names the language on screen (state 0) or the one saved for the next start (state 2). |
+| `k33_language` | string, archived | The requested language: a name of `k33_languageList`. Set it (`setdvar` from a movie, the console, `k33_setlanguage`) to change the language. `English`/`Chinese`/any case are accepted and stored as the list's spelling. A name that is not in the list is logged and put back. |
 | `k33_languageList` | string, read only | Installed languages, sorted, `;` separated: `en;zh`. `zh` is always there (C1's own text); any other name is there when `client_shipRetail\patch\` holds a zone of that language. Fixed for the session. |
-| `k33_languageState` | int, read only | `0` idle: `k33_language` is on screen. `1` switching: only ever set inside the frame that switches, a poll never sees it. `2` restart needed: the request is saved and applies on the next start; the screen keeps the previous language. Setting `k33_language` back to the language on screen returns to `0`. |
+| `k33_languageState` | int, read only | `0` idle: `k33_language` is on screen. `1` switching: set in the frame that accepts the request (the unload and the load's queueing happen in that frame); back to 0 when C1's database has linked the new zone (measured 15-550 ms; at most 60 s, then 2). `2` restart needed: the request is saved and applies on the next start; the screen keeps the previous language. Setting `k33_language` back to the language on screen returns to `0`. |
 | `k33_languageSerial` | int, read only | Starts at 0, +1 each time the language on screen changed. Anything that holds translated text re-creates it when this changes. |
 | `k33_setlanguage <name>` | command | `set k33_language <name>` after checking the name; without a name prints the list, the language on screen, state and serial. |
+| `k33_langstat [label]`, `k33_langcycle <n>`, `k33_langforce` | commands, local-testing builds only | log entry / localize / stack use; switch n times; let the next switch unload a zone that is not the top of its stack (measurement only: it corrupts the stack and ends the client, see "Memory"). |
 
-Timing: the four dvars exist from the first frame after C1 registered its own dvars (before the login screen). A
-request is read on the main thread once per frame (`K33OnMainTick`, the eighth and last free slot of
-`K33_MAX_TICKS` in a local-testing build with every optional tick). The frame that sees a changed `k33_language`
-decides (`LsDecide`), and for a live switch the new language answers every lookup from that frame on: serial and
-state are final in the same frame. A movie that did `setdvar k33_language zh` can therefore poll
-`k33_languageSerial` / `k33_languageState` from its next frame: serial changed -> rebuild text; state 2 -> show
-"applies after restart".
+A movie that did `setdvar k33_language zh` polls `k33_languageSerial` / `k33_languageState`: serial changed -> rebuild
+text; state 2 -> show "applies after restart". Text a movie set from a localize key is a Scaleform copy (the
+translator `0x6A5AC0` copies) and stays until the movie sets it again; text C1 draws natively (looked up per draw)
+changes at once (measured in a match: `SPECTATING` / `观战中`, `TIE` / `双方持平`, `Left Mouse - Next player`,
+zombies `Round 1/9` / `回合 1/9`). What the movies do is unchanged by this work: the pause menu rebuilds on a serial
+change; the front end re-sets only some of its texts (measured: after a switch the Multiplayer lobby screen keeps the
+old language until it is opened again; dialogs created after the switch are in the new one).
 
-What a movie must do on a serial change: every text it set from a localize key is a copy Scaleform holds (the
-translator `0x6A5AC0` copies), so it must assign those texts again (`.text = "@KEY"`, `LocalizeUtil.localize`, list
-labels, HTML text it built). Text that C1 draws natively (HUD strings looked up per draw) changes by itself. Text
-C1 formatted earlier and stored (obituary lines already printed, a chat line, configstrings a server sent) keeps
-its old language.
+Startup order (`CodolStartupLanguage`) is unchanged: the last valid `+set k33_language`; else `+set k33_english` /
+`+set codol_patchlang`; else the last `seta k33_language` line of `players\config_mp.cfg`; else `en`.
 
-What the movies do today (reported by the menu work, not by this file): the pause menu (codoingame.gfx) rebuilds
-its open list and header labels on a serial change, so it is fully live. The front end (codo.gfx) re-sets only
-Options > Graphics, the Options title and the four tab buttons; the Audio, Controls and Controller tabs and
-everything outside the Options window set their text once when the movie loads and keep the old language until
-codo.gfx is loaded again (after a match, or a restart). The DLL does not reload codo.gfx after a switch: the
-load call is known (`0x6B53CD` into the generic loader `0x6B3EA0`) but the front end's close path is not
-identified, so there is no checked way to re-create the movie; until there is, a front-end switch is complete
-only for text that is re-set on the serial.
+## How it works
 
-Startup order (`CodolStartupLanguage`): the last valid `+set k33_language <name>`; else `+set k33_english 0|1` /
-`+set codol_patchlang en|zh` (unchanged, `CodolPatchLanguageFromArgv`); else the last `seta k33_language "<name>"`
-line of a plaintext `players\config_mp.cfg`; else `en`. A language with no zone in the patch folder starts as
-`en` when English is installed, else `zh`; `Kernel33.log` says which and why (`language: "zh" (the saved
-k33_language)`). At registration the dvar is set to the language the client started in, so a language chosen on
-the command line is also what gets saved.
+1. **Where the zone loads.** The startup language's `codol_<name>_locale` zone is the last zone of the code_post_gfx
+   list (`SubmitPatchZones`), alloc flag 1 like every code zone. Other languages' zones are not queued; they load when
+   chosen. By then every stock code zone holds its names.
+2. **No override entries (the entry limit).** C1's linker (`DB_LinkXAssetEntry 0x4CC390`) keeps both copies of a name
+   that two zones with different alloc flags carry (the second as an override entry, `0x4CC648`) and throws the second
+   away when the flags are equal (`0x4CC623`-`0x4CC639`). `LR_LinkHook` replaces the flag compare at `0x4CC61B`
+   (`cmp ecx,[eax+0x1F0E154]`, 6 bytes -> `call` + `nop`; the hook ends with C1's own compare, so C1 takes its own
+   branch). For a localize string of the language zone whose name another zone holds, `LrLink` puts the language's
+   string into the holder's pool slot (one pointer store) and remembers the holder's own pointer by slot; C1 then
+   discards the new entry (holder flag 1, 8,708 strings for English at the front end) or chains it as its ordinary
+   override (holder flag 2/4/8: the name survives that zone's unload; that is the entry C1 uses for that pair
+   anyway). Names only the language has are ordinary entries of the language zone (1,464 for English).
+3. **The switch** (main thread, the one `K33OnMainTick` slot, when C1's "database idle" event `0x26090BC` is set):
+   every pool slot that still carries the language's pointer gets the holder's own pointer back (found through the
+   entries that own the slots now, under the database read lock), then the zone is unloaded: its alloc flag (`+0x4C`)
+   is 0x10 for the duration of `DB_LoadXAssets({NULL, 0, 0x10}, 1, 0)` (`0x8465768`, virtualized), which unloads that
+   group of one inside the call, on the main thread (measured). C1's per-zone unload `0x4CD9A0` is entered through
+   `LR_UnloadHook` (6-byte `jmp` over `push ebp; mov ebp,esp; mov eax,[ebp+8]`), which passes `createDefault 0` for
+   the language zone only. C1's loader asks for 1, which turns an entry without an override into a copy of the type's
+   default asset until the next load, and the localize default `CGAME_UNKNOWN` exists only in `localized_common_mp`
+   (in a match): at the front end that is C1's fatal `WIN_LOAD_ASSET_ERROR` (measured: the first prototype's first
+   unload ended the client with it). With 0 the entries and slots are freed (`0x4CDAD1`). Then
+   `DB_LoadXAssets({codol_<new>_locale, 1, 0}, 1, 0)` queues the new zone; when the event is set again a sweep
+   re-applies any shared name not in place yet, serial +1, state 0.
+4. **Memory (the crux).** A zone's memory is a block of a PMem stack (`0x2B2C97C + type*0x10C`:
+   `{name, count, pos, {name, pos}[32]}`; type 0 for flags 1 and 0x10, 1 otherwise, inlined at `0x4CD6AF`).
+   `PMem_Free` is virtualized; measured by reading the stack before and after:
+   - freeing the **top** block pops it: count and position return exactly to the block below, the freed pages are
+     decommitted (`MEM_RESERVE`), the next zone is allocated there. 120 switches in this state: identical numbers
+     after every switch (table below).
+   - freeing a block that is **not** the top (`k33_langforce` in a match, the English zone block 14 of 19): the list
+     entry's name is cleared but the stack position is rewound to the freed block, so the next zone
+     (`codol_chinese_locale`) was written at offset `0x1C88000`, over `patch_common_mp` / `common_mp`, and its list
+     entry replaced `localized_common_mp`'s. The client crashed while linking it (AV read at `0x4CC435` on the
+     database thread, AV at `0x4CB356` on the main thread). A mid-stack free is corruption, not a leak.
+   The first match of a session adds `patch_common_mp`, `common_mp`, `patch_localized_common_mp`, `localized_common_mp`
+   with flag 1 (`0x4CCD80`, only while common_mp is not loaded; C1 keeps them for the session) to stack 0, above the
+   language zone. `LrMapLoadHook` (the map load's `DB_LoadXAssets` call `0x4CD0F0`) sees a flag-1 zone in that list
+   while the language zone is the top block, unloads the language zone there (C1 has just unloaded groups 6 from the
+   same function, `0x4CCE6C`, synchronously; C1's idle event is not set at that point although nothing loads, so it
+   is not tested) and appends it to the list: it loads after common_mp and is the top block for the rest of the
+   session (measured at Killhouse and Mech Factory and after leaving the match). Every switch reads the stack first
+   (`LrGateDecide`): the language zone not on top -> state 2, nothing touched (measured with the reorder disabled:
+   `"zh" saved, applies on restart (the language zone is not the top block of its memory stack)`).
+5. **The font movie** (`scaleform/fonts_ingame.gfx`, the Latin glyphs) was in `codol_english_locale`. Loading after
+   code_post_gfx it loses to the stock copy (a rawfile, same flags, the first linked wins; measured: the active
+   `fonts_ingame.gfx` was `patch_code_post_gfx_mp`'s), and a zone Scaleform's movie came from must not be unloaded.
+   It is now part of `codol_common` (`part,codol_english_font,only=rawfile`), ahead of code_pre_gfx in every language
+   (measured: active zone `codol_common`). Chinese text keeps C1's CJK glyphs; Latin text uses the English font in both
+   languages. `codol_english_locale.ff` shrank from 7,595,839 to 202,238 bytes.
 
-## What it does
+Fallbacks, all decided before anything is touched: a C1 site differs (`LocaleSwitchCheck`, run before anything is
+queued) -> nothing is hooked, the startup language's zone loads ahead of code_pre_gfx, the others are skipped (the
+behaviour before any language switch existed) and every request ends in state 2. Old-style zones of the startup
+language (`codol_english_ui.ff` ...) -> state 2. A switch that finds the stack, the free entries (< 4,096), the free
+slots (< 4,096), C1's zone table (33) or the linker's replace mode (`0x19A2F6C`) wrong -> state 2. The database busy
+for 60 s -> state 2. The new zone did not load -> C1's own text, state 2, logged.
 
-A language is which string a localize name (asset type 27) resolves to. Three things are added, all installed
-only when every C1 site below has C1's bytes (`LocaleSwitchCheck`; one mismatch -> `language: bytes at 0x...
-differ; no live switch`, nothing is patched, other languages' zones are skipped as before, and a request ends in
-state 2):
+## Measured (2026-11-13, own test client, read-only process reads; evidence logs in the scratch folder of the run)
 
-1. **Other languages are loaded as duplicates.** `LoadPatchDir` no longer skips the `codol_<name>_locale.ff` of a
-   language that is not the startup one: it queues it after the `code_post_gfx` zones (the existing
-   `*_postgfx_mp` path, alloc flag 1). At that point nearly every name in it is already held, by the startup
-   language's zone or by a stock code zone, so C1's linker discards the string (`DB_LinkXAssetEntry`
-   `0x4CC621`-`0x4CC639`: same alloc flags, the first zone keeps the name). The call that frees the duplicate
-   (`0x4CC639`, `call 0x4CB320`, `esi` = duplicate, `ebx` = holder) goes through `LS_DiscardHook`, which copies
-   name and value into this DLL's table for that language first. No asset entry and no pool slot remain.
-2. **Displaced stock strings are kept the same way**: a stock string discarded because a language's zone holds
-   its name goes into one "stock" table. That is the Chinese text an English client otherwise never has.
-3. **Lookups consult the tables.** All eleven `DB_FindXAssetHeader(27, name)` call sites (and the translator's
-   existence test) call `LsFindHook` / `LsExistsHook`:
-   - the shown language's table, when it is not the startup language;
-   - else C1's entry. If that entry belongs to a language zone that is not the one shown (found through a map
-     built once: localize pool slot -> entry, `LsMapOwners`): the stock table's string; else the first-linked
-     entry of a non-language zone chained under it (gametype, map and UI zones have other alloc flags and chain
-     as overrides, `0x4CC648`); else NULL, which every site handles (`test eax, eax` is part of the byte check).
-   - otherwise C1's entry as it is.
+Entries are C1's 59,999 asset entries in use (all types); localize = slots of the 24,000-slot pool in use; stack 0 =
+the code zones' PMem stack (blocks, position).
 
-A switch is one interlocked store of the shown language index. There is no load, no unload, no pool write, no
-"database idle" precondition, and it works in a match. The result for every name is what a client started in
-that language resolves, with one exception listed under "Differences".
+| state | build | entries used | localize | stack 0 |
+|---|---|---|---|---|
+| front end, English | no language switch (the shipped DLL, whose check fails) | 40,342 | 11,211 | 15, 0x24CE000 |
+| front end, English | this branch | 40,342 | 11,211 | 15, 0x24CE000, top codol_english_locale |
+| front end, English | first implementation, its check corrected (all languages resident) | 40,346 | 11,211 | |
+| front end, Chinese | no language switch | 39,319 | 10,192 | |
+| front end, Chinese (after switching) | this branch | 39,320 | 10,192 | 15, 0x23FC000, top codol_chinese_locale |
+| front end, Chinese start | first implementation, check corrected (English resident) | 40,346 | 11,211 | |
+| Killhouse match, English | no language switch | 49,222 | 11,962 | 19 |
+| Killhouse match, English | this branch (two runs: started en / switched from zh) | 49,235 / 49,210 | 11,961 / 11,936 | 19, 0x3EAD000, top codol_english_locale |
+| Killhouse match, English | first implementation, check corrected | 49,226 | 11,962 | |
+| Killhouse match, Chinese | no language switch | 48,451 | 11,181 | |
+| Killhouse match, Chinese | this branch (switched at the front end, then the map load) | 48,452 | 11,181 | 19, 0x3DDB000 |
+| Killhouse match, Chinese start | first implementation, check corrected | 49,240 | 11,962 | |
+| front end after the match, en / zh | this branch | 48,599 / 47,841 | 11,250 / 10,495 | 19 |
+| Mech Factory (zombies) match, en / zh | this branch | 38,492 / 37,734 | 11,649 / 10,894 | 19, 0x3EAD000 / 0x3DDB000 |
 
-## Why the pool is not cleared and reloaded
+Cycles (`k33_langcycle 24`, numbers read after every switch): front end 2 x 24, Killhouse 24, front end after the
+match 24, Mech Factory 24. In each, every English state and every Chinese state had the same entries, localize count,
+zone count and stack 0 count/position (e.g. Killhouse: 12 x `10,789 free, 11,936 localize, stack 0 19 blocks
+0x3EAD000`, 12 x `11,547 free, 11,181 localize, 19 blocks 0x3DDB000`): no leak, no growth. A switch took 15-30 ms to
+Chinese (7.5 KB zone) and 110-550 ms to English.
 
-That was the requested mechanism (unload the locale zone under an alloc flag of its own, load the other one,
-promote its entries). It was not built, for measured reasons:
+Who holds pointers into the language zone (scan of all committed writable memory for the exact addresses of the
+zone's strings; Killhouse, English, before a switch):
 
-- **The asset entry table is the limit, not the localize pool.** `0x1C402C8` holds 59,999 usable entries for all
-  assets of all types (init `0x4CB26B`-`0x4CB294`, free list `0x18779BC`, uint16 links). Measured by reading
-  the tables of a running client and of twelve crash dumps (`k33-devtest\DMP*.tmp`, read only):
+| holder | count | handled |
+|---|---|---|
+| the localize pool (slots in place and the zone's own slots) | 3,100 | put back / freed by the switch |
+| this DLL's slot table and name index (454 KB) | 2,088 | cleared by the switch |
+| C1 `.bss` `0x017C6904` (a transient name pointer) | 1 | C1 rewrites it (it pointed into the new zone after the switch) |
+| C1 `0x020389E8`, `0x02038A08`, `0x02038A38`: entries of a 16-byte record list of rawfiles read at load time (`{size, size, name, next}`) | 3 | none: free records (size fields 0); C1 leaves the same stale name field in its own free records. They kept pointing at decommitted memory through the later switches and map loads without a fault. Inferred harmless, not proven: the code that walks the list is virtualized |
+| about 20 single hits in other heaps / encrypted module data | 1 each | coincidental values (their neighbours are random bytes or packed uint16 pairs) |
 
-  | state (English client) | entries used | localize | zones |
-  |---|---|---|---|
-  | front end, current zones (live client and `CODOL_Builds_quit_popup_20261029.dmp`) | 40,273 | 11,190 | 19 |
-  | in a match, mp_killhouse_sh (`DMP5FB9.tmp`) | 47,530 | 10,743 | 21 |
-  | front end after a match (`DMP439A.tmp`, `DMPEFB2.tmp`) | 46,980 | 10,057 | 19-20 |
-
-  For Chinese to be reachable from an English start inside C1's pool, the stock strings English displaces must
-  keep their entries (up to 7,739). That is about 55,300 of 59,999 in the smallest map, for every English player,
-  switched or not. Whether a larger map overflows was not measured; the failure would be C1's fatal "exceeded
-  limit" error.
-- **Freeing zone memory is not readable.** `PMem_Free` (`0x8373109`) and `DB_LoadXAssets` (`0x8465768`) are
-  virtualized. `PMem_BeginAlloc` is inlined at `0x4CD6AF`-`0x4CD6FB`: alloc type 0 for flags 1 or 0x10, else 1;
-  a list of 32 `{name, pos}` per type with no bounds check. Measured: type 0 grows up, type 1 down from
-  `0x12C00000`, and a locale zone at the head of the pre-gfx list is the second block of its stack, so its
-  first unload would be a mid-stack free whose behaviour cannot be read.
-- **C1 hands out raw `char *` into zone memory** (`0x5DA3B2` returns `entry->value`). Nothing here is ever freed,
-  so no pointer C1 holds can dangle.
-- `codol_english_locale` also carries `scaleform/fonts_ingame.gfx`; unloading it changes which font file is active.
-
-What the request wanted (the language changes at once, completely, both ways, as often as wanted) is what this
-does; what differs is that the strings of the language not shown stay in memory (about 0.5 MB of heap per
-English-sized language) instead of being re-read.
+After the unload the zone's pages are decommitted, so a pointer C1 kept and read later would fault, not show old text.
+None was found besides the above and no fault happened in 168 switches across front end, two maps and a map load;
+the scan was one moment of one map, so a holder that exists only during some other event (a kill feed line, an open
+scoreboard) is not excluded.
 
 ## Addresses
 
-M = measured (capstone over `C1.exe`, bytes compared at run time before use, or read from a live client / dump);
-I = inferred.
+M = measured (bytes compared at run time before use, disassembly of the running image, or read from a live client);
+I = inferred. Every patched or called site is byte-checked in `LocaleSwitchCheck`.
 
 | address | what | |
 |---|---|---|
-| `0x4CB8E0` | `DB_FindXAssetHeader(type, name)`; read lock at `0x4CB953`-`0x4CB990` (`++[0x2007A5C]`, wait while `[0x2007A60]`) | M |
-| `0x5DA3A6 0x5F4A13 0x5FA7C2 0x5FA965 0x5FAAFB 0x5FACAB 0x5FAED5 0x5FC8A6 0x5FCB1D 0x5FCD87 0x6A5B23` | the eleven `push 1Bh ; call 0x4CB8E0 ; add esp,8 ; test eax,eax` sites: every call of it with type 27 in the image | M |
-| `0x6A5AFA` | the translator's `push 1Bh ; call 0x4CB850 ; add esp,8 ; test al,al` | M |
-| `0x4CC390` | `DB_LinkXAssetEntry`; `0x4CC621` same flags -> discard, `0x4CC648` other flags -> chain as override (new entry right behind the holder), `0x4CC6A6` replace (zone byte `+0xA4`, only `ffotd_client`) | M |
-| `0x4CC639` | `call 0x4CB320`: free the duplicate entry (`esi`); `ebx` = the entry that keeps the name | M |
-| `0x4CB350` | asset name hash (not used: entries are found by pool slot) | M |
-| `0x1C402C8` | asset entries, 24 bytes: type +0, header +8, zone +0x10, flags +0x11, next +0x12, override +0x14 | M |
-| `0x18FD9D8` | 60000 uint16 hash buckets | M |
-| `0x1F0E108` | zones, 0xA8 bytes: name +0xC, alloc flags +0x4C, PMem type +0x50; count `0x18FCFBC`, load order `0x1C402A4`; limit 34 at `0x4CC824` | M |
-| `0xCD5028[27]`, `0xCD4D68[27]` | localize pool block and size (24000 after `PatchLocalizePool`) | M |
-| `0x26090BC` | event: database idle and its results taken (`0x4CC8D7`); `0x2609060` database thread id | M |
-| `0x624740` | `Dvar_RegisterString` (prologue checked) | M |
-| alloc flags | 1 code zones (never unloaded), 2 UI, 4 gametype/map, 8 load screen; 0x10 and above unused in every state looked at | M |
-| language zones are never unloaded, so their entries and pool slots are fixed | no path frees flag 1 except shutdown `0x4CDEB0` | I (read from the callers `0x4CCE3D` mask 6, `0x598624` mask 2, `0x599CB7` mask 0x1E) |
-| a discarded duplicate's header is still intact at `0x4CC639` | it was copied into the pool slot at `0x4CC521` and is freed only by the call | M (code), not run |
-| all localize text goes through the eleven sites | no other reference to type 27 reads a value (the others are pool setup, enumeration for the pure check, and the linker) | I |
+| `0x4CC600`-`0x4CC652` | `DB_LinkXAssetEntry`'s flag compare `0x4CC61B` (patched: `call LR_LinkHook; nop`); equal -> discard `0x4CC623` / `0x4CC639 call 0x4CB320`; not equal -> override `0x4CC648` | M |
+| `0x4CB320` | free the entry in esi | M |
+| `0x4CD9A0` | `DB_UnloadXZone(zone, createDefault)` (patched: `jmp LR_UnloadHook; nop`); createDefault -> `0x4CDB0B` (default copy; fatal `0x4CDB79` without a default), 0 -> `0x4CDAD1` (freed) | M |
+| `0x8465768` | `DB_LoadXAssets(info, count, sync)`, virtualized; called; its call sites `0x59864A`, `0x4CCE6C`, `0x5984D2` are checked, `0x4CD0F0` is patched -> `LrMapLoadHook` | M |
+| `0x4CCD80` | queues common_mp & co. with flag 1 while common_mp is not loaded | M |
+| `0x4CD6AF` | inlined PMem_BeginAlloc: stack 0 for flags 1 and 0x10, stack 1 otherwise; stacks at `0x2B2C97C` | M |
+| `0x4CC8D7`, `0x26090BC` | the database idle event | M |
+| `0x1C402C8`, `0x18779BC`, `0x18FD9D8` | asset entries, free list, hash | M |
+| `0x1F0E108` (+0xC name, +0x4C flags), `0x18FCFBC`, `0x1C402A4`, `0x187490C` | zones, count, load order, loaded flags | M |
+| `0xCD5028[27]`, `0xCD4D68[27]`, `0x18FCFC0[27]` | localize pool, size, count | M |
+| `0x19A2F6C` | linker replace mode (0 in every state seen) | M |
+| `0x624740` | `Dvar_RegisterString` | M |
+| after the first map load nothing else loads with flag 1 | measured for MP (Killhouse) and zombies (Mech Factory); other modes not looked at | I (gated at run time) |
 
 ## Costs and limits
 
-- English start: one extra zone load at startup (`codol_chinese_locale`, 426 strings), a few Chinese-only names
-  become ordinary entries; two array reads per lookup.
-- Chinese start: `codol_english_locale` (7.6 MB file, about 8 MB of zone memory, measured as its PMem block)
-  loads at every startup and stays; the English names no zone held yet become entries, at most as many as an
-  English client already has.
-- At most `LANG_RESIDENT_MAX` (3) other languages are loaded: C1 holds 33 zones. More languages are listed but
-  answer state 2.
-- A language with only old-style zones (`codol_english_ui.ff` ... without `codol_english_locale.ff`) starts
-  normally but cannot be switched to live.
-- Each table holds 24,576 strings; more are dropped and the log says so.
-
-## Fonts
-
-Not touched. The `fonts_ingame.gfx` that linked first stays until restart: started in English, the English font
-zone's Latin glyphs remain after switching to Chinese (CJK glyphs are the stock ones in both); started in
-Chinese, English text is drawn with the stock font until restart.
-
-## Differences from what was asked
-
-1. No pool clear / zone reload (above).
-2. `k33_languageState` 1 is never visible: the switch is synchronous.
-3. A switch does not wait for an idle database and is allowed in a match.
-4. Names that only one language has resolve in that language and to nothing (the key is shown) in every other,
-   exactly as after a restart; there is no fallback to the startup language's text.
-5. Started with a command-line language, that language is written to `k33_language` and so saved.
-6. `test_ui_baseline.py` pins `src/kernel33.c` and `src/patch_locale_policy.h` hashes and fails until `ui_baseline.json`
-   is re-recorded.
+- Entries and slots: the same as a client without the switch, at every state measured (table above); the language
+  not shown costs nothing.
+- One extra unload + load of the language zone on the first map load of a session (about 0.1 s, on the loading
+  screen; for that moment the shown language's own names resolve to nothing and shared names to C1's text).
+- With the match hosted in-process, the switch acts on the client's database only.
+- At most `CODOL_LANG_MAX` (8) languages are listed; one is loaded at a time.
 
 ## Not verified
 
-Nothing here ran in a client. The local-testing DLL links (`K33_LOCAL_TESTING=1 K33_NO_COPY=1 sh scripts/build.sh`), but
-a test client needs a lobby, and no offline one is part of this branch. Open points, in order of weight:
+1. A larger MP map than Killhouse (one hosted match per client run on this branch: the lobby refused a second
+   `Restart the client before hosting another Local Play match`). The DLL adds no entries, so the map only moves
+   C1's own number.
+2. Pointer holders at moments other than the scanned one (see above).
+3. Survival and Spec Ops (co-op) maps. A mode that loads further flag-1 zones would leave the language zone below them;
+   every later switch in that session then answers state 2 (gated, logged), not a fault.
+4. `ui_baseline.json` pins `src/kernel33.c` and `src/patch_locale_policy.h`: `tests/test_ui_baseline.py` fails until
+   the baseline is re-recorded after review (`python -m zonekit.ui_baseline --record`).
 
-1. The capture hook at `0x4CC639` runs for every duplicate of every type during every zone load (it returns at
-   once for other types). Startup and a map load must be unchanged.
-2. `LsMapOwners` waits for the event at `0x26090BC`; the log line `language: N string(s) belong to language zones;
-   A of other languages and B displaced stock strings kept` must appear within seconds of the first frame, with
-   A about 426 (English start) or about 7,700-10,154 (Chinese start) and B about 7,700 (English start).
-3. Text after a switch, both directions, front end and in a match.
-4. That nothing reads localize text outside the eleven sites (a string that stays in the old language after a
-   movie was rebuilt would show it).
+## Manual test (local-testing build, `+set k33_cmdFile 1`)
 
-Manual test (test client, `+set k33_cmdFile 1`, both locale zones in the patch folder):
-
-1. Start with no language option. Log: `language: "en" (the default)`, `patch folder: patch\codol_chinese_locale.ff
-   queued as zone "codol_chinese_locale" after code_post_gfx`, `language: live switch installed (12 lookups ...)`,
-   then the `string(s) belong to language zones` line and `language: k33_language "en" of "en;zh"; live switch
-   ready`.
-2. Console / command file: `k33_setlanguage zh`. Log: `language: "en" -> "zh" live (serial 1; ...)`.
-   `k33_languageSerial` 1, `k33_languageState` 0. Reopen a menu: Chinese. `k33_setlanguage en`: serial 2, English.
-   Repeat ten times.
-3. `set k33_language nope`: log `is not an installed language`, dvar back to the previous value.
-4. Enter a match (zombies and MP), switch both ways, open the scoreboard and pause menu, leave the match, switch
-   again at the front end.
-5. Quit, check `players\config_mp.cfg` has `seta k33_language "zh"`, start without options: `language: "zh" (the
-   saved k33_language)`, the game is Chinese, `codol_english_locale` is queued after code_post_gfx; switch to en
-   and back.
-6. Start with `+set k33_english 1` and with `+set k33_language zh`: the command line wins over the saved line.
-7. Remove `codol_chinese_locale.ff`: list is still `en;zh`, `zh` switches live to C1's stock text (the UI movies'
-   K33UI keys show as `@K33UI_...`, as in a Chinese start without that zone).
+1. Start. `Kernel33.log`: `language: live switch installed (link hook 0x004CC61B, unload hook 0x004CD9A0)`,
+   `language: "en" zone "codol_english_locale" loaded: 8708 string(s) in place`, `language: startup: ... top
+   "codol_english_locale"`.
+2. `k33_setlanguage zh`: `"en" -> "zh" live (serial 1, ...)`; native HUD text and newly opened menus are Chinese.
+   `k33_langcycle 24`: 24 `live` lines; the `after the switch` numbers are identical per language.
+3. Enter a match: `the map load adds code zones; "codol_english_locale" is unloaded and loads again after them`;
+   switch in the match; leave; switch at the front end.
+4. `set k33_language nope`: `is not an installed language`, the dvar goes back.

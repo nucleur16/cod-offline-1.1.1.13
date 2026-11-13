@@ -630,8 +630,11 @@ static BOOL PatchUnsignedZones(void)
 typedef struct { const char *name; int allocFlags; int freeFlags; } XZoneInfo;
 typedef void (__cdecl *LoadXAssetsFn)(XZoneInfo *info, unsigned count, int sync);
 
-enum { PATCH_PRE_GFX, PATCH_UI, PATCH_POST_GFX };
-typedef struct { char name[64]; char path[MAX_PATH]; int stage; } PatchZone;
+/* PATCH_LOCALE: a language's codol_<name>_locale zone that is not the startup language's. No list loads it;
+ * locale_switch.c does, when that language is chosen. `locale` marks every language zone that locale_switch.c
+ * manages (the startup one is PATCH_POST_GFX with it): the last zone of the code_post_gfx list. */
+enum { PATCH_PRE_GFX, PATCH_UI, PATCH_POST_GFX, PATCH_LOCALE };
+typedef struct { char name[64]; char path[MAX_PATH]; int stage; int locale; } PatchZone;
 
 static PatchZone g_patchZones[PATCHDIR_MAX_FILES];
 static int g_patchZoneCount;
@@ -655,7 +658,7 @@ static BOOL PatchDirEnabled(void)
 /* English (launch option k33_english). Both languages use the same UI movies (voice_ui_mp, controller_ingame: every
  * text in them is a localize key); the language is which string zones load. English is the patch zones named
  * codol_english* (build_zones.py: codol_english = localized strings, codol_english_font = the Latin glyphs of
- * fonts_ingame.gfx, codol_english_ui / codol_english_ui_extra = the UI movies' K33UI_* keys, codol_english_zombies_base
+ * fonts_ingame.gfx (packed into codol_common since the language can change), codol_english_ui / codol_english_ui_extra = the UI movies' K33UI_* keys, codol_english_zombies_base
  * = zombies strings, codol_english_usermaps = the usermaps' names); they load ahead of code_pre_gfx, so their strings
  * win over the stock Chinese ones. Chinese is C1's own strings plus the zones named codol_chinese* (the UI movies'
  * K33UI_* keys in Chinese). Only one set loads: C1 holds at most 12000 localize assets, and a name loaded by both sets
@@ -667,20 +670,23 @@ static BOOL PatchDirEnabled(void)
  * (patch_locale_policy.h CodolStartupLanguage). C1 execs config_mp.cfg before any of this and applies no +set to a
  * dvar it does not know, so both are read here, from the command line and from the plaintext config file itself
  * (PatchPlainConfig); k33_language becomes a real, archived dvar later (locale_switch.c), which is what writes the
- * saved line. The startup language's zones load ahead of code_pre_gfx as before. Every other language's
- * codol_<name>_locale zone is queued after the code_post_gfx zones instead of being skipped (at most
- * LANG_RESIDENT_MAX of them, and only when locale_switch.c's C1 sites all match): there its strings are duplicates
- * of names C1 already holds, the linker discards them and locale_switch.c keeps them, which is what makes a
- * language change possible without a restart. Nothing else in the DLL depends on the language (GBK text input,
- * fonts, voice, controller work the same in all). The pure check lists client_shipRetail\<language>\ and main\
+ * saved line. When every C1 site locale_switch.c uses matches, a language's one codol_<name>_locale zone is that
+ * file's to load and unload: the startup language's loads as the last zone of the code_post_gfx list (its strings go
+ * into the slots of the names C1 already holds, locale_switch.c LrLink), another language's is not queued at all and
+ * loads only when it is chosen, after the shown one was unloaded. Otherwise (a site differs, or only old-style
+ * codol_english_* zones are installed) the startup language's zones load ahead of code_pre_gfx as before and the
+ * others are skipped. The Latin font movie is in codol_common (every language). Nothing else in the DLL depends on
+ * the language (GBK text input, voice, controller work the same in all). The pure check lists client_shipRetail\<language>\ and main\
  * only, never patch\, so every state passes it. */
 static BOOL g_english = TRUE;
 static int g_englishZones, g_englishSkipped, g_chineseZones;
-#define LANG_RESIDENT_MAX 3   /* C1 holds 33 zones (0x4CC824); a match has about 26 with one resident language */
 static char g_lang[CODOL_LANG_NAME_MAX] = "en";             /* the language this client started in */
 static char g_langs[CODOL_LANG_MAX][CODOL_LANG_NAME_MAX];   /* k33_languageList, sorted */
-static int g_langCount, g_langResident;
+static int g_langCount;
 static unsigned g_langZones;                                /* bit i: g_langs[i] has a zone in the patch folder */
+static unsigned g_langLocale;                               /* bit i: ... and its codol_<name>_locale zone is queued */
+static BOOL g_langReload;                                   /* the language zones are locale_switch.c's to load and unload */
+static BOOL g_langOldStyle;                                 /* a zone of the startup language loads the old way too */
 static BOOL LocaleSwitchCheck(void);                        /* locale_switch.c */
 
 /* players\config_mp.cfg next to the exe, for its saved k33_language line (at most 1 MB; NULL when there is none).
@@ -854,21 +860,22 @@ static void LoadPatchDir(void)
         if (len - 3 >= sizeof(z->name)) { Log("patch folder: skipped %s: name too long", file); continue; }
         memcpy(z->name, file, len - 3);
         z->name[len - 3] = 0;
-        BOOL resident = FALSE;   /* another language's locale zone: after code_post_gfx, for locale_switch.c */
-        if (!CodolPatchZoneAllowedFor(z->name, g_lang)) {
-            char owner[CODOL_LANG_NAME_MAX], want[64];
-            /* only the language's one zone, under its own name (codol_english_locale, not a codol_en_locale beside it) */
-            resident = !CodolPatchZoneRetired(z->name) && CodolLocaleZoneLanguage(z->name, owner) &&
-                       _snprintf(want, sizeof(want), "codol_%s_locale", CodolLanguageZoneStem(owner)) > 0 &&
-                       lstrcmpiA(want, z->name) == 0 &&
-                       CodolLanguageListFind(g_langs, g_langCount, owner) >= 0 && g_langResident < LANG_RESIDENT_MAX &&
-                       LocaleSwitchCheck();
-            if (!resident) {
-                if (EnglishZone(z->name)) g_englishSkipped++;
-                else if (CodolPatchZoneRetired(z->name))
-                    Log("patch folder: skipped %s: retired duplicate map table", file);
-                continue;
-            }
+        /* A language's one zone, under its own name (codol_english_locale, not a codol_en_locale beside it), is
+         * locale_switch.c's when its C1 sites all match: the startup language's loads after the code_post_gfx zones
+         * as the last code zone, another language's when it is chosen. Otherwise everything is as it was before a
+         * language could change: the startup language's zones ahead of code_pre_gfx, the others skipped. */
+        char owner[CODOL_LANG_NAME_MAX], want[64];
+        int lang = -1;
+        BOOL locale = !CodolPatchZoneRetired(z->name) && CodolLocaleZoneLanguage(z->name, owner) &&
+                      _snprintf(want, sizeof(want), "codol_%s_locale", CodolLanguageZoneStem(owner)) > 0 &&
+                      lstrcmpiA(want, z->name) == 0 &&
+                      (lang = CodolLanguageListFind(g_langs, g_langCount, owner)) >= 0 && LocaleSwitchCheck();
+        BOOL startup = CodolPatchZoneAllowedFor(z->name, g_lang);
+        if (!startup && !locale) {
+            if (EnglishZone(z->name)) g_englishSkipped++;
+            else if (CodolPatchZoneRetired(z->name))
+                Log("patch folder: skipped %s: retired duplicate map table", file);
+            continue;
         }
         if (lstrcmpiA(z->name, "ffotd_client") == 0) {
             Log("patch folder: skipped %s: the name belongs to the lobby's FFOTD", file);
@@ -896,7 +903,8 @@ static void LoadPatchDir(void)
         }
 
         _snprintf(z->path, sizeof(z->path), "%s%s", pdir, file);
-        z->stage = resident ? PATCH_POST_GFX : PatchZoneStage(z->name);
+        z->locale = locale;
+        z->stage = !locale ? PatchZoneStage(z->name) : startup ? PATCH_POST_GFX : PATCH_LOCALE;
         z->path[sizeof(z->path) - 1] = 0;
         HANDLE f = CreateFileA(z->path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
         if (f == INVALID_HANDLE_VALUE) {
@@ -915,11 +923,16 @@ static void LoadPatchDir(void)
             continue;
         }
         g_patchZoneCount++;
-        if (resident) {
-            g_langResident++;
-            Log("patch folder: %s%s queued as zone \"%s\" after code_post_gfx: a language to switch to (locale_switch.c)",
-                sub, file, z->name);
-            continue;
+        if (locale) {
+            g_langLocale |= 1u << lang;
+            g_langReload = TRUE;
+            if (!startup) {
+                Log("patch folder: %s%s (%lu bytes) is zone \"%s\": a language to switch to (locale_switch.c)", sub, file,
+                    (unsigned long)size, z->name);
+                continue;
+            }
+        } else if (CodolPatchZoneLanguage(z->name, owner)) {
+            g_langOldStyle = TRUE;   /* codol_english_ui and the like: C1 keeps them (alloc flag 1) for the session */
         }
         g_englishZones += EnglishZone(z->name);
         g_chineseZones += ChineseZone(z->name);
@@ -987,13 +1000,16 @@ static void SubmitPatchZones(int stage, const char *list, XZoneInfo *info, unsig
     unsigned n = 0;
     if (stage == PATCH_POST_GFX)
         for (unsigned i = 0; i < count && n < sizeof(all) / sizeof(all[0]); i++) all[n++] = info[i];
-    for (int i = 0; i < g_patchZoneCount; i++) {
-        if (g_patchZones[i].stage != stage) continue;
-        all[n].name = g_patchZones[i].name;
-        all[n].allocFlags = info[0].allocFlags;
-        all[n].freeFlags = 0;
-        n++;
-    }
+    /* the language zone last: every name it shares is held by then, and its memory is the top block of the code
+     * zones' PMem stack, which is what lets locale_switch.c unload it */
+    for (int pass = 0; pass < 2; pass++)
+        for (int i = 0; i < g_patchZoneCount; i++) {
+            if (g_patchZones[i].stage != stage || g_patchZones[i].locale != pass) continue;
+            all[n].name = g_patchZones[i].name;
+            all[n].allocFlags = info[0].allocFlags;
+            all[n].freeFlags = 0;
+            n++;
+        }
     if (stage != PATCH_POST_GFX)
         for (unsigned i = 0; i < count && n < sizeof(all) / sizeof(all[0]); i++) all[n++] = info[i];
     Log("patch folder: %s list: %d patch zone(s) %s %u stock", list, PatchZonesIn(stage),
