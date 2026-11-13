@@ -1680,9 +1680,11 @@ __asm__(
 typedef void(__cdecl *UiDrawTextFn)(const void *, const char *, int, void *, float, float, int, int, float,
                                     const float *, int);
 
+static int HudStyleOwnerDraw(const DWORD *args); /* hud_style.c: the HUD styles' ownerdraws share this hook */
 /* args points at CG_OwnerDraw's first stack argument ([ebp+8]). 1 = handled here. */
 __attribute__((used)) int __cdecl VoiceOwnerDraw(const DWORD *args)
 {
+    if (HudStyleOwnerDraw(args)) return 1;
     int ownerDraw = (int)args[(0x40 - 8) / 4];
     if (ownerDraw != VOICE_OD_TALKING && (ownerDraw < VOICE_OD_TALKER1 || ownerDraw > VOICE_OD_TALKER1 + 3)) return 0;
     if (!g_voiceOn || !g_voiceDvarsDone || !VoiceEnabled()) return 1;

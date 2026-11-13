@@ -1337,6 +1337,7 @@
   "MENU_SAB_DANGER": false,
   "MENU_SAB_NEUTRAL": false,
   "MENU_SAB_SAFE": false,
+  "MPUI_ASSIST_CAP": false,
   "MPUI_COMBAT_TRAINING": true,
   "MPUI_DIE_CAPS": false,
   "MPUI_KILL_CAPS": false,
@@ -1346,176 +1347,104 @@
   "MPUI_WINNING_CAPS": true,
   "MP_BOMB_A_COLON_N_N": true,
   "MP_BOMB_B_COLON_N_N": true,
-  "MP_BOMB_COLON_N_N": true
+  "MP_BOMB_COLON_N_N": true,
+  "SF_WEAPON_BURST_2_NAME": false,
+  "SF_WEAPON_BURST_3_NAME": false,
+  "SF_WEAPON_BURST_4_NAME": false,
+  "SF_WEAPON_FULL_AUTO_NAME": false,
+  "SF_WEAPON_ROCKET_NAME": false,
+  "SF_WEAPON_SEMIAUTO_PUMP_NAME": false,
+  "SF_WEAPON_SEMIAUTO_RIFLE_NAME": false
  },
  "localize": {
+  "MPUI_ASSIST_CAP": {
+   "english": "A",
+   "chinese": "助",
+   "from": "2.6.9.7"
+  },
   "MPUI_DIE_CAPS": {
    "english": "D",
    "chinese": "亡",
-   "from": "1.2.1.12"
+   "from": "2.6.9.7"
   },
   "MPUI_KILL_CAPS": {
    "english": "K",
    "chinese": "杀",
-   "from": "1.2.1.12"
+   "from": "2.6.9.7"
   },
   "MPUI_SCORE_CAPS": {
    "english": "SCORE",
    "chinese": "得分",
-   "from": "1.2.1.12"
+   "from": "2.6.9.7"
+  },
+  "SF_WEAPON_BURST_2_NAME": {
+   "english": "BURST",
+   "chinese": "点射",
+   "from": "2.6.9.7"
+  },
+  "SF_WEAPON_BURST_3_NAME": {
+   "english": "BURST",
+   "chinese": "点射",
+   "from": "2.6.9.7"
+  },
+  "SF_WEAPON_BURST_4_NAME": {
+   "english": "BURST",
+   "chinese": "点射",
+   "from": "2.6.9.7"
+  },
+  "SF_WEAPON_FULL_AUTO_NAME": {
+   "english": "AUTO",
+   "chinese": "全自动",
+   "from": "2.6.9.7"
+  },
+  "SF_WEAPON_ROCKET_NAME": {
+   "english": "SINGLE",
+   "chinese": "单发",
+   "from": "2.6.9.7"
+  },
+  "SF_WEAPON_SEMIAUTO_PUMP_NAME": {
+   "english": "PUMP",
+   "chinese": "泵动式",
+   "from": "2.6.9.7"
+  },
+  "SF_WEAPON_SEMIAUTO_RIFLE_NAME": {
+   "english": "SEMI",
+   "chinese": "半自动",
+   "from": "2.6.9.7"
   }
  },
  "styles": {
-  "v12": {
-   "materials": {
-    "1kd_rate_bg": {
-     "action": "carry",
-     "asset": "k33hud12_1kd_rate_bg",
-     "why": "1.1.1.13 has no material of this name; image 1kd_rate_bg as k33hud12_1kd_rate_bg"
-    },
-    "1score_bar_bar1": {
-     "action": "carry",
-     "asset": "k33hud12_1score_bar_bar1",
-     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar1 as k33hud12_1score_bar_bar1"
-    },
-    "1score_bar_bar1_bottom": {
-     "action": "carry",
-     "asset": "k33hud12_1score_bar_bar1_bottom",
-     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar1_bottom as k33hud12_1score_bar_bar1_bottom"
-    },
-    "1score_bar_bar2": {
-     "action": "carry",
-     "asset": "k33hud12_1score_bar_bar2",
-     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar2 as k33hud12_1score_bar_bar2"
-    },
-    "1score_bar_bar2_bottom": {
-     "action": "carry",
-     "asset": "k33hud12_1score_bar_bar2_bottom",
-     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar2_bottom as k33hud12_1score_bar_bar2_bottom"
-    },
-    "1score_bar_bg": {
-     "action": "carry",
-     "asset": "k33hud12_1score_bar_bg",
-     "why": "1.1.1.13 has no material of this name; image 1score_bar_bg as k33hud12_1score_bar_bg"
-    },
-    "ac130_overlay_grain": {
-     "action": "stock",
-     "why": "1.1.1.13 common_mp has it with the same image"
-    },
-    "compass_map_default": {
-     "action": "stock",
-     "why": "1.1.1.13 common_mp has it with the same image"
-    },
-    "compassping_player": {
-     "action": "carry",
-     "asset": "k33hud12_compassping_player",
-     "why": "1.1.1.13's compassping_player differs; image compassping_player as k33hud12_compassping_player"
-    },
-    "dpad_killstreak_nuke": {
-     "action": "stock",
-     "why": "no image of this name in 1.2.1.12 to compare; 1.1.1.13's own HUD menus draw a material of this name"
-    },
-    "hud_killstreak_bar_empty": {
-     "action": "carry",
-     "asset": "k33hud12_hud_killstreak_bar_empty",
-     "why": "1.1.1.13's hud_killstreak_bar_empty differs; image hud_killstreak_bar_empty as k33hud12_hud_killstreak_bar_empty"
-    },
-    "hud_killstreak_bar_full": {
-     "action": "carry",
-     "asset": "k33hud12_hud_killstreak_bar_full",
-     "why": "1.1.1.13's hud_killstreak_bar_full differs; image hud_killstreak_bar_full as k33hud12_hud_killstreak_bar_full"
-    },
-    "hud_suitcase_bomb": {
-     "action": "stock",
-     "why": "1.1.1.13 common_mp has it with the same image"
-    },
-    "minimap_scanlines": {
-     "action": "stock",
-     "why": "1.1.1.13 common_mp has it with the same image"
-    },
-    "objective_line": {
-     "action": "stock",
-     "why": "1.1.1.13 common_mp has it with the same image"
-    },
-    "scanlines_stencil": {
-     "action": "stock",
-     "why": "no image of this name in 1.2.1.12 to compare; 1.1.1.13's own HUD menus draw a material of this name"
-    },
-    "specialty_bg": {
-     "action": "carry",
-     "asset": "k33hud12_specialty_bg",
-     "why": "1.1.1.13 has no material of this name; image specialty_bg as k33hud12_specialty_bg"
-    },
-    "specialty_bg_disable": {
-     "action": "carry",
-     "asset": "k33hud12_specialty_bg_disable",
-     "why": "1.1.1.13 has no material of this name; image specialty_bg_disable as k33hud12_specialty_bg_disable"
-    },
-    "stencil_base": {
-     "action": "stock",
-     "why": "a reference in 1.2.1.12 too; 1.1.1.13 common_mp has it"
-    },
-    "stencil_fill": {
-     "action": "stock",
-     "why": "no image of this name in 1.2.1.12 to compare; 1.1.1.13's own HUD menus draw a material of this name"
-    },
-    "weaponbar_bg": {
-     "action": "carry",
-     "asset": "k33hud12_weaponbar_bg",
-     "why": "1.1.1.13 has no material of this name; image weaponbar_bg as k33hud12_weaponbar_bg"
-    },
-    "weaponbar_key_bg": {
-     "action": "carry",
-     "asset": "k33hud12_weaponbar_key_bg",
-     "why": "1.1.1.13 has no material of this name; image weaponbar_key_bg as k33hud12_weaponbar_key_bg"
-    },
-    "white": {
-     "action": "stock",
-     "why": "a reference in 1.2.1.12 too; 1.1.1.13 code_post_gfx_mp has it"
-    }
-   },
-   "tables": {
-    "mp/coKillstreakStatsTable.csv,0,15": {
-     "rows_by": 1,
-     "shared": 48,
-     "differ": 0,
-     "only_1.2.1.12": [
-      "locker"
-     ]
-    }
-   }
-  },
   "v26": {
    "materials": {
     "1kd_rate_bg": {
      "action": "carry",
-     "asset": "k33hud12_1kd_rate_bg",
-     "why": "1.1.1.13 has no material of this name; image 1kd_rate_bg as k33hud12_1kd_rate_bg"
+     "asset": "k33hud26_1kd_rate_bg",
+     "why": "1.1.1.13 has no material of this name; image 1kd_rate_bg as k33hud26_1kd_rate_bg"
     },
     "1score_bar_bar1": {
      "action": "carry",
-     "asset": "k33hud12_1score_bar_bar1",
-     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar1 as k33hud12_1score_bar_bar1"
+     "asset": "k33hud26_1score_bar_bar1",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar1 as k33hud26_1score_bar_bar1"
     },
     "1score_bar_bar1_bottom": {
      "action": "carry",
-     "asset": "k33hud12_1score_bar_bar1_bottom",
-     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar1_bottom as k33hud12_1score_bar_bar1_bottom"
+     "asset": "k33hud26_1score_bar_bar1_bottom",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar1_bottom as k33hud26_1score_bar_bar1_bottom"
     },
     "1score_bar_bar2": {
      "action": "carry",
-     "asset": "k33hud12_1score_bar_bar2",
-     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar2 as k33hud12_1score_bar_bar2"
+     "asset": "k33hud26_1score_bar_bar2",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar2 as k33hud26_1score_bar_bar2"
     },
     "1score_bar_bar2_bottom": {
      "action": "carry",
-     "asset": "k33hud12_1score_bar_bar2_bottom",
-     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar2_bottom as k33hud12_1score_bar_bar2_bottom"
+     "asset": "k33hud26_1score_bar_bar2_bottom",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bar2_bottom as k33hud26_1score_bar_bar2_bottom"
     },
     "1score_bar_bg": {
      "action": "carry",
-     "asset": "k33hud12_1score_bar_bg",
-     "why": "1.1.1.13 has no material of this name; image 1score_bar_bg as k33hud12_1score_bar_bg"
+     "asset": "k33hud26_1score_bar_bg",
+     "why": "1.1.1.13 has no material of this name; image 1score_bar_bg as k33hud26_1score_bar_bg"
     },
     "ac130_overlay_grain": {
      "action": "stock",
@@ -1527,22 +1456,27 @@
     },
     "compassping_player": {
      "action": "carry",
-     "asset": "k33hud12_compassping_player",
-     "why": "1.1.1.13's compassping_player differs; image compassping_player as k33hud12_compassping_player"
+     "asset": "k33hud26_compassping_player",
+     "why": "1.1.1.13's compassping_player differs; image compassping_player as k33hud26_compassping_player"
     },
     "dpad_killstreak_nuke": {
      "action": "stock",
      "why": "no image of this name in 2.6.9.7 to compare; 1.1.1.13's own HUD menus draw a material of this name"
     },
+    "fire_type_bg": {
+     "action": "carry",
+     "asset": "k33hud26_fire_type_bg",
+     "why": "1.1.1.13 has no material of this name; image fire_type_bg as k33hud26_fire_type_bg"
+    },
     "hud_killstreak_bar_empty": {
      "action": "carry",
-     "asset": "k33hud12_hud_killstreak_bar_empty",
-     "why": "1.1.1.13's hud_killstreak_bar_empty differs; image hud_killstreak_bar_empty as k33hud12_hud_killstreak_bar_empty"
+     "asset": "k33hud26_hud_killstreak_bar_empty",
+     "why": "1.1.1.13's hud_killstreak_bar_empty differs; image hud_killstreak_bar_empty as k33hud26_hud_killstreak_bar_empty"
     },
     "hud_killstreak_bar_full": {
      "action": "carry",
-     "asset": "k33hud12_hud_killstreak_bar_full",
-     "why": "1.1.1.13's hud_killstreak_bar_full differs; image hud_killstreak_bar_full as k33hud12_hud_killstreak_bar_full"
+     "asset": "k33hud26_hud_killstreak_bar_full",
+     "why": "1.1.1.13's hud_killstreak_bar_full differs; image hud_killstreak_bar_full as k33hud26_hud_killstreak_bar_full"
     },
     "hud_suitcase_bomb": {
      "action": "stock",
@@ -1562,13 +1496,13 @@
     },
     "specialty_bg": {
      "action": "carry",
-     "asset": "k33hud12_specialty_bg",
-     "why": "1.1.1.13 has no material of this name; image specialty_bg as k33hud12_specialty_bg"
+     "asset": "k33hud26_specialty_bg",
+     "why": "1.1.1.13 has no material of this name; image specialty_bg as k33hud26_specialty_bg"
     },
     "specialty_bg_disable": {
      "action": "carry",
-     "asset": "k33hud12_specialty_bg_disable",
-     "why": "1.1.1.13 has no material of this name; image specialty_bg_disable as k33hud12_specialty_bg_disable"
+     "asset": "k33hud26_specialty_bg_disable",
+     "why": "1.1.1.13 has no material of this name; image specialty_bg_disable as k33hud26_specialty_bg_disable"
     },
     "stencil_base": {
      "action": "stock",
@@ -1580,13 +1514,13 @@
     },
     "weaponbar_bg": {
      "action": "carry",
-     "asset": "k33hud12_weaponbar_bg",
-     "why": "1.1.1.13 has no material of this name; image weaponbar_bg as k33hud12_weaponbar_bg"
+     "asset": "k33hud26_weaponbar_bg",
+     "why": "1.1.1.13 has no material of this name; image weaponbar_bg as k33hud26_weaponbar_bg"
     },
     "weaponbar_key_bg": {
      "action": "carry",
-     "asset": "k33hud12_weaponbar_key_bg",
-     "why": "1.1.1.13 has no material of this name; image weaponbar_key_bg as k33hud12_weaponbar_key_bg"
+     "asset": "k33hud26_weaponbar_key_bg",
+     "why": "1.1.1.13 has no material of this name; image weaponbar_key_bg as k33hud26_weaponbar_key_bg"
     },
     "white": {
      "action": "stock",
