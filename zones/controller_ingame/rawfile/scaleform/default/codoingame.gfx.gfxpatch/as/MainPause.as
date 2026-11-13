@@ -15,6 +15,21 @@ package
    //   class is put under Sensitivity (the rows below move down a row, the list background grows): labelled with
    //   C1's own key SF_UI_VIDEO_FOV, ranged by GetFOVRange (65..120 with Kernel33 PatchFov), showing whole degrees,
    //   setting cg_fov (archived in config_mp.cfg) as it moves. PauseMenuView itself stays C1's compiled class.
+   // k33 style rows (docs/UI_STYLE_OPTIONS_20261112.md): under the last slider of that list go Language, Button icons
+   //   and HUD style, each a slider row of the same class used as a stepped chooser (one stop per choice, the choice's
+   //   name where a slider shows its number). Each reads and sets a Kernel33 dvar (CFunctionContainerCommon):
+   //     Language      k33_language, one of k33_languageList ("en;zh"); names K33UI_LANG_NAME_<ID>
+   //     Button icons  gpad_glyphs 0..6 (shown when the controller module is there: k33_padinfo is set); K33UI_GLYPHS_*
+   //     HUD style     k33_hudStyle, one of the numbers of k33_hudStyleList ("0:stock;2:v26"); K33UI_HUD_STYLE_<ID>
+   //   A row whose list is empty (an older Kernel33.dll) is not added. A name without a localize entry shows the raw
+   //   id. A value the list does not have shows the first choice. The rows apply at once (setdvar) and show what the
+   //   dvar holds: it is read back a few frames after a change, so a value the engine refused does not stay on show.
+   //   Mouse: drag or click along the bar; a click on the row's label or on the name steps to the next choice.
+   //   Pad: left / right step (wrapping), select steps forward.
+   //   k33_languageState 1 / 2 shows a line under the list (switching / restart to apply). When k33_languageSerial
+   //   changes (a live switch finished) the open list is built again (PauseMenuView.gotoMenu of its current menu) so
+   //   every row is translated again, with the view's fixed labels; the pad focus stays on the row it was on.
+   //   The same k33Style* functions are in codo.gfx's OptionView_video (tests/ui_style_rows_test.js runs both).
    import codo.common.AsyncTaskManager;
    import codo.common.BaseMain;
    import codo.common.CFunctionContainerCommon;
@@ -27,6 +42,7 @@ package
    import codo.constants.CodoPageViewDBPause;
    import codo.constants.LocalizationInGame;
    import codo.constants.MenuType;
+   import codo.utils.LocalizeUtil;
    import codo.utils.ScaleformUtil;
    import codo.common.CFunctionContainerPause;
    import codo.views.PauseMenuView;
@@ -46,6 +62,8 @@ package
    import flash.display.Sprite;
    import flash.display.SimpleButton;
    import flash.display.InteractiveObject;
+   import flash.text.TextField;
+   import flash.text.TextFieldAutoSize;
    
    [SWF(frameRate="30",backgroundColor="#999999",width="1280",height="960")]
    public class MainPause extends BaseMain
@@ -93,6 +111,7 @@ package
          this.stage.addEventListener(MouseEvent.MOUSE_DOWN,this.k33SliderMouseDown,true,1000); // k33: slider drag
          this.initTheatrePause();
          this.addEventListener(Event.ENTER_FRAME,this.survivalClassMenuFrame);
+         this.addEventListener(Event.ENTER_FRAME,this.k33StyleFrame); // k33: style rows
          if(!ScaleformUtil.isScaleform)
          {
             this.commManager.cpp_activate();
@@ -459,9 +478,9 @@ package
          if(cur is InGameMenuSliderBtn && code >= 242)
          {
             this.k33Log(code,list.length,cur,cur);
-            if(code != 244)
+            if(code != 244 || this.k33StyleOf(cur) != null) // k33: select on a style row steps forward
             {
-               this.k33StepSlider(cur as InGameMenuSliderBtn,code == 243 ? 1 : -1);
+               this.k33StepSlider(cur as InGameMenuSliderBtn,code == 242 ? -1 : 1);
             }
             return;
          }
@@ -562,7 +581,7 @@ package
       private function k33OnAdded(e:Event) : void
       {
          var row:InGameMenuBtn = e.target as InGameMenuBtn;
-         if(row == null || row == this.k33FovRow || !(row.parent is PauseMenuView))
+         if(row == null || row == this.k33FovRow || this.k33StyleBusy || !(row.parent is PauseMenuView))
          {
             return;
          }
@@ -585,6 +604,14 @@ package
          catch(err:Error)
          {
          }
+         try
+         {
+            this.k33AddStyleRows(view); // k33: style rows, under the FOV row
+         }
+         catch(err2:Error)
+         {
+            this.k33StyleBusy = false;
+         }
       }
 
       // k33: the menu rows of the view (C1's _menuInstances are private: its InGameMenuBtn children), top to bottom
@@ -596,7 +623,7 @@ package
          while(i < view.numChildren)
          {
             row = view.getChildAt(i) as InGameMenuBtn;
-            if(row != null && row != this.k33FovRow)
+            if(row != null && row != this.k33FovRow && this.k33StyleOf(row) == null)
             {
                rows.push(row);
             }
@@ -714,6 +741,13 @@ package
             {
                range = CFunctionContainerPause.GetFOVRange();
             }
+            else if(this.k33StyleOf(row) != null) // k33: a style row has one stop per choice
+            {
+               range = {
+                  "min":0,
+                  "max":Math.max(1,this.k33StyleOf(row).opts.length - 1)
+               };
+            }
             else
             {
                rows = this.k33Rows(row.parent);
@@ -742,6 +776,12 @@ package
          var step:Number = NaN;
          var cur:Number = NaN;
          var next:Number = NaN;
+         var style:Object = this.k33StyleOf(row);
+         if(style != null) // k33: a style row steps one choice, wrapping
+         {
+            this.k33StylePick(style,this.k33StyleStep(this.k33StyleShown(style),style.opts.length,dir));
+            return;
+         }
          if(range == null)
          {
             return;
@@ -783,6 +823,15 @@ package
             return;
          }
          e.stopImmediatePropagation();
+         if(this.k33StyleOf(row) != null && row.mySlider.myBg != null) // k33: off the bar, a click steps to the next choice
+         {
+            var bar:Rectangle = row.mySlider.myBg.getBounds(this.stage);
+            if(e.stageX < bar.x - 4 || e.stageX > bar.right + 4)
+            {
+               this.k33StepSlider(row,1);
+               return;
+            }
+         }
          this.k33DragRow = row;
          this.stage.addEventListener(MouseEvent.MOUSE_MOVE,this.k33SliderMouseMove,true,1000);
          this.stage.addEventListener(MouseEvent.MOUSE_UP,this.k33SliderMouseUp,true,1000);
@@ -845,7 +894,671 @@ package
          {
             v = Math.round(v);
          }
+         if(this.k33StyleOf(row) != null) // k33: the nearest choice
+         {
+            this.k33StylePick(this.k33StyleOf(row),Math.round(v));
+            return;
+         }
          row.mySlider.value = v;
+      }
+
+      // k33 style rows (Language, Button icons, HUD style): see the header comment
+      private static const K33_STYLE_KINDS:Array = ["lang","glyph","hud"]; // k33
+
+      private static const K33_STYLE_LABELS:Object = {
+         "lang":"@K33UI_LANGUAGE",
+         "glyph":"@K33UI_GLYPHS",
+         "hud":"@K33UI_HUD_STYLE"
+      }; // k33
+
+      private static const K33_STYLE_HOLD:int = 12; // k33: frames a new choice stays on show before the dvar is read back
+
+      private static const K33_STYLE_POLL:int = 6; // k33: frames between looks at the dvars
+
+      private static const K33_SLIDER_W:Number = 195; // k33: menuSliderButton's mySlider.width (bar + value text)
+
+      private static const K33_STYLE_BAR:Number = 60; // k33: the shortest bar a long name may leave
+
+      private var k33StyleRows:Array = []; // k33: [{kind, row, opts, names, shown, hold}]
+
+      private var k33StyleBusy:Boolean = false; // k33: our own rows are being added
+
+      private var k33StyleSync:Boolean = false; // k33: a slider is being moved to what its dvar holds
+
+      private var k33StyleAnchor:InGameMenuSliderBtn = null; // k33: the slider row the style rows sit under
+
+      private var k33StyleView:PauseMenuView = null; // k33
+
+      private var k33StyleNote:TextField = null; // k33: "restart to apply" under the list
+
+      private var k33StyleNoteKey:String = ""; // k33
+
+      private var k33StyleSerial:int = -1; // k33: k33_languageSerial as last seen
+
+      private var k33StyleFrames:int = 0; // k33
+
+      private var k33StyleRefocus:String = ""; // k33: the kind whose row gets the pad focus back after a rebuild
+
+      // k33 style shared: begin (the same text in MainPause.as and OptionView_video.as; tests/ui_style_rows_test.js)
+      private static const K33_GLYPH_NAMES:Array = ["AUTO","XBOX","PS","NINTENDO","GENERIC","TEXT","KBM"]; // gpad_glyphs 0..6
+
+      private static const K33_STYLE_DVARS:Object = {
+         "lang":"k33_language",
+         "glyph":"gpad_glyphs",
+         "hud":"k33_hudStyle"
+      };
+
+      private function k33StyleTrim(s:String) : String
+      {
+         var a:int = 0;
+         var b:int = 0;
+         if(s == null)
+         {
+            return "";
+         }
+         s = String(s);
+         b = s.length;
+         while(a < b && s.charCodeAt(a) <= 32)
+         {
+            a++;
+         }
+         while(b > a && s.charCodeAt(b - 1) <= 32)
+         {
+            b--;
+         }
+         return s.substring(a,b);
+      }
+
+      // k33: digits only (a style number of k33_hudStyleList)
+      private function k33StyleDigits(s:String) : Boolean
+      {
+         var i:int = 0;
+         if(s == null || s.length == 0 || s.length > 6)
+         {
+            return false;
+         }
+         while(i < s.length)
+         {
+            if(s.charCodeAt(i) < 48 || s.charCodeAt(i) > 57)
+            {
+               return false;
+            }
+            i++;
+         }
+         return true;
+      }
+
+      // k33: a row's choices, [{v: the value its dvar takes, key: the localize key of its name, raw: the text shown
+      // when that key has no entry}]. "lang": the ids of k33_languageList ("en;zh"); "hud": the "number:id" pairs of
+      // k33_hudStyleList ("0:stock;2:v26"); "glyph": gpad_glyphs 0..6, when the controller module has published
+      // k33_padinfo. An empty list (the dvar is not there: an older Kernel33.dll) gives [], and the row is left out.
+      // Blank, malformed and repeated entries are dropped.
+      private function k33StyleOptions(kind:String) : Array
+      {
+         var out:Array = [];
+         var list:String = null;
+         var parts:Array = null;
+         var item:String = null;
+         var v:String = null;
+         var id:String = null;
+         var at:int = 0;
+         var i:int = 0;
+         var j:int = 0;
+         if(kind == "glyph")
+         {
+            list = CFunctionContainerCommon.Dvar_GetString("k33_padinfo");
+            if(list == null || list == "")
+            {
+               return out;
+            }
+            while(i < K33_GLYPH_NAMES.length)
+            {
+               out.push({
+                  "v":String(i),
+                  "key":"K33UI_GLYPHS_" + K33_GLYPH_NAMES[i],
+                  "raw":String(i)
+               });
+               i++;
+            }
+            return out;
+         }
+         list = CFunctionContainerCommon.Dvar_GetString(kind == "lang" ? "k33_languageList" : "k33_hudStyleList");
+         if(list == null || list == "")
+         {
+            return out;
+         }
+         parts = String(list).split(";");
+         while(i < parts.length)
+         {
+            item = this.k33StyleTrim(parts[i]);
+            i++;
+            if(kind == "hud")
+            {
+               at = item.indexOf(":");
+               if(at < 1)
+               {
+                  continue;
+               }
+               v = this.k33StyleTrim(item.substring(0,at));
+               id = this.k33StyleTrim(item.substring(at + 1));
+               if(!this.k33StyleDigits(v) || id == "")
+               {
+                  continue;
+               }
+               v = String(parseInt(v,10));
+            }
+            else
+            {
+               v = item;
+               id = item;
+               if(id == "")
+               {
+                  continue;
+               }
+            }
+            j = 0;
+            while(j < out.length && out[j].v != v)
+            {
+               j++;
+            }
+            if(j < out.length)
+            {
+               continue;
+            }
+            out.push({
+               "v":v,
+               "key":(kind == "hud" ? "K33UI_HUD_STYLE_" : "K33UI_LANG_NAME_") + id.toUpperCase(),
+               "raw":id
+            });
+         }
+         return out;
+      }
+
+      // k33: a choice's name in the loaded language; C1's translator gives "@KEY" back for a key it does not have
+      private function k33StyleName(opt:Object) : String
+      {
+         var s:String = LocalizeUtil.localize("@" + opt.key);
+         if(s == null || s == "" || s.charAt(0) == "@")
+         {
+            return String(opt.raw);
+         }
+         return s;
+      }
+
+      // k33: what the row's dvar holds, as a choice's v
+      private function k33StyleCurrent(kind:String) : String
+      {
+         var s:String = null;
+         if(kind == "lang")
+         {
+            s = CFunctionContainerCommon.Dvar_GetString(K33_STYLE_DVARS[kind]);
+            return s == null ? "" : this.k33StyleTrim(s);
+         }
+         return String(CFunctionContainerCommon.Dvar_GetInt(K33_STYLE_DVARS[kind]));
+      }
+
+      // k33: the choice holding `cur`; a value the list does not have shows the first choice
+      private function k33StyleIndex(opts:Array, cur:String) : int
+      {
+         var i:int = 0;
+         while(i < opts.length)
+         {
+            if(String(opts[i].v).toLowerCase() == String(cur).toLowerCase())
+            {
+               return i;
+            }
+            i++;
+         }
+         return 0;
+      }
+
+      // k33: the next (dir 1) or previous (dir -1) choice, wrapping at both ends
+      private function k33StyleStep(index:int, count:int, dir:int) : int
+      {
+         if(count < 1)
+         {
+            return 0;
+         }
+         return ((index + dir) % count + count) % count;
+      }
+
+      // k33: set the row's dvar to choice `index` (setdvar; nothing when it already holds it) -> whether it was set
+      private function k33StyleSet(kind:String, opts:Array, index:int) : Boolean
+      {
+         if(index < 0 || index >= opts.length || String(opts[index].v).toLowerCase() == this.k33StyleCurrent(kind).toLowerCase())
+         {
+            return false;
+         }
+         CFunctionContainerCommon.setdvar(K33_STYLE_DVARS[kind],String(opts[index].v));
+         return true;
+      }
+
+      // k33: the choices' values in order: a row is built again when this changes
+      private function k33StyleSig(opts:Array) : String
+      {
+         var s:String = "";
+         var i:int = 0;
+         while(i < opts.length)
+         {
+            s += opts[i].v + ":" + opts[i].key + ";";
+            i++;
+         }
+         return s;
+      }
+      // k33 style shared: end
+
+      // k33: the style row record of a row (null: not one of ours)
+      private function k33StyleOf(o:Object) : Object
+      {
+         var i:int = 0;
+         while(i < this.k33StyleRows.length)
+         {
+            if(this.k33StyleRows[i].row == o)
+            {
+               return this.k33StyleRows[i];
+            }
+            i++;
+         }
+         return null;
+      }
+
+      private function k33StyleShown(rec:Object) : int
+      {
+         return int(rec.shown);
+      }
+
+      // k33: show choice `index` on the row without setting its dvar
+      private function k33StyleShow(rec:Object, index:int) : void
+      {
+         var slider:InGameMenuProgressBar = rec.row.mySlider;
+         index = Math.max(0,Math.min(rec.opts.length - 1,index));
+         this.k33StyleSync = true;
+         try
+         {
+            slider.value = index;
+         }
+         catch(err:Error)
+         {
+         }
+         this.k33StyleSync = false;
+         rec.shown = index;
+         slider.myCurrentTF.text = String(rec.names[index]);
+      }
+
+      // k33: the player's choice: show it and set the dvar; the dvar is read back K33_STYLE_HOLD frames later
+      private function k33StylePick(rec:Object, index:int) : void
+      {
+         index = Math.max(0,Math.min(rec.opts.length - 1,index));
+         this.k33StyleShow(rec,index);
+         if(this.k33StyleSet(rec.kind,rec.opts,index))
+         {
+            rec.hold = K33_STYLE_HOLD;
+         }
+      }
+
+      // k33: a style slider moved. Our own moves (k33StyleSync) are finished by k33StyleShow; any other (C1's own
+      // slider handler) takes the nearest choice
+      private function k33OnStyleChange(e:Event) : void
+      {
+         var slider:InGameMenuProgressBar = e.target as InGameMenuProgressBar;
+         var rec:Object = slider != null ? this.k33StyleOf(slider.parent) : null;
+         if(rec == null || this.k33StyleSync)
+         {
+            return;
+         }
+         this.k33StylePick(rec,int(Math.round(slider.value)));
+      }
+
+      private function k33StyleRemove() : void
+      {
+         var i:int = 0;
+         var row:InGameMenuSliderBtn = null;
+         while(i < this.k33StyleRows.length)
+         {
+            row = this.k33StyleRows[i].row;
+            if(row.mySlider != null)
+            {
+               row.mySlider.removeEventListener(ProgressBar.EVT_VALUE_CHANGE,this.k33OnStyleChange);
+            }
+            if(row.parent != null)
+            {
+               row.parent.removeChild(row);
+            }
+            i++;
+         }
+         this.k33StyleRows = [];
+         if(this.k33StyleNote != null && this.k33StyleNote.parent != null)
+         {
+            this.k33StyleNote.parent.removeChild(this.k33StyleNote);
+         }
+         this.k33StyleNote = null;
+         this.k33StyleNoteKey = "";
+         this.k33StyleAnchor = null;
+         this.k33StyleView = null;
+      }
+
+      // k33: the names of the row's choices; the bar is shortened so the longest fits in the row (the slider is
+      // K33_SLIDER_W wide in all: bar, gap, value text), one stop per choice, and the dvar's choice is shown
+      private function k33StyleSetup(rec:Object) : void
+      {
+         var slider:InGameMenuProgressBar = rec.row.mySlider;
+         var longest:String = "";
+         var name:String = null;
+         var w:Number = -1;
+         var total:Number = K33_SLIDER_W;
+         var off:Number = NaN;
+         var i:int = 0;
+         rec.names = [];
+         while(i < rec.opts.length)
+         {
+            name = this.k33StyleName(rec.opts[i]);
+            rec.names.push(name);
+            slider.myCurrentTF.text = name;
+            if(slider.myCurrentTF.width > w)
+            {
+               w = slider.myCurrentTF.width;
+               longest = name;
+            }
+            i++;
+         }
+         slider.myCurrentTF.text = longest;
+         off = slider.myCurrentTF.x - slider.myBg.width;
+         if(total - off - slider.myCurrentTF.width < K33_STYLE_BAR)
+         {
+            total = K33_STYLE_BAR + off + slider.myCurrentTF.width;
+         }
+         slider.width = total;
+         slider.minVal = 0;
+         slider.maxVal = Math.max(1,rec.opts.length - 1);
+         rec.shown = -1;
+         rec.hold = 0;
+         this.k33StyleShow(rec,this.k33StyleIndex(rec.opts,this.k33StyleCurrent(rec.kind)));
+      }
+
+      // k33: the style rows go under the lowest slider row of the Options list (C1's Brightness, else the FOV row);
+      // the rows below move down, the list background grows. A list without sliders (a submenu) gets none.
+      private function k33AddStyleRows(view:PauseMenuView) : void
+      {
+         var rows:Array = null;
+         var first:InGameMenuSliderBtn = null;
+         var anchor:InGameMenuSliderBtn = null;
+         var s:InGameMenuSliderBtn = null;
+         var row:InGameMenuBtn = null;
+         var cls:Class = null;
+         var made:InGameMenuSliderBtn = null;
+         var bg:DisplayObject = null;
+         var kinds:Array = [];
+         var lists:Array = [];
+         var opts:Array = null;
+         var rec:Object = null;
+         var tf:TextField = null;
+         var i:int = 0;
+         if(view == null || view.stage == null)
+         {
+            return;
+         }
+         rows = this.k33Rows(view);
+         while(i < rows.length)
+         {
+            s = rows[i] as InGameMenuSliderBtn;
+            if(s != null && first == null)
+            {
+               first = s;
+            }
+            if(s != null && Math.abs(s.x - first.x) < 1 && (anchor == null || s.y > anchor.y))
+            {
+               anchor = s;
+            }
+            i++;
+         }
+         if(anchor != null && this.k33FovRow != null && this.k33FovRow.parent == view && this.k33FovRow.y > anchor.y)
+         {
+            anchor = this.k33FovRow;
+         }
+         if(anchor != null && anchor == this.k33StyleAnchor && view == this.k33StyleView)
+         {
+            return; // this list already has its style rows
+         }
+         this.k33StyleRemove();
+         if(anchor == null)
+         {
+            return;
+         }
+         i = 0;
+         while(i < K33_STYLE_KINDS.length)
+         {
+            opts = this.k33StyleOptions(K33_STYLE_KINDS[i]);
+            if(opts.length > 0)
+            {
+               kinds.push(K33_STYLE_KINDS[i]);
+               lists.push(opts);
+            }
+            i++;
+         }
+         this.k33StyleAnchor = anchor; // also with no rows: the frame handler adds them when a list turns up
+         this.k33StyleView = view;
+         if(this.k33StyleSerial < 0)
+         {
+            this.k33StyleSerial = CFunctionContainerCommon.Dvar_GetInt("k33_languageSerial");
+         }
+         if(kinds.length == 0)
+         {
+            return;
+         }
+         cls = Object(anchor).constructor as Class;
+         i = 0;
+         while(i < rows.length)
+         {
+            row = rows[i] as InGameMenuBtn;
+            if(row.y > anchor.y && Math.abs(row.x - anchor.x) < 1)
+            {
+               row.y += K33_ROW * kinds.length;
+            }
+            i++;
+         }
+         bg = view["myMiscListBg"] as DisplayObject;
+         if(bg != null && Math.abs(bg.x + 10 - anchor.x) < 1)
+         {
+            bg.height += K33_ROW * kinds.length;
+         }
+         this.k33StyleBusy = true; // their ADDED events must not schedule another pass
+         i = 0;
+         while(i < kinds.length)
+         {
+            made = new cls() as InGameMenuSliderBtn;
+            if(made != null)
+            {
+               made.x = anchor.x;
+               made.y = anchor.y + K33_ROW * (i + 1);
+               view.addChild(made);
+               made.label = K33_STYLE_LABELS[kinds[i]];
+               rec = {
+                  "kind":kinds[i],
+                  "row":made,
+                  "opts":lists[i],
+                  "names":[],
+                  "shown":-1,
+                  "hold":0
+               };
+               this.k33StyleRows.push(rec);
+               this.k33StyleSetup(rec);
+               made.mySlider.addEventListener(ProgressBar.EVT_VALUE_CHANGE,this.k33OnStyleChange);
+            }
+            i++;
+         }
+         this.k33StyleBusy = false;
+         // the language line, under the list, in the rows' own font
+         tf = new TextField();
+         tf.embedFonts = anchor.myLabel.embedFonts;
+         tf.defaultTextFormat = anchor.myLabel.getTextFormat();
+         tf.textColor = 14544626;
+         tf.selectable = false;
+         tf.mouseEnabled = false;
+         tf.multiline = true;
+         tf.wordWrap = true;
+         tf.width = 300;
+         tf.autoSize = TextFieldAutoSize.LEFT;
+         tf.x = anchor.x + 2;
+         tf.y = bg != null ? bg.y + bg.height + 4 : anchor.y + K33_ROW * (kinds.length + 3);
+         tf.visible = false;
+         view.addChild(tf);
+         this.k33StyleNote = tf;
+         this.k33StyleNoteUpdate();
+         i = 0;
+         while(i < this.k33StyleRows.length)
+         {
+            if(this.k33StyleRefocus != "" && this.k33StyleRows[i].kind == this.k33StyleRefocus)
+            {
+               this.k33Focus = this.k33StyleRows[i].row;
+               this.k33Hover(this.k33Focus,true);
+               this.k33ShowRing();
+            }
+            i++;
+         }
+         this.k33StyleRefocus = "";
+      }
+
+      // k33: k33_languageState 1 (switching) / 2 (saved, applies on the next start) as a line under the list
+      private function k33StyleNoteUpdate() : void
+      {
+         var key:String = "";
+         var state:int = 0;
+         var i:int = 0;
+         if(this.k33StyleNote == null)
+         {
+            return;
+         }
+         while(i < this.k33StyleRows.length)
+         {
+            if(this.k33StyleRows[i].kind == "lang")
+            {
+               state = CFunctionContainerCommon.Dvar_GetInt("k33_languageState");
+               key = state == 2 ? "@K33UI_LANG_RESTART" : (state == 1 ? "@K33UI_LANG_SWITCHING" : "");
+            }
+            i++;
+         }
+         if(key != this.k33StyleNoteKey)
+         {
+            this.k33StyleNoteKey = key;
+            this.k33StyleNote.text = key;
+            this.k33StyleNote.visible = key != "";
+         }
+      }
+
+      // k33: build the open list again (its rows are translated as their labels are set; the FOV and style rows
+      // follow on the next frame); `texts`: after a language switch, C1's fixed labels of the view are set again
+      private function k33StyleRebuild(view:PauseMenuView, texts:Boolean) : void
+      {
+         var rec:Object = this.k33StyleOf(this.k33Focus);
+         var o:Object = view;
+         this.k33StyleRefocus = rec != null ? rec.kind : "";
+         if(texts)
+         {
+            try
+            {
+               view.myQoSLabelTF.text = LocalizationInGame.QOS_TITLE;
+               view.myQoSBtn.label = LocalizationInGame.QOS_BTN;
+            }
+            catch(err1:Error)
+            {
+            }
+            try
+            {
+               if(view.myBackButton != null && "label" in view.myBackButton)
+               {
+                  o.myBackButton.label = LocalizationInGame.BackToGame;
+               }
+               if(view.myLoadoutListHeader != null && view.myLoadoutListHeader.visible)
+               {
+                  o.myLoadoutListHeader.SetLabel(LocalizationInGame.ChooseClass);
+               }
+            }
+            catch(err2:Error)
+            {
+            }
+         }
+         try
+         {
+            if(view.getCurrentMenu() != null)
+            {
+               view.gotoMenu(view.getCurrentMenu());
+            }
+         }
+         catch(err3:Error)
+         {
+         }
+      }
+
+      // k33: every K33_STYLE_POLL frames while the list is open: a finished language switch (k33_languageSerial)
+      // builds the list again; a list that changed builds it again; a row shows what its dvar holds
+      private function k33StyleFrame(e:Event) : void
+      {
+         var view:PauseMenuView = this.k33StyleView;
+         var rec:Object = null;
+         var opts:Array = null;
+         var serial:int = 0;
+         var index:int = 0;
+         var count:int = 0;
+         var i:int = 0;
+         if(view == null || this.k33StyleAnchor == null || view.stage == null || !this.k33Shown(view))
+         {
+            return;
+         }
+         while(i < this.k33StyleRows.length)
+         {
+            if(this.k33StyleRows[i].hold > 0)
+            {
+               this.k33StyleRows[i].hold--;
+            }
+            i++;
+         }
+         this.k33StyleFrames++;
+         if(this.k33StyleFrames % K33_STYLE_POLL != 0)
+         {
+            return;
+         }
+         try
+         {
+            serial = CFunctionContainerCommon.Dvar_GetInt("k33_languageSerial");
+            if(serial != this.k33StyleSerial)
+            {
+               this.k33StyleSerial = serial;
+               this.k33StyleRebuild(view,true);
+               return;
+            }
+            i = 0;
+            while(i < K33_STYLE_KINDS.length)
+            {
+               opts = this.k33StyleOptions(K33_STYLE_KINDS[i]);
+               rec = count < this.k33StyleRows.length && this.k33StyleRows[count].kind == K33_STYLE_KINDS[i] ? this.k33StyleRows[count] : null;
+               i++;
+               if(rec != null)
+               {
+                  count++;
+                  if(rec.row == this.k33DragRow)
+                  {
+                     continue;
+                  }
+               }
+               if(this.k33StyleSig(opts) != (rec != null ? this.k33StyleSig(rec.opts) : ""))
+               {
+                  this.k33StyleRebuild(view,false);
+                  return;
+               }
+               if(rec != null && rec.hold <= 0)
+               {
+                  index = this.k33StyleIndex(rec.opts,this.k33StyleCurrent(rec.kind));
+                  if(index != rec.shown)
+                  {
+                     this.k33StyleShow(rec,index);
+                  }
+               }
+            }
+            this.k33StyleNoteUpdate();
+         }
+         catch(err:Error)
+         {
+         }
       }
    }
 }
