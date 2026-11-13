@@ -610,43 +610,30 @@ read with the Python lobby's codec from a copy of `players\edtest\mpdata`):
 * **A second match in one client run**: unchanged limitation of the in-process host (one hosted
   session per client run).
 * **Shipping profile** (`K33_LOCAL_TESTING=0`): builds; not run live.
-* **The LOCAL PLAY box of the Create Room dialogs is still drawn** (an unlabelled `@K33UI_LOC...` box
-  in the test shadow). It is inert offline: ticked or not, the room is hosted locally (ticking still
-  sets the room's minimum players to 1 and shows the read-only box in the room). Removing it needs an
-  ActionScript change: `MatchMiniRoomCreatorView` and `MatchMPCTRoomCreatorView_mpcreator` set
-  `localCreateOption.visible` from the room type alone (no dvar is read), so `visible = false` there and
-  `minPlayer = 1` for every created room, plus dropping `LocalMatchControls`' box from `InRoomBaseView`;
-  that is an FFDec recompile of the patched `codo.gfx` with a pin-chain successor stage and was left
-  for a follow-up.
-* The room view after a finished match (placeholder texts, Ready without effect), see above.
-* After leaving a zombies room, the Spec Ops room list showed that room as still waiting; not
-  investigated.
-
-
-## Dead or unreachable now that the client is offline only (left in the tree for a cleanup job)
-
-Nothing below was deleted; none of it can take the client online.
-
-* `src/p2p/hostgate.c`: `HostGateReadLobbyNames`, `HostGateAllowGateways`, `HostGateAllow` / `HostGateVouch`,
-  the resolve thread's name list and the SSDP exception - all behind `!OfflineLobbyActive()`, which is
-  never true once C1 runs. The non-offline scenarios of `tests/hostgate_windows_fixture.c` test them.
-* The Local Play checkbox protocols: startup IPC 1 / 2 (`p2p_start_intent`, `p2p_cancel_start`,
-  `p2p_startup_*`, `p2p_active_*`), the production protocol 3 (`p2p_production_*`, `src/production/`,
-  `src/shared/p2p_win_pipe.c`, the retained SDK), the Guest binding route (`p2p_guest_binding*`): a
-  client started by such a launcher session is refused at start-up (`InstallOfflineLobby`).
-  `K33LocalPlayLaunch` has no caller left (the lobby uses `K33LocalPlayAuto`).
-* The verified-script service path (`p2p_verified_scripts.c`): hosting never asks for it.
-* The intent files `p2p_host.<uid>.txt` / `p2p_host.txt` and `P2PRollout`: written, read by nobody.
-* `src/launcher_update_bridge.c` (inert without a compiled launcher pin), `src/gfx/news_refresh*` (the
-  news pane stays on "Loading, please wait..."), invitations / friends / clan UI paths (answered empty
-  by the lobby), `src/kernel/kernel_name_network.c` (opt-in build flag, names `codol.kewkew.org`).
-* `src/theatre.c` and `src/name_display.c`'s service: their URLs are refused by `k33http.c` unless
+* **The LOCAL PLAY box is gone from the UI** (12 November 2026; it was still drawn after the native
+  change, inert). `MatchMiniRoomCreatorView` and `MatchMPCTRoomCreatorView_mpcreator` no longer make
+  a `LocalCreateRoomOption`; where the box used to be offered (multiplayer, zombies, survival rooms)
+  the room is created the way the ticked box created it - `ui_p2p_create 1` for the room view's bridge
+  and a minimum of one player - and a Campaign room as before. `codo.k33.LocalMatchControls`, the
+  bridge the room view makes, shows nothing any more (the read-only ticked box with its STARTING HOST
+  / HOST ERROR captions is gone); it still tells Kernel33 the owner's room context (`p2p_room`, and
+  `p2p_localhost 1` / `0`, which hosting-always-on ignores). A failed host start is still the room's
+  message box (`LobbyController` watches `ui_p2p_error` / `ui_p2p_state`; unchanged). The class
+  `codo.k33.LocalCreateRoomOption` is still in the movie, unused (taking a class out of the patch is a
+  `patch.txt` edit the pin chain would have to follow), and `InRoomBaseView` is unchanged: it still
+  makes the invisible bridge. Seen in a test client: Create Room (multiplayer lobby) without the box,
+  the room `1 - 6` players without a box, `p2p: room mp_killhouse_sh war (mp) from the lobby: armed`,
+  Ready -> `match launch (lobby call)`, `server ready`, in the match; the same for a zombies room
+  (`MatchMiniRoomCreatorView`: no box, `zm_prototype_sh zm (zm) ... armed`, Ready, in the match). Not
+  seen: the Survival creator, a failed start's message box with the new classes. The four
+  changed `codo.gfx` classes add to the composition-chain gap (`tests/test_optionview_method.py`):
+  they need an owner-reviewed successor stage.
   loopback, so the THEATRE button's recording service cannot be reached.
 * `src/discord.c` talks to the local Discord client over its named pipe (no socket of its own); it is
   the one feature left that can make something else (Discord) show the player online.
 * The Python lobby's `CODOL_*` online knobs were never ported; `scripts/build-controller.sh` does not
   link `src/offline` (it did not link `src/production` before either, i.e. it was already stale).
-* In the UI: the LOCAL PLAY boxes (above), the DEV PANEL of the room view.
+* In the UI: the DEV PANEL of the room view.
 
 ## Not done
 

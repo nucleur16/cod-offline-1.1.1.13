@@ -11,18 +11,25 @@ package codo.views.option_sub
    //             Unlimited / 30 / 60 / 75 / 90 / 120 / 144 / 165 / 240 / 360 / 500 -> "1848"
    //             (com_maxfps, 0 = no cap, archived in config_mp.cfg), set by Apply like the rest of
    //             the screen; a value set from the console is listed as its own entry
-   //   Language / Button icons / HUD style (docs/UI_STYLE_OPTIONS_20261112.md): three rows built in code under the
-   //             Graphics check boxes, a label and a "<  name  >" stepper each (a click on its left half steps back,
-   //             on its right half forward, wrapping; codo.k33.PadSnap stops the pad cursor on either half):
-   //               Language      k33_language, one of k33_languageList ("en;zh"); names K33UI_LANG_NAME_<ID>
+   //   Button icons / HUD style (and Language) (docs/UI_STYLE_OPTIONS_20261112.md): rows under the Graphics check
+   //             boxes, each a label and a drop-down like the tab's own (CodoComboBox): another instance of the class
+   //             the tab's combo boxes are (codoComboBox_l2, or codoComboBoxCyborgs on the other panel; taken from
+   //             myCBAspectRatio, as CodoList makes its item renderers), in the Display Mode column, opening upwards:
    //               Button icons  gpad_glyphs 0..6 (shown when the controller module is there: k33_padinfo is set)
    //               HUD style     k33_hudStyle, one of the numbers of k33_hudStyleList ("0:stock;2:v26")
-   //             A row whose list is empty (an older Kernel33.dll) is not made; a name without a localize entry
-   //             shows the raw id; a value the list lacks shows the first choice. Unlike the rest of the tab these
-   //             apply at once (setdvar) and take no part in Apply / Cancel / Default: the stepper shows what the
-   //             dvar holds, read back a few frames after a change. k33_languageState 1 / 2 shows a line under the
-   //             rows (switching / restart to apply); when k33_languageSerial changes (a live switch finished) the
-   //             tab's texts are set again (k33StyleRelocalize). The texts onInit sets are in k33Texts for that.
+   //               Language      k33_language, one of k33_languageList ("en;zh"); names K33UI_LANG_NAME_<ID>.
+   //                             Switched off by K33_STYLE_LANGUAGE_ROW (the row and its line are not made).
+   //             A row whose list is empty (an older Kernel33.dll) is hidden; a name without a localize entry shows
+   //             the raw id; a value the list lacks shows the first choice and sets nothing. Unlike the rest of the
+   //             tab these apply at once (setdvar, on the player's pick only: what the code selects is not a pick)
+   //             and take no part in Apply / Cancel / Default: the box shows what the dvar holds, read back a few
+   //             frames after a change. With the Language row, k33_languageState 1 / 2 shows a line under the rows
+   //             (switching / restart to apply). When k33_languageSerial changes (a live switch finished) the tab's
+   //             texts are set again (k33StyleRelocalize), the rows' labels and lists with them. The texts onInit
+   //             sets are in k33Texts for that.
+   //             Texts of code-made fields are translated before they are set (LocalizeUtil.localize): C1's
+   //             translator answers a field that is set to "@KEY" with the text in the field's authored format, and
+   //             a field made in code has none (Times, 12, black), which an embedded-font field draws as black boxes.
    //             The k33Style* functions between "k33 style shared" are the same text as in codoingame.gfx's
    //             MainPause (tests/ui_style_rows_test.js runs both).
    import codo.common.BaseSubElement;
@@ -32,7 +39,6 @@ package codo.views.option_sub
    import codo.constants.LocalizationDict;
    import codo.constants.LocalizationSetting;
    import codo.constants.SyncDataID;
-   import codo.k33.PadSnap;
    import codo.objects.VideoObj;
    import codo.utils.LocalizeUtil;
    import components.BaseButton;
@@ -42,11 +48,11 @@ package codo.views.option_sub
    import components.ProgressBar;
    import flash.display.Sprite;
    import flash.events.Event;
-   import flash.events.MouseEvent;
-   import flash.geom.ColorTransform;
    import flash.text.TextField;
    import flash.text.TextFieldAutoSize;
    import flash.text.TextFormat;
+   import flash.utils.getDefinitionByName;
+   import flash.utils.getQualifiedClassName;
    
    public class OptionView_video extends BaseSubElement
    {
@@ -585,7 +591,7 @@ package codo.views.option_sub
          this._preVideoObj.ui_r_distortion = this._curVideoObj.ui_r_distortion;
       }
 
-      // k33 style rows (Language, Button icons, HUD style): see the header comment
+      // k33 style rows (Button icons, HUD style, and Language when it is switched on): see the header comment
       private static const K33_STYLE_KINDS:Array = ["lang","glyph","hud"];
 
       private static const K33_STYLE_LABELS:Object = {
@@ -598,21 +604,31 @@ package codo.views.option_sub
 
       private static const K33_STYLE_POLL:int = 6; // frames between looks at the dvars
 
-      private static const K33_STYLE_X:Number = 12; // the rows' place: under the Graphics check boxes (they end at
-                                                    // y 401), above the warning line (y 465), left of the texture
-      private static const K33_STYLE_Y:Number = 405; // rows (x 296)
+      // the rows' place: under the Graphics check boxes (they end at y 398), above the warning line (y 467), left
+      // of the texture rows (x 298). Labels at the check boxes' left edge, boxes in the Display Mode column.
+      private static const K33_STYLE_X:Number = 12;
 
-      private static const K33_STYLE_PITCH:Number = 20;
+      private static const K33_STYLE_Y:Number = 407; // the first box (two rows: 407, 437)
 
-      private static const K33_STYLE_BTN_X:Number = 118;
+      private static const K33_STYLE_PITCH:Number = 30;
 
-      private static const K33_STYLE_BTN_W:Number = 170;
+      private static const K33_STYLE_Y3:Number = 399; // three rows (with Language): 399, 421, 443
 
-      private static const K33_STYLE_BTN_H:Number = 18;
+      private static const K33_STYLE_PITCH3:Number = 22;
 
       private static const K33_STYLE_NOTE_Y:Number = 486; // under the warning line, left of the Default button (x 228)
 
-      private var _k33StyleRows:Array = []; // [{kind, label, btn, opts, names, shown, hold}]
+      private var _k33StyleRows:Array = []; // the rows on show: [{kind, label, combo, opts, names, shown, hold}]
+
+      private var _k33StyleCombos:Object = {}; // kind -> its CodoComboBox, made once
+
+      private var _k33StyleLabels:Object = {}; // kind -> its label, made once
+
+      private var _k33StyleOpen:CodoComboBox = null; // the style box whose list is open
+
+      private var _k33StyleSync:Boolean = false; // the code is selecting: not the player's pick, nothing is set
+
+      private var _k33StyleDirty:Boolean = false; // the rows are to be made once the tab is on the stage
 
       private var _k33StyleNote:TextField = null;
 
@@ -632,6 +648,13 @@ package codo.views.option_sub
          "glyph":"gpad_glyphs",
          "hud":"k33_hudStyle"
       };
+
+      // k33: the Language row is switched off here, in one place for both movies: with false the row and its
+      // "Switching language..." / "Restart the game to apply the language" line are not made and none of the
+      // k33_language* dvars is read for a row (the language is still changed with k33_language / k33_setlanguage
+      // in the console, and a finished switch still translates the remaining rows: k33_languageSerial). true
+      // brings the row back; its keys (K33UI_LANGUAGE, K33UI_LANG_*) stay in the string zones for that.
+      private static const K33_STYLE_LANGUAGE_ROW:Boolean = false;
 
       private function k33StyleTrim(s:String) : String
       {
@@ -677,6 +700,7 @@ package codo.views.option_sub
       // when that key has no entry}]. "lang": the ids of k33_languageList ("en;zh"); "hud": the "number:id" pairs of
       // k33_hudStyleList ("0:stock;2:v26"); "glyph": gpad_glyphs 0..6, when the controller module has published
       // k33_padinfo. An empty list (the dvar is not there: an older Kernel33.dll) gives [], and the row is left out.
+      // "lang" gives [] while K33_STYLE_LANGUAGE_ROW is false.
       // Blank, malformed and repeated entries are dropped.
       private function k33StyleOptions(kind:String) : Array
       {
@@ -689,6 +713,10 @@ package codo.views.option_sub
          var at:int = 0;
          var i:int = 0;
          var j:int = 0;
+         if(kind == "lang" && !K33_STYLE_LANGUAGE_ROW)
+         {
+            return out; // the Language row is switched off
+         }
          if(kind == "glyph")
          {
             list = CFunctionContainerCommon.Dvar_GetString("k33_padinfo");
@@ -832,47 +860,20 @@ package codo.views.option_sub
       }
       // k33 style shared: end
 
-      private function k33StyleText(s:String, size:int, color:uint) : TextField
+      // a text field in the format of one of the tab's own (`src`), for text that is already translated. Never
+      // "@KEY": C1's translator would answer with the text in this field's authored format, and a field made in code
+      // has none (Times, 12, black: black boxes in an embedded-font field).
+      private function k33StyleText(src:TextField, s:String, size:int, color:uint) : TextField
       {
          var tf:TextField = new TextField();
-         var fmt:TextFormat = this.myTFDisplayMode.getTextFormat();
-         tf.embedFonts = this.myTFDisplayMode.embedFonts;
-         tf.defaultTextFormat = new TextFormat(fmt.font,size > 0 ? size : fmt.size,color);
+         var fmt:TextFormat = src.getTextFormat();
+         tf.embedFonts = src.embedFonts;
+         tf.defaultTextFormat = new TextFormat(fmt.font,size > 0 ? size : int(fmt.size),color);
          tf.selectable = false;
          tf.mouseEnabled = false;
          tf.autoSize = TextFieldAutoSize.LEFT;
          tf.text = s;
          return tf;
-      }
-
-      private function k33StyleOver(e:MouseEvent) : void
-      {
-         (e.currentTarget as Sprite).transform.colorTransform = new ColorTransform(1.4,1.4,1.4);
-      }
-
-      private function k33StyleOut(e:MouseEvent) : void
-      {
-         (e.currentTarget as Sprite).transform.colorTransform = new ColorTransform();
-      }
-
-      // the "<  name  >" stepper of a row (as OptionView's Controller tab draws its buttons)
-      private function k33StyleButton(kind:String) : Sprite
-      {
-         var b:Sprite = new Sprite();
-         var tf:TextField = this.k33StyleText("",12,14544626);
-         b.graphics.lineStyle(1,6272712,0.8);
-         b.graphics.beginFill(928307,0.85);
-         b.graphics.drawRect(0,0,K33_STYLE_BTN_W,K33_STYLE_BTN_H);
-         b.graphics.endFill();
-         tf.name = "label";
-         b.addChild(tf);
-         b.name = kind;
-         b.buttonMode = true;
-         b.mouseChildren = false;
-         b.addEventListener(MouseEvent.CLICK,this.k33OnStyleClick);
-         b.addEventListener(MouseEvent.ROLL_OVER,this.k33StyleOver);
-         b.addEventListener(MouseEvent.ROLL_OUT,this.k33StyleOut);
-         return b;
       }
 
       private function k33StyleOf(kind:String) : Object
@@ -889,51 +890,132 @@ package codo.views.option_sub
          return null;
       }
 
-      // show choice `index` on the row without setting its dvar
-      private function k33StyleShow(rec:Object, index:int) : void
+      // a row's drop-down, made once: one more instance of the class this panel's own combo boxes are (the symbol
+      // brings its button, list and skin), opening upwards (the rows are at the foot of the panel). Like the others
+      // it comes to the front as it opens. Made only on the stage: a CodoSprite builds itself when it gets there.
+      private function k33StyleCombo(kind:String) : CodoComboBox
       {
-         var tf:TextField = rec.btn.getChildByName("label") as TextField;
-         index = Math.max(0,Math.min(rec.opts.length - 1,index));
-         rec.shown = index;
-         tf.text = rec.opts.length > 1 ? "<  " + rec.names[index] + "  >" : String(rec.names[index]);
-         tf.x = (K33_STYLE_BTN_W - tf.width) / 2;
-         tf.y = (K33_STYLE_BTN_H - tf.height) / 2;
+         var cb:CodoComboBox = this._k33StyleCombos[kind] as CodoComboBox;
+         var cls:Class = null;
+         if(cb == null)
+         {
+            cls = getDefinitionByName(getQualifiedClassName(this.myCBAspectRatio)) as Class;
+            cb = new cls() as CodoComboBox;
+            cb.name = "k33Style_" + kind;
+            cb.x = this.myCBDisplayMode.x;
+            cb.visible = false;
+            this.addChild(cb);
+            cb.setDropDownAtRuntime(false);
+            cb.addEventListener(CodoComboBox.EVT_CHANGE,this.k33OnStyleChange);
+            cb.addEventListener(CodoComboBox.EVT_PRE_OPEN,this.onK33ComboPreOpen);
+            cb.addEventListener(CodoComboBox.EVT_OPEN,this.k33OnStyleOpen);
+            cb.addEventListener(CodoComboBox.EVT_CLOSE,this.k33OnStyleClose);
+            this._k33StyleCombos[kind] = cb;
+         }
+         return cb;
       }
 
-      // a click on a row's stepper: the left half steps back, the right half forward (wrapping); the choice is shown
-      // and its dvar set at once, and the dvar is read back K33_STYLE_HOLD frames later
-      private function k33OnStyleClick(e:MouseEvent) : void
+      // a row's label, made once, in the format of the Graphics rows' labels
+      private function k33StyleLabel(kind:String) : TextField
       {
-         var b:Sprite = e.currentTarget as Sprite;
-         var rec:Object = this.k33StyleOf(b.name);
+         var tf:TextField = this._k33StyleLabels[kind] as TextField;
+         if(tf == null)
+         {
+            tf = this.k33StyleText(this.myTFSSAO,"",0,this.myTFSSAO.textColor);
+            tf.x = K33_STYLE_X;
+            tf.visible = false;
+            this.addChild(tf);
+            this._k33StyleLabels[kind] = tf;
+         }
+         return tf;
+      }
+
+      private function k33OnStyleOpen(e:Event) : void
+      {
+         this._k33StyleOpen = e.currentTarget as CodoComboBox;
+      }
+
+      private function k33OnStyleClose(e:Event) : void
+      {
+         if(this._k33StyleOpen == e.currentTarget)
+         {
+            this._k33StyleOpen = null;
+         }
+      }
+
+      // show choice `index` in the row's box without setting its dvar
+      private function k33StyleShow(rec:Object, index:int) : void
+      {
+         index = Math.max(0,Math.min(rec.opts.length - 1,index));
+         rec.shown = index;
+         if(rec.combo.selectedDataIndex != index)
+         {
+            this._k33StyleSync = true;
+            rec.combo.selectedDataIndex = index;
+            this._k33StyleSync = false;
+         }
+      }
+
+      // a style box changed. The player's pick is shown (the box did that) and its dvar set at once; the dvar is
+      // read back K33_STYLE_HOLD frames later. What the code selected (a new list, the dvar's value) sets nothing.
+      private function k33OnStyleChange(e:Event) : void
+      {
+         var rec:Object = null;
          var index:int = 0;
-         if(rec == null || rec.opts.length < 2)
+         var i:int = 0;
+         if(this._k33StyleSync)
          {
             return;
          }
-         index = this.k33StyleStep(rec.shown,rec.opts.length,b.mouseX > K33_STYLE_BTN_W / 2 ? 1 : -1);
-         this.k33StyleShow(rec,index);
+         while(i < this._k33StyleRows.length)
+         {
+            if(this._k33StyleRows[i].combo == e.currentTarget)
+            {
+               rec = this._k33StyleRows[i];
+            }
+            i++;
+         }
+         if(rec == null)
+         {
+            return;
+         }
+         index = rec.combo.selectedDataIndex;
+         if(index < 0 || index >= rec.opts.length)
+         {
+            return;
+         }
+         rec.shown = index;
          if(this.k33StyleSet(rec.kind,rec.opts,index))
          {
             rec.hold = K33_STYLE_HOLD;
          }
       }
 
+      // every row off the tab (the boxes and labels are kept for the next build)
       private function k33StyleRemove() : void
       {
+         var kind:String = null;
+         var cb:CodoComboBox = null;
          var i:int = 0;
-         while(i < this._k33StyleRows.length)
+         while(i < K33_STYLE_KINDS.length)
          {
-            if(this._k33StyleRows[i].label.parent != null)
+            kind = K33_STYLE_KINDS[i];
+            cb = this._k33StyleCombos[kind] as CodoComboBox;
+            if(cb != null)
             {
-               this._k33StyleRows[i].label.parent.removeChild(this._k33StyleRows[i].label);
+               if(cb == this._k33StyleOpen)
+               {
+                  cb.close();
+               }
+               cb.visible = false;
             }
-            if(this._k33StyleRows[i].btn.parent != null)
+            if(this._k33StyleLabels[kind] != null)
             {
-               this._k33StyleRows[i].btn.parent.removeChild(this._k33StyleRows[i].btn);
+               this._k33StyleLabels[kind].visible = false;
             }
             i++;
          }
+         this._k33StyleOpen = null;
          this._k33StyleRows = [];
          if(this._k33StyleNote != null && this._k33StyleNote.parent != null)
          {
@@ -943,61 +1025,88 @@ package codo.views.option_sub
          this._k33StyleNoteKey = "";
       }
 
-      // the rows are made again from the dvars: one per kind that has choices, top to bottom without gaps
+      // the rows are made again from the dvars: one per kind that has choices, top to bottom without gaps; labels
+      // and names in the loaded language
       private function k33StyleBuild() : void
       {
+         var kinds:Array = [];
+         var lists:Array = [];
          var opts:Array = null;
          var rec:Object = null;
          var lab:TextField = null;
-         var btn:Sprite = null;
+         var cb:CodoComboBox = null;
+         var dp:Array = null;
+         var y0:Number = NaN;
+         var pitch:Number = NaN;
          var i:int = 0;
          var j:int = 0;
-         var n:int = 0;
+         if(this.stage == null)
+         {
+            this._k33StyleDirty = true; // k33StyleFrame makes them
+            return;
+         }
+         this._k33StyleDirty = false;
          this.k33StyleRemove();
          while(i < K33_STYLE_KINDS.length)
          {
             opts = this.k33StyleOptions(K33_STYLE_KINDS[i]);
             if(opts.length > 0)
             {
-               lab = this.k33StyleText(K33_STYLE_LABELS[K33_STYLE_KINDS[i]],0,this.myTFDisplayMode.textColor);
-               lab.x = K33_STYLE_X;
-               lab.y = K33_STYLE_Y + n * K33_STYLE_PITCH - 1;
-               this.addChild(lab);
-               btn = this.k33StyleButton(K33_STYLE_KINDS[i]);
-               btn.x = K33_STYLE_BTN_X;
-               btn.y = K33_STYLE_Y + n * K33_STYLE_PITCH;
-               this.addChild(btn);
-               rec = {
-                  "kind":K33_STYLE_KINDS[i],
-                  "label":lab,
-                  "btn":btn,
-                  "opts":opts,
-                  "names":[],
-                  "shown":-1,
-                  "hold":0
-               };
-               j = 0;
-               while(j < opts.length)
-               {
-                  rec.names.push(this.k33StyleName(opts[j]));
-                  j++;
-               }
-               if(opts.length > 1)
-               {
-                  PadSnap.hint(btn,PadSnap.SPLIT_H); // the pad cursor stops on either half
-               }
-               this._k33StyleRows.push(rec);
-               this.k33StyleShow(rec,this.k33StyleIndex(opts,this.k33StyleCurrent(rec.kind)));
-               n++;
+               kinds.push(K33_STYLE_KINDS[i]);
+               lists.push(opts);
             }
             i++;
          }
-         this._k33StyleNote = this.k33StyleText("",12,10474463);
-         this._k33StyleNote.x = K33_STYLE_X;
-         this._k33StyleNote.y = K33_STYLE_NOTE_Y;
-         this._k33StyleNote.visible = false;
-         this.addChild(this._k33StyleNote);
-         this.k33StyleNoteUpdate();
+         y0 = kinds.length > 2 ? K33_STYLE_Y3 : K33_STYLE_Y;
+         pitch = kinds.length > 2 ? K33_STYLE_PITCH3 : K33_STYLE_PITCH;
+         i = 0;
+         while(i < kinds.length)
+         {
+            opts = lists[i];
+            cb = this.k33StyleCombo(kinds[i]);
+            cb.y = y0 + i * pitch;
+            lab = this.k33StyleLabel(kinds[i]);
+            lab.text = LocalizeUtil.localize(K33_STYLE_LABELS[kinds[i]]);
+            lab.y = cb.y + (this.myTFSSAO.y - this.myCBSSAO.y);
+            rec = {
+               "kind":kinds[i],
+               "label":lab,
+               "combo":cb,
+               "opts":opts,
+               "names":[],
+               "shown":-1,
+               "hold":0
+            };
+            dp = [];
+            j = 0;
+            while(j < opts.length)
+            {
+               rec.names.push(this.k33StyleName(opts[j]));
+               dp.push({
+                  "label":rec.names[j],
+                  "id":opts[j].v
+               });
+               j++;
+            }
+            rec.shown = this.k33StyleIndex(opts,this.k33StyleCurrent(rec.kind));
+            this._k33StyleSync = true; // filling the box selects; that is not the player's pick
+            cb.dataProvider = dp;
+            cb.selectedDataIndex = rec.shown;
+            this._k33StyleSync = false;
+            lab.visible = true;
+            cb.visible = true;
+            this._k33StyleRows.push(rec);
+            i++;
+         }
+         if(K33_STYLE_LANGUAGE_ROW)
+         {
+            this._k33StyleNote = this.k33StyleText(this.myTFSSAO,"",12,10474463);
+            this._k33StyleNote.x = K33_STYLE_X;
+            this._k33StyleNote.y = K33_STYLE_NOTE_Y;
+            this._k33StyleNote.visible = false;
+            this.addChild(this._k33StyleNote);
+            this.k33StyleNoteUpdate();
+         }
       }
 
       // k33_languageState 1 (switching) / 2 (saved, applies on the next start) as a line under the rows
@@ -1017,7 +1126,7 @@ package codo.views.option_sub
          if(key != this._k33StyleNoteKey)
          {
             this._k33StyleNoteKey = key;
-            this._k33StyleNote.text = key;
+            this._k33StyleNote.text = key == "" ? "" : LocalizeUtil.localize(key); // translated first: k33StyleText
             this._k33StyleNote.visible = key != "";
          }
       }
@@ -1100,7 +1209,7 @@ package codo.views.option_sub
       }
 
       // every K33_STYLE_POLL frames while the tab is shown: a finished language switch translates the tab again; a
-      // list that changed makes the rows again; a row shows what its dvar holds
+      // list that changed makes the rows again; a row's box shows what its dvar holds
       private function k33StyleFrame(e:Event) : void
       {
          var rec:Object = null;
@@ -1108,6 +1217,10 @@ package codo.views.option_sub
          var serial:int = 0;
          var index:int = 0;
          var i:int = 0;
+         if(this._k33StyleDirty)
+         {
+            this.k33StyleBuild();
+         }
          while(i < this._k33StyleRows.length)
          {
             if(this._k33StyleRows[i].hold > 0)
@@ -1141,7 +1254,7 @@ package codo.views.option_sub
                   this.k33StyleBuild();
                   return;
                }
-               if(rec != null && rec.hold <= 0)
+               if(rec != null && rec.hold <= 0 && rec.combo != this._k33StyleOpen) // an open list is left alone
                {
                   index = this.k33StyleIndex(rec.opts,this.k33StyleCurrent(rec.kind));
                   if(index != rec.shown)

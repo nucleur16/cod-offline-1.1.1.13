@@ -1,24 +1,25 @@
 package codo.k33
 {
    import codo.common.CFunctionContainerCommon;
-   import codo.utils.LocalizeUtil;
    import flash.display.Sprite;
    import flash.display.DisplayObject;
    import flash.display.DisplayObjectContainer;
    import flash.events.Event;
-   import flash.events.MouseEvent;
    import flash.geom.Rectangle;
    import flash.text.TextField;
    import flash.text.TextFormat;
 
    // The existing room view creates this invisible bridge after Create Room succeeds.
+   // k33 offline: it shows nothing. There is no Local Play box, neither in Create Room nor here (the read-only
+   // ticked box with its STARTING HOST / HOST ERROR captions is gone): every room the player owns is hosted
+   // locally. A failed host start is the room's message box (LobbyController watches ui_p2p_error). What is
+   // left is the bridge: the owner's room context goes to Kernel33 (p2p_room) as the room and its map change.
    public class LocalMatchControls extends Sprite
    {
       private var room:Object;
       private var lastContext:String="";
       private var localSelection:Boolean=false;
 
-      private var choice:LocalCreateRoomOption;
       private var choiceCallback:Function;
       private var observedProtocol:String="";
       private var pendingChoice:Boolean=false;
@@ -28,20 +29,14 @@ package codo.k33
       {
          super();
          this.visible=false;
-         if(sample==null){sample=new TextField();sample.defaultTextFormat=new TextFormat("_sans",14,0xFFFFFF);}
-         this.choice=new LocalCreateRoomOption(sample);this.addChild(this.choice);
+         this.mouseEnabled=false;this.mouseChildren=false;
          this.choiceCallback=onChoice;
-         this.choice.addEventListener(MouseEvent.CLICK,this.onLocalChoice);
          this.addEventListener(Event.ENTER_FRAME,this.onProtocolFrame);
       }
 
       public function anchorBesideReadyArea(area:DisplayObject,container:DisplayObjectContainer):void
       {
-         // Only the new control moves. Stock Ready, its label and all siblings
-         // retain their transforms. Real multi-resolution adjacency needs render QA.
-         if(area==null || container==null)return;
-         var bounds:Rectangle=area.getBounds(container);
-         this.x=bounds.right+12;this.y=bounds.bottom-32;
+         // Nothing is drawn, so there is nothing to place (the room view still calls this).
       }
 
       private function onProtocolFrame(event:Event):void
@@ -55,32 +50,12 @@ package codo.k33
             this.pendingChoice=false;
             if(this.choiceCallback!=null)this.choiceCallback(true);
          }
-         this.refreshStatus();
-      }
-
-      private function refreshStatus():void
-      {
-         // Protocols 0-2: the owner's room shows the Create Room choice read-only. Ticking it only
-         // arms: no server runs until the match launches, when Kernel33 reports the embedded
-         // host's start here (ui_p2p_launching) and the client's connect waits for it.
-         if(CFunctionContainerCommon.Dvar_GetString("ui_p2p_startup_protocol")=="3"){this.choice.mouseEnabled=true;return;}
-         var shown:Boolean=this.room!=null && this.localSelection && this.owner() &&
-            CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled")=="1";
-         this.choice.mouseEnabled=false;
-         this.mouseEnabled=false;this.mouseChildren=false;
-         this.visible=shown;
-         if(!shown)return;
-         this.choice.selected=true;
-         this.choice.label=CFunctionContainerCommon.Dvar_GetString("ui_p2p_error").length>0 ||
-            CFunctionContainerCommon.Dvar_GetString("ui_p2p_state")=="failed" ? "HOST ERROR" :
-            (CFunctionContainerCommon.Dvar_GetString("ui_p2p_launching")=="1" ? "STARTING HOST..." :
-            LocalizeUtil.localize("@K33UI_LOCAL_PLAY"));
       }
 
       private function resetProductionChoice():void
       {
          if(this.localSelection)CFunctionContainerCommon.execnow("p2p_localhost 0");
-         this.localSelection=false;this.lastContext="";this.choice.selected=false;this.pendingChoice=false;
+         this.localSelection=false;this.lastContext="";this.pendingChoice=false;
       }
 
       private function nativeMapID():String
@@ -97,40 +72,30 @@ package codo.k33
          return /^(0|[1-9][0-9]{0,19})$/.test(index) && name.length>0 ? index+"|"+name.length+":"+name : "";
       }
 
-      private function onLocalChoice(event:MouseEvent):void
-      {
-         if(CFunctionContainerCommon.Dvar_GetString("ui_p2p_startup_protocol")!="3" || this.room==null || this.lastContext=="")return;
-         this.localSelection=this.choice.selected;
-         CFunctionContainerCommon.execnow("p2p_room "+this.lastContext);
-         CFunctionContainerCommon.execnow("p2p_localhost "+(this.localSelection?"1":"0"));
-         this.pendingChoice=this.localSelection;
-         if(!this.localSelection && this.choiceCallback!=null)this.choiceCallback(false);
-      }
-
       private function setProductionRoom(value:Object):void
       {
          var roomKey:String=this.intentRoomKey(value);
          if(this.lastRoomKey!="" && roomKey!=this.lastRoomKey)this.resetProductionChoice();
          this.lastRoomKey=roomKey;
          this.room=value;
-         if(value==null || roomKey=="" || value.isPlayList==true){this.resetProductionChoice();this.visible=false;return;}
+         if(value==null || roomKey=="" || value.isPlayList==true){this.resetProductionChoice();return;}
          var map:String=this.mapID();
          var gt:String=this.gameType();
          var intent:String=this.difficultyIntent();
          if(!/^[a-z][a-z0-9_]{0,63}$/.test(map) || !/^[a-z][a-z0-9_]{0,31}$/.test(gt) || intent=="")
-         {this.resetProductionChoice();this.visible=false;return;}
+         {this.resetProductionChoice();return;}
          var context:String=map+" "+gt+" "+this.category()+" "+intent;
          if(this.lastContext!="" && context!=this.lastContext)this.resetProductionChoice();
          if(this.lastContext=="")
          {
-            // A genuine local Create Room choice may seed its own host view.
-            // Guests start unchecked and require their own explicit click.
+            // The owner's created room seeds its own host view (Create Room sets ui_p2p_create).
+            // A guest has no control to opt in with: there is no box.
             this.localSelection=this.owner() && CFunctionContainerCommon.Dvar_GetString("ui_p2p_create")=="1";
             CFunctionContainerCommon.setdvar("ui_p2p_create","0");
             CFunctionContainerCommon.execnow("p2p_room "+context);
             if(this.localSelection)CFunctionContainerCommon.execnow("p2p_localhost 1");
          }
-         this.lastContext=context;this.choice.selected=this.localSelection;this.visible=true;
+         this.lastContext=context;
       }
 
       private function mapID():String

@@ -15,8 +15,9 @@ package
    //   class is put under Sensitivity (the rows below move down a row, the list background grows): labelled with
    //   C1's own key SF_UI_VIDEO_FOV, ranged by GetFOVRange (65..120 with Kernel33 PatchFov), showing whole degrees,
    //   setting cg_fov (archived in config_mp.cfg) as it moves. PauseMenuView itself stays C1's compiled class.
-   // k33 style rows (docs/UI_STYLE_OPTIONS_20261112.md): under the last slider of that list go Language, Button icons
-   //   and HUD style, each a slider row of the same class used as a stepped chooser (one stop per choice, the choice's
+   // k33 style rows (docs/UI_STYLE_OPTIONS_20261112.md): under the last slider of that list go Button icons and HUD
+   //   style (and Language, which K33_STYLE_LANGUAGE_ROW switches off for now: its row and its line under the list are
+   //   not made), each a slider row of the same class used as a stepped chooser (one stop per choice, the choice's
    //   name where a slider shows its number). Each reads and sets a Kernel33 dvar (CFunctionContainerCommon):
    //     Language      k33_language, one of k33_languageList ("en;zh"); names K33UI_LANG_NAME_<ID>
    //     Button icons  gpad_glyphs 0..6 (shown when the controller module is there: k33_padinfo is set); K33UI_GLYPHS_*
@@ -26,7 +27,9 @@ package
    //   dvar holds: it is read back a few frames after a change, so a value the engine refused does not stay on show.
    //   Mouse: drag or click along the bar; a click on the row's label or on the name steps to the next choice.
    //   Pad: left / right step (wrapping), select steps forward.
-   //   k33_languageState 1 / 2 shows a line under the list (switching / restart to apply). When k33_languageSerial
+   //   With the Language row, k33_languageState 1 / 2 shows a line under the list (switching / restart to apply);
+   //   its text is translated before it is set (a code-made field set to "@KEY" comes back from C1's translator in
+   //   the default format and draws as black boxes). When k33_languageSerial
    //   changes (a live switch finished) the open list is built again (PauseMenuView.gotoMenu of its current menu) so
    //   every row is translated again, with the view's fixed labels; the pad focus stays on the row it was on.
    //   The same k33Style* functions are in codo.gfx's OptionView_video (tests/ui_style_rows_test.js runs both).
@@ -948,6 +951,13 @@ package
          "hud":"k33_hudStyle"
       };
 
+      // k33: the Language row is switched off here, in one place for both movies: with false the row and its
+      // "Switching language..." / "Restart the game to apply the language" line are not made and none of the
+      // k33_language* dvars is read for a row (the language is still changed with k33_language / k33_setlanguage
+      // in the console, and a finished switch still translates the remaining rows: k33_languageSerial). true
+      // brings the row back; its keys (K33UI_LANGUAGE, K33UI_LANG_*) stay in the string zones for that.
+      private static const K33_STYLE_LANGUAGE_ROW:Boolean = false;
+
       private function k33StyleTrim(s:String) : String
       {
          var a:int = 0;
@@ -992,6 +1002,7 @@ package
       // when that key has no entry}]. "lang": the ids of k33_languageList ("en;zh"); "hud": the "number:id" pairs of
       // k33_hudStyleList ("0:stock;2:v26"); "glyph": gpad_glyphs 0..6, when the controller module has published
       // k33_padinfo. An empty list (the dvar is not there: an older Kernel33.dll) gives [], and the row is left out.
+      // "lang" gives [] while K33_STYLE_LANGUAGE_ROW is false.
       // Blank, malformed and repeated entries are dropped.
       private function k33StyleOptions(kind:String) : Array
       {
@@ -1004,6 +1015,10 @@ package
          var at:int = 0;
          var i:int = 0;
          var j:int = 0;
+         if(kind == "lang" && !K33_STYLE_LANGUAGE_ROW)
+         {
+            return out; // the Language row is switched off
+         }
          if(kind == "glyph")
          {
             list = CFunctionContainerCommon.Dvar_GetString("k33_padinfo");
@@ -1387,23 +1402,26 @@ package
             i++;
          }
          this.k33StyleBusy = false;
-         // the language line, under the list, in the rows' own font
-         tf = new TextField();
-         tf.embedFonts = anchor.myLabel.embedFonts;
-         tf.defaultTextFormat = anchor.myLabel.getTextFormat();
-         tf.textColor = 14544626;
-         tf.selectable = false;
-         tf.mouseEnabled = false;
-         tf.multiline = true;
-         tf.wordWrap = true;
-         tf.width = 300;
-         tf.autoSize = TextFieldAutoSize.LEFT;
-         tf.x = anchor.x + 2;
-         tf.y = bg != null ? bg.y + bg.height + 4 : anchor.y + K33_ROW * (kinds.length + 3);
-         tf.visible = false;
-         view.addChild(tf);
-         this.k33StyleNote = tf;
-         this.k33StyleNoteUpdate();
+         if(K33_STYLE_LANGUAGE_ROW)
+         {
+            // the language line, under the list, in the rows' own font (only with the Language row)
+            tf = new TextField();
+            tf.embedFonts = anchor.myLabel.embedFonts;
+            tf.defaultTextFormat = anchor.myLabel.getTextFormat();
+            tf.textColor = 14544626;
+            tf.selectable = false;
+            tf.mouseEnabled = false;
+            tf.multiline = true;
+            tf.wordWrap = true;
+            tf.width = 300;
+            tf.autoSize = TextFieldAutoSize.LEFT;
+            tf.x = anchor.x + 2;
+            tf.y = bg != null ? bg.y + bg.height + 4 : anchor.y + K33_ROW * (kinds.length + 3);
+            tf.visible = false;
+            view.addChild(tf);
+            this.k33StyleNote = tf;
+            this.k33StyleNoteUpdate();
+         }
          i = 0;
          while(i < this.k33StyleRows.length)
          {
@@ -1440,7 +1458,9 @@ package
          if(key != this.k33StyleNoteKey)
          {
             this.k33StyleNoteKey = key;
-            this.k33StyleNote.text = key;
+            // translated here, not by the field: C1's translator gives a code-made field that is set to "@KEY" its
+            // text in the default format (Times, 12, black), which an embedded-font field draws as black boxes
+            this.k33StyleNote.text = key == "" ? "" : LocalizeUtil.localize(key);
             this.k33StyleNote.visible = key != "";
          }
       }

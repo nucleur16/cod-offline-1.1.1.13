@@ -11,7 +11,6 @@ package codo.views.matchmpctroomcreator_sub
    import codo.constants.QuickMatchType;
    import codo.constants.SanitizedType;
    import codo.constants.SyncDataID;
-   import codo.k33.LocalCreateRoomOption;
    import codo.utils.StringUtil;
    import components.Album;
    import components.CodoComboBox;
@@ -63,7 +62,6 @@ package codo.views.matchmpctroomcreator_sub
       
       private var _mapAlbum:Album;
 
-      private var localCreateOption:LocalCreateRoomOption;
       
       public function MatchMPCTRoomCreatorView_mpcreator()
       {
@@ -76,12 +74,6 @@ package codo.views.matchmpctroomcreator_sub
          this.myRoomNameTF.maxChars = 12;
          this.myPasswordLabelTF.text = LocalizationRoom.CREATE_ROOM_PASSWORD;
          this.myRoomNameLabelTF.text = LocalizationRoom.CREATE_ROOM_NAME;
-         this.localCreateOption = new LocalCreateRoomOption(this.myRoomNameLabelTF);
-         this.localCreateOption.multiplayerTheme = true;
-         this.localCreateOption.x = this.myOptionLabelTF_2.x + 492;
-         this.localCreateOption.y = this.myOptionLabelTF_2.y + 65;
-         this.localCreateOption.visible = false;
-         this.addChild(this.localCreateOption);
          this.myPasswordLabelTF.text = LocalizationRoom.CREATE_ROOM_PASSWORD;
          var fitFieldPassword:Object = this.myPasswordLabelTF;
          if(fitFieldPassword != null && fitFieldPassword.text == "Room Password" && fitFieldPassword.width > 4)
@@ -111,7 +103,6 @@ package codo.views.matchmpctroomcreator_sub
       
       override public function enable() : void
       {
-         this.localCreateOption.selected = false;
          CFunctionContainerCommon.setdvar("ui_p2p_create","0");
          this.addSyncDP(SyncDataID.MATCH_MPCT_ROOMCREATOR_MP_PARAMS,this.getRoomCreatorParams);
          this.listen(BCEventCommon.EVT_ON_STRING_SANITIZED,this.onRoomNameSanitizedHandle);
@@ -155,12 +146,10 @@ package codo.views.matchmpctroomcreator_sub
                   this.refreshCyborgsData();
             }
          }
-         this.localCreateOption.visible = this._currentMatchType == QuickMatchType.MP;
       }
       
       override public function disable() : void
       {
-         this.localCreateOption.selected = false;
          CFunctionContainerCommon.setdvar("ui_p2p_create","0");
          this.stopListen(BCEventCommon.EVT_ON_STRING_SANITIZED,this.onRoomNameSanitizedHandle);
       }
@@ -358,7 +347,9 @@ package codo.views.matchmpctroomcreator_sub
       private function getRoomCreatorParams() : Object
       {
          var room:Object = {};
-         var local:Boolean = this.localCreateOption.visible && this.localCreateOption.selected;
+         // k33 offline: there is no Local Play box; a multiplayer room is created the way the ticked box created
+         // it (ui_p2p_create 1 for the room view's bridge, a minimum of one player): it is hosted locally
+         var local:Boolean = this._currentMatchType == QuickMatchType.MP;
          CFunctionContainerCommon.setdvar("ui_p2p_create",local ? "1" : "0");
          room.name = this.myRoomNameTF.text;
          room.password = this.myPasswordTF.text;

@@ -126,9 +126,10 @@ a client started by them is refused at start-up):
   room UI shows as `Localhost hosting failed: <reason>` after Ready; the lobby adds a ticker line. A
   selection that was accepted on the lobby's thread but cannot be armed on the main thread (the state
   changed in between) ends the client's connect with `disconnect`, like a failed launched host.
-* The LOCAL PLAY boxes of the patched movie are still drawn in the Create Room dialogs and are inert
-  (`docs/OFFLINE_LOBBY.md` says what an ActionScript change would be). No ActionScript was changed, so
-  the movie pin chain is untouched.
+* The LOCAL PLAY boxes of the patched movie were still drawn in the Create Room dialogs, inert, when
+  this was written (no ActionScript was changed then). They have since been taken out of the UI
+  (`docs/OFFLINE_LOBBY.md`, "The LOCAL PLAY box is gone from the UI"): four `codo.gfx` classes changed,
+  which the movie pin chain has yet to follow.
 * The host's command line gains `+set g_difficulty <0..2>` for a Zombies room and `+set net_ip6 ::1` for
   a loopback host.
 

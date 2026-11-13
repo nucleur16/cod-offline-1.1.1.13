@@ -1,18 +1,30 @@
-# Language, Button icons and HUD style rows (12 November 2026)
+# Button icons and HUD style rows; the Language row, switched off (12 November 2026)
 
-Three settings rows, in both places a player changes settings:
+Two settings rows, in both places a player changes settings:
 
-| Place | Movie / class | Where |
-|---|---|---|
-| Main menu, Options > Graphics | `codo.gfx`, `codo.views.option_sub.OptionView_video` | under the Graphics check boxes, left column |
-| Pause menu, Options list | `codoingame.gfx`, `MainPause` (C1's `PauseMenuView` stays compiled stock) | under the last slider row (FOV, or Brightness in fullscreen), above Back to Lobby |
+| Place | Movie / class | Where | Control |
+|---|---|---|---|
+| Main menu, Options > Graphics | `codo.gfx`, `codo.views.option_sub.OptionView_video` | under the Graphics check boxes, left column | a drop-down, the tab's own `CodoComboBox` |
+| Pause menu, Options list | `codoingame.gfx`, `MainPause` (C1's `PauseMenuView` stays compiled stock) | under the last slider row (FOV, or Brightness in fullscreen), above Back to Lobby | a slider row used as a stepped chooser (that list has no combo box) |
 
 Each row reads and writes a dvar that Kernel33.dll owns. The movies only show
-and set; what a value does (reloading strings, swapping glyphs, loading a HUD
-zone) is native work on the DLL side.
+and set; what a value does (swapping glyphs, loading a HUD zone) is native work
+on the DLL side.
 
-This is source, compiled tags and a candidate build. Nothing here has been seen
-in a running game: the dvars are written on other branches. See "Not verified".
+**The Language row is switched off** (owner, 12 November 2026: out of the options
+menus until the asset limit of a live language switch is solved). One constant in
+the shared block of both sources, `K33_STYLE_LANGUAGE_ROW = false`: the row and
+its "Switching language..." / "Restart the game to apply the language" line are
+not made, the other two rows close up, and no `k33_language*` dvar is read for a
+row. The language is still changed from the console (`k33_language`,
+`k33_setlanguage`), and a finished switch (`k33_languageSerial`) still translates
+the remaining rows and the Graphics tab again. Setting the constant to `true` in
+both sources (the text between the markers must stay identical) and storing the
+two classes brings the row back; its localize keys are still in the string zones.
+Everything below that is about the Language row describes that switched-on state.
+
+What was seen in a running client (12 November 2026, a test client next to the
+player's, English and Chinese, 1920x1080): "Seen in a client" at the end.
 
 ## Dvar contract
 
@@ -21,7 +33,7 @@ writes through `CFunctionContainerCommon.setdvar(name, String(value))`.
 
 | Row | Set | Choices | Names |
 |---|---|---|---|
-| Language | `k33_language` (string, archived) | the ids of `k33_languageList`, `;`-separated (`en;zh`) | `K33UI_LANG_NAME_<ID>` |
+| Language (switched off) | `k33_language` (string, archived) | the ids of `k33_languageList`, `;`-separated (`en;zh`) | `K33UI_LANG_NAME_<ID>` |
 | Button icons | `gpad_glyphs` (int, archived, 0..6) | 0 Auto, 1 Xbox, 2 PlayStation, 3 Wii U / Switch, 4 Generic, 5 Text only, 6 Keyboard & mouse | `K33UI_GLYPHS_AUTO / XBOX / PS / NINTENDO / GENERIC / TEXT / KBM` |
 | HUD style | `k33_hudStyle` (int, archived) | the numbers of `k33_hudStyleList`, `;`-separated `number:id` pairs (`0:stock;2:v26`) | `K33UI_HUD_STYLE_<ID>` (`STOCK`, `V12`, `V26`, `V33`, `V35`) |
 
@@ -41,8 +53,12 @@ to be identical and runs them):
 - A name with no localize entry shows the raw id (`de`, `v99`).
 - A current value the list does not have shows the first choice; nothing is
   written until the player picks.
-- Stepping wraps at both ends. A list of one choice shows it and has nothing to
-  step to.
+- Pause menu: stepping wraps at both ends. A list of one choice shows it and has
+  nothing to step to.
+- Only the player's pick sets a dvar. What the code selects (filling a list,
+  showing what the dvar holds) sets nothing: on Options > Graphics a combo box
+  fires its change event for those too, and the tab ignores them
+  (`_k33StyleSync`).
 - A pick is shown at once and set at once. The row then keeps that for 12 frames
   and after that shows what the dvar actually holds, read every 6 frames. So a
   value the engine refuses does not stay on show: an older DLL whose `gpad_glyphs`
@@ -55,33 +71,68 @@ to be identical and runs them):
 
 ## Main menu: Options > Graphics
 
-A label and a `<  name  >` stepper per row, built in code (as the Controller
-tab's steppers are), at x 12..288, y 405..463 of the panel: below the check
-boxes (which end at y 401), above the warning line (y 465), left of the texture
-rows (x 296).
+A label and a drop-down per row, like the tab's other options. The drop-down is
+one more instance of the class the tab's own combo boxes are: C1 places them by
+class name (`codoComboBox_l2` on `option_videoPanel`, `codoComboBoxCyborgs` on
+`option_videoPanelCyborgs`), so the tab takes the class of its `myCBAspectRatio`
+(`getDefinitionByName(getQualifiedClassName(..))`, the way C1's `CodoList` makes
+its item renderers) and `new` gives the symbol with its button, list, scroll bar
+and skin. The box is made once per row, after the tab is on the stage (a
+`CodoSprite` builds itself when it gets there), and kept.
 
-- Mouse: click the right half for the next choice, the left half for the previous.
-- Gamepad: the menu cursor snaps to each half (`PadSnap.hint(.., SPLIT_H)`), and
-  A clicks it.
+- Place: labels at x 12 (the check boxes' left edge), boxes at x 98 (the Display
+  Mode / Resolution column, the same 150-wide box), rows at y 407 and 437: below
+  the check boxes (which end at y 398), above the warning line (y 467), left of
+  the texture rows (x 298). The label sits by its box as the Graphics rows'
+  labels do (`myTFSSAO.y - myCBSSAO.y`) and has their font, size and colour.
+  With the Language row switched on there are three rows, at y 399 / 421 / 443.
+- The list is `[{label, id}]`: the choice's translated name and the value its
+  dvar takes. It opens **upwards** (`setDropDownAtRuntime(false)`: the rows are
+  at the foot of the panel) and, like every combo box of the tab, comes to the
+  front as it opens (`EVT_PRE_OPEN`), so it covers the check boxes above it.
+  Seven Button icons choices in a five-row list: C1's scroll bar and wheel.
+- Gamepad: nothing special. PadSnap finds a combo box's button
+  (`comboBox_l2_button`) and, while the list is open, its rows, exactly as for
+  the tab's other boxes; the controls the list covers stop being targets.
 - The rows apply immediately. They take no part in Apply, Cancel or Recommended:
-  those handlers do not touch the three dvars, and the rows keep no pending state,
-  so there is nothing for Cancel to undo or for Apply to repeat.
+  those handlers do not touch the dvars, and the rows keep no pending state, so
+  there is nothing for Cancel to undo or for Apply to repeat.
+- A row whose list is empty is hidden (box and label) and the rows below move up.
+- While a list is open its box is not moved to the dvar's value.
 - `k33_languageState` 2 shows "Restart the game to apply the language" under the
-  warning line (x 12, y 486); 1 shows "Switching language...".
-- The rows are made again from the dvars every time the tab is shown, and are
+  warning line (x 12, y 486); 1 shows "Switching language..." (Language row only).
+- The rows are set again from the dvars every time the tab is shown, and are
   only polled while it is shown.
 
 The rows are on Graphics, not on Controller, because `OptionView` (the Controller
 tab's host) may only be changed through `tools/optionview-method-producer`; the
-generic compile route refuses it. Keeping all three together on one tab was
-preferred to splitting them. One consequence: C1 disables the Graphics tab while
-the player is in a room or a ranked match, so there the rows are reachable only
-from the pause menu once the match starts.
+generic compile route refuses it. One consequence: C1 disables the Graphics tab
+while the player is in a room or a ranked match, so there the rows are reachable
+only from the pause menu once the match starts.
+
+### The black boxes (fixed)
+
+The first build drew each row's label as a line of small black squares. Cause:
+the labels were code-made `TextField`s whose text was set to `"@K33UI_..."`.
+C1's translator resolves `@KEY` as a text is set and gives the field the text
+back in the field's *authored* format; a field made with `new TextField()` has
+none, so the format set through `defaultTextFormat` was replaced by the default
+(Times New Roman, 12, black), and a field with `embedFonts` has no glyphs for
+that font: every character is drawn as a box. Measured in the client with a
+diagnostic build: the label read back `size 12, colour 0` where `16, 7450297
+($font_3)` had been set, with its translated text intact. The stepper next to it
+was fine because its text was translated first (`LocalizeUtil.localize`) and
+then set, which is also what `OptionView` and `OptionView_audio` do for their
+code-made texts. So: a code-made field never gets `@KEY`; the label and the
+language line are translated with `LocalizeUtil.localize` and then set. The same
+line in the pause menu (`MainPause`'s note under the list) had the same fault
+and is fixed the same way; the pause rows themselves use the row class's own
+authored fields and were not affected.
 
 ## Pause menu: Options list
 
-Each row is another instance of the list's own slider row class
-(`InGameMenuSliderBtn`), used as a stepped chooser: one stop per choice, the
+Unchanged: that list has no combo box component. Each row is another instance of
+the list's own slider row class (`InGameMenuSliderBtn`), used as a stepped chooser: one stop per choice, the
 choice's name where a slider shows its number. The bar is shortened so the
 longest name of the row fits inside the slider's 195 px (never below 60 px). The
 rows below move down and the list background grows, as for the FOV row.
@@ -90,7 +141,8 @@ rows below move down and the list background grows, as for the FOV row.
   label or on the name steps to the next choice.
 - Gamepad: left / right step (wrapping); select steps forward. Up / down move
   between rows as before.
-- `k33_languageState` 1 / 2 shows the same line under the list.
+- `k33_languageState` 1 / 2 shows the same line under the list (Language row only;
+  the line is not made while the row is switched off).
 - A submenu without sliders (change team, leave confirmation, the theatre pause)
   gets no rows.
 
@@ -101,7 +153,7 @@ text already on screen does not change by itself. When `k33_languageSerial` move
 
 | Text | Refresh |
 |---|---|
-| The three rows, both movies | live: made again, names and labels |
+| The rows, both movies | live: made again, names and labels (Graphics: the row labels and the boxes' lists are set again, the selection kept) |
 | Pause menu: the whole open list (class rows, Sensitivity, FOV, Brightness, Back to Lobby), the list header, Back to Game, the network-quality label and button, the class header | live: `PauseMenuView.gotoMenu(getCurrentMenu())` builds the list again and the fixed labels are set again. Pad focus stays on the row it was on. |
 | Pause menu: the loadout panel beside the list | the same rebuild shows it again; the texts C1 sets each time it shows follow, any it set once do not |
 | Options > Graphics: every label, check box and button of the tab, the Options window's title and four tab buttons | live (`k33Texts`, `k33StyleRelocalize`) |
@@ -156,7 +208,14 @@ node tests/ui_style_rows_test.js
 ActionScript from both sources against a fake dvar table: list parsing, missing
 dvars, values not in the list, wraparound, a refused set, the hold and read-back,
 a language serial change, a list that changes while open, and the nineteen keys
-in both languages, once per pack.
+in both languages, once per pack. The language logic runs with the switch on.
+With the switch as the sources have it (off): no Language row in either menu, no
+gap, no `k33_language*` dvar read for a row. For Options > Graphics the tab's
+build / show / change / frame code runs against combo boxes that behave as
+`CodoComboBox` does (a new list selects its first entry; every selection fires
+the change event): filling and following the dvar set nothing, a pick sets once,
+an unlisted value shows the first entry and writes nothing, an empty list hides
+its row, a serial change sets labels and list names again.
 
 `ui_baseline.json` was re-recorded for the changed `codo.gfx` files with
 `python -m zonekit.ui_baseline --record`.
@@ -165,7 +224,8 @@ The four-tag composition gate (`tools/p2p-four-tag-composition`, exercised by
 `tests/test_optionview_method.py`) is **not** succeeded and fails on this branch.
 It proves that the checked-in `codo.gfx` is the reviewed selector movie with
 exactly four qualified class tags changed, and pins the movie digest and the
-bytes of `patch.txt`. `OptionView_video` is a fifth changed tag. Its successor
+bytes of `patch.txt`. `OptionView_video` is a fifth changed tag (and the Local Play removal changed `MatchMiniRoomCreatorView`,
+`MatchMPCTRoomCreatorView_mpcreator` and `codo.k33.LocalMatchControls` as well: docs/OFFLINE_LOBBY.md). Its successor
 would be a new composition over the current one (the retained predecessor movie,
 the prior `patch.txt`, the new tag's identity, and an independent semantic review
 receipt like `actual-semantic-review.json.DATA`), wired in the way a618141 wired
@@ -173,36 +233,52 @@ this one into `playlist-selector-producer/current_endpoint.py`, then pinned in
 `ui_baseline.json`. That receipt is a reviewer's decision and was not invented
 here.
 
-## Not verified
+## Seen in a client
 
-No running game was available with these dvars. Unverified:
+12 November 2026: a test client of this branch's diagnostic DLL and candidate
+zones, started next to the player's own client (its own folder, profile and
+process mutex; off-screen window; driven with `k33mouse`, the synthetic pad and
+back-buffer screenshots). 1920x1080, windowed.
 
-- that the rows appear where described and nothing overlaps at every resolution,
-  in both the multiplayer and the zombies / co-op pause view and both Options
-  panel variants;
-- text widths in the pause rows (the longest names against the 195 px slider);
-- CJK glyphs for `中文` under the English font;
-- that `setdvar` reaches the three dvars from Scaleform (archived / read-only
-  flags on the DLL side decide that);
-- the live re-localisation: that `gotoMenu(getCurrentMenu())` and re-setting the
-  Graphics tab's texts show the new language once the DLL has switched strings.
+- Before the fix (Chinese): the three row labels are lines of black squares, the
+  steppers' texts are fine.
+- After, Chinese and English: `按键图标` / `HUD 样式` and `Button icons` / `HUD
+  style` in the Graphics rows' font and colour, each with a drop-down in the
+  Display Mode column; no Language row; nothing overlaps the check boxes, the
+  texture rows or the warning line.
+- The Button icons list open: five rows and a scroll bar, above the box, over
+  the check boxes. A click on Xbox: the box shows Xbox and the DLL logs
+  `gpad_glyphs 1` at once. `gpad_glyphs 4` in the console: the box follows.
+- Synthetic pad: the two boxes are PadSnap targets like the tab's other boxes
+  (`comboBox_l2_button/myBtn`, 172x30); A on the box opens the list, its five
+  rows become targets and the covered check boxes stop being targets; A on a row
+  picks it and sets the dvar.
+- The zombies lobby's Options (`option_videoPanelCyborgs`, Chinese): the same two
+  rows with that panel's own orange combo boxes and label colour.
+- Pause menu in a match: multiplayer (English) and zombies (Chinese): Button
+  icons and HUD style under FOV, Back to Lobby right below them, texts drawn.
+
+Not seen: other resolutions and aspect ratios; an open list on the Cyborgs panel;
+a list of more than seven entries; a language switch finishing while the tab is
+open (this client's DLL reports "no live switch"); anything of the Language row
+(it is switched off).
 
 ## Manual test
 
 1. Install the candidate packs with a DLL that has the dvars. Main menu > Options
-   > Graphics: three rows under the check boxes. Click each half of each stepper;
-   check `k33_language`, `gpad_glyphs`, `k33_hudStyle` in the console after each.
-2. With a pad: move the cursor onto a stepper, confirm it stops on each half, press A.
-3. Set `gpad_glyphs 3` in the console: the row follows within a moment.
-4. Change Resolution without Apply, then switch language: the pending resolution
-   is still selected, labels are in the new language. Press Cancel: the language
-   stays changed.
-5. Start a match, open the pause menu: three rows under FOV / Brightness, Back to
+   > Graphics: Button icons and HUD style under the check boxes, each a drop-down;
+   no Language row. Open each list and pick; check `gpad_glyphs`, `k33_hudStyle`
+   in the console after each.
+2. With a pad: move the cursor onto a box, press A, move over the list, press A.
+3. Set `gpad_glyphs 3` in the console: the box follows within a moment.
+4. Change Resolution without Apply, pick a HUD style, press Cancel: the HUD style
+   stays changed, the resolution does not.
+5. Start a match, open the pause menu: two rows under FOV / Brightness, Back to
    Lobby below them, list background covering all rows. Drag a bar, click a
    label, step with the pad (left / right / select).
-6. Switch language from the pause menu: every row of the list, the header and
-   Back to Game change; pad focus stays on Language.
-7. A language that needs a restart (`k33_languageState 2`): the line appears under
-   the rows in both menus.
-8. An older Kernel33.dll: both menus look as before, with at most the Button icons row.
-9. Open change team / leave confirmation: no rows; back to the main list: rows return.
+6. `k33_setlanguage` in the console with the Graphics tab or the pause menu open:
+   the rows' labels and names follow when the switch has finished.
+7. An older Kernel33.dll: both menus look as before, with at most the Button icons row.
+8. Open change team / leave confirmation: no rows; back to the main list: rows return.
+9. With `K33_STYLE_LANGUAGE_ROW = true` only: three rows; `k33_languageState 2`
+   shows the restart line under the rows in both menus.

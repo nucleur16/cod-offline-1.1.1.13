@@ -3,7 +3,6 @@ package codo.views
    import codo.common.BaseView;
    import codo.common.CFunctionContainerCommon;
    import codo.common.ParaEvent;
-   import codo.k33.LocalCreateRoomOption;
    import codo.constants.BCEvent;
    import codo.constants.BCEventCommon;
    import codo.constants.GameInfo;
@@ -92,7 +91,10 @@ package codo.views
       
       protected var _currentMatchType:int = -1;
 
-      private var localCreateOption:LocalCreateRoomOption;
+      // k33 offline: there is no Local Play box. Every room the player owns is hosted locally, so a room of a
+      // kind the box was offered for (multiplayer, zombies, survival) is created the way the ticked box
+      // created it: ui_p2p_create 1 for the room view's bridge (LocalMatchControls) and a minimum of one player.
+      private var localCreateAllowed:Boolean = false;
       
       public function MatchMiniRoomCreatorView()
       {
@@ -113,11 +115,6 @@ package codo.views
          this.myPasswordLabelTF.text = LocalizationRoom.CREATE_ROOM_PASSWORD;
          this.myCreateBtn.label = LocalizationRoom.CREATE;
          this.myHeader.enable = false;
-         localCreateOption = new LocalCreateRoomOption(this.myRoomNameLabelTF);
-         localCreateOption.x = this.myCreateBtn.x - 163;
-         localCreateOption.y = this.myCreateBtn.y + 6;
-         localCreateOption.visible = false;
-         this.addChild(localCreateOption);
          var fitFieldPassword:Object = this.myPasswordLabelTF;
          if(fitFieldPassword != null && fitFieldPassword.text == "Room Password" && fitFieldPassword.width > 4)
          {
@@ -167,7 +164,6 @@ package codo.views
       override protected function enableData() : void
       {
          this.listen(BCEventCommon.EVT_ON_STRING_SANITIZED,this.onRoomNameSanitizedHandle);
-         localCreateOption.selected = false;
          CFunctionContainerCommon.setdvar("ui_p2p_create","0");
          this.myRoomNameTF.text = super.getSyncDP(SyncDataID.DEFAULT_ROOM_NAME);
          this.myPasswordTF.text = "";
@@ -276,18 +272,12 @@ package codo.views
       {
          var mapID:String = _optionMap != null && _optionMap.selectedValue != null ? String(_optionMap.selectedValue.id) : "";
          var allowed:Boolean = _currentMatchType == QuickMatchType.MP || _currentMatchType == QuickMatchType.CYBORG || _currentMatchType == QuickMatchType.COOP && mapID.indexOf("coop_survival_") == 0;
-         // MP's bottom profile strip covers the Zombies placement. The MP
-         // panel's right-hand gap between map details and XP rate is clear.
-         localCreateOption.x = _currentMatchType == QuickMatchType.MP ? this.myCreateBtn.x - 88 : this.myCreateBtn.x - 163;
-         localCreateOption.y = _currentMatchType == QuickMatchType.MP ? this.myCreateBtn.y - 270 : this.myCreateBtn.y + 6;
-         localCreateOption.multiplayerTheme = _currentMatchType == QuickMatchType.MP;
-         localCreateOption.visible = allowed;
-         if(!allowed) localCreateOption.selected = false;
+         localCreateAllowed = allowed;
       }
 
       private function onLocalCreateChosen(cEvt:ParaEvent) : void
       {
-         CFunctionContainerCommon.setdvar("ui_p2p_create",localCreateOption.visible && localCreateOption.selected ? "1" : "0");
+         CFunctionContainerCommon.setdvar("ui_p2p_create",localCreateAllowed ? "1" : "0");
       }
 
       private function refreshMPMaps(modeID:String) : void
@@ -319,7 +309,6 @@ package codo.views
       
       private function onBackBtnClickHandle(cEvt:ParaEvent) : void
       {
-         localCreateOption.selected = false;
          CFunctionContainerCommon.setdvar("ui_p2p_create","0");
          this.broadcast(BCEvent.EVT_CLOSE_ROOM_CREATOR);
       }
@@ -330,7 +319,7 @@ package codo.views
          room.name = this.myRoomNameTF.text;
          room.password = this.myPasswordTF.text;
          room.map = _optionMap.selectedValue.id;
-         room.minPlayer = localCreateOption.visible && localCreateOption.selected ? 1 : _optionMap.selectedValue.minPlayer;
+         room.minPlayer = localCreateAllowed ? 1 : _optionMap.selectedValue.minPlayer;
          if(_currentMatchType == QuickMatchType.COOP)
          {
             room.mode = MatchType.COOP;

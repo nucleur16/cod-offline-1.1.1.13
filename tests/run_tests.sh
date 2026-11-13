@@ -42,6 +42,7 @@ node tests/campaign_local_host_test.js
 node tests/local_match_controls_test.js
 node tests/local_play_deferred_test.js
 node tests/local_match_layout_test.js
+node tests/local_create_room_option_test.js
 node tests/ui_style_rows_test.js
 python -B tests/test_survival_kiosk_menus.py
 python -B tests/test_survival_wave_overrides.py

@@ -1,5 +1,5 @@
 // Deferred Local Play host start (docs/P2P_DEFERRED_HOST_START.md): execute the actual ActionScript bodies of the
-// room controller's Ready/Start routing and of the room helper's read-only status. Only the native/timer/display
+// room controller's Ready/Start routing; the room helper shows nothing (offline: no Local Play box). Only the native/timer/display
 // boundaries are doubled. Ready and Start must proceed at once in protocols 0-2 and never wait for a running host.
 const fs = require('fs'), path = require('path'), assert = require('assert');
 const asRoot = process.env.P2P_AS_ROOT || path.join(__dirname, '../zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as');
@@ -24,7 +24,6 @@ global.CFunctionContainerCommon = {execnow: c => commands.push(c), Dvar_GetStrin
 global.getTimer = () => now;
 global.TimerEvent = {TIMER: 'timer'};
 global.Timer = class { addEventListener(e, cb) { this.callback = cb; } start() { this.running = true; } stop() { this.running = false; } };
-global.LocalizeUtil = {localize: key => key === '@K33UI_LOCAL_PLAY' ? 'LOCAL PLAY' : key};
 
 const lobby = reader('codo/controllers/LobbyController.as');
 function controller(protocol) {
@@ -97,23 +96,10 @@ assert.equal((text.match(/if\(this\.isProductionLocalRoom\(\)\) this\.beginCampa
 assert.equal((text.match(/else this\.beginDeferredLocalHost\(/g) || []).length, 2);
 console.log('Deferred Local Play: Ready/Start proceed at once in protocols 0-2, failure and revocation paths, production gate untouched');
 
-// The room helper: a read-only ticked box for the owner while the choice is enabled; launch and error captions.
-const controls = reader('codo/k33/LocalMatchControls.as');
-function helper(protocol) {
-  dvars = {ui_p2p_startup_protocol: protocol, ui_p2p_enabled: '1', ui_p2p_state: 'armed'};
-  const h = {room: {forces: {isHost: true}}, localSelection: true, visible: false, mouseEnabled: true, mouseChildren: true,
-    choice: {selected: false, mouseEnabled: true, label: ''}};
-  h.owner = new Function(controls('owner')); h.refreshStatus = new Function(controls('refreshStatus'));
-  return h;
-}
-let h = helper('0'); h.refreshStatus();
-assert(h.visible && h.choice.selected && !h.choice.mouseEnabled && !h.mouseChildren, 'armed choice is shown ticked and cannot be clicked');
-assert.equal(h.choice.label, 'LOCAL PLAY');
-dvars.ui_p2p_launching = '1'; h.refreshStatus(); assert.equal(h.choice.label, 'STARTING HOST...');
-dvars.ui_p2p_error = 'the UDP port is in use'; h.refreshStatus(); assert.equal(h.choice.label, 'HOST ERROR');
-dvars.ui_p2p_error = ''; dvars.ui_p2p_launching = '0'; dvars.ui_p2p_enabled = '0'; h.refreshStatus(); assert(!h.visible, 'unticked: no box');
-h = helper('1'); h.room.forces.isHost = false; h.refreshStatus(); assert(!h.visible, 'guests see no box');
-h = helper('2'); h.localSelection = false; h.refreshStatus(); assert(!h.visible);
-h = helper('3'); h.visible = true; h.choice.mouseEnabled = false; h.refreshStatus();
-assert(h.visible && h.choice.mouseEnabled && h.choice.label === '', 'the production checkbox stays clickable and untouched');
-console.log('Room helper: read-only armed box, STARTING HOST and HOST ERROR captions, owner/enabled scope, production unchanged');
+// The room helper shows nothing offline (no Local Play box, no STARTING HOST / HOST ERROR caption): a failed start
+// is the room's message box above (showMsg from onCampaignHostReady, which watches ui_p2p_error / ui_p2p_state).
+const helperSource = fs.readFileSync(path.join(asRoot, 'codo/k33/LocalMatchControls.as'), 'utf8');
+assert(!/refreshStatus|"STARTING HOST|"HOST ERROR|@K33UI_LOCAL_PLAY|choice\./.test(helperSource), 'no box and no captions in the room');
+assert(helperSource.includes('this.visible=false;') && !/this\.visible=(?!false;)/.test(helperSource), 'the helper is never shown');
+assert(lobby('onCampaignHostReady').includes('ui_p2p_error') && lobby('onCampaignHostReady').includes('showMsg'), 'a failed host start still reaches the message box');
+console.log('Room helper: invisible bridge, no Local Play box or captions; host errors go to the room message box');
