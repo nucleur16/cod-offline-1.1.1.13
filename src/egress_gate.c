@@ -49,6 +49,7 @@
  */
 #include <ws2tcpip.h>
 #include <mswsock.h>
+#include <iphlpapi.h>
 
 #define EG_MAX_HOOKS   64
 #define EG_TRAMP_SIZE  16
@@ -530,20 +531,71 @@ static int WSAAPI EgWSAIoctl(SOCKET s, DWORD code, void *in, DWORD inLen, void *
     return r;
 }
 
-/* Nothing of this process listens on the network: "any" and LAN addresses become loopback. */
+/* Is an IPv4 port of this protocol bound by anybody on this PC on "any", a loopback or a LAN address? (The UDP / TCP
+ * tables of the system; no socket is opened for the test.) */
+static BOOL EgPortTaken(int udp, unsigned short portNet)
+{
+    DWORD size = 0, r;
+    void *t = NULL;
+    BOOL taken = FALSE;
+    for (int tries = 0; tries < 4; tries++) {
+        r = udp ? GetExtendedUdpTable(t, &size, FALSE, AF_INET, UDP_TABLE_BASIC, 0)
+                : GetExtendedTcpTable(t, &size, FALSE, AF_INET, TCP_TABLE_BASIC_ALL, 0);
+        if (r == NO_ERROR) break;
+        if (r != ERROR_INSUFFICIENT_BUFFER) { free(t); return FALSE; }
+        free(t);
+        t = malloc(size + 4096);
+        size += 4096;
+        if (!t) return FALSE;
+    }
+    if (r == NO_ERROR && t) {
+        if (udp) {
+            MIB_UDPTABLE *u = (MIB_UDPTABLE *)t;
+            for (DWORD i = 0; i < u->dwNumEntries && !taken; i++) taken = (unsigned short)u->table[i].dwLocalPort == portNet;
+        } else {
+            MIB_TCPTABLE *c = (MIB_TCPTABLE *)t;
+            for (DWORD i = 0; i < c->dwNumEntries && !taken; i++)
+                taken = (unsigned short)c->table[i].dwLocalPort == portNet && c->table[i].dwState == MIB_TCP_STATE_LISTEN;
+        }
+    }
+    free(t);
+    return taken;
+}
+
+/* Nothing of this process listens on the network: "any" and LAN addresses become loopback.
+ * A socket moved to loopback must not share its port: Windows hands a datagram for 127.0.0.1:<port> to the most
+ * specific socket, so a 127.0.0.1:30001 socket of this client would receive the traffic of every other program bound
+ * to 0.0.0.0:30001 - another CoDOL client in particular (C1 always asks for 30001; seen live: the other client lost its
+ * lobby connection). So the moved socket is bound with SO_EXCLUSIVEADDRUSE, and when its port is already bound by
+ * anybody it takes a free one instead. C1 reads its game port back with getsockname; the lobby in this DLL answers
+ * whatever source port it sees. */
 static int WSAAPI EgBind(SOCKET s, const struct sockaddr *name, int len)
 {
     if (name && name->sa_family == AF_INET && len >= (int)sizeof(struct sockaddr_in) &&
         !EgLoopback4(((const struct sockaddr_in *)name)->sin_addr.s_addr)) {
         struct sockaddr_in in = *(const struct sockaddr_in *)name;
         char what[48], where[128], from[64];
+        int type = 0, tl = sizeof(type), off = 0, on = 1, r;
         EgAddrText(name, len, from, sizeof(from));
         in.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        if (getsockopt(s, SOL_SOCKET, SO_TYPE, (char *)&type, &tl)) type = 0;
+        if (in.sin_port && (type == SOCK_DGRAM || type == SOCK_STREAM) && EgPortTaken(type == SOCK_DGRAM, in.sin_port)) in.sin_port = 0;
+        g_egSetSockOpt(s, SOL_SOCKET, SO_REUSEADDR, (const char *)&off, sizeof(off));
+        g_egSetSockOpt(s, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, (const char *)&on, sizeof(on));
+        r = g_egBind(s, (const struct sockaddr *)&in, sizeof(in));
+        if (r == SOCKET_ERROR && in.sin_port && WSAGetLastError() == WSAEADDRINUSE) { /* taken between the test and the bind */
+            in.sin_port = 0;
+            r = g_egBind(s, (const struct sockaddr *)&in, sizeof(in));
+        }
+        struct sockaddr_in got;
+        int gl = sizeof(got);
+        if (r == 0 && !getsockname(s, (struct sockaddr *)&got, &gl)) in.sin_port = got.sin_port;
         _snprintf(what, sizeof(what), "%s bind", EgSockKind(s));
-        _snprintf(where, sizeof(where), "%s -> 127.0.0.1", from);
+        _snprintf(where, sizeof(where), "%s -> 127.0.0.1:%u%s", from, ntohs(in.sin_port),
+                  ((const struct sockaddr_in *)name)->sin_port && in.sin_port != ((const struct sockaddr_in *)name)->sin_port ? " (port in use)" : "");
         what[sizeof(what) - 1] = where[sizeof(where) - 1] = 0;
         EgReport(2, what, where, EG_RA());
-        return g_egBind(s, (const struct sockaddr *)&in, sizeof(in));
+        return r;
     }
     if (name && name->sa_family == AF_INET6 && len >= 24 && !EgLoopback6((const BYTE *)&((const struct sockaddr_in6 *)name)->sin6_addr)) {
         BYTE copy[64];
