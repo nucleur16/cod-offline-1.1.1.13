@@ -1,4 +1,4 @@
-/* Kernel33-owned room context migration. Include after k33http.c (K33Sha256Hex)
+/* Kernel33-owned room context migration. Include after k33sha256.c (K33Sha256Hex)
  * and install after the existing voice/Discord tick wrappers. This module is
  * opt-in until the complete proxy/name-display cutover is qualified. */
 #include "kernel_room_policy.h"

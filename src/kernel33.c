@@ -1535,10 +1535,9 @@ static void PatchGbkInput(void)
 #include "discord.c"
 
 /* Shared plumbing for the features ported from codol-classic's d3d9.dll: a main-thread tick list (k33tick.c, chained
- * after voice.c's and discord.c's Com_EventLoop hooks), an HTTPS/SHA-256 helper (k33http.c) and a JSON reader (k33json.c). */
+ * after voice.c's and discord.c's Com_EventLoop hooks) and a SHA-256 helper (k33sha256.c). */
 #include "k33tick.c"
-#include "k33http.c"
-#include "k33json.c"
+#include "k33sha256.c"
 
 /* codol_quick_native_room_context for the shared movie's Quick Play room checks: see quick_room.c. */
 #if !CODOL_KERNEL_ROOM_CONTEXT
@@ -1546,7 +1545,7 @@ static void PatchGbkInput(void)
 #endif
 /* The THEATRE screen (codol-classic's theatre playback): see theatre.c. */
 #include "theatre.c"
-/* UTF-8 player names and an optional display-name service: see name_display.c. */
+/* UTF-8 player names: see name_display.c. */
 #if !CODOL_KERNEL_NAME_DISPLAY
 #include "name_display.c"
 #endif
@@ -1587,7 +1586,6 @@ static void PatchGbkInput(void)
 #include "guards/party_session_refresh_guard.c"
 
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
-#include "gfx/news_refresh.c"
 #include "gfx/gfx_date_time.c"
 #include "gfx/gfx_local_operands.c"
 #if CODOL_KERNEL_NAME_DISPLAY
@@ -1673,7 +1671,6 @@ static void __cdecl TakeOver(void)
     PatchCapacityQueueWait();
     PatchInitialRoomOwner();
     PatchRoomRosterRoles();
-    PatchNewsRefresh();
     PatchLoopFxCatchUp();
     PatchPatchDir();
     PatchLocalizePool();

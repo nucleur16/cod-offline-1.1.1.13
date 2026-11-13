@@ -46,7 +46,7 @@ OFFLINE_LINK="$OFFLINE_OBJS -static-libstdc++ -lstdc++"
 "$BIN/gcc.exe" "$@" -O2 -Wall -shared -s -static -static-libgcc -I"$SDL_DIR/include" -o "$OUT/Kernel33.dll" \
     -I. kernel33.c "$OUT/kernel33_res.o" kernel33.def $OFFLINE_LINK \
     -L"$SDL_DIR/lib" -lSDL2 -lsetupapi -lcfgmgr32 -lversion -loleaut32 -luuid \
-    -lopus -lz -lwinhttp -limm32 -lgdi32 -lshlwapi -lole32 -lwinmm -lws2_32 -liphlpapi -lpsapi -ladvapi32 -lshell32 -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat -Wl,--image-base,0x69100000
+    -lopus -lz -limm32 -lgdi32 -lshlwapi -lole32 -lwinmm -lws2_32 -liphlpapi -lpsapi -ladvapi32 -lshell32 -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat -Wl,--image-base,0x69100000
 if [ "${K33_NO_COPY:-0}" = 1 ]; then
     echo "built build/Kernel33.dll (SDL2 $SDL_VER static; not copied)"
 else
