@@ -54,8 +54,8 @@ def room_profile(body, room, local):
 
 class CutoverContract(unittest.TestCase):
     def setUp(self):
-        self.kernel = (ROOT / 'kernel33.c').read_text(encoding='utf8')
-        self.tick = (ROOT / 'k33tick.c').read_text(encoding='utf8')
+        self.kernel = (ROOT / 'src/kernel33.c').read_text(encoding='utf8')
+        self.tick = (ROOT / 'src/k33tick.c').read_text(encoding='utf8')
 
     def test_full_profile_requires_callback_and_dispatcher(self):
         self.assertTrue(required(self.kernel))
@@ -65,7 +65,7 @@ class CutoverContract(unittest.TestCase):
     def test_default_profile_and_dependency_remain(self):
         _, default = profile_gate(self.kernel)
         self.assertEqual(default.strip(), 'K33InstallMainTicks(); /* last: chains in front of the retained client tick hooks */')
-        profile = (ROOT / 'production_profile.h').read_text(encoding='utf8')
+        profile = (ROOT / 'src/production_profile.h').read_text(encoding='utf8')
         self.assertIn('#define CODOL_KERNEL_ROOM_CONTEXT 0', profile)
         self.assertIn('#define CODOL_KERNEL_NAME_DISPLAY 0', profile)
         self.assertIn('#if CODOL_KERNEL_NAME_DISPLAY && !CODOL_KERNEL_ROOM_CONTEXT', profile)
@@ -97,9 +97,9 @@ class CutoverContract(unittest.TestCase):
         self.assertLess(tail.index('InstallP2PInprocDiagnostics()'), tail.index('InstallP2PHost()'))
         self.assertLess(tail.index('InstallP2PHost()'), tail.index('K33HasMainTick(TheatreTick)'))
         self.assertNotIn('InstallP2PInproc();',tail)
-        host=(ROOT/'p2p.c').read_text();start=function(host,'static BOOL P2PStartConfigured(')
+        host=(ROOT/'src/p2p/p2p.c').read_text();start=function(host,'static BOOL P2PStartConfigured(')
         self.assertLess(start.index('P2PEnsureInprocActivation()'),start.index('CreateThread('))
-        pi=(ROOT/'p2p_inproc.c').read_text();activation=function(pi,'static int PiActivationTick(')
+        pi=(ROOT/'src/p2p/p2p_inproc.c').read_text();activation=function(pi,'static int PiActivationTick(')
         self.assertIn('K33OnMainTick(PiTick)',activation)
         self.assertNotIn('RedirectCall(',activation)
         self.assertIn('g_k33Ticks[i]!=w->ticks[i]',function(pi,'static int PiActivationChain('))

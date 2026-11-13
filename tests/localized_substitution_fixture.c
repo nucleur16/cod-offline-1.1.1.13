@@ -12,7 +12,7 @@ static DWORD caller=0x45533b;
 static void *fixture_at(DWORD va) { assert(va>=0x450000 && va<0x600000);return image+va-0x450000; }
 #define K33LOC_AT(va) fixture_at(va)
 #define K33LOC_CALLER() caller
-#include "../localized_substitution.c"
+#include "../src/gfx/localized_substitution.c"
 static unsigned checks;
 #define CHECK(x) do { assert(x);checks++; } while(0)
 static K33LocView view(const char *s) { K33LocView v={s,s ? strlen(s):0};return v; }

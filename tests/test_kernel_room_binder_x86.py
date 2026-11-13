@@ -18,7 +18,7 @@ exports={s.name.decode():base+s.address for s in pe.DIRECTORY_ENTRY_EXPORT.symbo
 STACK=0x30000000;STUB=0x10000000;MEM=0x6000000;STOP=STACK+0x1fff0;SITE=0x595e9d
 ROOT=Path(__file__).resolve().parents[1]
 guards=[]
-for name,body in re.findall(r'static const unsigned char krc_(a5a7\w+)\[\]=\{([^}]+)\};',(ROOT/'kernel_room_guards.h').read_text()):
+for name,body in re.findall(r'static const unsigned char krc_(a5a7\w+)\[\]=\{([^}]+)\};',(ROOT/'src/kernel/kernel_room_guards.h').read_text()):
  address=0x70e9f0 if name.endswith('IsInRoom') else 0x70e9b0 if name.endswith('Membership') else 0x6232c0 if name.endswith('DvarFind') else 0x58ba60
  guards.append((name,address,bytes(int(v,16) for v in re.findall(r'0x([0-9a-f]+)',body))))
 class Machine:
@@ -189,6 +189,6 @@ if __name__=='__main__':
  result=unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(Binder))
  report={'passed':result.wasSuccessful(),'methods':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),
          'fixture_sha256':hashlib.sha256(data).hexdigest(),'image_sha256':image_sha,
-         'source_sha256':{n:hashlib.sha256((ROOT/n).read_bytes()).hexdigest() for n in ['kernel_room_context.c','kernel_room_guards.h','kernel_room_policy.h','kernel_call_guard.c']},
+         'source_sha256':{n:hashlib.sha256((ROOT/n).read_bytes()).hexdigest() for n in ['src/kernel/kernel_room_context.c','src/kernel/kernel_room_guards.h','src/kernel/kernel_room_policy.h','src/kernel/kernel_call_guard.c']},
          'boundary':'Compiled binder and actual Cbuf_AddText x86; explicit Windows/CRT/hash/room/dvar doubles. No actual game/Windows acceptance.'}
  args.output.write_text(json.dumps(report,indent=2)+'\n');raise SystemExit(not result.wasSuccessful())

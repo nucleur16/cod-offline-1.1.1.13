@@ -1,4 +1,4 @@
-#include "../p2p_match_options.h"
+#include "../src/p2p/p2p_match_options.h"
 #include <assert.h>
 #include <stdio.h>
 int main(void) {

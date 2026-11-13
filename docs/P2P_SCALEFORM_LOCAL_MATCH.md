@@ -35,8 +35,8 @@ entries in zonelist.py so decompilation preserves them.
 
 Build commands (Kernel33-consol), serialized with other store-class operations:
 
-    python build_zones.py --store-class voice_ui_mp:scaleform/default/codo.gfx:codo.k33.LocalMatchControls
-    python build_zones.py voice_ui_mp --parts --candidate --out output_lobby_local_parts --game <approved Host copy>
+    python scripts/build_zones.py --store-class voice_ui_mp:scaleform/default/codo.gfx:codo.k33.LocalMatchControls
+    python scripts/build_zones.py voice_ui_mp --parts --candidate --out output_lobby_local_parts --game <approved Host copy>
 
 The room-view class remains at its already compiled tag. FFDec currently
 rejects its existing protected `getSyncDP` call when recompiling it; the new

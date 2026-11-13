@@ -22,8 +22,8 @@ only the reference, the oracle of the differential tests and the language of bui
 
 Offline mode is two switches, both off by default.
 
-1. **Build flag.** `K33_OFFLINE=1 sh build.sh` (or `build-dev.sh`) defines `CODOL_OFFLINE_LOBBY=1`,
-   compiles `offline/*.cpp` with g++ into `obj_offline/` and links them statically (libstdc++
+1. **Build flag.** `K33_OFFLINE=1 sh scripts/build.sh` (or `scripts/build-dev.sh`) defines `CODOL_OFFLINE_LOBBY=1`,
+   compiles `src/offline/*.cpp` with g++ into `build/obj_offline/` and links them statically (libstdc++
    included; the DLL's import list does not change). Without the flag none of that code is compiled
    or linked and `OfflineLobbyActive()` is a constant `FALSE`. The flag is independent of
    `K33_LOCAL_TESTING` / `K33_DIAGNOSTICS`: it adds a feature and enables no diagnostics.
@@ -51,21 +51,21 @@ If offline mode is requested and cannot be provided (no free port can be had, an
 taken, C1's bytes at the NAT-port site differ, the client was started by a launcher-managed Local
 Play session), the client stops with a message instead of silently logging on to the real lobby.
 
-## What happens at start-up (`offline_lobby.c`)
+## What happens at start-up (`src/offline_lobby.c`)
 
 All of it in `TakeOver`, before C1's entry point:
 
 1. **The match host's port.** The embedded sh1x host serves on the UDP port of `p2p\p2p_host.ini`
    (17760 by default) when that port is free on 127.0.0.1, else on a free port the operating system
    picks. The socket that proved the port free is **kept bound** until the host is about to bind it
-   (`OfflineHostPortRelease`, one line in `p2p.c` before its own port check), so nothing else on the
+   (`OfflineHostPortRelease`, one line in `src/p2p/p2p.c` before its own port check), so nothing else on the
    PC - a second offline client in particular - is given the same port between start-up and the match
    launch. `OfflineP2PConfig` writes the chosen port into every `P2PLoadIni` result, which is where
    the armed intent (`p2p_host.txt`, `K33LocalPlayIntent().port`), the launch observation
    (`P2PArmLaunch` / `P2PLaunchObserve` in hostgate's `sendto`), the host's own bind and the lobby's
    START_GAME address all take it from.
-2. **The listener on a free port.** `DwOfflineStartServer` (C boundary `offline/dw_api.h`) starts one
-   thread running the lobby's `select()` loop (`offline/dw_net.cpp`). The TCP listener binds
+2. **The listener on a free port.** `DwOfflineStartServer` (C boundary `src/offline/dw_api.h`) starts one
+   thread running the lobby's `select()` loop (`src/offline/dw_net.cpp`). The TCP listener binds
    `127.0.0.1:0`, i.e. the operating system picks a free port P; the UDP sockets `127.0.0.1:P` and
    `127.0.0.2:P` must bind too. If one does not, the next tries (up to 64) take a port drawn at
    random from the dynamic range 49152-65535 rather than the system's next choice: Windows excludes
@@ -78,7 +78,7 @@ All of it in `TakeOver`, before C1's entry point:
 3. **Routing C1 to it, in memory.** C1 reads `dwauth.ini` (auth host, auth port, lobby host, lobby
    port, title id) and `stun.ini` (up to ten NAT-discovery hosts) with `fopen` at `0x00630CE2` /
    `0x00630D70`; its CRT reaches `CreateFileA` through import slot `0xB421D8` (the slot
-   `local_multi.c` already uses). In offline mode that slot gets a wrapper that answers a read of
+   `src/local_multi.c` already uses). In offline mode that slot gets a wrapper that answers a read of
    those two names with a delete-on-close temporary holding `127.0.0.1 / P / 127.0.0.1 / P / 3ea` and
    ten `127.0.0.1` lines. The files on disk are neither read nor written, so an install that also
    plays online keeps its real route.
@@ -94,7 +94,7 @@ All of it in `TakeOver`, before C1's entry point:
    import slot (`0xB42284`) appends `+set dw_username <name>` from the ini. The name in use is also
    the player's folder (below).
 6. **The level gates on playing** are lifted (`OflLiftGates`, "Level gates" below).
-7. **The host gate stays on loopback.** `hostgate.c` vouches no lobby name, no default gateway, not
+7. **The host gate stays on loopback.** `src/p2p/hostgate.c` vouches no lobby name, no default gateway, not
    the SSDP group, and ignores any later vouch while offline mode is active: UDP is exchanged with
    `127.0.0.0/8` only.
 8. **Local Play.** `P2PLoadIni` ends in `OfflineP2PConfig`, which points the embedded match host's
@@ -105,7 +105,7 @@ All of it in `TakeOver`, before C1's entry point:
    (`codol_scriptPath`).
 
 The lobby thread never calls into C1. It reads the owner's Local Play intent with
-`K33LocalPlayIntent()` and raises the host launch with `K33LocalPlayLaunch()` (`p2p_local_play_api.h`,
+`K33LocalPlayIntent()` and raises the host launch with `K33LocalPlayLaunch()` (`src/p2p/p2p_local_play_api.h`,
 `docs/P2P_DEFERRED_HOST_START.md`); both are safe on any thread and start nothing themselves. No
 intent file is read by anything in offline mode (p2p.c still writes its `p2p_host.<uid>.txt`; nobody
 consumes it).
@@ -185,11 +185,11 @@ Rules of the port (details in `offline/PORTING.md`):
 
 * **No dependency on C1 or Kernel33** anywhere under `offline/`; only `dw_util.cpp`, `dw_net.cpp`
   and `dw_api.cpp` touch the operating system. The same sources build `tests/offline/dwtest.exe`.
-* C++11 with `-fno-exceptions -fno-rtti -fno-threadsafe-statics`, as `build-dev.sh` builds the vision
-  editor. No exception or C++ object crosses `dw_api.h`.
+* C++11 with `-fno-exceptions -fno-rtti -fno-threadsafe-statics`. No exception or C++ object crosses
+  `dw_api.h`.
 * **One thread.** The Python lobby is one thread per connection plus a database writer thread and a
   report poller; the port is a single `select()` loop, so there are no locks inside the lobby. The
-  only data shared with another thread is the log file, in `offline_lobby.c`; the Local Play intent is
+  only data shared with another thread is the log file, in `src/offline_lobby.c`; the Local Play intent is
   read through p2p.c's own locked snapshot.
 * The wire format is the Python lobby's, byte for byte; that is what the differential tests check.
   Its several hundred `CODOL_*` A/B switches are not ported: the port implements the default
@@ -292,8 +292,8 @@ under), with wallet, inventory and `mpdata`; a player who already has an `mpdata
 
 The Python lobby reads tables harvested from the client's zones, seed blobs and the publisher
 `.info` files from `resources\`. The port embeds the ones it uses in the DLL
-(`offline/tools/gen_resources.py` -> `offline/dw_embedded.cpp`, zlib-compressed, list in
-`offline/resources.manifest`) rather than reading the game's zones at run time: the zone readers
+(`src/offline/tools/gen_resources.py` -> `src/offline/dw_embedded.cpp`, zlib-compressed, list in
+`src/offline/resources.manifest`) rather than reading the game's zones at run time: the zone readers
 (`zones/`, `catalogue/` generators, ~5k lines of Python, plus the fastfile decryption) are only
 generators of those tables and the tables are fixed for build 1.1.1.13. Not embedded: the 5.9 MB
 `map_spawns.proposed.json` and the weapon tables in the repository root, which only the retired
@@ -365,7 +365,7 @@ Python lobby answers an empty success on purpose and so does the port.
 ## How it was tested
 
 **Differential tests against the Python lobby.** `tests/offline/difftest.sh` starts a fresh private
-copy of the Python lobby and a fresh `dwtest.exe` (the same `offline/*.cpp`, built standalone) on
+copy of the Python lobby and a fresh `dwtest.exe` (the same `src/offline/*.cpp`, built standalone) on
 private loopback ports, replays captured client byte streams against both (`dwdiff.py`: the raw
 bytes the retail client sent, cut out of a Python-lobby log) and compares every decrypted reply and
 push. Captures hold real player ids and are not in the repository. Rerun on `k33-offline-2` with the

@@ -24,7 +24,7 @@ static int __attribute__((naked, noinline, used)) FixtureLoopTarget(void)
 
 #define PARTY_SLOT_LOOP_COMPARE_VA ((uintptr_t)g_entry)
 #define PARTY_SLOT_LOOP_BODY_VA ((uintptr_t)FixtureLoopTarget)
-#include "../party_slot_loop_guard.c"
+#include "../src/guards/party_slot_loop_guard.c"
 
 static int __attribute__((naked, noinline)) FixtureDispatch(
     int index __attribute__((unused)), void *dvar __attribute__((unused)))

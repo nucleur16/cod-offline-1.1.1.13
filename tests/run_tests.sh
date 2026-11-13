@@ -1,7 +1,7 @@
 #!/bin/sh
 # Every Kernel33 source test, on Windows (MSYS2 mingw32; the Quick fixture is an x86 Windows program):
 #   sh tests/run_tests.sh
-# CI also executes the portable native Quick policy on Linux. Exact C1 x86
+# The portable checks that this script does not run are listed in README.md ("Tests"). Exact C1 x86
 # emulation requires an explicitly supplied private image; see docs.
 set -e
 cd "$(dirname "$0")/.."
@@ -16,11 +16,11 @@ for PROFILE in 0 1; do
 done
 # Offline mode (docs/OFFLINE_LOBBY.md): the Kernel33 side in an owned fixture; tests/offline/ holds the
 # lobby's own differential tests against the Python lobby (they need a private copy of it).
-"$BIN/gcc.exe" -std=gnu99 -O2 -Wall -Wextra -Werror -Wno-unused-function -Wno-cast-function-type -I. \
+"$BIN/gcc.exe" -std=gnu99 -O2 -Wall -Wextra -Werror -Wno-unused-function -Wno-cast-function-type \
     tests/offline_lobby_fixture.c -o "$OUT/offline_lobby_fixture.exe" -lws2_32
 rm -rf "$OUT/offline-lobby"
 python tests/test_offline_lobby_windows.py "$OUT/offline_lobby_fixture.exe" "$OUT/offline-lobby"
-# The lobby itself (offline/*.cpp) as the standalone dwtest.exe, on the resources embedded in it: the
+# The lobby itself (src/offline/*.cpp) as the standalone dwtest.exe, on the resources embedded in it: the
 # crypto, the listener on free ports (two at once, loopback only), the players-folder store (the career
 # read back from mpdata_s), the rank write-back and the Local Play room policy. Each needs its own
 # empty scratch folders.
@@ -66,7 +66,7 @@ python -B docs/baselines/20261024-gfx-date-time/run_regressions.py \
 "$OUT/p2p_intent_heartbeat_test.exe"
 # managed_quick_windows.c needs its .qa section at 0x700000, where C1's room code is: as the first section of an
 # image based at 0x6F0000 with 64 KB section alignment (.init is placed first in .text).
-"$BIN/gcc.exe" -O0 -Wall -Wextra -I. -c tests/managed_quick_windows.c -o "$OUT/managed_quick.o"
+"$BIN/gcc.exe" -O0 -Wall -Wextra -c tests/managed_quick_windows.c -o "$OUT/managed_quick.o"
 "$BIN/objcopy.exe" --rename-section .qa=.init "$OUT/managed_quick.o" "$OUT/managed_quick_init.o"
 "$BIN/gcc.exe" -s -o "$OUT/managed_quick_windows.exe" "$OUT/managed_quick_init.o" \
     -Wl,--image-base=0x6f0000 -Wl,--section-alignment=0x10000 -Wl,--disable-dynamicbase

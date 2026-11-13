@@ -51,7 +51,7 @@ static unsigned fake_count;
 static BOOL Readable(const void *p, SIZE_T n) { return p != NULL && n <= 11; }
 static void WriteCode(void *p, const void *s, SIZE_T n) { memcpy(p, s, n); }
 static void Log(const char *fmt, ...) { (void)fmt; }
-#include "../snapshot_guard.c"
+#include "../src/guards/snapshot_guard.c"
 
 #ifndef _WIN32
 static int __attribute__((noinline)) Run(BYTE *entry, unsigned entity, BYTE *snap, unsigned *msg)

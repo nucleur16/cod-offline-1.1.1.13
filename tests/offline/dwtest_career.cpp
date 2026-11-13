@@ -14,12 +14,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <algorithm>
-#include "../../offline/dw.h"
-#include "../../offline/dw_career.h"
-#include "../../offline/dw_playerdata.h"
-#include "../../offline/dw_profiles.h"
-#include "../../offline/dw_state.h"
-#include "../../offline/dw_store.h"
+#include "../../src/offline/dw.h"
+#include "../../src/offline/dw_career.h"
+#include "../../src/offline/dw_playerdata.h"
+#include "../../src/offline/dw_profiles.h"
+#include "../../src/offline/dw_state.h"
+#include "../../src/offline/dw_store.h"
 
 using namespace dw;
 

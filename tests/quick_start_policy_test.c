@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "../quick_start_policy.h"
+#include "../src/rooms/quick_start_policy.h"
 static unsigned checks;
 #define CHECK(x) do {checks++;if(!(x)){fprintf(stderr,"line %d: %s\n",__LINE__,#x);return 1;}} while(0)
 static QsgSnapshot sample(void) {

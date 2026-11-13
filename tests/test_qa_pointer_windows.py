@@ -4,7 +4,7 @@ import argparse, hashlib, json, os, subprocess
 
 ROOT=Path(__file__).resolve().parents[1]
 def function(name):
-    text=(ROOT/'controller.c').read_text()
+    text=(ROOT/'src/controller/controller.c').read_text()
     start=text.index('static '+('BOOL ' if name=='CtlTestMode' else 'void __cdecl ')+name+'(')
     opened=text.index('{',start);end=opened+1;depth=1
     while depth:
@@ -60,7 +60,7 @@ int main(void){
  if(GetForegroundWindow()!=foreground || IsWindowVisible(owned))return 6;
  DestroyWindow(owned);puts("PASS: owned hidden QA pointer, shipping/launch guards, unchanged foreground");return 0;
 }
-'''.replace('PROFILE_HEADER',linux((ROOT/'production_profile.h').resolve())).replace('FUNCTIONS','\n'.join(function(n) for n in ('CtlTestMode','CtlCmdCursor','CtlCmdEscape')))
+'''.replace('PROFILE_HEADER',linux((ROOT/'src/production_profile.h').resolve())).replace('FUNCTIONS','\n'.join(function(n) for n in ('CtlTestMode','CtlCmdCursor','CtlCmdEscape')))
     path=a.output/'pointer.c';path.write_text(source)
     rows=[]
     for name,flags,args in (('shipping',[],['k33_cmdFile','1']),('quiet-QA',['-DCODOL_LOCAL_TESTING=1','-DCODOL_DIAGNOSTICS=0'],['k33_cmdFile','1']),('QA-without-launch-guard',['-DCODOL_LOCAL_TESTING=1','-DCODOL_DIAGNOSTICS=0'],[])):

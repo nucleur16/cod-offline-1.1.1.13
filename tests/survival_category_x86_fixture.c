@@ -30,7 +30,7 @@ static void WriteCode(void *dst, const void *src, SIZE_T n) { memcpy(dst, src, n
 static LPSTR TCmdLine(void) { return stest_cmdline; }
 #define GetCommandLineA TCmdLine
 #define strstr TStrstr
-#include "../survival_category.c"
+#include "../src/rooms/survival_category.c"
 
 __declspec(dllexport) void __cdecl STestInstall(void) { PatchSurvivalCategory(); }
 __declspec(dllexport) long __cdecl STestZoneLists(void) { return g_k33SurvZoneLists; }

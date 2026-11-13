@@ -22,7 +22,7 @@ replaces it, keeps a rollback copy, and reopens it. The new launcher owns future
 updates. Its installed-hash receipt prevents this one-time bridge from applying
 an older staged launcher over a later successful update.
 
-Build without installing with `K33_NO_COPY=1 sh build.sh`. The controller and
+Build without installing with `K33_NO_COPY=1 sh scripts/build.sh`. The controller and
 parity entry points use the same checked build profile and dependency closure.
 
 ## Validation and remaining release gates

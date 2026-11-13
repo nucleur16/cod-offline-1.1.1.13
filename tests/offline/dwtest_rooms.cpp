@@ -1,6 +1,6 @@
 /*
  * dwtest --selftest-rooms: the offline product's room start (the non-differential match handoff
- * policy of offline/dw_rooms.cpp) against a fake embedder, and the room selection it starts from.
+ * policy of src/offline/dw_rooms.cpp) against a fake embedder, and the room selection it starts from.
  *
  * Every room the local player owns is hosted by the embedded server; nothing is ticked. For an mp
  * room (and one whose mode the UI spells "tdm"), a zombies room, a survival room and a coop room:
@@ -20,9 +20,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <windows.h>
-#include "../../offline/dw.h"
-#include "../../offline/dw_handoff.h"
-#include "../../offline/dw_rooms.h"
+#include "../../src/offline/dw.h"
+#include "../../src/offline/dw_handoff.h"
+#include "../../src/offline/dw_rooms.h"
 
 namespace {
 

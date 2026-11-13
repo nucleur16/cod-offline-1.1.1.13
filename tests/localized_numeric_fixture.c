@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "../localized_substitution.c"
+#include "../src/gfx/localized_substitution.c"
 static unsigned checks;
 #define CHECK(x) do { assert(x);checks++; } while(0)
 typedef struct { DWORD base;unsigned size;BYTE *data; } Region;
@@ -37,7 +37,7 @@ static const char *fixture_va(const char *format,const char *text)
 #define K33NUM_VA(format,text) fixture_va(format,text)
 #define K33NUM_TLS_ROOT() tls_root
 #define K33NUM_KNOWN(address) fixture_known(address)
-#include "../localized_numeric.c"
+#include "../src/gfx/localized_numeric.c"
 static int fixture_known(DWORD caller)
 {
     observed_caller=caller;return allow_thunk || K33NumKnownCaller(caller);

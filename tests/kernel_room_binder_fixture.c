@@ -16,7 +16,7 @@ static int LauncherBridgeHash(const wchar_t *path,char out[65])
 }
 void VOICE_TickHook(void){}
 void DISCORD_TickHook(void){}
-#include "../kernel_room_context.c"
+#include "../src/kernel/kernel_room_context.c"
 __declspec(dllexport) int Install(void){return InstallKernelRoomContext();}
 __declspec(dllexport) void Tick(void){KernelRoomMainTick();}
 __declspec(dllexport) unsigned Build(void){return g_krcBuild;}

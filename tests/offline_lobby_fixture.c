@@ -46,7 +46,7 @@ static void P2PLoadIni(P2PConfig *c)
     OfflineP2PConfig(c); /* as p2p.c's P2PLoadIni ends */
 }
 /* p2p_local_play_api.h doubles: the published intent, the lobby's room selection and its leave. */
-#include "../p2p_local_play_api.h"
+#include "../src/p2p/p2p_local_play_api.h"
 static K33LocalPlayIntentInfo intent;
 static int intent_published, auto_calls, auto_answer, leave_calls;
 static char auto_seen[200];
@@ -84,8 +84,8 @@ static unsigned char __cdecl C1NotificationUnlocked(const char *name)
 #define OFL_NOTIFY_CALL_VA ((DWORD_PTR)notify_site)
 #define OFL_NOTIFY_FN_VA   ((DWORD_PTR)C1NotificationUnlocked)
 
-/* offline/dw_api.h doubles: record what Kernel33 asked for. A free port is "obtained" as 41234 / 41238. */
-#include "../offline/dw_api.h"
+/* src/offline/dw_api.h doubles: record what Kernel33 asked for. A free port is "obtained" as 41234 / 41238. */
+#include "../src/offline/dw_api.h"
 #define FIXTURE_FREE_PORT 41234
 #define FIXTURE_FREE_ALT  41238
 static DwOfflineConfig started;
@@ -103,7 +103,7 @@ int DwOfflineAltPort(void) { return started.altPort ? started.altPort : FIXTURE_
 void DwOfflineStopServer(void) { ++stop_calls; }
 int DwOfflineRunning(void) { return start_calls && !listen_fails && !stop_calls; }
 
-#include "../offline_lobby.c"
+#include "../src/offline_lobby.c"
 
 static const C1Import kCreate = { 0x00B421D8, "KERNEL32.dll", "CreateFileA" };
 static const C1Import kCmd = { 0x00B42284, "KERNEL32.dll", "GetCommandLineA" };

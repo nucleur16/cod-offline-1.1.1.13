@@ -4,7 +4,7 @@ The exact public r45 Kernel33 source is `96d7020d8133d854d4be04dd76eda47ef4474a4
 Its DLL is SHA-256 `f4b6a547d8bb2dd8242e575929a32588373c36908e0339fddd3a3c91a006413a`.
 The source-root DLL is an older artifact and must not be used as release evidence.
 
-The shared UI baseline retained the `quick_start_gate.c` digest from before
+The shared UI baseline retained the `src/rooms/quick_start_gate.c` digest from before
 `c54fa1b` (the reviewed public playlist autostart repair). The source matches
 that commit byte-for-byte. This change advances only that file's baseline pin;
 it does not rebuild a movie or alter the native hook. The existing mutation

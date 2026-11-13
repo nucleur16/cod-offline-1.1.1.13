@@ -10,7 +10,7 @@
 #   DWDIFF_ROOT     work folder OUTSIDE the repository (sessions hold real player ids)
 #   PYLOBBY_SRC     pristine copy of the Python lobby repo (read only; copied per slot per run)
 #   PYLOBBY_ZONE_DIR  optional, the client's zone folder (read only)
-#   OFFLINE_SKIP    modules to leave out of dwtest (see build-offline.inc.sh)
+#   OFFLINE_SKIP    modules to leave out of dwtest (see scripts/build-offline.inc.sh)
 #   DWDIFF_KEEP=1   leave both servers running afterwards (stop them with: difftest.sh <slot> stop)
 # Never uses 3074, 17733 or 17760; both servers bind 127.0.0.1 only.
 set -e

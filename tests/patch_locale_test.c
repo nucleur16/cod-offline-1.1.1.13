@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include "../patch_locale_policy.h"
+#include "../src/patch_locale_policy.h"
 #define LOCALE(...) do { const wchar_t *v[]={L"C1.exe",__VA_ARGS__}; \
  assert(CodolPatchLanguageFromArgv(sizeof(v)/sizeof(v[0]),v)==expected); } while(0)
 int main(void)

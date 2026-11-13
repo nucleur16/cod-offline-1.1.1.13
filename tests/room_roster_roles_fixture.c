@@ -20,7 +20,7 @@ static void test_role(BYTE *member,BYTE *room){
 #ifndef CMR_NATIVE_ROLE
 #define CMR_ROLE(member,room) test_role(member,room)
 #endif
-#include "../room_roster_roles.c"
+#include "../src/rooms/room_roster_roles.c"
 static void __attribute__((stdcall)) fake_prune(void *room){(void)room;++prunes;}
 static void __attribute__((naked,used)) abi_prune(void){
  __asm__ __volatile__("pushfl\n\tpopl _flags_at_prune\n\t"

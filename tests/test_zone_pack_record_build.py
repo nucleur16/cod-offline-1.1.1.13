@@ -16,7 +16,7 @@ class RecordBuildTests(unittest.TestCase):
         self.output = self.root / "fixture.ff"
         self.output.write_bytes(b"inert bytes, not a game fastfile")
         self.digest = hashlib.md5(self.output.read_bytes()).hexdigest().encode("ascii")
-        source = Path(__file__).resolve().parents[1] / "build_zones.py"
+        source = Path(__file__).resolve().parents[1] / "scripts/build_zones.py"
         nodes = [n for n in ast.parse(source.read_bytes()).body
                  if isinstance(n, ast.FunctionDef) and n.name in ("md5", "record_build")]
         self.assertEqual({n.name for n in nodes}, {"md5", "record_build"})
@@ -24,7 +24,7 @@ class RecordBuildTests(unittest.TestCase):
         exec(compile(ast.Module(body=nodes, type_ignores=[]), str(source), "exec"), namespace)
         self.record = namespace["record_build"]
         parser = {}
-        parser_source = source.parent / "zonekit" / "manifest.py"
+        parser_source = source.parents[1] / "zonekit" / "manifest.py"
         exec(compile(parser_source.read_bytes(), str(parser_source), "exec"), parser)
         self.parse = parser["read"]
 

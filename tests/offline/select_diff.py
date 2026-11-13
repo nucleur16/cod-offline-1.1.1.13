@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Differential test of the room selection: map_handoff.select() of the Python lobby against
-offline/dw_handoff.cpp HandoffSelect(), descriptor by descriptor.
+src/offline/dw_handoff.cpp HandoffSelect(), descriptor by descriptor.
 
     PYLOBBY_DIR=<private copy of the Python lobby> python tests/offline/select_diff.py <dwtest.exe> <scratch dir>
 

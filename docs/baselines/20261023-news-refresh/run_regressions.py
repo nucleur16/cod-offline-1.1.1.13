@@ -63,7 +63,7 @@ def run(args,out):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--image",help="Owned private C1 image; otherwise CODOL_NEWS_TEST_IMAGE")
-    parser.add_argument("--source-root",type=Path,default=HERE.parents[2],help="Client source root containing the three news files")
+    parser.add_argument("--source-root",type=Path,default=HERE.parents[2]/"src"/"gfx",help="Folder containing the three news files (src/gfx)")
     parser.add_argument("--out",type=Path,help="External directory for generated test artifacts; defaults to an ephemeral temp directory")
     parser.add_argument("--cc",default="gcc")
     parser.add_argument("--win32-cc",help="Optional i686-w64-mingw32-gcc executable for compile-only verification")

@@ -16,7 +16,7 @@ def main():
     parser.add_argument('--evidence',type=Path,required=True)
     parser.add_argument('--native-libs',type=Path,required=True)
     args=parser.parse_args();root=Path(__file__).resolve().parents[1];native=args.native.resolve();out=args.evidence.resolve();out.mkdir(parents=True,exist_ok=True)
-    inputs=[root/name for name in ('p2p.c','p2p_inproc.c','p2p_startup_bridge.c','p2p_startup_wire.c','p2p_startup_wire.h','p2p_active_bridge.c','p2p_active_wire.c','p2p_active_wire.h','tests/test_p2p_startup_fiber.c','tests/p2p_startup_mode_cases.inc','tests/p2p_active_fiber_scaffold.inc','tests/p2p_active_io_scaffold.inc')]
+    inputs=[root/name for name in ('src/p2p/p2p.c','src/p2p/p2p_inproc.c','src/p2p/p2p_startup_bridge.c','src/p2p/p2p_startup_wire.c','src/p2p/p2p_startup_wire.h','src/p2p/p2p_active_bridge.c','src/p2p/p2p_active_wire.c','src/p2p/p2p_active_wire.h','tests/test_p2p_startup_fiber.c','tests/p2p_startup_mode_cases.inc','tests/p2p_active_fiber_scaffold.inc','tests/p2p_active_io_scaffold.inc')]
     inputs+=[native/name for name in ('src/win32/sys_host.c','src/codol/net/codol_quickplay.c','src/codol/net/codol_match_options.c','src/codol/net/codol_match_options.h','src/codol/net/codol_network.c','src/codol/net/codol_principal_binding.c','src/codol/script/codol_verified_sources.c','tests/test_codol_principal_clock.c','tests/run_codol_match_options.py')]
     input_hashes={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}
     spec=importlib.util.spec_from_file_location('actual_fiber_reader',root/'tests/test_p2p_startup_fiber.py')
@@ -30,7 +30,7 @@ def main():
         while depth:depth+=(text[at]=='{')-(text[at]=='}');at+=1
         return text[start:at]+'\n'
     host=(native/'src/win32/sys_host.c').read_text();quick=(native/'src/codol/net/codol_quickplay.c').read_text()
-    bridge=(root/'p2p_startup_bridge.c').read_text();client=(root/'p2p_inproc.c').read_text();commands=(root/'p2p.c').read_text();active=(root/'p2p_active_bridge.c').read_text()
+    bridge=(root/'src/p2p/p2p_startup_bridge.c').read_text();client=(root/'src/p2p/p2p_inproc.c').read_text();commands=(root/'src/p2p/p2p.c').read_text();active=(root/'src/p2p/p2p_active_bridge.c').read_text()
     template=(root/'tests/test_p2p_startup_fiber.c').read_text().split('int main(int argc,char **argv)')[0]
     # These two functions are engine/Win32 test doubles in the sibling fixture,
     # not client/native authorization logic. V2 invokes the real native entry.
@@ -88,7 +88,7 @@ void Com_Frame(void) {
     selected={};order=[]
     def add(source,names):
         for name in names:selected[name]=function(source,name);order.append(name)
-    add((root/'p2p_active_wire.c').read_text(),['p2pa_u32','p2pa_u64'])
+    add((root/'src/p2p/p2p_active_wire.c').read_text(),['p2pa_u32','p2pa_u64'])
     add(bridge,['P2PSAtomicCAS','P2PSWallMillis','P2PStartupProtocolMode'])
     add(commands,['P2PStartupAttemptCurrent'])
     add(bridge,['P2PSParentAlive','P2PSRefuse','P2PSCurrent','P2PSClose','P2PSAcknowledge'])
@@ -115,8 +115,8 @@ void Com_Frame(void) {
     with tempfile.TemporaryDirectory(prefix='p2p-v2-fiber-') as tmp:
         scratch=Path(tmp);(scratch/'principal_clock_io.inc').write_text(clock);(scratch/'actual_startup_declarations.inc').write_text(declarations)
         (scratch/'fixture.c').write_text(template)
-        includes=['-I'+str(root),'-I'+str(scratch),'-I'+str(native/'src'),'-I'+str(native/'tests')]+['-I'+str(p) for p in (native/'src/codol').iterdir() if p.is_dir()]
-        binary=scratch/'mode-fiber';cmd=['gcc','-m32','-std=gnu11','-O1','-g','-D_GNU_SOURCE','-DCODOL_SERVER','-ffunction-sections','-fdata-sections','-fsanitize=address,undefined','-fno-omit-frame-pointer','-fno-pie','-no-pie']+includes+[str(scratch/'fixture.c'),str(root/'p2p_startup_wire.c'),str(root/'p2p_active_wire.c'),str(native/'src/codol/net/codol_match_options.c'),str(native/'src/codol/net/codol_principal_binding.c'),str(native/'src/codol/script/codol_verified_sources.c'),'-L'+str(args.native_libs),'-lmbedcrypto','-pthread','-Wl,--gc-sections','-o',str(binary)]
+        includes=['-I'+str(root/'src'/'p2p'),'-I'+str(scratch),'-I'+str(native/'src'),'-I'+str(native/'tests')]+['-I'+str(p) for p in (native/'src/codol').iterdir() if p.is_dir()]
+        binary=scratch/'mode-fiber';cmd=['gcc','-m32','-std=gnu11','-O1','-g','-D_GNU_SOURCE','-DCODOL_SERVER','-ffunction-sections','-fdata-sections','-fsanitize=address,undefined','-fno-omit-frame-pointer','-fno-pie','-no-pie']+includes+[str(scratch/'fixture.c'),str(root/'src/p2p/p2p_startup_wire.c'),str(root/'src/p2p/p2p_active_wire.c'),str(native/'src/codol/net/codol_match_options.c'),str(native/'src/codol/net/codol_principal_binding.c'),str(native/'src/codol/script/codol_verified_sources.c'),'-L'+str(args.native_libs),'-lmbedcrypto','-pthread','-Wl,--gc-sections','-o',str(binary)]
         def compile_source(functions):
             text='\n'.join(functions[name] for name in order);(scratch/'actual_startup_functions.inc').write_text(text)
             run=subprocess.run(cmd,capture_output=True,text=True);(out/'compile.log').write_text(run.stdout+run.stderr);assert run.returncode==0,run.stderr

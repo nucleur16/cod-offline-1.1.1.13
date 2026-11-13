@@ -37,7 +37,7 @@ C1 paths that a hostile host reaches first:
 
 A dedicated server we run is trusted code; a player's machine is not. So every stage keeps the
 rule "a host is reachable only after the lobby vouches for it", and stage 1 enforces it in the
-client (`hostgate.c`):
+client (`src/p2p/hostgate.c`):
 
 - C1 does all its UDP through two import slots, `WSOCK32!sendto` (0xB42538) and
   `WS2_32!recvfrom` (0xB424E0). Kernel33 wraps both before the game starts.
@@ -54,7 +54,7 @@ client (`hostgate.c`):
   Every refused address is logged once to `Kernel33.log`.
 
 Before anything wider than "the lobby vouches for the host": verify or replace the row-14 parser
-(Kernel33 can pre-validate `svc_gamestate` the way `voice.c` re-implements the `"v"` packet),
+(Kernel33 can pre-validate `svc_gamestate` the way `src/audio/voice.c` re-implements the `"v"` packet),
 audit rows 15-17, and refuse downloads (row 18) from player hosts.
 
 ## Architecture decision (2026-10-27)
@@ -204,7 +204,7 @@ of cost:
 
 | stage | what | lobby change | status |
 |---|---|---|---|
-| 1 | Kernel33 hosts the server as a child (`p2p.c`), the server follows its host (`codol_hostParentPid`), the client talks only to vouched hosts (`hostgate.c`), and the same-PC lobby places players through the rollout file | none | **this branch** |
+| 1 | Kernel33 hosts the server as a child (`src/p2p/p2p.c`), the server follows its host (`codol_hostParentPid`), the client talks only to vouched hosts (`src/p2p/hostgate.c`), and the same-PC lobby places players through the rollout file | none | **this branch** |
 | 2 | host registration, UPnP, signed host tickets -> `HostGateVouch`, admission roster and match selection pushed through the lobby connection, status push, no ranked progression on player hosts | yes | next |
 | 3 | lobby introducer (bdNATTrav) and the UDP relay on the VPS; room-list rows for hosts; host quality floor | yes | later |
 | 4 | gamestate pre-validation in Kernel33 (audit row 14), snapshot and OOB audit (15-16); only then hosts outside lobby vouching, if ever | no | blocked on audit |
@@ -217,7 +217,7 @@ anyone who can forge it can admit themselves.
 
 ## Stage 1: what it does
 
-`p2p.c` (included in every build; inert until asked):
+`src/p2p/p2p.c` (included in every build; inert until asked):
 
 - `p2phost [map] [gametype] [zonetype]` starts hosting, `p2pstop` stops (rcon `quit`, then the
   job), `p2pstatus` prints the state, address, pid, ready time and last `sh1x_status` line.
@@ -236,13 +236,13 @@ anyone who can forge it can admit themselves.
   answer it writes `<state>\p2p_host.txt` and, with `rollout=`, the line `extra <port>` into the
   lobby's `match_rollout.txt`. Both are removed when the server ends.
 
-`hostgate.c`: see the hard requirement above.
+`src/p2p/hostgate.c`: see the hard requirement above.
 
 ### Setup: the server submodule
 
 The server is a git submodule of this repo at `server/sh1x`
 (`git@github.com:nucleur16/codol_1.1.1.13_alpha_server.git`), pinned to the server's
-`feat/p2p-hosting` commit. Its sources are not copied here. `build.sh` / `build-dev.sh` run
+`feat/p2p-hosting` commit. Its sources are not copied here. `scripts/build.sh` / `scripts/build-dev.sh` run
 `git submodule update --init server/sh1x` (not recursive). The server's own submodules: only
 `bin/home/codol_rawfiles` (CODOL-EMU/13-rawfiles) is needed, and only to stage a hosted server.
 `plugins/cod4x_mysql_plugin` is a gitlink with no URL; a bare recursive update stops on it, so
@@ -252,10 +252,10 @@ never use `--recursive`.
 git submodule update --init server/sh1x
 git -C server/sh1x -c core.autocrlf=false submodule update --init -- bin/home/codol_rawfiles
 git -C server/sh1x/bin/home/codol_rawfiles config core.autocrlf false
-sh build-server.sh            # WSL Ubuntu-24.04 + i686-w64-mingw32, as the server's own docs
+sh scripts/build-server.sh            # WSL Ubuntu-24.04 + i686-w64-mingw32, as the server's own docs
 ```
 
-`build-server.sh` cross-builds `server/sh1x/bin/codol_dedrun.exe` in WSL (clean `obj/k33-p2p`
+`scripts/build-server.sh` cross-builds `server/sh1x/bin/codol_dedrun.exe` in WSL (clean `obj/k33-p2p`
 when asked with `K33_SERVER_CLEAN=1`). It stages the exe as `k33p2p_dedrun.exe` (its own image name, so an
 image-name kill of `codol_dedrun.exe` aimed at a dedicated server cannot hit a hosted match; also p2p.c's default `exe=`), the server pack (the server's own
 `tools/codol_stage_server_pack.py`) and the rawfiles into `$K33_P2P_STAGE` (default
@@ -293,12 +293,12 @@ reach the user's lobby; those probes are stateless.
 | hostgate | both clients ran enforcing all session. Datagrams from 192.168.1.4 (this PC's LAN address, not vouched) to both clients' game ports were refused before C1 saw them (`hostgate: refused datagram from 192.168.1.4:55282`). The lobby, STUN and the hosted server (loopback) worked. The first build also refused UPnP (SSDP 239.255.255.250:1900), which delayed DW login by about 70 s while bdUPnP discovery timed out; SSDP and the default gateway are vouched now and login starts 11 s after launch |
 
 Not measured: a host on another machine (refused by design until stage 2), NAT and UPnP mapping,
-the release build (`build.sh`) in a client (it compiles and links), and a host machine with less
+the release build (`scripts/build.sh`) in a client (it compiles and links), and a host machine with less
 memory.
 
 ## In-process hosting (branch `feat/p2p-inprocess`)
 
-`p2p_inproc.c` plus the server's host API (server branch `feat/p2p-inprocess`). `mode = inprocess` is the default.
+`src/p2p/p2p_inproc.c` plus the server's host API (server branch `feat/p2p-inprocess`). `mode = inprocess` is the default.
 
 ### How it runs
 - **Server build.** The server repo's makefile target `host-dll` links the dedicated server's objects as
@@ -458,7 +458,7 @@ has to hand the match to the owner of an armed intent. The paragraphs below desc
 Multiplayer, Zombies and Survival room owners have one Scaleform toggle:
 **LOCAL HOSTING: ENABLED / DISABLED**. It uses the lobby's selected map and
 mode; bot settings stay under the existing lobby/RCON controls. There are no
-additional hosting settings in the UI, and F3 remains the vision editor.
+additional hosting settings in the UI.
 
 The user's command is `p2p_localhost 1` or `p2p_localhost 0`. The movie supplies
 room context internally through `p2p_room`. The host handles saved paths, port,

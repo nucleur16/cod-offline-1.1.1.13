@@ -17,7 +17,7 @@ image=pefile.PE(data=raw);pe=pefile.PE(str(args.fixture));base=pe.OPTIONAL_HEADE
 exports={s.name.decode():base+s.address for s in pe.DIRECTORY_ENTRY_EXPORT.symbols}
 STACK=0x30000000;STOP=STACK+0x1fff0;STUB=0x10000000;MEM=0x6000000
 ROOT=Path(__file__).resolve().parents[1]
-header=(ROOT/'kernel_name_guards.h').read_text();arrays={name:bytes(int(v,16) for v in re.findall(r'0x([0-9a-f]+)',body)) for name,body in re.findall(r'static const unsigned char (\w+)\[\]=\{([^}]+)\};',header)}
+header=(ROOT/'src/kernel/kernel_name_guards.h').read_text();arrays={name:bytes(int(v,16) for v in re.findall(r'0x([0-9a-f]+)',body)) for name,body in re.findall(r'static const unsigned char (\w+)\[\]=\{([^}]+)\};',header)}
 guards=[(int(address,16),arrays[name]) for address,name in re.findall(r'\{(0x[0-9a-f]+)u,(\w+),sizeof',header)]
 assert len(guards)==16
 patch_guards=[guards[i] for i in (4,5,6,7,8,10,11,12,13)]

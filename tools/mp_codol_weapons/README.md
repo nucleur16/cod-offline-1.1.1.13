@@ -1,6 +1,6 @@
 # The producers of mp_codol_weapons / mp_codol_weapons_postgfx_mp
 
-`build_zones.py` builds both zones from `zone_source/` + `zones/` like every other zone. These files are what made
+`scripts/build_zones.py` builds both zones from `zone_source/` + `zones/` like every other zone. These files are what made
 those sources, kept so they can be made again (for example for the next MP weapon).
 
 - `gen_mp_codol_weapons.py` -- the stringtables of mp_codol_weapons. Input: `CodolSoundDumper zone-stringtables

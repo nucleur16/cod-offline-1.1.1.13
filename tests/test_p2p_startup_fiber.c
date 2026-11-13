@@ -5,8 +5,8 @@
 #include <setjmp.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include "p2p_startup_wire.h"
-#include "p2p_startup_ownership.h"
+#include "../src/p2p/p2p_startup_wire.h"
+#include "../src/p2p/p2p_startup_ownership.h"
 #include "codol_verified_sources.h"
 #include "mbedtls/sha256.h"
 #define __declspec(x)

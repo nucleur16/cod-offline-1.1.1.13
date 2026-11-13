@@ -19,7 +19,7 @@ static void send_info(void *object,const uint32_t *message){
 #define CTP_IDENTITY() identity
 #define CTP_STATE() state
 #define CTP_TRANSPORT(r,i) send_info(r,i)
-#include "../training_preview_publish.c"
+#include "../src/rooms/training_preview_publish.c"
 static void __attribute__((thiscall)) original_ready(void *r,unsigned ready){
  if(r!=room || ready>255)failures++;
  events[count++]=16;

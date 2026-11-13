@@ -13,7 +13,7 @@ static BOOL Readable(const void *at,SIZE_T n) {
 }
 static void WriteCode(void *to,const void *from,SIZE_T n) { ++writes;memcpy(to,from,n); }
 #define Log(...) ((void)0)
-#include "../quick_collection_default.c"
+#include "../src/rooms/quick_collection_default.c"
 static void require(int ok,const char *why) { ++checks;if (!ok) { fprintf(stderr,"FAIL %s\n",why);ExitProcess(1); } }
 static void reset(void) {
     memcpy(fixtureRegistration,kQuickCollectionRegistration,sizeof(kQuickCollectionRegistration));

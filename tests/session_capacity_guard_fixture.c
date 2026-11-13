@@ -24,7 +24,7 @@ static void Log(const char *ignored) { (void)ignored; }
 #define SESSION_CAPACITY_ENTRY_VA ((uintptr_t)g_entry)
 #define SESSION_PUBLIC_DVAR_SLOT_VA ((uintptr_t)&g_public_slot)
 #define SESSION_TOTAL_DVAR_SLOT_VA ((uintptr_t)&g_total_slot)
-#include "../session_capacity_guard.c"
+#include "../src/guards/session_capacity_guard.c"
 
 /* Invalid guard returns directly to this function's caller; valid guard
  * returns here with ECX equal to the original public dvar pointer. */

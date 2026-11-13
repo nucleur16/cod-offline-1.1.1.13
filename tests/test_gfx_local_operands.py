@@ -49,7 +49,7 @@ class GfxLocalOperands(unittest.TestCase):
   with tempfile.TemporaryDirectory() as temp:
    c=pathlib.Path(temp)/'policy.c';exe=pathlib.Path(temp)/('policy.exe' if os.name=='nt' else 'policy')
    c.write_text(DRIVER)
-   subprocess.run([str(gcc),'-std=c11','-Wall','-Wextra','-Werror','-I',str(ROOT),str(c),'-o',str(exe)],env=env,capture_output=True,check=True)
+   subprocess.run([str(gcc),'-std=c11','-Wall','-Wextra','-Werror','-I',str(ROOT/'src'/'gfx'),str(c),'-o',str(exe)],env=env,capture_output=True,check=True)
    run=subprocess.run([str(exe)],input=b''.join(cls.original.values()),capture_output=True,env=env,check=True,
                       creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
   if len(run.stdout)!=288:raise AssertionError('Policy driver did not return two complete guarded spans')

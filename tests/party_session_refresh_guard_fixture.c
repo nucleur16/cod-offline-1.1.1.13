@@ -18,7 +18,7 @@ static void WriteCode(void *p, const void *src, size_t n) { memcpy(p, src, n); }
 static void Log(const char *ignored) { (void)ignored; }
 
 #define PARTY_SESSION_REFRESH_STORE_VA ((uintptr_t)g_entry)
-#include "../party_session_refresh_guard.c"
+#include "../src/guards/party_session_refresh_guard.c"
 
 static int __attribute__((naked, noinline)) FixtureDispatch(
     void *session __attribute__((unused)), int first __attribute__((unused)),

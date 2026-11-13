@@ -26,7 +26,7 @@ the server's item_cost implementation. Existing purchase responses, hover and
 focus handlers, ownership and perk restrictions remain unchanged.
 
 Build: python tools/build_survival_kiosks.py then
-python build_zones.py patch_common_gametype_survival --candidate --out output_survival_kiosks
+python scripts/build_zones.py patch_common_gametype_survival --candidate --out output_survival_kiosks
 
 Deployment candidate is output_survival_kiosks/client_shipRetail/chinese/
 patch_common_gametype_survival.ff. This category patch loads ahead of the base

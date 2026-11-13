@@ -13,7 +13,7 @@ static void Log(const char *fmt,...){(void)fmt;}
 static int Readable(const void *p,size_t n){return p && n && (uintptr_t)p!=denied;}
 #define CIO_ROOM ((uintptr_t)test_room)
 #define CIO_IDENTITY() identity
-#include "../initial_room_owner.c"
+#include "../src/rooms/initial_room_owner.c"
 static void __attribute__((naked,used)) original_callback(void)
 {
  __asm__ __volatile__("incl _original_calls\n\tret $12\n");

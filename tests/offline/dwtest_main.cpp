@@ -21,10 +21,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
-#include "../../offline/dw.h"
-#include "../../offline/dw_net.h"
-#include "../../offline/dw_handoff.h"
-#include "../../offline/dw_playerdata.h"
+#include "../../src/offline/dw.h"
+#include "../../src/offline/dw_net.h"
+#include "../../src/offline/dw_handoff.h"
+#include "../../src/offline/dw_playerdata.h"
 
 struct TestHost : dw::Host {
     FILE *log;

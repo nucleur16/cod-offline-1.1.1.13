@@ -50,7 +50,7 @@ static BOOL FlushInstructionCache(void *process, const void *where, SIZE_T n)
 static BOOL Readable(const void *where, SIZE_T n) { return where != NULL && n <= 10; }
 static void WriteCode(void *where, const void *source, SIZE_T n) { memcpy(where, source, n); }
 static void Log(const char *format, ...) { (void)format; }
-#include "../bd_packet_guard.c"
+#include "../src/guards/bd_packet_guard.c"
 
 static int forwarded;
 static int data_forwarded;

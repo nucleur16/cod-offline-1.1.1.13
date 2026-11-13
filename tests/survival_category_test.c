@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include "../survival_category_policy.h"
+#include "../src/rooms/survival_category_policy.h"
 
 static void categories(void)
 {

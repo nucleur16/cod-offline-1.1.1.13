@@ -62,7 +62,7 @@ def validate(before,after):
 
 
 def merged_table():
-    source=(ROOT/'patch_locale_policy.h').read_text(encoding='utf-8')
+    source=(ROOT/'src/patch_locale_policy.h').read_text(encoding='utf-8')
     source=source.split('kCodolPatchZoneMerged[][2]={',1)[1].split('};',1)[0]
     return {old.lower():new.lower() for old,new in re.findall(r'\{"([^"]+)","([^"]+)"\}',source)}
 
@@ -114,7 +114,7 @@ def main():
         values,_dups,_selected=effective(legacy,language)
         for key,(english,_chinese) in PARTY_LOCALE.items():
             assert codecs.decode_localize(values[(27,key.lower())])[1]==english.encode('ascii')
-    source_files=['patch_locale_policy.h','zone_packs/codol_common.csv','zone_packs/codol_english_locale.csv',
+    source_files=['src/patch_locale_policy.h','zone_packs/codol_common.csv','zone_packs/codol_english_locale.csv',
                   'zone_packs/codol_chinese_locale.csv','zone_source/codol_chinese_ui_extra.csv',
                   'zones/codol_chinese_ui_extra/localize.str']
     manifest={'scope':'Unlaunched source/decoded three-pack proof; MUST rebuild from final merged locale+P2P comaplist sources',

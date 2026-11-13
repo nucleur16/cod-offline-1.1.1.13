@@ -248,7 +248,7 @@ def main():
     parser.add_argument("--source",type=Path,default=Path(__file__).resolve().parents[1])
     parser.add_argument("--cc",default="gcc")
     args=parser.parse_args()
-    source=(args.source/"p2p_inproc.c").read_text()
+    source=(args.source/"src/p2p/p2p_inproc.c").read_text()
     start=source.index("    BOOL ready = FALSE, registered = FALSE, quitAsked = FALSE;")
     end=source.index("\n    st = g_piState;\n",start)
     with tempfile.TemporaryDirectory(prefix="p2p-inproc-lifecycle-") as tmp:
@@ -256,7 +256,7 @@ def main():
         fixture=folder/"fixture.c"
         fixture.write_text(PREFIX+source[start:end]+SUFFIX)
         binary=folder/"fixture"
-        subprocess.run([args.cc,"-std=c99","-O1","-g","-Wall","-Wextra","-Werror","-fsanitize=address,undefined","-fno-omit-frame-pointer","-fno-pie","-no-pie","-I",str(args.source),str(fixture),"-o",str(binary)],check=True,timeout=30)
+        subprocess.run([args.cc,"-std=c99","-O1","-g","-Wall","-Wextra","-Werror","-fsanitize=address,undefined","-fno-omit-frame-pointer","-fno-pie","-no-pie","-I",str(args.source/"src"/"p2p"),str(fixture),"-o",str(binary)],check=True,timeout=30)
         subprocess.run([str(binary)],check=True,timeout=10)
         retirement=folder/"retirement.c"
         retirement.write_text(retirement_fixture(source))
@@ -266,7 +266,7 @@ def main():
             subprocess.run([str(executable)],check=True,timeout=10)
 
         hostgate=folder/"hostgate.c"
-        hostgate.write_text(hostgate_fixture((args.source/"hostgate.c").read_text()))
+        hostgate.write_text(hostgate_fixture((args.source/"src/p2p/hostgate.c").read_text()))
         gate_binary=folder/"hostgate"
         subprocess.run([args.cc,"-std=c11","-O1","-g","-Wall","-Wextra","-Wpedantic","-Werror","-fsanitize=address,undefined","-fno-omit-frame-pointer","-fno-pie","-no-pie",str(hostgate),"-o",str(gate_binary)],check=True,timeout=30)
         subprocess.run([str(gate_binary)],check=True,timeout=10)

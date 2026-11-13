@@ -29,7 +29,7 @@ def main():
     def unix(p):return '/mnt/'+str(p)[0].lower()+str(p)[2:].replace('\\','/')
     binary=unix(OUT/'active-wire')
     command=['wsl','--exec','gcc','-m32','-O1','-g','-fsanitize=address,undefined','-fno-omit-frame-pointer',
-        '-I'+unix(NATIVE/'src'),unix(ROOT/'tests/test_p2p_active_wire.c'),unix(ROOT/'p2p_active_wire.c'),
+        '-I'+unix(NATIVE/'src'),unix(ROOT/'tests/test_p2p_active_wire.c'),unix(ROOT/'src/p2p/p2p_active_wire.c'),
         unix(NATIVE/'src/mbedtls/sha256.c'),unix(NATIVE/'src/mbedtls/platform_util.c'),'-o',binary]
     built=subprocess.run(command,capture_output=True,text=True,encoding='utf-8',errors='replace');(OUT/'codec-build.log').write_text(built.stdout+built.stderr)
     if built.returncode:raise AssertionError(built.stderr)
@@ -43,7 +43,7 @@ def main():
     compile_probe=command[:]
     compile_probe[compile_probe.index(unix(ROOT/'tests/test_p2p_active_wire.c'))]=unix(ROOT/'tests/p2p_active_vector_probe.c')
     compile_probe[compile_probe.index(binary)]=probe
-    compile_probe.insert(compile_probe.index(unix(ROOT/'p2p_active_wire.c')),unix(ROOT/'p2p_startup_wire.c'))
+    compile_probe.insert(compile_probe.index(unix(ROOT/'src/p2p/p2p_active_wire.c')),unix(ROOT/'src/p2p/p2p_startup_wire.c'))
     built=subprocess.run(compile_probe,capture_output=True,text=True,encoding='utf-8',errors='replace')
     (OUT/'parent-probe-build.log').write_text(built.stdout+built.stderr)
     if built.returncode:raise AssertionError(built.stdout+built.stderr)
@@ -55,7 +55,7 @@ def main():
     print(probed.stdout.strip())
     receipt=dict(okay=True,codec_output=run.stdout,probe_output=probed.stdout,
         sources={name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in
-            ['p2p_active_wire.c','p2p_active_wire.h','tests/test_p2p_active_wire.c','tests/test_p2p_active_wire.py','tests/p2p_active_vector_probe.c']},
+            ['src/p2p/p2p_active_wire.c','src/p2p/p2p_active_wire.h','tests/test_p2p_active_wire.c','tests/test_p2p_active_wire.py','tests/p2p_active_vector_probe.c']},
         independent_golden_receipt_sha256=hashlib.sha256((golden/'receipt.json').read_bytes()).hexdigest(),
         golden_files={name:hashlib.sha256((golden/name).read_bytes()).hexdigest() for name in ['update.bin','ack.bin','envelope.bin']})
     (OUT/'active-wire-tests.json').write_text(json.dumps(receipt,indent=2)+'\n')

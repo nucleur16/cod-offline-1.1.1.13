@@ -1,7 +1,7 @@
 # shipping_maps.txt -- the usermaps whose UI ships to players.
 #
-#   <map> <state>      state: ship  in the shipping build (python build_zones.py -> output\)
-#                             dev   only in the all-maps build (python build_zones.py --maps all -> output_dev\)
+#   <map> <state>      state: ship  in the shipping build (python scripts/build_zones.py -> output\)
+#                             dev   only in the all-maps build (python scripts/build_zones.py --maps all -> output_dev\)
 #
 # A map's UI is everything the patch zones carry for it: its create-room map pool row (mp/comaplist.csv), its vlobby
 # arena entry (mp/basemaps.arena), its display-name strings, its map-select image (sfproto_<map>_usermap, whose

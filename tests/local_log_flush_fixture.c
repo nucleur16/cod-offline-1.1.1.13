@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "../p2p_verified_scripts.c"
+#include "../src/p2p/p2p_verified_scripts.c"
 
 static int Readable(const void *p,unsigned n) { return p!=NULL && n>0; }
 #if CODOL_LOCAL_TESTING
@@ -65,7 +65,7 @@ static HANDLE LocalQaOpenDwauth(const char *path)
 }
 #endif
 #define K33LF_FIXTURE 1
-#include "../local_log_flush.c"
+#include "../src/local_log_flush.c"
 
 #if CODOL_LOCAL_TESTING
 static void read_code(HANDLE file,DWORD va,void *out,DWORD bytes)

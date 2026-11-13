@@ -43,7 +43,7 @@ python3 -B docs/baselines/20261024-gfx-date-time/run_regressions.py --output-dir
 ```
 
 This compiles the actual portable policy and runs eighteen checks. It needs no
-game files and is appropriate for ordinary CI. `--cc` selects the compiler.
+game files and runs wherever a C compiler does. `--cc` selects the compiler.
 
 For original x86 execution, install `pefile` and `unicorn` in the test Python
 environment and build the Win32 bridge with MinGW:

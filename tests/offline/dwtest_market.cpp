@@ -11,10 +11,10 @@
  * Linked into dwtest.exe by build_dwtest.sh; entry point DwMarketSelfTest (dwtest_main.cpp).
  */
 #include <stdio.h>
-#include "../../offline/dw.h"
-#include "../../offline/dw_json.h"
-#include "../../offline/dw_profiles.h"
-#include "../../offline/dw_store.h"
+#include "../../src/offline/dw.h"
+#include "../../src/offline/dw_json.h"
+#include "../../src/offline/dw_profiles.h"
+#include "../../src/offline/dw_store.h"
 
 namespace market_selftest {
 

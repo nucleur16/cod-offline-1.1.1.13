@@ -20,7 +20,7 @@ STANDALONE = {"codol_infected_cyborg_postgfx_mp": "C#-written: its assets point 
 
 
 def merged_table():
-    text = (ROOT / "patch_locale_policy.h").read_text(encoding="utf-8")
+    text = (ROOT / "src/patch_locale_policy.h").read_text(encoding="utf-8")
     body = text[text.index("kCodolPatchZoneMerged[][2]={"):]
     body = body[:body.index("};")]
     return dict(re.findall(r'\{"([^"]+)","([^"]+)"\}', body))
