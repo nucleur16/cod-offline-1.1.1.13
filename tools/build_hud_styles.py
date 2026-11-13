@@ -102,7 +102,56 @@ LOCALVARS = {"isCombat": ("ui_gametype", "combat")}
 # menu ("host"). The first source of a host is the later build's menu of the same name (its visibility replaces the
 # host's while the style is on); the others are menus 1.1.1.13 does not register, so their items join the host with
 # their own menu's visibility and origin.
+def _ops_3333():
+    """3.3.3.3's operator table: 2.6.9.7's up to 97, two operators inserted at 98 / 99, 2.6.9.7 + 2 from there
+    through getweaponfiretype (241), then 3.x's own (242..273). MEASURED by aligning the menus both builds share
+    (every operator position of an equal statement gives a pair: 151 numbers, 2 one-statement conflicts) and by
+    3.3.3.3's evaluator itself (0x00575DF1: case = op - 30, 245 cases, table 0x00578090). The names of 242..273
+    are this file's; what each does is read from its case (V33_OPS)."""
+    t = list(menus.OPS_2697[:98]) + ["#98", "#99"] + list(menus.OPS_2697[98:240])
+    t += ["v33op%d" % i for i in range(242, 280)]
+    assert len(t) >= 274 and t[107] == "keybinding" and t[241] == "getweaponfiretype"
+    return t
+
+
+OPS_3333 = _ops_3333()
+# 3.3.3.3's own operators, as read from their cases in its evaluator (0x00575DF1, table 0x00578090), and what
+# they become here: (number of arguments, the 1.1.1.13 value). Every one is exact in 1.1.1.13 because the state it
+# tests does not exist there (the case reads a gametype or map prefix 1.1.1.13 never has), except 255 (below).
+V33_OPS = {
+    253: (0, 0),    # 0x00577C0D: mapname starts with "coop_gun_" (3.x co-op gunner maps)
+    257: (0, 0),    # 0x00574C60: only for gametypes "asym*" / "borg*" (ui_asym_robot_axis), else 0
+    258: (0, 0),    # 0x00574CF0: only for gametypes "asym*" / "borg*" (cg + 0x3508), else 0
+    264: (0, 0),    # 0x00577EA1: g_gametype starts with "asym"
+    265: (0, 1),    # 0x00571D80: playerdata aarRoundNumber + 1; every use is under "asym" (264), so round 1
+    267: (0, ""),   # 0x005719B0: the team juggernaut's name; every use is under g_gametype "tjugg"
+    270: (0, 0),    # 0x00574D60: only for gametypes "asym*" / "borg*", else 0
+    273: (0, 0),    # 0x00575910: weaponDef + 0x47C of the weapon in hand; its one use is "|| ui_gametype is not
+                    # clash", so any value gives the same result in 1.1.1.13 (no "clash" mode)
+    # 256 is not a constant: (V33_KILLSTREAK_BAR, rewritten in StyleConverter.statement)
+    255: (1, 100),  # 0x00570BC0: killstreak slot N's glow, 0..100, rising while the slot has just become usable
+                    # and falling back after (a per-frame animation); 100 is its resting value. The glow
+                    # animation is not reproduced: the slot is drawn at its resting brightness
+}
+# 3.3.3.3 operator 256 (case 0x00577153 -> 0x00573440): two arguments (each to int: a string through atoi, a float
+# through ftol), the name of the killstreak bar segment material: the first argument is the streak's kill count,
+# the second whether the segment is still empty. A count of 3 or less draws the wider "_2" segments. In 1.1.1.13 it
+# is written with its own operators: select( (A) <= 3, select( (B) == 1, empty_2, full_2 ), select( (B) == 1,
+# empty_1, full_1 ) ), or with B folded when it is a constant
+V33_KILLSTREAK_BAR = {"op": 256, "short": ("hud_killstreak_bar_empty_2", "hud_killstreak_bar_full_2"),
+                      "long": ("hud_killstreak_bar_empty_1", "hud_killstreak_bar_full_1")}
+# items whose visibility makes them never show in 1.1.1.13: (regex on the listing of the visible statement, why)
+NEVER_SHOWN = {"v33": [(re.compile(r"^\( v33op253 \)"), "only on 3.x co-op gunner maps (its visibility is 3.3.3.3 "
+                        "operator 253, mapname starts with \"coop_gun_\": always 0 in 1.1.1.13)")]}
 STYLES = {
+    # the killstreak bar segments (hud_killstreak_bar_*_1/_2, named by operator 256) are materials of
+    # common_marketplace_lite in 3.3.3.3, not of common_mp
+    "v33": dict(build="3.3.3.3", window=0xA8, ops=OPS_3333, zone="common_mp", prefix="k33hud33_", own_ops=V33_OPS,
+                material_zones=["common_marketplace_lite"],
+                hosts={"weaponbar_hd": ["weaponbar_hd", "weaponbar_hd_extend", "reloadbar"],
+                       "scorebar_hd": ["scorebar_hd", "kd_rate_bar", "extra_info"],
+                       "killstreaks_hd": ["killstreaks_hd2"],
+                       "minimap_fullscreen": ["minimap_fullscreen"]}),
     "v26": dict(build="2.6.9.7", window=0xA8, ops=menus.OPS_2697, zone="common_mp", prefix="k33hud26_",
                 hosts={"weaponbar_hd": ["weaponbar_hd", "weaponbar_hd_extend", "reloadbar"],
                        "scorebar_hd": ["scorebar_hd", "kd_rate_bar"],
@@ -279,6 +328,34 @@ class StyleConverter(menus.Converter):
                 es += [op("dvarstring"), string(FIRE_DVAR)]
                 self.note('getweaponfiretype -> dvarstring("%s") (hud_style.c, from the weapon def)' % FIRE_DVAR)
                 continue
+            if self.cfg["build"] == "3.3.3.3" and a == V33_KILLSTREAK_BAR["op"]:
+                args, k = _call_args(src, k, self.ops)
+                if len(args) != 2:
+                    raise menus.MenuError("3.3.3.3 operator 256 with %d arguments" % len(args))
+                first = [op("(")] + self.statement({"raw": "00" * 8, "p": {"4": args[0]}})["p"]["4"] + [op(")")]
+                second = self.statement({"raw": "00" * 8, "p": {"4": args[1]}})["p"]["4"]
+
+                def pick(pair):
+                    empty, full = pair
+                    if len(second) == 1 and struct.unpack_from("<II", bytes.fromhex(second[0]["raw"]))[:2] == (1, 0):
+                        b = struct.unpack_from("<i", bytes.fromhex(second[0]["raw"]), 8)[0]
+                        return [string(empty if b == 1 else full)]
+                    return [op("select"), op("(")] + copy.deepcopy(second) + [op(")"), op("=="), integer(1), op(","),
+                                                                           string(empty), op(","), string(full), op(")")]
+                es += [op("select")] + first + [op("<="), integer(3), op(",")] + pick(V33_KILLSTREAK_BAR["short"]) +                     [op(",")] + pick(V33_KILLSTREAK_BAR["long"]) + [op(")")]
+                self.note("3.3.3.3 operator 256 -> select((A) <= 3, ..._2, ..._1) of empty / full by B "
+                          "(the killstreak bar segment material, read from its case 0x00573440)")
+                continue
+            own = self.cfg.get("own_ops", {})
+            if a in own and name.startswith("v33op"):
+                argc, value = own[a]
+                k += argc                                   # the arguments, then the ")" the function ends with
+                closed = k < len(src) and _is_op(src[k], self.ops, ")")
+                k += closed
+                es.append(integer(value) if isinstance(value, int) else string(value))
+                self.note("%s operator %d -> %r (read from its case in %s)" % (self.cfg["build"], a, value,
+                                                                             self.cfg["build"]))
+                continue
             if name in MODE_CONSTANTS or name == "issurvival":
                 # a function without arguments: the operator, then its ")" (which the last entry of a statement omits)
                 closed = k < len(src) and _is_op(src[k], self.ops, ")")
@@ -325,6 +402,27 @@ class StyleConverter(menus.Converter):
             struct.pack_into("<I", raw, 0, len(es))
             out["raw"] = raw.hex().upper()
         return out
+
+
+def _call_args(src, k, ops):
+    """The arguments of the function whose operator was just read (src[k] is the first entry after it): a list of
+    entry lists split at the top-level ",", and the index after its closing ")"."""
+    args, depth = [[]], 1
+    while k < len(src):
+        t, a = struct.unpack_from("<II", bytes.fromhex(src[k]["raw"]))
+        name = ops[a] if t == 0 and a < len(ops) else None
+        if name == ")":
+            depth -= 1
+            if depth == 0:
+                return [x for x in args if x] if args != [[]] else [], k + 1
+        elif t == 0 and (name == "(" or (name is not None and a >= ops.index("dvarint(static)"))):
+            depth += 1
+        if name == "," and depth == 1:
+            args.append([])
+        else:
+            args[-1].append(src[k])
+        k += 1
+    raise menus.MenuError("a function call without its )")
 
 
 def _is_op(e, ops, name):
@@ -569,6 +667,9 @@ def style_parts(style, facts=None, sources=None, stock=None):
                     shown = it["p"].get(str(W + 0xA0))
                     if host == "scorebar_hd" and shown is not None and MODE_ONLY.match(menus.expr(shown, cfg["ops"])):
                         raise Dropped("a Survival / Evac item of %s (1.1.1.13: the survival HUD's own panel)" % cfg["build"])
+                    for pattern, why in NEVER_SHOWN.get(style, []):
+                        if shown is not None and pattern.match(menus.expr(shown, cfg["ops"])):
+                            raise Dropped(why)
                     if it["p"].get(str(W + 0x40)) in DROP_TEXT:
                         raise Dropped(DROP_TEXT[it["p"][str(W + 0x40)]])
                     plate = (it["p"].get("160") or {}).get("name", "").lstrip(",")
@@ -900,6 +1001,7 @@ DEFAULT_INSTALL = {
     "c1": DEFAULT_BUILDS + r"\Call of Duty Online 1.1.1.13",
     "v26": DEFAULT_BUILDS + r"\CODOL_2.6.9.7",
     "v12": DEFAULT_BUILDS + "\\codol-misc-builds\\\u00ca\u00b9\u00c3\u00fc\u00d5\u00d9\u00bb\u00bdOnline",
+    "v33": DEFAULT_BUILDS + "\\codol-misc-builds\\\u4f7f\u547d\u53ec\u5524Online(\u4f53\u9a8c\u670d)",
 }
 
 
@@ -914,6 +1016,7 @@ def main(argv=None):
     ap.add_argument("--c1", default=DEFAULT_INSTALL["c1"])
     ap.add_argument("--v26", default=DEFAULT_INSTALL["v26"])
     ap.add_argument("--v12", default=DEFAULT_INSTALL["v12"])
+    ap.add_argument("--v33", default=DEFAULT_INSTALL["v33"])
     ap.add_argument("--work", help="extract: a folder for the dumps (default: a temporary one)")
     ap.add_argument("--images", action="append", default=[], metavar="STYLE=DIR",
                     help="extract: read a style's images from this folder instead of its install. 1.2.1.12 has a "

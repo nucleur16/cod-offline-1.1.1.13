@@ -194,7 +194,7 @@ def run(a):
     os.makedirs(work, exist_ok=True)
     # in number order, so a later style reuses an earlier one's identical images
     styles = sorted([s for s in a.styles.split(",") if s], key=lambda s: hs.STYLE_NUMBERS[s])
-    installs = {"v26": a.v26, "v12": a.v12}
+    installs = {"v26": a.v26, "v12": a.v12, "v33": a.v33}
     image_installs = dict(x.split("=", 1) for x in a.images)
     hs.SRC.mkdir(parents=True, exist_ok=True)
 
@@ -269,7 +269,7 @@ def run(a):
             tables["%s,%d,%d" % (table, search, result)] = {
                 "rows_by": ident, "shared": len(shared), "differ": len(differ),
                 "only_%s" % cfg["build"]: sorted(r[ident] for r in theirs if len(r) > need and r[ident] not in rows)}
-        later = materials_of(a.dumper, install, cfg["zone"])
+        later = [m for z in [cfg["zone"]] + cfg.get("material_zones", []) for m in materials_of(a.dumper, install, z)]
         by_image = {}
         for name, techset, images in later:
             for im in images:

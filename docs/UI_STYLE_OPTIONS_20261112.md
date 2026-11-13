@@ -35,7 +35,7 @@ writes through `CFunctionContainerCommon.setdvar(name, String(value))`.
 |---|---|---|---|
 | Language (switched off) | `k33_language` (string, archived) | the ids of `k33_languageList`, `;`-separated (`en;zh`) | `K33UI_LANG_NAME_<ID>` |
 | Button icons | `gpad_glyphs` (int, archived, 0..6) | 0 Auto, 1 Xbox, 2 PlayStation, 3 Wii U / Switch, 4 Generic, 5 Text only, 6 Keyboard & mouse | `K33UI_GLYPHS_AUTO / XBOX / PS / NINTENDO / GENERIC / TEXT / KBM` |
-| HUD style | `k33_hudStyle` (int, archived) | the numbers of `k33_hudStyleList`, `;`-separated `number:id` pairs (`0:stock;2:v26`) | `K33UI_HUD_STYLE_<ID>` (`STOCK`, `V12`, `V26`, `V33`, `V35`) |
+| HUD style | `k33_hudStyle` (int, archived) | the numbers of `k33_hudStyleList`, `;`-separated `number:id` pairs (`0:stock;2:v26;3:v33`) | `K33UI_HUD_STYLE_<ID>` (`STOCK`, `V12`, `V26`, `V33`, `V35`) |
 
 Also read: `k33_languageState` (0 idle, 1 switching, 2 saved and applies on the
 next start), `k33_languageSerial` (moves when a live switch has finished), and

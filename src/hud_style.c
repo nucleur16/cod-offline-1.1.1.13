@@ -55,7 +55,7 @@
 #define HUD_STYLE_LIST_DVAR "k33_hudStyleList"
 /* tools/build_hud_styles.py style_list(): the styles whose sources are in zones/hud_styles_postgfx_mp/sources
  * (tests/test_hud_styles.py compares the two). */
-#define HUD_STYLE_LIST      "0:stock;2:v26"
+#define HUD_STYLE_LIST      "0:stock;2:v26;3:v33"
 #define HUD_STYLE_MAX       4
 #define HUD_STYLE_REGISTER_STRING_VA 0x00624740u
 #define HUD_FIRE_DVAR       "k33_hudFireType"
