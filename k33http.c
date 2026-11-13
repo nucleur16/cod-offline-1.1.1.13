@@ -8,7 +8,9 @@
  *   K33HttpGet       GET into a malloc'd buffer (capped), optional "Authorization: Bearer", no redirects.
  *   K33HttpDownload  GET into <path>.part, exact Content-Length and SHA-256 checked, then renamed over <path>.
  *   K33Sha256Hex     SHA-256 of memory or of a file (CryptoAPI, advapi32), lowercase hex.
- * Only https:// URLs are accepted, plus http:// to 127.0.0.1 / localhost (a local test service).
+ * This client is offline only: a URL is accepted only when its host is 127.0.0.1 / localhost (http:// or
+ * https://, a local test service). Every other host is refused here, whatever a dvar or the command line
+ * names, so the optional services built on this file (theatre.c, name_display.c) cannot go online.
  */
 #include <winhttp.h>
 #include <wincrypt.h>
@@ -98,7 +100,7 @@ static BOOL K33HttpSend(K33HttpReq *r, const char *url, const char *bearer, int 
     if (!g_wh.CrackUrl(wurl, 0, 0, &u)) return FALSE;
     BOOL https = u.nScheme == INTERNET_SCHEME_HTTPS;
     BOOL local = !lstrcmpiW(host, L"127.0.0.1") || !lstrcmpiW(host, L"localhost");
-    if (!https && !(u.nScheme == INTERNET_SCHEME_HTTP && local)) return FALSE;
+    if (!local || !(https || u.nScheme == INTERNET_SCHEME_HTTP)) return FALSE; /* loopback only: offline client */
     if (lstrlenW(path) + lstrlenW(extra) >= 2047) return FALSE;
     lstrcatW(path, extra);
 

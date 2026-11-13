@@ -1,5 +1,5 @@
 #!/bin/sh
-# Sourced by build.sh, build-dev.sh and tests/offline/build_dwtest.sh: compiles the offline Demonware
+# Sourced by build.sh, build-dev.sh (every build) and tests/offline/build_dwtest.sh: compiles the Demonware
 # lobby (offline/*.cpp, docs/OFFLINE_LOBBY.md) with g++ into an object folder, like build-dev.sh does
 # for the vision editor. No exceptions, no RTTI: nothing C++ unwinds into C1 or Kernel33's C frames.
 #

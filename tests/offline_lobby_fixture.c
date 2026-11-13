@@ -1,5 +1,5 @@
-/* The actual offline_lobby.c body (the Kernel33 side of offline mode) in an owned Windows fixture:
- * the switch, the free lobby port and the in-memory dwauth.ini / stun.ini route that carries it, the
+/* The actual offline_lobby.c body (the Kernel33 side of the built-in lobby) in an owned Windows fixture:
+ * that it needs no switch (and that the old one is ignored), the free lobby port and the in-memory dwauth.ini / stun.ini route that carries it, the
  * NAT traversal port patch, the profile name and its folder, the level gates, the embedded host's
  * port (free, reserved until the host starts) and folders, and the Local Play hand-over. The lobby
  * itself (offline/) and C1 are doubles; the only sockets are loopback UDP sockets bound to prove a
@@ -155,17 +155,8 @@ int main(int argc, char **argv)
     FARPROC create = OfflineRouteImport(&kCreate, realCreate), cmd = OfflineRouteImport(&kCmd, realCmd);
     assert(OfflineRouteImport(&kOther, realCreate) == realCreate); /* never another slot */
 
-    if (!strcmp(test, "off")) { /* no switch: nothing is wrapped, nothing starts, no byte is written, no port is held */
-        assert(create == realCreate && cmd == realCmd);
-        assert(InstallOfflineLobby() && !OfflineLobbyActive() && !start_calls);
-        P2PConfig c; P2PDefaults(&c); P2PLoadIni(&c);
-        assert(!strcmp(c.state, "X:\\lobby\\state") && !strcmp(c.profile, "X:\\lobby\\resources") && c.port == FIXTURE_HOST_PORT);
-        assert(nat_site[1] == 0x02 && nat_site[2] == 0x0C && notify_site[0] == 0xE8 && !memcmp(notify_site + 1, &rel, 4));
-        assert(g_ofl.hostSock == -1 && !g_ofl.gatesLifted);
-        OfflineHostPortRelease(); /* a no-op */
-        puts("offline lobby fixture passed");
-        return 0;
-    }
+    /* There is no switch: with no argument and no ini (case "plain"), and with the `enabled = 0` line of
+     * earlier builds, the two import slots are wrapped and the lobby starts all the same. */
     assert(create != realCreate && cmd != realCmd);
     /* Before the lobby is up the wrappers are transparent. */
     assert(((CmdFn)cmd)() == GetCommandLineA());
@@ -204,7 +195,7 @@ int main(int argc, char **argv)
     assert(EndsWith(started.profile, "\\players") && EndsWith(started.state, "\\p2p\\offline") && !strcmp(started.state, started.matchProfile));
     const BOOL named = strstr(GetCommandLineA(), "dw_username") != NULL;
     if (!strcmp(test, "badname")) assert(!strcmp(started_name, "<null>")); /* not a folder name: named by player id */
-    else assert(!strcmp(started_name, named || ini3999 ? "edtest" : "Player"));
+    else assert(!strcmp(started_name, named || ini3999 || !strcmp(test, "oldswitch") ? "edtest" : "Player"));
     if (!strcmp(test, "legacy")) assert(EndsWith(started_legacy, "\\k33_offline\\profile"));
     else assert(!strcmp(started_legacy, "<null>"));
 
@@ -255,7 +246,7 @@ int main(int argc, char **argv)
         assert(line != GetCommandLineA() && !strncmp(line, GetCommandLineA(), strlen(GetCommandLineA())));
         const char *tail = line + strlen(GetCommandLineA());
         char expect[128] = "";
-        if (!named) { lstrcatA(expect, " +set dw_username "); lstrcatA(expect, ini3999 ? "edtest" : "Player"); }
+        if (!named) { lstrcatA(expect, " +set dw_username "); lstrcatA(expect, ini3999 || !strcmp(test, "oldswitch") ? "edtest" : "Player"); }
         if (lifted) lstrcatA(expect, " +set 2653 1");
         assert(!strcmp(tail, expect));
         assert(((CmdFn)cmd)() == line); /* one stable string */

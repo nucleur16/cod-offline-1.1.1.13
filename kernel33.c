@@ -183,7 +183,8 @@ static void PatchActiveHandFiringMarker(void)
 #if defined(CODOL_LOCAL_TESTING) && CODOL_LOCAL_TESTING == 1
 static FARPROC LocalQaRouteImport(const C1Import *imp,FARPROC original);
 #endif
-/* Offline mode (offline_lobby.c): FALSE unless compiled in AND switched on by the player. */
+/* The lobby inside this DLL (offline_lobby.c): TRUE once it listens and C1 is routed to it. This client is
+ * offline only, so that is before C1's entry point in every run; a start that fails stops the client. */
 static BOOL OfflineLobbyActive(void);
 #if CODOL_OFFLINE_LOBBY
 static FARPROC OfflineRouteImport(const C1Import *imp, FARPROC original);
@@ -1625,7 +1626,8 @@ static void __cdecl TakeOver(void)
     PatchGfxLocalOperands();
 #if CODOL_OFFLINE_LOBBY
     if (!InstallOfflineLobby())
-        Fatal("Offline mode was requested but the built-in lobby could not start. See Kernel33.log.");
+        Fatal("The built-in lobby could not start, and this client does not connect to any other lobby. "
+              "The reason is in Kernel33.log (next to the game's exe).");
 #endif
     if (!InstallHostGate())
         Fatal("Required network safety checks could not be installed. Please repair or update the client.");

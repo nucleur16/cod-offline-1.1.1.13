@@ -1,16 +1,12 @@
 /*
- * offline_lobby.c - offline mode: the Demonware lobby runs inside the client (docs/OFFLINE_LOBBY.md).
+ * offline_lobby.c - the Demonware lobby runs inside the client (docs/OFFLINE_LOBBY.md).
  *
- * Compiled in only with -DCODOL_OFFLINE_LOBBY=1 (K33_OFFLINE=1 in build-profile.sh) and active only
- * when the player asks for it:
+ * This client is offline only. There is no switch: every build has the lobby and every run uses it.
+ * <exe dir>\k33_offline.ini is an OPTIONAL settings file (profile name, test port overrides,
+ * level_gates, folders); `+set dw_username <name>` on the command line names the profile, else the
+ * ini's `name`, else "Player".
  *
- *     +set k33_offline 1          on the command line, or
- *     <exe dir>\k33_offline.ini   with a line  enabled = 1
- *
- * With the switch off (or the feature not compiled in) nothing in this file runs and Kernel33
- * behaves exactly as before against the real lobby.
- *
- * What offline mode does, all before C1's own entry point runs:
+ * All of it happens before C1's own entry point runs:
  *   1. starts the lobby (offline/, C++) on its own thread, bound to 127.0.0.1 only, on a FREE port
  *      the operating system picks (so it runs next to another lobby or a second client on this PC);
  *   2. answers C1's reads of dwauth.ini and stun.ini from memory with that port, and points C1's NAT
@@ -18,20 +14,23 @@
  *      read nor written);
  *   3. gives C1 a profile name when the command line has none (+set dw_username <name>);
  *   4. keeps the host gate on loopback: no lobby name, no gateway and no SSDP group is vouched;
- *   5. lets Local Play host with the GSC tree installed with the client, gives the embedded match host
- *      a UDP port that is free (kept reserved until the host binds it) and points its state / profile
- *      folders at the offline run-time folder (OfflineP2PConfig);
+ *   5. hosts every room the player owns on the embedded match server, with the GSC tree installed
+ *      with the client: gives that host a UDP port that is free (kept reserved until the host binds
+ *      it) and points its state / profile folders at the run-time folder (OfflineP2PConfig);
  *   6. lifts C1's level gates on playing: the room list, Create Room, the playlists and the map list
  *      are usable by a level-1 profile (OflLiftGates). The career itself is not touched: a level-1
  *      player is shown, stored and reported as level 1, and loadout unlocks keep their levels.
+ * If the lobby cannot start (no free port, an explicit port that is taken, C1's bytes at a patch site
+ * differ, a launcher-managed session) the client stops with the reason; it never contacts another lobby.
  *
  * The player's career is the game's own profile blobs in <exe dir>\players\<profile name>\
  * (offline/dw_store.h); there is no database.
  *
- * The lobby thread never touches C1. It reads the owner's Local Play intent with K33LocalPlayIntent()
- * and, when it hands START_GAME to the owner, raises the host launch with K33LocalPlayLaunch()
- * (p2p_local_play_api.h, docs/P2P_DEFERRED_HOST_START.md rule 5): both are safe on any thread and
- * start nothing themselves - p2p.c's main-thread tick validates the request and starts the host.
+ * The lobby thread never touches C1. It reads Kernel33's published local-host snapshot with
+ * K33LocalPlayIntent(), names the selection of the room the player owns with K33LocalPlayAuto() (which
+ * arms the host and, when the lobby hands START_GAME over, raises its launch) and reports a left room
+ * with K33LocalPlayLeave() (p2p_local_play_api.h, docs/P2P_DEFERRED_HOST_START.md): all are safe on any
+ * thread and start nothing themselves - p2p.c's main-thread tick validates the request and starts the host.
  */
 #if CODOL_OFFLINE_LOBBY
 #include "offline/dw_api.h"
@@ -52,7 +51,7 @@
 #define OFL_UNLOCK_MAPS_DVAR "2653"
 
 static struct {
-    int requested;               /* 0 unknown, 1 on, -1 off */
+    int settingsRead;            /* k33_offline.ini was looked for */
     BOOL active;                 /* the listener is up and C1 is routed to it */
     int wantPort, wantAltPort;   /* k33_offline.ini port / alt_port; 0 = a free port (the default) */
     int wantHostPort;            /* k33_offline.ini host_port; 0 = the configured one if free, else a free one */
@@ -79,12 +78,6 @@ static void OflExeDir(char *out)
     DWORD n = GetModuleFileNameA(NULL, out, MAX_PATH);
     while (n && out[n - 1] != '\\') n--;
     out[n] = 0;
-}
-
-/* `+set k33_offline 1` (or "1") anywhere on the command line. */
-static BOOL OflCommandLineSwitch(const char *cl)
-{
-    return cl && (strstr(cl, "k33_offline 1") || strstr(cl, "k33_offline \"1\""));
 }
 
 /* A profile name is also the player's folder under players\: letters, digits, _ - . only. */
@@ -116,12 +109,13 @@ static BOOL OflCommandLineName(const char *cl, char *out, size_t cap)
 
 static BOOL OflPortOk(int p) { return p >= 1024 && p <= 65535; }
 
-/* Decide once, before FillImports. The ini is optional; the command line wins for the switch. */
-static void OflReadSwitch(void)
+/* The optional settings file, read once, before FillImports. There is nothing to switch on: an
+ * `enabled` line (the switch of earlier builds) is ignored. */
+static void OflReadSettings(void)
 {
-    if (g_ofl.requested) return;
+    if (g_ofl.settingsRead) return;
+    g_ofl.settingsRead = 1;
     char dir[MAX_PATH], path[MAX_PATH + 32], line[512];
-    int enabled = 0;
     OflExeDir(dir);
     lstrcpyA(g_ofl.name, "Player");
     _snprintf(g_ofl.players, MAX_PATH, "%splayers", dir);
@@ -146,8 +140,7 @@ static void OflReadSwitch(void)
             e = val + strlen(val);
             while (e > val && (e[-1] == ' ' || e[-1] == '\t' || e[-1] == '\r' || e[-1] == '\n')) *--e = 0;
             BOOL pathOk = *val && !strchr(val, '"') && strlen(val) < MAX_PATH - 32;
-            if (!_stricmp(key, "enabled")) enabled = !strcmp(val, "1");
-            else if (!_stricmp(key, "name")) { if (OflNameOk(val)) lstrcpyA(g_ofl.name, val); }
+            if (!_stricmp(key, "name")) { if (OflNameOk(val)) lstrcpyA(g_ofl.name, val); }
             /* explicit ports are for tests; the default (0) is whatever is free */
             else if (!_stricmp(key, "port")) { int p = atoi(val); if (OflPortOk(p)) g_ofl.wantPort = p; }
             else if (!_stricmp(key, "alt_port")) { int p = atoi(val); if (OflPortOk(p)) g_ofl.wantAltPort = p; }
@@ -158,14 +151,6 @@ static void OflReadSwitch(void)
         }
         fclose(f);
     }
-    if (OflCommandLineSwitch(GetCommandLineA())) enabled = 1;
-    g_ofl.requested = enabled ? 1 : -1;
-}
-
-static BOOL OfflineLobbyRequested(void)
-{
-    OflReadSwitch();
-    return g_ofl.requested == 1;
 }
 
 static BOOL OfflineLobbyActive(void) { return g_ofl.active; }
@@ -301,10 +286,11 @@ static LPSTR WINAPI OflGetCommandLineA(void)
     return g_ofl.commandLine;
 }
 
-/* FillImports: wrap the two slots only when offline mode was asked for. */
+/* FillImports: wrap the two slots C1 reads its lobby route and its command line through. */
 static FARPROC OfflineRouteImport(const C1Import *imp, FARPROC original)
 {
-    if (!OfflineLobbyRequested() || lstrcmpiA(imp->dll, "KERNEL32.dll")) return original;
+    OflReadSettings();
+    if (lstrcmpiA(imp->dll, "KERNEL32.dll")) return original;
     if (imp->slot == 0x00B421D8 && !strcmp(imp->name, "CreateFileA")) { g_ofl.createFileA = original; return (FARPROC)OflCreateFileA; }
     if (imp->slot == 0x00B42284 && !strcmp(imp->name, "GetCommandLineA")) { g_ofl.getCommandLineA = original; return (FARPROC)OflGetCommandLineA; }
     return original;
@@ -441,17 +427,17 @@ static void OfflineHostPortRelease(void)
     if (s != -1) closesocket((SOCKET)(ULONG)s);
 }
 
-/* TakeOver, after FillImports and before the host gate. -> FALSE when offline mode was requested and
- * cannot be provided (the caller stops: falling back to the real lobby would not be what was asked). */
+/* TakeOver, after FillImports and before the host gate. -> FALSE when the lobby cannot be provided:
+ * the caller stops the client with the reason (there is no other lobby to fall back to). */
 static BOOL InstallOfflineLobby(void)
 {
-    if (!OfflineLobbyRequested()) return TRUE;
+    OflReadSettings();
     InitializeCriticalSection(&g_ofl.lock);
     if (!g_ofl.createFileA || !g_ofl.getCommandLineA) { Log("offline lobby: C1's file/command-line imports were not found"); return FALSE; }
     /* Launcher-managed Local Play (the SDK pipe protocols, the production host) is a different product. */
     if (GetEnvironmentVariableA("CODOL_P2P_PRODUCTION_PIPE", NULL, 0) || GetEnvironmentVariableA("CODOL_P2P_STARTUP_IPC_V1", NULL, 0) ||
         GetEnvironmentVariableA("CODOL_LOCAL_QA_DWAUTH_HANDLE", NULL, 0)) {
-        Log("offline lobby: refused, this client was started by a launcher-managed Local Play session");
+        Log("offline lobby: refused, this client was started by a launcher-managed Local Play session (not supported: this client is offline only)");
         return FALSE;
     }
     WSADATA wsa;

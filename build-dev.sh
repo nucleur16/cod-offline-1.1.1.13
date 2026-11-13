@@ -40,14 +40,11 @@ if [ ! -f "$SDL_DIR/lib/libSDL2.a" ]; then
     tar xzf "$TGZ" -C third_party "SDL2-$SDL_VER/i686-w64-mingw32/include" "SDL2-$SDL_VER/i686-w64-mingw32/lib/libSDL2.a"
     rm -f "$TGZ"
 fi
-# Offline mode (K33_OFFLINE=1, docs/OFFLINE_LOBBY.md): the C++ lobby in offline/ is compiled with g++ into
-# obj_offline/ and linked statically (libstdc++ included). Without the flag none of it is built or linked.
-OFFLINE_LINK=""
-if [ "${K33_OFFLINE:-0}" = 1 ]; then
-    . ./build-offline.inc.sh
-    k33_offline_objects obj_offline
-    OFFLINE_LINK="$OFFLINE_OBJS -static-libstdc++ -lstdc++"
-fi
+# The lobby (docs/OFFLINE_LOBBY.md): the C++ sources in offline/ are compiled with g++ into obj_offline/
+# and linked statically (libstdc++ included). Every build has it: this client is offline only.
+. ./build-offline.inc.sh
+k33_offline_objects obj_offline
+OFFLINE_LINK="$OFFLINE_OBJS -static-libstdc++ -lstdc++"
 "$BIN/windres.exe" -O coff -i kernel33.rc -o kernel33_res.o
 CFLAGS="-O2 -Wall -Wextra -Wno-unused-parameter -Wno-cast-function-type -Wno-missing-field-initializers -shared -s -static -static-libgcc -I$SDL_DIR/include"
 LIBS="-L$SDL_DIR/lib -lSDL2 -lsetupapi -lcfgmgr32 -lversion -loleaut32 -luuid \

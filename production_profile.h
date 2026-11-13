@@ -23,8 +23,10 @@
 #error Kernel room-context migration flag must be zero or one
 #endif
 #ifndef CODOL_OFFLINE_LOBBY
-/* The in-client lobby (offline_lobby.c, docs/OFFLINE_LOBBY.md): its own opt-in build flag. */
-#define CODOL_OFFLINE_LOBBY 0
+/* The in-client lobby (offline_lobby.c, docs/OFFLINE_LOBBY.md). This client is offline only: every
+ * build has it and it is always active. The macro is not a build option any more (no script sets
+ * it); it only lets an owned test fixture compile one source file without the lobby (define it 0). */
+#define CODOL_OFFLINE_LOBBY 1
 #endif
 #if CODOL_OFFLINE_LOBBY != 0 && CODOL_OFFLINE_LOBBY != 1
 #error Offline lobby flag must be zero or one
