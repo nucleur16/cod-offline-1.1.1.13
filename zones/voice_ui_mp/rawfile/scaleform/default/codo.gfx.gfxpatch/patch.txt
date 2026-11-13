@@ -3,7 +3,7 @@ stock patch_ui_mp:scaleform/default/codo.gfx
 stock-sha256 2f143069ed10f3c937e0f5b758591e477f57544f76bdfd3bd2635f77cca5d332
 # Method-only OptionView stored-tag update; original-header GFX DATA provenance.
 # Whole-class baseline remains HOLD; this digest is not FF/game/release acceptance.
-sha256 bc9c8515ca326a31e1006bfeb8338a441cd2d5677d6a56d0b31eb46ef294e9a9
+sha256 938c9bc0d0a5d45a5afca28309b74d287e644e5652a0677e7496479e0946a873
 header 4746580a68b64500800003200000025800001e0100
 keep 0
 keep 1
@@ -6903,7 +6903,6 @@ as codo.views.ScoreboardBaseView as/codo/views/ScoreboardBaseView.as 541ac869765
 as codo.views.SummaryView as/codo/views/SummaryView.as 0e2866e484e085be128c14dc7b58e3180b1d739fe900e04762f12148430c73b1
 as codo.views.option_sub.OptionView_audio as/codo/views/option_sub/OptionView_audio.as bd11696b3f0c4c5e96feae902434c0e0e317ea7a4b624a858e6eda55c0497860
 as codo.views.option_sub.OptionView_control_chat as/codo/views/option_sub/OptionView_control_chat.as 62b0364bf158cbc8cc8f7f4f27c6b2e103692f94b0110ca9f4bdf2930e9c4362
-as codo.views.option_sub.OptionView_video as/codo/views/option_sub/OptionView_video.as c1cea72f9756f1ff81ec6a283cc3ebc0d755de98497166cc10633245a9225a55
 as codo.views.summary_sub.LobbySummaryView_scoreboardPanel as/codo/views/summary_sub/LobbySummaryView_scoreboardPanel.as 6d755b9fe05a0c5ddb4ea101ac48d7783723c54405bd634ba2f894d7a48631b0
 as components.CodoButton as/components/CodoButton.as dedcc37aff499b1a1123657f95c9f33f9187764429e45bf17750d0bc53628528
 as components.LevelChooser as/components/LevelChooser.as e3eb7121705bd8eb43b2c0f97b69337f95374ca37d3249827c87f7677e95f0ff
@@ -6932,3 +6931,4 @@ as codo.views.matchmpctroomcreator_sub.MatchMPCTRoomCreatorView_mpcreator as/cod
 as codo.views.ServerMessageView as/codo/views/ServerMessageView.as 4bf3db5fbc6557c450dad000bee38a8435e80343ca5c6d8ee3b937114c62581a
 as codo.controllers.LobbyController as/codo/controllers/LobbyController.as 196931fce41a2edb3255a907a45f990b58ac09e04bfa8be12a799f8aa8fc2e43
 as codo.k33.LocalMatchControls as/codo/k33/LocalMatchControls.as 0c82f458da92abb55b7ae1df20f7263661cb9f05f5a6e8ae4e5133a1c33030dc
+as codo.views.option_sub.OptionView_video as/codo/views/option_sub/OptionView_video.as 832c5218a7118ef59e74f21c1a400178fd4bc06f6deaad885ebfdc43e0c72b90
