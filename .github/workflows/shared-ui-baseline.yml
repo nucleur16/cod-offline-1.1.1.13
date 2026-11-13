@@ -46,7 +46,7 @@ jobs:
         run: python -B -m unittest discover -s tests -p "test_zone_pack_*.py"
       - id: native_check_10
         continue-on-error: true
-        run: gcc -O2 -Wall -Wextra -Werror tests/quick_start_policy_test.c -o /tmp/quick-start-policy && /tmp/quick-start-policy
+        run: gcc -O2 -Wall -Wextra -Werror tests/quick_start_policy_test.c -o /tmp/quick-start-policy && /tmp/quick-start-policy && gcc -O2 -Wall -Wextra -Werror tests/controller_glyph_policy_test.c -o /tmp/controller-glyph-policy && /tmp/controller-glyph-policy
       - id: native_check_11
         continue-on-error: true
         run: python -B docs/baselines/20261024-gfx-date-time/run_regressions.py --output-dir /tmp/gfx-date-time

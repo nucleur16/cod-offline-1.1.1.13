@@ -29,6 +29,8 @@ python -B tests/test_zone_packs.py
 python -B tests/test_party_locales.py
 "$BIN/gcc.exe" -O2 -Wall -Wextra -Werror tests/quick_start_policy_test.c -o "$OUT/quick_start_policy.exe"
 "$OUT/quick_start_policy.exe"
+"$BIN/gcc.exe" -O2 -Wall -Wextra -Werror tests/controller_glyph_policy_test.c -o "$OUT/controller_glyph_policy.exe"
+"$OUT/controller_glyph_policy.exe"
 python -B docs/baselines/20261024-gfx-date-time/run_regressions.py \
     --cc "$BIN/gcc.exe" --output-dir "$OUT/gfx-date-time"
 "$BIN/gcc.exe" -Wall -Wextra -Werror tests/patch_locale_test.c -o "$OUT/patch_locale_test.exe"
