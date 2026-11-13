@@ -179,8 +179,10 @@ class HudStyles(unittest.TestCase):
 
     def test_shipped_styles_and_numbers(self):
         self.assertEqual(hs.STYLE_NUMBERS, {"stock": 0, "v12": 1, "v26": 2, "v33": 3, "v35": 4})
-        self.assertEqual(hs.shipped(), [(1, "v12"), (2, "v26")])
-        self.assertEqual(hs.style_list(), "0:stock;1:v12;2:v26")
+        # v12 is not shipped: in a client its converted HUD could not be told from v26's (same art, layout
+        # differences of a few units; docs/HUD_STYLES_20261112.md)
+        self.assertEqual(hs.shipped(), [(2, "v26")])
+        self.assertEqual(hs.style_list(), "0:stock;2:v26")
         c = (ROOT / "src" / "hud_style.c").read_text(encoding="utf-8")
         self.assertIn('#define HUD_STYLE_LIST      "%s"' % hs.style_list(), c)
         self.assertIn('#define HUD_STYLE_DVAR      "%s"' % hs.DVAR, c)
@@ -297,7 +299,7 @@ class HudStyles(unittest.TestCase):
                         continue
                     raw = bytes.fromhex(it["raw"])
                     od = struct.unpack_from("<i", raw, 0x38)[0]
-                    self.assertTrue(od == 0 or od in self.facts["c1_ownerdraws"])
+                    self.assertTrue(od == 0 or od in self.facts["c1_ownerdraws"] or od in hs.HUD_OWNERDRAWS)
                     self.assertNotIn(struct.unpack_from("<i", raw, W + 0x20)[0], hs.FONTS)
                     listing = menus.expr({"kind": "Statement", "raw": "00" * 20, "p": {"4": [
                         hs.nested(v) for k, v in it["p"].items() if isinstance(v, dict) and v.get("kind") == "Statement"]}})
@@ -320,7 +322,7 @@ class HudStyles(unittest.TestCase):
 
     def test_dropped_items_are_reported_with_a_reason(self):
         text = "\n".join(self.report)
-        for style in ("v12", "v26"):
+        for _n, style in hs.shipped():
             cfg = hs.STYLES[style]
             src = json.loads((hs.SRC / ("menus_%s.json" % style)).read_text(encoding="utf-8"))
             self.assertEqual(src["build"], cfg["build"])
@@ -335,14 +337,19 @@ class HudStyles(unittest.TestCase):
         self.assertEqual(len(hs.STYLES["v12"]["ops"]), 232)
         self.assertEqual(hs.STYLES["v12"]["ops"][-1], "isevac")
         # what the docs call visibly missing really is dropped, and the main panels really are kept
-        self.assertRegex(text, r"v26 weaponbar_hd\[3\] -> weaponbar_hd: dropped: operator getweaponfiretype")
-        self.assertRegex(text, r'v26 kd_rate_bar\[8\] -> scorebar_hd: dropped: player\("assists"\)')
-        for line in ("v26 killstreaks_hd -> killstreaks_hd: 83 of 83 items", "v26 minimap_fullscreen -> minimap_fullscreen: 17 of 17 items",
-                     "v12 weaponbar_hd -> weaponbar_hd: 24 of 24 items", "v12 killstreaks_hd -> killstreaks_hd: 83 of 83 items"):
+        # implemented natively now (hud_style.c): the fire-mode tag, the assists, the ammo display
+        self.assertIn('v26 rewrite: getweaponfiretype -> dvarstring("k33_hudFireType")', text)
+        self.assertIn('v26 rewrite: player("assists") -> dvarint("k33_hudAssists")', text)
+        self.assertIn("v26 weaponbar_hd[4] -> weaponbar_hd: ownerDraw 5 written as clip count, clip bar and reserve count", text)
+        # what stays out, with the reason the docs give
+        self.assertRegex(text, r'v26 kd_rate_bar\[10\] -> scorebar_hd: dropped: player\("revives"\)')
+        self.assertRegex(text, r"v26 weaponbar_hd_extend\[2\] chargeAttackAnime -> weaponbar_hd: dropped: ownerDraw 297")
+        for line in ("v26 weaponbar_hd -> weaponbar_hd: 26 of 26 items", "v26 killstreaks_hd -> killstreaks_hd: 83 of 83 items",
+                     "v26 minimap_fullscreen -> minimap_fullscreen: 17 of 17 items", "v26 kd_rate_bar -> scorebar_hd: 16 of 20 items"):
             self.assertIn(line, text)
 
     def test_the_isCombat_rewrite_is_what_the_later_onOpen_stores(self):
-        for style in ("v12", "v26"):
+        for _n, style in hs.shipped():
             cfg = hs.STYLES[style]
             src = json.loads((hs.SRC / ("menus_%s.json" % style)).read_text(encoding="utf-8"))
             one = {"kind": "MenuList", "raw": "00" * 12, "p": {"0": "x", "8": [src["menus"]["scorebar_hd"]]}}
@@ -352,6 +359,35 @@ class HudStyles(unittest.TestCase):
             self.assertIn('    if ( dvarstring(static) "ui_gametype" ) == "combat":\n        setLocalVarInt isCombat = 1\n'
                           '    else:\n        setLocalVarInt isCombat = 0\n', text)
             self.assertEqual(hs.LOCALVARS["isCombat"], ("ui_gametype", "combat"))
+
+    def test_ammo_display_items(self):
+        """ownerDraw 5 of the later weapon bar as clip count, gauge and reserve; the gauge at the later build's
+        screen position (-133, -41 in the later build's placement: the host menu's origin is taken off)."""
+        wb = self.menus["weaponbar_hd"]
+        host = bytes.fromhex(self.stock["weaponbar_hd"]["raw"])
+        ox, oy = struct.unpack_from("<2f", host, 4)
+        items = [it for it in wb["p"][ITEMS] if struct.unpack_from("<i", bytes.fromhex(it["raw"]), 0x38)[0] in hs.HUD_OWNERDRAWS]
+        self.assertEqual(sorted(struct.unpack_from("<i", bytes.fromhex(it["raw"]), 0x38)[0] for it in items),
+                         [hs.OD_CLIP, hs.OD_CLIP_BAR])
+        for it in items:
+            raw = bytes.fromhex(it["raw"])
+            self.assertEqual(struct.unpack_from("<i", raw, W + 0x14)[0], 8)        # an ownerdraw item
+            if struct.unpack_from("<i", raw, 0x38)[0] == hs.OD_CLIP_BAR:
+                x, y, w, h = struct.unpack_from("<4f", raw, 0x18)
+                self.assertAlmostEqual(x + ox, -133.0, places=3)
+                self.assertAlmostEqual(y + oy, -41.0, places=3)
+                self.assertEqual((w, h), (99.0, 3.5))
+        c = (ROOT / "src/hud_style.c").read_text(encoding="utf-8")
+        self.assertIn("#define HUD_OD_CLIP         %d" % hs.OD_CLIP, c)
+        self.assertIn("#define HUD_OD_CLIP_BAR     %d" % hs.OD_CLIP_BAR, c)
+        self.assertIn('#define HUD_FIRE_DVAR       "%s"' % hs.FIRE_DVAR, c)
+        self.assertIn('#define HUD_ASSISTS_DVAR    "%s"' % hs.ASSISTS_DVAR, c)
+        v = (ROOT / "src/audio/voice.c").read_text(encoding="utf-8")
+        self.assertIn("    if (HudStyleOwnerDraw(args)) return 1;", v)
+        # nothing reads the old tick-published clip dvars any more
+        listing = (hs.ZDIR / "menufile/hud_styles.txt").read_text(encoding="utf-8")
+        self.assertNotIn("k33_hudClip", listing)
+        self.assertNotIn('player "clipAmmo_left"', listing)
 
     def test_carried_materials_and_images(self):
         glyph = ROOT / "zones/controller_glyphs_postgfx_mp/material/0073_k33pad_xbox360_a.bin"
@@ -375,6 +411,24 @@ class HudStyles(unittest.TestCase):
             for name, how in st["materials"].items():
                 if how["action"] == "carry":
                     self.assertRegex(how["asset"], r"^k33hud\d\d_" + re.escape(name) + "$")
+                    if name in hs.TEAM_TINT:      # carried white, tinted with 1.1.1.13's team colour
+                        self.assertIn(how["asset"] + hs.WHITE, set(hs.carried(self.convs)))
+                        self.assertNotIn(how["asset"], set(hs.carried(self.convs)))
+        # the team bars take the stock scorebar's own constants
+        stock_colours = set()
+        for it in self.original["p"]["8"][1]["p"][ITEMS]:
+            name = (it["p"].get("160") or {}).get("name", "")
+            if name in (",hud_scorebar_topbar", ",hud_scorebar_bottombar"):
+                stock_colours.add(tuple(round(v, 3) for v in struct.unpack_from("<4f", bytes.fromhex(it["raw"]), 0x50)))
+        self.assertEqual(stock_colours, {hs.STOCK_OWN_TEAM, hs.STOCK_OTHER_TEAM})
+        tinted = 0
+        for it in self.menus["scorebar_hd"]["p"][ITEMS]:
+            name = (it["p"].get("160") or {}).get("name", "")
+            if name.endswith(hs.WHITE):
+                tinted += 1
+                colour = tuple(round(v, 3) for v in struct.unpack_from("<4f", bytes.fromhex(it["raw"]), 0x50))
+                self.assertIn(colour, stock_colours)
+        self.assertEqual(tinted, 4)
 
     def test_zone_is_packed_after_code_post_gfx_and_ahead_of_the_survival_hud(self):
         pack = packs.load(str(ROOT), "codol_common_postgfx_mp")

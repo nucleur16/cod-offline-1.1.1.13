@@ -47,6 +47,8 @@ python -B tests/test_survival_kiosk_menus.py
 python -B tests/test_survival_wave_overrides.py
 python -B tests/test_survival_hud.py
 python -B tests/test_hud_styles.py
+"$BIN/gcc.exe" -std=c99 -O2 -Wall -Wextra -Werror -Wno-unused-function tests/hud_style_policy_test.c -o "$OUT/hud_style_policy_test.exe"
+"$OUT/hud_style_policy_test.exe"
 python -B tests/test_survival_status_component.py
 python -B tests/test_tip_stage_lookup.py
 python -B tests/test_invitations_disabled.py
