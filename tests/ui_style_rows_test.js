@@ -20,10 +20,10 @@ function shared(text){
  return text.slice(a,b);
 }
 assert.strictEqual(shared(SOURCES.pause),shared(SOURCES.video),'the k33Style* logic must be the same text in both movies');
-// the one switch of the Language row is in that shared text, and it is off
+// the one switch of the Language row is in that shared text, and it is on
 const LANGUAGE_ROW=/private static const K33_STYLE_LANGUAGE_ROW:Boolean = (true|false);/.exec(shared(SOURCES.video));
 assert(LANGUAGE_ROW,'K33_STYLE_LANGUAGE_ROW is declared once, in the shared block');
-assert.strictEqual(LANGUAGE_ROW[1],'false','the Language row is switched off');
+assert.strictEqual(LANGUAGE_ROW[1],'true','the Language row is switched on (the language zone reloads live: docs/LANGUAGE_SWITCH_20261112.md)');
 for(const [n,t] of Object.entries(SOURCES))assert.strictEqual(t.split('K33_STYLE_LANGUAGE_ROW:Boolean').length,2,n+': one declaration of the switch');
 
 // --- ActionScript -> JavaScript: a function's body with the type annotations taken off ---------------------------
@@ -199,7 +199,7 @@ for(const which of ['pause','video']){
  p.k33StepSlider(p.rec('hud').row,1);p.k33StylePick(p.rec('hud'),5);assert.deepStrictEqual(sets,[['k33_hudStyle','3']],'the only listed style is what a pick sets');
 }
 
-// --- the pause menu with the Language row switched off (what ships) ------------------------------------------------
+// --- the pause menu with the Language row switched off (the switch still works when turned off) ------------------------------------------------
 {
  global.K33_STYLE_LANGUAGE_ROW=false;
  for(const which of ['pause','video']){

@@ -956,7 +956,7 @@ package
       // k33_language* dvars is read for a row (the language is still changed with k33_language / k33_setlanguage
       // in the console, and a finished switch still translates the remaining rows: k33_languageSerial). true
       // brings the row back; its keys (K33UI_LANGUAGE, K33UI_LANG_*) stay in the string zones for that.
-      private static const K33_STYLE_LANGUAGE_ROW:Boolean = false;
+      private static const K33_STYLE_LANGUAGE_ROW:Boolean = true;
 
       private function k33StyleTrim(s:String) : String
       {

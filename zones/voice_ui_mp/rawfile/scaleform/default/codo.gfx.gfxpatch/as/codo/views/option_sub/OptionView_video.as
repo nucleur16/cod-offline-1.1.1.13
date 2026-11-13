@@ -18,7 +18,7 @@ package codo.views.option_sub
    //               Button icons  gpad_glyphs 0..6 (shown when the controller module is there: k33_padinfo is set)
    //               HUD style     k33_hudStyle, one of the numbers of k33_hudStyleList ("0:stock;2:v26")
    //               Language      k33_language, one of k33_languageList ("en;zh"); names K33UI_LANG_NAME_<ID>.
-   //                             Switched off by K33_STYLE_LANGUAGE_ROW (the row and its line are not made).
+   //                             Switched by K33_STYLE_LANGUAGE_ROW (on since the language zone reloads live).
    //             A row whose list is empty (an older Kernel33.dll) is hidden; a name without a localize entry shows
    //             the raw id; a value the list lacks shows the first choice and sets nothing. Unlike the rest of the
    //             tab these apply at once (setdvar, on the player's pick only: what the code selects is not a pick)
@@ -654,7 +654,7 @@ package codo.views.option_sub
       // k33_language* dvars is read for a row (the language is still changed with k33_language / k33_setlanguage
       // in the console, and a finished switch still translates the remaining rows: k33_languageSerial). true
       // brings the row back; its keys (K33UI_LANGUAGE, K33UI_LANG_*) stay in the string zones for that.
-      private static const K33_STYLE_LANGUAGE_ROW:Boolean = false;
+      private static const K33_STYLE_LANGUAGE_ROW:Boolean = true;
 
       private function k33StyleTrim(s:String) : String
       {

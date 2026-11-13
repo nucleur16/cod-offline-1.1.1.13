@@ -3,7 +3,7 @@ stock patch_ui_mp:scaleform/default/codo.gfx
 stock-sha256 2f143069ed10f3c937e0f5b758591e477f57544f76bdfd3bd2635f77cca5d332
 # Method-only OptionView stored-tag update; original-header GFX DATA provenance.
 # Whole-class baseline remains HOLD; this digest is not FF/game/release acceptance.
-sha256 9ed066d7b88c4db60bff95d4f389a6e4a0b9fe113dd5a242f1fef66b394bd74c
+sha256 2e2f7431a68ed299f1fd4cee2b917456e998975a42e065001d2f9934419d191a
 header 4746580a68b64500800003200000025800001e0100
 keep 0
 keep 1
@@ -6928,7 +6928,7 @@ as codo.controllers.MatchController as/codo/controllers/MatchController.as 03f65
 as codo.views.ServerMessageView as/codo/views/ServerMessageView.as 4bf3db5fbc6557c450dad000bee38a8435e80343ca5c6d8ee3b937114c62581a
 as codo.k33.LocalCreateRoomOption as/codo/k33/LocalCreateRoomOption.as c4f59c3eeb858a3a8c4fa191b47879522a172759932a77ae253fe8b25fa29c8a
 as codo.controllers.LobbyController as/codo/controllers/LobbyController.as a582ae0a9756f2e25ac2c6c313bad6576f2efd16fab179f1b7167a41b0e0ced2
-as codo.views.option_sub.OptionView_video as/codo/views/option_sub/OptionView_video.as b0c268a4f0e766824be99974da5050eb03c943f8e1391d84085e3a835ec30328
 as codo.views.MatchMiniRoomCreatorView as/codo/views/MatchMiniRoomCreatorView.as f2e9599258882f421bebbe925d61e85e1cb35a559019d0e164d297809fb21e92
 as codo.views.matchmpctroomcreator_sub.MatchMPCTRoomCreatorView_mpcreator as/codo/views/matchmpctroomcreator_sub/MatchMPCTRoomCreatorView_mpcreator.as 059bd6fd3c59116025ccb567c8e0cd57c80478af44c8883beaecd5eff80b09a9
 as codo.k33.LocalMatchControls as/codo/k33/LocalMatchControls.as e5388f87879434eb94f03ab841e4db649450a4a93412acc52f3ff795a4e857b7
+as codo.views.option_sub.OptionView_video as/codo/views/option_sub/OptionView_video.as 9f32c0f7019d2b75beaee0807b4a02bffed85dda56c1135c32e8f08ae5ddde59
