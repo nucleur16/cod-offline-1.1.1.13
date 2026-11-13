@@ -18,11 +18,8 @@
  *
  * Every path and setting comes from <exe dir>\p2p\p2p_host.ini (key=value, '#' comments); the defaults
  * keep everything under <exe dir>\p2p\. The server is in a job object with KILL_ON_JOB_CLOSE, so it
- * ends with the client even when the client crashes. While it answers sh1x_status the module writes
- * <state>\p2p_host.txt (the host descriptor) and, with rollout= set, an "extra <port>" line into the
- * lobby's match_rollout.txt, which a lobby on the same PC (CODOL_OFFLINE stack) already reads to place
- * Ready presses on a server it did not start (alpha0022 handoff/match_instances.py). Both are removed
- * when the server ends.
+ * ends with the client even when the client crashes. No descriptor, intent or rollout file is written: the
+ * in-DLL lobby reads the published snapshot (K33LocalPlayIntent).
  *
  * Threads: the commands run on C1's main thread (Cbuf) and only print and signal; the host thread does
  * the process work, the rcon polling and the files. g_p2p is shared under g_p2pLock.
@@ -31,7 +28,6 @@
 #include <ws2tcpip.h>
 #include "p2p_match_options.h"
 #include "p2p_status.h"
-#include "p2p_intent_heartbeat.h"
 #include "p2p_client_identity.h"
 #include "p2p_local_play_api.h"
 
@@ -50,7 +46,6 @@ typedef struct P2PConfig {
     char state[MAX_PATH];        /* securitykey.bin, game_admissions.txt, native_server_rcon.txt */
     char profile[MAX_PATH];      /* codol_profilePath: the lobby's resources folder */
     char rconFile[MAX_PATH];
-    char rollout[MAX_PATH];      /* optional: the lobby's match_rollout.txt */
     char map[64], gametype[32], zoneType[16], sessionMap[64];
     char netIp[64], botDifficulty[16], extra[512];
     char mode[16];               /* inprocess (default): sh1x_host.dll on the game thread; child: the exe */
@@ -182,10 +177,6 @@ static void P2PArmLaunch(int port)
     InterlockedExchange(&g_p2pLaunchSignal, P2P_LAUNCH_NONE);
     InterlockedExchange(&g_p2pLaunchPort, port);
 }
-static const char *P2PLaunchLabel(void)
-{
-    return !g_p2pArmed ? "none" : g_p2pLaunched ? "started" : "deferred";
-}
 
 /* ---- configuration ------------------------------------------------------------------------- */
 
@@ -273,7 +264,7 @@ static void P2PLoadIni(P2PConfig *c)
         struct { const char *k; char *dst; size_t n; } strs[] = {
             { "exe", c->exe, MAX_PATH }, { "basepath", c->basepath, MAX_PATH }, { "home", c->home, MAX_PATH },
             { "scripts", c->scripts, MAX_PATH }, { "state", c->state, MAX_PATH }, { "profile", c->profile, MAX_PATH },
-            { "rcon_file", c->rconFile, MAX_PATH }, { "rollout", c->rollout, MAX_PATH },
+            { "rcon_file", c->rconFile, MAX_PATH },
             { "map", c->map, sizeof(c->map) }, { "gametype", c->gametype, sizeof(c->gametype) },
             { "zone_type", c->zoneType, sizeof(c->zoneType) }, { "session_map", c->sessionMap, sizeof(c->sessionMap) },
             { "net_ip", c->netIp, sizeof(c->netIp) }, { "bot_difficulty", c->botDifficulty, sizeof(c->botDifficulty) },
@@ -329,7 +320,7 @@ static const char *P2PCheck(const P2PConfig *c)
     }
     for (const char *p = c->netIp; *p; p++) if (!((*p >= '0' && *p <= '9') || *p == '.')) return "net_ip must be an IPv4 address";
     if (!P2PPathOk(c->exe) || !P2PPathOk(c->basepath) || !P2PPathOk(c->home) || !P2PPathOk(c->scripts) ||
-        !P2PPathOk(c->state) || !P2PPathOk(c->profile) || !P2PPathOk(c->rconFile) || !P2PPathOk(c->rollout))
+        !P2PPathOk(c->state) || !P2PPathOk(c->profile) || !P2PPathOk(c->rconFile))
         return "a path holds a quote";
     BOOL inproc = !_stricmp(c->mode, "inprocess");
     if (!inproc && _stricmp(c->mode, "child")) return "mode must be inprocess or child";
@@ -480,65 +471,6 @@ static BOOL P2PStatusLine(const char *reply, char *out, int outSize)
     return TRUE;
 }
 
-/* The lobby rollout file (handoff/match_instances.py _read_rollout): add or drop our "extra <port>"
- * line, keeping every other line. Written through a temp file and a rename, as the lobby's own. */
-static void P2PRollout(const char *file, int port, BOOL add)
-{
-    if (!file[0]) return;
-    char mine[64];
-    _snprintf(mine, sizeof(mine), "extra %d", port);
-    char *text = NULL;
-    size_t size = 0;
-    FILE *f = fopen(file, "rb");
-    if (f) {
-        fseek(f, 0, SEEK_END);
-        long len = ftell(f);
-        fseek(f, 0, SEEK_SET);
-        if (len > 0 && len < 65536) {
-            text = (char *)malloc((size_t)len + 1);
-            if (text) { size = fread(text, 1, (size_t)len, f); text[size] = 0; }
-        }
-        fclose(f);
-    }
-    char tmp[MAX_PATH + 8];
-    _snprintf(tmp, sizeof(tmp), "%s.k33tmp", file);
-    tmp[sizeof(tmp) - 1] = 0;
-    FILE *o = fopen(tmp, "wb");
-    if (!o) { free(text); Log("p2p: cannot write %s", tmp); return; }
-    for (char *line = text, *next; line; line = next) {
-        next = strchr(line, '\n');
-        if (next) *next++ = 0;
-        if (!next && !*line) break; /* the end of a file whose last line has its newline */
-        size_t len = strlen(line);
-        if (len && line[len - 1] == '\r') line[len - 1] = 0;
-        char copy[256];
-        lstrcpynA(copy, line, sizeof(copy));
-        char *hash = strchr(copy, '#');
-        if (hash) *hash = 0;
-        P2PTrim(copy);
-        if (!strcmp(copy, mine)) continue; /* ours: dropped, re-added below when adding */
-        fprintf(o, "%s\n", line);
-    }
-    if (add) fprintf(o, "%s    # Kernel33 player-hosted server, client pid %lu\n", mine, GetCurrentProcessId());
-    fclose(o);
-    free(text);
-    if (!MoveFileExA(tmp, file, MOVEFILE_REPLACE_EXISTING)) { DeleteFileA(tmp); Log("p2p: cannot replace %s", file); return; }
-    Log("p2p: %s \"%s\" %s %s", add ? "registered" : "unregistered", mine, add ? "in" : "from", file);
-}
-
-static void P2PDescriptor(const P2PConfig *c, DWORD pid, BOOL ready)
-{
-    char path[MAX_PATH];
-    _snprintf(path, MAX_PATH, "%s\\p2p_runtime.txt", c->state);
-    path[MAX_PATH - 1] = 0;
-    if (!ready) { DeleteFileA(path); return; }
-    FILE *f = fopen(path, "wb");
-    if (!f) return;
-    fprintf(f, "port=%d\nnet_ip=%s\nserver_pid=%lu\nclient_pid=%lu\nmap=%s\ngametype=%s\ntype=%s\n", c->port, c->netIp,
-            pid, GetCurrentProcessId(), c->map, c->gametype, c->zoneType);
-    fclose(f);
-}
-
 /* ---- the host thread ----------------------------------------------------------------------- */
 
 static DWORD WINAPI P2PHostThread(LPVOID unused)
@@ -673,7 +605,7 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
     Log("p2p: server pid %lu started: %s %s on %s:%d (home %s, state %s)", pi.dwProcessId, c.map, c.gametype,
         c.netIp, c.port, c.home, c.state);
 
-    BOOL ready = FALSE, registered = FALSE;
+    BOOL ready = FALSE;
     DWORD lastPoll = 0, lastAnswer = 0;
     for (;;) {
         DWORD w = WaitForSingleObject(pi.hProcess, ready ? P2P_STATUS_MS : 500);
@@ -705,8 +637,6 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
             if (!ready) {
                 ready = TRUE;
                 Log("p2p: server ready after %lu ms: %s", now - t0, line);
-                P2PDescriptor(&c, pi.dwProcessId, TRUE);
-                if (c.rollout[0]) { P2PRollout(c.rollout, c.port, TRUE); registered = TRUE; }
             }
         } else if (ready && now - lastAnswer > 20000) {
             /* A fatal error (a script compile error, a failed map load) leaves the process alive with its
@@ -733,8 +663,6 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
     GetExitCodeProcess(pi.hProcess, &code);
     CloseHandle(pi.hProcess);
     if (job) CloseHandle(job);
-    if (registered) P2PRollout(c.rollout, c.port, FALSE);
-    P2PDescriptor(&c, 0, FALSE);
     EnterCriticalSection(&g_p2pLock);
     g_p2p.exitCode = code;
     if (g_p2p.state != P2P_FAILED) g_p2p.state = P2P_EXITED;
@@ -805,8 +733,6 @@ static P2PConfig g_p2pLobbyNext;
 static BOOL g_p2pLobbyPending, g_p2pEnabled, g_p2pHasRoom;
 static P2PConfig g_p2pIntentConfig;
 static unsigned long long g_p2pIntentUid;
-static DWORD g_p2pIntentAt;
-static P2PIntentHeartbeat g_p2pIntentHeartbeat;
 static BOOL P2PStartupBusy(void)
 {
     return g_p2pLaunchPending || (g_p2pThread && WaitForSingleObject(g_p2pThread,0)!=WAIT_OBJECT_0);
@@ -845,48 +771,15 @@ static void P2PArmCurrentRoom(void)
     if (bad) { lstrcpynA(g_p2pLobbyError,bad,sizeof(g_p2pLobbyError));P2PSetState(P2P_FAILED,bad); }
     else { g_p2pLobbyError[0]=0;P2PSetState(P2PStartupBusy() ? P2P_STOPPING:P2P_IDLE,""); }
 }
-static BOOL P2PWriteIntent(const char *path, const char *text)
-{
-    char tmp[MAX_PATH+40];
-    _snprintf(tmp,sizeof(tmp),"%s.%lu.tmp",path,GetCurrentProcessId());
-    tmp[sizeof(tmp)-1]=0;
-    FILE *file=fopen(tmp,"wb");
-    if (!file) return FALSE;
-    BOOL ok=fputs(text,file)>=0;
-    if (fclose(file)) ok=FALSE;
-    if (ok) ok=MoveFileExA(tmp,path,MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH);
-    if (!ok) DeleteFileA(tmp);
-    return ok;
-}
-/* An explicit, owner-bound route request, including pending/failed states.
- * The legacy runtime descriptor is deliberately separate: worker cleanup
- * must never erase enabled intent and send a failed host to a dedicated exe. */
+/* The intent files <state>\p2p_host.<uid>.txt / p2p_host.txt are gone (the in-DLL lobby reads the same
+ * snapshot through K33LocalPlayIntent). What is left is the launcher-session routing answer. */
 static BOOL P2PPublishIntent(const char *state, BOOL ready)
 {
+    (void)state;(void)ready;
     if(P2PProductionMode()!=0)return FALSE;
     int guest=P2PGuestRouteMode();
     if(guest!=0)return guest==1; /* binding-only Guest has no Host intent route */
-    char path[MAX_PATH],legacy[MAX_PATH],text[1024];DWORD serverPid;
-    if (!g_p2pIntentUid) return !g_p2pEnabled;
-    P2PConfig c=g_p2pIntentConfig;
-    if (!c.state[0]) { P2PDefaults(&c);P2PLoadIni(&c); }
-    if (GetFileAttributesA(c.state)==INVALID_FILE_ATTRIBUTES) P2PMakeDirs(c.state);
-    int length=_snprintf(path,sizeof(path),"%s\\p2p_host.%016llx.txt",c.state,g_p2pIntentUid);
-    if (length<0 || length>=(int)sizeof(path)) return FALSE;
-    length=_snprintf(legacy,sizeof(legacy),"%s\\p2p_host.txt",c.state);
-    if (length<0 || length>=(int)sizeof(legacy)) return FALSE;
-    EnterCriticalSection(&g_p2pLock);serverPid=g_p2p.pid;LeaveCriticalSection(&g_p2pLock);
-    _snprintf(text,sizeof(text),
-        "uid=%016llx\nenabled=%d\nready=%d\nstate=%s\nport=%d\nnet_ip=127.0.0.1\n"
-        "client_pid=%lu\nserver_pid=%lu\nmap=%s\nsession_map=%s\ngametype=%s\ntype=%s\nlaunch=%s\n",
-        g_p2pIntentUid,g_p2pEnabled ? 1:0,ready ? 1:0,state,c.port,GetCurrentProcessId(),serverPid,
-        g_p2pRoom.map,g_p2pRoom.session,g_p2pRoom.gametype,g_p2pRoom.category,
-        g_p2pEnabled ? P2PLaunchLabel():"none");
-    text[sizeof(text)-1]=0;
-    BOOL ok=P2PWriteIntent(path,text);
-    if (ok) P2PWriteIntent(legacy,text); /* compatibility; routing prefers the UID file */
-    if (ok) g_p2pIntentAt=GetTickCount();
-    return ok;
+    return TRUE;
 }
 static void P2PHostCurrentRoom(void);
 static void P2PStartIntentLaunch(BOOL prepared);
@@ -1025,7 +918,6 @@ static void P2PMatchOverTick(void)
 static void P2PLobbyTick(void)
 {
     static char previous[1024];
-    static char previousNative[1024];
     char snapshot[1024], error[256], number[24]; int state;
     if (!g_p2pInit) return;
     if(P2PProductionMode()!=0) { P2PProductionTick();return; }
@@ -1094,17 +986,6 @@ static void P2PLobbyTick(void)
     BOOL armed=g_p2pEnabled && g_p2pArmed && !g_p2pLaunched && !error[0] && state==P2P_IDLE;
     BOOL launching=g_p2pEnabled && g_p2pLaunched && !error[0] && (state==P2P_IDLE || state==P2P_STARTING);
     const char *label=armed ? "armed":kP2PState[state];
-    _snprintf(snapshot,sizeof(snapshot),"%d|%u|%d|%s|%s|%d|%d%d",state,g_p2pLobbyRequest,g_p2pEnabled,g_p2pLobbyMap,error,protocol,armed,launching);
-    snapshot[sizeof(snapshot)-1]=0;
-    if (P2PIntentHeartbeatDue(&g_p2pIntentHeartbeat,now,g_p2pIntentAt,strcmp(snapshot,previousNative)!=0)) {
-        BOOL published=P2PPublishIntent(error[0] ? "failed":label,g_p2pEnabled && currentReady && state==P2P_READY && !error[0]);
-        P2PIntentHeartbeatResult(&g_p2pIntentHeartbeat,now,published);
-    }
-    lstrcpynA(previousNative,snapshot,sizeof(previousNative));
-    if (g_p2pIntentHeartbeat.failed && !error[0])
-        lstrcpyA(error,"Waiting to publish the local host route.");
-    /* The UI snapshot includes publication errors, so a later successful
-     * heartbeat clears its temporary error and restores Ready without a toggle. */
     _snprintf(snapshot,sizeof(snapshot),"%d|%u|%d|%s|%s|%d|%d%d",state,g_p2pLobbyRequest,g_p2pEnabled,g_p2pLobbyMap,error,protocol,armed,launching);
     snapshot[sizeof(snapshot)-1]=0;
     BOOL changed=strcmp(snapshot,previous)!=0;

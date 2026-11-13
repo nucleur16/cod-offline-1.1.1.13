@@ -27,12 +27,12 @@ typedef struct K33LocalPlayIntentInfo {
     int port;                      /* loopback UDP port the host will listen / listens on */
     int protocol;                  /* 0 legacy, 1/2 local startup IPC (the production protocol never arms here) */
     char map[64], session_map[64], gametype[32], type[16];
-    char state[16];                /* the intent file's state=: idle armed starting ready stopping exited failed */
+    char state[16];                /* idle armed starting ready stopping exited failed */
     char error[256];
 } K33LocalPlayIntentInfo;
 
-/* -> 1 and *out when Kernel33 has published an intent snapshot, else 0. The same fields as the
- * intent file <state>\p2p_host.<uid16hex>.txt, without the two-second file heartbeat. */
+/* -> 1 and *out when Kernel33 has published an intent snapshot (p2p.c, P2PLobbyTick), else 0.
+ * No intent file is written for it. */
 int K33LocalPlayIntent(K33LocalPlayIntentInfo *out);
 
 /* Offline mode: every room the local player owns is hosted by the embedded server; there is no

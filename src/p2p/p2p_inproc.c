@@ -816,7 +816,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     }
 #endif
 
-    BOOL ready = FALSE, registered = FALSE, quitAsked = FALSE;
+    BOOL ready = FALSE, quitAsked = FALSE;
     int matchState = 0;
     int emptyPolls = 0;
 #if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_MONITOR_DECL */
@@ -899,8 +899,6 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
                 Log("p2p in-process: server ready after %lu ms (Sh1xHost_Init %lu ms, first frame / map load %lu ms); "
                     "process private %lu -> %lu MB, address space used %lu -> %lu MB: %s", now - t0, g_piInitMs,
                     g_piFirstFrameMs, (unsigned long)priv0, (unsigned long)priv1, (unsigned long)virt0, (unsigned long)virt1, line);
-                P2PDescriptor(&c, GetCurrentProcessId(), TRUE);
-                if (c.rollout[0]) { P2PRollout(c.rollout, c.port, TRUE); registered = TRUE; }
             }
         } else if (ready && g_piYielding) {
             P2PSetState(P2P_STARTING, NULL);
@@ -930,8 +928,6 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         InterlockedExchange(&g_piPrincipalFresh,0);
     }
 #endif
-    if (registered) P2PRollout(c.rollout, c.port, FALSE);
-    P2PDescriptor(&c, 0, FALSE);
     EnterCriticalSection(&g_p2pLock);
     g_p2p.exitCode = st == PI_CRASHED ? g_piFaultCode : (DWORD)g_piCode();
     if (st == PI_CRASHED) { g_p2p.state = P2P_FAILED; lstrcpynA(g_p2p.error, "the server crashed (contained)", sizeof(g_p2p.error)); }

@@ -531,7 +531,6 @@ static void OfflineP2PConfig(P2PConfig *c)
     lstrcpynA(c->profile, g_ofl.runtime, MAX_PATH);
     if (g_ofl.hostPort) c->port = g_ofl.hostPort;
     c->rconFile[0] = 0;   /* <state>\native_server_rcon.txt, created on first use */
-    c->rollout[0] = 0;    /* no external lobby to register with */
     lstrcpyA(c->netIp, "127.0.0.1");
     lstrcpyA(c->mode, "inprocess");
     c->admission = 1;
