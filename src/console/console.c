@@ -1,6 +1,11 @@
 /*
- * Developer console (dev branch). Included by kernel33.c after parity.c, so it shares Log/Readable/
+ * Developer console. Included by kernel33.c after parity.c, so it shares Log/Readable/
  * WriteCode/CallsTarget/RedirectCall and the parity logger's helpers.
+ *
+ * In this offline fork every build has it (docs/OFFLINE_CONSOLE_20261112.md): the shipping profile too, where
+ * it was absent while the gate was CODOL_DIAGNOSTICS. What stays diagnostics-only is marked
+ * `#if CODOL_DIAGNOSTICS` here: the k33shot built-in, k33shot.c's Present callbacks and the rcon to a server
+ * other than the one this client hosts. A build without the console is -DK33_NO_CONSOLE.
  *
  * C1 has no console of its own any more. IW4's Con_Init (C1 0x489090) still registers "864"
  * (monkeytoy) and "865" (con_matchPrefixOnly) and the chat fields, but g_consoleField, the
@@ -371,7 +376,11 @@ static const BYTE *ConFindDvar(const char *name, int count)
 typedef struct ConCmd { struct ConCmd *next; const char *name; void *fn; } ConCmd;
 
 /* Commands the console handles itself (they also cover the IW4 ones C1 dropped). */
-static const char *const kBuiltins[] = { "clear", "cmdlist", "condump", "dvarlist", "find", "k33help", "k33shot" };
+static const char *const kBuiltins[] = { "clear", "cmdlist", "condump", "dvarlist", "find", "k33help",
+#if CODOL_DIAGNOSTICS
+                                         "k33shot", /* the console frame as a BMP: a test aid, not shipped */
+#endif
+};
 #define BUILTIN_COUNT (sizeof(kBuiltins) / sizeof(kBuiltins[0]))
 
 static BOOL ConIsSetCommand(const char *t)
@@ -380,53 +389,53 @@ static BOOL ConIsSetCommand(const char *t)
            !_stricmp(t, "togglep") || !_stricmp(t, "setfromdvar") || !_stricmp(t, "sets") || !_stricmp(t, "setu");
 }
 
-/* ---- sh1x developer commands (feat/dev-cheat-commands) ------------------------------------------------
+/* ---- sh1x developer commands and the server route ------------------------------------------------------
  *
  * The cheat commands live on the server (sh1x codol_dev_cheats.c, g_cmds.c). C1 has none of them, so
  * Cmd_ExecuteString (0x58CB16) hands an unknown word to CL_ForwardCommandToServer 0x494CE0, which
  * sends it as a reliable client command while connected (connection state >= 5): typing "noclip" here
- * already reaches the server. This table only gives them autocomplete, argument hints and help. They
- * work only on a developer server started with devmap (sv_cheats 1, not a lobby match server).
+ * reaches the server as THIS player's command, which is what a cheat needs (the server acts on the
+ * client that sent it). This table gives them autocomplete, argument hints and help. It is the server's
+ * set: tests/test_offline_console.py compares the names and usage strings with the pinned server source
+ * (sh1x_cmds.h kSh1xCheats, generated from it), so neither side can gain or lose a command unnoticed.
+ * The server decides whether a cheat runs: sv_cheats must be on (the server command "codol_dev_cheats on",
+ * host only) and the server must not be a lobby match server: typed here, "codol_dev_cheats on" first sets
+ * the server's own codol_devServer 1 (ConSvCheatsOn, console_server.c).
  *
- * Server console commands go through "rcon <command>", a console built-in: one rcon datagram to
- * 127.0.0.1 only (the connected server's port when it is local, else k33_rconPort, default 17733),
- * with the password from the first of main\k33_rcon.txt, the p2p host's rcon file and the local
- * lobby's CODOL\1.1.1.13_server\alpha0022\native_server_rcon.txt that the server accepts. The reply
- * prints here. A remote server is never contacted: this is for the player who hosts the server. */
+ * Server console commands and dvars go to the server this client hosts: "sv <command>" (alias "rcon"),
+ * or the bare name when C1 has no command or dvar of that name. See console_server.c for the route and
+ * ConExecute for the rules. Nothing but the hosted server is ever contacted (a diagnostics build keeps the
+ * older rcon to another local server: ConRconLegacy). */
 
-typedef struct { const char *name, *usage, *help; } ConDevCmd;
+typedef struct { const char *name, *usage, *help; BYTE builtin; } ConDevCmd;
 static const ConDevCmd kDevCmds[] = {
-    { "noclip", "noclip", "fly through walls (C1 pm_type 2; server and prediction run the same free move)" },
-    { "ufo", "ufo", "fly, 6x speed (C1 pm_type 3)" },
-    { "god", "god", "take no damage" },
-    { "demigod", "demigod", "damage never takes the last health point" },
-    { "notarget", "notarget", "bots, actors and turrets ignore you" },
-    { "kill", "kill", "die now (respawn as normal)" },
-    { "give", "give <weapon [model]|health [n]|ammo|all>", "give a weapon (engine or *composed name) and switch to it, or refill" },
-    { "take", "take <weapon|weapons|health [n]|ammo|all>", "remove a weapon, all weapons, ammo or health" },
-    { "setviewpos", "setviewpos <x> <y> <z> [yaw [pitch]]", "teleport" },
-    { "viewpos", "viewpos", "print your position and angles as a setviewpos line" },
-    { "devset", "devset <dvar> <value>", "server movement/bot dvar: jump_height g_speed g_gravity timescale ..." },
-    { "addbot", "addbot [n]", "add training bots (scr_codol_bots)" },
-    { "kickbot", "kickbot [n|all]", "remove training bots" },
-    { "devhelp", "devhelp", "the server's list and whether cheats are on" },
-    { "rcon", "rcon <server command>", "console built-in: run a command on the local server (map, devmap, status, kick ...)" },
-    { "k33dev", "k33dev", "console built-in: this list" },
+    { "god", "god", "take no damage", 0 },
+    { "demigod", "demigod", "damage never takes the last health point", 0 },
+    { "notarget", "notarget", "bots, actors and turrets ignore you", 0 },
+    { "noclip", "noclip", "fly through walls (C1 pm_type 2; server and prediction run the same free move)", 0 },
+    { "ufo", "ufo", "fly, 6x speed (C1 pm_type 3)", 0 },
+    { "kill", "kill", "die now (respawn as normal)", 0 },
+    { "give", "give <weapon [model]|health [n]|ammo|all>", "give a weapon (engine or *composed name) and switch to it, or refill", 0 },
+    { "take", "take <weapon|weapons|health [n]|ammo|all>", "remove a weapon, all weapons, ammo or health", 0 },
+    { "setviewpos", "setviewpos x y z [yaw [pitch]]", "teleport", 0 },
+    { "viewpos", "viewpos", "print your position and angles as a setviewpos line", 0 },
+    { "devset", "devset <dvar> <value>", "server movement/bot dvar: jump_height g_speed g_gravity timescale ...", 0 },
+    { "addbot", "addbot [n]", "add training bots (scr_codol_bots)", 0 },
+    { "kickbot", "kickbot [n|all]", "remove training bots", 0 },
+    { "devhelp", "devhelp", "the server's list and whether cheats are on", 0 },
+    { "sv", "sv <server command or dvar ...>", "console built-in: run a line on the match server this client hosts; its output prints here", 1 },
+    { "rcon", "rcon <server command or dvar ...>", "console built-in: the same as sv (the name IW consoles use)", 1 },
+    { "k33dev", "k33dev", "console built-in: this list and the state of the server route", 1 },
 };
 #define DEV_CMD_COUNT (sizeof(kDevCmds) / sizeof(kDevCmds[0]))
 
-static const char *const kArgRcon[] = { "status", "devmap", "map", "map_restart", "fast_restart", "map_rotate",
-    "kick", "clientkick", "tempban", "say", "tell", "dumpuser", "serverinfo", "sh1x_status", "dev_cheats",
-    "dev_clientcmd", "sv_botStop", "scr_codol_bots", "sv_botDifficulty", "g_speed", "g_gravity", "jump_height",
-    "timescale", "g_gametype", NULL };
-static const char *const kArgDevset[] = { "jump_height", "g_speed", "g_gravity", "timescale", "player_sprintSpeedScale",
-    "bg_fallDamageMinHeight", "bg_fallDamageMaxHeight", "sv_botStop", "scr_codol_bots", "sv_botDifficulty", NULL };
 static const char *const kArgGive[] = { "health", "ammo", "all", NULL };
 static const char *const kArgTake[] = { "weapons", "health", "ammo", "all", NULL };
 static const char *const kArgKickbot[] = { "all", NULL };
+static const char *g_argDevset[32]; /* sh1x_cmds.h kSh1xDevset, the server's own list: filled by InstallConsole */
 typedef struct { const char *cmd; const char *const *args; } ConDevArgs;
 static const ConDevArgs kDevArgs[] = {
-    { "rcon", kArgRcon }, { "devset", kArgDevset }, { "give", kArgGive }, { "take", kArgTake }, { "kickbot", kArgKickbot },
+    { "devset", g_argDevset }, { "give", kArgGive }, { "take", kArgTake }, { "kickbot", kArgKickbot },
 };
 
 static const ConDevCmd *ConDevFind(const char *name)
@@ -446,23 +455,27 @@ static const char *const *ConDevArgList(const char *cmd)
 static void ConDevDetail(const ConDevCmd *c)
 {
     int k = 0;
-    _snprintf(g_detail[k++], 200, "^3%s^7  %s", c->usage, strcmp(c->name, "rcon") && strcmp(c->name, "k33dev") ?
-              "^9(server cheat: devmap on a developer server)" : "");
+    _snprintf(g_detail[k++], 200, "^3%s^7  %s", c->usage, c->builtin ? "" :
+              "^9(server cheat, in a match: codol_dev_cheats on first)");
     _snprintf(g_detail[k++], 200, "^9  %s", c->help);
     for (int i = 0; i < k; i++) g_detail[i][199] = 0;
     g_detailCount = k;
 }
 
-static void ConDevHelp(void)
-{
-    ConPrintf("sh1x developer commands - the server runs them; they need a developer server started with devmap\n");
-    ConPrintf("  (sv_cheats 1; refused on lobby match servers; once cheats are on the server records no progression).\n");
-    for (unsigned i = 0; i < DEV_CMD_COUNT; i++) ConPrintf("  ^3%-40s^7 %s\n", kDevCmds[i].usage, kDevCmds[i].help);
-    ConPrintf("  Local toggles: k33_drawFPS 1 (or cg_drawFPS 1), k33_drawViewpos 1; rcon target port k33_rconPort.\n");
-}
+static void ConDevHelp(void);
 
 /* ---- rcon to the local server ---- */
 
+/* Connected to a server (C1's connection state [0x16FC2E8] >= 5, the value CL_ForwardCommandToServer 0x494CE0
+ * needs to send a client command; the same word voice.c and controller.c read, measured there). In this
+ * client the only server is the one it hosts. */
+static BOOL ConConnected(void)
+{
+    const volatile int *state = (const volatile int *)(DWORD_PTR)0x016FC2E8u;
+    return Readable((const void *)state, 4) && *state >= 5;
+}
+
+#if CODOL_DIAGNOSTICS
 static const BYTE *volatile g_conRconPortDvar;
 
 /* The connected server's address when it is on this machine: port, else 0. */
@@ -476,8 +489,7 @@ static int ConLocalServerPort(void)
     if (!(type == 2 /* loopback */ || (type > 2 && adr[4] == 127))) return -1; /* connected, not local */
     return adr[8] << 8 | adr[9];
 }
-
-typedef struct { int port; char command[CON_INPUT_LEN]; } ConRconJob;
+#endif
 
 static BOOL ConReadPassword(const char *path, char *out, int n)
 {
@@ -492,11 +504,16 @@ static BOOL ConReadPassword(const char *path, char *out, int n)
     return len > 0;
 }
 
-static int ConRconOnce(int port, const char *password, const char *command, char *out, int outSize)
+/* One rcon datagram to 127.0.0.1:port; the reply (every datagram of it, from that socket only) into out.
+ * firstMs: how long to wait for the first datagram; moreMs: for each continuation. */
+static int ConRconOnce(int port, const char *password, const char *command, char *out, int outSize, DWORD firstMs,
+                       DWORD moreMs)
 {
     SOCKET s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (s == INVALID_SOCKET) return -1;
-    char pkt[CON_INPUT_LEN + 128];
+    int rcvbuf = 2 * 1024 * 1024; /* cvarlist is a burst of about a hundred datagrams */
+    setsockopt(s, SOL_SOCKET, SO_RCVBUF, (const char *)&rcvbuf, sizeof(rcvbuf));
+    char pkt[CON_INPUT_LEN + 192];
     int n = _snprintf(pkt, sizeof(pkt), "\xff\xff\xff\xffrcon \"%s\" %s", password, command);
     struct sockaddr_in a;
     memset(&a, 0, sizeof(a));
@@ -506,18 +523,21 @@ static int ConRconOnce(int port, const char *password, const char *command, char
     int got = 0;
     out[0] = 0;
     if (n > 0 && n < (int)sizeof(pkt) && sendto(s, pkt, n, 0, (struct sockaddr *)&a, sizeof(a)) == n) {
-        DWORD start = GetTickCount(), limit = 1500;
+        DWORD start = GetTickCount();
         for (;;) {
             DWORD used = GetTickCount() - start;
-            if (used >= limit) break;
+            if (!got && used >= firstMs) break;
             fd_set rd;
             FD_ZERO(&rd);
             FD_SET(s, &rd);
-            DWORD left = got ? 250 : limit - used; /* after the first datagram, only its continuation */
+            DWORD left = got ? moreMs : firstMs - used; /* after the first datagram, only its continuation */
             struct timeval tv = { (long)(left / 1000), (long)(left % 1000) * 1000 };
             if (select(0, &rd, NULL, NULL, &tv) <= 0) break;
-            char buf[1500];
-            int r = recv(s, buf, sizeof(buf), 0);
+            char buf[8192];
+            struct sockaddr_in from;
+            int fromLen = sizeof(from);
+            int r = recvfrom(s, buf, sizeof(buf), 0, (struct sockaddr *)&from, &fromLen);
+            if (r > 0 && (from.sin_addr.s_addr != a.sin_addr.s_addr || from.sin_port != a.sin_port)) continue;
             if (r <= 4) break;
             const char *text = buf + 4;
             int len = r - 4;
@@ -532,6 +552,36 @@ static int ConRconOnce(int port, const char *password, const char *command, char
     closesocket(s);
     return got;
 }
+
+/* The route to the server this client hosts: lists for completion, ConSvExec. */
+#include "console_server.c"
+
+static void ConDevHelp(void)
+{
+    int port, nc, nd;
+    char pw[128];
+    DWORD session = 0;
+    BOOL hosting = ConSvHost(&port, pw, sizeof(pw), &session), live;
+    ConPrintf("sh1x developer commands - the match server runs them for the player who typed them. In a match:\n");
+    ConPrintf("  ^3codol_dev_cheats on^7 switches cheats on (sv_cheats 1; that match then records no progression), off again with off.\n");
+    for (unsigned i = 0; i < DEV_CMD_COUNT; i++) ConPrintf("  ^3%-40s^7 %s\n", kDevCmds[i].usage, kDevCmds[i].help);
+    ConPrintf("  Server commands and dvars: type the name, or ^3sv <name ...>^7 when the client has one of the same name\n");
+    ConPrintf("  (the client's wins). dev_cheats shows the cheat state, codol_dev_clients the players, cmdlist/dvarlist/find list both sides.\n");
+    EnterCriticalSection(&g_svLock);
+    nc = g_sv.cmdCount; nd = g_sv.dvarCount; live = g_sv.session != 0;
+    LeaveCriticalSection(&g_svLock);
+    if (hosting)
+        ConPrintf("  Server route: hosting on 127.0.0.1:%d; %d server commands, %d server dvars (%s).\n", port, nc, nd,
+                  live ? "from the running server" : "generated table; the server has not answered yet");
+    else
+        ConPrintf("  Server route: no match running; %d server commands, %d server dvars (generated table).\n", nc, nd);
+    ConPrintf("  Local toggles: k33_drawFPS 1 (or cg_drawFPS 1), k33_drawViewpos 1.\n");
+}
+
+#if CODOL_DIAGNOSTICS
+/* Diagnostics builds only: rcon to another server on this machine (a developer's dedicated sh1x), when this
+ * client hosts nothing. The shipped client has no such path: it contacts the server it hosts and nothing else. */
+typedef struct { int port; char command[CON_INPUT_LEN]; } ConRconJob;
 
 static DWORD WINAPI ConRconThread(LPVOID param)
 {
@@ -551,7 +601,7 @@ static DWORD WINAPI ConRconThread(LPVOID param)
         files[i][MAX_PATH - 1] = 0;
         if (!ConReadPassword(files[i], password, sizeof(password))) continue;
         tried++;
-        int got = ConRconOnce(job->port, password, job->command, reply, sizeof(reply));
+        int got = ConRconOnce(job->port, password, job->command, reply, sizeof(reply), 1500, 250);
         if (got <= 0) { ConAppend("rcon: no reply from 127.0.0.1 (is the server running on that port?)\n"); answered = 1; break; }
         if (strstr(reply, "Bad rcon") || strstr(reply, "bad rcon") || strstr(reply, "Invalid password")) continue;
         answered = 1;
@@ -565,10 +615,8 @@ static DWORD WINAPI ConRconThread(LPVOID param)
     return 0;
 }
 
-static void ConRcon(const char *command)
+static void ConRconLegacy(const char *command)
 {
-    while (*command == ' ') command++;
-    if (!*command) { ConPrintf("usage: rcon <server command>   (the local server only)\n"); return; }
     int port = ConLocalServerPort();
     if (port < 0) { ConPrintf("rcon: the connected server is not on this machine; rcon only talks to a local one\n"); return; }
     if (!port) port = g_conRconPortDvar ? *(volatile const int *)(g_conRconPortDvar + 0xC) : 17733;
@@ -582,11 +630,32 @@ static void ConRcon(const char *command)
     if (t) CloseHandle(t);
     else free(job);
 }
+#endif
+
+/* "sv <line>" / "rcon <line>", or a bare server command or dvar: to the server this client hosts.
+ * explicitRcon: the line was typed as "rcon ..." (a diagnostics build then falls back to another local server
+ * when this client hosts nothing; "sv" and bare names never leave the hosted server). */
+static void ConServerLine(const char *command, BOOL explicitRcon)
+{
+    while (*command == ' ') command++;
+    if (!*command) { ConPrintf("usage: sv <server command or dvar ...>   (the match server this client hosts)\n"); return; }
+    if (ConSvExec(command)) return;
+#if CODOL_DIAGNOSTICS
+    if (explicitRcon) { ConRconLegacy(command); return; }
+#else
+    (void)explicitRcon;
+#endif
+    ConPrintf("no match running: \"%s\" is for the match server, which this client runs only during a match\n", command);
+}
 
 /* ---- suggestions ---------------------------------------------------------------------------------- */
 
-typedef struct { const char *shown; const BYTE *dvar; const char *cmd; BYTE prefix; const ConDevCmd *dev; const char *argOf; } ConMatch;
-static ConMatch g_matches[CON_MAX_DVARS + 1024 + 64];
+typedef struct {
+    const char *shown; const BYTE *dvar; const char *cmd; BYTE prefix; const ConDevCmd *dev; const char *argOf;
+    const ConSvName *sv; /* a server command (svKind 1) or dvar (2): console_server.c, under g_svLock */
+    BYTE svKind;
+} ConMatch;
+static ConMatch g_matches[CON_MAX_DVARS + 1024 + 64 + 2048 + 8192];
 
 static int ConCmpMatch(const void *a, const void *b)
 {
@@ -675,8 +744,89 @@ static void ConDetailFor(const BYTE *d)
     g_detailCount = k;
 }
 
-/* Recomputes the dropdown for the token under the cursor. Main thread. */
+/* The client's own commands: C1's list and the console built-ins (kBuiltins, and sv/rcon/k33dev). */
+static BOOL ConClientHasCommand(const char *name)
+{
+    for (unsigned b = 0; b < BUILTIN_COUNT; b++)
+        if (!_stricmp(kBuiltins[b], name)) return TRUE;
+    const ConDevCmd *dev = ConDevFind(name);
+    if (dev && dev->builtin) return TRUE;
+    for (const ConCmd *c = (const ConCmd *)C1CommandList(); c; c = c->next) {
+        if (!Readable(c, sizeof(*c)) || !Readable(c->name, 1)) break;
+        if (!_stricmp(c->name, name)) return TRUE;
+    }
+    return FALSE;
+}
+
+/* A server command or dvar under the cursor. g_svLock and g_conLock held. */
+static void ConSvDetail(const ConSvName *n, int kind)
+{
+    int k = 0, port;
+    char pw[128];
+    if (kind == 2)
+        _snprintf(g_detail[k++], 200, "^3%s^7  \"%s^7\"   ^9server dvar (sh1x match server)", n->name, n->value ? n->value : "?");
+    else
+        _snprintf(g_detail[k++], 200, "^3%s^7   ^9server command (sh1x match server)", n->name);
+    if (n->desc && n->desc[0]) _snprintf(g_detail[k++], 200, "^9  %s", n->desc);
+    _snprintf(g_detail[k++], 200, "^9  %s", ConSvHost(&port, pw, sizeof(pw), NULL) ?
+              "runs on the match server this client hosts; what it prints comes back here" :
+              "no match running: the match server exists only during a match");
+    for (int i = 0; i < k; i++) g_detail[i][199] = 0;
+    g_detailCount = k;
+}
+
+/* Appends the server names that match part to g_matches[m...]. skipClient: leave out a name the client
+ * already put in the list (its own command, dvar or built-in). g_svLock held. */
+static int ConSvMatches(const char *part, int plen, int m, BOOL skipClient)
+{
+    int first = m, max = (int)(sizeof(g_matches) / sizeof(g_matches[0]));
+    for (int pass = 0; pass < 2; pass++) {
+        const ConSvName *list = pass ? g_sv.dvars : g_sv.cmds;
+        int count = pass ? g_sv.dvarCount : g_sv.cmdCount;
+        for (int i = 0; i < count && m < max; i++) {
+            BYTE prefix = _strnicmp(list[i].name, part, plen) == 0;
+            if (plen && !prefix && !ConStrIStr(list[i].name, part)) continue;
+            BOOL dup = FALSE;
+            for (int k = 0; skipClient && k < first && !dup; k++) dup = !_stricmp(g_matches[k].shown, list[i].name);
+            if (dup) continue;
+            g_matches[m].shown = list[i].name;
+            g_matches[m].dvar = NULL;
+            g_matches[m].cmd = list[i].name;
+            g_matches[m].prefix = prefix;
+            g_matches[m].dev = NULL;
+            g_matches[m].argOf = NULL;
+            g_matches[m].sv = &list[i];
+            g_matches[m].svKind = (BYTE)(pass ? 2 : 1);
+            m++;
+        }
+    }
+    return m;
+}
+
+static void ConFillSuggestion(ConSuggest *s, const ConMatch *x)
+{
+    lstrcpynA(s->name, x->shown, sizeof(s->name));
+    s->prefix = x->prefix;
+    s->kind = (BYTE)(x->svKind == 2 ? 4 : 3);
+    if (x->svKind == 2) _snprintf(s->value, sizeof(s->value), "%s", x->sv->value ? x->sv->value : "^9server dvar");
+    else _snprintf(s->value, sizeof(s->value), "^9server command");
+    s->value[sizeof(s->value) - 1] = 0;
+    lstrcpynA(s->info, x->svKind == 2 ? "sh1x server dvar" : "sh1x server command", sizeof(s->info));
+}
+
+static void ConUpdateSuggestionsLocked(void);
+
+/* Recomputes the dropdown for the token under the cursor. Main thread. The server lists (console_server.c)
+ * stay locked for the whole pass: the matches point into them. */
 static void ConUpdateSuggestions(void)
+{
+    ConSvRefresh();
+    EnterCriticalSection(&g_svLock);
+    ConUpdateSuggestionsLocked();
+    LeaveCriticalSection(&g_svLock);
+}
+
+static void ConUpdateSuggestionsLocked(void)
 {
     ConTokens t;
     char tok0[96], part[96];
@@ -700,6 +850,32 @@ static void ConUpdateSuggestions(void)
     }
     dcount = ConSnapshotDvars();
 
+    if (t.cur >= 1 && (!_stricmp(tok0, "sv") || !_stricmp(tok0, "rcon"))) {
+        /* "sv <name ...>": the server's commands and dvars, then the one being given arguments */
+        if (t.cur == 1) {
+            ConTokenText(&t, 1, part, sizeof(part));
+            g_suggTokStart = t.start[1];
+            g_suggTokEnd = t.cur < t.count ? t.end[1] : g_conCursor;
+            int m = ConSvMatches(part, (int)strlen(part), 0, FALSE);
+            qsort(g_matches, m, sizeof(g_matches[0]), ConCmpMatch);
+            EnterCriticalSection(&g_conLock);
+            g_suggTotal = m;
+            g_suggCount = m < CON_SUGGEST ? m : CON_SUGGEST;
+            for (int i = 0; i < g_suggCount; i++) ConFillSuggestion(&g_sugg[i], &g_matches[i]);
+            if (g_suggCount >= 1 && !_stricmp(g_sugg[0].name, part)) ConSvDetail(g_matches[0].sv, g_matches[0].svKind);
+            else if (!g_suggCount) ConDevDetail(ConDevFind(tok0));
+            LeaveCriticalSection(&g_conLock);
+        } else {
+            char name[96];
+            ConTokenText(&t, 1, name, sizeof(name));
+            const ConSvName *c = ConSvFindCmd(name), *d = c ? NULL : ConSvFindDvar(name);
+            EnterCriticalSection(&g_conLock);
+            if (c || d) ConSvDetail(c ? c : d, c ? 1 : 2);
+            LeaveCriticalSection(&g_conLock);
+        }
+        InterlockedExchange(&g_conDirty, 1);
+        return;
+    }
     BOOL nameSlot = t.cur == 0 || (t.cur >= 1 && ConIsSetCommand(tok0) &&
                                    (t.cur == 1 || (t.cur == 2 && !_stricmp(tok0, "setfromdvar"))));
     const char *const *devArgs = t.cur == 1 ? ConDevArgList(tok0) : NULL;
@@ -724,6 +900,7 @@ static void ConUpdateSuggestions(void)
             g_matches[m].cmd = devArgs[i];
             g_matches[m].prefix = prefix;
             g_matches[m].dev = NULL;
+            g_matches[m].sv = NULL;
             g_matches[m].argOf = tok0;
             m++;
         }
@@ -754,8 +931,13 @@ static void ConUpdateSuggestions(void)
             else lstrcpynA(name, tok0, sizeof(name));
             d = ConFindDvar(name, dcount);
         }
+        /* not the client's: a server command or dvar being given its arguments */
+        BOOL client = d || t.count < 1 || ConClientHasCommand(name) || ConDevFind(name);
+        const ConSvName *sc = client ? NULL : ConSvFindCmd(name);
+        const ConSvName *sd = client || sc ? NULL : ConSvFindDvar(name);
         EnterCriticalSection(&g_conLock);
         if (d) ConDetailFor(d);
+        else if (sc || sd) ConSvDetail(sc ? sc : sd, sc ? 1 : 2);
         LeaveCriticalSection(&g_conLock);
         InterlockedExchange(&g_conDirty, 1);
         return;
@@ -778,6 +960,7 @@ static void ConUpdateSuggestions(void)
         g_matches[m].cmd = NULL;
         g_matches[m].prefix = prefix;
         g_matches[m].dev = NULL;
+        g_matches[m].sv = NULL;
         m++;
     }
     if (t.cur == 0) {
@@ -794,6 +977,7 @@ static void ConUpdateSuggestions(void)
             g_matches[m].cmd = c->name;
             g_matches[m].prefix = prefix;
             g_matches[m].dev = NULL;
+            g_matches[m].sv = NULL;
             m++;
         }
         for (unsigned b = 0; b < BUILTIN_COUNT; b++) {
@@ -804,6 +988,7 @@ static void ConUpdateSuggestions(void)
             g_matches[m].cmd = kBuiltins[b];
             g_matches[m].prefix = prefix;
             g_matches[m].dev = NULL;
+            g_matches[m].sv = NULL;
             m++;
         }
         for (unsigned b = 0; b < DEV_CMD_COUNT; b++) {
@@ -814,8 +999,11 @@ static void ConUpdateSuggestions(void)
             g_matches[m].cmd = kDevCmds[b].name;
             g_matches[m].prefix = prefix;
             g_matches[m].dev = &kDevCmds[b];
+            g_matches[m].sv = NULL;
             m++;
         }
+        /* the hosted server's commands and dvars, unless the client has the name (the client's wins: "sv <name>") */
+        m = ConSvMatches(part, plen, m, TRUE);
     }
     qsort(g_matches, m, sizeof(g_matches[0]), ConCmpMatch);
 
@@ -841,6 +1029,8 @@ static void ConUpdateSuggestions(void)
             _snprintf(s->value, sizeof(s->value), "^9%s", x->dev->usage);
             s->value[sizeof(s->value) - 1] = 0;
             lstrcpynA(s->info, "sh1x developer command", sizeof(s->info));
+        } else if (x->sv) {
+            ConFillSuggestion(s, x);
         } else {
             s->kind = 1;
             s->value[0] = 0;
@@ -852,6 +1042,9 @@ static void ConUpdateSuggestions(void)
         ConDevDetail(g_matches[0].dev);
     /* exactly one dvar typed in full: its details too */
     if (g_suggCount >= 1 && g_sugg[0].kind == 0 && _stricmp(g_sugg[0].name, part) == 0) ConDetailFor(g_matches[0].dvar);
+    /* a server command or dvar typed in full */
+    if (g_suggCount >= 1 && g_sugg[0].kind >= 3 && _stricmp(g_sugg[0].name, part) == 0)
+        ConSvDetail(g_matches[0].sv, g_matches[0].svKind);
     LeaveCriticalSection(&g_conLock);
     InterlockedExchange(&g_conDirty, 1);
 }
@@ -1036,6 +1229,20 @@ static void ConDvarList(const char *filter)
     }
     ConPrintf("%d of %d dvars%s%s (A archive, C cheat, R read-only; the second column is C1's own name)\n", shown, n,
               filter && *filter ? " matching " : "", filter && *filter ? filter : "");
+    /* the match server's dvars: "sv <name>" reaches one whose name the client has too */
+    EnterCriticalSection(&g_svLock);
+    int sv = 0;
+    for (int i = 0; i < g_sv.dvarCount; i++) {
+        const ConSvName *d = &g_sv.dvars[i];
+        if (filter && *filter && !ConStrIStr(d->name, filter)) continue;
+        if (d->value) ConPrintf("sv  %-34s \"%s^7\"\n", d->name, d->value);
+        else ConPrintf("sv  %s\n", d->name);
+        sv++;
+    }
+    ConPrintf("%d of %d server dvars%s%s (%s)\n", sv, g_sv.dvarCount, filter && *filter ? " matching " : "",
+              filter && *filter ? filter : "", g_sv.session ? "from the running match server" :
+              "generated table, no values: no match running or the server has not answered yet");
+    LeaveCriticalSection(&g_svLock);
 }
 
 static void ConCmdList(const char *filter)
@@ -1057,6 +1264,16 @@ static void ConCmdList(const char *filter)
         shown++;
     }
     ConPrintf("%d commands%s%s\n", shown, filter && *filter ? " matching " : "", filter && *filter ? filter : "");
+    EnterCriticalSection(&g_svLock);
+    int sv = 0;
+    for (int i = 0; i < g_sv.cmdCount; i++) {
+        if (filter && *filter && !ConStrIStr(g_sv.cmds[i].name, filter)) continue;
+        ConPrintf("  sv  %s\n", g_sv.cmds[i].name);
+        sv++;
+    }
+    ConPrintf("%d of %d server commands%s%s (%s)\n", sv, g_sv.cmdCount, filter && *filter ? " matching " : "",
+              filter && *filter ? filter : "", g_sv.session ? "from the running match server" : "generated table");
+    LeaveCriticalSection(&g_svLock);
 }
 
 static void ConDump(const char *name)
@@ -1083,13 +1300,14 @@ static void ConDump(const char *name)
 
 static void ConHelp(void)
 {
-    ConPrintf("Kernel33 developer console - %u readable dvar names (c1_dvars.h)\n", (unsigned)C1_DVAR_NAME_COUNT);
+    ConPrintf("Kernel33 console - %u readable dvar names (c1_dvars.h)\n", (unsigned)C1_DVAR_NAME_COUNT);
     ConPrintf("  Type a command or a dvar by its readable name: cg_drawFPS 1, com_maxfps 0, set cg_fov 80.\n");
     ConPrintf("  Tab completes the common prefix, then cycles the matches. Up/Down: history (main\\k33_console_history.txt).\n");
     ConPrintf("  Shift+Tab or Shift+~ opens the full log (PgUp/PgDn/wheel scroll, Ctrl+Home/End). Esc closes.\n");
     ConPrintf("  Built-ins: dvarlist [filter], cmdlist [filter], find <text>, clear, condump [file], k33help.\n");
     ConPrintf("  Toggle: the key left of 1, or the virtual key in k33_consoleKey (default 112 = F1, 0 = none).\n");
-    ConPrintf("  sh1x developer commands (noclip, god, give, setviewpos, ...) and rcon to the local server: k33dev.\n");
+    ConPrintf("  Match server (during a match this client hosts): its commands and dvars complete and run from here too;\n");
+    ConPrintf("  sv <name ...> addresses the server when the client has the same name. Cheats (noclip, god, give, ...): k33dev.\n");
     ConPrintf("  HUD: k33_drawFPS 1 (cg_drawFPS 1 works too), k33_drawViewpos 1.\n");
 }
 
@@ -1168,7 +1386,15 @@ static void ConExecute(const char *line)
     LeaveCriticalSection(&g_conLock);
     ConPrintf("]%s\n", line);
 
-    /* split on ';' outside quotes; built-ins run here, the rest goes to Cbuf with names mapped */
+    /* Split on ';' outside quotes. Each command goes to exactly one place (docs/OFFLINE_CONSOLE_20261112.md):
+     *   1. a console built-in (clear, cmdlist, dvarlist, find, condump, k33help, k33dev)      here
+     *   2. "sv <line>" / "rcon <line>"                                                         the hosted server
+     *   3. a name the client has (a C1 command or dvar, by C1's name or the readable one)      C1's Cbuf
+     *   4. one of the server's cheat commands (kDevCmds)        C1's Cbuf, which forwards it as this player's
+     *                                                           client command; "no match running" when not connected
+     *   5. a server command or dvar the client does not have (also behind set/seta/reset/toggle) the hosted server
+     *   6. anything else                                         C1's Cbuf (C1 forwards an unknown word when connected)
+     * So where both sides have a name the client's wins, and "sv" reaches the server's. */
     char seg[CON_INPUT_LEN];
     int i = 0;
     while (line[i]) {
@@ -1195,6 +1421,7 @@ static void ConExecute(const char *line)
             InterlockedExchange(&g_conDirty, 1);
             continue;
         }
+#if CODOL_DIAGNOSTICS
         if (!_stricmp(t0, "k33shot")) {
             int delay;
             ConReadToken(seg, &p, t1, sizeof(t1));
@@ -1205,8 +1432,9 @@ static void ConExecute(const char *line)
             ConPrintf("k33shot: the console frame %d ms from now goes to main\\k33_console.bmp\n", delay);
             continue;
         }
-        if (!_stricmp(t0, "rcon")) {
-            ConRcon(seg + afterT0);
+#endif
+        if (!_stricmp(t0, "sv") || !_stricmp(t0, "rcon")) {
+            ConServerLine(seg + afterT0, !_stricmp(t0, "rcon"));
             continue;
         }
         if (!_stricmp(t0, "k33dev")) {
@@ -1222,6 +1450,42 @@ static void ConExecute(const char *line)
             else if (!_stricmp(t0, "condump")) ConDump(t1);
             else ConHelp();
             continue;
+        }
+
+        {
+            /* rules 3-5: which side owns the name this command is about */
+            char subject[96];
+            int q = afterT0;
+            BOOL isSet = ConIsSetCommand(t0);
+            if (isSet) ConReadToken(seg, &q, subject, sizeof(subject));
+            else lstrcpynA(subject, t0, sizeof(subject));
+            BOOL clientHas = ConFindDvar(subject, dcount) != NULL || (!isSet && ConClientHasCommand(subject));
+            const ConDevCmd *dev = isSet ? NULL : ConDevFind(t0);
+            int svKind = ConSvKind(subject);
+            if (!clientHas && dev) {
+                if (!ConConnected()) {
+                    ConPrintf("no match running: %s is a command of the match server (k33dev lists them)\n", t0);
+                    continue;
+                }
+                if (_stricmp(t0, "devhelp")) {
+                    char arg[96];
+                    int q2 = afterT0;
+                    ConReadToken(seg, &q2, arg, sizeof(arg));
+                    ConSvCheatHint();
+                    ConSvCheatEcho(t0, arg); /* the server's own reply does not reach the console */
+                } else {
+                    ConDevHelp(); /* devhelp's answer is a game message too: the same list, from here */
+                }
+            } else if (!clientHas && (isSet ? svKind == 2 : svKind != 0)) {
+                char a1[16];
+                int q3 = afterT0;
+                ConReadToken(seg, &q3, a1, sizeof(a1));
+                if (!isSet && !_stricmp(t0, "codol_dev_cheats") && !_stricmp(a1, "on") && ConSvCheatsOn(seg)) continue;
+                ConServerLine(seg, FALSE);
+                continue;
+            } else if (clientHas && svKind) {
+                ConPrintf("  ^9%s: the client's own; the match server has one too: sv %s\n", subject, subject);
+            }
         }
 
         char rebuilt[CON_INPUT_LEN + 64];
@@ -1308,7 +1572,7 @@ static void ConSetOpen(BOOL open)
     if (open) {
         if (!g_conBanner) {
             g_conBanner = TRUE;
-            ConPrintf("Kernel33 developer console (dev branch): type k33help. %u readable dvar names; "
+            ConPrintf("Kernel33 console: type k33help. %u readable dvar names; "
                       "hooks: output %s, input ok, draw %s, execute %s\n", (unsigned)C1_DVAR_NAME_COUNT,
                       g_conCaptureOk ? "ok" : "OFF", g_conDrawOk ? "ok" : "OFF", g_c1CbufOk ? "ok" : "OFF");
         }
@@ -2225,9 +2489,11 @@ static void ConHudRegister(void)
     if (!g_hudPosDvar)
         g_hudPosDvar = C1RegisterInt("k33_drawViewpos", 0, 0, 1, 0x1,
                                      "Kernel33: draw the predicted position, view angles and speed (top right)");
+#if CODOL_DIAGNOSTICS
     if (!g_conRconPortDvar)
         g_conRconPortDvar = C1RegisterInt("k33_rconPort", 17733, 1, 65535, 0x1,
                                           "Kernel33 console: rcon port when not connected to a local server");
+#endif
     if (!g_hudC1FpsDvar) {
         const BYTE *d = C1DvarFind("591"); /* cg_drawFPS, bool */
         if (d && Readable(d, 0x10) && d[8] == 0) g_hudC1FpsDvar = d;
@@ -2371,7 +2637,9 @@ static HRESULT WINAPI Hook_Present(IDirect3DDevice9 *dev, const RECT *a, const R
 {
     ConDraw(dev);
     ConHudDraw(dev);
+#if CODOL_DIAGNOSTICS
     ShotBeforePresent(dev); /* k33shot.c: a pending screenshot or statistics request */
+#endif
     InterlockedIncrement(&g_inPresent); /* d3d9 may present through the swap chain's vtable */
     HRESULT hr = g_origPresent(dev, a, b, w, r);
     InterlockedDecrement(&g_inPresent);
@@ -2383,10 +2651,17 @@ static HRESULT WINAPI Hook_SCPresent(IDirect3DSwapChain9 *sc, const RECT *a, con
     IDirect3DDevice9 *dev = NULL;
     int hudFps, hudPos;
     BOOL hud = ConHudWanted(&hudFps, &hudPos);
-    if ((g_conOpen || hud || ShotWanted()) && !g_inPresent && SUCCEEDED(IDirect3DSwapChain9_GetDevice(sc, &dev)) && dev) {
+#if CODOL_DIAGNOSTICS
+    BOOL shot = ShotWanted(); /* k33shot.c */
+#else
+    BOOL shot = FALSE;
+#endif
+    if ((g_conOpen || hud || shot) && !g_inPresent && SUCCEEDED(IDirect3DSwapChain9_GetDevice(sc, &dev)) && dev) {
         ConDraw(dev);
         ConHudDraw(dev);
+#if CODOL_DIAGNOSTICS
         ShotBeforePresent(dev);
+#endif
         IDirect3DDevice9_Release(dev);
     }
     return g_origSCPresent(sc, a, b, w, r, f);
@@ -2479,6 +2754,9 @@ static void InstallConsole(void)
     }
     if (!g_conWorkEvent) Log("console: raster worker unavailable; overlay drawing disabled");
     ConInitNames();
+    ConSvInit(); /* console_server.c: the generated server table until a hosted server answers */
+    for (unsigned i = 0; i < SH1X_DEVSET_COUNT && i + 1 < sizeof(g_argDevset) / sizeof(g_argDevset[0]); i++)
+        g_argDevset[i] = kSh1xDevset[i].name;
     g_conReady = TRUE;
 
     /* output */
@@ -2527,6 +2805,9 @@ static void InstallConsole(void)
         drawHook = TRUE;
     }
 
+    (void)inputOk; (void)drawHook; /* only logged, and a shipping build has no log */
+    Log("console: server route ready (rcon to the hosted match server only); table: %u server commands, %u server "
+        "dvars, %u cheat commands", (unsigned)SH1X_CMD_COUNT, (unsigned)SH1X_DVAR_COUNT, (unsigned)SH1X_CHEAT_COUNT);
     Log("console: output %d/4 print paths, input %s, draw %s, Cbuf_AddText %s, cmd list %s, dvar list %s, "
         "%u dvar names",
         logHooks, inputOk ? "hooked (WndProc)" : "NOT hooked (bytes differ)",

@@ -9,10 +9,12 @@ features remain enabled. Fatal startup failures still report an error.
 `K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=0` builds quiet local QA: the approved
 command-file transport is available only in this separately compiled profile.
 `K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=1` enables development diagnostics.
-That profile alone compiles `src/console/k33shot.c` (with the developer console it rides on): the `k33_screenshot` and
+The console itself (`src/console/console.c`, `docs/OFFLINE_CONSOLE_20261112.md`) is in every profile of this offline
+client. Only the diagnostics profile compiles `src/console/k33shot.c`, which rides on the console's hooks: the `k33_screenshot` and
 `k33_framestats` commands and, on a test client only (`+set k33_shotFile 1` or `+set k33_cmdFile 1`), the
-`k33_shot.req` / `k33_stats.req` request files. Shipping and quiet-QA DLLs contain none of it: no command, no
-request-file polling, no Direct3D hook.
+`k33_shot.req` / `k33_stats.req` request files. Shipping and quiet-QA DLLs contain none of that: no screenshot or statistics command, no
+request-file polling, no draw-call hooks. They do contain the console and therefore its `Direct3DCreate9`
+import-slot wrap and `Present` hook, its window procedure and its four log-print pre-hooks (each byte-checked).
 Shipping with diagnostics, or values other than zero/one, is rejected.
 
 The room-context migration remains opt-in (`K33_KERNEL_ROOM_CONTEXT=0` by

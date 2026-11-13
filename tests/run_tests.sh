@@ -47,6 +47,8 @@ python -B tests/test_survival_kiosk_menus.py
 python -B tests/test_survival_wave_overrides.py
 python -B tests/test_survival_hud.py
 python -B tests/test_hud_styles.py
+# The console in every profile and its command sync with the pinned match server (docs/OFFLINE_CONSOLE_20261112.md).
+python -B tests/test_offline_console.py
 python -B tests/test_survival_status_component.py
 python -B tests/test_tip_stage_lookup.py
 python -B tests/test_invitations_disabled.py
