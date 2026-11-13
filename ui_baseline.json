@@ -159,7 +159,7 @@
     }
   },
   "files": {
-    "borderless.c": "54edab00f4b10a610287b886f301f87a0cdd39e4a8da9007c8a0818b918e08eb",
+    "borderless.c": "d07ce2174e61cee3e00bce62214f58c7c7f80ac567a190a444ad5f99a458b991",
     "build-profile.sh": "e5b9acce3b21f8da3bcea93957e1aff3c9e0ca7e3c70e744c68ead6a60931016",
     "docs/baselines/20261105-invitations-current-transition/current_transition.py": "a3076007b0f9cadf2d9183bb6a640e4d5ffb26171d01aa196d8602edb0436917",
     "gfx_date_time.c": "8a0e2175c405a7f5aca4487792b99c9835070df67f71ff8b11c39f3723255489",
@@ -167,7 +167,7 @@
     "gfx_date_time_policy.h": "76edd321bec694a51883c682e6c8e50b48cd23c19e664456923bdea3cc73c552",
     "gfx_local_operands.c": "8dcaf96f5f29c30fb74cb7a0dd5a82199de727205fa047bce4bdee95dcc3708e",
     "gfx_local_operands_policy.h": "b82942103e219c4917f0b5b51240125b760e5853d94135a9b5e7c58c25128eec",
-    "kernel33.c": "5d4318c133bd5617a8a1657ae9fa5d94ebe7395779a2d5aba40c8edd1a665090",
+    "kernel33.c": "a0adc0bef60e165d4ee068818fee347797835edc09e69450a3bf8d6f57acbc5d",
     "kernel_call_guard.c": "11e45dd2c23db87c7ad7e558c016d8be91d04e83148cc1ff92e76ca89c3e04c3",
     "kernel_name_display.c": "40c875f1e5a1b17bbf9bd5e132b2fcccdbd60d25cbcd29899390a4d34fe396dc",
     "kernel_name_guards.h": "9f9d865f3c9d5fc671a7c862c88987f2b28b375293298bbc1a662b3a4f8198b3",

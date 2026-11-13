@@ -464,8 +464,8 @@ static void AttachRawMouse(HWND hwnd)
     Log("raw mouse: attached to window %p", hwnd);
 }
 
-/* An overlay that owns the mouse (the dev branch's vision editor, vision.c): no view turn, no menu cursor
- * and no recentering while it is open, so the Windows cursor moves freely over it. */
+/* An overlay that owns the mouse: no view turn, no menu cursor and no recentering while it is open, so the
+ * Windows cursor moves freely over it. Nothing sets it at present (the in-game console takes the keyboard only). */
 static volatile LONG g_k33OverlayMouse;
 
 static int __cdecl MouseEventHook(int x, int y, int dx, int dy)
@@ -1517,11 +1517,6 @@ static void PatchGbkInput(void)
 /* Fullscreen Windowed (codol_borderless): see borderless.c. */
 #include "borderless.c"
 
-/* Realtime vision editor (Dear ImGui, vision.c + vision_ui.cpp): dev build only, -DK33_VISION (build-dev.sh links
- * the C++ objects). It rides on the console's D3D and WndProc hooks, so it needs console.c. */
-#if CODOL_DIAGNOSTICS && defined(K33_VISION) && !defined(K33_NO_CONSOLE)
-#include "vision.c"
-#endif
 /* Developer console overlay (dev branch): see console.c. Builds without it (-DK33_NO_CONSOLE, or delete
  * these three lines and the InstallConsole() call) still compile and link. */
 #if CODOL_DIAGNOSTICS && !defined(K33_NO_CONSOLE)
@@ -1698,9 +1693,6 @@ static void __cdecl TakeOver(void)
 #if CODOL_DIAGNOSTICS && !defined(K33_NO_CONSOLE)
     InstallConsole();
     InstallShot();
-#endif
-#if CODOL_DIAGNOSTICS && defined(K33_VISION) && !defined(K33_NO_CONSOLE)
-    InstallVision();
 #endif
 #if CODOL_KERNEL_NAME_DISPLAY
     if(!InstallKernelNameDisplay())Fatal("Kernel33 name-display migration checks failed. Restore the qualified client package.");

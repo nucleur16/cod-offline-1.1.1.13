@@ -16,8 +16,8 @@
  * existing "+set k33_cmdFile 1" on the command line. A request file is deleted when it is read. The picture is
  * written to <path>.tmp and renamed, so a reader never sees half a file.
  *
- * The picture is the back buffer just before Present, after Kernel33's own overlays (console, FPS line, vision
- * editor) were drawn: what the player would see. A multisampled back buffer is resolved first. Only 32-bit
+ * The picture is the back buffer just before Present, after Kernel33's own overlays (console, FPS line) were
+ * drawn: what the player would see. A multisampled back buffer is resolved first. Only 32-bit
  * X8R8G8B8 / A8R8G8B8 back buffers are written (what C1 creates).
  *
  * Statistics: one line per pair of colour render target and depth buffer that the frame drew into,

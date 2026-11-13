@@ -15,7 +15,7 @@
  *   R_CreateWindow's CreateWindowExA (call [IAT] @ 0xA79DBF; windowed style 0xC80000 = caption + system
  *   menu, its size grown by AdjustWindowRectEx) goes through BorderlessCreateWindowExA, which makes it
  *   WS_POPUP at the monitor's rectangle. The device stays a windowed D3D9 device, so Alt+Tab never
- *   loses it, and the dev console / vision editor hooks see an ordinary window.
+ *   loses it, and the dev console's hooks see an ordinary window.
  *
  *   The monitor is the one the game window was last on (else the one under vid_xpos / vid_ypos, else
  *   the primary). Each frame (BorderlessTick, from the voice main-thread tick) the wanted mode

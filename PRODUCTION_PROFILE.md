@@ -23,8 +23,10 @@ complete proxy parity, actual Windows exception dispatch and client lifecycle
 acceptance remain release gates. Do not turn this switch on in a public release
 merely because the standalone policy/binder fixtures pass.
 
-The paired launcher proxy defaults to `PROFILE=shipping` and excludes the
-developer ImGui console, developer panel and their input hook. Its normal replay,
+The paired launcher proxy (a separate project, not in this repository) defaults
+to `PROFILE=shipping` and excludes its own developer console overlay, developer
+panel and their input hook. Kernel33's in-game console is `console.c`: it draws
+itself with GDI and Direct3D 9 and uses no GUI library. Its normal replay,
 name-display and native room integration remain. Development must be selected
 explicitly and must use a separate output directory.
 

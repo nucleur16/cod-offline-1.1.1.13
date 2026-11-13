@@ -27,7 +27,6 @@ output/
 
 # all-maps build output (python build_zones.py --maps all): dev maps included, never shipped
 output_dev/
-obj_vision/
 
 # Explicit unqualified development builds.
 output_candidate/

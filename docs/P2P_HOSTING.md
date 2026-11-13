@@ -458,7 +458,7 @@ has to hand the match to the owner of an armed intent. The paragraphs below desc
 Multiplayer, Zombies and Survival room owners have one Scaleform toggle:
 **LOCAL HOSTING: ENABLED / DISABLED**. It uses the lobby's selected map and
 mode; bot settings stay under the existing lobby/RCON controls. There are no
-additional hosting settings in the UI, and F3 remains the vision editor.
+additional hosting settings in the UI.
 
 The user's command is `p2p_localhost 1` or `p2p_localhost 0`. The movie supplies
 room context internally through `p2p_room`. The host handles saved paths, port,

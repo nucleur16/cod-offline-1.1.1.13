@@ -185,8 +185,8 @@ Rules of the port (details in `offline/PORTING.md`):
 
 * **No dependency on C1 or Kernel33** anywhere under `offline/`; only `dw_util.cpp`, `dw_net.cpp`
   and `dw_api.cpp` touch the operating system. The same sources build `tests/offline/dwtest.exe`.
-* C++11 with `-fno-exceptions -fno-rtti -fno-threadsafe-statics`, as `build-dev.sh` builds the vision
-  editor. No exception or C++ object crosses `dw_api.h`.
+* C++11 with `-fno-exceptions -fno-rtti -fno-threadsafe-statics`. No exception or C++ object crosses
+  `dw_api.h`.
 * **One thread.** The Python lobby is one thread per connection plus a database writer thread and a
   report poller; the port is a single `select()` loop, so there are no locks inside the lobby. The
   only data shared with another thread is the log file, in `offline_lobby.c`; the Local Play intent is
