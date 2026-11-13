@@ -31,6 +31,7 @@
 #include <math.h>
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
+#include "controller_glyph_policy.h"
 
 #define CTL_IN_FRAME_VA        0x0062DA90u
 #define CTL_IN_FRAME_RESUME    0x0062DA96u
@@ -140,7 +141,7 @@ static BOOL g_ctlOn, g_ctlKeysOk, g_ctlMoveOk, g_ctlDvarsDone;
 static const BYTE *g_gpEnabled, *g_gpDzMin, *g_gpDzMax, *g_gpSens, *g_gpInvert, *g_gpBtnDz, *g_gpYaw, *g_gpPitch,
     *g_gpYawAds, *g_gpPitchAds, *g_gpCurve, *g_gpAccel, *g_gpCursor, *g_gpDebug, *g_gpUseHold, *g_gpAim,
     *g_gpAimRange, *g_gpAimSnap, *g_gpGlyphs, *g_gpBindsVer, *g_gpUserinfo, *g_gpKbmCooldown, *g_gpLocSpeed, *g_gpRemoteSens, *g_gpGlyphShift, *g_gpAccelStart, *g_gpHires, *g_gpLookVer, *g_gpDive, *g_gpMoveDigital, *g_gpMoveThreshold, *g_gpCustom, *g_gpSwapSticks,
-    *g_k33PadInfo, *g_k33PadBinds, *g_k33PadCapture, *g_k33PadClear;
+    *g_k33PadInfo, *g_k33PadBinds, *g_k33PadCapture, *g_k33PadClear, *g_k33GlyphInfo, *g_k33GlyphSerial;
 static volatile LONG g_padType;            /* 0 Xbox (and XInput), 1 PlayStation, 2 Nintendo, 3 other */
 static int g_locBase = -1;                 /* first pad entry in g_ctlKeyNamesLoc */
 
@@ -219,7 +220,10 @@ static void CtlRegisterDvars(void)
     {
         typedef const BYTE *(__cdecl *RegStr)(const char *, const char *, unsigned, const char *);
         RegStr reg = (RegStr)(DWORD_PTR)0x00624740u;
-        g_k33PadInfo = reg("k33_padinfo", "", 0, "Options > Controller: pad family|connected|name|forced (Kernel33, read only)");
+        g_k33PadInfo = reg("k33_padinfo", "", 0, "Options > Controller: pad family|connected|name|forced|gpad_glyphs (Kernel33, read only)");
+        g_k33GlyphInfo = reg("k33_glyphinfo", "", 0,
+                             "What button hints show now: family|device|textOnly|gpad_glyphs (family 0 Xbox, 1 PlayStation, 2 Nintendo, "
+                             "3 generic; device 0 keyboard / mouse, 1 pad) (Kernel33, read only)");
         g_k33PadBinds = reg("k33_padbinds", "", 0, "Options > Controller: every pad button's bind (Kernel33, read only)");
         g_k33PadCapture = reg("k33_padcapture", "", 0, "Options > Controller: bind the next pad button pressed to this command");
         g_k33PadClear = reg("k33_padclear", "", 0, "Options > Controller: unbind this command's pad buttons");
@@ -236,8 +240,12 @@ static void CtlRegisterDvars(void)
                                "Aim assist strength for the pad's right stick (slowdown, lock-on, ADS snap): 1 IW4 console values, 0 off. Never applies to the mouse");
     g_gpAimRange = CtlRegisterFloat("gpad_aimassist_range", 3200.0f, 0.0f, 20000.0f, 0x1, "Aim assist range, units");
     g_gpAimSnap = C1RegisterInt("gpad_aimassist_snap", 1, 0, 1, 0x1, "Aim down sights (pad LT) turns onto a target near the crosshair");
-    g_gpGlyphs = C1RegisterInt("gpad_glyphs", 0, 0, 5, 0x1,
-                               "Pad button icons in hints and prompts: 0 by pad type, 1 Xbox 360, 2 PS3, 3 Wii U, 4 generic, 5 text names only");
+    g_gpGlyphs = C1RegisterInt("gpad_glyphs", 0, 0, CGP_GLYPHS_MAX, 0x1,
+                               "Button hints and prompts: 0 automatic (pad type and last-used device), 1 Xbox 360, 2 PS3, 3 Wii U, "
+                               "4 generic (1-4: always that pad's buttons), 5 text names only, 6 always keyboard / mouse");
+    g_k33GlyphSerial = C1RegisterInt("k33_glyphSerial", 0, 0, CGP_SERIAL_MAX, 0,
+                                     "Counts every change of what button hints show (k33_glyphinfo): menus re-read their key labels "
+                                     "when it changes (Kernel33, read only)");
     g_gpBindsVer = C1RegisterInt("gpad_binds_version", 0, 0, 1000, 0x1, "Default pad binds last applied (read only)");
     g_gpUserinfo = C1RegisterInt("gpad", 0, 0, 2, 0x200,
                                  "Userinfo, visible to the server: 0 keyboard / mouse, 1 gamepad with aim assist, 2 gamepad in the keyboard/mouse cooldown (no assist)");
@@ -255,8 +263,9 @@ static void CtlRegisterDvars(void)
     PadSnapRegisterDvars();   /* padsnap.c */
 }
 
-/* Last-used input device, for the key names C1 shows (CtlCommandKeys) and for aim assist: 1 pad,
- * 0 keyboard / mouse. g_lastMouseMs is the last real mouse movement (CL_MouseMove, menu cursor). */
+/* Last-used input device: 1 pad, 0 keyboard / mouse. Aim assist, the userinfo dvar "gpad" and the menu
+ * cursor follow it directly; the key names C1 shows follow it through CtlDisplayNow (gpad_glyphs can
+ * override it there, and only there). g_lastMouseMs is the last real mouse movement (CL_MouseMove, menu cursor). */
 static volatile LONG g_lastDevice;
 static volatile DWORD g_lastMouseMs, g_lastPadMs, g_selfPostMs;
 static volatile LONG g_deviceChanged;
@@ -267,6 +276,26 @@ static void CtlSetDevice(int pad)
     InterlockedExchange(&g_lastDevice, pad);
     InterlockedExchange(&g_deviceChanged, 1);
 }
+
+/* ---- what hints DISPLAY (controller_glyph_policy.h) ---------------------------------------------------
+ * gpad_glyphs 1..4 and 6 override the detection for display: 1..4 show that pad family's buttons even while
+ * the keyboard is the last-used device, 6 shows keyboard / mouse keys even while the pad is. Only the
+ * display readers ask here: CtlCommandKeys (which device's keys a hint names), CtlApplyPadNames (the
+ * family's text names), the glyph set (controller_glyphs.c) and the published k33_padinfo / k33_glyphinfo.
+ * Everything behavioural keeps reading g_lastDevice itself: aim assist (CtlAimAllowed), the userinfo dvar
+ * "gpad" and the pointer watch (CtlFrameExtras), the snap scan (padsnap.c), gpad_status / gpad_aadump.
+ * Called on the main thread and, through CtlGlyphPrepare, on the render thread: three word-sized reads. */
+static CtlGlyphDisplay CtlDisplayNow(void)
+{
+    return CtlGlyphPolicy(C1DvarInt(g_gpGlyphs, 0), (int)g_padType, g_lastDevice == 1 ? CGP_DEVICE_PAD : CGP_DEVICE_KBM);
+}
+
+/* The pad family whose names and icons C1 shows: 0 Xbox, 1 PlayStation, 2 Nintendo, 3 generic (gpad_glyphs
+ * 1..4 forces one; 0, 5 and 6 follow the pad's SDL type). */
+static int CtlPadFamily(void) { return CtlDisplayNow().family; }
+
+/* 1 when hints name the pad's buttons, 0 the keyboard's / mouse's keys. Display only: never use it for input. */
+static int CtlDisplayPad(void) { return CtlDisplayNow().device == CGP_DEVICE_PAD; }
 
 static BOOL CtlEnabled(void) { return !g_ctlDvarsDone || C1DvarInt(g_gpEnabled, 1) != 0; }
 
@@ -469,10 +498,24 @@ static void CtlApplyDefaultBinds(int how) /* 0 unbound only, 1 force all, 2 migr
  * Key_GetBindingNames 0x493920 (every "[{+attack}]" in hints and prompts, the HUD, the Controls screen
  * through AS_GetKeyBindingNamesFromCommand) asks Key_GetCommandAssignment 0x492E30 (eax = command, ecx =
  * localClient, [esp+4] = int keys[2]) for the first two keys bound to a command. That call (0x49393E)
- * comes here: the keys of the last-used device only, so the same prompt reads "LT" while the pad is in
- * use and "MOUSE2" after the mouse, from the next frame on (C1 rebuilds those strings when it draws them).
- * A command bound only on the other device still shows that device's key. The bind and unbind paths keep
- * calling 0x492E30 directly. */
+ * comes here: the keys of the display device only (CtlDisplayPad: the last-used device, unless gpad_glyphs
+ * 1..4 says always the pad or 6 says always keyboard / mouse), so the same prompt reads "LT" while the pad
+ * is in use and "MOUSE2" after the mouse. A command bound only on the other device still shows that
+ * device's key. The bind and unbind paths (0x492D00), the Scaleform bind natives (0x5B06CC, 0x5B0746,
+ * 0x5B091E, 0x5B09E9), 0x4551C3 and 0x604F89 keep calling 0x492E30 directly: every device's keys.
+ *
+ * When a change shows (callers of 0x493920, of UI_GetKeyBindingLocalizedString 0x604A40 and of the "[{cmd}]"
+ * conversion 0x603E50; read from the code of C1.exe 1.1.1.13, not traced at run time):
+ *   next frame    cgame's own hints (0x456130, 0x456270, 0x456370, 0x457120, 0x457610, 0x457800, 0x4579A0:
+ *                 each converts into a stack buffer every time it draws) and HUD element strings (0x448E40,
+ *                 0x449710, converted in the hudelem draw path; inferred from their callers).
+ *   next print    centre-print lines (0x439170 converts once and copies the result into the line's own
+ *                 buffer at 0x4391D4) and game-message lines (0x448E10 from 0x4693FA..0x469500): a line
+ *                 already on screen keeps the key names it was printed with until it expires (seconds).
+ *                 An icon in such a line still follows the family (its slot is refilled at draw time);
+ *                 only the keyboard <-> pad choice is frozen in it.
+ *   on request    Scaleform and GSC (0x5B080D, 0x55A8B6) ask when their ActionScript / script asks:
+ *                 k33_glyphSerial tells the menus when to ask again. */
 static BOOL CtlIsPadKey(int k)
 {
     return (k >= 1 && k <= 6) || (k >= 14 && k <= 23) || k == K_BUTTON_X_HOLD;
@@ -488,7 +531,7 @@ __attribute__((used)) int __cdecl CtlCommandKeys(const char *cmd, int lc, int *k
     if (!cmd || (unsigned)lc > 3) return 0;
     int idx = ((int(__cdecl *)(const char *))(DWORD_PTR)0x00492DB0u)(cmd);
     if (!idx) return 0;
-    int pad = g_lastDevice == 1, n = 0;
+    int pad = CtlDisplayPad(), n = 0;
     const BYTE *kb = (const BYTE *)(DWORD_PTR)(CTL_KEYS_VA + lc * 0xD28);
     for (int pass = 0; pass < 2 && n == 0; pass++)   /* pass 1: any device, when the active one has none */
         for (int k = 0; k < 256 && n < 2; k++) {
@@ -1598,14 +1641,6 @@ __asm__(
     "    popal\n"
     "    jmp *_g_ctlLocSelFn\n");
 
-/* The pad family whose names and icons C1 shows: 0 Xbox, 1 PlayStation, 2 Nintendo, 3 generic (gpad_glyphs
- * 1..4 forces one; 0 and 5 follow the pad's SDL type). */
-static int CtlPadFamily(void)
-{
-    int g = C1DvarInt(g_gpGlyphs, 0);
-    return g >= 1 && g <= 4 ? g - 1 : (int)g_padType;
-}
-
 /* Pad family names in C1's display table: what Scaleform (Controls screen, pause menu) and the text-only
  * mode show; hints and prompts drawn by C1's text renderer get icons instead (controller_glyphs.c). */
 static void CtlApplyPadNames(void)
@@ -1623,7 +1658,7 @@ static void CtlApplyPadNames(void)
 #include "controller_glyphs.c"
 
 /* ---- Options > Controller (zones/voice_ui_mp/.../as/codo/views/OptionView.as) ------------------------
- * Publishes k33_padinfo ("family|connected|name|forced") and k33_padbinds ("A=cmd;B=cmd;...;HOLDX=cmd")
+ * Publishes k33_padinfo ("family|connected|name|forced|glyphs") and k33_padbinds ("A=cmd;B=cmd;...;HOLDX=cmd")
  * when they change, binds the next pad button to k33_padcapture's command (the input thread catches it in
  * menu mode; the command's other pad buttons are unbound, one pad button per action) and unbinds
  * k33_padclear's command. Both set gpad_binds_custom, which stops the bind repair. */
@@ -1642,6 +1677,36 @@ static void CtlUnbindPadKeysOf(const char *cmd, char *out, int n, int *len)
             *len += _snprintf(out + *len, n - *len, "unbind %s; ", kCtlButtons[i].name);
 }
 
+/* k33_glyphinfo ("family|device|textOnly|glyphs") and k33_glyphSerial: what hints display now, for the
+ * Scaleform menus and HUD (they hold key labels they asked for once). Checked every frame; one command
+ * line sets both, so a reader that sees the new serial also sees the new state. The serial starts at 0
+ * (nothing published), is 1 after the first frame and wraps to 1 after CGP_SERIAL_MAX. The device is not
+ * in k33_padinfo: OptionView redraws its diagram and rebuilds its bind list whenever that string changes,
+ * and the display device flips with every keyboard <-> pad change in modes 0 and 5. */
+static void CtlPublishGlyphState(void)
+{
+    static CtlGlyphDisplay last = { -1, -1, -1, -1 };
+    static int lastGlyphs = -1, serial;
+    static const char *const kFam[] = { "Xbox", "PlayStation", "Nintendo", "generic" };
+    char info[CGP_INFO_LEN + 1], cmd[96];
+    (void)kFam;   /* Log compiles to nothing in the production profile */
+    if (!g_c1CbufOk || !g_k33GlyphInfo || !g_k33GlyphSerial) return;
+    int g = C1DvarInt(g_gpGlyphs, 0);
+    CtlGlyphDisplay now = CtlDisplayNow();
+    BOOL same = CtlGlyphDisplaySame(&now, &last);
+    if (same && g == lastGlyphs) return;
+    last = now;
+    lastGlyphs = g;
+    if (!CtlGlyphInfo(info, sizeof(info), &now, g)) return;
+    if (!same) serial = CtlGlyphSerialNext(serial);
+    _snprintf(cmd, sizeof(cmd), "set k33_glyphinfo \"%s\"; set k33_glyphSerial %d\n", info, serial);
+    cmd[sizeof(cmd) - 1] = 0;
+    C1CbufAddText(cmd);
+    Log("controller: hints show %s, %s %s (gpad_glyphs %d, pad type %d, last input %s); k33_glyphSerial %d",
+        now.device == CGP_DEVICE_PAD ? "pad buttons" : "keyboard / mouse keys", kFam[now.family],
+        now.text_only ? "text names" : "icons", g, (int)g_padType, g_lastDevice == 1 ? "pad" : "keyboard / mouse", serial);
+}
+
 static void CtlFrameOptions(void)
 {
     static DWORD lastPublish;
@@ -1650,6 +1715,7 @@ static void CtlFrameOptions(void)
                                         "LT", "RT", "HOLDX" };
     DWORD now = GetTickCount();
     if (!g_c1CbufOk || !g_k33PadInfo) return;
+    CtlPublishGlyphState();
     if (now - lastPublish > 250) {
         char info[160], binds[700], cmd[900], name[96];
         int n = 0;
@@ -1658,8 +1724,13 @@ static void CtlFrameOptions(void)
         lstrcpynA(name, g_padName, sizeof(name));
         LeaveCriticalSection(&g_ctlLock);
         for (char *c = name; *c; c++) if (*c == '"' || *c == ';' || *c == '|' || (BYTE)*c >= 0x80) *c = ' ';
+        /* OptionView.as reads fields 0..3 by index (info.split("|"), parts.length > 3), so a build of it that
+         * does not know the fifth field ignores it. The fifth is the gpad_glyphs value in effect. */
         int g = C1DvarInt(g_gpGlyphs, 0);
-        _snprintf(info, sizeof(info), "%d|%d|%s|%d", CtlPadFamily(), (int)g_padConnected, g_padConnected ? name : "", g >= 1 && g <= 4);
+        CtlGlyphDisplay disp = CtlDisplayNow();
+        _snprintf(info, sizeof(info), "%d|%d|%s|%d|%d", disp.family, (int)g_padConnected, g_padConnected ? name : "", disp.forced,
+                  g >= 0 && g <= CGP_GLYPHS_MAX ? g : 0);
+        info[sizeof(info) - 1] = 0;
         for (int i = 0; i < CTL_NBUTTONS && i < (int)(sizeof(kTag) / sizeof(kTag[0])); i++) {
             const char *b = CtlBindName(CtlKeyBinding(kCtlButtons[i].key));
             n += _snprintf(binds + n, sizeof(binds) - n, "%s%s=%s", i ? ";" : "", kTag[i], CtlKeyBinding(kCtlButtons[i].key) && b ? b : "");
@@ -2325,6 +2396,13 @@ static void __cdecl CtlCmdStatus(void)
         else if (left) C1Printf("gamepad: aim assist off, KBM cooldown %lu s\n", (unsigned long)((left + 999) / 1000));
         else if (g_lastDevice != 1) C1Printf("gamepad: aim assist off (keyboard/mouse is the last-used input)\n");
         else C1Printf("gamepad: aim assist on\n");
+    }
+    {
+        static const char *const kFam[] = { "Xbox", "PlayStation", "Nintendo", "generic" };
+        CtlGlyphDisplay d = CtlDisplayNow();
+        C1Printf("gamepad: hints show %s, %s %s (gpad_glyphs %d; last-used input: %s)\n",
+                 d.device == CGP_DEVICE_PAD ? "pad buttons" : "keyboard / mouse keys", kFam[d.family], d.text_only ? "text names" : "icons",
+                 C1DvarInt(g_gpGlyphs, 0), g_lastDevice == 1 ? "pad" : "keyboard / mouse");
     }
     for (int i = 0; i < CTL_NBUTTONS; i++) {
         int b = CtlKeyBinding(kCtlButtons[i].key);
