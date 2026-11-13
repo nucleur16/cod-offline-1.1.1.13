@@ -379,28 +379,41 @@ The 3D play path's channel check (call of 0x736C10 at 0x73E4DB) decides two more
 `+set codol_soundvoices 0` turns both off at startup. The voice diagnostics (`k33_snddiag`, `CODOL_SNDDIAG`) now
 default to 0; at 1+ they also log `snd policy` totals and `why=limit` refusals to Kernel33.log.
 
-## English (`k33_english`)
-Both languages run the same UI movies, and every text those movies show is a localize key. The language is only which
-string zones load. Kernel33 decides that at startup, from the command line:
+## English (`k33_language`, `k33_english`)
+Every language runs the same UI movies, and every text those movies show is a localize key. The language is only which
+strings a key resolves to. It is chosen at startup and can be changed while the game runs
+(docs/LANGUAGE_SWITCH_20261112.md):
 
-    codoMP_client_shipRetail.exe +set dw_username <name>                        English (default)
-    codoMP_client_shipRetail.exe +set dw_username <name> +set k33_english 1     English
-    codoMP_client_shipRetail.exe +set dw_username <name> +set k33_english 0     Chinese
+    codoMP_client_shipRetail.exe +set dw_username <name>                        the saved language, else English
+    codoMP_client_shipRetail.exe +set dw_username <name> +set k33_language en   English
+    codoMP_client_shipRetail.exe +set dw_username <name> +set k33_language zh   Chinese
+    codoMP_client_shipRetail.exe +set dw_username <name> +set k33_english 1     English (the older spelling)
+    codoMP_client_shipRetail.exe +set dw_username <name> +set k33_english 0     Chinese (the older spelling)
 
-- **Default: English** (no option, or `1`). The last `k33_english` on the line wins; any value but `0`/`1` is ignored.
-- Existing launchers may still use `+set codol_patchlang en` or `+set codol_patchlang zh`. An explicit valid
-  `k33_english` takes precedence over that compatibility alias, regardless of argument order. Both selectors use
-  one parsed language choice; they cannot independently filter out both sets of string zones.
-- Read by the DLL from the command line only (`patch_locale_policy.h`, `CodolPatchLanguageFromArgv`): C1 execs
-  `players\config_mp.cfg` before it registers its dvars and applies no `+set` to a dvar it does not know, so the
-  option is not a saved dvar. Nothing writes it to config_mp.cfg, and a config write never changes it; it lasts until
-  the client is started without it.
-- What it switches: `client_shipRetail\patch\codol_english*.ff` load with `1`, `codol_chinese*.ff` with `0`
-  (since the consolidation one zone each, codol_english_locale and codol_chinese_locale; the table below names the
-  source zones they are built from);
-  every other patch zone loads either way. Only one set loads because C1 holds at most 12000 localize assets ("Exceeded
-  limit of 12000 'localize' assets", a fatal error at startup) and a name loaded by both sets takes two. The DLL has no
-  other language-dependent code: GBK text input, fonts, voice, controller, usermaps and the frame cap are the same.
+- **A language is a name**: `en` (the `codol_english*` zones), `zh` (C1's own text plus the `codol_chinese*` zones),
+  and any other `codol_<name>_locale.ff` put into `client_shipRetail\patch\` is the language `<name>`. `english` /
+  `chinese` are accepted for `en` / `zh`.
+- **At startup** (`patch_locale_policy.h`, `CodolStartupLanguage`): the last valid `+set k33_language <name>`; else
+  `+set k33_english 0|1` (the last one on the line; any value but `0`/`1` is ignored) or `+set codol_patchlang en|zh`
+  (an explicit valid `k33_english` wins over it, regardless of order); else the saved choice; else English. A language
+  without a zone in the patch folder starts as English, or as Chinese when English is not installed either.
+- **Saved**: `k33_language` is an archived dvar, so C1 writes `seta k33_language "<name>"` to `players\config_mp.cfg`.
+  C1 execs that file before the DLL's dvars exist and applies no `+set` to a dvar it does not know, so the DLL reads
+  both itself, before the game starts: the command line, and that line of the (plaintext) config file.
+- **While the game runs**: `k33_language` (set it from a menu with `setdvar`, or `k33_setlanguage <name>` in the
+  console) changes the language at once, in menus and in a match; `k33_languageList` (`en;zh`) names what is installed,
+  `k33_languageSerial` counts completed changes (a movie re-creates its text when it changes) and `k33_languageState`
+  is 2 when the change can only apply after a restart (a C1 site did not match, or the language's zone is not one
+  `codol_<name>_locale.ff`). Fonts do not change until restart.
+- What the startup language decides: `client_shipRetail\patch\codol_english*.ff` load ahead of code_pre_gfx with `en`,
+  `codol_chinese*.ff` with `zh` (since the consolidation one zone each, codol_english_locale and codol_chinese_locale;
+  the table below names the source zones they are built from); every other patch zone loads either way. The other
+  languages' locale zones load too, after code_post_gfx, where C1 discards nearly all of their strings as duplicates
+  and Kernel33 keeps them for a language change (`locale_switch.c`): they cost no localize asset. (C1's localize
+  pool holds 24000 entries here, `PatchLocalizePool`; the limit that matters is C1's 59,999 asset entries of all
+  types, of which an English client uses 47,530 in a small match, which is why the second language's strings are not
+  C1 assets.) The DLL has no other language-dependent code: GBK text input, fonts, voice, controller, usermaps and
+  the frame cap are the same.
 
 | zone | loads with | what |
 |---|---|---|
@@ -446,8 +459,10 @@ Other notes:
   `codol_borderless`, which Kernel33 does not implement (it behaves as windowed).
 - 000_codol_party_modes and codol_loading_mode_names name modes C1 does not have (in English, with no Chinese text to
   fall back to) and load in both languages.
-- `Kernel33.log` says which: `english: on (k33_english 1): 1 codol_english* zone(s) queued`, `english: off
-  (k33_english 0): 1 codol_english* zone(s) skipped, 1 codol_chinese* zone(s) queued`, or, with English on and no
+- `Kernel33.log` says which: `language: "en" (the default)` (or `+set k33_language`, `+set k33_english /
+  codol_patchlang`, `the saved k33_language`), then `english: on (k33_english 1): 1 codol_english* zone(s) queued`,
+  `english: off (k33_english 0): 0 codol_english* zone(s) skipped, 1 codol_chinese* zone(s) queued` (the English zone
+  is not skipped but queued after code_post_gfx as a language to switch to), or, with English on and no
   English zone installed, `english: on (k33_english 1), but no codol_english*.ff zone is in the patch folder: the
   game stays Chinese` (missing zones are never an error; a missing string shows as its `@NAME`).
 - Install all of them together: an older `codol_english_ui.ff` / `codol_english_ui_extra.ff` (which carried English
@@ -578,8 +593,8 @@ The source zones under `zone_source/` + `zones/` stay as they are (each with its
 | codol_common | ahead of code_pre_gfx | both | 000_codol_party_modes, codol_loading_mode_names, codol_zm_deathmachine_audio, controller_ingame, usermaps_patch (all but its strings) |
 | codol_common_ui_mp | ahead of the UI zones | both | voice_ui_mp, usermaps_ui_mp |
 | codol_common_postgfx_mp | after code_post_gfx | both | codol_field_orders_postgfx_mp, controller_glyphs_postgfx_mp |
-| codol_english_locale | ahead of code_pre_gfx | `k33_english 1` | codol_english, codol_english_font, codol_english_ui, codol_english_ui_extra, codol_english_usermaps, codol_english_zombies_base |
-| codol_chinese_locale | ahead of code_pre_gfx | `k33_english 0` (and no valid language) | codol_chinese_ui, codol_chinese_ui_extra, usermaps_patch's GBK strings |
+| codol_english_locale | ahead of code_pre_gfx (after code_post_gfx when another language starts) | `k33_language en` | codol_english, codol_english_font, codol_english_ui, codol_english_ui_extra, codol_english_usermaps, codol_english_zombies_base |
+| codol_chinese_locale | ahead of code_pre_gfx (after code_post_gfx when another language starts) | `k33_language zh` (and no valid language) | codol_chinese_ui, codol_chinese_ui_extra, usermaps_patch's GBK strings |
 | codol_infected_cyborg_postgfx_mp | after code_post_gfx | both | itself: C#-written, its assets point into its own runtime blocks, so they cannot move into another zone |
 | mp_codol_weapons | ahead of code_pre_gfx | both | itself (stringtables only): the MP weapon tables, whole -- an `mp_*` name, so the sh1x server mounts it too |
 | mp_codol_weapons_postgfx_mp | after code_post_gfx | both | itself: the MP weapon art (C#-written), `mp_*` for the server as well |
