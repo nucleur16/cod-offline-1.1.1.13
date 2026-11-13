@@ -175,7 +175,7 @@ Fixtures (run on this branch):
   `-Werror` at d0b0756 because that function was unused).
 - `tests/campaign_local_host_test.js` (stale since before d0b0756) drives the room's own handlers again: Ready and
   Start proceed at once in protocols 0-2 with the failure watch, and protocol 3 keeps its waiting gate.
-- **Open:** `tests/test_r46_native_source_integration.py` (CI only, not in `tests/run_tests.sh`) pins a whitespace
+- **Open:** `tests/test_r46_native_source_integration.py` (run by hand, not in `tests/run_tests.sh`) pins a whitespace
   hash of `HostGateSendTo` in `tests/r46_native_source_contract.json`; the launch observation added to that function
   here changes it. That pin was left for a review of the native change.
 

@@ -37,6 +37,34 @@ result to `../Kernel33.dll` (`K33_NO_COPY=1` leaves it in this folder). Needs li
 `third_party/` (official SDL2-devel mingw package, SHA-256 checked) and links statically: the DLL has no
 SDL2.dll dependency.
 
+## Tests
+`sh tests/run_tests.sh` (Git Bash, MSYS2 mingw32 gcc, Python, Node) runs the Windows source tests: the fixtures it
+compiles, the UI baseline, the survival, zone-pack and locale checks. Nothing runs them automatically (there is no
+CI); run it before every merge.
+
+These portable checks are **not** part of `tests/run_tests.sh`; run them by hand as well (they need no game files;
+the `gcc` ones also build with Linux gcc, the last one needs Linux gcc with AddressSanitizer, e.g. in WSL):
+
+```
+python tests/test_quick_host_real_name.py
+python tests/test_room_display_owner.py
+python -B tests/test_invitations_current_transition.py
+python -B -m unittest discover -s tests -p "test_zone_pack_*.py"
+python -B tests/test_optionview_method.py
+python -B tests/test_kernel_cutover_contract.py
+python -B tests/test_quiet_diagnostic_paths.py
+python -I -S -B tests/test_r46_native_source_integration.py
+python -I -S -B tests/test_playlist_active_ordinal_selector.py
+gcc -std=c99 -O2 -Wall -Wextra -Werror tests/test_guest_binding_wire.c p2p_startup_wire.c p2p_guest_binding_wire.c -o /tmp/guest-binding-wire && /tmp/guest-binding-wire
+gcc -std=c99 -O2 -Wall -Wextra -Werror tests/p2p_activation_transaction_test.c -o /tmp/p2p-activation-transaction && /tmp/p2p-activation-transaction
+python -I -S -B tests/test_p2p_inproc_lifecycle.py        # Linux gcc + ASan/UBSan
+```
+
+`tests/run_tests.sh` already runs `tests/quick_start_policy_test.c`, `tests/patch_locale_test.c` and
+`docs/baselines/20261024-gfx-date-time/run_regressions.py` with the Windows compiler; the same three also build and
+pass with Linux gcc (`gcc -O2 -Wall -Wextra -Werror tests/quick_start_policy_test.c -o /tmp/q && /tmp/q`, likewise
+`tests/patch_locale_test.c`, and `python -B docs/baselines/20261024-gfx-date-time/run_regressions.py --output-dir /tmp/gfx`).
+
 ## Player-hosted matches (branch `feat/p2p-hosting`)
 Since `feat/p2p-inprocess` the server runs **inside the client** by default (`mode = inprocess`):
 `p2p_inproc.c` loads the server's `sh1x_host.dll` (server makefile target `host-dll`) and ticks it on the game
@@ -554,7 +582,7 @@ The source zones under `zone_source/` + `zones/` stay as they are (each with its
 - `tests/check_zone_packs.py [--maps all] [--old <folder>]` loads the built zones the way C1 does for each language
   and proves the same assets reach the game, byte for byte and in the same list, that no list carries a name twice
   and that every asset of every old zone is in exactly one new zone (or shadowed); it also checks codo.gfx's
-  endless LevelChooser and comaplist column 23. `tests/test_zone_packs.py` (portable, CI) checks the packs against
+  endless LevelChooser and comaplist column 23. `tests/test_zone_packs.py` (portable) checks the packs against
   Kernel33's table. `--verify` compares each pack with its recorded `>build-md5` (`>build-md5-all` for `--maps all`).
 - The `mp_*` zones stay on their own: the sh1x server mounts `mp_*.ff` of the patch folder (`codol_patchZonePath`)
   with every MP map, ranked ahead of stock, so client and server read the same weapon tables and models. A zone in

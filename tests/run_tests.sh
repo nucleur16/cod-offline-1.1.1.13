@@ -1,7 +1,7 @@
 #!/bin/sh
 # Every Kernel33 source test, on Windows (MSYS2 mingw32; the Quick fixture is an x86 Windows program):
 #   sh tests/run_tests.sh
-# CI also executes the portable native Quick policy on Linux. Exact C1 x86
+# The portable checks that this script does not run are listed in README.md ("Tests"). Exact C1 x86
 # emulation requires an explicitly supplied private image; see docs.
 set -e
 cd "$(dirname "$0")/.."

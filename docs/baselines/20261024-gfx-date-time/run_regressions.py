@@ -1,4 +1,4 @@
-"""Public-asset-free CI policy regression. Outputs only to explicit scratch."""
+"""Public-asset-free portable policy regression. Outputs only to explicit scratch."""
 from pathlib import Path
 import argparse,subprocess,hashlib,json
 p=argparse.ArgumentParser();p.add_argument('--output-dir',type=Path,required=True);p.add_argument('--cc',default='cc');a=p.parse_args()

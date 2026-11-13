@@ -1,6 +1,6 @@
 """Portable reviewed native Source contracts; no C/API/DLL/game execution."""
 from pathlib import Path
-import builtins,contextlib,hashlib,io,json,re,types,unittest
+import hashlib,json,re,unittest
 ROOT=Path(__file__).resolve().parents[1]
 CONTRACT=json.loads((ROOT/'tests/r46_native_source_contract.json').read_bytes())
 def function(text,name):
@@ -103,25 +103,6 @@ class NativeR46Source(unittest.TestCase):
   for name,n in (('P2PG_PACKET_SIZE',608),('P2PG_ENVELOPE_SIZE',688),('P2PG_ACK_SIZE',76),('P2PG_DISPATCH_SIZE',88),('P2PG_QUEUED_SIZE',80)):self.assertRegex(header,r'#define '+name+r' '+str(n)+r'u')
   text=(ROOT/'p2p_guest_binding_wire.c').read_text();body=function(text,'P2PGuestConnectParse');self.assertIn('v->connect_dispatch!=1',body);self.assertIn('p2pg_u64(p+76)!=p2pg_u64(v->packet+88)',body);self.assertIn('p2pg_u32(p+84)',body)
   self.assertIn('x==p2pg_u16(v->packet+516)',body);self.assertIn('x<1024u||x>65535u',body)
- def test_strict_actual_CI_gate_rejects_every_missing_or_failed_new_step(self):
-  workflow=(ROOT/'.github/workflows/shared-ui-baseline.yml').read_text();code=workflow.split("          python - <<'PY'\n",1)[1].split('          PY',1)[0];code='\n'.join(line[10:]for line in code.splitlines())
-  complete={'native_check_%02d'%i:{'outcome':'success'}for i in range(1,20)}
-  def execute(steps):
-   fake=types.SimpleNamespace(environ={'NATIVE_QUALIFICATION_STEPS':json.dumps(steps)});safe=dict(vars(builtins))
-   def importer(name,*a,**k):
-    if name=='json':return json
-    if name=='os':return fake
-    raise AssertionError('unexpected CI gate import')
-   safe['__import__']=importer
-   with contextlib.redirect_stdout(io.StringIO()):exec(compile(code,'<real workflow gate over RAM>','exec'),{'__builtins__':safe})
-  execute(complete)
-  for i in range(1,20):
-   trial=dict(complete);del trial['native_check_%02d'%i]
-   with self.subTest(missing=i),self.assertRaises(SystemExit):execute(trial)
-  for i in (16,17,18,19):
-   for state in ('failure','skipped','cancelled'):
-    trial=dict(complete);trial['native_check_%02d'%i]={'outcome':state}
-    with self.subTest(check=i,state=state),self.assertRaises(SystemExit):execute(trial)
 
 class ProductionTestSurfaces(unittest.TestCase):
  def setUp(self):

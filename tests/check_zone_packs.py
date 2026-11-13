@@ -7,7 +7,7 @@ r"""check_zone_packs.py -- prove the consolidated patch zones (zone_packs/) load
                                                       compare with pre-migration .ff files instead of fresh parts
                                                       (e.g. an install's client_shipRetail\patch)
 
-Needs the game (C1.exe for the zone key, client_shipRetail\chinese for the stock movies), so it is not part of CI;
+Needs the game (C1.exe for the zone key, client_shipRetail\chinese for the stock movies), so it is run by hand;
 tests/test_zone_packs.py is the portable half. Run build_zones.py first: this reads the built .ff files themselves.
 
 For each language Kernel33 can select (en, zh, native: patch_locale_policy.h) it loads the old and the new patch
