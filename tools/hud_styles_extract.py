@@ -39,7 +39,18 @@ ENGLISH = {
     "MPUI_SCORE_CAPS": "SCORE",
     "MPUI_KILL_CAPS": "K",
     "MPUI_DIE_CAPS": "D",
+    "MPUI_ASSIST_CAP": "A",
+    # the fire-mode labels hud_style.c publishes for getweaponfiretype (HudFireTypeKey)
+    "SF_WEAPON_FULL_AUTO_NAME": "AUTO",
+    "SF_WEAPON_SEMIAUTO_RIFLE_NAME": "SEMI",
+    "SF_WEAPON_SEMIAUTO_PUMP_NAME": "PUMP",
+    "SF_WEAPON_ROCKET_NAME": "SINGLE",
+    "SF_WEAPON_BURST_2_NAME": "BURST",
+    "SF_WEAPON_BURST_3_NAME": "BURST",
+    "SF_WEAPON_BURST_4_NAME": "BURST",
 }
+# keys that are values of a dvar, not literals of an item, so the item scan cannot find them
+DVAR_KEYS = [k for k in ENGLISH if k.startswith("SF_WEAPON_")]
 
 
 def run_tool(dumper, *args, check=True):
@@ -129,6 +140,18 @@ def textures(dumper, install, names, out):
     run_tool(dumper, *args, check=False)      # it fails as a whole when one image has no pixels to export
     return {n: os.path.join(out, "textures", n + ".png") for n in names
             if os.path.isfile(os.path.join(out, "textures", n + ".png"))}
+
+
+def white_image(src, dst):
+    """The art as white: luminance scaled so the brightest opaque pixel is 255, alpha kept (build_hud_styles
+    TEAM_TINT: the menu item's colour then gives it 1.1.1.13's team colour)."""
+    from PIL import Image
+    im = Image.open(src).convert("RGBA")
+    px = [(0.299 * r + 0.587 * g + 0.114 * b, a) for r, g, b, a in im.getdata()]
+    top = max([l for l, a in px if a > 16] or [255.0]) or 255.0
+    out = Image.new("RGBA", im.size)
+    out.putdata([(min(255, round(l * 255 / top)),) * 3 + (a,) for l, a in px])
+    out.save(dst, optimize=True)
 
 
 def same_pixels(a, b):
@@ -230,7 +253,7 @@ def run(a):
         for m in original["p"]["8"]:
             stock_all[m["p"]["0"]] = m
         named = _named_materials(style, probe, sources, stock_all)
-        keys = set(named.pop("@keys"))
+        keys = set(named.pop("@keys")) | set(DVAR_KEYS)
         tables = {}
         for table, search, result in sorted(named.pop("@tables")):
             mine, theirs = stringtable(a.dumper, a.c1, table, work, "c1"), stringtable(a.dumper, install, table, work, style)
@@ -308,7 +331,10 @@ def run(a):
     for old in idir.glob("*.png"):
         old.unlink()
     for name in sorted(used):
-        shutil.copyfile(wanted_images[name], idir / (name + ".png"))
+        if name.endswith(hs.WHITE):
+            white_image(wanted_images[name[:-len(hs.WHITE)]], idir / (name + ".png"))
+        else:
+            shutil.copyfile(wanted_images[name], idir / (name + ".png"))
     print("extracted %s into %s (%d images)" % (", ".join(styles), hs.SRC, len(used)))
 
 

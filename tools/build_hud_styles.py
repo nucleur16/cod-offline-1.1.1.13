@@ -30,7 +30,21 @@ What a style's item needs to be kept (anything else is dropped and listed in men
   * its "@KEY" texts exist in 1.1.1.13 or are carried by codol_{english,chinese}_hud_styles;
   * its materials exist in 1.1.1.13 under that name with the same pixels, or are carried by this zone as
     k33hud<NN>_<name> (image + a `2d` material in C1's hud_scorebar_topbar layout).
-Fonts 11, 12 and 14 do not exist in 1.1.1.13 (UI_GetFontHandle 0x005EC790 knows 3..10): 0, which picks by scale.
+Fonts 11..14 do not exist in 1.1.1.13 (UI_GetFontHandle 0x005EC790 knows 3..10). MEASURED in 1.2.1.12
+(0x005F170C..0x005F181D, UI_GetFontHandle 0x005F21B0): its fonts 11..14 are four copies of fonts/normalFont's
+Font_s under the names "1".."4", so they have normalFont's glyphs and metrics: font 7 here.
+
+The ammo display. The later builds draw it with ownerDraw 5 like 1.1.1.13, but their CG_DrawPlayerAmmoValue is
+another function (MEASURED: 1.2.1.12 0x00455EF0 against C1 0x004540F0). With the item's rect (x, y, w, h) it draws
+  the clip count  "%1i" at (x, y + h), the item's font and scale, text style 7 (both hands of a dual weapon summed);
+  the clip bar    a white rectangle at x = (1 - f) * 99 - 133, y = -41, 99 * f wide, 3.5 high, f = clip / clip size
+                  (the inside of weaponbar_bg's frame: the bar empties toward its right end);
+  the reserve     "%2i" at (x + 12, y + h + 9.78), font 11, scale 0.2991.
+C1's function draws clip and reserve side by side from the rect's left edge and no bar, so in the later item's
+small rect the two numbers land on each other and the frame stays empty. A style's ownerDraw 5 item is therefore
+written as those three items (ammo_items): the clip count reads dvarint("k33_hudClipRounds") and the bar
+dvarint("k33_hudClip") (1000 * f), both published by hud_style.c every frame (1.1.1.13 has no operator for the clip
+size, and its player("clipAmmo_left") is not 0 for a one-handed weapon); the reserve reads player("stockAmmo"). Not carried over: the red pulse of a low clip / low reserve.
 """
 from __future__ import annotations
 
@@ -62,7 +76,23 @@ C1_PLAYER_FIELDS = frozenset(
     "teamname otherteamname dead clipAmmo clipAmmo_left stockAmmo fragAmmo smokeAmmo tactAmmo nightvision killstreak "
     "killstreakTarget killstreakID0 killstreakID1 killstreakID2 killstreakID3 killstreakID4 killstreakTarget0 "
     "killstreakTarget1 killstreakTarget2 killstreakTarget3 killstreakTarget4 score deaths kills ping".split())
-FONTS = {11: 0, 12: 0, 14: 0}
+FONTS = {11: 7, 12: 7, 13: 7, 14: 7}      # 1.2.1.12's fonts 11..14 are fonts/normalFont (7): see the docstring
+# ownerDraw numbers hud_style.c draws (C1's CG_OwnerDraw switch ends at 0x121 + 5 = 294; voice.c has 193..196, 266)
+OD_CLIP = 3001          # rounds in the clip, both hands of an akimbo weapon (C1's own dual-wield test)
+OD_CLIP_BAR = 3002      # the clip gauge: the item's rect, emptied from its left end
+HUD_OWNERDRAWS = (OD_CLIP, OD_CLIP_BAR)
+# The score bar's team bars in 1.1.1.13's team colours (live request): the stock scorebar_hd draws its own team's
+# bar with forecolor 0.63 0.86 0.6 and the other team's with 0.78 0.278 0.239, constants in the stock menu
+# (zones/survival_hud_postgfx_mp .original.json, hud_scorebar_topbar / hud_scorebar_bottombar). The later art has
+# its blue / orange baked in, so the generator carries a white version of it (WHITE: the luminance, scaled so the
+# brightest pixel is white, alpha kept; hud_styles_extract.py white_image) and the item takes the stock colour.
+STOCK_OWN_TEAM = (0.63, 0.86, 0.6, 1.0)
+STOCK_OTHER_TEAM = (0.78, 0.278, 0.239, 1.0)
+TEAM_TINT = {"1score_bar_bar1_bottom": STOCK_OWN_TEAM, "1score_bar_bar1": STOCK_OWN_TEAM,
+             "1score_bar_bar2_bottom": STOCK_OTHER_TEAM, "1score_bar_bar2": STOCK_OTHER_TEAM}
+WHITE = "_white"
+FIRE_DVAR = "k33_hudFireType"   # hud_style.c: "@SF_WEAPON_*_NAME" of the weapon in hand (getweaponfiretype)
+ASSISTS_DVAR = "k33_hudAssists" # hud_style.c: the local player's assists from the score records (player("assists"))
 MODE_CONSTANTS = {"istrain": 0, "isevac": 0}       # modes 1.1.1.13 does not have
 # scorebar_hd's onOpen in the later builds: if ( dvarstring("ui_gametype") == "combat" ) isCombat = 1 else 0. The
 # host keeps 1.1.1.13's menu (no onOpen), so the items read the dvar instead of the local variable.
@@ -87,14 +117,13 @@ STYLES = {
 # Items left out on purpose, whatever the checks say (the reason goes to the report):
 #  * the later builds' Survival / Evac panels inside scorebar_hd. Evac does not exist in 1.1.1.13, and Kernel33's
 #    Survival panel is the survival HUD zone's own component, shown in every style;
-#  * a label or plate whose value 1.1.1.13 cannot produce (player("assists") / player("revives") are not fields of
-#    its operator, getweaponfiretype is not an operator), so no caption or box is left without its content.
+#  * a label whose value 1.1.1.13 cannot produce: player("revives") (co-op / zombies) is not a field of its
+#    operator, and the zombies score records C1 parses do not hold it either, so no caption is left without its
+#    value. player("assists") and getweaponfiretype are implemented (hud_style.c publishes them).
 MODE_ONLY = re.compile(r"^\( (\( )?(isevac|issurvival) \)( \|\| (isevac|issurvival) \) \))? &&"
                        r'|^\( dvarint\(static\) "so_survival" \) &&')
-DROP_MATERIAL = {"fire_type_bg": "the plate behind the fire-mode text, getweaponfiretype(), which 1.1.1.13 has no "
-                                 "operator for"}
-DROP_TEXT = {"@MPUI_ASSIST_CAP": 'the label of player("assists"), which 1.1.1.13 has no field for',
-             "@MPUI_SCORE_R": 'the label of player("revives"), which 1.1.1.13 has no field for'}
+DROP_MATERIAL = {}
+DROP_TEXT = {"@MPUI_SCORE_R": 'the label of player("revives"), which 1.1.1.13 has no field for'}
 
 # the hosts this zone carries (1.1.1.13's menu, from sources/menus_stock.json); the survival HUD zone carries the
 # other two, with both gates (fold_survival)
@@ -123,6 +152,10 @@ def string(value):
 
 def integer(value):
     return {"kind": "expressionEntry", "raw": struct.pack("<IIi", 1, 0, value).hex().upper(), "p": {}}
+
+
+def number(value):
+    return {"kind": "expressionEntry", "raw": struct.pack("<IIf", 1, 1, value).hex().upper(), "p": {}}
 
 
 def statement(entries):
@@ -208,10 +241,13 @@ class StyleConverter(menus.Converter):
         except menus.MenuError as e:
             raise Dropped(str(e))
         raw = bytearray(bytes.fromhex(out["raw"]))
-        font = struct.unpack_from("<i", raw, W13 + 0x20)[0]
+        # the later build's own number (menus.Converter has already turned 11 and 14 into 0)
+        font = struct.unpack_from("<i", bytes.fromhex(node["raw"]), self.cfg["window"] + 0x20)[0]
         if font in FONTS:
             struct.pack_into("<i", raw, W13 + 0x20, FONTS[font])
-            self.note("fontEnum %d -> 0 (1.1.1.13 has no font %d; 0 picks one by scale)" % (font, font))
+            self.note("fontEnum %d -> %d (1.1.1.13 has no font %d; in 1.2.1.12 it is a copy of fonts/normalFont)"
+                      % (font, FONTS[font], font))
+        self.notes = [n for n in self.notes if not n.startswith("fontEnum") or "normalFont" in n]
         out["raw"] = raw.hex().upper()
         return out
 
@@ -237,6 +273,12 @@ class StyleConverter(menus.Converter):
                 es.append({"kind": "expressionEntry", "raw": r.hex().upper(), "p": ep})
                 continue
             name = self.ops[a] if a < len(self.ops) else "#%d (not in the %s table)" % (a, self.cfg["build"])
+            if name == "getweaponfiretype":
+                # no arguments: the later build returns the fire-mode label of the weapon in hand; hud_style.c
+                # publishes the same "@SF_WEAPON_*_NAME" key from weaponDef + 0x350 (HudFireTypeKey)
+                es += [op("dvarstring"), string(FIRE_DVAR)]
+                self.note('getweaponfiretype -> dvarstring("%s") (hud_style.c, from the weapon def)' % FIRE_DVAR)
+                continue
             if name in MODE_CONSTANTS or name == "issurvival":
                 # a function without arguments: the operator, then its ")" (which the last entry of a statement omits)
                 closed = k < len(src) and _is_op(src[k], self.ops, ")")
@@ -260,6 +302,13 @@ class StyleConverter(menus.Converter):
                 self.note('localvarint("%s") -> dvarstring("%s") == "%s" (what the later onOpen stores in it)'
                           % (arg, dvar, value))
                 k += 2
+                continue
+            if name == "player" and arg == "assists":
+                # C1 parses assists into the score records (CG_ParseScores 0x00465240, 7th value of each row, +0x1C)
+                # but its player() operator has no field for them: hud_style.c publishes the local player's
+                es += [op("dvarint"), string(ASSISTS_DVAR)]
+                self.note('player("assists") -> dvarint("%s") (hud_style.c, from the score records)' % ASSISTS_DVAR)
+                k += 1
                 continue
             if name == "player" and arg not in C1_PLAYER_FIELDS:
                 raise menus.MenuError('player("%s"): not a field of 1.1.1.13\'s operator' % arg)
@@ -387,6 +436,13 @@ def check_item(conv, style, src_menu, item, owner_draws):
             raise Dropped("material %s: not resolved (sources/facts.json)" % name)
         if how["action"] == "carry":
             new = how["asset"]
+            tint = TEAM_TINT.get(name) if "asset" in ref else None
+            if tint:
+                # the team bars in 1.1.1.13's colours: a white version of the art, tinted by the item's colour
+                new += WHITE
+                raw = bytearray(bytes.fromhex(item["raw"]))
+                struct.pack_into("<4f", raw, 0x50, *tint)
+                item["raw"] = raw.hex().upper()
             conv.used_materials.add(new)
         elif how["action"] == "stock":
             new = name
@@ -423,6 +479,49 @@ def shift(item, dx, dy):
         x, y = struct.unpack_from("<2f", raw, o)
         struct.pack_into("<2f", raw, o, x + dx, y + dy)
     item["raw"] = raw.hex().upper()
+
+
+def ammo_items(item, origin=(0.0, 0.0)):
+    """A later build's ownerDraw 5 item (in the 1.1.1.13 layout) as the three things its CG_DrawPlayerAmmoValue
+    draws from that rect: clip count, clip bar, reserve count (module docstring; MEASURED in 1.2.1.12).
+    The two counts are drawn at the item's laid-out rect (which includes the menu's origin), the bar at fixed
+    screen-placement coordinates, outside the menu: `origin` is the host menu's (x, y), taken off the bar's rect so
+    that C1's layout (rectClient + menu origin) puts it where the later build drew it (live: 10 units too far left
+    in weaponbar_hd, whose origin is -10, before this). The counts read dvarint("k33_hudClipRounds") (hud_style.c):
+    player("clipAmmo_left") is not 0 for a one-handed weapon, so clip + left doubled the count."""
+    ox, oy = origin
+    raw = bytes.fromhex(item["raw"])
+    x, y, w, h = struct.unpack_from("<4f", raw, 0x18)
+    scale = struct.unpack_from("<f", raw, W13 + 0x30)[0]
+    shown = statement([op("("), op("weaponname"), op(")"), op("!="), string("none")])
+
+    def make(rect, style, text_scale, p, owner_draw=0):
+        r = bytearray(raw)
+        for o in (4, 0x18):
+            struct.pack_into("<4f", r, o, *rect)
+        struct.pack_into("<i", r, 0x30, style)                # window style: 0 text, 3 shader
+        struct.pack_into("<i", r, 0x38, owner_draw)           # ownerDraw (hud_style.c draws OD_CLIP / OD_CLIP_BAR)
+        struct.pack_into("<i", r, W13 + 0x14, 8 if owner_draw else 0)   # item type: ownerdraw / text
+        struct.pack_into("<i", r, W13 + 0x20, FONTS[11])      # the font the later build draws all three with
+        struct.pack_into("<i", r, W13 + 0x24, 0)              # textAlignMode: from the rect's left, on its baseline
+        struct.pack_into("<f", r, W13 + 0x30, text_scale)
+        # text style 3, shadowed: what the weapon name above them uses (live request: the later build's style 7,
+        # 0x005F1FF1 in 1.2.1.12, read too thin over a bright background in 1.1.1.13)
+        struct.pack_into("<i", r, W13 + 0x34, 3)
+        return {"kind": "itemDef", "raw": bytes(r).hex().upper(), "p": dict(p, **{str(W13 + 0xA0): copy.deepcopy(shown)})}
+
+    def fexp(target, entries):
+        return {"kind": "ItemFloatExpression", "raw": struct.pack("<II", target, 0).hex().upper(),
+                "p": {"4": statement(entries)}}
+
+    # the clip count and the bar are read when they are drawn (hud_style.c HudStyleOwnerDraw, through the
+    # CG_OwnerDraw hook voice.c installs), from the same playerState C1's ammo display reads: no tick, no dvar
+    # (live: a count published on the main tick trailed the reserve count by a frame or more)
+    clip = make((x, y + h, 0, 0), 0, scale, {}, OD_CLIP)
+    bar = make((-133.0 - ox, -41.0 - oy, 99.0, 3.5), 0, scale, {}, OD_CLIP_BAR)
+    reserve = make((x + 12.0, y + h + 9.78, 0, 0), 0, 0.2991, {str(W13 + 0xA8): statement(
+        [op("("), op("player"), string("stockAmmo")])})
+    return [clip, bar, reserve]
 
 
 def menu_origin(raw):
@@ -480,14 +579,19 @@ def style_parts(style, facts=None, sources=None, stock=None):
                 except Dropped as e:
                     report.append("%s -> %s: dropped: %s" % (label, host, e))
                     continue
-                if i:           # a menu 1.1.1.13 does not register: its own visibility goes with each item
-                    old = new["p"].get(str(W13 + 0xA0))
-                    if vis is not None:
-                        new["p"][str(W13 + 0xA0)] = statement([op("("), nested(vis)] + (
-                            [op("&&"), nested(old)] if old is not None else []))
-                part["items"].append(new)
-                part["own"].append(i == 0)
                 kept += 1
+                news = [new]
+                if struct.unpack_from("<i", bytes.fromhex(new["raw"]), 0x38)[0] == 5:
+                    news = ammo_items(new, (hx, hy))
+                    report.append("%s -> %s: ownerDraw 5 written as clip count, clip bar and reserve count" % (label, host))
+                for new in news:
+                    if i:       # a menu 1.1.1.13 does not register: its own visibility goes with each item
+                        old = new["p"].get(str(W13 + 0xA0))
+                        if vis is not None:
+                            new["p"][str(W13 + 0xA0)] = statement([op("("), nested(vis)] + (
+                                [op("&&"), nested(old)] if old is not None else []))
+                    part["items"].append(new)
+                    part["own"].append(i == 0)
             report.append("%s %s -> %s: %d of %d items" % (style, name, host, kept, len(items)))
         out[host] = part
     for n in conv.notes:
@@ -701,7 +805,7 @@ def write_manifest(names):
 def locale_rows(convs):
     """The "@KEY" texts 1.1.1.13 lacks: {language: [(key, value)]} from sources/facts.json."""
     facts = load_facts()
-    need = sorted({k for c in convs.values() for k in c.keys if k in facts["localize"]})
+    need = sorted(facts["localize"])      # the items' texts and the dvar values hud_style.c publishes
     return {lang: [(k, facts["localize"][k][lang]) for k in need] for lang in LOCALE_ZONES}
 
 

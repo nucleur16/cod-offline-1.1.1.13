@@ -3,256 +3,130 @@ menufile ui_mp/scriptmenus/hud_styles.menu
 menu
   name 'weaponbar_hd' group None rect -10 0 640 480 align 4 4 style 0 ownerdraw 0 static 0x0 dynamic 0x4
   forecolor 1 1 1 1 backcolor 0 0 0 0
-  visible when ( ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( {( ! {( ui_active )}} && {( ! {( dvarbool(static) "g_hardcore" )}} && {( ! {( flashbanged )}} && {( ! {( {( weaponname ) == "killstreak_ac130_mp"} || {( weaponname ) == "killstreak_helicopter_minigun_mp"} || {( weaponname ) == "killstreak_predator_missile_mp" || weaponname ) == "remote_missile_detonator_so"} || {( {( weaponname ) == "ac130_105mm_mp"} || {( weaponname ) == "ac130_40mm_mp"} || {( weaponname ) == "ac130_25mm_mp"}} || {( adsjavelin )} || {( weaponname ) == "heli_remote_mp"} || missilecam )}} && {( ! isempjammed )} && {( ! {( dvarint(static) "scr_gameended" )}}} && ! {( selecting_location )} && {( ! {( spectatingfree )}} && {! {demofreecamera}} && {! {demofollowcamera}} && {( dvarbool(static) "cg_weaponBarHide" ) == 0}} ) || ( dvarint "k33_hudStyle" ) == 1 && {( {( ( {( ! {( ui_active )}} || menuisopen "shoutcast" ) ) && {( ! {( dvarbool(static) "g_hardcore" )}} && {( ! {( flashbanged )}} && {( ! {( {( weaponname ) == "killstreak_ac130_mp"} || {( weaponname ) == "killstreak_helicopter_minigun_mp"} || {( weaponname ) == "killstreak_predator_missile_mp" || weaponname ) == "remote_missile_detonator_so"} || {( {( weaponname ) == "ac130_105mm_mp"} || {( weaponname ) == "ac130_40mm_mp"} || {( weaponname ) == "ac130_25mm_mp"}} || {( adsjavelin )} || {( weaponname ) == "heli_remote_mp" || dvarbool(static) "heli_remote" )} || missilecam )}} && {( ! isempjammed )} && {( ! {( dvarint(static) "scr_gameended" )}}} && ! {( selecting_location )} && {( ! {( spectatingfree )}} && {! {demofreecamera}} && {! {demofollowcamera}} && {( dvarbool(static) "cg_weaponBarHide" ) == 0}} ) || ( dvarint "k33_hudStyle" ) == 2 && {( {( ( {( ! {( ui_active )}} || menuisopen "shoutcast" ) ) && {( ! {( dvarbool(static) "g_hardcore" )}} && {( ! {( flashbanged )}} && {( ! {( {( weaponname ) == "killstreak_ac130_mp"} || {( weaponname ) == "killstreak_helicopter_minigun_mp"} || {( weaponname ) == "killstreak_predator_missile_mp" || weaponname ) == "remote_missile_detonator_so"} || {( {( weaponname ) == "ac130_105mm_mp"} || {( weaponname ) == "ac130_40mm_mp"} || {( weaponname ) == "ac130_25mm_mp"}} || {( adsjavelin )} || {( weaponname ) == "heli_remote_mp" || dvarbool(static) "heli_remote" )} || missilecam )}} && {( ! isempjammed )} && {( ! {( dvarint(static) "scr_gameended" )}}} && ! {( selecting_location )} && {( ! {( spectatingfree )}} && {! {demofreecamera}} && {! {demofollowcamera}} && {( dvarbool(static) "cg_weaponBarHide" ) == 0}} )
+  visible when ( ( dvarint "k33_hudStyle" ) != 2 && {( {( {( ! {( ui_active )}} && {( ! {( dvarbool(static) "g_hardcore" )}} && {( ! {( flashbanged )}} && {( ! {( {( weaponname ) == "killstreak_ac130_mp"} || {( weaponname ) == "killstreak_helicopter_minigun_mp"} || {( weaponname ) == "killstreak_predator_missile_mp" || weaponname ) == "remote_missile_detonator_so"} || {( {( weaponname ) == "ac130_105mm_mp"} || {( weaponname ) == "ac130_40mm_mp"} || {( weaponname ) == "ac130_25mm_mp"}} || {( adsjavelin )} || {( weaponname ) == "heli_remote_mp"} || missilecam )}} && {( ! isempjammed )} && {( ! {( dvarint(static) "scr_gameended" )}}} && ! {( selecting_location )} && {( ! {( spectatingfree )}} && {! {demofreecamera}} && {! {demofollowcamera}} && {( dvarbool(static) "cg_weaponBarHide" ) == 0}} ) || ( dvarint "k33_hudStyle" ) == 2 && {( {( ( {( ! {( ui_active )}} || menuisopen "shoutcast" ) ) && {( ! {( dvarbool(static) "g_hardcore" )}} && {( ! {( flashbanged )}} && {( ! {( {( weaponname ) == "killstreak_ac130_mp"} || {( weaponname ) == "killstreak_helicopter_minigun_mp"} || {( weaponname ) == "killstreak_predator_missile_mp" || weaponname ) == "remote_missile_detonator_so"} || {( {( weaponname ) == "ac130_105mm_mp"} || {( weaponname ) == "ac130_40mm_mp"} || {( weaponname ) == "ac130_25mm_mp"}} || {( adsjavelin )} || {( weaponname ) == "heli_remote_mp" || dvarbool(static) "heli_remote" )} || missilecam )}} && {( ! isempjammed )} && {( ! {( dvarint(static) "scr_gameended" )}}} && ! {( selecting_location )} && {( ! {( spectatingfree )}} && {! {demofreecamera}} && {! {demofollowcamera}} && {( dvarbool(static) "cg_weaponBarHide" ) == 0}} )
   item type 8 font 10 textscale 0.3333 textstyle 3 align 2
     name None group None rect -70 -53.3333 37.3333 0.666667 align 10 10 style 0 ownerdraw 83 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( inkillcam ) || spectatingclient )}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( inkillcam ) || spectatingclient )}
   item type 8 font 10 textscale 0.3333 textstyle 3 align 2
     name None group None rect -70 -53.3333 37.3333 0.666667 align 10 10 style 0 ownerdraw 81 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( ! {( inkillcam )}} && {( ! {( spectatingclient )}}}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( ! {( inkillcam )}} && {( ! {( spectatingclient )}}}
   item type 8 font 9 textscale 0.3333 textstyle 3 align 9
     name 'lowammowarning' group None rect -60 0 100 100 align 2 2 style 0 ownerdraw 120 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 0.65 backcolor 0 0 0 0
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( ! {( inkillcam )}} && {( ! {( spectatingclient )}}}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( ! {( inkillcam )}} && {( ! {( spectatingclient )}}}
   item type 8 font 9 textscale 0.437475 textstyle 6 align 0
     name None group None rect -140.667 -34 77.3333 0.666667 align 10 10 style 0 ownerdraw 5 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2
+    visible when ( dvarint "k33_hudStyle" ) != 2
   item type 0 font 0 textscale 0.55 textstyle 0 align 0
     name None group None rect -213.333 -46.6667 186.667 20 align 10 10 style 3 ownerdraw 0 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
     background ,hud_weaponbar
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2
+    visible when ( dvarint "k33_hudStyle" ) != 2
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'offhandFragIcon' group None rect -88 -28 18 18 align 10 10 style 0 ownerdraw 103 static 0x100000 dynamic 0x10004
     forecolor 0.7 0.7 0.7 1 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( player "fragAmmo" )} > 3}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( player "fragAmmo" )} > 3}
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'offhandFragIcon' group None rect -84.6667 -28 18 18 align 10 10 style 0 ownerdraw 103 static 0x100000 dynamic 0x10004
     forecolor 0.7 0.7 0.7 1 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( player "fragAmmo" )} > 2}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( player "fragAmmo" )} > 2}
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'offhandFragIcon' group None rect -81.3333 -28 18 18 align 10 10 style 0 ownerdraw 103 static 0x100000 dynamic 0x10004
     forecolor 0.7 0.7 0.7 1 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( player "fragAmmo" )} > 1}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( player "fragAmmo" )} > 1}
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'offhandFragIcon' group None rect -78 -28 18 18 align 10 10 style 0 ownerdraw 103 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( player "fragAmmo" )}}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( player "fragAmmo" )}}
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'offhandFragIcon' group None rect -78 -28 18 18 align 10 10 style 0 ownerdraw 103 static 0x100000 dynamic 0x10004
     forecolor 0.5 0.3 0.3 1 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( player "fragAmmo" )} == 0}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( player "fragAmmo" )} == 0}
   item type 0 font 6 textscale 0.18 textstyle 6 align 2
     name None group None rect -96 -24 18 18 align 10 10 style 0 ownerdraw 0 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 0 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( player "fragAmmo" )} > 0}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( player "fragAmmo" )} > 0}
     exp text ( "^3" + keybinding "+frag" )
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'offhandSmokeIcon' group None rect -121.333 -28 18 18 align 10 10 style 0 ownerdraw 104 static 0x100000 dynamic 0x10004
     forecolor 0.7 0.7 0.7 1 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( player "smokeAmmo" )} > 3}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( player "smokeAmmo" )} > 3}
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'offhandSmokeIcon' group None rect -118 -28 18 18 align 10 10 style 0 ownerdraw 104 static 0x100000 dynamic 0x10004
     forecolor 0.7 0.7 0.7 1 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( player "smokeAmmo" )} > 2}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( player "smokeAmmo" )} > 2}
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'offhandSmokeIcon' group None rect -114.667 -28 18 18 align 10 10 style 0 ownerdraw 104 static 0x100000 dynamic 0x10004
     forecolor 0.7 0.7 0.7 1 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( player "smokeAmmo" )} > 1}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( player "smokeAmmo" )} > 1}
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'offhandSmokeIcon' group None rect -111.333 -28 18 18 align 10 10 style 0 ownerdraw 104 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( player "smokeAmmo" )}}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( player "smokeAmmo" )}}
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'offhandSmokeIcon' group None rect -111.333 -28 18 18 align 10 10 style 0 ownerdraw 104 static 0x100000 dynamic 0x10004
     forecolor 0.5 0.3 0.3 1 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( player "smokeAmmo" )} == 0}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( player "smokeAmmo" )} == 0}
   item type 0 font 6 textscale 0.18 textstyle 6 align 2
     name None group None rect -129.333 -24 18 18 align 10 10 style 0 ownerdraw 0 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 0 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( player "smokeAmmo" )} > 0}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( player "smokeAmmo" )} > 0}
     exp text ( "^3" + keybinding "+smoke" )
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'offhandTactIcon' group None rect -154.667 -28 18 18 align 10 10 style 0 ownerdraw 284 static 0x100000 dynamic 0x10004
     forecolor 0.7 0.7 0.7 1 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( player "tactAmmo" )} > 3}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( player "tactAmmo" )} > 3}
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'offhandTactIcon' group None rect -151.333 -28 18 18 align 10 10 style 0 ownerdraw 284 static 0x100000 dynamic 0x10004
     forecolor 0.7 0.7 0.7 1 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( player "tactAmmo" )} > 2}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( player "tactAmmo" )} > 2}
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'offhandTactIcon' group None rect -148 -28 18 18 align 10 10 style 0 ownerdraw 284 static 0x100000 dynamic 0x10004
     forecolor 0.7 0.7 0.7 1 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( player "tactAmmo" )} > 1}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( player "tactAmmo" )} > 1}
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'offhandTactIcon' group None rect -144.667 -28 18 18 align 10 10 style 0 ownerdraw 284 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( player "tactAmmo" )} > 0}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( player "tactAmmo" )} > 0}
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'offhandTactIcon' group None rect -144.667 -28 18 18 align 10 10 style 0 ownerdraw 284 static 0x100000 dynamic 0x10004
     forecolor 0.5 0.3 0.3 1 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( player "tactAmmo" )} == 0}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( player "tactAmmo" )} == 0}
   item type 0 font 6 textscale 0.18 textstyle 6 align 2
     name None group None rect -162.667 -24 18 18 align 10 10 style 0 ownerdraw 0 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 0 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {( player "tactAmmo" )} > 0}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( {( player "tactAmmo" )} > 0}
     exp text ( "^3" + keybinding "+tact" )
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name None group None rect -45 -40 20 20 align 10 10 style 0 ownerdraw 294 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( hasaltweapon )}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( hasaltweapon )}
   item type 0 font 6 textscale 0.25 textstyle 6 align 1
     name None group None rect -45 -40 20 20 align 10 10 style 0 ownerdraw 0 static 0x100000 dynamic 0x10004
     forecolor 1 1 0 1 backcolor 0 0 0 0
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( hasaltweapon )}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( hasaltweapon )}
     exp text ( "^3" + keybinding "weapalt" )
-  item type 8 font 0 textscale 0.24 textstyle 3 align 2
-    name None group None rect -134 -42 37.3333 0.666667 align 10 10 style 0 ownerdraw 83 static 0x100000 dynamic 0x10004
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( inkillcam ) || spectatingclient ) && ( weaponname ) != "none" )}
-  item type 8 font 10 textscale 0.22439 textstyle 3 align 2
-    name None group None rect -134 -42 37.3333 0.666667 align 10 10 style 0 ownerdraw 83 static 0x100000 dynamic 0x10004
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( ! {( inkillcam )}} && {( ! {( spectatingclient )}} && ( weaponname ) != "none" )}
-  item type 8 font 0 textscale 0.56912 textstyle 7 align 0
-    name None group None rect -32 -52 18.6667 18 align 10 10 style 0 ownerdraw 5 static 0x100000 dynamic 0x10004
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    visible when ( dvarint "k33_hudStyle" ) == 1
-  item type 0 font 0 textscale 0.55 textstyle 0 align 0
-    name None group None rect -136.667 -42 130.667 18.6667 align 10 10 style 3 ownerdraw 0 static 0x100000 dynamic 0x10004
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    background ,k33hud12_weaponbar_bg
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( weaponname ) != "none"}
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'offhandFragIcon' group None rect -114.667 -38.5 18 18 align 10 10 style 0 ownerdraw 103 static 0x100000 dynamic 0x10004
-    forecolor 0.7 0.7 0.7 1 backcolor 0 0 0 0
-    exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( player "fragAmmo" )} > 3}
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'offhandFragIcon' group None rect -111.333 -38.5 18 18 align 10 10 style 0 ownerdraw 103 static 0x100000 dynamic 0x10004
-    forecolor 0.7 0.7 0.7 1 backcolor 0 0 0 0
-    exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( player "fragAmmo" )} > 2}
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'offhandFragIcon' group None rect -108 -38.5 18 18 align 10 10 style 0 ownerdraw 103 static 0x100000 dynamic 0x10004
-    forecolor 0.7 0.7 0.7 1 backcolor 0 0 0 0
-    exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( player "fragAmmo" )} > 1}
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'offhandFragIcon' group None rect -104.667 -38.5 18 18 align 10 10 style 0 ownerdraw 103 static 0x100000 dynamic 0x10004
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( player "fragAmmo" )}}
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'offhandFragIcon' group None rect -104.667 -38.5 18 18 align 10 10 style 0 ownerdraw 103 static 0x100000 dynamic 0x10004
-    forecolor 0.5 0.3 0.3 1 backcolor 0 0 0 0
-    exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( player "fragAmmo" )} == 0}
-  item type 0 font 0 textscale 0.12 textstyle 7 align 14
-    name None group None rect -103 -32 12 12 align 10 10 style 0 ownerdraw 0 static 0x100000 dynamic 0x10004
-    forecolor 0.16 0.65 1 1 backcolor 0 0 0 0
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( player "fragAmmo" )} > 0}
-    exp text ( "^2" + keybinding "+frag" )
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'offhandSmokeIcon' group None rect -61.3333 -38.5 18 18 align 10 10 style 0 ownerdraw 104 static 0x100000 dynamic 0x10004
-    forecolor 0.7 0.7 0.7 1 backcolor 0 0 0 0
-    exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( player "smokeAmmo" )} > 3}
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'offhandSmokeIcon' group None rect -58 -38.5 18 18 align 10 10 style 0 ownerdraw 104 static 0x100000 dynamic 0x10004
-    forecolor 0.7 0.7 0.7 1 backcolor 0 0 0 0
-    exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( player "smokeAmmo" )} > 2}
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'offhandSmokeIcon' group None rect -54.6667 -38.5 18 18 align 10 10 style 0 ownerdraw 104 static 0x100000 dynamic 0x10004
-    forecolor 0.7 0.7 0.7 1 backcolor 0 0 0 0
-    exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( player "smokeAmmo" )} > 1}
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'offhandSmokeIcon' group None rect -51.3333 -38.5 18 18 align 10 10 style 0 ownerdraw 104 static 0x100000 dynamic 0x10004
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( player "smokeAmmo" )}}
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'offhandSmokeIcon' group None rect -51.3333 -38.5 18 18 align 10 10 style 0 ownerdraw 104 static 0x100000 dynamic 0x10004
-    forecolor 0.5 0.3 0.3 1 backcolor 0 0 0 0
-    exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( player "smokeAmmo" )} == 0}
-  item type 0 font 0 textscale 0.12 textstyle 7 align 14
-    name None group None rect -49.6667 -32 12 12 align 10 10 style 0 ownerdraw 0 static 0x100000 dynamic 0x10004
-    forecolor 0.16 0.65 1 1 backcolor 0 0 0 0
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( player "smokeAmmo" )} > 0}
-    exp text ( "^2" + keybinding "+smoke" )
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'offhandTactIcon' group None rect -141.333 -38.5 18 18 align 10 10 style 0 ownerdraw 284 static 0x100000 dynamic 0x10004
-    forecolor 0.7 0.7 0.7 1 backcolor 0 0 0 0
-    exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( player "tactAmmo" )} > 3}
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'offhandTactIcon' group None rect -138 -38.5 18 18 align 10 10 style 0 ownerdraw 284 static 0x100000 dynamic 0x10004
-    forecolor 0.7 0.7 0.7 1 backcolor 0 0 0 0
-    exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( player "tactAmmo" )} > 2}
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'offhandTactIcon' group None rect -134.667 -38.5 18 18 align 10 10 style 0 ownerdraw 284 static 0x100000 dynamic 0x10004
-    forecolor 0.7 0.7 0.7 1 backcolor 0 0 0 0
-    exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( player "tactAmmo" )} > 1}
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'offhandTactIcon' group None rect -131.333 -38.5 18 18 align 10 10 style 0 ownerdraw 284 static 0x100000 dynamic 0x10004
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( player "tactAmmo" )} > 0}
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'offhandTactIcon' group None rect -131.333 -38.5 18 18 align 10 10 style 0 ownerdraw 284 static 0x100000 dynamic 0x10004
-    forecolor 0.5 0.3 0.3 1 backcolor 0 0 0 0
-    exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( player "tactAmmo" )} == 0}
-  item type 0 font 0 textscale 0.12 textstyle 7 align 14
-    name None group None rect -129.667 -32 12 12 align 10 10 style 0 ownerdraw 0 static 0x100000 dynamic 0x10004
-    forecolor 0.16 0.65 1 1 backcolor 0 0 0 0
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( player "tactAmmo" )} > 0}
-    exp text ( "^2" + keybinding "+tact" )
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name None group None rect -58 -40 20 20 align 10 10 style 0 ownerdraw 294 static 0x100000 dynamic 0x10004
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( hasaltweapon ) && ( weaponname ) != "none" )}
-  item type 0 font 0 textscale 0.12 textstyle 7 align 14
-    name None group None rect -58 -40 20 20 align 10 10 style 0 ownerdraw 0 static 0x100000 dynamic 0x10004
-    forecolor 0.16 0.65 1 1 backcolor 0 0 0 0
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( hasaltweapon ) && ( weaponname ) != "none" )}
-    exp text ( "^2" + keybinding "weapalt" )
-  item type 0 font 0 textscale 0.55 textstyle 0 align 0
-    name None group None rect -70.4 -38.9 20.4 20.4 align 10 10 style 3 ownerdraw 0 static 0x100000 dynamic 0x10004
-    forecolor 0.7 0.7 0.7 1 backcolor 0 0 0 0
-    exp float[8] ( hudfade "weapon" )
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( {( ( {( ! {( ui_active )}} || menuisopen "shoutcast" ) ) && {( ! {( dvarbool(static) "g_hardcore" )}} && {( ! {( flashbanged )}} && {( ! {( {( weaponname ) == "killstreak_ac130_mp"} || {( weaponname ) == "killstreak_helicopter_minigun_mp"} || {( weaponname ) == "killstreak_predator_missile_mp" || weaponname ) == "remote_missile_detonator_so"} || {( {( weaponname ) == "ac130_105mm_mp"} || {( weaponname ) == "ac130_40mm_mp"} || {( weaponname ) == "ac130_25mm_mp"}} || {( adsjavelin )} || {( weaponname ) == "heli_remote_mp" || dvarbool(static) "heli_remote" )} || missilecam )}} && {( ! isempjammed )} && {( ! {( dvarint(static) "scr_gameended" )}}} && ! {( selecting_location )} && {( ! {( spectatingfree )}} && {! {demofreecamera}} && {! {demofollowcamera}} && {( dvarbool(static) "cg_weaponBarHide" ) == 0}} && {( actionslotusable 1 ) && {( player "killstreakID0" )} && iszm )}}
-    exp material ( tablelookup "mp/coKillstreakStatsTable.csv" , 0 , {( player "killstreakID0" )} , 15 )
-  item type 8 font 9 textscale 0.25 textstyle 3 align 9
-    name 'lowammowarning' group None rect -40 85 100 15 align 9 9 style 0 ownerdraw 120 static 0x100000 dynamic 0x10004
-    forecolor 1 1 1 0.65 backcolor 0 0 0 0
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( {( {( ( {( ! {( ui_active )}} || menuisopen "shoutcast" ) ) && {( ! {( dvarbool(static) "g_hardcore" )}} && {( ! {( flashbanged )}} && {( ! {( {( weaponname ) == "killstreak_ac130_mp"} || {( weaponname ) == "killstreak_helicopter_minigun_mp"} || {( weaponname ) == "killstreak_predator_missile_mp" || weaponname ) == "remote_missile_detonator_so"} || {( {( weaponname ) == "ac130_105mm_mp"} || {( weaponname ) == "ac130_40mm_mp"} || {( weaponname ) == "ac130_25mm_mp"}} || {( adsjavelin )} || {( weaponname ) == "heli_remote_mp" || dvarbool(static) "heli_remote" )} || missilecam )}} && {( ! isempjammed )} && {( ! {( dvarint(static) "scr_gameended" )}}} && ! {( selecting_location )} && {( ! {( spectatingfree )}} && {! {demofreecamera}} && {! {demofollowcamera}} && {( dvarbool(static) "cg_weaponBarHide" ) == 0}} && {( {( ! {( inkillcam )}} && {( ! {( spectatingclient )}} && ( weaponname ) != "none" )}}
   item type 8 font 0 textscale 0.24 textstyle 3 align 2
     name None group None rect -134 -42 37.3333 0.666667 align 10 10 style 0 ownerdraw 83 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
@@ -261,14 +135,33 @@ menu
     name None group None rect -134 -42 37.3333 0.666667 align 10 10 style 0 ownerdraw 83 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
     visible when ( dvarint "k33_hudStyle" ) == 2 && {( {( ! {( inkillcam )}} && {( ! {( spectatingclient )}} && ( weaponname ) != "none" )}
-  item type 8 font 0 textscale 0.56912 textstyle 7 align 0
-    name None group None rect -32 -52 18.6667 18 align 10 10 style 0 ownerdraw 5 static 0x100000 dynamic 0x10004
+  item type 0 font 0 textscale 0.55 textstyle 0 align 0
+    name None group None rect -134.667 -61.3333 40 8.66667 align 10 10 style 3 ownerdraw 0 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
-    visible when ( dvarint "k33_hudStyle" ) == 2
+    background ,k33hud26_fire_type_bg
+    visible when ( dvarint "k33_hudStyle" ) == 2 && {( weaponname ) != "none"}
+  item type 0 font 10 textscale 0.15 textstyle 0 align 8
+    name None group None rect -134.667 -61.3333 40 8.66667 align 10 10 style 0 ownerdraw 0 static 0x100000 dynamic 0x10004
+    forecolor 0 0 0 1 backcolor 0 0 0 0
+    visible when ( dvarint "k33_hudStyle" ) == 2 && {( weaponname ) != "none"}
+    exp text ( locstring dvarstring "k33_hudFireType" ) )
+  item type 8 font 7 textscale 0.56912 textstyle 3 align 0
+    name None group None rect -22 -34 0 0 align 10 10 style 0 ownerdraw 3001 static 0x100000 dynamic 0x10004
+    forecolor 1 1 1 1 backcolor 0 0 0 0
+    visible when ( dvarint "k33_hudStyle" ) == 2 && {( weaponname ) != "none"}
+  item type 8 font 7 textscale 0.56912 textstyle 3 align 0
+    name None group None rect -123 -41 99 3.5 align 10 10 style 0 ownerdraw 3002 static 0x100000 dynamic 0x10004
+    forecolor 1 1 1 1 backcolor 0 0 0 0
+    visible when ( dvarint "k33_hudStyle" ) == 2 && {( weaponname ) != "none"}
+  item type 0 font 7 textscale 0.2991 textstyle 3 align 0
+    name None group None rect -10 -24.22 0 0 align 10 10 style 0 ownerdraw 0 static 0x100000 dynamic 0x10004
+    forecolor 1 1 1 1 backcolor 0 0 0 0
+    visible when ( dvarint "k33_hudStyle" ) == 2 && {( weaponname ) != "none"}
+    exp text ( player "stockAmmo"
   item type 0 font 0 textscale 0.55 textstyle 0 align 0
     name None group None rect -136.667 -42 130.667 18.6667 align 10 10 style 3 ownerdraw 0 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
-    background ,k33hud12_weaponbar_bg
+    background ,k33hud26_weaponbar_bg
     visible when ( dvarint "k33_hudStyle" ) == 2 && {( weaponname ) != "none"}
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'offhandFragIcon' group None rect -112.667 -36.5 16 16 align 10 10 style 0 ownerdraw 103 static 0x100000 dynamic 0x10004
@@ -295,7 +188,7 @@ menu
     forecolor 0.5 0.3 0.3 1 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
     visible when ( dvarint "k33_hudStyle" ) == 2 && {( {( player "fragAmmo" )} == 0 && ! iszm )}
-  item type 0 font 0 textscale 0.12 textstyle 7 align 14
+  item type 0 font 7 textscale 0.12 textstyle 7 align 14
     name None group None rect -101.667 -30.6667 10.6667 10.6667 align 10 10 style 0 ownerdraw 0 static 0x100000 dynamic 0x10004
     forecolor 0.16 0.65 1 1 backcolor 0 0 0 0
     visible when ( dvarint "k33_hudStyle" ) == 2 && {( {( player "fragAmmo" )} > 0}
@@ -325,7 +218,7 @@ menu
     forecolor 0.5 0.3 0.3 1 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
     visible when ( dvarint "k33_hudStyle" ) == 2 && {( {( player "smokeAmmo" )} == 0 && ! iszm )}
-  item type 0 font 0 textscale 0.12 textstyle 7 align 14
+  item type 0 font 7 textscale 0.12 textstyle 7 align 14
     name None group None rect -48.3333 -30.6667 10.6667 10.6667 align 10 10 style 0 ownerdraw 0 static 0x100000 dynamic 0x10004
     forecolor 0.16 0.65 1 1 backcolor 0 0 0 0
     visible when ( dvarint "k33_hudStyle" ) == 2 && {( {( player "smokeAmmo" )} > 0}
@@ -355,7 +248,7 @@ menu
     forecolor 0.5 0.3 0.3 1 backcolor 0 0 0 0
     exp float[8] ( hudfade "weapon" )
     visible when ( dvarint "k33_hudStyle" ) == 2 && {( {( player "tactAmmo" )} == 0 && ! iszm )}
-  item type 0 font 0 textscale 0.12 textstyle 7 align 14
+  item type 0 font 7 textscale 0.12 textstyle 7 align 14
     name None group None rect -128.333 -30.6667 10.6667 10.6667 align 10 10 style 0 ownerdraw 0 static 0x100000 dynamic 0x10004
     forecolor 0.16 0.65 1 1 backcolor 0 0 0 0
     visible when ( dvarint "k33_hudStyle" ) == 2 && {( {( player "tactAmmo" )} > 0}
@@ -364,7 +257,7 @@ menu
     name None group None rect -58 -40 20 20 align 10 10 style 0 ownerdraw 294 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
     visible when ( dvarint "k33_hudStyle" ) == 2 && {( hasaltweapon ) && ( weaponname ) != "none" )}
-  item type 0 font 0 textscale 0.12 textstyle 7 align 14
+  item type 0 font 7 textscale 0.12 textstyle 7 align 14
     name None group None rect -58 -40 20 20 align 10 10 style 0 ownerdraw 0 static 0x100000 dynamic 0x10004
     forecolor 0.16 0.65 1 1 backcolor 0 0 0 0
     visible when ( dvarint "k33_hudStyle" ) == 2 && {( hasaltweapon ) && ( weaponname ) != "none" )}
@@ -383,177 +276,90 @@ menu
 menu
   name 'minimap_fullscreen' group None rect 6 6 0 0 align 8 8 style 0 ownerdraw 0 static 0x30000000 dynamic 0x4
   forecolor 1 1 1 1 backcolor 0 0 0 0
-  visible when ( ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( {demofreecamera} || {demofollowcamera} || ( {( {( ! {( ui_active )}} && {( ! {( spectatingclient )}} && {( ! {( flashbanged )}} && {( ! {( {( {( weaponname ) == "killstreak_ac130_mp"} || {( weaponname ) == "killstreak_helicopter_minigun_mp"} || {( weaponname ) == "killstreak_predator_missile_mp" || weaponname ) == "remote_missile_detonator_so"} || {( {( weaponname ) == "ac130_105mm_mp"} || {( weaponname ) == "ac130_40mm_mp"} || {( weaponname ) == "ac130_25mm_mp"}} || {( adsjavelin )} || {( weaponname ) == "heli_remote_mp"} || missilecam )} || {( getperk "equipment" ) == "specialty_blastshield" && usingabilitymodifier "modBlastShield" ) && ( {( ! {( dvarint(static) "scr_gameended" )}} || inkillcam ) )}}} && {( ! {( scoped )}} && {( ! {( selecting_location )}} && {( ! isempjammed )} && ( dvarbool(static) "cg_miniMapHide" ) == 0 ) && ( dvarstring(static) "g_gametype" ) != "zm" ) && ( {( ! {( dvarbool(static) "g_hardcore" )}} || radarisenabled ) || dvarint(static) "g_compassShowEnemies" ) ) && {( ! {( dvarint(static) "scr_gameended" )}}} && {( ! {( milliseconds ) - localvarint "ui_show_killedBy" ) < 4000 || {( inkillcam )}}} && {( ! {( selecting_location )}} && {( ! {( spectatingfree )}} )} ) || ( dvarint "k33_hudStyle" ) == 1 && {( {demofreecamera} || {demofollowcamera} || ( {( ( {( ! {( ui_active )}} || menuisopen "shoutcast" ) ) && ( dvarbool(static) "cl_minimapInShoutcast" ) == 0 ) && {( ! {( flashbanged )}} && {( ! {( {( {( weaponname ) == "killstreak_ac130_mp"} || {( weaponname ) == "killstreak_helicopter_minigun_mp"} || {( weaponname ) == "killstreak_predator_missile_mp" || weaponname ) == "remote_missile_detonator_so"} || {( {( weaponname ) == "ac130_105mm_mp"} || {( weaponname ) == "ac130_40mm_mp"} || {( weaponname ) == "ac130_25mm_mp"}} || {( adsjavelin )} || {( weaponname ) == "heli_remote_mp" || dvarbool(static) "heli_remote" )} || missilecam )} || {( getperk "equipment" ) == "specialty_blastshield" && usingabilitymodifier "modBlastShield" ) && ( {( ! {( dvarint(static) "scr_gameended" )}} || inkillcam ) )}}} && {( ! {( scoped )}} && {( ! {( selecting_location )}} && {( ! isempjammed )} && ( dvarbool(static) "cg_miniMapHide" ) == 0 ) && ( dvarstring(static) "g_gametype" ) != "zm" && ( dvarstring(static) "g_gametype" ) != "train" ) && ( {( ! {( dvarbool(static) "g_hardcore" )}} || radarisenabled ) || dvarint(static) "g_compassShowEnemies" ) ) && {( ! {( dvarint(static) "scr_gameended" )}} )} && {( ! {( milliseconds ) - localvarint "ui_show_killedBy" ) < 4000 || {( inkillcam )}}} && {( ! {( selecting_location )}} && {( ! {( spectatingfree )}} )} ) || ( dvarint "k33_hudStyle" ) == 2 && {( {demofreecamera} || {demofollowcamera} || ( {( ( {( ! {( ui_active )}} || menuisopen "shoutcast" ) ) && ( dvarbool(static) "cl_minimapInShoutcast" ) == 0 ) && {( ! {( flashbanged )}} && {( ! {( {( {( weaponname ) == "killstreak_ac130_mp"} || {( weaponname ) == "killstreak_helicopter_minigun_mp"} || {( weaponname ) == "killstreak_predator_missile_mp" || weaponname ) == "remote_missile_detonator_so"} || {( {( weaponname ) == "ac130_105mm_mp"} || {( weaponname ) == "ac130_40mm_mp"} || {( weaponname ) == "ac130_25mm_mp"}} || {( adsjavelin )} || {( weaponname ) == "heli_remote_mp" || dvarbool(static) "heli_remote" )} || missilecam )} || {( getperk "equipment" ) == "specialty_blastshield" && usingabilitymodifier "modBlastShield" ) && ( {( ! {( dvarint(static) "scr_gameended" )}} || inkillcam ) )}}} && {( ! {( scoped )}} && {( ! {( selecting_location )}} && {( ! isempjammed )} && ( dvarbool(static) "cg_miniMapHide" ) == 0 ) && ( dvarstring(static) "g_gametype" ) != "zm" && ( dvarstring(static) "g_gametype" ) != "train" ) && ( {( ! {( dvarbool(static) "g_hardcore" )}} || radarisenabled ) ) && {( ! {( dvarint(static) "scr_gameended" )}} )} && {( ! {( milliseconds ) - localvarint "ui_show_killedBy" ) < 4000 || {( inkillcam )}}} && {( ! {( selecting_location )}} && {( ! {( spectatingfree )}} )} )
+  visible when ( ( dvarint "k33_hudStyle" ) != 2 && {( {demofreecamera} || {demofollowcamera} || ( {( {( ! {( ui_active )}} && {( ! {( spectatingclient )}} && {( ! {( flashbanged )}} && {( ! {( {( {( weaponname ) == "killstreak_ac130_mp"} || {( weaponname ) == "killstreak_helicopter_minigun_mp"} || {( weaponname ) == "killstreak_predator_missile_mp" || weaponname ) == "remote_missile_detonator_so"} || {( {( weaponname ) == "ac130_105mm_mp"} || {( weaponname ) == "ac130_40mm_mp"} || {( weaponname ) == "ac130_25mm_mp"}} || {( adsjavelin )} || {( weaponname ) == "heli_remote_mp"} || missilecam )} || {( getperk "equipment" ) == "specialty_blastshield" && usingabilitymodifier "modBlastShield" ) && ( {( ! {( dvarint(static) "scr_gameended" )}} || inkillcam ) )}}} && {( ! {( scoped )}} && {( ! {( selecting_location )}} && {( ! isempjammed )} && ( dvarbool(static) "cg_miniMapHide" ) == 0 ) && ( dvarstring(static) "g_gametype" ) != "zm" ) && ( {( ! {( dvarbool(static) "g_hardcore" )}} || radarisenabled ) || dvarint(static) "g_compassShowEnemies" ) ) && {( ! {( dvarint(static) "scr_gameended" )}}} && {( ! {( milliseconds ) - localvarint "ui_show_killedBy" ) < 4000 || {( inkillcam )}}} && {( ! {( selecting_location )}} && {( ! {( spectatingfree )}} )} ) || ( dvarint "k33_hudStyle" ) == 2 && {( {demofreecamera} || {demofollowcamera} || ( {( ( {( ! {( ui_active )}} || menuisopen "shoutcast" ) ) && ( dvarbool(static) "cl_minimapInShoutcast" ) == 0 ) && {( ! {( flashbanged )}} && {( ! {( {( {( weaponname ) == "killstreak_ac130_mp"} || {( weaponname ) == "killstreak_helicopter_minigun_mp"} || {( weaponname ) == "killstreak_predator_missile_mp" || weaponname ) == "remote_missile_detonator_so"} || {( {( weaponname ) == "ac130_105mm_mp"} || {( weaponname ) == "ac130_40mm_mp"} || {( weaponname ) == "ac130_25mm_mp"}} || {( adsjavelin )} || {( weaponname ) == "heli_remote_mp" || dvarbool(static) "heli_remote" )} || missilecam )} || {( getperk "equipment" ) == "specialty_blastshield" && usingabilitymodifier "modBlastShield" ) && ( {( ! {( dvarint(static) "scr_gameended" )}} || inkillcam ) )}}} && {( ! {( scoped )}} && {( ! {( selecting_location )}} && {( ! isempjammed )} && ( dvarbool(static) "cg_miniMapHide" ) == 0 ) && ( dvarstring(static) "g_gametype" ) != "zm" && ( dvarstring(static) "g_gametype" ) != "train" ) && ( {( ! {( dvarbool(static) "g_hardcore" )}} || radarisenabled ) ) && {( ! {( dvarint(static) "scr_gameended" )}} )} && {( ! {( milliseconds ) - localvarint "ui_show_killedBy" ) < 4000 || {( inkillcam )}}} && {( ! {( selecting_location )}} && {( ! {( spectatingfree )}} )} )
   item type 0 font 0 textscale 0.55 textstyle 0 align 0
     name 'minimap_border' group None rect 6 6 100 100 align 8 8 style 0 ownerdraw 0 static 0x0 dynamic 0x4
     forecolor 1 1 1 1 backcolor 0 0 0 0
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2
+    visible when ( dvarint "k33_hudStyle" ) != 2
   item type 0 font 0 textscale 0.55 textstyle 0 align 0
     name None group None rect 6 6 100 100 align 8 8 style 3 ownerdraw 0 static 0x0 dynamic 0x10004
     forecolor 0.89 0.98 0.95 0.05 backcolor 0 0 0 0
     background ,minimap_scanlines
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2
+    visible when ( dvarint "k33_hudStyle" ) != 2
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'minimap_map' group None rect 6 6 100 100 align 8 8 style 0 ownerdraw 159 static 0x0 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
     background ,compass_map_default
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2
+    visible when ( dvarint "k33_hudStyle" ) != 2
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'minimap_friendlies' group None rect 6 6 100 100 align 8 8 style 0 ownerdraw 158 static 0x0 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
     exp float[8] ( 1 - radarjamintensity )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2
+    visible when ( dvarint "k33_hudStyle" ) != 2
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'minimap_objectives' group None rect 6 6 100 100 align 8 8 style 0 ownerdraw 152 static 0x0 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
     background ,objective_line
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2
+    visible when ( dvarint "k33_hudStyle" ) != 2
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'minimap_enemies' group None rect 6 6 100 100 align 8 8 style 0 ownerdraw 175 static 0x0 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
     exp float[8] ( 1 - radarjamintensity )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2
+    visible when ( dvarint "k33_hudStyle" ) != 2
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'minimap_vehicles' group None rect 6 6 100 100 align 8 8 style 0 ownerdraw 155 static 0x0 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
     exp float[8] ( 1 - radarjamintensity )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2
+    visible when ( dvarint "k33_hudStyle" ) != 2
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'minimap_planes' group None rect 6 6 100 100 align 8 8 style 0 ownerdraw 156 static 0x0 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
     exp float[8] ( 1 - radarjamintensity )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2
+    visible when ( dvarint "k33_hudStyle" ) != 2
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'minimap_sentries' group None rect 6 6 100 100 align 8 8 style 0 ownerdraw 165 static 0x0 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
     exp float[8] ( 1 - radarjamintensity )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2
+    visible when ( dvarint "k33_hudStyle" ) != 2
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'minimap_scramblers' group None rect 6 6 100 100 align 8 8 style 0 ownerdraw 168 static 0x0 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
     exp float[8] ( 1 - radarjamintensity )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2
+    visible when ( dvarint "k33_hudStyle" ) != 2
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'minimap_player' group None rect 6 6 100 100 align 8 8 style 0 ownerdraw 150 static 0x0 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
     background ,compassping_player
     exp float[8] ( 1 - radarjamintensity )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2
+    visible when ( dvarint "k33_hudStyle" ) != 2
   item type 0 font 0 textscale 0.55 textstyle 0 align 0
     name None group None rect 6 6 100 100 align 8 8 style 3 ownerdraw 0 static 0x0 dynamic 0x10004
     forecolor 0.64 0.74 0.71 1 backcolor 0 0 0 0
     background ,white
     exp float[8] ( radarjamintensity )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( radarisjammed )}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( radarisjammed )}
   item type 0 font 0 textscale 0.55 textstyle 0 align 0
     name None group None rect 6 6 100 100 align 8 8 style 3 ownerdraw 0 static 0x0 dynamic 0x10004
     forecolor 0.89 0.98 0.95 1 backcolor 0 0 0 0
     background ,ac130_overlay_grain
     exp float[8] ( radarjamintensity )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2 && {( radarisjammed )}
+    visible when ( dvarint "k33_hudStyle" ) != 2 && {( radarisjammed )}
   item type 0 font 0 textscale 0.55 textstyle 0 align 0
     name None group None rect 6 6 100 100 align 8 8 style 3 ownerdraw 0 static 0x0 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
     background ,stencil_base
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2
+    visible when ( dvarint "k33_hudStyle" ) != 2
   item type 0 font 0 textscale 0.55 textstyle 0 align 0
     name None group None rect 6 6 100 100 align 8 8 style 3 ownerdraw 0 static 0x0 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
     background ,scanlines_stencil
     exp float[1] ( ( 0 - 100 ) + ( ( 100 * 2 ) * {( 1 - {( ( milliseconds ) % 4000 ) / 4000}} )
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2
+    visible when ( dvarint "k33_hudStyle" ) != 2
   item type 0 font 0 textscale 0.55 textstyle 0 align 0
     name None group None rect 6 6 100 100 align 8 8 style 3 ownerdraw 0 static 0x0 dynamic 0x10004
     forecolor 0.89 0.98 0.95 1 backcolor 0 0 0 0
     background ,stencil_fill
-    visible when ( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2
-  item type 0 font 0 textscale 0.55 textstyle 0 align 0
-    name None group None rect 6 6 115 115 align 8 8 style 1 ownerdraw 0 static 0x0 dynamic 0x4
-    forecolor 1 1 1 1 backcolor 0 0 0 0.75
-    visible when ( dvarint "k33_hudStyle" ) == 1
-  item type 0 font 0 textscale 0.55 textstyle 0 align 0
-    name 'minimap_border' group None rect 5.75 5.75 115.5 115.5 align 8 8 style 0 ownerdraw 0 static 0x0 dynamic 0x4
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    visible when ( dvarint "k33_hudStyle" ) == 1
-  item type 0 font 0 textscale 0.55 textstyle 0 align 0
-    name None group None rect 6 6 115 115 align 8 8 style 3 ownerdraw 0 static 0x0 dynamic 0x10004
-    forecolor 0.89 0.98 0.95 0.03 backcolor 0 0 0 0
-    background ,minimap_scanlines
-    visible when ( dvarint "k33_hudStyle" ) == 1
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'minimap_map' group None rect 6 6 115 115 align 8 8 style 0 ownerdraw 159 static 0x0 dynamic 0x10004
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    background ,compass_map_default
-    visible when ( dvarint "k33_hudStyle" ) == 1
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'minimap_friendlies' group None rect 6 6 115 115 align 8 8 style 0 ownerdraw 158 static 0x0 dynamic 0x10004
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    exp float[8] ( 1 - radarjamintensity )
-    visible when ( dvarint "k33_hudStyle" ) == 1
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'minimap_objectives' group None rect 6 6 115 115 align 8 8 style 0 ownerdraw 152 static 0x0 dynamic 0x10004
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    background ,objective_line
-    visible when ( dvarint "k33_hudStyle" ) == 1
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'minimap_enemies' group None rect 6 6 115 115 align 8 8 style 0 ownerdraw 175 static 0x0 dynamic 0x10004
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    exp float[8] ( 1 - radarjamintensity )
-    visible when ( dvarint "k33_hudStyle" ) == 1
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'minimap_vehicles' group None rect 6 6 115 115 align 8 8 style 0 ownerdraw 155 static 0x0 dynamic 0x10004
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    exp float[8] ( 1 - radarjamintensity )
-    visible when ( dvarint "k33_hudStyle" ) == 1
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'minimap_planes' group None rect 6 6 115 115 align 8 8 style 0 ownerdraw 156 static 0x0 dynamic 0x10004
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    exp float[8] ( 1 - radarjamintensity )
-    visible when ( dvarint "k33_hudStyle" ) == 1
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'minimap_sentries' group None rect 6 6 115 115 align 8 8 style 0 ownerdraw 165 static 0x0 dynamic 0x10004
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    exp float[8] ( 1 - radarjamintensity )
-    visible when ( dvarint "k33_hudStyle" ) == 1
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'minimap_scramblers' group None rect 6 6 115 115 align 8 8 style 0 ownerdraw 168 static 0x0 dynamic 0x10004
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    exp float[8] ( 1 - radarjamintensity )
-    visible when ( dvarint "k33_hudStyle" ) == 1
-  item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name 'minimap_player' group None rect 6 6 115 115 align 8 8 style 0 ownerdraw 150 static 0x0 dynamic 0x10004
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    background ,k33hud12_compassping_player
-    exp float[8] ( 1 - radarjamintensity )
-    visible when ( dvarint "k33_hudStyle" ) == 1
-  item type 0 font 0 textscale 0.55 textstyle 0 align 0
-    name None group None rect 6 6 115 115 align 8 8 style 3 ownerdraw 0 static 0x0 dynamic 0x10004
-    forecolor 0.64 0.74 0.71 1 backcolor 0 0 0 0
-    background ,white
-    exp float[8] ( radarjamintensity )
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( radarisjammed )}
-  item type 0 font 0 textscale 0.55 textstyle 0 align 0
-    name None group None rect 6 6 115 115 align 8 8 style 3 ownerdraw 0 static 0x0 dynamic 0x10004
-    forecolor 0.89 0.98 0.95 1 backcolor 0 0 0 0
-    background ,ac130_overlay_grain
-    exp float[8] ( radarjamintensity )
-    visible when ( dvarint "k33_hudStyle" ) == 1 && {( radarisjammed )}
-  item type 0 font 0 textscale 0.55 textstyle 0 align 0
-    name None group None rect 6 6 115 115 align 8 8 style 3 ownerdraw 0 static 0x0 dynamic 0x10004
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    background ,stencil_base
-    visible when ( dvarint "k33_hudStyle" ) == 1
-  item type 0 font 0 textscale 0.55 textstyle 0 align 0
-    name None group None rect 6 6 115 115 align 8 8 style 3 ownerdraw 0 static 0x0 dynamic 0x10004
-    forecolor 1 1 1 1 backcolor 0 0 0 0
-    background ,scanlines_stencil
-    exp float[1] ( ( 0 - 115 ) + ( ( 115 * 2 ) * {( 1 - {( ( milliseconds ) % 4000 ) / 4000}} )
-    visible when ( dvarint "k33_hudStyle" ) == 1
-  item type 0 font 0 textscale 0.55 textstyle 0 align 0
-    name None group None rect 6 6 115 115 align 8 8 style 3 ownerdraw 0 static 0x0 dynamic 0x10004
-    forecolor 0.89 0.98 0.95 1 backcolor 0 0 0 0
-    background ,stencil_fill
-    visible when ( dvarint "k33_hudStyle" ) == 1
+    visible when ( dvarint "k33_hudStyle" ) != 2
   item type 0 font 0 textscale 0.55 textstyle 0 align 0
     name None group None rect 6 6 115 115 align 8 8 style 1 ownerdraw 0 static 0x0 dynamic 0x4
     forecolor 1 1 1 1 backcolor 0 0 0 0.75
@@ -610,7 +416,7 @@ menu
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
     name 'minimap_player' group None rect 6 6 115 115 align 8 8 style 0 ownerdraw 150 static 0x0 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
-    background ,k33hud12_compassping_player
+    background ,k33hud26_compassping_player
     exp float[8] ( 1 - radarjamintensity )
     visible when ( dvarint "k33_hudStyle" ) == 2
   item type 0 font 0 textscale 0.55 textstyle 0 align 0

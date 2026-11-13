@@ -12,6 +12,14 @@
 >xassetlist,0x0,0xffffffff
 >localize,localize.str,ascii
 rawfile,codol_english_hud_styles
+localize,MPUI_ASSIST_CAP
 localize,MPUI_DIE_CAPS
 localize,MPUI_KILL_CAPS
 localize,MPUI_SCORE_CAPS
+localize,SF_WEAPON_BURST_2_NAME
+localize,SF_WEAPON_BURST_3_NAME
+localize,SF_WEAPON_BURST_4_NAME
+localize,SF_WEAPON_FULL_AUTO_NAME
+localize,SF_WEAPON_ROCKET_NAME
+localize,SF_WEAPON_SEMIAUTO_PUMP_NAME
+localize,SF_WEAPON_SEMIAUTO_RIFLE_NAME
