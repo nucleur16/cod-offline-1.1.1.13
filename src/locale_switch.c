@@ -62,6 +62,7 @@
 #define LR_IDLE_READ_VA      0x004CC8D7u   /* mov eax, [0x26090BC] in the function that takes a load's results */
 #define LR_UNLOAD_UI_CALL_VA 0x0059864Au   /* C1's own "unload group 2" call of DB_LoadXAssets */
 #define LR_UNLOAD_MAP_CALL_VA 0x004CCE6Cu  /* and its "unload groups 6" call before a map loads */
+#define LR_MAP_LOAD_CALL_VA  0x004CD0F0u   /* the map load's DB_LoadXAssets: gametype zones, and common_mp (flag 1) */
 #define LS_ZONES_VA          0x01F0E108u   /* 0xA8 bytes each: name +0xC, alloc flags +0x4C, PMem stack +0x50 */
 #define LS_ZONE_SIZE         0xA8u
 #define LS_ZONE_MAX          35
@@ -110,6 +111,10 @@ static int g_lrPhase = LR_PHASE_STARTUP, g_lrTarget = -1;
 static DWORD g_lrSince;
 #if CODOL_LOCAL_TESTING
 static int g_lrCycles;                     /* k33_langcycle: switches still to do */
+static BOOL g_lrForce;                     /* k33_langforce: the next switch ignores LR_GATE_NO_STACK (measurement) */
+#endif
+static BOOL g_lrNoReorder;                 /* +set k33_langNoReorder 1 (test builds): LrMapLoadHook passes through */
+#if CODOL_LOCAL_TESTING
 #endif
 
 typedef struct LrStats {
@@ -160,6 +165,7 @@ static BOOL LocaleSwitchCheck(void)
     else if (!CallsTarget(LR_UNLOAD_UI_CALL_VA, DB_LOAD_XASSETS_VA) || !CallsTarget(LR_UNLOAD_MAP_CALL_VA, DB_LOAD_XASSETS_VA))
         bad = DB_LOAD_XASSETS_VA;
     else if (!CallsTarget(POSTGFX_LOAD_CALL_VA, DB_LOAD_XASSETS_VA)) bad = POSTGFX_LOAD_CALL_VA;
+    else if (!CallsTarget(LR_MAP_LOAD_CALL_VA, DB_LOAD_XASSETS_VA)) bad = LR_MAP_LOAD_CALL_VA;
     else if (!Readable((void *)(DWORD_PTR)LS_ZONES_VA, LS_ZONE_MAX * LS_ZONE_SIZE) ||
              !Readable((void *)(DWORD_PTR)LS_ENTRIES_VA, LS_ENTRY_MAX * 24) ||
              !Readable((void *)(DWORD_PTR)LS_HASH_VA, LS_HASH_SIZE * 2) || !Readable((void *)(DWORD_PTR)LS_DB_LOCK_VA, 8) ||
@@ -262,14 +268,6 @@ __attribute__((used)) void __cdecl LrUnloadSeen(unsigned zone, unsigned createDe
     Log("language: C1 unloads zone %u \"%s\" (createDefault %u%s, thread %lu, return 0x%08lX)", zone,
         zone < LS_ZONE_MAX ? LrZoneName(zone) : "?", createDefault & 0xFF,
         (LONG)zone == g_lrUnloadZone ? " -> 0: the language zone" : "", GetCurrentThreadId(), caller);
-    {   /* TEMP: code addresses on the stack above the call */
-        const DWORD *sp = (const DWORD *)__builtin_frame_address(0);
-        char line[400]; unsigned n = 0, found = 0;
-        for (unsigned i = 0; i < 600 && found < 14 && Readable(sp + i, 4); i++)
-            if (sp[i] >= 0x401000u && sp[i] < 0xB41000u) { n += _snprintf(line + n, sizeof(line) - n, " %08lX", sp[i]); found++; }
-        line[n] = 0;
-        Log("language: stack:%s", line);
-    }
 #else
     (void)zone; (void)createDefault; (void)caller;
 #endif
@@ -500,6 +498,49 @@ static void LrUnloadZone(void)
     *loaded &= ~(DWORD)LR_UNLOAD_FLAG;
 }
 
+/* The map load's zone list (0x4CD0F0). The first match of a session adds common_mp, patch_common_mp,
+ * localized_common_mp and patch_localized_common_mp with flag 1 (0x4CCD80, only while common_mp is not loaded):
+ * code zones that C1 then keeps for the session, on PMem stack 0 above the language zone. MEASURED: after that the
+ * language zone is block 14 of 19 and an unload of it frees nothing (see the doc). So when that list carries a
+ * flag-1 zone and the language zone is the top block of stack 0, the language zone is unloaded here (C1 has just
+ * unloaded the previous map's groups at 0x4CCE6C, on this thread, synchronously) and put at the end of the list:
+ * it loads right after them, as the top block again, and its strings go in place over theirs. */
+static void __cdecl LrMapLoadHook(XZoneInfo *info, unsigned count, int sync)
+{
+    XZoneInfo all[40];
+    LrStats s;
+    char zone[64];
+    BOOL code = FALSE;
+    for (unsigned i = 0; info && i < count; i++) code |= info[i].allocFlags == 1;
+    /* No idle test here: C1 itself has just unloaded groups 6 from this same function (0x4CCE6C) without one, and
+     * MEASURED: C1's "idle" event is not set at this point although nothing is loading. */
+    if (!code || g_lrNoReorder || !g_lsInstalled || !g_lrName[0] || g_lrPhase != LR_PHASE_IDLE || count >= 40) {
+        if (code && g_lsInstalled && g_lrName[0])
+            Log("language: a map load adds code zones above \"%s\"; it stays where it is (%s): a later switch applies on "
+                "restart", g_lrName, g_lrNoReorder ? "k33_langNoReorder" : g_lrPhase != LR_PHASE_IDLE ? "a switch is running" :
+                "list too long");
+        ((LoadXAssetsFn)(DWORD_PTR)DB_LOAD_XASSETS_VA)(info, count, sync);
+        return;
+    }
+    LrReadStats(&s);
+    if (lstrcmpiA(s.top[0], g_lrName) != 0) {
+        Log("language: \"%s\" is not the top block of stack 0 (\"%s\" is); left where it is", g_lrName, s.top[0]);
+        ((LoadXAssetsFn)(DWORD_PTR)DB_LOAD_XASSETS_VA)(info, count, sync);
+        return;
+    }
+    lstrcpynA(zone, g_lrName, sizeof(zone));
+    LrUnloadZone();
+    memcpy(all, info, count * sizeof(*info));
+    lstrcpynA(g_lrName, zone, sizeof(g_lrName));
+    g_lrInPlace = g_lrChained = 0;
+    all[count].name = g_lrName;
+    all[count].allocFlags = 1;
+    all[count].freeFlags = 0;
+    Log("language: the map load adds code zones; \"%s\" is unloaded and loads again after them (%u zones in the list)",
+        zone, count + 1);
+    ((LoadXAssetsFn)(DWORD_PTR)DB_LOAD_XASSETS_VA)(all, count + 1, sync);
+}
+
 static const char *LrGateText(enum LrGateAnswer a)
 {
     switch (a) {
@@ -524,6 +565,13 @@ static enum LrGateAnswer LrGateNow(LrStats *s)
     g.replaceMode = *(volatile int *)(DWORD_PTR)LR_REPLACE_MODE_VA != 0;
     g.loaded = g_lrName[0] != 0;
     g.onTop = g.loaded && !lstrcmpiA(s->top[0], g_lrName);
+#if CODOL_LOCAL_TESTING
+    if (g_lrForce && g.loaded && !g.onTop) {
+        g_lrForce = FALSE;
+        g.onTop = TRUE;
+        Log("language: k33_langforce: unloading \"%s\" although it is not the top block of its stack", g_lrName);
+    }
+#endif
     g.zones = (int)s->zones;
     g.zoneMax = LR_ZONE_LIMIT;
     g.freeEntries = s->entriesFree;
@@ -752,6 +800,8 @@ static void __cdecl LrCmdCycle(void)
 
 static C1Cmd g_lrCmdStat = { NULL, "k33_langstat", (void *)LrCmdStat };
 static C1Cmd g_lrCmdCycle = { NULL, "k33_langcycle", (void *)LrCmdCycle };
+static void __cdecl LrCmdForce(void) { g_lrForce = TRUE; Log("language: k33_langforce armed"); }
+static C1Cmd g_lrCmdForce = { NULL, "k33_langforce", (void *)LrCmdForce };
 #endif
 
 /* After PatchPatchDir (the language list, the zones) and before K33InstallMainTicks. */
@@ -767,6 +817,11 @@ static void InstallLocaleSwitch(void)
 #if CODOL_LOCAL_TESTING
     C1AddCommand(&g_lrCmdStat);
     C1AddCommand(&g_lrCmdCycle);
+    C1AddCommand(&g_lrCmdForce);
+    {
+        const char *cl = GetCommandLineA();
+        g_lrNoReorder = cl && strstr(cl, "k33_langNoReorder 1") != NULL;
+    }
 #endif
     if (!g_langCount) {
         Log("language: no language zone in the patch folder; \"%s\" is all there is", g_lang);
@@ -800,6 +855,7 @@ static void InstallLocaleSwitch(void)
         rel = (LONG)((DWORD_PTR)LR_UnloadHook - (LR_UNLOAD_ZONE_VA + 5));
         memcpy(jump + 1, &rel, 4);
         WriteCode((void *)(DWORD_PTR)LR_UNLOAD_ZONE_VA, jump, sizeof(jump));
+        RedirectCall(LR_MAP_LOAD_CALL_VA, (void *)LrMapLoadHook);
     }
     g_lsInstalled = TRUE;
     Log("language: live switch installed (link hook 0x%08X, unload hook 0x%08X); \"%s\" is zone \"%s\"", LR_LINK_CMP_VA,

@@ -12,4 +12,7 @@ part,000_codol_party_modes,exclude=localize
 part,codol_loading_mode_names,exclude=localize
 part,codol_zm_deathmachine_audio
 part,controller_ingame
+// The Latin font movie loads in every language and stays: the language zone is unloaded on a language switch
+// (src/locale_switch.c), and it loads after code_post_gfx, where its copy of the movie would lose to the stock one.
+part,codol_english_font,only=rawfile
 part,usermaps_patch,exclude=localize

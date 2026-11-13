@@ -67,7 +67,7 @@ static const char *const kCodolPatchZoneMerged[][2]={
  {"hud_styles_postgfx_mp","codol_common_postgfx_mp"},
  {"survival_hud_postgfx_mp","codol_common_postgfx_mp"},
  {"codol_english","codol_english_locale"},
- {"codol_english_font","codol_english_locale"},
+ {"codol_english_font","codol_common"},
  {"codol_english_ui","codol_english_locale"},
  {"codol_english_ui_extra","codol_english_locale"},
  {"codol_english_usermaps","codol_english_locale"},
