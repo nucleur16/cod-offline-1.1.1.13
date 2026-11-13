@@ -47,8 +47,8 @@ neither needed nor an off switch).
 If the lobby cannot be provided (no free port can be had, an explicit port is taken, C1's bytes at the
 NAT-port site differ, the client was started by a launcher-managed Local Play session), the client
 stops with a message box naming `Kernel33.log`, where the reason is. It never falls back to another
-lobby: the route files on disk are not read, the host gate vouches loopback only, and `k33http.c` (the
-HTTP client under the optional theatre / display-name services) accepts loopback URLs only.
+lobby: the route files on disk are not read, the host gate lets UDP through to and from loopback only, and
+the client has no HTTP client left (the theatre / display-name services that used one were removed).
 
 ## What happens at start-up (`src/offline_lobby.c`)
 
@@ -60,7 +60,7 @@ All of it in `TakeOver`, before C1's entry point:
    (`OfflineHostPortRelease`, one line in `src/p2p/p2p.c` before its own port check), so nothing else on the
    PC - a second offline client in particular - is given the same port between start-up and the match
    launch. `OfflineP2PConfig` writes the chosen port into every `P2PLoadIni` result, which is where
-   the armed intent (`p2p_host.txt`, `K33LocalPlayIntent().port`), the launch observation
+   the armed intent (`K33LocalPlayIntent().port`), the launch observation
    (`P2PArmLaunch` / `P2PLaunchObserve` in hostgate's `sendto`), the host's own bind and the lobby's
    START_GAME address all take it from.
 2. **The listener on a free port.** `DwOfflineStartServer` (C boundary `src/offline/dw_api.h`) starts one
@@ -109,8 +109,7 @@ The lobby thread never calls into C1. It reads Kernel33's published local-host s
 `K33LocalPlayIntent()`, names the selection of the owner's room with `K33LocalPlayAuto()` (arm, and
 launch when START_GAME is handed over) and reports a left room with `K33LocalPlayLeave()`
 (`p2p_local_play_api.h`, `docs/P2P_DEFERRED_HOST_START.md`); all are safe on any thread and start
-nothing themselves. No intent file is read by anything (p2p.c still writes its `p2p_host.<uid>.txt`;
-nobody consumes it).
+nothing themselves. No intent file is written or read.
 
 ## Level gates
 
@@ -275,7 +274,6 @@ whenever the client is not running:
 ```
 p2p\offline\
   securitykey.bin, game_admissions.txt, native_server_rcon.txt     the match host's contract with the lobby
-  p2p_host.txt, p2p_host.<uid>.txt, p2p_runtime.txt                p2p.c's intent / runtime files
   mpdata_s.<uid>, owned_items.<uid>.txt                            the player's blob and purchases, exported at a room start
   match_report*.json, match_report.journal.log                     the match host's reports, archived as they are folded
   match_report.state.json                                          which reports were applied (so none is credited twice)
@@ -761,30 +759,47 @@ a once-a-second netstat watch of the pid (`ofl3\logs\t1e_netwatch.log`) saw 18 s
 on 127.0.0.1 / 127.0.0.2 / ::1. The shipping build's run to the menus logged the same refusal and the
 same loopback lines.
 
-## Dead or unreachable now that the client is offline only (left in the tree for a cleanup job)
+## Removed now that the client is offline only
 
-Nothing below was deleted; none of it can take the client online.
+All of this was unreachable once the client became offline only (the `!OfflineLobbyActive()` and launcher-session
+branches never ran) and was deleted in the offline cleanup (commits "Offline cleanup 1".."8"). None of it could take
+the client online; the hosting path (`K33LocalPlayAuto` / `P2PAutoTick` / `P2PLaunchTick` / `P2PHostCurrentRoom` /
+`P2PHostThread` / `P2PInprocRun` / `PiRetire`) is unchanged.
 
-* `src/p2p/hostgate.c`: `HostGateReadLobbyNames`, `HostGateAllowGateways`, `HostGateAllow` / `HostGateVouch`,
-  the resolve thread's name list and the SSDP exception - all behind `!OfflineLobbyActive()`, which is
-  never true once C1 runs. The non-offline scenarios of `tests/hostgate_windows_fixture.c` test them.
-* The Local Play checkbox protocols: startup IPC 1 / 2 (`p2p_start_intent`, `p2p_cancel_start`,
-  `p2p_startup_*`, `p2p_active_*`), the production protocol 3 (`p2p_production_*`, `src/production/`,
-  `src/shared/p2p_win_pipe.c`, the retained SDK), the Guest binding route (`p2p_guest_binding*`): a
-  client started by such a launcher session is refused at start-up (`InstallOfflineLobby`).
-  `K33LocalPlayLaunch` has no caller left (the lobby uses `K33LocalPlayAuto`).
-* The verified-script service path (`p2p_verified_scripts.c`): hosting never asks for it.
-* The intent files `p2p_host.<uid>.txt` / `p2p_host.txt` and `P2PRollout`: written, read by nobody.
-* `src/launcher_update_bridge.c` (inert without a compiled launcher pin), `src/gfx/news_refresh*` (the
-  news pane stays on "Loading, please wait..."), invitations / friends / clan UI paths (answered empty
-  by the lobby), `src/kernel/kernel_name_network.c` (opt-in build flag, names `codol.kewkew.org`).
-* `src/theatre.c` and `src/name_display.c`'s service: their URLs are refused by `k33http.c` unless
-  loopback, so the THEATRE button's recording service cannot be reached.
-* `src/discord.c` talks to the local Discord client over its named pipe (no socket of its own); it is
-  the one feature left that can make something else (Discord) show the player online.
-* The Python lobby's `CODOL_*` online knobs were never ported; `scripts/build-controller.sh` does not
-  link `src/offline` (it did not link `src/production` before either, i.e. it was already stale).
-* In the UI: the LOCAL PLAY boxes (above), the DEV PANEL of the room view.
+* **Host gate vouching** (`src/p2p/hostgate.c`): `HostGateReadLobbyNames` (dwauth.ini / stun.ini names),
+  `HostGateAllowGateways` (UPnP gateways), `HostGateAllow` / `HostGateVouch`, the resolve thread, the SSDP exception
+  and the `gethostbyname` wrapper. The gate is loopback only: C1's `sendto` / `recvfrom` slots stay wrapped and
+  `P2PLaunchObserve` still sees every loopback datagram C1 sends.
+* **The launcher Local Play protocols**: startup IPC 1 / 2 (`p2p_startup_*`, `p2p_active_*`), the production
+  protocol 3 (`p2p_production_*`, `src/production/`, `src/shared/p2p_win_pipe.c`, the retained SDK, the
+  `K33_P2P_PRODUCTION_POLICY_HEADER` build switch), the Guest binding route (`p2p_guest_binding*`) and
+  `P2PParseRoomContextV2`. `P2PProductionMode()` / `P2PSelectedProtocolMode()` / `P2PGuestRouteMode()` and their
+  branches in p2p.c, p2p_inproc.c and hostgate.c are gone; the protocol-0 path is what is left. A client started
+  by such a launcher session is still refused at start-up (`InstallOfflineLobby`). The UI still sends
+  `p2p_start_intent` / `p2p_cancel_start` (registered as no-ops) and reads `ui_p2p_startup_protocol` (always `0`).
+  `K33LocalPlayLaunch` (no caller) is gone too.
+* **The verified-script service** (`p2p_verified_scripts.c`): offline hosting compiles the installed GSC tree.
+  `local_log_flush.c` (local testing) keeps the launcher flag and pipe/pid parsers it read through it.
+* **Intent, descriptor and rollout files**: `p2p_host.<uid>.txt` / `p2p_host.txt` with their 2 Hz heartbeat
+  (`p2p_intent_heartbeat.h`), `p2p_runtime.txt` and `P2PRollout` (`rollout=` in p2p_host.ini): written, read by
+  nobody.
+* `src/launcher_update_bridge.c` (`TryLauncherUpgrade`, `K33_LAUNCHER_HOST_SHA256`), `src/gfx/news_refresh*`
+  (it re-ran C1's news text request every 60 s; the news pane still shows "Loading, please wait..."),
+  `src/kernel/kernel_name_network.c` (the opt-in name-display migration's `codol.kewkew.org` lookup and its worker).
+* **The theatre recording service and the display-name service** (`src/theatre.c`, `src/name_display.c`): the
+  THEATRE screen lists and plays the recordings on this PC, names keep their UTF-8 display; `k33http.c`'s HTTPS
+  client went with them (`src/k33sha256.c` keeps the SHA-256 helper) and `k33json.c` had no user left.
+* Build scripts: `scripts/build-controller.sh` (a stale side copy) and `scripts/build-parity.sh` (a shipping DLL,
+  which has no parity logger) are deleted; `scripts/build-dev.sh` runs `scripts/build.sh` in the diagnostic profile.
+* The dead `g_k33OverlayMouse` flag in `src/kernel33.c`.
+
+Kept on purpose: `src/discord.c` (Discord's local named pipe; it publishes mode, map, player counts, a start time and
+the art asset - no party, join secret, button or server address; its `getinfo` probe goes to 127.0.0.1 only), the
+packet/parser guards in `src/guards/`, the invitation hold of the UI movie (no C code; the lobby answers friends,
+mail, clan and invitations empty), `p2p_activation_transaction.h` (the in-process server's hook activation), the
+console commands `p2p_room` / `p2p_localhost` / `p2p_start_intent` and the `ui_p2p_*` dvars the UI reads.
+The Python lobby's `CODOL_*` online knobs were never ported. In the UI: the LOCAL PLAY boxes and the DEV PANEL of the
+room view are still drawn (the movie is not changed here).
 
 ## Not done
 
