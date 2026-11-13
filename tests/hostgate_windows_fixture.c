@@ -14,7 +14,6 @@ static int write_number, fail_write;
 static BYTE *test_table;
 #define HG_SLOT_RECVFROM ((DWORD_PTR)test_table+0x24E0)
 #define HG_SLOT_SENDTO ((DWORD_PTR)test_table+0x2538)
-#define HG_SLOT_GETHOSTBYNAME ((DWORD_PTR)test_table+0x2530)
 static void Log(const char *format,...) { (void)format; }
 static BOOL Readable(const void *p, SIZE_T n)
 {
@@ -27,48 +26,10 @@ static void WriteCode(void *dst,const void *src,SIZE_T n)
 {
     if (++write_number!=fail_write) memcpy(dst,src,n);
 }
-static void P2PTrim(char *s)
-{
-    size_t n=strlen(s);
-    while (n && (s[n-1]=='\r' || s[n-1]=='\n' || s[n-1]==' ')) s[--n]=0;
-}
-/* Do not resolve configured hosts or start a background thread in this fixture. */
-static HANDLE TestThread(LPSECURITY_ATTRIBUTES a,SIZE_T b,LPTHREAD_START_ROUTINE c,
-                         LPVOID d,DWORD e,LPDWORD f)
-{ (void)a;(void)b;(void)c;(void)d;(void)e;(void)f;return NULL; }
-#if CODOL_LOCAL_TESTING
-/* This historical installation fixture models only ABSENT route selection.
- * New inherited-route logic is exercised separately by the actual-body fixture
- * and still needs real Windows/C1 acceptance. Never ignore an explicit value. */
-static int LocalQaRouteState(void)
-{
-    char value[16];SetLastError(ERROR_SUCCESS);
-    DWORD n=GetEnvironmentVariableA("CODOL_LOCAL_QA_DWAUTH_HANDLE",value,sizeof(value));
-    assert(!n && GetLastError()==ERROR_ENVVAR_NOT_FOUND);
-    return 1;
-}
-static int CodolLocalMultiRoute(const char *data,size_t bytes)
-{
-    (void)data;(void)bytes;
-    assert(!"explicit inherited route is outside this absent-selection fixture");
-    return 0;
-}
-static int LocalQaReadRoute(char *data,DWORD capacity,DWORD *bytes)
-{
-    (void)data;(void)capacity;(void)bytes;
-    assert(!"explicit inherited route is outside this absent-selection fixture");
-    return 0;
-}
-#endif
 /* p2p.c: the armed Local Play host's launch is observed on loopback datagrams only. */
 static unsigned launch_observed,launch_port;
 static void P2PLaunchObserve(unsigned port) {++launch_observed;launch_port=port;}
-/* Offline mode (offline_lobby.c): the "offline" scenario turns it on before the gate is used. */
-static BOOL fixture_offline;
-static BOOL OfflineLobbyActive(void) { return fixture_offline; }
-#define CreateThread TestThread
 #include "../src/p2p/hostgate.c"
-#undef CreateThread
 
 static int receives,sends,consume,allow_at;
 static int WINAPI FakeRecv(SOCKET s,char *buf,int len,int flags,struct sockaddr *from,int *size)
@@ -94,16 +55,16 @@ static void InstallTest(const char *test)
     assert(test_table);
     HMODULE w1=LoadLibraryA("wsock32.dll"),w2=LoadLibraryA("ws2_32.dll");
     assert(w1 && w2);
-    FARPROC *r=(FARPROC *)HG_SLOT_RECVFROM,*s=(FARPROC *)HG_SLOT_SENDTO,*h=(FARPROC *)HG_SLOT_GETHOSTBYNAME;
+    FARPROC *r=(FARPROC *)HG_SLOT_RECVFROM,*s=(FARPROC *)HG_SLOT_SENDTO,*h=(FARPROC *)((DWORD_PTR)test_table+0x2530);
     *r=GetProcAddress(w2,"recvfrom");*s=GetProcAddress(w1,"sendto");*h=GetProcAddress(w1,"gethostbyname");
     if (!strcmp(test,"missing")) *r=NULL;
     if (!strcmp(test,"foreign_recv")) *r=(FARPROC)ForeignRecv;
     if (!strcmp(test,"foreign_send")) *s=(FARPROC)ForeignRecv;
-    if (!strcmp(test,"foreign_resolver")) *h=(FARPROC)ForeignRecv;
     if (!strncmp(test,"write",5)) fail_write=atoi(test+5);
     if (!strcmp(test,"good")) {
         assert(InstallHostGate());
-        assert(*r==(FARPROC)HostGateRecvFrom && *s==(FARPROC)HostGateSendTo && *h==(FARPROC)HostGateGetHostByName);
+        /* the resolver slot next to them is not the gate's any more: nothing is vouched by name */
+        assert(*r==(FARPROC)HostGateRecvFrom && *s==(FARPROC)HostGateSendTo && *h==GetProcAddress(w1,"gethostbyname"));
 #if CODOL_LOCAL_TESTING
         assert(g_hgMode==1);
 #else
@@ -117,16 +78,12 @@ static void PacketTests(void)
     g_hgRecvFrom=FakeRecv;g_hgSendTo=FakeSend;
     assert(HostGateOk(inet_addr("127.2.3.4")));
     assert(!HostGateOk(inet_addr("192.0.2.55")));
-    HostGateVouch(inet_addr("192.0.2.56"));
-    assert(HostGateOk(inet_addr("192.0.2.56")));
     struct sockaddr_in address;memset(&address,0,sizeof(address));
     address.sin_family=AF_INET;address.sin_port=htons(17760);address.sin_addr.s_addr=inet_addr("192.0.2.55");
     assert(HostGateSendTo(INVALID_SOCKET,"x",1,0,(struct sockaddr *)&address,sizeof(address))==1 && sends==0);
     assert(!launch_observed); /* a refused, non-loopback destination is never a Local Play launch */
-    address.sin_addr.s_addr=inet_addr("192.0.2.56");
-    assert(HostGateSendTo(INVALID_SOCKET,"x",1,0,(struct sockaddr *)&address,sizeof(address))==1 && sends==1 && !launch_observed);
     address.sin_addr.s_addr=inet_addr("127.0.0.1");
-    assert(HostGateSendTo(INVALID_SOCKET,"x",1,0,(struct sockaddr *)&address,sizeof(address))==1 && sends==2);
+    assert(HostGateSendTo(INVALID_SOCKET,"x",1,0,(struct sockaddr *)&address,sizeof(address))==1 && sends==1);
     assert(launch_observed==1 && launch_port==17760); /* observed, and the datagram is sent unchanged */
     /* A real loopback socket supplies readable queue state to the drain loop. */
     SOCKET receiver=socket(AF_INET,SOCK_DGRAM,0),sender=socket(AF_INET,SOCK_DGRAM,0);
@@ -153,21 +110,15 @@ static void PacketTests(void)
     assert(HostGateRecvFrom(receiver,buf,sizeof(buf),0,(struct sockaddr *)&source,&size)==1 && receives==1);
     closesocket(sender);closesocket(receiver);
 }
-/* Offline mode vouches loopback and nothing else: no SSDP group, no gateway, no lobby name, and a
- * later vouch (a host ticket) is ignored. With it off, the SSDP group stays reachable as before. */
-static void OfflineTests(void)
+/* Loopback and nothing else: no SSDP group (239.255.255.250), no gateway, no other address. */
+static void LoopbackOnlyTests(void)
 {
     InitializeCriticalSection(&g_hgLock);
     g_hgRecvFrom=FakeRecv;g_hgSendTo=FakeSend;
-    assert(HostGateOk(HG_SSDP));
-    fixture_offline=TRUE;
     assert(HostGateOk(inet_addr("127.0.0.1")) && HostGateOk(inet_addr("127.0.0.2")));
-    assert(!HostGateOk(HG_SSDP));
-    HostGateVouch(inet_addr("192.0.2.56"));
-    HostGateAllow(inet_addr("192.0.2.57"),"dwauth.ini");
-    assert(!HostGateOk(inet_addr("192.0.2.56")) && !HostGateOk(inet_addr("192.0.2.57")) && g_hgAllowedCount==0);
+    assert(!HostGateOk(inet_addr("239.255.255.250")) && !HostGateOk(inet_addr("192.168.1.1")) && !HostGateOk(inet_addr("128.0.0.1")));
     struct sockaddr_in address;memset(&address,0,sizeof(address));
-    address.sin_family=AF_INET;address.sin_port=htons(1900);address.sin_addr.s_addr=HG_SSDP;
+    address.sin_family=AF_INET;address.sin_port=htons(1900);address.sin_addr.s_addr=inet_addr("239.255.255.250");
     g_hgMode=2;
     assert(HostGateSendTo(INVALID_SOCKET,"x",1,0,(struct sockaddr *)&address,sizeof(address))==1 && sends==0);
     address.sin_addr.s_addr=inet_addr("127.0.0.1");
@@ -176,7 +127,7 @@ static void OfflineTests(void)
 int main(int argc,char **argv)
 {
     WSADATA w;assert(!WSAStartup(MAKEWORD(2,2),&w));assert(argc>=2);
-    if (!strcmp(argv[1],"offline")) OfflineTests();
+    if (!strcmp(argv[1],"loopback")) LoopbackOnlyTests();
     else if (!strcmp(argv[1],"packets")) PacketTests();else InstallTest(argv[1]);
     puts("hostgate fixture passed");WSACleanup();return 0;
 }
