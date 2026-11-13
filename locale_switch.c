@@ -292,6 +292,8 @@ __attribute__((used)) void *__cdecl LsFindHook(int type, const char *name)
     DWORD off = (DWORD)(DWORD_PTR)header - g_lsPoolFirst;
     if (!header || off >= g_lsPoolBytes || (off & 7) || !owner[off >> 3]) return header;
     if (!LsEntryForeign(g_lsOwnerLang[off >> 3], shown)) return header;
+    void *stock = LsForeignAnswer(&g_lsStock, name, NULL);   /* the displaced string first: no lock needed for it */
+    if (stock) return stock;
     return LsForeignAnswer(&g_lsStock, name, LsChainedStock((const BYTE *)(DWORD_PTR)LS_ENTRIES_VA + owner[off >> 3] * 24));
 }
 

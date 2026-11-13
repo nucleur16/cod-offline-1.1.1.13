@@ -28,6 +28,15 @@ labels, HTML text it built). Text that C1 draws natively (HUD strings looked up 
 C1 formatted earlier and stored (obituary lines already printed, a chat line, configstrings a server sent) keeps
 its old language.
 
+What the movies do today (reported by the menu work, not by this file): the pause menu (codoingame.gfx) rebuilds
+its open list and header labels on a serial change, so it is fully live. The front end (codo.gfx) re-sets only
+Options > Graphics, the Options title and the four tab buttons; the Audio, Controls and Controller tabs and
+everything outside the Options window set their text once when the movie loads and keep the old language until
+codo.gfx is loaded again (after a match, or a restart). The DLL does not reload codo.gfx after a switch: the
+load call is known (`0x6B53CD` into the generic loader `0x6B3EA0`) but the front end's close path is not
+identified, so there is no checked way to re-create the movie; until there is, a front-end switch is complete
+only for text that is re-set on the serial.
+
 Startup order (`CodolStartupLanguage`): the last valid `+set k33_language <name>`; else `+set k33_english 0|1` /
 `+set codol_patchlang en|zh` (unchanged, `CodolPatchLanguageFromArgv`); else the last `seta k33_language "<name>"`
 line of a plaintext `players\config_mp.cfg`; else `en`. A language with no zone in the patch folder starts as
