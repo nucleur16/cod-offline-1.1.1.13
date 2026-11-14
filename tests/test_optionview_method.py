@@ -10,6 +10,12 @@ from zonekit import gfx
 
 class FirstIO(Exception):pass
 def stop(*a,**kw):raise FirstIO('original IO reached')
+def chain_end(proof):
+    """The last stage of a composition proof chain (each stage hands the tree's movie to its successor)."""
+    while'successor'in proof:
+        assert proof['successor']['prior_movie_sha256']==proof['current_movie_sha256']and proof['successor']['inverse_exact']
+        proof=proof['successor']
+    return proof
 def function(path,name):
     return next(n for n in ast.parse(path.read_text(encoding='utf-8')).body if isinstance(n,ast.FunctionDef)and n.name==name)
 
@@ -132,10 +138,10 @@ class MethodSource(unittest.TestCase):
         composition=importlib.util.module_from_spec(spec);spec.loader.exec_module(composition)
         proof=composition.verify(ROOT,selector['output_movie_sha256'])
         self.assertTrue(proof['inverse_exact']);self.assertEqual(proof['non_target_tags_exact'],6863)
-        # The four-tag endpoint has a reviewed successor; the tree's movie is the end of that chain.
+        # The four-tag endpoint has reviewed successors; the tree's movie is the end of that chain.
         self.assertEqual(proof['successor']['prior_movie_sha256'],proof['current_movie_sha256'])
         self.assertTrue(proof['successor']['inverse_exact'])
-        self.assertIn('sha256 '+proof['successor']['current_movie_sha256'],lines)
+        self.assertIn('sha256 '+chain_end(proof)['current_movie_sha256'],lines)
         self.assertIn('as codo.views.OptionView as/codo/views/OptionView.as '+r['candidate_source_include_digest'],lines)
         self.assertFalse(any(D.is_relative_to(p)for p in [ROOT/'zones']))
 
@@ -181,12 +187,15 @@ class FourTagComposition(unittest.TestCase):
 
     def test_foreign_current_digest_or_header_geometry_refuses(self):
         raw=self.patch.read_bytes()
-        current=self.C.verify(ROOT,self.C.PRIOR_SHA)['successor']['current_movie_sha256'].encode()
+        proof=self.C.verify(ROOT,self.C.PRIOR_SHA)
+        current=chain_end(proof)['current_movie_sha256'].encode()
         self.assertIn(b'sha256 '+current+b'\n',raw)
         changed=raw.replace(current,b'0'*64,1)
         self.changed_read(self.patch,changed,'predecessor/current movie identities')
-        # The four-tag endpoint's own digest is no longer an acceptable tree digest either.
-        self.changed_read(self.patch,raw.replace(current,self.C.OUTPUT_SHA.encode(),1),'predecessor/current movie identities')
+        # No earlier endpoint's own digest is an acceptable tree digest either.
+        for earlier in(self.C.OUTPUT_SHA,proof['successor']['current_movie_sha256']):
+            self.assertNotEqual(earlier.encode(),current)
+            self.changed_read(self.patch,raw.replace(current,earlier.encode(),1),'predecessor/current movie identities')
         line=next(x for x in raw.splitlines()if x.startswith(b'header '))
         changed=raw.replace(line,line[:-2]+(b'01'if line[-2:]!=b'01'else b'02'),1)
         self.changed_read(self.patch,changed,'header/version/geometry/fps')
@@ -215,6 +224,7 @@ class ThreeTagSuccessor(unittest.TestCase):
             spec=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);return m
         self.F=load('four_tag_predecessor_tests',ROOT/'tools/p2p-four-tag-composition/composition.py')
         self.S=load('three_tag_successor_tests',ROOT/'tools/p2p-deferred-host-composition/composition.py')
+        self.U=load('ui_style_successor_tests',ROOT/'tools/p2p-ui-style-composition/composition.py')
         self.X=load('resolved_abc_tests',self.S.HERE/'resolved_abc.py')
         self.contract=json.loads((self.S.HERE/'composition.json').read_bytes())
         self.review=json.loads((self.S.HERE/'automated-diff-review.json.DATA').read_bytes())
@@ -230,7 +240,10 @@ class ThreeTagSuccessor(unittest.TestCase):
         self.assertEqual((p['qualified_classes'],p['non_target_tags_exact'],p['total_tags']),(3,6864,6867))
         self.assertEqual((p['prior_movie_sha256'],p['current_movie_sha256']),(self.F.OUTPUT_SHA,self.S.OUTPUT_SHA))
         self.assertTrue(p['inverse_exact']);self.assertFalse(p['runtime_or_release_ready']);self.assertFalse(p['human_reviewed'])
-        self.assertIn('sha256 '+p['current_movie_sha256'],(ROOT/self.F.PATCH/'patch.txt').read_text(encoding='utf-8').splitlines())
+        # This endpoint has a successor of its own; the tree's movie is the end of the chain.
+        lines=(ROOT/self.F.PATCH/'patch.txt').read_text(encoding='utf-8').splitlines()
+        self.assertNotIn('sha256 '+p['current_movie_sha256'],lines)
+        self.assertIn('sha256 '+chain_end(p)['current_movie_sha256'],lines)
 
     def test_predecessor_cannot_be_relabelled_or_supplied(self):
         with self.assertRaisesRegex(ValueError,'immutable four-tag predecessor'):self.S.verify(ROOT,self.S.OUTPUT_SHA)
@@ -267,7 +280,9 @@ class ThreeTagSuccessor(unittest.TestCase):
         for row in self.contract['classes']:
             name=row['class_name'].replace('.','/')
             old=self.S.abc((self.S.HERE/row['prior_tag_data']).read_bytes(),name)
-            new=self.S.abc((ROOT/self.F.PATCH/row['tag']).read_bytes(),name)
+            # This endpoint's tag: the UI style successor's witness where the tree has moved on.
+            new=self.U.held(row['tag'])or(ROOT/self.F.PATCH/row['tag']).read_bytes()
+            new=self.S.abc(new,name)
             d=self.X.delta(old,new);changed,added=edited[row['class_name']]
             with self.subTest(cls=row['class_name']):
                 self.assertEqual(d,next(x for x in self.review['classes']if x['class_name']==row['class_name'])['resolved_delta'])
@@ -282,6 +297,107 @@ class ThreeTagSuccessor(unittest.TestCase):
                 try:mutated=self.X.delta(old,new[:at]+b'\xd1'+new[at+1:])
                 except ValueError:mutated=None
                 self.assertNotEqual(mutated,d)
+
+class UIStyleSuccessor(unittest.TestCase):
+    """tools/p2p-ui-style-composition: the UI style branch's recompilation of four codo.gfx classes."""
+    CLASSES={'codo.views.option_sub.OptionView_video','codo.views.MatchMiniRoomCreatorView',
+             'codo.views.matchmpctroomcreator_sub.MatchMPCTRoomCreatorView_mpcreator','codo.k33.LocalMatchControls'}
+    def setUp(self):
+        import importlib.util
+        def load(name,path):
+            spec=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);return m
+        self.F=load('ui_four_tag_predecessor_tests',ROOT/'tools/p2p-four-tag-composition/composition.py')
+        self.T=load('ui_three_tag_predecessor_tests',ROOT/'tools/p2p-deferred-host-composition/composition.py')
+        self.U=load('ui_style_successor_tests',ROOT/'tools/p2p-ui-style-composition/composition.py')
+        self.X=load('ui_resolved_abc_tests',self.U.RESOLVED)
+        self.contract=json.loads((self.U.HERE/'composition.json').read_bytes())
+        self.review=json.loads((self.U.HERE/'automated-diff-review.json.DATA').read_bytes())
+        self.patch=ROOT/self.F.PATCH/'patch.txt'
+
+    def changed_read(self,path,bad,reason):
+        read=Path.read_bytes
+        with patch.object(Path,'read_bytes',lambda p:bad if p==path else read(p)):
+            with self.assertRaisesRegex(ValueError,reason):self.F.verify(ROOT,self.F.PRIOR_SHA)
+
+    def test_exactly_the_four_UI_classes_change_and_the_chain_ends_at_the_tree_movie(self):
+        p=self.U.verify(ROOT,self.U.PRIOR_SHA)
+        self.assertEqual(p,self.F.verify(ROOT,self.F.PRIOR_SHA)['successor']['successor'])
+        self.assertEqual(p,chain_end(self.T.verify(ROOT,self.T.PRIOR_SHA)))
+        self.assertEqual({r['class_name']for r in self.contract['classes']},self.CLASSES)
+        self.assertEqual((p['qualified_classes'],p['non_target_tags_exact'],p['total_tags']),(4,6863,6867))
+        self.assertEqual((p['prior_movie_sha256'],p['current_movie_sha256']),(self.T.OUTPUT_SHA,self.U.OUTPUT_SHA))
+        self.assertTrue(p['inverse_exact']);self.assertFalse(p['runtime_or_release_ready']);self.assertFalse(p['human_reviewed'])
+        self.assertIn('sha256 '+p['current_movie_sha256'],self.patch.read_text(encoding='utf-8').splitlines())
+
+    def test_predecessor_cannot_be_relabelled_or_supplied(self):
+        with self.assertRaisesRegex(ValueError,'immutable deferred-host predecessor'):self.U.verify(ROOT,self.U.OUTPUT_SHA)
+        with self.assertRaisesRegex(ValueError,'reconstructed exact deferred-host predecessor'):
+            self.U.verify(ROOT,self.U.PRIOR_SHA,before=b'GFX',prior=types.SimpleNamespace(**vars(self.F)))
+
+    def test_earlier_stages_are_not_repinned(self):
+        self.assertEqual(self.F.CONTRACT_SHA,'6838fca3f273cf05b1e79a1ee3a85c944a83a177bcf00511a3686e194348ce8b')
+        self.assertEqual(self.T.CONTRACT_SHA,'a07b3586097f50cefd879df1210ec064032d87b1272d1f77c185654b9bb27d97')
+        self.assertEqual(self.T.OUTPUT_SHA,self.U.PRIOR_SHA)
+        self.assertEqual(self.review['predecessor_review']['sha256'],json.loads((self.T.HERE/'composition.json').read_bytes())['review_sha256'])
+
+    def test_unreviewed_change_to_any_other_tag_refuses(self):
+        # The guard against unreviewed movie changes stays: the OptionView (vertical), MatchController (selector),
+        # LobbyController (deferred host) and the now unused LocalCreateRoomOption tags must be as before.
+        for name in ('5988_82_codo_views_OptionView.bin','6167_82_codo_controllers_MatchController.bin',
+                     '6122_82_codo_controllers_LobbyController.bin','k33_82_codo_k33_LocalCreateRoomOption.bin'):
+            path=ROOT/self.F.PATCH/'tags'/name;raw=path.read_bytes()
+            # LobbyController and LocalCreateRoomOption are refused by the deferred-host stage's own pins of those tags.
+            why='qualified target tag identity'if name.startswith(('6122_','k33_'))else'non-target tag payload unchanged'
+            with self.subTest(name=name):self.changed_read(path,raw[:-1]+bytes([raw[-1]^1]),why)
+
+    def test_each_qualified_tag_and_Source_is_pinned(self):
+        for row in self.contract['classes']:
+            with self.subTest(cls=row['class_name']):
+                path=ROOT/self.F.PATCH/row['tag'];raw=path.read_bytes()
+                self.changed_read(path,raw[:-1]+bytes([raw[-1]^1]),'qualified target tag identity')
+                path=ROOT/self.F.PATCH/row['source']
+                self.changed_read(path,path.read_bytes()+b'\n','composition DATA identity')
+
+    def test_every_preserved_witness_and_stage_file_is_pinned(self):
+        flip=lambda raw:raw[:-1]+bytes([raw[-1]^1])
+        for row in self.contract['classes']:
+            with self.subTest(cls=row['class_name']):
+                # A witness is an earlier stage's endpoint: LocalMatchControls is a deferred-host target, the others are not.
+                why='qualified target tag identity'if row['class_name']=='codo.k33.LocalMatchControls'else'non-target tag payload unchanged'
+                path=self.U.HERE/row['prior_tag_data'];self.changed_read(path,flip(path.read_bytes()),why)
+                path=self.U.HERE/row['prior_source_data'];self.changed_read(path,path.read_bytes()+b'\n','composition DATA identity')
+        path=self.U.HERE/'patch.before.txt.DATA';self.changed_read(path,path.read_bytes()+b'\n','exact qualified patch metadata bytes')
+        for path in (self.U.HERE/'composition.py',self.U.HERE/'composition.json',self.U.HERE/'automated-diff-review.json.DATA',self.U.RESOLVED):
+            with self.subTest(name=path.name):self.changed_read(path,path.read_bytes()+b'\n','composition DATA identity')
+
+    def test_patch_metadata_drift_refuses(self):
+        raw=self.patch.read_bytes()
+        self.changed_read(self.patch,raw+b'# unqualified metadata drift\n','exact qualified patch metadata bytes')
+        line=next(x for x in raw.splitlines()if x.startswith(b'as codo.views.OptionView '))
+        self.changed_read(self.patch,raw.replace(line,line[:-64]+b'0'*64,1),'non-target Source metadata unchanged')
+
+    def test_record_is_an_automated_review_and_says_so(self):
+        r=self.review
+        self.assertEqual((r['reviewer']['kind'],r['reviewer']['human'],r['runtime_authority'],r['actual_actions_authorized']),('automated',False,False,False))
+        self.assertIn('No human reviewed',r['reviewer']['statement'])
+        self.assertEqual({c['class_name']for c in r['classes']},self.CLASSES)
+
+    def test_resolved_delta_is_recomputed_from_the_actual_tags(self):
+        edited={'codo.views.option_sub.OptionView_video':{'','OptionView_video','onInit','enable','disable'},
+                'codo.views.MatchMiniRoomCreatorView':{'onInit','enableData','updateLocalOption','onLocalCreateChosen','onBackBtnClickHandle','onCreateRoomBtnClickHandle'},
+                'codo.views.matchmpctroomcreator_sub.MatchMPCTRoomCreatorView_mpcreator':{'onInit','enable','disable','getRoomCreatorParams'},
+                'codo.k33.LocalMatchControls':{'LocalMatchControls','anchorBesideReadyArea','onProtocolFrame','resetProductionChoice','setProductionRoom'}}
+        removed={'codo.k33.LocalMatchControls':{'onLocalChoice','refreshStatus'}}
+        for row in self.contract['classes']:
+            name=row['class_name'].replace('.','/')
+            old=self.U.abc((self.U.HERE/row['prior_tag_data']).read_bytes(),name)
+            new=self.U.abc((ROOT/self.F.PATCH/row['tag']).read_bytes(),name)
+            d=self.X.delta(old,new)
+            with self.subTest(cls=row['class_name']):
+                self.assertEqual(d,next(x for x in self.review['classes']if x['class_name']==row['class_name'])['resolved_delta'])
+                self.assertEqual({m.rsplit('/',1)[-1]for m in d['methods_changed_beyond_compiler_spelling']},edited[row['class_name']])
+                self.assertEqual({m.rsplit('/',1)[1]for m in d['methods_removed']},removed.get(row['class_name'],set()))
+                self.assertTrue(all(m.rsplit('/',1)[1].startswith('k33')for m in d['methods_added']))
 
 
 if __name__=='__main__':unittest.main()

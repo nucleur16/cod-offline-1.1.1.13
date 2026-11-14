@@ -1,0 +1,297 @@
+{
+  "format": 1,
+  "verdict": "ACCEPT_UI_STYLE_FOUR_CLASS_TAG_DATA_DELTA_BY_AUTOMATED_REVIEW",
+  "reviewer": {
+    "kind": "automated",
+    "human": false,
+    "agent": "Claude Code agent, model claude-opus-5-5",
+    "session": "https://claude.ai/code/session_018mKcuw4VVDYoX6MDsXa4HH",
+    "date": "2026-11-13",
+    "statement": "This record was produced by an automated review of the ActionScript difference d319a61..5b23cef of codo.gfx and of the stored tag bytes of the four classes. No human reviewed, approved or signed it. The decision to re-pin (record a successor stage rather than retire the chain) was agreed with the owner of the UI style session; that agreement is not a review of the bytes. It does not extend the claims of tools/p2p-four-tag-composition/actual-semantic-review.json.DATA or tools/p2p-deferred-host-composition/automated-diff-review.json.DATA to this endpoint."
+  },
+  "change": {
+    "commits": [
+      {
+        "commit": "0f5fb5e",
+        "subject": "feat(ui): Language, Button icons and HUD style rows in Options > Graphics"
+      },
+      {
+        "commit": "ac1d351",
+        "subject": "Merge k33/feat/ui-style-options: live language switch, glyph override, menu rows"
+      },
+      {
+        "commit": "54dd327",
+        "subject": "UI: Graphics style rows as drop-downs, label text fixed, Language row off; no Local Play box"
+      },
+      {
+        "commit": "c0a88a2",
+        "subject": "UI: Language row back on in Options > Graphics and the pause menu"
+      }
+    ],
+    "parent_endpoint_commit": "d319a61ea9291aa5f7e792041d56457d432d9f47",
+    "design": "docs/UI_STYLE_OPTIONS_20261112.md",
+    "movie_files_changed": "Only these four Source files, their four stored tags and patch.txt (its sha256 line, and the Source rows of the four classes, moved to the end with their new digests) changed under codo.gfx.gfxpatch between d319a61 and 5b23cef; git log of that directory over the range lists only the four commits above.",
+    "not_covered": "MainPause (the pause menu drop-downs of the same commits) is a class of codoingame.gfx, a different movie that this chain does not pin."
+  },
+  "prior_movie_sha256": "7fedff5bda30dc0bd8a484735e1dcce3d389e7fb68b825f28680aa8bc70ce6a5",
+  "output_movie_sha256": "2e2f7431a68ed299f1fd4cee2b917456e998975a42e065001d2f9934419d191a",
+  "predecessor_review": {
+    "path": "tools/p2p-deferred-host-composition/automated-diff-review.json.DATA",
+    "sha256": "6297c63fdc8af4a649c22f816453e99739fc2ae9983d159f1f2c760ebcb20641",
+    "status": "unchanged and still bound to the deferred-host endpoint 7fedff5b only"
+  },
+  "classes": [
+    {
+      "class_name": "codo.views.option_sub.OptionView_video",
+      "source_change": [
+        "Added the Language / Button icons / HUD style rows of Options > Graphics: 25 private methods (k33Texts, k33Style*, k33OnStyleOpen/Close/Change), 13 private static constants and 11 private instance fields.",
+        "onInit: the text assignments moved into the new k33Texts (so a finished language switch can set them again); the Max FPS row layout statements that followed them are unchanged and stay in onInit, which now calls k33Texts first. The Aspect Ratio label is set once to \"@K33UI_MAX_FPS\" instead of first to ASPECT_RATIO and then to the key.",
+        "enable: after the existing statements, relocalizes when k33_languageSerial changed since the tab was last shown, else builds the rows; then starts the row watch. disable: stops the row watch. Apply / Cancel / Default and the existing combo boxes are not edited.",
+        "The rows write only gpad_glyphs, k33_hudStyle and k33_language (setdvar, on the player's pick). They read k33_padinfo, k33_languageList, k33_hudStyleList, k33_languageState and k33_languageSerial. No execnow is added."
+      ],
+      "unchanged_source_methods_recompiled_with_another_spelling": 0,
+      "resolved_delta": {
+        "bodies_before": 31,
+        "bodies_after": 56,
+        "methods_added": [
+          "codo.views.option_sub:OptionView_video/private/k33OnStyleChange",
+          "codo.views.option_sub:OptionView_video/private/k33OnStyleClose",
+          "codo.views.option_sub:OptionView_video/private/k33OnStyleOpen",
+          "codo.views.option_sub:OptionView_video/private/k33StyleBuild",
+          "codo.views.option_sub:OptionView_video/private/k33StyleCombo",
+          "codo.views.option_sub:OptionView_video/private/k33StyleCurrent",
+          "codo.views.option_sub:OptionView_video/private/k33StyleDigits",
+          "codo.views.option_sub:OptionView_video/private/k33StyleFrame",
+          "codo.views.option_sub:OptionView_video/private/k33StyleIndex",
+          "codo.views.option_sub:OptionView_video/private/k33StyleLabel",
+          "codo.views.option_sub:OptionView_video/private/k33StyleName",
+          "codo.views.option_sub:OptionView_video/private/k33StyleNoteUpdate",
+          "codo.views.option_sub:OptionView_video/private/k33StyleOf",
+          "codo.views.option_sub:OptionView_video/private/k33StyleOptions",
+          "codo.views.option_sub:OptionView_video/private/k33StylePending",
+          "codo.views.option_sub:OptionView_video/private/k33StyleRelocalize",
+          "codo.views.option_sub:OptionView_video/private/k33StyleRemove",
+          "codo.views.option_sub:OptionView_video/private/k33StyleSet",
+          "codo.views.option_sub:OptionView_video/private/k33StyleShow",
+          "codo.views.option_sub:OptionView_video/private/k33StyleSig",
+          "codo.views.option_sub:OptionView_video/private/k33StyleStep",
+          "codo.views.option_sub:OptionView_video/private/k33StyleText",
+          "codo.views.option_sub:OptionView_video/private/k33StyleTrim",
+          "codo.views.option_sub:OptionView_video/private/k33StyleWatch",
+          "codo.views.option_sub:OptionView_video/private/k33Texts"
+        ],
+        "methods_removed": [],
+        "methods_changed": [
+          "",
+          "codo.views.option_sub:OptionView_video/OptionView_video",
+          "codo.views.option_sub:OptionView_video/disable",
+          "codo.views.option_sub:OptionView_video/enable",
+          "codo.views.option_sub:OptionView_video/protected/onInit"
+        ],
+        "methods_identical": 25,
+        "methods_changed_beyond_compiler_spelling": [
+          "",
+          "codo.views.option_sub:OptionView_video/OptionView_video",
+          "codo.views.option_sub:OptionView_video/disable",
+          "codo.views.option_sub:OptionView_video/enable",
+          "codo.views.option_sub:OptionView_video/protected/onInit"
+        ],
+        "traits_added": [
+          "('class', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'K33_GLYPH_NAMES'), 6, 0, 13, (('qname', 7, '22:', 'Array'), None)))",
+          "('class', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'K33_STYLE_DVARS'), 6, 0, 14, (('qname', 7, '22:', 'Object'), None)))",
+          "('class', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'K33_STYLE_HOLD'), 6, 0, 5, (('qname', 7, '22:', 'int'), ('int', 12))))",
+          "('class', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'K33_STYLE_KINDS'), 6, 0, 3, (('qname', 7, '22:', 'Array'), None)))",
+          "('class', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'K33_STYLE_LABELS'), 6, 0, 4, (('qname', 7, '22:', 'Object'), None)))",
+          "('class', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'K33_STYLE_LANGUAGE_ROW'), 6, 0, 15, (('qname', 7, '22:', 'Boolean'), ('literal', 11))))",
+          "('class', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'K33_STYLE_NOTE_Y'), 6, 0, 12, (('qname', 7, '22:', 'Number'), ('int', 486))))",
+          "('class', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'K33_STYLE_PITCH'), 6, 0, 9, (('qname', 7, '22:', 'Number'), ('int', 30))))",
+          "('class', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'K33_STYLE_PITCH3'), 6, 0, 11, (('qname', 7, '22:', 'Number'), ('int', 22))))",
+          "('class', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'K33_STYLE_POLL'), 6, 0, 6, (('qname', 7, '22:', 'int'), ('int', 6))))",
+          "('class', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'K33_STYLE_X'), 6, 0, 7, (('qname', 7, '22:', 'Number'), ('int', 12))))",
+          "('class', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'K33_STYLE_Y'), 6, 0, 8, (('qname', 7, '22:', 'Number'), ('int', 407))))",
+          "('class', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'K33_STYLE_Y3'), 6, 0, 10, (('qname', 7, '22:', 'Number'), ('int', 399))))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', '_k33StyleCombos'), 0, 0, 0, (('qname', 7, '22:', 'Object'), None)))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', '_k33StyleDirty'), 0, 0, 0, (('qname', 7, '22:', 'Boolean'), ('literal', 10))))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', '_k33StyleFrames'), 0, 0, 0, (('qname', 7, '22:', 'int'), ('int', 0))))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', '_k33StyleLabels'), 0, 0, 0, (('qname', 7, '22:', 'Object'), None)))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', '_k33StyleNote'), 0, 0, 0, (('qname', 7, '22:flash.text', 'TextField'), ('literal', 12))))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', '_k33StyleNoteKey'), 0, 0, 0, (('qname', 7, '22:', 'String'), ('string', ''))))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', '_k33StyleOn'), 0, 0, 0, (('qname', 7, '22:', 'Boolean'), ('literal', 10))))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', '_k33StyleOpen'), 0, 0, 0, (('qname', 7, '22:components', 'CodoComboBox'), ('literal', 12))))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', '_k33StyleRows'), 0, 0, 0, (('qname', 7, '22:', 'Array'), None)))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', '_k33StyleSerial'), 0, 0, 0, (('qname', 7, '22:', 'int'), ('int', -1))))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', '_k33StyleSync'), 0, 0, 0, (('qname', 7, '22:', 'Boolean'), ('literal', 10))))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33OnStyleChange'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33OnStyleChange')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33OnStyleClose'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33OnStyleClose')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33OnStyleOpen'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33OnStyleOpen')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleBuild'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleBuild')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleCombo'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleCombo')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleCurrent'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleCurrent')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleDigits'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleDigits')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleFrame'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleFrame')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleIndex'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleIndex')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleLabel'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleLabel')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleName'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleName')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleNoteUpdate'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleNoteUpdate')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleOf'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleOf')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleOptions'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleOptions')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StylePending'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StylePending')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleRelocalize'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleRelocalize')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleRemove'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleRemove')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleSet'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleSet')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleShow'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleShow')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleSig'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleSig')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleStep'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleStep')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleText'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleText')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleTrim'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleTrim')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33StyleWatch'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33StyleWatch')))",
+          "('instance', (('qname', 7, '5:codo.views.option_sub:OptionView_video', 'k33Texts'), 1, 0, 0, ('method', 'codo.views.option_sub:OptionView_video/private/k33Texts')))"
+        ],
+        "traits_removed": []
+      }
+    },
+    {
+      "class_name": "codo.views.MatchMiniRoomCreatorView",
+      "source_change": [
+        "Removed the Local Play box (import, the localCreateOption field, its construction in onInit and every selected/visible use). Added the private Boolean localCreateAllowed (default false).",
+        "updateLocalOption sets localCreateAllowed to the same `allowed` test as before (multiplayer, zombies, coop_survival_ maps); onLocalCreateChosen sets ui_p2p_create to 1 exactly when it is allowed; onCreateRoomBtnClickHandle uses a minimum of one player exactly when it is allowed. enableData and onBackBtnClickHandle lost only the box reset; both still set ui_p2p_create 0."
+      ],
+      "unchanged_source_methods_recompiled_with_another_spelling": 3,
+      "resolved_delta": {
+        "bodies_before": 27,
+        "bodies_after": 27,
+        "methods_added": [],
+        "methods_removed": [],
+        "methods_changed": [
+          "codo.views:MatchMiniRoomCreatorView/private/onBackBtnClickHandle",
+          "codo.views:MatchMiniRoomCreatorView/private/onLocalCreateChosen",
+          "codo.views:MatchMiniRoomCreatorView/private/onRoomNameSanitizedHandle",
+          "codo.views:MatchMiniRoomCreatorView/private/refreshMPData",
+          "codo.views:MatchMiniRoomCreatorView/private/refreshMPMaps",
+          "codo.views:MatchMiniRoomCreatorView/private/updateLocalOption",
+          "codo.views:MatchMiniRoomCreatorView/protected/enableData",
+          "codo.views:MatchMiniRoomCreatorView/protected/onCreateRoomBtnClickHandle",
+          "codo.views:MatchMiniRoomCreatorView/protected/onInit"
+        ],
+        "methods_identical": 17,
+        "methods_changed_beyond_compiler_spelling": [
+          "codo.views:MatchMiniRoomCreatorView/private/onBackBtnClickHandle",
+          "codo.views:MatchMiniRoomCreatorView/private/onLocalCreateChosen",
+          "codo.views:MatchMiniRoomCreatorView/private/updateLocalOption",
+          "codo.views:MatchMiniRoomCreatorView/protected/enableData",
+          "codo.views:MatchMiniRoomCreatorView/protected/onCreateRoomBtnClickHandle",
+          "codo.views:MatchMiniRoomCreatorView/protected/onInit"
+        ],
+        "traits_added": [
+          "('instance', (('qname', 7, '5:codo.views:MatchMiniRoomCreatorView', 'localCreateAllowed'), 0, 0, 0, (('qname', 7, '22:', 'Boolean'), ('literal', 10))))"
+        ],
+        "traits_removed": [
+          "('instance', (('qname', 7, '5:codo.views:MatchMiniRoomCreatorView', 'localCreateOption'), 0, 0, 0, (('qname', 7, '22:codo.k33', 'LocalCreateRoomOption'), None)))"
+        ]
+      }
+    },
+    {
+      "class_name": "codo.views.matchmpctroomcreator_sub.MatchMPCTRoomCreatorView_mpcreator",
+      "source_change": [
+        "Removed the Local Play box (import, the localCreateOption field, its construction in onInit, the reset in enable/disable and its visibility in enable).",
+        "getRoomCreatorParams: a room is local (ui_p2p_create 1, minimum one player) exactly when the current match type is multiplayer, the case in which the box used to be shown."
+      ],
+      "unchanged_source_methods_recompiled_with_another_spelling": 3,
+      "resolved_delta": {
+        "bodies_before": 20,
+        "bodies_after": 20,
+        "methods_added": [],
+        "methods_removed": [],
+        "methods_changed": [
+          "codo.views.matchmpctroomcreator_sub:MatchMPCTRoomCreatorView_mpcreator/disable",
+          "codo.views.matchmpctroomcreator_sub:MatchMPCTRoomCreatorView_mpcreator/enable",
+          "codo.views.matchmpctroomcreator_sub:MatchMPCTRoomCreatorView_mpcreator/private/getRoomCreatorParams",
+          "codo.views.matchmpctroomcreator_sub:MatchMPCTRoomCreatorView_mpcreator/private/onRoomNameSanitizedHandle",
+          "codo.views.matchmpctroomcreator_sub:MatchMPCTRoomCreatorView_mpcreator/private/refreshMPData",
+          "codo.views.matchmpctroomcreator_sub:MatchMPCTRoomCreatorView_mpcreator/private/refreshMPMaps",
+          "codo.views.matchmpctroomcreator_sub:MatchMPCTRoomCreatorView_mpcreator/protected/onInit"
+        ],
+        "methods_identical": 12,
+        "methods_changed_beyond_compiler_spelling": [
+          "codo.views.matchmpctroomcreator_sub:MatchMPCTRoomCreatorView_mpcreator/disable",
+          "codo.views.matchmpctroomcreator_sub:MatchMPCTRoomCreatorView_mpcreator/enable",
+          "codo.views.matchmpctroomcreator_sub:MatchMPCTRoomCreatorView_mpcreator/private/getRoomCreatorParams",
+          "codo.views.matchmpctroomcreator_sub:MatchMPCTRoomCreatorView_mpcreator/protected/onInit"
+        ],
+        "traits_added": [],
+        "traits_removed": [
+          "('instance', (('qname', 7, '5:codo.views.matchmpctroomcreator_sub:MatchMPCTRoomCreatorView_mpcreator', 'localCreateOption'), 0, 0, 0, (('qname', 7, '22:codo.k33', 'LocalCreateRoomOption'), None)))"
+        ]
+      }
+    },
+    {
+      "class_name": "codo.k33.LocalMatchControls",
+      "source_change": [
+        "Removed the read-only Local Play box of the room: the choice field, the private methods refreshStatus and onLocalChoice, the imports of LocalizeUtil and MouseEvent, the box's construction and click listener in the constructor (now mouseEnabled/mouseChildren false), the placement in anchorBesideReadyArea (now an empty body), the trailing refreshStatus call of onProtocolFrame, the box reset in resetProductionChoice and the visible writes in setProductionRoom.",
+        "The bridge itself is unchanged: setProductionRoom still sends p2p_room <context> and, for the owner's created room (ui_p2p_create 1), p2p_localhost 1, and resetProductionChoice still sends p2p_localhost 0. Nothing new is sent."
+      ],
+      "unchanged_source_methods_recompiled_with_another_spelling": 0,
+      "resolved_delta": {
+        "bodies_before": 17,
+        "bodies_after": 15,
+        "methods_added": [],
+        "methods_removed": [
+          "codo.k33:LocalMatchControls/private/onLocalChoice",
+          "codo.k33:LocalMatchControls/private/refreshStatus"
+        ],
+        "methods_changed": [
+          "codo.k33:LocalMatchControls/LocalMatchControls",
+          "codo.k33:LocalMatchControls/anchorBesideReadyArea",
+          "codo.k33:LocalMatchControls/private/onProtocolFrame",
+          "codo.k33:LocalMatchControls/private/resetProductionChoice",
+          "codo.k33:LocalMatchControls/private/setProductionRoom"
+        ],
+        "methods_identical": 9,
+        "methods_changed_beyond_compiler_spelling": [
+          "codo.k33:LocalMatchControls/LocalMatchControls",
+          "codo.k33:LocalMatchControls/anchorBesideReadyArea",
+          "codo.k33:LocalMatchControls/private/onProtocolFrame",
+          "codo.k33:LocalMatchControls/private/resetProductionChoice",
+          "codo.k33:LocalMatchControls/private/setProductionRoom"
+        ],
+        "traits_added": [],
+        "traits_removed": [
+          "('instance', (('qname', 7, '5:codo.k33:LocalMatchControls', 'choice'), 0, 0, 0, (('qname', 7, '22:codo.k33', 'LocalCreateRoomOption'), None)))",
+          "('instance', (('qname', 7, '5:codo.k33:LocalMatchControls', 'onLocalChoice'), 1, 0, 0, ('method', 'codo.k33:LocalMatchControls/private/onLocalChoice')))",
+          "('instance', (('qname', 7, '5:codo.k33:LocalMatchControls', 'refreshStatus'), 1, 0, 0, ('method', 'codo.k33:LocalMatchControls/private/refreshStatus')))"
+        ]
+      }
+    }
+  ],
+  "unchanged_classes": "All other classes of the movie, among them codo.k33.LocalCreateRoomOption, codo.controllers.LobbyController, codo.views.InRoomBaseView, codo.views.OptionView and codo.controllers.MatchController: Source rows and stored tags byte-identical to the deferred-host endpoint (no Source of the movie refers to LocalCreateRoomOption any more; its class and tag are kept unchanged).",
+  "compiled_findings": [
+    "OptionView_video: 31 -> 56 bodies; 25 methods added with their 25 method traits, plus 11 instance field traits and 13 class constant traits (classes[0].resolved_delta); no method or trait removed. Beyond the compiler spellings, the changed pre-existing bodies are the ones the source edits (onInit, enable, disable) plus the instance and class initializers, which carry the new field and constant initial values.",
+    "MatchMiniRoomCreatorView: 27 -> 27 bodies; trait localCreateOption replaced by localCreateAllowed. Changed beyond spelling: onInit, enableData, updateLocalOption, onLocalCreateChosen, onBackBtnClickHandle, onCreateRoomBtnClickHandle, the methods the source edits.",
+    "MatchMPCTRoomCreatorView_mpcreator: 20 -> 20 bodies; trait localCreateOption removed. Changed beyond spelling: onInit, enable, disable, getRoomCreatorParams, the methods the source edits.",
+    "LocalMatchControls: 17 -> 15 bodies; methods refreshStatus and onLocalChoice and the trait choice removed. Changed beyond spelling: the constructor, anchorBesideReadyArea, onProtocolFrame, resetProductionChoice, setProductionRoom, the methods the source edits.",
+    "FINDING, as in the predecessor record: onRoomNameSanitizedHandle, refreshMPData and refreshMPMaps of both room creator views have unchanged source but differ in raw resolved instructions; the difference is entirely the two compiler spellings that resolved_abc.fold folds (explicit conversions; AS3-namespace builtin members). Those spellings are treated as the same statement, not proved equivalent.",
+    "The strict and folded method deltas of all four classes are in classes[].resolved_delta; composition.verify recomputes them from the preserved predecessor tags and the tree tags and refuses a mismatch."
+  ],
+  "source_findings": [
+    "The Local Play removal keeps the earlier outcome of a ticked box for every room kind the box was offered for: ui_p2p_create 1 and a minimum of one player; LocalMatchControls still seeds p2p_localhost 1 from ui_p2p_create for the owner. The difference is that the player can no longer opt out (or a guest opt in) from the UI; docs and code comments state every owned room is hosted locally.",
+    "The protocol 3 click path (onLocalChoice: p2p_room, p2p_localhost 1/0 on a click) is removed with the box. In protocol 3 a guest can no longer opt in from the room.",
+    "The style rows apply at once and outside Apply / Cancel / Default, by design (source comment and docs/UI_STYLE_OPTIONS_20261112.md)."
+  ],
+  "executed_checks": [
+    {
+      "check": "tools/p2p-ui-style-composition/composition.py verify (through tools/p2p-four-tag-composition and tools/p2p-deferred-host-composition)",
+      "result": "deferred-host endpoint 7fedff5b reconstructed from preserved witnesses; tree movie 2e2f7431 reconstructed; 6863 other tags byte-identical; inverse restores the predecessor; resolved method deltas recomputed"
+    },
+    {
+      "check": "node tests/ui_style_rows_test.js; node tests/local_match_controls_test.js; node tests/local_match_layout_test.js; node tests/local_create_room_option_test.js; node tests/local_play_deferred_test.js; node tests/campaign_local_host_test.js",
+      "result": "pass (source bodies in Node, through tests/run_tests.sh; not an AS VM)"
+    }
+  ],
+  "limits": [
+    "Stored tag DATA and source text only. No compiler, decompiler, Java, Scaleform/AVM, game client, server or lobby was run for this record; the compilation that produced the four tags was neither witnessed nor repeated, and no decompiler readback of them was compared with the source.",
+    "Private namespaces are compared by their text. The folded comparison ignores the open namespace set of late-bound names and the max_stack value, and drops debug line records.",
+    "No rendering, gameplay, network, reward or release statement. The FF asset built from this movie is not covered."
+  ],
+  "actual_actions_authorized": false,
+  "runtime_authority": false
+}

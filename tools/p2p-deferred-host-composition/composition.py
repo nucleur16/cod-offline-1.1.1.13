@@ -7,6 +7,14 @@ the patch.txt of that endpoint as bounded DATA witnesses (held()), so the
 four-tag stage still reconstructs and proves its exact endpoint, and then
 hands that reconstructed movie here as the predecessor.
 
+This endpoint (OUTPUT_SHA) is no longer the tree's movie either: the UI style
+commits recompiled four classes later (tools/p2p-ui-style-composition). As
+the four-tag stage does for this stage, the files of this endpoint that changed
+since are read from that successor's preserved DATA witnesses (endpoint()
+below, each still checked against this stage's own pins), and the tree's movie
+is then proved by that successor over this reconstructed endpoint. held()
+hands an earlier stage a file this stage did not change from that successor.
+
 Nothing is compiled or loaded. The review record is an automated review of
 the source and stored-tag difference; verify() recomputes its constant-resolved
 method delta from the actual tag bytes instead of trusting it.
@@ -20,6 +28,8 @@ PRIOR_SHA='bc9c8515ca326a31e1006bfeb8338a441cd2d5677d6a56d0b31eb46ef294e9a9'
 OUTPUT_SHA='7fedff5bda30dc0bd8a484735e1dcce3d389e7fb68b825f28680aa8bc70ce6a5'
 FORMAT='automated-diff-reviewed-three-P2P-tag-composition-v1'
 VERDICT='ACCEPT_THREE_P2P_CLASS_TAG_DATA_DELTA_BY_AUTOMATED_REVIEW'
+NEXT=HERE.parent/'p2p-ui-style-composition'/'composition.py'
+NEXT_SHA='c4833df0cfa12d611fb979a653928ab1214e1b27407206879c239bb16428833c'
 
 def need(value,label):
     if not value:raise ValueError(label)
@@ -27,15 +37,20 @@ def need(value,label):
 def module(name,path):
     spec=importlib.util.spec_from_file_location(name,path);loaded=importlib.util.module_from_spec(spec);spec.loader.exec_module(loaded);return loaded
 
-def held(rel):
-    """The four-tag endpoint's bytes of a patch file this stage changed, else None.
+def successor():
+    raw=NEXT.read_bytes();need(hashlib.sha256(raw).hexdigest()==NEXT_SHA,'composition DATA identity: '+NEXT.name)
+    return module('qualified_ui_style_successor',NEXT)
 
-    Unpinned here on purpose: the four-tag stage checks every returned byte
-    against its own unchanged pins.
+def held(rel):
+    """The four-tag endpoint's bytes of a patch file changed since, else None.
+
+    A file this stage changed comes from this stage's witnesses, any other
+    from the successor's (this stage's own endpoint). Unpinned here on purpose:
+    the four-tag stage checks every returned byte against its own unchanged pins.
     """
     contract=json.loads((HERE/'composition.json').read_bytes());table={'patch.txt':'patch.before.txt.DATA'}
     for row in contract['classes']:table[row['source']]=row['prior_source_data'];table[row['tag']]=row['prior_tag_data']
-    name=table.get(rel);return None if name is None else(HERE/name).read_bytes()
+    name=table.get(rel);return successor().held(rel)if name is None else(HERE/name).read_bytes()
 
 def abc(tag,name):
     head=6 if struct.unpack_from('<H',tag)[0]&63==63 else 2
@@ -54,7 +69,11 @@ def verify(root,prior_sha,*,before=None,prior=None):
     need(contract['format']==FORMAT and contract['prior_movie_sha256']==PRIOR_SHA and contract['output_movie_sha256']==OUTPUT_SHA,'closed composition lineage')
     prior_patch=exact(HERE/'patch.before.txt.DATA',contract['prior_patch_sha256'])
     oldmeta,oldsrc,oldops=prior.parse_patch(prior_patch)
-    current_patch=(Path(root)/PATCH/'patch.txt').read_bytes()
+    exact(NEXT,NEXT_SHA);after_stage=module('qualified_ui_style_successor',NEXT)
+    def endpoint(rel):
+        # This endpoint's bytes: the successor's witness where the tree has moved on, else the tree.
+        raw=after_stage.held(rel);return(Path(root)/PATCH/rel).read_bytes()if raw is None else raw
+    current_patch=endpoint('patch.txt')
     meta,sources,ops=prior.parse_patch(current_patch)
     need(ops==oldops,'all 6867 original patch operations/order exact')
     need(meta['stock']==oldmeta['stock']and meta['stock-sha256']==oldmeta['stock-sha256'],'original stock reference and digest exact')
@@ -68,7 +87,7 @@ def verify(root,prior_sha,*,before=None,prior=None):
         if cls.replace('.','/')in allowed:
             expected=allowed[cls.replace('.','/')]
             need(row==(expected['source'],expected['source_sha256'])and oldsrc[cls]==(expected['source'],expected['prior_source_sha256']),'qualified three Source metadata exact')
-            exact(Path(root)/PATCH/row[0],row[1]);exact(HERE/expected['prior_source_data'],expected['prior_source_sha256'])
+            need(sha(endpoint(row[0]))==row[1],'composition DATA identity: '+Path(row[0]).name);exact(HERE/expected['prior_source_data'],expected['prior_source_sha256'])
         else:need(row==oldsrc[cls],'non-target Source metadata unchanged')
     review=json.loads(exact(HERE/'automated-diff-review.json.DATA',contract['review_sha256']))
     need(review['verdict']==VERDICT and review['reviewer']['kind']=='automated'and review['reviewer']['human']is False and
@@ -82,7 +101,7 @@ def verify(root,prior_sha,*,before=None,prior=None):
         old=before[t['begin']:t['end']];name=t['name']
         if op[0]=='keep':
             need(name not in allowed,'qualified class must use an explicit stored tag');out.append(old);continue
-        now=(Path(root)/PATCH/op[1]).read_bytes()
+        now=endpoint(op[1])
         if name in allowed:
             r=allowed[name]
             need(op[1]==r['tag']and sha(old)==r['prior_tag_sha256']and sha(now)==r['tag_sha256']and
@@ -103,5 +122,8 @@ def verify(root,prior_sha,*,before=None,prior=None):
     restored=bytearray(current[:S.header_len(current)]+b''.join(reverse));struct.pack_into('<I',restored,4,len(restored))
     need(bytes(restored)==before and sha(restored)==PRIOR_SHA,'three-tag inverse restores exact four-tag endpoint')
     need(sha(current_patch)==contract['current_patch_sha256'],'exact qualified patch metadata bytes')
-    return dict(prior_movie_sha256=PRIOR_SHA,current_movie_sha256=OUTPUT_SHA,qualified_classes=3,non_target_tags_exact=6864,total_tags=6867,
+    proof=dict(prior_movie_sha256=PRIOR_SHA,current_movie_sha256=OUTPUT_SHA,qualified_classes=3,non_target_tags_exact=6864,total_tags=6867,
                 inverse_exact=True,resolved_method_delta_recomputed=True,review='automated',human_reviewed=False,compiler_invoked=False,runtime_or_release_ready=False)
+    # The tree's movie: proved by the successor over this reconstructed endpoint.
+    proof['successor']=after_stage.verify(root,OUTPUT_SHA,before=current,prior=prior)
+    return proof

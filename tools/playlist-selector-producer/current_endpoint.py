@@ -62,7 +62,7 @@ def verify_successor(root,tag,*,source=None,prior):
     for name,pin in recipe['tools'].items():exact(HERE/name,pin)
     lines=(root/prior.PATCH/'patch.txt').read_text(encoding='utf-8').splitlines()
     need(lines.count('as codo.controllers.MatchController as/codo/controllers/MatchController.as '+P.SOURCE_SHA)==1,'exact selector Source recipe row')
-    exact(root/'tools/p2p-four-tag-composition/composition.py','c4ab79897a9796deb7e773c76061c16ff23b0661e313fba4af1878265c860ad4')
+    exact(root/'tools/p2p-four-tag-composition/composition.py','636d7a05509499b8afff5e59ef1695f553b4ce3bc8cccd39289760b318b0d2f0')
     composition=prior.module('qualified_four_tag_composition',root/'tools/p2p-four-tag-composition/composition.py')
     proof['movie_composition']=composition.verify(root,P.OUTPUT_MOVIE_SHA)
     # No Source-only candidate may masquerade as an actual decompiler readback.

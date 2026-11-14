@@ -24,7 +24,7 @@ OUTPUT_SHA='bc9c8515ca326a31e1006bfeb8338a441cd2d5677d6a56d0b31eb46ef294e9a9'
 PATCH=Path('zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch')
 MAX=16*1024*1024
 NEXT=HERE.parent/'p2p-deferred-host-composition'/'composition.py'
-NEXT_SHA='f98e1b5d3bf6c313008c16a30e2a8b4cfcd96ccb53885ad420a5ecdb4f68cacc'
+NEXT_SHA='9161bce691e756f0961d9a9801fef589fca5531e15a785ab27eb7cc1ac965b43'
 
 def need(value,label):
     if not value:raise ValueError(label)

@@ -1,0 +1,55 @@
+{
+  "classes": [
+    {
+      "class_name": "codo.views.option_sub.OptionView_video",
+      "prior_source_data": "OptionView_video.before.as.DATA",
+      "prior_source_sha256": "c1cea72f9756f1ff81ec6a283cc3ebc0d755de98497166cc10633245a9225a55",
+      "prior_tag_data": "OptionView_video.before.tag.DATA",
+      "prior_tag_sha256": "de3f4e4d4ede18eec2039c2feb506c4487a54751bf06595b5c51defd79ba726e",
+      "source": "as/codo/views/option_sub/OptionView_video.as",
+      "source_sha256": "9f32c0f7019d2b75beaee0807b4a02bffed85dda56c1135c32e8f08ae5ddde59",
+      "tag": "tags/6334_82_codo_views_option_sub_OptionView_video.bin",
+      "tag_sha256": "600acd43caf0b0f39398147982c9783149327b145919f84618d2c544a7216775"
+    },
+    {
+      "class_name": "codo.views.MatchMiniRoomCreatorView",
+      "prior_source_data": "MatchMiniRoomCreatorView.before.as.DATA",
+      "prior_source_sha256": "1378af250ddc6eece34d66ff1993261cf859ca1bb6b1f4846fe996c23a100367",
+      "prior_tag_data": "MatchMiniRoomCreatorView.before.tag.DATA",
+      "prior_tag_sha256": "541dc6ee65951ab835aec54ba5f8280d64d1790ed2f2b655d7081be17f51de01",
+      "source": "as/codo/views/MatchMiniRoomCreatorView.as",
+      "source_sha256": "f2e9599258882f421bebbe925d61e85e1cb35a559019d0e164d297809fb21e92",
+      "tag": "tags/4812_82_codo_views_MatchMiniRoomCreatorView.bin",
+      "tag_sha256": "c7003569e2d9f1703a3b8c6454e002a452d5ec450f563edf7fbcbe1704a07293"
+    },
+    {
+      "class_name": "codo.views.matchmpctroomcreator_sub.MatchMPCTRoomCreatorView_mpcreator",
+      "prior_source_data": "MatchMPCTRoomCreatorView_mpcreator.before.as.DATA",
+      "prior_source_sha256": "944696d6f200b04222edfba6bf1f9bc0ee8223785df74d1c85cb616d801e9237",
+      "prior_tag_data": "MatchMPCTRoomCreatorView_mpcreator.before.tag.DATA",
+      "prior_tag_sha256": "0dd0ba7d2a1fcea9140f9cbaf257e620c695cee1fc451c07a4a5515db2e8705b",
+      "source": "as/codo/views/matchmpctroomcreator_sub/MatchMPCTRoomCreatorView_mpcreator.as",
+      "source_sha256": "059bd6fd3c59116025ccb567c8e0cd57c80478af44c8883beaecd5eff80b09a9",
+      "tag": "tags/4709_82_codo_views_matchmpctroomcreator_sub_MatchMPCTRoomCreatorView_mpcreator.bin",
+      "tag_sha256": "e4b16dde80cc7306cef1885f2f886fd834a17b1450e1b985c406c00b31ef3dd0"
+    },
+    {
+      "class_name": "codo.k33.LocalMatchControls",
+      "prior_source_data": "LocalMatchControls.before.as.DATA",
+      "prior_source_sha256": "8e1fe34cc4eff0f92bca71207d2926443ebb25285683946c80f93ed89b10f29d",
+      "prior_tag_data": "LocalMatchControls.before.tag.DATA",
+      "prior_tag_sha256": "da567fed803d7b368cf3a7bf69f442f05804ffc185f052fd26d0714269a34899",
+      "source": "as/codo/k33/LocalMatchControls.as",
+      "source_sha256": "e5388f87879434eb94f03ab841e4db649450a4a93412acc52f3ff795a4e857b7",
+      "tag": "tags/k33_82_codo_k33_LocalMatchControls.bin",
+      "tag_sha256": "b742c7b23e23e6800a2ea0cc966a0d35f04f53ad851a749f859efb545a96c555"
+    }
+  ],
+  "current_patch_sha256": "9c4c3e376ad174d4cb3e3876db22bf4823784b1b4093307194f21d1ac64e63ef",
+  "format": "automated-diff-reviewed-ui-style-four-tag-composition-v1",
+  "output_movie_sha256": "2e2f7431a68ed299f1fd4cee2b917456e998975a42e065001d2f9934419d191a",
+  "prior_movie_sha256": "7fedff5bda30dc0bd8a484735e1dcce3d389e7fb68b825f28680aa8bc70ce6a5",
+  "prior_patch_sha256": "93b36eac8f589276434b7d944a06da289ca50e3bd018f5c723c0f17808969dc6",
+  "resolved_abc_sha256": "829ab29122505798b58d10c4b26e0008ba395a92bbf05da8f0ef7da7222550d1",
+  "review_sha256": "d07f7d04496002287de96b791e3081ae0ffa4dec597796e88ad695d6f61adabb"
+}
