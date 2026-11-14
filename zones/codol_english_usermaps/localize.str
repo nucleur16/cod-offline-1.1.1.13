@@ -20,3 +20,55 @@ MPUI_QADEEM	Qadeem
 MPUI_DESC_MAP_QADEEM	A luxury resort in the Middle East, built around an old coastal fortress. A beautiful coast outside and lavish halls inside, but watch out for heavy enemy fire.
 MPUI_HUNGER	Hunger
 MPUI_DESC_MAP_HUNGER	A large map: an abandoned town to the west, open fields and woods to the east.
+MPUI_ARKADEN_SH	Arkaden
+MPUI_DESC_MAP_ARKADEN_SH	A shopping mall in the heart of Berlin.
+MPUI_AWP_ARENA	AWP Arena
+MPUI_DESC_MAP_AWP_ARENA	A compact arena built for sniper duels.
+MPUI_BACKLOT_SH	Backlot
+MPUI_DESC_MAP_BACKLOT_SH	A medium-sized construction site. Great level for any mode.
+MPUI_BOOMTOWN	Boomtown
+MPUI_DESC_MAP_BOOMTOWN	A frontier town of saloons, mines and a log flume.
+MPUI_BOOTLEG_SH	Bootleg
+MPUI_DESC_MAP_BOOTLEG_SH	Rain-soaked back streets of an Asian market district.
+MPUI_CARBON_SH	Carbon
+MPUI_DESC_MAP_CARBON_SH	An oil refinery perched on a hillside.
+MPUI_DERAIL_SH	Derail
+MPUI_DESC_MAP_DERAIL_SH	A train wreck in a large snowy area. Epic large battles.
+MPUI_DISTRICT	District
+MPUI_DESC_MAP_DISTRICT	A large urban town with a market in the middle. Great for team games.
+MPUI_FALLEN_SH	Fallen
+MPUI_DESC_MAP_FALLEN_SH	A ruined town under a crashed tower.
+MPUI_FOUNDATION_SH	Foundation
+MPUI_DESC_MAP_FOUNDATION_SH	A quarry and construction yard in the hills.
+MPUI_INTERCHANGE_SH	Interchange
+MPUI_DESC_MAP_INTERCHANGE_SH	A collapsed highway interchange.
+MPUI_INVASION_SH	Invasion
+MPUI_DESC_MAP_INVASION_SH	A city in the desert. Classic street to street firefights.
+MPUI_ITALY_SH	Piazza
+MPUI_DESC_MAP_ITALY_SH	A hillside village on the Italian coast.
+MPUI_LIBERATION_SH	Liberation
+MPUI_DESC_MAP_LIBERATION_SH	A park and its buildings in a besieged city.
+MPUI_LOCKDOWN_SH	Lockdown
+MPUI_DESC_MAP_LOCKDOWN_SH	City blocks around a sealed-off bank.
+MPUI_MISSION_SH	Mission
+MPUI_DESC_MAP_MISSION_SH	An old mission compound in the jungle.
+MPUI_MOGADISHU_SH	Bakaara
+MPUI_DESC_MAP_MOGADISHU_SH	A war-torn market in Mogadishu.
+MPUI_NIGHTSHIFT_SH	Skidrow
+MPUI_DESC_MAP_NIGHTSHIFT_SH	Urban city fighting. In and out of apartments, close range engagements.
+MPUI_OFFSHORE	Offshore
+MPUI_DESC_MAP_OFFSHORE	An oil platform at sea.
+MPUI_OVERWATCH_SH	Overwatch
+MPUI_DESC_MAP_OVERWATCH_SH	A skyscraper under construction high above the city.
+MPUI_RADIATION_SH	Radiation
+MPUI_DESC_MAP_RADIATION_SH	A secret nuclear facility.
+MPUI_RESISTANCE_SH	Resistance
+MPUI_DESC_MAP_RESISTANCE_SH	Streets of an occupied Paris neighbourhood.
+MPUI_MP_SHOWDOWN	Showdown
+MPUI_DESC_MP_SHOWDOWN	A small desert arena. Great fast gameplay for small numbers of players.
+MPUI_TUNISIA	Tunisia
+MPUI_DESC_MAP_TUNISIA	A North African town.
+MPUI_VILLAGE	Village
+MPUI_DESC_MAP_VILLAGE	A cliffside village in Africa.
+MPUI_WASTELAND_SH	Wasteland
+MPUI_DESC_MAP_WASTELAND_SH	Trenches and bunkers in a barren wasteland.

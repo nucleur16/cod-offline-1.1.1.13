@@ -38,3 +38,31 @@ mp_vacant           ship
 mp_brl_derail       dev     # Explicitly excluded from the 2026-10-31 release
 zm_factory_sh       ship
 zm_theater_sh       ship
+
+# --- 2026-11-13: CODOL 3.19.26.22 ports (CODOL-AssetExplorer port-map); zones in chinese, iwds iw_model_06..23 / iw_sound_04..21
+mp_arkaden_sh       ship
+mp_awp_arena        ship
+mp_backlot_sh       ship
+mp_boomtown         ship
+mp_bootleg_sh       ship
+mp_carbon_sh        ship
+mp_derail_sh        ship
+mp_district         ship
+mp_fallen_sh        ship
+mp_foundation_sh    ship
+mp_interchange_sh   ship
+mp_invasion_sh      ship
+mp_italy_sh         ship
+mp_liberation_sh    ship
+mp_lockdown_sh      ship
+mp_mission_sh       ship
+mp_mogadishu_sh     ship
+mp_nightshift_sh    ship
+mp_offshore         ship
+mp_overwatch_sh     ship
+mp_radiation_sh     ship
+mp_resistance_sh    ship
+mp_showdown         ship
+mp_tunisia          ship
+mp_village          ship
+mp_wasteland_sh     ship
