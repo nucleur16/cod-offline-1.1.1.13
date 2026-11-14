@@ -430,6 +430,10 @@ ownerdraw.
   Destroy / Sabotage (the kept stock items), free-for-all, an akimbo weapon, three or more chosen streaks (the
   test profile has only the UAV).
 
+  Known observation, not investigated (not caused by the HUD styles): during the second round the client's
+  `main\console_mp.log` had `PARITY ... snap-ps: playerState weapon 121 is past the last registered weapon 120 (its
+  weapon configstring has not reached the client yet?)` right after the test player was given weapons with `give`.
+
 ## Rebuilding
 
 - `python tools/build_hud_styles.py` regenerates `zones/hud_styles_postgfx_mp/{menufile,material}`,
