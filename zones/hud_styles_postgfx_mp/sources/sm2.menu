@@ -72,13 +72,13 @@ menuDef
         exp text ( player("stockAmmo") )
         visible when ( HAS_WEAPON )
     }
-    // the weapon's icon (ownerDraw 118, the weapon def's HUD icon), white. Seen live: 1.1.1.13 draws it right-aligned
-    // to the rect's right edge, 4 * w wide and h high (the 4:1 icons), facing left: w = h keeps the icon's shape
+    // the weapon's icon (ownerDraw 3004, hud_style.c: the weapon def's HUD icon as high as the rect and as wide as
+    // its image's own aspect gives, right-aligned; C1's 118 stretched it to the def's ratio)
     itemDef
     {
-        rect -24.5 -42.5 16.5 16.5 RIGHT_BOTTOM
+        rect -84 -42.5 66 16.5 RIGHT_BOTTOM
         type 8
-        ownerdraw 118
+        ownerdraw 3004
         forecolor 1 1 1 0.95
         visible when ( HAS_WEAPON )
     }
@@ -334,22 +334,108 @@ menuDef
         exp text ( dvarstring("name") )
         visible when ( !player("dead") )
     }
-    // the health line: menus cannot read the player's health (player() has no health field, no dvar holds it, and
-    // the IW4 health-bar ownerDraw 79 drew nothing in a client), so it is the reference's thin white line, shown
-    // while alive
+    // the health bar: a dark track and the fill (ownerDraw 3003, hud_style.c: C1's own health fraction, drawn red
+    // below 30 %)
     itemDef { rect 14 -8 90 2.5 LEFT_BOTTOM style 3 background "white" forecolor 0 0 0 0.45 visible when ( !player("dead") ) }
-    itemDef { rect 14 -8 90 1.2 LEFT_BOTTOM style 3 background "white" forecolor 1 1 1 0.95 visible when ( !player("dead") ) }
+    itemDef { rect 14 -8 90 1.5 LEFT_BOTTOM type 8 ownerdraw 3003 forecolor 1 1 1 0.95 visible when ( !player("dead") ) }
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// Killstreaks: three dark slots on the right edge above the weapon block, and 1.1.1.13's own column.
+// Killstreaks, right edge above the weapon block: the chosen streaks in three dark slots (bottom: the first),
+// always drawn (empty while no streak is chosen), each icon dim while it is being earned and lit, with a white top line and its key, once it can be called in
+// (1.1.1.13's own killstreak menu's expressions: coKillstreakStatsTable column 17, actionslotusable,
+// actionslothudiconoverride); the streak counter beside them, one pip per kill up to the last streak.
 menuDef
 {
     name "killstreaks_hd"
-    stockItems all
 
-    itemDef { rect -48 -178 24 24 RIGHT_BOTTOM style 3 background "white" forecolor PANEL }
-    itemDef { rect -48 -150 24 24 RIGHT_BOTTOM style 3 background "white" forecolor PANEL }
+    // streak 1 (killstreakID1, action slot 2)
     itemDef { rect -48 -122 24 24 RIGHT_BOTTOM style 3 background "white" forecolor PANEL }
+    itemDef { rect -48 -122 24 0.6 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 0.8 visible when ( actionslotusable(2) ) }
+    itemDef { rect -46 -120 20 20 RIGHT_BOTTOM style 3 forecolor 1 1 1 0.3
+              exp material ( tablelookup( "mp/coKillstreakStatsTable.csv", 0, player("killstreakID1"), 17 ) )
+              visible when ( player("killstreakID1") > 0 && player("killstreak") < player("killstreakTarget1") ) }
+    itemDef { rect -46 -120 20 20 RIGHT_BOTTOM style 3 forecolor 1 1 1 1
+              exp material ( tablelookup( "mp/coKillstreakStatsTable.csv", 0, player("killstreakID1"), 17 ) )
+              visible when ( actionslotusable(2) && player("killstreakID1") ) }
+    itemDef { rect -46 -120 20 20 RIGHT_BOTTOM style 3 forecolor 1 1 1 1
+              exp material ( actionslothudiconoverride(2) )
+              visible when ( actionslotusable(2) && !player("killstreakID1") ) }
+    itemDef { rect -51 -107 0 0 RIGHT_BOTTOM textfont 10 textscale 0.18 textstyle 3 textalign 14 forecolor 1 0.85 0.3 1
+              exp text ( keybinding("+actionslot 2") ) visible when ( actionslotusable(2) ) }
+    // streak 2 (killstreakID2, action slot 3)
+    itemDef { rect -48 -150 24 24 RIGHT_BOTTOM style 3 background "white" forecolor PANEL }
+    itemDef { rect -48 -150 24 0.6 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 0.8 visible when ( actionslotusable(3) ) }
+    itemDef { rect -46 -148 20 20 RIGHT_BOTTOM style 3 forecolor 1 1 1 0.3
+              exp material ( tablelookup( "mp/coKillstreakStatsTable.csv", 0, player("killstreakID2"), 17 ) )
+              visible when ( player("killstreakID2") > 0 && player("killstreak") < player("killstreakTarget2") ) }
+    itemDef { rect -46 -148 20 20 RIGHT_BOTTOM style 3 forecolor 1 1 1 1
+              exp material ( tablelookup( "mp/coKillstreakStatsTable.csv", 0, player("killstreakID2"), 17 ) )
+              visible when ( actionslotusable(3) && player("killstreakID2") ) }
+    itemDef { rect -46 -148 20 20 RIGHT_BOTTOM style 3 forecolor 1 1 1 1
+              exp material ( actionslothudiconoverride(3) )
+              visible when ( actionslotusable(3) && !player("killstreakID2") ) }
+    itemDef { rect -51 -135 0 0 RIGHT_BOTTOM textfont 10 textscale 0.18 textstyle 3 textalign 14 forecolor 1 0.85 0.3 1
+              exp text ( keybinding("+actionslot 3") ) visible when ( actionslotusable(3) ) }
+    // streak 3 (killstreakID3, action slot 4)
+    itemDef { rect -48 -178 24 24 RIGHT_BOTTOM style 3 background "white" forecolor PANEL }
+    itemDef { rect -48 -178 24 0.6 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 0.8 visible when ( actionslotusable(4) ) }
+    itemDef { rect -46 -176 20 20 RIGHT_BOTTOM style 3 forecolor 1 1 1 0.3
+              exp material ( tablelookup( "mp/coKillstreakStatsTable.csv", 0, player("killstreakID3"), 17 ) )
+              visible when ( player("killstreakID3") > 0 && player("killstreak") < player("killstreakTarget3") ) }
+    itemDef { rect -46 -176 20 20 RIGHT_BOTTOM style 3 forecolor 1 1 1 1
+              exp material ( tablelookup( "mp/coKillstreakStatsTable.csv", 0, player("killstreakID3"), 17 ) )
+              visible when ( actionslotusable(4) && player("killstreakID3") ) }
+    itemDef { rect -46 -176 20 20 RIGHT_BOTTOM style 3 forecolor 1 1 1 1
+              exp material ( actionslothudiconoverride(4) )
+              visible when ( actionslotusable(4) && !player("killstreakID3") ) }
+    itemDef { rect -51 -163 0 0 RIGHT_BOTTOM textfont 10 textscale 0.18 textstyle 3 textalign 14 forecolor 1 0.85 0.3 1
+              exp text ( keybinding("+actionslot 4") ) visible when ( actionslotusable(4) ) }
+    // a fourth streak, while one is chosen: a slot above the three
+    // streak 4 (killstreakID4, action slot 5)
+    itemDef { rect -48 -206 24 24 RIGHT_BOTTOM style 3 background "white" forecolor PANEL
+              visible when ( player("killstreakID4") > 0 || actionslotusable(5) ) }
+    itemDef { rect -48 -206 24 0.6 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 0.8 visible when ( actionslotusable(5) ) }
+    itemDef { rect -46 -204 20 20 RIGHT_BOTTOM style 3 forecolor 1 1 1 0.3
+              exp material ( tablelookup( "mp/coKillstreakStatsTable.csv", 0, player("killstreakID4"), 17 ) )
+              visible when ( player("killstreakID4") > 0 && player("killstreak") < player("killstreakTarget4") ) }
+    itemDef { rect -46 -204 20 20 RIGHT_BOTTOM style 3 forecolor 1 1 1 1
+              exp material ( tablelookup( "mp/coKillstreakStatsTable.csv", 0, player("killstreakID4"), 17 ) )
+              visible when ( actionslotusable(5) && player("killstreakID4") ) }
+    itemDef { rect -46 -204 20 20 RIGHT_BOTTOM style 3 forecolor 1 1 1 1
+              exp material ( actionslothudiconoverride(5) )
+              visible when ( actionslotusable(5) && !player("killstreakID4") ) }
+    itemDef { rect -51 -191 0 0 RIGHT_BOTTOM textfont 10 textscale 0.18 textstyle 3 textalign 14 forecolor 1 0.85 0.3 1
+              exp text ( keybinding("+actionslot 5") ) visible when ( actionslotusable(5) ) }
+    // the support item of action slot 1 (killstreakID0), left of the first slot while it can be called in
+    itemDef { rect -74 -122 24 24 RIGHT_BOTTOM style 3 background "white" forecolor PANEL visible when ( actionslotusable(1) ) }
+    itemDef { rect -72 -120 20 20 RIGHT_BOTTOM style 3 exp material ( tablelookup( "mp/coKillstreakStatsTable.csv", 0, player("killstreakID0"), 17 ) ) visible when ( actionslotusable(1) && player("killstreakID0") ) }
+    itemDef { rect -72 -120 20 20 RIGHT_BOTTOM style 3 exp material ( actionslothudiconoverride(1) ) visible when ( actionslotusable(1) && !player("killstreakID0") ) }
+    // the streak counter
+    itemDef { rect -20 -100.2 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 0 ) ) ) visible when ( player("killstreakTarget") > 0 ) }
+    itemDef { rect -20 -103.4 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 1 ) ) ) visible when ( player("killstreakTarget") > 1 ) }
+    itemDef { rect -20 -106.6 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 2 ) ) ) visible when ( player("killstreakTarget") > 2 ) }
+    itemDef { rect -20 -109.8 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 3 ) ) ) visible when ( player("killstreakTarget") > 3 ) }
+    itemDef { rect -20 -113.0 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 4 ) ) ) visible when ( player("killstreakTarget") > 4 ) }
+    itemDef { rect -20 -116.2 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 5 ) ) ) visible when ( player("killstreakTarget") > 5 ) }
+    itemDef { rect -20 -119.4 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 6 ) ) ) visible when ( player("killstreakTarget") > 6 ) }
+    itemDef { rect -20 -122.6 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 7 ) ) ) visible when ( player("killstreakTarget") > 7 ) }
+    itemDef { rect -20 -125.8 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 8 ) ) ) visible when ( player("killstreakTarget") > 8 ) }
+    itemDef { rect -20 -129.0 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 9 ) ) ) visible when ( player("killstreakTarget") > 9 ) }
+    itemDef { rect -20 -132.2 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 10 ) ) ) visible when ( player("killstreakTarget") > 10 ) }
+    itemDef { rect -20 -135.4 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 11 ) ) ) visible when ( player("killstreakTarget") > 11 ) }
+    itemDef { rect -20 -138.6 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 12 ) ) ) visible when ( player("killstreakTarget") > 12 ) }
+    itemDef { rect -20 -141.8 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 13 ) ) ) visible when ( player("killstreakTarget") > 13 ) }
+    itemDef { rect -20 -145.0 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 14 ) ) ) visible when ( player("killstreakTarget") > 14 ) }
+    itemDef { rect -20 -148.2 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 15 ) ) ) visible when ( player("killstreakTarget") > 15 ) }
+    itemDef { rect -20 -151.4 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 16 ) ) ) visible when ( player("killstreakTarget") > 16 ) }
+    itemDef { rect -20 -154.6 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 17 ) ) ) visible when ( player("killstreakTarget") > 17 ) }
+    itemDef { rect -20 -157.8 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 18 ) ) ) visible when ( player("killstreakTarget") > 18 ) }
+    itemDef { rect -20 -161.0 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 19 ) ) ) visible when ( player("killstreakTarget") > 19 ) }
+    itemDef { rect -20 -164.2 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 20 ) ) ) visible when ( player("killstreakTarget") > 20 ) }
+    itemDef { rect -20 -167.4 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 21 ) ) ) visible when ( player("killstreakTarget") > 21 ) }
+    itemDef { rect -20 -170.6 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 22 ) ) ) visible when ( player("killstreakTarget") > 22 ) }
+    itemDef { rect -20 -173.8 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 23 ) ) ) visible when ( player("killstreakTarget") > 23 ) }
+    itemDef { rect -20 -177.0 3.5 2.2 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 1 exp forecolor A ( 0.22 + ( 0.73 * ( player("killstreak") > 24 ) ) ) visible when ( player("killstreakTarget") > 24 ) }
 }
 }

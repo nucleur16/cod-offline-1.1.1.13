@@ -354,37 +354,63 @@ ownerdraw.
   `player()` field C1 lacks, or an unknown text.
 - **What it shows** (positions in the hosts' 640x480 units):
   - bottom right, a dark translucent panel: the large clip count (ownerDraw 3001, akimbo-aware), a thin divider,
-    the grey reserve (`player("stockAmmo")`) and the weapon's icon (ownerDraw 118);
+    the grey reserve (`player("stockAmmo")`) and the weapon's icon (ownerDraw 3004, below);
   - above the panel, the weapon name (ownerDraws 81 / 83, as the stock HUD: it shows on a weapon switch and in
     killcam);
   - above that, a small dark box with the lethal grenade and its count, and the tactical (or smoke / flash) one
     while carried;
-  - three dark slots on the right edge; 1.1.1.13's own killstreak column is kept;
+  - the killstreaks on the right edge: three dark slots, always drawn, bottom to top the chosen streaks 1-3
+    (`player("killstreakID1..3")`). Each icon is `tablelookup("mp/coKillstreakStatsTable.csv", 0, id, 17)`,
+    the stock killstreak menu's own expression. It is dim (alpha 0.3) while `player("killstreak")` is below the
+    streak's `player("killstreakTargetN")`, and lit once `actionslotusable(N + 1)`, with a white top line and its
+    key (`keybinding("+actionslot N + 1")`) in yellow. `actionslothudiconoverride` is the icon when no streak id
+    is set, as in the stock menu. A fourth slot above appears only while a fourth streak is chosen; the support
+    item of action slot 1 sits left of the first slot while it can be called in;
+  - the streak counter beside the slots: one pip per kill up to `player("killstreakTarget")`, lit up to
+    `player("killstreak")` (the stock column's pips, 25 at most). 1.1.1.13's own column is no longer drawn
+    under SM2: it sat under the SM2 panels;
   - top left, the minimap on a dark square, with a compass strip over its top edge: ownerDraw 145, the heading tape
     1.1.1.13's own killstreak HUD draws with `viper_heading_mp` (common_mp);
   - top centre: own score, a slim bar filled from its inner end in blue, the side's emblem
     (`g_TeamIcon_Allies` / `g_TeamIcon_Axis`, hidden in free-for-all), the enemy bar filled from its inner end in
     red, the enemy score; under it the match state (`MPUI_WINNING_CAPS` / `LOSING` / `TIED`, coloured) and a small
     round timer (1.1.1.13's own expression);
-  - bottom left, the player's name (`dvarstring("name")`) over a thin white line;
+  - bottom left, the player's name (`dvarstring("name")`) over the health bar: a dark track and the fill
+    (ownerDraw 3003, below), red below 30 %;
   - 1.1.1.13's half-time / overtime captions, bomb and nuke timers and Sabotage captions (stock items 16-24, 28-32 of
     `scorebar_hd`) and its low-ammo warning are kept.
-- **Ownerdraws first used here** (`PROBED_OWNERDRAWS`; none of the four hosts' stock items uses them):
-  - 118, the weapon icon. Seen live: it is drawn right-aligned to the rect's right edge, 4 * w wide and h high,
-    facing left, so `w = h` keeps the icon's 4:1 shape.
-  - 145, the heading tape. A stock common_mp menu draws it as a 400x20 tape with `viper_heading_mp` (found by
-    scanning common_mp's menu assets for ownerDraw 145).
-  - IW4's 79 (health bar) drew nothing in any capture and is not used.
-- **Not possible as menus, and why:**
-  - *Health.* `player()` has no health field, no dvar holds it, and ownerDraw 79 drew nothing. The bottom-left
-    line is therefore the reference's look, shown while alive; it does not shrink with damage. A health value
-    would need C, which this style was asked not to add.
-  - *A constant weapon name.* There is no menu value with the localized name: `weaponname()` is the internal
-    name (`kriss_mp`), so the name shows when C1 shows it.
-- **C.** `hud_style.c` only gained the list entry (`5:sm2`), `HUD_STYLE_MAX` 5 and the dvar description; the look
-  needs no new C. The option rows read `k33_hudStyleList`, so the HUD style drop-downs in `OptionView_video.as` and
-  `MainPause.as` list SM2 without change. Its label `K33UI_HUD_STYLE_SM2` ("SM2" in both languages) is in
-  `codol_*_ui`.
+- **Ownerdraws.**
+  - 145, the heading tape (`PROBED_OWNERDRAWS`: none of the four hosts' stock items uses it). A stock common_mp
+    menu draws it as a 400x20 tape with `viper_heading_mp`, found by scanning common_mp's menu assets for
+    ownerDraw 145. Live: it scrolls with the view.
+  - 3003, the health fill (`hud_style.c`). The menus cannot read health: `player()` has no field and no dvar
+    holds it. C1's own health bar, ownerDraw 79 (`CG_DrawPlayerBarHealth` 0x004558C0), returns early unless a
+    dvar ([0x016D0F4C] + 0xC) is set, so it drew nothing. 3003 reads the same fraction C1's bar computes
+    (0x00453EE0: cg + 0x190 health over cg + 0x198 max health, clamped, 0 for pm type 8; byte-checked from
+    0x00453EE6) when the item is drawn, so it moves in the same frame. It fills the item's rect from its left
+    end, in the item's colour, red (0.9 0.22 0.2) below 30 % (`hud_style_policy.h HudHealthPermille`).
+  - 3004, the weapon icon (`hud_style.c`). C1's own ownerDraw 118 (`CG_DrawPlayerWeaponIcon` 0x0042B960 ->
+    0x0042B860) stretches the icon to the weapon def's `hudIconRatio` (+0x554; 1: x -= w, w *= 2; 2: x -= 3w,
+    w *= 4). Live, the Vector's icon is a 128x64 image under a 4:1 ratio, so 118 drew it twice as wide. 3004
+    draws the def's HUD icon (+0x550, byte-checked at 0x0042B9D9) as high as the rect and as wide as the
+    image's own width / height, at most the rect, right-aligned (`HudIconFit`). The image size is the
+    material's first texture's GfxImage width / height (Material texture table +0x54, MaterialTextureDef image
+    +8, GfxImage +0x14 / +0x16). A def without a HUD icon (the sniper rifles drew nothing) takes the icon C1
+    itself falls back to for its per-weapon icon table: +0x548, else +0x540 (0x0047C4D7, byte-checked). Each
+    new icon is logged with its material name and image size.
+- **Not possible as menus:** a constant weapon name. There is no menu value with the localized name:
+  `weaponname()` is the internal name (`kriss_mp`), so the name shows when C1 shows it (on a switch, in
+  killcam).
+- **C.** `hud_style.c` gained:
+  - the list entry (`5:sm2`), `HUD_STYLE_MAX` 5 and the dvar description;
+  - ownerDraws 3003 and 3004, drawn at paint time through the CG_OwnerDraw hook it already shares with voice.c;
+  - their three byte checks, and one more part of the register line: `health ok|differs, weapon icon
+    ok|...|differs`.
+
+  The pure parts (`HudHealthPermille`, `HudIconFit`) are in `hud_style_policy.h`, tested by
+  `tests/hud_style_policy_test.c`. The option rows read `k33_hudStyleList`, so the HUD style drop-downs in
+  `OptionView_video.as` and `MainPause.as` list SM2 without change. Its label `K33UI_HUD_STYLE_SM2` ("SM2" in both
+  languages) is in `codol_*_ui`.
 - **Live** (2026-11-13, own client copy `D:\CoD\k33_sm2_client`, throwaway profile `edtest`, Afghan bot Team
   Deathmatch, 1920x1080). Seen working:
   - the panel, clip / reserve after firing, the grenade count dropping to 0 with its icon dimming, and the weapon
@@ -394,7 +420,15 @@ ownerdraw.
   - the HUD-style row of the pause menu showing "SM2";
   - `set k33_hudStyle 0` / `5` switching in the same frame.
 
-  Not checked live: 720p, Search and Destroy / Sabotage (the kept stock items), free-for-all, an akimbo weapon.
+  Second round (killstreaks, health, icon), with `codol_devServer 1` / `codol_dev_cheats on` over the host's rcon,
+  `take health N`, frozen bots (`sv_botStop 1`) moved in front of the player (`dev_clientcmd bots setviewpos`):
+  - the streak slot dim at 0 kills, the pips filling at 2 kills, then the UAV lit with its key at 3;
+  - health full, at 30 % after `take health 70`, regenerating back to full within about 3 s, and red at 18 %;
+  - the icon at its image's aspect: Vector 128x64, M4 128x32, AK-47.
+
+  Not checked live: 720p and 4:3 (`r_mode` set in a running client did not change the 1920x1080 window), Search and
+  Destroy / Sabotage (the kept stock items), free-for-all, an akimbo weapon, three or more chosen streaks (the
+  test profile has only the UAV).
 
 ## Rebuilding
 

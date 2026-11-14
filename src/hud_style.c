@@ -19,8 +19,12 @@
  * What the later builds' HUD reads that 1.1.1.13 has no operator or ownerdraw for, implemented here:
  *   ownerDraw 3001     the clip count, drawn at the item's rect with its font, scale, colour and style
  *   ownerDraw 3002     the clip gauge: the item's rect, emptied from its left end as the clip empties
- *                      Both are read when the menu paints (no tick, no dvar): the same playerState C1's own ammo
- *                      display reads, so they change in the same frame as player("stockAmmo") does.
+ *   ownerDraw 3003     the health fill (SM2): the item's rect filled from its left end by C1's own health fraction,
+ *                      in the item's colour, red below 30 %
+ *   ownerDraw 3004     the weapon icon (SM2): the weapon def's HUD icon, as high as the rect, as wide as its image's
+ *                      own width / height gives, right-aligned (C1's ownerDraw 118 stretches it by the def's ratio)
+ *                      All four are read when the menu paints (no tick, no dvar): the same playerState C1's own
+ *                      HUD reads, so they change in the same frame as player("stockAmmo") does.
  *   k33_hudFireType    string: the "@SF_WEAPON_*_NAME" label of the weapon in hand (2.6.9.7's getweaponfiretype),
  *                      from weaponDef + 0x350 / + 0xB64 (hud_style_policy.h HudFireTypeKey)
  *   k33_hudAssists     int: the local player's assists (2.6.9.7's player("assists")), from C1's score records
@@ -46,6 +50,17 @@
  *               the client number at +0.
  *   weaponDef + 0x350 fire type, + 0xB64 class: located by value (hud_style_policy.h), no instruction to check;
  *               read only after the three sites above passed.
+ *   0x00453EE0  C1's health fraction (CG_DrawPlayerBarHealth 0x004558C0 calls it): mov ecx, [eax + 190h] (health),
+ *               mov ecx, [eax + 198h] (max health), cmp dword [eax + 4], 8; checked from 0x00453EE6.
+ *   0x0042B9D9  CG_DrawPlayerWeaponIcon (ownerDraw 118, 0x0042B960): mov edx, [ecx + 554h] (hudIconRatio);
+ *               mov eax, [ecx + 550h] (hudIcon Material*). The icon's image is the material's first texture
+ *               (Material: texture table at +0x54, count byte +0x48; MaterialTextureDef image at +8; GfxImage
+ *               width / height u16 at +0x14 / +0x16, the zone layouts zonekit/codecs.py and build_hud_styles.py
+ *               write).
+ *   0x0047C4D7  mov eax, [edi + 548h]; test eax, eax; jnz; mov eax, [edi + 540h]: C1 takes a weapon's icon from
+ *               weaponDef + 0x548, else + 0x540, into its per-weapon icon table (0x016D4564; 0x00486875 draws
+ *               + 0x540 the same way). A weapon whose HUD icon (+ 0x550) is empty (the sniper rifles) is drawn
+ *               with that icon instead.
  * The ownerdraws are dispatched from voice.c's CG_OwnerDraw entry hook (0x00459E10, one hook for both files:
  * VoiceOwnerDraw calls HudStyleOwnerDraw first). Without that hook they draw nothing; that is logged once.
  */
@@ -63,6 +78,11 @@
 #define HUD_ASSISTS_DVAR    "k33_hudAssists"
 #define HUD_OD_CLIP         3001    /* tools/build_hud_styles.py OD_CLIP */
 #define HUD_OD_CLIP_BAR     3002    /* tools/build_hud_styles.py OD_CLIP_BAR */
+#define HUD_OD_HEALTH       3003    /* tools/build_hud_styles.py OD_HEALTH */
+#define HUD_OD_WEAPON_ICON  3004    /* tools/build_hud_styles.py OD_WEAPON_ICON */
+#define HUD_HEALTH_VA       0x00453EE6u
+#define HUD_ICON_VA         0x0042B9D9u
+#define HUD_ICON_ALT_VA     0x0047C4D7u
 #define HUD_WEAPONDEF_VA    0x0150D720u
 #define HUD_CLIP_GETTER_VA  0x0045C540u
 #define HUD_CLIP_SIZE_VA    0x00453D16u
@@ -75,7 +95,7 @@
 
 static const BYTE *g_hudStyleDvar, *g_hudAssistsDvar, *g_hudFireDvar;
 static BOOL g_hudStyleDone;
-static BOOL g_hudClipOk, g_hudScoresOk;
+static BOOL g_hudClipOk, g_hudScoresOk, g_hudHealthOk, g_hudIconOk, g_hudIconAltOk;
 static void *g_hudWhite;
 
 /* The local client's cg, or NULL outside a match. Main thread. */
@@ -137,11 +157,76 @@ static int HudAssists(void)
     return 0;
 }
 
+/* The weapon icon's material and its image's size, or NULL. Main thread. */
+static void *HudWeaponIcon(int *imageW, int *imageH)
+{
+    *imageW = *imageH = 0;
+    const BYTE *cg = HudCg();
+    if (!g_hudIconOk || !cg) return NULL;
+    int weapon = *(const int *)(cg + 0x33C);
+    if (weapon <= 0 || weapon > 4095) return NULL;
+    const BYTE *def = *(const BYTE *volatile *)(DWORD_PTR)(HUD_WEAPONDEF_VA + 4u * (DWORD)weapon);
+    if (!def || !Readable(def + 0x540, 0x18)) return NULL;
+    /* the HUD icon; without one, the icon C1 itself falls back to (+ 0x548, else + 0x540: 0x0047C4D7) */
+    const BYTE *mat = *(const BYTE *const *)(def + 0x550);
+    if (!mat && g_hudIconAltOk) mat = *(const BYTE *const *)(def + 0x548);
+    if (!mat && g_hudIconAltOk) mat = *(const BYTE *const *)(def + 0x540);
+    if (!mat || !Readable(mat, 0x60)) return NULL;
+    const BYTE *table = *(const BYTE *const *)(mat + 0x54);
+    if (mat[0x48] && table && Readable(table, 12)) {
+        const BYTE *image = *(const BYTE *const *)(table + 8);
+        if (image && Readable(image + 0x14, 4)) {
+            *imageW = *(const WORD *)(image + 0x14);
+            *imageH = *(const WORD *)(image + 0x16);
+        }
+    }
+    return (void *)mat;
+}
+
+/* ownerDraws 3003 (health fill) and 3004 (weapon icon); arguments as HudStyleOwnerDraw. 1 = drawn (or empty). */
+static int HudStyleOwnerDraw2(const DWORD *args, int ownerDraw)
+{
+    int lc = (int)args[0];
+    float x = *(const float *)&args[(0x20 - 8) / 4], y = *(const float *)&args[(0x24 - 8) / 4];
+    float w = *(const float *)&args[(0x28 - 8) / 4], h = *(const float *)&args[(0x2C - 8) / 4];
+    int horz = (BYTE)args[(0x30 - 8) / 4], vert = (BYTE)args[(0x34 - 8) / 4];
+    const float *color = (const float *)(DWORD_PTR)args[(0x4C - 8) / 4];
+    float c[4] = { 1, 1, 1, 1 };
+    if (color && Readable(color, 16)) memcpy(c, color, sizeof(c));
+    const void *scr = ((const void *(__cdecl *)(int))(DWORD_PTR)VOICE_SCRPLACE_VA)(lc);
+    if (ownerDraw == HUD_OD_HEALTH) {
+        const BYTE *cg = HudCg();
+        if (!g_hudHealthOk || !cg || !Readable(cg, 0x19C)) return 1;
+        int permille = HudHealthPermille(*(const int *)(cg + 0x190), *(const int *)(cg + 0x198), *(const int *)(cg + 4));
+        if (!g_hudWhite)
+            g_hudWhite = ((void *(__cdecl *)(const char *, int))(DWORD_PTR)VOICE_MAT_REGISTER_VA)("white", 7);
+        if (permille < HUD_HEALTH_LOW_PERMILLE) { c[0] = 0.9f; c[1] = 0.22f; c[2] = 0.2f; }
+        if (g_hudWhite && permille > 0) VOICE_DrawPic(scr, c, x, y, w * permille / 1000.0f, h, horz, vert, g_hudWhite);
+        return 1;
+    }
+    int iw, ih;
+    void *mat = HudWeaponIcon(&iw, &ih);
+    if (!mat) return 1;
+    {
+        static const void *lastMat;
+        if (mat != lastMat) {
+            const char *name = *(const char *const *)mat;
+            lastMat = mat;
+            Log("hud style: weapon icon %s, image %dx%d", name && Readable(name, 1) ? name : "?", iw, ih);
+        }
+    }
+    float ix, iwid;
+    HudIconFit(x, w, h, iw, ih, &ix, &iwid);
+    VOICE_DrawPic(scr, c, ix, y, iwid, h, horz, vert, mat);
+    return 1;
+}
+
 /* CG_OwnerDraw's arguments as voice.c reads them (args = [ebp+8]). 1 = drawn (or ours and empty). */
 static int HudStyleOwnerDraw(const DWORD *args)
 {
     int ownerDraw = (int)args[(0x40 - 8) / 4];
-    if (ownerDraw != HUD_OD_CLIP && ownerDraw != HUD_OD_CLIP_BAR) return 0;
+    if (ownerDraw < HUD_OD_CLIP || ownerDraw > HUD_OD_WEAPON_ICON) return 0;
+    if (ownerDraw == HUD_OD_HEALTH || ownerDraw == HUD_OD_WEAPON_ICON) return HudStyleOwnerDraw2(args, ownerDraw);
     int rounds, permille;
     if (!HudWeapon(&rounds, &permille)) return 1;
     int lc = (int)args[0];
@@ -218,6 +303,18 @@ static void HudStyleRegister(void)
                       !memcmp((void *)(DWORD_PTR)HUD_DUAL_WIELD_VA, kDual, sizeof(kDual)) &&
                       Readable((void *)(DWORD_PTR)HUD_WEAPON_SLOT_VA, sizeof(kSlot)) &&
                       !memcmp((void *)(DWORD_PTR)HUD_WEAPON_SLOT_VA, kSlot, sizeof(kSlot));
+        static const BYTE kHealth[] = { 0x8B, 0x88, 0x90, 0x01, 0x00, 0x00, 0x89, 0x4D, 0xFC, 0x85, 0xC9, 0x74, 0x3D,
+                                        0x8B, 0x88, 0x98, 0x01, 0x00, 0x00, 0x89, 0x4D, 0xF8, 0x85, 0xC9, 0x74, 0x30,
+                                        0x83, 0x78, 0x04, 0x08 };
+        static const BYTE kIcon[] = { 0x8B, 0x91, 0x54, 0x05, 0x00, 0x00, 0x8B, 0x81, 0x50, 0x05, 0x00, 0x00 };
+        g_hudHealthOk = Readable((void *)(DWORD_PTR)HUD_HEALTH_VA, sizeof(kHealth)) &&
+                        !memcmp((void *)(DWORD_PTR)HUD_HEALTH_VA, kHealth, sizeof(kHealth));
+        static const BYTE kIconAlt[] = { 0x8B, 0x87, 0x48, 0x05, 0x00, 0x00, 0x85, 0xC0, 0x75, 0x06, 0x8B, 0x87, 0x40,
+                                         0x05, 0x00, 0x00 };
+        g_hudIconOk = g_hudClipOk && Readable((void *)(DWORD_PTR)HUD_ICON_VA, sizeof(kIcon)) &&
+                      !memcmp((void *)(DWORD_PTR)HUD_ICON_VA, kIcon, sizeof(kIcon));
+        g_hudIconAltOk = g_hudIconOk && Readable((void *)(DWORD_PTR)HUD_ICON_ALT_VA, sizeof(kIconAlt)) &&
+                         !memcmp((void *)(DWORD_PTR)HUD_ICON_ALT_VA, kIconAlt, sizeof(kIconAlt));
         g_hudScoresOk = Readable((void *)(DWORD_PTR)HUD_SCORES_VA, sizeof(kScores)) &&
                         !memcmp((void *)(DWORD_PTR)HUD_SCORES_VA, kScores, sizeof(kScores)) &&
                         Readable((void *)(DWORD_PTR)0x0046541Eu, sizeof(kScoreRow)) &&
@@ -225,9 +322,12 @@ static void HudStyleRegister(void)
         g_hudFireDvar = ((RegStr)(DWORD_PTR)HUD_STYLE_REGISTER_STRING_VA)(
             HUD_FIRE_DVAR, "", 0, "HUD styles' fire-mode label of the weapon in hand (read only)");
         g_hudAssistsDvar = C1RegisterInt(HUD_ASSISTS_DVAR, 0, 0, 9999, 0, "HUD styles' assists of the local player (read only)");
-        Log("hud style: clip / akimbo / fire type sites %s, score rows %s, CG_OwnerDraw hook %s",
+        Log("hud style: clip / akimbo / fire type sites %s, score rows %s, health %s, weapon icon %s, CG_OwnerDraw hook %s",
             g_hudClipOk ? "ok" : "differ (clip count, gauge and fire type stay empty)",
             g_hudScoresOk ? "ok" : "differ (assists stay 0)",
+            g_hudHealthOk ? "ok" : "differs (the health fill stays empty)",
+            g_hudIconOk ? (g_hudIconAltOk ? "ok" : "ok, fallback icon site differs (no icon for weapons without a HUD icon)")
+                        : "differs (the weapon icon is not drawn)",
             g_voiceHudOk ? "shared with voice.c" : "missing (clip count and gauge are not drawn)");
     }
     g_hudStyleDvar = C1RegisterInt(HUD_STYLE_DVAR, 0, 0, HUD_STYLE_MAX, 0x1,

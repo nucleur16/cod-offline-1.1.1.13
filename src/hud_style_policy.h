@@ -56,3 +56,25 @@ static void HudClipBar(float x, float w, int permille, float *outX, float *outW)
     *outW = w * f;
     *outX = x + (w - *outW);
 }
+
+/* The health fill, 0..1000: C1's own health fraction (0x00453EE0: cg + 0x190 health / cg + 0x198 max health,
+ * clamped to 0..1, and 0 when either is 0 or the pm type at cg + 4 is 8). */
+static int HudHealthPermille(int health, int maxHealth, int pmType)
+{
+    if (health <= 0 || maxHealth <= 0 || pmType == 8) return 0;
+    long long v = (long long)health * 1000 / maxHealth;
+    return v > 1000 ? 1000 : (int)v;
+}
+
+/* Below this fill the health bar is drawn red (SM2). */
+#define HUD_HEALTH_LOW_PERMILLE 300
+
+/* The weapon icon in the item's rect with the image's own aspect: as high as the rect, as wide as the image's
+ * width / height gives (at most the rect's width), right-aligned. A degenerate image fills the rect. */
+static void HudIconFit(float x, float w, float h, int imageW, int imageH, float *outX, float *outW)
+{
+    float iw = (imageW > 0 && imageH > 0) ? h * (float)imageW / (float)imageH : w;
+    if (iw > w) iw = w;
+    *outW = iw;
+    *outX = x + (w - iw);
+}

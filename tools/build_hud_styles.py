@@ -85,13 +85,13 @@ FONTS = {11: 7, 12: 7, 13: 7, 14: 7}      # 1.2.1.12's fonts 11..14 are fonts/no
 # ownerDraw numbers hud_style.c draws (C1's CG_OwnerDraw switch ends at 0x121 + 5 = 294; voice.c has 193..196, 266)
 OD_CLIP = 3001          # rounds in the clip, both hands of an akimbo weapon (C1's own dual-wield test)
 OD_CLIP_BAR = 3002      # the clip gauge: the item's rect, emptied from its left end
-HUD_OWNERDRAWS = (OD_CLIP, OD_CLIP_BAR)
+OD_HEALTH = 3003        # the health fill: C1's own health fraction (SM2)
+OD_WEAPON_ICON = 3004   # the weapon icon with its image's own aspect (SM2)
+HUD_OWNERDRAWS = (OD_CLIP, OD_CLIP_BAR, OD_HEALTH, OD_WEAPON_ICON)
 # ownerDraw numbers none of the four hosts' stock items uses, that an authored style may use because they were seen
 # drawing in a client (docs/HUD_STYLES_20261112.md "SM2"): IW4's numbering, which 1.1.1.13's HUD numbers follow
 # wherever both are known (103, 104, 120, 150..175)
-PROBED_OWNERDRAWS = {118: "the weapon's HUD icon (IW4 CG_PLAYER_WEAPON_PRIMARY_ICON): seen drawing the icon right-aligned "
-                          "to the rect's right edge, 4 * w wide, h high, facing left",
-                     145: "the heading tape (IW4 CG_PLAYER_COMPASS_TICKERTAPE): a stock common_mp killstreak menu draws "
+PROBED_OWNERDRAWS = {145: "the heading tape (IW4 CG_PLAYER_COMPASS_TICKERTAPE): a stock common_mp killstreak menu draws "
                           "it with viper_heading_mp"}
 # The score bar's team bars in 1.1.1.13's team colours (live request): the stock scorebar_hd draws its own team's
 # bar with forecolor 0.63 0.86 0.6 and the other team's with 0.78 0.278 0.239, constants in the stock menu

@@ -437,7 +437,7 @@ menu
     visible when ( dvarint "k33_hudStyle" ) == 5 && {( ( weaponname ) != "none" ) )}
     exp text ( player "stockAmmo" ) )
   item type 8 font 0 textscale 0.55 textstyle 0 align 0
-    name None group None rect -24.5 -42.5 16.5 16.5 align 10 10 style 0 ownerdraw 118 static 0x100000 dynamic 0x10004
+    name None group None rect -84 -42.5 66 16.5 align 10 10 style 0 ownerdraw 3004 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 0.95 backcolor 0 0 0 0
     visible when ( dvarint "k33_hudStyle" ) == 5 && {( ( weaponname ) != "none" ) )}
   item type 8 font 10 textscale 0.24 textstyle 3 align 2

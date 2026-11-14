@@ -422,6 +422,8 @@ class HudStyles(unittest.TestCase):
         c = (ROOT / "src/hud_style.c").read_text(encoding="utf-8")
         self.assertIn("#define HUD_OD_CLIP         %d" % hs.OD_CLIP, c)
         self.assertIn("#define HUD_OD_CLIP_BAR     %d" % hs.OD_CLIP_BAR, c)
+        self.assertIn("#define HUD_OD_HEALTH       %d" % hs.OD_HEALTH, c)
+        self.assertIn("#define HUD_OD_WEAPON_ICON  %d" % hs.OD_WEAPON_ICON, c)
         self.assertIn('#define HUD_FIRE_DVAR       "%s"' % hs.FIRE_DVAR, c)
         self.assertIn('#define HUD_ASSISTS_DVAR    "%s"' % hs.ASSISTS_DVAR, c)
         v = (ROOT / "src/audio/voice.c").read_text(encoding="utf-8")

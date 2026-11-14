@@ -123,4 +123,4 @@ v33 rewrite: 3.3.3.3 operator 256 -> select((A) <= 3, ..._2, ..._1) of empty / f
 sm2 weaponbar_hd -> weaponbar_hd: 14 items authored in sm2.menu, 1 of 1.1.1.13's own items kept (2)
 sm2 minimap_fullscreen -> minimap_fullscreen: 14 items authored in sm2.menu, 0 of 1.1.1.13's own items kept
 sm2 scorebar_hd -> scorebar_hd: 15 items authored in sm2.menu, 14 of 1.1.1.13's own items kept (16 17 18 19 20 21 22 23 24 28 29 30 31 32)
-sm2 killstreaks_hd -> killstreaks_hd: 3 items authored in sm2.menu, 69 of 1.1.1.13's own items kept
+sm2 killstreaks_hd -> killstreaks_hd: 52 items authored in sm2.menu, 0 of 1.1.1.13's own items kept

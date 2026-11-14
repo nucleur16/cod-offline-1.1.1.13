@@ -42,6 +42,24 @@ int main(void)
     assert(w == 49.5f && x + w == -34.0f);
     HudClipBar(-133.0f, 99.0f, 2000, &x, &w);
     assert(w == 99.0f);
+    /* health: C1's own fraction (0x00453EE0) */
+    assert(HudHealthPermille(100, 100, 0) == 1000);
+    assert(HudHealthPermille(29, 100, 0) == 290 && HudHealthPermille(29, 100, 0) < HUD_HEALTH_LOW_PERMILLE);
+    assert(HudHealthPermille(30, 100, 0) == HUD_HEALTH_LOW_PERMILLE);
+    assert(HudHealthPermille(150, 100, 0) == 1000);
+    assert(HudHealthPermille(50, 0, 0) == 0);
+    assert(HudHealthPermille(-5, 100, 0) == 0);
+    assert(HudHealthPermille(100, 100, 8) == 0);           /* pm type 8: no health shown, as C1 */
+
+    /* the weapon icon keeps its image's aspect, right-aligned in the rect */
+    HudIconFit(-90.0f, 72.0f, 18.0f, 256, 64, &x, &w);     /* 4:1 */
+    assert(w == 72.0f && x == -90.0f);
+    HudIconFit(-90.0f, 72.0f, 18.0f, 128, 64, &x, &w);     /* 2:1: half as wide, against the right edge */
+    assert(w == 36.0f && x == -54.0f);
+    HudIconFit(-90.0f, 72.0f, 18.0f, 512, 64, &x, &w);     /* wider than the rect: capped */
+    assert(w == 72.0f && x == -90.0f);
+    HudIconFit(-90.0f, 72.0f, 18.0f, 0, 64, &x, &w);       /* no image size: the rect */
+    assert(w == 72.0f && x == -90.0f);
     puts("hud style policy passed");
     return 0;
 }
