@@ -1,0 +1,355 @@
+// SM2 HUD style (k33_hudStyle 5): an original HUD laid out after a screenshot of the cancelled SM2 mod's HUD (the
+// user's reference), authored for 1.1.1.13 with its own ownerdraws and operators. No art is copied: every item draws
+// "white", a material 1.1.1.13 loads with common_mp, or a 1.1.1.13 ownerdraw (the clip count 3001 is Kernel33's,
+// hud_style.c). Compiled by zonekit/menu_source.py from tools/build_hud_styles.py; docs/HUD_STYLES_20261112.md.
+//
+// Coordinates are the host menu's (1.1.1.13's own weaponbar_hd, minimap_fullscreen, scorebar_hd, killstreaks_hd),
+// in 640x480 units with each item's alignment: 10 10 = from the bottom-right of the safe area, 8 10 bottom-left,
+// 8 8 top-left, 9 8 top-centre. Text items: textalign 12 = left on the baseline below the rect, 14 = right, 13 =
+// centred.
+
+#define RIGHT_BOTTOM 10 10
+#define LEFT_BOTTOM 8 10
+#define LEFT_TOP 8 8
+#define CENTER_TOP 9 8
+#define RIGHT_TOP 10 8
+
+#define PANEL 0 0 0 0.45
+#define HAS_WEAPON ( weaponname() != "none" )
+#define NOT_KILLCAM ( !inkillcam() && !spectatingclient() )
+
+// the reference's team colours: friendly blue, enemy red
+#define OWN_COLOR 0.29 0.55 0.95
+#define OTHER_COLOR 0.9 0.27 0.25
+
+// 1.1.1.13's scorebar_hd score expressions (team modes: the team score; free-for-all: kills from the score)
+#define FFA ( team("name") == "TEAM_FREE" )
+#define OWN_SCORE ( ( team("score") * !FFA ) + ( int( player("score") / dvarint("ui_DMKillScore") ) * FFA ) )
+#define OTHER_FFA_SCORE ( ( ( player("score") == scoreatrank(1) ) * scoreatrank(2) ) + \
+                          ( ( player("score") != scoreatrank(1) ) * scoreatrank(1) ) )
+#define OTHER_SCORE ( ( otherteam("score") * !FFA ) + ( int( OTHER_FFA_SCORE / dvarint("ui_DMKillScore") ) * FFA ) )
+#define SCORE_PANEL ( dvarint("g_ui_no_hud_winlose") != 1 && team("name") != "TEAM_SPECTATOR" && \
+                      dvarstring("g_gametype") != "coop" && dvarstring("g_gametype") != "zm" )
+#define HAS_LIMIT ( dvarint("ui_scorelimit") > 0 )
+#define BAR_W 78
+// 1.1.1.13's round timer: the time left, less the second half while the first one runs
+#define TIME_LEFT ( int( timeleft() ) - ( dvarint("ui_timelimit") * 0.5 * 60 *                     ( dvarint("ui_halftime") && ( ( timeleft() + 1 ) > ( dvarint("ui_timelimit") * 60 * 0.5 ) ) ) ) )
+#define OWN_FILL ( min( OWN_SCORE / dvarint("ui_scorelimit"), 1 ) * BAR_W )
+#define OTHER_FILL ( min( OTHER_SCORE / dvarint("ui_scorelimit"), 1 ) * BAR_W )
+
+{
+// ---------------------------------------------------------------------------------------------------------------
+// Weapon block, bottom right: a dark panel with the large clip count, a thin divider, the smaller reserve and the
+// weapon's icon; the weapon name above it, right-aligned; above that a small dark box with the lethal and tactical
+// grenades and their counts.
+menuDef
+{
+    name "weaponbar_hd"
+    stockItems 2                        // lowammowarning (ownerDraw 120): 1.1.1.13's own "reload" / "low ammo"
+
+    itemDef { rect -150 -48 140 28 RIGHT_BOTTOM style 3 background "white" forecolor PANEL visible when ( HAS_WEAPON ) }
+    // the clip count (ownerDraw 3001: both hands of an akimbo weapon), large and white
+    itemDef
+    {
+        rect -144 -25 0 0 RIGHT_BOTTOM
+        type 8
+        ownerdraw 3001
+        textfont 9
+        textscale 0.42
+        textstyle 3
+        visible when ( HAS_WEAPON )
+    }
+    itemDef { rect -122 -44 0.6 20 RIGHT_BOTTOM style 3 background "white" forecolor 1 1 1 0.45 visible when ( HAS_WEAPON ) }
+    // the reserve, smaller and grey
+    itemDef
+    {
+        rect -116 -27 0 0 RIGHT_BOTTOM
+        textfont 6
+        textscale 0.3
+        textstyle 3
+        textalign 12
+        forecolor 0.72 0.72 0.72 1
+        exp text ( player("stockAmmo") )
+        visible when ( HAS_WEAPON )
+    }
+    // the weapon's icon (ownerDraw 118, the weapon def's HUD icon), white. Seen live: 1.1.1.13 draws it right-aligned
+    // to the rect's right edge, 4 * w wide and h high (the 4:1 icons), facing left: w = h keeps the icon's shape
+    itemDef
+    {
+        rect -24.5 -42.5 16.5 16.5 RIGHT_BOTTOM
+        type 8
+        ownerdraw 118
+        forecolor 1 1 1 0.95
+        visible when ( HAS_WEAPON )
+    }
+
+    // weapon name (1.1.1.13's ownerdraws: 83 in killcam / spectating, 81 otherwise), right-aligned above the panel
+    itemDef
+    {
+        rect -47.3333 -52 37.3333 0.666667 RIGHT_BOTTOM
+        type 8
+        ownerdraw 83
+        textfont 10
+        textscale 0.24
+        textstyle 3
+        textalign 2
+        visible when ( ( inkillcam() || spectatingclient() ) && HAS_WEAPON )
+    }
+    itemDef
+    {
+        rect -47.3333 -52 37.3333 0.666667 RIGHT_BOTTOM
+        type 8
+        ownerdraw 81
+        textfont 10
+        textscale 0.24
+        textstyle 3
+        textalign 2
+        visible when ( NOT_KILLCAM && HAS_WEAPON )
+    }
+
+    // grenades: a small dark box with the lethal grenade (frag slot) and its count; the tactical (and smoke / flash)
+    // grenade beside it while one is carried
+    itemDef { rect -66 -78 50 17 RIGHT_BOTTOM style 3 background "white" forecolor PANEL visible when ( HAS_WEAPON ) }
+    itemDef
+    {
+        rect -33 -77 15 15 RIGHT_BOTTOM
+        type 8
+        ownerdraw 103
+        exp forecolor A ( 0.35 + ( 0.65 * ( player("fragAmmo") > 0 ) ) )
+        visible when ( HAS_WEAPON )
+    }
+    itemDef
+    {
+        rect -35 -64 0 0 RIGHT_BOTTOM
+        textfont 6
+        textscale 0.18
+        textstyle 3
+        textalign 14
+        exp text ( player("fragAmmo") )
+        visible when ( HAS_WEAPON )
+    }
+    itemDef
+    {
+        rect -64 -77 15 15 RIGHT_BOTTOM
+        type 8
+        ownerdraw 284
+        visible when ( HAS_WEAPON && player("tactAmmo") > 0 )
+    }
+    itemDef
+    {
+        rect -64 -77 15 15 RIGHT_BOTTOM
+        type 8
+        ownerdraw 104
+        visible when ( HAS_WEAPON && player("tactAmmo") == 0 && player("smokeAmmo") > 0 )
+    }
+    itemDef
+    {
+        rect -48 -64 0 0 RIGHT_BOTTOM
+        textfont 6
+        textscale 0.18
+        textstyle 3
+        textalign 12
+        exp text ( player("tactAmmo") + player("smokeAmmo") )
+        visible when ( HAS_WEAPON && ( player("tactAmmo") + player("smokeAmmo") ) > 0 )
+    }
+
+    // the alternate weapon (grenade launcher, ...): 1.1.1.13's icon (ownerDraw 294) and its key, left of the box
+    itemDef
+    {
+        rect -86 -78 16 16 RIGHT_BOTTOM
+        type 8
+        ownerdraw 294
+        visible when ( hasaltweapon() )
+    }
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Minimap, top left: the map and its layers on a dark translucent square, a compass strip over its top edge:
+// 1.1.1.13's heading tape (ownerDraw 145) with the material its own killstreak HUD draws it with (viper_heading_mp,
+// common_mp), which scrolls with the view.
+menuDef
+{
+    name "minimap_fullscreen"
+
+    itemDef { rect 4 4 104 104 LEFT_TOP style 3 background "white" forecolor 0 0 0 0.5 }
+    itemDef { rect 6 6 100 100 LEFT_TOP type 8 ownerdraw 159 background "compass_map_default" forecolor 1 1 1 0.85 }
+    itemDef { rect 6 6 100 100 LEFT_TOP type 8 ownerdraw 158 exp forecolor A ( 1 - radarjamintensity() ) }
+    itemDef { rect 6 6 100 100 LEFT_TOP type 8 ownerdraw 152 background "objective_line" }
+    itemDef { rect 6 6 100 100 LEFT_TOP type 8 ownerdraw 175 exp forecolor A ( 1 - radarjamintensity() ) }
+    itemDef { rect 6 6 100 100 LEFT_TOP type 8 ownerdraw 155 exp forecolor A ( 1 - radarjamintensity() ) }
+    itemDef { rect 6 6 100 100 LEFT_TOP type 8 ownerdraw 156 exp forecolor A ( 1 - radarjamintensity() ) }
+    itemDef { rect 6 6 100 100 LEFT_TOP type 8 ownerdraw 165 exp forecolor A ( 1 - radarjamintensity() ) }
+    itemDef { rect 6 6 100 100 LEFT_TOP type 8 ownerdraw 168 exp forecolor A ( 1 - radarjamintensity() ) }
+    itemDef { rect 6 6 100 100 LEFT_TOP type 8 ownerdraw 150 background "compassping_player"
+              exp forecolor A ( 1 - radarjamintensity() ) }
+    // jammed: 1.1.1.13's own grey wash and grain
+    itemDef { rect 6 6 100 100 LEFT_TOP style 3 background "white" forecolor 0.64 0.74 0.71 1
+              exp forecolor A ( radarjamintensity() ) visible when ( radarisjammed() ) }
+    itemDef { rect 6 6 100 100 LEFT_TOP style 3 background "ac130_overlay_grain" forecolor 0.89 0.98 0.95 1
+              exp forecolor A ( radarjamintensity() ) visible when ( radarisjammed() ) }
+    // the compass strip
+    itemDef { rect 6 6 100 10 LEFT_TOP style 3 background "white" forecolor 0 0 0 0.4 }
+    itemDef
+    {
+        rect 6 6 100 10 LEFT_TOP
+        type 8
+        ownerdraw 145
+        background "viper_heading_mp"
+        forecolor 1 1 1 0.85
+    }
+}
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Score, top centre: friendly score, a slim bar filled from its inner (right) end, the team emblem, the enemy bar
+// filled from its inner (left) end, the enemy score; the match state in small caps under the emblem.
+// Bottom left: the player's name in small grey caps over a thin health bar. 1.1.1.13's half-time / overtime
+// captions, bomb and nuke timers and Sabotage captions are kept as they are.
+menuDef
+{
+    name "scorebar_hd"
+    stockItems 16 17 18 19 20 21 22 23 24 28 29 30 31 32
+
+    // friendly
+    itemDef
+    {
+        rect -104 52 0 0 CENTER_TOP
+        textfont 6
+        textscale 0.26
+        textstyle 3
+        textalign 14
+        exp text ( OWN_SCORE )
+        visible when ( SCORE_PANEL )
+    }
+    itemDef { rect -98 45 BAR_W 6 CENTER_TOP style 3 background "white" forecolor PANEL visible when ( SCORE_PANEL ) }
+    itemDef
+    {
+        rect -20 45 0 6 CENTER_TOP
+        style 3
+        background "white"
+        forecolor OWN_COLOR 1
+        exp rect X ( -20 - OWN_FILL )
+        exp rect W ( OWN_FILL )
+        visible when ( SCORE_PANEL && HAS_LIMIT )
+    }
+    // the emblem of the player's side (1.1.1.13's g_TeamIcon_* dvars, as its scoreboard)
+    itemDef
+    {
+        rect -8 40 16 16 CENTER_TOP
+        style 3
+        forecolor 0.85 0.85 0.85 0.9
+        exp material ( select( team("name") == "TEAM_AXIS", dvarstring("g_TeamIcon_Axis"), dvarstring("g_TeamIcon_Allies") ) )
+        visible when ( SCORE_PANEL && !FFA && dvarstring("g_TeamIcon_Allies") != "" && dvarstring("g_TeamIcon_Axis") != "" )
+    }
+    // enemy
+    itemDef { rect 20 45 BAR_W 6 CENTER_TOP style 3 background "white" forecolor PANEL visible when ( SCORE_PANEL ) }
+    itemDef
+    {
+        rect 20 45 0 6 CENTER_TOP
+        style 3
+        background "white"
+        forecolor OTHER_COLOR 1
+        exp rect W ( OTHER_FILL )
+        visible when ( SCORE_PANEL && HAS_LIMIT )
+    }
+    itemDef
+    {
+        rect 104 52 0 0 CENTER_TOP
+        textfont 6
+        textscale 0.26
+        textstyle 3
+        textalign 12
+        exp text ( OTHER_SCORE )
+        visible when ( SCORE_PANEL )
+    }
+    // the match state, small blue caps under the emblem
+    itemDef
+    {
+        rect 0 64 0 0 CENTER_TOP
+        textfont 10
+        textscale 0.2
+        textstyle 3
+        textalign 13
+        forecolor OWN_COLOR 1
+        text "@MPUI_WINNING_CAPS"
+        visible when ( SCORE_PANEL && OWN_SCORE > OTHER_SCORE )
+    }
+    itemDef
+    {
+        rect 0 64 0 0 CENTER_TOP
+        textfont 10
+        textscale 0.2
+        textstyle 3
+        textalign 13
+        forecolor OTHER_COLOR 1
+        text "@MPUI_LOSING_CAPS"
+        visible when ( SCORE_PANEL && OWN_SCORE < OTHER_SCORE )
+    }
+    itemDef
+    {
+        rect 0 64 0 0 CENTER_TOP
+        textfont 10
+        textscale 0.2
+        textstyle 3
+        textalign 13
+        forecolor 0.8 0.8 0.8 1
+        text "@MPUI_TIED_CAPS"
+        visible when ( SCORE_PANEL && OWN_SCORE == OTHER_SCORE )
+    }
+
+    // the round timer, small and grey, under the match state (1.1.1.13's own expression: the time left, less the
+    // second half while the first one runs); red tenths in the last 30 seconds
+    itemDef
+    {
+        rect 0 73 0 0 CENTER_TOP
+        textfont 10
+        textscale 0.2
+        textstyle 3
+        textalign 13
+        forecolor 0.75 0.75 0.75 1
+        exp text ( secondsascountdown( TIME_LEFT ) )
+        visible when ( SCORE_PANEL && TIME_LEFT >= 30 && !dvarint("ui_bomb_timer") )
+    }
+    itemDef
+    {
+        rect 0 73 0 0 CENTER_TOP
+        textfont 10
+        textscale 0.2
+        textstyle 3
+        textalign 13
+        forecolor 1 0.45 0.35 1
+        exp text ( secondsascountdown( TIME_LEFT ) + "." + ( ( 9 - int( milliseconds() / 100 ) ) % 10 ) )
+        visible when ( SCORE_PANEL && TIME_LEFT >= 0 && TIME_LEFT < 30 && !dvarint("ui_bomb_timer") )
+    }
+
+    // bottom left: name and health
+    itemDef
+    {
+        rect 14 -12 0 0 LEFT_BOTTOM
+        textfont 10
+        textscale 0.2
+        textstyle 3
+        textalign 12
+        forecolor 0.8 0.8 0.8 1
+        exp text ( dvarstring("name") )
+        visible when ( !player("dead") )
+    }
+    // the health line: menus cannot read the player's health (player() has no health field, no dvar holds it, and
+    // the IW4 health-bar ownerDraw 79 drew nothing in a client), so it is the reference's thin white line, shown
+    // while alive
+    itemDef { rect 14 -8 90 2.5 LEFT_BOTTOM style 3 background "white" forecolor 0 0 0 0.45 visible when ( !player("dead") ) }
+    itemDef { rect 14 -8 90 1.2 LEFT_BOTTOM style 3 background "white" forecolor 1 1 1 0.95 visible when ( !player("dead") ) }
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Killstreaks: three dark slots on the right edge above the weapon block, and 1.1.1.13's own column.
+menuDef
+{
+    name "killstreaks_hd"
+    stockItems all
+
+    itemDef { rect -48 -178 24 24 RIGHT_BOTTOM style 3 background "white" forecolor PANEL }
+    itemDef { rect -48 -150 24 24 RIGHT_BOTTOM style 3 background "white" forecolor PANEL }
+    itemDef { rect -48 -122 24 24 RIGHT_BOTTOM style 3 background "white" forecolor PANEL }
+}
+}

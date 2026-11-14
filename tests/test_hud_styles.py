@@ -178,11 +178,12 @@ class HudStyles(unittest.TestCase):
         menus.encode_menulist(self.own)
 
     def test_shipped_styles_and_numbers(self):
-        self.assertEqual(hs.STYLE_NUMBERS, {"stock": 0, "v12": 1, "v26": 2, "v33": 3, "v35": 4})
+        self.assertEqual(hs.STYLE_NUMBERS, {"stock": 0, "v12": 1, "v26": 2, "v33": 3, "v35": 4, "sm2": 5})
         # v12 is not shipped: in a client its converted HUD could not be told from v26's (same art, layout
         # differences of a few units; docs/HUD_STYLES_20261112.md)
-        self.assertEqual(hs.shipped(), [(2, "v26"), (3, "v33")])
-        self.assertEqual(hs.style_list(), "0:stock;2:v26;3:v33")
+        self.assertEqual(hs.shipped(), [(2, "v26"), (3, "v33"), (5, "sm2")])
+        self.assertEqual(hs.style_list(), "0:stock;2:v26;3:v33;5:sm2")
+        self.assertTrue(hs.authored("sm2") and not hs.authored("v26"))
         c = (ROOT / "src" / "hud_style.c").read_text(encoding="utf-8")
         self.assertIn('#define HUD_STYLE_LIST      "%s"' % hs.style_list(), c)
         self.assertIn('#define HUD_STYLE_DVAR      "%s"' % hs.DVAR, c)
@@ -235,7 +236,7 @@ class HudStyles(unittest.TestCase):
                 k = len(self.parts[n][name]["items"])
                 groups[n] = items[at:at + k]
                 at += k
-            for value in range(0, 6):
+            for value in range(0, max(hs.STYLE_NUMBERS.values()) + 2):
                 shown = value if value in self.numbers else 0       # a value that is not shipped shows the stock HUD
                 with self.subTest(menu=name, k33_hudStyle=value):
                     self.assertTrue(visible(menu["p"].get(VIS), value))
@@ -248,7 +249,7 @@ class HudStyles(unittest.TestCase):
     def test_menu_visibility_follows_the_selected_build(self):
         for name, menu in self.menus.items():
             stock_vis = self.stock[name]["p"].get(VIS)
-            for value in range(0, 6):
+            for value in range(0, max(hs.STYLE_NUMBERS.values()) + 2):
                 shown = value if value in self.numbers else 0
                 want = stock_vis if shown == 0 else self.parts[shown][name]["visible"]
                 seen = []
@@ -285,8 +286,9 @@ class HudStyles(unittest.TestCase):
 
     def test_every_kept_item_uses_only_what_1_1_1_13_has(self):
         carried = set(hs.carried(self.convs))
-        stock_ok = {n for st in self.facts["styles"].values() for n, how in st["materials"].items()
-                    if how["action"] == "stock"}
+        # what the converted styles resolved as stock, and what the stock HUD menus draw (an authored style's
+        # items and the stock items it keeps)
+        stock_ok = hs.stock_materials(self.facts, self.stock)
         for name, menu in self.menus.items():
             stock_count = len(self.stock[name]["p"][ITEMS])
             for i, it in enumerate(menu["p"][ITEMS]):
@@ -299,7 +301,8 @@ class HudStyles(unittest.TestCase):
                         continue
                     raw = bytes.fromhex(it["raw"])
                     od = struct.unpack_from("<i", raw, 0x38)[0]
-                    self.assertTrue(od == 0 or od in self.facts["c1_ownerdraws"] or od in hs.HUD_OWNERDRAWS)
+                    self.assertTrue(od == 0 or od in self.facts["c1_ownerdraws"] or od in hs.HUD_OWNERDRAWS or
+                                    od in hs.PROBED_OWNERDRAWS)
                     self.assertNotIn(struct.unpack_from("<i", raw, W + 0x20)[0], hs.FONTS)
                     listing = menus.expr({"kind": "Statement", "raw": "00" * 20, "p": {"4": [
                         hs.nested(v) for k, v in it["p"].items() if isinstance(v, dict) and v.get("kind") == "Statement"]}})
@@ -323,6 +326,8 @@ class HudStyles(unittest.TestCase):
     def test_dropped_items_are_reported_with_a_reason(self):
         text = "\n".join(self.report)
         for _n, style in hs.shipped():
+            if hs.authored(style):
+                continue
             cfg = hs.STYLES[style]
             src = json.loads((hs.SRC / ("menus_%s.json" % style)).read_text(encoding="utf-8"))
             self.assertEqual(src["build"], cfg["build"])
@@ -378,6 +383,8 @@ class HudStyles(unittest.TestCase):
 
     def test_the_isCombat_rewrite_is_what_the_later_onOpen_stores(self):
         for _n, style in hs.shipped():
+            if hs.authored(style):
+                continue
             cfg = hs.STYLES[style]
             src = json.loads((hs.SRC / ("menus_%s.json" % style)).read_text(encoding="utf-8"))
             one = {"kind": "MenuList", "raw": "00" * 12, "p": {"0": "x", "8": [src["menus"]["scorebar_hd"]]}}
@@ -395,11 +402,18 @@ class HudStyles(unittest.TestCase):
         host = bytes.fromhex(self.stock["weaponbar_hd"]["raw"])
         ox, oy = struct.unpack_from("<2f", host, 4)
         items = [it for it in wb["p"][ITEMS] if struct.unpack_from("<i", bytes.fromhex(it["raw"]), 0x38)[0] in hs.HUD_OWNERDRAWS]
-        self.assertEqual(sorted(struct.unpack_from("<i", bytes.fromhex(it["raw"]), 0x38)[0] for it in items),
-                         [hs.OD_CLIP] * len(hs.shipped()) + [hs.OD_CLIP_BAR] * len(hs.shipped()))   # one set per style
+        converted_n = len([s for _n, s in hs.shipped() if not hs.authored(s)])
+        ods = sorted(struct.unpack_from("<i", bytes.fromhex(it["raw"]), 0x38)[0] for it in items)
+        # one clip count per style, one gauge per converted style (an authored one may leave the gauge out)
+        self.assertEqual(ods.count(hs.OD_CLIP), len(hs.shipped()))
+        self.assertGreaterEqual(ods.count(hs.OD_CLIP_BAR), converted_n)
+        converted = [n for n, style in hs.shipped() if not hs.authored(style)]
         for it in items:
             raw = bytes.fromhex(it["raw"])
             self.assertEqual(struct.unpack_from("<i", raw, W + 0x14)[0], 8)        # an ownerdraw item
+            gate = tokens(it["p"][IVIS])[:6]
+            if gate[4][1] not in converted:       # an authored style places its gauge itself
+                continue
             if struct.unpack_from("<i", raw, 0x38)[0] == hs.OD_CLIP_BAR:
                 x, y, w, h = struct.unpack_from("<4f", raw, 0x18)
                 self.assertAlmostEqual(x + ox, -133.0, places=3)
@@ -477,6 +491,69 @@ class HudStyles(unittest.TestCase):
             self.assertFalse(self.facts["c1_localize"][key])
             value["chinese"].encode("gbk")
             value["english"].encode("ascii")
+
+    def test_sm2_is_authored_menu_source(self):
+        """sm2 (k33_hudStyle 5) is written as .menu source: every host has its menuDef, the items are what the
+        compiler gives, the stock items it keeps are byte for byte 1.1.1.13's, and it uses only white and stock art."""
+        from zonekit import menu_source
+        text = (ROOT / hs.STYLES["sm2"]["menu"]).read_text(encoding="utf-8")
+        defs = {d["name"]: d for d in menu_source.parse(text, "sm2.menu")}
+        self.assertEqual(sorted(defs), sorted(hs.OWN_HOSTS + hs.SURVIVAL_HOSTS))
+        n = hs.STYLE_NUMBERS["sm2"]
+        for host, d in defs.items():
+            part = self.parts[n][host]
+            own = self.stock[host]["p"].get(ITEMS, [])
+            keep = list(range(len(own))) if d["stock"] == "all" else d["stock"]
+            self.assertEqual(part["items"][:len(d["items"])], d["items"])
+            self.assertEqual(part["items"][len(d["items"]):], [hs.references(own[i]) for i in keep])
+            self.assertEqual(part["visible"], d["visible"] if d["visible"] is not None else self.stock[host]["p"].get(VIS))
+        # the weapon block: clip count and gauge (hud_style.c's ownerdraws), the stock low-ammo warning kept
+        ods = [struct.unpack_from("<i", bytes.fromhex(it["raw"]), 0x38)[0] for it in self.parts[n]["weaponbar_hd"]["items"]]
+        for od in (hs.OD_CLIP, 81, 83, 103, 104, 284, 120):
+            self.assertIn(od, ods)
+        art = set()
+        for host in defs:
+            for it in defs[host]["items"]:
+                if "160" in it["p"]:
+                    art.add(it["p"]["160"]["name"])
+        self.assertEqual(art, {",white", ",compass_map_default", ",objective_line", ",compassping_player",
+                               ",ac130_overlay_grain", ",viper_heading_mp"})
+        self.assertNotIn("k33hud", text)
+
+    def test_menu_source_compiler(self):
+        from zonekit import menu_source
+        src = """#define SHOWN ( weaponname() != "none" )
+        menuDef { name "weaponbar_hd" stockItems 2
+            itemDef { rect -10 -20 30 4 10 10 style 3 background "white" forecolor 1 0.5 0 0.25
+                      exp rect W ( min( player("clipAmmo") / 30, 1 ) * -30 ) visible when ( SHOWN && !inkillcam() ) }
+            itemDef { rect 1 2 0 0 type 8 ownerdraw 3001 textfont 9 textscale 0.4 textstyle 3 textalign 14
+                      exp text ( "x" + player("stockAmmo") ) } }"""
+        (d,) = menu_source.parse(src)
+        self.assertEqual((d["name"], d["stock"]), ("weaponbar_hd", [2]))
+        a, b = d["items"]
+        raw = bytes.fromhex(a["raw"])
+        self.assertEqual(len(raw), menus.ITEM13)
+        self.assertEqual(struct.unpack_from("<4f", raw, 4), (-10.0, -20.0, 30.0, 4.0))
+        self.assertEqual(struct.unpack_from("<4f", raw, 0x18), (-10.0, -20.0, 30.0, 4.0))
+        self.assertEqual((raw[0x14], raw[0x15], raw[0x28], raw[0x29]), (10, 10, 10, 10))
+        self.assertEqual(struct.unpack_from("<i", raw, 0x30)[0], 3)
+        self.assertEqual(a["p"]["160"], {"asset": "material", "name": ",white"})
+        self.assertEqual(menus.expr(a["p"][IVIS]), '( ( weaponname ) != "none" ) && ! inkillcam ) )')
+        (fe,) = a["p"][str(W + 0x9C)]
+        self.assertEqual(struct.unpack_from("<I", bytes.fromhex(fe["raw"]))[0], 2)        # the rect's width
+        self.assertEqual(menus.expr(fe["p"]["4"]), '( min player "clipAmmo" ) / 30 , 1 ) * -30 )')
+        raw = bytes.fromhex(b["raw"])
+        self.assertEqual([struct.unpack_from("<i", raw, o)[0] for o in (0x38, W + 0x14, W + 0x20, W + 0x24, W + 0x34)],
+                         [3001, 8, 9, 14, 3])
+        self.assertEqual(menus.expr(b["p"][str(W + 0xA8)]), '( "x" + player "stockAmmo" ) )')
+        menus.encode_menulist({"kind": "MenuList", "raw": "00" * 12, "p": {"0": "x", "8": [
+            dict(self.stock["weaponbar_hd"], p=dict(self.stock["weaponbar_hd"]["p"], **{ITEMS: [a, b]}))]}})
+        for bad in ('menuDef { name "x" itemDef { rect 0 0 1 1 visible when ( nosuchfunction() ) } }',
+                    'menuDef { name "x" itemDef { rect 0 0 1 1 visible when ( weaponname ) } }',
+                    'menuDef { name "x" itemDef { rect 0 0 1 1 visible when ( ( 1 ) } }',
+                    'menuDef { name "x" itemDef { style 3 } }'):
+            with self.subTest(bad=bad), self.assertRaises(menu_source.MenuSourceError):
+                menu_source.parse(bad)
 
     def test_gate_evaluator_reads_the_stock_shape(self):
         # ( dvarint "x" ) == 2 && {..}: one opening parenthesis, the last ")" left out, like a stock expression

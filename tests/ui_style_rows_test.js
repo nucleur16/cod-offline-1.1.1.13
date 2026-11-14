@@ -382,8 +382,8 @@ const used=new Set();
 for(const t of Object.values(SOURCES))for(const m of t.matchAll(/"@(K33UI_(?:LANGUAGE|GLYPHS|HUD_STYLE|LANG_[A-Z]+))"/g))used.add(m[1]);
 for(const n of literal(P,'K33_GLYPH_NAMES'))used.add('K33UI_GLYPHS_'+n);
 for(const id of ['EN','ZH'])used.add('K33UI_LANG_NAME_'+id);
-for(const id of ['STOCK','V12','V26','V33','V35'])used.add('K33UI_HUD_STYLE_'+id);
-assert.strictEqual(used.size,19,[...used].join(' '));
+for(const id of ['STOCK','V12','V26','V33','V35','SM2'])used.add('K33UI_HUD_STYLE_'+id);
+assert.strictEqual(used.size,20,[...used].join(' '));
 const en=entries('codol_english_ui'),zh=entries('codol_chinese_ui'),enx=entries('codol_english_ui_extra'),zhx=entries('codol_chinese_ui_extra');
 const keysPy=read('scripts/ui_keys.py');
 for(const lang of ['english','chinese']){

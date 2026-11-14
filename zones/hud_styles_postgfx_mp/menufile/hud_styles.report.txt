@@ -1,4 +1,4 @@
-k33_hudStyleList 0:stock;2:v26;3:v33
+k33_hudStyleList 0:stock;2:v26;3:v33;5:sm2
 v26 weaponbar_hd[4] -> weaponbar_hd: ownerDraw 5 written as clip count, clip bar and reserve count
 v26 weaponbar_hd -> weaponbar_hd: 26 of 26 items
 v26 weaponbar_hd_extend[1] -> weaponbar_hd: dropped: operator canChargeAttackIconShow has no 1.1.1.13 equivalent
@@ -120,3 +120,7 @@ v33 rewrite: 3.3.3.3 operator 253 -> 0 (read from its case in 3.3.3.3)
 v33 rewrite: 3.3.3.3 operator 267 -> '' (read from its case in 3.3.3.3)
 v33 rewrite: 3.3.3.3 operator 255 -> 100 (read from its case in 3.3.3.3)
 v33 rewrite: 3.3.3.3 operator 256 -> select((A) <= 3, ..._2, ..._1) of empty / full by B (the killstreak bar segment material, read from its case 0x00573440)
+sm2 weaponbar_hd -> weaponbar_hd: 14 items authored in sm2.menu, 1 of 1.1.1.13's own items kept (2)
+sm2 minimap_fullscreen -> minimap_fullscreen: 14 items authored in sm2.menu, 0 of 1.1.1.13's own items kept
+sm2 scorebar_hd -> scorebar_hd: 15 items authored in sm2.menu, 14 of 1.1.1.13's own items kept (16 17 18 19 20 21 22 23 24 28 29 30 31 32)
+sm2 killstreaks_hd -> killstreaks_hd: 3 items authored in sm2.menu, 69 of 1.1.1.13's own items kept

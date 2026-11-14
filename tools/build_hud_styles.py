@@ -14,8 +14,13 @@ that style's number. Menu expressions are evaluated every frame, so the HUD chan
                                                      later installs -> zones/hud_styles_postgfx_mp/sources + image/
                                                      (read only on the installs; --work holds the dumps)
 
-Style numbers are fixed (hud_style.c, the menus): 0 stock, 1 v12 (1.2.1.12), 2 v26 (2.6.9.7), 3 v33, 4 v35. A style
-ships when its sources are checked in (SHIPPED below); hud_style.c publishes the same list in k33_hudStyleList.
+Style numbers are fixed (hud_style.c, the menus): 0 stock, 1 v12 (1.2.1.12), 2 v26 (2.6.9.7), 3 v33, 4 v35, 5 sm2. A
+style ships when its sources are checked in (shipped()); hud_style.c publishes the same list in k33_hudStyleList.
+
+A style can also be authored rather than converted: STYLES[..]["menu"] names a .menu source (zonekit/menu_source.py,
+IW-style menuDef / itemDef text) whose menuDefs are named after the 1.1.1.13 hosts. Its items are checked like a
+converted style's (1.1.1.13 operators, ownerdraws, player() fields, stock materials, known texts) and gated the same
+way. sm2 (k33_hudStyle 5) is one: an original MW2-like HUD, sources/sm2.menu.
 
 What a style's item needs to be kept (anything else is dropped and listed in menufile/hud_styles.report.txt):
   * every expression operator exists in 1.1.1.13 (operator tables: zonekit/menus.py; 1.2.1.12's is the first 232
@@ -65,7 +70,7 @@ ZDIR = ROOT / "zones" / ZONE
 SRC = ZDIR / "sources"
 MENUFILE = "ui_mp/scriptmenus/hud_styles.menu"
 DVAR = "k33_hudStyle"
-STYLE_NUMBERS = {"stock": 0, "v12": 1, "v26": 2, "v33": 3, "v35": 4}
+STYLE_NUMBERS = {"stock": 0, "v12": 1, "v26": 2, "v33": 3, "v35": 4, "sm2": 5}
 SURVIVAL_DIR = ROOT / "zones/survival_hud_postgfx_mp/menufile"
 LOCALE_ZONES = {"english": "codol_english_hud_styles", "chinese": "codol_chinese_hud_styles"}
 
@@ -81,6 +86,13 @@ FONTS = {11: 7, 12: 7, 13: 7, 14: 7}      # 1.2.1.12's fonts 11..14 are fonts/no
 OD_CLIP = 3001          # rounds in the clip, both hands of an akimbo weapon (C1's own dual-wield test)
 OD_CLIP_BAR = 3002      # the clip gauge: the item's rect, emptied from its left end
 HUD_OWNERDRAWS = (OD_CLIP, OD_CLIP_BAR)
+# ownerDraw numbers none of the four hosts' stock items uses, that an authored style may use because they were seen
+# drawing in a client (docs/HUD_STYLES_20261112.md "SM2"): IW4's numbering, which 1.1.1.13's HUD numbers follow
+# wherever both are known (103, 104, 120, 150..175)
+PROBED_OWNERDRAWS = {118: "the weapon's HUD icon (IW4 CG_PLAYER_WEAPON_PRIMARY_ICON): seen drawing the icon right-aligned "
+                          "to the rect's right edge, 4 * w wide, h high, facing left",
+                     145: "the heading tape (IW4 CG_PLAYER_COMPASS_TICKERTAPE): a stock common_mp killstreak menu draws "
+                          "it with viper_heading_mp"}
 # The score bar's team bars in 1.1.1.13's team colours (live request): the stock scorebar_hd draws its own team's
 # bar with forecolor 0.63 0.86 0.6 and the other team's with 0.78 0.278 0.239, constants in the stock menu
 # (zones/survival_hud_postgfx_mp .original.json, hud_scorebar_topbar / hud_scorebar_bottombar). The later art has
@@ -157,6 +169,8 @@ STYLES = {
                        "scorebar_hd": ["scorebar_hd", "kd_rate_bar"],
                        "killstreaks_hd": ["killstreaks_hd"],
                        "minimap_fullscreen": ["minimap_fullscreen"]}),
+    # authored in .menu source (zonekit/menu_source.py), not converted from a later build
+    "sm2": dict(build="SM2 (authored)", menu="zones/hud_styles_postgfx_mp/sources/sm2.menu"),
     "v12": dict(build="1.2.1.12", window=0xA4, ops=menus.OPS_2697[:232], zone="common_mp", prefix="k33hud12_",
                 hosts={"weaponbar_hd": ["weaponbar_hd", "weaponbar_hd_extend", "reloadbar"],
                        "scorebar_hd": ["scorebar_hd", "kd_rate_bar"],
@@ -180,9 +194,15 @@ OWN_HOSTS = ("weaponbar_hd", "minimap_fullscreen")
 SURVIVAL_HOSTS = ("killstreaks_hd", "scorebar_hd")
 
 
+def authored(style):
+    """Is the style authored as .menu source (rather than converted from a later build's menus)?"""
+    return "menu" in STYLES[style]
+
+
 def shipped():
-    """The styles whose converted sources are checked in, in number order: [(number, id)]."""
-    return sorted((STYLE_NUMBERS[s], s) for s in STYLES if (SRC / ("menus_%s.json" % s)).is_file())
+    """The styles whose sources are checked in (converted menus or a .menu), in number order: [(number, id)]."""
+    return sorted((STYLE_NUMBERS[s], s) for s in STYLES
+                  if (ROOT / STYLES[s]["menu"] if authored(s) else SRC / ("menus_%s.json" % s)).is_file())
 
 
 def style_list():
@@ -483,7 +503,10 @@ def material_strings(item):
                 scan(e["p"]["8"])
             elif t == 1 and a == 2:
                 prev = struct.unpack_from("<II", bytes.fromhex(es[i - 1]["raw"])) if i else (0, OP["("])
-                if not (prev[0] == 0 and prev[1] >= OP["dvarint(static)"]):      # not a function's first argument
+                after = struct.unpack_from("<II", bytes.fromhex(es[i + 1]["raw"])) if i + 1 < len(es) else (1, 0)
+                compared = (0, OP["=="]) in (prev, after) or (0, OP["!="]) in (prev, after)
+                if not (prev[0] == 0 and prev[1] >= OP["dvarint(static)"]) and not compared:
+                    # not a function's first argument, nor a value compared with (team("name") == "TEAM_AXIS")
                     out.append(e)
     if st is not None:
         scan(st)
@@ -631,6 +654,8 @@ def style_parts(style, facts=None, sources=None, stock=None):
     The items are in the 1.1.1.13 layout, ungated, with their foreign menu's visibility already folded in."""
     cfg = STYLES[style]
     facts = facts or load_facts()
+    if authored(style):
+        return authored_parts(style, facts, stock or stock_menus())
     sources = sources or json.loads((SRC / ("menus_%s.json" % style)).read_text(encoding="utf-8"))
     stock = stock or stock_menus()
     conv = StyleConverter(style, facts)
@@ -699,6 +724,87 @@ def style_parts(style, facts=None, sources=None, stock=None):
         if n.startswith("material "):
             continue
         report.append("%s rewrite: %s" % (style, n))
+    return out, report, conv
+
+
+# Materials of common_mp an authored style may name besides the hosts' own: (where 1.1.1.13 itself draws it)
+AUTHORED_MATERIALS = {"viper_heading_mp": "the heading tape (ownerDraw 145) of 1.1.1.13's own killstreak HUD, common_mp "
+                                          "ui_mp menus (rect 400x20, foreColor alpha 0.65)"}
+
+
+# --- a style authored as .menu source ------------------------------------------------------------------------------
+class AuthoredStyle:
+    """What carried() and the report read of a converter, for an authored style (it carries no material)."""
+
+    def __init__(self):
+        self.used_materials, self.keys, self.tables, self.notes = set(), set(), set(), []
+
+
+def stock_materials(facts, stock):
+    """Materials an authored item may name: the ones the stock 1.1.1.13 HUD menus draw (loaded with the HUD) and the
+    ones sources/facts.json resolved as stock for a converted style."""
+    names = {n for st in facts["styles"].values() for n, how in st["materials"].items() if how["action"] == "stock"}
+    names.update(AUTHORED_MATERIALS)
+    for m in stock.values():
+        for it in m["p"].get(str(W13 + 0x78), []):
+            if "160" in it["p"]:
+                names.add(it["p"]["160"]["name"].lstrip(","))
+            names.update(e["p"]["8"] for e in material_strings(it))
+    return names
+
+
+def check_authored(style, host, n, item, facts, materials, conv):
+    """Stops the build at an authored item 1.1.1.13 cannot draw: an authored style is fixed, not trimmed."""
+    where = "%s %s item %d%s" % (style, host, n, " %s" % item["p"]["0"] if item["p"].get("0") else "")
+    od = struct.unpack_from("<i", bytes.fromhex(item["raw"]), 0x38)[0]
+    if od and od not in facts["c1_ownerdraws"] and od not in HUD_OWNERDRAWS and od not in PROBED_OWNERDRAWS:
+        raise SystemExit("%s: ownerDraw %d is not one 1.1.1.13's HUD (or hud_style.c) draws" % (where, od))
+    names = [item["p"]["160"]["name"]] if "160" in item["p"] else []
+    for name in names + [e["p"]["8"] for e in material_strings(item)]:
+        if name.lstrip(",") not in materials:
+            raise SystemExit("%s: material %s is not one the stock 1.1.1.13 HUD draws" % (where, name))
+    listing = menus.expr(statement([nested(v) for v in item["p"].values()
+                                    if isinstance(v, dict) and v.get("kind") == "Statement"] +
+                                   [nested(fe["p"]["4"]) for fe in item["p"].get(str(W13 + 0x9C), [])]))
+    for field in re.findall(r'\bplayer "([^"]*)"', listing):
+        if field not in C1_PLAYER_FIELDS:
+            raise SystemExit('%s: player("%s") is not a field of 1.1.1.13\'s operator' % (where, field))
+    for key in loc_keys(item):
+        if not facts["c1_localize"].get(key) and key not in facts["localize"] and key not in facts["c1_menu_keys"]:
+            raise SystemExit("%s: text @%s is not in 1.1.1.13 and not carried" % (where, key))
+        conv.keys.add(key)
+    return item
+
+
+def authored_parts(style, facts, stock):
+    """style_parts() of a style authored as .menu source: each menuDef is a host; its items, then the host's own items
+    it names (stockItems), are the style's items; its visibility is the menuDef's or, without one, the host's."""
+    from zonekit import menu_source
+    path = ROOT / STYLES[style]["menu"]
+    try:
+        defs = menu_source.parse(path.read_text(encoding="utf-8"), path.name)
+    except menu_source.MenuSourceError as e:
+        raise SystemExit(str(e))
+    conv, report, out = AuthoredStyle(), [], {}
+    materials = stock_materials(facts, stock)
+    for d in defs:
+        host = d["name"]
+        if host not in stock or host in out:
+            raise SystemExit("%s: menuDef %s is not a 1.1.1.13 HUD host (or appears twice)" % (path.name, host))
+        own = stock[host]["p"].get(str(W13 + 0x78), [])
+        keep = list(range(len(own))) if d["stock"] == "all" else d["stock"]
+        if any(not 0 <= i < len(own) for i in keep):
+            raise SystemExit("%s: stockItems of %s out of range (%d items)" % (path.name, host, len(own)))
+        items = [check_authored(style, host, n, it, facts, materials, conv) for n, it in enumerate(d["items"])]
+        items += [references(copy.deepcopy(own[i])) for i in keep]
+        visible = d["visible"] if d["visible"] is not None else copy.deepcopy(stock[host]["p"].get(str(W13 + 0x40)))
+        out[host] = dict(visible=visible, items=items, own=[True] * len(items))
+        report.append("%s %s -> %s: %d items authored in %s, %d of 1.1.1.13's own items kept%s" % (
+            style, host, host, len(d["items"]), path.name, len(keep),
+            " (%s)" % " ".join(map(str, keep)) if keep and len(keep) < len(own) else ""))
+    missing = [h for h in OWN_HOSTS + SURVIVAL_HOSTS if h not in out]
+    if missing:
+        raise SystemExit("%s: no menuDef for %s (an authored style hosts every HUD menu)" % (path.name, ", ".join(missing)))
     return out, report, conv
 
 

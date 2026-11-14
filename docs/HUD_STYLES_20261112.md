@@ -1,7 +1,7 @@
 # Selectable HUD styles (`k33_hudStyle`)
 
-The combat HUD of 1.1.1.13 can show the layout of a later Call of Duty Online build (2.6.9.7 or 3.3.3.3), switched
-live.
+The combat HUD of 1.1.1.13 can show the layout of a later Call of Duty Online build (2.6.9.7 or 3.3.3.3), or SM2, an
+original HUD written as `.menu` source. The style switches live.
 
 | `k33_hudStyle` | id | build | state |
 |---|---|---|---|
@@ -10,8 +10,10 @@ live.
 | 2 | `v26` | 2.6.9.7 | shipped |
 | 3 | `v33` | 3.3.3.3 | shipped (its own operators read from its executable, see "3.3.3.3") |
 | 4 | `v35` | 3.5.2.6 | not shipped: no unpacked 3.5.2.6 executable exists on disk (see below) |
+| 5 | `sm2` | authored | shipped: an original HUD laid out after a screenshot of the cancelled SM2 mod's HUD, written in `.menu` source (see "SM2") |
 
-`k33_hudStyleList` in this build: `0:stock;2:v26;3:v33`.
+`k33_hudStyleList` in this build: `0:stock;2:v26;3:v33;5:sm2`. SM2 takes 5, not 4: the numbers are fixed, and 4
+stays reserved for 3.5.2.6 as 1 does for 1.2.1.12.
 
 Runtime-checked on 2026-11-12 in the offline fork's client (own test folder, Team Deathmatch on Crash, 1920x1080
 window): see "Live check". The static evidence is what the generator and the tests check without a client.
@@ -31,7 +33,7 @@ The weapon bar, score bar, minimap, killstreak column and perk display of every 
 - C1 evaluates these expressions every frame. `set k33_hudStyle 2` therefore changes the HUD in the same frame:
   no menu reload, no vid_restart, no patch in C1. A value that is not a shipped style shows the stock items, so
   the HUD is never empty.
-- `src/hud_style.c` owns the dvars: `k33_hudStyle` (int 0..4, archived, registered once `C1DvarsReady()`, a
+- `src/hud_style.c` owns the dvars: `k33_hudStyle` (int 0..5, archived, registered once `C1DvarsReady()`, a
   command-line `+set k33_hudStyle N` re-issued as voice.c does) and `k33_hudStyleList` (string). A saved value that
   is not in the list is set back to 0 and logged once. It also implements what the later HUD reads and 1.1.1.13
   lacks ("Implemented natively").
@@ -242,14 +244,14 @@ Still open:
    `codol_english_locale.ff` and `codol_chinese_locale.ff` over the test install's, and a `Kernel33.dll` built from
    this branch (`K33_LOCAL_TESTING=1` for the log lines and `k33_cmdFile`).
 2. Start with `+set k33_cmdFile 1`; `Kernel33.log` must have
-   `hud style: k33_hudStyle registered (k33_hudStyleList 0:stock;2:v26;3:v33), value 0`.
-3. In a private Team Deathmatch, write `set k33_hudStyle 2` (then 3) into `<exe dir>\k33_cmd_<pid>.txt` (or use the pause
+   `hud style: k33_hudStyle registered (k33_hudStyleList 0:stock;2:v26;3:v33;5:sm2), value 0`.
+3. In a private Team Deathmatch, write `set k33_hudStyle 2` (then 3, then 5) into `<exe dir>\k33_cmd_<pid>.txt` (or use the pause
    menu's HUD style control): the weapon bar, score bar, minimap frame and killstreak column switch to the
    2.6.9.7 (3.3.3.3) layout within half a second, without a reload. `set k33_hudStyle 0`: stock. Fire a few rounds: the
    big clip count and the gauge drop in the same frame as the reserve; reload refills both. With an akimbo weapon
    the clip count is both hands.
 4. `set k33_hudStyle 1` (or 4): the stock HUD, the dvar back at 0, one line
-   `hud style: k33_hudStyle 1 is not in this build (0:stock;2:v26;3:v33); showing the stock HUD`.
+   `hud style: k33_hudStyle 1 is not in this build (0:stock;2:v26;3:v33;5:sm2); showing the stock HUD`.
 5. Quit and start again: the last shipped value is still set (archived).
 6. Repeat step 3 in Survival: the enemy / credit panel is the same in all three, the MP score panel and the
    killstreak column stay hidden.
@@ -332,6 +334,68 @@ Crash hosted in-process, pictures through `k33_shot.req`.
 
 Captures are in the session scratch folder (`hud_impl/shots`), not in the repository.
 
+## SM2 (k33_hudStyle 5): an authored style in `.menu` source
+
+SM2 is not converted from another build. It is an original HUD written as IW-style menu source,
+`zones/hud_styles_postgfx_mp/sources/sm2.menu`, laid out after a screenshot of the cancelled SM2 mod's HUD that the
+user supplied. No art is copied: every item draws `white`, a material 1.1.1.13 already loads, or a 1.1.1.13 / Kernel33
+ownerdraw.
+
+- **Compiler.** `zonekit/menu_source.py` reads the subset of the IW4 menu language a HUD needs (`#define`,
+  `menuDef { name, visible when, stockItems }`, and `itemDef` with `rect`, `type`, `style`, `ownerdraw`,
+  `background`, colours, text fields, `text`, `visible when`, `exp text / material / rect X|Y|W|H /
+  forecolor|backcolor R|G|B|A`). Expressions become the infix entry stream C1 evaluates; function names must be
+  operators of 1.1.1.13's table, and anything else is a compile error.
+- **Build.** `STYLES["sm2"]["menu"]` marks an authored style. `authored_parts()` turns each menuDef into the part of
+  its host: the authored items, then the host's own items that `stockItems` names, unchanged. Its visibility is the
+  menuDef's or, without one, the host's. From there it is gated like v26 / v33: the stock items get `!= 5` and the
+  SM2 items `== 5`. An authored style must have all four hosts. An item 1.1.1.13 cannot draw stops the build
+  (`check_authored`): an unknown ownerdraw, a material not drawn by the stock HUD or not in `AUTHORED_MATERIALS`, a
+  `player()` field C1 lacks, or an unknown text.
+- **What it shows** (positions in the hosts' 640x480 units):
+  - bottom right, a dark translucent panel: the large clip count (ownerDraw 3001, akimbo-aware), a thin divider,
+    the grey reserve (`player("stockAmmo")`) and the weapon's icon (ownerDraw 118);
+  - above the panel, the weapon name (ownerDraws 81 / 83, as the stock HUD: it shows on a weapon switch and in
+    killcam);
+  - above that, a small dark box with the lethal grenade and its count, and the tactical (or smoke / flash) one
+    while carried;
+  - three dark slots on the right edge; 1.1.1.13's own killstreak column is kept;
+  - top left, the minimap on a dark square, with a compass strip over its top edge: ownerDraw 145, the heading tape
+    1.1.1.13's own killstreak HUD draws with `viper_heading_mp` (common_mp);
+  - top centre: own score, a slim bar filled from its inner end in blue, the side's emblem
+    (`g_TeamIcon_Allies` / `g_TeamIcon_Axis`, hidden in free-for-all), the enemy bar filled from its inner end in
+    red, the enemy score; under it the match state (`MPUI_WINNING_CAPS` / `LOSING` / `TIED`, coloured) and a small
+    round timer (1.1.1.13's own expression);
+  - bottom left, the player's name (`dvarstring("name")`) over a thin white line;
+  - 1.1.1.13's half-time / overtime captions, bomb and nuke timers and Sabotage captions (stock items 16-24, 28-32 of
+    `scorebar_hd`) and its low-ammo warning are kept.
+- **Ownerdraws first used here** (`PROBED_OWNERDRAWS`; none of the four hosts' stock items uses them):
+  - 118, the weapon icon. Seen live: it is drawn right-aligned to the rect's right edge, 4 * w wide and h high,
+    facing left, so `w = h` keeps the icon's 4:1 shape.
+  - 145, the heading tape. A stock common_mp menu draws it as a 400x20 tape with `viper_heading_mp` (found by
+    scanning common_mp's menu assets for ownerDraw 145).
+  - IW4's 79 (health bar) drew nothing in any capture and is not used.
+- **Not possible as menus, and why:**
+  - *Health.* `player()` has no health field, no dvar holds it, and ownerDraw 79 drew nothing. The bottom-left
+    line is therefore the reference's look, shown while alive; it does not shrink with damage. A health value
+    would need C, which this style was asked not to add.
+  - *A constant weapon name.* There is no menu value with the localized name: `weaponname()` is the internal
+    name (`kriss_mp`), so the name shows when C1 shows it.
+- **C.** `hud_style.c` only gained the list entry (`5:sm2`), `HUD_STYLE_MAX` 5 and the dvar description; the look
+  needs no new C. The option rows read `k33_hudStyleList`, so the HUD style drop-downs in `OptionView_video.as` and
+  `MainPause.as` list SM2 without change. Its label `K33UI_HUD_STYLE_SM2` ("SM2" in both languages) is in
+  `codol_*_ui`.
+- **Live** (2026-11-13, own client copy `D:\CoD\k33_sm2_client`, throwaway profile `edtest`, Afghan bot Team
+  Deathmatch, 1920x1080). Seen working:
+  - the panel, clip / reserve after firing, the grenade count dropping to 0 with its icon dimming, and the weapon
+    icon (Vector, MG4);
+  - the top score with the enemy fill and the "losing" caption after a death (0 : 100), the emblem and the timer;
+  - the name, and everything hiding while dead;
+  - the HUD-style row of the pause menu showing "SM2";
+  - `set k33_hudStyle 0` / `5` switching in the same frame.
+
+  Not checked live: 720p, Search and Destroy / Sabotage (the kept stock items), free-for-all, an akimbo weapon.
+
 ## Rebuilding
 
 - `python tools/build_hud_styles.py` regenerates `zones/hud_styles_postgfx_mp/{menufile,material}`,
@@ -351,6 +415,7 @@ Captures are in the session scratch folder (`hud_impl/shots`), not in the reposi
   first run indexes 238 zones (about 5 minutes) and a cold `export-textures` can otherwise look hung.
 - Adding or removing a shipped style changes three places that the test compares: the sources, `HUD_STYLE_LIST` in
   `hud_style.c`, and the expected list in `tests/test_hud_styles.py`.
+- SM2: edit `sources/sm2.menu` and run `python tools/build_hud_styles.py`; no install or dumper is needed.
 
 ## Integration notes
 

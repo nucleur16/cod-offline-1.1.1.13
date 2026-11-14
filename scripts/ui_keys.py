@@ -178,6 +178,7 @@ NAMED = {
     "K33UI_HUD_STYLE_V26": ("Version 2.6", "2.6 版", "codo.gfx"),
     "K33UI_HUD_STYLE_V33": ("Version 3.3", "3.3 版", "codo.gfx"),
     "K33UI_HUD_STYLE_V35": ("Version 3.5", "3.5 版", "codo.gfx"),
+    "K33UI_HUD_STYLE_SM2": ("SM2", "SM2", "codo.gfx"),
 }
 
 

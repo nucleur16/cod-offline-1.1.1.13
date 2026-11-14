@@ -9,8 +9,9 @@
  * shipped style, a style's items while it is that style's number. C1 evaluates those expressions every frame, so
  * a "set k33_hudStyle N" (the pause and options menus' setdvar) changes the HUD at once; no menu is reloaded.
  *
- *   k33_hudStyle       int 0..4, archived (flag 0x1): 0 stock 1.1.1.13, 1 v12 (1.2.1.12), 2 v26 (2.6.9.7),
- *                      3 v33 (3.3.3.3), 4 v35 (3.5.2.6). The numbers are fixed whether or not a style ships.
+ *   k33_hudStyle       int 0..5, archived (flag 0x1): 0 stock 1.1.1.13, 1 v12 (1.2.1.12), 2 v26 (2.6.9.7),
+ *                      3 v33 (3.3.3.3), 4 v35 (3.5.2.6), 5 sm2 (authored as .menu source, an MW2-like HUD).
+ *                      The numbers are fixed whether or not a style ships.
  *   k33_hudStyleList   string, read only by convention (flag 0, as voice.c's k33_voiceInputList): the styles this
  *                      build ships as "number:id" pairs, HUD_STYLE_LIST. The menus cycle through these.
  * A saved k33_hudStyle that is not in the list is set back to 0, logged once per value.
@@ -55,8 +56,8 @@
 #define HUD_STYLE_LIST_DVAR "k33_hudStyleList"
 /* tools/build_hud_styles.py style_list(): the styles whose sources are in zones/hud_styles_postgfx_mp/sources
  * (tests/test_hud_styles.py compares the two). */
-#define HUD_STYLE_LIST      "0:stock;2:v26;3:v33"
-#define HUD_STYLE_MAX       4
+#define HUD_STYLE_LIST      "0:stock;2:v26;3:v33;5:sm2"
+#define HUD_STYLE_MAX       5
 #define HUD_STYLE_REGISTER_STRING_VA 0x00624740u
 #define HUD_FIRE_DVAR       "k33_hudFireType"
 #define HUD_ASSISTS_DVAR    "k33_hudAssists"
@@ -230,7 +231,7 @@ static void HudStyleRegister(void)
             g_voiceHudOk ? "shared with voice.c" : "missing (clip count and gauge are not drawn)");
     }
     g_hudStyleDvar = C1RegisterInt(HUD_STYLE_DVAR, 0, 0, HUD_STYLE_MAX, 0x1,
-                                   "HUD style: 0 stock 1.1.1.13, 1 1.2.1.12, 2 2.6.9.7, 3 3.3.3.3, 4 3.5.2.6 (k33_hudStyleList: the ones in this build)");
+                                   "HUD style: 0 stock 1.1.1.13, 1 1.2.1.12, 2 2.6.9.7, 3 3.3.3.3, 4 3.5.2.6, 5 SM2 (k33_hudStyleList: the ones in this build)");
     ((RegStr)(DWORD_PTR)HUD_STYLE_REGISTER_STRING_VA)(HUD_STYLE_LIST_DVAR, HUD_STYLE_LIST, 0,
                                                       "HUD styles in this build as number:id pairs (read only)");
     if (!g_hudStyleDvar) {
