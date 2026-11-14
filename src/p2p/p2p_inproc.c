@@ -575,6 +575,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     BOOL ready = FALSE, quitAsked = FALSE;
     int matchState = 0;
     int emptyPolls = 0;
+    char current[160] = ""; /* the running match's identity (P2PStatusIdentity), to follow a map change */
 #if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_MONITOR_DECL */
     DWORD lastPoll = 0, lastAnswer = 0, lastStats = GetTickCount(), quitAt = 0;
 #else /* K33_SHIPPING_TIMING_MONITOR_DECL */
@@ -615,11 +616,27 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         /* A late matching reply must not reopen Ready once shutdown starts.
          * It also must not reset quitAt on every failed startup poll. */
         if (quitAsked) continue;
-        char reply[2048], line[512];
+        char reply[2048], line[512], ident[160];
+        int kind = P2P_STATUS_BAD;
         if (P2PRcon(c.port, password, "sh1x_status", reply, sizeof(reply), 400) > 0 &&
-            P2PStatusLine(reply, line, sizeof(line)) &&
-            P2PStatusMatches(line, c.map, c.sessionMap, c.gametype, c.zoneType)) {
+            P2PStatusLine(reply, line, sizeof(line)))
+            kind = P2PStatusClassify(line, c.map, c.sessionMap, c.gametype, c.zoneType);
+        /* Readiness is first confirmed only by the requested match (EXACT): that proves the server loaded what the
+         * room asked for. Once ready, a running match on another map/gametype is still this session's match (a
+         * console or rcon `map`): the session follows it, and it answers, so it is not hung. Requiring the
+         * requested map here ended every session 20 s after a map change ("stopped answering"). */
+        if (kind == P2P_STATUS_EXACT || (ready && kind == P2P_STATUS_LIVE)) {
             lastAnswer = now;
+            P2PStatusIdentity(line, ident, sizeof(ident));
+            if (strcmp(ident, current)) {
+                if (current[0]) {
+                    Log("p2p in-process: the match changed from %s to %s; the session follows it", current, ident);
+                    /* a new level is a new match: an earlier level exit does not end this one */
+                    matchState &= ~2;
+                    emptyPolls = 0;
+                }
+                lstrcpynA(current, ident, sizeof(current));
+            }
             if (OfflineLobbyActive() && tracked && PiMatchOverPoll(line, &matchState, &emptyPolls)) {
                 /* offline: one match per session; the room is re-armed for the next Ready (p2p.c) */
                 InterlockedExchange(&g_piMatchOver, 1);
@@ -658,7 +675,10 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
             quitAt = now;
         } else if (ready) {
             /* Match loading, an ended/parked map, or a missed response revokes
-             * readiness immediately; only fresh exact status restores it. */
+             * readiness immediately; only a fresh running status restores it.
+             * A server with no level (IDLE: running=0, map=none after a failed
+             * map load) answers but is not refreshed: nobody can play on it, so
+             * it is still ended 20 s later, as a silent one is. */
             P2PSetState(P2P_STARTING, NULL);
         }
     }

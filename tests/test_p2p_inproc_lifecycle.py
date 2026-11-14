@@ -34,7 +34,7 @@ static long g_piGapsOver1s;
 static DWORD g_piInitMs,g_piFirstFrameMs;
 static const char *kPiState[]={"none","starting","running","ended","crashed"};
 typedef struct {DWORD delta; int response,stop,yielding,expected;} Step;
-static Step steps[40];
+static Step steps[80];
 static int count,index_next,current_response,queries;
 /* Explicit leaves: the actual monitor is extracted below. Offline mode (always on in the product)
  * ends the session when the hosted match is over (p2p_inproc_retire.c PiMatchOverPoll). */
@@ -65,7 +65,10 @@ static void PiMemory(SIZE_T *a,SIZE_T *b) {*a=*b=0;}
 static int P2PRcon(int port,const char *pw,const char *cmd,char *out,size_t size,int timeout) {
     (void)port;(void)pw;(void)cmd;(void)timeout;++queries;
     if(!current_response)return 0;
-    snprintf(out,size,"map=mp_rust session_map=mp_rust gametype=war type=mp running=1 parked=%d",current_response==2);
+    /* 1 the requested match, 2 parked, 3 a running match after a map change, 4 no level (map=none) */
+    if(current_response==3)snprintf(out,size,"map=mp_backlot_sh session_map=mp_rust gametype=dm type=mp running=1 parked=0");
+    else if(current_response==4)snprintf(out,size,"map=none session_map=none gametype=war type=mp running=0 parked=0");
+    else snprintf(out,size,"map=mp_rust session_map=mp_rust gametype=war type=mp running=1 parked=%d",current_response==2);
     return (int)strlen(out);
 }
 static int P2PStatusLine(const char *reply,char *line,size_t size) {
@@ -121,7 +124,25 @@ int main(void) {
     match_over_at=1;
     add(1,0,0,P2P_READY);add(1,0,0,P2P_READY);
     assert(monitor()==count);assert(!g_piQuit&&!g_piMatchOver);
-    puts("PASS: seven actual monitor-loop lifecycle/recovery scenarios (offline match over included)");
+    reset("a map change on a ready host is followed, never ended as hung");
+    add(1,0,0,P2P_READY);
+    for(int n=0;n<45;++n)add(3,0,0,P2P_READY);
+    add(4,0,0,P2P_STARTING);add(3,0,0,P2P_READY);
+    for(int n=0;n<15;++n)add(3,0,0,P2P_READY);
+    assert(monitor()==count);assert(!g_piQuit);assert(strstr(g_p2p.status,"map=mp_backlot_sh"));
+    reset("another map before the first ready never confirms the requested match");
+    add(3,0,0,P2P_STARTING);add(1,0,0,P2P_READY); /* the fixture's ready timeout is 2 s */
+    assert(monitor()==count);assert(!g_piQuit);
+    reset("a ready host left with no level is still ended at 20 s");
+    add(1,0,0,P2P_READY);add(3,0,0,P2P_READY);
+    for(int n=0;n<10;++n)add(4,0,0,P2P_STARTING);
+    for(int n=0;n<24;++n)add(4,0,0,P2P_FAILED);
+    assert(monitor()<count);assert(g_piQuit);assert(clock_now==58000);
+    reset("offline: the match over after a map change still ends the session once");
+    offline_on=1;match_over_at=3;
+    add(1,0,0,P2P_READY);add(3,0,0,P2P_READY);add(3,0,0,P2P_STOPPING);add(3,0,0,P2P_STOPPING);
+    assert(monitor()==count);assert(g_piQuit&&g_piMatchOver);assert(queries==3);
+    puts("PASS: eleven actual monitor-loop lifecycle/recovery scenarios (offline match over and map changes included)");
     return 0;
 }
 '''

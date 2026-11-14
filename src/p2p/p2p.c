@@ -574,6 +574,7 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
 
     BOOL ready = FALSE;
     DWORD lastPoll = 0, lastAnswer = 0;
+    char current[160] = ""; /* the running match's identity (P2PStatusIdentity), to follow a map change */
     for (;;) {
         DWORD w = WaitForSingleObject(pi.hProcess, ready ? P2P_STATUS_MS : 500);
         if (w == WAIT_OBJECT_0) break;
@@ -591,11 +592,20 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
         DWORD now = GetTickCount();
         if (now - lastPoll < (ready ? P2P_STATUS_MS : 1000)) continue;
         lastPoll = now;
-        char reply[2048], line[512];
+        char reply[2048], line[512], ident[160];
+        int kind = P2P_STATUS_BAD;
         if (P2PRcon(c.port, password, "sh1x_status", reply, sizeof(reply), 400) > 0 &&
-            P2PStatusLine(reply, line, sizeof(line)) &&
-            P2PStatusMatches(line,c.map,c.sessionMap,c.gametype,c.zoneType)) {
+            P2PStatusLine(reply, line, sizeof(line)))
+            kind = P2PStatusClassify(line,c.map,c.sessionMap,c.gametype,c.zoneType);
+        /* The first Ready needs the requested match (EXACT); after it, a running match on another map/gametype (a
+         * console/rcon `map`) is followed, not taken for a hung server (p2p_inproc.c, the same rule). */
+        if (kind == P2P_STATUS_EXACT || (ready && kind == P2P_STATUS_LIVE)) {
             lastAnswer = now;
+            P2PStatusIdentity(line, ident, sizeof(ident));
+            if (strcmp(ident, current)) {
+                if (current[0]) Log("p2p: the match changed from %s to %s; the host follows it", current, ident);
+                lstrcpynA(current, ident, sizeof(current));
+            }
             EnterCriticalSection(&g_p2pLock);
             lstrcpynA(g_p2p.status, line, sizeof(g_p2p.status));
             if (!ready) g_p2p.readyMs = now - t0;
@@ -621,8 +631,9 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
             break;
         } else if (ready) {
             /* Stop releasing lobby Start while the previously ready match is
-             * loading/recovering or has stopped answering. A later exact
-             * status restores READY; the existing 20-second failure gate stays. */
+             * loading/recovering or has stopped answering. A later running
+             * status restores READY; the existing 20-second failure gate stays
+             * (a server with no level, running=0, is not refreshed). */
             P2PSetState(P2P_STARTING, NULL);
         }
     }
