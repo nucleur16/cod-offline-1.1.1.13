@@ -73,8 +73,6 @@ python -B docs/baselines/20261024-gfx-date-time/run_regressions.py \
 "$OUT/p2p_match_options_test.exe"
 "$BIN/gcc.exe" -std=c99 -O2 -Wall -Wextra -Werror tests/test_p2p_status.c -o "$OUT/p2p_status_test.exe"
 "$OUT/p2p_status_test.exe"
-"$BIN/gcc.exe" -std=c99 -O2 -Wall -Wextra -Werror tests/test_p2p_intent_heartbeat.c -o "$OUT/p2p_intent_heartbeat_test.exe"
-"$OUT/p2p_intent_heartbeat_test.exe"
 # managed_quick_windows.c needs its .qa section at 0x700000, where C1's room code is: as the first section of an
 # image based at 0x6F0000 with 64 KB section alignment (.init is placed first in .text).
 "$BIN/gcc.exe" -O0 -Wall -Wextra -c tests/managed_quick_windows.c -o "$OUT/managed_quick.o"

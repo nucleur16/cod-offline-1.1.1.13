@@ -46,19 +46,4 @@ static const char *P2PParseRoomContext(int argc, const char *const *argv, P2PRoo
     } else if (!strcmp(next.category,"coop")) strcpy(next.gametype,"coop");
     *out=next;return NULL;
 }
-/* UI hints only. The owned SDK independently compares the authenticated room.
- * MP currentLevel is a league; it must never become a Zombies/bot tier. */
-static const char *P2PParseRoomContextV2(int argc,const char *const *argv,P2PRoomContext *out)
-{
-    P2PRoomContext next;const char *bad;
-    if(argc!=5)return "The selected match options are missing.";
-    bad=P2PParseRoomContext(3,argv,&next);if(bad)return bad;
-    if(!strcmp(argv[3],"0")&&!strcmp(argv[4],"-1")) { next.difficultyPresent=0;next.difficulty=-1; }
-    else if(!strcmp(argv[3],"1")&&argv[4]&&argv[4][0]>='0'&&argv[4][0]<='3'&&!argv[4][1]) {
-        next.difficultyPresent=1;next.difficulty=argv[4][0]-'0';
-    } else return "The selected match difficulty is invalid.";
-    if((!strcmp(next.category,"zm")&&!next.difficultyPresent)||
-       (!strcmp(next.category,"mp")&&next.difficultyPresent))return "The selected difficulty does not belong to this mode.";
-    *out=next;return NULL;
-}
 #endif

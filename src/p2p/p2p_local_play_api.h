@@ -25,21 +25,15 @@ typedef struct K33LocalPlayIntentInfo {
     int ready;                     /* the host answers with exactly this selection */
     int failed;                    /* the choice cannot be hosted (see error) */
     int port;                      /* loopback UDP port the host will listen / listens on */
-    int protocol;                  /* 0 legacy, 1/2 local startup IPC (the production protocol never arms here) */
+    int protocol;                  /* always 0: the launcher startup protocols 1-3 were removed */
     char map[64], session_map[64], gametype[32], type[16];
-    char state[16];                /* the intent file's state=: idle armed starting ready stopping exited failed */
+    char state[16];                /* idle armed starting ready stopping exited failed */
     char error[256];
 } K33LocalPlayIntentInfo;
 
-/* -> 1 and *out when Kernel33 has published an intent snapshot, else 0. The same fields as the
- * intent file <state>\p2p_host.<uid16hex>.txt, without the two-second file heartbeat. */
+/* -> 1 and *out when Kernel33 has published an intent snapshot (p2p.c, P2PLobbyTick), else 0.
+ * No intent file is written for it. */
 int K33LocalPlayIntent(K33LocalPlayIntentInfo *out);
-
-/* The lobby is handing START_GAME for exactly this selection to the local owner. -> 1 when the
- * launch request was raised (or that selection's host was already started), 0 when the owner's
- * current intent is not this enabled, armed selection: the lobby must then withhold START_GAME.
- * Never substitute another server for a refused Local Play room. */
-int K33LocalPlayLaunch(unsigned long long owner_uid, const char *session_map, const char *gametype, const char *type);
 
 /* Offline mode: every room the local player owns is hosted by the embedded server; there is no
  * choice to tick. The in-process lobby tells Kernel33 the selection it resolved for the owner's room

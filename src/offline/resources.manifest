@@ -11,7 +11,12 @@
 
 # publisher files the client fetches at login (service 10 task 7)
 mp_playlists_shipRetail_cb2.info
-configs_s.info
+# configs_s.info: this repository's own copy. The Python lobby's has [adnews] / [promotion] / [hotitem] sections
+# that point the client's HTTP fetcher (C1's libcurl) at http://127.0.0.1:8787/feed/..., the Python admin UI.
+# Offline there is no such server, so the sections are left out (an absent `enable_adnews` is "off":
+# C1 0x005BC58B) and the client opens no connection for news or banners. Plain text beside it; made with
+# the Python lobby's notices/codol_cfgcrypt.py (AES-CTR, IV from the length).
+configs_s.info = repo:src/offline/resources/configs_s.info
 questionnaire.info
 activities.info
 mp_rewardlists.info

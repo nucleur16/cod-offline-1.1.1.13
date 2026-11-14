@@ -1,0 +1,8 @@
+[ui_config]
+enable_elementprint=0
+enable_cyborg=1
+enable_survival=1
+enable_market=1
+enable_matchbuttonpos=0
+enable_recentmet=1
+lockLowSpecVideoSetting=0

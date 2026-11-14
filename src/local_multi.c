@@ -42,13 +42,6 @@ static HANDLE LocalQaOpenDwauth(const char* legacyPath) {
     // ReOpenFile provides a separate file position for every CRT descriptor.
     return ReOpenFile(g_localQaRoute.route,GENERIC_READ,FILE_SHARE_READ,FILE_FLAG_SEQUENTIAL_SCAN);
 }
-static int LocalQaReadRoute(char *data,DWORD capacity,DWORD *bytes) {
-    HANDLE file=LocalQaOpenDwauth("dwauth.ini");*bytes=0;
-    if(file==INVALID_HANDLE_VALUE)return 0;
-    DWORD size=GetFileSize(file,NULL);int ok=size&&size<=capacity&&ReadFile(file,data,size,bytes,NULL)&&*bytes==size;
-    if(!CloseHandle(file))ok=0;
-    return ok;
-}
 static HANDLE WINAPI LocalQaCreateFileA(LPCSTR path,DWORD access,DWORD share,LPSECURITY_ATTRIBUTES security,
                                        DWORD disposition,DWORD flags,HANDLE templateFile) {
     if(path&&!lstrcmpiA(path,"dwauth.ini")&&LocalQaRouteState()!=1) {

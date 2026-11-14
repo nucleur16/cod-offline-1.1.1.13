@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "../src/p2p/p2p_verified_scripts.c"
 
 static int Readable(const void *p,unsigned n) { return p!=NULL && n>0; }
 #if CODOL_LOCAL_TESTING

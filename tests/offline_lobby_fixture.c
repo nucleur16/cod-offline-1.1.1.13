@@ -35,14 +35,14 @@ static void WriteCode(void *dst, const void *src, SIZE_T n) { memcpy(dst, src, n
 /* p2p.c, reduced to what offline_lobby.c reads and calls. */
 #define FIXTURE_HOST_PORT 17761 /* what "p2p_host.ini" configures here */
 typedef struct P2PConfig {
-    char state[MAX_PATH], profile[MAX_PATH], rconFile[MAX_PATH], rollout[MAX_PATH], netIp[64], mode[16], extra[512];
+    char state[MAX_PATH], profile[MAX_PATH], rconFile[MAX_PATH], netIp[64], mode[16], extra[512];
     int port, admission;
 } P2PConfig;
 static void P2PDefaults(P2PConfig *c) { memset(c, 0, sizeof(*c)); c->port = FIXTURE_HOST_PORT; lstrcpyA(c->state, "X:\\lobby\\state"); }
 static void OfflineP2PConfig(P2PConfig *c);
 static void P2PLoadIni(P2PConfig *c)
 {
-    lstrcpyA(c->profile, "X:\\lobby\\resources"); lstrcpyA(c->rollout, "X:\\lobby\\rollout.txt"); lstrcpyA(c->extra, "+set x 1");
+    lstrcpyA(c->profile, "X:\\lobby\\resources"); lstrcpyA(c->extra, "+set x 1");
     OfflineP2PConfig(c); /* as p2p.c's P2PLoadIni ends */
 }
 /* p2p_local_play_api.h doubles: the published intent, the lobby's room selection and its leave. */
@@ -52,11 +52,6 @@ static int intent_published, auto_calls, auto_answer, leave_calls;
 static char auto_seen[200];
 static unsigned long long leave_seen;
 int K33LocalPlayIntent(K33LocalPlayIntentInfo *out) { if (!intent_published) return 0; *out = intent; return 1; }
-int K33LocalPlayLaunch(unsigned long long owner_uid, const char *session_map, const char *gametype, const char *type)
-{
-    (void)owner_uid; (void)session_map; (void)gametype; (void)type;
-    abort(); /* the in-DLL lobby names its selection with K33LocalPlayAuto; it never raises a bare launch */
-}
 int K33LocalPlayAuto(unsigned long long owner_uid, const char *session_map, const char *gametype, const char *type, int difficulty,
                      int launch, int *port, char *error, int error_size)
 {
@@ -255,7 +250,7 @@ int main(int argc, char **argv)
     /* THE MATCH HOST PORT: the configured one when it is free, else a free one; held reserved from now
      * until the host is about to bind it, so a second client cannot be given the same port. */
     P2PConfig c; P2PDefaults(&c); P2PLoadIni(&c);
-    assert(!strcmp(c.state, started.state) && !strcmp(c.profile, started.matchProfile) && !c.rollout[0] && !c.extra[0] &&
+    assert(!strcmp(c.state, started.state) && !strcmp(c.profile, started.matchProfile) && !c.extra[0] &&
            !strcmp(c.netIp, "127.0.0.1") && !strcmp(c.mode, "inprocess") && c.admission == 1);
     assert(c.port == g_ofl.hostPort && started.hostPort == g_ofl.hostPort);
     if (ini3999) {

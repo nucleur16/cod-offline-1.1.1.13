@@ -1069,7 +1069,7 @@ refuse empty/unselected inventories. The lobby Host and pending-restart paths
 now select the in-process host. The full PE32 client DLL linked, SHA256
 `cca78352548d7ce210d1ea755f25468b0d73097ba4db377a0cb822b2580fc90d`;
 local and shipping policy fixture translation units compiled to PE/i386 objects
-but were not executed under Windows. See `docs/P2P_VERIFIED_SCRIPTS_LOCAL.md`.
+but were not executed under Windows. (`docs/P2P_VERIFIED_SCRIPTS_LOCAL.md` and the verified-script code were removed in the offline cleanup.)
 The candidate has not been staged or run in C1. It remains local, and the
 same-IP shared-key first-connect identity and protected C1 parser gates remain
 unresolved.

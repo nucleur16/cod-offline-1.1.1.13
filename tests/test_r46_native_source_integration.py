@@ -89,21 +89,6 @@ class NativeR46Source(unittest.TestCase):
  def test_patchdir_size_query_is_diagnostic_but_header_read_stays(self):
   text=(ROOT/'src/kernel33.c').read_text();self.assertRegex(text,r'#if CODOL_DIAGNOSTICS\s+DWORD size = GetFileSize\(f, NULL\);\s+#endif')
   shipping=gate_project(function(text,'LoadPatchDir'),'CODOL_DIAGNOSTICS',False);self.assertNotIn('GetFileSize(',shipping);self.assertIn('ReadFile(f, hdr, sizeof(hdr), &got, NULL)',shipping);self.assertIn('CloseHandle(f)',shipping)
- def test_guest_dispatch_queued_loopback_only_and_original_currentness_checks(self):
-  text=(ROOT/'src/p2p/p2p_guest_binding.c').read_text();body=function(text,'P2PGConnectDispatchTick')
-  self.assertIn('connect 127.0.0.1:%u\\n',body);self.assertEqual(body.count('C1CbufAddText(line)'),1);self.assertEqual(body.count('P2PGNativeCurrent()'),2);self.assertEqual(body.count('P2PGRoomCurrent()'),2)
-  self.assertIn('connect_spent,1,0',body);self.assertIn('P2PGConnectCommandExists()',body);self.assertIn('QUEUED only',text)
-  self.assertTrue(pinned_function('src/p2p/p2p_guest_binding.c','P2PGConnectDispatchTick',body))
-  for old,new in (('P2PGNativeCurrent()','TRUE'),('P2PGRoomCurrent()','TRUE'),('connect 127.0.0.1:%u','connect 192.0.2.1:%u'),('connect_spent,1,0','connect_spent,0,0')):
-   mutant=body.replace(old,new,1);self.assertNotEqual(mutant,body);self.assertFalse(pinned_function('src/p2p/p2p_guest_binding.c','P2PGConnectDispatchTick',mutant))
-  self.assertNotIn('C1QueueSet("ui_p2p_ready","1")',text);self.assertIn('C1QueueSet("ui_p2p_ready","0")',text)
-  shipping=gate_project(text,'CODOL_LOCAL_TESTING',False);self.assertNotIn('C1CbufAddText(line)',shipping);self.assertIn('P2PGuestThread(LPVOID ignored){(void)ignored;return 1;}',shipping)
- def test_guest_wire_sizes_and_bound_dispatch_not_ready_authority(self):
-  header=(ROOT/'src/p2p/p2p_guest_binding_wire.h').read_text()
-  for name,n in (('P2PG_PACKET_SIZE',608),('P2PG_ENVELOPE_SIZE',688),('P2PG_ACK_SIZE',76),('P2PG_DISPATCH_SIZE',88),('P2PG_QUEUED_SIZE',80)):self.assertRegex(header,r'#define '+name+r' '+str(n)+r'u')
-  text=(ROOT/'src/p2p/p2p_guest_binding_wire.c').read_text();body=function(text,'P2PGuestConnectParse');self.assertIn('v->connect_dispatch!=1',body);self.assertIn('p2pg_u64(p+76)!=p2pg_u64(v->packet+88)',body);self.assertIn('p2pg_u32(p+84)',body)
-  self.assertIn('x==p2pg_u16(v->packet+516)',body);self.assertIn('x<1024u||x>65535u',body)
-
 class ProductionTestSurfaces(unittest.TestCase):
  def setUp(self):
   self.kernel=(ROOT/'src/kernel33.c').read_text()

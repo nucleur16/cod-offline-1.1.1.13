@@ -12,15 +12,8 @@ mutex override.
 
 ## Existing launcher upgrade
 
-`K33_LAUNCHER_HOST_SHA256` optionally pins a 64-character lowercase SHA-256 of
-the staged `TCLS/LauncherHost.pending.exe`. An unset pin makes the bridge inert.
-The bridge runs before game initialization, verifies the staged hash and the
-actual parent launcher's path and process creation time, and starts that staged
-launcher's after-exit installer. It neither downloads files nor requests
-elevation or firewall changes. The old launcher closes normally; the installer
-replaces it, keeps a rollback copy, and reopens it. The new launcher owns future
-updates. Its installed-hash receipt prevents this one-time bridge from applying
-an older staged launcher over a later successful update.
+Removed: the one-time launcher bridge (`src/launcher_update_bridge.c`, `K33_LAUNCHER_HOST_SHA256`) is gone. This
+client is offline only and is not started or updated by a launcher.
 
 Build without installing with `K33_NO_COPY=1 sh scripts/build.sh`. The controller and
 parity entry points use the same checked build profile and dependency closure.

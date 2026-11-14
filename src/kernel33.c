@@ -111,6 +111,9 @@ static void WriteCode(void *dst, const void *src, SIZE_T n)
     FlushInstructionCache(GetCurrentProcess(), dst, n);
 }
 
+/* Nothing in this process reaches a non-loopback address (every build profile; docs/OFFLINE_LOBBY.md). */
+#include "egress_gate.c"
+
 /* ---- the C1.exe reproduction ------------------------------------------------------------ */
 
 /* The image travels inside this DLL as RCDATA 1 ("unpacked.z": 16-byte header, then zlib). */
@@ -465,19 +468,10 @@ static void AttachRawMouse(HWND hwnd)
     Log("raw mouse: attached to window %p", hwnd);
 }
 
-/* An overlay that owns the mouse: no view turn, no menu cursor and no recentering while it is open, so the
- * Windows cursor moves freely over it. Nothing sets it at present (the in-game console takes the keyboard only). */
-static volatile LONG g_k33OverlayMouse;
-
 static int __cdecl MouseEventHook(int x, int y, int dx, int dy)
 {
     HWND hwnd = *(HWND *)(DWORD_PTR)MAIN_HWND_VA;
     if (hwnd && hwnd != g_rawHwnd) AttachRawMouse(hwnd);
-    if (g_k33OverlayMouse) {
-        InterlockedExchange(&g_rawDx, 0);
-        InterlockedExchange(&g_rawDy, 0);
-        return 0;
-    }
     if (g_rawActive) {
         dx = InterlockedExchange(&g_rawDx, 0);
         dy = InterlockedExchange(&g_rawDy, 0);
@@ -1647,11 +1641,10 @@ static void PatchGbkInput(void)
 #include "discord.c"
 
 /* Shared plumbing for the features ported from codol-classic's d3d9.dll: a main-thread tick list (k33tick.c, chained
- * after voice.c's and discord.c's Com_EventLoop hooks), an HTTPS/SHA-256 helper (k33http.c) and a JSON reader (k33json.c). */
+ * after voice.c's and discord.c's Com_EventLoop hooks) and a SHA-256 helper (k33sha256.c). */
 #include "k33tick.c"
 #include "locale_switch.c" /* k33_language: the language, changed while the game runs (after voice.c, k33tick.c) */
-#include "k33http.c"
-#include "k33json.c"
+#include "k33sha256.c"
 
 /* codol_quick_native_room_context for the shared movie's Quick Play room checks: see quick_room.c. */
 #if !CODOL_KERNEL_ROOM_CONTEXT
@@ -1660,17 +1653,14 @@ static void PatchGbkInput(void)
 /* The THEATRE screen (codol-classic's theatre playback): see theatre.c. */
 #include "theatre.c"
 #include "hud_style.c"   /* k33_hudStyle / k33_hudStyleList: the selectable HUD style (docs/HUD_STYLES_20261112.md) */
-/* UTF-8 player names and an optional display-name service: see name_display.c. */
+/* UTF-8 player names: see name_display.c. */
 #if !CODOL_KERNEL_NAME_DISPLAY
 #include "name_display.c"
 #endif
-/* Local verified SDK -> immutable hosted-script source handoff. */
-#include "p2p/p2p_verified_scripts.c"
 #include "local_log_flush.c"
 #include "gfx/localized_substitution.c"
 #include "gfx/localized_numeric.c"
 /* Player-hosted matches: the sh1x server as a child of the host's client (p2p.c, docs/P2P_HOSTING.md). */
-#include "p2p/p2p_production_kernel.h"
 #include "p2p/p2p.c"
 /* The sh1x server inside the client, on the game thread (p2p_inproc.c, feat/p2p-inprocess). */
 #include "p2p/p2p_inproc.c"
@@ -1678,7 +1668,6 @@ static void PatchGbkInput(void)
 #include "p2p/p2p_assets.c"
 /* UDP only with lobby-vouched hosts (hostgate.c): the P2P trust requirement. */
 #include "p2p/hostgate.c"
-#include "p2p/p2p_production_kernel.c"
 /* Offline mode: the Demonware lobby inside the client (offline_lobby.c, offline/, docs/OFFLINE_LOBBY.md). */
 #include "offline_lobby.c"
 /* Reject malformed top-level DemonWare packet lengths in the exact C1 parser. */
@@ -1705,10 +1694,8 @@ static void PatchGbkInput(void)
 #include "guards/party_session_refresh_guard.c"
 
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
-#include "gfx/news_refresh.c"
 #include "gfx/gfx_date_time.c"
 #include "gfx/gfx_local_operands.c"
-#include "launcher_update_bridge.c"
 #if CODOL_KERNEL_NAME_DISPLAY
 #include "kernel/kernel_name_display.c"
 #endif
@@ -1717,7 +1704,9 @@ static void PatchGbkInput(void)
 #endif
 static void __cdecl TakeOver(void)
 {
-    if (TryLauncherUpgrade()) ExitProcess(0);
+    if (!EgressGateArm())
+        Fatal("The offline network gate could not be installed, so the client does not start. "
+              "See Kernel33_egress.log (next to the game's exe).");
     LoadUnpackedImage();
     MatchC1SectionFlags();
     FillImports();
@@ -1790,7 +1779,6 @@ static void __cdecl TakeOver(void)
     PatchCapacityQueueWait();
     PatchInitialRoomOwner();
     PatchRoomRosterRoles();
-    PatchNewsRefresh();
     PatchLoopFxCatchUp();
     PatchPatchDir();
     PatchLocalizePool();
@@ -1994,6 +1982,9 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved)
             g_supportedBuild ? "" : ", NOT 1.1.1.13: passing through untouched");
 #endif
         if (g_supportedBuild) AddVectoredExceptionHandler(1, FaultHandler);
+        if (g_supportedBuild) EgressGateAttach(); /* before any other module of the install is loaded */
+    } else if (reason == DLL_PROCESS_DETACH) {
+        if (g_supportedBuild) EgressGateSummary();
     }
     return TRUE;
 }

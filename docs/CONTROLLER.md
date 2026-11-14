@@ -4,8 +4,8 @@ Gamepad play for codoMP_client_shipRetail.exe 1.1.1.13, added by Kernel33 (`src/
 `src/kernel33.c` after `src/audio/voice.c`, installed by `InstallController()` in `TakeOver`). Every patch is
 byte-checked against the running exe; a mismatch is logged to `Kernel33.log` and that part stays off.
 
-Build: `PATH=/c/msys64/mingw32/bin:$PATH sh scripts/build-controller.sh` writes `build/Kernel33_controller.dll` and copies
-it nowhere. Kill switch: `+set gpad_enabled 0` on the command line installs nothing; `gpad_enabled 0` at run
+Build: part of every `scripts/build.sh` DLL (`K33_NO_COPY=1 sh scripts/build.sh` writes `build/Kernel33.dll` and
+copies it nowhere). Kill switch: `+set gpad_enabled 0` on the command line installs nothing; `gpad_enabled 0` at run
 time stops all pad input.
 
 ## 1. What C1 still has
@@ -83,7 +83,7 @@ mouse via `0x5F3900`, keys via `0x4931E0` / UI_KeyEvent `0x5F3760`.
 
 - **Backend: SDL2 2.32.10 GameController**, linked statically from the official
   `SDL2-devel-2.32.10-mingw.tar.gz` (i686 `libSDL2.a`, SHA-256
-  `83a5d74012311edc3c0d40ea6faecbe57ad692aa033fa5dc273cc937e3938ff2`; `scripts/build-controller.sh` fetches it into
+  `83a5d74012311edc3c0d40ea6faecbe57ad692aa033fa5dc273cc937e3938ff2`; `scripts/build.sh` fetches it into
   `third_party/` and checks it). Link line:
   `-Ithird_party/SDL2-2.32.10/i686-w64-mingw32/include ... -Lthird_party/SDL2-2.32.10/i686-w64-mingw32/lib -lSDL2
   -lsetupapi -lcfgmgr32 -lversion -loleaut32 -luuid ... -limm32 -lgdi32 -lole32 -lwinmm` (no SDL2.dll).

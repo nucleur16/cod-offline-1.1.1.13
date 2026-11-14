@@ -626,9 +626,16 @@ static std::string ReadyPress(Server &s, Conn &c, uint64_t rid, uint32_t trailer
      * it; the client's dwRoomInfo gets that same name (match_instances._localhost_placement, Python
      * 8381ddd: the selection sent on is the host's). */
     const std::string &gt = route.local && !route.launchGametype.empty() ? route.launchGametype : sel.gametype;
+    /* The JoinResponse empties the receiver's member roster (it must carry 0 members: C1 Com_Error 702), which
+     * the owner's room view shows after the match as a card of placeholder texts. The owner of a multiplayer
+     * room whose own dwRoomInfo already names this map does not need it: its START_GAME reads that map. */
+    bool ownRoom = route.owner && sel.roomMap && (sel.type == "mp" || sel.type == "zm") && sel.sessionMap == sel.map;
     if (!map.empty()) {
         Bytes jr = BuildJoinResponseRecord(map, gt), mr = BuildRoomInfoRecord(map, gt);
-        c.Queue(MapPushPayload(jr, rid, 0, kSenderName, trailer), Fmt("push 7 SET_MAP(joinresp) %s/%s, %uB", map.c_str(), gt.c_str(), (unsigned)jr.size()));
+        if (!ownRoom)
+            c.Queue(MapPushPayload(jr, rid, 0, kSenderName, trailer), Fmt("push 7 SET_MAP(joinresp) %s/%s, %uB", map.c_str(), gt.c_str(), (unsigned)jr.size()));
+        else
+            note += " | no JoinResponse: the owner's own room already names " + map;
         c.Queue(MapPushPayload(mr, rid, ROOM_ID, kSenderName, trailer), Fmt("push 7 SET_MAP %s/%s, %uB", map.c_str(), gt.c_str(), (unsigned)mr.size()));
         note += Fmt(" | SET_MAP -> %s gametype=%s playlist=%d %s", map.c_str(), gt.c_str(), sel.playlist, sel.resolved ? "RESOLVED" : "DEFAULTED");
     }
@@ -668,7 +675,9 @@ static Reply RoomMessages(Server &s, Conn &c, const Vals &args)
             if (own) sender = own;
         }
         c.Queue(Push7(sender, name, rid, blob, trailer), Fmt("push 7 relay, %uB", (unsigned)blob.size()));
-        rep.note += Fmt(" -> relaying %uB as sender=%llu name='%s'", (unsigned)blob.size(), (unsigned long long)sender, name.c_str());
+        std::string tl;
+        for (std::set<int>::const_iterator it = types.begin(); it != types.end(); ++it) tl += Fmt("%s%d", tl.empty() ? "" : ",", *it);
+        rep.note += Fmt(" -> relaying %uB [typeIds %s] as sender=%llu name='%s'", (unsigned)blob.size(), tl.c_str(), (unsigned long long)sender, name.c_str());
 
         /* Fan-out to the other members, stamped with the true sender. */
         uint64_t ownUid = ConnUid(s, c);

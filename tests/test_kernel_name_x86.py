@@ -1,7 +1,6 @@
 """Execute the compiled C migration and legacy thunks in Unicorn, not Windows.
 
-Native guard bytes come from the owned exact C1 image. Windows, HTTP, TLS,
-Unicode conversion and GFx are explicit doubles; actual Windows/gameplay and
+Native guard bytes come from the owned exact C1 image. Windows, Unicode conversion and GFx are explicit doubles; actual Windows/gameplay and
 remote-service qualification are separate release gates.
 """
 from pathlib import Path
@@ -110,8 +109,6 @@ class Machine:
    if self.fail_alloc:self.ret(0,12);return
    out=self.allocated;self.allocations[out]=arg(3);self.allocated+=(arg(3)+15)&~15;self.ret(out,12);return
   if name=='HeapFree':self.frees.append(arg(3));assert arg(3) in self.allocations;del self.allocations[arg(3)];self.ret(1,12);return
-  if name=='CreateEventW':self.ret(33,16);return
-  if name=='CreateThread':self.worker=arg(3);self.ret(0 if self.fail_thread else 34,24);return
   if name=='CloseHandle':self.ret(1,4);return
   if name in ('lstrcpyW','lstrcatW'):
    text=(self.text(arg(1),True) if name=='lstrcatW' else '')+self.text(arg(2),True);self.write(arg(1),(text+'\0').encode('utf-16le'));self.ret(arg(1),8);return
@@ -134,8 +131,6 @@ class Machine:
    if self.file_fail=='rename':self.ret(0,12);return
    self.files[target]=self.files.pop(source);self.ret(1,12);return
   if name=='DeleteFileW':path=self.text(arg(1),True);self.deleted.append(path);self.files.pop(path,None);self.ret(1,4);return
-  if name=='SetEvent':self.events+=1;self.ret(int(self.setevent),4);return
-  if name=='WaitForSingleObject':self.waits+=1;self.ret(0 if self.waits==1 else 0xffffffff,8);return
   if name.startswith('AcquireSRWLock'):self.lock+=1;self.ret(0,4);return
   if name.startswith('ReleaseSRWLock'):self.lock-=1;assert self.lock>=0;self.ret(0,4);return
   if name in ('memcpy','memset'):
@@ -161,19 +156,6 @@ class Machine:
     self.ret(out_length,32 if wide else 24)
    except (UnicodeError,ValueError):self.ret(0,32 if wide else 24)
    return
-  if name.startswith('WinHttp'):
-   self.http_calls.append(name);self.now=(self.now+self.http_advance)&0xffffffff
-   if name=='WinHttpCloseHandle':self.closed.append(arg(1));self.ret(1,4);return
-   widths={'WinHttpOpen':20,'WinHttpSetTimeouts':20,'WinHttpConnect':16,'WinHttpOpenRequest':28,'WinHttpSetOption':16,'WinHttpSendRequest':28,'WinHttpReceiveResponse':8,'WinHttpQueryHeaders':24,'WinHttpReadData':16}
-   if name==self.http_fail:self.ret(0,widths[name]);return
-   if name=='WinHttpOpen':self.ret(1,20);return
-   if name=='WinHttpConnect':assert self.text(arg(2),True)=='codol.kewkew.org' and arg(3)==443;self.ret(2,16);return
-   if name=='WinHttpOpenRequest':self.request_path=self.text(arg(3),True);assert arg(7)&0x800000;self.response_at=0;self.ret(3,28);return
-   if name=='WinHttpSetOption':assert arg(2)==88 and self.get(arg(3))==0;self.ret(1,16);return
-   if name=='WinHttpQueryHeaders':self.put(arg(4),self.status);self.ret(1,24);return
-   if name=='WinHttpReadData':
-    b=self.body[self.response_at:self.response_at+arg(3)];self.response_at+=len(b);self.write(arg(2),b);self.put(arg(4),len(b));self.ret(1,16);return
-   self.ret(1,widths[name]);return
   raise AssertionError('Unmodeled API '+name)
  def invoke(self,name,*values,callee_cleanup=0):
   sp=STACK+0xf000;self.put(sp,STOP)
@@ -193,7 +175,7 @@ class Machine:
 
 class Tests(unittest.TestCase):
  def test_install_exact_guard_and_every_guard_byte_mutation(self):
-  m=Machine();self.assertEqual(m.invoke('Install'),1);self.assertTrue(m.worker);self.assertEqual(m.protects,18);self.assertEqual(set(m.protections.values()),{0x20})
+  m=Machine();self.assertEqual(m.invoke('Install'),1);self.assertEqual(m.protects,18);self.assertEqual(set(m.protections.values()),{0x20})
   for index,(at,body) in enumerate(patch_guards):
    replacement=bytes(m.u.mem_read(at,len(body)));target=(at+5+struct.unpack('<i',replacement[1:5])[0])&0xffffffff
    self.assertEqual(target,m.get(exports['hooks']+index*4));self.assertEqual(replacement[0],0xe9 if index in (0,3,4) else 0xe8)
@@ -203,9 +185,8 @@ class Tests(unittest.TestCase):
  def test_install_transaction_faults_restore_every_original_site(self):
   for fail in range(1,19):
    m=Machine();before=m.original();m.fail_protect={fail};self.assertEqual(m.invoke('Install'),0);self.assertEqual(m.original(),before);self.assertTrue(all(p==0x20 for p in m.protections.values()))
-  for mode in ('flush','worker'):
-   m=Machine();before=m.original();m.fail_flush={1} if mode=='flush' else set();m.fail_thread=mode=='worker'
-   self.assertEqual(m.invoke('Install'),0);self.assertEqual(m.original(),before);self.assertEqual(set(m.protections.values()),{0x20})
+  m=Machine();before=m.original();m.fail_flush={1}
+  self.assertEqual(m.invoke('Install'),0);self.assertEqual(m.original(),before);self.assertEqual(set(m.protections.values()),{0x20})
   m=Machine();m.fail_flush={1,2};self.assertIsNone(m.invoke('Install'));self.assertEqual(m.terminated,0x4b4e4402)
  def test_exact_local_identity_ttl_clan_and_uid_fallback(self):
   m=Machine();self.assertEqual(m.invoke('Install'),1);m.seed();source=m.string('Alpha');self.assertEqual(m.text(m.invoke('Alias',source)),'中文'.encode())
@@ -225,8 +206,7 @@ class Tests(unittest.TestCase):
    m=Machine();m.invoke('Install');m.seed();m.fail_alloc=failure=='allocation';m.fail_fls_set=failure=='assignment';source=m.string('Alpha')
    self.assertEqual(m.invoke('Alias',source),source);self.assertEqual(m.allocations,{});self.assertEqual(len(m.frees),int(failure=='assignment'));self.assertEqual(m.fls,0);m.thread_exit();self.assertEqual(len(m.frees),int(failure=='assignment'))
   m=Machine();m.fail_fls_alloc=True;self.assertEqual(m.invoke('Install'),0);self.assertEqual(m.protects,0);self.assertEqual(m.slot_frees,0)
-  m=Machine();m.fail_thread=True;self.assertEqual(m.invoke('Install'),0);self.assertEqual(m.slot_frees,1);self.assertEqual(m.fls_callback,0);self.assertEqual(m.allocations,{})
-  self.assertEqual(m.invoke('Install'),0);self.assertEqual(m.slot_frees,2);self.assertEqual(m.fls_callback,0);self.assertEqual(m.frees,[])
+  m=Machine();m.fail_protect={1};self.assertEqual(m.invoke('Install'),0);self.assertEqual(m.slot_frees,1);self.assertEqual(m.fls_callback,0);self.assertEqual(m.allocations,{})
   m=Machine();m.fail_pin=True;self.assertEqual(m.invoke('Install'),0);self.assertEqual(m.fls_callback,0);self.assertEqual(m.protects,0)
  def test_chinese_native_buffers_and_english_unchanged(self):
   m=Machine();m.invoke('Install');m.seed();text=m.string(b'\x14MP_CONNECTED\x15'+ '中文'.encode());expected=b'\x14MP_CONNECTED\x15'+'中文'.encode('cp936')
@@ -237,40 +217,6 @@ class Tests(unittest.TestCase):
   m.put(MEM+0x30c,0);source=m.string('中文');m.invoke('Obituary',source);self.assertEqual(m.text(source),'中文'.encode())
   m.put(MEM+0x30c,11);row=MEM+0x400;m.write(row,struct.pack('<Q',42));m.string('Alpha',row+8)
   self.assertEqual(m.invoke('Lobby',row+8,MEM+0x600),1);self.assertEqual(m.text(MEM+0x600),'中文'.encode('cp936'));self.assertEqual(m.text(row+8),b'Alpha')
- def test_main_thread_sampling_worker_backpressure_refresh_and_identity_invalidation(self):
-  m=Machine();m.invoke('Install');m.invoke('Tick');self.assertEqual(m.events,1);self.assertEqual(m.invoke('Busy'),1);self.assertEqual(m.invoke('Pending'),1)
-  for now in (1,249,250,10000,30000):m.now=now;m.invoke('Tick')
-  self.assertEqual(m.events,1);self.assertEqual(m.invoke('WorkerOnce'),0);self.assertEqual(m.invoke('Busy'),0);self.assertEqual(m.invoke('Pending'),0)
-  self.assertEqual(m.text(m.invoke('Alias',m.string('Alpha'))),'中文'.encode())
-  m.now=30250;m.invoke('Tick');self.assertEqual(m.events,2)
-  m.string('Other',MEM+0x200);m.now=30500;m.invoke('Tick');self.assertEqual(m.invoke('Alias',m.string('Alpha')),MEM+0x1000)
-  m.waits=0;m.invoke('WorkerOnce');self.assertEqual(m.invoke('Alias',MEM+0x1000),MEM+0x1000)
-  m=Machine();m.invoke('Install');m.setevent=False;m.invoke('Tick');self.assertEqual(m.invoke('Busy'),0)
-  m.now=999;m.invoke('Tick');self.assertEqual(m.events,1);m.now=1249;m.setevent=True;m.invoke('Tick');self.assertEqual(m.events,2)
- def test_theatre_generation_transition_zero_wrap_rejects_pending_name_reply(self):
-  # The worker keeps its original request identity. A newer Theatre generation
-  # invalidates that reply even when canonical name and UID are unchanged.
-  for previous,current in ((0,1),(1,0),(0xffffffff,0),(0,0xffffffff)):
-   with self.subTest(previous=previous,current=current):
-    m=Machine();self.assertEqual(m.invoke('Install'),1)
-    m.invoke('TheatreSession',previous);m.invoke('Tick');self.assertEqual(m.events,1)
-    m.invoke('TheatreSession',current);m.now=250;m.invoke('Tick')
-    m.waits=0;self.assertEqual(m.invoke('WorkerOnce'),0)
-    source=m.string('Alpha');self.assertEqual(m.invoke('Alias',source),source)
-    m.now=500;m.invoke('Tick');self.assertEqual(m.events,2)
-    m.waits=0;self.assertEqual(m.invoke('WorkerOnce'),0)
-    self.assertEqual(m.text(m.invoke('Alias',m.string('Alpha'))),'中文'.encode())
-
- def test_unchanged_zero_and_max_theatre_generation_keep_pending_name_reply(self):
-  # Zero is a real initial/wrapped generation, not an unavailable sentinel.
-  for generation in (0,1,0xffffffff):
-   with self.subTest(generation=generation):
-    m=Machine();self.assertEqual(m.invoke('Install'),1)
-    m.invoke('TheatreSession',generation);m.invoke('Tick')
-    m.invoke('TheatreSession',generation);m.now=250;m.invoke('Tick')
-    self.assertEqual(m.events,1);self.assertEqual(m.invoke('WorkerOnce'),0)
-    self.assertEqual(m.text(m.invoke('Alias',m.string('Alpha'))),'中文'.encode())
-
  def test_utf8_conversion_native_custom_abi_and_gfx_thiscall(self):
   m=Machine();source=m.string('ASCII');out=MEM+0x500;m.u.reg_write(UC_X86_REG_ESI,0xabcdef);self.assertEqual(m.invoke('Convert',out,source),out)
   at,registers,sp=m.native_calls[-1];self.assertEqual(at,0x5c7340);self.assertEqual(registers[UC_X86_REG_ESI],out);self.assertEqual(m.get(sp+4),source);self.assertEqual(m.u.reg_read(UC_X86_REG_ESI),0xabcdef)
@@ -302,14 +248,6 @@ class Tests(unittest.TestCase):
     self.assertEqual(end,STOP);self.assertEqual(m.u.reg_read(UC_X86_REG_ESP),sp+4);expected=initial[:];expected[0]=1;self.assertEqual(after,expected);self.assertEqual(m.text(MEM+0x600),'中文'.encode('cp936'))
    else:
     self.assertEqual(end,STOP);self.assertEqual(m.u.reg_read(UC_X86_REG_ESP),sp+4);self.assertEqual(after[4:],initial[4:]);self.assertEqual(after[0],MEM+0x600)
- def test_http_exact_identity_body_budget_failures_and_cleanup(self):
-  for failure in (None,'WinHttpOpen','WinHttpSetTimeouts','WinHttpConnect','WinHttpOpenRequest','WinHttpSetOption','WinHttpSendRequest','WinHttpReceiveResponse','WinHttpQueryHeaders','WinHttpReadData'):
-   m=Machine();m.http_fail=failure;key=MEM+0x400;m.write(key,b'Alpha\0'+b'\0'*58+struct.pack('<QQI',42,1,0));out=MEM+0x600
-   self.assertEqual(m.invoke('Fetch',key,out),int(failure is None));self.assertEqual(m.text(out),'中文'.encode() if failure is None else b'')
-   if failure is None:self.assertEqual(m.request_path,'/api/community/display-name?identity=Alpha');self.assertEqual(m.closed,[3,2,1])
-  for body in (b'x'*4097,b'{"identity":"Other","uid":"42","name":"Alias"}'):
-   m=Machine();m.body=body;m.write(MEM+0x400,b'Alpha\0'+b'\0'*58+struct.pack('<QQI',42,1,0));self.assertEqual(m.invoke('Fetch',MEM+0x400,MEM+0x600),0);self.assertEqual(m.closed,[3,2,1])
-  m=Machine();m.http_advance=2000;m.write(MEM+0x400,b'Alpha\0'+b'\0'*58+struct.pack('<QQI',42,1,0));self.assertEqual(m.invoke('Fetch',MEM+0x400,MEM+0x600),0)
  def test_legacy_video_mode_fallback_atomic_write_failures_and_no_frame_io(self):
   path='E:\\AWS Test\\codol_video_mode.cfg'
   for content,expected in [(b'0\n',0),(b'1\n',1),(b'x',1),(b'',1)]:

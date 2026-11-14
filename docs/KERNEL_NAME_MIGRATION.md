@@ -1,5 +1,11 @@
 # Kernel33 name-display cutover prototype
 
+**Offline-only fork (2026-11-13):** the display-name lookup (`src/kernel/kernel_name_network.c`, its HTTP worker,
+event and request scheduling) was removed, so this migration fetches no alias any more; its UTF-8 / CP936 name
+paths and the alias plumbing remain. The exe hash uses `K33Sha256Hex` (`src/k33sha256.c`) instead of the removed
+launcher bridge's helper. The HTTP / worker statements below are history, and the private-image x86 test lost
+those cases.
+
 The opt-in `K33_KERNEL_NAME_DISPLAY=1 K33_KERNEL_ROOM_CONTEXT=1 K33_NO_COPY=1`
 build owns all nine retained NameDisplay patch sites in Kernel33. Both flags
 default to zero. It resolves the Windows system d3d9 explicitly instead of the

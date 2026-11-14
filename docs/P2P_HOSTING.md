@@ -1,5 +1,11 @@
 # Player-hosted (P2P) matches through Kernel33
 
+**Offline-only fork (2026-11-13):** this is the design record of the online player-hosting work. What this client
+still has is the in-process host on 127.0.0.1 for the built-in lobby (`docs/OFFLINE_LOBBY.md`). The host gate is
+loopback only (`HostGateVouch` and every other vouching path were removed), and the intent / descriptor / rollout
+files, the launcher startup protocols 1-3 and the verified-script service are gone - see `docs/OFFLINE_LOBBY.md`,
+"Removed now that the client is offline only". Statements below about those are history.
+
 Security follow-up: [public-RCE review and host-filter repairs](P2P_PUBLIC_RCE_AUDIT_20261028.md).
 Remote player hosts remain unqualified. Lobby authentication is necessary but
 does not make host-controlled packets safe for C1's unresolved native parsers.
@@ -224,7 +230,7 @@ anyone who can forge it can admit themselves.
   `+set k33_p2pHost 1` on the command line starts hosting while the client loads.
 - Settings come from `<exe dir>\p2p\p2p_host.ini` (`key=value`). The defaults keep everything
   under `<exe dir>\p2p\`. Keys: `exe`, `basepath`, `home`, `scripts`, `state`, `profile`,
-  `rcon_file`, `rollout`, `map`, `gametype`, `zone_type`, `session_map`, `net_ip`, `port`,
+  `rcon_file`, `map`, `gametype`, `zone_type`, `session_map`, `net_ip`, `port`,
   `bots`, `bot_difficulty`, `admission_required`, `developer`, `ready_timeout`, `extra`. Map,
   gametype and difficulty must be plain identifiers, the same rule as the lobby handoff, so they
   can never add console commands.
@@ -232,9 +238,9 @@ anyone who can forge it can admit themselves.
   `+set codol_hostParentPid <client pid>`. The server branch makes it quit cleanly once that
   process ends.
 - The rcon secret is shared with the lobby through `<state>\native_server_rcon.txt` (read, or
-  created with 16 random bytes). The host thread polls `sh1x_status` over loopback; at the first
-  answer it writes `<state>\p2p_host.txt` and, with `rollout=`, the line `extra <port>` into the
-  lobby's `match_rollout.txt`. Both are removed when the server ends.
+  created with 16 random bytes). The host thread polls `sh1x_status` over loopback. (It used to write
+  `<state>\p2p_host.txt` and, with `rollout=`, the line `extra <port>` into the lobby's
+  `match_rollout.txt`; both were removed with the online paths.)
 
 `src/p2p/hostgate.c`: see the hard requirement above.
 
@@ -242,7 +248,7 @@ anyone who can forge it can admit themselves.
 
 The server is a git submodule of this repo at `server/sh1x`
 (`git@github.com:nucleur16/codol_1.1.1.13_alpha_server.git`), pinned to the server's
-`feat/p2p-hosting` commit. Its sources are not copied here. `scripts/build.sh` / `scripts/build-dev.sh` run
+`feat/p2p-hosting` commit. Its sources are not copied here. `scripts/build.sh` runs
 `git submodule update --init server/sh1x` (not recursive). The server's own submodules: only
 `bin/home/codol_rawfiles` (CODOL-EMU/13-rawfiles) is needed, and only to stage a hosted server.
 `plugins/cod4x_mysql_plugin` is a gitlink with no URL; a bare recursive update stops on it, so

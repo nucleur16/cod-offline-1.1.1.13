@@ -17,7 +17,7 @@ def run(name,argv):
     print(name+': PASS')
 try:
     with tempfile.TemporaryDirectory(prefix='p2p-bounded-audit-') as tmp:
-        for fixture in ('test_p2p_match_options.c','test_p2p_status.c','test_p2p_intent_heartbeat.c','bd_packet_guard_fixture.c','snapshot_guard_fixture.c','join_party_guard_fixture.c','challenge_sender_guard_fixture.c'):
+        for fixture in ('test_p2p_match_options.c','test_p2p_status.c','bd_packet_guard_fixture.c','snapshot_guard_fixture.c','join_party_guard_fixture.c','challenge_sender_guard_fixture.c'):
             binary=str(Path(tmp)/fixture.removesuffix('.c'))
             run(fixture+' compile',['gcc','-m32','-std=gnu99','-O1','-g','-Wall','-Wextra','-Werror','-Wno-unused-parameter','-fno-pie','-no-pie','-fsanitize=address,undefined','-fno-omit-frame-pointer',str(ROOT/'tests'/fixture),'-o',binary])
             run(fixture+' run',[binary])

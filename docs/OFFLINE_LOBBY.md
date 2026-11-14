@@ -5,7 +5,8 @@ the lobby and every run uses it. The client never contacts a Demonware lobby, a 
 
 * **Start it:** run `codoMP_client_shipRetail.exe` with no arguments (optionally
   `+set dw_username <name>` to pick the profile). The game needs the install, `Kernel33.dll` and the
-  staged in-process match server (`p2p\sh1x_host.dll`, `main\sh1x_rawfiles`, `p2p\survival_maps.txt`).
+  staged in-process match server (`p2p\sh1x_host.dll`, `p2p\home\main\sh1x_svr_scripts.iwd`,
+  `main\sh1x_rawfiles`, `p2p\survival_maps.txt`).
 * **The profile** is the folder `<exe dir>\players\<name>\` (`mpdata`, `mpdata_s`, `account.txt`); the name
   is `dw_username`, else `name` of the optional `k33_offline.ini`, else `Player`.
 * **Every match is hosted by the embedded server** on 127.0.0.1. There is no LOCAL PLAY choice: every
@@ -47,8 +48,8 @@ neither needed nor an off switch).
 If the lobby cannot be provided (no free port can be had, an explicit port is taken, C1's bytes at the
 NAT-port site differ, the client was started by a launcher-managed Local Play session), the client
 stops with a message box naming `Kernel33.log`, where the reason is. It never falls back to another
-lobby: the route files on disk are not read, the host gate vouches loopback only, and `k33http.c` (the
-HTTP client under the optional theatre / display-name services) accepts loopback URLs only.
+lobby: the route files on disk are not read, the host gate lets UDP through to and from loopback only, and
+the client has no HTTP client left (the theatre / display-name services that used one were removed).
 
 ## What happens at start-up (`src/offline_lobby.c`)
 
@@ -60,7 +61,7 @@ All of it in `TakeOver`, before C1's entry point:
    (`OfflineHostPortRelease`, one line in `src/p2p/p2p.c` before its own port check), so nothing else on the
    PC - a second offline client in particular - is given the same port between start-up and the match
    launch. `OfflineP2PConfig` writes the chosen port into every `P2PLoadIni` result, which is where
-   the armed intent (`p2p_host.txt`, `K33LocalPlayIntent().port`), the launch observation
+   the armed intent (`K33LocalPlayIntent().port`), the launch observation
    (`P2PArmLaunch` / `P2PLaunchObserve` in hostgate's `sendto`), the host's own bind and the lobby's
    START_GAME address all take it from.
 2. **The listener on a free port.** `DwOfflineStartServer` (C boundary `src/offline/dw_api.h`) starts one
@@ -109,8 +110,7 @@ The lobby thread never calls into C1. It reads Kernel33's published local-host s
 `K33LocalPlayIntent()`, names the selection of the owner's room with `K33LocalPlayAuto()` (arm, and
 launch when START_GAME is handed over) and reports a left room with `K33LocalPlayLeave()`
 (`p2p_local_play_api.h`, `docs/P2P_DEFERRED_HOST_START.md`); all are safe on any thread and start
-nothing themselves. No intent file is read by anything (p2p.c still writes its `p2p_host.<uid>.txt`;
-nobody consumes it).
+nothing themselves. No intent file is written or read.
 
 ## Level gates
 
@@ -275,7 +275,6 @@ whenever the client is not running:
 ```
 p2p\offline\
   securitykey.bin, game_admissions.txt, native_server_rcon.txt     the match host's contract with the lobby
-  p2p_host.txt, p2p_host.<uid>.txt, p2p_runtime.txt                p2p.c's intent / runtime files
   mpdata_s.<uid>, owned_items.<uid>.txt                            the player's blob and purchases, exported at a room start
   match_report*.json, match_report.journal.log                     the match host's reports, archived as they are folded
   match_report.state.json                                          which reports were applied (so none is credited twice)
@@ -537,17 +536,31 @@ through Kernel33's `k33_shot.req` in `D:\CoD\k33work\m14surv\shots\`):
 | Leave that room | `p2p: the owner left the room (lobby); disarmed`; intent `state=idle`, no selection, nothing running |
 | Spec Ops > Boot Camp > Start > Ready | `coop_training_mp_killhouse_sh/coop/coop -> armed`, host up, in the mission (`g04`) |
 | sockets of the client (netstat, by pid) | lobby and STUN on 127.0.0.1 / 127.0.0.2 only; the match host on 127.0.0.1:17760 and, after the `net_ip6 ::1` change, `[::1]:17760` (before it: `[::]:17760`, TCP and UDP); C1's own game socket `0.0.0.0:30001` |
-| outbound traffic seen | no connection to any lobby host (`dwauth.ini` / `stun.ini` on disk point at 192.0.2.1 and were not used). `hostgate: refused datagram to 239.255.255.250:1900` (C1's UPnP search, refused, 7 times in one run). One UDP socket of the process is connected to `116.130.229.213:8000`: it is not C1's (C1's `sendto` goes through the host gate) - one of the Tencent DLLs the client loads (`TenProxy` / `TerSafe` / `GbSpy` / `BugTrace`); whether a datagram left was not measured |
+| outbound traffic seen | no connection to any lobby host (`dwauth.ini` / `stun.ini` on disk point at 192.0.2.1 and were not used). `hostgate: refused datagram to 239.255.255.250:1900` (C1's UPnP search, refused, 7 times in one run). One UDP socket of the process is connected to `116.130.229.213:8000`: it is not C1's (C1's `sendto` goes through the host gate) - found later to be C1's own Tencent QoS (`ied-tqos.qq.com`), refused since by the egress gate ("Network egress" below) |
 
 Not shown live on this branch: the ticker line of a refused start on screen; a refused start in a
 playlist room; a second match in one client run (after the first match the client came back to a room
 view with placeholder texts whose Ready did nothing - not investigated); Survival on a usermap.
 
-**XP from a real match was not obtained** (earlier branches): the test client's player is driven by posted clicks and
-key messages and made no multiplayer kill (the bots of this server build stand idle), and zombies
-kills carry no XP in the server's report. The XP / rank path of the live run is therefore the
-hand-written report above plus the 33 differential scenarios; everything else of the write-back (GP,
-lifetime members, kill counters, challenge progress) came from the embedded server's own reports.
+**XP from a real match** (2026-11-13, shadow `ofl3\client`, diagnostic build): Killhouse TDM against three
+training bots armed from the server pack's `mp/botclasstable.csv` (below). The player holds fire (a console
+`bind k +attack` and posted key presses) while the bots are moved, one direction after another, into the
+line of fire around him over loopback rcon (`codol_setpos <bot> x y z`, a server command that needs no
+cheats; the script is `D:\CoD\k33work\ofl3\ofl3_xp2.py`). Result, the server's own report: kills 0,
+assists 1, score 20, `"xp": {"kill_xp": 25, "total": 25}` - folded at once: `+25 XP level 1->1 (total 25, 25
+into rank, 1975 to next) | +100 GP`. The after-action Statistics shows Combat XP 25 (`ofl3\shots\t3_d04.png`);
+`players\edtest\mpdata_s` read back by `dwtest --career` gives `total_xp 25`; the rank bar shows 25/2000 after
+returning to the lobby (`t3_e01_c.png`) and after a restart (`t3_e02_c.png`). Nothing on the Kernel33 or lobby
+side was missing: the server measures XP as the session rank-experience delta (`_rank.gsc` giveRankXP ->
+`codol_match_report.c` `client_total_xp`) and the lobby folds it. A kill (rather than an assist) was not
+landed: the bot moved into the crosshair is shot but rarely finished by the burst.
+Not tried: `codol_explodeprobe <player> frag_grenade_mp` (a player-owned grenade): it crashed the level both
+times (`Invalid animation condition client` on the bot's death, then a `_weapons.gsc` runtime error
+`cannot set field of removed entity`); it is a developer probe, not a game path.
+
+**Zombies kills carry no XP**: a Zombies match with 5 kills reported `"xp": {"total": 0}` and the "Defeat!"
+screen shows `MP: 0 ZM: 0` - the Zombies scripts award points (score 2840) but never rank XP. A server-side gap
+(its Zombies GSC would have to call the rank script's XP award); nothing in Kernel33 or the lobby drops it.
 
 One of the six starts of the first build of this branch refused offline mode with `could not get a
 free loopback port`. Cause, found afterwards: that build took the system's choice of a TCP port
@@ -592,23 +605,27 @@ read with the Python lobby's codec from a copy of `players\edtest\mpdata`):
   hard-coded `cmd mr %i 13 class0` (`0x0071A06E`), but menu slot 13 is not the class menu on this
   host (the reply does nothing), and when C1 sends it was not determined. So the patch fixes a real
   defect that matches the report's words; that it is the path the report came from is an inference.
-* **Bots** (seen in the host log, not on screen): `CoDOL bot class N: mp/botclasstable.csv has no
-  member loadoutPrimary; answering none` for every member, then `CoDOL weapon '_mp' is not in any
-  mounted zone; using defaultweapon_mp`: in this shadow the bots are handed the default weapon.
-  Whether a dedicated host run finds that table was not checked.
+* **Bots without bodies** (fixed): `CoDOL bot class N: mp/botclasstable.csv has no member loadoutPrimary;
+  answering none` for every member, `CoDOL appearance: character N has no available models`, then
+  `publication failed; keeping appearance`: the bots spawned with `defaultweapon_mp` and only their names
+  were drawn (no body, head, world weapon or shadow). Cause: the test shadow had no server pack
+  `p2p\home\main\sh1x_svr_scripts.iwd`. The host reads `mp/botclasstable.csv` with `FS_ReadFile` from
+  that pack (sh1x `codol_bot_loadout.c`), so without it every class answered `none`; the same run also
+  routed bots over the level's raw `node_*` records (732 on mp_killhouse_sh) because the pack's waypoint
+  and node files were missing too. With the pack in place the warnings are gone and the bots carry
+  their class weapons and characters. `P2PCheck` now refuses to host when neither the pack nor a loose
+  `p2p\home\main\mp\botclasstable.csv` exists ("server pack missing"), so a shadow or an install
+  without it fails visibly instead of starting a match with invisible bots.
 * Not done: a sweep of every primary weapon, and the comparison with a dedicated `codol_dedrun` run.
 
 
 ## What still needs the live client
 
-* **XP from kills in a real match** (see above).
-* **XP from kills on this branch**: the Survival match's four kills carried no XP in the server's
-  report either (`+0 XP`).
+* **XP from a kill** (an assist's 25 XP arrived, see above), and XP from Zombies / Survival kills (none
+  is awarded by the server's scripts).
 * **Two offline clients at once on one PC**: the ports are proven free and distinct per listener
   (self-test, and live against dummy sockets on the default ports), but two real clients were not
   started together.
-* **A second match in one client run**: unchanged limitation of the in-process host (one hosted
-  session per client run).
 * **Shipping profile** (`K33_LOCAL_TESTING=0`): builds; not run live.
 * **The LOCAL PLAY box is gone from the UI** (12 November 2026; it was still drawn after the native
   change, inert). `MatchMiniRoomCreatorView` and `MatchMPCTRoomCreatorView_mpcreator` no longer make
@@ -628,12 +645,173 @@ read with the Python lobby's codec from a copy of `players\edtest\mpdata`):
   seen: the Survival creator, a failed start's message box with the new classes. The four
   changed `codo.gfx` classes add to the composition-chain gap (`tests/test_optionview_method.py`):
   they need an owner-reviewed successor stage.
-  loopback, so the THEATRE button's recording service cannot be reached.
-* `src/discord.c` talks to the local Discord client over its named pipe (no socket of its own); it is
-  the one feature left that can make something else (Discord) show the player online.
-* The Python lobby's `CODOL_*` online knobs were never ported; `scripts/build-controller.sh` does not
-  link `src/offline` (it did not link `src/production` before either, i.e. it was already stale).
-* In the UI: the DEV PANEL of the room view.
+* After leaving a zombies room, the Spec Ops room list showed that room as still waiting; not
+  investigated.
+
+
+## Consecutive matches in one client run (`src/p2p/p2p_inproc_retire.c`)
+
+Every match is a fresh server; the spent one is taken down completely, so the next Ready (same room,
+another map, another category) starts a new one in the same client run.
+
+* **Why it could not run twice.** The in-process server cannot be re-initialised (its globals are spent
+  after a quit: server `win32/sys_host.c`), so p2p.c always loaded a fresh copy of `sh1x_host.dll` per
+  session - but the spent copy stayed: its 228 MB image, the hunk and zone memory it `VirtualAlloc`s
+  (measured: about 730 MB private and 1.2 GB of address space per session) and its threads. A second
+  copy does not fit in the 32-bit address space next to C1, so the client refused ("Restart the client
+  before hosting another Local Play match").
+* **The teardown.** Right after `LoadLibrary` of the copy and before `Sh1xHost_Init`, the copy's own import
+  table is pointed at wrappers that record what the server takes from the process (`VirtualAlloc` /
+  `VirtualFree`, `CreateThread`, `_beginthread`, events, files, mappings and views, sockets) and put its
+  `malloc` family on a private heap (a block carries a tag, so a pointer msvcrt allocated still goes back
+  to msvcrt). When the session ends: the game thread is off the server's fiber, the fiber is deleted, the
+  server's remaining threads are ended - each only while it sits in a system call, so no lock of the
+  process heap or the CRT is left owned - its sockets, views and handles are closed, the copy is unloaded,
+  its remaining regions are released, its heap destroyed and the temporary file deleted. If a thread never
+  reaches a wait, nothing is unloaded and the old rule (restart the client) applies for that run.
+* **When a session ends.** Offline, the host is started with `codol_oneShotMatch 1` and `codol_exitToLobby 1`
+  (server `g_sv_main.c` `ExitLevel`: the finished map stays loaded instead of rotating); the status poll ends
+  the session once that level exit was seen and the player has left (no human for three polls, ~6 s), or
+  once nobody has been on it for a minute (back to the lobby mid-match). A short empty gap alone does not
+  end it: during the match's own `map_restart` ("waiting for teams") the server counted no human for several
+  seconds (seen live: a session ended there by an earlier rule). After the teardown the lobby holds the host
+  port again until the next launch (`OfflineHostPortReserve`), so another program cannot take it between two
+  matches (seen live: another client on this PC took 17760 and the next Init failed). Before, the server
+  rotated to the next map at the level exit, C1 followed it for a second, and that map's `disconnect` report
+  credited a **loss** after every match (seen in every earlier live report pair); a Zombies server rotated to
+  another level (`zm_asylum_sh`) whose load stalled the host until the 20 s status watchdog ended it ("Server
+  quit"). The room stays armed (`P2PMatchOverTick`); the next Ready launches a fresh host. A host nobody joins
+  is stopped after 120 s as before, now without the "Restart the client" error.
+* **The room view after the match.** The lobby's typeId-5 JoinResponse (sent with SET_MAP at Ready) must carry
+  an empty roster (a member in it is C1 `Com_Error 702`, Python `docs/join_fix_702.md`); it empties the
+  owner's own member list, which the room view showed after the match as the card's placeholder texts
+  ("Example text", "MAP NAME") with a Ready that sends nothing. The owner of a multiplayer or Zombies room
+  whose descriptor / room info already names the map is no longer sent it (`ReadyPress`, `Selection::roomMap`):
+  its START_GAME reads its own dwRoomInfo (seen live: `map: mp_killhouse_sh type: war`, `map: zm_prototype_sh
+  type: zm`). Co-op, Survival and playlist rooms still get it (their session map is spelled differently), so
+  their room card is still blank after a match; leaving and re-creating the room works.
+
+**Live** (2026-11-13, shadow `ofl3\client`, diagnostic build, one client run; pictures `ofl3\shots\t2_e*`,
+`t2_f*`): Create Room Killhouse TDM, Ready, spawn, match to its time limit, report folded (+13 GP),
+`session taken down`; the same room, map changed to Overgrown, Ready, spawn, match end (+2 GP), taken down;
+Leave, Zombies, Create Room, Ready, spawn in Outpost round 1, killed, "Defeat!" (+2 GP), taken down. Every
+report is a single `gameended` report (no `disconnect` loss). A separate run: Zombies twice from the same
+room (the room card intact between them). Process memory (Get-Process, private / virtual):
+
+| point | private MB | virtual MB |
+|---|---:|---:|
+| main menu after login | 1221 | 1802 |
+| room view after match 1 (Killhouse) | 1512 | 2074 |
+| room view after match 2 (Overgrown) | 1524 | 2081 |
+| main menu before match 3 | 1534 | 2085 |
+| Zombies summary after match 3 | 1504 | 2144 |
+
+Each teardown released 255-290 MB private and 395-460 MB of address space (`session taken down: ... process
+private 1591 -> 1330 MB, address space 2389 -> 1994 MB`); what stays after the first match is C1's own (the
+map zones it holds until the next load). The server image, hunk and threads do not accumulate.
+
+Seen in these runs and not caused by the change: on a busy PC (three other clients running) C1's own load of
+`common_gametype_mp` took 49-74 s on the game thread, during which the in-process server is not ticked; the
+client's connect then timed out ("Unable to connect to host") - twice, both on the first match after start-up.
+
+## Network egress: nothing leaves loopback (`src/egress_gate.c`)
+
+The process - C1, every DLL it loads from the install, the embedded match host and Windows' own HTTP
+stacks inside it - reaches 127.0.0.0/8 and ::1 only. The gate is installed from `DllMain` (before
+any other module of the install is loaded: the exe imports `Kernel33.dll` alone) in **every build
+profile**; there is no dvar, ini key or command-line switch for it. If one of its required hooks cannot
+be installed the client does not start.
+
+* **Layer A, the entry points** (hooked inline, in the system DLL itself, so the caller does not matter -
+  an import slot, a `GetProcAddress` result, a pointer captured earlier, another system DLL):
+  ws2_32 `connect` / `WSAConnect` / `WSAConnectByName*` / `WSAConnectByList` / `WSAJoinLeaf` /
+  `ConnectEx` (handed out by `WSAIoctl`) / `sendto` / `WSASendTo` / `WSASendMsg` (a destination that is
+  not loopback is refused: a connect fails with `WSAENETUNREACH`, a datagram is reported sent and
+  dropped); `bind` (an "any" or LAN address is bound to loopback instead; a socket that sends or
+  connects unbound is bound to loopback first - nothing listens on the network, no firewall prompt);
+  `setsockopt` multicast joins (refused); every name lookup (`gethostbyname`, `getaddrinfo`,
+  `GetAddrInfoW/ExA/ExW`, `gethostbyaddr`, `getnameinfo`, `WSAAsyncGetHostBy*`,
+  `WSALookupServiceBegin*`, dnsapi `DnsQuery_*` / `DnsQueryEx`): literals, `localhost` and this PC's
+  own name pass (Windows answers them from the adapters), any other name fails at once with no DNS /
+  LLMNR / NetBIOS query; WinINet `InternetConnect*` / `InternetOpenUrl*` / `InternetCheckConnection*` /
+  `InternetAttemptConnect`, WinHTTP `WinHttpConnect` / proxy and WPAD lookups, `Netbios`, the ICMP
+  echo functions, and `ShellExecute*` of a web address. DLLs that load later (WinINet, ...) are hooked
+  from the loader's DLL notification.
+* **Layer B, the backstop**: `ntdll!NtDeviceIoControlFile`. At start-up the gate performs each kind of
+  socket operation once against 127.77.33.1 and learns which AFD ioctl carries the destination where
+  (five on Windows 11 26200); an AFD ioctl with a non-loopback destination is then failed with
+  `STATUS_NETWORK_UNREACHABLE`. It fires only if layer A missed a path, and says so in the log; in
+  every run so far it never fired.
+* **The log**: `<exe dir>\Kernel33_egress.log` (every profile; restarted above 512 KB): one line per
+  distinct refused destination with the module that asked (the first caller outside Windows and
+  Kernel33's own import-slot wrappers), one line per loopback address and module, every bind moved to
+  loopback, and a summary at exit.
+* Not covered, by nature: other processes, and a UNC path or remote pipe name handed to a file API
+  (the SMB redirector is kernel code). Nothing in the install's modules names either.
+
+**What tried to talk to where** (static scan of every PE in the install, then live runs of the
+diagnostic and the shipping build, 2026-11-12, shadow `D:\CoD\k33work\ofl3\client`):
+
+| who | what | before | now |
+|---|---|---|---|
+| C1, Tencent QoS (`tqos_*`; the call at `0x00725DC5` right before `Live_Init`) | `gethostbyname("ied-tqos.qq.com")` at start-up, then a UDP socket connected to the result | the socket of the process connected to `116.130.229.213:8000` seen in the last live run (C1's own `sendto` goes through the host gate, so the datagrams of a connected socket did not show there) | lookup refused (`by C1@0x00A535D2`), no socket is created |
+| C1 / the lobby's `configs_s.info` | `[adnews] url = http://127.0.0.1:8787/feed/news` and the promotion / hot-item banner URLs (the Python lobby's admin UI) fetched by C1's libcurl at every front-end entry (`tcp connect 127.0.0.1:8787 by C1@0x009C9875`) | a refused loopback connect per front-end entry | the lobby serves its own `configs_s.info` without those sections (`src/offline/resources/`, embedded): no connection at all; the News pane stays on "Loading, please wait..." as before |
+| C1, DemonWare UPnP (bdUPnP) | SSDP search to `239.255.255.250:1900` | refused by the host gate | still refused by the host gate (2 per run); `bind 0.0.0.0:30001` of C1's game socket is moved to `127.0.0.1:30001` |
+| C1, DemonWare | `WSALookupServiceBegin` enumeration on the default name space (from `gethostbyname("")`) | - | passed (this PC's addresses, no query on the wire) |
+| embedded match host (`k33_sh1x_host_<pid>_<n>.dll`) | `getaddrinfo(<this PC's name>)`, UDP to the client and the lobby on 127.0.0.1 | its IPv6 sockets were on `[::]` until `net_ip6 ::1` | loopback only; its heartbeat thread (`SV_SendHeartbeatThread`) never asked for a master server in these runs |
+| Kernel33's rcon / status probes (`P2PRcon`) | unbound UDP sockets connected to the host | bound by Windows to `0.0.0.0:<ephemeral>` (seen with netstat) | bound to `127.0.0.1` first |
+| TerSafe.dll, TenProxy.dll, GbSpy.dll (loaded by C1), steam_api.dll | anti-cheat / login proxy / crash spy | - | no socket, lookup or HTTP call at all in any run; kept loaded (C1 calls into them), every attempt they could make is refused by the gate |
+| TenSLX.dll, BugTrace.dll (WinINet, `qq.com` URLs), SteamAPIUpdater.dll, UpdateDLLWrapper.dll | Tencent login, crash reporter, updaters | - | never loaded by this client (TenProtect's start routine, which loads them, is replaced by Kernel33's `TakeOver`) |
+
+Live proof (diagnostic build: start, login, menus, Multiplayer front end with the store list, Create
+Room, Ready, a Killhouse match with three training bots to its time limit, the report folded
+(`+43 GP`), back to the lobby, leave the room, quit): `Kernel33_egress.log` lists one refused
+destination (`ied-tqos.qq.com`), no backstop refusal, 20659 loopback operations and one moved bind;
+a once-a-second netstat watch of the pid (`ofl3\logs\t1e_netwatch.log`) saw 18 socket lines, every one
+on 127.0.0.1 / 127.0.0.2 / ::1. The shipping build's run to the menus logged the same refusal and the
+same loopback lines.
+
+## Removed now that the client is offline only
+
+All of this was unreachable once the client became offline only (the `!OfflineLobbyActive()` and launcher-session
+branches never ran) and was deleted in the offline cleanup (commits "Offline cleanup 1".."8"). None of it could take
+the client online; the hosting path (`K33LocalPlayAuto` / `P2PAutoTick` / `P2PLaunchTick` / `P2PHostCurrentRoom` /
+`P2PHostThread` / `P2PInprocRun` / `PiRetire`) is unchanged.
+
+* **Host gate vouching** (`src/p2p/hostgate.c`): `HostGateReadLobbyNames` (dwauth.ini / stun.ini names),
+  `HostGateAllowGateways` (UPnP gateways), `HostGateAllow` / `HostGateVouch`, the resolve thread, the SSDP exception
+  and the `gethostbyname` wrapper. The gate is loopback only: C1's `sendto` / `recvfrom` slots stay wrapped and
+  `P2PLaunchObserve` still sees every loopback datagram C1 sends.
+* **The launcher Local Play protocols**: startup IPC 1 / 2 (`p2p_startup_*`, `p2p_active_*`), the production
+  protocol 3 (`p2p_production_*`, `src/production/`, `src/shared/p2p_win_pipe.c`, the retained SDK, the
+  `K33_P2P_PRODUCTION_POLICY_HEADER` build switch), the Guest binding route (`p2p_guest_binding*`) and
+  `P2PParseRoomContextV2`. `P2PProductionMode()` / `P2PSelectedProtocolMode()` / `P2PGuestRouteMode()` and their
+  branches in p2p.c, p2p_inproc.c and hostgate.c are gone; the protocol-0 path is what is left. A client started
+  by such a launcher session is still refused at start-up (`InstallOfflineLobby`). The UI still sends
+  `p2p_start_intent` / `p2p_cancel_start` (registered as no-ops) and reads `ui_p2p_startup_protocol` (always `0`).
+  `K33LocalPlayLaunch` (no caller) is gone too.
+* **The verified-script service** (`p2p_verified_scripts.c`): offline hosting compiles the installed GSC tree.
+  `local_log_flush.c` (local testing) keeps the launcher flag and pipe/pid parsers it read through it.
+* **Intent, descriptor and rollout files**: `p2p_host.<uid>.txt` / `p2p_host.txt` with their 2 Hz heartbeat
+  (`p2p_intent_heartbeat.h`), `p2p_runtime.txt` and `P2PRollout` (`rollout=` in p2p_host.ini): written, read by
+  nobody.
+* `src/launcher_update_bridge.c` (`TryLauncherUpgrade`, `K33_LAUNCHER_HOST_SHA256`), `src/gfx/news_refresh*`
+  (it re-ran C1's news text request every 60 s; the news pane still shows "Loading, please wait..."),
+  `src/kernel/kernel_name_network.c` (the opt-in name-display migration's `codol.kewkew.org` lookup and its worker).
+* **The theatre recording service and the display-name service** (`src/theatre.c`, `src/name_display.c`): the
+  THEATRE screen lists and plays the recordings on this PC, names keep their UTF-8 display; `k33http.c`'s HTTPS
+  client went with them (`src/k33sha256.c` keeps the SHA-256 helper) and `k33json.c` had no user left.
+* Build scripts: `scripts/build-controller.sh` (a stale side copy) and `scripts/build-parity.sh` (a shipping DLL,
+  which has no parity logger) are deleted; `scripts/build-dev.sh` runs `scripts/build.sh` in the diagnostic profile.
+* The dead `g_k33OverlayMouse` flag in `src/kernel33.c`.
+
+Kept on purpose: `src/discord.c` (Discord's local named pipe; it publishes mode, map, player counts, a start time and
+the art asset - no party, join secret, button or server address; its `getinfo` probe goes to 127.0.0.1 only), the
+packet/parser guards in `src/guards/`, the invitation hold of the UI movie (no C code; the lobby answers friends,
+mail, clan and invitations empty), `p2p_activation_transaction.h` (the in-process server's hook activation), the
+console commands `p2p_room` / `p2p_localhost` / `p2p_start_intent` and the `ui_p2p_*` dvars the UI reads.
+The Python lobby's `CODOL_*` online knobs were never ported. In the UI: the DEV PANEL of the room view is still
+drawn (the LOCAL PLAY boxes are gone, see above).
 
 ## Not done
 

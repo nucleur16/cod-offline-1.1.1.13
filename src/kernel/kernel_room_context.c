@@ -1,4 +1,4 @@
-/* Kernel33-owned room context migration. Include after launcher_update_bridge.c
+/* Kernel33-owned room context migration. Include after k33sha256.c (K33Sha256Hex)
  * and install after the existing voice/Discord tick wrappers. This module is
  * opt-in until the complete proxy/name-display cutover is qualified. */
 #include "kernel_room_policy.h"
@@ -118,7 +118,7 @@ static int InstallKernelRoomContext(void)
     /* No parallel proxy writer, and no install on an approximate build. */
     DWORD path_length=GetModuleFileNameW(NULL,path,MAX_PATH);
     if(!KrcSystemD3D() || (uintptr_t)GetModuleHandleW(NULL)!=0x400000u ||
-       !path_length || path_length>=MAX_PATH || !LauncherBridgeHash(path,digest))return 0;
+       !path_length || path_length>=MAX_PATH || !K33Sha256Hex(NULL,0,path,digest))return 0;
     if(!strcmp(digest,"a5a7b44e66ca72da785eae4319126c23491586dc88dde499e8e6c9cf4bd6a976") &&
        KRC_MATCH(0x70e9f0u,a5a7IsInRoom) && KRC_MATCH(0x70e9b0u,a5a7Membership) &&
        KRC_MATCH(0x6232c0u,a5a7DvarFind) && KRC_MATCH(0x58ba60u,a5a7CbufAdd))g_krcBuild=1;

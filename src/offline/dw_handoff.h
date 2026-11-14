@@ -23,9 +23,10 @@ struct Selection {
     int playlist;           /* -1 = none */
     std::string playlistName, source, playerName;
     bool resolved, rotated;
+    bool roomMap;           /* the map is the room's own (its descriptor or its typeId-15 broadcast named it) */
     int rotationIndex;      /* -1 = not a round-robin pick */
     std::vector<std::string> chain; /* every resolution step, for the log */
-    Selection() : difficulty(-1), playlist(-1), resolved(false), rotated(false), rotationIndex(-1) {}
+    Selection() : difficulty(-1), playlist(-1), resolved(false), rotated(false), roomMap(false), rotationIndex(-1) {}
     std::string Summary() const;
 };
 

@@ -25,26 +25,27 @@ client contacts no lobby, website or launcher.
 src/            everything compiled into Kernel33.dll (C, plus the C++ offline lobby)
   kernel33.c      the DLL itself: a unity build, it #includes the other .c files below
   kernel33.def, kernel33.rc, unpacked.z   exports, and the resource embedded in the DLL (scripts/make_exe.py writes unpacked.z)
-  c1game.c, c1_dvars.h, c1_tables.h, production_profile.h, patch_locale_policy.h, k33tick.c, k33http.c, k33json.c
+  c1game.c, c1_dvars.h, c1_tables.h, production_profile.h, patch_locale_policy.h, k33tick.c, k33sha256.c
                   shared helpers, generated tables and the build profile
   locale_switch.c, locale_switch_policy.h   the language changed while the game runs (k33_language)
-  *.c             features with no family of their own: borderless, discord, usermaps, theatre, name display,
-                  parity logger, scoreboard fix, launcher bridge, offline-mode glue, local-testing helpers
+  hud_style.c     k33_hudStyle: the selectable HUD style (docs/HUD_STYLES_20261112.md)
+  *.c             features with no family of their own: borderless, discord, usermaps, theatre (recordings on this
+                  PC), UTF-8 name display, parity logger, scoreboard fix, offline-mode glue, the egress gate,
+                  local-testing helpers
   console/        the in-game console (console.c, every build), its route to the hosted match server
                   (console_server.c, sh1x_cmds.h) and the diagnostics-only screenshots on its hooks (k33shot.c)
   controller/     gamepad: controller.c, button glyphs (what hints show: controller_glyph_policy.h), the menu cursor
                   snapping (padsnap.c)
   audio/          voice chat and the sound-voice policy / diagnostics
-  p2p/            player-hosted matches: p2p*.c/.h and the host gate (hostgate.c)
-  production/     the production P2P receiver and wire formats (separate objects, linked by scripts/build.sh)
-  shared/         the Windows pipe shared with it
+  p2p/            the in-process match host the built-in lobby starts (p2p.c, p2p_inproc*.c, p2p_assets.c) and the
+                  loopback-only host gate (hostgate.c)
   guards/         bounds guards for C1's packet and party parsers (*_guard.c)
-  gfx/            Scaleform / localization / news repairs (gfx_*, localized_*, news_refresh*)
+  gfx/            Scaleform / localization repairs (gfx_*, localized_*)
   kernel/         the room-context and name-display migration (kernel_*), opt-in
   rooms/          lobby rooms, Quick Match and the survival category
   offline/        the Demonware lobby in C++ (part of every build)
-scripts/        build.sh and its variants (build-dev, build-controller, build-parity, build-server; build-profile.sh and
-                build-offline.inc.sh are sourced by them), and the Python helpers: build_zones.py (patch zones),
+scripts/        build.sh and its variants (build-dev, build-server; build-profile.sh and
+                build-offline.inc.sh are sourced by build.sh), and the Python helpers: build_zones.py (patch zones),
                 make_exe.py, gen_dvars.py, gen_tables.py, ui_keys.py
 docs/           design notes, audits, baselines (docs/baselines/), CONTROLLER.md, PADSNAP.md, PRODUCTION_PROFILE.md
 tests/          source tests and their fixtures (sh tests/run_tests.sh; see "Tests")
@@ -97,7 +98,8 @@ compiles, the UI baseline, the survival, zone-pack and locale checks. Nothing ru
 CI); run it before every merge.
 
 These portable checks are **not** part of `tests/run_tests.sh`; run them by hand as well (they need no game files;
-the `gcc` ones also build with Linux gcc, the last one needs Linux gcc with AddressSanitizer, e.g. in WSL):
+the `gcc` one also builds with Linux gcc, the last two need Linux gcc with AddressSanitizer, e.g. in WSL Ubuntu, and
+`test_p2p_start_intent.py` also its 32-bit libraries for `-m32`):
 
 ```
 python tests/test_quick_host_real_name.py
@@ -110,9 +112,9 @@ python -B tests/test_quiet_diagnostic_paths.py
 python -B tests/test_offline_console.py                   # also run by tests/run_tests.sh
 python -I -S -B tests/test_r46_native_source_integration.py
 python -I -S -B tests/test_playlist_active_ordinal_selector.py
-gcc -std=c99 -O2 -Wall -Wextra -Werror tests/test_guest_binding_wire.c src/p2p/p2p_startup_wire.c src/p2p/p2p_guest_binding_wire.c -o /tmp/guest-binding-wire && /tmp/guest-binding-wire
 gcc -std=c99 -O2 -Wall -Wextra -Werror tests/p2p_activation_transaction_test.c -o /tmp/p2p-activation-transaction && /tmp/p2p-activation-transaction
 python -I -S -B tests/test_p2p_inproc_lifecycle.py        # Linux gcc + ASan/UBSan
+python -I -S -B tests/test_p2p_start_intent.py            # Linux gcc -m32 + ASan/UBSan: p2p.c's arm/launch/offline tick
 ```
 
 `tests/run_tests.sh` already runs `tests/quick_start_policy_test.c`, `tests/controller_glyph_policy_test.c`,
@@ -131,12 +133,13 @@ Details and measurements: `docs/P2P_HOSTING.md`, "In-process hosting".
 
 `src/p2p/p2p.c` lets a player host a match from the client: the sh1x match server runs as a child of the
 host's client (`p2phost [map] [gametype] [zonetype]`, `p2pstop`, `p2pstatus`, or `+set k33_p2pHost 1`;
-settings in `p2p\p2p_host.ini`). `src/p2p/hostgate.c` lets the client exchange UDP only with loopback, the lobby
-(dwauth.ini / stun.ini hosts), the UPnP gateway and lobby-vouched hosts. That is a hard requirement
-from the client security audit. Design, trust rules, stages and measurements: `docs/P2P_HOSTING.md`.
+settings in `p2p\p2p_host.ini`). `src/p2p/hostgate.c` lets the client exchange UDP only with loopback (this
+client is offline only; the lobby-name, gateway and host-ticket vouching of the online design were removed). That is
+a hard requirement from the client security audit. Design, trust rules, stages and measurements:
+`docs/P2P_HOSTING.md` (the online parts are history, see `docs/OFFLINE_LOBBY.md`, "Removed").
 
 The server is the git submodule `server/sh1x` (the sh1x server repo, pinned to its `feat/p2p-hosting`
-commit). `scripts/build.sh` / `scripts/build-dev.sh` init it; the DLL does not compile it. To build and stage the
+commit). `scripts/build.sh` inits it; the DLL does not compile it. To build and stage the
 server a client hosts:
 ```sh
 git submodule update --init server/sh1x       # never --recursive: the server has a URL-less gitlink
@@ -175,8 +178,8 @@ higher limits), registered with the archive flag so the console can change it. S
 `+set parity_log N` on the command line, else the environment variable `CODOL_PARITY_LOG`, else 1.
 A startup value of 0 installs no hooks at all.
 
-Build without touching the live DLL: `PATH=/c/msys64/mingw32/bin:$PATH sh scripts/build-parity.sh` writes
-`build/Kernel33_parity.dll`; copy it over `../Kernel33.dll` (keep a backup) to use it.
+The logger is compiled only into the diagnostic profile: `K33_NO_COPY=1 K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=1 sh
+scripts/build.sh` (or `sh scripts/build-dev.sh`) writes it without touching the live DLL.
 
 ### Several clients on one PC (branch `parity-log`)
 The branch also skips WinMain's "is already running." check (0x630C3A; the game's mutex
@@ -313,8 +316,9 @@ description, with a confidence; below 85 the name is a positional guess and the 
 Numbers without a name display as they are. Command names are not hashed in this build (all
 `Cmd_AddCommand` names are plaintext), so commands are listed as registered.
 
-A build without the console: `K33_NO_COPY=1 sh scripts/build.sh -DK33_NO_CONSOLE` (everything else must only need
-`src/c1game.c`; that build links).
+Build without touching the live DLL: `sh scripts/build-dev.sh` runs `scripts/build.sh` in the diagnostic profile and
+writes `build/Kernel33_dev.dll` (k33shot + parity logger on top of everything the shipping DLL has) and
+`build/Kernel33_noconsole.dll` (`-DK33_NO_CONSOLE`), failing if the diagnostic code depends on `src/console/console.c`.
 
 ## Controller (branch `feat/controller`)
 `src/controller/controller.c` adds gamepad play: SDL2 2.32.10 GameController (static; Xbox, PlayStation, Switch Pro, generic 
@@ -322,8 +326,7 @@ pads, hot-plug; XInput fallback) on its own ~1 kHz thread, pad buttons as real C
 bindable and saved in config_mp.cfg, queued through C1's Sys_QueEvent), analog move/look in CL_MouseMove, a 
 stick-driven cursor for the Scaleform menus (A click, B Escape) and `gpad_*` dvars. See `docs/CONTROLLER.md` for C1's 
 input path, the dvars, commands, default binds, what was verified and the phase 2/3 plan. `scripts/build.sh` builds it
-into Kernel33.dll; `PATH=/c/msys64/mingw32/bin:$PATH sh scripts/build-controller.sh` writes a side copy,
-`build/Kernel33_controller.dll`, and copies nothing.
+into Kernel33.dll (`K33_NO_COPY=1` leaves the installed DLL alone).
 
 Button hints: `gpad_glyphs` (archived) is the player's choice of what hints show, and an explicit choice overrides
 the detection: 0 automatic (icons of the detected pad type, the bindings of the last-used device), 1 Xbox 360,
@@ -556,6 +559,9 @@ to Discord's local IPC pipe (`\\.\pipe\discord-ipc-0..9`) as application 1554730
 - in a match: "<mode> on <map>" (e.g. "Team Deathmatch on Killhouse"), elapsed since joining, and as state
   "N players, M bots" on a server at 127.0.0.1 (its `getinfo` reply) or "In a match" on a remote one;
 - the `codol` art asset with the text "Call of Duty Online".
+
+Nothing about the lobby or the server is published: no party, join or spectate secret, no button and no address
+(checked in the offline cleanup; the `getinfo` probe goes to 127.0.0.1 only).
 
 The map and mode come from the server's serverinfo configstring and the connection state from C1 itself,
 not from `console_mp.log`. All pipe and socket I/O runs on a worker thread with timeouts; with no

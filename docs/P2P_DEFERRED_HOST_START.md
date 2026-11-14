@@ -1,5 +1,10 @@
 # Local Play: the embedded server starts when the match launches
 
+**Offline-only fork (2026-11-13):** the launcher startup protocols 1-3 and `K33LocalPlayLaunch` were removed; the
+built-in lobby raises the launch with `K33LocalPlayAuto(..., launch = 1, ...)`. What is said below about protocols 1-3,
+the production protocol and `K33LocalPlayLaunch` is history (`docs/OFFLINE_LOBBY.md`, "Removed now that the client
+is offline only").
+
 Branch `k33-deferred-host` (off `main` d0b0756), 2026-11-12. Supersedes the start-on-tick behaviour described in
 `P2P_HOSTING.md` ("Match-lobby local hosting") and `P2P_SCALEFORM_LOCAL_MATCH.md` for startup protocols 0, 1 and 2.
 
