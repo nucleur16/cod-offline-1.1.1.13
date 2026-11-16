@@ -11,12 +11,22 @@ package codo.views.option_sub
    //             Unlimited / 30 / 60 / 75 / 90 / 120 / 144 / 165 / 240 / 360 / 500 -> "1848"
    //             (com_maxfps, 0 = no cap, archived in config_mp.cfg), set by Apply like the rest of
    //             the screen; a value set from the console is listed as its own entry
-   //   Button icons / HUD style (and Language) (docs/UI_STYLE_OPTIONS_20261112.md): rows under the Graphics check
-   //             boxes, each a label and a drop-down like the tab's own (CodoComboBox): another instance of the class
-   //             the tab's combo boxes are (codoComboBox_l2, or codoComboBoxCyborgs on the other panel; taken from
-   //             myCBAspectRatio, as CodoList makes its item renderers), in the Display Mode column, opening upwards:
+   //   Game tab (docs/UI_STYLE_OPTIONS_20261112.md "Game tab"): a fifth tab of the Options window, made here in
+   //             code (k33GameSetup: another instance of OptionView's own tab button class, right of the Controller
+   //             tab, and a panel of rows where this panel sits, on the window's card, which every tab shares: it is
+   //             OptionView's first child, not part of any tab), holding the UI / HUD rows, each a label and a
+   //             drop-down like the Graphics tab's own (CodoComboBox): another instance of the class this tab's combo
+   //             boxes are (codoComboBox_l2, or codoComboBoxCyborgs on the other panel; taken from myCBAspectRatio,
+   //             as CodoList makes its item renderers), top to bottom:
+   //               Language      k33_language (below)
    //               Button icons  gpad_glyphs 0..6 (shown when the controller module is there: k33_padinfo is set)
    //               HUD style     k33_hudStyle, one of the numbers of k33_hudStyleList ("0:stock;2:v26")
+   //               HUD sway      cg_hudSway, Off / On (with the HUD style row: hud_style.c registers both)
+   //             OptionView itself is not changed (its class is pinned by the selector producer): the Game tab
+   //             listens to OptionView's four tab buttons; opening it hides whichever of OptionView's panels is shown
+   //             and closing it shows that panel again: on any other tab (its listener runs ahead of OptionView's), when
+   //             the window closes (OptionView calls this panel's disable()) and on EVT_ENABLE_VIDEO. Until 16 November
+   //             these rows were under the Graphics check boxes.
    //               Language      k33_language, one of k33_languageList ("en;zh"); names K33UI_LANG_NAME_<ID>.
    //                             Switched by K33_STYLE_LANGUAGE_ROW (on since the language zone reloads live).
    //             A row whose list is empty (an older Kernel33.dll) is hidden; a name without a localize entry shows
@@ -184,6 +194,7 @@ package codo.views.option_sub
          this.myCBDistortion.selected = false;
          this.myCBGlowAllowed.selected = false;
          this.myCancelBtn.visible = true;
+         this.k33GameSetup(); // k33: the Game tab
       }
       
       // k33: every text onInit gave this tab (C1's translator resolves "@KEY" as a text is set)
@@ -260,23 +271,22 @@ package codo.views.option_sub
       {
          super.enable();
          this.videoSettings = this.getSyncDP(SyncDataID.VIDEO_SETTING);
-         // k33: the style rows are made from their dvars each time the tab opens, and follow them while it is shown;
-         // a language switch since the tab was last shown translates its texts again first
+         // k33: a language switch since the tab was last shown translates its texts again first; the frame watch
+         // runs while this tab or the Game tab is shown
          if(this._k33StyleSerial >= 0 && CFunctionContainerCommon.Dvar_GetInt("k33_languageSerial") != this._k33StyleSerial)
          {
             this.k33StyleRelocalize();
          }
-         else
-         {
-            this.k33StyleBuild();
-         }
-         this.k33StyleWatch(true);
+         this._k33VideoOn = true;
+         this.k33StyleWatch(this._k33VideoOn || this._k33GameOpen);
       }
       
       override public function disable() : void
       {
          super.disable();
-         this.k33StyleWatch(false); // k33
+         this._k33VideoOn = false; // k33: OptionView calls this on every change of tab and when the window closes
+         this.k33GameClose();
+         this.k33StyleWatch(this._k33GameOpen);
          this._preVideoObj = null;
          this._curVideoObj = null;
       }
@@ -417,9 +427,9 @@ package codo.views.option_sub
       private function onK33ComboPreOpen(event:Event) : void
       {
          var tempCB:CodoComboBox = event.target as CodoComboBox;
-         if(tempCB != null && tempCB.parent == this)
+         if(tempCB != null && tempCB.parent != null)
          {
-            this.setChildIndex(tempCB,this.numChildren - 1);
+            tempCB.parent.setChildIndex(tempCB,tempCB.parent.numChildren - 1);
          }
       }
       
@@ -591,32 +601,54 @@ package codo.views.option_sub
          this._preVideoObj.ui_r_distortion = this._curVideoObj.ui_r_distortion;
       }
 
-      // k33 style rows (Button icons, HUD style, and Language when it is switched on): see the header comment
-      private static const K33_STYLE_KINDS:Array = ["lang","glyph","hud"];
+      // k33 style rows (Button icons, HUD style, HUD sway, and Language when it is switched on): see the header comment
+      private static const K33_STYLE_KINDS:Array = ["lang","glyph","hud","sway"];
 
       private static const K33_STYLE_LABELS:Object = {
          "lang":"@K33UI_LANGUAGE",
          "glyph":"@K33UI_GLYPHS",
-         "hud":"@K33UI_HUD_STYLE"
+         "hud":"@K33UI_HUD_STYLE",
+         "sway":"@K33UI_HUD_SWAY"
       };
 
       private static const K33_STYLE_HOLD:int = 12; // frames a new choice stays on show before the dvar is read back
 
       private static const K33_STYLE_POLL:int = 6; // frames between looks at the dvars
 
-      // the rows' place: under the Graphics check boxes (they end at y 398), above the warning line (y 467), left
-      // of the texture rows (x 298). Labels at the check boxes' left edge, boxes in the Display Mode column.
-      private static const K33_STYLE_X:Number = 12;
+      // the Game tab's rows, in this panel's coordinates (the Game panel sits where this panel does): labels near
+      // the left edge, boxes in a column of their own, one row per K33_STYLE_PITCH under the tab's title
+      private static const K33_STYLE_X:Number = 24;
 
-      private static const K33_STYLE_Y:Number = 407; // the first box (two rows: 407, 437)
+      private static const K33_STYLE_BOX_X:Number = 170;
 
-      private static const K33_STYLE_PITCH:Number = 30;
+      private static const K33_STYLE_Y:Number = 40;
 
-      private static const K33_STYLE_Y3:Number = 399; // three rows (with Language): 399, 421, 443
+      private static const K33_STYLE_PITCH:Number = 34;
 
-      private static const K33_STYLE_PITCH3:Number = 22;
+      private static const K33_STYLE_NOTE_GAP:Number = 10; // the language line, under the last row
 
-      private static const K33_STYLE_NOTE_Y:Number = 486; // under the warning line, left of the Default button (x 228)
+
+      private static const K33_HOST_TABS:Array = ["myTabVideo","myTabAudio","myTabControl","myTabOther"]; // OptionView's
+
+      private var _k33Game:Sprite = null; // the Game tab's panel (a child of OptionView, over its panels)
+
+      private var _k33GameTab:CodoGrowButtonNoTint = null; // the Game tab's button (a child of OptionView)
+
+      private var _k33GameTitle:TextField = null;
+
+      private var _k33GameOpen:Boolean = false;
+
+      private var _k33GamePrev:CodoGrowButtonNoTint = null; // OptionView's tab that was selected when Game opened
+
+      private var _k33GameFix:int = 0; // frames until the tab selection is checked after Game closed
+
+      private var _k33VideoOn:Boolean = false; // this (Graphics) panel is shown
+
+      private var _k33GameCard:Object = null; // the window's card (OptionView's first child), in this panel's coordinates
+
+      private var _k33GameFailed:Boolean = false; // k33GameSetup failed: no Game tab, no rows
+
+      private var _k33GameHidden:Array = null; // OptionView's panels hidden while Game is open
 
       private var _k33StyleRows:Array = []; // the rows on show: [{kind, label, combo, opts, names, shown, hold}]
 
@@ -646,7 +678,8 @@ package codo.views.option_sub
       private static const K33_STYLE_DVARS:Object = {
          "lang":"k33_language",
          "glyph":"gpad_glyphs",
-         "hud":"k33_hudStyle"
+         "hud":"k33_hudStyle",
+         "sway":"cg_hudSway"
       };
 
       // k33: the Language row is switched off here, in one place for both movies: with false the row and its
@@ -716,6 +749,28 @@ package codo.views.option_sub
          if(kind == "lang" && !K33_STYLE_LANGUAGE_ROW)
          {
             return out; // the Language row is switched off
+         }
+         if(kind == "sway")
+         {
+            // cg_hudSway 0 / 1 (hud_style.c: the HUD moves with the view, movement and camera shake, every style).
+            // It is an int dvar: C1's Dvar_GetString reads an int's value as a string pointer (live: a crash at
+            // 0x007739B0 reading 0x00000001), so the row comes with the HUD style row, whose k33_hudStyleList the
+            // same hud_style.c registers: a Kernel33.dll without HUD styles has neither
+            if(this.k33StyleOptions("hud").length == 0)
+            {
+               return out;
+            }
+            out.push({
+               "v":"0",
+               "key":"K33UI_HUD_SWAY_OFF",
+               "raw":"off"
+            });
+            out.push({
+               "v":"1",
+               "key":"K33UI_HUD_SWAY_ON",
+               "raw":"on"
+            });
+            return out;
          }
          if(kind == "glyph")
          {
@@ -891,8 +946,8 @@ package codo.views.option_sub
       }
 
       // a row's drop-down, made once: one more instance of the class this panel's own combo boxes are (the symbol
-      // brings its button, list and skin), opening upwards (the rows are at the foot of the panel). Like the others
-      // it comes to the front as it opens. Made only on the stage: a CodoSprite builds itself when it gets there.
+      // brings its button, list and skin), opening upwards as the Graphics tab's do. Like the others it comes to
+      // the front as it opens. Made only on the stage: a CodoSprite builds itself when it gets there.
       private function k33StyleCombo(kind:String) : CodoComboBox
       {
          var cb:CodoComboBox = this._k33StyleCombos[kind] as CodoComboBox;
@@ -902,10 +957,10 @@ package codo.views.option_sub
             cls = getDefinitionByName(getQualifiedClassName(this.myCBAspectRatio)) as Class;
             cb = new cls() as CodoComboBox;
             cb.name = "k33Style_" + kind;
-            cb.x = this.myCBDisplayMode.x;
+            cb.x = K33_STYLE_BOX_X;
             cb.visible = false;
-            this.addChild(cb);
-            cb.setDropDownAtRuntime(false);
+            this.k33StyleHost().addChild(cb);
+            cb.setDropDownAtRuntime(true); // the Game rows start at the top of the panel: their lists open downwards
             cb.addEventListener(CodoComboBox.EVT_CHANGE,this.k33OnStyleChange);
             cb.addEventListener(CodoComboBox.EVT_PRE_OPEN,this.onK33ComboPreOpen);
             cb.addEventListener(CodoComboBox.EVT_OPEN,this.k33OnStyleOpen);
@@ -924,7 +979,7 @@ package codo.views.option_sub
             tf = this.k33StyleText(this.myTFSSAO,"",0,this.myTFSSAO.textColor);
             tf.x = K33_STYLE_X;
             tf.visible = false;
-            this.addChild(tf);
+            this.k33StyleHost().addChild(tf);
             this._k33StyleLabels[kind] = tf;
          }
          return tf;
@@ -1036,10 +1091,12 @@ package codo.views.option_sub
          var lab:TextField = null;
          var cb:CodoComboBox = null;
          var dp:Array = null;
-         var y0:Number = NaN;
-         var pitch:Number = NaN;
          var i:int = 0;
          var j:int = 0;
+         if(this._k33GameFailed)
+         {
+            return; // the rows live on the Game tab only
+         }
          if(this.stage == null)
          {
             this._k33StyleDirty = true; // k33StyleFrame makes them
@@ -1057,15 +1114,16 @@ package codo.views.option_sub
             }
             i++;
          }
-         y0 = kinds.length > 2 ? K33_STYLE_Y3 : K33_STYLE_Y;
-         pitch = kinds.length > 2 ? K33_STYLE_PITCH3 : K33_STYLE_PITCH;
          i = 0;
          while(i < kinds.length)
          {
             opts = lists[i];
             cb = this.k33StyleCombo(kinds[i]);
-            cb.y = y0 + i * pitch;
             lab = this.k33StyleLabel(kinds[i]);
+            // in this panel's coordinates (the Game panel sits where this panel does), inside the window's card
+            cb.x = K33_STYLE_BOX_X;
+            cb.y = K33_STYLE_Y + i * K33_STYLE_PITCH;
+            lab.x = K33_STYLE_X;
             lab.text = LocalizeUtil.localize(K33_STYLE_LABELS[kinds[i]]);
             lab.y = cb.y + (this.myTFSSAO.y - this.myCBSSAO.y);
             rec = {
@@ -1102,9 +1160,9 @@ package codo.views.option_sub
          {
             this._k33StyleNote = this.k33StyleText(this.myTFSSAO,"",12,10474463);
             this._k33StyleNote.x = K33_STYLE_X;
-            this._k33StyleNote.y = K33_STYLE_NOTE_Y;
+            this._k33StyleNote.y = K33_STYLE_Y + kinds.length * K33_STYLE_PITCH + K33_STYLE_NOTE_GAP;
             this._k33StyleNote.visible = false;
-            this.addChild(this._k33StyleNote);
+            this.k33StyleHost().addChild(this._k33StyleNote);
             this.k33StyleNoteUpdate();
          }
       }
@@ -1143,11 +1201,11 @@ package codo.views.option_sub
          {
             this._k33StyleSerial = CFunctionContainerCommon.Dvar_GetInt("k33_languageSerial");
             this._k33StyleFrames = 0;
-            this.addEventListener(Event.ENTER_FRAME,this.k33StyleFrame);
+            this.k33StyleHost().addEventListener(Event.ENTER_FRAME,this.k33StyleFrame);
          }
          else
          {
-            this.removeEventListener(Event.ENTER_FRAME,this.k33StyleFrame);
+            this.k33StyleHost().removeEventListener(Event.ENTER_FRAME,this.k33StyleFrame);
          }
       }
 
@@ -1160,6 +1218,229 @@ package codo.views.option_sub
             return true;
          }
          return this.isVideoChanged() || fps != null && int(fps.id) != this._k33FpsApplied || Math.abs(this.myPBBrightness.value - this._preVideoObj.ui_r_brightness) > 0.001 || Math.abs(this.myPBFOV.value - this._preVideoObj.ui_r_fov) > 0.5;
+      }
+
+      // k33 Game tab: where the rows live (the Game panel; this panel when there is no Game panel, e.g. a test)
+      private function k33StyleHost() : Sprite
+      {
+         return this._k33Game != null ? this._k33Game : this;
+      }
+
+      // k33 Game tab: made once, from onInit. OptionView's display list (measured live, 16 November): its first child
+      // is the window's card, which every tab shares (a MovieClip at -310,-277, 599 x 544 in OptionView's
+      // coordinates), then the three panels, the tab bar's header line, the tab buttons, the close button and the
+      // title; OptionView_video has no card of its own (its myBg is null: the card is not on this panel's timeline).
+      // So the Game tab draws no background: the button is another instance of OptionView's tab button class, one tab
+      // pitch right of the Controller tab, and the panel holds only this panel's section header (another instance of
+      // its frame_window_title, at the same place), the tab's name over it and the rows, where this panel sits.
+      // Opening Game hides the panel that is shown (k33OnGameTab), so only the card is under the rows.
+      private function k33GameSetup() : void
+      {
+         var host:Object = this.parent;
+         var cls:Class = null;
+         var head:Sprite = null;
+         var d:Object = null;
+         var name:String = null;
+         var i:int = 0;
+         if(this._k33Game != null || host == null || !("myTabOther" in host) || !("myTabControl" in host))
+         {
+            return;
+         }
+         try
+         {
+            cls = getDefinitionByName(getQualifiedClassName(host.myTabOther)) as Class;
+            this._k33GameTab = new cls() as CodoGrowButtonNoTint;
+            this._k33GameTab.name = "k33TabGame";
+            this._k33GameTab.x = host.myTabOther.x + (host.myTabOther.x - host.myTabControl.x);
+            this._k33GameTab.y = host.myTabOther.y;
+            host.addChild(this._k33GameTab);
+            this._k33GameTab.label = LocalizeUtil.localize("@K33UI_GAME_TAB");
+            this._k33GameTab.selected = false;
+            this._k33GameTab.addEventListener(BaseButton.EVT_CLICK,this.k33OnGameTab);
+            for each(name in K33_HOST_TABS)
+            {
+               if(name in host && host[name] != null)
+               {
+                  // ahead of OptionView's own listener: the hidden panel is shown again before OptionView changes tab
+                  host[name].addEventListener(BaseButton.EVT_CLICK,this.k33OnHostTab,false,100);
+               }
+            }
+            this._k33Game = new Sprite();
+            this._k33Game.name = "k33PanelGame";
+            this._k33Game.x = this.x;
+            this._k33Game.y = this.y;
+            this._k33Game.scaleX = this.scaleX;
+            this._k33Game.scaleY = this.scaleY;
+            this._k33Game.visible = false;
+            // this panel's first section header ("Basic"), as the Game tab's header
+            while(i < this.numChildren)
+            {
+               d = this.getChildAt(i);
+               if(head == null && getQualifiedClassName(d) == "frame_window_title")
+               {
+                  cls = getDefinitionByName(getQualifiedClassName(d)) as Class;
+                  head = new cls() as Sprite;
+                  if(head != null)
+                  {
+                     head.x = d.x;
+                     head.y = d.y;
+                     head.scaleX = d.scaleX;
+                     head.scaleY = d.scaleY;
+                     head.mouseEnabled = false;
+                     head.mouseChildren = false;
+                     this._k33Game.addChild(head);
+                  }
+               }
+               i++;
+            }
+            name = LocalizeUtil.localize("@K33UI_GAME_TAB"); // translated before it is set (k33StyleText)
+            this._k33GameTitle = this.k33StyleText(this.myTFBase,name,0,this.myTFBase.textColor);
+            this._k33GameTitle.x = this.myTFBase.x;
+            this._k33GameTitle.y = this.myTFBase.y;
+            this._k33Game.addChild(this._k33GameTitle);
+            host.addChild(this._k33Game);
+            // the window's card, for the rows' bounds (tests/ui_style_rows_test.js): OptionView's first child
+            this._k33GameCard = host.getChildAt(0).getBounds(this);
+         }
+         catch(err:Error)
+         {
+            // no Game tab at all: the half-made button goes, and the rows are not made on the Graphics tab either
+            this._k33GameFailed = true;
+            if(this._k33GameTab != null && this._k33GameTab.parent != null)
+            {
+               this._k33GameTab.parent.removeChild(this._k33GameTab);
+            }
+            if(this._k33Game != null && this._k33Game.parent != null)
+            {
+               this._k33Game.parent.removeChild(this._k33Game);
+            }
+            this._k33GameTab = null;
+            this._k33Game = null;
+         }
+      }
+
+      // k33 Game tab: whether one of OptionView's children is a panel (hidden while Game is open): not the card
+      // (first child), the tab bar's header line, a tab, the close button, the title or the Game panel
+      private function k33IsHostPanel(host:Object, d:Object) : Boolean
+      {
+         var n:String = getQualifiedClassName(d);
+         if(d == null || d == this._k33Game || d == this._k33GameTab || host.getChildIndex(d) == 0)
+         {
+            return false;
+         }
+         if(n == "header_window" || n.indexOf("iconTab") == 0 || d is TextField || d == host.myIconCloseBtn)
+         {
+            return false;
+         }
+         return d is Sprite;
+      }
+
+      // k33 Game tab: open it in place of the shown panel (OptionView's tabs are shown unselected meanwhile)
+      private function k33OnGameTab(e:Event) : void
+      {
+         var host:Object = this.parent;
+         var name:String = null;
+         var d:Object = null;
+         var i:int = 0;
+         if(this._k33GameOpen || this._k33Game == null)
+         {
+            return;
+         }
+         this._k33GamePrev = null;
+         for each(name in K33_HOST_TABS)
+         {
+            if(name in host && host[name] != null && host[name].selected)
+            {
+               this._k33GamePrev = host[name];
+               host[name].selected = false;
+            }
+         }
+         this._k33GameHidden = [];
+         while(i < host.numChildren)
+         {
+            d = host.getChildAt(i);
+            if(d.visible && this.k33IsHostPanel(host,d))
+            {
+               d.visible = false;
+               this._k33GameHidden.push(d);
+            }
+            i++;
+         }
+         this._k33GameOpen = true;
+         this._k33GameTab.selected = true;
+         this._k33Game.visible = true;
+         this.k33StyleBuild();
+         this.k33StyleWatch(true);
+      }
+
+      // k33 Game tab: one of OptionView's tabs was clicked (this listener runs before OptionView's). Game closes and
+      // the panel it hid is shown again; then OptionView changes tab as usual, or ignores a click on its current tab,
+      // which is selected again here; a change OptionView refuses (Controls with unbound commands) is caught two frames
+      // later: no tab selected -> the one that was
+      private function k33OnHostTab(e:Event) : void
+      {
+         if(!this._k33GameOpen)
+         {
+            return;
+         }
+         this.k33GameClose();
+         if(this._k33GamePrev != null && e.currentTarget == this._k33GamePrev)
+         {
+            this._k33GamePrev.selected = true;
+         }
+         this._k33GameFix = 2;
+         this.k33StyleHost().addEventListener(Event.ENTER_FRAME,this.k33GameFixFrame);
+      }
+
+      private function k33GameFixFrame(e:Event) : void
+      {
+         var host:Object = this.parent;
+         var name:String = null;
+         var any:Boolean = false;
+         this._k33GameFix--;
+         if(this._k33GameFix > 0)
+         {
+            return;
+         }
+         this.k33StyleHost().removeEventListener(Event.ENTER_FRAME,this.k33GameFixFrame);
+         for each(name in K33_HOST_TABS)
+         {
+            if(name in host && host[name] != null && host[name].selected)
+            {
+               any = true;
+            }
+         }
+         if(!any && this._k33GamePrev != null && !this._k33GameOpen)
+         {
+            this._k33GamePrev.selected = true;
+         }
+      }
+
+      // k33 Game tab: close it (an open list first) and show the panel it hid
+      private function k33GameClose() : void
+      {
+         var d:Object = null;
+         if(!this._k33GameOpen)
+         {
+            return;
+         }
+         this._k33GameOpen = false;
+         if(this._k33StyleOpen != null)
+         {
+            this._k33StyleOpen.close();
+            this._k33StyleOpen = null;
+         }
+         this._k33Game.visible = false;
+         this._k33GameTab.selected = false;
+         if(this._k33GameHidden != null)
+         {
+            for each(d in this._k33GameHidden)
+            {
+               d.visible = true;
+            }
+            this._k33GameHidden = null;
+         }
+         this.k33StyleWatch(this._k33VideoOn);
       }
 
       // a live language switch finished (k33_languageSerial moved): every text of this tab is set again, so C1's
@@ -1182,6 +1463,14 @@ package codo.views.option_sub
                host.myTabAudio.label = LocalizationSetting.OPTION_TAB_AUDIO;
                host.myTabControl.label = LocalizationSetting.OPTION_TAB_CONTROL;
                host.myTabOther.label = LocalizeUtil.localize("@K33UI_PAD_TAB");
+            }
+            if(this._k33GameTab != null)
+            {
+               this._k33GameTab.label = LocalizeUtil.localize("@K33UI_GAME_TAB");
+            }
+            if(this._k33GameTitle != null)
+            {
+               this._k33GameTitle.text = LocalizeUtil.localize("@K33UI_GAME_TAB");
             }
          }
          catch(err:Error)

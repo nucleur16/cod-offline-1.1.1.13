@@ -1,7 +1,7 @@
 # GFx movie as a patch over a stock movie (zonekit/gfx.py)
 stock patch_common_mp:scaleform/default/codoingame.gfx
 stock-sha256 e2a6514c6a82760d14d5b77116fc6c0e11c3c245247da86a62e1986da6dc0115
-sha256 dfffe19b3790c6cc31a70d9a1a29898f6f170ca281e1e9038d6fe857c31bdb72
+sha256 7e56547fcd17f996b1d7d6d36f3f6a94e6964d3fcdda77552c253fa3a083dc35
 header 4746580aa92a0d00800003200000025800001e0100
 keep 0
 keep 1
@@ -856,4 +856,4 @@ as codo.common.CFunctionContainer as/codo/common/CFunctionContainer.as c0f1e15ca
 as codo.common.CFunctionContainerPause as/codo/common/CFunctionContainerPause.as 3231853eee0b4f09b03123bc7d1df8d50a9c2eacd0e11ff5c1e147e4ef0fc2f1
 as codo.common.PageManagerPause as/codo/common/PageManagerPause.as ec55821ee4cfdfcec3afd6668b8df81784a4ffc25cf4be3424465b1a78493171
 as components.scoreboard_part.ScoreboardTeamPanel as/components/scoreboard_part/ScoreboardTeamPanel.as 0e78302799a9bf0c8eb12798a5f97135dc74f947d3901e348424e6b60adb5afb
-as MainPause as/MainPause.as 7e068e4acf755922eeff9163a103af3c92b3a214688c8487fb3e055280c7dd2a
+as MainPause as/MainPause.as 0720c9575256337a8f449ff07f47260eb2b8df9d2562edfe70f950cebfa8acc8

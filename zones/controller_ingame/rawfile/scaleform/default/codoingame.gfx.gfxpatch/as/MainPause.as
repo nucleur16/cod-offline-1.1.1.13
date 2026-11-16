@@ -22,6 +22,7 @@ package
    //     Language      k33_language, one of k33_languageList ("en;zh"); names K33UI_LANG_NAME_<ID>
    //     Button icons  gpad_glyphs 0..6 (shown when the controller module is there: k33_padinfo is set); K33UI_GLYPHS_*
    //     HUD style     k33_hudStyle, one of the numbers of k33_hudStyleList ("0:stock;2:v26"); K33UI_HUD_STYLE_<ID>
+   //     HUD sway      cg_hudSway, Off / On (shown when the dvar is there); K33UI_HUD_SWAY_OFF / _ON
    //   A row whose list is empty (an older Kernel33.dll) is not added. A name without a localize entry shows the raw
    //   id. A value the list does not have shows the first choice. The rows apply at once (setdvar) and show what the
    //   dvar holds: it is read back a few frames after a change, so a value the engine refused does not stay on show.
@@ -905,13 +906,14 @@ package
          row.mySlider.value = v;
       }
 
-      // k33 style rows (Language, Button icons, HUD style): see the header comment
-      private static const K33_STYLE_KINDS:Array = ["lang","glyph","hud"]; // k33
+      // k33 style rows (Language, Button icons, HUD style, HUD sway): see the header comment
+      private static const K33_STYLE_KINDS:Array = ["lang","glyph","hud","sway"]; // k33
 
       private static const K33_STYLE_LABELS:Object = {
          "lang":"@K33UI_LANGUAGE",
          "glyph":"@K33UI_GLYPHS",
-         "hud":"@K33UI_HUD_STYLE"
+         "hud":"@K33UI_HUD_STYLE",
+         "sway":"@K33UI_HUD_SWAY"
       }; // k33
 
       private static const K33_STYLE_HOLD:int = 12; // k33: frames a new choice stays on show before the dvar is read back
@@ -948,7 +950,8 @@ package
       private static const K33_STYLE_DVARS:Object = {
          "lang":"k33_language",
          "glyph":"gpad_glyphs",
-         "hud":"k33_hudStyle"
+         "hud":"k33_hudStyle",
+         "sway":"cg_hudSway"
       };
 
       // k33: the Language row is switched off here, in one place for both movies: with false the row and its
@@ -1018,6 +1021,28 @@ package
          if(kind == "lang" && !K33_STYLE_LANGUAGE_ROW)
          {
             return out; // the Language row is switched off
+         }
+         if(kind == "sway")
+         {
+            // cg_hudSway 0 / 1 (hud_style.c: the HUD moves with the view, movement and camera shake, every style).
+            // It is an int dvar: C1's Dvar_GetString reads an int's value as a string pointer (live: a crash at
+            // 0x007739B0 reading 0x00000001), so the row comes with the HUD style row, whose k33_hudStyleList the
+            // same hud_style.c registers: a Kernel33.dll without HUD styles has neither
+            if(this.k33StyleOptions("hud").length == 0)
+            {
+               return out;
+            }
+            out.push({
+               "v":"0",
+               "key":"K33UI_HUD_SWAY_OFF",
+               "raw":"off"
+            });
+            out.push({
+               "v":"1",
+               "key":"K33UI_HUD_SWAY_ON",
+               "raw":"on"
+            });
+            return out;
          }
          if(kind == "glyph")
          {

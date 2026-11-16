@@ -114,6 +114,10 @@ localize,K33UI_HUD_STYLE_V26
 localize,K33UI_HUD_STYLE_V33
 localize,K33UI_HUD_STYLE_V35
 localize,K33UI_HUD_STYLE_SM2
+localize,K33UI_HUD_SWAY
+localize,K33UI_HUD_SWAY_OFF
+localize,K33UI_HUD_SWAY_ON
+localize,K33UI_GAME_TAB
 localize,K33UI_CODO_16
 localize,K33UI_CODO_19
 localize,K33UI_CODO_20
