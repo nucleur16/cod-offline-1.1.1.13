@@ -7,7 +7,7 @@
  * ((size - 16) * fontHeight + 16) / 32 pixels, so 48 is one line high). C1's zones have no button
  * materials; ours come from a patch zone:
  *
- *   zone       client_shipRetail\patch\codol_common_postgfx_mp.ff (zones/controller_glyphs_postgfx_mp, built into that
+ *   zone       client_shipRetail\patch\common_postgfx_mp.ff (zones/controller_glyphs_postgfx_mp, built into that
  *              consolidated zone by build_zones.py; an install with only the old controller_glyphs_postgfx_mp.ff
  *              still works: that name is looked up when the new one is not there). A *_postgfx_mp patch zone is
  *              appended to the code_post_gfx list (kernel33.c), so it
@@ -37,7 +37,7 @@
 
 #define CTL_GLYPH_SETS         4
 #define CTL_GLYPH_ESC_SIZE     56            /* 48 = one text line high; a little more reads better */
-#define CTL_GLYPH_ZONE         "codol_common_postgfx_mp"
+#define CTL_GLYPH_ZONE         "common_postgfx_mp"
 #define CTL_GLYPH_ZONE_OLD     "controller_glyphs_postgfx_mp"   /* before the zones were consolidated */
 static const char *g_glyphZone = CTL_GLYPH_ZONE;
 #define CTL_MATERIAL_REGISTER  0x00A78170u   /* Material_RegisterHandle(name, imageTrack) */

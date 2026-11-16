@@ -181,9 +181,9 @@ Nineteen keys, English and Chinese, in `scripts/ui_keys.py` `NAMED` and in
 `K33UI_LANG_NAME_ZH`, `K33UI_LANG_RESTART`, `K33UI_LANG_SWITCHING`, seven
 `K33UI_GLYPHS_*`, five `K33UI_HUD_STYLE_*`.
 
-They are entered once per language, in `codol_*_ui`, and not again in
-`codol_*_ui_extra` (where `codoingame.gfx`'s other keys live). Both string zones
-are parts of the same `codol_<language>_locale` pack, which is loaded whole and
+They are entered once per language, in `<language>_ui`, and not again in
+`<language>_ui_extra` (where `codoingame.gfx`'s other keys live). Both string zones
+are parts of the same `<language>_locale` pack, which is loaded whole and
 stays loaded in a match, so the pause menu sees them. The pack builder would drop
 the second copy as shadowed anyway, and an entry that did load twice would take
 two of C1's 12000 localize slots.
@@ -200,7 +200,7 @@ wholesale); the entries were added by hand in `NAMED` order.
 
 ```
 python scripts/build_zones.py --store-class controller_ingame:scaleform/default/codoingame.gfx:MainPause --store-class voice_ui_mp:scaleform/default/codo.gfx:codo.views.option_sub.OptionView_video
-python scripts/build_zones.py --candidate voice_ui_mp controller_ingame codol_english_locale codol_chinese_locale
+python scripts/build_zones.py --candidate voice_ui_mp controller_ingame english_locale chinese_locale
 node tests/ui_style_rows_test.js
 ```
 

@@ -389,7 +389,7 @@ once it has ended), so it is started once, by the first match the player hosts, 
   `PiMatchOverPoll`) the finished level simply stays loaded, as a one-shot lobby worker keeps it; the player's
   `p2pstop` unloads it with `killserver` (the server then "stays down until the next map command").
 - Next match: the same server. Its settings and map are queued with `Sh1xHost_Command`:
-  `set codol_zoneType`, `set codol_sessionMap`, `set g_gametype`, `set g_difficulty`, `map <map>` (the latched
+  `set sv_zoneType`, `set sv_sessionMap`, `set g_gametype`, `set g_difficulty`, `map <map>` (the latched
   dvars apply at that map load), as the lobby retargets a warm dedicated worker. The match's state goes to
   running only after the frame that ran the `map` has returned, so a status of the previous level never counts.
 - Settings that are on the server's command line (port, address, paths, rcon file, admission, developer, PMem,
@@ -474,8 +474,8 @@ headless `+set com_cmdFile 1 +set com_localTestMulti 1`, below-normal priority):
   fresh server was not tried.
 - `room.leave`, `room.match.cyborg`, `ui_pressReady 1`: `reusing the match server started 78 s ago (match 3)`, ready
   after 5.8 s; the player played zm_factory_sh (round 1).
-- Same server, multiplayer with bots: `p2psv set codol_zoneType mp`, `p2psv set codol_sessionMap
-  mp_killhouse_sh`, `p2psv set g_gametype war`, `p2psv set scr_codol_bots 5`, `p2psv map mp_killhouse_sh`. The
+- Same server, multiplayer with bots: `p2psv set sv_zoneType mp`, `p2psv set sv_sessionMap
+  mp_killhouse_sh`, `p2psv set g_gametype war`, `p2psv set scr_bots 5`, `p2psv map mp_killhouse_sh`. The
   session followed the map change, and the player loaded Team Deathmatch on Killhouse with the Training bots.
 - `p2pstop`: the match ended with `killserver`, and the server stayed up. The player was dropped ("connection
   timed out"), which closed the room.
@@ -493,12 +493,12 @@ headless `+set com_cmdFile 1 +set com_localTestMulti 1`, below-normal priority):
   room made with the bare `room.create` test command has category `mp`. Re-arming for the new selection is what
   stopped match 1 (`P2PArmLegacyRoom`: `g_p2pStop`).
   - A fresh server given gametype `coop` with category `mp` resolves the same set
-    (`SV_ResolveAssetCategory`): `+set codol_zoneType mp` is the default, so it is not taken as explicit,
+    (`SV_ResolveAssetCategory`): `+set sv_zoneType mp` is the default, so it is not taken as explicit,
     and an `mp_*` name gives `mp`.
-  - The reused server took `mp` from the latched `codol_zoneType`. Both load the mp gametype zones under the
+  - The reused server took `mp` from the latched `sv_zoneType`. Both load the mp gametype zones under the
     co-op gametype, which C1 rejects.
   - The room UI's real co-op rooms carry `coop` on both sides.
-- **A real reuse bug was found on the way and is fixed.** The resolver takes `codol_zoneType` as this match's
+- **A real reuse bug was found on the way and is fixed.** The resolver takes `sv_zoneType` as this match's
   only while its latch differs from the running value. A second co-op (or survival) match in a row therefore
   sent nothing explicit and resolved as `mp` from its `mp_*` level name. The retarget now starts with
   `set fs_game <category>`, the one-shot carrier the lobby itself sends before `map`

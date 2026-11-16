@@ -6,13 +6,13 @@ worktree's `CODOL-31926.md`) are installed like the other later maps: zones in `
 
 ## Create Room (this repository)
 
-Same route as mp_dome / mp_strike_sh / mp_qadeem_sh: `zones/usermaps_patch` (packed into `codol_common.ff` and the
+Same route as mp_dome / mp_strike_sh / mp_qadeem_sh: `zones/usermaps_patch` (packed into `common.ff` and the
 locale packs) carries for each map
 - a `mp/comaplist.csv` row (pvp, 4-18 players, every channel on; ids 98-123, sort keys 50-75);
 - a `mp/basemaps.arena` entry; its `gametype` list is what the map's MapEnts spawn points and game objects support
   (a TDM-based mode only with both `mp_tdm_spawn_*_start` classes: Tunisia has neither, so no war/hc/thc/koth);
-- `MPUI_<NAME>` / `MPUI_DESC_MAP_<NAME>` in English (`codol_english_usermaps`) and Chinese (`usermaps_patch`);
-  Hunted, Showdown and Suburbs use `MPUI_MP_*` / `MPUI_DESC_MP_*` because `codol_english` already has the plain keys;
+- `MPUI_<NAME>` / `MPUI_DESC_MAP_<NAME>` in English (`english_usermaps`) and Chinese (`usermaps_patch`);
+  Hunted, Showdown and Suburbs use `MPUI_MP_*` / `MPUI_DESC_MP_*` because `english` already has the plain keys;
 - a map-select image: a stock `ui_mp` picture of the same map where one exists (Backlot, Derail, District, Invasion,
   Skidrow, Showdown), otherwise `sfproto_<map>_usermap` in usermaps_ui_mp (see "Menu art and environment" below);
 - a `ship` line in `shipping_maps.txt`.

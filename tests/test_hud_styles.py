@@ -476,15 +476,15 @@ class HudStyles(unittest.TestCase):
         self.assertEqual(tinted, 4 + 6)
 
     def test_zone_is_packed_after_code_post_gfx_and_ahead_of_the_survival_hud(self):
-        pack = packs.load(str(ROOT), "codol_common_postgfx_mp")
+        pack = packs.load(str(ROOT), "common_postgfx_mp")
         names = [n for n, _f, _q in packs.parts(pack)]
         self.assertIn(hs.ZONE, names)
         # the survival HUD's menus name this zone's materials: they are linked first
         self.assertLess(names.index(hs.ZONE), names.index("survival_hud_postgfx_mp"))
         self.assertEqual(packs.stage(hs.ZONE), "post_gfx")
         for lang, zone in hs.LOCALE_ZONES.items():
-            self.assertIn(zone, [n for n, _f, _q in packs.parts(packs.load(str(ROOT), "codol_%s_locale" % lang))])
-            self.assertEqual(packs.locales(zone), packs.locales("codol_%s_locale" % lang))
+            self.assertIn(zone, [n for n, _f, _q in packs.parts(packs.load(str(ROOT), "%s_locale" % lang))])
+            self.assertEqual(packs.locales(zone), packs.locales("%s_locale" % lang))
             rows = hs.locale_rows(self.convs)[lang]
             self.assertEqual([k for k, _v in rows], sorted(self.facts["localize"]))
             m = manifest.read((ROOT / "zone_source" / (zone + ".csv")).read_text(encoding="utf-8"))

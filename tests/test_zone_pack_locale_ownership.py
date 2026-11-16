@@ -41,45 +41,45 @@ class LocaleOwnership(unittest.TestCase):
             entry = asset(key)
             self.assertEqual(codecs.decode_localize(entry[2]), (key, b''))
             self.assertEqual(len(entry[2]), 25)
-            old = {'codol_englishui': [entry], 'codol_chineseui': [entry]}
-            new = {'codol_english_locale': [entry], 'codol_chinese_locale': [entry]}
+            old = {'englishui': [entry], 'chineseui': [entry]}
+            new = {'english_locale': [entry], 'chinese_locale': [entry]}
             self.assertEqual(ownership_block(old, new), ([], []))
 
     def test_nonempty_bytes_also_obey_language_selection(self):
         entry = asset('NORMAL_SHARED_TEXT', b'identical nonempty')
-        old = {'codol_englishui': [entry], 'codol_chineseui': [entry]}
-        new = {'codol_english_locale': [entry], 'codol_chinese_locale': [entry]}
+        old = {'englishui': [entry], 'chineseui': [entry]}
+        new = {'english_locale': [entry], 'chinese_locale': [entry]}
         self.assertEqual(ownership_block(old, new), ([], []))
 
     def test_same_locale_duplicate_is_refused_for_each_effective_language(self):
         entry = asset()
-        errors, _ = ownership_block({'codol_chineseui': [entry]},
-                                   {'codol_chinese_locale': [entry], 'codol_chinese_extra': [entry]})
+        errors, _ = ownership_block({'chineseui': [entry]},
+                                   {'chinese_locale': [entry], 'chinese_extra': [entry]})
         self.assertEqual(len(errors), 2)
         self.assertTrue(any(e.startswith('zh:') and '2 eligible' in e for e in errors))
         self.assertTrue(any(e.startswith('native:') and '2 eligible' in e for e in errors))
 
     def test_missing_owner_is_refused(self):
-        errors, _ = ownership_block({'codol_englishui': [asset()]}, {})
+        errors, _ = ownership_block({'englishui': [asset()]}, {})
         self.assertEqual(len(errors), 1)
         self.assertIn('en:', errors[0])
         self.assertIn('0 eligible', errors[0])
 
     def test_wrong_language_owner_is_not_substitute(self):
-        errors, _ = ownership_block({'codol_englishui': [asset()]}, {'codol_chinese_locale': [asset()]})
+        errors, _ = ownership_block({'englishui': [asset()]}, {'chinese_locale': [asset()]})
         self.assertEqual(len(errors), 1)
         self.assertIn('en:', errors[0])
         self.assertIn('0 eligible', errors[0])
 
     def test_empty_key_cannot_be_dropped_or_replaced_with_different_key(self):
-        errors, _ = ownership_block({'codol_englishui': [asset()]},
-                                   {'codol_english_locale': [asset('K33UI_CODO_4288')]})
+        errors, _ = ownership_block({'englishui': [asset()]},
+                                   {'english_locale': [asset('K33UI_CODO_4288')]})
         self.assertEqual(len(errors), 1)
         self.assertIn('K33UI_CODO_3905', errors[0])
 
     def test_shared_pack_duplicate_with_language_pack_still_refused(self):
         errors, _ = ownership_block({'shared_old': [asset()]},
-                                   {'shared_new': [asset()], 'codol_english_locale': [asset()]})
+                                   {'shared_new': [asset()], 'english_locale': [asset()]})
         self.assertEqual(len(errors), 1)
         self.assertIn('en:', errors[0])
         self.assertIn('2 eligible', errors[0])

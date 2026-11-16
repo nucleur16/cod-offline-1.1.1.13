@@ -82,6 +82,6 @@ The user confirmed the Survival red crosshair works. A real C1 Survival join
 confirmed the lower-left enemy/credit panel replaces the MP score panel and
 killstreak HUD is hidden. The user reported credit/enemy text overlap; the
 follow-up layout reduces the oversized credit font and separates the baselines.
-The HUD MenuList now loads in codol_common_postgfx_mp after graphics defaults
+The HUD MenuList now loads in common_postgfx_mp after graphics defaults
 exist, preserving the original pre-gfx controller movie stage. Native/final
 qualification details and historical diagnostics remain in the server receipt.

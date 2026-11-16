@@ -26,17 +26,17 @@ def actual_selection():
 class InstallIdentity(unittest.TestCase):
     def test_actual_m1911_manifest_selected_with_either_valid_separator(self):
         original = build.load
-        self.assertEqual(original(str(ROOT), "codol_zm_m1911_arms_diag").get("install"),
+        self.assertEqual(original(str(ROOT), "m1911_arms_diag").get("install"),
                          "client_shipRetail/patch")
         for install in ("client_shipRetail/patch", "client_shipRetail\\patch"):
             def alternate(repo, zone):
                 manifest = original(repo, zone)
-                if zone == "codol_zm_m1911_arms_diag":
+                if zone == "m1911_arms_diag":
                     manifest = copy.deepcopy(manifest)
                     manifest.settings["install"] = [install]
                 return manifest
             with self.subTest(install=install), patch.object(checker.build, "load", side_effect=alternate):
-                self.assertIn("codol_zm_m1911_arms_diag", actual_selection())
+                self.assertIn("m1911_arms_diag", actual_selection())
 
     def test_only_exact_patch_identity_is_admitted(self):
         for value in (None, "", "client_shipRetail/chinese", "/client_shipRetail/patch",
@@ -48,7 +48,7 @@ class InstallIdentity(unittest.TestCase):
 
     def test_actual_m1911_script_strings_and_binding_drift_are_visible(self):
         import json
-        strings = json.loads((ROOT / "zones/codol_zm_m1911_arms_diag/script_strings.json").read_bytes())
+        strings = json.loads((ROOT / "zones/m1911_arms_diag/script_strings.json").read_bytes())
         image = zoneimage.ZoneImage([0]*9, [0xffffffff if s is not None else 0 for s in strings],
                                    strings, len(strings), 0xffffffff, 0xffffffff)
         baseline = checker.script_string_identity(image)

@@ -13,9 +13,9 @@ four Survival-only items from the authored later CoDOL menu. The conditions use
 C1's existing dvar-string operator, without leaving a HUD setting latched when
 switching to another mode.
 
-The small additional MenuList loads in `codol_common_postgfx_mp.ff`, after
+The small additional MenuList loads in `common_postgfx_mp.ff`, after
 `code_post_gfx` initializes C1's default material assets and before the stock
-common HUD definitions. An initial placement in the earlier `codol_common`
+common HUD definitions. An initial placement in the earlier `common`
 pack failed the real startup test because material defaults did not yet exist;
 that placement was removed. Existing in-match GFx movies retain their timing.
 No other native HUD menu is replaced. The existing `scorebar_hd` registration
@@ -42,7 +42,7 @@ change, rather than only the offline menu decoder. `kernel33.c` appends
 using permanent allocation flags 1. This runs after the renderer and stock
 code/default assets exist, before the later `common_mp`/`patch_common_mp` HUD
 loads. The `survival_hud_postgfx_mp` source part belongs to
-`zone_packs/codol_common_postgfx_mp.csv`; `controller_ingame` retains only its
+`zone_packs/common_postgfx_mp.csv`; `controller_ingame` retains only its
 original pre-gfx movie timing.
 
 C1 `Load_MenuDefPtr` (`0x4C17B0`) loads the authored menu through `0x4C12B0`,

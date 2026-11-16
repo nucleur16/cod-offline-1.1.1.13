@@ -2,7 +2,7 @@
 r"""DefineFont3 (wide codes, layout) parse / byte-exact rebuild, and a glyph-level patch format.
 
 Font3 and the bit helpers are taken from tools/english/gfx_font.py (CoD4x_Server / localizedStrings-1.1.1.13),
-which builds codol_english_font.ff; its Font3.build() is byte-exact on every font of C1's fonts_ingame.gfx.
+which builds english_font.ff; its Font3.build() is byte-exact on every font of C1's fonts_ingame.gfx.
 """
 from __future__ import annotations
 

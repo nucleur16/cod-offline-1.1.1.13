@@ -106,7 +106,7 @@ weapon. After `devset <dvar> <value>` it prints that dvar instead. `devhelp` pri
   generator. Usage strings are taken from the server's own: `give <weapon [model]|health [n]|ammo|all>`,
   `take <weapon|weapons|health [n]|ammo|all>`, `setviewpos x y z [yaw [pitch]]`, `devset <dvar> <value>`.
 - `kSh1xDevset` (10): `jump_height g_speed g_gravity timescale player_sprintSpeedScale bg_fallDamageMinHeight
-  bg_fallDamageMaxHeight sv_botStop scr_codol_bots sv_botDifficulty`. This is now the console's `devset` argument
+  bg_fallDamageMaxHeight sv_botStop scr_bots sv_botDifficulty`. This is now the console's `devset` argument
   list (the old hand-written `kArgDevset` and `kArgRcon` lists are gone).
 
 Server console commands relevant to development (all reachable bare or with `sv`): `dev_cheats`, `dev_cheats

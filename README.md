@@ -71,17 +71,17 @@ the root is an old committed build, not what the scripts write: they write `buil
    folder; remove the old zone names listed under "Consolidated zones"), `output\client_shipRetail\chinese\patch_common_gametype_zm.ff`
    over the stock one (keep it as `.pre-pap`) and `output\main\iw_image_16.iwd` into `<game>\main\`. The patch folder
    holds six zones, one per load list and language (see "Consolidated zones"):
-   - `codol_common_ui_mp.ff`: the front-end movies (codo.gfx, codologin.gfx; codol-classic's, every text a localize
+   - `common_ui_mp.ff`: the front-end movies (codo.gfx, codologin.gfx; codol-classic's, every text a localize
      key, see "English") with Options > Controls > Chat (Talk key), Options > Audio > Voice (mode, mic level bar,
      microphone choice), Options > Graphics > Max FPS and Options > Controller (the pad tab), and the usermaps'
      map-select images. Keep every codo.gfx change in one zone: each zone carrying codo.gfx carries the whole movie,
      and the first one loaded wins.
-   - `codol_common.ff`: the in-match movies (the HUD codohud.gfx and the pause menu codoingame.gfx with gamepad focus
+   - `common.ff`: the in-match movies (the HUD codohud.gfx and the pause menu codoingame.gfx with gamepad focus
      navigation), the party modes' tables and rules, the death machine sounds and the usermaps' create-room data.
-   - `codol_english_locale.ff` / `codol_chinese_locale.ff`: the strings of each language (see "English").
-   - `codol_common_postgfx_mp.ff`: the gamepad button icons drawn in hints (CONTROLLER.md) and the field order menus;
+   - `english_locale.ff` / `chinese_locale.ff`: the strings of each language (see "English").
+   - `common_postgfx_mp.ff`: the gamepad button icons drawn in hints (CONTROLLER.md) and the field order menus;
      install it with the DLL. Without it the hints show the pad's button names as text.
-   - `codol_infected_cyborg_postgfx_mp.ff`: the Infected mode's cyborg assets (on its own: see "Consolidated zones").
+   - `infected_cyborg_postgfx_mp.ff`: the Infected mode's cyborg assets (on its own: see "Consolidated zones").
 
 ## Build (MSYS2 mingw32)
 ```sh
@@ -393,7 +393,7 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
   has the push-to-talk row ("说话" with a key button and a "hold to talk" checkbox that switches the
   button between `toggletalk` and `+talk`), but its onInit hid it. voice_ui_mp's codo.gfx has those three
   `visible = false` flipped to true (same byte length; the stored OptionView_control_chat tag, decompiled in
-  `zones/voice_ui_mp/.../as/`); it installs in `client_shipRetail\patch\codol_common_ui_mp.ff`, a *_ui_mp patch
+  `zones/voice_ui_mp/.../as/`); it installs in `client_shipRetail\patch\common_ui_mp.ff`, a *_ui_mp patch
   zone Kernel33 loads ahead of the UI zones.
   Rebinding there goes through C1's own AS_SetKeyBindingForCommand.
 - **Path**: WASAPI shared-mode capture (default communications device) -> 48 kHz mono -> Opus VOIP,
@@ -421,7 +421,7 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
 
 Built by `scripts/build.sh` (libopus linked statically: `pacman -S mingw-w64-i686-opus`). The Controls-menu
 push-to-talk row comes from voice_ui_mp's codo.gfx (`python scripts/build_zones.py voice_ui_mp` writes
-`output\client_shipRetail\patch\codol_common_ui_mp.ff`, the zone it is part of).
+`output\client_shipRetail\patch\common_ui_mp.ff`, the zone it is part of).
 
 Test automation (only with `+set com_cmdFile 1` on the command line): the lines of
 `<exe dir>\k33_cmd_<pid>.txt` are executed every half second, and `ui_pressReady [0|1]` presses the room's
@@ -480,31 +480,31 @@ strings a key resolves to. It is chosen at startup and can be changed while the 
     codoMP_client_shipRetail.exe +set dw_username <name> +set k33_english 1     English (the older spelling)
     codoMP_client_shipRetail.exe +set dw_username <name> +set k33_english 0     Chinese (the older spelling)
 
-- **A language is a name**: `en` (the `codol_english*` zones), `zh` (C1's own text plus the `codol_chinese*` zones),
-  and any other `codol_<name>_locale.ff` put into `client_shipRetail\patch\` is the language `<name>`. `english` /
+- **A language is a name**: `en` (the `english*` zones), `zh` (C1's own text plus the `chinese*` zones),
+  and any other `<name>_locale.ff` put into `client_shipRetail\patch\` is the language `<name>`. `english` /
   `chinese` are accepted for `en` / `zh`.
 - **At startup** (`src/patch_locale_policy.h`, `StartupLanguage`): the last valid `+set k33_language <name>`; else
-  `+set k33_english 0|1` (the last one on the line; any value but `0`/`1` is ignored) or `+set codol_patchlang en|zh`
+  `+set k33_english 0|1` (the last one on the line; any value but `0`/`1` is ignored) or `+set loc_patchLang en|zh`
   (an explicit valid `k33_english` wins over it, regardless of order); else the saved choice; else English. A language
   without a zone in the patch folder starts as English, or as Chinese when English is not installed either.
 - **Saved**: `k33_language` is an archived dvar, so C1 writes `seta k33_language "<name>"` to `players\config_mp.cfg`.
   C1 execs that file before the DLL's dvars exist and applies no `+set` to a dvar it does not know, so the DLL reads
   both itself, before the game starts: the command line, and that line of the (plaintext) config file.
 - **While the game runs**: `k33_language` (set it from a menu with `setdvar`, or `k33_setlanguage <name>` in the
-  console) changes the language, in menus and in a match: the shown language's `codol_<name>_locale` zone is unloaded
+  console) changes the language, in menus and in a match: the shown language's `<name>_locale` zone is unloaded
   (its strings, asset entries, localize slots and zone memory are freed) and the chosen one's is loaded, with C1's own
   zone loader, in about 20-200 ms. `k33_languageList` (`en;zh`) names what is installed, `k33_languageState` is 1 while
   the switch runs (one or a few frames), back to 0 when it is done, and 2 when it can only apply after a restart;
   `k33_languageSerial` counts completed switches (a movie re-creates its text when it changes). A switch is refused
   (state 2) when a C1 site did not match, when the language zone is not the top block of its memory stack, or when
   too few asset entries / localize slots are free; it never half-happens.
-- What the startup language decides: `client_shipRetail\patch\codol_<name>_locale.ff` of that language loads as the
+- What the startup language decides: `client_shipRetail\patch\<name>_locale.ff` of that language loads as the
   last zone of the code_post_gfx list, the others' only when chosen (`src/locale_switch.c`; when a C1 site differs it
   loads ahead of code_pre_gfx and the others are skipped, as before the switch existed). Its strings take the pool
   slots of the names C1's own zones already hold, so a language costs no asset entry beyond the names only it has:
   an English client uses the same 40,342 of C1's 59,999 asset entries at the front end as one without the switch, and 49,210-49,235 in a Killhouse
   match against its 49,222 (measured, docs/LANGUAGE_SWITCH_20261112.md). The Latin font movie
-  (`codol_english_font`) is part of `codol_common` and loads in every language. The DLL has no other
+  (`english_font`) is part of `common` and loads in every language. The DLL has no other
   language-dependent code: GBK text input, voice, controller, usermaps and the frame cap are the same.
 - Test builds (`K33_LOCAL_TESTING=1`): `loc_tableStats [label]` logs entry, localize and memory-stack use;
   `loc_cycle <n>` switches n times; `loc_forceUnload` lets the next switch unload a zone that is not the top of its
@@ -514,12 +514,12 @@ strings a key resolves to. It is chosen at startup and can be changed while the 
 |---|---|---|
 | voice_ui_mp | both | the front end: codo.gfx (lobby, rooms, loadout, store, options; codol-classic's THEATRE screen and SURVIVAL / THEATRE buttons; Options > Voice, Max FPS, Controller) and codologin.gfx |
 | controller_ingame | both | in a match: codohud.gfx (HUD, scoreboard) and codoingame.gfx (pause menu with pad navigation) |
-| codol_english | `1` | 9,700 of C1's strings in English (menus, HUD, weapons, perks, challenges, killstreaks, errors) |
-| codol_english_font | `1` | fonts_ingame.gfx with Latin glyphs drawn for English text |
-| codol_english_ui, codol_english_ui_extra | `1` | the UI movies' K33UI_* keys in English (codo + login, hud + ingame) |
-| codol_english_zombies_base | `1` | zombies weapon, perk, challenge and subtitle strings |
-| codol_english_usermaps | `1` | usermaps_patch's map names and descriptions (those are GBK Chinese), filtered by shipping_maps.txt the same way |
-| codol_chinese_ui, codol_chinese_ui_extra | `0` | the UI movies' K33UI_* keys in Chinese |
+| english | `1` | 9,700 of C1's strings in English (menus, HUD, weapons, perks, challenges, killstreaks, errors) |
+| english_font | `1` | fonts_ingame.gfx with Latin glyphs drawn for English text |
+| english_ui, english_ui_extra | `1` | the UI movies' K33UI_* keys in English (codo + login, hud + ingame) |
+| english_zombies_base | `1` | zombies weapon, perk, challenge and subtitle strings |
+| english_usermaps | `1` | usermaps_patch's map names and descriptions (those are GBK Chinese), filtered by shipping_maps.txt the same way |
+| chinese_ui, chinese_ui_extra | `0` | the UI movies' K33UI_* keys in Chinese |
 
 The movies are codol-classic's English ones (with Kernel33's Options classes and the pause menu's pad navigation),
 converted by `scripts/ui_keys.py`. C1's Scaleform translator replaces a text that starts with `@` by the localize entry of
@@ -540,9 +540,9 @@ fails. ui_keys.py made:
    `LocalizeUtil.localize("@K33UI_<NAME>")` (`codo.utils.LocalizeUtil`; `LocalizeUtil.replace(text, [a, b])` fills
    `#A#` `#B#`). OptionView's `k33L("K33UI_<NAME>")` does the same.
 2. Add `"K33UI_<NAME>": ("English", "中文", "codo.gfx")` to `NAMED` in `scripts/ui_keys.py` (the movie: codo.gfx /
-   codologin.gfx for codol_*_ui, codohud.gfx / codoingame.gfx for codol_*_ui_extra).
-3. `python scripts/ui_keys.py` compiles the changed classes (FFDec), adds the entry to `zones/codol_english_ui*/localize.str`
-   and `zones/codol_chinese_ui*/localize.str` and to their `zone_source` manifests; then `python scripts/build_zones.py`.
+   codologin.gfx for <language>_ui, codohud.gfx / codoingame.gfx for <language>_ui_extra).
+3. `python scripts/ui_keys.py` compiles the changed classes (FFDec), adds the entry to `zones/english_ui*/localize.str`
+   and `zones/chinese_ui*/localize.str` and to their `zone_source` manifests; then `python scripts/build_zones.py`.
    (By hand: one `K33UI_<NAME><TAB>text` line in each localize.str, one `localize,K33UI_<NAME>` line in each manifest.)
 To change a text, edit the localize.str line; ui_keys.py never overwrites an entry that exists.
 
@@ -552,15 +552,15 @@ Other notes:
   `codol_theatre_*` dvars), so the list stays empty and WATCH does nothing. The SURVIVAL button sets
   `codol_survival_direct_home` and opens Survival as in codol-classic; "Fullscreen Windowed" in Options > Video sets
   `codol_borderless`, which Kernel33 does not implement (it behaves as windowed).
-- 000_codol_party_modes and codol_loading_mode_names name modes C1 does not have (in English, with no Chinese text to
+- 000_party_modes and loading_mode_names name modes C1 does not have (in English, with no Chinese text to
   fall back to) and load in both languages.
 - `Kernel33.log` says which: `language: "en" (the default)` (or `+set k33_language`, `+set k33_english /
-  codol_patchlang`, `the saved k33_language`), then `english: on (k33_english 1): 1 codol_english* zone(s) queued`,
-  `english: off (k33_english 0): 0 codol_english* zone(s) skipped, 1 codol_chinese* zone(s) queued` (the English zone
+  loc_patchLang`, `the saved k33_language`), then `english: on (k33_english 1): 1 english* zone(s) queued`,
+  `english: off (k33_english 0): 0 english* zone(s) skipped, 1 chinese* zone(s) queued` (the English zone
   is not skipped but queued after code_post_gfx as a language to switch to), or, with English on and no
-  English zone installed, `english: on (k33_english 1), but no codol_english*.ff zone is in the patch folder: the
+  English zone installed, `english: on (k33_english 1), but no english*.ff zone is in the patch folder: the
   game stays Chinese` (missing zones are never an error; a missing string shows as its `@NAME`).
-- Install all of them together: an older `codol_english_ui.ff` / `codol_english_ui_extra.ff` (which carried English
+- Install all of them together: an older `english_ui.ff` / `english_ui_extra.ff` (which carried English
   movies) would override the shared movies in English mode.
 - The pure check lists `client_shipRetail\chinese\` and `main\` only, never `patch\`, so both states pass it.
 - Launchers: add the option to the client's command line. `3-START-CLIENT.cmd` (game folder) and the lobby's
@@ -649,7 +649,7 @@ Python 3.10+ with `pycryptodome` (`pip install pycryptodome`).
 ```
 python scripts/build_zones.py                                   # every zone -> output\ (shipping build: "ship" maps only)
 python scripts/build_zones.py --maps all                        # every zone with every usermap -> output_dev\ (local testing)
-python scripts/build_zones.py codol_common_ui_mp voice_ui_mp    # some zones (a source zone builds the zone it is part of)
+python scripts/build_zones.py common_ui_mp voice_ui_mp    # some zones (a source zone builds the zone it is part of)
 python scripts/build_zones.py --parts                           # every source zone on its own -> output_parts\ (the old layout)
 python scripts/build_zones.py --list                            # the zones, their install folder and origin
 python scripts/build_zones.py --verify                          # build and compare each with the original it came from
@@ -666,13 +666,13 @@ and only that DoABC tag is replaced. Each as/ file's sha256 is recorded in patch
 so FFDec is needed only after an edit; `--compile-as` also compiles the hand-written classes unchanged, which
 reproduces their stored tags byte for byte (the decompiled ones are skipped). Rawfiles, localize, stringtables and blobs can be changed and
 resized freely in the flat (Python-written) zones. In the C#-written zones (patch_common_gametype_zm,
-codol_infected_cyborg_postgfx_mp) assets point back at earlier data, so a resized asset can move what later assets
+infected_cyborg_postgfx_mp) assets point back at earlier data, so a resized asset can move what later assets
 point at: the manifest records each decoded asset's length (`len=`) and the build warns when an edit changes it.
 
 ### Where each zone goes
 `client_shipRetail\patch\` (Kernel33 loads `*_ui_mp` zones ahead of the UI zones, `*_postgfx_mp` zones after
-`code_post_gfx` (permanent, images allowed), the rest ahead of `code_pre_gfx`): codol_common, codol_common_ui_mp,
-codol_common_postgfx_mp, codol_infected_cyborg_postgfx_mp, codol_english_locale, codol_chinese_locale, plus
+`code_post_gfx` (permanent, images allowed), the rest ahead of `code_pre_gfx`): common, common_ui_mp,
+common_postgfx_mp, infected_cyborg_postgfx_mp, english_locale, chinese_locale, plus
 `sound_channels.txt`.
 `client_shipRetail\chinese\` (the 1.1.1.13 install and the CODOL 1.1.1.13 map pack): patch_common_gametype_zm (replaces
 the stock zone; keep the stock one as `patch_common_gametype_zm.ff.pre-pap`). `main\`: iw_image_16.iwd (the PaP camo
@@ -688,27 +688,27 @@ The source zones under `zone_source/` + `zones/` stay as they are (each with its
 
 | installed zone | list | languages | source zones (old installed names) |
 |---|---|---|---|
-| codol_common | ahead of code_pre_gfx | both | 000_codol_party_modes, codol_loading_mode_names, codol_zm_deathmachine_audio, controller_ingame, codol_english_font (the Latin font movie, every language), usermaps_patch (all but its strings) |
-| codol_common_ui_mp | ahead of the UI zones | both | voice_ui_mp, usermaps_ui_mp |
-| codol_common_postgfx_mp | after code_post_gfx | both | codol_field_orders_postgfx_mp, controller_glyphs_postgfx_mp, hud_styles_postgfx_mp, survival_hud_postgfx_mp |
-| codol_english_locale | last of the code_post_gfx list (ahead of code_pre_gfx when a C1 site differs); unloaded and loaded on a switch | `k33_language en` | codol_english, codol_english_ui, codol_english_ui_extra, codol_english_usermaps, codol_english_zombies_base, codol_english_hud_styles |
-| codol_chinese_locale | as codol_english_locale | `k33_language zh` (and no valid language) | codol_chinese_ui, codol_chinese_ui_extra, usermaps_patch's GBK strings, codol_chinese_hud_styles |
-| codol_infected_cyborg_postgfx_mp | after code_post_gfx | both | itself: C#-written, its assets point into its own runtime blocks, so they cannot move into another zone |
-| mp_codol_weapons | ahead of code_pre_gfx | both | itself (stringtables only): the MP weapon tables, whole -- an `mp_*` name, so the sh1x server mounts it too |
-| mp_codol_weapons_postgfx_mp | after code_post_gfx | both | itself: the MP weapon art (C#-written), `mp_*` for the server as well |
+| common | ahead of code_pre_gfx | both | 000_party_modes, loading_mode_names, zm_deathmachine_audio, controller_ingame, english_font (the Latin font movie, every language), usermaps_patch (all but its strings) |
+| common_ui_mp | ahead of the UI zones | both | voice_ui_mp, usermaps_ui_mp |
+| common_postgfx_mp | after code_post_gfx | both | field_orders_postgfx_mp, controller_glyphs_postgfx_mp, hud_styles_postgfx_mp, survival_hud_postgfx_mp |
+| english_locale | last of the code_post_gfx list (ahead of code_pre_gfx when a C1 site differs); unloaded and loaded on a switch | `k33_language en` | english, english_ui, english_ui_extra, english_usermaps, english_zombies_base, english_hud_styles |
+| chinese_locale | as english_locale | `k33_language zh` (and no valid language) | chinese_ui, chinese_ui_extra, usermaps_patch's GBK strings, chinese_hud_styles |
+| infected_cyborg_postgfx_mp | after code_post_gfx | both | itself: C#-written, its assets point into its own runtime blocks, so they cannot move into another zone |
+| mp_weapons | ahead of code_pre_gfx | both | itself (stringtables only): the MP weapon tables, whole -- an `mp_*` name, so the sh1x server mounts it too |
+| mp_weapons_postgfx_mp | after code_post_gfx | both | itself: the MP weapon art (C#-written), `mp_*` for the server as well |
 
 - Every asset keeps its list: graphics (images, materials, menus) only in `*_ui_mp` / `*_postgfx_mp` zones (an image
   ahead of code_pre_gfx crashes C1 at startup, AV read 0x0000000C).
 - C1 keeps the first asset it links under a name, and the old zones loaded in alphabetical order, so the parts are
   listed in that order and a later part's copy of a name an earlier part carries is left out ("shadowed": the old
-  install never used it). There are five: codol_loading_mode_names' gun.txt / oic.txt / shrp.txt / _gametypes.txt
-  (000_codol_party_modes' load first) and codol_english_zombies_base's ZOMBIE_THUNDERGUN(_UPGRADED) (codol_english's
-  load first). usermaps_patch's GBK map names, which codol_english_usermaps' English ones always covered in English,
-  are in codol_chinese_locale only, so no name is in two zones a language loads.
+  install never used it). There are five: loading_mode_names' gun.txt / oic.txt / shrp.txt / _gametypes.txt
+  (000_party_modes' load first) and english_zombies_base's ZOMBIE_THUNDERGUN(_UPGRADED) (english's
+  load first). usermaps_patch's GBK map names, which english_usermaps' English ones always covered in English,
+  are in chinese_locale only, so no name is in two zones a language loads.
 - Kernel33 skips an old zone name while the zone that replaced it is in the patch folder (`kPatchZoneMerged` in
-  patch_locale_policy.h; `patch folder: skipped voice_ui_mp.ff: merged into codol_common_ui_mp.ff`), so stale files on
+  patch_locale_policy.h; `patch folder: skipped voice_ui_mp.ff: merged into common_ui_mp.ff`), so stale files on
   an existing install never load twice, and a folder with only the old names (codol-classic-zz) still loads them.
-  The glyphs (controller_glyphs.c) are looked up in codol_common_postgfx_mp, else in controller_glyphs_postgfx_mp.
+  The glyphs (controller_glyphs.c) are looked up in common_postgfx_mp, else in controller_glyphs_postgfx_mp.
 - `tests/check_zone_packs.py [--maps all] [--old <folder>]` loads the built zones the way C1 does for each language
   and proves the same assets reach the game, byte for byte and in the same list, that no list carries a name twice
   and that every asset of every old zone is in exactly one new zone (or shadowed); it also checks codo.gfx's
@@ -716,10 +716,10 @@ The source zones under `zone_source/` + `zones/` stay as they are (each with its
   Kernel33's table. `--verify` compares each pack with its recorded `>build-md5` (`>build-md5-all` for `--maps all`).
 - The `mp_*` zones stay on their own: the sh1x server mounts `mp_*.ff` of the patch folder (`patchZonePath`)
   with every MP map, ranked ahead of stock, so client and server read the same weapon tables and models. A zone in
-  a pack would be invisible to the server. mp_codol_weapons carries each table it changes whole (the effective stock
+  a pack would be invisible to the server. mp_weapons carries each table it changes whole (the effective stock
   table plus the new rows) because C1 links the first stringtable of a name, and it loads ahead of every stock zone
-  in every session; its tables come from mp_m14_staging `tool_src\gen_mp_codol_weapons.py`.
-  mp_codol_weapons_postgfx_mp is written by mp_m14_staging's `CodolSoundDumper mp-weapons-zone` (decompiled here);
+  in every session; its tables come from mp_m14_staging `tool_src\gen_mp_weapons.py`.
+  mp_weapons_postgfx_mp is written by mp_m14_staging's `CodolSoundDumper mp-weapons-zone` (decompiled here);
   it holds the M14 EBR's base gun (m14ebr_mp): the zombies M14 models with their merged default parts hidden, in
   C1's 22 camo rows.
 - To add a source zone: give it a zone_source manifest as before and add a `part,<zone>` line to the pack of its list
@@ -754,19 +754,19 @@ in the map pack, change it to `ship` and build.
 ### Provenance
 | zone | made by |
 |---|---|
-| codol_english | `tools/english/build_ff.py` (CoD4x_Server, localizedStrings-1.1.1.13) from `codol_english.tsv` |
-| codol_english_font | `build_font_ff.py` (same tools); byte-identical to localizedStrings-1.1.1.13 `zones/` |
-| codol_english_zombies_base | localizedStrings-1.1.1.13 `tools/localize_zone.py` from `strings/codol_english_zombies_base/strings.tsv` (identical) |
-| codol_english_ui, codol_english_ui_extra, codol_chinese_ui, codol_chinese_ui_extra | `scripts/ui_keys.py`: the K33UI_* entries; the English text is codol-classic's (its English movies, launcher releases r22-r30 and `deploy/client-patches/revive-token-mode/build_token_mode.py`), the Chinese text the stock movies' |
-| codol_english_usermaps | this repository (authored here, no shipped original): usermaps_patch's strings in English |
-| codol_loading_mode_names | codol-classic `launcher/tools/build_loading_mode_names.py` (r21) |
-| codol_zm_deathmachine_audio | codol-classic `deploy/client-patches/build_deathmachine_audio.py` |
-| 000_codol_party_modes | codol-classic branch `codex/party-infected-20261017` (r22) |
-| codol_infected_cyborg_postgfx_mp | codol-classic branch `codex/party-infected-20261017`, `build_infected_cyborg_assets.py` |
-| voice_ui_mp, controller_ingame | codol-classic's English codo.gfx / codologin.gfx / codohud.gfx / codoingame.gfx (formerly codol_english_ui / _extra) made language-neutral by `scripts/ui_keys.py`, with this repository's hand-written classes in their `.gfxpatch/as/` (formerly `voice_ui/`, build_voice_ui.py / build_ingame_ui.py) |
+| english | `tools/english/build_ff.py` (CoD4x_Server, localizedStrings-1.1.1.13) from `english.tsv` |
+| english_font | `build_font_ff.py` (same tools); byte-identical to localizedStrings-1.1.1.13 `zones/` |
+| english_zombies_base | localizedStrings-1.1.1.13 `tools/localize_zone.py` from `strings/english_zombies_base/strings.tsv` (identical) |
+| english_ui, english_ui_extra, chinese_ui, chinese_ui_extra | `scripts/ui_keys.py`: the K33UI_* entries; the English text is codol-classic's (its English movies, launcher releases r22-r30 and `deploy/client-patches/revive-token-mode/build_token_mode.py`), the Chinese text the stock movies' |
+| english_usermaps | this repository (authored here, no shipped original): usermaps_patch's strings in English |
+| loading_mode_names | codol-classic `launcher/tools/build_loading_mode_names.py` (r21) |
+| zm_deathmachine_audio | codol-classic `deploy/client-patches/build_deathmachine_audio.py` |
+| 000_party_modes | codol-classic branch `codex/party-infected-20261017` (r22) |
+| infected_cyborg_postgfx_mp | codol-classic branch `codex/party-infected-20261017`, `build_infected_cyborg_assets.py` |
+| voice_ui_mp, controller_ingame | codol-classic's English codo.gfx / codologin.gfx / codohud.gfx / codoingame.gfx (formerly english_ui / _extra) made language-neutral by `scripts/ui_keys.py`, with this repository's hand-written classes in their `.gfxpatch/as/` (formerly `voice_ui/`, build_voice_ui.py / build_ingame_ui.py) |
 | usermaps_patch, usermaps_ui_mp | the game folder's `usermaps\build_usermaps_patch.py` (now superseded by the sources here) |
 | controller_glyphs_postgfx_mp | this repository (authored here, no shipped original): the former `glyphs/glyphs.bin` icons (Xelu's CC0 prompts) as image assets with C1's `hud_status_dead` material layout |
-| hud_styles_postgfx_mp, codol_english_hud_styles, codol_chinese_hud_styles | `tools/build_hud_styles.py` (authored here, no shipped original): the native HUD menus, HUD images and labels of the user's own Call of Duty Online 2.6.9.7 and 3.3.3.3 installs (3.3.3.3's own menu operators read from its executable's evaluator), read with CODOL-AssetExplorer's CodolSoundDumper (`extract`), converted to 1.1.1.13 and gated on `k33_hudStyle`; the English labels are plain translations. Style 5 (SM2) is authored as `.menu` source (`sources/sm2.menu`, compiled by `zonekit/menu_source.py`). `docs/HUD_STYLES_20261112.md` |
+| hud_styles_postgfx_mp, english_hud_styles, chinese_hud_styles | `tools/build_hud_styles.py` (authored here, no shipped original): the native HUD menus, HUD images and labels of the user's own Call of Duty Online 2.6.9.7 and 3.3.3.3 installs (3.3.3.3's own menu operators read from its executable's evaluator), read with CODOL-AssetExplorer's CodolSoundDumper (`extract`), converted to 1.1.1.13 and gated on `k33_hudStyle`; the English labels are plain translations. Style 5 (SM2) is authored as `.menu` source (`sources/sm2.menu`, compiled by `zonekit/menu_source.py`). `docs/HUD_STYLES_20261112.md` |
 | patch_common_gametype_zm | `CodolSoundDumper zm-pap-patch` (CODOL-AssetExplorer + `pap_patch_staging\tool_src`) over the stock zone |
 
 ### Known gaps
