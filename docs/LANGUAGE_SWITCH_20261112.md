@@ -39,7 +39,7 @@ zombies `Round 1/9` / `回合 1/9`). What the movies do is unchanged by this wor
 change; the front end re-sets only some of its texts (measured: after a switch the Multiplayer lobby screen keeps the
 old language until it is opened again; dialogs created after the switch are in the new one).
 
-Startup order (`CodolStartupLanguage`) is unchanged: the last valid `+set k33_language`; else `+set k33_english` /
+Startup order (`StartupLanguage`) is unchanged: the last valid `+set k33_language`; else `+set k33_english` /
 `+set codol_patchlang`; else the last `seta k33_language` line of `players\config_mp.cfg`; else `en`.
 
 ## How it works
@@ -174,7 +174,7 @@ I = inferred. Every patched or called site is byte-checked in `LocaleSwitchCheck
 - One extra unload + load of the language zone on the first map load of a session (about 0.1 s, on the loading
   screen; for that moment the shown language's own names resolve to nothing and shared names to C1's text).
 - With the match hosted in-process, the switch acts on the client's database only.
-- At most `CODOL_LANG_MAX` (8) languages are listed; one is loaded at a time.
+- At most `LANG_MAX` (8) languages are listed; one is loaded at a time.
 
 ## Not verified
 

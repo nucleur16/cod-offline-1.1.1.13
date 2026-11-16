@@ -2,7 +2,7 @@
  * The existing exact-build import loader and guarded borderless creation path
  * call this layer. The external receipt-bound launcher moves the off-screen,
  * non-activating window before setting its per-launch placement property. */
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
 __declspec(dllexport) volatile LONG QbgTelemetry[16];
 static BOOL g_qbgChecked, g_qbgEnabled;
 static char g_qbgProperty[64];

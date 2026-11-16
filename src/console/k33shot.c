@@ -1,7 +1,7 @@
 /*
  * k33shot.c - back-buffer screenshots and per-render-target draw statistics for test harnesses.
  *
- * Diagnostic profile only (CODOL_DIAGNOSTICS, with console.c): shipping and quiet-QA builds do not compile this
+ * Diagnostic profile only (K33_DIAGNOSTICS, with console.c): shipping and quiet-QA builds do not compile this
  * file. It rides on the console's Direct3D hooks (console.c: Present of the device and of swap chain 0), so no
  * second d3d9 proxy DLL is needed next to the client. A screen copy of the game window is black while the display
  * is off (Windows drops the frames of a windowed Direct3D 9 program), but the game still renders its back buffer.

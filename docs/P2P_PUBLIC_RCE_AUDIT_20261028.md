@@ -401,11 +401,11 @@ test double. These are **20 profile/scenario runs**, not real C1 acceptance.
 Compile each profile with MinGW GCC13:
 
 ```
-i686-w64-mingw32-gcc -std=c99 -O2 -Wall -Wextra -Werror -Wno-cast-function-type -DCODOL_LOCAL_TESTING=0 tests/hostgate_windows_fixture.c -o hostgate-0.exe -lws2_32 -liphlpapi
+i686-w64-mingw32-gcc -std=c99 -O2 -Wall -Wextra -Werror -Wno-cast-function-type -DK33_LOCAL_TESTING=0 tests/hostgate_windows_fixture.c -o hostgate-0.exe -lws2_32 -liphlpapi
 python tests/test_hostgate_windows.py hostgate-0.exe
 ```
 
-Repeat with `CODOL_LOCAL_TESTING=1`. The normal Windows test runner includes
+Repeat with `K33_LOCAL_TESTING=1`. The normal Windows test runner includes
 both profiles. The native reviewer separately compiled and ran eight exact-main
 source fixtures: handshake guard, vote guard, info strings, data fast path,
 peer pool, session reservations, connect parsing and gamestate validation.
@@ -530,7 +530,7 @@ and no additional RCE was demonstrated. See
 `re/p2p-native-audit-20261028/docs/P2P_RCON_UNTERMINATED_QUOTE_AUDIT_20261031.md`.
 
 The local admitted-P2P native source also refused a fail-open configuration:
-with `codol_admissionRequired` enabled and no encryption key path, packets
+with `admissionRequired` enabled and no encryption key path, packets
 previously fell through to the ordinary plaintext UDP parser. They are now
 consumed. The focused 32-bit fixture covers both required-admission refusal
 and the separate diagnostic mode; this is not evidence that production was

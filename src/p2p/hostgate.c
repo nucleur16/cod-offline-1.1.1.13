@@ -36,12 +36,12 @@ typedef int (WINAPI *HgSendToFn)(SOCKET, const char *, int, int, const struct so
 static HgRecvFromFn g_hgRecvFrom;
 static HgSendToFn g_hgSendTo;
 static CRITICAL_SECTION g_hgLock;
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
 static DWORD g_hgRefused[64];
 static int g_hgRefusedCount;
 #endif
 static int g_hgMode = 2;
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
 static volatile LONG g_hgDropsIn, g_hgDropsOut;
 #endif
 
@@ -52,7 +52,7 @@ static BOOL HostGateOk(DWORD ip)
     return ok;
 }
 
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
 static void HostGateRefused(DWORD ip, int out, int port)
 {
     InterlockedIncrement(out ? &g_hgDropsOut : &g_hgDropsIn);
@@ -123,7 +123,7 @@ static int WINAPI HostGateSendTo(SOCKET s, const char *buf, int len, int flags, 
 static BOOL InstallHostGate(void)
 {
     InitializeCriticalSection(&g_hgLock);
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
     const char *cl = GetCommandLineA();
     if (cl && (strstr(cl, "k33_hostGate 1") || strstr(cl, "k33_hostGate \"1\""))) g_hgMode = 1;
 #endif

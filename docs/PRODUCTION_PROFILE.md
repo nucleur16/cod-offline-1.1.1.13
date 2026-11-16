@@ -1,6 +1,6 @@
 # Production and local test builds
 
-The default build has `CODOL_LOCAL_TESTING=0` and `CODOL_DIAGNOSTICS=0`.
+The default build has `K33_LOCAL_TESTING=0` and `K33_DIAGNOSTICS=0`.
 It omits the Kernel33 log writer, parity logger installation, diagnostic pad and
 voice commands, synthetic Ready/mouse helpers and command-file transport.
 Normal controller input, voice, room identity, sound voice policy and gameplay
@@ -58,4 +58,4 @@ window remains unchanged. It does not certify the game's menu response.
 
 ## Offline mode
 
-The in-client lobby (`src/offline/`, `src/offline_lobby.c`, `docs/OFFLINE_LOBBY.md`) is part of every profile and always active: this fork is offline only. `K33_OFFLINE` no longer exists; `CODOL_OFFLINE_LOBBY` is fixed at 1 in `production_profile.h` (a test fixture may define it 0 to compile one source file alone). It enables no diagnostics.
+The in-client lobby (`src/offline/`, `src/offline_lobby.c`, `docs/OFFLINE_LOBBY.md`) is part of every profile and always active: this fork is offline only. `K33_OFFLINE` no longer exists; `K33_OFFLINE_LOBBY` is fixed at 1 in `production_profile.h` (a test fixture may define it 0 to compile one source file alone). It enables no diagnostics.

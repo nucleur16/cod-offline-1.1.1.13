@@ -20,7 +20,7 @@
  * The hook runs C1's own code for every other category string, byte for byte (tests/test_survival_category_x86.py
  * runs the patched and the stock functions side by side in Unicorn).
  *
- * "+set codol_survival 0" on the command line installs nothing. */
+ * "+set k33_survival 0" on the command line installs nothing. */
 #define K33_SURV_LOG Log
 #include "survival_category_hooks.h"
 
@@ -28,10 +28,10 @@ static BOOL SurvivalCategoryEnabled(void)
 {
     const char *p = GetCommandLineA(), *q;
     BOOL on = TRUE;
-    while ((q = strstr(p, "codol_survival")) != NULL) {
-        q += 14;
+    while ((q = strstr(p, "k33_survival")) != NULL) {
+        q += sizeof("k33_survival") - 1;
         p = q;
-        if (*q != ' ' && *q != '\t' && *q != '"') continue; /* codol_survivalXxx is another name */
+        if (*q != ' ' && *q != '\t' && *q != '"') continue; /* k33_survivalXxx is another name */
         while (*q == ' ' || *q == '\t' || *q == '"') q++;
         on = *q != '0';
     }
@@ -70,7 +70,7 @@ static void PatchSurvivalCategory(void)
         { K33_SURV_CROSSHAIR_HOOK_VA, {0x84,0x84,0x24,0x04,0,0,0,0x0f,0x84,0x2a,0x31,0xea,0xff},13 },
     };
     if (!SurvivalCategoryEnabled()) {
-        Log("survival category: off (codol_survival 0)");
+        Log("survival category: off (k33_survival 0)");
         return;
     }
     for (unsigned i = 0; i < sizeof(kSites) / sizeof(kSites[0]); i++)

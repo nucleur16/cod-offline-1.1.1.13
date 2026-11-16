@@ -44,14 +44,14 @@ typedef struct P2PConfig {
     char home[MAX_PATH];         /* fs_homepath */
     char scripts[MAX_PATH];      /* GSC root (codol_rawfiles) */
     char state[MAX_PATH];        /* securitykey.bin, game_admissions.txt, native_server_rcon.txt */
-    char profile[MAX_PATH];      /* codol_profilePath: the lobby's resources folder */
+    char profile[MAX_PATH];      /* profilePath: the lobby's resources folder */
     char rconFile[MAX_PATH];
     char map[64], gametype[32], zoneType[16], sessionMap[64];
     char netIp[64], botDifficulty[16], extra[512];
     char mode[16];               /* inprocess (default): sh1x_host.dll on the game thread; child: the exe */
     char dll[MAX_PATH];          /* the server as a DLL (mode inprocess) */
     int port, bots, admission, developer, readyTimeout;
-    int pmemMegs;                /* codol_pmemMegs for the server: its fastfile block (0 = the server default) */
+    int pmemMegs;                /* pmemMegs for the server: its fastfile block (0 = the server default) */
     int c1Assets;                /* in-process: take C1's records of startup zones (default 1) */
     int c1Preload;               /* in-process: preloadmap when C1 is not loading a hosted map (default 0) */
     int c1Zones;                 /* in-process: map zones C1 holds are C1-backed, mounted only on demand (default 1) */
@@ -186,7 +186,7 @@ static void P2PDefaults(P2PConfig *c)
     c->c1Zones = 1;
 }
 
-#if CODOL_OFFLINE_LOBBY
+#if K33_OFFLINE_LOBBY
 static void OfflineP2PConfig(P2PConfig *c); /* offline_lobby.c: the offline run-time folder and this run's host port */
 static void OfflineHostPortRelease(void);   /* offline_lobby.c: the host port stops being held reserved */
 static void OfflineHostPortReserve(void);   /* offline_lobby.c: held again after a session was taken down */
@@ -304,7 +304,7 @@ static const char *P2PCheck(const P2PConfig *c)
      * trial's two known lifecycle switches, but never let it override an
      * admission, script or network cvar (or inject another console command). */
     if (c->extra[0] && strcmp(c->extra,
-            "+set codol_exitToLobby 1 +set codol_oneShotMatch 1"))
+            "+set exitToLobby 1 +set oneShotMatch 1"))
         return "P2P extra commands are not permitted by the local host policy";
     if (!P2PPathOk(c->dll)) return "a path holds a quote";
     if (inproc && GetFileAttributesA(c->dll) == INVALID_FILE_ATTRIBUTES) return "server DLL not found (dll=)";
@@ -486,7 +486,7 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
     char pmem[256] = "";
     char relayArg[MAX_PATH + 96] = "";
     char relayPath[MAX_PATH + 64];
-    if (c.pmemMegs >= 32 && c.pmemMegs <= 2048) _snprintf(pmem, sizeof(pmem), "+set codol_pmemMegs %d", c.pmemMegs);
+    if (c.pmemMegs >= 32 && c.pmemMegs <= 2048) _snprintf(pmem, sizeof(pmem), "+set pmemMegs %d", c.pmemMegs);
     /* Zombies: the room's difficulty is g_difficulty to the server's _zombiemode.gsc (the lobby's
      * selection, K33LocalPlayAuto); left unset it stays 0 and every room plays on easy. */
     if (!strcmp(c.zoneType, "zm") && c.difficultyPresent && c.difficulty >= 0 && c.difficulty <= 2)
@@ -501,22 +501,22 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
      * Ready starts a fresh one. Without it the client followed the rotation into the next map for a second and
      * that map's "disconnect" report credited a loss. */
     if (OfflineLobbyActive())
-        _snprintf(pmem + strlen(pmem), sizeof(pmem) - strlen(pmem), " +set codol_oneShotMatch 1 +set codol_exitToLobby 1");
+        _snprintf(pmem + strlen(pmem), sizeof(pmem) - strlen(pmem), " +set oneShotMatch 1 +set exitToLobby 1");
     pmem[sizeof(pmem) - 1] = 0;
     /* The explicit local Host/Guest trial arms this short-lived file before
      * forwarding any Guest packet. Normal solo hosting leaves it absent. */
     _snprintf(relayPath, sizeof(relayPath), "%s\\p2p_relay_identity.txt", c.state);
     relayPath[sizeof(relayPath)-1] = 0;
-    _snprintf(relayArg, sizeof(relayArg), "+set codol_relayIdentityPath \"%s\"", relayPath);
+    _snprintf(relayArg, sizeof(relayArg), "+set relayIdentityPath \"%s\"", relayPath);
     relayArg[sizeof(relayArg)-1] = 0;
     _snprintf(cmd, sizeof(cmd),
         "\"%s\" +set dedicated 2 +set fs_basepath \"%s\" +set fs_homepath \"%s\" +set net_ip %s +set net_port %d "
         "+set rcon_password \"%s\" +set logfile 2 +set logrcon 1 +set developer %d +set sv_fps 60 "
-        "+set codol_scriptPath \"%s\" +set codol_scriptOverlay \"%s\" +set codol_scriptNativeOverlay \"%s\" "
-        "+set codol_securityKeyPath \"%s\\securitykey.bin\" +set codol_admissionPath \"%s\\game_admissions.txt\" "
-        "+set codol_admissionRequired %d %s +set codol_profilePath \"%s\" +set codol_zoneType %s +set codol_sessionMap %s "
-        "+set g_gametype %s +set codol_hostParentPid %lu %s "
-        "+codol_scriptPath +codol_scriptOverlay +codol_scriptNativeOverlay +map %s %s",
+        "+set scriptPath \"%s\" +set scriptOverlay \"%s\" +set scriptNativeOverlay \"%s\" "
+        "+set securityKeyPath \"%s\\securitykey.bin\" +set admissionPath \"%s\\game_admissions.txt\" "
+        "+set admissionRequired %d %s +set profilePath \"%s\" +set zoneType %s +set sessionMap %s "
+        "+set g_gametype %s +set hostParentPid %lu %s "
+        "+scriptPath +scriptOverlay +scriptNativeOverlay +map %s %s",
         c.exe, c.basepath, c.home, c.netIp, c.port, password, c.developer, c.scripts, c.scripts, c.scripts,
         c.state, c.state, c.admission ? 1 : 0, relayArg, c.profile, c.zoneType, c.sessionMap[0] ? c.sessionMap : c.map,
         c.gametype, inproc ? 0ul : GetCurrentProcessId(), pmem, c.map, c.extra);

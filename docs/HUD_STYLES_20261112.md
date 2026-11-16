@@ -319,7 +319,7 @@ found), so its own operators (from 3.5.2.6 + 8 onward; menu visibility of its we
 Own client folder (`D:\CoD\k33_hud_fix_client`: the model test folder's root files, players\ and p2p\ copied; patch\
 a real folder with the candidate zones; chinese, temp, miles, usermaps junctions; main\ a real folder with
 junctions for sh1x_rawfiles and video, hard links for the .iwd files, copies of the small files), a
-`K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=1` DLL, `+set k33_cmdFile 1 +set codol_local_test_multi 1`, Team Deathmatch on
+`K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=1` DLL, `+set k33_cmdFile 1 +set k33_local_test_multi 1`, Team Deathmatch on
 Crash hosted in-process, pictures through `k33_shot.req`.
 
 | capture | shows |
@@ -420,7 +420,7 @@ ownerdraw.
   - the HUD-style row of the pause menu showing "SM2";
   - `set k33_hudStyle 0` / `5` switching in the same frame.
 
-  Second round (killstreaks, health, icon), with `codol_devServer 1` / `codol_dev_cheats on` over the host's rcon,
+  Second round (killstreaks, health, icon), with `devServer 1` / `dev_cheats on` over the host's rcon,
   `take health N`, frozen bots (`sv_botStop 1`) moved in front of the player (`dev_clientcmd bots setviewpos`):
   - the streak slot dim at 0 kills, the pips filling at 2 kills, then the UAV lit with its key at 3;
   - health full, at 30 % after `take health 70`, regenerating back to full within about 3 s, and red at 18 %;
@@ -458,7 +458,7 @@ ownerdraw.
 ## Integration notes
 
 - `src/kernel33.c`: `#include "hud_style.c"` after `theatre.c`, `InstallHudStyle();` after `InstallTheatre();`.
-- `src/patch_locale_policy.h` `kCodolPatchZoneMerged`: three rows (`hud_styles_postgfx_mp`,
+- `src/patch_locale_policy.h` `kPatchZoneMerged`: three rows (`hud_styles_postgfx_mp`,
   `codol_english_hud_styles`, `codol_chinese_hud_styles`), required by tests/test_zone_packs.py. Both files are
   pinned by `ui_baseline.json`, which is not re-recorded here.
 - `hud_style.c` takes one `K33OnMainTick` slot. A local-testing build then registers seven before Product Pi's

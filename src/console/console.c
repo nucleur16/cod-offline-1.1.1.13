@@ -3,8 +3,8 @@
  * WriteCode/CallsTarget/RedirectCall and the parity logger's helpers.
  *
  * In this offline fork every build has it (docs/OFFLINE_CONSOLE_20261112.md): the shipping profile too, where
- * it was absent while the gate was CODOL_DIAGNOSTICS. What stays diagnostics-only is marked
- * `#if CODOL_DIAGNOSTICS` here: the k33shot built-in, k33shot.c's Present callbacks and the rcon to a server
+ * it was absent while the gate was K33_DIAGNOSTICS. What stays diagnostics-only is marked
+ * `#if K33_DIAGNOSTICS` here: the k33shot built-in, k33shot.c's Present callbacks and the rcon to a server
  * other than the one this client hosts. A build without the console is -DK33_NO_CONSOLE.
  *
  * C1 has no console of its own any more. IW4's Con_Init (C1 0x489090) still registers "864"
@@ -377,7 +377,7 @@ typedef struct ConCmd { struct ConCmd *next; const char *name; void *fn; } ConCm
 
 /* Commands the console handles itself (they also cover the IW4 ones C1 dropped). */
 static const char *const kBuiltins[] = { "clear", "cmdlist", "condump", "dvarlist", "find", "k33help",
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
                                          "k33shot", /* the console frame as a BMP: a test aid, not shipped */
 #endif
 };
@@ -398,9 +398,9 @@ static BOOL ConIsSetCommand(const char *t)
  * client that sent it). This table gives them autocomplete, argument hints and help. It is the server's
  * set: tests/test_offline_console.py compares the names and usage strings with the pinned server source
  * (sh1x_cmds.h kSh1xCheats, generated from it), so neither side can gain or lose a command unnoticed.
- * The server decides whether a cheat runs: sv_cheats must be on (the server command "codol_dev_cheats on",
- * host only) and the server must not be a lobby match server: typed here, "codol_dev_cheats on" first sets
- * the server's own codol_devServer 1 (ConSvCheatsOn, console_server.c).
+ * The server decides whether a cheat runs: sv_cheats must be on (the server command "dev_cheats on",
+ * host only) and the server must not be a lobby match server: typed here, "dev_cheats on" first sets
+ * the server's own devServer 1 (ConSvCheatsOn, console_server.c).
  *
  * Server console commands and dvars go to the server this client hosts: "sv <command>" (alias "rcon"),
  * or the bare name when C1 has no command or dvar of that name. See console_server.c for the route and
@@ -456,7 +456,7 @@ static void ConDevDetail(const ConDevCmd *c)
 {
     int k = 0;
     _snprintf(g_detail[k++], 200, "^3%s^7  %s", c->usage, c->builtin ? "" :
-              "^9(server cheat, in a match: codol_dev_cheats on first)");
+              "^9(server cheat, in a match: dev_cheats on first)");
     _snprintf(g_detail[k++], 200, "^9  %s", c->help);
     for (int i = 0; i < k; i++) g_detail[i][199] = 0;
     g_detailCount = k;
@@ -475,7 +475,7 @@ static BOOL ConConnected(void)
     return Readable((const void *)state, 4) && *state >= 5;
 }
 
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
 static const BYTE *volatile g_conRconPortDvar;
 
 /* The connected server's address when it is on this machine: port, else 0. */
@@ -563,10 +563,10 @@ static void ConDevHelp(void)
     DWORD session = 0;
     BOOL hosting = ConSvHost(&port, pw, sizeof(pw), &session), live;
     ConPrintf("sh1x developer commands - the match server runs them for the player who typed them. In a match:\n");
-    ConPrintf("  ^3codol_dev_cheats on^7 switches cheats on (sv_cheats 1; that match then records no progression), off again with off.\n");
+    ConPrintf("  ^3dev_cheats on^7 switches cheats on (sv_cheats 1; that match then records no progression), off again with off.\n");
     for (unsigned i = 0; i < DEV_CMD_COUNT; i++) ConPrintf("  ^3%-40s^7 %s\n", kDevCmds[i].usage, kDevCmds[i].help);
     ConPrintf("  Server commands and dvars: type the name, or ^3sv <name ...>^7 when the client has one of the same name\n");
-    ConPrintf("  (the client's wins). dev_cheats shows the cheat state, codol_dev_clients the players, cmdlist/dvarlist/find list both sides.\n");
+    ConPrintf("  (the client's wins). dev_cheats shows the cheat state, dev_clients the players, cmdlist/dvarlist/find list both sides.\n");
     EnterCriticalSection(&g_svLock);
     nc = g_sv.cmdCount; nd = g_sv.dvarCount; live = g_sv.session != 0;
     LeaveCriticalSection(&g_svLock);
@@ -578,7 +578,7 @@ static void ConDevHelp(void)
     ConPrintf("  Local toggles: k33_drawFPS 1 (or cg_drawFPS 1), k33_drawViewpos 1.\n");
 }
 
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
 /* Diagnostics builds only: rcon to another server on this machine (a developer's dedicated sh1x), when this
  * client hosts nothing. The shipped client has no such path: it contacts the server it hosts and nothing else. */
 typedef struct { int port; char command[CON_INPUT_LEN]; } ConRconJob;
@@ -640,7 +640,7 @@ static void ConServerLine(const char *command, BOOL explicitRcon)
     while (*command == ' ') command++;
     if (!*command) { ConPrintf("usage: sv <server command or dvar ...>   (the match server this client hosts)\n"); return; }
     if (ConSvExec(command)) return;
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     if (explicitRcon) { ConRconLegacy(command); return; }
 #else
     (void)explicitRcon;
@@ -1421,7 +1421,7 @@ static void ConExecute(const char *line)
             InterlockedExchange(&g_conDirty, 1);
             continue;
         }
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         if (!_stricmp(t0, "k33shot")) {
             int delay;
             ConReadToken(seg, &p, t1, sizeof(t1));
@@ -1480,7 +1480,7 @@ static void ConExecute(const char *line)
                 char a1[16];
                 int q3 = afterT0;
                 ConReadToken(seg, &q3, a1, sizeof(a1));
-                if (!isSet && !_stricmp(t0, "codol_dev_cheats") && !_stricmp(a1, "on") && ConSvCheatsOn(seg)) continue;
+                if (!isSet && !_stricmp(t0, "dev_cheats") && !_stricmp(a1, "on") && ConSvCheatsOn(seg)) continue;
                 ConServerLine(seg, FALSE);
                 continue;
             } else if (clientHas && svKind) {
@@ -2489,7 +2489,7 @@ static void ConHudRegister(void)
     if (!g_hudPosDvar)
         g_hudPosDvar = C1RegisterInt("k33_drawViewpos", 0, 0, 1, 0x1,
                                      "Kernel33: draw the predicted position, view angles and speed (top right)");
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     if (!g_conRconPortDvar)
         g_conRconPortDvar = C1RegisterInt("k33_rconPort", 17733, 1, 65535, 0x1,
                                           "Kernel33 console: rcon port when not connected to a local server");
@@ -2637,7 +2637,7 @@ static HRESULT WINAPI Hook_Present(IDirect3DDevice9 *dev, const RECT *a, const R
 {
     ConDraw(dev);
     ConHudDraw(dev);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     ShotBeforePresent(dev); /* k33shot.c: a pending screenshot or statistics request */
 #endif
     InterlockedIncrement(&g_inPresent); /* d3d9 may present through the swap chain's vtable */
@@ -2651,7 +2651,7 @@ static HRESULT WINAPI Hook_SCPresent(IDirect3DSwapChain9 *sc, const RECT *a, con
     IDirect3DDevice9 *dev = NULL;
     int hudFps, hudPos;
     BOOL hud = ConHudWanted(&hudFps, &hudPos);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     BOOL shot = ShotWanted(); /* k33shot.c */
 #else
     BOOL shot = FALSE;
@@ -2659,7 +2659,7 @@ static HRESULT WINAPI Hook_SCPresent(IDirect3DSwapChain9 *sc, const RECT *a, con
     if ((g_conOpen || hud || shot) && !g_inPresent && SUCCEEDED(IDirect3DSwapChain9_GetDevice(sc, &dev)) && dev) {
         ConDraw(dev);
         ConHudDraw(dev);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         ShotBeforePresent(dev);
 #endif
         IDirect3DDevice9_Release(dev);

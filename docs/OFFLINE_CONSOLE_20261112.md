@@ -7,8 +7,8 @@ are synced and how the sync is tested, and what was measured as opposed to infer
 ## What gated the console, and what is enabled now
 
 `src/console/console.c` (the overlay console: input line, completion, log, Present-hook drawing) was compiled only
-when `CODOL_DIAGNOSTICS` was 1 (`#if CODOL_DIAGNOSTICS && !defined(K33_NO_CONSOLE)` in `src/kernel33.c`, around the
-include and around `InstallConsole()`). `CODOL_DIAGNOSTICS` follows `K33_LOCAL_TESTING` (`src/production_profile.h`,
+when `K33_DIAGNOSTICS` was 1 (`#if K33_DIAGNOSTICS && !defined(K33_NO_CONSOLE)` in `src/kernel33.c`, around the
+include and around `InstallConsole()`). `K33_DIAGNOSTICS` follows `K33_LOCAL_TESTING` (`src/production_profile.h`,
 `scripts/build-profile.sh`), and shipping builds reject it. So the default `sh scripts/build.sh` had no console, and
 only a local-testing build had one.
 
@@ -30,7 +30,7 @@ in builds that have a log): the `Direct3DCreate9` import-slot wrap (0xB42598) an
 vtable hooks, the window-class WndProc swap (0x62FB85 -> `ConsoleWndProc`), and the four pre-hooks on
 `Com_LogPrintMessage` 0x594010 (0x5941A4, 0x5942CE, 0x5944A2, 0x59B96E). Nothing test-only came with them: the
 command-file transport, `k33mouse`/`k33ready`, the parity logger and the snapshot diagnostics keep their own
-`CODOL_LOCAL_TESTING`/`CODOL_DIAGNOSTICS` gates.
+`K33_LOCAL_TESTING`/`K33_DIAGNOSTICS` gates.
 
 ## Routing rules (ConExecute, console.c)
 
@@ -48,7 +48,7 @@ A line is split on `;` outside quotes, and each command goes to exactly one plac
    needs, because the server applies it to the client that sent it. While not connected the console prints
    `no match running: <cmd> is a command of the match server`.
 5. A server command or dvar the client does not have goes to the hosted server without a prefix (`dev_cheats`,
-   `codol_dev_clients`, `g_gravity`, `set g_speed 300`, ...).
+   `dev_clients`, `g_gravity`, `set g_speed 300`, ...).
 6. Anything else goes to `Cbuf`, as before.
 
 Whenever rule 2 or 5 applies and this client hosts nothing, the console prints
@@ -73,17 +73,17 @@ and nothing returns its output.
 ### Cheats and the server's permission model
 
 The server enforces this, unchanged (`codol_dev_cheats.c`): `CODOL_CheatsPermitted() = sv_cheats &&
-!lobby_match_server()`. `lobby_match_server` is true when `codol_admissionRequired` is 1 (hosting always sets it)
-and `codol_devServer` is not 1. Once `sv_cheats` has been on, the server process records no progression or stats.
+!lobby_match_server()`. `lobby_match_server` is true when `admissionRequired` is 1 (hosting always sets it)
+and `devServer` is not 1. Once `sv_cheats` has been on, the server process records no progression or stats.
 
-The console's part: when the host types `codol_dev_cheats on` (a server console command, so only the host's rcon
-can run it), `ConSvCheatsOn` first sends `codol_devServer 1`, as its own rcon datagram, then the command.
-`codol_devServer` is registered with flags 0, so the operator may set it at run time. It is the server's own
+The console's part: when the host types `dev_cheats on` (a server console command, so only the host's rcon
+can run it), `ConSvCheatsOn` first sends `devServer 1`, as its own rcon datagram, then the command.
+`devServer` is registered with flags 0, so the operator may set it at run time. It is the server's own
 developer-server switch, and in this offline client the server exists for this one player on loopback. Nothing
 else sets it, and nothing on the client sets `sv_cheats`.
 
 Every new match starts with cheats off (`+map`, not `devmap`). The first cheat command typed in a match where the
-console has not seen `sv_cheats` on prints a one-line hint: `cheats are off in a new match: type codol_dev_cheats on
+console has not seen `sv_cheats` on prints a one-line hint: `cheats are off in a new match: type dev_cheats on
 first ...`.
 
 The server answers a cheat command with a game message (`CODOL_DevPrint`, server command `e`). Measured: C1 shows
@@ -109,8 +109,8 @@ weapon. After `devset <dvar> <value>` it prints that dvar instead. `devhelp` pri
   bg_fallDamageMaxHeight sv_botStop scr_codol_bots sv_botDifficulty`. This is now the console's `devset` argument
   list (the old hand-written `kArgDevset` and `kArgRcon` lists are gone).
 
-Server console commands relevant to development (all reachable bare or with `sv`): `dev_cheats`, `codol_dev_cheats
-<on|off>`, `codol_dev_clients`, `codol_dev_player <slot> <noclip|ufo|god|demigod|notarget> <on|off|toggle>`,
+Server console commands relevant to development (all reachable bare or with `sv`): `dev_cheats`, `dev_cheats
+<on|off>`, `dev_clients`, `dev_player <slot> <noclip|ufo|god|demigod|notarget> <on|off|toggle>`,
 `dev_clientcmd <clientnum|bots|all> <command ...>`, `sh1x_status`, `status`, `map_restart`, `kick`, plus every
 other name in the table.
 
@@ -123,7 +123,7 @@ replace the table. Before a match, or if the server does not answer, the table i
 - `gen_sh1x_cmds.py --check` differs (the submodule moved, or a server command, dvar, cheat or usage changed);
 - the console's `kDevCmds` cheat rows and `kSh1xCheats` differ in names, order or usage;
 - the cheat set read straight from the server source differs from the table;
-- the console is gated again, a diagnostics-only part appears outside `#if CODOL_DIAGNOSTICS`, or the route gets a
+- the console is gated again, a diagnostics-only part appears outside `#if K33_DIAGNOSTICS`, or the route gets a
   port, password or target from anywhere but `P2PConsoleHost`.
 
 The table versus the running server (measured, `cmdlist`/`cvarlist` of a hosted zm match):
@@ -140,7 +140,7 @@ That gap is why the live lists win while a match runs.
 
 The installed `D:\CoD\CODOL Builds\k33-uistyle-offline-test\p2p\sh1x_host.dll` (PE time stamp 2026-11-12 14:07:26,
 SHA-256 `fe0b7d3d...f3fe`) suffices; no rebuild is needed. The route uses only rcon, `cmdlist`, `cvarlist`,
-`codol_devServer`, `codol_dev_cheats`, `dev_cheats` and the cheat client commands, and its strings show all of these
+`devServer`, `dev_cheats` and the cheat client commands, and its strings show all of these
 (the dev-cheat-commands work is in it). No new export is required.
 
 ## Runtime check (measured)
@@ -155,11 +155,11 @@ folder `offline_console\evidence`.
   `sv status` printed the `no match running` line (`03_shipping_condump.txt`).
 - **Local-testing build, zm match hosted in-process** (`run2_*`, `run3_*`, `run3_condump.txt`):
   - Before the match: `sv sv_bot` completed from the table; `god` printed `no match running: god is a command of
-    the match server`; `codol_dev_cheats on` printed `no match running`.
+    the match server`; `dev_cheats on` printed `no match running`.
   - In the match, `Kernel33.log`: `console: server lists from the running host (session ...): 141 commands, 550
     dvars`.
   - `viewpos` with cheats off printed the hint and the server's `cheats: cheats are off ...` line.
-  - `codol_dev_cheats on` printed `codol_dev_cheats enabled=1`; `god` then showed `... god ...`; `noclip` showed
+  - `dev_cheats on` printed `dev_cheats enabled=1`; `god` then showed `... god ...`; `noclip` showed
     `pm_type 2 god noclip`; a second `noclip` showed `pm_type 0`.
   - `devset g_speed 380` printed `"g_speed" is: "380" default: "190"`.
   - `sv timescale` printed the server's dvar; `find botStop` printed `sv  sv_botStop "0"` from the running server.
@@ -169,14 +169,14 @@ folder `offline_console\evidence`.
     progression-off warnings.
 - **Name collision** (`run4_condump.txt`): `timescale` ran C1's (`-> 1867`), with the line `the client's own; the
   match server has one too: sv timescale`.
-- **Run 2 used an earlier build** in which the server still got `+set codol_devServer 1` on its command line.
+- **Run 2 used an earlier build** in which the server still got `+set devServer 1` on its command line.
   Runs 3 and 4 were made with the per-command echo.
 - **Final build** (the committed sources; `final_*`, `final_condump.txt`, the server's `qconsole.log`), zm_theater_sh
   hosted in-process:
-  - `god` before cheats printed the hint and `cheats are off ...; codol_devServer 0`, so the server's start-up is
+  - `god` before cheats printed the hint and `cheats are off ...; devServer 0`, so the server's start-up is
     unchanged.
-  - `codol_dev_cheats on` printed `codol_dev_cheats enabled=1`. The server log shows
-    `Rcon from 127.0.0.1: codol_devServer 1`, then `Rcon from 127.0.0.1: codol_dev_cheats on`.
+  - `dev_cheats on` printed `dev_cheats enabled=1`. The server log shows
+    `Rcon from 127.0.0.1: devServer 1`, then `Rcon from 127.0.0.1: dev_cheats on`.
   - `god` then showed `god`; `give ammo` showed `CoDOL cheats: client 0 give` in the server log; `ufo` showed
     `pm_type 3 god ufo`, and the second `ufo` showed `pm_type 0` again.
   - `sv status` printed the server's status table, with ConTest in slot 0.
@@ -188,7 +188,7 @@ folder `offline_console\evidence`.
 
 - `kill`, `take`, `setviewpos`, `addbot`, `kickbot`, `demigod` and `notarget` were not exercised at runtime. They
   share the dispatch path of the measured ones (`god`, `noclip`, `ufo`, `give`, `devset`, `viewpos`).
-- That `codol_devServer` may be set at run time is read from its registration (flags 0). It is also measured: the
+- That `devServer` may be set at run time is read from its registration (flags 0). It is also measured: the
   final run's `dev_cheats` showed it change from 0 to 1.
 - Whether a damage hit is actually absorbed under `god` was not provoked. The run shows the flag on and the player
   alive at 100 hp after 60 s in a zm round; that is inferred evidence only.

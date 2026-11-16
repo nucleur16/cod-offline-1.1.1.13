@@ -85,14 +85,14 @@ def _relative(filename):
 
 
 def _runtime(ae_bin=None):
-    candidates = [ae_bin, os.environ.get('CODOL_ASSETEXPLORER_BIN'),
+    candidates = [ae_bin, os.environ.get('K33_ASSETEXPLORER_BIN'),
                   r'D:/CoD/ae_survival_wt/src/Codol.SoundDumper/bin/Release/net9.0',
                   r'D:/CoD/CODOL Builds/CODOL-AssetExplorer/src/Codol.SoundDumper/bin/Release/net9.0']
     for candidate in candidates:
         if candidate and all((Path(candidate) / (name + '.dll')).is_file()
                              for name in ('Codol.Assets', 'Codol.FastFiles')):
             return Path(candidate).resolve()
-    raise FileNotFoundError('Installed AssetExplorer runtime not found; set CODOL_ASSETEXPLORER_BIN')
+    raise FileNotFoundError('Installed AssetExplorer runtime not found; set K33_ASSETEXPLORER_BIN')
 
 
 _DECODER = r'''

@@ -256,9 +256,9 @@ static DWORD WINAPI ConSvExecThread(LPVOID param)
     if (job->delay) Sleep(job->delay);
     if (job->devServer) {
         /* See ConSvCheatsOn. One rcon datagram runs one command (SVC_RemoteCommand -> Cmd_ExecuteSingleCommand),
-         * so the switch goes first, on its own. Its reply ("codol_devServer" is set silently) is not shown. */
+         * so the switch goes first, on its own. Its reply ("devServer" is set silently) is not shown. */
         char ack[512];
-        ConRconOnce(job->port, job->password, "codol_devServer 1", ack, sizeof(ack), 1500, 100);
+        ConRconOnce(job->port, job->password, "devServer 1", ack, sizeof(ack), 1500, 100);
     }
     char *reply = (char *)malloc(CON_SV_REPLY);
     int got = reply ? ConRconOnce(job->port, job->password, job->command, reply, CON_SV_REPLY, 4000, 250) : -1;
@@ -304,13 +304,13 @@ static BOOL ConSvExecDelayed(const char *command, DWORD delayMs)
 
 static BOOL ConSvExec(const char *command) { return ConSvExecDelayed(command, 0); }
 
-/* "codol_dev_cheats on" typed in the console of the player who hosts this offline match.
- * The server refuses every cheat on a "lobby match server" (codol_admissionRequired 1, which hosting requires)
- * unless its operator declares a developer server (dvar codol_devServer, registered with flags 0 in
+/* "dev_cheats on" typed in the console of the player who hosts this offline match.
+ * The server refuses every cheat on a "lobby match server" (admissionRequired 1, which hosting requires)
+ * unless its operator declares a developer server (dvar devServer, registered with flags 0 in
  * codol_dev_cheats.c, so the operator may set it at run time). The host's console speaks to the server with the
  * operator's rcon password, and in this offline client the server exists only for this one player on loopback:
  * so the console declares it right before switching cheats on, never otherwise. sv_cheats itself stays the
- * server's: codol_dev_cheats on sets it, and from then on that server records no progression (its own latch). */
+ * server's: dev_cheats on sets it, and from then on that server records no progression (its own latch). */
 static BOOL ConSvCheatsOn(const char *line)
 {
     ConSvExecJob *job = (ConSvExecJob *)calloc(1, sizeof(*job));
@@ -352,5 +352,5 @@ static void ConSvCheatHint(void)
     if (!on && g_sv.cheatHintSession != session) { g_sv.cheatHintSession = session; say = TRUE; }
     LeaveCriticalSection(&g_svLock);
     if (say)
-        ConPrintf("  ^3cheats are off in a new match: type ^7codol_dev_cheats on^3 first (that match then records no progression)\n");
+        ConPrintf("  ^3cheats are off in a new match: type ^7dev_cheats on^3 first (that match then records no progression)\n");
 }

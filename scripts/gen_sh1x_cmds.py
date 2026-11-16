@@ -18,6 +18,10 @@ The table is a superset in one direction and a subset in the other: a command re
 host build leaves out is listed, one registered from retained assembly or by a script is not. A running host is
 asked for its real lists (rcon cmdlist / cvarlist); this table serves before a match and when that fails.
 tests/test_offline_console.py runs --check, so the header cannot drift from the pinned submodule unnoticed.
+
+Names are written as the client spells them: the source is read through tools/drop_codol_prefix.py server_text(),
+which spells the server's old codol_* commands and dvars by the server's rename rule (the prefix dropped:
+devServer, dev_cheats, ...). Once the pinned server registers the new names that is a no-op.
 """
 import pathlib
 import re
@@ -27,6 +31,8 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SERVER = ROOT / "server" / "sh1x"
 OUT = ROOT / "src" / "console" / "sh1x_cmds.h"
+sys.path.insert(0, str(ROOT / "tools"))
+import drop_codol_prefix  # noqa: E402  (the server's names in the client's spelling)
 
 CMD_RE = re.compile(r'\bCmd_Add(?:P|H)?Command(?:Generic)?\s*\(\s*"([^"\\]+)"')
 DVAR_RE = re.compile(r'\bCvar_Register(Bool|Int|Float|String|Enum|Color|Vec2|Vec3|Vec4)\s*\(\s*"([^"\\]+)"')
@@ -37,6 +43,19 @@ NAME_OK = re.compile(r'^[A-Za-z_][A-Za-z0-9_.+-]*$')
 def strip_comments(text):
     text = re.sub(r'/\*.*?\*/', lambda m: re.sub(r'[^\n]', ' ', m.group(0)), text, flags=re.S)
     return re.sub(r'(?m)^([^"\n]*?)//[^\n]*$', r'\1', text)
+
+
+def server_source(path):
+    """A server source file without comments, its codol_* names spelled the client's way."""
+    return drop_codol_prefix.server_text(strip_comments(path.read_text(encoding="latin-1")))
+
+
+def dev_cheats_source():
+    """The server's developer-cheat module (src/codol/player/codol_dev_cheats.c, or its renamed successor)."""
+    hits = sorted((SERVER / "src").rglob("*dev_cheats.c"))
+    if len(hits) != 1:
+        raise SystemExit("gen_sh1x_cmds: expected one *dev_cheats.c in server/sh1x/src, found %s" % hits)
+    return hits[0]
 
 
 def call_text(text, start):
@@ -81,7 +100,7 @@ def description(args):
 def scan():
     cmds, dvars = set(), {}
     for path in sorted((SERVER / "src").rglob("*.c")):
-        text = strip_comments(path.read_text(encoding="latin-1"))
+        text = server_source(path)
         for m in CMD_RE.finditer(text):
             if NAME_OK.match(m.group(1)):
                 cmds.add(m.group(1))
@@ -96,13 +115,13 @@ def scan():
 
 
 def cheats():
-    dev = strip_comments((SERVER / "src/codol/player/codol_dev_cheats.c").read_text(encoding="latin-1"))
-    gcmds = strip_comments((SERVER / "src/g_cmds.c").read_text(encoding="latin-1"))
-    m = re.search(r'CODOL_DevPrint\(ent,\s*"dev: ([a-z ]+)"\)', dev)
+    dev = server_source(dev_cheats_source())
+    gcmds = server_source(SERVER / "src/g_cmds.c")
+    m = re.search(r'\w*DevPrint\(ent,\s*"dev: ([a-z ]+)"\)', dev)
     if not m:
-        raise SystemExit("gen_sh1x_cmds: cmd_devhelp's list was not found in codol_dev_cheats.c")
+        raise SystemExit("gen_sh1x_cmds: cmd_devhelp's list was not found in %s" % dev_cheats_source().name)
     verbs = m.group(1).split() + ["devhelp"]
-    body = dev[dev.index("int CODOL_DevClientCommand"):]
+    body = dev[re.search(r'\bint\s+\w*DevClientCommand\b', dev).start():]
     own = set(re.findall(r'Q_stricmp\(verb,\s*"([a-z]+)"\)', body))
     game = set(re.findall(r'Q_stricmp\(\s*cmd,\s*"([a-z_]+)"\s*\)', gcmds[gcmds.index("void ClientCommand"):]))
     for v in verbs:
@@ -110,14 +129,14 @@ def cheats():
             raise SystemExit("gen_sh1x_cmds: devhelp lists '%s' but neither dispatcher handles it" % v)
     extra = own - set(verbs)
     if extra:
-        raise SystemExit("gen_sh1x_cmds: CODOL_DevClientCommand handles %s, which devhelp does not list" % sorted(extra))
+        raise SystemExit("gen_sh1x_cmds: the server's DevClientCommand handles %s, which devhelp does not list" % sorted(extra))
     usage = {}
     for verb in ("give", "take", "devset"):
         u = re.search(r'"usage: (%s [^";]+)[";]' % verb, dev)
         if not u:
             raise SystemExit("gen_sh1x_cmds: no usage string for %s" % verb)
         usage[verb] = u.group(1).strip()
-    u = re.search(r'CODOL_DevPrint\(\s*ent,\s*"usage: (setviewpos [^"]+)"', gcmds)
+    u = re.search(r'\w*DevPrint\(\s*ent,\s*"usage: (setviewpos [^"]+)"', gcmds)
     if not u:
         raise SystemExit("gen_sh1x_cmds: no usage string for setviewpos")
     usage["setviewpos"] = u.group(1).strip()

@@ -204,13 +204,13 @@ of cost:
 - The joiner's safety does not depend on the host being honest. The hostgate, plus the audit's
   parser work, protect the joiner's machine. That protection is the non-negotiable part.
 - Host migration is out of scope. When the host leaves, the match ends (the server follows its
-  client: job object plus `codol_hostParentPid`) and players return to the lobby.
+  client: job object plus `hostParentPid`) and players return to the lobby.
 
 ## Staged plan
 
 | stage | what | lobby change | status |
 |---|---|---|---|
-| 1 | Kernel33 hosts the server as a child (`src/p2p/p2p.c`), the server follows its host (`codol_hostParentPid`), the client talks only to vouched hosts (`src/p2p/hostgate.c`), and the same-PC lobby places players through the rollout file | none | **this branch** |
+| 1 | Kernel33 hosts the server as a child (`src/p2p/p2p.c`), the server follows its host (`hostParentPid`), the client talks only to vouched hosts (`src/p2p/hostgate.c`), and the same-PC lobby places players through the rollout file | none | **this branch** |
 | 2 | host registration, UPnP, signed host tickets -> `HostGateVouch`, admission roster and match selection pushed through the lobby connection, status push, no ranked progression on player hosts | yes | next |
 | 3 | lobby introducer (bdNATTrav) and the UDP relay on the VPS; room-list rows for hosts; host quality floor | yes | later |
 | 4 | gamestate pre-validation in Kernel33 (audit row 14), snapshot and OOB audit (15-16); only then hosts outside lobby vouching, if ever | no | blocked on audit |
@@ -235,7 +235,7 @@ anyone who can forge it can admit themselves.
   gametype and difficulty must be plain identifiers, the same rule as the lobby handoff, so they
   can never add console commands.
 - The server runs with `CREATE_NO_WINDOW` in a job object with `KILL_ON_JOB_CLOSE`, plus
-  `+set codol_hostParentPid <client pid>`. The server branch makes it quit cleanly once that
+  `+set hostParentPid <client pid>`. The server branch makes it quit cleanly once that
   process ends.
 - The rcon secret is shared with the lobby through `<state>\native_server_rcon.txt` (read, or
   created with 16 random bytes). The host thread polls `sh1x_status` over loopback. (It used to write
@@ -294,7 +294,7 @@ reach the user's lobby; those probes are stateless.
 | `p2pstatus` | printed state, address, pid, ready time and the live `sh1x_status` (humans=2 bots=2) |
 | `p2pstop` | the server quit with exit code 0 in 0.9 s; `extra 17760` and `p2p_host.txt` removed |
 | host client killed (hard) | the job object ended the server at once (gone within 3 s). The rollout line and descriptor stay behind, because the host thread dies with the client; the lobby drops a silent instance after 10 s, and the next `p2phost` rewrites the line |
-| `codol_hostParentPid` (server branch) | a server started by hand with its parent set to a throwaway process quit cleanly (`host client ... has ended; quitting`, exit code 0) 0.9 s after that process was killed |
+| `hostParentPid` (server branch) | a server started by hand with its parent set to a throwaway process quit cleanly (`host client ... has ended; quitting`, exit code 0) 0.9 s after that process was killed |
 | server fatal error | the lobby switched the hosted server to `zm_zombie_training` (an unpinned room pick): `script compile error, unknown function (maps/_zombiemode_tokens.gsc line 139)`. The process stays alive with its network shut down; the supervisor now treats 20 s without `sh1x_status` after ready as failed and ends it. The compile error itself is a server/rawfiles issue at `origin/main` 32da84d5 + 1c10bb3, not a P2P one |
 | hostgate | both clients ran enforcing all session. Datagrams from 192.168.1.4 (this PC's LAN address, not vouched) to both clients' game ports were refused before C1 saw them (`hostgate: refused datagram from 192.168.1.4:55282`). The lobby, STUN and the hosted server (loopback) worked. The first build also refused UPnP (SSDP 239.255.255.250:1900), which delayed DW login by about 70 s while bdUPnP discovery timed out; SSDP and the default gateway are vouched now and login starts 11 s after launch |
 
@@ -395,7 +395,7 @@ The server branch `feat/iw4-asset-layout` (`docs/CODOL_IW4_ASSET_LAYOUT.md` ther
 server's memory goes. Asset reuse and the IW4 layout are planned there in stages.
 
 - **PMem.** The fastfile block was 328 MB, committed up front, but held 1.5 MB. It is now only reserved, and each
-  allocation commits its own pages. Its size is `codol_pmemMegs`; p2p.c passes 32 (`pmem_megs=` in p2p_host.ini).
+  allocation commits its own pages. Its size is `pmemMegs`; p2p.c passes 32 (`pmem_megs=` in p2p_host.ini).
 - **In-process host, before / after**, mp_killhouse_sh, 2 players:
 
   | measure | before | after |

@@ -392,7 +392,7 @@ static Sh1xFindAssetFn g_paFind;
 static BOOL g_paGeneric;
 static unsigned g_paType;
 
-/* ---- Generic comparison of C1-layout header copies (server codol_c1Fixups 1) ------------------------------------
+/* ---- Generic comparison of C1-layout header copies (server c1Fixups 1) ------------------------------------
  * The server replays each zone the way C1's loader does and records every pointer word C1 relocates (a fix-up):
  * Sh1xHost_FindC1Header gives the header as C1 holds it after DB_AddXAsset, with pointer words still serialized,
  * Sh1xHost_C1PointersIn lists the pointer words of a range and Sh1xHost_ResolveC1Pointer what C1 stores in each:
@@ -656,7 +656,7 @@ static void __cdecl PiCmdAssetCheck(void)
     Sh1xEnumAssetsFn enumerate = (Sh1xEnumAssetsFn)(void *)GetProcAddress(m, "Sh1xHost_EnumerateAssets");
     if (!g_paFind || !enumerate) { C1Printf("p2passetcheck: the server DLL has no asset API (needs feat/iw4-asset-layout)\n"); return; }
     /* p2passetcheck <type> <name|*> c1: the generic comparison of the server's C1-layout header copies (any type
-     * the replay catalogues; the server needs +set codol_c1Fixups 1). Without it, the converted types' records. */
+     * the replay catalogues; the server needs +set c1Fixups 1). Without it, the converted types' records. */
     /* c1: the header copies; m: the materialized records (real pointers) walked beside them */
     g_paMaterialized = VoiceArgc() > 3 && !strcmp(VoiceArgv(3), "m");
     g_paGeneric = VoiceArgc() > 3 && (!strcmp(VoiceArgv(3), "c1") || g_paMaterialized);

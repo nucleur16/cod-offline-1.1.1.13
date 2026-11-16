@@ -13,7 +13,7 @@ requires:
     common_gametype_survival and then C1's own mp gametype set (flags 4), then the plain map zones; each set is
     skipped when its common_gametype_* zone is loaded; the size estimate, mp/constConfigStrings_mp.csv and its
     checksum are exactly C1's for an mp category;
-  * the install writes one jump and nothing else; a byte mismatch at any site, or "+set codol_survival 0", installs
+  * the install writes one jump and nothing else; a byte mismatch at any site, or "+set k33_survival 0", installs
     nothing.
 Boundary doubles: DB_LoadXAssets 0x8465768 (records), DB_FindXAssetHeader 0x4CB8E0 (fake tables), C1's table
 checksum 0x83B094E (a TenProtect VM stub: a per-table stand-in), Com_sprintf 0x6286A0, the error print 0x8308DBD and two
@@ -300,10 +300,10 @@ class SurvivalCategory(unittest.TestCase):
                 self.assertEqual(M.get(EXPORT['stest_writes']), writes)
                 for s, n in SITES:
                     self.assertEqual(bytes(M.u.mem_read(s, n)), M.original[s])
-        M.u.mem_write(EXPORT['stest_cmdline'], b'codoMP_client_shipRetail.exe +set codol_survival 0\0')
+        M.u.mem_write(EXPORT['stest_cmdline'], b'codoMP_client_shipRetail.exe +set k33_survival 0\0')
         M.call('STestInstall')
         self.assertEqual(M.get(EXPORT['stest_writes']), writes)
-        M.u.mem_write(EXPORT['stest_cmdline'], b'codoMP_client_shipRetail.exe +set codol_survivalx 0\0')
+        M.u.mem_write(EXPORT['stest_cmdline'], b'codoMP_client_shipRetail.exe +set k33_survivalx 0\0')
         M.call('STestInstall')
         self.assertEqual(M.get(EXPORT['stest_writes']), writes + 2)
         M.patched(False)

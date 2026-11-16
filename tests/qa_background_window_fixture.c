@@ -2,7 +2,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <string.h>
-#define CODOL_LOCAL_TESTING 1
+#define K33_LOCAL_TESTING 1
 typedef struct { DWORD slot; const char *dll; const char *name; } C1Import;
 static const char *mode, *property;
 static const char good[]="CODOL_QA_BG_0123456789abcdef0123456789abcdef";

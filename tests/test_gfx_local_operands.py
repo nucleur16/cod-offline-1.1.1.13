@@ -4,7 +4,7 @@ writers and retained cleanup/refcount instructions execute in Unicorn.
 """
 import json,os,pathlib,struct,subprocess,tempfile,unittest
 ROOT=pathlib.Path(__file__).resolve().parents[1]
-GAME=pathlib.Path(os.environ.get('CODOL_GAME',r'D:/CoD/CODOL Builds/Call of Duty Online 1.1.1.13'))
+GAME=pathlib.Path(os.environ.get('K33_GAME',r'D:/CoD/CODOL Builds/Call of Duty Online 1.1.1.13'))
 DRIVER=r"""
 #include <assert.h>
 #include <stdio.h>

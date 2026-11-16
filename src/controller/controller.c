@@ -231,7 +231,7 @@ static void CtlRegisterDvars(void)
     g_gpDive = C1RegisterInt("gpad_dive", 1, 0, 1, 0x1,
                              "The pad button bound to +stance (B by default) dives while sprinting (C1's dolphin dive, toggleprone during a sprint); 0 = always +stance");
     g_gpCursor = CtlRegisterFloat("gpad_menu_cursor_speed", 1100.0f, 50.0f, 5000.0f, 0x1, "Menu cursor speed at full deflection, pixels/s");
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     g_gpDebug = C1RegisterInt("gpad_debug", 0, 0, 2, 0, "Gamepad diagnostics in the console (1 state twice a second, 2 also every button)");
 #endif
     g_gpUseHold = C1RegisterInt("gpad_use_hold_time", 250, 0, 2000, 0x1,
@@ -302,7 +302,7 @@ static BOOL CtlEnabled(void) { return !g_ctlDvarsDone || C1DvarInt(g_gpEnabled, 
 /* "+set k33_cmdFile 1" (a test client next to the player's game): never the real pad, never the real cursor. */
 static BOOL CtlTestMode(void)
 {
-#if defined(CODOL_LOCAL_TESTING) && CODOL_LOCAL_TESTING == 1
+#if defined(K33_LOCAL_TESTING) && K33_LOCAL_TESTING == 1
     static int t = -1;
     if (t < 0) { const char *cl = GetCommandLineA(); t = cl && strstr(cl, "k33_cmdFile 1") != NULL; }
     return t;
@@ -327,7 +327,7 @@ static int CtlKeyBinding(int key) { return *(volatile const int *)(DWORD_PTR)(CT
 static char g_dbgRing[32][160];
 static int g_dbgHead, g_dbgCount;
 
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
 static void CtlDebugf(int level, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 static void CtlDebugf(int level, const char *fmt, ...)
 {
@@ -352,7 +352,7 @@ static void CtlDebugf(int level, const char *fmt, ...)
 
 static void CtlDrainDebug(void)
 {
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     char line[160];
     for (;;) {
         EnterCriticalSection(&g_ctlLock);
@@ -2512,13 +2512,13 @@ static void __cdecl CtlCmdAaDump(void)
 }
 
 static C1Cmd g_ctlCmds[] = {
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     { NULL, "gpad_status", (void *)CtlCmdStatus },
 #endif
     { NULL, "gpad_defaultbinds", (void *)CtlCmdDefaults },
     { NULL, "gpad_ksnext", (void *)CtlCmdKsNext },
     { NULL, "gpad_ksuse", (void *)CtlCmdKsUse },
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     { NULL, "gpad_glyphdump", (void *)CtlCmdGlyphDump },
 #endif
     { NULL, "gpad_lookpreset", (void *)CtlCmdLookPreset },
@@ -2542,7 +2542,7 @@ static C1Cmd g_ctlTestCmds[] = {
 
 static BOOL CtlTestCmdsEnabled(void)
 {
-#if defined(CODOL_LOCAL_TESTING) && CODOL_LOCAL_TESTING == 1
+#if defined(K33_LOCAL_TESTING) && K33_LOCAL_TESTING == 1
     const char *cl = GetCommandLineA();
     return CtlTestMode() || (cl && (strstr(cl, "gpad_testcmds 1") || strstr(cl, "gpad_testcmds \"1\"")));
 #else

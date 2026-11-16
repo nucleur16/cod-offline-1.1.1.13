@@ -10,7 +10,7 @@ OUT=${K33_TEST_OUT:-${TMP:-/tmp}/k33-tests}
 mkdir -p "$OUT"
 for PROFILE in 0 1; do
     "$BIN/gcc.exe" -std=c99 -O2 -Wall -Wextra -Werror -Wno-cast-function-type \
-        -DCODOL_LOCAL_TESTING=$PROFILE tests/hostgate_windows_fixture.c \
+        -DK33_LOCAL_TESTING=$PROFILE tests/hostgate_windows_fixture.c \
         -o "$OUT/hostgate-$PROFILE.exe" -lws2_32 -liphlpapi
     python tests/test_hostgate_windows.py "$OUT/hostgate-$PROFILE.exe"
 done

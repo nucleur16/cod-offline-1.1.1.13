@@ -27,7 +27,7 @@
  *     are not 3D (+0x44 == 0) compare -volume instead (0x737994 / 0x737A49).
  *   - channel records 0x6C34F68 + ch * 0x50: priority +0x40, 3D +0x44, cap +0x48, active count +0x4C.
  *
- * Dvars: k33_sndAliasLimit 0..32 (0 = no limit), k33_sndNearest 0/1. "+set codol_soundvoices 0" on the command line
+ * Dvars: k33_sndAliasLimit 0..32 (0 = no limit), k33_sndNearest 0/1. "+set k33_soundvoices 0" on the command line
  * turns both off at startup. Counters are written to Kernel33.log by sounddiag's thread ("snd policy ...") when
  * k33_snddiag is 1 or more. */
 
@@ -68,8 +68,8 @@ static BOOL SvStartupOn(void)
 {
     const char *p = GetCommandLineA(), *q;
     BOOL on = TRUE;
-    while ((q = strstr(p, "codol_soundvoices")) != NULL) {
-        q += 17;
+    while ((q = strstr(p, "k33_soundvoices")) != NULL) {
+        q += sizeof("k33_soundvoices") - 1;
         while (*q == ' ' || *q == '"') q++;
         on = *q != '0';
         p = q;
@@ -161,13 +161,13 @@ static int SndVoicesHasRoom(int ok, DWORD params, int channel, int pool)
         if (count >= limit) {
             if (!scored) { score = is3d ? SvScoreAt((const float *)(DWORD_PTR)(params + SV_P_ORIGIN)) : -*(const float *)(DWORD_PTR)(params + SV_P_VOLUME); scored = TRUE; }
             if (worst < 0 || !(worstScore > score)) {
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
                 InterlockedIncrement(&g_svLimitRefused);
 #endif
                 return 0;
             }
             SvStopVoice(worst);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
             InterlockedIncrement(&g_svLimitTook);
 #endif
             ok = SvChannelHasRoom(channel);
@@ -188,7 +188,7 @@ static int SndVoicesHasRoom(int ok, DWORD params, int channel, int pool)
             if (!scored) { score = is3d ? SvScoreAt((const float *)(DWORD_PTR)(params + SV_P_ORIGIN)) : -*(const float *)(DWORD_PTR)(params + SV_P_VOLUME); scored = TRUE; }
             if (worstScore > score) {
                 SvStopVoice(worst);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
                 InterlockedIncrement(&g_svNearestTook);
 #endif
                 ok = SvChannelHasRoom(channel);

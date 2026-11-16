@@ -7,7 +7,7 @@
  * typed in UTF-8, or a lobby name) therefore shows as mojibake. Kernel33's GBK input (kernel33.c,
  * PatchGbkInput) is unchanged: names typed in the game are GBK and stay on the original path.
  *
- * UTF-8 names (on by default; "+set codol_name_utf8 0" on the command line installs none of them):
+ * UTF-8 names (on by default; "+set k33_name_utf8 0" on the command line installs none of them):
  *   0x5AA7CF  local player name (AS_GetPlayerName, from dw_username)  call 0x5C7340 -> NdConvertName
  *   0x5B4E41  scoreboard player names                                 call 0x5C7340 -> NdConvertName
  *     A string that is valid UTF-8 and has a non-ASCII byte is built with GFx's own UTF-8 constructor 0x744AA0 on
@@ -271,13 +271,13 @@ static void InstallNameDisplay(void)
         { 0x004447DDu, 5, 0xE8, (void *)ND_ObituarySource, { 0xE8, 0x0E, 0x43, 0x04, 0x00 } },
     };
     const char *cl = GetCommandLineA();
-    BOOL utf8On = !(cl && (strstr(cl, "codol_name_utf8 0") || strstr(cl, "codol_name_utf8 \"0\"")));
+    BOOL utf8On = !(cl && (strstr(cl, "k33_name_utf8 0") || strstr(cl, "k33_name_utf8 \"0\"")));
 
     BOOL helpers = NdBytes(ND_CONVERT_VA, kConvert, sizeof(kConvert)) && NdBytes(ND_GFX_UTF8_VA, kGfxUtf8, sizeof(kGfxUtf8)) &&
                    NdBytes(ND_HUD_FORMAT_VA, kHud, sizeof(kHud)) && NdBytes(ND_OBIT_NAME_VA, kObit, sizeof(kObit));
     BOOL sitesOk = helpers;
     for (unsigned i = 0; i < sizeof(utf8) / sizeof(utf8[0]); i++) sitesOk = sitesOk && NdCheck(&utf8[i]);
-    if (!utf8On) Log("name display: UTF-8 names off (codol_name_utf8 0)");
+    if (!utf8On) Log("name display: UTF-8 names off (k33_name_utf8 0)");
     else if (!sitesOk) Log("name display: name conversion sites differ; UTF-8 names not installed");
     else {
         for (unsigned i = 0; i < sizeof(utf8) / sizeof(utf8[0]); i++) NdPatch(&utf8[i]);

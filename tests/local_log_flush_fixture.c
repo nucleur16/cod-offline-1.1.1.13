@@ -9,7 +9,7 @@
 #include <assert.h>
 
 static int Readable(const void *p,unsigned n) { return p!=NULL && n>0; }
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
 static BYTE code_flush[14],code_caller[37],code_dvar[12],code_prefix[12],code_lock[19];
 static FARPROC lock_import;
 static BYTE fake_dvar[16],entry[0x11c],stream[64];
@@ -52,7 +52,7 @@ static void *fixture_at(DWORD va)
 #define K33LF_AT(va) fixture_at(va)
 #define K33LF_WRITE fixture_write
 #endif
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
 /* Same absent-selection file leaf as before. An explicit route belongs to the
  * separate inherited-route fixture and may never silently use this fallback. */
 static HANDLE LocalQaOpenDwauth(const char *path)
@@ -66,7 +66,7 @@ static HANDLE LocalQaOpenDwauth(const char *path)
 #define K33LF_FIXTURE 1
 #include "../src/local_log_flush.c"
 
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
 static void read_code(HANDLE file,DWORD va,void *out,DWORD bytes)
 {
     BYTE header[4096];DWORD got=0;
@@ -163,7 +163,7 @@ int main(int argc,char **argv)
     assert(argc>=3);
     const char *which=argv[1],*nonce="0123456789abcdef0123456789abcdef";
     char pid[16];_snprintf(pid,sizeof(pid),"%lu",(unsigned long)GetCurrentProcessId());
-#if !CODOL_LOCAL_TESTING
+#if !K33_LOCAL_TESTING
     (void)which;
     assert(!K33LfExecute(pid,nonce) && g_k33LfStage==LF_SHIPPING);
     assert(!K33LfExecuteExchange(pid,nonce,"11111111111111111111111111111111") && g_k33LfStage==LF_SHIPPING);

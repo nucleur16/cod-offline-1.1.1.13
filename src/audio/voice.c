@@ -34,7 +34,7 @@
  *   client -> server  "\xff\xff\xff\xffv\0" u8 ver=1, u8 flags (1 = last), u16 seq, u8 n, n*(u8 len, data)
  *   server -> client  "\xff\xff\xff\xffv\0" u8 ver=1, u8 flags, u8 talker, u16 seq, u8 n, frames
  *
- * Dvars: codol_voice (master switch; "+set codol_voice 0" installs nothing),
+ * Dvars: k33_voice (master switch; "+set k33_voice 0" installs nothing),
  * k33_voiceVolume (percent), k33_voiceBitrate, k33_voiceLoopback (hear yourself locally, no server),
  * k33_voiceDebug, k33_voiceTone, k33_voiceMode (0 push-to-talk, 1 voice activation), k33_voiceThreshold
  * (0..100 = -60..0 dBFS), k33_voiceHangMs, k33_voiceMicMute, k33_voiceLevel (live, read only),
@@ -177,7 +177,7 @@ static int VoicePull(VoiceTalker *t, float *out, float *tmp)
         VoiceTalkerReset(t);
         return 0;
     } else {
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         InterlockedIncrement(&g_statLostFrames);
 #endif
         if (n->have && n->seq == (unsigned short)(t->next + 1))
@@ -512,7 +512,7 @@ static void VoiceEncodePcm(const float *pcm, BOOL last)
     int n = opus_encode_float(g_enc, pcm, VOICE_FRAME, out, sizeof(out));
     if (n > 0) {
         VoiceQueueFrame(out, n, last);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         InterlockedIncrement(&g_statCapFrames);
 #endif
     }
@@ -571,7 +571,7 @@ static void VoiceProcessFrame(void)
             for (int i = 0; i < g_prerollCount; i++) VoiceEncodePcm(g_preroll[(first + i) % VOICE_PREROLL], FALSE);
             g_prerollCount = 0;
             InterlockedExchange(&g_txActive, 1);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
             InterlockedIncrement(&g_statSpurts);
 #endif
             if (VoiceDvarInt(g_dvDebug, 0)) Log("voice: transmit on (level %d, threshold %d, %s)", level, thr, g_txForce ? "key" : "voice activation");
@@ -755,7 +755,7 @@ static void VoiceRenderTick(void)
         for (int i = 0; i < VOICE_TALKERS; i++)
             if (g_talkers[i].queued || g_talkers[i].started) voices += VoicePull(&g_talkers[i], g_mix, g_tmp);
         LeaveCriticalSection(&g_voiceLock);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         if (voices) InterlockedIncrement(&g_statPlayed);
 #endif
 
@@ -833,10 +833,10 @@ static void VoiceRegisterDvars(void)
 {
     const BYTE *(*reg)(const char *, int, int, int, unsigned, const char *) = C1RegisterInt;
     g_voiceDvarsDone = TRUE;
-    g_dvVoice = reg("codol_voice", 1, 0, 1, 0x1, "Voice chat: 1 on, 0 off (+set codol_voice 0 on the command line installs nothing)");
+    g_dvVoice = reg("k33_voice", 1, 0, 1, 0x1, "Voice chat: 1 on, 0 off (+set k33_voice 0 on the command line installs nothing)");
     g_dvVolume = reg("k33_voiceVolume", 100, 0, 400, 0x1, "Voice chat playback volume in percent");
     g_dvBitrate = reg("k33_voiceBitrate", 24000, 6000, 64000, 0x1, "Opus voice bitrate (bits per second)");
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     g_dvLoopback = reg("k33_voiceLoopback", 0, 0, 1, 0, "Play your own voice back locally instead of sending it");
     g_dvDebug = reg("k33_voiceDebug", 0, 0, 2, 0, "Voice chat diagnostics in the console");
     g_dvTone = reg("k33_voiceTone", 0, 0, 2, 0, "Transmit a 440 Hz test tone instead of the microphone (2: in bursts)");
@@ -859,7 +859,7 @@ static void VoiceRegisterDvars(void)
 
     /* C1 does not apply "+set" from the command line to a dvar registered this late (and runs no
      * "+command" at all), so re-issue ours: "+set k33_voiceLoopback 1", "+toggletalk". */
-    static const char *const kMine[] = { "codol_voice", "k33_voiceVolume", "k33_voiceBitrate",
+    static const char *const kMine[] = { "k33_voice", "k33_voiceVolume", "k33_voiceBitrate",
                                          "k33_voiceLoopback", "k33_voiceDebug", "k33_voiceTone",
                                          "k33_voiceMode", "k33_voiceThreshold", "k33_voiceHangMs",
                                          "k33_voiceMicMute" };
@@ -933,7 +933,7 @@ static void VoiceSendQueued(const BYTE *adr)
         if (adr) {
             const DWORD *a = (const DWORD *)adr;
             ((OobDataFn)(DWORD_PTR)VOICE_OOBDATA_VA)(0, pkt, len, a[0], a[1], a[2], a[3], a[4], a[5]);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
             InterlockedIncrement(&g_statSent);
 #endif
         }
@@ -1132,7 +1132,7 @@ static void VoiceAnnounce(void)
     C1Printf("^3voice: Opus voice chat %s, %s. Push-to-talk: %s (+talk; rebind under Options > Controls > Chat or "
               "\"bind <key> +talk\"); toggletalk latches. Voice mode, microphone and activation level: Options > "
               "Audio. k33voice shows status.\n",
-              VoiceEnabled() ? "on" : "OFF (codol_voice 0)",
+              VoiceEnabled() ? "on" : "OFF (k33_voice 0)",
               VoiceDvarInt(g_dvMode, 0) == 1 ? "voice activation" : "push-to-talk", keys[0] ? keys : "no key bound");
 }
 
@@ -1140,7 +1140,7 @@ static void VoiceAnnounce(void)
  * of <exe dir>\k33_cmd_<pid>.txt are executed (Cbuf) and the file is deleted. */
 static void VoiceCmdFile(void)
 {
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
     static int enabled = -1;
     static DWORD last;
     static char path[MAX_PATH];
@@ -1230,7 +1230,7 @@ __attribute__((used)) void __cdecl VoiceMainTick(void)
     if (!g_voiceDvarsDone) {
         if (!C1DvarsReady()) return;
         VoiceRegisterDvars();
-        Log("voice: dvars registered at tick %ld (codol_voice %d, loopback %d)", ticks,
+        Log("voice: dvars registered at tick %ld (k33_voice %d, loopback %d)", ticks,
             VoiceDvarInt(g_dvVoice, -1), VoiceDvarInt(g_dvLoopback, -1));
     }
     {
@@ -1265,7 +1265,7 @@ __attribute__((used)) void __cdecl VoiceMainTick(void)
     if (hang != g_vadHangMs) InterlockedExchange(&g_vadHangMs, hang);
     if (vad != (g_vadArmed != 0)) {
         InterlockedExchange(&g_vadArmed, vad);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         if (VoiceDvarInt(g_dvDebug, 0) || g_lastTalkPrint < 3) {
             g_lastTalkPrint++;
             C1Printf("voice: voice activation %s\n", vad ? "armed (open mic)" : "off");
@@ -1274,7 +1274,7 @@ __attribute__((used)) void __cdecl VoiceMainTick(void)
     }
     if (key != (g_txForce != 0)) {
         InterlockedExchange(&g_txForce, key);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         if (VoiceDvarInt(g_dvDebug, 0) || g_lastTalkPrint < 3) {
             g_lastTalkPrint++;
             C1Printf("voice: %s\n", key ? "talking" : "stopped talking");
@@ -1324,7 +1324,7 @@ __attribute__((used)) void __cdecl VoiceOnPacket(const BYTE *msg, const DWORD *f
     unsigned short seq = (unsigned short)(p[3] | (p[4] << 8));
     if (talker >= VOICE_TALKERS || count < 1 || count > 8) return;
     int off = 6;
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     InterlockedIncrement(&g_statRecv);
 #endif
     EnterCriticalSection(&g_voiceLock);
@@ -1432,7 +1432,7 @@ static void __cdecl VoiceCmdStatus(void)
 /* Test automation: "k33ready [0|1]" presses the room's Ready button the way the Scaleform
  * SetReadyState callback does (AS_SetReadyState::Call 0x6AEFF0 reads the bool at args[0]+8). Only
  * with "+set k33_cmdFile 1" on the command line. */
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
 static void __cdecl VoiceCmdReady(void)
 {
     static const BYTE kReady[] = { 0x55, 0x8B, 0xEC, 0xB8, 0x01, 0x00, 0x00, 0x00, 0x84, 0x05, 0xA8, 0xB0, 0x2E, 0x08 };
@@ -1508,13 +1508,13 @@ static void __cdecl VoiceCmdMouse(void)
 
 #endif
 static C1Cmd g_voiceCmds[] = {
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
     { NULL, "k33mouse", (void *)VoiceCmdMouse },
     { NULL, "k33ready", (void *)VoiceCmdReady },
 #endif
     { NULL, "+talk", (void *)VoiceCmdTalkDown },   { NULL, "-talk", (void *)VoiceCmdTalkUp },
     { NULL, "toggletalk", (void *)VoiceCmdToggle },
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     { NULL, "k33voice", (void *)VoiceCmdStatus },
 #endif
     { NULL, "k33voicemute", (void *)VoiceCmdMute },
@@ -1779,8 +1779,8 @@ static void InstallVoice(void)
     static const BYTE kClc[] = { 0x8B, 0x3D, 0x68, 0x80, 0x6F, 0x01, 0x6A, 0x01, 0x81, 0xF7, 0xCC, 0x50, 0xF9, 0x26 };
 
     const char *cl = GetCommandLineA();
-    if (cl && (strstr(cl, "codol_voice 0") || strstr(cl, "codol_voice \"0\""))) {
-        Log("voice: off (codol_voice 0)");
+    if (cl && (strstr(cl, "k33_voice 0") || strstr(cl, "k33_voice \"0\""))) {
+        Log("voice: off (k33_voice 0)");
         return;
     }
     InitializeCriticalSection(&g_voiceLock);

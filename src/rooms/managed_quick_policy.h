@@ -3,7 +3,7 @@
 
 /* Exact d821 C1 native room contract. This only normalizes the native
  * search-closure publication; it never creates members, Ready or StartGame. */
-static int CodolManagedQuickOpen(uint32_t caller, int main_room, int host,
+static int ManagedQuickOpen(uint32_t caller, int main_room, int host,
     int native_controller, unsigned native_kind, int playlist_mode,
     const unsigned char *info)
 {
@@ -12,7 +12,7 @@ static int CodolManagedQuickOpen(uint32_t caller, int main_room, int host,
         info[0x0c] == 11 && info[0x0d] == 2 && info[0x0e] == 12 && info[0x28] == 1;
 }
 
-static void CodolManagedQuickNormalize(unsigned char *info)
+static void ManagedQuickNormalize(unsigned char *info)
 {
     info[0x29] = 0;
     info[0x2a] = 0;

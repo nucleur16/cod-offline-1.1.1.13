@@ -65,7 +65,7 @@ static void InstallTest(const char *test)
         assert(InstallHostGate());
         /* the resolver slot next to them is not the gate's any more: nothing is vouched by name */
         assert(*r==(FARPROC)HostGateRecvFrom && *s==(FARPROC)HostGateSendTo && *h==GetProcAddress(w1,"gethostbyname"));
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
         assert(g_hgMode==1);
 #else
         assert(g_hgMode==2);
@@ -97,7 +97,7 @@ static void PacketTests(void)
     allow_at=1;
     assert(HostGateRecvFrom(receiver,buf,sizeof(buf),0,(struct sockaddr *)&source,&size)==1);
     assert(receives==2 && consume==2);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     assert(g_hgDropsIn==1);
 #endif
     receives=consume=0;allow_at=2;size=sizeof(source);

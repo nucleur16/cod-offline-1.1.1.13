@@ -45,18 +45,18 @@ int main(void) {
  unsigned char info[0x48],original[0x48];
  for(unsigned i=0;i<sizeof(info);i++)info[i]=(BYTE)(i+7);
  info[0x0c]=11;info[0x0d]=2;info[0x0e]=12;info[0x28]=1;info[0x29]=info[0x2a]=1;
- CHECK(CodolManagedQuickOpen(0x71b121,1,1,1,1,1,info));
- CHECK(CodolManagedQuickOpen(0x71b312,1,1,1,1,1,info));
- CHECK(!CodolManagedQuickOpen(0x71b121,1,1,1,1,1,NULL));
- CHECK(!CodolManagedQuickOpen(0x71b122,1,1,1,1,1,info));
- CHECK(!CodolManagedQuickOpen(0x71b121,0,1,1,1,1,info));
- CHECK(!CodolManagedQuickOpen(0x71b121,1,0,1,1,1,info));
- CHECK(!CodolManagedQuickOpen(0x71b121,1,1,0,1,1,info));
- CHECK(!CodolManagedQuickOpen(0x71b121,1,1,1,2,1,info));
- CHECK(!CodolManagedQuickOpen(0x71b121,1,1,1,1,0,info));
+ CHECK(ManagedQuickOpen(0x71b121,1,1,1,1,1,info));
+ CHECK(ManagedQuickOpen(0x71b312,1,1,1,1,1,info));
+ CHECK(!ManagedQuickOpen(0x71b121,1,1,1,1,1,NULL));
+ CHECK(!ManagedQuickOpen(0x71b122,1,1,1,1,1,info));
+ CHECK(!ManagedQuickOpen(0x71b121,0,1,1,1,1,info));
+ CHECK(!ManagedQuickOpen(0x71b121,1,0,1,1,1,info));
+ CHECK(!ManagedQuickOpen(0x71b121,1,1,0,1,1,info));
+ CHECK(!ManagedQuickOpen(0x71b121,1,1,1,2,1,info));
+ CHECK(!ManagedQuickOpen(0x71b121,1,1,1,1,0,info));
  const unsigned offsets[]={0xc,0xd,0xe,0x28};
- for(unsigned i=0;i<4;i++) { info[offsets[i]]++;CHECK(!CodolManagedQuickOpen(0x71b121,1,1,1,1,1,info));info[offsets[i]]--; }
- memcpy(original,info,sizeof(info));CodolManagedQuickNormalize(info);
+ for(unsigned i=0;i<4;i++) { info[offsets[i]]++;CHECK(!ManagedQuickOpen(0x71b121,1,1,1,1,1,info));info[offsets[i]]--; }
+ memcpy(original,info,sizeof(info));ManagedQuickNormalize(info);
  for(unsigned i=0;i<sizeof(info);i++)CHECK(info[i]==(i==0x29||i==0x2a?0:original[i]));
  CHECK(map(0x082d0000,0x20000)!=NULL);CHECK(map(0x06c40000,0x10000)!=NULL);CHECK(map(0x00710000,0x10000)!=NULL);
  if(failures)return 1;
@@ -102,16 +102,16 @@ int main(void) {
  }
  caller(0x71b130)(room,info);CHECK(memcmp(seen,info,sizeof(info))==0);
  const char *valid="127.0.0.1\r\n23174\r\n127.0.0.1\r\n23174\r\n1002\r\n";
- CHECK(CodolLocalMultiRoute(valid,strlen(valid)));
+ CHECK(LocalMultiRoute(valid,strlen(valid)));
  const char *actual="127.0.0.1\r\n23174\r\n127.0.0.1\r\n23174\r\n3ea\r\n";
- CHECK(CodolLocalMultiRoute(actual,strlen(actual)));
+ CHECK(LocalMultiRoute(actual,strlen(actual)));
  const char *isolated="127.0.0.3\r\n3074\r\n127.0.0.3\r\n3074\r\n3ea\r\n";
- CHECK(CodolLocalMultiRoute(isolated,strlen(isolated)));
+ CHECK(LocalMultiRoute(isolated,strlen(isolated)));
  const char *isolatedLF="127.0.0.3\n3074\n127.0.0.3\n3074\n3ea\n";
- CHECK(CodolLocalMultiRoute(isolatedLF,strlen(isolatedLF)));
- CHECK(CodolLocalTitle("3EA"));CHECK(!CodolLocalTitle("3ez"));CHECK(!CodolLocalTitle("000"));CHECK(!CodolLocalTitle("123456789"));
+ CHECK(LocalMultiRoute(isolatedLF,strlen(isolatedLF)));
+ CHECK(LocalTitle("3EA"));CHECK(!LocalTitle("3ez"));CHECK(!LocalTitle("000"));CHECK(!LocalTitle("123456789"));
  const char *invalid[]={"localhost\n23174\n127.0.0.1\n23174\n1002\n","127.0.0.1\n23174\n8.8.8.8\n23174\n1002\n","127.0.0.1\n23174\n127.0.0.1\n23175\n1002\n","127.0.0.1\n0\n127.0.0.1\n0\n1002\n","127.0.0.1\n65536\n127.0.0.1\n65536\n1002\n","127.0.0.1.example\n23174\n127.0.0.1\n23174\n1002\n","127.0.0.1\n23174\n127.0.0.1\n23174\n1002\nextra\n"};
- for(unsigned i=0;i<sizeof(invalid)/sizeof(invalid[0]);i++)CHECK(!CodolLocalMultiRoute(invalid[i],strlen(invalid[i])));
+ for(unsigned i=0;i<sizeof(invalid)/sizeof(invalid[0]);i++)CHECK(!LocalMultiRoute(invalid[i],strlen(invalid[i])));
  const char *isolatedInvalid[]={
   "127.0.0.1\n3074\n127.0.0.3\n3074\n3ea\n",
   "127.0.0.3\n3074\n127.0.0.1\n3074\n3ea\n",
@@ -127,9 +127,9 @@ int main(void) {
   "127.0.0.3\n0\n127.0.0.3\n0\n3ea\n",
   "127.0.0.3\n3074\n127.0.0.3\n3074\n3ea\nextra\n"};
  for(unsigned i=0;i<sizeof(isolatedInvalid)/sizeof(isolatedInvalid[0]);i++)
-  CHECK(!CodolLocalMultiRoute(isolatedInvalid[i],strlen(isolatedInvalid[i])));
- const wchar_t *args[]={L"game",L"+set",L"codol_local_test_multi",L"1",L"+set",L"codol_local_test_multi",L"0"};
- CHECK(CodolLocalMultiArgument(4,args));CHECK(!CodolLocalMultiArgument(7,args));CHECK(!CodolLocalMultiArgument(3,args));CHECK(!CodolLocalMultiArgument(1,args));
+  CHECK(!LocalMultiRoute(isolatedInvalid[i],strlen(isolatedInvalid[i])));
+ const wchar_t *args[]={L"game",L"+set",L"k33_local_test_multi",L"1",L"+set",L"k33_local_test_multi",L"0"};
+ CHECK(LocalMultiArgument(4,args));CHECK(!LocalMultiArgument(7,args));CHECK(!LocalMultiArgument(3,args));CHECK(!LocalMultiArgument(1,args));
  printf("{\"checks\":%u,\"failures\":%u,\"actual_x86_windows\":true,\"live_client\":false}\n",checks,failures);
  return failures!=0;
 }

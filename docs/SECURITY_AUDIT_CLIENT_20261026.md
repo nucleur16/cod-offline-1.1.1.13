@@ -117,7 +117,7 @@ attacker-controlled URL, no elevation. Integrity is enforced by the pinned hash.
 to the pinned release, so a planted file cannot be used to run arbitrary code.
 
 ### 8. Local multi-client (`local_multi.c`)
-Entirely behind `#if CODOL_LOCAL_TESTING==1` (not defined in `build.sh` /
+Entirely behind `#if K33_LOCAL_TESTING==1` (not defined in `build.sh` /
 `build-dev.sh`), and additionally gated by a command-line flag plus a loopback
 routing guard reading a ≤256-byte `dwauth.ini`. Not present in production.
 

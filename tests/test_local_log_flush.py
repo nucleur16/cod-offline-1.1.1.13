@@ -31,7 +31,7 @@ def main():
             route='127.0.0.1' if case=='wrongroute' else '127.0.0.3'
             auth='127.0.0.1' if case=='mixedroute' else route
             (root/'dwauth.ini').write_text(f'{route}\n3074\n{auth}\n3074\n3ea\n',encoding='ascii')
-            result=subprocess.run([str(target),case,str(c1),'+set','codol_local_test_multi',
+            result=subprocess.run([str(target),case,str(c1),'+set','k33_local_test_multi',
                                    '0' if case=='multioff' else '1'],cwd=root,capture_output=True,
                                    text=True,check=True,timeout=8)
             receipts=list((root/'main').glob('*.json'))

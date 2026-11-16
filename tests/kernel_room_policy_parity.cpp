@@ -7,7 +7,7 @@
 #include <map>
 #include <string>
 #include <vector>
-#define CODOL_NATIVE_ROOM_FIXTURE
+#define NATIVE_ROOM_FIXTURE
 #define sprintf_s(buffer,...) snprintf(buffer,sizeof(buffer),__VA_ARGS__)
 #include LEGACY_ROOM_PUBLISHER_HEADER
 #include LEGACY_ROOM_SAMPLE_HEADER
