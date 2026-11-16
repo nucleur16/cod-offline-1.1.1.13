@@ -428,9 +428,13 @@ struct Advance {
     Advance() : known(false), deactivated(false), tiers(0) {}
 };
 
-/* Challenges.advance: add `amount` to one challenge. An unknown or deactivated ref is a no-op that
- * says so: one bad row in a match report must not cost the rest of it. */
-Advance AdvanceChallenge(Server &s, ChallengeMap &stored, const std::string &ref, double amount)
+/* Challenges.advance: add `amount` to one challenge. An unknown ref is a no-op that says so: one bad
+ * row in a match report must not cost the rest of it. A ref of mp/challengedeactivate.csv is one too
+ * when `honourDeactivated`; the match report's challenges are credited regardless, because the
+ * match server is what gates them (a weapon's challenges count once that weapon is unlocked,
+ * _missions.gsc), and refusing them here made every match restart them from 0 and pay tier 1
+ * again. */
+Advance AdvanceChallenge(Server &s, ChallengeMap &stored, const std::string &ref, double amount, bool honourDeactivated)
 {
     Advance r;
     r.ref = ref;
@@ -438,7 +442,7 @@ Advance AdvanceChallenge(Server &s, ChallengeMap &stored, const std::string &ref
     if (!c) return r;
     r.known = true;
     r.ref = c->ref;
-    if (CareerChallengeDeactivated(s, c->id)) {
+    if (honourDeactivated && CareerChallengeDeactivated(s, c->id)) {
         r.deactivated = true;
         return r;
     }
@@ -469,7 +473,7 @@ std::string ProgressionCredit(Server &s, Json &prof, const Json &deltas)
     for (size_t i = 0; i < chd.size(); i++) {
         double amount = 0;
         if (chd[i].second.truthy()) PyFloat(chd[i].second, amount);
-        Advance r = AdvanceChallenge(s, stored, chd[i].first, amount);
+        Advance r = AdvanceChallenge(s, stored, chd[i].first, amount, false);
         if (!r.known) { notes.push_back("unknown challenge " + Quoted(chd[i].first)); continue; }
         if (r.deactivated) { notes.push_back("challenge " + r.ref + " is deactivated"); continue; }
         tiers += r.tiers;
@@ -532,7 +536,7 @@ std::string ProgressionCredit(Server &s, Json &prof, const Json &deltas)
             const CareerChallenge *c = CareerChallengeGet(s, ref);
             double have = stored.get(c->id, 0.0);
             if (have >= 1.0) continue;
-            Advance r = AdvanceChallenge(s, stored, ref, 1.0 - have);
+            Advance r = AdvanceChallenge(s, stored, ref, 1.0 - have, true);
             if (r.known && !r.deactivated) tiers += r.tiers;
             else notes.push_back("coop challenge " + ref + " is " + (r.deactivated ? "deactivated" : "unknown"));
         }

@@ -55,12 +55,12 @@ class PartyLocales(unittest.TestCase):
             self.assertEqual(value.encode('gbk').decode('gbk'), value)
 
     def test_shared_pack_keeps_tables_and_markers_but_not_localized_text(self):
-        for part,keep,_ in packs.parts(packs.load(str(ROOT),'common')):
+        for part,keep,_ in packs.parts(packs.load(str(ROOT),'common_extras')):
             if part in ('000_party_modes','loading_mode_names'):
                 self.assertFalse(keep('localize'))
                 self.assertTrue(keep('rawfile'))
                 self.assertTrue(keep('stringtable'))
-        actual = {p for p,_,_ in packs.parts(packs.load(str(ROOT),'common'))}
+        actual = {p for p,_,_ in packs.parts(packs.load(str(ROOT),'common_extras'))}
         self.assertTrue({'000_party_modes','loading_mode_names'} <= actual)
 
     def test_english_pack_takes_only_the_exact_legacy_text_parts(self):
@@ -81,7 +81,7 @@ class PartyLocales(unittest.TestCase):
         for name in ('000_party_modes','loading_mode_names'):
             name=zonelist.LEGACY_NAME[name]   # the file an older install carries
             while name in merged: name=merged[name]   # kernel33.c follows the chain (PatchZoneMergedChain)
-            self.assertEqual(name,'common')
+            self.assertEqual(name,'common_extras')
 
     def test_checker_migrates_only_twelve_chinese_winners_and_keeps_english(self):
         before=old_winners();before[(37,'mp/comaplist.csv')]=('pre_gfx','shared','unchanged-table')

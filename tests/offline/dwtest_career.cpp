@@ -179,6 +179,17 @@ void Tables(Server &s)
     const CareerChallenge *m = CareerChallengeGet(s, "ch_ak47_mp_mastery");
     CHECK(m && mastery.size() == 1 && mastery[(int)m->id] == 10.0 && !prof.get("challenges").has(Fmt("%lld", (long long)m->id)));
     CHECK(CareerWeaponXpByItem(s, prof).size() == 1 && CareerWeaponXpByItem(s, prof)[1009] == 14000);
+    /* A challenge mp/challengedeactivate.csv lists (529 ch_marksman_m14ebr_mp) is credited from a match
+     * report like any other: the match server gates it by the weapon's unlock. Tier 1 (10) once. */
+    {
+        Json mp = Parsed("{\"level\": 1}");
+        CHECK(CareerChallengeDeactivated(s, 529));
+        note = ProgressionCredit(s, mp, Parsed("{\"challenges\": {\"ch_marksman_m14ebr_mp\": 25, \"537\": 25}}"));
+        CHECK(mp.get("challenges").get("529").asReal() == 25.0 && mp.get("challenges").get("537").asReal() == 25.0);
+        CHECK(note.find("deactivated") == std::string::npos && note.find("1 challenge tier(s)") != std::string::npos);
+        note = ProgressionCredit(s, mp, Parsed("{\"challenges\": {\"ch_marksman_m14ebr_mp\": 25}}"));
+        CHECK(mp.get("challenges").get("529").asReal() == 50.0 && note.find("1 challenge tier(s)") != std::string::npos);
+    }
     /* coop: a failure unlocks nothing, a completion completes challenge 800 once, a replay is only counted */
     Json cp = Parsed("{\"level\": 1}");
     size_t flags0 = CareerGrantedFlagIds(s, cp).size();

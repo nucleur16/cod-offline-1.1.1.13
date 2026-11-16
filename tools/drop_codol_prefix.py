@@ -856,7 +856,7 @@ def apply_menus():
 # in that category's matches: zm_, coop_, survival_). The alphabetical (link) order in each load list is unchanged.
 ZONE_TABLE = [
     # installed (client_shipRetail\patch): the consolidated packs and the standalone zones
-    ("codol_common", "common", "pack ahead of code_pre_gfx"),
+    ("codol_common", "common_extras", "pack ahead of code_pre_gfx"),
     ("codol_common_ui_mp", "common_ui_mp", "pack of the UI list"),
     ("codol_common_postgfx_mp", "common_postgfx_mp", "pack after code_post_gfx"),
     ("codol_english_locale", "english_locale", "English strings (one language)"),
@@ -866,9 +866,9 @@ ZONE_TABLE = [
     ("mp_codol_weapons", "mp_weapons", "standalone; the server mounts mp_*.ff"),
     ("mp_codol_weapons_postgfx_mp", "mp_weapons_postgfx_mp", "standalone; the server mounts mp_*.ff"),
     # source zones (zones/, zone_source/): parts of the packs; old installs carry them under the old names
-    ("000_codol_party_modes", "000_party_modes", "part of common / english_locale"),
+    ("000_codol_party_modes", "000_party_modes", "part of common_extras / english_locale"),
     ("codol_english", "english", "part of english_locale; also the English zones' name prefix"),
-    ("codol_english_font", "english_font", "part of common"),
+    ("codol_english_font", "english_font", "part of common_extras"),
     ("codol_english_ui", "english_ui", "part of english_locale"),
     ("codol_english_ui_extra", "english_ui_extra", "part of english_locale"),
     ("codol_english_usermaps", "english_usermaps", "part of english_locale"),
@@ -878,8 +878,8 @@ ZONE_TABLE = [
     ("codol_chinese_ui_extra", "chinese_ui_extra", "part of chinese_locale"),
     ("codol_chinese_hud_styles", "chinese_hud_styles", "part of chinese_locale"),
     ("codol_field_orders_postgfx_mp", "field_orders_postgfx_mp", "part of common_postgfx_mp"),
-    ("codol_loading_mode_names", "loading_mode_names", "part of common / english_locale"),
-    ("codol_zm_deathmachine_audio", "zm_deathmachine_audio", "part of common"),
+    ("codol_loading_mode_names", "loading_mode_names", "part of common_extras / english_locale"),
+    ("codol_zm_deathmachine_audio", "zm_deathmachine_audio", "part of common_extras"),
 ]
 ZONE_WORDS = {old: new for old, new, _why in ZONE_TABLE}
 ZONE_WORDS.update({

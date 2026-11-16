@@ -14,7 +14,7 @@ manifest names those blobs by sha1 and the build takes them from the stock zone 
 the stored tag), not FFDec's decompile: --decompile keeps those files instead of exporting over them.
 The usermap map zones themselves (mp_*.ff, zm_sumpf_sh.ff and their _load zones) are not part of this repository.
 The client_shipRetail\patch zones below are source zones: they install inside the consolidated zones of zone_packs/
-(zonekit/packs.py: common, common_ui_mp, common_postgfx_mp, english_locale,
+(zonekit/packs.py: common_extras, common_ui_mp, common_postgfx_mp, english_locale,
 chinese_locale), except infected_cyborg_postgfx_mp, which installs on its own.
 """
 
@@ -42,7 +42,7 @@ LEGACY_NAME = {
     "m1911_arms_diag": "codol_zm_m1911_arms_diag",  # LEGACY_ZONE
     "mp_weapons": "mp_codol_weapons",  # LEGACY_ZONE
     "mp_weapons_postgfx_mp": "mp_codol_weapons_postgfx_mp",  # LEGACY_ZONE
-    "common": "codol_common",  # LEGACY_ZONE
+    "common_extras": "codol_common",  # LEGACY_ZONE
     "common_ui_mp": "codol_common_ui_mp",  # LEGACY_ZONE
     "common_postgfx_mp": "codol_common_postgfx_mp",  # LEGACY_ZONE
     "english_locale": "codol_english_locale",  # LEGACY_ZONE

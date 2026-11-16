@@ -16,7 +16,7 @@ including the streamed usermap images. Derail currently has no separate
 Rebuild the four relevant local packs without altering the ship/dev manifest:
 
 ```powershell
-python build_zones.py common common_ui_mp english_locale chinese_locale --candidate --maps all --out output_local_maps_test
+python build_zones.py common_extras common_ui_mp english_locale chinese_locale --candidate --maps all --out output_local_maps_test
 ```
 
 The local install also takes `files/client_shipRetail/patch/sound_channels.txt`

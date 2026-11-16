@@ -60,6 +60,8 @@ python -B tests/test_tip_stage_lookup.py
 python -B tests/test_invitations_disabled.py
 python -B tests/test_zone_packs.py
 python -B tests/test_party_locales.py
+# Backfill of marksman kills a career lost while IW4's challenge unlock gate was closed.
+python -B tests/test_repair_locked_marksman.py
 "$BIN/gcc.exe" -O2 -Wall -Wextra -Werror tests/quick_start_policy_test.c -o "$OUT/quick_start_policy.exe"
 "$OUT/quick_start_policy.exe"
 "$BIN/gcc.exe" -O2 -Wall -Wextra -Werror tests/controller_glyph_policy_test.c -o "$OUT/controller_glyph_policy.exe"

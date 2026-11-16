@@ -17,7 +17,7 @@ sys.path.insert(0,str(ROOT))
 from zonekit import codecs,container,packs,zoneimage
 from party_locale_contract import PARTY_LOCALE
 
-PACKS=('common','english_locale','chinese_locale')
+PACKS=('common_extras','english_locale','chinese_locale')
 LEGACY=('000_party_modes','loading_mode_names')
 
 
@@ -43,9 +43,9 @@ def localized(rows):
 
 def validate(before,after):
     assert set(before)==set(after)==set(PACKS), 'all three reviewed packs are required together'
-    common_old=localized(before['common'])
+    common_old=localized(before['common_extras'])
     assert common_old=={k:v[0].encode('ascii') for k,v in PARTY_LOCALE.items()}
-    assert localized(after['common'])=={}, 'shared common pack still owns localized text'
+    assert localized(after['common_extras'])=={}, 'shared common pack still owns localized text'
     for pack in PACKS:
         old=[r for r in before[pack] if r[0]!=27]
         new=[r for r in after[pack] if r[0]!=27]
@@ -114,7 +114,7 @@ def main():
         values,_dups,_selected=effective(legacy,language)
         for key,(english,_chinese) in PARTY_LOCALE.items():
             assert codecs.decode_localize(values[(27,key.lower())])[1]==english.encode('ascii')
-    source_files=['src/patch_locale_policy.h','zone_packs/common.csv','zone_packs/english_locale.csv',
+    source_files=['src/patch_locale_policy.h','zone_packs/common_extras.csv','zone_packs/english_locale.csv',
                   'zone_packs/chinese_locale.csv','zone_source/chinese_ui_extra.csv',
                   'zones/chinese_ui_extra/localize.str']
     manifest={'scope':'Unlaunched source/decoded three-pack proof; MUST rebuild from final merged locale+P2P comaplist sources',
