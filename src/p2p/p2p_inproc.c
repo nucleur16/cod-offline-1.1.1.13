@@ -1,7 +1,7 @@
 /*
  * p2p_inproc.c - the sh1x match server inside the host's client, on the game thread (feat/p2p-inprocess).
  *
- * Mode `inprocess` of p2p.c (the default; `mode = child` in p2p_host.ini runs codol_dedrun.exe as before). The
+ * Mode `inprocess` of p2p.c (the default; `mode = child` in p2p_host.ini runs sh1x_dedrun.exe as before). The
  * server is the sh1x server repo's `host-dll` target, sh1x_host.dll: the same objects as the dedicated exe plus
  * its host API (win32/sys_host.c: Sh1xHost_Init / Frame / Command / ExitCode). Like a listen server, C1's game
  * thread runs it: every pass of C1's Com_EventLoop (the call at 0x595E9D, chained behind voice and discord) runs
@@ -45,7 +45,7 @@ static const char *const kPiState[] = { "none", "starting", "running", "ended", 
 
 static volatile LONG g_piState;
 static volatile LONG g_piQuit;
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
 static volatile LONG g_piFaultTest;  /* p2pfaulttest: test clients only */
 #endif
 static Sh1xInitFn g_piInit;
@@ -96,7 +96,7 @@ static void __cdecl PiRescue(void)
     for (;;) SwitchToFiber(g_piMainFiber);
 }
 
-#if CODOL_KERNEL_ROOM_CONTEXT
+#if K33_KERNEL_ROOM_CONTEXT
 #include "p2p_exception_policy.h"
 /* Definition remains in the byte-identical repaired kernel_call_guard.c,
  * included later by kernel_room_context.c in this translation unit. */
@@ -125,7 +125,7 @@ static LONG CALLBACK PiFaultHandler(EXCEPTION_POINTERS *ep)
         return EXCEPTION_CONTINUE_SEARCH;
     DWORD_PTR eip = ep->ContextRecord->Eip;
     if (!(eip >= g_piBase && eip < g_piEnd) && !(eip >= g_crtBase && eip < g_crtEnd)) return EXCEPTION_CONTINUE_SEARCH;
-#if CODOL_KERNEL_ROOM_CONTEXT
+#if K33_KERNEL_ROOM_CONTEXT
     if (PiMigrationGuardActive()) return EXCEPTION_CONTINUE_SEARCH;
 #endif
     g_piFaultCode = code;
@@ -162,7 +162,7 @@ static void WINAPI PiServerFiber(void *unused)
                 g_piFirstFrameMs = GetTickCount() - t;
             }
         } else if (st == PI_RUNNING) {
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
             /* p2pfaulttest: a real fault inside the server's code (Cbuf_AddText reading address 1). */
             if (g_piFaultTest) { g_piFaultTest = 0; g_piCmd((const char *)1); }
 #endif
@@ -173,13 +173,13 @@ static void WINAPI PiServerFiber(void *unused)
     }
 }
 
-#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_GAP_STATE */
+#if K33_DIAGNOSTICS /* K33_SHIPPING_TIMING_GAP_STATE */
 static LONGLONG g_piLastTickQpc, g_piMaxGapUs;
 #else /* K33_SHIPPING_TIMING_GAP_STATE */
 static LONGLONG g_piLastTickQpc;
 #endif /* K33_SHIPPING_TIMING_GAP_STATE */
 static volatile LONG g_piInTick;
-#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_GAP_COUNT */
+#if K33_DIAGNOSTICS /* K33_SHIPPING_TIMING_GAP_COUNT */
 static volatile LONG g_piGapsOver1s;
 #endif /* K33_SHIPPING_TIMING_GAP_COUNT */
 
@@ -195,7 +195,7 @@ __attribute__((used)) void __cdecl PiTick(void)
         /* Unknown callback/import mutation: never resume the retained server. */
         InterlockedExchange(&g_piQuit,1);InterlockedExchange(&g_piState,PI_CRASHED);return;
     }
-#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_GAP_SAMPLE */
+#if K33_DIAGNOSTICS /* K33_SHIPPING_TIMING_GAP_SAMPLE */
     if (g_piLastTickQpc && g_piQpf) {
         LARGE_INTEGER n;
         QueryPerformanceCounter(&n);
@@ -218,12 +218,12 @@ __attribute__((used)) void __cdecl PiTick(void)
     unsigned int mxcsr;
     __asm__ volatile("fnstcw %0" : "=m"(fcw));
     __asm__ volatile("stmxcsr %0" : "=m"(mxcsr));
-#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_SAMPLE_DECL */
+#if K33_DIAGNOSTICS /* K33_SHIPPING_TIMING_SAMPLE_DECL */
     LARGE_INTEGER a, b;
 #else /* K33_SHIPPING_TIMING_SAMPLE_DECL */
     LARGE_INTEGER b;
 #endif /* K33_SHIPPING_TIMING_SAMPLE_DECL */
-#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_SAMPLE_START */
+#if K33_DIAGNOSTICS /* K33_SHIPPING_TIMING_SAMPLE_START */
     QueryPerformanceCounter(&a);
 #endif /* K33_SHIPPING_TIMING_SAMPLE_START */
     g_piInTick = 1;
@@ -233,7 +233,7 @@ __attribute__((used)) void __cdecl PiTick(void)
     __asm__ volatile("fldcw %0" : : "m"(fcw));
     __asm__ volatile("ldmxcsr %0" : : "m"(mxcsr));
     g_piLastTickQpc = b.QuadPart;
-#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_SAMPLE_TOTALS */
+#if K33_DIAGNOSTICS /* K33_SHIPPING_TIMING_SAMPLE_TOTALS */
     if (st == PI_RUNNING && g_piQpf) {
         LONGLONG us = (b.QuadPart - a.QuadPart) * 1000000 / g_piQpf;
         g_piCalls++; g_piTotalUs += us; if (us > g_piMaxUs) g_piMaxUs = us;
@@ -374,7 +374,7 @@ static void __cdecl PiHostPhaseYield(const char *phase)
     g_piPhaseLast = now;
     PiYield();
 }
-/* The server's await_zones (codol_asset_host.h), on its fiber during a map load. C1 starts loading a hosted map
+/* The server's await_zones (asset_host.h), on its fiber during a map load. C1 starts loading a hosted map
  * itself when it is connected (the server's loadingnewmap); otherwise, after a short grace, preloadmap starts it.
  * Then the server waits, yielding, until C1 holds the level and its common_gametype zone
  * and its database is idle. */
@@ -492,7 +492,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         P2PSetState(P2P_FAILED, "restart the client to host again");
         return 1;
     }
-    /* The host compiles the GSC tree installed with the client (codol_scriptPath); P2PCheck refused
+    /* The host compiles the GSC tree installed with the client (scriptPath); P2PCheck refused
      * every host but the offline lobby's. */
     /* A private copy: a fresh set of globals for every session. */
     char copy[MAX_PATH], tmp[MAX_PATH];
@@ -557,7 +557,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     lstrcpynA(g_piArgs, args, sizeof(g_piArgs));
     if (g_piFiber && g_piState == PI_CRASHED) { DeleteFiber(g_piFiber); g_piFiber = NULL; }
     if (g_piFiber && g_piState == PI_ENDED) { DeleteFiber(g_piFiber); g_piFiber = NULL; }
-#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_START_TOTALS */
+#if K33_DIAGNOSTICS /* K33_SHIPPING_TIMING_START_TOTALS */
     g_piCalls = g_piTotalUs = g_piMaxUs = g_piWinCalls = g_piWinTotalUs = g_piWinMaxUs = 0;
 #endif /* K33_SHIPPING_TIMING_START_TOTALS */
     g_piInitMs = g_piFirstFrameMs = 0;
@@ -576,7 +576,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     int matchState = 0;
     int emptyPolls = 0;
     char current[160] = ""; /* the running match's identity (P2PStatusIdentity), to follow a map change */
-#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_MONITOR_DECL */
+#if K33_DIAGNOSTICS /* K33_SHIPPING_TIMING_MONITOR_DECL */
     DWORD lastPoll = 0, lastAnswer = 0, lastStats = GetTickCount(), quitAt = 0;
 #else /* K33_SHIPPING_TIMING_MONITOR_DECL */
     DWORD lastPoll = 0, lastAnswer = 0, quitAt = 0;
@@ -596,7 +596,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
             Log("p2p in-process: the server did not end within 30 s of quit (state %s)", kPiState[st]);
             break;
         }
-#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_MONITOR_TOTALS */
+#if K33_DIAGNOSTICS /* K33_SHIPPING_TIMING_MONITOR_TOTALS */
         if (st == PI_RUNNING && now - lastStats >= 30000 && !g_piWinCalls) {
             Log("p2p in-process: no server ticks in the last %lu s (the game thread is blocked or skips every tick source)",
                 (now - lastStats) / 1000);
@@ -728,12 +728,12 @@ static void __cdecl PiCmdStatus(void)
              (unsigned long)priv, (unsigned long)virt);
 }
 
-#if CODOL_LOCAL_TESTING
-/* Test clients only (+set k33_cmdFile 1): make the running server fault, to check the containment. */
+#if K33_LOCAL_TESTING
+/* Test clients only (+set com_cmdFile 1): make the running server fault, to check the containment. */
 static void __cdecl PiCmdFaultTest(void)
 {
     const char *cl = GetCommandLineA();
-    if (!cl || !strstr(cl, "k33_cmdFile 1")) { C1Printf("p2pfaulttest: test clients only (+set k33_cmdFile 1)\n"); return; }
+    if (!cl || !strstr(cl, "com_cmdFile 1")) { C1Printf("p2pfaulttest: test clients only (+set com_cmdFile 1)\n"); return; }
     if (g_piState != PI_RUNNING) { C1Printf("p2pfaulttest: no in-process server running\n"); return; }
     InterlockedExchange(&g_piFaultTest, 1);
     C1Printf("p2pfaulttest: the server faults in its next frame\n");
@@ -789,7 +789,7 @@ static int PiActivationPrepare(void *context)
     if(g_k33TickNext!=VOICE_EVENTLOOP_FUNC_VA &&
        g_k33TickNext!=(DWORD)(DWORD_PTR)VOICE_TickHook &&
        g_k33TickNext!=(DWORD)(DWORD_PTR)DISCORD_TickHook
-#if CODOL_KERNEL_ROOM_CONTEXT
+#if K33_KERNEL_ROOM_CONTEXT
        && g_k33TickNext!=(DWORD)(DWORD_PTR)KRC_MainTickHook
 #endif
        )return 0;
@@ -896,7 +896,7 @@ static BOOL P2PEnsureInprocActivation(void)
     g_piHooked=TRUE; /* only complete transaction; never a diagnostic success bit */
     return TRUE;
 }
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
 static void InstallP2PInprocDiagnostics(void)
 {
     for(unsigned i=0;i<sizeof(g_piCmds)/sizeof(g_piCmds[0]);++i)C1AddCommand(&g_piCmds[i]);

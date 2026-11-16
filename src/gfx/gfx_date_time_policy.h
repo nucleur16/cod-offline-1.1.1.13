@@ -1,5 +1,5 @@
-#ifndef CODOL_GFX_DATE_TIME_POLICY_H
-#define CODOL_GFX_DATE_TIME_POLICY_H
+#ifndef GFX_DATE_TIME_POLICY_H
+#define GFX_DATE_TIME_POLICY_H
 #include <stdint.h>
 
 /* The original Date.setTime performs TimeClip first. Never alter its epoch,

@@ -63,7 +63,7 @@ int main(void){
 '''.replace('PROFILE_HEADER',linux((ROOT/'src/production_profile.h').resolve())).replace('FUNCTIONS','\n'.join(function(n) for n in ('CtlTestMode','CtlCmdCursor','CtlCmdEscape')))
     path=a.output/'pointer.c';path.write_text(source)
     rows=[]
-    for name,flags,args in (('shipping',[],['k33_cmdFile','1']),('quiet-QA',['-DCODOL_LOCAL_TESTING=1','-DCODOL_DIAGNOSTICS=0'],['k33_cmdFile','1']),('QA-without-launch-guard',['-DCODOL_LOCAL_TESTING=1','-DCODOL_DIAGNOSTICS=0'],[])):
+    for name,flags,args in (('shipping',[],['com_cmdFile','1']),('quiet-QA',['-DK33_LOCAL_TESTING=1','-DK33_DIAGNOSTICS=0'],['com_cmdFile','1']),('QA-without-launch-guard',['-DK33_LOCAL_TESTING=1','-DK33_DIAGNOSTICS=0'],[])):
         exe=a.output/(name+'.exe')
         build=subprocess.run(['wsl','-d','Ubuntu','--','i686-w64-mingw32-gcc','-O2','-Wall','-static',*flags,linux(path.resolve()),'-o',linux(exe.resolve()),'-luser32'],capture_output=True,text=True,timeout=30)
         (a.output/(name+'-build.log')).write_text(build.stdout+build.stderr)

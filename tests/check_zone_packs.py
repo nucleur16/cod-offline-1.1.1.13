@@ -110,7 +110,7 @@ def ownership_conflicts(md, where_by_language, used_by_language):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--maps", default="ship", choices=shipping.MODES)
-    ap.add_argument("--game", default=os.environ.get("CODOL_GAME", DEFAULT_GAME))
+    ap.add_argument("--game", default=os.environ.get("K33_GAME", DEFAULT_GAME))
     ap.add_argument("--new", help="the built patch folder (default output[_dev]\\client_shipRetail\\patch)")
     ap.add_argument("--old", help="old .ff files to compare with (default: the source zones built as before)")
     ap.add_argument("--old-party-locale-profile", choices=('source-parts', 'pre-migration'),

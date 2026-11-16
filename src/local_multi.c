@@ -1,7 +1,7 @@
 /* Production retains the unmodified C1 single-instance branch and mutex.
  * Only the explicitly compiled local QA DLL may give the exact game mutex
  * a process-local name, after both command and loopback routing guards pass. */
-#if defined(CODOL_LOCAL_TESTING) && CODOL_LOCAL_TESTING == 1
+#if defined(K33_LOCAL_TESTING) && K33_LOCAL_TESTING == 1
 #include "local_multi_policy.h"
 
 /* The current A5 CRT fopen chain calls C1's own B421D8 slot. This is not a
@@ -18,7 +18,7 @@ static int LocalQaRouteState(void) {
         value=value*10+(unsigned)(text[i]-'0');if(value>0x7fffffffUL)return -1;}
     if(!value)return -1;
     int argc=0;LPWSTR* argv=CommandLineToArgvW(GetCommandLineW(),&argc);
-    int selected=argv&&CodolLocalMultiArgument(argc,(const wchar_t*const*)argv);if(argv)LocalFree(argv);
+    int selected=argv&&LocalMultiArgument(argc,(const wchar_t*const*)argv);if(argv)LocalFree(argv);
     wchar_t pipe[128],parent[32],ceiling[32];
     DWORD pn=GetEnvironmentVariableW(L"CODOL_P2P_PRODUCTION_PIPE",pipe,128);
     DWORD hn=GetEnvironmentVariableW(L"CODOL_P2P_PRODUCTION_PARENT_HANDLE",parent,32);
@@ -30,7 +30,7 @@ static int LocalQaRouteState(void) {
        info.nNumberOfLinks!=1||info.nFileSizeHigh||!info.nFileSizeLow||info.nFileSizeLow>256)return -1;
     HANDLE input=ReOpenFile(source,GENERIC_READ,FILE_SHARE_READ,FILE_FLAG_SEQUENTIAL_SCAN);
     if(input==INVALID_HANDLE_VALUE)return -1;
-    char data[256];DWORD got=0;int ok=ReadFile(input,data,info.nFileSizeLow,&got,NULL)&&got==info.nFileSizeLow&&CodolLocalMultiRoute(data,got);
+    char data[256];DWORD got=0;int ok=ReadFile(input,data,info.nFileSizeLow,&got,NULL)&&got==info.nFileSizeLow&&LocalMultiRoute(data,got);
     if(!CloseHandle(input))ok=0;
     if(!ok)return -1;
     g_localQaRoute.route=source;return g_localQaRoute.state=2;
@@ -58,13 +58,13 @@ static FARPROC LocalQaRouteImport(const C1Import *imp,FARPROC original) {
 }
 
 
-static const char kCodolGameMutex[]="Global\\{{5BD75B76-601A-4b20-80C8-D2317C94BB30}}";
+static const char kGameMutex[]="Global\\{{5BD75B76-601A-4b20-80C8-D2317C94BB30}}";
 
 static HANDLE WINAPI LocalGameMutex(LPSECURITY_ATTRIBUTES attributes,BOOL owner,LPCSTR name)
 {
-    if(name && strcmp(name,kCodolGameMutex)==0) {
+    if(name && strcmp(name,kGameMutex)==0) {
         char local[80];
-        _snprintf(local,sizeof(local),"Local\\CoDOLClassicTest-%lu",(unsigned long)GetCurrentProcessId());
+        _snprintf(local,sizeof(local),"Local\\K33LocalTest-%lu",(unsigned long)GetCurrentProcessId());
         local[sizeof(local)-1]=0;
         return CreateMutexA(attributes,owner,local);
     }
@@ -74,7 +74,7 @@ static HANDLE WINAPI LocalGameMutex(LPSECURITY_ATTRIBUTES attributes,BOOL owner,
 static BOOL LocalMultiEnabled(void)
 {
     int argc=0;LPWSTR *argv=CommandLineToArgvW(GetCommandLineW(),&argc);
-    int enabled=argv && CodolLocalMultiArgument(argc,(const wchar_t *const *)argv);
+    int enabled=argv && LocalMultiArgument(argc,(const wchar_t *const *)argv);
     if(argv)LocalFree(argv);
     if(!enabled)return FALSE;
     HANDLE input=LocalQaOpenDwauth("dwauth.ini");
@@ -82,13 +82,13 @@ static BOOL LocalMultiEnabled(void)
     char data[257];DWORD size=GetFileSize(input,NULL),got=0;
     BOOL ok=size>0 && size<=256 && ReadFile(input,data,size,&got,NULL) && got==size;
     CloseHandle(input);
-    return ok && CodolLocalMultiRoute(data,size);
+    return ok && LocalMultiRoute(data,size);
 }
 #endif
 
 static void PatchMultiInstance(void)
 {
-#if defined(CODOL_LOCAL_TESTING) && CODOL_LOCAL_TESTING == 1
+#if defined(K33_LOCAL_TESTING) && K33_LOCAL_TESTING == 1
     static const BYTE branch[]={0x81,0x3d,0xd8,0x07,0xf9,0x07,0xb7,0,0,0,
         0x8b,0x45,0x08,0x53,0x56,0x89,0x44,0x24,0x10,0x8b,0x45,0x10,0x57,0x75,0x45};
     static const BYTE initializer[]={0x68,0xcc,0x14,0xc7,0,0x6a,0,0x6a,0,0xff,0x15,0x3c,0x22,0xb4,0};
@@ -98,7 +98,7 @@ static void PatchMultiInstance(void)
     if(!LocalMultiEnabled()) { Log("local multi-client: disabled by local-only guards");return; }
     if(!Readable(check,sizeof(branch)) || memcmp(check,branch,sizeof(branch)) ||
        !Readable(init,sizeof(initializer)) || memcmp(init,initializer,sizeof(initializer)) ||
-       !Readable(name,sizeof(kCodolGameMutex)) || memcmp(name,kCodolGameMutex,sizeof(kCodolGameMutex))) {
+       !Readable(name,sizeof(kGameMutex)) || memcmp(name,kGameMutex,sizeof(kGameMutex))) {
         Log("local multi-client: native guard differs; single-client unchanged");return;
     }
     if(RedirectIndirectCall(0x00b32069,0x00b4223c,(void *)LocalGameMutex))

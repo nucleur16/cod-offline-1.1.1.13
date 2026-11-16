@@ -254,7 +254,7 @@ def override_zone(clips: tuple[Clip, ...]) -> bytes:
     """All-inline standalone override; no existing C# pooled offsets are moved.
 
     Allocation cursor follows C1 XAnim loader 4b7a50, replayed in
-    codol_load_blocks.c:481 and CODOL_BeginZoneReplay. Block0 is temporary
+    load_blocks.c:481 and BeginZoneReplay. Block0 is temporary
     (rewound after each asset). Block3 holds local strings and inline arrays.
     Page rounding follows the retained zone allocation boundary. There are no
     external resources; the extra header word and unused blocks are zero.

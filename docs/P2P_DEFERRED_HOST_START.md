@@ -165,7 +165,7 @@ longer starts one in protocols 1 and 2.
 
 ## Protocols
 
-- **0 (legacy).** Full deferral as above. `p2phost` / `+set k33_p2pHost 1` (explicit console hosting) are unchanged.
+- **0 (legacy).** Full deferral as above. `p2phost` / `+set sv_p2pHost 1` (explicit console hosting) are unchanged.
 - **1, 2 (local startup IPC).** `p2p_start_intent` validates the intent against the armed room exactly as before,
   invalidates the previous attempt, arms, and records the permission. The startup generation is issued, and the
   worker created, by the launch. Ready then Start is still one attempt; a room, owner, enable or cancel change

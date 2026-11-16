@@ -13,7 +13,7 @@ def project(body, diagnostic):
     for line in body.splitlines(keepends=True):
         token=line.strip()
         if token.startswith('#if '):
-            if token!='#if CODOL_DIAGNOSTICS':raise AssertionError('unexpected condition')
+            if token!='#if K33_DIAGNOSTICS':raise AssertionError('unexpected condition')
             stack.append(enabled);enabled=enabled and diagnostic
         elif token=='#endif':
             if not stack:raise AssertionError('unbalanced endif')
@@ -24,7 +24,7 @@ def project(body, diagnostic):
     return ''.join(result)
 
 def contract(body):
-    if body.count('#if CODOL_DIAGNOSTICS')!=2:return False
+    if body.count('#if K33_DIAGNOSTICS')!=2:return False
     try:shipping=project(body,False);development=project(body,True)
     except AssertionError:return False
     if any(token in shipping for token in ('logged','InterlockedIncrement','VirtualQuery','GetModuleHandleExA','GetModuleFileNameA')):return False
@@ -53,7 +53,7 @@ class FaultProfile(unittest.TestCase):
         for i,body in enumerate(mutants):
             with self.subTest(mutant=i):self.assertFalse(contract(body))
     def test_hostile_profile_and_dispatch_mutations_are_rejected(self):
-        mutants=[self.body.replace('#if CODOL_DIAGNOSTICS','#if 1',1),self.body.replace('#endif','',1),self.body.replace('#if CODOL_DIAGNOSTICS','',1),self.body.replace('GetModuleFileNameA(', 'VirtualQuery(',1).replace('#if CODOL_DIAGNOSTICS\n    if (InterlockedIncrement(&logged) <= 4) {','    if (InterlockedIncrement(&logged) <= 4) {',1),self.body.replace('c->Eip = (DWORD)(DWORD_PTR)TakeOver;','c->Eip = 0;',1),self.body.replace('return EXCEPTION_CONTINUE_EXECUTION;','return EXCEPTION_CONTINUE_SEARCH;',1)]
+        mutants=[self.body.replace('#if K33_DIAGNOSTICS','#if 1',1),self.body.replace('#endif','',1),self.body.replace('#if K33_DIAGNOSTICS','',1),self.body.replace('GetModuleFileNameA(', 'VirtualQuery(',1).replace('#if K33_DIAGNOSTICS\n    if (InterlockedIncrement(&logged) <= 4) {','    if (InterlockedIncrement(&logged) <= 4) {',1),self.body.replace('c->Eip = (DWORD)(DWORD_PTR)TakeOver;','c->Eip = 0;',1),self.body.replace('return EXCEPTION_CONTINUE_EXECUTION;','return EXCEPTION_CONTINUE_SEARCH;',1)]
         for i,body in enumerate(mutants):
             with self.subTest(mutant=i):self.assertFalse(contract(body))
 
@@ -70,7 +70,7 @@ def loopfx(text):
 def loop_contract(body):
     try:shipping=project(body,False)
     except AssertionError:return False
-    if body.count('#if CODOL_DIAGNOSTICS')!=7:return False
+    if body.count('#if K33_DIAGNOSTICS')!=7:return False
     if any(token in shipping for token in ('logged','warned','moved','skipped','worst','InterlockedIncrement','Log(')):return False
     return hashlib.sha256(' '.join(shipping.split()).encode()).hexdigest()==EXPECTED_LOOPFX_SHIPPING
 
@@ -81,7 +81,7 @@ class LoopFxProfile(unittest.TestCase):
         active=project(self.body,True)
         for token in ('skipped += steps;', 'moved++;', 'if (behind > worst) worst = behind;', 'InterlockedIncrement(&logged) <= 8', 'InterlockedIncrement(&warned) == 1'):self.assertIn(token,active)
     def test_hostile_guard_and_functional_drift_are_rejected(self):
-        mutants=[self.body.replace('#if CODOL_DIAGNOSTICS','#if 1',1),self.body.replace('#endif','',1),self.body.replace('next[i] = (int)(next[i] + steps * period);','next[i] = 0;',1),self.body.replace('behind / period + 1','behind / period',1),self.body.replace(')(localClient);',')(0);',1),self.body.replace('period <= 0 || behind <= 0','period < 0 || behind <= 0',1)]
+        mutants=[self.body.replace('#if K33_DIAGNOSTICS','#if 1',1),self.body.replace('#endif','',1),self.body.replace('next[i] = (int)(next[i] + steps * period);','next[i] = 0;',1),self.body.replace('behind / period + 1','behind / period',1),self.body.replace(')(localClient);',')(0);',1),self.body.replace('period <= 0 || behind <= 0','period < 0 || behind <= 0',1)]
         for i,body in enumerate(mutants):
             with self.subTest(mutant=i):self.assertFalse(loop_contract(body))
 

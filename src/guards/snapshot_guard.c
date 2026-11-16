@@ -28,7 +28,7 @@ static SnapshotAppendFn g_snapshotEntityOriginal;
 static void *g_snapshotEntityExit;
 static SnapshotAppendFn g_snapshotGenericOriginal;
 static void *g_snapshotGenericExit;
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
 static volatile unsigned g_snapshotGuardCalls[4], g_snapshotGuardRejects[4];
 static volatile unsigned g_snapshotEntityRejectedIndex, g_snapshotEntityRejectedCount;
 static volatile unsigned g_snapshotInvalidObserved;
@@ -109,12 +109,12 @@ static void __attribute__((naked)) SnapshotAppendGuard(void)
         "cmpl $0x400, %1\n\t"
         "jae 1f\n\t"
         "2: "
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         "incl %2\n\t"
 #endif
         "jmp *%0\n\t"
         "1: "
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         "incl %3\n\t"
 #endif
         "movl 4(%%esp), %%eax\n\t"
@@ -123,7 +123,7 @@ static void __attribute__((naked)) SnapshotAppendGuard(void)
         "ret\n\t"
         : : "m"(g_snapshotAppendOriginal),
             "m"(*(volatile unsigned *)(DWORD_PTR)SNAPSHOT_FULL_ENTITY_COUNT_VA)
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
             , "m"(g_snapshotGuardCalls[0]), "m"(g_snapshotGuardRejects[0])
 #endif
         : "memory");
@@ -142,18 +142,18 @@ static void __attribute__((naked)) SnapshotPlayerstateRunGuard(void)
         "cmpl -0x3384(%%ebp), %%edi\n\t"
         "ja 1f\n\t"
         
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         "incl %2\n\t"
 #endif
         "jmp *%0\n\t"
         "1: "
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         "incl %3\n\t"
 #endif
         "movl $1, (%%esi)\n\t"
         "jmp *%1\n\t"
         : : "m"(g_snapshotPlayerstateOriginal), "m"(g_snapshotPlayerstateExit)
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
             , "m"(g_snapshotGuardCalls[1]), "m"(g_snapshotGuardRejects[1])
 #endif
         : "memory");
@@ -172,12 +172,12 @@ static void __attribute__((naked)) SnapshotEntityRunGuard(void)
         "cmpl -4(%%ebp), %%esi\n\t"
         "ja 1f\n\t"
         
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         "incl %2\n\t"
 #endif
         "jmp *%0\n\t"
         "1: "
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         "incl %3\n\t"
         "movl %%esi, %4\n\t"
         "pushl %%eax\n\t"
@@ -191,7 +191,7 @@ static void __attribute__((naked)) SnapshotEntityRunGuard(void)
         "popl %%eax\n\t"
         "jmp *%1\n\t"
         : : "m"(g_snapshotEntityOriginal), "m"(g_snapshotEntityExit)
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
             , "m"(g_snapshotGuardCalls[2]), "m"(g_snapshotGuardRejects[2]),
               "m"(g_snapshotEntityRejectedIndex), "m"(g_snapshotEntityRejectedCount)
 #endif
@@ -212,19 +212,19 @@ static void __attribute__((naked)) SnapshotGenericRunGuard(void)
         "cmpl 0x18(%%ebp), %%edx\n\t"
         "ja 1f\n\t"
         "popl %%edx\n\t"
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         "incl %2\n\t"
 #endif
         "jmp *%0\n\t"
         "1: popl %%edx\n\t"
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         "incl %3\n\t"
 #endif
         "addl $4, %%esp\n\t"
         "movl $1, (%%edi)\n\t"
         "jmp *%1\n\t"
         : : "m"(g_snapshotGenericOriginal), "m"(g_snapshotGenericExit)
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
             , "m"(g_snapshotGuardCalls[3]), "m"(g_snapshotGuardRejects[3])
 #endif
         : "memory");
