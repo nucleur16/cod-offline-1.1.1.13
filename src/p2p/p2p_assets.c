@@ -6,7 +6,7 @@
  * p2passetcheck <type> [name|*] compares the server's record with C1's (DB_FindXAssetHeader 0x4CB8E0, only for
  * names C1 has a real, non-default entry for: DB_IsXAssetDefault 0x4CBDA0 first, so no default asset is created).
  * Pointer words are compared by what they point at; every other byte must be equal. Results go to the console
- * and Kernel33.log. Test clients only (+set k33_cmdFile 1). Types: 11 sound, 36 rawfile, 37 string table.
+ * and Kernel33.log. Test clients only (+set com_cmdFile 1). Types: 11 sound, 36 rawfile, 37 string table.
  */
 
 /* (DB_FindXAssetHeader blocked on some rawfiles; the hash is read directly, see PiC1Find) */
@@ -298,7 +298,7 @@ static const char *PiC1ZoneOf(unsigned type, const char *name)
     return NULL;
 }
 
-/* C1 WeaponDef (loader 0x4c3c20, 0xBFC bytes): the pointer slots of the server's codol_c1_weapon.c / the
+/* C1 WeaponDef (loader 0x4c3c20, 0xBFC bytes): the pointer slots of the server's c1_weapon.c / the
  * replay_weapon field table: 1 string, 2 sound, 3 31-entry sound array, 4 asset (compared by the name every
  * C1 asset header starts with), 5 graph points. Script-string handle arrays are skipped (9). */
 static const struct { unsigned offset, count, kind; } kWeaponSlots[] = {
@@ -392,7 +392,7 @@ static Sh1xFindAssetFn g_paFind;
 static BOOL g_paGeneric;
 static unsigned g_paType;
 
-/* ---- Generic comparison of C1-layout header copies (server codol_c1Fixups 1) ------------------------------------
+/* ---- Generic comparison of C1-layout header copies (server c1Fixups 1) ------------------------------------
  * The server replays each zone the way C1's loader does and records every pointer word C1 relocates (a fix-up):
  * Sh1xHost_FindC1Header gives the header as C1 holds it after DB_AddXAsset, with pointer words still serialized,
  * Sh1xHost_C1PointersIn lists the pointer words of a range and Sh1xHost_ResolveC1Pointer what C1 stores in each:
@@ -647,7 +647,7 @@ static void PiCheckOnServer(void *ctx)
 static void __cdecl PiCmdAssetCheck(void)
 {
     const char *cl = GetCommandLineA();
-    if (!cl || !strstr(cl, "k33_cmdFile 1")) { C1Printf("p2passetcheck: test clients only (+set k33_cmdFile 1)\n"); return; }
+    if (!cl || !strstr(cl, "com_cmdFile 1")) { C1Printf("p2passetcheck: test clients only (+set com_cmdFile 1)\n"); return; }
     if (g_piServer != PS_RUNNING) { C1Printf("p2passetcheck: no in-process server running\n"); return; }
     unsigned type = VoiceArgc() > 1 ? (unsigned)atoi(VoiceArgv(1)) : 11;
     const char *which = VoiceArgc() > 2 ? VoiceArgv(2) : "*";
@@ -655,7 +655,7 @@ static void __cdecl PiCmdAssetCheck(void)
     Sh1xEnumAssetsFn enumerate = Sh1xHost_EnumerateAssets;
     if (!g_paFind || !enumerate) { C1Printf("p2passetcheck: the server DLL has no asset API (needs feat/iw4-asset-layout)\n"); return; }
     /* p2passetcheck <type> <name|*> c1: the generic comparison of the server's C1-layout header copies (any type
-     * the replay catalogues; the server needs +set codol_c1Fixups 1). Without it, the converted types' records. */
+     * the replay catalogues; the server needs +set c1Fixups 1). Without it, the converted types' records. */
     /* c1: the header copies; m: the materialized records (real pointers) walked beside them */
     g_paMaterialized = VoiceArgc() > 3 && !strcmp(VoiceArgv(3), "m");
     g_paGeneric = VoiceArgc() > 3 && (!strcmp(VoiceArgv(3), "c1") || g_paMaterialized);

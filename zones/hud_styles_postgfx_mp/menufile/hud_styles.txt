@@ -144,7 +144,7 @@ menu
     name None group None rect -134.667 -61.3333 40 8.66667 align 10 10 style 0 ownerdraw 0 static 0x100000 dynamic 0x10004
     forecolor 0 0 0 1 backcolor 0 0 0 0
     visible when ( dvarint "k33_hudStyle" ) == 2 && {( weaponname ) != "none"}
-    exp text ( locstring dvarstring "k33_hudFireType" ) )
+    exp text ( locstring dvarstring "cg_hudFireType" ) )
   item type 8 font 7 textscale 0.56912 textstyle 3 align 0
     name None group None rect -22 -34 0 0 align 10 10 style 0 ownerdraw 3001 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
@@ -289,7 +289,7 @@ menu
     name None group None rect -134.667 -61.3333 50 8.66667 align 10 10 style 0 ownerdraw 0 static 0x100000 dynamic 0x10004
     forecolor 0 0 0 1 backcolor 0 0 0 0
     visible when ( dvarint "k33_hudStyle" ) == 3 && {( weaponname ) != "none" && ! 0}
-    exp text ( locstring dvarstring "k33_hudFireType" ) )
+    exp text ( locstring dvarstring "cg_hudFireType" ) )
   item type 8 font 7 textscale 0.56912 textstyle 3 align 0
     name None group None rect -22 -34 0 0 align 10 10 style 0 ownerdraw 3001 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0

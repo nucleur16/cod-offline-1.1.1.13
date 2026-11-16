@@ -21,7 +21,7 @@ STANDALONE = {"codol_infected_cyborg_postgfx_mp": "C#-written: its assets point 
 
 def merged_table():
     text = (ROOT / "src/patch_locale_policy.h").read_text(encoding="utf-8")
-    body = text[text.index("kCodolPatchZoneMerged[][2]={"):]
+    body = text[text.index("kPatchZoneMerged[][2]={"):]
     body = body[:body.index("};")]
     return dict(re.findall(r'\{"([^"]+)","([^"]+)"\}', body))
 
@@ -43,7 +43,7 @@ class ZonePacks(unittest.TestCase):
     def test_kernel33_skips_every_old_name_for_its_pack(self):
         table = merged_table()
         idx = packs.part_index(str(ROOT))
-        self.assertEqual(set(table), set(idx), "patch_locale_policy.h kCodolPatchZoneMerged vs zone_packs parts")
+        self.assertEqual(set(table), set(idx), "patch_locale_policy.h kPatchZoneMerged vs zone_packs parts")
         for old, into in table.items():
             with self.subTest(zone=old):
                 # a zone split by type is replaced by the pack that keeps its non-string assets (the shared one)

@@ -2,7 +2,7 @@
  * p2p_inproc.c - the sh1x match server inside the host's client, on the game thread (feat/p2p-inprocess,
  * feat/server-in-kernel33).
  *
- * Mode `inprocess` of p2p.c (the default; `mode = child` in p2p_host.ini runs codol_dedrun.exe as before). The
+ * Mode `inprocess` of p2p.c (the default; `mode = child` in p2p_host.ini runs sh1x_dedrun.exe as before). The
  * server is linked into Kernel33.dll: the sh1x server repo's `host-lib` target (bin/libsh1x_host.a), the same
  * objects as the dedicated exe plus its host API (win32/sys_host.c: Sh1xHost_Init / Frame / Command / ExitCode),
  * called directly (p2p_server_api.h). Like a listen server, C1's game thread runs it: every pass of C1's
@@ -192,13 +192,13 @@ static void WINAPI PiServerFiber(void *unused)
     }
 }
 
-#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_GAP_STATE */
+#if K33_DIAGNOSTICS /* K33_SHIPPING_TIMING_GAP_STATE */
 static LONGLONG g_piLastTickQpc, g_piMaxGapUs;
 #else /* K33_SHIPPING_TIMING_GAP_STATE */
 static LONGLONG g_piLastTickQpc;
 #endif /* K33_SHIPPING_TIMING_GAP_STATE */
 static volatile LONG g_piInTick;
-#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_GAP_COUNT */
+#if K33_DIAGNOSTICS /* K33_SHIPPING_TIMING_GAP_COUNT */
 static volatile LONG g_piGapsOver1s;
 #endif /* K33_SHIPPING_TIMING_GAP_COUNT */
 
@@ -214,7 +214,7 @@ __attribute__((used)) void __cdecl PiTick(void)
         /* Unknown callback/import mutation: never resume the retained server. */
         InterlockedExchange(&g_piQuit,1);InterlockedExchange(&g_piServer,PS_ENDED);InterlockedExchange(&g_piState,PI_CRASHED);return;
     }
-#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_GAP_SAMPLE */
+#if K33_DIAGNOSTICS /* K33_SHIPPING_TIMING_GAP_SAMPLE */
     if (g_piLastTickQpc && g_piQpf) {
         LARGE_INTEGER n;
         QueryPerformanceCounter(&n);
@@ -237,12 +237,12 @@ __attribute__((used)) void __cdecl PiTick(void)
     unsigned int mxcsr;
     __asm__ volatile("fnstcw %0" : "=m"(fcw));
     __asm__ volatile("stmxcsr %0" : "=m"(mxcsr));
-#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_SAMPLE_DECL */
+#if K33_DIAGNOSTICS /* K33_SHIPPING_TIMING_SAMPLE_DECL */
     LARGE_INTEGER a, b;
 #else /* K33_SHIPPING_TIMING_SAMPLE_DECL */
     LARGE_INTEGER b;
 #endif /* K33_SHIPPING_TIMING_SAMPLE_DECL */
-#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_SAMPLE_START */
+#if K33_DIAGNOSTICS /* K33_SHIPPING_TIMING_SAMPLE_START */
     QueryPerformanceCounter(&a);
 #endif /* K33_SHIPPING_TIMING_SAMPLE_START */
     g_piInTick = 1;
@@ -252,7 +252,7 @@ __attribute__((used)) void __cdecl PiTick(void)
     __asm__ volatile("fldcw %0" : : "m"(fcw));
     __asm__ volatile("ldmxcsr %0" : : "m"(mxcsr));
     g_piLastTickQpc = b.QuadPart;
-#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_SAMPLE_TOTALS */
+#if K33_DIAGNOSTICS /* K33_SHIPPING_TIMING_SAMPLE_TOTALS */
     if (st == PI_RUNNING && g_piQpf) {
         LONGLONG us = (b.QuadPart - a.QuadPart) * 1000000 / g_piQpf;
         g_piCalls++; g_piTotalUs += us; if (us > g_piMaxUs) g_piMaxUs = us;
@@ -386,7 +386,7 @@ static void PiYield(void)
     SwitchToFiber(g_piMainFiber);
     g_piYielding = 0;
 }
-/* The server's await_zones (codol_asset_host.h), on its fiber during a map load. C1 starts loading a hosted map
+/* The server's await_zones (asset_host.h), on its fiber during a map load. C1 starts loading a hosted map
  * itself when it is connected (the server's loadingnewmap); otherwise, after a short grace, preloadmap starts it.
  * Then the server waits, yielding, until C1 holds the level and its common_gametype zone
  * and its database is idle. */
@@ -570,8 +570,8 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         /* The same server, moved to this match: latched settings, then the map (as the lobby retargets a worker). */
         const char *session = c.sessionMap[0] ? c.sessionMap : c.map;
         int difficulty = !strcmp(c.zoneType, "zm") && c.difficultyPresent && c.difficulty >= 0 && c.difficulty <= 2 ? c.difficulty : 0;
-        /* fs_game carries the category for exactly the next spawn (server filesystem.c FS_CoDOLNormalizeGameDir,
-         * sv_main.c SV_CoDOLResolveAssetCategory), as the lobby dispatches a match. codol_zoneType alone only
+        /* fs_game carries the category for exactly the next spawn (server filesystem.c FS_NormalizeGameDir,
+         * sv_main.c SV_ResolveAssetCategory), as the lobby dispatches a match. codol_zoneType alone only
          * counts while it differs from the running value: a second co-op or survival match in a row would
          * otherwise resolve as mp from its mp_* level name. */
         _snprintf(g_piRetarget, sizeof(g_piRetarget),
@@ -583,7 +583,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     }
     InterlockedExchange(&g_piFirstMapAwait, 1);
     g_piRetargetSent = FALSE;
-#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_START_TOTALS */
+#if K33_DIAGNOSTICS /* K33_SHIPPING_TIMING_START_TOTALS */
     g_piCalls = g_piTotalUs = g_piMaxUs = g_piWinCalls = g_piWinTotalUs = g_piWinMaxUs = 0;
 #endif /* K33_SHIPPING_TIMING_START_TOTALS */
     g_piInitMs = g_piFirstFrameMs = 0;
@@ -599,7 +599,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     int matchState = 0;
     int emptyPolls = 0;
     char current[160] = ""; /* the running match's identity (P2PStatusIdentity), to follow a map change */
-#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_MONITOR_DECL */
+#if K33_DIAGNOSTICS /* K33_SHIPPING_TIMING_MONITOR_DECL */
     DWORD lastPoll = 0, lastAnswer = 0, lastStats = GetTickCount(), quitAt = 0;
 #else /* K33_SHIPPING_TIMING_MONITOR_DECL */
     DWORD lastPoll = 0, lastAnswer = 0, quitAt = 0;
@@ -619,7 +619,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
             Log("p2p in-process: the server did not end within 30 s of quit (state %s)", kPiState[st]);
             break;
         }
-#if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_MONITOR_TOTALS */
+#if K33_DIAGNOSTICS /* K33_SHIPPING_TIMING_MONITOR_TOTALS */
         if (st == PI_RUNNING && now - lastStats >= 30000 && !g_piWinCalls) {
             Log("p2p in-process: no server ticks in the last %lu s (the game thread is blocked or skips every tick source)",
                 (now - lastStats) / 1000);
@@ -748,18 +748,18 @@ static void __cdecl PiCmdStatus(void)
              (unsigned long)priv, (unsigned long)virt);
 }
 
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
 static void __cdecl PiCmdAssetCheck(void); /* p2p_assets.c */
 static void __cdecl PiCmdSlScan(void); /* p2p_assets.c */
 static void __cdecl PiServerCommand(void *line) { Sh1xHost_Command((const char *)line); }
-/* p2psv <command...>: test clients only (+set k33_cmdFile 1): one console command for the running match server,
+/* p2psv <command...>: test clients only (+set com_cmdFile 1): one console command for the running match server,
  * queued with Sh1xHost_Command on its fiber (C1 splits a line at ';', so one command per p2psv). */
 static void __cdecl PiCmdServer(void)
 {
     const char *cl = GetCommandLineA();
     char line[1024];
     size_t used = 0;
-    if (!cl || !strstr(cl, "k33_cmdFile 1")) { C1Printf("p2psv: test clients only (+set k33_cmdFile 1)\n"); return; }
+    if (!cl || !strstr(cl, "com_cmdFile 1")) { C1Printf("p2psv: test clients only (+set com_cmdFile 1)\n"); return; }
     line[0] = 0;
     for (int i = 1; i < VoiceArgc() && used + 2 < sizeof(line); i++) {
         int n = _snprintf(line + used, sizeof(line) - used - 2, "%s%s", i > 1 ? " " : "", VoiceArgv(i));
@@ -819,7 +819,7 @@ static int PiActivationPrepare(void *context)
     if(g_k33TickNext!=VOICE_EVENTLOOP_FUNC_VA &&
        g_k33TickNext!=(DWORD)(DWORD_PTR)VOICE_TickHook &&
        g_k33TickNext!=(DWORD)(DWORD_PTR)DISCORD_TickHook
-#if CODOL_KERNEL_ROOM_CONTEXT
+#if K33_KERNEL_ROOM_CONTEXT
        && g_k33TickNext!=(DWORD)(DWORD_PTR)KRC_MainTickHook
 #endif
        )return 0;
@@ -926,7 +926,7 @@ static BOOL P2PEnsureInprocActivation(void)
     g_piHooked=TRUE; /* only complete transaction; never a diagnostic success bit */
     return TRUE;
 }
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
 static void InstallP2PInprocDiagnostics(void)
 {
     for(unsigned i=0;i<sizeof(g_piCmds)/sizeof(g_piCmds[0]);++i)C1AddCommand(&g_piCmds[i]);

@@ -18,8 +18,8 @@ and measured on one PC (see "Stage 1: what was measured"). Nothing here is insta
 player's client.
 
 Goal: a player hosts a match from their own client and other players join it. Today every
-match runs on the sh1x server (`codol_dedrun.exe`, CoD4x-derived: `src/`, the retained IW3 asm
-in `src/asmsource/`, CoDOL code in `src/codol/<area>/`, GSC in `bin/home/codol_rawfiles`). The
+match runs on the sh1x server (`sh1x_dedrun.exe`, CoD4x-derived: `src/`, the retained IW3 asm
+in `src/asmsource/`, CoDOL code in `src/online/<area>/`, GSC in `bin/home/codol_rawfiles`). The
 Python lobby (alpha0022) places Ready presses on it over loopback rcon and shares
 `securitykey.bin` / `game_admissions.txt` with it through a state folder.
 
@@ -55,7 +55,7 @@ client (`src/p2p/hostgate.c`):
   (`CODOL_MM_HOST_IP`), so they pass.
 - Nothing calls `HostGateVouch()` yet. **A player-hosted server on another machine is refused
   in stage 1.** Stage 2 adds lobby-signed host tickets, the only way into that list.
-- Only an explicit local-testing build accepts `+set k33_hostGate 1` for log-only
+- Only an explicit local-testing build accepts `+set net_hostGate 1` for log-only
   diagnosis. Shipping always enforces; installation failure stops client startup.
   Every refused address is logged once to `Kernel33.log`.
 
@@ -74,7 +74,7 @@ stays available as `mode = child` in `p2p_host.ini`. The costs listed under (b) 
 
 ### (a) Kernel33 starts the native server as a child of the host's client (recommended)
 
-Kernel33 runs `codol_dedrun.exe` as a child process on its own UDP port and supervises it: a job
+Kernel33 runs `sh1x_dedrun.exe` as a child process on its own UDP port and supervises it: a job
 object, loopback rcon `sh1x_status`, and an exit with the client. The lobby advertises the host's
 address in the session record it already builds (`_common_addr`). Players connect exactly as
 they connect to a dedicated server today.
@@ -143,7 +143,7 @@ the process boundary between an unaudited client and the authoritative simulatio
   `stun.ini`, the lobby answers it). The host reports the mapped address and NAT type to the
   lobby with its registration.
 - **Hole punching (stage 3).** C1's bdNATTrav (INTRO REQ type 13 / reply 12, already answered by
-  the server, `codol_network.c`) is DemonWare's introducer protocol. The lobby can introduce the
+  the server, `network.c`) is DemonWare's introducer protocol. The lobby can introduce the
   joiner and the host to each other (both send to each other's mapped address after the lobby's
   "introduce" push). That works for cone NATs.
 - **Relay fallback (stage 3).** For symmetric NAT or CGNAT hosts, the lobby (or a relay sidecar on
@@ -204,13 +204,13 @@ of cost:
 - The joiner's safety does not depend on the host being honest. The hostgate, plus the audit's
   parser work, protect the joiner's machine. That protection is the non-negotiable part.
 - Host migration is out of scope. When the host leaves, the match ends (the server follows its
-  client: job object plus `codol_hostParentPid`) and players return to the lobby.
+  client: job object plus `hostParentPid`) and players return to the lobby.
 
 ## Staged plan
 
 | stage | what | lobby change | status |
 |---|---|---|---|
-| 1 | Kernel33 hosts the server as a child (`src/p2p/p2p.c`), the server follows its host (`codol_hostParentPid`), the client talks only to vouched hosts (`src/p2p/hostgate.c`), and the same-PC lobby places players through the rollout file | none | **this branch** |
+| 1 | Kernel33 hosts the server as a child (`src/p2p/p2p.c`), the server follows its host (`hostParentPid`), the client talks only to vouched hosts (`src/p2p/hostgate.c`), and the same-PC lobby places players through the rollout file | none | **this branch** |
 | 2 | host registration, UPnP, signed host tickets -> `HostGateVouch`, admission roster and match selection pushed through the lobby connection, status push, no ranked progression on player hosts | yes | next |
 | 3 | lobby introducer (bdNATTrav) and the UDP relay on the VPS; room-list rows for hosts; host quality floor | yes | later |
 | 4 | gamestate pre-validation in Kernel33 (audit row 14), snapshot and OOB audit (15-16); only then hosts outside lobby vouching, if ever | no | blocked on audit |
@@ -227,7 +227,7 @@ anyone who can forge it can admit themselves.
 
 - `p2phost [map] [gametype] [zonetype]` starts hosting, `p2pstop` stops (rcon `quit`, then the
   job), `p2pstatus` prints the state, address, pid, ready time and last `sh1x_status` line.
-  `+set k33_p2pHost 1` on the command line starts hosting while the client loads.
+  `+set sv_p2pHost 1` on the command line starts hosting while the client loads.
 - Settings come from `<exe dir>\p2p\p2p_host.ini` (`key=value`). The defaults keep everything
   under `<exe dir>\p2p\`. Keys: `exe`, `basepath`, `home`, `scripts`, `state`, `profile`,
   `rcon_file`, `map`, `gametype`, `zone_type`, `session_map`, `net_ip`, `port`,
@@ -235,7 +235,7 @@ anyone who can forge it can admit themselves.
   gametype and difficulty must be plain identifiers, the same rule as the lobby handoff, so they
   can never add console commands.
 - The server runs with `CREATE_NO_WINDOW` in a job object with `KILL_ON_JOB_CLOSE`, plus
-  `+set codol_hostParentPid <client pid>`. The server branch makes it quit cleanly once that
+  `+set hostParentPid <client pid>`. The server branch makes it quit cleanly once that
   process ends.
 - The rcon secret is shared with the lobby through `<state>\native_server_rcon.txt` (read, or
   created with 16 random bytes). The host thread polls `sh1x_status` over loopback. (It used to write
@@ -261,10 +261,10 @@ git -C server/sh1x/bin/home/codol_rawfiles config core.autocrlf false
 sh scripts/build-server.sh            # WSL Ubuntu-24.04 + i686-w64-mingw32, as the server's own docs
 ```
 
-`scripts/build-server.sh` cross-builds `server/sh1x/bin/codol_dedrun.exe` in WSL (clean `obj/k33-p2p`
+`scripts/build-server.sh` cross-builds `server/sh1x/bin/sh1x_dedrun.exe` in WSL (clean `obj/k33-p2p`
 when asked with `K33_SERVER_CLEAN=1`). It stages the exe as `k33p2p_dedrun.exe` (its own image name, so an
-image-name kill of `codol_dedrun.exe` aimed at a dedicated server cannot hit a hosted match; also p2p.c's default `exe=`), the server pack (the server's own
-`tools/codol_stage_server_pack.py`) and the rawfiles into `$K33_P2P_STAGE` (default
+image-name kill of `sh1x_dedrun.exe` aimed at a dedicated server cannot hit a hosted match; also p2p.c's default `exe=`), the server pack (the server's own
+`tools/stage_server_pack.py`) and the rawfiles into `$K33_P2P_STAGE` (default
 `../../k33_p2p_staging`). The lib/*.a the server links (mbedtls, tomcrypt) come from the server
 repo's own build (`K33_SERVER_LIBS` = a folder that holds them, default `D:\CoD\CoD4x_Server\lib`).
 
@@ -286,7 +286,7 @@ reach the user's lobby; those probes are stateless.
 
 | check | result |
 |---|---|
-| host client started with `+set k33_p2pHost 1` | the server started about 6 s after the client; first `sh1x_status` 33.9 s after the start (cold disk), 23.0 s and 10.6 s on later starts |
+| host client started with `+set sv_p2pHost 1` | the server started about 6 s after the client; first `sh1x_status` 33.9 s after the start (cold disk), 23.0 s and 10.6 s on later starts |
 | registration | `extra 17760` in the lobby's `match_rollout.txt`; the lobby's `lobby_status.json` showed 17760 answering |
 | host joins its own server | Ready in a room: the lobby logged `instances: :17760 is free -- switching mp_killhouse_sh/war -> mp_killhouse_sh/combat` and RCONed it; the host client connected (`p2phost num 2 from 127.0.0.1:30002`) and played about 9.5 minutes (snapshots, splashes, PARITY lines) until the match ended and the server restarted the map |
 | second client joins | client B (`p2pjoin`, second local instance): the lobby logged `instances: joining :17760 mp_killhouse_sh/combat (1 other player(s))`; B connected (`num 3`); then both played together, rcon `status` sampled every 10 s for 60 s: both players active, ping 6-22 ms, last message 0-34 ms |
@@ -294,7 +294,7 @@ reach the user's lobby; those probes are stateless.
 | `p2pstatus` | printed state, address, pid, ready time and the live `sh1x_status` (humans=2 bots=2) |
 | `p2pstop` | the server quit with exit code 0 in 0.9 s; `extra 17760` and `p2p_host.txt` removed |
 | host client killed (hard) | the job object ended the server at once (gone within 3 s). The rollout line and descriptor stay behind, because the host thread dies with the client; the lobby drops a silent instance after 10 s, and the next `p2phost` rewrites the line |
-| `codol_hostParentPid` (server branch) | a server started by hand with its parent set to a throwaway process quit cleanly (`host client ... has ended; quitting`, exit code 0) 0.9 s after that process was killed |
+| `hostParentPid` (server branch) | a server started by hand with its parent set to a throwaway process quit cleanly (`host client ... has ended; quitting`, exit code 0) 0.9 s after that process was killed |
 | server fatal error | the lobby switched the hosted server to `zm_zombie_training` (an unpinned room pick): `script compile error, unknown function (maps/_zombiemode_tokens.gsc line 139)`. The process stays alive with its network shut down; the supervisor now treats 20 s without `sh1x_status` after ready as failed and ends it. The compile error itself is a server/rawfiles issue at `origin/main` 32da84d5 + 1c10bb3, not a P2P one |
 | hostgate | both clients ran enforcing all session. Datagrams from 192.168.1.4 (this PC's LAN address, not vouched) to both clients' game ports were refused before C1 saw them (`hostgate: refused datagram from 192.168.1.4:55282`). The lobby, STUN and the hosted server (loopback) worked. The first build also refused UPnP (SSDP 239.255.255.250:1900), which delayed DW login by about 70 s while bdUPnP discovery timed out; SSDP and the default gateway are vouched now and login starts 11 s after launch |
 
@@ -346,7 +346,7 @@ linked into Kernel33.dll" further down.
 | address space | `codoMP_client_shipRetail.exe` already has LARGE_ADDRESS_AWARE (characteristics 0x122), so the process gets 4 GB on 64-bit Windows; no change was needed | see memory below |
 
 ### Measured (2026-10-27, k33-p2ptest, offline lobby copy on 3174, mp_killhouse_sh)
-- **Startup.** `+set k33_p2pHost 1`: `Sh1xHost_Init` took 2.3 s on the game thread. The server answered
+- **Startup.** `+set sv_p2pHost 1`: `Sh1xHost_Init` took 2.3 s on the game thread. The server answered
   `sh1x_status` 17.5 s after the session started (the client was loading in parallel), and the lobby
   registration worked as in stage 1.
 - **Host joins.** The host pressed Ready; the lobby switched the in-process server to `combat`. That switch is
@@ -413,7 +413,7 @@ and `sizeof`):
 
 | array | MB | array | MB |
 |---|---|---|---|
-| `svs` (sv_main.c) | 158.6 | `codol_pmtrace` | 2.4 |
+| `svs` (sv_main.c) | 158.6 | `pmtrace` | 2.4 |
 | entity-state snapshot / archive extensions | 10.5 + 1.0 | script string freed-text log (`sl_freedText`) | 1.5 |
 | player-state archive / frame extensions | 6.3 + 3.1 | script memory tree (`mt`) | 1.1 |
 | async capture streams | 3.2 | bot A* heap / nodes | 1.1 + 0.9 |
@@ -460,26 +460,26 @@ Kernel33.dll) and the exception reaches C1's unhandled-exception filter (BugTrac
 chain. The server never installs its own crash filter (only its WinMain does). The `longjmp` that turns a server
 exit or `Sys_Error` into an end of the server is unchanged.
 
-**Test command.** `p2psv <command>` (test clients only, `+set k33_cmdFile 1`): one console command for the running
+**Test command.** `p2psv <command>` (test clients only, `+set com_cmdFile 1`): one console command for the running
 server, queued with `Sh1xHost_Command` on its fiber (C1 splits at `;`: one command per `p2psv`).
 
 **Measured** (2026-11-16, own full copy of k33-uistyle-offline-test without `p2p\sh1x_host.dll`, test-profile DLL,
-headless `+set k33_cmdFile 1 +set codol_local_test_multi 1`, below-normal priority):
+headless `+set com_cmdFile 1 +set com_localTestMulti 1`, below-normal priority):
 - At the menu, never hosted: 1,173 MB private, 1,860 MB virtual.
-- `room.create` (a co-op room), `k33ready 1`: `starting the match server linked into Kernel33.dll (match 1, the
+- `room.create` (a co-op room), `ui_pressReady 1`: `starting the match server linked into Kernel33.dll (match 1, the
   first of this client run)`. The lobby stopped that start during its map load and relaunched (`C1's first
   datagram to the armed port`): `reusing the match server started 8 s ago (match 2)`, ready after 9.0 s, the player
   connected. C1 then dropped with `ERROR: 181 aa12_mp 0 2` while loading the gamestate: the relaunch asked for
   category `mp` for this co-op room. Not followed up: it is the lobby's relaunch, and the same configuration on a
   fresh server was not tried.
-- `room.leave`, `room.match.cyborg`, `k33ready 1`: `reusing the match server started 78 s ago (match 3)`, ready
+- `room.leave`, `room.match.cyborg`, `ui_pressReady 1`: `reusing the match server started 78 s ago (match 3)`, ready
   after 5.8 s; the player played zm_factory_sh (round 1).
 - Same server, multiplayer with bots: `p2psv set codol_zoneType mp`, `p2psv set codol_sessionMap
   mp_killhouse_sh`, `p2psv set g_gametype war`, `p2psv set scr_codol_bots 5`, `p2psv map mp_killhouse_sh`. The
   session followed the map change, and the player loaded Team Deathmatch on Killhouse with the Training bots.
 - `p2pstop`: the match ended with `killserver`, and the server stayed up. The player was dropped ("connection
   timed out"), which closed the room.
-- `k33ready 1` once more: match 4 on the same server, ready after 5.5 s. The lobby then stopped it because the
+- `ui_pressReady 1` once more: match 4 on the same server, ready after 5.5 s. The lobby then stopped it because the
   room was gone.
 - `starting the match server` appears once in the run. Address space after the multiplayer and zombies loads:
   3,378 MB of 4,096.
@@ -493,7 +493,7 @@ headless `+set k33_cmdFile 1 +set codol_local_test_multi 1`, below-normal priori
   room made with the bare `room.create` test command has category `mp`. Re-arming for the new selection is what
   stopped match 1 (`P2PArmLegacyRoom`: `g_p2pStop`).
   - A fresh server given gametype `coop` with category `mp` resolves the same set
-    (`SV_CoDOLResolveAssetCategory`): `+set codol_zoneType mp` is the default, so it is not taken as explicit,
+    (`SV_ResolveAssetCategory`): `+set codol_zoneType mp` is the default, so it is not taken as explicit,
     and an `mp_*` name gives `mp`.
   - The reused server took `mp` from the latched `codol_zoneType`. Both load the mp gametype zones under the
     co-op gametype, which C1 rejects.
@@ -502,7 +502,7 @@ headless `+set k33_cmdFile 1 +set codol_local_test_multi 1`, below-normal priori
   only while its latch differs from the running value. A second co-op (or survival) match in a row therefore
   sent nothing explicit and resolved as `mp` from its `mp_*` level name. The retarget now starts with
   `set fs_game <category>`, the one-shot carrier the lobby itself sends before `map`
-  (`FS_CoDOLNormalizeGameDir` / `FS_CoDOLConsumeGameCategory`).
+  (`FS_NormalizeGameDir` / `FS_ConsumeGameCategory`).
 - **The new match counts as running only once a new level is up.** The fiber queues the retarget once, then
   waits until `Sh1xHost_LevelSerial` (levels spawned, server `sv_main.c`) has moved. Before, it was enough that
   the frame that ran `map` had returned. This matters because the replaced level can be the same map, finished
@@ -510,7 +510,7 @@ headless `+set k33_cmdFile 1 +set codol_local_test_multi 1`, below-normal priori
   new level is up ends the match and keeps the server.
 - **`p2pstop` returns the players to the lobby.** Before unloading the level, the fiber calls
   `Sh1xHost_ReturnPlayersToLobby`. This flushes the secure profiles and sends every human in the game
-  `t "EXE_MATCHENDED"`, the leave a finished match sends (`codol_script_exitlevel_trace.c`). The server then
+  `t "EXE_MATCHENDED"`, the leave a finished match sends (`script_exitlevel_trace.c`). The server then
   keeps running frames for 1.5 s and only after that sends `killserver`.
   - Before this change, the player was dropped without a usable message: "connection timed out" 22 s later,
     which also closed the room.
@@ -552,7 +552,7 @@ The server branch `feat/iw4-asset-layout` (`docs/CODOL_IW4_ASSET_LAYOUT.md` ther
 server's memory goes. Asset reuse and the IW4 layout are planned there in stages.
 
 - **PMem.** The fastfile block was 328 MB, committed up front, but held 1.5 MB. It is now only reserved, and each
-  allocation commits its own pages. Its size is `codol_pmemMegs`; p2p.c passes 32 (`pmem_megs=` in p2p_host.ini).
+  allocation commits its own pages. Its size is `pmemMegs`; p2p.c passes 32 (`pmem_megs=` in p2p_host.ini).
 - **In-process host, before / after**, mp_killhouse_sh, 2 players:
 
   | measure | before | after |

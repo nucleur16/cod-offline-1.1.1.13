@@ -24,7 +24,7 @@ static int g_k33TickCount;
 static BOOL g_k33TickInstalled;
 /* Installed before this dispatcher; its frame hook must remain in the chain. */
 void PI_TickHook(void);
-#if CODOL_KERNEL_ROOM_CONTEXT
+#if K33_KERNEL_ROOM_CONTEXT
 /* Both profiles retain the verified room/name chain before on-demand Pi activation. */
 void KRC_MainTickHook(void);
 #endif
@@ -76,7 +76,7 @@ static BOOL K33InstallMainTicks(void)
     memcpy(&rel, call + 1, 4);
     DWORD target = VOICE_EVENTLOOP_CALL_VA + 5 + (DWORD)rel;
     if (target != VOICE_EVENTLOOP_FUNC_VA && target != (DWORD)(DWORD_PTR)VOICE_TickHook &&
-#if CODOL_KERNEL_ROOM_CONTEXT
+#if K33_KERNEL_ROOM_CONTEXT
         target != (DWORD)(DWORD_PTR)KRC_MainTickHook &&
 #endif
         target != (DWORD)(DWORD_PTR)DISCORD_TickHook && target != (DWORD)(DWORD_PTR)PI_TickHook) {

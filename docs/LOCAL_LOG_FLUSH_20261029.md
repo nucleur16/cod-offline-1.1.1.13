@@ -8,7 +8,7 @@ receipts use `output_candidate/local-log-flush-20261029/`.
 The subsequent refusal-diagnostics build uses
 `output_candidate/local-log-flush-diagnostics-20261029/`. It retains the original
 guards and emits only a fixed stage label, for example
-`k33logflush: refused (stage=native-filename)`. Stages distinguish the policy,
+`com_logFlush: refused (stage=native-filename)`. Stages distinguish the policy,
 pipe, individual native byte guards, current prefix, stream validation, native
 flush and receipt operations without exposing paths, pointers, credentials or
 caller text. Its 25 development fixtures assert each exercised refusal stage;
@@ -38,7 +38,7 @@ injected. Live C1 flush success remains a separate acceptance step.
 The fixed main-thread engine command is:
 
 ```text
-k33logflush <actual decimal C1 PID> <32 lowercase hexadecimal nonce>
+com_logFlush <actual decimal C1 PID> <32 lowercase hexadecimal nonce>
 ```
 
 The native `1436` dvar must equal `codol_<nonce>`. The command accepts no filename,

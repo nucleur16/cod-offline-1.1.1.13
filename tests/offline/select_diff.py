@@ -53,7 +53,7 @@ CASES = [
     ("select", "zm", "zm_zombie_training", 1, 0, 4, 0),
     # usermaps and level zones without a _load zone
     ("select", "war", "mp_seatown", 255, 0, 12, 0),
-    ("select", "war", "mp_brl_derail", 255, 0, 12, 0),
+    ("select", "war", "mp_crash_intro", 255, 0, 12, 0),
     ("select", "dom", "mp_abandon_sh_mk", 255, 0, 12, 0),
     # the typeId-15 room latch, and its category
     ("latch", "zm_prototype_sh", "zm"),
@@ -160,7 +160,7 @@ def make_game(scratch):
     for z in ("mp_rust", "mp_rust_load", "mp_fav_tropical", "mp_fav_tropical_load", "mp_cross_fire", "mp_killhouse_sh",
               "mp_crash_tropical", "mp_cargoship_sh", "mp_overgrown", "mp_underpass", "mp_estate_tropical",
               "coop_training_mp_killhouse_sh", "coop_spec_mp_estate_tropical", "coop_take_mp_fav_tropical",
-              "zm_asylum_sh", "zm_prototype_sh", "zm_zombie_training", "zm_sumpf_sh", "mp_brl_derail", "mp_playlists",
+              "zm_asylum_sh", "zm_prototype_sh", "zm_zombie_training", "zm_sumpf_sh", "mp_crash_intro", "mp_playlists",
               "patch_mp_rust", "common_mp", "mp_terminal_cls"):
         touch(zones, z + ".ff")
     touch(game, "usermaps", "mp_seatown", "mp_seatown.ff")

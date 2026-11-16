@@ -2,7 +2,7 @@
  * SND_ChannelHasRoom (the call at 0x73E4DB that sounddiag.c already routes through its stub):
  *
  *  1. Alias limit. A one-shot (non-looping) alias on a low-priority channel (priority <= 1: physics, ambdist1/2, auto2,
- *     element, ...) holds at most k33_sndAliasLimit voices (default 4). One more play of it takes the voice of its
+ *     element, ...) holds at most snd_aliasLimit voices (default 4). One more play of it takes the voice of its
  *     farthest copy when it is nearer, else it is not started. C1 1.1.1.13's aliases have no per-alias limit (IW5's
  *     limitCount came later), and the effects of the ported 3.3.3.3 maps rely on one: mp_abandon_sh_mk's five
  *     fireworks launchers play "fireworks_launch" (auto2, priority 1) about 50 times a second; measured 2026-10-19..21
@@ -27,9 +27,9 @@
  *     are not 3D (+0x44 == 0) compare -volume instead (0x737994 / 0x737A49).
  *   - channel records 0x6C34F68 + ch * 0x50: priority +0x40, 3D +0x44, cap +0x48, active count +0x4C.
  *
- * Dvars: k33_sndAliasLimit 0..32 (0 = no limit), k33_sndNearest 0/1. "+set codol_soundvoices 0" on the command line
+ * Dvars: snd_aliasLimit 0..32 (0 = no limit), snd_aliasNearest 0/1. "+set snd_voiceLimits 0" on the command line
  * turns both off at startup. Counters are written to Kernel33.log by sounddiag's thread ("snd policy ...") when
- * k33_snddiag is 1 or more. */
+ * snd_diag is 1 or more. */
 
 #define SV_SCORE_VA      0x00736E10u
 #define SV_ORIGIN_VA     0x00737620u
@@ -68,8 +68,8 @@ static BOOL SvStartupOn(void)
 {
     const char *p = GetCommandLineA(), *q;
     BOOL on = TRUE;
-    while ((q = strstr(p, "codol_soundvoices")) != NULL) {
-        q += 17;
+    while ((q = strstr(p, "snd_voiceLimits")) != NULL) {
+        q += sizeof("snd_voiceLimits") - 1;
         while (*q == ' ' || *q == '"') q++;
         on = *q != '0';
         p = q;
@@ -80,9 +80,9 @@ static BOOL SvStartupOn(void)
 /* main thread, once C1 has registered its own dvars (called from SdRegisterDvar) */
 static void SvRegisterDvars(void)
 {
-    g_svLimitDvar = C1RegisterInt("k33_sndAliasLimit", SV_LIMIT_DEFAULT, 0, 32, 0,
+    g_svLimitDvar = C1RegisterInt("snd_aliasLimit", SV_LIMIT_DEFAULT, 0, 32, 0,
         "Kernel33: most voices one one-shot ambient/effect sound alias (channel priority <= 1) may hold; 0 = no limit");
-    g_svNearestDvar = C1RegisterInt("k33_sndNearest", 1, 0, 1, 0,
+    g_svNearestDvar = C1RegisterInt("snd_aliasNearest", 1, 0, 1, 0,
         "Kernel33: a 3D sound whose channel is at its cap takes the voice of that channel's farthest sound when nearer");
 }
 
@@ -161,13 +161,13 @@ static int SndVoicesHasRoom(int ok, DWORD params, int channel, int pool)
         if (count >= limit) {
             if (!scored) { score = is3d ? SvScoreAt((const float *)(DWORD_PTR)(params + SV_P_ORIGIN)) : -*(const float *)(DWORD_PTR)(params + SV_P_VOLUME); scored = TRUE; }
             if (worst < 0 || !(worstScore > score)) {
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
                 InterlockedIncrement(&g_svLimitRefused);
 #endif
                 return 0;
             }
             SvStopVoice(worst);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
             InterlockedIncrement(&g_svLimitTook);
 #endif
             ok = SvChannelHasRoom(channel);
@@ -188,7 +188,7 @@ static int SndVoicesHasRoom(int ok, DWORD params, int channel, int pool)
             if (!scored) { score = is3d ? SvScoreAt((const float *)(DWORD_PTR)(params + SV_P_ORIGIN)) : -*(const float *)(DWORD_PTR)(params + SV_P_VOLUME); scored = TRUE; }
             if (worstScore > score) {
                 SvStopVoice(worst);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
                 InterlockedIncrement(&g_svNearestTook);
 #endif
                 ok = SvChannelHasRoom(channel);

@@ -10,7 +10,7 @@
  *   p2phost [map] [gametype] [zonetype]   start hosting (defaults from p2p\p2p_host.ini)
  *   p2pstop                               end the hosted match (in-process: its level is unloaded, the server stays up)
  *   p2pstatus                             state, address, pid, ready time, last sh1x_status line
- *   +set k33_p2pHost 1                    on the command line: start hosting while the client loads
+ *   +set sv_p2pHost 1                    on the command line: start hosting while the client loads
  *
  * The lobby's room (K33LocalPlayAuto, or the UI's p2p_room / p2p_localhost 1) only ARMS a host: it records and publishes the intent
  * ("state=armed launch=deferred") and starts nothing. The server is started when the match the room started
@@ -45,14 +45,14 @@ typedef struct P2PConfig {
     char home[MAX_PATH];         /* fs_homepath */
     char scripts[MAX_PATH];      /* GSC root (codol_rawfiles) */
     char state[MAX_PATH];        /* securitykey.bin, game_admissions.txt, native_server_rcon.txt */
-    char profile[MAX_PATH];      /* codol_profilePath: the lobby's resources folder */
+    char profile[MAX_PATH];      /* profilePath: the lobby's resources folder */
     char rconFile[MAX_PATH];
     char map[64], gametype[32], zoneType[16], sessionMap[64];
     char netIp[64], botDifficulty[16], extra[512];
     char mode[16];               /* inprocess (default): the server in Kernel33.dll on the game thread; child: the exe */
     char dll[MAX_PATH];          /* dll= of earlier builds, read and ignored: the server is part of Kernel33.dll */
     int port, bots, admission, developer, readyTimeout;
-    int pmemMegs;                /* codol_pmemMegs for the server: its fastfile block (0 = the server default) */
+    int pmemMegs;                /* pmemMegs for the server: its fastfile block (0 = the server default) */
     int c1Assets;                /* in-process: take C1's records of startup zones (default 1) */
     int c1Preload;               /* in-process: preloadmap when C1 is not loading a hosted map (default 0) */
     int c1Zones;                 /* in-process: map zones C1 holds are C1-backed, mounted only on demand (default 1) */
@@ -144,7 +144,7 @@ static void P2PTrim(char *s)
 }
 
 /* Identifiers that become command-line dvar values: the same rule as the lobby's handoff
- * (tools/codol_map_handoff.ps1), so a map or gametype can never add console commands. */
+ * (tools/ol_map_handoff.ps1), so a map or gametype can never add console commands. */
 static BOOL P2PIdent(const char *s, size_t max)
 {
     size_t n = strlen(s);
@@ -188,7 +188,7 @@ static void P2PDefaults(P2PConfig *c)
     c->c1Zones = 1;
 }
 
-#if CODOL_OFFLINE_LOBBY
+#if K33_OFFLINE_LOBBY
 static void OfflineP2PConfig(P2PConfig *c); /* offline_lobby.c: the offline run-time folder and this run's host port */
 static void OfflineHostPortRelease(void);   /* offline_lobby.c: the host port stops being held reserved */
 static void OfflineHostPortReserve(void);   /* offline_lobby.c: held again after a session was taken down */
@@ -261,7 +261,7 @@ static int P2PSurvivalMaps(char (*maps)[64], int maximum, const char *wanted)
 
 /* The server pack scripts/build-server.sh stages next to the host DLL: <home>\main\sh1x_svr_scripts.iwd
  * (waypoints, node maps and mp/botclasstable.csv). The host reads mp/botclasstable.csv with FS_ReadFile
- * (sh1x codol_bot_loadout.c), never from a mounted stringtable. Without the pack the host still runs,
+ * (sh1x bot_loadout.c), never from a mounted stringtable. Without the pack the host still runs,
  * but every bot class answers "none" for its whole loadout and character: bots spawn with
  * defaultweapon_mp and no body, head or shadow - only their names are drawn - and route over the
  * level's raw node_* records. Refuse to host instead of starting that match. A loose
@@ -306,7 +306,7 @@ static const char *P2PCheck(const P2PConfig *c)
      * trial's two known lifecycle switches, but never let it override an
      * admission, script or network cvar (or inject another console command). */
     if (c->extra[0] && strcmp(c->extra,
-            "+set codol_exitToLobby 1 +set codol_oneShotMatch 1"))
+            "+set exitToLobby 1 +set oneShotMatch 1"))
         return "P2P extra commands are not permitted by the local host policy";
     if (!P2PPathOk(c->dll)) return "a path holds a quote";
     if (!inproc && GetFileAttributesA(c->exe) == INVALID_FILE_ATTRIBUTES) return "server executable not found (exe=)";
@@ -489,7 +489,7 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
     char pmem[256] = "";
     char relayArg[MAX_PATH + 96] = "";
     char relayPath[MAX_PATH + 64];
-    if (c.pmemMegs >= 32 && c.pmemMegs <= 2048) _snprintf(pmem, sizeof(pmem), "+set codol_pmemMegs %d", c.pmemMegs);
+    if (c.pmemMegs >= 32 && c.pmemMegs <= 2048) _snprintf(pmem, sizeof(pmem), "+set pmemMegs %d", c.pmemMegs);
     /* Zombies: the room's difficulty is g_difficulty to the server's _zombiemode.gsc (the lobby's
      * selection, K33LocalPlayAuto); left unset it stays 0 and every room plays on easy. */
     if (!strcmp(c.zoneType, "zm") && c.difficultyPresent && c.difficulty >= 0 && c.difficulty <= 2)
@@ -504,7 +504,7 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
      * the same server to the next match. Without it the client followed the rotation into the next map for a second and
      * that map's "disconnect" report credited a loss. */
     if (OfflineLobbyActive())
-        _snprintf(pmem + strlen(pmem), sizeof(pmem) - strlen(pmem), " +set codol_oneShotMatch 1 +set codol_exitToLobby 1");
+        _snprintf(pmem + strlen(pmem), sizeof(pmem) - strlen(pmem), " +set oneShotMatch 1 +set exitToLobby 1");
     pmem[sizeof(pmem) - 1] = 0;
     /* The explicit local Host/Guest trial arms this short-lived file before
      * forwarding any Guest packet. Normal solo hosting leaves it absent. */
@@ -515,11 +515,11 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
     _snprintf(cmd, sizeof(cmd),
         "\"%s\" +set dedicated 2 +set fs_basepath \"%s\" +set fs_homepath \"%s\" +set net_ip %s +set net_port %d "
         "+set rcon_password \"%s\" +set logfile 2 +set logrcon 1 +set developer %d +set sv_fps 60 "
-        "+set codol_scriptPath \"%s\" +set codol_scriptOverlay \"%s\" +set codol_scriptNativeOverlay \"%s\" "
-        "+set codol_securityKeyPath \"%s\\securitykey.bin\" +set codol_admissionPath \"%s\\game_admissions.txt\" "
-        "+set codol_admissionRequired %d %s +set codol_profilePath \"%s\" +set codol_zoneType %s +set codol_sessionMap %s "
-        "+set g_gametype %s +set codol_hostParentPid %lu %s "
-        "+codol_scriptPath +codol_scriptOverlay +codol_scriptNativeOverlay +map %s %s",
+        "+set scriptPath \"%s\" +set scriptOverlay \"%s\" +set scriptNativeOverlay \"%s\" "
+        "+set securityKeyPath \"%s\\securitykey.bin\" +set admissionPath \"%s\\game_admissions.txt\" "
+        "+set admissionRequired %d %s +set profilePath \"%s\" +set codol_zoneType %s +set codol_sessionMap %s "
+        "+set g_gametype %s +set hostParentPid %lu %s "
+        "+scriptPath +scriptOverlay +scriptNativeOverlay +map %s %s",
         c.exe, c.basepath, c.home, c.netIp, c.port, password, c.developer, c.scripts, c.scripts, c.scripts,
         c.state, c.state, c.admission ? 1 : 0, relayArg, c.profile, c.zoneType, c.sessionMap[0] ? c.sessionMap : c.map,
         c.gametype, inproc ? 0ul : GetCurrentProcessId(), pmem, c.map, c.extra);
@@ -1146,7 +1146,7 @@ static C1Cmd g_p2pCmds[] = {
 };
 
 /* TakeOver, before the game entry: link the commands (the list head is plain data, as voice.c notes) and
- * start hosting at once with +set k33_p2pHost 1, so the server loads its map while the client starts. */
+ * start hosting at once with +set sv_p2pHost 1, so the server loads its map while the client starts. */
 static void InstallP2PHost(void)
 {
     g_p2pMainThread=GetCurrentThreadId(); /* TakeOver calls the original C1 entry on this thread. */
@@ -1156,7 +1156,7 @@ static void InstallP2PHost(void)
     int added = 0;
     for (unsigned i = 0; i < sizeof(g_p2pCmds) / sizeof(g_p2pCmds[0]); i++) added += C1AddCommand(&g_p2pCmds[i]);
     const char *cl = GetCommandLineA();
-    BOOL autostart = cl && (strstr(cl, "k33_p2pHost 1") || strstr(cl, "k33_p2pHost \"1\""));
-    Log("p2p: %d commands (p2phost, p2pstop, p2pstatus)%s", added, autostart ? "; hosting at startup (k33_p2pHost 1)" : "");
+    BOOL autostart = cl && (strstr(cl, "sv_p2pHost 1") || strstr(cl, "sv_p2pHost \"1\""));
+    Log("p2p: %d commands (p2phost, p2pstop, p2pstatus)%s", added, autostart ? "; hosting at startup (sv_p2pHost 1)" : "");
     if (autostart) P2PStart(NULL, NULL, NULL);
 }

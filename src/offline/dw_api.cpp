@@ -51,6 +51,15 @@ struct ApiHost : dw::Host {
         if (!ok && error.empty()) error = "the embedded match host refused the selection";
         return ok != 0;
     }
+    virtual std::string DisplayName(const std::string &profileName)
+    {
+        char name[64];
+        if (!cb.displayName || profileName.empty()) return "";
+        name[0] = 0;
+        if (!cb.displayName(profileName.c_str(), name, (int)sizeof(name))) return "";
+        name[sizeof(name) - 1] = 0;
+        return name;
+    }
     virtual void LocalPlayLeave(uint64_t ownerUid)
     {
         if (cb.leave) cb.leave(ownerUid);

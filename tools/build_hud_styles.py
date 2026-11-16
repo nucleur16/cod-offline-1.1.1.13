@@ -47,8 +47,8 @@ another function (MEASURED: 1.2.1.12 0x00455EF0 against C1 0x004540F0). With the
   the reserve     "%2i" at (x + 12, y + h + 9.78), font 11, scale 0.2991.
 C1's function draws clip and reserve side by side from the rect's left edge and no bar, so in the later item's
 small rect the two numbers land on each other and the frame stays empty. A style's ownerDraw 5 item is therefore
-written as those three items (ammo_items): the clip count reads dvarint("k33_hudClipRounds") and the bar
-dvarint("k33_hudClip") (1000 * f), both published by hud_style.c every frame (1.1.1.13 has no operator for the clip
+written as those three items (ammo_items): the clip count reads dvarint("cg_hudClipRounds") and the bar
+dvarint("cg_hudClip") (1000 * f), both published by hud_style.c every frame (1.1.1.13 has no operator for the clip
 size, and its player("clipAmmo_left") is not 0 for a one-handed weapon); the reserve reads player("stockAmmo"). Not carried over: the red pulse of a low clip / low reserve.
 """
 from __future__ import annotations
@@ -103,8 +103,8 @@ STOCK_OTHER_TEAM = (0.78, 0.278, 0.239, 1.0)
 TEAM_TINT = {"1score_bar_bar1_bottom": STOCK_OWN_TEAM, "1score_bar_bar1": STOCK_OWN_TEAM,
              "1score_bar_bar2_bottom": STOCK_OTHER_TEAM, "1score_bar_bar2": STOCK_OTHER_TEAM}
 WHITE = "_white"
-FIRE_DVAR = "k33_hudFireType"   # hud_style.c: "@SF_WEAPON_*_NAME" of the weapon in hand (getweaponfiretype)
-ASSISTS_DVAR = "k33_hudAssists" # hud_style.c: the local player's assists from the score records (player("assists"))
+FIRE_DVAR = "cg_hudFireType"   # hud_style.c: "@SF_WEAPON_*_NAME" of the weapon in hand (getweaponfiretype)
+ASSISTS_DVAR = "cg_hudAssists" # hud_style.c: the local player's assists from the score records (player("assists"))
 MODE_CONSTANTS = {"istrain": 0, "isevac": 0}       # modes 1.1.1.13 does not have
 # scorebar_hd's onOpen in the later builds: if ( dvarstring("ui_gametype") == "combat" ) isCombat = 1 else 0. The
 # host keeps 1.1.1.13's menu (no onOpen), so the items read the dvar instead of the local variable.
@@ -608,7 +608,7 @@ def ammo_items(item, origin=(0.0, 0.0)):
     The two counts are drawn at the item's laid-out rect (which includes the menu's origin), the bar at fixed
     screen-placement coordinates, outside the menu: `origin` is the host menu's (x, y), taken off the bar's rect so
     that C1's layout (rectClient + menu origin) puts it where the later build drew it (live: 10 units too far left
-    in weaponbar_hd, whose origin is -10, before this). The counts read dvarint("k33_hudClipRounds") (hud_style.c):
+    in weaponbar_hd, whose origin is -10, before this). The counts read dvarint("cg_hudClipRounds") (hud_style.c):
     player("clipAmmo_left") is not 0 for a one-handed weapon, so clip + left doubled the count."""
     ox, oy = origin
     raw = bytes.fromhex(item["raw"])
