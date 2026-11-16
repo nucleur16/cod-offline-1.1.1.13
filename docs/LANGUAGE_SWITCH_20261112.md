@@ -1,7 +1,7 @@
 # Language switch while the game runs (`k33_language`), 2026-11-12 / 2026-11-13
 
 `src/locale_switch.c`, `src/locale_switch_policy.h`, `src/patch_locale_policy.h`, the patch-folder code in
-`src/kernel33.c`, `zone_packs/codol_common.csv`, `zone_packs/codol_english_locale.csv`.
+`src/kernel33.c`, `zone_packs/common.csv`, `zone_packs/english_locale.csv`.
 Client: CoDOL 1.1.1.13 (`C1.exe`, PE timestamp 5314DEF0). Status: **ran in a test client** (offline lobby,
 local-testing + diagnostics DLL, 2026-11-13): 48 switches at the front end, 24 in a hosted Killhouse match, 24 at the
 front end after that match, 24 in a hosted zombies match on Mech Factory, and a switch before a map load. See
@@ -44,7 +44,7 @@ Startup order (`StartupLanguage`) is unchanged: the last valid `+set k33_languag
 
 ## How it works
 
-1. **Where the zone loads.** The startup language's `codol_<name>_locale` zone is the last zone of the code_post_gfx
+1. **Where the zone loads.** The startup language's `<name>_locale` zone is the last zone of the code_post_gfx
    list (`SubmitPatchZones`), alloc flag 1 like every code zone. Other languages' zones are not queued; they load when
    chosen. By then every stock code zone holds its names.
 2. **No override entries (the entry limit).** C1's linker (`DB_LinkXAssetEntry 0x4CC390`) keeps both copies of a name
@@ -66,7 +66,7 @@ Startup order (`StartupLanguage`) is unchanged: the last valid `+set k33_languag
    default asset until the next load, and the localize default `CGAME_UNKNOWN` exists only in `localized_common_mp`
    (in a match): at the front end that is C1's fatal `WIN_LOAD_ASSET_ERROR` (measured: the first prototype's first
    unload ended the client with it). With 0 the entries and slots are freed (`0x4CDAD1`). Then
-   `DB_LoadXAssets({codol_<new>_locale, 1, 0}, 1, 0)` queues the new zone; when the event is set again a sweep
+   `DB_LoadXAssets({<new>_locale, 1, 0}, 1, 0)` queues the new zone; when the event is set again a sweep
    re-applies any shared name not in place yet, serial +1, state 0.
 4. **Memory (the crux).** A zone's memory is a block of a PMem stack (`0x2B2C97C + type*0x10C`:
    `{name, count, pos, {name, pos}[32]}`; type 0 for flags 1 and 0x10, 1 otherwise, inlined at `0x4CD6AF`).
@@ -76,7 +76,7 @@ Startup order (`StartupLanguage`) is unchanged: the last valid `+set k33_languag
      after every switch (table below).
    - freeing a block that is **not** the top (`loc_forceUnload` in a match, the English zone block 14 of 19): the list
      entry's name is cleared but the stack position is rewound to the freed block, so the next zone
-     (`codol_chinese_locale`) was written at offset `0x1C88000`, over `patch_common_mp` / `common_mp`, and its list
+     (`chinese_locale`) was written at offset `0x1C88000`, over `patch_common_mp` / `common_mp`, and its list
      entry replaced `localized_common_mp`'s. The client crashed while linking it (AV read at `0x4CC435` on the
      database thread, AV at `0x4CB356` on the main thread). A mid-stack free is corruption, not a leak.
    The first match of a session adds `patch_common_mp`, `common_mp`, `patch_localized_common_mp`, `localized_common_mp`
@@ -88,17 +88,17 @@ Startup order (`StartupLanguage`) is unchanged: the last valid `+set k33_languag
    session (measured at Killhouse and Mech Factory and after leaving the match). Every switch reads the stack first
    (`LrGateDecide`): the language zone not on top -> state 2, nothing touched (measured with the reorder disabled:
    `"zh" saved, applies on restart (the language zone is not the top block of its memory stack)`).
-5. **The font movie** (`scaleform/fonts_ingame.gfx`, the Latin glyphs) was in `codol_english_locale`. Loading after
+5. **The font movie** (`scaleform/fonts_ingame.gfx`, the Latin glyphs) was in `english_locale`. Loading after
    code_post_gfx it loses to the stock copy (a rawfile, same flags, the first linked wins; measured: the active
    `fonts_ingame.gfx` was `patch_code_post_gfx_mp`'s), and a zone Scaleform's movie came from must not be unloaded.
-   It is now part of `codol_common` (`part,codol_english_font,only=rawfile`), ahead of code_pre_gfx in every language
-   (measured: active zone `codol_common`). Chinese text keeps C1's CJK glyphs; Latin text uses the English font in both
-   languages. `codol_english_locale.ff` shrank from 7,595,839 to 202,238 bytes.
+   It is now part of `common` (`part,english_font,only=rawfile`), ahead of code_pre_gfx in every language
+   (measured: active zone `common`). Chinese text keeps C1's CJK glyphs; Latin text uses the English font in both
+   languages. `english_locale.ff` shrank from 7,595,839 to 202,238 bytes.
 
 Fallbacks, all decided before anything is touched: a C1 site differs (`LocaleSwitchCheck`, run before anything is
 queued) -> nothing is hooked, the startup language's zone loads ahead of code_pre_gfx, the others are skipped (the
 behaviour before any language switch existed) and every request ends in state 2. Old-style zones of the startup
-language (`codol_english_ui.ff` ...) -> state 2. A switch that finds the stack, the free entries (< 4,096), the free
+language (`english_ui.ff` ...) -> state 2. A switch that finds the stack, the free entries (< 4,096), the free
 slots (< 4,096), C1's zone table (33) or the linker's replace mode (`0x19A2F6C`) wrong -> state 2. The database busy
 for 60 s -> state 2. The new zone did not load -> C1's own text, state 2, logged.
 
@@ -110,13 +110,13 @@ the code zones' PMem stack (blocks, position).
 | state | build | entries used | localize | stack 0 |
 |---|---|---|---|---|
 | front end, English | no language switch (the shipped DLL, whose check fails) | 40,342 | 11,211 | 15, 0x24CE000 |
-| front end, English | this branch | 40,342 | 11,211 | 15, 0x24CE000, top codol_english_locale |
+| front end, English | this branch | 40,342 | 11,211 | 15, 0x24CE000, top english_locale |
 | front end, English | first implementation, its check corrected (all languages resident) | 40,346 | 11,211 | |
 | front end, Chinese | no language switch | 39,319 | 10,192 | |
-| front end, Chinese (after switching) | this branch | 39,320 | 10,192 | 15, 0x23FC000, top codol_chinese_locale |
+| front end, Chinese (after switching) | this branch | 39,320 | 10,192 | 15, 0x23FC000, top chinese_locale |
 | front end, Chinese start | first implementation, check corrected (English resident) | 40,346 | 11,211 | |
 | Killhouse match, English | no language switch | 49,222 | 11,962 | 19 |
-| Killhouse match, English | this branch (two runs: started en / switched from zh) | 49,235 / 49,210 | 11,961 / 11,936 | 19, 0x3EAD000, top codol_english_locale |
+| Killhouse match, English | this branch (two runs: started en / switched from zh) | 49,235 / 49,210 | 11,961 / 11,936 | 19, 0x3EAD000, top english_locale |
 | Killhouse match, English | first implementation, check corrected | 49,226 | 11,962 | |
 | Killhouse match, Chinese | no language switch | 48,451 | 11,181 | |
 | Killhouse match, Chinese | this branch (switched at the front end, then the map load) | 48,452 | 11,181 | 19, 0x3DDB000 |
@@ -190,10 +190,10 @@ I = inferred. Every patched or called site is byte-checked in `LocaleSwitchCheck
 ## Manual test (local-testing build, `+set com_cmdFile 1`)
 
 1. Start. `Kernel33.log`: `language: live switch installed (link hook 0x004CC61B, unload hook 0x004CD9A0)`,
-   `language: "en" zone "codol_english_locale" loaded: 8708 string(s) in place`, `language: startup: ... top
-   "codol_english_locale"`.
+   `language: "en" zone "english_locale" loaded: 8708 string(s) in place`, `language: startup: ... top
+   "english_locale"`.
 2. `k33_setlanguage zh`: `"en" -> "zh" live (serial 1, ...)`; native HUD text and newly opened menus are Chinese.
    `loc_cycle 24`: 24 `live` lines; the `after the switch` numbers are identical per language.
-3. Enter a match: `the map load adds code zones; "codol_english_locale" is unloaded and loads again after them`;
+3. Enter a match: `the map load adds code zones; "english_locale" is unloaded and loads again after them`;
    switch in the match; leave; switch at the front end.
 4. `set k33_language nope`: `is not an installed language`, the dvar goes back.

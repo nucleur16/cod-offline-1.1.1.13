@@ -851,9 +851,9 @@ def apply_menus():
 # ---- step 4: the fastfile (zone) names ---------------------------------------------------------------------------
 # (old, new, why). "codol" is implied by the install, so it is dropped. No new name is a stock 1.1.1.13 zone
 # (client_shipRetail\chinese: common_mp, common_gametype_*, ui_mp, patch_*, localized_*, mp_<map>, zm_<map> ...), and
-# the load-list suffixes kernel33.c PatchZoneStage reads (_ui_mp, _postgfx_mp) and the server's mp_*.ff rule stay.
-# The alphabetical order of the installed zones in each load list is unchanged except zm_m1911_arms_diag, which now
-# sorts after mp_weapons (they share no asset name).
+# the load-list suffixes kernel33.c PatchZoneStage reads (_ui_mp, _postgfx_mp) and the server's mp_*.ff rule stay; no
+# installed name starts with another match category's "<category>_" (the server mounts <category>_*.ff of the patch folder
+# in that category's matches: zm_, coop_, survival_). The alphabetical (link) order in each load list is unchanged.
 ZONE_TABLE = [
     # installed (client_shipRetail\patch): the consolidated packs and the standalone zones
     ("codol_common", "common", "pack ahead of code_pre_gfx"),
@@ -862,7 +862,7 @@ ZONE_TABLE = [
     ("codol_english_locale", "english_locale", "English strings (one language)"),
     ("codol_chinese_locale", "chinese_locale", "Chinese strings (one language)"),
     ("codol_infected_cyborg_postgfx_mp", "infected_cyborg_postgfx_mp", "standalone (C#-written)"),
-    ("codol_zm_m1911_arms_diag", "zm_m1911_arms_diag", "standalone"),
+    ("codol_zm_m1911_arms_diag", "m1911_arms_diag", "standalone; not zm_*: the server mounts zm_*.ff in zombies matches"),
     ("mp_codol_weapons", "mp_weapons", "standalone; the server mounts mp_*.ff"),
     ("mp_codol_weapons_postgfx_mp", "mp_weapons_postgfx_mp", "standalone; the server mounts mp_*.ff"),
     # source zones (zones/, zone_source/): parts of the packs; old installs carry them under the old names

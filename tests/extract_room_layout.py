@@ -76,7 +76,7 @@ if args.game:
  game=Path(args.game)
  source=stock.ZoneSource(str(game/'C1.exe'),[str(game/'client_shipRetail/chinese')])
  native=source.rawfile('patch_code_post_gfx_mp:scaleform/fonts_ingame.gfx')
- english=gfx.build_patch(str(Path(__file__).resolve().parents[1]/'zones/codol_english_font/rawfile/scaleform/fonts_ingame.gfx.gfxpatch'),native)
+ english=gfx.build_patch(str(Path(__file__).resolve().parents[1]/'zones/english_font/rawfile/scaleform/fonts_ingame.gfx.gfxpatch'),native)
  metrics=[]
  for locale,movie in [('stock',native),('english',english)]:
   for tag,a,b,name in gfx.tags(movie):

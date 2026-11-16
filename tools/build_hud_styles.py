@@ -72,7 +72,7 @@ MENUFILE = "ui_mp/scriptmenus/hud_styles.menu"
 DVAR = "k33_hudStyle"
 STYLE_NUMBERS = {"stock": 0, "v12": 1, "v26": 2, "v33": 3, "v35": 4, "sm2": 5}
 SURVIVAL_DIR = ROOT / "zones/survival_hud_postgfx_mp/menufile"
-LOCALE_ZONES = {"english": "codol_english_hud_styles", "chinese": "codol_chinese_hud_styles"}
+LOCALE_ZONES = {"english": "english_hud_styles", "chinese": "chinese_hud_styles"}
 
 W13 = menus.W13
 OP = menus.OP_1113

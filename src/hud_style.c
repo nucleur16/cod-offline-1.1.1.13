@@ -3,7 +3,7 @@
  * that 1.1.1.13 lacks. Included by kernel33.c after k33tick.c and voice.c (needs c1game.c, K33OnMainTick and
  * voice.c's CG_OwnerDraw hook and draw thunks). docs/HUD_STYLES_20261112.md.
  *
- * The combat HUD is native menus (ui_mp/hud_720.txt). codol_common_postgfx_mp carries the later builds' HUD items
+ * The combat HUD is native menus (ui_mp/hud_720.txt). common_postgfx_mp carries the later builds' HUD items
  * inside C1's own menus (zones/hud_styles_postgfx_mp, zones/survival_hud_postgfx_mp; tools/build_hud_styles.py),
  * each item with a visibility expression on dvarint("k33_hudStyle"): the stock items show while the dvar is not a
  * shipped style, a style's items while it is that style's number. C1 evaluates those expressions every frame, so

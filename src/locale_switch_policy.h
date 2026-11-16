@@ -106,7 +106,7 @@ static enum LrLink LrLinkDecision(int type, int freshIsLanguageZone, int holderI
  * as "saved, applies on restart". */
 typedef struct LrGate {
     int armed;          /* every C1 site checked and hooked */
-    int oldStyle;       /* the startup language came from zones that are not one codol_<name>_locale: C1 owns them */
+    int oldStyle;       /* the startup language came from zones that are not one <name>_locale: C1 owns them */
     int dbIdle;         /* C1's "database idle, results taken" event is set */
     int replaceMode;    /* C1's linker is in its replace mode (0x19A2F6C != 0) */
     int loaded;         /* a language zone is loaded now */
@@ -145,7 +145,7 @@ typedef struct LsWorld {
     int armed;        /* every C1 site checked and hooked */
     int count;        /* installed languages */
     int shown;        /* index of the language on screen */
-    unsigned ready;   /* bit i: language i can be loaded (one codol_<name>_locale zone, or zh: C1's own text) */
+    unsigned ready;   /* bit i: language i can be loaded (one <name>_locale zone, or zh: C1's own text) */
 } LsWorld;
 
 /* Decided before anything is touched. */

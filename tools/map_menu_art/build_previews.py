@@ -3,7 +3,7 @@ r"""Map-select pictures for the maps ported from CODOL 3.19.26.22 (Create Room c
 python tools/map_menu_art/build_previews.py --src <folder of source PNGs> [--check]
 
 Writes zones/usermaps_ui_mp/image/sfproto_<map>_usermap.png (200x120, the size of the stock sfproto_* pictures) for
-every map in PREVIEWS. The pixels go into the zone itself (usermaps_ui_mp is part of codol_common_ui_mp, a UI zone),
+every map in PREVIEWS. The pixels go into the zone itself (usermaps_ui_mp is part of common_ui_mp, a UI zone),
 so the pictures need no IWD.
 
 Sources (decoded to PNG with tools/map_menu_art/iwi.py; see docs/MAPS_31926_PORTS.md "Menu art"):

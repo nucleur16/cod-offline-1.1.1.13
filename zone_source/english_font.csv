@@ -1,0 +1,13 @@
+// english_font -- built by build_zones.py from zones/english_font/ (zonekit/manifest.py describes the format)
+>zone,english_font
+>install,client_shipRetail\patch
+>origin,Z:client_shipRetail/patch
+>origin-md5,85439569fab0ce210cbbf941c7bee928
+>container,iwffu100
+>filetime,0x01dd4fa3,0x74883222
+>rsa,47d8cb9e8771e037f069db6ed371091001353bce4be518b57eaf182df403b721a2df5bc818f41aa3a773ede9c7d0548c40eeed618455c1d1a80017211e8c9b543dfb76e617f6ccb0f1471978e9269509fc68bd515928be25d88ec1ae8f06176eca68ea4d907930b1035ae50a7a932e4991fc05a36b84ee9b7d66ac704df19494c6fbe31084a16f087bca08e150eebeb01202d3ad07672b0f98cc1899b374b789d611baddc032878269b563c26a3454256b8bcdf0935dce029b04e5938e569f02c7772faa7ecf8e6dc41cefd7e6ca45fb596c79e45235d847cc65a8bdfd9d926cc905a66351911104ce9ca7f3dd7f77dd3a20dd8f3f6990625327c858a8181317
+>zlib,9
+>blocks,0x0,0x20,0x0,0x0,auto,0x0,0x0,0x0,0x0
+>xassetlist,0x0,0xffffffff
+rawfile,english_font
+rawfile,scaleform/fonts_ingame.gfx,zlib=9,gfx=patch_code_post_gfx_mp:scaleform/fonts_ingame.gfx

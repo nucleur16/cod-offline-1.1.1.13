@@ -58,7 +58,7 @@ item, and the Survival panel's four items do not depend on the style. A style's 
 `g_gametype != "survival"` as well (they are MP items, like the stock ones); the kill/death bar keeps the later
 build's own rule, which shows it in Survival.
 
-Both zones are parts of `codol_common_postgfx_mp` (after `code_post_gfx`, permanent). `hud_styles_postgfx_mp`
+Both zones are parts of `common_postgfx_mp` (after `code_post_gfx`, permanent). `hud_styles_postgfx_mp`
 is listed ahead of `survival_hud_postgfx_mp`, so the images and materials are linked before either menufile
 names them.
 
@@ -203,7 +203,7 @@ Measured means read from the user's own installs or the built files; inferred is
   (hud_scorebar_topbar is 64x18), but those are streamed without mips. Mipmapped non-power-of-two upload is
   therefore inferred, not measured.
 - **Texts.** Every `@KEY` a kept item shows is in 1.1.1.13's localize table, or is one a stock 1.1.1.13 HUD item
-  shows too, or is carried in `codol_chinese_hud_styles` (2.6.9.7's own values) and `codol_english_hud_styles`
+  shows too, or is carried in `chinese_hud_styles` (2.6.9.7's own values) and `english_hud_styles`
   (parts of the two locale packs): the kill/death bar's captions `MPUI_SCORE_CAPS`, `MPUI_KILL_CAPS`,
   `MPUI_DIE_CAPS`, `MPUI_ASSIST_CAP` (SCORE / K / D / A) and the seven fire-mode labels `SF_WEAPON_*_NAME`.
 - **Killstreak table.** `mp/coKillstreakStatsTable.csv` column 15 holds the same value in 1.1.1.13 and in each
@@ -212,7 +212,7 @@ Measured means read from the user's own installs or the built files; inferred is
   material of 1.1.1.13's table is defined in the zone of its mode (common_gametype_mp / _coop for the MP streaks,
   common_gametype_zm for the zombies ones, common_mp for the rest), measured with zone-materials.
 - **The built pack loads.** `python scripts/build_zones.py --candidate` builds all 11 installed zones; AssetExplorer's
-  C1 loader emulation loads `codol_common_postgfx_mp.ff` with 0 warnings (179 assets), and the two menufiles it
+  C1 loader emulation loads `common_postgfx_mp.ff` with 0 warnings (179 assets), and the two menufiles it
   resolves list identically to the authored `.txt` files. `tests/check_zone_packs.py` passes on the candidate.
 - **Gates.** `tests/test_hud_styles.py` evaluates every generated gate for `k33_hudStyle` 0..5: exactly the selected
   style's items are visible, a value that is not shipped shows the stock items, the menu follows the selected
@@ -240,8 +240,8 @@ Still open:
 
 ### Manual test
 
-1. `python scripts/build_zones.py --candidate`, copy `output_candidate\client_shipRetail\patch\codol_common_postgfx_mp.ff`,
-   `codol_english_locale.ff` and `codol_chinese_locale.ff` over the test install's, and a `Kernel33.dll` built from
+1. `python scripts/build_zones.py --candidate`, copy `output_candidate\client_shipRetail\patch\common_postgfx_mp.ff`,
+   `english_locale.ff` and `chinese_locale.ff` over the test install's, and a `Kernel33.dll` built from
    this branch (`K33_LOCAL_TESTING=1` for the log lines and `com_cmdFile`).
 2. Start with `+set com_cmdFile 1`; `Kernel33.log` must have
    `hud style: k33_hudStyle registered (k33_hudStyleList 0:stock;2:v26;3:v33;5:sm2), value 0`.
@@ -410,7 +410,7 @@ ownerdraw.
   The pure parts (`HudHealthPermille`, `HudIconFit`) are in `hud_style_policy.h`, tested by
   `tests/hud_style_policy_test.c`. The option rows read `k33_hudStyleList`, so the HUD style drop-downs in
   `OptionView_video.as` and `MainPause.as` list SM2 without change. Its label `K33UI_HUD_STYLE_SM2` ("SM2" in both
-  languages) is in `codol_*_ui`.
+  languages) is in `<language>_ui`.
 - **Live** (2026-11-13, own client copy `D:\CoD\k33_sm2_client`, throwaway profile `edtest`, Afghan bot Team
   Deathmatch, 1920x1080). Seen working:
   - the panel, clip / reserve after firing, the grenade count dropping to 0 with its icon dimming, and the weapon
@@ -437,7 +437,7 @@ ownerdraw.
 ## Rebuilding
 
 - `python tools/build_hud_styles.py` regenerates `zones/hud_styles_postgfx_mp/{menufile,material}`,
-  `zone_source/hud_styles_postgfx_mp.csv`, the two `codol_*_hud_styles` zones and the survival HUD's menufile
+  `zone_source/hud_styles_postgfx_mp.csv`, the two `<language>_hud_styles` zones and the survival HUD's menufile
   from `zones/hud_styles_postgfx_mp/sources` and `image/`. No install is needed.
 - `python tools/build_hud_styles.py extract --dumper <CodolSoundDumper.exe> [--c1 DIR] [--v26 DIR] [--v12 DIR]
   [--images v12=DIR] [--work DIR]` re-reads the installs (defaults under `D:\CoD\CODOL Builds`). It needs a
@@ -459,9 +459,9 @@ ownerdraw.
 
 - `src/kernel33.c`: `#include "hud_style.c"` after `theatre.c`, `InstallHudStyle();` after `InstallTheatre();`.
 - `src/patch_locale_policy.h` `kPatchZoneMerged`: three rows (`hud_styles_postgfx_mp`,
-  `codol_english_hud_styles`, `codol_chinese_hud_styles`), required by tests/test_zone_packs.py. Both files are
+  `english_hud_styles`, `chinese_hud_styles`), required by tests/test_zone_packs.py. Both files are
   pinned by `ui_baseline.json`, which is not re-recorded here.
 - `hud_style.c` takes one `K33OnMainTick` slot. A local-testing build then registers seven before Product Pi's
   on-demand one. K33_MAX_TICKS was 8 and is 12 since the language switch and this feature each took a slot.
-- `zone_packs/codol_common_postgfx_mp.csv` has its new build md5 recorded; the two locale packs gained a part and
+- `zone_packs/common_postgfx_mp.csv` has its new build md5 recorded; the two locale packs gained a part and
   were left unrecorded (they already differed from their recorded md5 before this change).

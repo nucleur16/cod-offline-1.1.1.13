@@ -30,7 +30,7 @@ def validate(repo):
         path = root / name
         if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
             problems.append(name)
-    for zone in ("codol_english_ui", "codol_english_ui_extra", "codol_chinese_ui", "codol_chinese_ui_extra"):
+    for zone in ("english_ui", "english_ui_extra", "chinese_ui", "chinese_ui_extra"):
         data = manifest.read((root / "zone_source" / (zone + ".csv")).read_text(encoding="utf-8"))
         if any(t == "rawfile" and name.endswith(".gfx") for t, name, _ in data.assets):
             problems.append(zone + ": a language-specific movie would split feature versions")

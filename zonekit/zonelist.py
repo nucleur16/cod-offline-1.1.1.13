@@ -14,11 +14,40 @@ manifest names those blobs by sha1 and the build takes them from the stock zone 
 the stored tag), not FFDec's decompile: --decompile keeps those files instead of exporting over them.
 The usermap map zones themselves (mp_*.ff, zm_sumpf_sh.ff and their _load zones) are not part of this repository.
 The client_shipRetail\patch zones below are source zones: they install inside the consolidated zones of zone_packs/
-(zonekit/packs.py: codol_common, codol_common_ui_mp, codol_common_postgfx_mp, codol_english_locale,
-codol_chinese_locale), except codol_infected_cyborg_postgfx_mp, which installs on its own.
+(zonekit/packs.py: common, common_ui_mp, common_postgfx_mp, english_locale,
+chinese_locale), except infected_cyborg_postgfx_mp, which installs on its own.
 """
 
 PATCH = "client_shipRetail/patch"
+
+# Every zone renamed when "codol" was dropped from the zone names (2026-11): {name: its old name}. Installs from before
+# that, and the installs a G:/Z: origin zone was decompiled from, carry the old file names (build_zones.py finds an
+# origin under it; kernel33.c skips an old file once its new one is in the patch folder, patch_locale_policy.h).
+LEGACY_NAME = {
+    "000_party_modes": "000_codol_party_modes",  # LEGACY_ZONE
+    "english": "codol_english",  # LEGACY_ZONE
+    "english_font": "codol_english_font",  # LEGACY_ZONE
+    "english_ui": "codol_english_ui",  # LEGACY_ZONE
+    "english_ui_extra": "codol_english_ui_extra",  # LEGACY_ZONE
+    "english_usermaps": "codol_english_usermaps",  # LEGACY_ZONE
+    "english_zombies_base": "codol_english_zombies_base",  # LEGACY_ZONE
+    "english_hud_styles": "codol_english_hud_styles",  # LEGACY_ZONE
+    "chinese_ui": "codol_chinese_ui",  # LEGACY_ZONE
+    "chinese_ui_extra": "codol_chinese_ui_extra",  # LEGACY_ZONE
+    "chinese_hud_styles": "codol_chinese_hud_styles",  # LEGACY_ZONE
+    "field_orders_postgfx_mp": "codol_field_orders_postgfx_mp",  # LEGACY_ZONE
+    "infected_cyborg_postgfx_mp": "codol_infected_cyborg_postgfx_mp",  # LEGACY_ZONE
+    "loading_mode_names": "codol_loading_mode_names",  # LEGACY_ZONE
+    "zm_deathmachine_audio": "codol_zm_deathmachine_audio",  # LEGACY_ZONE
+    "m1911_arms_diag": "codol_zm_m1911_arms_diag",  # LEGACY_ZONE
+    "mp_weapons": "mp_codol_weapons",  # LEGACY_ZONE
+    "mp_weapons_postgfx_mp": "mp_codol_weapons_postgfx_mp",  # LEGACY_ZONE
+    "common": "codol_common",  # LEGACY_ZONE
+    "common_ui_mp": "codol_common_ui_mp",  # LEGACY_ZONE
+    "common_postgfx_mp": "codol_common_postgfx_mp",  # LEGACY_ZONE
+    "english_locale": "codol_english_locale",  # LEGACY_ZONE
+    "chinese_locale": "codol_chinese_locale",  # LEGACY_ZONE
+}
 CHINESE = "client_shipRetail/chinese"
 
 FONTS = "patch_code_post_gfx_mp:scaleform/fonts_ingame.gfx"
@@ -29,27 +58,27 @@ INGAME = "patch_common_mp:scaleform/default/codoingame.gfx"
 
 ZONES = {
     # --- client_shipRetail\patch (Kernel33 loads these ahead of code_pre_gfx; first asset linked under a name wins)
-    "000_codol_party_modes": dict(origin="Z:" + PATCH, install=PATCH),
-    "codol_english": dict(origin="Z:" + PATCH, install=PATCH),
-    "codol_english_font": dict(origin="Z:" + PATCH, install=PATCH, gfx={"scaleform/fonts_ingame.gfx": FONTS}),
+    "000_party_modes": dict(origin="Z:" + PATCH, install=PATCH),
+    "english": dict(origin="Z:" + PATCH, install=PATCH),
+    "english_font": dict(origin="Z:" + PATCH, install=PATCH, gfx={"scaleform/fonts_ingame.gfx": FONTS}),
     # the text of the shared UI movies (voice_ui_mp, controller_ingame): their K33UI_* localize keys, in English
-    # (codol_english_ui*: k33_english 1) or Chinese (codol_chinese_ui*: k33_english 0); Kernel33 loads one set (ui_keys.py)
-    "codol_chinese_ui": dict(origin="new", install=PATCH),
-    "codol_chinese_ui_extra": dict(origin="new", install=PATCH),
-    "codol_english_ui": dict(origin="Z:" + PATCH, install=PATCH),
-    "codol_english_ui_extra": dict(origin="Z:" + PATCH, install=PATCH),
-    "codol_english_zombies_base": dict(origin="Z:" + PATCH, install=PATCH),
+    # (english_ui*: k33_english 1) or Chinese (chinese_ui*: k33_english 0); Kernel33 loads one set (ui_keys.py)
+    "chinese_ui": dict(origin="new", install=PATCH),
+    "chinese_ui_extra": dict(origin="new", install=PATCH),
+    "english_ui": dict(origin="Z:" + PATCH, install=PATCH),
+    "english_ui_extra": dict(origin="Z:" + PATCH, install=PATCH),
+    "english_zombies_base": dict(origin="Z:" + PATCH, install=PATCH),
     # usermaps_patch's map names and descriptions in English (its own are GBK Chinese); ahead of usermaps_patch, so
     # they win while English is on, filtered like usermaps_patch's (a map that does not ship has no strings here either)
-    "codol_english_usermaps": dict(origin="new", install=PATCH, maps=dict(localize_from="usermaps_patch")),
-    "codol_infected_cyborg_postgfx_mp": dict(origin="Z:" + PATCH, install=PATCH,
+    "english_usermaps": dict(origin="new", install=PATCH, maps=dict(localize_from="usermaps_patch")),
+    "infected_cyborg_postgfx_mp": dict(origin="Z:" + PATCH, install=PATCH,
                                              stock=["code_post_gfx_mp", "patch_code_post_gfx_mp", "common_mp",
                                                     "common_gametype_zm", "patch_common_mp"]),
-    "codol_loading_mode_names": dict(origin="Z:" + PATCH, install=PATCH),
-    "codol_zm_deathmachine_audio": dict(origin="Z:" + PATCH, install=PATCH),
-    "codol_zm_m1911_arms_diag": dict(origin="new", install=PATCH),
+    "loading_mode_names": dict(origin="Z:" + PATCH, install=PATCH),
+    "zm_deathmachine_audio": dict(origin="Z:" + PATCH, install=PATCH),
+    "m1911_arms_diag": dict(origin="new", install=PATCH),
     # the in-match movies, shared by both languages (codol-classic's English codohud / codoingame with every text a
-    # localize key, the Chinese entries here, the English ones in codol_english_ui_extra) and the pause menu's pad
+    # localize key, the Chinese entries here, the English ones in english_ui_extra) and the pause menu's pad
     # navigation; ahead of code_pre_gfx, so they stay loaded in a match
     "controller_ingame": dict(origin="R:3317112:patch", install=PATCH,
                               gfx={"scaleform/default/codohud.gfx": HUD, "scaleform/default/codoingame.gfx": INGAME},
@@ -62,8 +91,8 @@ ZONES = {
     # (k33hud<NN>_*). tools/build_hud_styles.py writes it from sources/; docs/HUD_STYLES_20261112.md.
     "hud_styles_postgfx_mp": dict(origin="new", install=PATCH),
     # the "@KEY" texts of those items that 1.1.1.13 has no localize entry for, per language
-    "codol_english_hud_styles": dict(origin="new", install=PATCH),
-    "codol_chinese_hud_styles": dict(origin="new", install=PATCH),
+    "english_hud_styles": dict(origin="new", install=PATCH),
+    "chinese_hud_styles": dict(origin="new", install=PATCH),
     # the usermaps' front-end data, filtered by shipping_maps.txt (zonekit/shipping.py): only "ship" maps' rows,
     # arena entries, strings, vision files and map-select images are in a shipping build
     "usermaps_patch": dict(origin="G:" + PATCH, install=PATCH, older="Z:" + PATCH,
@@ -86,7 +115,7 @@ ZONES = {
     "usermaps_ui_mp": dict(origin="G:" + PATCH, install=PATCH, older="Z:" + PATCH,
                            maps=dict(assets=["image:sfproto_{map}_usermap"])),
     # the front-end movies, shared by both languages: codol-classic's English codo.gfx (theatre, survival button, party
-    # modes, ...) and codologin.gfx with every text a localize key (Chinese entries here, English in codol_english_ui),
+    # modes, ...) and codologin.gfx with every text a localize key (Chinese entries here, English in english_ui),
     # plus Kernel33's Options classes (Voice, Max FPS, Controller tab)
     "voice_ui_mp": dict(origin="R:3317112:patch", install=PATCH,
                         gfx={"scaleform/default/codo.gfx": CODO, "scaleform/default/codologin.gfx": LOGIN},
@@ -116,11 +145,11 @@ ZONES = {
     "controller_glyphs_postgfx_mp": dict(origin="new", install=PATCH),
     # --- client_shipRetail\patch, mp_*: the MP weapon zones (the sh1x server mounts mp_*.ff of the patch folder with
     # every MP map, so client and server read the same tables and models); standalone, not part of a pack
-    # the weapon tables, whole (ahead of code_pre_gfx: stringtables only), from mp_m14_staging gen_mp_codol_weapons.py
-    "mp_codol_weapons": dict(origin="new", install=PATCH),
+    # the weapon tables, whole (ahead of code_pre_gfx: stringtables only), from mp_m14_staging gen_mp_weapons.py
+    "mp_weapons": dict(origin="new", install=PATCH),
     # the art (after code_post_gfx, permanent: models, materials, images): the M14 EBR's base gun, the zombies M14
     # models with their default parts hidden, by mp_m14_staging's CodolSoundDumper mp-weapons-zone (C#-written)
-    "mp_codol_weapons_postgfx_mp": dict(origin="new", install=PATCH, stock=["common_gametype_mp", "common_gametype_zm"]),
+    "mp_weapons_postgfx_mp": dict(origin="new", install=PATCH, stock=["common_gametype_mp", "common_gametype_zm"]),
     # Historical Survival staging sources remain reproducible; the integrated
     # shipping kiosks use patch_common_gametype_survival instead.
     "survival_menus": dict(origin="new", install=CHINESE, staging=True),

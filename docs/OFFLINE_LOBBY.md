@@ -349,7 +349,7 @@ Reference: the Python lobby's `origin/feat/mp-m14`, `origin/feat/survival-catego
 
 | Python commit | what | here |
 |---|---|---|
-| 2d37c1e (`feat/mp-m14`) catalogue: m14ebr_mp's attachment rows | one table, `catalogue/weapon_tables.py` `_ATTACH_RAW`, read only by the Python profile tools' legality check (`store/playerdata_validate.py`); nothing on a request path | **ported as data**: embedded resource `weapon_attachments.txt` (rendered from the module constant by `gen_resources.py`), with the tools' two lookups `PdWeaponRegistered` / `PdAttachmentLegal` in `dw_playerdata.cpp`. No request path reads it, as in Python. `tests/offline/test_m14_attach_table.py`: all 1915 rows of 52 weapons equal `zones/mp_codol_weapons` (the table the client and the host read); m14ebr_mp has its 58 |
+| 2d37c1e (`feat/mp-m14`) catalogue: m14ebr_mp's attachment rows | one table, `catalogue/weapon_tables.py` `_ATTACH_RAW`, read only by the Python profile tools' legality check (`store/playerdata_validate.py`); nothing on a request path | **ported as data**: embedded resource `weapon_attachments.txt` (rendered from the module constant by `gen_resources.py`), with the tools' two lookups `PdWeaponRegistered` / `PdAttachmentLegal` in `dw_playerdata.cpp`. No request path reads it, as in Python. `tests/offline/test_m14_attach_table.py`: all 1915 rows of 52 weapons equal `zones/mp_weapons` (the table the client and the host read); m14ebr_mp has its 58 |
 | 8789d5f survival is its own category | coop descriptor naming `coop_survival_<level>` -> type / gametype `survival` on a level with survival data | **ported** (`dw_handoff.cpp` `HandoffSelect`) |
 | 3742464 every level with survival data | the fourteen supported levels | **ported** (`kSurvivalLevels`, the Python constant) |
 | 9853181 align with installed MP maps and placements | only levels whose zone and `main\sh1x_rawfiles\maps\mp\survival\<level>.gsc` are installed; another level -> the first available (not a rotation); every entry path (rooms, latch) carries the category | **ported** (`HandoffSurvivalLevels`). Product only: also cut to Kernel33's `p2p\survival_maps.txt` when installed, the list `P2PCheck` enforces. No level at all: the start is withheld with the reason (Python falls back to its killhouse record; reproduced under the differential flag) |
@@ -364,7 +364,7 @@ Reference: the Python lobby's `origin/feat/mp-m14`, `origin/feat/survival-catego
 | 58db75a reject stale or unrelated context (selftest only) | another user's context is not a pin; a stale one is ignored | **ported as tests** (`dwtest --selftest-rooms`: another player's and an incoherent context). Staleness has no file age in-process: the lobby clears the context when the owner leaves the room |
 | `fix/reaper-fixed-ports` | dedicated-server instance management | not applicable offline; not looked at further |
 
-**The M14 EBR offline.** The Kernel33 patch zones `mp_codol_weapons` / `mp_codol_weapons_postgfx_mp`
+**The M14 EBR offline.** The Kernel33 patch zones `mp_weapons` / `mp_weapons_postgfx_mp`
 release m14ebr_mp (marketplace item 1057, shown as "MK14") with its tables and art. The store tables
 have no sku for it (product 1365), so it could never be bought; the offline lobby therefore puts item
 1057 in every profile's inventory (`kReleasedUnsoldWeapons`, product only - the Python lobby does not).
@@ -477,7 +477,7 @@ prints the careers of a folder as the lobby reads them.
 | `tests/offline/select_diff.py`: 45 descriptors (rooms, playlists, co-op, Survival by descriptor and by gametype, Zombies difficulties, usermaps, room latches of each category) x 2 installs (none; a made-up one with usermaps and Survival placements), Python `select()` against `HandoffSelect` | 90 selections, 0 differ |
 | `difftest.sh`, the login capture | 209 requests, 0 differ |
 | `difftest.sh`, the 64-connection capture | 2210 requests, 13 differ: 12 x `(11, 4)` (the 860-byte join-request storm against the 3 s relay throttle, timing, as before) and one idle 24-byte plain frame; every `(80, x)` (the flag set with 668 included), `(21, x)`, `(10, x)`, `(4, x)` row is 0 |
-| `tests/offline/test_m14_attach_table.py` | 1915 rows, lobby == `zones/mp_codol_weapons` |
+| `tests/offline/test_m14_attach_table.py` | 1915 rows, lobby == `zones/mp_weapons` |
 
 The always-local hand-off and the ticker line are product policy with no Python counterpart; they are
 covered by the self-tests and the native fixture, not by a differential test.

@@ -139,7 +139,7 @@ void Tables(Server &s)
     CHECK(std::binary_search(at1.begin(), at1.end(), 668));
 
     /* the weapon attachment table (Python feat/mp-m14): m14ebr_mp has its stock rows and the eight the
-     * Kernel33 patch zone mp_codol_weapons adds, with their unlock levels; nothing else moved */
+     * Kernel33 patch zone mp_weapons adds, with their unlock levels; nothing else moved */
     {
         int level = -1;
         static const char *const added[] = { "bip_ar", "for_gripafg", "for_griphandstop", "red_reflex", "sra_riflelaser", "sto_ar15fix",

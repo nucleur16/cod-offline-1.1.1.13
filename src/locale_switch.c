@@ -3,7 +3,7 @@
  * Included by kernel33.c after voice.c (its command arguments) and k33tick.c; the pure part is locale_switch_policy.h.
  *
  * What a language is: which string a localize name (asset type 27) resolves to. A language's strings are one zone,
- * codol_<name>_locale.ff. A switch unloads the zone of the language on screen and loads the other one, with C1's
+ * <name>_locale.ff. A switch unloads the zone of the language on screen and loads the other one, with C1's
  * own zone loader: the old strings' memory, asset entries and localize pool slots are freed and the new ones are
  * allocated. Nothing of a language that is not on screen stays in memory.
  *
@@ -46,7 +46,7 @@
  * before a switch: see the doc ("Who holds pointers").
  *
  * The font movie (scaleform/fonts_ingame.gfx) must not be in the language zone: a movie Scaleform has loaded is
- * memory C1 keeps using. It is in codol_english_font, an ordinary flag-1 zone ahead of code_pre_gfx that loads
+ * memory C1 keeps using. It is in english_font, an ordinary flag-1 zone ahead of code_pre_gfx that loads
  * when the client starts in English and stays (zone_packs/, kernel33.c).
  */
 #define LS_PUBLISH(dst, src) InterlockedExchangePointer((PVOID volatile *)(dst), (PVOID)(src))
@@ -256,7 +256,7 @@ __asm__(
 /* DB_UnloadXZone's entry. C1's loader unloads with createDefault 1: an entry without an override is not freed but
  * turned into a copy of the type's default asset (0x4CDB0B) until the next load is in, and a type with a pool but
  * no default asset is fatal there (WIN_LOAD_ASSET_ERROR, 0x4CDB79). The localize default is CGAME_UNKNOWN, which
- * stock C1 has only in localized_common_mp, i.e. in a match: MEASURED, unloading codol_chinese_locale at the front
+ * stock C1 has only in localized_common_mp, i.e. in a match: MEASURED, unloading chinese_locale at the front
  * end ended the client with that error. Nothing holds a pointer to a localize entry (the callers read the value
  * and keep that), so for the language zone, and only when LrUnloadZone asked, createDefault is 0: its entries and
  * slots are freed at once (0x4CDAD1), which is what the request is. */
@@ -408,12 +408,12 @@ static void LsPublish(int state)
     LsPoke(g_lsDvSerial, g_lsSerial);
 }
 
-/* Language i's zone name, "" when it has none (zh without codol_chinese_locale: C1's own text). */
+/* Language i's zone name, "" when it has none (zh without chinese_locale: C1's own text). */
 static void LrZoneOf(int lang, char out[64])
 {
     out[0] = 0;
     if (lang >= 0 && lang < g_langCount && (g_langLocale >> lang & 1u))
-        _snprintf(out, 63, "codol_%s_locale", LanguageZoneStem(g_langs[lang])), out[63] = 0;
+        _snprintf(out, 63, "%s_locale", LanguageZoneStem(g_langs[lang])), out[63] = 0;
 }
 
 static unsigned LsReadyMask(void)
@@ -545,7 +545,7 @@ __attribute__((unused)) static const char *LrGateText(enum LrGateAnswer a)
 {
     switch (a) {
     case LR_GATE_NO_HOOKS: return "no live switch in this client";
-    case LR_GATE_NO_OLD_STYLE: return "the startup language's zones are not one codol_<name>_locale zone";
+    case LR_GATE_NO_OLD_STYLE: return "the startup language's zones are not one <name>_locale zone";
     case LR_GATE_NO_REPLACE_MODE: return "C1's linker is replacing assets";
     case LR_GATE_NO_STACK: return "the language zone is not the top block of its memory stack";
     case LR_GATE_NO_ZONES: return "C1's zone table is full";
@@ -738,7 +738,7 @@ static void LocaleSwitchTick(void)
         g_lsWanted = request;
         LsPublish(LS_STATE_RESTART);
         Log("language: \"%s\" saved, applies on restart (%s); \"%s\" stays on screen", g_langs[request],
-            !g_lsInstalled ? "no live switch in this client" : "its strings are not one codol_<name>_locale zone", shown);
+            !g_lsInstalled ? "no live switch in this client" : "its strings are not one <name>_locale zone", shown);
         break;
     }
 }

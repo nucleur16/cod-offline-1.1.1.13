@@ -45,37 +45,48 @@ static int PatchZoneRetired(const char *name)
         AsciiPrefix(name,"codol_zombies_endless");
 }
 /* The patch zones consolidated into one zone per load list and language (build_zones.py, zone_packs/<zone>.csv):
- * {old name, the zone that carries its assets now}. kernel33.c skips an old name while its replacement is in the
- * patch folder, so an install that kept the old files never loads an asset twice (two zones with one
+ * {old name, the zone that carries its assets now}. kernel33.c skips an old name while its replacement, or the
+ * replacement's own replacement (PatchZoneMergedChain), is in the patch folder, so an install that kept the old files never loads an asset twice (two zones with one
  * stringtable/rawfile replace each other), and an install that has only the old names (codol-classic-zz) still
  * loads them. tests/test_zone_packs.py checks this table against zone_packs/. usermaps_patch's strings went to
- * codol_chinese_locale and its tables to codol_common: it is replaced once codol_common is there.
- * Likewise the old party/loading files retain only their non-localize assets in codol_common; their English
- * text moves to codol_english_locale and Chinese text lives in codol_chinese_locale. Keep both old-name mappings
- * to codol_common: complete new packages must skip retained old 000_* English strings before either locale links.
+ * chinese_locale and its tables to common: it is replaced once common is there.
+ * Likewise the old party/loading files retain only their non-localize assets in common; their English
+ * text moves to english_locale and Chinese text lives in chinese_locale. Keep both old-name mappings
+ * to common: complete new packages must skip retained old 000_* English strings before either locale links.
  * Old-only folders retain the legacy fallback; they are not a qualified bilingual r46 package. */
 static const char *const kPatchZoneMerged[][2]={
- {"000_codol_party_modes","codol_common"},
- {"codol_loading_mode_names","codol_common"},
- {"codol_zm_deathmachine_audio","codol_common"},
- {"controller_ingame","codol_common"},
- {"usermaps_patch","codol_common"},
- {"voice_ui_mp","codol_common_ui_mp"},
- {"usermaps_ui_mp","codol_common_ui_mp"},
- {"codol_field_orders_postgfx_mp","codol_common_postgfx_mp"},
- {"controller_glyphs_postgfx_mp","codol_common_postgfx_mp"},
- {"hud_styles_postgfx_mp","codol_common_postgfx_mp"},
- {"survival_hud_postgfx_mp","codol_common_postgfx_mp"},
- {"codol_english","codol_english_locale"},
- {"codol_english_font","codol_common"},
- {"codol_english_ui","codol_english_locale"},
- {"codol_english_ui_extra","codol_english_locale"},
- {"codol_english_usermaps","codol_english_locale"},
- {"codol_english_hud_styles","codol_english_locale"},
- {"codol_english_zombies_base","codol_english_locale"},
- {"codol_chinese_hud_styles","codol_chinese_locale"},
- {"codol_chinese_ui","codol_chinese_locale"},
- {"codol_chinese_ui_extra","codol_chinese_locale"},
+ /* the zones as installs before the codol name drop (2026-11) carry them; the first column is a file name there */
+ {"000_codol_party_modes","codol_common"}, /* LEGACY_ZONE */
+ {"codol_loading_mode_names","codol_common"}, /* LEGACY_ZONE */
+ {"codol_zm_deathmachine_audio","codol_common"}, /* LEGACY_ZONE */
+ {"controller_ingame","codol_common"}, /* LEGACY_ZONE */
+ {"usermaps_patch","codol_common"}, /* LEGACY_ZONE */
+ {"voice_ui_mp","codol_common_ui_mp"}, /* LEGACY_ZONE */
+ {"usermaps_ui_mp","codol_common_ui_mp"}, /* LEGACY_ZONE */
+ {"codol_field_orders_postgfx_mp","codol_common_postgfx_mp"}, /* LEGACY_ZONE */
+ {"controller_glyphs_postgfx_mp","codol_common_postgfx_mp"}, /* LEGACY_ZONE */
+ {"hud_styles_postgfx_mp","codol_common_postgfx_mp"}, /* LEGACY_ZONE */
+ {"survival_hud_postgfx_mp","codol_common_postgfx_mp"}, /* LEGACY_ZONE */
+ {"codol_english","codol_english_locale"}, /* LEGACY_ZONE */
+ {"codol_english_font","codol_common"}, /* LEGACY_ZONE */
+ {"codol_english_ui","codol_english_locale"}, /* LEGACY_ZONE */
+ {"codol_english_ui_extra","codol_english_locale"}, /* LEGACY_ZONE */
+ {"codol_english_usermaps","codol_english_locale"}, /* LEGACY_ZONE */
+ {"codol_english_hud_styles","codol_english_locale"}, /* LEGACY_ZONE */
+ {"codol_english_zombies_base","codol_english_locale"}, /* LEGACY_ZONE */
+ {"codol_chinese_hud_styles","codol_chinese_locale"}, /* LEGACY_ZONE */
+ {"codol_chinese_ui","codol_chinese_locale"}, /* LEGACY_ZONE */
+ {"codol_chinese_ui_extra","codol_chinese_locale"}, /* LEGACY_ZONE */
+ /* the installed zones renamed by that drop: {old file name, new file name} */
+ {"codol_common","common"}, /* LEGACY_ZONE */
+ {"codol_common_ui_mp","common_ui_mp"}, /* LEGACY_ZONE */
+ {"codol_common_postgfx_mp","common_postgfx_mp"}, /* LEGACY_ZONE */
+ {"codol_english_locale","english_locale"}, /* LEGACY_ZONE */
+ {"codol_chinese_locale","chinese_locale"}, /* LEGACY_ZONE */
+ {"codol_infected_cyborg_postgfx_mp","infected_cyborg_postgfx_mp"}, /* LEGACY_ZONE */
+ {"codol_zm_m1911_arms_diag","m1911_arms_diag"}, /* LEGACY_ZONE */
+ {"mp_codol_weapons","mp_weapons"}, /* LEGACY_ZONE */
+ {"mp_codol_weapons_postgfx_mp","mp_weapons_postgfx_mp"}, /* LEGACY_ZONE */
 };
 static int AsciiEqual(const char *a,const char *b)
 {
@@ -89,6 +100,16 @@ static const char *PatchZoneMergedInto(const char *name)
   if(AsciiEqual(name,kPatchZoneMerged[i][0]))return kPatchZoneMerged[i][1];
  return NULL;
 }
+/* The zones that replaced `name`, nearest first (an older install's part -> its old pack -> the renamed pack): up to max
+ * names in out; the count. kernel33.c skips `name` when any of them is in the patch folder. */
+#define PATCH_ZONE_CHAIN_MAX 4
+static int PatchZoneMergedChain(const char *name,const char *out[PATCH_ZONE_CHAIN_MAX])
+{
+ int n=0;
+ const char *into=PatchZoneMergedInto(name);
+ while(into && n<PATCH_ZONE_CHAIN_MAX) { out[n++]=into; into=PatchZoneMergedInto(into); }
+ return n;
+}
 /* Shared tables/rules/images/audio and postgfx assets are language-independent.
  * Ignore the retired duplicate table on existing installs in every locale. (The two-language form; kernel33.c
  * filters by language name, PatchZoneAllowedFor below, which agrees with it for en and zh.) */
@@ -98,18 +119,19 @@ __attribute__((unused))
 static int PatchZoneLocaleAllowed(const char *name,enum PatchLanguage language)
 {
  if(PatchZoneRetired(name))return 0;
- if(AsciiPrefix(name,"codol_english"))return language==PATCH_EN;
+ if(AsciiPrefix(name,"english") || AsciiPrefix(name,"codol_english"))return language==PATCH_EN; /* LEGACY_ZONE */
  /* The UI movies are shared and every text in them is a localize key, so a launch
   * with no valid language (PATCH_NATIVE) still needs one set of strings:
   * stock C1 is Chinese, so native loads the Chinese strings. */
- if(AsciiPrefix(name,"codol_chinese"))return language==PATCH_ZH || language==PATCH_NATIVE;
+ if(AsciiPrefix(name,"chinese") || AsciiPrefix(name,"codol_chinese")) /* LEGACY_ZONE */
+  return language==PATCH_ZH || language==PATCH_NATIVE;
  return 1;
 }
 
 /* ---- languages by name (k33_language, docs/LANGUAGE_SWITCH_20261112.md) ------------------------------------------
- * A language is a short name: "en" and "zh" are the two this project ships; any other codol_<name>_locale.ff in the
+ * A language is a short name: "en" and "zh" are the two this project ships; any other <name>_locale.ff in the
  * patch folder is a language too, named <name>. "english"/"chinese" are accepted spellings of en/zh (they are the
- * zone stems: codol_english_locale, codol_chinese_locale). Everything here is pure (tests/patch_locale_test.c). */
+ * zone stems: english_locale, chinese_locale). Everything here is pure (tests/patch_locale_test.c). */
 #define LANG_NAME_MAX 16
 #define LANG_MAX 8
 
@@ -144,31 +166,34 @@ static int LanguageCanonicalWide(const wchar_t *in,char out[LANG_NAME_MAX])
  narrow[n]=0;
  return LanguageCanonical(narrow,out);
 }
-/* The zone stem of a canonical language: codol_<stem>_locale. */
+/* The zone stem of a canonical language: <stem>_locale. */
 static const char *LanguageZoneStem(const char *lang)
 {
  if(!strcmp(lang,"en"))return "english";
  if(!strcmp(lang,"zh"))return "chinese";
  return lang;
 }
-/* "codol_<stem>_locale" -> the language, 0 when name is not a locale zone. */
+/* "<stem>_locale" -> the language, 0 when name is not a locale zone (the stem is a language name: letters and
+ * digits only, so an older install's codol_<name>_locale is not one; PatchZoneLanguage knows it). */
 static int LocaleZoneLanguage(const char *name,char out[LANG_NAME_MAX])
 {
  char stem[LANG_NAME_MAX];
  size_t len=strlen(name),n;
- if(len<=6+7 || !AsciiPrefix(name,"codol_") || !AsciiEqual(name+len-7,"_locale"))return 0;
- n=len-6-7;
+ if(len<=7 || !AsciiEqual(name+len-7,"_locale"))return 0;
+ n=len-7;
  if(n>=sizeof(stem))return 0;
- memcpy(stem,name+6,n);
+ memcpy(stem,name,n);
  stem[n]=0;
  return LanguageCanonical(stem,out);
 }
-/* The language a patch zone belongs to, 0 when it loads in every language. codol_english* / codol_chinese* are the
- * two languages' zones under every name they ever had; any other language has exactly its codol_<name>_locale. */
+/* The language a patch zone belongs to, 0 when it loads in every language. english* / chinese* are the
+ * two languages' zones under every name they ever had; any other language has exactly its <name>_locale (an older
+ * install's <name>_locale too). */
 static int PatchZoneLanguage(const char *name,char out[LANG_NAME_MAX])
 {
- if(AsciiPrefix(name,"codol_english")) { strcpy(out,"en"); return 1; }
- if(AsciiPrefix(name,"codol_chinese")) { strcpy(out,"zh"); return 1; }
+ if(AsciiPrefix(name,"english") || AsciiPrefix(name,"codol_english")) { strcpy(out,"en"); return 1; } /* LEGACY_ZONE */
+ if(AsciiPrefix(name,"chinese") || AsciiPrefix(name,"codol_chinese")) { strcpy(out,"zh"); return 1; } /* LEGACY_ZONE */
+ if(AsciiPrefix(name,"codol_") && LocaleZoneLanguage(name+6,out))return 1; /* LEGACY_ZONE: codol_<name>_locale */
  return LocaleZoneLanguage(name,out);
 }
 /* PatchZoneLocaleAllowed for a language name: shared zones always, a language's zones only in that language. */

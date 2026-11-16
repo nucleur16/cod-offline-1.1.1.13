@@ -33,7 +33,7 @@ Which data is per map is declared per zone in zonelist.py (`maps=`):
     localize=True
         a localize entry of the zone that only dropped rows/entries name is dropped with them.
     localize_from=<zone>
-        the zone's localize entries are another zone's in another language (codol_english_usermaps: usermaps_patch's
+        the zone's localize entries are another zone's in another language (english_usermaps: usermaps_patch's
         map names in English); each is dropped when that zone's filter drops it, and each must exist there.
 FILES maps a files\ path to its per-map line filter (first word of a line = the map zone).
 """

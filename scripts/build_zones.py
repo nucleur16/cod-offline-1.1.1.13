@@ -84,6 +84,7 @@ def origin_path(origin, name, roots, tmp):
         return out if r.returncode == 0 else None
     if not roots.get(root):
         return None
+    name = zonelist.LEGACY_NAME.get(name, name)   # the name it has in that install (before "codol" was dropped)
     p = os.path.join(roots[root], rel.replace("/", os.sep), name + ".ff")
     return p if os.path.isfile(p) else None
 
