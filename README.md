@@ -16,8 +16,9 @@ client contacts no lobby, website or launcher.
 * **Profile:** `<exe dir>\players\<name>\` - `mpdata` (classes), `mpdata_s` (rank, XP, stats) and
   `account.txt` (wallet, purchases). Deleting `mpdata_s` is a new career.
 * **Playing:** create a room of any kind (Multiplayer, matchmaking, Zombies, Survival, Spec Ops) and
-  press Ready; the match starts on the built-in server. Needs `p2p\sh1x_host.dll`, `main\sh1x_rawfiles`
-  and `p2p\survival_maps.txt` beside the game. One hosted match per client run.
+  press Ready; the match starts on the built-in server, which is part of Kernel33.dll. Needs `main\sh1x_rawfiles`,
+  `p2p\home\main\sh1x_svr_scripts.iwd` and `p2p\survival_maps.txt` beside the game. The server starts with the
+  first hosted match and serves every later one of the client run.
 * If the built-in lobby cannot start, the client stops and says so (`Kernel33.log` has the reason).
 
 ## Repository layout
@@ -125,14 +126,16 @@ pass with Linux gcc (`gcc -O2 -Wall -Wextra -Werror tests/quick_start_policy_tes
 
 ## Player-hosted matches (branch `feat/p2p-hosting`)
 Since `feat/p2p-inprocess` the server runs **inside the client** by default (`mode = inprocess`):
-`src/p2p/p2p_inproc.c` loads the server (server makefile target `host-dll`) and ticks it on the game
-thread, on its own fiber, with exits and faults contained. Kernel33.dll carries the server itself
-(`src/p2p/p2p_embedded.c`, RCDATA 2): no `p2p\sh1x_host.dll` is needed (`dll=` in `p2p_host.ini` still loads a DLL
-file instead). `mode = child` runs the separate process as before.
-`scripts/build-server.sh` builds the server and stages an install-shaped tree: `p2p\k33p2p_dedrun.exe`,
-`p2p\home\main\sh1x_svr_scripts.iwd` and the GSC tree as `main\sh1x_rawfiles\` (`src/p2p/p2p.c`'s default `scripts=`);
-`scripts/build.sh` then embeds the server it built. Details and measurements: `docs/P2P_HOSTING.md`, "In-process
-hosting" and "The server inside Kernel33.dll".
+the server is **linked into Kernel33.dll** (server makefile target `host-lib`, `bin/libsh1x_host.a`) and
+`src/p2p/p2p_inproc.c` ticks it on the game thread, on its own fiber, with its exits turned into an end of the server.
+There is no `p2p\sh1x_host.dll`. The first hosted match starts the server; later matches move the same server to their
+map and settings (`map`, as the lobby retargets a worker); only an end of the server itself needs a client restart.
+Its large state (about 200 MB) is allocated on that first host, so a client that never hosts reserves only 24 MB more
+than before. A fault in the server is a fault of the client (normal crash logging and dump). `mode = child` runs the
+separate process as before. `scripts/build-server.sh` builds the library and stages the server's data:
+`p2p\home\main\sh1x_svr_scripts.iwd` and the GSC tree as `main\sh1x_rawfiles\` (`src/p2p/p2p.c`'s default
+`scripts=`); `scripts/build.sh` links it. Details and measurements: `docs/P2P_HOSTING.md`, "In-process hosting" and
+"The server linked into Kernel33.dll".
 
 `src/p2p/p2p.c` lets a player host a match from the client: the sh1x match server runs as a child of the
 host's client (`p2phost [map] [gametype] [zonetype]`, `p2pstop`, `p2pstatus`, or `+set k33_p2pHost 1`;
@@ -142,17 +145,17 @@ a hard requirement from the client security audit. Design, trust rules, stages a
 `docs/P2P_HOSTING.md` (the online parts are history, see `docs/OFFLINE_LOBBY.md`, "Removed").
 
 The server is the git submodule `server/sh1x` (the sh1x server repo, pinned to its `feat/p2p-hosting`
-commit). `scripts/build.sh` inits it; the DLL does not compile it but embeds its `bin/sh1x_host.dll` when it has
-been built (`K33_EMBED_SERVER=auto|1|0`, `K33_SERVER_DIR`, `K33_SERVER_DLL`; see `docs/P2P_HOSTING.md`). To build
-the server a client hosts, stage its data and embed it:
+commit). `scripts/build.sh` inits it; the DLL does not compile it but links its `bin/libsh1x_host.a` when it has
+been built (`K33_SERVER=auto|1|0`, `K33_SERVER_DIR`, `K33_SERVER_LIB`; see `docs/P2P_HOSTING.md`). To build the
+server a client hosts, stage its data and link it:
 ```sh
 git submodule update --init server/sh1x       # never --recursive: the server has a URL-less gitlink
-sh scripts/build-server.sh                    # WSL cross-build + staging into ../../k33_p2p_staging
-K33_EMBED_SERVER=1 sh scripts/build.sh        # Kernel33.dll with the server inside
+sh scripts/build-server.sh                    # MSYS2 build of bin/libsh1x_host.a + staging into ../../k33_p2p_staging
+K33_SERVER=1 sh scripts/build.sh              # Kernel33.dll with the server linked in
 ```
 `scripts/build-server.sh` initialises only the server's `bin/home/codol_rawfiles` submodule
-(`core.autocrlf false`). It needs WSL Ubuntu-24.04 with i686-w64-mingw32 and nasm, and the server's
-prebuilt lib/*.a (`K33_SERVER_LIBS`).
+(`core.autocrlf false`). It needs MSYS2's mingw32 gcc (the one Kernel33 uses), its make and nasm, and the server's
+prebuilt lib/*.a (`K33_SERVER_LIBS`); `K33_SERVER_EXE=1` also cross-builds the child-process exe in WSL.
 
 ## Parity logger (branch `parity-log`)
 `src/parity.c` adds a client-side snapshot-parity logger for bringing the server to retail parity. It

@@ -306,6 +306,10 @@ memory.
 
 `src/p2p/p2p_inproc.c` plus the server's host API (server branch `feat/p2p-inprocess`). `mode = inprocess` is the default.
 
+Since `feat/server-in-kernel33` the server is linked into Kernel33.dll and kept for the client's run: the DLL
+loading, the per-session fresh globals and the fault containment described below are history. See "The server
+linked into Kernel33.dll" further down.
+
 ### How it runs
 - **Server build.** The server repo's makefile target `host-dll` links the dedicated server's objects as
   `sh1x_host.dll`. Its API (`src/win32/sys_host.c`):
@@ -371,47 +375,116 @@ memory.
   session's DLL copy, its 328 MB PMem block and its hunk are not released. Hosting again currently needs a
   client restart.
 
-### The server inside Kernel33.dll (branch `feat/server-in-kernel33`, 2026-11-16)
-Kernel33.dll carries the match server: no `p2p\sh1x_host.dll` ships. `scripts/build.sh` strips the server repo's
-`host-dll` output, packs it with zlib (`scripts/pack_server.py`: magic `K33S`, size, SHA-256, server commit) and
-embeds it as RCDATA 2 next to the C1 image (RCDATA 1). `src/p2p/p2p_embedded.c` inflates it for every session,
-checks the SHA-256, writes it to the session's private copy (`%TEMP%\k33_sh1x_host_<pid>_<n>.dll`, as before),
-reads it back through a handle that refuses writers and keeps that handle until `LoadLibrary` has mapped the copy.
-From there on nothing changed: the same host API, fiber, fault containment, teardown and C1 zone sharing.
+### The server linked into Kernel33.dll (branch `feat/server-in-kernel33`, 2026-11-16)
+The match server is part of Kernel33.dll: no `p2p\sh1x_host.dll`, no DLL copy in `%TEMP%`, no `LoadLibrary`. The
+server repo's makefile target `host-lib` (server branch `feat/server-in-kernel33`) builds `bin/libsh1x_host.a`;
+`scripts/build.sh` links it and `src/p2p/p2p_inproc.c` calls the host API directly (`src/p2p/p2p_server_api.h`).
+This replaces the first take on this branch (the DLL image packed into Kernel33.dll's resources) at the user's
+request; the three costs that take was avoiding are handled as below.
 
-- **Build.** `K33_EMBED_SERVER=auto` (default) embeds `$K33_SERVER_DIR/bin/sh1x_host.dll` (default
-  `server/sh1x`) when it exists, `1` requires it, `0` leaves it out. `K33_SERVER_DLL` names the DLL itself.
-  `scripts/build-server.sh` builds it (`K33_SERVER_DIR` for another checkout of the server) and no longer stages
-  `p2p\sh1x_host.dll` (`K33_STAGE_HOST_DLL=1` still does). The data files stay where they were:
-  `p2p\home\main\sh1x_svr_scripts.iwd` and `main\sh1x_rawfiles\`.
-- **Fallback.** `dll=<path>` in `p2p_host.ini` loads that DLL file instead (a server developer's build). A
-  Kernel33.dll built without the server loads `p2p\sh1x_host.dll` as before. The log names the source:
-  `p2p in-process: the match server is the one inside Kernel33.dll (sh1x <commit>, <KB>, sha256 <prefix>)` or
-  `... is the DLL file <path>`.
-- **Size.** Kernel33.dll 14,264,320 -> 16,563,712 bytes (shipping profile; the server is 5.1 MB stripped,
-  2.3 MB packed). Nothing is unpacked or reserved until a session starts.
+**One server per client run, matches change on it.** The server cannot be initialised twice (its globals are spent
+once it has ended), so it is started once, by the first match the player hosts, and kept for the rest of the run:
+- First match: `Sh1xHost_Init` with the full command line (`+map`), as before.
+- A match ends without ending the server. When it is over (offline: its level ended and its player left,
+  `PiMatchOverPoll`) the finished level simply stays loaded, as a one-shot lobby worker keeps it; the player's
+  `p2pstop` unloads it with `killserver` (the server then "stays down until the next map command").
+- Next match: the same server. Its settings and map are queued with `Sh1xHost_Command`:
+  `set codol_zoneType`, `set codol_sessionMap`, `set g_gametype`, `set g_difficulty`, `map <map>` (the latched
+  dvars apply at that map load), as the lobby retargets a warm dedicated worker. The match's state goes to
+  running only after the frame that ran the `map` has returned, so a status of the previous level never counts.
+- Settings that are on the server's command line (port, address, paths, rcon file, admission, developer, PMem,
+  C1 zone sharing, `extra`) cannot change: a match that asks for others is refused with "restart the client".
+- The server keeps its port, sockets and threads between matches and is still ticked; the offline lobby no longer
+  re-reserves the port after a match (`P2PInprocServerAlive`).
+- Only an end of the server itself (a `quit`, a `Sys_Error`, a changed frame hook) is final for the run: the next
+  host then says "restart the client to host again" (`P2PInprocUsed`).
+- `p2p_inproc_retire.c` (the import-table tracking and unloading of a spent DLL copy) is gone: there is nothing to
+  unload.
 
-**Why not link the server's objects into Kernel33.dll** (evaluated first, rejected):
-- *Fresh globals per session.* The server cannot be re-initialised once it ended ("one server per DLL
-  instance", server `win32/sys_host.c`), and every offline match is a new session (`p2p_inproc_retire.c`).
-  Linked in, a client could host one match per run.
-- *Address space.* The server's .bss is 227 MB (`objdump -h`: 0x0D951D18). Linked in, it is part of
-  Kernel33.dll's image in every client, hosting or not, for the whole run; today it exists only during a session
-  and the teardown returns it. The headroom in a hosted match is about 400 MB.
-- *Teardown.* `p2p_inproc_retire.c` tracks the server's allocations, threads, sockets and handles through the
-  loaded image's own import table and unloads the image; that needs a separate image.
-- *Containment.* The vectored fault handler decides "server fault" by the faulting address being inside the
-  server's image (or msvcrt.dll).
-- *Symbols and start-up.* 58 global symbols of the server's objects clash with Kernel33's static libraries
-  (zlib, `MatrixMultiply`); the server's C++ constructors and TLS would run in Kernel33.dll's DllMain, under the
-  loader lock, at the client's start.
+`p2p_inproc.c` keeps two states: `g_piServer` (not started / running / ended, for the run) and `g_piState` (the
+current match). The monitor loop and its exit classification are unchanged (`tests/test_p2p_inproc_lifecycle.py`
+still extracts them verbatim).
 
-**Measured** (2026-11-16, own copy of the k33-uistyle-offline-test install with its `p2p\sh1x_host.dll` removed,
-`K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=1` DLL with the server 1e945cab embedded, headless `+set k33_cmdFile 1
-+set codol_local_test_multi 1`): `room.match.cyborg`, `k33ready 1` -> the server unpacked from Kernel33.dll,
-ready after 17.5 s, the host joined `zm_theater_sh` (CA_ACTIVE, round 1, zombies spawning) and the match ran
-until the idle player died; the session was taken down (copy unloaded and deleted), `k33ready 1` again started a
-second session from a fresh copy (`_2.dll`, ready after 7.1 s), joined, and `p2pstop` ended it cleanly.
+**Memory: the large state is allocated on the first host.** The server's .bss was 217 MB (MSYS2 build;
+`svs` alone 159 MB). Linked as it was, every client would have reserved and committed it for its whole run, hosting
+or not. Server `src/sys_ondemand.h` turns the 16 largest arrays into pointers to arrays that `Sys_OnDemandInit`
+(start of `Sys_MainInit`) allocates; their uses are unchanged (`#define name (*sh1x_od_key)` keeps indexing, `&`
+and `sizeof`):
+
+| array | MB | array | MB |
+|---|---|---|---|
+| `svs` (sv_main.c) | 158.6 | `codol_pmtrace` | 2.4 |
+| entity-state snapshot / archive extensions | 10.5 + 1.0 | script string freed-text log (`sl_freedText`) | 1.5 |
+| player-state archive / frame extensions | 6.3 + 3.1 | script memory tree (`mt`) | 1.1 |
+| async capture streams | 3.2 | bot A* heap / nodes | 1.1 + 0.9 |
+| client-state snapshots / archives | 2.7 + 1.1 | client stats, skeleton memory | 1.0 + 1.0 |
+| actor animation journal | 2.5 | | |
+
+None of them is referenced by the retained assembly. The rest of the server's .bss is 19.4 MB (largest:
+`odeGlob` 2.8 MB and `level_bgs` 0.7 MB, which the assembly defines; `g_entities` 1.2 MB; then a tail under 1 MB).
+
+| Kernel33.dll (shipping profile) | file | SizeOfImage (address space it reserves) | .bss |
+|---|---|---|---|
+| before (main, server as a separate DLL) | 14,264,320 | 17.0 MB | 3.4 MB |
+| server packed as a resource (first take) | 16,563,712 | 19.2 MB | 3.4 MB |
+| server linked, its .bss as it was (computed) | about 19.2 MB | about 258 MB | about 221 MB |
+| **server linked, large state on demand** | 19,189,760 | 41.0 MB | 22.7 MB |
+
+So a client that never hosts reserves 24 MB more than before, not 241 MB. The first host allocates 202,631 KB
+(`Sh1xHost_OnDemandBytes`, logged after each match) and keeps it for the run, like the hunk and zone memory.
+
+**Symbols.** `host-lib` links the server's objects and its mbedtls/tomcrypt archives into one relocatable object
+(`ld -r -d`) and makes every symbol local except the host API and the COMDAT sections
+(`tools/sh1x_host_lib_symbols.py`; 10,395 local, 64 global). Without that, 58 of the server's globals clash with
+Kernel33's static libraries (its own zlib, `MatrixMultiply`), and some would silently replace a library function
+for all of Kernel33 instead of clashing (the server defines `__cxa_atexit`). Its `.drectve` (the CoD4x plugin API
+exports) is dropped: Kernel33.dll exports nothing of the server.
+
+**Compiler, CRT and allocator.** `scripts/build-server.sh` builds the library with MSYS2's mingw32 gcc 14 (the
+one Kernel33 uses) and MSYS2's make and nasm, not the WSL cross gcc 13-win32: the objects, libstdc++ and libgcc
+then agree (the WSL compiler's win32 thread model calls `__gthr_win32_*` functions that MSYS2's posix-model libgcc
+does not have). Both are msvcrt.dll builds: the server's `malloc` is Kernel33's (C1 keeps its own static CRT heap),
+its large blocks are VirtualAlloc. The server adds `-lcrypt32 -lwsock32` to the link.
+
+**Loader lock.** The server's static initialisation in Kernel33's DllMain is one constructor (an empty
+`std::vector<std::string>` in stringed_ingame.cpp, plus its `atexit`); it has no static TLS (`.tls` is the CRT's
+own 8 bytes). `Sys_InitThreadContext` (its `TlsAlloc`), the on-demand allocation and everything else run in
+`Sh1xHost_Init`, on the game thread, at the first host.
+
+**Faults are not contained any more** (user decision: "the crashes as part of kernel33 are fine it'll make it
+easier to debug when it's all in one place"). The vectored handler that moved a server fault onto a rescue stack
+(it recognised the server by its separate image) and the test command `p2pfaulttest` are removed; the activation
+transaction keeps its handler step as a no-op so its order holds. A fault in the server is a fault of the client:
+Kernel33's `FaultHandler` logs it (diagnostic profile: the `AV ... eip=` lines with module offsets, now all in
+Kernel33.dll) and the exception reaches C1's unhandled-exception filter (BugTrace dump) through the fiber's SEH
+chain. The server never installs its own crash filter (only its WinMain does). The `longjmp` that turns a server
+exit or `Sys_Error` into an end of the server is unchanged.
+
+**Test command.** `p2psv <command>` (test clients only, `+set k33_cmdFile 1`): one console command for the running
+server, queued with `Sh1xHost_Command` on its fiber (C1 splits at `;`: one command per `p2psv`).
+
+**Measured** (2026-11-16, own full copy of k33-uistyle-offline-test without `p2p\sh1x_host.dll`, test-profile DLL,
+headless `+set k33_cmdFile 1 +set codol_local_test_multi 1`, below-normal priority):
+- At the menu, never hosted: 1,173 MB private, 1,860 MB virtual.
+- `room.create` (a co-op room), `k33ready 1`: `starting the match server linked into Kernel33.dll (match 1, the
+  first of this client run)`. The lobby stopped that start during its map load and relaunched (`C1's first
+  datagram to the armed port`): `reusing the match server started 8 s ago (match 2)`, ready after 9.0 s, the player
+  connected. C1 then dropped with `ERROR: 181 aa12_mp 0 2` while loading the gamestate: the relaunch asked for
+  category `mp` for this co-op room. Not followed up: it is the lobby's relaunch, and the same configuration on a
+  fresh server was not tried.
+- `room.leave`, `room.match.cyborg`, `k33ready 1`: `reusing the match server started 78 s ago (match 3)`, ready
+  after 5.8 s; the player played zm_factory_sh (round 1).
+- Same server, multiplayer with bots: `p2psv set codol_zoneType mp`, `p2psv set codol_sessionMap
+  mp_killhouse_sh`, `p2psv set g_gametype war`, `p2psv set scr_codol_bots 5`, `p2psv map mp_killhouse_sh`. The
+  session followed the map change, and the player loaded Team Deathmatch on Killhouse with the Training bots.
+- `p2pstop`: the match ended with `killserver`, and the server stayed up. The player was dropped ("connection
+  timed out"), which closed the room.
+- `k33ready 1` once more: match 4 on the same server, ready after 5.5 s. The lobby then stopped it because the
+  room was gone.
+- `starting the match server` appears once in the run. Address space after the multiplayer and zombies loads:
+  3,378 MB of 4,096.
+- Not done: two natural match-overs in a row (a zombies death, then Ready again with the player joining). The
+  next client launches failed in Direct3D device creation (the display was not available) before the room step.
 
 ### Not done yet / next steps
 1. **Reuse the zones and assets the client already loaded.**

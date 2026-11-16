@@ -10,7 +10,7 @@
  *   why rcon and not Sh1xHost_Command   the host DLL's Sh1xHost_Command is Cbuf_AddText: the command runs in a
  *                                       later server frame and nothing returns what it printed. rcon runs the
  *                                       same command with console power (invoker 100) and returns the output.
- *                                       Nothing here calls into sh1x_host.dll or keeps a pointer into it, so a
+ *                                       Nothing here calls into the linked server or keeps a pointer into it, so a
  *                                       host that is torn down and started again needs no care on this side.
  *   target                              P2PConsoleHost (p2p_inproc.c): the port and rcon file of the host session that
  *                                       is starting or ready right now, asked again for every command. No

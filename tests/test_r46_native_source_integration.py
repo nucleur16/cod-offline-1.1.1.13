@@ -61,19 +61,20 @@ class NativeR46Source(unittest.TestCase):
   self.assertIn('K33OnMainTick(P2PLobbyTick)',host);self.assertLess(start.index('P2PEnsureInprocActivation()'),start.index('CreateThread('))
   self.assertNotIn('Direct3DCreate9',(ROOT/'src/k33tick.c').read_text())
  def test_development_command_storage_fault_and_registration_all_gated(self):
-  text=(ROOT/'src/p2p/p2p_inproc.c').read_text();edits=[dict(row)for row in CONTRACT['dev_gate_sections']];self.assertEqual(len(edits),4)
+  text=(ROOT/'src/p2p/p2p_inproc.c').read_text();edits=[dict(row)for row in CONTRACT['dev_gate_sections']];self.assertEqual(len(edits),2)
   # The SAME registration guard now surrounds the separate QA-only function.
-  # Keep all four surfaces and their ungated mutation negatives, not a waiver.
+  # Keep both surfaces and their ungated mutation negatives, not a waiver. (The fault-injection
+  # command p2pfaulttest went with the fault containment: the server is part of Kernel33.dll.)
   self.assertEqual(edits[-1]['label'],'diagnostic command registration')
   diagnostics=function(text,'InstallP2PInprocDiagnostics')
   self.assertIn('C1AddCommand(&g_piCmds[i])',diagnostics)
   edits[-1]=dict(edits[-1],before=diagnostics,after='#if CODOL_LOCAL_TESTING\n'+diagnostics+'\n#endif')
   for row in edits:self.assertEqual(text.count(row['after']),1)
   shipping=gate_project(text,'CODOL_LOCAL_TESTING',False);development=gate_project(text,'CODOL_LOCAL_TESTING',True)
-  for symbol in ('g_piFaultTest','PiCmdFaultTest','g_piCmds'):self.assertNotIn(symbol,shipping);self.assertIn(symbol,development)
+  for symbol in ('g_piCmds','PiCmdAssetCheck'):self.assertNotIn(symbol,shipping);self.assertIn(symbol,development)
   for row in edits:
    changed=text.replace(row['after'],row['before'],1)
-   self.assertTrue(any(x in gate_project(changed,'CODOL_LOCAL_TESTING',False)for x in ('g_piFaultTest','PiCmdFaultTest','g_piCmds')))
+   self.assertTrue(any(x in gate_project(changed,'CODOL_LOCAL_TESTING',False)for x in ('g_piCmds','PiCmdAssetCheck')))
  def test_hostgate_diagnostics_only_and_operational_function_hashes(self):
   text=(ROOT/'src/p2p/hostgate.c').read_text();shipping=gate_project(text,'CODOL_DIAGNOSTICS',False)
   for symbol in ('g_hgRefusedCount','g_hgDropsIn','g_hgDropsOut','InterlockedIncrement'):self.assertNotIn(symbol,shipping)
