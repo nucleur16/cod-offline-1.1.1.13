@@ -1,6 +1,6 @@
 #!/bin/sh
 # Builds the diagnostic profile (K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=1, docs/PRODUCTION_PROFILE.md) with
-# scripts/build.sh's source set and flags as build/Kernel33_dev.dll (developer console, k33shot, parity logger),
+# scripts/build.sh's source set and flags as build/Kernel33_dev.dll (developer console, con_shot, parity logger),
 # and the same profile without the console (-DK33_NO_CONSOLE) as build/Kernel33_noconsole.dll; it fails when that
 # one does not build, i.e. when the diagnostic code depends on src/console/console.c. Nothing is copied next to the
 # game: install by hand (cp ../Kernel33.dll ../Kernel33.dll.pre-dev && cp build/Kernel33_dev.dll ../Kernel33.dll).

@@ -24,7 +24,7 @@
  * Toggle: dvar "parity_log" 0 off / 1 normal (default) / 2 verbose, registered as an int with the
  * archive flag on the first main-thread hook (C1 refuses console sets of non-archive dvars, see
  * PatchDvarRegistrations). Its startup value comes from "+set parity_log N" on the command line
- * or the environment variable CODOL_PARITY_LOG=N (command line wins). A startup value of 0
+ * or the environment variable K33_PARITY_LOG=N (command line wins). A startup value of 0
  * installs nothing at all. Verbose lowers the prediction thresholds and raises the per-key limit.
  *
  * Every hook redirects one E8 call whose 6 preceding bytes and target are checked first; a site
@@ -61,8 +61,8 @@
 #define ES_SIZE                0x114
 #define CS_SIZE                0x138
 
-/* playerState (C1 offsets: src/codol/snapshot/codol_player_fields.inc in the server repo,
- * docs/CODOL_C1_MOVEMENT_LAYOUT.md, src/codol/weapon/codol_weapon_state.h). */
+/* playerState (C1 offsets: src/online/snapshot/player_fields.inc in the server repo,
+ * docs/CODOL_C1_MOVEMENT_LAYOUT.md, src/online/weapon/weapon_state.h). */
 #define PS_COMMANDTIME         0x000
 #define PS_PMTYPE              0x004
 #define CG_SNAPBUF             0x35E8   /* cg's two snapshot_t buffers, 0x556B0 apart */
@@ -97,7 +97,7 @@
 #define CS_COUNT               ((CS_DATA_VA - CS_OFFSETS_VA) / 4)
 #define CS_DATA_LIMIT          0x40000u
 
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
 static int g_parityStartLevel = 1;
 static const BYTE *volatile g_parityDvar;
 static DWORD g_mainThread;
@@ -216,7 +216,7 @@ static void ParityTick(void)
     if (g_parityQueueCount || g_parityQueueDropped) ParityFlush();
 }
 
-#endif /* CODOL_DIAGNOSTICS */
+#endif /* K33_DIAGNOSTICS */
 static BYTE *ParityCg(void)
 {
     /* The index is not the local client number: CG_Init's allocator (0x44E138..0x44E167) picks a
@@ -231,7 +231,7 @@ static BYTE *ParityCg(void)
     return Readable(cg, CG_SNAP + 8) && Readable(cg + CG_TIME, 4) ? cg : NULL;
 }
 
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
 /* messageNum of the snapshot in each of cg's two snapshot buffers (CG_ReadNextSnapshot 0x46D9F5
  * fills cg+0x35E8 / cg+0x35E8+0x556B0 with CL_GetSnapshot(num)); snapshot_t has no messageNum. */
 static const BYTE *volatile g_snapBuf[2];
@@ -970,12 +970,12 @@ static BOOL ParityTablesMatch(void)
            memcmp(types[30], "fx", 3) == 0;
 }
 
-/* "parity_log N" anywhere on the command line (last wins), else CODOL_PARITY_LOG=N, else 1. */
+/* "parity_log N" anywhere on the command line (last wins), else K33_PARITY_LOG=N, else 1. */
 static int ParityStartLevel(void)
 {
     int level = 1;
     char env[16];
-    DWORD n = GetEnvironmentVariableA("CODOL_PARITY_LOG", env, sizeof(env));
+    DWORD n = GetEnvironmentVariableA("K33_PARITY_LOG", env, sizeof(env));
     if (n && n < sizeof(env)) level = atoi(env);
     const char *p = GetCommandLineA();
     while ((p = strstr(p, "parity_log")) != NULL) {
@@ -1016,4 +1016,4 @@ static void InstallParityLogger(void)
     Log("parity: logger active, %d hooks installed, %d skipped, parity_log %d at startup%s", g_parityHooks,
         g_paritySkipped, g_parityStartLevel, g_csReadable ? "" : ", configstring lookup off");
 }
-#endif /* CODOL_DIAGNOSTICS */
+#endif /* K33_DIAGNOSTICS */

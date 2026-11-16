@@ -29,7 +29,7 @@ the present mechanism costs nothing.
 | `k33_languageState` | int, read only | `0` idle: `k33_language` is on screen. `1` switching: set in the frame that accepts the request (the unload and the load's queueing happen in that frame); back to 0 when C1's database has linked the new zone (measured 15-550 ms; at most 60 s, then 2). `2` restart needed: the request is saved and applies on the next start; the screen keeps the previous language. Setting `k33_language` back to the language on screen returns to `0`. |
 | `k33_languageSerial` | int, read only | Starts at 0, +1 each time the language on screen changed. Anything that holds translated text re-creates it when this changes. |
 | `k33_setlanguage <name>` | command | `set k33_language <name>` after checking the name; without a name prints the list, the language on screen, state and serial. |
-| `k33_langstat [label]`, `k33_langcycle <n>`, `k33_langforce` | commands, local-testing builds only | log entry / localize / stack use; switch n times; let the next switch unload a zone that is not the top of its stack (measurement only: it corrupts the stack and ends the client, see "Memory"). |
+| `loc_tableStats [label]`, `loc_cycle <n>`, `loc_forceUnload` | commands, local-testing builds only | log entry / localize / stack use; switch n times; let the next switch unload a zone that is not the top of its stack (measurement only: it corrupts the stack and ends the client, see "Memory"). |
 
 A movie that did `setdvar k33_language zh` polls `k33_languageSerial` / `k33_languageState`: serial changed -> rebuild
 text; state 2 -> show "applies after restart". Text a movie set from a localize key is a Scaleform copy (the
@@ -39,7 +39,7 @@ zombies `Round 1/9` / `回合 1/9`). What the movies do is unchanged by this wor
 change; the front end re-sets only some of its texts (measured: after a switch the Multiplayer lobby screen keeps the
 old language until it is opened again; dialogs created after the switch are in the new one).
 
-Startup order (`CodolStartupLanguage`) is unchanged: the last valid `+set k33_language`; else `+set k33_english` /
+Startup order (`StartupLanguage`) is unchanged: the last valid `+set k33_language`; else `+set k33_english` /
 `+set codol_patchlang`; else the last `seta k33_language` line of `players\config_mp.cfg`; else `en`.
 
 ## How it works
@@ -74,7 +74,7 @@ Startup order (`CodolStartupLanguage`) is unchanged: the last valid `+set k33_la
    - freeing the **top** block pops it: count and position return exactly to the block below, the freed pages are
      decommitted (`MEM_RESERVE`), the next zone is allocated there. 120 switches in this state: identical numbers
      after every switch (table below).
-   - freeing a block that is **not** the top (`k33_langforce` in a match, the English zone block 14 of 19): the list
+   - freeing a block that is **not** the top (`loc_forceUnload` in a match, the English zone block 14 of 19): the list
      entry's name is cleared but the stack position is rewound to the freed block, so the next zone
      (`codol_chinese_locale`) was written at offset `0x1C88000`, over `patch_common_mp` / `common_mp`, and its list
      entry replaced `localized_common_mp`'s. The client crashed while linking it (AV read at `0x4CC435` on the
@@ -124,7 +124,7 @@ the code zones' PMem stack (blocks, position).
 | front end after the match, en / zh | this branch | 48,599 / 47,841 | 11,250 / 10,495 | 19 |
 | Mech Factory (zombies) match, en / zh | this branch | 38,492 / 37,734 | 11,649 / 10,894 | 19, 0x3EAD000 / 0x3DDB000 |
 
-Cycles (`k33_langcycle 24`, numbers read after every switch): front end 2 x 24, Killhouse 24, front end after the
+Cycles (`loc_cycle 24`, numbers read after every switch): front end 2 x 24, Killhouse 24, front end after the
 match 24, Mech Factory 24. In each, every English state and every Chinese state had the same entries, localize count,
 zone count and stack 0 count/position (e.g. Killhouse: 12 x `10,789 free, 11,936 localize, stack 0 19 blocks
 0x3EAD000`, 12 x `11,547 free, 11,181 localize, 19 blocks 0x3DDB000`): no leak, no growth. A switch took 15-30 ms to
@@ -174,7 +174,7 @@ I = inferred. Every patched or called site is byte-checked in `LocaleSwitchCheck
 - One extra unload + load of the language zone on the first map load of a session (about 0.1 s, on the loading
   screen; for that moment the shown language's own names resolve to nothing and shared names to C1's text).
 - With the match hosted in-process, the switch acts on the client's database only.
-- At most `CODOL_LANG_MAX` (8) languages are listed; one is loaded at a time.
+- At most `LANG_MAX` (8) languages are listed; one is loaded at a time.
 
 ## Not verified
 
@@ -187,13 +187,13 @@ I = inferred. Every patched or called site is byte-checked in `LocaleSwitchCheck
 4. `ui_baseline.json` pins `src/kernel33.c` and `src/patch_locale_policy.h`: `tests/test_ui_baseline.py` fails until
    the baseline is re-recorded after review (`python -m zonekit.ui_baseline --record`).
 
-## Manual test (local-testing build, `+set k33_cmdFile 1`)
+## Manual test (local-testing build, `+set com_cmdFile 1`)
 
 1. Start. `Kernel33.log`: `language: live switch installed (link hook 0x004CC61B, unload hook 0x004CD9A0)`,
    `language: "en" zone "codol_english_locale" loaded: 8708 string(s) in place`, `language: startup: ... top
    "codol_english_locale"`.
 2. `k33_setlanguage zh`: `"en" -> "zh" live (serial 1, ...)`; native HUD text and newly opened menus are Chinese.
-   `k33_langcycle 24`: 24 `live` lines; the `after the switch` numbers are identical per language.
+   `loc_cycle 24`: 24 `live` lines; the `after the switch` numbers are identical per language.
 3. Enter a match: `the map load adds code zones; "codol_english_locale" is unloaded and loads again after them`;
    switch in the match; leave; switch at the front end.
 4. `set k33_language nope`: `is not an installed language`, the dvar goes back.

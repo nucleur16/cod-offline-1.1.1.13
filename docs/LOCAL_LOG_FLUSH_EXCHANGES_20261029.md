@@ -8,13 +8,13 @@ SDK pipe and isolated backend policy are unchanged.
 
 The startup form remains exactly:
 
-`k33logflush <actualPID> <launch_nonce32lowerhex>`
+`com_logFlush <actualPID> <launch_nonce32lowerhex>`
 
 It keeps the original seven-field version1 receipt and original path. A new
 optional third argument permits a separate fresh exchange against the same
 launch and same native current log:
 
-`k33logflush <actualPID> <launch_nonce32lowerhex> <exchange32lowerhex>`
+`com_logFlush <actualPID> <launch_nonce32lowerhex> <exchange32lowerhex>`
 
 It writes only:
 

@@ -29,7 +29,7 @@ Rules the build enforces:
     its own.
 
 Kernel33 skips an old zone name when the pack that replaced it is in the patch folder (patch_locale_policy.h
-CodolPatchZoneMergedInto); tests/test_zone_packs.py checks that table against these manifests.
+PatchZoneMergedInto); tests/test_zone_packs.py checks that table against these manifests.
 """
 from __future__ import annotations
 
@@ -56,7 +56,7 @@ def stage(name):
 
 
 def locales(name):
-    """patch_locale_policy.h CodolPatchZoneLocaleAllowed: the languages (en, zh, native) a zone of this name loads in."""
+    """patch_locale_policy.h PatchZoneLocaleAllowed: the languages (en, zh, native) a zone of this name loads in."""
     n = name.lower()
     if n.startswith("codol_english"):
         return frozenset(["en"])

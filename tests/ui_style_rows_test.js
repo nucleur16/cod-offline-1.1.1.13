@@ -57,7 +57,7 @@ global.CFunctionContainerCommon={
 global.LocalizeUtil={localize:k=>strings[k.slice(1)]===undefined?k:strings[k.slice(1)]};
 function engine(over){
  dvars=Object.assign({k33_language:'en',k33_languageList:'en;zh',k33_languageState:'0',k33_languageSerial:'0',
-  gpad_glyphs:'0',k33_padinfo:'0|1|Xbox 360 Controller|0|0',k33_glyphSerial:'0',
+  gpad_glyphs:'0',k33_padinfo:'0|1|Xbox 360 Controller|0|0',gpad_glyphSerial:'0',
   k33_hudStyle:'0',k33_hudStyleList:'0:stock;2:v26'},over||{});
  for(const k of Object.keys(dvars))if(dvars[k]===null)delete dvars[k];
  ranges={gpad_glyphs:[0,6],k33_hudStyle:[0,9]};sets=[];reads=[];

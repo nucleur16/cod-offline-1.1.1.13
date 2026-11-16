@@ -32,8 +32,8 @@
  * t is GetTickCount() milliseconds. The snapshot is written each second while a refusal happened in the last 3 s,
  * and at level 2 also every 5 s regardless.
  *
- * Toggle: dvar k33_snddiag 0 off (default) / 1 refusals + snapshots around them / 2 also a snapshot every 5 s.
- * Startup value: "+set k33_snddiag N" on the command line, else CODOL_SNDDIAG=N, else 0; 0 at startup installs nothing.
+ * Toggle: dvar snd_diag 0 off (default) / 1 refusals + snapshots around them / 2 also a snapshot every 5 s.
+ * Startup value: "+set snd_diag N" on the command line, else K33_SNDDIAG=N, else 0; 0 at startup installs nothing.
  * Memory C1 hands over (play params, alias, alias name) is read with ReadProcessMemory, which fails instead of
  * faulting, so a bad pointer only costs the name ("?"). */
 
@@ -216,7 +216,7 @@ static int SdChannelActive(int ch)
 
 static int SdLevel(void)
 {
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     const BYTE *d = g_sdDvar;
     int v = d ? *(volatile const int *)(d + 0xC) : g_sdStartLevel;
     return v < 0 ? 0 : v > 2 ? 2 : v;
@@ -233,12 +233,12 @@ static void SdRegisterDvar(void)
         *(volatile const int *)(DWORD_PTR)SDIAG_DVAR_COUNT_VA <= 100)
         return;
     g_sdDvarTried = 1;
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     const BYTE *d = ((RegisterIntFn)(DWORD_PTR)SDIAG_DVAR_REG_VA)(
-        "k33_snddiag", g_sdStartLevel, 0, 2, 0,
+        "snd_diag", g_sdStartLevel, 0, 2, 0,
         "Kernel33 sound voice diagnostics in Kernel33.log: 0 off, 1 refusals (+ snapshots around them), 2 + snapshot every 5 s");
     if (d && SdReadable(d, 0x10)) g_sdDvar = d;
-    Log("snddiag: dvar k33_snddiag %s", g_sdDvar ? "registered" : "could not be registered, startup value kept");
+    Log("snddiag: dvar snd_diag %s", g_sdDvar ? "registered" : "could not be registered, startup value kept");
 #endif
     SvRegisterDvars();
 }
@@ -281,7 +281,7 @@ static void SdRefused(int pool, int why, DWORD params, int channel)
     SdAliasName(alias, name, sizeof(name));
     SdChannelName(channel, ch, sizeof(ch));
     if (why == 2)
-        _snprintf(detail, sizeof(detail), "why=limit k33_sndAliasLimit");
+        _snprintf(detail, sizeof(detail), "why=limit snd_aliasLimit");
     else if (why == 0)
         _snprintf(detail, sizeof(detail), "why=cap %s=%d/%d", ch, SdChannelActive(channel), SdChannelInt(channel, SDIAG_CH_CAP));
     else
@@ -321,20 +321,20 @@ static void SdRefused(int pool, int why, DWORD params, int channel)
 __attribute__((used)) int __cdecl SndDiagHasRoom(int ok, DWORD params, int channel, int pool)
 {
     if (!g_sdDvarTried) SdRegisterDvar();
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     LONG before = g_svLimitRefused;
 #endif
     ok = SndVoicesHasRoom(ok & 0xFF, params, channel, pool);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     if (!ok) SdRefused(pool, g_svLimitRefused != before ? 2 : 0, params, channel);
 #endif
     return ok;
 }
 
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
 __attribute__((used)) void __cdecl SndDiagAllocFailed(DWORD params, int channel, int pool)
 {
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     if (channel < 0 || channel >= SDIAG_MAX_CHANNELS) channel = -1;
     int full = channel >= 0 && SdChannelActive(channel) >= SdChannelInt(channel, SDIAG_CH_CAP);
     SdRefused(pool, full ? 0 : 1, params, channel);
@@ -345,7 +345,7 @@ __attribute__((used)) void __cdecl SndDiagAllocFailed(DWORD params, int channel,
 void SNDDIAG_HasRoom2D(void);
 void SNDDIAG_HasRoom3D(void);
 void SNDDIAG_HasRoomStream(void);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
 void SNDDIAG_Alloc2D(void);
 void SNDDIAG_Alloc3D(void);
 void SNDDIAG_AllocStream(void);
@@ -382,7 +382,7 @@ __asm__(
     "    addl $20, %esp\n"
     "    addl $8, %esp\n"
     "    ret\n"
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     ".globl _SNDDIAG_Alloc2D\n"
     "_SNDDIAG_Alloc2D:\n"                 /* 0x73E20E: edi = channel, [esp+4] = params */
     "    pushl 4(%esp)\n"
@@ -541,16 +541,16 @@ static DWORD WINAPI SdThread(LPVOID unused)
     return 0;
 }
 
-/* "k33_snddiag N" anywhere on the command line (last wins), else CODOL_SNDDIAG=N, else 0. */
+/* "snd_diag N" anywhere on the command line (last wins), else K33_SNDDIAG=N, else 0. */
 static int SdStartLevel(void)
 {
     int level = 0;
     char env[16];
-    DWORD n = GetEnvironmentVariableA("CODOL_SNDDIAG", env, sizeof(env));
+    DWORD n = GetEnvironmentVariableA("K33_SNDDIAG", env, sizeof(env));
     if (n && n < sizeof(env)) level = atoi(env);
     const char *p = GetCommandLineA();
-    while (p && (p = strstr(p, "k33_snddiag")) != NULL) {
-        p += 11;
+    while (p && (p = strstr(p, "snd_diag")) != NULL) {
+        p += sizeof("snd_diag") - 1;
         if (*p != ' ' && *p != '\t' && *p != '"') continue;
         while (*p == ' ' || *p == '\t' || *p == '"') p++;
         if (*p >= '0' && *p <= '9') level = atoi(p);
@@ -593,7 +593,7 @@ static void InstallSoundDiag(void)
         { SDIAG_CAP2D_CALL_VA, SDIAG_HASROOM_VA, SNDDIAG_HasRoom2D, "2d cap" },
         { SDIAG_CAP3D_CALL_VA, SDIAG_HASROOM_VA, SNDDIAG_HasRoom3D, "3d cap" },
         { SDIAG_CAPSTR_CALL_VA, SDIAG_HASROOM_VA, SNDDIAG_HasRoomStream, "stream cap" },
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         { SDIAG_AL2D_CALL_VA, SDIAG_ALLOC2D_VA, SNDDIAG_Alloc2D, "2d alloc" },
         { SDIAG_AL3D_CALL_VA, SDIAG_ALLOC3D_VA, SNDDIAG_Alloc3D, "3d alloc" },
         { SDIAG_ALSTR_CALL_VA, SDIAG_ALLOCSTREAM_VA, SNDDIAG_AllocStream, "stream alloc" },
@@ -605,13 +605,13 @@ static void InstallSoundDiag(void)
     };
     static const BYTE kRegisterInt[] = { 0x55, 0x8B, 0xEC, 0x83, 0xE4, 0xF8, 0x64, 0xA1, 0x2C, 0x00, 0x00, 0x00 };
 
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     g_sdStartLevel = SdStartLevel();
 #else
     g_sdStartLevel = 0;
 #endif
     g_svOn = SvStartupOn();
-    if (!g_sdStartLevel && !g_svOn) { Log("snddiag: off (k33_snddiag 0, codol_soundvoices 0 at startup), no hooks installed"); return; }
+    if (!g_sdStartLevel && !g_svOn) { Log("snddiag: off (snd_diag 0, snd_voiceLimits 0 at startup), no hooks installed"); return; }
     for (unsigned i = 0; i < sizeof(kChecks) / sizeof(kChecks[0]); i++) {
         const BYTE *p = (const BYTE *)(DWORD_PTR)kChecks[i].va;
         if (!SdReadable(p, kChecks[i].n) || memcmp(p, kChecks[i].bytes, kChecks[i].n) != 0) {
@@ -634,22 +634,22 @@ static void InstallSoundDiag(void)
     g_sdDvarOk = SdReadable((void *)(DWORD_PTR)SDIAG_DVAR_REG_VA, sizeof(kRegisterInt)) &&
                  !memcmp((void *)(DWORD_PTR)SDIAG_DVAR_REG_VA, kRegisterInt, sizeof(kRegisterInt)) &&
                  SdReadable((void *)(DWORD_PTR)SDIAG_DVAR_COUNT_VA, 4);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     InitializeCriticalSection(&g_sdLock);
 #endif
     g_sdMainThread = GetCurrentThreadId();
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     HANDLE t = CreateThread(NULL, 0, SdThread, NULL, 0, NULL);
     if (!t) { Log("snddiag: no log thread, not installed"); return; }
     SetThreadPriority(t, THREAD_PRIORITY_BELOW_NORMAL);
     CloseHandle(t);
 #endif
     for (unsigned i = 0; i < sizeof(kSites) / sizeof(kSites[0]); i++)
-#if !CODOL_DIAGNOSTICS
+#if !K33_DIAGNOSTICS
         if (kSites[i].stub)
 #endif
             RedirectCall(kSites[i].site, (void *)kSites[i].stub);
-    Log("snddiag: 6 hooks installed (cap checks 0x%08X/0x%08X/0x%08X, allocators 0x%08X/0x%08X/0x%08X), k33_snddiag %d at startup%s",
+    Log("snddiag: 6 hooks installed (cap checks 0x%08X/0x%08X/0x%08X, allocators 0x%08X/0x%08X/0x%08X), snd_diag %d at startup%s",
         SDIAG_CAP2D_CALL_VA, SDIAG_CAP3D_CALL_VA, SDIAG_CAPSTR_CALL_VA, SDIAG_AL2D_CALL_VA, SDIAG_AL3D_CALL_VA,
         SDIAG_ALSTR_CALL_VA, g_sdStartLevel, g_sdDvarOk ? "" : ", no dvar (Dvar_RegisterInt bytes differ)");
 }

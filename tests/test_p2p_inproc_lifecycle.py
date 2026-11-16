@@ -22,7 +22,7 @@ typedef size_t SIZE_T;
 #define FALSE 0
 #define P2P_STATUS_MS 2000u
 /* This monitor fixture declares the full QA statistics profile explicitly. */
-#define CODOL_DIAGNOSTICS 1
+#define K33_DIAGNOSTICS 1
 enum { PI_NONE, PI_INIT_PENDING, PI_RUNNING, PI_ENDED, PI_CRASHED };
 enum { P2P_IDLE, P2P_STARTING, P2P_READY, P2P_STOPPING, P2P_EXITED, P2P_FAILED };
 typedef struct {char map[64],sessionMap[64],gametype[32],zoneType[16]; int port,readyTimeout;} P2PConfig;
@@ -279,7 +279,7 @@ def main():
         retirement.write_text(retirement_fixture(source))
         for local_testing in (0,1):
             executable=folder/("retirement-%d"%local_testing)
-            subprocess.run([args.cc,"-std=c99","-O1","-g","-Wall","-Wextra","-Werror","-fsanitize=address,undefined","-fno-omit-frame-pointer","-fno-pie","-no-pie","-DCODOL_LOCAL_TESTING=%d"%local_testing,str(retirement),"-o",str(executable)],check=True,timeout=30)
+            subprocess.run([args.cc,"-std=c99","-O1","-g","-Wall","-Wextra","-Werror","-fsanitize=address,undefined","-fno-omit-frame-pointer","-fno-pie","-no-pie","-DK33_LOCAL_TESTING=%d"%local_testing,str(retirement),"-o",str(executable)],check=True,timeout=30)
             subprocess.run([str(executable)],check=True,timeout=10)
 
         hostgate=folder/"hostgate.c"

@@ -63,7 +63,7 @@ def validate(before,after):
 
 def merged_table():
     source=(ROOT/'src/patch_locale_policy.h').read_text(encoding='utf-8')
-    source=source.split('kCodolPatchZoneMerged[][2]={',1)[1].split('};',1)[0]
+    source=source.split('kPatchZoneMerged[][2]={',1)[1].split('};',1)[0]
     return {old.lower():new.lower() for old,new in re.findall(r'\{"([^"]+)","([^"]+)"\}',source)}
 
 

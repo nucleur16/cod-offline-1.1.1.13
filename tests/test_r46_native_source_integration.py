@@ -35,26 +35,26 @@ def gate_project(text,macro,value):
  return ''.join(out)
 class GateProjectComments(unittest.TestCase):
  def test_trailing_block_comments_preserve_both_macro_projections(self):
-  text=('#if CODOL_LOCAL_TESTING /* section */ /* second ** tag */\n'
+  text=('#if K33_LOCAL_TESTING /* section */ /* second ** tag */\n'
         'diagnostic_only();\n'
         '#else /* section */\n'
         'shipping_only();\n'
         '#endif /* section */\n')
-  self.assertEqual(gate_project(text,'CODOL_LOCAL_TESTING',False),'shipping_only();\n')
-  self.assertEqual(gate_project(text,'CODOL_LOCAL_TESTING',True),'diagnostic_only();\n')
+  self.assertEqual(gate_project(text,'K33_LOCAL_TESTING',False),'shipping_only();\n')
+  self.assertEqual(gate_project(text,'K33_LOCAL_TESTING',True),'diagnostic_only();\n')
  def test_interior_comment_does_not_erase_compound_condition(self):
-  text=('#if CODOL_LOCAL_TESTING /* interior */ && OTHER /* trailing */\n'
+  text=('#if K33_LOCAL_TESTING /* interior */ && OTHER /* trailing */\n'
         'compound_true();\n'
         '#else\n'
         'compound_false();\n'
         '#endif\n')
   for value in (False,True):
-   self.assertEqual(gate_project(text,'CODOL_LOCAL_TESTING',value),text)
+   self.assertEqual(gate_project(text,'K33_LOCAL_TESTING',value),text)
 
 class NativeR46Source(unittest.TestCase):
  def test_profile_defaults_and_kernel_only_optin_remain(self):
-  profile=(ROOT/'src/production_profile.h').read_text();self.assertIn('#define CODOL_LOCAL_TESTING 0',profile);self.assertIn('#define CODOL_KERNEL_ROOM_CONTEXT 0',profile);self.assertIn('#define CODOL_KERNEL_NAME_DISPLAY 0',profile)
-  kernel=(ROOT/'src/kernel33.c').read_text();shipping=gate_project(kernel,'CODOL_LOCAL_TESTING',False);local=gate_project(kernel,'CODOL_LOCAL_TESTING',True)
+  profile=(ROOT/'src/production_profile.h').read_text();self.assertIn('#define K33_LOCAL_TESTING 0',profile);self.assertIn('#define K33_KERNEL_ROOM_CONTEXT 0',profile);self.assertIn('#define K33_KERNEL_NAME_DISPLAY 0',profile)
+  kernel=(ROOT/'src/kernel33.c').read_text();shipping=gate_project(kernel,'K33_LOCAL_TESTING',False);local=gate_project(kernel,'K33_LOCAL_TESTING',True)
   self.assertNotIn('InstallP2PInproc();',shipping);self.assertNotIn('InstallP2PInproc();',local)
   self.assertNotIn('InstallP2PInprocDiagnostics();',shipping);self.assertIn('InstallP2PInprocDiagnostics();',local)
   host=(ROOT/'src/p2p/p2p.c').read_text();start=function(host,'P2PStartConfigured')
@@ -67,15 +67,15 @@ class NativeR46Source(unittest.TestCase):
   self.assertEqual(edits[-1]['label'],'diagnostic command registration')
   diagnostics=function(text,'InstallP2PInprocDiagnostics')
   self.assertIn('C1AddCommand(&g_piCmds[i])',diagnostics)
-  edits[-1]=dict(edits[-1],before=diagnostics,after='#if CODOL_LOCAL_TESTING\n'+diagnostics+'\n#endif')
+  edits[-1]=dict(edits[-1],before=diagnostics,after='#if K33_LOCAL_TESTING\n'+diagnostics+'\n#endif')
   for row in edits:self.assertEqual(text.count(row['after']),1)
-  shipping=gate_project(text,'CODOL_LOCAL_TESTING',False);development=gate_project(text,'CODOL_LOCAL_TESTING',True)
+  shipping=gate_project(text,'K33_LOCAL_TESTING',False);development=gate_project(text,'K33_LOCAL_TESTING',True)
   for symbol in ('g_piFaultTest','PiCmdFaultTest','g_piCmds'):self.assertNotIn(symbol,shipping);self.assertIn(symbol,development)
   for row in edits:
    changed=text.replace(row['after'],row['before'],1)
-   self.assertTrue(any(x in gate_project(changed,'CODOL_LOCAL_TESTING',False)for x in ('g_piFaultTest','PiCmdFaultTest','g_piCmds')))
+   self.assertTrue(any(x in gate_project(changed,'K33_LOCAL_TESTING',False)for x in ('g_piFaultTest','PiCmdFaultTest','g_piCmds')))
  def test_hostgate_diagnostics_only_and_operational_function_hashes(self):
-  text=(ROOT/'src/p2p/hostgate.c').read_text();shipping=gate_project(text,'CODOL_DIAGNOSTICS',False)
+  text=(ROOT/'src/p2p/hostgate.c').read_text();shipping=gate_project(text,'K33_DIAGNOSTICS',False)
   for symbol in ('g_hgRefusedCount','g_hgDropsIn','g_hgDropsOut','InterlockedIncrement'):self.assertNotIn(symbol,shipping)
   self.assertIn('#define HostGateRefused(...) ((void)0)',shipping)
   for name in CONTRACT['function_whitespace_hashes']['src/p2p/hostgate.c']:self.assertTrue(pinned_function('src/p2p/hostgate.c',name,function(text,name)))
@@ -87,30 +87,30 @@ class NativeR46Source(unittest.TestCase):
   for name,word in (('ChallengeSenderGuard','cmpw -0xc60(%%ebp), %%ax'),('ConnectSenderCompare','cmpw 0x24(%%esp), %%ax')):
    body=function(text,name);self.assertIn(word,body);self.assertFalse(pinned_function('src/guards/challenge_sender_guard.c',name,body.replace(word,'nop',1)))
  def test_patchdir_size_query_is_diagnostic_but_header_read_stays(self):
-  text=(ROOT/'src/kernel33.c').read_text();self.assertRegex(text,r'#if CODOL_DIAGNOSTICS\s+DWORD size = GetFileSize\(f, NULL\);\s+#endif')
-  shipping=gate_project(function(text,'LoadPatchDir'),'CODOL_DIAGNOSTICS',False);self.assertNotIn('GetFileSize(',shipping);self.assertIn('ReadFile(f, hdr, sizeof(hdr), &got, NULL)',shipping);self.assertIn('CloseHandle(f)',shipping)
+  text=(ROOT/'src/kernel33.c').read_text();self.assertRegex(text,r'#if K33_DIAGNOSTICS\s+DWORD size = GetFileSize\(f, NULL\);\s+#endif')
+  shipping=gate_project(function(text,'LoadPatchDir'),'K33_DIAGNOSTICS',False);self.assertNotIn('GetFileSize(',shipping);self.assertIn('ReadFile(f, hdr, sizeof(hdr), &got, NULL)',shipping);self.assertIn('CloseHandle(f)',shipping)
 class ProductionTestSurfaces(unittest.TestCase):
  def setUp(self):
   self.kernel=(ROOT/'src/kernel33.c').read_text()
   self.rows=CONTRACT['development_surface_sections']
  def current_contract(self,text):
   if len(self.rows)!=2 or any(text.count(row['after'])!=1 for row in self.rows):return False
-  shipping=gate_project(text,'CODOL_LOCAL_TESTING',False)
-  local=gate_project(text,'CODOL_LOCAL_TESTING',True)
+  shipping=gate_project(text,'K33_LOCAL_TESTING',False)
+  local=gate_project(text,'K33_LOCAL_TESTING',True)
   return ('k33patch' not in function(shipping,'LoadPatchDir') and 'InstallK33LogFlush();' not in shipping and
           all(row['before'] in local for row in self.rows) and
-          'CodolPatchLanguageFromArgv' in function(shipping,'LoadPatchDir') and
+          'PatchLanguageFromArgv' in function(shipping,'LoadPatchDir') and
           'ReadFile(f, hdr, sizeof(hdr), &got, NULL)' in function(shipping,'LoadPatchDir') and
           'CloseHandle(f)' in function(shipping,'LoadPatchDir'))
  def test_production_omits_test_directory_probe_and_development_command_registration(self):
   self.assertTrue(self.current_contract(self.kernel))
   for flags in ('0000','0010','0011'):
    with self.subTest(profile=flags):
-    shipping=gate_project(self.kernel,'CODOL_LOCAL_TESTING',False)
+    shipping=gate_project(self.kernel,'K33_LOCAL_TESTING',False)
     self.assertNotIn('GetFileAttributesA(test)',function(shipping,'LoadPatchDir'))
     self.assertNotIn('InstallK33LogFlush();',shipping)
  def test_local_profile_retains_original_test_override_and_logflush_call(self):
-  local=gate_project(self.kernel,'CODOL_LOCAL_TESTING',True)
+  local=gate_project(self.kernel,'K33_LOCAL_TESTING',True)
   for row in self.rows:self.assertIn(row['before'],local)
   self.assertEqual(local.count('InstallK33LogFlush();'),1)
   self.assertIn('GetFileAttributesA(test)',function(local,'LoadPatchDir'))
@@ -122,20 +122,20 @@ class ProductionTestSurfaces(unittest.TestCase):
    mutant=self.kernel.replace(row['after'],row['before'],1)
    with self.subTest(surface=row['label']):self.assertFalse(self.current_contract(mutant))
   for row in self.rows:
-   mutant=self.kernel.replace(row['after'],row['after'].replace('#if CODOL_LOCAL_TESTING','#if CODOL_DIAGNOSTICS',1),1)
+   mutant=self.kernel.replace(row['after'],row['after'].replace('#if K33_LOCAL_TESTING','#if K33_DIAGNOSTICS',1),1)
    with self.subTest(wrong_gate=row['label']):self.assertFalse(self.current_contract(mutant))
  def test_logflush_functional_body_is_local_only_and_shipping_refuses(self):
   body=function((ROOT/'src/local_log_flush.c').read_text(),'K33LfExecuteExchange')
-  shipping=gate_project(body,'CODOL_LOCAL_TESTING',False)
+  shipping=gate_project(body,'K33_LOCAL_TESTING',False)
   self.assertIn('return K33LfFail(LF_SHIPPING);',shipping)
   for token in ('K33LfPolicy()', 'K33LfPipe()', 'K33LfGuard()', 'K33LfNative(expected)'):
    self.assertNotIn(token,shipping)
-   self.assertIn(token,gate_project(body,'CODOL_LOCAL_TESTING',True))
+   self.assertIn(token,gate_project(body,'K33_LOCAL_TESTING',True))
 
  def test_scoreboard_repair_keeps_functional_calls_without_shipping_diagnostic_counter(self):
   body=function((ROOT/'src/kernel33.c').read_text(),'ScoresOpenHook')
-  shipping=gate_project(body,'CODOL_DIAGNOSTICS',False)
-  diagnostic=gate_project(body,'CODOL_DIAGNOSTICS',True)
+  shipping=gate_project(body,'K33_DIAGNOSTICS',False)
+  diagnostic=gate_project(body,'K33_DIAGNOSTICS',True)
   digest=lambda text:hashlib.sha256(' '.join(text.split()).encode()).hexdigest()
   # Golden preimage identities pin the entire existing repair/control flow;
   # a removed/reordered UI call or changed condition cannot pass this check.
@@ -151,19 +151,19 @@ class ProductionTestSurfaces(unittest.TestCase):
   digest=lambda value:hashlib.sha256(' '.join(value.split()).encode()).hexdigest()
   def valid(value):
    try:
-    shipping=gate_project(value,'CODOL_DIAGNOSTICS',False)
-    diagnostic=gate_project(value,'CODOL_DIAGNOSTICS',True)
+    shipping=gate_project(value,'K33_DIAGNOSTICS',False)
+    diagnostic=gate_project(value,'K33_DIAGNOSTICS',True)
    except AssertionError:return False
-   return (value.count('#if CODOL_DIAGNOSTICS\n')==2 and
-           digest(shipping)=='e77bede52cf1ca517b9b1081f03513cb1fcebfdcc286b6c0628b7d990f54b95c' and
-           digest(diagnostic)=='6f84ad3127191a21fa3b3a4ecbf29c63b8e2832229e174128cce666dd00ab30f')
+   return (value.count('#if K33_DIAGNOSTICS\n')==2 and
+           digest(shipping)=='b35db0f18dbb038b056252e3b89d285268acd036a105ac75d471f03a26021cfc' and
+           digest(diagnostic)=='61397b6d35cdc7da3e3097c870b2d4cf2bf3d0b0787514be5a0e0d76e300128a')
   self.assertTrue(valid(text))
-  shipping=gate_project(text,'CODOL_DIAGNOSTICS',False)
+  shipping=gate_project(text,'K33_DIAGNOSTICS',False)
   self.assertIn('static BYTE *ParityCg(void)',shipping)
   for symbol in ('ParityEvents','ParityPredCheck','ParitySnapshot','ParityDefaultAsset','g_phEvents','g_parityQueue','InstallParityLogger'):
    self.assertNotIn(symbol,shipping)
   # Removing either gate must reintroduce debug code; common-helper drift must also fail.
-  begin='#if CODOL_DIAGNOSTICS\n';end='#endif /* CODOL_DIAGNOSTICS */\n'
+  begin='#if K33_DIAGNOSTICS\n';end='#endif /* K33_DIAGNOSTICS */\n'
   for index in (0,1):
    starts=[match.start()for match in re.finditer(re.escape(begin),text)]
    at=starts[index];stop=text.index(end,at)

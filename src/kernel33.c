@@ -58,7 +58,7 @@ static BOOL g_supportedBuild;
 static BYTE *volatile g_tenBase;
 static SIZE_T g_tenSize;
 
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
 static void Log(const char *fmt, ...)
 {
     char path[MAX_PATH], line[512];
@@ -183,13 +183,13 @@ static void PatchActiveHandFiringMarker(void)
 
 #include "minigun_pair_native.c.inc"
 
-#if defined(CODOL_LOCAL_TESTING) && CODOL_LOCAL_TESTING == 1
+#if defined(K33_LOCAL_TESTING) && K33_LOCAL_TESTING == 1
 static FARPROC LocalQaRouteImport(const C1Import *imp,FARPROC original);
 #endif
 /* The lobby inside this DLL (offline_lobby.c): TRUE once it listens and C1 is routed to it. This client is
  * offline only, so that is before C1's entry point in every run; a start that fails stops the client. */
 static BOOL OfflineLobbyActive(void);
-#if CODOL_OFFLINE_LOBBY
+#if K33_OFFLINE_LOBBY
 static FARPROC OfflineRouteImport(const C1Import *imp, FARPROC original);
 #endif
 static void FillImports(void)
@@ -199,7 +199,7 @@ static void FillImports(void)
     for (unsigned i = 0; i < sizeof(kC1Imports) / sizeof(kC1Imports[0]); i++) {
         const C1Import *imp = &kC1Imports[i];
         HMODULE m;
-#if CODOL_KERNEL_NAME_DISPLAY
+#if K33_KERNEL_NAME_DISPLAY
         if (!lstrcmpiA(imp->dll, "d3d9.dll")) {
             /* Full cutover bypasses the retired local proxy. Resolve only the
              * Windows copy, and let the guarded binders verify its path. */
@@ -219,10 +219,10 @@ static void FillImports(void)
             continue;
         }
         f = QbgImport(imp, f);
-#if defined(CODOL_LOCAL_TESTING) && CODOL_LOCAL_TESTING == 1
+#if defined(K33_LOCAL_TESTING) && K33_LOCAL_TESTING == 1
         f = LocalQaRouteImport(imp,f);
 #endif
-#if CODOL_OFFLINE_LOBBY
+#if K33_OFFLINE_LOBBY
         f = OfflineRouteImport(imp, f);
 #endif
         WriteCode((void *)(DWORD_PTR)imp->slot, &f, sizeof(f));
@@ -520,13 +520,13 @@ typedef unsigned char (__cdecl *GfxUnusableFn)(void);
 
 static void __cdecl ScoresOpenHook(int localClient, int mode)
 {
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     static LONG reloads;
 #endif
     if (!*(volatile DWORD *)(DWORD_PTR)HUD_MOVIE_VA && !*(volatile DWORD *)(DWORD_PTR)HUD_MOVIE_DEF_VA &&
         *(volatile DWORD *)(DWORD_PTR)SCALEFORM_ON_VA && !((GfxUnusableFn)(DWORD_PTR)GFX_UNUSABLE_VA)()) {
         ((UiModeFn)(DWORD_PTR)UI_MODE_VA)(localClient, UI_MODE_HUD);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         if (InterlockedIncrement(&reloads) <= 8)
             Log("scoreboard: HUD movie was not loaded (focus lost while loading?), reloaded it: %s",
                 *(volatile DWORD *)(DWORD_PTR)HUD_MOVIE_VA ? "ok" : "still missing");
@@ -559,7 +559,7 @@ static void PatchScoresOpen(void)
  * chunks with ReadFileEx for a handle or memcpy for a buffer, and 0x4B69E0 inflates unsigned
  * chunks directly (signed ones go through 0x4B5840). The jne becomes two nops, so an unsigned
  * zone loads from a file like any other; signed zones are untouched. Any client_shipRetail zone
- * may now be an unsigned build, in the same layout tools/codol_english/build_font_ff.py writes. */
+ * may now be an unsigned build, in the same layout tools/english/build_font_ff.py writes. */
 #define UNSIGNED_GATE_VA 0x004B5EF5u
 
 static BOOL PatchUnsignedZones(void)
@@ -595,10 +595,10 @@ static BOOL PatchUnsignedZones(void)
  * The project's zones are consolidated, one per list and language (build_zones.py, zone_packs/): codol_common (ahead
  * of code_pre_gfx), codol_common_ui_mp (UI list), codol_common_postgfx_mp and codol_infected_cyborg_postgfx_mp (after
  * code_post_gfx), codol_english_locale / codol_chinese_locale (ahead of code_pre_gfx, one language). An old zone name
- * (patch_locale_policy.h kCodolPatchZoneMerged) is skipped while the zone that replaced it is in the folder.
+ * (patch_locale_policy.h kPatchZoneMerged) is skipped while the zone that replaced it is in the folder.
  * A file named like a stock zone (or ffotd_client) is skipped, so it can never shadow one; to
  * replace a stock zone, put the unsigned build in its stock folder instead.
- * "+set codol_patchdir 0" on the command line turns the folder off.
+ * "+set fs_patchDir 0" on the command line turns the folder off.
  *
  * Patch zones named *_ui_mp (the stock UI zones' naming: patch_ui_mp, ui_mp) are prepended instead,
  * the same way, to the UI list's DB_LoadXAssets call
@@ -635,13 +635,13 @@ static int g_patchZoneCount;
 __attribute__((used)) DWORD g_patchDirDiskPath = PATCHDIR_DISK_PATH_VA;
 __attribute__((used)) DWORD g_patchDirOpenedPath = PATCHDIR_OPENED_VA;
 
-/* "+set codol_patchdir 0" anywhere on the command line; the last setting wins. */
+/* "+set fs_patchDir 0" anywhere on the command line; the last setting wins. */
 static BOOL PatchDirEnabled(void)
 {
     const char *p = GetCommandLineA();
     BOOL on = TRUE;
-    while ((p = strstr(p, "codol_patchdir")) != NULL) {
-        p += 14;
+    while ((p = strstr(p, "fs_patchDir")) != NULL) {
+        p += sizeof("fs_patchDir") - 1;
         if (*p != ' ' && *p != '\t' && *p != '"') continue;
         while (*p == ' ' || *p == '\t' || *p == '"') p++;
         on = !(p[0] == '0' && (p[1] == '\0' || p[1] == ' ' || p[1] == '\t' || p[1] == '"'));
@@ -661,7 +661,7 @@ static BOOL PatchDirEnabled(void)
  *     +set k33_english 1 | 0     the older spelling of en | zh (and +set codol_patchlang en | zh)
  *     seta k33_language "<name>" the saved choice in players\config_mp.cfg, when the command line names none
  *     nothing                    English
- * (patch_locale_policy.h CodolStartupLanguage). C1 execs config_mp.cfg before any of this and applies no +set to a
+ * (patch_locale_policy.h StartupLanguage). C1 execs config_mp.cfg before any of this and applies no +set to a
  * dvar it does not know, so both are read here, from the command line and from the plaintext config file itself
  * (PatchPlainConfig); k33_language becomes a real, archived dvar later (locale_switch.c), which is what writes the
  * saved line. When every C1 site locale_switch.c uses matches, a language's one codol_<name>_locale zone is that
@@ -674,8 +674,8 @@ static BOOL PatchDirEnabled(void)
  * only, never patch\, so every state passes it. */
 static BOOL g_english = TRUE;
 static int g_englishZones, g_englishSkipped, g_chineseZones;
-static char g_lang[CODOL_LANG_NAME_MAX] = "en";             /* the language this client started in */
-static char g_langs[CODOL_LANG_MAX][CODOL_LANG_NAME_MAX];   /* k33_languageList, sorted */
+static char g_lang[LANG_NAME_MAX] = "en";             /* the language this client started in */
+static char g_langs[LANG_MAX][LANG_NAME_MAX];   /* k33_languageList, sorted */
 static int g_langCount;
 static unsigned g_langZones;                                /* bit i: g_langs[i] has a zone in the patch folder */
 static unsigned g_langLocale;                               /* bit i: ... and its codol_<name>_locale zone is queued */
@@ -758,10 +758,10 @@ static void LoadPatchDir(void)
 {
     int localeArgc=0;
     LPWSTR *localeArgv=CommandLineToArgvW(GetCommandLineW(),&localeArgc);
-    enum CodolPatchLanguage locale=localeArgv ? CodolPatchLanguageFromArgv(localeArgc,(const wchar_t *const*)localeArgv) : CODOL_PATCH_NATIVE;
+    enum PatchLanguage locale=localeArgv ? PatchLanguageFromArgv(localeArgc,(const wchar_t *const*)localeArgv) : PATCH_NATIVE;
     DWORD savedLength = 0;
     char *saved = ReadSavedConfig(&savedLength);
-    enum CodolLanguageSource langSource = CodolStartupLanguage(localeArgv ? localeArgc : 0, (const wchar_t *const*)localeArgv,
+    enum LanguageSource langSource = StartupLanguage(localeArgv ? localeArgc : 0, (const wchar_t *const*)localeArgv,
                                                                saved, savedLength, g_lang);
     if(localeArgv)LocalFree(localeArgv);
     if (saved) HeapFree(GetProcessHeap(), 0, saved);
@@ -774,15 +774,15 @@ static void LoadPatchDir(void)
     char pdir[MAX_PATH];   /* where the patch files are: client_shipRetail\patch\ */
     _snprintf(pdir, sizeof(pdir), "%s%s", dir, sub);
     pdir[sizeof(pdir) - 1] = 0;
-#if CODOL_LOCAL_TESTING
-    {   /* test clients ("+set k33_cmdFile 1") with a k33patch\ folder next to the exe load that one instead,
+#if K33_LOCAL_TESTING
+    {   /* test clients ("+set com_cmdFile 1") with a k33patch\ folder next to the exe load that one instead,
          * so a UI build can be tried while the shared client_shipRetail\patch\ is in use */
         const char *cl = GetCommandLineA();
         char test[MAX_PATH];
         memcpy(test, dir, n);
         lstrcpynA(test + n, "k33patch\\", MAX_PATH - n);
         DWORD at = GetFileAttributesA(test);
-        if (cl && strstr(cl, "k33_cmdFile 1") && at != INVALID_FILE_ATTRIBUTES && (at & FILE_ATTRIBUTE_DIRECTORY)) {
+        if (cl && strstr(cl, "com_cmdFile 1") && at != INVALID_FILE_ATTRIBUTES && (at & FILE_ATTRIBUTE_DIRECTORY)) {
             lstrcpynA(pdir, test, sizeof(pdir));
             Log("patch folder: test client: using %s", pdir);
         }
@@ -808,36 +808,36 @@ static void LoadPatchDir(void)
     qsort(files, count, sizeof(files[0]), CompareNames);
 
     {   /* the languages: zh is C1's own (it needs no zone), every other one is a zone in the folder */
-        char owner[CODOL_LANG_NAME_MAX], name[MAX_PATH];
-        CodolLanguageListAdd(g_langs, &g_langCount, "zh");
+        char owner[LANG_NAME_MAX], name[MAX_PATH];
+        LanguageListAdd(g_langs, &g_langCount, "zh");
         for (int pass = 0; pass < 2; pass++)
             for (int i = 0; i < count; i++) {
                 size_t len = strlen(files[i]);
                 if (len < 4 || lstrcmpiA(files[i] + len - 3, ".ff") != 0) continue;
                 memcpy(name, files[i], len - 3);
                 name[len - 3] = 0;
-                if (CodolPatchZoneRetired(name) || !CodolPatchZoneLanguage(name, owner)) continue;
+                if (PatchZoneRetired(name) || !PatchZoneLanguage(name, owner)) continue;
                 if (!pass) {
-                    if (CodolLanguageListAdd(g_langs, &g_langCount, owner) < 0)
-                        Log("language: more than %d languages in the patch folder, \"%s\" is ignored", CODOL_LANG_MAX, owner);
+                    if (LanguageListAdd(g_langs, &g_langCount, owner) < 0)
+                        Log("language: more than %d languages in the patch folder, \"%s\" is ignored", LANG_MAX, owner);
                 } else {
-                    int at = CodolLanguageListFind(g_langs, g_langCount, owner);
+                    int at = LanguageListFind(g_langs, g_langCount, owner);
                     if (at >= 0) g_langZones |= 1u << at;
                 }
             }
-        int at = CodolLanguageListFind(g_langs, g_langCount, g_lang);
+        int at = LanguageListFind(g_langs, g_langCount, g_lang);
         static const char *const kSource[] = { "the default", "+set k33_language", "+set k33_english / codol_patchlang",
                                                "the saved k33_language" };
         if (strcmp(g_lang, "zh") != 0 && (at < 0 || !(g_langZones >> at & 1u))) {
             /* no zone of that language: English when it is installed, else C1's own text (LogEnglish says so for en) */
-            int en = CodolLanguageListFind(g_langs, g_langCount, "en");
+            int en = LanguageListFind(g_langs, g_langCount, "en");
             const char *use = en >= 0 && (g_langZones >> en & 1u) ? "en" : "zh";
             Log("language: \"%s\" (%s) has no zone in the patch folder; starting in \"%s\"", g_lang, kSource[langSource], use);
             lstrcpynA(g_lang, use, sizeof(g_lang));
             if (!strcmp(g_lang, "en")) g_english = TRUE;
         } else {
             Log("language: \"%s\" (%s%s)", g_lang, kSource[langSource],
-                langSource == CODOL_LANG_ALIAS && locale == CODOL_PATCH_NATIVE ? ": no valid language, C1's own" : "");
+                langSource == LANG_ALIAS && locale == PATCH_NATIVE ? ": no valid language, C1's own" : "");
         }
         (void)kSource; (void)langSource; (void)locale;   /* only logged (Log is compiled out of shipping builds) */
     }
@@ -858,16 +858,16 @@ static void LoadPatchDir(void)
          * locale_switch.c's when its C1 sites all match: the startup language's loads after the code_post_gfx zones
          * as the last code zone, another language's when it is chosen. Otherwise everything is as it was before a
          * language could change: the startup language's zones ahead of code_pre_gfx, the others skipped. */
-        char owner[CODOL_LANG_NAME_MAX], want[64];
+        char owner[LANG_NAME_MAX], want[64];
         int lang = -1;
-        BOOL locale = !CodolPatchZoneRetired(z->name) && CodolLocaleZoneLanguage(z->name, owner) &&
-                      _snprintf(want, sizeof(want), "codol_%s_locale", CodolLanguageZoneStem(owner)) > 0 &&
+        BOOL locale = !PatchZoneRetired(z->name) && LocaleZoneLanguage(z->name, owner) &&
+                      _snprintf(want, sizeof(want), "codol_%s_locale", LanguageZoneStem(owner)) > 0 &&
                       lstrcmpiA(want, z->name) == 0 &&
-                      (lang = CodolLanguageListFind(g_langs, g_langCount, owner)) >= 0 && LocaleSwitchCheck();
-        BOOL startup = CodolPatchZoneAllowedFor(z->name, g_lang);
+                      (lang = LanguageListFind(g_langs, g_langCount, owner)) >= 0 && LocaleSwitchCheck();
+        BOOL startup = PatchZoneAllowedFor(z->name, g_lang);
         if (!startup && !locale) {
             if (EnglishZone(z->name)) g_englishSkipped++;
-            else if (CodolPatchZoneRetired(z->name))
+            else if (PatchZoneRetired(z->name))
                 Log("patch folder: skipped %s: retired duplicate map table", file);
             continue;
         }
@@ -876,7 +876,7 @@ static void LoadPatchDir(void)
             continue;
         }
         {   /* an old zone whose assets a consolidated zone in the folder carries now (patch_locale_policy.h) */
-            const char *into = CodolPatchZoneMergedInto(z->name);
+            const char *into = PatchZoneMergedInto(z->name);
             BOOL there = FALSE;
             char want[MAX_PATH];
             if (into) {
@@ -907,7 +907,7 @@ static void LoadPatchDir(void)
         }
         BYTE hdr[12];
         DWORD got = 0;
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         DWORD size = GetFileSize(f, NULL);
 #endif
         BOOL ok = ReadFile(f, hdr, sizeof(hdr), &got, NULL) && got == sizeof(hdr);
@@ -925,7 +925,7 @@ static void LoadPatchDir(void)
                     (unsigned long)size, z->name);
                 continue;
             }
-        } else if (CodolPatchZoneLanguage(z->name, owner)) {
+        } else if (PatchZoneLanguage(z->name, owner)) {
             g_langOldStyle = TRUE;   /* codol_english_ui and the like: C1 keeps them (alloc flag 1) for the session */
         }
         g_englishZones += EnglishZone(z->name);
@@ -1069,7 +1069,7 @@ static void PatchPatchDir(void)
         return;
     }
     if (!PatchDirEnabled()) {
-        Log("patch folder: off (codol_patchdir 0)");
+        Log("patch folder: off (fs_patchDir 0)");
         return;
     }
     static const BYTE kCmpJne[] = { 0x33, 0xFF, 0x3B, 0xC7, 0x0F, 0x85, 0x2E, 0x01, 0x00, 0x00 };
@@ -1196,7 +1196,7 @@ typedef void (__cdecl *LoopFxProcessFn)(int localClient);
 
 static void __cdecl LoopFxProcessHook(int localClient)
 {
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     static LONG logged;
 #endif
     DWORD idx = *(volatile DWORD *)(DWORD_PTR)LOOPFX_CG_INDEX_VA;
@@ -1207,11 +1207,11 @@ static void __cdecl LoopFxProcessHook(int localClient)
         int now = *(const volatile int *)(cg + LOOPFX_CG_TIME_OFF);
         BYTE *t = (BYTE *)(DWORD_PTR)(LOOPFX_TABLE_VA + (DWORD)localClient * LOOPFX_TABLE_STRIDE);
         int count = *(int *)t;
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         int moved = 0;
 #endif
         int *next = (int *)(t + 4);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         long long skipped = 0, worst = 0;
 #endif
         for (int i = 0; i < count && i < LOOPFX_MAX; i++) {
@@ -1219,22 +1219,22 @@ static void __cdecl LoopFxProcessHook(int localClient)
             long long behind = (long long)now - LOOPFX_REPLAY_MS - next[i];
             if (period <= 0 || behind <= 0) continue;
             long long steps = behind / period + 1;
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
             if (behind > worst) worst = behind;
 #endif
             next[i] = (int)(next[i] + steps * period);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
             skipped += steps;
             moved++;
 #endif
         }
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         if (moved && InterlockedIncrement(&logged) <= 8)
             Log("loop fx: %d of %d effects were up to %lld ms behind cg time %d; skipped %lld replays", moved, count,
                 worst + LOOPFX_REPLAY_MS, now, skipped);
 #endif
     } else {
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         static LONG warned;
         if (InterlockedIncrement(&warned) == 1)
             Log("loop fx: cg slot %lu (local client %d) not usable, catch-up not limited", (unsigned long)idx, localClient);
@@ -1619,14 +1619,14 @@ static void PatchGbkInput(void)
  * it (it was diagnostics-only); k33shot.c stays diagnostics-only. Builds without it (-DK33_NO_CONSOLE) still
  * compile and link. */
 #if !defined(K33_NO_CONSOLE)
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
 #include "console/k33shot.c" /* screenshots and draw statistics on the console's Present hooks; diagnostics only */
 #endif
 #include "console/console.c"
 #endif
 
 /* Sound voices: per-alias voice limit and nearest-wins at a channel cap (soundvoices.c), through the voice
- * diagnostics' hooks (sounddiag.c, which also logs refusals to Kernel33.log at k33_snddiag 1+). */
+ * diagnostics' hooks (sounddiag.c, which also logs refusals to Kernel33.log at snd_diag 1+). */
 #include "audio/sounddiag.c"
 #include "audio/soundvoices.c"
 
@@ -1647,14 +1647,14 @@ static void PatchGbkInput(void)
 #include "k33sha256.c"
 
 /* codol_quick_native_room_context for the shared movie's Quick Play room checks: see quick_room.c. */
-#if !CODOL_KERNEL_ROOM_CONTEXT
+#if !K33_KERNEL_ROOM_CONTEXT
 #include "rooms/quick_room.c"
 #endif
 /* The THEATRE screen (codol-classic's theatre playback): see theatre.c. */
 #include "theatre.c"
 #include "hud_style.c"   /* k33_hudStyle / k33_hudStyleList: the selectable HUD style (docs/HUD_STYLES_20261112.md) */
 /* UTF-8 player names: see name_display.c. */
-#if !CODOL_KERNEL_NAME_DISPLAY
+#if !K33_KERNEL_NAME_DISPLAY
 #include "name_display.c"
 #endif
 #include "local_log_flush.c"
@@ -1696,10 +1696,10 @@ static void PatchGbkInput(void)
 /* Runs in place of TenPlat's start routine (the fault handler redirects there). */
 #include "gfx/gfx_date_time.c"
 #include "gfx/gfx_local_operands.c"
-#if CODOL_KERNEL_NAME_DISPLAY
+#if K33_KERNEL_NAME_DISPLAY
 #include "kernel/kernel_name_display.c"
 #endif
-#if CODOL_KERNEL_ROOM_CONTEXT
+#if K33_KERNEL_ROOM_CONTEXT
 #include "kernel/kernel_room_context.c"
 #endif
 static void __cdecl TakeOver(void)
@@ -1716,7 +1716,7 @@ static void __cdecl TakeOver(void)
         Fatal("Required numeric text safety checks could not be installed. Please repair or update the client.");
     PatchGfxDateTime();
     PatchGfxLocalOperands();
-#if CODOL_OFFLINE_LOBBY
+#if K33_OFFLINE_LOBBY
     if (!InstallOfflineLobby())
         Fatal("The built-in lobby could not start, and this client does not connect to any other lobby. "
               "The reason is in Kernel33.log (next to the game's exe).");
@@ -1727,7 +1727,7 @@ static void __cdecl TakeOver(void)
         Fatal("Required packet length checks could not be installed. Please repair or update the client.");
     if (!InstallSnapshotBoundsGuards())
         Fatal("Required snapshot bounds could not be installed. Please repair or update the client.");
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     if (!InstallSnapshotInvalidFrameDiagnostic())
         Fatal("Local snapshot diagnostic could not be installed.");
 #endif
@@ -1785,49 +1785,49 @@ static void __cdecl TakeOver(void)
     PatchUserMaps();
     PatchSurvivalCategory();
     InstallSoundDiag();
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     InstallParityLogger();
 #endif
 #if !defined(K33_NO_CONSOLE)
     InstallConsole();
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     InstallShot();
 #endif
 #endif
-#if CODOL_KERNEL_NAME_DISPLAY
+#if K33_KERNEL_NAME_DISPLAY
     if(!InstallKernelNameDisplay())Fatal("Kernel33 name-display migration checks failed. Restore the qualified client package.");
 #endif
     InstallVoice();
     InstallController();
     InstallDiscord();
-#if CODOL_KERNEL_ROOM_CONTEXT
+#if K33_KERNEL_ROOM_CONTEXT
     if(!InstallKernelRoomContext())Fatal("Kernel33 native room migration checks failed. Restore the qualified client package.");
 #else
     InstallQuickRoom();
 #endif
     InstallTheatre();
     InstallHudStyle();
-#if !CODOL_KERNEL_NAME_DISPLAY
+#if !K33_KERNEL_NAME_DISPLAY
     InstallNameDisplay();
 #endif
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
     InstallP2PInprocDiagnostics(); /* QA commands only; no frame/IAT/VEH activation at startup. */
 #endif
     InstallP2PHost();
     InstallLocaleSwitch();
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
     if (!K33OnMainTick(VoiceCmdFile))
         Fatal("Local command-file tick could not be installed.");
 #endif
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     K33OnMainTick(SnapshotGuardReport);
 #endif
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
     InstallK33LogFlush();
 #endif
     /* Full migration must not enter C1 after silently dropping its ported
      * Theatre callback or the dispatcher. Defaults retain the legacy path. */
-#if CODOL_KERNEL_NAME_DISPLAY
+#if K33_KERNEL_NAME_DISPLAY
     if (!K33HasMainTick(TheatreTick) || !K33InstallMainTicks())
         Fatal("Kernel33 main-thread migration checks failed. Restore the qualified client package.");
 #else
@@ -1876,7 +1876,7 @@ static BOOL WINAPI Hook_VirtualProtect(LPVOID a, SIZE_T n, DWORD p, PDWORD old)
 
 static LONG CALLBACK FaultHandler(EXCEPTION_POINTERS *ep)
 {
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     static volatile LONG logged;
 #endif
     EXCEPTION_RECORD *er = ep->ExceptionRecord;
@@ -1909,7 +1909,7 @@ static LONG CALLBACK FaultHandler(EXCEPTION_POINTERS *ep)
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     if (InterlockedIncrement(&logged) <= 4) {
         DWORD ret = Readable(sp, 4) ? sp[0] : 0;
         Log("AV %s 0x%08lX at eip=0x%08lX [esp]=0x%08lX (thread %lu)",
@@ -1974,7 +1974,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved)
         IMAGE_NT_HEADERS *nt = (IMAGE_NT_HEADERS *)(base + ((IMAGE_DOS_HEADER *)base)->e_lfanew);
         g_supportedBuild = base == (BYTE *)0x400000 && nt->FileHeader.TimeDateStamp == BUILD_TIMESTAMP;
 
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         char exe[MAX_PATH];
         GetModuleFileNameA(NULL, exe, MAX_PATH);
         Log("---- attach pid %lu %s (build %08lX%s) [kernel33 diag/import-crash 2]", GetCurrentProcessId(), exe,

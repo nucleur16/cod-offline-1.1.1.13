@@ -26,10 +26,10 @@ static void __attribute__((fastcall,noinline)) ManagedRoomInfoHook(void *room, v
     const char *mode = NULL;
     if (info && Readable(info,0x48)) memcpy(&mode,info,sizeof(mode));
     int playlist = mode && Readable(mode,9) && memcmp(mode,"playlist",9)==0;
-    if (CodolManagedQuickOpen(caller,main,host,native,kind,playlist,info)) {
+    if (ManagedQuickOpen(caller,main,host,native,kind,playlist,info)) {
         unsigned char local[0x48];
         memcpy(local,info,sizeof(local));
-        CodolManagedQuickNormalize(local);
+        ManagedQuickNormalize(local);
         g_managedRoomInfo(room,local);
     } else {
         g_managedRoomInfo(room,info);

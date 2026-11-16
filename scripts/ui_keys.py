@@ -40,8 +40,8 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # the reposi
 sys.path.insert(0, HERE)
 from zonekit import abcstr, build, codecs, gfx, manifest, stock, zonelist  # noqa: E402
 
-GAME = os.environ.get("CODOL_GAME", r"D:\CoD\CODOL Builds\Call of Duty Online 1.1.1.13")
-FFDEC = os.environ.get("CODOL_FFDEC", r"C:\Program Files (x86)\FFDec\ffdec-cli.exe")
+GAME = os.environ.get("K33_GAME", r"D:\CoD\CODOL Builds\Call of Duty Online 1.1.1.13")
+FFDEC = os.environ.get("K33_FFDEC", r"C:\Program Files (x86)\FFDec\ffdec-cli.exe")
 
 # (zone, rawfile, key prefix, (English zone, Chinese zone))
 UI = ("codol_english_ui", "codol_chinese_ui")
