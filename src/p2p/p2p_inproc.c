@@ -18,7 +18,7 @@
  *    session), the level simply stays loaded, as a one-shot lobby worker keeps it; a stop (p2pstop, a hung or
  *    timed-out start) unloads it with `killserver`. Either way the server keeps its sockets, its port and its
  *    threads, and is still ticked.
- *  - The next match is the same server: its settings (codol_zoneType, codol_sessionMap, g_gametype,
+ *  - The next match is the same server: its settings (sv_zoneType, sv_sessionMap, g_gametype,
  *    g_difficulty) and `map <map>` are queued with Sh1xHost_Command, as the lobby retargets a warm dedicated
  *    worker. The server is never initialised twice: its globals are spent once it has ended.
  *  - Only an end of the server itself (a quit, a Sys_Error: Sh1xHost_Frame returns 0) is final for the run:
@@ -571,11 +571,11 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         const char *session = c.sessionMap[0] ? c.sessionMap : c.map;
         int difficulty = !strcmp(c.zoneType, "zm") && c.difficultyPresent && c.difficulty >= 0 && c.difficulty <= 2 ? c.difficulty : 0;
         /* fs_game carries the category for exactly the next spawn (server filesystem.c FS_NormalizeGameDir,
-         * sv_main.c SV_ResolveAssetCategory), as the lobby dispatches a match. codol_zoneType alone only
+         * sv_main.c SV_ResolveAssetCategory), as the lobby dispatches a match. sv_zoneType alone only
          * counts while it differs from the running value: a second co-op or survival match in a row would
          * otherwise resolve as mp from its mp_* level name. */
         _snprintf(g_piRetarget, sizeof(g_piRetarget),
-                  "set fs_game %s\nset codol_zoneType %s\nset codol_sessionMap %s\nset g_gametype %s\nset g_difficulty %d\nmap %s\n",
+                  "set fs_game %s\nset sv_zoneType %s\nset sv_sessionMap %s\nset g_gametype %s\nset g_difficulty %d\nmap %s\n",
                   c.zoneType, c.zoneType, session, c.gametype, difficulty, c.map);
         g_piRetarget[sizeof(g_piRetarget) - 1] = 0;
         Log("p2p in-process: reusing the match server started %lu s ago (match %ld): %s %s on %s:%d",
