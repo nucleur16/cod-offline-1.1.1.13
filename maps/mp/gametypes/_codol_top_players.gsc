@@ -29,7 +29,7 @@
 //   Weapons   codol_setCharacterClone also links the player's world guns to
 //             the clone at the same hand tags (C1 0x55b5e0 does the same), or
 //             the named weapon when the player holds none any more.
-//   Camera    the view starts scr_codol_topplayers_dolly units behind
+//   Camera    the view starts scr_topplayers_dolly units behind
 //             top_players_camera and dollies onto it over the walk. Viewers
 //             are spectators camera-linked to a moving tag_origin model, so
 //             C1 interpolates the camera from the entity's trajectory; an
@@ -53,16 +53,16 @@ init()
 	if ( isDefined( level.is_zombie_level ) )
 		return;
 
-	if ( getDvar( "scr_codol_topplayers" ) == "" )
-		setDvar( "scr_codol_topplayers", 1 );
+	if ( getDvar( "scr_topplayers" ) == "" )
+		setDvar( "scr_topplayers", 1 );
 	// Seconds the three hold their pose with their cards up once the last one
 	// has arrived.
-	if ( getDvar( "scr_codol_topplayers_hold" ) == "" )
-		setDvar( "scr_codol_topplayers_hold", 6 );
+	if ( getDvar( "scr_topplayers_hold" ) == "" )
+		setDvar( "scr_topplayers_hold", 6 );
 	// How far behind top_players_camera the shot starts; it dollies in over
 	// the walk-up. 0 keeps the camera still.
-	if ( getDvar( "scr_codol_topplayers_dolly" ) == "" )
-		setDvar( "scr_codol_topplayers_dolly", 32 );
+	if ( getDvar( "scr_topplayers_dolly" ) == "" )
+		setDvar( "scr_topplayers_dolly", 32 );
 
 	precacheModel( "tag_origin" );
 
@@ -206,7 +206,7 @@ pickTopPlayers( count )
 	for ( i = 0; i < ranked.size && top.size < count; i++ )
 		top[ top.size ] = ranked[i];
 
-	if ( getDvarInt( "scr_codol_topplayers_trace" ) )
+	if ( getDvarInt( "scr_topplayers_trace" ) )
 	{
 		for ( i = 0; i < ranked.size; i++ )
 			print( "CoDOL top players: place " + ( i + 1 ) + " client " + ranked[i] getEntityNumber() + " '" + ranked[i].name + "' team " + ranked[i].pers["team"] + " score " + ranked[i].score + " deaths " + ranked[i].deaths + "\n" );
@@ -229,7 +229,7 @@ playScene()
 {
 	if ( isDefined( level.is_zombie_level ) || !isDefined( level.topPlayersWalk ) )
 		return;
-	if ( !getDvarInt( "scr_codol_topplayers" ) )
+	if ( !getDvarInt( "scr_topplayers" ) )
 		return;
 
 	scene = sceneMarks();
@@ -282,7 +282,7 @@ playScene()
 	// The cards are up for the whole scene (viewFromCamera and holdAsSource
 	// each put them up for their player as it joins the shot).
 	wait ( longest );
-	wait ( getDvarFloat( "scr_codol_topplayers_hold" ) );
+	wait ( getDvarFloat( "scr_topplayers_hold" ) );
 
 	level.topPlayersSceneActive = false;
 	level notify( "top_players_scene_end" );
@@ -311,7 +311,7 @@ playScene()
 // moveTo publishes a trajectory, which C1 evaluates every frame.
 spawnCamera( camera, duration )
 {
-	dolly = getDvarFloat( "scr_codol_topplayers_dolly" );
+	dolly = getDvarFloat( "scr_topplayers_dolly" );
 	// Camera-only framing design: preserve authored height/heading and the walk.
 	// Advance both endpoints one existing default dolly length; not retail parity.
 	framedOrigin = camera.origin + anglesToForward( camera.angles ) * 32;
@@ -363,7 +363,7 @@ viewFromCamera( camera )
 	self setDepthOfField( 0, 128, 512, 4000, 6, 1.8 );
 }
 
-// scr_codol_topplayers_trace 2: the server origin every server frame against
+// scr_topplayers_trace 2: the server origin every server frame against
 // where the clip's own motion has the model at that time.
 sampleWalk( walk, length, start, startAngles )
 {
@@ -428,7 +428,7 @@ holdAsSource( camera, cameraOrigin, rank )
 	self cameraLinkTo( camera, "tag_origin" );
 	self showCards();
 
-	if ( getDvarInt( "scr_codol_topplayers_trace" ) )
+	if ( getDvarInt( "scr_topplayers_trace" ) )
 		print( "CoDOL top players: source client " + self getEntityNumber() + " held at " + hidden + " for the clone build\n" );
 
 	// Several snapshots at 20 Hz and more: every client has had the source
@@ -475,12 +475,12 @@ spawnWalker( rank, mark )
 	// to be clear) and carries the clone forward from there toward the camera,
 	// turning so the pose ends facing it.  Starting a clip-length behind the
 	// mark, as before, was never traced and walked clones out of walls or
-	// through the ground on some maps.  scr_codol_topplayers_nowalk 1 keeps the
+	// through the ground on some maps.  scr_topplayers_nowalk 1 keeps the
 	// clone standing on its mark in the idle.
 	endAngles = ( 0, mark.angles[1], 0 );
 	startAngles = ( 0, mark.angles[1] - getAngleDelta( walk, 0, 1 ), 0 );
 	start = mark.origin;
-	walkIn = !getDvarInt( "scr_codol_topplayers_nowalk" );
+	walkIn = !getDvarInt( "scr_topplayers_nowalk" );
 	if ( !walkIn )
 		startAngles = endAngles;
 
@@ -558,7 +558,7 @@ walkUp( player, walk, idle, length, start, startAngles )
 
 	player thread dropCloneOnDisconnect( self );
 
-	trace = getDvarInt( "scr_codol_topplayers_trace" );
+	trace = getDvarInt( "scr_topplayers_trace" );
 	if ( trace >= 2 )
 		self thread sampleWalk( walk, length, start, startAngles );
 	if ( trace )
@@ -583,7 +583,7 @@ walkTimeout( seconds )
 	self notify( "top_players_walk", "end" );
 }
 
-// scr_codol_topplayers_trace 1: the server origin against the clip's root
+// scr_topplayers_trace 1: the server origin against the clip's root
 // position every 0.25 s and at the end.
 traceWalkEnd( walk, length, start, startAngles )
 {

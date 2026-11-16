@@ -1054,20 +1054,20 @@ carpenter_c4_think( owner, blocker )
 
 // --------------------------------------------------------------------------
 // Test verbs, reached from _codol_equiptest through level.codolEquipTestPerkpop:
-//   set scr_codol_equiptest "perkpop <client> character <zmN>" another roster row's pops
-//   set scr_codol_equiptest "perkpop <client> rounds <n>"   end n rounds for him
-//   set scr_codol_equiptest "perkpop <client> grant <0|1>"  award slot 0/1 now (notice + effect)
-//   set scr_codol_equiptest "perkpop <client> select <weapon>" switch + log current weapon
-//   set scr_codol_equiptest "perkpop <client> down"         last stand, revive 3 s later
-//   set scr_codol_equiptest "perkpop <client> keepperk"     give specialty_perkpop_zm
-//   set scr_codol_equiptest "perkpop <client> hit <mod>"    damage him with <mod>
-//   set scr_codol_equiptest "perkpop <client> dive"         the dive-landing explosion
-//   set scr_codol_equiptest "perkpop <client> zombiehit"    a robot zombie hits him
-//   set scr_codol_equiptest "perkpop <client> zkill"        he kills a robot zombie
-//   set scr_codol_equiptest "perkpop <client> drain|ammo"   empty / log primary stock
-//   set scr_codol_equiptest "perkpop <client> buy <points>" a purchase
-//   set scr_codol_equiptest "perkpop <client> repair"       he finishes a window
-//   set scr_codol_equiptest "perkpop <client> state"        log his state
+//   set scr_equiptest "perkpop <client> character <zmN>" another roster row's pops
+//   set scr_equiptest "perkpop <client> rounds <n>"   end n rounds for him
+//   set scr_equiptest "perkpop <client> grant <0|1>"  award slot 0/1 now (notice + effect)
+//   set scr_equiptest "perkpop <client> select <weapon>" switch + log current weapon
+//   set scr_equiptest "perkpop <client> down"         last stand, revive 3 s later
+//   set scr_equiptest "perkpop <client> keepperk"     give specialty_perkpop_zm
+//   set scr_equiptest "perkpop <client> hit <mod>"    damage him with <mod>
+//   set scr_equiptest "perkpop <client> dive"         the dive-landing explosion
+//   set scr_equiptest "perkpop <client> zombiehit"    a robot zombie hits him
+//   set scr_equiptest "perkpop <client> zkill"        he kills a robot zombie
+//   set scr_equiptest "perkpop <client> drain|ammo"   empty / log primary stock
+//   set scr_equiptest "perkpop <client> buy <points>" a purchase
+//   set scr_equiptest "perkpop <client> repair"       he finishes a window
+//   set scr_equiptest "perkpop <client> state"        log his state
 // --------------------------------------------------------------------------
 
 test_verb( player, tokens )

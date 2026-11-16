@@ -3,7 +3,7 @@
 
 	CoDOL developer-only attack log for the MP attack dogs.  Nothing here
 	changes behaviour: every entry point returns at once unless the server
-	runs with developer 1 AND codol_dogAttackLog 1.
+	runs with developer 1 AND scr_dogAttackLog 1.
 
 	One line per attack attempt ("CoDOL dogattack:"), written when the
 	attempt ends, carrying what dog_combat decided and what came of it:
@@ -28,7 +28,7 @@
 
 enabled()
 {
-	return getDvarInt( "developer" ) > 0 && getDvarInt( "codol_dogAttackLog" ) > 0;
+	return getDvarInt( "developer" ) > 0 && getDvarInt( "scr_dogAttackLog" ) > 0;
 }
 
 yaw_error( target )
@@ -243,7 +243,7 @@ watch()
 	}
 }
 
-// Developer verbs (developer 1 only), `rcon set codol_dogAttackTest "<verb>"`:
+// Developer verbs (developer 1 only), `rcon set scr_dogAttackTest "<verb>"`:
 //   "freeze 1" / "freeze 0"   freeze or release every live player who is
 //                             not on <team> (the dogs' targets), so a run
 //                             can measure lunges on stationary targets
@@ -252,16 +252,16 @@ test_watcher()
 {
 	if ( getDvarInt( "developer" ) <= 0 )
 		return;
-	setDvar( "codol_dogAttackTest", "" );
+	setDvar( "scr_dogAttackTest", "" );
 	level.dogAttackTestTeam = "allies";
 	level.dogAttackTestFreeze = false;
 	for ( ;; )
 	{
 		wait 0.5;
-		request = getDvar( "codol_dogAttackTest" );
+		request = getDvar( "scr_dogAttackTest" );
 		if ( request == "" )
 			continue;
-		setDvar( "codol_dogAttackTest", "" );
+		setDvar( "scr_dogAttackTest", "" );
 		tokens = strTok( request, " " );
 		if ( tokens.size < 2 )
 			continue;

@@ -1,6 +1,6 @@
 // Developer-only test verbs for the power switch and the map traps.
 //
-// Runs only on a developer server.  Drive it through scr_codol_powertest:
+// Runs only on a developer server.  Drive it through scr_powertest:
 //
 //   addbot                  add one test client
 //   god <client> 0|1        the test client ignores damage
@@ -36,7 +36,7 @@ init()
 	if ( getDvarInt( "developer" ) <= 0 )
 		return;
 
-	setDvar( "scr_codol_powertest", "" );
+	setDvar( "scr_powertest", "" );
 	level thread powertest_watch();
 }
 
@@ -45,10 +45,10 @@ powertest_watch()
 	for ( ;; )
 	{
 		wait( 0.25 );
-		request = getDvar( "scr_codol_powertest" );
+		request = getDvar( "scr_powertest" );
 		if ( request == "" )
 			continue;
-		setDvar( "scr_codol_powertest", "" );
+		setDvar( "scr_powertest", "" );
 
 		tokens = strTok( request, " " );
 		{}

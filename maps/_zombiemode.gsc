@@ -493,10 +493,10 @@ Callback_StartGameType()
 	level.zombie_start_weapon = resolveStartWeapon();
 	level.zombie_lethal_grenade = resolveLethalGrenade();
 
-	// Equipment test hooks (idle unless scr_codol_equiptest is set).
+	// Equipment test hooks (idle unless scr_equiptest is set).
 
 	// Player-damage rule test verbs (idle unless developer and
-	// scr_codol_fftest is set).
+	// scr_fftest is set).
 
 	// Each Cyborg's pistol/lethal/special/trap (mp/cyborgclasstable.csv) and
 	// the grenade_fire registry the item modules below hook into.  Before
@@ -815,7 +815,7 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 	if ( is_capped_explosive_mod( sMeansOfDeath ) && self.health > 75 && iDamage > 75 )
 		iDamage = 75;
 
-	// Test clients added by _codol_equiptest (scr_codol_equiptest "addbots")
+	// Test clients added by _codol_equiptest (scr_equiptest "addbots")
 	// stand still next to the equipment under test; nothing else sets this.
 
 	// Already down: T5 lets a downed player be finished only by the bleedout,

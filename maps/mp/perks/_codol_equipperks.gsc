@@ -18,7 +18,7 @@
 //   modExtraExplosive (93)  Scavenger Pro: one extra frag / semtex at spawn.
 //       C1 PERKS_DESC_SCAVENGER_PRO; +1 is T5 _class.gsc specialty_twogrenades.
 //
-// set scr_codol_perklog 1 logs every effect as it happens.
+// set scr_perklog 1 logs every effect as it happens.
 #include maps\mp\_utility;
 #include common_scripts\utility;
 #include maps\mp\gametypes\_hud_util;
@@ -46,7 +46,7 @@ delayExplosiveTime()
 
 perkLog( message )
 {
-    if ( getDvarInt( "scr_codol_perklog" ) )
+    if ( getDvarInt( "scr_perklog" ) )
         codolPrintLn( "CoDOL perk: " + message );
 }
 

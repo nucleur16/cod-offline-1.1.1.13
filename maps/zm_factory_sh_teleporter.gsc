@@ -962,7 +962,7 @@ factory_sound_ok( alias )
 
 factory_sound_log( text )
 {
-	if ( getDvarInt( "scr_codol_factory_soundlog" ) > 0 )
+	if ( getDvarInt( "scr_factory_soundlog" ) > 0 )
 		codolprintln( "CoDOL zm factory sound: " + text );
 }
 

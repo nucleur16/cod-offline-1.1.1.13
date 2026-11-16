@@ -2,7 +2,7 @@
 // (_zombiemode.gsc Callback_PlayerDamage: players never hurt each other).
 //
 // Runs only on a developer server (the live server runs developer 0).  Drive it
-// through the dvar scr_codol_fftest:
+// through the dvar scr_fftest:
 //
 //   addbot                                  add one test client
 //   watch <client>                          log every hit the client takes
@@ -30,7 +30,7 @@ init()
 	if ( getDvarInt( "developer" ) <= 0 )
 		return;
 
-	setDvar( "scr_codol_fftest", "" );
+	setDvar( "scr_fftest", "" );
 	level thread fftest_watch();
 }
 
@@ -39,10 +39,10 @@ fftest_watch()
 	for ( ;; )
 	{
 		wait( 0.5 );
-		request = getDvar( "scr_codol_fftest" );
+		request = getDvar( "scr_fftest" );
 		if ( request == "" )
 			continue;
-		setDvar( "scr_codol_fftest", "" );
+		setDvar( "scr_fftest", "" );
 
 		tokens = strTok( request, " " );
 		switch ( tokens[ 0 ] )

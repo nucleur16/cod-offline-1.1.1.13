@@ -370,7 +370,7 @@ hurtPlayersThink()
 // the MP and Survival loader must apply the same non-specialops selection.
 codolRemoveMissionEntities()
 {
-    category = getDvar( "codol_zoneType" );
+    category = getDvar( "sv_zoneType" );
     if ( category != "mp" && category != "survival" )
         return;
     // Survival always uses the MP world, even if a previous campaign left

@@ -153,7 +153,7 @@ init_blockers()
 
 	{}
 
-	// Developer-only test verbs (scr_codol_blockertest); returns at once on
+	// Developer-only test verbs (scr_blockertest); returns at once on
 	// the live server, which runs developer 0.
 	level thread maps\_zombiemode_blockertest::init();
 }

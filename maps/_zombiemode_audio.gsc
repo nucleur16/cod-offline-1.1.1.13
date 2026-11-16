@@ -83,21 +83,21 @@ init()
 
 }
 
-// Developer test verbs, scr_codol_audiotest:
+// Developer test verbs, scr_audiotest:
 //   lines              each player: which of its character's lines exist
 //   vox <line>         every player says <line> (speaker lock bypassed)
 //   music <state>      game_start / round_start / round_end / game_over
 audiotest_watch()
 {
-	setDvar( "scr_codol_audiotest", "" );
+	setDvar( "scr_audiotest", "" );
 	all = strTok( "headshot multikill lowammo noammo perkcola purchase purchasegoodweapon purchasebadweapon nocashtopurchase matchstart matchend personality revivemanytimes whilerevivingteammate firetrap frost frostgrenade shrinktrap trap tesla monkeybomb moneyball teleporter reviveknife russiandolls", " " );
 	for ( ;; )
 	{
 		wait( 0.5 );
-		request = getDvar( "scr_codol_audiotest" );
+		request = getDvar( "scr_audiotest" );
 		if ( request == "" )
 			continue;
-		setDvar( "scr_codol_audiotest", "" );
+		setDvar( "scr_audiotest", "" );
 		args = strTok( request, " " );
 		players = getPlayers();
 

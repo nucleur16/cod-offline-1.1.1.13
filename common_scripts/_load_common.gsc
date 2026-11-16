@@ -155,7 +155,7 @@ main()
 	}
 
 	destructibles = getEntArray( "destructible_vehicle", "targetname" ).size + getEntArray( "destructible_toy", "targetname" ).size;
-	codolprintln( "CoDOL load_common: " + getDvar( "mapname" ) + " (" + getDvar( "codol_zoneType" ) + ") started" + started +
+	codolprintln( "CoDOL load_common: " + getDvar( "mapname" ) + " (" + getDvar( "sv_zoneType" ) + ") started" + started +
 		"; " + destructibles + " destructibles, " + level.createFXent.size + " createfx/exploder entries" );
 }
 

@@ -6,8 +6,8 @@ init()
     if ( isDefined( level.codolCombatBotsStarted ) )
         return;
     level.codolCombatBotsStarted = true;
-    if ( getDvar( "scr_codol_bots" ) == "" )
-        setDvar( "scr_codol_bots", 0 );
+    if ( getDvar( "scr_bots" ) == "" )
+        setDvar( "scr_bots", 0 );
     syncRegularRoomDifficulty();
     // Independent of bots: it also drives a human client by number.
     level thread watchKillstreakTestDvar();
@@ -38,7 +38,7 @@ init()
 // Combat Training owns its explicit difficulty, including war+positive bot count.
 syncRegularRoomDifficulty()
 {
-    if ( getDvar( "g_gametype" ) == "combat" || getDvarInt( "scr_codol_bots" ) > 0 )
+    if ( getDvar( "g_gametype" ) == "combat" || getDvarInt( "scr_bots" ) > 0 )
         return;
     profile = getDvar( "sv_botDifficulty" );
     if ( profile == "" || profile == "regular" )
@@ -62,7 +62,7 @@ isCombatBot( player )
 }
 
 // Test hook for rewards bots never earn on their own:
-//   set scr_codol_usekillstreak "<clientnum> <streakRef> [place|throw|locate]"
+//   set scr_botusekillstreak "<clientnum> <streakRef> [place|throw|locate]"
 // runs level.killstreakFuncs[streakRef] on that player, exactly as a use
 // would. "place" also sends the carry-placement notify a second later, for
 // carried rewards (sentry, sam_turret) that wait on +attack. "throw" throws
@@ -77,14 +77,14 @@ watchKillstreakTestDvar()
 	if ( getDvarInt( "developer" ) <= 0 )
 		return;
     level endon( "game_ended" );
-    setDvar( "scr_codol_usekillstreak", "" );
+    setDvar( "scr_botusekillstreak", "" );
     for ( ;; )
     {
         wait 0.5;
-        request = getDvar( "scr_codol_usekillstreak" );
+        request = getDvar( "scr_botusekillstreak" );
         if ( request == "" )
             continue;
-        setDvar( "scr_codol_usekillstreak", "" );
+        setDvar( "scr_botusekillstreak", "" );
         if ( request == "list" )
         {
             reportKillstreakCoverage();
@@ -636,7 +636,7 @@ logMarkerThrow( weapon )
     }
 }
 
-// set scr_codol_usekillstreak list: every catalogue row, whether a use
+// set scr_botusekillstreak list: every catalogue row, whether a use
 // handler is registered for it, and its activation weapon.
 reportKillstreakCoverage()
 {
@@ -657,7 +657,7 @@ reportKillstreakCoverage()
     {}
 }
 
-// set scr_codol_usekillstreak rows: every column of every catalogue row.
+// set scr_botusekillstreak rows: every column of every catalogue row.
 reportKillstreakRows()
 {
     table = "mp/coKillstreakStatsTable.csv";
@@ -673,7 +673,7 @@ reportKillstreakRows()
     }
 }
 
-// set scr_codol_usekillstreak "ti <clientnum>": give the tactical insertion
+// set scr_botusekillstreak "ti <clientnum>": give the tactical insertion
 // perk, throw its flare_mp through the real tactical button, then kill the
 // player and report whether the respawn used the beacon.
 testTacticalInsertion()
@@ -1003,21 +1003,21 @@ placeCarriedKillstreak()
 }
 
 // Two modes:
-//   scr_codol_botfill 0 (default): keep scr_codol_bots bots (training); lowering
+//   scr_botfill 0 (default): keep scr_bots bots (training); lowering
 //       the count stops replenishment and never kicks.
-//   scr_codol_botfill N > 0: fill around the real players. With no real player
+//   scr_botfill N > 0: fill around the real players. With no real player
 //       there are no bots; otherwise N - humans bots, never more than
-//       scr_codol_botmax (default 11), adding and kicking as players come and go.
+//       scr_botmax (default 11), adding and kicking as players come and go.
 maintainBots()
 {
     // Survival enemies are actors; room-fill bots must never join the player team.
     if ( isDefined( level.forcedTeam ) )
         return;
     level endon( "game_ended" );
-    if ( getDvar( "scr_codol_botfill" ) == "" )
-        setDvar( "scr_codol_botfill", 0 );
-    if ( getDvar( "scr_codol_botmax" ) == "" )
-        setDvar( "scr_codol_botmax", 11 );
+    if ( getDvar( "scr_botfill" ) == "" )
+        setDvar( "scr_botfill", 0 );
+    if ( getDvar( "scr_botmax" ) == "" )
+        setDvar( "scr_botmax", 11 );
     // After a round restart, let the previous round's clients reconnect
     // before counting them.
     if ( game["codolBotSerial"] > 0 )
@@ -1043,7 +1043,7 @@ maintainBots()
                 humans++;
         }
 		// Test hook, idle unless set: pretend this many more real players are on.
-		humans += getDvarInt( "scr_codol_botfill_testhumans" );
+		humans += getDvarInt( "scr_botfill_testhumans" );
 		availableBots = matchLimit - humans;
 		if ( humans == 0 )
 			availableBots--;
@@ -1051,7 +1051,7 @@ maintainBots()
 			availableBots = 0;
 		// Authenticated local development controls own an exact count only
 		// while set; empty resumes the normal playlist fill policy below.
-		devTarget = getDvar( "scr_codol_devbot_target" );
+		devTarget = getDvar( "scr_devbot_target" );
 		if ( devTarget != "" )
 		{
 			devCapacity = 16 - humans;
@@ -1061,7 +1061,7 @@ maintainBots()
 				devCapacity = availableBots;
 			if ( devCapacity < 0 )
 				devCapacity = 0;
-			desired = getDvarInt( "scr_codol_devbot_target" );
+			desired = getDvarInt( "scr_devbot_target" );
 			if ( desired < 0 )
 				desired = 0;
 			if ( desired > devCapacity )
@@ -1074,13 +1074,13 @@ maintainBots()
 			continue;
 		}
 
-		fill = getDvarInt( "scr_codol_botfill" );
+		fill = getDvarInt( "scr_botfill" );
         if ( fill > 0 )
         {
             desired = 0;
             if ( humans > 0 )
                 desired = fill - humans;
-            botMax = getDvarInt( "scr_codol_botmax" );
+            botMax = getDvarInt( "scr_botmax" );
             if ( desired > botMax )
                 desired = botMax;
 			if ( desired < 0 )
@@ -1094,7 +1094,7 @@ maintainBots()
         }
         else
         {
-            desired = getDvarInt( "scr_codol_bots" );
+            desired = getDvarInt( "scr_bots" );
 			if ( level.gameType != "infect" && desired > 16 )
 				desired = 16;
 			if ( desired > availableBots )
