@@ -69,19 +69,23 @@ the root is an old committed build, not what the scripts write: they write `buil
    zones" below); it is the shipping build, with only the usermaps `shipping_maps.txt` marks `ship` (see "Shipping
    maps"). Copy `output\client_shipRetail\patch\*` into `<game>\client_shipRetail\patch\` (create the
    folder; remove the old zone names listed under "Consolidated zones"), `output\client_shipRetail\chinese\patch_common_gametype_zm.ff`
-   over the stock one (keep it as `.pre-pap`) and `output\main\iw_image_16.iwd` into `<game>\main\`. The patch folder
-   holds six zones, one per load list and language (see "Consolidated zones"):
+   over the stock one (keep it as `.pre-pap`), `output\client_shipRetail\chinese\patch_common_gametype_survival.ff`
+   and `output\main\iw_image_16.iwd` into `<game>\main\`. The patch folder holds eight zones, one per load list and
+   language, plus the ones that must stay apart (see "Consolidated zones"):
    - `common_ui_mp.ff`: the front-end movies (codo.gfx, codologin.gfx; codol-classic's, every text a localize
      key, see "English") with Options > Controls > Chat (Talk key), Options > Audio > Voice (mode, mic level bar,
      microphone choice), Options > Graphics > Max FPS and Options > Controller (the pad tab), and the usermaps'
      map-select images. Keep every codo.gfx change in one zone: each zone carrying codo.gfx carries the whole movie,
      and the first one loaded wins.
    - `common_extras.ff`: the in-match movies (the HUD codohud.gfx and the pause menu codoingame.gfx with gamepad focus
-     navigation), the party modes' tables and rules, the death machine sounds and the usermaps' create-room data.
+     navigation), the party modes' tables and rules, the death machine sounds, the usermaps' create-room data and the
+     upgraded M1911's arm animations (was `m1911_arms_diag.ff`).
    - `english_locale.ff` / `chinese_locale.ff`: the strings of each language (see "English").
    - `common_postgfx_mp.ff`: the gamepad button icons drawn in hints (CONTROLLER.md) and the field order menus;
      install it with the DLL. Without it the hints show the pad's button names as text.
    - `infected_cyborg_postgfx_mp.ff`: the Infected mode's cyborg assets (on its own: see "Consolidated zones").
+   - `mp_weapons.ff` / `mp_weapons_postgfx_mp.ff`: the MP weapon tables and art (the M14 EBR); `mp_*`, so the sh1x
+     server mounts them with every MP and Survival match.
 
 ## Build (MSYS2 mingw32)
 ```sh
@@ -672,7 +676,7 @@ point at: the manifest records each decoded asset's length (`len=`) and the buil
 ### Where each zone goes
 `client_shipRetail\patch\` (Kernel33 loads `*_ui_mp` zones ahead of the UI zones, `*_postgfx_mp` zones after
 `code_post_gfx` (permanent, images allowed), the rest ahead of `code_pre_gfx`): common_extras, common_ui_mp,
-common_postgfx_mp, infected_cyborg_postgfx_mp, english_locale, chinese_locale, plus
+common_postgfx_mp, infected_cyborg_postgfx_mp, english_locale, chinese_locale, mp_weapons, mp_weapons_postgfx_mp, plus
 `sound_channels.txt`.
 `client_shipRetail\chinese\` (the 1.1.1.13 install and the CODOL 1.1.1.13 map pack): patch_common_gametype_zm (replaces
 the stock zone; keep the stock one as `patch_common_gametype_zm.ff.pre-pap`). `main\`: iw_image_16.iwd (the PaP camo
@@ -688,7 +692,7 @@ The source zones under `zone_source/` + `zones/` stay as they are (each with its
 
 | installed zone | list | languages | source zones (old installed names) |
 |---|---|---|---|
-| common_extras | ahead of code_pre_gfx | both | 000_party_modes, loading_mode_names, zm_deathmachine_audio, controller_ingame, english_font (the Latin font movie, every language), usermaps_patch (all but its strings) |
+| common_extras | ahead of code_pre_gfx | both | 000_party_modes, loading_mode_names, zm_deathmachine_audio, controller_ingame, english_font (the Latin font movie, every language), usermaps_patch (all but its strings), m1911_arms_diag (the upgraded M1911 xanims, with their script string table: the one part of a pack that may carry one; it installed as m1911_arms_diag.ff before) |
 | common_ui_mp | ahead of the UI zones | both | voice_ui_mp, usermaps_ui_mp |
 | common_postgfx_mp | after code_post_gfx | both | field_orders_postgfx_mp, controller_glyphs_postgfx_mp, hud_styles_postgfx_mp, survival_hud_postgfx_mp |
 | english_locale | last of the code_post_gfx list (ahead of code_pre_gfx when a C1 site differs); unloaded and loaded on a switch | `k33_language en` | english, english_ui, english_ui_extra, english_usermaps, english_zombies_base, english_hud_styles |
@@ -708,6 +712,8 @@ The source zones under `zone_source/` + `zones/` stay as they are (each with its
 - Kernel33 skips an old zone name while the zone that replaced it is in the patch folder (`kPatchZoneMerged` in
   patch_locale_policy.h; `patch folder: skipped voice_ui_mp.ff: merged into common_ui_mp.ff`), so stale files on
   an existing install never load twice, and a folder with only the old names (codol-classic-zz) still loads them.
+  A zone that installed under its own name and was packed later (zonelist.py `PACKED_LATER`: m1911_arms_diag) is in
+  that table too, and its older name chains through it (codol_zm_m1911_arms_diag -> m1911_arms_diag -> common_extras).
   The glyphs (controller_glyphs.c) are looked up in common_postgfx_mp, else in controller_glyphs_postgfx_mp.
 - `tests/check_zone_packs.py [--maps all] [--old <folder>]` loads the built zones the way C1 does for each language
   and proves the same assets reach the game, byte for byte and in the same list, that no list carries a name twice
@@ -722,8 +728,21 @@ The source zones under `zone_source/` + `zones/` stay as they are (each with its
   mp_weapons_postgfx_mp is written by mp_m14_staging's `CodolSoundDumper mp-weapons-zone` (decompiled here);
   it holds the M14 EBR's base gun (m14ebr_mp): the zombies M14 models with their merged default parts hidden, in
   C1's 22 camo rows.
+- `tests/check_zone_outputs.py --old <output> --new <output>` compares two whole builds (e.g. the base commit's and a
+  consolidation's): every asset (type, name, md5) of the old output is in exactly one new file, the one of the same
+  name or the one its name was folded into (kPatchZoneMerged), a moved script string table is the same table, and the
+  copied files are byte for byte the same. `tests/test_zone_outputs.py` is its portable half.
+- What stays apart, and why (everything that loads at the same time, in the same languages, is one file): the three
+  load lists (common_extras ahead of code_pre_gfx; common_ui_mp with the UI zones, freed on match entry;
+  common_postgfx_mp after code_post_gfx); one locale zone per language (locale_switch.c unloads and loads it on a
+  switch); the `mp_*` zones (the server mounts them, below; two, as their stringtables load ahead of code_pre_gfx and
+  their art after code_post_gfx); infected_cyborg_postgfx_mp (its 575 script strings and its runtime-block
+  references cannot move into another zone's tables without a rebuild by the C# writer); and, in
+  `client_shipRetail\chinese`, the per-gametype `patch_common_gametype_<zm|survival>` zones, which C1 itself loads
+  ahead of `common_gametype_<category>` only in a match of that category.
 - To add a source zone: give it a zone_source manifest as before and add a `part,<zone>` line to the pack of its list
-  and language (and its old name to kPatchZoneMerged if it was ever installed on its own).
+  and language (and its old name to kPatchZoneMerged if it was ever installed on its own; a zone that already
+  shipped under its new name goes into zonelist.py `PACKED_LATER` as well).
 
 ### Shipping maps (`shipping_maps.txt`)
 The usermap zones' sources carry the front-end data of every usermap worked on; `shipping_maps.txt` decides which

@@ -2,6 +2,7 @@
 
 Portable (no game files): tests/check_zone_packs.py is the half that loads the built zones.
 """
+import json
 from pathlib import Path
 import re
 import sys
@@ -43,7 +44,7 @@ class ZonePacks(unittest.TestCase):
     def test_every_patch_folder_zone_is_packed_or_listed_standalone(self):
         idx = packs.part_index(str(ROOT))
         for z in source_zones():
-            if build.load(str(ROOT), z).get("install") != PATCH:
+            if build.load(str(ROOT), z).get("install").replace("/", "\\") != PATCH:
                 continue
             with self.subTest(zone=z):
                 self.assertTrue(z in idx or z in STANDALONE, "%s is neither in a pack nor standalone" % z)
@@ -57,7 +58,14 @@ class ZonePacks(unittest.TestCase):
         # zone, under its old name; nothing else
         parts = {legacy.get(part, part): part for part in idx}
         renamed = {legacy[z]: z for z in legacy if z not in idx}
-        self.assertEqual(set(table), set(parts) | set(renamed), "patch_locale_policy.h kPatchZoneMerged vs zone_packs")
+        # zones that installed under their own new name before they were packed: that file is an old name too
+        later = zonelist.PACKED_LATER
+        self.assertEqual(set(table), set(parts) | set(renamed) | set(later),
+                         "patch_locale_policy.h kPatchZoneMerged vs zone_packs")
+        for name, pack in later.items():
+            with self.subTest(zone=name):
+                self.assertEqual(idx.get(name), [pack])
+                self.assertEqual(table[name], pack)
         for old, part in parts.items():
             with self.subTest(zone=old):
                 # a zone split by type is replaced by the pack that keeps its non-string assets (the shared one)
@@ -96,6 +104,38 @@ class ZonePacks(unittest.TestCase):
         for pack in packs.names(str(ROOT)):
             self.assertNotIn(pack, table)
             self.assertNotEqual(pack.lower(), "codol_zombies_endless")
+
+    def test_a_pack_takes_at_most_one_part_with_script_strings(self):
+        for pack in packs.names(str(ROOT)):
+            with self.subTest(pack=pack):
+                m = packs.load(str(ROOT), pack)
+                withs = [part for part, _k, q in packs.parts(m) if "strings" in build.load(str(ROOT), part).settings]
+                self.assertLessEqual(len(withs), 1, withs)
+                for part, _k, q in packs.parts(m):
+                    if part in withs:
+                        self.assertFalse("only" in q or "exclude" in q)
+                        types = {t for t, _n, _q in build.load(str(ROOT), part).assets}
+                        self.assertLessEqual(types, set(packs.STRINGS_PART_TYPES))
+
+    def test_m1911_xanims_move_with_their_string_table(self):
+        m = build.load(str(ROOT), "m1911_arms_diag")
+        zdir = ROOT / "zones" / "m1911_arms_diag"
+        strings = json.loads((zdir / m.settings["strings"][0]).read_text(encoding="utf-8"))
+        items = [(t, n, (0, 0xFFFFFFFF, (zdir / q["file"]).read_bytes())) for t, n, q in m.assets]
+        self.assertEqual(len(items), 8)
+        packs.strings_part_check("m1911_arms_diag", items, strings)     # all inline, every index a string
+        with self.assertRaises(packs.PackError):
+            packs.strings_part_check("m1911_arms_diag", items, strings[:5])
+        bad = items[:1] + [("material", "x", (0, 0xFFFFFFFF, bytes(4 * [0xFF])))]
+        with self.assertRaises(packs.PackError):
+            packs.strings_part_check("m1911_arms_diag", bad, strings)
+        self.assertIn("m1911_arms_diag", [p for p, _k, _q in packs.parts(packs.load(str(ROOT), "common_extras"))])
+
+    def test_standalone_zones_are_only_the_listed_ones(self):
+        idx = packs.part_index(str(ROOT))
+        alone = {z for z in source_zones() if z not in idx and not zonelist.ZONES.get(z, {}).get("staging")
+                 and build.load(str(ROOT), z).get("install").replace("/", "\\") == PATCH}
+        self.assertEqual(alone, set(STANDALONE))
 
     def test_stage_and_locale_rules_match_kernel33(self):
         self.assertEqual(packs.stage("common_postgfx_mp"), "post_gfx")

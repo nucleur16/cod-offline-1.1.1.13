@@ -168,6 +168,15 @@ def main(argv=None):
             problems.append("%s: standalone script strings/header/pointers differ" % z)
         elif old_script_strings[z][0]:
             print("%s: %d standalone script strings match" % (z, old_script_strings[z][0]))
+    # a packed part with script strings (zonekit/packs.py STRINGS_PART_TYPES): its pack took its table whole
+    for z in sorted(part_of):
+        if not old_script_strings[z][0]:
+            continue
+        for p in part_of[z]:
+            if old_script_strings[z] != new_script_strings[p]:
+                problems.append("%s: its script strings/pointers are not %s's table" % (p, z))
+            else:
+                print("%s: %d script strings, %s's table whole" % (p, old_script_strings[z][0], z))
     markers = {h(codecs.encode_rawfile(p, b"", {})) for p in pack_names}
     unnamed = sum(1 for zs in (old, new) for items in zs.values() for _t, n, _b in items if n is None)
     print("rawfiles, localize entries and stringtables are keyed by name, the other %d assets by content" % unnamed)

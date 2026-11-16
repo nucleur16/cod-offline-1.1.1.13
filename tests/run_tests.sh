@@ -59,6 +59,7 @@ python -B tests/test_survival_status_component.py
 python -B tests/test_tip_stage_lookup.py
 python -B tests/test_invitations_disabled.py
 python -B tests/test_zone_packs.py
+python -B tests/test_zone_outputs.py
 python -B tests/test_party_locales.py
 # Backfill of marksman kills a career lost while IW4's challenge unlock gate was closed.
 python -B tests/test_repair_locked_marksman.py

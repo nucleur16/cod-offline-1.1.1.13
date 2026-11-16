@@ -263,6 +263,8 @@ def build_one_pack(pack, a, exe, src, maps, ffdec):
                                                         for p, n, t in rep["parts"]))
     if rep["dropped_maps"]:
         line += "; without %s" % ", ".join(sorted(rep["dropped_maps"]))
+    if rep.get("strings"):
+        line += "\n    script strings: %d, %s's table whole (its xanims name them by index)" % rep["strings"][::-1]
     for t, name, part, first in rep["shadowed"]:
         line += "\n    shadowed: %s %s of %s (%s, loaded first, carries it; the old install never used this one)" % (
             t, name, part, first)
