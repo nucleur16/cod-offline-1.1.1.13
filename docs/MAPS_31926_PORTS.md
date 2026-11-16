@@ -161,3 +161,10 @@ defaults. Neither MW3 nor 3.19.26.22 has one for those maps. This work used no I
 `shipping_maps.txt` line. The `MPUI_DERAIL` / `MPUI_DESC_MAP_DERAIL` strings stay: they are stock (stock arena entries
 use them), and mp_derail_sh uses `MPUI_DERAIL_SH`. The offline selector tests use stock mp_crash_intro, which also has
 no `_load` zone, for the level-zone case.
+
+**Open (seen live, not fixed).** Tunisia's room showed no 3D lobby scene and its load screen titled the map
+`mp_tunisia` (raw), and Village's load screen did the same on 2026-11-13. Showdown, whose stock arena entry comes first,
+showed both. The usermap arena entries sit at positions 94..136 of `mp/basemaps.arena`, and the suspected cause is that
+the client keeps only the first 128 entries (an IW4-style arena limit). That would leave Skidrow (128) to Wasteland (136)
+without arena data. It is untested: the test client stopped starting (the D3D device creation stalled, as it did for
+other agents' clients at the same time) before Arkaden (position 111) could be compared.
