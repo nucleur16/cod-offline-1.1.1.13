@@ -18,7 +18,7 @@
  * (P2PLaunchObserve: the armed Local Play host starts at C1's first datagram to its port).
  * The process-wide egress gate (egress_gate.c) keeps every other socket on loopback as well.
  *
- * k33_hostGate on the command line: 2 (default) enforce; explicit local-testing builds alone may
+ * net_hostGate on the command line: 2 (default) enforce; explicit local-testing builds alone may
  * use 1 (log only). Shipping builds always enforce. Diagnostic builds log each refused address once to
  * Kernel33.log (the first 64 addresses).
  */
@@ -125,7 +125,7 @@ static BOOL InstallHostGate(void)
     InitializeCriticalSection(&g_hgLock);
 #if K33_LOCAL_TESTING
     const char *cl = GetCommandLineA();
-    if (cl && (strstr(cl, "k33_hostGate 1") || strstr(cl, "k33_hostGate \"1\""))) g_hgMode = 1;
+    if (cl && (strstr(cl, "net_hostGate 1") || strstr(cl, "net_hostGate \"1\""))) g_hgMode = 1;
 #endif
     FARPROC *slotRecv = (FARPROC *)(DWORD_PTR)HG_SLOT_RECVFROM;
     FARPROC *slotSend = (FARPROC *)(DWORD_PTR)HG_SLOT_SENDTO;
@@ -152,6 +152,6 @@ static BOOL InstallHostGate(void)
         Log("hostgate: required socket filter write failed; refusing startup");
         return FALSE;
     }
-    Log("hostgate: %s; UDP only with loopback (this PC)", g_hgMode >= 2 ? "enforcing" : "LOG ONLY (k33_hostGate 1)");
+    Log("hostgate: %s; UDP only with loopback (this PC)", g_hgMode >= 2 ? "enforcing" : "LOG ONLY (net_hostGate 1)");
     return TRUE;
 }

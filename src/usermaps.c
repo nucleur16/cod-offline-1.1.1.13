@@ -14,7 +14,7 @@
  *     main\*iw_image_*.iwd only, so it still sees the stock count.
  * An iwd keeps the name it was written with (the name is part of its encryption, and C1 accepts
  * iw_image_00..23 only), so two maps must not use the same iw_image_NN, nor one main\ has.
- * "+set k33_usermaps 0" on the command line turns it off.
+ * "+set fs_usermaps 0" on the command line turns it off.
  *
  * Maps may also be installed directly (zones in client_shipRetail\chinese, iwds in main\): PatchPureCheck hides
  * every file the built-in lists do not name from the pure check's two folder listings, so it still sees the stock
@@ -49,8 +49,8 @@ static BOOL UserMapsEnabled(void)
 {
     const char *p = GetCommandLineA(), *q;
     BOOL on = TRUE;
-    while ((q = strstr(p, "k33_usermaps")) != NULL) {
-        q += sizeof("k33_usermaps") - 1;
+    while ((q = strstr(p, "fs_usermaps")) != NULL) {
+        q += sizeof("fs_usermaps") - 1;
         while (*q == ' ' || *q == '"') q++;
         on = *q != '0';
         p = q;
@@ -410,7 +410,7 @@ static void PatchUserMaps(void)
         { USERMAP_FINDCLOSE_SLOT, (void *)UserMapFindClose },
         { USERMAP_FINDFIRSTFILEEXA_SLOT, (void *)UserMapFindFirstFileExA },
     };
-    if (!UserMapsEnabled()) { Log("usermaps: off (k33_usermaps 0)"); return; }
+    if (!UserMapsEnabled()) { Log("usermaps: off (fs_usermaps 0)"); return; }
     DWORD n = GetModuleFileNameA(NULL, g_gameDir, MAX_PATH);
     while (n && g_gameDir[n - 1] != '\\') n--;
     if (!n) return;

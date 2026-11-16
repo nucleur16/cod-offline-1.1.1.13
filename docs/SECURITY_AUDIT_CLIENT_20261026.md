@@ -129,7 +129,7 @@ is parsed here; all `_snprintf` calls use `sizeof(buf)`. Safe.
 ### 10. Command / Cbuf helpers (`c1game.c`)
 `C1CbufAddText` and `C1AddCommand` are only ever called with
 Kernel33-controlled, constant or locally-sourced strings (console input,
-`k33_cmd_<pid>.txt` which is test-only behind `+set k33_cmdFile 1`, and
+`k33_cmd_<pid>.txt` which is test-only behind `+set com_cmdFile 1`, and
 `set <dvar> <int>`). **No server- or peer-controlled string reaches Cbuf**, so
 there is no remote command-injection path through Kernel33. `C1Printf` uses a
 fixed `buf[1024]` with `_vsnprintf(...,sizeof-1)` and an explicit NUL — and is

@@ -311,8 +311,8 @@ static void __cdecl K33LfCommand(void)
     if (VoiceArgc()==3) ok=K33LfExecute(VoiceArgv(1),VoiceArgv(2));
     else if (VoiceArgc()==4) ok=K33LfExecuteExchange(VoiceArgv(1),VoiceArgv(2),VoiceArgv(3));
     else ok=K33LfFail(LF_ARGUMENTS);
-    Log("k33logflush: %s (stage=%s)",ok ? "owned local log flushed":"refused",K33LfStageName());
+    Log("com_logFlush: %s (stage=%s)",ok ? "owned local log flushed":"refused",K33LfStageName());
 }
-static C1Cmd g_k33LfCommand={NULL,"k33logflush",(void *)K33LfCommand};
+static C1Cmd g_k33LfCommand={NULL,"com_logFlush",(void *)K33LfCommand};
 static void InstallK33LogFlush(void) { C1AddCommand(&g_k33LfCommand); }
 #endif

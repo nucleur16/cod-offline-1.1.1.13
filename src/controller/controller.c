@@ -221,7 +221,7 @@ static void CtlRegisterDvars(void)
         typedef const BYTE *(__cdecl *RegStr)(const char *, const char *, unsigned, const char *);
         RegStr reg = (RegStr)(DWORD_PTR)0x00624740u;
         g_k33PadInfo = reg("k33_padinfo", "", 0, "Options > Controller: pad family|connected|name|forced|gpad_glyphs (Kernel33, read only)");
-        g_k33GlyphInfo = reg("k33_glyphinfo", "", 0,
+        g_k33GlyphInfo = reg("gpad_glyphInfo", "", 0,
                              "What button hints show now: family|device|textOnly|gpad_glyphs (family 0 Xbox, 1 PlayStation, 2 Nintendo, "
                              "3 generic; device 0 keyboard / mouse, 1 pad) (Kernel33, read only)");
         g_k33PadBinds = reg("k33_padbinds", "", 0, "Options > Controller: every pad button's bind (Kernel33, read only)");
@@ -243,8 +243,8 @@ static void CtlRegisterDvars(void)
     g_gpGlyphs = C1RegisterInt("gpad_glyphs", 0, 0, CGP_GLYPHS_MAX, 0x1,
                                "Button hints and prompts: 0 automatic (pad type and last-used device), 1 Xbox 360, 2 PS3, 3 Wii U, "
                                "4 generic (1-4: always that pad's buttons), 5 text names only, 6 always keyboard / mouse");
-    g_k33GlyphSerial = C1RegisterInt("k33_glyphSerial", 0, 0, CGP_SERIAL_MAX, 0,
-                                     "Counts every change of what button hints show (k33_glyphinfo): menus re-read their key labels "
+    g_k33GlyphSerial = C1RegisterInt("gpad_glyphSerial", 0, 0, CGP_SERIAL_MAX, 0,
+                                     "Counts every change of what button hints show (gpad_glyphInfo): menus re-read their key labels "
                                      "when it changes (Kernel33, read only)");
     g_gpBindsVer = C1RegisterInt("gpad_binds_version", 0, 0, 1000, 0x1, "Default pad binds last applied (read only)");
     g_gpUserinfo = C1RegisterInt("gpad", 0, 0, 2, 0x200,
@@ -281,7 +281,7 @@ static void CtlSetDevice(int pad)
  * gpad_glyphs 1..4 and 6 override the detection for display: 1..4 show that pad family's buttons even while
  * the keyboard is the last-used device, 6 shows keyboard / mouse keys even while the pad is. Only the
  * display readers ask here: CtlCommandKeys (which device's keys a hint names), CtlApplyPadNames (the
- * family's text names), the glyph set (controller_glyphs.c) and the published k33_padinfo / k33_glyphinfo.
+ * family's text names), the glyph set (controller_glyphs.c) and the published k33_padinfo / gpad_glyphInfo.
  * Everything behavioural keeps reading g_lastDevice itself: aim assist (CtlAimAllowed), the userinfo dvar
  * "gpad" and the pointer watch (CtlFrameExtras), the snap scan (padsnap.c), gpad_status / gpad_aadump.
  * Called on the main thread and, through CtlGlyphPrepare, on the render thread: three word-sized reads. */
@@ -299,12 +299,12 @@ static int CtlDisplayPad(void) { return CtlDisplayNow().device == CGP_DEVICE_PAD
 
 static BOOL CtlEnabled(void) { return !g_ctlDvarsDone || C1DvarInt(g_gpEnabled, 1) != 0; }
 
-/* "+set k33_cmdFile 1" (a test client next to the player's game): never the real pad, never the real cursor. */
+/* "+set com_cmdFile 1" (a test client next to the player's game): never the real pad, never the real cursor. */
 static BOOL CtlTestMode(void)
 {
 #if defined(K33_LOCAL_TESTING) && K33_LOCAL_TESTING == 1
     static int t = -1;
-    if (t < 0) { const char *cl = GetCommandLineA(); t = cl && strstr(cl, "k33_cmdFile 1") != NULL; }
+    if (t < 0) { const char *cl = GetCommandLineA(); t = cl && strstr(cl, "com_cmdFile 1") != NULL; }
     return t;
 #else
     return FALSE;
@@ -515,7 +515,7 @@ static void CtlApplyDefaultBinds(int how) /* 0 unbound only, 1 force all, 2 migr
  *                 An icon in such a line still follows the family (its slot is refilled at draw time);
  *                 only the keyboard <-> pad choice is frozen in it.
  *   on request    Scaleform and GSC (0x5B080D, 0x55A8B6) ask when their ActionScript / script asks:
- *                 k33_glyphSerial tells the menus when to ask again. */
+ *                 gpad_glyphSerial tells the menus when to ask again. */
 static BOOL CtlIsPadKey(int k)
 {
     return (k >= 1 && k <= 6) || (k >= 14 && k <= 23) || k == K_BUTTON_X_HOLD;
@@ -821,7 +821,7 @@ static void CtlInstallBindCommands(void)
         return;
     }
     for (int i = 0; i < n; i++) g_ctlBindNames[i] = cur[i];
-    for (int i = n; i < CTL_BIND_KSNEXT; i++) g_ctlBindNames[i] = "k33_reserved";
+    for (int i = n; i < CTL_BIND_KSNEXT; i++) g_ctlBindNames[i] = "gpad_reserved";
     g_ctlBindNames[CTL_BIND_KSNEXT] = "gpad_ksnext";
     g_ctlBindNames[CTL_BIND_KSUSE] = "gpad_ksuse";
     DWORD nt = (DWORD)(DWORD_PTR)g_ctlBindNames;
@@ -841,9 +841,9 @@ static void CtlInstallBindCommands(void)
 
 /* ---- menus --------------------------------------------------------------------------------------- */
 
-/* Test clients only (k33_cmdFile 1, never focused): C1 treats a background window as inactive, so
+/* Test clients only (com_cmdFile 1, never focused): C1 treats a background window as inactive, so
  * while the virtual cursor is in use its GetCursorPos / GetForegroundWindow / GetActiveWindow import
- * slots (0xB423A4 / 0xB423F4 / 0xB42454, as voice.c's k33mouse) report the cursor and the game window,
+ * slots (0xB423A4 / 0xB423F4 / 0xB42454, as voice.c's cl_fakeMouse) report the cursor and the game window,
  * and SetCursorPos (0xB423F0) is swallowed for the whole session, so a test client that thinks it is
  * active can never move the player's real mouse pointer. */
 #define CTL_SLOT_GETCURSORPOS 0x00B423A4u
@@ -889,7 +889,7 @@ static BOOL CtlInstallTestFakes(void)
 
 /* Moves the menu cursor by (dx, dy) client pixels. With the window in the foreground the real cursor
  * moves (Windows sends the WM_MOUSEMOVE); otherwise (gpad_fake tests on a background client) C1's
- * GetCursorPos import slot 0xB423A4 reports the position, as voice.c's k33mouse does. */
+ * GetCursorPos import slot 0xB423A4 reports the position, as voice.c's cl_fakeMouse does. */
 static void CtlCursorMove(HWND h, float dx, float dy, BOOL focused)
 {
     static float fx, fy; /* sub-pixel position, so slow stick movement still adds up */
@@ -1677,7 +1677,7 @@ static void CtlUnbindPadKeysOf(const char *cmd, char *out, int n, int *len)
             *len += _snprintf(out + *len, n - *len, "unbind %s; ", kCtlButtons[i].name);
 }
 
-/* k33_glyphinfo ("family|device|textOnly|glyphs") and k33_glyphSerial: what hints display now, for the
+/* gpad_glyphInfo ("family|device|textOnly|glyphs") and gpad_glyphSerial: what hints display now, for the
  * Scaleform menus and HUD (they hold key labels they asked for once). Checked every frame; one command
  * line sets both, so a reader that sees the new serial also sees the new state. The serial starts at 0
  * (nothing published), is 1 after the first frame and wraps to 1 after CGP_SERIAL_MAX. The device is not
@@ -1699,10 +1699,10 @@ static void CtlPublishGlyphState(void)
     lastGlyphs = g;
     if (!CtlGlyphInfo(info, sizeof(info), &now, g)) return;
     if (!same) serial = CtlGlyphSerialNext(serial);
-    _snprintf(cmd, sizeof(cmd), "set k33_glyphinfo \"%s\"; set k33_glyphSerial %d\n", info, serial);
+    _snprintf(cmd, sizeof(cmd), "set gpad_glyphInfo \"%s\"; set gpad_glyphSerial %d\n", info, serial);
     cmd[sizeof(cmd) - 1] = 0;
     C1CbufAddText(cmd);
-    Log("controller: hints show %s, %s %s (gpad_glyphs %d, pad type %d, last input %s); k33_glyphSerial %d",
+    Log("controller: hints show %s, %s %s (gpad_glyphs %d, pad type %d, last input %s); gpad_glyphSerial %d",
         now.device == CGP_DEVICE_PAD ? "pad buttons" : "keyboard / mouse keys", kFam[now.family],
         now.text_only ? "text names" : "icons", g, (int)g_padType, g_lastDevice == 1 ? "pad" : "keyboard / mouse", serial);
 }
@@ -2482,7 +2482,7 @@ static void __cdecl CtlCmdEscape(void)
 
 static void __cdecl CtlCmdTestMouse(void)
 {
-    if (!CtlTestMode()) { C1Printf("gpad_testmouse: test clients only (+set k33_cmdFile 1)\n"); return; }
+    if (!CtlTestMode()) { C1Printf("gpad_testmouse: test clients only (+set com_cmdFile 1)\n"); return; }
     if (VoiceArgc() < 4) { C1Printf("usage: gpad_testmouse <dx> <dy> <ms>   (mouse counts per frame)\n"); return; }
     g_testMouseDx = atoi(VoiceArgv(1));
     g_testMouseDy = atoi(VoiceArgv(2));
@@ -2526,7 +2526,7 @@ static C1Cmd g_ctlCmds[] = {
 };
 
 /* Test and measurement commands (synthetic pad, injected mouse / cursor / Scaleform keys, look and glyph
- * tests, aim-assist dump): registered only on a test client ("+set k33_cmdFile 1") or with
+ * tests, aim-assist dump): registered only on a test client ("+set com_cmdFile 1") or with
  * "+set gpad_testcmds 1" on the command line, so a player's build has none of them. */
 static C1Cmd g_ctlTestCmds[] = {
     { NULL, "gpad_fake", (void *)CtlCmdFake },
@@ -2669,7 +2669,7 @@ static void InstallController(void)
     for (unsigned i = 0; i < sizeof(g_ctlCmds) / sizeof(g_ctlCmds[0]); i++) added += C1AddCommand(&g_ctlCmds[i]);
     if (CtlTestCmdsEnabled()) {
         for (unsigned i = 0; i < sizeof(g_ctlTestCmds) / sizeof(g_ctlTestCmds[0]); i++) added += C1AddCommand(&g_ctlTestCmds[i]);
-        Log("controller: test commands registered (k33_cmdFile 1 / gpad_testcmds 1)");
+        Log("controller: test commands registered (com_cmdFile 1 / gpad_testcmds 1)");
     }
     PadSnapInstall();   /* padsnap.c */
     g_ctlOn = TRUE;

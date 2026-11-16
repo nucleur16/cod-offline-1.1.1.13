@@ -32,8 +32,8 @@
  * t is GetTickCount() milliseconds. The snapshot is written each second while a refusal happened in the last 3 s,
  * and at level 2 also every 5 s regardless.
  *
- * Toggle: dvar k33_snddiag 0 off (default) / 1 refusals + snapshots around them / 2 also a snapshot every 5 s.
- * Startup value: "+set k33_snddiag N" on the command line, else K33_SNDDIAG=N, else 0; 0 at startup installs nothing.
+ * Toggle: dvar snd_diag 0 off (default) / 1 refusals + snapshots around them / 2 also a snapshot every 5 s.
+ * Startup value: "+set snd_diag N" on the command line, else K33_SNDDIAG=N, else 0; 0 at startup installs nothing.
  * Memory C1 hands over (play params, alias, alias name) is read with ReadProcessMemory, which fails instead of
  * faulting, so a bad pointer only costs the name ("?"). */
 
@@ -235,10 +235,10 @@ static void SdRegisterDvar(void)
     g_sdDvarTried = 1;
 #if K33_DIAGNOSTICS
     const BYTE *d = ((RegisterIntFn)(DWORD_PTR)SDIAG_DVAR_REG_VA)(
-        "k33_snddiag", g_sdStartLevel, 0, 2, 0,
+        "snd_diag", g_sdStartLevel, 0, 2, 0,
         "Kernel33 sound voice diagnostics in Kernel33.log: 0 off, 1 refusals (+ snapshots around them), 2 + snapshot every 5 s");
     if (d && SdReadable(d, 0x10)) g_sdDvar = d;
-    Log("snddiag: dvar k33_snddiag %s", g_sdDvar ? "registered" : "could not be registered, startup value kept");
+    Log("snddiag: dvar snd_diag %s", g_sdDvar ? "registered" : "could not be registered, startup value kept");
 #endif
     SvRegisterDvars();
 }
@@ -281,7 +281,7 @@ static void SdRefused(int pool, int why, DWORD params, int channel)
     SdAliasName(alias, name, sizeof(name));
     SdChannelName(channel, ch, sizeof(ch));
     if (why == 2)
-        _snprintf(detail, sizeof(detail), "why=limit k33_sndAliasLimit");
+        _snprintf(detail, sizeof(detail), "why=limit snd_aliasLimit");
     else if (why == 0)
         _snprintf(detail, sizeof(detail), "why=cap %s=%d/%d", ch, SdChannelActive(channel), SdChannelInt(channel, SDIAG_CH_CAP));
     else
@@ -541,7 +541,7 @@ static DWORD WINAPI SdThread(LPVOID unused)
     return 0;
 }
 
-/* "k33_snddiag N" anywhere on the command line (last wins), else K33_SNDDIAG=N, else 0. */
+/* "snd_diag N" anywhere on the command line (last wins), else K33_SNDDIAG=N, else 0. */
 static int SdStartLevel(void)
 {
     int level = 0;
@@ -549,8 +549,8 @@ static int SdStartLevel(void)
     DWORD n = GetEnvironmentVariableA("K33_SNDDIAG", env, sizeof(env));
     if (n && n < sizeof(env)) level = atoi(env);
     const char *p = GetCommandLineA();
-    while (p && (p = strstr(p, "k33_snddiag")) != NULL) {
-        p += 11;
+    while (p && (p = strstr(p, "snd_diag")) != NULL) {
+        p += sizeof("snd_diag") - 1;
         if (*p != ' ' && *p != '\t' && *p != '"') continue;
         while (*p == ' ' || *p == '\t' || *p == '"') p++;
         if (*p >= '0' && *p <= '9') level = atoi(p);
@@ -611,7 +611,7 @@ static void InstallSoundDiag(void)
     g_sdStartLevel = 0;
 #endif
     g_svOn = SvStartupOn();
-    if (!g_sdStartLevel && !g_svOn) { Log("snddiag: off (k33_snddiag 0, k33_soundvoices 0 at startup), no hooks installed"); return; }
+    if (!g_sdStartLevel && !g_svOn) { Log("snddiag: off (snd_diag 0, snd_voiceLimits 0 at startup), no hooks installed"); return; }
     for (unsigned i = 0; i < sizeof(kChecks) / sizeof(kChecks[0]); i++) {
         const BYTE *p = (const BYTE *)(DWORD_PTR)kChecks[i].va;
         if (!SdReadable(p, kChecks[i].n) || memcmp(p, kChecks[i].bytes, kChecks[i].n) != 0) {
@@ -649,7 +649,7 @@ static void InstallSoundDiag(void)
         if (kSites[i].stub)
 #endif
             RedirectCall(kSites[i].site, (void *)kSites[i].stub);
-    Log("snddiag: 6 hooks installed (cap checks 0x%08X/0x%08X/0x%08X, allocators 0x%08X/0x%08X/0x%08X), k33_snddiag %d at startup%s",
+    Log("snddiag: 6 hooks installed (cap checks 0x%08X/0x%08X/0x%08X, allocators 0x%08X/0x%08X/0x%08X), snd_diag %d at startup%s",
         SDIAG_CAP2D_CALL_VA, SDIAG_CAP3D_CALL_VA, SDIAG_CAPSTR_CALL_VA, SDIAG_AL2D_CALL_VA, SDIAG_AL3D_CALL_VA,
         SDIAG_ALSTR_CALL_VA, g_sdStartLevel, g_sdDvarOk ? "" : ", no dvar (Dvar_RegisterInt bytes differ)");
 }

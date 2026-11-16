@@ -10,8 +10,8 @@ features remain enabled. Fatal startup failures still report an error.
 command-file transport is available only in this separately compiled profile.
 `K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=1` enables development diagnostics.
 The console itself (`src/console/console.c`, `docs/OFFLINE_CONSOLE_20261112.md`) is in every profile of this offline
-client. Only the diagnostics profile compiles `src/console/k33shot.c`, which rides on the console's hooks: the `k33_screenshot` and
-`k33_framestats` commands and, on a test client only (`+set k33_shotFile 1` or `+set k33_cmdFile 1`), the
+client. Only the diagnostics profile compiles `src/console/k33shot.c`, which rides on the console's hooks: the `r_screenshot` and
+`com_frameStats` commands and, on a test client only (`+set r_shotFile 1` or `+set com_cmdFile 1`), the
 `k33_shot.req` / `k33_stats.req` request files. Shipping and quiet-QA DLLs contain none of that: no screenshot or statistics command, no
 request-file polling, no draw-call hooks. They do contain the console and therefore its `Direct3DCreate9`
 import-slot wrap and `Present` hook, its window procedure and its four log-print pre-hooks (each byte-checked).

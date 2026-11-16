@@ -68,7 +68,7 @@ class ConsoleInEveryProfile(unittest.TestCase):
 
     def test_shipping_profile_has_no_diagnostic_console_parts(self):
         shipping = strip_block(CONSOLE, None)
-        for diagnostic in ("ShotBeforePresent(", "ShotWanted(", '"k33shot"', "k33_rconPort", "ConRconLegacy(",
+        for diagnostic in ("ShotBeforePresent(", "ShotWanted(", '"con_shot"', "con_rconPort", "ConRconLegacy(",
                            "k33_rcon.txt", "native_server_rcon.txt"):
             self.assertNotIn(diagnostic, shipping, "%s must stay inside #if K33_DIAGNOSTICS" % diagnostic)
         # the route file has no profile switch at all and no way to another server
@@ -77,7 +77,7 @@ class ConsoleInEveryProfile(unittest.TestCase):
 
     def test_toggle_key_and_off_switch_unchanged(self):
         self.assertIn('== 0x29 && !(lp & (1 << 24))', CONSOLE)  # the key left of 1
-        self.assertIn('C1RegisterInt("k33_consoleKey", VK_F1', CONSOLE)
+        self.assertIn('C1RegisterInt("con_toggleKey", VK_F1', CONSOLE)
         self.assertIn('"k33_console 0"', CONSOLE)
 
 
@@ -147,7 +147,7 @@ class CheatSetsAreTheSame(unittest.TestCase):
 
     def test_builtins_are_not_server_cheats(self):
         builtins = [n for n, _, b in self.client if b == "1"]
-        self.assertEqual(builtins, ["sv", "rcon", "k33dev"])
+        self.assertEqual(builtins, ["sv", "rcon", "con_status"])
 
     def test_devset_list_is_the_servers(self):
         self.assertIn('{ "devset", g_argDevset }', CONSOLE)

@@ -3,6 +3,14 @@
 names the client forwards to the hosted sh1x match server) with an explicit table, so the same rename can be
 applied again to another branch (for example after a rebase onto the branch that first ran it).
 
+Step 2 (IW_TABLE) renames Kernel33's k33 console names (dvars, commands, command-line switches) to IW engine
+prefixes chosen by function: cg_ HUD/drawing, cl_ client/voice/input, snd_ sound, con_ console, r_ renderer,
+com_ common, fs_ filesystem, ui_ front end, loc_ language, net_ network, sv_ hosting, gpad_ gamepad. One run
+applies both steps (a chain codol_voice -> k33_voice -> cl_voiceChat resolves to the last name). Step 2 also
+covers the native menu sources under zones/ (menufile .json/.txt, sources/*.menu; a stored .bin menulist is
+re-encoded from its .json with zonekit.menus), refuses any name a shipped UI movie spells (KEEP_K33 lists them),
+and writes src/dvar_renames.h, from which c1game.c moves a value saved under an old dvar name to the new one.
+
     python tools/drop_codol_prefix.py            apply the table to the tree, re-pin ui_baseline.json
     python tools/drop_codol_prefix.py --check    change nothing; exit 1 when a mapped name is still present or
                                                  a "codol" name in the code is neither mapped nor listed in KEEP
@@ -180,11 +188,92 @@ codol_scriptNativeOverlay
 """.split()
 SERVER_NAMES = {old: SERVER_CLASH.get(old, old[len("codol_"):]) for old in SERVER_NAMES_OLD}
 
+# ---- step 2: Kernel33's k33 console names -> IW engine prefixes by function ----------------------------------
+# (old, new, kind, why). kind: dvar (registered; a saved value of the old name is migrated, src/dvar_renames.h),
+# cmd (console command / console built-in), switch (read from the command line only, never registered).
+# A name compiled into a shipped UI movie (zones/*.gfxpatch: tags and .as) is NOT here: renaming it needs a new
+# verified composition stage of that movie (tools/*-composition, tests/test_optionview_method.py), see KEEP_K33.
+# A name that is not in the tree is a no-op (names of branches still being written are listed ahead).
+IW_TABLE = [
+    # client-game: HUD and drawing
+    ("k33_hudFireType", "cg_hudFireType", "dvar", "HUD style item text (menus read it)"),
+    ("k33_hudAssists", "cg_hudAssists", "dvar", "HUD style item value (menus read it)"),
+    ("k33_hudClip", "cg_hudClip", "dvar", "HUD style item (HUD branch)"),
+    ("k33_hudClipRounds", "cg_hudClipRounds", "dvar", "HUD style item (HUD branch)"),
+    ("k33_hudSway", "cg_hudSway", "dvar", "HUD sway (HUD branch; refused while a movie row reads it)"),
+    ("k33_hudSwayX", "cg_hudSwayX", "dvar", "HUD sway (HUD branch)"),
+    ("k33_hudSwayY", "cg_hudSwayY", "dvar", "HUD sway (HUD branch)"),
+    ("k33_drawFPS", "cg_drawFramerate", "dvar", "cg_drawFPS is C1 dvar 591 and an IW4 dvar"),
+    ("k33_drawViewpos", "cg_drawViewOrigin", "dvar", "cg_drawViewpos is a C1 dvar"),
+    ("k33_name_utf8", "cl_utf8Names", "switch", "player names read as UTF-8 (client)"),
+    # client: voice chat (IW's cl_voice family; cl_voice itself is a C1 dvar)
+    ("k33_voice", "cl_voiceChat", "dvar", "voice chat master switch; cl_voice is a C1 dvar"),
+    ("k33_voiceBitrate", "cl_voiceBitrate", "dvar", "voice chat"),
+    ("k33_voiceLoopback", "cl_voiceLoopback", "dvar", "voice chat"),
+    ("k33_voiceDebug", "cl_voiceDebug", "dvar", "voice chat"),
+    ("k33_voiceTone", "cl_voiceTone", "dvar", "voice chat"),
+    ("k33_voiceHangMs", "cl_voiceHangMs", "dvar", "voice chat"),
+    ("k33_voiceInputDevice", "cl_voiceInputDevice", "dvar", "voice chat"),
+    ("k33voice", "cl_voiceStatus", "cmd", "voice chat"),
+    ("k33voicemute", "cl_voiceMute", "cmd", "voice chat"),
+    ("k33_discord", "cl_discord", "dvar", "Discord presence (client)"),
+    ("k33mouse", "cl_fakeMouse", "cmd", "test input (client); gpad_testmouse is another command"),
+    # sound
+    ("k33_soundvoices", "snd_voiceLimits", "switch", "sound voice allocation fixes"),
+    ("k33_sndAliasLimit", "snd_aliasLimit", "dvar", "sound voice allocation"),
+    ("k33_sndNearest", "snd_aliasNearest", "dvar", "sound voice allocation"),
+    ("k33_snddiag", "snd_diag", "dvar", "sound diagnostics"),
+    # gamepad (Kernel33's existing gpad_ family, as IW4's console builds)
+    ("k33_glyphinfo", "gpad_glyphInfo", "dvar", "button glyphs"),
+    ("k33_glyphSerial", "gpad_glyphSerial", "dvar", "button glyphs"),
+    ("k33_reserved", "gpad_reserved", "cmd", "placeholder name of an unused bind slot"),
+    # console
+    ("k33_consoleKey", "con_toggleKey", "dvar", "console"),
+    ("k33_rconPort", "con_rconPort", "dvar", "the console's rcon route"),
+    ("k33help", "con_help", "cmd", "console built-in"),
+    ("k33dev", "con_status", "cmd", "console built-in: its lists and the server route"),
+    ("k33shot", "con_shot", "cmd", "console built-in (diagnostics)"),
+    # renderer
+    ("k33_screenshot", "r_screenshot", "cmd", "diagnostics screenshot; C1 has screenshot"),
+    ("k33_shotFile", "r_shotFile", "switch", "diagnostics screenshot requests"),
+    # common / engine
+    ("k33_cmdFile", "com_cmdFile", "switch", "headless command-file mode"),
+    ("k33_framestats", "com_frameStats", "cmd", "frame timing (diagnostics)"),
+    ("k33logflush", "com_logFlush", "cmd", "local QA log flush"),
+    ("k33_local_test_multi", "com_localTestMulti", "switch", "several local test clients"),
+    # filesystem
+    ("k33_patchdir", "fs_patchDir", "switch", "the patch zone folder"),
+    ("k33_usermaps", "fs_usermaps", "switch", "usermaps folder"),
+    # menus / front end
+    ("k33_survival", "ui_survival", "switch", "the Survival room category"),
+    ("k33_survivalXxx", "ui_survivalXxx", "switch", "a comment's example of a longer name"),
+    ("k33_survivalx", "ui_survivalx", "switch", "the test's longer name that must not match"),
+    ("k33ready", "ui_pressReady", "cmd", "test automation: the room's Ready button"),
+    # language (test-build commands and switches; the player-facing ones are in the movie, KEEP_K33)
+    ("k33_langstat", "loc_tableStats", "cmd", "language switch diagnostics"),
+    ("k33_langcycle", "loc_cycle", "cmd", "language switch test"),
+    ("k33_langforce", "loc_forceUnload", "cmd", "language switch test"),
+    ("k33_langNoReorder", "loc_noReorder", "switch", "language switch test"),
+    # network / server hosting
+    ("k33_hostGate", "net_hostGate", "switch", "the loopback-only UDP gate"),
+    ("k33_p2pHost", "sv_p2pHost", "switch", "host a match at startup"),
+]
+IW_NAMES = {old: new for old, new, _kind, _why in IW_TABLE}
+IW_DVARS = sorted((old, new) for old, new, kind, _why in IW_TABLE if kind == "dvar")
+
 MAPPING = {}
-for table in (C_NAMES, CLIENT_DVARS, CLIENT_STRINGS, SERVER_NAMES):
+for table in (C_NAMES, CLIENT_DVARS, CLIENT_STRINGS, SERVER_NAMES, IW_NAMES):
     for old, new in table.items():
         assert old not in MAPPING, old
         MAPPING[old] = new
+# one pass reaches the final name (codol_voice -> k33_voice -> cl_voiceChat)
+for old in list(MAPPING):
+    seen = {old}
+    while MAPPING[old] in MAPPING:
+        assert MAPPING[old] not in seen, old
+        seen.add(MAPPING[old])
+        MAPPING[old] = MAPPING[MAPPING[old]]
+assert not set(MAPPING.values()) & set(MAPPING), "a new name is also an old one"
 
 # ---- what stays, and why ------------------------------------------------------------------------------------
 # Exact names (case-sensitive). The --check/--report scan looks at every [A-Za-z0-9_]*codol[A-Za-z0-9_]* word
@@ -273,6 +362,32 @@ KEEP = {
     "drop_codol_prefix": "this rename tool (scripts/gen_sh1x_cmds.py and tests/test_offline_console.py import it)",
 }
 
+# ---- k33 names that stay, and why (the step-2 check looks at k33 words inside C string literals) -------------
+REASON_K33_MOVIE = ("read or set by name inside a shipped UI movie (zones/*.gfxpatch .as and DoABC tags): a rename "
+                    "needs a new verified composition stage of codo.gfx / codoingame.gfx / codologin.gfx")
+REASON_K33_FILE = "file or folder name (inside the install or its main folder), not a console name"
+REASON_K33_ASSET = "asset or ActionScript package name inside the shipped zones"
+REASON_K33_TOKEN = "runtime token, not a console name"
+KEEP_K33 = {
+    **{name: REASON_K33_MOVIE for name in (
+        "k33_hudStyle", "k33_hudStyleList", "k33_english", "k33_language", "k33_languageList", "k33_languageState",
+        "k33_languageSerial", "k33_setlanguage", "k33_padinfo", "k33_padbinds", "k33_padcapture", "k33_padclear",
+        "k33nav", "k33_snapscan", "k33_snapn", "k33_snaperr", "k33_snapprobe", "k33_snapat", "k33_snap",
+        "k33_snaphid", "k33_snapcls", "k33_snap0", "k33_snap1", "k33_snap2", "k33_snap3", "k33_snap4", "k33_snap5",
+        "k33_snap6", "k33_snap7", "k33_snapcls0", "k33_snapcls1", "k33_snapcls2", "k33_snapcls3", "k33_snapcls4",
+        "k33_snapcls5", "k33_snapcls6", "k33_snapcls7", "k33_snaphid0", "k33_snaphid1", "k33_snaphid2",
+        "k33_snaphid3", "k33_voiceVolume", "k33_voiceThreshold", "k33_voiceMode", "k33_voiceMicMute",
+        "k33_voiceLevel", "k33_voiceMeter", "k33_voiceInputList", "k33_voiceInputPick", "k33_voiceInputIndex")},
+    **{name: REASON_K33_FILE for name in (
+        "k33_cmd_", "k33_console", "k33_console_history", "k33_offline", "k33_rcon", "k33_shot", "k33_stats",
+        "k33patch", "k33p2p_dedrun", "k33sha256", "k33tick")},
+    "k33pad_": REASON_K33_ASSET, "k33": REASON_K33_ASSET,
+    "k33rpc": REASON_K33_TOKEN,
+}
+K33_WORD = re.compile(r'(?<![A-Za-z0-9_])k33_?[a-z][A-Za-z0-9_]*|(?<![A-Za-z0-9_])k33(?![A-Za-z0-9_])')
+GENERATED = "src/dvar_renames.h"
+MOVIE_MARK = ".gfxpatch/"
+
 LEFT = r'(?:(?<![A-Za-z0-9_])|(?<=-D)|(?<=\^[0-9]))'
 RIGHT = r'(?![A-Za-z0-9_])(?!\.[A-Za-z])'
 _PATTERN = re.compile(LEFT + '(' + '|'.join(re.escape(k) for k in sorted(MAPPING, key=lambda s: (-len(s), s)))
@@ -304,7 +419,7 @@ def tracked_files():
         if not rel or rel.startswith(NEVER_DIRS) or rel.endswith(BINARY_SUFFIXES):
             continue
         path = ROOT / rel
-        if path.resolve() == SELF or not path.is_file():
+        if path.resolve() == SELF or rel == GENERATED or not path.is_file():
             continue
         if rel.split("/")[0] in CODE_DIRS or rel.endswith(".md"):
             files.append(rel)
@@ -431,6 +546,11 @@ def digest_pairs(old_texts, new_texts, helpers):
 
 
 def apply():
+    conflicts = movie_conflicts()
+    if conflicts:
+        for old, rel in conflicts:
+            print("refused: %s is spelled by the UI movie %s; move it to KEEP_K33 or rebuild the movie" % (old, rel))
+        return 1
     files = tracked_files()
     path, pins = baseline_pins()
     before = {rel: hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() for rel in pins if (ROOT / rel).is_file()}
@@ -446,9 +566,14 @@ def apply():
             changed.append((rel, n))
             old_texts[rel], new_texts[rel] = text, new
             total += n
+    changed += apply_menus()
+    header = renames_header()
+    if not (ROOT / GENERATED).is_file() or (ROOT / GENERATED).read_bytes() != header:
+        (ROOT / GENERATED).write_bytes(header)
+        changed.append((GENERATED, 0))
     for rel, n in changed:
         print("%5d  %s" % (n, rel))
-    print("%d replacements in %d files" % (total, len(changed)))
+    print("%d replacements in %d files" % (total + sum(n for r, n in changed if r not in old_texts), len(changed)))
     if not changed:
         return 0
     # the generated console table: the new names sort differently
@@ -490,6 +615,94 @@ def apply():
     return 0
 
 
+def all_tracked():
+    out = subprocess.run(["git", "-C", str(ROOT), "ls-files", "-z"], capture_output=True, check=True).stdout
+    return [rel for rel in out.decode("utf-8").split("\0") if rel and (ROOT / rel).is_file()]
+
+
+def menu_files():
+    """The native menu sources and their generated listings under zones/ (step-2 names only: zone names stay)."""
+    return sorted(rel for rel in all_tracked() if rel.startswith("zones/") and MOVIE_MARK not in rel and
+                  (("/menufile/" in rel and rel.endswith((".json", ".txt"))) or
+                   ("/sources/" in rel and rel.endswith(".menu"))))
+
+
+_IW_PATTERN = re.compile(LEFT + '(' + '|'.join(re.escape(k) for k in sorted(IW_NAMES, key=lambda s: (-len(s), s)))
+                         + ')' + RIGHT)
+
+
+def movie_conflicts():
+    """[(old name, movie file)] for every step-2 name a shipped UI movie spells: those must not be renamed here."""
+    hits = []
+    for rel in all_tracked():
+        if MOVIE_MARK not in rel:
+            continue
+        data = (ROOT / rel).read_bytes()
+        for old in IW_NAMES:
+            if re.search(rb'(?<![A-Za-z0-9_])' + re.escape(old.encode()) + rb'(?![A-Za-z0-9_])', data):
+                hits.append((old, rel))
+    return hits
+
+
+def renames_header():
+    lines = ["/* Generated by tools/drop_codol_prefix.py - do not edit (the rename tool never rewrites this file).",
+             " * Kernel33 dvars renamed from the k33_ prefix to IW engine names. C1 executes config_mp.cfg before",
+             " * Kernel33 registers its dvars, so a saved \"seta <old> <value>\" leaves a string dvar of the old name;",
+             " * C1MigrateRenamed (c1game.c) copies its value to the new name once and empties the old one. */",
+             "#ifndef K33_DVAR_RENAMES_H", "#define K33_DVAR_RENAMES_H", "",
+             "static const char *const kDvarRenames[][2] = {"]
+    lines += ['    { "%s", "%s" },' % (new, old) for old, new in sorted(IW_DVARS, key=lambda p: p[1].lower())]
+    lines += ["};", "", "#endif", ""]
+    return "\n".join(lines).encode("ascii")
+
+
+def k33_remaining():
+    """{word: {reason: count}} of k33 console-like words inside C string literals of src/ and tests/."""
+    found = {}
+    for rel in tracked_files():
+        if not rel.startswith(("src/", "tests/")) or not rel.endswith((".c", ".h", ".cpp", ".inc")):
+            continue
+        _, text = read(rel)
+        if text is None:
+            continue
+        for line in text.splitlines():
+            s = line.replace('\\"', '')
+            for m in K33_WORD.finditer(s):
+                if s[:m.start()].count('"') % 2 != 1:
+                    continue
+                word = m.group(0)
+                after = s[m.end():m.end() + 2]
+                if len(after) == 2 and after[0] == "." and after[1].isalpha():
+                    reason = "file name (another repository or an install)"
+                elif word in MAPPING:
+                    reason = "STILL MAPPED"
+                elif word in KEEP_K33:
+                    reason = KEEP_K33[word]
+                else:
+                    reason = "UNCLASSIFIED"
+                found.setdefault(word, {}).setdefault(reason, 0)
+                found[word][reason] += 1
+    return found
+
+
+def apply_menus():
+    """Step-2 names in the native menu sources; the stored .bin menulists are re-encoded from their .json."""
+    changed = []
+    for rel in menu_files():
+        data, text = read(rel)
+        new, n = _IW_PATTERN.subn(lambda m: IW_NAMES[m.group(1)], text)
+        if n:
+            (ROOT / rel).write_bytes(encode(new, data))
+            changed.append((rel, n))
+            if rel.endswith(".json") and (ROOT / (rel[:-5] + ".bin")).is_file():
+                sys.path.insert(0, str(ROOT))
+                from zonekit import menus
+                bin_path = ROOT / (rel[:-5] + ".bin")
+                bin_path.write_bytes(menus.encode_menulist(json.loads(new)))
+                changed.append((rel[:-5] + ".bin", 0))
+    return changed
+
+
 def length_hazards(files):
     """C code that steps over a renamed string literal by the OLD name's length (q += 14 after
     strstr(p, "k33_survival")): every renamed name changes length, so such a step must be sizeof("...") - 1."""
@@ -505,7 +718,7 @@ def length_hazards(files):
                 continue
             for m in re.finditer(r'"%s"' % re.escape(new), text):
                 window = text[m.end():m.end() + 120]
-                if re.search(r"\+=?\s*%d(?![0-9])" % len(old), window):
+                if re.search(r"(?:\+=?|[<>]=?)\s*%d(?![0-9])" % len(old), window):
                     line = text.count(chr(10), 0, m.start()) + 1
                     hazards.append("%s:%d: %s" % (rel, line, new))
     return hazards
@@ -521,7 +734,20 @@ def check(report):
     hazards = length_hazards(files)
     for h in hazards:
         print("old-length step after a renamed literal: %s" % h)
+    for rel in menu_files():
+        _, text = read(rel)
+        pending += len(_IW_PATTERN.findall(text))
+    conflicts = movie_conflicts()
+    for old, rel in conflicts:
+        print("step-2 name spelled by a UI movie (move it to KEEP_K33): %s in %s" % (old, rel))
+    stale_header = not (ROOT / GENERATED).is_file() or (ROOT / GENERATED).read_bytes() != renames_header()
+    if stale_header:
+        print("%s is missing or stale: run the tool" % GENERATED)
     found = remaining(files)
+    for word, reasons in k33_remaining().items():
+        for reason, n in reasons.items():
+            found.setdefault(word, {}).setdefault(reason, 0)
+            found[word][reason] += n
     bad = {w: r for w, r in found.items() if any(k.startswith(("UNCLASSIFIED", "STILL")) for k in r)}
     if report:
         by_reason = {}
@@ -530,10 +756,10 @@ def check(report):
                 by_reason.setdefault(reason, []).append("%s (%d)" % (word, n))
         for reason in sorted(by_reason):
             print("%s:\n    %s" % (reason, ", ".join(sorted(by_reason[reason], key=str.lower))))
-    print("%d mapped name(s) still to replace; %d unclassified codol word(s) in the code" % (pending, len(bad)))
+    print("%d mapped name(s) still to replace; %d unclassified codol/k33 word(s) in the code" % (pending, len(bad)))
     for word, reasons in sorted(bad.items()):
         print("    %s %s" % (word, reasons))
-    return 1 if pending or bad or hazards else 0
+    return 1 if pending or bad or hazards or conflicts or stale_header else 0
 
 
 if __name__ == "__main__":

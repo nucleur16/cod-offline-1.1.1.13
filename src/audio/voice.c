@@ -34,12 +34,12 @@
  *   client -> server  "\xff\xff\xff\xffv\0" u8 ver=1, u8 flags (1 = last), u16 seq, u8 n, n*(u8 len, data)
  *   server -> client  "\xff\xff\xff\xffv\0" u8 ver=1, u8 flags, u8 talker, u16 seq, u8 n, frames
  *
- * Dvars: k33_voice (master switch; "+set k33_voice 0" installs nothing),
- * k33_voiceVolume (percent), k33_voiceBitrate, k33_voiceLoopback (hear yourself locally, no server),
- * k33_voiceDebug, k33_voiceTone, k33_voiceMode (0 push-to-talk, 1 voice activation), k33_voiceThreshold
- * (0..100 = -60..0 dBFS), k33_voiceHangMs, k33_voiceMicMute, k33_voiceLevel (live, read only),
- * k33_voiceMeter (Options > Audio's meter request). Commands: +talk, -talk, toggletalk, k33voice
- * (status), k33voicemute <client>.
+ * Dvars: cl_voiceChat (master switch; "+set cl_voiceChat 0" installs nothing),
+ * k33_voiceVolume (percent), cl_voiceBitrate, cl_voiceLoopback (hear yourself locally, no server),
+ * cl_voiceDebug, cl_voiceTone, k33_voiceMode (0 push-to-talk, 1 voice activation), k33_voiceThreshold
+ * (0..100 = -60..0 dBFS), cl_voiceHangMs, k33_voiceMicMute, k33_voiceLevel (live, read only),
+ * k33_voiceMeter (Options > Audio's meter request). Commands: +talk, -talk, toggletalk, cl_voiceStatus
+ * (status), cl_voiceMute <client>.
  * Options > Audio's Voice section (voice_ui_mp: zones/voice_ui_mp/.../as/codo/views/option_sub/OptionView_audio.as) sets these.
  *
  * Every site is byte-checked; a mismatch is logged and that part stays off. Missing audio devices
@@ -230,13 +230,13 @@ static void VoiceDevRelease(VoiceDev *d)
     d->retryAt = retry;
 }
 
-/* ---- microphone choice (k33_voiceInputDevice) -------------------------------------------------------
+/* ---- microphone choice (cl_voiceInputDevice) -------------------------------------------------------
  * The audio thread lists the active capture endpoints (EnumAudioEndpoints eCapture, DEVICE_STATE_ACTIVE,
  * PKEY_Device_FriendlyName) when it starts and whenever Windows reports a device change
  * (IMMNotificationClient), into g_inIds / g_inNames (names in code page 936, what C1 shows; a character
  * GBK lacks becomes '?'). The main thread publishes the names as k33_voiceInputList ("Default;name;..."),
  * the chosen one's position as k33_voiceInputIndex, and turns Options > Audio's pick (k33_voiceInputPick,
- * an index) into k33_voiceInputDevice (archived: the endpoint ID; empty = Windows' default
+ * an index) into cl_voiceInputDevice (archived: the endpoint ID; empty = Windows' default
  * communications device). The capture stream is reopened on the chosen endpoint as soon as the choice
  * changes; a chosen device that is missing falls back to the default (logged), and is taken again when it
  * comes back. */
@@ -445,7 +445,7 @@ static void VoiceSampleOut(const VoiceDev *d, BYTE *frame, float v)
  *   level   RMS of the frame in dBFS, mapped -60..0 dBFS -> 0..100 (k33_voiceThreshold's scale).
  *   attack  the gate opens after two frames in a row at or above the threshold (40 ms), or at once
  *           on a frame 15 above it (a loud onset).
- *   hang    every frame within 8 of the threshold (about 5 dB hysteresis) restarts k33_voiceHangMs
+ *   hang    every frame within 8 of the threshold (about 5 dB hysteresis) restarts cl_voiceHangMs
  *           (400); when it runs out the gate closes and that frame goes out marked last.
  *   pre-roll  the last VOICE_PREROLL frames (120 ms) before the gate opened are encoded first, so
  *           the start of a word that only crossed the threshold half way through is not clipped.
@@ -605,7 +605,7 @@ static void VoiceCaptureEnd(void)
     InterlockedExchange(&g_micLevel100, 0);
 }
 
-/* k33_voiceTone 1: a 440 Hz test tone instead of the microphone (no capture device); 2: the tone in
+/* cl_voiceTone 1: a 440 Hz test tone instead of the microphone (no capture device); 2: the tone in
  * bursts, 600 ms on and 900 ms off, to exercise the voice-activation gate. */
 static BOOL VoiceToneTick(BOOL want)
 {
@@ -833,35 +833,36 @@ static void VoiceRegisterDvars(void)
 {
     const BYTE *(*reg)(const char *, int, int, int, unsigned, const char *) = C1RegisterInt;
     g_voiceDvarsDone = TRUE;
-    g_dvVoice = reg("k33_voice", 1, 0, 1, 0x1, "Voice chat: 1 on, 0 off (+set k33_voice 0 on the command line installs nothing)");
+    g_dvVoice = reg("cl_voiceChat", 1, 0, 1, 0x1, "Voice chat: 1 on, 0 off (+set cl_voiceChat 0 on the command line installs nothing)");
     g_dvVolume = reg("k33_voiceVolume", 100, 0, 400, 0x1, "Voice chat playback volume in percent");
-    g_dvBitrate = reg("k33_voiceBitrate", 24000, 6000, 64000, 0x1, "Opus voice bitrate (bits per second)");
+    g_dvBitrate = reg("cl_voiceBitrate", 24000, 6000, 64000, 0x1, "Opus voice bitrate (bits per second)");
 #if K33_DIAGNOSTICS
-    g_dvLoopback = reg("k33_voiceLoopback", 0, 0, 1, 0, "Play your own voice back locally instead of sending it");
-    g_dvDebug = reg("k33_voiceDebug", 0, 0, 2, 0, "Voice chat diagnostics in the console");
-    g_dvTone = reg("k33_voiceTone", 0, 0, 2, 0, "Transmit a 440 Hz test tone instead of the microphone (2: in bursts)");
+    g_dvLoopback = reg("cl_voiceLoopback", 0, 0, 1, 0, "Play your own voice back locally instead of sending it");
+    g_dvDebug = reg("cl_voiceDebug", 0, 0, 2, 0, "Voice chat diagnostics in the console");
+    g_dvTone = reg("cl_voiceTone", 0, 0, 2, 0, "Transmit a 440 Hz test tone instead of the microphone (2: in bursts)");
 #endif
     g_dvMode = reg("k33_voiceMode", 0, 0, 1, 0x1, "Voice chat transmit mode: 0 push-to-talk, 1 voice activation (open mic gated by level)");
     g_dvThreshold = reg("k33_voiceThreshold", 30, 0, 100, 0x1,
-                        "Voice activation level, 0..100 = -60..0 dBFS (RMS); k33voice shows the live mic level");
-    g_dvHang = reg("k33_voiceHangMs", 400, 0, 3000, 0x1, "Voice activation: keep transmitting this long after the level drops");
+                        "Voice activation level, 0..100 = -60..0 dBFS (RMS); cl_voiceStatus shows the live mic level");
+    g_dvHang = reg("cl_voiceHangMs", 400, 0, 3000, 0x1, "Voice activation: keep transmitting this long after the level drops");
     g_dvMicMute = reg("k33_voiceMicMute", 0, 0, 1, 0x1, "Microphone off (Options > Audio > Microphone)");
     g_dvLevel = reg("k33_voiceLevel", 0, -1, 100, 0, "Live microphone level 0..100 (read only; -1 no microphone)");
     g_dvMeter = reg("k33_voiceMeter", 0, 0, 1, 0, "Set by Options > Audio while shown: open the mic to meter it (nothing is sent)");
     {
         typedef const BYTE *(__cdecl *RegStr)(const char *, const char *, unsigned, const char *);
         RegStr regs = (RegStr)(DWORD_PTR)0x00624740u;
-        g_dvInDevice = regs("k33_voiceInputDevice", "", 0x1, "Microphone: Windows endpoint ID (empty = the default communications device)");
+        g_dvInDevice = regs("cl_voiceInputDevice", "", 0x1, "Microphone: Windows endpoint ID (empty = the default communications device)");
+        if (g_dvInDevice) C1MigrateRenamed("cl_voiceInputDevice");
         g_dvInList = regs("k33_voiceInputList", "", 0, "Microphones for Options > Audio: Default;name;... (read only)");
     }
     g_dvInPick = reg("k33_voiceInputPick", -1, -1, 64, 0, "Set by Options > Audio: choose the microphone at this position of k33_voiceInputList");
     g_dvInIndex = reg("k33_voiceInputIndex", 0, 0, 64, 0, "The chosen microphone's position in k33_voiceInputList (read only)");
 
     /* C1 does not apply "+set" from the command line to a dvar registered this late (and runs no
-     * "+command" at all), so re-issue ours: "+set k33_voiceLoopback 1", "+toggletalk". */
-    static const char *const kMine[] = { "k33_voice", "k33_voiceVolume", "k33_voiceBitrate",
-                                         "k33_voiceLoopback", "k33_voiceDebug", "k33_voiceTone",
-                                         "k33_voiceMode", "k33_voiceThreshold", "k33_voiceHangMs",
+     * "+command" at all), so re-issue ours: "+set cl_voiceLoopback 1", "+toggletalk". */
+    static const char *const kMine[] = { "cl_voiceChat", "k33_voiceVolume", "cl_voiceBitrate",
+                                         "cl_voiceLoopback", "cl_voiceDebug", "cl_voiceTone",
+                                         "k33_voiceMode", "k33_voiceThreshold", "cl_voiceHangMs",
                                          "k33_voiceMicMute" };
     const char *cl = GetCommandLineA();
     for (unsigned i = 0; cl && i < sizeof(kMine) / sizeof(kMine[0]); i++) {
@@ -1106,7 +1107,7 @@ static void VoiceInstallBind(void)
         return;
     }
     for (int i = 0; i < VOICE_BIND_COUNT; i++) g_bindNames[i] = (const char *)(DWORD_PTR)table[i];
-    g_bindNames[86] = "k33_reserved";
+    g_bindNames[86] = "gpad_reserved";
     g_bindNames[VOICE_BIND_TALK] = "+talk";
     g_bindNames[VOICE_BIND_UNTALK] = "-talk";
     DWORD nt = (DWORD)(DWORD_PTR)g_bindNames;
@@ -1131,12 +1132,12 @@ static void VoiceAnnounce(void)
     VoiceTalkKeys(keys, sizeof(keys));
     C1Printf("^3voice: Opus voice chat %s, %s. Push-to-talk: %s (+talk; rebind under Options > Controls > Chat or "
               "\"bind <key> +talk\"); toggletalk latches. Voice mode, microphone and activation level: Options > "
-              "Audio. k33voice shows status.\n",
-              VoiceEnabled() ? "on" : "OFF (k33_voice 0)",
+              "Audio. cl_voiceStatus shows status.\n",
+              VoiceEnabled() ? "on" : "OFF (cl_voiceChat 0)",
               VoiceDvarInt(g_dvMode, 0) == 1 ? "voice activation" : "push-to-talk", keys[0] ? keys : "no key bound");
 }
 
-/* Test automation, only with "+set k33_cmdFile 1" on the command line: every half second the lines
+/* Test automation, only with "+set com_cmdFile 1" on the command line: every half second the lines
  * of <exe dir>\k33_cmd_<pid>.txt are executed (Cbuf) and the file is deleted. */
 static void VoiceCmdFile(void)
 {
@@ -1146,7 +1147,7 @@ static void VoiceCmdFile(void)
     static char path[MAX_PATH];
     if (enabled < 0) {
         const char *cl = GetCommandLineA();
-        enabled = cl && strstr(cl, "k33_cmdFile 1") != NULL;
+        enabled = cl && strstr(cl, "com_cmdFile 1") != NULL;
         if (enabled) {
             DWORD n = GetModuleFileNameA(NULL, path, MAX_PATH);
             while (n && path[n - 1] != '\\') n--;
@@ -1179,8 +1180,8 @@ static const char *VoiceDvarStr(const BYTE *d)
     return v && Readable(v, 1) ? v : "";
 }
 
-/* Main thread: k33_voiceInputDevice -> the audio thread; the device list and the chosen index for
- * Options > Audio; Options > Audio's pick -> k33_voiceInputDevice. */
+/* Main thread: cl_voiceInputDevice -> the audio thread; the device list and the chosen index for
+ * Options > Audio; Options > Audio's pick -> cl_voiceInputDevice. */
 static void VoiceInputTick(void)
 {
     static LONG listGen = -1;
@@ -1201,7 +1202,7 @@ static void VoiceInputTick(void)
         char cmd[260];
         EnterCriticalSection(&g_voiceLock);
         const char *id = pick > 0 && pick <= g_inCount ? g_inIds[pick - 1] : "";
-        _snprintf(cmd, sizeof(cmd), "set k33_voiceInputDevice \"%s\"; set k33_voiceInputPick -1\n", id);
+        _snprintf(cmd, sizeof(cmd), "set cl_voiceInputDevice \"%s\"; set k33_voiceInputPick -1\n", id);
         LeaveCriticalSection(&g_voiceLock);
         C1CbufAddText(cmd);
         VoiceDvarPoke(g_dvInPick, -1);
@@ -1230,7 +1231,7 @@ __attribute__((used)) void __cdecl VoiceMainTick(void)
     if (!g_voiceDvarsDone) {
         if (!C1DvarsReady()) return;
         VoiceRegisterDvars();
-        Log("voice: dvars registered at tick %ld (k33_voice %d, loopback %d)", ticks,
+        Log("voice: dvars registered at tick %ld (cl_voiceChat %d, loopback %d)", ticks,
             VoiceDvarInt(g_dvVoice, -1), VoiceDvarInt(g_dvLoopback, -1));
     }
     {
@@ -1389,7 +1390,7 @@ static void __cdecl VoiceCmdToggle(void)
 static void __cdecl VoiceCmdMute(void)
 {
     if (VoiceArgc() < 2) {
-        C1Printf("usage: k33voicemute <client number>   (toggles; k33voice lists who is talking)\n");
+        C1Printf("usage: cl_voiceMute <client number>   (toggles; cl_voiceStatus lists who is talking)\n");
         return;
     }
     int n = atoi(VoiceArgv(1));
@@ -1429,15 +1430,15 @@ static void __cdecl VoiceCmdStatus(void)
                       now - g_lastHeard[i] < 500 ? " (talking)" : "", g_talkers[i].muted ? " [muted]" : "");
 }
 
-/* Test automation: "k33ready [0|1]" presses the room's Ready button the way the Scaleform
+/* Test automation: "ui_pressReady [0|1]" presses the room's Ready button the way the Scaleform
  * SetReadyState callback does (AS_SetReadyState::Call 0x6AEFF0 reads the bool at args[0]+8). Only
- * with "+set k33_cmdFile 1" on the command line. */
+ * with "+set com_cmdFile 1" on the command line. */
 #if K33_LOCAL_TESTING
 static void __cdecl VoiceCmdReady(void)
 {
     static const BYTE kReady[] = { 0x55, 0x8B, 0xEC, 0xB8, 0x01, 0x00, 0x00, 0x00, 0x84, 0x05, 0xA8, 0xB0, 0x2E, 0x08 };
     const char *cl = GetCommandLineA();
-    if (!cl || !strstr(cl, "k33_cmdFile 1")) { C1Printf("k33ready: test builds only (+set k33_cmdFile 1)\n"); return; }
+    if (!cl || !strstr(cl, "com_cmdFile 1")) { C1Printf("ui_pressReady: test builds only (+set com_cmdFile 1)\n"); return; }
     if (!Readable((void *)(DWORD_PTR)0x006AEFF0u, sizeof(kReady)) || memcmp((void *)(DWORD_PTR)0x006AEFF0u, kReady, sizeof(kReady))) return;
     static double args[2];
     static DWORD params[8];
@@ -1448,14 +1449,14 @@ static void __cdecl VoiceCmdReady(void)
     params[5] = 1;
     typedef void(__attribute__((thiscall)) * CallFn)(void *, void *);
     ((CallFn)(DWORD_PTR)0x006AEFF0u)(NULL, params);
-    Log("voice: k33ready %d", ((BYTE *)args)[8]);
+    Log("voice: ui_pressReady %d", ((BYTE *)args)[8]);
 }
 
-/* Test automation: "k33mouse <x> <y> [click|off]" points C1 at a client-area position and clicks there
+/* Test automation: "cl_fakeMouse <x> <y> [click|off]" points C1 at a client-area position and clicks there
  * without the window having focus, so a test client next to the player's game can drive the menus:
  * C1's GetCursorPos / GetForegroundWindow / GetActiveWindow import slots (0xB423A4, 0xB423F4,
  * 0xB42454) report that position and the game window, and the click is posted as WM_LBUTTON*.
- * Only with "+set k33_cmdFile 1" on the command line. */
+ * Only with "+set com_cmdFile 1" on the command line. */
 static volatile LONG g_fakeMouse;
 static POINT g_fakeCursor;
 static FARPROC g_realCursor, g_realFg, g_realActive;
@@ -1481,7 +1482,7 @@ static HWND WINAPI VoiceFakeActive(void)
 static void __cdecl VoiceCmdMouse(void)
 {
     const char *cl = GetCommandLineA();
-    if (!cl || !strstr(cl, "k33_cmdFile 1")) { C1Printf("k33mouse: test builds only (+set k33_cmdFile 1)\n"); return; }
+    if (!cl || !strstr(cl, "com_cmdFile 1")) { C1Printf("cl_fakeMouse: test builds only (+set com_cmdFile 1)\n"); return; }
     if (!g_realCursor) {
         g_realCursor = *(FARPROC *)(DWORD_PTR)0x00B423A4u;
         g_realFg = *(FARPROC *)(DWORD_PTR)0x00B423F4u;
@@ -1503,21 +1504,21 @@ static void __cdecl VoiceCmdMouse(void)
         PostMessageA(h, WM_LBUTTONDOWN, MK_LBUTTON, lp);
         PostMessageA(h, WM_LBUTTONUP, 0, lp);
     }
-    Log("voice: k33mouse %ld %ld %s", g_fakeCursor.x, g_fakeCursor.y, VoiceArgc() >= 4 ? VoiceArgv(3) : "");
+    Log("voice: cl_fakeMouse %ld %ld %s", g_fakeCursor.x, g_fakeCursor.y, VoiceArgc() >= 4 ? VoiceArgv(3) : "");
 }
 
 #endif
 static C1Cmd g_voiceCmds[] = {
 #if K33_LOCAL_TESTING
-    { NULL, "k33mouse", (void *)VoiceCmdMouse },
-    { NULL, "k33ready", (void *)VoiceCmdReady },
+    { NULL, "cl_fakeMouse", (void *)VoiceCmdMouse },
+    { NULL, "ui_pressReady", (void *)VoiceCmdReady },
 #endif
     { NULL, "+talk", (void *)VoiceCmdTalkDown },   { NULL, "-talk", (void *)VoiceCmdTalkUp },
     { NULL, "toggletalk", (void *)VoiceCmdToggle },
 #if K33_DIAGNOSTICS
-    { NULL, "k33voice", (void *)VoiceCmdStatus },
+    { NULL, "cl_voiceStatus", (void *)VoiceCmdStatus },
 #endif
-    { NULL, "k33voicemute", (void *)VoiceCmdMute },
+    { NULL, "cl_voiceMute", (void *)VoiceCmdMute },
 };
 
 /* Link the nodes into C1's command list. Done before the game entry: the list head 0x24F6424 is
@@ -1643,7 +1644,7 @@ static int VoiceTalkerNum(int nth)
     for (int i = 0; i < VOICE_TALKERS; i++) {
         DWORD t = g_lastHeard[i];
         if (!t || now - t > 500 || g_talkers[i].muted) continue;
-        if (nth-- == 0) return i == VOICE_LOOPBACK_TALKER ? VoiceLocalClient() : i; /* k33_voiceLoopback: you */
+        if (nth-- == 0) return i == VOICE_LOOPBACK_TALKER ? VoiceLocalClient() : i; /* cl_voiceLoopback: you */
     }
     return -1;
 }
@@ -1779,8 +1780,8 @@ static void InstallVoice(void)
     static const BYTE kClc[] = { 0x8B, 0x3D, 0x68, 0x80, 0x6F, 0x01, 0x6A, 0x01, 0x81, 0xF7, 0xCC, 0x50, 0xF9, 0x26 };
 
     const char *cl = GetCommandLineA();
-    if (cl && (strstr(cl, "k33_voice 0") || strstr(cl, "k33_voice \"0\""))) {
-        Log("voice: off (k33_voice 0)");
+    if (cl && (strstr(cl, "cl_voiceChat 0") || strstr(cl, "cl_voiceChat \"0\""))) {
+        Log("voice: off (cl_voiceChat 0)");
         return;
     }
     InitializeCriticalSection(&g_voiceLock);

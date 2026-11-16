@@ -6,7 +6,7 @@ static int LocalMultiArgument(int argc, const wchar_t *const *argv)
 {
     int enabled=0;
     for(int i=1;i+1<argc;i++) {
-        if(wcscmp(argv[i],L"+set") || wcscmp(argv[i+1],L"k33_local_test_multi")) continue;
+        if(wcscmp(argv[i],L"+set") || wcscmp(argv[i+1],L"com_localTestMulti")) continue;
         enabled=i+2<argc && wcscmp(argv[i+2],L"1")==0;
     }
     return enabled;

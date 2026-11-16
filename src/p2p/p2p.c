@@ -9,7 +9,7 @@
  *   p2phost [map] [gametype] [zonetype]   start hosting (defaults from p2p\p2p_host.ini)
  *   p2pstop                               rcon quit, then end the server's job
  *   p2pstatus                             state, address, pid, ready time, last sh1x_status line
- *   +set k33_p2pHost 1                    on the command line: start hosting while the client loads
+ *   +set sv_p2pHost 1                    on the command line: start hosting while the client loads
  *
  * The lobby's room (K33LocalPlayAuto, or the UI's p2p_room / p2p_localhost 1) only ARMS a host: it records and publishes the intent
  * ("state=armed launch=deferred") and starts nothing. The server is started when the match the room started
@@ -1142,7 +1142,7 @@ static C1Cmd g_p2pCmds[] = {
 };
 
 /* TakeOver, before the game entry: link the commands (the list head is plain data, as voice.c notes) and
- * start hosting at once with +set k33_p2pHost 1, so the server loads its map while the client starts. */
+ * start hosting at once with +set sv_p2pHost 1, so the server loads its map while the client starts. */
 static void InstallP2PHost(void)
 {
     g_p2pMainThread=GetCurrentThreadId(); /* TakeOver calls the original C1 entry on this thread. */
@@ -1152,7 +1152,7 @@ static void InstallP2PHost(void)
     int added = 0;
     for (unsigned i = 0; i < sizeof(g_p2pCmds) / sizeof(g_p2pCmds[0]); i++) added += C1AddCommand(&g_p2pCmds[i]);
     const char *cl = GetCommandLineA();
-    BOOL autostart = cl && (strstr(cl, "k33_p2pHost 1") || strstr(cl, "k33_p2pHost \"1\""));
-    Log("p2p: %d commands (p2phost, p2pstop, p2pstatus)%s", added, autostart ? "; hosting at startup (k33_p2pHost 1)" : "");
+    BOOL autostart = cl && (strstr(cl, "sv_p2pHost 1") || strstr(cl, "sv_p2pHost \"1\""));
+    Log("p2p: %d commands (p2phost, p2pstop, p2pstatus)%s", added, autostart ? "; hosting at startup (sv_p2pHost 1)" : "");
     if (autostart) P2PStart(NULL, NULL, NULL);
 }

@@ -55,7 +55,7 @@ client (`src/p2p/hostgate.c`):
   (`CODOL_MM_HOST_IP`), so they pass.
 - Nothing calls `HostGateVouch()` yet. **A player-hosted server on another machine is refused
   in stage 1.** Stage 2 adds lobby-signed host tickets, the only way into that list.
-- Only an explicit local-testing build accepts `+set k33_hostGate 1` for log-only
+- Only an explicit local-testing build accepts `+set net_hostGate 1` for log-only
   diagnosis. Shipping always enforces; installation failure stops client startup.
   Every refused address is logged once to `Kernel33.log`.
 
@@ -227,7 +227,7 @@ anyone who can forge it can admit themselves.
 
 - `p2phost [map] [gametype] [zonetype]` starts hosting, `p2pstop` stops (rcon `quit`, then the
   job), `p2pstatus` prints the state, address, pid, ready time and last `sh1x_status` line.
-  `+set k33_p2pHost 1` on the command line starts hosting while the client loads.
+  `+set sv_p2pHost 1` on the command line starts hosting while the client loads.
 - Settings come from `<exe dir>\p2p\p2p_host.ini` (`key=value`). The defaults keep everything
   under `<exe dir>\p2p\`. Keys: `exe`, `basepath`, `home`, `scripts`, `state`, `profile`,
   `rcon_file`, `map`, `gametype`, `zone_type`, `session_map`, `net_ip`, `port`,
@@ -286,7 +286,7 @@ reach the user's lobby; those probes are stateless.
 
 | check | result |
 |---|---|
-| host client started with `+set k33_p2pHost 1` | the server started about 6 s after the client; first `sh1x_status` 33.9 s after the start (cold disk), 23.0 s and 10.6 s on later starts |
+| host client started with `+set sv_p2pHost 1` | the server started about 6 s after the client; first `sh1x_status` 33.9 s after the start (cold disk), 23.0 s and 10.6 s on later starts |
 | registration | `extra 17760` in the lobby's `match_rollout.txt`; the lobby's `lobby_status.json` showed 17760 answering |
 | host joins its own server | Ready in a room: the lobby logged `instances: :17760 is free -- switching mp_killhouse_sh/war -> mp_killhouse_sh/combat` and RCONed it; the host client connected (`p2phost num 2 from 127.0.0.1:30002`) and played about 9.5 minutes (snapshots, splashes, PARITY lines) until the match ended and the server restarted the map |
 | second client joins | client B (`p2pjoin`, second local instance): the lobby logged `instances: joining :17760 mp_killhouse_sh/combat (1 other player(s))`; B connected (`num 3`); then both played together, rcon `status` sampled every 10 s for 60 s: both players active, ping 6-22 ms, last message 0-34 ms |
@@ -342,7 +342,7 @@ memory.
 | address space | `codoMP_client_shipRetail.exe` already has LARGE_ADDRESS_AWARE (characteristics 0x122), so the process gets 4 GB on 64-bit Windows; no change was needed | see memory below |
 
 ### Measured (2026-10-27, k33-p2ptest, offline lobby copy on 3174, mp_killhouse_sh)
-- **Startup.** `+set k33_p2pHost 1`: `Sh1xHost_Init` took 2.3 s on the game thread. The server answered
+- **Startup.** `+set sv_p2pHost 1`: `Sh1xHost_Init` took 2.3 s on the game thread. The server answered
   `sh1x_status` 17.5 s after the session started (the client was loading in parallel), and the lobby
   registration worked as in stage 1.
 - **Host joins.** The host pressed Ready; the lobby switched the in-process server to `combat`. That switch is

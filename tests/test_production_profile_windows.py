@@ -51,7 +51,7 @@ int main(void) {
         (folder/'compile.log').write_text(r.stdout+r.stderr,encoding='utf8')
         assert (r.returncode==0)==valid,name
         if valid:
-            run=subprocess.run([str(exe),'k33_cmdFile','1','gpad_testcmds','1'],capture_output=True,text=True,timeout=10,creationflags=subprocess.CREATE_NO_WINDOW)
+            run=subprocess.run([str(exe),'com_cmdFile','1','gpad_testcmds','1'],capture_output=True,text=True,timeout=10,creationflags=subprocess.CREATE_NO_WINDOW)
             assert run.returncode==0,run.stdout+run.stderr
             results.append(dict(case=name,compiled=True,hidden_actual_Windows_body_passed=True))
         else:results.append(dict(case=name,invalid_profile_compile_rejected=True))

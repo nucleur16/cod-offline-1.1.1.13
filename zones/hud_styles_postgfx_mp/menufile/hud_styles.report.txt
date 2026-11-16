@@ -48,7 +48,7 @@ v26 kd_rate_bar[19] -> scorebar_hd: dropped: player("revives"): not a field of 1
 v26 kd_rate_bar -> scorebar_hd: 16 of 20 items
 v26 killstreaks_hd -> killstreaks_hd: 83 of 83 items
 v26 minimap_fullscreen -> minimap_fullscreen: 17 of 17 items
-v26 rewrite: getweaponfiretype -> dvarstring("k33_hudFireType") (hud_style.c, from the weapon def)
+v26 rewrite: getweaponfiretype -> dvarstring("cg_hudFireType") (hud_style.c, from the weapon def)
 v26 rewrite: fontEnum 11 -> 7 (1.1.1.13 has no font 11; in 1.2.1.12 it is a copy of fonts/normalFont)
 v26 rewrite: fontEnum 14 -> 7 (1.1.1.13 has no font 14; in 1.2.1.12 it is a copy of fonts/normalFont)
 v26 rewrite: istrain -> 0 (a mode 1.1.1.13 does not have)
@@ -56,7 +56,7 @@ v26 rewrite: issurvival -> dvarstring("g_gametype") == "survival"
 v26 rewrite: fontEnum 12 -> 7 (1.1.1.13 has no font 12; in 1.2.1.12 it is a copy of fonts/normalFont)
 v26 rewrite: localvarint("isCombat") -> dvarstring("ui_gametype") == "combat" (what the later onOpen stores in it)
 v26 rewrite: isevac -> 0 (a mode 1.1.1.13 does not have)
-v26 rewrite: player("assists") -> dvarint("k33_hudAssists") (hud_style.c, from the score records)
+v26 rewrite: player("assists") -> dvarint("cg_hudAssists") (hud_style.c, from the score records)
 v33 weaponbar_hd[4] -> weaponbar_hd: ownerDraw 5 written as clip count, clip bar and reserve count
 v33 weaponbar_hd -> weaponbar_hd: 26 of 26 items
 v33 weaponbar_hd_extend[1] -> weaponbar_hd: dropped: operator canChargeAttackIconShow has no 1.1.1.13 equivalent
@@ -105,7 +105,7 @@ v33 killstreaks_hd2 -> killstreaks_hd: 121 of 124 items
 v33 minimap_fullscreen -> minimap_fullscreen: 17 of 17 items
 v33 rewrite: 3.3.3.3 operator 258 -> 0 (read from its case in 3.3.3.3)
 v33 rewrite: 3.3.3.3 operator 273 -> 0 (read from its case in 3.3.3.3)
-v33 rewrite: getweaponfiretype -> dvarstring("k33_hudFireType") (hud_style.c, from the weapon def)
+v33 rewrite: getweaponfiretype -> dvarstring("cg_hudFireType") (hud_style.c, from the weapon def)
 v33 rewrite: fontEnum 11 -> 7 (1.1.1.13 has no font 11; in 1.2.1.12 it is a copy of fonts/normalFont)
 v33 rewrite: fontEnum 14 -> 7 (1.1.1.13 has no font 14; in 1.2.1.12 it is a copy of fonts/normalFont)
 v33 rewrite: istrain -> 0 (a mode 1.1.1.13 does not have)
@@ -115,7 +115,7 @@ v33 rewrite: fontEnum 12 -> 7 (1.1.1.13 has no font 12; in 1.2.1.12 it is a copy
 v33 rewrite: isevac -> 0 (a mode 1.1.1.13 does not have)
 v33 rewrite: localvarint("isCombat") -> dvarstring("ui_gametype") == "combat" (what the later onOpen stores in it)
 v33 rewrite: 3.3.3.3 operator 265 -> 1 (read from its case in 3.3.3.3)
-v33 rewrite: player("assists") -> dvarint("k33_hudAssists") (hud_style.c, from the score records)
+v33 rewrite: player("assists") -> dvarint("cg_hudAssists") (hud_style.c, from the score records)
 v33 rewrite: 3.3.3.3 operator 253 -> 0 (read from its case in 3.3.3.3)
 v33 rewrite: 3.3.3.3 operator 267 -> '' (read from its case in 3.3.3.3)
 v33 rewrite: 3.3.3.3 operator 255 -> 100 (read from its case in 3.3.3.3)

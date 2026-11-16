@@ -128,7 +128,7 @@ int main(void) {
   "127.0.0.3\n3074\n127.0.0.3\n3074\n3ea\nextra\n"};
  for(unsigned i=0;i<sizeof(isolatedInvalid)/sizeof(isolatedInvalid[0]);i++)
   CHECK(!LocalMultiRoute(isolatedInvalid[i],strlen(isolatedInvalid[i])));
- const wchar_t *args[]={L"game",L"+set",L"k33_local_test_multi",L"1",L"+set",L"k33_local_test_multi",L"0"};
+ const wchar_t *args[]={L"game",L"+set",L"com_localTestMulti",L"1",L"+set",L"com_localTestMulti",L"0"};
  CHECK(LocalMultiArgument(4,args));CHECK(!LocalMultiArgument(7,args));CHECK(!LocalMultiArgument(3,args));CHECK(!LocalMultiArgument(1,args));
  printf("{\"checks\":%u,\"failures\":%u,\"actual_x86_windows\":true,\"live_client\":false}\n",checks,failures);
  return failures!=0;

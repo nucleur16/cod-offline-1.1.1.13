@@ -6,14 +6,14 @@
  * second d3d9 proxy DLL is needed next to the client. A screen copy of the game window is black while the display
  * is off (Windows drops the frames of a windowed Direct3D 9 program), but the game still renders its back buffer.
  *
- *   k33_screenshot <file.png|file.bmp>   console command: the next presented frame is written to that file
- *   k33_framestats <file.txt>            console command: what the next complete frame draws into (below)
+ *   r_screenshot <file.png|file.bmp>   console command: the next presented frame is written to that file
+ *   com_frameStats <file.txt>            console command: what the next complete frame draws into (below)
  *   <exe dir>\k33_shot.req               one line: the path of the picture to write (.png or .bmp)
  *   <exe dir>\k33_stats.req              one line: the path of the statistics text file
  *
  * The two request files are for a harness outside the process (no input focus needed). They are polled on the
- * thread that presents, at most 20 times a second, and only on a test client: "+set k33_shotFile 1" or the
- * existing "+set k33_cmdFile 1" on the command line. A request file is deleted when it is read. The picture is
+ * thread that presents, at most 20 times a second, and only on a test client: "+set r_shotFile 1" or the
+ * existing "+set com_cmdFile 1" on the command line. A request file is deleted when it is read. The picture is
  * written to <path>.tmp and renamed, so a reader never sees half a file.
  *
  * The picture is the back buffer just before Present, after Kernel33's own overlays (console, FPS line) were
@@ -313,7 +313,7 @@ static BOOL ShotFileRequests(void)
 {
     if (g_shotFileRequests < 0) {
         const char *cl = GetCommandLineA();
-        g_shotFileRequests = cl && (strstr(cl, "k33_shotFile 1") || strstr(cl, "k33_cmdFile 1"));
+        g_shotFileRequests = cl && (strstr(cl, "r_shotFile 1") || strstr(cl, "com_cmdFile 1"));
         DWORD n = GetModuleFileNameA(NULL, g_shotReqFile, MAX_PATH - 20);
         while (n && g_shotReqFile[n - 1] != '\\') n--;
         g_shotReqFile[n] = 0;
@@ -380,16 +380,16 @@ static void ShotCmdQueue(char *slot, const char *what)
 static void __cdecl ShotCmdScreenshot(void)
 {
     if (VoiceArgc() == 2 && !ShotHasExt(VoiceArgv(1), ".png") && !ShotHasExt(VoiceArgv(1), ".bmp")) {
-        C1Printf("k33_screenshot <file.png|file.bmp>\n");
+        C1Printf("r_screenshot <file.png|file.bmp>\n");
         return;
     }
-    ShotCmdQueue(g_shotCmdPath, "k33_screenshot");
+    ShotCmdQueue(g_shotCmdPath, "r_screenshot");
 }
-static void __cdecl ShotCmdStats(void) { ShotCmdQueue(g_shotCmdStats, "k33_framestats"); }
+static void __cdecl ShotCmdStats(void) { ShotCmdQueue(g_shotCmdStats, "com_frameStats"); }
 
 static C1Cmd g_shotCmds[] = {
-    { NULL, "k33_screenshot", (void *)ShotCmdScreenshot },
-    { NULL, "k33_framestats", (void *)ShotCmdStats },
+    { NULL, "r_screenshot", (void *)ShotCmdScreenshot },
+    { NULL, "com_frameStats", (void *)ShotCmdStats },
 };
 
 /* TakeOver, after InstallConsole (whose Direct3DCreate9 hook leads here). */
@@ -398,6 +398,6 @@ static void InstallShot(void)
     if (!g_shotInit) { InitializeCriticalSection(&g_shotLock); g_shotInit = TRUE; }
     int added = 0;
     for (unsigned i = 0; i < sizeof(g_shotCmds) / sizeof(g_shotCmds[0]); i++) added += C1AddCommand(&g_shotCmds[i]);
-    Log("shot: %d commands (k33_screenshot, k33_framestats); request files %s", added,
-        ShotFileRequests() ? "polled" : "off (k33_shotFile 1 or k33_cmdFile 1 turns them on)");
+    Log("shot: %d commands (r_screenshot, com_frameStats); request files %s", added,
+        ShotFileRequests() ? "polled" : "off (r_shotFile 1 or com_cmdFile 1 turns them on)");
 }

@@ -371,7 +371,7 @@ occupied-slot repair and remaining first-connect gate are described below.
 These are security-boundary defects and an availability weakness, **not confirmed
 RCEs**:
 
-1. Shipping accepted `+set k33_hostGate 1`, forwarding denied hosts in log-only
+1. Shipping accepted `+set net_hostGate 1`, forwarding denied hosts in log-only
    mode despite the stated shipping trust requirement. Only explicit local-test
    builds can now use this mode.
 2. Missing or mismatched import slots caused `InstallHostGate` to return while

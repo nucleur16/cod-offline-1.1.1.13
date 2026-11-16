@@ -6,7 +6,7 @@
  * p2passetcheck <type> [name|*] compares the server's record with C1's (DB_FindXAssetHeader 0x4CB8E0, only for
  * names C1 has a real, non-default entry for: DB_IsXAssetDefault 0x4CBDA0 first, so no default asset is created).
  * Pointer words are compared by what they point at; every other byte must be equal. Results go to the console
- * and Kernel33.log. Test clients only (+set k33_cmdFile 1). Types: 11 sound, 36 rawfile, 37 string table.
+ * and Kernel33.log. Test clients only (+set com_cmdFile 1). Types: 11 sound, 36 rawfile, 37 string table.
  */
 
 /* (DB_FindXAssetHeader blocked on some rawfiles; the hash is read directly, see PiC1Find) */
@@ -647,7 +647,7 @@ static void PiCheckOnServer(void *ctx)
 static void __cdecl PiCmdAssetCheck(void)
 {
     const char *cl = GetCommandLineA();
-    if (!cl || !strstr(cl, "k33_cmdFile 1")) { C1Printf("p2passetcheck: test clients only (+set k33_cmdFile 1)\n"); return; }
+    if (!cl || !strstr(cl, "com_cmdFile 1")) { C1Printf("p2passetcheck: test clients only (+set com_cmdFile 1)\n"); return; }
     if (g_piState != PI_RUNNING || !g_piBase) { C1Printf("p2passetcheck: no in-process server running\n"); return; }
     unsigned type = VoiceArgc() > 1 ? (unsigned)atoi(VoiceArgv(1)) : 11;
     const char *which = VoiceArgc() > 2 ? VoiceArgv(2) : "*";

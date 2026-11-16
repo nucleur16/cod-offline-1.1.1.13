@@ -598,7 +598,7 @@ static BOOL PatchUnsignedZones(void)
  * (patch_locale_policy.h kPatchZoneMerged) is skipped while the zone that replaced it is in the folder.
  * A file named like a stock zone (or ffotd_client) is skipped, so it can never shadow one; to
  * replace a stock zone, put the unsigned build in its stock folder instead.
- * "+set k33_patchdir 0" on the command line turns the folder off.
+ * "+set fs_patchDir 0" on the command line turns the folder off.
  *
  * Patch zones named *_ui_mp (the stock UI zones' naming: patch_ui_mp, ui_mp) are prepended instead,
  * the same way, to the UI list's DB_LoadXAssets call
@@ -635,13 +635,13 @@ static int g_patchZoneCount;
 __attribute__((used)) DWORD g_patchDirDiskPath = PATCHDIR_DISK_PATH_VA;
 __attribute__((used)) DWORD g_patchDirOpenedPath = PATCHDIR_OPENED_VA;
 
-/* "+set k33_patchdir 0" anywhere on the command line; the last setting wins. */
+/* "+set fs_patchDir 0" anywhere on the command line; the last setting wins. */
 static BOOL PatchDirEnabled(void)
 {
     const char *p = GetCommandLineA();
     BOOL on = TRUE;
-    while ((p = strstr(p, "k33_patchdir")) != NULL) {
-        p += sizeof("k33_patchdir") - 1;
+    while ((p = strstr(p, "fs_patchDir")) != NULL) {
+        p += sizeof("fs_patchDir") - 1;
         if (*p != ' ' && *p != '\t' && *p != '"') continue;
         while (*p == ' ' || *p == '\t' || *p == '"') p++;
         on = !(p[0] == '0' && (p[1] == '\0' || p[1] == ' ' || p[1] == '\t' || p[1] == '"'));
@@ -775,14 +775,14 @@ static void LoadPatchDir(void)
     _snprintf(pdir, sizeof(pdir), "%s%s", dir, sub);
     pdir[sizeof(pdir) - 1] = 0;
 #if K33_LOCAL_TESTING
-    {   /* test clients ("+set k33_cmdFile 1") with a k33patch\ folder next to the exe load that one instead,
+    {   /* test clients ("+set com_cmdFile 1") with a k33patch\ folder next to the exe load that one instead,
          * so a UI build can be tried while the shared client_shipRetail\patch\ is in use */
         const char *cl = GetCommandLineA();
         char test[MAX_PATH];
         memcpy(test, dir, n);
         lstrcpynA(test + n, "k33patch\\", MAX_PATH - n);
         DWORD at = GetFileAttributesA(test);
-        if (cl && strstr(cl, "k33_cmdFile 1") && at != INVALID_FILE_ATTRIBUTES && (at & FILE_ATTRIBUTE_DIRECTORY)) {
+        if (cl && strstr(cl, "com_cmdFile 1") && at != INVALID_FILE_ATTRIBUTES && (at & FILE_ATTRIBUTE_DIRECTORY)) {
             lstrcpynA(pdir, test, sizeof(pdir));
             Log("patch folder: test client: using %s", pdir);
         }
@@ -1069,7 +1069,7 @@ static void PatchPatchDir(void)
         return;
     }
     if (!PatchDirEnabled()) {
-        Log("patch folder: off (k33_patchdir 0)");
+        Log("patch folder: off (fs_patchDir 0)");
         return;
     }
     static const BYTE kCmpJne[] = { 0x33, 0xFF, 0x3B, 0xC7, 0x0F, 0x85, 0x2E, 0x01, 0x00, 0x00 };
@@ -1626,7 +1626,7 @@ static void PatchGbkInput(void)
 #endif
 
 /* Sound voices: per-alias voice limit and nearest-wins at a channel cap (soundvoices.c), through the voice
- * diagnostics' hooks (sounddiag.c, which also logs refusals to Kernel33.log at k33_snddiag 1+). */
+ * diagnostics' hooks (sounddiag.c, which also logs refusals to Kernel33.log at snd_diag 1+). */
 #include "audio/sounddiag.c"
 #include "audio/soundvoices.c"
 

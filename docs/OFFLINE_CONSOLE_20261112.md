@@ -16,27 +16,27 @@ Now (`src/kernel33.c`, two small blocks):
 
 | part | shipping (`build.sh`) | local testing (`K33_LOCAL_TESTING=1`) |
 |---|---|---|
-| console.c: overlay, completion, history, `cmdlist`/`dvarlist`/`find`/`condump`/`k33help`/`k33dev`, HUD dvars `k33_drawFPS`/`k33_drawViewpos`, `k33_consoleKey` | yes | yes |
+| console.c: overlay, completion, history, `cmdlist`/`dvarlist`/`find`/`condump`/`con_help`/`con_status`, HUD dvars `cg_drawFramerate`/`cg_drawViewOrigin`, `con_toggleKey` | yes | yes |
 | console_server.c: route to the hosted server (`sv`/`rcon`, bare server names, server completion, cheat echo) | yes | yes |
-| k33shot.c: `k33_screenshot`, `k33_framestats`, `k33_shot.req`/`k33_stats.req`, draw-call hooks | no | yes |
-| `k33shot` built-in (console BMP) | no | yes |
-| `rcon` to a server other than the hosted one (`k33_rconPort`, `main\k33_rcon.txt`) | no | yes, only for an explicit `rcon` while nothing is hosted |
+| k33shot.c: `r_screenshot`, `com_frameStats`, `k33_shot.req`/`k33_stats.req`, draw-call hooks | no | yes |
+| `con_shot` built-in (console BMP) | no | yes |
+| `rcon` to a server other than the hosted one (`con_rconPort`, `main\k33_rcon.txt`) | no | yes, only for an explicit `rcon` while nothing is hosted |
 
-The console still opens with the key left of 1 (scan code 0x29) or F1 (`k33_consoleKey`, 0 = none), and
+The console still opens with the key left of 1 (scan code 0x29) or F1 (`con_toggleKey`, 0 = none), and
 `+set k33_console 0` still leaves it out. `-DK33_NO_CONSOLE` still builds and links.
 
 What the shipping DLL now contains because of this (all byte-checked as before, logged once by `InstallConsole`
 in builds that have a log): the `Direct3DCreate9` import-slot wrap (0xB42598) and the device/swap-chain `Present`
 vtable hooks, the window-class WndProc swap (0x62FB85 -> `ConsoleWndProc`), and the four pre-hooks on
 `Com_LogPrintMessage` 0x594010 (0x5941A4, 0x5942CE, 0x5944A2, 0x59B96E). Nothing test-only came with them: the
-command-file transport, `k33mouse`/`k33ready`, the parity logger and the snapshot diagnostics keep their own
+command-file transport, `cl_fakeMouse`/`ui_pressReady`, the parity logger and the snapshot diagnostics keep their own
 `K33_LOCAL_TESTING`/`K33_DIAGNOSTICS` gates.
 
 ## Routing rules (ConExecute, console.c)
 
 A line is split on `;` outside quotes, and each command goes to exactly one place:
 
-1. Console built-ins (`clear cmdlist dvarlist find condump k33help k33dev`) run in the console.
+1. Console built-ins (`clear cmdlist dvarlist find condump con_help con_status`) run in the console.
 2. `sv <line>` (alias `rcon <line>`) goes to the hosted server.
 3. A name the client has (a C1 command, or a C1 dvar by its numeric or readable name, also after
    `set/seta/reset/toggle...`) goes to C1's `Cbuf_AddText` 0x58BA60. If the server also has that name, the console
@@ -90,7 +90,7 @@ The server answers a cheat command with a game message (`CODOL_DevPrint`, server
 this neither in `console_mp.log` nor on the HUD (`viewpos`, `give ammo` and a refusal left nothing). So half a
 second after each cheat the console asks the server for `dev_cheats` and prints the result: whether cheats are
 permitted, then per player the health, pm_type, the god/demigod/notarget/noclip/ufo flags, the position and the
-weapon. After `devset <dvar> <value>` it prints that dvar instead. `devhelp` prints the console's `k33dev` list.
+weapon. After `devset <dvar> <value>` it prints that dvar instead. `devhelp` prints the console's `con_status` list.
 
 ## Synced commands and how they are kept in sync
 

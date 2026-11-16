@@ -110,10 +110,10 @@ enum { LR_PHASE_IDLE, LR_PHASE_WAIT, LR_PHASE_LOADING, LR_PHASE_STARTUP };
 static int g_lrPhase = LR_PHASE_STARTUP, g_lrTarget = -1;
 static DWORD g_lrSince;
 #if K33_LOCAL_TESTING
-static int g_lrCycles;                     /* k33_langcycle: switches still to do */
-static BOOL g_lrForce;                     /* k33_langforce: the next switch ignores LR_GATE_NO_STACK (measurement) */
+static int g_lrCycles;                     /* loc_cycle: switches still to do */
+static BOOL g_lrForce;                     /* loc_forceUnload: the next switch ignores LR_GATE_NO_STACK (measurement) */
 #endif
-static BOOL g_lrNoReorder;                 /* +set k33_langNoReorder 1 (test builds): LrMapLoadHook passes through */
+static BOOL g_lrNoReorder;                 /* +set loc_noReorder 1 (test builds): LrMapLoadHook passes through */
 #if K33_LOCAL_TESTING
 #endif
 
@@ -517,7 +517,7 @@ static void __cdecl LrMapLoadHook(XZoneInfo *info, unsigned count, int sync)
     if (!code || g_lrNoReorder || !g_lsInstalled || !g_lrName[0] || g_lrPhase != LR_PHASE_IDLE || count >= 40) {
         if (code && g_lsInstalled && g_lrName[0])
             Log("language: a map load adds code zones above \"%s\"; it stays where it is (%s): a later switch applies on "
-                "restart", g_lrName, g_lrNoReorder ? "k33_langNoReorder" : g_lrPhase != LR_PHASE_IDLE ? "a switch is running" :
+                "restart", g_lrName, g_lrNoReorder ? "loc_noReorder" : g_lrPhase != LR_PHASE_IDLE ? "a switch is running" :
                 "list too long");
         ((LoadXAssetsFn)(DWORD_PTR)DB_LOAD_XASSETS_VA)(info, count, sync);
         return;
@@ -569,7 +569,7 @@ static enum LrGateAnswer LrGateNow(LrStats *s)
     if (g_lrForce && g.loaded && !g.onTop) {
         g_lrForce = FALSE;
         g.onTop = TRUE;
-        Log("language: k33_langforce: unloading \"%s\" although it is not the top block of its stack", g_lrName);
+        Log("language: loc_forceUnload: unloading \"%s\" although it is not the top block of its stack", g_lrName);
     }
 #endif
     g.zones = (int)s->zones;
@@ -764,7 +764,7 @@ static void __cdecl LsCmdSetLanguage(void)
 static C1Cmd g_lsCmd = { NULL, "k33_setlanguage", (void *)LsCmdSetLanguage };
 
 #if K33_LOCAL_TESTING
-/* Test builds: "k33_langstat [text]" logs the tables' use; "k33_langcycle <n>" switches to the next language n times,
+/* Test builds: "loc_tableStats [text]" logs the tables' use; "loc_cycle <n>" switches to the next language n times,
  * each when the one before is done. */
 static void __cdecl LrCmdStat(void)
 {
@@ -779,10 +779,10 @@ static void __cdecl LrCmdCycle(void)
     Log("language: %d test switch(es) queued", g_lrCycles);
 }
 
-static C1Cmd g_lrCmdStat = { NULL, "k33_langstat", (void *)LrCmdStat };
-static C1Cmd g_lrCmdCycle = { NULL, "k33_langcycle", (void *)LrCmdCycle };
-static void __cdecl LrCmdForce(void) { g_lrForce = TRUE; Log("language: k33_langforce armed"); }
-static C1Cmd g_lrCmdForce = { NULL, "k33_langforce", (void *)LrCmdForce };
+static C1Cmd g_lrCmdStat = { NULL, "loc_tableStats", (void *)LrCmdStat };
+static C1Cmd g_lrCmdCycle = { NULL, "loc_cycle", (void *)LrCmdCycle };
+static void __cdecl LrCmdForce(void) { g_lrForce = TRUE; Log("language: loc_forceUnload armed"); }
+static C1Cmd g_lrCmdForce = { NULL, "loc_forceUnload", (void *)LrCmdForce };
 #endif
 
 /* After PatchPatchDir (the language list, the zones) and before K33InstallMainTicks. */
@@ -801,7 +801,7 @@ static void InstallLocaleSwitch(void)
     C1AddCommand(&g_lrCmdForce);
     {
         const char *cl = GetCommandLineA();
-        g_lrNoReorder = cl && strstr(cl, "k33_langNoReorder 1") != NULL;
+        g_lrNoReorder = cl && strstr(cl, "loc_noReorder 1") != NULL;
     }
 #endif
     if (!g_langCount) {

@@ -729,11 +729,11 @@ static void __cdecl PiCmdStatus(void)
 }
 
 #if K33_LOCAL_TESTING
-/* Test clients only (+set k33_cmdFile 1): make the running server fault, to check the containment. */
+/* Test clients only (+set com_cmdFile 1): make the running server fault, to check the containment. */
 static void __cdecl PiCmdFaultTest(void)
 {
     const char *cl = GetCommandLineA();
-    if (!cl || !strstr(cl, "k33_cmdFile 1")) { C1Printf("p2pfaulttest: test clients only (+set k33_cmdFile 1)\n"); return; }
+    if (!cl || !strstr(cl, "com_cmdFile 1")) { C1Printf("p2pfaulttest: test clients only (+set com_cmdFile 1)\n"); return; }
     if (g_piState != PI_RUNNING) { C1Printf("p2pfaulttest: no in-process server running\n"); return; }
     InterlockedExchange(&g_piFaultTest, 1);
     C1Printf("p2pfaulttest: the server faults in its next frame\n");
