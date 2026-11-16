@@ -60,13 +60,17 @@ static const char *const kPiServer[] = { "not started", "running", "ended" };
 
 static volatile LONG g_piState;
 static volatile LONG g_piServer;
-static volatile LONG g_piQuit;        /* 1: end the match (the fiber unloads the level unless it is over); 2: done */
+static volatile LONG g_piQuit;        /* 1: end the match; 3: a stop, players told to leave, unload next; 2: done */
 static volatile LONG g_piMatchOver;   /* the hosted match ended and its player left: p2p.c re-arms the room */
 static Sh1xCodeFn g_piCode = Sh1xHost_ExitCode;
 static void *g_piMainFiber, *g_piFiber;
 static DWORD g_piThread;
 static char g_piArgs[8192];           /* the first match: the server's command line */
 static char g_piRetarget[1024];       /* a later match: the commands that move the running server to it */
+static BOOL g_piRetargetSent;         /* the fiber has queued g_piRetarget for the pending match */
+static unsigned g_piRetargetSerial;   /* Sh1xHost_LevelSerial before it: the new level is up once it moved */
+static DWORD g_piRetargetTick, g_piLobbyTick;
+static int g_piLobbyTold;             /* players sent back to the lobby by a stop (g_piQuit 3) */
 static int g_piInitResult;
 static DWORD g_piInitMs, g_piFirstFrameMs, g_piServerStartTick;
 static volatile DWORD g_piFaultCode;  /* no fault is contained any more: always 0 */
@@ -136,24 +140,51 @@ static void WINAPI PiServerFiber(void *unused)
         } else if (g_piServer == PS_RUNNING) {
             BOOL endMatch = FALSE, alive = TRUE;
             if (st == PI_INIT_PENDING) {
-                /* A later match: the running server moves to it. The map loads in this frame, so the match is
-                 * running (and its status can be trusted) once the frame has returned. */
-                DWORD t = GetTickCount();
-                Sh1xHost_Command(g_piRetarget);
+                /* A later match: the running server moves to it. The match is running (and its status can be
+                 * trusted) only once the server has spawned a new level: the replaced one may be the same map,
+                 * finished, and a map change can wait on the previous match's report for a few frames. */
+                if (!g_piRetargetSent) {
+                    g_piRetargetSerial = Sh1xHost_LevelSerial();
+                    g_piRetargetTick = GetTickCount();
+                    Sh1xHost_Command(g_piRetarget);
+                    g_piRetargetSent = TRUE;
+                    g_piInitMs = 0;
+                }
+                if (g_piQuit == 1) {
+                    /* stopped before its level came up: the match ends, the server stays */
+                    g_piQuit = 2;
+                    endMatch = TRUE;
+                }
                 alive = Sh1xHost_Frame();
-                g_piFirstFrameMs = GetTickCount() - t;
-                g_piInitMs = 0;
-                if (alive) { InterlockedExchange(&g_piState, PI_RUNNING); st = PI_RUNNING; }
+                if (alive && !endMatch && Sh1xHost_LevelSerial() != g_piRetargetSerial) {
+                    g_piFirstFrameMs = GetTickCount() - g_piRetargetTick;
+                    InterlockedExchange(&g_piState, PI_RUNNING);
+                }
+                if (!alive) PiServerEnded();
+                else if (endMatch) InterlockedExchange(&g_piState, PI_ENDED);
+                SwitchToFiber(g_piMainFiber);
+                continue;
             }
-            if (alive && st == PI_RUNNING && g_piQuit == 1) {
+            if (st == PI_RUNNING && g_piQuit == 1) {
                 /* The end of a match, never of the server. A match that is over (or a start that failed) keeps
-                 * its level until the next match's map replaces it, as a one-shot lobby worker does; only the
-                 * player's stop (p2pstop) unloads it now, which also drops whoever is still on it. */
-                if (g_p2pStop && !g_piMatchOver) Sh1xHost_Command("killserver\n");
+                 * its level until the next match's map replaces it, as a one-shot lobby worker does. The
+                 * player's stop (p2pstop) first sends everyone in the game back to the lobby, as a finished
+                 * match does (t "EXE_MATCHENDED"), lets a few frames carry it, then unloads the level. */
+                if (g_p2pStop && !g_piMatchOver) {
+                    g_piLobbyTold = Sh1xHost_ReturnPlayersToLobby();
+                    g_piLobbyTick = GetTickCount();
+                    g_piQuit = 3;
+                } else {
+                    g_piQuit = 2;
+                    endMatch = TRUE;
+                }
+            } else if (st == PI_RUNNING && g_piQuit == 3 &&
+                       (!g_piLobbyTold || GetTickCount() - g_piLobbyTick >= 1500)) {
+                Sh1xHost_Command("killserver\n");
                 g_piQuit = 2;
                 endMatch = TRUE;
             }
-            if (alive) alive = Sh1xHost_Frame();
+            alive = Sh1xHost_Frame();
             if (!alive) PiServerEnded();
             else if (endMatch) InterlockedExchange(&g_piState, PI_ENDED);
         }
@@ -539,14 +570,19 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         /* The same server, moved to this match: latched settings, then the map (as the lobby retargets a worker). */
         const char *session = c.sessionMap[0] ? c.sessionMap : c.map;
         int difficulty = !strcmp(c.zoneType, "zm") && c.difficultyPresent && c.difficulty >= 0 && c.difficulty <= 2 ? c.difficulty : 0;
+        /* fs_game carries the category for exactly the next spawn (server filesystem.c FS_CoDOLNormalizeGameDir,
+         * sv_main.c SV_CoDOLResolveAssetCategory), as the lobby dispatches a match. codol_zoneType alone only
+         * counts while it differs from the running value: a second co-op or survival match in a row would
+         * otherwise resolve as mp from its mp_* level name. */
         _snprintf(g_piRetarget, sizeof(g_piRetarget),
-                  "set codol_zoneType %s\nset codol_sessionMap %s\nset g_gametype %s\nset g_difficulty %d\nmap %s\n",
-                  c.zoneType, session, c.gametype, difficulty, c.map);
+                  "set fs_game %s\nset codol_zoneType %s\nset codol_sessionMap %s\nset g_gametype %s\nset g_difficulty %d\nmap %s\n",
+                  c.zoneType, c.zoneType, session, c.gametype, difficulty, c.map);
         g_piRetarget[sizeof(g_piRetarget) - 1] = 0;
         Log("p2p in-process: reusing the match server started %lu s ago (match %ld): %s %s on %s:%d",
             (GetTickCount() - g_piServerStartTick) / 1000, n, c.map, c.gametype, c.netIp, c.port);
     }
     InterlockedExchange(&g_piFirstMapAwait, 1);
+    g_piRetargetSent = FALSE;
 #if CODOL_DIAGNOSTICS /* K33_SHIPPING_TIMING_START_TOTALS */
     g_piCalls = g_piTotalUs = g_piMaxUs = g_piWinCalls = g_piWinTotalUs = g_piWinMaxUs = 0;
 #endif /* K33_SHIPPING_TIMING_START_TOTALS */

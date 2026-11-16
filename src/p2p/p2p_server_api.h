@@ -15,6 +15,8 @@ int __cdecl Sh1xHost_Frame(void);
 void __cdecl Sh1xHost_Command(const char *text);
 int __cdecl Sh1xHost_ExitCode(void);
 unsigned __cdecl Sh1xHost_OnDemandBytes(void);
+unsigned __cdecl Sh1xHost_LevelSerial(void);
+int __cdecl Sh1xHost_ReturnPlayersToLobby(void);
 const void *__cdecl Sh1xHost_FindAsset(unsigned type, const char *name);
 int __cdecl Sh1xHost_EnumerateAssets(unsigned type, int (__cdecl *visit)(void *, const char *), void *context);
 const void *__cdecl Sh1xHost_FindC1Header(unsigned type, const char *name, unsigned *length);
@@ -33,6 +35,8 @@ static int __cdecl Sh1xHost_Frame(void) { return 0; }
 static void __cdecl Sh1xHost_Command(const char *text) { (void)text; }
 static int __cdecl Sh1xHost_ExitCode(void) { return 0; }
 static unsigned __cdecl Sh1xHost_OnDemandBytes(void) { return 0; }
+static unsigned __cdecl Sh1xHost_LevelSerial(void) { return 0; }
+static int __cdecl Sh1xHost_ReturnPlayersToLobby(void) { return 0; }
 static const void *__cdecl Sh1xHost_FindAsset(unsigned t, const char *n) { (void)t; (void)n; return NULL; }
 static int __cdecl Sh1xHost_EnumerateAssets(unsigned t, int (__cdecl *v)(void *, const char *), void *c) { (void)t; (void)v; (void)c; return -1; }
 static const void *__cdecl Sh1xHost_FindC1Header(unsigned t, const char *n, unsigned *l) { (void)t; (void)n; (void)l; return NULL; }

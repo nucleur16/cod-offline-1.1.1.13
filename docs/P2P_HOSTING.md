@@ -486,6 +486,48 @@ headless `+set k33_cmdFile 1 +set codol_local_test_multi 1`, below-normal priori
 - Not done: two natural match-overs in a row (a zombies death, then Ready again with the player joining). The
   next client launches failed in Direct3D device creation (the display was not available) before the room step.
 
+**Follow-up (same day): category, stop and back-to-back matches.**
+- **The co-op `181 aa12_mp 0 2` is not specific to reuse.** The two launches of that test asked for different
+  selections. The first was `mp_crash_tropical coop (coop)`, from the room UI's `p2p_room`. The second was
+  `(mp)`, from the offline lobby's `K33LocalPlayAuto`: `dw_rooms.cpp HostSelection` takes `sel.category`, and a
+  room made with the bare `room.create` test command has category `mp`. Re-arming for the new selection is what
+  stopped match 1 (`P2PArmLegacyRoom`: `g_p2pStop`).
+  - A fresh server given gametype `coop` with category `mp` resolves the same set
+    (`SV_CoDOLResolveAssetCategory`): `+set codol_zoneType mp` is the default, so it is not taken as explicit,
+    and an `mp_*` name gives `mp`.
+  - The reused server took `mp` from the latched `codol_zoneType`. Both load the mp gametype zones under the
+    co-op gametype, which C1 rejects.
+  - The room UI's real co-op rooms carry `coop` on both sides.
+- **A real reuse bug was found on the way and is fixed.** The resolver takes `codol_zoneType` as this match's
+  only while its latch differs from the running value. A second co-op (or survival) match in a row therefore
+  sent nothing explicit and resolved as `mp` from its `mp_*` level name. The retarget now starts with
+  `set fs_game <category>`, the one-shot carrier the lobby itself sends before `map`
+  (`FS_CoDOLNormalizeGameDir` / `FS_CoDOLConsumeGameCategory`).
+- **The new match counts as running only once a new level is up.** The fiber queues the retarget once, then
+  waits until `Sh1xHost_LevelSerial` (levels spawned, server `sv_main.c`) has moved. Before, it was enough that
+  the frame that ran `map` had returned. This matters because the replaced level can be the same map, finished
+  (one-shot), and a map change can wait for the previous match's report to become durable. A stop before the
+  new level is up ends the match and keeps the server.
+- **`p2pstop` returns the players to the lobby.** Before unloading the level, the fiber calls
+  `Sh1xHost_ReturnPlayersToLobby`. This flushes the secure profiles and sends every human in the game
+  `t "EXE_MATCHENDED"`, the leave a finished match sends (`codol_script_exitlevel_trace.c`). The server then
+  keeps running frames for 1.5 s and only after that sends `killserver`.
+  - Before this change, the player was dropped without a usable message: "connection timed out" 22 s later,
+    which also closed the room.
+  - The old per-session `quit` went through `SV_FinalMessage` the same way, so it was no cleaner.
+- **More state on demand.** `physics_launches`, `s_animlist_refs`, the bot nav cut records and the capture
+  publications (1.5 MB) are now allocated on demand too. The server's remaining .bss is 17.9 MB. Shipping
+  Kernel33.dll: 19,189,760 bytes, SizeOfImage 39.5 MB, .bss 21.2 MB.
+- **Live.** The client could create its Direct3D device again, but only at a 1,024 x 768 fallback. It
+  presented no frames: screenshot requests stayed pending and the main thread sat in C1's inactive-window
+  `Sleep` loop. The display was likely off or locked; two other game clients were running, possibly the
+  user's. Results:
+  - The first host started the server: ready after 10.7 s, `Sh1xHost_Init` 3.7 s.
+  - C1 never connected. After 120 s the empty-host rule ended the match, and the server stayed up
+    (204,163 KB on demand).
+  - Not tested live: two natural match-overs in a row, `p2pstop`'s return to the lobby, and the `fs_game`
+    retarget. These need a client that presents frames.
+
 ### Not done yet / next steps
 1. **Reuse the zones and assets the client already loaded.**
    - Not done. The server's loader (`db_load.cpp`) builds IW3-layout xassets in its own memory. C1's are
