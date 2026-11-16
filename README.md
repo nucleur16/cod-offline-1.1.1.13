@@ -48,7 +48,8 @@ src/            everything compiled into Kernel33.dll (C, plus the C++ offline l
   offline/        the Demonware lobby in C++ (part of every build)
 scripts/        build.sh and its variants (build-dev, build-server; build-profile.sh and
                 build-offline.inc.sh are sourced by build.sh), and the Python helpers: build_zones.py (patch zones),
-                make_exe.py, gen_dvars.py, gen_tables.py, ui_keys.py
+                make_exe.py, gen_dvars.py, gen_tables.py, ui_keys.py, stage_server_data.py (the hosting data)
+  gsc/          the GSC game scripts the match server runs (a git subtree of 13-rawfiles; see "GSC scripts")
 docs/           design notes, audits, baselines (docs/baselines/), CONTROLLER.md, PADSNAP.md, PRODUCTION_PROFILE.md
 tests/          source tests and their fixtures (sh tests/run_tests.sh; see "Tests")
 tools/          one-off producers and inspectors for the UI movies and zones
@@ -134,8 +135,8 @@ map and settings (`map`, as the lobby retargets a worker); only an end of the se
 Its large state (about 200 MB) is allocated on that first host, so a client that never hosts reserves only 24 MB more
 than before. A fault in the server is a fault of the client (normal crash logging and dump). `mode = child` runs the
 separate process as before. `scripts/build-server.sh` builds the library and stages the server's data:
-`p2p\home\main\sh1x_svr_scripts.iwd` and the GSC tree as `main\sh1x_rawfiles\` (`src/p2p/p2p.c`'s default
-`scripts=`); `scripts/build.sh` links it. Details and measurements: `docs/P2P_HOSTING.md`, "In-process hosting" and
+`p2p\home\main\sh1x_svr_scripts.iwd` and the GSC tree, `scripts/gsc`, as `main\sh1x_rawfiles\` (`src/p2p/p2p.c`'s
+default `scripts=`; see "GSC scripts"); `scripts/build.sh` links it. Details and measurements: `docs/P2P_HOSTING.md`, "In-process hosting" and
 "The server linked into Kernel33.dll".
 
 `src/p2p/p2p.c` lets a player host a match from the client: the sh1x match server runs as a child of the
@@ -154,9 +155,32 @@ git submodule update --init server/sh1x       # never --recursive: the server ha
 sh scripts/build-server.sh                    # MSYS2 build of bin/libsh1x_host.a + staging into ../../k33_p2p_staging
 K33_SERVER=1 sh scripts/build.sh              # Kernel33.dll with the server linked in
 ```
-`scripts/build-server.sh` initialises only the server's `bin/home/codol_rawfiles` submodule
-(`core.autocrlf false`). It needs MSYS2's mingw32 gcc (the one Kernel33 uses), its make and nasm, and the server's
+`scripts/build-server.sh` does not initialise the server's `bin/home/codol_rawfiles` submodule: the GSC it stages
+comes from `scripts/gsc` (see "GSC scripts"). It needs MSYS2's mingw32 gcc (the one Kernel33 uses), its make and nasm, and the server's
 prebuilt lib/*.a (`K33_SERVER_LIBS`); `K33_SERVER_EXE=1` also cross-builds the child-process exe in WSL.
+
+## GSC scripts (`scripts/gsc`)
+The GSC game scripts the hosted match server runs live in this repository, in `scripts/gsc`. It is a `git subtree`
+of [CODOL-EMU/13-rawfiles](https://github.com/CODOL-EMU/13-rawfiles) imported with its history (no squash), so
+`git log` and `git blame` of a file there show the 13-rawfiles commits. **Make GSC edits here**, in `scripts/gsc`,
+and commit them with the client change they belong to.
+
+* **What the build uses:** `scripts/build-server.sh` stages through `scripts/stage_server_data.py`: the tracked files
+  of `scripts/gsc` become `main\sh1x_rawfiles\` and the `scripts/` of `p2p\home\main\sh1x_svr_scripts.iwd` (the
+  pack's waypoints and bot tables still come from the server). The server repository's own copy, its
+  `bin/home/codol_rawfiles` submodule, is left as it is for the standalone server build; the Kernel33 build no
+  longer reads it. `tests/test_gsc_staging.py` checks that the staged GSC is `scripts/gsc`, byte for byte.
+* **Drift:** `python -B tests/test_gsc_drift.py [--fetch]` reports how `scripts/gsc` differs from the 13-rawfiles
+  commit `server/sh1x` pins (informational, exit 0; `scripts/build-server.sh` prints it after staging).
+* **Sync with 13-rawfiles** (from the repository root, with a clean working tree):
+  ```sh
+  git subtree pull --prefix=scripts/gsc https://github.com/CODOL-EMU/13-rawfiles.git main   # take upstream changes
+  git subtree push --prefix=scripts/gsc https://github.com/CODOL-EMU/13-rawfiles.git <branch>  # send ours back
+  ```
+  Push to a branch of 13-rawfiles and merge it there by PR; the server repository picks it up by bumping its
+  `bin/home/codol_rawfiles` submodule. Never `--squash` a pull: it would cut the shared history.
+* **Renamed console names:** `python tools/drop_codol_prefix.py --check` also counts the GSC_TABLE names left in
+  `scripts/gsc` (step 3), and its default run applies them there.
 
 ## Parity logger (branch `parity-log`)
 `src/parity.c` adds a client-side snapshot-parity logger for bringing the server to retail parity. It

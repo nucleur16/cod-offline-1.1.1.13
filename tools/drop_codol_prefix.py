@@ -11,13 +11,16 @@ covers the native menu sources under zones/ (menufile .json/.txt, sources/*.menu
 re-encoded from its .json with zonekit.menus), refuses any name a shipped UI movie spells (KEEP_K33 lists them),
 and writes src/dvar_renames.h, from which c1game.c moves a value saved under an old dvar name to the new one.
 
-    python tools/drop_codol_prefix.py            apply the table to the tree, re-pin ui_baseline.json
-    python tools/drop_codol_prefix.py --check    change nothing; exit 1 when a mapped name is still present or
-                                                 a "codol" name in the code is neither mapped nor listed in KEEP
+    python tools/drop_codol_prefix.py            apply the table to the tree (GSC_TABLE to scripts/gsc), re-pin
+                                                 ui_baseline.json
+    python tools/drop_codol_prefix.py --check    change nothing; exit 1 when a mapped name is still present (a
+                                                 GSC_TABLE name in scripts/gsc included) or a "codol" name in the
+                                                 code is neither mapped nor listed in KEEP
     python tools/drop_codol_prefix.py --report   print every remaining "codol" name in the code with its reason
     python tools/drop_codol_prefix.py --tree DIR [--check]
                                                  apply (or check) GSC_TABLE, the console names the GSC scripts read
-                                                 or set, in another checkout: the GSC tree (13-rawfiles)
+                                                 or set, in another checkout of the GSC tree (13-rawfiles); this
+                                                 repository's own copy, scripts/gsc, is covered by the two above
 
 Step 3 (GSC_TABLE) renames the console names with "codol" that the GSC scripts read or set (scr_codol_botfill ->
 scr_botfill, codol_zoneType -> sv_zoneType) on all three sides: here, in the GSC tree (--tree) and in the server
@@ -67,7 +70,10 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 SELF = pathlib.Path(__file__).resolve()
 
 CODE_DIRS = ("src", "tests", "tools", "scripts", "zonekit")
-NEVER_DIRS = ("server/", "zones/", "zone_source/", "zone_packs/", "files/", "build/", "third_party/")
+# scripts/gsc/ is the GSC tree (a git subtree of 13-rawfiles): step 3 (GSC_TABLE, case-insensitive) covers it as a
+# --tree, never the client rules of steps 1 and 2 (its own codol names, maps/_codol_*.gsc, are GSC, not client names).
+GSC_DIR = "scripts/gsc"
+NEVER_DIRS = ("server/", "zones/", "zone_source/", "zone_packs/", "files/", "build/", "third_party/", GSC_DIR + "/")
 BINARY_SUFFIXES = (".DATA", ".bin", ".ff", ".iwd", ".dll", ".exe", ".z", ".png", ".dds", ".jpg", ".gif",
                    ".zip", ".gz", ".ttf", ".otf", ".swf", ".gfx", ".pyc")
 
@@ -167,9 +173,11 @@ CLIENT_STRINGS = {
 # names p2p.c passes the host. (codol_dev_cheats -> dev_cheats is the server's existing alias of the same command.)
 SERVER_CLASH = {"codol_voiceDebug": "sv_voiceDebug"}   # voiceDebug is a C1 dvar name; the server took sv_voiceDebug
 # ---- step 3: console names with "codol" that the GSC scripts read or set ------------------------------------------
-# (old, new, why). The GSC tree (the 13-rawfiles repository, the server's bin/home/codol_rawfiles and its native
-# overlay scripts/codol), the server and this client all spell them; each of the three runs the same table:
-#   * this repository: the code, the docs (step 1 rules), and any GSC/menu/config text under zones/;
+# (old, new, why). The GSC tree (this repository's scripts/gsc, a git subtree of the 13-rawfiles repository; the
+# server's bin/home/codol_rawfiles and its native overlay scripts/codol), the server and this client all spell them;
+# each of the three runs the same table:
+#   * this repository: the code, the docs (step 1 rules), any GSC/menu/config text under zones/, and scripts/gsc
+#                      (as a --tree: the default run applies it there, --check counts what is left there);
 #   * the GSC tree:    python tools/drop_codol_prefix.py --tree <rawfiles checkout> [--check] (case-insensitive: GSC
 #                      and dvar names are), every tracked .gsc/.csc/.csv/.cfg/.txt/.menu/.json file, comments too;
 #   * the server:      its tools/rename_prefix_map.json "config.gsc_names" holds the same pairs (--check compares).
@@ -680,6 +688,8 @@ def apply():
         for old, rel in conflicts:
             print("refused: %s is spelled by the UI movie %s; move it to KEEP_K33 or rebuild the movie" % (old, rel))
         return 1
+    if (ROOT / GSC_DIR).is_dir():
+        tree(ROOT / GSC_DIR, False)   # step 3 in this repository's GSC tree
     files = tracked_files()
     path, pins = baseline_pins()
     before = {rel: hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() for rel in pins if (ROOT / rel).is_file()}
@@ -1031,10 +1041,11 @@ def check(report):
         for reason in sorted(by_reason):
             print("%s:\n    %s" % (reason, ", ".join(sorted(by_reason[reason], key=str.lower))))
     gsc_mismatch = server_gsc_mismatch()
+    gsc_pending = tree(ROOT / GSC_DIR, True) if (ROOT / GSC_DIR).is_dir() else 0
     print("%d mapped name(s) still to replace; %d unclassified codol/k33 word(s) in the code" % (pending, len(bad)))
     for word, reasons in sorted(bad.items()):
         print("    %s %s" % (word, reasons))
-    return 1 if pending or bad or hazards or conflicts or stale_header or gsc_mismatch else 0
+    return 1 if pending or bad or hazards or conflicts or stale_header or gsc_mismatch or gsc_pending else 0
 
 
 def server_gsc_mismatch():

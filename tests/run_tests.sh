@@ -50,6 +50,9 @@ python -B tests/test_survival_hud.py
 python -B tests/test_hud_styles.py
 # The console in every profile and its command sync with the pinned match server (docs/OFFLINE_CONSOLE_20261112.md).
 python -B tests/test_offline_console.py
+# The GSC the build stages is scripts/gsc (README.md, "GSC scripts"); its drift from the server's pin is informational.
+python -B tests/test_gsc_staging.py
+python -B tests/test_gsc_drift.py
 "$BIN/gcc.exe" -std=c99 -O2 -Wall -Wextra -Werror -Wno-unused-function tests/hud_style_policy_test.c -o "$OUT/hud_style_policy_test.exe"
 "$OUT/hud_style_policy_test.exe"
 # The console's `name`: accepted names and the per-profile names file (src/player_name_policy.h).
