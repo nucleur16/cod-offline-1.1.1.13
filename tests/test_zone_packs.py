@@ -100,7 +100,7 @@ class ZonePacks(unittest.TestCase):
     def test_stage_and_locale_rules_match_kernel33(self):
         self.assertEqual(packs.stage("common_postgfx_mp"), "post_gfx")
         self.assertEqual(packs.stage("common_ui_mp"), "ui")
-        self.assertEqual(packs.stage("common"), "pre_gfx")
+        self.assertEqual(packs.stage("common_extras"), "pre_gfx")
         self.assertEqual(packs.locales("english_locale"), {"en"})
         self.assertEqual(packs.locales("chinese_locale"), {"zh", "native"})
 

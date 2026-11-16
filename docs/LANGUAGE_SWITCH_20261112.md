@@ -1,7 +1,7 @@
 # Language switch while the game runs (`k33_language`), 2026-11-12 / 2026-11-13
 
 `src/locale_switch.c`, `src/locale_switch_policy.h`, `src/patch_locale_policy.h`, the patch-folder code in
-`src/kernel33.c`, `zone_packs/common.csv`, `zone_packs/english_locale.csv`.
+`src/kernel33.c`, `zone_packs/common_extras.csv`, `zone_packs/english_locale.csv`.
 Client: CoDOL 1.1.1.13 (`C1.exe`, PE timestamp 5314DEF0). Status: **ran in a test client** (offline lobby,
 local-testing + diagnostics DLL, 2026-11-13): 48 switches at the front end, 24 in a hosted Killhouse match, 24 at the
 front end after that match, 24 in a hosted zombies match on Mech Factory, and a switch before a map load. See
@@ -91,8 +91,8 @@ Startup order (`StartupLanguage`) is unchanged: the last valid `+set k33_languag
 5. **The font movie** (`scaleform/fonts_ingame.gfx`, the Latin glyphs) was in `english_locale`. Loading after
    code_post_gfx it loses to the stock copy (a rawfile, same flags, the first linked wins; measured: the active
    `fonts_ingame.gfx` was `patch_code_post_gfx_mp`'s), and a zone Scaleform's movie came from must not be unloaded.
-   It is now part of `common` (`part,english_font,only=rawfile`), ahead of code_pre_gfx in every language
-   (measured: active zone `common`). Chinese text keeps C1's CJK glyphs; Latin text uses the English font in both
+   It is now part of `common_extras` (`part,english_font,only=rawfile`), ahead of code_pre_gfx in every language
+   (measured: active zone `common_extras`). Chinese text keeps C1's CJK glyphs; Latin text uses the English font in both
    languages. `english_locale.ff` shrank from 7,595,839 to 202,238 bytes.
 
 Fallbacks, all decided before anything is touched: a C1 site differs (`LocaleSwitchCheck`, run before anything is

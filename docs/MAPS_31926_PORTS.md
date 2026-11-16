@@ -6,7 +6,7 @@ worktree's `CODOL-31926.md`) are installed like the other later maps: zones in `
 
 ## Create Room (this repository)
 
-Same route as mp_dome / mp_strike_sh / mp_qadeem_sh: `zones/usermaps_patch` (packed into `common.ff` and the
+Same route as mp_dome / mp_strike_sh / mp_qadeem_sh: `zones/usermaps_patch` (packed into `common_extras.ff` and the
 locale packs) carries for each map
 - a `mp/comaplist.csv` row (pvp, 4-18 players, every channel on; ids 98-123, sort keys 50-75);
 - a `mp/basemaps.arena` entry; its `gametype` list is what the map's MapEnts spawn points and game objects support

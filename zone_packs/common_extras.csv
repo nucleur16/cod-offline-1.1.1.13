@@ -1,6 +1,6 @@
-// common -- the shared zone ahead of code_pre_gfx (both languages): mode rules and tables, the in-match movies,
+// common_extras -- the shared zone ahead of code_pre_gfx (both languages): mode rules and tables, the in-match movies,
 // sounds and the usermaps' create-room data. Built by build_zones.py from the parts below (zonekit/packs.py).
->zone,common
+>zone,common_extras
 >install,client_shipRetail\patch
 >zlib,9
 >filetime,0x01dd65c1,0xf533ac42
