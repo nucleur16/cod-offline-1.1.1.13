@@ -4,28 +4,28 @@
 // damage callback, ADS through the bot's real usercmd buttons, so the
 // challenge code sees what a match would give it.
 //
-//   set scr_codol_chtest "admit <client>"
+//   set scr_chtest "admit <client>"
 //       admit a training bot bound to a test profile (codol_bindprofile) to
 //       challenge progress, which bots never get, load its tiers and stop
 //       its combat AI.
-//   set scr_codol_chtest "kill <killer> <victim> <ads 0|1> <perk[,perk]|none> [mod]"
+//   set scr_chtest "kill <killer> <victim> <ads 0|1> <perk[,perk]|none> [mod]"
 //       killer gets the perks ("-<perk>" removes one), holds ADS (1) or not (0), then kills victim
 //       with its current weapon and [mod] (default MOD_RIFLE_BULLET).
-//   set scr_codol_chtest "blast <victim> <attacker> <perk[,perk]|none>"
+//   set scr_chtest "blast <victim> <attacker> <perk[,perk]|none>"
 //       victim gets the perks and survives a 10-damage frag splash.
-//   set scr_codol_chtest "paint <painter> <victim> <perk[,perk]|none> <mod>"
+//   set scr_chtest "paint <painter> <victim> <perk[,perk]|none> <mod>"
 //       painter gets the perks and hurts victim for 10 with <mod>.
-//   set scr_codol_chtest "throwback <client> <perk[,perk]|none>"
+//   set scr_chtest "throwback <client> <perk[,perk]|none>"
 //       client gets the perks and throws a real frag whose pullback is then
 //       forgotten, so _weapons.gsc takes it for one picked up off the ground.
-//   set scr_codol_chtest "join <client> <allies|axis>"
+//   set scr_chtest "join <client> <allies|axis>"
 //       a spectating test client picks the team and class0, as _dev.gsc's do.
-//   set scr_codol_chtest "arm <client> <weapon>"
+//   set scr_chtest "arm <client> <weapon>"
 //       give the client the weapon and put it in hand.
-//   set scr_codol_chtest "armbase <client> <base weapon>"
+//   set scr_chtest "armbase <client> <base weapon>"
 //       give the client the bare composed form of a stock weapon ("*a 68 0"
 //       for javelin_mp), as a class would, and put it in hand.
-//   set scr_codol_chtest "show <client>"
+//   set scr_chtest "show <client>"
 //       the client's perk challenge progress and derived tiers.
 #include maps\mp\_utility;
 #include common_scripts\utility;
@@ -35,7 +35,7 @@ init()
     if ( isDefined( level.codolChTestStarted ) )
         return;
     level.codolChTestStarted = true;
-    setDvar( "scr_codol_chtest", "" );
+    setDvar( "scr_chtest", "" );
     level thread watchDvar();
 }
 
@@ -47,10 +47,10 @@ watchDvar()
     for ( ;; )
     {
         wait 0.5;
-        request = getDvar( "scr_codol_chtest" );
+        request = getDvar( "scr_chtest" );
         if ( request == "" )
             continue;
-        setDvar( "scr_codol_chtest", "" );
+        setDvar( "scr_chtest", "" );
         tokens = strTok( request, " " );
         if ( tokens.size < 2 )
             continue;

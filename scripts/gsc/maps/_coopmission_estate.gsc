@@ -53,7 +53,7 @@
 
 is_estate()
 {
-	return getDvar( "codol_sessionMap" ) == "coop_take_mp_estate_tropical";
+	return getDvar( "sv_sessionMap" ) == "coop_take_mp_estate_tropical";
 }
 
 // --------------------------------------------------------------------------

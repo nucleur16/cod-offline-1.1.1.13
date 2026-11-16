@@ -48,7 +48,7 @@ SESSION()
 
 is_mission()
 {
-	return getDvar( "codol_sessionMap" ) == SESSION();
+	return getDvar( "sv_sessionMap" ) == SESSION();
 }
 
 // --------------------------------------------------------------------------

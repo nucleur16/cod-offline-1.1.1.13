@@ -251,7 +251,7 @@ onScoreLimit()
 
 quickPlaySession()
 {
-	return getDvarInt( "codol_quickPlay" ) == 1 && getDvarInt( "codol_playlistId" ) == 120;
+	return getDvarInt( "sv_quickPlay" ) == 1 && getDvarInt( "sv_playlistId" ) == 120;
 }
 
 
@@ -444,8 +444,8 @@ quickInitialPopulationReady()
 		return false;
 
 	// Same normal-room fill/max/available clamps used by maintainBots.
-	desired = getDvarInt( "scr_codol_botfill" ) - humans;
-	botMax = getDvarInt( "scr_codol_botmax" );
+	desired = getDvarInt( "scr_botfill" ) - humans;
+	botMax = getDvarInt( "scr_botmax" );
 	if ( desired > botMax )
 		desired = botMax;
 	if ( desired < 0 )

@@ -72,8 +72,8 @@ cap_knockdown_one( z )
 
 cap_on_dog_placed( z )
 {
-	if ( getDvarInt( "codol_tracePace" ) < 0 )
-		setDvar( "codol_tracePace", z getEntityNumber() );
+	if ( getDvarInt( "ai_tracePace" ) < 0 )
+		setDvar( "ai_tracePace", z getEntityNumber() );
 }
 
 cap_platform_init()

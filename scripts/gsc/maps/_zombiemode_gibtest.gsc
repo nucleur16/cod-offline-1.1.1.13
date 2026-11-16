@@ -1,8 +1,8 @@
 // Developer-only test verbs for zombie dismemberment (_zombiemode_gib.gsc).
 //
 // Runs only on a developer server (the live server runs developer 0).  Drive
-// it through the dvar scr_codol_gibtest (add a client first with
-// scr_codol_fftest "addbot"):
+// it through the dvar scr_gibtest (add a client first with
+// scr_fftest "addbot"):
 //
 //   shoot <client> <bone> <weapon> [health]
 //                        magicBullet from the client's side of the nearest
@@ -25,7 +25,7 @@ init()
 	if ( getDvarInt( "developer" ) <= 0 )
 		return;
 
-	setDvar( "scr_codol_gibtest", "" );
+	setDvar( "scr_gibtest", "" );
 	level thread gibtest_watch();
 }
 
@@ -34,10 +34,10 @@ gibtest_watch()
 	for ( ;; )
 	{
 		wait( 0.5 );
-		request = getDvar( "scr_codol_gibtest" );
+		request = getDvar( "scr_gibtest" );
 		if ( request == "" )
 			continue;
-		setDvar( "scr_codol_gibtest", "" );
+		setDvar( "scr_gibtest", "" );
 
 		// From the first verb on, the damage watcher logs how it read each hit.
 		level.zm_gib_diag = true;

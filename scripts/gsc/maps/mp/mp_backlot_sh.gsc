@@ -3,9 +3,9 @@
 // The zone's own maps/mp/mp_backlot_sh_fx.gsc and maps/createfx/mp_backlot_sh_fx.gsc (3.19.26.22) are used as they ship.
 // Precache: maps/mp/mp_backlot_sh_precache.gsc names the modules the zone's MapEnts give in precache_script keys.
 // Adaptations:
-//   * ambientPlay( "ambient_backlot_ext" ) left out: the zone has no such alias
+//   * ambient ambient_backlot_ext -> ambient_mp_backlot_sh_ext (the zone's alias; added 2026-11-16)
 //   * game["allies"]/["axis"] = marines/opfor and the *_soldiertype lines are left out (IW3 team setup; 1.1.1.13 takes its teams from the arena/teams scripts)
-//   * no createart: IW3's maps/createart/mp_backlot_art.gsc is not in the dump
+//   * createart: maps/createart/mp_backlot_sh_art.gsc, the fog of CoD4's maps/createart/mp_backlot_art.gsc (zone/english/mp_backlot.ff; added 2026-11-16)
 //   * compass: compass_map_mp_backlot_sh (the zone's)
 #include maps\mp\_utility;
 #include common_scripts\utility;
@@ -14,7 +14,10 @@ main()
 {
 	maps\mp\mp_backlot_sh_precache::main();
 	maps\mp\mp_backlot_sh_fx::main();
+	maps\createart\mp_backlot_sh_art::main();
 	maps\mp\_load::main();
+
+	ambientPlay( "ambient_mp_backlot_sh_ext" );
 
 	maps\mp\_compass::setupMiniMap( "compass_map_mp_backlot_sh" );
 	setdvar( "r_specularcolorscale", "1" );

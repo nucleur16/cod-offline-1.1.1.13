@@ -2,8 +2,8 @@
 // (_zombiemode_weap_thundergun.gsc, _zombiemode_weap_tesla.gsc).
 //
 // Runs only on a developer server (the live server runs developer 0).  Drive
-// it through the dvar scr_codol_weaptest (add a client first with
-// scr_codol_fftest "addbot"):
+// it through the dvar scr_weaptest (add a client first with
+// scr_fftest "addbot"):
 //
 //   thunder <client> [up]   line the nearest live zombies up in front of the
 //                           client at 80..1100 units, face them, hand over
@@ -21,7 +21,7 @@ init()
 	if ( getDvarInt( "developer" ) <= 0 )
 		return;
 
-	setDvar( "scr_codol_weaptest", "" );
+	setDvar( "scr_weaptest", "" );
 	level thread weaptest_watch();
 }
 
@@ -30,10 +30,10 @@ weaptest_watch()
 	for ( ;; )
 	{
 		wait( 0.5 );
-		request = getDvar( "scr_codol_weaptest" );
+		request = getDvar( "scr_weaptest" );
 		if ( request == "" )
 			continue;
-		setDvar( "scr_codol_weaptest", "" );
+		setDvar( "scr_weaptest", "" );
 
 		tokens = strTok( request, " " );
 		switch ( tokens[ 0 ] )

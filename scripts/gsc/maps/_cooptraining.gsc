@@ -59,7 +59,7 @@
 
 is_training()
 {
-	return getDvar( "codol_sessionMap" ) == "coop_training_mp_killhouse_sh";
+	return getDvar( "sv_sessionMap" ) == "coop_training_mp_killhouse_sh";
 }
 
 // --------------------------------------------------------------------------

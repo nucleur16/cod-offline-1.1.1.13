@@ -115,7 +115,7 @@ init()
 	for ( i = 0; i < register.size; i++ )
 		maps\_zombiemode_equipment::register_equipment( register[ i ], ::on_trap_thrown );
 
-	setDvar( "scr_codol_traptest", "" );
+	setDvar( "scr_traptest", "" );
 	level thread trap_test_watch();
 
 	{}
@@ -915,25 +915,25 @@ shrink_stepped_death( killer, trap_id, who )
 
 // ==========================================================================
 // Test hooks, idle unless set (probe use; a test client has no stick):
-//   set scr_codol_traptest "throw <client> <weapon> [<near> [<dx> <dy>]]"
+//   set scr_traptest "throw <client> <weapon> [<near> [<dx> <dy>]]"
 //       arms <weapon> in the equipment slot with a full clip and presses the
 //       equipment button, so the engine throws it and raises grenade_fire.
 //       <near> > 0 first waits (up to 400 s) for a zombie within <near>
 //       units of the client; <dx> <dy> first steps the client that far.
 //       (A trap weapon given at runtime that is not the character's own
 //       reports 0 ammo after giveStartAmmo, hence the explicit clip.)
-//   set scr_codol_traptest "grid <client0> <client1> <halfwidth>"
+//   set scr_traptest "grid <client0> <client1> <halfwidth>"
 //       waits for a chasing zombie and stands a shock trap (owned by each
 //       client) <halfwidth> units either side of its path 120 units ahead, so
 //       the zombie must cross the live segment between the traps.
-//   set scr_codol_traptest "place <client> <weapon> <ahead> [<within>]"
+//   set scr_traptest "place <client> <weapon> <ahead> [<within>]"
 //       waits for a chasing zombie (within <within> of the client when
 //       given) and stands a <weapon> trap owned by that
 //       client <ahead> units in front of it.
-//   set scr_codol_traptest "hit <client> <seconds> <nth>"
+//   set scr_traptest "hit <client> <seconds> <nth>"
 //       once the nth zombie has been frozen, that client lands one 10-point
 //       hit on a frozen zombie, as a player shooting it would (shatter).
-//   set scr_codol_traptest "push <client> <seconds> [<nth>]"
+//   set scr_traptest "push <client> <seconds> [<nth>]"
 //       drives that client at the nearest dwarf by velocity, which is what a
 //       player running into it does; the kick test above then decides.
 // ==========================================================================
@@ -947,10 +947,10 @@ trap_test_watch()
 	for ( ;; )
 	{
 		wait( 0.5 );
-		request = getDvar( "scr_codol_traptest" );
+		request = getDvar( "scr_traptest" );
 		if ( request == "" )
 			continue;
-		setDvar( "scr_codol_traptest", "" );
+		setDvar( "scr_traptest", "" );
 		tokens = strTok( request, " " );
 		if ( tokens.size < 3 )
 			continue;

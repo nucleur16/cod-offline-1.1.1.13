@@ -293,11 +293,11 @@ codol_dogs_think( lifespan )
 	}
 }
 
-// -- nuke (announces only unless scr_codol_nuke_live; never ends the match) -
+// -- nuke (announces only unless scr_nuke_live; never ends the match) -
 
 codol_nuke( lifeId )
 {
-	if ( getDvarInt( "scr_codol_nuke_live" ) == 0 )
+	if ( getDvarInt( "scr_nuke_live" ) == 0 )
 		return true;			// default: no game-end, no mass kill
 	self thread codol_nuke_blast();
 	return true;

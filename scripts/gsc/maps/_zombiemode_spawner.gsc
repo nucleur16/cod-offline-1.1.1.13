@@ -94,7 +94,7 @@ init()
 	init_spawn_points();
 	init_spawner();
 
-	// Developer-only entrance-walk soak (scr_codol_pathtest); returns at once
+	// Developer-only entrance-walk soak (scr_pathtest); returns at once
 	// on a production server.
 	level thread maps\_zombiemode_pathtest::init();
 

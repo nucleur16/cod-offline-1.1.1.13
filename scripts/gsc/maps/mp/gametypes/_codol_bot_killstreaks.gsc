@@ -16,7 +16,7 @@
 // Ride rewards (helicopter gunner/MK19, AC-130, predator missile, RC-XD) are
 // left owned and never used: T5 removes the gunner rewards from its bots
 // instead of driving them, and a bot cannot steer a rideable missile or car
-// through C1's remote-control input here. scr_codol_botkillstreaks 0 turns
+// through C1's remote-control input here. scr_botkillstreaks 0 turns
 // the whole behaviour off.
 #include maps\mp\_utility;
 #include common_scripts\utility;
@@ -28,8 +28,8 @@ onBotSpawned()
     self endon( "disconnect" );
     self endon( "death" );
     level endon( "game_ended" );
-    if ( getDvar( "scr_codol_botkillstreaks" ) == "" )
-        setDvar( "scr_codol_botkillstreaks", 1 );
+    if ( getDvar( "scr_botkillstreaks" ) == "" )
+        setDvar( "scr_botkillstreaks", 1 );
     if ( !isDefined( self.codolBotStreakReady ) )
     {
         self.codolBotStreakReady = [];
@@ -40,7 +40,7 @@ onBotSpawned()
     for ( ;; )
     {
         wait randomFloatRange( 1.0, 2.0 );
-        if ( getDvarInt( "scr_codol_botkillstreaks" ) <= 0 )
+        if ( getDvarInt( "scr_botkillstreaks" ) <= 0 )
             continue;
         reward = self pickReward();
         if ( !isDefined( reward ) )
@@ -419,7 +419,7 @@ botCrateThink()
     for ( ;; )
     {
         wait randomFloatRange( 3, 5 );
-        if ( getDvarInt( "scr_codol_botkillstreaks" ) <= 0 || self isUsingRemote() || isDefined( self.selectingLocation ) )
+        if ( getDvarInt( "scr_botkillstreaks" ) <= 0 || self isUsingRemote() || isDefined( self.selectingLocation ) )
             continue;
         crate = self pickCrate();
         if ( !isDefined( crate ) )

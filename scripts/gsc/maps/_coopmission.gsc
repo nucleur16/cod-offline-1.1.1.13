@@ -1155,13 +1155,13 @@ end_level()
 }
 
 // The mission's result for every player still in it, by playlist name
-// (codol_sessionMap, e.g. coop_training_mp_killhouse_sh).  The match report
+// (sv_sessionMap, e.g. coop_training_mp_killhouse_sh).  The match report
 // carries it to the lobby, which records a completion in the profile and
 // unlocks the next mission; a failure unlocks nothing.  IW4 Spec Ops credits
 // every player in the mission, including one who is out of lives.
 report_mission_result()
 {
-	mission = getDvar( "codol_sessionMap" );
+	mission = getDvar( "sv_sessionMap" );
 	if ( mission == "" )
 		mission = getDvar( "mapname" );
 	success = isDefined( level.coop_mission_success ) && level.coop_mission_success;
@@ -1209,7 +1209,7 @@ main()
 	init();
 	setup_entity_driven();
 
-	codolprintln( "CoDOL coop mission: " + getDvar( "mapname" ) + " (" + getDvar( "codol_sessionMap" ) + "): " +
+	codolprintln( "CoDOL coop mission: " + getDvar( "mapname" ) + " (" + getDvar( "sv_sessionMap" ) + "): " +
 		level.coop_spawner_count + " enemy spawners, " + level.coop_pmc_spawners.size + " pmc, " +
 		level.coop_chain_spawners.size + " chained, " + level.coop_trigger_count + " triggers" );
 
@@ -1238,7 +1238,7 @@ main()
 	if ( isDefined( level.coop_training_flow ) && level.coop_training_flow )
 		codolprintln( "CoDOL coop mission: the training flow runs this mission" );
 	// A mission with its own script (_coopmission_<name>.gsc, selected by
-	// codol_sessionMap) runs its own flow; the shared flag triggers, flag
+	// sv_sessionMap) runs its own flow; the shared flag triggers, flag
 	// groups, spawn helpers and end conditions still serve it.
 	else if ( isDefined( level.coop_mission_flow ) )
 		codolprintln( "CoDOL coop mission: the " + level.coop_mission_flow + " flow runs this mission" );

@@ -2,14 +2,14 @@
 // -> boards -> traversal -> inside).
 //
 // Runs only on a developer server (the live server runs developer 0).  Drive it
-// through the dvar scr_codol_pathtest:
+// through the dvar scr_pathtest:
 //
 //   addbot                    add one test client and keep every player alive
 //   hold                      stop the round's own spawning and remove the
 //                             zombies it already made (the soak owns the actors)
 //   openzones                 enable every authored zone, as if every door and
 //                             debris had been bought
-//   openall                   buy every door and debris (scr_codol_blockertest
+//   openall                   buy every door and debris (scr_blockertest
 //                             "fire" on each trigger) and enable every zone
 //   soak <seconds> <alive> <all|live>
 //                             spawn zombies for <seconds>, at most <alive> at a
@@ -40,7 +40,7 @@ init()
 	if ( getDvarInt( "developer" ) <= 0 )
 		return;
 
-	setDvar( "scr_codol_pathtest", "" );
+	setDvar( "scr_pathtest", "" );
 	level thread pathtest_watch();
 }
 
@@ -49,10 +49,10 @@ pathtest_watch()
 	for ( ;; )
 	{
 		wait( 0.5 );
-		request = getDvar( "scr_codol_pathtest" );
+		request = getDvar( "scr_pathtest" );
 		if ( request == "" )
 			continue;
-		setDvar( "scr_codol_pathtest", "" );
+		setDvar( "scr_pathtest", "" );
 
 		tokens = strTok( request, " " );
 		switch ( tokens[ 0 ] )

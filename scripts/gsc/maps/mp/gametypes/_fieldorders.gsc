@@ -321,7 +321,7 @@ foIsBot( player )
 // The MP sets are the Boot Camp / combat-training sets: C1's playlists 1 and
 // 3 (flag combattraining, gametype combat) put a party against bots. A match
 // counts when its gametype is combat, or when every enemy of this player is a
-// bot (the lobby's rooms run war or dm against scr_codol_bots training bots).
+// bot (the lobby's rooms run war or dm against scr_bots training bots).
 // Human teammates do not matter. Returns 1 (bot match), 0 (a human enemy),
 // -1 (no enemy yet: bots are still being added).
 foBotMatch()

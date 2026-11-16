@@ -68,7 +68,7 @@ init()
 {
 	level.zm_thundergun_ok = false;
 
-	// Developer-only test verbs (scr_codol_weaptest); returns at once on a
+	// Developer-only test verbs (scr_weaptest); returns at once on a
 	// non-developer server.
 	maps\_zombiemode_weaptest::init();
 

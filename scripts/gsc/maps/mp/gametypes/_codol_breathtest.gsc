@@ -1,7 +1,7 @@
 // CoDOL hold-breath test hook. Idle unless the dvar is set, and only on a
 // developer server.
 //
-//   set scr_codol_breathtest "<client> <weapon> <adsSeconds> <holdSeconds>"
+//   set scr_breathtest "<client> <weapon> <adsSeconds> <holdSeconds>"
 //       gives <client> (a bot) <weapon>, switches to it, holds ADS (0x800)
 //       and, once scoped, ADS plus the breath button (0x2000) for
 //       <holdSeconds>. It then keeps ADS alone for one more second so the
@@ -15,7 +15,7 @@ init()
     if ( isDefined( level.codolBreathTestStarted ) )
         return;
     level.codolBreathTestStarted = true;
-    setDvar( "scr_codol_breathtest", "" );
+    setDvar( "scr_breathtest", "" );
     level thread watchDvar();
 }
 
@@ -27,10 +27,10 @@ watchDvar()
     for ( ;; )
     {
         wait 0.5;
-        request = getDvar( "scr_codol_breathtest" );
+        request = getDvar( "scr_breathtest" );
         if ( request == "" )
             continue;
-        setDvar( "scr_codol_breathtest", "" );
+        setDvar( "scr_breathtest", "" );
         tokens = strTok( request, " " );
         if ( tokens.size < 4 )
             continue;

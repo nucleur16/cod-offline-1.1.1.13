@@ -23,12 +23,12 @@
 // A model name in no mounted zone must never be precached: the client is told
 // the name over a configstring and has nothing to draw.  So the faction a
 // soldier may take is decided by which playlist zone is mounted
-// (codol_sessionMap, the playlist spelling the lobby sets), and an unknown map
+// (sv_sessionMap, the playlist spelling the lobby sets), and an unknown map
 // falls back to the one body every coop match carries.
 
 session_map()
 {
-	session = getDvar( "codol_sessionMap" );
+	session = getDvar( "sv_sessionMap" );
 	if ( session == "" )
 		session = getDvar( "mapname" );
 	return session;
@@ -37,7 +37,7 @@ session_map()
 has_militia()
 {
 	// Survival mounts its own enemies beside MP, never a coop session zone.
-	if ( getDvar( "codol_zoneType" ) == "survival" )
+	if ( getDvar( "sv_zoneType" ) == "survival" )
 		return false;
 	session = session_map();
 	if ( isSubStr( session, "killhouse" ) )

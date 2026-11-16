@@ -233,7 +233,7 @@ levelMain( visionName )
 	// _take_fav), so the session wins: the training mission was drawn with
 	// the multiplayer Killhouse vision (user report 2026-10-08, "the vision
 	// seems different from the video").
-	session = getDvar( "codol_sessionMap" );
+	session = getDvar( "sv_sessionMap" );
 	if ( coop_session_has_vision( session ) )
 		visionName = session;
 	if ( isDefined( visionName ) && visionName != "" )
@@ -338,7 +338,7 @@ coop_minimap_material( session )
 // is maps\mp\_compass::setupMiniMap's.
 coop_minimap()
 {
-	session = getDvar( "codol_sessionMap" );
+	session = getDvar( "sv_sessionMap" );
 	material = coop_minimap_material( session );
 	if ( !isDefined( material ) )
 	{

@@ -81,7 +81,7 @@ cleanup()
 		// coop_training_mp_killhouse_sh (course_end_blocker) and for a
 		// coop_spec2_mp_killhouse_sh that does not ship (MEASURED).
 		if ( isDefined( e.script_specialopsname ) && e.script_specialopsname != "" &&
-		     e.script_specialopsname != getDvar( "codol_sessionMap" ) )
+		     e.script_specialopsname != getDvar( "sv_sessionMap" ) )
 		{
 			e delete();
 			deleted++;

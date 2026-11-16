@@ -1,6 +1,6 @@
 // Developer-only test verbs for the mystery box and the power-up drop rule.
 //
-// Runs only on a developer server.  Drive it through scr_codol_boxtest:
+// Runs only on a developer server.  Drive it through scr_boxtest:
 //
 //   addbot              add one test client
 //   use <client> <n>    n real purchases at the live box by that client:
@@ -25,7 +25,7 @@ init()
 	if ( getDvarInt( "developer" ) <= 0 )
 		return;
 
-	setDvar( "scr_codol_boxtest", "" );
+	setDvar( "scr_boxtest", "" );
 	level thread boxtest_watch();
 }
 
@@ -34,10 +34,10 @@ boxtest_watch()
 	for ( ;; )
 	{
 		wait( 0.5 );
-		request = getDvar( "scr_codol_boxtest" );
+		request = getDvar( "scr_boxtest" );
 		if ( request == "" )
 			continue;
-		setDvar( "scr_codol_boxtest", "" );
+		setDvar( "scr_boxtest", "" );
 
 		tokens = strTok( request, " " );
 		switch ( tokens[ 0 ] )

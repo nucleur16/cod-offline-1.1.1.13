@@ -5,7 +5,7 @@
 // Adaptations:
 //   * ambient ambient_crossfire -> ambient_mp_showdown (the zone's alias)
 //   * game["allies"]/["axis"] = marines/opfor and the *_soldiertype lines are left out (IW3 team setup; 1.1.1.13 takes its teams from the arena/teams scripts)
-//   * no createart: IW3's maps/createart/mp_showdown_art.gsc is not in the dump
+//   * createart: maps/createart/mp_showdown_art.gsc, the fog of CoD4's maps/createart/mp_showdown_art.gsc (zone/english/mp_showdown.ff; added 2026-11-16)
 //   * compass: compass_map_mp_showdown (the zone's)
 #include maps\mp\_utility;
 #include common_scripts\utility;
@@ -14,6 +14,7 @@ main()
 {
 	maps\mp\mp_showdown_precache::main();
 	maps\mp\mp_showdown_fx::main();
+	maps\createart\mp_showdown_art::main();
 	maps\mp\_load::main();
 
 	maps\mp\_compass::setupMiniMap( "compass_map_mp_showdown" );

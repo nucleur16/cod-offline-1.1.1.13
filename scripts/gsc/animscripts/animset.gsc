@@ -281,7 +281,7 @@ init_animset_default_stand()
 	// zombies actor on this set (the juggernaut) asked for four xanims no zm
 	// zone mounts and stood static. The _zm nodes sit beside the plain ones in
 	// generic_human.atr's aim_2/4/6/8 additive groups.
-	if ( getDvar( "codol_zoneType" ) == "zm" )
+	if ( getDvar( "sv_zoneType" ) == "zm" )
 	{
 		anim.initAnimSet[ "add_aim_up" ] = %exposed_aim_8_zm;
 		anim.initAnimSet[ "add_aim_down" ] = %exposed_aim_2_zm;
