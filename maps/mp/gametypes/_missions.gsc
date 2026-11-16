@@ -2304,9 +2304,13 @@ updateChallenges()
 	if ( !mayProcessChallenges() )
 		return;
 
-	if ( !self isItemUnlocked( "challenges" ) )
-		return false;
-	
+	// No "challenges" feature gate. IW4's mp/unlockTable.csv locks challenges
+	// below rank index 4, and this ran once per connect, so nothing counted
+	// before level 5 or in a match the player levelled past it -- while
+	// CoDOL's front end shows every challenge from level 1 (uf_challenges is
+	// an unconditional flag). A player's early marksman kills were dropped
+	// and tier 1 came after ten counted kills, long after ten real ones.
+
 	foreach ( challengeRef, challengeData in level.challengeInfo )
 	{
 		self.challengeData[challengeRef] = 0;
@@ -2407,6 +2411,8 @@ buildChallegeInfo()
 		refString = tableLookupByRow( tableName, index, CH_REF_COL );
 	}
 
+	dropDeactivatedChallenges();
+
 	tierTable = tableLookupByRow( "mp/challengeTable.csv", 0, 4 );	
 	for ( tierId = 1; tierTable != ""; tierId++ )
 	{
@@ -2429,6 +2435,39 @@ buildChallegeInfo()
 	printLn( "TOTAL CHALLENGE REWARD XP: " + totalRewardXP );
 	#/
 }
+
+/*
+	C1 retires challenges through mp/challengedeactivate.csv (column 0 "1",
+	column 1 the numeric id): the M14 EBR, SCAR SAPR, Kriss, Tavor ... weapon
+	rows and every prestige (pr_) marksman/expert row among them. The lobby
+	never stores their progress (dw_career / challenges.py "deactivated"), so
+	a match that still advanced one started again from 0 next match and
+	splashed and paid tier 1 every time. They are no challenge here either.
+*/
+dropDeactivatedChallenges()
+{
+	table = "mp/challengedeactivate.csv";
+
+	deactivated = [];
+	for ( row = 0; ; row++ )
+	{
+		id = tableLookupByRow( table, row, 1 );
+		if ( id == "" )
+			break;
+		if ( tableLookupByRow( table, row, 0 ) == "1" )
+			deactivated[ int( id ) ] = true;
+	}
+
+	drop = [];
+	foreach ( refString, info in level.challengeInfo )
+	{
+		if ( isDefined( level.challengeIds[ refString ] ) && isDefined( deactivated[ level.challengeIds[ refString ] ] ) )
+			drop[ drop.size ] = refString;
+	}
+	foreach ( refString in drop )
+		level.challengeInfo[ refString ] = undefined;
+}
+
 
 /#
 verifyMarksmanChallenges()
