@@ -11,7 +11,7 @@ Layouts (all MEASURED on the shipped zones; a pointer of 0xFFFFFFFF means the da
   localize (27)    {u32 valuePtr, u32 namePtr} value\0 name\0
   stringtable (37) {u32 namePtr, u32 columns, u32 rows, u32 cellsPtr} name\0, cells {u32 stringPtr, u32 hash}[rows *
                    columns], then each inline cell string\0 in cell order. hash = C1's cell hash
-                   (h = tolower(c) + 31 * h, tools/codol_stringtable_dump.py)
+                   (h = tolower(c) + 31 * h, tools/stringtable_dump.py)
 """
 from __future__ import annotations
 

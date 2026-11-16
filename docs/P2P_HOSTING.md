@@ -18,8 +18,8 @@ and measured on one PC (see "Stage 1: what was measured"). Nothing here is insta
 player's client.
 
 Goal: a player hosts a match from their own client and other players join it. Today every
-match runs on the sh1x server (`codol_dedrun.exe`, CoD4x-derived: `src/`, the retained IW3 asm
-in `src/asmsource/`, CoDOL code in `src/codol/<area>/`, GSC in `bin/home/codol_rawfiles`). The
+match runs on the sh1x server (`sh1x_dedrun.exe`, CoD4x-derived: `src/`, the retained IW3 asm
+in `src/asmsource/`, CoDOL code in `src/online/<area>/`, GSC in `bin/home/codol_rawfiles`). The
 Python lobby (alpha0022) places Ready presses on it over loopback rcon and shares
 `securitykey.bin` / `game_admissions.txt` with it through a state folder.
 
@@ -74,7 +74,7 @@ stays available as `mode = child` in `p2p_host.ini`. The costs listed under (b) 
 
 ### (a) Kernel33 starts the native server as a child of the host's client (recommended)
 
-Kernel33 runs `codol_dedrun.exe` as a child process on its own UDP port and supervises it: a job
+Kernel33 runs `sh1x_dedrun.exe` as a child process on its own UDP port and supervises it: a job
 object, loopback rcon `sh1x_status`, and an exit with the client. The lobby advertises the host's
 address in the session record it already builds (`_common_addr`). Players connect exactly as
 they connect to a dedicated server today.
@@ -143,7 +143,7 @@ the process boundary between an unaudited client and the authoritative simulatio
   `stun.ini`, the lobby answers it). The host reports the mapped address and NAT type to the
   lobby with its registration.
 - **Hole punching (stage 3).** C1's bdNATTrav (INTRO REQ type 13 / reply 12, already answered by
-  the server, `codol_network.c`) is DemonWare's introducer protocol. The lobby can introduce the
+  the server, `network.c`) is DemonWare's introducer protocol. The lobby can introduce the
   joiner and the host to each other (both send to each other's mapped address after the lobby's
   "introduce" push). That works for cone NATs.
 - **Relay fallback (stage 3).** For symmetric NAT or CGNAT hosts, the lobby (or a relay sidecar on
@@ -261,10 +261,10 @@ git -C server/sh1x/bin/home/codol_rawfiles config core.autocrlf false
 sh scripts/build-server.sh            # WSL Ubuntu-24.04 + i686-w64-mingw32, as the server's own docs
 ```
 
-`scripts/build-server.sh` cross-builds `server/sh1x/bin/codol_dedrun.exe` in WSL (clean `obj/k33-p2p`
+`scripts/build-server.sh` cross-builds `server/sh1x/bin/sh1x_dedrun.exe` in WSL (clean `obj/k33-p2p`
 when asked with `K33_SERVER_CLEAN=1`). It stages the exe as `k33p2p_dedrun.exe` (its own image name, so an
-image-name kill of `codol_dedrun.exe` aimed at a dedicated server cannot hit a hosted match; also p2p.c's default `exe=`), the server pack (the server's own
-`tools/codol_stage_server_pack.py`) and the rawfiles into `$K33_P2P_STAGE` (default
+image-name kill of `sh1x_dedrun.exe` aimed at a dedicated server cannot hit a hosted match; also p2p.c's default `exe=`), the server pack (the server's own
+`tools/stage_server_pack.py`) and the rawfiles into `$K33_P2P_STAGE` (default
 `../../k33_p2p_staging`). The lib/*.a the server links (mbedtls, tomcrypt) come from the server
 repo's own build (`K33_SERVER_LIBS` = a folder that holds them, default `D:\CoD\CoD4x_Server\lib`).
 

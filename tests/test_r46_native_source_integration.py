@@ -155,8 +155,8 @@ class ProductionTestSurfaces(unittest.TestCase):
     diagnostic=gate_project(value,'K33_DIAGNOSTICS',True)
    except AssertionError:return False
    return (value.count('#if K33_DIAGNOSTICS\n')==2 and
-           digest(shipping)=='8fb15274d95910dc3dca6802ffbd407890785bdaf2d1a0491dff0c24e4d163c8' and
-           digest(diagnostic)=='2bf2a007d54d79417cccb57b4dfbf818714ca1f3990fdd39306de7449bc05169')
+           digest(shipping)=='b35db0f18dbb038b056252e3b89d285268acd036a105ac75d471f03a26021cfc' and
+           digest(diagnostic)=='61397b6d35cdc7da3e3097c870b2d4cf2bf3d0b0787514be5a0e0d76e300128a')
   self.assertTrue(valid(text))
   shipping=gate_project(text,'K33_DIAGNOSTICS',False)
   self.assertIn('static BYTE *ParityCg(void)',shipping)

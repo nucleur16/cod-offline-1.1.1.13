@@ -391,7 +391,7 @@ static BOOL ConIsSetCommand(const char *t)
 
 /* ---- sh1x developer commands and the server route ------------------------------------------------------
  *
- * The cheat commands live on the server (sh1x codol_dev_cheats.c, g_cmds.c). C1 has none of them, so
+ * The cheat commands live on the server (sh1x dev_cheats.c, g_cmds.c). C1 has none of them, so
  * Cmd_ExecuteString (0x58CB16) hands an unknown word to CL_ForwardCommandToServer 0x494CE0, which
  * sends it as a reliable client command while connected (connection state >= 5): typing "noclip" here
  * reaches the server as THIS player's command, which is what a cheat needs (the server acts on the

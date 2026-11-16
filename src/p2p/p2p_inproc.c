@@ -1,7 +1,7 @@
 /*
  * p2p_inproc.c - the sh1x match server inside the host's client, on the game thread (feat/p2p-inprocess).
  *
- * Mode `inprocess` of p2p.c (the default; `mode = child` in p2p_host.ini runs codol_dedrun.exe as before). The
+ * Mode `inprocess` of p2p.c (the default; `mode = child` in p2p_host.ini runs sh1x_dedrun.exe as before). The
  * server is the sh1x server repo's `host-dll` target, sh1x_host.dll: the same objects as the dedicated exe plus
  * its host API (win32/sys_host.c: Sh1xHost_Init / Frame / Command / ExitCode). Like a listen server, C1's game
  * thread runs it: every pass of C1's Com_EventLoop (the call at 0x595E9D, chained behind voice and discord) runs
@@ -374,7 +374,7 @@ static void __cdecl PiHostPhaseYield(const char *phase)
     g_piPhaseLast = now;
     PiYield();
 }
-/* The server's await_zones (codol_asset_host.h), on its fiber during a map load. C1 starts loading a hosted map
+/* The server's await_zones (asset_host.h), on its fiber during a map load. C1 starts loading a hosted map
  * itself when it is connected (the server's loadingnewmap); otherwise, after a short grace, preloadmap starts it.
  * Then the server waits, yielding, until C1 holds the level and its common_gametype zone
  * and its database is idle. */

@@ -159,6 +159,11 @@ CLIENT_STRINGS = {
 # The server's rule: drop "codol_". Every name of src/console/sh1x_cmds.h that starts with codol_, plus the +set
 # names p2p.c passes the host. (codol_dev_cheats -> dev_cheats is the server's existing alias of the same command.)
 SERVER_CLASH = {}
+# The server repository keeps these (tools/rename_prefix_map.json "kept"): the GSC tree (bin/home/codol_rawfiles, a
+# separate repository) reads them, or, for codol_relayIdentityPath, the server never registers it.
+SERVER_KEPT = ("codol_zoneType", "codol_sessionMap", "codol_quickPlay", "codol_playlistId", "codol_tracePace",
+               "codol_relayIdentityPath", "scr_codol_bots", "scr_codol_botfill", "scr_codol_botmax",
+               "scr_codol_botfill_testhumans")
 SERVER_NAMES_OLD = """
 codol_actorcontact codol_admissionPath codol_admissionRequired codol_animTrace codol_animlistMask
 codol_animmodelprobe codol_autoUnstuck codol_autoUnstuckInput codol_autoUnstuckMs codol_bindprofile
@@ -174,16 +179,16 @@ codol_friendlyCrosshair codol_gibprobe codol_gpRatePercent codol_hitprobe codol_
 codol_infectedModelZone codol_limits codol_limitstress codol_loadzone codol_loadzones codol_lookatDebug
 codol_matchReportSpool codol_meleeDebug codol_modelslot codol_movementDebug codol_patchZonePath
 codol_persistentBoot codol_persistentCatalogue codol_persistentEvents codol_persistentRoot codol_persistentSlot
-codol_playlistId codol_preferMapGraph codol_profilePath codol_publishExtendedPlayerState codol_pushPublicProfile
+codol_preferMapGraph codol_profilePath codol_publishExtendedPlayerState codol_pushPublicProfile
 codol_pushSecureProfile codol_ragdollLaunchScale codol_recoverDelay codol_rootMotionTrace codol_securityId
-codol_securityKeyPath codol_serverSurfaceGeometry codol_sessionMap codol_sessionStatePath codol_setpos
+codol_securityKeyPath codol_serverSurfaceGeometry codol_sessionStatePath codol_setpos
 codol_settleRestingPrediction codol_shadowcompare codol_shieldBlastDebug codol_solidprobe codol_soundTrace
 codol_sourceRconRemote codol_sweepprobe codol_theatreAutoRecord codol_theatreMaxSegments codol_theatreSegmentMiB
 codol_theatreSegmentSeconds codol_token_consumed codol_token_inventory codol_traceActorEvents
 codol_traceRagdollLaunch codol_traceWeaponLock codol_unstuck codol_voiceDebug codol_voiceEcho
 codol_voiceMaxPackets codol_warmAdmissionPath codol_warmPreparation codol_worldgunprobe codol_xpRatePercent
-codol_zonePath codol_zoneType
-codol_oneShotMatch codol_pmemMegs codol_relayIdentityPath codol_scriptPath codol_scriptOverlay
+codol_zonePath 
+codol_oneShotMatch codol_pmemMegs codol_scriptPath codol_scriptOverlay
 codol_scriptNativeOverlay
 """.split()
 SERVER_NAMES = {old: SERVER_CLASH.get(old, old[len("codol_"):]) for old in SERVER_NAMES_OLD}
@@ -259,10 +264,55 @@ IW_TABLE = [
     ("k33_p2pHost", "sv_p2pHost", "switch", "host a match at startup"),
 ]
 IW_NAMES = {old: new for old, new, _kind, _why in IW_TABLE}
+
+# ---- step 3: the sh1x server repository's renamed files, folders and functions (its tools/rename_prefix_map.json
+# "files" / "identifiers" and build outputs), as this repository's build script, comments and docs name them.
+SERVER_REFS = {
+    "src/codol/net/codol_network.c": "src/online/net/network.c",
+    "src/codol/net/codol_voice.c": "src/online/net/voice.c",
+    "src/codol/player/codol_dev_cheats.c": "src/online/player/dev_cheats.c",
+    "src/codol/snapshot/codol_player_fields.inc": "src/online/snapshot/player_fields.inc",
+    "src/codol/stats/codol_scoreboard_wire.c": "src/online/stats/scoreboard_wire.c",
+    "src/codol/weapon/codol_weapon_state.h": "src/online/weapon/weapon_state.h",
+    "src/codol/": "src/online/",
+    "tests/test_codol_vote_guard.c": "tests/test_vote_guard.c",
+    "tools/codol_discord_presence.py": "tools/discord_presence.py",
+    "tools/codol_english/build_ff.py": "tools/english/build_ff.py",
+    "tools/codol_english/build_font_ff.py": "tools/english/build_font_ff.py",
+    "tools/codol_english/gfx_font.py": "tools/english/gfx_font.py",
+    "tools/codol_map_handoff.ps1": "tools/ol_map_handoff.ps1",
+    "tools/codol_stage_server_pack.py": "tools/stage_server_pack.py",
+    "tools/codol_stringtable_dump.py": "tools/stringtable_dump.py",
+    "bin/codol_dedrun.exe": "bin/sh1x_dedrun.exe",
+    "codol_dedrun.exe": "sh1x_dedrun.exe",
+    "codol_dedrun": "sh1x_dedrun",
+    "codol_asset_host.h": "asset_host.h",
+    "codol_bot_loadout.c": "bot_loadout.c",
+    "codol_c1_weapon.c": "c1_weapon.c",
+    "codol_dev_cheats.c": "dev_cheats.c",
+    "codol_ecdh.c": "ol_ecdh.c",
+    "codol_game.c": "game.c",
+    "codol_load_blocks.c": "load_blocks.c",
+    "codol_match_report.c": "match_report.c",
+    "codol_network.c": "network.c",
+    "codol_remote_missile.c": "remote_missile.c",
+    "codol_voice.c": "voice.c",
+    "CODOL_AdmissionMember": "AdmissionMember",
+    "CODOL_BeginZoneReplay": "BeginZoneReplay",
+    "CODOL_CheatsPermitted": "CheatsPermitted",
+    "CODOL_DevClientCommand": "DevClientCommand",
+    "CODOL_DevPrint": "DevPrint",
+    "CODOL_LocationSelectionAction": "LocationSelectionAction",
+    "CODOL_NetworkSend": "NetworkSend",
+    "CODOL_ReadXModelBounds": "ReadXModelBounds",
+    "CODOL_VoicePacket": "VoicePacket",
+    "CODOL_VoteArgIsSafe": "VoteArgIsSafe",
+    "CODOL_VoteNameIsSafe": "VoteNameIsSafe",
+}
 IW_DVARS = sorted((old, new) for old, new, kind, _why in IW_TABLE if kind == "dvar")
 
 MAPPING = {}
-for table in (C_NAMES, CLIENT_DVARS, CLIENT_STRINGS, SERVER_NAMES, IW_NAMES):
+for table in (C_NAMES, CLIENT_DVARS, CLIENT_STRINGS, SERVER_NAMES, IW_NAMES, SERVER_REFS):
     for old, new in table.items():
         assert old not in MAPPING, old
         MAPPING[old] = new
@@ -293,6 +343,8 @@ REASON_PROSE = "product name in prose (CoDOL = the game, Call of Duty Online)"
 REASON_HISTORY = "removed online feature, named only in a comment"
 REASON_PATH = "folder name on disk (an install or build folder: CODOL Builds, CODOL_2.6.9.7, a local CODOL server tree)"
 REASON_PENDING = "server GSC dvar with codol inside the name (not a codol_ prefix); follows the server repo"
+REASON_GSC = ("the server keeps it: the GSC scripts (bin/home/codol_rawfiles, a separate repository) read it, or "
+              "the server never registers it (codol_relayIdentityPath)")
 
 KEEP = {
     # names compiled into the UI movies
@@ -315,14 +367,10 @@ KEEP = {
     "gen_mp_codol_weapons": "producer of the mp_codol_weapons zone, named after it",
     "codologin": "Scaleform movie name inside the shipped zones (codologin.gfx)",
     # sh1x server repository (files, functions, folders)
-    "codol_rawfiles": REASON_SERVER_REPO, "codol_dedrun": REASON_SERVER_REPO, "CODOL_DevPrint": REASON_SERVER_REPO,
-    "CODOL_DevClientCommand": REASON_SERVER_REPO, "CODOL_LocationSelectionAction": REASON_SERVER_REPO,
-    "CODOL_BeginZoneReplay": REASON_SERVER_REPO, "CODOL_ReadXModelBounds": REASON_SERVER_REPO,
-    "codol_map_handoff": REASON_SERVER_REPO, "codol_stage_server_pack": REASON_SERVER_REPO,
-    "codol_stringtable_dump": REASON_SERVER_REPO, "codol_discord_presence": REASON_SERVER_REPO,
+    "codol_rawfiles": REASON_SERVER_REPO, "CODOL_DevCheats": REASON_SERVER_REPO,
+    **{name: REASON_GSC for name in SERVER_KEPT},
     "codol_english_font": REASON_ZONE, "CODOL_C1_VIRTUALIZED_20260928": REASON_SERVER_REPO,
     "CODOL_C1_MOVEMENT_LAYOUT": REASON_SERVER_REPO,
-    "scr_codol_bots": REASON_PENDING,
     # launcher-managed session protocol
     "CODOL_VERIFIED_SCRIPTS_REQUIRED": REASON_LAUNCHER, "CODOL_VERIFIED_SCRIPT_PIPE": REASON_LAUNCHER,
     "CODOL_VERIFIED_SCRIPT_PARENT_PID": REASON_LAUNCHER, "CODOL_LOCAL_LOG_IDENTITY_PIPE": REASON_LAUNCHER,
@@ -529,11 +577,12 @@ def digest_pairs(old_texts, new_texts, helpers):
         add(normalised_digest(old), normalised_digest(new))
         if not helpers or not rel.endswith((".c", ".h", ".cpp", ".inc")):
             continue
-        for macro in PROFILE_MACROS:
+        # the profile macros under their old names (a first run) and under their new names (a later step)
+        for macro in PROFILE_MACROS + tuple(MAPPING[m] for m in PROFILE_MACROS):
             for value in (False, True):
                 try:
                     add(normalised_digest(helpers.gate_project(old, macro, value)),
-                        normalised_digest(helpers.gate_project(new, MAPPING[macro], value)))
+                        normalised_digest(helpers.gate_project(new, MAPPING.get(macro, macro), value)))
                 except Exception:
                     pass
         for name in contract.get(rel, {}):

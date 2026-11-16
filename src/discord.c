@@ -3,7 +3,7 @@
  * Log/Readable/WriteCode/CallsTarget/RedirectCall, c1game.c's dvar helpers, voice.c's connection-state
  * and clc addresses and parity.c's configstring addresses.
  *
- * This is CoDOLPresence.exe (the PyInstaller build of the server repo's tools/codol_discord_presence.py
+ * This is CoDOLPresence.exe (the PyInstaller build of the server repo's tools/discord_presence.py
  * that the codol-classic launcher starts beside the client with --client-pid) moved into the client:
  *
  *   application  1554730441825718272 ("Call of Duty Online"); its one art asset is "codol".

@@ -336,7 +336,7 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
       - rotates the heading (cg+0xC8B10, degrees) while MOUSE2 is held on a directional streak (ps.locationSelectionInfo +0x230 bit 7);
       - writes usercmd 0x20000 (confirm) / 0x40000 (cancel) plus the heading byte (+0x23).
     - It writes those bits when CL_KeyEvent has left state 1 (MOUSE1) or 2 (Escape) at 0x16F5D5C + lc*0xD28.
-    - The server's CODOL_LocationSelectionAction then notifies `confirm_location` (position, yaw).
+    - The server's LocationSelectionAction then notifies `confirm_location` (position, yaw).
   - **The pad hook** (CtlLocSelect, ahead of 0x490700):
     - The left stick moves the selector at `gpad_locsel_speed` map widths per second (default 0.45). The response is quadratic, and speed doubles over 0.6 s of full push.
     - The right stick sets the heading.
@@ -381,7 +381,7 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
 
 ## 11. Movement parity, look feel, dive (2026-10-21)
 - **Movement:**
-  - C1's wire usercmd has no analog movement. It carries four direction bits, and the server rebuilds forwardmove/rightmove as ±127 (CoD4x_Server `codol_game.c`).
+  - C1's wire usercmd has no analog movement. It carries four direction bits, and the server rebuilds forwardmove/rightmove as ±127 (CoD4x_Server `game.c`).
   - The stick's analog cmd therefore moved the server at full key speed in the octant its signs gave, while the client predicted the analog move and was corrected every snapshot:
     - a 10-degree drift became a 45-degree strafe on the server;
     - a half tilt ran at full speed on the server while the client predicted 0.38.
@@ -436,7 +436,7 @@ external reads of clientActive / cg / the usercmd ring at clientActive +0x34B8, 
   the button bits, 0x200000, and the mouse into two signed wire bytes, pitch cmd+0x24 =
   clamp(my * m_pitch, -1, 1) * 127, yaw cmd+0x25 = clamp(-mx * m_yaw, -1, 1) * 127. The server turns the
   missile by rate * msec / 1000 * byte / -127 per command (C1 0x40EC50, CoD4x_Server
-  `codol_remote_missile.c`), so a byte is a turn rate. `CtlRemoteMove` (call at 0x490DCF) adds the sticks after
+  `remote_missile.c`), so a byte is a turn rate. `CtlRemoteMove` (call at 0x490DCF) adds the sticks after
   C1's mouse: the right stick, or the left one when it is pushed further; the look curve (`gpad_view_curve`),
   `gpad_view_sensitivity` x `gpad_remote_sensitivity` (new, default 1), `gpad_invert_y`, the mouse's
   directions. Being a rate, it is frame-time independent by construction (the server multiplies by each

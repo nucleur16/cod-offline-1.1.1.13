@@ -8,9 +8,9 @@ for the client console's completion, help and command routing (docs/OFFLINE_CONS
 Read from the server SOURCE (not from a running server):
   commands  every Cmd_AddCommand / Cmd_AddPCommand / Cmd_AddHCommand / Cmd_AddCommandGeneric("name", ...) literal
   dvars     every Cvar_Register<Type>("name", ...) literal, with its description when the last argument is one;
-            plus the dvars `devset` may write (codol_dev_cheats.c dev_dvars: some are created by GSC, not C)
+            plus the dvars `devset` may write (dev_cheats.c dev_dvars: some are created by GSC, not C)
   cheats    the client command verbs of the developer set: the list cmd_devhelp prints plus devhelp itself,
-            each checked to be dispatched by ClientCommand (g_cmds.c) or CODOL_DevClientCommand
+            each checked to be dispatched by ClientCommand (g_cmds.c) or DevClientCommand
   usage     the server's own usage strings for give, take, setviewpos and devset
   devset    the dev_dvars names, in the server's order
 
@@ -51,7 +51,7 @@ def server_source(path):
 
 
 def dev_cheats_source():
-    """The server's developer-cheat module (src/codol/player/codol_dev_cheats.c, or its renamed successor)."""
+    """The server's developer-cheat module (src/online/player/dev_cheats.c; older pins have it under its codol_ name)."""
     hits = sorted((SERVER / "src").rglob("*dev_cheats.c"))
     if len(hits) != 1:
         raise SystemExit("gen_sh1x_cmds: expected one *dev_cheats.c in server/sh1x/src, found %s" % hits)

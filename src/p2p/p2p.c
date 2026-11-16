@@ -142,7 +142,7 @@ static void P2PTrim(char *s)
 }
 
 /* Identifiers that become command-line dvar values: the same rule as the lobby's handoff
- * (tools/codol_map_handoff.ps1), so a map or gametype can never add console commands. */
+ * (tools/ol_map_handoff.ps1), so a map or gametype can never add console commands. */
 static BOOL P2PIdent(const char *s, size_t max)
 {
     size_t n = strlen(s);
@@ -259,7 +259,7 @@ static int P2PSurvivalMaps(char (*maps)[64], int maximum, const char *wanted)
 
 /* The server pack scripts/build-server.sh stages next to the host DLL: <home>\main\sh1x_svr_scripts.iwd
  * (waypoints, node maps and mp/botclasstable.csv). The host reads mp/botclasstable.csv with FS_ReadFile
- * (sh1x codol_bot_loadout.c), never from a mounted stringtable. Without the pack the host still runs,
+ * (sh1x bot_loadout.c), never from a mounted stringtable. Without the pack the host still runs,
  * but every bot class answers "none" for its whole loadout and character: bots spawn with
  * defaultweapon_mp and no body, head or shadow - only their names are drawn - and route over the
  * level's raw node_* records. Refuse to host instead of starting that match. A loose
@@ -507,14 +507,14 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
      * forwarding any Guest packet. Normal solo hosting leaves it absent. */
     _snprintf(relayPath, sizeof(relayPath), "%s\\p2p_relay_identity.txt", c.state);
     relayPath[sizeof(relayPath)-1] = 0;
-    _snprintf(relayArg, sizeof(relayArg), "+set relayIdentityPath \"%s\"", relayPath);
+    _snprintf(relayArg, sizeof(relayArg), "+set codol_relayIdentityPath \"%s\"", relayPath);
     relayArg[sizeof(relayArg)-1] = 0;
     _snprintf(cmd, sizeof(cmd),
         "\"%s\" +set dedicated 2 +set fs_basepath \"%s\" +set fs_homepath \"%s\" +set net_ip %s +set net_port %d "
         "+set rcon_password \"%s\" +set logfile 2 +set logrcon 1 +set developer %d +set sv_fps 60 "
         "+set scriptPath \"%s\" +set scriptOverlay \"%s\" +set scriptNativeOverlay \"%s\" "
         "+set securityKeyPath \"%s\\securitykey.bin\" +set admissionPath \"%s\\game_admissions.txt\" "
-        "+set admissionRequired %d %s +set profilePath \"%s\" +set zoneType %s +set sessionMap %s "
+        "+set admissionRequired %d %s +set profilePath \"%s\" +set codol_zoneType %s +set codol_sessionMap %s "
         "+set g_gametype %s +set hostParentPid %lu %s "
         "+scriptPath +scriptOverlay +scriptNativeOverlay +map %s %s",
         c.exe, c.basepath, c.home, c.netIp, c.port, password, c.developer, c.scripts, c.scripts, c.scripts,

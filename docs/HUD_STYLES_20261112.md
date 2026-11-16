@@ -127,7 +127,7 @@ stayed empty. The generator writes ownerDraw 5 as three items: the clip count (o
 |---|---|---|
 | its ammo display (ownerDraw 5) | another layout | ownerDraws 3001 / 3002, above |
 | `getweaponfiretype` (the fire-mode tag above the weapon name, and its plate) | no operator | `dvarstring("cg_hudFireType")`: `hud_style.c` publishes the `@SF_WEAPON_*_NAME` key of the weapon in hand from weaponDef + 0x350 (fire type) and + 0xB64 (class). Both offsets were located by value over the stock weapon defs (fire type m4 0, m16 / famas 3, usp / spas12 / m21 / rpg 1; class rifle 2, pistol 1, shotgun 5, rocket 9; no other offset fits). Which key a fire type and class get is INFERRED from the keys' names and values (`src/hud_style_policy.h`); 2.6.9.7's code is packed. The labels are carried in both languages |
-| `player("assists")` (kill/death bar) | not a field of `player` | `dvarint("cg_hudAssists")`: the local client's row of C1's score records (CG_ParseScores 0x00465240: 19 rows of 0x40 bytes at cg + 0xBEB70, the 7th value of a row at +0x1C, which the sh1x server fills with the assists, `server/sh1x/src/codol/stats/codol_scoreboard_wire.c`) |
+| `player("assists")` (kill/death bar) | not a field of `player` | `dvarint("cg_hudAssists")`: the local client's row of C1's score records (CG_ParseScores 0x00465240: 19 rows of 0x40 bytes at cg + 0xBEB70, the 7th value of a row at +0x1C, which the sh1x server fills with the assists, `server/sh1x/src/online/stats/scoreboard_wire.c`) |
 
 The two dvars are written on the main tick while a style is on (they change with a weapon switch or a score message,
 not per shot). The ownerdraws share voice.c's CG_OwnerDraw entry hook (0x00459E10): `VoiceOwnerDraw` calls

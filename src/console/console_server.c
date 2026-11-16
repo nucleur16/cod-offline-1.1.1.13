@@ -307,7 +307,7 @@ static BOOL ConSvExec(const char *command) { return ConSvExecDelayed(command, 0)
 /* "dev_cheats on" typed in the console of the player who hosts this offline match.
  * The server refuses every cheat on a "lobby match server" (admissionRequired 1, which hosting requires)
  * unless its operator declares a developer server (dvar devServer, registered with flags 0 in
- * codol_dev_cheats.c, so the operator may set it at run time). The host's console speaks to the server with the
+ * dev_cheats.c, so the operator may set it at run time). The host's console speaks to the server with the
  * operator's rcon password, and in this offline client the server exists only for this one player on loopback:
  * so the console declares it right before switching cheats on, never otherwise. sv_cheats itself stays the
  * server's: dev_cheats on sets it, and from then on that server records no progression (its own latch). */
@@ -325,7 +325,7 @@ static BOOL ConSvCheatsOn(const char *line)
 }
 
 /* A cheat command went to the server as this player's client command. The server answers the player with a
- * game message (CODOL_DevPrint: server command 'e'), and C1 neither prints that to its log nor does this
+ * game message (DevPrint: server command 'e'), and C1 neither prints that to its log nor does this
  * client's HUD show it (measured: "viewpos", "give ammo" and a refusal left no line in console_mp.log or on
  * screen). So the console asks the server what the command left behind, half a second later, when the
  * command has run: dev_cheats (whether cheats are permitted and, per player, health, pm_type, the

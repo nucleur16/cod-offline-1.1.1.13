@@ -559,7 +559,7 @@ static void PatchScoresOpen(void)
  * chunks with ReadFileEx for a handle or memcpy for a buffer, and 0x4B69E0 inflates unsigned
  * chunks directly (signed ones go through 0x4B5840). The jne becomes two nops, so an unsigned
  * zone loads from a file like any other; signed zones are untouched. Any client_shipRetail zone
- * may now be an unsigned build, in the same layout tools/codol_english/build_font_ff.py writes. */
+ * may now be an unsigned build, in the same layout tools/english/build_font_ff.py writes. */
 #define UNSIGNED_GATE_VA 0x004B5EF5u
 
 static BOOL PatchUnsignedZones(void)

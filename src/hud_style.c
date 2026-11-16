@@ -46,7 +46,7 @@
  *               akimbo byte (0x0040AB60: the weapon's index among cg + 0x2A0[15], record cg + 0x2DC + idx * 5,
  *               byte +1; index 14 while dvar [0x0238A908] byte +0xC is set). HudAkimbo repeats both.
  *   0x00465240  CG_ParseScores: 19 rows of 0x40 bytes at cg + 0xBEB70, row count cg + 0xBEB18; the 7th value of a
- *               row (the sh1x server's assists, server/sh1x src/codol/stats/codol_scoreboard_wire.c) at +0x1C,
+ *               row (the sh1x server's assists, server/sh1x src/online/stats/scoreboard_wire.c) at +0x1C,
  *               the client number at +0.
  *   weaponDef + 0x350 fire type, + 0xB64 class: located by value (hud_style_policy.h), no instruction to check;
  *               read only after the three sites above passed.

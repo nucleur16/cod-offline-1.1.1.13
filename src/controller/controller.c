@@ -1530,7 +1530,7 @@ static void CtlSampleSticks(void)
  * cg+0xBFA24), rotates the heading (cg+0xC8B10, degrees: the vector from a second point cg+0xC8B30 / 34
  * back to the selector, while MOUSE2 is held on a directional streak, ps.locationSelectionInfo bit 7),
  * and on the state CL_KeyEvent leaves at 0x16F5D5C + lc * 0xD28 (1 MOUSE1 = confirm, 2 Escape = cancel)
- * puts 0x20000 / 0x40000 and the heading byte in the usercmd; the server (CODOL_LocationSelectionAction)
+ * puts 0x20000 / 0x40000 and the heading byte in the usercmd; the server (LocationSelectionAction)
  * then notifies confirm_location. The hook runs first: left stick moves the selector (speed
  * gpad_locsel_speed, quadratic response, doubling over 0.6 s of full push, IW4 console style), right
  * stick sets the heading, and A / RT / B set that same state, so the pad takes the mouse's path. */
@@ -2112,7 +2112,7 @@ __attribute__((used)) void __cdecl ControllerMove(int lc, BYTE *cmd, float frame
     CtlSampleSticks(); /* once per usercmd, next to the mouse */
 
     /* move. C1's wire usercmd has no analog movement: it carries four direction bits, and the server rebuilds
-     * forwardmove / rightmove as +-127 from them (CoD4x_Server codol_game.c). An analog cmd therefore moved the
+     * forwardmove / rightmove as +-127 from them (CoD4x_Server game.c). An analog cmd therefore moved the
      * server at full key speed in whatever octant the signs gave (a 10-degree drift = a full diagonal strafe,
      * a half tilt = a run), while this client predicted a slower or straighter move, and corrected back.
      * gpad_move_digital maps the stick to the same eight +-127 combinations the keys make, by the octant of
@@ -2278,7 +2278,7 @@ __attribute__((used)) void __cdecl ControllerMove(int lc, BYTE *cmd, float frame
  * whole normal path, CL_MouseMove included, and calls 0x490B40 (eax = lc, esi = cmd) instead: +attack and two
  * other kbuttons into the button bits, 0x200000 (remote control), and the mouse into two signed wire bytes,
  * pitch cmd+0x24 = clamp(my * m_pitch, -1, 1) * 127 and yaw cmd+0x25 = clamp(-mx * m_yaw, -1, 1) * 127.
- * The server (CoD4x_Server codol_remote_missile.c, C1 0x40EC50) turns the missile by
+ * The server (CoD4x_Server remote_missile.c, C1 0x40EC50) turns the missile by
  * rate * msec / 1000 * byte / -127 per command, so a byte is a turn rate, not an angle. The pad's sticks
  * went to the view-angle hook only, which this branch never reaches, so the missile ignored them.
  * CtlRemoteMove runs after 0x490B40 and adds the sticks: the right stick (or the left, whichever is pushed

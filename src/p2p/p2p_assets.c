@@ -298,7 +298,7 @@ static const char *PiC1ZoneOf(unsigned type, const char *name)
     return NULL;
 }
 
-/* C1 WeaponDef (loader 0x4c3c20, 0xBFC bytes): the pointer slots of the server's codol_c1_weapon.c / the
+/* C1 WeaponDef (loader 0x4c3c20, 0xBFC bytes): the pointer slots of the server's c1_weapon.c / the
  * replay_weapon field table: 1 string, 2 sound, 3 31-entry sound array, 4 asset (compared by the name every
  * C1 asset header starts with), 5 graph points. Script-string handle arrays are skipped (9). */
 static const struct { unsigned offset, count, kind; } kWeaponSlots[] = {

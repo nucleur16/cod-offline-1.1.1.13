@@ -287,7 +287,7 @@ and the rcon to a server other than the hosted one (they stay with `K33_LOCAL_TE
 - `+set k33_console 0` on the command line leaves the console out entirely.
 
 ### sh1x developer commands and the match server (`docs/OFFLINE_CONSOLE_20261112.md`)
-The cheat commands run on the sh1x server (`src/codol/player/codol_dev_cheats.c` there). C1 forwards any word it
+The cheat commands run on the sh1x server (`src/online/player/dev_cheats.c` there). C1 forwards any word it
 does not know to the server (Cmd_ExecuteString 0x58CB16 -> CL_ForwardCommandToServer 0x494CE0), so typing
 `noclip` here reaches it as this player's command; the console adds autocomplete, argument lists and usage for them
 (`con_status` lists them): `god demigod notarget noclip ufo kill give take setviewpos viewpos devset addbot kickbot
@@ -341,7 +341,7 @@ menus know when to re-read their key labels. The mapping is `src/controller/cont
 `src/audio/voice.c` puts back in-game voice chat, which C1 stripped (no capture, no codec, no `+talk`; the "v"
 packet branch only printed "voice communication is disabled"). It uses Opus (libopus, linked
 statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
-(`src/codol/net/codol_voice.c` on its `feat/voicechat` branch).
+(`src/online/net/voice.c` on its `feat/voicechat` branch).
 
 - **Push-to-talk**: `+talk`, a real C1 key binding like `+melee`. C1 stores binds as indices into its
   bind table (0xCD62C0, 86 names, no `+talk`), so voice.c extends the table with `+talk`/`-talk`, lets
@@ -553,7 +553,7 @@ Other notes:
 
 ## Discord Rich Presence (`src/discord.c`)
 The launcher's `TCLS\CoDOLPresence.exe` helper (a PyInstaller build of the server repo's
-`tools/codol_discord_presence.py`) now runs inside the client: no Python, no second process. It talks
+`tools/discord_presence.py`) now runs inside the client: no Python, no second process. It talks
 to Discord's local IPC pipe (`\\.\pipe\discord-ipc-0..9`) as application 1554730441825718272 and shows
 - front end: "In the lobby" / "Choosing a match", elapsed since the client started;
 - in a match: "<mode> on <map>" (e.g. "Team Deathmatch on Killhouse"), elapsed since joining, and as state
@@ -736,7 +736,7 @@ in the map pack, change it to `ship` and build.
 ### Provenance
 | zone | made by |
 |---|---|
-| codol_english | `tools/codol_english/build_ff.py` (CoD4x_Server, localizedStrings-1.1.1.13) from `codol_english.tsv` |
+| codol_english | `tools/english/build_ff.py` (CoD4x_Server, localizedStrings-1.1.1.13) from `codol_english.tsv` |
 | codol_english_font | `build_font_ff.py` (same tools); byte-identical to localizedStrings-1.1.1.13 `zones/` |
 | codol_english_zombies_base | localizedStrings-1.1.1.13 `tools/localize_zone.py` from `strings/codol_english_zombies_base/strings.tsv` (identical) |
 | codol_english_ui, codol_english_ui_extra, codol_chinese_ui, codol_chinese_ui_extra | `scripts/ui_keys.py`: the K33UI_* entries; the English text is codol-classic's (its English movies, launcher releases r22-r30 and `deploy/client-patches/revive-token-mode/build_token_mode.py`), the Chinese text the stock movies' |

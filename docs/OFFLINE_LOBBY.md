@@ -552,7 +552,7 @@ into rank, 1975 to next) | +100 GP`. The after-action Statistics shows Combat XP
 `players\edtest\mpdata_s` read back by `dwtest --career` gives `total_xp 25`; the rank bar shows 25/2000 after
 returning to the lobby (`t3_e01_c.png`) and after a restart (`t3_e02_c.png`). Nothing on the Kernel33 or lobby
 side was missing: the server measures XP as the session rank-experience delta (`_rank.gsc` giveRankXP ->
-`codol_match_report.c` `client_total_xp`) and the lobby folds it. A kill (rather than an assist) was not
+`match_report.c` `client_total_xp`) and the lobby folds it. A kill (rather than an assist) was not
 landed: the bot moved into the crosshair is shot but rarely finished by the burst.
 Not tried: `explodeprobe <player> frag_grenade_mp` (a player-owned grenade): it crashed the level both
 times (`Invalid animation condition client` on the bot's death, then a `_weapons.gsc` runtime error
@@ -610,13 +610,13 @@ read with the Python lobby's codec from a copy of `players\edtest\mpdata`):
   `publication failed; keeping appearance`: the bots spawned with `defaultweapon_mp` and only their names
   were drawn (no body, head, world weapon or shadow). Cause: the test shadow had no server pack
   `p2p\home\main\sh1x_svr_scripts.iwd`. The host reads `mp/botclasstable.csv` with `FS_ReadFile` from
-  that pack (sh1x `codol_bot_loadout.c`), so without it every class answered `none`; the same run also
+  that pack (sh1x `bot_loadout.c`), so without it every class answered `none`; the same run also
   routed bots over the level's raw `node_*` records (732 on mp_killhouse_sh) because the pack's waypoint
   and node files were missing too. With the pack in place the warnings are gone and the bots carry
   their class weapons and characters. `P2PCheck` now refuses to host when neither the pack nor a loose
   `p2p\home\main\mp\botclasstable.csv` exists ("server pack missing"), so a shadow or an install
   without it fails visibly instead of starting a match with invisible bots.
-* Not done: a sweep of every primary weapon, and the comparison with a dedicated `codol_dedrun` run.
+* Not done: a sweep of every primary weapon, and the comparison with a dedicated `sh1x_dedrun` run.
 
 
 ## What still needs the live client

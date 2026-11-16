@@ -72,7 +72,7 @@ and nothing returns its output.
 
 ### Cheats and the server's permission model
 
-The server enforces this, unchanged (`codol_dev_cheats.c`): `CODOL_CheatsPermitted() = sv_cheats &&
+The server enforces this, unchanged (`dev_cheats.c`): `CheatsPermitted() = sv_cheats &&
 !lobby_match_server()`. `lobby_match_server` is true when `admissionRequired` is 1 (hosting always sets it)
 and `devServer` is not 1. Once `sv_cheats` has been on, the server process records no progression or stats.
 
@@ -86,7 +86,7 @@ Every new match starts with cheats off (`+map`, not `devmap`). The first cheat c
 console has not seen `sv_cheats` on prints a one-line hint: `cheats are off in a new match: type dev_cheats on
 first ...`.
 
-The server answers a cheat command with a game message (`CODOL_DevPrint`, server command `e`). Measured: C1 shows
+The server answers a cheat command with a game message (`DevPrint`, server command `e`). Measured: C1 shows
 this neither in `console_mp.log` nor on the HUD (`viewpos`, `give ammo` and a refusal left nothing). So half a
 second after each cheat the console asks the server for `dev_cheats` and prints the result: whether cheats are
 permitted, then per player the health, pm_type, the god/demigod/notarget/noclip/ufo flags, the position and the
@@ -102,7 +102,7 @@ weapon. After `devset <dvar> <value>` it prints that dvar instead. `devhelp` pri
   dvars that GSC creates.
 - `kSh1xCheats` (14), in `cmd_devhelp`'s order: `god demigod notarget noclip ufo kill give take setviewpos viewpos
   devset addbot kickbot devhelp`. Each one is checked to be dispatched by `ClientCommand` (g_cmds.c) or
-  `CODOL_DevClientCommand`, and a verb that `CODOL_DevClientCommand` handles but devhelp does not list fails the
+  `DevClientCommand`, and a verb that `DevClientCommand` handles but devhelp does not list fails the
   generator. Usage strings are taken from the server's own: `give <weapon [model]|health [n]|ammo|all>`,
   `take <weapon|weapons|health [n]|ammo|all>`, `setviewpos x y z [yaw [pitch]]`, `devset <dvar> <value>`.
 - `kSh1xDevset` (10): `jump_height g_speed g_gravity timescale player_sprintSpeedScale bg_fallDamageMinHeight

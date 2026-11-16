@@ -30,7 +30,7 @@
  *   ui       AS_EnableVoiceTalk (vtable 0xC77100) and AS_SetVoiceMicMute (0xC636A8) Call slots,
  *            both `ret 4` at 0x97C8B0, go to VoiceAsEnable / VoiceAsMicMute.
  *
- * Wire format (see CoD4x src/codol/net/codol_voice.c, the relay):
+ * Wire format (see CoD4x src/online/net/voice.c, the relay):
  *   client -> server  "\xff\xff\xff\xffv\0" u8 ver=1, u8 flags (1 = last), u16 seq, u8 n, n*(u8 len, data)
  *   server -> client  "\xff\xff\xff\xffv\0" u8 ver=1, u8 flags, u8 talker, u16 seq, u8 n, frames
  *

@@ -61,8 +61,8 @@
 #define ES_SIZE                0x114
 #define CS_SIZE                0x138
 
-/* playerState (C1 offsets: src/codol/snapshot/codol_player_fields.inc in the server repo,
- * docs/CODOL_C1_MOVEMENT_LAYOUT.md, src/codol/weapon/codol_weapon_state.h). */
+/* playerState (C1 offsets: src/online/snapshot/player_fields.inc in the server repo,
+ * docs/CODOL_C1_MOVEMENT_LAYOUT.md, src/online/weapon/weapon_state.h). */
 #define PS_COMMANDTIME         0x000
 #define PS_PMTYPE              0x004
 #define CG_SNAPBUF             0x35E8   /* cg's two snapshot_t buffers, 0x556B0 apart */

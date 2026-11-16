@@ -8,7 +8,7 @@ restarted, replaced, or retired. No exploit payload was sent to a game client.
 ## October 31 local security follow-up
 
 An additional short-datagram native receive defect was confirmed in
-`src/codol/net/codol_network.c`. After a two-byte minimum check, a NAT-shaped
+`src/online/net/network.c`. After a two-byte minimum check, a NAT-shaped
 datagram `{13, 2}` reached `packet[2]` before testing for the required
 29-byte length. The failed-DATA diagnostic also indexed bytes 2–5 while the
 old minimum remained two. A 32-bit AddressSanitizer fixture using an exact
@@ -70,7 +70,7 @@ sealed records with a byte that could make C1 parse a DemonWare chunk, it sent
 the final unsafe record. It could also send a nonzero but sub-16-byte result
 from the seal function. Both cases now drop the packet after consuming the
 reserved counter; a later valid record can still be sent. The actual
-`src/codol/net/codol_network.c` send path passed an AddressSanitizer fixture
+`src/online/net/network.c` send path passed an AddressSanitizer fixture
 covering ordinary sends, three unsafe retries, retry exhaustion, short seals,
 counter persistence and recovery. WSL's 32-bit MinGW cross compiler produced
 a Windows-target object, SHA256
@@ -159,7 +159,7 @@ the standalone direct ICE path; the overnight full matches used the private TURN
 bridge, whose separate counters and expiry were already tested. No clients,
 servers, installed files, production services or firewall rules were changed.
 
-The native server still has a fixed ECDH scalar (`codol_network.c`). Source review
+The native server still has a fixed ECDH scalar (`network.c`). Source review
 confirms it is used for each CoDOL handshake. Its confidentiality impact depends
 on the separate admission security key, but it removes forward secrecy if that
 key is exposed later. Replacing it requires exact C1 compatibility testing;
@@ -361,7 +361,7 @@ the separate C1 client parsers.
 The old `SECURITY_AUDIT_CLIENT_20261026.md` is evidence of an earlier pass, not
 a security certificate. Its unproven native rows 14–18 remain open. Likewise the
 old server audit's broad shared-IP admission finding was narrowed: current
-`CODOL_AdmissionMember` requires an exact UID/member or UID/IP row. The UID
+`AdmissionMember` requires an exact UID/member or UID/IP row. The UID
 comes from the client-controlled connect request. When two members share the
 host key and source IP, this check alone cannot distinguish them; the later
 occupied-slot repair and remaining first-connect gate are described below.
@@ -561,7 +561,7 @@ See `docs/P2P_C1_BULK_COUNT_20261031.md` for the exact bound and receipts.
 
 ## October 31 admitted-send plaintext fallback
 
-The native `CODOL_NetworkSend` return value of `-1` tells `NET_SendPacket` to
+The native `NetworkSend` return value of `-1` tells `NET_SendPacket` to
 send the original buffer through plaintext UDP. Before the local repair, a
 missing key configuration or established peer returned `-1` even when lobby
 admission was required. The source now drops non-OOB gameplay in that state
@@ -816,7 +816,7 @@ unresolved: it needs a per-member credential or trusted relay source binding
 before any release or progress authority is safe. No hostile C1 proof or RCE
 claim follows from this source finding.
 
-The adjacent `CODOL_AdmissionMember` fallback was also still accepting an
+The adjacent `AdmissionMember` fallback was also still accepting an
 ordinary roster row for any claimed UID at the same source IP, even when the
 authenticated key belonged to a different host and no explicit member row
 linked them. The isolated native source now requires an explicit host/member
@@ -859,9 +859,9 @@ United Offensive and Call of Duty 2. Those affected versions are not this
 CoDOL C1/sh1x build. This server does have a `callvote map` path, so the
 pattern was checked directly: `src/g_sv_cmds.c::Cmd_CallVote_f` copies all
 three arguments into bounded arrays, rejects command separators with
-`CODOL_VoteArgIsSafe`, restricts map/gametype names to 1-63 plain bytes with
-`CODOL_VoteNameIsSafe`, and uses bounded `Com_sprintf` for `level.voteString`.
-The existing `tests/test_codol_vote_guard.c` covers long names and separators.
+`VoteArgIsSafe`, restricts map/gametype names to 1-63 plain bytes with
+`VoteNameIsSafe`, and uses bounded `Com_sprintf` for `level.voteString`.
+The existing `tests/test_vote_guard.c` covers long names and separators.
 This source comparison does not transfer the older CVE to CoDOL or prove the
 protected C1 parser safe.
 
@@ -958,7 +958,7 @@ This is static narrowing only; no new C1 patch or gameplay test resulted.
 The native encrypted DATA receive path passes a successful association open to
 `MSG_InitReadOnly` and `SV_PacketEvent`. For connectionless `v` packets,
 `MSG_ReadStringLine` consumes bytes through `MSG_ReadByte`, which stops at the
-message size, before `CODOL_VoicePacket` uses `msg->readcount`. The relay
+message size, before `VoicePacket` uses `msg->readcount`. The relay
 accepts only a connected active client at that exact endpoint, requires a
 five-byte voice header, and bounds its list to six frames of at most 255 bytes.
 Its largest accepted list is `5 + 6*(1+255) = 1541` bytes; the outbound
@@ -1014,7 +1014,7 @@ includes this version, but requires a TLS client configured with an oversized
 PSK identity and an ECDHE-PSK negotiation. The only non-vendor SSL client call
 site found in the isolated native checkout is `src/httpftp.c`; it configures
 CA and hostname verification but has no `mbedtls_ssl_conf_psk` call. The P2P
-handshake uses the separate `codol_ecdh.c` path rather than Mbed TLS SSL. This
+handshake uses the separate `ol_ecdh.c` path rather than Mbed TLS SSL. This
 specific disclosed overflow is therefore not mapped to a reachable CoDOL
 P2P path by the current source. The maintainer's
 [CVE-2026-34877 advisory](https://github.com/Mbed-TLS/mbedtls-docs/blob/main/security-advisories/mbedtls-security-advisory-2026-03-serialized-data.md)
