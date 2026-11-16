@@ -158,7 +158,7 @@ CLIENT_STRINGS = {
 # ---- names the client forwards to (or reads from) the hosted sh1x match server ---------------------------------
 # The server's rule: drop "codol_". Every name of src/console/sh1x_cmds.h that starts with codol_, plus the +set
 # names p2p.c passes the host. (codol_dev_cheats -> dev_cheats is the server's existing alias of the same command.)
-SERVER_CLASH = {}
+SERVER_CLASH = {"codol_voiceDebug": "sv_voiceDebug"}   # voiceDebug is a C1 dvar name; the server took sv_voiceDebug
 # The server repository keeps these (tools/rename_prefix_map.json "kept"): the GSC tree (bin/home/codol_rawfiles, a
 # separate repository) reads them, or, for codol_relayIdentityPath, the server never registers it.
 SERVER_KEPT = ("codol_zoneType", "codol_sessionMap", "codol_quickPlay", "codol_playlistId", "codol_tracePace",
