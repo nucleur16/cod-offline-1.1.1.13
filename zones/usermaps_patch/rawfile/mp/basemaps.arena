@@ -1184,17 +1184,6 @@
     environment	"forest"
 }
 {
-	map			"mp_brl_derail"
-	longname	"MPUI_DERAIL"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
-    description "MPUI_DESC_MAP_DERAIL"
-    mapimage    "blank"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "socom_141_arctic"
-    axischar    "opforce_arctic"
-    environment	"arctic"
-}
-{
 	map			"mp_strike_sh"
 	longname	"MPUI_MP_STRIKE_SH"
 	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
@@ -1276,7 +1265,7 @@
 	mapoverlay  "compass_overlay_map_blank"
     allieschar  "us_army"
     axischar    "opforce_composite"
-    environment	"urban"
+    environment	"arctic"
 }
 {
 	map			"mp_backlot_sh"
@@ -1320,7 +1309,7 @@
 	mapoverlay  "compass_overlay_map_blank"
     allieschar  "us_army"
     axischar    "opforce_composite"
-    environment	"urban"
+    environment	"desert"
 }
 {
 	map			"mp_derail_sh"
@@ -1386,7 +1375,7 @@
 	mapoverlay  "compass_overlay_map_blank"
     allieschar  "us_army"
     axischar    "opforce_composite"
-    environment	"desert"
+    environment	"urban"
 }
 {
 	map			"mp_italy_sh"
@@ -1485,7 +1474,7 @@
 	mapoverlay  "compass_overlay_map_blank"
     allieschar  "us_army"
     axischar    "opforce_composite"
-    environment	"urban"
+    environment	"desert"
 }
 {
 	map			"mp_resistance_sh"

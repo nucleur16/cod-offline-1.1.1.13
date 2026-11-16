@@ -35,7 +35,6 @@ mp_qadeem_sh        ship
 mp_highrise         ship
 mp_hunger           dev     # Explicitly excluded from the 2026-10-31 release (also known as mp_hunger_sh)
 mp_vacant           ship
-mp_brl_derail       dev     # Explicitly excluded from the 2026-10-31 release
 zm_factory_sh       ship
 zm_theater_sh       ship
 
