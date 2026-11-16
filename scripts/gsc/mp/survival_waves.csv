@@ -1,0 +1,44 @@
+a0,b1,c2,d3,e4,f5,g6,h7,i8,j9,k10,
+100,easy,Easy Infantry,Easy guys,actor_enemy_so_easy,model1887_mp,,25,0.9,100,,0.9
+101,regular,Regular Infantry,Regular guys,actor_enemy_so_regular,mp5k_mp,frag_grenade_mp,50,1,125,,0.92
+102,hardened,Hardened Infantry,Harder guys,actor_enemy_so_hardened,scar_mp,frag_grenade_mp,75,1.1,150,,0.92
+103,veteran,Veterans,Veteran guys,actor_enemy_so_veteran,ak104_mp,frag_grenade_mp,100,1.2,200,,0.95
+104,elite,Elite,Elite guys,actor_enemy_so_elite,fn2000_mp,frag_grenade_mp,125,1.3,275,,0.97
+105,martyrdom,Martydom,Guys strapped with C4 that explode on death,actor_enemy_so_martyrdom,aa12_mp,frag_grenade_mp,50,1.1,150,,0.95
+106,claymore,Claymore laying,Guys that place claymores,actor_enemy_so_claymore,miniuzi_mp,frag_grenade_mp,75,1,150,,0.95
+107,chemical,VX Gas,Chemical warfare enemies in gas masks,actor_enemy_so_chemical,m79_mp,tabun_gas_mp,75,1.2,150,,1
+108,jug_regular,Juggernaut,Heavy armored guy,actor_enemy_juggernaut_so_survival,,rpg_mp,500,1,500,1,1
+109,jug_riotshield,Riot Shield Juggernaut,Armory guy behind a riot shield,actor_enemy_juggernaut_riotshield,,rpg_mp,500,1.2,750,1,1
+110,jug_explosive,Explosive Juggernaut,Uses and is weak to explosives,actor_enemy_juggernaut_explosive,,rpg_mp,500,1.2,1000,1,1
+111,jug_minigun,The Terminator,WTFBBQ dead?,actor_enemy_juggernaut_bfg,,,1000,1,1000,1,1
+112,chopper,Enemy Attack Chopper,Enemy Attack Helicopter with mini-gun,,,,1100,1,600,1,
+113,missile_chopper,Missile Chopper,Enemy Attack Helicopter with missiles,,,,1300,1,1000,1,
+114,jug_drop_chopper,MI17 Jugg Dropper,Heli used for bringing in Juggernauts,,,,2200,1,1000,1,
+115,dog_reg,Dog,Regular dogs,,,,25,1,100,,
+116,dog_splode,Martydom Dogs,Dogs strapped with C4 that explode on death,,,,25,1,150,,
+117,friendly_support_delta,Delta Allies,Delta Infantry with M16s,actor_ally_so_delta,m16_mp,frag_grenade_mp,200,1,100,,1
+118,friendly_support_riotshield,Riotshield Allies,GIGN Riotshield Infantry with MP5Ks,actor_ally_so_riotshield,mp5k_mp,frag_grenade_mp,200,1,100,,1
+119,rpg,RPG,Guys that use RPG only,actor_enemy_so_rpg,rpg_mp,frag_grenade_mp,25,0.9,150,,0.8
+120,sniper,Snipers,Snipers in Ghillie suits use wa2000 sniper rifle,actor_enemy_so_sniper,as50_mp,frag_grenade_mp,60,1,150,,0.99
+121,riotshield,Riot Shields,Regular enemy riot shield dudes.,actor_enemy_so_riotshield,mp5k_mp,frag_grenade_mp,100,1,150,,1
+122,noob,Pistol Infantry,Noob infantry,actor_enemy_so_noob,usp_mp,,25,.9,100,,1
+123,searcher,Point Capture Infantry,Enemies that search for captured points,actor_enemy_so_martyrdom,usp_mp,,25,.9,100,,1
+124,armored,Armored Infantry,Armored but not Juggernauts,actor_enemy_so_armored,mp5k_mp,frag_grenade_mp,125,0.9,150,,0.85
+125,stormtrooper,Black and Red Armored Infantry for Crash,Armored but not Juggernauts,actor_enemy_so_armored_blk,striker_mp|eot_expsstriker|cqc_stalkerstriker,frag_grenade_mp,255,1.2,150,,1
+126,hazmat,Yellow Chemical Suit Infantry,Chemical warefare enemies in gas masks,actor_enemy_so_chemical_yellow,mp5k_mp|mag_extclipmp5k|sra_riflelasermp5k|muz_slnc9smgmp5k|red_rmrmp5k|cam_multicammp5k,tabun_gas_mp,75,1.2,150,,1
+127,demolitionist,AT4 Rocket Guys,Guys that use the AT4,actor_enemy_so_demolitionist,at4_mp,frag_grenade_mp,100,.8,150,,0.8
+1000,weapon_1,beretta_mp,max,,,,,,,,
+1001,weapon_2,,,,,,,,,,
+1002,weapon_3,,,,,,,,,,
+1003,grenade_1,frag_grenade_mp,3,,,,,,,,
+1004,grenade_2,flash_grenade_mp,3,,,,,,,,
+1005,equipment_1,laststand,1,,,,,,,,
+1006,equipment_2,,,,,,,,,,
+1007,equipment_3,,,,,,,,,,
+1008,airsupport_1,,,,,,,,,,
+1009,airsupport_2,,,,,,,,,,
+1010,airsupport_3,,,,,,,,,,
+1011,perk_1,,,,,,,,,,
+1012,perk_2,,,,,,,,,,
+1013,perk_3,,,,,,,,,,
+1014,armor_1,armor,100,,,,,,,,

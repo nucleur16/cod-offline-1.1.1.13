@@ -1,0 +1,164 @@
+{
+  "kind": "historical ancestry reconciliation; evolved gameplay source retained",
+  "date": "2026-10-29",
+  "pre_merge_head": "649b5adaf6fa66bb693911d92459cd20af0c07ba",
+  "preserved_gameplay_tree": "fecc1d990f826ece7f0a8607c50975243fe905b0",
+  "pending_merge_parents": [
+    "e37a77d2ed0aa99d4310da5a7cc7c7f8e74bdc6f",
+    "4fa282fa57df458abf6309913c1c03e2af4dcd53",
+    "56fca7323c020ffcef1a9e7c7419d06b1915195d",
+    "2cdc49c08a516cb186737bd031dc0c94b229d3d2"
+  ],
+  "remote_live_heads": [
+    {
+      "remote_ref": "refs/heads/codex/hellhound-chase-audio-20261024",
+      "sha": "9d1aedb45f4c061e66b1aacdb9ec7f103c1387f4",
+      "already_in_head": true,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/codex/hotjoin-team-admission-20261026",
+      "sha": "045da5f9f0a0b6ae1c6931692753658a656b1852",
+      "already_in_head": true,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/codex/maintenance-mp-scripts-20261020",
+      "sha": "a1dbc866ed9eebfd3d4bc3fd47fdc60e7590397f",
+      "already_in_head": false,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/codex/maintenance-zombies-scripts-20261020",
+      "sha": "4fa282fa57df458abf6309913c1c03e2af4dcd53",
+      "already_in_head": false,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/codex/mp-podium-eligibility-20261023",
+      "sha": "e37a77d2ed0aa99d4310da5a7cc7c7f8e74bdc6f",
+      "already_in_head": false,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/codex/postgame-party-class-20261023",
+      "sha": "59a27fb889ccc409aec361f53f8e128333a2894a",
+      "already_in_head": false,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/codex/zombies-script-fixes-20261019",
+      "sha": "c7da25a75f517969463479cbf621450480dd1ce0",
+      "already_in_head": true,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/deploy/survival-mode",
+      "sha": "fd2203e3cf3ddde08e9116f1c9f2b0bc91ec783d",
+      "already_in_head": true,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/dog-parity",
+      "sha": "cdffc5d180215b02afa753ecb19e198a9ca49a07",
+      "already_in_head": true,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/feat/survival-mode",
+      "sha": "56fca7323c020ffcef1a9e7c7419d06b1915195d",
+      "already_in_head": false,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/feat/zm-factory-teleporter-audio",
+      "sha": "589333b0d2cd5b81d5606036d4cd6c86a5f3ed4f",
+      "already_in_head": true,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/feat/zm-old-perk-machines",
+      "sha": "9acbc6a846b1968a65d30f301a142f1d915b64b2",
+      "already_in_head": true,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/feat/zm-theater-perks",
+      "sha": "87d114ec1d9fa5deaef1463f4e63d8e7df7504ca",
+      "already_in_head": true,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/feat/zm-wallbuy-terminals",
+      "sha": "5d2601c0d733ece52b19e902eebe4000c3226fe3",
+      "already_in_head": true,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/feat/zm-wallbuys",
+      "sha": "b579ae5c8caf77c31b3c3b2c29d81b41150a65bc",
+      "already_in_head": true,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/fix/hosted-survival-spawn-20261028",
+      "sha": "90bc468d82b3a0b9af599c56a75851ffdd7c2770",
+      "already_in_head": true,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/fix/survival-gameplay-20261028",
+      "sha": "12d97c73e18569252795ac08d81de985c94027c6",
+      "already_in_head": true,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/fix/zm-factory-fence-traversal",
+      "sha": "95318cabdba7b491831ffbe41ab3ac757e67b0d1",
+      "already_in_head": true,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/fix/zm-factory-pap-door",
+      "sha": "1c10bb339a0050087ece3e1a608c34d700f73f90",
+      "already_in_head": true,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/fix/zm-melee-notetrack-sync",
+      "sha": "3e62d0198eda493b1e6a7c9bcf79810595d1cefe",
+      "already_in_head": true,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/fix/zm-perk-machine-clip",
+      "sha": "6f87f62f388dc6280108614bc259c65eae6d3fc1",
+      "already_in_head": true,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/main",
+      "sha": "b72688e9237ce3ec6ff6bfc47cd2d01b7d151e15",
+      "already_in_head": true,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/sec/server-audit-20261026",
+      "sha": "2cdc49c08a516cb186737bd031dc0c94b229d3d2",
+      "already_in_head": false,
+      "covered_by_pending_parents": true
+    },
+    {
+      "remote_ref": "refs/heads/sec/server-audit-20261026-deploy",
+      "sha": "2ea31a70c400f83f2143f53badcf63245852920d",
+      "already_in_head": true,
+      "covered_by_pending_parents": true
+    }
+  ],
+  "dev_policy": "Preserve literal dev; no such live remote head exists in this snapshot.",
+  "archive_namespace": "refs/archive/rawfiles-consolidation-20261029",
+  "semantic_review": "Native parent docs/releases/rawfiles-historical-review-20261029.md and rawfiles-historical-function-delta-20261029.json",
+  "meaningful_unique_port_commit": "649b5ad",
+  "reason": "Old large checkpoints were compared by file/function; obsolete deletes, simplified gameplay and superseded menu/model/weapon implementations are not reapplied. Six unique developer powerup diagnostic helpers were preserved separately with explicit opt-in. This merge records represented historical lineage and does not claim verbatim application of obsolete trees.",
+  "remaining_unreviewed_live_tips": []
+}

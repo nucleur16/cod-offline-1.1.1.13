@@ -1,0 +1,1415 @@
+#include maps\mp\_utility;
+#include maps\mp\gametypes\_hud_util;
+#include common_scripts\utility;
+
+init()
+{
+	precacheString( &"MP_FIRSTPLACE_NAME" );
+	precacheString( &"MP_SECONDPLACE_NAME" );
+	precacheString( &"MP_THIRDPLACE_NAME" );
+	precacheString( &"MP_MATCH_BONUS_IS" );
+
+	// CoDOL: C1's menu bank (configstrings 4243..4274) has 32 slots and
+	// mp/constConfigStrings_mp.csv already fills 0..25 with the retail
+	// server's own precaches. "splash" and "defcon" are not among them and no
+	// script opens or closes them by name -- CG_ShowSplash opens a splash's
+	// column-11 menu by name, not by slot -- so they are not precached; their
+	// slots stay free (closePopupMenu borrows a free slot, per client, to close
+	// the field order splash menus: codolRegisterClosedSplashMenu).
+	precacheMenu( "challenge" );
+	precacheMenu( "killstreak" );
+	precacheMenu( "perk_display" );
+	precacheMenu( "perk_hide" );
+	precacheMenu( "killedby_card_display" );
+	precacheMenu( "killedby_card_hide" );
+	precacheMenu( "youkilled_card_display" );
+
+	game["menu_endgameupdate"] = "endgameupdate";
+	if ( level.splitscreen )
+		game["menu_endgameupdate"] += "_splitscreen";
+	precacheMenu(game["menu_endgameupdate"]);
+
+	game["strings"]["draw"] = &"MP_DRAW";
+	game["strings"]["round_draw"] = &"MP_ROUND_DRAW";
+	game["strings"]["round_win"] = &"MP_ROUND_WIN";
+	game["strings"]["round_loss"] = &"MP_ROUND_LOSS";
+	game["strings"]["victory"] = &"MP_VICTORY";
+	game["strings"]["defeat"] = &"MP_DEFEAT";
+	game["strings"]["halftime"] = &"MP_HALFTIME";
+	game["strings"]["overtime"] = &"MP_OVERTIME";
+	game["strings"]["roundend"] = &"MP_ROUNDEND";
+	game["strings"]["intermission"] = &"MP_INTERMISSION";
+	game["strings"]["side_switch"] = &"MP_SWITCHING_SIDES";
+	game["strings"]["match_bonus"] = &"MP_MATCH_BONUS_IS";
+	
+	level thread onPlayerConnect();
+}
+
+
+onPlayerConnect()
+{
+	for(;;)
+	{
+		level waittill( "connected", player );
+
+		player thread hintMessageDeathThink();
+		player thread lowerMessageThink();
+		
+		player thread initNotifyMessage();
+	}
+}
+
+
+hintMessage( hintText )
+{
+	notifyData = spawnstruct();
+	
+	notifyData.notifyText = hintText;
+	notifyData.glowColor = (0.3, 0.6, 0.3);
+	
+	notifyMessage( notifyData );
+}
+
+
+initNotifyMessage()
+{
+	if ( level.splitscreen )
+	{
+		titleSize = 2.0;
+		textSize = 1.5;
+		iconSize = 24;
+		font = "default";
+		point = "TOP";
+		relativePoint = "BOTTOM";
+		yOffset = 30;
+		xOffset = 0;
+	}
+	else
+	{
+		titleSize = 2.5;
+		textSize = 1.75;
+		iconSize = 30;
+		font = "objective";
+		point = "TOP";
+		relativePoint = "BOTTOM";
+		yOffset = 50;
+		xOffset = 0;
+	}
+	
+	self.notifyTitle = createFontString( font, titleSize );
+	self.notifyTitle setPoint( point, undefined, xOffset, yOffset );
+	self.notifyTitle.glowColor = (0.2, 0.3, 0.7);
+	self.notifyTitle.glowAlpha = 1;
+	self.notifyTitle.hideWhenInMenu = true;
+	self.notifyTitle.archived = false;
+	self.notifyTitle.alpha = 0;
+
+	self.notifyText = createFontString( font, textSize );
+	self.notifyText setParent( self.notifyTitle );
+	self.notifyText setPoint( point, relativePoint, 0, 0 );
+	self.notifyText.glowColor = (0.2, 0.3, 0.7);
+	self.notifyText.glowAlpha = 1;
+	self.notifyText.hideWhenInMenu = true;
+	self.notifyText.archived = false;
+	self.notifyText.alpha = 0;
+
+	self.notifyText2 = createFontString( font, textSize );
+	self.notifyText2 setParent( self.notifyTitle );
+	self.notifyText2 setPoint( point, relativePoint, 0, 0 );
+	self.notifyText2.glowColor = (0.2, 0.3, 0.7);
+	self.notifyText2.glowAlpha = 1;
+	self.notifyText2.hideWhenInMenu = true;
+	self.notifyText2.archived = false;
+	self.notifyText2.alpha = 0;
+
+	self.notifyIcon = createIcon( "white", iconSize, iconSize );
+	self.notifyIcon setParent( self.notifyText2 );
+	self.notifyIcon setPoint( point, relativePoint, 0, 0 );
+	self.notifyIcon.hideWhenInMenu = true;
+	self.notifyIcon.archived = false;
+	self.notifyIcon.alpha = 0;
+
+	self.notifyOverlay = createIcon( "white", iconSize, iconSize );
+	self.notifyOverlay setParent( self.notifyIcon );
+	self.notifyOverlay setPoint( "CENTER", "CENTER", 0, 0 );
+	self.notifyOverlay.hideWhenInMenu = true;
+	self.notifyOverlay.archived = false;
+	self.notifyOverlay.alpha = 0;
+
+	self.doingSplash = [];
+	self.doingSplash[0] = undefined;
+	self.doingSplash[1] = undefined;
+	self.doingSplash[2] = undefined;
+	self.doingSplash[3] = undefined;
+
+	self.splashQueue = [];
+	self.splashQueue[0] = [];
+	self.splashQueue[1] = [];
+	self.splashQueue[2] = [];
+	self.splashQueue[3] = [];
+
+	// Splash menus this server closes itself, by slot; see
+	// codolRegisterClosedSplashMenu. A round restart or rotation reconnects
+	// the player without closing C1's menus, so close any left from before.
+	self.codolSplashMenu = [];
+	if ( isDefined( level.codolClosedSplashMenus ) && !self.isbot )
+	{
+		foreach ( menu in level.codolClosedSplashMenus )
+			self closePopupMenu( menu );
+	}
+}
+
+
+// CoDOL: splash menus that nothing on the client closes but the slot timer.
+//
+// C1 times a splash per slot: CG_ShowSplash (0x00469140) writes {row, start,
+// duration, optionalNumber} into cg+0x174384+slot*16 (start = the client's
+// wall clock at receipt, duration = splashTable column 4) and opens the
+// column-11 menu (0x005F5740 at 0x004692C4). Its per-frame timer 0x0044E390
+// (called from 0x00497A7B) closes, for each slot 0..3 whose start + duration
+// has passed, the menu of the row the slot holds NOW (column 11 again,
+// Menus_FindByName 0x005F95C0 + Menus_Close 0x005F9AE0). A second splash in
+// the same slot overwrites the record, so the first splash's menu is never
+// closed by the timer.
+//
+// That is harmless for the stock splash menus: splash, killstreak,
+// killstreak_pickup, promotion, promotion_weapon and challenge each close all
+// the others in onOpen, and splash also fades its own items by timer_mark.
+// patch_common_mp's field_order_get and field_order_win (read from the live
+// client's menu assets) have no visibility or alpha expression at all, and
+// no splash menu's onOpen closes them (only perk_gained and intel_found close
+// field_order_win; nothing closes field_order_get, and neither closes the
+// other). The queue below releases a slot exactly `duration` after the 'w'
+// was sent, and C1 starts its timer when the 'w' arrives, so a queued splash
+// (a capture or kill medal, a killstreak, the win splash behind the get
+// splash) lands in the same snapshot-interval as the expiry and wins the race
+// about half the time -- every time when the first 'w' was delayed more than
+// the second. The field order splash then stayed on screen for good.
+//
+// So the server closes these menus itself through closePopupMenu ('v' <menu
+// slot>: 0x00467FC0 -> 0x005F5790, the same FindByName + Menus_Close the
+// timer runs; closing a menu that is already closed only drops it from the
+// open list). It is sent when the splash's duration has passed, and again
+// before anything else is shown in that slot; reliable commands arrive in
+// order, so the close always reaches the client before the next splash.
+codolRegisterClosedSplashMenu( menu )
+{
+	if ( !isDefined( level.codolClosedSplashMenus ) )
+		level.codolClosedSplashMenus = [];
+	if ( isDefined( level.codolClosedSplashMenus[ menu ] ) )
+		return;
+	// Not precacheMenu: these menus live inside patch_common_mp's own menu
+	// files, and C1's CG_Init loads every precached name as
+	// ui_mp/scriptmenus/<name>.menu (a default menufile for these). The
+	// server's closePopupMenu closes a menu that was not precached by name
+	// through a slot set for that client alone (codol_script_menu.c).
+	level.codolClosedSplashMenus[ menu ] = menu;
+}
+
+
+codolCloseSplashMenu( slot )
+{
+	if ( !isDefined( self.codolSplashMenu ) || !isDefined( self.codolSplashMenu[ slot ] ) )
+		return;
+	menu = self.codolSplashMenu[ slot ];
+	self.codolSplashMenu[ slot ] = undefined;
+	self closePopupMenu( menu );
+	self maps\mp\gametypes\_fieldorders::foTrace( "closed splash menu " + menu + " (slot " + slot + ") at " + getTime() );
+}
+
+
+oldNotifyMessage( titleText, notifyText, iconName, glowColor, sound, duration )
+{
+	notifyData = spawnstruct();
+	
+	notifyData.titleText = titleText;
+	notifyData.notifyText = notifyText;
+	notifyData.iconName = iconName;
+	notifyData.glowColor = glowColor;
+	notifyData.sound = sound;
+	notifyData.duration = duration;
+	
+	notifyMessage( notifyData );
+}
+
+
+notifyMessage( notifyData )
+{
+	self endon ( "death" );
+	self endon ( "disconnect" );
+	if ( !isDefined( notifyData.slot ) )
+		notifyData.slot = 0;
+	if ( !isDefined( notifyData.type ) )
+		notifyData.type = "";
+	self codolQueueNotify( notifyData );
+}
+
+
+// One owner per C1 splash slot. Priority changes the next entry, never the
+// splash already fading in. Keep all earned notifications, including streaks.
+codolQueueNotify( notifyData )
+{
+	slot = notifyData.slot;
+	insertAt = self.splashQueue[slot].size;
+	if ( notifyData.type == "challenge" || notifyData.type == "killstreak" )
+	{
+		insertAt = 0;
+		while ( insertAt < self.splashQueue[slot].size )
+		{
+			queued = self.splashQueue[slot][insertAt];
+			if ( queued.type != "challenge" && queued.type != "killstreak" )
+				break;
+			insertAt++;
+		}
+	}
+	for ( i = self.splashQueue[slot].size; i > insertAt; i-- )
+		self.splashQueue[slot][i] = self.splashQueue[slot][i-1];
+	self.splashQueue[slot][insertAt] = notifyData;
+	self dispatchNotify( slot );
+}
+
+
+dispatchNotify( slot )
+{
+	if ( isDefined( self.doingSplash[slot] ) || !self.splashQueue[slot].size )
+		return;
+
+	nextNotifyData = self.splashQueue[slot][0];
+	for ( i = 1; i < self.splashQueue[slot].size; i++ )
+		self.splashQueue[slot][i-1] = self.splashQueue[slot][i];
+	self.splashQueue[slot][i-1] = undefined;
+
+	// Reserve synchronously, before a worker can wait or another producer run.
+	self.doingSplash[slot] = nextNotifyData;
+	if ( isDefined( nextNotifyData.name ) )
+		self thread actionNotifyMessage( nextNotifyData );
+	else
+		self thread showNotifyMessage( nextNotifyData );
+}
+
+
+codolFinishNotify( slot )
+{
+	self.doingSplash[slot] = undefined;
+	self dispatchNotify( slot );
+}
+
+
+// CoDOL announcer caption.  C1 draws every announcer (1mc) voice line in the
+// top-right corner: splashTable row "announcer_line" (row 204, menu
+// announcer_line, 2.5 s) is an MP_ANNOUNCER speaker label ("Captain") over an
+// ITEM_TYPE_GAME_MESSAGE_WINDOW (type 19) bound to message window 2, the
+// subtitle window, and it slides in from the right like playercard_splash,
+// which it closes and is closed by.  The client prints the subtitle of the
+// alias variant it is playing into that window itself, so the server only
+// opens the menu while the line plays; sending the timed-subtitle command ']'
+// as well printed a second (often different-variant) line underneath.
+// The official tutorial videos show exactly this for streak-ready, inbound and
+// objective lines ("Captain" / "Counter-UAV standing by").  Aliases without a
+// subtitle get no caption.
+codolAnnouncerLine( alias )
+{
+	if ( self.isbot )
+		return;
+
+	if ( !isDefined( soundAliasSubtitle( alias ) ) )
+		return;
+
+	// No C1 menu reads a splash record for this row. Slot 3 is the one no
+	// other C1 splash menu uses (0 splash/killstreak, 1 challenge, 2 card)
+	// that C1 still expires: its per-frame splash timer 0x44e390 walks slots
+	// 0..3 only and closes each slot's column-11 menu when start + duration
+	// passes, so a slot-4 announcer_line menu would never close.
+	self ShowHudSplash( "announcer_line", 3 );
+}
+
+
+promotionSplashNotify()
+{
+	self endon ( "disconnect" );
+
+	actionData = spawnStruct();
+	
+	actionData.name = "promotion";
+	actionData.type = "rank";
+	actionData.sound = "mp_level_up";
+	actionData.slot = 0;
+
+	self thread actionNotify( actionData );
+}
+
+
+// IW5 _hud_message::weaponPromotionSplashNotify (plutoniummod iw5-scripts),
+// C1 splashTable row 1 "promotion_weapon" (RANK_WEAPON_INCREASED, sound
+// new_weapon_unlocks in C1's row, menu promotion_weapon).  Not yet produced
+// in a match: a weapon's level is the lobby's inventory "xp" field (task 10,
+// resources/lobby.sqlite), which this server never reads, so it cannot tell
+// when a kill crosses a coWeapon*RankTable threshold.
+weaponPromotionSplashNotify()
+{
+	self endon ( "disconnect" );
+
+	actionData = spawnStruct();
+
+	actionData.name = "promotion_weapon";
+	actionData.type = "weaponRank";
+	actionData.sound = tableLookup( "mp/splashTable.csv", 0, actionData.name, 9 );
+	actionData.slot = 0;
+
+	self thread actionNotify( actionData );
+}
+
+showNotifyMessage( notifyData )
+{
+	self endon ( "codol_notify_reset" );
+	self endon("disconnect");
+
+	assert( isDefined( notifyData.slot ) );
+	slot = notifyData.slot;
+
+	if ( level.gameEnded )
+	{
+		wait ( 0 );
+		if ( isDefined( notifyData.type ) && notifyData.type == "rank" )
+		{
+			self setClientDvar( "ui_promotion", 1 );
+			self.postGamePromotion = true;
+		}
+		
+		self codolFinishNotify( slot );
+		return;
+	}
+	
+	self.doingSplash[ slot ] = notifyData;
+
+	waitRequireVisibility( 0 );
+
+	if ( isDefined( notifyData.duration ) )
+		duration = notifyData.duration;
+	else if ( level.gameEnded )
+		duration = 2.0;
+	else
+		duration = 4.0;
+	
+	self thread resetOnCancel();
+
+	if ( isDefined( notifyData.sound ) )
+		self playLocalSound( notifyData.sound );
+
+	if ( isDefined( notifyData.leaderSound ) )
+		self leaderDialogOnPlayer( notifyData.leaderSound );
+	
+	if ( isDefined( notifyData.glowColor ) )
+		glowColor = notifyData.glowColor;
+	else
+		glowColor = (0.3, 0.6, 0.3);
+
+	anchorElem = self.notifyTitle;
+
+	if ( isDefined( notifyData.titleText ) )
+	{
+		if ( isDefined( notifyData.titleLabel ) )
+			self.notifyTitle.label = notifyData.titleLabel;
+		else
+			self.notifyTitle.label = &"";
+
+		if ( isDefined( notifyData.titleLabel ) && !isDefined( notifyData.titleIsString ) )
+			self.notifyTitle setValue( notifyData.titleText );
+		else
+			self.notifyTitle setText( notifyData.titleText );
+		self.notifyTitle setPulseFX( int(25*duration), int(duration*1000), 1000 );
+		self.notifyTitle.glowColor = glowColor;	
+		self.notifyTitle.alpha = 1;
+	}
+
+	if ( isDefined( notifyData.textGlowColor ) )
+		glowColor = notifyData.textGlowColor;
+
+	if ( isDefined( notifyData.notifyText ) )
+	{
+		if ( isDefined( notifyData.textLabel ) )
+			self.notifyText.label = notifyData.textLabel;
+		else
+			self.notifyText.label = &"";
+
+		if ( isDefined( notifyData.textLabel ) && !isDefined( notifyData.textIsString ) )
+			self.notifyText setValue( notifyData.notifyText );
+		else
+			self.notifyText setText( notifyData.notifyText );
+		self.notifyText setPulseFX( 100, int(duration*1000), 1000 );
+		self.notifyText.glowColor = glowColor;	
+		self.notifyText.alpha = 1;
+		anchorElem = self.notifyText;
+	}
+
+	if ( isDefined( notifyData.notifyText2 ) )
+	{
+		self.notifyText2 setParent( anchorElem );
+		
+		if ( isDefined( notifyData.text2Label ) )
+			self.notifyText2.label = notifyData.text2Label;
+		else
+			self.notifyText2.label = &"";
+
+		self.notifyText2 setText( notifyData.notifyText2 );
+		self.notifyText2 setPulseFX( 100, int(duration*1000), 1000 );
+		self.notifyText2.glowColor = glowColor;	
+		self.notifyText2.alpha = 1;
+		anchorElem = self.notifyText2;
+	}
+
+	if ( isDefined( notifyData.iconName ) )
+	{
+		self.notifyIcon setParent( anchorElem );
+		self.notifyIcon setShader( notifyData.iconName, 60, 60 );
+		self.notifyIcon.alpha = 0;
+
+		if ( isDefined( notifyData.iconOverlay ) )
+		{
+			self.notifyIcon fadeOverTime( 0.15 );
+			self.notifyIcon.alpha = 1;
+
+			//if ( !isDefined( notifyData.overlayOffsetY ) )
+				notifyData.overlayOffsetY = 0;
+
+			self.notifyOverlay setParent( self.notifyIcon );
+			self.notifyOverlay setPoint( "CENTER", "CENTER", 0, notifyData.overlayOffsetY );
+			self.notifyOverlay setShader( notifyData.iconOverlay, 512, 512 );
+			self.notifyOverlay.alpha = 0;
+			self.notifyOverlay.color = (1,0,0);
+
+			self.notifyOverlay fadeOverTime( 0.4 );
+			self.notifyOverlay.alpha = 0.85;
+	
+			self.notifyOverlay scaleOverTime( 0.4, 32, 32 );
+			
+			waitRequireVisibility( duration );
+
+			self.notifyIcon fadeOverTime( 0.75 );
+			self.notifyIcon.alpha = 0;
+	
+			self.notifyOverlay fadeOverTime( 0.75 );
+			self.notifyOverlay.alpha = 0;
+		}
+		else
+		{
+			self.notifyIcon fadeOverTime( 1.0 );
+			self.notifyIcon.alpha = 1;
+
+			waitRequireVisibility( duration );
+
+			self.notifyIcon fadeOverTime( 0.75 );
+			self.notifyIcon.alpha = 0;
+		}		
+	}
+	else
+	{
+		waitRequireVisibility( duration );
+	}
+
+	self notify ( "notifyMessageDone" );
+	self codolFinishNotify( slot );
+}
+
+
+killstreakSplashNotify( streakName, streakVal, appendString )
+{
+	self endon ( "disconnect" );
+	waittillframeend;
+
+	if ( level.gameEnded )
+		return;
+
+	actionData = spawnStruct();
+	
+	if ( isDefined( appendString ) )
+		actionData.name = streakName + "_" + appendString;
+	else
+		actionData.name = streakName;
+
+	actionData.type = "killstreak";
+	actionData.optionalNumber = streakVal;	
+	actionData.sound = maps\mp\killstreaks\_killstreaks::getKillstreakSound( streakName );
+	actionData.leaderSound = streakName;
+	actionData.leaderSoundGroup = "killstreak_earned";
+	actionData.slot = 0;
+	actionData.actionSlot = self codolKillstreakActionSlot( streakName );
+
+	self thread actionNotify( actionData );
+}
+
+
+// The action slot the reward named streakName was given (giveKillstreak's
+// record, newest first): 1 for care-package and other extra rewards, 2..4 for
+// the class's three selected streaks.  C1's MP_EARNED_* descriptions name
+// that slot's key through [{ACTION_SLOT_HELP}].
+codolKillstreakActionSlot( streakName )
+{
+	if ( !isDefined( self.pers["killstreaks"] ) )
+		return undefined;
+
+	for ( i = 0; i < self.pers["killstreaks"].size; i++ )
+	{
+		reward = self.pers["killstreaks"][i];
+		if ( isDefined( reward ) && isDefined( reward.streakName ) && reward.streakName == streakName && isDefined( reward.actionSlot ) )
+			return reward.actionSlot;
+	}
+	return undefined;
+}
+
+
+defconSplashNotify( defconLevel, forceNotify )
+{
+	/*
+	actionData = spawnStruct();
+	
+	actionData.name = "defcon_" + defconLevel;
+	actionData.sound = tableLookup( "mp/splashTable.csv", 0, actionData.name, 9 );
+	actionData.slot = 0;
+	actionData.forceNotify = forceNotify;
+
+	self thread actionNotify( actionData );
+	*/
+}
+
+
+challengeSplashNotify( challengeRef )
+{
+	self endon ( "disconnect" );
+	waittillframeend;
+	
+	// this is used to ensure the client receives the new challenge state before the splash is shown.
+	wait ( 0.05 );
+
+	//subtracting one from state becase state was incremented after completing challenge
+	// Derived from the stored progress, like everywhere else -- CoDOL has no
+	// "challengeState" root (the string is absent from C1 entirely).
+	challengeState = ( self maps\mp\gametypes\_missions::ch_getState( challengeRef ) - 1 );
+	challengeTarget = int( tableLookup( "mp/allChallengesTable.csv", 0, challengeRef, 6 + ((challengeState-1)*2) ) );
+	
+	if( challengeTarget == 0 )
+		challengeTarget = 1;
+	
+	if( isSubStr( challengeRef,  "marathon" ) || isSubStr( challengeRef,  "lightweight" ) )
+		challengeTarget = int( challengeTarget/5280 );
+	
+	actionData = spawnStruct();
+	actionData.type = "challenge";
+	actionData.optionalNumber = challengeTarget;
+	actionData.name = challengeRef;
+	actionData.sound = tableLookup( "mp/splashTable.csv", 0, actionData.name, 9 );
+	// C1's challenge and perk_challenge menus read splash slot 1
+	// (getsplashdescription(1), splashrownum(1)); IW4 sent challenges in 0.
+	actionData.slot = 1;
+
+	self thread actionNotify( actionData );
+}
+
+
+splashNotify( text, optionalNumber )
+{
+	self endon ( "disconnect" );
+	// wait until any challenges have been processed
+	//self waittill( "playerKilledChallengesProcessed" );
+	wait .05;
+
+	actionData = spawnStruct();
+	
+	actionData.name = text;
+	actionData.optionalNumber = optionalNumber;
+	actionData.sound = tableLookup( "mp/splashTable.csv", 0, actionData.name, 9 );
+	actionData.slot = 0;
+
+	self thread actionNotify( actionData );
+}
+
+
+splashNotifyDelayed( text, optionalNumber )
+{
+	// CoDOL: a medal, for the lobby's after-action report (_codol_aar.gsc).
+	self maps\mp\gametypes\_codol_aar::noteMedal( text, optionalNumber );
+
+	if ( level.hardcoreMode )
+		return;
+	
+	self endon ( "disconnect" );
+	waittillframeend;
+
+	if ( level.gameEnded )
+		return;
+
+	actionData = spawnStruct();
+	
+	actionData.name = text;
+	actionData.optionalNumber = optionalNumber;
+	actionData.sound = tableLookup( "mp/splashTable.csv", 0, actionData.name, 9 );
+	actionData.slot = 0;
+
+	self thread actionNotify( actionData );
+}
+
+
+playerCardSplashNotify( splashRef, player, optionalNumber )
+{
+	self endon ( "disconnect" );
+	waittillframeend;
+
+	if ( level.gameEnded )
+		return;
+
+	actionData = spawnStruct();
+	
+	actionData.name = splashRef;
+	actionData.optionalNumber = optionalNumber;
+	actionData.sound = tableLookup( "mp/splashTable.csv", 0, actionData.name, 9 );
+	actionData.playerCardPlayer = player;
+	// C1's patched playercard_splash (top right, slides in from x 600) reads
+	// its text from splash slot 2 (getsplashdescription(2)); IW4 used 1.
+	actionData.slot = 2;
+
+	self thread actionNotify( actionData );
+}
+
+
+actionNotify( actionData )
+{
+	self endon ( "death" );
+	self endon ( "disconnect" );
+	assert( isDefined( actionData.slot ) );
+	if ( !isDefined( actionData.type ) )
+		actionData.type = "";
+	self codolQueueNotify( actionData );
+}
+
+
+removeTypeFromQueue( actionType, slot )
+{
+	newQueue = [];
+
+	for ( i = 0; i < self.splashQueue[ slot ].size; i++ )
+	{
+		if ( self.splashQueue[ slot ][ i ].type != "killstreak" )
+			newQueue[ newQueue.size ] = self.splashQueue[ slot ][ i ];
+	}
+
+	self.splashQueue[ slot ] = newQueue;
+}
+
+
+actionNotifyMessage( actionData )
+{
+	self endon ( "codol_notify_reset" );
+	self endon ( "disconnect" );
+
+	assert( isDefined( actionData.slot ) );
+	slot = actionData.slot;
+	
+	if ( level.gameEnded )
+	{
+		// added to prevent potential stack overflow
+		wait ( 0 );
+
+		if ( isDefined( actionData.type ) && ( actionData.type == "rank" || actionData.type == "weaponRank" ) )
+		{
+			self setClientDvar( "ui_promotion", 1 );
+			self.postGamePromotion = true;
+		}		
+		else if ( isDefined( actionData.type ) && actionData.type == "challenge" )
+		{
+			self.pers["postGameChallenges"]++;
+			self setClientDvar( "ui_challenge_"+ self.pers["postGameChallenges"] +"_ref", actionData.name );
+		}
+
+		self codolFinishNotify( slot );
+		return;
+	}
+
+	assertEx( tableLookup( "mp/splashTable.csv", 0, actionData.name, 0 ) != "", "ERROR: unknown splash - " + actionData.name );
+
+	// defensive ship hack for missing table entries
+	if ( tableLookup( "mp/splashTable.csv", 0, actionData.name, 0 ) != "" )
+	{
+		if ( isDefined( actionData.playerCardPlayer ) )
+			self SetCardDisplaySlot( actionData.playerCardPlayer, 5 );
+
+		// C1 reads the key for [{ACTION_SLOT_HELP}] from this player's
+		// clientState while the splash is up; publish it with the splash.
+		if ( isDefined( actionData.actionSlot ) )
+			self setActionSlotHelp( actionData.actionSlot );
+
+		// A splash menu that reads a client dvar (the field order splashes
+		// read fo_splash_ref) gets it when it is shown, not when it is queued,
+		// so a splash still on screen keeps the value it was opened with.
+		if ( isDefined( actionData.clientDvar ) )
+			self setClientDvar( actionData.clientDvar, actionData.clientDvarValue );
+
+		// A field order splash still open from a cut-short worker (reset)
+		// goes before anything else takes the slot.
+		self codolCloseSplashMenu( slot );
+
+		if ( isDefined( actionData.optionalNumber ) )
+			self ShowHudSplash( actionData.name, actionData.slot, actionData.optionalNumber );
+		else
+			self ShowHudSplash( actionData.name, actionData.slot );
+
+		menu = tableLookup( "mp/splashTable.csv", 0, actionData.name, 11 );
+		if ( isDefined( level.codolClosedSplashMenus ) && isDefined( level.codolClosedSplashMenus[ menu ] ) )
+		{
+			if ( !isDefined( self.codolSplashMenu ) )
+				self.codolSplashMenu = [];
+			self.codolSplashMenu[ slot ] = menu;
+		}
+		self maps\mp\gametypes\_fieldorders::foTrace( "splash " + actionData.name + " (menu " + menu + ") in slot " + slot + " at " + getTime() );
+
+		self.doingSplash[ slot ] = actionData;
+	
+		duration = stringToFloat( tableLookup( "mp/splashTable.csv", 0, actionData.name, 4 ) );
+
+		if ( isDefined( actionData.sound ) )
+			self playLocalSound( actionData.sound );
+	
+		if ( isDefined( actionData.leaderSound ) )
+		{
+			if ( isDefined( actionData.leaderSoundGroup ) )
+				self leaderDialogOnPlayer( actionData.leaderSound, actionData.leaderSoundGroup, true );
+			else
+				self leaderDialogOnPlayer( actionData.leaderSound );
+		}
+	
+		// C1 uses column 4 as its complete slot lifetime. Do not reopen a
+		// same-menu splash 50 ms before the previous client slot expires.
+		wait ( duration );
+
+		// Close a field order splash now: C1's own timer loses it whenever
+		// the next splash in this slot arrives first (codolRegisterClosedSplashMenu).
+		self codolCloseSplashMenu( slot );
+	}
+
+	self codolFinishNotify( slot );
+}
+
+
+// waits for waitTime, plus any time required to let flashbangs go away.
+waitRequireVisibility( waitTime )
+{
+	interval = .05;
+	
+	while ( !self canReadText() )
+		wait interval;
+	
+	while ( waitTime > 0 )
+	{
+		wait interval;
+		if ( self canReadText() )
+			waitTime -= interval;
+	}
+}
+
+
+canReadText()
+{
+	if ( self maps\mp\_flashgrenades::isFlashbanged() )
+		return false;
+	
+	return true;
+}
+
+
+resetOnDeath()
+{
+	self endon ( "notifyMessageDone" );
+	self endon ( "disconnect" );
+	level endon ( "game_ended" );
+	self waittill ( "death" );
+
+	resetNotify();
+}
+
+
+resetOnCancel()
+{
+	self notify ( "resetOnCancel" );
+	self endon ( "resetOnCancel" );
+	self endon ( "notifyMessageDone" );
+	self endon ( "disconnect" );
+
+	level waittill ( "cancel_notify" );
+	
+	resetNotify();
+}
+
+
+resetNotify()
+{
+	// Terminate waiting action AND legacy HUD workers before clearing owners.
+	// Otherwise a pre-reset worker can later release a newly active splash.
+	self notify ( "codol_notify_reset" );
+	self.notifyText2.alpha = 0;
+	self.notifyTitle.alpha = 0;
+	self.notifyText.alpha = 0;
+	self.notifyIcon.alpha = 0;
+	self.notifyOverlay.alpha = 0;
+	
+	self.doingSplash[0] = undefined;
+	self.doingSplash[1] = undefined;
+	self.doingSplash[2] = undefined;
+	self.doingSplash[3] = undefined;
+
+	// Keep queued rewards. The original workers convert rank/challenge entries
+	// to postgame state when gameEnded is set; do not strand that queue.
+	self thread codolResumeNotify();
+}
+
+
+codolResumeNotify()
+{
+	self endon ( "disconnect" );
+	self endon ( "codol_notify_reset" );
+	// Let the resetOnCancel caller unwind before a new legacy notice starts
+	// its own resetOnCancel watcher. That watcher cancels the previous one.
+	wait ( 0 );
+	for ( slot = 0; slot < 4; slot++ )
+		self dispatchNotify( slot );
+}
+
+
+hintMessageDeathThink()
+{
+	self endon ( "disconnect" );
+
+	for ( ;; )
+	{
+		self waittill ( "death" );
+		
+		if ( isDefined( self.hintMessage ) )
+			self.hintMessage destroyElem();
+	}
+}
+
+lowerMessageThink()
+{
+	self endon ( "disconnect" );
+	
+	self.lowerMessages = [];
+	
+	self.lowerMessage = createFontString( "default", level.lowerTextFontSize );
+	self.lowerMessage setPoint( "CENTER", level.lowerTextYAlign, 0, level.lowerTextY );
+	self.lowerMessage setText( "" );
+	self.lowerMessage.archived = false;
+	self.lowerMessage.sort = 10;
+	
+	timerFontSize = 0.75;
+	if ( level.splitscreen )
+		timerFontSize = 0.5;
+	
+	self.lowerTimer = createFontString( "hudbig", timerFontSize );
+	self.lowerTimer setParent( self.lowerMessage );
+	self.lowerTimer setPoint( "TOP", "BOTTOM", 0, 0 );
+	self.lowerTimer setText( "" );
+	self.lowerTimer.archived = false;
+	self.lowerTimer.sort = 10;
+}
+
+
+outcomeOverlay( winner )
+{
+	if ( level.teamBased )
+	{
+		if ( winner == "tie" )
+			self matchOutcomeNotify( "draw" );
+		else if ( winner == self.team )
+			self matchOutcomeNotify( "victory" );
+		else
+			self matchOutcomeNotify( "defeat" );
+	}
+	else
+	{
+		if ( winner == self )
+			self matchOutcomeNotify( "victory" );
+		else
+			self matchOutcomeNotify( "defeat" );
+	}
+}
+
+
+matchOutcomeNotify( outcome )
+{
+	team = self.team;
+	
+	outcomeTitle = createFontString( "bigfixed", 1.0 );
+	outcomeTitle setPoint( "TOP", undefined, 0, 50 );
+	outcomeTitle.foreground = true;
+	outcomeTitle.glowAlpha = 1;
+	outcomeTitle.hideWhenInMenu = false;
+	outcomeTitle.archived = false;
+
+	outcomeTitle setText( game["strings"][outcome] );
+	outcomeTitle.alpha = 0;
+	outcomeTitle fadeOverTime( 0.5 );
+	outcomeTitle.alpha = 1;	
+	
+	switch( outcome )
+	{
+		case "victory":
+			outcomeTitle.glowColor = (0.6, 0.9, 0.6);
+			break;
+		default:
+			outcomeTitle.glowColor = (0.9, 0.6, 0.6);
+			break;
+	}
+
+	centerIcon = createIcon( game["icons"][team], 64, 64 );
+	centerIcon setParent( outcomeTitle );
+	centerIcon setPoint( "TOP", "BOTTOM", 0, 30 );
+	centerIcon.foreground = true;
+	centerIcon.hideWhenInMenu = false;
+	centerIcon.archived = false;
+	centerIcon.alpha = 0;
+	centerIcon fadeOverTime( 0.5 );
+	centerIcon.alpha = 1;	
+	
+	wait ( 3.0 );
+	
+	outcomeTitle destroyElem();
+	centerIcon destroyElem();
+}
+
+
+isDoingSplash()
+{
+	if ( isDefined( self.doingSplash[0] ) )
+		return true;
+
+	if ( isDefined( self.doingSplash[1] ) )
+		return true;
+
+	if ( isDefined( self.doingSplash[2] ) )
+		return true;
+
+	if ( isDefined( self.doingSplash[3] ) )
+		return true;
+
+	return false;		
+}
+
+
+teamOutcomeNotify( winner, isRound, endReasonText )
+{
+	self endon ( "disconnect" );
+	self notify ( "reset_outcome" );
+
+	wait ( 0.5 );
+
+	team = self.pers["team"];
+	if ( !isDefined( team ) || (team != "allies" && team != "axis") )
+		team = "allies";
+
+	// wait for notifies to finish
+	while ( self isDoingSplash() )
+		wait 0.05;
+
+	self endon ( "reset_outcome" );
+	
+	if ( level.splitscreen )
+	{
+		// These are mostly fullscreen values divided by 1.5
+		titleSize = 1;
+		titleOffset = -76;
+		textSize = 0.667;
+		textOffset = 12;
+		numberSize = 0.833;
+		iconSize = 46;
+		iconSpacingH = 40;
+		iconSpacing = 30;
+		scoreSpacing = 0;
+		bonusSpacing = 60;
+		font = "hudbig";
+	}
+	else
+	{
+		titleSize = 1.5;
+		titleOffset = -134;
+		textSize = 1.0;
+		textOffset = 18;
+		numberSize = 1.25;
+		iconSize = 70;
+		iconSpacingH = 60;
+		iconSpacing = 45;
+		scoreSpacing = 0;
+		bonusSpacing = 90;
+		font = "hudbig";
+	}
+
+	duration = 60000;
+
+	outcomeTitle = createFontString( font, titleSize );
+	outcomeTitle setPoint( "CENTER", undefined, 0, titleOffset );
+	outcomeTitle.foreground = true;
+	outcomeTitle.glowAlpha = 1;
+	outcomeTitle.hideWhenInMenu = false;
+	outcomeTitle.archived = false;
+
+	outcomeText = createFontString( font, textSize );
+	outcomeText setParent( outcomeTitle );
+	outcomeText.foreground = true;
+	outcomeText setPoint( "TOP", "BOTTOM", 0, textOffset );
+	outcomeText.glowAlpha = 1;
+	outcomeText.hideWhenInMenu = false;
+	outcomeText.archived = false;
+	
+	if ( winner == "halftime" )
+	{
+		outcomeTitle.glowColor = (0.2, 0.3, 0.7);
+		outcomeTitle setText( game["strings"]["halftime"] );
+		outcomeTitle.color = (1, 1, 1);
+		
+		winner = "allies";
+	}
+	else if ( winner == "intermission" )
+	{
+		outcomeTitle.glowColor = (0.2, 0.3, 0.7);
+		outcomeTitle setText( game["strings"]["intermission"] );
+		outcomeTitle.color = (1, 1, 1);
+		
+		winner = "allies";
+	}
+	else if ( winner == "roundend" )
+	{
+		outcomeTitle.glowColor = (0.2, 0.3, 0.7);
+		outcomeTitle setText( game["strings"]["roundend"] );
+		outcomeTitle.color = (1, 1, 1);
+		
+		winner = "allies";
+	}
+	else if ( winner == "overtime" )
+	{
+		outcomeTitle.glowColor = (0.2, 0.3, 0.7);
+		outcomeTitle setText( game["strings"]["overtime"] );
+		outcomeTitle.color = (1, 1, 1);
+		
+		winner = "allies";
+	}
+	else if ( winner == "tie" )
+	{
+		outcomeTitle.glowColor = (0.2, 0.3, 0.7);
+		if ( isRound )
+			outcomeTitle setText( game["strings"]["round_draw"] );
+		else
+			outcomeTitle setText( game["strings"]["draw"] );
+		outcomeTitle.color = (1, 1, 1);
+		
+		winner = "allies";
+	}
+	else if ( isDefined( self.pers["team"] ) && winner == team )
+	{
+		outcomeTitle.glowColor = (0, 0, 0);
+		if ( isRound )
+			outcomeTitle setText( game["strings"]["round_win"] );
+		else
+			outcomeTitle setText( game["strings"]["victory"] );
+		outcomeTitle.color = (0.6, 0.9, 0.6);
+	}
+	else
+	{
+		outcomeTitle.glowColor = (0, 0, 0);
+		if ( isRound )
+			outcomeTitle setText( game["strings"]["round_loss"] );
+		else
+			outcomeTitle setText( game["strings"]["defeat"] );
+		outcomeTitle.color = (0.7, 0.3, 0.2);
+	}
+	
+	outcomeText.glowColor = (0.2, 0.3, 0.7);
+	outcomeText setText( endReasonText );
+	
+	outcomeTitle setPulseFX( 100, duration, 1000 );
+	outcomeText setPulseFX( 100, duration, 1000 );
+	
+	if ( getIntProperty( "useRelativeTeamColors", 0 ) )
+		leftIcon = createIcon( game["icons"][team] + "_blue", iconSize, iconSize );
+	else
+		leftIcon = createIcon( game["icons"][team], iconSize, iconSize );
+	leftIcon setParent( outcomeText );
+	leftIcon setPoint( "TOP", "BOTTOM", (iconSpacingH*-1), iconSpacing );
+	leftIcon.foreground = true;
+	leftIcon.hideWhenInMenu = false;
+	leftIcon.archived = false;
+	leftIcon.alpha = 0;
+	leftIcon fadeOverTime( 0.5 );
+	leftIcon.alpha = 1;
+
+	if ( getIntProperty( "useRelativeTeamColors", 0 ) )
+		rightIcon = createIcon( game["icons"][level.otherTeam[team]] + "_red", iconSize, iconSize );
+	else
+		rightIcon = createIcon( game["icons"][level.otherTeam[team]], iconSize, iconSize );
+	rightIcon setParent( outcomeText );
+	rightIcon setPoint( "TOP", "BOTTOM", iconSpacingH, iconSpacing );
+	rightIcon.foreground = true;
+	rightIcon.hideWhenInMenu = false;
+	rightIcon.archived = false;
+	rightIcon.alpha = 0;
+	rightIcon fadeOverTime( 0.5 );
+	rightIcon.alpha = 1;
+
+	leftScore = createFontString( font, numberSize );
+	leftScore setParent( leftIcon );
+	leftScore setPoint( "TOP", "BOTTOM", 0, scoreSpacing );
+	if ( getIntProperty( "useRelativeTeamColors", 0 ) )
+		leftScore.glowColor = game["colors"]["blue"];
+	else
+		leftScore.glowColor = game["colors"][team];
+	leftScore.glowAlpha = 1;
+	if ( !isRoundBased() || !isObjectiveBased() )
+		leftScore setValue( maps\mp\gametypes\_gamescore::_getTeamScore( team ) );
+	else
+		leftScore setValue( game["roundsWon"][team] );
+	leftScore.foreground = true;
+	leftScore.hideWhenInMenu = false;
+	leftScore.archived = false;
+	leftScore setPulseFX( 100, duration, 1000 );
+
+	rightScore = createFontString( font, numberSize );
+	rightScore setParent( rightIcon );
+	rightScore setPoint( "TOP", "BOTTOM", 0, scoreSpacing );
+	if ( getIntProperty( "useRelativeTeamColors", 0 ) )
+		rightScore.glowColor = game["colors"]["red"];
+	else
+		rightScore.glowColor = game["colors"][level.otherTeam[team]];
+	rightScore.glowAlpha = 1;
+	if ( !isRoundBased() || !isObjectiveBased() )
+		rightScore setValue( maps\mp\gametypes\_gamescore::_getTeamScore( level.otherTeam[team] ) );
+	else
+		rightScore setValue( game["roundsWon"][level.otherTeam[team]] );
+	rightScore.foreground = true;
+	rightScore.hideWhenInMenu = false;
+	rightScore.archived = false;
+	rightScore setPulseFX( 100, duration, 1000 );
+
+	matchBonus = undefined;
+	if ( isDefined( self.matchBonus ) )
+	{
+		matchBonus = createFontString( font, textSize );
+		matchBonus setParent( outcomeText );
+		matchBonus setPoint( "TOP", "BOTTOM", 0, iconSize + bonusSpacing + leftScore.height );
+		matchBonus.glowAlpha = 1;
+		matchBonus.foreground = true;
+		matchBonus.hideWhenInMenu = false;
+		matchBonus.color = (1,1,0.5);
+		matchBonus.archived = false;
+		matchBonus.label = game["strings"]["match_bonus"];
+		matchBonus setValue( self.matchBonus );
+	}
+	
+	self thread resetTeamOutcomeNotify( outcomeTitle, outcomeText, leftIcon, rightIcon, leftScore, rightScore, matchBonus );
+}
+
+
+outcomeNotify( winner, endReasonText )
+{
+	self endon ( "disconnect" );
+	self notify ( "reset_outcome" );
+
+	// wait for notifies to finish
+	while ( self isDoingSplash() )
+		wait 0.05;
+
+	self endon ( "reset_outcome" );
+
+	if ( level.splitscreen )
+	{
+		titleSize = 2.0;
+		winnerSize = 1.5;
+		otherSize = 1.5;
+		iconSize = 30;
+		spacing = 2;
+		font = "default";
+	}
+	else
+	{
+		titleSize = 3.0;
+		winnerSize = 2.0;
+		otherSize = 1.5;
+		iconSize = 30;
+		spacing = 20;
+		font = "objective";
+	}
+
+	duration = 60000;
+
+	players = level.placement["all"];
+		
+	outcomeTitle = createFontString( font, titleSize );
+	outcomeTitle setPoint( "TOP", undefined, 0, spacing );
+	if ( isDefined( players[1] ) && players[0].score == players[1].score && players[0].deaths == players[1].deaths && (self == players[0] || self == players[1]) )
+	{
+		outcomeTitle setText( game["strings"]["tie"] );
+		outcomeTitle.glowColor = (0.2, 0.3, 0.7);
+	}
+	else if ( isDefined( players[2] ) && players[0].score == players[2].score && players[0].deaths == players[2].deaths && self == players[2] )
+	{
+		outcomeTitle setText( game["strings"]["tie"] );
+		outcomeTitle.glowColor = (0.2, 0.3, 0.7);
+	}
+	else if ( isDefined( players[0] ) && self == players[0] )
+	{
+		outcomeTitle setText( game["strings"]["victory"] );
+		outcomeTitle.glowColor = (0.2, 0.3, 0.7);
+	}
+	else
+	{
+		outcomeTitle setText( game["strings"]["defeat"] );
+		outcomeTitle.glowColor = (0.7, 0.3, 0.2);
+	}
+	outcomeTitle.glowAlpha = 1;
+	outcomeTitle.foreground = true;
+	outcomeTitle.hideWhenInMenu = false;
+	outcomeTitle.archived = false;
+	outcomeTitle setPulseFX( 100, duration, 1000 );
+
+	outcomeText = createFontString( font, 2.0 );
+	outcomeText setParent( outcomeTitle );
+	outcomeText setPoint( "TOP", "BOTTOM", 0, 0 );
+	outcomeText.glowAlpha = 1;
+	outcomeText.foreground = true;
+	outcomeText.hideWhenInMenu = false;
+	outcomeText.archived = false;
+	outcomeText.glowColor = (0.2, 0.3, 0.7);
+	outcomeText setText( endReasonText );
+
+	firstTitle = createFontString( font, winnerSize );
+	firstTitle setParent( outcomeText );
+	firstTitle setPoint( "TOP", "BOTTOM", 0, spacing );
+	firstTitle.glowColor = (0.3, 0.7, 0.2);
+	firstTitle.glowAlpha = 1;
+	firstTitle.foreground = true;
+	firstTitle.hideWhenInMenu = false;
+	firstTitle.archived = false;
+	if ( isDefined( players[0] ) )
+	{
+		firstTitle.label = &"MP_FIRSTPLACE_NAME";
+		firstTitle setPlayerNameString( players[0] );
+		firstTitle setPulseFX( 100, duration, 1000 );
+	}
+
+	secondTitle = createFontString( font, otherSize );
+	secondTitle setParent( firstTitle );
+	secondTitle setPoint( "TOP", "BOTTOM", 0, spacing );
+	secondTitle.glowColor = (0.2, 0.3, 0.7);
+	secondTitle.glowAlpha = 1;
+	secondTitle.foreground = true;
+	secondTitle.hideWhenInMenu = false;
+	secondTitle.archived = false;
+	if ( isDefined( players[1] ) )
+	{
+		secondTitle.label = &"MP_SECONDPLACE_NAME";
+		secondTitle setPlayerNameString( players[1] );
+		secondTitle setPulseFX( 100, duration, 1000 );
+	}
+	
+	thirdTitle = createFontString( font, otherSize );
+	thirdTitle setParent( secondTitle );
+	thirdTitle setPoint( "TOP", "BOTTOM", 0, spacing );
+	thirdTitle setParent( secondTitle );
+	thirdTitle.glowColor = (0.2, 0.3, 0.7);
+	thirdTitle.glowAlpha = 1;
+	thirdTitle.foreground = true;
+	thirdTitle.hideWhenInMenu = false;
+	thirdTitle.archived = false;
+	if ( isDefined( players[2] ) )
+	{
+		thirdTitle.label = &"MP_THIRDPLACE_NAME";
+		thirdTitle setPlayerNameString( players[2] );
+		thirdTitle setPulseFX( 100, duration, 1000 );
+	}
+
+	matchBonus = createFontString( font, 2.0 );
+	matchBonus setParent( thirdTitle );
+	matchBonus setPoint( "TOP", "BOTTOM", 0, spacing );
+	matchBonus.glowAlpha = 1;
+	matchBonus.foreground = true;
+	matchBonus.hideWhenInMenu = false;
+	matchBonus.archived = false;
+	if ( isDefined( self.matchBonus ) )
+	{
+		matchBonus.label = game["strings"]["match_bonus"];
+		matchBonus setValue( self.matchBonus );
+	}
+
+	self thread updateOutcome( firstTitle, secondTitle, thirdTitle );
+	self thread resetOutcomeNotify( outcomeTitle, outcomeText, firstTitle, secondTitle, thirdTitle, matchBonus );
+}
+
+
+resetOutcomeNotify( outcomeTitle, outcomeText, firstTitle, secondTitle, thirdTitle, matchBonus )
+{
+	self endon ( "disconnect" );
+	self waittill ( "reset_outcome" );
+	
+	if ( isDefined( outcomeTitle ) )
+		outcomeTitle destroyElem();
+	if ( isDefined( outcomeText ) )
+		outcomeText destroyElem();
+	if ( isDefined( firstTitle ) )
+		firstTitle destroyElem();
+	if ( isDefined( secondTitle ) )
+		secondTitle destroyElem();
+	if ( isDefined( thirdTitle ) )
+		thirdTitle destroyElem();
+	if ( isDefined( matchBonus ) )
+		matchBonus destroyElem();
+}
+
+resetTeamOutcomeNotify( outcomeTitle, outcomeText, leftIcon, rightIcon, LeftScore, rightScore, matchBonus )
+{
+	self endon ( "disconnect" );
+	self waittill ( "reset_outcome" );
+
+	if ( isDefined( outcomeTitle ) )
+		outcomeTitle destroyElem();
+	if ( isDefined( outcomeText ) )
+		outcomeText destroyElem();
+	if ( isDefined( leftIcon ) )
+		leftIcon destroyElem();
+	if ( isDefined( rightIcon ) )
+		rightIcon destroyElem();
+	if ( isDefined( leftScore ) )
+		leftScore destroyElem();
+	if ( isDefined( rightScore ) )
+		rightScore destroyElem();
+	if ( isDefined( matchBonus ) )
+		matchBonus destroyElem();
+}
+
+
+updateOutcome( firstTitle, secondTitle, thirdTitle )
+{
+	self endon( "disconnect" );
+	self endon( "reset_outcome" );
+	
+	while( true )
+	{
+		self waittill( "update_outcome" );
+
+		players = level.placement["all"];
+
+		if ( isDefined( firstTitle ) && isDefined( players[0] ) )
+			firstTitle setPlayerNameString( players[0] );
+		else if ( isDefined( firstTitle ) )
+			firstTitle.alpha = 0;
+		
+		if ( isDefined( secondTitle ) && isDefined( players[1] ) )
+			secondTitle setPlayerNameString( players[1] );
+		else if ( isDefined( secondTitle ) )
+			secondTitle.alpha = 0;
+		
+		if ( isDefined( thirdTitle ) && isDefined( players[2] ) )
+			thirdTitle setPlayerNameString( players[2] );
+		else if ( isDefined( thirdTitle ) )
+			thirdTitle.alpha = 0;
+	}	
+}
+
+canShowSplash( type )
+{
+	
+}

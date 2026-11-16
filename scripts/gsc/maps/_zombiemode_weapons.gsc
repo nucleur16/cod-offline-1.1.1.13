@@ -1,0 +1,1780 @@
+// zm weapons: the box pool, the mystery box, and wall buys.
+//
+// Port of the purchasable half of T5's maps\_zombiemode_weapons.gsc (3,106
+// lines).
+//
+// TAKEN, by T5 function:
+//   add_zombie_weapon              :28    -- the weapon record: upgrade name,
+//                                            hint, cost, ammo cost, in_box.
+//   include_zombie_weapon          :188
+//   is_weapon_included             :177
+//   get_weapon_hint/cost/ammo_cost :677,:684,:691
+//   get_is_in_box                  :698
+//   is_weapon_upgraded             :708
+//   has_upgrade                    :734
+//   has_weapon_or_upgrade          :755
+//   treasure_chest_init            :793
+//   init_starting_chest_location   :850
+//   hide_rubble / show_rubble      :902,:921
+//   get_chest_pieces               :945
+//   show_chest / hide_chest        :984,:1005
+//   treasure_chest_think           :1057  -- pay, roll, grab-or-timeout, close.
+//   treasure_chest_lid_open/close  :1752,:1763
+//   treasure_chest_timeout         :1742
+//   treasure_chest_ChooseRandomWeapon         :1774
+//   treasure_chest_ChooseWeightedRandomWeapon :1784
+//   treasure_chest_weapon_spawn    :1951  -- the 40-cycle mario-kart roll,
+//                                            the floating weapon model and the
+//                                            teddy-bear (joker) roll :2042.
+//   default_box_move_logic         :1428
+//   treasure_chest_move            :1489  -- the teddy bear flies off, the
+//                                            box lifts, shakes and vanishes,
+//                                            and reappears at the next spot.
+//   toggle_fire_sale_on / remove_temp_chest (_zombiemode_powerups :1414,:1468)
+//                                          -- a fire sale opens every spot.
+//   treasure_chest_give_weapon     :2365
+//   weapon_spawn_think             :2649  -- the wall buy: first purchase,
+//                                            then ammo at ammo_cost.
+//   weapon_show                    :2798
+//   init_weapon_upgrade            :356   -- wall-buy discovery.
+//
+// NOT TAKEN, and why:
+//   The chest LID is a RotateRoll in T5, not an animation; it does NOT port
+//   (see THE LID below).  And
+//   default_pandora_show_func / default_pandora_fx_func / treasure_chest_glowfx
+//   and the box move's "poltergeist" puff (:1024,:1037,:2351,:1559) are playfx
+//   on effects no CoDOL zone ships (MEASURED, docs/zone_assets/ALL_fx.txt),
+//   and are left out; so are the move's zmb_whoosh / zmb_laugh_child /
+//   zmb_box_poof_land sounds, which no zone carries either (ALL_sound.txt).
+//   init_weapon_toggle / init_pay_turret / weapon cabinet / hacker /
+//   dual-wield left-hand models / limited tesla -- separate systems.
+//   useweaponhidetags() (:2026) -- native useWeaponHideTags applies all source
+//   slots and skips tags absent from the entity model. Reset reused models
+//   first; both the box and authored wall models use that native path.
+//   setclientflag(level._ZOMBIE_SCRIPTMOVER_FLAG_BOX_RANDOM) (:1972) -- there
+//   is no CSC VM and no zm client-flag table on this server.
+//
+// THE BOX LOCATIONS (fixed 2026-10-01, the "cabinet on top of the box"
+// report).  zm_asylum_sh authors FIVE treasure_chest_use spots, and each one
+// carries a codo_zm_treasure_box_rubble script_model (script_noteworthy
+// "<trigger noteworthy>_rubble") in the same place as the box: the junk pile
+// T5 shows where the box is NOT.  The previous port made every spot live and
+// never touched the rubble, so all five boxes rendered inside their rubble
+// piles.  Now, as T5 :793-:1005: one spot (the one marked start_chest) is
+// live, the rest are hidden with their rubble shown, the live spot hides its
+// rubble, and the teddy bear moves the box.  The single-box maps
+// (zm_prototype_sh, zm_zombie_training) author a tag_origin rubble and never
+// move, exactly as in T5.
+//
+// THE LID (fixed 2026-10-04, the "broken server rack on top of the box"
+// report).  T5's lid (zombie_treasure_box_lid) pivots on its hinge, so T5
+// opens it with RotateRoll( 105 ).  C1's codo_treasure_chest_box2_lid is a
+// different asset: MEASURED in zm_prototype_sh / zm_asylum_sh /
+// zm_zombie_training, its bones are j_main, j_left, j_right, j_left_rotate,
+// j_right_rotate, j_left_move, j_right_move, j_left_down_move,
+// j_right_down_move (a split, sliding sci-fi lid with tag_bulb lights), and
+// its origin is the box's BASE (the map places lid and box at the same
+// origin; the lid's lighting origin sits 20 units above it).  Rolling that
+// model 105 degrees about its origin swung the whole lid round the bottom of
+// the box into a lit panel standing on edge through it, which is what the
+// report describes (inferred from the asset geometry; not yet seen on a C1
+// screen).
+// C1 opens it with its own xanims instead: patch_common_gametype_zm ships
+// animtrees/zm_magic_box.atr (codo_treasure_chest_box_open,
+// codo_treasure_chest_box_close, which animate exactly those bones), and
+// that zone's animlists/common_zombie.animlist registers the tree
+// "=zm_magic_box" with both, so the client knows it.
+//
+// THE LID, take two (fixed 2026-10-05, "the box doesn't animate properly").
+// The first fix played those clips through PrecacheMpAnim /
+// ScriptModelPlayAnim.  That is the IW4 animated-prop path, and C1 starts
+// every clip it carries at a RANDOM phase (MEASURED, C1 0x43fd9c: SetTime to
+// flrand(0, duration) / duration -- swaying trees start out of step), after a
+// one-second blend: the lid popped part-way (or all the way) open instead of
+// sliding.  The lid now plays them the T5 way, setAnimKnobRestart on a
+// script model, which this server delivers through the snapshot
+// animation-command channel (C1 0x443e90) from time 0, and re-sends from the
+// server's own pose to anyone who sees the box later
+// (src/codol/script/codol_script_model_tree.h).
+//
+// THE WEAPON (same fix).  T5's model rises out of the box: spawned at the
+// chest origin and moved up 40 units over 3 s (accel 2, decel 0.9) while it
+// cycles (T5 :1960, commented out there only because T5 moved the spin to
+// CSC, which C1 does not have), then sinks back over the 12 s the player has
+// to take it (T5 :2337 timer_til_despawn).  The previous port spawned it
+// already floating 40 units up and never moved it.
+//
+// THE WEAPON TABLE IS CoDOL's, NOT T5's.  T5's init_weapons (:222) names
+// ak74u_zm / mp40_zm / ray_gun_zm and so on.  MEASURED 2026-09-20 from
+// docs/zone_assets/ALL_weapon.txt: CoDOL's zm zones carry a DIFFERENT set --
+// 163 *_zm names, in common_gametype_zm / patch_common_gametype_zm, with the
+// same "<base>_zm" / "<base>_upgraded_zm" pairing convention T5 uses.  So the
+// contract (add_zombie_weapon, the cost tiers by class, the upgrade suffix) is
+// T5's and the names are the ones the client can actually build.  Every entry
+// is then validated at init with codol_isWeaponMounted, which runs the same
+// find-only zone probe precacheItem uses internally and registers nothing.
+//
+// It must NOT be getWeaponIndexFromName: that is the registering path
+// (BG_GetWeaponIndexForName -> BG_LoadWeaponDef_FastFile, a bare
+// DB_FindXAssetHeaderReal with no default-asset check), which increments
+// bg_lastParsedWeaponIndex and returns NON-ZERO even for a name in no mounted
+// zone, because db_load.cpp:3499 hands back the defaultweapon_mp definition.
+// Gating on it therefore passed every absent weapon, burned a native weapon
+// slot plus a publish/republish cycle per probe, and put an _mp definition
+// body into a zm match under a zm name -- thundergun_zm sat in the mystery
+// box backed by that clone on every map that does not ship it.
+
+#include maps\_zombiemode_utility;
+
+// C1's box lid animations (THE LID, above): the tree the client registers from
+// common_zombie.animlist, and the one the lid's %anim references compile
+// against.
+#using_animtree( "zm_magic_box" );
+
+init()
+{
+	level.zombie_weapons = [];
+
+	init_weapons();
+	spawn_extra_wall_buys();
+	init_weapon_upgrade();
+	treasure_chest_init();
+
+	add_sound( "open_chest", "zmb_box_open" );
+	add_sound( "close_chest", "zmb_box_close" );
+	add_sound( "weapon_show", "zmb_cha_ching" );
+}
+
+// T5 :28.  cost is the wall/box price, ammo_cost the refill price.
+add_zombie_weapon( weapon_name, upgrade_name, hint, cost, ammo_cost, in_box )
+{
+	if ( !isDefined( in_box ) )
+		in_box = true;
+
+	precacheItem( weapon_name );
+	if ( !codol_isWeaponMounted( weapon_name ) )
+		return;
+
+	if ( isDefined( upgrade_name ) )
+	{
+		precacheItem( upgrade_name );
+		if ( !codol_isWeaponMounted( upgrade_name ) )
+			upgrade_name = undefined;
+	}
+
+	s = spawnStruct();
+	s.weapon_name = weapon_name;
+	s.upgrade_name = upgrade_name;
+	s.hint = hint;
+	s.cost = cost;
+	s.ammo_cost = ammo_cost;
+	s.is_in_box = in_box;
+	s.weighting_func = ::default_weighting_func;
+
+	level.zombie_weapons[ weapon_name ] = s;
+}
+
+// T5 :78.
+default_weighting_func()
+{
+	return 1;
+}
+
+// T5 :222 init_weapons, with CoDOL's weapon names (see the header) and T5's
+// cost tiers: pistol 50-2200, smg 1000-1200, shotgun 500-2000, rifle 500-1200,
+// assault 100-1200, sniper 50-2500, mg 50-4000, launcher 2000, wonder 10000.
+init_weapons()
+{
+	// Pistols
+	add_zombie_weapon( "m1911_zm",					"m1911_upgraded_zm",				"M1911",			50,		250 );
+	add_zombie_weapon( "coltanaconda_zm",			"coltanaconda_upgraded_zm",			"Anaconda",			2200,	1000 );
+	add_zombie_weapon( "glock_zm",					"glock_upgraded_zm",				"Glock",			50,		250 );
+	add_zombie_weapon( "glockdw_zm",				"glockdw_upgraded_zm",				"Dual Glock",		50,		250 );
+
+	// SMGs
+	add_zombie_weapon( "mp5k_zm",					"mp5k_upgraded_zm",					"MP5K",				1000,	500 );
+	add_zombie_weapon( "ump45_zm",				"ump45_upgraded_zm",				"UMP45",				1000,	500, false );
+	add_zombie_weapon( "uzi_zm",					"uzi_upgraded_zm",					"Uzi",				1200,	600 );
+	add_zombie_weapon( "p90_zm",					"p90_upgraded_zm",					"P90",				1200,	600 );
+	add_zombie_weapon( "tmp_zm",					"tmp_upgraded_zm",					"TMP",				1000,	500 );
+	add_zombie_weapon( "pp2000_zm",					"pp2000_upgraded_zm",				"PP2000",			1000,	500 );
+
+	// Shotguns
+	add_zombie_weapon( "spas12_zm",					"spas12_upgraded_zm",				"SPAS-12",			2000,	1000 );
+	add_zombie_weapon( "striker_zm",				"striker_upgraded_zm",				"Striker",			1500,	750 );
+	add_zombie_weapon( "model1887_zm",				"model1887_upgraded_zm",			"Model 1887",		500,	250 );
+	add_zombie_weapon( "ranger_zm",					"ranger_upgraded_zm",				"Ranger",			500,	250 );
+
+	// Rifles
+	add_zombie_weapon( "m14ebr_zm",					"m14ebr_upgraded_zm",				"M14 EBR",			500,	250 );
+	// MEASURED (zone weapon defs, common_gametype_zm): the rifle half of each
+	// upgraded under-barrel pair is the one to hand out.  gl_m16_upgraded_zm is
+	// the M203 launcher (rumble damage_heavy, projectile_m203grenade; its
+	// altWeapon +0xB78 is m16_gl_upgraded_zm) and mk_scar_h_upgraded_zm is the
+	// Masterkey shotgun (rumble shotgun_fire; altWeapon
+	// scar_h_eotech_mk_upgraded_zm).  Pack-a-Punch used to hand those, so the
+	// player held a launcher / shotgun where the M16 / SCAR-H should be.  The
+	// rifle defs name the launcher / shotgun as their altWeapon, as T5's
+	// m16_gl_upgraded_zm does.  The upgrade still reaches the alt mode.
+	add_zombie_weapon( "m16_zm",					"m16_gl_upgraded_zm",				"M16",				1200,	600 );
+	add_zombie_weapon( "famas_zm",					"famas_upgraded_zm",				"FAMAS",			1200,	600 );
+	add_zombie_weapon( "fal_zm",					"fal_upgraded_zm",					"FAL",				1200,	600 );
+	add_zombie_weapon( "ak104_zm",					"ak104_upgraded_zm",				"AK-104",			1200,	600 );
+	add_zombie_weapon( "aug_eotech_zm",				"aug_eotech_upgraded_zm",			"AUG",				1200,	600 );
+	add_zombie_weapon( "tavor_zm",					"tavor_upgraded_zm",				"Tavor",			1200,	600 );
+	add_zombie_weapon( "m4a1tech_zm",				"m4a1tech_upgraded_zm",				"M4A1",				1200,	600 );
+	add_zombie_weapon( "scar_h_eotech_zm",			"scar_h_eotech_mk_upgraded_zm",	"SCAR-H",			1200,	600 );
+
+	// Sniper rifles
+	add_zombie_weapon( "cheytac_zm",				"cheytac_upgraded_zm",				"CheyTac",			2500,	1250 );
+	add_zombie_weapon( "as50_zm",					"as50_upgraded_zm",					"AS50",				2500,	1250 );
+	add_zombie_weapon( "wa2000_zm",					"wa2000_upgraded_zm",				"WA2000",			2500,	1250 );
+	add_zombie_weapon( "sniper_explosive_zm",		"sniper_explosive_upgraded_zm",		"Explosive Sniper",	2500,	1250 );
+
+	// Machineguns
+	add_zombie_weapon( "l86_zm",					"l86_upgraded_zm",					"L86 LSW",			4000,	2000 );
+
+	// Launchers
+	add_zombie_weapon( "m79_zm",					"m79_upgraded_zm",					"M79",				2000,	1000 );
+	add_zombie_weapon( "at4_zm",					"at4_upgraded_zm",					"AT4",				2000,	1000 );
+
+	// Melee / special
+	add_zombie_weapon( "knife_ballistic_zm",		"knife_ballistic_upgraded_zm",			"Ballistic Knife",		3000,	1500 );
+	add_zombie_weapon( "knife_ballistic_bowie_zm",	"knife_ballistic_bowie_upgraded_zm",	"Bowie Ballistic Knife",3000,	1500 );
+	add_zombie_weapon( "crossbow_explosive_zm",		"crossbow_explosive_upgraded_zm",		"Explosive Crossbow",	1200,	600 );
+
+	// Wonder weapons
+	add_zombie_weapon( "ray_gun_zm",				"ray_gun_upgraded_zm",				"Ray Gun",			10000,	4500 );
+	add_zombie_weapon( "tesla_gun_zm",				"tesla_gun_upgraded_zm",			"Wunderwaffe",		10000,	4500 );
+	add_zombie_weapon( "thundergun_zm",				"thundergun_upgraded_zm",			"Thundergun",		10000,	4500 );
+
+	// Equipment -- wall buy only, never a box roll (T5 passes in_box false for
+	// the same reason: a box that can hand you a claymore is a dead pull).
+	add_zombie_weapon( "frag_grenade_zm",			undefined,	"Frag Grenade",		250,	250,	false );
+	add_zombie_weapon( "semtex_grenade_zm",			undefined,	"Semtex",			250,	250,	false );
+	add_zombie_weapon( "claymore_zm",				undefined,	"Claymore",			1000,	1000,	false );
+	add_zombie_weapon( "bouncingbetty_zm",			undefined,	"Bouncing Betty",	1000,	1000,	false );
+	add_zombie_weapon( "c4_zm",						undefined,	"C4",				1000,	1000,	false );
+
+	keys = getArrayKeys( level.zombie_weapons );
+	{}
+}
+
+// T5 :177,:188,:677-:708.
+is_weapon_included( weapon_name )
+{
+	return isDefined( level.zombie_weapons[ weapon_name ] );
+}
+
+get_weapon_hint( weapon_name )
+{
+	if ( !is_weapon_included( weapon_name ) )
+		return weapon_name;
+	return level.zombie_weapons[ weapon_name ].hint;
+}
+
+get_weapon_cost( weapon_name )
+{
+	if ( !is_weapon_included( weapon_name ) )
+		return 1000;
+	return level.zombie_weapons[ weapon_name ].cost;
+}
+
+get_ammo_cost( weapon_name )
+{
+	if ( !is_weapon_included( weapon_name ) )
+		return 500;
+	return level.zombie_weapons[ weapon_name ].ammo_cost;
+}
+
+get_is_in_box( weapon_name )
+{
+	if ( !is_weapon_included( weapon_name ) )
+		return false;
+	return level.zombie_weapons[ weapon_name ].is_in_box;
+}
+
+get_upgrade_name( weapon_name )
+{
+	if ( !is_weapon_included( weapon_name ) )
+		return undefined;
+	return level.zombie_weapons[ weapon_name ].upgrade_name;
+}
+
+// T5 :708.  An upgraded weapon is the one named as some base weapon's upgrade.
+is_weapon_upgraded( weapon_name )
+{
+	keys = getArrayKeys( level.zombie_weapons );
+	for ( i = 0; i < keys.size; i++ )
+	{
+		up = level.zombie_weapons[ keys[ i ] ].upgrade_name;
+		if ( isDefined( up ) && up == weapon_name )
+			return true;
+	}
+	return false;
+}
+
+// T5 :734,:755.  self is a player.
+has_upgrade( weapon_name )
+{
+	up = get_upgrade_name( weapon_name );
+	if ( !isDefined( up ) )
+		return false;
+	return self hasWeapon( up );
+}
+
+has_weapon_or_upgrade( weapon_name )
+{
+	if ( self hasWeapon( weapon_name ) )
+		return true;
+	return self has_upgrade( weapon_name );
+}
+
+// T5 :2370-2385.  THE WEAPON LIMIT.
+//
+// The base limit is two primaries; Mule Kick
+// ("specialty_additionalprimaryweapon") raises it to three.  T5 applies this
+// in weapon_give() itself, so every purchase path -- wall buy, ammo top-up and
+// the mystery box alike -- goes through it.
+//
+// BUG FIXED 2026-09-20: this server's weapon_give() had NO limit at all, so
+// wall buys stacked without bound.  That is the reported "3 guns without Mule
+// Kick": the box path swapped correctly but the wall path never took anything
+// away, so start pistol + wall buy + box pull = three.
+//
+// Mule Kick in CoDOL: the localized name DOES ship
+// (&"ZOMBIE_PERK_ADDITIONALPRIMARYWEAPON", MEASURED in
+// docs/zone_assets/ALL_localize.txt), and this tree already sells the machine
+// through _zombiemode_perks::perk_cost/perk_bottle.  The specialty STRING
+// "specialty_additionalprimaryweapon" appears nowhere in src/** or in the
+// shipped mp rawfiles (MEASURED), so if this server's setPerk does not know
+// it, hasPerk returns false and the limit stays at the base two -- which is
+// the correct conservative behaviour and still fixes the reported bug.
+player_weapon_limit()
+{
+	if ( self hasPerk( "specialty_additionalprimaryweapon" ) )
+		return 3;
+
+	// The additional-primary perk pop (modAdditionalPrimary).
+	if ( is_true( self.perkpop_extra_primary ) )
+		return 3;
+
+	return 2;
+}
+
+// T5 :2389-2412.  Returns after making room, if room was needed.
+//
+// getWeaponsListPrimaries() covers only the primary slots, so placeable mines,
+// grenades and other offhands are excluded by the engine rather than by the
+// is_placeable_mine()/is_equipment()/is_offhand_weapon() guards T5 needs --
+// none of which exist in this tree (MEASURED).
+enforce_weapon_limit( new_weapon )
+{
+	current = self weapon_limit_victim( new_weapon );
+
+	if ( isDefined( current ) )
+		self takeWeapon( current );
+}
+
+// The primary enforce_weapon_limit takes to make room for new_weapon, or
+// undefined when there is room (or new_weapon is a re-buy).
+weapon_limit_victim( new_weapon )
+{
+	primaries = self getWeaponsListPrimaries();
+
+	if ( !isDefined( primaries ) )
+		return undefined;
+
+	// Buying a weapon already held is a re-buy, not a new slot.
+	for ( i = 0; i < primaries.size; i++ )
+	{
+		if ( primaries[ i ] == new_weapon )
+			return undefined;
+	}
+
+	if ( primaries.size < self player_weapon_limit() )
+		return undefined;
+
+	// T5 drops whatever is in hand.  It does NOT spare the starting pistol:
+	// T5 :2404 records last_pistol_swap for m1911_zm and takes it anyway, and
+	// sparing it unconditionally would reintroduce the stacking bug whenever
+	// the pistol is the held weapon.
+	current = self getCurrentWeapon();
+
+	if ( isDefined( current ) && ( current == "none" || current == new_weapon ) )
+		current = undefined;
+
+	// The held weapon can be an offhand mid-throw, in which case it is not in
+	// the primaries list and taking it would free no slot.  Fall back to the
+	// first primary that is not the weapon being bought.
+	if ( isDefined( current ) )
+	{
+		held_is_primary = false;
+		for ( i = 0; i < primaries.size; i++ )
+		{
+			if ( primaries[ i ] == current )
+				held_is_primary = true;
+		}
+
+		if ( !held_is_primary )
+			current = undefined;
+	}
+
+	if ( !isDefined( current ) )
+	{
+		for ( i = 0; i < primaries.size; i++ )
+		{
+			if ( primaries[ i ] == new_weapon )
+				continue;
+
+			current = primaries[ i ];
+			break;
+		}
+	}
+
+	return current;
+}
+
+// T5 :2365, plus the ammo top-up branch of :2649.
+//
+// When the weapon making room is the one in hand it is taken AFTER the switch
+// to the new one has begun.  Taking the held weapon first leaves the player
+// holding "none" (C1 0x422109 clears ps+0x33c), and C1's PM_FinishWeaponChange
+// sends EV_RAISE_WEAPON / EV_FIRST_RAISE_WEAPON -- the events that play the
+// definition's raise sound (def +0x410 / +0x418) -- only for a change that
+// starts from a held weapon (0x419efc).  A take-then-give therefore raised the
+// new gun in silence (the Mustang & Sally pullout had no sound).
+weapon_give( weapon_name )
+{
+	victim = self weapon_limit_victim( weapon_name );
+	held = self getCurrentWeapon();
+
+	if ( isDefined( victim ) && ( !isDefined( held ) || victim != held ) )
+	{
+		self takeWeapon( victim );
+		victim = undefined;
+	}
+
+	self giveWeapon( weapon_name );
+	self giveMaxAmmo( weapon_name );
+	self switch_then_take( weapon_name, victim );
+}
+
+// Replace old_weapon (normally the one in hand) with new_weapon so that the
+// raise is heard: give and switch first, take the old one afterwards.
+weapon_swap( old_weapon, new_weapon )
+{
+	self giveWeapon( new_weapon );
+	self giveMaxAmmo( new_weapon );
+	self switch_then_take( new_weapon, old_weapon );
+}
+
+// Switch to new_weapon and take old_weapon once the change has reached the
+// raise (getCurrentWeapon reports the new weapon from PM_FinishWeaponChange
+// on), so the change starts from a held weapon and carries the raise event.
+// A switch that never happens (player downed, weapon taken) still takes the
+// old weapon after 3 s.
+switch_then_take( new_weapon, old_weapon )
+{
+	self switchToWeapon( new_weapon );
+
+	if ( isDefined( old_weapon ) && old_weapon != "none" && old_weapon != new_weapon )
+		self thread take_weapon_after_switch( old_weapon, new_weapon );
+}
+
+take_weapon_after_switch( old_weapon, new_weapon )
+{
+	self endon( "disconnect" );
+
+	for ( i = 0; i < 60; i++ )
+	{
+		if ( self getCurrentWeapon() == new_weapon || !self hasWeapon( new_weapon ) )
+			break;
+		wait( 0.05 );
+	}
+
+	if ( self hasWeapon( old_weapon ) )
+		self takeWeapon( old_weapon );
+}
+
+ammo_give( weapon_name )
+{
+	if ( !self hasWeapon( weapon_name ) )
+		return false;
+
+	if ( self getFractionMaxAmmo( weapon_name ) >= 1 )
+		return false;
+
+	self giveMaxAmmo( weapon_name );
+	return true;
+}
+
+// ==========================================================================
+// WALL BUYS -- T5 :356 init_weapon_upgrade, :2649 weapon_spawn_think.
+// ==========================================================================
+
+init_weapon_upgrade()
+{
+	weapon_spawns = getEntArray( "weapon_upgrade", "targetname" );
+	if ( isDefined( level.extra_wall_buys ) )
+	{
+		for ( i = 0; i < level.extra_wall_buys.size; i++ )
+		{
+			known = false;
+			for ( j = 0; j < weapon_spawns.size; j++ )
+			{
+				if ( weapon_spawns[ j ] == level.extra_wall_buys[ i ] )
+					known = true;
+			}
+			if ( !known )
+				weapon_spawns[ weapon_spawns.size ] = level.extra_wall_buys[ i ];
+		}
+	}
+
+	for ( i = 0; i < weapon_spawns.size; i++ )
+	{
+		trig = weapon_spawns[ i ];
+
+		if ( !isDefined( trig.zombie_weapon_upgrade ) )
+			continue;
+
+		if ( !is_weapon_included( trig.zombie_weapon_upgrade ) )
+		{
+			// The wall names a weapon that is in no mounted zone.  T5 would
+			// AssertEx; here the wall is left inert rather than ending the
+			// match, and it is reported by name.
+			{}
+			continue;
+		}
+
+		// The map authors the physical weapon separately from its wall mark.
+		// T5 reveals that model only on the first successful weapon purchase.
+		// A map's trigger_use is usable by its brush; a spawned wall (spawn_extra_wall_buys) is a script_model made
+		// usable, as IW4's care packages are (native makeUsable: the use-trigger content bit and a cursor hint).
+		if ( trig.classname != "trigger_use" )
+			trig makeUsable();
+
+		model = trig wall_buy_model();
+		if ( isDefined( model ) )
+		{
+			model showAllParts();
+			model useWeaponHideTags( trig.zombie_weapon_upgrade );
+			model hide();
+		}
+
+		trig thread weapon_spawn_think();
+	}
+
+	{}
+}
+
+// T5 :2649, solo purse, minus the hacker/fire-sale/collector branches.
+weapon_spawn_think()
+{
+	weapon_name = self.zombie_weapon_upgrade;
+	cost = get_weapon_cost( weapon_name );
+	ammo_cost = get_ammo_cost( weapon_name );
+
+	self setCursorHint( "HINT_NOICON" );
+	self setHintString( &"ZOMBIE_WEAPONCOSTAMMO", cost, get_ammo_cost( weapon_name ) );
+
+	self.first_time_triggered = false;
+
+	for ( ;; )
+	{
+		self waittill( "trigger", player );
+
+		if ( !isDefined( player ) || !isPlayer( player ) )
+			continue;
+
+		if ( !is_player_valid( player ) )
+		{
+			wait( 0.1 );
+			continue;
+		}
+
+		if ( !player useButtonPressed() )
+			continue;
+
+		if ( player in_revive_trigger() )
+			continue;
+
+		if ( is_lethal_wall_weapon( weapon_name ) )
+		{
+			self lethal_wall_buy( player, cost );
+			wait( 0.5 );
+			continue;
+		}
+
+		if ( !player has_weapon_or_upgrade( weapon_name ) )
+		{
+			if ( player.score < cost )
+			{
+				self play_sound_on_ent( "no_purchase" );
+				player maps\_zombiemode_audio::no_cash_vox();
+				wait( 0.5 );
+				continue;
+			}
+
+			if ( self.first_time_triggered == false )
+			{
+				model = self wall_buy_model();
+				if ( isDefined( model ) )
+					model thread weapon_show();
+				self.first_time_triggered = true;
+				self setHintString( &"ZOMBIE_WEAPONCOSTAMMO", cost, ammo_cost );
+			}
+
+			player maps\_zombiemode_score::minus_to_player_score( cost );
+			player weapon_give( weapon_name );
+			level notify( "zm_cortex_event", "weapon" );   // _zombiemode_cortex reaction
+			// CHALLENGE_ZM_WALLWEAPONS "buy &&1 wall weapons"; ammo is not one.
+			player maps\_zombiemode_challenges::zm_challenge_inc( "zm_wallweapons" );
+			player play_sound_on_ent( "purchase" );
+			player maps\_zombiemode_audio::purchase_vox();
+			wait( 0.5 );
+			continue;
+		}
+
+		// Owns it: sell ammo.  T5's rule -- an upgraded weapon's refill is
+		// 4500, the base weapon's is its own ammo_cost.
+		refill_cost = ammo_cost;
+		refill_name = weapon_name;
+		if ( player has_upgrade( weapon_name ) )
+		{
+			refill_cost = 4500;
+			refill_name = get_upgrade_name( weapon_name );
+		}
+
+		if ( player.score < refill_cost )
+		{
+			self play_sound_on_ent( "no_purchase" );
+			player maps\_zombiemode_audio::no_cash_vox();
+			wait( 0.5 );
+			continue;
+		}
+
+		if ( player ammo_give( refill_name ) )
+		{
+			player maps\_zombiemode_score::minus_to_player_score( refill_cost );
+			player play_sound_on_ent( "purchase" );
+		}
+
+		wait( 0.5 );
+	}
+}
+
+// The weapon model a wall reveals: a spawned wall carries it (wall_model), a
+// map's trigger targets it.
+wall_buy_model()
+{
+	if ( isDefined( self.wall_model ) )
+		return self.wall_model;
+	if ( !isDefined( self.target ) )
+		return undefined;
+	return getEnt( self.target, "targetname" );
+}
+
+// T5's grenade walls (stielhandgranate, Kino's frag_grenade_zm).  CoDOL's
+// characters each carry their own lethal (frag or semtex, mp/cyborgclasstable),
+// given with an empty clip and filled each round, so a grenade wall refills the
+// buyer's own lethal, as T5's refills its level lethal: never a weapon switch
+// (weapon_give would switchToWeapon an offhand).  Nothing is sold when it is full.
+is_lethal_wall_weapon( weapon_name )
+{
+	return weapon_name == "frag_grenade_zm" || weapon_name == "semtex_grenade_zm";
+}
+
+// self = the wall.
+lethal_wall_buy( player, cost )
+{
+	lethal = player maps\_zombiemode_equipment::lethal_grenade();
+	if ( !isDefined( lethal ) )
+		lethal = self.zombie_weapon_upgrade;
+
+	if ( player hasWeapon( lethal ) && player getFractionMaxAmmo( lethal ) >= 1 )
+		return;
+
+	if ( player.score < cost )
+	{
+		self play_sound_on_ent( "no_purchase" );
+		player maps\_zombiemode_audio::no_cash_vox();
+		return;
+	}
+
+	if ( self.first_time_triggered == false )
+	{
+		model = self wall_buy_model();
+		if ( isDefined( model ) )
+			model thread weapon_show();
+		self.first_time_triggered = true;
+	}
+
+	player maps\_zombiemode_score::minus_to_player_score( cost );
+	if ( !player hasWeapon( lethal ) )
+		player giveWeapon( lethal );
+	player giveMaxAmmo( lethal );
+	player play_sound_on_ent( "purchase" );
+}
+
+// ==========================================================================
+// THE WALL BUYS CoDOL'S PORTS LACK -- T5's own walls, spawned here.
+// ==========================================================================
+//
+// zm_theater_sh, zm_factory_sh and zm_sumpf_sh (ported from build 3.5.2.6)
+// carry no weapon_upgrade at all, and CoDOL's zm_asylum_sh / zm_prototype_sh
+// replaced T5's walls with C1 weapons but left out the grenade walls,
+// asylum's upstairs double barrel and prototype's BAR.  MEASURED 2026-10-25
+// from the entity strings of T5's zones (zombie_theater, zombie_cod5_*) and
+// CoDOL's.  Each T5 wall becomes the C1 weapon CoDOL itself put in that
+// weapon's place on asylum/prototype (m1garand/gewehr43/kar98k -> m14ebr_zm,
+// m1carbine -> ranger_zm, double barrel -> tmp_zm, thompson -> pp2000_zm,
+// trench gun -> spas12_zm, stg44 -> mp5k_zm, bar -> ump45_zm, mp40 -> uzi_zm;
+// Kino's own guns by the outline CoDOL draws for them), the grenade walls
+// frag_grenade_zm (lethal_wall_buy).  Skipped: sumpf's type100 wall and
+// prototype's grenade wall, where CoDOL put the power switch.
+//
+// Positions: the outline is T5's chalk quad (BSP or chalk brush model), moved
+// onto the wall in CoDOL's geometry; the C1 world model sits where CoDOL's
+// prefab puts that weapon against its outline (constant per weapon over all 19
+// of CoDOL's walls, muzzle toward the outline's image left).  Generated by
+// zm_wallbuy_staging tool_src/gen_wallbuys.py from wallbuys.json, which also
+// builds the client outlines (zm-wallbuy: effects in the theater, factory and
+// sumpf zones; asylum and prototype get the walls only, their stock zones
+// already drawing CoDOL's outlines).
+//
+// Spawned, not authored in MapEnts: a trigger_use needs a clip-map brush model
+// these maps do not have, so the usable entity is a script_model either way;
+// the stock asylum/prototype zones cannot change (C1's pure check pins their
+// size); and the server reads entities from its own zone copies (VPS), so the
+// walls deploy with the scripts.
+spawn_extra_wall_buys()
+{
+	level.extra_wall_buys = [];
+	walls = extra_wall_buy_table( getDvar( "mapname" ) );
+	if ( walls.size == 0 )
+		return;
+
+	precacheModel( "tag_origin" );
+	for ( i = 0; i < walls.size; i++ )
+		precacheModel( walls[ i ].model );
+	// CoDOL's weapon case on every wall (its own walls on zm_prototype_sh / zm_asylum_sh carry one as a static
+	// model): the rebuilt theater/factory/sumpf zones and the stock asylum/prototype zones define it.  A zone without
+	// it (an older install) keeps the walls without the case instead of drawing a default model.
+	terminal = "codo_weapon_box";
+	terminals = codol_isModelMounted( terminal );
+	if ( terminals )
+		precacheModel( terminal );
+
+	for ( i = 0; i < walls.size; i++ )
+	{
+		w = walls[ i ];
+		if ( !is_weapon_included( w.weapon ) )
+			continue;
+
+		model = spawn( "script_model", w.model_origin );
+		model.angles = w.model_angles;
+		model setModel( w.model );
+
+		if ( terminals && isDefined( w.terminal_origin ) )
+		{
+			box = spawn( "script_model", w.terminal_origin );
+			box.angles = w.terminal_angles;
+			box setModel( terminal );
+			model.wall_terminal = box;
+		}
+
+		trig = spawn( "script_model", w.use_origin );
+		trig setModel( "tag_origin" );
+		trig.targetname = "weapon_upgrade";
+		trig.zombie_weapon_upgrade = w.weapon;
+		trig.wall_model = model;
+		level.extra_wall_buys[ level.extra_wall_buys.size ] = trig;
+	}
+	note = ", no " + terminal + " in the zones";
+	if ( terminals )
+		note = ", each with a " + terminal;
+	codolPrintLn( "CoDOL zm: " + level.extra_wall_buys.size + " of " + walls.size + " T5 wall buys spawned on " + getDvar( "mapname" ) + note );
+}
+
+extra_wall_buy( weapon, use_origin, model, model_origin, model_angles, terminal_origin, terminal_angles )
+{
+	s = spawnStruct();
+	s.weapon = weapon;
+	s.use_origin = use_origin;
+	s.model = model;
+	s.model_origin = model_origin;
+	s.model_angles = model_angles;
+	s.terminal_origin = terminal_origin;
+	s.terminal_angles = terminal_angles;
+	return s;
+}
+
+// Generated from wallbuys.json (zm_perkclip_staging tool_src/wallbuy/gen_wall_table.py); "mapname" -> the walls,
+// each with CoDOL's weapon case (codo_weapon_box, tool_src/wallbuy/terminals.py).
+extra_wall_buy_table( map )
+{
+	w = [];
+	if ( map == "zm_theater_sh" )
+	{
+		w[ w.size ] = extra_wall_buy( "spas12_zm", ( 783, 78.25, 221.5 ), "codo_weapon_spas12_world", ( 781.5, 77.75, 226 ), ( 0, 270, 0 ), ( 784.3, 76.05, 204.2 ), ( 0, 270, 0 ) );	// theater1: T5 ithaca_zm
+		w[ w.size ] = extra_wall_buy( "mp5k_zm", ( 1041, 1104.5, 38 ), "codo_weapon_mp5k_world", ( 1039, 1094, 40 ), ( 0, 270, 0 ), ( 1042.3, 1102.3, 20.7 ), ( 0, 270, 0 ) );	// theater2: T5 mp5k_zm
+		w[ w.size ] = extra_wall_buy( "m14ebr_zm", ( 297.75, -523, 304.5 ), "codo_weapon_m14ebr_world", ( 296.95, -521, 307 ), ( 0, 180, 0 ), ( 295.55, -524.3, 287.2 ), ( 0, 180, 0 ) );	// theater3: T5 m14_zm
+		w[ w.size ] = extra_wall_buy( "uzi_zm", ( 1885, 419.88, 36.88 ), "codo_weapon_miniuzi_world", ( 1885.5, 431.48, 40.98 ), ( 0, 90, 0 ), ( 1883.7, 422.07, 19.57 ), ( 0, 90, 0 ) );	// theater4: T5 mp40_zm
+		w[ w.size ] = extra_wall_buy( "m16_zm", ( -633.5, 1227, 38.75 ), "codo_weapon_m16_world", ( -630, 1225, 40.95 ), ( 0, 0, 0 ), ( -631.3, 1228.3, 21.45 ), ( 0, 360, 0 ) );	// theater5: T5 m16_zm
+		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( -181, -210.5, 381 ), "grenade_bag", ( -178.5, -210.5, 380.5 ), ( 0, 90, 0 ), ( -179.7, -213.67, 364.46 ), ( 0, 270, 0 ) );	// theater6: T5 frag_grenade_zm
+		w[ w.size ] = extra_wall_buy( "ranger_zm", ( -389, -1272, 133.5 ), "codo_weapon_ranger_world", ( -391, -1272.6, 137 ), ( 0, 270, 0 ), ( -387.7, -1274.2, 116.2 ), ( 0, 270, 0 ) );	// theater7: T5 rottweil72_zm
+		w[ w.size ] = extra_wall_buy( "tmp_zm", ( 812.75, -323, 372.25 ), "codo_weapon_tmp_world", ( 803.95, -321.5, 377.75 ), ( 0, 180, 0 ), ( 810.55, -324.3, 354.95 ), ( 0, 180, 0 ) );	// theater8: T5 pm63_zm
+		w[ w.size ] = extra_wall_buy( "ump45_zm", ( -1131, 307.25, 56 ), "codo_weapon_ump45_world", ( -1129, 317.25, 59 ), ( 0, 90, 0 ), ( -1132.3, 309.45, 38.7 ), ( 0, 90, 0 ) );	// theater9: T5 ak74u_zm
+		w[ w.size ] = extra_wall_buy( "pp2000_zm", ( -845.25, -326.99, 132 ), "codo_weapon_pp2000_world", ( -855.05, -324.99, 136 ), ( 0, 180, 0 ), ( -847.45, -328.29, 114.7 ), ( 0, 180, 0 ) );	// theater10: T5 mpl_zm
+	}
+	if ( map == "zm_factory_sh" )
+	{
+		w[ w.size ] = extra_wall_buy( "ranger_zm", ( 480, 31, 129 ), "codo_weapon_ranger_world", ( 480.6, 29, 132.5 ), ( 0, 0, 0 ), ( 482.2, 32.3, 111.7 ), ( 0, 360, 0 ) );	// factory1: T5 zombie_m1carbine
+		w[ w.size ] = extra_wall_buy( "tmp_zm", ( -945, -181.1, 125 ), "codo_weapon_tmp_world", ( -946.5, -189.9, 130.5 ), ( 0, 270, 0 ), ( -943.7, -183.3, 107.7 ), ( 0, 270, 0 ) );	// factory2: T5 zombie_doublebarrel
+		w[ w.size ] = extra_wall_buy( "m14ebr_zm", ( 61, 521.1, 65 ), "codo_weapon_m14ebr_world", ( 59, 520.3, 67.5 ), ( 0, 270, 0 ), ( 62.3, 518.9, 47.7 ), ( 0, 270, 0 ) );	// factory3: T5 zombie_gewehr43
+		w[ w.size ] = extra_wall_buy( "mp5k_zm", ( 597.85, -3021.69, 209.5 ), "codo_weapon_mp5k_world", ( 599.65, -3011.15, 211.5 ), ( 0, 91.099, 0 ), ( 596.51, -3019.52, 192.2 ), ( 0, 91.099, 0 ) );	// factory4: T5 zombie_stg44
+		w[ w.size ] = extra_wall_buy( "m16_zm", ( -51.75, -936.78, 121.7 ), "codo_weapon_m16_world", ( -48.2, -938.68, 123.9 ), ( 0, 1.6, 0 ), ( -49.59, -935.42, 104.4 ), ( 0, 1.6, 0 ) );	// factory5: T5 zombie_fg42
+		w[ w.size ] = extra_wall_buy( "ump45_zm", ( -1467.49, -755.3, 256.5 ), "codo_weapon_ump45_world", ( -1477.41, -752.92, 259.5 ), ( 0, 177.851, 0 ), ( -1469.74, -756.51, 239.2 ), ( 0, 177.851, 0 ) );	// factory6: T5 zombie_type100_smg
+		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( 1593, 984.2, 238.5 ), "grenade_bag", ( 1590.5, 984.2, 238 ), ( 0, 270, 0 ), ( 1591.7, 986.4, 221.2 ), ( 0, 90, 0 ) );	// factory7: T5 stielhandgranate
+		w[ w.size ] = extra_wall_buy( "pp2000_zm", ( -770.7, -1021, 130.2 ), "codo_weapon_pp2000_world", ( -760.9, -1023, 134.2 ), ( 0, 0, 0 ), ( -768.5, -1019.7, 112.9 ), ( 0, 360, 0 ) );	// factory8: T5 zombie_thompson
+		w[ w.size ] = extra_wall_buy( "spas12_zm", ( 1075, -176.2, 115.2 ), "codo_weapon_spas12_world", ( 1076.5, -175.7, 119.7 ), ( 0, 90, 0 ), ( 1073.7, -174, 97.9 ), ( 0, 90, 0 ) );	// factory9: T5 zombie_shotgun
+		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( -35.15, -2423.44, 108.5 ), "grenade_bag", ( -37.65, -2423.49, 108 ), ( 0, 271.1, 0 ), ( -36.49, -2421.27, 91.2 ), ( 0, 91.1, 0 ) );	// factory10: T5 stielhandgranate
+		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( -1419, -473.36, 245.5 ), "grenade_bag", ( -1416.5, -473.36, 245 ), ( 0, 90, 0 ), ( -1417.7, -475.56, 228.2 ), ( 0, 270, 0 ) );	// factory11: T5 stielhandgranate
+		w[ w.size ] = extra_wall_buy( "uzi_zm", ( 719.03, 1041.6, 224.88 ), "codo_weapon_miniuzi_world", ( 718.57, 1030, 228.97 ), ( 0, 270.201, 0 ), ( 720.34, 1039.41, 207.57 ), ( 0, 270.201, 0 ) );	// factory12: T5 mp40_zm
+		w[ w.size ] = extra_wall_buy( "m14ebr_zm", ( -106, -534.4, 75.5 ), "codo_weapon_m14ebr_world", ( -108, -535.2, 78 ), ( 0, 270, 0 ), ( -104.7, -536.6, 58.2 ), ( 0, 270, 0 ) );	// factory13: T5 zombie_kar98k
+	}
+	if ( map == "zm_sumpf_sh" )
+	{
+		w[ w.size ] = extra_wall_buy( "m14ebr_zm", ( 10625, 857, -607 ), "codo_weapon_m14ebr_world", ( 10625.8, 855, -604.5 ), ( 0, 0, 0 ), ( 10627.2, 858.3, -624.3 ), ( 0, 360, 0 ) );	// sumpf1: T5 zombie_m1garand
+		w[ w.size ] = extra_wall_buy( "m14ebr_zm", ( 10661, 393.6, -476.25 ), "codo_weapon_m14ebr_world", ( 10663, 394.4, -473.75 ), ( 0, 90, 0 ), ( 10659.7, 395.8, -493.55 ), ( 0, 90, 0 ) );	// sumpf2: T5 zombie_type99_rifle
+		w[ w.size ] = extra_wall_buy( "m16_zm", ( 9543, 697.6, -475 ), "codo_weapon_m16_world", ( 9541, 694.1, -472.8 ), ( 0, 270, 0 ), ( 9544.3, 695.4, -492.3 ), ( 0, 270, 0 ) );	// sumpf3: T5 zombie_gewehr43
+		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( 10608.5, 1332.5, -472.5 ), "grenade_bag", ( 10608.5, 1330, -473 ), ( 0, 0, 0 ), ( 10606.3, 1331.2, -489.8 ), ( 0, 180, 0 ) );	// sumpf4: T5 stielhandgranate
+		w[ w.size ] = extra_wall_buy( "ranger_zm", ( 10202, 1332.5, -477 ), "codo_weapon_ranger_world", ( 10201.4, 1334.5, -473.5 ), ( 0, 180, 0 ), ( 10199.8, 1331.2, -494.3 ), ( 0, 180, 0 ) );	// sumpf5: T5 zombie_m1carbine
+		w[ w.size ] = extra_wall_buy( "spas12_zm", ( 10514, 201, -608 ), "codo_weapon_spas12_world", ( 10514.5, 199.5, -603.5 ), ( 0, 0, 0 ), ( 10516.2, 202.3, -625.3 ), ( 0, 360, 0 ) );	// sumpf6: T5 zombie_shotgun
+		w[ w.size ] = extra_wall_buy( "pp2000_zm", ( 10147, 486, -609 ), "codo_weapon_pp2000_world", ( 10149, 495.8, -605 ), ( 0, 90, 0 ), ( 10145.7, 488.2, -626.3 ), ( 0, 90, 0 ) );	// sumpf7: T5 zombie_thompson
+		w[ w.size ] = extra_wall_buy( "uzi_zm", ( 8476.65, 3262.24, -605.12 ), "codo_weapon_miniuzi_world", ( 8468.77, 3270.77, -601.02 ), ( 0, 135.2, 0 ), ( 8474.17, 3262.87, -622.42 ), ( 0, 135.2, 0 ) );	// sumpf8: T5 mp40_zm
+		w[ w.size ] = extra_wall_buy( "mp5k_zm", ( 7717.38, -1095.64, -627.5 ), "codo_weapon_mp5k_world", ( 7723.46, -1104.44, -625.5 ), ( 0, 315.4, 0 ), ( 7719.86, -1096.26, -644.8 ), ( 0, 315.4, 0 ) );	// sumpf9: T5 zombie_stg44
+		w[ w.size ] = extra_wall_buy( "ump45_zm", ( 11529.15, 3786.81, -607 ), "codo_weapon_ump45_world", ( 11523.83, 3795.51, -604 ), ( 0, 132.8, 0 ), ( 11526.7, 3787.54, -624.3 ), ( 0, 132.8, 0 ) );	// sumpf10: T5 zombie_bar
+	}
+	if ( map == "zm_asylum_sh" )
+	{
+		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( 263, -606.5, 285 ), "grenade_bag", ( 265.5, -606.5, 284.5 ), ( 0, 90, 0 ), ( 264.3, -608.7, 267.7 ), ( 0, 270, 0 ) );	// asylum1: T5 stielhandgranate
+		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( 443, 694, 111.5 ), "grenade_bag", ( 443, 691.5, 111 ), ( 0, 0, 0 ), ( 440.8, 692.7, 94.2 ), ( 0, 180, 0 ) );	// asylum2: T5 stielhandgranate
+		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( -825, 725, 277.5 ), "grenade_bag", ( -825, 722.5, 277 ), ( 0, 0, 0 ), ( -827.2, 723.7, 260.2 ), ( 0, 180, 0 ) );	// asylum3: T5 stielhandgranate
+		w[ w.size ] = extra_wall_buy( "frag_grenade_zm", ( 917, -633, 109.5 ), "grenade_bag", ( 917, -630.5, 109 ), ( 0, 180, 0 ), ( 919.2, -631.7, 92.2 ), ( 0, 360, 0 ) );	// asylum4: T5 stielhandgranate
+		w[ w.size ] = extra_wall_buy( "tmp_zm", ( 837, -242.5, 281.25 ), "codo_weapon_tmp_world", ( 838.5, -233.7, 286.75 ), ( 0, 90, 0 ), ( 835.7, -240.3, 263.95 ), ( 0, 90, 0 ) );	// asylum5: T5 zombie_doublebarrel
+	}
+	if ( map == "zm_prototype_sh" )
+	{
+		w[ w.size ] = extra_wall_buy( "ump45_zm", ( -220, 1044.5, 196 ), "codo_weapon_ump45_world", ( -222, 1034.5, 199 ), ( 0, 270, 0 ), ( -218.7, 1042.3, 178.7 ), ( 0, 270, 0 ) );	// prototype1: T5 zombie_bar
+	}
+	return w;
+}
+
+// T5 :2798.  The wall weapon model appears once, the first time the wall is
+// bought.  T5 also rotates it to face the buyer; the map already authored the
+// angles, so only the reveal is kept.
+weapon_show()
+{
+	self show();
+	self play_sound_on_ent( "weapon_show" );
+}
+
+// T5's box applies the weapon's hide tags after every model change. CoDOL's
+// authored world models contain the alternative sights too (for example the
+// SPAS-12 has tag_red_dot and tag_eotech). A plain setModel displays both.
+// Reset first because the box reuses one entity for different weapons. Some
+// shipped T5-derived definitions name tags absent from their CoDOL model;
+// hidePart errors on an absent bone, so intersect with that exact skeleton.
+weapon_model_hide_tags( weapon_name, model_name )
+{
+	self showAllParts();
+	tags = getWeaponHideTags( weapon_name );
+	if ( !isDefined( tags ) || tags.size == 0 )
+		return;
+
+	for ( i = 0; i < getNumParts( model_name ); i++ )
+	{
+		part = getPartName( model_name, i );
+		for ( j = 0; j < tags.size; j++ )
+		{
+			if ( part != tags[ j ] )
+				continue;
+			self hidePart( part );
+			break;
+		}
+	}
+}
+
+// The floating preview must use the awarded weapon's own hide tags. A generic
+// optional-attachment blacklist also removes a sniper's required stock scope.
+
+// ==========================================================================
+// MYSTERY BOX -- T5 :793, :945, :1057, :1742-:1784, :1951, :2365.
+// ==========================================================================
+
+// T5 :793.
+treasure_chest_init()
+{
+	flag_init( "chest_has_been_used" );
+
+	level.chests = getEntArray( "treasure_chest_use", "targetname" );
+
+	if ( level.chests.size < 1 )
+	{
+		{}
+		return;
+	}
+
+	for ( i = 0; i < level.chests.size; i++ )
+	{
+		level.chests[ i ] get_chest_pieces();
+
+		// THE LID: give it its animtree now (clearing nothing), so C1 builds
+		// the lid's DObj with that tree from the first snapshot.  A tree that
+		// first appeared with the first open would reach the client in the
+		// same snapshot as the open command, before the DObj was rebuilt to
+		// take it.
+		if ( isDefined( level.chests[ i ].chest_lid ) )
+			level.chests[ i ].chest_lid clearAnim( %codo_treasure_chest_box_open, 0 );
+
+		if ( !isDefined( level.chests[ i ].zombie_cost ) )
+			level.chests[ i ].zombie_cost = 950;
+	}
+
+	box_marker_init();
+
+	flag_init( "moving_chest_enabled" );
+	flag_init( "moving_chest_now" );
+
+	level.chest_moves = 0;
+	level.chest_index = 0;
+	level.chest_accessed = 0;
+
+	// T5 :829.  More than one spot: one is live and the teddy bear moves it.
+	if ( level.chests.size > 1 )
+	{
+		precacheModel( "zombie_teddybear" );
+		flag_set( "moving_chest_enabled" );
+		level.chests = array_randomize( level.chests );
+		init_starting_chest_location();
+	}
+	else
+	{
+		// T5 leaves a single box alone; its rubble (a tag_origin on the
+		// shipped single-box maps) belongs hidden while the box is there.
+		level.chests[ 0 ] hide_rubble();
+		level.chests[ 0 ].hidden = false;
+		level.chests[ 0 ] thread box_marker_on();
+	}
+
+	array_thread_1( level.chests, ::treasure_chest_think );
+	level thread maps\_zombiemode_boxtest::init();
+
+	{}
+}
+
+// T5 :850, the semi-random branch: the list is already shuffled, the first
+// spot marked start_chest is live and every other spot is hidden.  A level
+// that sets level.random_pandora_box_start (T5 Kino, zm_theater_sh) takes
+// T5's random branch instead: the first shuffled spot without
+// start_exclude 1.
+init_starting_chest_location()
+{
+	level.chest_index = -1;
+	random_start = is_true( level.random_pandora_box_start );
+
+	for ( i = 0; i < level.chests.size; i++ )
+	{
+		chest = level.chests[ i ];
+		if ( random_start )
+			starts_here = !isDefined( chest.start_exclude ) || int( chest.start_exclude ) != 1;
+		else
+			starts_here = isDefined( chest.script_noteworthy ) && isSubStr( chest.script_noteworthy, "start_chest" );
+		if ( level.chest_index < 0 && starts_here )
+		{
+			level.chest_index = i;
+			continue;
+		}
+		chest hide_chest();
+		chest show_rubble();
+	}
+
+	// A map with no start_chest spot: T5 would leave every spot hidden.  Keep
+	// the box usable by opening the first (already shuffled) spot instead.
+	if ( level.chest_index < 0 )
+	{
+		level.chest_index = 0;
+		level.chests[ 0 ] show_chest();
+	}
+
+	level.chests[ level.chest_index ] hide_rubble();
+	level.chests[ level.chest_index ].hidden = false;
+	level.chests[ level.chest_index ] thread box_marker_on();
+}
+
+// THE BOX BEACON.  T5 :703 default_pandora_fx_func / :716
+// default_pandora_show_func: a tag_origin at the box's chest_origin, pitched
+// -90, carries the looping column of light ("lght_marker") while the box is
+// at that spot, and "lght_marker_flare" flashes half a second after the box
+// appears there.  Each map plays the marker its own zones ship (MEASURED):
+// zm_sumpf_sh fx_zombie_lght_marker(_flare) -- T5 Shi No Numa's own --,
+// zm_asylum_sh fx_zombie_factory_marker(_fl), and every other map the
+// fx_zombie_coast_marker(_fl) pair common_gametype_zm carries.  Not on
+// zm_prototype_sh, by the user's call (T5 Nacht has a single fixed box).
+box_marker_init()
+{
+	level.zm_box_marker = false;
+
+	map = getDvar( "mapname" );
+	if ( map == "zm_prototype_sh" )
+		return;
+
+	if ( map == "zm_sumpf_sh" )
+	{
+		marker = "maps/zombie/fx_zombie_lght_marker";
+		flare = "maps/zombie/fx_zombie_lght_marker_flare";
+	}
+	else if ( map == "zm_asylum_sh" )
+	{
+		marker = "maps/zombie/fx_zombie_factory_marker";
+		flare = "maps/zombie/fx_zombie_factory_marker_fl";
+	}
+	else
+	{
+		marker = "maps/zombie/fx_zombie_coast_marker";
+		flare = "maps/zombie/fx_zombie_coast_marker_fl";
+	}
+
+	precacheModel( "tag_origin" );
+	level._effect[ "lght_marker" ] = loadfx( marker );
+	level._effect[ "lght_marker_flare" ] = loadfx( flare );
+	level.zm_box_marker = true;
+	codolprintln( "CoDOL zm box: beacon " + marker + " on " + map );
+}
+
+// self = a box use trigger.  T5 :716 (the objective icon is not taken).
+box_marker_on()
+{
+	if ( !is_true( level.zm_box_marker ) || isDefined( self.pandora_light ) )
+		return;
+
+	origin = self.origin;
+	angles = ( 0, 0, 0 );
+	if ( isDefined( self.chest_origin ) )
+	{
+		origin = self.chest_origin.origin;
+		if ( isDefined( self.chest_origin.angles ) )
+			angles = self.chest_origin.angles;
+	}
+	else if ( isDefined( self.chest_lid ) )
+		origin = self.chest_lid.origin;
+
+	light = spawn( "script_model", origin );
+	light.angles = angles + ( -90, 0, 0 );
+	light setModel( "tag_origin" );
+	self.pandora_light = light;
+	wait_network_frame();
+	if ( !isDefined( light ) )
+		return;
+	playFxOnTag( level._effect[ "lght_marker" ], light, "tag_origin" );
+
+	wait( 0.5 );
+	if ( isDefined( light ) )
+		playFx( level._effect[ "lght_marker_flare" ], light.origin );
+}
+
+// self = a box use trigger.  The looping column is stopped explicitly, a
+// network frame passes so the stop reaches every client, then the carrier
+// goes (as the tesla arc carrier does).
+box_marker_off()
+{
+	if ( !isDefined( self.pandora_light ) )
+		return;
+	light = self.pandora_light;
+	self.pandora_light = undefined;
+	stopFxOnTag( level._effect[ "lght_marker" ], light, "tag_origin" );
+	wait_network_frame();
+	light delete();
+}
+
+// T5 :902,:921.  Rubble is what is visible where the box is not.
+hide_rubble()
+{
+	if ( !isDefined( self.chest_rubble ) )
+		return;
+	for ( i = 0; i < self.chest_rubble.size; i++ )
+		self.chest_rubble[ i ] hide();
+}
+
+show_rubble()
+{
+	if ( !isDefined( self.chest_rubble ) )
+		return;
+	for ( i = 0; i < self.chest_rubble.size; i++ )
+		self.chest_rubble[ i ] show();
+}
+
+// T5 :984,:1005.  self is the use trigger.
+show_chest()
+{
+	if ( !is_true( self.hidden ) )
+		return;
+
+	self enable_trigger();
+	if ( isDefined( self.chest_lid ) )
+		self.chest_lid show();
+	if ( isDefined( self.chest_box ) )
+		self.chest_box show();
+
+	if ( isDefined( self.chest_lid ) )
+		playSoundAtPosition( "zmb_couch_slam", self.chest_lid.origin );
+
+	self.hidden = false;
+	self thread box_marker_on();
+}
+
+hide_chest()
+{
+	self thread box_marker_off();
+	self disable_trigger();
+	if ( isDefined( self.chest_lid ) )
+		self.chest_lid hide();
+	if ( isDefined( self.chest_box ) )
+		self.chest_box hide();
+
+	self.hidden = true;
+}
+
+// The spot a player may use right now: the live one, or one a fire sale
+// opened (T5 :1291 tests the same two cases before re-enabling).
+is_live_chest()
+{
+	if ( level.chests[ level.chest_index ] == self )
+		return true;
+	return is_true( self.fire_sale_temp );
+}
+
+// T5 :945.  use trigger -> chest_lid -> chest_origin -> chest_box.
+get_chest_pieces()
+{
+	if ( isDefined( self.target ) )
+		self.chest_lid = getEnt( self.target, "targetname" );
+
+	if ( isDefined( self.chest_lid ) && isDefined( self.chest_lid.target ) )
+		self.chest_origin = getEnt( self.chest_lid.target, "targetname" );
+
+	if ( isDefined( self.chest_origin ) && isDefined( self.chest_origin.target ) )
+		self.chest_box = getEnt( self.chest_origin.target, "targetname" );
+
+	// T5 :955.  This VM's filtered getEntArray takes native ent fields only
+	// (script_noteworthy is a dynamic key), so walk the entities once.  The
+	// 100-unit radius is T5's "temp hax to separate multiple instances": two
+	// spots can share one noteworthy.
+	self.chest_rubble = [];
+	if ( !isDefined( self.script_noteworthy ) )
+		return;
+	rubble_name = self.script_noteworthy + "_rubble";
+	ents = getEntArray();
+	for ( i = 0; i < ents.size; i++ )
+	{
+		if ( !isDefined( ents[ i ].script_noteworthy ) || ents[ i ].script_noteworthy != rubble_name )
+			continue;
+		if ( distanceSquared( self.origin, ents[ i ].origin ) < 10000 )
+			self.chest_rubble[ self.chest_rubble.size ] = ents[ i ];
+	}
+}
+
+// T5 :1752,:1763, with C1's lid: T5 rolls its hinged lid 105 degrees; C1's
+// split lid is opened and closed by its own animations (THE LID, above).
+// Knob: the clip replaces the other one; restart: it plays from its start
+// every time (each clip ends holding its last frame, open or shut).
+treasure_chest_lid_open()
+{
+	self setAnimKnobRestart( %codo_treasure_chest_box_open, 1, 0.2, 1 );
+	play_sound_at_pos( "open_chest", self.origin );
+}
+
+treasure_chest_lid_close()
+{
+	self setAnimKnobRestart( %codo_treasure_chest_box_close, 1, 0.2, 1 );
+	play_sound_at_pos( "close_chest", self.origin );
+}
+
+// T5 :1742.
+treasure_chest_timeout()
+{
+	self endon( "user_grabbed_weapon" );
+	wait( 12 );
+	self notify( "trigger", level );
+}
+
+// T5 :1774,:1784.
+// Preview spins and final rewards share the same eligibility rule. The full
+// registry also contains equipment for wall buys and local developer tools.
+treasure_chest_box_weapons()
+{
+	keys = getArrayKeys( level.zombie_weapons );
+	filtered = [];
+	for ( i = 0; i < keys.size; i++ )
+	{
+		if ( get_is_in_box( keys[ i ] ) )
+			filtered[ filtered.size ] = keys[ i ];
+	}
+	return filtered;
+}
+
+treasure_chest_ChooseRandomWeapon()
+{
+	keys = treasure_chest_box_weapons();
+	if ( keys.size < 1 )
+		return undefined;
+	return keys[ randomInt( keys.size ) ];
+}
+
+treasure_chest_ChooseWeightedRandomWeapon( player )
+{
+	keys = treasure_chest_box_weapons();
+
+	filtered = [];
+	for ( i = 0; i < keys.size; i++ )
+	{
+		if ( isDefined( player ) && is_player_valid( player ) && player has_weapon_or_upgrade( keys[ i ] ) )
+			continue;
+
+		filtered[ filtered.size ] = keys[ i ];
+	}
+
+	// Owning every eligible gun may relax ownership, never box eligibility.
+	if ( filtered.size < 1 )
+		filtered = keys;
+
+	if ( filtered.size < 1 )
+		return undefined;
+
+	return filtered[ randomInt( filtered.size ) ];
+}
+
+// T5 :1057.  Pay, roll, grab or time out, close.  self is the use trigger.
+// T5 _zombiemode_powerups.gsc:2062 toggle_fire_sale_on drops every box to 10
+// for the duration of the power-up.  The cost is read per purchase rather
+// than latched at init so a sale that starts while a player is standing at
+// the box applies to them.
+treasure_chest_cost()
+{
+	if ( isDefined( level.zombie_vars[ "zombie_powerup_fire_sale_on" ] ) &&
+	     level.zombie_vars[ "zombie_powerup_fire_sale_on" ] )
+		return 10;
+
+	return self.zombie_cost;
+}
+
+// The hint has to follow the sale, or a box on sale still advertises 950.
+treasure_chest_cost_hint()
+{
+	self endon( "kill_chest_think" );
+
+	shown = -1;
+
+	for ( ;; )
+	{
+		cost = self treasure_chest_cost();
+		if ( cost != shown )
+		{
+			shown = cost;
+			self set_hint_string( undefined, "default_treasure_chest_" + cost, "generic_buy_weapon" );
+		}
+
+		wait( 0.5 );
+	}
+}
+
+treasure_chest_think()
+{
+	self endon( "kill_chest_think" );
+
+	self setCursorHint( "HINT_NOICON" );
+	self thread treasure_chest_cost_hint();
+
+	for ( ;; )
+	{
+		user = undefined;
+		user_cost = 0;
+		paid_by_fire_sale = false;
+
+		for ( ;; )
+		{
+			self waittill( "trigger", who );
+
+			if ( !isDefined( who ) || !isPlayer( who ) )
+				continue;
+
+			if ( !is_player_valid( who ) )
+			{
+				wait( 0.1 );
+				continue;
+			}
+
+			if ( !who useButtonPressed() )
+				continue;
+
+			if ( who in_revive_trigger() )
+			{
+				wait( 0.1 );
+				continue;
+			}
+
+			// codol_boxtest: a developer test client (_zombiemode_boxtest.gsc)
+			// carries no weapon in hand.
+			if ( who getCurrentWeapon() == "none" && !is_true( who.codol_boxtest ) )
+			{
+				wait( 0.1 );
+				continue;
+			}
+
+			cost = self treasure_chest_cost();
+
+			if ( who.score < cost )
+			{
+				self play_sound_on_ent( "no_purchase" );
+				who maps\_zombiemode_audio::no_cash_vox();
+				wait( 0.5 );
+				continue;
+			}
+
+			who maps\_zombiemode_score::minus_to_player_score( cost );
+			user = who;
+			user_cost = cost;
+			paid_by_fire_sale = is_true( level.zombie_vars[ "zombie_powerup_fire_sale_on" ] );
+			break;
+		}
+
+		flag_set( "chest_has_been_used" );
+		self._box_open = true;
+
+		if ( isDefined( self.chest_lid ) )
+			self.chest_lid thread treasure_chest_lid_open();
+
+		self disable_trigger();
+
+		weapon = self treasure_chest_weapon_spawn( user );
+
+		if ( is_true( self.chest_moving ) )
+		{
+			// The teddy bear.  T5 :1176 refunds the pull (add_to_player_score
+			// with add_to_total false) and :1182 moves the box; this spot is
+			// hidden when the move returns, so the loop below waits on a
+			// disabled trigger until a later move or a fire sale shows it.
+			if ( isDefined( user ) )
+				user maps\_zombiemode_score::add_to_player_score( user_cost, false );
+			self treasure_chest_move();
+			self._box_open = false;
+			continue;
+		}
+
+		if ( !isDefined( weapon ) )
+		{
+			// Nothing to give.  Refund, exactly as T5 refunds a teddy-bear
+			// pull (:1188 add_to_player_score( user_cost, false )): the spend
+			// comes back without crediting the lifetime total.
+			user maps\_zombiemode_score::add_to_player_score( user_cost, false );
+			if ( isDefined( self.chest_lid ) )
+				self.chest_lid thread treasure_chest_lid_close();
+			self._box_open = false;
+			if ( self is_live_chest() )
+				self enable_trigger();
+			continue;
+		}
+
+		self.grabbed_weapon = weapon;
+		// The shipped swap hint advertises weapon cycling, but this trigger
+		// consumes useButtonPressed below. Expand the actual use binding (F
+		// by default), including players who have rebound it. Highlight only
+		// the binding in yellow, then restore white for the rest of the hint.
+		self setHintString( "Press ^3[{+activate}]^7 to Swap Weapon" );
+		self enable_trigger();
+		self thread treasure_chest_timeout();
+
+		for ( ;; )
+		{
+			self waittill( "trigger", grabber );
+
+			if ( grabber == level )
+			{
+				// timed out
+				break;
+			}
+
+			if ( !isDefined( grabber ) || grabber != user )
+				continue;
+
+			if ( !is_player_valid( user ) )
+				break;
+
+			if ( !user useButtonPressed() )
+				continue;
+
+			self notify( "user_grabbed_weapon" );
+			user treasure_chest_give_weapon( weapon );
+			level notify( "zm_cortex_event", "weapon" );   // _zombiemode_cortex reaction
+			user maps\_zombiemode_audio::box_weapon_vox( weapon );
+			// CHALLENGE_ZM_CRATEWEAPONS "buy &&1 items from the mystery box":
+			// counted when the bought item is taken.
+			user maps\_zombiemode_challenges::zm_challenge_inc( "zm_crateweapons" );
+			break;
+		}
+
+		// T5 :1252: every finished pull counts toward the teddy bear, taken
+		// or timed out, except one a fire sale paid for.
+		if ( !is_true( paid_by_fire_sale ) )
+			level.chest_accessed++;
+
+		self disable_trigger();
+
+		if ( isDefined( self.weapon_model ) )
+		{
+			self.weapon_model delete();
+			self.weapon_model = undefined;
+		}
+
+		if ( isDefined( self.chest_lid ) )
+			self.chest_lid thread treasure_chest_lid_close();
+
+		self set_hint_string( undefined, "default_treasure_chest_" + self.zombie_cost, "generic_buy_weapon" );
+
+		// T5 :1291: only the live spot (or one a fire sale opened) comes back.
+		wait( 3 );
+		if ( self is_live_chest() )
+			self enable_trigger();
+		self._box_open = false;
+	}
+}
+
+// T5 :1951.  The 40-cycle roll, slowing down as it goes, then the weapon
+// floating above the box.  Returns the weapon it landed on.
+treasure_chest_weapon_spawn( player )
+{
+	if ( !isDefined( self.chest_origin ) )
+		return treasure_chest_ChooseWeightedRandomWeapon( player );
+
+	origin = self.chest_origin.origin;
+	angles = self.chest_origin.angles;
+	if ( !isDefined( angles ) )
+		angles = ( 0, 0, 0 );
+
+	// THE WEAPON (above): it starts inside the box and rises while it cycles.
+	floatHeight = 40;
+	if ( !isDefined( self.weapon_model ) )
+	{
+		self.weapon_model = spawn( "script_model", origin );
+		self.weapon_model.angles = angles + ( 0, 90, 0 );
+	}
+	self.weapon_model moveTo( origin + ( 0, 0, floatHeight ), 3, 2, 0.9 );
+	// The shipped box jingle belongs to the roll at this box, not the
+	// player's music channel or a moving/deleted preview weapon model.
+	playSoundAtPos( origin, "zmb_music_box" );
+
+	rand = undefined;
+	number_cycles = 40;
+
+	for ( i = 0; i < number_cycles; i++ )
+	{
+		if ( i < 20 )
+			wait( 0.05 );
+		else if ( i < 30 )
+			wait( 0.1 );
+		else if ( i < 35 )
+			wait( 0.2 );
+		else if ( i < 38 )
+			wait( 0.3 );
+		else
+			wait( 0.05 );
+
+		if ( i + 1 < number_cycles )
+			rand = treasure_chest_ChooseRandomWeapon();
+		else
+			rand = treasure_chest_ChooseWeightedRandomWeapon( player );
+
+		if ( !isDefined( rand ) )
+			continue;
+
+		modelname = getWeaponModel( rand );
+		if ( isDefined( modelname ) && modelname != "" )
+		{
+			// T5 :2026 useweaponhidetags: the attachments the weapon does not
+			// carry stay hidden; the previous spin's mask is cleared first.
+			self.weapon_model setModel( modelname );
+			self.weapon_model showAllParts();
+			self.weapon_model useWeaponHideTags( rand );
+		}
+
+		if ( i + 1 == number_cycles )
+		{
+			modeltext = "<none>";
+			if ( isDefined( modelname ) && modelname != "" )
+				modeltext = modelname;
+			{}
+		}
+	}
+
+	if ( self treasure_chest_joker_roll() )
+	{
+		// T5 :2132.  The teddy bear replaces the weapon, facing the box.
+		self.weapon_model setModel( "zombie_teddybear" );
+		self.weapon_model showAllParts();
+		self.weapon_model.angles = angles;
+		self.chest_moving = true;
+		flag_set( "moving_chest_now" );
+		level.chest_accessed = 0;
+		level.chest_moves++;
+		{}
+		return undefined;
+	}
+
+	// T5 :2337 timer_til_despawn: back down into the box over the 12 s the
+	// player has to take it (treasure_chest_timeout); the think loop deletes
+	// it on the grab or the timeout.
+	self.weapon_model moveTo( origin, 12, 6 );
+
+	return rand;
+}
+
+// T5 :2042-:2128, the chance of the joker, on the box that was just rolled.
+// Never on a single-box map (T5: magic_chest_movable is not set there and
+// moving_chest_enabled is not set either), never during a fire sale.
+treasure_chest_joker_roll()
+{
+	if ( !flag( "moving_chest_enabled" ) || level.chests.size < 2 )
+		return false;
+
+	if ( is_true( level.zombie_vars[ "zombie_powerup_fire_sale_on" ] ) || is_true( self.fire_sale_temp ) )
+		return false;
+
+	random = randomInt( 100 );
+
+	if ( !isDefined( level.chest_min_move_usage ) )
+		level.chest_min_move_usage = 4;
+
+	if ( level.chest_accessed < level.chest_min_move_usage )
+		return false;
+
+	chance_of_joker = level.chest_accessed + 20;
+
+	// The 8th pull moves a box that has never moved.
+	if ( level.chest_moves == 0 && level.chest_accessed >= 8 )
+		chance_of_joker = 100;
+
+	// Pulls 4 through 7: 15%.
+	if ( level.chest_accessed >= 4 && level.chest_accessed < 8 )
+	{
+		if ( random < 15 )
+			chance_of_joker = 100;
+		else
+			chance_of_joker = -1;
+	}
+
+	// After the first move: 30% for pulls 8 through 12, then 50%.
+	if ( level.chest_moves > 0 )
+	{
+		if ( level.chest_accessed >= 8 && level.chest_accessed < 13 )
+		{
+			if ( random < 30 )
+				chance_of_joker = 100;
+			else
+				chance_of_joker = -1;
+		}
+
+		if ( level.chest_accessed >= 13 )
+		{
+			if ( random < 50 )
+				chance_of_joker = 100;
+			else
+				chance_of_joker = -1;
+		}
+	}
+
+	return chance_of_joker > random;
+}
+
+// T5 :1428.  A spot whose noteworthy names this move ("move<n>...") wins;
+// otherwise the next spot in the shuffled list, reshuffling at the end
+// without landing on the spot the box just left.
+default_box_move_logic()
+{
+	index = -1;
+	for ( i = 0; i < level.chests.size; i++ )
+	{
+		if ( isDefined( level.chests[ i ].script_noteworthy ) &&
+			isSubStr( level.chests[ i ].script_noteworthy, "move" + ( level.chest_moves + 1 ) ) &&
+			i != level.chest_index )
+		{
+			index = i;
+			break;
+		}
+	}
+
+	if ( index != -1 )
+		level.chest_index = index;
+	else
+		level.chest_index++;
+
+	if ( level.chest_index >= level.chests.size )
+	{
+		left = level.chests[ level.chest_index - 1 ];
+		level.chest_index = 0;
+		level.chests = array_randomize( level.chests );
+		if ( level.chests[ level.chest_index ] == left )
+			level.chest_index++;
+	}
+}
+
+// T5 :1489 treasure_chest_move, plus the fly-away half of :2140.  self is
+// the use trigger of the box that rolled the teddy bear.  Returns once the
+// box is live at its next spot.
+treasure_chest_move()
+{
+	// The bear rises out of the box and leaves (T5 :2143-:2150).
+	wait( 0.5 );
+	if ( isDefined( self.chest_origin ) )
+		playSoundAtPosition( "zmb_vox_ann_magicbox", self.chest_origin.origin );
+	wait( 2 );
+
+	if ( isDefined( self.weapon_model ) )
+	{
+		self.weapon_model moveZ( 500, 4, 3 );
+		self.weapon_model waittill( "movedone" );
+		self.weapon_model delete();
+		self.weapon_model = undefined;
+	}
+
+	if ( isDefined( self.chest_lid ) )
+		self.chest_lid thread treasure_chest_lid_close();
+
+	self hide_chest();
+
+	// The box itself lifts, shakes and vanishes: stand-in copies of the lid
+	// and the base, linked to one mover, exactly as T5 does it.
+	fake_pieces = [];
+	if ( isDefined( self.chest_lid ) && isDefined( self.chest_lid.model ) && self.chest_lid.model != "" )
+	{
+		piece = spawn( "script_model", self.chest_lid.origin );
+		piece.angles = self.chest_lid.angles;
+		piece setModel( self.chest_lid.model );
+		fake_pieces[ fake_pieces.size ] = piece;
+	}
+	if ( isDefined( self.chest_box ) && isDefined( self.chest_box.model ) && self.chest_box.model != "" )
+	{
+		piece = spawn( "script_model", self.chest_box.origin );
+		piece.angles = self.chest_box.angles;
+		piece setModel( self.chest_box.model );
+		fake_pieces[ fake_pieces.size ] = piece;
+	}
+
+	if ( fake_pieces.size > 0 )
+	{
+		anchor = spawn( "script_origin", fake_pieces[ 0 ].origin );
+		anchor playSound( "zmb_box_move" );
+		for ( i = 0; i < fake_pieces.size; i++ )
+			fake_pieces[ i ] linkTo( anchor );
+
+		anchor moveTo( anchor.origin + ( 0, 0, 50 ), 5 );
+
+		// T5 :1528: shake across the box, perpendicular to lid -> base.
+		direction = ( 0, 1, 0 );
+		if ( isDefined( self.chest_box ) && isDefined( self.chest_lid ) )
+		{
+			direction = self.chest_box.origin - self.chest_lid.origin;
+			direction = ( direction[ 1 ], direction[ 0 ], 0 );
+			if ( direction[ 1 ] < 0 || ( direction[ 0 ] > 0 && direction[ 1 ] > 0 ) )
+				direction = ( direction[ 0 ], direction[ 1 ] * -1, 0 );
+			else if ( direction[ 0 ] < 0 )
+				direction = ( direction[ 0 ] * -1, direction[ 1 ], 0 );
+			if ( lengthSquared( direction ) < 0.0001 )
+				direction = ( 0, 1, 0 );
+		}
+		anchor vibrate( direction, 10, 0.5, 5 );
+
+		anchor waittill( "movedone" );
+
+		playSoundAtPosition( "zmb_box_poof", anchor.origin );
+		for ( i = 0; i < fake_pieces.size; i++ )
+			fake_pieces[ i ] delete();
+		anchor delete();
+	}
+
+	self show_rubble();
+	self.chest_moving = undefined;
+
+	// T5 :1585: 7 seconds, plus 5 more when no fire sale is running.
+	post_selection_wait_duration = 7;
+	if ( !is_true( level.zombie_vars[ "zombie_powerup_fire_sale_on" ] ) )
+		post_selection_wait_duration += 5;
+
+	default_box_move_logic();
+
+	wait( post_selection_wait_duration );
+
+	next = level.chests[ level.chest_index ];
+	next.fire_sale_temp = undefined;
+	next show_chest();
+	next hide_rubble();
+	flag_clear( "moving_chest_now" );
+	{}
+}
+
+// _zombiemode_powerups (T5 :1414 toggle_fire_sale_on, :1468
+// remove_temp_chest).  Every hidden spot opens at the sale price for the
+// sale's duration; when it ends, each one closes (after its user is done)
+// and its rubble comes back.  A spot that became the live one while the sale
+// ran stays.
+treasure_chest_fire_sale()
+{
+	if ( !isDefined( level.chests ) || level.chests.size < 2 )
+		return;
+
+	for ( i = 0; i < level.chests.size; i++ )
+	{
+		chest = level.chests[ i ];
+		if ( i == level.chest_index || !is_true( chest.hidden ) || is_true( chest.chest_moving ) )
+			continue;
+		chest.fire_sale_temp = true;
+		chest show_chest();
+		chest hide_rubble();
+	}
+
+	level waittill( "fire_sale_off" );
+
+	for ( i = 0; i < level.chests.size; i++ )
+	{
+		chest = level.chests[ i ];
+		if ( !is_true( chest.fire_sale_temp ) )
+			continue;
+		chest thread treasure_chest_remove_temp();
+	}
+}
+
+treasure_chest_remove_temp()
+{
+	while ( is_true( self._box_open ) )
+		wait( 0.1 );
+
+	self.fire_sale_temp = undefined;
+	if ( level.chests[ level.chest_index ] == self )
+		return;
+
+	if ( isDefined( self.chest_lid ) )
+		playSoundAtPosition( "zmb_couch_slam", self.chest_lid.origin );
+	self hide_chest();
+	self show_rubble();
+}
+
+// T5 :2365.  The box goes through the SAME limit rule as a wall buy -- in T5
+// both call weapon_give().  The previous version open-coded a different rule
+// here (always swap the held weapon, but never the starting pistol), which is
+// why the two paths disagreed; with the wall path unbounded, that disagreement
+// is what let three primaries accumulate.
+treasure_chest_give_weapon( weapon_name )
+{
+	self weapon_give( weapon_name );
+}
