@@ -73,6 +73,15 @@ ZONES = {
                                      survival_levels=['mp_fav_tropical', 'mp_abandon_sh', 'mp_ambush_sh', 'mp_crash_tropical', 'mp_cross_fire', 'mp_firingrange', 'mp_hardhat_sh', 'mp_highrise', 'mp_qadeem_sh', 'mp_seatown', 'mp_storm_spring', 'mp_strike_sh', 'mp_subbase_sh', 'mp_terminal_cls'],
                                      stock_edits={"coop_survival_mp_fav_tropical": list(range(32)), "zm_asylum_sh": [23], "zm_prototype_sh": [23], "zm_factory_sh": [23], "zm_sumpf_sh": [23], "zm_theater_sh": [23]},
                                      arena=("mp/basemaps.arena", "code_post_gfx_mp"),
+                                     # stock arena entries of maps no install has and no comaplist row names (and a stock
+                                     # duplicate): C1 reads only 128 entries (shipping.ARENA_MAX_ENTRIES), so they make room
+                                     # for the usermaps
+                                     arena_prune=["mp_invasion", "mp_checkpoint", "mp_favela", "mp_brecourt", "mp_derail", "mp_estate",
+                                                  "mp_storm", "mp_compact", "mp_crash", "mp_abandon", "mp_fuel2", "mp_crossfire",
+                                                  "mp_killhouse", "mp_cargoship", "mp_bloc", "mp_bog", "coop_takeover_mp_estate",
+                                                  "coop_training_mp_killhouse", "mp_hunted", "coop_zac130_mp_derail",
+                                                  "coop_sniperfi4_mp_con_spring", "mp_oilrig2", "mp_stop", "coop_spec_mp_bloc",
+                                                  "zm_sumpf", "mp_cliffhanger"],
                                      assets=["rawfile:vision/{map}.vision"], localize=True)),
     "usermaps_ui_mp": dict(origin="G:" + PATCH, install=PATCH, older="Z:" + PATCH,
                            maps=dict(assets=["image:sfproto_{map}_usermap"])),

@@ -239,7 +239,7 @@ static std::string Lowered(std::string v)
  * <game>/usermaps/<map>/<map>.ff (Kernel33 usermaps.c hands C1 that file for a zone missing under
  * client_shipRetail), or by the map pack in the game's own client_shipRetail/chinese: every mp_ /
  * zm_ zone there that is not a _load zone and not the playlist table. A level zone needs no
- * <map>_load.ff (stock mp_crash_intro ships none, nor does the mp_brl_derail port). */
+ * <map>_load.ff (stock mp_crash_intro ships none). */
 static void Usermaps(Server &s, std::set<std::string> &out)
 {
     if (s.cfg.gameDir.empty()) return;

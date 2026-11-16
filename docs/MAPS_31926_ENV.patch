@@ -1,0 +1,155 @@
+From e25b6a0b42a17ae02650d1b8f058884665037dc9 Mon Sep 17 00:00:00 2001
+From: michael desktop <michaelpmaurerii@gmail.com>
+Date: Mon, 16 Nov 2026 00:56:49 -0500
+Subject: [PATCH] Ported 3.19.26.22 maps: CoD4 fog for Backlot, District and
+ Showdown; Backlot ambience
+
+maps/createart/mp_backlot_sh_art.gsc, mp_district_art.gsc and mp_showdown_art.gsc carry the
+setExpFog of Call of Duty 4's mp_backlot / mp_citystreets / mp_showdown createart (CoD4 zone
+rawfiles; six-argument CoD4 fog written as the IW4 call with maxOpacity 1), called from the
+level scripts. mp_backlot_sh plays the zone's ambient_mp_backlot_sh_ext.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018mKcuyuVLbnt9gb6Xo6sTn
+---
+ maps/createart/mp_backlot_sh_art.gsc | 13 +++++++++++++
+ maps/createart/mp_district_art.gsc   | 13 +++++++++++++
+ maps/createart/mp_showdown_art.gsc   | 13 +++++++++++++
+ maps/mp/mp_backlot_sh.gsc            |  7 +++++--
+ maps/mp/mp_district.gsc              |  3 ++-
+ maps/mp/mp_showdown.gsc              |  3 ++-
+ 6 files changed, 48 insertions(+), 4 deletions(-)
+ create mode 100644 maps/createart/mp_backlot_sh_art.gsc
+ create mode 100644 maps/createart/mp_district_art.gsc
+ create mode 100644 maps/createart/mp_showdown_art.gsc
+
+diff --git a/maps/createart/mp_backlot_sh_art.gsc b/maps/createart/mp_backlot_sh_art.gsc
+new file mode 100644
+index 0000000..91a268e
+--- /dev/null
++++ b/maps/createart/mp_backlot_sh_art.gsc
+@@ -0,0 +1,13 @@
++// PROVENANCE (2026-11-16): the 3.19.26.22 port of mp_backlot_sh ships no createart. Call of Duty 4's maps/createart/mp_backlot_art.gsc
++// (CoD4 Steam install, zone/english/mp_backlot.ff rawfile) sets setExpFog(901.718, 2200, 0.631373, 0.568627, 0.34902, 0): CoD4's six-argument exponential fog has no
++// opacity argument and draws it at full opacity, so it is written as the IW4 MP call with maxOpacity 1 (7 arguments: sun fog
++// off), the way maps/createart/mp_dome_art.gsc does.
++main()
++{
++	level.tweakfile = true;
++
++	setDevDvar( "scr_fog_disable", "0" );
++
++	setExpFog( 901.718, 2200, 0.631373, 0.568627, 0.34902, 1, 0 );
++	VisionSetNaked( "mp_backlot_sh", 0 );
++}
+diff --git a/maps/createart/mp_district_art.gsc b/maps/createart/mp_district_art.gsc
+new file mode 100644
+index 0000000..90f04b5
+--- /dev/null
++++ b/maps/createart/mp_district_art.gsc
+@@ -0,0 +1,13 @@
++// PROVENANCE (2026-11-16): the 3.19.26.22 port of mp_district ships no createart. Call of Duty 4's maps/createart/mp_citystreets_art.gsc
++// (CoD4 Steam install, zone/english/mp_citystreets.ff rawfile) sets setExpFog(512, 2200, 0.709, 0.66, 0.60, 0): CoD4's six-argument exponential fog has no
++// opacity argument and draws it at full opacity, so it is written as the IW4 MP call with maxOpacity 1 (7 arguments: sun fog
++// off), the way maps/createart/mp_dome_art.gsc does.
++main()
++{
++	level.tweakfile = true;
++
++	setDevDvar( "scr_fog_disable", "0" );
++
++	setExpFog( 512, 2200, 0.709, 0.66, 0.60, 1, 0 );
++	VisionSetNaked( "mp_district", 0 );
++}
+diff --git a/maps/createart/mp_showdown_art.gsc b/maps/createart/mp_showdown_art.gsc
+new file mode 100644
+index 0000000..117d098
+--- /dev/null
++++ b/maps/createart/mp_showdown_art.gsc
+@@ -0,0 +1,13 @@
++// PROVENANCE (2026-11-16): the 3.19.26.22 port of mp_showdown ships no createart. Call of Duty 4's maps/createart/mp_showdown_art.gsc
++// (CoD4 Steam install, zone/english/mp_showdown.ff rawfile) sets setExpFog(500, 14000, 0.7, 0.6, .4, 0): CoD4's six-argument exponential fog has no
++// opacity argument and draws it at full opacity, so it is written as the IW4 MP call with maxOpacity 1 (7 arguments: sun fog
++// off), the way maps/createart/mp_dome_art.gsc does.
++main()
++{
++	level.tweakfile = true;
++
++	setDevDvar( "scr_fog_disable", "0" );
++
++	setExpFog( 500, 14000, 0.7, 0.6, 0.4, 1, 0 );
++	VisionSetNaked( "mp_showdown", 0 );
++}
+diff --git a/maps/mp/mp_backlot_sh.gsc b/maps/mp/mp_backlot_sh.gsc
+index d392703..4990e0a 100644
+--- a/maps/mp/mp_backlot_sh.gsc
++++ b/maps/mp/mp_backlot_sh.gsc
+@@ -3,9 +3,9 @@
+ // The zone's own maps/mp/mp_backlot_sh_fx.gsc and maps/createfx/mp_backlot_sh_fx.gsc (3.19.26.22) are used as they ship.
+ // Precache: maps/mp/mp_backlot_sh_precache.gsc names the modules the zone's MapEnts give in precache_script keys.
+ // Adaptations:
+-//   * ambientPlay( "ambient_backlot_ext" ) left out: the zone has no such alias
++//   * ambient ambient_backlot_ext -> ambient_mp_backlot_sh_ext (the zone's alias; added 2026-11-16)
+ //   * game["allies"]/["axis"] = marines/opfor and the *_soldiertype lines are left out (IW3 team setup; 1.1.1.13 takes its teams from the arena/teams scripts)
+-//   * no createart: IW3's maps/createart/mp_backlot_art.gsc is not in the dump
++//   * createart: maps/createart/mp_backlot_sh_art.gsc, the fog of CoD4's maps/createart/mp_backlot_art.gsc (zone/english/mp_backlot.ff; added 2026-11-16)
+ //   * compass: compass_map_mp_backlot_sh (the zone's)
+ #include maps\mp\_utility;
+ #include common_scripts\utility;
+@@ -14,8 +14,11 @@ main()
+ {
+ 	maps\mp\mp_backlot_sh_precache::main();
+ 	maps\mp\mp_backlot_sh_fx::main();
++	maps\createart\mp_backlot_sh_art::main();
+ 	maps\mp\_load::main();
+ 
++	ambientPlay( "ambient_mp_backlot_sh_ext" );
++
+ 	maps\mp\_compass::setupMiniMap( "compass_map_mp_backlot_sh" );
+ 	setdvar( "r_specularcolorscale", "1" );
+ 	setdvar( "r_glowbloomintensity0", ".25" );
+diff --git a/maps/mp/mp_district.gsc b/maps/mp/mp_district.gsc
+index b0935e0..2cf83e3 100644
+--- a/maps/mp/mp_district.gsc
++++ b/maps/mp/mp_district.gsc
+@@ -5,7 +5,7 @@
+ // Adaptations:
+ //   * ambientPlay( "ambient_citystreets_day" ) left out: the zone has no such alias
+ //   * game["allies"]/["axis"] = marines/opfor and the *_soldiertype lines are left out (IW3 team setup; 1.1.1.13 takes its teams from the arena/teams scripts)
+-//   * no createart: IW3's maps/createart/mp_citystreets_art.gsc is not in the dump
++//   * createart: maps/createart/mp_district_art.gsc, the fog of CoD4's maps/createart/mp_citystreets_art.gsc (zone/english/mp_citystreets.ff; added 2026-11-16)
+ //   * compass: compass_map_mp_citystreets (the zone's)
+ #include maps\mp\_utility;
+ #include common_scripts\utility;
+@@ -14,6 +14,7 @@ main()
+ {
+ 	maps\mp\mp_district_precache::main();
+ 	maps\mp\mp_district_fx::main();
++	maps\createart\mp_district_art::main();
+ 	maps\mp\_load::main();
+ 
+ 	maps\mp\_compass::setupMiniMap( "compass_map_mp_citystreets" );
+diff --git a/maps/mp/mp_showdown.gsc b/maps/mp/mp_showdown.gsc
+index 54aadf2..81080e7 100644
+--- a/maps/mp/mp_showdown.gsc
++++ b/maps/mp/mp_showdown.gsc
+@@ -5,7 +5,7 @@
+ // Adaptations:
+ //   * ambient ambient_crossfire -> ambient_mp_showdown (the zone's alias)
+ //   * game["allies"]/["axis"] = marines/opfor and the *_soldiertype lines are left out (IW3 team setup; 1.1.1.13 takes its teams from the arena/teams scripts)
+-//   * no createart: IW3's maps/createart/mp_showdown_art.gsc is not in the dump
++//   * createart: maps/createart/mp_showdown_art.gsc, the fog of CoD4's maps/createart/mp_showdown_art.gsc (zone/english/mp_showdown.ff; added 2026-11-16)
+ //   * compass: compass_map_mp_showdown (the zone's)
+ #include maps\mp\_utility;
+ #include common_scripts\utility;
+@@ -14,6 +14,7 @@ main()
+ {
+ 	maps\mp\mp_showdown_precache::main();
+ 	maps\mp\mp_showdown_fx::main();
++	maps\createart\mp_showdown_art::main();
+ 	maps\mp\_load::main();
+ 
+ 	maps\mp\_compass::setupMiniMap( "compass_map_mp_showdown" );
+-- 
+2.44.0.windows.1
+

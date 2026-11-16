@@ -723,8 +723,10 @@ of it ships. One line per map, `<map> ship` or `<map> dev` (`#` comments). The s
 build_zones.py`, `output\`) leaves out each `dev` map's:
 - create-room map pool row (usermaps_patch `mp/comaplist.csv`; the 60 stock rows, checked against
   patch_code_post_gfx_mp's table through C1's cell hashes, are never touched),
-- vlobby arena entry (usermaps_patch `mp/basemaps.arena`; the stock text, checked against code_post_gfx_mp's, is
-  never touched),
+- vlobby arena entry (usermaps_patch `mp/basemaps.arena`; the stock text is checked against code_post_gfx_mp's
+  minus the entries zonelist's `arena_prune` names: C1 reads only 128 arena entries, so the stock entries of maps
+  that no install has and no comaplist row names make room for the usermaps; every build fails when the result
+  would have more than 128 entries, `tests/test_arena_cap.py`),
 - display-name / description strings no remaining row or entry names (usermaps_patch `localize.str`),
 - vision override (`vision/<map>.vision`),
 - map-select image (usermaps_ui_mp `sfproto_<map>_usermap`; its pixels are in a map pack iwd, and a client without

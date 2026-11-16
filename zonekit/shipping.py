@@ -144,6 +144,52 @@ def _arena_map(entry):
     return m.group(1).decode("latin-1") if m else None
 
 
+# C1's arena loader (0x005EA150) reads mp/basemaps.arena (into a 0x80000-byte buffer) through UI_ParseInfos
+# (0x005E9DA0) into 128 info slots (count 0x02822C7C, pointers 0x02822C80; the loader passes 0x80 - count as the
+# limit and the parser stops there without a message), whose text shares a 0x10000-byte pool (0x02832E80; past it,
+# an error). The map list built from them (0x005EA420) also stops at 0x80 maps (0x005EA8A7). An entry past the 128th
+# is never read: no display name on the load screen, no lobby scene or characters.
+ARENA_MAX_ENTRIES = 0x80
+ARENA_MAX_INFO_BYTES = 0x10000
+
+
+def arena_check(text, where):
+    """Fail when C1 would drop entries of this arena text (ARENA_MAX_*); -> (entries, info pool bytes, an estimate
+    from above: "\\key\\value" per pair, the NUL and the 6 bytes the parser adds per entry)."""
+    entries, _t = _arena_entries(text)
+    pool = 0
+    for _g, e in entries:
+        pool += sum(len(k) + len(v) + 2 for k, v in re.findall(rb'(\w+)\s+"([^"]*)"', e)) + 1 + 6
+    if len(entries) > ARENA_MAX_ENTRIES:
+        names = [_arena_map(e) for _g, e in entries[ARENA_MAX_ENTRIES:]]
+        raise ShippingError("%s: %d arena entries; C1 reads only the first %d, so %s would have no arena data"
+                            % (where, len(entries), ARENA_MAX_ENTRIES, ", ".join(names)))
+    if pool > ARENA_MAX_INFO_BYTES:
+        raise ShippingError("%s: arena info text %d bytes, over C1's %d-byte pool" % (where, pool, ARENA_MAX_INFO_BYTES))
+    return len(entries), pool
+
+
+def _arena_prune(stock, prune, zone_name):
+    """The stock arena text without the entries named in `prune` (maps that no install has and no comaplist row
+    names) and without a second entry of a name (C1 finds the first one), each with the whitespace before it."""
+    if not prune:
+        return stock
+    entries, trailing = _arena_entries(stock)
+    out, seen, found = bytearray(), set(), set()
+    for gap, e in entries:
+        mp = _arena_map(e)
+        if mp in prune or mp in seen:
+            found.add(mp)
+        else:
+            out += gap + e
+        seen.add(mp)
+    missing = set(prune) - found
+    if missing:
+        raise ShippingError("%s: arena_prune names %s, which the stock arena does not have"
+                            % (zone_name, ", ".join(sorted(missing))))
+    return bytes(out + trailing)
+
+
 def plan(repo, zone_name, m, cfg, stocks, maps):
     """The shipping filter for one zone (zonelist entry `cfg`), or an empty Plan when it has no per-map data."""
     p = Plan()
@@ -200,7 +246,7 @@ def plan(repo, zone_name, m, cfg, stocks, maps):
         name, stock_zone = spec["arena"]
         with open(os.path.join(zdir, "rawfile", name), "rb") as g:
             data = g.read()
-        stock = stocks.rawfile("%s:%s" % (stock_zone, name))
+        stock = _arena_prune(stocks.rawfile("%s:%s" % (stock_zone, name)), spec.get("arena_prune", ()), zone_name)
         if not data.startswith(stock):
             raise ShippingError("%s: %s does not start with %s's stock text any more; the filter takes the entries "
                                 "after it as the usermap entries" % (zone_name, name, stock_zone))
@@ -222,6 +268,7 @@ def plan(repo, zone_name, m, cfg, stocks, maps):
         if n_kept != len(entries):
             p.rawfiles[name] = bytes(out)
             p.notes.append("%s: %d of %d usermap entries" % (name, n_kept, len(entries)))
+        arena_check(bytes(out), "%s %s" % (zone_name, name))
 
     for pat in spec.get("assets", []):
         t, rx = _pattern(pat)
