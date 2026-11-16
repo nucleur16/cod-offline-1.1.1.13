@@ -2454,7 +2454,7 @@ menu
     name None group None rect -23.3333 19.3333 17.3333 14.6667 align 10 8 style 0 ownerdraw 0 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
     visible when ( dvarint "k33_hudStyle" ) == 2 && {( {( {( ( {( ! {( ui_active )}} || menuisopen "shoutcast" ) ) && {( ! {( dvarbool(static) "g_hardcore" )}} && {( ! {( flashbanged )}} && {( ! {( {( weaponname ) == "killstreak_ac130_mp"} || {( weaponname ) == "killstreak_helicopter_minigun_mp"} || {( weaponname ) == "killstreak_predator_missile_mp" || weaponname ) == "remote_missile_detonator_so"} || {( {( weaponname ) == "ac130_105mm_mp"} || {( weaponname ) == "ac130_40mm_mp"} || {( weaponname ) == "ac130_25mm_mp"}} || {( adsjavelin )} || {( weaponname ) == "heli_remote_mp" || dvarbool(static) "heli_remote" )} || missilecam )}} && {( ! isempjammed )} && {( ! {( dvarint(static) "scr_gameended" )}}} && ! inkillcam ) && ! {( selecting_location )}} && {( dvarint(static) "g_ui_no_hud_winlose" ) != 1 && ( ( ! iscoop ) || ( dvarstring "g_gametype" ) == "survival" ) || 0 ) && ! iszm ) ) && dvarstring(static) "g_gametype" ) != "coop" && dvarint(static) "g_ui_no_hud_winlose" ) != 1 && ( ( ! iscoop ) || ( dvarstring "g_gametype" ) == "survival" ) || 0 ) && ! iszm ) ) && dvarint(static) "cl_isHostAsSpectator" ) == 0}}
-    exp text ( dvarint "k33_hudAssists" )
+    exp text ( dvarint "cg_hudAssists" )
   item type 0 font 0 textscale 0.55 textstyle 0 align 0
     name None group None rect -136.667 18.6667 131.333 13.3333 align 10 8 style 3 ownerdraw 0 static 0x100000 dynamic 0x4
     forecolor 1 1 1 1 backcolor 0 0 0 0
@@ -2706,7 +2706,7 @@ menu
     name None group None rect -23.3333 19.3333 17.3333 14.6667 align 10 8 style 0 ownerdraw 0 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
     visible when ( dvarint "k33_hudStyle" ) == 3 && {( {( {( ( {( ! {( ui_active )}} || {( {( dvarint(static) "cl_isHostAsSpectator" ) == 1} && dvarint(static) "cl_shoutCastMode" ) != 0} || {( dvarint(static) "cl_isHostAsSpectator" ) != 0} ) && {( ! {( dvarbool(static) "g_hardcore" )}} && {( ! {( flashbanged )}} && {( ! {( {( weaponname ) == "killstreak_ac130_mp"} || {( weaponname ) == "killstreak_helicopter_minigun_mp"} || {( weaponname ) == "killstreak_predator_missile_mp" || weaponname ) == "remote_missile_detonator_so"} || {( {( weaponname ) == "ac130_105mm_mp"} || {( weaponname ) == "ac130_40mm_mp"} || {( weaponname ) == "ac130_25mm_mp"}} || {( adsjavelin )} || {( weaponname ) == "heli_remote_mp" || dvarbool(static) "heli_remote" )} || missilecam )}} && {( ! isempjammed )} && {( ! {( dvarint(static) "scr_gameended" )}}} && ! inkillcam ) && ! {( selecting_location )}} && {( dvarint(static) "g_ui_no_hud_winlose" ) != 1 && ( ( ! iscoop ) || ( dvarstring "g_gametype" ) == "survival" ) || 0 ) && ! iszm ) ) && ! ( dvarstring(static) "g_gametype" ) == "coop" || dvarstring(static) "g_gametype" ) == "zarena" ) && dvarint(static) "g_ui_no_hud_winlose" ) != 1 && ( ( ! iscoop ) || ( dvarstring "g_gametype" ) == "survival" ) || 0 ) && ! iszm ) ) && dvarint(static) "cl_isHostAsSpectator" ) == 0 && ( dvarint(static) "ui_hudkitreplacemenu" ) != 1 || dvarstring(static) "g_gametype" ) != "asym" )}}
-    exp text ( dvarint "k33_hudAssists" )
+    exp text ( dvarint "cg_hudAssists" )
   item type 0 font 0 textscale 0.55 textstyle 0 align 0
     name None group None rect -136.667 18.6667 131.333 13.3333 align 10 8 style 3 ownerdraw 0 static 0x100000 dynamic 0x4
     forecolor 1 1 1 1 backcolor 0 0 0 0

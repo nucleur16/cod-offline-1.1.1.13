@@ -133,7 +133,7 @@ thread, on its own fiber, with exits and faults contained. `mode = child` runs t
 Details and measurements: `docs/P2P_HOSTING.md`, "In-process hosting".
 
 `src/p2p/p2p.c` lets a player host a match from the client: the sh1x match server runs as a child of the
-host's client (`p2phost [map] [gametype] [zonetype]`, `p2pstop`, `p2pstatus`, or `+set k33_p2pHost 1`;
+host's client (`p2phost [map] [gametype] [zonetype]`, `p2pstop`, `p2pstatus`, or `+set sv_p2pHost 1`;
 settings in `p2p\p2p_host.ini`). `src/p2p/hostgate.c` lets the client exchange UDP only with loopback (this
 client is offline only; the lobby-name, gateway and host-ticket vouching of the online design were removed). That is
 a hard requirement from the client security audit. Design, trust rules, stages and measurements:
@@ -176,7 +176,7 @@ and localVars the HUD reads before a script menu sets them are level-2 only.
 
 Toggle: dvar `parity_log` 0 off / 1 normal (default) / 2 verbose (lower prediction thresholds,
 higher limits), registered with the archive flag so the console can change it. Startup value:
-`+set parity_log N` on the command line, else the environment variable `CODOL_PARITY_LOG`, else 1.
+`+set parity_log N` on the command line, else the environment variable `K33_PARITY_LOG`, else 1.
 A startup value of 0 installs no hooks at all.
 
 The logger is compiled only into the diagnostic profile: `K33_NO_COPY=1 K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=1 sh
@@ -220,15 +220,15 @@ below 100).
 **Every build of this offline client has the console** (`sh scripts/build.sh`, shipping profile included; it used to
 be compiled only with `K33_LOCAL_TESTING=1`). It opens with the key left of 1 or F1, and during a match it is also the
 console of the match server this client hosts: server commands and dvars complete and run from it, their output
-prints in it, and the server's cheat commands (`god`, `noclip`, `give`, ...) work once `codol_dev_cheats on` was
+prints in it, and the server's cheat commands (`god`, `noclip`, `give`, ...) work once `dev_cheats on` was
 typed. The rules, the command list and what was measured are in `docs/OFFLINE_CONSOLE_20261112.md`; the short form:
 
 - a name the client has (a C1 command or dvar) runs on the client; `sv <line>` (alias `rcon`) runs a line on the
   match server; a name only the server has runs there without the prefix; before a match those say `no match running`;
 - `cmdlist`, `dvarlist` and `find` list both sides (`sv` marks the server's); Tab completion includes the server's
   names, with live dvar values while a match runs;
-- cheats: `codol_dev_cheats on` (server command, so host only; that match then records no progression), then
-  `god demigod notarget noclip ufo kill give take setviewpos viewpos devset addbot kickbot devhelp`. `k33dev` lists
+- cheats: `dev_cheats on` (server command, so host only; that match then records no progression), then
+  `god demigod notarget noclip ufo kill give take setviewpos viewpos devset addbot kickbot devhelp`. `con_status` lists
   them with their arguments. After each one the console prints the server's `dev_cheats` state line;
 - `name` shows the player name and `name <new name>` (or `set name ...`) changes it (`src/player_name.c`). C1
   registered it read-only; it is now writable and checked: 1..31 bytes, ASCII, UTF-8 or GBK, no control characters,
@@ -241,7 +241,7 @@ typed. The rules, the command list and what was measured are in `docs/OFFLINE_CO
   submodule moves; `tests/test_offline_console.py` fails until it is done, and when the console's cheat table and the
   server's differ.
 
-Not in the shipping profile: `k33shot`, `k33_screenshot` / `k33_framestats` and their request files, `k33_rconPort`
+Not in the shipping profile: `con_shot`, `r_screenshot` / `com_frameStats` and their request files, `con_rconPort`
 and the rcon to a server other than the hosted one (they stay with `K33_LOCAL_TESTING=1`).
 
 `src/console/console.c` is an in-game console for C1, which has none left: IW4's
@@ -256,10 +256,10 @@ and the rcon to a server other than the hosted one (they stay with `K33_LOCAL_TE
   Under that, only what the last command printed. Shift+Tab or Shift+`~` opens the full-height log
   (con_outputWindowColor, IW4's scroll bar, the version string bottom right). Engine and PARITY lines
   appear only there.
-- `k33shot [ms]` (diagnostics builds only) writes the console overlay as rendered, that many ms later, to
+- `con_shot [ms]` (diagnostics builds only) writes the console overlay as rendered, that many ms later, to
   `main\k33_console.bmp`.
 - **Toggle**: the key left of 1 (`~` on US layouts, by scan code) or the virtual key in the archived
-  dvar `k33_consoleKey` (default 112 = F1, 0 = none). Works at the Scaleform menus and in game. Esc
+  dvar `con_toggleKey` (default 112 = F1, 0 = none). Works at the Scaleform menus and in game. Esc
   closes it (first Esc only closes the hint box).
 - **Input**: the window class's WndProc (0x62FB85) goes through `ConsoleWndProc`, which owns the
   keyboard while the console is open; key-ups and everything else still reach the game. While it is
@@ -291,26 +291,26 @@ and the rcon to a server other than the hosted one (they stay with `K33_LOCAL_TE
 - **Keys**: Up/Down history (saved to `main\k33_console_history.txt`), PgUp/PgDn/wheel scroll the full log,
   Ctrl+Home/End top/bottom, Ctrl+V paste, Ctrl+U/K cut, Ctrl+Backspace word, Ctrl+L clear.
 - **Built-ins**: `dvarlist [filter]` and `cmdlist [filter]` with readable names, `find <text>`,
-  `clear`, `condump [file]` (to `main\`), `k33help`.
+  `clear`, `condump [file]` (to `main\`), `con_help`.
 - `+set k33_console 0` on the command line leaves the console out entirely.
 
 ### sh1x developer commands and the match server (`docs/OFFLINE_CONSOLE_20261112.md`)
-The cheat commands run on the sh1x server (`src/codol/player/codol_dev_cheats.c` there). C1 forwards any word it
+The cheat commands run on the sh1x server (`src/online/player/dev_cheats.c` there). C1 forwards any word it
 does not know to the server (Cmd_ExecuteString 0x58CB16 -> CL_ForwardCommandToServer 0x494CE0), so typing
 `noclip` here reaches it as this player's command; the console adds autocomplete, argument lists and usage for them
-(`k33dev` lists them): `god demigod notarget noclip ufo kill give take setviewpos viewpos devset addbot kickbot
+(`con_status` lists them): `god demigod notarget noclip ufo kill give take setviewpos viewpos devset addbot kickbot
 devhelp`, the same names and usage strings as the pinned server (a test compares them). The server decides: cheats
-need sv_cheats on, which the host switches with the server command `codol_dev_cheats on` (the map starts with it
+need sv_cheats on, which the host switches with the server command `dev_cheats on` (the map starts with it
 off), and a server that had cheats on records no progression until it ends. Typed in the console,
-`codol_dev_cheats on` first sets the server's own `codol_devServer 1` (over the same loopback rcon), the switch that
+`dev_cheats on` first sets the server's own `devServer 1` (over the same loopback rcon), the switch that
 lets a server with lobby admission accept cheats; the host's start-up is unchanged.
 
 - `sv <command>` (alias `rcon`): a console built-in for the server this client hosts: one rcon datagram to
   127.0.0.1, to the port and with the password of the host session that is running, nothing else. Its reply prints
-  in the console. `sv status`, `sv dev_cheats`, `sv codol_dev_clients`, `sv sv_botStop 1`, `sv dev_clientcmd bots god`.
+  in the console. `sv status`, `sv dev_cheats`, `sv dev_clients`, `sv sv_botStop 1`, `sv dev_clientcmd bots god`.
   A diagnostics build (`K33_LOCAL_TESTING=1`) keeps the older `rcon` to another server on this machine when the
-  client hosts nothing (`k33_rconPort`, `main\k33_rcon.txt`).
-- HUD: `k33_drawFPS 1` (or C1's own `cg_drawFPS 1`, which nothing else reads) and `k33_drawViewpos 1` draw the frame
+  client hosts nothing (`con_rconPort`, `main\k33_rcon.txt`).
+- HUD: `cg_drawFramerate 1` (or C1's own `cg_drawFPS 1`, which nothing else reads) and `cg_drawViewOrigin 1` draw the frame
   rate and the predicted position, view angles and speed in the top-right corner, in a match.
 
 ### Dvar name table (`src/c1_dvars.h`, `scripts/gen_dvars.py`)
@@ -325,7 +325,7 @@ Numbers without a name display as they are. Command names are not hashed in this
 `Cmd_AddCommand` names are plaintext), so commands are listed as registered.
 
 Build without touching the live DLL: `sh scripts/build-dev.sh` runs `scripts/build.sh` in the diagnostic profile and
-writes `build/Kernel33_dev.dll` (k33shot + parity logger on top of everything the shipping DLL has) and
+writes `build/Kernel33_dev.dll` (con_shot + parity logger on top of everything the shipping DLL has) and
 `build/Kernel33_noconsole.dll` (`-DK33_NO_CONSOLE`), failing if the diagnostic code depends on `src/console/console.c`.
 
 ## Controller (branch `feat/controller`)
@@ -341,7 +341,7 @@ the detection: 0 automatic (icons of the detected pad type, the bindings of the 
 2 PS3, 3 Wii U, 4 generic (1-4: always that pad's buttons, also while playing on keyboard and mouse; before, they
 only picked the icon family), 5 text names only, 6 always keyboard / mouse. It changes labels only: aim assist, the
 userinfo dvar `gpad` and the menu cursor keep following the device really in use. Kernel33 publishes the result
-as `k33_glyphinfo` ("family|device|textOnly|glyphs") and bumps `k33_glyphSerial` on every change, so the Scaleform
+as `gpad_glyphInfo` ("family|device|textOnly|glyphs") and bumps `gpad_glyphSerial` on every change, so the Scaleform
 menus know when to re-read their key labels. The mapping is `src/controller/controller_glyph_policy.h`
 (`tests/controller_glyph_policy_test.c`); docs/CONTROLLER.md section 14 has the semantics and what refreshes live.
 
@@ -349,7 +349,7 @@ menus know when to re-read their key labels. The mapping is `src/controller/cont
 `src/audio/voice.c` puts back in-game voice chat, which C1 stripped (no capture, no codec, no `+talk`; the "v"
 packet branch only printed "voice communication is disabled"). It uses Opus (libopus, linked
 statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
-(`src/codol/net/codol_voice.c` on its `feat/voicechat` branch).
+(`src/online/net/voice.c` on its `feat/voicechat` branch).
 
 - **Push-to-talk**: `+talk`, a real C1 key binding like `+melee`. C1 stores binds as indices into its
   bind table (0xCD62C0, 86 names, no `+talk`), so voice.c extends the table with `+talk`/`-talk`, lets
@@ -364,7 +364,7 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
   and with the game window in the foreground (scoreboard, chat line and console do not stop it; alt-tab,
   the lobby and the main menu do), the mic stays open and a level gate decides what is sent: RMS level
   of each 20 ms frame on a 0..100 scale (-60..0 dBFS), opens after two frames at or above
-  `k33_voiceThreshold` (or at once 15 above it), holds for `k33_voiceHangMs` after the level drops
+  `k33_voiceThreshold` (or at once 15 above it), holds for `cl_voiceHangMs` after the level drops
   below threshold-8, and sends the 120 ms before it opened first (pre-roll) so word starts and endings
   are not clipped. Opus DTX stays on. `+talk` still transmits regardless of level. The HUD `talking`
   icon follows what is actually sent (key or open gate).
@@ -379,7 +379,7 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
   theirs; dimmed with "no mic" when there is no capture device; while the tab is shown it keeps
   `k33_voiceMeter` set so the mic is open for metering, nothing is sent). Subtitles moves up beside
   Output. That edit is not same-length, so `scripts/build_zones.py` compiles the class with JPEXS FFDec
-  (`ffdec-cli`, `$CODOL_FFDEC`) when the .as changes and splices only its DoABC tag into codo.gfx, checking
+  (`ffdec-cli`, `$K33_FFDEC`) when the .as changes and splices only its DoABC tag into codo.gfx, checking
   every other tag is unchanged (zonekit/gfx.py; the compiled tag is stored, so FFDec is needed only after an edit).
 - **Options > Controls > Chat**: C1's own options screen (codo.gfx `OptionView_control_chat`) already
   has the push-to-talk row ("说话" with a key button and a "hold to talk" checkbox that switches the
@@ -395,16 +395,16 @@ statically from MSYS2 `mingw-w64-i686-opus`) and the CoD4x server's relay
   prebuffer, FEC/PLC on loss) -> mix -> WASAPI playback.
 - **Talk balloon**: the server sets es.eFlags 0x100 on a talking player's entity for 500 ms, the bit
   C1's head-icon code already draws `headicontalkballoon` for (teammates only).
-- **Dvars**: `codol_voice` (1; `+set codol_voice 0` installs nothing),
-  `k33_voiceVolume` (100 %), `k33_voiceBitrate` (24000), `k33_voiceLoopback` (0; 1 plays your own
-  voice back locally without a server), `k33_voiceDebug` (0; 1 prints status every 5 s, 2 every packet), `k33_voiceTone` (0; 1 transmits a
+- **Dvars**: `cl_voiceChat` (1; `+set cl_voiceChat 0` installs nothing),
+  `k33_voiceVolume` (100 %), `cl_voiceBitrate` (24000), `cl_voiceLoopback` (0; 1 plays your own
+  voice back locally without a server), `cl_voiceDebug` (0; 1 prints status every 5 s, 2 every packet), `cl_voiceTone` (0; 1 transmits a
   440 Hz tone instead of the microphone, 2 the tone in 600 ms bursts every 1.5 s, for tests).
   Archived (saved in config_mp.cfg): `k33_voiceMode` (0 push-to-talk, 1 voice activation),
-  `k33_voiceThreshold` (30 = -42 dBFS RMS; 0..100 = -60..0 dBFS), `k33_voiceHangMs` (400),
+  `k33_voiceThreshold` (30 = -42 dBFS RMS; 0..100 = -60..0 dBFS), `cl_voiceHangMs` (400),
   `k33_voiceMicMute` (0). Read only: `k33_voiceLevel` (live mic level, -1 no microphone);
   `k33_voiceMeter` (set by Options > Audio).
-- **Commands**: `+talk`/`-talk`, `toggletalk`, `k33voice` (status: devices, counters, mode,
-  threshold, live mic level and gate state, who is talking), `k33voicemute <client>` (toggle a
+- **Commands**: `+talk`/`-talk`, `toggletalk`, `cl_voiceStatus` (status: devices, counters, mode,
+  threshold, live mic level and gate state, who is talking), `cl_voiceMute <client>` (toggle a
   client-side mute).
 - **UI**: the Scaleform callbacks `EnableVoiceTalk` (voice on/off) and `SetVoiceMicMute` (mic mute,
   stored in `k33_voiceMicMute`), both `ret 4` stubs in C1, now reach `src/audio/voice.c`.
@@ -415,22 +415,22 @@ Built by `scripts/build.sh` (libopus linked statically: `pacman -S mingw-w64-i68
 push-to-talk row comes from voice_ui_mp's codo.gfx (`python scripts/build_zones.py voice_ui_mp` writes
 `output\client_shipRetail\patch\codol_common_ui_mp.ff`, the zone it is part of).
 
-Test automation (only with `+set k33_cmdFile 1` on the command line): the lines of
-`<exe dir>\k33_cmd_<pid>.txt` are executed every half second, and `k33ready [0|1]` presses the room's
-Ready button (AS_SetReadyState), so `room.match.cyborg` then `k33ready 1` puts a test client into a
-match without the UI. `k33mouse <x> <y> [click|off]` drives the Scaleform menus of an unfocused test
+Test automation (only with `+set com_cmdFile 1` on the command line): the lines of
+`<exe dir>\k33_cmd_<pid>.txt` are executed every half second, and `ui_pressReady [0|1]` presses the room's
+Ready button (AS_SetReadyState), so `room.match.cyborg` then `ui_pressReady 1` puts a test client into a
+match without the UI. `cl_fakeMouse <x> <y> [click|off]` drives the Scaleform menus of an unfocused test
 client: C1's GetCursorPos / GetForegroundWindow / GetActiveWindow import slots report that client-area
-position and the game window, and the click is posted (e.g. `k33mouse 1441 47 click` opens Options
+position and the game window, and the click is posted (e.g. `cl_fakeMouse 1441 47 click` opens Options
 at 1680x1050).
 
 **Screenshots and frame statistics (diagnostic profile only, `src/console/k33shot.c`).** For harnesses on a machine whose
 display is off (a screen copy of a windowed Direct3D 9 game is black then, the back buffer is not) and for anything
-that must not take input focus. `k33_screenshot <file.png|file.bmp>` writes the next presented frame's back buffer
-(after Kernel33's overlays; a multisampled buffer is resolved first). `k33_framestats <file.txt>` writes, for the
+that must not take input focus. `r_screenshot <file.png|file.bmp>` writes the next presented frame's back buffer
+(after Kernel33's overlays; a multisampled buffer is resolved first). `com_frameStats <file.txt>` writes, for the
 next complete frame, one line per pair of colour target and depth buffer: size, format, usage, draw calls and
 primitives (`DrawPrimitive` / `DrawIndexedPrimitive`); a shadow-map pass shows as draws into a depth buffer that has
-not the back buffer's size. From outside the process, a test client (`+set k33_shotFile 1`, or the existing
-`+set k33_cmdFile 1`) polls `<exe dir>\k33_shot.req` and `<exe dir>\k33_stats.req` on the presenting thread, at
+not the back buffer's size. From outside the process, a test client (`+set r_shotFile 1`, or the existing
+`+set com_cmdFile 1`) polls `<exe dir>\k33_shot.req` and `<exe dir>\k33_stats.req` on the presenting thread, at
 most 20 times a second: one line, the output path; the request file is deleted when read, the output is written to
 `<path>.tmp` and renamed. It uses the developer console's Present hooks (`src/console/console.c`), so `k33_console 0` turns it
 off too; the four draw-path device entries are hooked on the first statistics request, not before. Built only with
@@ -443,7 +443,7 @@ draws them like IW4's CG_DrawPlayerTalking / CG_DrawTalkerNum with C1's own call
 (Material_RegisterHandle "voice_on", UI_DrawHandlePic, UI_DrawText), at the menu's own rects and
 text scale and under its visibility rules. `talking` shows while you transmit and dims when the mic
 is silent; `talkerN` lists the players heard in the last 500 ms with their names (configstring
-1280 + clientNum), mutes excluded. With `k33_voiceLoopback 1` you appear in the list yourself.
+1280 + clientNum), mutes excluded. With `cl_voiceLoopback 1` you appear in the list yourself.
 
 **Shared C1 helpers.** `src/c1game.c` holds what features share: Com_Printf, Cbuf_AddText, the command
 list (Cmd_AddCommand), Dvar_RegisterInt and keyCatchers, each byte-checked once. Voice prints go to
@@ -451,14 +451,14 @@ C1's own console and console_mp.log through Com_Printf.
 
 ### Sound voices (`src/audio/soundvoices.c`, through `src/audio/sounddiag.c`'s hooks)
 The 3D play path's channel check (call of 0x736C10 at 0x73E4DB) decides two more things before C1 takes a voice:
-- **Alias limit** (`k33_sndAliasLimit`, default 4, 0 = off): a one-shot alias on a channel of priority <= 1 holds at
+- **Alias limit** (`snd_aliasLimit`, default 4, 0 = off): a one-shot alias on a channel of priority <= 1 holds at
   most that many 3D voices; one more play takes its farthest copy's voice when nearer, else it is not started.
   mp_abandon_sh_mk's fireworks launchers played `fireworks_launch` ~50 times a second and held 19.7 of the 32 3D voices
   on average (snddiag, 2026-10-19..21), starving the map's loops and the players' gear sounds.
-- **Nearest wins at a cap** (`k33_sndNearest`, default 1): a 3D sound refused because its channel is at its cap
+- **Nearest wins at a cap** (`snd_aliasNearest`, default 1): a 3D sound refused because its channel is at its cap
   (ambdist1/2 and physics 6, bulletimpact 10) takes the voice of that channel's farthest 3D sound when nearer. C1's
   own SND_StealVoice only runs after the cap check.
-`+set codol_soundvoices 0` turns both off at startup. The voice diagnostics (`k33_snddiag`, `CODOL_SNDDIAG`) now
+`+set snd_voiceLimits 0` turns both off at startup. The voice diagnostics (`snd_diag`, `K33_SNDDIAG`) now
 default to 0; at 1+ they also log `snd policy` totals and `why=limit` refusals to Kernel33.log.
 
 ## English (`k33_language`, `k33_english`)
@@ -475,7 +475,7 @@ strings a key resolves to. It is chosen at startup and can be changed while the 
 - **A language is a name**: `en` (the `codol_english*` zones), `zh` (C1's own text plus the `codol_chinese*` zones),
   and any other `codol_<name>_locale.ff` put into `client_shipRetail\patch\` is the language `<name>`. `english` /
   `chinese` are accepted for `en` / `zh`.
-- **At startup** (`src/patch_locale_policy.h`, `CodolStartupLanguage`): the last valid `+set k33_language <name>`; else
+- **At startup** (`src/patch_locale_policy.h`, `StartupLanguage`): the last valid `+set k33_language <name>`; else
   `+set k33_english 0|1` (the last one on the line; any value but `0`/`1` is ignored) or `+set codol_patchlang en|zh`
   (an explicit valid `k33_english` wins over it, regardless of order); else the saved choice; else English. A language
   without a zone in the patch folder starts as English, or as Chinese when English is not installed either.
@@ -498,8 +498,8 @@ strings a key resolves to. It is chosen at startup and can be changed while the 
   match against its 49,222 (measured, docs/LANGUAGE_SWITCH_20261112.md). The Latin font movie
   (`codol_english_font`) is part of `codol_common` and loads in every language. The DLL has no other
   language-dependent code: GBK text input, voice, controller, usermaps and the frame cap are the same.
-- Test builds (`K33_LOCAL_TESTING=1`): `k33_langstat [label]` logs entry, localize and memory-stack use;
-  `k33_langcycle <n>` switches n times; `k33_langforce` lets the next switch unload a zone that is not the top of its
+- Test builds (`K33_LOCAL_TESTING=1`): `loc_tableStats [label]` logs entry, localize and memory-stack use;
+  `loc_cycle <n>` switches n times; `loc_forceUnload` lets the next switch unload a zone that is not the top of its
   stack (measurement only: it corrupts the stack and ends the client, see the doc).
 
 | zone | loads with | what |
@@ -561,7 +561,7 @@ Other notes:
 
 ## Discord Rich Presence (`src/discord.c`)
 The launcher's `TCLS\CoDOLPresence.exe` helper (a PyInstaller build of the server repo's
-`tools/codol_discord_presence.py`) now runs inside the client: no Python, no second process. It talks
+`tools/discord_presence.py`) now runs inside the client: no Python, no second process. It talks
 to Discord's local IPC pipe (`\\.\pipe\discord-ipc-0..9`) as application 1554730441825718272 and shows
 - front end: "In the lobby" / "Choosing a match", elapsed since the client started;
 - in a match: "<mode> on <map>" (e.g. "Team Deathmatch on Killhouse"), elapsed since joining, and as state
@@ -573,8 +573,8 @@ Nothing about the lobby or the server is published: no party, join or spectate s
 
 The map and mode come from the server's serverinfo configstring and the connection state from C1 itself,
 not from `console_mp.log`. All pipe and socket I/O runs on a worker thread with timeouts; with no
-Discord running it retries every 5 s, and it reconnects when Discord restarts. `codol_discord 0`
-(archived) clears the activity and closes the pipe; `+set codol_discord 0` on the command line installs
+Discord running it retries every 5 s, and it reconnects when Discord restarts. `cl_discord 0`
+(archived) clears the activity and closes the pipe; `+set cl_discord 0` on the command line installs
 nothing. `Kernel33.log` gets `discord:` lines for connection changes and each new activity.
 With this DLL installed the launcher should stop starting `CoDOLPresence.exe`, or both publish for the
 same process.
@@ -604,7 +604,7 @@ create-a-class, the MP HUD), so it is an mp category with one more gametype zone
   - 7 loaded-zone states.
 
   Run it with `K33_C1_EXE=<C1.exe> sh tests/run_tests.sh`.
-- **Off switch.** `+set codol_survival 0` on the command line installs nothing. `Kernel33.log` says
+- **Off switch.** `+set ui_survival 0` on the command line installs nothing. `Kernel33.log` says
   `survival category: ...`.
 
 ## Patch zones (`zones/`, `zone_source/`, `scripts/build_zones.py`)
@@ -697,7 +697,7 @@ The source zones under `zone_source/` + `zones/` stay as they are (each with its
   (000_codol_party_modes' load first) and codol_english_zombies_base's ZOMBIE_THUNDERGUN(_UPGRADED) (codol_english's
   load first). usermaps_patch's GBK map names, which codol_english_usermaps' English ones always covered in English,
   are in codol_chinese_locale only, so no name is in two zones a language loads.
-- Kernel33 skips an old zone name while the zone that replaced it is in the patch folder (`kCodolPatchZoneMerged` in
+- Kernel33 skips an old zone name while the zone that replaced it is in the patch folder (`kPatchZoneMerged` in
   patch_locale_policy.h; `patch folder: skipped voice_ui_mp.ff: merged into codol_common_ui_mp.ff`), so stale files on
   an existing install never load twice, and a folder with only the old names (codol-classic-zz) still loads them.
   The glyphs (controller_glyphs.c) are looked up in codol_common_postgfx_mp, else in controller_glyphs_postgfx_mp.
@@ -706,7 +706,7 @@ The source zones under `zone_source/` + `zones/` stay as they are (each with its
   and that every asset of every old zone is in exactly one new zone (or shadowed); it also checks codo.gfx's
   endless LevelChooser and comaplist column 23. `tests/test_zone_packs.py` (portable) checks the packs against
   Kernel33's table. `--verify` compares each pack with its recorded `>build-md5` (`>build-md5-all` for `--maps all`).
-- The `mp_*` zones stay on their own: the sh1x server mounts `mp_*.ff` of the patch folder (`codol_patchZonePath`)
+- The `mp_*` zones stay on their own: the sh1x server mounts `mp_*.ff` of the patch folder (`patchZonePath`)
   with every MP map, ranked ahead of stock, so client and server read the same weapon tables and models. A zone in
   a pack would be invisible to the server. mp_codol_weapons carries each table it changes whole (the effective stock
   table plus the new rows) because C1 links the first stringtable of a name, and it loads ahead of every stock zone
@@ -715,7 +715,7 @@ The source zones under `zone_source/` + `zones/` stay as they are (each with its
   it holds the M14 EBR's base gun (m14ebr_mp): the zombies M14 models with their merged default parts hidden, in
   C1's 22 camo rows.
 - To add a source zone: give it a zone_source manifest as before and add a `part,<zone>` line to the pack of its list
-  and language (and its old name to kCodolPatchZoneMerged if it was ever installed on its own).
+  and language (and its old name to kPatchZoneMerged if it was ever installed on its own).
 
 ### Shipping maps (`shipping_maps.txt`)
 The usermap zones' sources carry the front-end data of every usermap worked on; `shipping_maps.txt` decides which
@@ -731,7 +731,7 @@ build_zones.py`, `output\`) leaves out each `dev` map's:
   that iwd fails at startup, so an image must not ship before its map),
 - sound channel fixes (`files\...\sound_channels.txt`).
 
-`python scripts/build_zones.py --maps all` (or `CODOL_MAPS=all`) keeps every listed map and writes `output_dev\`, so a
+`python scripts/build_zones.py --maps all` (or `K33_MAPS=all`) keeps every listed map and writes `output_dev\`, so a
 local test build never lands in the folder that ships. A map that the zones name but `shipping_maps.txt` does not
 list fails both builds. `--verify` compares the unfiltered build with the recorded original (the installed zones
 carry every map) and prints what the shipping build left out; `--list` prints both lists. Which assets are per map
@@ -744,7 +744,7 @@ in the map pack, change it to `ship` and build.
 ### Provenance
 | zone | made by |
 |---|---|
-| codol_english | `tools/codol_english/build_ff.py` (CoD4x_Server, localizedStrings-1.1.1.13) from `codol_english.tsv` |
+| codol_english | `tools/english/build_ff.py` (CoD4x_Server, localizedStrings-1.1.1.13) from `codol_english.tsv` |
 | codol_english_font | `build_font_ff.py` (same tools); byte-identical to localizedStrings-1.1.1.13 `zones/` |
 | codol_english_zombies_base | localizedStrings-1.1.1.13 `tools/localize_zone.py` from `strings/codol_english_zombies_base/strings.tsv` (identical) |
 | codol_english_ui, codol_english_ui_extra, codol_chinese_ui, codol_chinese_ui_extra | `scripts/ui_keys.py`: the K33UI_* entries; the English text is codol-classic's (its English movies, launcher releases r22-r30 and `deploy/client-patches/revive-token-mode/build_token_mode.py`), the Chinese text the stock movies' |

@@ -160,7 +160,7 @@ internal static partial class MpWeaponCommands
                     }
                     target.AssetHeaders[variant] = TypeXModel;
                     // the bone bounds are each model's own, inline, as stock camo models carry them (the sh1x server's
-                    // XModel reader, CODOL_ReadXModelBounds, reads +0x138 inline whenever it is set)
+                    // XModel reader, ReadXModelBounds, reads +0x138 inline whenever it is set)
                     uint boneInfo = target.Pointer(model + ModelBoneInfo);
                     if (boneInfo != 0)
                     {

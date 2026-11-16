@@ -1,5 +1,5 @@
-#ifndef CODOL_P2P_EXCEPTION_POLICY_H
-#define CODOL_P2P_EXCEPTION_POLICY_H
+#ifndef P2P_EXCEPTION_POLICY_H
+#define P2P_EXCEPTION_POLICY_H
 #include <stdint.h>
 /* A VEH runs before thread SEH. Never rescue a migrated native call whose
  * recognized fault must terminate, potentially with an engine lock retained.

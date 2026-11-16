@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define CODOL_OFFLINE_LOBBY 1
+#define K33_OFFLINE_LOBBY 1
 typedef struct { DWORD slot; const char *dll; const char *name; } C1Import;
 static char all_log[8192];
 static void Log(const char *fmt, ...)

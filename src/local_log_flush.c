@@ -21,7 +21,7 @@ static K33LfStage g_k33LfStage=LF_NOT_RUN;
 static int K33LfFail(K33LfStage stage) { g_k33LfStage=stage;return 0; }
 static const char *K33LfStageName(void)
 {
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
     static const char *const names[]={
         "not-run","arguments","pid","nonce","exchange","multi-opt-in","verified-flag","policy-path",
         "policy-open","policy-read","policy-route","pipe-environment","pipe-api","pipe-open",
@@ -36,7 +36,7 @@ static const char *K33LfStageName(void)
 #endif
 }
 
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
 #include "local_multi_policy.h"
 /* The launcher's CODOL_VERIFIED_SCRIPTS_REQUIRED flag (the verified-script service itself was removed with
  * p2p_verified_scripts.c): zero is absent/off, one is explicitly selected, minus one is malformed. */
@@ -141,7 +141,7 @@ static int K33LfGuard(void)
 static int K33LfPolicy(void)
 {
     int argc=0;LPWSTR *argv=CommandLineToArgvW(GetCommandLineW(),&argc);
-    int selected=argv && CodolLocalMultiArgument(argc,(const wchar_t *const *)argv);
+    int selected=argv && LocalMultiArgument(argc,(const wchar_t *const *)argv);
     if (argv) LocalFree(argv);
     if (!selected) return K33LfFail(LF_MULTI);
     if (K33LfVerifiedFlag()!=1) return K33LfFail(LF_VERIFIED_FLAG);
@@ -156,7 +156,7 @@ static int K33LfPolicy(void)
     int ok=bytes>0 && bytes<=sizeof(data) && ReadFile(file,data,bytes,&got,NULL) && got==bytes;
     CloseHandle(file);
     if (!ok) return K33LfFail(LF_POLICY_READ);
-    return (CodolLocalMultiRoute(data,bytes) && bytes>=10 &&
+    return (LocalMultiRoute(data,bytes) && bytes>=10 &&
         !memcmp(data,"127.0.0.3",9) && (data[9]=='\n' || data[9]=='\r')) ? 1:K33LfFail(LF_POLICY_ROUTE);
 }
 
@@ -280,7 +280,7 @@ static int K33LfReceipt(DWORD pid,const char *nonce,const char *prefix)
 
 static int K33LfExecuteExchange(const char *pid_text,const char *nonce,const char *exchange)
 {
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
     ULONG pid=0;char expected[39];
     g_k33LfStage=LF_NOT_RUN;
     if (!pid_text || !K33LfPid(pid_text,&pid) || pid!=GetCurrentProcessId()) return K33LfFail(LF_PID);
@@ -311,8 +311,8 @@ static void __cdecl K33LfCommand(void)
     if (VoiceArgc()==3) ok=K33LfExecute(VoiceArgv(1),VoiceArgv(2));
     else if (VoiceArgc()==4) ok=K33LfExecuteExchange(VoiceArgv(1),VoiceArgv(2),VoiceArgv(3));
     else ok=K33LfFail(LF_ARGUMENTS);
-    Log("k33logflush: %s (stage=%s)",ok ? "owned local log flushed":"refused",K33LfStageName());
+    Log("com_logFlush: %s (stage=%s)",ok ? "owned local log flushed":"refused",K33LfStageName());
 }
-static C1Cmd g_k33LfCommand={NULL,"k33logflush",(void *)K33LfCommand};
+static C1Cmd g_k33LfCommand={NULL,"com_logFlush",(void *)K33LfCommand};
 static void InstallK33LogFlush(void) { C1AddCommand(&g_k33LfCommand); }
 #endif

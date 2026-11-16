@@ -36,7 +36,7 @@ typedef struct DwOfflineConfig {
     const char *playerName;   /* the local player's profile name = its folder under `profile`; NULL = name it by uid */
     const char *legacyStore;  /* optional: a k33_offline\profile store of the first offline builds, imported once */
     const char *state;        /* securitykey.bin, game_admissions.txt: shared with the embedded match host */
-    const char *matchProfile; /* the match host's codol_profilePath: mpdata_s.<uid>, match_report.json */
+    const char *matchProfile; /* the match host's profilePath: mpdata_s.<uid>, match_report.json */
     const char *zoneDir;      /* the client's zone folder (map availability), or NULL */
     const char *gameDir;      /* the game install: usermaps\<map>\, main\sh1x_rawfiles (Survival placements),
                                  p2p\survival_maps.txt; or NULL */

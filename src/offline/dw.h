@@ -162,7 +162,7 @@ struct Config {
     std::string legacyStore; /* optional: the JSON store of the first offline builds (k33_offline\profile);
                               * its careers are imported once into `profile` (Store::ImportLegacy) */
     std::string state;       /* securitykey.bin, game_admissions.txt (shared with the match server) */
-    std::string matchProfile;/* the match server's codol_profilePath: mpdata_s.<uid>, match_report.json */
+    std::string matchProfile;/* the match server's profilePath: mpdata_s.<uid>, match_report.json */
     std::string zoneDir;     /* the client's zone folder (map availability); may be empty */
     std::string gameDir;     /* the game install (the folder holding client_shipRetail\, usermaps\, main\, p2p\);
                               * empty = unknown: no usermaps, every supported Survival level counts as installed */

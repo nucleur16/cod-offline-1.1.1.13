@@ -37,7 +37,7 @@
 #define BD_DVAR_FIND_VA       0x006232C0u   /* Dvar_FindVar(name) -> dvar_t* */
 #define BD_MAIN_HWND_VA       0x02B68104u
 #define BD_REGISTER_BOOL_VA   0x00624370u   /* Dvar_RegisterBool(name, value, flags, desc) */
-#if CODOL_KERNEL_NAME_DISPLAY
+#if K33_KERNEL_NAME_DISPLAY
 #include "kernel/kernel_video_mode.c"
 #endif
 
@@ -185,7 +185,7 @@ static void BorderlessTick(void)
     if (!g_bdInstalled) return;
     if (!g_bdDvar && C1DvarsReady()) {
         int fallback=0;
-#if CODOL_KERNEL_NAME_DISPLAY
+#if K33_KERNEL_NAME_DISPLAY
         fallback=KvLoad(0);
 #endif
         int cur = BdDvarValue("codol_borderless", fallback) != 0;
@@ -197,7 +197,7 @@ static void BorderlessTick(void)
         if (!g_bdDvar) g_bdDvar = (const BYTE *)1;   /* do not try again; read it by name */
     }
     HWND h = *(HWND *)(DWORD_PTR)BD_MAIN_HWND_VA;
-#if CODOL_KERNEL_NAME_DISPLAY
+#if K33_KERNEL_NAME_DISPLAY
     if(g_bdDvar && g_bdDvar!=(const BYTE *)1)KvSave(BorderlessWanted());
 #endif
     if (!h || !IsWindow(h) || g_bdWindowBorderless < 0) return;

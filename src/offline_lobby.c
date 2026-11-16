@@ -32,7 +32,7 @@
  * with K33LocalPlayLeave() (p2p_local_play_api.h, docs/P2P_DEFERRED_HOST_START.md): all are safe on any
  * thread and start nothing themselves - p2p.c's main-thread tick validates the request and starts the host.
  */
-#if CODOL_OFFLINE_LOBBY
+#if K33_OFFLINE_LOBBY
 #include "offline/dw_api.h"
 
 #define OFL_C1_NATTRAV_PORT  3074   /* what C1's bdNetStartParams uses for NAT traversal (0x00A50454) */
@@ -546,7 +546,7 @@ static void OfflineP2PConfig(P2PConfig *c)
     c->admission = 1;
     /* P2PCheck permits exactly one extra string (the two match-lifecycle switches); anything else an
      * older p2p_host.ini carries would refuse hosting, so it is dropped rather than passed on. */
-    if (strcmp(c->extra, "+set codol_exitToLobby 1 +set codol_oneShotMatch 1")) c->extra[0] = 0;
+    if (strcmp(c->extra, "+set exitToLobby 1 +set oneShotMatch 1")) c->extra[0] = 0;
 }
 
 #else

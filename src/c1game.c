@@ -94,12 +94,16 @@ static BOOL C1AddCommand(C1Cmd *node)
 
 static BOOL C1DvarsReady(void) { return g_c1DvarOk && *(volatile int *)(DWORD_PTR)C1_DVAR_COUNT_VA > 100; }
 
-/* Dvar_RegisterInt; NULL when unavailable. The value is the int at dvar+0xC. */
+static void C1MigrateRenamed(const char *name);
+
+/* Dvar_RegisterInt; NULL when unavailable. The value is the int at dvar+0xC. A dvar that was renamed from the k33_
+ * prefix takes over the value the old name was saved with (C1MigrateRenamed). */
 static const BYTE *C1RegisterInt(const char *name, int value, int min, int max, unsigned flags, const char *desc)
 {
     typedef const BYTE *(__cdecl *RegisterIntFn)(const char *, int, int, int, unsigned, const char *);
     if (!g_c1DvarOk) return NULL;
     const BYTE *d = ((RegisterIntFn)(DWORD_PTR)C1_REGISTER_INT_VA)(name, value, min, max, flags, desc);
+    if (d && Readable(d, 0x10)) C1MigrateRenamed(name);
     return d && Readable(d, 0x10) ? d : NULL;
 }
 
@@ -163,4 +167,21 @@ __attribute__((unused)) static BOOL C1QueueSet(const char *name, const char *val
     line[n] = 0;
     if (C1CbufFree() <= n + 1) return FALSE;
     return C1CbufAddText(line);
+}
+
+/* ---- dvars renamed from the k33_ prefix (src/dvar_renames.h, written by tools/drop_codol_prefix.py) -------------
+ * config_mp.cfg runs before Kernel33 registers its dvars, so a saved "seta <old> <value>" leaves a string dvar of the
+ * old name. When the new name is registered, that value is set on it (through the command buffer, like every other
+ * set here) and the old one is emptied, so it is copied once: the next config_mp.cfg saves the new name. Main thread. */
+#include "dvar_renames.h"
+static void C1MigrateRenamed(const char *name)
+{
+    char value[256];
+    for (unsigned i = 0; name && i < sizeof(kDvarRenames) / sizeof(kDvarRenames[0]); i++) {
+        if (_stricmp(kDvarRenames[i][0], name)) continue;
+        if (!C1DvarString(kDvarRenames[i][1], value, sizeof(value)) || !value[0]) return;
+        if (C1QueueSet(name, value) && C1QueueSet(kDvarRenames[i][1], ""))
+            Log("dvar: %s set to \"%s\", the value saved as %s", name, value, kDvarRenames[i][1]);
+        return;
+    }
 }

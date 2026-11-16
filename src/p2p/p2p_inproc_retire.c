@@ -408,7 +408,7 @@ fail_unloaded:
 }
 
 /* p2p_inproc.c's status poll (every 2 s): the session is over once the match has ended (the level exit, ended=1: the
- * server then keeps its finished map, codol_oneShotMatch in p2p.c) and the player has left (no human for three polls),
+ * server then keeps its finished map, oneShotMatch in p2p.c) and the player has left (no human for three polls),
  * or once nobody has been on it for a minute (the player went back to the lobby mid-match). A level exit alone is not
  * the end - a player still on the scoreboard would be dropped with "Server quit" - and a short gap is not either: during
  * the match's own map_restart ("waiting for teams", seen live) the server counted no human for several seconds.

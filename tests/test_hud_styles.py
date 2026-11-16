@@ -343,8 +343,8 @@ class HudStyles(unittest.TestCase):
         self.assertEqual(hs.STYLES["v12"]["ops"][-1], "isevac")
         # what the docs call visibly missing really is dropped, and the main panels really are kept
         # implemented natively now (hud_style.c): the fire-mode tag, the assists, the ammo display
-        self.assertIn('v26 rewrite: getweaponfiretype -> dvarstring("k33_hudFireType")', text)
-        self.assertIn('v26 rewrite: player("assists") -> dvarint("k33_hudAssists")', text)
+        self.assertIn('v26 rewrite: getweaponfiretype -> dvarstring("cg_hudFireType")', text)
+        self.assertIn('v26 rewrite: player("assists") -> dvarint("cg_hudAssists")', text)
         self.assertIn("v26 weaponbar_hd[4] -> weaponbar_hd: ownerDraw 5 written as clip count, clip bar and reserve count", text)
         # what stays out, with the reason the docs give
         self.assertRegex(text, r'v26 kd_rate_bar\[10\] -> scorebar_hd: dropped: player\("revives"\)')
@@ -430,7 +430,7 @@ class HudStyles(unittest.TestCase):
         self.assertIn("    if (HudStyleOwnerDraw(args)) return 1;", v)
         # nothing reads the old tick-published clip dvars any more
         listing = (hs.ZDIR / "menufile/hud_styles.txt").read_text(encoding="utf-8")
-        self.assertNotIn("k33_hudClip", listing)
+        self.assertNotIn("cg_hudClip", listing)
         self.assertNotIn('player "clipAmmo_left"', listing)
 
     def test_carried_materials_and_images(self):

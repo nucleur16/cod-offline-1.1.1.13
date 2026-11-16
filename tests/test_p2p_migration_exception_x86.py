@@ -17,10 +17,10 @@ def linux(path):
     value=str(path.resolve());return '/mnt/'+value[0].lower()+value[2:].replace('\\','/')
 
 source=(ROOT/'src/p2p/p2p_inproc.c').read_text()
-start=source.index('#if CODOL_KERNEL_ROOM_CONTEXT\n#include "p2p_exception_policy.h"')
+start=source.index('#if K33_KERNEL_ROOM_CONTEXT\n#include "p2p_exception_policy.h"')
 end=source.index('/* A call into the server',start)
 body=source[start:end]
-prefix='''#define CODOL_KERNEL_ROOM_CONTEXT 1
+prefix='''#define K33_KERNEL_ROOM_CONTEXT 1
 #include <windows.h>
 #include <stdint.h>
 #include "%s/tests/kernel_call_guard_fixture.c"

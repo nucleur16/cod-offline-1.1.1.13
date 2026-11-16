@@ -6,7 +6,7 @@ languages. A language choice does not choose an older client implementation.
 
 The ordinary build leaves C1's original single-instance branch and mutex intact.
 `K33_LOCAL_TESTING=1` compiles the separate QA profile. That profile still requires
-`+set codol_local_test_multi 1` and an exact loopback `dwauth.ini` before replacing
+`+set com_localTestMulti 1` and an exact loopback `dwauth.ini` before replacing
 the exact game mutex with a process-local name. Production does not contain that
 mutex override.
 

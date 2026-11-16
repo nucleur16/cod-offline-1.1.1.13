@@ -27,7 +27,7 @@ generators.
 ## Starting it
 
 Nothing has to be switched on. `sh scripts/build.sh` always compiles `src/offline/*.cpp` with g++ and
-links them statically (the `K33_OFFLINE` build flag of earlier branches is gone; `CODOL_OFFLINE_LOBBY`
+links them statically (the `K33_OFFLINE` build flag of earlier branches is gone; `K33_OFFLINE_LOBBY`
 is fixed at 1 in `production_profile.h` and survives only so that a test fixture can compile one source
 file without the lobby). At run time the lobby is started before C1's entry point in every run; the
 `+set k33_offline 1` argument and the `enabled =` ini line of earlier builds are ignored (they are
@@ -101,7 +101,7 @@ All of it in `TakeOver`, before C1's entry point:
    `state` and `profile` folders at the run-time folder, whatever `p2p_host.ini` says, sets this
    run's port, forces `127.0.0.1`, in-process mode and admission, and clears `rollout` / `extra`.
    `P2PCheck` and `P2PInprocRun` accept hosting without the verified script service: the host compiles
-   the GSC tree installed with the client (`codol_scriptPath`). The host is told `+set net_ip6 ::1`, so
+   the GSC tree installed with the client (`scriptPath`). The host is told `+set net_ip6 ::1`, so
    its IPv6 sockets are on loopback too (without it the server also bound `[::]:17760` - seen live).
    Hosting is always enabled: `p2p_localhost 0` is ignored and nothing has to be ticked ("The match
    handoff" below).
@@ -269,7 +269,7 @@ as the client is served and uploads them, and one small text file:
   uid (also when the name is not a usable folder name).
 
 **Run-time files** - what the lobby and the embedded match host exchange, none of it a player's - are
-in `<exe dir>\p2p\offline\` (the host's `state` and `codol_profilePath`); the folder can be deleted
+in `<exe dir>\p2p\offline\` (the host's `state` and `profilePath`); the folder can be deleted
 whenever the client is not running:
 
 ```
@@ -545,16 +545,16 @@ view with placeholder texts whose Ready did nothing - not investigated); Surviva
 **XP from a real match** (2026-11-13, shadow `ofl3\client`, diagnostic build): Killhouse TDM against three
 training bots armed from the server pack's `mp/botclasstable.csv` (below). The player holds fire (a console
 `bind k +attack` and posted key presses) while the bots are moved, one direction after another, into the
-line of fire around him over loopback rcon (`codol_setpos <bot> x y z`, a server command that needs no
+line of fire around him over loopback rcon (`setpos <bot> x y z`, a server command that needs no
 cheats; the script is `D:\CoD\k33work\ofl3\ofl3_xp2.py`). Result, the server's own report: kills 0,
 assists 1, score 20, `"xp": {"kill_xp": 25, "total": 25}` - folded at once: `+25 XP level 1->1 (total 25, 25
 into rank, 1975 to next) | +100 GP`. The after-action Statistics shows Combat XP 25 (`ofl3\shots\t3_d04.png`);
 `players\edtest\mpdata_s` read back by `dwtest --career` gives `total_xp 25`; the rank bar shows 25/2000 after
 returning to the lobby (`t3_e01_c.png`) and after a restart (`t3_e02_c.png`). Nothing on the Kernel33 or lobby
 side was missing: the server measures XP as the session rank-experience delta (`_rank.gsc` giveRankXP ->
-`codol_match_report.c` `client_total_xp`) and the lobby folds it. A kill (rather than an assist) was not
+`match_report.c` `client_total_xp`) and the lobby folds it. A kill (rather than an assist) was not
 landed: the bot moved into the crosshair is shot but rarely finished by the burst.
-Not tried: `codol_explodeprobe <player> frag_grenade_mp` (a player-owned grenade): it crashed the level both
+Not tried: `explodeprobe <player> frag_grenade_mp` (a player-owned grenade): it crashed the level both
 times (`Invalid animation condition client` on the bot's death, then a `_weapons.gsc` runtime error
 `cannot set field of removed entity`); it is a developer probe, not a game path.
 
@@ -610,13 +610,13 @@ read with the Python lobby's codec from a copy of `players\edtest\mpdata`):
   `publication failed; keeping appearance`: the bots spawned with `defaultweapon_mp` and only their names
   were drawn (no body, head, world weapon or shadow). Cause: the test shadow had no server pack
   `p2p\home\main\sh1x_svr_scripts.iwd`. The host reads `mp/botclasstable.csv` with `FS_ReadFile` from
-  that pack (sh1x `codol_bot_loadout.c`), so without it every class answered `none`; the same run also
+  that pack (sh1x `bot_loadout.c`), so without it every class answered `none`; the same run also
   routed bots over the level's raw `node_*` records (732 on mp_killhouse_sh) because the pack's waypoint
   and node files were missing too. With the pack in place the warnings are gone and the bots carry
   their class weapons and characters. `P2PCheck` now refuses to host when neither the pack nor a loose
   `p2p\home\main\mp\botclasstable.csv` exists ("server pack missing"), so a shadow or an install
   without it fails visibly instead of starting a match with invisible bots.
-* Not done: a sweep of every primary weapon, and the comparison with a dedicated `codol_dedrun` run.
+* Not done: a sweep of every primary weapon, and the comparison with a dedicated `sh1x_dedrun` run.
 
 
 ## What still needs the live client
@@ -669,7 +669,7 @@ another map, another category) starts a new one in the same client run.
   process heap or the CRT is left owned - its sockets, views and handles are closed, the copy is unloaded,
   its remaining regions are released, its heap destroyed and the temporary file deleted. If a thread never
   reaches a wait, nothing is unloaded and the old rule (restart the client) applies for that run.
-* **When a session ends.** Offline, the host is started with `codol_oneShotMatch 1` and `codol_exitToLobby 1`
+* **When a session ends.** Offline, the host is started with `oneShotMatch 1` and `exitToLobby 1`
   (server `g_sv_main.c` `ExitLevel`: the finished map stays loaded instead of rotating); the status poll ends
   the session once that level exit was seen and the player has left (no human for three polls, ~6 s), or
   once nobody has been on it for a minute (back to the lobby mid-match). A short empty gap alone does not
