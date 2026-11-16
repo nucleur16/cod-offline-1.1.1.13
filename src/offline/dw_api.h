@@ -53,6 +53,10 @@ typedef struct DwOfflineConfig {
     /* The owner left its room (K33LocalPlayLeave). */
     void (*leave)(unsigned long long ownerUid);
     void (*startGame)(const DwOfflineStartInfo *info);
+    /* Optional: the display name the local player set for the profile `profileName` (the console's `name`).
+     * -> 1 and the name in out (NUL-terminated), or 0 when there is none. Called on the lobby thread; it must
+     * only copy data. */
+    int (*displayName)(const char *profileName, char *out, int outSize);
 } DwOfflineConfig;
 
 /* Starts the listener thread and waits (at most 3 s) until it is bound.

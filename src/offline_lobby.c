@@ -50,6 +50,14 @@
  * is set (registered at 0x005EB25D, default 0, no flags; read by name at 0x005AC266). */
 #define OFL_UNLOCK_MAPS_DVAR "2653"
 
+/* The console's `name` for a profile (player_name.c sets this once it is installed; NULL = the descriptor's name). */
+static int (*volatile g_oflDisplayName)(const char *profileName, char *out, int outSize);
+static int OflDisplayName(const char *profileName, char *out, int outSize) /* lobby thread */
+{
+    int (*fn)(const char *, char *, int) = g_oflDisplayName;
+    return fn ? fn(profileName, out, outSize) : 0;
+}
+
 static struct {
     int settingsRead;            /* k33_offline.ini was looked for */
     BOOL active;                 /* the listener is up and C1 is routed to it */
@@ -495,6 +503,7 @@ static BOOL InstallOfflineLobby(void)
     cfg.start = OflStart;
     cfg.leave = OflLeave;
     cfg.startGame = OflStartGame;
+    cfg.displayName = OflDisplayName; /* player_name.c: the console's `name` for this profile */
     int port = DwOfflineStartServer(&cfg);
     if (!port) {
         if (g_ofl.wantPort) Log("offline lobby: could not listen on 127.0.0.1:%d (k33_offline.ini port; is it in use?)", g_ofl.wantPort);

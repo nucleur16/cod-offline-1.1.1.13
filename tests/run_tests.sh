@@ -52,6 +52,9 @@ python -B tests/test_hud_styles.py
 python -B tests/test_offline_console.py
 "$BIN/gcc.exe" -std=c99 -O2 -Wall -Wextra -Werror -Wno-unused-function tests/hud_style_policy_test.c -o "$OUT/hud_style_policy_test.exe"
 "$OUT/hud_style_policy_test.exe"
+# The console's `name`: accepted names and the per-profile names file (src/player_name_policy.h).
+"$BIN/gcc.exe" -std=c99 -O2 -Wall -Wextra -Werror -Wno-unused-function tests/player_name_policy_test.c -o "$OUT/player_name_policy_test.exe"
+"$OUT/player_name_policy_test.exe"
 python -B tests/test_survival_status_component.py
 python -B tests/test_tip_stage_lookup.py
 python -B tests/test_invitations_disabled.py

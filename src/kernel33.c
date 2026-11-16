@@ -1670,6 +1670,8 @@ static void PatchGbkInput(void)
 #include "p2p/hostgate.c"
 /* Offline mode: the Demonware lobby inside the client (offline_lobby.c, offline/, docs/OFFLINE_LOBBY.md). */
 #include "offline_lobby.c"
+/* The console's `name`, read and write (player_name.c; after offline_lobby.c for the players folder). */
+#include "player_name.c"
 /* Reject malformed top-level DemonWare packet lengths in the exact C1 parser. */
 #include "guards/bd_packet_guard.c"
 /* Reject C1 snapshot entity and delta-field writes beyond their bounds. */
@@ -1810,6 +1812,7 @@ static void __cdecl TakeOver(void)
 #if !CODOL_KERNEL_NAME_DISPLAY
     InstallNameDisplay();
 #endif
+    InstallPlayerName();
 #if CODOL_LOCAL_TESTING
     InstallP2PInprocDiagnostics(); /* QA commands only; no frame/IAT/VEH activation at startup. */
 #endif

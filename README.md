@@ -14,7 +14,8 @@ client contacts no lobby, website or launcher.
 * **Start:** run `codoMP_client_shipRetail.exe` - no arguments are needed. `+set dw_username <name>`
   picks the profile (default `Player`, or `name =` in the optional `k33_offline.ini`).
 * **Profile:** `<exe dir>\players\<name>\` - `mpdata` (classes), `mpdata_s` (rank, XP, stats) and
-  `account.txt` (wallet, purchases). Deleting `mpdata_s` is a new career.
+  `account.txt` (wallet, purchases). Deleting `mpdata_s` is a new career. The name other players see can differ
+  from the profile name: the console's `name <new name>` (see "Console"), kept in `players\k33_names.txt`.
 * **Playing:** create a room of any kind (Multiplayer, matchmaking, Zombies, Survival, Spec Ops) and
   press Ready; the match starts on the built-in server. Needs `p2p\sh1x_host.dll`, `main\sh1x_rawfiles`
   and `p2p\survival_maps.txt` beside the game. One hosted match per client run.
@@ -229,6 +230,13 @@ typed. The rules, the command list and what was measured are in `docs/OFFLINE_CO
 - cheats: `codol_dev_cheats on` (server command, so host only; that match then records no progression), then
   `god demigod notarget noclip ufo kill give take setviewpos viewpos devset addbot kickbot devhelp`. `k33dev` lists
   them with their arguments. After each one the console prints the server's `dev_cheats` state line;
+- `name` shows the player name and `name <new name>` (or `set name ...`) changes it (`src/player_name.c`). C1
+  registered it read-only; it is now writable and checked: 1..31 bytes, ASCII, UTF-8 or GBK, no control characters,
+  none of `" \ ; %`, no space at either end (a refused name prints why). The menus read the new name from then on (a screen already drawn keeps the old one until it is redrawn); the
+  match server takes it when this player next connects (the next match started or joined; a running match keeps the
+  old name, because the server reads names only on connect). It is saved per profile in
+  `players\k33_names.txt` (one line `<profile>`, a tab, `<name>`) and used at the next launch; `name <profile name>` forgets it. The
+  profile (`dw_username`, the career's folder and player id) never changes;
 - `python scripts/gen_sh1x_cmds.py` regenerates `src/console/sh1x_cmds.h` from the `server/sh1x` submodule after the
   submodule moves; `tests/test_offline_console.py` fails until it is done, and when the console's cheat table and the
   server's differ.
