@@ -15,7 +15,7 @@ switching to another mode.
 
 The small additional MenuList loads in `common_postgfx_mp.ff`, after
 `code_post_gfx` initializes C1's default material assets and before the stock
-common HUD definitions. An initial placement in the earlier `common`
+common HUD definitions. An initial placement in the earlier `common_extras`
 pack failed the real startup test because material defaults did not yet exist;
 that placement was removed. Existing in-match GFx movies retain their timing.
 No other native HUD menu is replaced. The existing `scorebar_hd` registration

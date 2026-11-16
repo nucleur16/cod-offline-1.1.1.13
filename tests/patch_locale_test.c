@@ -52,11 +52,11 @@ int main(void)
  assert(!strcmp(PatchZoneMergedInto("controller_glyphs_postgfx_mp"),"codol_common_postgfx_mp")); /* LEGACY_ZONE */
  assert(!strcmp(PatchZoneMergedInto("codol_english"),"codol_english_locale")); /* LEGACY_ZONE */
  assert(!strcmp(PatchZoneMergedInto("codol_chinese_ui_extra"),"codol_chinese_locale")); /* LEGACY_ZONE */
- assert(!strcmp(PatchZoneMergedInto("codol_common"),"common")); /* LEGACY_ZONE */
+ assert(!strcmp(PatchZoneMergedInto("codol_common"),"common_extras")); /* LEGACY_ZONE */
  assert(!strcmp(PatchZoneMergedInto("codol_english_locale"),"english_locale")); /* LEGACY_ZONE */
  assert(!strcmp(PatchZoneMergedInto("codol_infected_cyborg_postgfx_mp"),"infected_cyborg_postgfx_mp")); /* LEGACY_ZONE */
  assert(!strcmp(PatchZoneMergedInto("mp_codol_weapons_postgfx_mp"),"mp_weapons_postgfx_mp")); /* LEGACY_ZONE */
- assert(!PatchZoneMergedInto("common"));
+ assert(!PatchZoneMergedInto("common_extras"));
  assert(!PatchZoneMergedInto("english_locale"));
  assert(!PatchZoneMergedInto("english"));
  assert(!PatchZoneMergedInto("codol_english_ui_extra2"));
@@ -69,7 +69,7 @@ int main(void)
   assert(!strcmp(chain[0],"codol_english_locale") && !strcmp(chain[1],"english_locale")); /* LEGACY_ZONE */
   assert(PatchZoneMergedChain("voice_ui_mp",chain)==2 && !strcmp(chain[1],"common_ui_mp"));
   assert(PatchZoneMergedChain("codol_zm_m1911_arms_diag",chain)==1 && !strcmp(chain[0],"m1911_arms_diag")); /* LEGACY_ZONE */
-  assert(PatchZoneMergedChain("common",chain)==0);
+  assert(PatchZoneMergedChain("common_extras",chain)==0);
  }
  /* the consolidated zones keep their old zones' languages, under the new names and an older install's */
  assert(PatchZoneLocaleAllowed("codol_english_locale",PATCH_EN) && !PatchZoneLocaleAllowed("codol_english_locale",PATCH_ZH)); /* LEGACY_ZONE */
@@ -81,7 +81,7 @@ int main(void)
  assert(PatchZoneLocaleAllowed("chinese_locale",PATCH_NATIVE));
  assert(!PatchZoneLocaleAllowed("chinese_locale",PATCH_EN));
  for(int locale=PATCH_EN;locale<=PATCH_NATIVE;locale++) {
-  assert(PatchZoneLocaleAllowed("common",locale));
+  assert(PatchZoneLocaleAllowed("common_extras",locale));
   assert(PatchZoneLocaleAllowed("common_ui_mp",locale));
   assert(PatchZoneLocaleAllowed("common_postgfx_mp",locale));
  }
@@ -114,7 +114,7 @@ int main(void)
   assert(LocaleZoneLanguage("english_locale",lang) && !strcmp(lang,"en"));
   assert(LocaleZoneLanguage("CHINESE_LOCALE",lang) && !strcmp(lang,"zh"));
   assert(LocaleZoneLanguage("fr_locale",lang) && !strcmp(lang,"fr"));
-  assert(!LocaleZoneLanguage("common",lang));
+  assert(!LocaleZoneLanguage("common_extras",lang));
   assert(!LocaleZoneLanguage("_locale",lang));
   assert(!LocaleZoneLanguage("a_b_locale",lang));
   assert(!LocaleZoneLanguage("fr_locale_extra",lang));
@@ -134,7 +134,7 @@ int main(void)
   /* the name-based filter agrees with the two-language one and extends it */
   {
    static const char *const zones[]={"english_locale","chinese_locale","english_ui","chinese_ui_extra",
-    "common","common_ui_mp","voice_ui_mp","codol_zombies_endless","usermaps_patch","infected_cyborg_postgfx_mp"};
+    "common_extras","common_ui_mp","voice_ui_mp","codol_zombies_endless","usermaps_patch","infected_cyborg_postgfx_mp"};
    for(unsigned i=0;i<sizeof(zones)/sizeof(zones[0]);i++) {
     assert(PatchZoneAllowedFor(zones[i],"en")==PatchZoneLocaleAllowed(zones[i],PATCH_EN));
     assert(PatchZoneAllowedFor(zones[i],"zh")==PatchZoneLocaleAllowed(zones[i],PATCH_ZH));
@@ -145,7 +145,7 @@ int main(void)
   assert(PatchZoneAllowedFor("fr_locale","fr"));
   assert(!PatchZoneAllowedFor("fr_locale","en"));
   assert(!PatchZoneAllowedFor("english_locale","fr"));
-  assert(PatchZoneAllowedFor("common","fr"));
+  assert(PatchZoneAllowedFor("common_extras","fr"));
   /* the command line: k33_language, the last valid one */
   {
    const wchar_t *a[]={L"C1.exe",L"+set",L"k33_language",L"zh"};

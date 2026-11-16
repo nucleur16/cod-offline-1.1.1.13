@@ -49,10 +49,10 @@ static int PatchZoneRetired(const char *name)
  * replacement's own replacement (PatchZoneMergedChain), is in the patch folder, so an install that kept the old files never loads an asset twice (two zones with one
  * stringtable/rawfile replace each other), and an install that has only the old names (codol-classic-zz) still
  * loads them. tests/test_zone_packs.py checks this table against zone_packs/. usermaps_patch's strings went to
- * chinese_locale and its tables to common: it is replaced once common is there.
- * Likewise the old party/loading files retain only their non-localize assets in common; their English
+ * chinese_locale and its tables to common_extras: it is replaced once common_extras is there.
+ * Likewise the old party/loading files retain only their non-localize assets in common_extras; their English
  * text moves to english_locale and Chinese text lives in chinese_locale. Keep both old-name mappings
- * to common: complete new packages must skip retained old 000_* English strings before either locale links.
+ * to common_extras: complete new packages must skip retained old 000_* English strings before either locale links.
  * Old-only folders retain the legacy fallback; they are not a qualified bilingual r46 package. */
 static const char *const kPatchZoneMerged[][2]={
  /* the zones as installs before the codol name drop (2026-11) carry them; the first column is a file name there */
@@ -78,7 +78,7 @@ static const char *const kPatchZoneMerged[][2]={
  {"codol_chinese_ui","codol_chinese_locale"}, /* LEGACY_ZONE */
  {"codol_chinese_ui_extra","codol_chinese_locale"}, /* LEGACY_ZONE */
  /* the installed zones renamed by that drop: {old file name, new file name} */
- {"codol_common","common"}, /* LEGACY_ZONE */
+ {"codol_common","common_extras"}, /* LEGACY_ZONE */
  {"codol_common_ui_mp","common_ui_mp"}, /* LEGACY_ZONE */
  {"codol_common_postgfx_mp","common_postgfx_mp"}, /* LEGACY_ZONE */
  {"codol_english_locale","english_locale"}, /* LEGACY_ZONE */

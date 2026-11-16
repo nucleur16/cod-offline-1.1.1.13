@@ -592,7 +592,7 @@ static BOOL PatchUnsignedZones(void)
  *     first entry it links under a name, so their assets win over every stock zone.
  * Files are taken in alphabetical order; each must start IWffu100 version 0x14E. Nothing is held
  * in memory: C1's own streaming reader reads the file on every load.
- * The project's zones are consolidated, one per list and language (build_zones.py, zone_packs/): common (ahead
+ * The project's zones are consolidated, one per list and language (build_zones.py, zone_packs/): common_extras (ahead
  * of code_pre_gfx), common_ui_mp (UI list), common_postgfx_mp and infected_cyborg_postgfx_mp (after
  * code_post_gfx), english_locale / chinese_locale (ahead of code_pre_gfx, one language). An old zone name
  * (patch_locale_policy.h kPatchZoneMerged) is skipped while the zone that replaced it is in the folder.
@@ -652,7 +652,7 @@ static BOOL PatchDirEnabled(void)
 /* English (launch option k33_english). Both languages use the same UI movies (voice_ui_mp, controller_ingame: every
  * text in them is a localize key); the language is which string zones load. English is the patch zones named
  * english* (build_zones.py: english = localized strings, english_font = the Latin glyphs of
- * fonts_ingame.gfx (packed into common since the language can change), english_ui / english_ui_extra = the UI movies' K33UI_* keys, english_zombies_base
+ * fonts_ingame.gfx (packed into common_extras since the language can change), english_ui / english_ui_extra = the UI movies' K33UI_* keys, english_zombies_base
  * = zombies strings, english_usermaps = the usermaps' names); they load ahead of code_pre_gfx, so their strings
  * win over the stock Chinese ones. Chinese is C1's own strings plus the zones named chinese* (the UI movies'
  * K33UI_* keys in Chinese). Only one set loads: C1 holds at most 12000 localize assets, and a name loaded by both sets
@@ -669,7 +669,7 @@ static BOOL PatchDirEnabled(void)
  * into the slots of the names C1 already holds, locale_switch.c LrLink), another language's is not queued at all and
  * loads only when it is chosen, after the shown one was unloaded. Otherwise (a site differs, or only old-style
  * english_* zones are installed) the startup language's zones load ahead of code_pre_gfx as before and the
- * others are skipped. The Latin font movie is in common (every language). Nothing else in the DLL depends on
+ * others are skipped. The Latin font movie is in common_extras (every language). Nothing else in the DLL depends on
  * the language (GBK text input, voice, controller work the same in all). The pure check lists client_shipRetail\<language>\ and main\
  * only, never patch\, so every state passes it. */
 static BOOL g_english = TRUE;

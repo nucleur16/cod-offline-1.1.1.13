@@ -76,7 +76,7 @@ the root is an old committed build, not what the scripts write: they write `buil
      microphone choice), Options > Graphics > Max FPS and Options > Controller (the pad tab), and the usermaps'
      map-select images. Keep every codo.gfx change in one zone: each zone carrying codo.gfx carries the whole movie,
      and the first one loaded wins.
-   - `common.ff`: the in-match movies (the HUD codohud.gfx and the pause menu codoingame.gfx with gamepad focus
+   - `common_extras.ff`: the in-match movies (the HUD codohud.gfx and the pause menu codoingame.gfx with gamepad focus
      navigation), the party modes' tables and rules, the death machine sounds and the usermaps' create-room data.
    - `english_locale.ff` / `chinese_locale.ff`: the strings of each language (see "English").
    - `common_postgfx_mp.ff`: the gamepad button icons drawn in hints (CONTROLLER.md) and the field order menus;
@@ -504,7 +504,7 @@ strings a key resolves to. It is chosen at startup and can be changed while the 
   slots of the names C1's own zones already hold, so a language costs no asset entry beyond the names only it has:
   an English client uses the same 40,342 of C1's 59,999 asset entries at the front end as one without the switch, and 49,210-49,235 in a Killhouse
   match against its 49,222 (measured, docs/LANGUAGE_SWITCH_20261112.md). The Latin font movie
-  (`english_font`) is part of `common` and loads in every language. The DLL has no other
+  (`english_font`) is part of `common_extras` and loads in every language. The DLL has no other
   language-dependent code: GBK text input, voice, controller, usermaps and the frame cap are the same.
 - Test builds (`K33_LOCAL_TESTING=1`): `loc_tableStats [label]` logs entry, localize and memory-stack use;
   `loc_cycle <n>` switches n times; `loc_forceUnload` lets the next switch unload a zone that is not the top of its
@@ -671,7 +671,7 @@ point at: the manifest records each decoded asset's length (`len=`) and the buil
 
 ### Where each zone goes
 `client_shipRetail\patch\` (Kernel33 loads `*_ui_mp` zones ahead of the UI zones, `*_postgfx_mp` zones after
-`code_post_gfx` (permanent, images allowed), the rest ahead of `code_pre_gfx`): common, common_ui_mp,
+`code_post_gfx` (permanent, images allowed), the rest ahead of `code_pre_gfx`): common_extras, common_ui_mp,
 common_postgfx_mp, infected_cyborg_postgfx_mp, english_locale, chinese_locale, plus
 `sound_channels.txt`.
 `client_shipRetail\chinese\` (the 1.1.1.13 install and the CODOL 1.1.1.13 map pack): patch_common_gametype_zm (replaces
@@ -688,7 +688,7 @@ The source zones under `zone_source/` + `zones/` stay as they are (each with its
 
 | installed zone | list | languages | source zones (old installed names) |
 |---|---|---|---|
-| common | ahead of code_pre_gfx | both | 000_party_modes, loading_mode_names, zm_deathmachine_audio, controller_ingame, english_font (the Latin font movie, every language), usermaps_patch (all but its strings) |
+| common_extras | ahead of code_pre_gfx | both | 000_party_modes, loading_mode_names, zm_deathmachine_audio, controller_ingame, english_font (the Latin font movie, every language), usermaps_patch (all but its strings) |
 | common_ui_mp | ahead of the UI zones | both | voice_ui_mp, usermaps_ui_mp |
 | common_postgfx_mp | after code_post_gfx | both | field_orders_postgfx_mp, controller_glyphs_postgfx_mp, hud_styles_postgfx_mp, survival_hud_postgfx_mp |
 | english_locale | last of the code_post_gfx list (ahead of code_pre_gfx when a C1 site differs); unloaded and loaded on a switch | `k33_language en` | english, english_ui, english_ui_extra, english_usermaps, english_zombies_base, english_hud_styles |
