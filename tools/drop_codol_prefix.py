@@ -15,6 +15,13 @@ and writes src/dvar_renames.h, from which c1game.c moves a value saved under an 
     python tools/drop_codol_prefix.py --check    change nothing; exit 1 when a mapped name is still present or
                                                  a "codol" name in the code is neither mapped nor listed in KEEP
     python tools/drop_codol_prefix.py --report   print every remaining "codol" name in the code with its reason
+    python tools/drop_codol_prefix.py --tree DIR [--check]
+                                                 apply (or check) GSC_TABLE, the console names the GSC scripts read
+                                                 or set, in another checkout: the GSC tree (13-rawfiles)
+
+Step 3 (GSC_TABLE) renames the console names with "codol" that the GSC scripts read or set (scr_codol_botfill ->
+scr_botfill, codol_zoneType -> sv_zoneType) on all three sides: here, in the GSC tree (--tree) and in the server
+(its rename_prefix_map.json config.gsc_names, which --check compares with GSC_TABLE once server/sh1x carries it).
 
 Deterministic and idempotent: the table maps whole names only (no new name contains an old one), so a second run
 changes nothing. The rules:
@@ -159,11 +166,42 @@ CLIENT_STRINGS = {
 # The server's rule: drop "codol_". Every name of src/console/sh1x_cmds.h that starts with codol_, plus the +set
 # names p2p.c passes the host. (codol_dev_cheats -> dev_cheats is the server's existing alias of the same command.)
 SERVER_CLASH = {"codol_voiceDebug": "sv_voiceDebug"}   # voiceDebug is a C1 dvar name; the server took sv_voiceDebug
-# The server repository keeps these (tools/rename_prefix_map.json "kept"): the GSC tree (bin/home/codol_rawfiles, a
-# separate repository) reads them, or, for codol_relayIdentityPath, the server never registers it.
-SERVER_KEPT = ("codol_zoneType", "codol_sessionMap", "codol_quickPlay", "codol_playlistId", "codol_tracePace",
-               "codol_relayIdentityPath", "scr_codol_bots", "scr_codol_botfill", "scr_codol_botmax",
-               "scr_codol_botfill_testhumans")
+# ---- step 3: console names with "codol" that the GSC scripts read or set ------------------------------------------
+# (old, new, why). The GSC tree (the 13-rawfiles repository, the server's bin/home/codol_rawfiles and its native
+# overlay scripts/codol), the server and this client all spell them; each of the three runs the same table:
+#   * this repository: the code, the docs (step 1 rules), and any GSC/menu/config text under zones/;
+#   * the GSC tree:    python tools/drop_codol_prefix.py --tree <rawfiles checkout> [--check] (case-insensitive: GSC
+#                      and dvar names are), every tracked .gsc/.csc/.csv/.cfg/.txt/.menu/.json file, comments too;
+#   * the server:      its tools/rename_prefix_map.json "config.gsc_names" holds the same pairs (--check compares).
+# GSC script dvars keep scr_ and lose "codol_"; the others take the IW prefix of what they do. Every new name was
+# checked against C1's dvars (src/c1_dvars.h), the server's registered names, the GSC trees and the stock IW3/IW4/
+# IW5/T5 scripts: scr_usekillstreak is a stock IW4 _dev.gsc dvar, so the bots' one became scr_botusekillstreak.
+GSC_TABLE = [
+    # server session state (the server and the lobby set them; the scripts, the server and the client read them)
+    ("codol_zoneType", "sv_zoneType", "asset category of the match: mp, coop, zm or survival"),
+    ("codol_sessionMap", "sv_sessionMap", "the playlist/session spelling of the map (coop_training_mp_killhouse_sh)"),
+    ("codol_playlistId", "sv_playlistId", "the master-selected playlist"),
+    ("codol_quickPlay", "sv_quickPlay", "a Quick Play match"),
+    ("codol_relayIdentityPath", "sv_relayIdentityPath", "+set by p2p.c for the hosted server"),
+    ("codol_maintenance_banner", "sv_maintenanceBanner", "operator text the scripts show as a banner"),
+    # AI / actors (the server registers it)
+    ("codol_tracePace", "ai_tracePace", "per-frame T5 path pace trace of one actor"),
+    # dog AI developer dvars (scripts only)
+    ("codol_dogAttackTest", "scr_dogAttackTest", "dog attack test verbs"),
+    ("codol_dogAttackLog", "scr_dogAttackLog", "dog attack log"),
+    ("codol_dogAttackDiag", "scr_dogAttackDiag", "dog lunge decision trace (named in a server comment)"),
+    ("codol_dogsTest", "scr_dogsTest", "MP dogs test verbs"),
+    ("codol_dogsNoPathNodes", "scr_dogsNoPathNodes", "MP dogs without path nodes"),
+    # GSC script dvars: scr_codol_x -> scr_x
+    ("scr_codol_usekillstreak", "scr_botusekillstreak", "scr_usekillstreak is a stock IW4 _dev.gsc dvar"),
+] + [("scr_codol_" + n, "scr_" + n, "GSC script dvar") for n in """
+    bots botfill botmax botfill_testhumans botkillstreaks bot_objective bot_objective_debug botequipment devbot_target
+    weaptest traptest topplayers topplayers_trace topplayers_hold topplayers_dolly topplayers_nowalk scavtest ridetest
+    powertest perktest pathtest gibtest fftest factorytest equiptest chtest breathtest boxtest blockertest audiotest
+    perklog aar_trace nuke_live helilog factory_soundlog""".split()]
+GSC_NAMES = {old: new for old, new, _why in GSC_TABLE}
+# the client's language switch alias (a +set on the command line creates a dvar of that name)
+CLIENT_SWITCHES = {"codol_patchlang": "loc_patchLang"}
 SERVER_NAMES_OLD = """
 codol_actorcontact codol_admissionPath codol_admissionRequired codol_animTrace codol_animlistMask
 codol_animmodelprobe codol_autoUnstuck codol_autoUnstuckInput codol_autoUnstuckMs codol_bindprofile
@@ -191,7 +229,7 @@ codol_zonePath
 codol_oneShotMatch codol_pmemMegs codol_scriptPath codol_scriptOverlay
 codol_scriptNativeOverlay
 """.split()
-SERVER_NAMES = {old: SERVER_CLASH.get(old, old[len("codol_"):]) for old in SERVER_NAMES_OLD}
+SERVER_NAMES = {old: SERVER_CLASH.get(old, old[len("codol_"):]) for old in SERVER_NAMES_OLD if old not in GSC_NAMES}
 
 # ---- step 2: Kernel33's k33 console names -> IW engine prefixes by function ----------------------------------
 # (old, new, kind, why). kind: dvar (registered; a saved value of the old name is migrated, src/dvar_renames.h),
@@ -308,11 +346,13 @@ SERVER_REFS = {
     "CODOL_VoicePacket": "VoicePacket",
     "CODOL_VoteArgIsSafe": "VoteArgIsSafe",
     "CODOL_VoteNameIsSafe": "VoteNameIsSafe",
+    "CODOL_NetworkAdmission": "NetworkAdmission",
+    "CODOL_RefreshServerPlayerNames": "RefreshServerPlayerNames",
 }
 IW_DVARS = sorted((old, new) for old, new, kind, _why in IW_TABLE if kind == "dvar")
 
 MAPPING = {}
-for table in (C_NAMES, CLIENT_DVARS, CLIENT_STRINGS, SERVER_NAMES, IW_NAMES, SERVER_REFS):
+for table in (C_NAMES, CLIENT_DVARS, CLIENT_STRINGS, SERVER_NAMES, IW_NAMES, SERVER_REFS, GSC_NAMES, CLIENT_SWITCHES):
     for old, new in table.items():
         assert old not in MAPPING, old
         MAPPING[old] = new
@@ -330,6 +370,8 @@ assert not set(MAPPING.values()) & set(MAPPING), "a new name is also an old one"
 # (any case) in the code; a word followed by a file extension is reported as a file name of another repository
 # or of an install. Patch zone names are also taken from zones/, zone_source/ and zone_packs/ (see zone_names()).
 REASON_ZONE = "patch zone / fastfile name (a file name in the installs, loaded by name)"
+REASON_LEGACY_ZONE = ("an old install's zone name on a line marked LEGACY_ZONE (kPatchZoneMerged, the old-name rules "
+                      "and their tests, a zone's origin file): what an existing install still carries")
 REASON_ZONE_TEST = "a zone name a test or policy feeds the zone-name rules (codol_<lang>_locale family)"
 REASON_MOVIE = "dvar name compiled into the shipped UI movies (codo.gfx / codoingame.gfx tags under zones/)"
 REASON_SERVER_REPO = "file, function or folder of the sh1x server repository (renamed there, not here)"
@@ -338,14 +380,10 @@ REASON_PYLOBBY = "environment switch of the external Python lobby (CODOL-EMU), n
 REASON_EXTERNAL = "external tool or assembly name (CODOL-AssetExplorer, codol-classic, Python lobby, Discord)"
 REASON_LOCALIZE = "localize key inside the shipped zones' localize.str / stringtables"
 REASON_INSTALL = "file name inside existing installs"
-REASON_COMPAT = "command-line alias kept for existing launchers (patch_locale_policy.h)"
 REASON_PROSE = "product name in prose (CoDOL = the game, Call of Duty Online)"
 REASON_HISTORY = "removed online feature, named only in a comment"
 REASON_PATH = "folder name on disk (an install or build folder: CODOL Builds, CODOL_2.6.9.7, a local CODOL server tree)"
 REASON_PENDING = "server GSC dvar with codol inside the name (not a codol_ prefix); follows the server repo"
-REASON_GSC = ("the server keeps it: the GSC scripts (bin/home/codol_rawfiles, a separate repository) read it, or "
-              "the server never registers it (codol_relayIdentityPath)")
-
 KEEP = {
     # names compiled into the UI movies
     "codol_borderless": REASON_MOVIE, "codol_quick_native_room_context": REASON_MOVIE,
@@ -355,21 +393,17 @@ KEEP = {
     "codol_theatre_count": REASON_MOVIE, "codol_theatre_id_i": REASON_MOVIE, "codol_theatre_open": REASON_MOVIE,
     "codol_theatre_playback": REASON_MOVIE, "codol_theatre_": REASON_MOVIE, "codol_favorites_": REASON_MOVIE,
     # zone-name families in code and tests
-    "codol_": REASON_ZONE, "codol_english": REASON_ZONE, "codol_chinese": REASON_ZONE,
-    "codol_english_": REASON_ZONE, "codol_zombies_endless": REASON_ZONE,
+    "codol_": REASON_ZONE, "codol_zombies_endless": REASON_ZONE,
     "codol_en_locale": REASON_ZONE_TEST, "codol_fr_locale": REASON_ZONE_TEST, "codol_de_locale": REASON_ZONE_TEST,
     "codol_a_b_locale": REASON_ZONE_TEST, "codol__locale": REASON_ZONE_TEST, "codol_native_locale": REASON_ZONE_TEST,
     "xcodol_fr_locale": REASON_ZONE_TEST, "codol_fr_locale_extra": REASON_ZONE_TEST,
     "codol_chinese_extra": REASON_ZONE_TEST, "codol_english_ui_extra2": REASON_ZONE_TEST,
     "codol_loading_mode_names_extra": REASON_ZONE_TEST, "codol_zombies_endless_extra": REASON_ZONE_TEST,
     "codol_englishui": REASON_ZONE_TEST, "codol_chineseui": REASON_ZONE_TEST,
-    "mp_codol_weapons": REASON_ZONE, "mp_codol_weapons_postgfx_mp": REASON_ZONE,
-    "gen_mp_codol_weapons": "producer of the mp_codol_weapons zone, named after it",
     "codologin": "Scaleform movie name inside the shipped zones (codologin.gfx)",
     # sh1x server repository (files, functions, folders)
     "codol_rawfiles": REASON_SERVER_REPO, "CODOL_DevCheats": REASON_SERVER_REPO,
-    **{name: REASON_GSC for name in SERVER_KEPT},
-    "codol_english_font": REASON_ZONE, "CODOL_C1_VIRTUALIZED_20260928": REASON_SERVER_REPO,
+    "CODOL_C1_VIRTUALIZED_20260928": REASON_SERVER_REPO,
     "CODOL_C1_MOVEMENT_LAYOUT": REASON_SERVER_REPO,
     # launcher-managed session protocol
     "CODOL_VERIFIED_SCRIPTS_REQUIRED": REASON_LAUNCHER, "CODOL_VERIFIED_SCRIPT_PIPE": REASON_LAUNCHER,
@@ -402,7 +436,6 @@ KEEP = {
         "CODOL_LOADING_MODE_SHRP", "CODOL_LOADING_MODE_")},
     # files in installs, compatibility, prose, history
     "codol_video_mode": REASON_INSTALL,
-    "codol_patchlang": REASON_COMPAT,
     "CoDOL": REASON_PROSE, "CODOL": REASON_PROSE, "codol": REASON_PROSE, "sCODOL": REASON_PATH,
     "CODOL_ZOMBIES_ENDLESS": REASON_ZONE_TEST, "CODOL_LOADING_MODE_NAMES": REASON_ZONE_TEST,
     "CODOL_CHINESE_LOCALE": REASON_ZONE_TEST,
@@ -448,16 +481,60 @@ def rename(text):
     return _PATTERN.subn(lambda m: MAPPING[m.group(1)], text)
 
 
+SERVER_VOCAB = dict(SERVER_NAMES, **GSC_NAMES)
+
+
 def server_name(name):
     """A name the server source registers, in the client's (post-rename) vocabulary."""
-    return SERVER_NAMES.get(name, name)
+    return SERVER_VOCAB.get(name, name)
 
 
 def server_text(text):
     """Server source text with its codol_ command/dvar names spelled as the client spells them."""
-    pattern = re.compile(LEFT + '(' + '|'.join(re.escape(k) for k in sorted(SERVER_NAMES, key=lambda s: (-len(s), s)))
+    pattern = re.compile(LEFT + '(' + '|'.join(re.escape(k) for k in sorted(SERVER_VOCAB, key=lambda s: (-len(s), s)))
                          + ')' + RIGHT)
-    return pattern.sub(lambda m: SERVER_NAMES[m.group(1)], text)
+    return pattern.sub(lambda m: SERVER_VOCAB[m.group(1)], text)
+
+
+# ---- step 3 on another checkout: the GSC tree -------------------------------------------------------------------
+TREE_SUFFIXES = (".gsc", ".csc", ".gsh", ".csv", ".cfg", ".txt", ".menu", ".inc", ".json", ".md", ".atr", ".script")
+_GSC_PATTERN = re.compile(r'(?<![A-Za-z0-9_])(' + '|'.join(re.escape(k) for k in sorted(GSC_NAMES, key=lambda s: (-len(s), s)))
+                          + r')(?![A-Za-z0-9_])(?!\.[A-Za-z])', re.I)
+_GSC_LOWER = {k.lower(): v for k, v in GSC_NAMES.items()}
+
+
+def gsc_rename(text):
+    """text with every GSC_TABLE name (any case) replaced; (new text, number of replacements)."""
+    return _GSC_PATTERN.subn(lambda m: _GSC_LOWER[m.group(1).lower()], text)
+
+
+def tree(root, check_only):
+    """Apply (or, check_only, count) GSC_TABLE in the tracked text files of another checkout (a GSC tree)."""
+    root = pathlib.Path(root).resolve()
+    out = subprocess.run(["git", "-C", str(root), "ls-files", "-z"], capture_output=True, check=True).stdout
+    total, changed = 0, []
+    for rel in sorted(r for r in out.decode("utf-8").split("\0") if r):
+        path = root / rel
+        if not rel.lower().endswith(TREE_SUFFIXES) or not path.is_file():
+            continue
+        data = path.read_bytes()
+        if b"\0" in data:
+            continue
+        try:
+            text = data.decode("utf-8")
+        except UnicodeDecodeError:
+            text = data.decode("latin-1")
+        new, n = gsc_rename(text)
+        if n:
+            total += n
+            changed.append((rel, n))
+            if not check_only:
+                path.write_bytes(encode(new, data))
+    for rel, n in changed:
+        print("%5d  %s" % (n, rel))
+    print("%d %s in %d files of %s" % (total, "name(s) still to replace" if check_only else "replacements", len(changed),
+                                       root))
+    return 1 if check_only and total else 0
 
 
 def tracked_files():
@@ -515,7 +592,10 @@ def remaining(files):
         for m in WORD.finditer(text):
             word = m.group(0)
             after = text[m.end():m.end() + 2]
-            if word in MAPPING:
+            line = text[text.rfind(chr(10), 0, m.start()) + 1:text.find(chr(10), m.end()) % (len(text) + 1)]
+            if word in ZONE_WORDS:
+                reason = REASON_LEGACY_ZONE if LEGACY_MARK in line else "STILL MAPPED (zone name)"
+            elif word in MAPPING:
                 reason = "STILL MAPPED (not replaced: inside a longer word or a file name?)"
                 if len(after) == 2 and after[0] == "." and after[1].isalpha():
                     reason = "file name (another repository or an install)"
@@ -616,6 +696,15 @@ def apply():
             old_texts[rel], new_texts[rel] = text, new
             total += n
     changed += apply_menus()
+    zone_texts, moved = apply_zones()
+    for rel, (old, new) in zone_texts.items():
+        if rel not in new_texts:
+            old_texts[rel] = old
+        new_texts[rel] = new
+        if rel not in [r for r, _ in changed]:
+            changed.append((rel, zone_text(old)[1]))
+    for rel, new_rel in sorted(moved.items()):
+        print("moved  %s -> %s" % (rel, new_rel))
     header = renames_header()
     if not (ROOT / GENERATED).is_file() or (ROOT / GENERATED).read_bytes() != header:
         (ROOT / GENERATED).write_bytes(header)
@@ -623,7 +712,7 @@ def apply():
     for rel, n in changed:
         print("%5d  %s" % (n, rel))
     print("%d replacements in %d files" % (total + sum(n for r, n in changed if r not in old_texts), len(changed)))
-    if not changed:
+    if not changed and not moved:
         return 0
     # the generated console table: the new names sort differently
     if (ROOT / "server" / "sh1x" / "src" / "g_cmds.c").is_file():
@@ -636,6 +725,11 @@ def apply():
         print("note: server/sh1x is not initialised; run python scripts/gen_sh1x_cmds.py once it is")
     # source digests pinned in tests/
     pairs = digest_pairs(old_texts, new_texts, helpers)
+    for rel in old_texts:   # whole-file sha256 pins too (a zone source file's digest)
+        data = (ROOT / rel).read_bytes()
+        old_raw = hashlib.sha256(encode(old_texts[rel], data)).hexdigest()
+        if old_raw != hashlib.sha256(data).hexdigest():
+            pairs.setdefault(old_raw, hashlib.sha256(data).hexdigest())
     repinned_tests = []
     for rel in files:
         if not rel.startswith("tests/"):
@@ -647,11 +741,13 @@ def apply():
         if new != text:
             (ROOT / rel).write_bytes(encode(new, data))
             repinned_tests.append(rel)
-    # ui_baseline.json "files"
+    # ui_baseline.json "files" (its path keys were renamed with the files the zone step moved)
+    _, pins = baseline_pins()
     pin_text = path.read_text(encoding="utf-8")
     repinned = []
+    origin = {new_rel: rel for rel, new_rel in moved.items()}
     for rel in sorted(set(r for r, _ in changed) | set(repinned_tests)):
-        if rel in pins and before.get(rel) == pins[rel]:
+        if rel in pins and before.get(origin.get(rel, rel)) == pins[rel]:
             new_hash = hashlib.sha256((ROOT / rel).read_bytes()).hexdigest()
             old_line = '"%s": "%s"' % (rel, pins[rel])
             if new_hash != pins[rel] and pin_text.count(old_line) == 1:
@@ -752,6 +848,131 @@ def apply_menus():
     return changed
 
 
+# ---- step 4: the fastfile (zone) names ---------------------------------------------------------------------------
+# (old, new, why). "codol" is implied by the install, so it is dropped. No new name is a stock 1.1.1.13 zone
+# (client_shipRetail\chinese: common_mp, common_gametype_*, ui_mp, patch_*, localized_*, mp_<map>, zm_<map> ...), and
+# the load-list suffixes kernel33.c PatchZoneStage reads (_ui_mp, _postgfx_mp) and the server's mp_*.ff rule stay.
+# The alphabetical order of the installed zones in each load list is unchanged except zm_m1911_arms_diag, which now
+# sorts after mp_weapons (they share no asset name).
+ZONE_TABLE = [
+    # installed (client_shipRetail\patch): the consolidated packs and the standalone zones
+    ("codol_common", "common", "pack ahead of code_pre_gfx"),
+    ("codol_common_ui_mp", "common_ui_mp", "pack of the UI list"),
+    ("codol_common_postgfx_mp", "common_postgfx_mp", "pack after code_post_gfx"),
+    ("codol_english_locale", "english_locale", "English strings (one language)"),
+    ("codol_chinese_locale", "chinese_locale", "Chinese strings (one language)"),
+    ("codol_infected_cyborg_postgfx_mp", "infected_cyborg_postgfx_mp", "standalone (C#-written)"),
+    ("codol_zm_m1911_arms_diag", "zm_m1911_arms_diag", "standalone"),
+    ("mp_codol_weapons", "mp_weapons", "standalone; the server mounts mp_*.ff"),
+    ("mp_codol_weapons_postgfx_mp", "mp_weapons_postgfx_mp", "standalone; the server mounts mp_*.ff"),
+    # source zones (zones/, zone_source/): parts of the packs; old installs carry them under the old names
+    ("000_codol_party_modes", "000_party_modes", "part of common / english_locale"),
+    ("codol_english", "english", "part of english_locale; also the English zones' name prefix"),
+    ("codol_english_font", "english_font", "part of common"),
+    ("codol_english_ui", "english_ui", "part of english_locale"),
+    ("codol_english_ui_extra", "english_ui_extra", "part of english_locale"),
+    ("codol_english_usermaps", "english_usermaps", "part of english_locale"),
+    ("codol_english_zombies_base", "english_zombies_base", "part of english_locale"),
+    ("codol_english_hud_styles", "english_hud_styles", "part of english_locale"),
+    ("codol_chinese_ui", "chinese_ui", "part of chinese_locale"),
+    ("codol_chinese_ui_extra", "chinese_ui_extra", "part of chinese_locale"),
+    ("codol_chinese_hud_styles", "chinese_hud_styles", "part of chinese_locale"),
+    ("codol_field_orders_postgfx_mp", "field_orders_postgfx_mp", "part of common_postgfx_mp"),
+    ("codol_loading_mode_names", "loading_mode_names", "part of common / english_locale"),
+    ("codol_zm_deathmachine_audio", "zm_deathmachine_audio", "part of common"),
+]
+ZONE_WORDS = {old: new for old, new, _why in ZONE_TABLE}
+ZONE_WORDS.update({
+    "codol_chinese": "chinese",                  # the Chinese zones' name prefix (codol_chinese* -> chinese*)
+    "codol_english_": "english_",                # the same prefix spelled with its underscore
+    "gen_mp_codol_weapons": "gen_mp_weapons",    # the mp_weapons zone's table producer, named after it
+})
+# A line holding this word keeps its old zone names: what an existing install still carries (patch_locale_policy.h
+# kPatchZoneMerged, the legacy name rules, their tests, a zone's origin file in another install).
+LEGACY_MARK = "LEGACY_ZONE"
+# Never rewritten: the sh1x server (its own repository runs its own table), build output, the pinned review records
+# of the UI movies (tools/*-composition, tools/*-producer, tools/theatre-retirement, docs/baselines) and the movies'
+# own sources (zones/**/*.gfxpatch: a change there is a new composition stage of the movie).
+ZONE_NEVER = ("server/", "build/", "third_party/", "docs/baselines/", "tools/theatre-retirement/")
+ZONE_NEVER_PARTS = ("-composition/", "-producer/", ".gfxpatch/")
+_ZONE_PATTERN = re.compile(r'(?<![A-Za-z0-9_])(' + '|'.join(re.escape(k) for k in sorted(ZONE_WORDS, key=lambda s: (-len(s), s)))
+                           + r')(?![A-Za-z0-9_])')
+
+
+def zone_scope():
+    """Tracked text files the zone step rewrites, and tracked paths it may move."""
+    files = []
+    for rel in all_tracked():
+        if rel.startswith(ZONE_NEVER) or any(p in rel for p in ZONE_NEVER_PARTS) or (ROOT / rel).resolve() == SELF:
+            continue
+        files.append(rel)
+    return files
+
+
+def zone_text(text):
+    """text with the zone names replaced on every line that does not carry LEGACY_MARK; (new text, count)."""
+    if LEGACY_MARK not in text:
+        return _ZONE_PATTERN.subn(lambda m: ZONE_WORDS[m.group(1)], text)
+    out, total = [], 0
+    for line in text.splitlines(True):
+        if LEGACY_MARK in line:
+            out.append(line)
+            continue
+        new, n = _ZONE_PATTERN.subn(lambda m: ZONE_WORDS[m.group(1)], line)
+        out.append(new)
+        total += n
+    return "".join(out), total
+
+
+def zone_path(rel):
+    """rel with every path component (or the stem of the last one) that is an old zone name renamed."""
+    parts = rel.split("/")
+    for i, p in enumerate(parts):
+        stem, dot, ext = p.partition(".")
+        if stem in ZONE_WORDS and (i < len(parts) - 1 or dot):
+            parts[i] = ZONE_WORDS[stem] + dot + ext
+        elif p in ZONE_WORDS:
+            parts[i] = ZONE_WORDS[p]
+    return "/".join(parts)
+
+
+def zone_pending():
+    """[(rel, new rel, replacements)] the zone step would still change."""
+    out = []
+    for rel in zone_scope():
+        n = 0
+        if not rel.endswith(BINARY_SUFFIXES):
+            data, text = read(rel)
+            if text is not None:
+                n = zone_text(text)[1]
+        new_rel = zone_path(rel)
+        if n or new_rel != rel:
+            out.append((rel, new_rel, n))
+    return out
+
+
+def apply_zones():
+    """Move the zone sources and rewrite the zone names. {new rel: (old text, new text)} of the rewritten files and
+    {old rel: new rel} of the moved ones."""
+    texts, moved = {}, {}
+    for rel, new_rel, n in zone_pending():
+        if new_rel != rel:
+            (ROOT / new_rel).parent.mkdir(parents=True, exist_ok=True)
+            subprocess.run(["git", "-C", str(ROOT), "mv", rel, new_rel], check=True)
+            moved[rel] = new_rel
+        if n:
+            data, text = read(new_rel)
+            new, _ = zone_text(text)
+            (ROOT / new_rel).write_bytes(encode(new, data))
+            texts[new_rel] = (text, new)
+    for parent in sorted({str(pathlib.PurePosixPath(r).parent) for r in moved}, key=len, reverse=True):
+        path = ROOT / parent
+        while path != ROOT and path.is_dir() and not any(path.iterdir()):
+            path.rmdir()
+            path = path.parent
+    return texts, moved
+
+
 def length_hazards(files):
     """C code that steps over a renamed string literal by the OLD name's length (q += 14 after
     strstr(p, "k33_survival")): every renamed name changes length, so such a step must be sizeof("...") - 1."""
@@ -786,6 +1007,10 @@ def check(report):
     for rel in menu_files():
         _, text = read(rel)
         pending += len(_IW_PATTERN.findall(text))
+    for rel, new_rel, n in zone_pending():
+        print("zone name(s) still to rename: %s%s%s" % (rel, " -> " + new_rel if new_rel != rel else "",
+                                                      " (%d in the text)" % n if n else ""))
+        pending += n + (new_rel != rel)
     conflicts = movie_conflicts()
     for old, rel in conflicts:
         print("step-2 name spelled by a UI movie (move it to KEEP_K33): %s in %s" % (old, rel))
@@ -805,14 +1030,34 @@ def check(report):
                 by_reason.setdefault(reason, []).append("%s (%d)" % (word, n))
         for reason in sorted(by_reason):
             print("%s:\n    %s" % (reason, ", ".join(sorted(by_reason[reason], key=str.lower))))
+    gsc_mismatch = server_gsc_mismatch()
     print("%d mapped name(s) still to replace; %d unclassified codol/k33 word(s) in the code" % (pending, len(bad)))
     for word, reasons in sorted(bad.items()):
         print("    %s %s" % (word, reasons))
-    return 1 if pending or bad or hazards or conflicts or stale_header else 0
+    return 1 if pending or bad or hazards or conflicts or stale_header or gsc_mismatch else 0
+
+
+def server_gsc_mismatch():
+    """True when server/sh1x's rename table (config.gsc_names) differs from GSC_TABLE (absent: a note only)."""
+    path = ROOT / "server" / "sh1x" / "tools" / "rename_prefix_map.json"
+    if not path.is_file():
+        print("note: server/sh1x is not initialised; its config.gsc_names was not compared")
+        return False
+    names = json.loads(path.read_text(encoding="utf-8")).get("config", {}).get("gsc_names")
+    if names is None:
+        print("note: the pinned server/sh1x has no config.gsc_names yet (bump it to the server's GSC rename)")
+        return False
+    if names != GSC_NAMES:
+        print("server/sh1x config.gsc_names differs from GSC_TABLE: %s" %
+              sorted(set(names.items()) ^ set(GSC_NAMES.items())))
+        return True
+    return False
 
 
 if __name__ == "__main__":
     args = sys.argv[1:]
+    if "--tree" in args:
+        sys.exit(tree(args[args.index("--tree") + 1], "--check" in args))
     if "--check" in args or "--report" in args:
         sys.exit(check("--report" in args))
     sys.exit(apply())

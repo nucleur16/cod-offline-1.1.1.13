@@ -179,7 +179,7 @@
     "src/kernel/kernel_video_mode.c": "0fbb16f81b1602405d8c7b678292d62ef9821cdc5918fd6030c78445ef30d0a5",
     "src/kernel33.c": "16140cd2b338fed4f3aba472686e0b10908be7deba5dbe4f3aff1f0e9319e459",
     "src/minigun_pair_native.c.inc": "ec3341020ca0afb09fe21e265867240ec218dfc7c5f959f8d0be65904a33ce33",
-    "src/patch_locale_policy.h": "5cb6b3534832a46ea93be9a65d7393aaa58dfe4dd8e4e62c0b4fe23f448fb580",
+    "src/patch_locale_policy.h": "836eaa51d74c6ff7e5482d617e0a900ed7d3b006fa4a4817e335fef754922528",
     "src/production_profile.h": "7ace08df588d0f224e1c5e6d6580cae7b51568fa790959b8d5a2f2892493955c",
     "src/rooms/quick_start_gate.c": "7bc579e2e19ddbf9709878cdb1540cf9c9c29ff66ab10f94105750d260c0c224",
     "src/rooms/quick_start_guards.h": "ef5f78630dbee8a384cb2d820f30f10e9d401d4c4c4b1b80a190ed9553e8af95",

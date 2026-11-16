@@ -484,7 +484,7 @@ strings a key resolves to. It is chosen at startup and can be changed while the 
   and any other `codol_<name>_locale.ff` put into `client_shipRetail\patch\` is the language `<name>`. `english` /
   `chinese` are accepted for `en` / `zh`.
 - **At startup** (`src/patch_locale_policy.h`, `StartupLanguage`): the last valid `+set k33_language <name>`; else
-  `+set k33_english 0|1` (the last one on the line; any value but `0`/`1` is ignored) or `+set codol_patchlang en|zh`
+  `+set k33_english 0|1` (the last one on the line; any value but `0`/`1` is ignored) or `+set loc_patchLang en|zh`
   (an explicit valid `k33_english` wins over it, regardless of order); else the saved choice; else English. A language
   without a zone in the patch folder starts as English, or as Chinese when English is not installed either.
 - **Saved**: `k33_language` is an archived dvar, so C1 writes `seta k33_language "<name>"` to `players\config_mp.cfg`.
@@ -555,7 +555,7 @@ Other notes:
 - 000_codol_party_modes and codol_loading_mode_names name modes C1 does not have (in English, with no Chinese text to
   fall back to) and load in both languages.
 - `Kernel33.log` says which: `language: "en" (the default)` (or `+set k33_language`, `+set k33_english /
-  codol_patchlang`, `the saved k33_language`), then `english: on (k33_english 1): 1 codol_english* zone(s) queued`,
+  loc_patchLang`, `the saved k33_language`), then `english: on (k33_english 1): 1 codol_english* zone(s) queued`,
   `english: off (k33_english 0): 0 codol_english* zone(s) skipped, 1 codol_chinese* zone(s) queued` (the English zone
   is not skipped but queued after code_post_gfx as a language to switch to), or, with English on and no
   English zone installed, `english: on (k33_english 1), but no codol_english*.ff zone is in the patch folder: the

@@ -658,7 +658,7 @@ static BOOL PatchDirEnabled(void)
  * K33UI_* keys in Chinese). Only one set loads: C1 holds at most 12000 localize assets, and a name loaded by both sets
  * would take two. The language the client starts in is decided once, here, before the game runs:
  *     +set k33_language <name>   the language of codol_<name>_locale.ff (en = codol_english*, zh = codol_chinese*)
- *     +set k33_english 1 | 0     the older spelling of en | zh (and +set codol_patchlang en | zh)
+ *     +set k33_english 1 | 0     the older spelling of en | zh (and +set loc_patchLang en | zh)
  *     seta k33_language "<name>" the saved choice in players\config_mp.cfg, when the command line names none
  *     nothing                    English
  * (patch_locale_policy.h StartupLanguage). C1 execs config_mp.cfg before any of this and applies no +set to a
@@ -826,7 +826,7 @@ static void LoadPatchDir(void)
                 }
             }
         int at = LanguageListFind(g_langs, g_langCount, g_lang);
-        static const char *const kSource[] = { "the default", "+set k33_language", "+set k33_english / codol_patchlang",
+        static const char *const kSource[] = { "the default", "+set k33_language", "+set k33_english / loc_patchLang",
                                                "the saved k33_language" };
         if (strcmp(g_lang, "zh") != 0 && (at < 0 || !(g_langZones >> at & 1u))) {
             /* no zone of that language: English when it is installed, else C1's own text (LogEnglish says so for en) */

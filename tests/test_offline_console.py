@@ -100,7 +100,7 @@ class GeneratedServerTable(unittest.TestCase):
         for name in ("cmdlist", "cvarlist", "dev_cheats", "dev_clients", "dev_player",
                      "dev_clientcmd", "sh1x_status", "status"):
             self.assertIn(name, cmds)
-        for name in ("sv_cheats", "sv_botStop", "devServer", "g_gravity", "scr_codol_bots"):
+        for name in ("sv_cheats", "sv_botStop", "devServer", "g_gravity", "scr_bots"):
             self.assertIn(name, dvars)
 
 

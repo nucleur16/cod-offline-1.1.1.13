@@ -7,7 +7,7 @@ static int AsciiWideEqual(const wchar_t *a,const wchar_t *b)
  while(*a && *b) { wchar_t x=*a++,y=*b++; if(x>=L'A'&&x<=L'Z')x+=32;if(y>=L'A'&&y<=L'Z')y+=32;if(x!=y)return 0; }
  return *a==*b;
 }
-/* k33_english is the canonical startup-only switch. Keep codol_patchlang for
+/* k33_english is the canonical startup-only switch. Keep loc_patchLang for
  * existing launchers. The last valid canonical switch wins over the alias;
  * an absent or malformed canonical value does not erase a valid choice. */
 static enum PatchLanguage PatchLanguageFromArgv(int argc,const wchar_t *const *argv)
@@ -25,7 +25,7 @@ static enum PatchLanguage PatchLanguageFromArgv(int argc,const wchar_t *const *a
    }
    continue;
   }
-  if(!AsciiWideEqual(argv[i+1],L"codol_patchlang"))continue;
+  if(!AsciiWideEqual(argv[i+1],L"loc_patchLang"))continue;
   language=PATCH_NATIVE;
   if(i+2<argc) {
    if(AsciiWideEqual(argv[i+2],L"en"))language=PATCH_EN;
@@ -192,13 +192,13 @@ static int LanguageFromArgv(int argc,const wchar_t *const *argv,char out[LANG_NA
  }
  return found;
 }
-/* True when the command line carries one of the older selectors (a valid k33_english, or any codol_patchlang). */
+/* True when the command line carries one of the older selectors (a valid k33_english, or any loc_patchLang). */
 static int PatchLanguageAliasSeen(int argc,const wchar_t *const *argv)
 {
  int i;
  for(i=1;i+1<argc;i++) {
   if(!AsciiWideEqual(argv[i],L"+set"))continue;
-  if(AsciiWideEqual(argv[i+1],L"codol_patchlang"))return 1;
+  if(AsciiWideEqual(argv[i+1],L"loc_patchLang"))return 1;
   if(AsciiWideEqual(argv[i+1],L"k33_english") && i+2<argc &&
      (AsciiWideEqual(argv[i+2],L"0") || AsciiWideEqual(argv[i+2],L"1")))return 1;
  }
@@ -233,8 +233,8 @@ static int LanguageFromConfig(const char *text,size_t len,char out[LANG_NAME_MAX
  }
  return found;
 }
-/* The language a client starts in: "+set k33_language <name>", else the older k33_english / codol_patchlang
- * selectors (PatchLanguageFromArgv; an unsupported codol_patchlang means the stock language, zh), else the
+/* The language a client starts in: "+set k33_language <name>", else the older k33_english / loc_patchLang
+ * selectors (PatchLanguageFromArgv; an unsupported loc_patchLang means the stock language, zh), else the
  * config's saved k33_language, else English. Returns where it came from. */
 static enum LanguageSource StartupLanguage(int argc,const wchar_t *const *argv,const char *config,size_t configLen,
                                                     char out[LANG_NAME_MAX])

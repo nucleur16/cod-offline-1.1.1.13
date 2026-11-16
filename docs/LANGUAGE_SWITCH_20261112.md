@@ -40,7 +40,7 @@ change; the front end re-sets only some of its texts (measured: after a switch t
 old language until it is opened again; dialogs created after the switch are in the new one).
 
 Startup order (`StartupLanguage`) is unchanged: the last valid `+set k33_language`; else `+set k33_english` /
-`+set codol_patchlang`; else the last `seta k33_language` line of `players\config_mp.cfg`; else `en`.
+`+set loc_patchLang`; else the last `seta k33_language` line of `players\config_mp.cfg`; else `en`.
 
 ## How it works
 

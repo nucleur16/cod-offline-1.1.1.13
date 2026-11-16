@@ -19,11 +19,11 @@
  *     code at 0x85EC590, right after "Account logged in with username"; MEASURED by the frame chain of that set).
  *   - The match server (server/sh1x) takes a player's name ONLY when the player connects: SV_DirectConnect cleans
  *     the userinfo "name", but first replaces it with the lobby's admission gamertag when the roster has one
- *     (sv_client.c, CODOL_NetworkAdmission -> Info_SetValueForKey(userinfo, "name", admission.gamertag)). The lobby's
+ *     (sv_client.c, NetworkAdmission -> Info_SetValueForKey(userinfo, "name", admission.gamertag)). The lobby's
  *     gamertag is the name in the client's session descriptor (src/offline/dw_session.cpp, LivePlayerName).
  *     SV_UserinfoChanged has the name code commented out and ClientUserinfoChanged (g_sv_client.cpp) reads only
  *     cg_predictItems, so a "userinfo" sent during a match cannot rename anyone; the scoreboard and overhead names
- *     are CS 1280+slot, built from svs.clients[slot].name (sv_main.c, CODOL_RefreshServerPlayerNames).
+ *     are CS 1280+slot, built from svs.clients[slot].name (sv_main.c, RefreshServerPlayerNames).
  *
  * What this file changes:
  *   1. 0x498887: the registration goes through PnRegister, which drops the 0x2000 flag, registers the profile's

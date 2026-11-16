@@ -420,7 +420,7 @@ static const ConDevCmd kDevCmds[] = {
     { "setviewpos", "setviewpos x y z [yaw [pitch]]", "teleport", 0 },
     { "viewpos", "viewpos", "print your position and angles as a setviewpos line", 0 },
     { "devset", "devset <dvar> <value>", "server movement/bot dvar: jump_height g_speed g_gravity timescale ...", 0 },
-    { "addbot", "addbot [n]", "add training bots (scr_codol_bots)", 0 },
+    { "addbot", "addbot [n]", "add training bots (scr_bots)", 0 },
     { "kickbot", "kickbot [n|all]", "remove training bots", 0 },
     { "devhelp", "devhelp", "the server's list and whether cheats are on", 0 },
     { "sv", "sv <server command or dvar ...>", "console built-in: run a line on the match server this client hosts; its output prints here", 1 },
