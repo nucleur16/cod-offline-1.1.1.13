@@ -49,7 +49,7 @@ typedef struct P2PConfig {
     char map[64], gametype[32], zoneType[16], sessionMap[64];
     char netIp[64], botDifficulty[16], extra[512];
     char mode[16];               /* inprocess (default): sh1x_host.dll on the game thread; child: the exe */
-    char dll[MAX_PATH];          /* the server as a DLL (mode inprocess) */
+    char dll[MAX_PATH];          /* a server DLL file (dll=); empty: the server inside Kernel33.dll */
     int port, bots, admission, developer, readyTimeout;
     int pmemMegs;                /* codol_pmemMegs for the server: its fastfile block (0 = the server default) */
     int c1Assets;                /* in-process: take C1's records of startup zones (default 1) */
@@ -82,6 +82,7 @@ static BOOL g_p2pHasOverride;
 struct P2PConfig;
 static int P2PInprocRun(const struct P2PConfig *c, const char *password, const char *args); /* p2p_inproc.c */
 static BOOL P2PInprocUsed(void); /* p2p_inproc.c: an in-process session ran and could not be taken down */
+static int PiServerSource(const struct P2PConfig *c, char out[MAX_PATH]); /* p2p_embedded.c: 1 inside Kernel33.dll, 2 a DLL file, 0 none */
 static volatile LONG g_piMatchOver; /* p2p_inproc_retire.c: the hosted match ended; its session is being taken down */
 
 static void P2PSetState(int state, const char *error)
@@ -165,7 +166,7 @@ static void P2PDefaults(P2PConfig *c)
     _snprintf(c->dir, MAX_PATH, "%s\\p2p", root);
     _snprintf(c->exe, MAX_PATH, "%s\\k33p2p_dedrun.exe", c->dir);
     _snprintf(c->home, MAX_PATH, "%s\\home", c->dir);
-    _snprintf(c->dll, MAX_PATH, "%s\\sh1x_host.dll", c->dir);
+    /* dll stays empty: the server inside Kernel33.dll (p2p_embedded.c); dll= in p2p_host.ini names a DLL file. */
     /* The GSC tree installed with the client (main\sh1x_rawfiles, docs/P2P_HOSTING.md). */
     _snprintf(c->scripts, MAX_PATH, "%s\\main\\sh1x_rawfiles", root);
     lstrcpyA(c->mode, "inprocess");
@@ -307,7 +308,8 @@ static const char *P2PCheck(const P2PConfig *c)
             "+set codol_exitToLobby 1 +set codol_oneShotMatch 1"))
         return "P2P extra commands are not permitted by the local host policy";
     if (!P2PPathOk(c->dll)) return "a path holds a quote";
-    if (inproc && GetFileAttributesA(c->dll) == INVALID_FILE_ATTRIBUTES) return "server DLL not found (dll=)";
+    char serverFile[MAX_PATH];
+    if (inproc && !PiServerSource(c, serverFile)) return "server DLL not found (dll=)";
     if (!inproc && GetFileAttributesA(c->exe) == INVALID_FILE_ATTRIBUTES) return "server executable not found (exe=)";
     if (!P2PServerPackPresent(c))
         return "server pack missing: p2p\\home\\main\\sh1x_svr_scripts.iwd (bot classes, waypoints)";

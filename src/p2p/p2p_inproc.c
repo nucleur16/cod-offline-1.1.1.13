@@ -3,7 +3,8 @@
  *
  * Mode `inprocess` of p2p.c (the default; `mode = child` in p2p_host.ini runs codol_dedrun.exe as before). The
  * server is the sh1x server repo's `host-dll` target, sh1x_host.dll: the same objects as the dedicated exe plus
- * its host API (win32/sys_host.c: Sh1xHost_Init / Frame / Command / ExitCode). Like a listen server, C1's game
+ * its host API (win32/sys_host.c: Sh1xHost_Init / Frame / Command / ExitCode). Kernel33.dll carries it
+ * (p2p_embedded.c: RCDATA 2, written to each session's private copy); no separate DLL ships. Like a listen server, C1's game
  * thread runs it: every pass of C1's Com_EventLoop (the call at 0x595E9D, chained behind voice and discord) runs
  * one server Com_Frame, which returns at once unless a server frame is due (the host API makes NET_Sleep poll).
  * There is no second process and no window.
@@ -470,6 +471,7 @@ static const char *__cdecl PiScriptString(unsigned handle)
     return Readable(s, 1) ? s : NULL;
 }
 #include "p2p_inproc_retire.c"
+#include "p2p_embedded.c"
 static const void *__cdecl PiC1Provide(unsigned type, const char *name)
 {
     if (*(volatile const DWORD *)(DWORD_PTR)0x02007A60u) return NULL;
@@ -494,14 +496,29 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     }
     /* The host compiles the GSC tree installed with the client (codol_scriptPath); P2PCheck refused
      * every host but the offline lobby's. */
-    /* A private copy: a fresh set of globals for every session. */
-    char copy[MAX_PATH], tmp[MAX_PATH];
+    /* A private copy: a fresh set of globals for every session. The server is the one inside Kernel33.dll
+     * (p2p_embedded.c), or the DLL file dll= in p2p_host.ini names. */
+    char copy[MAX_PATH], tmp[MAX_PATH], source[MAX_PATH], why[128];
+    int from = PiServerSource(&c, source);
     GetTempPathA(MAX_PATH, tmp);
     LONG n = InterlockedIncrement(&g_piSession);
     _snprintf(copy, MAX_PATH, "%sk33_sh1x_host_%lu_%ld.dll", tmp, GetCurrentProcessId(), n);
     copy[MAX_PATH - 1] = 0;
-    if (!CopyFileA(c.dll, copy, FALSE)) {
-        Log("p2p in-process: cannot copy %s to %s (%lu)", c.dll, copy, GetLastError());
+    HANDLE hold = INVALID_HANDLE_VALUE;
+    if (from == 1) {
+        hold = PiEmbeddedWrite(copy, why, sizeof(why));
+        if (hold == INVALID_HANDLE_VALUE) {
+            Log("p2p in-process: cannot unpack the server inside Kernel33.dll to %s: %s", copy, why);
+            P2PSetState(P2P_FAILED, "cannot unpack the embedded server");
+            return 1;
+        }
+        PiEmbeddedDescribe(why, sizeof(why));
+        Log("p2p in-process: the match server is the one inside Kernel33.dll (%s), unpacked to %s", why, copy);
+        lstrcpynA(source, "Kernel33.dll", MAX_PATH);
+    } else if (from == 2 && CopyFileA(source, copy, FALSE)) {
+        Log("p2p in-process: the match server is the DLL file %s", source);
+    } else {
+        Log("p2p in-process: cannot copy %s to %s (%lu)", from ? source : "(no server DLL)", copy, GetLastError());
         P2PSetState(P2P_FAILED, "cannot copy the server DLL");
         return 1;
     }
@@ -509,6 +526,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     PiMemory(&priv0, &virt0);
     DWORD t0 = GetTickCount();
     HMODULE m = LoadLibraryExA(copy, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+    if (hold != INVALID_HANDLE_VALUE) CloseHandle(hold); /* mapped (or failed): the image can no longer change */
     if (!m) {
         Log("p2p in-process: LoadLibrary %s failed (%lu)", copy, GetLastError());
         P2PSetState(P2P_FAILED, "the server DLL did not load");
@@ -522,7 +540,7 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     Sh1xCmdFn cmd = (Sh1xCmdFn)(void *)GetProcAddress(m, "Sh1xHost_Command");
     Sh1xCodeFn code = (Sh1xCodeFn)(void *)GetProcAddress(m, "Sh1xHost_ExitCode");
     if (!init || !frame || !cmd || !code) {
-        Log("p2p in-process: %s lacks the Sh1xHost_* API (build the server's host-dll target)", c.dll);
+        Log("p2p in-process: %s lacks the Sh1xHost_* API (build the server's host-dll target)", source);
         P2PSetState(P2P_FAILED, "the server DLL has no host API");
         FreeLibrary(m);
         DeleteFileA(copy);

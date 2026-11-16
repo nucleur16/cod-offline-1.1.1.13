@@ -17,8 +17,9 @@ cd "$ROOT/src"
 OUT=../build
 mkdir -p "$OUT"
 # The sh1x server that src/p2p/p2p.c hosts is the submodule server/sh1x (docs/P2P_HOSTING.md); the DLL itself does
-# not compile it, scripts/build-server.sh does. Init it (not --recursive: the server has a URL-less gitlink).
-[ -f "$ROOT/server/sh1x/makefile" ] || git -C "$ROOT" submodule update --init server/sh1x || echo "warning: server/sh1x submodule not initialised (only scripts/build-server.sh needs it)"
+# not compile it, scripts/build-server.sh does, and this script embeds its output (below). Init it unless
+# K33_SERVER_DIR names another checkout (not --recursive: the server has a URL-less gitlink).
+[ -n "${K33_SERVER_DIR:-}" ] || [ -f "$ROOT/server/sh1x/makefile" ] || git -C "$ROOT" submodule update --init server/sh1x || echo "warning: server/sh1x submodule not initialised (only scripts/build-server.sh needs it)"
 . ../scripts/build-profile.sh
 BIN=/c/msys64/mingw32/bin
 SDL_VER=2.32.10
@@ -40,7 +41,32 @@ fi
 . ../scripts/build-offline.inc.sh
 k33_offline_objects "$OUT/obj_offline"
 OFFLINE_LINK="$OFFLINE_OBJS -static-libstdc++ -lstdc++"
-"$BIN/windres.exe" -O coff -i kernel33.rc -o "$OUT/kernel33_res.o"
+# The match server travels inside Kernel33.dll (src/p2p/p2p_embedded.c; docs/P2P_HOSTING.md, "The server inside
+# Kernel33.dll"): the server repo's host-dll output, stripped and zlib-packed, as RCDATA 2. scripts/build-server.sh
+# builds it. K33_EMBED_SERVER=1 requires it, 0 leaves it out (the client then loads p2p\sh1x_host.dll), auto (the
+# default) embeds it when it exists. K33_SERVER_DIR names the server checkout (default server/sh1x), K33_SERVER_DLL
+# the DLL itself (default $K33_SERVER_DIR/bin/sh1x_host.dll).
+EMBED=${K33_EMBED_SERVER:-auto}
+case "$EMBED" in 0|1|auto) ;; *) echo "K33_EMBED_SERVER must be 0, 1 or auto" >&2; exit 1;; esac
+SRVDIR=${K33_SERVER_DIR:-$ROOT/server/sh1x}
+SRVDLL=${K33_SERVER_DLL:-$SRVDIR/bin/sh1x_host.dll}
+RC=kernel33.rc
+rm -f "$OUT/sh1x_host.k33s" "$OUT/kernel33_server.rc"
+if [ "$EMBED" != 0 ] && [ -f "$SRVDLL" ]; then
+    "$BIN/strip.exe" -o "$OUT/sh1x_host.stripped.dll" "$SRVDLL"
+    SRVREV=$(git -C "$SRVDIR" rev-parse HEAD 2>/dev/null || echo unknown)
+    python ../scripts/pack_server.py "$OUT/sh1x_host.stripped.dll" "$OUT/sh1x_host.k33s" "$SRVREV"
+    rm -f "$OUT/sh1x_host.stripped.dll"
+    printf '#include "kernel33.rc"\n// the sh1x match server (scripts/pack_server.py)\n2 RCDATA "%s/sh1x_host.k33s"\n' "$OUT" > "$OUT/kernel33_server.rc"
+    RC=$OUT/kernel33_server.rc
+    echo "embedding the sh1x server $SRVREV from $SRVDLL"
+elif [ "$EMBED" = 1 ]; then
+    echo "K33_EMBED_SERVER=1 but $SRVDLL does not exist: run scripts/build-server.sh first" >&2
+    exit 1
+else
+    echo "warning: no sh1x_host.dll at $SRVDLL; Kernel33.dll is built without the match server (hosting then needs p2p\\sh1x_host.dll)"
+fi
+"$BIN/windres.exe" -O coff -I. -i "$RC" -o "$OUT/kernel33_res.o"
 # ld derives a DLL's default image base from the output file name as it is written on the command line. 0x69100000
 # is the one "Kernel33.dll" always got; it is pinned so the DLL does not change with the output folder.
 "$BIN/gcc.exe" "$@" -O2 -Wall -shared -s -static -static-libgcc -I"$SDL_DIR/include" -o "$OUT/Kernel33.dll" \

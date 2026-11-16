@@ -371,6 +371,48 @@ memory.
   session's DLL copy, its 328 MB PMem block and its hunk are not released. Hosting again currently needs a
   client restart.
 
+### The server inside Kernel33.dll (branch `feat/server-in-kernel33`, 2026-11-16)
+Kernel33.dll carries the match server: no `p2p\sh1x_host.dll` ships. `scripts/build.sh` strips the server repo's
+`host-dll` output, packs it with zlib (`scripts/pack_server.py`: magic `K33S`, size, SHA-256, server commit) and
+embeds it as RCDATA 2 next to the C1 image (RCDATA 1). `src/p2p/p2p_embedded.c` inflates it for every session,
+checks the SHA-256, writes it to the session's private copy (`%TEMP%\k33_sh1x_host_<pid>_<n>.dll`, as before),
+reads it back through a handle that refuses writers and keeps that handle until `LoadLibrary` has mapped the copy.
+From there on nothing changed: the same host API, fiber, fault containment, teardown and C1 zone sharing.
+
+- **Build.** `K33_EMBED_SERVER=auto` (default) embeds `$K33_SERVER_DIR/bin/sh1x_host.dll` (default
+  `server/sh1x`) when it exists, `1` requires it, `0` leaves it out. `K33_SERVER_DLL` names the DLL itself.
+  `scripts/build-server.sh` builds it (`K33_SERVER_DIR` for another checkout of the server) and no longer stages
+  `p2p\sh1x_host.dll` (`K33_STAGE_HOST_DLL=1` still does). The data files stay where they were:
+  `p2p\home\main\sh1x_svr_scripts.iwd` and `main\sh1x_rawfiles\`.
+- **Fallback.** `dll=<path>` in `p2p_host.ini` loads that DLL file instead (a server developer's build). A
+  Kernel33.dll built without the server loads `p2p\sh1x_host.dll` as before. The log names the source:
+  `p2p in-process: the match server is the one inside Kernel33.dll (sh1x <commit>, <KB>, sha256 <prefix>)` or
+  `... is the DLL file <path>`.
+- **Size.** Kernel33.dll 14,264,320 -> 16,563,712 bytes (shipping profile; the server is 5.1 MB stripped,
+  2.3 MB packed). Nothing is unpacked or reserved until a session starts.
+
+**Why not link the server's objects into Kernel33.dll** (evaluated first, rejected):
+- *Fresh globals per session.* The server cannot be re-initialised once it ended ("one server per DLL
+  instance", server `win32/sys_host.c`), and every offline match is a new session (`p2p_inproc_retire.c`).
+  Linked in, a client could host one match per run.
+- *Address space.* The server's .bss is 227 MB (`objdump -h`: 0x0D951D18). Linked in, it is part of
+  Kernel33.dll's image in every client, hosting or not, for the whole run; today it exists only during a session
+  and the teardown returns it. The headroom in a hosted match is about 400 MB.
+- *Teardown.* `p2p_inproc_retire.c` tracks the server's allocations, threads, sockets and handles through the
+  loaded image's own import table and unloads the image; that needs a separate image.
+- *Containment.* The vectored fault handler decides "server fault" by the faulting address being inside the
+  server's image (or msvcrt.dll).
+- *Symbols and start-up.* 58 global symbols of the server's objects clash with Kernel33's static libraries
+  (zlib, `MatrixMultiply`); the server's C++ constructors and TLS would run in Kernel33.dll's DllMain, under the
+  loader lock, at the client's start.
+
+**Measured** (2026-11-16, own copy of the k33-uistyle-offline-test install with its `p2p\sh1x_host.dll` removed,
+`K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=1` DLL with the server 1e945cab embedded, headless `+set k33_cmdFile 1
++set codol_local_test_multi 1`): `room.match.cyborg`, `k33ready 1` -> the server unpacked from Kernel33.dll,
+ready after 17.5 s, the host joined `zm_theater_sh` (CA_ACTIVE, round 1, zombies spawning) and the match ran
+until the idle player died; the session was taken down (copy unloaded and deleted), `k33ready 1` again started a
+second session from a fresh copy (`_2.dll`, ready after 7.1 s), joined, and `p2pstop` ended it cleanly.
+
 ### Not done yet / next steps
 1. **Reuse the zones and assets the client already loaded.**
    - Not done. The server's loader (`db_load.cpp`) builds IW3-layout xassets in its own memory. C1's are

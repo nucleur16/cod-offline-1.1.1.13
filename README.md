@@ -125,11 +125,14 @@ pass with Linux gcc (`gcc -O2 -Wall -Wextra -Werror tests/quick_start_policy_tes
 
 ## Player-hosted matches (branch `feat/p2p-hosting`)
 Since `feat/p2p-inprocess` the server runs **inside the client** by default (`mode = inprocess`):
-`src/p2p/p2p_inproc.c` loads the server's `sh1x_host.dll` (server makefile target `host-dll`) and ticks it on the game
-thread, on its own fiber, with exits and faults contained. `mode = child` runs the separate process as before.
-`scripts/build-server.sh` stages an install-shaped tree: `p2p\sh1x_host.dll`, `p2p\k33p2p_dedrun.exe`,
-`p2p\home\main\sh1x_svr_scripts.iwd` and the GSC tree as `main\sh1x_rawfiles\` (`src/p2p/p2p.c`'s default `scripts=`).
-Details and measurements: `docs/P2P_HOSTING.md`, "In-process hosting".
+`src/p2p/p2p_inproc.c` loads the server (server makefile target `host-dll`) and ticks it on the game
+thread, on its own fiber, with exits and faults contained. Kernel33.dll carries the server itself
+(`src/p2p/p2p_embedded.c`, RCDATA 2): no `p2p\sh1x_host.dll` is needed (`dll=` in `p2p_host.ini` still loads a DLL
+file instead). `mode = child` runs the separate process as before.
+`scripts/build-server.sh` builds the server and stages an install-shaped tree: `p2p\k33p2p_dedrun.exe`,
+`p2p\home\main\sh1x_svr_scripts.iwd` and the GSC tree as `main\sh1x_rawfiles\` (`src/p2p/p2p.c`'s default `scripts=`);
+`scripts/build.sh` then embeds the server it built. Details and measurements: `docs/P2P_HOSTING.md`, "In-process
+hosting" and "The server inside Kernel33.dll".
 
 `src/p2p/p2p.c` lets a player host a match from the client: the sh1x match server runs as a child of the
 host's client (`p2phost [map] [gametype] [zonetype]`, `p2pstop`, `p2pstatus`, or `+set k33_p2pHost 1`;
@@ -139,11 +142,13 @@ a hard requirement from the client security audit. Design, trust rules, stages a
 `docs/P2P_HOSTING.md` (the online parts are history, see `docs/OFFLINE_LOBBY.md`, "Removed").
 
 The server is the git submodule `server/sh1x` (the sh1x server repo, pinned to its `feat/p2p-hosting`
-commit). `scripts/build.sh` inits it; the DLL does not compile it. To build and stage the
-server a client hosts:
+commit). `scripts/build.sh` inits it; the DLL does not compile it but embeds its `bin/sh1x_host.dll` when it has
+been built (`K33_EMBED_SERVER=auto|1|0`, `K33_SERVER_DIR`, `K33_SERVER_DLL`; see `docs/P2P_HOSTING.md`). To build
+the server a client hosts, stage its data and embed it:
 ```sh
 git submodule update --init server/sh1x       # never --recursive: the server has a URL-less gitlink
 sh scripts/build-server.sh                    # WSL cross-build + staging into ../../k33_p2p_staging
+K33_EMBED_SERVER=1 sh scripts/build.sh        # Kernel33.dll with the server inside
 ```
 `scripts/build-server.sh` initialises only the server's `bin/home/codol_rawfiles` submodule
 (`core.autocrlf false`). It needs WSL Ubuntu-24.04 with i686-w64-mingw32 and nasm, and the server's
