@@ -15,6 +15,8 @@ CH_TARGET_COL	= 6;
 CH_REWARD_COL	= 7;		// tier XP, interleaved with the targets: 7, 9, 11, ...
 CH_ID_COL		= 4;		// CoDOL: the numeric id into challenges[1000]
 CH_CO_REWARD_COL = 24;		// CoDOL: per-tier GP (C1's CP1..CP9), parallel to the targets
+MARKET_ITEMS	= "mp/coMarketplaceItems.csv";		// 0 item id, 1 name, 2 category (WEA, per, ...)
+MARKET_PRODUCTS	= "mp/coMarketplaceProducts.csv";	// 0 product id, 4 first item id, 24..27 unlock flags
 
 
 TIER_FILE_COL	= 4;
@@ -2145,6 +2147,11 @@ processChallenge( baseName, progressInc, forceSetProgress )
 	if ( !self rankingEnabled() && !( self.isbot && isDefined( self.codolChTest ) ) )
 		return;
 	
+	// A weapon's challenges count once the player has that weapon unlocked;
+	// a challenge with a tier-table requirement once that is unlocked.
+	if ( !self challengeUnlocked( baseName ) )
+		return;
+
 	if ( !isDefined( progressInc ) )
 		progressInc = 1;	
 	
@@ -2317,10 +2324,11 @@ updateChallenges()
 		
 		if ( !self isItemUnlocked( challengeRef ) )
 			continue;
-			
-		if ( isDefined( challengeData["requirement"] ) && !self isItemUnlocked( challengeData["requirement"] ) )
-			continue;
-			
+
+		// The challenge's weapon and its tier-table requirement are checked
+		// on every event (processChallenge), not once here: a rank-up during
+		// the match unlocks them for the rest of it.
+
 		// Derived from the stored progress; nothing to seed and nothing to
 		// write back.  A challenge with no progress yet reports tier 1.
 		status = self ch_getState( challengeRef );
@@ -2411,7 +2419,7 @@ buildChallegeInfo()
 		refString = tableLookupByRow( tableName, index, CH_REF_COL );
 	}
 
-	dropDeactivatedChallenges();
+	buildChallengeUnlocks();
 
 	tierTable = tableLookupByRow( "mp/challengeTable.csv", 0, 4 );	
 	for ( tierId = 1; tierTable != ""; tierId++ )
@@ -2437,35 +2445,157 @@ buildChallegeInfo()
 }
 
 /*
-	C1 retires challenges through mp/challengedeactivate.csv (column 0 "1",
-	column 1 the numeric id): the M14 EBR, SCAR SAPR, Kriss, Tavor ... weapon
-	rows and every prestige (pr_) marksman/expert row among them. The lobby
-	never stores their progress (dw_career / challenges.py "deactivated"), so
-	a match that still advanced one started again from 0 next match and
-	splashed and paid tier 1 every time. They are no challenge here either.
-*/
-dropDeactivatedChallenges()
-{
-	table = "mp/challengedeactivate.csv";
+	WHEN A CHALLENGE COUNTS (user rule 2026-11-16: "the challenges are based
+	on level / if you have the gun unlocked").
 
-	deactivated = [];
-	for ( row = 0; ; row++ )
+	CoDOL unlocks weapons and perks through its store tables, not IW4's
+	mp/unlockTable.csv: an item (mp/coMarketplaceItems.csv: id, name,
+	category) is sold by products (mp/coMarketplaceProducts.csv) whose unlock
+	flags, columns 24..27, are uf_rank_N -- "from level N", the store's
+	padlock -- or uf_item_hide, the retail "requires level 98" sentinel of
+	the event weapons. An item is unlocked for a player at the lowest level
+	any of its products asks (1 with no rank flag, as the M4, Vector, M9 and
+	M14 EBR are), or when the player owns it (codol_tryOwnsItem: bought in
+	the lobby store).
+
+	A weapon challenge -- ch_ / pr_ marksman and expert, ch_<weapon>_mastery
+	-- names its weapon: before that weapon is unlocked it neither counts nor
+	splashes, afterwards it tracks like any other. That includes the rows
+	C1's mp/challengedeactivate.csv lists (M14 EBR, SCAR SAPR, Kriss, Tavor,
+	every pr_ row): the lobby stores them now. C1's tables give the prestige
+	(pr_) rows no prestige requirement and CoDOL has no prestige to require,
+	so they are weapon challenges with higher targets.
+
+	A challenge with a requirement in its tier table (a perk for the _pro
+	perk challenges) counts once that is unlocked: the store's level for a
+	store item, isItemUnlocked's table otherwise.
+*/
+buildChallengeUnlocks()
+{
+	// item id -> the lowest level a product of it unlocks at
+	level.challengeItemLevel = [];
+	empty = 0;
+	for ( row = 0; empty < 16; row++ )
 	{
-		id = tableLookupByRow( table, row, 1 );
-		if ( id == "" )
-			break;
-		if ( tableLookupByRow( table, row, 0 ) == "1" )
-			deactivated[ int( id ) ] = true;
+		product = tableLookupByRow( MARKET_PRODUCTS, row, 0 );
+		if ( product == "" )
+		{
+			empty++;
+			continue;
+		}
+		empty = 0;
+
+		item = int( tableLookupByRow( MARKET_PRODUCTS, row, 4 ) );
+		if ( item <= 0 )
+			continue;
+
+		need = 1;
+		for ( col = 24; col < 28; col++ )
+		{
+			flag = toLower( tableLookupByRow( MARKET_PRODUCTS, row, col ) );
+			if ( flag == "uf_item_hide" )
+				need = 99;
+			else if ( getSubStr( flag, 0, 8 ) == "uf_rank_" && int( getSubStr( flag, 8 ) ) > need )
+				need = int( getSubStr( flag, 8 ) );
+		}
+		if ( !isDefined( level.challengeItemLevel[ item ] ) || need < level.challengeItemLevel[ item ] )
+			level.challengeItemLevel[ item ] = need;
 	}
 
-	drop = [];
 	foreach ( refString, info in level.challengeInfo )
 	{
-		if ( isDefined( level.challengeIds[ refString ] ) && isDefined( deactivated[ level.challengeIds[ refString ] ] ) )
-			drop[ drop.size ] = refString;
+		weapon = challengeWeapon( refString );
+		if ( isDefined( weapon ) )
+			level.challengeInfo[ refString ]["weapon"] = weapon;
 	}
-	foreach ( refString in drop )
-		level.challengeInfo[ refString ] = undefined;
+}
+
+
+// "ch_marksman_m4_mp" -> "m4_mp", "pr_expert_m4_mp" -> "m4_mp",
+// "ch_m4_mp_mastery" -> "m4_mp"; undefined unless that is a store weapon.
+challengeWeapon( refString )
+{
+	name = refString;
+	if ( getSubStr( name, 0, 3 ) != "ch_" && getSubStr( name, 0, 3 ) != "pr_" )
+		return undefined;
+	name = getSubStr( name, 3 );
+	if ( getSubStr( name, 0, 9 ) == "marksman_" )
+		name = getSubStr( name, 9 );
+	else if ( getSubStr( name, 0, 7 ) == "expert_" )
+		name = getSubStr( name, 7 );
+	else if ( name.size > 8 && getSubStr( name, name.size - 8 ) == "_mastery" )
+		name = getSubStr( name, 0, name.size - 8 );
+
+	if ( name.size < 4 || getSubStr( name, name.size - 3 ) != "_mp" )
+		return undefined;
+	if ( toLower( tableLookup( MARKET_ITEMS, 1, name, 2 ) ) != "wea" )
+		return undefined;
+	return name;
+}
+
+
+// The level a store item unlocks at; undefined when it is no store item.
+challengeItemLevel( name )
+{
+	// Cached by name: this runs for every challenge event.
+	if ( !isDefined( level.challengeItemLevelByName ) )
+		level.challengeItemLevelByName = [];
+	if ( !isDefined( level.challengeItemLevelByName[ name ] ) )
+	{
+		id = tableLookup( MARKET_ITEMS, 1, name, 0 );
+		need = 0;	// 0: no store item
+		if ( id != "" )
+		{
+			need = 1;
+			if ( isDefined( level.challengeItemLevel ) && isDefined( level.challengeItemLevel[ int( id ) ] ) )
+				need = level.challengeItemLevel[ int( id ) ];
+		}
+		level.challengeItemLevelByName[ name ] = need;
+	}
+	if ( !level.challengeItemLevelByName[ name ] )
+		return undefined;
+	return level.challengeItemLevelByName[ name ];
+}
+
+
+// Whether this player has the store item `name` unlocked: its level reached,
+// or bought. Undefined when `name` is no store item.
+challengeItemUnlocked( name )
+{
+	need = challengeItemLevel( name );
+	if ( !isDefined( need ) )
+		return undefined;
+	if ( isDefined( self.pers["rank"] ) && self.pers["rank"] + 1 >= need )
+		return true;
+
+	// Asked once per item and match: the purchase manifest is a file read.
+	if ( !isDefined( self.challengeOwned ) )
+		self.challengeOwned = [];
+	if ( !isDefined( self.challengeOwned[ name ] ) )
+	{
+		owned = self codol_tryOwnsItem( name );
+		self.challengeOwned[ name ] = ( isDefined( owned ) && owned );
+	}
+	return self.challengeOwned[ name ];
+}
+
+
+challengeUnlocked( refString )
+{
+	info = level.challengeInfo[ refString ];
+
+	if ( isDefined( info["weapon"] ) && !self challengeItemUnlocked( info["weapon"] ) )
+		return false;
+
+	if ( isDefined( info["requirement"] ) )
+	{
+		unlocked = self challengeItemUnlocked( info["requirement"] );
+		if ( !isDefined( unlocked ) )
+			unlocked = self isItemUnlocked( info["requirement"] );
+		if ( !unlocked )
+			return false;
+	}
+	return true;
 }
 
 
