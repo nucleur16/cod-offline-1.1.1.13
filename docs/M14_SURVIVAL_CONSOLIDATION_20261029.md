@@ -6,7 +6,7 @@ weapon zones also match that release: table MD522e724382b185632b699b54cd583a04d,
 art MD5c0111bc74c91dfaa0a79b5970307cf7b. Neither `dev` nor its files were changed.
 
 The missing behavior was in native Survival archive loading. Its category-only
-patch scan omitted the two permanent `mp_codol_weapons` zones, despite borrowing
+patch scan omitted the two permanent `mp_weapons` zones, despite borrowing
 MP weapons/gameplay. The old server reported50 legal M14 attachment rows, no
 complete added receiver models, and rejected both tested composed recipes for
 missing base art. The normal profile code then used its stock weapon path,

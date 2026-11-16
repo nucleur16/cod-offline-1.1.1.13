@@ -7,7 +7,7 @@ No map archives or images are promoted into a public shipping pack by this chang
 The local selector adds Shi No Numa (`zm_sumpf_sh`), Der Riese
 (`zm_factory_sh`), Kino der Toten (`zm_theater_sh`), and the ten dev MP ports:
 `mp_abandon_sh`, `mp_dome`, `mp_sd_jardin`, `mp_hardhat_sh`, `mp_strike_sh`,
-`mp_qadeem_sh`, `mp_highrise`, `mp_hunger`, `mp_vacant`, `mp_brl_derail`.
+`mp_qadeem_sh`, `mp_highrise`, `mp_hunger`, `mp_vacant`, `mp_brl_derail` (mp_brl_derail was removed on 2026-11-16 as deprecated; mp_derail_sh is the Derail that stays).
 All13 active cb2 rows occur exactly once and their main FFs are installed.
 The installed AssetExplorer decoder resolves all13 actual map thumbnails,
 including the streamed usermap images. Derail currently has no separate
@@ -16,7 +16,7 @@ including the streamed usermap images. Derail currently has no separate
 Rebuild the four relevant local packs without altering the ship/dev manifest:
 
 ```powershell
-python build_zones.py codol_common codol_common_ui_mp codol_english_locale codol_chinese_locale --candidate --maps all --out output_local_maps_test
+python build_zones.py common_extras common_ui_mp english_locale chinese_locale --candidate --maps all --out output_local_maps_test
 ```
 
 The local install also takes `files/client_shipRetail/patch/sound_channels.txt`

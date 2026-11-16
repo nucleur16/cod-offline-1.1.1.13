@@ -4,7 +4,7 @@ The user reported frame lag while the console was open and requested a separate
 thread. Before this change, every dirty console Present created/resized GDI
 resources, cleared the framebuffer-sized DIB, converted/drew text, flushed GDI,
 and scanned every painted pixel to produce alpha. It also took the log lock
-for a snapshot and could write the k33shot BMP on the render thread. Captured
+for a snapshot and could write the con_shot BMP on the render thread. Captured
 log messages dirtied even a collapsed console with no visible new result.
 
 `console.c` now starts one process-lifetime raster worker. It owns the console

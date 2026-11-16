@@ -1,8 +1,8 @@
 /* Private fixed Pi activation transaction. No OS calls, allocation or retries.
  * Slot operations own exactly Sleep, SleepEx and PeekMessageA. Tick operation
  * owns only one LAST callback; it never rewrites the Com_EventLoop call chain. */
-#ifndef CODOL_P2P_ACTIVATION_TRANSACTION_H
-#define CODOL_P2P_ACTIVATION_TRANSACTION_H
+#ifndef P2P_ACTIVATION_TRANSACTION_H
+#define P2P_ACTIVATION_TRANSACTION_H
 enum { PIA_COLD, PIA_INSTALLING, PIA_READY, PIA_FAILED };
 typedef struct {
     int state, failure_stage, quarantine;

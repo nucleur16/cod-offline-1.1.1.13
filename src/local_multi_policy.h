@@ -2,17 +2,17 @@
 #include <wchar.h>
 #include <string.h>
 
-static int CodolLocalMultiArgument(int argc, const wchar_t *const *argv)
+static int LocalMultiArgument(int argc, const wchar_t *const *argv)
 {
     int enabled=0;
     for(int i=1;i+1<argc;i++) {
-        if(wcscmp(argv[i],L"+set") || wcscmp(argv[i+1],L"codol_local_test_multi")) continue;
+        if(wcscmp(argv[i],L"+set") || wcscmp(argv[i+1],L"com_localTestMulti")) continue;
         enabled=i+2<argc && wcscmp(argv[i+2],L"1")==0;
     }
     return enabled;
 }
 
-static int CodolLocalPort(const char *value)
+static int LocalPort(const char *value)
 {
     unsigned port=0;
     if(!*value)return 0;
@@ -23,7 +23,7 @@ static int CodolLocalPort(const char *value)
     return port>0 && port<=65535;
 }
 
-static int CodolLocalTitle(const char *value)
+static int LocalTitle(const char *value)
 {
     /* C1/launcher encode title 1002 as hex "3ea", not decimal. */
     unsigned nonzero=0;
@@ -39,7 +39,7 @@ static int CodolLocalTitle(const char *value)
 /* dwauth.ini's exact five-line C1 contract. Both hosts must equal the same
  * explicit local-test literal (normal .1 or isolated .3) and valid port.
  * No hostname, wildcard, suffix match or general loopback range is accepted. */
-static int CodolLocalMultiRoute(const char *contents, size_t size)
+static int LocalMultiRoute(const char *contents, size_t size)
 {
     char lines[5][64];unsigned line=0,column=0;
     if(!contents || !size || size>256)return 0;
@@ -58,6 +58,6 @@ static int CodolLocalMultiRoute(const char *contents, size_t size)
     }
     if(column)line++;
     return line==5 && (strcmp(lines[0],"127.0.0.1")==0 || strcmp(lines[0],"127.0.0.3")==0) &&
-        strcmp(lines[2],lines[0])==0 && CodolLocalPort(lines[1]) &&
-        strcmp(lines[1],lines[3])==0 && CodolLocalTitle(lines[4]);
+        strcmp(lines[2],lines[0])==0 && LocalPort(lines[1]) &&
+        strcmp(lines[1],lines[3])==0 && LocalTitle(lines[4]);
 }

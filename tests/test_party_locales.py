@@ -8,7 +8,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from zonekit import build, codecs, packs
+from zonekit import build, codecs, packs, zonelist
 from party_locale_contract import PARTY_LOCALE, expected_effective
 
 
@@ -26,60 +26,62 @@ def strings(zone):
 
 def old_winners(language='en', baseline='source-parts'):
     # Independently model source alphabetical first-wins, including extra's
-    # four loading translations that precede codol_loading_mode_names.
-    source = {'000_codol_party_modes': strings('000_codol_party_modes'),
-              'codol_loading_mode_names': strings('codol_loading_mode_names')}
+    # four loading translations that precede loading_mode_names.
+    source = {'000_party_modes': strings('000_party_modes'),
+              'loading_mode_names': strings('loading_mode_names')}
     if language != 'en' and baseline == 'source-parts':
-        source['codol_chinese_ui_extra'] = strings('codol_chinese_ui_extra')
+        source['chinese_ui_extra'] = strings('chinese_ui_extra')
     result = {}
     for zone in sorted(source):
         for key, value in source[zone].items():
             if key not in PARTY_LOCALE:continue
-            blob = codecs.encode_localize(key,value.encode('ascii' if zone != 'codol_chinese_ui_extra' else 'gbk'))
+            blob = codecs.encode_localize(key,value.encode('ascii' if zone != 'chinese_ui_extra' else 'gbk'))
             result.setdefault((27,key.lower()),('pre_gfx',zone,hashlib.md5(blob).hexdigest()))
     return result
 
 
 class PartyLocales(unittest.TestCase):
     def test_legacy_english_values_remain_exact(self):
-        old = {**strings('000_codol_party_modes'), **strings('codol_loading_mode_names')}
+        old = {**strings('000_party_modes'), **strings('loading_mode_names')}
         self.assertEqual(set(old), set(PARTY_LOCALE))
         self.assertEqual(old, {k:v[0] for k,v in PARTY_LOCALE.items()})
 
     def test_chinese_values_and_registration_are_exact_lossless_gbk(self):
-        chinese = strings('codol_chinese_ui_extra')
-        registered = [n for t,n,_ in build.load(str(ROOT),'codol_chinese_ui_extra').assets if t=='localize']
+        chinese = strings('chinese_ui_extra')
+        registered = [n for t,n,_ in build.load(str(ROOT),'chinese_ui_extra').assets if t=='localize']
         for key, (_english,value) in PARTY_LOCALE.items():
             self.assertEqual(chinese[key], value)
             self.assertEqual(registered.count(key), 1)
             self.assertEqual(value.encode('gbk').decode('gbk'), value)
 
     def test_shared_pack_keeps_tables_and_markers_but_not_localized_text(self):
-        for part,keep,_ in packs.parts(packs.load(str(ROOT),'codol_common')):
-            if part in ('000_codol_party_modes','codol_loading_mode_names'):
+        for part,keep,_ in packs.parts(packs.load(str(ROOT),'common_extras')):
+            if part in ('000_party_modes','loading_mode_names'):
                 self.assertFalse(keep('localize'))
                 self.assertTrue(keep('rawfile'))
                 self.assertTrue(keep('stringtable'))
-        actual = {p for p,_,_ in packs.parts(packs.load(str(ROOT),'codol_common'))}
-        self.assertTrue({'000_codol_party_modes','codol_loading_mode_names'} <= actual)
+        actual = {p for p,_,_ in packs.parts(packs.load(str(ROOT),'common_extras'))}
+        self.assertTrue({'000_party_modes','loading_mode_names'} <= actual)
 
     def test_english_pack_takes_only_the_exact_legacy_text_parts(self):
         found = set()
-        for part,keep,_ in packs.parts(packs.load(str(ROOT),'codol_english_locale')):
-            if part in ('000_codol_party_modes','codol_loading_mode_names'):
+        for part,keep,_ in packs.parts(packs.load(str(ROOT),'english_locale')):
+            if part in ('000_party_modes','loading_mode_names'):
                 found.add(part)
                 self.assertTrue(keep('localize'))
                 self.assertFalse(keep('rawfile'))
                 self.assertFalse(keep('stringtable'))
-        self.assertEqual(found, {'000_codol_party_modes','codol_loading_mode_names'})
-        self.assertIn('codol_chinese_ui_extra', {p for p,_,_ in packs.parts(packs.load(str(ROOT),'codol_chinese_locale'))})
+        self.assertEqual(found, {'000_party_modes','loading_mode_names'})
+        self.assertIn('chinese_ui_extra', {p for p,_,_ in packs.parts(packs.load(str(ROOT),'chinese_locale'))})
 
     def test_legacy_shared_names_still_merge_into_the_shared_table_pack(self):
         header=(ROOT/'src/patch_locale_policy.h').read_text(encoding='utf-8')
-        body=header.split('kCodolPatchZoneMerged[][2]={',1)[1].split('};',1)[0]
+        body=header.split('kPatchZoneMerged[][2]={',1)[1].split('};',1)[0]
         merged=dict(re.findall(r'\{"([^"]+)","([^"]+)"\}',body))
-        for name in ('000_codol_party_modes','codol_loading_mode_names'):
-            self.assertEqual(merged[name],'codol_common')
+        for name in ('000_party_modes','loading_mode_names'):
+            name=zonelist.LEGACY_NAME[name]   # the file an older install carries
+            while name in merged: name=merged[name]   # kernel33.c follows the chain (PatchZoneMergedChain)
+            self.assertEqual(name,'common_extras')
 
     def test_checker_migrates_only_twelve_chinese_winners_and_keeps_english(self):
         before=old_winners();before[(37,'mp/comaplist.csv')]=('pre_gfx','shared','unchanged-table')
@@ -110,7 +112,7 @@ class PartyLocales(unittest.TestCase):
             before=old_winners(language)
             for name in PARTY_LOCALE:
                 zone=before[(27,name.lower())][1]
-                self.assertEqual(zone,'codol_chinese_ui_extra' if name.startswith('CODOL_LOADING_MODE_') else '000_codol_party_modes')
+                self.assertEqual(zone,'chinese_ui_extra' if name.startswith('CODOL_LOADING_MODE_') else '000_party_modes')
             expected_effective(before,language,codecs.encode_localize)
 
     def test_pre_migration_profile_is_separate_and_not_auto_accepted(self):

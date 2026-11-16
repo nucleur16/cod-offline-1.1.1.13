@@ -6,7 +6,7 @@
  * to a program that Windows Defender's heuristics refused to run as "Trojan:Win32/CobaltStrike.UTA!MTB".) */
 static const char READY[]="sh1x_status map=mp_fav_tropical session_map=mp_fav_tropical gametype=survival type=survival running=1 parked=0 humans=0 bots=0";
 static const char MISSION[]="sh1x_status map=mp_killhouse_sh session_map=coop_training_mp_killhouse_sh gametype=coop type=coop running=1 parked=0";
-/* After rcon `map mp_rust` on a Killhouse room: codol_sessionMap keeps the room's spelling. */
+/* After rcon `map mp_rust` on a Killhouse room: sv_sessionMap keeps the room's spelling. */
 static const char MOVED[]="sh1x_status map=mp_rust session_map=mp_killhouse_sh gametype=war type=mp running=1 ended=0 humans=1 bots=4 maxclients=16 parked=0 quick=0";
 static const char MOVED_DM[]="sh1x_status map=mp_backlot_sh session_map=mp_killhouse_sh gametype=dm type=mp running=1 ended=0 humans=1 bots=4 parked=0";
 static const char LOADING[]="sh1x_status map=none session_map=none gametype=war type=mp running=0 ended=0 humans=0 bots=0 maxclients=0 parked=0";

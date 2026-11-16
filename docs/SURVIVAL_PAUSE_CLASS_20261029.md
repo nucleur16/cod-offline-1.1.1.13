@@ -25,6 +25,6 @@ actual AS observer tests cover delayed open, close-once, successful choice and
 other modes; actual kiosk and `_menus` callback tests show an immediate loadout
 and single wallet debit outside grace period. Cancellation, same/invalid class,
 insufficient balance and duplicate replies remain free. MainPause compiled and
-the shared `codol_common` candidate built successfully. No physical cursor or
+the shared `common_extras` candidate built successfully. No physical cursor or
 desktop key input is needed for these checks. Live in-game visual acceptance
 remains separate from the code and compiled-asset checks.

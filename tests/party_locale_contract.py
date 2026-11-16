@@ -35,8 +35,8 @@ def expected_effective(old, language, encode_localize, baseline='source-parts'):
         key = (27, name.lower())
         loading = name.startswith('CODOL_LOADING_MODE_')
         chinese_winner = baseline == 'source-parts' and loading and language in ('zh', 'native')
-        zone = ('codol_chinese_ui_extra' if chinese_winner else
-                'codol_loading_mode_names' if loading else '000_codol_party_modes')
+        zone = ('chinese_ui_extra' if chinese_winner else
+                'loading_mode_names' if loading else '000_party_modes')
         text = chinese.encode('gbk') if chinese_winner else english.encode('ascii')
         expected = ('pre_gfx', zone, hashlib.md5(encode_localize(name, text)).hexdigest())
         if old.get(key) != expected:

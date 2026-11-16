@@ -404,8 +404,8 @@ class HudStyles(unittest.TestCase):
         self.assertEqual(hs.STYLES["v12"]["ops"][-1], "isevac")
         # what the docs call visibly missing really is dropped, and the main panels really are kept
         # implemented natively now (hud_style.c): the fire-mode tag, the assists, the ammo display
-        self.assertIn('v26 rewrite: getweaponfiretype -> dvarstring("k33_hudFireType")', text)
-        self.assertIn('v26 rewrite: player("assists") -> dvarint("k33_hudAssists")', text)
+        self.assertIn('v26 rewrite: getweaponfiretype -> dvarstring("cg_hudFireType")', text)
+        self.assertIn('v26 rewrite: player("assists") -> dvarint("cg_hudAssists")', text)
         self.assertIn("v26 weaponbar_hd[4] -> weaponbar_hd: ownerDraw 5 written as clip count, clip bar and reserve count", text)
         # what stays out, with the reason the docs give
         self.assertRegex(text, r'v26 kd_rate_bar\[10\] -> scorebar_hd: dropped: player\("revives"\)')
@@ -492,7 +492,7 @@ class HudStyles(unittest.TestCase):
         self.assertIn("    if (HudStyleOwnerDraw(args)) return 1;", v)
         # nothing reads the old tick-published clip dvars any more
         listing = (hs.ZDIR / "menufile/hud_styles.txt").read_text(encoding="utf-8")
-        self.assertNotIn("k33_hudClip", listing)
+        self.assertNotIn("cg_hudClip", listing)
         self.assertNotIn('player "clipAmmo_left"', listing)
 
     def test_carried_materials_and_images(self):
@@ -538,15 +538,15 @@ class HudStyles(unittest.TestCase):
         self.assertEqual(tinted, 4 + 6)
 
     def test_zone_is_packed_after_code_post_gfx_and_ahead_of_the_survival_hud(self):
-        pack = packs.load(str(ROOT), "codol_common_postgfx_mp")
+        pack = packs.load(str(ROOT), "common_postgfx_mp")
         names = [n for n, _f, _q in packs.parts(pack)]
         self.assertIn(hs.ZONE, names)
         # the survival HUD's menus name this zone's materials: they are linked first
         self.assertLess(names.index(hs.ZONE), names.index("survival_hud_postgfx_mp"))
         self.assertEqual(packs.stage(hs.ZONE), "post_gfx")
         for lang, zone in hs.LOCALE_ZONES.items():
-            self.assertIn(zone, [n for n, _f, _q in packs.parts(packs.load(str(ROOT), "codol_%s_locale" % lang))])
-            self.assertEqual(packs.locales(zone), packs.locales("codol_%s_locale" % lang))
+            self.assertIn(zone, [n for n, _f, _q in packs.parts(packs.load(str(ROOT), "%s_locale" % lang))])
+            self.assertEqual(packs.locales(zone), packs.locales("%s_locale" % lang))
             rows = hs.locale_rows(self.convs)[lang]
             self.assertEqual([k for k, _v in rows], sorted(self.facts["localize"]))
             m = manifest.read((ROOT / "zone_source" / (zone + ".csv")).read_text(encoding="utf-8"))

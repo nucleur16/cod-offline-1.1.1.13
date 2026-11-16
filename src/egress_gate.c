@@ -1266,7 +1266,7 @@ static void CALLBACK EgDllNotify(ULONG reason, const EgLdrData *data, void *ctx)
     EgInstallFor((HMODULE)data->DllBase, name);
     for (int i = 0; i < EG_HOOKS; i++) /* the new module's imports of a function hooked through the tables */
         if (g_egHooks[i].state == 2) EgSweepImports((HMODULE)data->DllBase, g_egHooks[i].target, g_egHooks[i].hook);
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
     {
         char full[MAX_PATH] = "";
         if (data->FullDllName && data->FullDllName->Buffer)

@@ -36,22 +36,22 @@ int main(void) {
  FILE *f=fopen(path,"wb");if(!f)return 5;fputs("owned fixture marker\\n",f);fclose(f);
  VoiceCmdFile();
  BOOL exists=GetFileAttributesA(path)!=INVALID_FILE_ATTRIBUTES;
- int ok=CODOL_LOCAL_TESTING ? (CtlTestMode() && CtlTestCmdsEnabled() && dispatches==1 && !exists) :
+ int ok=K33_LOCAL_TESTING ? (CtlTestMode() && CtlTestCmdsEnabled() && dispatches==1 && !exists) :
                            (!CtlTestMode() && !CtlTestCmdsEnabled() && !dispatches && exists);
  DeleteFileA(path);if(!ok)return 6;
  puts("PASS: exact profile/command-file body boundary");return 0;
 }
 '''.replace('PROFILE_HEADER',linux(header.resolve())).replace('FUNCTIONS',functions)
     c=a.output/'profile_fixture.c';c.write_text(source);results=[]
-    for name,flags,valid in [('shipping-default',[],True),('quiet-QA',['-DCODOL_LOCAL_TESTING=1','-DCODOL_DIAGNOSTICS=0'],True),
-        ('development',['-DCODOL_LOCAL_TESTING=1'],True),('shipping-debug-forbidden',['-DCODOL_DIAGNOSTICS=1'],False),
-        ('invalid-test-mode',['-DCODOL_LOCAL_TESTING=2'],False),('invalid-diagnostics',['-DCODOL_LOCAL_TESTING=1','-DCODOL_DIAGNOSTICS=2'],False)]:
+    for name,flags,valid in [('shipping-default',[],True),('quiet-QA',['-DK33_LOCAL_TESTING=1','-DK33_DIAGNOSTICS=0'],True),
+        ('development',['-DK33_LOCAL_TESTING=1'],True),('shipping-debug-forbidden',['-DK33_DIAGNOSTICS=1'],False),
+        ('invalid-test-mode',['-DK33_LOCAL_TESTING=2'],False),('invalid-diagnostics',['-DK33_LOCAL_TESTING=1','-DK33_DIAGNOSTICS=2'],False)]:
         folder=a.output/name;folder.mkdir();exe=folder/'fixture.exe'
         r=subprocess.run(['wsl','-d','Ubuntu','--','i686-w64-mingw32-gcc','-O2','-Wall','-static',*flags,linux(c.resolve()),'-o',linux(exe.resolve())],capture_output=True,text=True,encoding='utf8',errors='replace',timeout=30)
         (folder/'compile.log').write_text(r.stdout+r.stderr,encoding='utf8')
         assert (r.returncode==0)==valid,name
         if valid:
-            run=subprocess.run([str(exe),'k33_cmdFile','1','gpad_testcmds','1'],capture_output=True,text=True,timeout=10,creationflags=subprocess.CREATE_NO_WINDOW)
+            run=subprocess.run([str(exe),'com_cmdFile','1','gpad_testcmds','1'],capture_output=True,text=True,timeout=10,creationflags=subprocess.CREATE_NO_WINDOW)
             assert run.returncode==0,run.stdout+run.stderr
             results.append(dict(case=name,compiled=True,hidden_actual_Windows_body_passed=True))
         else:results.append(dict(case=name,invalid_profile_compile_rejected=True))

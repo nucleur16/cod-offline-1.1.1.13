@@ -67,7 +67,7 @@ int main(void)
     CHECK(CtlGlyphSerialNext(-5) == 1);
     CHECK(CtlGlyphSerialNext(CGP_SERIAL_MAX - 1) == CGP_SERIAL_MAX);
     CHECK(CtlGlyphSerialNext(CGP_SERIAL_MAX) == 1);
-    /* k33_glyphinfo */
+    /* gpad_glyphInfo */
     a = CtlGlyphPolicy(2, 0, CGP_DEVICE_KBM);
     CHECK(CtlGlyphInfo(tail, sizeof(tail), &a, 2) == CGP_INFO_LEN && !strcmp(tail, "1|1|0|2"));
     a = CtlGlyphPolicy(5, 3, CGP_DEVICE_KBM);

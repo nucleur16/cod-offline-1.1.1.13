@@ -32,7 +32,7 @@
  * with K33LocalPlayLeave() (p2p_local_play_api.h, docs/P2P_DEFERRED_HOST_START.md): all are safe on any
  * thread and start nothing themselves - p2p.c's main-thread tick validates the request and starts the host.
  */
-#if CODOL_OFFLINE_LOBBY
+#if K33_OFFLINE_LOBBY
 #include "offline/dw_api.h"
 
 #define OFL_C1_NATTRAV_PORT  3074   /* what C1's bdNetStartParams uses for NAT traversal (0x00A50454) */
@@ -49,6 +49,14 @@
 /* AS_IsMapUnlocked (0x005AC260) answers "unlocked" for every map while C1's own bool dvar "2653"
  * is set (registered at 0x005EB25D, default 0, no flags; read by name at 0x005AC266). */
 #define OFL_UNLOCK_MAPS_DVAR "2653"
+
+/* The console's `name` for a profile (player_name.c sets this once it is installed; NULL = the descriptor's name). */
+static int (*volatile g_oflDisplayName)(const char *profileName, char *out, int outSize);
+static int OflDisplayName(const char *profileName, char *out, int outSize) /* lobby thread */
+{
+    int (*fn)(const char *, char *, int) = g_oflDisplayName;
+    return fn ? fn(profileName, out, outSize) : 0;
+}
 
 static struct {
     int settingsRead;            /* k33_offline.ini was looked for */
@@ -495,6 +503,7 @@ static BOOL InstallOfflineLobby(void)
     cfg.start = OflStart;
     cfg.leave = OflLeave;
     cfg.startGame = OflStartGame;
+    cfg.displayName = OflDisplayName; /* player_name.c: the console's `name` for this profile */
     int port = DwOfflineStartServer(&cfg);
     if (!port) {
         if (g_ofl.wantPort) Log("offline lobby: could not listen on 127.0.0.1:%d (k33_offline.ini port; is it in use?)", g_ofl.wantPort);
@@ -537,7 +546,7 @@ static void OfflineP2PConfig(P2PConfig *c)
     c->admission = 1;
     /* P2PCheck permits exactly one extra string (the two match-lifecycle switches); anything else an
      * older p2p_host.ini carries would refuse hosting, so it is dropped rather than passed on. */
-    if (strcmp(c->extra, "+set codol_exitToLobby 1 +set codol_oneShotMatch 1")) c->extra[0] = 0;
+    if (strcmp(c->extra, "+set exitToLobby 1 +set oneShotMatch 1")) c->extra[0] = 0;
 }
 
 #else

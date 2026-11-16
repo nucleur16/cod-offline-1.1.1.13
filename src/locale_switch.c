@@ -3,7 +3,7 @@
  * Included by kernel33.c after voice.c (its command arguments) and k33tick.c; the pure part is locale_switch_policy.h.
  *
  * What a language is: which string a localize name (asset type 27) resolves to. A language's strings are one zone,
- * codol_<name>_locale.ff. A switch unloads the zone of the language on screen and loads the other one, with C1's
+ * <name>_locale.ff. A switch unloads the zone of the language on screen and loads the other one, with C1's
  * own zone loader: the old strings' memory, asset entries and localize pool slots are freed and the new ones are
  * allocated. Nothing of a language that is not on screen stays in memory.
  *
@@ -46,7 +46,7 @@
  * before a switch: see the doc ("Who holds pointers").
  *
  * The font movie (scaleform/fonts_ingame.gfx) must not be in the language zone: a movie Scaleform has loaded is
- * memory C1 keeps using. It is in codol_english_font, an ordinary flag-1 zone ahead of code_pre_gfx that loads
+ * memory C1 keeps using. It is in english_font, an ordinary flag-1 zone ahead of code_pre_gfx that loads
  * when the client starts in English and stays (zone_packs/, kernel33.c).
  */
 #define LS_PUBLISH(dst, src) InterlockedExchangePointer((PVOID volatile *)(dst), (PVOID)(src))
@@ -109,12 +109,12 @@ static int g_lsState, g_lsSerial;
 enum { LR_PHASE_IDLE, LR_PHASE_WAIT, LR_PHASE_LOADING, LR_PHASE_STARTUP };
 static int g_lrPhase = LR_PHASE_STARTUP, g_lrTarget = -1;
 static DWORD g_lrSince;
-#if CODOL_LOCAL_TESTING
-static int g_lrCycles;                     /* k33_langcycle: switches still to do */
-static BOOL g_lrForce;                     /* k33_langforce: the next switch ignores LR_GATE_NO_STACK (measurement) */
+#if K33_LOCAL_TESTING
+static int g_lrCycles;                     /* loc_cycle: switches still to do */
+static BOOL g_lrForce;                     /* loc_forceUnload: the next switch ignores LR_GATE_NO_STACK (measurement) */
 #endif
-static BOOL g_lrNoReorder;                 /* +set k33_langNoReorder 1 (test builds): LrMapLoadHook passes through */
-#if CODOL_LOCAL_TESTING
+static BOOL g_lrNoReorder;                 /* +set loc_noReorder 1 (test builds): LrMapLoadHook passes through */
+#if K33_LOCAL_TESTING
 #endif
 
 typedef struct LrStats {
@@ -256,7 +256,7 @@ __asm__(
 /* DB_UnloadXZone's entry. C1's loader unloads with createDefault 1: an entry without an override is not freed but
  * turned into a copy of the type's default asset (0x4CDB0B) until the next load is in, and a type with a pool but
  * no default asset is fatal there (WIN_LOAD_ASSET_ERROR, 0x4CDB79). The localize default is CGAME_UNKNOWN, which
- * stock C1 has only in localized_common_mp, i.e. in a match: MEASURED, unloading codol_chinese_locale at the front
+ * stock C1 has only in localized_common_mp, i.e. in a match: MEASURED, unloading chinese_locale at the front
  * end ended the client with that error. Nothing holds a pointer to a localize entry (the callers read the value
  * and keep that), so for the language zone, and only when LrUnloadZone asked, createDefault is 0: its entries and
  * slots are freed at once (0x4CDAD1), which is what the request is. */
@@ -264,7 +264,7 @@ static const char *LrZoneName(unsigned zone);
 /* Test builds log the language zone's unload (C1's own unloads pass through untouched and unlogged). */
 __attribute__((used)) void __cdecl LrUnloadSeen(unsigned zone, unsigned createDefault, DWORD caller)
 {
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
     if ((LONG)zone == g_lrUnloadZone)
         Log("language: zone %u \"%s\" unloads with createDefault %u -> 0 (thread %lu, from 0x%08lX)", zone,
             zone < LS_ZONE_MAX ? LrZoneName(zone) : "?", createDefault & 0xFF, GetCurrentThreadId(), caller);
@@ -408,12 +408,12 @@ static void LsPublish(int state)
     LsPoke(g_lsDvSerial, g_lsSerial);
 }
 
-/* Language i's zone name, "" when it has none (zh without codol_chinese_locale: C1's own text). */
+/* Language i's zone name, "" when it has none (zh without chinese_locale: C1's own text). */
 static void LrZoneOf(int lang, char out[64])
 {
     out[0] = 0;
     if (lang >= 0 && lang < g_langCount && (g_langLocale >> lang & 1u))
-        _snprintf(out, 63, "codol_%s_locale", CodolLanguageZoneStem(g_langs[lang])), out[63] = 0;
+        _snprintf(out, 63, "%s_locale", LanguageZoneStem(g_langs[lang])), out[63] = 0;
 }
 
 static unsigned LsReadyMask(void)
@@ -430,14 +430,14 @@ static void LsRegisterDvars(void)
     RegStr regs = (RegStr)(DWORD_PTR)LS_REGISTER_STRING_VA;
     /* push ebp ; mov ebp,esp ; and esp,-8 ; sub esp,10h ; mov edx,[ebp+14h] ; mov ecx,[ebp+0Ch] */
     static const BYTE kRegStr[] = { 0x55, 0x8B, 0xEC, 0x83, 0xE4, 0xF8, 0x83, 0xEC, 0x10, 0x8B, 0x55, 0x14, 0x8B, 0x4D, 0x0C };
-    char list[CODOL_LANG_MAX * CODOL_LANG_NAME_MAX];
+    char list[LANG_MAX * LANG_NAME_MAX];
     g_lsDvarsDone = TRUE;
     if (!Readable((void *)(DWORD_PTR)LS_REGISTER_STRING_VA, sizeof(kRegStr)) ||
         memcmp((void *)(DWORD_PTR)LS_REGISTER_STRING_VA, kRegStr, sizeof(kRegStr)) != 0) {
         Log("language: Dvar_RegisterString 0x%08X differs; k33_language is not registered", LS_REGISTER_STRING_VA);
         return;
     }
-    CodolLanguageListJoin(g_langs, g_langCount, list, sizeof(list));
+    LanguageListJoin(g_langs, g_langCount, list, sizeof(list));
     g_lsDvLanguage = regs("k33_language", g_lang, 0x1,
                           "Language: a name of k33_languageList. Changing it switches the game's text now when "
                           "k33_languageState returns to 0, else on the next start (2)");
@@ -517,7 +517,7 @@ static void __cdecl LrMapLoadHook(XZoneInfo *info, unsigned count, int sync)
     if (!code || g_lrNoReorder || !g_lsInstalled || !g_lrName[0] || g_lrPhase != LR_PHASE_IDLE || count >= 40) {
         if (code && g_lsInstalled && g_lrName[0])
             Log("language: a map load adds code zones above \"%s\"; it stays where it is (%s): a later switch applies on "
-                "restart", g_lrName, g_lrNoReorder ? "k33_langNoReorder" : g_lrPhase != LR_PHASE_IDLE ? "a switch is running" :
+                "restart", g_lrName, g_lrNoReorder ? "loc_noReorder" : g_lrPhase != LR_PHASE_IDLE ? "a switch is running" :
                 "list too long");
         ((LoadXAssetsFn)(DWORD_PTR)DB_LOAD_XASSETS_VA)(info, count, sync);
         return;
@@ -545,7 +545,7 @@ __attribute__((unused)) static const char *LrGateText(enum LrGateAnswer a)
 {
     switch (a) {
     case LR_GATE_NO_HOOKS: return "no live switch in this client";
-    case LR_GATE_NO_OLD_STYLE: return "the startup language's zones are not one codol_<name>_locale zone";
+    case LR_GATE_NO_OLD_STYLE: return "the startup language's zones are not one <name>_locale zone";
     case LR_GATE_NO_REPLACE_MODE: return "C1's linker is replacing assets";
     case LR_GATE_NO_STACK: return "the language zone is not the top block of its memory stack";
     case LR_GATE_NO_ZONES: return "C1's zone table is full";
@@ -565,11 +565,11 @@ static enum LrGateAnswer LrGateNow(LrStats *s)
     g.replaceMode = *(volatile int *)(DWORD_PTR)LR_REPLACE_MODE_VA != 0;
     g.loaded = g_lrName[0] != 0;
     g.onTop = g.loaded && !lstrcmpiA(s->top[0], g_lrName);
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
     if (g_lrForce && g.loaded && !g.onTop) {
         g_lrForce = FALSE;
         g.onTop = TRUE;
-        Log("language: k33_langforce: unloading \"%s\" although it is not the top block of its stack", g_lrName);
+        Log("language: loc_forceUnload: unloading \"%s\" although it is not the top block of its stack", g_lrName);
     }
 #endif
     g.zones = (int)s->zones;
@@ -693,9 +693,9 @@ static void LocaleSwitchTick(void)
             if (late) Log("language: %u string(s) put back in place after C1 changed zones", late);
         }
     }
-    char now[64], lang[CODOL_LANG_NAME_MAX];
+    char now[64], lang[LANG_NAME_MAX];
     if (!C1DvarString("k33_language", now, sizeof(now))) return;
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
     if (!strcmp(now, g_lsSeen) && g_lrCycles > 0 && g_lsState == LS_STATE_IDLE && g_langCount > 1) {
         g_lrCycles--;
         C1QueueSet("k33_language", g_langs[(g_lsShown + 1) % g_langCount]);
@@ -705,7 +705,7 @@ static void LocaleSwitchTick(void)
     if (!strcmp(now, g_lsSeen)) return;
     _snprintf(g_lsSeen, sizeof(g_lsSeen), "%s", now);
     g_lsSeen[sizeof(g_lsSeen) - 1] = 0;
-    int request = CodolLanguageCanonical(now, lang) ? CodolLanguageListFind(g_langs, g_langCount, lang) : -1;
+    int request = LanguageCanonical(now, lang) ? LanguageListFind(g_langs, g_langCount, lang) : -1;
     if (request >= 0 && strcmp(now, g_langs[request]) != 0) {   /* "English", "ZH": store the list's spelling */
         C1QueueSet("k33_language", g_langs[request]);
         _snprintf(g_lsSeen, sizeof(g_lsSeen), "%s", g_langs[request]);
@@ -738,7 +738,7 @@ static void LocaleSwitchTick(void)
         g_lsWanted = request;
         LsPublish(LS_STATE_RESTART);
         Log("language: \"%s\" saved, applies on restart (%s); \"%s\" stays on screen", g_langs[request],
-            !g_lsInstalled ? "no live switch in this client" : "its strings are not one codol_<name>_locale zone", shown);
+            !g_lsInstalled ? "no live switch in this client" : "its strings are not one <name>_locale zone", shown);
         break;
     }
 }
@@ -746,15 +746,15 @@ static void LocaleSwitchTick(void)
 /* k33_setlanguage [name]: sets k33_language through the command buffer; without a name, says where things are. */
 static void __cdecl LsCmdSetLanguage(void)
 {
-    char list[CODOL_LANG_MAX * CODOL_LANG_NAME_MAX], lang[CODOL_LANG_NAME_MAX];
-    CodolLanguageListJoin(g_langs, g_langCount, list, sizeof(list));
+    char list[LANG_MAX * LANG_NAME_MAX], lang[LANG_NAME_MAX];
+    LanguageListJoin(g_langs, g_langCount, list, sizeof(list));
     if (VoiceArgc() < 2) {
         LONG shown = g_lsShown;
         C1Printf("k33_setlanguage <%s>: \"%s\" on screen, state %d, serial %d\n", list,
                  shown >= 0 ? g_langs[shown] : g_lang, g_lsState, g_lsSerial);
         return;
     }
-    if (!CodolLanguageCanonical(VoiceArgv(1), lang) || CodolLanguageListFind(g_langs, g_langCount, lang) < 0) {
+    if (!LanguageCanonical(VoiceArgv(1), lang) || LanguageListFind(g_langs, g_langCount, lang) < 0) {
         C1Printf("k33_setlanguage: not an installed language (%s)\n", list);
         return;
     }
@@ -763,8 +763,8 @@ static void __cdecl LsCmdSetLanguage(void)
 
 static C1Cmd g_lsCmd = { NULL, "k33_setlanguage", (void *)LsCmdSetLanguage };
 
-#if CODOL_LOCAL_TESTING
-/* Test builds: "k33_langstat [text]" logs the tables' use; "k33_langcycle <n>" switches to the next language n times,
+#if K33_LOCAL_TESTING
+/* Test builds: "loc_tableStats [text]" logs the tables' use; "loc_cycle <n>" switches to the next language n times,
  * each when the one before is done. */
 static void __cdecl LrCmdStat(void)
 {
@@ -779,29 +779,29 @@ static void __cdecl LrCmdCycle(void)
     Log("language: %d test switch(es) queued", g_lrCycles);
 }
 
-static C1Cmd g_lrCmdStat = { NULL, "k33_langstat", (void *)LrCmdStat };
-static C1Cmd g_lrCmdCycle = { NULL, "k33_langcycle", (void *)LrCmdCycle };
-static void __cdecl LrCmdForce(void) { g_lrForce = TRUE; Log("language: k33_langforce armed"); }
-static C1Cmd g_lrCmdForce = { NULL, "k33_langforce", (void *)LrCmdForce };
+static C1Cmd g_lrCmdStat = { NULL, "loc_tableStats", (void *)LrCmdStat };
+static C1Cmd g_lrCmdCycle = { NULL, "loc_cycle", (void *)LrCmdCycle };
+static void __cdecl LrCmdForce(void) { g_lrForce = TRUE; Log("language: loc_forceUnload armed"); }
+static C1Cmd g_lrCmdForce = { NULL, "loc_forceUnload", (void *)LrCmdForce };
 #endif
 
 /* After PatchPatchDir (the language list, the zones) and before K33InstallMainTicks. */
 static void InstallLocaleSwitch(void)
 {
-    g_lsStartup = CodolLanguageListFind(g_langs, g_langCount, g_lang);
+    g_lsStartup = LanguageListFind(g_langs, g_langCount, g_lang);
     g_lsShown = g_lsStartup;
     if (!K33OnMainTick(LocaleSwitchTick)) {
         Log("language: no main-thread tick left; k33_language is not registered (command line and saved choice only)");
         return;
     }
     C1AddCommand(&g_lsCmd);
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
     C1AddCommand(&g_lrCmdStat);
     C1AddCommand(&g_lrCmdCycle);
     C1AddCommand(&g_lrCmdForce);
     {
         const char *cl = GetCommandLineA();
-        g_lrNoReorder = cl && strstr(cl, "k33_langNoReorder 1") != NULL;
+        g_lrNoReorder = cl && strstr(cl, "loc_noReorder 1") != NULL;
     }
 #endif
     if (!g_langCount) {

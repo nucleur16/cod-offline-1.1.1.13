@@ -25,6 +25,20 @@ KERNEL = (ROOT / "src/kernel33.c").read_text(encoding="latin-1")
 P2P = (ROOT / "src/p2p/p2p_inproc.c").read_text(encoding="latin-1")
 P2P_C = (ROOT / "src/p2p/p2p.c").read_text(encoding="latin-1")
 HEADER = (ROOT / "src/console/sh1x_cmds.h").read_text(encoding="ascii")
+sys.path.insert(0, str(ROOT / "tools"))
+import drop_codol_prefix  # noqa: E402  (the server's codol_* names as the client spells them)
+
+
+def server_source(rel=None):
+    """A server source file (default: the developer-cheat module, under its old or a renamed path), with the
+    server's codol_* command and dvar names spelled the client's way (tools/drop_codol_prefix.py)."""
+    if rel is None:
+        hits = sorted((SERVER / "src").rglob("*dev_cheats.c"))
+        assert len(hits) == 1, hits
+        path = hits[0]
+    else:
+        path = SERVER / rel
+    return drop_codol_prefix.server_text(path.read_text(encoding="latin-1"))
 
 
 def table(text, name):
@@ -34,19 +48,19 @@ def table(text, name):
 
 
 def strip_block(text, start_marker):
-    """text without every `#if CODOL_DIAGNOSTICS ... #endif` block (no nesting inside them in console.c)."""
-    return re.sub(r'#if CODOL_DIAGNOSTICS\b.*?#endif', '', text, flags=re.S)
+    """text without every `#if K33_DIAGNOSTICS ... #endif` block (no nesting inside them in console.c)."""
+    return re.sub(r'#if K33_DIAGNOSTICS\b.*?#endif', '', text, flags=re.S)
 
 
 class ConsoleInEveryProfile(unittest.TestCase):
     def test_console_is_not_gated_on_diagnostics(self):
-        m = re.search(r'#if !defined\(K33_NO_CONSOLE\)\n#if CODOL_DIAGNOSTICS\n#include "console/k33shot.c"[^\n]*\n#endif\n'
+        m = re.search(r'#if !defined\(K33_NO_CONSOLE\)\n#if K33_DIAGNOSTICS\n#include "console/k33shot.c"[^\n]*\n#endif\n'
                       r'#include "console/console.c"\n#endif', KERNEL)
         self.assertTrue(m, "kernel33.c must include console.c in every profile and k33shot.c only with diagnostics")
-        m = re.search(r'#if !defined\(K33_NO_CONSOLE\)\n\s*InstallConsole\(\);\n#if CODOL_DIAGNOSTICS\n\s*InstallShot\(\);\n'
+        m = re.search(r'#if !defined\(K33_NO_CONSOLE\)\n\s*InstallConsole\(\);\n#if K33_DIAGNOSTICS\n\s*InstallShot\(\);\n'
                       r'#endif\n#endif', KERNEL)
         self.assertTrue(m, "InstallConsole() in every profile, InstallShot() only with diagnostics")
-        self.assertNotIn("CODOL_DIAGNOSTICS && !defined(K33_NO_CONSOLE)", KERNEL)
+        self.assertNotIn("K33_DIAGNOSTICS && !defined(K33_NO_CONSOLE)", KERNEL)
 
     def test_build_scripts_do_not_gate_it(self):
         for script in ("scripts/build.sh", "scripts/build-profile.sh"):
@@ -54,16 +68,16 @@ class ConsoleInEveryProfile(unittest.TestCase):
 
     def test_shipping_profile_has_no_diagnostic_console_parts(self):
         shipping = strip_block(CONSOLE, None)
-        for diagnostic in ("ShotBeforePresent(", "ShotWanted(", '"k33shot"', "k33_rconPort", "ConRconLegacy(",
+        for diagnostic in ("ShotBeforePresent(", "ShotWanted(", '"con_shot"', "con_rconPort", "ConRconLegacy(",
                            "k33_rcon.txt", "native_server_rcon.txt"):
-            self.assertNotIn(diagnostic, shipping, "%s must stay inside #if CODOL_DIAGNOSTICS" % diagnostic)
+            self.assertNotIn(diagnostic, shipping, "%s must stay inside #if K33_DIAGNOSTICS" % diagnostic)
         # the route file has no profile switch at all and no way to another server
-        self.assertNotIn("CODOL_DIAGNOSTICS", ROUTE)
-        self.assertNotIn("CODOL_LOCAL_TESTING", ROUTE)
+        self.assertNotIn("K33_DIAGNOSTICS", ROUTE)
+        self.assertNotIn("K33_LOCAL_TESTING", ROUTE)
 
     def test_toggle_key_and_off_switch_unchanged(self):
         self.assertIn('== 0x29 && !(lp & (1 << 24))', CONSOLE)  # the key left of 1
-        self.assertIn('C1RegisterInt("k33_consoleKey", VK_F1', CONSOLE)
+        self.assertIn('C1RegisterInt("con_toggleKey", VK_F1', CONSOLE)
         self.assertIn('"k33_console 0"', CONSOLE)
 
 
@@ -83,10 +97,10 @@ class GeneratedServerTable(unittest.TestCase):
     def test_table_has_what_the_route_relies_on(self):
         cmds = {n for n, _ in table(HEADER, "kSh1xCmds")}
         dvars = {n for n, _ in table(HEADER, "kSh1xDvars")}
-        for name in ("cmdlist", "cvarlist", "codol_dev_cheats", "codol_dev_clients", "codol_dev_player", "dev_cheats",
+        for name in ("cmdlist", "cvarlist", "dev_cheats", "dev_clients", "dev_player",
                      "dev_clientcmd", "sh1x_status", "status"):
             self.assertIn(name, cmds)
-        for name in ("sv_cheats", "sv_botStop", "codol_devServer", "g_gravity", "scr_codol_bots"):
+        for name in ("sv_cheats", "sv_botStop", "devServer", "g_gravity", "scr_bots"):
             self.assertIn(name, dvars)
 
 
@@ -118,9 +132,9 @@ class CheatSetsAreTheSame(unittest.TestCase):
 
     def test_server_side_matches_its_own_source(self):
         """Read straight from the server source, not through the generated header."""
-        dev = (SERVER / "src/codol/player/codol_dev_cheats.c").read_text(encoding="latin-1")
-        gcmds = (SERVER / "src/g_cmds.c").read_text(encoding="latin-1")
-        listed = re.search(r'CODOL_DevPrint\(ent,\s*"dev: ([a-z ]+)"\)', dev).group(1).split() + ["devhelp"]
+        dev = server_source()
+        gcmds = server_source("src/g_cmds.c")
+        listed = re.search(r'\w*DevPrint\(ent,\s*"dev: ([a-z ]+)"\)', dev).group(1).split() + ["devhelp"]
         self.assertEqual([n for n, _ in self.server], listed)
         own = set(re.findall(r'Q_stricmp\(verb,\s*"([a-z]+)"\)', dev))
         game = set(re.findall(r'Q_stricmp\(\s*cmd,\s*"([a-z_]+)"\s*\)', gcmds))
@@ -133,14 +147,14 @@ class CheatSetsAreTheSame(unittest.TestCase):
 
     def test_builtins_are_not_server_cheats(self):
         builtins = [n for n, _, b in self.client if b == "1"]
-        self.assertEqual(builtins, ["sv", "rcon", "k33dev"])
+        self.assertEqual(builtins, ["sv", "rcon", "con_status"])
 
     def test_devset_list_is_the_servers(self):
         self.assertIn('{ "devset", g_argDevset }', CONSOLE)
         self.assertIn("g_argDevset[i] = kSh1xDevset[i].name", CONSOLE)
         self.assertNotIn("kArgDevset", CONSOLE)
         self.assertNotIn("kArgRcon", CONSOLE)
-        dev = (SERVER / "src/codol/player/codol_dev_cheats.c").read_text(encoding="latin-1")
+        dev = server_source()
         t = dev[dev.index("static dev_dvar_t dev_dvars[]"):]
         t = t[:t.index("};")]
         self.assertEqual([n for n, _ in table(HEADER, "kSh1xDevset")], re.findall(r'\{\s*"([A-Za-z_]+)"', t))
@@ -180,15 +194,15 @@ class ServerRoute(unittest.TestCase):
         self.assertIn("} else if (!clientHas && (isSet ? svKind == 2 : svKind != 0)) {", ex)
 
     def test_cheats_need_the_servers_own_gate(self):
-        # the host's "codol_dev_cheats on" declares its own server a developer server first; nothing sets sv_cheats
-        self.assertEqual(ROUTE.count('"codol_devServer 1"'), 1)
-        self.assertIn('!_stricmp(t0, "codol_dev_cheats") && !_stricmp(a1, "on") && ConSvCheatsOn(seg)', CONSOLE)
-        self.assertNotIn("codol_devServer", P2P_C)  # the host's start-up is not changed
+        # the host's "dev_cheats on" declares its own server a developer server first; nothing sets sv_cheats
+        self.assertEqual(ROUTE.count('"devServer 1"'), 1)
+        self.assertIn('!_stricmp(t0, "dev_cheats") && !_stricmp(a1, "on") && ConSvCheatsOn(seg)', CONSOLE)
+        self.assertNotIn("devServer", P2P_C)  # the host's start-up is not changed
         for src in (CONSOLE, ROUTE, P2P, P2P_C):
             self.assertNotIn("sv_cheats 1\"", src)
             self.assertNotIn("+devmap", src)
-        dev = (SERVER / "src/codol/player/codol_dev_cheats.c").read_text(encoding="latin-1")
-        self.assertIn('dev_server = Cvar_RegisterBool("codol_devServer"', dev)
+        dev = server_source()
+        self.assertIn('dev_server = Cvar_RegisterBool("devServer"', dev)
         self.assertIn("return cheats_on() && !lobby_match_server();", dev)
 
 

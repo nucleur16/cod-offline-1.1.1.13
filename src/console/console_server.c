@@ -10,7 +10,7 @@
  *   why rcon and not Sh1xHost_Command   the host DLL's Sh1xHost_Command is Cbuf_AddText: the command runs in a
  *                                       later server frame and nothing returns what it printed. rcon runs the
  *                                       same command with console power (invoker 100) and returns the output.
- *                                       Nothing here calls into sh1x_host.dll or keeps a pointer into it, so a
+ *                                       Nothing here calls into the linked server or keeps a pointer into it, so a
  *                                       host that is torn down and started again needs no care on this side.
  *   target                              P2PConsoleHost (p2p_inproc.c): the port and rcon file of the host session that
  *                                       is starting or ready right now, asked again for every command. No
@@ -256,9 +256,9 @@ static DWORD WINAPI ConSvExecThread(LPVOID param)
     if (job->delay) Sleep(job->delay);
     if (job->devServer) {
         /* See ConSvCheatsOn. One rcon datagram runs one command (SVC_RemoteCommand -> Cmd_ExecuteSingleCommand),
-         * so the switch goes first, on its own. Its reply ("codol_devServer" is set silently) is not shown. */
+         * so the switch goes first, on its own. Its reply ("devServer" is set silently) is not shown. */
         char ack[512];
-        ConRconOnce(job->port, job->password, "codol_devServer 1", ack, sizeof(ack), 1500, 100);
+        ConRconOnce(job->port, job->password, "devServer 1", ack, sizeof(ack), 1500, 100);
     }
     char *reply = (char *)malloc(CON_SV_REPLY);
     int got = reply ? ConRconOnce(job->port, job->password, job->command, reply, CON_SV_REPLY, 4000, 250) : -1;
@@ -304,13 +304,13 @@ static BOOL ConSvExecDelayed(const char *command, DWORD delayMs)
 
 static BOOL ConSvExec(const char *command) { return ConSvExecDelayed(command, 0); }
 
-/* "codol_dev_cheats on" typed in the console of the player who hosts this offline match.
- * The server refuses every cheat on a "lobby match server" (codol_admissionRequired 1, which hosting requires)
- * unless its operator declares a developer server (dvar codol_devServer, registered with flags 0 in
- * codol_dev_cheats.c, so the operator may set it at run time). The host's console speaks to the server with the
+/* "dev_cheats on" typed in the console of the player who hosts this offline match.
+ * The server refuses every cheat on a "lobby match server" (admissionRequired 1, which hosting requires)
+ * unless its operator declares a developer server (dvar devServer, registered with flags 0 in
+ * dev_cheats.c, so the operator may set it at run time). The host's console speaks to the server with the
  * operator's rcon password, and in this offline client the server exists only for this one player on loopback:
  * so the console declares it right before switching cheats on, never otherwise. sv_cheats itself stays the
- * server's: codol_dev_cheats on sets it, and from then on that server records no progression (its own latch). */
+ * server's: dev_cheats on sets it, and from then on that server records no progression (its own latch). */
 static BOOL ConSvCheatsOn(const char *line)
 {
     ConSvExecJob *job = (ConSvExecJob *)calloc(1, sizeof(*job));
@@ -325,7 +325,7 @@ static BOOL ConSvCheatsOn(const char *line)
 }
 
 /* A cheat command went to the server as this player's client command. The server answers the player with a
- * game message (CODOL_DevPrint: server command 'e'), and C1 neither prints that to its log nor does this
+ * game message (DevPrint: server command 'e'), and C1 neither prints that to its log nor does this
  * client's HUD show it (measured: "viewpos", "give ammo" and a refusal left no line in console_mp.log or on
  * screen). So the console asks the server what the command left behind, half a second later, when the
  * command has run: dev_cheats (whether cheats are permitted and, per player, health, pm_type, the
@@ -352,5 +352,5 @@ static void ConSvCheatHint(void)
     if (!on && g_sv.cheatHintSession != session) { g_sv.cheatHintSession = session; say = TRUE; }
     LeaveCriticalSection(&g_svLock);
     if (say)
-        ConPrintf("  ^3cheats are off in a new match: type ^7codol_dev_cheats on^3 first (that match then records no progression)\n");
+        ConPrintf("  ^3cheats are off in a new match: type ^7dev_cheats on^3 first (that match then records no progression)\n");
 }

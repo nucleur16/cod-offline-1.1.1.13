@@ -202,7 +202,7 @@ menu
     exp float[0] ( -124.667 + ( dvarint "cg_hudSwayX" ) * 0.01 ) )
     exp float[1] ( -61.3333 + ( dvarint "cg_hudSwayY" ) * 0.01 ) )
     visible when ( dvarint "k33_hudStyle" ) == 2 && {( weaponname ) != "none"}
-    exp text ( locstring dvarstring "k33_hudFireType" ) )
+    exp text ( locstring dvarstring "cg_hudFireType" ) )
   item type 8 font 7 textscale 0.56912 textstyle 3 align 0
     name None group None rect -22 -34 0 0 align 10 10 style 0 ownerdraw 3001 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0
@@ -407,7 +407,7 @@ menu
     exp float[0] ( -124.667 + ( dvarint "cg_hudSwayX" ) * 0.01 ) )
     exp float[1] ( -61.3333 + ( dvarint "cg_hudSwayY" ) * 0.01 ) )
     visible when ( dvarint "k33_hudStyle" ) == 3 && {( weaponname ) != "none" && ! 0}
-    exp text ( locstring dvarstring "k33_hudFireType" ) )
+    exp text ( locstring dvarstring "cg_hudFireType" ) )
   item type 8 font 7 textscale 0.56912 textstyle 3 align 0
     name None group None rect -22 -34 0 0 align 10 10 style 0 ownerdraw 3001 static 0x100000 dynamic 0x10004
     forecolor 1 1 1 1 backcolor 0 0 0 0

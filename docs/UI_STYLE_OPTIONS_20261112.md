@@ -66,9 +66,9 @@ to be identical and runs them):
   stops at 5 refuses 6, and the row returns to the stored choice. The same read
   follows a value changed from the console or from the other menu.
 - The Button icons row's own text comes from `gpad_glyphs`, not from
-  `k33_glyphSerial`, which does not move when the effective display is unchanged
+  `gpad_glyphSerial`, which does not move when the effective display is unchanged
   (0 to 6 while already on keyboard). The rows show no key or button hints, so
-  there is nothing of theirs to ask again when `k33_glyphSerial` moves.
+  there is nothing of theirs to ask again when `gpad_glyphSerial` moves.
 
 ## Main menu: Options > Graphics
 
@@ -172,7 +172,7 @@ and loaded on return, and at start). A complete live switch of the front end
 needs the DLL to reload `codo.gfx` after the switch, or to report state 2 there.
 A switch made while a menu is closed is picked up when it is next shown.
 
-`k33_glyphSerial`: C1's key-name natives at `0x5B06CC`, `0x5B0746`, `0x5B091E`
+`gpad_glyphSerial`: C1's key-name natives at `0x5B06CC`, `0x5B0746`, `0x5B091E`
 and `0x5B09E9` return every device's keys whatever `gpad_glyphs` says, so a stock
 menu label fed by them does not follow the override. None of the rows uses them.
 
@@ -185,9 +185,9 @@ Twenty-three keys, English and Chinese, in `scripts/ui_keys.py` `NAMED` and in
 `K33UI_GLYPHS_*`, six `K33UI_HUD_STYLE_*` (with `SM2`), and `K33UI_HUD_SWAY` ("HUD sway" / "HUD 晃动"),
 `K33UI_HUD_SWAY_OFF` ("Off" / "关"), `K33UI_HUD_SWAY_ON` ("On" / "开").
 
-They are entered once per language, in `codol_*_ui`, and not again in
-`codol_*_ui_extra` (where `codoingame.gfx`'s other keys live). Both string zones
-are parts of the same `codol_<language>_locale` pack, which is loaded whole and
+They are entered once per language, in `<language>_ui`, and not again in
+`<language>_ui_extra` (where `codoingame.gfx`'s other keys live). Both string zones
+are parts of the same `<language>_locale` pack, which is loaded whole and
 stays loaded in a match, so the pause menu sees them. The pack builder would drop
 the second copy as shadowed anyway, and an entry that did load twice would take
 two of C1's 12000 localize slots.
@@ -204,7 +204,7 @@ wholesale); the entries were added by hand in `NAMED` order.
 
 ```
 python scripts/build_zones.py --store-class controller_ingame:scaleform/default/codoingame.gfx:MainPause --store-class voice_ui_mp:scaleform/default/codo.gfx:codo.views.option_sub.OptionView_video
-python scripts/build_zones.py --candidate voice_ui_mp controller_ingame codol_english_locale codol_chinese_locale
+python scripts/build_zones.py --candidate voice_ui_mp controller_ingame english_locale chinese_locale
 node tests/ui_style_rows_test.js
 ```
 
@@ -241,7 +241,7 @@ here.
 
 12 November 2026: a test client of this branch's diagnostic DLL and candidate
 zones, started next to the player's own client (its own folder, profile and
-process mutex; off-screen window; driven with `k33mouse`, the synthetic pad and
+process mutex; off-screen window; driven with `cl_fakeMouse`, the synthetic pad and
 back-buffer screenshots). 1920x1080, windowed.
 
 - Before the fix (Chinese): the three row labels are lines of black squares, the
@@ -275,8 +275,8 @@ build of the row asked `Dvar_GetString("cg_hudSway")` to see whether the dvar ex
 whenever the HUD style row is (`k33StyleOptions("hud")` non-empty: the same `hud_style.c` registers both), and
 its value is read with `Dvar_GetInt`. `tests/ui_style_rows_test.js` checks that the sway row reads only
 `k33_hudStyleList` to decide. Live (`D:\CoD\k33_sm2_compass_client`, 1024x768), with the row still on the Graphics
-tab and the dvar still named `k33_hudSway`: the row showed On, picking Off through the drop-down set the dvar to 0
-(`seta k33_hudSway "0"` in `config_mp.cfg` after quitting), and after a restart the row showed Off. The pause menu
+tab and the dvar still under its first, k33-prefixed name (now `cg_hudSway`): the row showed On, picking Off through
+the drop-down set the dvar to 0 (saved in `config_mp.cfg` after quitting), and after a restart the row showed Off. The pause menu
 row was not opened live (no headless way into the pause menu); its logic runs in `tests/ui_style_rows_test.js`.
 
 ## Game tab (16 November 2026)
@@ -320,7 +320,7 @@ list read with a debug build (`F_dump2.png`).
   the Game panel: labels at x 24, boxes at x 170, from y 40 one per 34 units, lists opening downwards, the language
   line under the last row. The frame watch runs while the Graphics or the Game tab is shown.
 
-Live (16 November, `D:\CoD\k33_sm2_compass_client`, 1024x768 windowed, headless: `k33mouse` clicks through
+Live (16 November, `D:\CoD\k33_sm2_compass_client`, 1024x768 windowed, headless: `cl_fakeMouse` clicks through
 `k33_cmd_<pid>.txt`, pictures through `k33_shot.req`): Options opens on Graphics with none of the rows on it; Game
 selects its tab and shows Language / Button icons / HUD style / HUD sway on the card; Video goes back to Graphics
 with its Apply / Recommended / Cancel; Game again; Controller shows the controller panel and Game closes; Game from

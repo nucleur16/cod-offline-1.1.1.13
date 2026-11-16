@@ -89,3 +89,4 @@ localize,MPUI_VILLAGE
 localize,MPUI_DESC_MAP_VILLAGE
 localize,MPUI_WASTELAND_SH
 localize,MPUI_DESC_MAP_WASTELAND_SH
+rawfile,vision/mp_showdown.vision,zlib=9

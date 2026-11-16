@@ -65,7 +65,7 @@ class SharedUIBaseline(unittest.TestCase):
                 ui_baseline.validate(ROOT)
 
     def test_language_specific_functional_movie_is_rejected(self):
-        target=ROOT/"zone_source/codol_chinese_ui.csv"
+        target=ROOT/"zone_source/chinese_ui.csv"
         read=Path.read_text
         def text(p,*args,**kwargs):
             data=read(p,*args,**kwargs)

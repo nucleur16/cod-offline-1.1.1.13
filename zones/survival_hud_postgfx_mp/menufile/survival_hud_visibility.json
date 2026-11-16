@@ -263703,7 +263703,7 @@
             "kind": "expressionEntry",
             "raw": "010000000200000000000000",
             "p": {
-             "8": "k33_hudAssists"
+             "8": "cg_hudAssists"
             }
            },
            {
@@ -316049,7 +316049,7 @@
             "kind": "expressionEntry",
             "raw": "010000000200000000000000",
             "p": {
-             "8": "k33_hudAssists"
+             "8": "cg_hudAssists"
             }
            },
            {
