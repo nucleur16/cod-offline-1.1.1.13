@@ -147,6 +147,10 @@ struct Host {
     virtual void LocalPlayLeave(uint64_t ownerUid) { (void)ownerUid; }
     /* A room start was answered with START_GAME. Runs on the server thread: copy and return. */
     virtual void OnStartGame(const StartInfo &info) { (void)info; }
+    /* The name the local player chose for `profileName` (the console's `name`), or "" for none: the lobby then
+     * uses it wherever it would use the name in the client's session descriptor (LivePlayerName). Any thread
+     * the server runs on: the embedder answers from its own copy and does not touch the game. */
+    virtual std::string DisplayName(const std::string &profileName) { (void)profileName; return ""; }
 };
 
 struct Config {
