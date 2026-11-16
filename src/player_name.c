@@ -115,7 +115,7 @@ static BOOL PnBytes(DWORD va, const BYTE *b, unsigned n)
 static void PnFilePath(void)
 {
     char dir[MAX_PATH];
-#if CODOL_OFFLINE_LOBBY
+#if K33_OFFLINE_LOBBY
     if (g_ofl.players[0]) {
         _snprintf(g_pn.file, MAX_PATH, "%s\\k33_names.txt", g_ofl.players);
         g_pn.file[MAX_PATH - 1] = 0;
@@ -303,7 +303,7 @@ static void InstallPlayerName(void)
     static const BYTE kReadName[] = { 0xA1, 0xFC, 0xC2, 0x6F, 0x01 }; /* mov eax, [0x16FC2FC] */
 
     C1GameInit();
-#if CODOL_OFFLINE_LOBBY
+#if K33_OFFLINE_LOBBY
     g_oflDisplayName = PnLobbyDisplayName;
 #endif
     BOOL reg = PnBytes(PN_REGISTER_SITE_VA, kRegister, sizeof(kRegister)) && PnBytes(PN_REGISTER_STRING_VA, kRegisterFn, sizeof(kRegisterFn)) &&

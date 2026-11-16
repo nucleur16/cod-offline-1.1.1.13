@@ -1,13 +1,14 @@
 /*
  * p2p.c - player-hosted matches (docs/P2P_HOSTING.md).
  *
- * The in-process path loads sh1x_host.dll in the hosting C1 process and drives its server fiber from
- * the game thread; it compiles the GSC tree installed with the client. This client is offline only:
+ * The in-process path runs the sh1x server linked into Kernel33.dll (p2p_inproc.c: started on the first host,
+ * kept for the client's run) on its fiber from the game thread; it compiles the GSC tree installed with the
+ * client. This client is offline only:
  * the launcher startup protocols 1-3, the production SDK, the Guest binding route and the verified
  * script service are gone, and the room's Local Play host is the one (protocol 0) route.
  *
  *   p2phost [map] [gametype] [zonetype]   start hosting (defaults from p2p\p2p_host.ini)
- *   p2pstop                               rcon quit, then end the server's job
+ *   p2pstop                               end the hosted match (in-process: its level is unloaded, the server stays up)
  *   p2pstatus                             state, address, pid, ready time, last sh1x_status line
  *   +set sv_p2pHost 1                    on the command line: start hosting while the client loads
  *
@@ -48,8 +49,8 @@ typedef struct P2PConfig {
     char rconFile[MAX_PATH];
     char map[64], gametype[32], zoneType[16], sessionMap[64];
     char netIp[64], botDifficulty[16], extra[512];
-    char mode[16];               /* inprocess (default): sh1x_host.dll on the game thread; child: the exe */
-    char dll[MAX_PATH];          /* the server as a DLL (mode inprocess) */
+    char mode[16];               /* inprocess (default): the server in Kernel33.dll on the game thread; child: the exe */
+    char dll[MAX_PATH];          /* dll= of earlier builds, read and ignored: the server is part of Kernel33.dll */
     int port, bots, admission, developer, readyTimeout;
     int pmemMegs;                /* pmemMegs for the server: its fastfile block (0 = the server default) */
     int c1Assets;                /* in-process: take C1's records of startup zones (default 1) */
@@ -82,7 +83,8 @@ static BOOL g_p2pHasOverride;
 struct P2PConfig;
 static int P2PInprocRun(const struct P2PConfig *c, const char *password, const char *args); /* p2p_inproc.c */
 static BOOL P2PInprocUsed(void); /* p2p_inproc.c: an in-process session ran and could not be taken down */
-static volatile LONG g_piMatchOver; /* p2p_inproc_retire.c: the hosted match ended; its session is being taken down */
+static BOOL P2PInprocServerAlive(void); /* p2p_inproc.c: the server of this run is up (it holds its port) */
+static volatile LONG g_piMatchOver; /* p2p_inproc.c: the hosted match ended; the room is re-armed for the next one */
 
 static void P2PSetState(int state, const char *error)
 {
@@ -165,7 +167,7 @@ static void P2PDefaults(P2PConfig *c)
     _snprintf(c->dir, MAX_PATH, "%s\\p2p", root);
     _snprintf(c->exe, MAX_PATH, "%s\\k33p2p_dedrun.exe", c->dir);
     _snprintf(c->home, MAX_PATH, "%s\\home", c->dir);
-    _snprintf(c->dll, MAX_PATH, "%s\\sh1x_host.dll", c->dir);
+    /* dll stays empty: the server inside Kernel33.dll (p2p_embedded.c); dll= in p2p_host.ini names a DLL file. */
     /* The GSC tree installed with the client (main\sh1x_rawfiles, docs/P2P_HOSTING.md). */
     _snprintf(c->scripts, MAX_PATH, "%s\\main\\sh1x_rawfiles", root);
     lstrcpyA(c->mode, "inprocess");
@@ -307,7 +309,6 @@ static const char *P2PCheck(const P2PConfig *c)
             "+set exitToLobby 1 +set oneShotMatch 1"))
         return "P2P extra commands are not permitted by the local host policy";
     if (!P2PPathOk(c->dll)) return "a path holds a quote";
-    if (inproc && GetFileAttributesA(c->dll) == INVALID_FILE_ATTRIBUTES) return "server DLL not found (dll=)";
     if (!inproc && GetFileAttributesA(c->exe) == INVALID_FILE_ATTRIBUTES) return "server executable not found (exe=)";
     if (!P2PServerPackPresent(c))
         return "server pack missing: p2p\\home\\main\\sh1x_svr_scripts.iwd (bot classes, waypoints)";
@@ -460,8 +461,10 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
 
     const char *bad = P2PCheck(&c);
     if (bad) { Log("p2p: not hosting: %s", bad); P2PSetState(P2P_FAILED, bad); WSACleanup(); return 1; }
-    OfflineHostPortRelease(); /* offline mode kept the port bound until now so that it is still free */
-    if (!P2PPortFree(c.netIp, c.port)) {
+    /* The server of this run, once started, holds its port between matches; only the first match checks it. */
+    BOOL serverUp = !_stricmp(c.mode, "inprocess") && P2PInprocServerAlive();
+    if (!serverUp) OfflineHostPortRelease(); /* offline mode kept the port bound until now so that it is still free */
+    if (!serverUp && !P2PPortFree(c.netIp, c.port)) {
         Log("p2p: not hosting: udp %s:%d is in use", c.netIp, c.port);
         P2PSetState(P2P_FAILED, "the UDP port is in use");
         WSACleanup();
@@ -497,8 +500,8 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
         _snprintf(pmem + strlen(pmem), sizeof(pmem) - strlen(pmem), " +set net_ip6 ::1");
     /* Offline: one match per session. At its level exit the server keeps the finished map instead of rotating
      * (server g_sv_main.c ExitLevel: "a managed worker keeps the finished map loaded until clients leave"); the
-     * player goes back to the lobby, the session ends and is taken down (p2p_inproc_retire.c), and the next
-     * Ready starts a fresh one. Without it the client followed the rotation into the next map for a second and
+     * player goes back to the lobby, the match ends (the server stays up, p2p_inproc.c), and the next Ready moves
+     * the same server to the next match. Without it the client followed the rotation into the next map for a second and
      * that map's "disconnect" report credited a loss. */
     if (OfflineLobbyActive())
         _snprintf(pmem + strlen(pmem), sizeof(pmem) - strlen(pmem), " +set oneShotMatch 1 +set exitToLobby 1");
@@ -525,7 +528,8 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
         /* The same command line without the exe: Sh1xHost_Init takes what follows it. */
         const char *args = strchr(cmd + 1, '"');
         int r = P2PInprocRun(&c, password, args ? args + 2 : cmd);
-        if (OfflineLobbyActive() && !P2PInprocUsed()) OfflineHostPortReserve(); /* until the next match's launch */
+        /* until the next match's launch; a running server holds the port itself */
+        if (OfflineLobbyActive() && !P2PInprocUsed() && !P2PInprocServerAlive()) OfflineHostPortReserve();
         WSACleanup();
         return r;
     }
@@ -831,7 +835,7 @@ static void P2PLaunchWatch(int state, DWORD now)
     InterlockedExchange(&g_p2pStop, 1);
     InterlockedExchange(&g_piMatchOver, 1); /* the room stays armed: the next Ready starts a fresh host */
 }
-/* Main thread: the launched host's match is over (its session ends and is taken down, p2p_inproc_retire.c).
+/* Main thread: the launched host's match is over (the match ends, the server stays up, p2p_inproc.c).
  * The owner is still in the room: it is armed again for the next Ready, which starts a fresh host. */
 static void P2PMatchOverTick(void)
 {

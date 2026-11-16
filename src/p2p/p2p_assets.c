@@ -1,7 +1,7 @@
 /*
  * p2p_assets.c - the in-process server's assets against C1's own (feat/p2p-inprocess, asset layout stage 2/3).
  *
- * The server (sh1x_host.dll, server branch feat/iw4-asset-layout) converts its assets, one type at a time, to the
+ * The server (linked into Kernel33.dll, server branch feat/iw4-asset-layout) converts its assets, one type at a time, to the
  * layout C1 holds in memory, and exports Sh1xHost_FindAsset / Sh1xHost_EnumerateAssets for the converted types.
  * p2passetcheck <type> [name|*] compares the server's record with C1's (DB_FindXAssetHeader 0x4CB8E0, only for
  * names C1 has a real, non-default entry for: DB_IsXAssetDefault 0x4CBDA0 first, so no default asset is created).
@@ -648,23 +648,22 @@ static void __cdecl PiCmdAssetCheck(void)
 {
     const char *cl = GetCommandLineA();
     if (!cl || !strstr(cl, "com_cmdFile 1")) { C1Printf("p2passetcheck: test clients only (+set com_cmdFile 1)\n"); return; }
-    if (g_piState != PI_RUNNING || !g_piBase) { C1Printf("p2passetcheck: no in-process server running\n"); return; }
+    if (g_piServer != PS_RUNNING) { C1Printf("p2passetcheck: no in-process server running\n"); return; }
     unsigned type = VoiceArgc() > 1 ? (unsigned)atoi(VoiceArgv(1)) : 11;
     const char *which = VoiceArgc() > 2 ? VoiceArgv(2) : "*";
-    HMODULE m = (HMODULE)(DWORD_PTR)g_piBase;
-    g_paFind = (Sh1xFindAssetFn)(void *)GetProcAddress(m, "Sh1xHost_FindAsset");
-    Sh1xEnumAssetsFn enumerate = (Sh1xEnumAssetsFn)(void *)GetProcAddress(m, "Sh1xHost_EnumerateAssets");
+    g_paFind = Sh1xHost_FindAsset;
+    Sh1xEnumAssetsFn enumerate = Sh1xHost_EnumerateAssets;
     if (!g_paFind || !enumerate) { C1Printf("p2passetcheck: the server DLL has no asset API (needs feat/iw4-asset-layout)\n"); return; }
     /* p2passetcheck <type> <name|*> c1: the generic comparison of the server's C1-layout header copies (any type
      * the replay catalogues; the server needs +set c1Fixups 1). Without it, the converted types' records. */
     /* c1: the header copies; m: the materialized records (real pointers) walked beside them */
     g_paMaterialized = VoiceArgc() > 3 && !strcmp(VoiceArgv(3), "m");
     g_paGeneric = VoiceArgc() > 3 && (!strcmp(VoiceArgv(3), "c1") || g_paMaterialized);
-    g_paRecord = (Sh1xFindC1RecordFn)(void *)GetProcAddress(m, "Sh1xHost_FindC1Record");
+    g_paRecord = Sh1xHost_FindC1Record;
     if (g_paMaterialized && !g_paRecord) { C1Printf("p2passetcheck: the server DLL has no C1 record API\n"); return; }
-    g_paHeader = (Sh1xFindC1HeaderFn)(void *)GetProcAddress(m, "Sh1xHost_FindC1Header");
-    g_paResolve = (Sh1xResolveC1Fn)(void *)GetProcAddress(m, "Sh1xHost_ResolveC1Pointer");
-    g_paPointers = (Sh1xPointersInFn)(void *)GetProcAddress(m, "Sh1xHost_C1PointersIn");
+    g_paHeader = Sh1xHost_FindC1Header;
+    g_paResolve = Sh1xHost_ResolveC1Pointer;
+    g_paPointers = Sh1xHost_C1PointersIn;
     if (g_paGeneric && (!g_paHeader || !g_paResolve || !g_paPointers)) { C1Printf("p2passetcheck: the server DLL has no C1 header API\n"); return; }
     if (!g_paGeneric && type != 11 && type != 28 && type != 36 && type != 37) { C1Printf("p2passetcheck: type %u is not converted yet (11 sound, 28 weapon, 36 rawfile, 37 stringtable; or add c1)\n", type); return; }
     g_paType = type;
