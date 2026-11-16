@@ -38,7 +38,7 @@
 #define CGP_DEVICE_KBM      0   /* the values of g_lastDevice */
 #define CGP_DEVICE_PAD      1
 
-#define CGP_SERIAL_MAX      1000000000   /* k33_glyphSerial wraps to 1 after this; 0 = nothing published yet */
+#define CGP_SERIAL_MAX      1000000000   /* gpad_glyphSerial wraps to 1 after this; 0 = nothing published yet */
 #define CGP_INFO_LEN        7            /* "f|d|t|g" */
 
 typedef struct {
@@ -69,7 +69,7 @@ static inline CtlGlyphDisplay CtlGlyphPolicy(int glyphs, int padType, int lastDe
     return d;
 }
 
-/* What a change of bumps k33_glyphSerial: family, device, text-only. (forced follows from the dvar alone and
+/* What a change of bumps gpad_glyphSerial: family, device, text-only. (forced follows from the dvar alone and
  * cannot change a label on its own.) */
 static inline int CtlGlyphDisplaySame(const CtlGlyphDisplay *a, const CtlGlyphDisplay *b)
 {
@@ -81,7 +81,7 @@ static inline int CtlGlyphSerialNext(int serial)
     return serial < 1 || serial >= CGP_SERIAL_MAX ? 1 : serial + 1;
 }
 
-/* k33_glyphinfo, the display state the Scaleform menus and HUD read: "family|device|textOnly|glyphs", one
+/* gpad_glyphInfo, the display state the Scaleform menus and HUD read: "family|device|textOnly|glyphs", one
  * digit each (family 0 Xbox, 1 PlayStation, 2 Nintendo, 3 generic; device 0 keyboard / mouse, 1 pad; glyphs =
  * the gpad_glyphs value in effect, 0..6). Writes CGP_INFO_LEN characters and a 0 into out
  * (n >= CGP_INFO_LEN + 1) and returns the length, or 0 when out is too small. */

@@ -36,7 +36,7 @@ typedef struct DwOfflineConfig {
     const char *playerName;   /* the local player's profile name = its folder under `profile`; NULL = name it by uid */
     const char *legacyStore;  /* optional: a k33_offline\profile store of the first offline builds, imported once */
     const char *state;        /* securitykey.bin, game_admissions.txt: shared with the embedded match host */
-    const char *matchProfile; /* the match host's codol_profilePath: mpdata_s.<uid>, match_report.json */
+    const char *matchProfile; /* the match host's profilePath: mpdata_s.<uid>, match_report.json */
     const char *zoneDir;      /* the client's zone folder (map availability), or NULL */
     const char *gameDir;      /* the game install: usermaps\<map>\, main\sh1x_rawfiles (Survival placements),
                                  p2p\survival_maps.txt; or NULL */
@@ -53,6 +53,10 @@ typedef struct DwOfflineConfig {
     /* The owner left its room (K33LocalPlayLeave). */
     void (*leave)(unsigned long long ownerUid);
     void (*startGame)(const DwOfflineStartInfo *info);
+    /* Optional: the display name the local player set for the profile `profileName` (the console's `name`).
+     * -> 1 and the name in out (NUL-terminated), or 0 when there is none. Called on the lobby thread; it must
+     * only copy data. */
+    int (*displayName)(const char *profileName, char *out, int outSize);
 } DwOfflineConfig;
 
 /* Starts the listener thread and waits (at most 3 s) until it is bound.

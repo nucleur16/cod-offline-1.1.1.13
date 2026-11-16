@@ -37,5 +37,5 @@ items_cha.txt
 items_cha_default.proposed
 items_cha_unlockall.proposed
 # weapon -> legal attachments (mp/coWeaponAttachmentTable.csv), with m14ebr_mp's rows as the Kernel33
-# patch zone mp_codol_weapons ships them (Python lobby feat/mp-m14, 2d37c1e)
+# patch zone mp_weapons ships them (Python lobby feat/mp-m14, 2d37c1e)
 weapon_attachments.txt = py:catalogue/weapon_tables.py:_ATTACH_RAW

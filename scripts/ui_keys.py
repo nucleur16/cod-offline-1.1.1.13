@@ -15,8 +15,8 @@ entry shows as the "@NAME" itself). So:
   - the hand-written classes (OptionView*, MatchMPCTMenuView, MatchRoomListView, MatchSelectModeHomeView,
     MainPause) use keys in their source (NAMED below); a class whose literal is also a name in its ABC
     (MatchRoomListView: "MAP") must be one of those.
-Entries (GBK): English in codol_english_ui (codo, login keys) / codol_english_ui_extra (hud, ingame), Chinese in
-codol_chinese_ui / codol_chinese_ui_extra. Kernel33 loads one set: codol_english* with k33_english 1, codol_chinese*
+Entries (GBK): English in english_ui (codo, login keys) / english_ui_extra (hud, ingame), Chinese in
+chinese_ui / chinese_ui_extra. Kernel33 loads one set: english* with k33_english 1, chinese*
 with 0 (C1 holds at most 12000 localize assets, and an entry loaded twice takes two). An entry already in a
 localize.str keeps its text, so those files are where a text is changed; running this again only adds what is missing
 and drops text keys no movie uses any more.
@@ -40,12 +40,12 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # the reposi
 sys.path.insert(0, HERE)
 from zonekit import abcstr, build, codecs, gfx, manifest, stock, zonelist  # noqa: E402
 
-GAME = os.environ.get("CODOL_GAME", r"D:\CoD\CODOL Builds\Call of Duty Online 1.1.1.13")
-FFDEC = os.environ.get("CODOL_FFDEC", r"C:\Program Files (x86)\FFDec\ffdec-cli.exe")
+GAME = os.environ.get("K33_GAME", r"D:\CoD\CODOL Builds\Call of Duty Online 1.1.1.13")
+FFDEC = os.environ.get("K33_FFDEC", r"C:\Program Files (x86)\FFDec\ffdec-cli.exe")
 
 # (zone, rawfile, key prefix, (English zone, Chinese zone))
-UI = ("codol_english_ui", "codol_chinese_ui")
-UI_EXTRA = ("codol_english_ui_extra", "codol_chinese_ui_extra")
+UI = ("english_ui", "chinese_ui")
+UI_EXTRA = ("english_ui_extra", "chinese_ui_extra")
 MOVIES = [("voice_ui_mp", "scaleform/default/codo.gfx", "CODO", UI),
           ("voice_ui_mp", "scaleform/default/codologin.gfx", "LOGIN", UI),
           ("controller_ingame", "scaleform/default/codohud.gfx", "HUD", UI_EXTRA),
@@ -157,8 +157,8 @@ NAMED = {
     "K33UI_PAD_BTN_GENERIC_BACK": ("Back", "返回", "codo.gfx"),
     # Options > Graphics (OptionView_video) and the pause menu's Options list (codoingame.gfx MainPause): the
     # Language / Button icons / HUD style rows (docs/UI_STYLE_OPTIONS_20261112.md). Both movies show these keys;
-    # they are entered once, here (codol_*_ui), not also in codol_*_ui_extra: both string zones are parts of the
-    # same codol_<language>_locale pack, which is loaded whole, and an entry loaded twice takes two of C1's slots.
+    # they are entered once, here (<language>_ui), not also in <language>_ui_extra: both string zones are parts of the
+    # same <language>_locale pack, which is loaded whole, and an entry loaded twice takes two of C1's slots.
     "K33UI_LANGUAGE": ("Language", "语言", "codo.gfx"),
     "K33UI_GLYPHS": ("Button icons", "按键图标", "codo.gfx"),
     "K33UI_HUD_STYLE": ("HUD style", "HUD 样式", "codo.gfx"),

@@ -65,9 +65,9 @@ to be identical and runs them):
   stops at 5 refuses 6, and the row returns to the stored choice. The same read
   follows a value changed from the console or from the other menu.
 - The Button icons row's own text comes from `gpad_glyphs`, not from
-  `k33_glyphSerial`, which does not move when the effective display is unchanged
+  `gpad_glyphSerial`, which does not move when the effective display is unchanged
   (0 to 6 while already on keyboard). The rows show no key or button hints, so
-  there is nothing of theirs to ask again when `k33_glyphSerial` moves.
+  there is nothing of theirs to ask again when `gpad_glyphSerial` moves.
 
 ## Main menu: Options > Graphics
 
@@ -169,7 +169,7 @@ and loaded on return, and at start). A complete live switch of the front end
 needs the DLL to reload `codo.gfx` after the switch, or to report state 2 there.
 A switch made while a menu is closed is picked up when it is next shown.
 
-`k33_glyphSerial`: C1's key-name natives at `0x5B06CC`, `0x5B0746`, `0x5B091E`
+`gpad_glyphSerial`: C1's key-name natives at `0x5B06CC`, `0x5B0746`, `0x5B091E`
 and `0x5B09E9` return every device's keys whatever `gpad_glyphs` says, so a stock
 menu label fed by them does not follow the override. None of the rows uses them.
 
@@ -181,9 +181,9 @@ Nineteen keys, English and Chinese, in `scripts/ui_keys.py` `NAMED` and in
 `K33UI_LANG_NAME_ZH`, `K33UI_LANG_RESTART`, `K33UI_LANG_SWITCHING`, seven
 `K33UI_GLYPHS_*`, five `K33UI_HUD_STYLE_*`.
 
-They are entered once per language, in `codol_*_ui`, and not again in
-`codol_*_ui_extra` (where `codoingame.gfx`'s other keys live). Both string zones
-are parts of the same `codol_<language>_locale` pack, which is loaded whole and
+They are entered once per language, in `<language>_ui`, and not again in
+`<language>_ui_extra` (where `codoingame.gfx`'s other keys live). Both string zones
+are parts of the same `<language>_locale` pack, which is loaded whole and
 stays loaded in a match, so the pause menu sees them. The pack builder would drop
 the second copy as shadowed anyway, and an entry that did load twice would take
 two of C1's 12000 localize slots.
@@ -200,7 +200,7 @@ wholesale); the entries were added by hand in `NAMED` order.
 
 ```
 python scripts/build_zones.py --store-class controller_ingame:scaleform/default/codoingame.gfx:MainPause --store-class voice_ui_mp:scaleform/default/codo.gfx:codo.views.option_sub.OptionView_video
-python scripts/build_zones.py --candidate voice_ui_mp controller_ingame codol_english_locale codol_chinese_locale
+python scripts/build_zones.py --candidate voice_ui_mp controller_ingame english_locale chinese_locale
 node tests/ui_style_rows_test.js
 ```
 
@@ -237,7 +237,7 @@ here.
 
 12 November 2026: a test client of this branch's diagnostic DLL and candidate
 zones, started next to the player's own client (its own folder, profile and
-process mutex; off-screen window; driven with `k33mouse`, the synthetic pad and
+process mutex; off-screen window; driven with `cl_fakeMouse`, the synthetic pad and
 back-buffer screenshots). 1920x1080, windowed.
 
 - Before the fix (Chinese): the three row labels are lines of black squares, the

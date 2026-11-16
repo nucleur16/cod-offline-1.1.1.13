@@ -57,7 +57,7 @@ global.CFunctionContainerCommon={
 global.LocalizeUtil={localize:k=>strings[k.slice(1)]===undefined?k:strings[k.slice(1)]};
 function engine(over){
  dvars=Object.assign({k33_language:'en',k33_languageList:'en;zh',k33_languageState:'0',k33_languageSerial:'0',
-  gpad_glyphs:'0',k33_padinfo:'0|1|Xbox 360 Controller|0|0',k33_glyphSerial:'0',
+  gpad_glyphs:'0',k33_padinfo:'0|1|Xbox 360 Controller|0|0',gpad_glyphSerial:'0',
   k33_hudStyle:'0',k33_hudStyleList:'0:stock;2:v26'},over||{});
  for(const k of Object.keys(dvars))if(dvars[k]===null)delete dvars[k];
  ranges={gpad_glyphs:[0,6],k33_hudStyle:[0,9]};sets=[];reads=[];
@@ -384,13 +384,13 @@ for(const n of literal(P,'K33_GLYPH_NAMES'))used.add('K33UI_GLYPHS_'+n);
 for(const id of ['EN','ZH'])used.add('K33UI_LANG_NAME_'+id);
 for(const id of ['STOCK','V12','V26','V33','V35','SM2'])used.add('K33UI_HUD_STYLE_'+id);
 assert.strictEqual(used.size,20,[...used].join(' '));
-const en=entries('codol_english_ui'),zh=entries('codol_chinese_ui'),enx=entries('codol_english_ui_extra'),zhx=entries('codol_chinese_ui_extra');
+const en=entries('english_ui'),zh=entries('chinese_ui'),enx=entries('english_ui_extra'),zhx=entries('chinese_ui_extra');
 const keysPy=read('scripts/ui_keys.py');
 for(const lang of ['english','chinese']){
- const manifest=read('zone_source/codol_'+lang+'_ui.csv').split('\n');
- for(const k of used)assert.strictEqual(manifest.filter(l=>l==='localize,'+k).length,1,k+' in zone_source/codol_'+lang+'_ui.csv');
- const pack=read('zone_packs/codol_'+lang+'_locale.csv');
- assert(pack.includes('part,codol_'+lang+'_ui\n')&&pack.includes('part,codol_'+lang+'_ui_extra\n'),'both string zones load as one pack, so the pause menu sees the keys');
+ const manifest=read('zone_source/'+lang+'_ui.csv').split('\n');
+ for(const k of used)assert.strictEqual(manifest.filter(l=>l==='localize,'+k).length,1,k+' in zone_source/'+lang+'_ui.csv');
+ const pack=read('zone_packs/'+lang+'_locale.csv');
+ assert(pack.includes('part,'+lang+'_ui\n')&&pack.includes('part,'+lang+'_ui_extra\n'),'both string zones load as one pack, so the pause menu sees the keys');
 }
 for(const k of used){
  assert(en[k]&&zh[k],k+' needs an English and a Chinese entry');

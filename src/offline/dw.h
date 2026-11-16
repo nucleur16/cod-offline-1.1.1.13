@@ -147,6 +147,10 @@ struct Host {
     virtual void LocalPlayLeave(uint64_t ownerUid) { (void)ownerUid; }
     /* A room start was answered with START_GAME. Runs on the server thread: copy and return. */
     virtual void OnStartGame(const StartInfo &info) { (void)info; }
+    /* The name the local player chose for `profileName` (the console's `name`), or "" for none: the lobby then
+     * uses it wherever it would use the name in the client's session descriptor (LivePlayerName). Any thread
+     * the server runs on: the embedder answers from its own copy and does not touch the game. */
+    virtual std::string DisplayName(const std::string &profileName) { (void)profileName; return ""; }
 };
 
 struct Config {
@@ -158,7 +162,7 @@ struct Config {
     std::string legacyStore; /* optional: the JSON store of the first offline builds (k33_offline\profile);
                               * its careers are imported once into `profile` (Store::ImportLegacy) */
     std::string state;       /* securitykey.bin, game_admissions.txt (shared with the match server) */
-    std::string matchProfile;/* the match server's codol_profilePath: mpdata_s.<uid>, match_report.json */
+    std::string matchProfile;/* the match server's profilePath: mpdata_s.<uid>, match_report.json */
     std::string zoneDir;     /* the client's zone folder (map availability); may be empty */
     std::string gameDir;     /* the game install (the folder holding client_shipRetail\, usermaps\, main\, p2p\);
                               * empty = unknown: no usermaps, every supported Survival level counts as installed */

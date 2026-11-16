@@ -10622,7 +10622,7 @@
             "kind": "expressionEntry",
             "raw": "010000000200000000000000",
             "p": {
-             "8": "k33_hudFireType"
+             "8": "cg_hudFireType"
             }
            },
            {
@@ -17502,7 +17502,7 @@
             "kind": "expressionEntry",
             "raw": "010000000200000000000000",
             "p": {
-             "8": "k33_hudFireType"
+             "8": "cg_hudFireType"
             }
            },
            {

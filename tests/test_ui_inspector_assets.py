@@ -74,11 +74,11 @@ class UiAssets(unittest.TestCase):
 
     def test_missing_decoder_is_actionable_and_never_claims_rendering(self):
         with tempfile.TemporaryDirectory() as temp:
-            with patch.object(M, '_runtime', side_effect=FileNotFoundError('set CODOL_ASSETEXPLORER_BIN')):
+            with patch.object(M, '_runtime', side_effect=FileNotFoundError('set K33_ASSETEXPLORER_BIN')):
                 result = M.prepare_movie_assets(movie(), Path(temp) / 'preview', Path(temp) / 'game')
             self.assertEqual(result['resolved'], [])
             self.assertEqual(len(result['unresolved']), 1)
-            self.assertIn('CODOL_ASSETEXPLORER_BIN', result['errors'][0])
+            self.assertIn('K33_ASSETEXPLORER_BIN', result['errors'][0])
 
 
 if __name__ == '__main__':

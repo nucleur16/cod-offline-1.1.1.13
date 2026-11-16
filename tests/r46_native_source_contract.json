@@ -1,22 +1,12 @@
 {
   "dev_gate_sections": [
     {
-      "after": "#if CODOL_LOCAL_TESTING\nstatic volatile LONG g_piFaultTest;  /* p2pfaulttest: test clients only */\n#endif",
-      "before": "static volatile LONG g_piFaultTest;  /* p2pfaulttest: test clients only */",
-      "label": "fault flag storage"
+      "label": "diagnostic command declarations and registration array",
+      "before": "static void __cdecl PiCmdAssetCheck(void); /* p2p_assets.c */\nstatic void __cdecl PiCmdSlScan(void); /* p2p_assets.c */\nstatic void __cdecl PiServerCommand(void *line) { Sh1xHost_Command((const char *)line); }\n/* p2psv <command...>: test clients only (+set com_cmdFile 1): one console command for the running match server,\n * queued with Sh1xHost_Command on its fiber (C1 splits a line at ';', so one command per p2psv). */\nstatic void __cdecl PiCmdServer(void)\n{\n    const char *cl = GetCommandLineA();\n    char line[1024];\n    size_t used = 0;\n    if (!cl || !strstr(cl, \"com_cmdFile 1\")) { C1Printf(\"p2psv: test clients only (+set com_cmdFile 1)\\n\"); return; }\n    line[0] = 0;\n    for (int i = 1; i < VoiceArgc() && used + 2 < sizeof(line); i++) {\n        int n = _snprintf(line + used, sizeof(line) - used - 2, \"%s%s\", i > 1 ? \" \" : \"\", VoiceArgv(i));\n        if (n < 0) break;\n        used += (size_t)n;\n    }\n    lstrcpynA(line + used, \"\\n\", (int)(sizeof(line) - used));\n    if (!PiRunOnServer(PiServerCommand, line)) { C1Printf(\"p2psv: no in-process server running\\n\"); return; }\n    Log(\"p2p in-process: p2psv %s\", line);\n}\nstatic C1Cmd g_piCmds[] = { { NULL, \"p2passetcheck\", (void *)PiCmdAssetCheck }, { NULL, \"p2pslscan\", (void *)PiCmdSlScan },\n                            { NULL, \"p2psv\", (void *)PiCmdServer } };",
+      "after": "#if K33_LOCAL_TESTING\nstatic void __cdecl PiCmdAssetCheck(void); /* p2p_assets.c */\nstatic void __cdecl PiCmdSlScan(void); /* p2p_assets.c */\nstatic void __cdecl PiServerCommand(void *line) { Sh1xHost_Command((const char *)line); }\n/* p2psv <command...>: test clients only (+set com_cmdFile 1): one console command for the running match server,\n * queued with Sh1xHost_Command on its fiber (C1 splits a line at ';', so one command per p2psv). */\nstatic void __cdecl PiCmdServer(void)\n{\n    const char *cl = GetCommandLineA();\n    char line[1024];\n    size_t used = 0;\n    if (!cl || !strstr(cl, \"com_cmdFile 1\")) { C1Printf(\"p2psv: test clients only (+set com_cmdFile 1)\\n\"); return; }\n    line[0] = 0;\n    for (int i = 1; i < VoiceArgc() && used + 2 < sizeof(line); i++) {\n        int n = _snprintf(line + used, sizeof(line) - used - 2, \"%s%s\", i > 1 ? \" \" : \"\", VoiceArgv(i));\n        if (n < 0) break;\n        used += (size_t)n;\n    }\n    lstrcpynA(line + used, \"\\n\", (int)(sizeof(line) - used));\n    if (!PiRunOnServer(PiServerCommand, line)) { C1Printf(\"p2psv: no in-process server running\\n\"); return; }\n    Log(\"p2p in-process: p2psv %s\", line);\n}\nstatic C1Cmd g_piCmds[] = { { NULL, \"p2passetcheck\", (void *)PiCmdAssetCheck }, { NULL, \"p2pslscan\", (void *)PiCmdSlScan },\n                            { NULL, \"p2psv\", (void *)PiCmdServer } };\n#endif"
     },
     {
-      "after": "#if CODOL_LOCAL_TESTING\n            /* p2pfaulttest: a real fault inside the server's code (Cbuf_AddText reading address 1). */\n            if (g_piFaultTest) { g_piFaultTest = 0; g_piCmd((const char *)1); }\n#endif",
-      "before": "            /* p2pfaulttest: a real fault inside the server's code (Cbuf_AddText reading address 1). */\n            if (g_piFaultTest) { g_piFaultTest = 0; g_piCmd((const char *)1); }",
-      "label": "fault flag frame check and injection"
-    },
-    {
-      "after": "#if CODOL_LOCAL_TESTING\n/* Test clients only (+set k33_cmdFile 1): make the running server fault, to check the containment. */\nstatic void __cdecl PiCmdFaultTest(void)\n{\n    const char *cl = GetCommandLineA();\n    if (!cl || !strstr(cl, \"k33_cmdFile 1\")) { C1Printf(\"p2pfaulttest: test clients only (+set k33_cmdFile 1)\\n\"); return; }\n    if (g_piState != PI_RUNNING) { C1Printf(\"p2pfaulttest: no in-process server running\\n\"); return; }\n    InterlockedExchange(&g_piFaultTest, 1);\n    C1Printf(\"p2pfaulttest: the server faults in its next frame\\n\");\n}\nstatic void __cdecl PiCmdAssetCheck(void); /* p2p_assets.c */\nstatic void __cdecl PiCmdSlScan(void); /* p2p_assets.c */\nstatic C1Cmd g_piCmds[] = { { NULL, \"p2pfaulttest\", (void *)PiCmdFaultTest }, { NULL, \"p2passetcheck\", (void *)PiCmdAssetCheck },\n                            { NULL, \"p2pslscan\", (void *)PiCmdSlScan } };\n#endif",
-      "before": "/* Test clients only (+set k33_cmdFile 1): make the running server fault, to check the containment. */\nstatic void __cdecl PiCmdFaultTest(void)\n{\n    const char *cl = GetCommandLineA();\n    if (!cl || !strstr(cl, \"k33_cmdFile 1\")) { C1Printf(\"p2pfaulttest: test clients only (+set k33_cmdFile 1)\\n\"); return; }\n    if (g_piState != PI_RUNNING) { C1Printf(\"p2pfaulttest: no in-process server running\\n\"); return; }\n    InterlockedExchange(&g_piFaultTest, 1);\n    C1Printf(\"p2pfaulttest: the server faults in its next frame\\n\");\n}\nstatic void __cdecl PiCmdAssetCheck(void); /* p2p_assets.c */\nstatic void __cdecl PiCmdSlScan(void); /* p2p_assets.c */\nstatic C1Cmd g_piCmds[] = { { NULL, \"p2pfaulttest\", (void *)PiCmdFaultTest }, { NULL, \"p2passetcheck\", (void *)PiCmdAssetCheck },\n                            { NULL, \"p2pslscan\", (void *)PiCmdSlScan } };",
-      "label": "fault function, diagnostic command declarations and registration array"
-    },
-    {
-      "after": "#if CODOL_LOCAL_TESTING\n    for (unsigned i = 0; i < sizeof(g_piCmds) / sizeof(g_piCmds[0]); i++) C1AddCommand(&g_piCmds[i]);\n#endif",
+      "after": "#if K33_LOCAL_TESTING\n    for (unsigned i = 0; i < sizeof(g_piCmds) / sizeof(g_piCmds[0]); i++) C1AddCommand(&g_piCmds[i]);\n#endif",
       "before": "    for (unsigned i = 0; i < sizeof(g_piCmds) / sizeof(g_piCmds[0]); i++) C1AddCommand(&g_piCmds[i]);",
       "label": "diagnostic command registration"
     }
@@ -32,19 +22,19 @@
       "HostGateOk": "b2e414d76b4c3d831e8c320055c2e77041b336c5f3fddb365a7d656147132687",
       "HostGateRecvFrom": "38e9a4ef98a592b942d7a3f2fb43f768d77d74ed6bf90027a7d8988bb18768d2",
       "HostGateSendTo": "e212fff50738a5d172532361f1d059cdf77fdf30b55ac36337d4fa51780b1221",
-      "InstallHostGate": "77f99632a1e9d8ef904f4ace61d55a196ee3c82957e2622da291fec06bb62478"
+      "InstallHostGate": "077fe542290631c09603df2ee78ad1362136f3c1617f5be6a1b439d3c7ae54ef"
     }
   },
   "development_surface_sections": [
     {
       "label": "test-only patch-directory override",
-      "before": "    {   /* test clients (\"+set k33_cmdFile 1\") with a k33patch\\ folder next to the exe load that one instead,\n         * so a UI build can be tried while the shared client_shipRetail\\patch\\ is in use */\n        const char *cl = GetCommandLineA();\n        char test[MAX_PATH];\n        memcpy(test, dir, n);\n        lstrcpynA(test + n, \"k33patch\\\\\", MAX_PATH - n);\n        DWORD at = GetFileAttributesA(test);\n        if (cl && strstr(cl, \"k33_cmdFile 1\") && at != INVALID_FILE_ATTRIBUTES && (at & FILE_ATTRIBUTE_DIRECTORY)) {\n            lstrcpynA(pdir, test, sizeof(pdir));\n            Log(\"patch folder: test client: using %s\", pdir);\n        }\n    }\n",
-      "after": "#if CODOL_LOCAL_TESTING\n    {   /* test clients (\"+set k33_cmdFile 1\") with a k33patch\\ folder next to the exe load that one instead,\n         * so a UI build can be tried while the shared client_shipRetail\\patch\\ is in use */\n        const char *cl = GetCommandLineA();\n        char test[MAX_PATH];\n        memcpy(test, dir, n);\n        lstrcpynA(test + n, \"k33patch\\\\\", MAX_PATH - n);\n        DWORD at = GetFileAttributesA(test);\n        if (cl && strstr(cl, \"k33_cmdFile 1\") && at != INVALID_FILE_ATTRIBUTES && (at & FILE_ATTRIBUTE_DIRECTORY)) {\n            lstrcpynA(pdir, test, sizeof(pdir));\n            Log(\"patch folder: test client: using %s\", pdir);\n        }\n    }\n#endif\n"
+      "before": "    {   /* test clients (\"+set com_cmdFile 1\") with a k33patch\\ folder next to the exe load that one instead,\n         * so a UI build can be tried while the shared client_shipRetail\\patch\\ is in use */\n        const char *cl = GetCommandLineA();\n        char test[MAX_PATH];\n        memcpy(test, dir, n);\n        lstrcpynA(test + n, \"k33patch\\\\\", MAX_PATH - n);\n        DWORD at = GetFileAttributesA(test);\n        if (cl && strstr(cl, \"com_cmdFile 1\") && at != INVALID_FILE_ATTRIBUTES && (at & FILE_ATTRIBUTE_DIRECTORY)) {\n            lstrcpynA(pdir, test, sizeof(pdir));\n            Log(\"patch folder: test client: using %s\", pdir);\n        }\n    }\n",
+      "after": "#if K33_LOCAL_TESTING\n    {   /* test clients (\"+set com_cmdFile 1\") with a k33patch\\ folder next to the exe load that one instead,\n         * so a UI build can be tried while the shared client_shipRetail\\patch\\ is in use */\n        const char *cl = GetCommandLineA();\n        char test[MAX_PATH];\n        memcpy(test, dir, n);\n        lstrcpynA(test + n, \"k33patch\\\\\", MAX_PATH - n);\n        DWORD at = GetFileAttributesA(test);\n        if (cl && strstr(cl, \"com_cmdFile 1\") && at != INVALID_FILE_ATTRIBUTES && (at & FILE_ATTRIBUTE_DIRECTORY)) {\n            lstrcpynA(pdir, test, sizeof(pdir));\n            Log(\"patch folder: test client: using %s\", pdir);\n        }\n    }\n#endif\n"
     },
     {
       "label": "development-only log-flush command registration",
       "before": "    InstallK33LogFlush();\n",
-      "after": "#if CODOL_LOCAL_TESTING\n    InstallK33LogFlush();\n#endif\n"
+      "after": "#if K33_LOCAL_TESTING\n    InstallK33LogFlush();\n#endif\n"
     }
   ]
 }

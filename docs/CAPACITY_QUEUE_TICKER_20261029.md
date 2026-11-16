@@ -44,7 +44,7 @@ precedence over the older remote values.
 The assembled merged codo.gfx is 4,579,910 bytes with SHA256
 `47e1240b47601997ada67dc5bd128e3991ae4a83c510f61e7d63401904339d71`.
 The shared UI candidate is
-`output_remote_ui_merge_candidate/client_shipRetail/patch/codol_common_ui_mp.ff`,
+`output_remote_ui_merge_candidate/client_shipRetail/patch/common_ui_mp.ff`,
 2,076,133 bytes, SHA256
 `d748c5ae4b3d5834520249b1c1ee641ddd7d7f9af396218f2314fc8c0785c22c`.
 Direct baseline validation, all five baseline tests, all seven invitation tests,
@@ -67,7 +67,7 @@ Merged codo.gfx: 4,580,056 bytes, SHA256
 `691250c42f916e1a04d17f4f89e6a3e8a461a9ad2f754f6563113040bfa4af03`.
 patch.txt SHA256:
 `3577fea1e9e324a9e9f60f20c9bc80c48d5532f85cbd80cabce4c851713a136f`.
-`output_remote_ui_merge_candidate/client_shipRetail/patch/codol_common_ui_mp.ff`:
+`output_remote_ui_merge_candidate/client_shipRetail/patch/common_ui_mp.ff`:
 2,076,230 bytes, SHA256
 `ddb06f0584533849598cd105e0c6e767666c54fe899fa44d78acca5e9cefcd88`.
 

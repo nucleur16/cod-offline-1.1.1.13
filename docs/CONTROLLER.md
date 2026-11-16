@@ -74,7 +74,7 @@ All in the client module, IW4 layout. `cl` (clientActive) = `[0x16FC318] ^ 0x905
 The Scaleform front end (lobby, rooms, options, end-of-match) is driven by window messages: the WndProc offers
 messages to Scaleform first, and its cursor comes from GetCursorPos (import slot `0xB423A4`). A posted
 `WM_MOUSEMOVE` / `WM_LBUTTONDOWN` / `WM_LBUTTONUP` / `WM_KEYDOWN VK_ESCAPE` to the game window works exactly
-like the real device (voice.c's `k33mouse` found the same). keyCatchers is 0x10 in the front end; outside a
+like the real device (voice.c's `cl_fakeMouse` found the same). keyCatchers is 0x10 in the front end; outside a
 match `connstate` (`0x16FC2E8`) is not 9. C1 treats a window that is not in the foreground as inactive
 (GetForegroundWindow / GetActiveWindow, slots `0xB423F4` / `0xB42454`). The old IW menu path also still exists:
 mouse via `0x5F3900`, keys via `0x4931E0` / UI_KeyEvent `0x5F3760`.
@@ -144,22 +144,22 @@ mouse via `0x5F3900`, keys via `0x4931E0` / UI_KeyEvent `0x5F3760`.
 | `gpad_button_deadzone` | 0.13 | trigger press threshold |
 | `gpad_menu_cursor_speed` | 1100 | px/s |
 | `gpad_glyphs` | 0 | what button hints show (section 14): 0 automatic, 1 Xbox 360, 2 PS3, 3 Wii U, 4 generic, 5 text names only, 6 keyboard / mouse |
-| `k33_glyphinfo` (not archived, read only) | "" | what hints show now: `family\|device\|textOnly\|glyphs` (section 14) |
-| `k33_glyphSerial` (not archived, read only) | 0 | counts every change of the family, device or text-only state in `k33_glyphinfo` (section 14) |
+| `gpad_glyphInfo` (not archived, read only) | "" | what hints show now: `family\|device\|textOnly\|glyphs` (section 14) |
+| `gpad_glyphSerial` (not archived, read only) | 0 | counts every change of the family, device or text-only state in `gpad_glyphInfo` (section 14) |
 | `gpad_debug` (not archived) | 0 | 1 state twice a second, 2 also every button / click |
 
 ### Commands
 `gpad_status` (backend, pad name, mode, every pad bind), `gpad_defaultbinds`, `gpad_ksnext`, `gpad_ksuse`,
 `gpad_lookpreset`, `gpad_swaptriggers`, `gpad_glyphdump`.
 
-Test commands are registered only on a test client (`+set k33_cmdFile 1`) or with `+set gpad_testcmds 1` on
+Test commands are registered only on a test client (`+set com_cmdFile 1`) or with `+set gpad_testcmds 1` on
 the command line: `gpad_fake <lx> <ly> <rx> <ry> [lt rt [buttons [ms]]] | off` (synthetic pad: sticks -1..1,
 triggers 0..1, XInput button bits A 0x1000 B 0x2000 X 0x4000 Y 0x8000 LB 0x100 RB 0x200 Start 0x10 Back 0x20
 L3 0x40 R3 0x80, D-pad 1/2/4/8), `gpad_testmouse`, `gpad_cursor`, `gpad_sfkey`, `gpad_aadump`,
 `gpad_notifytest`, `gpad_looktest`, `gpad_glyphtest`.
 
 ### Test clients
-With `+set k33_cmdFile 1` (a test client beside the player's game) the real pad is never read and never
+With `+set com_cmdFile 1` (a test client beside the player's game) the real pad is never read and never
 opened (SDL only lists it: HIDAPI opens can change a PlayStation pad's report mode), and while `gpad_fake`
 drives the menu cursor, C1's GetCursorPos / GetForegroundWindow / GetActiveWindow slots report the virtual
 cursor and the game window; SetCursorPos is a no-op for the whole session, so the test client can never move
@@ -336,7 +336,7 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
       - rotates the heading (cg+0xC8B10, degrees) while MOUSE2 is held on a directional streak (ps.locationSelectionInfo +0x230 bit 7);
       - writes usercmd 0x20000 (confirm) / 0x40000 (cancel) plus the heading byte (+0x23).
     - It writes those bits when CL_KeyEvent has left state 1 (MOUSE1) or 2 (Escape) at 0x16F5D5C + lc*0xD28.
-    - The server's CODOL_LocationSelectionAction then notifies `confirm_location` (position, yaw).
+    - The server's LocationSelectionAction then notifies `confirm_location` (position, yaw).
   - **The pad hook** (CtlLocSelect, ahead of 0x490700):
     - The left stick moves the selector at `gpad_locsel_speed` map widths per second (default 0.45). The response is quadratic, and speed doubles over 0.6 s of full push.
     - The right stick sets the heading.
@@ -381,7 +381,7 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
 
 ## 11. Movement parity, look feel, dive (2026-10-21)
 - **Movement:**
-  - C1's wire usercmd has no analog movement. It carries four direction bits, and the server rebuilds forwardmove/rightmove as ±127 (CoD4x_Server `codol_game.c`).
+  - C1's wire usercmd has no analog movement. It carries four direction bits, and the server rebuilds forwardmove/rightmove as ±127 (CoD4x_Server `game.c`).
   - The stick's analog cmd therefore moved the server at full key speed in the octant its signs gave, while the client predicted the analog move and was corrected every snapshot:
     - a 10-degree drift became a 45-degree strafe on the server;
     - a half tilt ran at full speed on the server while the client predicted 0.38.
@@ -414,7 +414,7 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
   value in effect, was added in section 14) and `k33_padbinds` ("A=cmd;...;HOLDX=cmd").
 - **Microphone (Options > Audio > 语音, 输入设备):**
   - `src/audio/voice.c` lists the active capture endpoints and their friendly names (GBK, code page 936).
-  - It publishes `k33_voiceInputList` ("Default;name;...") and `k33_voiceInputIndex`, and turns the dropdown's pick (`k33_voiceInputPick`) into the archived `k33_voiceInputDevice` (endpoint ID; empty = the Windows default communications device).
+  - It publishes `k33_voiceInputList` ("Default;name;...") and `k33_voiceInputIndex`, and turns the dropdown's pick (`k33_voiceInputPick`) into the archived `cl_voiceInputDevice` (endpoint ID; empty = the Windows default communications device).
   - Capture reopens on the chosen device right away.
   - A missing device falls back to the default (logged) and is taken again when IMMNotificationClient reports it back.
 - **Test clients:** a test client with a `k33patch\` folder next to its exe loads its patch zones from there, so a UI build can be tried while the shared `client_shipRetail\patch\` is in use.
@@ -436,7 +436,7 @@ external reads of clientActive / cg / the usercmd ring at clientActive +0x34B8, 
   the button bits, 0x200000, and the mouse into two signed wire bytes, pitch cmd+0x24 =
   clamp(my * m_pitch, -1, 1) * 127, yaw cmd+0x25 = clamp(-mx * m_yaw, -1, 1) * 127. The server turns the
   missile by rate * msec / 1000 * byte / -127 per command (C1 0x40EC50, CoD4x_Server
-  `codol_remote_missile.c`), so a byte is a turn rate. `CtlRemoteMove` (call at 0x490DCF) adds the sticks after
+  `remote_missile.c`), so a byte is a turn rate. `CtlRemoteMove` (call at 0x490DCF) adds the sticks after
   C1's mouse: the right stick, or the left one when it is pushed further; the look curve (`gpad_view_curve`),
   `gpad_view_sensitivity` x `gpad_remote_sensitivity` (new, default 1), `gpad_invert_y`, the mouse's
   directions. Being a rate, it is frame-time independent by construction (the server multiplies by each
@@ -492,15 +492,15 @@ through `CtlDisplayNow` / `CtlPadFamily` / `CtlDisplayPad`.
 Set through C1's command path like `k33_padinfo`; "read only" is by convention (flags 0; Kernel33 never reads
 them back).
 
-- `k33_glyphinfo` (string): `family|device|textOnly|glyphs`, one digit each. family 0 Xbox, 1 PlayStation,
+- `gpad_glyphInfo` (string): `family|device|textOnly|glyphs`, one digit each. family 0 Xbox, 1 PlayStation,
   2 Nintendo, 3 generic; device 0 keyboard / mouse, 1 pad; textOnly 0 / 1; glyphs = `gpad_glyphs` (0..6).
   Example: `1|1|0|2` = PS3 forced. Empty until the first client frame with dvars.
-- `k33_glyphSerial` (int, 0..1000000000): 0 until the first publish, then +1 on every change of family, device
+- `gpad_glyphSerial` (int, 0..1000000000): 0 until the first publish, then +1 on every change of family, device
   or textOnly (it wraps to 1). It does not move when `gpad_glyphs` changes without changing those three
-  (0 -> 6 while already on keyboard and mouse; `k33_glyphinfo`'s last digit still updates). Both are set by one
-  command line, so a reader that sees a new serial also sees the matching `k33_glyphinfo`. The state is checked
+  (0 -> 6 while already on keyboard and mouse; `gpad_glyphInfo`'s last digit still updates). Both are set by one
+  command line, so a reader that sees a new serial also sees the matching `gpad_glyphInfo`. The state is checked
   every client frame; C1 runs the `set` on its next command-buffer pass. A menu polls
-  `Dvar_GetInt("k33_glyphSerial")` and re-queries its key labels when the number differs from the one it last saw.
+  `Dvar_GetInt("gpad_glyphSerial")` and re-queries its key labels when the number differs from the one it last saw.
 - `k33_padinfo`: a fifth field, the `gpad_glyphs` value: `family|connected|name|forced|glyphs`. `forced` is still
   1 only for 1..4. OptionView.as splits on `|` and reads fields 0..3 by index, so a build of it that does not know
   the fifth field ignores it. The display device is deliberately not in this string: OptionView redraws its
@@ -519,7 +519,7 @@ was traced at run time.
 | HUD element strings (`0x448E40`, `0x449710`) | next frame | converted in the hudelem draw path (inferred from their callers `0x44994E`, `0x44AF18`, `0x44B122`) |
 | centre-print lines (`0x439170`) and game-message lines (`0x448E10`) | the next line printed | converted once when printed and stored (`0x4391D4` copies the result into the line); a line already on screen keeps its key names until it expires, a few seconds. An icon in it still follows the family |
 | text names (mode 5) <-> icons | next frame for per-frame text; stored lines keep what they were printed with | the escape or the name is chosen when the string is built |
-| Scaleform (Controls screen, pause menu, Scaleform HUD) and GSC | when their script asks again | they ask through `0x5B080D` / `0x55A8B6` and keep the answer: poll `k33_glyphSerial`, or reopen the view |
+| Scaleform (Controls screen, pause menu, Scaleform HUD) and GSC | when their script asks again | they ask through `0x5B080D` / `0x55A8B6` and keep the answer: poll `gpad_glyphSerial`, or reopen the view |
 | Options > Controller diagram | within 250 ms | `k33_padinfo` is republished when it changes |
 
 Not handled: re-converting stored centre-print / game-message lines (it would need every line's source string;

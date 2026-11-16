@@ -9,21 +9,30 @@ import unittest
 
 ROOT = Path(__file__).absolute().parents[1]
 sys.path.insert(0, str(ROOT))
-from zonekit import build, packs  # noqa: E402
+from zonekit import build, packs, zonelist  # noqa: E402
 
 PATCH = r"client_shipRetail\patch"
 # source zones that cannot join a pack and still install under their own name
-STANDALONE = {"codol_infected_cyborg_postgfx_mp": "C#-written: its assets point into its own runtime blocks",
+STANDALONE = {"infected_cyborg_postgfx_mp": "C#-written: its assets point into its own runtime blocks",
               # the sh1x server mounts mp_*.ff of the patch folder with every MP map: a pack name would hide them
-              "mp_codol_weapons": "mp_*: the sh1x server mounts it too (the MP weapon tables)",
-              "mp_codol_weapons_postgfx_mp": "mp_*: the sh1x server mounts it too; C#-written (the MP weapon art)"}
+              "mp_weapons": "mp_*: the sh1x server mounts it too (the MP weapon tables)",
+              "mp_weapons_postgfx_mp": "mp_*: the sh1x server mounts it too; C#-written (the MP weapon art)"}
 
 
 def merged_table():
     text = (ROOT / "src/patch_locale_policy.h").read_text(encoding="utf-8")
-    body = text[text.index("kCodolPatchZoneMerged[][2]={"):]
+    body = text[text.index("kPatchZoneMerged[][2]={"):]
     body = body[:body.index("};")]
     return dict(re.findall(r'\{"([^"]+)","([^"]+)"\}', body))
+
+
+def merged_final(table, name):
+    """Where the chain of kPatchZoneMerged ends for name (kernel33.c follows it, PatchZoneMergedChain)."""
+    seen = []
+    while name in table and name not in seen:
+        seen.append(name)
+        name = table[name]
+    return name
 
 
 def source_zones():
@@ -43,13 +52,22 @@ class ZonePacks(unittest.TestCase):
     def test_kernel33_skips_every_old_name_for_its_pack(self):
         table = merged_table()
         idx = packs.part_index(str(ROOT))
-        self.assertEqual(set(table), set(idx), "patch_locale_policy.h kCodolPatchZoneMerged vs zone_packs parts")
-        for old, into in table.items():
+        legacy = zonelist.LEGACY_NAME
+        # every part, under the name an install from before the packs carries, and every renamed pack or standalone
+        # zone, under its old name; nothing else
+        parts = {legacy.get(part, part): part for part in idx}
+        renamed = {legacy[z]: z for z in legacy if z not in idx}
+        self.assertEqual(set(table), set(parts) | set(renamed), "patch_locale_policy.h kPatchZoneMerged vs zone_packs")
+        for old, part in parts.items():
             with self.subTest(zone=old):
                 # a zone split by type is replaced by the pack that keeps its non-string assets (the shared one)
-                self.assertIn(into, idx[old])
-                if len(idx[old]) > 1:
-                    self.assertEqual(packs.locales(into), packs.locales(old))
+                into = merged_final(table, old)
+                self.assertIn(into, idx[part])
+                if len(idx[part]) > 1:
+                    self.assertEqual(packs.locales(into), packs.locales(part))
+        for old, new in renamed.items():
+            with self.subTest(zone=old):
+                self.assertEqual(table[old], new)
 
     def test_packs_keep_the_load_list_and_language_of_their_parts(self):
         for pack in packs.names(str(ROOT)):
@@ -80,11 +98,11 @@ class ZonePacks(unittest.TestCase):
             self.assertNotEqual(pack.lower(), "codol_zombies_endless")
 
     def test_stage_and_locale_rules_match_kernel33(self):
-        self.assertEqual(packs.stage("codol_common_postgfx_mp"), "post_gfx")
-        self.assertEqual(packs.stage("codol_common_ui_mp"), "ui")
-        self.assertEqual(packs.stage("codol_common"), "pre_gfx")
-        self.assertEqual(packs.locales("codol_english_locale"), {"en"})
-        self.assertEqual(packs.locales("codol_chinese_locale"), {"zh", "native"})
+        self.assertEqual(packs.stage("common_postgfx_mp"), "post_gfx")
+        self.assertEqual(packs.stage("common_ui_mp"), "ui")
+        self.assertEqual(packs.stage("common"), "pre_gfx")
+        self.assertEqual(packs.locales("english_locale"), {"en"})
+        self.assertEqual(packs.locales("chinese_locale"), {"zh", "native"})
 
 
 if __name__ == "__main__":

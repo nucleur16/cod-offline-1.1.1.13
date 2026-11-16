@@ -11,7 +11,7 @@ test -f "$task_dep_root/msys/lib/libz.a"
 test -f unpacked.z
 mkdir -p ../candidate-local
 i686-w64-mingw32-windres -O coff -i kernel33.rc -o ../candidate-local/kernel33_res.o
-i686-w64-mingw32-gcc -DCODOL_LOCAL_TESTING=1 -DCODOL_DIAGNOSTICS=1 \
+i686-w64-mingw32-gcc -DK33_LOCAL_TESTING=1 -DK33_DIAGNOSTICS=1 \
     -O2 -Wall -Wextra -Wno-unused-parameter -Wno-cast-function-type \
     -Wno-missing-field-initializers -shared -s -static -static-libgcc \
     -I"$task_dep_root/sdl/include" -I"$task_dep_root/msys/include" \

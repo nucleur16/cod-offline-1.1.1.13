@@ -5,7 +5,7 @@
 
 The lobby embeds the Python lobby's attach table (catalogue/weapon_tables.py at feat/mp-m14, resource
 weapon_attachments.txt). The client and the match server read mp/coWeaponAttachmentTable.csv from the
-Kernel33 patch zone mp_codol_weapons, whose source is zones/mp_codol_weapons/ in this repository. Both
+Kernel33 patch zone mp_weapons, whose source is zones/mp_weapons/ in this repository. Both
 must name the same (weapon, attachment, unlock level) rows: for m14ebr_mp that is the 50 stock rows
 plus the eight the zone adds (bip_ar, for_gripafg, for_griphandstop, red_reflex, sra_riflelaser,
 sto_ar15fix, sto_ar15prs, sto_ar15ubr).
@@ -16,7 +16,7 @@ import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-ZONE_TABLE = os.path.join(ROOT, "zones", "mp_codol_weapons", "stringtable", "mp", "coweaponattachmenttable.csv")
+ZONE_TABLE = os.path.join(ROOT, "zones", "mp_weapons", "stringtable", "mp", "coweaponattachmenttable.csv")
 ADDED = {"bip_ar": 0, "for_gripafg": 0, "for_griphandstop": 0, "red_reflex": 1, "sra_riflelaser": 14,
          "sto_ar15fix": 7, "sto_ar15prs": 0, "sto_ar15ubr": 0}
 
@@ -67,7 +67,7 @@ def main():
         for f in fails:
             print("FAIL " + f)
         return 1
-    print("m14 attach table: %d rows, %d weapons, m14ebr_mp 58 rows: lobby == mp_codol_weapons zone" % (
+    print("m14 attach table: %d rows, %d weapons, m14ebr_mp 58 rows: lobby == mp_weapons zone" % (
         len(lobby), len({k[0] for k in lobby})))
     return 0
 

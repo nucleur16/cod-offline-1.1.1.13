@@ -58,7 +58,7 @@ item, and the Survival panel's four items do not depend on the style. A style's 
 `g_gametype != "survival"` as well (they are MP items, like the stock ones); the kill/death bar keeps the later
 build's own rule, which shows it in Survival.
 
-Both zones are parts of `codol_common_postgfx_mp` (after `code_post_gfx`, permanent). `hud_styles_postgfx_mp`
+Both zones are parts of `common_postgfx_mp` (after `code_post_gfx`, permanent). `hud_styles_postgfx_mp`
 is listed ahead of `survival_hud_postgfx_mp`, so the images and materials are linked before either menufile
 names them.
 
@@ -126,8 +126,8 @@ stayed empty. The generator writes ownerDraw 5 as three items: the clip count (o
 | what the later HUD reads | in 1.1.1.13 | here |
 |---|---|---|
 | its ammo display (ownerDraw 5) | another layout | ownerDraws 3001 / 3002, above |
-| `getweaponfiretype` (the fire-mode tag above the weapon name, and its plate) | no operator | `dvarstring("k33_hudFireType")`: `hud_style.c` publishes the `@SF_WEAPON_*_NAME` key of the weapon in hand from weaponDef + 0x350 (fire type) and + 0xB64 (class). Both offsets were located by value over the stock weapon defs (fire type m4 0, m16 / famas 3, usp / spas12 / m21 / rpg 1; class rifle 2, pistol 1, shotgun 5, rocket 9; no other offset fits). Which key a fire type and class get is INFERRED from the keys' names and values (`src/hud_style_policy.h`); 2.6.9.7's code is packed. The labels are carried in both languages |
-| `player("assists")` (kill/death bar) | not a field of `player` | `dvarint("k33_hudAssists")`: the local client's row of C1's score records (CG_ParseScores 0x00465240: 19 rows of 0x40 bytes at cg + 0xBEB70, the 7th value of a row at +0x1C, which the sh1x server fills with the assists, `server/sh1x/src/codol/stats/codol_scoreboard_wire.c`) |
+| `getweaponfiretype` (the fire-mode tag above the weapon name, and its plate) | no operator | `dvarstring("cg_hudFireType")`: `hud_style.c` publishes the `@SF_WEAPON_*_NAME` key of the weapon in hand from weaponDef + 0x350 (fire type) and + 0xB64 (class). Both offsets were located by value over the stock weapon defs (fire type m4 0, m16 / famas 3, usp / spas12 / m21 / rpg 1; class rifle 2, pistol 1, shotgun 5, rocket 9; no other offset fits). Which key a fire type and class get is INFERRED from the keys' names and values (`src/hud_style_policy.h`); 2.6.9.7's code is packed. The labels are carried in both languages |
+| `player("assists")` (kill/death bar) | not a field of `player` | `dvarint("cg_hudAssists")`: the local client's row of C1's score records (CG_ParseScores 0x00465240: 19 rows of 0x40 bytes at cg + 0xBEB70, the 7th value of a row at +0x1C, which the sh1x server fills with the assists, `server/sh1x/src/online/stats/scoreboard_wire.c`) |
 
 The two dvars are written on the main tick while a style is on (they change with a weapon switch or a score message,
 not per shot). The ownerdraws share voice.c's CG_OwnerDraw entry hook (0x00459E10): `VoiceOwnerDraw` calls
@@ -203,7 +203,7 @@ Measured means read from the user's own installs or the built files; inferred is
   (hud_scorebar_topbar is 64x18), but those are streamed without mips. Mipmapped non-power-of-two upload is
   therefore inferred, not measured.
 - **Texts.** Every `@KEY` a kept item shows is in 1.1.1.13's localize table, or is one a stock 1.1.1.13 HUD item
-  shows too, or is carried in `codol_chinese_hud_styles` (2.6.9.7's own values) and `codol_english_hud_styles`
+  shows too, or is carried in `chinese_hud_styles` (2.6.9.7's own values) and `english_hud_styles`
   (parts of the two locale packs): the kill/death bar's captions `MPUI_SCORE_CAPS`, `MPUI_KILL_CAPS`,
   `MPUI_DIE_CAPS`, `MPUI_ASSIST_CAP` (SCORE / K / D / A) and the seven fire-mode labels `SF_WEAPON_*_NAME`.
 - **Killstreak table.** `mp/coKillstreakStatsTable.csv` column 15 holds the same value in 1.1.1.13 and in each
@@ -212,7 +212,7 @@ Measured means read from the user's own installs or the built files; inferred is
   material of 1.1.1.13's table is defined in the zone of its mode (common_gametype_mp / _coop for the MP streaks,
   common_gametype_zm for the zombies ones, common_mp for the rest), measured with zone-materials.
 - **The built pack loads.** `python scripts/build_zones.py --candidate` builds all 11 installed zones; AssetExplorer's
-  C1 loader emulation loads `codol_common_postgfx_mp.ff` with 0 warnings (179 assets), and the two menufiles it
+  C1 loader emulation loads `common_postgfx_mp.ff` with 0 warnings (179 assets), and the two menufiles it
   resolves list identically to the authored `.txt` files. `tests/check_zone_packs.py` passes on the candidate.
 - **Gates.** `tests/test_hud_styles.py` evaluates every generated gate for `k33_hudStyle` 0..5: exactly the selected
   style's items are visible, a value that is not shipped shows the stock items, the menu follows the selected
@@ -240,10 +240,10 @@ Still open:
 
 ### Manual test
 
-1. `python scripts/build_zones.py --candidate`, copy `output_candidate\client_shipRetail\patch\codol_common_postgfx_mp.ff`,
-   `codol_english_locale.ff` and `codol_chinese_locale.ff` over the test install's, and a `Kernel33.dll` built from
-   this branch (`K33_LOCAL_TESTING=1` for the log lines and `k33_cmdFile`).
-2. Start with `+set k33_cmdFile 1`; `Kernel33.log` must have
+1. `python scripts/build_zones.py --candidate`, copy `output_candidate\client_shipRetail\patch\common_postgfx_mp.ff`,
+   `english_locale.ff` and `chinese_locale.ff` over the test install's, and a `Kernel33.dll` built from
+   this branch (`K33_LOCAL_TESTING=1` for the log lines and `com_cmdFile`).
+2. Start with `+set com_cmdFile 1`; `Kernel33.log` must have
    `hud style: k33_hudStyle registered (k33_hudStyleList 0:stock;2:v26;3:v33;5:sm2), value 0`.
 3. In a private Team Deathmatch, write `set k33_hudStyle 2` (then 3, then 5) into `<exe dir>\k33_cmd_<pid>.txt` (or use the pause
    menu's HUD style control): the weapon bar, score bar, minimap frame and killstreak column switch to the
@@ -319,7 +319,7 @@ found), so its own operators (from 3.5.2.6 + 8 onward; menu visibility of its we
 Own client folder (`D:\CoD\k33_hud_fix_client`: the model test folder's root files, players\ and p2p\ copied; patch\
 a real folder with the candidate zones; chinese, temp, miles, usermaps junctions; main\ a real folder with
 junctions for sh1x_rawfiles and video, hard links for the .iwd files, copies of the small files), a
-`K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=1` DLL, `+set k33_cmdFile 1 +set codol_local_test_multi 1`, Team Deathmatch on
+`K33_LOCAL_TESTING=1 K33_DIAGNOSTICS=1` DLL, `+set com_cmdFile 1 +set com_localTestMulti 1`, Team Deathmatch on
 Crash hosted in-process, pictures through `k33_shot.req`.
 
 | capture | shows |
@@ -410,7 +410,7 @@ ownerdraw.
   The pure parts (`HudHealthPermille`, `HudIconFit`) are in `hud_style_policy.h`, tested by
   `tests/hud_style_policy_test.c`. The option rows read `k33_hudStyleList`, so the HUD style drop-downs in
   `OptionView_video.as` and `MainPause.as` list SM2 without change. Its label `K33UI_HUD_STYLE_SM2` ("SM2" in both
-  languages) is in `codol_*_ui`.
+  languages) is in `<language>_ui`.
 - **Live** (2026-11-13, own client copy `D:\CoD\k33_sm2_client`, throwaway profile `edtest`, Afghan bot Team
   Deathmatch, 1920x1080). Seen working:
   - the panel, clip / reserve after firing, the grenade count dropping to 0 with its icon dimming, and the weapon
@@ -420,7 +420,7 @@ ownerdraw.
   - the HUD-style row of the pause menu showing "SM2";
   - `set k33_hudStyle 0` / `5` switching in the same frame.
 
-  Second round (killstreaks, health, icon), with `codol_devServer 1` / `codol_dev_cheats on` over the host's rcon,
+  Second round (killstreaks, health, icon), with `devServer 1` / `dev_cheats on` over the host's rcon,
   `take health N`, frozen bots (`sv_botStop 1`) moved in front of the player (`dev_clientcmd bots setviewpos`):
   - the streak slot dim at 0 kills, the pips filling at 2 kills, then the UAV lit with its key at 3;
   - health full, at 30 % after `take health 70`, regenerating back to full within about 3 s, and red at 18 %;
@@ -437,7 +437,7 @@ ownerdraw.
 ## Rebuilding
 
 - `python tools/build_hud_styles.py` regenerates `zones/hud_styles_postgfx_mp/{menufile,material}`,
-  `zone_source/hud_styles_postgfx_mp.csv`, the two `codol_*_hud_styles` zones and the survival HUD's menufile
+  `zone_source/hud_styles_postgfx_mp.csv`, the two `<language>_hud_styles` zones and the survival HUD's menufile
   from `zones/hud_styles_postgfx_mp/sources` and `image/`. No install is needed.
 - `python tools/build_hud_styles.py extract --dumper <CodolSoundDumper.exe> [--c1 DIR] [--v26 DIR] [--v12 DIR]
   [--images v12=DIR] [--work DIR]` re-reads the installs (defaults under `D:\CoD\CODOL Builds`). It needs a
@@ -458,10 +458,10 @@ ownerdraw.
 ## Integration notes
 
 - `src/kernel33.c`: `#include "hud_style.c"` after `theatre.c`, `InstallHudStyle();` after `InstallTheatre();`.
-- `src/patch_locale_policy.h` `kCodolPatchZoneMerged`: three rows (`hud_styles_postgfx_mp`,
-  `codol_english_hud_styles`, `codol_chinese_hud_styles`), required by tests/test_zone_packs.py. Both files are
+- `src/patch_locale_policy.h` `kPatchZoneMerged`: three rows (`hud_styles_postgfx_mp`,
+  `english_hud_styles`, `chinese_hud_styles`), required by tests/test_zone_packs.py. Both files are
   pinned by `ui_baseline.json`, which is not re-recorded here.
 - `hud_style.c` takes one `K33OnMainTick` slot. A local-testing build then registers seven before Product Pi's
   on-demand one. K33_MAX_TICKS was 8 and is 12 since the language switch and this feature each took a slot.
-- `zone_packs/codol_common_postgfx_mp.csv` has its new build md5 recorded; the two locale packs gained a part and
+- `zone_packs/common_postgfx_mp.csv` has its new build md5 recorded; the two locale packs gained a part and
   were left unrecorded (they already differed from their recorded md5 before this change).

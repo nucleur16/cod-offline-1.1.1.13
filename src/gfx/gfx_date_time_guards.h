@@ -1,5 +1,5 @@
-#ifndef CODOL_GFX_DATE_TIME_GUARDS_H
-#define CODOL_GFX_DATE_TIME_GUARDS_H
+#ifndef GFX_DATE_TIME_GUARDS_H
+#define GFX_DATE_TIME_GUARDS_H
 #include <stdint.h>
 typedef struct GfxDateGuard { uint32_t va,length,shipping_hash,retained_hash; const char *name; } GfxDateGuard;
 static const GfxDateGuard g_gdtGuards[] = {

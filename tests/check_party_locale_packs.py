@@ -17,8 +17,8 @@ sys.path.insert(0,str(ROOT))
 from zonekit import codecs,container,packs,zoneimage
 from party_locale_contract import PARTY_LOCALE
 
-PACKS=('codol_common','codol_english_locale','codol_chinese_locale')
-LEGACY=('000_codol_party_modes','codol_loading_mode_names')
+PACKS=('common','english_locale','chinese_locale')
+LEGACY=('000_party_modes','loading_mode_names')
 
 
 def named(image):
@@ -43,14 +43,14 @@ def localized(rows):
 
 def validate(before,after):
     assert set(before)==set(after)==set(PACKS), 'all three reviewed packs are required together'
-    common_old=localized(before['codol_common'])
+    common_old=localized(before['common'])
     assert common_old=={k:v[0].encode('ascii') for k,v in PARTY_LOCALE.items()}
-    assert localized(after['codol_common'])=={}, 'shared common pack still owns localized text'
+    assert localized(after['common'])=={}, 'shared common pack still owns localized text'
     for pack in PACKS:
         old=[r for r in before[pack] if r[0]!=27]
         new=[r for r in after[pack] if r[0]!=27]
         assert old==new, 'non-localize assets changed: '+pack
-    for pack,index,encoding in [('codol_english_locale',0,'ascii'),('codol_chinese_locale',1,'gbk')]:
+    for pack,index,encoding in [('english_locale',0,'ascii'),('chinese_locale',1,'gbk')]:
         old=localized(before[pack]);new=localized(after[pack])
         assert not set(PARTY_LOCALE)&set(old), 'baseline already has migration keys; use correct predecessor'
         expected=dict(old)
@@ -63,7 +63,7 @@ def validate(before,after):
 
 def merged_table():
     source=(ROOT/'src/patch_locale_policy.h').read_text(encoding='utf-8')
-    source=source.split('kCodolPatchZoneMerged[][2]={',1)[1].split('};',1)[0]
+    source=source.split('kPatchZoneMerged[][2]={',1)[1].split('};',1)[0]
     return {old.lower():new.lower() for old,new in re.findall(r'\{"([^"]+)","([^"]+)"\}',source)}
 
 
@@ -114,9 +114,9 @@ def main():
         values,_dups,_selected=effective(legacy,language)
         for key,(english,_chinese) in PARTY_LOCALE.items():
             assert codecs.decode_localize(values[(27,key.lower())])[1]==english.encode('ascii')
-    source_files=['src/patch_locale_policy.h','zone_packs/codol_common.csv','zone_packs/codol_english_locale.csv',
-                  'zone_packs/codol_chinese_locale.csv','zone_source/codol_chinese_ui_extra.csv',
-                  'zones/codol_chinese_ui_extra/localize.str']
+    source_files=['src/patch_locale_policy.h','zone_packs/common.csv','zone_packs/english_locale.csv',
+                  'zone_packs/chinese_locale.csv','zone_source/chinese_ui_extra.csv',
+                  'zones/chinese_ui_extra/localize.str']
     manifest={'scope':'Unlaunched source/decoded three-pack proof; MUST rebuild from final merged locale+P2P comaplist sources',
        'source_sha256':{p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in source_files},
        'required_updated_packs_together':[{ 'name':name,'sha256':hashlib.sha256((a.candidate/(name+'.ff')).read_bytes()).hexdigest(),

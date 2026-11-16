@@ -71,7 +71,13 @@ void SetDesc(Server &s, Conn *c, const Vals &vals)
 
 uint64_t DescPlayerUid(Server &s, Conn *c) { return DescUidOf(Desc(s, c, c != NULL)); }
 
-std::string LivePlayerName(Server &s, Conn *c) { return DescPlayerName(Desc(s, c, c != NULL)); }
+/* The descriptor's name, unless the local player renamed that profile with the console's `name` (Host::DisplayName). */
+std::string LivePlayerName(Server &s, Conn *c)
+{
+    std::string name = DescPlayerName(Desc(s, c, c != NULL));
+    std::string shown = s.host ? s.host->DisplayName(name) : std::string();
+    return shown.empty() ? name : shown;
+}
 
 uint64_t ConnUid(Server &s, Conn &c) { return c.uid ? c.uid : DescPlayerUid(s, &c); }
 

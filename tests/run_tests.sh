@@ -10,7 +10,7 @@ OUT=${K33_TEST_OUT:-${TMP:-/tmp}/k33-tests}
 mkdir -p "$OUT"
 for PROFILE in 0 1; do
     "$BIN/gcc.exe" -std=c99 -O2 -Wall -Wextra -Werror -Wno-cast-function-type \
-        -DCODOL_LOCAL_TESTING=$PROFILE tests/hostgate_windows_fixture.c \
+        -DK33_LOCAL_TESTING=$PROFILE tests/hostgate_windows_fixture.c \
         -o "$OUT/hostgate-$PROFILE.exe" -lws2_32 -liphlpapi
     python tests/test_hostgate_windows.py "$OUT/hostgate-$PROFILE.exe"
 done
@@ -34,7 +34,7 @@ for T in net store career rooms; do
         --selftest-$T > "$OUT/dwtest-$T.log" 2>&1 || { tail -30 "$OUT/dwtest-$T.log"; exit 1; }
     tail -1 "$OUT/dwtest-$T.log"
 done
-# The lobby's weapon attachment table against the mp_codol_weapons zone the client reads (the M14 EBR).
+# The lobby's weapon attachment table against the mp_weapons zone the client reads (the M14 EBR).
 python -B tests/offline/test_m14_attach_table.py "$OUT/dwtest.exe"
 python tests/test_ui_baseline.py
 python tests/test_quick_ready_gate.py
@@ -52,6 +52,9 @@ python -B tests/test_hud_styles.py
 python -B tests/test_offline_console.py
 "$BIN/gcc.exe" -std=c99 -O2 -Wall -Wextra -Werror -Wno-unused-function tests/hud_style_policy_test.c -o "$OUT/hud_style_policy_test.exe"
 "$OUT/hud_style_policy_test.exe"
+# The console's `name`: accepted names and the per-profile names file (src/player_name_policy.h).
+"$BIN/gcc.exe" -std=c99 -O2 -Wall -Wextra -Werror -Wno-unused-function tests/player_name_policy_test.c -o "$OUT/player_name_policy_test.exe"
+"$OUT/player_name_policy_test.exe"
 python -B tests/test_survival_status_component.py
 python -B tests/test_tip_stage_lookup.py
 python -B tests/test_invitations_disabled.py

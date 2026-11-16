@@ -6,16 +6,15 @@ worktree's `CODOL-31926.md`) are installed like the other later maps: zones in `
 
 ## Create Room (this repository)
 
-Same route as mp_dome / mp_strike_sh / mp_qadeem_sh: `zones/usermaps_patch` (packed into `codol_common.ff` and the
+Same route as mp_dome / mp_strike_sh / mp_qadeem_sh: `zones/usermaps_patch` (packed into `common.ff` and the
 locale packs) carries for each map
 - a `mp/comaplist.csv` row (pvp, 4-18 players, every channel on; ids 98-123, sort keys 50-75);
 - a `mp/basemaps.arena` entry; its `gametype` list is what the map's MapEnts spawn points and game objects support
   (a TDM-based mode only with both `mp_tdm_spawn_*_start` classes: Tunisia has neither, so no war/hc/thc/koth);
-- `MPUI_<NAME>` / `MPUI_DESC_MAP_<NAME>` in English (`codol_english_usermaps`) and Chinese (`usermaps_patch`);
-  Hunted, Showdown and Suburbs use `MPUI_MP_*` / `MPUI_DESC_MP_*` because `codol_english` already has the plain keys;
-- a map-select image: none of the ports ships a preview image (their `_load` zones only name `loadscreen_*`, whose
-  pixels are in no IWD), so a map reuses a stock `ui_mp` picture of the same map where one exists (Backlot, Derail,
-  District, Invasion, Skidrow, Showdown) and has none otherwise (the carousel shows a black picture, no error);
+- `MPUI_<NAME>` / `MPUI_DESC_MAP_<NAME>` in English (`english_usermaps`) and Chinese (`usermaps_patch`);
+  Hunted, Showdown and Suburbs use `MPUI_MP_*` / `MPUI_DESC_MP_*` because `english` already has the plain keys;
+- a map-select image: a stock `ui_mp` picture of the same map where one exists (Backlot, Derail, District, Invasion,
+  Skidrow, Showdown), otherwise `sfproto_<map>_usermap` in usermaps_ui_mp (see "Menu art and environment" below);
 - a `ship` line in `shipping_maps.txt`.
 
 In the list (26): mp_arkaden_sh Arkaden, mp_awp_arena AWP Arena, mp_backlot_sh Backlot, mp_boomtown Boomtown,
@@ -90,3 +89,94 @@ Check: every script set was compiled and loaded headless with the sh1x dedicated
 mp_underground_sh (above), mp_mountain (collision, before scripts run) and mp_lookout_sh (spawns). Remaining warnings:
 mp_bootleg_sh's chicken destructible anims are in no client animlist (server keeps the props static), and the
 `Pathnode ... has no connections` map-data warning on several levels.
+
+## Menu art and environment (2026-11-16, branch feat/ported-maps-menus-env)
+
+**Map-select pictures.** The 20 maps without a stock picture get `sfproto_<map>_usermap` (200x120, the size of the
+stock `sfproto_*` pictures) in `zones/usermaps_ui_mp/image/`, with the pixels in the zone (A8R8G8B8, one level, the
+in-zone header the glyph images use). No IWD carries them, so a client without the map pack cannot fail on a missing
+`.iwi`. `comaplist.csv` column 4 names them. `tools/map_menu_art/build_previews.py` makes them from decoded sources
+(`tools/map_menu_art/iwi.py` decodes IWI versions 6/8/9/13): the original game's own map-select picture where the
+map exists in one, else the map's own CODOL 3.19.26.22 loadscreen (its right part; the left third fades to black).
+Checked live: every one of the 26 maps shows its picture in the Create Room carousel.
+
+**Loadscreens.** Every port's IWD already carries `loadscreen_<map>.iwi` (1280x720 RGB, CODOL 3.19.26.22's art; the
+earlier note that their pixels are in no IWD was wrong) and the `_load` zone's `$levelbriefing` names it. Checked live
+on Showdown and Tunisia.
+
+**Lobby environment.** The pre-match room draws the 3D virtual lobby (`ui_viewer_mp`). The arena entry's
+`environment` (urban / forest / desert / arctic) picks its scene and camera (`mp/camerapostable.csv` `team_<env>`),
+and `allieschar` / `axischar` the character sets; the room's map strip is the comaplist picture. 1.1.1.13 has no
+per-map lobby music, lobby camera or Scaleform map-info entry beyond these, and `mapimage` is `blank` for every
+usermap (mp_dome, mp_strike_sh and mp_qadeem_sh included). Environments now follow the original map's setting: AWP
+Arena arctic (snow), Carbon and Radiation desert, Invasion urban (as stock mp_invasion). District and Showdown also
+have older stock arena entries (urban), which the game finds first.
+
+**Environment per map.** Every port zone carries `vision/<map>.vision` (except Showdown) and its sky (GfxWorld skies,
+`sky_*` images in the port IWD), and `sun/<map>.sun` (sun sprite / flare / glare dvars only) where 3.19.26.22 had one.
+Changes:
+- fog: `maps/createart/mp_backlot_sh_art.gsc`, `mp_district_art.gsc` and `mp_showdown_art.gsc` take Call of Duty 4's
+  createart fog (`docs/MAPS_31926_ENV.patch`, on top of MAPS_31926_RAWFILES.patch; branch `feat/ported-maps-env` in the
+  13-rawfiles worktree `D:\CoD\k33_maps_menus_rawfiles_wt`). Derail, Invasion, Skidrow and Wasteland already run the IW4
+  createart. Its `VisionSetNaked( "<iw4 name>" )` names no vision in the zone, and `_load` sets the map's own after it.
+- vision: Showdown's zone has only `vision/mp_showdown_tp.vision`, which looks washed out as the main vision, so
+  usermaps_patch carries `vision/mp_showdown.vision` with mp_tunisia's values (the same CODOL desert set and sky).
+- ambient: Backlot plays its zone's `ambient_mp_backlot_sh_ext`. The other zones have no ambient alias the scripts
+  could use (Offshore, Showdown, Tunisia and Village already play theirs). `maps\mp\_audio` (IW5 reverb) is not in 1.1.1.13.
+
+| map | map-select picture | loadscreen (port IWD) | fog | vision | sun file | sky | compass | ambient | gaps |
+|---|---|---|---|---|---|---|---|---|---|
+| mp_arkaden_sh | MW3 preview_mp_plaza2 | loadscreen_mp_arkaden_sh (iw_model_06) | IW5 mp_plaza2_fog | zone | zone | sky_mp_plaza2 | compass_map_mp_arkaden_sh | - | ambient |
+| mp_awp_arena | own loadscreen | loadscreen_mp_awp_arena (iw_model_07) | none | zone | zone | sky_mp_overwatch | compass_map_mp_awp_arena | - | fog, ambient (CODOL-only map, no source) |
+| mp_backlot_sh | stock sfproto_mp_backlot | loadscreen_mp_backlot_sh (iw_sound_20) | CoD4 mp_backlot (new) | zone | zone | sky_mp_backlot_sh | compass_map_mp_backlot_sh | ambient_mp_backlot_sh_ext (new) | - |
+| mp_boomtown | own loadscreen | loadscreen_mp_boomtown (iw_sound_16) | none | zone | zone | sky_mp_boomtown | compass_map_mp_boomtown | - | fog, ambient (CODOL-only map) |
+| mp_bootleg_sh | MW3 preview_mp_bootleg | loadscreen_mp_bootleg_sh (iw_model_08) | IW5 | zone | none | sky_mp_bootleg | compass_map_mp_bootleg_sh | - | sun file, ambient |
+| mp_carbon_sh | MW3 preview_mp_carbon | loadscreen_mp_carbon_sh (iw_model_09) | IW5 | zone | zone | sky_mp_carbon | compass_map_mp_carbon_sh | - | ambient |
+| mp_derail_sh | stock sfproto_mp_derail | loadscreen_mp_derail_sh (iw_model_10) | IW4 mp_derail_art | zone | zone | sky_sp_cliffhanger | compass_map_mp_derail_sh | - | ambient |
+| mp_district | stock sfproto_mp_district | loadscreen_mp_district_hh (iw_model_11) | CoD4 mp_citystreets (new) | zone | none | sky_mp_restrepo_ss | compass_map_mp_citystreets | - | sun file, ambient |
+| mp_fallen_sh | MW3 preview_mp_lambeth | loadscreen_mp_fallen_sh (iw_model_12) | IW5 | zone | zone | sky_mp_fallen | compass_map_mp_fallen_sh | - | ambient |
+| mp_foundation_sh | MW3 preview_mp_cement | loadscreen_mp_foundation_sh (iw_model_13) | IW5 | zone | zone | sky_mp_cement | compass_map_mp_foundation_sh | - | ambient |
+| mp_interchange_sh | MW3 preview_mp_interchange | loadscreen_mp_interchange_sh (iw_model_14) | IW5 | zone | none | sky_mp_interchange | compass_map_mp_interchange_sh | - | sun file, ambient |
+| mp_invasion_sh | stock sfproto_mp_invasion | loadscreen_mp_invasion_sh (iw_model_15) | IW4 mp_invasion_art | zone | zone | sky_sp_roadkill | compass_map_mp_invasion_sh | - | ambient |
+| mp_italy_sh | MW3 preview_mp_italy | loadscreen_mp_italy_sh (iw_model_16) | IW5 | zone | zone | sky_mp_italy_sh | compass_map_mp_italy_sh | - | ambient |
+| mp_liberation_sh | MW3 preview_mp_park | loadscreen_mp_liberation_sh (iw_model_17) | IW5 | zone | zone | sky_mp_park | compass_map_mp_liberation_sh | - | ambient |
+| mp_lockdown_sh | MW3 preview_mp_alpha | loadscreen_mp_lockdown_sh (iw_model_19) | IW5 | zone | zone | sky_mp_alpha | compass_map_mp_lockdown_sh | - | ambient |
+| mp_mission_sh | MW3 preview_mp_bravo | loadscreen_mp_mission_sh (iw_model_23) | IW5 | zone | zone | sky_mp_bravo | compass_map_mp_mission_sh | - | ambient |
+| mp_mogadishu_sh | MW3 preview_mp_mogadishu | loadscreen_mp_mogadishu_sh (iw_sound_04) | IW5 | zone | zone | sky_mp_mogadishu_sh | compass_map_mp_mogadishu_sh | - | ambient |
+| mp_nightshift_sh | stock sfproto_mp_nightshift | loadscreen_mp_nightshift_sh (iw_sound_05) | IW4 mp_nightshift_art | zone | none | sky_mp_crossfire | compass_map_mp_nightshift_sh | - | sun file, ambient |
+| mp_offshore | MW3 preview_mp_roughneck | loadscreen_mp_offshore (iw_sound_06) | IW5 | zone | none | sky_mp_offshore | compass_map_mp_offshore | ambient_mp_offshore | sun file |
+| mp_overwatch_sh | MW3 preview_mp_overwatch | loadscreen_mp_overwatch_sh (iw_sound_07) | IW5 | zone | none | sky_mp_overwatch | compass_map_mp_overwatch_sh | - | sun file, ambient |
+| mp_radiation_sh | Black Ops menu_mp_map_select_radiation_big | loadscreen_mp_radiation_sh (iw_sound_17) | T5 createart | zone | zone | sky_mp_village_02 | compass_map_mp_radiation_sh | - | ambient |
+| mp_resistance_sh | MW3 preview_mp_paris | loadscreen_mp_resistance_sh (iw_sound_18) | IW5 | zone | zone | sky_mp_paris | compass_map_mp_resistance_sh | - | ambient |
+| mp_showdown | stock sfproto_mp_showdown | loadscreen_mp_showdown_hh (iw_sound_08) | CoD4 mp_showdown (new) | usermaps_patch (new) | zone | sky_tunisia | compass_map_mp_showdown | ambient_mp_showdown | - |
+| mp_tunisia | own loadscreen | loadscreen_mp_tunisia (iw_sound_09) | none | zone | none | sky_tunisia | compass_map_mp_tunisia | ambient_mp_tunisia | fog, sun file (CODOL-only map) |
+| mp_village | MW3 preview_mp_village | loadscreen_mp_village (iw_sound_11) | IW5 | zone | zone | sky_mp_village | compass_map_mp_village | ambient_mp_village | - |
+| mp_wasteland_sh | MW2 preview_mp_brecourt | loadscreen_mp_wasteland_sh (iw_sound_12) | IW4 mp_brecourt_art | zone | zone | sky_mp_brecourt | compass_map_mp_wasteland_sh | - | ambient |
+
+"zone" means the map zone's own 3.19.26.22 file. A missing `.sun` leaves the sun sprite / flare dvars at their
+defaults. Neither MW3 nor 3.19.26.22 has one for those maps. This work used no IWD slot.
+
+**mp_brl_derail removed.** It was deprecated, and mp_derail_sh is the Derail that stays. Removed: its comaplist row
+(id 75; the other rows keep their ids, as the shipping build already leaves gaps for dev rows), its arena entry and its
+`shipping_maps.txt` line. The `MPUI_DERAIL` / `MPUI_DESC_MAP_DERAIL` strings stay: they are stock (stock arena entries
+use them), and mp_derail_sh uses `MPUI_DERAIL_SH`. The offline selector tests use stock mp_crash_intro, which also has
+no `_load` zone, for the level-zone case.
+
+**Arena entry limit (fixed).** Tunisia's room showed no 3D lobby scene and its load screen titled the map
+`mp_tunisia`, and Village's did the same on 2026-11-13, while Showdown (whose stock entry comes first) showed both.
+Cause, read in C1.exe: the arena loader (0x005EA150) parses `mp/basemaps.arena` with UI_ParseInfos (0x005E9DA0)
+into 128 info slots (`mov edx, 0x80; sub edx, count` at 0x005EA1E7; the parser stops at the limit without a message),
+the info text shares a 0x10000-byte pool (0x005EA0BD; past it, an error), and the map list built from the entries
+(0x005EA420, the `longname` / `mapimage` / `environment` reads) stops at 0x80 maps too (0x005EA8A7). The arena had
+137 entries, so Skidrow, Offshore, Overwatch, Radiation, Resistance, Showdown (the new entry), Tunisia, Village and
+Wasteland were never read. comaplist has no such limit: the carousel lists every row (checked live).
+Fix: the arena drops the 26 stock entries of maps that no install has and no comaplist row names (MW2 originals such
+as mp_favela, mp_derail, mp_crossfire; SP / Spec Ops ones such as mp_cliffhanger, coop_zac130_mp_derail), the stock
+duplicate of coop_zrescue_mp_storm_spring, and the new mp_district / mp_showdown entries that the stock ones always
+shadowed. That leaves 108 entries (info text about 26.6 KB), 20 slots free. `zonekit/zonelist.py` `arena_prune`
+lists them, `zonekit/shipping.py` checks the stock text minus that list and fails any build whose arena has more
+than 128 entries or more info text than the pool, and `tests/test_arena_cap.py` checks the source arena (every
+pvp / zm map of shipping_maps.txt read, no name twice) and, with `K33_C1_EXE`, the three limits in C1.exe.
+Checked live after the fix (headless client, 2026-11-16): Tunisia's room shows the desert lobby scene and its load
+screen "Tunisia"; Wasteland, Backlot, District and Arkaden load screens show their names; Showdown with its new
+vision, Backlot and District with their CoD4 fog look right in game.

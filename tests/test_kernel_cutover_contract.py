@@ -18,7 +18,7 @@ def function(text, name):
 def profile_gate(text):
     start = text.index('    /* Full migration must not enter C1')
     end = text.index('    Log("entering game', start)
-    body = text[start:end].split('#if CODOL_KERNEL_NAME_DISPLAY\n', 1)[1]
+    body = text[start:end].split('#if K33_KERNEL_NAME_DISPLAY\n', 1)[1]
     full, default = body.split('#else\n', 1)
     return full, default.split('#endif', 1)[0]
 
@@ -41,7 +41,7 @@ def room_profile(body, room, local):
     for line in body.splitlines(True):
         token=line.strip()
         if token.startswith('#if'):
-            if token!='#if CODOL_KERNEL_ROOM_CONTEXT':raise AssertionError('unexpected target condition')
+            if token!='#if K33_KERNEL_ROOM_CONTEXT':raise AssertionError('unexpected target condition')
             stack.append(enabled);enabled=enabled and room
         elif token=='#endif':
             if not stack:raise AssertionError('unbalanced target condition')
@@ -66,9 +66,9 @@ class CutoverContract(unittest.TestCase):
         _, default = profile_gate(self.kernel)
         self.assertEqual(default.strip(), 'K33InstallMainTicks(); /* last: chains in front of the retained client tick hooks */')
         profile = (ROOT / 'src/production_profile.h').read_text(encoding='utf8')
-        self.assertIn('#define CODOL_KERNEL_ROOM_CONTEXT 0', profile)
-        self.assertIn('#define CODOL_KERNEL_NAME_DISPLAY 0', profile)
-        self.assertIn('#if CODOL_KERNEL_NAME_DISPLAY && !CODOL_KERNEL_ROOM_CONTEXT', profile)
+        self.assertIn('#define K33_KERNEL_ROOM_CONTEXT 0', profile)
+        self.assertIn('#define K33_KERNEL_NAME_DISPLAY 0', profile)
+        self.assertIn('#if K33_KERNEL_NAME_DISPLAY && !K33_KERNEL_ROOM_CONTEXT', profile)
 
     def test_success_follows_exact_readback(self):
         self.assertTrue(checked(self.tick))
@@ -82,7 +82,7 @@ class CutoverContract(unittest.TestCase):
             for name in ('VOICE_EVENTLOOP_FUNC_VA', 'VOICE_TickHook', 'DISCORD_TickHook', 'PI_TickHook'):
                 self.assertIn(name, active)
             self.assertEqual('KRC_MainTickHook' in active, room)
-        with self.assertRaises(AssertionError):room_profile(body.replace('#if CODOL_KERNEL_ROOM_CONTEXT','#if 1'),True,False)
+        with self.assertRaises(AssertionError):room_profile(body.replace('#if K33_KERNEL_ROOM_CONTEXT','#if 1'),True,False)
 
     def test_membership_uses_actual_callback_list(self):
         body = function(self.tick, 'static BOOL K33HasMainTick(K33TickFn fn)')

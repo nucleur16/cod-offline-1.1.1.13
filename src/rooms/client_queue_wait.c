@@ -7,7 +7,7 @@
 #endif
 typedef void (__attribute__((thiscall)) *CqwTickerFn)(void *,uint64_t,const char *,const void *,unsigned);
 static CqwTickerFn g_cqwTicker;
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
 /* QA-only passive receipt. No credential, input, Ready or game-state writes. */
 __declspec(dllexport) uint32_t CqwTelemetry[16];
 __declspec(dllexport) char CqwTelemetryName[64],CqwTelemetryData[80];
@@ -54,7 +54,7 @@ static int CqwFresh(const BYTE *data,unsigned size,uint64_t *scope)
     }
     if(!digits || !room || i+3>=size || memcmp(data+i," />",3))return 0;
     uint64_t now=CQW_NOW();
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
     CqwTelemetry[11]=(uint32_t)now;CqwTelemetry[12]=(uint32_t)expires;
 #endif
     *scope=room;
@@ -63,7 +63,7 @@ static int CqwFresh(const BYTE *data,unsigned size,uint64_t *scope)
 
 static unsigned CqwRenew(uint64_t sender,const char *name,const void *data,unsigned size)
 {
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
     CqwTelemetry[0]++;CQW_REASON(1);CqwTelemetry[2]++;
     memcpy(CqwTelemetry+3,&sender,8);CqwTelemetry[5]=size;
     CQW_CAPTURE(CqwTelemetryName,name,sizeof(CqwTelemetryName));
@@ -82,7 +82,7 @@ static unsigned CqwRenew(uint64_t sender,const char *name,const void *data,unsig
     uintptr_t record=*(const uint32_t *)(room+0x10);uint64_t rid=0;
     if (!Readable((const void *)record,0x18)) return 0;
     memcpy(&rid,(const void *)(record+0x10),8);
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
     memcpy(CqwTelemetry+6,&rid,8);
 #endif
     CQW_REASON(4);
@@ -97,7 +97,7 @@ static unsigned CqwRenew(uint64_t sender,const char *name,const void *data,unsig
         if (!Readable(remote,0x3c) || *(const uint32_t *)remote!=0x00bdd530u ||
             *(const uint32_t *)(remote+0x14)!=1) continue;
         float elapsed=CQW_ELAPSED(remote),limit=*(const float *)(remote+0x10);
-#if CODOL_LOCAL_TESTING
+#if K33_LOCAL_TESTING
         CqwTelemetry[8]=(uintptr_t)remote;memcpy(CqwTelemetry+9,&elapsed,4);memcpy(CqwTelemetry+10,&limit,4);
 #endif
         CQW_REASON(6);

@@ -1,15 +1,16 @@
 /*
  * p2p.c - player-hosted matches (docs/P2P_HOSTING.md).
  *
- * The in-process path loads sh1x_host.dll in the hosting C1 process and drives its server fiber from
- * the game thread; it compiles the GSC tree installed with the client. This client is offline only:
+ * The in-process path runs the sh1x server linked into Kernel33.dll (p2p_inproc.c: started on the first host,
+ * kept for the client's run) on its fiber from the game thread; it compiles the GSC tree installed with the
+ * client. This client is offline only:
  * the launcher startup protocols 1-3, the production SDK, the Guest binding route and the verified
  * script service are gone, and the room's Local Play host is the one (protocol 0) route.
  *
  *   p2phost [map] [gametype] [zonetype]   start hosting (defaults from p2p\p2p_host.ini)
- *   p2pstop                               rcon quit, then end the server's job
+ *   p2pstop                               end the hosted match (in-process: its level is unloaded, the server stays up)
  *   p2pstatus                             state, address, pid, ready time, last sh1x_status line
- *   +set k33_p2pHost 1                    on the command line: start hosting while the client loads
+ *   +set sv_p2pHost 1                    on the command line: start hosting while the client loads
  *
  * The lobby's room (K33LocalPlayAuto, or the UI's p2p_room / p2p_localhost 1) only ARMS a host: it records and publishes the intent
  * ("state=armed launch=deferred") and starts nothing. The server is started when the match the room started
@@ -44,14 +45,14 @@ typedef struct P2PConfig {
     char home[MAX_PATH];         /* fs_homepath */
     char scripts[MAX_PATH];      /* GSC root (codol_rawfiles) */
     char state[MAX_PATH];        /* securitykey.bin, game_admissions.txt, native_server_rcon.txt */
-    char profile[MAX_PATH];      /* codol_profilePath: the lobby's resources folder */
+    char profile[MAX_PATH];      /* profilePath: the lobby's resources folder */
     char rconFile[MAX_PATH];
     char map[64], gametype[32], zoneType[16], sessionMap[64];
     char netIp[64], botDifficulty[16], extra[512];
-    char mode[16];               /* inprocess (default): sh1x_host.dll on the game thread; child: the exe */
-    char dll[MAX_PATH];          /* the server as a DLL (mode inprocess) */
+    char mode[16];               /* inprocess (default): the server in Kernel33.dll on the game thread; child: the exe */
+    char dll[MAX_PATH];          /* dll= of earlier builds, read and ignored: the server is part of Kernel33.dll */
     int port, bots, admission, developer, readyTimeout;
-    int pmemMegs;                /* codol_pmemMegs for the server: its fastfile block (0 = the server default) */
+    int pmemMegs;                /* pmemMegs for the server: its fastfile block (0 = the server default) */
     int c1Assets;                /* in-process: take C1's records of startup zones (default 1) */
     int c1Preload;               /* in-process: preloadmap when C1 is not loading a hosted map (default 0) */
     int c1Zones;                 /* in-process: map zones C1 holds are C1-backed, mounted only on demand (default 1) */
@@ -82,7 +83,8 @@ static BOOL g_p2pHasOverride;
 struct P2PConfig;
 static int P2PInprocRun(const struct P2PConfig *c, const char *password, const char *args); /* p2p_inproc.c */
 static BOOL P2PInprocUsed(void); /* p2p_inproc.c: an in-process session ran and could not be taken down */
-static volatile LONG g_piMatchOver; /* p2p_inproc_retire.c: the hosted match ended; its session is being taken down */
+static BOOL P2PInprocServerAlive(void); /* p2p_inproc.c: the server of this run is up (it holds its port) */
+static volatile LONG g_piMatchOver; /* p2p_inproc.c: the hosted match ended; the room is re-armed for the next one */
 
 static void P2PSetState(int state, const char *error)
 {
@@ -142,7 +144,7 @@ static void P2PTrim(char *s)
 }
 
 /* Identifiers that become command-line dvar values: the same rule as the lobby's handoff
- * (tools/codol_map_handoff.ps1), so a map or gametype can never add console commands. */
+ * (tools/ol_map_handoff.ps1), so a map or gametype can never add console commands. */
 static BOOL P2PIdent(const char *s, size_t max)
 {
     size_t n = strlen(s);
@@ -165,7 +167,7 @@ static void P2PDefaults(P2PConfig *c)
     _snprintf(c->dir, MAX_PATH, "%s\\p2p", root);
     _snprintf(c->exe, MAX_PATH, "%s\\k33p2p_dedrun.exe", c->dir);
     _snprintf(c->home, MAX_PATH, "%s\\home", c->dir);
-    _snprintf(c->dll, MAX_PATH, "%s\\sh1x_host.dll", c->dir);
+    /* dll stays empty: the server inside Kernel33.dll (p2p_embedded.c); dll= in p2p_host.ini names a DLL file. */
     /* The GSC tree installed with the client (main\sh1x_rawfiles, docs/P2P_HOSTING.md). */
     _snprintf(c->scripts, MAX_PATH, "%s\\main\\sh1x_rawfiles", root);
     lstrcpyA(c->mode, "inprocess");
@@ -186,7 +188,7 @@ static void P2PDefaults(P2PConfig *c)
     c->c1Zones = 1;
 }
 
-#if CODOL_OFFLINE_LOBBY
+#if K33_OFFLINE_LOBBY
 static void OfflineP2PConfig(P2PConfig *c); /* offline_lobby.c: the offline run-time folder and this run's host port */
 static void OfflineHostPortRelease(void);   /* offline_lobby.c: the host port stops being held reserved */
 static void OfflineHostPortReserve(void);   /* offline_lobby.c: held again after a session was taken down */
@@ -259,7 +261,7 @@ static int P2PSurvivalMaps(char (*maps)[64], int maximum, const char *wanted)
 
 /* The server pack scripts/build-server.sh stages next to the host DLL: <home>\main\sh1x_svr_scripts.iwd
  * (waypoints, node maps and mp/botclasstable.csv). The host reads mp/botclasstable.csv with FS_ReadFile
- * (sh1x codol_bot_loadout.c), never from a mounted stringtable. Without the pack the host still runs,
+ * (sh1x bot_loadout.c), never from a mounted stringtable. Without the pack the host still runs,
  * but every bot class answers "none" for its whole loadout and character: bots spawn with
  * defaultweapon_mp and no body, head or shadow - only their names are drawn - and route over the
  * level's raw node_* records. Refuse to host instead of starting that match. A loose
@@ -304,10 +306,9 @@ static const char *P2PCheck(const P2PConfig *c)
      * trial's two known lifecycle switches, but never let it override an
      * admission, script or network cvar (or inject another console command). */
     if (c->extra[0] && strcmp(c->extra,
-            "+set codol_exitToLobby 1 +set codol_oneShotMatch 1"))
+            "+set exitToLobby 1 +set oneShotMatch 1"))
         return "P2P extra commands are not permitted by the local host policy";
     if (!P2PPathOk(c->dll)) return "a path holds a quote";
-    if (inproc && GetFileAttributesA(c->dll) == INVALID_FILE_ATTRIBUTES) return "server DLL not found (dll=)";
     if (!inproc && GetFileAttributesA(c->exe) == INVALID_FILE_ATTRIBUTES) return "server executable not found (exe=)";
     if (!P2PServerPackPresent(c))
         return "server pack missing: p2p\\home\\main\\sh1x_svr_scripts.iwd (bot classes, waypoints)";
@@ -460,8 +461,10 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
 
     const char *bad = P2PCheck(&c);
     if (bad) { Log("p2p: not hosting: %s", bad); P2PSetState(P2P_FAILED, bad); WSACleanup(); return 1; }
-    OfflineHostPortRelease(); /* offline mode kept the port bound until now so that it is still free */
-    if (!P2PPortFree(c.netIp, c.port)) {
+    /* The server of this run, once started, holds its port between matches; only the first match checks it. */
+    BOOL serverUp = !_stricmp(c.mode, "inprocess") && P2PInprocServerAlive();
+    if (!serverUp) OfflineHostPortRelease(); /* offline mode kept the port bound until now so that it is still free */
+    if (!serverUp && !P2PPortFree(c.netIp, c.port)) {
         Log("p2p: not hosting: udp %s:%d is in use", c.netIp, c.port);
         P2PSetState(P2P_FAILED, "the UDP port is in use");
         WSACleanup();
@@ -486,7 +489,7 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
     char pmem[256] = "";
     char relayArg[MAX_PATH + 96] = "";
     char relayPath[MAX_PATH + 64];
-    if (c.pmemMegs >= 32 && c.pmemMegs <= 2048) _snprintf(pmem, sizeof(pmem), "+set codol_pmemMegs %d", c.pmemMegs);
+    if (c.pmemMegs >= 32 && c.pmemMegs <= 2048) _snprintf(pmem, sizeof(pmem), "+set pmemMegs %d", c.pmemMegs);
     /* Zombies: the room's difficulty is g_difficulty to the server's _zombiemode.gsc (the lobby's
      * selection, K33LocalPlayAuto); left unset it stays 0 and every room plays on easy. */
     if (!strcmp(c.zoneType, "zm") && c.difficultyPresent && c.difficulty >= 0 && c.difficulty <= 2)
@@ -497,26 +500,26 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
         _snprintf(pmem + strlen(pmem), sizeof(pmem) - strlen(pmem), " +set net_ip6 ::1");
     /* Offline: one match per session. At its level exit the server keeps the finished map instead of rotating
      * (server g_sv_main.c ExitLevel: "a managed worker keeps the finished map loaded until clients leave"); the
-     * player goes back to the lobby, the session ends and is taken down (p2p_inproc_retire.c), and the next
-     * Ready starts a fresh one. Without it the client followed the rotation into the next map for a second and
+     * player goes back to the lobby, the match ends (the server stays up, p2p_inproc.c), and the next Ready moves
+     * the same server to the next match. Without it the client followed the rotation into the next map for a second and
      * that map's "disconnect" report credited a loss. */
     if (OfflineLobbyActive())
-        _snprintf(pmem + strlen(pmem), sizeof(pmem) - strlen(pmem), " +set codol_oneShotMatch 1 +set codol_exitToLobby 1");
+        _snprintf(pmem + strlen(pmem), sizeof(pmem) - strlen(pmem), " +set oneShotMatch 1 +set exitToLobby 1");
     pmem[sizeof(pmem) - 1] = 0;
     /* The explicit local Host/Guest trial arms this short-lived file before
      * forwarding any Guest packet. Normal solo hosting leaves it absent. */
     _snprintf(relayPath, sizeof(relayPath), "%s\\p2p_relay_identity.txt", c.state);
     relayPath[sizeof(relayPath)-1] = 0;
-    _snprintf(relayArg, sizeof(relayArg), "+set codol_relayIdentityPath \"%s\"", relayPath);
+    _snprintf(relayArg, sizeof(relayArg), "+set sv_relayIdentityPath \"%s\"", relayPath);
     relayArg[sizeof(relayArg)-1] = 0;
     _snprintf(cmd, sizeof(cmd),
         "\"%s\" +set dedicated 2 +set fs_basepath \"%s\" +set fs_homepath \"%s\" +set net_ip %s +set net_port %d "
         "+set rcon_password \"%s\" +set logfile 2 +set logrcon 1 +set developer %d +set sv_fps 60 "
-        "+set codol_scriptPath \"%s\" +set codol_scriptOverlay \"%s\" +set codol_scriptNativeOverlay \"%s\" "
-        "+set codol_securityKeyPath \"%s\\securitykey.bin\" +set codol_admissionPath \"%s\\game_admissions.txt\" "
-        "+set codol_admissionRequired %d %s +set codol_profilePath \"%s\" +set codol_zoneType %s +set codol_sessionMap %s "
-        "+set g_gametype %s +set codol_hostParentPid %lu %s "
-        "+codol_scriptPath +codol_scriptOverlay +codol_scriptNativeOverlay +map %s %s",
+        "+set scriptPath \"%s\" +set scriptOverlay \"%s\" +set scriptNativeOverlay \"%s\" "
+        "+set securityKeyPath \"%s\\securitykey.bin\" +set admissionPath \"%s\\game_admissions.txt\" "
+        "+set admissionRequired %d %s +set profilePath \"%s\" +set sv_zoneType %s +set sv_sessionMap %s "
+        "+set g_gametype %s +set hostParentPid %lu %s "
+        "+scriptPath +scriptOverlay +scriptNativeOverlay +map %s %s",
         c.exe, c.basepath, c.home, c.netIp, c.port, password, c.developer, c.scripts, c.scripts, c.scripts,
         c.state, c.state, c.admission ? 1 : 0, relayArg, c.profile, c.zoneType, c.sessionMap[0] ? c.sessionMap : c.map,
         c.gametype, inproc ? 0ul : GetCurrentProcessId(), pmem, c.map, c.extra);
@@ -525,7 +528,8 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
         /* The same command line without the exe: Sh1xHost_Init takes what follows it. */
         const char *args = strchr(cmd + 1, '"');
         int r = P2PInprocRun(&c, password, args ? args + 2 : cmd);
-        if (OfflineLobbyActive() && !P2PInprocUsed()) OfflineHostPortReserve(); /* until the next match's launch */
+        /* until the next match's launch; a running server holds the port itself */
+        if (OfflineLobbyActive() && !P2PInprocUsed() && !P2PInprocServerAlive()) OfflineHostPortReserve();
         WSACleanup();
         return r;
     }
@@ -831,7 +835,7 @@ static void P2PLaunchWatch(int state, DWORD now)
     InterlockedExchange(&g_p2pStop, 1);
     InterlockedExchange(&g_piMatchOver, 1); /* the room stays armed: the next Ready starts a fresh host */
 }
-/* Main thread: the launched host's match is over (its session ends and is taken down, p2p_inproc_retire.c).
+/* Main thread: the launched host's match is over (the match ends, the server stays up, p2p_inproc.c).
  * The owner is still in the room: it is armed again for the next Ready, which starts a fresh host. */
 static void P2PMatchOverTick(void)
 {
@@ -1142,7 +1146,7 @@ static C1Cmd g_p2pCmds[] = {
 };
 
 /* TakeOver, before the game entry: link the commands (the list head is plain data, as voice.c notes) and
- * start hosting at once with +set k33_p2pHost 1, so the server loads its map while the client starts. */
+ * start hosting at once with +set sv_p2pHost 1, so the server loads its map while the client starts. */
 static void InstallP2PHost(void)
 {
     g_p2pMainThread=GetCurrentThreadId(); /* TakeOver calls the original C1 entry on this thread. */
@@ -1152,7 +1156,7 @@ static void InstallP2PHost(void)
     int added = 0;
     for (unsigned i = 0; i < sizeof(g_p2pCmds) / sizeof(g_p2pCmds[0]); i++) added += C1AddCommand(&g_p2pCmds[i]);
     const char *cl = GetCommandLineA();
-    BOOL autostart = cl && (strstr(cl, "k33_p2pHost 1") || strstr(cl, "k33_p2pHost \"1\""));
-    Log("p2p: %d commands (p2phost, p2pstop, p2pstatus)%s", added, autostart ? "; hosting at startup (k33_p2pHost 1)" : "");
+    BOOL autostart = cl && (strstr(cl, "sv_p2pHost 1") || strstr(cl, "sv_p2pHost \"1\""));
+    Log("p2p: %d commands (p2phost, p2pstop, p2pstatus)%s", added, autostart ? "; hosting at startup (sv_p2pHost 1)" : "");
     if (autostart) P2PStart(NULL, NULL, NULL);
 }

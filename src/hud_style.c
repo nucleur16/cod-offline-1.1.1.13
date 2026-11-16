@@ -3,7 +3,7 @@
  * that 1.1.1.13 lacks. Included by kernel33.c after k33tick.c and voice.c (needs c1game.c, K33OnMainTick and
  * voice.c's CG_OwnerDraw hook and draw thunks). docs/HUD_STYLES_20261112.md.
  *
- * The combat HUD is native menus (ui_mp/hud_720.txt). codol_common_postgfx_mp carries the later builds' HUD items
+ * The combat HUD is native menus (ui_mp/hud_720.txt). common_postgfx_mp carries the later builds' HUD items
  * inside C1's own menus (zones/hud_styles_postgfx_mp, zones/survival_hud_postgfx_mp; tools/build_hud_styles.py),
  * each item with a visibility expression on dvarint("k33_hudStyle"): the stock items show while the dvar is not a
  * shipped style, a style's items while it is that style's number. C1 evaluates those expressions every frame, so
@@ -25,9 +25,9 @@
  *                      own width / height gives, right-aligned (C1's ownerDraw 118 stretches it by the def's ratio)
  *                      All four are read when the menu paints (no tick, no dvar): the same playerState C1's own
  *                      HUD reads, so they change in the same frame as player("stockAmmo") does.
- *   k33_hudFireType    string: the "@SF_WEAPON_*_NAME" label of the weapon in hand (2.6.9.7's getweaponfiretype),
+ *   cg_hudFireType    string: the "@SF_WEAPON_*_NAME" label of the weapon in hand (2.6.9.7's getweaponfiretype),
  *                      from weaponDef + 0x350 / + 0xB64 (hud_style_policy.h HudFireTypeKey)
- *   k33_hudAssists     int: the local player's assists (2.6.9.7's player("assists")), from C1's score records
+ *   cg_hudAssists     int: the local player's assists (2.6.9.7's player("assists")), from C1's score records
  * The two dvars are published on the main tick while a style is on (they change with a weapon switch or a score
  * message, not per shot); the menus read them with dvarstring / dvarint.
  *
@@ -46,7 +46,7 @@
  *               akimbo byte (0x0040AB60: the weapon's index among cg + 0x2A0[15], record cg + 0x2DC + idx * 5,
  *               byte +1; index 14 while dvar [0x0238A908] byte +0xC is set). HudAkimbo repeats both.
  *   0x00465240  CG_ParseScores: 19 rows of 0x40 bytes at cg + 0xBEB70, row count cg + 0xBEB18; the 7th value of a
- *               row (the sh1x server's assists, server/sh1x src/codol/stats/codol_scoreboard_wire.c) at +0x1C,
+ *               row (the sh1x server's assists, server/sh1x src/online/stats/scoreboard_wire.c) at +0x1C,
  *               the client number at +0.
  *   weaponDef + 0x350 fire type, + 0xB64 class: located by value (hud_style_policy.h), no instruction to check;
  *               read only after the three sites above passed.
@@ -74,8 +74,8 @@
 #define HUD_STYLE_LIST      "0:stock;2:v26;3:v33;5:sm2"
 #define HUD_STYLE_MAX       5
 #define HUD_STYLE_REGISTER_STRING_VA 0x00624740u
-#define HUD_FIRE_DVAR       "k33_hudFireType"
-#define HUD_ASSISTS_DVAR    "k33_hudAssists"
+#define HUD_FIRE_DVAR       "cg_hudFireType"
+#define HUD_ASSISTS_DVAR    "cg_hudAssists"
 #define HUD_OD_CLIP         3001    /* tools/build_hud_styles.py OD_CLIP */
 #define HUD_OD_CLIP_BAR     3002    /* tools/build_hud_styles.py OD_CLIP_BAR */
 #define HUD_OD_HEALTH       3003    /* tools/build_hud_styles.py OD_HEALTH */

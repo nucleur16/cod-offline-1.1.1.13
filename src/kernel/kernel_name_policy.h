@@ -1,5 +1,5 @@
-#ifndef CODOL_KERNEL_NAME_POLICY_H
-#define CODOL_KERNEL_NAME_POLICY_H
+#ifndef KERNEL_NAME_POLICY_H
+#define KERNEL_NAME_POLICY_H
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>

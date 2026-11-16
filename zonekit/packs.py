@@ -8,7 +8,7 @@ parts in order, and the build concatenates each part's assets (after that part's
     // comment
     >zone,<pack>                  the installed name; it decides the load list (kernel33.c PatchZoneStage):
                                   *_postgfx_mp after code_post_gfx, *_ui_mp ahead of the UI zones, else ahead of
-                                  code_pre_gfx; codol_english* / codol_chinese* load in one language only
+                                  code_pre_gfx; english* / chinese* load in one language only
     >install,client_shipRetail\patch
     >filetime,hi,lo  >rsa,hex     the container's recorded key (drawn and written back on the first build)
     >zlib,9
@@ -18,7 +18,7 @@ parts in order, and the build concatenates each part's assets (after that part's
 
 Rules the build enforces:
   * every part is a flat zone (no script strings, no back references: a C#-written zone such as
-    codol_infected_cyborg_postgfx_mp points into its own runtime blocks, so its assets cannot move and it ships on
+    infected_cyborg_postgfx_mp points into its own runtime blocks, so its assets cannot move and it ships on
     its own);
   * a part loads in the same list as the pack (the old name's suffix gives the same stage), and in the same languages,
     except where a pack takes only some asset types of a part (usermaps_patch's GBK strings go to the Chinese pack);
@@ -29,7 +29,7 @@ Rules the build enforces:
     its own.
 
 Kernel33 skips an old zone name when the pack that replaced it is in the patch folder (patch_locale_policy.h
-CodolPatchZoneMergedInto); tests/test_zone_packs.py checks that table against these manifests.
+PatchZoneMergedInto); tests/test_zone_packs.py checks that table against these manifests.
 """
 from __future__ import annotations
 
@@ -56,11 +56,11 @@ def stage(name):
 
 
 def locales(name):
-    """patch_locale_policy.h CodolPatchZoneLocaleAllowed: the languages (en, zh, native) a zone of this name loads in."""
+    """patch_locale_policy.h PatchZoneLocaleAllowed: the languages (en, zh, native) a zone of this name loads in."""
     n = name.lower()
-    if n.startswith("codol_english"):
+    if n.startswith("english"):
         return frozenset(["en"])
-    if n.startswith("codol_chinese"):
+    if n.startswith("chinese"):
         return frozenset(["zh", "native"])
     return frozenset(["en", "zh", "native"])
 

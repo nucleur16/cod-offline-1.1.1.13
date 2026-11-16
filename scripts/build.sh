@@ -17,8 +17,9 @@ cd "$ROOT/src"
 OUT=../build
 mkdir -p "$OUT"
 # The sh1x server that src/p2p/p2p.c hosts is the submodule server/sh1x (docs/P2P_HOSTING.md); the DLL itself does
-# not compile it, scripts/build-server.sh does. Init it (not --recursive: the server has a URL-less gitlink).
-[ -f "$ROOT/server/sh1x/makefile" ] || git -C "$ROOT" submodule update --init server/sh1x || echo "warning: server/sh1x submodule not initialised (only scripts/build-server.sh needs it)"
+# not compile it, scripts/build-server.sh does, and this script links its output (below). Init it unless
+# K33_SERVER_DIR names another checkout (not --recursive: the server has a URL-less gitlink).
+[ -n "${K33_SERVER_DIR:-}" ] || [ -f "$ROOT/server/sh1x/makefile" ] || git -C "$ROOT" submodule update --init server/sh1x || echo "warning: server/sh1x submodule not initialised (only scripts/build-server.sh needs it)"
 . ../scripts/build-profile.sh
 BIN=/c/msys64/mingw32/bin
 SDL_VER=2.32.10
@@ -40,11 +41,33 @@ fi
 . ../scripts/build-offline.inc.sh
 k33_offline_objects "$OUT/obj_offline"
 OFFLINE_LINK="$OFFLINE_OBJS -static-libstdc++ -lstdc++"
+# The match server is linked into Kernel33.dll (src/p2p/p2p_inproc.c; docs/P2P_HOSTING.md, "The server linked into
+# Kernel33.dll"): the server repo's host-lib output, bin/libsh1x_host.a, which scripts/build-server.sh builds with
+# this same MSYS2 mingw32 compiler. K33_SERVER=1 requires it, 0 leaves it out (hosting then fails with "built
+# without the match server"), auto (the default) links it when it exists. K33_SERVER_DIR names the server checkout
+# (default server/sh1x), K33_SERVER_LIB the library itself (default $K33_SERVER_DIR/bin/libsh1x_host.a).
+WITH_SERVER=${K33_SERVER:-auto}
+case "$WITH_SERVER" in 0|1|auto) ;; *) echo "K33_SERVER must be 0, 1 or auto" >&2; exit 1;; esac
+SRVDIR=${K33_SERVER_DIR:-$ROOT/server/sh1x}
+SRVLIB=${K33_SERVER_LIB:-$SRVDIR/bin/libsh1x_host.a}
+SERVER_LINK=
+if [ "$WITH_SERVER" != 0 ] && [ -f "$SRVLIB" ]; then
+    # the server's imports beyond Kernel33's own: crypt32 (its certificate store) and wsock32
+    SERVER_LINK="$SRVLIB -lcrypt32 -lwsock32"
+    echo "linking the sh1x server $(git -C "$SRVDIR" rev-parse --short HEAD 2>/dev/null || echo '?') from $SRVLIB"
+elif [ "$WITH_SERVER" = 1 ]; then
+    echo "K33_SERVER=1 but $SRVLIB does not exist: run scripts/build-server.sh first" >&2
+    exit 1
+else
+    set -- "$@" -DK33_NO_SERVER=1
+    [ "$WITH_SERVER" = 0 ] || echo "warning: no $SRVLIB (scripts/build-server.sh builds it)"
+    echo "Kernel33.dll is built without the match server"
+fi
 "$BIN/windres.exe" -O coff -i kernel33.rc -o "$OUT/kernel33_res.o"
 # ld derives a DLL's default image base from the output file name as it is written on the command line. 0x69100000
 # is the one "Kernel33.dll" always got; it is pinned so the DLL does not change with the output folder.
 "$BIN/gcc.exe" "$@" -O2 -Wall -shared -s -static -static-libgcc -I"$SDL_DIR/include" -o "$OUT/Kernel33.dll" \
-    -I. kernel33.c "$OUT/kernel33_res.o" kernel33.def $OFFLINE_LINK \
+    -I. kernel33.c "$OUT/kernel33_res.o" kernel33.def $SERVER_LINK $OFFLINE_LINK \
     -L"$SDL_DIR/lib" -lSDL2 -lsetupapi -lcfgmgr32 -lversion -loleaut32 -luuid \
     -lopus -lz -limm32 -lgdi32 -lshlwapi -lole32 -lwinmm -lws2_32 -liphlpapi -lpsapi -ladvapi32 -lshell32 -Wl,--enable-stdcall-fixup -Wl,--dynamicbase -Wl,--nxcompat -Wl,--image-base,0x69100000
 if [ "${K33_NO_COPY:-0}" = 1 ]; then

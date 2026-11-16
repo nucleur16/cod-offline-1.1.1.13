@@ -3,7 +3,7 @@
  * Log/Readable/WriteCode/CallsTarget/RedirectCall, c1game.c's dvar helpers, voice.c's connection-state
  * and clc addresses and parity.c's configstring addresses.
  *
- * This is CoDOLPresence.exe (the PyInstaller build of the server repo's tools/codol_discord_presence.py
+ * This is CoDOLPresence.exe (the PyInstaller build of the server repo's tools/discord_presence.py
  * that the codol-classic launcher starts beside the client with --client-pid) moved into the client:
  *
  *   application  1554730441825718272 ("Call of Duty Online"); its one art asset is "codol".
@@ -40,7 +40,7 @@
  * 0 HANDSHAKE {"v":1,"client_id":...}, 1 FRAME (commands, replies, the READY dispatch), 2 CLOSE,
  * 3 PING (answered with 4 PONG carrying the same body). Frames are capped at 16 KiB as in the helper.
  *
- * Dvar: codol_discord 1 (archived): 0 clears the activity and closes the pipe. "+set codol_discord 0"
+ * Dvar: cl_discord 1 (archived): 0 clears the activity and closes the pipe. "+set cl_discord 0"
  * on the command line installs nothing. Kernel33.log gets the connection changes and each new
  * activity, like the helper's diagnostics file.
  *
@@ -191,9 +191,9 @@ __attribute__((used)) void __cdecl DiscordMainTick(void)
     if (!g_dcDvarDone) {
         if (!C1DvarsReady()) return;
         g_dcDvarDone = TRUE;
-        g_dvDiscord = C1RegisterInt("codol_discord", 1, 0, 1, 0x1,
+        g_dvDiscord = C1RegisterInt("cl_discord", 1, 0, 1, 0x1,
                                     "Discord Rich Presence: 1 show what you are playing in Discord, 0 off");
-        Log("discord: codol_discord %d", C1DvarInt(g_dvDiscord, 1));
+        Log("discord: cl_discord %d", C1DvarInt(g_dvDiscord, 1));
         g_dcThread = CreateThread(NULL, 0, DiscordThread, NULL, 0, NULL);
         if (g_dcThread) SetThreadPriority(g_dcThread, THREAD_PRIORITY_BELOW_NORMAL);
         else Log("discord: worker thread could not start (%lu)", GetLastError());
@@ -226,7 +226,7 @@ __attribute__((used)) void __cdecl DiscordMainTick(void)
             g.port = (unsigned short)(adr[8] << 8 | adr[9]);
             g.local = type == 2 /* NA_LOOPBACK */ || (type > 2 && adr[4] == 127);
         }
-#if CODOL_DIAGNOSTICS
+#if K33_DIAGNOSTICS
         static char logged[128];
         char line[128];
         _snprintf(line, sizeof(line), "%s %s %lld", g.map, g.mode, activeSince);
@@ -569,7 +569,7 @@ static DWORD WINAPI DiscordThread(LPVOID unused)
 
         if (!g.enabled) {
             if (wasEnabled) {
-                Log("discord: off (codol_discord 0)");
+                Log("discord: off (cl_discord 0)");
                 if (g_dcPipe != INVALID_HANDLE_VALUE) {
                     DiscordActivity none;
                     memset(&none, 0, sizeof(none));
@@ -580,7 +580,7 @@ static DWORD WINAPI DiscordThread(LPVOID unused)
             }
             continue;
         }
-        if (!wasEnabled) { wasEnabled = TRUE; needSend = TRUE; retryAt = 0; Log("discord: on (codol_discord 1)"); }
+        if (!wasEnabled) { wasEnabled = TRUE; needSend = TRUE; retryAt = 0; Log("discord: on (cl_discord 1)"); }
 
         /* the local server's player count: on joining, on a map or mode change, then every 10 s */
         if (g.active && g.local && g.port && net) {
@@ -651,8 +651,8 @@ __asm__(
 static void InstallDiscord(void)
 {
     const char *cl = GetCommandLineA();
-    if (cl && (strstr(cl, "codol_discord 0") || strstr(cl, "codol_discord \"0\""))) {
-        Log("discord: off (codol_discord 0 on the command line)");
+    if (cl && (strstr(cl, "cl_discord 0") || strstr(cl, "cl_discord \"0\""))) {
+        Log("discord: off (cl_discord 0 on the command line)");
         return;
     }
     C1GameInit();

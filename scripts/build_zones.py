@@ -15,7 +15,7 @@ r"""build_zones.py -- the one build entry point for every zone of this repositor
 Usermaps: shipping_maps.txt lists every usermap as "ship" or "dev" (zonekit/shipping.py). The default build is the
 shipping build: the usermap zones (usermaps_patch, usermaps_ui_mp) and files\...\sound_channels.txt carry only the
 "ship" maps' data (create-room rows, arena entries, names, map-select images, vision, sound channels). --maps all
-(or CODOL_MAPS=all) keeps every listed map, for local testing of maps in development, and writes output_dev\ unless
+(or K33_MAPS=all) keeps every listed map, for local testing of maps in development, and writes output_dev\ unless
 --out is given, so a dev build is never the folder that ships. A usermap that shipping_maps.txt does not list fails
 the build either way.
 
@@ -84,6 +84,7 @@ def origin_path(origin, name, roots, tmp):
         return out if r.returncode == 0 else None
     if not roots.get(root):
         return None
+    name = zonelist.LEGACY_NAME.get(name, name)   # the name it has in that install (before "codol" was dropped)
     p = os.path.join(roots[root], rel.replace("/", os.sep), name + ".ff")
     return p if os.path.isfile(p) else None
 
@@ -284,11 +285,11 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0], epilog=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("zones", nargs="*", help="zone names (default: every zone_source/*.csv)")
-    ap.add_argument("--game", default=os.environ.get("CODOL_GAME", DEFAULT_GAME))
-    ap.add_argument("--zz", default=os.environ.get("CODOL_ZZ", DEFAULT_ZZ))
+    ap.add_argument("--game", default=os.environ.get("K33_GAME", DEFAULT_GAME))
+    ap.add_argument("--zz", default=os.environ.get("K33_ZZ", DEFAULT_ZZ))
     ap.add_argument("--exe", help="C1.exe of 1.1.1.13 (default: <game>\\C1.exe)")
     ap.add_argument("--out")
-    ap.add_argument("--maps", default=os.environ.get("CODOL_MAPS", "ship"), choices=shipping.MODES)
+    ap.add_argument("--maps", default=os.environ.get("K33_MAPS", "ship"), choices=shipping.MODES)
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--verify", action="store_true")
     ap.add_argument("--record", action="store_true",
@@ -301,7 +302,7 @@ def main(argv=None):
     ap.add_argument("--parts", action="store_true",
                     help="build every source zone on its own (the layout before zone_packs/) into output_parts\\")
     ap.add_argument("--candidate", action="store_true", help="build unqualified intentional changes into output_candidate instead of shipping output")
-    ap.add_argument("--ffdec", default=os.environ.get("CODOL_FFDEC", DEFAULT_FFDEC))
+    ap.add_argument("--ffdec", default=os.environ.get("K33_FFDEC", DEFAULT_FFDEC))
     a = ap.parse_args(argv)
     exe = a.exe or os.path.join(a.game, "C1.exe")
     chinese = os.path.join(a.game, "client_shipRetail", "chinese")

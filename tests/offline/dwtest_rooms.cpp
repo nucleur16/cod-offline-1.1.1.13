@@ -421,7 +421,7 @@ void SelectionChecks(const dw::Config &base, const std::string &scratch)
         const std::string surv = dw::PathJoin(dw::PathJoin(dw::PathJoin(dw::PathJoin(dw::PathJoin(cfg.gameDir, "main"), "sh1x_rawfiles"), "maps"), "mp"), "survival");
         const std::string gts = dw::PathJoin(dw::PathJoin(dw::PathJoin(dw::PathJoin(dw::PathJoin(cfg.gameDir, "main"), "sh1x_rawfiles"), "maps"), "mp"), "gametypes");
         cfg.zoneDir = zones;
-        static const char *const stock[] = { "mp_rust", "mp_rust_load", "mp_fav_tropical", "mp_cross_fire", "mp_highrise", "mp_brl_derail",
+        static const char *const stock[] = { "mp_rust", "mp_rust_load", "mp_fav_tropical", "mp_cross_fire", "mp_highrise", "mp_crash_intro",
                                               "zm_sumpf_sh", "mp_playlists", "patch_mp_rust" };
         for (size_t i = 0; i < sizeof(stock) / sizeof(stock[0]); i++) Touch(dw::PathJoin(zones, std::string(stock[i]) + ".ff"));
         Touch(dw::PathJoin(dw::PathJoin(dw::PathJoin(cfg.gameDir, "usermaps"), "mp_seatown"), "mp_seatown.ff"));
@@ -438,7 +438,7 @@ void SelectionChecks(const dw::Config &base, const std::string &scratch)
         {
             Pick p(cfg, &host);
             Check(Is(p.Select("war", "mp_seatown"), "mp_seatown", "mp_seatown", "war", "mp"), T, "a usermaps folder's map resolves as the room's map");
-            Check(Is(p.Select("war", "mp_brl_derail"), "mp_brl_derail", "mp_brl_derail", "war", "mp"), T, "a level zone needs no _load zone");
+            Check(Is(p.Select("war", "mp_crash_intro"), "mp_crash_intro", "mp_crash_intro", "war", "mp"), T, "a level zone needs no _load zone");
             Check(Is(p.Select("zm", "zm_sumpf_sh", 1), "zm_sumpf_sh", "zm_sumpf_sh", "zm", "zm"), T, "an installed zm zone outside the playlists resolves");
             std::vector<std::string> levels = dw::HandoffSurvivalLevels(p.server);
             Check(levels.size() == 2 && levels[0] == "mp_cross_fire" && levels[1] == "mp_seatown", T,
