@@ -1,14 +1,4 @@
-{
-	map			"mp_invasion"
-	longname	"MPUI_INVASION"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth dd oneflag gtnw"
-    description "MPUI_DESC_MAP_INVASION"
-    mapimage    "preview_mp_invasion"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "us_army"
-    axischar    "opforce_composite"
-    environment	"urban"
-}
+
 
 {
 	map			"mp_highrise"
@@ -23,18 +13,6 @@
 }
 
 {
-	map			"mp_checkpoint"
-	longname	"MPUI_CHECKPOINT"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth dd oneflag gtnw"
-    description "MPUI_DESC_MAP_checkpoint"
-    mapimage    "preview_mp_checkpoint"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "seals_udt"
-    axischar    "opforce_composite"
-    environment	"urban"
-}
-
-{
 	map			"mp_nightshift"
 	longname	"MPUI_RAID"
 	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth dd oneflag gtnw"
@@ -44,42 +22,6 @@
     allieschar  "us_army"
     axischar    "opforce_airborne"
     environment	"urban"
-}
-
-{
-	map			"mp_favela"
-	longname	"MPUI_FAVELA"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth dd oneflag gtnw"
-    description "MPUI_DESC_MAP_favela"
-    mapimage    "preview_mp_favela"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "socom_141_desert"
-    axischar    "militia"
-    environment	"urban"
-}
-
-{
-	map			"mp_brecourt"
-	longname	"MPUI_WASTELAND"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth dd oneflag gtnw"
-    description "MPUI_DESC_MAP_BRECOURT"
-    mapimage    "preview_mp_brecourt"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "socom_141_forest"
-    axischar    "opforce_airborne"
-    environment	"forest"
-}
-
-{
-	map			"mp_derail"
-	longname	"MPUI_DERAIL"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth dd oneflag gtnw"
-    description "MPUI_DESC_MAP_DERAIL"
-    mapimage    "preview_mp_derail"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "socom_141_arctic"
-    axischar    "opforce_arctic"
-    environment	"arctic"
 }
 
 {
@@ -103,18 +45,6 @@
 	mapoverlay  "compass_overlay_map_blank"
     allieschar  "socom_141_forest"
     axischar    "militia"
-    environment	"forest"
-}
-
-{
-	map			"mp_estate"
-	longname	"MPUI_ESTATE"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth dd oneflag gtnw"
-    description "MPUI_DESC_MAP_ESTATE"
-    mapimage    "preview_mp_estate"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "socom_141_forest"
-    axischar    "opforce_airborne"
     environment	"forest"
 }
 
@@ -155,30 +85,6 @@
 }
 
 {
-	map			"mp_storm"
-	longname	"PATCH_STORM"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
-    description "PATCH_DESC_MAP_STORM"
-    mapimage    "preview_mp_storm"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "socom_141_desert"
-    axischar    "opforce_airborne"
-    environment	"urban"
-}
-
-{
-	map			"mp_compact"
-	longname	"PATCH_COMPACT"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
-    description "PATCH_DESC_MAP_COMPACT"
-    mapimage    "preview_mp_compact"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "socom_141_arctic"
-    axischar    "opforce_arctic"
-    environment	"urban"
-}
-
-{
 	map			"mp_complex"
 	longname	"PATCH_COMPLEX"
 	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
@@ -191,18 +97,6 @@
 }
 
 {
-	map			"mp_crash"
-	longname	"MPUI_CRASH"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
-    description "MPUI_DESC_MAP_CRASH"
-    mapimage    "preview_mp_crash"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "socom_141_desert"
-    axischar    "opforce_composite"
-    environment	"desert"
-}
-
-{
 	map			"mp_overgrown"
 	longname	"MPUI_OVERGROWN"
 	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
@@ -212,31 +106,6 @@
     allieschar  "socom_141_forest"
     axischar    "opforce_airborne"
     environment	"forest"
-}
-
-
-{
-	map			"mp_abandon"
-	longname	"PATCH_ABANDON"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
-    description "PATCH_DESC_MAP_ABANDON"
-    mapimage    "preview_mp_abandon"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "socom_141_desert"
-    axischar    "militia"
-    environment	"urban"
-}
-
-{
-	map			"mp_fuel2"
-	longname	"PATCH_FUEL2"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
-    description "PATCH_DESC_MAP_FUEL2"
-    mapimage    "preview_mp_fuel2"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "us_army"
-    axischar    "opforce_composite"
-    environment	"desert"
 }
 
 {
@@ -273,67 +142,6 @@
     allieschar  "socom_141_desert"
     axischar    "opforce_composite"
     environment	"forest"
-}
-
-{
-	map			"mp_crossfire"
-	longname	"MPUI_CROSSFIRE"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
-    description "MPUI_DESC_MAP_CROSSFIRE"
-    mapimage    "preview_mp_crossfire"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "socom_141_desert"
-    axischar    "opforce_composite"
-    environment	"desert"
-}
-
-{
-	map			"mp_killhouse"
-	longname	"MPUI_KILLHOUSE"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
-    description "MPUI_DESC_MAP_KILLHOUSE"
-    mapimage    "preview_mp_killhouse"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "socom_141_desert"
-    axischar    "opforce_composite"
-    environment	"urban"
-}
-
-
-{
-	map			"mp_cargoship"
-	longname	"MPUI_CARGOSHIP"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
-    description "MPUI_DESC_MAP_CARGOSHIP"
-    mapimage    "preview_mp_cargoship"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "socom_141_desert"
-    axischar    "opforce_composite"
-    environment	"urban"
-}
-
-{
-	map			"mp_bloc"
-	longname	"MPUI_BLOC"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
-    description "MPUI_DESC_MAP_BLOC"
-    mapimage    "preview_mp_bloc"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "socom_141_forest"
-    axischar    "opforce_airborne"
-    environment	"arctic"
-}
-
-{
-	map			"mp_bog"
-	longname	"MPUI_BOG"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
-    description "MPUI_DESC_MAP_BOG"
-    mapimage    "preview_mp_bog"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "socom_141_desert"
-    axischar    "opforce_composite"
-    environment	"desert"
 }
 
 {
@@ -403,50 +211,6 @@
     allieschar  "us_army"
     axischar    "opforce_composite"
     environment	"urban"
-}
-{
-	map			"coop_takeover_mp_estate"
-	longname	"MPUI_TAKEOVER"
-	gametype	"coop"
-    description "MPUI_DESC_MAP_TAKEOVER"
-    mapimage    "blank"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "us_army"
-    axischar    "opforce_composite"
-    environment	"forest"
-}
-{
-	map			"coop_training_mp_killhouse"
-	longname	"MPUI_TRAINING"
-	gametype	"coop"
-    description "MPUI_DESC_MAP_TRAINING"
-    mapimage    "blank"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "us_army"
-    axischar    "opforce_composite"
-    environment	"urban"
-}
-{
-	map			"mp_hunted"
-	longname	"MPUI_HUNTED"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
-    description "MPUI_DESC_MAP_HUNTED"
-    mapimage    "preview_mp_hunted"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "us_army"
-    axischar    "opforce_composite"
-    environment	"arctic"
-}
-{
-	map			"coop_zac130_mp_derail"
-	longname	"MPUI_DERAIL"
-	gametype	"coop"
-    description "MPUI_DESC_MAP_DERAIL"
-    mapimage    "preview_mp_derail"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "socom_141_arctic"
-    axischar    "opforce_arctic"
-    environment	"arctic"
 }
 {
 	map			"coop_sniperfi_mp_con_spring"
@@ -616,17 +380,6 @@
     axischar    "opforce_composite"
     environment	"forest"
 }
-{
-	map			"coop_sniperfi4_mp_con_spring"
-	longname	"MPUI_SNIPERFI"
-	gametype	"coop"
-    description "MPUI_DESC_MAP_SNIPERFI"
-    mapimage    "so_rooftop_contingency"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "us_army"
-    axischar    "opforce_composite"
-    environment	"arctic"
-}
 
 {
 	map			"mp_nuked"
@@ -686,18 +439,6 @@
     allieschar  "us_army"
     axischar    "opforce_composite"
     environment	"forest"
-}
-
-{
-	map			"mp_oilrig2"
-	longname	"MPUI_OILRIG"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
-    description "MPUI_DESC_MAP_OILRIG"
-    mapimage    "blank"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "socom_141_desert"
-    axischar    "opforce_composite"
-    environment	"urban"
 }
 {
 	map			"coop_spec_mp_hunted_spring"
@@ -759,30 +500,6 @@
 }
 
 {
-	map			"coop_zrescue_mp_storm_spring"
-	longname	"PATCH_STORM"
-	gametype	"coop"
-    description "PATCH_DESC_MAP_STORM"
-    mapimage    "preview_mp_storm"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "socom_141_desert"
-    axischar    "opforce_airborne"
-    environment	"arctic"
-}
-
-{
-	map			"mp_stop"
-	longname	"MPUI_STOP"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
-    description "MPUI_DESC_MAP_STOP"
-    mapimage    "blank"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "socom_141_desert"
-    axischar    "opforce_composite"
-    environment	"urban"
-}
-
-{
 	map			"coop_ac130_mp_estate_tropical"
 	longname	"MPUI_ESTATE"
 	gametype	"coop"
@@ -799,18 +516,6 @@
 	longname	"MPUI_COOP_SPEC3_MP_BRIDGE"
 	gametype	"coop"
     description "MPUI_DESC_MAP_SUSPENSION"
-    mapimage    "blank"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "us_army"
-    axischar    "opforce_composite"
-    environment	"urban"
-}
-
-{
-	map			"coop_spec_mp_bloc"
-	longname	"MPUI_BIG_BROTHER"
-	gametype	"coop"
-    description "MPUI_DESC_MAP_BIG_BROTHER"
     mapimage    "blank"
 	mapoverlay  "compass_overlay_map_blank"
     allieschar  "us_army"
@@ -848,13 +553,6 @@
 	longname	"MPUI_ZM_FACTORY"
 	gametype	"zm"
     description "MPUI_DESC_MAP_ZM_FACTORY"
-	mapimage    "blank"
-}
-{
-	map			"zm_sumpf"
-	longname	"MPUI_ZM_SUMPF"
-	gametype	"zm"
-    description "MPUI_DESC_MAP_ZM_SUMPF"
 	mapimage    "blank"
 }
 {
@@ -966,17 +664,6 @@
     allieschar  "us_army"
     axischar    "opforce_composite"
     environment	"urban"
-}
-{
-	map			"mp_cliffhanger"
-	longname	"MPUI_DERAIL"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth dd oneflag gtnw"
-    description "MPUI_DESC_MAP_DERAIL"
-    mapimage    "preview_mp_derail"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "socom_141_arctic"
-    axischar    "opforce_arctic"
-    environment	"arctic"
 }
 {
 	map			"coop_spec_mp_cargoship_sh"
@@ -1323,17 +1010,6 @@
     environment	"arctic"
 }
 {
-	map			"mp_district"
-	longname	"MPUI_DISTRICT"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
-    description "MPUI_DESC_MAP_DISTRICT"
-    mapimage    "blank"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "us_army"
-    axischar    "opforce_composite"
-    environment	"urban"
-}
-{
 	map			"mp_fallen_sh"
 	longname	"MPUI_FALLEN_SH"
 	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth dd"
@@ -1486,17 +1162,6 @@
     allieschar  "us_army"
     axischar    "opforce_composite"
     environment	"urban"
-}
-{
-	map			"mp_showdown"
-	longname	"MPUI_MP_SHOWDOWN"
-	gametype	"dm war sab sab2 dom sd sd2 hc thc ctf koth"
-    description "MPUI_DESC_MP_SHOWDOWN"
-    mapimage    "blank"
-	mapoverlay  "compass_overlay_map_blank"
-    allieschar  "us_army"
-    axischar    "opforce_composite"
-    environment	"desert"
 }
 {
 	map			"mp_tunisia"

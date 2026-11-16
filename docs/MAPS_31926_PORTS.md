@@ -162,9 +162,21 @@ defaults. Neither MW3 nor 3.19.26.22 has one for those maps. This work used no I
 use them), and mp_derail_sh uses `MPUI_DERAIL_SH`. The offline selector tests use stock mp_crash_intro, which also has
 no `_load` zone, for the level-zone case.
 
-**Open (seen live, not fixed).** Tunisia's room showed no 3D lobby scene and its load screen titled the map
-`mp_tunisia` (raw), and Village's load screen did the same on 2026-11-13. Showdown, whose stock arena entry comes first,
-showed both. The usermap arena entries sit at positions 94..136 of `mp/basemaps.arena`, and the suspected cause is that
-the client keeps only the first 128 entries (an IW4-style arena limit). That would leave Skidrow (128) to Wasteland (136)
-without arena data. It is untested: the test client stopped starting (the D3D device creation stalled, as it did for
-other agents' clients at the same time) before Arkaden (position 111) could be compared.
+**Arena entry limit (fixed).** Tunisia's room showed no 3D lobby scene and its load screen titled the map
+`mp_tunisia`, and Village's did the same on 2026-11-13, while Showdown (whose stock entry comes first) showed both.
+Cause, read in C1.exe: the arena loader (0x005EA150) parses `mp/basemaps.arena` with UI_ParseInfos (0x005E9DA0)
+into 128 info slots (`mov edx, 0x80; sub edx, count` at 0x005EA1E7; the parser stops at the limit without a message),
+the info text shares a 0x10000-byte pool (0x005EA0BD; past it, an error), and the map list built from the entries
+(0x005EA420, the `longname` / `mapimage` / `environment` reads) stops at 0x80 maps too (0x005EA8A7). The arena had
+137 entries, so Skidrow, Offshore, Overwatch, Radiation, Resistance, Showdown (the new entry), Tunisia, Village and
+Wasteland were never read. comaplist has no such limit: the carousel lists every row (checked live).
+Fix: the arena drops the 26 stock entries of maps that no install has and no comaplist row names (MW2 originals such
+as mp_favela, mp_derail, mp_crossfire; SP / Spec Ops ones such as mp_cliffhanger, coop_zac130_mp_derail), the stock
+duplicate of coop_zrescue_mp_storm_spring, and the new mp_district / mp_showdown entries that the stock ones always
+shadowed. That leaves 108 entries (info text about 26.6 KB), 20 slots free. `zonekit/zonelist.py` `arena_prune`
+lists them, `zonekit/shipping.py` checks the stock text minus that list and fails any build whose arena has more
+than 128 entries or more info text than the pool, and `tests/test_arena_cap.py` checks the source arena (every
+pvp / zm map of shipping_maps.txt read, no name twice) and, with `K33_C1_EXE`, the three limits in C1.exe.
+Checked live after the fix (headless client, 2026-11-16): Tunisia's room shows the desert lobby scene and its load
+screen "Tunisia"; Wasteland, Backlot, District and Arkaden load screens show their names; Showdown with its new
+vision, Backlot and District with their CoD4 fog look right in game.
