@@ -14,14 +14,14 @@
 // Mixing with combat: the native AI (codol_bot.c) keeps acquiring and shooting
 // enemies while it walks to a script goal. Bots share objectives out (each
 // claimant makes a target less attractive to teammates, and some targets cap
-// their claimants), and only scr_codol_bot_objective percent of bots (default
+// their claimants), and only scr_bot_objective percent of bots (default
 // 70) make objectives their focus; the rest roam and fight, taking only
 // urgent errands (a defuse, a dropped flag, the bomb they carry) or ones close
 // by. Planting waits while the bot sees an enemy (T5 bot_is_idle); a defuse
 // does not.
 //
 // Hooked from _codol_bots::watchSpawns. Developer trace: set
-// scr_codol_bot_objective_debug 1 (developer > 0).
+// scr_bot_objective_debug 1 (developer > 0).
 #include maps\mp\_utility;
 #include common_scripts\utility;
 
@@ -35,15 +35,15 @@ objectiveThink()
 
 	if ( !isObjectiveGametype() )
 		return;
-	if ( getDvar( "scr_codol_bot_objective" ) == "" )
-		setDvar( "scr_codol_bot_objective", 70 );
+	if ( getDvar( "scr_bot_objective" ) == "" )
+		setDvar( "scr_bot_objective", 70 );
 
 	self.codolObjKey = undefined;
 	self.codolObjGoal = undefined;
 	self.codolObjState = undefined;
 	self.codolObjBad = [];
-	self.codolObjFocus = randomInt( 100 ) < getDvarInt( "scr_codol_bot_objective" );
-	if ( !isDefined( level.codolObjStatusStarted ) && getDvarInt( "developer" ) > 0 && getDvarInt( "scr_codol_bot_objective_debug" ) > 0 )
+	self.codolObjFocus = randomInt( 100 ) < getDvarInt( "scr_bot_objective" );
+	if ( !isDefined( level.codolObjStatusStarted ) && getDvarInt( "developer" ) > 0 && getDvarInt( "scr_bot_objective_debug" ) > 0 )
 	{
 		level.codolObjStatusStarted = true;
 		level thread debugStatus();
@@ -54,7 +54,7 @@ objectiveThink()
 
 	for ( ;; )
 	{
-		if ( getDvarInt( "scr_codol_bot_objective" ) <= 0 || self objectivePaused() )
+		if ( getDvarInt( "scr_bot_objective" ) <= 0 || self objectivePaused() )
 		{
 			self releaseObjective();
 			wait 1.5;
@@ -813,7 +813,7 @@ taskStillValid( task )
 // Developer trace of what the gameobject use loop gates on.
 debugUse( task )
 {
-	if ( getDvarInt( "developer" ) <= 0 || getDvarInt( "scr_codol_bot_objective_debug" ) < 2 )
+	if ( getDvarInt( "developer" ) <= 0 || getDvarInt( "scr_bot_objective_debug" ) < 2 )
 		return;
 	progress = "-";
 	if ( isDefined( task.obj ) && isDefined( task.obj.curProgress ) )

@@ -5,49 +5,49 @@
 // the throw and raises the real "grenade_fire". Nothing here simulates an
 // effect. Every hook is idle unless its dvar is set.
 //
-//   set scr_codol_equiptest "<clientnum> <slot> <weapon>"
+//   set scr_equiptest "<clientnum> <slot> <weapon>"
 //       slot 0 lethal (frag button), 1 tactical, 2 equipment. Arms <weapon>
 //       in that slot with the other two kept, then holds the slot's button.
-//   set scr_codol_equiptest "addbots <n>"
-//       adds n test clients (zombies only; multiplayer has scr_codol_bots).
-//   set scr_codol_equiptest "down <clientnum>"
+//   set scr_equiptest "addbots <n>"
+//       adds n test clients (zombies only; multiplayer has scr_bots).
+//   set scr_equiptest "down <clientnum>"
 //       puts a client into last stand through level.codolEquipTestDown
 //       (zombies sets it; idle elsewhere).
-//   set scr_codol_equiptest "place <clientnum> <anchor clientnum> <dist>"
+//   set scr_equiptest "place <clientnum> <anchor clientnum> <dist>"
 //       moves a client <dist> units in front of the anchor client, on the
 //       ground (a target for thrown equipment).
-//   set scr_codol_equiptest "warp <clientnum> <x> <y> <z>"
+//   set scr_equiptest "warp <clientnum> <x> <y> <z>"
 //       moves a client to a position.
-//   set scr_codol_equiptest "togrenade <clientnum>"
+//   set scr_equiptest "togrenade <clientnum>"
 //       moves a client to where the last thrown grenade is (or came to rest).
-//   set scr_codol_equiptest "tozombie <clientnum> <dist>"
+//   set scr_equiptest "tozombie <clientnum> <dist>"
 //       stands a client <dist> units west of the nearest live zombie in
 //       level.zombies, facing it (a target for a thrown lethal).
-//   set scr_codol_equiptest "knife <thrower> <victim>"
+//   set scr_equiptest "knife <thrower> <victim>"
 //       arms <thrower> with throwingknife_mp, stands <victim> 300 units in
 //       front of it and throws the knife at the victim's chest; the knife's
 //       position is logged twice a second for 12 s. A trailing "tough"
 //       lets the victim survive the knife and kills it 2.5 s later.
-//   set scr_codol_equiptest "knifeat <thrower> <x> <y> <z>"
+//   set scr_equiptest "knifeat <thrower> <x> <y> <z>"
 //       the same throw at a point; "knifeat <thrower> wall 0 0" aims at
 //       the first wall 250..700 units away, "... ground 0 0" at the floor.
-//   set scr_codol_equiptest "knifepick <client>"
+//   set scr_equiptest "knifepick <client>"
 //       stands a client on the last knife and holds use; logs its knife ammo
 //       before and after.
-//   set scr_codol_equiptest "car <clientnum> <dist>"
+//   set scr_equiptest "car <clientnum> <dist>"
 //       freezes a client <dist> units from the nearest intact destructible
 //       vehicle and damages the car until it burns and explodes, logging the
 //       server time of the explosion and of the client's death (pair with
 //       codol_soundTrace 1 for the sound events).
-//   set scr_codol_equiptest "state <clientnum>"
+//   set scr_equiptest "state <clientnum>"
 //       prints a client's alive flag, session state, health and team.
-//   set scr_codol_equiptest "weapflags <clientnum>" | "weapflags name <weapon>"
+//   set scr_equiptest "weapflags <clientnum>" | "weapflags name <weapon>"
 //       prints the C1 attachment flags (thermal, gps, idlock, hpbt) and
 //       script mods of each held weapon, or of one weapon name.
-//   set scr_codol_equiptest "gpsdrop <owner> <picker> <weapon>"
+//   set scr_equiptest "gpsdrop <owner> <picker> <weapon>"
 //       <owner> drops <weapon> through the death-drop path and <picker>
 //       picks it up with the use button (multiplayer only).
-//   set scr_codol_equiptest "gpstrack <holder> [<owner> <weapon>]"
+//   set scr_equiptest "gpstrack <holder> [<owner> <weapon>]"
 //       starts a GPS track directly, or reports a holder's track abilities.
 //
 // Deliberately free of maps\mp\killstreaks and maps\mp\gametypes\_class so
@@ -58,7 +58,7 @@ init()
     if ( isDefined( level.codolEquipTestStarted ) )
         return;
     level.codolEquipTestStarted = true;
-    setDvar( "scr_codol_equiptest", "" );
+    setDvar( "scr_equiptest", "" );
     level thread watchDvar();
     level thread logGrenadeFire();
 }
@@ -73,10 +73,10 @@ watchDvar()
     for ( ;; )
     {
         wait 0.5;
-        request = getDvar( "scr_codol_equiptest" );
+        request = getDvar( "scr_equiptest" );
         if ( request == "" )
             continue;
-        setDvar( "scr_codol_equiptest", "" );
+        setDvar( "scr_equiptest", "" );
         tokens = strTok( request, " " );
         if ( tokens[0] == "addbots" && tokens.size > 1 )
         {
@@ -453,7 +453,7 @@ logPlayerGrenadeFire()
     }
 }
 
-// set scr_codol_equiptest "table <name>": every row (first 24 columns) of a mounted string table.
+// set scr_equiptest "table <name>": every row (first 24 columns) of a mounted string table.
 dumpTable( table )
 {
     for ( row = 0; row < 256; row++ )

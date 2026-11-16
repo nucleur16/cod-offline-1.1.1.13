@@ -3,16 +3,16 @@
 // so the bag is dropped by _damage.gsc / _weapons.gsc exactly as in a match;
 // pickups are real touches (the test only moves players onto the bag).
 //
-//   set scr_codol_scavtest "run <killer> <victim> <outsider> [perk]"
+//   set scr_scavtest "run <killer> <victim> <outsider> [perk]"
 //       killer gets [perk] (default specialty_scavenger; "specialty_scavenger,
 //       specialty_extraammo" for Pro) and kills victim. The outsider, whose
 //       scavenger is removed, stands on the bag first and must not take it;
 //       then the killer, with its stock emptied, stands on it. Ammo before and
 //       after is reported. [perk] "class:<name>" gives the killer a class whose
 //       perk1 is <name> through _class::loadoutAllPerks instead.
-//   set scr_codol_scavtest "census <seconds>"
+//   set scr_scavtest "census <seconds>"
 //       while the bots fight, reports how long each scavenger bag lives.
-//   set scr_codol_scavtest "track <client|all> <seconds> [walk|drain|none]"
+//   set scr_scavtest "track <client|all> <seconds> [walk|drain|none]"
 //       client keeps a Scavenger Pro class (perk1 specialty_extraammo through
 //       _class::loadoutAllPerks) on every spawn while the bots fight. Every
 //       kill it makes is logged: whether a bag dropped, whether the killer
@@ -36,7 +36,7 @@ init()
     if ( isDefined( level.codolScavTestStarted ) )
         return;
     level.codolScavTestStarted = true;
-    setDvar( "scr_codol_scavtest", "" );
+    setDvar( "scr_scavtest", "" );
     level thread watchDvar();
 }
 
@@ -48,10 +48,10 @@ watchDvar()
     for ( ;; )
     {
         wait 0.5;
-        request = getDvar( "scr_codol_scavtest" );
+        request = getDvar( "scr_scavtest" );
         if ( request == "" )
             continue;
-        setDvar( "scr_codol_scavtest", "" );
+        setDvar( "scr_scavtest", "" );
         tokens = strTok( request, " " );
         if ( tokens[0] == "run" && tokens.size > 3 )
         {

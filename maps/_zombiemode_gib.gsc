@@ -69,7 +69,7 @@ init()
 	level.zm_gib_piece_max = 8;
 	level.zm_gib_piece_life = 6;
 
-	// Developer-only verbs (scr_codol_gibtest); returns at once on a
+	// Developer-only verbs (scr_gibtest); returns at once on a
 	// production server.
 
 }
@@ -113,7 +113,7 @@ zombie_gib_on_damage()
 			source = "ray";
 		}
 
-		// scr_codol_gibtest (developer only) sets this.
+		// scr_gibtest (developer only) sets this.
 		if ( is_true( level.zm_gib_diag ) )
 		{
 			diag_weapon = "<undefined>";

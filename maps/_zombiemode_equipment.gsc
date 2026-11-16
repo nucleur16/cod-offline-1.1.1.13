@@ -2,7 +2,7 @@
 // the item modules hook into.
 //
 // C1 GIVES EVERY ZOMBIES CHARACTER A FIXED KIT.  MEASURED: the mounted
-// mp/cyborgclasstable.csv (dumped live with scr_codol_equiptest "table",
+// mp/cyborgclasstable.csv (dumped live with scr_equiptest "table",
 // 2026-09-24; the same rows alpha0022 catalogue/zm_characters.py extracts)
 // has one row per character:
 //

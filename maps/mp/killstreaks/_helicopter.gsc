@@ -1726,10 +1726,10 @@ attack_primary()
 }
 
 // Diagnostics for the attack helicopter's target/fire loop; off unless
-// scr_codol_helilog is set.
+// scr_helilog is set.
 heliLog( msg )
 {
-	if ( getDvarInt( "scr_codol_helilog" ) )
+	if ( getDvarInt( "scr_helilog" ) )
 		{}
 }
 

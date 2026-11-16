@@ -33,7 +33,7 @@
 // C1's own localized strings (COOP_TAKE_MP_FAV_TROPICAL_*) and dialogue
 // aliases (favela_*) ship in the playlist zone; this script names them only.
 //
-// Selected by codol_sessionMap like _cooptraining; _coopmission runs none of
+// Selected by sv_sessionMap like _cooptraining; _coopmission runs none of
 // its generic phases while level.coop_mission_flow is set.  Coop category
 // root only; names no multiplayer module.
 
@@ -41,7 +41,7 @@
 
 is_mission()
 {
-	return getDvar( "codol_sessionMap" ) == "coop_take_mp_fav_tropical";
+	return getDvar( "sv_sessionMap" ) == "coop_take_mp_fav_tropical";
 }
 
 // --------------------------------------------------------------------------

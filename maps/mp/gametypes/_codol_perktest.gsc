@@ -4,16 +4,16 @@
 // real use button (codol_botPressButtons 0x28); nothing here applies an
 // effect itself.
 //
-//   set scr_codol_perktest "hack <owner> <taker> <claymore_mp|c4_mp> [perk]"
+//   set scr_perktest "hack <owner> <taker> <claymore_mp|c4_mp> [perk]"
 //       owner throws the device; taker (an enemy) gets [perk] (default
 //       specialty_hacker), stands at the device and holds use.
-//   set scr_codol_perktest "trip <owner> <victim> <claymore_mp|bouncingbetty_mp> [perk]"
+//   set scr_perktest "trip <owner> <victim> <claymore_mp|bouncingbetty_mp> [perk]"
 //       owner plants the device; victim gets [perk] (none = control) and is
 //       walked into it. Reports trigger-to-explosion time.
-//   set scr_codol_perktest "crate <owner> <taker> [perk] [opener]"
+//   set scr_perktest "crate <owner> <taker> [perk] [opener]"
 //       a uav care package lands next to owner; taker gets [perk] and holds use
 //       on it; then [opener] (a client number) holds use on whatever is left.
-//   set scr_codol_perktest "extra <client>"
+//   set scr_perktest "extra <client>"
 //       gives specialty_extraammo and runs the spawn-time extra explosive grant.
 #include maps\mp\_utility;
 #include common_scripts\utility;
@@ -23,7 +23,7 @@ init()
     if ( isDefined( level.codolPerkTestStarted ) )
         return;
     level.codolPerkTestStarted = true;
-    setDvar( "scr_codol_perktest", "" );
+    setDvar( "scr_perktest", "" );
     level thread watchDvar();
 }
 
@@ -37,11 +37,11 @@ watchDvar()
     for ( ;; )
     {
         wait 0.5;
-        request = getDvar( "scr_codol_perktest" );
+        request = getDvar( "scr_perktest" );
         if ( request == "" )
             continue;
-        setDvar( "scr_codol_perktest", "" );
-        setDvar( "scr_codol_perklog", 1 );
+        setDvar( "scr_perktest", "" );
+        setDvar( "scr_perklog", 1 );
         tokens = strTok( request, " " );
         if ( tokens.size < 2 )
             continue;

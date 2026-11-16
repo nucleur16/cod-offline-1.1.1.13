@@ -14,7 +14,7 @@
 //
 // Every round start also logs the four round HUD dvars updateRoundHud sets.
 //
-// Pair it with scr_codol_fftest (addbot, invuln) for test clients and
+// Pair it with scr_fftest (addbot, invuln) for test clients and
 // scr_zm_roundcap <n> for a short game.
 
 #include maps\_zombiemode_utility;

@@ -69,7 +69,7 @@ init()
 	if ( !isDefined( level.elec_trap_cooldown_time ) )
 		level.elec_trap_cooldown_time = 60;
 
-	// Developer-only test verbs (scr_codol_powertest); returns at once on
+	// Developer-only test verbs (scr_powertest); returns at once on
 	// a production server.
 	level thread maps\_zombiemode_powertest::init();
 

@@ -170,7 +170,7 @@ getRandomCrateType( dropType )
 	// cscr_variable.cpp CopyArray used to re-link the entries in reverse,
 	// fixed 2026-09-27 to keep IW order), so this loop walked the entries in
 	// the opposite order to the one the running totals were built in. The
-	// order-independent rule stays. MEASURED 2026-09-27 (scr_codol_usekillstreak
+	// order-independent rule stays. MEASURED 2026-09-27 (scr_botusekillstreak
 	// "crates"): the table iterated nuke=0 emp=115 ac130=114 ... ammo=17,
 	// and the first-above-draw rule returned "emp" for every draw, "ac130"
 	// for every emergency airdrop. The smallest total above the draw is the

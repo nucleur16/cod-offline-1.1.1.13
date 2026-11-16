@@ -544,7 +544,7 @@ factory_exploder_play()
 }
 
 // --------------------------------------------------------------------------
-// Developer-only test verbs (developer servers only), scr_codol_factorytest:
+// Developer-only test verbs (developer servers only), scr_factorytest:
 //   pad <client> <0..2>   stand the client on the pad and use it
 //   core <client>         stand the client at the mainframe and use it
 //   state                 print the teleporter, bridge and trap state
@@ -553,14 +553,14 @@ factory_test_watch()
 {
 	if ( getDvarInt( "developer" ) <= 0 )
 		return;
-	setDvar( "scr_codol_factorytest", "" );
+	setDvar( "scr_factorytest", "" );
 	for ( ;; )
 	{
 		wait( 0.5 );
-		request = getDvar( "scr_codol_factorytest" );
+		request = getDvar( "scr_factorytest" );
 		if ( request == "" )
 			continue;
-		setDvar( "scr_codol_factorytest", "" );
+		setDvar( "scr_factorytest", "" );
 		tokens = strTok( request, " " );
 		players = getPlayers();
 		switch ( tokens[ 0 ] )

@@ -87,13 +87,13 @@ onPlayerConnect()
 }
 
 
-// Bots have no lobby to return to. scr_codol_aar_trace 2 keeps their
+// Bots have no lobby to return to. scr_aar_trace 2 keeps their
 // accounting (printed, never sent) for a probe without a C1 client.
 isAARIgnored()
 {
 	if ( !( isDefined( self.isbot ) && self.isbot ) )
 		return false;
-	return getDvarInt( "scr_codol_aar_trace" ) < 2;
+	return getDvarInt( "scr_aar_trace" ) < 2;
 }
 
 
@@ -397,11 +397,11 @@ addPair( pairs, name, value )
 
 
 // Four dvars per setClientDvars (one C1 's' command each, well inside its
-// 1024-character limit). scr_codol_aar_trace 1 prints what a player is sent;
+// 1024-character limit). scr_aar_trace 1 prints what a player is sent;
 // 2 also runs the accounting for bots and prints theirs, sending them nothing.
 flushPairs( pairs )
 {
-	trace = getDvarInt( "scr_codol_aar_trace" );
+	trace = getDvarInt( "scr_aar_trace" );
 	botSummary = isDefined( self.isbot ) && self.isbot;
 	if ( trace > 0 )
 	{

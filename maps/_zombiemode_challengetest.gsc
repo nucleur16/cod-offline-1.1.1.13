@@ -22,7 +22,7 @@
 //                              (a test client never switches on its own)
 //   show <client>              print the client's nonzero zm challenges and XP
 //
-// Pair it with scr_codol_fftest (addbot, zhit, zdmg) for test clients, kills
+// Pair it with scr_fftest (addbot, zhit, zdmg) for test clients, kills
 // and downs, and scr_zm_challenges_testclients 1 so test clients are counted.
 
 #include maps\_zombiemode_utility;

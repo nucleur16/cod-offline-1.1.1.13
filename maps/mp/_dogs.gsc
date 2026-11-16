@@ -172,7 +172,7 @@ init()
 //	create_dogs();
 }
 
-// `rcon set codol_dogsTest 1` calls the dogs in for the first live player;
+// `rcon set scr_dogsTest 1` calls the dogs in for the first live player;
 // "2" also runs the mp_nuked decoy check below.  Other verbs are in
 // dog_test_verb().  Test hooks can damage and flash entities, so, like
 // _codol_bots::watchKillstreakTestDvar, they only run with developer 1.
@@ -184,16 +184,16 @@ dog_test_watcher()
 	// no game_ended endon: "state" must still answer while the dogs leave
 	// after the match ends.
 
-	setDvar( "codol_dogsTest", "0" );
+	setDvar( "scr_dogsTest", "0" );
 
 	for ( ;; )
 	{
 		wait 1;
 
-		request = getDvar( "codol_dogsTest" );
+		request = getDvar( "scr_dogsTest" );
 		if ( request == "" || request == "0" )
 			continue;
-		setDvar( "codol_dogsTest", "0" );
+		setDvar( "scr_dogsTest", "0" );
 
 		tokens = strTok( request, " " );
 		if ( int( tokens[0] ) <= 0 )
@@ -204,7 +204,7 @@ dog_test_watcher()
 
 		test = int( tokens[0] );
 
-		// `rcon set codol_dogsTest 2` reproduces the mp_nuked defect on any map:
+		// `rcon set scr_dogsTest 2` reproduces the mp_nuked defect on any map:
 		// it plants a script_model whose targetname is "dog_spawner" so that
 		// dog_manager_spawn_dogs' getent() finds a NON-spawner, then calls the
 		// dogs in. The native isactorspawner()/spawnactor() must both refuse it
@@ -246,7 +246,7 @@ dog_test_watcher()
 	}
 }
 
-// Developer verbs for codol_dogsTest (dog_test_watcher gates developer 1):
+// Developer verbs for scr_dogsTest (dog_test_watcher gates developer 1):
 //   "call <client>"         useKillstreakDogs for that client number
 //   "state"                 every dog: health, team, owner, enemy, flash
 //   "hurt <who> <damage>"   the first live dog takes <damage> of rifle fire
@@ -259,7 +259,7 @@ dog_test_watcher()
 //   "goto x y z gx gy gz"   place the first dog and send it somewhere
 //   "embed x y z"           put the first dog inside solid
 //   "where"                 the first dog's origin
-//   (codol_dogsNoPathNodes 1/2 before a map load: no path nodes, use bot
+//   (scr_dogsNoPathNodes 1/2 before a map load: no path nodes, use bot
 //   waypoints / spawn points)
 //   "leave"                 make_all_dogs_leave()
 //   "endgame"               _gamelogic::forceEnd(), to watch the dogs leave
@@ -590,8 +590,8 @@ init_node_arrays()
 	nodes = getallnodes();
 
 	// Developer test hook: behave as on a map without path nodes
-	// (codol_dogsNoPathNodes 1: substitute bot waypoints; 2: spawn points).
-	if ( getDvarInt( "developer" ) > 0 && getDvarInt( "codol_dogsNoPathNodes" ) > 0 )
+	// (scr_dogsNoPathNodes 1: substitute bot waypoints; 2: spawn points).
+	if ( getDvarInt( "developer" ) > 0 && getDvarInt( "scr_dogsNoPathNodes" ) > 0 )
 		nodes = [];
 
 	pathnodes = [];
@@ -1044,7 +1044,7 @@ dog_ensure_nodes()
 
 	points = [];
 	source = "none";
-	if ( getDvarInt( "developer" ) <= 0 || getDvarInt( "codol_dogsNoPathNodes" ) < 2 )
+	if ( getDvarInt( "developer" ) <= 0 || getDvarInt( "scr_dogsNoPathNodes" ) < 2 )
 	{
 		points = codol_getWalkableWaypoints();
 		source = "bot waypoints";

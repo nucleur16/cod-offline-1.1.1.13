@@ -1,19 +1,19 @@
 // CoDOL radar / gunship / announcer test hook. Idle unless the dvar is set,
 // and only on a developer server. Output lines start "CoDOL ride test:".
 //
-//   set scr_codol_ridetest "radar"
+//   set scr_ridetest "radar"
 //       each player's guid, radar-blocked input and hasRadar, plus the
 //       free-for-all UAV / counter-UAV counts _uav.gsc keys by that guid.
-//   set scr_codol_ridetest "calm <client>"
+//   set scr_ridetest "calm <client>"
 //       turns a bot's combat AI off (it keeps re-selecting its own weapon,
 //       so a scripted switch such as the gunship's never sticks).
-//   set scr_codol_ridetest "aim <gunner> <target>"
+//   set scr_ridetest "aim <gunner> <target>"
 //       points an AC-130 gunner's view from the gunship camera at a player.
-//   set scr_codol_ridetest "fire <client> <seconds> [weapon]"
+//   set scr_ridetest "fire <client> <seconds> [weapon]"
 //       a bot holds attack (0x1) for <seconds>, holding <weapon> first when
 //       one is named; prints each weapon_fired with the body and gunship
 //       camera origins, the projectiles in flight and each projectile_impact.
-//   set scr_codol_ridetest "subs"
+//   set scr_ridetest "subs"
 //       every leader-dialog alias of both factions with the subtitle
 //       reference soundAliasSubtitle picks for it.
 #include maps\mp\_utility;
@@ -24,7 +24,7 @@ init()
     if ( isDefined( level.codolRideTestStarted ) )
         return;
     level.codolRideTestStarted = true;
-    setDvar( "scr_codol_ridetest", "" );
+    setDvar( "scr_ridetest", "" );
     level thread watchDvar();
 }
 
@@ -36,10 +36,10 @@ watchDvar()
     for ( ;; )
     {
         wait 0.5;
-        request = getDvar( "scr_codol_ridetest" );
+        request = getDvar( "scr_ridetest" );
         if ( request == "" )
             continue;
-        setDvar( "scr_codol_ridetest", "" );
+        setDvar( "scr_ridetest", "" );
         tokens = strTok( request, " " );
         if ( tokens[0] == "radar" )
             reportRadar();

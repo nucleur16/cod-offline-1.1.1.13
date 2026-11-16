@@ -1,7 +1,7 @@
 // Developer-only test verbs for purchasable doors and debris.
 //
 // Runs only on a developer server (the live server runs developer 0).  Drive it
-// through the dvar scr_codol_blockertest:
+// through the dvar scr_blockertest:
 //
 //   addbot                    add one test client
 //   dump                      print every zombie_debris / zombie_door trigger
@@ -29,7 +29,7 @@ init()
 	if ( getDvarInt( "developer" ) <= 0 )
 		return;
 
-	setDvar( "scr_codol_blockertest", "" );
+	setDvar( "scr_blockertest", "" );
 	level thread blockertest_watch();
 }
 
@@ -38,10 +38,10 @@ blockertest_watch()
 	for ( ;; )
 	{
 		wait( 0.5 );
-		request = getDvar( "scr_codol_blockertest" );
+		request = getDvar( "scr_blockertest" );
 		if ( request == "" )
 			continue;
-		setDvar( "scr_codol_blockertest", "" );
+		setDvar( "scr_blockertest", "" );
 
 		tokens = strTok( request, " " );
 		switch ( tokens[ 0 ] )

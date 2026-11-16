@@ -17,7 +17,7 @@ watchMaintenanceBanner()
 	nextScroll = 0;
 	for ( ;; )
 	{
-		text = getDvar( "codol_maintenance_banner" );
+		text = getDvar( "sv_maintenanceBanner" );
 		if ( text != lastText )
 		{
 			if ( text == "" )

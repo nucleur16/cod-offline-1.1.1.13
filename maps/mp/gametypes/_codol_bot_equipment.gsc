@@ -10,7 +10,7 @@
 // This script adds the two parts that need gametype knowledge:
 //  - mp/botclasstable.csv leaves every bot class's equipment slot
 //    (loadoutTactical) empty, so a bot carries no placed equipment of its own.
-//    scr_codol_botequipment 1 (default) gives each bot a claymore or a
+//    scr_botequipment 1 (default) gives each bot a claymore or a
 //    bouncing betty in that otherwise empty slot, whichever this map mounts.
 //  - Near an objective (bomb site, domination/HQ flag) an idle bot plants its
 //    equipment facing away from it, toward where attackers come from.
@@ -27,11 +27,11 @@ onBotSpawned()
     // or bouncing betty after the mode gave them their starting weapon.
     if ( isDefined( level.partyMode ) && level.partyMode )
         return;
-    if ( getDvar( "scr_codol_botequipment" ) == "" )
-        setDvar( "scr_codol_botequipment", 1 );
+    if ( getDvar( "scr_botequipment" ) == "" )
+        setDvar( "scr_botequipment", 1 );
     // giveLoadout runs before "spawned_player"; let its equipment settle.
     wait 0.1;
-    if ( getDvarInt( "scr_codol_botequipment" ) <= 0 )
+    if ( getDvarInt( "scr_botequipment" ) <= 0 )
         return;
     weapon = self giveBotEquipment();
     if ( !isDefined( weapon ) )

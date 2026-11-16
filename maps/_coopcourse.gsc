@@ -86,7 +86,7 @@ init()
 	if ( !isDefined( level.coop_training_flow ) || !level.coop_training_flow )
 		level thread course_triggers();
 	level thread proximity_groups();
-	if ( getDvar( "codol_sessionMap" ) == "coop_spec1_mp_killhouse_sh" )
+	if ( getDvar( "sv_sessionMap" ) == "coop_spec1_mp_killhouse_sh" )
 		level thread spec1_cast();
 }
 
