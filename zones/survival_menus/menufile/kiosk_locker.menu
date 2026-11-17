@@ -1,0 +1,1599 @@
+// ui_mp/scriptmenus/kiosk_locker.menu: 2.6.9.7's common_gametype_survival menu, converted to 1.1.1.13 by
+// `python -m zonekit.menus convert` (zone_source/survival_menus.csv); this text is now its source.
+// IW menu language: zonekit/menu_source.py.
+{
+    menuDef
+    {
+        name                 "kiosk_locker"
+        rect                 0 0 0 0 2 2
+        popup
+        outOfBoundsClick
+        legacySplitScreenScale
+        exp rect X ( 0 - ( 287 * 0.5 );
+        exp rect Y ( 0 - ( ( ( ( 20 * 1 ) + ( 16.367 * 0 ) ) + ( 10 * ( 20 + 2 ) ) ) * 0.5 );
+        exp rect W ( 287;
+        exp rect H ( ( ( ( 20 * 1 ) + ( 16.367 * 0 ) ) + ( 10 * ( 20 + 2 ) ) );
+        onOpen
+        {
+            setLocalVarInt ui_quit_timer milliseconds;
+            ;
+            setLocalVarInt selected_item_index - 1;
+            setLocalVarInt ui_buttonNavGroupOffset_popup 0;
+            setLocalVarInt ui_buttonNavGroupCurrent_popup 0;
+            setLocalVarString ui_buttonNavGroupName_popup "invalid";
+            setLocalVarBool ui_swfSelectionButtonVis 0;
+            setLocalVarBool ui_swfSelectionBarVis 0;
+            setLocalVarBool ui_swfSelectionDisabled 0;
+            setLocalVarBool ui_swfPopupSelectionButtonVis 0;
+            setLocalVarBool ui_swfPopupSelectionBarVis 0;
+            setLocalVarBool ui_swfPopupSelectionDisabled 0;
+            setLocalVarString ui_swfPopupContext "invalid";
+            setLocalVarBool ui_centerPopup 1;
+            play tabs_slide;
+            lerp x from - 460 to 0 over 0.05;
+            focusfirst;
+            setfocus WEAPON_POPUP_3;
+            focusfirst;
+        }
+        onClose
+        {
+            scriptmenuresponse quit;
+            setLocalVarBool ui_centerPopup 0;
+            play "";
+        }
+        onESC
+        {
+            if ( ( ( milliseconds ) - localvarint( "ui_quit_timer" ) ) >= 100 )
+            {
+                close self;
+            }
+        }
+        execKeyInt 168
+        {
+            setLocalVarInt ui_quit_timer milliseconds;
+            ;
+            if ( ( ( milliseconds ) - localvarint( "ui_donate_timer" ) ) >= 500 ) && ( [ ( staticdvarint
+                    "surHUD_credits" ) ] >= 500 ) && ( iscoop ) || staticdvarbool( "splitscreen" ) )
+            {
+                scriptmenuresponse share;
+                play so_ingame_summary;
+                setLocalVarInt ui_donate_timer milliseconds;
+                ;
+            }
+        }
+        execKeyInt 14
+        {
+            if ( ( ( milliseconds ) - localvarint( "ui_quit_timer" ) ) >= 100 )
+            {
+                close self;
+            }
+        }
+        itemDef
+        {
+            rect                 -1280 -480 2560 960 2 2
+            decoration
+            visible              1
+            forecolor            0 0 0 0.8
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            visible when ( 1;
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -131.333 -78.667 262.667 130.667 2 2
+            decoration
+            visible              1
+            forecolor            0.24 0.24 0.24 1
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            visible when ( 1;
+            exp rect Y ( 0 + "SWF_POPUP_GLOBAL_Y_OFFSET";
+            exp rect H ( ( ( ( 20 * 1 ) + ( 16.367 * 0 ) ) + ( 10 * ( 20 + 2 ) ) ) + 0;
+            exp rect X ( 0 + "SWF_POPUP_GLOBAL_X_OFFSET";
+            exp rect W ( 287;
+        }
+        itemDef
+        {
+            rect                 0 0 1 20 2 2
+            decoration
+            visible              1
+            style                WINDOW_STYLE_SHADER
+            background           "navbar_selection_bar_focus"
+            visible when ( localvarbool( "ui_swfPopupSelectionBarVis" ) && ( localvarstring(
+                    "ui_buttonNavGroupName_popup" ) == "WEAPON_POPUP" ) && ( localvarstring( "ui_swfPopupContext" ) ==
+                    "WEAPON_POPUP" );
+            exp rect X ( ( 0 + 0 + 4 );
+            exp rect Y ( ( 0 - 3.5 ) + ( ( localvarint "ui_buttonNavGroupCurrent_popup" ) - localvarint(
+                    "ui_buttonNavGroupOffset_popup" ) ) * ( 20 + 2 ) ) + ( ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) )
+                    );
+            exp rect W 287 - 8;
+        }
+        itemDef
+        {
+            rect                 0 0 20 20 2 2
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_FILLED
+            textfont             3
+            textalign            10
+            textscale            0.30625
+            text                 " "
+            editField
+            visible when ( localvarbool( "ui_swfPopupSelectionButtonVis" ) && ( localvarstring(
+                    "ui_buttonNavGroupName_popup" ) == "WEAPON_POPUP" ) && ( localvarstring( "ui_swfPopupContext" ) ==
+                    "WEAPON_POPUP" );
+            exp rect X ( ( 0 + ( 0 + 287 - 24 ) );
+            exp rect Y ( ( ( ( localvarint "ui_buttonNavGroupCurrent_popup" ) - localvarint(
+                    "ui_buttonNavGroupOffset_popup" ) ) * ( 20 + 2 ) ) + ( ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) )
+                    ) - 1.167 ) - 1.8;
+        }
+        itemDef
+        {
+            rect                 0 0 287 1 2 2
+            decoration
+            visible              1
+            forecolor            0 0 0 1
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            visible when ( 1 && 1;
+            exp rect X ( 0;
+            exp rect Y ( 0;
+            exp rect H ( ( 1 * 22 ) + ( 16.367 * 0 ) + 2;
+        }
+        itemDef
+        {
+            rect                 0 1 271 22 2 2
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_FILLED
+            textalign            8
+            textscale            0.38
+            editField
+            visible when ( 1;
+            exp text ( "@KIOSKS_LOCKER";
+            exp rect X ( ( 0 + 4 );
+            exp rect Y ( ( 0 + 4 );
+        }
+        itemDef
+        {
+            rect                 0 0 226 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_FILLED
+            textalign            4
+            textscale            0.24
+            editField
+            visible when ( 1;
+            exp text ( localvarstring "armory_desc" );
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 15 + ( 0 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 45 45 2 2
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            visible when ( ( ( tablelookup "mp/kiosks.csv" , 0 , localvarint( "selected_item_index" ) , 6 ) != "" )
+                    && 1 );
+            exp material ( tablelookup "mp/kiosks.csv" , 0 , localvarint( "selected_item_index" ) , 6 );
+            exp rect X ( ( ( ( ( 287 ) - 45 ) + ( 0 - 10 ) + 0 ) );
+            exp rect Y ( ( ( 12 - 2 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) + ( 0 + 4 ) + ( 0 * ( 20 + 2 ) ) );
+        }
+        itemDef
+        {
+            rect                 0 0 287 1 2 2
+            decoration
+            visible              1
+            forecolor            0.31 0.31 0.31 1
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            exp rect X ( ( 0 + 0 );
+            exp rect Y ( ( 0 - 3.5 ) + ( 9 * ( 20 + 2 ) ) + ( ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) + 15;
+            exp rect H ( ( 20 * 1 ) + 1;
+            exp rect W ( 287;
+        }
+        itemDef
+        {
+            rect                 0 0 0 20 2 2
+            visible              1
+            type                 ITEM_TYPE_BUTTON
+            dataType             1
+            textscale            0.24
+            action
+            {
+                play mouse_click;
+                setLocalVarInt ui_quit_timer milliseconds;
+                ;
+                if ( ( ( milliseconds ) - localvarint( "ui_donate_timer" ) ) >= 500 ) && ( [ ( staticdvarint
+                        "surHUD_credits" ) ] >= 500 ) && ( iscoop ) || staticdvarbool( "splitscreen" ) )
+                {
+                    scriptmenuresponse share;
+                    play so_ingame_summary;
+                    setLocalVarInt ui_donate_timer milliseconds;
+                    ;
+                }
+                ;
+            }
+            onFocus
+            {
+                setLocalVarInt ui_ralign_index 2;
+                setLocalVarString ui_ralign_group "WEAPON_POPUP";
+                ;
+                play mouse_over;
+            }
+            leaveFocus
+            {
+                setLocalVarInt ui_ralign_index - 1;
+                setLocalVarString ui_ralign_group "";
+                ;
+            }
+            visible when ( ! ( ( milliseconds ) - localvarint( "ui_donate_timer" ) ) < 500 )
+                    && ( [ ( staticdvarint "surHUD_credits" ) ] >= 500 ) && ( iscoop ) || staticdvarbool(
+                    "splitscreen" ) );
+            exp rect X ( ( ( ( 287 ) + 4 ) ) - ( 1 * 5 ) - 10 - 100 - select( ( ! ( ( milliseconds ) - localvarint(
+                    "ui_donate_timer" ) ) < 500 ) ) , ( 10 + 100 + 5 ) , 0 );
+            exp rect Y ( ( ( ( 0 - 2.333 ) + ( 9 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) + 15 )
+                    );
+            exp rect W ( ( ( 287 ) + 4 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 20 2 2
+            decoration
+            visible              1
+            style                WINDOW_STYLE_FILLED
+            backcolor            1 1 1 1
+            visible when ( ( ! ( ( milliseconds( ) - localvarint( "ui_donate_timer" ) ) < 500 )
+                    && ( [ ( staticdvarint "surHUD_credits" ) ] >= 500 ) && ( iscoop( ) || staticdvarbool(
+                    "splitscreen" ) ) ) && ( localvarint( "ui_ralign_index" ) == 2 && localvarstring(
+                    "ui_ralign_group" ) == "WEAPON_POPUP" );
+            exp rect X ( ( ( ( 287 ) + 4 ) ) - ( 1 * 5 ) - ( 10 ) - 100 - select( ( ! ( ( milliseconds ) -
+                    localvarint( "ui_donate_timer" ) ) < 500 ) ) , ( 10 + 100 + 5 ) , 0 );
+            exp rect Y ( ( ( ( 0 - 2.333 ) + ( 9 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) + 15 )
+                    );
+            exp rect W ( 100 + 10;
+        }
+        itemDef
+        {
+            rect                 0 0 0 20 2 2
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textalign            8
+            textscale            0.24
+            visible when ( ! ( ( milliseconds ) - localvarint( "ui_donate_timer" ) ) < 500 )
+                    && ( [ ( staticdvarint "surHUD_credits" ) ] >= 500 ) && ( iscoop ) || staticdvarbool(
+                    "splitscreen" ) );
+            exp text ( "@KIOSKS_MENU_SHARE_HINT";
+            exp rect X ( ( ( ( 287 ) + 4 ) ) - ( 1 * 5 ) - ( 10 / 2 ) - 100 - select( ( ! ( ( milliseconds ) -
+                    localvarint( "ui_donate_timer" ) ) < 500 ) ) , ( 10 + 100 + 5 ) , 0 );
+            exp rect Y ( ( ( ( 0 - 2.333 ) + ( 9 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) + 15 )
+                    );
+            exp rect W ( 100;
+            exp forecolor R ( select ( localvarint "ui_ralign_index" ) == 2 && localvarstring( "ui_ralign_group" ) ==
+                    "WEAPON_POPUP" ) , "MW3_BUTTON_TEXT_PULSE" , 1 );
+            exp forecolor G ( select ( localvarint "ui_ralign_index" ) == 2 && localvarstring( "ui_ralign_group" ) ==
+                    "WEAPON_POPUP" ) , "MW3_BUTTON_TEXT_PULSE" , 1 );
+            exp forecolor B ( select ( localvarint "ui_ralign_index" ) == 2 && localvarstring( "ui_ralign_group" ) ==
+                    "WEAPON_POPUP" ) , "MW3_BUTTON_TEXT_PULSE" , 1 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 20 2 2
+            visible              1
+            type                 ITEM_TYPE_BUTTON
+            dataType             1
+            textalign            8
+            textscale            0.24
+            action
+            {
+                play mouse_click;
+                close self;
+                ;
+            }
+            onFocus
+            {
+                setLocalVarInt ui_ralign_index 1;
+                setLocalVarString ui_ralign_group "WEAPON_POPUP";
+                ;
+                play mouse_over;
+            }
+            leaveFocus
+            {
+                setLocalVarInt ui_ralign_index - 1;
+                setLocalVarString ui_ralign_group "";
+                ;
+            }
+            visible when ( ! ( ( milliseconds ) - localvarint( "ui_donate_timer" ) ) < 500 );
+            exp rect X ( ( ( ( 287 ) + 4 ) ) - ( 1 * 5 ) - 10 - 100;
+            exp rect Y ( ( ( ( 0 - 2.333 ) + ( 9 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) + 15 )
+                    );
+            exp rect W ( 100 + 10;
+        }
+        itemDef
+        {
+            rect                 0 0 0 20 2 2
+            decoration
+            visible              1
+            style                WINDOW_STYLE_FILLED
+            backcolor            1 1 1 1
+            visible when ( ( ! ( ( milliseconds ) - localvarint( "ui_donate_timer" ) ) < 500 ) )
+                    && ( localvarint "ui_ralign_index" ) == 1 && localvarstring( "ui_ralign_group" ) == "WEAPON_POPUP"
+                    );
+            exp rect X ( ( ( ( 287 ) + 4 ) ) - ( 1 * 5 ) - ( 10 ) - 100;
+            exp rect Y ( ( ( ( 0 - 2.333 ) + ( 9 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) + 15 )
+                    );
+            exp rect W ( 100 + 10;
+        }
+        itemDef
+        {
+            rect                 0 0 0 20 2 2
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textalign            9
+            textscale            0.24
+            visible when ( ! ( ( milliseconds ) - localvarint( "ui_donate_timer" ) ) < 500 );
+            exp text ( "@KIOSKS_BACKHINT";
+            exp rect X ( ( ( ( 287 ) + 4 ) ) - ( 1 * 5 ) - ( 10 / 2 ) - 100;
+            exp rect Y ( ( ( ( 0 - 2.333 ) + ( 9 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) + 15 )
+                    );
+            exp rect W ( 100;
+            exp forecolor R ( select ( localvarint "ui_ralign_index" ) == 1 && localvarstring( "ui_ralign_group" ) ==
+                    "WEAPON_POPUP" ) , "MW3_BUTTON_TEXT_PULSE" , 1 );
+            exp forecolor G ( select ( localvarint "ui_ralign_index" ) == 1 && localvarstring( "ui_ralign_group" ) ==
+                    "WEAPON_POPUP" ) , "MW3_BUTTON_TEXT_PULSE" , 1 );
+            exp forecolor B ( select ( localvarint "ui_ralign_index" ) == 1 && localvarstring( "ui_ralign_group" ) ==
+                    "WEAPON_POPUP" ) , "MW3_BUTTON_TEXT_PULSE" , 1 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 20 2 2
+            decoration
+            visible              1
+            forecolor            0.7843 0.7843 0.7843 1
+            textalign            8
+            textscale            0.24
+            visible when ( ( ( milliseconds ) - localvarint( "ui_donate_timer" ) ) < 500 )
+                    && ( [ ( staticdvarint "surHUD_credits" ) ] >= 500 ) && ( iscoop ) || staticdvarbool(
+                    "splitscreen" ) );
+            exp text ( "@KIOSKS_MENU_SHARE_SENDING";
+            exp rect X ( ( ( ( 287 ) + 4 ) ) - ( 1 * 5 ) - ( 10 / 2 ) - 100 - select( ( ( ( milliseconds ) -
+                    localvarint( "ui_donate_timer" ) ) < 500 ) ) , ( 10 + 100 + 5 ) , 0 );
+            exp rect Y ( ( ( ( 0 - 2.333 ) + ( 9 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) + 15 )
+                    );
+            exp rect W ( 100;
+        }
+        itemDef
+        {
+            rect                 0 0 0 20 2 2
+            visible              1
+            type                 ITEM_TYPE_BUTTON
+            dataType             1
+            textalign            8
+            textscale            0.24
+            action
+            {
+                play mouse_click;
+                close self;
+                ;
+            }
+            onFocus
+            {
+                setLocalVarInt ui_ralign_index 1;
+                setLocalVarString ui_ralign_group "WEAPON_POPUP";
+                ;
+                play mouse_over;
+            }
+            leaveFocus
+            {
+                setLocalVarInt ui_ralign_index - 1;
+                setLocalVarString ui_ralign_group "";
+                ;
+            }
+            visible when ( ( ( milliseconds ) - localvarint( "ui_donate_timer" ) ) < 500 );
+            exp rect X ( ( ( ( 287 ) + 4 ) ) - ( 1 * 5 ) - 10 - 100;
+            exp rect Y ( ( ( ( 0 - 2.333 ) + ( 9 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) + 15 )
+                    );
+            exp rect W ( 100 + 10;
+        }
+        itemDef
+        {
+            rect                 0 0 0 20 2 2
+            decoration
+            visible              1
+            style                WINDOW_STYLE_FILLED
+            backcolor            1 1 1 1
+            visible when ( ( ( ( milliseconds ) - localvarint( "ui_donate_timer" ) ) < 500 ) )
+                    && ( localvarint "ui_ralign_index" ) == 1 && localvarstring( "ui_ralign_group" ) == "WEAPON_POPUP"
+                    );
+            exp rect X ( ( ( ( 287 ) + 4 ) ) - ( 1 * 5 ) - ( 10 ) - 100;
+            exp rect Y ( ( ( ( 0 - 2.333 ) + ( 9 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) + 15 )
+                    );
+            exp rect W ( 100 + 10;
+        }
+        itemDef
+        {
+            rect                 0 0 0 20 2 2
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textalign            9
+            textscale            0.24
+            visible when ( ( ( milliseconds ) - localvarint( "ui_donate_timer" ) ) < 500 );
+            exp text ( "@KIOSKS_BACKHINT";
+            exp rect X ( ( ( ( 287 ) + 4 ) ) - ( 1 * 5 ) - ( 10 / 2 ) - 100;
+            exp rect Y ( ( ( ( 0 - 2.333 ) + ( 9 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) + 15 )
+                    );
+            exp rect W ( 100;
+            exp forecolor R ( select ( localvarint "ui_ralign_index" ) == 1 && localvarstring( "ui_ralign_group" ) ==
+                    "WEAPON_POPUP" ) , "MW3_BUTTON_TEXT_PULSE" , 1 );
+            exp forecolor G ( select ( localvarint "ui_ralign_index" ) == 1 && localvarstring( "ui_ralign_group" ) ==
+                    "WEAPON_POPUP" ) , "MW3_BUTTON_TEXT_PULSE" , 1 );
+            exp forecolor B ( select ( localvarint "ui_ralign_index" ) == 1 && localvarstring( "ui_ralign_group" ) ==
+                    "WEAPON_POPUP" ) , "MW3_BUTTON_TEXT_PULSE" , 1 );
+        }
+        itemDef
+        {
+            rect                 0 0 287 1 2 2
+            decoration
+            visible              1
+            forecolor            0 0 0 0.15
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            exp rect X ( ( 0 + 0 ) + 4;
+            exp rect Y ( ( 0 - 3.5 ) + ( 3 * ( 20 + 2 ) ) + ( ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) );
+            exp rect H ( ( 20 * 1 ) + 1;
+            exp rect W ( 287 - 8;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! ( int dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 0 , 1 ) ) ) > 0
+                    ) && int( dvarint( "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 , 0 , 3
+                    ) ) ) && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 0 , 7 )
+                    ) );
+            exp text ( locstring "@SO_SURVIVAL_NUM_CARDS" , int( tablelookup( "mp/kiosks.csv" , 0 , 0 , 3 ) ) );
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 3 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 0.5 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! int( dvarint( "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 ,
+                    0 , 3 ) ) ) && ! ( int dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 0 , 1 ) )
+                    ) > 0 ) ) && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 0 ,
+                    7 ) );
+            exp text ( locstring "@SO_SURVIVAL_NUM_CARDS" , int( tablelookup( "mp/kiosks.csv" , 0 , 0 , 3 ) ) );
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 3 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            0.5 0.5 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ! int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 0 , 7 )
+                    );
+            exp text ( locstring "@KIOSKS_PERKS_FULL" );
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 3 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            0.16 0.65 1 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -65
+            textaligny           -1
+            textscale            0.24
+            editField
+            visible when ( ( ( int( tablelookup( "mp/kiosks.csv" , 0 , 0 , 13 ) ) == 1 ) && ! ( ( int( dvarint(
+                    "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 0 , 1 ) ) ) > 0 )
+                    && ( int( tablelookup( "mp/kiosks.csv" , 0 , 0 , 10 ) == 1 ) ) ) );
+            exp text ( "@KIOSKS_RECOMMAND";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 3 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! ( ( tablelookup( "mp/kiosks.csv" , 0 , 0 , 2 ) == "" ) && ( tablelookup(
+                    "mp/kiosks.csv" , 0 , 0 , 8 ) != "" ) && ( ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 0 , 1 ) ) ) > 0 ) ) ) && ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 0 , 1 ) ) ) > 0 ) && ( int( tablelookup( "mp/kiosks.csv" , 0 , 0 , 10 ) != 1
+                    ) ) );
+            exp text ( "@KIOSKS_ARMORY_FULL";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 3 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! ( ( tablelookup( "mp/kiosks.csv" , 0 , 0 , 2 ) == "" ) && ( tablelookup(
+                    "mp/kiosks.csv" , 0 , 0 , 8 ) != "" ) && ( ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 0 , 1 ) ) ) > 0 ) ) ) && ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 0 , 1 ) ) ) > 0 ) && ( int( tablelookup( "mp/kiosks.csv" , 0 , 0 , 10 ) == 1
+                    ) ) );
+            exp text ( "@KIOSKS_ARMORY_OWNED";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 3 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ( ( tablelookup( "mp/kiosks.csv" , 0 , 0 , 2 ) == "" ) && ( tablelookup( "mp/kiosks.csv"
+                    , 0 , 0 , 8 ) != "" ) && ( ( int( dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0
+                    , 0 , 1 ) ) ) > 0 ) ) ) && ( int( dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0
+                    , 0 , 1 ) ) ) > 0 ) );
+            exp text ( "@KIOSKS_ARMORY_UPGRADE";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 3 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            name                 "WEAPON_POPUP_3"
+            rect                 7.667 0 287 22 2 2
+            visible              1
+            forecolor            0 0 0 0
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            type                 ITEM_TYPE_BUTTON
+            dataType             1
+            action
+            {
+                play mouse_click;
+                setLocalVarInt ui_quit_timer milliseconds;
+                ;
+                play so_ingame_summary;
+                setLocalVarString purchase_item ( "purchase_" + 0;
+                ;
+                scriptmenuresponse purchase_0;
+            }
+            onFocus
+            {
+                setLocalVarString ui_swf_selection "SWF_POPUP_BUTTON_NAME(WEAPON_POPUP,3)";
+                setLocalVarInt ui_buttonNavGroupCurrent_popup 3;
+                setLocalVarString ui_buttonNavGroupName_popup "WEAPON_POPUP";
+                setLocalVarBool ui_swfPopupSelectionButtonVis ( ( 1 ) && ! ( ! ( ! ( int dvarint( "armory" + "locker"
+                        + tablelookup( "mp/kiosks.csv" , 0 , 0 , 1 ) ) ) > 0 ) && int( dvarint(
+                        "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 , 0 , 3 ) ) )
+                        && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 0 , 7 ) )
+                        ) );
+                ;
+                setLocalVarBool ui_swfPopupSelectionBarVis ( 1;
+                ;
+                setLocalVarBool ui_swfPopupSelectionDisabled ( ! ( ! ( int dvarint( "armory" + "locker" + tablelookup(
+                        "mp/kiosks.csv" , 0 , 0 , 1 ) ) ) > 0 ) && int( dvarint( "playingCardsCurrentBestSet" ) >=
+                        int( tablelookup( "mp/kiosks.csv" , 0 , 0 , 3 ) ) ) && int( dvarint(
+                        "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 0 , 7 ) ) );
+                ;
+                setLocalVarString ui_swfPopupContext "WEAPON_POPUP";
+                ;
+                ;
+                play mouse_over;
+                setLocalVarString armory_desc "@" + tablelookup "mp/kiosks.csv" , 0 , 0 , 5;
+                ;
+                setLocalVarInt selected_item_index 0;
+            }
+            leaveFocus
+            {
+                ;
+                setLocalVarBool ui_swfPopupSelectionButtonVis 0;
+                setLocalVarBool ui_swfPopupSelectionBarVis 0;
+                setLocalVarBool ui_swfPopupSelectionDisabled 0;
+            }
+            visible when ( 1;
+            disabled when ( ! ( ! ( int dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 0 , 1 ) ) )
+                    > 0 ) && int( dvarint( "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 , 0
+                    , 3 ) ) ) && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 0 ,
+                    7 ) ) );
+            exp rect Y ( ( ( 3 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) + ( ( 0 - 1.333 ) );
+            exp rect W ( 287 - 0;
+            exp rect X ( ( 0 + ( 0 + 4 ) );
+        }
+        itemDef
+        {
+            rect                 7.667 0 287 19.567 2 2
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_FILLED
+            textalign            8
+            textscale            0.24
+            editField
+            visible when ( ( 1 ) && ( 1 );
+            exp text ( "@" + tablelookup( "mp/kiosks.csv" , 0 , 0 , 4 );
+            exp rect Y ( ( ( ( 3 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) + ( 0 - 1.333 ) ) -
+                    2.333;
+            exp rect W ( 287;
+        }
+        itemDef
+        {
+            rect                 0 0 287 1 2 2
+            decoration
+            visible              1
+            forecolor            0 0 0 0.15
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            exp rect X ( ( 0 + 0 ) + 4;
+            exp rect Y ( ( 0 - 3.5 ) + ( 4 * ( 20 + 2 ) ) + ( ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) );
+            exp rect H ( ( 20 * 1 ) + 1;
+            exp rect W ( 287 - 8;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! ( int dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 1 , 1 ) ) ) > 0
+                    ) && int( dvarint( "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 , 1 , 3
+                    ) ) ) && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 1 , 7 )
+                    ) );
+            exp text ( locstring "@SO_SURVIVAL_NUM_CARDS" , int( tablelookup( "mp/kiosks.csv" , 0 , 1 , 3 ) ) );
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 4 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 0.5 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! int( dvarint( "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 ,
+                    1 , 3 ) ) ) && ! ( int dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 1 , 1 ) )
+                    ) > 0 ) ) && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 1 ,
+                    7 ) );
+            exp text ( locstring "@SO_SURVIVAL_NUM_CARDS" , int( tablelookup( "mp/kiosks.csv" , 0 , 1 , 3 ) ) );
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 4 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            0.5 0.5 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ! int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 1 , 7 )
+                    );
+            exp text ( locstring "@KIOSKS_PERKS_FULL" );
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 4 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            0.16 0.65 1 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -65
+            textaligny           -1
+            textscale            0.24
+            editField
+            visible when ( ( ( int( tablelookup( "mp/kiosks.csv" , 0 , 1 , 13 ) ) == 1 ) && ! ( ( int( dvarint(
+                    "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 1 , 1 ) ) ) > 0 )
+                    && ( int( tablelookup( "mp/kiosks.csv" , 0 , 1 , 10 ) == 1 ) ) ) );
+            exp text ( "@KIOSKS_RECOMMAND";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 4 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! ( ( tablelookup( "mp/kiosks.csv" , 0 , 1 , 2 ) == "" ) && ( tablelookup(
+                    "mp/kiosks.csv" , 0 , 1 , 8 ) != "" ) && ( ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 1 , 1 ) ) ) > 0 ) ) ) && ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 1 , 1 ) ) ) > 0 ) && ( int( tablelookup( "mp/kiosks.csv" , 0 , 1 , 10 ) != 1
+                    ) ) );
+            exp text ( "@KIOSKS_ARMORY_FULL";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 4 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! ( ( tablelookup( "mp/kiosks.csv" , 0 , 1 , 2 ) == "" ) && ( tablelookup(
+                    "mp/kiosks.csv" , 0 , 1 , 8 ) != "" ) && ( ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 1 , 1 ) ) ) > 0 ) ) ) && ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 1 , 1 ) ) ) > 0 ) && ( int( tablelookup( "mp/kiosks.csv" , 0 , 1 , 10 ) == 1
+                    ) ) );
+            exp text ( "@KIOSKS_ARMORY_OWNED";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 4 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ( ( tablelookup( "mp/kiosks.csv" , 0 , 1 , 2 ) == "" ) && ( tablelookup( "mp/kiosks.csv"
+                    , 0 , 1 , 8 ) != "" ) && ( ( int( dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0
+                    , 1 , 1 ) ) ) > 0 ) ) ) && ( int( dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0
+                    , 1 , 1 ) ) ) > 0 ) );
+            exp text ( "@KIOSKS_ARMORY_UPGRADE";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 4 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            name                 "WEAPON_POPUP_4"
+            rect                 7.667 0 287 22 2 2
+            visible              1
+            forecolor            0 0 0 0
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            type                 ITEM_TYPE_BUTTON
+            dataType             1
+            action
+            {
+                play mouse_click;
+                setLocalVarInt ui_quit_timer milliseconds;
+                ;
+                play so_ingame_summary;
+                setLocalVarString purchase_item ( "purchase_" + 1;
+                ;
+                scriptmenuresponse purchase_1;
+            }
+            onFocus
+            {
+                setLocalVarString ui_swf_selection "SWF_POPUP_BUTTON_NAME(WEAPON_POPUP,4)";
+                setLocalVarInt ui_buttonNavGroupCurrent_popup 4;
+                setLocalVarString ui_buttonNavGroupName_popup "WEAPON_POPUP";
+                setLocalVarBool ui_swfPopupSelectionButtonVis ( ( 1 ) && ! ( ! ( ! ( int dvarint( "armory" + "locker"
+                        + tablelookup( "mp/kiosks.csv" , 0 , 1 , 1 ) ) ) > 0 ) && int( dvarint(
+                        "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 , 1 , 3 ) ) )
+                        && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 1 , 7 ) )
+                        ) );
+                ;
+                setLocalVarBool ui_swfPopupSelectionBarVis ( 1;
+                ;
+                setLocalVarBool ui_swfPopupSelectionDisabled ( ! ( ! ( int dvarint( "armory" + "locker" + tablelookup(
+                        "mp/kiosks.csv" , 0 , 1 , 1 ) ) ) > 0 ) && int( dvarint( "playingCardsCurrentBestSet" ) >=
+                        int( tablelookup( "mp/kiosks.csv" , 0 , 1 , 3 ) ) ) && int( dvarint(
+                        "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 1 , 7 ) ) );
+                ;
+                setLocalVarString ui_swfPopupContext "WEAPON_POPUP";
+                ;
+                ;
+                play mouse_over;
+                setLocalVarString armory_desc "@" + tablelookup "mp/kiosks.csv" , 0 , 1 , 5;
+                ;
+                setLocalVarInt selected_item_index 1;
+            }
+            leaveFocus
+            {
+                ;
+                setLocalVarBool ui_swfPopupSelectionButtonVis 0;
+                setLocalVarBool ui_swfPopupSelectionBarVis 0;
+                setLocalVarBool ui_swfPopupSelectionDisabled 0;
+            }
+            visible when ( 1;
+            disabled when ( ! ( ! ( int dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 1 , 1 ) ) )
+                    > 0 ) && int( dvarint( "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 , 1
+                    , 3 ) ) ) && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 1 ,
+                    7 ) ) );
+            exp rect Y ( ( ( 4 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) + ( ( 0 - 1.333 ) );
+            exp rect W ( 287 - 0;
+            exp rect X ( ( 0 + ( 0 + 4 ) );
+        }
+        itemDef
+        {
+            rect                 7.667 0 287 19.567 2 2
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_FILLED
+            textalign            8
+            textscale            0.24
+            editField
+            visible when ( ( 1 ) && ( 1 );
+            exp text ( "@" + tablelookup( "mp/kiosks.csv" , 0 , 1 , 4 );
+            exp rect Y ( ( ( ( 4 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) + ( 0 - 1.333 ) ) -
+                    2.333;
+            exp rect W ( 287;
+        }
+        itemDef
+        {
+            rect                 0 0 287 1 2 2
+            decoration
+            visible              1
+            forecolor            0 0 0 0.15
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            exp rect X ( ( 0 + 0 ) + 4;
+            exp rect Y ( ( 0 - 3.5 ) + ( 5 * ( 20 + 2 ) ) + ( ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) );
+            exp rect H ( ( 20 * 1 ) + 1;
+            exp rect W ( 287 - 8;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! ( int dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 2 , 1 ) ) ) > 0
+                    ) && int( dvarint( "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 , 2 , 3
+                    ) ) ) && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 2 , 7 )
+                    ) );
+            exp text ( locstring "@SO_SURVIVAL_NUM_CARDS" , int( tablelookup( "mp/kiosks.csv" , 0 , 2 , 3 ) ) );
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 5 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 0.5 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! int( dvarint( "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 ,
+                    2 , 3 ) ) ) && ! ( int dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 2 , 1 ) )
+                    ) > 0 ) ) && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 2 ,
+                    7 ) );
+            exp text ( locstring "@SO_SURVIVAL_NUM_CARDS" , int( tablelookup( "mp/kiosks.csv" , 0 , 2 , 3 ) ) );
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 5 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            0.5 0.5 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ! int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 2 , 7 )
+                    );
+            exp text ( locstring "@KIOSKS_PERKS_FULL" );
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 5 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            0.16 0.65 1 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -65
+            textaligny           -1
+            textscale            0.24
+            editField
+            visible when ( ( ( int( tablelookup( "mp/kiosks.csv" , 0 , 2 , 13 ) ) == 1 ) && ! ( ( int( dvarint(
+                    "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 2 , 1 ) ) ) > 0 )
+                    && ( int( tablelookup( "mp/kiosks.csv" , 0 , 2 , 10 ) == 1 ) ) ) );
+            exp text ( "@KIOSKS_RECOMMAND";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 5 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! ( ( tablelookup( "mp/kiosks.csv" , 0 , 2 , 2 ) == "" ) && ( tablelookup(
+                    "mp/kiosks.csv" , 0 , 2 , 8 ) != "" ) && ( ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 2 , 1 ) ) ) > 0 ) ) ) && ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 2 , 1 ) ) ) > 0 ) && ( int( tablelookup( "mp/kiosks.csv" , 0 , 2 , 10 ) != 1
+                    ) ) );
+            exp text ( "@KIOSKS_ARMORY_FULL";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 5 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! ( ( tablelookup( "mp/kiosks.csv" , 0 , 2 , 2 ) == "" ) && ( tablelookup(
+                    "mp/kiosks.csv" , 0 , 2 , 8 ) != "" ) && ( ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 2 , 1 ) ) ) > 0 ) ) ) && ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 2 , 1 ) ) ) > 0 ) && ( int( tablelookup( "mp/kiosks.csv" , 0 , 2 , 10 ) == 1
+                    ) ) );
+            exp text ( "@KIOSKS_ARMORY_OWNED";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 5 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ( ( tablelookup( "mp/kiosks.csv" , 0 , 2 , 2 ) == "" ) && ( tablelookup( "mp/kiosks.csv"
+                    , 0 , 2 , 8 ) != "" ) && ( ( int( dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0
+                    , 2 , 1 ) ) ) > 0 ) ) ) && ( int( dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0
+                    , 2 , 1 ) ) ) > 0 ) );
+            exp text ( "@KIOSKS_ARMORY_UPGRADE";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 5 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            name                 "WEAPON_POPUP_5"
+            rect                 7.667 0 287 22 2 2
+            visible              1
+            forecolor            0 0 0 0
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            type                 ITEM_TYPE_BUTTON
+            dataType             1
+            action
+            {
+                play mouse_click;
+                setLocalVarInt ui_quit_timer milliseconds;
+                ;
+                play so_ingame_summary;
+                setLocalVarString purchase_item ( "purchase_" + 2;
+                ;
+                scriptmenuresponse purchase_2;
+            }
+            onFocus
+            {
+                setLocalVarString ui_swf_selection "SWF_POPUP_BUTTON_NAME(WEAPON_POPUP,5)";
+                setLocalVarInt ui_buttonNavGroupCurrent_popup 5;
+                setLocalVarString ui_buttonNavGroupName_popup "WEAPON_POPUP";
+                setLocalVarBool ui_swfPopupSelectionButtonVis ( ( 1 ) && ! ( ! ( ! ( int dvarint( "armory" + "locker"
+                        + tablelookup( "mp/kiosks.csv" , 0 , 2 , 1 ) ) ) > 0 ) && int( dvarint(
+                        "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 , 2 , 3 ) ) )
+                        && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 2 , 7 ) )
+                        ) );
+                ;
+                setLocalVarBool ui_swfPopupSelectionBarVis ( 1;
+                ;
+                setLocalVarBool ui_swfPopupSelectionDisabled ( ! ( ! ( int dvarint( "armory" + "locker" + tablelookup(
+                        "mp/kiosks.csv" , 0 , 2 , 1 ) ) ) > 0 ) && int( dvarint( "playingCardsCurrentBestSet" ) >=
+                        int( tablelookup( "mp/kiosks.csv" , 0 , 2 , 3 ) ) ) && int( dvarint(
+                        "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 2 , 7 ) ) );
+                ;
+                setLocalVarString ui_swfPopupContext "WEAPON_POPUP";
+                ;
+                ;
+                play mouse_over;
+                setLocalVarString armory_desc "@" + tablelookup "mp/kiosks.csv" , 0 , 2 , 5;
+                ;
+                setLocalVarInt selected_item_index 2;
+            }
+            leaveFocus
+            {
+                ;
+                setLocalVarBool ui_swfPopupSelectionButtonVis 0;
+                setLocalVarBool ui_swfPopupSelectionBarVis 0;
+                setLocalVarBool ui_swfPopupSelectionDisabled 0;
+            }
+            visible when ( 1;
+            disabled when ( ! ( ! ( int dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 2 , 1 ) ) )
+                    > 0 ) && int( dvarint( "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 , 2
+                    , 3 ) ) ) && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 2 ,
+                    7 ) ) );
+            exp rect Y ( ( ( 5 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) + ( ( 0 - 1.333 ) );
+            exp rect W ( 287 - 0;
+            exp rect X ( ( 0 + ( 0 + 4 ) );
+        }
+        itemDef
+        {
+            rect                 7.667 0 287 19.567 2 2
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_FILLED
+            textalign            8
+            textscale            0.24
+            editField
+            visible when ( ( 1 ) && ( 1 );
+            exp text ( "@" + tablelookup( "mp/kiosks.csv" , 0 , 2 , 4 );
+            exp rect Y ( ( ( ( 5 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) + ( 0 - 1.333 ) ) -
+                    2.333;
+            exp rect W ( 287;
+        }
+        itemDef
+        {
+            rect                 0 0 287 1 2 2
+            decoration
+            visible              1
+            forecolor            0 0 0 0.15
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            exp rect X ( ( 0 + 0 ) + 4;
+            exp rect Y ( ( 0 - 3.5 ) + ( 6 * ( 20 + 2 ) ) + ( ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) );
+            exp rect H ( ( 20 * 1 ) + 1;
+            exp rect W ( 287 - 8;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! ( int dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 3 , 1 ) ) ) > 0
+                    ) && int( dvarint( "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 , 3 , 3
+                    ) ) ) && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 3 , 7 )
+                    ) );
+            exp text ( locstring "@SO_SURVIVAL_NUM_CARDS" , int( tablelookup( "mp/kiosks.csv" , 0 , 3 , 3 ) ) );
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 6 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 0.5 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! int( dvarint( "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 ,
+                    3 , 3 ) ) ) && ! ( int dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 3 , 1 ) )
+                    ) > 0 ) ) && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 3 ,
+                    7 ) );
+            exp text ( locstring "@SO_SURVIVAL_NUM_CARDS" , int( tablelookup( "mp/kiosks.csv" , 0 , 3 , 3 ) ) );
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 6 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            0.5 0.5 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ! int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 3 , 7 )
+                    );
+            exp text ( locstring "@KIOSKS_PERKS_FULL" );
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 6 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            0.16 0.65 1 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -65
+            textaligny           -1
+            textscale            0.24
+            editField
+            visible when ( ( ( int( tablelookup( "mp/kiosks.csv" , 0 , 3 , 13 ) ) == 1 ) && ! ( ( int( dvarint(
+                    "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 3 , 1 ) ) ) > 0 )
+                    && ( int( tablelookup( "mp/kiosks.csv" , 0 , 3 , 10 ) == 1 ) ) ) );
+            exp text ( "@KIOSKS_RECOMMAND";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 6 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! ( ( tablelookup( "mp/kiosks.csv" , 0 , 3 , 2 ) == "" ) && ( tablelookup(
+                    "mp/kiosks.csv" , 0 , 3 , 8 ) != "" ) && ( ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 3 , 1 ) ) ) > 0 ) ) ) && ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 3 , 1 ) ) ) > 0 ) && ( int( tablelookup( "mp/kiosks.csv" , 0 , 3 , 10 ) != 1
+                    ) ) );
+            exp text ( "@KIOSKS_ARMORY_FULL";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 6 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! ( ( tablelookup( "mp/kiosks.csv" , 0 , 3 , 2 ) == "" ) && ( tablelookup(
+                    "mp/kiosks.csv" , 0 , 3 , 8 ) != "" ) && ( ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 3 , 1 ) ) ) > 0 ) ) ) && ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 3 , 1 ) ) ) > 0 ) && ( int( tablelookup( "mp/kiosks.csv" , 0 , 3 , 10 ) == 1
+                    ) ) );
+            exp text ( "@KIOSKS_ARMORY_OWNED";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 6 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ( ( tablelookup( "mp/kiosks.csv" , 0 , 3 , 2 ) == "" ) && ( tablelookup( "mp/kiosks.csv"
+                    , 0 , 3 , 8 ) != "" ) && ( ( int( dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0
+                    , 3 , 1 ) ) ) > 0 ) ) ) && ( int( dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0
+                    , 3 , 1 ) ) ) > 0 ) );
+            exp text ( "@KIOSKS_ARMORY_UPGRADE";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 6 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            name                 "WEAPON_POPUP_6"
+            rect                 7.667 0 287 22 2 2
+            visible              1
+            forecolor            0 0 0 0
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            type                 ITEM_TYPE_BUTTON
+            dataType             1
+            action
+            {
+                play mouse_click;
+                setLocalVarInt ui_quit_timer milliseconds;
+                ;
+                play so_ingame_summary;
+                setLocalVarString purchase_item ( "purchase_" + 3;
+                ;
+                scriptmenuresponse purchase_3;
+            }
+            onFocus
+            {
+                setLocalVarString ui_swf_selection "SWF_POPUP_BUTTON_NAME(WEAPON_POPUP,6)";
+                setLocalVarInt ui_buttonNavGroupCurrent_popup 6;
+                setLocalVarString ui_buttonNavGroupName_popup "WEAPON_POPUP";
+                setLocalVarBool ui_swfPopupSelectionButtonVis ( ( 1 ) && ! ( ! ( ! ( int dvarint( "armory" + "locker"
+                        + tablelookup( "mp/kiosks.csv" , 0 , 3 , 1 ) ) ) > 0 ) && int( dvarint(
+                        "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 , 3 , 3 ) ) )
+                        && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 3 , 7 ) )
+                        ) );
+                ;
+                setLocalVarBool ui_swfPopupSelectionBarVis ( 1;
+                ;
+                setLocalVarBool ui_swfPopupSelectionDisabled ( ! ( ! ( int dvarint( "armory" + "locker" + tablelookup(
+                        "mp/kiosks.csv" , 0 , 3 , 1 ) ) ) > 0 ) && int( dvarint( "playingCardsCurrentBestSet" ) >=
+                        int( tablelookup( "mp/kiosks.csv" , 0 , 3 , 3 ) ) ) && int( dvarint(
+                        "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 3 , 7 ) ) );
+                ;
+                setLocalVarString ui_swfPopupContext "WEAPON_POPUP";
+                ;
+                ;
+                play mouse_over;
+                setLocalVarString armory_desc "@" + tablelookup "mp/kiosks.csv" , 0 , 3 , 5;
+                ;
+                setLocalVarInt selected_item_index 3;
+            }
+            leaveFocus
+            {
+                ;
+                setLocalVarBool ui_swfPopupSelectionButtonVis 0;
+                setLocalVarBool ui_swfPopupSelectionBarVis 0;
+                setLocalVarBool ui_swfPopupSelectionDisabled 0;
+            }
+            visible when ( 1;
+            disabled when ( ! ( ! ( int dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 3 , 1 ) ) )
+                    > 0 ) && int( dvarint( "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 , 3
+                    , 3 ) ) ) && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 3 ,
+                    7 ) ) );
+            exp rect Y ( ( ( 6 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) + ( ( 0 - 1.333 ) );
+            exp rect W ( 287 - 0;
+            exp rect X ( ( 0 + ( 0 + 4 ) );
+        }
+        itemDef
+        {
+            rect                 7.667 0 287 19.567 2 2
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_FILLED
+            textalign            8
+            textscale            0.24
+            editField
+            visible when ( ( 1 ) && ( 1 );
+            exp text ( "@" + tablelookup( "mp/kiosks.csv" , 0 , 3 , 4 );
+            exp rect Y ( ( ( ( 6 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) + ( 0 - 1.333 ) ) -
+                    2.333;
+            exp rect W ( 287;
+        }
+        itemDef
+        {
+            rect                 0 0 287 1 2 2
+            decoration
+            visible              1
+            forecolor            0 0 0 0.15
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            exp rect X ( ( 0 + 0 ) + 4;
+            exp rect Y ( ( 0 - 3.5 ) + ( 7 * ( 20 + 2 ) ) + ( ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) );
+            exp rect H ( ( 20 * 1 ) + 1;
+            exp rect W ( 287 - 8;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! ( int dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 4 , 1 ) ) ) > 0
+                    ) && int( dvarint( "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 , 4 , 3
+                    ) ) ) && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 4 , 7 )
+                    ) );
+            exp text ( locstring "@SO_SURVIVAL_NUM_CARDS" , int( tablelookup( "mp/kiosks.csv" , 0 , 4 , 3 ) ) );
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 7 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 0.5 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! int( dvarint( "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 ,
+                    4 , 3 ) ) ) && ! ( int dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 4 , 1 ) )
+                    ) > 0 ) ) && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 4 ,
+                    7 ) );
+            exp text ( locstring "@SO_SURVIVAL_NUM_CARDS" , int( tablelookup( "mp/kiosks.csv" , 0 , 4 , 3 ) ) );
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 7 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            0.5 0.5 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ! int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 4 , 7 )
+                    );
+            exp text ( locstring "@KIOSKS_PERKS_FULL" );
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 7 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            0.16 0.65 1 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -65
+            textaligny           -1
+            textscale            0.24
+            editField
+            visible when ( ( ( int( tablelookup( "mp/kiosks.csv" , 0 , 4 , 13 ) ) == 1 ) && ! ( ( int( dvarint(
+                    "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 4 , 1 ) ) ) > 0 )
+                    && ( int( tablelookup( "mp/kiosks.csv" , 0 , 4 , 10 ) == 1 ) ) ) );
+            exp text ( "@KIOSKS_RECOMMAND";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 7 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! ( ( tablelookup( "mp/kiosks.csv" , 0 , 4 , 2 ) == "" ) && ( tablelookup(
+                    "mp/kiosks.csv" , 0 , 4 , 8 ) != "" ) && ( ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 4 , 1 ) ) ) > 0 ) ) ) && ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 4 , 1 ) ) ) > 0 ) && ( int( tablelookup( "mp/kiosks.csv" , 0 , 4 , 10 ) != 1
+                    ) ) );
+            exp text ( "@KIOSKS_ARMORY_FULL";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 7 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ! ( ( tablelookup( "mp/kiosks.csv" , 0 , 4 , 2 ) == "" ) && ( tablelookup(
+                    "mp/kiosks.csv" , 0 , 4 , 8 ) != "" ) && ( ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 4 , 1 ) ) ) > 0 ) ) ) && ( int( dvarint( "armory" + "locker" + tablelookup(
+                    "mp/kiosks.csv" , 0 , 4 , 1 ) ) ) > 0 ) && ( int( tablelookup( "mp/kiosks.csv" , 0 , 4 , 10 ) == 1
+                    ) ) );
+            exp text ( "@KIOSKS_ARMORY_OWNED";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 7 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            rect                 0 0 271 20 2 2
+            decoration
+            autowrapped
+            visible              1
+            forecolor            1 1 0.5 1
+            style                WINDOW_STYLE_FILLED
+            textalign            10
+            textalignx           -30
+            textscale            0.24
+            editField
+            visible when ( ( ( ( tablelookup( "mp/kiosks.csv" , 0 , 4 , 2 ) == "" ) && ( tablelookup( "mp/kiosks.csv"
+                    , 0 , 4 , 8 ) != "" ) && ( ( int( dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0
+                    , 4 , 1 ) ) ) > 0 ) ) ) && ( int( dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0
+                    , 4 , 1 ) ) ) > 0 ) );
+            exp text ( "@KIOSKS_ARMORY_UPGRADE";
+            exp rect X ( ( ( 0 + 4 ) + 0 );
+            exp rect Y ( ( 0 + ( 7 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) - 2.333;
+        }
+        itemDef
+        {
+            name                 "WEAPON_POPUP_7"
+            rect                 7.667 0 287 22 2 2
+            visible              1
+            forecolor            0 0 0 0
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            type                 ITEM_TYPE_BUTTON
+            dataType             1
+            action
+            {
+                play mouse_click;
+                setLocalVarInt ui_quit_timer milliseconds;
+                ;
+                play so_ingame_summary;
+                setLocalVarString purchase_item ( "purchase_" + 4;
+                ;
+                scriptmenuresponse purchase_4;
+            }
+            onFocus
+            {
+                setLocalVarString ui_swf_selection "SWF_POPUP_BUTTON_NAME(WEAPON_POPUP,7)";
+                setLocalVarInt ui_buttonNavGroupCurrent_popup 7;
+                setLocalVarString ui_buttonNavGroupName_popup "WEAPON_POPUP";
+                setLocalVarBool ui_swfPopupSelectionButtonVis ( ( 1 ) && ! ( ! ( ! ( int dvarint( "armory" + "locker"
+                        + tablelookup( "mp/kiosks.csv" , 0 , 4 , 1 ) ) ) > 0 ) && int( dvarint(
+                        "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 , 4 , 3 ) ) )
+                        && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 4 , 7 ) )
+                        ) );
+                ;
+                setLocalVarBool ui_swfPopupSelectionBarVis ( 1;
+                ;
+                setLocalVarBool ui_swfPopupSelectionDisabled ( ! ( ! ( int dvarint( "armory" + "locker" + tablelookup(
+                        "mp/kiosks.csv" , 0 , 4 , 1 ) ) ) > 0 ) && int( dvarint( "playingCardsCurrentBestSet" ) >=
+                        int( tablelookup( "mp/kiosks.csv" , 0 , 4 , 3 ) ) ) && int( dvarint(
+                        "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 4 , 7 ) ) );
+                ;
+                setLocalVarString ui_swfPopupContext "WEAPON_POPUP";
+                ;
+                ;
+                play mouse_over;
+                setLocalVarString armory_desc "@" + tablelookup "mp/kiosks.csv" , 0 , 4 , 5;
+                ;
+                setLocalVarInt selected_item_index 4;
+            }
+            leaveFocus
+            {
+                ;
+                setLocalVarBool ui_swfPopupSelectionButtonVis 0;
+                setLocalVarBool ui_swfPopupSelectionBarVis 0;
+                setLocalVarBool ui_swfPopupSelectionDisabled 0;
+            }
+            visible when ( 1;
+            disabled when ( ! ( ! ( int dvarint( "armory" + "locker" + tablelookup( "mp/kiosks.csv" , 0 , 4 , 1 ) ) )
+                    > 0 ) && int( dvarint( "playingCardsCurrentBestSet" ) >= int( tablelookup( "mp/kiosks.csv" , 0 , 4
+                    , 3 ) ) ) && int( dvarint( "perksRemainingForPurchase" ) >= tablelookup( "mp/kiosks.csv" , 0 , 4 ,
+                    7 ) ) );
+            exp rect Y ( ( ( 7 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) + ( ( 0 - 1.333 ) );
+            exp rect W ( 287 - 0;
+            exp rect X ( ( 0 + ( 0 + 4 ) );
+        }
+        itemDef
+        {
+            rect                 7.667 0 287 19.567 2 2
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_FILLED
+            textalign            8
+            textscale            0.24
+            editField
+            visible when ( ( 1 ) && ( 1 );
+            exp text ( "@" + tablelookup( "mp/kiosks.csv" , 0 , 4 , 4 );
+            exp rect Y ( ( ( ( 7 * ( 20 + 2 ) ) + ( 0 + 4 ) + ( ( 20 * 1 ) + ( 16.367 * 0 ) ) ) + ( 0 - 1.333 ) ) -
+                    2.333;
+            exp rect W ( 287;
+        }
+    }
+}

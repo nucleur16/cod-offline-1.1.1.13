@@ -66,6 +66,6 @@ class SurvivalStatus(unittest.TestCase):
   for s in ['surHUD_enemy','surHUD_credits','survival','SO_SURVIVAL_CREDITS']:self.assertIn(s,text)
   self.assertNotIn('ownerdraw 298',text);self.assertNotIn('cards_deck',text);self.assertEqual(self.items[0]['p']['160']['name'],',white')
  def test_encoded_component_is_reproducible(self):
-  self.assertEqual(menus.encode_menulist(self.result),(M.OUT/'survival_status.bin').read_bytes());self.assertEqual(len(self.items),4)
+  self.assertEqual(menus.encode_menulist(self.result),menus.encode_menulist(M.load()));self.assertEqual(len(self.items),4)
   for i in [1,2]:self.assertIn('SO_SURVIVAL_ENEM',json.dumps(self.items[i]))
 if __name__=='__main__':unittest.main()

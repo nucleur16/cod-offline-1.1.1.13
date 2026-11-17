@@ -1,0 +1,1395 @@
+// ui_mp/scriptmenus/survival_hud_visibility.menu as 1.1.1.13 ships them: killstreaks_hd and scorebar_hd of patch_common_mp
+// (MenuCommands' resolved zone-menus dump, decompiled to .menu). The input of tools/build_survival_hud.py and
+// tools/build_hud_styles.py (which keep these menus and add to them); not built as it is. IW menu language:
+// zonekit/menu_source.py.
+{
+    menuDef
+    {
+        name                 "killstreaks_hd"
+        rect                 0 0 640 480 10 10
+        visible              1
+        menuExtra            1
+        focusColor           0 0 0 0
+        visible when ( [ ( [ ( ! [ ( ui_active ) ] ] && [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ]
+                && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( weaponname ) == "killstreak_ac130_mp" ]
+                || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ] || [ ( weaponname ) ==
+                "killstreak_predator_missile_mp" || weaponname( ) == "remote_missile_detonator_so" ]
+                || [ ( [ ( weaponname ) == "ac130_105mm_mp" ] || [ ( weaponname ) == "ac130_40mm_mp" ]
+                || [ ( weaponname ) == "ac130_25mm_mp" ] ] || [ ( adsjavelin ) ] || [ ( weaponname ) ==
+                "heli_remote_mp" ] || missilecam( ) ] ] && [ ( ! isempjammed( ) ] && [ ( ! [ ( staticdvarint
+                "scr_gameended" ) ] ] ] && ! [ ( selecting_location ) ] && [ ( ! [ ( spectatingclient )
+                || spectatingfree( ) ] ] && [ ( ! [ ( inkillcam ) ] ] && [ ( ! [ ( milliseconds ) - localvarint(
+                "ui_show_killedBy" ) < 4000 || [ ( inkillcam ) ] ] ] && [ ! [ demofreecamera ] ]
+                && [ ! [ demofollowcamera ] ];
+        itemDef
+        {
+            rect                 -26.666668 -63.333332 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 0 ) && ( [ ( player "killstreakTarget" ) ] > 0 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -63.333332 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 0 ) && ( [ ( player "killstreakTarget" ) ] > 0 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -68.66667 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 1 ) && ( [ ( player "killstreakTarget" ) ] > 1 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -68.66667 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 1 ) && ( [ ( player "killstreakTarget" ) ] > 1 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -74.00001 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 2 ) && ( [ ( player "killstreakTarget" ) ] > 2 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -74.00001 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 2 ) && ( [ ( player "killstreakTarget" ) ] > 2 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -79.333336 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 3 ) && ( [ ( player "killstreakTarget" ) ] > 3 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -79.333336 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 3 ) && ( [ ( player "killstreakTarget" ) ] > 3 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -84.66667 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 4 ) && ( [ ( player "killstreakTarget" ) ] > 4 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -84.66667 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 4 ) && ( [ ( player "killstreakTarget" ) ] > 4 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -90.00001 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 5 ) && ( [ ( player "killstreakTarget" ) ] > 5 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -90.00001 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 5 ) && ( [ ( player "killstreakTarget" ) ] > 5 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -95.333336 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 6 ) && ( [ ( player "killstreakTarget" ) ] > 6 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -95.333336 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 6 ) && ( [ ( player "killstreakTarget" ) ] > 6 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -100.66667 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 7 ) && ( [ ( player "killstreakTarget" ) ] > 7 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -100.66667 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 7 ) && ( [ ( player "killstreakTarget" ) ] > 7 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -106.00001 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 8 ) && ( [ ( player "killstreakTarget" ) ] > 8 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -106.00001 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 8 ) && ( [ ( player "killstreakTarget" ) ] > 8 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -111.333336 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 9 ) && ( [ ( player "killstreakTarget" ) ] > 9 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -111.333336 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 9 ) && ( [ ( player "killstreakTarget" ) ] > 9 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -116.66667 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 10 ) && ( [ ( player "killstreakTarget" ) ] > 10 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -116.66667 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 10 ) && ( [ ( player "killstreakTarget" ) ] > 10 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -122.00001 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 11 ) && ( [ ( player "killstreakTarget" ) ] > 11 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -122.00001 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 11 ) && ( [ ( player "killstreakTarget" ) ] > 11 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -127.333336 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 12 ) && ( [ ( player "killstreakTarget" ) ] > 12 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -127.333336 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 12 ) && ( [ ( player "killstreakTarget" ) ] > 12 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -132.66667 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 13 ) && ( [ ( player "killstreakTarget" ) ] > 13 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -132.66667 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 13 ) && ( [ ( player "killstreakTarget" ) ] > 13 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -138 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 14 ) && ( [ ( player "killstreakTarget" ) ] > 14 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -138 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 14 ) && ( [ ( player "killstreakTarget" ) ] > 14 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -143.33333 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 15 ) && ( [ ( player "killstreakTarget" ) ] > 15 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -143.33333 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 15 ) && ( [ ( player "killstreakTarget" ) ] > 15 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -148.66667 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 16 ) && ( [ ( player "killstreakTarget" ) ] > 16 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -148.66667 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 16 ) && ( [ ( player "killstreakTarget" ) ] > 16 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -154 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 17 ) && ( [ ( player "killstreakTarget" ) ] > 17 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -154 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 17 ) && ( [ ( player "killstreakTarget" ) ] > 17 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -159.33333 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 18 ) && ( [ ( player "killstreakTarget" ) ] > 18 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -159.33333 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 18 ) && ( [ ( player "killstreakTarget" ) ] > 18 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -164.66667 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 19 ) && ( [ ( player "killstreakTarget" ) ] > 19 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -164.66667 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 19 ) && ( [ ( player "killstreakTarget" ) ] > 19 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -170 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 20 ) && ( [ ( player "killstreakTarget" ) ] > 20 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -170 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 20 ) && ( [ ( player "killstreakTarget" ) ] > 20 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -175.33333 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 21 ) && ( [ ( player "killstreakTarget" ) ] > 21 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -175.33333 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 21 ) && ( [ ( player "killstreakTarget" ) ] > 21 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -180.66667 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 22 ) && ( [ ( player "killstreakTarget" ) ] > 22 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -180.66667 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 22 ) && ( [ ( player "killstreakTarget" ) ] > 22 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -186 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 23 ) && ( [ ( player "killstreakTarget" ) ] > 23 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -186 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 23 ) && ( [ ( player "killstreakTarget" ) ] > 23 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -191.33333 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_empty"
+            visible when ( ( [ ( player "killstreak" ) ] <= 24 ) && ( [ ( player "killstreakTarget" ) ] > 24 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -26.666668 -191.33333 13.333334 6.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_killstreak_bar_full"
+            visible when ( ( [ ( player "killstreak" ) ] > 24 ) && ( [ ( player "killstreakTarget" ) ] > 24 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -68 -88.666664 17.333334 17.333334 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            visible when ( actionslotusable 1 ) && [ ( player "killstreakID0" ) ];
+            exp material ( tablelookup "mp/coKillstreakStatsTable.csv" , 0 , [ ( player "killstreakID0" ) ] , 17 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -68 -88.666664 17.333334 17.333334 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            visible when ( actionslotusable 1 ) && ! [ ( player "killstreakID0" ) ];
+            exp material ( actionslothudiconoverride 1 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            name                 "bs"
+            rect                 -85.333336 -71.333336 17.333334 17.333334 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 0
+            textfont             6
+            textalign            2
+            textscale            0.2
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            visible when ( actionslotusable 1 );
+            exp text ( "^3" + keybinding( "+actionslot 1" );
+            exp forecolor A ( 0.65 * 1.3 * hudfade( "dpad" );
+        }
+        itemDef
+        {
+            rect                 -42.000004 -88.666664 17.333334 17.333334 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 0.35
+            style                WINDOW_STYLE_SHADER
+            visible when ( [ ( player "killstreakID1" ) ] > 0 && [ ( player "killstreak" ) ] < [ ( player
+                    "killstreakTarget1" ) ];
+            exp material ( tablelookup "mp/coKillstreakStatsTable.csv" , 0 , [ ( player "killstreakID1" ) ] , 17 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -42.000004 -88.666664 17.333334 17.333334 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            visible when ( actionslotusable 2 ) && [ ( player "killstreakID1" ) ];
+            exp material ( tablelookup "mp/coKillstreakStatsTable.csv" , 0 , [ ( player "killstreakID1" ) ] , 17 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -42.000004 -88.666664 17.333334 17.333334 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            visible when ( actionslotusable 2 ) && ! [ ( player "killstreakID1" ) ];
+            exp material ( actionslothudiconoverride 2 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -59.333336 -71.333336 17.333334 17.333334 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 0
+            textfont             6
+            textalign            2
+            textscale            0.2
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            visible when ( actionslotusable 2 );
+            exp text ( "^3" + keybinding( "+actionslot 2" );
+            exp forecolor A ( 0.65 * 1.3 * hudfade( "dpad" );
+        }
+        itemDef
+        {
+            rect                 -42.000004 -108.666664 17.333334 17.333334 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 0.35
+            style                WINDOW_STYLE_SHADER
+            visible when ( [ ( player "killstreakID2" ) ] > 0 && [ ( player "killstreak" ) ] < [ ( player
+                    "killstreakTarget2" ) ];
+            exp material ( tablelookup "mp/coKillstreakStatsTable.csv" , 0 , [ ( player "killstreakID2" ) ] , 17 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -42.000004 -108.666664 17.333334 17.333334 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            visible when ( actionslotusable 3 ) && [ ( player "killstreakID2" ) ];
+            exp material ( tablelookup "mp/coKillstreakStatsTable.csv" , 0 , [ ( player "killstreakID2" ) ] , 17 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -42.000004 -108.666664 17.333334 17.333334 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            visible when ( actionslotusable 3 ) && ! [ ( player "killstreakID2" ) ];
+            exp material ( actionslothudiconoverride 3 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -59.333336 -88.666664 17.333334 17.333334 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 0
+            textfont             6
+            textalign            2
+            textscale            0.2
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            visible when ( actionslotusable 3 );
+            exp text ( "^3" + keybinding( "+actionslot 3" );
+            exp forecolor A ( 0.65 * 1.3 * hudfade( "dpad" );
+        }
+        itemDef
+        {
+            rect                 -42.000004 -128.66667 17.333334 17.333334 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 0.35
+            style                WINDOW_STYLE_SHADER
+            visible when ( [ ( player "killstreakID3" ) ] > 0 && [ ( player "killstreak" ) ] < [ ( player
+                    "killstreakTarget3" ) ];
+            exp material ( tablelookup "mp/coKillstreakStatsTable.csv" , 0 , [ ( player "killstreakID3" ) ] , 17 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -42.000004 -128.66667 17.333334 17.333334 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            visible when ( actionslotusable 4 ) && [ ( player "killstreakID3" ) ];
+            exp material ( tablelookup "mp/coKillstreakStatsTable.csv" , 0 , [ ( player "killstreakID3" ) ] , 17 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -42.000004 -128.66667 17.333334 17.333334 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            visible when ( actionslotusable 4 ) && ! [ ( player "killstreakID3" ) ];
+            exp material ( actionslothudiconoverride 4 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -59.333336 -111.333336 17.333334 17.333334 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 0
+            textfont             6
+            textalign            2
+            textscale            0.2
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            visible when ( actionslotusable 4 );
+            exp text ( "^3" + keybinding( "+actionslot 4" );
+            exp forecolor A ( 0.65 * 1.3 * hudfade( "dpad" );
+        }
+        itemDef
+        {
+            rect                 -42.000004 -148.66667 17.333334 17.333334 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 0.35
+            style                WINDOW_STYLE_SHADER
+            visible when ( [ ( player "killstreakID4" ) ] > 0 && [ ( player "killstreak" ) ] < [ ( player
+                    "killstreakTarget4" ) ];
+            exp material ( tablelookup "mp/coKillstreakStatsTable.csv" , 0 , [ ( player "killstreakID4" ) ] , 17 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -42.000004 -148.66667 17.333334 17.333334 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            visible when ( actionslotusable 5 ) && [ ( player "killstreakID4" ) ];
+            exp material ( tablelookup "mp/coKillstreakStatsTable.csv" , 0 , [ ( player "killstreakID4" ) ] , 17 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -42.000004 -148.66667 17.333334 17.333334 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            visible when ( actionslotusable 5 ) && ! [ ( player "killstreakID4" ) ];
+            exp material ( actionslothudiconoverride 5 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 -59.333336 -131.33334 17.333334 17.333334 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 0
+            textfont             6
+            textalign            2
+            textscale            0.2
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            visible when ( actionslotusable 5 );
+            exp text ( "^3" + keybinding( "+actionslot 5" );
+            exp forecolor A ( 0.65 * 1.3 * hudfade( "dpad" );
+        }
+    }
+
+    menuDef
+    {
+        name                 "scorebar_hd"
+        rect                 0 -20 640 480 8 8
+        visible              1
+        menuExtra            1
+        focusColor           0 0 0 0
+        visible when ( [ ( [ ( ! [ ( ui_active ) ] ] && [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ]
+                && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( weaponname ) == "killstreak_ac130_mp" ]
+                || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ] || [ ( weaponname ) ==
+                "killstreak_predator_missile_mp" || weaponname( ) == "remote_missile_detonator_so" ]
+                || [ ( [ ( weaponname ) == "ac130_105mm_mp" ] || [ ( weaponname ) == "ac130_40mm_mp" ]
+                || [ ( weaponname ) == "ac130_25mm_mp" ] ] || [ ( adsjavelin ) ] || [ ( weaponname ) ==
+                "heli_remote_mp" ] || missilecam( ) ] ] && [ ( ! isempjammed( ) ] && [ ( ! [ ( staticdvarint
+                "scr_gameended" ) ] ] ] && ! inkillcam( ) && ! [ ( selecting_location ) ];
+        itemDef
+        {
+            rect                 20 -24 73.333336 12 8 10
+            decoration
+            visible              1
+            forecolor            0.75 0.75 0.75 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_scorebar_topbar_bg"
+            visible when ( staticdvarint "g_ui_no_hud_winlose" ) != 1 && ( team "name" ) != "TEAM_SPECTATOR"
+                    && staticdvarstring( "g_gametype" ) != "coop" && staticdvarstring( "g_gametype" ) != "zm" );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 89.333336 -24 17.333334 12 8 10
+            decoration
+            visible              1
+            forecolor            0.75 0.75 0.75 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_scorebar_topcap_bg"
+            visible when ( staticdvarint "g_ui_no_hud_winlose" ) != 1 && ( team "name" ) != "TEAM_SPECTATOR"
+                    && staticdvarstring( "g_gametype" ) != "coop" && staticdvarstring( "g_gametype" ) != "zm" );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 20 -24 60 12 8 10
+            decoration
+            visible              1
+            forecolor            0.63 0.86 0.6 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_scorebar_topbar"
+            visible when ( staticdvarint "g_ui_no_hud_winlose" ) != 1 && ( team "name" ) != "TEAM_SPECTATOR"
+                    && staticdvarstring( "g_gametype" ) != "coop" && staticdvarstring( "g_gametype" ) != "zm" );
+            exp rect W ( ( 20 / 1.5 ) + [ ( [ ( ( team "score" ) * [ ( ! [ ( [ team "name" ] == "TEAM_FREE" ] ] ) +
+                    int( [ ( player "score" ) ] / staticdvarint( "ui_DMKillScore" ) * [ ( [ team "name" ] ==
+                    "TEAM_FREE" ] ) ] / staticdvarint( "ui_scorelimit" ) ] * ( 90 / 1.5 );
+        }
+        itemDef
+        {
+            rect                 80 -24 10.666667 12 8 10
+            decoration
+            visible              1
+            forecolor            0.872 0.945 0.872 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_scorebar_topcap"
+            visible when ( staticdvarint "g_ui_no_hud_winlose" ) != 1 && ( team "name" ) != "TEAM_SPECTATOR"
+                    && staticdvarstring( "g_gametype" ) != "coop" && staticdvarstring( "g_gametype" ) != "zm" );
+            exp rect X ( ( ( 30 + 20 ) / 1.5 ) + ( [ ( [ ( ( team "score" ) * [ ( ! [ ( [ team "name" ] == "TEAM_FREE"
+                    ] ] ) + int( [ ( player "score" ) ] / staticdvarint( "ui_DMKillScore" ) * [ ( [ team "name" ] ==
+                    "TEAM_FREE" ] ) ] / staticdvarint( "ui_scorelimit" ) ] * ( 90 / 1.5 ) ) - ( 6 / 1.5 );
+        }
+        itemDef
+        {
+            rect                 0 -26.666668 16 16 8 10
+            decoration
+            visible              1
+            forecolor            0.63 0.86 0.6 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_teamcaret"
+            visible when ( staticdvarint "g_ui_no_hud_winlose" ) != 1 && ( team "name" ) != "TEAM_SPECTATOR"
+                    && staticdvarstring( "g_gametype" ) != "coop" && staticdvarstring( "g_gametype" ) != "zm" )
+                    && [ ! [ demofreecamera ] ] && [ ! [ demofollowcamera ] ];
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 20 -10.666667 73.333336 10.666667 8 10
+            decoration
+            visible              1
+            forecolor            0.75 0.75 0.75 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_scorebar_bottombar_bg"
+            visible when ( staticdvarint "g_ui_no_hud_winlose" ) != 1 && ( team "name" ) != "TEAM_SPECTATOR"
+                    && staticdvarstring( "g_gametype" ) != "coop" && staticdvarstring( "g_gametype" ) != "zm" );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 89.333336 -10.666667 10.666667 10.666667 8 10
+            decoration
+            visible              1
+            forecolor            0.75 0.75 0.75 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_scorebar_bottomcap_bg"
+            visible when ( staticdvarint "g_ui_no_hud_winlose" ) != 1 && ( team "name" ) != "TEAM_SPECTATOR"
+                    && staticdvarstring( "g_gametype" ) != "coop" && staticdvarstring( "g_gametype" ) != "zm" );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 20 -10.666667 60 10.666667 8 10
+            decoration
+            visible              1
+            forecolor            0.78 0.278 0.239 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_scorebar_bottombar"
+            visible when ( staticdvarint "g_ui_no_hud_winlose" ) != 1 && ( team "name" ) != "TEAM_SPECTATOR"
+                    && staticdvarstring( "g_gametype" ) != "coop" && staticdvarstring( "g_gametype" ) != "zm" );
+            exp rect W ( ( ( 20 ) / 1.5 ) + [ ( [ ( ( otherteam "score" ) * [ ( ! [ ( [ team "name" ] == "TEAM_FREE" ]
+                    ] ) + int( [ ( ( ( [ ( player "score" ) ] == [ ( scoreatrank 1 ) ] ) * [ ( scoreatrank 2 ) ] ) + (
+                    ( [ ( player "score" ) ] != [ ( scoreatrank 1 ) ] ) * [ ( scoreatrank 1 ) ] ) ] / staticdvarint(
+                    "ui_DMKillScore" ) * [ ( [ team "name" ] == "TEAM_FREE" ] ) ] / staticdvarint( "ui_scorelimit" ) ]
+                    * ( 90 / 1.5 );
+        }
+        itemDef
+        {
+            rect                 80 -10.666667 10.666667 10.666667 8 10
+            decoration
+            visible              1
+            forecolor            0.921 0.892 0.892 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_scorebar_bottomcap"
+            visible when ( staticdvarint "g_ui_no_hud_winlose" ) != 1 && ( team "name" ) != "TEAM_SPECTATOR"
+                    && staticdvarstring( "g_gametype" ) != "coop" && staticdvarstring( "g_gametype" ) != "zm" );
+            exp rect X ( ( ( 30 + 20 ) / 1.5 ) + ( [ ( [ ( ( otherteam "score" ) * [ ( ! [ ( [ team "name" ] ==
+                    "TEAM_FREE" ] ] ) + int( [ ( ( ( [ ( player "score" ) ] == [ ( scoreatrank 1 ) ] ) * [ (
+                    scoreatrank 2 ) ] ) + ( ( [ ( player "score" ) ] != [ ( scoreatrank 1 ) ] ) * [ ( scoreatrank 1 )
+                    ] ) ] / staticdvarint( "ui_DMKillScore" ) * [ ( [ team "name" ] == "TEAM_FREE" ] ) ] /
+                    staticdvarint( "ui_scorelimit" ) ] * ( 90 / 1.5 ) ) - ( 6 / 1.5 );
+        }
+        itemDef
+        {
+            rect                 13.333334 -12.666667 0.6666667 0.6666667 8 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textfont             10
+            textalign            12
+            textscale            0.26664
+            textstyle            7
+            glowColor            0 0 0 0.75
+            editField
+            visible when ( staticdvarint "g_ui_no_hud_winlose" ) != 1 && ( team "name" ) != "TEAM_SPECTATOR"
+                    && staticdvarstring( "g_gametype" ) != "coop" && staticdvarstring( "g_gametype" ) != "zm" );
+            exp text ( [ ( ( team "score" ) * [ ( ! [ ( [ team "name" ] == "TEAM_FREE" ] ] ) + int( [ ( player "score"
+                    ) ] / staticdvarint( "ui_DMKillScore" ) * [ ( [ team "name" ] == "TEAM_FREE" ] ) ];
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 13.333334 -10.000001 0.6666667 0.6666667 8 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textfont             10
+            textalign            4
+            textscale            0.26664
+            textstyle            7
+            glowColor            0 0 0 0.75
+            editField
+            visible when ( staticdvarint "g_ui_no_hud_winlose" ) != 1 && ( team "name" ) != "TEAM_SPECTATOR"
+                    && staticdvarstring( "g_gametype" ) != "coop" && staticdvarstring( "g_gametype" ) != "zm" );
+            exp text ( [ ( ( otherteam "score" ) * [ ( ! [ ( [ team "name" ] == "TEAM_FREE" ] ] ) + int( [ ( ( ( [ (
+                    player "score" ) ] == [ ( scoreatrank 1 ) ] ) * [ ( scoreatrank 2 ) ] ) + ( ( [ ( player "score" )
+                    ] != [ ( scoreatrank 1 ) ] ) * [ ( scoreatrank 1 ) ] ) ] / staticdvarint( "ui_DMKillScore" ) * [ (
+                    [ team "name" ] == "TEAM_FREE" ] ) ];
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 101.333336 -18.666666 0.6666667 0.6666667 8 10
+            decoration
+            visible              1
+            forecolor            1 0.91 0.31 0.5
+            textfont             10
+            textalign            4
+            textscale            0.3333
+            textstyle            7
+            glowColor            0 0 0 0.75
+            editField
+            visible when ( staticdvarint "g_ui_no_hud_winlose" ) != 1 && ( team "name" ) != "TEAM_SPECTATOR"
+                    && staticdvarstring( "g_gametype" ) != "coop" && staticdvarstring( "g_gametype" ) != "zm" )
+                    && [ staticdvarint "ui_scorelimit" ] != 0;
+            exp text ( [ staticdvarint "ui_scorelimit" ];
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 13.333334 -24.666666 0.6666667 0.6666667 8 10
+            decoration
+            visible              1
+            forecolor            1 0.91 0.31 1
+            textfont             10
+            textscale            0.3333
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            glowColor            0 0 0 0.75
+            editField
+            visible when ( staticdvarstring( "g_gametype" ) != "coop" && ( team( "name" ) != "TEAM_SPECTATOR"
+                    && staticdvarstring( "g_gametype" ) != "coop" && staticdvarstring( "g_gametype" ) != "zm" )
+                    && ( milliseconds( ) % 30000 ) > 0 && ( milliseconds( ) % 30000 ) < 4000
+                    && ( [ ( int timeleft( ) - ( [ staticdvarint "ui_timelimit" ] * 0.5 * 60 * ( [ ( staticdvarint
+                    "ui_halftime" ) ] && [ ( timeleft ) + 1 > ( [ staticdvarint "ui_timelimit" ] * 60 * 0.5 ) ] ) ) )
+                    ] < 0 || [ ( int timeleft( ) - ( [ staticdvarint "ui_timelimit" ] * 0.5 * 60 * ( [ ( staticdvarint
+                    "ui_halftime" ) ] && [ ( timeleft ) + 1 > ( [ staticdvarint "ui_timelimit" ] * 60 * 0.5 ) ] ) ) )
+                    ] > 60 );
+            exp text ( gametypename );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 13.333334 -24.666666 0.6666667 0.6666667 8 10
+            decoration
+            visible              1
+            forecolor            0.61 0.96 0.3 1
+            textfont             10
+            textscale            0.3333
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            glowColor            0 0 0 0.75
+            text                 "@MPUI_WINNING_CAPS"
+            editField
+            visible when ( ( staticdvarint( "g_ui_no_hud_winlose" ) != 1 && ( team( "name" ) != "TEAM_SPECTATOR"
+                    && staticdvarstring( "g_gametype" ) != "coop" && staticdvarstring( "g_gametype" ) != "zm" )
+                    && [ ( ( [ ( ( team "score" ) * [ ( ! [ ( [ team "name" ] == "TEAM_FREE" ] ] ) + int( [ ( player
+                    "score" ) ] / staticdvarint( "ui_DMKillScore" ) * [ ( [ team "name" ] == "TEAM_FREE" ] ) ] > [ ( (
+                    otherteam "score" ) * [ ( ! [ ( [ team "name" ] == "TEAM_FREE" ] ] ) + int( [ ( ( ( [ ( player
+                    "score" ) ] == [ ( scoreatrank 1 ) ] ) * [ ( scoreatrank 2 ) ] ) + ( ( [ ( player "score" ) ] != [
+                    ( scoreatrank 1 ) ] ) * [ ( scoreatrank 1 ) ] ) ] / staticdvarint( "ui_DMKillScore" ) * [ ( [ team
+                    "name" ] == "TEAM_FREE" ] ) ] && [ team "name" ] != "TEAM_FREE" ) || ( [ ( player "score" ) ] == [
+                    ( scoreatrank 1 ) ] && [ ( scoreatrank 1 ) ] != [ ( scoreatrank 2 ) ]
+                    && [ team "name" ] == "TEAM_FREE" ) ] && ( ( ( milliseconds( ) % 30000 ) > 4000
+                    && ( milliseconds( ) % 30000 ) < 30000 ) || ( [ ( int timeleft( ) - ( [ staticdvarint
+                    "ui_timelimit" ] * 0.5 * 60 * ( [ ( staticdvarint "ui_halftime" ) ] && [ ( timeleft ) + 1 > ( [
+                    staticdvarint "ui_timelimit" ] * 60 * 0.5 ) ] ) ) ) ] >= 0 && [ ( int timeleft( ) - ( [
+                    staticdvarint "ui_timelimit" ] * 0.5 * 60 * ( [ ( staticdvarint "ui_halftime" ) ]
+                    && [ ( timeleft ) + 1 > ( [ staticdvarint "ui_timelimit" ] * 60 * 0.5 ) ] ) ) ) ] <= 60 ) ) )
+                    && [ ! [ demofreecamera ] ] && [ ! [ demofollowcamera ] ];
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 13.333334 -24.666666 0.6666667 0.6666667 8 10
+            decoration
+            visible              1
+            forecolor            1 0.65 0.27 1
+            textfont             10
+            textscale            0.3333
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            glowColor            0 0 0 0.75
+            text                 "@MPUI_LOSING_CAPS"
+            editField
+            visible when ( ( staticdvarint( "g_ui_no_hud_winlose" ) != 1 && ( team( "name" ) != "TEAM_SPECTATOR"
+                    && staticdvarstring( "g_gametype" ) != "coop" && staticdvarstring( "g_gametype" ) != "zm" )
+                    && [ ( ( [ ( ( team "score" ) * [ ( ! [ ( [ team "name" ] == "TEAM_FREE" ] ] ) + int( [ ( player
+                    "score" ) ] / staticdvarint( "ui_DMKillScore" ) * [ ( [ team "name" ] == "TEAM_FREE" ] ) ] < [ ( (
+                    otherteam "score" ) * [ ( ! [ ( [ team "name" ] == "TEAM_FREE" ] ] ) + int( [ ( ( ( [ ( player
+                    "score" ) ] == [ ( scoreatrank 1 ) ] ) * [ ( scoreatrank 2 ) ] ) + ( ( [ ( player "score" ) ] != [
+                    ( scoreatrank 1 ) ] ) * [ ( scoreatrank 1 ) ] ) ] / staticdvarint( "ui_DMKillScore" ) * [ ( [ team
+                    "name" ] == "TEAM_FREE" ] ) ] && [ team "name" ] != "TEAM_FREE" ) || ( [ ( player "score" ) ] != [
+                    ( scoreatrank 1 ) ] && [ team "name" ] == "TEAM_FREE" ) ] && ( ( ( milliseconds( ) % 30000 ) >
+                    4000 && ( milliseconds( ) % 30000 ) < 30000 ) || ( [ ( int timeleft( ) - ( [ staticdvarint
+                    "ui_timelimit" ] * 0.5 * 60 * ( [ ( staticdvarint "ui_halftime" ) ] && [ ( timeleft ) + 1 > ( [
+                    staticdvarint "ui_timelimit" ] * 60 * 0.5 ) ] ) ) ) ] >= 0 && [ ( int timeleft( ) - ( [
+                    staticdvarint "ui_timelimit" ] * 0.5 * 60 * ( [ ( staticdvarint "ui_halftime" ) ]
+                    && [ ( timeleft ) + 1 > ( [ staticdvarint "ui_timelimit" ] * 60 * 0.5 ) ] ) ) ) ] <= 60 ) ) )
+                    && [ ! [ demofreecamera ] ] && [ ! [ demofollowcamera ] ];
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 13.333334 -24.666666 0.6666667 0.6666667 8 10
+            decoration
+            visible              1
+            forecolor            1 0.91 0.31 1
+            textfont             10
+            textscale            0.3333
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            glowColor            0 0 0 0.75
+            text                 "@MPUI_TIED_CAPS"
+            editField
+            visible when ( ( staticdvarint( "g_ui_no_hud_winlose" ) != 1 && ( team( "name" ) != "TEAM_SPECTATOR"
+                    && staticdvarstring( "g_gametype" ) != "coop" && staticdvarstring( "g_gametype" ) != "zm" )
+                    && [ ( ( [ ( ( team "score" ) * [ ( ! [ ( [ team "name" ] == "TEAM_FREE" ] ] ) + int( [ ( player
+                    "score" ) ] / staticdvarint( "ui_DMKillScore" ) * [ ( [ team "name" ] == "TEAM_FREE" ] ) ] == [ (
+                    ( otherteam "score" ) * [ ( ! [ ( [ team "name" ] == "TEAM_FREE" ] ] ) + int( [ ( ( ( [ ( player
+                    "score" ) ] == [ ( scoreatrank 1 ) ] ) * [ ( scoreatrank 2 ) ] ) + ( ( [ ( player "score" ) ] != [
+                    ( scoreatrank 1 ) ] ) * [ ( scoreatrank 1 ) ] ) ] / staticdvarint( "ui_DMKillScore" ) * [ ( [ team
+                    "name" ] == "TEAM_FREE" ] ) ] && [ team "name" ] != "TEAM_FREE" ) || ( [ ( player "score" ) ] == [
+                    ( scoreatrank 1 ) ] && [ ( scoreatrank 1 ) ] == [ ( scoreatrank 2 ) ]
+                    && [ team "name" ] == "TEAM_FREE" ) ] && ( ( ( milliseconds( ) % 30000 ) > 4000
+                    && ( milliseconds( ) % 30000 ) < 30000 ) || ( [ ( int timeleft( ) - ( [ staticdvarint
+                    "ui_timelimit" ] * 0.5 * 60 * ( [ ( staticdvarint "ui_halftime" ) ] && [ ( timeleft ) + 1 > ( [
+                    staticdvarint "ui_timelimit" ] * 60 * 0.5 ) ] ) ) ) ] >= 0 && [ ( int timeleft( ) - ( [
+                    staticdvarint "ui_timelimit" ] * 0.5 * 60 * ( [ ( staticdvarint "ui_halftime" ) ]
+                    && [ ( timeleft ) + 1 > ( [ staticdvarint "ui_timelimit" ] * 60 * 0.5 ) ] ) ) ) ] <= 60 ) ) )
+                    && [ ! [ demofreecamera ] ] && [ ! [ demofollowcamera ] ];
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 6 126 100 30 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 0.65
+            textfont             10
+            textalign            4
+            textscale            0.3333
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            visible when ( [ ( staticdvarint "ui_halftime" ) ] && [ ( timeleft ) + 1 > ( [ staticdvarint
+                    "ui_timelimit" ] * 60 * 0.5 ) ] && ! [ staticdvarint "ui_overtime" ] && ! [ ( timeleft ) < 1 ];
+            exp text ( "@MPUI_FIRST_HALF";
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 6 126 100 30 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 0.65
+            textfont             10
+            textalign            4
+            textscale            0.3333
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            visible when ( [ ( staticdvarint "ui_halftime" ) ] && ! [ ( timeleft ) + 1 > ( [ staticdvarint
+                    "ui_timelimit" ] * 60 * 0.5 ) ] && ! [ staticdvarint "ui_overtime" ] && ! [ ( timeleft ) < 1 ];
+            exp text ( "@MPUI_SECOND_HALF";
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 6 126 100 30 8 8
+            decoration
+            visible              1
+            forecolor            0.85 0.4 0.4 1
+            textfont             10
+            textalign            4
+            textscale            0.3333
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            visible when ( [ staticdvarint "ui_overtime" ] && ! [ ( timeleft ) < 1 ];
+            exp text ( "@MP_OVERTIME";
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 112 26 48 48 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 0.5
+            style                WINDOW_STYLE_SHADER
+            visible when ( [ ( staticdvarint "ui_bomb_timer" ) ] > 0;
+            exp material ( "hud_suitcase_bomb";
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 112 76 48 48 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 0.5
+            style                WINDOW_STYLE_SHADER
+            visible when ( [ ( staticdvarint "ui_nuke_timer" ) ] == 1;
+            exp material ( "dpad_killstreak_nuke";
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 112 26 100 30 8 8
+            decoration
+            visible              1
+            forecolor            1 0.55 0.55 1
+            textfont             10
+            textalign            4
+            textscale            0.3333
+            textstyle            7
+            visible when ( ( team "name" ) != "TEAM_SPECTATOR" && staticdvarstring( "g_gametype" ) != "coop"
+                    && staticdvarstring( "g_gametype" ) != "zm" ) && [ ( staticdvarstring( "ui_danger_team" ) !=
+                    "BombExploded" && ( team( "name" ) == "TEAM_ALLIES" && staticdvarstring( "ui_danger_team" ) ==
+                    "allies" ) || ( team( "name" ) == "TEAM_AXIS" && staticdvarstring( "ui_danger_team" ) == "axis" )
+                    ];
+            exp text ( "@MENU_SAB_DANGER";
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 112 26 100 30 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textfont             10
+            textalign            4
+            textscale            0.3333
+            textstyle            7
+            visible when ( ( team "name" ) != "TEAM_SPECTATOR" && staticdvarstring( "g_gametype" ) != "coop"
+                    && staticdvarstring( "g_gametype" ) != "zm" ) && [ ( staticdvarstring "ui_danger_team" ) !=
+                    "BombExploded" && staticdvarstring( "ui_danger_team" ) == "none" ];
+            exp text ( "@MENU_SAB_NEUTRAL";
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 112 26 100 30 8 8
+            decoration
+            visible              1
+            forecolor            0.63 0.86 0.6 1
+            textfont             10
+            textalign            4
+            textscale            0.3333
+            textstyle            7
+            visible when ( ( team "name" ) != "TEAM_SPECTATOR" && staticdvarstring( "g_gametype" ) != "coop"
+                    && staticdvarstring( "g_gametype" ) != "zm" ) && [ ( staticdvarstring( "ui_danger_team" ) !=
+                    "BombExploded" && ( team( "name" ) == "TEAM_ALLIES" && staticdvarstring( "ui_danger_team" ) ==
+                    "axis" ) || ( team( "name" ) == "TEAM_AXIS" && staticdvarstring( "ui_danger_team" ) == "allies" )
+                    ];
+            exp text ( "@MENU_SAB_SAFE";
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 112 26 100 30 8 8
+            decoration
+            visible              1
+            forecolor            1 0.55 0.55 1
+            textfont             10
+            textalign            4
+            textscale            0.3333
+            textstyle            7
+            visible when ( ( team "name" ) != "TEAM_SPECTATOR" && staticdvarstring( "g_gametype" ) != "coop"
+                    && staticdvarstring( "g_gametype" ) != "zm" ) && [ ( staticdvarstring "ui_danger_team" ) ==
+                    "contested" ];
+            exp text ( "@MENU_CONTESTED";
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 5.3333335 -38.666668 54.666668 54.666668 8 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textfont             10
+            textalign            13
+            textaligny           -58
+            textscale            0.3333
+            textstyle            8
+            visible when ( [ ( int timeleft( ) - ( [ staticdvarint "ui_timelimit" ] * 0.5 * 60 * ( [ ( staticdvarint
+                    "ui_halftime" ) ] && [ ( timeleft ) + 1 > ( [ staticdvarint "ui_timelimit" ] * 60 * 0.5 ) ] ) ) )
+                    ] >= 60 && ! staticdvarint( "ui_bomb_timer" );
+            exp text ( secondsascountdown [ ( int timeleft( ) - ( [ staticdvarint "ui_timelimit" ] * 0.5 * 60 * ( [ (
+                    staticdvarint "ui_halftime" ) ] && [ ( timeleft ) + 1 > ( [ staticdvarint "ui_timelimit" ] * 60 *
+                    0.5 ) ] ) ) ) ] );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 5.3333335 -38.666668 54.666668 54.666668 8 10
+            decoration
+            visible              1
+            forecolor            0.85 0.5 0 1
+            textfont             10
+            textalign            13
+            textaligny           -58
+            textscale            0.3333
+            textstyle            8
+            glowColor            0.75 0.55 0 1
+            editField
+            visible when ( [ ( int timeleft( ) - ( [ staticdvarint "ui_timelimit" ] * 0.5 * 60 * ( [ ( staticdvarint
+                    "ui_halftime" ) ] && [ ( timeleft ) + 1 > ( [ staticdvarint "ui_timelimit" ] * 60 * 0.5 ) ] ) ) )
+                    ] >= 30 && [ ( int timeleft( ) - ( [ staticdvarint "ui_timelimit" ] * 0.5 * 60 * ( [ (
+                    staticdvarint "ui_halftime" ) ] && [ ( timeleft ) + 1 > ( [ staticdvarint "ui_timelimit" ] * 60 *
+                    0.5 ) ] ) ) ) ] < 60 && ! staticdvarint( "ui_bomb_timer" );
+            exp text ( secondsascountdown [ ( int timeleft( ) - ( [ staticdvarint "ui_timelimit" ] * 0.5 * 60 * ( [ (
+                    staticdvarint "ui_halftime" ) ] && [ ( timeleft ) + 1 > ( [ staticdvarint "ui_timelimit" ] * 60 *
+                    0.5 ) ] ) ) ) ] );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 5.3333335 -38.666668 54.666668 54.666668 8 10
+            decoration
+            visible              1
+            forecolor            0.85 0.4 0.4 1
+            textfont             10
+            textalign            12
+            textaligny           -58
+            textscale            0.3333
+            textstyle            8
+            glowColor            1 0.25 0 1
+            editField
+            visible when ( [ ( int timeleft( ) - ( [ staticdvarint "ui_timelimit" ] * 0.5 * 60 * ( [ ( staticdvarint
+                    "ui_halftime" ) ] && [ ( timeleft ) + 1 > ( [ staticdvarint "ui_timelimit" ] * 60 * 0.5 ) ] ) ) )
+                    ] >= 0 && [ ( int timeleft( ) - ( [ staticdvarint "ui_timelimit" ] * 0.5 * 60 * ( [ (
+                    staticdvarint "ui_halftime" ) ] && [ ( timeleft ) + 1 > ( [ staticdvarint "ui_timelimit" ] * 60 *
+                    0.5 ) ] ) ) ) ] < 30 && ! staticdvarint( "ui_bomb_timer" );
+            exp text ( secondsascountdown [ ( int timeleft( ) - ( [ staticdvarint "ui_timelimit" ] * 0.5 * 60 * ( [ (
+                    staticdvarint "ui_halftime" ) ] && [ ( timeleft ) + 1 > ( [ staticdvarint "ui_timelimit" ] * 60 *
+                    0.5 ) ] ) ) ) ] ) + "." + ( 9 - int( ( milliseconds ) / 100 ) % 10 ) );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 112 42 100 30 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textfont             10
+            textalign            4
+            textscale            0.3333
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            glowColor            1 0.25 0 1
+            editField
+            visible when ( staticdvarint "ui_bomb_timer" ) == 1;
+            exp text ( secondsascountdown [ ( int timeleft( ) - ( [ staticdvarint "ui_timelimit" ] * 0.5 * 60 * ( [ (
+                    staticdvarint "ui_halftime" ) ] && [ ( timeleft ) + 1 > ( [ staticdvarint "ui_timelimit" ] * 60 *
+                    0.5 ) ] ) ) ) ] ) + "." + ( 9 - int( ( milliseconds ) / 100 ) % 10 ) );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 112 93 100 30 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textfont             10
+            textalign            4
+            textscale            0.3333
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            glowColor            1 0.25 0 1
+            editField
+            visible when ( staticdvarint "ui_nuke_timer" ) == 1 && staticdvarint( "ui_inhostmigration" ) == 0;
+            exp text ( [ ( secondsascountdown [ int( ( staticdvarfloat "ui_nuke_end_milliseconds" ) - gettime( ) ) /
+                    1000 ] ) + "." + [ int( int( ( staticdvarfloat "ui_nuke_end_milliseconds" ) - gettime( ) ) / 100 )
+                    % 10 ] ];
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 112 26 100 30 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textfont             10
+            textalign            4
+            textscale            0.3333
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            glowColor            1 0.25 0 1
+            editField
+            visible when ( staticdvarint "ui_bomb_timer" ) > 1 && staticdvarint( "ui_bombtimer_a" ) >= 0;
+            exp text ( locstring "@MP_BOMB_A_COLON_N_N" , staticdvarint( "ui_bombtimer_a" ) , ( 9 - int( (
+                    milliseconds ) / 100 ) % 10 ) ) );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 112 26 100 30 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textfont             10
+            textalign            12
+            textscale            0.3333
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            glowColor            1 0.25 0 1
+            editField
+            visible when ( staticdvarint "ui_bomb_timer" ) > 1 && staticdvarint( "ui_bombtimer_b" ) >= 0;
+            exp text ( locstring "@MP_BOMB_B_COLON_N_N" , staticdvarint( "ui_bombtimer_b" ) , ( 9 - int( (
+                    milliseconds ) / 100 ) % 10 ) ) );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 112 26 100 30 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textfont             10
+            textalign            4
+            textscale            0.3333
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            glowColor            1 0.25 0 1
+            editField
+            visible when ( staticdvarint "ui_bomb_timer" ) > 1 && staticdvarint( "ui_bombtimer_c" ) >= 0;
+            exp text ( locstring "@MP_BOMB_COLON_N_N" , staticdvarint( "ui_bombtimer_c" ) , ( 9 - int( ( milliseconds
+                    ) / 100 ) % 10 ) ) );
+            floatExpressionsEmpty
+        }
+    }
+}

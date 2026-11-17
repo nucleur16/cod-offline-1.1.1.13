@@ -9,4 +9,4 @@
 >zlib,9
 >blocks,0x0,0x20,0x0,0x0,auto,0x0,0x0,0x0,0x0
 >xassetlist,0x0,0xffffffff
-menufile,ui_mp/scriptmenus/survival_hud_visibility.menu,file=menufile/survival_hud_visibility.bin
+menufile,ui_mp/scriptmenus/survival_hud_visibility.menu,src=menufile/survival_hud_visibility.menu

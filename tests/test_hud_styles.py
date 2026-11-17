@@ -16,7 +16,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from zonekit import manifest, menus, packs  # noqa: E402
+from zonekit import manifest, menu_source, menus, packs  # noqa: E402
 
 
 def load(name):
@@ -31,6 +31,12 @@ survival = load("build_survival_hud")
 W = hs.W13
 VIS, ITEMS, IVIS = str(W + 0x40), str(W + 0x78), str(W + 0xA0)
 OPS = menus.OPS_1113
+SURVIVAL_MENUFILE = "ui_mp/scriptmenus/survival_hud_visibility.menu"
+
+
+def zone_listing(path, name):
+    """menus.listing() of a checked-in .menu source (what the zone build compiles)."""
+    return menus.listing(menu_source.load(path, name))
 
 
 def tokens(stmt):
@@ -183,7 +189,7 @@ class HudStyles(unittest.TestCase):
         cls.numbers = sorted(cls.parts)
         cls.stock = hs.stock_menus()
         cls.own = hs.author(cls.parts)
-        original = json.loads((hs.SURVIVAL_DIR / "survival_hud_visibility.original.json").read_text())
+        original = survival.original()
         cls.original = original
         cls.authored = survival.author(original)
         cls.folded = hs.fold_survival(cls.authored, original, cls.parts)
@@ -192,11 +198,14 @@ class HudStyles(unittest.TestCase):
 
     def test_the_checked_in_zone_is_what_the_sources_give(self):
         z = hs.ZDIR
-        self.assertEqual(json.loads((z / "menufile/hud_styles.json").read_text(encoding="utf-8")), self.own)
-        self.assertEqual((z / "menufile/hud_styles.txt").read_text(encoding="utf-8"), menus.listing(self.own))
+        self.assertEqual((z / "menufile/hud_styles.menu").read_text(encoding="utf-8"),
+                         menu_source.decompile_menufile(self.own, hs.HEADER))
+        self.assertEqual(menus.normalize(menu_source.load(z / "menufile/hud_styles.menu", hs.MENUFILE)),
+                         menus.normalize(self.own))
         self.assertEqual((z / "menufile/hud_styles.report.txt").read_text(encoding="utf-8"),
                          "k33_hudStyleList %s\n" % hs.style_list() + "\n".join(self.report) + "\n")
-        self.assertEqual((hs.SURVIVAL_DIR / "survival_hud_visibility.bin").read_bytes(),
+        self.assertEqual(menus.encode_menulist(menu_source.load(hs.SURVIVAL_DIR / "survival_hud_visibility.menu",
+                                                                SURVIVAL_MENUFILE)),
                          menus.encode_menulist(self.folded))
         names = hs.carried(self.convs)
         self.assertEqual(sorted(p.stem for p in (z / "image").glob("*.png")), names)
@@ -421,8 +430,9 @@ class HudStyles(unittest.TestCase):
         self.assertEqual(hs.OPS_3333[107], "keybinding")
         self.assertEqual(hs.OPS_3333[241], "getweaponfiretype")
         self.assertEqual(hs.OPS_3333[:98], menus.OPS_2697[:98])
-        for zone_txt in (hs.ZDIR / "menufile/hud_styles.txt", hs.SURVIVAL_DIR / "survival_hud_visibility.txt"):
-            self.assertNotIn("v33op", zone_txt.read_text(encoding="utf-8"))
+        for zone_menu, name in ((hs.ZDIR / "menufile/hud_styles.menu", hs.MENUFILE),
+                                (hs.SURVIVAL_DIR / "survival_hud_visibility.menu", SURVIVAL_MENUFILE)):
+            self.assertNotIn("v33op", zone_listing(zone_menu, name))
         used = set()
         hs.walk_ops(list(json.loads((hs.SRC / "menus_v33.json").read_text(encoding="utf-8"))["menus"].values()), used)
         self.assertTrue({253, 255, 258, 264, 265, 267, 273} <= used)
@@ -431,7 +441,7 @@ class HudStyles(unittest.TestCase):
                 continue
             self.assertIn("v33 rewrite: 3.3.3.3 operator %d -> %r" % (a, value), text)
         # operator 256: the killstreak bar segment, selected in 1.1.1.13 by the streak's kill count (<= 3: "_2")
-        listing = (hs.SURVIVAL_DIR / "survival_hud_visibility.txt").read_text(encoding="utf-8")
+        listing = zone_listing(hs.SURVIVAL_DIR / "survival_hud_visibility.menu", SURVIVAL_MENUFILE)
         for kind in ("empty", "full"):
             self.assertIn('<= 3 , "k33hud33_hud_killstreak_bar_%s_2" , "k33hud33_hud_killstreak_bar_%s_1" )' % (kind, kind),
                           listing)
@@ -491,7 +501,7 @@ class HudStyles(unittest.TestCase):
         v = (ROOT / "src/audio/voice.c").read_text(encoding="utf-8")
         self.assertIn("    if (HudStyleOwnerDraw(args)) return 1;", v)
         # nothing reads the old tick-published clip dvars any more
-        listing = (hs.ZDIR / "menufile/hud_styles.txt").read_text(encoding="utf-8")
+        listing = zone_listing(hs.ZDIR / "menufile/hud_styles.menu", hs.MENUFILE)
         self.assertNotIn("cg_hudClip", listing)
         self.assertNotIn('player "clipAmmo_left"', listing)
 

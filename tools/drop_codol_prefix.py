@@ -776,10 +776,9 @@ def all_tracked():
 
 
 def menu_files():
-    """The native menu sources and their generated listings under zones/ (step-2 names only: zone names stay)."""
+    """The native menu sources (.menu text) under zones/ (step-2 names only: zone names stay)."""
     return sorted(rel for rel in all_tracked() if rel.startswith("zones/") and MOVIE_MARK not in rel and
-                  (("/menufile/" in rel and rel.endswith((".json", ".txt"))) or
-                   ("/sources/" in rel and rel.endswith(".menu"))))
+                  rel.endswith(".menu"))
 
 
 _IW_PATTERN = re.compile(LEFT + '(' + '|'.join(re.escape(k) for k in sorted(IW_NAMES, key=lambda s: (-len(s), s)))
@@ -841,7 +840,7 @@ def k33_remaining():
 
 
 def apply_menus():
-    """Step-2 names in the native menu sources; the stored .bin menulists are re-encoded from their .json."""
+    """Step-2 names in the native menu sources (.menu text, which the zone build compiles)."""
     changed = []
     for rel in menu_files():
         data, text = read(rel)
@@ -849,12 +848,6 @@ def apply_menus():
         if n:
             (ROOT / rel).write_bytes(encode(new, data))
             changed.append((rel, n))
-            if rel.endswith(".json") and (ROOT / (rel[:-5] + ".bin")).is_file():
-                sys.path.insert(0, str(ROOT))
-                from zonekit import menus
-                bin_path = ROOT / (rel[:-5] + ".bin")
-                bin_path.write_bytes(menus.encode_menulist(json.loads(new)))
-                changed.append((rel[:-5] + ".bin", 0))
     return changed
 
 

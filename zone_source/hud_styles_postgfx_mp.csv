@@ -63,4 +63,4 @@ material,k33hud33_hud_killstreak_bar_full_2,file=material/k33hud33_hud_killstrea
 material,k33hud33_hud_teamjugg_icon_allies,file=material/k33hud33_hud_teamjugg_icon_allies.bin
 material,k33hud33_specialty_bg_1,file=material/k33hud33_specialty_bg_1.bin
 material,k33hud33_specialty_bg_disable_1,file=material/k33hud33_specialty_bg_disable_1.bin
-menufile,ui_mp/scriptmenus/hud_styles.menu,src=menufile/hud_styles.json
+menufile,ui_mp/scriptmenus/hud_styles.menu,src=menufile/hud_styles.menu

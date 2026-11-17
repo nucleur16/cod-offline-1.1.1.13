@@ -13,7 +13,7 @@ class SurvivalKioskMenus(unittest.TestCase):
     def test_wallet_prices_and_existing_purchase_handlers(self):
         for name,rows in [('kiosk_locker',[0,1,2,3,4]),('kiosk_killstreak',[10,11,13,14])]:
             with self.subTest(menu=name):
-                original=json.loads((b.ZONE/'sources'/(name+'.json')).read_text())
+                original=b.original(name)
                 authored=b.author(original)
                 old=original['p']['8'][0];new=authored['p']['8'][0]
                 self.assertEqual(len(new['p']['284']),len(old['p']['284'])+1)
@@ -33,7 +33,8 @@ class SurvivalKioskMenus(unittest.TestCase):
                             if node.get('asset')=='material' and node.get('name')==',navbar_selection_bar_focus':node['name']=',gradient_fadein'
                     self.assertEqual(expected,actual)
                 blob=b.codec.encode_menulist(authored)
-                self.assertEqual(blob,(b.ZONE/'menufile'/(name+'.bin')).read_bytes())
+                written=b.menu_source.load(b.ZONE/'menufile'/(name+'.menu'),b.asset(name))
+                self.assertEqual(blob,b.codec.encode_menulist(written))
                 self.assertNotIn('SO_SURVIVAL_NUM_CARDS',json.dumps(authored))
                 self.assertTrue((b.ZONE/'localize/SO_SURVIVAL_CREDITS.bin').is_file())
 if __name__=='__main__':unittest.main()

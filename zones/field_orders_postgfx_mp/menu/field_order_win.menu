@@ -1,0 +1,78 @@
+// field_order_win: a menu asset (menuDef_t, type 26) of field_orders_postgfx_mp, decompiled from the zone it came from
+// (zone_source/field_orders_postgfx_mp.csv >origin); this text is now its source. IW menu language:
+// zonekit/menu_source.py.
+{
+    menuDef
+    {
+        name                 "field_order_win"
+        rect                 0 0 640 1 1 0
+        decoration
+        menuExtra            1
+        fadeCycle            1
+        fadeClamp            1
+        fadeAmount           0.1
+        focusColor           0 0 0 0
+        exp rect Y ( [ ( staticdvarbool "camera_thirdPerson" ) ] * ( 0 - 40 ) * [ ( ! [ ( staticdvarbool "splitscreen"
+                ) ] ];
+        onOpen
+        {
+            lerp alpha from 0 to 1 over 0.15;
+            lerp x from - 640 to 0 over 0.15;
+            close splash;
+            close intel_found close perk_gained close killstreak;
+        }
+        onRequestClose
+        {
+            lerp x from 0 to 640 over 0.15;
+            lerp alpha from 1 to 0 over 0.15;
+        }
+        itemDef
+        {
+            name                 "fo_bkg"
+            rect                 -250 10 500 50 2 1
+            decoration
+            visible              1
+            forecolor            1 1 1 0.5
+            style                WINDOW_STYLE_SHADER
+            background           "fobkg_alert"
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            name                 "fo_icon"
+            rect                 -125 -18 92 92 2 1
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "foicon"
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            name                 "fo_header_complete"
+            rect                 230 32 0 0 1 1
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textfont             4
+            textscale            0.47
+            glowColor            1 0.8 0.6 1
+            text                 "@FO_COMPLETE"
+            editField
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            name                 "fo_reward"
+            rect                 230 53 0 0 1 1
+            decoration
+            forecolor            1 1 1 1
+            textscale            0.25
+            exp text ( locstring( "@" + ( tablelookupbyrow( staticdvarstring( "fo_table" ) , staticdvarint(
+                    "fo_splash_ref" ) , 4 ) ) ( ) , int( ( tablelookupbyrow( staticdvarstring( "fo_table" ) ,
+                    staticdvarint( "fo_splash_ref" ) , 7 ) ) ( ) ) );
+            floatExpressionsEmpty
+        }
+    }
+}

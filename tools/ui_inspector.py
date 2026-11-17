@@ -1,7 +1,8 @@
 """Live, read-only CoD menu inspector and genuine Scaleform preview launcher.
 
-Run with a .menu, decoded MenuList JSON, serialized .bin with JSON sidecar,
-SWF/GFX, or .gfxpatch directory. No game process is modified.
+Run with a .menu (compiled by zonekit/menu_source.py, as the zone build does), a decoded
+MenuList JSON, a menufile / menu zone blob (.bin; one the reader cannot take needs a .menu or
+.json sidecar), SWF/GFX, or .gfxpatch directory. No game process is modified.
 """
 from __future__ import annotations
 import argparse
@@ -18,7 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from zonekit import gfx, menus
+from zonekit import gfx, menu_source, menus
 
 DEFAULT_GAME = Path(r'D:\CoD\CODOL Builds\Call of Duty Online 1.1.1.13')
 DEFAULT_PLAYER = Path(r'D:\CoD\Scaleform\GFx SDK 3.3\Bin\Win32\Msvc80\GFxPlayer\FxPlayer_D3D9_Release_Static.exe')
@@ -249,11 +250,18 @@ def parse_menu(text, values=None, localization=None):
 def load_menu(path, values=None, localization=None):
     path=Path(path)
     if path.suffix.lower()=='.bin' or b'\0' in path.read_bytes()[:128]:
-        sibling=path.with_suffix('.json')
-        if not sibling.exists():raise ValueError('Binary menu needs decoded JSON sidecar from zone-menus extraction')
+        data=path.read_bytes()
+        for decode in (menus.decode_menulist,lambda d:{'kind':'MenuList','raw':'00'*12,'p':{'8':[menus.decode_menu(d)]}}):
+            try:return decoded(decode(data),values,localization)
+            except (menus.MenuError,ValueError,struct.error):pass
+        sibling=next((s for s in (path.with_suffix('.menu'),path.with_suffix('.json')) if s.exists()),None)
+        if sibling is None:raise ValueError('Binary menu the reader cannot decode needs a .menu or decoded JSON sidecar')
         path=sibling
     text=path.read_text(encoding='utf-8-sig')
-    return decoded(json.loads(text),values,localization) if text.lstrip().startswith('{"') or path.suffix=='.json' else parse_menu(text,values,localization)
+    if text.lstrip().startswith('{"') or path.suffix=='.json':return decoded(json.loads(text),values,localization)
+    try:tree=menu_source.compile_menufile(text,str(path),path.name)
+    except menu_source.MenuSourceError:return parse_menu(text,values,localization)
+    result=decoded(tree,values,localization);result['format']='.menu source (zonekit/menu_source.py)';return result
 
 
 def anchor(rect, align, width, height):

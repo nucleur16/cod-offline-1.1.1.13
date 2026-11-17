@@ -6,9 +6,12 @@ of a later build's HUD menus converted to the 1.1.1.13 layout and appended to 1.
 the stock items stay and show while k33_hudStyle is not a shipped style, a style's items show while k33_hudStyle is
 that style's number. Menu expressions are evaluated every frame, so the HUD changes the moment the dvar does.
 
-    python tools/build_hud_styles.py                 sources -> zones/hud_styles_postgfx_mp (menufile, materials,
-                                                     zone_source csv) and the survival HUD menufile (which owns
-                                                     killstreaks_hd and scorebar_hd: one copy of a menu, both gates)
+    python tools/build_hud_styles.py                 sources -> zones/hud_styles_postgfx_mp (menufile/hud_styles.menu,
+                                                     materials, zone_source csv) and the survival HUD menufile
+                                                     (survival_hud_visibility.menu, which owns killstreaks_hd and
+                                                     scorebar_hd: one copy of a menu, both gates). The menufiles are
+                                                     written as .menu source (zonekit/menu_source.py), which the zone
+                                                     build compiles; sources/menus_*.json stay the extracted dumps
     python tools/build_hud_styles.py extract --dumper <CodolSoundDumper.exe with zone-menus> [--c1 DIR] [--v26 DIR]
                                              [--v12 DIR] [--work DIR]
                                                      later installs -> zones/hud_styles_postgfx_mp/sources + image/
@@ -72,6 +75,9 @@ MENUFILE = "ui_mp/scriptmenus/hud_styles.menu"
 DVAR = "k33_hudStyle"
 STYLE_NUMBERS = {"stock": 0, "v12": 1, "v26": 2, "v33": 3, "v35": 4, "sm2": 5}
 SURVIVAL_DIR = ROOT / "zones/survival_hud_postgfx_mp/menufile"
+SURVIVAL_ORIGINAL = ROOT / "zones/survival_hud_postgfx_mp/sources/survival_hud_visibility.original.menu"
+HEADER = [MENUFILE + ": written by tools/build_hud_styles.py from sources/ (the extracted menus_*.json, sm2.menu,",
+          "facts.json) and 1.1.1.13's own HUD menus: edit those, not this file. IW menu language: zonekit/menu_source.py."]
 LOCALE_ZONES = {"english": "english_hud_styles", "chinese": "chinese_hud_styles"}
 
 W13 = menus.W13
@@ -96,7 +102,8 @@ PROBED_OWNERDRAWS = {145: "the heading tape (IW4 CG_PLAYER_COMPASS_TICKERTAPE): 
                           "it with viper_heading_mp"}
 # The score bar's team bars in 1.1.1.13's team colours (live request): the stock scorebar_hd draws its own team's
 # bar with forecolor 0.63 0.86 0.6 and the other team's with 0.78 0.278 0.239, constants in the stock menu
-# (zones/survival_hud_postgfx_mp .original.json, hud_scorebar_topbar / hud_scorebar_bottombar). The later art has
+# (zones/survival_hud_postgfx_mp sources/survival_hud_visibility.original.menu, hud_scorebar_topbar /
+# hud_scorebar_bottombar). The later art has
 # its blue / orange baked in, so the generator carries a white version of it (WHITE: the luminance, scaled so the
 # brightest pixel is white, alpha kept; hud_styles_extract.py white_image) and the item takes the stock colour.
 STOCK_OWN_TEAM = (0.63, 0.86, 0.6, 1.0)
@@ -813,10 +820,15 @@ def authored_parts(style, facts, stock):
 def stock_menus():
     """1.1.1.13's own menus by name: this zone's (sources/menus_stock.json) and the survival HUD's originals."""
     out = dict(json.loads((SRC / "menus_stock.json").read_text(encoding="utf-8"))["menus"])
-    original = json.loads((SURVIVAL_DIR / "survival_hud_visibility.original.json").read_text(encoding="utf-8"))
-    for m in original["p"]["8"]:
+    for m in survival_original()["p"]["8"]:
         out[m["p"]["0"]] = m
     return out
+
+
+def survival_original():
+    """The survival HUD zone's 1.1.1.13 originals (tools/build_survival_hud.py: their .menu source)."""
+    from zonekit import menu_source
+    return menu_source.load(SURVIVAL_ORIGINAL, "ui_mp/scriptmenus/survival_hud_visibility.menu")
 
 
 def load_facts():
@@ -1022,7 +1034,7 @@ def manifest_rows(names):
         w, h = png_size(ZDIR / "image" / (n + ".png"))
         rows.append("image,%s,hdr=%s,levels=%d,lflags=0x1" % (n, IMAGE_HDR, image_levels(w, h)))
     rows += ["material,%s,file=material/%s.bin" % (n, n) for n in names]
-    rows.append("menufile,%s,src=menufile/hud_styles.json" % MENUFILE)
+    rows.append("menufile,%s,src=menufile/hud_styles.menu" % MENUFILE)
     return rows
 
 
@@ -1103,9 +1115,8 @@ def record_keys(game):
 def build(game=None):
     parts, report, convs = all_parts()
     node = author(parts)
-    menus.encode_menulist(node)
-    write_text(ZDIR / "menufile" / "hud_styles.json", json.dumps(node, indent=1) + "\n")
-    write_text(ZDIR / "menufile" / "hud_styles.txt", menus.listing(node))
+    from zonekit import menu_source
+    write_text(ZDIR / "menufile" / "hud_styles.menu", menu_source.decompile_menufile(node, HEADER))
     write_text(ZDIR / "menufile" / "hud_styles.report.txt",
                "k33_hudStyleList %s\n" % style_list() + "\n".join(report) + "\n")
     names = carried(convs)

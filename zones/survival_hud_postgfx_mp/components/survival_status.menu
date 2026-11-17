@@ -1,0 +1,86 @@
+// ui_mp/scriptmenus/survival_status_component.menu: the Survival status items, written by tools/build_survival_status.py from
+// sources/survival_scorebar_2697.json (edit the generator, not this file). tools/build_survival_hud.py appends its
+// items to C1's scorebar_hd; it is not a zone asset of its own. IW menu language: zonekit/menu_source.py.
+{
+    menuDef
+    {
+        name                 "survival_status_component"
+        rect                 0 -20 640 480 8 8
+        visible              1
+        menuExtra            1
+        focusColor           0 0 0 0
+        visible when ( dvarstring "g_gametype" ) == "survival" && ! ui_active && ! spectatingfree
+                && ! spectatingclient;
+        onOpen
+        {
+            if ( staticdvarstring "ui_gametype" ) == "combat"
+            {
+                setLocalVarInt isCombat 1;
+            }
+            else
+            {
+                setLocalVarInt isCombat 0;
+            }
+        }
+        itemDef
+        {
+            rect                 5 -50 75 1 8 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            visible when ( ( dvarstring "g_gametype" ) == "survival" && ! ui_active && ! spectatingfree
+                    && ! spectatingclient( ) && ( ( [ ( dvarstring "g_gametype" ) == "survival" ] )
+                    && staticdvarint( "surHUD_enemy" ) >= 1 );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 5 -38 0 0 8 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textscale            0.24
+            textstyle            7
+            glowColor            0 0 0 0.7
+            editField
+            visible when ( ( dvarstring "g_gametype" ) == "survival" && ! ui_active && ! spectatingfree
+                    && ! spectatingclient( ) && ( ( [ ( dvarstring "g_gametype" ) == "survival" ] )
+                    && staticdvarint( "surHUD_enemy" ) > 1 );
+            exp text ( locstring "@SO_SURVIVAL_ENEMIES_LEFT" , staticdvarint( "surHUD_enemy" ) );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 5 -38 0 0 8 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textscale            0.24
+            textstyle            7
+            glowColor            0 0 0 0.7
+            editField
+            visible when ( ( dvarstring "g_gametype" ) == "survival" && ! ui_active && ! spectatingfree
+                    && ! spectatingclient( ) && ( ( [ ( dvarstring "g_gametype" ) == "survival" ] )
+                    && staticdvarint( "surHUD_enemy" ) == 1 );
+            exp text ( locstring "@SO_SURVIVAL_ENEMY_LEFT" , staticdvarint( "surHUD_enemy" ) );
+            floatExpressionsEmpty
+        }
+        itemDef
+        {
+            rect                 8 -10 0 0 8 10
+            decoration
+            visible              1
+            forecolor            0.16 0.65 1 1
+            textalign            12
+            textscale            0.24
+            textstyle            7
+            glowColor            0 0 0 0.7
+            editField
+            visible when ( ( dvarstring "g_gametype" ) == "survival" && ! ui_active && ! spectatingfree
+                    && ! spectatingclient( ) && ( ( dvarstring "g_gametype" ) == "survival" );
+            exp text ( locstring "@SO_SURVIVAL_CREDITS" ) + ": " + ( string ( dvarint "surHUD_credits" ) );
+        }
+    }
+}

@@ -11,7 +11,8 @@ Asset lines (files are under zones/<zone>/):
     localize,<NAME>                the next entry named NAME in localize.str
     stringtable,<name>,columns=N[,enc=E][,emptyptr=null][,cellsptr=..]
                                    stringtable/<name> (CSV, UTF-8; cells are E in the zone)
-    menufile,<name>,src=<path>     a menu file (MenuList) from its readable source (zonekit/menus.py)
+    menufile,<name>,src=<path>.menu   a menu file (MenuList), compiled from its .menu source (zonekit/menu_source.py)
+    menu,<name>,src=<path>.menu    a menu (menuDef_t) on its own, compiled from a .menu source with one menuDef
     <type>,<name>,file=<path>      any other asset, as the raw blob <path> (relative to zones/<zone>/)
     <type>,<name>,file=@stock:<sha1>   a blob the build takes unchanged from a stock zone named by >stock
     ptr=0x..                       the directory entry's pointer field when it is not 0xFFFFFFFF
