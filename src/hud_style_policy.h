@@ -2,6 +2,8 @@
  * tests/hud_style_policy_test.c checks them on the build machine. */
 #pragma once
 
+#include <math.h>
+
 /* C1's weapon fire types (weaponDef + 0x350; MEASURED by value over the stock weapon defs: m4 0, usp / spas12 /
  * m21 / rpg 1, m16 / famas 3, the IW4 enum full auto, single shot, burst 2 / 3 / 4) and weapon classes
  * (weaponDef + 0xB64, MEASURED the same way: rifle 2, pistol 1, shotgun 5, rocket launcher 9). */
@@ -77,4 +79,113 @@ static void HudIconFit(float x, float w, float h, int imageW, int imageH, float 
     if (iw > w) iw = w;
     *outW = iw;
     *outX = x + (w - iw);
+}
+
+/* The SM2 compass strip (ownerDraw 3005): C1's heading tape (0x004321B0) shows dvar compassTickertapeStretch
+ * (249) of its material's width, centred on the view's heading. viper_heading_mp, the material it is drawn with,
+ * carries two laps of the heading (720 degrees: N 3 6 E 12 15 S 21 24 W 30 33, twice) across its 1024 texels, so
+ * C1's default 0.5 puts all 360 degrees into the strip: drawn 100 units wide (the stock killstreak menu's tape is
+ * 400) the letters shrink to a few pixels and only W and S stay legible. The strip shows this many degrees instead,
+ * so that one cardinal letter is always in it and the labels keep their size. */
+#define HUD_TAPE_DEGREES     120
+#define HUD_TAPE_LAP_DEGREES 720   /* viper_heading_mp's width in degrees */
+
+/* compassTickertapeStretch for `degrees` of a tape whose material spans `lapDegrees`, inside the dvar's own
+ * domain 0.01..1. */
+static float HudTapeStretch(int degrees, int lapDegrees)
+{
+    float s = lapDegrees > 0 ? (float)degrees / (float)lapDegrees : 0.5f;
+    return s < 0.01f ? 0.01f : s > 1.0f ? 1.0f : s;
+}
+
+/* C1's tape centres the material on heading / 360 (0x004322B3: -(cg + 0xB441C view yaw - cg + 0xBFA08 compass north)
+ * / 360), one material width per turn. viper_heading_mp holds two laps in that width, so the stock tape ran its
+ * labels at twice the heading: facing east it showed S, facing south N. The strip hands the tape a north of its own
+ * for its call, (yaw + north) / 2, which halves the difference the tape reads: one turn, one lap of labels. A
+ * jump of the view yaw by 360 moves the material by half its width, one whole lap: the same picture. */
+static float HudTapeNorth(float viewYaw, float north)
+{
+    return (viewYaw + north) * 0.5f;
+}
+
+/* The HUD sway (cg_hudSway, every style): the whole HUD lags the view's turning, bobs with the player's steps, dips
+ * with jumps and landings and is shaken by what shakes the camera (explosions, damage). Offsets are in the hosts'
+ * 640x480 units; the menus add cg_hudSwayX / Y (hundredths) to every HUD item's rect. */
+#define HUD_SWAY_LOOK       0.020f   /* units per degree / second of turning (live: 0.010 moved 1.2 units at 180 deg/s) */
+#define HUD_SWAY_LOOK_MAX   720.0f   /* degrees / second counted at most */
+#define HUD_SWAY_BOB        1.1f     /* units of step bob at running speed */
+#define HUD_SWAY_RUN_SPEED  190.0f   /* units / second: C1's running speed */
+#define HUD_SWAY_STEP_HZ    1.7f     /* steps per second at running speed (one bob cycle = two steps) */
+#define HUD_SWAY_JUMP       0.010f   /* units per unit / second of vertical speed */
+#define HUD_SWAY_JUMP_MAX   4.0f
+#define HUD_SWAY_SHAKE      3.0f     /* units per degree of camera shake */
+#define HUD_SWAY_SHAKE_MAX  8.0f
+#define HUD_SWAY_MAX        12.0f
+#define HUD_SWAY_OMEGA      16.0f    /* the spring that pulls the HUD back: rad / s */
+#define HUD_SWAY_DAMPING    0.55f    /* < 1: a small overshoot when it settles */
+
+struct HudSway {
+    float x, y, vx, vy;              /* the sprung offset and its speed */
+    float phase;                     /* step bob */
+    float yaw, pitch;                /* last frame's view */
+    int primed;
+};
+
+static float HudSwayClamp(float v, float m) { return v < -m ? -m : v > m ? m : v; }
+
+static float HudSwayAngleDelta(float a, float b)
+{
+    float d = fmodf(a - b, 360.0f);
+    if (d > 180.0f) d -= 360.0f;
+    if (d < -180.0f) d += 360.0f;
+    return d;
+}
+
+/* One frame. dt in seconds; yaw / pitch the player's view (degrees, IW: yaw left-positive, pitch down-positive);
+ * shakeYaw / shakePitch what the rendered view adds to it (degrees); speed the horizontal speed and vz the
+ * vertical one (units / s); alive 0 lets the HUD settle. Writes the offset to *outX / *outY. */
+static void HudSwayStep(struct HudSway *s, float dt, float yaw, float pitch, float shakeYaw, float shakePitch,
+                        float speed, float vz, int alive, float *outX, float *outY)
+{
+    if (!(dt > 0.0f)) dt = 0.0f;
+    if (dt > 0.1f) dt = 0.1f;                         /* a hitch or a pause: no catapult */
+    float tx = 0.0f, ty = 0.0f;
+    if (!s->primed || !alive || dt == 0.0f) {
+        s->yaw = yaw;
+        s->pitch = pitch;
+        s->primed = 1;
+    }
+    if (alive && dt > 0.0f) {
+        float ry = HudSwayClamp(HudSwayAngleDelta(yaw, s->yaw) / dt, HUD_SWAY_LOOK_MAX);
+        float rp = HudSwayClamp(HudSwayAngleDelta(pitch, s->pitch) / dt, HUD_SWAY_LOOK_MAX);
+        /* turning right lowers the yaw: the HUD trails to the left; looking up lowers the pitch: it trails down */
+        tx += ry * HUD_SWAY_LOOK;
+        ty -= rp * HUD_SWAY_LOOK;
+        float run = HudSwayClamp(speed / HUD_SWAY_RUN_SPEED, 1.3f);
+        if (run < 0.0f) run = 0.0f;
+        s->phase += dt * run * HUD_SWAY_STEP_HZ * 3.14159265f;
+        if (s->phase > 6.2831853f) s->phase -= 6.2831853f;
+        tx += sinf(s->phase) * HUD_SWAY_BOB * run;
+        ty += fabsf(sinf(s->phase)) * HUD_SWAY_BOB * 0.8f * run;
+        ty += HudSwayClamp(vz * HUD_SWAY_JUMP, HUD_SWAY_JUMP_MAX);     /* rising: it trails down */
+    }
+    s->yaw = yaw;
+    s->pitch = pitch;
+    /* a damped spring toward the target, in steps of at most 1/240 s */
+    for (float left = dt; left > 0.0f; ) {
+        float h = left < (1.0f / 240.0f) ? left : (1.0f / 240.0f);
+        float w2 = HUD_SWAY_OMEGA * HUD_SWAY_OMEGA, c = 2.0f * HUD_SWAY_DAMPING * HUD_SWAY_OMEGA;
+        s->vx += (w2 * (tx - s->x) - c * s->vx) * h;
+        s->vy += (w2 * (ty - s->y) - c * s->vy) * h;
+        s->x += s->vx * h;
+        s->y += s->vy * h;
+        left -= h;
+    }
+    s->x = HudSwayClamp(s->x, HUD_SWAY_MAX);
+    s->y = HudSwayClamp(s->y, HUD_SWAY_MAX);
+    /* the camera's own shake goes straight through: it is already a motion */
+    float sx = alive ? HudSwayClamp(shakeYaw * HUD_SWAY_SHAKE, HUD_SWAY_SHAKE_MAX) : 0.0f;
+    float sy = alive ? HudSwayClamp(-shakePitch * HUD_SWAY_SHAKE, HUD_SWAY_SHAKE_MAX) : 0.0f;
+    *outX = HudSwayClamp(s->x + sx, HUD_SWAY_MAX);
+    *outY = HudSwayClamp(s->y + sy, HUD_SWAY_MAX);
 }

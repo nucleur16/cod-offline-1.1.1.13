@@ -19,7 +19,10 @@ parts in order, and the build concatenates each part's assets (after that part's
 Rules the build enforces:
   * every part is a flat zone (no script strings, no back references: a C#-written zone such as
     infected_cyborg_postgfx_mp points into its own runtime blocks, so its assets cannot move and it ships on
-    its own);
+    its own), except that one part of a pack may carry script strings when every asset of it is proven
+    self-contained (STRINGS_PART_TYPES: an xanim the parser reads as all inline data, xanim_opposite_arm.parse):
+    its assets name script strings only by index into its own table, so the pack takes that table whole, in
+    order, and the indices keep their meaning (m1911_arms_diag in common_extras);
   * a part loads in the same list as the pack (the old name's suffix gives the same stage), and in the same languages,
     except where a pack takes only some asset types of a part (usermaps_patch's GBK strings go to the Chinese pack);
   * C1 keeps the first asset linked under a name (kernel33.c, "first entry it links"); the old zones loaded in
@@ -39,6 +42,10 @@ from . import build, container, manifest, zoneimage
 
 PACK_DIR = "zone_packs"
 SLACK = 0x1000          # per merged runtime block other than block 4: allocation alignment between parts
+# asset types a part with script strings may carry, each with the check that its blob is all inline data (no back
+# reference into a runtime block, which would move with the pack's longer asset table) and that every script
+# string index it uses is a string of the part's own table
+STRINGS_PART_TYPES = ("xanim",)
 
 
 class PackError(Exception):
@@ -119,6 +126,19 @@ def part_assets(repo, part, stocks, maps, ffdec=None, compile_as=False, log=prin
     return m, z, plan, [(t, n, a) for (t, n), a in zip(kept, z.assets)]
 
 
+def strings_part_check(part, items, strings):
+    """Raise PackError unless every asset of a part with script strings can move into a pack unchanged."""
+    from . import xanim_opposite_arm
+    for t, name, (_tid, _ptr, blob) in items:
+        if t not in STRINGS_PART_TYPES:
+            raise PackError("%s has script strings and a %s (%s): only %s assets are proven to move with their "
+                            "string table; it must ship on its own" % (part, t, name, ", ".join(STRINGS_PART_TYPES)))
+        try:
+            xanim_opposite_arm.parse(blob, strings)
+        except (xanim_opposite_arm.Unsupported, ValueError, IndexError) as e:
+            raise PackError("%s: xanim %s is not all inline data (%s); it must ship on its own" % (part, name, e))
+
+
 def assemble(repo, pack, stocks, maps, ffdec=None, compile_as=False, log=print):
     """-> (zone image bytes, report dict). report: parts, per-part counts, shadowed duplicates, dropped maps."""
     m = load(repo, pack)
@@ -129,21 +149,30 @@ def assemble(repo, pack, stocks, maps, ffdec=None, compile_as=False, log=print):
     used = [0] * 9
     xal = None
     report = dict(parts=[], shadowed=[], dropped_maps=set(), notes=[])
+    strings_part = None     # (part, its zone image): the one part whose script string table the pack takes
     for part, keep, q in parts(m):
         pm, z, plan, items = part_assets(repo, part, stocks, maps, ffdec, compile_as, log)
         if not z.flat or z.strings:
-            raise PackError("%s: part %s has script strings (a C#-written zone with back references); it must "
-                            "ship on its own" % (pack, part))
+            if strings_part is not None:
+                raise PackError("%s: parts %s and %s both have script strings; a pack takes one part's table"
+                                % (pack, strings_part[0], part))
+            if "only" in q or "exclude" in q:
+                raise PackError("%s: part %s has script strings; it cannot be split by type" % (pack, part))
+            strings_part_check(part, items, z.strings)
+            strings_part = (part, z)
         if stage(part) != pstage:
             raise PackError("%s (%s) cannot take %s, which loads in the %s list" % (pack, pstage, part, stage(part)))
         partial = "only" in q or "exclude" in q
         if not partial and locales(part) != ploc:
             raise PackError("%s loads in %s, its part %s in %s" % (pack, sorted(ploc), part, sorted(locales(part))))
-        fields = (z.strings_ptr_field, z.assets_ptr_field)
+        # the strings pointer field belongs to the table (taken from the strings part below), the assets one to all
+        fields = (z.strings_ptr_field if z.flat else None, z.assets_ptr_field)
         if xal is None:
             xal = fields
-        elif fields != xal:
+        elif fields[1] != xal[1] or None not in (fields[0], xal[0]) and fields[0] != xal[0]:
             raise PackError("%s: part %s has the XAssetList fields %s, the others %s" % (pack, part, fields, xal))
+        elif xal[0] is None:
+            xal = fields
         n = 0
         for t, name, a in items:
             if not keep(t):
@@ -166,11 +195,16 @@ def assemble(repo, pack, stocks, maps, ffdec=None, compile_as=False, log=print):
     for i in range(9):
         if i != 4 and used[i] > 1:
             blocks[i] += SLACK
+    # the strings part's table, whole and in order (its assets name strings by index), else none
+    sz = strings_part[1] if strings_part else None
+    table = dict(string_ptrs=list(sz.string_ptrs), strings=list(sz.strings), string_count_field=sz.string_count_field,
+                 strings_ptr_field=sz.strings_ptr_field) if sz else         dict(string_ptrs=[], strings=[], string_count_field=0, strings_ptr_field=xal[0] if xal[0] is not None else 0)
+    report["strings"] = (strings_part[0], sz.string_count_field) if sz else None
     # block 4 (the zone's own data): the sum of the parts' (each with its margin) covers every byte they allocated
     auto = sum(len(b) for _t, _p, b in assets) + 16 * len(assets) + 0x10000
+    auto += 4 * len(table["string_ptrs"]) + sum(len(s) + 1 for s in table["strings"] if s is not None)
     blocks[4] = max(blocks[4], auto)
-    img = zoneimage.ZoneImage(blocks=blocks, string_ptrs=[], strings=[], string_count_field=0,
-                              strings_ptr_field=xal[0], assets_ptr_field=xal[1], assets=assets)
+    img = zoneimage.ZoneImage(blocks=blocks, assets_ptr_field=xal[1], assets=assets, **table)
     return zoneimage.assemble(img), report
 
 

@@ -165,8 +165,9 @@ menuDef
 
 // ---------------------------------------------------------------------------------------------------------------
 // Minimap, top left: the map and its layers on a dark translucent square, a compass strip over its top edge:
-// 1.1.1.13's heading tape (ownerDraw 145) with the material its own killstreak HUD draws it with (viper_heading_mp,
-// common_mp), which scrolls with the view.
+// ownerDraw 3005 (hud_style.c), 1.1.1.13's heading tape (ownerDraw 145's) with the material its own killstreak HUD
+// draws it with (viper_heading_mp, common_mp), scrolling with the view, over 120 degrees of the heading instead of
+// C1's 360 (the letters stay legible at this width), one lap of letters per turn and without objectives.
 menuDef
 {
     name "minimap_fullscreen"
@@ -193,7 +194,7 @@ menuDef
     {
         rect 6 6 100 10 LEFT_TOP
         type 8
-        ownerdraw 145
+        ownerdraw 3005
         background "viper_heading_mp"
         forecolor 1 1 1 0.85
     }

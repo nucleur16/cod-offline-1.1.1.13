@@ -179,6 +179,10 @@ NAMED = {
     "K33UI_HUD_STYLE_V33": ("Version 3.3", "3.3 版", "codo.gfx"),
     "K33UI_HUD_STYLE_V35": ("Version 3.5", "3.5 版", "codo.gfx"),
     "K33UI_HUD_STYLE_SM2": ("SM2", "SM2", "codo.gfx"),
+    "K33UI_HUD_SWAY": ("HUD sway", "HUD 晃动", "codo.gfx"),
+    "K33UI_HUD_SWAY_OFF": ("Off", "关", "codo.gfx"),
+    "K33UI_HUD_SWAY_ON": ("On", "开", "codo.gfx"),
+    "K33UI_GAME_TAB": ("Game", "游戏", "codo.gfx"),
 }
 
 

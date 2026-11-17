@@ -87,6 +87,8 @@ static const char *const kPatchZoneMerged[][2]={
  {"codol_zm_m1911_arms_diag","m1911_arms_diag"}, /* LEGACY_ZONE */
  {"mp_codol_weapons","mp_weapons"}, /* LEGACY_ZONE */
  {"mp_codol_weapons_postgfx_mp","mp_weapons_postgfx_mp"}, /* LEGACY_ZONE */
+ /* zones that installed under their own name and were packed later: {old file name, the pack that carries it} */
+ {"m1911_arms_diag","common_extras"}, /* LEGACY_ZONE */
 };
 static int AsciiEqual(const char *a,const char *b)
 {

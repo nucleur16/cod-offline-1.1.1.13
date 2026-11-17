@@ -369,7 +369,7 @@ ownerdraw.
   - the streak counter beside the slots: one pip per kill up to `player("killstreakTarget")`, lit up to
     `player("killstreak")` (the stock column's pips, 25 at most). 1.1.1.13's own column is no longer drawn
     under SM2: it sat under the SM2 panels;
-  - top left, the minimap on a dark square, with a compass strip over its top edge: ownerDraw 145, the heading tape
+  - top left, the minimap on a dark square, with a compass strip over its top edge: ownerDraw 3005 (below), the heading tape
     1.1.1.13's own killstreak HUD draws with `viper_heading_mp` (common_mp);
   - top centre: own score, a slim bar filled from its inner end in blue, the side's emblem
     (`g_TeamIcon_Allies` / `g_TeamIcon_Axis`, hidden in free-for-all), the enemy bar filled from its inner end in
@@ -383,6 +383,27 @@ ownerdraw.
   - 145, the heading tape (`PROBED_OWNERDRAWS`: none of the four hosts' stock items uses it). A stock common_mp
     menu draws it as a 400x20 tape with `viper_heading_mp`, found by scanning common_mp's menu assets for
     ownerDraw 145. Live: it scrolls with the view.
+  - 3005, the compass strip (`hud_style.c` `HudStyleTape`), which replaced 145 in sm2.menu on 2026-11-15. It calls
+    C1's tape (0x004321B0, ownerDraw 145's) with three changes, each for its own call only and put back after:
+    - **No objectives** (16 November, user request): the tape's last argument is 0, as ownerDraw 146 passes. The
+      tape then returns after drawing the material (0x0043237E `cmp byte [ebp+20h], 0` / `je 0x0043273D`): no icons and
+      no distances ("%im" / "%.1fm", which under SM2 read as the minimap's).
+    - **The stretch**: `viper_heading_mp` carries 720 degrees (two laps) across its width and dvar 249
+      compassTickertapeStretch (0.5) shows half of it, a whole lap in 100 units; the strip shows 120 degrees
+      (`HudTapeStretch(120, 720)`), so the labels keep their size.
+    - **The heading's rate** (16 November, user report: the letters came in the wrong order): the tape centres the
+      material on -(cg + 0xB441C view yaw - cg + 0xBFA08 compass north) / 360 (0x004322B3, byte-checked), one material width per
+      turn; with two laps in that width the labels went round twice per turn (facing east showed S, facing south N).
+      3005 writes cg + 0xBFA08 = `HudTapeNorth()` = (yaw + north) / 2 for its call, which halves the difference the
+      tape reads: one lap of labels per turn. Nothing else reads 0xBFA08 during the call: with objectives 0 the tape
+      reads it once (0x004322B9); its other readers (the compass draws 0x00430ACB..0x00436676, written at 0x0043DDD9
+      / 0x00450E34) run outside it, on the same thread, after the value is restored. The cg is the tape's own
+      ([0x016D3B58 + [0x06C3D2AC] * 4] ^ 0x490B400C at 0x004321EB..0x0043220E, `ParityCg`).
+    Live (16 November, co-op on mp_crash_tropical, headless, `compassRotation` (dvar 245) 0 so the minimap is
+    north-up and its arrow is the ground truth; turned with the server's `dev_clientcmd 0 setviewpos 600 400 200 <yaw>`):
+    yaw 0 arrow up, strip centred on N; 90 arrow left, W; 180 arrow down, S; 270 arrow right, E; 45 arrow up-left,
+    between 30 and 33 (315). Before the change the same build drew S facing east. Objective icons: not seen live
+    (co-op on Crash has no compass objectives); the skip is the tape's own branch above.
   - 3003, the health fill (`hud_style.c`). The menus cannot read health: `player()` has no field and no dvar
     holds it. C1's own health bar, ownerDraw 79 (`CG_DrawPlayerBarHealth` 0x004558C0), returns early unless a
     dvar ([0x016D0F4C] + 0xC) is set, so it drew nothing. 3003 reads the same fraction C1's bar computes
@@ -433,6 +454,59 @@ ownerdraw.
   Known observation, not investigated (not caused by the HUD styles): during the second round the client's
   `main\console_mp.log` had `PARITY ... snap-ps: playerState weapon 121 is past the last registered weapon 120 (its
   weapon configstring has not reached the client yet?)` right after the test player was given weapons with `give`.
+
+## HUD sway (`cg_hudSway`, every style)
+
+User request (16 November): the HUD moves with the view, the player's movement and nearby explosions, as the SM2
+mod's HUD did, first for SM2, then for every style (stock 0, v26 2, v33 3, sm2 5).
+
+- **Switch.** `cg_hudSway`, int 0 / 1, archived, **default 1** (on: the user asked for the HUD to move; 0 brings back
+  the still HUD). Options > Game has a "HUD sway" row (Off / On) under HUD style; the pause menu's Options list has it as a stepped row under HUD style (docs/UI_STYLE_OPTIONS_20261112.md).
+- **C** (`hud_style.c` `HudSwayTick`, main tick, before the frame's menus paint; pure part `hud_style_policy.h`
+  `HudSwayStep`, tested by `tests/hud_style_policy_test.c`). Whenever the switch is on and a match runs (any style),
+  it reads the predicted playerState from the same cg the HUD reads (`HudCg`): view angles cg + 0x14C, velocity
+  cg + 0x28, health cg + 0x190; and the camera shake: the rendered view's angles cg + 0xB4418 (C1 copies the
+  playerState's there at 0x0045648C, byte-checked, and adds its sin-driven explosion / damage shake at 0x0042C577..)
+  minus the playerState's. It writes `cg_hudSwayX` / `cg_hudSwayY` (ints, hundredths of a 640x480 unit, read only).
+  Off or out of a match it writes 0 once and then leaves the two alone, so a test can set them by hand.
+  - turning: the HUD trails the turn by `HUD_SWAY_LOOK` 0.02 units per degree / second (at most 720 deg/s): turning
+    right (yaw falling) moves it left, looking up (pitch falling) moves it down;
+  - steps: a bob of `HUD_SWAY_BOB` 1.1 units at running speed (190 u/s), 1.7 steps a second;
+  - jumps and falls: 0.01 units per u/s of vertical speed, at most 4, rising moves it down;
+  - all three through a damped spring (16 rad/s, damping 0.55: a small overshoot), at most 12 units;
+  - camera shake: 3 units per degree of shake, at most 8, passed straight through (it is already a motion);
+  - dead: the HUD settles back.
+- **Menus** (`tools/build_hud_styles.py` `sway()`, run on every item of the four hosts, in this zone and in the
+  survival HUD's menufile: the stock items, the Survival panel's and every style's). An item with its own
+  `exp rect X` / `Y` gets `( {its expression} + ( dvarint("cg_hudSwayX") * 0.01 ) )`, one without gets
+  `( its rectClient x + ( .. ) )`. rectClient (+0x18) is the item's own position, which an `exp rect X` replaces
+  (+4 is the laid-out rect: rectClient plus the menu's origin, scorebar_hd's y -20). With the dvars at 0 every item is
+  where it was: live, the four styles' HUD at offset 0 matched the build without `sway()` pixel for pixel
+  (minimap, ammo, score, streak column). `tests/test_hud_styles.py` checks that every item has exactly one sway on
+  x and one on y and that removing it gives the item back (`strip_sway`). (`zonekit/menu_source.py`'s menuDef keyword
+  `itemOffset ( x ) ( y )`, written for SM2 first, is still there and tested; sm2.menu no longer uses it, since
+  `sway()` covers SM2 like the others.)
+- **Live** (16 November, `D:\CoD\k33_sm2_compass_client`, profile `edtest`, co-op on mp_crash_tropical, 1024x768
+  windowed, headless: commands through `k33_cmd_<pid>.txt`, the turns through the host's rcon
+  `dev_clientcmd 0 setviewpos ..` at 90 Hz, pictures through `k33_shot.req`; the dvars were still named
+  the dvars still had their first, k33-prefixed names then; renamed `cg_hudSway*` later that day with no other
+  change, and not re-run under the new names):
+  - `cg_hudSway 0`, `cg_hudSwayX 1000`, `cg_hudSwayY 1000`: in every style the HUD moved 10 units right and down
+    (16 px at 1.6 px/unit), ownerdraws included: SM2's minimap, compass strip, player arrow, clip count, weapon icon
+    and health bar; stock's minimap and ammo; v26 / v33's minimap, ammo panel, score bar (scorebar_hd, the -20 origin)
+    and kill / death bar; v33's streak column;
+  - live turns, the ammo panel's offset: left at 180 deg/s +2 to +3 units, right at 360 deg/s -4 to -6, looking up
+    at 40 deg/s +0.6 down, in all four styles; at rest 0. With the first gain (0.010) a 180 deg/s turn gave 1.2
+    units: hardly visible, so the gain was doubled;
+  - an instant 90 degree turn (one `setviewpos`) gives a one-frame kick of about 1 unit (a single frame of turn rate).
+  - Not seen live: explosions. Co-op on Crash has no frag loaded; `explodeprobe 0 c4_so` (developer 1) fired
+    an explosion event 400 units overhead, with no visible effect or shake. `take health 40` gives no view kick.
+    The shake term is the rendered view's offset from the playerState's angles, 0 at rest (measured), so it moves
+    the HUD only when C1 shakes the camera.
+- Seen on the way, not caused by the sway: under v33 in co-op the streak column's five slots draw as white boxes; the
+  build without `sway()` draws them the same.
+- **Not checked live:** walking bob and jumps (no headless movement: `+forward`, `+left` do nothing in an unfocused
+  window), Survival, killcam / spectating.
 
 ## Rebuilding
 

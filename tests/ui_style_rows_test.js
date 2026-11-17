@@ -58,12 +58,12 @@ global.LocalizeUtil={localize:k=>strings[k.slice(1)]===undefined?k:strings[k.sli
 function engine(over){
  dvars=Object.assign({k33_language:'en',k33_languageList:'en;zh',k33_languageState:'0',k33_languageSerial:'0',
   gpad_glyphs:'0',k33_padinfo:'0|1|Xbox 360 Controller|0|0',gpad_glyphSerial:'0',
-  k33_hudStyle:'0',k33_hudStyleList:'0:stock;2:v26'},over||{});
+  k33_hudStyle:'0',k33_hudStyleList:'0:stock;2:v26',cg_hudSway:'1'},over||{});
  for(const k of Object.keys(dvars))if(dvars[k]===null)delete dvars[k];
- ranges={gpad_glyphs:[0,6],k33_hudStyle:[0,9]};sets=[];reads=[];
+ ranges={gpad_glyphs:[0,6],k33_hudStyle:[0,9],cg_hudSway:[0,1]};sets=[];reads=[];
  strings={K33UI_LANG_NAME_EN:'English',K33UI_LANG_NAME_ZH:'中文',K33UI_HUD_STYLE_STOCK:'Classic (1.1.1.13)',K33UI_HUD_STYLE_V26:'Version 2.6',
   K33UI_GLYPHS_AUTO:'Auto',K33UI_GLYPHS_XBOX:'Xbox',K33UI_GLYPHS_PS:'PlayStation',K33UI_GLYPHS_NINTENDO:'Wii U / Switch',
-  K33UI_GLYPHS_GENERIC:'Generic',K33UI_GLYPHS_TEXT:'Text only',K33UI_GLYPHS_KBM:'Keyboard & mouse'};
+  K33UI_GLYPHS_GENERIC:'Generic',K33UI_GLYPHS_TEXT:'Text only',K33UI_GLYPHS_KBM:'Keyboard & mouse',K33UI_HUD_SWAY_OFF:'Off',K33UI_HUD_SWAY_ON:'On'};
 }
 function logic(which,extra){
  const text=SOURCES[which],o={};
@@ -80,8 +80,8 @@ for(const which of ['pause','video']){
  global.K33_STYLE_POLL=Number(/K33_STYLE_POLL:int = (\d+)/.exec(text)[1]);
  global.K33_STYLE_HOLD=Number(/K33_STYLE_HOLD:int = (\d+)/.exec(text)[1]);
  assert.deepStrictEqual(K33_GLYPH_NAMES,['AUTO','XBOX','PS','NINTENDO','GENERIC','TEXT','KBM'],'gpad_glyphs 0..6 in the contract order');
- assert.deepStrictEqual(K33_STYLE_DVARS,{lang:'k33_language',glyph:'gpad_glyphs',hud:'k33_hudStyle'},'the contract dvars');
- assert.deepStrictEqual(K33_STYLE_KINDS,['lang','glyph','hud'],'row order');
+ assert.deepStrictEqual(K33_STYLE_DVARS,{lang:'k33_language',glyph:'gpad_glyphs',hud:'k33_hudStyle',sway:'cg_hudSway'},'the contract dvars');
+ assert.deepStrictEqual(K33_STYLE_KINDS,['lang','glyph','hud','sway'],'row order');
  const L=logic(which);
  const vs=o=>o.map(x=>x.v),keys=o=>o.map(x=>x.key);
 
@@ -91,6 +91,14 @@ for(const which of ['pause','video']){
  assert.deepStrictEqual(L.k33StyleOptions('hud'),[{v:'0',key:'K33UI_HUD_STYLE_STOCK',raw:'stock'},{v:'2',key:'K33UI_HUD_STYLE_V26',raw:'v26'}]);
  assert.deepStrictEqual(vs(L.k33StyleOptions('glyph')),['0','1','2','3','4','5','6']);
  assert.deepStrictEqual(keys(L.k33StyleOptions('glyph')),K33_GLYPH_NAMES.map(n=>'K33UI_GLYPHS_'+n));
+ // HUD sway: Off / On, cg_hudSway 0 / 1; an int dvar is never read with Dvar_GetString (C1 reads its value as a
+ // string pointer: live crash), its row is there when the DLL has the HUD styles (k33_hudStyleList)
+ engine({cg_hudSway:'1'});reads=[];
+ assert.deepStrictEqual(L.k33StyleOptions('sway'),[{v:'0',key:'K33UI_HUD_SWAY_OFF',raw:'off'},{v:'1',key:'K33UI_HUD_SWAY_ON',raw:'on'}]);
+ assert.deepStrictEqual(reads,['k33_hudStyleList'],'the sway row reads only the style list to decide (never cg_hudSway as a string)');
+ assert.strictEqual(L.k33StyleIndex(L.k33StyleOptions('sway'),L.k33StyleCurrent('sway')),1);
+ assert.strictEqual(L.k33StyleSet('sway',L.k33StyleOptions('sway'),0),true);assert.deepStrictEqual(sets,[['cg_hudSway','0']]);
+ engine({k33_hudStyleList:''});assert.deepStrictEqual(L.k33StyleOptions('sway'),[],'no HUD styles in the DLL: no sway row');
  engine({k33_languageList:' en ;; zh;en;pt-br; ',k33_hudStyleList:'0:stock; 2 : v26 ;x:bad;3;:v33;4:;02:dup;12:v35;1234567:big;-1:neg'});
  assert.deepStrictEqual(vs(L.k33StyleOptions('lang')),['en','zh','pt-br'],'blank and repeated ids dropped, ids trimmed');
  assert.strictEqual(L.k33StyleOptions('lang')[2].key,'K33UI_LANG_NAME_PT-BR');
@@ -111,9 +119,9 @@ for(const which of ['pause','video']){
  // the current value; one the list does not have shows the first choice
  engine({k33_language:'zh',k33_hudStyle:'2',gpad_glyphs:'5'});
  for(const [kind,want] of [['lang',1],['hud',1],['glyph',5]])assert.strictEqual(L.k33StyleIndex(L.k33StyleOptions(kind),L.k33StyleCurrent(kind)),want,kind);
- engine({k33_language:'fr',k33_hudStyle:'5',gpad_glyphs:'9'});
+ engine({k33_language:'fr',k33_hudStyle:'5',gpad_glyphs:'9',cg_hudSway:'7'});
  for(const kind of K33_STYLE_KINDS)assert.strictEqual(L.k33StyleIndex(L.k33StyleOptions(kind),L.k33StyleCurrent(kind)),0,kind+': not listed -> first');
- engine({k33_language:null,k33_hudStyle:null,gpad_glyphs:null});
+ engine({k33_language:null,k33_hudStyle:null,gpad_glyphs:null,cg_hudSway:null});
  for(const kind of K33_STYLE_KINDS)assert.strictEqual(L.k33StyleIndex(L.k33StyleOptions(kind),L.k33StyleCurrent(kind)),0,kind+': dvar missing -> first');
  engine({k33_language:'ZH'});assert.strictEqual(L.k33StyleIndex(L.k33StyleOptions('lang'),L.k33StyleCurrent('lang')),1,'ids compare without case');
  assert.strictEqual(L.k33StyleIndex([],'x'),0);
@@ -167,7 +175,7 @@ for(const which of ['pause','video']){
   return p;
  }
  engine({k33_language:'zh',gpad_glyphs:'2',k33_hudStyle:'2'});let p=pause();
- assert.deepStrictEqual(p.k33StyleRows.map(r=>[r.kind,r.shown,r.row.mySlider.myCurrentTF.text]),[['lang',1,'中文'],['glyph',2,'PlayStation'],['hud',1,'Version 2.6']],'rows show their dvars, by name');
+ assert.deepStrictEqual(p.k33StyleRows.map(r=>[r.kind,r.shown,r.row.mySlider.myCurrentTF.text]),[['lang',1,'中文'],['glyph',2,'PlayStation'],['hud',1,'Version 2.6'],['sway',1,'On']],'rows show their dvars, by name');
  assert.deepStrictEqual(sets,[],'showing a row sets nothing');
  // pad right on HUD style (2 choices): wraps to the first and sets the listed number
  p.k33StepSlider(p.rec('hud').row,1);assert.deepStrictEqual(sets,[['k33_hudStyle','0']]);assert.strictEqual(p.rec('hud').row.mySlider.myCurrentTF.text,'Classic (1.1.1.13)');
@@ -189,7 +197,7 @@ for(const which of ['pause','video']){
  dvars.k33_languageSerial='1';p.frames(K33_STYLE_POLL*3);assert.deepStrictEqual(p.rebuilds,[true]);
  // a list that changed (or turned up) builds the rows again
  dvars.k33_hudStyleList='0:stock;2:v26;4:v35';p.frames(K33_STYLE_POLL);assert.deepStrictEqual(p.rebuilds,[true,false]);
- engine({k33_languageList:null});p=pause();assert.deepStrictEqual(p.k33StyleRows.map(r=>r.kind),['glyph','hud'],'no Language row without k33_languageList');
+ engine({k33_languageList:null});p=pause();assert.deepStrictEqual(p.k33StyleRows.map(r=>r.kind),['glyph','hud','sway'],'no Language row without k33_languageList');
  p.frames(K33_STYLE_POLL*2);assert.deepStrictEqual(p.rebuilds,[]);dvars.k33_languageList='en;zh';p.frames(K33_STYLE_POLL);assert.deepStrictEqual(p.rebuilds,[false],'the row is added when its list turns up');
  // a closed menu costs nothing and changes nothing
  engine();p=pause();p.k33Shown=()=>false;dvars.k33_languageSerial='5';p.frames(K33_STYLE_POLL*4);assert.deepStrictEqual(p.rebuilds,[]);
@@ -223,7 +231,7 @@ for(const which of ['pause','video']){
   const rec={kind,row:{mySlider:slider,parent:view},opts,names:opts.map(o=>p.k33StyleName(o)),shown:-1,hold:0};
   p.k33StyleRows.push(rec);p.k33StyleShow(rec,p.k33StyleIndex(opts,p.k33StyleCurrent(kind)));
  }
- assert.deepStrictEqual(p.k33StyleRows.map(r=>[r.kind,r.row.mySlider.myCurrentTF.text]),[['glyph','PlayStation'],['hud','Version 2.6']],'pause: Button icons and HUD style only, in that order');
+ assert.deepStrictEqual(p.k33StyleRows.map(r=>[r.kind,r.row.mySlider.myCurrentTF.text]),[['glyph','PlayStation'],['hud','Version 2.6'],['sway','On']],'pause: Button icons, HUD style and HUD sway only, in that order');
  reads=[];for(let i=0;i<K33_STYLE_POLL*4;i++)p.k33StyleFrame(null);
  assert.deepStrictEqual(p.rebuilds,[],'pause: a language list does not bring the row back');
  assert.deepStrictEqual([...new Set(reads.filter(n=>n.indexOf('k33_language')===0))],['k33_languageSerial'],'pause: of the language dvars only the serial is read (to translate the rows again)');
@@ -241,13 +249,13 @@ for(const which of ['pause','video']){
  global.K33_GLYPH_NAMES=literal(text,'K33_GLYPH_NAMES');global.K33_STYLE_DVARS=literal(text,'K33_STYLE_DVARS');
  global.K33_STYLE_KINDS=literal(text,'K33_STYLE_KINDS');global.K33_STYLE_LABELS=literal(text,'K33_STYLE_LABELS');
  global.K33_STYLE_POLL=Number(/K33_STYLE_POLL:int = (\d+)/.exec(text)[1]);global.K33_STYLE_HOLD=Number(/K33_STYLE_HOLD:int = (\d+)/.exec(text)[1]);
- for(const n of ['K33_STYLE_X','K33_STYLE_Y','K33_STYLE_PITCH','K33_STYLE_Y3','K33_STYLE_PITCH3','K33_STYLE_NOTE_Y'])
+ for(const n of ['K33_STYLE_X','K33_STYLE_BOX_X','K33_STYLE_Y','K33_STYLE_PITCH','K33_STYLE_NOTE_GAP'])
   global[n]=Number(new RegExp(n+':Number = ([0-9.]+);').exec(text)[1]);
  function tab(){
-  const v=logic('video',['k33StyleOf','k33StyleShow','k33OnStyleChange','k33OnStyleOpen','k33OnStyleClose','k33StyleRemove','k33StyleBuild','k33StyleNoteUpdate','k33StyleFrame']);
+  const v=logic('video',['k33StyleOf','k33StyleShow','k33OnStyleChange','k33OnStyleOpen','k33OnStyleClose','k33StyleRemove','k33StyleBuild','k33StyleNoteUpdate','k33StyleFrame','k33StyleHost']);
   Object.assign(v,{stage:{},_k33StyleRows:[],_k33StyleCombos:{},_k33StyleLabels:{},_k33StyleOpen:null,_k33StyleSync:false,_k33StyleDirty:false,
-   _k33StyleNote:null,_k33StyleNoteKey:'',_k33StyleSerial:0,_k33StyleFrames:0,relocalized:0,made:[],
-   myTFSSAO:{y:249.9},myCBSSAO:{y:244},myCBDisplayMode:{x:98},children:[],
+   _k33StyleNote:null,_k33StyleNoteKey:'',_k33Game:null,_k33GameFailed:false,_k33StyleSerial:0,_k33StyleFrames:0,relocalized:0,made:[],
+   myTFSSAO:{y:249.9},myCBSSAO:{y:244},myCBDisplayMode:{x:98},myCBTextureQuality:{x:372},myTFTextureQuality:{x:296},children:[],
    addChild(o){o.parent=this;this.children.push(o);},removeChild(o){o.parent=null;this.children.splice(this.children.indexOf(o),1);},
    k33StyleText(src,str,size,color){return {text:str,x:0,y:0,visible:true,parent:null};},
    k33StyleLabel(kind){if(!this._k33StyleLabels[kind])this._k33StyleLabels[kind]={text:'',x:K33_STYLE_X,y:0,visible:false};return this._k33StyleLabels[kind];},
@@ -273,11 +281,13 @@ for(const which of ['pause','video']){
 
  // what ships: the Language row off -> two rows, no gap, the dvars' values shown by name, nothing set
  global.K33_STYLE_LANGUAGE_ROW=false;
- strings_extra=()=>Object.assign(strings,{K33UI_LANGUAGE:'Language',K33UI_GLYPHS:'Button icons',K33UI_HUD_STYLE:'HUD style',K33UI_LANG_RESTART:'Restart the game to apply the language',K33UI_LANG_SWITCHING:'Switching language...'});
+ strings_extra=()=>Object.assign(strings,{K33UI_LANGUAGE:'Language',K33UI_GLYPHS:'Button icons',K33UI_HUD_STYLE:'HUD style',K33UI_HUD_SWAY:'HUD sway',K33UI_LANG_RESTART:'Restart the game to apply the language',K33UI_LANG_SWITCHING:'Switching language...'});
  engine({k33_language:'zh',gpad_glyphs:'2',k33_hudStyle:'2',k33_languageState:'2'});strings_extra();
  let v=tab();v.k33StyleBuild();
- assert.deepStrictEqual(v.rows(),[['glyph','Button icons','PlayStation',K33_STYLE_Y],['hud','HUD style','Version 2.6',K33_STYLE_Y+K33_STYLE_PITCH]],'two drop-downs under each other, labels and names translated');
- assert.deepStrictEqual(v.made,['glyph','hud'],'no Language box is made');assert.strictEqual(v._k33StyleNote,null,'no language line is made');
+ assert.deepStrictEqual(v.rows(),[['glyph','Button icons','PlayStation',K33_STYLE_Y],['hud','HUD style','Version 2.6',K33_STYLE_Y+K33_STYLE_PITCH],['sway','HUD sway','On',K33_STYLE_Y+2*K33_STYLE_PITCH]],'the Game tab: one drop-down under the other, labels and names translated');
+ // HUD sway is in the right-hand column (the Textures box's x and its label's), the others in the Display Mode column
+ assert.deepStrictEqual([v.cb('glyph').x,v.cb('hud').x,v.cb('sway').x,v._k33StyleLabels.hud.x,v._k33StyleLabels.sway.x],[K33_STYLE_BOX_X,K33_STYLE_BOX_X,K33_STYLE_BOX_X,K33_STYLE_X,K33_STYLE_X],'one column of labels, one of boxes');
+ assert.deepStrictEqual(v.made,['glyph','hud','sway'],'no Language box is made');assert.strictEqual(v._k33StyleNote,null,'no language line is made');
  assert.deepStrictEqual(sets,[],'filling and selecting from the dvars sets nothing');
  assert.deepStrictEqual(reads.filter(n=>n.indexOf('k33_language')===0),[],'no k33_language* dvar is read to make the rows');
  assert.deepStrictEqual(v.cb('glyph').dataProvider.map(d=>d.id),['0','1','2','3','4','5','6']);
@@ -301,34 +311,35 @@ for(const which of ['pause','video']){
  v.k33OnStyleOpen({currentTarget:v.cb('hud')});dvars.k33_hudStyle='0';v.frames(K33_STYLE_POLL*2);assert.strictEqual(v.cb('hud').shown,'Version 2.6','not changed under the player\'s cursor');
  v.k33OnStyleClose({currentTarget:v.cb('hud')});v.frames(K33_STYLE_POLL);assert.strictEqual(v.cb('hud').shown,'Classic (1.1.1.13)');
  // a value the list does not have shows the first entry and writes nothing
- engine({k33_hudStyle:'5',gpad_glyphs:'9'});strings_extra();v=tab();v.k33StyleBuild();
- assert.deepStrictEqual(v.rows().map(r=>r[2]),['Auto','Classic (1.1.1.13)']);v.frames(K33_STYLE_POLL*3);assert.deepStrictEqual(sets,[],'unknown value: first entry, nothing written');
+ engine({k33_hudStyle:'5',gpad_glyphs:'9',cg_hudSway:'4'});strings_extra();v=tab();v.k33StyleBuild();
+ assert.deepStrictEqual(v.rows().map(r=>r[2]),['Auto','Classic (1.1.1.13)','Off']);v.frames(K33_STYLE_POLL*3);assert.deepStrictEqual(sets,[],'unknown value: first entry, nothing written');
  assert.strictEqual(dvars.k33_hudStyle,'5');
  // a list that is empty hides its row and the other closes up; when the list turns up the row is made
  engine({k33_padinfo:''});strings_extra();v=tab();v.k33StyleBuild();
- assert.deepStrictEqual(v.rows(),[['hud','HUD style','Classic (1.1.1.13)',K33_STYLE_Y]],'HUD style moves up when Button icons has no list');
- dvars.k33_padinfo='0|1|pad';v.frames(K33_STYLE_POLL);assert.deepStrictEqual(v.rows().map(r=>[r[0],r[3]]),[['glyph',K33_STYLE_Y],['hud',K33_STYLE_Y+K33_STYLE_PITCH]],'the row appears when its list does');
+ assert.deepStrictEqual(v.rows(),[['hud','HUD style','Classic (1.1.1.13)',K33_STYLE_Y],['sway','HUD sway','On',K33_STYLE_Y+K33_STYLE_PITCH]],'HUD style and HUD sway move up when Button icons has no list');
+ dvars.k33_padinfo='0|1|pad';v.frames(K33_STYLE_POLL);assert.deepStrictEqual(v.rows().map(r=>[r[0],r[3]]),[['glyph',K33_STYLE_Y],['hud',K33_STYLE_Y+K33_STYLE_PITCH],['sway',K33_STYLE_Y+2*K33_STYLE_PITCH]],'the row appears when its list does');
  dvars.k33_hudStyleList='';v.frames(K33_STYLE_POLL);assert.deepStrictEqual(v.rows().map(r=>r[0]),['glyph']);
  assert.strictEqual(v.cb('hud').visible,false);assert.strictEqual(v._k33StyleLabels.hud.visible,false,'a row without a list is hidden, box and label');
+ assert.strictEqual(v.cb('sway').visible,false,'HUD sway goes with HUD style');
  engine({k33_padinfo:null,k33_hudStyleList:null});v=tab();v.k33StyleBuild();assert.deepStrictEqual(v.rows(),[],'an older Kernel33.dll: no rows');assert.deepStrictEqual(v.made,[]);
  // a rebuild closes an open list first
  engine();strings_extra();v=tab();v.k33StyleBuild();v.k33OnStyleOpen({currentTarget:v.cb('glyph')});v.k33StyleBuild();assert.strictEqual(v.cb('glyph').closed,1);assert.strictEqual(v._k33StyleOpen,null);
  // a finished language switch (k33_languageSerial, e.g. k33_setlanguage in the console): labels and list names are set again
  engine({gpad_glyphs:'5',k33_hudStyle:'2'});strings_extra();v=tab();v.k33StyleBuild();const boxes=[v.cb('glyph'),v.cb('hud')];
- Object.assign(strings,{K33UI_GLYPHS:'按键图标',K33UI_HUD_STYLE:'HUD 样式',K33UI_GLYPHS_TEXT:'仅文字',K33UI_HUD_STYLE_V26:'2.6 版'});
+ Object.assign(strings,{K33UI_GLYPHS:'按键图标',K33UI_HUD_STYLE:'HUD 样式',K33UI_GLYPHS_TEXT:'仅文字',K33UI_HUD_STYLE_V26:'2.6 版',K33UI_HUD_SWAY:'HUD 晃动',K33UI_HUD_SWAY_ON:'开'});
  v.frames(K33_STYLE_POLL*2);assert.strictEqual(v.relocalized,0,'not before the serial moves');
  dvars.k33_languageSerial='3';v.frames(K33_STYLE_POLL*2);assert.strictEqual(v.relocalized,1,'a finished switch translates the tab again, once');
- assert.deepStrictEqual(v.rows().map(r=>[r[1],r[2]]),[['按键图标','仅文字'],['HUD 样式','2.6 版']],'row labels and the boxes\' entries in the new language, the selection kept');
+ assert.deepStrictEqual(v.rows().map(r=>[r[1],r[2]]),[['按键图标','仅文字'],['HUD 样式','2.6 版'],['HUD 晃动','开']],'row labels and the boxes\' entries in the new language, the selection kept');
  assert.deepStrictEqual([v.cb('glyph'),v.cb('hud')],boxes,'the same boxes are used again');assert.deepStrictEqual(sets,[],'re-localising sets nothing');
  // not on the stage yet: the rows are made by the first frame
  engine();strings_extra();v=tab();v.stage=null;v.k33StyleBuild();assert.deepStrictEqual(v.rows(),[]);assert.strictEqual(v._k33StyleDirty,true);
- v.stage={};v.frames(1);assert.strictEqual(v.rows().length,2);
+ v.stage={};v.frames(1);assert.strictEqual(v.rows().length,3);
 
  // the Language row switched on: three rows on the tighter pitch, the language line, a pick sets k33_language
  global.K33_STYLE_LANGUAGE_ROW=true;
  engine({k33_language:'zh',k33_languageState:'2'});strings_extra();v=tab();v.k33StyleBuild();
- assert.deepStrictEqual(v.rows().map(r=>[r[0],r[2],r[3]]),[['lang','中文',K33_STYLE_Y3],['glyph','Auto',K33_STYLE_Y3+K33_STYLE_PITCH3],['hud','Classic (1.1.1.13)',K33_STYLE_Y3+2*K33_STYLE_PITCH3]]);
- assert(K33_STYLE_Y3+2*K33_STYLE_PITCH3+24<=467,'three rows end above the warning line');
+ assert.deepStrictEqual(v.rows().map(r=>[r[0],r[2],r[3]]),[['lang','中文',K33_STYLE_Y],['glyph','Auto',K33_STYLE_Y+K33_STYLE_PITCH],['hud','Classic (1.1.1.13)',K33_STYLE_Y+2*K33_STYLE_PITCH],['sway','On',K33_STYLE_Y+3*K33_STYLE_PITCH]],'four rows on the Game tab, the Language row first');
+ assert.strictEqual(v._k33StyleNote.y,K33_STYLE_Y+4*K33_STYLE_PITCH+K33_STYLE_NOTE_GAP,'the language line under the last row');
  assert.strictEqual(v._k33StyleNote.text,'Restart the game to apply the language','state 2: the restart line, translated before it is set');assert.strictEqual(v._k33StyleNote.visible,true);
  dvars.k33_languageState='1';v.frames(K33_STYLE_POLL);assert.strictEqual(v._k33StyleNote.text,'Switching language...');
  dvars.k33_languageState='0';v.frames(K33_STYLE_POLL);assert.strictEqual(v._k33StyleNote.visible,false);
@@ -345,14 +356,63 @@ assert(P.includes('this.k33AddStyleRows(view); // k33: style rows, under the FOV
 assert(P.includes('row != this.k33FovRow && this.k33StyleOf(row) == null'),"pause: C1's row list leaves the style rows out");
 assert(P.includes('view.gotoMenu(view.getCurrentMenu());'),'pause: a language switch builds the open list again');
 assert(/if\(code != 244 \|\| this\.k33StyleOf\(cur\) != null\)/.test(P),'pause: pad select steps a style row');
-assert(V.includes('this.k33StyleWatch(true);')&&V.includes('this.k33StyleWatch(false); // k33'),'video: watched only while the tab is shown');
+assert(V.includes('this.k33StyleWatch(this._k33VideoOn || this._k33GameOpen);')&&V.includes('this.k33StyleWatch(this._k33GameOpen);')&&V.includes('this.k33StyleWatch(this._k33VideoOn);'),'video: the rows are watched only while the Graphics or the Game tab is shown');
 // video: the rows are the tab's own combo box class, made in code; they open upwards, come to the front as they open
 // (so the list is not behind the check boxes) and need no pad hint: PadSnap finds a combo box's button and list rows
 assert(V.includes('cls = getDefinitionByName(getQualifiedClassName(this.myCBAspectRatio)) as Class;')&&V.includes('cb = new cls() as CodoComboBox;'),"video: another instance of the tab's own combo box class");
-assert(V.includes('cb.setDropDownAtRuntime(false);'),'video: the list opens upwards (the rows are at the foot of the panel)');
-assert(V.includes('cb.addEventListener(CodoComboBox.EVT_PRE_OPEN,this.onK33ComboPreOpen);')&&V.includes('this.setChildIndex(tempCB,this.numChildren - 1);'),'video: an opening list comes to the front');
+assert(V.includes('cb.setDropDownAtRuntime(true);'),'video: the Game rows start at the top of the panel, their lists open downwards');
+assert(V.includes('cb.addEventListener(CodoComboBox.EVT_PRE_OPEN,this.onK33ComboPreOpen);')&&V.includes('tempCB.parent.setChildIndex(tempCB,tempCB.parent.numChildren - 1);'),'video: an opening list comes to the front');
 assert(V.includes('cb.addEventListener(CodoComboBox.EVT_CHANGE,this.k33OnStyleChange);'),'video: a pick applies at once');
-assert(V.includes('cb.x = this.myCBDisplayMode.x;'),'video: the boxes are in the Display Mode column');
+assert(V.includes('cb.x = K33_STYLE_BOX_X;'),"video: the boxes are in the Game tab's box column");
+// video: the Game tab and the window's card (measured live, 16 November, with a debug build's dump of the display list):
+// OptionView's first child is the card every tab shares; OptionView_video has no card of its own (myBg is null, which
+// made the card-copying setup throw: no Game panel, rows drawn on the Graphics tab, a Game tab that did nothing). So
+// the Game panel draws no background and copies no card; it sits where this panel does, with this panel's section
+// header; opening it hides the shown panel and closing it shows that panel again; its listener on OptionView's tabs runs
+// ahead of OptionView's own
+{ const at=V.indexOf('private function k33GameSetup('),end=V.indexOf('\n      }\n',at),setup=V.slice(at,end);
+  assert(!/myBg|drawRect|beginFill|transform\.matrix|\.width\s*=|\.height\s*=/.test(setup),'video: no background, no card copy, no resizing in the Game setup');
+  assert(['x','y','scaleX','scaleY'].every(k=>setup.includes('this._k33Game.'+k+' = this.'+k+';')),'video: the Game panel sits where this panel does, at its scale');
+  assert(setup.includes('getQualifiedClassName(d) == "frame_window_title"'),"video: the Game tab's header is another instance of this panel's section header");
+  assert(setup.includes('this._k33GameCard = host.getChildAt(0).getBounds(this);'),"video: the card the rows are checked against is OptionView's own first child");
+  assert(setup.includes('host[name].addEventListener(BaseButton.EVT_CLICK,this.k33OnHostTab,false,100);'),"video: the Game tab's listener on OptionView's tabs runs ahead of OptionView's");
+  assert(setup.includes('this._k33GameFailed = true;')&&/if\(this\._k33GameFailed\)\s*\{\s*return; \/\/ the rows live on the Game tab only/.test(V),'video: a failed Game setup leaves no tab and makes no rows on the Graphics tab'); }
+{ const open=V.slice(V.indexOf('private function k33OnGameTab('),V.indexOf('private function k33OnHostTab('));
+  const close=V.slice(V.indexOf('private function k33GameClose('),V.indexOf('// a live language switch finished'));
+  const which=V.slice(V.indexOf('private function k33IsHostPanel('),V.indexOf('private function k33OnGameTab('));
+  assert(open.includes('d.visible = false;')&&open.includes('this._k33GameHidden.push(d);'),'video: opening Game hides the shown panel');
+  assert(close.includes('d.visible = true;')&&close.includes('this._k33GameHidden = null;'),'video: closing Game shows it again');
+  assert(which.includes('host.getChildIndex(d) == 0')&&which.includes('"header_window"')&&which.includes('indexOf("iconTab") == 0'),'video: the card, the header line and the tabs are never hidden'); }
+// the rows stay inside the window's card (live: OptionView's first child at -310,-277, 599 x 544; this panel at
+// -294,-239; so the card is at -16,-38 in this panel's coordinates)
+{ engine({k33_language:'zh'});strings_extra();global.K33_STYLE_LANGUAGE_ROW=true;
+  const g=logic('video',['k33StyleOf','k33StyleShow','k33OnStyleChange','k33OnStyleOpen','k33OnStyleClose','k33StyleRemove','k33StyleBuild','k33StyleNoteUpdate','k33StyleFrame','k33StyleHost']);
+  const card={x:-310+294,y:-277+239,width:599,height:544},boxes={};
+  Object.assign(g,{stage:{},_k33StyleRows:[],_k33StyleCombos:{},_k33StyleLabels:{},_k33StyleOpen:null,_k33StyleSync:false,_k33StyleDirty:false,
+   _k33StyleNote:null,_k33StyleNoteKey:'',_k33StyleSerial:0,_k33StyleFrames:0,_k33Game:null,_k33GameFailed:false,
+   myTFSSAO:{y:249.9},myCBSSAO:{y:244},addChild(){},
+   k33StyleText(){return {text:'',x:0,y:0,visible:true};},
+   k33StyleLabel(kind){return this._k33StyleLabels[kind]=this._k33StyleLabels[kind]||{text:'',x:0,y:0,visible:false};},
+   k33StyleCombo(kind){return boxes[kind]=boxes[kind]||{x:0,y:0,visible:false,_dp:[],_i:-1,set dataProvider(d){this._dp=d;},get dataProvider(){return this._dp;},set selectedDataIndex(i){this._i=i;},get selectedDataIndex(){return this._i;}};}});
+  g.k33StyleBuild();
+  const rows=g._k33StyleRows;assert.strictEqual(rows.length,4,'four rows on the Game tab');
+  for(const r of rows){
+   assert(r.label.x>=card.x&&r.combo.y>=card.y&&r.combo.y+24<=card.y+card.height&&r.combo.x+156<=card.x+card.width,'a row inside the card');
+  }
+  assert(g._k33StyleNote.y+16<=card.y+card.height,'the language line inside the card');
+  // a failed Game setup: no rows (they would land on the Graphics tab)
+  g._k33GameFailed=true;g._k33StyleRows=[];g.k33StyleBuild();assert.strictEqual(g._k33StyleRows.length,0,'no rows after a failed Game setup');
+  global.K33_STYLE_LANGUAGE_ROW=false; }
+// video: the Game tab. OptionView is not changed (the selector producer pins its class): the tab and its panel are made
+// by OptionView_video from OptionView's own tab button class, listen to OptionView's four tabs and close with the window
+assert(V.includes('this.k33GameSetup(); // k33: the Game tab'),'video: the Game tab is made from onInit');
+assert(V.includes('cls = getDefinitionByName(getQualifiedClassName(host.myTabOther)) as Class;'),'video: the Game tab is another instance of OptionView\'s tab button class');
+assert(V.includes('host[name].addEventListener(BaseButton.EVT_CLICK,this.k33OnHostTab,false,100);'),'video: any of OptionView\'s tabs closes the Game tab');
+assert(/override public function disable\(\) : void\s*\{[^}]*this\.k33GameClose\(\);/.test(V),'video: closing the window (OptionView disables this panel) closes the Game tab');
+assert(V.includes('this._k33GameTab.label = LocalizeUtil.localize("@K33UI_GAME_TAB");'),'video: a language switch names the Game tab again');
+assert(!/k33StyleBuild\(\);\s*\}\s*this\._k33VideoOn = true;/.test(V)&&!/this\.addChild\(cb\)|this\.addChild\(tf\)/.test(V),'video: no row is made on the Graphics tab any more');
+{ const O=read('zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/OptionView.as');
+  assert(!/k33Game|K33UI_GAME_TAB/.test(O),'OptionView.as itself stays as it was'); }
 assert(!/PadSnap|k33StyleButton|k33OnStyleClick|drawRect/.test(V),'video: no code-drawn stepper is left');
 // a code-made text field never gets "@KEY" (C1's translator would answer in the default format: black boxes)
 assert(V.includes('lab.text = LocalizeUtil.localize(K33_STYLE_LABELS[kinds[i]]);'),'video: row labels are translated before they are set');
@@ -379,11 +439,14 @@ function entries(zone){
  return out;
 }
 const used=new Set();
-for(const t of Object.values(SOURCES))for(const m of t.matchAll(/"@(K33UI_(?:LANGUAGE|GLYPHS|HUD_STYLE|LANG_[A-Z]+))"/g))used.add(m[1]);
+for(const t of Object.values(SOURCES))for(const m of t.matchAll(/"@(K33UI_(?:LANGUAGE|GLYPHS|HUD_STYLE|HUD_SWAY|GAME_TAB|LANG_[A-Z]+))"/g))used.add(m[1]);
 for(const n of literal(P,'K33_GLYPH_NAMES'))used.add('K33UI_GLYPHS_'+n);
 for(const id of ['EN','ZH'])used.add('K33UI_LANG_NAME_'+id);
 for(const id of ['STOCK','V12','V26','V33','V35','SM2'])used.add('K33UI_HUD_STYLE_'+id);
-assert.strictEqual(used.size,20,[...used].join(' '));
+for(const id of ['OFF','ON'])used.add('K33UI_HUD_SWAY_'+id);
+assert(used.has('K33UI_HUD_SWAY'),'the HUD sway label');
+assert(used.has('K33UI_GAME_TAB'),'the Game tab label');
+assert.strictEqual(used.size,24,[...used].join(' '));
 const en=entries('english_ui'),zh=entries('chinese_ui'),enx=entries('english_ui_extra'),zhx=entries('chinese_ui_extra');
 const keysPy=read('scripts/ui_keys.py');
 for(const lang of ['english','chinese']){

@@ -68,7 +68,11 @@ int main(void)
   assert(PatchZoneMergedChain("codol_english_ui",chain)==2); /* LEGACY_ZONE */
   assert(!strcmp(chain[0],"codol_english_locale") && !strcmp(chain[1],"english_locale")); /* LEGACY_ZONE */
   assert(PatchZoneMergedChain("voice_ui_mp",chain)==2 && !strcmp(chain[1],"common_ui_mp"));
-  assert(PatchZoneMergedChain("codol_zm_m1911_arms_diag",chain)==1 && !strcmp(chain[0],"m1911_arms_diag")); /* LEGACY_ZONE */
+  /* m1911_arms_diag installed on its own after the rename and was packed into common_extras later */
+  assert(PatchZoneMergedChain("codol_zm_m1911_arms_diag",chain)==2 && !strcmp(chain[0],"m1911_arms_diag") &&
+         !strcmp(chain[1],"common_extras")); /* LEGACY_ZONE */
+  assert(PatchZoneMergedChain("m1911_arms_diag",chain)==1 && !strcmp(chain[0],"common_extras")); /* LEGACY_ZONE */
+  assert(PatchZoneAllowedFor("m1911_arms_diag","zh") && PatchZoneAllowedFor("m1911_arms_diag","en"));
   assert(PatchZoneMergedChain("common_extras",chain)==0);
  }
  /* the consolidated zones keep their old zones' languages, under the new names and an older install's */

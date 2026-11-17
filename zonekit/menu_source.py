@@ -23,6 +23,8 @@ It reads the subset of the IW4 menu language a HUD needs (no event handlers, no 
             visible when ( expr )   |   visible 1
             exp text ( expr )   exp material ( expr )
             exp rect X|Y|W|H ( expr )   exp forecolor R|G|B|A ( expr )   exp backcolor R|G|B|A ( expr )
+        a menuDef's  itemOffset ( exprX ) ( exprY )  adds the two to the x and y of every itemDef after it in that
+        menuDef: "exp rect X ( x + ( exprX ) )", or "( its own exp rect X ) + ( exprX )" when it has one
         }
     }
 
@@ -284,11 +286,23 @@ def _base_item():
     return raw
 
 
-def parse_item(r):
+def _offset_group(base, extra):
+    """( ( base ) + ( extra ) ) as a token group; base is a group or a number."""
+    line = extra[0][2]
+    if isinstance(base, float):
+        b = ([("op", "-", line)] if base < 0 else []) + [("num", repr(abs(base)), line)]
+    else:
+        b = list(base)
+    return ([("op", "(", line), ("op", "(", line)] + b + [("op", ")", line), ("op", "+", line)] + list(extra) +
+            [("op", ")", line)])
+
+
+def parse_item(r, offset=None):
     raw = _base_item()
     p = {}
     floats = []
     rect_set = False
+    rect_exp = {}                       # "x" / "y": the source group of its exp rect X / Y (for itemOffset)
     r.expect("{")
     while True:
         kind, v, line = r.take()
@@ -300,6 +314,7 @@ def parse_item(r):
         elif key == "rect":
             vals = r.numbers_on_line(4, 6)
             x, y, w, h = (float(a) for a in vals[:4])
+            rect_xy = (x, y)
             horz, vert = (int(vals[4]), int(vals[5])) if len(vals) == 6 else (0, 0)
             for o in (4, 0x18):
                 struct.pack_into("<4f", raw, o, x, y, w, h)
@@ -338,8 +353,12 @@ def parse_item(r):
                 target = FLOAT_TARGETS.get((what, comp.lower()))
                 if target is None:
                     raise MenuSourceError("%s:%d: exp %s %s is not supported" % (r.where, line, what, comp))
-                floats.append({"kind": "ItemFloatExpression", "raw": struct.pack("<II", target, 0).hex().upper(),
-                               "p": {"4": compile_expression(r.group(), "%s:%d" % (r.where, line))}})
+                group = r.group()
+                if what == "rect" and comp.lower() in ("x", "y") and offset:
+                    rect_exp[comp.lower()] = group
+                else:
+                    floats.append({"kind": "ItemFloatExpression", "raw": struct.pack("<II", target, 0).hex().upper(),
+                                   "p": {"4": compile_expression(group, "%s:%d" % (r.where, line))}})
             else:
                 raise MenuSourceError("%s:%d: exp %s is not supported" % (r.where, line, what))
         else:
@@ -348,6 +367,12 @@ def parse_item(r):
             r.take()
     if not rect_set:
         raise MenuSourceError("%s: an itemDef without a rect" % r.where)
+    if offset:
+        for k, axis in enumerate(("x", "y")):
+            group = _offset_group(rect_exp.get(axis, rect_xy[k]), offset[k])
+            floats.insert(k, {"kind": "ItemFloatExpression",
+                              "raw": struct.pack("<II", FLOAT_TARGETS[("rect", axis)], 0).hex().upper(),
+                              "p": {"4": compile_expression(group, "%s: itemOffset" % r.where)}})
     p[P_FLOATS] = floats
     struct.pack_into("<i", raw, W + 0x98, len(floats))
     return {"kind": "itemDef", "raw": bytes(raw).hex().upper(), "p": p}
@@ -365,6 +390,7 @@ def parse(text, where="menu"):
             raise MenuSourceError("%s:%d: expected menuDef, got %r" % (where, line, v))
         r.expect("{")
         menu = {"name": None, "visible": None, "items": [], "stock": []}
+        offset = None
         while True:
             kind, v, line = r.take()
             if v == "}":
@@ -381,8 +407,12 @@ def parse(text, where="menu"):
             elif v == "visible":
                 r.expect("when")
                 menu["visible"] = compile_expression(r.group(), "%s:%d" % (where, line))
+            elif v == "itemOffset":
+                offset = (r.group(), r.group())
+                for g in offset:
+                    compile_expression(g, "%s:%d" % (where, line))      # reported here, not at each item
             elif v == "itemDef":
-                menu["items"].append(parse_item(r))
+                menu["items"].append(parse_item(r, offset))
             else:
                 raise MenuSourceError("%s:%d: unknown menuDef keyword %r" % (where, line, v))
             if r.peek()[1] == ";":

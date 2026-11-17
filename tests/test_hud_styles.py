@@ -144,6 +144,38 @@ def strip_gate(stmt):
     return last["p"]["8"] if (t, a) == (1, 3) else None
 
 
+def sway_parts(fe):
+    """An item's exp rect X / Y with the sway (build_hud_styles.sway): (axis, the operand before " + ", the
+    sway term's dvar) or None when the expression is not of that shape."""
+    t = struct.unpack_from("<I", bytes.fromhex(fe["raw"]))[0]
+    es = fe["p"]["4"]["p"]["4"]
+    if t not in (0, 1) or len(es) != 11:
+        return None
+    if es[0] != hs.op("(") or es[2:] != [hs.op("+")] + hs._sway_term(t) + [hs.op(")")]:
+        return None
+    return t, es[1], hs.SWAY_DVARS[t]
+
+
+def strip_sway(item):
+    """The item as it was before build_hud_styles.sway(): its own exp rect X / Y back, the added ones removed."""
+    floats, out = item["p"].get(hs.P_FLOATS, []), []
+    for fe in floats:
+        part = sway_parts(fe)
+        if part is None:
+            out.append(fe)
+            continue
+        if struct.unpack_from("<II", bytes.fromhex(part[1]["raw"])) == (1, 3):                                   # ( {old} + sway ): the item's own expression
+            out.append(dict(fe, p={"4": part[1]["p"]["8"]}))
+    raw = bytearray(bytes.fromhex(item["raw"]))
+    struct.pack_into("<i", raw, W + 0x98, len(out))
+    item["raw"] = raw.hex().upper() if item["raw"] == item["raw"].upper() else raw.hex()
+    if out:
+        item["p"][hs.P_FLOATS] = out
+    else:
+        item["p"].pop(hs.P_FLOATS, None)
+    return item
+
+
 class HudStyles(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -215,7 +247,7 @@ class HudStyles(unittest.TestCase):
                 # each stock item (and the survival HUD's own gating of it, and its Survival panel) is intact
                 # under the style gate
                 for got, want in zip(items[:count], before["p"][ITEMS]):
-                    restored = copy.deepcopy(got)
+                    restored = strip_sway(copy.deepcopy(got))
                     panel = name == "scorebar_hd" and want not in self.authored["p"]["8"][1]["p"][ITEMS][:33]
                     if not panel:
                         inner = strip_gate(got["p"][IVIS])
@@ -223,7 +255,36 @@ class HudStyles(unittest.TestCase):
                             del restored["p"][IVIS]
                         else:
                             restored["p"][IVIS] = inner
+                    want = copy.deepcopy(want)
+                    if not want["p"].get(hs.P_FLOATS, True):
+                        del want["p"][hs.P_FLOATS]         # an empty list and no list are the same item
                     self.assertEqual(restored, want)
+
+    def test_every_item_sways(self):
+        # every item of the four hosts (stock, Survival panel, every style) adds cg_hudSwayX / Y to its x / y once,
+        # to its own exp rect X / Y when it has one, else to its rectClient position (the one the menu lays out)
+        for name, menu in self.menus.items():
+            for k, item in enumerate(menu["p"][ITEMS]):
+                with self.subTest(menu=name, item=k):
+                    floats = item["p"].get(hs.P_FLOATS, [])
+                    raw = bytes.fromhex(item["raw"])
+                    self.assertEqual(struct.unpack_from("<i", raw, W + 0x98)[0], len(floats))
+                    for axis in (0, 1):
+                        mine = [fe for fe in floats if struct.unpack_from("<I", bytes.fromhex(fe["raw"]))[0] == axis]
+                        self.assertEqual(len(mine), 1)
+                        part = sway_parts(mine[0])
+                        self.assertIsNotNone(part)
+                        t, d = struct.unpack_from("<II", bytes.fromhex(part[1]["raw"]))
+                        if d == 1:
+                            self.assertAlmostEqual(struct.unpack_from("<f", bytes.fromhex(part[1]["raw"]), 8)[0],
+                                                   struct.unpack_from("<f", raw, 0x18 + 4 * axis)[0], places=4)
+                        else:
+                            self.assertEqual((t, d), (1, 3))
+        # with the dvars at 0 the sway adds nothing: the item is what it was (checked above, strip_sway); the C side
+        # writes 0 once when cg_hudSway goes off
+        c = (ROOT / "src" / "hud_style.c").read_text(encoding="utf-8")
+        for d in hs.SWAY_DVARS:
+            self.assertIn('"%s"' % d, c)
 
     def test_exactly_the_selected_style_is_visible(self):
         for name, menu in self.menus.items():
@@ -424,6 +485,7 @@ class HudStyles(unittest.TestCase):
         self.assertIn("#define HUD_OD_CLIP_BAR     %d" % hs.OD_CLIP_BAR, c)
         self.assertIn("#define HUD_OD_HEALTH       %d" % hs.OD_HEALTH, c)
         self.assertIn("#define HUD_OD_WEAPON_ICON  %d" % hs.OD_WEAPON_ICON, c)
+        self.assertIn("#define HUD_OD_COMPASS      %d" % hs.OD_COMPASS, c)
         self.assertIn('#define HUD_FIRE_DVAR       "%s"' % hs.FIRE_DVAR, c)
         self.assertIn('#define HUD_ASSISTS_DVAR    "%s"' % hs.ASSISTS_DVAR, c)
         v = (ROOT / "src/audio/voice.c").read_text(encoding="utf-8")
@@ -550,7 +612,17 @@ class HudStyles(unittest.TestCase):
         self.assertEqual(menus.expr(b["p"][str(W + 0xA8)]), '( "x" + player "stockAmmo" ) )')
         menus.encode_menulist({"kind": "MenuList", "raw": "00" * 12, "p": {"0": "x", "8": [
             dict(self.stock["weaponbar_hd"], p=dict(self.stock["weaponbar_hd"]["p"], **{ITEMS: [a, b]}))]}})
+        # itemOffset: every later item's x / y gains the two expressions, an own exp rect X included
+        (d,) = menu_source.parse('''menuDef { name "x" itemDef { rect 1 2 3 4 }
+            itemOffset ( dvarint("ox") ) ( 2 )
+            itemDef { rect -5 6 7 8 exp rect X ( 9 ) exp rect W ( 1 ) } }''')
+        self.assertEqual(d["items"][0]["p"][str(W + 0x9C)], [])
+        fx, fy, fw = d["items"][1]["p"][str(W + 0x9C)]
+        self.assertEqual([struct.unpack_from("<I", bytes.fromhex(f["raw"]))[0] for f in (fx, fy, fw)], [0, 1, 2])
+        self.assertEqual(menus.expr(fx["p"]["4"]), '( ( ( 9 ) ) + ( dvarint "ox" ) ) )')
+        self.assertEqual(menus.expr(fy["p"]["4"]), '( ( 6 ) + ( 2 ) )')
         for bad in ('menuDef { name "x" itemDef { rect 0 0 1 1 visible when ( nosuchfunction() ) } }',
+                    'menuDef { name "x" itemOffset ( nosuchfunction() ) ( 0 ) itemDef { rect 0 0 1 1 } }',
                     'menuDef { name "x" itemDef { rect 0 0 1 1 visible when ( weaponname ) } }',
                     'menuDef { name "x" itemDef { rect 0 0 1 1 visible when ( ( 1 ) } }',
                     'menuDef { name "x" itemDef { style 3 } }'):

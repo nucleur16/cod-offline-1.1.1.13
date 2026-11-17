@@ -35,7 +35,8 @@ writes through `CFunctionContainerCommon.setdvar(name, String(value))`.
 |---|---|---|---|
 | Language (switched off) | `k33_language` (string, archived) | the ids of `k33_languageList`, `;`-separated (`en;zh`) | `K33UI_LANG_NAME_<ID>` |
 | Button icons | `gpad_glyphs` (int, archived, 0..6) | 0 Auto, 1 Xbox, 2 PlayStation, 3 Wii U / Switch, 4 Generic, 5 Text only, 6 Keyboard & mouse | `K33UI_GLYPHS_AUTO / XBOX / PS / NINTENDO / GENERIC / TEXT / KBM` |
-| HUD style | `k33_hudStyle` (int, archived) | the numbers of `k33_hudStyleList`, `;`-separated `number:id` pairs (`0:stock;2:v26;3:v33`) | `K33UI_HUD_STYLE_<ID>` (`STOCK`, `V12`, `V26`, `V33`, `V35`) |
+| HUD style | `k33_hudStyle` (int, archived) | the numbers of `k33_hudStyleList`, `;`-separated `number:id` pairs (`0:stock;2:v26;3:v33`) | `K33UI_HUD_STYLE_<ID>` (`STOCK`, `V12`, `V26`, `V33`, `V35`, `SM2`) |
+| HUD sway (16 November 2026) | `cg_hudSway` (int, archived, 0..1; docs/HUD_STYLES_20261112.md "HUD sway") | 0 Off, 1 On; the row is there when the HUD style row is | `K33UI_HUD_SWAY_OFF / ON`, label `K33UI_HUD_SWAY` |
 
 Also read: `k33_languageState` (0 idle, 1 switching, 2 saved and applies on the
 next start), `k33_languageSerial` (moves when a live switch has finished), and
@@ -86,6 +87,8 @@ and skin. The box is made once per row, after the tab is on the stage (a
   the texture rows (x 298). The label sits by its box as the Graphics rows'
   labels do (`myTFSSAO.y - myCBSSAO.y`) and has their font, size and colour.
   With the Language row switched on there are three rows, at y 399 / 421 / 443.
+  **Superseded on 16 November 2026: these rows moved to the Game tab (below, "Game tab").** The Graphics tab has
+  none of them any more.
 - The list is `[{label, id}]`: the choice's translated name and the value its
   dvar takes. It opens **upwards** (`setDropDownAtRuntime(false)`: the rows are
   at the foot of the panel) and, like every combo box of the tab, comes to the
@@ -175,11 +178,12 @@ menu label fed by them does not follow the override. None of the rows uses them.
 
 ## Localize keys
 
-Nineteen keys, English and Chinese, in `scripts/ui_keys.py` `NAMED` and in
+Twenty-three keys, English and Chinese, in `scripts/ui_keys.py` `NAMED` and in
 `zones/codol_{english,chinese}_ui/localize.str` with their manifests:
 `K33UI_LANGUAGE`, `K33UI_GLYPHS`, `K33UI_HUD_STYLE`, `K33UI_LANG_NAME_EN`,
 `K33UI_LANG_NAME_ZH`, `K33UI_LANG_RESTART`, `K33UI_LANG_SWITCHING`, seven
-`K33UI_GLYPHS_*`, five `K33UI_HUD_STYLE_*`.
+`K33UI_GLYPHS_*`, six `K33UI_HUD_STYLE_*` (with `SM2`), and `K33UI_HUD_SWAY` ("HUD sway" / "HUD 晃动"),
+`K33UI_HUD_SWAY_OFF` ("Off" / "关"), `K33UI_HUD_SWAY_ON` ("On" / "开").
 
 They are entered once per language, in `<language>_ui`, and not again in
 `<language>_ui_extra` (where `codoingame.gfx`'s other keys live). Both string zones
@@ -207,7 +211,7 @@ node tests/ui_style_rows_test.js
 `tests/ui_style_rows_test.js` (in `tests/run_tests.sh`) runs the rows' actual
 ActionScript from both sources against a fake dvar table: list parsing, missing
 dvars, values not in the list, wraparound, a refused set, the hold and read-back,
-a language serial change, a list that changes while open, and the nineteen keys
+a language serial change, a list that changes while open, and the twenty-three keys
 in both languages, once per pack. The language logic runs with the switch on.
 With the switch as the sources have it (off): no Language row in either menu, no
 gap, no `k33_language*` dvar read for a row. For Options > Graphics the tab's
@@ -262,6 +266,71 @@ Not seen: other resolutions and aspect ratios; an open list on the Cyborgs panel
 a list of more than seven entries; a language switch finishing while the tab is
 open (this client's DLL reports "no live switch"); anything of the Language row
 (it is switched off).
+
+### HUD sway row (16 November 2026)
+
+`cg_hudSway` is an int dvar, and C1's `Dvar_GetString` reads an int dvar's value as a string pointer: the first
+build of the row asked `Dvar_GetString("cg_hudSway")` to see whether the dvar exists, and opening Options crashed
+(AV reading 0x00000001 at 0x007739B0, the dvar's value 1). The row now never reads it as a string: it is shown
+whenever the HUD style row is (`k33StyleOptions("hud")` non-empty: the same `hud_style.c` registers both), and
+its value is read with `Dvar_GetInt`. `tests/ui_style_rows_test.js` checks that the sway row reads only
+`k33_hudStyleList` to decide. Live (`D:\CoD\k33_sm2_compass_client`, 1024x768), with the row still on the Graphics
+tab and the dvar still under its first, k33-prefixed name (now `cg_hudSway`): the row showed On, picking Off through
+the drop-down set the dvar to 0 (saved in `config_mp.cfg` after quitting), and after a restart the row showed Off. The pause menu
+row was not opened live (no headless way into the pause menu); its logic runs in `tests/ui_style_rows_test.js`.
+
+## Game tab (16 November 2026)
+
+User request: a fifth tab of the Options window, "Game" (`K33UI_GAME_TAB`, "Game" / "游戏"), holding the UI / HUD
+rows; the HUD sway row leaves the Graphics tab. All four rows moved there, top to bottom: Language (`k33_language`),
+Button icons (`gpad_glyphs`), HUD style (`k33_hudStyle`), HUD sway (`cg_hudSway`). The Graphics tab keeps only its
+own settings (Max FPS stays: it is a rendering setting, applied with the tab). The pause menu's Options list
+(codoingame.gfx `MainPause`) is a different menu and keeps its stepped rows.
+
+The HUD sway dvars were renamed the same day, with no new `k33_` name: `cg_hudSway`, `cg_hudSwayX`, `cg_hudSwayY`
+(the IW names the drop-codol branch's `tools/drop_codol_prefix.py` lists for them).
+
+How it is made, in `OptionView_video.as` only. `codo.views.OptionView` is not changed: its Source digest is pinned
+by the selector producer (`tests/test_optionview_method.py` `MethodSource`), so the tab cannot be added there without
+a new provenance record for that class as well.
+
+- The Options window's display list, measured live with a debug build (16 November): OptionView's first child is
+  the card every tab shares (a MovieClip at -310,-277, 599 x 544 in OptionView's coordinates), then the three
+  panels, the tab bar's header line (`header_window`), the tab buttons (`iconTab_blue2`), the close button and the
+  title. `OptionView_video` has no card of its own: its `myBg` is null. The panels' bounds are much larger than the
+  card (the Graphics panel 582 x 753): they take in the combo boxes' closed lists (156 x 335 each).
+- `k33GameSetup` (from `onInit`): the tab button is another instance of OptionView's own tab button class
+  (`myTabOther`'s), one tab pitch right of the Controller tab; the panel (`k33PanelGame`) is a child of OptionView at
+  this panel's position and scale, holding another instance of this panel's section header (`frame_window_title`),
+  the tab's name over it (`myTFBase`'s format) and the rows. It draws no background: the window's card is under it.
+- Opening Game hides whichever of OptionView's panels is shown (any visible child but the card, the header line,
+  the tabs, the close button, the title) and marks OptionView's tabs unselected. Any of OptionView's four tabs
+  closes it: its listener on each runs ahead of OptionView's (priority 100) and shows the hidden panel again, then
+  OptionView changes tab as usual; a click on the tab that was current selects it again (OptionView ignores a click
+  on its current tab), and a change OptionView refuses (Controls with unbound commands) is caught two frames later.
+  Closing the window closes Game too: OptionView disables this panel then (`disable()` -> `k33GameClose`).
+- If the setup fails, the half-made tab is removed and no rows are made (they would land on the Graphics tab).
+
+Two failed builds before this one, both seen live: the first drew an opaque fill over the three panels' bounds (to
+the screen's bottom right: the bounds take in the closed lists); the second copied the card from `myBg`, which is
+null, so `k33GameSetup` threw half way: a Game tab that did nothing (no panel) and the rows drawn on the Graphics
+tab. Reproduced headless with that build's exact zone (`shots3\B_now.png`, `B_game_click.png`), then the display
+list read with a debug build (`F_dump2.png`).
+- The rows are the same code as before (`k33Style*`; the shared block is still identical to `MainPause`'s), made in
+  the Game panel: labels at x 24, boxes at x 170, from y 40 one per 34 units, lists opening downwards, the language
+  line under the last row. The frame watch runs while the Graphics or the Game tab is shown.
+
+Live (16 November, `D:\CoD\k33_sm2_compass_client`, 1024x768 windowed, headless: `cl_fakeMouse` clicks through
+`k33_cmd_<pid>.txt`, pictures through `k33_shot.req`): Options opens on Graphics with none of the rows on it; Game
+selects its tab and shows Language / Button icons / HUD style / HUD sway on the card; Video goes back to Graphics
+with its Apply / Recommended / Cancel; Game again; Controller shows the controller panel and Game closes; Game from
+there; closing and reopening Options shows the tab OptionView had (Game closed). On Game, the HUD sway list opened
+downwards, Off was picked, and `config_mp.cfg` held `seta cg_hudSway "0"` after quitting.
+
+The codo.gfx movie changed (`OptionView_video` only: source,
+stored tag, `patch.txt`), so the movie chain (`tools/p2p-*-composition`) needs a successor stage before
+`tests/test_optionview_method.py`, `test_invitations_disabled.py` and `test_invitations_current_transition.py` pass
+again. That stage holds a review / authorization record, which an agent may not write; it waits for the owner.
 
 ## Manual test
 

@@ -87,7 +87,8 @@ OD_CLIP = 3001          # rounds in the clip, both hands of an akimbo weapon (C1
 OD_CLIP_BAR = 3002      # the clip gauge: the item's rect, emptied from its left end
 OD_HEALTH = 3003        # the health fill: C1's own health fraction (SM2)
 OD_WEAPON_ICON = 3004   # the weapon icon with its image's own aspect (SM2)
-HUD_OWNERDRAWS = (OD_CLIP, OD_CLIP_BAR, OD_HEALTH, OD_WEAPON_ICON)
+OD_COMPASS = 3005       # the compass strip: C1's heading tape over 120 degrees, one lap per turn, no objectives (SM2)
+HUD_OWNERDRAWS = (OD_CLIP, OD_CLIP_BAR, OD_HEALTH, OD_WEAPON_ICON, OD_COMPASS)
 # ownerDraw numbers none of the four hosts' stock items uses, that an authored style may use because they were seen
 # drawing in a client (docs/HUD_STYLES_20261112.md "SM2"): IW4's numbering, which 1.1.1.13's HUD numbers follow
 # wherever both are known (103, 104, 120, 150..175)
@@ -834,6 +835,36 @@ def references(node):
     return {"kind": node["kind"], "raw": node["raw"], "p": {k: references(v) for k, v in node["p"].items()}}
 
 
+# The HUD sway (hud_style.c HudSwayTick, cg_hudSway): every item of the four hosts, stock and styled, in this zone and
+# in the survival HUD's menufile, moves by these two dvars (hundredths of a 640x480 unit; 0 while the sway is off).
+SWAY_DVARS = ("cg_hudSwayX", "cg_hudSwayY")
+P_FLOATS = str(W13 + 0x9C)
+
+
+def _sway_term(axis):
+    return [op("("), op("dvarint"), string(SWAY_DVARS[axis]), op(")"), op("*"), number(0.01), op(")")]
+
+
+def sway(item):
+    """Add the sway to the item's x and y: an existing exp rect X / Y becomes ( {it} + sway ), an item without one
+    gets ( its rectClient x / y + sway ). rectClient (+0x18) is the item's own position, the one an exp rect X / Y
+    replaces (rect, +4, is laid out: rectClient plus the menu's origin, scorebar_hd's y -20)."""
+    floats = item["p"].setdefault(P_FLOATS, [])
+    raw = bytearray(bytes.fromhex(item["raw"]))
+    for axis in (0, 1):
+        mine = [fe for fe in floats if struct.unpack_from("<I", bytes.fromhex(fe["raw"]))[0] == axis]
+        for fe in mine:
+            fe["p"]["4"] = statement([op("("), nested(fe["p"]["4"]), op("+")] + _sway_term(axis) + [op(")")])
+        if not mine:
+            base = struct.unpack_from("<f", raw, 0x18 + 4 * axis)[0]
+            floats.insert(axis, {"kind": "ItemFloatExpression", "raw": struct.pack("<II", axis, 0).hex().upper(),
+                                 "p": {"4": statement([op("("), number(base), op("+")] + _sway_term(axis) +
+                                                      [op(")")])}})
+    struct.pack_into("<i", raw, W13 + 0x98, len(floats))
+    item["raw"] = raw.hex().upper() if item["raw"] == item["raw"].upper() else raw.hex()    # the source's case
+    return item
+
+
 def set_items(menu, items):
     menu["p"][str(W13 + 0x78)] = items
     raw = bytearray(bytes.fromhex(menu["raw"]))
@@ -862,7 +893,7 @@ def merge(stock_menu, parts):
             it = copy.deepcopy(it)
             it["p"][items] = gate_style(n, it["p"].get(items))
             out.append(it)
-    set_items(menu, out)
+    set_items(menu, [sway(it) for it in out])
     return menu
 
 
@@ -917,6 +948,9 @@ def fold_survival(authored, original, parts=None):
                 it["p"][ivis] = gate_style(n, it["p"].get(ivis), survival=(name == "scorebar_hd" and own))
                 extra.append(it)
         set_items(menu, items + extra)
+    # the sway on every item of both menus: the stock ones, the Survival panel's and the styles'
+    for menu in result["p"]["8"]:
+        set_items(menu, [sway(it) for it in menu["p"].get(str(W13 + 0x78), [])])
     return result
 
 

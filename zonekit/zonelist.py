@@ -14,8 +14,9 @@ manifest names those blobs by sha1 and the build takes them from the stock zone 
 the stored tag), not FFDec's decompile: --decompile keeps those files instead of exporting over them.
 The usermap map zones themselves (mp_*.ff, zm_sumpf_sh.ff and their _load zones) are not part of this repository.
 The client_shipRetail\patch zones below are source zones: they install inside the consolidated zones of zone_packs/
-(zonekit/packs.py: common_extras, common_ui_mp, common_postgfx_mp, english_locale,
-chinese_locale), except infected_cyborg_postgfx_mp, which installs on its own.
+(zonekit/packs.py: common_extras, common_ui_mp, common_postgfx_mp, english_locale, chinese_locale), except
+infected_cyborg_postgfx_mp (C#-written: its assets point into its own runtime blocks) and the mp_weapons zones (the
+sh1x server mounts mp_*.ff), which install on their own.
 """
 
 PATCH = "client_shipRetail/patch"
@@ -48,6 +49,11 @@ LEGACY_NAME = {
     "english_locale": "codol_english_locale",  # LEGACY_ZONE
     "chinese_locale": "codol_chinese_locale",  # LEGACY_ZONE
 }
+# Zones that installed under their own (new) name and were packed later: {name: the pack}. An install from before
+# that still has <name>.ff; kernel33.c skips it once the pack is in the patch folder (patch_locale_policy.h).
+PACKED_LATER = {
+    "m1911_arms_diag": "common_extras",  # LEGACY_ZONE
+}
 CHINESE = "client_shipRetail/chinese"
 
 FONTS = "patch_code_post_gfx_mp:scaleform/fonts_ingame.gfx"
@@ -76,6 +82,7 @@ ZONES = {
                                                     "common_gametype_zm", "patch_common_mp"]),
     "loading_mode_names": dict(origin="Z:" + PATCH, install=PATCH),
     "zm_deathmachine_audio": dict(origin="Z:" + PATCH, install=PATCH),
+    # the eight upgraded M1911 xanims (zonekit/xanim_opposite_arm.py); part of common_extras, with its script strings
     "m1911_arms_diag": dict(origin="new", install=PATCH),
     # the in-match movies, shared by both languages (codol-classic's English codohud / codoingame with every text a
     # localize key, the Chinese entries here, the English ones in english_ui_extra) and the pause menu's pad
