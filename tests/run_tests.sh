@@ -48,6 +48,8 @@ python -B tests/test_survival_kiosk_menus.py
 python -B tests/test_survival_wave_overrides.py
 python -B tests/test_survival_hud.py
 python -B tests/test_hud_styles.py
+# The Scaleform movies spell the IW-style console names (tools/rename_movie_strings.py).
+python -B tests/test_movie_names.py
 # The console in every profile and its command sync with the pinned match server (docs/OFFLINE_CONSOLE_20261112.md).
 python -B tests/test_offline_console.py
 # The GSC the build stages is scripts/gsc (README.md, "GSC scripts"); its drift from the server's pin is informational.

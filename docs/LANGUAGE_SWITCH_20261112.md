@@ -1,4 +1,4 @@
-# Language switch while the game runs (`k33_language`), 2026-11-12 / 2026-11-13
+# Language switch while the game runs (`loc_languageName`), 2026-11-12 / 2026-11-13
 
 `src/locale_switch.c`, `src/locale_switch_policy.h`, `src/patch_locale_policy.h`, the patch-folder code in
 `src/kernel33.c`, `zone_packs/common_extras.csv`, `zone_packs/english_locale.csv`.
@@ -24,14 +24,14 @@ the present mechanism costs nothing.
 
 | name | type | meaning |
 |---|---|---|
-| `k33_language` | string, archived | The requested language: a name of `k33_languageList`. Set it (`setdvar` from a movie, the console, `k33_setlanguage`) to change the language. `English`/`Chinese`/any case are accepted and stored as the list's spelling. A name that is not in the list is logged and put back. |
-| `k33_languageList` | string, read only | Installed languages, sorted, `;` separated: `en;zh`. `zh` is always there (C1's own text); any other name is there when `client_shipRetail\patch\` holds a zone of that language. Fixed for the session. |
-| `k33_languageState` | int, read only | `0` idle: `k33_language` is on screen. `1` switching: set in the frame that accepts the request (the unload and the load's queueing happen in that frame); back to 0 when C1's database has linked the new zone (measured 15-550 ms; at most 60 s, then 2). `2` restart needed: the request is saved and applies on the next start; the screen keeps the previous language. Setting `k33_language` back to the language on screen returns to `0`. |
-| `k33_languageSerial` | int, read only | Starts at 0, +1 each time the language on screen changed. Anything that holds translated text re-creates it when this changes. |
-| `k33_setlanguage <name>` | command | `set k33_language <name>` after checking the name; without a name prints the list, the language on screen, state and serial. |
+| `loc_languageName` | string, archived | The requested language: a name of `loc_languageList`. Set it (`setdvar` from a movie, the console, `loc_setLanguage`) to change the language. `English`/`Chinese`/any case are accepted and stored as the list's spelling. A name that is not in the list is logged and put back. |
+| `loc_languageList` | string, read only | Installed languages, sorted, `;` separated: `en;zh`. `zh` is always there (C1's own text); any other name is there when `client_shipRetail\patch\` holds a zone of that language. Fixed for the session. |
+| `loc_languageState` | int, read only | `0` idle: `loc_languageName` is on screen. `1` switching: set in the frame that accepts the request (the unload and the load's queueing happen in that frame); back to 0 when C1's database has linked the new zone (measured 15-550 ms; at most 60 s, then 2). `2` restart needed: the request is saved and applies on the next start; the screen keeps the previous language. Setting `loc_languageName` back to the language on screen returns to `0`. |
+| `loc_languageSerial` | int, read only | Starts at 0, +1 each time the language on screen changed. Anything that holds translated text re-creates it when this changes. |
+| `loc_setLanguage <name>` | command | `set loc_languageName <name>` after checking the name; without a name prints the list, the language on screen, state and serial. |
 | `loc_tableStats [label]`, `loc_cycle <n>`, `loc_forceUnload` | commands, local-testing builds only | log entry / localize / stack use; switch n times; let the next switch unload a zone that is not the top of its stack (measurement only: it corrupts the stack and ends the client, see "Memory"). |
 
-A movie that did `setdvar k33_language zh` polls `k33_languageSerial` / `k33_languageState`: serial changed -> rebuild
+A movie that did `setdvar loc_languageName zh` polls `loc_languageSerial` / `loc_languageState`: serial changed -> rebuild
 text; state 2 -> show "applies after restart". Text a movie set from a localize key is a Scaleform copy (the
 translator `0x6A5AC0` copies) and stays until the movie sets it again; text C1 draws natively (looked up per draw)
 changes at once (measured in a match: `SPECTATING` / `观战中`, `TIE` / `双方持平`, `Left Mouse - Next player`,
@@ -39,8 +39,8 @@ zombies `Round 1/9` / `回合 1/9`). What the movies do is unchanged by this wor
 change; the front end re-sets only some of its texts (measured: after a switch the Multiplayer lobby screen keeps the
 old language until it is opened again; dialogs created after the switch are in the new one).
 
-Startup order (`StartupLanguage`) is unchanged: the last valid `+set k33_language`; else `+set k33_english` /
-`+set loc_patchLang`; else the last `seta k33_language` line of `players\config_mp.cfg`; else `en`.
+Startup order (`StartupLanguage`) is unchanged: the last valid `+set loc_languageName`; else `+set loc_english` /
+`+set loc_patchLang`; else the last `seta loc_languageName` line of `players\config_mp.cfg`; else `en`.
 
 ## How it works
 
@@ -192,8 +192,8 @@ I = inferred. Every patched or called site is byte-checked in `LocaleSwitchCheck
 1. Start. `Kernel33.log`: `language: live switch installed (link hook 0x004CC61B, unload hook 0x004CD9A0)`,
    `language: "en" zone "english_locale" loaded: 8708 string(s) in place`, `language: startup: ... top
    "english_locale"`.
-2. `k33_setlanguage zh`: `"en" -> "zh" live (serial 1, ...)`; native HUD text and newly opened menus are Chinese.
+2. `loc_setLanguage zh`: `"en" -> "zh" live (serial 1, ...)`; native HUD text and newly opened menus are Chinese.
    `loc_cycle 24`: 24 `live` lines; the `after the switch` numbers are identical per language.
 3. Enter a match: `the map load adds code zones; "english_locale" is unloaded and loads again after them`;
    switch in the match; leave; switch at the front end.
-4. `set k33_language nope`: `is not an installed language`, the dvar goes back.
+4. `set loc_languageName nope`: `is not an installed language`, the dvar goes back.

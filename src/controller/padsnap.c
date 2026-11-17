@@ -4,8 +4,8 @@
  * In the front end (CTL_MODE_MENU) the left stick moves the mouse cursor (controller.c). This file makes that
  * cursor aware of the controls on screen, the way console pointer UIs (Destiny, IW4x's pad cursor) work:
  *   - the targets come from the movies themselves: codo.k33.PadSnap (zones/voice_ui_mp/.../as/codo/k33/PadSnap.as,
- *     compiled into codo.gfx and codologin.gfx) walks the display list while k33_snapscan is set and publishes
- *     every control a click would reach (k33_snapn header, k33_snap0..7 rectangles and snap points); with a dialog
+ *     compiled into codo.gfx and codologin.gfx) walks the display list while gpad_snapScan is set and publishes
+ *     every control a click would reach (gpad_snapHeader header, gpad_snap0..7 rectangles and snap points); with a dialog
  *     up only the dialog's controls; the lists the mouse wheel scrolls come with a text signature;
  *   - magnetism: over a button-sized control a partial push is slowed and kept in the control's row (a full push
  *     and large cards keep their speed);
@@ -83,25 +83,25 @@ static void PadSnapRegisterDvars(void)
     typedef const BYTE *(__cdecl *RegStr)(const char *, const char *, unsigned, const char *);
     RegStr reg = (RegStr)(DWORD_PTR)0x00624740u;
     /* C1 keeps a registered dvar's name pointer: the names must be static */
-    static const char *const kChunk[8] = { "k33_snap0", "k33_snap1", "k33_snap2", "k33_snap3", "k33_snap4", "k33_snap5", "k33_snap6", "k33_snap7" };
-    static const char *const kCls[8] = { "k33_snapcls0", "k33_snapcls1", "k33_snapcls2", "k33_snapcls3", "k33_snapcls4", "k33_snapcls5", "k33_snapcls6", "k33_snapcls7" };
+    static const char *const kChunk[8] = { "gpad_snap0", "gpad_snap1", "gpad_snap2", "gpad_snap3", "gpad_snap4", "gpad_snap5", "gpad_snap6", "gpad_snap7" };
+    static const char *const kCls[8] = { "gpad_snapClass0", "gpad_snapClass1", "gpad_snapClass2", "gpad_snapClass3", "gpad_snapClass4", "gpad_snapClass5", "gpad_snapClass6", "gpad_snapClass7" };
     g_psOn = C1RegisterInt("gpad_menu_snap", 1, 0, 1, 0x1, "Menus: the pad's cursor snaps to buttons, list rows and sliders (1 on)");
     g_psStrength = CtlRegisterFloat("gpad_menu_snap_strength", 0.6f, 0.0f, 1.0f, 0x1,
                                     "Menu cursor magnetism: how much it slows down and pulls toward a control, and how far it settles (0 = D-pad / flick jumps only)");
 #if K33_DIAGNOSTICS
     g_psDebug = C1RegisterInt("gpad_menu_snap_debug", 0, 0, 2, 0, "Menu cursor snapping diagnostics (1 decisions, 2 also every target list)");
 #endif
-    g_psScan = C1RegisterInt("k33_snapscan", 0, 0, 2, 0, "Kernel33 -> codo.k33.PadSnap: publish the controls (1), with their classes (2)");
-    g_psN = reg("k33_snapn", "", 0, "codo.k33.PadSnap: seq targets chunks stageW stageH mouseX mouseY ms nodes hidden movie (read only)");
-    reg("k33_snaperr", "", 0, "codo.k33.PadSnap: its last ActionScript error (read only)");
-    reg("k33_snapprobe", "", 0, "codo.k33.PadSnap: \"x y\" (stage) to describe instead of the mouse position (gpad_snapdump)");
-    reg("k33_snapat", "", 0, "codo.k33.PadSnap: with k33_snapscan 2, what is under the mouse (read only)");
-    static const char *const kHid[4] = { "k33_snaphid0", "k33_snaphid1", "k33_snaphid2", "k33_snaphid3" };
+    g_psScan = C1RegisterInt("gpad_snapScan", 0, 0, 2, 0, "Kernel33 -> codo.k33.PadSnap: publish the controls (1), with their classes (2)");
+    g_psN = reg("gpad_snapHeader", "", 0, "codo.k33.PadSnap: seq targets chunks stageW stageH mouseX mouseY ms nodes hidden movie (read only)");
+    reg("gpad_snapError", "", 0, "codo.k33.PadSnap: its last ActionScript error (read only)");
+    reg("gpad_snapProbe", "", 0, "codo.k33.PadSnap: \"x y\" (stage) to describe instead of the mouse position (gpad_snapdump)");
+    reg("gpad_snapAt", "", 0, "codo.k33.PadSnap: with gpad_snapScan 2, what is under the mouse (read only)");
+    static const char *const kHid[4] = { "gpad_snapHidden0", "gpad_snapHidden1", "gpad_snapHidden2", "gpad_snapHidden3" };
     for (int i = 0; i < 4; i++)
-        g_psHid[i] = reg(kHid[i], "", 0, "codo.k33.PadSnap: with k33_snapscan 2, the controls a click cannot reach and what covers them (read only)");
+        g_psHid[i] = reg(kHid[i], "", 0, "codo.k33.PadSnap: with gpad_snapScan 2, the controls a click cannot reach and what covers them (read only)");
     for (int i = 0; i < 8; i++) {
         g_psChunk[i] = reg(kChunk[i], "", 0, "codo.k33.PadSnap: targets \"x y w h px py kind\" (read only)");
-        g_psCls[i] = reg(kCls[i], "", 0, "codo.k33.PadSnap: the targets' classes with k33_snapscan 2 (read only)");
+        g_psCls[i] = reg(kCls[i], "", 0, "codo.k33.PadSnap: the targets' classes with gpad_snapScan 2 (read only)");
     }
 }
 
@@ -188,7 +188,7 @@ static void PadSnapFrame(void)
         want = (g_psDumpUntil && (LONG)(now - g_psDumpUntil) < 0) ? 2 : 1;
     if (want != g_psScanSent && g_c1CbufOk) {
         char cmd[40];
-        _snprintf(cmd, sizeof(cmd), "set k33_snapscan %d\n", want);
+        _snprintf(cmd, sizeof(cmd), "set gpad_snapScan %d\n", want);
         C1CbufAddText(cmd);
         g_psScanSent = want;
         if (!want) g_psCount = 0;
@@ -525,10 +525,10 @@ static void __cdecl PsCmdDump(void)
     float x = -1, y = -1;
     if (h) PsCursor(h, &x, &y);
     C1Printf("padsnap: %s, header \"%s\", %d targets, age %lu ms, cursor %.0f,%.0f, err \"%s\"\n",
-             PsEnabled() ? "on" : "off", g_psHeader, g_psCount, (unsigned long)(GetTickCount() - g_psAt), x, y, PsStr(PsFind("k33_snaperr")));
+             PsEnabled() ? "on" : "off", g_psHeader, g_psCount, (unsigned long)(GetTickCount() - g_psAt), x, y, PsStr(PsFind("gpad_snapError")));
     Log("padsnap: dump: %s, scan %d, header \"%s\", %d targets, age %lu ms, cursor %.0f,%.0f (the movie's mouse maps to %.0f,%.0f;"
         " scale %.3f origin %.0f,%.0f), err \"%s\"", PsEnabled() ? "on" : "off", C1DvarInt(g_psScan, -1), g_psHeader, g_psCount,
-        (unsigned long)(GetTickCount() - g_psAt), x, y, g_psMouseX, g_psMouseY, g_psK, g_psOx, g_psOy, PsStr(PsFind("k33_snaperr")));
+        (unsigned long)(GetTickCount() - g_psAt), x, y, g_psMouseX, g_psMouseY, g_psK, g_psOx, g_psOy, PsStr(PsFind("gpad_snapError")));
     char cls[8][900];
     int nc = 0;
     for (int c = 0; c < 8; c++) { lstrcpynA(cls[c], PsStr(g_psCls[c]), sizeof(cls[c])); if (cls[c][0]) nc = c + 1; }
@@ -549,7 +549,7 @@ static void __cdecl PsCmdDump(void)
     }
     {
         char at[1100];
-        lstrcpynA(at, PsStr(PsFind("k33_snapat")), sizeof(at));
+        lstrcpynA(at, PsStr(PsFind("gpad_snapAt")), sizeof(at));
         for (char *tok = strtok(at, "/"); tok; tok = strtok(NULL, "/")) Log("padsnap: at: %s", tok);
     }
     {   /* what covers each control a click cannot reach, one per line */

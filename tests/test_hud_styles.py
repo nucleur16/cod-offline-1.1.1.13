@@ -1,7 +1,7 @@
 """The selectable HUD styles (tools/build_hud_styles.py, hud_style.c): portable, no game files.
 
 What is checked is what can be checked without a client: the generated zone is what the sources give, the stock HUD
-is untouched under its gate, exactly one style's items can be visible for any k33_hudStyle, every kept item uses only
+is untouched under its gate, exactly one style's items can be visible for any cg_hudStyle, every kept item uses only
 what 1.1.1.13 has, and the DLL publishes the list the zone was built for. docs/HUD_STYLES_20261112.md lists what still
 needs a live client.
 """
@@ -195,7 +195,7 @@ class HudStyles(unittest.TestCase):
         self.assertEqual(json.loads((z / "menufile/hud_styles.json").read_text(encoding="utf-8")), self.own)
         self.assertEqual((z / "menufile/hud_styles.txt").read_text(encoding="utf-8"), menus.listing(self.own))
         self.assertEqual((z / "menufile/hud_styles.report.txt").read_text(encoding="utf-8"),
-                         "k33_hudStyleList %s\n" % hs.style_list() + "\n".join(self.report) + "\n")
+                         "%sList %s\n" % (hs.DVAR, hs.style_list()) + "\n".join(self.report) + "\n")
         self.assertEqual((hs.SURVIVAL_DIR / "survival_hud_visibility.bin").read_bytes(),
                          menus.encode_menulist(self.folded))
         names = hs.carried(self.convs)
@@ -218,7 +218,10 @@ class HudStyles(unittest.TestCase):
         self.assertTrue(hs.authored("sm2") and not hs.authored("v26"))
         c = (ROOT / "src" / "hud_style.c").read_text(encoding="utf-8")
         self.assertIn('#define HUD_STYLE_LIST      "%s"' % hs.style_list(), c)
-        self.assertIn('#define HUD_STYLE_DVAR      "%s"' % hs.DVAR, c)
+        # the dvar the menus read (hs.DVAR): cg_hudStyle, or while the menu sources still spell the old name, the
+        # read-only mirror hud_style.c keeps of it (HUD_STYLE_MENU_DVAR, MENU_PENDING)
+        self.assertIn('#define HUD_STYLE_DVAR      "cg_hudStyle"', c)
+        self.assertTrue(hs.DVAR == "cg_hudStyle" or '#define HUD_STYLE_MENU_DVAR "%s"' % hs.DVAR in c, hs.DVAR)
         self.assertIn("#define HUD_STYLE_MAX       %d" % max(hs.STYLE_NUMBERS.values()), c)
         k = (ROOT / "src" / "kernel33.c").read_text(encoding="utf-8", errors="replace")
         self.assertEqual(k.count('#include "hud_style.c"'), 1)
@@ -299,7 +302,7 @@ class HudStyles(unittest.TestCase):
                 at += k
             for value in range(0, max(hs.STYLE_NUMBERS.values()) + 2):
                 shown = value if value in self.numbers else 0       # a value that is not shipped shows the stock HUD
-                with self.subTest(menu=name, k33_hudStyle=value):
+                with self.subTest(menu=name, cg_hudStyle=value):
                     self.assertTrue(visible(menu["p"].get(VIS), value))
                     for n, group in groups.items():
                         for it in group:
@@ -320,7 +323,7 @@ class HudStyles(unittest.TestCase):
                     return s == want or (s["p"]["4"] and any(
                         struct.unpack_from("<II", bytes.fromhex(e["raw"]))[:2] == (1, 3) and inner(e["p"]["8"])
                         for e in s["p"]["4"]))
-                with self.subTest(menu=name, k33_hudStyle=value):
+                with self.subTest(menu=name, cg_hudStyle=value):
                     self.assertTrue(visible(menu["p"][VIS], value, inner=inner))
                     self.assertIn(want, seen)
                     # only the selected build's rule decides: with it false the menu is hidden
@@ -329,7 +332,7 @@ class HudStyles(unittest.TestCase):
     def test_survival_keeps_its_panel_and_hides_the_score_and_streak_menus(self):
         ks, sb = self.menus["killstreaks_hd"], self.menus["scorebar_hd"]
         for value in range(0, 4):
-            with self.subTest(k33_hudStyle=value):
+            with self.subTest(cg_hudStyle=value):
                 self.assertFalse(visible(ks["p"][VIS], value, "survival"))
                 self.assertTrue(visible(ks["p"][VIS], value, "war"))
                 stock_count = len(self.stock["scorebar_hd"]["p"][ITEMS])
@@ -557,7 +560,7 @@ class HudStyles(unittest.TestCase):
             value["english"].encode("ascii")
 
     def test_sm2_is_authored_menu_source(self):
-        """sm2 (k33_hudStyle 5) is written as .menu source: every host has its menuDef, the items are what the
+        """sm2 (cg_hudStyle 5) is written as .menu source: every host has its menuDef, the items are what the
         compiler gives, the stock items it keeps are byte for byte 1.1.1.13's, and it uses only white and stock art."""
         from zonekit import menu_source
         text = (ROOT / hs.STYLES["sm2"]["menu"]).read_text(encoding="utf-8")
@@ -632,11 +635,11 @@ class HudStyles(unittest.TestCase):
     def test_gate_evaluator_reads_the_stock_shape(self):
         # ( dvarint "x" ) == 2 && {..}: one opening parenthesis, the last ")" left out, like a stock expression
         st = hs.gate_style(2, hs.statement([hs.integer(1)]))
-        self.assertEqual(menus.expr(st), '( dvarint "k33_hudStyle" ) == 2 && {1}')
+        self.assertEqual(menus.expr(st), '( dvarint "%s" ) == 2 && {1}' % hs.DVAR)
         self.assertEqual(menus.expr(hs.gate_stock([1, 2], None)),
-                         '( dvarint "k33_hudStyle" ) != 1 && dvarint "k33_hudStyle" ) != 2')
+                         '( dvarint "{0}" ) != 1 && dvarint "{0}" ) != 2'.format(hs.DVAR))
         self.assertEqual(menus.expr(hs.gate_style(2, None, survival=True)),
-                         '( dvarint "k33_hudStyle" ) == 2 && dvarstring "g_gametype" ) != "survival"')
+                         '( dvarint "%s" ) == 2 && dvarstring "g_gametype" ) != "survival"' % hs.DVAR)
         self.assertTrue(visible(st, 2) and not visible(st, 0) and not visible(st, 2, inner=lambda s: False))
 
 

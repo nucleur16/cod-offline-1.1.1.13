@@ -9,8 +9,8 @@
  *
  *   capture  WASAPI shared mode, default capture endpoint, on a worker thread; converted to 48 kHz
  *            mono and encoded with libopus (VOIP, 20 ms frames, FEC, DTX), linked statically.
- *            Push-to-talk (k33_voiceMode 0): the stream only runs while +talk is held. Voice
- *            activation (k33_voiceMode 1): it stays open in a match and a level gate (threshold,
+ *            Push-to-talk (cl_voiceMode 0): the stream only runs while +talk is held. Voice
+ *            activation (cl_voiceMode 1): it stays open in a match and a level gate (threshold,
  *            attack, hang, 120 ms pre-roll; see "capture + encode") decides what is sent.
  *   send     main thread, once per Com_EventLoop pass (call 0x595E9D -> 0x595CF0 hooked): queued
  *            frames go to clc.serverAddress as OOB "v" via C1's NET_OutOfBandData 0x5A3D60
@@ -35,10 +35,10 @@
  *   server -> client  "\xff\xff\xff\xffv\0" u8 ver=1, u8 flags, u8 talker, u16 seq, u8 n, frames
  *
  * Dvars: cl_voiceChat (master switch; "+set cl_voiceChat 0" installs nothing),
- * k33_voiceVolume (percent), cl_voiceBitrate, cl_voiceLoopback (hear yourself locally, no server),
- * cl_voiceDebug, cl_voiceTone, k33_voiceMode (0 push-to-talk, 1 voice activation), k33_voiceThreshold
- * (0..100 = -60..0 dBFS), cl_voiceHangMs, k33_voiceMicMute, k33_voiceLevel (live, read only),
- * k33_voiceMeter (Options > Audio's meter request). Commands: +talk, -talk, toggletalk, cl_voiceStatus
+ * cl_voiceVolume (percent), cl_voiceBitrate, cl_voiceLoopback (hear yourself locally, no server),
+ * cl_voiceDebug, cl_voiceTone, cl_voiceMode (0 push-to-talk, 1 voice activation), cl_voiceThreshold
+ * (0..100 = -60..0 dBFS), cl_voiceHangMs, cl_voiceMicMute, cl_voiceLevel (live, read only),
+ * cl_voiceMeter (Options > Audio's meter request). Commands: +talk, -talk, toggletalk, cl_voiceStatus
  * (status), cl_voiceMute <client>.
  * Options > Audio's Voice section (voice_ui_mp: zones/voice_ui_mp/.../as/codo/views/option_sub/OptionView_audio.as) sets these.
  *
@@ -234,8 +234,8 @@ static void VoiceDevRelease(VoiceDev *d)
  * The audio thread lists the active capture endpoints (EnumAudioEndpoints eCapture, DEVICE_STATE_ACTIVE,
  * PKEY_Device_FriendlyName) when it starts and whenever Windows reports a device change
  * (IMMNotificationClient), into g_inIds / g_inNames (names in code page 936, what C1 shows; a character
- * GBK lacks becomes '?'). The main thread publishes the names as k33_voiceInputList ("Default;name;..."),
- * the chosen one's position as k33_voiceInputIndex, and turns Options > Audio's pick (k33_voiceInputPick,
+ * GBK lacks becomes '?'). The main thread publishes the names as cl_voiceInputList ("Default;name;..."),
+ * the chosen one's position as cl_voiceInputIndex, and turns Options > Audio's pick (cl_voiceInputPick,
  * an index) into cl_voiceInputDevice (archived: the endpoint ID; empty = Windows' default
  * communications device). The capture stream is reopened on the chosen endpoint as soon as the choice
  * changes; a chosen device that is missing falls back to the default (logged), and is taken again when it
@@ -442,7 +442,7 @@ static void VoiceSampleOut(const VoiceDev *d, BYTE *frame, float v)
  * the stream only meters (the Options > Audio Input Level). Every 20 ms frame goes through
  * VoiceProcessFrame on the audio thread:
  *
- *   level   RMS of the frame in dBFS, mapped -60..0 dBFS -> 0..100 (k33_voiceThreshold's scale).
+ *   level   RMS of the frame in dBFS, mapped -60..0 dBFS -> 0..100 (cl_voiceThreshold's scale).
  *   attack  the gate opens after two frames in a row at or above the threshold (40 ms), or at once
  *           on a frame 15 above it (a loud onset).
  *   hang    every frame within 8 of the threshold (about 5 dB hysteresis) restarts cl_voiceHangMs
@@ -834,36 +834,36 @@ static void VoiceRegisterDvars(void)
     const BYTE *(*reg)(const char *, int, int, int, unsigned, const char *) = C1RegisterInt;
     g_voiceDvarsDone = TRUE;
     g_dvVoice = reg("cl_voiceChat", 1, 0, 1, 0x1, "Voice chat: 1 on, 0 off (+set cl_voiceChat 0 on the command line installs nothing)");
-    g_dvVolume = reg("k33_voiceVolume", 100, 0, 400, 0x1, "Voice chat playback volume in percent");
+    g_dvVolume = reg("cl_voiceVolume", 100, 0, 400, 0x1, "Voice chat playback volume in percent");
     g_dvBitrate = reg("cl_voiceBitrate", 24000, 6000, 64000, 0x1, "Opus voice bitrate (bits per second)");
 #if K33_DIAGNOSTICS
     g_dvLoopback = reg("cl_voiceLoopback", 0, 0, 1, 0, "Play your own voice back locally instead of sending it");
     g_dvDebug = reg("cl_voiceDebug", 0, 0, 2, 0, "Voice chat diagnostics in the console");
     g_dvTone = reg("cl_voiceTone", 0, 0, 2, 0, "Transmit a 440 Hz test tone instead of the microphone (2: in bursts)");
 #endif
-    g_dvMode = reg("k33_voiceMode", 0, 0, 1, 0x1, "Voice chat transmit mode: 0 push-to-talk, 1 voice activation (open mic gated by level)");
-    g_dvThreshold = reg("k33_voiceThreshold", 30, 0, 100, 0x1,
+    g_dvMode = reg("cl_voiceMode", 0, 0, 1, 0x1, "Voice chat transmit mode: 0 push-to-talk, 1 voice activation (open mic gated by level)");
+    g_dvThreshold = reg("cl_voiceThreshold", 30, 0, 100, 0x1,
                         "Voice activation level, 0..100 = -60..0 dBFS (RMS); cl_voiceStatus shows the live mic level");
     g_dvHang = reg("cl_voiceHangMs", 400, 0, 3000, 0x1, "Voice activation: keep transmitting this long after the level drops");
-    g_dvMicMute = reg("k33_voiceMicMute", 0, 0, 1, 0x1, "Microphone off (Options > Audio > Microphone)");
-    g_dvLevel = reg("k33_voiceLevel", 0, -1, 100, 0, "Live microphone level 0..100 (read only; -1 no microphone)");
-    g_dvMeter = reg("k33_voiceMeter", 0, 0, 1, 0, "Set by Options > Audio while shown: open the mic to meter it (nothing is sent)");
+    g_dvMicMute = reg("cl_voiceMicMute", 0, 0, 1, 0x1, "Microphone off (Options > Audio > Microphone)");
+    g_dvLevel = reg("cl_voiceLevel", 0, -1, 100, 0, "Live microphone level 0..100 (read only; -1 no microphone)");
+    g_dvMeter = reg("cl_voiceMeter", 0, 0, 1, 0, "Set by Options > Audio while shown: open the mic to meter it (nothing is sent)");
     {
         typedef const BYTE *(__cdecl *RegStr)(const char *, const char *, unsigned, const char *);
         RegStr regs = (RegStr)(DWORD_PTR)0x00624740u;
         g_dvInDevice = regs("cl_voiceInputDevice", "", 0x1, "Microphone: Windows endpoint ID (empty = the default communications device)");
         if (g_dvInDevice) C1MigrateRenamed("cl_voiceInputDevice");
-        g_dvInList = regs("k33_voiceInputList", "", 0, "Microphones for Options > Audio: Default;name;... (read only)");
+        g_dvInList = regs("cl_voiceInputList", "", 0, "Microphones for Options > Audio: Default;name;... (read only)");
     }
-    g_dvInPick = reg("k33_voiceInputPick", -1, -1, 64, 0, "Set by Options > Audio: choose the microphone at this position of k33_voiceInputList");
-    g_dvInIndex = reg("k33_voiceInputIndex", 0, 0, 64, 0, "The chosen microphone's position in k33_voiceInputList (read only)");
+    g_dvInPick = reg("cl_voiceInputPick", -1, -1, 64, 0, "Set by Options > Audio: choose the microphone at this position of cl_voiceInputList");
+    g_dvInIndex = reg("cl_voiceInputIndex", 0, 0, 64, 0, "The chosen microphone's position in cl_voiceInputList (read only)");
 
     /* C1 does not apply "+set" from the command line to a dvar registered this late (and runs no
      * "+command" at all), so re-issue ours: "+set cl_voiceLoopback 1", "+toggletalk". */
-    static const char *const kMine[] = { "cl_voiceChat", "k33_voiceVolume", "cl_voiceBitrate",
+    static const char *const kMine[] = { "cl_voiceChat", "cl_voiceVolume", "cl_voiceBitrate",
                                          "cl_voiceLoopback", "cl_voiceDebug", "cl_voiceTone",
-                                         "k33_voiceMode", "k33_voiceThreshold", "cl_voiceHangMs",
-                                         "k33_voiceMicMute" };
+                                         "cl_voiceMode", "cl_voiceThreshold", "cl_voiceHangMs",
+                                         "cl_voiceMicMute" };
     const char *cl = GetCommandLineA();
     for (unsigned i = 0; cl && i < sizeof(kMine) / sizeof(kMine[0]); i++) {
         char pat[64], cmd[96];
@@ -883,7 +883,7 @@ static BOOL VoiceEnabled(void) { return VoiceDvarInt(g_dvVoice, 1) != 0 && !g_ui
 
 static BOOL VoiceMicMuted(void) { return VoiceDvarInt(g_dvMicMute, 0) != 0 || g_micMuted; }
 
-/* A read-only dvar's value (k33_voiceLevel) or a consumed request (k33_voiceMeter) written in place:
+/* A read-only dvar's value (cl_voiceLevel) or a consumed request (cl_voiceMeter) written in place:
  * the current integer at dvar+0xC, as C1DvarInt reads it. Main thread. */
 static void VoiceDvarPoke(const BYTE *d, int v)
 {
@@ -1202,7 +1202,7 @@ static void VoiceInputTick(void)
         char cmd[260];
         EnterCriticalSection(&g_voiceLock);
         const char *id = pick > 0 && pick <= g_inCount ? g_inIds[pick - 1] : "";
-        _snprintf(cmd, sizeof(cmd), "set cl_voiceInputDevice \"%s\"; set k33_voiceInputPick -1\n", id);
+        _snprintf(cmd, sizeof(cmd), "set cl_voiceInputDevice \"%s\"; set cl_voiceInputPick -1\n", id);
         LeaveCriticalSection(&g_voiceLock);
         C1CbufAddText(cmd);
         VoiceDvarPoke(g_dvInPick, -1);
@@ -1217,7 +1217,7 @@ static void VoiceInputTick(void)
             if (want[0] && !strcmp(g_inIds[i], want)) index = i + 1;
         }
         LeaveCriticalSection(&g_voiceLock);
-        _snprintf(cmd, sizeof(cmd), "set k33_voiceInputList \"%s\"\n", list);
+        _snprintf(cmd, sizeof(cmd), "set cl_voiceInputList \"%s\"\n", list);
         C1CbufAddText(cmd);
         VoiceDvarPoke(g_dvInIndex, index);
     }
@@ -1248,7 +1248,7 @@ __attribute__((used)) void __cdecl VoiceMainTick(void)
 
     /* What the microphone is for this pass:
      *   key    push-to-talk held / toggletalk latched: transmit (also the override in voice activation)
-     *   vad    voice activation (k33_voiceMode 1): the mic stays open in a match while the game window
+     *   vad    voice activation (cl_voiceMode 1): the mic stays open in a match while the game window
      *          has focus, and the level gate decides (scoreboard, chat line and console do not stop it)
      *   meter  Options > Audio is showing its Input Level: open the mic, send nothing */
     BOOL muted = VoiceMicMuted();
@@ -1571,7 +1571,7 @@ __attribute__((thiscall)) static void VoiceAsMicMute(void *self, const BYTE *par
     Log("voice: UI SetVoiceMicMute(%s)", has ? (v ? "true" : "false") : "?");
     if (!has) return;
     char cmd[48];
-    _snprintf(cmd, sizeof(cmd), "set k33_voiceMicMute %d\n", v ? 1 : 0);
+    _snprintf(cmd, sizeof(cmd), "set cl_voiceMicMute %d\n", v ? 1 : 0);
     if (!g_voiceDvarsDone || !C1CbufAddText(cmd)) InterlockedExchange(&g_micMuted, v);
     else InterlockedExchange(&g_micMuted, 0);
 }

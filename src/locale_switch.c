@@ -1,5 +1,5 @@
 /*
- * locale_switch.c - the language, changed while the game runs (k33_language; docs/LANGUAGE_SWITCH_20261112.md).
+ * locale_switch.c - the language, changed while the game runs (loc_languageName; docs/LANGUAGE_SWITCH_20261112.md).
  * Included by kernel33.c after voice.c (its command arguments) and k33tick.c; the pure part is locale_switch_policy.h.
  *
  * What a language is: which string a localize name (asset type 27) resolves to. A language's strings are one zone,
@@ -42,7 +42,7 @@
  * Pointers. C1 hands out raw char pointers into zone memory (0x5DA3B2 returns entry->value). After an unload the
  * old zone's block is free but still mapped; the next zone loaded there overwrites it. Scaleform text is a copy
  * (the translator 0x6A5AC0 copies), so a movie keeps the old language's text until it sets it again
- * (k33_languageSerial). MEASURED by scanning the process's writable memory for pointers into the zone's block
+ * (loc_languageSerial). MEASURED by scanning the process's writable memory for pointers into the zone's block
  * before a switch: see the doc ("Who holds pointers").
  *
  * The font movie (scaleform/fonts_ingame.gfx) must not be in the language zone: a movie Scaleform has loaded is
@@ -104,7 +104,7 @@ static DWORD g_lrZoneSig;                  /* the zone set the slots were last r
 static const BYTE *volatile g_lsDvLanguage, *volatile g_lsDvList, *volatile g_lsDvState, *volatile g_lsDvSerial;
 static BOOL g_lsDvarsDone;
 static int g_lsWanted = -1;                /* the last request that was accepted (on screen, or saved for restart) */
-static char g_lsSeen[64];                  /* k33_language as last handled */
+static char g_lsSeen[64];                  /* loc_languageName as last handled */
 static int g_lsState, g_lsSerial;
 enum { LR_PHASE_IDLE, LR_PHASE_WAIT, LR_PHASE_LOADING, LR_PHASE_STARTUP };
 static int g_lrPhase = LR_PHASE_STARTUP, g_lrTarget = -1;
@@ -176,7 +176,7 @@ static BOOL LocaleSwitchCheck(void)
 #undef LS_SAME
     g_lsCheck = !bad;
     if (bad)
-        Log("language: bytes at 0x%08lX differ; no live switch (k33_language is saved and applies on restart)",
+        Log("language: bytes at 0x%08lX differ; no live switch (loc_languageName is saved and applies on restart)",
             (unsigned long)bad);
     return g_lsCheck;
 }
@@ -434,17 +434,17 @@ static void LsRegisterDvars(void)
     g_lsDvarsDone = TRUE;
     if (!Readable((void *)(DWORD_PTR)LS_REGISTER_STRING_VA, sizeof(kRegStr)) ||
         memcmp((void *)(DWORD_PTR)LS_REGISTER_STRING_VA, kRegStr, sizeof(kRegStr)) != 0) {
-        Log("language: Dvar_RegisterString 0x%08X differs; k33_language is not registered", LS_REGISTER_STRING_VA);
+        Log("language: Dvar_RegisterString 0x%08X differs; loc_languageName is not registered", LS_REGISTER_STRING_VA);
         return;
     }
     LanguageListJoin(g_langs, g_langCount, list, sizeof(list));
-    g_lsDvLanguage = regs("k33_language", g_lang, 0x1,
-                          "Language: a name of k33_languageList. Changing it switches the game's text now when "
-                          "k33_languageState returns to 0, else on the next start (2)");
-    g_lsDvList = regs("k33_languageList", list, 0, "Installed languages, ';' separated (read only)");
-    g_lsDvState = C1RegisterInt("k33_languageState", 0, 0, 2, 0,
+    g_lsDvLanguage = regs("loc_languageName", g_lang, 0x1,
+                          "Language: a name of loc_languageList. Changing it switches the game's text now when "
+                          "loc_languageState returns to 0, else on the next start (2)");
+    g_lsDvList = regs("loc_languageList", list, 0, "Installed languages, ';' separated (read only)");
+    g_lsDvState = C1RegisterInt("loc_languageState", 0, 0, 2, 0,
                                 "0 idle, 1 switching, 2 the chosen language applies on the next start (read only)");
-    g_lsDvSerial = C1RegisterInt("k33_languageSerial", 0, 0, 0x7FFFFFFF, 0,
+    g_lsDvSerial = C1RegisterInt("loc_languageSerial", 0, 0, 0x7FFFFFFF, 0,
                                  "Counts completed live language switches: re-read text when it changes (read only)");
     /* The config ran before this dvar existed, so C1 kept its saved line as a plain string and the registration
      * adopted it; the client may have started in another language (command line, or the saved one is not installed).
@@ -453,11 +453,15 @@ static void LsRegisterDvars(void)
     g_lsSeen[sizeof(g_lsSeen) - 1] = 0;
     g_lsWanted = g_lsStartup;
     char now[64];
-    if (!C1DvarString("k33_language", now, sizeof(now)) || strcmp(now, g_lang) != 0) C1QueueSet("k33_language", g_lang);
-    if (g_lsDvList && (!C1DvarString("k33_languageList", now, sizeof(now)) || strcmp(now, list) != 0))
-        C1QueueSet("k33_languageList", list);
+    if (!C1DvarString("loc_languageName", now, sizeof(now)) || strcmp(now, g_lang) != 0) C1QueueSet("loc_languageName", g_lang);
+    if (g_lsDvList && (!C1DvarString("loc_languageList", now, sizeof(now)) || strcmp(now, list) != 0))
+        C1QueueSet("loc_languageList", list);
+    /* LEGACY_NAME: a config saved before the rename keeps "seta k33_language <name>": StartupLanguage read it
+     * (LanguageFromConfig), so the old dvar is only emptied. */
+    if (C1DvarString(LANG_OLD_LANGUAGE, now, sizeof(now)) && now[0] && C1QueueSet(LANG_OLD_LANGUAGE, ""))
+        Log("language: the value saved as " LANG_OLD_LANGUAGE " (\"%s\") is loc_languageName's now", now);
     LsPublish(LS_STATE_IDLE);
-    Log("language: k33_language \"%s\" of \"%s\"; live switch %s", g_lang, list,
+    Log("language: loc_languageName \"%s\" of \"%s\"; live switch %s", g_lang, list,
         g_lsInstalled ? "ready" : "unavailable (a change applies on restart)");
 }
 
@@ -642,7 +646,7 @@ static void LrSwitchTick(void)
     LrLogStats("after the switch", &s);
 }
 
-/* Main thread, every frame: a changed k33_language is a request. */
+/* Main thread, every frame: a changed loc_languageName is a request. */
 static void LocaleSwitchTick(void)
 {
     if (!g_lsDvarsDone) {
@@ -694,11 +698,11 @@ static void LocaleSwitchTick(void)
         }
     }
     char now[64], lang[LANG_NAME_MAX];
-    if (!C1DvarString("k33_language", now, sizeof(now))) return;
+    if (!C1DvarString("loc_languageName", now, sizeof(now))) return;
 #if K33_LOCAL_TESTING
     if (!strcmp(now, g_lsSeen) && g_lrCycles > 0 && g_lsState == LS_STATE_IDLE && g_langCount > 1) {
         g_lrCycles--;
-        C1QueueSet("k33_language", g_langs[(g_lsShown + 1) % g_langCount]);
+        C1QueueSet("loc_languageName", g_langs[(g_lsShown + 1) % g_langCount]);
         return;
     }
 #endif
@@ -707,7 +711,7 @@ static void LocaleSwitchTick(void)
     g_lsSeen[sizeof(g_lsSeen) - 1] = 0;
     int request = LanguageCanonical(now, lang) ? LanguageListFind(g_langs, g_langCount, lang) : -1;
     if (request >= 0 && strcmp(now, g_langs[request]) != 0) {   /* "English", "ZH": store the list's spelling */
-        C1QueueSet("k33_language", g_langs[request]);
+        C1QueueSet("loc_languageName", g_langs[request]);
         _snprintf(g_lsSeen, sizeof(g_lsSeen), "%s", g_langs[request]);
     }
     LsWorld w = { g_lsInstalled, g_langCount, (int)g_lsShown, LsReadyMask() };
@@ -716,8 +720,8 @@ static void LocaleSwitchTick(void)
     switch (LsDecide(&w, request)) {
     case LS_ACT_REVERT: {
         const char *back = g_lsWanted >= 0 ? g_langs[g_lsWanted] : g_lang;
-        Log("language: \"%.32s\" is not an installed language; k33_language stays \"%s\"", now, back);
-        C1QueueSet("k33_language", back);
+        Log("language: \"%.32s\" is not an installed language; loc_languageName stays \"%s\"", now, back);
+        C1QueueSet("loc_languageName", back);
         _snprintf(g_lsSeen, sizeof(g_lsSeen), "%s", back);
         break;
     }
@@ -743,25 +747,25 @@ static void LocaleSwitchTick(void)
     }
 }
 
-/* k33_setlanguage [name]: sets k33_language through the command buffer; without a name, says where things are. */
+/* loc_setLanguage [name]: sets loc_languageName through the command buffer; without a name, says where things are. */
 static void __cdecl LsCmdSetLanguage(void)
 {
     char list[LANG_MAX * LANG_NAME_MAX], lang[LANG_NAME_MAX];
     LanguageListJoin(g_langs, g_langCount, list, sizeof(list));
     if (VoiceArgc() < 2) {
         LONG shown = g_lsShown;
-        C1Printf("k33_setlanguage <%s>: \"%s\" on screen, state %d, serial %d\n", list,
+        C1Printf("loc_setLanguage <%s>: \"%s\" on screen, state %d, serial %d\n", list,
                  shown >= 0 ? g_langs[shown] : g_lang, g_lsState, g_lsSerial);
         return;
     }
     if (!LanguageCanonical(VoiceArgv(1), lang) || LanguageListFind(g_langs, g_langCount, lang) < 0) {
-        C1Printf("k33_setlanguage: not an installed language (%s)\n", list);
+        C1Printf("loc_setLanguage: not an installed language (%s)\n", list);
         return;
     }
-    if (!C1QueueSet("k33_language", lang)) C1Printf("k33_setlanguage: the command buffer is full\n");
+    if (!C1QueueSet("loc_languageName", lang)) C1Printf("loc_setLanguage: the command buffer is full\n");
 }
 
-static C1Cmd g_lsCmd = { NULL, "k33_setlanguage", (void *)LsCmdSetLanguage };
+static C1Cmd g_lsCmd = { NULL, "loc_setLanguage", (void *)LsCmdSetLanguage };
 
 #if K33_LOCAL_TESTING
 /* Test builds: "loc_tableStats [text]" logs the tables' use; "loc_cycle <n>" switches to the next language n times,
@@ -791,7 +795,7 @@ static void InstallLocaleSwitch(void)
     g_lsStartup = LanguageListFind(g_langs, g_langCount, g_lang);
     g_lsShown = g_lsStartup;
     if (!K33OnMainTick(LocaleSwitchTick)) {
-        Log("language: no main-thread tick left; k33_language is not registered (command line and saved choice only)");
+        Log("language: no main-thread tick left; loc_languageName is not registered (command line and saved choice only)");
         return;
     }
     C1AddCommand(&g_lsCmd);

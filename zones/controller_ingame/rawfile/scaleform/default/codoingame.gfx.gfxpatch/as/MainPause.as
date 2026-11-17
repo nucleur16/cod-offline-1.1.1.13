@@ -4,7 +4,7 @@ package
    // gamepad focus navigation (the "k33" parts, written for controller_ingame) for controller.c CtlPauseNav /
    // CtlDeliverSfKeys: key codes 240 up, 241 down, 242 left, 243 right, 244 select; B / Start send Escape.
    // Focus moves to the nearest visible clickable object in the pressed direction; it gets MOUSE_OVER / ROLL_OVER and
-   // select sends it MOUSE_DOWN / MOUSE_UP / CLICK. The movie is shared by both languages (k33_english).
+   // select sends it MOUSE_DOWN / MOUSE_UP / CLICK. The movie is shared by both languages (loc_english).
    //   On a pause-menu slider row (InGameMenuSliderBtn: Sensitivity, FOV, Brightness) left / right step the slider
    //   (FOV 5 degrees to the next multiple of 5, the others a twentieth of their range) instead of moving the focus,
    //   and select does nothing (a synthetic click would drag the slider to the click's stage x).
@@ -19,18 +19,18 @@ package
    //   style (and Language, which K33_STYLE_LANGUAGE_ROW switches off for now: its row and its line under the list are
    //   not made), each a slider row of the same class used as a stepped chooser (one stop per choice, the choice's
    //   name where a slider shows its number). Each reads and sets a Kernel33 dvar (CFunctionContainerCommon):
-   //     Language      k33_language, one of k33_languageList ("en;zh"); names K33UI_LANG_NAME_<ID>
-   //     Button icons  gpad_glyphs 0..6 (shown when the controller module is there: k33_padinfo is set); K33UI_GLYPHS_*
-   //     HUD style     k33_hudStyle, one of the numbers of k33_hudStyleList ("0:stock;2:v26"); K33UI_HUD_STYLE_<ID>
+   //     Language      loc_languageName, one of loc_languageList ("en;zh"); names K33UI_LANG_NAME_<ID>
+   //     Button icons  gpad_glyphs 0..6 (shown when the controller module is there: gpad_info is set); K33UI_GLYPHS_*
+   //     HUD style     cg_hudStyle, one of the numbers of cg_hudStyleList ("0:stock;2:v26"); K33UI_HUD_STYLE_<ID>
    //     HUD sway      cg_hudSway, Off / On (shown when the dvar is there); K33UI_HUD_SWAY_OFF / _ON
    //   A row whose list is empty (an older Kernel33.dll) is not added. A name without a localize entry shows the raw
    //   id. A value the list does not have shows the first choice. The rows apply at once (setdvar) and show what the
    //   dvar holds: it is read back a few frames after a change, so a value the engine refused does not stay on show.
    //   Mouse: drag or click along the bar; a click on the row's label or on the name steps to the next choice.
    //   Pad: left / right step (wrapping), select steps forward.
-   //   With the Language row, k33_languageState 1 / 2 shows a line under the list (switching / restart to apply);
+   //   With the Language row, loc_languageState 1 / 2 shows a line under the list (switching / restart to apply);
    //   its text is translated before it is set (a code-made field set to "@KEY" comes back from C1's translator in
-   //   the default format and draws as black boxes). When k33_languageSerial
+   //   the default format and draws as black boxes). When loc_languageSerial
    //   changes (a live switch finished) the open list is built again (PauseMenuView.gotoMenu of its current menu) so
    //   every row is translated again, with the view's fixed labels; the pad focus stays on the row it was on.
    //   The same k33Style* functions are in codo.gfx's OptionView_video (tests/ui_style_rows_test.js runs both).
@@ -92,7 +92,7 @@ package
          {
             originalCyborgPauseClass = CodoPageViewDBPause.VIEW_PAUSE_CYBORGS.src;
          }
-         CodoPageViewDBPause.VIEW_PAUSE_CYBORGS.src = CFunctionContainerCommon.Dvar_GetString("codol_theatre_playback") == "1" ? CodoPageViewDBPause.VIEW_PAUSE.src : originalCyborgPauseClass;
+         CodoPageViewDBPause.VIEW_PAUSE_CYBORGS.src = CFunctionContainerCommon.Dvar_GetString("ui_theatrePlayback") == "1" ? CodoPageViewDBPause.VIEW_PAUSE.src : originalCyborgPauseClass;
       }
       
       override protected function onBeforeAddToStage() : void
@@ -166,7 +166,7 @@ package
       
       private function isTheatrePause() : Boolean
       {
-         return CFunctionContainerCommon.Dvar_GetString("codol_theatre_playback") == "1";
+         return CFunctionContainerCommon.Dvar_GetString("ui_theatrePlayback") == "1";
       }
 
       // The existing pause controller owns class display, selection and its
@@ -221,7 +221,7 @@ package
             return;
          }
          event.stopImmediatePropagation();
-         CFunctionContainerCommon.setdvar("codol_theatre_request","return");
+         CFunctionContainerCommon.setdvar("ui_theatreRequest","return");
       }
       
       private function theatrePauseKey(event:KeyboardEvent) : void
@@ -258,7 +258,7 @@ package
             var menu:Object = view.getCurrentMenu();
             if(menu == null || !menu.theatre)
             {
-               CFunctionContainerCommon.setdvar("codol_theatre_pause_diag","creating");
+               CFunctionContainerCommon.setdvar("ui_theatrePauseDiag","creating");
                view.gotoMenu({
                   "id":"theatre",
                   "theatre":true,
@@ -270,7 +270,7 @@ package
                      "onMiscMenu":true
                   }]
                });
-               CFunctionContainerCommon.setdvar("codol_theatre_pause_diag","created");
+               CFunctionContainerCommon.setdvar("ui_theatrePauseDiag","created");
             }
             if(view.myLoadoutListHeader != null)
             {
@@ -326,7 +326,7 @@ package
                i++;
             }
             view.myMiscListBg.height = bottom - view.myMiscListBg.y + 35;
-            CFunctionContainerCommon.setdvar("codol_theatre_pause_diag","ready");
+            CFunctionContainerCommon.setdvar("ui_theatrePauseDiag","ready");
             return;
          }
          var j:int = 0;
@@ -434,11 +434,11 @@ package
          }
       }
 
-      // k33: one line per key for Kernel33's gpad_debug (dvar k33nav)
+      // k33: one line per key for Kernel33's gpad_debug (dvar gpad_navLog)
       private function k33Log(code:uint, n:int, cur:InteractiveObject, next:InteractiveObject) : void
       {
          var r:Rectangle = null;
-         var msg:String = "k33nav " + code + " candidates " + n + " from " + (cur != null ? cur.name : "-");
+         var msg:String = "gpad_navLog " + code + " candidates " + n + " from " + (cur != null ? cur.name : "-");
          if(next != null)
          {
             r = next.getBounds(this.stage);
@@ -446,7 +446,7 @@ package
          }
          try
          {
-            CFunctionContainerCommon.setdvar("k33nav",msg);
+            CFunctionContainerCommon.setdvar("gpad_navLog",msg);
          }
          catch(e:Error)
          {
@@ -938,7 +938,7 @@ package
 
       private var k33StyleNoteKey:String = ""; // k33
 
-      private var k33StyleSerial:int = -1; // k33: k33_languageSerial as last seen
+      private var k33StyleSerial:int = -1; // k33: loc_languageSerial as last seen
 
       private var k33StyleFrames:int = 0; // k33
 
@@ -948,16 +948,16 @@ package
       private static const K33_GLYPH_NAMES:Array = ["AUTO","XBOX","PS","NINTENDO","GENERIC","TEXT","KBM"]; // gpad_glyphs 0..6
 
       private static const K33_STYLE_DVARS:Object = {
-         "lang":"k33_language",
+         "lang":"loc_languageName",
          "glyph":"gpad_glyphs",
-         "hud":"k33_hudStyle",
+         "hud":"cg_hudStyle",
          "sway":"cg_hudSway"
       };
 
       // k33: the Language row is switched off here, in one place for both movies: with false the row and its
       // "Switching language..." / "Restart the game to apply the language" line are not made and none of the
-      // k33_language* dvars is read for a row (the language is still changed with k33_language / k33_setlanguage
-      // in the console, and a finished switch still translates the remaining rows: k33_languageSerial). true
+      // loc_language* dvars is read for a row (the language is still changed with loc_languageName / loc_setLanguage
+      // in the console, and a finished switch still translates the remaining rows: loc_languageSerial). true
       // brings the row back; its keys (K33UI_LANGUAGE, K33UI_LANG_*) stay in the string zones for that.
       private static const K33_STYLE_LANGUAGE_ROW:Boolean = true;
 
@@ -982,7 +982,7 @@ package
          return s.substring(a,b);
       }
 
-      // k33: digits only (a style number of k33_hudStyleList)
+      // k33: digits only (a style number of cg_hudStyleList)
       private function k33StyleDigits(s:String) : Boolean
       {
          var i:int = 0;
@@ -1002,9 +1002,9 @@ package
       }
 
       // k33: a row's choices, [{v: the value its dvar takes, key: the localize key of its name, raw: the text shown
-      // when that key has no entry}]. "lang": the ids of k33_languageList ("en;zh"); "hud": the "number:id" pairs of
-      // k33_hudStyleList ("0:stock;2:v26"); "glyph": gpad_glyphs 0..6, when the controller module has published
-      // k33_padinfo. An empty list (the dvar is not there: an older Kernel33.dll) gives [], and the row is left out.
+      // when that key has no entry}]. "lang": the ids of loc_languageList ("en;zh"); "hud": the "number:id" pairs of
+      // cg_hudStyleList ("0:stock;2:v26"); "glyph": gpad_glyphs 0..6, when the controller module has published
+      // gpad_info. An empty list (the dvar is not there: an older Kernel33.dll) gives [], and the row is left out.
       // "lang" gives [] while K33_STYLE_LANGUAGE_ROW is false.
       // Blank, malformed and repeated entries are dropped.
       private function k33StyleOptions(kind:String) : Array
@@ -1026,7 +1026,7 @@ package
          {
             // cg_hudSway 0 / 1 (hud_style.c: the HUD moves with the view, movement and camera shake, every style).
             // It is an int dvar: C1's Dvar_GetString reads an int's value as a string pointer (live: a crash at
-            // 0x007739B0 reading 0x00000001), so the row comes with the HUD style row, whose k33_hudStyleList the
+            // 0x007739B0 reading 0x00000001), so the row comes with the HUD style row, whose cg_hudStyleList the
             // same hud_style.c registers: a Kernel33.dll without HUD styles has neither
             if(this.k33StyleOptions("hud").length == 0)
             {
@@ -1046,7 +1046,7 @@ package
          }
          if(kind == "glyph")
          {
-            list = CFunctionContainerCommon.Dvar_GetString("k33_padinfo");
+            list = CFunctionContainerCommon.Dvar_GetString("gpad_info");
             if(list == null || list == "")
             {
                return out;
@@ -1062,7 +1062,7 @@ package
             }
             return out;
          }
-         list = CFunctionContainerCommon.Dvar_GetString(kind == "lang" ? "k33_languageList" : "k33_hudStyleList");
+         list = CFunctionContainerCommon.Dvar_GetString(kind == "lang" ? "loc_languageList" : "cg_hudStyleList");
          if(list == null || list == "")
          {
             return out;
@@ -1379,7 +1379,7 @@ package
          this.k33StyleView = view;
          if(this.k33StyleSerial < 0)
          {
-            this.k33StyleSerial = CFunctionContainerCommon.Dvar_GetInt("k33_languageSerial");
+            this.k33StyleSerial = CFunctionContainerCommon.Dvar_GetInt("loc_languageSerial");
          }
          if(kinds.length == 0)
          {
@@ -1461,7 +1461,7 @@ package
          this.k33StyleRefocus = "";
       }
 
-      // k33: k33_languageState 1 (switching) / 2 (saved, applies on the next start) as a line under the list
+      // k33: loc_languageState 1 (switching) / 2 (saved, applies on the next start) as a line under the list
       private function k33StyleNoteUpdate() : void
       {
          var key:String = "";
@@ -1475,7 +1475,7 @@ package
          {
             if(this.k33StyleRows[i].kind == "lang")
             {
-               state = CFunctionContainerCommon.Dvar_GetInt("k33_languageState");
+               state = CFunctionContainerCommon.Dvar_GetInt("loc_languageState");
                key = state == 2 ? "@K33UI_LANG_RESTART" : (state == 1 ? "@K33UI_LANG_SWITCHING" : "");
             }
             i++;
@@ -1534,7 +1534,7 @@ package
          }
       }
 
-      // k33: every K33_STYLE_POLL frames while the list is open: a finished language switch (k33_languageSerial)
+      // k33: every K33_STYLE_POLL frames while the list is open: a finished language switch (loc_languageSerial)
       // builds the list again; a list that changed builds it again; a row shows what its dvar holds
       private function k33StyleFrame(e:Event) : void
       {
@@ -1564,7 +1564,7 @@ package
          }
          try
          {
-            serial = CFunctionContainerCommon.Dvar_GetInt("k33_languageSerial");
+            serial = CFunctionContainerCommon.Dvar_GetInt("loc_languageSerial");
             if(serial != this.k33StyleSerial)
             {
                this.k33StyleSerial = serial;

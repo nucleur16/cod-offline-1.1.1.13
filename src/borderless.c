@@ -3,7 +3,7 @@
  *
  * The shared Options movie (voice_ui_mp, SettingsService) offers three display modes: Windowed
  * (r_fullscreen 0), Fullscreen (r_fullscreen 1) and Fullscreen Windowed (r_fullscreen 0 plus
- * "seta codol_borderless 1"). C1 has no such mode; this file implements it:
+ * "seta r_noborder 1"). C1 has no such mode; this file implements it:
  *
  *   R_InitGraphicsApi (0xA7AC50) builds the window parameters (R_SetWndParms 0xA7A0C0, on its stack:
  *   +0 hwnd, +4 hz, +8 fullscreen, +0xC x, +0x10 y, +0x14/+0x18 scene size, +0x1C/+0x20 display size),
@@ -19,12 +19,12 @@
  *
  *   The monitor is the one the game window was last on (else the one under vid_xpos / vid_ypos, else
  *   the primary). Each frame (BorderlessTick, from the voice main-thread tick) the wanted mode
- *   (codol_borderless and not r_fullscreen) is compared with the window that exists; when they differ
+ *   (r_noborder and not r_fullscreen) is compared with the window that exists; when they differ
  *   (Options Apply switching Windowed <-> Fullscreen Windowed, which C1 alone would not restart for), or
  *   when a borderless window no longer covers its monitor (a desktop resolution change), one
  *   vid_restart is queued. vid_restart destroys and recreates the window and the device (0xA7AD90).
  *
- * codol_borderless is registered as an archived bool (saved in config_mp.cfg). It must be a bool (or a
+ * r_noborder is registered as an archived bool (saved in config_mp.cfg). It must be a bool (or a
  * string): the movie reads it with the Scaleform Dvar_GetBool (0x6A5000), which takes any other type's value
  * as a string pointer (an int dvar crashed it in strtol). Before registration, the value comes from the dvar
  * config_mp.cfg's "seta" created (a string dvar), read by name.
@@ -48,7 +48,7 @@ static volatile LONG g_bdWindowBorderless = -1; /* the window that exists: -1 no
 static RECT g_bdMonitor;                      /* the monitor the borderless window covers */
 static BOOL g_bdHaveMonitor;
 static BOOL g_bdInstalled;
-static const BYTE *g_bdDvar;                  /* codol_borderless once registered */
+static const BYTE *g_bdDvar;                  /* r_noborder once registered */
 
 typedef HWND(WINAPI *BdCreateWindowExFn)(DWORD, LPCSTR, LPCSTR, DWORD, int, int, int, int, HWND, HMENU, HINSTANCE, LPVOID);
 
@@ -69,10 +69,13 @@ static int BdDvarValue(const char *name, int def)
     }
 }
 
+/* LEGACY_NAME: the old name of r_noborder (a config_mp.cfg saved before the rename has "seta codol_borderless 1"). */
+#define BD_OLD_DVAR "codol_borderless" /* LEGACY_NAME */
+
 static BOOL BorderlessWanted(void)
 {
     if (g_bdDvar && g_bdDvar != (const BYTE *)1) return g_bdDvar[0xC] != 0;
-    return BdDvarValue("codol_borderless", 0) != 0;
+    return BdDvarValue("r_noborder", BdDvarValue(BD_OLD_DVAR, 0)) != 0;
 }
 
 static BOOL BdMonitorRect(HMONITOR m, RECT *r)
@@ -174,7 +177,7 @@ static void PatchBorderless(void)
     WriteCode(cw, kCwex, 6);
     RedirectCall(BD_CREATE_CALL_VA, (void *)BorderlessCreateStub);
     g_bdInstalled = TRUE;
-    Log("borderless: Fullscreen Windowed (codol_borderless) ready");
+    Log("borderless: Fullscreen Windowed (r_noborder) ready");
 }
 
 /* Main thread, every frame. */
@@ -188,12 +191,15 @@ static void BorderlessTick(void)
 #if K33_KERNEL_NAME_DISPLAY
         fallback=KvLoad(0);
 #endif
-        int cur = BdDvarValue("codol_borderless", fallback) != 0;
+        int cur = BdDvarValue("r_noborder", BdDvarValue(BD_OLD_DVAR, fallback)) != 0;
         typedef const BYTE *(__cdecl *RegisterBoolFn)(const char *, BYTE, unsigned, const char *);
         const BYTE *d = ((RegisterBoolFn)(DWORD_PTR)BD_REGISTER_BOOL_VA)(
-            "codol_borderless", (BYTE)cur, 0x1, "Fullscreen Windowed: a borderless window covering the monitor (with r_fullscreen 0)");
+            "r_noborder", (BYTE)cur, 0x1, "Fullscreen Windowed: a borderless window covering the monitor (with r_fullscreen 0)");
         g_bdDvar = d && Readable(d, 0x10) && d[8] == 0 ? d : NULL;
-        Log("borderless: codol_borderless registered as a bool (%d)", g_bdDvar ? g_bdDvar[0xC] : -1);
+        char old[8];
+        if (g_bdDvar && C1DvarString(BD_OLD_DVAR, old, sizeof(old)) && old[0] && C1QueueSet(BD_OLD_DVAR, ""))
+            Log("borderless: r_noborder took the value saved as " BD_OLD_DVAR " (%s)", old);
+        Log("borderless: r_noborder registered as a bool (%d)", g_bdDvar ? g_bdDvar[0xC] : -1);
         if (!g_bdDvar) g_bdDvar = (const BYTE *)1;   /* do not try again; read it by name */
     }
     HWND h = *(HWND *)(DWORD_PTR)BD_MAIN_HWND_VA;

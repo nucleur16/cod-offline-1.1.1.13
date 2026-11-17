@@ -100,7 +100,7 @@ static KrpSample KrpReadSample(const KrpAccess *access)
 static int KrpQueue(const KrpAccess *access,const char *value,int require_empty)
 {
     char command[128];uint32_t buffer=0,capacity=0,used=0;
-    int length=snprintf(command,sizeof(command),"set codol_quick_native_room_context \"%s\"\n",value);
+    int length=snprintf(command,sizeof(command),"set ui_quickNativeRoomContext \"%s\"\n",value);
     if(length<0 || (size_t)length>=sizeof(command))return 0;
     if(!access->read(access->context,0x25094dcu,&buffer,sizeof(buffer)) ||
        !access->read(access->context,0x25094e0u,&capacity,sizeof(capacity)) ||

@@ -6,11 +6,13 @@
  * The shared front-end movie (voice_ui_mp: Main, MatchMPCTMenuView, MatchRoomListView, BottomStartGameView) is
  * codol-classic's THEATRE screen; the pause movie (controller_ingame: MainPause) is its replay pause menu. They talk
  * to the client only through string dvars:
- *   movie -> client  codol_theatre_request  refresh | next | previous | filter:mp|zm|all | watch:<64 hex id> | return
- *   client -> movie  codol_theatre_count, _page, _pages, _total, _filter, _status, _revision (a change redraws),
- *                    per row i (0..9): codol_theatre_id_i, _date_i, _title_i, _map_i, _mode_i, _file_i, _duration_i,
- *                    codol_theatre_playback (1 while a recording plays: the pause menu becomes the replay menu),
- *                    codol_theatre_open (1 reopens the THEATRE page after a recording ends)
+ *   movie -> client  ui_theatreRequest  refresh | next | previous | filter:mp|zm|all | watch:<64 hex id> | return
+ *   client -> movie  ui_theatreCount, ui_theatrePage, ui_theatrePages, ui_theatreTotal, ui_theatreFilter,
+ *                    ui_theatreStatus, ui_theatreRevision (a change redraws),
+ *                    per row i (0..9): ui_theatreId<i>, ui_theatreDate<i>, ui_theatreTitle<i>, ui_theatreMap<i>,
+ *                    ui_theatreMode<i>, ui_theatreFile<i>, ui_theatreDuration<i>,
+ *                    ui_theatrePlayback (1 while a recording plays: the pause menu becomes the replay menu),
+ *                    ui_theatreOpen (1 reopens the THEATRE page after a recording ends)
  * This file answers those requests (main thread, every 200 ms, k33tick.c); every dvar write is a queued "set".
  *
  * Where recordings come from: this PC only, main\demo\*.demo (films copied there). Each row's id is the SHA-256 of
@@ -21,7 +23,7 @@
  * removed: this client is offline only.
  *
  * Playing: "cl_demo_play <name>" from the main menu only (connection state, clc demo flags and the demo allocation
- * all idle), codol_theatre_playback 1 until the client is idle again, then codol_theatre_open 1. "return" (the
+ * all idle), ui_theatrePlayback 1 until the client is idle again, then ui_theatreOpen 1. "return" (the
  * replay pause menu's Back) queues disconnectwithkeepsession. In a Zombies recording the stuck minimap_fullscreen
  * HUD menu is closed while it plays and shown again afterwards (C1 Menus_Close 0x5F9AE0 / show 0x5F9690).
  *
@@ -105,10 +107,10 @@ static void ThSet(const char *field, const char *value)
         clean[n++] = (char)c;
     }
     clean[n] = 0;
-    ThQueue("set codol_theatre_%s \"%s\"\n", field, clean);
+    ThQueue("set ui_theatre%s \"%s\"\n", field, clean);
 }
 
-static void ThStatus(int id) { ThSet("status", ThText(id)); }
+static void ThStatus(int id) { ThSet("Status", ThText(id)); }
 
 static BOOL ThHex64(const char *s)
 {
@@ -315,21 +317,21 @@ static void ThLocalCatalogue(void)
     char num[16], field[24];
     for (int i = 0; i < g_thLocalCount; i++) {
         const ThRow *r = &g_thLocal[i];
-        _snprintf(field, sizeof(field), "date_%d", i); ThSet(field, r->date);
-        _snprintf(field, sizeof(field), "title_%d", i); ThSet(field, r->date);
-        _snprintf(field, sizeof(field), "map_%d", i); ThSet(field, r->map);
-        _snprintf(field, sizeof(field), "mode_%d", i); ThSet(field, r->mode);
-        _snprintf(field, sizeof(field), "id_%d", i); ThSet(field, r->id);
-        _snprintf(field, sizeof(field), "file_%d", i); ThSet(field, r->file);
+        _snprintf(field, sizeof(field), "Date%d", i); ThSet(field, r->date);
+        _snprintf(field, sizeof(field), "Title%d", i); ThSet(field, r->date);
+        _snprintf(field, sizeof(field), "Map%d", i); ThSet(field, r->map);
+        _snprintf(field, sizeof(field), "Mode%d", i); ThSet(field, r->mode);
+        _snprintf(field, sizeof(field), "Id%d", i); ThSet(field, r->id);
+        _snprintf(field, sizeof(field), "File%d", i); ThSet(field, r->file);
         _snprintf(num, sizeof(num), "%u", r->seconds);
-        _snprintf(field, sizeof(field), "duration_%d", i); ThSet(field, num);
+        _snprintf(field, sizeof(field), "Duration%d", i); ThSet(field, num);
     }
-    _snprintf(num, sizeof(num), "%d", g_thLocalCount); ThSet("count", num);
-    ThSet("filter", g_thFilter);
-    _snprintf(num, sizeof(num), "%d", g_thPage + 1); ThSet("page", num);
-    _snprintf(num, sizeof(num), "%d", pages); ThSet("pages", num);
-    _snprintf(num, sizeof(num), "%d", count); ThSet("total", num);
-    _snprintf(num, sizeof(num), "%u", ++g_thRevision); ThSet("revision", num);
+    _snprintf(num, sizeof(num), "%d", g_thLocalCount); ThSet("Count", num);
+    ThSet("Filter", g_thFilter);
+    _snprintf(num, sizeof(num), "%d", g_thPage + 1); ThSet("Page", num);
+    _snprintf(num, sizeof(num), "%d", pages); ThSet("Pages", num);
+    _snprintf(num, sizeof(num), "%d", count); ThSet("Total", num);
+    _snprintf(num, sizeof(num), "%u", ++g_thRevision); ThSet("Revision", num);
     ThStatus(count ? TH_LOCAL : TH_LOCAL_NONE);
 }
 
@@ -346,7 +348,7 @@ static void ThWatchLocal(const char *id, const ThState *s)
         _snwprintf(p + base, MAX_PATH - base, L"%hs.demo", r->file);
         if (!ThDemoEnvelope(p, NULL)) break;
         if (!ThIdle(s)) { ThStatus(TH_MENU_FIRST); return; }
-        ThSet("playback", "1");
+        ThSet("Playback", "1");
         lstrcpynA(g_thPlayingZone, ThZombieRow(r) ? "zm" : "mp", sizeof(g_thPlayingZone));
         ThQueue("cl_demo_play %s\n", r->file);
         g_thWatching = TRUE;
@@ -408,22 +410,22 @@ static void TheatreTick(void)
         if ((g_thStarted && ThIdle(&s)) || (!g_thStarted && now - g_thSubmittedAt > 30000)) {
             g_thWatching = g_thStarted = g_thReturning = FALSE;
             g_thPlayingZone[0] = 0;
-            ThSet("playback", "0");
-            ThSet("open", "1");
+            ThSet("Playback", "0");
+            ThSet("Open", "1");
         }
     }
     if (g_thReturning) {
         if (ThIdle(&s)) {
             g_thReturning = g_thWatching = g_thStarted = FALSE;
             g_thPlayingZone[0] = 0;
-            ThSet("playback", "0");
-            ThSet("open", "1");
+            ThSet("Playback", "0");
+            ThSet("Open", "1");
         }
         return;
     }
     char action[80];
-    if (!C1DvarString("codol_theatre_request", action, sizeof(action)) || !action[0]) return;
-    ThSet("request", "");
+    if (!C1DvarString("ui_theatreRequest", action, sizeof(action)) || !action[0]) return;
+    ThSet("Request", "");
     if (!strcmp(action, "return")) {
         if (s.connection == 9 && s.demo == 1) {
             ThQueue("disconnectwithkeepsession\n");

@@ -2740,8 +2740,8 @@ static void InstallConsole(void)
     static const BYTE kWndClass[] = { 0xC7, 0x45, 0xD8, 0x90, 0x35, 0x63, 0x00 };
     static const BYTE kWndProc[] = { 0x55, 0x8B, 0xEC, 0x83, 0xE4, 0xF8, 0x83, 0xEC, 0x4C };
 
-    if (GetCommandLineA() && strstr(GetCommandLineA(), "k33_console 0")) {
-        Log("console: off (k33_console 0)");
+    if (GetCommandLineA() && strstr(GetCommandLineA(), "con_enable 0")) {
+        Log("console: off (con_enable 0)");
         return;
     }
     InitializeCriticalSection(&g_conLock);

@@ -23,7 +23,7 @@ Now (`src/kernel33.c`, two small blocks):
 | `rcon` to a server other than the hosted one (`con_rconPort`, `main\k33_rcon.txt`) | no | yes, only for an explicit `rcon` while nothing is hosted |
 
 The console still opens with the key left of 1 (scan code 0x29) or F1 (`con_toggleKey`, 0 = none), and
-`+set k33_console 0` still leaves it out. `-DK33_NO_CONSOLE` still builds and links.
+`+set con_enable 0` still leaves it out. `-DK33_NO_CONSOLE` still builds and links.
 
 What the shipping DLL now contains because of this (all byte-checked as before, logged once by `InstallConsole`
 in builds that have a log): the `Direct3DCreate9` import-slot wrap (0xB42598) and the device/swap-chain `Present`

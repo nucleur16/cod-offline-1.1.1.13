@@ -220,13 +220,13 @@ static void CtlRegisterDvars(void)
     {
         typedef const BYTE *(__cdecl *RegStr)(const char *, const char *, unsigned, const char *);
         RegStr reg = (RegStr)(DWORD_PTR)0x00624740u;
-        g_k33PadInfo = reg("k33_padinfo", "", 0, "Options > Controller: pad family|connected|name|forced|gpad_glyphs (Kernel33, read only)");
+        g_k33PadInfo = reg("gpad_info", "", 0, "Options > Controller: pad family|connected|name|forced|gpad_glyphs (Kernel33, read only)");
         g_k33GlyphInfo = reg("gpad_glyphInfo", "", 0,
                              "What button hints show now: family|device|textOnly|gpad_glyphs (family 0 Xbox, 1 PlayStation, 2 Nintendo, "
                              "3 generic; device 0 keyboard / mouse, 1 pad) (Kernel33, read only)");
-        g_k33PadBinds = reg("k33_padbinds", "", 0, "Options > Controller: every pad button's bind (Kernel33, read only)");
-        g_k33PadCapture = reg("k33_padcapture", "", 0, "Options > Controller: bind the next pad button pressed to this command");
-        g_k33PadClear = reg("k33_padclear", "", 0, "Options > Controller: unbind this command's pad buttons");
+        g_k33PadBinds = reg("gpad_binds", "", 0, "Options > Controller: every pad button's bind (Kernel33, read only)");
+        g_k33PadCapture = reg("gpad_bindCapture", "", 0, "Options > Controller: bind the next pad button pressed to this command");
+        g_k33PadClear = reg("gpad_bindClear", "", 0, "Options > Controller: unbind this command's pad buttons");
     }
     g_gpDive = C1RegisterInt("gpad_dive", 1, 0, 1, 0x1,
                              "The pad button bound to +stance (B by default) dives while sprinting (C1's dolphin dive, toggleprone during a sprint); 0 = always +stance");
@@ -259,7 +259,7 @@ static void CtlRegisterDvars(void)
     g_gpKbmCooldown = CtlRegisterFloat("gpad_aimassist_kbm_cooldown", 20.0f, 20.0f, 600.0f, 0x1,
                                        "Seconds without aim assist after any in-game keyboard / mouse use (20 minimum; may be raised, not lowered)");
     ((const BYTE *(__cdecl *)(const char *, const char *, unsigned, const char *))(DWORD_PTR)0x00624740u)(
-        "k33nav", "", 0, "Pause-menu navigator: its last decision (controller_ingame codoingame.gfx, read with gpad_debug)");
+        "gpad_navLog", "", 0, "Pause-menu navigator: its last decision (controller_ingame codoingame.gfx, read with gpad_debug)");
     PadSnapRegisterDvars();   /* padsnap.c */
 }
 
@@ -281,7 +281,7 @@ static void CtlSetDevice(int pad)
  * gpad_glyphs 1..4 and 6 override the detection for display: 1..4 show that pad family's buttons even while
  * the keyboard is the last-used device, 6 shows keyboard / mouse keys even while the pad is. Only the
  * display readers ask here: CtlCommandKeys (which device's keys a hint names), CtlApplyPadNames (the
- * family's text names), the glyph set (controller_glyphs.c) and the published k33_padinfo / gpad_glyphInfo.
+ * family's text names), the glyph set (controller_glyphs.c) and the published gpad_info / gpad_glyphInfo.
  * Everything behavioural keeps reading g_lastDevice itself: aim assist (CtlAimAllowed), the userinfo dvar
  * "gpad" and the pointer watch (CtlFrameExtras), the snap scan (padsnap.c), gpad_status / gpad_aadump.
  * Called on the main thread and, through CtlGlyphPrepare, on the render thread: three word-sized reads. */
@@ -1658,10 +1658,10 @@ static void CtlApplyPadNames(void)
 #include "controller_glyphs.c"
 
 /* ---- Options > Controller (zones/voice_ui_mp/.../as/codo/views/OptionView.as) ------------------------
- * Publishes k33_padinfo ("family|connected|name|forced|glyphs") and k33_padbinds ("A=cmd;B=cmd;...;HOLDX=cmd")
- * when they change, binds the next pad button to k33_padcapture's command (the input thread catches it in
+ * Publishes gpad_info ("family|connected|name|forced|glyphs") and gpad_binds ("A=cmd;B=cmd;...;HOLDX=cmd")
+ * when they change, binds the next pad button to gpad_bindCapture's command (the input thread catches it in
  * menu mode; the command's other pad buttons are unbound, one pad button per action) and unbinds
- * k33_padclear's command. Both set gpad_binds_custom, which stops the bind repair. */
+ * gpad_bindClear's command. Both set gpad_binds_custom, which stops the bind repair. */
 static const char *CtlDvarStr(const BYTE *d)
 {
     const char *v = d && Readable(d, 0x10) ? *(const char *const *)(d + 0xC) : NULL;
@@ -1681,7 +1681,7 @@ static void CtlUnbindPadKeysOf(const char *cmd, char *out, int n, int *len)
  * Scaleform menus and HUD (they hold key labels they asked for once). Checked every frame; one command
  * line sets both, so a reader that sees the new serial also sees the new state. The serial starts at 0
  * (nothing published), is 1 after the first frame and wraps to 1 after CGP_SERIAL_MAX. The device is not
- * in k33_padinfo: OptionView redraws its diagram and rebuilds its bind list whenever that string changes,
+ * in gpad_info: OptionView redraws its diagram and rebuilds its bind list whenever that string changes,
  * and the display device flips with every keyboard <-> pad change in modes 0 and 5. */
 static void CtlPublishGlyphState(void)
 {
@@ -1738,12 +1738,12 @@ static void CtlFrameOptions(void)
         }
         if (strcmp(info, lastInfo)) {
             lstrcpynA(lastInfo, info, sizeof(lastInfo));
-            _snprintf(cmd, sizeof(cmd), "set k33_padinfo \"%s\"\n", info);
+            _snprintf(cmd, sizeof(cmd), "set gpad_info \"%s\"\n", info);
             C1CbufAddText(cmd);
         }
         if (strcmp(binds, lastBinds)) {
             lstrcpynA(lastBinds, binds, sizeof(lastBinds));
-            _snprintf(cmd, sizeof(cmd), "set k33_padbinds \"%s\"\n", binds);
+            _snprintf(cmd, sizeof(cmd), "set gpad_binds \"%s\"\n", binds);
             C1CbufAddText(cmd);
         }
     }
@@ -1762,7 +1762,7 @@ static void CtlFrameOptions(void)
         for (int i = 0; i < CTL_NBUTTONS; i++) if (kCtlButtons[i].key == key) keyName = kCtlButtons[i].name;
         if (keyName) {
             CtlUnbindPadKeysOf(lastCapture, cmd, sizeof(cmd), &n);
-            n += _snprintf(cmd + n, sizeof(cmd) - n, "bind %s \"%s\"; set gpad_binds_custom 1; set k33_padcapture \"\"\n", keyName, lastCapture);
+            n += _snprintf(cmd + n, sizeof(cmd) - n, "bind %s \"%s\"; set gpad_binds_custom 1; set gpad_bindCapture \"\"\n", keyName, lastCapture);
             C1CbufAddText(cmd);
             Log("controller: Options > Controller: %s -> \"%s\"", keyName, lastCapture);
         }
@@ -1776,7 +1776,7 @@ static void CtlFrameOptions(void)
         char cmd[600];
         int n = 0;
         CtlUnbindPadKeysOf(clr, cmd, sizeof(cmd), &n);
-        _snprintf(cmd + n, sizeof(cmd) - n, "set gpad_binds_custom 1; set k33_padclear \"\"\n");
+        _snprintf(cmd + n, sizeof(cmd) - n, "set gpad_binds_custom 1; set gpad_bindClear \"\"\n");
         C1CbufAddText(cmd);
         Log("controller: Options > Controller: cleared \"%s\"", clr);
     }
@@ -1788,11 +1788,11 @@ static void CtlFrameOptions(void)
 static int g_testMouseDx, g_testMouseDy;
 static DWORD g_testMouseUntil;
 
-/* The pause-menu navigator's last decision (the pause menu's StageKeyController sets dvar "k33nav"). */
+/* The pause-menu navigator's last decision (the pause menu's StageKeyController sets dvar "gpad_navLog"). */
 static void CtlNavLog(void)
 {
     static char last[200];
-    const BYTE *d = ((const BYTE *(__cdecl *)(const char *))(DWORD_PTR)0x006232C0u)("k33nav");
+    const BYTE *d = ((const BYTE *(__cdecl *)(const char *))(DWORD_PTR)0x006232C0u)("gpad_navLog");
     if (!d || !Readable(d, 0x10)) return;
     const char *v = *(const char *const *)(d + 0xC);
     if (!v || !Readable(v, 1) || !strncmp(v, last, sizeof(last) - 1)) return;
