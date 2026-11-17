@@ -231,8 +231,18 @@ static int HudStyleOwnerDraw2(const DWORD *args, int ownerDraw)
         int permille = HudHealthPermille(*(const int *)(cg + 0x190), *(const int *)(cg + 0x198), *(const int *)(cg + 4));
         if (!g_hudWhite)
             g_hudWhite = ((void *(__cdecl *)(const char *, int))(DWORD_PTR)VOICE_MAT_REGISTER_VA)("white", 7);
-        if (permille < HUD_HEALTH_LOW_PERMILLE) { c[0] = 0.9f; c[1] = 0.22f; c[2] = 0.2f; }
-        if (g_hudWhite && permille > 0) VOICE_DrawPic(scr, c, x, y, w * permille / 1000.0f, h, horz, vert, g_hudWhite);
+        /* the fill eases up while health regenerates and drops at once on damage (HudHealthLerp) */
+        static float shown = -1.0f;
+        static LARGE_INTEGER last, freq;
+        LARGE_INTEGER now;
+        QueryPerformanceCounter(&now);
+        if (!freq.QuadPart) QueryPerformanceFrequency(&freq);
+        float dt = last.QuadPart && freq.QuadPart ? (float)((double)(now.QuadPart - last.QuadPart) / (double)freq.QuadPart)
+                                                  : 0.0f;
+        last = now;
+        shown = HudHealthLerp(shown, permille, dt);
+        if (shown < HUD_HEALTH_LOW_PERMILLE) { c[0] = 0.9f; c[1] = 0.22f; c[2] = 0.2f; }
+        if (g_hudWhite && shown > 0.0f) VOICE_DrawPic(scr, c, x, y, w * shown / 1000.0f, h, horz, vert, g_hudWhite);
         return 1;
     }
     int iw, ih;

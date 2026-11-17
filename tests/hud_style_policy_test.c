@@ -50,6 +50,17 @@ int main(void)
     assert(HudHealthPermille(50, 0, 0) == 0);
     assert(HudHealthPermille(-5, 100, 0) == 0);
     assert(HudHealthPermille(100, 100, 8) == 0);           /* pm type 8: no health shown, as C1 */
+    /* health fill: drops at once, eases up on regeneration, settles */
+    assert(HudHealthLerp(-1.0f, 700, 0.016f) == 700.0f);    /* first frame: the health itself */
+    assert(HudHealthLerp(800.0f, 300, 0.016f) == 300.0f);   /* damage: at once */
+    {
+        float v = 300.0f; int frames = 0;
+        v = HudHealthLerp(v, 1000, 0.016f);
+        assert(v > 300.0f && v < 400.0f);                   /* one frame: part of the way */
+        while (v < 1000.0f && frames < 1000) { v = HudHealthLerp(v, 1000, 0.016f); frames++; }
+        assert(v == 1000.0f && frames > 20 && frames < 60); /* full in ~0.4..1 s at 60 fps */
+    }
+    assert(HudHealthLerp(500.0f, 1000, 0.0f) == 1000.0f);   /* no time step: the health */
 
     /* the weapon icon keeps its image's aspect, right-aligned in the rect */
     HudIconFit(-90.0f, 72.0f, 18.0f, 256, 64, &x, &w);     /* 4:1 */
