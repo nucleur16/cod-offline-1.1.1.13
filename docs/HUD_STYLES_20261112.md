@@ -512,7 +512,9 @@ mod's HUD did, first for SM2, then for every style (stock 0, v26 2, v33 3, sm2 5
 
 - `python tools/build_hud_styles.py` regenerates `zones/hud_styles_postgfx_mp/{menufile,material}`,
   `zone_source/hud_styles_postgfx_mp.csv`, the two `<language>_hud_styles` zones and the survival HUD's menufile
-  from `zones/hud_styles_postgfx_mp/sources` and `image/`. No install is needed.
+  from `zones/hud_styles_postgfx_mp/sources` and `image/`. No install is needed. The two menufiles are written as
+  `.menu` source (`menufile/hud_styles.menu`, `survival_hud_visibility.menu`; docs/MENU_SOURCE.md), which the zone
+  build compiles; the extracted `sources/menus_*.json` dumps stay as they are.
 - `python tools/build_hud_styles.py extract --dumper <CodolSoundDumper.exe> [--c1 DIR] [--v26 DIR] [--v12 DIR]
   [--images v12=DIR] [--work DIR]` re-reads the installs (defaults under `D:\CoD\CODOL Builds`). It needs a
   CodolSoundDumper built from CODOL-AssetExplorer with the `zone-menus` command (branch `feat/zone-menus`,

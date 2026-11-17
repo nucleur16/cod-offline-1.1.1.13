@@ -663,6 +663,8 @@ zones/<zone>/                 the zone's contents
   stringtable/<name>          stringtables as CSV (UTF-8; ">enc" says what the zone stores: gbk, ascii)
   localize.str                localize entries, NAME<TAB>value, in zone order
   script_strings.json         the zone's script string list (C#-written zones only)
+  menufile/<name>.menu        menu files (MenuList) and menus (menuDef_t: menu/<name>.menu) as IW-language .menu
+                              source, compiled by the build (below, "Menus")
   image/<name>.png            images whose pixels are in the zone (A8R8G8B8): level 0, and <name>.mips.png the
                               smaller levels side by side (delete it to have the build make them, 2x2 box filter)
   <type>/NNNN_<name>.bin      assets kept as raw blobs (streamed images, materials, techsets, sounds, models, ...)
@@ -696,6 +698,55 @@ reproduces their stored tags byte for byte (the decompiled ones are skipped). Ra
 resized freely in the flat (Python-written) zones. In the C#-written zones (patch_common_gametype_zm,
 infected_cyborg_postgfx_mp) assets point back at earlier data, so a resized asset can move what later assets
 point at: the manifest records each decoded asset's length (`len=`) and the build warns when an edit changes it.
+
+### Menus
+Every menu asset is `.menu` source in the IW3/IW4 menu language, compiled by `zonekit/menu_source.py` when the zone
+is built (manifest `menufile,<name>,src=menufile/<name>.menu` and `menu,<name>,src=menu/<name>.menu`; any other
+`src=` is refused):
+
+```
+menuDef                                             // zones/survival_menus/menufile/kiosk_locker.menu, abridged
+{
+    name                 "kiosk_locker"
+    rect                 0 0 0 0 2 2
+    popup
+    outOfBoundsClick
+    legacySplitScreenScale
+    onESC
+    {
+        if ( ( ( milliseconds ) - localvarint( "ui_quit_timer" ) ) >= 100 )
+        {
+            close self;
+        }
+    }
+    itemDef
+    {
+        rect                 0 0 1 20 2 2
+        decoration
+        visible              1
+        style                WINDOW_STYLE_SHADER
+        background           "navbar_selection_bar_focus"
+        visible when ( localvarbool( "ui_swfPopupSelectionBarVis" ) && ( localvarstring(
+                "ui_buttonNavGroupName_popup" ) == "WEAPON_POPUP" ) && ( localvarstring( "ui_swfPopupContext" ) ==
+                "WEAPON_POPUP" );
+        exp rect X ( ( 0 + 0 + 4 );
+    }
+}
+```
+
+`#include`, `#define`, IW4's window / menu / item keywords, event handlers (`onOpen`, `onClose`, `onRequestClose`,
+`onESC`, `action`, `mouseEnter`, ..., `execKey`, `execKeyInt`) holding script commands, `if` / `else` and
+`setLocalVar*`, `visible when` / `disabled when` / `exp ...` expressions over 1.1.1.13's operators, list box, multi,
+dvar enum and edit field data. What 1.1.1.13 stores but IW4 has no keyword for has a documented extension keyword
+(`menuExtra`, `layoutRect`, `editField`, `floatExpressionsEmpty`, `[ nested statement ]`, `staticdvarint`, ...).
+The full reference, the extensions and which files are sources, generated or reference data:
+`docs/MENU_SOURCE.md`. Edit a source `.menu` and build; the generated ones (`hud_styles.menu`,
+`survival_hud_visibility.menu`, the patch zone's `kiosk_*.menu`, `survival_status.menu`) are rewritten by their
+`tools/build_*.py`. The extracted dumps of other builds stay CODOL-AssetExplorer JSON (`sources/menus_*.json`).
+```
+python -m zonekit.menu_source decompile <tree.json | blob.bin> <out.menu> [--menu]    # a dump or blob -> .menu
+python -m zonekit.menu_source compile <in.menu> <out.bin> [--name <asset name> | --menu]
+```
 
 ### Where each zone goes
 `client_shipRetail\patch\` (Kernel33 loads `*_ui_mp` zones ahead of the UI zones, `*_postgfx_mp` zones after
@@ -809,7 +860,7 @@ in the map pack, change it to `ship` and build.
 | voice_ui_mp, controller_ingame | codol-classic's English codo.gfx / codologin.gfx / codohud.gfx / codoingame.gfx (formerly english_ui / _extra) made language-neutral by `scripts/ui_keys.py`, with this repository's hand-written classes in their `.gfxpatch/as/` (formerly `voice_ui/`, build_voice_ui.py / build_ingame_ui.py) |
 | usermaps_patch, usermaps_ui_mp | the game folder's `usermaps\build_usermaps_patch.py` (now superseded by the sources here) |
 | controller_glyphs_postgfx_mp | this repository (authored here, no shipped original): the former `glyphs/glyphs.bin` icons (Xelu's CC0 prompts) as image assets with C1's `hud_status_dead` material layout |
-| hud_styles_postgfx_mp, english_hud_styles, chinese_hud_styles | `tools/build_hud_styles.py` (authored here, no shipped original): the native HUD menus, HUD images and labels of the user's own Call of Duty Online 2.6.9.7 and 3.3.3.3 installs (3.3.3.3's own menu operators read from its executable's evaluator), read with CODOL-AssetExplorer's CodolSoundDumper (`extract`), converted to 1.1.1.13 and gated on `k33_hudStyle`; the English labels are plain translations. Style 5 (SM2) is authored as `.menu` source (`sources/sm2.menu`, compiled by `zonekit/menu_source.py`). `docs/HUD_STYLES_20261112.md` |
+| hud_styles_postgfx_mp, english_hud_styles, chinese_hud_styles | `tools/build_hud_styles.py` (authored here, no shipped original): the native HUD menus, HUD images and labels of the user's own Call of Duty Online 2.6.9.7 and 3.3.3.3 installs (3.3.3.3's own menu operators read from its executable's evaluator), read with CODOL-AssetExplorer's CodolSoundDumper (`extract`), converted to 1.1.1.13 and gated on `k33_hudStyle`; the English labels are plain translations. Style 5 (SM2) is authored as `.menu` source (`sources/sm2.menu`, compiled by `zonekit/menu_source.py`); the menufile it writes is `.menu` source too (`menufile/hud_styles.menu`). `docs/HUD_STYLES_20261112.md` |
 | patch_common_gametype_zm | `CodolSoundDumper zm-pap-patch` (CODOL-AssetExplorer + `pap_patch_staging\tool_src`) over the stock zone |
 
 ### Known gaps
