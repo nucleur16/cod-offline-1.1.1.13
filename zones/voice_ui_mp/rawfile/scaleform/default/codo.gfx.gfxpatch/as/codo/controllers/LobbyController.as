@@ -363,12 +363,12 @@ package codo.controllers
                   this._roomObj["_localQuickHostFalseSeen"] = true;
                   // Keep the actual host false edge through a delayed results
                   // acknowledgement. A fresh return clears the previous edge.
-                  var resultContext:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_native_room_context").split("|");
+                  var resultContext:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickNativeRoomContext").split("|");
                   var resultOwner:String = CFunctionContainerCommon.GetPlayerID();
                   var resultToken:String = resultContext.length == 3 && resultContext[0] == "v1" ? "v1|" + resultOwner + "|" + String(resultContext[2]) : "";
-                  if(resultToken.length > 0 && CFunctionContainer.IsRankedMatch() && CFunctionContainerCommon.Dvar_GetString("codol_quick_return") == resultToken)
+                  if(resultToken.length > 0 && CFunctionContainer.IsRankedMatch() && CFunctionContainerCommon.Dvar_GetString("ui_quickReturn") == resultToken)
                   {
-                     CFunctionContainerCommon.setdvar("codol_quick_return_host_false",resultToken);
+                     CFunctionContainerCommon.setdvar("ui_quickReturnHostFalse",resultToken);
                   }
                }
             }
@@ -577,8 +577,8 @@ package codo.controllers
          if(this.usesLocalStartupProtocol() && CFunctionContainerCommon.Dvar_GetString("ui_p2p_enabled") == "1")
             CFunctionContainerCommon.execnow("p2p_localhost 0");
          this._campaignHostRequestedMap = "";
-         var directSurvival:Boolean = CFunctionContainerCommon.Dvar_GetString("codol_survival_direct_home") == "1";
-         CFunctionContainerCommon.setdvar("codol_survival_direct_home","0");
+         var directSurvival:Boolean = CFunctionContainerCommon.Dvar_GetString("ui_survivalDirectHome") == "1";
+         CFunctionContainerCommon.setdvar("ui_survivalDirectHome","0");
          this.resetRoom();
          this._isRenewingAvatar = 0;
          this._roomMembers.splice(0);
@@ -1120,7 +1120,7 @@ package codo.controllers
             this._roomObj.mapType = super.getSyncDP(SyncDataID.GET_MAP_TYPE,[this._roomObj.currentMap.id]);
          }
          var trainingKey:String = "v1|" + String(obj.index) + "|" + String(obj.name) + "|";
-         var trainingContext:String = CFunctionContainerCommon.Dvar_GetString("codol_training_room_context");
+         var trainingContext:String = CFunctionContainerCommon.Dvar_GetString("ui_trainingRoomContext");
          this._trainingRoomIndex = "";
          this._trainingPlaylist = -1;
          if(!obj.isPlayList && obj.matchType == MatchType.PVP &&
@@ -1140,7 +1140,7 @@ package codo.controllers
                this._trainingPlaylist = trainingChoice.id;
             }
          }
-         CFunctionContainerCommon.setdvar("codol_training_room_context",
+         CFunctionContainerCommon.setdvar("ui_trainingRoomContext",
             this.isManagedTrainingRoom() ? trainingKey + String(this._trainingPlaylist) : "");
          this._roomObj["_managedTrainingPlaylist"] = this.isManagedTrainingRoom() ? this._trainingPlaylist : -1;
          this.broadcast(BCEvent.ROOM_INFO_ONLY,this._roomObj);
@@ -1544,7 +1544,7 @@ package codo.controllers
       
       private function resetRoom() : void
       {
-         CFunctionContainerCommon.setdvar("codol_training_room_context","");
+         CFunctionContainerCommon.setdvar("ui_trainingRoomContext","");
          this._trainingRoomIndex = "";
          this._trainingPlaylist = -1;
          this._roomObj["_managedTrainingPlaylist"] = -1;

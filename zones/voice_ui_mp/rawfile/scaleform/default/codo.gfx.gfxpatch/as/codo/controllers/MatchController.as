@@ -979,8 +979,8 @@ import flash.utils.getTimer;
       
       public function onRoomJoined(cRes:Object) : void
       {
-         CFunctionContainerCommon.setdvar("codol_quick_lineage","");
-         CFunctionContainerCommon.setdvar("codol_quick_return","");
+         CFunctionContainerCommon.setdvar("ui_quickLineage","");
+         CFunctionContainerCommon.setdvar("ui_quickReturn","");
          if(this._currentQuickMatchFilter != null)
          {
             this._currentQuickMatchFilter["_localQuickVoteOpen"] = false;
@@ -1023,8 +1023,8 @@ import flash.utils.getTimer;
       
       public function onRoomCreated(cRes:Object) : void
       {
-         CFunctionContainerCommon.setdvar("codol_quick_lineage","");
-         CFunctionContainerCommon.setdvar("codol_quick_return","");
+         CFunctionContainerCommon.setdvar("ui_quickLineage","");
+         CFunctionContainerCommon.setdvar("ui_quickReturn","");
          if(this._currentQuickMatchFilter != null)
          {
             this._currentQuickMatchFilter["_localQuickVoteOpen"] = false;
@@ -1116,7 +1116,7 @@ import flash.utils.getTimer;
          {
             this._currentQuickMatchFilter["_localQuickSharedJoined"] = true;
          }
-         var durableNative:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_native_room_context").split("|");
+         var durableNative:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickNativeRoomContext").split("|");
          var durableOwner:String = CFunctionContainerCommon.GetPlayerID();
          var durableKey:String = durableNative.length == 3 ? String(durableNative[2]) : "";
          var durableSerial:Number = durableNative.length == 3 ? Number(durableNative[1]) : 0;
@@ -1130,8 +1130,8 @@ import flash.utils.getTimer;
             }
             durableDigit++;
          }
-         var durableSaved:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_lineage").split("|");
-         var durableReturn:String = CFunctionContainerCommon.Dvar_GetString("codol_quick_return");
+         var durableSaved:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickLineage").split("|");
+         var durableReturn:String = CFunctionContainerCommon.Dvar_GetString("ui_quickReturn");
          var durablePlaylist:PlayListObj = durableSaved.length == 5 ? this.getPlayListObj(int(durableSaved[3])) : null;
          var durableOwn:Boolean = false;
          var durableRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
@@ -1221,7 +1221,7 @@ import flash.utils.getTimer;
          }
          if(sharedQuick && durableValid && CFunctionContainer.IsRankedMatch())
          {
-            CFunctionContainerCommon.setdvar("codol_quick_lineage","v1|" + durableOwner + "|" + durableKey + "|" + String(quickFilter.playListID) + "|" + String(quickFilter.leagueName));
+            CFunctionContainerCommon.setdvar("ui_quickLineage","v1|" + durableOwner + "|" + durableKey + "|" + String(quickFilter.playListID) + "|" + String(quickFilter.leagueName));
          }
          if(cRes.result == ResultObj.RESULT_SUCCESS)
          {
@@ -1283,8 +1283,8 @@ import flash.utils.getTimer;
       
       private function bind_startMatchCountingDown(cRes:Object) : void
       {
-         var summaryNative:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_native_room_context").split("|");
-         var summarySaved:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_lineage").split("|");
+         var summaryNative:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickNativeRoomContext").split("|");
+         var summarySaved:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickLineage").split("|");
          var summaryOwner:String = CFunctionContainerCommon.GetPlayerID();
          var summaryKey:String = summaryNative.length == 3 ? String(summaryNative[2]) : "";
          var summaryEntry:PlayListObj = summarySaved.length == 5 ? this.getPlayListObj(int(summarySaved[3])) : null;
@@ -1295,7 +1295,7 @@ import flash.utils.getTimer;
             summaryValid = "0123456789abcdef".indexOf(summaryKey.charAt(summaryDigit)) >= 0;
             summaryDigit++;
          }
-         if(ScaleformUtil.isScaleform && summaryValid && this.isInRoom() && CFunctionContainer.IsRankedMatch() && summaryOwner.length > 0 && summarySaved.length == 5 && summarySaved[0] == "v1" && summarySaved[1] == summaryOwner && summarySaved[2] == summaryKey && summaryEntry != null && summaryEntry.name == "Quick Match" && summaryEntry.type == 1 && summaryEntry.minPartySize == 1 && summaryEntry.maxPartySize == 6 && summaryEntry.maxRoomSize == 12 && CFunctionContainerCommon.Dvar_GetString("codol_quick_return") == "v1|" + summaryOwner + "|" + summaryKey)
+         if(ScaleformUtil.isScaleform && summaryValid && this.isInRoom() && CFunctionContainer.IsRankedMatch() && summaryOwner.length > 0 && summarySaved.length == 5 && summarySaved[0] == "v1" && summarySaved[1] == summaryOwner && summarySaved[2] == summaryKey && summaryEntry != null && summaryEntry.name == "Quick Match" && summaryEntry.type == 1 && summaryEntry.minPartySize == 1 && summaryEntry.maxPartySize == 6 && summaryEntry.maxRoomSize == 12 && CFunctionContainerCommon.Dvar_GetString("ui_quickReturn") == "v1|" + summaryOwner + "|" + summaryKey)
          {
             this.stopRankedMatchGoGameTimer();
             this.startRankedMatchPassedTimeTimer();
@@ -1391,7 +1391,7 @@ import flash.utils.getTimer;
                }
             }
          }
-         var durableNative:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_native_room_context").split("|");
+         var durableNative:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickNativeRoomContext").split("|");
          var durableOwner:String = CFunctionContainerCommon.GetPlayerID();
          var durableKey:String = durableNative.length == 3 ? String(durableNative[2]) : "";
          var durableSerial:Number = durableNative.length == 3 ? Number(durableNative[1]) : 0;
@@ -1405,8 +1405,8 @@ import flash.utils.getTimer;
             }
             durableDigit++;
          }
-         var durableSaved:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_lineage").split("|");
-         var durableReturn:String = CFunctionContainerCommon.Dvar_GetString("codol_quick_return");
+         var durableSaved:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickLineage").split("|");
+         var durableReturn:String = CFunctionContainerCommon.Dvar_GetString("ui_quickReturn");
          var durablePlaylist:PlayListObj = durableSaved.length == 5 ? this.getPlayListObj(int(durableSaved[3])) : null;
          var durableOwn:Boolean = false;
          var durableRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
@@ -1507,7 +1507,7 @@ import flash.utils.getTimer;
          }
          if(sharedQuick && durableValid && CFunctionContainer.IsRankedMatch())
          {
-            CFunctionContainerCommon.setdvar("codol_quick_lineage","v1|" + durableOwner + "|" + durableKey + "|" + String(quickFilter.playListID) + "|" + String(quickFilter.leagueName));
+            CFunctionContainerCommon.setdvar("ui_quickLineage","v1|" + durableOwner + "|" + durableKey + "|" + String(quickFilter.playListID) + "|" + String(quickFilter.leagueName));
          }
          if(cRes.result == ResultObj.RESULT_SUCCESS)
          {
@@ -1787,8 +1787,8 @@ import flash.utils.getTimer;
       
       private function startRankedMatchGoGameTimer(repeatCount:int, lockNow:Boolean = true) : void
       {
-         var summaryNative:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_native_room_context").split("|");
-         var summarySaved:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_lineage").split("|");
+         var summaryNative:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickNativeRoomContext").split("|");
+         var summarySaved:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickLineage").split("|");
          var summaryOwner:String = CFunctionContainerCommon.GetPlayerID();
          var summaryKey:String = summaryNative.length == 3 ? String(summaryNative[2]) : "";
          var summaryEntry:PlayListObj = summarySaved.length == 5 ? this.getPlayListObj(int(summarySaved[3])) : null;
@@ -1799,7 +1799,7 @@ import flash.utils.getTimer;
             summaryValid = "0123456789abcdef".indexOf(summaryKey.charAt(summaryDigit)) >= 0;
             summaryDigit++;
          }
-         if(ScaleformUtil.isScaleform && summaryValid && this.isInRoom() && CFunctionContainer.IsRankedMatch() && summaryOwner.length > 0 && summarySaved.length == 5 && summarySaved[0] == "v1" && summarySaved[1] == summaryOwner && summarySaved[2] == summaryKey && summaryEntry != null && summaryEntry.name == "Quick Match" && summaryEntry.type == 1 && summaryEntry.minPartySize == 1 && summaryEntry.maxPartySize == 6 && summaryEntry.maxRoomSize == 12 && CFunctionContainerCommon.Dvar_GetString("codol_quick_return") == "v1|" + summaryOwner + "|" + summaryKey)
+         if(ScaleformUtil.isScaleform && summaryValid && this.isInRoom() && CFunctionContainer.IsRankedMatch() && summaryOwner.length > 0 && summarySaved.length == 5 && summarySaved[0] == "v1" && summarySaved[1] == summaryOwner && summarySaved[2] == summaryKey && summaryEntry != null && summaryEntry.name == "Quick Match" && summaryEntry.type == 1 && summaryEntry.minPartySize == 1 && summaryEntry.maxPartySize == 6 && summaryEntry.maxRoomSize == 12 && CFunctionContainerCommon.Dvar_GetString("ui_quickReturn") == "v1|" + summaryOwner + "|" + summaryKey)
          {
             this.stopRankedMatchGoGameTimer();
             this.startRankedMatchPassedTimeTimer();
@@ -1888,8 +1888,8 @@ import flash.utils.getTimer;
       
       private function leaveRoom(auto:Boolean = false, cancelRanked:Boolean = false, withParty:Boolean = false) : void
       {
-         CFunctionContainerCommon.setdvar("codol_quick_lineage","");
-         CFunctionContainerCommon.setdvar("codol_quick_return","");
+         CFunctionContainerCommon.setdvar("ui_quickLineage","");
+         CFunctionContainerCommon.setdvar("ui_quickReturn","");
          if(this._currentQuickMatchFilter != null)
          {
             this._currentQuickMatchFilter["_localQuickVoteOpen"] = false;
@@ -2001,7 +2001,7 @@ import flash.utils.getTimer;
                }
             }
          }
-         var durableNative:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_native_room_context").split("|");
+         var durableNative:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickNativeRoomContext").split("|");
          var durableOwner:String = CFunctionContainerCommon.GetPlayerID();
          var durableKey:String = durableNative.length == 3 ? String(durableNative[2]) : "";
          var durableSerial:Number = durableNative.length == 3 ? Number(durableNative[1]) : 0;
@@ -2015,8 +2015,8 @@ import flash.utils.getTimer;
             }
             durableDigit++;
          }
-         var durableSaved:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_lineage").split("|");
-         var durableReturn:String = CFunctionContainerCommon.Dvar_GetString("codol_quick_return");
+         var durableSaved:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickLineage").split("|");
+         var durableReturn:String = CFunctionContainerCommon.Dvar_GetString("ui_quickReturn");
          var durablePlaylist:PlayListObj = durableSaved.length == 5 ? this.getPlayListObj(int(durableSaved[3])) : null;
          var durableOwn:Boolean = false;
          var durableRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
@@ -2110,7 +2110,7 @@ import flash.utils.getTimer;
          }
          if(sharedQuick && durableValid && CFunctionContainer.IsRankedMatch())
          {
-            CFunctionContainerCommon.setdvar("codol_quick_lineage","v1|" + durableOwner + "|" + durableKey + "|" + String(quickFilter.playListID) + "|" + String(quickFilter.leagueName));
+            CFunctionContainerCommon.setdvar("ui_quickLineage","v1|" + durableOwner + "|" + durableKey + "|" + String(quickFilter.playListID) + "|" + String(quickFilter.leagueName));
          }
          if(sharedQuick && queuedHumanIDs.length < queuedRequired)
          {
@@ -2807,8 +2807,8 @@ import flash.utils.getTimer;
       
       private function onRankedMatchGoGameTimerHandle(cEvt:TimerEvent) : void
       {
-         var summaryNative:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_native_room_context").split("|");
-         var summarySaved:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_lineage").split("|");
+         var summaryNative:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickNativeRoomContext").split("|");
+         var summarySaved:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickLineage").split("|");
          var summaryOwner:String = CFunctionContainerCommon.GetPlayerID();
          var summaryKey:String = summaryNative.length == 3 ? String(summaryNative[2]) : "";
          var summaryEntry:PlayListObj = summarySaved.length == 5 ? this.getPlayListObj(int(summarySaved[3])) : null;
@@ -2819,7 +2819,7 @@ import flash.utils.getTimer;
             summaryValid = "0123456789abcdef".indexOf(summaryKey.charAt(summaryDigit)) >= 0;
             summaryDigit++;
          }
-         if(ScaleformUtil.isScaleform && summaryValid && this.isInRoom() && CFunctionContainer.IsRankedMatch() && summaryOwner.length > 0 && summarySaved.length == 5 && summarySaved[0] == "v1" && summarySaved[1] == summaryOwner && summarySaved[2] == summaryKey && summaryEntry != null && summaryEntry.name == "Quick Match" && summaryEntry.type == 1 && summaryEntry.minPartySize == 1 && summaryEntry.maxPartySize == 6 && summaryEntry.maxRoomSize == 12 && CFunctionContainerCommon.Dvar_GetString("codol_quick_return") == "v1|" + summaryOwner + "|" + summaryKey)
+         if(ScaleformUtil.isScaleform && summaryValid && this.isInRoom() && CFunctionContainer.IsRankedMatch() && summaryOwner.length > 0 && summarySaved.length == 5 && summarySaved[0] == "v1" && summarySaved[1] == summaryOwner && summarySaved[2] == summaryKey && summaryEntry != null && summaryEntry.name == "Quick Match" && summaryEntry.type == 1 && summaryEntry.minPartySize == 1 && summaryEntry.maxPartySize == 6 && summaryEntry.maxRoomSize == 12 && CFunctionContainerCommon.Dvar_GetString("ui_quickReturn") == "v1|" + summaryOwner + "|" + summaryKey)
          {
             this.stopRankedMatchGoGameTimer();
             this.startRankedMatchPassedTimeTimer();
@@ -2904,8 +2904,8 @@ import flash.utils.getTimer;
       private function onRankedMatchCanceled() : void
       {
          this.cancelRankedMatch();
-         CFunctionContainerCommon.setdvar("codol_quick_lineage","");
-         CFunctionContainerCommon.setdvar("codol_quick_return","");
+         CFunctionContainerCommon.setdvar("ui_quickLineage","");
+         CFunctionContainerCommon.setdvar("ui_quickReturn","");
          if(this._currentQuickMatchFilter != null)
          {
             this._currentQuickMatchFilter["_localQuickVoteOpen"] = false;
@@ -2975,8 +2975,8 @@ import flash.utils.getTimer;
       
       private function onRoomLeftHandle(cEvt:ParaEvent) : void
       {
-         CFunctionContainerCommon.setdvar("codol_quick_lineage","");
-         CFunctionContainerCommon.setdvar("codol_quick_return","");
+         CFunctionContainerCommon.setdvar("ui_quickLineage","");
+         CFunctionContainerCommon.setdvar("ui_quickReturn","");
          if(this._currentQuickMatchFilter != null)
          {
             this._currentQuickMatchFilter["_localQuickVoteOpen"] = false;
@@ -3143,8 +3143,8 @@ import flash.utils.getTimer;
             return;
          }
          this._currentQuickMatchFilter = cEvt.myPara.filter;
-         CFunctionContainerCommon.setdvar("codol_quick_lineage","");
-         CFunctionContainerCommon.setdvar("codol_quick_return","");
+         CFunctionContainerCommon.setdvar("ui_quickLineage","");
+         CFunctionContainerCommon.setdvar("ui_quickReturn","");
          if(this._currentQuickMatchFilter != null)
          {
             this._currentQuickMatchFilter["_localQuickVoteOpen"] = false;
@@ -3299,8 +3299,8 @@ import flash.utils.getTimer;
          }
          if(cEvt.type == BCEvent.LOBBY_CLOSE_SUMMARY)
          {
-            var ackNative:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_native_room_context").split("|");
-            var ackSaved:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_lineage").split("|");
+            var ackNative:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickNativeRoomContext").split("|");
+            var ackSaved:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickLineage").split("|");
             var ackOwner:String = CFunctionContainerCommon.GetPlayerID();
             var ackKey:String = ackNative.length == 3 ? String(ackNative[2]) : "";
             var ackSerial:Number = ackNative.length == 3 ? Number(ackNative[1]) : 0;
@@ -3329,7 +3329,7 @@ import flash.utils.getTimer;
                   }
                }
             }
-            if(ScaleformUtil.isScaleform && ackValid && this.isInRoom() && CFunctionContainer.IsRankedMatch() && ackOwn && ackSaved.length == 5 && ackSaved[0] == "v1" && ackSaved[1] == ackOwner && ackSaved[2] == ackKey && CFunctionContainerCommon.Dvar_GetString("codol_quick_return") == "v1|" + ackOwner + "|" + ackKey && ackPlaylist != null && ackPlaylist.name == "Quick Match" && ackPlaylist.type == 1 && ackPlaylist.minPartySize == 1 && ackPlaylist.maxPartySize == 6 && ackPlaylist.maxRoomSize == 12 && (ackFilter == null || ackFilter["_localQuickSharedInvalidated"] != true && ackFilter["_localQuickExternal"] != true && ackFilter["_localQuickExternal20"] != true && (ackFilter.playListID == int(ackSaved[3]) && ackFilter.playListName == "Quick Match" || ackFilter.playListID == -1 && ackFilter.type == RoomListType.NONE && ackFilter.playListName.length == 0)))
+            if(ScaleformUtil.isScaleform && ackValid && this.isInRoom() && CFunctionContainer.IsRankedMatch() && ackOwn && ackSaved.length == 5 && ackSaved[0] == "v1" && ackSaved[1] == ackOwner && ackSaved[2] == ackKey && CFunctionContainerCommon.Dvar_GetString("ui_quickReturn") == "v1|" + ackOwner + "|" + ackKey && ackPlaylist != null && ackPlaylist.name == "Quick Match" && ackPlaylist.type == 1 && ackPlaylist.minPartySize == 1 && ackPlaylist.maxPartySize == 6 && ackPlaylist.maxRoomSize == 12 && (ackFilter == null || ackFilter["_localQuickSharedInvalidated"] != true && ackFilter["_localQuickExternal"] != true && ackFilter["_localQuickExternal20"] != true && (ackFilter.playListID == int(ackSaved[3]) && ackFilter.playListName == "Quick Match" || ackFilter.playListID == -1 && ackFilter.type == RoomListType.NONE && ackFilter.playListName.length == 0)))
             {
                if(ackFilter == null)
                {
@@ -3350,7 +3350,7 @@ import flash.utils.getTimer;
          {
             var quickFilter:Object = this._currentQuickMatchFilter;
             var quickRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
-            var durableNative:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_native_room_context").split("|");
+            var durableNative:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickNativeRoomContext").split("|");
             var durableOwner:String = CFunctionContainerCommon.GetPlayerID();
             var durableKey:String = durableNative.length == 3 ? String(durableNative[2]) : "";
             var durableSerial:Number = durableNative.length == 3 ? Number(durableNative[1]) : 0;
@@ -3364,7 +3364,7 @@ import flash.utils.getTimer;
                }
                durableDigit++;
             }
-            var durableSaved:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_lineage").split("|");
+            var durableSaved:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickLineage").split("|");
             if(!durableValid || durableSaved.length != 5 || durableSaved[1] != durableOwner || durableSaved[2] != durableKey)
             {
                return;
@@ -3381,7 +3381,7 @@ import flash.utils.getTimer;
                quickFilter["_localQuickSharedRoomSeen"] = false;
                quickFilter["_localQuickSharedReturning"] = false;
                quickFilter["_localQuickSharedReturnPending"] = false;
-               CFunctionContainerCommon.setdvar("codol_quick_return","");
+               CFunctionContainerCommon.setdvar("ui_quickReturn","");
                CFunctionContainer.SetReadyState(false);
                this.gotoPage(CodoPageViewDB.PAGE_MAIN_HOME);
                this.changeRankedMatchStatus(RankedMatchStatus.IN_PROGRESS);
@@ -3390,9 +3390,9 @@ import flash.utils.getTimer;
             }
             quickFilter["_localQuickManagedSummary"] = false;
             quickFilter["_localQuickVoteRequireHostFalse"] = true;
-            var resultHostFalse:Boolean = CFunctionContainerCommon.Dvar_GetString("codol_quick_return_host_false") == "v1|" + durableOwner + "|" + durableKey;
-            CFunctionContainerCommon.setdvar("codol_quick_return","");
-            CFunctionContainerCommon.setdvar("codol_quick_return_host_false","");
+            var resultHostFalse:Boolean = CFunctionContainerCommon.Dvar_GetString("ui_quickReturnHostFalse") == "v1|" + durableOwner + "|" + durableKey;
+            CFunctionContainerCommon.setdvar("ui_quickReturn","");
+            CFunctionContainerCommon.setdvar("ui_quickReturnHostFalse","");
             if(quickFilter["_localQuickVoteOpen"] != true)
             {
                quickFilter["_localQuickVoteOpen"] = true;
@@ -3463,7 +3463,7 @@ import flash.utils.getTimer;
             this.leaveRoom(true,false,Boolean(super.getSyncDP(SyncDataID.IS_IN_PARTY)) && Boolean(super.getSyncDP(SyncDataID.IS_PARTY_HOST)));
             return;
          }
-         durableNative = CFunctionContainerCommon.Dvar_GetString("codol_quick_native_room_context").split("|");
+         durableNative = CFunctionContainerCommon.Dvar_GetString("ui_quickNativeRoomContext").split("|");
          durableOwner = CFunctionContainerCommon.GetPlayerID();
          durableKey = durableNative.length == 3 ? String(durableNative[2]) : "";
          durableSerial = durableNative.length == 3 ? Number(durableNative[1]) : 0;
@@ -3477,8 +3477,8 @@ import flash.utils.getTimer;
             }
             durableDigit++;
          }
-         durableSaved = CFunctionContainerCommon.Dvar_GetString("codol_quick_lineage").split("|");
-         var durableReturn:String = CFunctionContainerCommon.Dvar_GetString("codol_quick_return");
+         durableSaved = CFunctionContainerCommon.Dvar_GetString("ui_quickLineage").split("|");
+         var durableReturn:String = CFunctionContainerCommon.Dvar_GetString("ui_quickReturn");
          var durablePlaylist:PlayListObj = durableSaved.length == 5 ? this.getPlayListObj(int(durableSaved[3])) : null;
          var durableOwn:Boolean = false;
          var durableRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
@@ -3568,7 +3568,7 @@ import flash.utils.getTimer;
          }
          if(sharedQuick && durableValid && CFunctionContainer.IsRankedMatch())
          {
-            CFunctionContainerCommon.setdvar("codol_quick_lineage","v1|" + durableOwner + "|" + durableKey + "|" + String(quickFilter.playListID) + "|" + String(quickFilter.leagueName));
+            CFunctionContainerCommon.setdvar("ui_quickLineage","v1|" + durableOwner + "|" + durableKey + "|" + String(quickFilter.playListID) + "|" + String(quickFilter.leagueName));
          }
          var isPlayingOnBoard:Boolean = false;
          var mapID:String = null;
@@ -3600,11 +3600,11 @@ import flash.utils.getTimer;
                }
                if(durableSavedValid && durableSaved.length == 5 && durableSaved[0] == "v1" && durableSaved[1] == durableOwner && durablePlaylist != null && durablePlaylist.name == "Quick Match" && durablePlaylist.type == 1 && durablePlaylist.minPartySize == 1 && durablePlaylist.maxPartySize == 6 && durablePlaylist.maxRoomSize == 12 && (!durableValid || durableSaved[2] == durableKey) && this.isInRoom() && CFunctionContainer.IsRankedMatch() && CFunctionContainerCommon.Dvar_GetInt("ui_eog_show") == 1 && durableActualRoom != null && durableActualRoom.mapID == CFunctionContainerCommon.Dvar_GetString("ui_played_mapname") && String(durableActualRoom.mapID).length > 0)
                {
-                  if(CFunctionContainerCommon.Dvar_GetString("codol_quick_return") != "v1|" + durableOwner + "|" + String(durableSaved[2]))
+                  if(CFunctionContainerCommon.Dvar_GetString("ui_quickReturn") != "v1|" + durableOwner + "|" + String(durableSaved[2]))
                   {
-                     CFunctionContainerCommon.setdvar("codol_quick_return_host_false","");
+                     CFunctionContainerCommon.setdvar("ui_quickReturnHostFalse","");
                   }
-                  CFunctionContainerCommon.setdvar("codol_quick_return","v1|" + durableOwner + "|" + String(durableSaved[2]));
+                  CFunctionContainerCommon.setdvar("ui_quickReturn","v1|" + durableOwner + "|" + String(durableSaved[2]));
                   this.startRankedMatchPassedTimeTimer();
                }
                if(quickFilter != null && quickSelected && quickFilter["_localQuickSharedJoined"] == true && quickFilter["_localQuickSharedLineage"] == true && quickFilter["_localQuickExternal"] != true && quickFilter["_localQuickExternal20"] != true)
@@ -3839,7 +3839,7 @@ import flash.utils.getTimer;
                }
             }
          }
-         var durableNative:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_native_room_context").split("|");
+         var durableNative:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickNativeRoomContext").split("|");
          var durableOwner:String = CFunctionContainerCommon.GetPlayerID();
          var durableKey:String = durableNative.length == 3 ? String(durableNative[2]) : "";
          var durableSerial:Number = durableNative.length == 3 ? Number(durableNative[1]) : 0;
@@ -3853,8 +3853,8 @@ import flash.utils.getTimer;
             }
             durableDigit++;
          }
-         var durableSaved:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_lineage").split("|");
-         var durableReturn:String = CFunctionContainerCommon.Dvar_GetString("codol_quick_return");
+         var durableSaved:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickLineage").split("|");
+         var durableReturn:String = CFunctionContainerCommon.Dvar_GetString("ui_quickReturn");
          var durablePlaylist:PlayListObj = durableSaved.length == 5 ? this.getPlayListObj(int(durableSaved[3])) : null;
          var durableOwn:Boolean = false;
          var durableRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
@@ -3944,7 +3944,7 @@ import flash.utils.getTimer;
          }
          if(sharedQuick && durableValid && CFunctionContainer.IsRankedMatch())
          {
-            CFunctionContainerCommon.setdvar("codol_quick_lineage","v1|" + durableOwner + "|" + durableKey + "|" + String(quickFilter.playListID) + "|" + String(quickFilter.leagueName));
+            CFunctionContainerCommon.setdvar("ui_quickLineage","v1|" + durableOwner + "|" + durableKey + "|" + String(quickFilter.playListID) + "|" + String(quickFilter.leagueName));
          }
          if(durableEligible && durableReturn == "v1|" + durableOwner + "|" + durableKey && !sharedQuick)
          {
@@ -4013,7 +4013,7 @@ import flash.utils.getTimer;
                }
             }
          }
-         var durableNative:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_native_room_context").split("|");
+         var durableNative:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickNativeRoomContext").split("|");
          var durableOwner:String = CFunctionContainerCommon.GetPlayerID();
          var durableKey:String = durableNative.length == 3 ? String(durableNative[2]) : "";
          var durableSerial:Number = durableNative.length == 3 ? Number(durableNative[1]) : 0;
@@ -4027,8 +4027,8 @@ import flash.utils.getTimer;
             }
             durableDigit++;
          }
-         var durableSaved:Array = CFunctionContainerCommon.Dvar_GetString("codol_quick_lineage").split("|");
-         var durableReturn:String = CFunctionContainerCommon.Dvar_GetString("codol_quick_return");
+         var durableSaved:Array = CFunctionContainerCommon.Dvar_GetString("ui_quickLineage").split("|");
+         var durableReturn:String = CFunctionContainerCommon.Dvar_GetString("ui_quickReturn");
          var durablePlaylist:PlayListObj = durableSaved.length == 5 ? this.getPlayListObj(int(durableSaved[3])) : null;
          var durableOwn:Boolean = false;
          var durableRoom:Object = super.getSyncDP(SyncDataID.ROOM_INFO);
@@ -4118,7 +4118,7 @@ import flash.utils.getTimer;
          }
          if(sharedQuick && durableValid && CFunctionContainer.IsRankedMatch())
          {
-            CFunctionContainerCommon.setdvar("codol_quick_lineage","v1|" + durableOwner + "|" + durableKey + "|" + String(quickFilter.playListID) + "|" + String(quickFilter.leagueName));
+            CFunctionContainerCommon.setdvar("ui_quickLineage","v1|" + durableOwner + "|" + durableKey + "|" + String(quickFilter.playListID) + "|" + String(quickFilter.leagueName));
          }
          if(sharedQuick && queuedHumanIDs.length < queuedRequired)
          {
@@ -4898,8 +4898,8 @@ import flash.utils.getTimer;
       {
          if(!cRes)
          {
-            CFunctionContainerCommon.setdvar("codol_quick_lineage","");
-            CFunctionContainerCommon.setdvar("codol_quick_return","");
+            CFunctionContainerCommon.setdvar("ui_quickLineage","");
+            CFunctionContainerCommon.setdvar("ui_quickReturn","");
             if(this._currentQuickMatchFilter != null)
             {
                this._currentQuickMatchFilter["_localQuickVoteOpen"] = false;

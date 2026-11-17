@@ -1,4 +1,4 @@
-// SM2 HUD style (k33_hudStyle 5): an original HUD laid out after a screenshot of the cancelled SM2 mod's HUD (the
+// SM2 HUD style (cg_hudStyle 5): an original HUD laid out after a screenshot of the cancelled SM2 mod's HUD (the
 // user's reference), authored for 1.1.1.13 with its own ownerdraws and operators. No art is copied: every item draws
 // "white", a material 1.1.1.13 loads with common_mp, or a 1.1.1.13 ownerdraw (the clip count 3001 is Kernel33's,
 // hud_style.c). Compiled by zonekit/menu_source.py from tools/build_hud_styles.py; docs/HUD_STYLES_20261112.md.

@@ -1,4 +1,4 @@
-// english_locale -- every English string zone in one (k33_english 1; ahead of code_pre_gfx): C1's strings, the
+// english_locale -- every English string zone in one (loc_english 1; ahead of code_pre_gfx): C1's strings, the
 // Latin font movie, the UI movies' K33UI_* keys, the usermaps' names, zombies strings. Built by build_zones.py.
 >zone,english_locale
 >install,client_shipRetail\patch

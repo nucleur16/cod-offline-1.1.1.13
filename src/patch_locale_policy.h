@@ -7,7 +7,15 @@ static int AsciiWideEqual(const wchar_t *a,const wchar_t *b)
  while(*a && *b) { wchar_t x=*a++,y=*b++; if(x>=L'A'&&x<=L'Z')x+=32;if(y>=L'A'&&y<=L'Z')y+=32;if(x!=y)return 0; }
  return *a==*b;
 }
-/* k33_english is the canonical startup-only switch. Keep loc_patchLang for
+/* LEGACY_NAME: the names launchers may still pass from before the IW-style rename (k33_english, k33_language). */
+#define LANG_OLD_ENGLISH L"k33_english"     /* LEGACY_NAME */
+#define LANG_OLD_LANGUAGE "k33_language"    /* LEGACY_NAME */
+#define LANG_OLD_LANGUAGE_W L"k33_language" /* LEGACY_NAME */
+static int EnglishSwitchName(const wchar_t *name)
+{
+ return AsciiWideEqual(name,L"loc_english") || AsciiWideEqual(name,LANG_OLD_ENGLISH);
+}
+/* loc_english (LEGACY_NAME: or its old spelling k33_english) is the canonical startup-only switch. Keep loc_patchLang for
  * existing launchers. The last valid canonical switch wins over the alias;
  * an absent or malformed canonical value does not erase a valid choice. */
 static enum PatchLanguage PatchLanguageFromArgv(int argc,const wchar_t *const *argv)
@@ -18,7 +26,7 @@ static enum PatchLanguage PatchLanguageFromArgv(int argc,const wchar_t *const *a
  int i;
  for(i=1;i<argc;i++) {
   if(!AsciiWideEqual(argv[i],L"+set") || i+1>=argc)continue;
-  if(AsciiWideEqual(argv[i+1],L"k33_english")) {
+  if(EnglishSwitchName(argv[i+1])) {
    if(i+2<argc && (AsciiWideEqual(argv[i+2],L"0") || AsciiWideEqual(argv[i+2],L"1"))) {
     canonical=AsciiWideEqual(argv[i+2],L"1") ? PATCH_EN : PATCH_ZH;
     canonicalSeen=1;
@@ -130,7 +138,7 @@ static int PatchZoneLocaleAllowed(const char *name,enum PatchLanguage language)
  return 1;
 }
 
-/* ---- languages by name (k33_language, docs/LANGUAGE_SWITCH_20261112.md) ------------------------------------------
+/* ---- languages by name (loc_languageName, docs/LANGUAGE_SWITCH_20261112.md) ------------------------------------------
  * A language is a short name: "en" and "zh" are the two this project ships; any other <name>_locale.ff in the
  * patch folder is a language too, named <name>. "english"/"chinese" are accepted spellings of en/zh (they are the
  * zone stems: english_locale, chinese_locale). Everything here is pure (tests/patch_locale_test.c). */
@@ -208,33 +216,36 @@ static int PatchZoneAllowedFor(const char *name,const char *lang)
 }
 /* Where the startup language came from. */
 enum LanguageSource { LANG_DEFAULT=0, LANG_ARGV=1, LANG_ALIAS=2, LANG_CONFIG=3 };
-/* The last valid "+set k33_language <name>" on the command line; 0 when there is none. */
+/* The last valid "+set loc_languageName <name>" (LEGACY_NAME: or "+set k33_language <name>") on the command line; 0 when
+ * there is none. */
 static int LanguageFromArgv(int argc,const wchar_t *const *argv,char out[LANG_NAME_MAX])
 {
  int i,found=0;
  char lang[LANG_NAME_MAX];
  for(i=1;i+2<argc;i++) {
-  if(!AsciiWideEqual(argv[i],L"+set") || !AsciiWideEqual(argv[i+1],L"k33_language"))continue;
+  if(!AsciiWideEqual(argv[i],L"+set") ||
+     (!AsciiWideEqual(argv[i+1],L"loc_languageName") && !AsciiWideEqual(argv[i+1],LANG_OLD_LANGUAGE_W)))continue;
   if(LanguageCanonicalWide(argv[i+2],lang)) { strcpy(out,lang); found=1; }
  }
  return found;
 }
-/* True when the command line carries one of the older selectors (a valid k33_english, or any loc_patchLang). */
+/* True when the command line carries one of the older selectors (LEGACY_NAME: a valid loc_english / k33_english, or any
+ * loc_patchLang). */
 static int PatchLanguageAliasSeen(int argc,const wchar_t *const *argv)
 {
  int i;
  for(i=1;i+1<argc;i++) {
   if(!AsciiWideEqual(argv[i],L"+set"))continue;
   if(AsciiWideEqual(argv[i+1],L"loc_patchLang"))return 1;
-  if(AsciiWideEqual(argv[i+1],L"k33_english") && i+2<argc &&
+  if(EnglishSwitchName(argv[i+1]) && i+2<argc &&
      (AsciiWideEqual(argv[i+2],L"0") || AsciiWideEqual(argv[i+2],L"1")))return 1;
  }
  return 0;
 }
-/* The saved choice: the last  seta k33_language "<name>"  (or set / sets ...) line of a plaintext config_mp.cfg.
- * 0 when the text has no valid line (also for an encrypted config: it has no such text). */
-static int LanguageFromConfig(const char *text,size_t len,char out[LANG_NAME_MAX])
+/* The last  seta <dvar> "<name>"  (or set / sets ...) line of a plaintext config_mp.cfg naming a valid language. */
+static int LanguageFromConfigDvar(const char *text,size_t len,const char *dvar,char out[LANG_NAME_MAX])
 {
+ size_t dl=strlen(dvar);
  size_t i=0;
  int found=0;
  while(i<len) {
@@ -247,8 +258,8 @@ static int LanguageFromConfig(const char *text,size_t len,char out[LANG_NAME_MAX
    if(p<eol && (text[p]=='a'||text[p]=='A'||text[p]=='s'||text[p]=='S'||text[p]=='u'||text[p]=='U'))p++;
    if(p<eol && (text[p]==' '||text[p]=='\t')) {
     while(p<eol && (text[p]==' '||text[p]=='\t'))p++;
-    if(eol-p>12 && AsciiPrefix(text+p,"k33_language") && (text[p+12]==' '||text[p+12]=='\t')) {
-     p+=12;
+    if(eol-p>dl && AsciiPrefix(text+p,dvar) && (text[p+dl]==' '||text[p+dl]=='\t')) {
+     p+=dl;
      while(p<eol && (text[p]==' '||text[p]=='\t'||text[p]=='"'))p++;
      while(p<eol && text[p]!='"' && text[p]!=' ' && text[p]!='\t' && n<sizeof(word)-1)word[n++]=text[p++];
      word[n]=0;
@@ -260,9 +271,15 @@ static int LanguageFromConfig(const char *text,size_t len,char out[LANG_NAME_MAX
  }
  return found;
 }
-/* The language a client starts in: "+set k33_language <name>", else the older k33_english / loc_patchLang
+/* The saved choice: loc_languageName's line, else (LEGACY_NAME: a config saved before the rename) k33_language's.
+ * 0 when the text has no valid line (also for an encrypted config: it has no such text). */
+static int LanguageFromConfig(const char *text,size_t len,char out[LANG_NAME_MAX])
+{
+ return LanguageFromConfigDvar(text,len,"loc_languageName",out) || LanguageFromConfigDvar(text,len,LANG_OLD_LANGUAGE,out);
+}
+/* The language a client starts in: "+set loc_languageName <name>", else the older loc_english / loc_patchLang
  * selectors (PatchLanguageFromArgv; an unsupported loc_patchLang means the stock language, zh), else the
- * config's saved k33_language, else English. Returns where it came from. */
+ * config's saved loc_languageName, else English. Returns where it came from. */
 static enum LanguageSource StartupLanguage(int argc,const wchar_t *const *argv,const char *config,size_t configLen,
                                                     char out[LANG_NAME_MAX])
 {
@@ -296,7 +313,7 @@ static int LanguageListFind(char list[LANG_MAX][LANG_NAME_MAX],int count,const c
  for(i=0;i<count;i++)if(!strcmp(list[i],lang))return i;
  return -1;
 }
-/* "en;zh" (k33_languageList). */
+/* "en;zh" (loc_languageList). */
 static void LanguageListJoin(char list[LANG_MAX][LANG_NAME_MAX],int count,char *out,size_t size)
 {
  size_t n=0;

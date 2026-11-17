@@ -8,18 +8,17 @@
         visible              1
         menuExtra            1
         focusColor           0 0 0 0
-        visible when ( ( dvarint( "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( [ ( ! [ ( ui_active ) ] ] && [ ( ! [ ( staticdvarbool
-                "g_hardcore" ) ] ] && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( weaponname ) ==
-                "killstreak_ac130_mp" ] || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ]
-                || [ ( weaponname ) == "killstreak_predator_missile_mp" || weaponname( ) ==
-                "remote_missile_detonator_so" ] || [ ( [ ( weaponname ) == "ac130_105mm_mp" ]
-                || [ ( weaponname ) == "ac130_40mm_mp" ] || [ ( weaponname ) == "ac130_25mm_mp" ] ]
-                || [ ( adsjavelin ) ] || [ ( weaponname ) == "heli_remote_mp" ] || missilecam( ) ] ]
-                && [ ( ! isempjammed( ) ] && [ ( ! [ ( staticdvarint "scr_gameended" ) ] ] ]
-                && ! [ ( selecting_location ) ] && [ ( ! [ ( spectatingfree ) ] ] && [ ! [ demofreecamera ] ]
-                && [ ! [ demofollowcamera ] ] && [ ( staticdvarbool "cg_weaponBarHide" ) == 0 ] ] )
-                || ( dvarint( "k33_hudStyle" ) == 2 && [ ( [ ( ( [ ( ! [ ( ui_active ) ] ]
+        visible when ( ( dvarint( "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" ) !=
+                5 && [ ( [ ( [ ( ! [ ( ui_active ) ] ] && [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ]
+                && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( weaponname ) == "killstreak_ac130_mp" ]
+                || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ] || [ ( weaponname ) ==
+                "killstreak_predator_missile_mp" || weaponname( ) == "remote_missile_detonator_so" ]
+                || [ ( [ ( weaponname ) == "ac130_105mm_mp" ] || [ ( weaponname ) == "ac130_40mm_mp" ]
+                || [ ( weaponname ) == "ac130_25mm_mp" ] ] || [ ( adsjavelin ) ] || [ ( weaponname ) ==
+                "heli_remote_mp" ] || missilecam( ) ] ] && [ ( ! isempjammed( ) ] && [ ( ! [ ( staticdvarint
+                "scr_gameended" ) ] ] ] && ! [ ( selecting_location ) ] && [ ( ! [ ( spectatingfree ) ] ]
+                && [ ! [ demofreecamera ] ] && [ ! [ demofollowcamera ] ] && [ ( staticdvarbool "cg_weaponBarHide" )
+                == 0 ] ] ) || ( dvarint( "cg_hudStyle" ) == 2 && [ ( [ ( ( [ ( ! [ ( ui_active ) ] ]
                 || menuisopen( "shoutcast" ) ) && [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ]
                 && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( weaponname ) == "killstreak_ac130_mp" ]
                 || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ] || [ ( weaponname ) ==
@@ -30,7 +29,7 @@
                 && [ ( ! isempjammed( ) ] && [ ( ! [ ( staticdvarint "scr_gameended" ) ] ] ]
                 && ! [ ( selecting_location ) ] && [ ( ! [ ( spectatingfree ) ] ] && [ ! [ demofreecamera ] ]
                 && [ ! [ demofollowcamera ] ] && [ ( staticdvarbool "cg_weaponBarHide" ) == 0 ] ] )
-                || ( dvarint( "k33_hudStyle" ) == 3 && [ ( [ ( ( [ ( ! [ ( ui_active ) ] ]
+                || ( dvarint( "cg_hudStyle" ) == 3 && [ ( [ ( ( [ ( ! [ ( ui_active ) ] ]
                 || [ ( [ ( staticdvarint "cl_isHostAsSpectator" ) == 1 ] && staticdvarint( "cl_shoutCastMode" ) != 0 ]
                 || [ ( staticdvarint "cl_isHostAsSpectator" ) != 0 ] ) && [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ]
                 && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( weaponname ) == "killstreak_ac130_mp" ]
@@ -44,7 +43,7 @@
                 && [ ! [ demofollowcamera ] ] && [ ( staticdvarbool "cg_weaponBarHide" ) == 0 ]
                 && [ ( ! [ ( staticdvarint "cl_isHostAsSpectator" ) == 1 ] || staticdvarint( "cl_showShoutcastHud" )
                 == 1 ] && ( ! 0 || inkillcam( ) ) && ( ! [ ( staticdvarstring "ui_gametype" ) == "clash" ]
-                || ( 0 != 5 ) ) ] ) || ( dvarint( "k33_hudStyle" ) == 5 && [ ( [ ( [ ( ! [ ( ui_active ) ] ]
+                || ( 0 != 5 ) ) ] ) || ( dvarint( "cg_hudStyle" ) == 5 && [ ( [ ( [ ( ! [ ( ui_active ) ] ]
                 && [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ] && [ ( ! [ ( flashbanged ) ] ]
                 && [ ( ! [ ( [ ( weaponname ) == "killstreak_ac130_mp" ] || [ ( weaponname ) ==
                 "killstreak_helicopter_minigun_mp" ] || [ ( weaponname ) == "killstreak_predator_missile_mp"
@@ -66,8 +65,8 @@
             textalign            2
             textscale            0.3333
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( inkillcam ) || spectatingclient( ) ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( inkillcam ) || spectatingclient( ) ];
             exp rect X ( -60.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -53.333336 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -83,9 +82,8 @@
             textalign            2
             textscale            0.3333
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( ! [ ( inkillcam ) ] ] && [ ( ! [ ( spectatingclient )
-                    ] ] ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( ! [ ( inkillcam ) ] ] && [ ( ! [ ( spectatingclient ) ] ] ];
             exp rect X ( -60.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -53.333336 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -102,9 +100,8 @@
             textalign            9
             textscale            0.3333
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( ! [ ( inkillcam ) ] ] && [ ( ! [ ( spectatingclient )
-                    ] ] ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( ! [ ( inkillcam ) ] ] && [ ( ! [ ( spectatingclient ) ] ] ];
             exp rect X ( -50.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -119,8 +116,8 @@
             textfont             9
             textscale            0.437475
             textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5;
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
             exp rect X ( -130.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -34.000004 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -132,8 +129,8 @@
             forecolor            1 1 1 1
             style                WINDOW_STYLE_SHADER
             background           "hud_weaponbar"
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5;
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
             exp rect X ( -203.33334 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -46.666668 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -146,8 +143,8 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            103
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( player "fragAmmo" ) ] > 3 ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "fragAmmo" ) ] > 3 ];
             exp rect X ( -78.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -161,8 +158,8 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            103
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( player "fragAmmo" ) ] > 2 ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "fragAmmo" ) ] > 2 ];
             exp rect X ( -74.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -176,8 +173,8 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            103
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( player "fragAmmo" ) ] > 1 ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "fragAmmo" ) ] > 1 ];
             exp rect X ( -71.33333 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -191,8 +188,8 @@
             forecolor            1 1 1 1
             ownerdraw            103
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( player "fragAmmo" ) ] ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "fragAmmo" ) ] ];
             exp rect X ( -68.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -206,8 +203,8 @@
             forecolor            0.5 0.3 0.3 1
             ownerdraw            103
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( player "fragAmmo" ) ] == 0 ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "fragAmmo" ) ] == 0 ];
             exp rect X ( -68.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -222,8 +219,8 @@
             textalign            2
             textscale            0.18
             textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( player "fragAmmo" ) ] > 0 ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "fragAmmo" ) ] > 0 ];
             exp text ( "^3" + keybinding( "+frag" );
             exp rect X ( -86.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -24.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -238,8 +235,8 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            104
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( player "smokeAmmo" ) ] > 3 ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "smokeAmmo" ) ] > 3 ];
             exp rect X ( -111.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -253,8 +250,8 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            104
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( player "smokeAmmo" ) ] > 2 ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "smokeAmmo" ) ] > 2 ];
             exp rect X ( -108.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -268,8 +265,8 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            104
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( player "smokeAmmo" ) ] > 1 ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "smokeAmmo" ) ] > 1 ];
             exp rect X ( -104.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -283,8 +280,8 @@
             forecolor            1 1 1 1
             ownerdraw            104
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( player "smokeAmmo" ) ] ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "smokeAmmo" ) ] ];
             exp rect X ( -101.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -298,8 +295,8 @@
             forecolor            0.5 0.3 0.3 1
             ownerdraw            104
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( player "smokeAmmo" ) ] == 0 ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "smokeAmmo" ) ] == 0 ];
             exp rect X ( -101.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -314,8 +311,8 @@
             textalign            2
             textscale            0.18
             textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( player "smokeAmmo" ) ] > 0 ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "smokeAmmo" ) ] > 0 ];
             exp text ( "^3" + keybinding( "+smoke" );
             exp rect X ( -119.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -24.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -330,8 +327,8 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            284
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( player "tactAmmo" ) ] > 3 ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "tactAmmo" ) ] > 3 ];
             exp rect X ( -144.66666 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -345,8 +342,8 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            284
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( player "tactAmmo" ) ] > 2 ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "tactAmmo" ) ] > 2 ];
             exp rect X ( -141.33334 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -360,8 +357,8 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            284
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( player "tactAmmo" ) ] > 1 ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "tactAmmo" ) ] > 1 ];
             exp rect X ( -138.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -375,8 +372,8 @@
             forecolor            1 1 1 1
             ownerdraw            284
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( player "tactAmmo" ) ] > 0 ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "tactAmmo" ) ] > 0 ];
             exp rect X ( -134.66666 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -390,8 +387,8 @@
             forecolor            0.5 0.3 0.3 1
             ownerdraw            284
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( player "tactAmmo" ) ] == 0 ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "tactAmmo" ) ] == 0 ];
             exp rect X ( -134.66666 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -406,8 +403,8 @@
             textalign            2
             textscale            0.18
             textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( [ ( player "tactAmmo" ) ] > 0 ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "tactAmmo" ) ] > 0 ];
             exp text ( "^3" + keybinding( "+tact" );
             exp rect X ( -152.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -24.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -421,8 +418,8 @@
             forecolor            1 1 1 1
             ownerdraw            294
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( hasaltweapon ) ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( hasaltweapon ) ];
             exp rect X ( -35.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -40.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -438,8 +435,8 @@
             textaligny           18
             textscale            0.25
             textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( hasaltweapon ) ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( hasaltweapon ) ];
             exp text ( "^3" + keybinding( "weapalt" );
             exp rect X ( -35.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -40.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -455,7 +452,7 @@
             textalign            2
             textscale            0.24
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( inkillcam ) || spectatingclient( )
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( inkillcam ) || spectatingclient( )
                     && ( weaponname ) != "none" ) ];
             exp rect X ( -124.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -42.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -472,8 +469,8 @@
             textalign            2
             textscale            0.22439
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( ! [ ( inkillcam ) ] ]
-                    && [ ( ! [ ( spectatingclient ) ] ] && ( weaponname ) != "none" ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( ! [ ( inkillcam ) ] ] && [ ( ! [ ( spectatingclient
+                    ) ] ] && ( weaponname ) != "none" ) ];
             exp rect X ( -124.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -42.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -485,7 +482,7 @@
             forecolor            1 1 1 1
             style                WINDOW_STYLE_SHADER
             background           "k33hud26_fire_type_bg"
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( weaponname ) != "none" ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( weaponname ) != "none" ];
             exp rect X ( -124.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -61.333336 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -498,7 +495,7 @@
             textfont             10
             textalign            8
             textscale            0.15
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( weaponname ) != "none" ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( weaponname ) != "none" ];
             exp text ( locstring dvarstring( "cg_hudFireType" ) );
             exp rect X ( -124.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -61.333336 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -515,7 +512,7 @@
             textfont             7
             textscale            0.56912
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( weaponname ) != "none" ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( weaponname ) != "none" ];
             exp rect X ( -22.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -34.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -531,7 +528,7 @@
             textfont             7
             textscale            0.56912
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( weaponname ) != "none" ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( weaponname ) != "none" ];
             exp rect X ( -123.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -41.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -545,7 +542,7 @@
             textfont             7
             textscale            0.2991
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( weaponname ) != "none" ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( weaponname ) != "none" ];
             exp text ( player "stockAmmo";
             exp rect X ( -10.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -24.22 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -558,7 +555,7 @@
             forecolor            1 1 1 1
             style                WINDOW_STYLE_SHADER
             background           "k33hud26_weaponbar_bg"
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( weaponname ) != "none" ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( weaponname ) != "none" ];
             exp rect X ( -126.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -42.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -571,7 +568,7 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            103
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( player "fragAmmo" ) ] > 3 ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "fragAmmo" ) ] > 3 ];
             exp rect X ( -102.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -585,7 +582,7 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            103
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( player "fragAmmo" ) ] > 2 ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "fragAmmo" ) ] > 2 ];
             exp rect X ( -99.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -599,7 +596,7 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            103
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( player "fragAmmo" ) ] > 1 ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "fragAmmo" ) ] > 1 ];
             exp rect X ( -96.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -613,7 +610,7 @@
             forecolor            1 1 1 1
             ownerdraw            103
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( player "fragAmmo" ) ] ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "fragAmmo" ) ] ];
             exp rect X ( -92.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -627,7 +624,7 @@
             forecolor            0.5 0.3 0.3 1
             ownerdraw            103
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( player "fragAmmo" ) ] == 0
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "fragAmmo" ) ] == 0
                     && ! iszm( ) ];
             exp rect X ( -92.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -645,7 +642,7 @@
             textstyle            7
             glowColor            0 0 0 0.7
             editField
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( player "fragAmmo" ) ] > 0 ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "fragAmmo" ) ] > 0 ];
             exp text ( "^2" + keybinding( "+frag" );
             exp rect X ( -91.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -30.666668 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -659,7 +656,7 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            104
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( player "smokeAmmo" ) ] > 3 ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "smokeAmmo" ) ] > 3 ];
             exp rect X ( -49.333332 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -673,7 +670,7 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            104
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( player "smokeAmmo" ) ] > 2 ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "smokeAmmo" ) ] > 2 ];
             exp rect X ( -46.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -687,7 +684,7 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            104
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( player "smokeAmmo" ) ] > 1 ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "smokeAmmo" ) ] > 1 ];
             exp rect X ( -42.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -701,7 +698,7 @@
             forecolor            1 1 1 1
             ownerdraw            104
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( player "smokeAmmo" ) ] ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "smokeAmmo" ) ] ];
             exp rect X ( -39.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -715,7 +712,7 @@
             forecolor            0.5 0.3 0.3 1
             ownerdraw            104
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( player "smokeAmmo" ) ] == 0
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "smokeAmmo" ) ] == 0
                     && ! iszm( ) ];
             exp rect X ( -39.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -733,7 +730,7 @@
             textstyle            7
             glowColor            0 0 0 0.7
             editField
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( player "smokeAmmo" ) ] > 0 ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "smokeAmmo" ) ] > 0 ];
             exp text ( "^2" + keybinding( "+smoke" );
             exp rect X ( -38.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -30.666668 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -747,7 +744,7 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            284
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( player "tactAmmo" ) ] > 3 ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "tactAmmo" ) ] > 3 ];
             exp rect X ( -129.33334 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -761,7 +758,7 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            284
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( player "tactAmmo" ) ] > 2 ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "tactAmmo" ) ] > 2 ];
             exp rect X ( -126.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -775,7 +772,7 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            284
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( player "tactAmmo" ) ] > 1 ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "tactAmmo" ) ] > 1 ];
             exp rect X ( -122.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -789,7 +786,7 @@
             forecolor            1 1 1 1
             ownerdraw            284
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( player "tactAmmo" ) ] > 0 ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "tactAmmo" ) ] > 0 ];
             exp rect X ( -119.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -803,7 +800,7 @@
             forecolor            0.5 0.3 0.3 1
             ownerdraw            284
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( player "tactAmmo" ) ] == 0
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "tactAmmo" ) ] == 0
                     && ! iszm( ) ];
             exp rect X ( -119.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -821,7 +818,7 @@
             textstyle            7
             glowColor            0 0 0 0.7
             editField
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( player "tactAmmo" ) ] > 0 ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "tactAmmo" ) ] > 0 ];
             exp text ( "^2" + keybinding( "+tact" );
             exp rect X ( -118.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -30.666668 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -834,7 +831,7 @@
             forecolor            1 1 1 1
             ownerdraw            294
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( hasaltweapon ) && ( weaponname ) != "none" ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( hasaltweapon ) && ( weaponname ) != "none" ) ];
             exp rect X ( -48.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -40.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -850,7 +847,7 @@
             textstyle            7
             glowColor            0 0 0 0.7
             editField
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( hasaltweapon ) && ( weaponname ) != "none" ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( hasaltweapon ) && ( weaponname ) != "none" ) ];
             exp text ( "^2" + keybinding( "weapalt" );
             exp rect X ( -48.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -40.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -863,7 +860,7 @@
             visible              1
             forecolor            0.7 0.7 0.7 1
             style                WINDOW_STYLE_SHADER
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( [ ( ( [ ( ! [ ( ui_active ) ] ]
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( [ ( ( [ ( ! [ ( ui_active ) ] ]
                     || menuisopen( "shoutcast" ) ) && [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ]
                     && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( weaponname ) == "killstreak_ac130_mp" ]
                     || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ] || [ ( weaponname ) ==
@@ -894,7 +891,7 @@
             textalign            9
             textscale            0.25
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( [ ( [ ( ( [ ( ! [ ( ui_active ) ] ]
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( [ ( ( [ ( ! [ ( ui_active ) ] ]
                     || menuisopen( "shoutcast" ) ) && [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ]
                     && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( weaponname ) == "killstreak_ac130_mp" ]
                     || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ] || [ ( weaponname ) ==
@@ -921,7 +918,7 @@
             textalign            2
             textscale            0.24
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( ( inkillcam( ) && 0 ) || ( spectatingclient( )
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( ( inkillcam( ) && 0 ) || ( spectatingclient( )
                     && ! 0 ) && ( weaponname( ) != "none" ) ];
             exp rect X ( -125.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -42.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -938,8 +935,8 @@
             textalign            2
             textscale            0.2
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( ! [ ( inkillcam ) ] ]
-                    && [ ( ! [ ( spectatingclient ) ] ] && ( weaponname ) != "none" ) && ! 0 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( ! [ ( inkillcam ) ] ] && [ ( ! [ ( spectatingclient
+                    ) ] ] && ( weaponname ) != "none" ) && ! 0 ];
             exp rect X ( -125.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -42.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -951,7 +948,7 @@
             forecolor            1 1 1 1
             style                WINDOW_STYLE_SHADER
             background           "k33hud33_fire_type_bg"
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( weaponname ) != "none" && ! 0 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( weaponname ) != "none" && ! 0 ];
             exp rect X ( -124.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -61.333336 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -964,7 +961,7 @@
             textfont             10
             textalign            8
             textscale            0.15
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( weaponname ) != "none" && ! 0 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( weaponname ) != "none" && ! 0 ];
             exp text ( locstring dvarstring( "cg_hudFireType" ) );
             exp rect X ( -124.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -61.333336 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -981,7 +978,7 @@
             textfont             7
             textscale            0.56912
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( weaponname ) != "none" ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( weaponname ) != "none" ];
             exp rect X ( -22.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -34.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -997,7 +994,7 @@
             textfont             7
             textscale            0.56912
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( weaponname ) != "none" ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( weaponname ) != "none" ];
             exp rect X ( -123.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -41.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1011,7 +1008,7 @@
             textfont             7
             textscale            0.2991
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( weaponname ) != "none" ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( weaponname ) != "none" ];
             exp text ( player "stockAmmo";
             exp rect X ( -10.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -24.22 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -1024,7 +1021,7 @@
             forecolor            1 1 1 1
             style                WINDOW_STYLE_SHADER
             background           "k33hud26_weaponbar_bg"
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( weaponname ) != "none" && ! 0 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( weaponname ) != "none" && ! 0 ];
             exp rect X ( -126.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -42.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1037,7 +1034,7 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            103
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( player "fragAmmo" ) ] > 3 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "fragAmmo" ) ] > 3 ];
             exp rect X ( -102.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -1051,7 +1048,7 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            103
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( player "fragAmmo" ) ] > 2 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "fragAmmo" ) ] > 2 ];
             exp rect X ( -99.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -1065,7 +1062,7 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            103
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( player "fragAmmo" ) ] > 1 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "fragAmmo" ) ] > 1 ];
             exp rect X ( -96.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -1079,7 +1076,7 @@
             forecolor            1 1 1 1
             ownerdraw            103
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( player "fragAmmo" ) ] ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "fragAmmo" ) ] ];
             exp rect X ( -92.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -1093,7 +1090,7 @@
             forecolor            0.5 0.3 0.3 1
             ownerdraw            103
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( player "fragAmmo" ) ] == 0 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "fragAmmo" ) ] == 0 ];
             exp rect X ( -92.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -1110,7 +1107,7 @@
             textstyle            7
             glowColor            0 0 0 0.7
             editField
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( player "fragAmmo" ) ] > 0 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "fragAmmo" ) ] > 0 ];
             exp text ( "^2" + keybinding( "+frag" );
             exp rect X ( -91.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -30.666668 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -1124,7 +1121,7 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            104
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( player "smokeAmmo" ) ] > 3 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "smokeAmmo" ) ] > 3 ];
             exp rect X ( -49.333332 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -1138,7 +1135,7 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            104
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( player "smokeAmmo" ) ] > 2 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "smokeAmmo" ) ] > 2 ];
             exp rect X ( -46.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -1152,7 +1149,7 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            104
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( player "smokeAmmo" ) ] > 1 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "smokeAmmo" ) ] > 1 ];
             exp rect X ( -42.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -1166,7 +1163,7 @@
             forecolor            1 1 1 1
             ownerdraw            104
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( player "smokeAmmo" ) ] ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "smokeAmmo" ) ] ];
             exp rect X ( -39.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -1180,7 +1177,7 @@
             forecolor            0.5 0.3 0.3 1
             ownerdraw            104
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( player "smokeAmmo" ) ] == 0 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "smokeAmmo" ) ] == 0 ];
             exp rect X ( -39.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -1197,7 +1194,7 @@
             textstyle            7
             glowColor            0 0 0 0.7
             editField
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( player "smokeAmmo" ) ] > 0 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "smokeAmmo" ) ] > 0 ];
             exp text ( "^2" + keybinding( "+smoke" );
             exp rect X ( -38.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -30.666668 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -1211,7 +1208,7 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            284
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( player "tactAmmo" ) ] > 3 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "tactAmmo" ) ] > 3 ];
             exp rect X ( -129.33334 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -1225,7 +1222,7 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            284
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( player "tactAmmo" ) ] > 2 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "tactAmmo" ) ] > 2 ];
             exp rect X ( -126.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -1239,7 +1236,7 @@
             forecolor            0.7 0.7 0.7 1
             ownerdraw            284
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( player "tactAmmo" ) ] > 1 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "tactAmmo" ) ] > 1 ];
             exp rect X ( -122.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -1253,7 +1250,7 @@
             forecolor            1 1 1 1
             ownerdraw            284
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( player "tactAmmo" ) ] > 0 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "tactAmmo" ) ] > 0 ];
             exp rect X ( -119.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -1267,7 +1264,7 @@
             forecolor            0.5 0.3 0.3 1
             ownerdraw            284
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( player "tactAmmo" ) ] == 0 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "tactAmmo" ) ] == 0 ];
             exp rect X ( -119.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( hudfade "weapon" );
@@ -1284,7 +1281,7 @@
             textstyle            7
             glowColor            0 0 0 0.7
             editField
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( player "tactAmmo" ) ] > 0 ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "tactAmmo" ) ] > 0 ];
             exp text ( "^2" + keybinding( "+tact" );
             exp rect X ( -118.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -30.666668 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -1297,7 +1294,7 @@
             forecolor            1 1 1 1
             ownerdraw            294
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( hasaltweapon ) && ( weaponname ) != "none" ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( hasaltweapon ) && ( weaponname ) != "none" ) ];
             exp rect X ( -48.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -40.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1313,7 +1310,7 @@
             textstyle            7
             glowColor            0 0 0 0.7
             editField
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( hasaltweapon ) && ( weaponname ) != "none" ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( hasaltweapon ) && ( weaponname ) != "none" ) ];
             exp text ( "^2" + keybinding( "weapalt" );
             exp rect X ( -48.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -40.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -1326,7 +1323,7 @@
             visible              1
             forecolor            0.7 0.7 0.7 1
             style                WINDOW_STYLE_SHADER
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( [ ( ( [ ( ! [ ( ui_active ) ] ]
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( [ ( ( [ ( ! [ ( ui_active ) ] ]
                     || [ ( [ ( staticdvarint "cl_isHostAsSpectator" ) == 1 ] && staticdvarint( "cl_shoutCastMode" ) !=
                     0 ] || [ ( staticdvarint "cl_isHostAsSpectator" ) != 0 ] ) && [ ( ! [ ( staticdvarbool
                     "g_hardcore" ) ] ] && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( weaponname ) ==
@@ -1358,7 +1355,7 @@
             textalign            9
             textscale            0.25
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( [ ( [ ( ( [ ( ! [ ( ui_active ) ] ]
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( [ ( ( [ ( ! [ ( ui_active ) ] ]
                     || [ ( [ ( staticdvarint "cl_isHostAsSpectator" ) == 1 ] && staticdvarint( "cl_shoutCastMode" ) !=
                     0 ] || [ ( staticdvarint "cl_isHostAsSpectator" ) != 0 ] ) && [ ( ! [ ( staticdvarbool
                     "g_hardcore" ) ] ] && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( weaponname ) ==
@@ -1384,7 +1381,7 @@
             forecolor            0 0 0 0.45
             style                WINDOW_STYLE_SHADER
             background           "white"
-            visible when ( dvarint "k33_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
             exp rect X ( -150.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -48.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1400,7 +1397,7 @@
             textfont             9
             textscale            0.42
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
             exp rect X ( -144.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -25.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1413,7 +1410,7 @@
             forecolor            1 1 1 0.45
             style                WINDOW_STYLE_SHADER
             background           "white"
-            visible when ( dvarint "k33_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
             exp rect X ( -122.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -44.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1428,7 +1425,7 @@
             textalign            12
             textscale            0.3
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
             exp text ( player( "stockAmmo" ) );
             exp rect X ( -116.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -27.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -1442,7 +1439,7 @@
             forecolor            1 1 1 0.95
             ownerdraw            3004
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
             exp rect X ( -84.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -42.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1459,7 +1456,7 @@
             textalign            2
             textscale            0.24
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) == 5 && [ ( ( inkillcam( ) || spectatingclient( ) )
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( inkillcam( ) || spectatingclient( ) )
                     && ( weaponname( ) != "none" ) ) ];
             exp rect X ( -47.3333 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -52.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -1477,7 +1474,7 @@
             textalign            2
             textscale            0.24
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) == 5 && [ ( ( ! inkillcam( ) && ! spectatingclient( ) )
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( ! inkillcam( ) && ! spectatingclient( ) )
                     && ( weaponname( ) != "none" ) ) ];
             exp rect X ( -47.3333 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -52.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -1491,7 +1488,7 @@
             forecolor            0 0 0 0.45
             style                WINDOW_STYLE_SHADER
             background           "white"
-            visible when ( dvarint "k33_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
             exp rect X ( -66.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -78.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1504,7 +1501,7 @@
             forecolor            1 1 1 1
             ownerdraw            103
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
             exp rect X ( -33.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -77.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 0.35 + ( 0.65 * ( player( "fragAmmo" ) > 0 ) ) );
@@ -1520,7 +1517,7 @@
             textalign            14
             textscale            0.18
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
             exp text ( player( "fragAmmo" ) );
             exp rect X ( -35.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -64.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -1534,7 +1531,7 @@
             forecolor            1 1 1 1
             ownerdraw            284
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" )
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" )
                     && player( "tactAmmo" ) > 0 ) ];
             exp rect X ( -64.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -77.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -1548,7 +1545,7 @@
             forecolor            1 1 1 1
             ownerdraw            104
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" )
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" )
                     && player( "tactAmmo" ) == 0 && player( "smokeAmmo" ) > 0 ) ];
             exp rect X ( -64.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -77.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -1564,7 +1561,7 @@
             textalign            12
             textscale            0.18
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" )
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" )
                     && ( player( "tactAmmo" ) + player( "smokeAmmo" ) ) > 0 ) ];
             exp text ( player( "tactAmmo" ) + player( "smokeAmmo" ) );
             exp rect X ( -48.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
@@ -1579,7 +1576,7 @@
             forecolor            1 1 1 1
             ownerdraw            294
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 5 && [ ( hasaltweapon( ) ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( hasaltweapon( ) ) ];
             exp rect X ( -86.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -78.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1596,8 +1593,8 @@
             textalign            9
             textscale            0.3333
             textstyle            ITEM_TEXTSTYLE_SHADOWED
-            visible when ( dvarint "k33_hudStyle" ) == 5 && [ ( [ ( ! [ ( inkillcam ) ] ]
-                    && [ ( ! [ ( spectatingclient ) ] ] ];
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( [ ( ! [ ( inkillcam ) ] ] && [ ( ! [ ( spectatingclient
+                    ) ] ] ];
             exp rect X ( -50.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1612,12 +1609,12 @@
         visible              1
         menuExtra            1
         focusColor           0 0 0 0
-        visible when ( ( dvarint( "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                && dvarint( "k33_hudStyle" ) != 5 && [ ( [ demofreecamera ] || [ demofollowcamera ]
-                || ( [ ( [ ( ! [ ( ui_active ) ] ] && [ ( ! [ ( spectatingclient ) ] ] && [ ( ! [ ( flashbanged ) ] ]
-                && [ ( ! [ ( [ ( [ ( weaponname ) == "killstreak_ac130_mp" ] || [ ( weaponname ) ==
-                "killstreak_helicopter_minigun_mp" ] || [ ( weaponname ) == "killstreak_predator_missile_mp"
-                || weaponname( ) == "remote_missile_detonator_so" ] || [ ( [ ( weaponname ) == "ac130_105mm_mp" ]
+        visible when ( ( dvarint( "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" ) !=
+                5 && [ ( [ demofreecamera ] || [ demofollowcamera ] || ( [ ( [ ( ! [ ( ui_active ) ] ]
+                && [ ( ! [ ( spectatingclient ) ] ] && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( [ ( weaponname )
+                == "killstreak_ac130_mp" ] || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ]
+                || [ ( weaponname ) == "killstreak_predator_missile_mp" || weaponname( ) ==
+                "remote_missile_detonator_so" ] || [ ( [ ( weaponname ) == "ac130_105mm_mp" ]
                 || [ ( weaponname ) == "ac130_40mm_mp" ] || [ ( weaponname ) == "ac130_25mm_mp" ] ]
                 || [ ( adsjavelin ) ] || [ ( weaponname ) == "heli_remote_mp" ] || missilecam( ) ]
                 || [ ( getperk "equipment" ) == "specialty_blastshield" && usingabilitymodifier( "modBlastShield" )
@@ -1628,7 +1625,7 @@
                 "g_compassShowEnemies" ) ) && [ ( ! [ ( staticdvarint "scr_gameended" ) ] ] ]
                 && [ ( ! [ ( milliseconds ) - localvarint( "ui_show_killedBy" ) < 4000 || [ ( inkillcam ) ] ] ]
                 && [ ( ! [ ( selecting_location ) ] ] && [ ( ! [ ( spectatingfree ) ] ] ) ] )
-                || ( dvarint( "k33_hudStyle" ) == 2 && [ ( [ demofreecamera ] || [ demofollowcamera ]
+                || ( dvarint( "cg_hudStyle" ) == 2 && [ ( [ demofreecamera ] || [ demofollowcamera ]
                 || ( [ ( ( [ ( ! [ ( ui_active ) ] ] || menuisopen( "shoutcast" ) ) && ( staticdvarbool(
                 "cl_minimapInShoutcast" ) == 0 ) && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( [ ( weaponname ) ==
                 "killstreak_ac130_mp" ] || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ]
@@ -1644,7 +1641,7 @@
                 && ( [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ] || radarisenabled( ) ) && [ ( ! [ ( staticdvarint
                 "scr_gameended" ) ] ] ) ] && [ ( ! [ ( milliseconds ) - localvarint( "ui_show_killedBy" ) < 4000
                 || [ ( inkillcam ) ] ] ] && [ ( ! [ ( selecting_location ) ] ] && [ ( ! [ ( spectatingfree ) ] ] ) ] )
-                || ( dvarint( "k33_hudStyle" ) == 3 && [ ( [ demofreecamera ] || [ demofollowcamera ]
+                || ( dvarint( "cg_hudStyle" ) == 3 && [ ( [ demofreecamera ] || [ demofollowcamera ]
                 || ( [ ( ( [ ( ! [ ( ui_active ) ] ] || [ ( [ ( staticdvarint "cl_isHostAsSpectator" ) == 1 ]
                 && staticdvarint( "cl_shoutCastMode" ) != 0 ] ) && [ ( ! [ ( flashbanged ) ] ]
                 && [ ( ! [ ( [ ( [ ( weaponname ) == "killstreak_ac130_mp" ] || [ ( weaponname ) ==
@@ -1659,7 +1656,7 @@
                 "g_gametype" ) != "zm" && ( [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ] || radarisenabled( ) )
                 && [ ( ! [ ( staticdvarint "scr_gameended" ) ] ] ) ] && [ ( ! [ ( milliseconds ) - localvarint(
                 "ui_show_killedBy" ) < 4000 || [ ( inkillcam ) ] ] ] && [ ( ! [ ( selecting_location ) ] ]
-                && [ ( ! [ ( spectatingfree ) ] ] ) ] ) || ( dvarint( "k33_hudStyle" ) == 5
+                && [ ( ! [ ( spectatingfree ) ] ] ) ] ) || ( dvarint( "cg_hudStyle" ) == 5
                 && [ ( [ demofreecamera ] || [ demofollowcamera ] || ( [ ( [ ( ! [ ( ui_active ) ] ]
                 && [ ( ! [ ( spectatingclient ) ] ] && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( [ ( weaponname )
                 == "killstreak_ac130_mp" ] || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ]
@@ -1683,8 +1680,8 @@
             border               1
             borderSize           0.6666667
             bordercolor          1 1 1 0.35
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5;
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1695,8 +1692,8 @@
             forecolor            0.89 0.98 0.95 0.05
             style                WINDOW_STYLE_SHADER
             background           "minimap_scanlines"
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5;
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1709,8 +1706,8 @@
             ownerdraw            159
             background           "compass_map_default"
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5;
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1722,8 +1719,8 @@
             forecolor            1 1 1 1
             ownerdraw            158
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5;
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -1737,8 +1734,8 @@
             ownerdraw            152
             background           "objective_line"
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5;
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1750,8 +1747,8 @@
             forecolor            1 1 1 1
             ownerdraw            175
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5;
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -1764,8 +1761,8 @@
             forecolor            1 1 1 1
             ownerdraw            155
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5;
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -1778,8 +1775,8 @@
             forecolor            1 1 1 1
             ownerdraw            156
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5;
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -1792,8 +1789,8 @@
             forecolor            1 1 1 1
             ownerdraw            165
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5;
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -1806,8 +1803,8 @@
             forecolor            1 1 1 1
             ownerdraw            168
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5;
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -1821,8 +1818,8 @@
             ownerdraw            150
             background           "compassping_player"
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5;
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -1834,8 +1831,8 @@
             forecolor            0.64 0.74 0.71 1
             style                WINDOW_STYLE_SHADER
             background           "white"
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( radarisjammed ) ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( radarisjammed ) ];
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( radarjamintensity );
@@ -1847,8 +1844,8 @@
             forecolor            0.89 0.98 0.95 1
             style                WINDOW_STYLE_SHADER
             background           "ac130_overlay_grain"
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5 && [ ( radarisjammed ) ];
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( radarisjammed ) ];
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( radarjamintensity );
@@ -1860,8 +1857,8 @@
             forecolor            1 1 1 1
             style                WINDOW_STYLE_SHADER
             background           "stencil_base"
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5;
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1872,8 +1869,8 @@
             forecolor            1 1 1 1
             style                WINDOW_STYLE_SHADER
             background           "scanlines_stencil"
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5;
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( [ ( ( 0 - 100 ) + ( ( 100 * 2 ) * [ ( 1 - [ ( ( milliseconds ) % 4000 ) / 4000 ] ] ) ] + (
                     dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -1885,8 +1882,8 @@
             forecolor            0.89 0.98 0.95 1
             style                WINDOW_STYLE_SHADER
             background           "stencil_fill"
-            visible when ( dvarint "k33_hudStyle" ) != 2 && dvarint( "k33_hudStyle" ) != 3
-                    && dvarint( "k33_hudStyle" ) != 5;
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1896,7 +1893,7 @@
             visible              1
             style                WINDOW_STYLE_FILLED
             backcolor            0 0 0 0.75
-            visible when ( dvarint "k33_hudStyle" ) == 2;
+            visible when ( dvarint "cg_hudStyle" ) == 2;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1908,7 +1905,7 @@
             border               1
             borderSize           0.6666667
             bordercolor          0.11 0.72 0.93 1
-            visible when ( dvarint "k33_hudStyle" ) == 2;
+            visible when ( dvarint "cg_hudStyle" ) == 2;
             exp rect X ( -0.25 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -0.25 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1919,7 +1916,7 @@
             forecolor            0.89 0.98 0.95 0.03
             style                WINDOW_STYLE_SHADER
             background           "minimap_scanlines"
-            visible when ( dvarint "k33_hudStyle" ) == 2;
+            visible when ( dvarint "cg_hudStyle" ) == 2;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1932,7 +1929,7 @@
             ownerdraw            159
             background           "compass_map_default"
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2;
+            visible when ( dvarint "cg_hudStyle" ) == 2;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1944,7 +1941,7 @@
             forecolor            1 1 1 1
             ownerdraw            158
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2;
+            visible when ( dvarint "cg_hudStyle" ) == 2;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -1958,7 +1955,7 @@
             ownerdraw            152
             background           "objective_line"
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2;
+            visible when ( dvarint "cg_hudStyle" ) == 2;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -1970,7 +1967,7 @@
             forecolor            1 1 1 1
             ownerdraw            175
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2;
+            visible when ( dvarint "cg_hudStyle" ) == 2;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -1983,7 +1980,7 @@
             forecolor            1 1 1 1
             ownerdraw            155
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2;
+            visible when ( dvarint "cg_hudStyle" ) == 2;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -1996,7 +1993,7 @@
             forecolor            1 1 1 1
             ownerdraw            156
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2;
+            visible when ( dvarint "cg_hudStyle" ) == 2;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -2009,7 +2006,7 @@
             forecolor            1 1 1 1
             ownerdraw            165
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2;
+            visible when ( dvarint "cg_hudStyle" ) == 2;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -2022,7 +2019,7 @@
             forecolor            1 1 1 1
             ownerdraw            168
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2;
+            visible when ( dvarint "cg_hudStyle" ) == 2;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -2036,7 +2033,7 @@
             ownerdraw            150
             background           "k33hud26_compassping_player"
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 2;
+            visible when ( dvarint "cg_hudStyle" ) == 2;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -2048,7 +2045,7 @@
             forecolor            0.64 0.74 0.71 1
             style                WINDOW_STYLE_SHADER
             background           "white"
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( radarisjammed ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( radarisjammed ) ];
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( radarjamintensity );
@@ -2060,7 +2057,7 @@
             forecolor            0.89 0.98 0.95 1
             style                WINDOW_STYLE_SHADER
             background           "ac130_overlay_grain"
-            visible when ( dvarint "k33_hudStyle" ) == 2 && [ ( radarisjammed ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( radarisjammed ) ];
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( radarjamintensity );
@@ -2072,7 +2069,7 @@
             forecolor            1 1 1 1
             style                WINDOW_STYLE_SHADER
             background           "stencil_base"
-            visible when ( dvarint "k33_hudStyle" ) == 2;
+            visible when ( dvarint "cg_hudStyle" ) == 2;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -2083,7 +2080,7 @@
             forecolor            1 1 1 1
             style                WINDOW_STYLE_SHADER
             background           "scanlines_stencil"
-            visible when ( dvarint "k33_hudStyle" ) == 2;
+            visible when ( dvarint "cg_hudStyle" ) == 2;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( [ ( ( 0 - 115 ) + ( ( 115 * 2 ) * [ ( 1 - [ ( ( milliseconds ) % 4000 ) / 4000 ] ] ) ] + (
                     dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -2095,7 +2092,7 @@
             forecolor            0.89 0.98 0.95 1
             style                WINDOW_STYLE_SHADER
             background           "stencil_fill"
-            visible when ( dvarint "k33_hudStyle" ) == 2;
+            visible when ( dvarint "cg_hudStyle" ) == 2;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -2105,7 +2102,7 @@
             visible              1
             style                WINDOW_STYLE_FILLED
             backcolor            0 0 0 0.75
-            visible when ( dvarint "k33_hudStyle" ) == 3;
+            visible when ( dvarint "cg_hudStyle" ) == 3;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -2117,7 +2114,7 @@
             border               1
             borderSize           0.6666667
             bordercolor          0.11 0.72 0.93 1
-            visible when ( dvarint "k33_hudStyle" ) == 3;
+            visible when ( dvarint "cg_hudStyle" ) == 3;
             exp rect X ( -0.25 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( -0.25 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -2128,7 +2125,7 @@
             forecolor            0.89 0.98 0.95 0.03
             style                WINDOW_STYLE_SHADER
             background           "minimap_scanlines"
-            visible when ( dvarint "k33_hudStyle" ) == 3;
+            visible when ( dvarint "cg_hudStyle" ) == 3;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -2141,7 +2138,7 @@
             ownerdraw            159
             background           "compass_map_default"
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3;
+            visible when ( dvarint "cg_hudStyle" ) == 3;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -2153,7 +2150,7 @@
             forecolor            1 1 1 1
             ownerdraw            158
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3;
+            visible when ( dvarint "cg_hudStyle" ) == 3;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -2167,7 +2164,7 @@
             ownerdraw            152
             background           "objective_line"
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3;
+            visible when ( dvarint "cg_hudStyle" ) == 3;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -2179,7 +2176,7 @@
             forecolor            1 1 1 1
             ownerdraw            175
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3;
+            visible when ( dvarint "cg_hudStyle" ) == 3;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -2192,7 +2189,7 @@
             forecolor            1 1 1 1
             ownerdraw            155
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3;
+            visible when ( dvarint "cg_hudStyle" ) == 3;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -2205,7 +2202,7 @@
             forecolor            1 1 1 1
             ownerdraw            156
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3;
+            visible when ( dvarint "cg_hudStyle" ) == 3;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -2218,7 +2215,7 @@
             forecolor            1 1 1 1
             ownerdraw            165
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3;
+            visible when ( dvarint "cg_hudStyle" ) == 3;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -2231,7 +2228,7 @@
             forecolor            1 1 1 1
             ownerdraw            168
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3;
+            visible when ( dvarint "cg_hudStyle" ) == 3;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -2245,7 +2242,7 @@
             ownerdraw            150
             background           "k33hud26_compassping_player"
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 3;
+            visible when ( dvarint "cg_hudStyle" ) == 3;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( );
@@ -2257,7 +2254,7 @@
             forecolor            0.64 0.74 0.71 1
             style                WINDOW_STYLE_SHADER
             background           "white"
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( radarisjammed ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( radarisjammed ) ];
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( radarjamintensity );
@@ -2269,7 +2266,7 @@
             forecolor            0.89 0.98 0.95 1
             style                WINDOW_STYLE_SHADER
             background           "ac130_overlay_grain"
-            visible when ( dvarint "k33_hudStyle" ) == 3 && [ ( radarisjammed ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( radarisjammed ) ];
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( radarjamintensity );
@@ -2281,7 +2278,7 @@
             forecolor            1 1 1 1
             style                WINDOW_STYLE_SHADER
             background           "stencil_base"
-            visible when ( dvarint "k33_hudStyle" ) == 3;
+            visible when ( dvarint "cg_hudStyle" ) == 3;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -2292,7 +2289,7 @@
             forecolor            1 1 1 1
             style                WINDOW_STYLE_SHADER
             background           "scanlines_stencil"
-            visible when ( dvarint "k33_hudStyle" ) == 3;
+            visible when ( dvarint "cg_hudStyle" ) == 3;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( [ ( ( 0 - 115 ) + ( ( 115 * 2 ) * [ ( 1 - [ ( ( milliseconds ) % 4000 ) / 4000 ] ] ) ] + (
                     dvarint( "cg_hudSwayY" ) * 0.01 ) );
@@ -2304,7 +2301,7 @@
             forecolor            0.89 0.98 0.95 1
             style                WINDOW_STYLE_SHADER
             background           "stencil_fill"
-            visible when ( dvarint "k33_hudStyle" ) == 3;
+            visible when ( dvarint "cg_hudStyle" ) == 3;
             exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -2317,7 +2314,7 @@
             forecolor            0 0 0 0.5
             style                WINDOW_STYLE_SHADER
             background           "white"
-            visible when ( dvarint "k33_hudStyle" ) == 5;
+            visible when ( dvarint "cg_hudStyle" ) == 5;
             exp rect X ( 4.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 4.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -2331,7 +2328,7 @@
             ownerdraw            159
             background           "compass_map_default"
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 5;
+            visible when ( dvarint "cg_hudStyle" ) == 5;
             exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -2344,7 +2341,7 @@
             forecolor            1 1 1 1
             ownerdraw            158
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 5;
+            visible when ( dvarint "cg_hudStyle" ) == 5;
             exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( ) );
@@ -2359,7 +2356,7 @@
             ownerdraw            152
             background           "objective_line"
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 5;
+            visible when ( dvarint "cg_hudStyle" ) == 5;
             exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -2372,7 +2369,7 @@
             forecolor            1 1 1 1
             ownerdraw            175
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 5;
+            visible when ( dvarint "cg_hudStyle" ) == 5;
             exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( ) );
@@ -2386,7 +2383,7 @@
             forecolor            1 1 1 1
             ownerdraw            155
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 5;
+            visible when ( dvarint "cg_hudStyle" ) == 5;
             exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( ) );
@@ -2400,7 +2397,7 @@
             forecolor            1 1 1 1
             ownerdraw            156
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 5;
+            visible when ( dvarint "cg_hudStyle" ) == 5;
             exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( ) );
@@ -2414,7 +2411,7 @@
             forecolor            1 1 1 1
             ownerdraw            165
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 5;
+            visible when ( dvarint "cg_hudStyle" ) == 5;
             exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( ) );
@@ -2428,7 +2425,7 @@
             forecolor            1 1 1 1
             ownerdraw            168
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 5;
+            visible when ( dvarint "cg_hudStyle" ) == 5;
             exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( ) );
@@ -2443,7 +2440,7 @@
             ownerdraw            150
             background           "compassping_player"
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 5;
+            visible when ( dvarint "cg_hudStyle" ) == 5;
             exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( 1 - radarjamintensity( ) );
@@ -2457,7 +2454,7 @@
             forecolor            0.64 0.74 0.71 1
             style                WINDOW_STYLE_SHADER
             background           "white"
-            visible when ( dvarint "k33_hudStyle" ) == 5 && [ ( radarisjammed( ) ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( radarisjammed( ) ) ];
             exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( radarjamintensity( ) );
@@ -2471,7 +2468,7 @@
             forecolor            0.89 0.98 0.95 1
             style                WINDOW_STYLE_SHADER
             background           "ac130_overlay_grain"
-            visible when ( dvarint "k33_hudStyle" ) == 5 && [ ( radarisjammed( ) ) ];
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( radarisjammed( ) ) ];
             exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
             exp forecolor A ( radarjamintensity( ) );
@@ -2485,7 +2482,7 @@
             forecolor            0 0 0 0.4
             style                WINDOW_STYLE_SHADER
             background           "white"
-            visible when ( dvarint "k33_hudStyle" ) == 5;
+            visible when ( dvarint "cg_hudStyle" ) == 5;
             exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }
@@ -2499,7 +2496,7 @@
             ownerdraw            3005
             background           "viper_heading_mp"
             type                 ITEM_TYPE_OWNERDRAW
-            visible when ( dvarint "k33_hudStyle" ) == 5;
+            visible when ( dvarint "cg_hudStyle" ) == 5;
             exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
             exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
         }

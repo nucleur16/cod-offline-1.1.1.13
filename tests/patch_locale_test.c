@@ -9,19 +9,24 @@ int main(void)
  enum PatchLanguage expected=PATCH_EN;
  const wchar_t *empty[]={L"C1.exe"};
  assert(PatchLanguageFromArgv(1,empty)==expected);
- LOCALE(L"+set",L"k33_english",L"1");
- LOCALE(L"+set",L"k33_english",L"0",L"+set",L"k33_english",L"1");
- LOCALE(L"+set",L"k33_english",L"1",L"+set",L"loc_patchLang",L"zh");
- LOCALE(L"+set",L"k33_english",L"2");
- LOCALE(L"+set",L"k33_english");
+ LOCALE(L"+set",L"loc_english",L"1");
+ LOCALE(L"+set",L"loc_english",L"0",L"+set",L"loc_english",L"1");
+ LOCALE(L"+set",L"loc_english",L"1",L"+set",L"loc_patchLang",L"zh");
+ LOCALE(L"+set",L"loc_english",L"2");
+ LOCALE(L"+set",L"loc_english");
  expected=PATCH_ZH;
- LOCALE(L"+set",L"k33_english",L"0");
- LOCALE(L"+set",L"K33_ENGLISH",L"0");
+ LOCALE(L"+set",L"loc_english",L"0");
+ LOCALE(L"+set",L"LOC_ENGLISH",L"0");
+ /* LEGACY_NAME: the old spelling launchers may pass, any case, ranked like loc_english */
+ LOCALE(L"+set",L"k33_english",L"0"); /* LEGACY_NAME */
+ LOCALE(L"+set",L"K33_ENGLISH",L"0"); /* LEGACY_NAME */
+ LOCALE(L"+set",L"loc_english",L"1",L"+set",L"k33_english",L"0"); /* LEGACY_NAME */
+ LOCALE(L"+set",L"k33_english",L"0",L"+set",L"loc_patchLang",L"en"); /* LEGACY_NAME */
  LOCALE(L"+set",L"loc_patchLang",L"zh");
- LOCALE(L"+set",L"loc_patchLang",L"en",L"+set",L"k33_english",L"0");
- LOCALE(L"+set",L"k33_english",L"0",L"+set",L"loc_patchLang",L"en");
- LOCALE(L"+set",L"k33_english",L"0",L"+set",L"k33_english",L"invalid");
- LOCALE(L"+set",L"loc_patchLang",L"zh",L"+set",L"k33_english",L"00");
+ LOCALE(L"+set",L"loc_patchLang",L"en",L"+set",L"loc_english",L"0");
+ LOCALE(L"+set",L"loc_english",L"0",L"+set",L"loc_patchLang",L"en");
+ LOCALE(L"+set",L"loc_english",L"0",L"+set",L"loc_english",L"invalid");
+ LOCALE(L"+set",L"loc_patchLang",L"zh",L"+set",L"loc_english",L"00");
  expected=PATCH_NATIVE;
  LOCALE(L"+set",L"loc_patchLang",L"unsupported");
  assert(PatchZoneLocaleAllowed("voice_ui_mp",PATCH_ZH));
@@ -150,21 +155,27 @@ int main(void)
   assert(!PatchZoneAllowedFor("fr_locale","en"));
   assert(!PatchZoneAllowedFor("english_locale","fr"));
   assert(PatchZoneAllowedFor("common_extras","fr"));
-  /* the command line: k33_language, the last valid one */
+  /* the command line: loc_languageName, the last valid one */
   {
-   const wchar_t *a[]={L"C1.exe",L"+set",L"k33_language",L"zh"};
-   const wchar_t *b[]={L"C1.exe",L"+set",L"k33_language",L"zh",L"+set",L"K33_LANGUAGE",L"English"};
-   const wchar_t *c[]={L"C1.exe",L"+set",L"k33_language",L"fr",L"+set",L"k33_language",L"not a name"};
-   const wchar_t *d[]={L"C1.exe",L"+set",L"k33_language"};
-   const wchar_t *e[]={L"C1.exe",L"+set",L"k33_english",L"0"};
+   const wchar_t *a[]={L"C1.exe",L"+set",L"loc_languageName",L"zh"};
+   const wchar_t *b[]={L"C1.exe",L"+set",L"loc_languageName",L"zh",L"+set",L"LOC_LANGUAGENAME",L"English"};
+   const wchar_t *c[]={L"C1.exe",L"+set",L"loc_languageName",L"fr",L"+set",L"loc_languageName",L"not a name"};
+   const wchar_t *d[]={L"C1.exe",L"+set",L"loc_languageName"};
+   const wchar_t *e[]={L"C1.exe",L"+set",L"loc_english",L"0"};
    const wchar_t *f[]={L"C1.exe",L"+set",L"loc_patchLang",L"unsupported"};
-   const wchar_t *g[]={L"C1.exe",L"+set",L"k33_english",L"0",L"+set",L"k33_language",L"en"};
-   const wchar_t *h[]={L"C1.exe",L"+set",L"k33_english",L"2"};
+   const wchar_t *g[]={L"C1.exe",L"+set",L"loc_english",L"0",L"+set",L"loc_languageName",L"en"};
+   const wchar_t *h[]={L"C1.exe",L"+set",L"loc_english",L"2"};
    const wchar_t *n[]={L"C1.exe"};
-   const char cfgZh[]="// generated\nseta 1848 \"0\"\nseta k33_language \"zh\"\nbind W \"+forward\"\n";
-   const char cfgTwo[]="seta k33_language \"zh\"\r\nseta k33_language \"fr\"\r\n";
-   const char cfgBad[]="seta k33_language \"no;pe\"\nseta k33_languageList \"en;zh\"\n// seta k33_language \"zh\"\nsetak33_language zh\n";
-   const char cfgSet[]="  set   k33_language   Chinese\n";
+   const char cfgZh[]="// generated\nseta 1848 \"0\"\nseta loc_languageName \"zh\"\nbind W \"+forward\"\n";
+   const char cfgTwo[]="seta loc_languageName \"zh\"\r\nseta loc_languageName \"fr\"\r\n";
+   const char cfgBad[]="seta loc_languageName \"no;pe\"\nseta loc_languageList \"en;zh\"\n// seta loc_languageName \"zh\"\nsetaloc_languageName zh\n";
+   const char cfgSet[]="  set   loc_languageName   Chinese\n";
+   /* LEGACY_NAME: a config and a command line from before the rename */
+   const wchar_t *o[]={L"C1.exe",L"+set",L"k33_language",L"zh"}; /* LEGACY_NAME */
+   const wchar_t *q[]={L"C1.exe",L"+set",L"k33_english",L"0"}; /* LEGACY_NAME */
+   const char cfgOld[]="seta k33_language \"zh\"\n"; /* LEGACY_NAME */
+   const char cfgBoth[]="seta loc_languageName \"fr\"\nseta k33_language \"zh\"\n"; /* LEGACY_NAME */
+   const char cfgOldEmpty[]="seta loc_languageName \"fr\"\nseta k33_language \"\"\n"; /* LEGACY_NAME */
    assert(LanguageFromArgv(4,a,lang) && !strcmp(lang,"zh"));
    assert(LanguageFromArgv(7,b,lang) && !strcmp(lang,"en"));
    assert(LanguageFromArgv(7,c,lang) && !strcmp(lang,"fr"));
@@ -177,7 +188,13 @@ int main(void)
    assert(!LanguageFromConfig(cfgBad,sizeof(cfgBad)-1,lang));
    assert(LanguageFromConfig(cfgSet,sizeof(cfgSet)-1,lang) && !strcmp(lang,"zh"));
    assert(!LanguageFromConfig("",0,lang));
-   /* order: k33_language, the older selectors, the saved choice, English */
+   assert(LanguageFromArgv(4,o,lang) && !strcmp(lang,"zh"));
+   assert(PatchLanguageAliasSeen(4,q) && !PatchLanguageAliasSeen(4,o));
+   assert(LanguageFromConfig(cfgOld,sizeof(cfgOld)-1,lang) && !strcmp(lang,"zh"));
+   assert(LanguageFromConfig(cfgBoth,sizeof(cfgBoth)-1,lang) && !strcmp(lang,"fr"));
+   assert(LanguageFromConfig(cfgOldEmpty,sizeof(cfgOldEmpty)-1,lang) && !strcmp(lang,"fr"));
+   assert(StartupLanguage(4,q,cfgBoth,sizeof(cfgBoth)-1,lang)==LANG_ALIAS && !strcmp(lang,"zh"));
+   /* order: loc_languageName, the older selectors, the saved choice, English */
    assert(StartupLanguage(4,a,cfgTwo,sizeof(cfgTwo)-1,lang)==LANG_ARGV && !strcmp(lang,"zh"));
    assert(StartupLanguage(7,g,cfgTwo,sizeof(cfgTwo)-1,lang)==LANG_ARGV && !strcmp(lang,"en"));
    assert(StartupLanguage(4,e,cfgTwo,sizeof(cfgTwo)-1,lang)==LANG_ALIAS && !strcmp(lang,"zh"));

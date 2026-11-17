@@ -20,13 +20,15 @@ from zonekit import build, manifest, menu_source as ms, menus, shipping  # noqa:
 
 W = menus.W13
 GAME = Path(os.environ.get("K33_GAME", r"D:\CoD\CODOL Builds\Call of Duty Online 1.1.1.13"))
-# The zones that carry a menu, built from the sources the .menu files replaced (main at c7822d8: menu/*.bin,
-# menufile/*.json and *.bin): md5 of the zone image (zonekit/build.assemble, before the container) and of the
-# --parts .ff build_zones.py writes. A .menu that compiles to anything else changes these.
+# The zones that carry a menu: md5 of the zone image (zonekit/build.assemble, before the container) and of the
+# --parts .ff build_zones.py writes. A .menu that compiles to anything else changes these. They were the main build's
+# (c7822d8, from the menu/*.bin and menufile/*.json the .menu files replaced) until the HUD menus' style dvar became
+# cg_hudStyle; hud_styles_postgfx_mp and survival_hud_postgfx_mp were re-pinned then (their trees are the old ones
+# with that one name changed).
 PINNED = {
     "field_orders_postgfx_mp": ("a4af57c1970eba3cae93e0bd05c72278", "7b583c6a32f93d22398aeab60a39575a"),
-    "hud_styles_postgfx_mp": ("a27c68055130a2f6d3f8000e1767810a", "ca97ba55c9228a5e5183ab753f2a3177"),
-    "survival_hud_postgfx_mp": ("dfd683e524daab9c8a8ca02f0879f2b2", "15b4b0509da2552ed95f77423e2848b0"),
+    "hud_styles_postgfx_mp": ("068721d21b30aea502656605644e62a4", "2bf644b4a4c9b6a437dfb1be20898f28"),
+    "survival_hud_postgfx_mp": ("7422ba6df0d23ee9d05d7dc7ef6c5705", "749e896bb69fb91d40680cc60d55dda4"),
     "patch_common_gametype_survival": ("b9ba3d8084447ce644ce0583946482ec", "68a52c64bb2cf51dd7996a6cf2955bea"),
     "survival_menus": ("223e58ab1ebddc12a3c075fd5a0293ad", "44d8224f89d7d96b6ab256eac11818ae"),
 }

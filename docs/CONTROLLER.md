@@ -400,21 +400,21 @@ inline icon escape (`^`, 1 or 2, width, height, a raw 4-byte `Material *`; 0xAAB
   - It is compiled by FFDec and spliced into the same codo.gfx in `voice_ui_mp.ff` (`scripts/build_zones.py`), so there is still one UI zone.
 - **Page 手柄图示 (diagram):**
   - A line-art diagram for the pad family (glyph family: Xbox 360 / PS3 / Wii U / generic), pre-generated in `zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/k33_pad_diagrams.as.inc` (original line art; inserted at `// @K33DIAGRAMS@` when the class is compiled).
-  - Each button has a live callout with what it does, read from `k33_padbinds`.
+  - Each button has a live callout with what it does, read from `gpad_binds`.
   - Settings rows: swap sticks (`gpad_swap_sticks`), swap triggers (`gpad_swaptriggers` swaps the two trigger binds), look feel (`gpad_lookpreset`), look sensitivity, invert Y, aim assist, deadzone, and dive with the crouch button (`gpad_dive`).
   - With no pad, the generic diagram shows with 未连接手柄 ("no controller connected"); `gpad_glyphs 1..4` forces a family.
   - Scaleform note: drawCircle / drawRoundRect stroke a line from the pen to their start, so the pen is moved first.
 - **Page 按键设置 (bindings):**
-  - Click an action, then press a pad button. The tab sets `k33_padcapture`; `src/controller/controller.c` catches the next pad button in menu mode, binds it, unbinds the action's other pad buttons, and sets `gpad_binds_custom 1`.
+  - Click an action, then press a pad button. The tab sets `gpad_bindCapture`; `src/controller/controller.c` catches the next pad button in menu mode, binds it, unbinds the action's other pad buttons, and sets `gpad_binds_custom 1`.
   - `gpad_binds_custom 1` stops the bind repair and the "no pad key bound" defaults.
   - Hold X binds BUTTON_X_HOLD. Triggers and sticks are not bindable.
-  - 清除所选 clears an action (`k33_padclear`). 恢复默认 runs `gpad_defaultbinds`, which also resets `gpad_binds_custom`.
+  - 清除所选 clears an action (`gpad_bindClear`). 恢复默认 runs `gpad_defaultbinds`, which also resets `gpad_binds_custom`.
   - The dive follows whichever pad button is bound to +stance.
-- **Published state:** `k33_padinfo` ("family|connected|name|forced|glyphs"; the fifth field, the `gpad_glyphs`
-  value in effect, was added in section 14) and `k33_padbinds` ("A=cmd;...;HOLDX=cmd").
+- **Published state:** `gpad_info` ("family|connected|name|forced|glyphs"; the fifth field, the `gpad_glyphs`
+  value in effect, was added in section 14) and `gpad_binds` ("A=cmd;...;HOLDX=cmd").
 - **Microphone (Options > Audio > 语音, 输入设备):**
   - `src/audio/voice.c` lists the active capture endpoints and their friendly names (GBK, code page 936).
-  - It publishes `k33_voiceInputList` ("Default;name;...") and `k33_voiceInputIndex`, and turns the dropdown's pick (`k33_voiceInputPick`) into the archived `cl_voiceInputDevice` (endpoint ID; empty = the Windows default communications device).
+  - It publishes `cl_voiceInputList` ("Default;name;...") and `cl_voiceInputIndex`, and turns the dropdown's pick (`cl_voiceInputPick`) into the archived `cl_voiceInputDevice` (endpoint ID; empty = the Windows default communications device).
   - Capture reopens on the chosen device right away.
   - A missing device falls back to the default (logged) and is taken again when IMMNotificationClient reports it back.
 - **Test clients:** a test client with a `k33patch\` folder next to its exe loads its patch zones from there, so a UI build can be tried while the shared `client_shipRetail\patch\` is in use.
@@ -489,7 +489,7 @@ through `CtlDisplayNow` / `CtlPadFamily` / `CtlDisplayPad`.
   (the icon set), the published state below, and one line each in `gpad_status` / `gpad_glyphdump`.
 
 ### Published for the menus and the HUD
-Set through C1's command path like `k33_padinfo`; "read only" is by convention (flags 0; Kernel33 never reads
+Set through C1's command path like `gpad_info`; "read only" is by convention (flags 0; Kernel33 never reads
 them back).
 
 - `gpad_glyphInfo` (string): `family|device|textOnly|glyphs`, one digit each. family 0 Xbox, 1 PlayStation,
@@ -501,7 +501,7 @@ them back).
   command line, so a reader that sees a new serial also sees the matching `gpad_glyphInfo`. The state is checked
   every client frame; C1 runs the `set` on its next command-buffer pass. A menu polls
   `Dvar_GetInt("gpad_glyphSerial")` and re-queries its key labels when the number differs from the one it last saw.
-- `k33_padinfo`: a fifth field, the `gpad_glyphs` value: `family|connected|name|forced|glyphs`. `forced` is still
+- `gpad_info`: a fifth field, the `gpad_glyphs` value: `family|connected|name|forced|glyphs`. `forced` is still
   1 only for 1..4. OptionView.as splits on `|` and reads fields 0..3 by index, so a build of it that does not know
   the fifth field ignores it. The display device is deliberately not in this string: OptionView redraws its
   diagram and rebuilds its bind list whenever the string changes, and in modes 0 and 5 the device flips with every
@@ -520,7 +520,7 @@ was traced at run time.
 | centre-print lines (`0x439170`) and game-message lines (`0x448E10`) | the next line printed | converted once when printed and stored (`0x4391D4` copies the result into the line); a line already on screen keeps its key names until it expires, a few seconds. An icon in it still follows the family |
 | text names (mode 5) <-> icons | next frame for per-frame text; stored lines keep what they were printed with | the escape or the name is chosen when the string is built |
 | Scaleform (Controls screen, pause menu, Scaleform HUD) and GSC | when their script asks again | they ask through `0x5B080D` / `0x55A8B6` and keep the answer: poll `gpad_glyphSerial`, or reopen the view |
-| Options > Controller diagram | within 250 ms | `k33_padinfo` is republished when it changes |
+| Options > Controller diagram | within 250 ms | `gpad_info` is republished when it changes |
 
 Not handled: re-converting stored centre-print / game-message lines (it would need every line's source string;
 they expire in seconds). The Scaleform natives that call Key_GetCommandAssignment `0x492E30` directly (`0x5B06CC`,

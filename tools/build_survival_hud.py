@@ -68,7 +68,7 @@ def author(original):
     return result
 
 def styled(original):
-    """author(), then the selectable HUD styles (tools/build_hud_styles.py, k33_hudStyle) folded into the same two
+    """author(), then the selectable HUD styles (tools/build_hud_styles.py, cg_hudStyle) folded into the same two
     menus: C1 keeps the first menu it links under a name, so killstreaks_hd and scorebar_hd exist once, here, with
     both the Survival gate and the style gate."""
     import importlib.util

@@ -5,14 +5,14 @@ package codo.views.option_sub
    // codo.gfx, with its hidden Voice section turned on for Kernel33's voice chat (voice.c).
    // build_voice_ui.py compiles this with JPEXS FFDec and splices the class's DoABC tag back into
    // codo.gfx. Changes from C1's code are marked "k33".
-   //   Voice            slider -> k33_voiceVolume (playback %), checkbox mutes it (like the others)
-   //   Microphone       checkbox -> k33_voiceMicMute (0 = mic on); slider -> k33_voiceThreshold, the
+   //   Voice            slider -> cl_voiceVolume (playback %), checkbox mutes it (like the others)
+   //   Microphone       checkbox -> cl_voiceMicMute (0 = mic on); slider -> cl_voiceThreshold, the
    //                    voice-activation level (0..100 = -60..0 dBFS)
    //   Voice Mode       C1's unused "Sound Presets" combo box, moved into the Voice section:
-   //                    Push to talk / Voice activation -> k33_voiceMode 0/1
-   //   Input Level      a level bar drawn on the Microphone slider's geometry (fill from k33_voiceLevel,
+   //                    Push to talk / Voice activation -> cl_voiceMode 0/1
+   //   Input Level      a level bar drawn on the Microphone slider's geometry (fill from cl_voiceLevel,
    //                    marker at the activation level) and the number; while this tab is shown it
-   //                    keeps k33_voiceMeter set so voice.c opens the mic (metering only, nothing sent)
+   //                    keeps cl_voiceMeter set so voice.c opens the mic (metering only, nothing sent)
    import codo.common.BaseSubElement;
    import codo.common.CFunctionContainerCommon;
    import codo.common.Logger;
@@ -105,7 +105,7 @@ package codo.views.option_sub
       
       private var _k33Refreshing:Boolean = false;
 
-      // k33: Input Device (k33_voiceInputList / k33_voiceInputIndex from voice.c, pick -> k33_voiceInputPick)
+      // k33: Input Device (cl_voiceInputList / cl_voiceInputIndex from voice.c, pick -> cl_voiceInputPick)
       private var _k33DevBtn:Sprite = null;
 
       private var _k33DevPop:Sprite = null;
@@ -159,7 +159,7 @@ package codo.views.option_sub
          };
          // k33: voice chat playback volume is Kernel33's
          this._volumeComponentBind[this.myPBVolumeVoiceChat] = {
-            "dvar":"k33_voiceVolume",
+            "dvar":"cl_voiceVolume",
             "cb":this.myCBVolumeVoiceChat,
             "volume":100
          };
@@ -236,7 +236,7 @@ package codo.views.option_sub
       }
 
       // k33: "Input Device": a row under Input Level, a button with the chosen microphone that
-      // opens a list (Default first); picking one sets k33_voiceInputPick and the Input Level bar then
+      // opens a list (Default first); picking one sets cl_voiceInputPick and the Input Level bar then
       // meters that device
       private function k33Text(cSrc:TextField, cText:String, cSize:int, cColor:uint) : TextField
       {
@@ -335,8 +335,8 @@ package codo.views.option_sub
          {
             return;
          }
-         var list:String = CFunctionContainerCommon.Dvar_GetString("k33_voiceInputList");
-         var index:int = CFunctionContainerCommon.Dvar_GetInt("k33_voiceInputIndex");
+         var list:String = CFunctionContainerCommon.Dvar_GetString("cl_voiceInputList");
+         var index:int = CFunctionContainerCommon.Dvar_GetInt("cl_voiceInputIndex");
          if(list == null)
          {
             list = "";
@@ -392,7 +392,7 @@ package codo.views.option_sub
       {
          var i:int = int((e.currentTarget as Sprite).name.substr(3));
          this._k33DevPop.visible = false;
-         CFunctionContainerCommon.setdvar("k33_voiceInputPick",String(i));
+         CFunctionContainerCommon.setdvar("cl_voiceInputPick",String(i));
          this._k33DevIndex = -2;
       }
 
@@ -440,15 +440,15 @@ package codo.views.option_sub
             i++;
          }
          // k33
-         var tempVolume:int = CFunctionContainerCommon.Dvar_GetInt("k33_voiceVolume");
+         var tempVolume:int = CFunctionContainerCommon.Dvar_GetInt("cl_voiceVolume");
          this.myPBVolumeVoiceChat.value = tempVolume > 100 ? 100 : tempVolume;
          if(this.myPBVolumeVoiceChat.value > 0)
          {
             this._volumeComponentBind[this.myPBVolumeVoiceChat].volume = this.myPBVolumeVoiceChat.value;
          }
          this.myCBVolumeVoiceChat.selected = this.myPBVolumeVoiceChat.value > 0;
-         this.myPBVolumeVoiceMic.value = CFunctionContainerCommon.Dvar_GetInt("k33_voiceThreshold");
-         this.myCBVolumeVoiceMic.selected = CFunctionContainerCommon.Dvar_GetInt("k33_voiceMicMute") == 0;
+         this.myPBVolumeVoiceMic.value = CFunctionContainerCommon.Dvar_GetInt("cl_voiceThreshold");
+         this.myCBVolumeVoiceMic.selected = CFunctionContainerCommon.Dvar_GetInt("cl_voiceMicMute") == 0;
          this._k33Refreshing = true;
          this.myCBPresets.dataProvider = [{
             "label":"@K33UI_VOICE_PTT",
@@ -457,7 +457,7 @@ package codo.views.option_sub
             "label":"@K33UI_VOICE_VAD",
             "id":1
          }];
-         this.myCBPresets.selectedDataIndex = CFunctionContainerCommon.Dvar_GetInt("k33_voiceMode") == 1 ? 1 : 0;
+         this.myCBPresets.selectedDataIndex = CFunctionContainerCommon.Dvar_GetInt("cl_voiceMode") == 1 ? 1 : 0;
          this._k33Refreshing = false;
          this.myCBSubtitle.selected = this.getSyncDP(SyncDataID.GET_TOGGLE_SUBTITLE);
          this._k33Frames = 0;
@@ -500,13 +500,13 @@ package codo.views.option_sub
       {
          var tempCB:CheckBox = cEvt.target as CheckBox;
          tempCB.selected = !tempCB.selected;
-         CFunctionContainerCommon.setdvar("k33_voiceMicMute",tempCB.selected ? "0" : "1");
+         CFunctionContainerCommon.setdvar("cl_voiceMicMute",tempCB.selected ? "0" : "1");
       }
 
       private function onThresholdChangeHandle(cEvt:Event) : void
       {
          var tempPB:ProgressBar = cEvt.target as ProgressBar;
-         CFunctionContainerCommon.setdvar("k33_voiceThreshold",String(Math.round(tempPB.value)));
+         CFunctionContainerCommon.setdvar("cl_voiceThreshold",String(Math.round(tempPB.value)));
       }
 
       private function onPresetsChangedHandle(cEvt:ParaEvent) : void
@@ -514,7 +514,7 @@ package codo.views.option_sub
          var tempValue:Object = this.myCBPresets.selectedValue;
          if(tempValue != null && !this._k33Refreshing)
          {
-            CFunctionContainerCommon.setdvar("k33_voiceMode",String(tempValue.id));
+            CFunctionContainerCommon.setdvar("cl_voiceMode",String(tempValue.id));
          }
       }
 
@@ -526,10 +526,10 @@ package codo.views.option_sub
          }
          if(this._k33Frames % 10 == 0)
          {
-            CFunctionContainerCommon.setdvar("k33_voiceMeter","1");
+            CFunctionContainerCommon.setdvar("cl_voiceMeter","1");
          }
          this._k33Frames++;
-         var tempLevel:int = CFunctionContainerCommon.Dvar_GetInt("k33_voiceLevel");
+         var tempLevel:int = CFunctionContainerCommon.Dvar_GetInt("cl_voiceLevel");
          var tempThr:Number = this.myPBVolumeVoiceMic.value;
          var tempMic:Boolean = tempLevel >= 0 && this.myCBVolumeVoiceMic.selected;
          if(!tempMic)
@@ -545,7 +545,7 @@ package codo.views.option_sub
             this._k33Drawn = tempKey;
             this.drawLevelBar(this._k33Shown,this._k33Peak,tempThr,tempMic);
          }
-         var tempText:String = tempMic ? String(int(this._k33Shown)) : (CFunctionContainerCommon.Dvar_GetInt("k33_voiceLevel") < 0 ? LocalizeUtil.localize("@K33UI_VOICE_NO_MIC") : LocalizeUtil.localize("@K33UI_VOICE_MIC_OFF"));
+         var tempText:String = tempMic ? String(int(this._k33Shown)) : (CFunctionContainerCommon.Dvar_GetInt("cl_voiceLevel") < 0 ? LocalizeUtil.localize("@K33UI_VOICE_NO_MIC") : LocalizeUtil.localize("@K33UI_VOICE_MIC_OFF"));
          if(this.myMicLevel.text != tempText)
          {
             this.myMicLevel.text = tempText;

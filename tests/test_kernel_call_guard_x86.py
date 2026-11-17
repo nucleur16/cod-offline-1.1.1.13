@@ -131,7 +131,7 @@ class Guard(unittest.TestCase):
   if kind=='cbuf':
    function=0x58ba60;map(function,0xab);m.u.mem_write(function,native.get_data(function-0x400000,0xab));map(0x25094dc,12)
    m.put(0xb421ec,enter);m.put(0xb421e8,leave);m.put(0x25094dc,0xdead0000 if fault else CODE+0x4000);m.put(0x25094e0,65536);m.put(0x25094e4,0)
-   text=CODE+0x2000;m.u.mem_write(text,b'set codol_quick_native_room_context "v1|1|0000000000000001"\n\0');convention=4;fault_site=0x58baf2
+   text=CODE+0x2000;m.u.mem_write(text,b'set ui_quickNativeRoomContext "v1|1|0000000000000001"\n\0');convention=4;fault_site=0x58baf2
   else:
    function=0x6232c0;map(function,0xc7);m.u.mem_write(function,native.get_data(function-0x400000,0xc7));map(0x6217e0,0x4d);m.u.mem_write(0x6217e0,native.get_data(0x6217e0-0x400000,0x4d))
    map(0x2ab98d0,8);map(0x2abd8e0,4);m.put(0x2ab98d4,0);m.put(0x2abd8e0,0xdead0000 if fault else 0);m.put(0xb42120,enter);m.put(0xb42124,leave)

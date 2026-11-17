@@ -78,7 +78,7 @@ class ConsoleInEveryProfile(unittest.TestCase):
     def test_toggle_key_and_off_switch_unchanged(self):
         self.assertIn('== 0x29 && !(lp & (1 << 24))', CONSOLE)  # the key left of 1
         self.assertIn('C1RegisterInt("con_toggleKey", VK_F1', CONSOLE)
-        self.assertIn('"k33_console 0"', CONSOLE)
+        self.assertIn('"con_enable 0"', CONSOLE)
 
 
 class GeneratedServerTable(unittest.TestCase):

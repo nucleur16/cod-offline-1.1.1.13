@@ -103,7 +103,7 @@ class Machine:
   if name=='_vsnprintf':
    format=self.text(arg(3));values=arg(4)
    if format=='v1|%u|%08x%08x':text='v1|%u|%08x%08x'%(self.get(values),self.get(values+4),self.get(values+8))
-   elif format=='set codol_quick_native_room_context "%s"\n':text='set codol_quick_native_room_context "'+self.text(self.get(values))+'"\n'
+   elif format=='set ui_quickNativeRoomContext "%s"\n':text='set ui_quickNativeRoomContext "'+self.text(self.get(values))+'"\n'
    else:raise AssertionError(format)
    encoded=text.encode();assert len(encoded)<arg(2);self.write(arg(1),encoded+b'\0');self.ret(len(encoded));return
   raise AssertionError('Unmodeled API '+name)
@@ -157,7 +157,7 @@ class Binder(unittest.TestCase):
     if not aborted:self.assertEqual(result,0);self.assertEqual(bytes(m.u.mem_read(SITE,5)),m.original)
  def test_actual_retained_queue_ack_backpressure_and_same_lock_recovery(self):
   m=Machine();self.assertEqual(m.invoke('Install'),1);m.invoke('Tick');self.assertEqual(m.invoke('Serial'),1)
-  self.assertEqual(m.command(),'set codol_quick_native_room_context "v1|1|0000567800001234"\n')
+  self.assertEqual(m.command(),'set ui_quickNativeRoomContext "v1|1|0000567800001234"\n')
   used=m.get(0x25094e4);m.now=250;m.invoke('Tick');self.assertEqual(m.get(0x25094e4),used)
   m.now=2000;m.invoke('Tick');self.assertEqual(m.get(0x25094e4),used);self.assertEqual(m.max_lock_depth,1)
   m.consume(False);m.now=2250;m.invoke('Tick');self.assertEqual(m.invoke('Serial'),1);self.assertEqual(m.max_lock_depth,2);self.assertEqual(m.lock_depth,0)

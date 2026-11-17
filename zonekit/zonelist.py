@@ -68,7 +68,7 @@ ZONES = {
     "english": dict(origin="Z:" + PATCH, install=PATCH),
     "english_font": dict(origin="Z:" + PATCH, install=PATCH, gfx={"scaleform/fonts_ingame.gfx": FONTS}),
     # the text of the shared UI movies (voice_ui_mp, controller_ingame): their K33UI_* localize keys, in English
-    # (english_ui*: k33_english 1) or Chinese (chinese_ui*: k33_english 0); Kernel33 loads one set (ui_keys.py)
+    # (english_ui*: loc_english 1) or Chinese (chinese_ui*: loc_english 0); Kernel33 loads one set (ui_keys.py)
     "chinese_ui": dict(origin="new", install=PATCH),
     "chinese_ui_extra": dict(origin="new", install=PATCH),
     "english_ui": dict(origin="Z:" + PATCH, install=PATCH),
@@ -93,7 +93,7 @@ ZONES = {
     # Native HUD menus reference materials/defaults initialized by code_post_gfx. Its menufile also carries the
     # HUD styles' items for killstreaks_hd and scorebar_hd (one copy of a menu: tools/build_survival_hud.py styled()).
     "survival_hud_postgfx_mp": dict(origin="new", install=PATCH),
-    # The selectable HUD styles (k33_hudStyle, hud_style.c): later builds' native HUD items inside C1's weaponbar_hd
+    # The selectable HUD styles (cg_hudStyle, hud_style.c): later builds' native HUD items inside C1's weaponbar_hd
     # and minimap_fullscreen, each gated on the dvar, with the `2d` materials and A8R8G8B8 images they draw
     # (k33hud<NN>_*). tools/build_hud_styles.py writes it from sources/; docs/HUD_STYLES_20261112.md.
     "hud_styles_postgfx_mp": dict(origin="new", install=PATCH),

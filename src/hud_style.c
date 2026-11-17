@@ -1,20 +1,21 @@
 /*
- * hud_style.c - the selectable HUD style: k33_hudStyle and k33_hudStyleList, and the HUD logic of the later builds
+ * hud_style.c - the selectable HUD style: cg_hudStyle and cg_hudStyleList, and the HUD logic of the later builds
  * that 1.1.1.13 lacks. Included by kernel33.c after k33tick.c and voice.c (needs c1game.c, K33OnMainTick and
  * voice.c's CG_OwnerDraw hook and draw thunks). docs/HUD_STYLES_20261112.md.
  *
  * The combat HUD is native menus (ui_mp/hud_720.txt). common_postgfx_mp carries the later builds' HUD items
  * inside C1's own menus (zones/hud_styles_postgfx_mp, zones/survival_hud_postgfx_mp; tools/build_hud_styles.py),
- * each item with a visibility expression on dvarint("k33_hudStyle"): the stock items show while the dvar is not a
+ * each item with a visibility expression on the style dvar (dvarint("cg_hudStyle")): the stock items show while
+ * the dvar is not a
  * shipped style, a style's items while it is that style's number. C1 evaluates those expressions every frame, so
- * a "set k33_hudStyle N" (the pause and options menus' setdvar) changes the HUD at once; no menu is reloaded.
+ * a "set cg_hudStyle N" (the pause and options menus' setdvar) changes the HUD at once; no menu is reloaded.
  *
- *   k33_hudStyle       int 0..5, archived (flag 0x1): 0 stock 1.1.1.13, 1 v12 (1.2.1.12), 2 v26 (2.6.9.7),
+ *   cg_hudStyle       int 0..5, archived (flag 0x1): 0 stock 1.1.1.13, 1 v12 (1.2.1.12), 2 v26 (2.6.9.7),
  *                      3 v33 (3.3.3.3), 4 v35 (3.5.2.6), 5 sm2 (authored as .menu source, an MW2-like HUD).
  *                      The numbers are fixed whether or not a style ships.
- *   k33_hudStyleList   string, read only by convention (flag 0, as voice.c's k33_voiceInputList): the styles this
+ *   cg_hudStyleList   string, read only by convention (flag 0, as voice.c's cl_voiceInputList): the styles this
  *                      build ships as "number:id" pairs, HUD_STYLE_LIST. The menus cycle through these.
- * A saved k33_hudStyle that is not in the list is set back to 0, logged once per value.
+ * A saved cg_hudStyle that is not in the list is set back to 0, logged once per value.
  *
  * What the later builds' HUD reads that 1.1.1.13 has no operator or ownerdraw for, implemented here:
  *   ownerDraw 3001     the clip count, drawn at the item's rect with its font, scale, colour and style
@@ -89,8 +90,10 @@
 
 #include "hud_style_policy.h"
 
-#define HUD_STYLE_DVAR      "k33_hudStyle"
-#define HUD_STYLE_LIST_DVAR "k33_hudStyleList"
+#define HUD_STYLE_DVAR      "cg_hudStyle"
+#define HUD_STYLE_LIST_DVAR "cg_hudStyleList"
+/* LEGACY_NAME: the old name on the command line ("+set k33_hudStyle N"), read when the new one is absent. */
+#define HUD_STYLE_OLD_ARG   "+set k33_hudStyle " /* LEGACY_NAME */
 /* tools/build_hud_styles.py style_list(): the styles whose sources are in zones/hud_styles_postgfx_mp/sources
  * (tests/test_hud_styles.py compares the two). */
 #define HUD_STYLE_LIST      "0:stock;2:v26;3:v33;5:sm2"
@@ -460,7 +463,7 @@ static void HudStyleRegister(void)
             g_voiceHudOk ? "shared with voice.c" : "missing (clip count and gauge are not drawn)");
     }
     g_hudStyleDvar = C1RegisterInt(HUD_STYLE_DVAR, 0, 0, HUD_STYLE_MAX, 0x1,
-                                   "HUD style: 0 stock 1.1.1.13, 1 1.2.1.12, 2 2.6.9.7, 3 3.3.3.3, 4 3.5.2.6, 5 SM2 (k33_hudStyleList: the ones in this build)");
+                                   "HUD style: 0 stock 1.1.1.13, 1 1.2.1.12, 2 2.6.9.7, 3 3.3.3.3, 4 3.5.2.6, 5 SM2 (cg_hudStyleList: the ones in this build)");
     ((RegStr)(DWORD_PTR)HUD_STYLE_REGISTER_STRING_VA)(HUD_STYLE_LIST_DVAR, HUD_STYLE_LIST, 0,
                                                       "HUD styles in this build as number:id pairs (read only)");
     if (!g_hudStyleDvar) {
@@ -471,9 +474,11 @@ static void HudStyleRegister(void)
     int v = C1DvarInt(g_hudStyleDvar, 0);
     const char *cl = GetCommandLineA();
     const char *at = cl ? strstr(cl, "+set " HUD_STYLE_DVAR " ") : NULL;
+    size_t skip = sizeof("+set " HUD_STYLE_DVAR " ") - 1;
+    if (!at && cl && (at = strstr(cl, HUD_STYLE_OLD_ARG)) != NULL) skip = sizeof(HUD_STYLE_OLD_ARG) - 1;
     if (at) {
         char cmd[64];
-        at += sizeof("+set " HUD_STYLE_DVAR " ") - 1;
+        at += skip;
         v = atoi(at[0] == '"' ? at + 1 : at);
         _snprintf(cmd, sizeof(cmd), "set %s %d\n", HUD_STYLE_DVAR, v);
         cmd[sizeof(cmd) - 1] = 0;

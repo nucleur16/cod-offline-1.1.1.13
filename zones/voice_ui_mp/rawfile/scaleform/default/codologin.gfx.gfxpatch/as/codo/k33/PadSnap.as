@@ -2,7 +2,7 @@ package codo.k33
 {
    // Kernel33's gamepad cursor snapping: the targets (padsnap.c, PADSNAP.md).
    //
-   // Kernel33 moves the menu cursor with the left stick. While it asks (dvar k33_snapscan > 0: the pad drove the
+   // Kernel33 moves the menu cursor with the left stick. While it asks (dvar gpad_snapScan > 0: the pad drove the
    // cursor recently), this class walks the display list ten times a second and publishes every control a click
    // would reach: SimpleButtons, sprites in button mode, objects listening for clicks or presses (list rows,
    // tabs, check boxes, dropdown entries, scroll bars), input text fields, and C1's sliders (ProgressBar) by
@@ -12,12 +12,12 @@ package codo.k33
    // dialog hides everything under it. Kernel33 does the rest (magnetism, flicks, settling).
    //
    // Published (stage coordinates, integers; no ';' or '"', so it survives any dvar path):
-   //   k33_snapn  "<seq> <targets> <chunks> <stageW> <stageH> <mouseX> <mouseY> <ms> <nodes> <hidden> <authoredW>
+   //   gpad_snapHeader  "<seq> <targets> <chunks> <stageW> <stageH> <mouseX> <mouseY> <ms> <nodes> <hidden> <authoredW>
    //              <authoredH> <how>": stageW x stageH is the visible area, centred on the authored one; how: n/m hit test (getObjectsUnderPoint / walk), M/L movie
-   //   k33_snap0..7  targets "x y w h px py kind", comma separated; kind 0 button, 1 text field, 2 slider knob,
+   //   gpad_snap0..7  targets "x y w h px py kind", comma separated; kind 0 button, 1 text field, 2 slider knob,
    //                 3 / 4 the left / right half of a stepper ("<  value  >", see hint()), 5 a list the mouse wheel
    //                 scrolls (no target: where a D-pad press past the last row may scroll)
-   // k33_snapscan 2 also publishes each target's class in k33_snapcls0..7 and what hides the hidden ones in k33_snaphid
+   // gpad_snapScan 2 also publishes each target's class in gpad_snapClass0..7 and what hides the hidden ones in gpad_snapHidden0..3
    // (gpad_snapdump).
    //
    // The same class is compiled into codo.gfx and codologin.gfx (a new DoABC tag, build_zones.py --store-class).
@@ -118,7 +118,7 @@ package codo.k33
                   return;
                }
             }
-            want = CFunctionContainerCommon.Dvar_GetInt("k33_snapscan");
+            want = CFunctionContainerCommon.Dvar_GetInt("gpad_snapScan");
             if(want > 0)
             {
                scan(want);
@@ -126,7 +126,7 @@ package codo.k33
          }
          catch(e:Error)
          {
-            CFunctionContainerCommon.setdvar("k33_snaperr",String(e.message).replace(/[;"]/g," ").substr(0,200));
+            CFunctionContainerCommon.setdvar("gpad_snapError",String(e.message).replace(/[;"]/g," ").substr(0,200));
          }
       }
 
@@ -183,13 +183,13 @@ package codo.k33
             }
             i++;
          }
-         var n:int = publish("k33_snap",parts,8);
+         var n:int = publish("gpad_snap",parts,8);
          if(mode == 2)
          {
-            publish("k33_snapcls",names,8);
-            publish("k33_snaphid",hid,4);
+            publish("gpad_snapClass",names,8);
+            publish("gpad_snapHidden",hid,4);
             var at:Point = new Point(_stage.mouseX,_stage.mouseY);
-            var probe:Array = String(CFunctionContainerCommon.Dvar_GetString("k33_snapprobe")).split(" ");
+            var probe:Array = String(CFunctionContainerCommon.Dvar_GetString("gpad_snapProbe")).split(" ");
             if(probe.length == 2)
             {
                at = new Point(Number(probe[0]),Number(probe[1]));
@@ -211,10 +211,10 @@ package codo.k33
             catch(e2:Error)
             {
             }
-            CFunctionContainerCommon.setdvar("k33_snapat",("receiver " + (atWho == null ? "none" : chainOf(atWho)) + " under " + under.join(" / ")).substr(0,CHUNK));
+            CFunctionContainerCommon.setdvar("gpad_snapAt",("receiver " + (atWho == null ? "none" : chainOf(atWho)) + " under " + under.join(" / ")).substr(0,CHUNK));
          }
          _seq++;
-         CFunctionContainerCommon.setdvar("k33_snapn",_seq + " " + parts.length + " " + n + " " + int(sw) + " " + int(sh) + " " + int(_stage.mouseX) + " " + int(_stage.mouseY) + " " + (getTimer() - t0) + " " + _nodes + " " + _hidden + " " + int(aw) + " " + int(ah) + " " + (_native == 1 ? "n" : "m") + (_stage.loaderInfo != null && _stage.loaderInfo.url != null && _stage.loaderInfo.url.indexOf("login") >= 0 ? "L" : "M"));
+         CFunctionContainerCommon.setdvar("gpad_snapHeader",_seq + " " + parts.length + " " + n + " " + int(sw) + " " + int(sh) + " " + int(_stage.mouseX) + " " + int(_stage.mouseY) + " " + (getTimer() - t0) + " " + _nodes + " " + _hidden + " " + int(aw) + " " + int(ah) + " " + (_native == 1 ? "n" : "m") + (_stage.loaderInfo != null && _stage.loaderInfo.url != null && _stage.loaderInfo.url.indexOf("login") >= 0 ? "L" : "M"));
       }
 
       // A number for the text a list shows: it changes when the list scrolls (its rows are reused, so their positions

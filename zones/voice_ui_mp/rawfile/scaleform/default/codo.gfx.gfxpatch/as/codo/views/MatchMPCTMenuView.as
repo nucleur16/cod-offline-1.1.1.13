@@ -293,7 +293,7 @@ package codo.views
       private function theatreFilter(event:Event) : void
       {
          var mode:String = event.currentTarget == this.myRoomListBtn ? "mp" : (event.currentTarget == this.myRoomCreatorBtn ? "zm" : "all");
-         CFunctionContainerCommon.setdvar("codol_theatre_request","filter:" + mode);
+         CFunctionContainerCommon.setdvar("ui_theatreRequest","filter:" + mode);
       }
       
       public function theatreSelect(mode:String) : void

@@ -1,4 +1,4 @@
-k33_hudStyleList 0:stock;2:v26;3:v33;5:sm2
+cg_hudStyleList 0:stock;2:v26;3:v33;5:sm2
 v26 weaponbar_hd[4] -> weaponbar_hd: ownerDraw 5 written as clip count, clip bar and reserve count
 v26 weaponbar_hd -> weaponbar_hd: 26 of 26 items
 v26 weaponbar_hd_extend[1] -> weaponbar_hd: dropped: operator canChargeAttackIconShow has no 1.1.1.13 equivalent

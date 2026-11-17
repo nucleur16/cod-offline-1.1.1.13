@@ -62,7 +62,7 @@ static int KrcAvailable(void *unused)
 }
 static int KrcPublished(void *unused,char *out,size_t capacity)
 {
-    static const char field[]="codol_quick_native_room_context";
+    static const char field[]="ui_quickNativeRoomContext";
     uint8_t type=0;uint32_t text=0;(void)unused;
     if(!capacity)return 0;
     out[0]=0;
