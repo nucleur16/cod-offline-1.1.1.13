@@ -1,0 +1,4 @@
+# Runtime and generated files the server writes next to its rawfiles
+# (ignored the same way in the CoD4x_Server repo before this became a submodule).
+sys_error.txt
+*.def

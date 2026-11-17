@@ -1,0 +1,25 @@
+// PROVENANCE (2026-11-13): mp_resistance_sh is CODOL 3.19.26.22's port, converted to 1.1.1.13 by CODOL-AssetExplorer port-map.
+// Level script: IW5 mp_paris (COD-GSC-Source/IW5-GSC/scripts/maps/mp/mp_paris.gsc), translated to the 1.1.1.13 script set.
+// The zone's own maps/mp/mp_resistance_sh_fx.gsc and maps/createfx/mp_resistance_sh_fx.gsc (3.19.26.22) are used as they ship.
+// Adaptations:
+//   * ambientPlay( "ambient_mp_paris" ) left out: the zone has no such alias
+//   * audio_settings() (maps\mp\_audio::add_reverb "city") left out: this tree has no maps\mp\_audio
+//   * compass: compass_map_mp_resistance_sh (the zone's)
+#include maps\mp\_utility;
+#include common_scripts\utility;
+
+main()
+{
+	maps\createart\mp_resistance_sh_art::main();
+	maps\mp\mp_resistance_sh_fx::main();
+	maps\mp\_load::main();
+
+	maps\mp\_compass::setupMiniMap( "compass_map_mp_resistance_sh" );
+	setdvar( "r_lightGridEnableTweaks", 1 );
+	setdvar( "r_lightGridIntensity", 1.33 );
+
+	game[ "attackers" ] = "allies";
+	game[ "defenders" ] = "axis";
+
+	thread killTrigger( ( 1720, 552, 288 ), 100, 20 );
+}
