@@ -265,17 +265,22 @@ static int P2PSurvivalMaps(char (*maps)[64], int maximum, const char *wanted)
  * but every bot class answers "none" for its whole loadout and character: bots spawn with
  * defaultweapon_mp and no body, head or shadow - only their names are drawn - and route over the
  * level's raw node_* records. Refuse to host instead of starting that match. A loose
- * mp\botclasstable.csv in the home (a server developer's layout) counts as the pack. */
+ * mp\botclasstable.csv in the home (a server developer's layout) counts as the pack.
+ * The install's own main\ is looked at first: the host mounts fs_basepath\main (the client install) as its
+ * base game, so a pack installed next to the client's IWDs is read from there and p2p\home is only the
+ * host's run-time folder. */
 static BOOL P2PServerPackPresent(const P2PConfig *c)
 {
     static const char *const files[] = { "main\\sh1x_svr_scripts.iwd", "main\\mp\\botclasstable.csv" };
+    const char *const roots[] = { c->basepath, c->home };
     char path[MAX_PATH + 64];
-    for (unsigned i = 0; i < sizeof(files) / sizeof(files[0]); i++) {
-        _snprintf(path, sizeof(path), "%s\\%s", c->home, files[i]);
-        path[sizeof(path) - 1] = 0;
-        DWORD a = GetFileAttributesA(path);
-        if (a != INVALID_FILE_ATTRIBUTES && !(a & FILE_ATTRIBUTE_DIRECTORY)) return TRUE;
-    }
+    for (unsigned r = 0; r < sizeof(roots) / sizeof(roots[0]); r++)
+        for (unsigned i = 0; i < sizeof(files) / sizeof(files[0]); i++) {
+            _snprintf(path, sizeof(path), "%s\\%s", roots[r], files[i]);
+            path[sizeof(path) - 1] = 0;
+            DWORD a = GetFileAttributesA(path);
+            if (a != INVALID_FILE_ATTRIBUTES && !(a & FILE_ATTRIBUTE_DIRECTORY)) return TRUE;
+        }
     return FALSE;
 }
 
@@ -311,7 +316,7 @@ static const char *P2PCheck(const P2PConfig *c)
     if (!P2PPathOk(c->dll)) return "a path holds a quote";
     if (!inproc && GetFileAttributesA(c->exe) == INVALID_FILE_ATTRIBUTES) return "server executable not found (exe=)";
     if (!P2PServerPackPresent(c))
-        return "server pack missing: p2p\\home\\main\\sh1x_svr_scripts.iwd (bot classes, waypoints)";
+        return "server pack missing: main\\sh1x_svr_scripts.iwd (bot classes, waypoints)";
     return NULL;
 }
 
@@ -444,6 +449,44 @@ static BOOL P2PStatusLine(const char *reply, char *out, int outSize)
 
 /* ---- the host thread ----------------------------------------------------------------------- */
 
+/* The server derives the archive keys from two C1.exe regions (server client_crypto.h: the IWD blob at file
+ * offset 0x838B20, 256 bytes, and the RSA DER at 0x83C248, 1191 bytes), read from <basepath>\C1.exe or else
+ * <basepath>\c1_keys.bin. This client runs C1's image itself, so an install needs neither file: both regions are
+ * in C1's .rdata in memory (file 0x741000 -> RVA 0x742000, image base 0x400000), and they are written to the
+ * run-time folder as c1_keys.bin (exactly those two regions, the IWD blob first) and named with clientExe. The
+ * server checks both with SHA-256, so a wrong copy fails its mount instead of misreading zones.
+ * -> the "+set clientExe" argument, or "" to keep the server's own lookup. */
+#define P2P_C1_IWD_BLOB_VA   (0x00400000u + 0x1000u + 0x838B20u)
+#define P2P_C1_IWD_BLOB_SIZE 256u
+#define P2P_C1_RSA_DER_VA    (0x00400000u + 0x1000u + 0x83C248u)
+#define P2P_C1_RSA_DER_SIZE  1191u
+static void P2PClientKeysArg(const P2PConfig *c, char *out, size_t size)
+{
+    char path[MAX_PATH + 32];
+    out[0] = 0;
+    static const char *const files[] = { "C1.exe", "c1_keys.bin" };
+    for (unsigned i = 0; i < sizeof(files) / sizeof(files[0]); i++) {
+        _snprintf(path, sizeof(path), "%s\\%s", c->basepath, files[i]);
+        path[sizeof(path) - 1] = 0;
+        if (GetFileAttributesA(path) != INVALID_FILE_ATTRIBUTES) return; /* the server finds it itself */
+    }
+    const void *blob = (const void *)(DWORD_PTR)P2P_C1_IWD_BLOB_VA, *der = (const void *)(DWORD_PTR)P2P_C1_RSA_DER_VA;
+    if (!Readable(blob, P2P_C1_IWD_BLOB_SIZE) || !Readable(der, P2P_C1_RSA_DER_SIZE)) {
+        Log("p2p: C1's key regions are not readable; the server looks for C1.exe / c1_keys.bin itself");
+        return;
+    }
+    _snprintf(path, sizeof(path), "%s\\c1_keys.bin", c->state);
+    path[sizeof(path) - 1] = 0;
+    FILE *f = fopen(path, "wb");
+    BOOL ok = f && fwrite(blob, 1, P2P_C1_IWD_BLOB_SIZE, f) == P2P_C1_IWD_BLOB_SIZE &&
+              fwrite(der, 1, P2P_C1_RSA_DER_SIZE, f) == P2P_C1_RSA_DER_SIZE;
+    if (f && fclose(f)) ok = FALSE;
+    if (!ok) { Log("p2p: could not write %s; the server looks for C1.exe / c1_keys.bin itself", path); return; }
+    _snprintf(out, size, "+set clientExe \"%s\"", path);
+    out[size - 1] = 0;
+    Log("p2p: archive keys from C1's image in memory -> %s", path);
+}
+
 static DWORD WINAPI P2PHostThread(LPVOID unused)
 {
     (void)unused;
@@ -512,16 +555,18 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
     relayPath[sizeof(relayPath)-1] = 0;
     _snprintf(relayArg, sizeof(relayArg), "+set sv_relayIdentityPath \"%s\"", relayPath);
     relayArg[sizeof(relayArg)-1] = 0;
+    char keysArg[MAX_PATH + 64];
+    P2PClientKeysArg(&c, keysArg, sizeof(keysArg));
     _snprintf(cmd, sizeof(cmd),
         "\"%s\" +set dedicated 2 +set fs_basepath \"%s\" +set fs_homepath \"%s\" +set net_ip %s +set net_port %d "
         "+set rcon_password \"%s\" +set logfile 2 +set logrcon 1 +set developer %d +set sv_fps 60 "
         "+set scriptPath \"%s\" +set scriptOverlay \"%s\" +set scriptNativeOverlay \"%s\" "
         "+set securityKeyPath \"%s\\securitykey.bin\" +set admissionPath \"%s\\game_admissions.txt\" "
-        "+set admissionRequired %d %s +set profilePath \"%s\" +set sv_zoneType %s +set sv_sessionMap %s "
+        "+set admissionRequired %d %s %s +set profilePath \"%s\" +set sv_zoneType %s +set sv_sessionMap %s "
         "+set g_gametype %s +set hostParentPid %lu %s "
         "+scriptPath +scriptOverlay +scriptNativeOverlay +map %s %s",
         c.exe, c.basepath, c.home, c.netIp, c.port, password, c.developer, c.scripts, c.scripts, c.scripts,
-        c.state, c.state, c.admission ? 1 : 0, relayArg, c.profile, c.zoneType, c.sessionMap[0] ? c.sessionMap : c.map,
+        c.state, c.state, c.admission ? 1 : 0, relayArg, keysArg, c.profile, c.zoneType, c.sessionMap[0] ? c.sessionMap : c.map,
         c.gametype, inproc ? 0ul : GetCurrentProcessId(), pmem, c.map, c.extra);
     cmd[sizeof(cmd) - 1] = 0;
     if (inproc) {
