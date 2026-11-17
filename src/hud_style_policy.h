@@ -68,6 +68,19 @@ static int HudHealthPermille(int health, int maxHealth, int pmType)
     return v > 1000 ? 1000 : (int)v;
 }
 
+/* The SM2 health fill shown, in permille, after dt seconds: it drops to a lower health at once (damage) and eases up
+ * to a higher one (regeneration), closing HUD_HEALTH_LERP_RATE of the gap per second (exponential), so a regen of
+ * the whole bar takes about half a second; a gap under one permille is closed. dt <= 0 (first frame) or a shown
+ * value outside 0..1000 starts at the health itself. */
+#define HUD_HEALTH_LERP_RATE 8.0f
+static float HudHealthLerp(float shown, int target, float dt)
+{
+    if (dt <= 0.0f || shown < 0.0f || shown > 1000.0f || target <= shown) return (float)target;
+    if (dt > 0.25f) dt = 0.25f;                       /* a hitch eases, it does not jump */
+    shown += ((float)target - shown) * (1.0f - expf(-HUD_HEALTH_LERP_RATE * dt));
+    return (float)target - shown < 1.0f ? (float)target : shown;
+}
+
 /* Below this fill the health bar is drawn red (SM2). */
 #define HUD_HEALTH_LOW_PERMILLE 300
 
