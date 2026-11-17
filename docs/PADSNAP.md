@@ -20,7 +20,7 @@ themselves. `codo.k33.PadSnap` is a new class in both front-end movies (`build_z
 builds its first control, in codo.gfx and in codologin.gfx, and again whenever the movie is reloaded (after a
 match). A DoABC tag that is not lazy is *not* run by C1's Scaleform at load, so the class cannot start itself.
 
-While Kernel33 sets `k33_snapscan` (the pad is the last-used device and was used in the last 20 s, menu mode),
+While Kernel33 sets `gpad_snapScan` (the pad is the last-used device and was used in the last 20 s, menu mode),
 PadSnap walks the display list ten times a second (about 150-750 objects, 1-12 ms) and keeps every object that is
 visible (alpha > 0, every ancestor visible), not clipped away by a mask or scrollRect, and is a control:
 - a SimpleButton, an input TextField, a Sprite in buttonMode, or any InteractiveObject listening for CLICK /
@@ -41,8 +41,8 @@ above the control took it and something of the control is drawn there. The centr
 So a popup or a dimmed page hides what lies below it. With a dialog up (C1's modal mask, `$layerMask`, in its page
 layer) only controls of that layer drawn above the mask count, so the social side bar beside a dialog is skipped.
 
-Published (stage units; one dvar holds about 1 KB, so in chunks): `k33_snapn` "seq targets chunks stageW stageH
-mouseX mouseY ms nodes hidden authoredW authoredH how", `k33_snap0..7` "x y w h px py kind" comma separated (kind 0
+Published (stage units; one dvar holds about 1 KB, so in chunks): `gpad_snapHeader` "seq targets chunks stageW stageH
+mouseX mouseY ms nodes hidden authoredW authoredH how", `gpad_snap0..7` "x y w h px py kind" comma separated (kind 0
 button, 1 text field, 2 slider knob, 3 / 4 the halves of a "< value >" stepper, 5 a list the mouse wheel scrolls,
 whose `px` is a signature of the text it shows). Kernel33 maps stage units to client pixels: the stage is the
 visible area around the authored 1280 x 960, scaled to the client height and centred (a 16:9 window shows
@@ -85,7 +85,7 @@ the settle and a pending jump.
 | `gpad_menu_snap_debug` | 0 | 1 decisions (jumps, settles, flicks, wheel) to the console and Kernel33.log, 2 also every stick step and target list |
 
 Commands: `gpad_snapdump` (the targets in client pixels with their classes, what covers each hidden one, what is
-under the mouse or under `k33_snapprobe "x y"` stage units), `gpad_snapcount [reset]`. Test clients only:
+under the mouse or under `gpad_snapProbe "x y"` stage units), `gpad_snapcount [reset]`. Test clients only:
 `gpad_snapfake <lx> <ly> <ms> [buttons]` (the synthetic pad pushes for ms, then stays connected at rest like a
 real pad) and `gpad_snapgoto <x> <y> <w> <h> [reaction ms]` (the player model below).
 

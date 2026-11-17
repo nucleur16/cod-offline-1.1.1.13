@@ -15,6 +15,6 @@
 >xassetlist,0x0,0xffffffff
 rawfile,survival_menus
 stringtable,mp/kiosks.csv,columns=16
-menufile,ui_mp/scriptmenus/kiosk_locker.menu,src=menufile/kiosk_locker.json
-menufile,ui_mp/scriptmenus/kiosk_killstreak.menu,src=menufile/kiosk_killstreak.json
-menufile,ui_mp/scriptmenus/surhud_display.menu,src=menufile/surhud_display.json
+menufile,ui_mp/scriptmenus/kiosk_locker.menu,src=menufile/kiosk_locker.menu
+menufile,ui_mp/scriptmenus/kiosk_killstreak.menu,src=menufile/kiosk_killstreak.menu
+menufile,ui_mp/scriptmenus/surhud_display.menu,src=menufile/surhud_display.menu

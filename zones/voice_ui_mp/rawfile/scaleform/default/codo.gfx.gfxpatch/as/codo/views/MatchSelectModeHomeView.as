@@ -164,25 +164,25 @@ package codo.views
       
       private function onCoopClickHandle(cEvt:ParaEvent) : void
       {
-         CFunctionContainerCommon.setdvar("codol_survival_direct_home","0");
+         CFunctionContainerCommon.setdvar("ui_survivalDirectHome","0");
          this.broadcast(BCEvent.EVT_GOTO_MAIN_COOP);
       }
       
       private function onCyborgsClickHandle(cEvt:ParaEvent) : void
       {
-         CFunctionContainerCommon.setdvar("codol_survival_direct_home","0");
+         CFunctionContainerCommon.setdvar("ui_survivalDirectHome","0");
          this.broadcast(BCEvent.EVT_GOTO_MAIN_CYBORG);
       }
       
       private function onSurvivalClickHandle(cEvt:ParaEvent) : void
       {
-         CFunctionContainerCommon.setdvar("codol_survival_direct_home","1");
+         CFunctionContainerCommon.setdvar("ui_survivalDirectHome","1");
          this.broadcast(BCEvent.EVT_GOTO_SURVIVAL_QUICK_MATCH);
       }
       
       private function onMPClickHandle(cEvt:ParaEvent) : void
       {
-         CFunctionContainerCommon.setdvar("codol_survival_direct_home","0");
+         CFunctionContainerCommon.setdvar("ui_survivalDirectHome","0");
          this.broadcast(BCEvent.EVT_GOTO_MAIN_MP);
       }
       
@@ -305,7 +305,7 @@ package codo.views
       
       private function onTheatreModeClick(event:ParaEvent) : void
       {
-         CFunctionContainerCommon.setdvar("codol_theatre_open","1");
+         CFunctionContainerCommon.setdvar("ui_theatreOpen","1");
       }
    }
 }

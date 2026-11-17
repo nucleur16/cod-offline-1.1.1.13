@@ -1,0 +1,529 @@
+// field_orders: a menu asset (menuDef_t, type 26) of field_orders_postgfx_mp, decompiled from the zone it came from
+// (zone_source/field_orders_postgfx_mp.csv >origin); this text is now its source. IW menu language:
+// zonekit/menu_source.py.
+{
+    menuDef
+    {
+        name                 "field_orders"
+        rect                 5 110 0 0 8 8
+        legacySplitScreenScale
+        visible              1
+        focusColor           0 0 0 0
+        visible when ( [ ( [ ( ! [ ( ui_active ) ] ] && [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ]
+                && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( weaponname ) == "killstreak_ac130_mp" ]
+                || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ] || [ ( weaponname ) ==
+                "killstreak_predator_missile_mp" || weaponname( ) == "remote_missile_detonator_so" ]
+                || [ ( [ ( weaponname ) == "ac130_105mm_mp" ] || [ ( weaponname ) == "ac130_40mm_mp" ]
+                || [ ( weaponname ) == "ac130_25mm_mp" ] ] || [ ( adsjavelin ) ] || [ ( weaponname ) ==
+                "heli_remote_mp" ] || missilecam( ) ] ] && [ ( ! isempjammed( ) ] && [ ( ! [ ( staticdvarint
+                "scr_gameended" ) ] ] ] && ! [ ( selecting_location ) ] && [ ( ! [ ( spectatingfree ) ] ]
+                && [ ! [ demofreecamera ] ] && [ ! [ demofollowcamera ] ] && [ ( staticdvarbool "cg_weaponBarHide" )
+                == 0 ];
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            forecolor            1 1 1 0.5
+            style                WINDOW_STYLE_SHADER
+            background           "black"
+            exp rect H ( 60;
+            exp rect W ( 150;
+            exp rect Y ( 0;
+            exp rect X ( max min( ( 1 - ( milliseconds ) - localvarint( "ui_show_fo" ) + "index" * 500 ) / 200 ) , 1 )
+                    , 0 ) * ( 0 - 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            forecolor            1 1 1 0.5
+            style                WINDOW_STYLE_SHADER
+            background           "black"
+            exp rect H ( 180;
+            exp rect W ( 150;
+            exp rect Y ( 0;
+            exp rect X ( max min( ( 1 - ( milliseconds ) - localvarint( "ui_show_fo" ) + "index" * 500 ) / 200 ) , 1 )
+                    , 0 ) * ( 0 - 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "fobar_base"
+            visible when ( ( getFOGoal( 0 ) > 0 ) && ( getFOPercent( 0 ) ) < 1 && ! ( ( getFOProgress( 0 ) ) >= (
+                    tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 0 ) ) , 5 ) ) );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 0 * 40 ) + 20 + 2 );
+            exp rect X ( 5 + max( min( ( 1 - ( milliseconds ) - localvarint( "ui_show_fo" ) + 0 * 500 ) / 200 ) , 1 )
+                    , 0 ) * ( 0 - 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "fobar_base"
+            visible when ( ( getFOGoal( 0 ) > 0 ) && ( ( getFOProgress( 0 ) ) >= ( tablelookupbyrow( staticdvarstring(
+                    "fo_table" ) , ( getFOGoal( 0 ) ) , 5 ) ) );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 0 * 40 ) + 20 + 2 );
+            exp rect X ( 5 + min( max( ( milliseconds ) - 500 + localvarint( "ui_fo_complete_time" ) + 0 * 500 ) / 200
+                    , 0 ) , 1 ) * ( 0 - 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "fobar_tick"
+            visible when ( ( getFOGoal( 0 ) > 0 ) && ( getFOProgress( 0 ) ) > 0 && ( getFOPercent( 0 ) ) < 1
+                    && ! ( ( getFOProgress( 0 ) ) >= ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal(
+                    0 ) ) , 5 ) ) );
+            exp rect H ( 15 - 4;
+            exp rect W ( ( getFOPercent 0 ) ) * 40 - 4;
+            exp rect Y ( ( ( 0 * 40 ) + 20 + 2 ) + 2;
+            exp rect X ( 5 + 2 + max( min( ( 1 - ( milliseconds ) - localvarint( "ui_show_fo" ) + 0 * 500 ) / 200 ) ,
+                    1 ) , 0 ) * ( 0 - 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "fobar_tick"
+            visible when ( ( getFOGoal( 0 ) > 0 ) && ( ( getFOProgress( 0 ) ) >= ( tablelookupbyrow( staticdvarstring(
+                    "fo_table" ) , ( getFOGoal( 0 ) ) , 5 ) ) );
+            exp rect H ( 15 - 4;
+            exp rect W ( 40 - 4;
+            exp rect Y ( ( ( 0 * 40 ) + 20 + 2 ) + 2;
+            exp rect X ( 5 + 2 + min( max( ( milliseconds ) - 500 + localvarint( "ui_fo_complete_time" ) + 0 * 500 ) /
+                    200 , 0 ) , 1 ) * ( 0 - 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            0.9 0.86 0.68 1
+            textfont             9
+            textscale            0.23
+            textstyle            8
+            visible when ( ( getFOGoal( 0 ) > 0 ) && ( getFOProgress( 0 ) ) >= 0 && ( getFOPercent( 0 ) ) < 1
+                    && ! ( ( getFOProgress( 0 ) ) >= ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal(
+                    0 ) ) , 5 ) ) ) && ( int( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 0 ) ) ,
+                    8 ) ) );
+            exp text ( locstring( "@" + ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 0 ) ) , 1 )
+                    ) , int( ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 0 ) ) , 5 ) ) ) );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 0 * 40 ) + 20 );
+            exp rect X ( 5 + max( min( ( 1 - ( milliseconds ) - localvarint( "ui_show_fo" ) + 0 * 500 ) / 200 ) , 1 )
+                    , 0 ) * ( 0 - 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            0.9 0.86 0.68 1
+            textfont             9
+            textscale            0.23
+            textstyle            8
+            visible when ( ( getFOGoal( 0 ) > 0 ) && ( ( getFOProgress( 0 ) ) >= ( tablelookupbyrow( staticdvarstring(
+                    "fo_table" ) , ( getFOGoal( 0 ) ) , 5 ) ) ) && ( int( tablelookupbyrow( staticdvarstring(
+                    "fo_table" ) , ( getFOGoal( 0 ) ) , 8 ) ) );
+            exp text ( locstring( "@" + ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 0 ) ) , 1 )
+                    ) , int( ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 0 ) ) , 5 ) ) ) );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 0 * 40 ) + 20 );
+            exp rect X ( 5 + max( min( ( 1 - ( milliseconds ) - localvarint( "ui_show_fo" ) + 0 * 500 ) / 200 ) , 1 )
+                    , 0 ) * ( 0 - 256 );
+            exp forecolor A ( max min( ( 1 - ( milliseconds ) - localvarint( "ui_fo_complete_time" ) ) / 200 ) , 1 ) ,
+                    0 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            0.9 0.86 0.68 1
+            textfont             9
+            textscale            0.23
+            textstyle            8
+            visible when ( ( getFOGoal( 0 ) > 0 ) && ( getFOProgress( 0 ) ) >= 0 && ( getFOPercent( 0 ) ) < 1
+                    && ! ( ( getFOProgress( 0 ) ) >= ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal(
+                    0 ) ) , 5 ) ) ) && ! ( int( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 0 ) )
+                    , 8 ) ) );
+            exp text ( locstring( "@" + ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 0 ) ) , 1 )
+                    ) , int( ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 0 ) ) , 5 ) ) ) );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 0 * 40 ) + 20 );
+            exp rect X ( 5 + max( min( ( 1 - ( milliseconds ) - localvarint( "ui_show_fo" ) + 0 * 500 ) / 200 ) , 1 )
+                    , 0 ) * ( 0 - 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            0.9 0.86 0.68 1
+            textfont             9
+            textscale            0.23
+            textstyle            8
+            visible when ( ( getFOGoal( 0 ) > 0 ) && ( ( getFOProgress( 0 ) ) >= ( tablelookupbyrow( staticdvarstring(
+                    "fo_table" ) , ( getFOGoal( 0 ) ) , 5 ) ) ) && ! ( int( tablelookupbyrow( staticdvarstring(
+                    "fo_table" ) , ( getFOGoal( 0 ) ) , 8 ) ) );
+            exp text ( locstring( "@" + ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 0 ) ) , 1 )
+                    ) );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 0 * 40 ) + 20 );
+            exp rect X ( 5 + max( min( ( 1 - ( milliseconds ) - localvarint( "ui_show_fo" ) + 0 * 500 ) / 200 ) , 1 )
+                    , 0 ) * ( 0 - 256 );
+            exp forecolor A ( max min( ( 1 - ( milliseconds ) - localvarint( "ui_fo_complete_time" ) ) / 200 ) , 1 ) ,
+                    0 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            1 0.84 0 1
+            textfont             9
+            textscale            0.3
+            textstyle            8
+            visible when ( ( getFOGoal( 0 ) > 0 ) && ( ( getFOProgress( 0 ) ) >= ( tablelookupbyrow( staticdvarstring(
+                    "fo_table" ) , ( getFOGoal( 0 ) ) , 5 ) ) );
+            exp text ( locstring "@FO_COMPLETE" );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 0 * 40 ) + 20 + 15 );
+            exp rect X ( 5 + 8 + max( min( ( 1 - ( milliseconds ) - 500 + localvarint( "ui_fo_complete_time" ) + 0 *
+                    500 ) / 200 ) , 1 ) , 0 ) * ( 0 - 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "fobkg_alert"
+            visible when ( ( getFOGoal( 0 ) > 0 ) && ( ( getFOProgress( 0 ) ) >= ( tablelookupbyrow( staticdvarstring(
+                    "fo_table" ) , ( getFOGoal( 0 ) ) , 5 ) ) );
+            exp rect H ( 15;
+            exp rect W ( 124;
+            exp rect Y ( ( ( 0 * 40 ) + 20 + 2 );
+            exp rect X ( 5 - 18 + max( min( ( 1 - ( milliseconds ) - 500 + localvarint( "ui_fo_complete_time" ) + 0 *
+                    500 ) / 200 ) , 1 ) , 0 ) * ( 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textfont             10
+            textscale            0.2
+            textstyle            8
+            visible when ( ( getFOGoal( 0 ) > 0 ) && ( ( int( getFOStatus( 0 ) ) ) == 0 && ! ( ( getFOProgress( 0 ) )
+                    >= ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 0 ) ) , 5 ) ) ) );
+            exp text ( locstring( "@" + ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 0 ) ) , 2 )
+                    ) );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 0 * 40 ) + 20 + 25 );
+            exp rect X ( 5 + max( min( ( 1 - ( milliseconds ) - localvarint( "ui_show_fo" ) + 0 * 500 ) / 200 ) , 1 )
+                    , 0 ) * ( 0 - 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            0.97 0.96 0.8 1
+            textfont             4
+            textscale            0.3
+            visible when ( ( getFOGoal( 0 ) > 0 ) && ! ( ( getFOProgress( 0 ) ) >= ( tablelookupbyrow(
+                    staticdvarstring( "fo_table" ) , ( getFOGoal( 0 ) ) , 5 ) ) );
+            exp text ( locstring( "@" + ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 0 ) ) , 4 )
+                    ) , ( int( getFOReward( 0 ) ) ) );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 0 * 40 ) + 20 + 15 );
+            exp rect X ( 5 + 40 + 5 + max( min( ( 1 - ( milliseconds ) - localvarint( "ui_show_fo" ) + 0 * 500 ) / 200
+                    ) , 1 ) , 0 ) * ( 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            0.97 0.96 0.8 1
+            textfont             4
+            textscale            0.3
+            visible when ( ( getFOGoal( 0 ) > 0 ) && ( ( getFOProgress( 0 ) ) >= ( tablelookupbyrow( staticdvarstring(
+                    "fo_table" ) , ( getFOGoal( 0 ) ) , 5 ) ) );
+            exp text ( locstring( "@" + ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 0 ) ) , 4 )
+                    ) , ( int( getFOReward( 0 ) ) ) );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 0 * 40 ) + 20 + 15 );
+            exp rect X ( 5 + 40 + 5 + min( max( ( milliseconds ) - ( 500 / 2 ) + localvarint( "ui_fo_complete_time" )
+                    + 0 * 500 ) / 200 , 0 ) , 1 ) * ( 0 - 512 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "fobar_base"
+            visible when ( ( getFOGoal( 1 ) > 0 ) && ( getFOPercent( 1 ) ) < 1 && ! ( ( getFOProgress( 1 ) ) >= (
+                    tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 1 ) ) , 5 ) ) );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 1 * 40 ) + 20 + 2 );
+            exp rect X ( 5 + max( min( ( 1 - ( milliseconds ) - localvarint( "ui_show_fo" ) + 1 * 500 ) / 200 ) , 1 )
+                    , 0 ) * ( 0 - 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "fobar_base"
+            visible when ( ( getFOGoal( 1 ) > 0 ) && ( ( getFOProgress( 1 ) ) >= ( tablelookupbyrow( staticdvarstring(
+                    "fo_table" ) , ( getFOGoal( 1 ) ) , 5 ) ) );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 1 * 40 ) + 20 + 2 );
+            exp rect X ( 5 + min( max( ( milliseconds ) - 500 + localvarint( "ui_fo_complete_time" ) + 1 * 500 ) / 200
+                    , 0 ) , 1 ) * ( 0 - 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "fobar_tick"
+            visible when ( ( getFOGoal( 1 ) > 0 ) && ( getFOProgress( 1 ) ) > 0 && ( getFOPercent( 1 ) ) < 1
+                    && ! ( ( getFOProgress( 1 ) ) >= ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal(
+                    1 ) ) , 5 ) ) );
+            exp rect H ( 15 - 4;
+            exp rect W ( ( getFOPercent 1 ) ) * 40 - 4;
+            exp rect Y ( ( ( 1 * 40 ) + 20 + 2 ) + 2;
+            exp rect X ( 5 + 2 + max( min( ( 1 - ( milliseconds ) - localvarint( "ui_show_fo" ) + 1 * 500 ) / 200 ) ,
+                    1 ) , 0 ) * ( 0 - 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "fobar_tick"
+            visible when ( ( getFOGoal( 1 ) > 0 ) && ( ( getFOProgress( 1 ) ) >= ( tablelookupbyrow( staticdvarstring(
+                    "fo_table" ) , ( getFOGoal( 1 ) ) , 5 ) ) );
+            exp rect H ( 15 - 4;
+            exp rect W ( 40 - 4;
+            exp rect Y ( ( ( 1 * 40 ) + 20 + 2 ) + 2;
+            exp rect X ( 5 + 2 + min( max( ( milliseconds ) - 500 + localvarint( "ui_fo_complete_time" ) + 1 * 500 ) /
+                    200 , 0 ) , 1 ) * ( 0 - 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            0.9 0.86 0.68 1
+            textfont             9
+            textscale            0.23
+            textstyle            8
+            visible when ( ( getFOGoal( 1 ) > 0 ) && ( getFOProgress( 1 ) ) >= 0 && ( getFOPercent( 1 ) ) < 1
+                    && ! ( ( getFOProgress( 1 ) ) >= ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal(
+                    1 ) ) , 5 ) ) ) && ( int( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 1 ) ) ,
+                    8 ) ) );
+            exp text ( locstring( "@" + ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 1 ) ) , 1 )
+                    ) , int( ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 1 ) ) , 5 ) ) ) );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 1 * 40 ) + 20 );
+            exp rect X ( 5 + max( min( ( 1 - ( milliseconds ) - localvarint( "ui_show_fo" ) + 1 * 500 ) / 200 ) , 1 )
+                    , 0 ) * ( 0 - 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            0.9 0.86 0.68 1
+            textfont             9
+            textscale            0.23
+            textstyle            8
+            visible when ( ( getFOGoal( 1 ) > 0 ) && ( ( getFOProgress( 1 ) ) >= ( tablelookupbyrow( staticdvarstring(
+                    "fo_table" ) , ( getFOGoal( 1 ) ) , 5 ) ) ) && ( int( tablelookupbyrow( staticdvarstring(
+                    "fo_table" ) , ( getFOGoal( 1 ) ) , 8 ) ) );
+            exp text ( locstring( "@" + ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 1 ) ) , 1 )
+                    ) , int( ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 1 ) ) , 5 ) ) ) );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 1 * 40 ) + 20 );
+            exp rect X ( 5 + max( min( ( 1 - ( milliseconds ) - localvarint( "ui_show_fo" ) + 1 * 500 ) / 200 ) , 1 )
+                    , 0 ) * ( 0 - 256 );
+            exp forecolor A ( max min( ( 1 - ( milliseconds ) - localvarint( "ui_fo_complete_time" ) ) / 200 ) , 1 ) ,
+                    0 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            0.9 0.86 0.68 1
+            textfont             9
+            textscale            0.23
+            textstyle            8
+            visible when ( ( getFOGoal( 1 ) > 0 ) && ( getFOProgress( 1 ) ) >= 0 && ( getFOPercent( 1 ) ) < 1
+                    && ! ( ( getFOProgress( 1 ) ) >= ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal(
+                    1 ) ) , 5 ) ) ) && ! ( int( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 1 ) )
+                    , 8 ) ) );
+            exp text ( locstring( "@" + ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 1 ) ) , 1 )
+                    ) , int( ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 1 ) ) , 5 ) ) ) );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 1 * 40 ) + 20 );
+            exp rect X ( 5 + max( min( ( 1 - ( milliseconds ) - localvarint( "ui_show_fo" ) + 1 * 500 ) / 200 ) , 1 )
+                    , 0 ) * ( 0 - 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            0.9 0.86 0.68 1
+            textfont             9
+            textscale            0.23
+            textstyle            8
+            visible when ( ( getFOGoal( 1 ) > 0 ) && ( ( getFOProgress( 1 ) ) >= ( tablelookupbyrow( staticdvarstring(
+                    "fo_table" ) , ( getFOGoal( 1 ) ) , 5 ) ) ) && ! ( int( tablelookupbyrow( staticdvarstring(
+                    "fo_table" ) , ( getFOGoal( 1 ) ) , 8 ) ) );
+            exp text ( locstring( "@" + ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 1 ) ) , 1 )
+                    ) );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 1 * 40 ) + 20 );
+            exp rect X ( 5 + max( min( ( 1 - ( milliseconds ) - localvarint( "ui_show_fo" ) + 1 * 500 ) / 200 ) , 1 )
+                    , 0 ) * ( 0 - 256 );
+            exp forecolor A ( max min( ( 1 - ( milliseconds ) - localvarint( "ui_fo_complete_time" ) ) / 200 ) , 1 ) ,
+                    0 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            1 0.84 0 1
+            textfont             9
+            textscale            0.3
+            textstyle            8
+            visible when ( ( getFOGoal( 1 ) > 0 ) && ( ( getFOProgress( 1 ) ) >= ( tablelookupbyrow( staticdvarstring(
+                    "fo_table" ) , ( getFOGoal( 1 ) ) , 5 ) ) );
+            exp text ( locstring "@FO_COMPLETE" );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 1 * 40 ) + 20 + 15 );
+            exp rect X ( 5 + 8 + max( min( ( 1 - ( milliseconds ) - 500 + localvarint( "ui_fo_complete_time" ) + 1 *
+                    500 ) / 200 ) , 1 ) , 0 ) * ( 0 - 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "fobkg_alert"
+            visible when ( ( getFOGoal( 1 ) > 0 ) && ( ( getFOProgress( 1 ) ) >= ( tablelookupbyrow( staticdvarstring(
+                    "fo_table" ) , ( getFOGoal( 1 ) ) , 5 ) ) );
+            exp rect H ( 15;
+            exp rect W ( 124;
+            exp rect Y ( ( ( 1 * 40 ) + 20 + 2 );
+            exp rect X ( 5 - 18 + max( min( ( 1 - ( milliseconds ) - 500 + localvarint( "ui_fo_complete_time" ) + 1 *
+                    500 ) / 200 ) , 1 ) , 0 ) * ( 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textfont             10
+            textscale            0.2
+            textstyle            8
+            visible when ( ( getFOGoal( 1 ) > 0 ) && ( ( int( getFOStatus( 1 ) ) ) == 0 && ! ( ( getFOProgress( 1 ) )
+                    >= ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 1 ) ) , 5 ) ) ) );
+            exp text ( locstring( "@" + ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 1 ) ) , 2 )
+                    ) );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 1 * 40 ) + 20 + 25 );
+            exp rect X ( 5 + max( min( ( 1 - ( milliseconds ) - localvarint( "ui_show_fo" ) + 1 * 500 ) / 200 ) , 1 )
+                    , 0 ) * ( 0 - 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            0.97 0.96 0.8 1
+            textfont             4
+            textscale            0.3
+            visible when ( ( getFOGoal( 1 ) > 0 ) && ! ( ( getFOProgress( 1 ) ) >= ( tablelookupbyrow(
+                    staticdvarstring( "fo_table" ) , ( getFOGoal( 1 ) ) , 5 ) ) );
+            exp text ( locstring( "@" + ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 1 ) ) , 4 )
+                    ) , ( int( getFOReward( 1 ) ) ) );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 1 * 40 ) + 20 + 15 );
+            exp rect X ( 5 + 40 + 5 + max( min( ( 1 - ( milliseconds ) - localvarint( "ui_show_fo" ) + 1 * 500 ) / 200
+                    ) , 1 ) , 0 ) * ( 256 );
+        }
+        itemDef
+        {
+            rect                 0 0 0 0 0 0
+            decoration
+            visible              1
+            forecolor            0.97 0.96 0.8 1
+            textfont             4
+            textscale            0.3
+            visible when ( ( getFOGoal( 1 ) > 0 ) && ( ( getFOProgress( 1 ) ) >= ( tablelookupbyrow( staticdvarstring(
+                    "fo_table" ) , ( getFOGoal( 1 ) ) , 5 ) ) );
+            exp text ( locstring( "@" + ( tablelookupbyrow( staticdvarstring( "fo_table" ) , ( getFOGoal( 1 ) ) , 4 )
+                    ) , ( int( getFOReward( 1 ) ) ) );
+            exp rect H ( 15;
+            exp rect W ( 40;
+            exp rect Y ( ( ( 1 * 40 ) + 20 + 15 );
+            exp rect X ( 5 + 40 + 5 + min( max( ( milliseconds ) - ( 500 / 2 ) + localvarint( "ui_fo_complete_time" )
+                    + 1 * 500 ) / 200 , 0 ) , 1 ) * ( 0 - 512 );
+        }
+    }
+}

@@ -9,8 +9,8 @@
 >zlib,9
 >blocks,0x0,0x1000,0x0,0x0,auto,0x0,0x0,0x0,0x0
 >xassetlist,0x0,0xffffffff
-menufile,ui_mp/scriptmenus/kiosk_locker.menu,file=menufile/kiosk_locker.bin
-menufile,ui_mp/scriptmenus/kiosk_killstreak.menu,file=menufile/kiosk_killstreak.bin
+menufile,ui_mp/scriptmenus/kiosk_locker.menu,src=menufile/kiosk_locker.menu
+menufile,ui_mp/scriptmenus/kiosk_killstreak.menu,src=menufile/kiosk_killstreak.menu
 stringtable,mp/survival_waves_abandon_sh.csv,columns=12
 stringtable,mp/survival_waves_ambush_sh.csv,columns=12
 stringtable,mp/survival_waves_crash_tropical.csv,columns=12

@@ -1,0 +1,40 @@
+// ui_mp/scriptmenus/surhud_display.menu: 2.6.9.7's common_gametype_survival menu, converted to 1.1.1.13 by
+// `python -m zonekit.menus convert` (zone_source/survival_menus.csv); this text is now its source.
+// IW menu language: zonekit/menu_source.py.
+{
+    menuDef
+    {
+        name                 "surhud_display"
+        rect                 0 0 640 1 1 0
+        focusColor           0 0 0 0
+        onOpen
+        {
+            if ( staticdvarstring "surHUD_set_animate" ) == "challenge"
+            {
+                setLocalVarInt surHUD_ch_animate ( milliseconds );
+                ;
+            }
+            if ( staticdvarstring "surHUD_set_animate" ) == "credits"
+            {
+                setLocalVarInt surHUD_credits_animate ( milliseconds );
+                ;
+            }
+            if ( staticdvarstring "surHUD_set_animate" ) == "performance"
+            {
+                setLocalVarInt surHUD_performance_animate ( milliseconds );
+                ;
+            }
+            if ( staticdvarstring "surHUD_set_animate" ) == "unlock"
+            {
+                setLocalVarInt surHUD_unlock_animate ( milliseconds );
+                ;
+            }
+            if ( staticdvarstring "surHUD_set_animate" ) == "armory"
+            {
+                setLocalVarInt surHUD_armory_unlock_animate ( milliseconds );
+                ;
+            }
+            close surHUD_display;
+        }
+    }
+}

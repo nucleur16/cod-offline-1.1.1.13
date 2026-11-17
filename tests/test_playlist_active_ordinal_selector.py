@@ -1,9 +1,10 @@
 """Decoded selector behavior and preservation; no AVM2, compiler or game."""
 from pathlib import Path
-import importlib.util,sys,unittest
+import importlib.util,re,sys,unittest
 ROOT=Path(__file__).resolve().parents[1]
 D=ROOT/'tools/playlist-selector-producer';sys.path.insert(0,str(D))
 import selector_producer as P,selector_export_contract as X
+sys.path.insert(0,str(ROOT/'tools'));import rename_movie_strings as R
 
 def execute(code,abc,choices):
     """Closed interpreter for this selector, injecting listPlayList's two arrays."""
@@ -64,6 +65,10 @@ class ActiveOrdinalSelector(unittest.TestCase):
         self.before=(D/'Source.before.as.DATA').read_bytes()
         patch=ROOT/'zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch'
         self.source=(patch/'as/codo/controllers/MatchController.as').read_bytes()
+        # the producer's Source endpoint, before tools/rename_movie_strings.py renamed its dvar names
+        back={new:old for old,new in R.NAMES.items()}
+        self.produced_source=re.sub(r'(?<![A-Za-z0-9_])('+'|'.join(map(re.escape,sorted(back,key=len,reverse=True)))+r')(?![A-Za-z0-9_])',
+                                    lambda m:back[m.group(1)],self.source.decode('utf-8')).encode('utf-8')
         self.tag=(patch/'tags/6167_82_codo_controllers_MatchController.bin').read_bytes()
         self.old=P.A.read(P.abc(self.prior)[0]);self.new=P.A.read(P.abc(self.tag)[0])
         self.oldcode=P.A.method(self.old,P.NAME)['code'];self.code=P.A.method(self.new,P.NAME)['code']
@@ -95,13 +100,19 @@ class ActiveOrdinalSelector(unittest.TestCase):
         with self.assertRaises(RuntimeError):execute(self.oldcode,self.old,[row])
         self.assertIs(execute(self.code,self.new,[row])[0],row)
     def test_exact_transform_preserves_other165_and_full_rate_factors(self):
-        tag,proof=P.produce(self.prior,self.source,self.before)
-        self.assertEqual(tag,self.tag)
+        tag,proof=P.produce(self.prior,self.produced_source,self.before)
+        # the stored tag is the producer's, with only its dvar-name string constants renamed (no code change)
+        mapping=R.tag_mapping(tag)
+        self.assertEqual(sorted(mapping.values()),['ui_quickLineage','ui_quickNativeRoomContext','ui_quickReturn',
+                                                   'ui_quickReturnHostFalse'])
+        self.assertEqual(R.abcstr.replace(tag,mapping),self.tag)
+        self.assertEqual(P.A.read(P.abc(tag)[0])['bodies'].keys(),self.new['bodies'].keys())
+        self.assertTrue(all(P.A.read(P.abc(tag)[0])['bodies'][i]['raw']==self.new['bodies'][i]['raw']for i in self.new['bodies']))
         self.assertTrue(proof['other165_raw_exact']);self.assertTrue(proof['pools_tables_raw_exact'])
         self.assertTrue(proof['both_full_rate_factor_bodies_raw_exact'])
         self.assertEqual(proof['removed_bytes'],26);self.assertEqual(proof['new_instructions'],0)
     def test_source_and_preimage_drift_refused(self):
-        for old,source,before in [(self.prior[:-1],self.source,self.before),(self.prior,self.source+b'\n',self.before),(self.prior,self.source,self.before+b'\n')]:
+        for old,source,before in [(self.prior[:-1],self.produced_source,self.before),(self.prior,self.produced_source+b'\n',self.before),(self.prior,self.produced_source,self.before+b'\n')]:
             with self.subTest(source=len(source)),self.assertRaises(ValueError):P.produce(old,source,before)
     def test_branch_to_removed_clause_and_mid_operand_refused(self):
         rows=P.decode(self.oldcode)

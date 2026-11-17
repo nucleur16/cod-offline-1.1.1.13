@@ -1,7 +1,8 @@
 # Survival native HUD
 
 The original C1 `killstreaks_hd` and `scorebar_hd` menus are retained in
-`zones/survival_hud_postgfx_mp/menufile/survival_hud_visibility.original.json`.
+`zones/survival_hud_postgfx_mp/sources/survival_hud_visibility.original.menu` (.menu source:
+docs/MENU_SOURCE.md); the zone build compiles the written `menufile/survival_hud_visibility.menu`.
 They were resolved from 1.1.1.13 `patch_common_mp.ff`, `ui_mp/hud_720.txt`,
 using the existing AssetExplorer MenuCommands loader and its C1 struct layout.
 

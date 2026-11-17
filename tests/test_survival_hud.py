@@ -1,6 +1,5 @@
 import copy
 import importlib.util
-import json
 from pathlib import Path
 import unittest
 
@@ -11,7 +10,7 @@ spec.loader.exec_module(hud)
 
 class SurvivalHud(unittest.TestCase):
     def test_only_mp_score_and_killstreak_visibility_changes(self):
-        original = json.loads((hud.DIR/'survival_hud_visibility.original.json').read_text())
+        original = hud.original()
         result = hud.author(original)
         changed = [i for i,(a,b) in enumerate(zip(original['p']['8'],result['p']['8'])) if a != b]
         self.assertEqual(len(changed), 2)
@@ -30,7 +29,7 @@ class SurvivalHud(unittest.TestCase):
             else:
                 self.assertEqual(menu['p']['228'], stock['p']['228'])
                 count = len(stock['p']['284'])
-                component = json.loads((hud.DIR.parent/'components/survival_status.json').read_text())
+                component = hud.component()
                 self.assertEqual(menu['p']['284'][count:], component['p']['8'][0]['p']['284'])
                 for j, before in enumerate(stock['p']['284']):
                     replacement = menu['p']['284'][j]['p']['324']
@@ -45,8 +44,8 @@ class SurvivalHud(unittest.TestCase):
                 restored['p']['8'][i]['raw'] = stock['raw']
         self.assertEqual(restored, original)
         # the written menufile is that authoring with the HUD styles folded in (tests/test_hud_styles.py)
-        self.assertEqual((hud.DIR/'survival_hud_visibility.bin').read_bytes(),
-                         hud.menus.encode_menulist(hud.styled(original)))
+        written = hud.menu_source.load(hud.DIR/'survival_hud_visibility.menu', hud.NAME)
+        self.assertEqual(hud.menus.encode_menulist(written), hud.menus.encode_menulist(hud.styled(original)))
 
 if __name__ == '__main__':
     unittest.main()

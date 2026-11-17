@@ -1,4 +1,4 @@
-// chinese_locale -- every Chinese string zone in one (k33_english 0, or no valid language; ahead of code_pre_gfx):
+// chinese_locale -- every Chinese string zone in one (loc_english 0, or no valid language; ahead of code_pre_gfx):
 // the UI movies' K33UI_* keys, custom party/loading text, and usermap GBK names. Built by build_zones.py.
 >zone,chinese_locale
 >install,client_shipRetail\patch

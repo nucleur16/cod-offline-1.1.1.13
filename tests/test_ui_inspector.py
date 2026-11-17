@@ -8,13 +8,14 @@ import tempfile
 import unittest
 
 ROOT=Path(__file__).resolve().parents[1]
+STATUS=ROOT/'zones/survival_hud_postgfx_mp/components/survival_status.menu'
 spec=importlib.util.spec_from_file_location('ui_inspector',ROOT/'tools/ui_inspector.py')
 ui=importlib.util.module_from_spec(spec);spec.loader.exec_module(ui)
 
 
 class InspectorTests(unittest.TestCase):
     def test_actual_survival_visibility_and_wallet(self):
-        path=ROOT/'zones/survival_hud_postgfx_mp/components/survival_status.json'
+        path=STATUS
         for count in (0,1,4,32):
             result=ui.load_menu(path,ui.DEFAULT_DVARS|{'surHUD_enemy':count,'surHUD_credits':9876})
             items=result['menus'][0]['items']
@@ -46,7 +47,7 @@ class InspectorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             p=Path(tmp)/'x.bin';p.write_bytes(b'\0'*50)
             with self.assertRaisesRegex(ValueError,'sidecar'):ui.load_menu(p)
-            p.with_suffix('.json').write_bytes((ROOT/'zones/survival_hud_postgfx_mp/components/survival_status.json').read_bytes())
+            p.with_suffix('.json').write_text(json.dumps(ui.menu_source.load(STATUS,'ui_mp/scriptmenus/survival_status_component.menu')))
             self.assertEqual(len(ui.load_menu(p,ui.DEFAULT_DVARS)['menus']),1)
 
     def test_fullscreen_anchors_keep_status_on_screen(self):
@@ -65,7 +66,7 @@ class InspectorTests(unittest.TestCase):
         try:from PIL import Image
         except ImportError:self.skipTest('Pillow needed for rendered-pixel validation')
         with tempfile.TemporaryDirectory() as tmp:
-            source=ROOT/'zones/survival_hud_postgfx_mp/components/survival_status.json'
+            source=STATUS
             png=Path(tmp)/'current.png'
             subprocess.run([sys.executable,str(ROOT/'tools/ui_inspector.py'),str(source),'--snapshot',str(png)],check=True,capture_output=True)
             image=Image.open(png).convert('RGB');self.assertEqual(image.size,(1280,720))
@@ -74,7 +75,7 @@ class InspectorTests(unittest.TestCase):
             self.assertGreater(sum(b>r+40 and g>r+30 for r,g,b in pixels),50)
             report=json.loads(png.with_suffix('.report.json').read_text())
             self.assertFalse(any('Text bounds overlap' in w for w in report['preview_warnings']))
-            old=json.loads(source.read_text());item=old['p']['8'][0]['p']['284'][3]
+            old=ui.menu_source.load(source,'ui_mp/scriptmenus/survival_status_component.menu');item=old['p']['8'][0]['p']['284'][3]
             raw=bytearray.fromhex(item['raw']);struct.pack_into('<f',raw,8,-36);struct.pack_into('<f',raw,0x1c,-16);struct.pack_into('<f',raw,0xd4,.63);item['raw']=raw.hex()
             legacy=Path(tmp)/'legacy.json';legacy.write_text(json.dumps(old));png=Path(tmp)/'legacy.png'
             subprocess.run([sys.executable,str(ROOT/'tools/ui_inspector.py'),str(legacy),'--snapshot',str(png)],check=True,capture_output=True)
@@ -82,8 +83,7 @@ class InspectorTests(unittest.TestCase):
             self.assertTrue(any('Text bounds overlap' in w for w in report['preview_warnings']))
 
     def test_runtime_rect_client_overrides_stale_cached_rect(self):
-        source=ROOT/'zones/survival_hud_postgfx_mp/components/survival_status.json'
-        data=json.loads(source.read_text());item=data['p']['8'][0]['p']['284'][3]
+        data=ui.menu_source.load(STATUS,'ui_mp/scriptmenus/survival_status_component.menu');item=data['p']['8'][0]['p']['284'][3]
         raw=bytearray.fromhex(item['raw']);struct.pack_into('<f',raw,8,-30);struct.pack_into('<f',raw,0x1c,-40);item['raw']=raw.hex()
         result=ui.decoded(data,ui.DEFAULT_DVARS);wallet=result['menus'][0]['items'][3]
         self.assertEqual(wallet['cached_rect'][1],-30)

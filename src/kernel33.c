@@ -649,7 +649,7 @@ static BOOL PatchDirEnabled(void)
     return on;
 }
 
-/* English (launch option k33_english). Both languages use the same UI movies (voice_ui_mp, controller_ingame: every
+/* English (launch option loc_english). Both languages use the same UI movies (voice_ui_mp, controller_ingame: every
  * text in them is a localize key); the language is which string zones load. English is the patch zones named
  * english* (build_zones.py: english = localized strings, english_font = the Latin glyphs of
  * fonts_ingame.gfx (packed into common_extras since the language can change), english_ui / english_ui_extra = the UI movies' K33UI_* keys, english_zombies_base
@@ -657,13 +657,13 @@ static BOOL PatchDirEnabled(void)
  * win over the stock Chinese ones. Chinese is C1's own strings plus the zones named chinese* (the UI movies'
  * K33UI_* keys in Chinese). Only one set loads: C1 holds at most 12000 localize assets, and a name loaded by both sets
  * would take two. The language the client starts in is decided once, here, before the game runs:
- *     +set k33_language <name>   the language of <name>_locale.ff (en = english*, zh = chinese*)
- *     +set k33_english 1 | 0     the older spelling of en | zh (and +set loc_patchLang en | zh)
- *     seta k33_language "<name>" the saved choice in players\config_mp.cfg, when the command line names none
+ *     +set loc_languageName <name>   the language of <name>_locale.ff (en = english*, zh = chinese*)
+ *     +set loc_english 1 | 0     the older spelling of en | zh (and +set loc_patchLang en | zh)
+ *     seta loc_languageName "<name>" the saved choice in players\config_mp.cfg, when the command line names none
  *     nothing                    English
  * (patch_locale_policy.h StartupLanguage). C1 execs config_mp.cfg before any of this and applies no +set to a
  * dvar it does not know, so both are read here, from the command line and from the plaintext config file itself
- * (PatchPlainConfig); k33_language becomes a real, archived dvar later (locale_switch.c), which is what writes the
+ * (PatchPlainConfig); loc_languageName becomes a real, archived dvar later (locale_switch.c), which is what writes the
  * saved line. When every C1 site locale_switch.c uses matches, a language's one <name>_locale zone is that
  * file's to load and unload: the startup language's loads as the last zone of the code_post_gfx list (its strings go
  * into the slots of the names C1 already holds, locale_switch.c LrLink), another language's is not queued at all and
@@ -675,7 +675,7 @@ static BOOL PatchDirEnabled(void)
 static BOOL g_english = TRUE;
 static int g_englishZones, g_englishSkipped, g_chineseZones;
 static char g_lang[LANG_NAME_MAX] = "en";             /* the language this client started in */
-static char g_langs[LANG_MAX][LANG_NAME_MAX];   /* k33_languageList, sorted */
+static char g_langs[LANG_MAX][LANG_NAME_MAX];   /* loc_languageList, sorted */
 static int g_langCount;
 static unsigned g_langZones;                                /* bit i: g_langs[i] has a zone in the patch folder */
 static unsigned g_langLocale;                               /* bit i: ... and its <name>_locale zone is queued */
@@ -683,7 +683,7 @@ static BOOL g_langReload;                                   /* the language zone
 static BOOL g_langOldStyle;                                 /* a zone of the startup language loads the old way too */
 static BOOL LocaleSwitchCheck(void);                        /* locale_switch.c */
 
-/* players\config_mp.cfg next to the exe, for its saved k33_language line (at most 1 MB; NULL when there is none).
+/* players\config_mp.cfg next to the exe, for its saved loc_languageName line (at most 1 MB; NULL when there is none).
  * An encrypted config (one written before PatchPlainConfig) has no such text and yields no language. */
 static char *ReadSavedConfig(DWORD *length)
 {
@@ -828,8 +828,8 @@ static void LoadPatchDir(void)
                 }
             }
         int at = LanguageListFind(g_langs, g_langCount, g_lang);
-        static const char *const kSource[] = { "the default", "+set k33_language", "+set k33_english / loc_patchLang",
-                                               "the saved k33_language" };
+        static const char *const kSource[] = { "the default", "+set loc_languageName", "+set loc_english / loc_patchLang",
+                                               "the saved loc_languageName" };
         if (strcmp(g_lang, "zh") != 0 && (at < 0 || !(g_langZones >> at & 1u))) {
             /* no zone of that language: English when it is installed, else C1's own text (LogEnglish says so for en) */
             int en = LanguageListFind(g_langs, g_langCount, "en");
@@ -940,12 +940,12 @@ static void LoadPatchDir(void)
 static void LogEnglish(void)
 {
     if (!g_english)
-        Log("english: off (k33_english 0): %d english* zone(s) skipped, %d chinese* zone(s) queued",
+        Log("english: off (loc_english 0): %d english* zone(s) skipped, %d chinese* zone(s) queued",
             g_englishSkipped, g_chineseZones);
     else if (g_englishZones)
-        Log("english: on (k33_english 1): %d english* zone(s) queued", g_englishZones);
+        Log("english: on (loc_english 1): %d english* zone(s) queued", g_englishZones);
     else
-        Log("english: on (k33_english 1), but no english*.ff zone is in the patch folder: the game stays Chinese");
+        Log("english: on (loc_english 1), but no english*.ff zone is in the patch folder: the game stays Chinese");
 }
 
 static int PatchZonesIn(int stage)
@@ -1615,7 +1615,7 @@ static void PatchGbkInput(void)
 #include "c1game.c"
 #include "infect_scoreboard.c"
 
-/* Fullscreen Windowed (codol_borderless): see borderless.c. */
+/* Fullscreen Windowed (r_noborder): see borderless.c. */
 #include "borderless.c"
 
 /* Console overlay: see console.c and docs/OFFLINE_CONSOLE_20261112.md. Every profile of this offline client has
@@ -1646,16 +1646,16 @@ static void PatchGbkInput(void)
 /* Shared plumbing for the features ported from codol-classic's d3d9.dll: a main-thread tick list (k33tick.c, chained
  * after voice.c's and discord.c's Com_EventLoop hooks) and a SHA-256 helper (k33sha256.c). */
 #include "k33tick.c"
-#include "locale_switch.c" /* k33_language: the language, changed while the game runs (after voice.c, k33tick.c) */
+#include "locale_switch.c" /* loc_languageName: the language, changed while the game runs (after voice.c, k33tick.c) */
 #include "k33sha256.c"
 
-/* codol_quick_native_room_context for the shared movie's Quick Play room checks: see quick_room.c. */
+/* ui_quickNativeRoomContext for the shared movie's Quick Play room checks: see quick_room.c. */
 #if !K33_KERNEL_ROOM_CONTEXT
 #include "rooms/quick_room.c"
 #endif
 /* The THEATRE screen (codol-classic's theatre playback): see theatre.c. */
 #include "theatre.c"
-#include "hud_style.c"   /* k33_hudStyle / k33_hudStyleList: the selectable HUD style (docs/HUD_STYLES_20261112.md) */
+#include "hud_style.c"   /* cg_hudStyle / cg_hudStyleList: the selectable HUD style (docs/HUD_STYLES_20261112.md) */
 /* UTF-8 player names: see name_display.c. */
 #if !K33_KERNEL_NAME_DISPLAY
 #include "name_display.c"

@@ -15,9 +15,9 @@ on the DLL side.
 menus until the asset limit of a live language switch is solved). One constant in
 the shared block of both sources, `K33_STYLE_LANGUAGE_ROW = false`: the row and
 its "Switching language..." / "Restart the game to apply the language" line are
-not made, the other two rows close up, and no `k33_language*` dvar is read for a
-row. The language is still changed from the console (`k33_language`,
-`k33_setlanguage`), and a finished switch (`k33_languageSerial`) still translates
+not made, the other two rows close up, and no `loc_language*` dvar is read for a
+row. The language is still changed from the console (`loc_languageName`,
+`loc_setLanguage`), and a finished switch (`loc_languageSerial`) still translates
 the remaining rows and the Graphics tab again. Setting the constant to `true` in
 both sources (the text between the markers must stay identical) and storing the
 two classes brings the row back; its localize keys are still in the string zones.
@@ -33,14 +33,14 @@ writes through `CFunctionContainerCommon.setdvar(name, String(value))`.
 
 | Row | Set | Choices | Names |
 |---|---|---|---|
-| Language (switched off) | `k33_language` (string, archived) | the ids of `k33_languageList`, `;`-separated (`en;zh`) | `K33UI_LANG_NAME_<ID>` |
+| Language (switched off) | `loc_languageName` (string, archived) | the ids of `loc_languageList`, `;`-separated (`en;zh`) | `K33UI_LANG_NAME_<ID>` |
 | Button icons | `gpad_glyphs` (int, archived, 0..6) | 0 Auto, 1 Xbox, 2 PlayStation, 3 Wii U / Switch, 4 Generic, 5 Text only, 6 Keyboard & mouse | `K33UI_GLYPHS_AUTO / XBOX / PS / NINTENDO / GENERIC / TEXT / KBM` |
-| HUD style | `k33_hudStyle` (int, archived) | the numbers of `k33_hudStyleList`, `;`-separated `number:id` pairs (`0:stock;2:v26;3:v33`) | `K33UI_HUD_STYLE_<ID>` (`STOCK`, `V12`, `V26`, `V33`, `V35`, `SM2`) |
+| HUD style | `cg_hudStyle` (int, archived) | the numbers of `cg_hudStyleList`, `;`-separated `number:id` pairs (`0:stock;2:v26;3:v33`) | `K33UI_HUD_STYLE_<ID>` (`STOCK`, `V12`, `V26`, `V33`, `V35`, `SM2`) |
 | HUD sway (16 November 2026) | `cg_hudSway` (int, archived, 0..1; docs/HUD_STYLES_20261112.md "HUD sway") | 0 Off, 1 On; the row is there when the HUD style row is | `K33UI_HUD_SWAY_OFF / ON`, label `K33UI_HUD_SWAY` |
 
-Also read: `k33_languageState` (0 idle, 1 switching, 2 saved and applies on the
-next start), `k33_languageSerial` (moves when a live switch has finished), and
-`k33_padinfo` (non-empty once the controller module is running: that is what
+Also read: `loc_languageState` (0 idle, 1 switching, 2 saved and applies on the
+next start), `loc_languageSerial` (moves when a live switch has finished), and
+`gpad_info` (non-empty once the controller module is running: that is what
 shows the Button icons row). `<ID>` is the id in upper case.
 
 Rules both movies follow (one text, `k33Style*`, between the `k33 style shared`
@@ -48,7 +48,7 @@ markers of both sources; `tests/ui_style_rows_test.js` requires the two copies
 to be identical and runs them):
 
 - An empty or missing list means no row. An older Kernel33.dll without
-  `k33_languageList` / `k33_hudStyleList` / `k33_padinfo` shows the menu as it
+  `loc_languageList` / `cg_hudStyleList` / `gpad_info` shows the menu as it
   was before. Blank, malformed (`x:bad`, `3`, `:v33`) and repeated entries are
   dropped. The row appears by itself if its list turns up while the menu is open.
 - A name with no localize entry shows the raw id (`de`, `v99`).
@@ -102,7 +102,7 @@ and skin. The box is made once per row, after the tab is on the stage (a
   there is nothing for Cancel to undo or for Apply to repeat.
 - A row whose list is empty is hidden (box and label) and the rows below move up.
 - While a list is open its box is not moved to the dvar's value.
-- `k33_languageState` 2 shows "Restart the game to apply the language" under the
+- `loc_languageState` 2 shows "Restart the game to apply the language" under the
   warning line (x 12, y 486); 1 shows "Switching language..." (Language row only).
 - The rows are set again from the dvars every time the tab is shown, and are
   only polled while it is shown.
@@ -144,7 +144,7 @@ rows below move down and the list background grows, as for the FOV row.
   label or on the name steps to the next choice.
 - Gamepad: left / right step (wrapping); select steps forward. Up / down move
   between rows as before.
-- `k33_languageState` 1 / 2 shows the same line under the list (Language row only;
+- `loc_languageState` 1 / 2 shows the same line under the list (Language row only;
   the line is not made while the row is switched off).
 - A submenu without sliders (change team, leave confirmation, the theatre pause)
   gets no rows.
@@ -152,7 +152,7 @@ rows below move down and the list background grows, as for the FOV row.
 ## What refreshes live, and what waits
 
 C1's translator resolves `@KEY` when a text is set and hands the movie a copy, so
-text already on screen does not change by itself. When `k33_languageSerial` moves:
+text already on screen does not change by itself. When `loc_languageSerial` moves:
 
 | Text | Refresh |
 |---|---|
@@ -214,7 +214,7 @@ dvars, values not in the list, wraparound, a refused set, the hold and read-back
 a language serial change, a list that changes while open, and the twenty-three keys
 in both languages, once per pack. The language logic runs with the switch on.
 With the switch as the sources have it (off): no Language row in either menu, no
-gap, no `k33_language*` dvar read for a row. For Options > Graphics the tab's
+gap, no `loc_language*` dvar read for a row. For Options > Graphics the tab's
 build / show / change / frame code runs against combo boxes that behave as
 `CodoComboBox` does (a new list selects its first entry; every selection fires
 the change event): filling and following the dvar set nothing, a pick sets once,
@@ -274,7 +274,7 @@ build of the row asked `Dvar_GetString("cg_hudSway")` to see whether the dvar ex
 (AV reading 0x00000001 at 0x007739B0, the dvar's value 1). The row now never reads it as a string: it is shown
 whenever the HUD style row is (`k33StyleOptions("hud")` non-empty: the same `hud_style.c` registers both), and
 its value is read with `Dvar_GetInt`. `tests/ui_style_rows_test.js` checks that the sway row reads only
-`k33_hudStyleList` to decide. Live (`D:\CoD\k33_sm2_compass_client`, 1024x768), with the row still on the Graphics
+`cg_hudStyleList` to decide. Live (`D:\CoD\k33_sm2_compass_client`, 1024x768), with the row still on the Graphics
 tab and the dvar still under its first, k33-prefixed name (now `cg_hudSway`): the row showed On, picking Off through
 the drop-down set the dvar to 0 (saved in `config_mp.cfg` after quitting), and after a restart the row showed Off. The pause menu
 row was not opened live (no headless way into the pause menu); its logic runs in `tests/ui_style_rows_test.js`.
@@ -282,8 +282,8 @@ row was not opened live (no headless way into the pause menu); its logic runs in
 ## Game tab (16 November 2026)
 
 User request: a fifth tab of the Options window, "Game" (`K33UI_GAME_TAB`, "Game" / "游戏"), holding the UI / HUD
-rows; the HUD sway row leaves the Graphics tab. All four rows moved there, top to bottom: Language (`k33_language`),
-Button icons (`gpad_glyphs`), HUD style (`k33_hudStyle`), HUD sway (`cg_hudSway`). The Graphics tab keeps only its
+rows; the HUD sway row leaves the Graphics tab. All four rows moved there, top to bottom: Language (`loc_languageName`),
+Button icons (`gpad_glyphs`), HUD style (`cg_hudStyle`), HUD sway (`cg_hudSway`). The Graphics tab keeps only its
 own settings (Max FPS stays: it is a rendering setting, applied with the tab). The pause menu's Options list
 (codoingame.gfx `MainPause`) is a different menu and keeps its stepped rows.
 
@@ -336,7 +336,7 @@ again. That stage holds a review / authorization record, which an agent may not 
 
 1. Install the candidate packs with a DLL that has the dvars. Main menu > Options
    > Graphics: Button icons and HUD style under the check boxes, each a drop-down;
-   no Language row. Open each list and pick; check `gpad_glyphs`, `k33_hudStyle`
+   no Language row. Open each list and pick; check `gpad_glyphs`, `cg_hudStyle`
    in the console after each.
 2. With a pad: move the cursor onto a box, press A, move over the list, press A.
 3. Set `gpad_glyphs 3` in the console: the box follows within a moment.
@@ -345,9 +345,9 @@ again. That stage holds a review / authorization record, which an agent may not 
 5. Start a match, open the pause menu: two rows under FOV / Brightness, Back to
    Lobby below them, list background covering all rows. Drag a bar, click a
    label, step with the pad (left / right / select).
-6. `k33_setlanguage` in the console with the Graphics tab or the pause menu open:
+6. `loc_setLanguage` in the console with the Graphics tab or the pause menu open:
    the rows' labels and names follow when the switch has finished.
 7. An older Kernel33.dll: both menus look as before, with at most the Button icons row.
 8. Open change team / leave confirmation: no rows; back to the main list: rows return.
-9. With `K33_STYLE_LANGUAGE_ROW = true` only: three rows; `k33_languageState 2`
+9. With `K33_STYLE_LANGUAGE_ROW = true` only: three rows; `loc_languageState 2`
    shows the restart line under the rows in both menus.

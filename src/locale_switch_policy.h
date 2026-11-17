@@ -131,14 +131,14 @@ static enum LrGateAnswer LrGateDecide(const LrGate *g)
     return LR_GATE_GO;
 }
 
-/* k33_languageState */
+/* loc_languageState */
 enum LsState { LS_STATE_IDLE = 0, LS_STATE_SWITCHING = 1, LS_STATE_RESTART = 2 };
 
 enum LsAction {
     LS_ACT_NONE,      /* the request is the language on screen */
     LS_ACT_LIVE,      /* unload the language zone and load the requested one (when LrGateDecide lets it) */
     LS_ACT_RESTART,   /* keep the request saved; it applies on the next start */
-    LS_ACT_REVERT     /* not an installed language: put k33_language back */
+    LS_ACT_REVERT     /* not an installed language: put loc_languageName back */
 };
 
 typedef struct LsWorld {

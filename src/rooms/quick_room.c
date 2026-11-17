@@ -1,9 +1,9 @@
 /*
- * quick_room.c - codol_quick_native_room_context, ported from codol-classic's d3d9.dll (NativeRoomContext.cpp).
+ * quick_room.c - ui_quickNativeRoomContext, ported from codol-classic's d3d9.dll (NativeRoomContext.cpp).
  * Included by kernel33.c after k33tick.c.
  *
  * The shared front-end movie (voice_ui_mp: MatchController.as, LobbyController.as) reads the string dvar
- * codol_quick_native_room_context to recognise "the same native room" across a match: Quick Play's return to the
+ * ui_quickNativeRoomContext to recognise "the same native room" across a match: Quick Play's return to the
  * room after a match, the summary screen and the host-ready acknowledgement all compare its key. Its format is
  *     v1|<serial>|<room id as 16 lowercase hex digits, high dword first>
  * and "" when the client is in no room. The movie never writes it; codol-classic's d3d9.dll published it and
@@ -19,7 +19,7 @@
  * (a set lost in a level change), it is set again with the same serial. Read only otherwise: no room state changes.
  */
 
-#define QR_DVAR            "codol_quick_native_room_context"
+#define QR_DVAR            "ui_quickNativeRoomContext"
 #define QR_MAIN_ROOM_VA    0x082D5470u
 #define QR_IS_IN_ROOM_VA   0x0070E9F0u
 #define QR_MEMBERSHIP_VA   0x0070E9B0u

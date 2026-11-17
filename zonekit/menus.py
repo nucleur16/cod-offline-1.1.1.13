@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
-r"""Menu files (MenuList, asset type 25) of 1.1.1.13: a readable source <-> the zone blob, and the converter from the
-menus of the later builds (2.6.9.7, which loads menus with the 3.3.3.3 loaders).
+r"""Menu files (MenuList, asset type 25) and menus (menuDef_t, type 26) of 1.1.1.13: the struct tree <-> the zone blob
+(Writer / Reader), and the converter from the menus of the later builds (2.6.9.7, which loads menus with the 3.3.3.3
+loaders).
 
-Source (zones/<zone>/menufile/<name>.json): the struct tree CODOL-AssetExplorer's `zone-menus` command dumps from its
-zone-load emulator, in the 1.1.1.13 layout. Every struct is {"kind", "raw": hex of its bytes, "p": {byte offset: what
-the pointer there holds}}; a pointer holds a string, a struct, a list of structs (an array of pointers or an inline
-array) or an asset reference {"asset": "material"|"sound", "name": ",white"}. The pointer fields' bytes in "raw" are
-ignored: the build writes 0xFFFFFFFF (data follows inline) or 0 (no "p" entry). A ".txt" listing beside each source
-(`python -m zonekit.menus list`) shows the menus as items, event scripts and expressions.
+The sources in zones/ are .menu text (zonekit/menu_source.py compiles it to this struct tree and decompiles a tree
+back to it). The struct tree is also what CODOL-AssetExplorer's `zone-menus` command dumps from its zone-load emulator
+(the reference dumps tools/build_hud_styles.py converts, sources/menus_*.json, are such dumps). Every struct is
+{"kind", "raw": hex of its bytes, "p": {byte offset: what the pointer there holds}}; a pointer holds a string, a
+struct, a list of structs (an array of pointers or an inline array) or an asset reference {"asset": "material" |
+"sound", "name": ",white"}. The pointer fields' bytes in "raw" are ignored: the build writes 0xFFFFFFFF (data follows
+inline) or 0 (no "p" entry); normalize() gives the tree exactly as the zone stores it. listing() prints a tree of any
+build's layout as items, event scripts and expressions (a debugging view).
 
 Layouts (1.1.1.13: Generated/V1_1_1_13 Load_XAsset case 25 sub_4C1980 -> sub_4C18C0, menuDef_t sub_4C12B0, itemDef_s
 sub_4C0C90; 2.6.9.7 / 3.3.3.3: Generated/V3_3_3_3 sub_4904E0 -> sub_48FF80, sub_48F890). W = sizeof(windowDef_t):
@@ -343,6 +346,258 @@ def encode_menulist(node) -> bytes:
     return bytes(w.out)
 
 
+def encode_menu(node) -> bytes:
+    """A menu asset (menuDef_t, type 26) on its own: the menuDef as a MenuList writes it."""
+    w = Writer()
+    w.menu(node)
+    return bytes(w.out)
+
+
+# --- reader (the zone blob -> the struct tree; the inverse of Writer) ------------------------------------------------
+class Reader:
+    """Reads what Writer writes: every pointer field is 0 (absent) or INLINE (its data follows in load order).
+    Anything else (a back reference, an inline asset) is a MenuError: such a blob has no struct-tree source."""
+
+    def __init__(self, data):
+        self.d, self.k = bytes(data), 0
+
+    def take(self, n):
+        if self.k + n > len(self.d):
+            raise MenuError("blob ends at %#x, %d more bytes wanted" % (len(self.d), n))
+        b = self.d[self.k:self.k + n]
+        self.k += n
+        return b
+
+    def node(self, kind, size, ptrs):
+        raw = self.take(size)
+        present = []
+        for o in ptrs:
+            v = struct.unpack_from("<I", raw, o)[0]
+            if v == INLINE:
+                present.append(o)
+            elif v != 0:
+                raise MenuError("%s +%#x: pointer %#x is not inline data" % (kind, o, v))
+        return {"kind": kind, "raw": raw.hex().upper(), "p": {}}, raw, present
+
+    def string(self):
+        e = self.d.index(b"\0", self.k)
+        s = self.d[self.k:e].decode("latin-1")
+        self.k = e + 1
+        return s
+
+    def asset(self, kind):
+        size = {"material": 0x60, "sound": 12}[kind]
+        head = self.take(size)
+        if struct.unpack_from("<I", head)[0] != INLINE or any(head[4:]):
+            raise MenuError("an inline %s (only references are supported)" % kind)
+        return {"asset": kind, "name": self.string()}
+
+    def menulist(self):
+        n, raw, have = self.node("MenuList", 12, (0, 8))
+        count = struct.unpack_from("<i", raw, 4)[0]
+        if 0 in have:
+            n["p"]["0"] = self.string()
+        if 8 in have:
+            ptrs = struct.unpack("<%dI" % count, self.take(4 * count))
+            if any(v != INLINE for v in ptrs):
+                raise MenuError("MenuList: a menu pointer that is not inline")
+            n["p"]["8"] = [self.menu() for _ in range(count)]
+        return n
+
+    def window(self, n, have):
+        for o in (0, 0x2C):
+            if o in have:
+                n["p"][str(o)] = self.string()
+        if 0xA0 in have:
+            n["p"]["160"] = self.asset("material")
+
+    def menu(self):
+        W = W13
+        ptrs = [0, 0x2C, 0xA0, W] + [W + o for o in (0x2C, 0x30, 0x34, 0x38, 0x3C, 0x40, 0x44, 0x48)] + \
+               [W + o for o in range(0x60, 0x7C, 4)]
+        n, raw, have = self.node("menuDef", MENU13, ptrs)
+        p = n["p"]
+        self.window(n, have)
+        if W in have:
+            p[str(W)] = self.string()
+        for o in (0x2C, 0x34, 0x30, 0x38):
+            if W + o in have:
+                p[str(W + o)] = self.eventset()
+        if W + 0x3C in have:
+            p[str(W + 0x3C)] = self.keyhandler()
+        if W + 0x40 in have:
+            p[str(W + 0x40)] = self.statement()
+        for o in (0x44, 0x48):
+            if W + o in have:
+                p[str(W + o)] = self.string()
+        for o in range(0x60, 0x78, 4):
+            if W + o in have:
+                p[str(W + o)] = self.statement()
+        if W + 0x78 in have:
+            count = struct.unpack_from("<i", raw, W + 0xC)[0]
+            if any(v != INLINE for v in struct.unpack("<%dI" % count, self.take(4 * count))):
+                raise MenuError("menuDef: an item pointer that is not inline")
+            p[str(W + 0x78)] = [self.item() for _ in range(count)]
+        return n
+
+    def item(self):
+        W = W13
+        ptrs = [0, 0x2C, 0xA0, W + 0x40] + [W + o for o in range(0x4C, 0x80, 4)] + [W + 0x84, W + 0x90, W + 0x9C] + \
+               [W + o for o in range(0xA0, 0xB0, 4)]
+        n, raw, have = self.node("itemDef", ITEM13, ptrs)
+        p = n["p"]
+        itype = struct.unpack_from("<i", raw, W + 0x14)[0]
+        self.window(n, have)
+        if W + 0x40 in have:
+            p[str(W + 0x40)] = self.string()
+        for o in range(0x4C, 0x6C, 4):
+            if W + o in have:
+                p[str(W + o)] = self.eventset()
+        for o in (0x6C, 0x70):
+            if W + o in have:
+                p[str(W + o)] = self.string()
+        if W + 0x74 in have:
+            p[str(W + 0x74)] = self.keyhandler()
+        for o in (0x78, 0x7C):
+            if W + o in have:
+                p[str(W + o)] = self.string()
+        if W + 0x84 in have:
+            p[str(W + 0x84)] = self.asset("sound")
+        if W + 0x90 in have:
+            p[str(W + 0x90)] = self.typedata(itype)
+        if W + 0x9C in have:
+            count = struct.unpack_from("<i", raw, W + 0x98)[0]
+            fes = []
+            for _ in range(count):
+                fe, _r, fh = self.node("ItemFloatExpression", 8, (4,))
+                fes.append((fe, fh))
+            for fe, fh in fes:
+                if 4 in fh:
+                    fe["p"]["4"] = self.statement()
+            p[str(W + 0x9C)] = [fe for fe, _fh in fes]
+        for o in range(0xA0, 0xB0, 4):
+            if W + o in have:
+                p[str(W + o)] = self.statement()
+        return n
+
+    def typedata(self, itype):
+        if itype == 6:
+            n, _raw, have = self.node("listBoxDef", 0x144, (0x120, 0x140))
+            if 0x120 in have:
+                n["p"]["288"] = self.eventset()
+            if 0x140 in have:
+                n["p"]["320"] = self.asset("material")
+            return n
+        if itype in (4, 9, 16, 18, 11, 14, 10, 0, 17, 22, 23):
+            return self.node("editFieldDef", 0x20, ())[0]
+        if itype == 12:
+            n, _raw, have = self.node("multiDef", 0x188, tuple(range(0, 0x100, 4)))
+            for o in have:
+                n["p"][str(o)] = self.string()
+            return n
+        if itype == 13:
+            return self.string()
+        if itype == 20:
+            return self.node("newsTickerDef", 0x1C, ())[0]
+        if itype == 21:
+            return self.node("textScrollDef", 4, ())[0]
+        raise MenuError("item type %d has no typeData" % itype)
+
+    def eventset(self):
+        n, raw, have = self.node("MenuEventHandlerSet", 8, (4,))
+        if 4 not in have:
+            return n
+        count = struct.unpack_from("<i", raw, 0)[0]
+        ptrs = struct.unpack("<%dI" % count, self.take(4 * count))
+        hs = []
+        for v in ptrs:
+            if v == 0:
+                hs.append(None)
+                continue
+            if v != INLINE:
+                raise MenuError("MenuEventHandlerSet: handler pointer %#x" % v)
+            h, hraw, hh = self.node("MenuEventHandler", 8, (0,))
+            hs.append(h)
+            if 0 not in hh:
+                continue
+            t = hraw[4]
+            if t == 0:
+                h["p"]["0"] = self.string()
+            elif t == 1:
+                c, _cr, ch = self.node("ConditionalScript", 8, (0, 4))
+                if 4 in ch:
+                    c["p"]["4"] = self.statement()
+                if 0 in ch:
+                    c["p"]["0"] = self.eventset()
+                h["p"]["0"] = c
+            elif t == 2:
+                h["p"]["0"] = self.eventset()
+            elif t in (3, 4, 5, 6):
+                s, _sr, sh = self.node("SetLocalVarData", 8, (0, 4))
+                if 0 in sh:
+                    s["p"]["0"] = self.string()
+                if 4 in sh:
+                    s["p"]["4"] = self.statement()
+                h["p"]["0"] = s
+            else:
+                raise MenuError("event handler type %d" % t)
+        n["p"]["4"] = hs
+        return n
+
+    def keyhandler(self):
+        n, _raw, have = self.node("ItemKeyHandler", 12, (4, 8))
+        if 4 in have:
+            n["p"]["4"] = self.eventset()
+        if 8 in have:
+            n["p"]["8"] = self.keyhandler()
+        return n
+
+    def statement(self):
+        n, raw, have = self.node("Statement", 20, (4,))
+        if 4 not in have:
+            return n
+        count = struct.unpack_from("<i", raw, 0)[0]
+        es = []
+        for _ in range(count):
+            es.append({"kind": "expressionEntry", "raw": self.take(12).hex().upper(), "p": {}})
+        for e in es:
+            t, dt, v = struct.unpack("<III", bytes.fromhex(e["raw"]))
+            if t != 0 and dt in (2, 3):
+                if v == INLINE:
+                    e["p"]["8"] = self.string() if dt == 2 else self.statement()
+                elif v != 0:
+                    raise MenuError("expression operand pointer %#x" % v)
+        n["p"]["4"] = es
+        return n
+
+
+def _finish(r, what):
+    if r.k != len(r.d):
+        raise MenuError("%s: %d bytes left after the asset" % (what, len(r.d) - r.k))
+
+
+def decode_menulist(data):
+    """A menufile (MenuList, type 25) blob -> its struct tree."""
+    r = Reader(data)
+    n = r.menulist()
+    _finish(r, "MenuList")
+    return n
+
+
+def decode_menu(data):
+    """A menu (menuDef_t, type 26) blob -> its struct tree."""
+    r = Reader(data)
+    n = r.menu()
+    _finish(r, "menuDef")
+    return n
+
+
+def normalize(node, menu=False):
+    """The tree exactly as the zone stores it: what Writer writes, read back (pointer fields, counts and the fields
+    the loader sets rewritten, hex in upper case). Two trees are the same source when these are equal."""
+    return decode_menu(encode_menu(node)) if menu else decode_menulist(encode_menulist(node))
+
+
 # --- the converter from 2.6.9.7 ----------------------------------------------------------------------------------------
 W26 = 0xA8
 
@@ -634,13 +889,13 @@ def main(argv=None):
     import os
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
-    c = sub.add_parser("convert", help="2.6.9.7 zone-menus dump -> 1.1.1.13 sources (<out>/<name>.json + .txt)")
+    c = sub.add_parser("convert", help="2.6.9.7 zone-menus dump -> 1.1.1.13 .menu sources (<out>/<name>.menu)")
     c.add_argument("--dump", required=True)
     c.add_argument("--out", required=True)
     c.add_argument("--stock-materials", action="store_true",
                    help="replace the materials no stock 1.1.1.13 zone has (MATERIAL_2697) instead of referencing them")
     c.add_argument("names", nargs="+")
-    li = sub.add_parser("list", help="write the .txt listing of 1.1.1.13 sources")
+    li = sub.add_parser("list", help="print the listing of a struct tree (.json dump, or a menufile .bin blob)")
     li.add_argument("sources", nargs="+")
     a = ap.parse_args(argv)
     if a.cmd == "convert":
@@ -650,22 +905,24 @@ def main(argv=None):
             raise SystemExit("%s is a %s dump; the converter reads 2.6.9.7 menus" % (a.dump, dump.get("build")))
         os.makedirs(a.out, exist_ok=True)
         for name, ml in zip(a.names, menus_of(dump, a.names)):
+            from zonekit import menu_source
             cv = Converter(stock_materials=a.stock_materials)
             node = cv.menulist(ml)
             encode_menulist(node)
-            path = os.path.join(a.out, name + ".json")
-            with open(path, "w", encoding="utf-8", newline="\n") as f:
-                json.dump(node, f, indent=1, ensure_ascii=True)
-                f.write("\n")
-            with open(path[:-5] + ".txt", "w", encoding="utf-8", newline="\n") as f:
-                f.write(listing(node))
+            header = [node["p"]["0"] + ": 2.6.9.7's menu, converted to 1.1.1.13 by `python -m zonekit.menus convert`",
+                      "(rewrites: %s). IW menu language: zonekit/menu_source.py." % ("; ".join(cv.notes) or "none")]
+            with open(os.path.join(a.out, name + ".menu"), "w", encoding="utf-8", newline="\n") as f:
+                f.write(menu_source.decompile_menufile(node, header))
             print("%s: %s" % (name, "; ".join(cv.notes) or "no rewrites"))
     else:
         for s in a.sources:
-            with open(s, encoding="utf-8") as f:
-                node = json.load(f)
-            with open(s[:-5] + ".txt", "w", encoding="utf-8", newline="\n") as f:
-                f.write(listing(node))
+            if s.lower().endswith(".bin"):
+                with open(s, "rb") as f:
+                    node = decode_menulist(f.read())
+            else:
+                with open(s, encoding="utf-8") as f:
+                    node = json.load(f)
+            print(listing(node), end="")
 
 
 if __name__ == "__main__":

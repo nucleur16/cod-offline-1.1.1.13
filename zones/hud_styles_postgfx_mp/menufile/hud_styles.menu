@@ -1,0 +1,2504 @@
+// ui_mp/scriptmenus/hud_styles.menu: written by tools/build_hud_styles.py from sources/ (the extracted menus_*.json, sm2.menu,
+// facts.json) and 1.1.1.13's own HUD menus: edit those, not this file. IW menu language: zonekit/menu_source.py.
+{
+    menuDef
+    {
+        name                 "weaponbar_hd"
+        rect                 -10 0 640 480 4 4
+        visible              1
+        menuExtra            1
+        focusColor           0 0 0 0
+        visible when ( ( dvarint( "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" ) !=
+                5 && [ ( [ ( [ ( ! [ ( ui_active ) ] ] && [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ]
+                && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( weaponname ) == "killstreak_ac130_mp" ]
+                || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ] || [ ( weaponname ) ==
+                "killstreak_predator_missile_mp" || weaponname( ) == "remote_missile_detonator_so" ]
+                || [ ( [ ( weaponname ) == "ac130_105mm_mp" ] || [ ( weaponname ) == "ac130_40mm_mp" ]
+                || [ ( weaponname ) == "ac130_25mm_mp" ] ] || [ ( adsjavelin ) ] || [ ( weaponname ) ==
+                "heli_remote_mp" ] || missilecam( ) ] ] && [ ( ! isempjammed( ) ] && [ ( ! [ ( staticdvarint
+                "scr_gameended" ) ] ] ] && ! [ ( selecting_location ) ] && [ ( ! [ ( spectatingfree ) ] ]
+                && [ ! [ demofreecamera ] ] && [ ! [ demofollowcamera ] ] && [ ( staticdvarbool "cg_weaponBarHide" )
+                == 0 ] ] ) || ( dvarint( "cg_hudStyle" ) == 2 && [ ( [ ( ( [ ( ! [ ( ui_active ) ] ]
+                || menuisopen( "shoutcast" ) ) && [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ]
+                && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( weaponname ) == "killstreak_ac130_mp" ]
+                || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ] || [ ( weaponname ) ==
+                "killstreak_predator_missile_mp" || weaponname( ) == "remote_missile_detonator_so" ]
+                || [ ( [ ( weaponname ) == "ac130_105mm_mp" ] || [ ( weaponname ) == "ac130_40mm_mp" ]
+                || [ ( weaponname ) == "ac130_25mm_mp" ] ] || [ ( adsjavelin ) ] || [ ( weaponname ) ==
+                "heli_remote_mp" || staticdvarbool( "heli_remote" ) ] || missilecam( ) ] ]
+                && [ ( ! isempjammed( ) ] && [ ( ! [ ( staticdvarint "scr_gameended" ) ] ] ]
+                && ! [ ( selecting_location ) ] && [ ( ! [ ( spectatingfree ) ] ] && [ ! [ demofreecamera ] ]
+                && [ ! [ demofollowcamera ] ] && [ ( staticdvarbool "cg_weaponBarHide" ) == 0 ] ] )
+                || ( dvarint( "cg_hudStyle" ) == 3 && [ ( [ ( ( [ ( ! [ ( ui_active ) ] ]
+                || [ ( [ ( staticdvarint "cl_isHostAsSpectator" ) == 1 ] && staticdvarint( "cl_shoutCastMode" ) != 0 ]
+                || [ ( staticdvarint "cl_isHostAsSpectator" ) != 0 ] ) && [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ]
+                && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( weaponname ) == "killstreak_ac130_mp" ]
+                || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ] || [ ( weaponname ) ==
+                "killstreak_predator_missile_mp" || weaponname( ) == "remote_missile_detonator_so" ]
+                || [ ( [ ( weaponname ) == "ac130_105mm_mp" ] || [ ( weaponname ) == "ac130_40mm_mp" ]
+                || [ ( weaponname ) == "ac130_25mm_mp" ] ] || [ ( adsjavelin ) ] || [ ( weaponname ) ==
+                "heli_remote_mp" || staticdvarbool( "heli_remote" ) ] || missilecam( ) ] ]
+                && [ ( ! isempjammed( ) ] && [ ( ! [ ( staticdvarint "scr_gameended" ) ] ] ]
+                && ! [ ( selecting_location ) ] && [ ( ! [ ( spectatingfree ) ] ] && [ ! [ demofreecamera ] ]
+                && [ ! [ demofollowcamera ] ] && [ ( staticdvarbool "cg_weaponBarHide" ) == 0 ]
+                && [ ( ! [ ( staticdvarint "cl_isHostAsSpectator" ) == 1 ] || staticdvarint( "cl_showShoutcastHud" )
+                == 1 ] && ( ! 0 || inkillcam( ) ) && ( ! [ ( staticdvarstring "ui_gametype" ) == "clash" ]
+                || ( 0 != 5 ) ) ] ) || ( dvarint( "cg_hudStyle" ) == 5 && [ ( [ ( [ ( ! [ ( ui_active ) ] ]
+                && [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ] && [ ( ! [ ( flashbanged ) ] ]
+                && [ ( ! [ ( [ ( weaponname ) == "killstreak_ac130_mp" ] || [ ( weaponname ) ==
+                "killstreak_helicopter_minigun_mp" ] || [ ( weaponname ) == "killstreak_predator_missile_mp"
+                || weaponname( ) == "remote_missile_detonator_so" ] || [ ( [ ( weaponname ) == "ac130_105mm_mp" ]
+                || [ ( weaponname ) == "ac130_40mm_mp" ] || [ ( weaponname ) == "ac130_25mm_mp" ] ]
+                || [ ( adsjavelin ) ] || [ ( weaponname ) == "heli_remote_mp" ] || missilecam( ) ] ]
+                && [ ( ! isempjammed( ) ] && [ ( ! [ ( staticdvarint "scr_gameended" ) ] ] ]
+                && ! [ ( selecting_location ) ] && [ ( ! [ ( spectatingfree ) ] ] && [ ! [ demofreecamera ] ]
+                && [ ! [ demofollowcamera ] ] && [ ( staticdvarbool "cg_weaponBarHide" ) == 0 ] ] );
+        itemDef
+        {
+            rect                 -60 -53.333336 37.333336 0.6666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            83
+            type                 ITEM_TYPE_OWNERDRAW
+            textfont             10
+            textalign            2
+            textscale            0.3333
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( inkillcam ) || spectatingclient( ) ];
+            exp rect X ( -60.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -53.333336 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -60 -53.333336 37.333336 0.6666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            81
+            type                 ITEM_TYPE_OWNERDRAW
+            textfont             10
+            textalign            2
+            textscale            0.3333
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( ! [ ( inkillcam ) ] ] && [ ( ! [ ( spectatingclient ) ] ] ];
+            exp rect X ( -60.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -53.333336 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "lowammowarning"
+            rect                 -50 0 100 100 2 2
+            decoration
+            visible              1
+            forecolor            1 1 1 0.65
+            ownerdraw            120
+            type                 ITEM_TYPE_OWNERDRAW
+            textfont             9
+            textalign            9
+            textscale            0.3333
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( ! [ ( inkillcam ) ] ] && [ ( ! [ ( spectatingclient ) ] ] ];
+            exp rect X ( -50.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -130.66667 -34.000004 77.333336 0.6666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            5
+            type                 ITEM_TYPE_OWNERDRAW
+            textfont             9
+            textscale            0.437475
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
+            exp rect X ( -130.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -34.000004 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -203.33334 -46.666668 186.66667 20 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "hud_weaponbar"
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
+            exp rect X ( -203.33334 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -46.666668 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "offhandFragIcon"
+            rect                 -78 -28 18 18 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            103
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "fragAmmo" ) ] > 3 ];
+            exp rect X ( -78.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandFragIcon"
+            rect                 -74.66667 -28 18 18 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            103
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "fragAmmo" ) ] > 2 ];
+            exp rect X ( -74.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandFragIcon"
+            rect                 -71.33333 -28 18 18 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            103
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "fragAmmo" ) ] > 1 ];
+            exp rect X ( -71.33333 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandFragIcon"
+            rect                 -68 -28 18 18 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            103
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "fragAmmo" ) ] ];
+            exp rect X ( -68.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandFragIcon"
+            rect                 -68 -28 18 18 10 10
+            decoration
+            visible              1
+            forecolor            0.5 0.3 0.3 1
+            ownerdraw            103
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "fragAmmo" ) ] == 0 ];
+            exp rect X ( -68.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            rect                 -86 -24 18 18 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 0
+            textfont             6
+            textalign            2
+            textscale            0.18
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "fragAmmo" ) ] > 0 ];
+            exp text ( "^3" + keybinding( "+frag" );
+            exp rect X ( -86.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -24.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandSmokeIcon"
+            rect                 -111.333336 -28 18 18 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            104
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "smokeAmmo" ) ] > 3 ];
+            exp rect X ( -111.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandSmokeIcon"
+            rect                 -108 -28 18 18 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            104
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "smokeAmmo" ) ] > 2 ];
+            exp rect X ( -108.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandSmokeIcon"
+            rect                 -104.666664 -28 18 18 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            104
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "smokeAmmo" ) ] > 1 ];
+            exp rect X ( -104.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandSmokeIcon"
+            rect                 -101.333336 -28 18 18 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            104
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "smokeAmmo" ) ] ];
+            exp rect X ( -101.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandSmokeIcon"
+            rect                 -101.333336 -28 18 18 10 10
+            decoration
+            visible              1
+            forecolor            0.5 0.3 0.3 1
+            ownerdraw            104
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "smokeAmmo" ) ] == 0 ];
+            exp rect X ( -101.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            rect                 -119.333336 -24 18 18 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 0
+            textfont             6
+            textalign            2
+            textscale            0.18
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "smokeAmmo" ) ] > 0 ];
+            exp text ( "^3" + keybinding( "+smoke" );
+            exp rect X ( -119.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -24.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandTactIcon"
+            rect                 -144.66666 -28 18 18 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            284
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "tactAmmo" ) ] > 3 ];
+            exp rect X ( -144.66666 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandTactIcon"
+            rect                 -141.33334 -28 18 18 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            284
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "tactAmmo" ) ] > 2 ];
+            exp rect X ( -141.33334 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandTactIcon"
+            rect                 -138 -28 18 18 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            284
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "tactAmmo" ) ] > 1 ];
+            exp rect X ( -138.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandTactIcon"
+            rect                 -134.66666 -28 18 18 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            284
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "tactAmmo" ) ] > 0 ];
+            exp rect X ( -134.66666 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandTactIcon"
+            rect                 -134.66666 -28 18 18 10 10
+            decoration
+            visible              1
+            forecolor            0.5 0.3 0.3 1
+            ownerdraw            284
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "tactAmmo" ) ] == 0 ];
+            exp rect X ( -134.66666 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -28.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            rect                 -152.66667 -24 18 18 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 0
+            textfont             6
+            textalign            2
+            textscale            0.18
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( [ ( player "tactAmmo" ) ] > 0 ];
+            exp text ( "^3" + keybinding( "+tact" );
+            exp rect X ( -152.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -24.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            rect                 -35 -40 20 20 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            294
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( hasaltweapon ) ];
+            exp rect X ( -35.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -40.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -35 -40 20 20 10 10
+            decoration
+            visible              1
+            forecolor            1 1 0 1
+            textfont             6
+            textalign            1
+            textalignx           -10
+            textaligny           18
+            textscale            0.25
+            textstyle            ITEM_TEXTSTYLE_SHADOWEDMORE
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( hasaltweapon ) ];
+            exp text ( "^3" + keybinding( "weapalt" );
+            exp rect X ( -35.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -40.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -124 -42 37.333336 0.6666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            83
+            type                 ITEM_TYPE_OWNERDRAW
+            textalign            2
+            textscale            0.24
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( inkillcam ) || spectatingclient( )
+                    && ( weaponname ) != "none" ) ];
+            exp rect X ( -124.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -42.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -124 -42 37.333336 0.6666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            83
+            type                 ITEM_TYPE_OWNERDRAW
+            textfont             10
+            textalign            2
+            textscale            0.22439
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( ! [ ( inkillcam ) ] ] && [ ( ! [ ( spectatingclient
+                    ) ] ] && ( weaponname ) != "none" ) ];
+            exp rect X ( -124.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -42.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -124.66667 -61.333336 40 8.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "k33hud26_fire_type_bg"
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( weaponname ) != "none" ];
+            exp rect X ( -124.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -61.333336 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -124.66667 -61.333336 40 8.666667 10 10
+            decoration
+            visible              1
+            forecolor            0 0 0 1
+            textfont             10
+            textalign            8
+            textscale            0.15
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( weaponname ) != "none" ];
+            exp text ( locstring dvarstring( "cg_hudFireType" ) );
+            exp rect X ( -124.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -61.333336 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -22 -34 0 0 10 10
+            layoutRect           -22 -34 0 0 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            3001
+            type                 ITEM_TYPE_OWNERDRAW
+            textfont             7
+            textscale            0.56912
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( weaponname ) != "none" ];
+            exp rect X ( -22.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -34.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -123 -41 99 3.5 10 10
+            layoutRect           -123 -41 99 3.5 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            3002
+            type                 ITEM_TYPE_OWNERDRAW
+            textfont             7
+            textscale            0.56912
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( weaponname ) != "none" ];
+            exp rect X ( -123.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -41.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -10 -24.22 0 0 10 10
+            layoutRect           -10 -24.22 0 0 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textfont             7
+            textscale            0.2991
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( weaponname ) != "none" ];
+            exp text ( player "stockAmmo";
+            exp rect X ( -10.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -24.22 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -126.66667 -42 130.66667 18.666668 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "k33hud26_weaponbar_bg"
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( weaponname ) != "none" ];
+            exp rect X ( -126.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -42.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "offhandFragIcon"
+            rect                 -102.666664 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            103
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "fragAmmo" ) ] > 3 ];
+            exp rect X ( -102.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandFragIcon"
+            rect                 -99.333336 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            103
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "fragAmmo" ) ] > 2 ];
+            exp rect X ( -99.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandFragIcon"
+            rect                 -96 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            103
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "fragAmmo" ) ] > 1 ];
+            exp rect X ( -96.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandFragIcon"
+            rect                 -92.666664 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            103
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "fragAmmo" ) ] ];
+            exp rect X ( -92.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandFragIcon"
+            rect                 -92.666664 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.5 0.3 0.3 1
+            ownerdraw            103
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "fragAmmo" ) ] == 0
+                    && ! iszm( ) ];
+            exp rect X ( -92.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            rect                 -91.666664 -30.666668 10.666667 10.666667 10 10
+            decoration
+            visible              1
+            forecolor            0.16 0.65 1 1
+            textfont             7
+            textalign            14
+            textscale            0.12
+            textstyle            7
+            glowColor            0 0 0 0.7
+            editField
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "fragAmmo" ) ] > 0 ];
+            exp text ( "^2" + keybinding( "+frag" );
+            exp rect X ( -91.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -30.666668 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "offhandSmokeIcon"
+            rect                 -49.333332 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            104
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "smokeAmmo" ) ] > 3 ];
+            exp rect X ( -49.333332 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandSmokeIcon"
+            rect                 -46 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            104
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "smokeAmmo" ) ] > 2 ];
+            exp rect X ( -46.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandSmokeIcon"
+            rect                 -42.666664 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            104
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "smokeAmmo" ) ] > 1 ];
+            exp rect X ( -42.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandSmokeIcon"
+            rect                 -39.333336 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            104
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "smokeAmmo" ) ] ];
+            exp rect X ( -39.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandSmokeIcon"
+            rect                 -39.333336 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.5 0.3 0.3 1
+            ownerdraw            104
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "smokeAmmo" ) ] == 0
+                    && ! iszm( ) ];
+            exp rect X ( -39.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            rect                 -38.333336 -30.666668 10.666667 10.666667 10 10
+            decoration
+            visible              1
+            forecolor            0.16 0.65 1 1
+            textfont             7
+            textalign            14
+            textscale            0.12
+            textstyle            7
+            glowColor            0 0 0 0.7
+            editField
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "smokeAmmo" ) ] > 0 ];
+            exp text ( "^2" + keybinding( "+smoke" );
+            exp rect X ( -38.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -30.666668 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "offhandTactIcon"
+            rect                 -129.33334 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            284
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "tactAmmo" ) ] > 3 ];
+            exp rect X ( -129.33334 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandTactIcon"
+            rect                 -126 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            284
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "tactAmmo" ) ] > 2 ];
+            exp rect X ( -126.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandTactIcon"
+            rect                 -122.666664 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            284
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "tactAmmo" ) ] > 1 ];
+            exp rect X ( -122.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandTactIcon"
+            rect                 -119.333336 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            284
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "tactAmmo" ) ] > 0 ];
+            exp rect X ( -119.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandTactIcon"
+            rect                 -119.333336 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.5 0.3 0.3 1
+            ownerdraw            284
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "tactAmmo" ) ] == 0
+                    && ! iszm( ) ];
+            exp rect X ( -119.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            rect                 -118.333336 -30.666668 10.666667 10.666667 10 10
+            decoration
+            visible              1
+            forecolor            0.16 0.65 1 1
+            textfont             7
+            textalign            14
+            textscale            0.12
+            textstyle            7
+            glowColor            0 0 0 0.7
+            editField
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( player "tactAmmo" ) ] > 0 ];
+            exp text ( "^2" + keybinding( "+tact" );
+            exp rect X ( -118.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -30.666668 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -48 -40 20 20 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            294
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( hasaltweapon ) && ( weaponname ) != "none" ) ];
+            exp rect X ( -48.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -40.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -48 -40 20 20 10 10
+            decoration
+            visible              1
+            forecolor            0.16 0.65 1 1
+            textfont             7
+            textalign            14
+            textscale            0.12
+            textstyle            7
+            glowColor            0 0 0 0.7
+            editField
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( hasaltweapon ) && ( weaponname ) != "none" ) ];
+            exp text ( "^2" + keybinding( "weapalt" );
+            exp rect X ( -48.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -40.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -68.66667 -36.5 16 16 10 10
+            layoutRect           -68.66667 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            style                WINDOW_STYLE_SHADER
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( [ ( ( [ ( ! [ ( ui_active ) ] ]
+                    || menuisopen( "shoutcast" ) ) && [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ]
+                    && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( weaponname ) == "killstreak_ac130_mp" ]
+                    || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ] || [ ( weaponname ) ==
+                    "killstreak_predator_missile_mp" || weaponname( ) == "remote_missile_detonator_so" ]
+                    || [ ( [ ( weaponname ) == "ac130_105mm_mp" ] || [ ( weaponname ) == "ac130_40mm_mp" ]
+                    || [ ( weaponname ) == "ac130_25mm_mp" ] ] || [ ( adsjavelin ) ] || [ ( weaponname ) ==
+                    "heli_remote_mp" || staticdvarbool( "heli_remote" ) ] || missilecam( ) ] ]
+                    && [ ( ! isempjammed( ) ] && [ ( ! [ ( staticdvarint "scr_gameended" ) ] ] ]
+                    && ! [ ( selecting_location ) ] && [ ( ! [ ( spectatingfree ) ] ] && [ ! [ demofreecamera ] ]
+                    && [ ! [ demofollowcamera ] ] && [ ( staticdvarbool "cg_weaponBarHide" ) == 0 ] ]
+                    && [ ( actionslotusable 1 ) && [ ( player "killstreakID0" ) ] && iszm( ) ] ];
+            exp material ( tablelookup "mp/coKillstreakStatsTable.csv" , 0 , [ ( player "killstreakID0" ) ] , 15 );
+            exp rect X ( -68.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "lowammowarning"
+            rect                 -40 135 100 15 9 9
+            layoutRect           -40 135 100 15 9 9
+            decoration
+            visible              1
+            forecolor            1 1 1 0.65
+            ownerdraw            120
+            type                 ITEM_TYPE_OWNERDRAW
+            textfont             9
+            textalign            9
+            textscale            0.25
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( [ ( [ ( ( [ ( ! [ ( ui_active ) ] ]
+                    || menuisopen( "shoutcast" ) ) && [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ]
+                    && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( weaponname ) == "killstreak_ac130_mp" ]
+                    || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ] || [ ( weaponname ) ==
+                    "killstreak_predator_missile_mp" || weaponname( ) == "remote_missile_detonator_so" ]
+                    || [ ( [ ( weaponname ) == "ac130_105mm_mp" ] || [ ( weaponname ) == "ac130_40mm_mp" ]
+                    || [ ( weaponname ) == "ac130_25mm_mp" ] ] || [ ( adsjavelin ) ] || [ ( weaponname ) ==
+                    "heli_remote_mp" || staticdvarbool( "heli_remote" ) ] || missilecam( ) ] ]
+                    && [ ( ! isempjammed( ) ] && [ ( ! [ ( staticdvarint "scr_gameended" ) ] ] ]
+                    && ! [ ( selecting_location ) ] && [ ( ! [ ( spectatingfree ) ] ] && [ ! [ demofreecamera ] ]
+                    && [ ! [ demofollowcamera ] ] && [ ( staticdvarbool "cg_weaponBarHide" ) == 0 ] ]
+                    && [ ( [ ( ! [ ( inkillcam ) ] ] && [ ( ! [ ( spectatingclient ) ] ] && ( weaponname ) != "none" )
+                    ] ];
+            exp rect X ( -40.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 135.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -125.333336 -42 37.333336 0.6666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            83
+            type                 ITEM_TYPE_OWNERDRAW
+            textalign            2
+            textscale            0.24
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( ( inkillcam( ) && 0 ) || ( spectatingclient( )
+                    && ! 0 ) && ( weaponname( ) != "none" ) ];
+            exp rect X ( -125.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -42.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -125.333336 -42 37.333336 0.6666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            83
+            type                 ITEM_TYPE_OWNERDRAW
+            textfont             10
+            textalign            2
+            textscale            0.2
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( ! [ ( inkillcam ) ] ] && [ ( ! [ ( spectatingclient
+                    ) ] ] && ( weaponname ) != "none" ) && ! 0 ];
+            exp rect X ( -125.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -42.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -124.66667 -61.333336 50 8.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "k33hud33_fire_type_bg"
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( weaponname ) != "none" && ! 0 ];
+            exp rect X ( -124.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -61.333336 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -124.66667 -61.333336 50 8.666667 10 10
+            decoration
+            visible              1
+            forecolor            0 0 0 1
+            textfont             10
+            textalign            8
+            textscale            0.15
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( weaponname ) != "none" && ! 0 ];
+            exp text ( locstring dvarstring( "cg_hudFireType" ) );
+            exp rect X ( -124.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -61.333336 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -22 -34 0 0 10 10
+            layoutRect           -22 -34 0 0 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            3001
+            type                 ITEM_TYPE_OWNERDRAW
+            textfont             7
+            textscale            0.56912
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( weaponname ) != "none" ];
+            exp rect X ( -22.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -34.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -123 -41 99 3.5 10 10
+            layoutRect           -123 -41 99 3.5 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            3002
+            type                 ITEM_TYPE_OWNERDRAW
+            textfont             7
+            textscale            0.56912
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( weaponname ) != "none" ];
+            exp rect X ( -123.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -41.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -10 -24.22 0 0 10 10
+            layoutRect           -10 -24.22 0 0 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textfont             7
+            textscale            0.2991
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( weaponname ) != "none" ];
+            exp text ( player "stockAmmo";
+            exp rect X ( -10.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -24.22 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -126.66667 -42 130.66667 18.666668 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "k33hud26_weaponbar_bg"
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( weaponname ) != "none" && ! 0 ];
+            exp rect X ( -126.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -42.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "offhandFragIcon"
+            rect                 -102.666664 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            103
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "fragAmmo" ) ] > 3 ];
+            exp rect X ( -102.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandFragIcon"
+            rect                 -99.333336 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            103
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "fragAmmo" ) ] > 2 ];
+            exp rect X ( -99.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandFragIcon"
+            rect                 -96 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            103
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "fragAmmo" ) ] > 1 ];
+            exp rect X ( -96.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandFragIcon"
+            rect                 -92.666664 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            103
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "fragAmmo" ) ] ];
+            exp rect X ( -92.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandFragIcon"
+            rect                 -92.666664 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.5 0.3 0.3 1
+            ownerdraw            103
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "fragAmmo" ) ] == 0 ];
+            exp rect X ( -92.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            rect                 -91.666664 -30.666668 10.666667 10.666667 10 10
+            decoration
+            visible              1
+            forecolor            0.16 0.65 1 1
+            textfont             7
+            textalign            14
+            textscale            0.12
+            textstyle            7
+            glowColor            0 0 0 0.7
+            editField
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "fragAmmo" ) ] > 0 ];
+            exp text ( "^2" + keybinding( "+frag" );
+            exp rect X ( -91.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -30.666668 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "offhandSmokeIcon"
+            rect                 -49.333332 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            104
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "smokeAmmo" ) ] > 3 ];
+            exp rect X ( -49.333332 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandSmokeIcon"
+            rect                 -46 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            104
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "smokeAmmo" ) ] > 2 ];
+            exp rect X ( -46.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandSmokeIcon"
+            rect                 -42.666664 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            104
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "smokeAmmo" ) ] > 1 ];
+            exp rect X ( -42.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandSmokeIcon"
+            rect                 -39.333336 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            104
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "smokeAmmo" ) ] ];
+            exp rect X ( -39.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandSmokeIcon"
+            rect                 -39.333336 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.5 0.3 0.3 1
+            ownerdraw            104
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "smokeAmmo" ) ] == 0 ];
+            exp rect X ( -39.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            rect                 -38.333336 -30.666668 10.666667 10.666667 10 10
+            decoration
+            visible              1
+            forecolor            0.16 0.65 1 1
+            textfont             7
+            textalign            14
+            textscale            0.12
+            textstyle            7
+            glowColor            0 0 0 0.7
+            editField
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "smokeAmmo" ) ] > 0 ];
+            exp text ( "^2" + keybinding( "+smoke" );
+            exp rect X ( -38.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -30.666668 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "offhandTactIcon"
+            rect                 -129.33334 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            284
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "tactAmmo" ) ] > 3 ];
+            exp rect X ( -129.33334 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandTactIcon"
+            rect                 -126 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            284
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "tactAmmo" ) ] > 2 ];
+            exp rect X ( -126.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandTactIcon"
+            rect                 -122.666664 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            ownerdraw            284
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "tactAmmo" ) ] > 1 ];
+            exp rect X ( -122.666664 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandTactIcon"
+            rect                 -119.333336 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            284
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "tactAmmo" ) ] > 0 ];
+            exp rect X ( -119.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "offhandTactIcon"
+            rect                 -119.333336 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.5 0.3 0.3 1
+            ownerdraw            284
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "tactAmmo" ) ] == 0 ];
+            exp rect X ( -119.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            rect                 -118.333336 -30.666668 10.666667 10.666667 10 10
+            decoration
+            visible              1
+            forecolor            0.16 0.65 1 1
+            textfont             7
+            textalign            14
+            textscale            0.12
+            textstyle            7
+            glowColor            0 0 0 0.7
+            editField
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( player "tactAmmo" ) ] > 0 ];
+            exp text ( "^2" + keybinding( "+tact" );
+            exp rect X ( -118.333336 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -30.666668 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -48 -40 20 20 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            294
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( hasaltweapon ) && ( weaponname ) != "none" ) ];
+            exp rect X ( -48.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -40.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -48 -40 20 20 10 10
+            decoration
+            visible              1
+            forecolor            0.16 0.65 1 1
+            textfont             7
+            textalign            14
+            textscale            0.12
+            textstyle            7
+            glowColor            0 0 0 0.7
+            editField
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( hasaltweapon ) && ( weaponname ) != "none" ) ];
+            exp text ( "^2" + keybinding( "weapalt" );
+            exp rect X ( -48.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -40.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -68.66667 -36.5 16 16 10 10
+            layoutRect           -68.66667 -36.5 16 16 10 10
+            decoration
+            visible              1
+            forecolor            0.7 0.7 0.7 1
+            style                WINDOW_STYLE_SHADER
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( [ ( ( [ ( ! [ ( ui_active ) ] ]
+                    || [ ( [ ( staticdvarint "cl_isHostAsSpectator" ) == 1 ] && staticdvarint( "cl_shoutCastMode" ) !=
+                    0 ] || [ ( staticdvarint "cl_isHostAsSpectator" ) != 0 ] ) && [ ( ! [ ( staticdvarbool
+                    "g_hardcore" ) ] ] && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( weaponname ) ==
+                    "killstreak_ac130_mp" ] || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ]
+                    || [ ( weaponname ) == "killstreak_predator_missile_mp" || weaponname( ) ==
+                    "remote_missile_detonator_so" ] || [ ( [ ( weaponname ) == "ac130_105mm_mp" ]
+                    || [ ( weaponname ) == "ac130_40mm_mp" ] || [ ( weaponname ) == "ac130_25mm_mp" ] ]
+                    || [ ( adsjavelin ) ] || [ ( weaponname ) == "heli_remote_mp" || staticdvarbool( "heli_remote" ) ]
+                    || missilecam( ) ] ] && [ ( ! isempjammed( ) ] && [ ( ! [ ( staticdvarint "scr_gameended" ) ] ] ]
+                    && ! [ ( selecting_location ) ] && [ ( ! [ ( spectatingfree ) ] ] && [ ! [ demofreecamera ] ]
+                    && [ ! [ demofollowcamera ] ] && [ ( staticdvarbool "cg_weaponBarHide" ) == 0 ] ]
+                    && [ ( actionslotusable 1 ) && [ ( player "killstreakID0" ) ] && iszm( ) ] ];
+            exp material ( tablelookup "mp/coKillstreakStatsTable.csv" , 0 , [ ( player "killstreakID0" ) ] , 15 );
+            exp rect X ( -68.66667 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -36.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( hudfade "weapon" );
+        }
+        itemDef
+        {
+            name                 "lowammowarning"
+            rect                 -40 135 100 15 9 9
+            layoutRect           -40 135 100 15 9 9
+            decoration
+            visible              1
+            forecolor            1 1 1 0.65
+            ownerdraw            120
+            type                 ITEM_TYPE_OWNERDRAW
+            textfont             9
+            textalign            9
+            textscale            0.25
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( [ ( [ ( ( [ ( ! [ ( ui_active ) ] ]
+                    || [ ( [ ( staticdvarint "cl_isHostAsSpectator" ) == 1 ] && staticdvarint( "cl_shoutCastMode" ) !=
+                    0 ] || [ ( staticdvarint "cl_isHostAsSpectator" ) != 0 ] ) && [ ( ! [ ( staticdvarbool
+                    "g_hardcore" ) ] ] && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( weaponname ) ==
+                    "killstreak_ac130_mp" ] || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ]
+                    || [ ( weaponname ) == "killstreak_predator_missile_mp" || weaponname( ) ==
+                    "remote_missile_detonator_so" ] || [ ( [ ( weaponname ) == "ac130_105mm_mp" ]
+                    || [ ( weaponname ) == "ac130_40mm_mp" ] || [ ( weaponname ) == "ac130_25mm_mp" ] ]
+                    || [ ( adsjavelin ) ] || [ ( weaponname ) == "heli_remote_mp" || staticdvarbool( "heli_remote" ) ]
+                    || missilecam( ) ] ] && [ ( ! isempjammed( ) ] && [ ( ! [ ( staticdvarint "scr_gameended" ) ] ] ]
+                    && ! [ ( selecting_location ) ] && [ ( ! [ ( spectatingfree ) ] ] && [ ! [ demofreecamera ] ]
+                    && [ ! [ demofollowcamera ] ] && [ ( staticdvarbool "cg_weaponBarHide" ) == 0 ] ]
+                    && [ ( [ ( ! [ ( inkillcam ) ] ] && [ ( ! [ ( spectatingclient ) ] ] && ( weaponname ) != "none" )
+                    && staticdvarstring( "g_gametype" ) != "oic" ] ];
+            exp rect X ( -40.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 135.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -150 -48 140 28 10 10
+            layoutRect           -150 -48 140 28 10 10
+            decoration
+            visible              1
+            forecolor            0 0 0 0.45
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
+            exp rect X ( -150.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -48.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -144 -25 0 0 10 10
+            layoutRect           -144 -25 0 0 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            3001
+            type                 ITEM_TYPE_OWNERDRAW
+            textfont             9
+            textscale            0.42
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
+            exp rect X ( -144.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -25.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -122 -44 0.6 20 10 10
+            layoutRect           -122 -44 0.6 20 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 0.45
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
+            exp rect X ( -122.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -44.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -116 -27 0 0 10 10
+            layoutRect           -116 -27 0 0 10 10
+            decoration
+            visible              1
+            forecolor            0.72 0.72 0.72 1
+            textfont             6
+            textalign            12
+            textscale            0.3
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
+            exp text ( player( "stockAmmo" ) );
+            exp rect X ( -116.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -27.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -84 -42.5 66 16.5 10 10
+            layoutRect           -84 -42.5 66 16.5 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 0.95
+            ownerdraw            3004
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
+            exp rect X ( -84.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -42.5 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -47.3333 -52 37.3333 0.666667 10 10
+            layoutRect           -47.3333 -52 37.3333 0.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            83
+            type                 ITEM_TYPE_OWNERDRAW
+            textfont             10
+            textalign            2
+            textscale            0.24
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( inkillcam( ) || spectatingclient( ) )
+                    && ( weaponname( ) != "none" ) ) ];
+            exp rect X ( -47.3333 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -52.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -47.3333 -52 37.3333 0.666667 10 10
+            layoutRect           -47.3333 -52 37.3333 0.666667 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            81
+            type                 ITEM_TYPE_OWNERDRAW
+            textfont             10
+            textalign            2
+            textscale            0.24
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( ! inkillcam( ) && ! spectatingclient( ) )
+                    && ( weaponname( ) != "none" ) ) ];
+            exp rect X ( -47.3333 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -52.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -66 -78 50 17 10 10
+            layoutRect           -66 -78 50 17 10 10
+            decoration
+            visible              1
+            forecolor            0 0 0 0.45
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
+            exp rect X ( -66.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -78.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -33 -77 15 15 10 10
+            layoutRect           -33 -77 15 15 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            103
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
+            exp rect X ( -33.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -77.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 0.35 + ( 0.65 * ( player( "fragAmmo" ) > 0 ) ) );
+        }
+        itemDef
+        {
+            rect                 -35 -64 0 0 10 10
+            layoutRect           -35 -64 0 0 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textfont             6
+            textalign            14
+            textscale            0.18
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" ) ) ];
+            exp text ( player( "fragAmmo" ) );
+            exp rect X ( -35.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -64.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -64 -77 15 15 10 10
+            layoutRect           -64 -77 15 15 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            284
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" )
+                    && player( "tactAmmo" ) > 0 ) ];
+            exp rect X ( -64.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -77.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -64 -77 15 15 10 10
+            layoutRect           -64 -77 15 15 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            104
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" )
+                    && player( "tactAmmo" ) == 0 && player( "smokeAmmo" ) > 0 ) ];
+            exp rect X ( -64.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -77.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -48 -64 0 0 10 10
+            layoutRect           -48 -64 0 0 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            textfont             6
+            textalign            12
+            textscale            0.18
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( ( weaponname( ) != "none" )
+                    && ( player( "tactAmmo" ) + player( "smokeAmmo" ) ) > 0 ) ];
+            exp text ( player( "tactAmmo" ) + player( "smokeAmmo" ) );
+            exp rect X ( -48.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -64.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 -86 -78 16 16 10 10
+            layoutRect           -86 -78 16 16 10 10
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            294
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( hasaltweapon( ) ) ];
+            exp rect X ( -86.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -78.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "lowammowarning"
+            rect                 -50 0 100 100 2 2
+            decoration
+            visible              1
+            forecolor            1 1 1 0.65
+            ownerdraw            120
+            type                 ITEM_TYPE_OWNERDRAW
+            textfont             9
+            textalign            9
+            textscale            0.3333
+            textstyle            ITEM_TEXTSTYLE_SHADOWED
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( [ ( ! [ ( inkillcam ) ] ] && [ ( ! [ ( spectatingclient
+                    ) ] ] ];
+            exp rect X ( -50.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+    }
+
+    menuDef
+    {
+        name                 "minimap_fullscreen"
+        rect                 6 6 0 0 8 8
+        hiddenDuringFlash
+        hiddenDuringScope
+        visible              1
+        menuExtra            1
+        focusColor           0 0 0 0
+        visible when ( ( dvarint( "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" ) !=
+                5 && [ ( [ demofreecamera ] || [ demofollowcamera ] || ( [ ( [ ( ! [ ( ui_active ) ] ]
+                && [ ( ! [ ( spectatingclient ) ] ] && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( [ ( weaponname )
+                == "killstreak_ac130_mp" ] || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ]
+                || [ ( weaponname ) == "killstreak_predator_missile_mp" || weaponname( ) ==
+                "remote_missile_detonator_so" ] || [ ( [ ( weaponname ) == "ac130_105mm_mp" ]
+                || [ ( weaponname ) == "ac130_40mm_mp" ] || [ ( weaponname ) == "ac130_25mm_mp" ] ]
+                || [ ( adsjavelin ) ] || [ ( weaponname ) == "heli_remote_mp" ] || missilecam( ) ]
+                || [ ( getperk "equipment" ) == "specialty_blastshield" && usingabilitymodifier( "modBlastShield" )
+                && ( [ ( ! [ ( staticdvarint "scr_gameended" ) ] ] || inkillcam( ) ) ] ] ]
+                && [ ( ! [ ( scoped ) ] ] && [ ( ! [ ( selecting_location ) ] ] && [ ( ! isempjammed( ) ]
+                && ( staticdvarbool "cg_miniMapHide" ) == 0 ) && ( staticdvarstring "g_gametype" ) != "zm" )
+                && ( [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ] || radarisenabled( ) || staticdvarint(
+                "g_compassShowEnemies" ) ) && [ ( ! [ ( staticdvarint "scr_gameended" ) ] ] ]
+                && [ ( ! [ ( milliseconds ) - localvarint( "ui_show_killedBy" ) < 4000 || [ ( inkillcam ) ] ] ]
+                && [ ( ! [ ( selecting_location ) ] ] && [ ( ! [ ( spectatingfree ) ] ] ) ] )
+                || ( dvarint( "cg_hudStyle" ) == 2 && [ ( [ demofreecamera ] || [ demofollowcamera ]
+                || ( [ ( ( [ ( ! [ ( ui_active ) ] ] || menuisopen( "shoutcast" ) ) && ( staticdvarbool(
+                "cl_minimapInShoutcast" ) == 0 ) && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( [ ( weaponname ) ==
+                "killstreak_ac130_mp" ] || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ]
+                || [ ( weaponname ) == "killstreak_predator_missile_mp" || weaponname( ) ==
+                "remote_missile_detonator_so" ] || [ ( [ ( weaponname ) == "ac130_105mm_mp" ]
+                || [ ( weaponname ) == "ac130_40mm_mp" ] || [ ( weaponname ) == "ac130_25mm_mp" ] ]
+                || [ ( adsjavelin ) ] || [ ( weaponname ) == "heli_remote_mp" || staticdvarbool( "heli_remote" ) ]
+                || missilecam( ) ] || [ ( getperk "equipment" ) == "specialty_blastshield"
+                && usingabilitymodifier( "modBlastShield" ) && ( [ ( ! [ ( staticdvarint "scr_gameended" ) ] ]
+                || inkillcam( ) ) ] ] ] && [ ( ! [ ( scoped ) ] ] && [ ( ! [ ( selecting_location ) ] ]
+                && [ ( ! isempjammed( ) ] && ( staticdvarbool( "cg_miniMapHide" ) == 0 ) && ( staticdvarstring(
+                "g_gametype" ) != "zm" && ( staticdvarstring( "g_gametype" ) != "train" )
+                && ( [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ] || radarisenabled( ) ) && [ ( ! [ ( staticdvarint
+                "scr_gameended" ) ] ] ) ] && [ ( ! [ ( milliseconds ) - localvarint( "ui_show_killedBy" ) < 4000
+                || [ ( inkillcam ) ] ] ] && [ ( ! [ ( selecting_location ) ] ] && [ ( ! [ ( spectatingfree ) ] ] ) ] )
+                || ( dvarint( "cg_hudStyle" ) == 3 && [ ( [ demofreecamera ] || [ demofollowcamera ]
+                || ( [ ( ( [ ( ! [ ( ui_active ) ] ] || [ ( [ ( staticdvarint "cl_isHostAsSpectator" ) == 1 ]
+                && staticdvarint( "cl_shoutCastMode" ) != 0 ] ) && [ ( ! [ ( flashbanged ) ] ]
+                && [ ( ! [ ( [ ( [ ( weaponname ) == "killstreak_ac130_mp" ] || [ ( weaponname ) ==
+                "killstreak_helicopter_minigun_mp" ] || [ ( weaponname ) == "killstreak_predator_missile_mp"
+                || weaponname( ) == "remote_missile_detonator_so" ] || [ ( [ ( weaponname ) == "ac130_105mm_mp" ]
+                || [ ( weaponname ) == "ac130_40mm_mp" ] || [ ( weaponname ) == "ac130_25mm_mp" ] ]
+                || [ ( adsjavelin ) ] || [ ( weaponname ) == "heli_remote_mp" || staticdvarbool( "heli_remote" ) ]
+                || missilecam( ) ] || [ ( getperk "equipment" ) == "specialty_blastshield"
+                && usingabilitymodifier( "modBlastShield" ) && ( [ ( ! [ ( staticdvarint "scr_gameended" ) ] ]
+                || inkillcam( ) ) ] ] ] && [ ( ! [ ( scoped ) ] ] && [ ( ! [ ( selecting_location ) ] ]
+                && [ ( ! isempjammed( ) ] && ( staticdvarbool "cg_miniMapHide" ) == 0 ) && ( staticdvarstring
+                "g_gametype" ) != "zm" && ( [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ] || radarisenabled( ) )
+                && [ ( ! [ ( staticdvarint "scr_gameended" ) ] ] ) ] && [ ( ! [ ( milliseconds ) - localvarint(
+                "ui_show_killedBy" ) < 4000 || [ ( inkillcam ) ] ] ] && [ ( ! [ ( selecting_location ) ] ]
+                && [ ( ! [ ( spectatingfree ) ] ] ) ] ) || ( dvarint( "cg_hudStyle" ) == 5
+                && [ ( [ demofreecamera ] || [ demofollowcamera ] || ( [ ( [ ( ! [ ( ui_active ) ] ]
+                && [ ( ! [ ( spectatingclient ) ] ] && [ ( ! [ ( flashbanged ) ] ] && [ ( ! [ ( [ ( [ ( weaponname )
+                == "killstreak_ac130_mp" ] || [ ( weaponname ) == "killstreak_helicopter_minigun_mp" ]
+                || [ ( weaponname ) == "killstreak_predator_missile_mp" || weaponname( ) ==
+                "remote_missile_detonator_so" ] || [ ( [ ( weaponname ) == "ac130_105mm_mp" ]
+                || [ ( weaponname ) == "ac130_40mm_mp" ] || [ ( weaponname ) == "ac130_25mm_mp" ] ]
+                || [ ( adsjavelin ) ] || [ ( weaponname ) == "heli_remote_mp" ] || missilecam( ) ]
+                || [ ( getperk "equipment" ) == "specialty_blastshield" && usingabilitymodifier( "modBlastShield" )
+                && ( [ ( ! [ ( staticdvarint "scr_gameended" ) ] ] || inkillcam( ) ) ] ] ]
+                && [ ( ! [ ( scoped ) ] ] && [ ( ! [ ( selecting_location ) ] ] && [ ( ! isempjammed( ) ]
+                && ( staticdvarbool "cg_miniMapHide" ) == 0 ) && ( staticdvarstring "g_gametype" ) != "zm" )
+                && ( [ ( ! [ ( staticdvarbool "g_hardcore" ) ] ] || radarisenabled( ) || staticdvarint(
+                "g_compassShowEnemies" ) ) && [ ( ! [ ( staticdvarint "scr_gameended" ) ] ] ]
+                && [ ( ! [ ( milliseconds ) - localvarint( "ui_show_killedBy" ) < 4000 || [ ( inkillcam ) ] ] ]
+                && [ ( ! [ ( selecting_location ) ] ] && [ ( ! [ ( spectatingfree ) ] ] ) ] );
+        itemDef
+        {
+            name                 "minimap_border"
+            rect                 0 0 100 100 0 0
+            visible              1
+            border               1
+            borderSize           0.6666667
+            bordercolor          1 1 1 0.35
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 0 0 100 100 0 0
+            visible              1
+            forecolor            0.89 0.98 0.95 0.05
+            style                WINDOW_STYLE_SHADER
+            background           "minimap_scanlines"
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "minimap_map"
+            rect                 0 0 100 100 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            159
+            background           "compass_map_default"
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "minimap_friendlies"
+            rect                 0 0 100 100 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            158
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            name                 "minimap_objectives"
+            rect                 0 0 100 100 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            152
+            background           "objective_line"
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "minimap_enemies"
+            rect                 0 0 100 100 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            175
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            name                 "minimap_vehicles"
+            rect                 0 0 100 100 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            155
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            name                 "minimap_planes"
+            rect                 0 0 100 100 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            156
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            name                 "minimap_sentries"
+            rect                 0 0 100 100 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            165
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            name                 "minimap_scramblers"
+            rect                 0 0 100 100 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            168
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            name                 "minimap_player"
+            rect                 0 0 100 100 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            150
+            background           "compassping_player"
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            rect                 0 0 100 100 0 0
+            visible              1
+            forecolor            0.64 0.74 0.71 1
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( radarisjammed ) ];
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( radarjamintensity );
+        }
+        itemDef
+        {
+            rect                 0 0 100 100 0 0
+            visible              1
+            forecolor            0.89 0.98 0.95 1
+            style                WINDOW_STYLE_SHADER
+            background           "ac130_overlay_grain"
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5 && [ ( radarisjammed ) ];
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( radarjamintensity );
+        }
+        itemDef
+        {
+            rect                 0 0 100 100 0 0
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "stencil_base"
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 0 0 100 100 0 0
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "scanlines_stencil"
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( [ ( ( 0 - 100 ) + ( ( 100 * 2 ) * [ ( 1 - [ ( ( milliseconds ) % 4000 ) / 4000 ] ] ) ] + (
+                    dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 0 0 100 100 0 0
+            visible              1
+            forecolor            0.89 0.98 0.95 1
+            style                WINDOW_STYLE_SHADER
+            background           "stencil_fill"
+            visible when ( dvarint "cg_hudStyle" ) != 2 && dvarint( "cg_hudStyle" ) != 3 && dvarint( "cg_hudStyle" )
+                    != 5;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 0 0 115 115 0 0
+            visible              1
+            style                WINDOW_STYLE_FILLED
+            backcolor            0 0 0 0.75
+            visible when ( dvarint "cg_hudStyle" ) == 2;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "minimap_border"
+            rect                 -0.25 -0.25 115.5 115.5 0 0
+            visible              1
+            border               1
+            borderSize           0.6666667
+            bordercolor          0.11 0.72 0.93 1
+            visible when ( dvarint "cg_hudStyle" ) == 2;
+            exp rect X ( -0.25 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -0.25 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            0.89 0.98 0.95 0.03
+            style                WINDOW_STYLE_SHADER
+            background           "minimap_scanlines"
+            visible when ( dvarint "cg_hudStyle" ) == 2;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "minimap_map"
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            159
+            background           "compass_map_default"
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "minimap_friendlies"
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            158
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            name                 "minimap_objectives"
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            152
+            background           "objective_line"
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "minimap_enemies"
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            175
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            name                 "minimap_vehicles"
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            155
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            name                 "minimap_planes"
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            156
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            name                 "minimap_sentries"
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            165
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            name                 "minimap_scramblers"
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            168
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            name                 "minimap_player"
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            150
+            background           "k33hud26_compassping_player"
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 2;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            0.64 0.74 0.71 1
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( radarisjammed ) ];
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( radarjamintensity );
+        }
+        itemDef
+        {
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            0.89 0.98 0.95 1
+            style                WINDOW_STYLE_SHADER
+            background           "ac130_overlay_grain"
+            visible when ( dvarint "cg_hudStyle" ) == 2 && [ ( radarisjammed ) ];
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( radarjamintensity );
+        }
+        itemDef
+        {
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "stencil_base"
+            visible when ( dvarint "cg_hudStyle" ) == 2;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "scanlines_stencil"
+            visible when ( dvarint "cg_hudStyle" ) == 2;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( [ ( ( 0 - 115 ) + ( ( 115 * 2 ) * [ ( 1 - [ ( ( milliseconds ) % 4000 ) / 4000 ] ] ) ] + (
+                    dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            0.89 0.98 0.95 1
+            style                WINDOW_STYLE_SHADER
+            background           "stencil_fill"
+            visible when ( dvarint "cg_hudStyle" ) == 2;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 0 0 115 115 0 0
+            visible              1
+            style                WINDOW_STYLE_FILLED
+            backcolor            0 0 0 0.75
+            visible when ( dvarint "cg_hudStyle" ) == 3;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "minimap_border"
+            rect                 -0.25 -0.25 115.5 115.5 0 0
+            visible              1
+            border               1
+            borderSize           0.6666667
+            bordercolor          0.11 0.72 0.93 1
+            visible when ( dvarint "cg_hudStyle" ) == 3;
+            exp rect X ( -0.25 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( -0.25 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            0.89 0.98 0.95 0.03
+            style                WINDOW_STYLE_SHADER
+            background           "minimap_scanlines"
+            visible when ( dvarint "cg_hudStyle" ) == 3;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "minimap_map"
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            159
+            background           "compass_map_default"
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "minimap_friendlies"
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            158
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            name                 "minimap_objectives"
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            152
+            background           "objective_line"
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            name                 "minimap_enemies"
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            175
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            name                 "minimap_vehicles"
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            155
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            name                 "minimap_planes"
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            156
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            name                 "minimap_sentries"
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            165
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            name                 "minimap_scramblers"
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            168
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            name                 "minimap_player"
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            150
+            background           "k33hud26_compassping_player"
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 3;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( );
+        }
+        itemDef
+        {
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            0.64 0.74 0.71 1
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( radarisjammed ) ];
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( radarjamintensity );
+        }
+        itemDef
+        {
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            0.89 0.98 0.95 1
+            style                WINDOW_STYLE_SHADER
+            background           "ac130_overlay_grain"
+            visible when ( dvarint "cg_hudStyle" ) == 3 && [ ( radarisjammed ) ];
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( radarjamintensity );
+        }
+        itemDef
+        {
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "stencil_base"
+            visible when ( dvarint "cg_hudStyle" ) == 3;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            1 1 1 1
+            style                WINDOW_STYLE_SHADER
+            background           "scanlines_stencil"
+            visible when ( dvarint "cg_hudStyle" ) == 3;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( [ ( ( 0 - 115 ) + ( ( 115 * 2 ) * [ ( 1 - [ ( ( milliseconds ) % 4000 ) / 4000 ] ] ) ] + (
+                    dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 0 0 115 115 0 0
+            visible              1
+            forecolor            0.89 0.98 0.95 1
+            style                WINDOW_STYLE_SHADER
+            background           "stencil_fill"
+            visible when ( dvarint "cg_hudStyle" ) == 3;
+            exp rect X ( 0.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 0.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 4 4 104 104 8 8
+            layoutRect           4 4 104 104 8 8
+            decoration
+            visible              1
+            forecolor            0 0 0 0.5
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            visible when ( dvarint "cg_hudStyle" ) == 5;
+            exp rect X ( 4.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 4.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 6 6 100 100 8 8
+            layoutRect           6 6 100 100 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 0.85
+            ownerdraw            159
+            background           "compass_map_default"
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 5;
+            exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 6 6 100 100 8 8
+            layoutRect           6 6 100 100 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            158
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 5;
+            exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( ) );
+        }
+        itemDef
+        {
+            rect                 6 6 100 100 8 8
+            layoutRect           6 6 100 100 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            152
+            background           "objective_line"
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 5;
+            exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 6 6 100 100 8 8
+            layoutRect           6 6 100 100 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            175
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 5;
+            exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( ) );
+        }
+        itemDef
+        {
+            rect                 6 6 100 100 8 8
+            layoutRect           6 6 100 100 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            155
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 5;
+            exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( ) );
+        }
+        itemDef
+        {
+            rect                 6 6 100 100 8 8
+            layoutRect           6 6 100 100 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            156
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 5;
+            exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( ) );
+        }
+        itemDef
+        {
+            rect                 6 6 100 100 8 8
+            layoutRect           6 6 100 100 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            165
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 5;
+            exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( ) );
+        }
+        itemDef
+        {
+            rect                 6 6 100 100 8 8
+            layoutRect           6 6 100 100 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            168
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 5;
+            exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( ) );
+        }
+        itemDef
+        {
+            rect                 6 6 100 100 8 8
+            layoutRect           6 6 100 100 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 1
+            ownerdraw            150
+            background           "compassping_player"
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 5;
+            exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( 1 - radarjamintensity( ) );
+        }
+        itemDef
+        {
+            rect                 6 6 100 100 8 8
+            layoutRect           6 6 100 100 8 8
+            decoration
+            visible              1
+            forecolor            0.64 0.74 0.71 1
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( radarisjammed( ) ) ];
+            exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( radarjamintensity( ) );
+        }
+        itemDef
+        {
+            rect                 6 6 100 100 8 8
+            layoutRect           6 6 100 100 8 8
+            decoration
+            visible              1
+            forecolor            0.89 0.98 0.95 1
+            style                WINDOW_STYLE_SHADER
+            background           "ac130_overlay_grain"
+            visible when ( dvarint "cg_hudStyle" ) == 5 && [ ( radarisjammed( ) ) ];
+            exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+            exp forecolor A ( radarjamintensity( ) );
+        }
+        itemDef
+        {
+            rect                 6 6 100 10 8 8
+            layoutRect           6 6 100 10 8 8
+            decoration
+            visible              1
+            forecolor            0 0 0 0.4
+            style                WINDOW_STYLE_SHADER
+            background           "white"
+            visible when ( dvarint "cg_hudStyle" ) == 5;
+            exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+        itemDef
+        {
+            rect                 6 6 100 10 8 8
+            layoutRect           6 6 100 10 8 8
+            decoration
+            visible              1
+            forecolor            1 1 1 0.85
+            ownerdraw            3005
+            background           "viper_heading_mp"
+            type                 ITEM_TYPE_OWNERDRAW
+            visible when ( dvarint "cg_hudStyle" ) == 5;
+            exp rect X ( 6.0 + ( dvarint( "cg_hudSwayX" ) * 0.01 ) );
+            exp rect Y ( 6.0 + ( dvarint( "cg_hudSwayY" ) * 0.01 ) );
+        }
+    }
+}

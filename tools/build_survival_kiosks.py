@@ -1,5 +1,7 @@
-"""Author and encode the two Survival kiosks for C1's native interactive menu path.
-The retained inputs are converted original CoDOL menus, not replacement gameplay.
+"""Author the two Survival kiosks for C1's native interactive menu path.
+The inputs are the converted original CoDOL menus, not replacement gameplay: the
+.menu sources of zones/survival_menus (2.6.9.7's kiosks converted by zonekit/menus.py).
+The output is menufile/<name>.menu, which the zone build compiles.
 Balance and prices read authoritative server-published client dvars; purchase
 responses still flow to the Survival GSC credit/purchase validation.
 """
@@ -10,10 +12,19 @@ import struct
 import sys
 import re
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from zonekit import survival_menus as codec
+from zonekit import menus as codec
+from zonekit import menu_source
 from zonekit.codecs import encode_localize
 ROOT=Path(__file__).resolve().parents[1]
 ZONE=ROOT/'zones/patch_common_gametype_survival'
+SOURCES=ROOT/'zones/survival_menus/menufile'
+def asset(name):return 'ui_mp/scriptmenus/'+name+'.menu'
+def original(name):
+    """The converted original kiosk (survival_menus' .menu source)."""
+    return menu_source.load(SOURCES/(name+'.menu'),asset(name))
+def header(name):
+    return [asset(name)+': written by tools/build_survival_kiosks.py from zones/survival_menus/menufile/'+name+'.menu',
+            '(edit the generator or that source, not this file). IW menu language: zonekit/menu_source.py.']
 
 def op(name):
     return {'kind':'expressionEntry','raw':struct.pack('<III',0,codec.OP_1113[name],0).hex(),'p':{}}
@@ -70,11 +81,9 @@ def author(original):
 def main():
     required={'SO_SURVIVAL_CREDITS','SO_SURVIVAL_ENEMIES_LEFT','SO_SURVIVAL_ENEMY_LEFT'}
     for name in ('kiosk_locker','kiosk_killstreak'):
-        node=author(json.loads((ZONE/'sources'/(name+'.json')).read_text()))
+        node=author(original(name))
         required.update(re.findall(r'@([A-Z][A-Z0-9_]+)', json.dumps(node)))
-        (ZONE/'menufile'/(name+'.bin')).write_bytes(codec.encode_menulist(node))
-        (ZONE/'menufile'/(name+'.json')).write_text(json.dumps(node,indent=1)+'\n',newline='\n')
-        (ZONE/'menufile'/(name+'.txt')).write_text(codec.listing(node),newline='\n')
+        (ZONE/'menufile'/(name+'.menu')).write_text(menu_source.decompile_menufile(node,header(name)),newline='\n')
         print(name+': original controls preserved; live credit balance and authoritative row prices encoded')
     translations=dict(line.split('=',1) for line in (ZONE/'sources/english.txt').read_text().splitlines() if '=' in line)
     locale=ZONE/'localize';locale.mkdir(exist_ok=True)

@@ -18,23 +18,23 @@ package codo.views.option_sub
    //             drop-down like the Graphics tab's own (CodoComboBox): another instance of the class this tab's combo
    //             boxes are (codoComboBox_l2, or codoComboBoxCyborgs on the other panel; taken from myCBAspectRatio,
    //             as CodoList makes its item renderers), top to bottom:
-   //               Language      k33_language (below)
-   //               Button icons  gpad_glyphs 0..6 (shown when the controller module is there: k33_padinfo is set)
-   //               HUD style     k33_hudStyle, one of the numbers of k33_hudStyleList ("0:stock;2:v26")
+   //               Language      loc_languageName (below)
+   //               Button icons  gpad_glyphs 0..6 (shown when the controller module is there: gpad_info is set)
+   //               HUD style     cg_hudStyle, one of the numbers of cg_hudStyleList ("0:stock;2:v26")
    //               HUD sway      cg_hudSway, Off / On (with the HUD style row: hud_style.c registers both)
    //             OptionView itself is not changed (its class is pinned by the selector producer): the Game tab
    //             listens to OptionView's four tab buttons; opening it hides whichever of OptionView's panels is shown
    //             and closing it shows that panel again: on any other tab (its listener runs ahead of OptionView's), when
    //             the window closes (OptionView calls this panel's disable()) and on EVT_ENABLE_VIDEO. Until 16 November
    //             these rows were under the Graphics check boxes.
-   //               Language      k33_language, one of k33_languageList ("en;zh"); names K33UI_LANG_NAME_<ID>.
+   //               Language      loc_languageName, one of loc_languageList ("en;zh"); names K33UI_LANG_NAME_<ID>.
    //                             Switched by K33_STYLE_LANGUAGE_ROW (on since the language zone reloads live).
    //             A row whose list is empty (an older Kernel33.dll) is hidden; a name without a localize entry shows
    //             the raw id; a value the list lacks shows the first choice and sets nothing. Unlike the rest of the
    //             tab these apply at once (setdvar, on the player's pick only: what the code selects is not a pick)
    //             and take no part in Apply / Cancel / Default: the box shows what the dvar holds, read back a few
-   //             frames after a change. With the Language row, k33_languageState 1 / 2 shows a line under the rows
-   //             (switching / restart to apply). When k33_languageSerial changes (a live switch finished) the tab's
+   //             frames after a change. With the Language row, loc_languageState 1 / 2 shows a line under the rows
+   //             (switching / restart to apply). When loc_languageSerial changes (a live switch finished) the tab's
    //             texts are set again (k33StyleRelocalize), the rows' labels and lists with them. The texts onInit
    //             sets are in k33Texts for that.
    //             Texts of code-made fields are translated before they are set (LocalizeUtil.localize): C1's
@@ -273,7 +273,7 @@ package codo.views.option_sub
          this.videoSettings = this.getSyncDP(SyncDataID.VIDEO_SETTING);
          // k33: a language switch since the tab was last shown translates its texts again first; the frame watch
          // runs while this tab or the Game tab is shown
-         if(this._k33StyleSerial >= 0 && CFunctionContainerCommon.Dvar_GetInt("k33_languageSerial") != this._k33StyleSerial)
+         if(this._k33StyleSerial >= 0 && CFunctionContainerCommon.Dvar_GetInt("loc_languageSerial") != this._k33StyleSerial)
          {
             this.k33StyleRelocalize();
          }
@@ -666,7 +666,7 @@ package codo.views.option_sub
 
       private var _k33StyleNoteKey:String = "";
 
-      private var _k33StyleSerial:int = -1; // k33_languageSerial as last seen
+      private var _k33StyleSerial:int = -1; // loc_languageSerial as last seen
 
       private var _k33StyleFrames:int = 0;
 
@@ -676,16 +676,16 @@ package codo.views.option_sub
       private static const K33_GLYPH_NAMES:Array = ["AUTO","XBOX","PS","NINTENDO","GENERIC","TEXT","KBM"]; // gpad_glyphs 0..6
 
       private static const K33_STYLE_DVARS:Object = {
-         "lang":"k33_language",
+         "lang":"loc_languageName",
          "glyph":"gpad_glyphs",
-         "hud":"k33_hudStyle",
+         "hud":"cg_hudStyle",
          "sway":"cg_hudSway"
       };
 
       // k33: the Language row is switched off here, in one place for both movies: with false the row and its
       // "Switching language..." / "Restart the game to apply the language" line are not made and none of the
-      // k33_language* dvars is read for a row (the language is still changed with k33_language / k33_setlanguage
-      // in the console, and a finished switch still translates the remaining rows: k33_languageSerial). true
+      // loc_language* dvars is read for a row (the language is still changed with loc_languageName / loc_setLanguage
+      // in the console, and a finished switch still translates the remaining rows: loc_languageSerial). true
       // brings the row back; its keys (K33UI_LANGUAGE, K33UI_LANG_*) stay in the string zones for that.
       private static const K33_STYLE_LANGUAGE_ROW:Boolean = true;
 
@@ -710,7 +710,7 @@ package codo.views.option_sub
          return s.substring(a,b);
       }
 
-      // k33: digits only (a style number of k33_hudStyleList)
+      // k33: digits only (a style number of cg_hudStyleList)
       private function k33StyleDigits(s:String) : Boolean
       {
          var i:int = 0;
@@ -730,9 +730,9 @@ package codo.views.option_sub
       }
 
       // k33: a row's choices, [{v: the value its dvar takes, key: the localize key of its name, raw: the text shown
-      // when that key has no entry}]. "lang": the ids of k33_languageList ("en;zh"); "hud": the "number:id" pairs of
-      // k33_hudStyleList ("0:stock;2:v26"); "glyph": gpad_glyphs 0..6, when the controller module has published
-      // k33_padinfo. An empty list (the dvar is not there: an older Kernel33.dll) gives [], and the row is left out.
+      // when that key has no entry}]. "lang": the ids of loc_languageList ("en;zh"); "hud": the "number:id" pairs of
+      // cg_hudStyleList ("0:stock;2:v26"); "glyph": gpad_glyphs 0..6, when the controller module has published
+      // gpad_info. An empty list (the dvar is not there: an older Kernel33.dll) gives [], and the row is left out.
       // "lang" gives [] while K33_STYLE_LANGUAGE_ROW is false.
       // Blank, malformed and repeated entries are dropped.
       private function k33StyleOptions(kind:String) : Array
@@ -754,7 +754,7 @@ package codo.views.option_sub
          {
             // cg_hudSway 0 / 1 (hud_style.c: the HUD moves with the view, movement and camera shake, every style).
             // It is an int dvar: C1's Dvar_GetString reads an int's value as a string pointer (live: a crash at
-            // 0x007739B0 reading 0x00000001), so the row comes with the HUD style row, whose k33_hudStyleList the
+            // 0x007739B0 reading 0x00000001), so the row comes with the HUD style row, whose cg_hudStyleList the
             // same hud_style.c registers: a Kernel33.dll without HUD styles has neither
             if(this.k33StyleOptions("hud").length == 0)
             {
@@ -774,7 +774,7 @@ package codo.views.option_sub
          }
          if(kind == "glyph")
          {
-            list = CFunctionContainerCommon.Dvar_GetString("k33_padinfo");
+            list = CFunctionContainerCommon.Dvar_GetString("gpad_info");
             if(list == null || list == "")
             {
                return out;
@@ -790,7 +790,7 @@ package codo.views.option_sub
             }
             return out;
          }
-         list = CFunctionContainerCommon.Dvar_GetString(kind == "lang" ? "k33_languageList" : "k33_hudStyleList");
+         list = CFunctionContainerCommon.Dvar_GetString(kind == "lang" ? "loc_languageList" : "cg_hudStyleList");
          if(list == null || list == "")
          {
             return out;
@@ -1167,7 +1167,7 @@ package codo.views.option_sub
          }
       }
 
-      // k33_languageState 1 (switching) / 2 (saved, applies on the next start) as a line under the rows
+      // loc_languageState 1 (switching) / 2 (saved, applies on the next start) as a line under the rows
       private function k33StyleNoteUpdate() : void
       {
          var key:String = "";
@@ -1178,7 +1178,7 @@ package codo.views.option_sub
          }
          if(this.k33StyleOf("lang") != null)
          {
-            state = CFunctionContainerCommon.Dvar_GetInt("k33_languageState");
+            state = CFunctionContainerCommon.Dvar_GetInt("loc_languageState");
             key = state == 2 ? "@K33UI_LANG_RESTART" : (state == 1 ? "@K33UI_LANG_SWITCHING" : "");
          }
          if(key != this._k33StyleNoteKey)
@@ -1199,7 +1199,7 @@ package codo.views.option_sub
          this._k33StyleOn = on;
          if(on)
          {
-            this._k33StyleSerial = CFunctionContainerCommon.Dvar_GetInt("k33_languageSerial");
+            this._k33StyleSerial = CFunctionContainerCommon.Dvar_GetInt("loc_languageSerial");
             this._k33StyleFrames = 0;
             this.k33StyleHost().addEventListener(Event.ENTER_FRAME,this.k33StyleFrame);
          }
@@ -1443,7 +1443,7 @@ package codo.views.option_sub
          this.k33StyleWatch(this._k33VideoOn);
       }
 
-      // a live language switch finished (k33_languageSerial moved): every text of this tab is set again, so C1's
+      // a live language switch finished (loc_languageSerial moved): every text of this tab is set again, so C1's
       // translator gives it in the new language. The labels and the style rows always; the combo boxes' lists are
       // filled again (as when the tab is opened) unless the tab holds choices not applied yet - then only Max FPS's
       // list is, keeping its selection, and the others follow when the tab is next opened. The Options window's tab
@@ -1525,7 +1525,7 @@ package codo.views.option_sub
          }
          try
          {
-            serial = CFunctionContainerCommon.Dvar_GetInt("k33_languageSerial");
+            serial = CFunctionContainerCommon.Dvar_GetInt("loc_languageSerial");
             if(serial != this._k33StyleSerial)
             {
                this._k33StyleSerial = serial;

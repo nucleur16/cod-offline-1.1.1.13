@@ -225,7 +225,7 @@ package codo.views
       {
          if(this.theatreOnly)
          {
-            CFunctionContainerCommon.setdvar("codol_theatre_request","refresh");
+            CFunctionContainerCommon.setdvar("ui_theatreRequest","refresh");
             return;
          }
          if(this._enableRefresh == true)
@@ -394,17 +394,17 @@ package codo.views
       
       private function theatreClose(event:ParaEvent) : void
       {
-         CFunctionContainerCommon.setdvar("codol_theatre_close","1");
+         CFunctionContainerCommon.setdvar("ui_theatreClose","1");
       }
       
       private function theatrePreviousPage(event:ParaEvent) : void
       {
-         CFunctionContainerCommon.setdvar("codol_theatre_request","previous");
+         CFunctionContainerCommon.setdvar("ui_theatreRequest","previous");
       }
       
       private function theatreNextPage(event:ParaEvent) : void
       {
-         CFunctionContainerCommon.setdvar("codol_theatre_request","next");
+         CFunctionContainerCommon.setdvar("ui_theatreRequest","next");
       }
       
       private function theatreWatch() : void
@@ -412,7 +412,7 @@ package codo.views
          var row:Object = this.myList.selectedValue;
          if(row != null && row.theatreId != null && String(row.theatreId).length == 64 && String(row.theatreId).search(/[^a-f0-9]/) == -1)
          {
-            CFunctionContainerCommon.setdvar("codol_theatre_request","watch:" + row.theatreId);
+            CFunctionContainerCommon.setdvar("ui_theatreRequest","watch:" + row.theatreId);
          }
       }
       

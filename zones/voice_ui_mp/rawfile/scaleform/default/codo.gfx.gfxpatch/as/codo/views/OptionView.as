@@ -4,11 +4,11 @@ package codo.views
    // codo.views.OptionView from C1's codo.gfx (decompiled) with Kernel33's Options > Controller tab ("k33"):
    // C1's hidden "Other" tab (myTabOther) is shown as K33UI_PAD_TAB (Controller) and opens a panel built here in code:
    //   a line-art diagram of the connected pad (Kernel33's family: Xbox 360 / PS3 / Wii U / generic, from
-   //   k33_padinfo "family|connected|name"; glyphs/make_diagrams.py) with a callout per button showing what
-   //   it does (k33_padbinds "A=cmd;B=cmd;..."), live;
-   //   the action list: click an action, then press a pad button (k33_padcapture = command; Kernel33 binds
+   //   gpad_info "family|connected|name"; glyphs/make_diagrams.py) with a callout per button showing what
+   //   it does (gpad_binds "A=cmd;B=cmd;..."), live;
+   //   the action list: click an action, then press a pad button (gpad_bindCapture = command; Kernel33 binds
    //   the next pad button to it, unbinds the command's other pad buttons and sets gpad_binds_custom, so the
-   //   bind repair leaves the player's binds alone); "clear" (k33_padclear = command);
+   //   bind repair leaves the player's binds alone); "clear" (gpad_bindClear = command);
    //   settings: swap sticks (gpad_swap_sticks), swap triggers (gpad_swaptriggers: the two trigger binds
    //   swap), look feel (gpad_lookpreset), look sensitivity, invert Y, aim assist, deadzone, dive with the
    //   crouch button while sprinting (gpad_dive), the menu cursor's snapping (gpad_menu_snap) and its strength
@@ -510,8 +510,8 @@ package codo.views
 
       private function k33Refresh() : void
       {
-         var info:String = CFunctionContainerCommon.Dvar_GetString("k33_padinfo");
-         var binds:String = CFunctionContainerCommon.Dvar_GetString("k33_padbinds");
+         var info:String = CFunctionContainerCommon.Dvar_GetString("gpad_info");
+         var binds:String = CFunctionContainerCommon.Dvar_GetString("gpad_binds");
          if(info == null)
          {
             info = "";
@@ -547,7 +547,7 @@ package codo.views
          if(this._k33Capture != "")
          {
             this._k33CaptureFrames++;
-            var pending:String = CFunctionContainerCommon.Dvar_GetString("k33_padcapture");
+            var pending:String = CFunctionContainerCommon.Dvar_GetString("gpad_bindCapture");
             if(this._k33CaptureFrames > 5 && (pending == null || pending == ""))
             {
                this._k33Capture = "";
@@ -792,7 +792,7 @@ package codo.views
          {
             this._k33ClearMode = false;
             this.k33SetLabel(this._k33List.getChildByName("clear") as Sprite,this.k33L("K33UI_PAD_CLEAR"));
-            CFunctionContainerCommon.setdvar("k33_padclear",cmd);
+            CFunctionContainerCommon.setdvar("gpad_bindClear",cmd);
             this._k33Binds = "?";
             return;
          }
@@ -803,7 +803,7 @@ package codo.views
          }
          this._k33Capture = cmd;
          this._k33CaptureFrames = 0;
-         CFunctionContainerCommon.setdvar("k33_padcapture",cmd);
+         CFunctionContainerCommon.setdvar("gpad_bindCapture",cmd);
          this._k33Binds = "?";
          this.k33Refresh();
       }
@@ -813,7 +813,7 @@ package codo.views
          if(this._k33Capture != "")
          {
             this._k33Capture = "";
-            CFunctionContainerCommon.setdvar("k33_padcapture","");
+            CFunctionContainerCommon.setdvar("gpad_bindCapture","");
             this._k33Binds = "?";
          }
       }

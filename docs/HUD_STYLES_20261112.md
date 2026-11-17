@@ -1,9 +1,9 @@
-# Selectable HUD styles (`k33_hudStyle`)
+# Selectable HUD styles (`cg_hudStyle`)
 
 The combat HUD of 1.1.1.13 can show the layout of a later Call of Duty Online build (2.6.9.7 or 3.3.3.3), or SM2, an
 original HUD written as `.menu` source. The style switches live.
 
-| `k33_hudStyle` | id | build | state |
+| `cg_hudStyle` | id | build | state |
 |---|---|---|---|
 | 0 | `stock` | 1.1.1.13 | the game's own HUD |
 | 1 | `v12` | 1.2.1.12 | not shipped: a visual duplicate of v26 (see below) |
@@ -12,7 +12,7 @@ original HUD written as `.menu` source. The style switches live.
 | 4 | `v35` | 3.5.2.6 | not shipped: no unpacked 3.5.2.6 executable exists on disk (see below) |
 | 5 | `sm2` | authored | shipped: an original HUD laid out after a screenshot of the cancelled SM2 mod's HUD, written in `.menu` source (see "SM2") |
 
-`k33_hudStyleList` in this build: `0:stock;2:v26;3:v33;5:sm2`. SM2 takes 5, not 4: the numbers are fixed, and 4
+`cg_hudStyleList` in this build: `0:stock;2:v26;3:v33;5:sm2`. SM2 takes 5, not 4: the numbers are fixed, and 4
 stays reserved for 3.5.2.6 as 1 does for 1.2.1.12.
 
 Runtime-checked on 2026-11-12 in the offline fork's client (own test folder, Team Deathmatch on Crash, 1920x1080
@@ -25,16 +25,16 @@ The weapon bar, score bar, minimap, killstreak column and perk display of every 
 
 - `tools/build_hud_styles.py` converts the items of a later build's HUD menus to the 1.1.1.13 layout and appends
   them to 1.1.1.13's own menu of the same name. The stock items stay, each behind
-  `dvarint("k33_hudStyle") != 2 && {its own rule}`; a style's items sit behind
-  `dvarint("k33_hudStyle") == N && {their own rule}`. The menu's own visibility becomes
+  `dvarint("cg_hudStyle") != 2 && {its own rule}`; a style's items sit behind
+  `dvarint("cg_hudStyle") == N && {their own rule}`. The menu's own visibility becomes
   `(stock style && {1.1.1.13's rule}) || (style 2 && {2.6.9.7's rule}) || (style 3 && {3.3.3.3's rule})`.
   `{..}` is a whole statement used as one operand, the form the stock menus use for their sub-expressions, so no
   wrapped expression is re-parenthesised.
-- C1 evaluates these expressions every frame. `set k33_hudStyle 2` therefore changes the HUD in the same frame:
+- C1 evaluates these expressions every frame. `set cg_hudStyle 2` therefore changes the HUD in the same frame:
   no menu reload, no vid_restart, no patch in C1. A value that is not a shipped style shows the stock items, so
   the HUD is never empty.
-- `src/hud_style.c` owns the dvars: `k33_hudStyle` (int 0..5, archived, registered once `C1DvarsReady()`, a
-  command-line `+set k33_hudStyle N` re-issued as voice.c does) and `k33_hudStyleList` (string). A saved value that
+- `src/hud_style.c` owns the dvars: `cg_hudStyle` (int 0..5, archived, registered once `C1DvarsReady()`, a
+  command-line `+set cg_hudStyle N` re-issued as voice.c does) and `cg_hudStyleList` (string). A saved value that
   is not in the list is set back to 0 and logged once. It also implements what the later HUD reads and 1.1.1.13
   lacks ("Implemented natively").
 
@@ -160,7 +160,7 @@ which picks a font by scale.
 
 ### Why v12 (1.2.1.12) is not shipped
 
-The user could not tell v12 from v26 in a client, and the captures agree. The same scene with `k33_hudStyle` 1 and 2
+The user could not tell v12 from v26 in a client, and the captures agree. The same scene with `cg_hudStyle` 1 and 2
 (`shots/b_v12_before.png`, `shots/b_v26_before.png` of the live check) differs in 0 pixels in the minimap, 4 in the
 kill/death bar and a few hundred in the weapon bar, killstreak column and score bar: slot plates 25.5 against 31
 units, grenade icons two units apart. Both builds' 13 HUD images are pixel-identical. Its sources were removed; the
@@ -214,7 +214,7 @@ Measured means read from the user's own installs or the built files; inferred is
 - **The built pack loads.** `python scripts/build_zones.py --candidate` builds all 11 installed zones; AssetExplorer's
   C1 loader emulation loads `common_postgfx_mp.ff` with 0 warnings (179 assets), and the two menufiles it
   resolves list identically to the authored `.txt` files. `tests/check_zone_packs.py` passes on the candidate.
-- **Gates.** `tests/test_hud_styles.py` evaluates every generated gate for `k33_hudStyle` 0..5: exactly the selected
+- **Gates.** `tests/test_hud_styles.py` evaluates every generated gate for `cg_hudStyle` 0..5: exactly the selected
   style's items are visible, a value that is not shipped shows the stock items, the menu follows the selected
   build's rule, Survival hides what it hid. It also proves the stock items are byte-identical under their gate.
 
@@ -244,14 +244,14 @@ Still open:
    `english_locale.ff` and `chinese_locale.ff` over the test install's, and a `Kernel33.dll` built from
    this branch (`K33_LOCAL_TESTING=1` for the log lines and `com_cmdFile`).
 2. Start with `+set com_cmdFile 1`; `Kernel33.log` must have
-   `hud style: k33_hudStyle registered (k33_hudStyleList 0:stock;2:v26;3:v33;5:sm2), value 0`.
-3. In a private Team Deathmatch, write `set k33_hudStyle 2` (then 3, then 5) into `<exe dir>\k33_cmd_<pid>.txt` (or use the pause
+   `hud style: cg_hudStyle registered (cg_hudStyleList 0:stock;2:v26;3:v33;5:sm2), value 0`.
+3. In a private Team Deathmatch, write `set cg_hudStyle 2` (then 3, then 5) into `<exe dir>\k33_cmd_<pid>.txt` (or use the pause
    menu's HUD style control): the weapon bar, score bar, minimap frame and killstreak column switch to the
-   2.6.9.7 (3.3.3.3) layout within half a second, without a reload. `set k33_hudStyle 0`: stock. Fire a few rounds: the
+   2.6.9.7 (3.3.3.3) layout within half a second, without a reload. `set cg_hudStyle 0`: stock. Fire a few rounds: the
    big clip count and the gauge drop in the same frame as the reserve; reload refills both. With an akimbo weapon
    the clip count is both hands.
-4. `set k33_hudStyle 1` (or 4): the stock HUD, the dvar back at 0, one line
-   `hud style: k33_hudStyle 1 is not in this build (0:stock;2:v26;3:v33;5:sm2); showing the stock HUD`.
+4. `set cg_hudStyle 1` (or 4): the stock HUD, the dvar back at 0, one line
+   `hud style: cg_hudStyle 1 is not in this build (0:stock;2:v26;3:v33;5:sm2); showing the stock HUD`.
 5. Quit and start again: the last shipped value is still set (archived).
 6. Repeat step 3 in Survival: the enemy / credit panel is the same in all three, the MP score panel and the
    killstreak column stay hidden.
@@ -334,7 +334,7 @@ Crash hosted in-process, pictures through `k33_shot.req`.
 
 Captures are in the session scratch folder (`hud_impl/shots`), not in the repository.
 
-## SM2 (k33_hudStyle 5): an authored style in `.menu` source
+## SM2 (cg_hudStyle 5): an authored style in `.menu` source
 
 SM2 is not converted from another build. It is an original HUD written as IW-style menu source,
 `zones/hud_styles_postgfx_mp/sources/sm2.menu`, laid out after a screenshot of the cancelled SM2 mod's HUD that the
@@ -429,7 +429,7 @@ ownerdraw.
     ok|...|differs`.
 
   The pure parts (`HudHealthPermille`, `HudIconFit`) are in `hud_style_policy.h`, tested by
-  `tests/hud_style_policy_test.c`. The option rows read `k33_hudStyleList`, so the HUD style drop-downs in
+  `tests/hud_style_policy_test.c`. The option rows read `cg_hudStyleList`, so the HUD style drop-downs in
   `OptionView_video.as` and `MainPause.as` list SM2 without change. Its label `K33UI_HUD_STYLE_SM2` ("SM2" in both
   languages) is in `<language>_ui`.
 - **Live** (2026-11-13, own client copy `D:\CoD\k33_sm2_client`, throwaway profile `edtest`, Afghan bot Team
@@ -439,7 +439,7 @@ ownerdraw.
   - the top score with the enemy fill and the "losing" caption after a death (0 : 100), the emblem and the timer;
   - the name, and everything hiding while dead;
   - the HUD-style row of the pause menu showing "SM2";
-  - `set k33_hudStyle 0` / `5` switching in the same frame.
+  - `set cg_hudStyle 0` / `5` switching in the same frame.
 
   Second round (killstreaks, health, icon), with `devServer 1` / `dev_cheats on` over the host's rcon,
   `take health N`, frozen bots (`sv_botStop 1`) moved in front of the player (`dev_clientcmd bots setviewpos`):
@@ -512,7 +512,9 @@ mod's HUD did, first for SM2, then for every style (stock 0, v26 2, v33 3, sm2 5
 
 - `python tools/build_hud_styles.py` regenerates `zones/hud_styles_postgfx_mp/{menufile,material}`,
   `zone_source/hud_styles_postgfx_mp.csv`, the two `<language>_hud_styles` zones and the survival HUD's menufile
-  from `zones/hud_styles_postgfx_mp/sources` and `image/`. No install is needed.
+  from `zones/hud_styles_postgfx_mp/sources` and `image/`. No install is needed. The two menufiles are written as
+  `.menu` source (`menufile/hud_styles.menu`, `survival_hud_visibility.menu`; docs/MENU_SOURCE.md), which the zone
+  build compiles; the extracted `sources/menus_*.json` dumps stay as they are.
 - `python tools/build_hud_styles.py extract --dumper <CodolSoundDumper.exe> [--c1 DIR] [--v26 DIR] [--v12 DIR]
   [--images v12=DIR] [--work DIR]` re-reads the installs (defaults under `D:\CoD\CODOL Builds`). It needs a
   CodolSoundDumper built from CODOL-AssetExplorer with the `zone-menus` command (branch `feat/zone-menus`,

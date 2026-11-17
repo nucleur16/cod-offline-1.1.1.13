@@ -6,7 +6,7 @@ adapted to the real current Survival wallet, not claimed semantically identical.
 from pathlib import Path
 import copy,json,struct,sys
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from zonekit import menus
+from zonekit import menu_source,menus
 ROOT=Path(__file__).resolve().parents[1]
 SOURCE=ROOT/'zones/survival_hud_postgfx_mp/sources/survival_scorebar_2697.json'
 OUT=ROOT/'zones/survival_hud_postgfx_mp/components'
@@ -63,10 +63,15 @@ def author(source):
   old=i['p']['324']['p']['4'];i['p']['324']=stmt([op('(')]+menu['p']['228']['p']['4']+[op(')'),op('&&'),op('(')]+old+[op(')')])
  return result
 
+COMPONENT='ui_mp/scriptmenus/survival_status_component.menu'
+HEADER=[COMPONENT+': the Survival status items, written by tools/build_survival_status.py from',
+ 'sources/survival_scorebar_2697.json (edit the generator, not this file). tools/build_survival_hud.py appends its',
+ "items to C1's scorebar_hd; it is not a zone asset of its own. IW menu language: zonekit/menu_source.py."]
+def load():
+ """The component's MenuList, from its .menu source."""
+ return menu_source.load(OUT/'survival_status.menu',COMPONENT)
 def main():
  OUT.mkdir(exist_ok=True);result=author(json.loads(SOURCE.read_text()))
- (OUT/'survival_status.json').write_text(json.dumps(result,indent=1)+'\n',newline='\n')
- (OUT/'survival_status.txt').write_text(menus.listing(result),newline='\n')
- (OUT/'survival_status.bin').write_bytes(menus.encode_menulist(result))
+ (OUT/'survival_status.menu').write_text(menu_source.decompile_menufile(result,HEADER),newline='\n')
  print('4 authored items converted; only strict C1 operators, live wallet adaptation, original enemy geometry')
 if __name__=='__main__':main()

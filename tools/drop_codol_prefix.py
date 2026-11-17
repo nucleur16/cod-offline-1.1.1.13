@@ -308,6 +308,91 @@ IW_TABLE = [
     # network / server hosting
     ("k33_hostGate", "net_hostGate", "switch", "the loopback-only UDP gate"),
     ("k33_p2pHost", "sv_p2pHost", "switch", "host a match at startup"),
+    # ---- names the shipped UI movies spell (codo.gfx, codologin.gfx, codoingame.gfx), renamed with their
+    # DoABC tags' string constants (tools/rename_movie_strings.py). kind prefix: a name the movie or
+    # theatre.c completes with a row number (ui_theatreId0..9).
+    # language (the patch zones' language; loc_language itself is C1's int)
+    ("k33_language", "loc_languageName", "dvar", "the patch zones' language (en, zh); loc_language is C1's own (an int)"),
+    ("k33_languageList", "loc_languageList", "dvar", "installed languages (read only)"),
+    ("k33_languageState", "loc_languageState", "dvar", "language switch state (read only)"),
+    ("k33_languageSerial", "loc_languageSerial", "dvar", "language switch serial (read only)"),
+    ("k33_setlanguage", "loc_setLanguage", "cmd", "switch the language"),
+    ("k33_english", "loc_english", "switch", "startup language switch (the older spelling; k33_english still read from launchers)"),
+    # client-game: HUD style
+    ("k33_hudStyle", "cg_hudStyle", "dvar", "HUD style"),
+    ("k33_hudStyleList", "cg_hudStyleList", "dvar", "HUD styles in this build (read only)"),
+    # client: voice chat rows of Options > Audio
+    ("k33_voiceVolume", "cl_voiceVolume", "dvar", "voice chat"),
+    ("k33_voiceThreshold", "cl_voiceThreshold", "dvar", "voice chat"),
+    ("k33_voiceMode", "cl_voiceMode", "dvar", "voice chat"),
+    ("k33_voiceMicMute", "cl_voiceMicMute", "dvar", "voice chat"),
+    ("k33_voiceLevel", "cl_voiceLevel", "dvar", "voice chat (read only)"),
+    ("k33_voiceMeter", "cl_voiceMeter", "dvar", "voice chat"),
+    ("k33_voiceInputList", "cl_voiceInputList", "dvar", "voice chat (read only)"),
+    ("k33_voiceInputPick", "cl_voiceInputPick", "dvar", "voice chat"),
+    ("k33_voiceInputIndex", "cl_voiceInputIndex", "dvar", "voice chat (read only)"),
+    # gamepad: Options > Controller, the pause-menu navigator, the pad cursor snap (codo.k33.PadSnap)
+    ("k33_padinfo", "gpad_info", "dvar", "Options > Controller (read only)"),
+    ("k33_padbinds", "gpad_binds", "dvar", "Options > Controller (read only)"),
+    ("k33_padcapture", "gpad_bindCapture", "dvar", "Options > Controller"),
+    ("k33_padclear", "gpad_bindClear", "dvar", "Options > Controller"),
+    ("k33nav", "gpad_navLog", "dvar", "pause-menu navigator's last decision"),
+    ("k33_snapscan", "gpad_snapScan", "dvar", "pad cursor snap"),
+    ("k33_snapn", "gpad_snapHeader", "dvar", "pad cursor snap (read only)"),
+    ("k33_snaperr", "gpad_snapError", "dvar", "pad cursor snap (read only)"),
+    ("k33_snapprobe", "gpad_snapProbe", "dvar", "pad cursor snap"),
+    ("k33_snapat", "gpad_snapAt", "dvar", "pad cursor snap (read only)"),
+    ("k33_snap0", "gpad_snap0", "dvar", "pad cursor snap chunk (read only)"),
+    ("k33_snap1", "gpad_snap1", "dvar", "pad cursor snap chunk (read only)"),
+    ("k33_snap2", "gpad_snap2", "dvar", "pad cursor snap chunk (read only)"),
+    ("k33_snap3", "gpad_snap3", "dvar", "pad cursor snap chunk (read only)"),
+    ("k33_snap4", "gpad_snap4", "dvar", "pad cursor snap chunk (read only)"),
+    ("k33_snap5", "gpad_snap5", "dvar", "pad cursor snap chunk (read only)"),
+    ("k33_snap6", "gpad_snap6", "dvar", "pad cursor snap chunk (read only)"),
+    ("k33_snap7", "gpad_snap7", "dvar", "pad cursor snap chunk (read only)"),
+    ("k33_snapcls0", "gpad_snapClass0", "dvar", "pad cursor snap classes (read only)"),
+    ("k33_snapcls1", "gpad_snapClass1", "dvar", "pad cursor snap classes (read only)"),
+    ("k33_snapcls2", "gpad_snapClass2", "dvar", "pad cursor snap classes (read only)"),
+    ("k33_snapcls3", "gpad_snapClass3", "dvar", "pad cursor snap classes (read only)"),
+    ("k33_snapcls4", "gpad_snapClass4", "dvar", "pad cursor snap classes (read only)"),
+    ("k33_snapcls5", "gpad_snapClass5", "dvar", "pad cursor snap classes (read only)"),
+    ("k33_snapcls6", "gpad_snapClass6", "dvar", "pad cursor snap classes (read only)"),
+    ("k33_snapcls7", "gpad_snapClass7", "dvar", "pad cursor snap classes (read only)"),
+    ("k33_snaphid0", "gpad_snapHidden0", "dvar", "pad cursor snap hidden list (read only)"),
+    ("k33_snaphid1", "gpad_snapHidden1", "dvar", "pad cursor snap hidden list (read only)"),
+    ("k33_snaphid2", "gpad_snapHidden2", "dvar", "pad cursor snap hidden list (read only)"),
+    ("k33_snaphid3", "gpad_snapHidden3", "dvar", "pad cursor snap hidden list (read only)"),
+    # renderer
+    ("codol_borderless", "r_noborder", "dvar", "Fullscreen Windowed (IW4x's r_noborder)"),
+    # console
+    ("k33_console", "con_enable", "switch", "+set con_enable 0 turns Kernel33's console off"),
+    # menus / front end: Quick Play, Survival, Bot Training and THEATRE state the movies keep in dvars
+    ("codol_quick_native_room_context", "ui_quickNativeRoomContext", "dvar", "Quick Play room context"),
+    ("codol_quick_lineage", "ui_quickLineage", "dvar", "Quick Play (movie only)"),
+    ("codol_quick_return", "ui_quickReturn", "dvar", "Quick Play (movie only)"),
+    ("codol_quick_return_host_false", "ui_quickReturnHostFalse", "dvar", "Quick Play (movie only)"),
+    ("codol_survival_direct_home", "ui_survivalDirectHome", "dvar", "SURVIVAL button (movie only)"),
+    ("codol_training_room_context", "ui_trainingRoomContext", "dvar", "Bot Training room (movie only)"),
+    ("codol_theatre_request", "ui_theatreRequest", "dvar", "theatre"),
+    ("codol_theatre_selected", "ui_theatreSelected", "dvar", "theatre"),
+    ("codol_theatre_open", "ui_theatreOpen", "dvar", "theatre"),
+    ("codol_theatre_close", "ui_theatreClose", "dvar", "theatre"),
+    ("codol_theatre_filter", "ui_theatreFilter", "dvar", "theatre"),
+    ("codol_theatre_page", "ui_theatrePage", "dvar", "theatre"),
+    ("codol_theatre_pages", "ui_theatrePages", "dvar", "theatre"),
+    ("codol_theatre_total", "ui_theatreTotal", "dvar", "theatre"),
+    ("codol_theatre_status", "ui_theatreStatus", "dvar", "theatre"),
+    ("codol_theatre_revision", "ui_theatreRevision", "dvar", "theatre"),
+    ("codol_theatre_count", "ui_theatreCount", "dvar", "theatre"),
+    ("codol_theatre_playback", "ui_theatrePlayback", "dvar", "theatre"),
+    ("codol_theatre_pause_diag", "ui_theatrePauseDiag", "dvar", "theatre"),
+    ("codol_theatre_id_", "ui_theatreId", "prefix", "theatre row i: <name><i>"),
+    ("codol_theatre_date_", "ui_theatreDate", "prefix", "theatre row i: <name><i>"),
+    ("codol_theatre_title_", "ui_theatreTitle", "prefix", "theatre row i: <name><i>"),
+    ("codol_theatre_map_", "ui_theatreMap", "prefix", "theatre row i: <name><i>"),
+    ("codol_theatre_mode_", "ui_theatreMode", "prefix", "theatre row i: <name><i>"),
+    ("codol_theatre_file_", "ui_theatreFile", "prefix", "theatre row i: <name><i>"),
+    ("codol_theatre_duration_", "ui_theatreDuration", "prefix", "theatre row i: <name><i>"),
 ]
 IW_NAMES = {old: new for old, new, _kind, _why in IW_TABLE}
 
@@ -381,7 +466,8 @@ REASON_ZONE = "patch zone / fastfile name (a file name in the installs, loaded b
 REASON_LEGACY_ZONE = ("an old install's zone name on a line marked LEGACY_ZONE (kPatchZoneMerged, the old-name rules "
                       "and their tests, a zone's origin file): what an existing install still carries")
 REASON_ZONE_TEST = "a zone name a test or policy feeds the zone-name rules (codol_<lang>_locale family)"
-REASON_MOVIE = "dvar name compiled into the shipped UI movies (codo.gfx / codoingame.gfx tags under zones/)"
+REASON_MOVIE_STORE = ("MarketService's SharedObject.getLocal name (codol_favorites_<dw_username>): the Market favourites "
+                      "players already saved; not a dvar or command")
 REASON_SERVER_REPO = "file, function or folder of the sh1x server repository (renamed there, not here)"
 REASON_LAUNCHER = "environment variable / pipe / token of the launcher-managed session protocol (external launcher)"
 REASON_PYLOBBY = "environment switch of the external Python lobby (CODOL-EMU), named in ports/tests of it"
@@ -393,13 +479,8 @@ REASON_HISTORY = "removed online feature, named only in a comment"
 REASON_PATH = "folder name on disk (an install or build folder: CODOL Builds, CODOL_2.6.9.7, a local CODOL server tree)"
 REASON_PENDING = "server GSC dvar with codol inside the name (not a codol_ prefix); follows the server repo"
 KEEP = {
-    # names compiled into the UI movies
-    "codol_borderless": REASON_MOVIE, "codol_quick_native_room_context": REASON_MOVIE,
-    "codol_quick_lineage": REASON_MOVIE, "codol_quick_return": REASON_MOVIE,
-    "codol_quick_return_host_false": REASON_MOVIE, "codol_survival_direct_home": REASON_MOVIE,
-    "codol_training_room_context": REASON_MOVIE, "codol_theatre_request": REASON_MOVIE,
-    "codol_theatre_count": REASON_MOVIE, "codol_theatre_id_i": REASON_MOVIE, "codol_theatre_open": REASON_MOVIE,
-    "codol_theatre_playback": REASON_MOVIE, "codol_theatre_": REASON_MOVIE, "codol_favorites_": REASON_MOVIE,
+    # a name compiled into the UI movies that is not a console name
+    "codol_favorites_": REASON_MOVIE_STORE,
     # zone-name families in code and tests
     "codol_": REASON_ZONE, "codol_zombies_endless": REASON_ZONE,
     "codol_en_locale": REASON_ZONE_TEST, "codol_fr_locale": REASON_ZONE_TEST, "codol_de_locale": REASON_ZONE_TEST,
@@ -452,21 +533,17 @@ KEEP = {
 }
 
 # ---- k33 names that stay, and why (the step-2 check looks at k33 words inside C string literals) -------------
-REASON_K33_MOVIE = ("read or set by name inside a shipped UI movie (zones/*.gfxpatch .as and DoABC tags): a rename "
-                    "needs a new verified composition stage of codo.gfx / codoingame.gfx / codologin.gfx")
+REASON_MARKED = "old name read on purpose, on a line marked LEGACY_NAME or MENU_PENDING (see NAME_MARKS)"
+REASON_K33_MENU = ("old name of cg_hudStyle, kept registered as a read-only mirror (MENU_PENDING) because the native "
+                   "HUD menus' visibility expressions read it; goes when the menu sources (feat/menu-source) spell cg_hudStyle")
+REASON_K33_LEGACY = ("old spelling a launcher or a saved config_mp.cfg may still carry, read on a line marked LEGACY_NAME "
+                     "(the startup language switch, the saved language, the HUD style switch)")
 REASON_K33_FILE = "file or folder name (inside the install or its main folder), not a console name"
 REASON_K33_ASSET = "asset or ActionScript package name inside the shipped zones"
 REASON_K33_TOKEN = "runtime token, not a console name"
 KEEP_K33 = {
-    **{name: REASON_K33_MOVIE for name in (
-        "k33_hudStyle", "k33_hudStyleList", "k33_english", "k33_language", "k33_languageList", "k33_languageState",
-        "k33_languageSerial", "k33_setlanguage", "k33_padinfo", "k33_padbinds", "k33_padcapture", "k33_padclear",
-        "k33nav", "k33_snapscan", "k33_snapn", "k33_snaperr", "k33_snapprobe", "k33_snapat", "k33_snap",
-        "k33_snaphid", "k33_snapcls", "k33_snap0", "k33_snap1", "k33_snap2", "k33_snap3", "k33_snap4", "k33_snap5",
-        "k33_snap6", "k33_snap7", "k33_snapcls0", "k33_snapcls1", "k33_snapcls2", "k33_snapcls3", "k33_snapcls4",
-        "k33_snapcls5", "k33_snapcls6", "k33_snapcls7", "k33_snaphid0", "k33_snaphid1", "k33_snaphid2",
-        "k33_snaphid3", "k33_voiceVolume", "k33_voiceThreshold", "k33_voiceMode", "k33_voiceMicMute",
-        "k33_voiceLevel", "k33_voiceMeter", "k33_voiceInputList", "k33_voiceInputPick", "k33_voiceInputIndex")},
+    "k33_hudStyle": REASON_K33_LEGACY,
+    "k33_english": REASON_K33_LEGACY, "k33_language": REASON_K33_LEGACY,
     **{name: REASON_K33_FILE for name in (
         "k33_cmd_", "k33_console", "k33_console_history", "k33_offline", "k33_rcon", "k33_shot", "k33_stats",
         "k33patch", "k33p2p_dedrun", "k33sha256", "k33tick")},
@@ -484,9 +561,29 @@ _PATTERN = re.compile(LEFT + '(' + '|'.join(re.escape(k) for k in sorted(MAPPING
 WORD = re.compile(r'[A-Za-z0-9_]*[Cc][Oo][Dd][Oo][Ll][A-Za-z0-9_]*')
 
 
+# A line carrying one of these keeps its old names: LEGACY_NAME reads an old spelling on purpose (a launcher's
+# switch, a saved config line), MENU_PENDING keeps an old dvar registered for the native menus (KEEP_K33).
+NAME_MARKS = ("LEGACY_NAME", "MENU_PENDING")
+# step-2 names the native menu sources still read until feat/menu-source renames them (apply_menus renames them
+# there; check() lists them without failing)
+MENU_PENDING = set()   # the menu sources spell cg_hudStyle since the .menu conversion
+# the menu builders that spell them (the native menu sources under zones/ are menu_files())
+MENU_BUILDERS = ("tools/build_hud_styles.py", "tools/build_survival_hud.py")
+
+
 def rename(text):
-    """text with every mapped name replaced; (new text, number of replacements)."""
-    return _PATTERN.subn(lambda m: MAPPING[m.group(1)], text)
+    """text with every mapped name replaced, except on lines marked LEGACY_NAME / MENU_PENDING; (new text, count)."""
+    if not any(mark in text for mark in NAME_MARKS):
+        return _PATTERN.subn(lambda m: MAPPING[m.group(1)], text)
+    out, total = [], 0
+    for line in text.splitlines(True):
+        if any(mark in line for mark in NAME_MARKS):
+            out.append(line)
+            continue
+        new, n = _PATTERN.subn(lambda m: MAPPING[m.group(1)], line)
+        out.append(new)
+        total += n
+    return "".join(out), total
 
 
 SERVER_VOCAB = dict(SERVER_NAMES, **GSC_NAMES)
@@ -603,6 +700,8 @@ def remaining(files):
             line = text[text.rfind(chr(10), 0, m.start()) + 1:text.find(chr(10), m.end()) % (len(text) + 1)]
             if word in ZONE_WORDS:
                 reason = REASON_LEGACY_ZONE if LEGACY_MARK in line else "STILL MAPPED (zone name)"
+            elif word in MAPPING and any(mark in line for mark in NAME_MARKS):
+                reason = REASON_MARKED
             elif word in MAPPING:
                 reason = "STILL MAPPED (not replaced: inside a longer word or a file name?)"
                 if len(after) == 2 and after[0] == "." and after[1].isalpha():
@@ -776,10 +875,9 @@ def all_tracked():
 
 
 def menu_files():
-    """The native menu sources and their generated listings under zones/ (step-2 names only: zone names stay)."""
+    """The native menu sources (.menu text) under zones/ (step-2 names only: zone names stay)."""
     return sorted(rel for rel in all_tracked() if rel.startswith("zones/") and MOVIE_MARK not in rel and
-                  (("/menufile/" in rel and rel.endswith((".json", ".txt"))) or
-                   ("/sources/" in rel and rel.endswith(".menu"))))
+                  rel.endswith(".menu"))
 
 
 _IW_PATTERN = re.compile(LEFT + '(' + '|'.join(re.escape(k) for k in sorted(IW_NAMES, key=lambda s: (-len(s), s)))
@@ -801,7 +899,7 @@ def movie_conflicts():
 
 def renames_header():
     lines = ["/* Generated by tools/drop_codol_prefix.py - do not edit (the rename tool never rewrites this file).",
-             " * Kernel33 dvars renamed from the k33_ prefix to IW engine names. C1 executes config_mp.cfg before",
+             " * Kernel33 dvars renamed from the k33_ and codol_ prefixes to IW engine names. C1 executes config_mp.cfg before",
              " * Kernel33 registers its dvars, so a saved \"seta <old> <value>\" leaves a string dvar of the old name;",
              " * C1MigrateRenamed (c1game.c) copies its value to the new name once and empties the old one. */",
              "#ifndef K33_DVAR_RENAMES_H", "#define K33_DVAR_RENAMES_H", "",
@@ -829,6 +927,8 @@ def k33_remaining():
                 after = s[m.end():m.end() + 2]
                 if len(after) == 2 and after[0] == "." and after[1].isalpha():
                     reason = "file name (another repository or an install)"
+                elif word in KEEP_K33 and any(mark in line for mark in NAME_MARKS):
+                    reason = KEEP_K33[word]
                 elif word in MAPPING:
                     reason = "STILL MAPPED"
                 elif word in KEEP_K33:
@@ -841,7 +941,7 @@ def k33_remaining():
 
 
 def apply_menus():
-    """Step-2 names in the native menu sources; the stored .bin menulists are re-encoded from their .json."""
+    """Step-2 names in the native menu sources (.menu text, which the zone build compiles)."""
     changed = []
     for rel in menu_files():
         data, text = read(rel)
@@ -849,12 +949,6 @@ def apply_menus():
         if n:
             (ROOT / rel).write_bytes(encode(new, data))
             changed.append((rel, n))
-            if rel.endswith(".json") and (ROOT / (rel[:-5] + ".bin")).is_file():
-                sys.path.insert(0, str(ROOT))
-                from zonekit import menus
-                bin_path = ROOT / (rel[:-5] + ".bin")
-                bin_path.write_bytes(menus.encode_menulist(json.loads(new)))
-                changed.append((rel[:-5] + ".bin", 0))
     return changed
 
 
@@ -1007,16 +1101,29 @@ def length_hazards(files):
 def check(report):
     files = tracked_files()
     pending = 0
+    menu_pending = {}
     for rel in files:
         _, text = read(rel)
         if text is not None:
-            pending += rename(text)[1]
+            n = rename(text)[1]
+            if rel in MENU_BUILDERS:
+                held = sum(1 for m in _PATTERN.finditer(text) if m.group(1) in MENU_PENDING)
+                if held:
+                    menu_pending[rel] = held
+                n -= held
+            pending += n
     hazards = length_hazards(files)
     for h in hazards:
         print("old-length step after a renamed literal: %s" % h)
     for rel in menu_files():
         _, text = read(rel)
-        pending += len(_IW_PATTERN.findall(text))
+        for word in _IW_PATTERN.findall(text):
+            if word in MENU_PENDING:
+                menu_pending[rel] = menu_pending.get(rel, 0) + 1
+            else:
+                pending += 1
+    for rel, n in sorted(menu_pending.items()):
+        print("menu-side name pending feat/menu-source: %d in %s" % (n, rel))
     for rel, new_rel, n in zone_pending():
         print("zone name(s) still to rename: %s%s%s" % (rel, " -> " + new_rel if new_rel != rel else "",
                                                       " (%d in the text)" % n if n else ""))

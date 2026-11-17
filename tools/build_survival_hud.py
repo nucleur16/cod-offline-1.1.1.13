@@ -1,20 +1,36 @@
 """Preserve C1's native HUD, hiding its MP score and streak menus in Survival.
 
-Input is MenuCommands' resolved 1.1.1.13 patch_common_mp zone-menus dump.
-The checked-in original is retained so future rebuilds need no game extraction.
-The written menufile also carries the selectable HUD styles' items for these two
-menus (styled(); docs/HUD_STYLES_20261112.md).
+Input is MenuCommands' resolved 1.1.1.13 patch_common_mp zone-menus dump, kept as
+.menu source (sources/survival_hud_visibility.original.menu) so rebuilds need no game
+extraction. The written menufile (menufile/survival_hud_visibility.menu, which the zone
+build compiles) also carries the selectable HUD styles' items for these two menus
+(styled(); docs/HUD_STYLES_20261112.md).
 """
 import copy
-import json
 from pathlib import Path
 import struct
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from zonekit import menus
+from zonekit import menu_source, menus
 
 ROOT = Path(__file__).resolve().parents[1]
 DIR = ROOT / 'zones/survival_hud_postgfx_mp/menufile'
+NAME = 'ui_mp/scriptmenus/survival_hud_visibility.menu'
+ORIGINAL = ROOT / 'zones/survival_hud_postgfx_mp/sources/survival_hud_visibility.original.menu'
+HEADER = [NAME + ': written by tools/build_hud_styles.py (tools/build_survival_hud.py styled()) from',
+          'sources/survival_hud_visibility.original.menu, components/survival_status.menu and the HUD styles: edit',
+          'those, not this file. IW menu language: zonekit/menu_source.py.']
+
+
+def original():
+    """1.1.1.13's own killstreaks_hd and scorebar_hd (patch_common_mp), from their .menu source."""
+    return menu_source.load(ORIGINAL, NAME)
+
+
+def component():
+    """The Survival status items (tools/build_survival_status.py)."""
+    return menu_source.load(DIR.parent / 'components/survival_status.menu',
+                            'ui_mp/scriptmenus/survival_status_component.menu')
 
 def operator(name):
     return {'kind': 'expressionEntry', 'raw': struct.pack('<III', 0, menus.OP_1113[name], 0).hex(), 'p': {}}
@@ -44,7 +60,7 @@ def author(original):
             # this same loaded menu rather than opening a popup for the HUD.
             for item in menu['p']['284']:
                 item['p']['324'] = scoped(item['p'].get('324'), False)
-            component = json.loads((DIR.parent/'components/survival_status.json').read_text())
+            component = globals()['component']()
             menu['p']['284'].extend(copy.deepcopy(component['p']['8'][0]['p']['284']))
             raw = bytearray.fromhex(menu['raw'])
             struct.pack_into('<I',raw,0xB0,len(menu['p']['284']))
@@ -52,7 +68,7 @@ def author(original):
     return result
 
 def styled(original):
-    """author(), then the selectable HUD styles (tools/build_hud_styles.py, k33_hudStyle) folded into the same two
+    """author(), then the selectable HUD styles (tools/build_hud_styles.py, cg_hudStyle) folded into the same two
     menus: C1 keeps the first menu it links under a name, so killstreaks_hd and scorebar_hd exist once, here, with
     both the Survival gate and the style gate."""
     import importlib.util
@@ -62,11 +78,8 @@ def styled(original):
     return styles.fold_survival(author(original), original)
 
 def main():
-    original = json.loads((DIR / 'survival_hud_visibility.original.json').read_text())
-    result = styled(original)
-    (DIR / 'survival_hud_visibility.json').write_text(json.dumps(result, indent=1) + '\n', newline='\n')
-    (DIR / 'survival_hud_visibility.txt').write_text(menus.listing(result), newline='\n')
-    (DIR / 'survival_hud_visibility.bin').write_bytes(menus.encode_menulist(result))
+    result = styled(original())
+    (DIR / 'survival_hud_visibility.menu').write_text(menu_source.decompile_menufile(result, HEADER), newline='\n')
 
 if __name__ == '__main__':
     main()

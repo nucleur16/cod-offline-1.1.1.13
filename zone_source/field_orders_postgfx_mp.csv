@@ -10,6 +10,6 @@
 >blocks,0x0,0x20,0x0,0x0,auto,0x0,0x0,0x0,0x0
 >xassetlist,0x0,0xffffffff
 rawfile,field_orders_postgfx_mp
-menu,field_order_win,file=menu/0001_field_order_win.bin
-menu,field_order_get,file=menu/0002_field_order_get.bin
-menu,field_orders,file=menu/0003_field_orders.bin
+menu,field_order_win,src=menu/field_order_win.menu
+menu,field_order_get,src=menu/field_order_get.menu
+menu,field_orders,src=menu/field_orders.menu

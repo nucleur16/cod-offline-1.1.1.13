@@ -16,7 +16,7 @@ entry shows as the "@NAME" itself). So:
     MainPause) use keys in their source (NAMED below); a class whose literal is also a name in its ABC
     (MatchRoomListView: "MAP") must be one of those.
 Entries (GBK): English in english_ui (codo, login keys) / english_ui_extra (hud, ingame), Chinese in
-chinese_ui / chinese_ui_extra. Kernel33 loads one set: english* with k33_english 1, chinese*
+chinese_ui / chinese_ui_extra. Kernel33 loads one set: english* with loc_english 1, chinese*
 with 0 (C1 holds at most 12000 localize assets, and an entry loaded twice takes two). An entry already in a
 localize.str keeps its text, so those files are where a text is changed; running this again only adds what is missing
 and drops text keys no movie uses any more.

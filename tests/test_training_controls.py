@@ -47,7 +47,7 @@ for(const id of [0,2]) {
  c.initRoomInfo(info(false));assert(!c.isManagedTrainingRoom(),'replacement must discard the previous context');
  c.initRoomInfo(info(true));const replaced=fresh(id);const wrongOwner=info(false);wrongOwner.name='AnotherOwner';replaced.initRoomInfo(wrongOwner);assert(!replaced.isManagedTrainingRoom(),'room owner/name mismatch must discard context');
  c.initRoomInfo(info(true));c.resetRoom();assert(!c.isManagedTrainingRoom());
- assert.strictEqual(dvars.codol_training_room_context,'','Leave must clear process-persistent context');
+ assert.strictEqual(dvars.ui_trainingRoomContext,'','Leave must clear process-persistent context');
  c.initRoomInfo(info(false));assert(!c.isManagedTrainingRoom(),'custom room after Leave must remain editable');
 }
 for(const id of [1,11]) {const c=fresh(id);c.getCurrentPlayList=()=>({id,type:1,combatTrainingType:0});c.initRoomInfo(info(true));assert(!c.isManagedTrainingRoom());}
