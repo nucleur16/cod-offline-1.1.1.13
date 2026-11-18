@@ -35,7 +35,6 @@ dist\
   main\sh1x_rawfiles\                 the match server's scripts
   main\sh1x_svr_scripts.iwd           bot classes and waypoints
   main\iw_image_16.iwd
-  p2p\survival_maps.txt               Survival maps the server can host
 ```
 
 ## Install (drag and drop)

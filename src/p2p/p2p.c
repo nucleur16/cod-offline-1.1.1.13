@@ -239,24 +239,16 @@ static void P2PLoadIni(P2PConfig *c)
     OfflineP2PConfig(c);
 }
 
-/* Installed, authored Survival maps published with the rawfiles deployment. */
-static int P2PSurvivalMaps(char (*maps)[64], int maximum, const char *wanted)
+/* A Survival map the host accepts: the zones list it (a coop_survival_<level> row of mp/comaplist.csv,
+ * maplist_filter.c) and its MP zone is installed. */
+static BOOL P2PSurvivalMapOk(const char *level)
 {
-    P2PConfig c; P2PDefaults(&c);
-    char path[MAX_PATH]; _snprintf(path, sizeof(path), "%s\\survival_maps.txt", c.dir);
-    path[sizeof(path)-1] = 0;
-    FILE *f = fopen(path, "rb");
-    if (!f) return 0;
-    int count = 0, found = 0; char line[256];
-    while (fgets(line, sizeof(line), f)) {
-        char *comment = strchr(line, '#'); if (comment) *comment = 0;
-        P2PTrim(line);
-        if (!P2PIdent(line, 63)) continue;
-        if (wanted && !strcmp(line, wanted)) found = 1;
-        if (maps && count < maximum) lstrcpynA(maps[count++], line, 64);
-    }
-    fclose(f);
-    return wanted ? found : count;
+    if (K33SurvivalSupported(level) != 1) return FALSE;
+    char root[MAX_PATH];
+    DWORD n = GetModuleFileNameA(NULL, root, MAX_PATH);
+    while (n && root[n - 1] != '\\') n--;
+    root[n] = 0;
+    return MlZoneOnDisk(root, level);
 }
 
 /* The server pack scripts/build-server.sh stages next to the host DLL: <home>\main\sh1x_svr_scripts.iwd
@@ -293,7 +285,7 @@ static const char *P2PCheck(const P2PConfig *c)
     if (strcmp(c->zoneType, "mp") && strcmp(c->zoneType, "coop") && strcmp(c->zoneType, "zm") && strcmp(c->zoneType, "survival")) return "zone type must be mp, coop, zm or survival";
     if (!strcmp(c->zoneType, "survival")) {
         if (strcmp(c->gametype, "survival")) return "Survival requires gametype survival";
-        if (!P2PSurvivalMaps(NULL, 0, c->map)) return "Survival map is absent from p2p/survival_maps.txt (installed maps with placements)";
+        if (!P2PSurvivalMapOk(c->map)) return "Survival map is not installed or has no coop_survival_ row in mp/comaplist.csv (usermaps_patch.ff)";
     }
     for (const char *p = c->netIp; *p; p++) if (!((*p >= '0' && *p <= '9') || *p == '.')) return "net_ip must be an IPv4 address";
     if (!P2PPathOk(c->exe) || !P2PPathOk(c->basepath) || !P2PPathOk(c->home) || !P2PPathOk(c->scripts) ||

@@ -35,7 +35,13 @@ struct FakeHost : dw::Host {
     uint64_t toldOwner, leftOwner;
     FakeHost() : refuse(false), refuseLaunch(false), haveIntent(false), port(28999), starts(0), asked(0), arms(0), launches(0), leaves(0),
                  toldOwner(0), leftOwner(0) {}
+    std::string survival;  /* SurvivalSupported: "" = unknown (-1), else the space-separated levels the zones list */
     virtual double Mono() { return GetTickCount64() / 1000.0; }
+    virtual int SurvivalSupported(const std::string &level)
+    {
+        if (survival.empty()) return -1;
+        return (" " + survival + " ").find(" " + level + " ") != std::string::npos ? 1 : 0;
+    }
     virtual bool GetLocalRoute(uint64_t, dw::LocalRoute &out)
     {
         asked++;
@@ -414,7 +420,7 @@ void SelectionChecks(const dw::Config &base, const std::string &scratch)
         Check(Is(p.Select("war", "mp_crash_tropical"), "mp_crash_tropical", "mp_crash_tropical", "war", "mp"), T,
               "a latch of the same category still names the room's map");
     }
-    {   /* a game install: usermaps join the vocabulary; Survival needs zone + placement script (+ Kernel33's list) */
+    {   /* a game install: usermaps join the vocabulary; Survival needs zone + placement script (+ the zones' Survival rows) */
         dw::Config cfg = base;
         cfg.gameDir = dw::PathJoin(scratch, "game");
         const std::string zones = dw::PathJoin(dw::PathJoin(cfg.gameDir, "client_shipRetail"), "chinese");
@@ -448,12 +454,13 @@ void SelectionChecks(const dw::Config &base, const std::string &scratch)
             Check(Is(p.Select("coop", "coop_survival_mp_seatown"), "mp_seatown", "mp_seatown", "survival", "survival"), T,
                   "a usermap with placements hosts Survival");
         }
-        dw::WriteFileAtomic(dw::PathJoin(dw::PathJoin(cfg.gameDir, "p2p"), "survival_maps.txt"), "# hostable\r\nmp_seatown\r\nmp_highrise # no script\r\n");
+        host.survival = "mp_seatown mp_highrise";
         {
             Pick p(cfg, &host);
             std::vector<std::string> levels = dw::HandoffSurvivalLevels(p.server);
-            Check(levels.size() == 1 && levels[0] == "mp_seatown", T, "Kernel33's p2p/survival_maps.txt narrows the levels to what the host accepts");
+            Check(levels.size() == 1 && levels[0] == "mp_seatown", T, "the zones' Survival rows (mp/comaplist.csv) narrow the levels to what the host accepts");
         }
+        host.survival.clear();
     }
 }
 

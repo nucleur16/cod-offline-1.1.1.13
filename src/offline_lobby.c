@@ -494,7 +494,7 @@ static BOOL InstallOfflineLobby(void)
     cfg.zoneDir = g_ofl.zones;
     lstrcpynA(g_ofl.game, dir, MAX_PATH);
     if (g_ofl.game[0] && g_ofl.game[strlen(g_ofl.game) - 1] == '\\') g_ofl.game[strlen(g_ofl.game) - 1] = 0;
-    cfg.gameDir = g_ofl.game; /* usermaps, the Survival placements and Kernel33's list of hostable Survival maps */
+    cfg.gameDir = g_ofl.game; /* usermaps and the Survival placements */
     cfg.port = g_ofl.wantPort;
     cfg.altPort = g_ofl.wantAltPort;
     cfg.hostPort = g_ofl.hostPort;
@@ -504,6 +504,7 @@ static BOOL InstallOfflineLobby(void)
     cfg.leave = OflLeave;
     cfg.startGame = OflStartGame;
     cfg.displayName = OflDisplayName; /* player_name.c: the console's `name` for this profile */
+    cfg.survivalSupported = K33SurvivalSupported; /* maplist_filter.c: the zones' Survival rows */
     int port = DwOfflineStartServer(&cfg);
     if (!port) {
         if (g_ofl.wantPort) Log("offline lobby: could not listen on 127.0.0.1:%d (k33_offline.ini port; is it in use?)", g_ofl.wantPort);
