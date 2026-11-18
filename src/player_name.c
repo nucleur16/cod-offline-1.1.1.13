@@ -1,5 +1,6 @@
 /*
- * player_name.c - the console's `name`, readable AND writable (branch feat/console-name-writable). Included by
+ * player_name.c - the console's `name`, readable AND writable in the menus, read-only in a match (PnDomain
+ * refuses a change while PN_IN_GAME_VA is set; branch feat/console-name-writable). Included by
  * kernel33.c after offline_lobby.c. The pure parts (which names are accepted, the names file) are in
  * player_name_policy.h and tests/player_name_policy_test.c.
  *
@@ -188,6 +189,14 @@ static unsigned char __cdecl PnDomain(const BYTE *dvar, const char *value, DWORD
     if (!value || !Readable(value, 1)) return 0;
     lstrcpynA(copy, value, sizeof(copy));
     const char *reset = dvar && Readable(dvar, PN_DVAR_DOMAIN + 4) ? *(const char *const *)(dvar + PN_DVAR_RESET) : NULL;
+    /* Menus only: a match keeps the name its server took when the player connected, so a change there would only
+     * show up in the next match. Refused in a match, the same as C1's read-only refusal but with the reason. */
+    const char *cur = PnDvarString(dvar);
+    if (*(volatile const BYTE *)(DWORD_PTR)PN_IN_GAME_VA && !(cur && !strcmp(copy, cur))) {
+        C1Printf("name: can't be changed during a match; change it in the menus\n");
+        Log("name: refused \"%s\" in a match", copy);
+        return 0;
+    }
     if (reset && Readable(reset, 1) && !strcmp(copy, reset)) return 1;
     const char *why = strlen(value) >= sizeof(copy) ? "at most 31 bytes (a Chinese character takes 2 or 3)" : PnNameProblem(copy);
     if (!why) return 1;

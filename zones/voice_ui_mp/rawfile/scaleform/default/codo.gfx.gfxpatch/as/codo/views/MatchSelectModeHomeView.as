@@ -1,6 +1,6 @@
 package codo.views
 {
-   // codol-classic's English MatchSelectModeHomeView (FFDec's decompile of its codo.gfx tag): the main screen's
+   // the classic build's English MatchSelectModeHomeView (FFDec's decompile of its codo.gfx tag): the main screen's
    // SURVIVAL and THEATRE buttons, built in code. k33: their captions are localize keys (K33UI_SURVIVAL, K33UI_THEATRE),
    // localized before they are set: a code-made text field given "@KEY" loses its embedded font when C1's translator
    // replaces the text, and shows boxes.

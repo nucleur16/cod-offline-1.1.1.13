@@ -22,6 +22,7 @@ Kernel33_controller.dll
 third_party/*
 !third_party/server_libs/
 !third_party/mingw32/
+!third_party/sh1x/
 
 # glyph generator cache
 __pycache__/

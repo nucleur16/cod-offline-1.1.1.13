@@ -1,2 +1,2 @@
-// The unpacked packer section from C1.exe (see make_exe.py), inflated by kernel33.c at startup.
+// The unpacked packer section of the 1.1.1.13 client, inflated by kernel33.c at startup.
 1 RCDATA "unpacked.z"

@@ -6,7 +6,7 @@ setlocal
 set "REPO=%~dp0"
 set "REPO=%REPO:~0,-1%"
 set "INSTALL=%~1"
-if "%INSTALL%"=="" set "INSTALL=D:\CoD\CODOL Builds\Call of Duty Online 1.1.1.13"
+if "%INSTALL%"=="" ( echo usage: build.bat "path\to\Call of Duty Online 1.1.1.13" & exit /b 1 )
 if "%MSYS2_ROOT%"=="" set "MSYS2_ROOT=C:\msys64"
 set "BASH=%MSYS2_ROOT%\usr\bin\bash.exe"
 

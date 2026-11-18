@@ -595,7 +595,7 @@ static DWORD WINAPI ConRconThread(LPVOID param)
     root[n] = 0;
     _snprintf(files[0], MAX_PATH, "%smain\\k33_rcon.txt", root);
     _snprintf(files[1], MAX_PATH, "%sp2p\\state\\native_server_rcon.txt", root);
-    _snprintf(files[2], MAX_PATH, "%sCODOL\\1.1.1.13_server\\alpha0022\\native_server_rcon.txt", root);
+    _snprintf(files[2], MAX_PATH, "%sp2p\\offline\\native_server_rcon.txt", root);
     int tried = 0, answered = 0;
     for (int i = 0; i < 3 && !answered; i++) {
         files[i][MAX_PATH - 1] = 0;
