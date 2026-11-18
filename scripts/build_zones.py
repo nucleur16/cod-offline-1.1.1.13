@@ -21,9 +21,9 @@ the build either way.
 
 Options:
   --maps ship|all  ship (default): only the maps shipping_maps.txt marks "ship"; all: every listed map.
-  --game DIR       the 1.1.1.13 install (default D:\CoD\CODOL Builds\Call of Duty Online 1.1.1.13): C1.exe holds the
-                   zone key and client_shipRetail\chinese the stock zones (the movies the .gfx patches apply to, the
-                   PaP zone's unchanged blobs). Read only.
+  --game DIR       the 1.1.1.13 install (default D:\CoD\CODOL Builds\Call of Duty Online 1.1.1.13): its
+                   client_shipRetail\chinese holds the stock zones (the movies the .gfx patches apply to, the PaP
+                   zone's unchanged blobs). Read only. No C1.exe is needed: the zone key is zonekit\c1_zone_key.der.
   --zz DIR         codol-classic-zz, for --verify / --decompile of the zones that came from it. Read only.
   --out DIR        output root (default output\, output_dev\ with --maps all); zones land in
                    <out>\client_shipRetail\{patch,chinese}, files\ is copied (sound_channels.txt filtered like the
@@ -289,7 +289,8 @@ def main(argv=None):
     ap.add_argument("zones", nargs="*", help="zone names (default: every zone_source/*.csv)")
     ap.add_argument("--game", default=os.environ.get("K33_GAME", DEFAULT_GAME))
     ap.add_argument("--zz", default=os.environ.get("K33_ZZ", DEFAULT_ZZ))
-    ap.add_argument("--exe", help="C1.exe of 1.1.1.13 (default: <game>\\C1.exe)")
+    ap.add_argument("--exe", help="C1.exe of 1.1.1.13, read only when zonekit/c1_zone_key.der is missing "
+                                  "(default: <game>\\C1.exe)")
     ap.add_argument("--out")
     ap.add_argument("--maps", default=os.environ.get("K33_MAPS", "ship"), choices=shipping.MODES)
     ap.add_argument("--list", action="store_true")

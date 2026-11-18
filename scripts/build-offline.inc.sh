@@ -8,12 +8,12 @@
 #
 #   OFFLINE_SKIP="dw_rooms.cpp dw_marketplace.cpp"   leave modules out (their dw_stubs.cpp
 #                                                    placeholders answer instead); tests only.
-BIN=${BIN:-/c/msys64/mingw32/bin}
-PATH="$BIN:$PATH"   # g++ loads cc1plus and its DLLs from its own folder
-export PATH
+. "$(dirname "${K33_OFFLINE_INC:-../scripts/build-offline.inc.sh}")/toolchain.inc.sh"
 OFFLINE_CXXFLAGS="-std=gnu++11 -O2 -Wall -Wextra -Wno-unused-parameter -fno-exceptions -fno-rtti -fno-threadsafe-statics -ffunction-sections -fdata-sections"
 K33_OFFLINE_SRC=${K33_OFFLINE_SRC:-offline}
 K33_OFFLINE_INC=${K33_OFFLINE_INC:-../scripts/build-offline.inc.sh}
+# zlib.h from third_party/mingw32 (scripts/toolchain.inc.sh), found from this file's own path
+OFFLINE_CXXFLAGS="$OFFLINE_CXXFLAGS -I$(dirname "$K33_OFFLINE_INC")/../third_party/mingw32/include"
 k33_offline_objects() {
     _dir=$1
     mkdir -p "$_dir"
@@ -37,7 +37,7 @@ k33_offline_objects() {
         _o="$_dir/$(basename "${_src%.cpp}").o"
         if [ ! -f "$_o" ] || [ "$_src" -nt "$_o" ] || [ "$_newest" -nt "$_o" ]; then
             echo "g++ $_src"
-            "$BIN/g++.exe" $OFFLINE_CXXFLAGS $_have -c "$_src" -o "$_o" || exit 1
+            "$CXX" $OFFLINE_CXXFLAGS $_have -c "$_src" -o "$_o" || exit 1
         fi
         OFFLINE_OBJS="$OFFLINE_OBJS $_o"
     done

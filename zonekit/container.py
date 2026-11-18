@@ -11,8 +11,8 @@ Two kinds exist in an install:
   IWff0100 (signed, the stock zones): 0x2000-byte blocks, each AES-CTR with its own IV, a signed header block and
       IV-table blocks every 257 blocks (alpha0022 zones/zone_assets.py, MEASURED there).
 
-The RSA key is the DER private key inside C1.exe at file offset 0x83C248 (1191 bytes). Nothing here carries it: every
-entry point takes the path of C1.exe.
+The RSA key is the DER private key inside C1.exe at file offset 0x83C248 (1191 bytes), kept in this folder as
+c1_zone_key.der so a build needs no C1.exe. The `exe` arguments are only read when that file is missing.
 """
 from __future__ import annotations
 
@@ -35,17 +35,25 @@ KEY_SHA = "3a2f7891ac98f1fdf6a9a221c5586725157df270d6831e0ff82c383cd262cbb5"
 _keys: dict = {}
 
 
-def rsa_key(exe: str):
+KEY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "c1_zone_key.der")
+
+
+def rsa_key(exe: str | None = None):
     from Crypto.PublicKey import RSA
-    exe = os.path.abspath(exe)
-    if exe not in _keys:
-        with open(exe, "rb") as f:
-            f.seek(KEY_OFF)
-            der = f.read(KEY_LEN)
+    if "" not in _keys:
+        if os.path.isfile(KEY_FILE):
+            src, der = KEY_FILE, open(KEY_FILE, "rb").read()
+        elif exe and os.path.isfile(exe):
+            src = exe
+            with open(exe, "rb") as f:
+                f.seek(KEY_OFF)
+                der = f.read(KEY_LEN)
+        else:
+            raise SystemExit("no zone key: %s is missing and no C1.exe of 1.1.1.13 was given" % KEY_FILE)
         if hashlib.sha256(der).hexdigest() != KEY_SHA:
-            raise SystemExit("%s: the zone key at %#x is not the 1.1.1.13 one (pass C1.exe of 1.1.1.13)" % (exe, KEY_OFF))
-        _keys[exe] = RSA.import_key(der)
-    return _keys[exe]
+            raise SystemExit("%s: not the 1.1.1.13 zone key" % src)
+        _keys[""] = RSA.import_key(der)
+    return _keys[""]
 
 
 def ctr(key: bytes, iv: bytes, data: bytes) -> bytes:

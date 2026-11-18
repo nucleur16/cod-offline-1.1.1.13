@@ -13,6 +13,7 @@ namespace {
 struct ApiHost : dw::Host {
     DwOfflineConfig cb;
     virtual void Log(const std::string &line) { if (cb.log) cb.log(line.c_str()); }
+    virtual int SurvivalSupported(const std::string &level) { return cb.survivalSupported ? cb.survivalSupported(level.c_str()) : -1; }
     virtual double Mono() { return GetTickCount64() / 1000.0; }
     virtual bool GetLocalRoute(uint64_t uid, dw::LocalRoute &out)
     {

@@ -38,8 +38,8 @@ typedef struct DwOfflineConfig {
     const char *state;        /* securitykey.bin, game_admissions.txt: shared with the embedded match host */
     const char *matchProfile; /* the match host's profilePath: mpdata_s.<uid>, match_report.json */
     const char *zoneDir;      /* the client's zone folder (map availability), or NULL */
-    const char *gameDir;      /* the game install: usermaps\<map>\, main\sh1x_rawfiles (Survival placements),
-                                 p2p\survival_maps.txt; or NULL */
+    const char *gameDir;      /* the game install: usermaps\<map>\, main\sh1x_rawfiles (Survival placements);
+                                 or NULL */
     int port;                 /* loopback TCP + UDP port of the lobby; 0 = a free port (the normal case) */
     int altPort;              /* alternate STUN port; 0 = a free port */
     int hostPort;             /* the embedded match host's UDP port */
@@ -57,6 +57,9 @@ typedef struct DwOfflineConfig {
      * -> 1 and the name in out (NUL-terminated), or 0 when there is none. Called on the lobby thread; it must
      * only copy data. */
     int (*displayName)(const char *profileName, char *out, int outSize);
+    /* Optional: whether the zones list `level` as a Survival map (dw::Host::SurvivalSupported): 1, 0, or -1 for
+     * unknown. Called on the lobby thread; it must only read the embedder's own copy. */
+    int (*survivalSupported)(const char *level);
 } DwOfflineConfig;
 
 /* Starts the listener thread and waits (at most 3 s) until it is bound.

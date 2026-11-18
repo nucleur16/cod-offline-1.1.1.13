@@ -6,25 +6,27 @@ server. Run the exe and play.
 
 ## Build
 
-You need:
+Windows or Linux. You need:
 
-- **MSYS2** at `C:\msys64` (or set `MSYS2_ROOT`). In its MINGW32 shell:
-  `pacman -S make mingw-w64-i686-gcc mingw-w64-i686-opus nasm`
-- **Python 3.10+** on PATH: `pip install pefile pycryptodome pillow`
-- **A 1.1.1.13 install that includes `C1.exe`**. It's read only: the build takes the zone key and stock zones from it.
+- **A 1.1.1.13 install**, read only: the build edits some of its stock zones and patches a copy of
+  `codoMP_client_shipRetail.exe`. `C1.exe` isn't needed.
+- **Python 3.10+** with `pip install pefile pycryptodome pillow`.
+- **A 32-bit MinGW compiler, make and nasm:**
+  - Windows: [MSYS2](https://www.msys2.org) at `C:\msys64` (or set `MSYS2_ROOT`), then in its shell
+    `pacman -S make nasm mingw-w64-i686-gcc`. Python must be the Windows one, on PATH.
+  - Linux (Debian/Ubuntu): `sudo apt install gcc-mingw-w64-i686 g++-mingw-w64-i686 make nasm git curl`.
 
-The match server's prebuilt crypto libraries (mbedtls, libtomcrypt) are included in `third_party\server_libs`.
+Everything else (Opus, zlib, the match server's crypto libraries, the zone key) is in the repository, and SDL2 is
+downloaded on the first build.
 
-Then run:
-
-```bat
+```sh
 git clone https://github.com/nucleur16/cod-offline-1.1.1.13
 cd cod-offline-1.1.1.13
-build.bat "D:\path\to\Call of Duty Online 1.1.1.13"
+build.bat "D:\path\to\Call of Duty Online 1.1.1.13"        # Windows
+sh build.sh "/path/to/Call of Duty Online 1.1.1.13"          # Linux
 ```
 
-`build.bat` builds the match server, `Kernel33.dll`, the patch zones and the patched exe, and puts them all in
-`dist\`:
+Both build the match server, `Kernel33.dll`, the patch zones and the patched exe into `dist`:
 
 ```
 dist\
@@ -32,10 +34,8 @@ dist\
   codoMP_client_shipRetail.exe        loads Kernel33.dll
   client_shipRetail\patch\*.ff        patch zones (menus, HUD, map lists, locale, ...)
   client_shipRetail\chinese\*.ff      zones that replace or add to stock ones
-  main\sh1x_rawfiles\                 the match server's scripts
-  main\sh1x_svr_scripts.iwd           bot classes and waypoints
+  main\sh1x_svr_scripts.iwd           the match server's scripts, bot classes and waypoints
   main\iw_image_16.iwd
-  p2p\survival_maps.txt               Survival maps the server can host
 ```
 
 ## Install (drag and drop)
@@ -44,6 +44,8 @@ dist\
 2. Drag it onto your 1.1.1.13 game folder, the one containing `codoMP_client_shipRetail.exe`.
 3. When Windows asks, choose **Replace the files in the destination**.
 4. Start `codoMP_client_shipRetail.exe`.
+
+From Linux: `cp -r dist/. "/path/to/Call of Duty Online 1.1.1.13/"`.
 
 A finished install only needs:
 
@@ -54,7 +56,8 @@ miles\  client_shipRetail\{chinese,patch,temp}\  main\
 ```
 
 The game creates `players\` (your profile and stats) and `p2p\offline\` on its own. You can delete `C1.exe`, `C1.dll`,
-`TenSLX*`, `BugTrace*`, the updater DLLs, `p2p\sh1x_host.dll` and old `.ini` files.
+`TenSLX*`, `BugTrace*`, the updater DLLs, `p2p\sh1x_host.dll`, `p2p\survival_maps.txt` and old `.ini` files. Delete an old
+`main\sh1x_rawfiles\` too unless you edit scripts: it overrides the scripts in `sh1x_svr_scripts.iwd` file by file.
 
 ## Play
 
@@ -71,5 +74,7 @@ The game creates `players\` (your profile and stats) and `p2p\offline\` on its o
 - `sh scripts/build.sh` builds only the DLL (it copies it to `..\Kernel33.dll` unless `K33_NO_COPY=1`).
 - `sh scripts/build-dev.sh` builds the diagnostic build, with a developer console and test hooks.
 - `python scripts/build_zones.py --help` lists the zone build's options.
-- The server's GSC lives in `scripts/gsc` (a subtree of CODOL-EMU/13-rawfiles); edit it there.
+- The server's GSC lives in `scripts/gsc` (a subtree of CODOL-EMU/13-rawfiles); edit it there. To try a change
+  without rebuilding, put just the changed files under `main\sh1x_rawfiles\` in the game folder: the host reads them
+  over the pack's copies.
 - For map making, see [sh1xo-radiant, branch codol-1.1.1.13](https://github.com/nucleur16/sh1xo-radiant/tree/codol-1.1.1.13).

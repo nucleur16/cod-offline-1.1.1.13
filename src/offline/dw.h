@@ -151,6 +151,10 @@ struct Host {
      * uses it wherever it would use the name in the client's session descriptor (LivePlayerName). Any thread
      * the server runs on: the embedder answers from its own copy and does not touch the game. */
     virtual std::string DisplayName(const std::string &profileName) { (void)profileName; return ""; }
+    /* Whether the game's zones list `level` as a Survival map (a coop_survival_<level> row of mp/comaplist.csv in
+     * usermaps_patch.ff): 1 yes, 0 no, -1 unknown (no embedder, or the table is not loaded yet; every level with its
+     * zone and placement script then counts). Any thread: the embedder answers from its own copy. */
+    virtual int SurvivalSupported(const std::string &level) { (void)level; return -1; }
 };
 
 struct Config {
@@ -164,7 +168,7 @@ struct Config {
     std::string state;       /* securitykey.bin, game_admissions.txt (shared with the match server) */
     std::string matchProfile;/* the match server's profilePath: mpdata_s.<uid>, match_report.json */
     std::string zoneDir;     /* the client's zone folder (map availability); may be empty */
-    std::string gameDir;     /* the game install (the folder holding client_shipRetail\, usermaps\, main\, p2p\);
+    std::string gameDir;     /* the game install (the folder holding client_shipRetail\, usermaps\, main\);
                               * empty = unknown: no usermaps, every supported Survival level counts as installed */
     std::string mmHostIp;
     int mmHostPort;
@@ -242,6 +246,7 @@ bool StunReply(const Config &cfg, const Bytes &data, Bytes &out, int &via, std::
 bool ReadFile(const std::string &path, Bytes &out);
 bool WriteFileAtomic(const std::string &path, const Bytes &data);
 bool FileExists(const std::string &path);
+bool DirExists(const std::string &path);
 int64_t FileMtime(const std::string &path);
 void MakeDirs(const std::string &path);
 bool RemoveFile(const std::string &path);

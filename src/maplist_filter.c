@@ -11,6 +11,10 @@
  * p2p_assets.c) and the row count shrinks; nothing is allocated. The table is looked up in C1's asset hash directly
  * (DB_FindXAssetHeader can block, p2p_assets.c), on the main thread, never while the database thread links a zone,
  * and again when the table changes (a language switch reloads the patch zones). K33_MAPLIST_ALL=1 turns it off.
+ *
+ * The same table names the supported Survival maps: a row coop_survival_<level> (usermaps_patch.ff carries one for
+ * each level with authored placements, zonekit/shipping.py). Each new table's list is copied here, whether or not
+ * the filter is on; K33SurvivalSupported answers the embedded host (p2p.c P2PCheck) and the lobby from that copy.
  */
 
 #define ML_DB_BUSY_VA       0x02007A60u
@@ -23,6 +27,41 @@
 static BYTE *g_mlTable;     /* the table filtered last, and the row count it was left with */
 static int g_mlRows = -1;
 static unsigned g_mlFrame;
+static BOOL g_mlFilterOn;
+static CRITICAL_SECTION g_mlLock;
+static char g_mlSurvival[64][64]; /* the coop_survival_<level> rows' levels; count -1 until a table was seen */
+static int g_mlSurvivalCount = -1;
+
+/* 1 when the zones list `level` as a Survival map, 0 when not, -1 before mp/comaplist.csv is loaded. Any thread. */
+static int K33SurvivalSupported(const char *level)
+{
+    int r;
+    EnterCriticalSection(&g_mlLock);
+    r = g_mlSurvivalCount < 0 ? -1 : 0;
+    for (int i = 0; level && i < g_mlSurvivalCount && r != 1; i++)
+        if (!_stricmp(g_mlSurvival[i], level)) r = 1;
+    LeaveCriticalSection(&g_mlLock);
+    return r;
+}
+
+static void MlReadSurvival(const BYTE *t)
+{
+    int cols = *(const int *)(t + 4), rows = *(const int *)(t + 8);
+    const BYTE *cells = *(const BYTE *const *)(t + 12);
+    if (cols <= ML_MAP_COLUMN || cols > 256 || rows <= 0 || rows > 4096 || !Readable(cells, (SIZE_T)cols * 8 * rows)) return;
+    char found[64][64];
+    int n = 0;
+    for (int r = 0; r < rows && n < 64; r++) {
+        const char *level = *(const char *const *)(cells + (SIZE_T)cols * 8 * r + 8 * ML_MAP_COLUMN);
+        if (!level || !Readable(level, 1) || _strnicmp(level, "coop_survival_", 14) || strlen(level + 14) >= 64) continue;
+        lstrcpynA(found[n++], level + 14, 64);
+    }
+    EnterCriticalSection(&g_mlLock);
+    memcpy(g_mlSurvival, found, sizeof(found));
+    g_mlSurvivalCount = n;
+    LeaveCriticalSection(&g_mlLock);
+    Log("maplist: %d Survival maps in mp/comaplist.csv", n);
+}
 
 static BOOL MlNameEq(const char *a, const char *b)
 {
@@ -136,15 +175,16 @@ static void MapListTick(void)
     BYTE *t = MlFindTable("mp/comaplist.csv");
     if (!t || !Readable(t, 16)) return;
     if (t == g_mlTable && *(const int *)(t + 8) == g_mlRows) return;
-    MlFilter(t);
+    MlReadSurvival(t); /* before the filter drops rows of maps that are not installed */
+    if (g_mlFilterOn) MlFilter(t);
+    else g_mlTable = t, g_mlRows = *(const int *)(t + 8);
 }
 
 static void InstallMapListFilter(void)
 {
     char v[8];
-    if (GetEnvironmentVariableA("K33_MAPLIST_ALL", v, sizeof(v)) && v[0] == '1') {
-        Log("maplist: K33_MAPLIST_ALL=1, every map stays listed");
-        return;
-    }
-    if (!K33OnMainTick(MapListTick)) Log("maplist: no main-thread tick left; every map stays listed");
+    InitializeCriticalSection(&g_mlLock);
+    g_mlFilterOn = !(GetEnvironmentVariableA("K33_MAPLIST_ALL", v, sizeof(v)) && v[0] == '1');
+    if (!g_mlFilterOn) Log("maplist: K33_MAPLIST_ALL=1, every map stays listed");
+    if (!K33OnMainTick(MapListTick)) Log("maplist: no main-thread tick left; every map stays listed, no Survival map is known");
 }
