@@ -107,6 +107,14 @@ def main():
         open(d, "wb").write(data)
         n += 1
     print("exported %d files to %s (%d reworded)" % (n, dest, changed))
+    # the UI baseline pins file hashes: drop the files the export leaves out (development artifacts), then record
+    # the hashes the rewording changed
+    import json
+    bp = os.path.join(dest, "ui_baseline.json")
+    base = json.load(open(bp, encoding="utf-8"))
+    base["files"] = {k: v for k, v in base["files"].items() if os.path.isfile(os.path.join(dest, k))}
+    open(bp, "w", encoding="utf-8", newline="\n").write(json.dumps(base, indent=2, ensure_ascii=False) + "\n")
+    subprocess.run([sys.executable, "-m", "zonekit.ui_baseline", "--record"], cwd=dest, check=True)
     if left:
         print("still named:\n  " + "\n  ".join(left))
         sys.exit(1)

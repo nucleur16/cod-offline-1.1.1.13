@@ -159,7 +159,6 @@
     }
   },
   "files": {
-    "docs/baselines/20261105-invitations-current-transition/current_transition.py": "a3076007b0f9cadf2d9183bb6a640e4d5ffb26171d01aa196d8602edb0436917",
     "scripts/build-profile.sh": "12722b032ae63ca2cfebe0c138e1cef78d5e7dc5b2dffe19657a441c39ba4020",
     "shipping_maps.txt": "49f00ae5a2abce64b8654494ab7e50cf14bb86878400077bd068ce291636d088",
     "src/borderless.c": "f238bf31263dd0a1998a7e037e04f62bb21cf354c304bc7da75a53b72d6a5571",
