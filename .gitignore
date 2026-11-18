@@ -62,3 +62,8 @@ tests/party_session_refresh_guard_fixture_O2
 /production-parity-evidence/
 obj_offline*/
 tests/offline/dwtest.exe
+
+# not published from this repo (kept locally)
+/docs/
+/obj/quit_trace/
+/Kernel33.dll
