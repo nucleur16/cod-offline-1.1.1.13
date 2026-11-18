@@ -246,6 +246,7 @@ bool StunReply(const Config &cfg, const Bytes &data, Bytes &out, int &via, std::
 bool ReadFile(const std::string &path, Bytes &out);
 bool WriteFileAtomic(const std::string &path, const Bytes &data);
 bool FileExists(const std::string &path);
+bool DirExists(const std::string &path);
 int64_t FileMtime(const std::string &path);
 void MakeDirs(const std::string &path);
 bool RemoveFile(const std::string &path);

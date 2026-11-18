@@ -44,6 +44,12 @@ bool FileExists(const std::string &path)
     return stat(path.c_str(), &st) == 0 && (st.st_mode & S_IFREG);
 }
 
+bool DirExists(const std::string &path)
+{
+    struct stat st;
+    return stat(path.c_str(), &st) == 0 && (st.st_mode & S_IFDIR);
+}
+
 int64_t FileMtime(const std::string &path)
 {
     struct stat st;

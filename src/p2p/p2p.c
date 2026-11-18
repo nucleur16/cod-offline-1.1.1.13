@@ -168,8 +168,9 @@ static void P2PDefaults(P2PConfig *c)
     _snprintf(c->exe, MAX_PATH, "%s\\k33p2p_dedrun.exe", c->dir);
     _snprintf(c->home, MAX_PATH, "%s\\home", c->dir);
     /* dll stays empty: the server inside Kernel33.dll (p2p_embedded.c); dll= in p2p_host.ini names a DLL file. */
-    /* The GSC tree installed with the client (main\sh1x_rawfiles, docs/P2P_HOSTING.md). */
-    _snprintf(c->scripts, MAX_PATH, "%s\\main\\sh1x_rawfiles", root);
+    /* The GSC: scripts/ inside main\sh1x_svr_scripts.iwd (the server's "fs:" script root, script_source.c), which
+     * is how an install ships it. A loose main\sh1x_rawfiles tree goes over it (P2PScriptOverlay). */
+    lstrcpyA(c->scripts, "fs:scripts");
     lstrcpyA(c->mode, "inprocess");
     _snprintf(c->state, MAX_PATH, "%s\\state", c->dir);
     _snprintf(c->profile, MAX_PATH, "%s\\resources", c->dir);
@@ -549,6 +550,15 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
     relayArg[sizeof(relayArg)-1] = 0;
     char keysArg[MAX_PATH + 64];
     P2PClientKeysArg(&c, keysArg, sizeof(keysArg));
+    /* scriptOverlay and scriptNativeOverlay are read before scriptPath (script_source.c): a loose
+     * main\sh1x_rawfiles tree (a script or map developer's; sh1xo-radiant's map_install writes there) overrides
+     * single files of the pack's GSC, and needs to hold only those. */
+    char overlay[MAX_PATH];
+    _snprintf(overlay, sizeof(overlay), "%s\\main\\sh1x_rawfiles", c.basepath);
+    overlay[sizeof(overlay) - 1] = 0;
+    DWORD tree = GetFileAttributesA(overlay);
+    if (tree == INVALID_FILE_ATTRIBUTES || !(tree & FILE_ATTRIBUTE_DIRECTORY) || !P2PPathOk(overlay))
+        lstrcpynA(overlay, c.scripts, sizeof(overlay));
     _snprintf(cmd, sizeof(cmd),
         "\"%s\" +set dedicated 2 +set fs_basepath \"%s\" +set fs_homepath \"%s\" +set net_ip %s +set net_port %d "
         "+set rcon_password \"%s\" +set logfile 2 +set logrcon 1 +set developer %d +set sv_fps 60 "
@@ -557,7 +567,7 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
         "+set admissionRequired %d %s %s +set profilePath \"%s\" +set sv_zoneType %s +set sv_sessionMap %s "
         "+set g_gametype %s +set hostParentPid %lu %s "
         "+scriptPath +scriptOverlay +scriptNativeOverlay +map %s %s",
-        c.exe, c.basepath, c.home, c.netIp, c.port, password, c.developer, c.scripts, c.scripts, c.scripts,
+        c.exe, c.basepath, c.home, c.netIp, c.port, password, c.developer, c.scripts, overlay, overlay,
         c.state, c.state, c.admission ? 1 : 0, relayArg, keysArg, c.profile, c.zoneType, c.sessionMap[0] ? c.sessionMap : c.map,
         c.gametype, inproc ? 0ul : GetCurrentProcessId(), pmem, c.map, c.extra);
     cmd[sizeof(cmd) - 1] = 0;

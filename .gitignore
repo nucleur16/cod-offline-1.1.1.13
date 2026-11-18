@@ -21,6 +21,7 @@ Kernel33_noconsole.dll
 Kernel33_controller.dll
 third_party/*
 !third_party/server_libs/
+!third_party/mingw32/
 
 # glyph generator cache
 __pycache__/

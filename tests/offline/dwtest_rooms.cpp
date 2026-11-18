@@ -458,7 +458,30 @@ void SelectionChecks(const dw::Config &base, const std::string &scratch)
         {
             Pick p(cfg, &host);
             std::vector<std::string> levels = dw::HandoffSurvivalLevels(p.server);
-            Check(levels.size() == 1 && levels[0] == "mp_seatown", T, "the zones' Survival rows (mp/comaplist.csv) narrow the levels to what the host accepts");
+            Check(levels.size() == 2 && levels[0] == "mp_seatown" && levels[1] == "mp_highrise", T,
+                  "the zones' Survival rows (mp/comaplist.csv) decide, not the loose tree (an overlay over the pack's GSC)");
+        }
+        host.survival.clear();
+    }
+    {   /* a shipped install: the GSC is only in sh1x_svr_scripts.iwd, so the zones' Survival rows decide */
+        dw::Config cfg = base;
+        cfg.gameDir = dw::PathJoin(scratch, "game_packed");
+        const std::string zones = dw::PathJoin(dw::PathJoin(cfg.gameDir, "client_shipRetail"), "chinese");
+        cfg.zoneDir = zones;
+        dw::MakeDirs(zones);
+        Touch(dw::PathJoin(zones, "mp_rust.ff"));
+        Touch(dw::PathJoin(zones, "mp_seatown.ff"));
+        Touch(dw::PathJoin(zones, "mp_cross_fire.ff"));
+        {
+            Pick p(cfg, &host);
+            Check(dw::HandoffSurvivalLevels(p.server).empty(), T, "no loose tree and no zone answer yet: no Survival level");
+        }
+        host.survival = "mp_seatown mp_highrise";
+        {
+            Pick p(cfg, &host);
+            std::vector<std::string> levels = dw::HandoffSurvivalLevels(p.server);
+            Check(levels.size() == 1 && levels[0] == "mp_seatown", T,
+                  "no loose tree: a level the zones list and whose zone is installed hosts Survival");
         }
         host.survival.clear();
     }

@@ -295,9 +295,12 @@ bool HandoffZoneInstalled(Server &s, const std::string &name)
 }
 
 /* map_handoff.available_survival_levels. With no game install known (the standalone lobby, the
- * differential tests) every supported level counts. Otherwise a level needs its MP zone and placement script,
- * and, when the embedder knows it, a coop_survival_<level> row in the game's mp/comaplist.csv (usermaps_patch.ff;
- * Host::SurvivalSupported) - the same list p2p.c P2PCheck holds the embedded host to. */
+ * differential tests) every supported level counts. Otherwise a level needs its MP zone, and:
+ *   - when the embedder knows the game's zones (Host::SurvivalSupported), a coop_survival_<level> row in
+ *     mp/comaplist.csv (usermaps_patch.ff carries one per level with placements; the scripts themselves are in
+ *     main/sh1x_svr_scripts.iwd), the same list p2p.c P2PCheck holds the embedded host to;
+ *   - when it does not (no embedder, or the table is not loaded yet), the gametype and placement scripts in a loose
+ *     main/sh1x_rawfiles tree. */
 std::vector<std::string> HandoffSurvivalLevels(Server &s)
 {
     std::vector<std::string> out;
@@ -306,16 +309,16 @@ std::vector<std::string> HandoffSurvivalLevels(Server &s)
         out.assign(kSurvivalLevels, kSurvivalLevels + n);
         return out;
     }
-    std::string scripts = PathJoin(PathJoin(s.cfg.gameDir, "main"), "sh1x_rawfiles");
-    std::string mp = PathJoin(PathJoin(scripts, "maps"), "mp");
-    if (!FileExists(PathJoin(PathJoin(mp, "gametypes"), "survival.gsc"))) return out;
+    std::string mp = PathJoin(PathJoin(PathJoin(PathJoin(s.cfg.gameDir, "main"), "sh1x_rawfiles"), "maps"), "mp");
+    const bool gametype = FileExists(PathJoin(PathJoin(mp, "gametypes"), "survival.gsc"));
     for (size_t i = 0; i < n; i++) {
         std::string level = kSurvivalLevels[i];
-        if (!FileExists(PathJoin(PathJoin(mp, "survival"), level + ".gsc"))) continue;
+        int listed = !s.cfg.differential && s.host ? s.host->SurvivalSupported(level) : -1;
+        if (listed == 0) continue;
+        if (listed < 0 && !(gametype && FileExists(PathJoin(PathJoin(mp, "survival"), level + ".gsc")))) continue;
         if (!FileExists(PathJoin(PathJoin(PathJoin(s.cfg.gameDir, "client_shipRetail"), "chinese"), level + ".ff")) &&
             !FileExists(PathJoin(PathJoin(PathJoin(s.cfg.gameDir, "usermaps"), level), level + ".ff")))
             continue;
-        if (!s.cfg.differential && s.host && s.host->SurvivalSupported(level) == 0) continue;
         out.push_back(level);
     }
     return out;

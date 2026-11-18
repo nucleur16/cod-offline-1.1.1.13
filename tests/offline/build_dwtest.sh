@@ -9,6 +9,6 @@ K33_OFFLINE_SRC=src/offline
 K33_OFFLINE_INC=scripts/build-offline.inc.sh
 . ./scripts/build-offline.inc.sh
 k33_offline_objects "${DWTEST_OBJ:-obj_offline_test}"
-"$BIN/g++.exe" $OFFLINE_CXXFLAGS $_have -o "${DWTEST_OUT:-tests/offline/dwtest.exe}" tests/offline/dwtest_main.cpp tests/offline/dwtest_store.cpp tests/offline/dwtest_rooms.cpp tests/offline/dwtest_market.cpp tests/offline/dwtest_career.cpp $OFFLINE_OBJS \
+"$CXX" $OFFLINE_CXXFLAGS $_have -o "${DWTEST_OUT:-tests/offline/dwtest.exe}" tests/offline/dwtest_main.cpp tests/offline/dwtest_store.cpp tests/offline/dwtest_rooms.cpp tests/offline/dwtest_market.cpp tests/offline/dwtest_career.cpp $OFFLINE_OBJS \
     -static -static-libgcc -static-libstdc++ -lz -lws2_32
 echo "built ${DWTEST_OUT:-tests/offline/dwtest.exe}"
