@@ -891,12 +891,14 @@ static void P2PMatchOverTick(void)
     if (g_p2pHasRoom && g_p2pEnabled) P2PArmLaunch(g_p2pIntentConfig.port);
     else P2PDisarm();
 }
+static void P2PDevmapTick(void);
 static void P2PLobbyTick(void)
 {
     static char previous[1024];
     char snapshot[1024], error[256], number[24]; int state;
     if (!g_p2pInit) return;
     if(!C1DvarsReady())return;
+    P2PDevmapTick();
     if(g_p2pLaunchPending) {
         P2PConfig selected=g_p2pPendingConfig;g_p2pLaunchPending=FALSE;
         if(InterlockedCompareExchange(&g_p2pStop,0,0) || !P2PStartConfigured(NULL,NULL,NULL,&selected))
@@ -1179,6 +1181,259 @@ static void __cdecl P2PCmdStatus(void)
     LeaveCriticalSection(&g_p2pLock);
 }
 
+/* ---- devmap / map ----------------------------------------------------------------------------
+ * IW3/IW4's "map <level>" / "devmap <level>" (SV_Map_f) spawn a listen server in the game process and the client
+ * joins it on loopback; devmap also sets sv_cheats 1. This client's listen server is the embedded sh1x host, and
+ * C1 joins a server only through the lobby's START_GAME (it registers the session's security key for the host
+ * address; a bare "connect" is refused). So the commands take the path C1's own front end takes, IW4's
+ * xstartprivateparty + xpartygo:
+ *   1. not in a room: C1's own "room.create" (a private room and its session: createSession, security key,
+ *      admission), as the Create Game button does;
+ *   2. the room's selection: the level, as the room UI's map pick (p2p_room's room context, which the lobby's
+ *      LocalhostSelection takes over every other source) and C1's "room.changemap" for the room card;
+ *   3. Ready, through the native SetReadyState the Ready button calls (0x6AEFF0): the lobby resolves the
+ *      selection, the host starts, START_GAME goes out and C1 joins 127.0.0.1;
+ *   4. devmap only: once the host answers, cheats on (devServer 1 + dev_cheats on, console_server.c
+ *      ConSvCheatsOn), so that match records no progression. map leaves them off.
+ * In a match on this client's own host, the commands change the level there instead (the server's own map /
+ * devmap over rcon, as SV_Map_f): same category only; another category goes back through a room. */
+enum { DM_IDLE, DM_CREATE, DM_SELECT, DM_READY, DM_WAIT };
+static struct {
+    int step;
+    BOOL cheats;
+    P2PRoomContext room;
+    DWORD since, started, inRoomAt;
+    BOOL sentCreate;
+} g_dm;
+
+#define DM_CONN_STATE_VA 0x016FC2E8u /* clientUIActive connection state: >= 5 is connected (console.c ConConnected) */
+static BOOL P2PDmConnected(void)
+{
+    const volatile int *state = (const volatile int *)(DWORD_PTR)DM_CONN_STATE_VA;
+    return Readable((const void *)state, 4) && *state >= 5;
+}
+
+/* The Ready button's native callback, AS_SetReadyState::Call: it reads a bool from args[0]+8. */
+static BOOL P2PDmPressReady(void)
+{
+    static const BYTE kReady[] = { 0x55, 0x8B, 0xEC, 0xB8, 0x01, 0x00, 0x00, 0x00, 0x84, 0x05, 0xA8, 0xB0, 0x2E, 0x08 };
+    const void *fn = (const void *)(DWORD_PTR)0x006AEFF0u;
+    if (!Readable(fn, sizeof(kReady)) || memcmp(fn, kReady, sizeof(kReady))) return FALSE;
+    static double args[2];
+    static DWORD params[8];
+    memset(args, 0, sizeof(args));
+    memset(params, 0, sizeof(params));
+    ((BYTE *)args)[4] = 2; /* bool */
+    ((BYTE *)args)[8] = 1;
+    params[4] = (DWORD)(DWORD_PTR)args;
+    params[5] = 1;
+    typedef void(__attribute__((thiscall)) * CallFn)(void *, void *);
+    ((CallFn)(DWORD_PTR)0x006AEFF0u)(NULL, params);
+    return TRUE;
+}
+
+/* Cheats on the host of this run (rcon, off the main thread). */
+typedef struct { int port; char password[65]; } P2PDmCheatsJob;
+static DWORD WINAPI P2PDmCheatsThread(LPVOID arg)
+{
+    P2PDmCheatsJob *job = (P2PDmCheatsJob *)arg;
+    char reply[1024];
+    P2PRcon(job->port, job->password, "devServer 1", reply, sizeof(reply), 1500);
+    int got = P2PRcon(job->port, job->password, "dev_cheats on", reply, sizeof(reply), 4000);
+    Log("p2p: devmap: cheats %s", got > 0 ? "switched on" : "not switched on (no rcon reply)");
+    (void)got;
+    free(job);
+    return 0;
+}
+/* One rcon command to this run's host, off the main thread. */
+typedef struct { int port; char password[65]; char command[160]; } P2PDmRconJob;
+static DWORD WINAPI P2PDmRconThread(LPVOID arg)
+{
+    P2PDmRconJob *job = (P2PDmRconJob *)arg;
+    char reply[1024];
+    /* one rcon datagram runs one command (SVC_RemoteCommand -> Cmd_ExecuteSingleCommand): ';' separates them here */
+    for (char *cmd = job->command, *next; cmd && *cmd; cmd = next) {
+        next = strchr(cmd, ';');
+        if (next) *next++ = 0;
+        while (*cmd == ' ') cmd++;
+        if (!*cmd) continue;
+        int got = P2PRcon(job->port, job->password, cmd, reply, sizeof(reply), 4000);
+        Log("p2p: rcon \"%s\": %s", cmd, got > 0 ? "sent to the host" : "no rcon reply");
+        (void)got;
+    }
+    free(job);
+    return 0;
+}
+static BOOL P2PDmHostRcon(LPTHREAD_START_ROUTINE fn, void *job, int *port, char password[65])
+{
+    P2PConfig c;
+    EnterCriticalSection(&g_p2pLock);
+    c = g_p2p.cfg;
+    LeaveCriticalSection(&g_p2pLock);
+    if (!c.port) c = g_p2pIntentConfig;
+    if (!c.rconFile[0]) _snprintf(c.rconFile, MAX_PATH, "%s\\native_server_rcon.txt", c.state);
+    c.rconFile[MAX_PATH - 1] = 0;
+    *port = c.port;
+    if (!P2PRconPassword(c.rconFile, password)) { free(job); return FALSE; }
+    HANDLE t = CreateThread(NULL, 0, fn, job, 0, NULL);
+    if (!t) { free(job); return FALSE; }
+    CloseHandle(t);
+    return TRUE;
+}
+
+/* Main thread: the room context the room UI would publish for this selection (p2p_room). */
+static void P2PDmApplyRoom(void)
+{
+    g_p2pRoom = g_dm.room; g_p2pHasRoom = TRUE; g_p2pEnabled = TRUE; g_p2pLobbyError[0] = 0;
+    if (!g_p2pIntentUid) g_p2pIntentUid = P2PLocalUid();
+    P2PArmLegacyRoom();
+}
+static BOOL P2PDmRoomIsOurs(void)
+{
+    return g_p2pHasRoom && P2PRoomSame(&g_p2pRoom, &g_dm.room);
+}
+
+/* Main thread, every frame (P2PLobbyTick). */
+static void P2PDevmapTick(void)
+{
+    if (g_dm.step == DM_IDLE) return;
+    DWORD now = GetTickCount();
+    if (now - g_dm.started > 180000u) {
+        C1Printf("devmap: %s did not start in time\n", g_dm.room.session);
+        Log("p2p: devmap: gave up at step %d", g_dm.step);
+        g_dm.step = DM_IDLE;
+        return;
+    }
+    DWORD low, high;
+    BOOL inRoom = QuickRoomSample(&low, &high);
+    switch (g_dm.step) {
+    case DM_CREATE:
+        if (!inRoom) {
+            g_dm.inRoomAt = 0;
+            if (!g_dm.sentCreate) { g_dm.sentCreate = TRUE; C1CbufAddText("room.create\n"); Log("p2p: devmap: room.create"); }
+            else if (now - g_dm.since > 20000u) {
+                C1Printf("devmap: no room could be created (is the lobby connected?)\n");
+                g_dm.step = DM_IDLE;
+            }
+            return;
+        }
+        /* the room's createSession arms the room's own default selection: let that land first */
+        if (!g_dm.inRoomAt) g_dm.inRoomAt = now ? now : 1;
+        if (now - g_dm.inRoomAt < 1500u) return;
+        g_dm.step = DM_SELECT; g_dm.since = now;
+        /* fall through */
+    case DM_SELECT: {
+        P2PDmApplyRoom();
+        if (g_p2pLobbyError[0]) {
+            C1Printf("devmap: %s\n", g_p2pLobbyError);
+            g_dm.step = DM_IDLE;
+            return;
+        }
+        char line[128];
+        _snprintf(line, sizeof(line), "room.changemap %s\n", g_dm.room.session);
+        line[sizeof(line) - 1] = 0;
+        C1CbufAddText(line);
+        g_dm.step = DM_READY; g_dm.since = now;
+        return;
+    }
+    case DM_READY:
+        /* the room card and the session update settle; the lobby may re-arm the room meanwhile */
+        if (now - g_dm.since < 1500u) return;
+        if (!inRoom) { C1Printf("devmap: the room was left\n"); g_dm.step = DM_IDLE; return; }
+        if (!P2PDmRoomIsOurs()) { P2PDmApplyRoom(); g_dm.since = now; return; }
+        if (!P2PDmPressReady()) {
+            C1Printf("devmap: the Ready call is not the one this build knows; press Ready in the room\n");
+            g_dm.step = g_dm.cheats ? DM_WAIT : DM_IDLE;
+            g_dm.since = now;
+            return;
+        }
+        Log("p2p: devmap: Ready pressed for %s %s (%s)", g_dm.room.session, g_dm.room.gametype, g_dm.room.category);
+        g_dm.step = g_dm.cheats ? DM_WAIT : DM_IDLE;
+        g_dm.since = now;
+        return;
+    case DM_WAIT: {
+        EnterCriticalSection(&g_p2pLock);
+        int state = g_p2p.state;
+        LeaveCriticalSection(&g_p2pLock);
+        if (state == P2P_FAILED) { g_dm.step = DM_IDLE; return; }
+        if (state != P2P_READY || !g_p2pLaunched) return;
+        g_dm.step = DM_IDLE;
+        P2PDmCheatsJob *job = (P2PDmCheatsJob *)calloc(1, sizeof(*job));
+        if (job) P2PDmHostRcon(P2PDmCheatsThread, job, &job->port, job->password);
+        return;
+    }
+    }
+}
+
+static void P2PDmStart(BOOL cheats)
+{
+    const char *verb = cheats ? "devmap" : "map";
+    const char *map = VoiceArgc() > 1 ? VoiceArgv(1) : "";
+    const char *gt = VoiceArgc() > 2 ? VoiceArgv(2) : "";
+    const char *args[3], *bad;
+    P2PRoomContext room;
+    if (!map[0]) {
+        C1Printf("%s <level> [gametype]: host <level> on this PC and join it%s (gametype: war for mp_ levels, zm for zm_,"
+                 " coop for coop_)\n", verb, cheats ? " with cheats on" : "");
+        return;
+    }
+    const char *category = !strncmp(map, "zm_", 3) ? "zm" : !strncmp(map, "coop_", 5) ? "coop" : "mp";
+    if (!gt[0]) gt = !strcmp(category, "mp") ? "war" : category;
+    if (!strcmp(gt, "survival")) category = "survival";
+    args[0] = map; args[1] = gt; args[2] = category;
+    bad = P2PParseRoomContext(3, args, &room);
+    if (!bad && !P2PAutoMode()) bad = "local hosting is not available in this session";
+    if (bad) { C1Printf("%s: %s\n", verb, bad); return; }
+
+    if (P2PDmConnected()) {
+        /* In a match: SV_Map_f on the server this client hosts, when it hosts one and the category stays. */
+        EnterCriticalSection(&g_p2pLock);
+        BOOL hosting = g_p2p.state == P2P_READY;
+        char zone[16];
+        lstrcpynA(zone, g_p2p.cfg.zoneType, sizeof(zone));
+        LeaveCriticalSection(&g_p2pLock);
+        if (!hosting) { C1Printf("%s: this match is not hosted on this PC; leave it first\n", verb); return; }
+        if (strcmp(zone, room.category)) {
+            C1Printf("%s: %s is a %s level and this match is %s; leave the match and run %s again\n", verb, room.session, room.category, zone, verb);
+            return;
+        }
+        P2PDmRconJob *job = (P2PDmRconJob *)calloc(1, sizeof(*job));
+        if (!job) return;
+        _snprintf(job->command, sizeof(job->command), "g_gametype %s; %s %s", room.gametype, verb, room.map);
+        job->command[sizeof(job->command) - 1] = 0;
+        if (P2PDmHostRcon(P2PDmRconThread, job, &job->port, job->password))
+            C1Printf("%s: changing the level to %s (%s)\n", verb, room.map, room.gametype);
+        else C1Printf("%s: the host's rcon password is missing\n", verb);
+        return;
+    }
+
+    memset(&g_dm, 0, sizeof(g_dm));
+    g_dm.room = room; g_dm.cheats = cheats;
+    g_dm.started = g_dm.since = GetTickCount();
+    g_dm.step = DM_CREATE;
+    Log("p2p: %s %s %s (%s): starting", verb, room.session, room.gametype, room.category);
+    C1Printf("%s: hosting %s (%s) on this PC and joining it\n", verb, room.session, room.gametype);
+    P2PDevmapTick();
+}
+static void __cdecl P2PCmdDevmap(void) { P2PDmStart(TRUE); }
+static void __cdecl P2PCmdMap(void) { P2PDmStart(FALSE); }
+
+/* A command C1 already has is taken over in place (C1 has neither here; added otherwise). */
+static C1Cmd g_p2pDmCmds[] = { { NULL, "devmap", (void *)P2PCmdDevmap }, { NULL, "map", (void *)P2PCmdMap } };
+static void P2PInstallDevmap(void)
+{
+    for (unsigned i = 0; i < sizeof(g_p2pDmCmds) / sizeof(g_p2pDmCmds[0]); i++) {
+        BOOL replaced = FALSE;
+        for (C1Cmd *c = C1CommandList(); c && Readable(c, sizeof(*c)); c = c->next)
+            if (c->name && Readable(c->name, 1) && !_stricmp(c->name, g_p2pDmCmds[i].name)) {
+                c->fn = g_p2pDmCmds[i].fn; replaced = TRUE; break;
+            }
+        BOOL added = replaced || C1AddCommand(&g_p2pDmCmds[i]);
+        Log("p2p: %s: %s", g_p2pDmCmds[i].name, replaced ? "C1's command taken over" : added ? "added" : "NOT added");
+        (void)added;
+    }
+}
+
 static C1Cmd g_p2pCmds[] = {
     { NULL, "p2p_room", (void *)P2PCmdRoom },
     { NULL, "p2p_localhost", (void *)P2PCmdLocalhost },
@@ -1200,6 +1455,7 @@ static void InstallP2PHost(void)
     K33OnMainTick(P2PLobbyTick);
     int added = 0;
     for (unsigned i = 0; i < sizeof(g_p2pCmds) / sizeof(g_p2pCmds[0]); i++) added += C1AddCommand(&g_p2pCmds[i]);
+    P2PInstallDevmap();
     const char *cl = GetCommandLineA();
     BOOL autostart = cl && (strstr(cl, "sv_p2pHost 1") || strstr(cl, "sv_p2pHost \"1\""));
     Log("p2p: %d commands (p2phost, p2pstop, p2pstatus)%s", added, autostart ? "; hosting at startup (sv_p2pHost 1)" : "");
