@@ -67,3 +67,4 @@ tests/offline/dwtest.exe
 /docs/
 /obj/quit_trace/
 /Kernel33.dll
+/dist/
