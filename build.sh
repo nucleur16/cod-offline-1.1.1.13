@@ -22,12 +22,10 @@ DIST=$ROOT/dist
 rm -rf "$DIST"
 mkdir -p "$DIST/main"
 
-echo "=== 1/4 match server (server/sh1x) and its pack"
-K33_P2P_STAGE="$DIST" sh scripts/build-server.sh
+echo "=== 1/4 match server pack"
 # The GSC ships inside the pack (scripts/), which the host reads through its "fs:scripts" root (src/p2p/p2p.c);
-# the loose main/sh1x_rawfiles copy is for script and map developers only.
-mv "$DIST/p2p/home/main/sh1x_svr_scripts.iwd" "$DIST/main/"
-rm -rf "$DIST/p2p" "$DIST/main/sh1x_rawfiles"
+# a loose main/sh1x_rawfiles folder in an install overrides single files of it.
+$PYTHON scripts/stage_server_data.py --out "$DIST/main"
 
 echo "=== 2/4 Kernel33.dll"
 K33_NO_COPY=1 sh scripts/build.sh

@@ -1,6 +1,6 @@
 /*
- * Kernel33.dll - runs the packed codoMP_client_shipRetail.exe (1.1.1.13) the way C1.exe runs,
- * with TenProtect never executing a single instruction.
+ * Kernel33.dll - runs the packed codoMP_client_shipRetail.exe (1.1.1.13) with TenProtect never executing a
+ * single instruction.
  *
  * How the packed exe starts, measured with this DLL:
  *   1. The packer stub (VMProtect) maps an embedded TenProtect module ("TenPlat", 0x261000
@@ -11,19 +11,18 @@
  *      decompresses the game code into the packer section (VA 0x08849000-0x09A10000), fills
  *      the game's imports and jumps to the game entry (RVA 0x6DFAFA from the param block).
  *
- * C1.exe is that process dumped at the game entry, plus C1.dll which fills the imports. This DLL
- * reproduces the dump instead of letting TenPlat run:
+ * This DLL brings the process to the game entry itself instead of letting TenPlat run:
  *   - TenPlat's allocation is kept non-executable, so every jump into it faults (DEP);
  *   - DllMain gets TRUE back without running;
- *   - the start routine is replaced by TakeOver(): inflate C1.exe's copy of the decompressed
- *     range (embedded in this DLL as a resource by build.sh from make_exe.py's unpacked.z), fill the 424 import slots C1.dll
- *     fills (c1_tables.h), patch the render gate, and call the game entry.
+ *   - the start routine is replaced by TakeOver(): inflate the decompressed range (embedded in this DLL as a
+ *     resource, src/unpacked.z), fill the 424 import slots (c1_tables.h), patch the render gate, and call the game
+ *     entry.
  *
- * Render gate: C1.exe carries a one-byte patch in CG_DrawActiveFrame,
+ * Render gate: a one-byte patch in CG_DrawActiveFrame,
  *        test byte [eax+3368h], 0Ah ; jnz <skip all rendering>   (0x0A -> 0x00 @ 0x4787D1)
  * Our snapshots set snapFlags 0x08, inside that mask, so without it the world renders black.
  *
- * Loading: the packer's only import is Kernel32.dll!LoadLibraryA/GetProcAddress. make_exe.py
+ * Loading: the packer's only import is Kernel32.dll!LoadLibraryA/GetProcAddress. patch_exe.py
  * renames it to Kernel33.dll (same length), so this DLL loads first and sees every lookup the
  * stub makes; that is how VirtualAlloc/VirtualProtect are intercepted.
  */
@@ -40,8 +39,8 @@
 
 #include "c1_tables.h"
 
-#define BUILD_TIMESTAMP 0x5314DEF0u /* 1.1.1.13, identical to C1.exe */
-#define GAME_ENTRY_VA   0x00ADFAFAu /* C1.exe AddressOfEntryPoint 0x6DFAFA + image base */
+#define BUILD_TIMESTAMP 0x5314DEF0u /* 1.1.1.13 */
+#define GAME_ENTRY_VA   0x00ADFAFAu /* AddressOfEntryPoint 0x6DFAFA + image base */
 #define RENDER_GATE_VA  0x004787CBu
 #define UNPACKED_VA     0x08849000u /* must match make_exe.py */
 #define UNPACKED_SIZE   0x011C7000u
@@ -114,7 +113,7 @@ static void WriteCode(void *dst, const void *src, SIZE_T n)
 /* Nothing in this process reaches a non-loopback address (every build profile; docs/OFFLINE_LOBBY.md). */
 #include "egress_gate.c"
 
-/* ---- the C1.exe reproduction ------------------------------------------------------------ */
+/* ---- the game image ----------------------------------------------------------------- */
 
 /* The image travels inside this DLL as RCDATA 1 ("unpacked.z": 16-byte header, then zlib). */
 static void LoadUnpackedImage(void)
@@ -246,7 +245,7 @@ static void PatchRenderGate(void)
 /* The packer marks every section RWX in the PE header. The MSVC CRT reads those headers
  * (__IsNonwritableInCurrentImage) and skips floating-point init when _FPinit lies in a writable
  * section, which ends in R6002 "floating point support not loaded". Give the in-memory headers
- * C1.exe's flags: .text, .rdata, .data, .tls, .rsrc, then the three packer sections (C1's .tvm0).
+ * the game image's flags: .text, .rdata, .data, .tls, .rsrc, then the three packer sections (C1's .tvm0).
  * Only the header changes; page protections stay as they are. */
 static void MatchC1SectionFlags(void)
 {
@@ -261,7 +260,7 @@ static void MatchC1SectionFlags(void)
     VirtualProtect(sec, 8 * sizeof(*sec), PAGE_READWRITE, &old);
     for (int i = 0; i < 8; i++) sec[i].Characteristics = kC1Flags[i];
     VirtualProtect(sec, 8 * sizeof(*sec), old, &old);
-    Log("section flags: set to C1.exe's");
+    Log("section flags: set to the game image's");
 }
 
 /* Frame cap and FPS counter. The shipping client strips these names to numeric IDs and
@@ -1816,6 +1815,7 @@ static void __cdecl TakeOver(void)
 #if !K33_KERNEL_NAME_DISPLAY
     InstallNameDisplay();
 #endif
+    InstallPlayerName();
 #if K33_LOCAL_TESTING
     InstallP2PInprocDiagnostics(); /* QA commands only; no frame/IAT/VEH activation at startup. */
 #endif

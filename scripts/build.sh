@@ -1,7 +1,7 @@
 #!/bin/sh
 # Builds build/Kernel33.dll (32-bit) with MSYS2 mingw32 on Windows or the i686-w64-mingw32 cross compiler on Linux
 # (scripts/toolchain.inc.sh) and copies it next to the game exe (the folder above the repository): sh scripts/build.sh
-# src/unpacked.z (embedded as a resource, committed) was made from C1.exe by `python scripts/make_exe.py`.
+# src/unpacked.z (the game's unpacked code section, committed) is embedded as a resource.
 #
 # SDL2 2.32.10 (the official SDL2-devel-2.32.10-mingw.tar.gz, i686 static libSDL2.a) is linked statically
 # for the gamepad backend (src/controller/controller.c). It is fetched into third_party/ (not committed) on the first build
@@ -16,10 +16,6 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT/src"
 OUT=../build
 mkdir -p "$OUT"
-# The sh1x server that src/p2p/p2p.c hosts is the submodule server/sh1x (docs/P2P_HOSTING.md); the DLL itself does
-# not compile it, scripts/build-server.sh does, and this script links its output (below). Init it unless
-# K33_SERVER_DIR names another checkout (not --recursive: the server has a URL-less gitlink).
-[ -n "${K33_SERVER_DIR:-}" ] || [ -f "$ROOT/server/sh1x/makefile" ] || git -C "$ROOT" submodule update --init server/sh1x || echo "warning: server/sh1x submodule not initialised (only scripts/build-server.sh needs it)"
 . ../scripts/build-profile.sh
 . ../scripts/toolchain.inc.sh
 MW=../third_party/mingw32
@@ -27,7 +23,7 @@ SDL_VER=2.32.10
 SDL_SHA256=83a5d74012311edc3c0d40ea6faecbe57ad692aa033fa5dc273cc937e3938ff2
 TP=../third_party
 SDL_DIR=$TP/SDL2-$SDL_VER/i686-w64-mingw32
-[ -f unpacked.z ] || { echo "src/unpacked.z missing: run python scripts/make_exe.py first"; exit 1; }
+[ -f unpacked.z ] || { echo "src/unpacked.z missing"; exit 1; }
 if [ ! -f "$SDL_DIR/lib/libSDL2.a" ]; then
     mkdir -p "$TP"
     TGZ=$TP/SDL2-devel-$SDL_VER-mingw.tar.gz
@@ -41,26 +37,24 @@ fi
 . ../scripts/build-offline.inc.sh
 k33_offline_objects "$OUT/obj_offline${K33_HOST_TOOLS:+_cross}"   # a cross build keeps its own objects
 OFFLINE_LINK="$OFFLINE_OBJS -static-libstdc++ -lstdc++"
-# The match server is linked into Kernel33.dll (src/p2p/p2p_inproc.c; docs/P2P_HOSTING.md, "The server linked into
-# Kernel33.dll"): the server repo's host-lib output, bin/libsh1x_host.a, which scripts/build-server.sh builds with
-# this same MSYS2 mingw32 compiler. K33_SERVER=1 requires it, 0 leaves it out (hosting then fails with "built
-# without the match server"), auto (the default) links it when it exists. K33_SERVER_DIR names the server checkout
-# (default server/sh1x), K33_SERVER_LIB the library itself (default $K33_SERVER_DIR/bin/libsh1x_host.a).
+# The match server is linked into Kernel33.dll (src/p2p/p2p_inproc.c): third_party/sh1x/libsh1x_host.a, prebuilt
+# with the same 32-bit MinGW toolchain (third_party/sh1x/README.md). K33_SERVER=1 requires it, 0 leaves it out
+# (hosting then fails with "built without the match server"), auto (the default) links it when it exists.
+# K33_SERVER_LIB names another build of it.
 WITH_SERVER=${K33_SERVER:-auto}
 case "$WITH_SERVER" in 0|1|auto) ;; *) echo "K33_SERVER must be 0, 1 or auto" >&2; exit 1;; esac
-SRVDIR=${K33_SERVER_DIR:-$ROOT/server/sh1x}
-SRVLIB=${K33_SERVER_LIB:-$SRVDIR/bin/libsh1x_host.a}
+SRVLIB=${K33_SERVER_LIB:-$ROOT/third_party/sh1x/libsh1x_host.a}
 SERVER_LINK=
 if [ "$WITH_SERVER" != 0 ] && [ -f "$SRVLIB" ]; then
     # the server's imports beyond Kernel33's own: crypt32 (its certificate store) and wsock32
     SERVER_LINK="$SRVLIB -lcrypt32 -lwsock32"
-    echo "linking the sh1x server $(git -C "$SRVDIR" rev-parse --short HEAD 2>/dev/null || echo '?') from $SRVLIB"
+    echo "linking the match server from $SRVLIB"
 elif [ "$WITH_SERVER" = 1 ]; then
-    echo "K33_SERVER=1 but $SRVLIB does not exist: run scripts/build-server.sh first" >&2
+    echo "K33_SERVER=1 but $SRVLIB does not exist" >&2
     exit 1
 else
     set -- "$@" -DK33_NO_SERVER=1
-    [ "$WITH_SERVER" = 0 ] || echo "warning: no $SRVLIB (scripts/build-server.sh builds it)"
+    [ "$WITH_SERVER" = 0 ] || echo "warning: no $SRVLIB"
     echo "Kernel33.dll is built without the match server"
 fi
 "$WINDRES" -O coff -i kernel33.rc -o "$OUT/kernel33_res.o"

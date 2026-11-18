@@ -1,8 +1,8 @@
 package codo.views
 {
-   // codol-classic's English MatchMPCTMenuView (FFDec's decompile of its codo.gfx tag, with its theatre list mode)
+   // the classic build's English MatchMPCTMenuView (FFDec's decompile of its codo.gfx tag, with its theatre list mode)
    // with every string shown as a localize key (K33UI_THEATRE_*, or C1's own SF_UI_* where C1 has the text): English
-   // in codol_english_ui, Chinese in voice_ui_mp. The theatre needs codol-classic's theatre backend, which this
+   // in codol_english_ui, Chinese in voice_ui_mp. The theatre needs the classic build's theatre backend, which this
    // project does not have: the screen opens but lists nothing.
    import codo.common.BaseView;
    import codo.common.CFunctionContainerCommon;
@@ -242,7 +242,7 @@ package codo.views
             if(child is TextField)
             {
                var value:String = TextField(child).text.toLowerCase();
-               // k33: the party help (K33UI_CODO_1466) in any language, or codol-classic's English words
+               // k33: the party help (K33UI_CODO_1466) in any language, or the classic build's English words
                if(TextField(child).text == LocalizeUtil.localize("@K33UI_CODO_1466") || value.indexOf("party") >= 0 || value.indexOf("friend") >= 0)
                {
                   this.theatreHelp.push(child);

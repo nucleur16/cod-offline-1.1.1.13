@@ -1,6 +1,6 @@
 package
 {
-   // codol-classic's English codoingame.gfx MainPause (its theatre-playback pause, FFDec's decompile) with Kernel33's
+   // the classic build's English codoingame.gfx MainPause (its theatre-playback pause, FFDec's decompile) with Kernel33's
    // gamepad focus navigation (the "k33" parts, written for controller_ingame) for controller.c CtlPauseNav /
    // CtlDeliverSfKeys: key codes 240 up, 241 down, 242 left, 243 right, 244 select; B / Start send Escape.
    // Focus moves to the nearest visible clickable object in the pressed direction; it gets MOUSE_OVER / ROLL_OVER and

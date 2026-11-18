@@ -1,32 +1,35 @@
 # CoD Online 1.1.1.13 offline (Kernel33.dll)
 
 `Kernel33.dll` runs the 1.1.1.13 client (`codoMP_client_shipRetail.exe`) fully offline. The Demonware lobby and the
-match server both run inside the game, so you don't need C1.exe, TenProtect, a launcher, `.ini` files or a separate
-server. Run the exe and play.
+match server both run inside the game, so you don't need TenProtect, a launcher, `.ini` files or a separate server.
+Run the exe and play: Multiplayer with bots, Zombies, Survival and Spec Ops.
+
+Just want to play? Download the release zip and follow its `INSTALL.txt`. The rest of this page is for building it
+yourself.
 
 ## Build
 
 Windows or Linux. You need:
 
 - **A 1.1.1.13 install**, read only: the build edits some of its stock zones and patches a copy of
-  `codoMP_client_shipRetail.exe`. `C1.exe` isn't needed.
+  `codoMP_client_shipRetail.exe`.
 - **Python 3.10+** with `pip install pefile pycryptodome pillow`.
-- **A 32-bit MinGW compiler, make and nasm:**
+- **A 32-bit MinGW compiler:**
   - Windows: [MSYS2](https://www.msys2.org) at `C:\msys64` (or set `MSYS2_ROOT`), then in its shell
-    `pacman -S make nasm mingw-w64-i686-gcc`. Python must be the Windows one, on PATH.
-  - Linux (Debian/Ubuntu): `sudo apt install gcc-mingw-w64-i686 g++-mingw-w64-i686 make nasm git curl`.
+    `pacman -S mingw-w64-i686-gcc`. Python must be the Windows one, on PATH.
+  - Linux (Debian/Ubuntu): `sudo apt install gcc-mingw-w64-i686 g++-mingw-w64-i686 curl`.
 
-Everything else (Opus, zlib, the match server's crypto libraries, the zone key) is in the repository, and SDL2 is
-downloaded on the first build.
+Everything else is in the repository (Opus, zlib, the prebuilt match server, the zone key), and SDL2 is downloaded
+on the first build.
 
 ```sh
-git clone https://github.com/nucleur16/cod-offline-1.1.1.13
-cd cod-offline-1.1.1.13
+git clone <this repository>
+cd <its folder>
 build.bat "D:\path\to\Call of Duty Online 1.1.1.13"        # Windows
 sh build.sh "/path/to/Call of Duty Online 1.1.1.13"          # Linux
 ```
 
-Both build the match server, `Kernel33.dll`, the patch zones and the patched exe into `dist`:
+Both build `Kernel33.dll`, the match server's pack, the patch zones and the patched exe into `dist`:
 
 ```
 dist\
@@ -55,15 +58,17 @@ TenProxy.dll  TerSafe.dll  GbSpy.dll  steam_api.dll  localization.txt  splash.bm
 miles\  client_shipRetail\{chinese,patch,temp}\  main\
 ```
 
-The game creates `players\` (your profile and stats) and `p2p\offline\` on its own. You can delete `C1.exe`, `C1.dll`,
-`TenSLX*`, `BugTrace*`, the updater DLLs, `p2p\sh1x_host.dll`, `p2p\survival_maps.txt` and old `.ini` files. Delete an old
+The game creates `players\` (your profile and stats) and `p2p\offline\` on its own. You can delete `TenSLX*`,
+`BugTrace*`, the updater DLLs, `p2p\sh1x_host.dll`, `p2p\survival_maps.txt` and old `.ini` files. Delete an old
 `main\sh1x_rawfiles\` too unless you edit scripts: it overrides the scripts in `sh1x_svr_scripts.iwd` file by file.
 
 ## Play
 
 - **Menus:** create a room (Multiplayer, Zombies, Survival or Spec Ops) and press Ready.
 - **Console:** `devmap <map> [gametype]` loads a map with cheats on, and `map <map> [gametype]` loads it without them.
-  The gametype defaults to `war` for `mp_`, `zm` for `zm_` and `coop` for `coop_` maps.
+  The gametype defaults to `war` for `mp_`, `zm` for `zm_` and `coop` for `coop_` maps; `survival` plays Survival on
+  an MP map.
+- **Name:** `name <new name>` in the console, in the menus (not during a match). It is kept for your profile.
 - **Map lists:** they show only maps whose `.ff` is in `client_shipRetail\chinese\` or `usermaps\<map>\`. Set
   `K33_MAPLIST_ALL=1` to list every map.
 - **Profile:** `+set dw_username <name>` picks a profile (default `Player`).
@@ -74,7 +79,12 @@ The game creates `players\` (your profile and stats) and `p2p\offline\` on its o
 - `sh scripts/build.sh` builds only the DLL (it copies it to `..\Kernel33.dll` unless `K33_NO_COPY=1`).
 - `sh scripts/build-dev.sh` builds the diagnostic build, with a developer console and test hooks.
 - `python scripts/build_zones.py --help` lists the zone build's options.
-- The server's GSC lives in `scripts/gsc` (a subtree of CODOL-EMU/13-rawfiles); edit it there. To try a change
-  without rebuilding, put just the changed files under `main\sh1x_rawfiles\` in the game folder: the host reads them
-  over the pack's copies.
+- The match server's GSC is `scripts/gsc`. To try a change without rebuilding, put just the changed files under
+  `main\sh1x_rawfiles\` in the game folder: the host reads them over the pack's copies.
 - For map making, see [sh1xo-radiant, branch codol-1.1.1.13](https://github.com/nucleur16/sh1xo-radiant/tree/codol-1.1.1.13).
+
+## Licences
+
+- The match server linked into `Kernel33.dll` (`third_party/sh1x`) is derived from the CoD4x server and is under
+  the GNU AGPL-3.0: `third_party/sh1x/LICENSE.md`.
+- Bundled libraries: Opus, zlib (`third_party/mingw32/licenses`); SDL2 (zlib licence, downloaded at build time).

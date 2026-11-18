@@ -21,10 +21,10 @@ the build either way.
 
 Options:
   --maps ship|all  ship (default): only the maps shipping_maps.txt marks "ship"; all: every listed map.
-  --game DIR       the 1.1.1.13 install (default D:\CoD\CODOL Builds\Call of Duty Online 1.1.1.13): its
-                   client_shipRetail\chinese holds the stock zones (the movies the .gfx patches apply to, the PaP
-                   zone's unchanged blobs). Read only. No C1.exe is needed: the zone key is zonekit\c1_zone_key.der.
-  --zz DIR         codol-classic-zz, for --verify / --decompile of the zones that came from it. Read only.
+  --game DIR       the 1.1.1.13 install (or K33_GAME): its client_shipRetail/chinese holds the stock zones (the
+                   movies the .gfx patches apply to, the PaP zone's unchanged blobs). Read only. The zone key is
+                   zonekit/c1_zone_key.der.
+  --zz DIR         an older install (or K33_ZZ), for --verify / --decompile of the zones that came from it. Read only.
   --out DIR        output root (default output\, output_dev\ with --maps all); zones land in
                    <out>\client_shipRetail\{patch,chinese}, files\ is copied (sound_channels.txt filtered like the
                    usermap zones, main\iw_image_16.iwd as it is).
@@ -60,8 +60,8 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # the reposi
 sys.path.insert(0, HERE)
 from zonekit import build, container, decompile, gfx, packs, shipping, stock, ui_baseline, zoneimage, zonelist  # noqa: E402
 
-DEFAULT_GAME = r"D:\CoD\CODOL Builds\Call of Duty Online 1.1.1.13"
-DEFAULT_ZZ = r"D:\CoD\CODOL Builds\codol-classic-zz"
+DEFAULT_GAME = None
+DEFAULT_ZZ = None
 DEFAULT_FFDEC = r"C:\Program Files (x86)\FFDec\ffdec-cli.exe"
 
 
@@ -289,8 +289,6 @@ def main(argv=None):
     ap.add_argument("zones", nargs="*", help="zone names (default: every zone_source/*.csv)")
     ap.add_argument("--game", default=os.environ.get("K33_GAME", DEFAULT_GAME))
     ap.add_argument("--zz", default=os.environ.get("K33_ZZ", DEFAULT_ZZ))
-    ap.add_argument("--exe", help="C1.exe of 1.1.1.13, read only when zonekit/c1_zone_key.der is missing "
-                                  "(default: <game>\\C1.exe)")
     ap.add_argument("--out")
     ap.add_argument("--maps", default=os.environ.get("K33_MAPS", "ship"), choices=shipping.MODES)
     ap.add_argument("--list", action="store_true")
@@ -307,7 +305,9 @@ def main(argv=None):
     ap.add_argument("--candidate", action="store_true", help="build unqualified intentional changes into output_candidate instead of shipping output")
     ap.add_argument("--ffdec", default=os.environ.get("K33_FFDEC", DEFAULT_FFDEC))
     a = ap.parse_args(argv)
-    exe = a.exe or os.path.join(a.game, "C1.exe")
+    if not a.game:
+        ap.error("--game <1.1.1.13 install> (or K33_GAME) is required")
+    exe = None  # the zone key: zonekit/c1_zone_key.der
     chinese = os.path.join(a.game, "client_shipRetail", "chinese")
     ffdec = a.ffdec if a.ffdec and os.path.isfile(a.ffdec) else None
     roots = {"G": a.game, "Z": a.zz}

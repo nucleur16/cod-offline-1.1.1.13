@@ -43,7 +43,7 @@ typedef struct P2PConfig {
     char exe[MAX_PATH];          /* the server executable */
     char basepath[MAX_PATH];     /* fs_basepath: the client install (the server reads its zones) */
     char home[MAX_PATH];         /* fs_homepath */
-    char scripts[MAX_PATH];      /* GSC root (codol_rawfiles) */
+    char scripts[MAX_PATH];      /* GSC root (fs:scripts, the pack) */
     char state[MAX_PATH];        /* securitykey.bin, game_admissions.txt, native_server_rcon.txt */
     char profile[MAX_PATH];      /* profilePath: the lobby's resources folder */
     char rconFile[MAX_PATH];
@@ -442,9 +442,9 @@ static BOOL P2PStatusLine(const char *reply, char *out, int outSize)
 
 /* ---- the host thread ----------------------------------------------------------------------- */
 
-/* The server derives the archive keys from two C1.exe regions (server client_crypto.h: the IWD blob at file
- * offset 0x838B20, 256 bytes, and the RSA DER at 0x83C248, 1191 bytes), read from <basepath>\C1.exe or else
- * <basepath>\c1_keys.bin. This client runs C1's image itself, so an install needs neither file: both regions are
+/* The server derives the archive keys from two regions of the client image (server client_crypto.h: the IWD blob
+ * at file offset 0x838B20, 256 bytes, and the RSA DER at 0x83C248, 1191 bytes), read from <basepath>\c1_keys.bin.
+ * This client runs C1's image itself, so an install needs no such file: both regions are
  * in C1's .rdata in memory (file 0x741000 -> RVA 0x742000, image base 0x400000), and they are written to the
  * run-time folder as c1_keys.bin (exactly those two regions, the IWD blob first) and named with clientExe. The
  * server checks both with SHA-256, so a wrong copy fails its mount instead of misreading zones.
@@ -457,7 +457,7 @@ static void P2PClientKeysArg(const P2PConfig *c, char *out, size_t size)
 {
     char path[MAX_PATH + 32];
     out[0] = 0;
-    static const char *const files[] = { "C1.exe", "c1_keys.bin" };
+    static const char *const files[] = { "c1_keys.bin" };
     for (unsigned i = 0; i < sizeof(files) / sizeof(files[0]); i++) {
         _snprintf(path, sizeof(path), "%s\\%s", c->basepath, files[i]);
         path[sizeof(path) - 1] = 0;
@@ -465,7 +465,7 @@ static void P2PClientKeysArg(const P2PConfig *c, char *out, size_t size)
     }
     const void *blob = (const void *)(DWORD_PTR)P2P_C1_IWD_BLOB_VA, *der = (const void *)(DWORD_PTR)P2P_C1_RSA_DER_VA;
     if (!Readable(blob, P2P_C1_IWD_BLOB_SIZE) || !Readable(der, P2P_C1_RSA_DER_SIZE)) {
-        Log("p2p: C1's key regions are not readable; the server looks for C1.exe / c1_keys.bin itself");
+        Log("p2p: C1's key regions are not readable; the server looks for c1_keys.bin itself");
         return;
     }
     _snprintf(path, sizeof(path), "%s\\c1_keys.bin", c->state);
@@ -474,7 +474,7 @@ static void P2PClientKeysArg(const P2PConfig *c, char *out, size_t size)
     BOOL ok = f && fwrite(blob, 1, P2P_C1_IWD_BLOB_SIZE, f) == P2P_C1_IWD_BLOB_SIZE &&
               fwrite(der, 1, P2P_C1_RSA_DER_SIZE, f) == P2P_C1_RSA_DER_SIZE;
     if (f && fclose(f)) ok = FALSE;
-    if (!ok) { Log("p2p: could not write %s; the server looks for C1.exe / c1_keys.bin itself", path); return; }
+    if (!ok) { Log("p2p: could not write %s; the server looks for c1_keys.bin itself", path); return; }
     _snprintf(out, size, "+set clientExe \"%s\"", path);
     out[size - 1] = 0;
     Log("p2p: archive keys from C1's image in memory -> %s", path);

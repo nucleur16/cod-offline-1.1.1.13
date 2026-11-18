@@ -1,6 +1,6 @@
 package codo.views
 {
-   // codol-classic's English MatchRoomListView (FFDec's decompile of its codo.gfx tag, with its theatre list mode) with
+   // the classic build's English MatchRoomListView (FFDec's decompile of its codo.gfx tag, with its theatre list mode) with
    // every string shown as a localize key (K33UI_THEATRE_*, K33UI_PREVIOUS / _NEXT, C1's SF_UI_* where C1 has the text):
    // English in codol_english_ui, Chinese in voice_ui_mp. The theatre has no backend in this project: the list stays empty.
    import codo.common.BaseView;

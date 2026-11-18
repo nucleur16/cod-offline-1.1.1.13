@@ -1,6 +1,6 @@
 package codo.views.option_sub
 {
-   // codol-classic's English movie's display-mode fix is in (Brightness follows fullscreen; a display-mode change counts
+   // the classic build's English movie's display-mode fix is in (Brightness follows fullscreen; a display-mode change counts
    // as a change). Every string shown is a localize key (K33UI_*): English in codol_english_ui, Chinese in voice_ui_mp.
    // C1's codo.views.option_sub.OptionView_video (Options > Graphics) as decompiled from patch_ui_mp's
    // codo.gfx, with a frame-rate cap row for Kernel33 (kernel33.c PatchFrameCap). build_voice_ui.py

@@ -108,7 +108,7 @@ static Bytes BuildTicket(uint32_t ivSeed)
     PutLe(t + 13, 0x7FFFFFFF, 4);       /* timeExpires */
     PutLe(t + 17, 1002, 8);             /* licenseID */
     PutLe(t + 25, 1, 8);                /* userID */
-    memcpy(t + 33, "alpha0022", 9);     /* username[64] */
+    memcpy(t + 33, "offline", 7);       /* username[64] */
     for (int i = 0; i < 24; i++) t[97 + i] = (unsigned char)i; /* sessionKey[24]: ours to choose */
     t[121] = 0x09; t[122] = 0x04; t[123] = 0x00;
     DwTiger(t, 0x79, digest);
