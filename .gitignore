@@ -19,7 +19,8 @@ Kernel33_noconsole.dll
 
 # controller branch: build output and the fetched SDL2 package
 Kernel33_controller.dll
-third_party/
+third_party/*
+!third_party/server_libs/
 
 # glyph generator cache
 __pycache__/

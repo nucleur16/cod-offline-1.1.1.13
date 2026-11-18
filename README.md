@@ -12,8 +12,8 @@ You need:
   `pacman -S make mingw-w64-i686-gcc mingw-w64-i686-opus nasm`
 - **Python 3.10+** on PATH: `pip install pefile pycryptodome pillow`
 - **A 1.1.1.13 install that includes `C1.exe`**. It's read only: the build takes the zone key and stock zones from it.
-- **The match server's prebuilt crypto libraries** (`libmbedcrypto.a`, `libmbedtls.a`, `libmbedx509.a`,
-  `libtomcrypt.a`) in `D:\CoD\CoD4x_Server\lib`, or in the folder named by `K33_SERVER_LIBS`.
+
+The match server's prebuilt crypto libraries (mbedtls, libtomcrypt) are included in `third_party\server_libs`.
 
 Then run:
 
