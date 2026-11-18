@@ -19,7 +19,8 @@ Kernel33_noconsole.dll
 
 # controller branch: build output and the fetched SDL2 package
 Kernel33_controller.dll
-third_party/
+third_party/*
+!third_party/server_libs/
 
 # glyph generator cache
 __pycache__/
@@ -62,3 +63,9 @@ tests/party_session_refresh_guard_fixture_O2
 /production-parity-evidence/
 obj_offline*/
 tests/offline/dwtest.exe
+
+# not published from this repo (kept locally)
+/docs/
+/obj/quit_trace/
+/Kernel33.dll
+/dist/

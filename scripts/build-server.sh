@@ -10,8 +10,8 @@
 # The server is linked into Kernel33.dll: the server makefile's host-lib target is built with the same MSYS2
 # mingw32 compiler as Kernel33 (gcc, nasm from /c/msys64/usr/bin), so the server's objects, libstdc++ and libgcc
 # agree with the client's; scripts/build.sh then links bin/libsh1x_host.a (K33_SERVER_DIR=... when it is not
-# server/sh1x). It needs the prebuilt mbedtls/tomcrypt archives the server links (lib/*.a; not in git):
-# K33_SERVER_LIBS names a folder holding them (default D:/CoD/CoD4x_Server/lib, the server repo's own build).
+# server/sh1x). It needs the prebuilt mbedtls/tomcrypt archives the server links (lib/*.a; not in the server's git):
+# they are in third_party/server_libs, or K33_SERVER_LIBS names another folder holding them.
 # Staging ($K33_P2P_STAGE, default ../../k33_p2p_staging, seen from the repository root): scripts/stage_server_data.py
 # writes p2p/home/main/sh1x_svr_scripts.iwd and main/sh1x_rawfiles/. The GSC in both comes from this repository's
 # scripts/gsc (README.md, "GSC scripts"), not from the server's bin/home/codol_rawfiles submodule, which is left
@@ -19,7 +19,7 @@
 set -e
 cd "$(dirname "$0")/.."   # the repository root, from any directory
 if [ -n "${K33_SERVER_DIR:-}" ]; then SRV=$K33_SERVER_DIR; else git submodule update --init server/sh1x; SRV=server/sh1x; fi
-LIBS=${K33_SERVER_LIBS:-D:/CoD/CoD4x_Server/lib}
+LIBS=${K33_SERVER_LIBS:-third_party/server_libs}
 for a in libmbedcrypto.a libmbedtls.a libmbedx509.a libtomcrypt.a; do
     [ -f "$SRV/lib/$a" ] || cp "$LIBS/$a" "$SRV/lib/$a"
 done

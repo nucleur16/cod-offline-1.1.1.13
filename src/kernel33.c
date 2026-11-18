@@ -1648,6 +1648,7 @@ static void PatchGbkInput(void)
 #include "k33tick.c"
 #include "locale_switch.c" /* loc_languageName: the language, changed while the game runs (after voice.c, k33tick.c) */
 #include "k33sha256.c"
+#include "maplist_filter.c" /* the map lists show only installed maps (a main-thread tick) */
 
 /* ui_quickNativeRoomContext for the shared movie's Quick Play room checks: see quick_room.c. */
 #if !K33_KERNEL_ROOM_CONTEXT
@@ -1819,6 +1820,7 @@ static void __cdecl TakeOver(void)
     InstallP2PInprocDiagnostics(); /* QA commands only; no frame/IAT/VEH activation at startup. */
 #endif
     InstallP2PHost();
+    InstallMapListFilter();
     InstallLocaleSwitch();
 #if K33_LOCAL_TESTING
     if (!K33OnMainTick(VoiceCmdFile))
