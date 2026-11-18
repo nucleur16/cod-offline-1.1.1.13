@@ -12,6 +12,8 @@
 OFFLINE_CXXFLAGS="-std=gnu++11 -O2 -Wall -Wextra -Wno-unused-parameter -fno-exceptions -fno-rtti -fno-threadsafe-statics -ffunction-sections -fdata-sections"
 K33_OFFLINE_SRC=${K33_OFFLINE_SRC:-offline}
 K33_OFFLINE_INC=${K33_OFFLINE_INC:-../scripts/build-offline.inc.sh}
+# zlib.h from third_party/mingw32 (scripts/toolchain.inc.sh), found from this file's own path
+OFFLINE_CXXFLAGS="$OFFLINE_CXXFLAGS -I$(dirname "$K33_OFFLINE_INC")/../third_party/mingw32/include"
 k33_offline_objects() {
     _dir=$1
     mkdir -p "$_dir"
