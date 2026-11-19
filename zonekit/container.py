@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-r"""Fast file containers of CoD Online 1.1.1.13 (C1.exe).
+r"""Fast file containers of CoD Online 1.1.1.13.
 
 Two kinds exist in an install:
 
@@ -11,8 +11,7 @@ Two kinds exist in an install:
   IWff0100 (signed, the stock zones): 0x2000-byte blocks, each AES-CTR with its own IV, a signed header block and
       IV-table blocks every 257 blocks (alpha0022 zones/zone_assets.py, MEASURED there).
 
-The RSA key is the DER private key inside C1.exe at file offset 0x83C248 (1191 bytes), kept in this folder as
-c1_zone_key.der so a build needs no C1.exe. The `exe` arguments are only read when that file is missing.
+The RSA key (DER, 1191 bytes) is c1_zone_key.der in this folder. The `exe` arguments are kept for callers and unused.
 """
 from __future__ import annotations
 
@@ -29,7 +28,6 @@ RSA_LEN = 0x100
 BODY_OFF = HEADER_LEN + RSA_LEN
 READ_CHUNK = 0x40000
 ENCRYPTED = READ_CHUNK - BODY_OFF
-KEY_OFF, KEY_LEN = 0x83C248, 1191
 KEY_SHA = "3a2f7891ac98f1fdf6a9a221c5586725157df270d6831e0ff82c383cd262cbb5"
 
 _keys: dict = {}
@@ -41,17 +39,11 @@ KEY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "c1_zone_key
 def rsa_key(exe: str | None = None):
     from Crypto.PublicKey import RSA
     if "" not in _keys:
-        if os.path.isfile(KEY_FILE):
-            src, der = KEY_FILE, open(KEY_FILE, "rb").read()
-        elif exe and os.path.isfile(exe):
-            src = exe
-            with open(exe, "rb") as f:
-                f.seek(KEY_OFF)
-                der = f.read(KEY_LEN)
-        else:
-            raise SystemExit("no zone key: %s is missing and no C1.exe of 1.1.1.13 was given" % KEY_FILE)
+        if not os.path.isfile(KEY_FILE):
+            raise SystemExit("no zone key: %s is missing" % KEY_FILE)
+        der = open(KEY_FILE, "rb").read()
         if hashlib.sha256(der).hexdigest() != KEY_SHA:
-            raise SystemExit("%s: not the 1.1.1.13 zone key" % src)
+            raise SystemExit("%s: not the 1.1.1.13 zone key" % KEY_FILE)
         _keys[""] = RSA.import_key(der)
     return _keys[""]
 

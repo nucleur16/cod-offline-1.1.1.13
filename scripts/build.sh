@@ -37,12 +37,27 @@ fi
 . ../scripts/build-offline.inc.sh
 k33_offline_objects "$OUT/obj_offline${K33_HOST_TOOLS:+_cross}"   # a cross build keeps its own objects
 OFFLINE_LINK="$OFFLINE_OBJS -static-libstdc++ -lstdc++"
-# The match server is linked into Kernel33.dll (src/p2p/p2p_inproc.c): third_party/sh1x/libsh1x_host.a, prebuilt
-# with the same 32-bit MinGW toolchain (third_party/sh1x/README.md). K33_SERVER=1 requires it, 0 leaves it out
-# (hosting then fails with "built without the match server"), auto (the default) links it when it exists.
-# K33_SERVER_LIB names another build of it.
+# The match server is linked into Kernel33.dll (src/p2p/p2p_inproc.c) as one static library, libsh1x_host.a
+# (third_party/sh1x/README.md). Its source is in third_party/sh1x/src: it is built there with the same 32-bit MinGW
+# toolchain (make, nasm), into third_party/sh1x/src/bin/libsh1x_host.a. Without that folder the prebuilt
+# third_party/sh1x/libsh1x_host.a is linked. K33_SERVER=1 requires the server, 0 leaves it out (hosting then fails
+# with "built without the match server"), auto (the default) links it when it exists. K33_SERVER_LIB names another
+# build of it (nothing is compiled then).
 WITH_SERVER=${K33_SERVER:-auto}
 case "$WITH_SERVER" in 0|1|auto) ;; *) echo "K33_SERVER must be 0, 1 or auto" >&2; exit 1;; esac
+SRVSRC=$ROOT/third_party/sh1x/src
+if [ -z "${K33_SERVER_LIB:-}" ] && [ "$WITH_SERVER" != 0 ] && [ -f "$SRVSRC/makefile" ]; then
+    # a cross build keeps its objects apart from the MSYS2 ones; -pipe: gcc's temporary files would otherwise go to
+    # C:\WINDOWS under make
+    SRVOBJ=obj/k33-msys
+    [ -n "$K33_HOST_TOOLS" ] && SRVOBJ=obj/k33-cross
+    mkdir -p "$SRVSRC/bin"
+    echo "building the match server in $SRVSRC"
+    make -C "$SRVSRC" -j"$(nproc 2>/dev/null || echo 4)" OS=Windows_NT "CC=$CC -pipe" "CPP=$CXX -pipe" \
+        "AR=${K33_HOST_TOOLS}ar" "HOST_TOOLS=$K33_HOST_TOOLS" "WINDRES=$WINDRES" "PYTHON=$PYTHON" OBJ_DIR=$SRVOBJ \
+        host-lib
+    K33_SERVER_LIB=$SRVSRC/bin/libsh1x_host.a
+fi
 SRVLIB=${K33_SERVER_LIB:-$ROOT/third_party/sh1x/libsh1x_host.a}
 SERVER_LINK=
 if [ "$WITH_SERVER" != 0 ] && [ -f "$SRVLIB" ]; then

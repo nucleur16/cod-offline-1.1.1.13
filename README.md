@@ -16,11 +16,11 @@ Windows or Linux. You need:
 - **Python 3.10+** with `pip install pefile pycryptodome pillow`.
 - **A 32-bit MinGW compiler:**
   - Windows: [MSYS2](https://www.msys2.org) at `C:\msys64` (or set `MSYS2_ROOT`), then in its shell
-    `pacman -S mingw-w64-i686-gcc`. Python must be the Windows one, on PATH.
-  - Linux (Debian/Ubuntu): `sudo apt install gcc-mingw-w64-i686 g++-mingw-w64-i686 curl`.
+    `pacman -S mingw-w64-i686-gcc make nasm`. Python must be the Windows one, on PATH.
+  - Linux (Debian/Ubuntu): `sudo apt install gcc-mingw-w64-i686 g++-mingw-w64-i686 make nasm curl`.
 
-Everything else is in the repository (Opus, zlib, the prebuilt match server, the zone key), and SDL2 is downloaded
-on the first build.
+Everything else is in the repository (the match server's source, Opus, zlib, the zone key), and SDL2 is downloaded
+on the first build. The match server is compiled from `third_party/sh1x/src` as part of the build.
 
 ```sh
 git clone <this repository>
@@ -85,6 +85,7 @@ The game creates `players\` (your profile and stats) and `p2p\offline\` on its o
 
 ## Licences
 
-- The match server linked into `Kernel33.dll` (`third_party/sh1x`) is derived from the CoD4x server and is under
-  the GNU AGPL-3.0: `third_party/sh1x/LICENSE.md`.
+- The match server linked into `Kernel33.dll` (source in `third_party/sh1x/src`) is derived from the CoD4x server
+  and is under the GNU AGPL-3.0: `third_party/sh1x/LICENSE.md`. It includes Mbed TLS (Apache-2.0) and
+  LibTomCrypt (public domain) in `third_party/sh1x/src/src/mbedtls` and `src/tomcrypt`.
 - Bundled libraries: Opus, zlib (`third_party/mingw32/licenses`); SDL2 (zlib licence, downloaded at build time).
