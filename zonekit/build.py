@@ -5,6 +5,7 @@ from __future__ import annotations
 import collections
 import json
 import os
+import re
 
 from . import codecs, container, gfx, manifest, shipping, zoneimage, zonelist
 from .decompile import MARGIN
@@ -66,6 +67,9 @@ def assemble_filtered(repo, zone_name, m, stocks, ffdec=None, compile_as=False, 
     return zoneimage.assemble(img), p
 
 
+USERMAP_IMAGE = re.compile(r"sfproto_.+_usermap$")
+
+
 def asset_blob(zdir, t, name, q, loc, stocks, p, ffdec, compile_as, log):
     """One manifest line -> (type id, pointer field, blob); `p` is the zone's shipping.Plan."""
     tid = zoneimage.type_id(t)
@@ -81,6 +85,12 @@ def asset_blob(zdir, t, name, q, loc, stocks, p, ffdec, compile_as, log):
         else:
             with open(os.path.join(zdir, f), "rb") as g:
                 blob = g.read()
+        if tid == 10 and USERMAP_IMAGE.match(name) and codecs.image_is_streamed(blob):
+            # A usermap's map-select picture is loaded with the patch UI zone at startup; streamed, its pixels would
+            # come from a map pack iwd, and a client without that iwd dies with "image ... is missing" before the
+            # menus. Keep its pixels in the zone: image/<name>.png with hdr=/levels=/lflags= (see usermaps_ui_mp.csv).
+            raise BuildError("%s %s: a usermap image must carry its pixels in the zone (image/%s.png, hdr=...), "
+                             "not stream them from a map pack iwd" % (t, name, name))
     elif tid == 36:
         path = os.path.join(zdir, "rawfile", name)
         if "gfx" in q:

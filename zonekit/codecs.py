@@ -285,6 +285,19 @@ def decode_image(blob):
     return name, out, {"hdr": blob[4:0x20].hex(), "levels": str(levels), "lflags": "%#x" % flags}
 
 
+def image_is_streamed(blob):
+    """True for an image blob whose load definition has no data (resourceSize 0): its pixels come from an IWD."""
+    if len(blob) < 0x24 or blob[:4] != b"\xff\xff\xff\xff" or blob[0x20:0x24] != b"\xff\xff\xff\xff":
+        return False
+    try:
+        e = blob.index(b"\0", 0x24)
+    except ValueError:
+        return False
+    if len(blob) < e + 17:
+        return False
+    return struct.unpack_from("<I", blob, e + 13)[0] == 0
+
+
 def box_mip(rgba, w, h):
     from PIL import Image
     im = Image.frombytes("RGBA", (w, h), rgba)

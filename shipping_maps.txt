@@ -4,9 +4,10 @@
 #                             dev   only in the all-maps build (python scripts/build_zones.py --maps all -> output_dev\)
 #
 # A map's UI is everything the patch zones carry for it: its create-room map pool row (mp/comaplist.csv), its vlobby
-# arena entry (mp/basemaps.arena), its display-name strings, its map-select image (sfproto_<map>_usermap, whose
-# pixels are in a map pack iwd: a client without that iwd dies at startup), its vision override and its sound channel
-# fixes (sound_channels.txt). A "dev" map keeps all of it in the sources; only the shipping build leaves it out.
+# arena entry (mp/basemaps.arena), its display-name strings, its map-select image (sfproto_<map>_usermap, 200x120,
+# its pixels in the zone itself: zones/usermaps_ui_mp/image/<name>.png; never streamed from a map pack iwd, which a
+# client without the map pack would die on at startup, and the build refuses one), its vision override and its sound
+# channel fixes (sound_channels.txt). A "dev" map keeps all of it in the sources; only the shipping build leaves it out.
 # Every usermap the zones name must be listed here: an unlisted one fails both builds.
 #
 # To ship a map: put its zones and iwd in the map pack, change its line to "ship", build, and install output\.
