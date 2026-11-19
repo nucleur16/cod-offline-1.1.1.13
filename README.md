@@ -54,7 +54,7 @@ A finished install only needs:
 
 ```
 codoMP_client_shipRetail.exe  Kernel33.dll  mss32.dll  binkw32.dll  bink2w32.dll  D3DX9_43.dll
-TenProxy.dll  TerSafe.dll  GbSpy.dll  steam_api.dll  localization.txt  splash.bmp  logo.bmp
+TenProxy.dll  TerSafe.dll  GbSpy.dll  localization.txt  splash.bmp  logo.bmp
 miles\  client_shipRetail\{chinese,patch,temp}\  main\
 ```
 

@@ -5,8 +5,10 @@ The patch zones carry front-end data for every usermap the project has worked on
 (mp/comaplist.csv), the vlobby arena entry (mp/basemaps.arena), display-name localize strings, the map-select image
 (sfproto_<map>_usermap), vision overrides, and the per-map sound channel fixes (files\...\sound_channels.txt). A
 map that is still being worked on must not reach players through them: a pool row for a map the player does not
-have is a dead entry (or a failed load), and a map-select image whose pixels are in an iwd the player does not have
-is a COM_FATAL at client startup.
+have is a dead entry (or a failed load). A map-select image whose pixels are in an iwd the player does not have is a
+COM_FATAL at client startup ("image 'images/sfproto_<map>_usermap.iwi' is missing"), so every one carries its pixels
+in the zone (zones/usermaps_ui_mp/image/<name>.png) and build.py refuses a streamed one: the release boots without the
+map pack.
 
 shipping_maps.txt (repository root) lists every usermap with its state:
 
