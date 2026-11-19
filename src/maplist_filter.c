@@ -12,6 +12,14 @@
  * (DB_FindXAssetHeader can block, p2p_assets.c), on the main thread, never while the database thread links a zone,
  * and again when the table changes (a language switch reloads the patch zones). K33_MAPLIST_ALL=1 turns it off.
  *
+ * The tick alone came too late: codo.gfx's MatchService builds every map list once (listMap caches its rows per
+ * match type in _mapsWithFilter, from the movie's init) and the Create Room carousel, the room's map choice, the
+ * playlist room creator and the vote all read that cache. When the movie read the table before the tick's first
+ * pass (the tick waits for the database thread, which is still loading ui_viewer_mp then), every map stayed
+ * listed for the whole session. So the table is also filtered on its way out of C1's lookup: every reader (the
+ * ActionScript StringTable* natives, C1's own code) gets it from DB_FindXAssetHeader 0x4CB8E0, which is hooked at
+ * its entry; the first lookup of a new mp/comaplist.csv filters it before the caller sees a row.
+ *
  * The same table names the supported Survival maps: a row coop_survival_<level> (usermaps_patch.ff carries one for
  * each level with authored placements, zonekit/shipping.py). Each new table's list is copied here, whether or not
  * the filter is on; K33SurvivalSupported answers the embedded host (p2p.c P2PCheck) and the lobby from that copy.
@@ -168,6 +176,23 @@ static void MlFilter(BYTE *t)
     else Log("maplist: all %d maps are installed", rows);
 }
 
+/* A table not seen yet (the first, or a new one after a language switch): read its Survival rows, then filter
+ * it. Any thread; g_mlTableLock keeps the lookup hook and the tick from taking the same table twice. */
+static CRITICAL_SECTION g_mlTableLock;
+static void MlTakeTable(BYTE *t, DWORD caller)
+{
+    EnterCriticalSection(&g_mlTableLock);
+    if (!(t == g_mlTable && *(const int *)(t + 8) == g_mlRows)) {
+        if (caller) Log("maplist: new mp/comaplist.csv %p (%d rows), first looked up by 0x%08lX on thread %lu", (void *)t,
+                        *(const int *)(t + 8), (unsigned long)caller, GetCurrentThreadId());
+        else Log("maplist: new mp/comaplist.csv %p (%d rows), found by the tick", (void *)t, *(const int *)(t + 8));
+        MlReadSurvival(t); /* before the filter drops rows of maps that are not installed */
+        if (g_mlFilterOn) MlFilter(t);
+        g_mlTable = t, g_mlRows = *(const int *)(t + 8);
+    }
+    LeaveCriticalSection(&g_mlTableLock);
+}
+
 static void MapListTick(void)
 {
     if (++g_mlFrame % 30) return; /* twice a second at 60 fps */
@@ -175,16 +200,52 @@ static void MapListTick(void)
     BYTE *t = MlFindTable("mp/comaplist.csv");
     if (!t || !Readable(t, 16)) return;
     if (t == g_mlTable && *(const int *)(t + 8) == g_mlRows) return;
-    MlReadSurvival(t); /* before the filter drops rows of maps that are not installed */
-    if (g_mlFilterOn) MlFilter(t);
-    else g_mlTable = t, g_mlRows = *(const int *)(t + 8);
+    MlTakeTable(t, 0);
+}
+
+/* DB_FindXAssetHeader 0x4CB8E0: XAssetHeader __cdecl (XAssetType type, const char *name). Its first six bytes
+ * (push ebp; mov ebp, esp; and esp, -8) move to a trampoline, and the entry jumps to MlFindHook. */
+#define ML_DB_FIND_VA 0x004CB8E0u
+static const BYTE kMlFindPrologue[6] = { 0x55, 0x8B, 0xEC, 0x83, 0xE4, 0xF8 };
+typedef void *(__cdecl *MlFindFn)(int type, const char *name);
+static MlFindFn g_mlFindOriginal;
+
+static void *__cdecl MlFindHook(int type, const char *name)
+{
+    void *h = g_mlFindOriginal(type, name);
+    if (type == (int)ML_ASSET_STRINGTABLE && h && name && Readable(name, 1) && MlNameEq(name, "mp/comaplist.csv") &&
+        Readable(h, 16) && !(h == g_mlTable && *(const int *)((BYTE *)h + 8) == g_mlRows))
+        MlTakeTable((BYTE *)h, (DWORD)(DWORD_PTR)__builtin_return_address(0));
+    return h;
+}
+
+static BOOL MlHookLookup(void)
+{
+    BYTE *entry = (BYTE *)(DWORD_PTR)ML_DB_FIND_VA;
+    if (!Readable(entry, sizeof(kMlFindPrologue)) || memcmp(entry, kMlFindPrologue, sizeof(kMlFindPrologue))) return FALSE;
+    BYTE *tramp = (BYTE *)VirtualAlloc(NULL, 16, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    if (!tramp) return FALSE;
+    memcpy(tramp, kMlFindPrologue, sizeof(kMlFindPrologue));
+    tramp[6] = 0xE9; /* jmp back to the instruction after the moved prologue */
+    LONG back = (LONG)(DWORD_PTR)(entry + sizeof(kMlFindPrologue)) - (LONG)(DWORD_PTR)(tramp + 11);
+    memcpy(tramp + 7, &back, 4);
+    FlushInstructionCache(GetCurrentProcess(), tramp, 16);
+    g_mlFindOriginal = (MlFindFn)(void *)tramp;
+    BYTE jump[6] = { 0xE9, 0, 0, 0, 0, 0x90 };
+    LONG rel = (LONG)(DWORD_PTR)MlFindHook - (LONG)(DWORD_PTR)(entry + 5);
+    memcpy(jump + 1, &rel, 4);
+    WriteCode(entry, jump, sizeof(jump));
+    return TRUE;
 }
 
 static void InstallMapListFilter(void)
 {
     char v[8];
     InitializeCriticalSection(&g_mlLock);
+    InitializeCriticalSection(&g_mlTableLock);
     g_mlFilterOn = !(GetEnvironmentVariableA("K33_MAPLIST_ALL", v, sizeof(v)) && v[0] == '1');
     if (!g_mlFilterOn) Log("maplist: K33_MAPLIST_ALL=1, every map stays listed");
+    else if (MlHookLookup()) Log("maplist: mp/comaplist.csv is filtered on its first lookup (DB_FindXAssetHeader 0x%08X hooked)", ML_DB_FIND_VA);
+    else Log("maplist: DB_FindXAssetHeader 0x%08X differs; the table is filtered by the tick only", ML_DB_FIND_VA);
     if (!K33OnMainTick(MapListTick)) Log("maplist: no main-thread tick left; every map stays listed, no Survival map is known");
 }
