@@ -1,7 +1,8 @@
 #!/bin/sh
 # Development only (needs the server source): builds the sh1x match server that Kernel33 hosts from the server/sh1x
-# submodule and refreshes the prebuilt copy in third_party/sh1x that every build links. Never copies server sources
-# into this repository.
+# submodule and refreshes the prebuilt copy in third_party/sh1x that this repository's builds link. Never copies server
+# sources into this repository: the public export (tools/export_public.py) vendors them as third_party/sh1x/src,
+# which scripts/build.sh then builds in place instead of linking the prebuilt copy.
 #
 #   sh scripts/build-server.sh                 build server/sh1x/bin/libsh1x_host.a, copy it to third_party/sh1x
 #   K33_SERVER_CLEAN=1 sh scripts/build-server.sh   remove the object folder first (after header/.inc/asm changes)
