@@ -16,6 +16,8 @@
 //   * level.wagerMatch (T5) is false; playloopsound/stoploopsound take no fade times here.
 //   * dropAllToGround (T5 physics) -> physicsExplosionSphere-free no-op wait; destroyEquipment detonates
 //     the claymores/C4 touching a door through the players' claymoreArray/c4Array.
+//   * conveyor belt: coveyer_trig's T5 spawnflags 16 (VEHICLE) is TOUCH_ONCE to this server, which freed the trigger
+//     on the first touch; the trigger is parked out of reach and tested per frame instead (conveyer_belt_init).
 //   * missing in the zone, so their calls are left out: evt_excavator_* sounds; the green_light /
 //     blink_light effects are only played when level._effect defines them (the zone's fx file does not).
 #include maps\mp\_utility;
@@ -606,7 +608,12 @@ positive_value_func( num )
 	return num;
 }
 
-//Starts a thread to alter player's velocity as long as they're in the trigger
+//Alters the velocity of every player standing on the belt, as long as he is in the trigger.
+// 1.1.1.13: coveyer_trig carries T5's spawnflags 16 (VEHICLE: vehicles may trigger it). The IW3-derived match
+// server reads trigger_multiple spawnflag 16 as TOUCH_ONCE (Touch_Multi -> G_FreeEntityDelay), so the first player
+// who stepped on the belt deleted the trigger: T5's trigger_thread then ran on a removed entity and nobody was
+// carried. spawnflags is read-only to script, so the trigger is parked out of reach (no player can touch it, so the
+// engine never frees it) and moved back onto the belt only for the istouching() tests of one script frame.
 conveyer_belt_init()
 {
 	set_dvar_int_if_unset( "scr_coveyer_speed", 45 );
@@ -623,38 +630,24 @@ conveyer_belt_init()
 
 	conveyer_trigger._conveyer_vector = trigger_angles * getdvarint( "scr_coveyer_speed" );
 
+	belt_origin = conveyer_trigger.origin;
+	parked_origin = belt_origin - ( 0, 0, 10000 );
+	conveyer_trigger.origin = parked_origin;
+
 	while ( 1 )
 	{
-		conveyer_trigger waittill( "trigger", player );
-		if ( isPlayer( player ) && !isDefined( player._on_conveyer ) )
+		conveyer_trigger.origin = belt_origin;
+		foreach ( player in level.players )
 		{
-			conveyer_trigger thread player_on_conveyer( player );
+			if ( !isAlive( player ) || !player istouching( conveyer_trigger ) )
+				continue;
+			if ( player isonground() )
+				player setvelocity( player getvelocity() + conveyer_trigger._conveyer_vector );
 		}
+		conveyer_trigger.origin = parked_origin;
 
 		wait .05;
 	}
-}
-
-//Self is trigger. T5's trigger_thread: runs while the player stays in the trigger.
-player_on_conveyer( player )
-{
-	player endon( "death" );
-	player endon( "disconnect" );
-
-	player._on_conveyer = true;
-	while ( isDefined( player ) && isAlive( player ) && player istouching( self ) )
-	{
-		player_velocity = player getvelocity();
-
-		if ( player isonground() )
-		{
-			player setvelocity( player_velocity + self._conveyer_vector );
-		}
-
-		wait .05;
-	}
-	if ( isDefined( player ) )
-		player._on_conveyer = undefined;
 }
 
 getent_and_assert( ent_name )
