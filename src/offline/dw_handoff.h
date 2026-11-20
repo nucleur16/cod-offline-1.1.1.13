@@ -18,7 +18,7 @@ struct Selection {
     std::string gametype;   /* rules name: war / combat / coop / zm */
     std::string type;       /* zone category: mp / coop / zm / survival */
     std::string category;   /* the embedded host's category; the same word as `type` */
-    int difficulty;         /* Zombies: desc[26], 0 easy / 1 normal / 2 hard; -1 for every other category */
+    int difficulty;         /* Zombies: desc[26], 0 easy / 1 normal / 2 hard / 3 endless; -1 for every other category */
     std::string error;      /* not empty: the selection cannot be played (Python: select() raised) */
     int playlist;           /* -1 = none */
     std::string playlistName, source, playerName;

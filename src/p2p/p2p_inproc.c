@@ -569,14 +569,15 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
     } else {
         /* The same server, moved to this match: latched settings, then the map (as the lobby retargets a worker). */
         const char *session = c.sessionMap[0] ? c.sessionMap : c.map;
-        int difficulty = !strcmp(c.zoneType, "zm") && c.difficultyPresent && c.difficulty >= 0 && c.difficulty <= 2 ? c.difficulty : 0;
+        int difficulty = !strcmp(c.zoneType, "zm") && c.difficultyPresent && c.difficulty >= 0 && c.difficulty <= 3 ? c.difficulty : 0;
         /* fs_game carries the category for exactly the next spawn (server filesystem.c FS_NormalizeGameDir,
          * sv_main.c SV_ResolveAssetCategory), as the lobby dispatches a match. sv_zoneType alone only
          * counts while it differs from the running value: a second co-op or survival match in a row would
          * otherwise resolve as mp from its mp_* level name. */
         _snprintf(g_piRetarget, sizeof(g_piRetarget),
-                  "set fs_game %s\nset sv_zoneType %s\nset sv_sessionMap %s\nset g_gametype %s\nset g_difficulty %d\nmap %s\n",
-                  c.zoneType, c.zoneType, session, c.gametype, difficulty, c.map);
+                  "set fs_game %s\nset sv_zoneType %s\nset sv_sessionMap %s\nset g_gametype %s\nset g_difficulty %d\n"
+                  "set zombiesEndlessEnabled %d\nmap %s\n",
+                  c.zoneType, c.zoneType, session, c.gametype, difficulty, difficulty == 3, c.map);
         g_piRetarget[sizeof(g_piRetarget) - 1] = 0;
         Log("p2p in-process: reusing the match server started %lu s ago (match %ld): %s %s on %s:%d",
             (GetTickCount() - g_piServerStartTick) / 1000, n, c.map, c.gametype, c.netIp, c.port);

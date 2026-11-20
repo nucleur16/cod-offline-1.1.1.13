@@ -39,7 +39,7 @@ int K33LocalPlayIntent(K33LocalPlayIntentInfo *out);
  * choice to tick. The in-process lobby tells Kernel33 the selection it resolved for the owner's room
  * (and is about to tell the client): Kernel33 arms the host for exactly that selection, replacing
  * whatever was armed, and with `launch` also raises the launch (the lobby is handing START_GAME to
- * the owner now). `difficulty` is the Zombies room's (0..2), -1 for none.
+ * the owner now). `difficulty` is the Zombies room's (0..2, 3 = Endless), -1 for none.
  * -> 1: accepted; *port is the loopback UDP port the host serves on. The work is done by p2p.c's
  *       main-thread tick; nothing is started on the caller's thread.
  * -> 0: this selection cannot be hosted; `error` says why (an unknown category or map, a missing

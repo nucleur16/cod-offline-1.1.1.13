@@ -120,7 +120,7 @@ struct StartInfo { /* what a room start resolved to */
     int hostPort;
     Bytes securityKey; /* the client's 16-byte bdSecurityKey */
     bool local;
-    int difficulty;    /* Zombies: 0 easy / 1 normal / 2 hard; -1 for every other category */
+    int difficulty;    /* Zombies: 0 easy / 1 normal / 2 hard / 3 endless; -1 for every other category */
     StartInfo() : uid(0), hostPort(0), local(false), difficulty(-1) {}
 };
 struct Host {

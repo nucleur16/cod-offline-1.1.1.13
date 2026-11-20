@@ -409,7 +409,8 @@ void SelectionChecks(const dw::Config &base, const std::string &scratch)
               "a co-op mission is still co-op");
         dw::Selection zm = p.Select("zm", "zm_asylum_sh", 2);
         Check(Is(zm, "zm_asylum_sh", "zm_asylum_sh", "zm", "zm") && zm.difficulty == 2, T, "Zombies carries the room's difficulty (desc[26])");
-        Check(p.Select("zm", "zm_asylum_sh", 7).difficulty == 0, T, "a difficulty outside 0..2 is easy");
+        Check(p.Select("zm", "zm_prototype_sh", 3).difficulty == 3, T, "Endless (desc[26] 3) reaches the host on a non-Kino map");
+        Check(p.Select("zm", "zm_asylum_sh", 7).difficulty == 0, T, "a difficulty outside 0..3 is easy");
         Check(p.Select("war", "mp_rust").difficulty == -1, T, "no difficulty outside Zombies");
         /* the room latch of another category is some earlier room */
         std::string zmGt = "zm", warGt = "war";

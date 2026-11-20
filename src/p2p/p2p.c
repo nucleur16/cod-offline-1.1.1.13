@@ -527,9 +527,12 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
     char relayPath[MAX_PATH + 64];
     if (c.pmemMegs >= 32 && c.pmemMegs <= 2048) _snprintf(pmem, sizeof(pmem), "+set pmemMegs %d", c.pmemMegs);
     /* Zombies: the room's difficulty is g_difficulty to the server's _zombiemode.gsc (the lobby's
-     * selection, K33LocalPlayAuto); left unset it stays 0 and every room plays on easy. */
-    if (!strcmp(c.zoneType, "zm") && c.difficultyPresent && c.difficulty >= 0 && c.difficulty <= 2)
-        _snprintf(pmem + strlen(pmem), sizeof(pmem) - strlen(pmem), " +set g_difficulty %d", c.difficulty);
+     * selection, K33LocalPlayAuto); left unset it stays 0 and every room plays on easy. 3 is Endless
+     * on every zombies map (no round cap or rescue); zombiesEndlessEnabled lets the server keep its
+     * round checkpoint (coop_progress.c Scr_CheckpointZombiesRound). */
+    if (!strcmp(c.zoneType, "zm") && c.difficultyPresent && c.difficulty >= 0 && c.difficulty <= 3)
+        _snprintf(pmem + strlen(pmem), sizeof(pmem) - strlen(pmem), " +set g_difficulty %d +set zombiesEndlessEnabled %d",
+                  c.difficulty, c.difficulty == 3);
     /* A loopback host stays on loopback for IPv6 too: without this the server also binds [::]:<port>
      * (TCP and UDP, every interface - seen with netstat), next to its 127.0.0.1 sockets. */
     if (!strcmp(c.netIp, "127.0.0.1"))
@@ -1099,6 +1102,11 @@ int K33LocalPlayIntent(K33LocalPlayIntentInfo *out)
     return out->size==sizeof(*out);
 }
 
+/* devmap / map <zm level> zm <difficulty>: the Zombies difficulty the console named for that level, which
+ * the room's own descriptor (desc[26]) does not carry. -1: none. g_p2pLock. */
+static int g_dmDifficulty=-1;
+static char g_dmDifficultySession[64];
+
 int K33LocalPlayAuto(unsigned long long owner_uid,const char *session_map,const char *gametype,const char *type,int difficulty,int launch,int *port,char *error,int error_size)
 {
     const char *args[3]={session_map,gametype,type};
@@ -1112,7 +1120,13 @@ int K33LocalPlayAuto(unsigned long long owner_uid,const char *session_map,const 
     if (!owner_uid || !session_map || !gametype || !type) bad="No room selection.";
     else bad=P2PParseRoomContext(3,args,&room);
     if (!bad) {
-        if (!strcmp(room.category,"zm") && difficulty>=0 && difficulty<=2) { room.difficultyPresent=1;room.difficulty=difficulty; }
+        if (!strcmp(room.category,"zm")) {
+            /* a pending devmap/map <zm level> zm <difficulty> names it for its own level */
+            EnterCriticalSection(&g_p2pLock);
+            if (g_dmDifficulty>=0 && !strcmp(g_dmDifficultySession,room.session)) difficulty=g_dmDifficulty;
+            LeaveCriticalSection(&g_p2pLock);
+            if (difficulty>=0 && difficulty<=3) { room.difficultyPresent=1;room.difficulty=difficulty; }
+        }
         P2PDefaults(&c);P2PLoadIni(&c);
         lstrcpyA(c.map,room.map);lstrcpyA(c.sessionMap,room.session);
         lstrcpyA(c.gametype,room.gametype);lstrcpyA(c.zoneType,room.category);
@@ -1141,6 +1155,7 @@ void K33LocalPlayLeave(unsigned long long owner_uid)
 {
     if (!g_p2pInit || !P2PAutoMode()) return;
     EnterCriticalSection(&g_p2pLock);
+    g_dmDifficulty=-1;g_dmDifficultySession[0]=0;
     g_p2pAuto.kind=P2P_AUTO_LEAVE;g_p2pAuto.launch=FALSE;g_p2pAuto.owner=owner_uid;g_p2pAuto.error[0]=0;
     LeaveCriticalSection(&g_p2pLock);
 }
@@ -1372,12 +1387,23 @@ static void P2PDmStart(BOOL cheats)
     const char *verb = cheats ? "devmap" : "map";
     const char *map = VoiceArgc() > 1 ? VoiceArgv(1) : "";
     const char *gt = VoiceArgc() > 2 ? VoiceArgv(2) : "";
+    const char *tier = VoiceArgc() > 3 ? VoiceArgv(3) : "";
     const char *args[3], *bad;
     P2PRoomContext room;
+    int difficulty = -1;
     if (!map[0]) {
-        C1Printf("%s <level> [gametype]: host <level> on this PC and join it%s (gametype: war for mp_ levels, zm for zm_,"
-                 " coop for coop_)\n", verb, cheats ? " with cheats on" : "");
+        C1Printf("%s <level> [gametype] [easy|normal|hard|endless]: host <level> on this PC and join it%s (gametype: war"
+                 " for mp_ levels, zm for zm_, coop for coop_; the difficulty is for zm_ levels)\n", verb, cheats ? " with cheats on" : "");
         return;
+    }
+    if (tier[0]) {
+        static const char *const names[] = { "easy", "normal", "hard", "endless" };
+        for (int i = 0; i < 4; i++)
+            if (!_stricmp(tier, names[i]) || (tier[0] == '0' + i && !tier[1])) difficulty = i;
+        if (difficulty < 0 || strncmp(map, "zm_", 3)) {
+            C1Printf("%s: the difficulty (easy, normal, hard or endless) is for zm_ levels only\n", verb);
+            return;
+        }
     }
     const char *category = !strncmp(map, "zm_", 3) ? "zm" : !strncmp(map, "coop_", 5) ? "coop" : "mp";
     if (!gt[0]) gt = !strcmp(category, "mp") ? "war" : category;
@@ -1401,7 +1427,10 @@ static void P2PDmStart(BOOL cheats)
         }
         P2PDmRconJob *job = (P2PDmRconJob *)calloc(1, sizeof(*job));
         if (!job) return;
-        _snprintf(job->command, sizeof(job->command), "g_gametype %s; %s %s", room.gametype, verb, room.map);
+        if (difficulty >= 0)
+            _snprintf(job->command, sizeof(job->command), "g_difficulty %d; zombiesEndlessEnabled %d; g_gametype %s; %s %s",
+                      difficulty, difficulty == 3, room.gametype, verb, room.map);
+        else _snprintf(job->command, sizeof(job->command), "g_gametype %s; %s %s", room.gametype, verb, room.map);
         job->command[sizeof(job->command) - 1] = 0;
         if (P2PDmHostRcon(P2PDmRconThread, job, &job->port, job->password))
             C1Printf("%s: changing the level to %s (%s)\n", verb, room.map, room.gametype);
@@ -1409,6 +1438,10 @@ static void P2PDmStart(BOOL cheats)
         return;
     }
 
+    EnterCriticalSection(&g_p2pLock);
+    g_dmDifficulty = difficulty;
+    lstrcpynA(g_dmDifficultySession, difficulty >= 0 ? room.session : "", sizeof(g_dmDifficultySession));
+    LeaveCriticalSection(&g_p2pLock);
     memset(&g_dm, 0, sizeof(g_dm));
     g_dm.room = room; g_dm.cheats = cheats;
     g_dm.started = g_dm.since = GetTickCount();

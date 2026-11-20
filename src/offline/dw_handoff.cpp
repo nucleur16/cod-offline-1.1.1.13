@@ -26,8 +26,9 @@ namespace dw {
 static const char kDefaultTargetMap[] = "mp_killhouse_sh";
 static const char kCtorDefaultMap[] = "mp_crash_tropical"; /* dwRoomInfo ctor (C1 0x7089e0): "no map named" */
 static const uint32_t kCrcPlaylist = 3615625517u;           /* crc32("playlist"): the mode-1 sentinel */
-/* desc[26] is the Zombies room creator's difficulty (0 easy / 1 normal / 2 hard). MEASURED by the
- * Python lobby 2026-10-20: zm_sumpf_sh on hard sent desc[24..27] = crc, 0, 2, 0; easy rooms 0, 0, 0. */
+/* desc[26] is the Zombies room creator's difficulty (0 easy / 1 normal / 2 hard / 3 endless, the room
+ * UI's fourth choice where mp/comaplist.csv column 23 offers it). MEASURED by the Python lobby
+ * 2026-10-20: zm_sumpf_sh on hard sent desc[24..27] = crc, 0, 2, 0; easy rooms 0, 0, 0. */
 enum { D_MAXPLAYERS = 2, D_NAME = 3, D_MODE = 5, D_LEAGUE = 11, D_GT_CRC = 23, D_MAP_CRC = 24, D_DIFFICULTY = 26, COOP_LEAGUE_SENTINEL = 255 };
 static const double kPlaylistFreshSeconds = 300.0, kRoomLatchTtl = 1800.0;
 
@@ -789,15 +790,16 @@ Selection HandoffSelect(Server &s, const Vals *desc)
         }
     }
 
-    /* Zombies: the room creator's difficulty; anything else on the wire is easy. */
+    /* Zombies: the room creator's difficulty (3 = Endless: no round cap, no rescue, _zombiemode.gsc);
+     * anything else on the wire is easy. */
     if (ztype == "zm") {
-        if (d.ok && d.difficulty >= 0 && d.difficulty <= 2) {
-            static const char *const names[] = { "easy", "normal", "hard" };
+        if (d.ok && d.difficulty >= 0 && d.difficulty <= 3) {
+            static const char *const names[] = { "easy", "normal", "hard", "endless" };
             sel.difficulty = (int)d.difficulty;
             chain.push_back(Fmt("difficulty: %d (%s) from desc[%d]", sel.difficulty, names[sel.difficulty], (int)D_DIFFICULTY));
         } else {
             sel.difficulty = 0;
-            chain.push_back("difficulty: not 0..2 on the wire -- easy (0)");
+            chain.push_back("difficulty: not 0..3 on the wire -- easy (0)");
         }
     }
 
