@@ -161,7 +161,7 @@
   "files": {
     "scripts/build-profile.sh": "12722b032ae63ca2cfebe0c138e1cef78d5e7dc5b2dffe19657a441c39ba4020",
     "shipping_maps.txt": "35ebff1e86603145622d31ecffec895503cfbed14f4c6a963f1eeab24e7281ae",
-    "src/borderless.c": "f238bf31263dd0a1998a7e037e04f62bb21cf354c304bc7da75a53b72d6a5571",
+    "src/borderless.c": "833b3059560165ed8656062800ce75b95c8db2a7992abb17e1b99414642a1322",
     "src/gfx/gfx_date_time.c": "8a0e2175c405a7f5aca4487792b99c9835070df67f71ff8b11c39f3723255489",
     "src/gfx/gfx_date_time_guards.h": "bab7fafa81cabf95c3881459c39d44043c1b9f28f979a21a226bee61225cdd86",
     "src/gfx/gfx_date_time_policy.h": "1e031d2bae77c7a2c13e2e8e7b610415bc20e416734e7bd2852577cc89027333",
@@ -176,7 +176,7 @@
     "src/kernel/kernel_room_guards.h": "b5ae3eb07bad5f519fff2d5992b1406de53f6a93476a94eecf5e869c0a853aac",
     "src/kernel/kernel_room_policy.h": "2cc0d58b4577f14db838cd3348dc8ac3f3699591277f4d71ae14993ef07e63db",
     "src/kernel/kernel_video_mode.c": "0fbb16f81b1602405d8c7b678292d62ef9821cdc5918fd6030c78445ef30d0a5",
-    "src/kernel33.c": "a710aa805ab3970a0dc83ab7205f9c3b9da0ba2ddf8ef04f2528d9d8e6b103f7",
+    "src/kernel33.c": "537a1faee93746209e7f76e337a7fc69a62094b711e2f4030eb49dbded16f1dc",
     "src/minigun_pair_native.c.inc": "ec3341020ca0afb09fe21e265867240ec218dfc7c5f959f8d0be65904a33ce33",
     "src/patch_locale_policy.h": "ef908e847c3c9e593e2a60923d18f036713b79d831950e098b48123ddf29d38d",
     "src/production_profile.h": "7ace08df588d0f224e1c5e6d6580cae7b51568fa790959b8d5a2f2892493955c",

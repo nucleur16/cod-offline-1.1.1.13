@@ -185,6 +185,8 @@ static void PatchActiveHandFiringMarker(void)
 #if defined(K33_LOCAL_TESTING) && K33_LOCAL_TESTING == 1
 static FARPROC LocalQaRouteImport(const C1Import *imp,FARPROC original);
 #endif
+/* C1's GBK window titles and message boxes in Unicode (window_title.c). */
+static FARPROC WtImport(const C1Import *imp, FARPROC original);
 /* The lobby inside this DLL (offline_lobby.c): TRUE once it listens and C1 is routed to it. This client is
  * offline only, so that is before C1's entry point in every run; a start that fails stops the client. */
 static BOOL OfflineLobbyActive(void);
@@ -218,6 +220,7 @@ static void FillImports(void)
             continue;
         }
         f = QbgImport(imp, f);
+        f = WtImport(imp, f);
 #if defined(K33_LOCAL_TESTING) && K33_LOCAL_TESTING == 1
         f = LocalQaRouteImport(imp,f);
 #endif
@@ -1646,6 +1649,7 @@ static void PatchGbkInput(void)
  * after voice.c's and discord.c's Com_EventLoop hooks) and a SHA-256 helper (k33sha256.c). */
 #include "k33tick.c"
 #include "locale_switch.c" /* loc_languageName: the language, changed while the game runs (after voice.c, k33tick.c) */
+#include "window_title.c"   /* C1's GBK window titles and message boxes in Unicode (after locale_switch.c) */
 #include "k33sha256.c"
 #include "maplist_filter.c" /* the map lists show only installed maps (a main-thread tick) */
 
