@@ -1,0 +1,4 @@
+#define RESIDENT_PROFILE_NAME "unqualified"
+#define RESIDENT_PROFILE_SHA ""
+#define RESIDENT_HAS_COVER 1
+#define RESIDENT_HAS_TOKENS 1

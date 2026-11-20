@@ -1,0 +1,53 @@
+{
+  "schema": "codol-script-release-lineage/1",
+  "change": {
+    "status": "source integrated; actual retained native GSC VM passed; parent commit/publication pending",
+    "change": "Close menus, then ignore queued party class replies in postgame before team/class/accounting changes.",
+    "independent_GSC_only": true,
+    "added_native_builtins_or_client_components": [],
+    "package_before": "9a2e7c03923874ff3f70e45ab2b7594107e2f43afbdd9dbedfbcf6944be8988a",
+    "package_after": "29c3808f9ab99b3b68bead380c4b9c299479b5edc7a332697e476021f2326ec7",
+    "native_unchanged": "a654718ec3c9638507e10418dde85057cc85cdd1d9fccd3471726cf0542e84c8",
+    "proof": "docs/release-lineage/20261023-postgame-party-class.json",
+    "actual_native_GSC_VM_cases": 8,
+    "actual_C1": false,
+    "limits": "Native bot/menu-response and map lifecycle acceptance; no human Quick, password, C1 UI or lobby-return claim. Coupled e70e480d is excluded."
+  },
+  "checkpoint_source_equivalence": {
+    "schema": "postgame-party-class-source-equivalence/1",
+    "passed": true,
+    "checkpoint_rawfiles_commit": "a1dbc866ed9eebfd3d4bc3fd47fdc60e7590397f",
+    "checkpoint_before_leaf_sha256": "7b3e11cba822c4ff1b2ec152c6563522d0e3bf45e1ae3142c2a7aae97ef035b8",
+    "checkpoint_after_leaf_sha256": "c82f94f5dc317192cd09292cf7d0ad5b1a7902734425670296fc413ce0a3b7e6",
+    "exact_package_before_leaf_sha256": "e623ffce4b96f7b6734a97b72571145d2b93902c029606e27c76706a4a89b63f",
+    "exact_package_after_leaf_sha256": "2b36c9c6be9f2090715fd42832d5695b2f0924e005d27783dc6022f9a584ef1e",
+    "function_before_sha256": "67637df3035370840dc15edec9d784d6a4cb34c50f17e2e41f711c50bf845753",
+    "function_after_sha256": "55be5118fc501bd0d5fbb1a979ea4216093fe8a25f7e11927f05772aea3139c2",
+    "before_and_after_function_bytes_equal": true,
+    "checkpoint_full_leaf_equals_package_full_leaf": false,
+    "new_calls_or_builtins": [],
+    "exact_tested_package_sha256": "29c3808f9ab99b3b68bead380c4b9c299479b5edc7a332697e476021f2326ec7",
+    "baseline_scripts_are_not_replaced_by_checkpoint_tree": true
+  },
+  "rawfiles_source_base_reachable_ref": "origin/codex/maintenance-mp-scripts-20261020",
+  "server_checkpoint_base": "b04a8883eaad3d37fd8f3c123572c1dfa7d49fe4",
+  "source_branch": "codex/postgame-party-class-20261023",
+  "latest_audited_upstream_main": "b316bd45c81ebaa8600273e5090e85207573b7fc",
+  "latest_audited_private_server_main": "68c28a02a8073da679e961f9cfcceb9326ba40eb",
+  "latest_audited_rawfiles_main": "52e2e26d0318c169a9345ad4e24f5d59bf507d1c",
+  "upstream_main_does_not_contain_party_class_helper": true,
+  "private_server_main_rawfiles_is_tree_not_gitlink": true,
+  "merge_or_main_push_performed": false,
+  "baseline_native_source_archive": {
+    "sha256": "8c9dc76c59c937966de577848ebc4c1fd2d868595b633e39f0afb1cf426b8294",
+    "path": "re/overnight-lobby-audit-20261022/integration-r7-production/cumulative-normal-source.tar.gz"
+  },
+  "exact_package_member_manifest_sha256": "70ca8b0b04b8e8320fd5f80ba47bbc55db8ef8874275b4d9db9c7ffbcbad90a3",
+  "native_VM_results_sha256": "1d875a0c83a9a834e04855d9540c6133a5c53c5c24571967441769b106d77c44",
+  "read_only_baseline_receipt_sha256": "c57bdea93eb5bf430e694be4744e3155582546b367446c01424649a10434386c",
+  "producer_before_sha256": "aa9b54697c7b0952853c8106665bb962eb19b8bf370c39de591877046cad88d7",
+  "producer_feature_sha256": "7f89c1ada9b61de57d14d7d34e342d57342dc9b437be009ae9dcb0971c6364e3",
+  "producer_after_sha256": "44d7805b021932ed88c07da52801b341155f1a8c95a3e787474834b462936fd5",
+  "publication_source_contract": "Exact 9a2 immutable archive plus this one-leaf guard yields tested 29c. Checkpoint guard is equivalent source history, not a rebuild claim for the full package.",
+  "parent_commits_and_publication_pending": true
+}

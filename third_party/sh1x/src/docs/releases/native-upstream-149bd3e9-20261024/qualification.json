@@ -1,0 +1,77 @@
+{
+  "schema": "codol-native-current149-source-build-review-v1",
+  "parent_review_required": true,
+  "source_root": "E:\\CoDOL-Task-Clients\\native-current149-review-20261024",
+  "native_commit": null,
+  "base_commit": "b72e938d0c0698c481306f41445377dafc0ce32b",
+  "incoming_main": "149bd3e96b1f5c37a671eca176ac39ad136ce463",
+  "raw_commit": "c7da25a75f517969463479cbf621450480dd1ce0",
+  "source_integration": {
+    "path": "E:\\codol-task-evidence\\native-current149-build-20261024\\source-integration.json",
+    "size": 2956,
+    "sha256": "bc3c6ebfea4b5baf025726f5559a94c934615cd36c8ccfd22482ddce72379446"
+  },
+  "shared_scripts": {
+    "path": "E:\\codol-task-evidence\\native-current149-build-20261024\\shared-scripts\\sh1x_svr_scripts.iwd",
+    "size": 5410990,
+    "sha256": "ee5e4102ffa70d5be1566116aacd5121ea435c9890b940ea0e13286dfe642dc3",
+    "reproduction": {
+      "path": "E:\\codol-task-evidence\\native-current149-build-20261024\\shared-scripts\\reproduction.json",
+      "size": 1177,
+      "sha256": "a16cd07fecb1b0126121d6581f819ca4a3f946f6c92ab11b2959a3ee29e197be"
+    },
+    "members": 1718
+  },
+  "windows_qualification": {
+    "path": "E:\\codol-task-evidence\\native-current149-build-20261024\\windows\\qualification.json",
+    "size": 6448,
+    "sha256": "140f9ef1a983306431b81f7fb7d5e2044cfaf31e2017eb2856f091934cb9940b"
+  },
+  "focused_checks": {
+    "path": "E:\\codol-task-evidence\\native-current149-build-20261024\\focused-confirmed-results.json",
+    "size": 4190,
+    "sha256": "113f916541d2268d8f99bb3c90f79a847d965ab4f73c6d63485debff3ab39e2b"
+  },
+  "immutable_packages": {
+    "path": "E:\\codol-task-evidence\\native-current149-build-20261024\\prepared-immutable-packages.json",
+    "size": 1543,
+    "sha256": "58fd1bc903f63bd9f5351bce27df087e71bc74f5c721a56916129e40e8e24f39"
+  },
+  "pinned_source_manifest": {
+    "path": "E:\\CoDOL-Task-Clients\\native-current149-review-20261024\\native_profiles\\manifest.json",
+    "size": 10749,
+    "sha256": "1bdeacba39decbc1f703c7897a34703313272afd8b26f44b0ce564274c38bac1"
+  },
+  "new_native_C1_acceptance": false,
+  "committed_pushed_or_QA_activated": false,
+  "original_review_checkout_clean": true,
+  "source_whitespace_note": "Native source and actual profile delta pass diff checks. Generated review-only diff contains intentional diff-context whitespace; preserve its exact diagnostic bytes.",
+  "profiles": {
+    "normal": {
+      "linux": {
+        "size": 7072508,
+        "sha256": "e9fddc48d1c9ab8ad45fa132922224fac31aab1ab7800861929641bcaa08cfb3"
+      },
+      "windows": {
+        "size": 7449527,
+        "sha256": "055935468bd61c8a404721adbb51d197b4c81267c255b1b24e537eee5b6804bd"
+      },
+      "source_files": 1715,
+      "code_manifest_sha256": "58bb28628ae76cc36dfc48e8da679b5d375e9333e06f631424d3c0b819ab3f5f",
+      "new_native_C1_acceptance": false
+    },
+    "zombies": {
+      "linux": {
+        "size": 7046168,
+        "sha256": "78191aacfdd83f4765929597f84cd9ed18d7c3891f19799ba81caf2480522fd9"
+      },
+      "windows": {
+        "size": 7428876,
+        "sha256": "5e4eb5565eb75fc99250124fe9903be960761e976e7319fcf2ce99ac8e1f17c7"
+      },
+      "source_files": 1727,
+      "code_manifest_sha256": "a06929248bb706c7b5dc1e9ac7d3170747b52a917b48722ef60f3e0a5cd3063e",
+      "new_native_C1_acceptance": false
+    }
+  }
+}

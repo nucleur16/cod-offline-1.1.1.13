@@ -1,0 +1,18 @@
+{
+  "exit": 1,
+  "unknown": [
+    "canreachplayer",
+    "codol_checkpointzombiesround",
+    "codol_enableclientstatuscolour",
+    "codol_reserveentityfx",
+    "codol_setclipbox",
+    "codol_viewmodelfxready",
+    "codolarmrevivetoken",
+    "codolclearrevivetoken",
+    "codolgetrevivetokencount",
+    "codollocaltestallowed",
+    "codolrequestrevivetokenspend"
+  ],
+  "output": "\nUNRESOLVED NAMES (each one is a fatal map-load compile error)\n\n  maps/_zombiemode.gsc\n    bin/home/codol_rawfiles\\maps\\_zombiemode.gsc\n    unknown function: codol_checkpointzombiesround (2 call sites)\n    unknown function: codol_enableclientstatuscolour (1 call site)\n    unknown function: codollocaltestallowed (4 call sites)\n\n  maps/_zombiemode_ai_boss.gsc\n    bin/home/codol_rawfiles\\maps\\_zombiemode_ai_boss.gsc\n    unknown function: canreachplayer (1 call site)\n\n  maps/_zombiemode_spawner.gsc\n    bin/home/codol_rawfiles\\maps\\_zombiemode_spawner.gsc\n    unknown function: canreachplayer (1 call site)\n\n  maps/_zombiemode_tokens.gsc\n    bin/home/codol_rawfiles\\maps\\_zombiemode_tokens.gsc\n    unknown function: codolarmrevivetoken (1 call site)\n    unknown function: codolclearrevivetoken (1 call site)\n    unknown function: codolgetrevivetokencount (3 call sites)\n    unknown function: codolrequestrevivetokenspend (1 call site)\n\n  maps/_zombiemode_traps.gsc\n    bin/home/codol_rawfiles\\maps\\_zombiemode_traps.gsc\n    unknown function: codol_reserveentityfx (5 call sites)\n\n  maps/_zombiemode_weapon_lights.gsc\n    bin/home/codol_rawfiles\\maps\\_zombiemode_weapon_lights.gsc\n    unknown function: codol_viewmodelfxready (1 call site)\n\n  maps/zm_theater_sh.gsc\n    bin/home/codol_rawfiles\\maps\\zm_theater_sh.gsc\n    unknown function: codol_setclipbox (1 call site)\n",
+  "historical_status": "Pre-consolidation gate retained as evidence; superseded by native-final-union-validation-20261029.json: all missing builtins implemented and built-ZM resolver/startup passed."
+}

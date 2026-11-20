@@ -1,0 +1,17 @@
+{
+  "contains_binaries_archives_key_material_or_credentials": false,
+  "current_C1_acceptance": "Zombies narrow local pass; normal and full release pending",
+  "files": {
+    "PROOF.md": "ee9205079d71c1069000db89a8194ebe6cee18c625cf3fe5d6f2e565d7f4a89f",
+    "README.md": "36814f444d8e60f7273423c0a6daba485708044a62a2ee4821292fe83df03d59",
+    "fixtures/archive_probe.c": "a5ea159ed42ac5b95ace626166000205d52beb9c417da89df5db49dde5ae2008",
+    "fixtures/prepare.py": "af9c3fc031b6c667d3d78db075f4ec76d9551d1dedc00b22f40499c8504138c7",
+    "fixtures/run.sh": "a05a04db4db1446aa0a010c267be04689d3f965d7b4c9825b4891ac19c98dcd6",
+    "fixtures/test_anim_receiver.c": "b93651ad03d6d4835176f6cfccabf947825bbd0641f78e2bf5c66730baa60a19",
+    "qualification.json": "5f51bd09be6721cc3daf0283f3ad2455262e19b93e0bb69a829dc636d0444a42",
+    "source-preservation.json": "2afe49e57d9102e019f5c1cc870081c7a7ebbcd5863bc2929fb0ab14ece199d2",
+    "zombies-narrow-C1.json": "177c9929cd1bfdd44d3ee60e887e7c0e90f8d93452c0a8703c666c8efbe77b58"
+  },
+  "native_profile_manifest_sha256": "25e7f9bb05e7dd2e3dd34fe171c8537efcf071fb1650eede73eb50a28716885f",
+  "schema": "codol-native-parity-evidence-files-v1"
+}

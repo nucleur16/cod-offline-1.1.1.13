@@ -1,0 +1,227 @@
+{
+  "deleted": [
+    {
+      "branch": "codex/dev-ui",
+      "sha": "d65816894b501f0686528c42ce0ef4cb3b91f45e",
+      "ref": "refs/heads/codex/dev-ui"
+    },
+    {
+      "branch": "codex/discord-bug-bridge",
+      "sha": "32013908888a9fbaea28ddc5c4dee5cc112d0b42",
+      "ref": "refs/heads/codex/discord-bug-bridge"
+    },
+    {
+      "branch": "codex/qualified-departure-profiles-20261026",
+      "sha": "53ee8910d02cb28e657db26ff28c1e125053172f",
+      "ref": "refs/heads/codex/qualified-departure-profiles-20261026"
+    },
+    {
+      "branch": "codex/resident-native-20261029",
+      "sha": "dbc839ca0e9ed28967f4f933e5c55cb7ea96ac31",
+      "ref": "refs/heads/codex/resident-native-20261029"
+    },
+    {
+      "branch": "codex/rooms-production-20261026",
+      "sha": "4aeab129b002d8f4012df6a9b8eeb0dd504cad75",
+      "ref": "refs/heads/codex/rooms-production-20261026"
+    },
+    {
+      "branch": "codex/unified-native-profiles-20261023",
+      "sha": "7dd1a22ae0b18ed541a748a7061ac1c70456dbdc",
+      "ref": "refs/heads/codex/unified-native-profiles-20261023"
+    },
+    {
+      "branch": "deploy/dev-cheat-commands",
+      "sha": "6956a2d0501c1b20c51c8fefdb0b17d38644748b",
+      "ref": "refs/heads/deploy/dev-cheat-commands"
+    },
+    {
+      "branch": "deploy/dev-cheat-commands-sound-c1",
+      "sha": "554a82fd9e3542157492d417bb6b4e0bb9af8a61",
+      "ref": "refs/heads/deploy/dev-cheat-commands-sound-c1"
+    },
+    {
+      "branch": "deploy/late-corpse-powerdoor",
+      "sha": "da12470e9a6ac76b549d7495a59917c544c4f029",
+      "ref": "refs/heads/deploy/late-corpse-powerdoor"
+    },
+    {
+      "branch": "deploy/late-corpse-powerdoor-perkclip",
+      "sha": "8ed5cd221cca1f05718e831c27e85ca2a8e597b6",
+      "ref": "refs/heads/deploy/late-corpse-powerdoor-perkclip"
+    },
+    {
+      "branch": "deploy/late-corpse-powerdoor-perkclip-sec",
+      "sha": "729788af1d41d77de5fa19badd2e73c682a23936",
+      "ref": "refs/heads/deploy/late-corpse-powerdoor-perkclip-sec"
+    },
+    {
+      "branch": "deploy/lowmem-survival",
+      "sha": "6e62fb9a0e8df320642350407aef66f255921391",
+      "ref": "refs/heads/deploy/lowmem-survival"
+    },
+    {
+      "branch": "deploy/lowmem-survival-rconlog",
+      "sha": "8686756da50bed600694e46771527dc0e58a3d82",
+      "ref": "refs/heads/deploy/lowmem-survival-rconlog"
+    },
+    {
+      "branch": "deploy/lowmem-survival-rconlog2",
+      "sha": "9eee1c9e8dbb8b4725f154e6cb124bde148589d8",
+      "ref": "refs/heads/deploy/lowmem-survival-rconlog2"
+    },
+    {
+      "branch": "deploy/survival-minimal",
+      "sha": "a651c8527344851054daf8bfa8de482cf56b9c89",
+      "ref": "refs/heads/deploy/survival-minimal"
+    },
+    {
+      "branch": "deploy/survival-minimal-gscheck",
+      "sha": "ed0fcefb7d6e0b818abad78049ac1659af36759f",
+      "ref": "refs/heads/deploy/survival-minimal-gscheck"
+    },
+    {
+      "branch": "deploy/survival-minimal-mem",
+      "sha": "d5f5b0617ae12e6bc8eb3325481dbc440bb950f5",
+      "ref": "refs/heads/deploy/survival-minimal-mem"
+    },
+    {
+      "branch": "deploy/survival-minimal-mem-timeout",
+      "sha": "46efb4839a5eb279d55a1f5db931c5b06bdf5f5d",
+      "ref": "refs/heads/deploy/survival-minimal-mem-timeout"
+    },
+    {
+      "branch": "deploy/survival-mode",
+      "sha": "b6a7ee820f395a45b2256e61dca389e6478612a1",
+      "ref": "refs/heads/deploy/survival-mode"
+    },
+    {
+      "branch": "feat/dev-cheat-commands",
+      "sha": "fb079a01c5cb42f42716f15f3b5c0e6a9a2955d5",
+      "ref": "refs/heads/feat/dev-cheat-commands"
+    },
+    {
+      "branch": "feat/iw4-asset-layout",
+      "sha": "18454a2dfdffa199edae6259b91fef98d2a5fd28",
+      "ref": "refs/heads/feat/iw4-asset-layout"
+    },
+    {
+      "branch": "feat/mp-m14",
+      "sha": "2b064dac84d1c80e47e93084f65acc48e1af6536",
+      "ref": "refs/heads/feat/mp-m14"
+    },
+    {
+      "branch": "feat/p2p-hosting",
+      "sha": "44ff7822c3d893762962af72fc625cc47fc5a2ec",
+      "ref": "refs/heads/feat/p2p-hosting"
+    },
+    {
+      "branch": "feat/p2p-inprocess",
+      "sha": "070d671d1e7991269e8ec72a05a88912fe230668",
+      "ref": "refs/heads/feat/p2p-inprocess"
+    },
+    {
+      "branch": "feat/survival-mode",
+      "sha": "b5f636c8822526d5d82ee0973887705dcd664188",
+      "ref": "refs/heads/feat/survival-mode"
+    },
+    {
+      "branch": "feat/survival-threatbias",
+      "sha": "55ada2f1954bb046016e3a7cdeb495a601531849",
+      "ref": "refs/heads/feat/survival-threatbias"
+    },
+    {
+      "branch": "feat/unused-asset-report",
+      "sha": "48a3da6244b51dd8817706e666adf4840bda76c0",
+      "ref": "refs/heads/feat/unused-asset-report"
+    },
+    {
+      "branch": "feat/zm-factory-teleporter-audio",
+      "sha": "5ae287b7f354ce136522588adb2a35a70c35f55c",
+      "ref": "refs/heads/feat/zm-factory-teleporter-audio"
+    },
+    {
+      "branch": "feat/zm-old-perk-machines",
+      "sha": "8f6a8acb2c178a6079b177652b239b6bff592e91",
+      "ref": "refs/heads/feat/zm-old-perk-machines"
+    },
+    {
+      "branch": "feat/zm-theater-perks",
+      "sha": "ebccc365ca4753d502dd084a81b7edc528eda78c",
+      "ref": "refs/heads/feat/zm-theater-perks"
+    },
+    {
+      "branch": "feat/zm-wallbuy-terminals",
+      "sha": "14ef326247431f70a04b9f9bbde0ff70f8b39723",
+      "ref": "refs/heads/feat/zm-wallbuy-terminals"
+    },
+    {
+      "branch": "feat/zm-wallbuys",
+      "sha": "6dc879947a4fe8b49251ee6b7e031b17aba26958",
+      "ref": "refs/heads/feat/zm-wallbuys"
+    },
+    {
+      "branch": "fix/gamestate-send-check",
+      "sha": "4f8ded4be4cbcf3e96bc354c6bf33af54b6f4d58",
+      "ref": "refs/heads/fix/gamestate-send-check"
+    },
+    {
+      "branch": "fix/late-corpse",
+      "sha": "149bd3e96b1f5c37a671eca176ac39ad136ce463",
+      "ref": "refs/heads/fix/late-corpse"
+    },
+    {
+      "branch": "fix/lowmem-image-views",
+      "sha": "6e62fb9a0e8df320642350407aef66f255921391",
+      "ref": "refs/heads/fix/lowmem-image-views"
+    },
+    {
+      "branch": "fix/rcon-sender-log",
+      "sha": "ed79dec7ab52e3e9c94621ef37bdce7cbb6074de",
+      "ref": "refs/heads/fix/rcon-sender-log"
+    },
+    {
+      "branch": "fix/zm-factory-fence-traversal",
+      "sha": "d840d00bfe205ea2bc21bdda668c8da5c7a18935",
+      "ref": "refs/heads/fix/zm-factory-fence-traversal"
+    },
+    {
+      "branch": "fix/zm-melee-notetrack-sync",
+      "sha": "546229d37d4a153418140506eae5dbcb1874e84f",
+      "ref": "refs/heads/fix/zm-melee-notetrack-sync"
+    },
+    {
+      "branch": "fix/zm-perk-machine-clip",
+      "sha": "2577549385cf5b081b31614594cb533c1324320a",
+      "ref": "refs/heads/fix/zm-perk-machine-clip"
+    },
+    {
+      "branch": "fix/zm-power-door-prediction",
+      "sha": "c49407c3531b613a31bc05a22966d2b70c7484ac",
+      "ref": "refs/heads/fix/zm-power-door-prediction"
+    },
+    {
+      "branch": "integrate/zm-20261026",
+      "sha": "ca9cbcdd5435c4259ebc1bd3ac1f94495dd85abf",
+      "ref": "refs/heads/integrate/zm-20261026"
+    },
+    {
+      "branch": "sec/server-audit-20261026",
+      "sha": "c0cbf63ea970c5f6729980ffdf782c80851d1a55",
+      "ref": "refs/heads/sec/server-audit-20261026"
+    },
+    {
+      "branch": "sec/server-audit-20261026-deploy",
+      "sha": "6473a91d3d8de1cf857f32cb4e2400c2536cccb0",
+      "ref": "refs/heads/sec/server-audit-20261026-deploy"
+    }
+  ],
+  "preserved": [
+    {
+      "branch": "main",
+      "sha": "9d1708c5d2bb6ff381bac7815877caf6cc7a05c5",
+      "reason": "explicitly preserved"
+    }
+  ],
+  "main": "9d1708c5d2bb6ff381bac7815877caf6cc7a05c5"
+}

@@ -1,0 +1,83 @@
+{
+  "exit_code": 0,
+  "recovered_after_cli_ack_timeout": true,
+  "logs_cli_timeout": false,
+  "container_id": "c41e8088a453ee1e0bd94b39eb0728a23f68a6ea6dfacacd0f71dc6302b8b9f7",
+  "source_unchanged": true,
+  "recipe_unchanged": true,
+  "finished_utc": "2026-10-23T17:12:46.054922+00:00",
+  "cases": {
+    "hide-asan-run.log": {
+      "sha256": "6937ba3c4f7fad80a222e47a89b789c2ff342e09f44cea779a466ed6e47df93a",
+      "ok": 0,
+      "failed": 0,
+      "last_line": "weapon_hide_masks assertions=44 actual_method_and_eight_word_storage=PASS"
+    },
+    "hide-normal-run.log": {
+      "sha256": "6937ba3c4f7fad80a222e47a89b789c2ff342e09f44cea779a466ed6e47df93a",
+      "ok": 0,
+      "failed": 0,
+      "last_line": "weapon_hide_masks assertions=44 actual_method_and_eight_word_storage=PASS"
+    },
+    "party-asan-run.log": {
+      "sha256": "d74ba12f3df31137ec0d57664ce36c522e43d362d868c4628b35303eb30be2da",
+      "ok": 0,
+      "failed": 0,
+      "last_line": "PASS: 83 actual native party parser/cache/assigned-team/VM/lifecycle checks"
+    },
+    "party-normal-run.log": {
+      "sha256": "d74ba12f3df31137ec0d57664ce36c522e43d362d868c4628b35303eb30be2da",
+      "ok": 0,
+      "failed": 0,
+      "last_line": "PASS: 83 actual native party parser/cache/assigned-team/VM/lifecycle checks"
+    },
+    "pending-asan-run.log": {
+      "sha256": "d056351cf7d470ce0c1d679cbef7adc6fa67d43561b280b9c9d9e84f476dbf2c",
+      "ok": 0,
+      "failed": 0,
+      "last_line": "assertions=55"
+    },
+    "pending-normal-run.log": {
+      "sha256": "d056351cf7d470ce0c1d679cbef7adc6fa67d43561b280b9c9d9e84f476dbf2c",
+      "ok": 0,
+      "failed": 0,
+      "last_line": "assertions=55"
+    },
+    "quick-asan-run.log": {
+      "sha256": "ce3a6abe1d3cc39b95e56c91a15e095d52806c7a978b7c653b10f91fbbca471c",
+      "ok": 0,
+      "failed": 0,
+      "last_line": "PASS: 40 native Quick lifecycle/admission/status/bot-seat checks"
+    },
+    "quick-normal-run.log": {
+      "sha256": "ce3a6abe1d3cc39b95e56c91a15e095d52806c7a978b7c653b10f91fbbca471c",
+      "ok": 0,
+      "failed": 0,
+      "last_line": "PASS: 40 native Quick lifecycle/admission/status/bot-seat checks"
+    },
+    "route-asan-run.log": {
+      "sha256": "c66dc6d7d2643fe1a0678742b1f636a131b855f09afd430c412f5e30db5a7633",
+      "ok": 0,
+      "failed": 0,
+      "last_line": "route_endpoint assertions=24 exact_selector_and_native_planner=PASS"
+    },
+    "route-normal-run.log": {
+      "sha256": "c66dc6d7d2643fe1a0678742b1f636a131b855f09afd430c412f5e30db5a7633",
+      "ok": 0,
+      "failed": 0,
+      "last_line": "route_endpoint assertions=24 exact_selector_and_native_planner=PASS"
+    },
+    "startup-asan-run.log": {
+      "sha256": "1b6194a8db5300419fedea914271ea9b92425d2222d88356ca6293abced95d6c",
+      "ok": 0,
+      "failed": 0,
+      "last_line": "startup_ranked_archives assertions=54 exact_function=PASS"
+    },
+    "startup-normal-run.log": {
+      "sha256": "1b6194a8db5300419fedea914271ea9b92425d2222d88356ca6293abced95d6c",
+      "ok": 0,
+      "failed": 0,
+      "last_line": "startup_ranked_archives assertions=54 exact_function=PASS"
+    }
+  }
+}

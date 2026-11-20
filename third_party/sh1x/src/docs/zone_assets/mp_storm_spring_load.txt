@@ -1,0 +1,5 @@
+material	$defeatbackdrop
+material	$levelbriefing
+material	compass_map_mp_storm_spring
+rawfile	mp_storm_spring_load
+techset	2d

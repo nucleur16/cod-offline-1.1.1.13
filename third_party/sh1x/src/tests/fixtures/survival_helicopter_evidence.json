@@ -1,0 +1,156 @@
+{
+  "scope": "Owned offline/native UDP17761 tests and passive process reads; no user input/process changes; visual acceptance remains pending.",
+  "c1_vehicle_def_read": {
+    "pid": 84308,
+    "read_only": true,
+    "table": "0x02BC3018",
+    "cobra_mp": {
+      "friendly": "compass_objpoint_helicopter_friendly",
+      "enemy": "compass_objpoint_helicopter_busy"
+    },
+    "pavelow_mp": {
+      "friendly": "hud_minimap_pavelow_green",
+      "enemy": "hud_minimap_pavelow_red"
+    }
+  },
+  "installed_iwi_pixels": [
+    {
+      "image": "compass_objpoint_helicopter_busy",
+      "opaque_pixels": 12884,
+      "mean_rgb": [
+        255.0,
+        163.66,
+        132.63
+      ],
+      "red_dominant_pixels": 6751,
+      "green_dominant_pixels": 0
+    },
+    {
+      "image": "compass_objpoint_helicopter_friendly",
+      "opaque_pixels": 12884,
+      "mean_rgb": [
+        168.07,
+        255.0,
+        174.59
+      ],
+      "red_dominant_pixels": 0,
+      "green_dominant_pixels": 6749
+    },
+    {
+      "image": "compass_objpoint_littlebird_busy",
+      "opaque_pixels": 14344,
+      "mean_rgb": [
+        255.0,
+        160.14,
+        127.84
+      ],
+      "red_dominant_pixels": 7678,
+      "green_dominant_pixels": 0
+    }
+  ],
+  "decoder_sources": [
+    {
+      "filename": "compass_objpoint_helicopter_busy.tga",
+      "output": "D:\\CoD\\CoD4x_Server\\.claude\\worktrees\\iw4-asset-layout\\obj\\heli_icon_pixels\\compass_objpoint_helicopter_busy.tga",
+      "source": "iw_image_00.iwd:images/compass_objpoint_helicopter_busy.iwi",
+      "image": "compass_objpoint_helicopter_busy",
+      "width": 512,
+      "height": 128,
+      "sha256": "9FAD43FE35FA3EF2F719D4EAE27C6C0087F4641CB1B18C4469B3B7DD63DB668C"
+    },
+    {
+      "filename": "compass_objpoint_helicopter_friendly.tga",
+      "output": "D:\\CoD\\CoD4x_Server\\.claude\\worktrees\\iw4-asset-layout\\obj\\heli_icon_pixels\\compass_objpoint_helicopter_friendly.tga",
+      "source": "iw_image_00.iwd:images/compass_objpoint_helicopter_friendly.iwi",
+      "image": "compass_objpoint_helicopter_friendly",
+      "width": 512,
+      "height": 128,
+      "sha256": "66556AD77C6AC6E01E6D3FD31E97F4FD112B9F1406BAD3F1C9EE215AB78EA2C3"
+    },
+    {
+      "filename": "compass_objpoint_littlebird_busy.tga",
+      "output": "D:\\CoD\\CoD4x_Server\\.claude\\worktrees\\iw4-asset-layout\\obj\\heli_icon_pixels\\compass_objpoint_littlebird_busy.tga",
+      "source": "iw_image_00.iwd:images/compass_objpoint_littlebird_busy.iwi",
+      "image": "compass_objpoint_littlebird_busy",
+      "width": 512,
+      "height": 128,
+      "sha256": "E6F7BAB6BF77F42CD07B9D9194F6EEEFAB54AC79CB6CE4D282A9288875439848"
+    }
+  ],
+  "unsupported_iwi_lookup": [
+    "hud_minimap_pavelow_red.tga",
+    "hud_minimap_pavelow_green.tga"
+  ],
+  "built_exe_sha256": "35E4910FF4BB677E82771134AFE01F34B21C25D75368E35A1347DA3EC40D5A11",
+  "rawfiles_commit": "f05ed0c",
+  "built_host_dll_sha256": "C3850864C5E650CCAD113FF4CDB330150A9698AD79EB0988612CB80FECFED32B",
+  "native_capture": {
+    "pid": 104508,
+    "entity_extension_base": "0xbff5100",
+    "exe_base": "0x540000",
+    "read_only": true,
+    "vehicles": [
+      {
+        "entity": 601,
+        "type": 12,
+        "native_vehicle_team": 1,
+        "controlling_client": 0,
+        "compass_selector": 11,
+        "configstring": 6095,
+        "material_name": "compass_objpoint_helicopter_busy",
+        "origin": [
+          -2978.567626953125,
+          -1349.8409423828125,
+          557.2684326171875
+        ]
+      },
+      {
+        "entity": 818,
+        "type": 12,
+        "native_vehicle_team": 1,
+        "controlling_client": 0,
+        "compass_selector": 11,
+        "configstring": 6095,
+        "material_name": "compass_objpoint_helicopter_busy",
+        "origin": [
+          -2493.9775390625,
+          4219.751953125,
+          920.2314453125
+        ]
+      },
+      {
+        "entity": 826,
+        "type": 12,
+        "native_vehicle_team": 1,
+        "controlling_client": 0,
+        "compass_selector": 12,
+        "configstring": 6096,
+        "material_name": "hud_minimap_pavelow_red",
+        "origin": [
+          2109.919677734375,
+          2367.710205078125,
+          1849.9530029296875
+        ]
+      }
+    ]
+  },
+  "native_run": {
+    "pid": 104508,
+    "port": 17761,
+    "ready": true,
+    "elapsed_seconds": 44.42,
+    "runtime_error": false,
+    "missing_table_fatal": false,
+    "exited": true
+  },
+  "native_rotor_evidence": [
+    "CoDOL vehicle anim: ent 601 'vehicle_little_bird_armed' (eType 12, definition 4) bound server tree 2 'vehicles' (13 entries) / client tree 2",
+    "CoDOL heli rotors: ent 601 vehicle_little_bird_armed spins its rotors",
+    "CoDOL vehicle anim: ent 818 'vehicle_mi24p_hind_desert' (eType 12, definition 4) bound server tree 2 'vehicles' (13 entries) / client tree 2",
+    "CoDOL heli rotors: ent 818 vehicle_mi24p_hind_desert spins its rotors",
+    "CoDOL vehicle anim: ent 826 'vehicle_mi17_woodland_fly_cheap' (eType 12, definition 6) bound server tree 2 'vehicles' (13 entries) / client tree 2",
+    "CoDOL heli rotors: ent 826 vehicle_mi17_woodland_fly_cheap spins its rotors"
+  ],
+  "qualification": "Actual native axis team, unchanged controlling client0, captured minimap selectors and effective configstrings verified. Actual rotor helper bound each model to vehicles server/client tree2 and issued real setAnim loop. Wire+78 serialization tested in production fixture; no live C1 rendered frame or network-packet capture claimed.",
+  "probe_reader_note": "Initial97372 capture used ambiguous duplicate file-local COFF _live_ext and was discarded. Verified104508 reader resolves entity getter CALL then actual resolver live-record LEA, obtaining relocated0BFF5100, extension stride64 selector+10."
+}

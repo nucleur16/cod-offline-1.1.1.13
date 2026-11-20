@@ -1,0 +1,667 @@
+{
+  "source": "C1.exe 1.1.1.13 static PE",
+  "dispatcher": "0x469320",
+  "byte_map": "0x46a118",
+  "jump_table": "0x46a024",
+  "scope": "Printable ASCII 32..125 only; targets are measured, semantics require per-handler review. Not a runtime validation.",
+  "entries": [
+    {
+      "command": " ",
+      "opcode": 32,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "!",
+      "opcode": 33,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "\"",
+      "opcode": 34,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "#",
+      "opcode": 35,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "$",
+      "opcode": 36,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "%",
+      "opcode": 37,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "&",
+      "opcode": 38,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "'",
+      "opcode": 39,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "(",
+      "opcode": 40,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": ")",
+      "opcode": 41,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "*",
+      "opcode": 42,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "+",
+      "opcode": 43,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": ",",
+      "opcode": 44,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "-",
+      "opcode": 45,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": ".",
+      "opcode": 46,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "/",
+      "opcode": 47,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "0",
+      "opcode": 48,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "1",
+      "opcode": 49,
+      "table_index": 1,
+      "target": "0x469e64",
+      "unknown_command": false
+    },
+    {
+      "command": "2",
+      "opcode": 50,
+      "table_index": 2,
+      "target": "0x469e81",
+      "unknown_command": false
+    },
+    {
+      "command": "3",
+      "opcode": 51,
+      "table_index": 3,
+      "target": "0x469d7a",
+      "unknown_command": false
+    },
+    {
+      "command": "4",
+      "opcode": 52,
+      "table_index": 4,
+      "target": "0x4693cb",
+      "unknown_command": false
+    },
+    {
+      "command": "5",
+      "opcode": 53,
+      "table_index": 5,
+      "target": "0x469e98",
+      "unknown_command": false
+    },
+    {
+      "command": "6",
+      "opcode": 54,
+      "table_index": 6,
+      "target": "0x469eae",
+      "unknown_command": false
+    },
+    {
+      "command": "7",
+      "opcode": 55,
+      "table_index": 7,
+      "target": "0x469ec4",
+      "unknown_command": false
+    },
+    {
+      "command": "8",
+      "opcode": 56,
+      "table_index": 8,
+      "target": "0x469eda",
+      "unknown_command": false
+    },
+    {
+      "command": "9",
+      "opcode": 57,
+      "table_index": 9,
+      "target": "0x469f04",
+      "unknown_command": false
+    },
+    {
+      "command": ":",
+      "opcode": 58,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": ";",
+      "opcode": 59,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "<",
+      "opcode": 60,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "=",
+      "opcode": 61,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": ">",
+      "opcode": 62,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "?",
+      "opcode": 63,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "@",
+      "opcode": 64,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "A",
+      "opcode": 65,
+      "table_index": 10,
+      "target": "0x4697b1",
+      "unknown_command": false
+    },
+    {
+      "command": "B",
+      "opcode": 66,
+      "table_index": 11,
+      "target": "0x4697c7",
+      "unknown_command": false
+    },
+    {
+      "command": "C",
+      "opcode": 67,
+      "table_index": 12,
+      "target": "0x4699d5",
+      "unknown_command": false
+    },
+    {
+      "command": "D",
+      "opcode": 68,
+      "table_index": 13,
+      "target": "0x469a12",
+      "unknown_command": false
+    },
+    {
+      "command": "E",
+      "opcode": 69,
+      "table_index": 14,
+      "target": "0x469a4f",
+      "unknown_command": false
+    },
+    {
+      "command": "F",
+      "opcode": 70,
+      "table_index": 15,
+      "target": "0x469a8f",
+      "unknown_command": false
+    },
+    {
+      "command": "G",
+      "opcode": 71,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "H",
+      "opcode": 72,
+      "table_index": 16,
+      "target": "0x46987b",
+      "unknown_command": false
+    },
+    {
+      "command": "I",
+      "opcode": 73,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "J",
+      "opcode": 74,
+      "table_index": 17,
+      "target": "0x469aba",
+      "unknown_command": false
+    },
+    {
+      "command": "K",
+      "opcode": 75,
+      "table_index": 18,
+      "target": "0x469ad5",
+      "unknown_command": false
+    },
+    {
+      "command": "L",
+      "opcode": 76,
+      "table_index": 19,
+      "target": "0x469af1",
+      "unknown_command": false
+    },
+    {
+      "command": "M",
+      "opcode": 77,
+      "table_index": 20,
+      "target": "0x469b41",
+      "unknown_command": false
+    },
+    {
+      "command": "N",
+      "opcode": 78,
+      "table_index": 21,
+      "target": "0x469b94",
+      "unknown_command": false
+    },
+    {
+      "command": "O",
+      "opcode": 79,
+      "table_index": 22,
+      "target": "0x469c3a",
+      "unknown_command": false
+    },
+    {
+      "command": "P",
+      "opcode": 80,
+      "table_index": 23,
+      "target": "0x469c8a",
+      "unknown_command": false
+    },
+    {
+      "command": "Q",
+      "opcode": 81,
+      "table_index": 24,
+      "target": "0x469cda",
+      "unknown_command": false
+    },
+    {
+      "command": "R",
+      "opcode": 82,
+      "table_index": 25,
+      "target": "0x469d2a",
+      "unknown_command": false
+    },
+    {
+      "command": "S",
+      "opcode": 83,
+      "table_index": 26,
+      "target": "0x469960",
+      "unknown_command": false
+    },
+    {
+      "command": "T",
+      "opcode": 84,
+      "table_index": 27,
+      "target": "0x469dca",
+      "unknown_command": false
+    },
+    {
+      "command": "U",
+      "opcode": 85,
+      "table_index": 0,
+      "target": "0x46a013",
+      "unknown_command": false
+    },
+    {
+      "command": "V",
+      "opcode": 86,
+      "table_index": 28,
+      "target": "0x4695a6",
+      "unknown_command": false
+    },
+    {
+      "command": "W",
+      "opcode": 87,
+      "table_index": 29,
+      "target": "0x469618",
+      "unknown_command": false
+    },
+    {
+      "command": "X",
+      "opcode": 88,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "Y",
+      "opcode": 89,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "Z",
+      "opcode": 90,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "[",
+      "opcode": 91,
+      "table_index": 30,
+      "target": "0x469f32",
+      "unknown_command": false
+    },
+    {
+      "command": "\\",
+      "opcode": 92,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "]",
+      "opcode": 93,
+      "table_index": 31,
+      "target": "0x4694d2",
+      "unknown_command": false
+    },
+    {
+      "command": "^",
+      "opcode": 94,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "_",
+      "opcode": 95,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "`",
+      "opcode": 96,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "a",
+      "opcode": 97,
+      "table_index": 32,
+      "target": "0x469388",
+      "unknown_command": false
+    },
+    {
+      "command": "b",
+      "opcode": 98,
+      "table_index": 33,
+      "target": "0x4693b5",
+      "unknown_command": false
+    },
+    {
+      "command": "c",
+      "opcode": 99,
+      "table_index": 34,
+      "target": "0x4693e1",
+      "unknown_command": false
+    },
+    {
+      "command": "d",
+      "opcode": 100,
+      "table_index": 35,
+      "target": "0x469420",
+      "unknown_command": false
+    },
+    {
+      "command": "e",
+      "opcode": 101,
+      "table_index": 36,
+      "target": "0x46943a",
+      "unknown_command": false
+    },
+    {
+      "command": "f",
+      "opcode": 102,
+      "table_index": 37,
+      "target": "0x469479",
+      "unknown_command": false
+    },
+    {
+      "command": "g",
+      "opcode": 103,
+      "table_index": 38,
+      "target": "0x4694b8",
+      "unknown_command": false
+    },
+    {
+      "command": "h",
+      "opcode": 104,
+      "table_index": 39,
+      "target": "0x469800",
+      "unknown_command": false
+    },
+    {
+      "command": "i",
+      "opcode": 105,
+      "table_index": 40,
+      "target": "0x469b62",
+      "unknown_command": false
+    },
+    {
+      "command": "j",
+      "opcode": 106,
+      "table_index": 41,
+      "target": "0x469b7c",
+      "unknown_command": false
+    },
+    {
+      "command": "k",
+      "opcode": 107,
+      "table_index": 42,
+      "target": "0x46967c",
+      "unknown_command": false
+    },
+    {
+      "command": "l",
+      "opcode": 108,
+      "table_index": 43,
+      "target": "0x469698",
+      "unknown_command": false
+    },
+    {
+      "command": "m",
+      "opcode": 109,
+      "table_index": 44,
+      "target": "0x4696ee",
+      "unknown_command": false
+    },
+    {
+      "command": "n",
+      "opcode": 110,
+      "table_index": 45,
+      "target": "0x469731",
+      "unknown_command": false
+    },
+    {
+      "command": "o",
+      "opcode": 111,
+      "table_index": 46,
+      "target": "0x469785",
+      "unknown_command": false
+    },
+    {
+      "command": "p",
+      "opcode": 112,
+      "table_index": 47,
+      "target": "0x4697dd",
+      "unknown_command": false
+    },
+    {
+      "command": "q",
+      "opcode": 113,
+      "table_index": 48,
+      "target": "0x469816",
+      "unknown_command": false
+    },
+    {
+      "command": "r",
+      "opcode": 114,
+      "table_index": 49,
+      "target": "0x469830",
+      "unknown_command": false
+    },
+    {
+      "command": "s",
+      "opcode": 115,
+      "table_index": 50,
+      "target": "0x469891",
+      "unknown_command": false
+    },
+    {
+      "command": "t",
+      "opcode": 116,
+      "table_index": 60,
+      "target": "0x469f7d",
+      "unknown_command": true
+    },
+    {
+      "command": "u",
+      "opcode": 117,
+      "table_index": 51,
+      "target": "0x46984b",
+      "unknown_command": false
+    },
+    {
+      "command": "v",
+      "opcode": 118,
+      "table_index": 52,
+      "target": "0x469865",
+      "unknown_command": false
+    },
+    {
+      "command": "w",
+      "opcode": 119,
+      "table_index": 53,
+      "target": "0x469e0e",
+      "unknown_command": false
+    },
+    {
+      "command": "x",
+      "opcode": 120,
+      "table_index": 54,
+      "target": "0x4698ff",
+      "unknown_command": false
+    },
+    {
+      "command": "y",
+      "opcode": 121,
+      "table_index": 55,
+      "target": "0x46991a",
+      "unknown_command": false
+    },
+    {
+      "command": "z",
+      "opcode": 122,
+      "table_index": 56,
+      "target": "0x46979b",
+      "unknown_command": false
+    },
+    {
+      "command": "{",
+      "opcode": 123,
+      "table_index": 57,
+      "target": "0x469555",
+      "unknown_command": false
+    },
+    {
+      "command": "|",
+      "opcode": 124,
+      "table_index": 58,
+      "target": "0x469527",
+      "unknown_command": false
+    },
+    {
+      "command": "}",
+      "opcode": 125,
+      "table_index": 59,
+      "target": "0x469579",
+      "unknown_command": false
+    }
+  ]
+}

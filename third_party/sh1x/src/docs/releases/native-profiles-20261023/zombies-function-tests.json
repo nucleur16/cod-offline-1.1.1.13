@@ -1,0 +1,71 @@
+{
+  "exit_code": 0,
+  "recovered_after_cli_ack_timeout": true,
+  "logs_cli_timeout": false,
+  "container_id": "fc47fad40d3f726c8e52b44e5d788a843b1495d52a1e2db5a71e4930b9f16ef8",
+  "source_unchanged": true,
+  "recipe_unchanged": true,
+  "finished_utc": "2026-10-23T17:13:04.155305+00:00",
+  "cases": {
+    "hide-asan-run.log": {
+      "sha256": "6937ba3c4f7fad80a222e47a89b789c2ff342e09f44cea779a466ed6e47df93a",
+      "ok": 0,
+      "failed": 0,
+      "last_line": "weapon_hide_masks assertions=44 actual_method_and_eight_word_storage=PASS"
+    },
+    "hide-normal-run.log": {
+      "sha256": "6937ba3c4f7fad80a222e47a89b789c2ff342e09f44cea779a466ed6e47df93a",
+      "ok": 0,
+      "failed": 0,
+      "last_line": "weapon_hide_masks assertions=44 actual_method_and_eight_word_storage=PASS"
+    },
+    "pending-asan-run.log": {
+      "sha256": "d056351cf7d470ce0c1d679cbef7adc6fa67d43561b280b9c9d9e84f476dbf2c",
+      "ok": 0,
+      "failed": 0,
+      "last_line": "assertions=55"
+    },
+    "pending-normal-run.log": {
+      "sha256": "d056351cf7d470ce0c1d679cbef7adc6fa67d43561b280b9c9d9e84f476dbf2c",
+      "ok": 0,
+      "failed": 0,
+      "last_line": "assertions=55"
+    },
+    "route-asan-run.log": {
+      "sha256": "a0c972a4053bb27eac8881fb9b9e0fa4a6ae9a578e4a892681901878df028755",
+      "ok": 0,
+      "failed": 0,
+      "last_line": "route_endpoint assertions=42 exact_selector_and_native_planner=PASS"
+    },
+    "route-normal-run.log": {
+      "sha256": "a0c972a4053bb27eac8881fb9b9e0fa4a6ae9a578e4a892681901878df028755",
+      "ok": 0,
+      "failed": 0,
+      "last_line": "route_endpoint assertions=42 exact_selector_and_native_planner=PASS"
+    },
+    "session-baseline-drop-order-run.log": {
+      "sha256": "0b2fe9e722ee4cfc1b54714207d55a7fc8c4ac61f0bc474eb35470164bd66b88",
+      "ok": 781,
+      "failed": 8,
+      "last_line": "report_reset additional faults: PASS"
+    },
+    "session-baseline-report-run.log": {
+      "sha256": "0b2fe9e722ee4cfc1b54714207d55a7fc8c4ac61f0bc474eb35470164bd66b88",
+      "ok": 781,
+      "failed": 8,
+      "last_line": "report_reset additional faults: PASS"
+    },
+    "session-candidate-asan-run.log": {
+      "sha256": "f2f1603f64f1e1654b270fa17452887899ef086e51925c4263725b54859c57b7",
+      "ok": 309,
+      "failed": 0,
+      "last_line": "ZOMBIE_REJOIN_COUNTERS_END"
+    },
+    "session-candidate-run.log": {
+      "sha256": "628684059fda449382d19f7c18c4b43d365bec4e83baf2e299c4856f54bd4fa5",
+      "ok": 789,
+      "failed": 0,
+      "last_line": "report_reset additional faults: PASS"
+    }
+  }
+}

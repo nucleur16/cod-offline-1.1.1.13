@@ -1,0 +1,5 @@
+material	$defeatbackdrop
+material	$levelbriefing
+material	compass_map_mp_nuked
+rawfile	mp_nuked_load
+techset	2d

@@ -1,0 +1,8 @@
+mp/clientmatchdata.def	code_post_gfx_mp
+mp/defaultstructureddata.def	code_post_gfx_default_mp
+mp/matchdata.def	code_post_gfx_mp
+mp/playerdata.def	code_post_gfx_mp
+mp/playerdata.def	patch_code_post_gfx_mp
+mp/playersecuredata.def	code_post_gfx_mp
+mp/playersecuredata.def	patch_code_post_gfx_mp
+mp/prestigedata.def	code_post_gfx_mp

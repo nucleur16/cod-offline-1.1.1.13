@@ -1,0 +1,52 @@
+{
+  "scope": "Owned UDP17761 native probes; user client/host untouched; no C1 visual acceptance",
+  "pursuit": {
+    "binary_sha256": "5be2d5f7942f6a46749aa714fddefc922bf1348d5dd52ba33c6d3bcc8b9d6ec5",
+    "map": "mp_fav_tropical",
+    "pid": 118032,
+    "port": 17761,
+    "ready": true,
+    "elapsed_seconds": 84.31,
+    "start_wave": 1,
+    "runtime_error": false,
+    "missing_table_fatal": false
+  },
+  "radar_native_read": {
+    "pid": 118032,
+    "process_vm_read_only": true,
+    "actual_exe_base": "0x610000",
+    "symbols": "nm current EXE: _level0d914200 _g_entities0dce0aa4, relocated by actual base minus00400000",
+    "level_time": 43750,
+    "teamHasRadar_free_axis_allies_spectator": [
+      0,
+      0,
+      1,
+      0
+    ],
+    "player0_client": "0x0de2a9a4",
+    "player0_ps_radarEnabled": 1,
+    "source_offsets": "retained GScr_SetTeamRadar level+214/215/216, entity client+15c, actual native playerState radarEnabled1456"
+  },
+  "class_choice": {
+    "binary_sha256": "5be2d5f7942f6a46749aa714fddefc922bf1348d5dd52ba33c6d3bcc8b9d6ec5",
+    "map": "mp_fav_tropical",
+    "pid": 117512,
+    "port": 17761,
+    "ready": true,
+    "elapsed_seconds": 38.14,
+    "start_wave": 1,
+    "runtime_error": false,
+    "missing_table_fatal": false
+  },
+  "class_evidence": [
+    "CoDOL survival test: buy 1 as bot0: 1, credits 5000, armor 0",
+    "CoDOL survivaltest:   player 0 playing hp 100 at (424, -1160, 19.9112) credits 5000 kills 0",
+    "CoDOL survivaltest: bot0 class custom2 weapon *a 4 9 52 0 15 12 41 0 16 0 31 0 32 0 33 0 34 0 -> *a 52 10 118 3 17 16 156 0 31 0 32 0 41 0",
+    "CoDOL survivaltest:   player 0 playing hp 100 at (161.131, -443.347, 14.4823) credits 4000 kills 0",
+    "CoDOL survivaltest: bot0 class custom2 weapon *a 52 10 118 3 17 16 156 0 31 0 32 0 41 0 -> *a 52 10 118 3 17 16 156 0 31 0 32 0 41 0",
+    "CoDOL survivaltest:   player 0 playing hp 100 at (681.173, 121.819, 160.355) credits 4000 kills 0",
+    "CoDOL survivaltest:   player 0 playing hp 100 at (739.001, 95.4443, 160.444) credits 4000 kills 0",
+    "CoDOL survivaltest:   player 0 playing hp 100 at (570.302, 164.585, 158.173) credits 4000 kills 0"
+  ],
+  "limits": "Native class test uses existing developer bot class command, now routed through the production level.class callback. No real C1 menu click/Escape or minimap visual acceptance. Native chase probe demonstrates moving infantry and successful spawn, not every path completing. Current busy-flag lifecycle refinement was subsequently covered by actual-function tests."
+}

@@ -1,0 +1,190 @@
+{
+  "status": "PASS",
+  "profiles": {
+    "normal": {
+      "compiled_files": 1715,
+      "every_compiled_input_equals_frozen_archive": true,
+      "materialization_receipt_sha256": "05bb364091e5ab0ad42984106e8554ec0f7e0720708026f29510bd386c81138e",
+      "regenerated_executed_fixture_inputs": [
+        {
+          "name": "candidate-gate.inc",
+          "sha256": "8a7baab9d5735aedb4bd4b712ff82fe075f9b52af6dc56dca9af1ec477442a02",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "donor-gate.inc",
+          "sha256": "36293607619d002e1effd983b1fa52dca07a54a7f342d3fcefefc25a0c9cb7f8",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "endpoint.inc",
+          "sha256": "807ff12c51fcea14e81e2994d999b9912aad21ef533493e5f5cf34272aa869c0",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "run-focused.sh",
+          "sha256": "c2d04e5233e8dd7939d2c313eea27b89faa458c9285f168e7a67b8251ce68aff",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "startup.inc",
+          "sha256": "99e7cb2a5e0a24cae7d9aba384a0cbe77e457062d606f07cc4ea8d7bbd1fced7",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "test_legacy_quick.c",
+          "sha256": "adb472670977567448299ee72f5f5824ab7c2b38a4f6614760c2576d562a46a1",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "test_party_native.c",
+          "sha256": "134ea685b45e50b65515e9c037caf55762c01c44bb2109dc16c4fd134d1ee5cb",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "test_pending_identity.c",
+          "sha256": "04dcf47f04e75fa2fa6e29795f56f216c0e39a28a0bbc98df06b6b0cb7b05d6a",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "test_route_endpoint.cpp",
+          "sha256": "6b10a2dc19b1a6ff028d2764ab9c1d071f948687128beeb8498a2f8687bc4e9b",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "test_startup_archives.c",
+          "sha256": "c1d0210863d61c878b2878db63173bf079e187d9dc1ca74b5425b19664cee2e3",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "test_weapon_masks.c",
+          "sha256": "b965881b55b0152d8ea5ff7b3832cf5936d79e59bd1d7560a48ab318416fe0ee",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "walkable.inc",
+          "sha256": "0c7bed1e1952bf852a706084f8bf0eee11cde28f6baf777daefab6905be71d62",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        }
+      ]
+    },
+    "zombies": {
+      "compiled_files": 1727,
+      "every_compiled_input_equals_frozen_archive": true,
+      "materialization_receipt_sha256": "66f0a14d92ae3013d9e4f8f9cbb9833cd357efb899f0b5a1b1da1d8f4811089b",
+      "regenerated_executed_fixture_inputs": [
+        {
+          "name": "baseline-drop-order.c",
+          "sha256": "6972098388a1f0ee8a6ad86227af686f00791320e170fd970835c637706b7f2c",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "baseline-report-source.c",
+          "sha256": "7679eede5c59ce4d55b2c7f37a31cf1fb285bf428fa21fa6c2aa708fe3240fc8",
+          "matches_executed_GCC13_recipe": "exact_after_CRLF_to_LF_only"
+        },
+        {
+          "name": "baseline-report.c",
+          "sha256": "38b7faf68a7d5a79a1adf7ccdbbb8c0f730d7fbefe43e19a6e5cfa55c596d397",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "candidate-asan.c",
+          "sha256": "2fff7b67ea8712ee019902a69169406e930b1084289dee5c7b84746b7f50b4a0",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "candidate-gate.inc",
+          "sha256": "8a7baab9d5735aedb4bd4b712ff82fe075f9b52af6dc56dca9af1ec477442a02",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "candidate.c",
+          "sha256": "38b7faf68a7d5a79a1adf7ccdbbb8c0f730d7fbefe43e19a6e5cfa55c596d397",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "donor-gate.inc",
+          "sha256": "36293607619d002e1effd983b1fa52dca07a54a7f342d3fcefefc25a0c9cb7f8",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "endpoint.inc",
+          "sha256": "807ff12c51fcea14e81e2994d999b9912aad21ef533493e5f5cf34272aa869c0",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "run-focused.sh",
+          "sha256": "c2d04e5233e8dd7939d2c313eea27b89faa458c9285f168e7a67b8251ce68aff",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "test_legacy_quick.c",
+          "sha256": "adb472670977567448299ee72f5f5824ab7c2b38a4f6614760c2576d562a46a1",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "test_party_native.c",
+          "sha256": "134ea685b45e50b65515e9c037caf55762c01c44bb2109dc16c4fd134d1ee5cb",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "test_pending_identity.c",
+          "sha256": "04dcf47f04e75fa2fa6e29795f56f216c0e39a28a0bbc98df06b6b0cb7b05d6a",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "test_route_endpoint.cpp",
+          "sha256": "6b10a2dc19b1a6ff028d2764ab9c1d071f948687128beeb8498a2f8687bc4e9b",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "test_startup_archives.c",
+          "sha256": "c1d0210863d61c878b2878db63173bf079e187d9dc1ca74b5425b19664cee2e3",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "test_weapon_masks.c",
+          "sha256": "b965881b55b0152d8ea5ff7b3832cf5936d79e59bd1d7560a48ab318416fe0ee",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        },
+        {
+          "name": "walkable.inc",
+          "sha256": "0c7bed1e1952bf852a706084f8bf0eee11cde28f6baf777daefab6905be71d62",
+          "matches_executed_GCC13_recipe": "byte_exact"
+        }
+      ]
+    }
+  },
+  "negative_cases": [
+    {
+      "case": "reject-zombies-coop",
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "REJECT: unsupported profile/category pair\n"
+    },
+    {
+      "case": "reject-normal-zm",
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "REJECT: unsupported profile/category pair\n"
+    },
+    {
+      "case": "reject-unknown",
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "usage: materialize.py [-h] --category {mp,coop,zm} --profile {normal,zombies}\n                      --output OUTPUT [--library-dir LIBRARY_DIR]\nmaterialize.py: error: argument --category: invalid choice: 'unknown' (choose from mp, coop, zm)\n"
+    },
+    {
+      "case": "reject-existing-output",
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "REJECT: output must be new\n"
+    }
+  ],
+  "all_1711_primary_normal_inputs_byte_exact_in_Git_index": true,
+  "rawfiles_gitlink_preserved": "e37a77d2ed0aa99d4310da5a7cc7c7f8e74bdc6f",
+  "profile_manifest_sha256": "f05a89e8a60669d4ee2fe1a5cfb2b2d2b0c8359f980a95e586b620d6b53b2334",
+  "runtime_or_publication": false,
+  "finished_utc": "2026-10-23T17:37:59.680853+00:00"
+}

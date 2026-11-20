@@ -1,0 +1,11 @@
+fonts/bigDevFont	localized_common_mp
+fonts/bigFont	code_post_gfx_mp
+fonts/boldFont	code_post_gfx_mp
+fonts/consoleFont	code_post_gfx_default_mp
+fonts/extraBigFont	code_post_gfx_mp
+fonts/hudBigFont	code_post_gfx_mp
+fonts/hudSmallFont	code_post_gfx_mp
+fonts/normalFont	code_post_gfx_mp
+fonts/objectiveFont	code_post_gfx_mp
+fonts/smallDevFont	code_post_gfx_mp
+fonts/smallFont	code_post_gfx_mp

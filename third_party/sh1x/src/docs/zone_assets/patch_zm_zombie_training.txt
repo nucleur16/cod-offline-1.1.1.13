@@ -1,0 +1,4 @@
+loaded_sound	zmb/tutorial/cbg_tut_wall_digi_lp.wav
+pixelshader	<inline-name, unknown header>	!
+rawfile	animlists/zm_zombie_training.animlist
+sound	cbg_tut_wall_digi_lp

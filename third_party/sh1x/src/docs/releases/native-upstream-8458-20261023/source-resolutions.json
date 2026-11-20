@@ -1,0 +1,63 @@
+{
+  "head": "ab21a3699496eb2af6df622c85cada6174b4460d",
+  "base": "b316bd45c81ebaa8600273e5090e85207573b7fc",
+  "upstream": "8458d68306f3d2c3b768f6d50836b55625c2a6fd",
+  "resolutions": [
+    {
+      "profile": "normal",
+      "path": "src/common.c",
+      "method": "three-way normalized-line-ending merge",
+      "sha256": "b11591c56b21870c60deaf7a00e99af14ab05d1ee8bb3955a95190d4c3c07bef"
+    },
+    {
+      "profile": "normal",
+      "path": "src/scr_vm_main.c",
+      "method": "three-way normalized-line-ending merge",
+      "sha256": "1c3dec95e92edd3e64998f99a10ce2f07e42aed7286f9bc0091f30766fe97710"
+    },
+    {
+      "profile": "normal",
+      "path": "src/sv_cmds.c",
+      "method": "combined recovery header with existing theatre commands",
+      "sha256": "2cc117339c530f5eee014f3df528c98316f39c396360b6c544f7940b40318c38"
+    },
+    {
+      "profile": "zombies",
+      "path": "src/codol/net/codol_server_recovery.c",
+      "method": "new upstream source, exact blob bytes",
+      "sha256": "09fe10f556f3c7dcb011032fa79090d9481f3372b064777368ff8f20a401a599"
+    },
+    {
+      "profile": "zombies",
+      "path": "src/codol/net/codol_server_recovery.h",
+      "method": "new upstream source, exact blob bytes",
+      "sha256": "194d6e9effc567a5c7c4a1d4fa8f0e723419f818fb0f2c2c3792e640c0e8ed56"
+    },
+    {
+      "profile": "zombies",
+      "path": "src/common.c",
+      "method": "three-way normalized-line-ending merge",
+      "sha256": "b11591c56b21870c60deaf7a00e99af14ab05d1ee8bb3955a95190d4c3c07bef"
+    },
+    {
+      "profile": "zombies",
+      "path": "src/scr_vm_main.c",
+      "method": "three-way normalized-line-ending merge",
+      "sha256": "288a1006fb5e7f3351a9e1fab8b608da873af85b21bb9c84c1c9620c36e82f29"
+    },
+    {
+      "profile": "zombies",
+      "path": "src/sv_cmds.c",
+      "method": "combined recovery header with existing theatre commands",
+      "sha256": "2cc117339c530f5eee014f3df528c98316f39c396360b6c544f7940b40318c38"
+    },
+    {
+      "profile": "zombies",
+      "path": "src/sv_main.c",
+      "method": "three-way normalized-line-ending merge",
+      "sha256": "8de128bc4362314a2e3e8a59b4e7ce56b5f16d992c1d3f1f9dc01915c43d709b"
+    }
+  ],
+  "rawfiles_gitlink_was_unresolved_at_source_merge": true,
+  "final_gitlink_resolution": "parent authorized explicit preservation of e37a77d2ed0aa99d4310da5a7cc7c7f8e74bdc6f"
+}

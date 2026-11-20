@@ -1,0 +1,60 @@
+# sh1x server wiki: Postgres + FastAPI + Next.js.
+# The repository is mounted read-only into the backend so the indexer can read
+# the server source without any chance of the wiki writing to it.
+name: sh1x-wiki
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-wiki}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wiki}
+      POSTGRES_DB: ${POSTGRES_DB:-sh1x_wiki}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - wiki-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wiki} -d ${POSTGRES_DB:-sh1x_wiki}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment:
+      WIKI_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-wiki}:${POSTGRES_PASSWORD:-wiki}@db:5432/${POSTGRES_DB:-sh1x_wiki}
+      WIKI_SECRET_KEY: ${WIKI_SECRET_KEY:-change-me-in-.env-before-exposing-this-wiki}
+      WIKI_CORS_ORIGINS: ${WIKI_CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      WIKI_REPO_ROOT: /repo
+      WIKI_CONTENT_DIR: /wiki/content
+      WIKI_ADMIN_PASSWORD: ${WIKI_ADMIN_PASSWORD:-}
+    volumes:
+      - ../:/repo:ro
+      - ./content:/wiki/content:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_SITE_NAME: ${WIKI_SITE_NAME:-sh1x server wiki}
+    environment:
+      # Server components talk to the backend over the compose network; the
+      # browser never calls it directly, so this stays an internal name.
+      WIKI_API_URL: http://backend:8000
+      NEXT_PUBLIC_SITE_NAME: ${WIKI_SITE_NAME:-sh1x server wiki}
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    restart: unless-stopped
+
+volumes:
+  wiki-db:

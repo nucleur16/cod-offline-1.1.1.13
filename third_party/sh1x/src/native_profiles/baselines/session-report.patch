@@ -1,0 +1,76 @@
+--- a/src/codol/stats/codol_match_report.c
++++ b/src/codol/stats/codol_match_report.c
+@@ -10,7 +10,6 @@
+ #include "codol_profile.h"
+ #include "codol_script_profile_vm.h"
+ #include "codol_stats.h"
+-#include "codol_scoreboard_stats.h"
+ #include "codol_matchdata_server.h"
+ #include "codol_assets.h"
+ #include "codol_weapon_compose.h"
+@@ -156,10 +155,6 @@
+     unsigned zm_time_ms;
+     unsigned char zm_time_valid, zm_result_sent, zm_checkpoint_only;
+     int zm_downs, zm_revives, zm_headshots;
+-    /* Earlier connection stays of this authenticated match owner. The live
+-     * GSC score fields restart at begin; final metadata is an absolute match
+-     * total, independent of reward/report deltas and result refresh count. */
+-    int zm_carry_downs, zm_carry_revives, zm_carry_headshots;
+     /* GP (account currency 2) this row earned from FIXED awards, one total
+      * per source (CODOL_GP_SOURCE_*): completed field orders whose
+      * mp/cofieldorder*.csv reward column 4 is FO_GP, and completed challenge
+@@ -806,9 +801,6 @@
+         row.zm_downs = earlier->zm_downs;
+         row.zm_revives = earlier->zm_revives;
+         row.zm_headshots = earlier->zm_headshots;
+-        row.zm_carry_downs = earlier->zm_carry_downs;
+-        row.zm_carry_revives = earlier->zm_carry_revives;
+-        row.zm_carry_headshots = earlier->zm_carry_headshots;
+         memset(earlier, 0, sizeof(*earlier));
+     }
+     row.participation_since = (uint32_t)svs.time;
+@@ -901,13 +893,6 @@
+     return 0;
+ }
+ 
+-static int zombie_counter_total(int prior, int current)
+-{
+-    if (prior < 0) prior = 0;
+-    if (current < 0) current = 0;
+-    return current > INT_MAX - prior ? INT_MAX : prior + current;
+-}
+-
+ void CODOL_MatchReportClientDropped(unsigned client)
+ {
+     unsigned i;
+@@ -922,17 +907,6 @@
+     if (departed[i].used) {
+         Com_Error(ERR_FATAL, "Match report emergency departure ownership violated");
+         return;
+-    }
+-    /* These native session fields are cleared by CODOL_ResetClientInput.
+-     * SV_DropClient must freeze the owner first. Transfer this stay once;
+-     * memset(live) below prevents a duplicate drop from adding it twice. */
+-    if (!Q_stricmp(cvar_text("codol_zoneType"), "zm")) {
+-        live[client].zm_carry_downs = zombie_counter_total(live[client].zm_carry_downs,
+-            CODOL_GetScoreStat(client, CODOL_SCORE_DOWNS));
+-        live[client].zm_carry_revives = zombie_counter_total(live[client].zm_carry_revives,
+-            CODOL_GetScoreStat(client, CODOL_SCORE_REVIVES));
+-        live[client].zm_carry_headshots = zombie_counter_total(live[client].zm_carry_headshots,
+-            CODOL_GetScoreStat(client, CODOL_SCORE_HEADSHOTS));
+     }
+     /* Snapshot the world-owned round before the secure profile and game
+      * entity are detached. This is non-final progress: it must not consume
+@@ -1330,9 +1304,9 @@
+     row->zm_difficulty = (unsigned char)difficulty;
+     row->zm_round = (unsigned)round;
+     row->zm_round_goal = (unsigned)round_goal;
+-    if (downs >= 0) row->zm_downs = zombie_counter_total(row->zm_carry_downs, downs);
+-    if (revives >= 0) row->zm_revives = zombie_counter_total(row->zm_carry_revives, revives);
+-    if (headshots >= 0) row->zm_headshots = zombie_counter_total(row->zm_carry_headshots, headshots);
++    if (downs >= 0) row->zm_downs = downs;
++    if (revives >= 0) row->zm_revives = revives;
++    if (headshots >= 0) row->zm_headshots = headshots;
+     /* First successful lift-off is the endpoint. Subsequent end-game calls
+      * refresh counters, never add the outbound flight or result-screen delay.
+      * level.startTime is the same authoritative epoch as report duration_s. */

@@ -1,0 +1,12 @@
+{
+  "exit_code": 0,
+  "container_id": "f4c86285e574b3e80e81433189e74753a841d2b13e10aba845f58d7cac3d4fd1",
+  "retained_exited_container": true,
+  "source_snapshot": "E:\\CoDOL-Task-Clients\\unified-native-build-20261023\\build-zombies-7\\input\\source",
+  "source_manifest_sha256": "2b4b9610446bfbff6f31f972454b2ee5168653ff254d3ecbf40aec0a8cf3c9c2",
+  "input_hashes_unchanged": true,
+  "native_sha256": "a7a07b9b9f3e59ae9f6e581d4f97887a1dca9ecc81c2ae48d5b577d117fd54f3",
+  "binary_equal_to_build7": true,
+  "compiler_receipt_sha256": "70a154df1d1d0498e098ef6fbdac57f6525b780b1ac6360b954a0c15017788fa",
+  "finished_utc": "2026-10-23T17:16:12.404417+00:00"
+}

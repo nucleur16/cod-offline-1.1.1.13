@@ -1,0 +1,13 @@
+{
+  "source_profile_manifest_sha256": "f05a89e8a60669d4ee2fe1a5cfb2b2d2b0c8359f980a95e586b620d6b53b2334",
+  "normal_code_manifest_sha256": "796b73d59f088347714d871106a54b937a42ce75b3e694a8037dfec21e4e7bcb",
+  "zombies_code_manifest_sha256": "35b04b642da48734e14cfde6bac3096024e61bc19ae0929805742816de73afe6",
+  "raw_zombies_delta_sha256": "5b5fef1c2235219642538245f189b0b2a8712dd6feb0e48d38f75040ad33f80b",
+  "semantic_review_only_delta_sha256": "241a7b1d04e56b8846c1f77ad37b99dee978bc5557c7b778ad21d128d0c33df5",
+  "raw_changed_paths": 106,
+  "semantic_changed_paths": 106,
+  "materialization_validation_sha256": "2cd9537c77c188659db669ad2b9bae441083907765f25ddb3d00bc1dd3da5f8f",
+  "merged_native_fixture_sha256": "78a574074051f594ae166610f04906785c80219e8967884fe06cfcaa3257f596",
+  "frozen_release_manifest_sha256": "bc039c61885831a5ad519a9fcc0e8221f4b03edbf3747d275c5b29f6658bd918",
+  "runtime_or_publication": false
+}

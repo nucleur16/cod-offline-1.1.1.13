@@ -1,0 +1,5 @@
+material	$defeatbackdrop
+material	$levelbriefing
+material	compass_map_mp_bloc_sh
+rawfile	mp_bloc_sh_load
+techset	2d

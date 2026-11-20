@@ -1,0 +1,198 @@
+{
+  "status": "native release/portable tests passed; Survival/MP startup-spawn passed; initial raw9ffa ZM compile failure corrected by narrow diagnostic include fix and Prototype/Theater startup retests passed",
+  "recorded_utc": "2026-10-29T05:09:30.056147+00:00",
+  "production_source_commit": "94546f45784f8a2f949305fd0de8c3c3bc81183a",
+  "binary_metadata_source_commit": "cf139395",
+  "production_source_note": "Built cf139395 plus the exact Win32 reader/advapi32 production changes committed as94546f45. Later LF normalization is metadata/test-only. No production delta is omitted.",
+  "rawfiles_commit": "9ffa8bcf708e3dba8a944c22df701f654796bfe7",
+  "binaries": {
+    "codol_dedrun.exe": {
+      "sha256": "81f4b32171324601f1262c2ec0fdceabfeb6f7be001f3e27670f277b3350d314",
+      "bytes": 7542248
+    },
+    "sh1x_host.dll": {
+      "sha256": "08b9fb15f98f1c3846aff30fe8d590f7e26ac785a3059b032e9e99d655947811",
+      "bytes": 7521301
+    }
+  },
+  "build": {
+    "command": "make -j8 LOCAL_TEST=0 OS=Windows_NT CC=i686-w64-mingw32-gcc CPP=i686-w64-mingw32-g++ AR=i686-w64-mingw32-ar OBJ_DIR=obj/codol-win32 bin/codol_dedrun.exe host-dll",
+    "log": "obj/final-native-union-20261029-build.log",
+    "passed": true
+  },
+  "tests": {
+    "production_zombies_closure_sanitizers": "8 passed; actual token, FX, route graph, checkpoint, viewmodel, two localtest policy and archived colour bodies",
+    "existing_registered": "connect, appearance/archive, inherited reservation passed",
+    "windows_reader_sanitizers": "actual extracted Win32 bodies with OS doubles passed owner/ACL, reparse/type, bounds, short/error and digest checks; no Windows test EXE executed",
+    "warm_resident": "19 checks passed; default disabled and unqualified explicit resident boot quarantined before allocation",
+    "final_rawfiles_actual_body_regressions": "9 passed on21e928e: devbot target, historical diagnostics/include namespace, hotjoin, ZM branches, Survival kiosk economy/classchoice/HUD/progression/pursuit-radar",
+    "original_c1_actor_compass": "6 Unicorn tests passed against exact original C1.exe; no live process or fake engine math/trace substitutions; no live visual claim"
+  },
+  "built_binary_resolvers": {
+    "zm": {
+      "scripts": 102,
+      "maps": [
+        "zm_prototype_sh",
+        "zm_asylum_sh",
+        "zm_factory_sh",
+        "zm_sumpf_sh",
+        "zm_theater_sh",
+        "zm_zombie_training"
+      ],
+      "passed": true,
+      "final_recheck_rawfiles_commit": "21e928e335761ecd33e75db226856201ba3ea1b0"
+    },
+    "mp": {
+      "scripts": 128,
+      "passed": true
+    },
+    "survival": {
+      "scripts": 197,
+      "passed": true
+    },
+    "coop": {
+      "scripts": 170,
+      "passed": true
+    },
+    "literal_false_negative": "createprintchannel exact NUL-terminated literal exists EXE offset3860364; resolver requires leadingNUL but preceding byte is0x3f float constant.1067 names accepted; no reachable gated call unresolved."
+  },
+  "owned_probes": {
+    "survival": {
+      "pid": 110020,
+      "port": 17761,
+      "map": "mp_fav_tropical",
+      "ready": true,
+      "wave": 2,
+      "spawned": 6,
+      "killed": 6,
+      "failures": 0,
+      "bot": 1,
+      "runtime_error": false,
+      "death_exercise_completed": true,
+      "shutdown": "owned process exited after quit",
+      "log": "D:\\CoD\\CoD4x_Server\\.claude\\worktrees\\iw4-asset-layout\\obj\\final-union-probes-20261029\\survival\\mp_fav_tropical\\home\\main\\qconsole.log",
+      "result": "passed native startup/spawn/death lifecycle; godmode bot, no damage or C1 visual claim"
+    },
+    "mp": {
+      "category": "mp",
+      "map": "mp_killhouse_sh",
+      "gametype": "war",
+      "pid": 119552,
+      "port": 17761,
+      "ready": true,
+      "status": "\u00ff\u00ff\u00ff\u00ffprint\nsh1x_status map=mp_killhouse_sh session_map=mp_killhouse_sh gametype=war type=mp running=1 ended=0 humans=0 bots=1 maxclients=16 parked=0 quick=0 quick_session=- epoch=0 joinable=0 quick_parties=0 uids=- warm_phase=0 warm_preparation=- warm_lease=- warm_selection=- persistent_events=0 persistent_world=0 persistent_seq=0 persistent_steps=0 persistent_missing=511 persistent_world_ready=0 persistent_last_ended=0 persistent_cleanup_epoch=0 resident=0 resident_quarantined=0 resident_phase=0 resident_boot=- resident_lease=- resident_epoch=0 resident_world=0 resident_request=- resident_selection=- resident_reports=0 resident_report_digest=- resident_cleanup_failure=0 resident_round=0 resident_round_completed=0 resident_round_pending=0 resident_tail_failure=0 resident_known=1 resident_humans=0 resident_bots=1 resident_running=1\n",
+      "responses": [
+        "\u00ff\u00ff\u00ff\u00ffprint\n",
+        "\u00ff\u00ff\u00ff\u00ffprint\nhostname: sh1x server\nversion : sh1x server - Call of Duty Online Closed Alpha Server - win_mingw-x86-custom build 0 Oct 29 2026\nudp/ip  : 127.0.0.1:17761\nos      : win_mingw\ntype    : dedicated server\nmap     : mp_killhouse_sh\n\nnum score ping playerid            steamid           name                             lastmsg address                                              qport rate\n--- ----- ---- ------------------- ----------------- -------------------------------- ------- ---------------------------------------------------- ----- -----\n  0     0    0 0                   0                 Training 1^7                             0 bot                                                  21766 1048576\n\n"
+      ],
+      "elapsed_seconds": 26.64,
+      "exit_code_before_shutdown": null,
+      "log": "D:\\CoD\\CoD4x_Server\\.claude\\worktrees\\iw4-asset-layout\\obj\\final-union-probes-20261029\\mp\\home\\main\\qconsole.log",
+      "errors": [
+        "^1Error: steam_api.dll not found or it was not possible to load. Error is: The specified module could not be found."
+      ],
+      "spawn_evidence": [],
+      "owned_shutdown_exit_code": 0
+    },
+    "zm": {
+      "category": "zm",
+      "map": "zm_prototype_sh",
+      "gametype": "zm",
+      "pid": 32832,
+      "port": 17761,
+      "ready": false,
+      "status": "",
+      "responses": [],
+      "elapsed_seconds": 67.41,
+      "exit_code_before_shutdown": 4294967232,
+      "log": "D:\\CoD\\CoD4x_Server\\.claude\\worktrees\\iw4-asset-layout\\obj\\final-union-probes-20261029\\zm\\home\\main\\qconsole.log",
+      "errors": [
+        "^1Error: steam_api.dll not found or it was not possible to load. Error is: The specified module could not be found.",
+        "^1Error: ",
+        "^1Error: ******* script compile error *******",
+        "^1Error: function 'waittill_either' already defined in 'maps/_zombiemode_utility.gsc': (file 'maps/_zombiemode_powerup_test.gsc', line 7)",
+        "With the reason: Server fatal crashed: \u0015script compile error"
+      ],
+      "spawn_evidence": [],
+      "owned_shutdown_exit_code": 4294967232
+    },
+    "zombies_retest": {
+      "base_rawfiles_commit": "9ffa8bcf708e3dba8a944c22df701f654796bfe7",
+      "working_tree_delta": "Committed narrow diagnostic include correction relative to9ffa8bc; exact changed-file hash retained.",
+      "changed_file_sha256": "7ba206013c5f2899dcb6ebaa294f58cc3d41ec452d6af07e517502d2492cf26f",
+      "cases": [
+        {
+          "category": "zm",
+          "map": "zm_prototype_sh",
+          "gametype": "zm",
+          "pid": 111140,
+          "port": 17761,
+          "ready": true,
+          "status": "\u00ff\u00ff\u00ff\u00ffprint\nsh1x_status map=zm_prototype_sh session_map=zm_prototype_sh gametype=zm type=zm running=1 ended=0 humans=0 bots=0 maxclients=16 parked=0 quick=0 quick_session=- epoch=0 joinable=0 quick_parties=0 uids=- warm_phase=0 warm_preparation=- warm_lease=- warm_selection=- persistent_events=0 persistent_world=0 persistent_seq=0 persistent_steps=0 persistent_missing=511 persistent_world_ready=0 persistent_last_ended=0 persistent_cleanup_epoch=0 resident=0 resident_quarantined=0 resident_phase=0 resident_boot=- resident_lease=- resident_epoch=0 resident_world=0 resident_request=- resident_selection=- resident_reports=0 resident_report_digest=- resident_cleanup_failure=0 resident_round=0 resident_round_completed=0 resident_round_pending=0 resident_tail_failure=0 resident_known=1 resident_humans=0 resident_bots=0 resident_running=1\n",
+          "responses": [
+            "\u00ff\u00ff\u00ff\u00ffprint\n",
+            "\u00ff\u00ff\u00ff\u00ffprint\n",
+            "\u00ff\u00ff\u00ff\u00ffprint\nhostname: sh1x server\nversion : sh1x server - Call of Duty Online Closed Alpha Server - win_mingw-x86-custom build 0 Oct 29 2026\nudp/ip  : 127.0.0.1:17761\nos      : win_mingw\ntype    : dedicated server\nmap     : zm_prototype_sh\n\nnum score ping playerid            steamid           name                             lastmsg address                                              qport rate\n--- ----- ---- ------------------- ----------------- -------------------------------- ------- ---------------------------------------------------- ----- -----\n\n"
+          ],
+          "elapsed_seconds": 21.81,
+          "exit_code_before_shutdown": null,
+          "log": "D:\\CoD\\CoD4x_Server\\.claude\\worktrees\\iw4-asset-layout\\obj\\final-union-probes-20261029\\zm-retest\\zm_prototype_sh\\home\\main\\qconsole.log",
+          "errors": [],
+          "spawn_evidence": [],
+          "owned_shutdown_exit_code": 0
+        },
+        {
+          "category": "zm",
+          "map": "zm_theater_sh",
+          "gametype": "zm",
+          "pid": 117804,
+          "port": 17761,
+          "ready": true,
+          "status": "\u00ff\u00ff\u00ff\u00ffprint\nsh1x_status map=zm_theater_sh session_map=zm_theater_sh gametype=zm type=zm running=1 ended=0 humans=0 bots=0 maxclients=16 parked=0 quick=0 quick_session=- epoch=0 joinable=0 quick_parties=0 uids=- warm_phase=0 warm_preparation=- warm_lease=- warm_selection=- persistent_events=0 persistent_world=0 persistent_seq=0 persistent_steps=0 persistent_missing=511 persistent_world_ready=0 persistent_last_ended=0 persistent_cleanup_epoch=0 resident=0 resident_quarantined=0 resident_phase=0 resident_boot=- resident_lease=- resident_epoch=0 resident_world=0 resident_request=- resident_selection=- resident_reports=0 resident_report_digest=- resident_cleanup_failure=0 resident_round=0 resident_round_completed=0 resident_round_pending=0 resident_tail_failure=0 resident_known=1 resident_humans=0 resident_bots=0 resident_running=1\n",
+          "responses": [
+            "\u00ff\u00ff\u00ff\u00ffprint\n",
+            "\u00ff\u00ff\u00ff\u00ffprint\n",
+            "\u00ff\u00ff\u00ff\u00ffprint\nhostname: sh1x server\nversion : sh1x server - Call of Duty Online Closed Alpha Server - win_mingw-x86-custom build 0 Oct 29 2026\nudp/ip  : 127.0.0.1:17761\nos      : win_mingw\ntype    : dedicated server\nmap     : zm_theater_sh\n\nnum score ping playerid            steamid           name                             lastmsg address                                              qport rate\n--- ----- ---- ------------------- ----------------- -------------------------------- ------- ---------------------------------------------------- ----- -----\n\n"
+          ],
+          "elapsed_seconds": 21.83,
+          "exit_code_before_shutdown": null,
+          "log": "D:\\CoD\\CoD4x_Server\\.claude\\worktrees\\iw4-asset-layout\\obj\\final-union-probes-20261029\\zm-retest\\zm_theater_sh\\home\\main\\qconsole.log",
+          "errors": [],
+          "spawn_evidence": [],
+          "owned_shutdown_exit_code": 0
+        }
+      ],
+      "all_owned_exited": true,
+      "limitation": "Normal canonical Zombies does not invoke equiptest::init, so attempted existing addbots verb has no active consumer and both statuses correctly remain bots0; no player spawn/actor wave/C1 acceptance claimed.",
+      "rawfiles_commit": "21e928e335761ecd33e75db226856201ba3ea1b0"
+    }
+  },
+  "diagnostic_classification": {
+    "steam_api.dll": "optional missing module emitted on all three starts; nonfatal for Survival and MP",
+    "zombies_blocker": "maps/_zombiemode_powerup_test.gsc includes both maps/_zombiemode_utility and common_scripts/utility, duplicating waittill_either. Native compiler rejects at include line7 before running. Reported root/raw owner; no fix in this receipt. Narrow raw diagnostic fix tested with the exact same81F4 binary: Prototype/Theater both running1 and no compile/runtime errors."
+  },
+  "preserved_user_processes": [
+    {
+      "pid": 82484,
+      "name": "codoMP_client_shipRetail"
+    },
+    {
+      "pid": 57248,
+      "name": "k33p2p_dedrun"
+    }
+  ],
+  "limitations": [
+    "No C1 UI input, process memory writes, deployment or user process restart.",
+    "No C1 Zombies visual/network acceptance.",
+    "Current resident union unqualified; explicit boot fails closed.",
+    "Initial raw9ffa startup failed; passing Zombies retest includes the narrowly identified diagnostic include correction committed as21e928e335761ecd33e75db226856201ba3ea1b0/file hash above. No changed GSC gameplay or native binary."
+  ],
+  "user_process_observation": "C1 PID82484 and host57248 observed alive before probes and during first ZM attempt. C1 still alive afterwards;57248 subsequently absent independently. No probe targeted either PID, lobby, port17760 or UI.",
+  "probe_commands": {
+    "survival": "python tools/codol_survival_startup_probe.py --game \"D:/CoD/CODOL Builds/Call of Duty Online 1.1.1.13\" --binary bin/codol_dedrun.exe --out obj/final-union-probes-20261029/survival --port 17761 --maps mp_fav_tropical --start-wave 2 --exercise-seconds 24 --death-exercise",
+    "mp_and_zm": "Owned diagnostic harness obj/final_union_startup_probe.py launches same EXE with dedicated2, isolated fs_homepath per category, net_ip127.0.0.1/net_port17761, random per-process RCON password, all3 codol_script overlays to active rawroot, admissionRequired0, category/sessionmap/gametype exact; MP scr_codol_bots1; ZM scr_codol_bots0 and existing scr_codol_equiptest addbots1 attempt. Exact status/results in receipts. No normal port17760 or user RCON touched.",
+    "zombies_retest": "python obj/final_union_zm_retest.py (same settings, isolated zm-retest/map homes; Prototype and Theater sequential).",
+    "ownership": "Each launch first binds exact isolated UDP17761 to refuse occupied port; Popen PID retained, only that child gets quit/timeout termination; all exited and port subsequently free."
+  },
+  "final_passing_rawfiles_commit": "21e928e335761ecd33e75db226856201ba3ea1b0"
+}

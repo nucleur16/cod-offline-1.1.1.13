@@ -1,0 +1,70 @@
+
+#C file types to ignore
+
+*.o
+/obj/**/*.d
+/obj/**/test_native
+/obj/
+
+*.dll
+
+*.so
+
+*.exe
+
+*.lib
+
+*.def
+
+*.ff
+*.iwd
+*.bsp
+*.log
+src/bspc/*.obj
+
+#Git files
+
+git-pull.sh
+
+git-push.sh
+
+git-status.sh
+
+
+build_official*
+bin/sys_error.txt
+bin/logs/*
+
+bin/main/*
+bin/zone/*
+bin/serverstatus.xml
+bin/main_shared/*
+bin/cod4x18_dedrun
+bin/cod4x18_dedrun_dbg
+bin/sh1x_dedrun
+__pycache__/
+src/steam_api/
+lib/*.a
+
+plugins/libcom_plugin.a
+
+#T-Max: ignore Qt Creator files to keep project clean
+CoD4x_Server.config
+CoD4x_Server.creator
+CoD4x_Server.files
+CoD4x_Server.includes
+build_win32_PE_nopause.cmd
+build_linux32_ELF_nopause.sh
+
+#fraggy: ignore .vscode
+.vscode/
+
+#T-Max: I don't want to have this plugin inside main project.
+plugins/mysql
+
+# Wth this is here?
+sys_error.txt
+bin/sh1x_archive
+lib-native/
+lib-win/
+bin/libsh1x_host.a

@@ -1,0 +1,530 @@
+fx	env/light/fx_ray_sun_sm_short
+fx	maps/zombie/fx_reviveknife
+fx	maps/zombie/fx_zombie_fire_trap_med_sh
+fx	misc/fx_zombie_cola_doubletap_on_glow
+fx	misc/fx_zombie_cola_jugg_on_glow
+fx	misc/fx_zombie_cola_on
+fx	misc/fx_zombie_cola_on_glow
+fx	misc/fx_zombie_cola_revive_on_glow
+image	bip_default_as50ncm_col
+image	bip_default_as50ncm_nml
+image	codo_zombie_vending_doubletap_l_new
+image	codo_zombie_vending_doubletap_new_col
+image	codo_zombie_vending_doubletap_new_nml
+image	codo_zombie_vending_jugg_glow_new
+image	codo_zombie_vending_jugg_new_col
+image	codo_zombie_vending_jugg_new_nml
+image	codo_zombie_vending_revive_l_new_col
+image	codo_zombie_vending_revive_new_col
+image	codo_zombie_vending_revive_new_nml
+image	codo_zombie_vending_sleight_new_col
+image	codo_zombie_vending_sleight_new_nml
+image	codo_zombie_vending_sleight_white_col
+image	detail_flat
+image	flash4_blue_spc
+image	flash4_green_spc
+image	flash4_red_spc
+image	flash4_yellow_spc
+image	glass_blue_col
+image	gri_default_as50ncm_col
+image	gri_default_as50ncm_nml
+image	gri_default_m9_col
+image	gri_default_m9_nml
+image	heg_zmcowboy_zm_m_col
+image	heg_zmcowboy_zm_m_nml
+image	hud_as50
+image	iro_default_l86ncm_col
+image	mag_default_as50ncm_col
+image	mag_default_as50ncm_nml
+image	mag_default_g18ncm_col
+image	mag_default_g18ncm_nml
+image	mag_default_m9_col
+image	mag_default_m9_nml
+image	muz_default_as50ncm_col
+image	muz_default_as50ncm_nml
+image	office_light_flicker
+image	the_fixlarge_ssncm_col
+image	the_fixlarge_ssncm_nml
+image	wavy_nml_sml
+image	wea_as50_as50_col
+image	wea_as50_as50_nml
+image	wea_m9_m9_col
+image	wea_m9_m9_nml
+image	wea_scar_scar_col
+image	wea_scar_scar_nml
+image	~bip_default_as50ncm_spc-rgb&~597c92b4
+image	~codo_zombie_vending_doubleta~b7385bba
+image	~codo_zombie_vending_jugg_new~dd580104
+image	~codo_zombie_vending_revive_n~060e515a
+image	~codo_zombie_vending_sleight_~d461cdf9
+image	~glass_base_spc-rgb&glass_bas~a9cd8bff
+image	~gri_default_as50ncm_spc-rgb&~02abfd58
+image	~gri_default_m9_spc-rgb&gri_d~5b933941
+image	~heg_zmcowboy_zm_m_spc-rgb&he~956f7e1d
+image	~mag_default_as50ncm_spc-rgb&~26f5201f
+image	~mag_default_g18ncm_spc-rgb&m~4c154ab1
+image	~mag_default_m9_spc-rgb&mag_d~5b933941
+image	~muz_default_as50ncm_spc-rgb&~504d88d4
+image	~the_fixlarge_ssncm_spc-rgb&t~600daf16
+image	~wea_as50_as50_spc-rgb&wea_as~3ee891bb
+image	~wea_m9_m9_spc-rgb&wea_m9_m9_cos-l-67
+image	~wea_scar_scar_spc-rgb&wea_sc~103cda77
+loaded_sound	evt/zombie_global/box/new/box_close_00.wav
+loaded_sound	evt/zombie_global/box/new/box_lp.wav
+loaded_sound	evt/zombie_global/box/new/box_open_00.wav
+loaded_sound	weapons/as50/weap_aw50_slmn_1.wav
+loaded_sound	weapons/as50/weap_aw50_slst_1.wav
+loaded_sound	weapons/foley/wpfoly_as50_reload_chamber_v1.wav
+loaded_sound	weapons/foley/wpfoly_as50_reload_clipin_v1.wav
+loaded_sound	weapons/foley/wpfoly_as50_reload_clipout_v1.wav
+loaded_sound	weapons/foley/wpfoly_as50_reload_lift_v1.wav
+loaded_sound	weapons/foley/wpfoly_as50_reload_open_v1.wav
+loaded_sound	weapons/foley/wpfoly_type95_reload_chamber_v1.wav
+loaded_sound	weapons/foley/wpfoly_type95_reload_clipin_v1.wav
+loaded_sound	weapons/foley/wpfoly_type95_reload_clipout_v1.wav
+loaded_sound	weapons/foley/wpfoly_type95_reload_lift_v1.wav
+loaded_sound	weapons/qbz95/weap_qbz95_slmn_1.wav
+loaded_sound	weapons/qbz95/weap_qbz95_slst_1.wav
+loaded_sound	wpn/energy/freezegun/projectile/freeze/freeze_lp.wav
+loaded_sound	wpn/energy/freezegun/zombie/collapse/collapse_00.wav
+loaded_sound	wpn/energy/freezegun/zombie/collapse/collapse_01.wav
+loaded_sound	wpn/energy/freezegun/zombie/collapse/collapse_02.wav
+loaded_sound	zmb/firetrap/firetrap_step_on.wav
+loaded_sound	zmb/misc/cyborg_oil_spray_01.wav
+loaded_sound	zmb/misc/cyborg_oil_spray_02.wav
+loaded_sound	zmb/misc/cyborg_oil_spray_03.wav
+loaded_sound	zmb/misc/cyborg_oil_spray_04.wav
+loaded_sound	zmb/misc/cyborg_oil_spray_05.wav
+loaded_sound	zmb/misc/cyborg_oil_spray_06.wav
+loaded_sound	zmb/misc/cyborg_oil_spray_07.wav
+loaded_sound	zmb/misc/cyborg_oil_spray_08.wav
+loaded_sound	zmb/misc/cyborg_oil_spray_09.wav
+loaded_sound	zmb/misc/cyborg_oil_spray_10.wav
+loaded_sound	zmb/misc/cyborg_oil_spray_11.wav
+loaded_sound	zmb/misc/cyborg_oil_spray_12.wav
+loaded_sound	zmb/misc/cyborg_oil_spray_13.wav
+loaded_sound	zmb/misc/cyborg_oil_spray_14.wav
+loaded_sound	zmb/shrinktrap/shrink_trap_lp.wav
+loaded_sound	zmb/wpn/knife/zmb_revive_knife.wav
+material	gfx_codo_zm_eye_lensflare_blue
+material	gfx_fxt_light_flare2_eo2
+material	gfx_fxt_light_flare2_eo5
+material	gfx_fxt_light_glow
+material	gfx_fxt_light_glow_add
+material	gfx_fxt_light_len_flare
+material	hud_icon_as50
+material	mc/flash_additive4_blue
+material	mc/flash_additive4_green
+material	mc/flash_additive4_red
+material	mc/flash_additive4_yellow
+material	mc/glass_blue
+material	mc/mtl_bip_default_as50ncm_blk
+material	mc/mtl_codo_zombie_vending_doubletap_l_new
+material	mc/mtl_codo_zombie_vending_doubletap_new
+material	mc/mtl_codo_zombie_vending_jugg_glow_new
+material	mc/mtl_codo_zombie_vending_jugg_new
+material	mc/mtl_codo_zombie_vending_revive_l_new
+material	mc/mtl_codo_zombie_vending_revive_new
+material	mc/mtl_codo_zombie_vending_sleight_new
+material	mc/mtl_codo_zombie_vending_sleight_white
+material	mc/mtl_gri_default_as50ncm_blk
+material	mc/mtl_gri_default_m9_blk
+material	mc/mtl_hea_zmcowboy1_zm_m_00
+material	mc/mtl_mag_default_as50ncm_blk
+material	mc/mtl_mag_default_m9_blk
+material	mc/mtl_muz_default_as50ncm_blk
+material	mc/mtl_the_fixlarge_ssncm_blk
+material	mc/mtl_wea_as50_as50_blk
+material	mc/mtl_wea_as50_as50_blk_obj
+material	mc/mtl_wea_m9_m9_blk
+material	mc/mtl_wea_scar_scar_blk
+material	mc/mtl_wea_scar_scar_blk_obj
+material	mc/office_light_flicker
+phys_collmap	weapon_m82
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+pixelshader	<inline-name, unknown header>	!
+rawfile	animlists/common_zombie.animlist
+rawfile	animtrees/zm_magic_box.atr
+sound	mp_challenge_complete
+sound	mp_level_up
+sound	mus_fire_sale
+sound	mus_perks_doubletap_jingle
+sound	mus_perks_jugganog_jingle
+sound	mus_perks_packa_jingle
+sound	mus_perks_revive_jingle
+sound	mus_perks_speed_jingle
+sound	mus_zombie_game_over
+sound	weap_as50_chamber_plr
+sound	weap_as50_clipin_plr
+sound	weap_as50_clipout_plr
+sound	weap_as50_fire_npc
+sound	weap_as50_fire_plr
+sound	weap_as50_lift_plr
+sound	weap_as50_reload_open_plr
+sound	weap_qbz95_chamber_plr
+sound	weap_qbz95_clipin_plr
+sound	weap_qbz95_clipout_plr
+sound	weap_qbz95_fire_npc
+sound	weap_qbz95_fire_plr
+sound	weap_qbz95_lift_plr
+sound	wpn_freezegun_freeze_zombie
+sound	wpn_freezegun_freeze_zombie_lp
+sound	zmb_box_close
+sound	zmb_box_lp
+sound	zmb_box_move
+sound	zmb_box_open
+sound	zmb_box_raise
+sound	zmb_box_select
+sound	zmb_box_slam
+sound	zmb_death_gibs
+sound	zmb_death_mvmt
+sound	zmb_death_vox
+sound	zmb_firetrap_step_on
+sound	zmb_headshot
+sound	zmb_music_box
+sound	zmb_revive_knife
+sound	zmb_shrink_trap_lp
+sound	zombify_player	~
+stringtable	mp/challengedeactivate.csv
+stringtable	mp/challengeweight.csv
+stringtable	mp/cocharitems/heg.csv
+stringtable	mp/coweapitems/mag.csv
+stringtable	mp/coweapitemscam.csv
+stringtable	mp/coweapitemswea.csv
+stringtable	mp/gametypescptable.csv
+stringtable	mp/gametypesxptable.csv
+stringtable	mp/matchbonus.csv
+stringtable	mp/matchbonusgp.csv
+stringtable	mp/xpleaguescaler.csv
+stringtable	mp/zombiemode.csv
+techset	mc_l_hsm_b0c0q0n0p0
+techset	mc_l_hsm_b0c0q0n0s0p0
+techset	mc_l_hsm_b0c0q0p0
+techset	mc_l_hsm_b0c0q0s0p0
+techset	mc_l_sm_b0c0q0n0p0
+techset	mc_l_sm_b0c0q0n0s0p0
+techset	mc_l_sm_b0c0q0p0
+techset	mc_l_sm_b0c0q0s0p0
+techset	mc_unlit_add_lin_ua
+tracer	sniper
+vertexshader	<inline-name, unknown header>	!
+weapon	1000	~
+weapon	as50_upgraded_zm
+weapon	as50_zm
+weapon	aug_eotech_upgraded_zm
+weapon	aug_eotech_zm
+weapon	crossbow_explosive_upgraded_zm
+weapon	crossbow_explosive_zm
+weapon	m1911dw_zm
+weapon	model1887_upgraded_zm
+weapon	model1887_zm
+weapon	mp5k_upgraded_zm
+weapon	p90_upgraded_zm
+weapon	p90_zm
+weapon	sentry_minigun_mp
+weapon	sentry_minigun_pro_mp
+weapon	spas12_upgraded_zm
+weapon	spas12_zm
+weapon	ump45_zm
+xanim	codo_treasure_chest_box_close
+xanim	codo_treasure_chest_box_open
+xanim	post_game_walkup_cowboy_pistol
+xanim	post_game_walkup_cowboy_pistol_idle
+xanim	post_game_walkup_hiphop_pistol
+xanim	post_game_walkup_hiphop_pistol_idle
+xanim	post_game_walkup_lvbu_pistol
+xanim	post_game_walkup_lvbu_pistol_idle
+xanim	viewmodel_as50_ads_down
+xanim	viewmodel_as50_ads_fire
+xanim	viewmodel_as50_ads_up
+xanim	viewmodel_as50_fire
+xanim	viewmodel_as50_idle
+xanim	viewmodel_as50_pullout
+xanim	viewmodel_as50_pullout_quick
+xanim	viewmodel_as50_putaway
+xanim	viewmodel_as50_putaway_quick
+xanim	viewmodel_as50_reload
+xanim	viewmodel_as50_reload_empty
+xanim	viewmodel_as50_sprint_in
+xanim	viewmodel_as50_sprint_loop
+xanim	viewmodel_as50_sprint_out
+xanim	viewmodel_at4_reload
+xanim	viewmodel_aug_grip_ads_fire
+xanim	viewmodel_aug_grip_fire
+xanim	viewmodel_aug_grip_idle
+xanim	viewmodel_aug_grip_pullout
+xanim	viewmodel_aug_grip_pullout_first
+xanim	viewmodel_aug_grip_putaway
+xanim	viewmodel_aug_grip_reload
+xanim	viewmodel_aug_grip_reload_empty
+xanim	viewmodel_aug_grip_sprint_in
+xanim	viewmodel_aug_grip_sprint_loop
+xanim	viewmodel_aug_grip_sprint_out
+xanim	viewmodel_beretta_sprint_in
+xanim	viewmodel_beretta_sprint_loop
+xanim	viewmodel_beretta_sprint_out
+xanim	viewmodel_famas_reload_empty
+xanim	viewmodel_m4a1tech_reload
+xanim	viewmodel_m4a1tech_reload_empty
+xanim	viewmodel_scar_first_time_pullout_fgrip
+xanim	viewmodel_scar_reload_empty_alt_fgrip
+xanim	viewmodel_scar_shotgun_first_time_pullout
+xanim	viewmodel_scar_shotgun_reload_empty
+xanim	viewmodel_spas12_hb_ads_fire
+xanim	viewmodel_spas12_hb_ads_rechamber
+xanim	viewmodel_spas12_hb_breach
+xanim	viewmodel_spas12_hb_fire
+xanim	viewmodel_spas12_hb_idle
+xanim	viewmodel_spas12_hb_nvg_puton
+xanim	viewmodel_spas12_hb_nvg_takeoff
+xanim	viewmodel_spas12_hb_pullout
+xanim	viewmodel_spas12_hb_pullout_quick
+xanim	viewmodel_spas12_hb_putaway
+xanim	viewmodel_spas12_hb_putaway_quick
+xanim	viewmodel_spas12_hb_rechamber
+xanim	viewmodel_spas12_hb_reload_in
+xanim	viewmodel_spas12_hb_reload_loop
+xanim	viewmodel_spas12_hb_reload_out
+xanim	viewmodel_spas12_hb_sprint_in
+xanim	viewmodel_spas12_hb_sprint_loop
+xanim	viewmodel_spas12_hb_sprint_out
+xanim	viewmodel_spas12_pullout
+xanim	viewmodel_spas12_putaway
+xanim	viewmodel_tavor_first_time_pullout
+xanim	viewmodel_tavor_reload
+xanim	viewmodel_tavor_reload_empty
+xanim	zombie_dog_death_front
+xanim	zombie_dog_death_hit_back
+xanim	zombie_dog_death_hit_left
+xanim	zombie_dog_death_hit_right
+xanim	zombie_dog_run
+xanim	zombie_dog_run_attack
+xanim	zombie_dog_run_lean_l
+xanim	zombie_dog_run_lean_r
+xmodel	codo_weapon_at4_world
+xmodel	codo_weapon_at4_world_obj
+xmodel	codo_weapon_g18_viewmodel
+xmodel	codo_weapon_g18_world
+xmodel	codo_weapon_g18_world_obj
+xmodel	codo_weapon_l86_world
+xmodel	codo_weapon_l86_world_obj
+xmodel	codo_weapon_model1887_world
+xmodel	codo_weapon_model1887_world_obj
+xmodel	codo_weapon_ranger_world
+xmodel	codo_weapon_scar_viewmodel
+xmodel	codo_weapon_scar_world
+xmodel	codo_weapon_scar_world_obj
+xmodel	codo_weapon_tar21_world
+xmodel	codo_weapon_tar21_world_obj
+xmodel	fja_tanktop_sc_m_vmchar_blk
+xmodel	fja_tanktop_sc_m_vmchar_cau
+xmodel	fja_tanktop_sc_m_vmchar_wht
+xmodel	fja_tanktop_sc_m_vmchar_yel
+xmodel	fja_zmgirl_zm_f_00
+xmodel	fpa_compblkjeans_tf_m_00
+xmodel	fpa_zmgirl_zm_f_00
+xmodel	han_zmcowboy_zm_m_vmchar_00
+xmodel	han_zmtightgirl_zm_f_vmchar_00
+xmodel	hea_zmcowboy_zm_m_00
+xmodel	heg_zmcowboy_zm_m_nml	~
+xmodel	vehicle_blackhawk_minigun_hero
+xmodel	viewmodel_as50_codo
+xmodel	viewmodel_m9_codo
+xmodel	weapon_as50_codo
+xmodel	weapon_as50_codo_obj
+xmodel	weapon_m9_codo
+xmodel	zombie_vending_doubletap_on
+xmodel	zombie_vending_jugg_on
+xmodel	zombie_vending_revive_on
+xmodel	zombie_vending_speedcola_on
+xmodelsurfs	as50_codo_lod010
+xmodelsurfs	as50_codo_lod110
+xmodelsurfs	as50_codo_lod210
+xmodelsurfs	as50_codo_vmgun10
+xmodelsurfs	at4_codo_box_lod010
+xmodelsurfs	at4_codo_box_lod110
+xmodelsurfs	at4_codo_box_lod210
+xmodelsurfs	codo_zombie_vending_doubletap_new_on01
+xmodelsurfs	codo_zombie_vending_jugg_new_on01
+xmodelsurfs	codo_zombie_vending_sleight_new_on01
+xmodelsurfs	fja_zmgirl_zm_f_lod040
+xmodelsurfs	fpa_compblkjeans_tf_m_lod040
+xmodelsurfs	fpa_compblkjeans_tf_m_lod140
+xmodelsurfs	fpa_compblkjeans_tf_m_lod240
+xmodelsurfs	fpa_compblkjeans_tf_m_lod340
+xmodelsurfs	han_zmcowboy_zm_m_vmchar50
+xmodelsurfs	han_zmtightgirl_zm_f_vmchar50
+xmodelsurfs	l86_codo_box_lod010
+xmodelsurfs	l86_codo_box_lod110
+xmodelsurfs	l86_codo_box_lod210
+xmodelsurfs	m9_codo_lod010
+xmodelsurfs	m9_codo_lod110
+xmodelsurfs	m9_codo_lod210
+xmodelsurfs	m9_codo_vmgun10
+xmodelsurfs	scar_codo_lod010
+xmodelsurfs	scar_codo_lod110
+xmodelsurfs	scar_codo_lod210
+xmodelsurfs	scar_codo_vmgun10
+xmodelsurfs	tar21_codo_box_lod010
+xmodelsurfs	tar21_codo_box_lod110
+xmodelsurfs	tar21_codo_box_lod210
+xmodelsurfs	zombie_vending_revive_on_new01

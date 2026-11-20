@@ -1,0 +1,6 @@
+# Built from game and other titles' localized text; keep local (game files stay private).
+english.tsv
+missing.tsv
+out/
+sources/*
+!sources/manual.tsv

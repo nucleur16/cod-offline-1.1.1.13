@@ -1,0 +1,64 @@
+{
+  "schema": "codol-ee5e-proof-boundary-v1",
+  "source_receipt": "qa12-zombies-four-C1-return-proof.json",
+  "source_receipt_sha256": "74636250ca1b0c94ea684ca5dc3a5a697383936528317fb8d30670eed397fc74",
+  "source_receipt_location": "task-local re/overnight-unified-lobby-20261023/",
+  "native_sha256": "4a226c41e6b734a2dce24210bcb51749f152adc41499a66db01c7f68d6bc4d50",
+  "iwd_sha256": "ee5e4102ffa70d5be1566116aacd5121ea435c9890b940ea0e13286dfe642dc3",
+  "exact_C1_image_sha256": "a5a7b44e66ca72da785eae4319126c23491586dc88dde499e8e6c9cf4bd6a976",
+  "map": "zm_prototype_sh",
+  "human_clients": 4,
+  "bots": 0,
+  "locales": [
+    "en",
+    "zh"
+  ],
+  "confirmed_local_scope": [
+    "all four room490 members and avatars stable",
+    "only Chinese guest4 Ready; clearing it cancelled countdown without lease",
+    "guest4 Ready again; native60-second countdown with host and other guests genuinely unready",
+    "host remained Match starting during real cold worker boot, with no Servers-busy modal",
+    "all four EN/ZH clients rendered Round1 gameplay and complete peer HUD",
+    "four distinct initial views, clear cameras, no overlapping peer mesh",
+    "Chinese2 and Chinese4 jump input moved the rendered viewpoint",
+    "Natural results observed in all four C1 clients.",
+    "All four returned to the same retained room."
+  ],
+  "parent_reported_room": {
+    "backend_id": 69421,
+    "UI_number": 490
+  },
+  "client_or_lobby_restarts_during_room_and_match": 0,
+  "second_same_room_match": "Parent-observed second all-ready run passed; receipt now hash-bound.",
+  "pending": [
+    "MP/Quick on combined candidate",
+    "Normal92 native C1",
+    "Asylum spawn contract",
+    "Training spawn contract",
+    "Full release/production qualification"
+  ],
+  "native_VM_or_C1_proof_is_provided_by_archive_reproducer": false,
+  "production_changed": false,
+  "repeat_source_receipt": {
+    "name": "qa12-zombies-four-C1-repeat-proof.json",
+    "sha256": "17f5a1e08b1a355cd952bc0a007a7eff1139409bfe80b44a7a5edb17ea7153f7",
+    "prior_receipt_sha256": "74636250ca1b0c94ea684ca5dc3a5a697383936528317fb8d30670eed397fc74",
+    "same_four_process_records_verified_across_receipts": true,
+    "native_sha256": "4a226c41e6b734a2dce24210bcb51749f152adc41499a66db01c7f68d6bc4d50",
+    "iwd_sha256": "ee5e4102ffa70d5be1566116aacd5121ea435c9890b940ea0e13286dfe642dc3",
+    "human_clients": 4,
+    "bots": 0,
+    "locales": [
+      "en",
+      "zh"
+    ],
+    "parent_observed_scope": [
+      "Fourth genuine Ready started immediately with about 13 seconds remaining on countdown.",
+      "Same four EN/ZH C1 processes reached natural defeat results.",
+      "All four returned to backend 69421 / UI 490 before ordinary guest departures."
+    ],
+    "client_and_lobby_restarts_during_both_matches": 0,
+    "worker_cleanup": "Ordinary worker quit after ended=1 and humans=0.",
+    "proof_origin": "Parent-observed local C1; not executed by archive reproducer."
+  }
+}

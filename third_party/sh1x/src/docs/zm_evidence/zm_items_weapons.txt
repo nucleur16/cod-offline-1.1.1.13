@@ -1,0 +1,1349 @@
+
+Logfile opened on Thu Sep 24 18:21:27 2026
+
+
+Current language: chinese
+Current fs_basepath: d:/cod/codol builds/call of duty online 1.1.1.13
+Current fs_homepath: c:/users/michael/appdata/local/temp/codol-claude-probe-query
+Current search path:
+c:/users/michael/appdata/local/temp/codol-claude-probe-query/main
+c:/users/michael/appdata/local/temp/codol-claude-probe-query/main_shared
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_sound_03.iwd (4 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_sound_02.iwd (1 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_sound_01.iwd (820 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_sound_00.iwd (221 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_05.iwd (30 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_04.iwd (121 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_03.iwd (12 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_02.iwd (25 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_01.iwd (4 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_00.iwd (3246 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_12.iwd (144 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_11.iwd (279 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_10.iwd (124 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_09.iwd (58 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_08.iwd (32 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_07.iwd (266 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_06.iwd (1159 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_05.iwd (1489 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_04.iwd (1224 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_03.iwd (2072 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_02.iwd (2667 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_01.iwd (2938 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_00.iwd (2529 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_07.iwd (144 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_06.iwd (279 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_05.iwd (124 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_04.iwd (58 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_03.iwd (32 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_02.iwd (724 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_01.iwd (5492 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_00.iwd (8128 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_config_00.iwd (1 files)
+d:/cod/codol builds/call of duty online 1.1.1.13/main
+d:/cod/codol builds/call of duty online 1.1.1.13/main_shared
+d:/cod/codol builds/call of duty online 1.1.1.13/players
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_sound_02.iwd (31 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_sound_01.iwd (40 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_sound_00.iwd (7632 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_image_01.iwd (3 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_image_00.iwd (45 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_imagestripped_01.iwd (3 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_imagestripped_00.iwd (45 files)
+    localized assets iwd file for chinese
+
+File Handles:
+handle 1: qconsole.log
+----------------------
+42246 files in iwd files
+couldn't exec default_mp.cfg
+dedicated is write protected.
+fs_basepath is write protected.
+fs_homepath is write protected.
+net_port will be changed upon restarting.
+net_ip will be changed upon restarting.
+-------- Plugins initialization completed --------
+QUERY LIMIT: Querylimiting is enabled
+^1Error: steam_api.dll not found or it was not possible to load. Error is: The specified module could not be found.
+. Steam is not going to work.
+^2Couldn't open nvconfig_v2.dat for reading
+begin $init
+end $init 0 ms
+CoDOL native startup archives mounted: 9 (first: d:/cod/codol builds/call of duty online 1.1.1.13/client_shipRetail/chinese/code_post_gfx_default_mp.ff)
+--- Common Initialization Complete ---
+Hunk available: 10, Hunk total: 10
+^5Hitch warning: 2669 msec frame time
+CoDOL lifecycle: map zm_prototype_sh | invoker 'System/Rcon' power 100 client -1 | from codol_dedrun.exe+0x8bb3 (0x00fa8bb3) <- codol_dedrun.exe+0x769f (0x00fa769f) <- codol_dedrun.exe+0x7c77 (0x00fa7c77) <- codol_dedrun.exe+0x9f08 (0x00fa9f08) <- codol_dedrun.exe+0x84bc8 (0x01024bc8) <- codol_dedrun.exe+0x2d52 (0x00fa2d52) <- codol_dedrun.exe+0x31a814 (0x012ba814) <- codol_dedrun.exe+0x12de (0x00fa12de) <- KERNEL32.DLL+0x15d49 (0x75055d49) <- ntdll.dll+0x6d81b (0x7793d81b)
+^2Couldn't open nvconfig_v2.dat for reading
+CoDOL asset category: zm (from map name) for map zm_prototype_sh
+------ Server Initialization ------
+Server: zm_prototype_sh
+SV_SpawnServer checksum feed: 0x6ffb38a5
+Current language: chinese
+Current fs_basepath: d:/cod/codol builds/call of duty online 1.1.1.13
+Current fs_homepath: c:/users/michael/appdata/local/temp/codol-claude-probe-query
+Current search path:
+c:/users/michael/appdata/local/temp/codol-claude-probe-query/main
+c:/users/michael/appdata/local/temp/codol-claude-probe-query/main_shared
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_sound_03.iwd (4 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_sound_02.iwd (1 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_sound_01.iwd (820 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_sound_00.iwd (221 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_05.iwd (30 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_04.iwd (121 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_03.iwd (12 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_02.iwd (25 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_01.iwd (4 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_00.iwd (3246 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_12.iwd (144 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_11.iwd (279 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_10.iwd (124 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_09.iwd (58 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_08.iwd (32 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_07.iwd (266 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_06.iwd (1159 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_05.iwd (1489 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_04.iwd (1224 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_03.iwd (2072 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_02.iwd (2667 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_01.iwd (2938 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_00.iwd (2529 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_07.iwd (144 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_06.iwd (279 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_05.iwd (124 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_04.iwd (58 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_03.iwd (32 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_02.iwd (724 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_01.iwd (5492 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_00.iwd (8128 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_config_00.iwd (1 files)
+d:/cod/codol builds/call of duty online 1.1.1.13/main
+d:/cod/codol builds/call of duty online 1.1.1.13/main_shared
+d:/cod/codol builds/call of duty online 1.1.1.13/players
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_sound_02.iwd (31 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_sound_01.iwd (40 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_sound_00.iwd (7632 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_image_01.iwd (3 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_image_00.iwd (45 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_imagestripped_01.iwd (3 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_imagestripped_00.iwd (45 files)
+    localized assets iwd file for chinese
+
+File Handles:
+handle 1: qconsole.log
+----------------------
+42246 files in iwd files
+CoDOL native map archives mounted: 6 (zm_prototype_sh, zm)
+CoDOL inherited configstrings installed: 1625 (zm)
+CoDOL weapon window (zm): published 131 definitions, CS 6517 = 131 (constants demand 131)
+CoDOL animation classes: zm needs mask 0x8; using it in place of the default 0x0
+CoDOL waypoint graph: 0 nodes for zm_prototype_sh (no CSV for this map; actors steer straight at their goal)
+CoDOL mantle census: brush 60 mins (1530 -1207 -2) maxs (1630 -1139 48) contents 0x9000000
+CoDOL mantle census: brush 108 mins (-2122 968 2) maxs (-2051 1069 52) contents 0x9000000
+CoDOL mantle census: brush 1370 mins (-763 3130 -1) maxs (-692 3230 49) contents 0x9000000
+CoDOL mantle census: brush 2512 mins (5818 3119 -1) maxs (5894 3221 49) contents 0x9000000
+CoDOL mantle census: 18 of 12004 brushes carry CONTENTS_MANTLE
+CoDOL native collision installed: maps/mp/zm_prototype_sh.d3dbsp, 896 leaves, 506/0 dynamic entities, checksum 2c1235bc (all-visible policy)
+CoDOL native common world installed: maps/mp/zm_prototype_sh.d3dbsp, 19 primary lights
+CoDOL glass: installed 0 pieces for maps/mp/zm_prototype_sh.d3dbsp
+------- Game Initialization -------
+gamename: Call of Duty Online Closed Alpha Server
+gamedate: Feb 12 2009
+^2----------------------
+^2Game: G_SetupWeaponDef
+^2----------------------
+^2CoDOL snd channels: soundaliases/channels.def not mounted, using the shipped 37-channel table
+fs_ignoreLocalized is cheat protected.
+fs_ignoreLocalized is cheat protected.
+^2CoDOL lowering: codescripts/delete.gsc (85 bytes)
+^2CoDOL lowering: codescripts/struct.gsc (142 bytes)
+^2CoDOL lowering: maps/mp/gametypes/zm.gsc (1317 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_callbacksetup.gsc (6500 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_zombiemode.gsc (46017 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_zombiemode_utility.gsc (19736 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_zombiemode_perks.gsc (23147 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_zombiemode_score.gsc (12044 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_zombiemode_weapons.gsc (25037 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_zombiemode_laststand.gsc (14080 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_zombiemode_blockers.gsc (30544 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_zombiemode_power.gsc (3750 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_zombiemode_spawner.gsc (54250 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_zombiemode_powerups.gsc (21872 bytes)
+^2CoDOL lowering: maps/mp/animscripts/zombie_shared.gsc (8178 bytes)
+^2Notice: Could not find label 'CodeCallback_ScriptCommand' in script 'maps/mp/gametypes/_callbacksetup' - this part will be disabled
+^2CoDOL lowering: maps/mp/zm_prototype_sh.gsc (1596 bytes)
+^2CoDOL actor: 'zm' category, skipping the 'dog' species preload (category 'mp')
+^2CoDOL lowering: maps/mp/animscripts/zombie_init.gsc (7250 bytes)
+^2CoDOL lowering: maps/mp/animscripts/zombie_stop.gsc (2043 bytes)
+^2CoDOL lowering: maps/mp/animscripts/zombie_move.gsc (4854 bytes)
+^2CoDOL lowering: maps/mp/animscripts/zombie_combat.gsc (9130 bytes)
+^2CoDOL lowering: maps/mp/animscripts/zombie_death.gsc (4348 bytes)
+^2CoDOL lowering: maps/mp/animscripts/zombie_pain.gsc (3989 bytes)
+^2CoDOL lowering: maps/mp/animscripts/zombie_flashed.gsc (1471 bytes)
+^2CoDOL lowering: maps/mp/animscripts/zombie_turn.gsc (1535 bytes)
+^2CoDOL lowering: maps/mp/animscripts/zombie_jump.gsc (5130 bytes)
+^2CoDOL lowering: aitype/enemy_zombie_zm.gsc (3060 bytes)
+^2CoDOL lowering: character/character_zm_zombie.gsc (3349 bytes)
+CoDOL waypoint graph: 715 map nodes dropped to the floor (0 in solid, 0 floating, 0 landing in solid skipped); connecting (T5 Path_ConnectPaths rule)...
+CoDOL waypoint graph: built from the map in 136 ms: 715 nodes, 5957 links (12 negotiation, 4459 flat fast-path), 0 nodes with no link leaving them, 0 with none entering, 3 components (main 710 nodes, 5 off it)
+CoDOL waypoint graph: link test census: dz>128=9146 xy>256=14390 fwd startsolid=1 fwd hit solid=890 fwd hit monsterclip=2072 fwd hit other=3 no floor within drop=22 arrival dz>18=21 link=5945
+CoDOL waypoint graph: 42 zombie_spawner (0 off the main component), 12 exterior_goal (0 off)
+Script variables after compile: objects 361 values 2163
+^2Script object free chain at after ClearObject(loadedscripts): 32406 free (objects 361) ok
+^2CoDOL mounted animtree: animtrees/generic_human.atr
+^2CoDOL lowering: animtrees/generic_human.atr (123640 bytes)
+^3Warning: CoDOL xanim 'exposed_aim_8' is not in any mounted zone; using the null animation 'void' (whatever plays it stays static; reported once)
+^3Warning: CoDOL xanim 'exposed_aim_2' is not in any mounted zone; using the null animation 'void' (whatever plays it stays static; reported once)
+^3Warning: CoDOL xanim 'exposed_aim_6' is not in any mounted zone; using the null animation 'void' (whatever plays it stays static; reported once)
+^3Warning: CoDOL xanim 'exposed_aim_4' is not in any mounted zone; using the null animation 'void' (whatever plays it stays static; reported once)
+^2CoDOL mounted animtree: animtrees/multiplayer.atr
+^2CoDOL lowering: animtrees/multiplayer.atr (28397 bytes)
+-----------------------------------
+^2tableLookup miss: mp/zombiemode.csv column 0 value 'below_world_check' return column 1 (106x5)
+^2tableLookup miss: mp/zombiemode.csv column 0 value 'zombie_use_failsafe' return column 1 (106x5)
+^2tableLookup miss: mp/zombiemode.csv column 0 value 'zombie_between_round_time' return column 1 (106x5)
+^2tableLookup miss: mp/zombiemode.csv column 0 value 'zombie_point_scalar' return column 1 (106x5)
+^2tableLookup miss: mp/zombiemode.csv column 0 value 'zombie_powerup_insta_kill_on' return column 1 (106x5)
+^2tableLookup miss: mp/zombiemode.csv column 0 value 'player_starting_health' return column 1 (106x5)
+^2zombie_perk_bottle_jugg: WEAPON_ZOMBIE_PERK_BOTTLE
+^2zombie_perk_bottle_revive: WEAPON_ZOMBIE_PERK_BOTTLE
+^2zombie_perk_bottle_sleight: WEAPON_ZOMBIE_PERK_BOTTLE
+^2zombie_perk_bottle_doubletap: WEAPON_ZOMBIE_PERK_BOTTLE
+^2zombie_perk_bottle_marathon: WEAPON_ZOMBIE_PERK_BOTTLE
+^2zombie_perk_bottle_nuke: WEAPON_ZOMBIE_PERK_BOTTLE
+^2zombie_perk_bottle_deadshot: WEAPON_ZOMBIE_PERK_BOTTLE
+^2zombie_perk_bottle_additionalprimaryweapon: WEAPON_ZOMBIE_PERK_BOTTLE
+CoDOL zm: Callback_StartGameType entered on zm_prototype_sh
+^2tableLookup miss: mp/zombiemode.csv column 0 value 'zombie_starting_weapon' return column 1 (106x5)
+^3Warning: CoDOL weapon coltanaconda_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+CoDOL zm: starting weapon coltanaconda_zm
+^2frag_grenade_zm: WEAPON_FRAGGRENADE
+^2tableLookup miss: mp/zombiemode.csv column 0 value 'zombie_bleedout_time' return column 1 (106x5)
+^2tableLookup miss: mp/zombiemode.csv column 0 value 'zombie_revive_time' return column 1 (106x5)
+^2tableLookup miss: mp/zombiemode.csv column 0 value 'zombie_revive_trigger_radius' return column 1 (106x5)
+^3Warning: CoDOL weapon m1911_zm: view muzzle flash 'weapon/muzzleflashes/fx_pistol_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon m1911_zm: world muzzle flash 'weapon/muzzleflashes/fx_pistol_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon coltanaconda_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon coltanaconda_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle1_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon coltanaconda_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle1_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon glock_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon glock_zm: view muzzle flash 'weapon/muzzleflashes/fx_pistol_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon glock_zm: world muzzle flash 'weapon/muzzleflashes/fx_pistol_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon glock_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon glock_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_pistol_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon glock_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_pistol_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon glockdw_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_pistol_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon glockdw_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_pistol_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon mp5k_zm: view muzzle flash 'weapon/muzzleflashes/fx_smg_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon mp5k_zm: world muzzle flash 'weapon/muzzleflashes/fx_smg_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon mp5k_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_smg_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon mp5k_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_smg_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon uzi_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon uzi_zm: view muzzle flash 'weapon/muzzleflashes/fx_smg_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon uzi_zm: world muzzle flash 'weapon/muzzleflashes/fx_smg_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon uzi_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon uzi_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_smg_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon uzi_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_smg_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon p90_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle2_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon p90_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle2_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon tmp_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon tmp_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_smg_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon tmp_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_smg_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon pp2000_zm: view muzzle flash 'weapon/muzzleflashes/fx_smg_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon pp2000_zm: world muzzle flash 'weapon/muzzleflashes/fx_smg_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon pp2000_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_smg_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon pp2000_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_smg_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon spas12_zm: view muzzle flash 'weapon/muzzleflashes/fx_shotgun_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon spas12_zm: world muzzle flash 'weapon/muzzleflashes/fx_shotgun_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon spas12_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_shotgun_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon spas12_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_shotgun_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon striker_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon striker_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon striker_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_shotgun_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon striker_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_shotgun_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon model1887_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_shotgun_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon model1887_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_shotgun_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon ranger_zm: view muzzle flash 'weapon/muzzleflashes/fx_shotgun_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon ranger_zm: world muzzle flash 'weapon/muzzleflashes/fx_shotgun_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon m14ebr_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon m14ebr_zm: view muzzle flash 'weapon/muzzleflashes/fx_rifle1_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon m14ebr_zm: world muzzle flash 'weapon/muzzleflashes/fx_rifle1_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon m14ebr_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon m14ebr_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle1_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon m14ebr_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle1_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon m16_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon m16_zm: view muzzle flash 'weapon/muzzleflashes/fx_rifle2_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon m16_zm: world muzzle flash 'weapon/muzzleflashes/fx_rifle2_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon gl_m16_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon m16_gl_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon m16_gl_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle2_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon m16_gl_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle2_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon famas_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon famas_zm: view muzzle flash 'weapon/muzzleflashes/fx_rifle2_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon famas_zm: world muzzle flash 'weapon/muzzleflashes/fx_rifle2_flash_base' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon famas_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon famas_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle2_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon famas_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle2_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon fal_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon fal_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon fal_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle2_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon fal_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle2_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon ak104_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon ak104_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon ak104_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle1_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon ak104_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle1_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon aug_eotech_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_heavy_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon aug_eotech_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_heavy_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon tavor_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon tavor_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon tavor_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_smg_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon tavor_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_smg_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon m4a1tech_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon m4a1tech_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon m4a1tech_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle1_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon m4a1tech_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle1_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon mk_scar_h_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon scar_h_eotech_mk_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle1_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon scar_h_eotech_mk_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle1_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon cheytac_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon cheytac_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon cheytac_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_heavy_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon cheytac_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_heavy_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon as50_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_heavy_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon as50_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_heavy_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon wa2000_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon wa2000_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon wa2000_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle1_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon wa2000_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_rifle1_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon sniper_explosive_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon sniper_explosive_zm: view muzzle flash 'weapon/jackal/fx_jackal_muzzleflash' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon sniper_explosive_zm: world muzzle flash 'weapon/jackal/fx_jackal_muzzleflash' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon sniper_explosive_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon sniper_explosive_upgraded_zm: view muzzle flash 'weapon/jackal/fx_jackal_muzzleflash_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon sniper_explosive_upgraded_zm: world muzzle flash 'weapon/jackal/fx_jackal_muzzleflash_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon l86_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon l86_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon l86_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_zombie_heavy_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon l86_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_zombie_heavy_flash_base_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon crossbow_explosive_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon crossbow_explosive_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon ray_gun_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon ray_gun_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon tesla_gun_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon tesla_gun_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon thundergun_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon thundergun_zm: view muzzle flash 'weapon/muzzleflashes/fx_thundergun_view' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon thundergun_zm: world muzzle flash 'weapon/muzzleflashes/fx_thundergun_world' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon thundergun_upgraded_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon thundergun_upgraded_zm: view muzzle flash 'weapon/muzzleflashes/fx_thundergun_view_ug' did not resolve in any mounted zone; loading the weapon without it
+^3Warning: CoDOL weapon thundergun_upgraded_zm: world muzzle flash 'weapon/muzzleflashes/fx_thundergun_world_ug' did not resolve in any mounted zone; loading the weapon without it
+^2semtex_grenade_zm: WEAPON_SEMTEX_GRENADE
+^2claymore_zm: WEAPON_CLAYMORE
+^2bouncingbetty_zm: WAW_WEAPON_BETTY
+^2c4_zm: WEAPON_C4
+^2tableLookup miss: mp/zombiemode.csv column 0 value 'zombie_board_tear_delay' return column 1 (106x5)
+CoDOL actor: ent 168 disconnectpaths: 1 links cut inside (412 1014 -2)-(505 1022 115)
+CoDOL actor: ent 456 disconnectpaths: 1 links cut inside (-222 -798 1)-(-214 -705 118)
+CoDOL actor: ent 463 disconnectpaths: 1 links cut inside (-222 -231 0)-(-214 -138 117)
+CoDOL actor: ent 470 disconnectpaths: 1 links cut inside (226 -305 4)-(234 -212 121)
+CoDOL actor: ent 477 disconnectpaths: 1 links cut inside (-224 442 -4)-(-216 535 113)
+CoDOL actor: ent 484 disconnectpaths: 1 links cut inside (234 570 142)-(327 578 259)
+CoDOL actor: ent 491 disconnectpaths: 1 links cut inside (1053 848 -4)-(1061 941 113)
+CoDOL actor: ent 498 disconnectpaths: 1 links cut inside (863 1022 143)-(956 1030 260)
+CoDOL actor: ent 505 disconnectpaths: 1 links cut inside (221 200 139)-(229 293 256)
+CoDOL actor: ent 512 disconnectpaths: 1 links cut inside (193 1124 142)-(286 1132 259)
+CoDOL actor: ent 526 disconnectpaths: 3 links cut inside (130 -900 1)-(223 -892 118)
+CoDOL actor: ent 554 disconnectpaths: 1 links cut inside (586 610 -2)-(679 618 115)
+^2tableLookup miss: mp/zombiemode.csv column 0 value 'zombie_perk_cost' return column 1 (106x5)
+CoDOL zm: zombie melee weapon zombie_melee
+CoDOL zm: spawn points found: 42 on zm_prototype_sh
+CoDOL zm: zombie spawner ready
+^2tableLookup miss: mp/zombiemode.csv column 0 value 'zombie_powerup_fire_sale_time' return column 1 (106x5)
+^2tableLookup miss: mp/zombiemode.csv column 0 value 'zombie_timer_offset' return column 1 (106x5)
+CoDOL zm: subsystems initialised; starting the round loop
+By using this software you agree to the usage conditions you can find at https://github.com/callofduty4x/CoD4x_Server#usage-conditions-for-server-hosters
+-----------------------------------
+^4Calculate referenced files checksums...
+^4CRC32 for main/iw_model_00.iwd is b3499779 Len 67881432
+^4CRC32 for main/iw_model_04.iwd is 1049a632 Len 3141547
+^4CRC32 for main/iw_model_02.iwd is 99c053a3 Len 1412687
+^4CRC32 for main/iw_model_05.iwd is 3ad0ef35 Len 874362
+^4CRC32 for main/iw_model_03.iwd is e705ba0b Len 1429640
+^5Hitch warning: 5055 msec frame time
+^2SV packet 127.0.0.1:62483: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon money_ball_zm
+Rcon from 127.0.0.1:62483: codol_checkweapon money_ball_zm
+CoDOL weapon source: money_ball_zm, status 1, 3449 bytes (not a native WeaponDef)
+  header string 0: money_ball_zm
+  header string 1: 
+  header string 2: WEAPON_SEMTEX
+  header string 3: 
+  source guidedMissileType (+0x8e0): 0
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 2 populated of 14, next byte 3267
+  native accuracy graphs: 1, active 0/0, original 0/0
+  weapon tail: 1, 53 fields, final offset 3449/3449
+  animation names: status 1, 10 populated, 131 empty, next dependency byte 3082 (source slots)
+  animation source assets: 10 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 10 ready
+  native animation payloads: 10 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_semtex_idle, raise viewmodel_semtex_idle (names only, not activated)
+  leading effects: status 1, 0 source, 0 native; next dependency byte 3082 (not activated)
+  leading sound names: status 1, 14 populated; next dependency byte 3082 (not native aliases)
+  sound arrays: 31/0 populated names
+  leading model slot 0: viewmodel_base_viewhands
+  leading model slot 1: viewmodel_semtex_grenade
+  leading model slot 3: weapon_semtex_grenade
+  leading model slots: 3 source, 3 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 0, start duration/add 0/0; extra add/empty/empty-alt 0/0/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/0/1
+  native ADS fields: 1, enabled/rechamber 0/0, in/out rates 0.00333333341/0.00200000009 per ms
+  native firing mode: 1, type 0, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 15/0, player 0/0, falloff 999999/999999 (base definition only)
+  native melee fields: 1, damage 0, delay/time 250/699, charge delay/time 0/0 (base definition only)
+  ammo names: status 1; ammo 'semtex_grenade', clip 'semtex_grenade', shared cap 'WEAPON_SEMTEX_GRENADE'; next dependency byte 3267 (indices unregistered)
+  native ammo/clip keys: 'semtex_grenade' / 'semtex_grenade' (not registered)
+  native sprint in/out: 500/500 ms; retained dive in/out: 500/500 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS 0/0 hip 0/0
+  native starting ammo/first raise: 1 / 500 ms
+  native shared ammo cap/clip-only: 4 / 1 (indices unregistered)
+  native hit-location multipliers: head 0, upper torso 0, gun 0; retained shield 0
+  native weapon penetration/offhand: 0/1
+  native weapon type/inventory/class: 1/1/5
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 10 populated slots of 144
+  composed weapon muzzle flashes: view <null>, world <null>
+  composed weapon brass effects: <null> / <null>; last shot <null> / <null>
+  native spread fields: 1; standing 0/0, ADS 0 (not activated)
+  native ammo fields: 1; maximum 2, clip 2, shots 0, fire time 360 (indices unregistered)
+  native timing fields: 1; reload 2000/0, rechamber 0, drop/raise 0/0; variants 0/0/0 (not activated)
+^2SV packet 127.0.0.1:62484: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon semtex_grenade_zm
+Rcon from 127.0.0.1:62484: codol_checkweapon semtex_grenade_zm
+CoDOL weapon source: semtex_grenade_zm, status 1, 79214 bytes (not a native WeaponDef)
+  header string 0: semtex_grenade_zm
+  header string 1: 
+  header string 2: WEAPON_SEMTEX
+  header string 3: 
+  source guidedMissileType (+0x8e0): 0
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 2 populated of 14, next byte 78202
+  native accuracy graphs: 1, active 0/0, original 0/0
+  weapon tail: 1, 53 fields, final offset 79214/79214
+  animation names: status 1, 10 populated, 131 empty, next dependency byte 76326 (source slots)
+  animation source assets: 10 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 10 ready
+  native animation payloads: 10 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_semtex_idle, raise viewmodel_semtex_idle (names only, not activated)
+  leading effects: status 1, 0 source, 0 native; next dependency byte 76326 (not activated)
+  leading sound names: status 1, 14 populated; next dependency byte 77815 (not native aliases)
+  sound arrays: 31/0 populated names
+  leading model slot 0: viewmodel_base_viewhands
+  leading model slot 1: viewmodel_semtex_grenade
+  leading model slot 3: weapon_semtex_grenade
+  leading model slots: 3 source, 3 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 0, start duration/add 0/0; extra add/empty/empty-alt 0/0/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/0/1
+  native ADS fields: 1, enabled/rechamber 0/0, in/out rates 0.00333333341/0.00200000009 per ms
+  native firing mode: 1, type 0, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 15/0, player 0/0, falloff 999999/999999 (base definition only)
+  native melee fields: 1, damage 0, delay/time 250/699, charge delay/time 0/0 (base definition only)
+  ammo names: status 1; ammo 'semtex_grenade', clip 'semtex_grenade', shared cap 'WEAPON_SEMTEX_GRENADE'; next dependency byte 78239 (indices unregistered)
+  native ammo/clip keys: 'semtex_grenade' / 'semtex_grenade' (not registered)
+  native sprint in/out: 500/500 ms; retained dive in/out: 500/500 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS 0/0 hip 0/0
+  native starting ammo/first raise: 1 / 500 ms
+  native shared ammo cap/clip-only: 4 / 1 (indices unregistered)
+  native hit-location multipliers: head 0, upper torso 0, gun 0; retained shield 0
+  native weapon penetration/offhand: 0/1
+  native weapon type/inventory/class: 1/1/5
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 10 populated slots of 144
+  composed weapon muzzle flashes: view <null>, world <null>
+  composed weapon brass effects: <null> / <null>; last shot <null> / <null>
+  native spread fields: 1; standing 0/0, ADS 0 (not activated)
+  native ammo fields: 1; maximum 2, clip 2, shots 0, fire time 360 (indices unregistered)
+  native timing fields: 1; reload 2000/0, rechamber 0, drop/raise 0/0; variants 0/0/0 (not activated)
+^2SV packet 127.0.0.1:62485: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon bouncingbetty_zm
+Rcon from 127.0.0.1:62485: codol_checkweapon bouncingbetty_zm
+CoDOL weapon source: bouncingbetty_zm, status 1, 29030 bytes (not a native WeaponDef)
+  header string 0: bouncingbetty_zm
+  header string 1: 
+  header string 2: ZOMBIE_MINE_BOUNCING_BETTY
+  header string 3: 
+  source guidedMissileType (+0x8e0): 0
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 3 populated of 14, next byte 28987
+  native accuracy graphs: 1, active 0/0, original 0/0
+  weapon tail: 1, 53 fields, final offset 29030/29030
+  animation names: status 1, 20 populated, 121 empty, next dependency byte 27540 (source slots)
+  animation source assets: 20 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 20 ready
+  native animation payloads: 20 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_C4_putaway, raise viewmodel_C4_pullout (names only, not activated)
+  leading effects: status 1, 0 source, 0 native; next dependency byte 27540 (not activated)
+  leading sound names: status 1, 18 populated; next dependency byte 28601 (not native aliases)
+  sound arrays: 31/0 populated names
+  leading model slot 0: viewmodel_base_viewhands
+  leading model slot 1: viewmodel_bouncing_betty
+  leading model slot 3: projectile_bouncing_betty_grenade
+  leading model slots: 3 source, 3 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 0, start duration/add 0/0; extra add/empty/empty-alt 0/0/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/0/1
+  native ADS fields: 1, enabled/rechamber 0/0, in/out rates 0.00333333341/0.00200000009 per ms
+  native firing mode: 1, type 0, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 0/0, player 0/0, falloff 999999/999999 (base definition only)
+  native melee fields: 1, damage 0, delay/time 79/800, charge delay/time 100/1159 (base definition only)
+  ammo names: status 1; ammo '', clip '', shared cap 'WAW_WEAPON_BETTY'; next dependency byte 29004 (indices unregistered)
+  native ammo/clip keys: 'bouncingbetty_zm' / 'bouncingbetty_zm' (not registered)
+  native sprint in/out: 300/300 ms; retained dive in/out: 500/500 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS 0/0 hip 0/0
+  native starting ammo/first raise: 2 / 1200 ms
+  native shared ammo cap/clip-only: 2 / 1 (indices unregistered)
+  native hit-location multipliers: head 0, upper torso 0, gun 0; retained shield 0
+  native weapon penetration/offhand: 0/5
+  native weapon type/inventory/class: 1/1/5
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 20 populated slots of 144
+  composed weapon muzzle flashes: view <null>, world <null>
+  composed weapon brass effects: <null> / <null>; last shot <null> / <null>
+  native spread fields: 1; standing 0/0, ADS 0 (not activated)
+  native ammo fields: 1; maximum 3, clip 3, shots 0, fire time 800 (indices unregistered)
+  native timing fields: 1; reload 1000/0, rechamber 0, drop/raise 899/1200; variants 0/0/0 (not activated)
+^2SV packet 127.0.0.1:62486: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon teleporter_zm
+Rcon from 127.0.0.1:62486: codol_checkweapon teleporter_zm
+CoDOL weapon source: teleporter_zm, status 1, 13958 bytes (not a native WeaponDef)
+  header string 0: teleporter_zm
+  header string 1: 
+  header string 2: ZOMBIE_PLACEABLE_TELEPORTER
+  header string 3: 
+  source guidedMissileType (+0x8e0): 0
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 1 populated of 14, next byte 13753
+  native accuracy graphs: 1, active 0/0, original 0/0
+  weapon tail: 1, 53 fields, final offset 13958/13958
+  animation names: status 1, 13 populated, 128 empty, next dependency byte 12514 (source slots)
+  animation source assets: 13 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 13 ready
+  native animation payloads: 13 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_zombie_blackholebomb_idle, raise viewmodel_zombie_blackholebomb_idle (names only, not activated)
+  leading effects: status 1, 0 source, 0 native; next dependency byte 12514 (not activated)
+  leading sound names: status 1, 10 populated; next dependency byte 13570 (not native aliases)
+  sound arrays: 31/0 populated names
+  leading model slot 0: viewmodel_hands_no_model
+  leading model slot 1: t5_tp_bomb_viewmodel
+  leading model slot 3: t5_tp_bomb_world
+  leading model slots: 3 source, 3 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 0, start duration/add 0/0; extra add/empty/empty-alt 0/0/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/0/1
+  native ADS fields: 1, enabled/rechamber 0/0, in/out rates 0.00333333341/0.00200000009 per ms
+  native firing mode: 1, type 0, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 0/0, player 0/0, falloff 999999/999999 (base definition only)
+  native melee fields: 1, damage 0, delay/time 250/699, charge delay/time 0/0 (base definition only)
+  ammo names: status 1; ammo '', clip '', shared cap 'ZOMBIE_BLACK_HOLE_BOMB'; next dependency byte 13776 (indices unregistered)
+  native ammo/clip keys: 'teleporter_zm' / 'teleporter_zm' (not registered)
+  native sprint in/out: 79/79 ms; retained dive in/out: 500/500 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS 0/0 hip 0/0
+  native starting ammo/first raise: 1 / 500 ms
+  native shared ammo cap/clip-only: 3 / 1 (indices unregistered)
+  native hit-location multipliers: head 0, upper torso 0, gun 0; retained shield 0
+  native weapon penetration/offhand: 0/2
+  native weapon type/inventory/class: 1/1/5
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 13 populated slots of 144
+  composed weapon muzzle flashes: view <null>, world <null>
+  composed weapon brass effects: <null> / <null>; last shot <null> / <null>
+  native spread fields: 1; standing 0/0, ADS 0 (not activated)
+  native ammo fields: 1; maximum 2, clip 2, shots 0, fire time 699 (indices unregistered)
+  native timing fields: 1; reload 1500/0, rechamber 0, drop/raise 0/250; variants 0/0/0 (not activated)
+^2SV packet 127.0.0.1:62487: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon zombie_cymbal_monkey
+Rcon from 127.0.0.1:62487: codol_checkweapon zombie_cymbal_monkey
+CoDOL weapon source: zombie_cymbal_monkey, status 1, 6612 bytes (not a native WeaponDef)
+  header string 0: zombie_cymbal_monkey
+  header string 1: 
+  header string 2: ZOMBIE_CYMBAL_MONKEY
+  header string 3: 
+  source guidedMissileType (+0x8e0): 0
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 1 populated of 14, next byte 4777
+  native accuracy graphs: 1, active 0/0, original 0/0
+  weapon tail: 1, 53 fields, final offset 6612/6612
+  animation names: status 1, 13 populated, 128 empty, next dependency byte 4260 (source slots)
+  animation source assets: 13 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 13 ready
+  native animation payloads: 13 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_zombie_monkeybomb_idle, raise viewmodel_zombie_monkeybomb_idle (names only, not activated)
+  leading effects: status 1, 0 source, 0 native; next dependency byte 4260 (not activated)
+  leading sound names: status 1, 10 populated; next dependency byte 4591 (not native aliases)
+  sound arrays: 31/0 populated names
+  leading model slot 0: viewmodel_hands_no_model
+  leading model slot 1: viewmodel_zombie_cymbal_monkey
+  leading model slot 3: viewmodel_zombie_cymbal_monkey
+  leading model slots: 3 source, 3 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 0, start duration/add 0/0; extra add/empty/empty-alt 0/0/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/0/1
+  native ADS fields: 1, enabled/rechamber 0/0, in/out rates 0.00333333341/0.00200000009 per ms
+  native firing mode: 1, type 0, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 15/0, player 0/0, falloff 999999/999999 (base definition only)
+  native melee fields: 1, damage 0, delay/time 250/699, charge delay/time 0/0 (base definition only)
+  ammo names: status 1; ammo '', clip '', shared cap 'ZOMBIE_CYMBAL_MONKEY'; next dependency byte 4777 (indices unregistered)
+  native ammo/clip keys: 'zombie_cymbal_monkey' / 'zombie_cymbal_monkey' (not registered)
+  native sprint in/out: 79/79 ms; retained dive in/out: 500/500 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS 0/0 hip 0/0
+  native starting ammo/first raise: 1 / 500 ms
+  native shared ammo cap/clip-only: 3 / 1 (indices unregistered)
+  native hit-location multipliers: head 0, upper torso 0, gun 0; retained shield 0
+  native weapon penetration/offhand: 0/2
+  native weapon type/inventory/class: 1/1/5
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 13 populated slots of 144
+  composed weapon muzzle flashes: view <null>, world <null>
+  composed weapon brass effects: <null> / <null>; last shot <null> / <null>
+  native spread fields: 1; standing 0/0, ADS 0 (not activated)
+  native ammo fields: 1; maximum 2, clip 2, shots 0, fire time 699 (indices unregistered)
+  native timing fields: 1; reload 1500/0, rechamber 0, drop/raise 0/250; variants 0/0/0 (not activated)
+^2SV packet 127.0.0.1:62488: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon zombie_black_hole_bomb
+Rcon from 127.0.0.1:62488: codol_checkweapon zombie_black_hole_bomb
+CoDOL weapon source: zombie_black_hole_bomb, status 1, 4689 bytes (not a native WeaponDef)
+  header string 0: zombie_black_hole_bomb
+  header string 1: 
+  header string 2: ZOMBIE_BLACK_HOLE_BOMB
+  header string 3: 
+  source guidedMissileType (+0x8e0): 0
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 1 populated of 14, next byte 4689
+  native accuracy graphs: 1, active 0/0, original 0/0
+  weapon tail: 1, 53 fields, final offset 4689/4689
+  animation names: status 1, 13 populated, 128 empty, next dependency byte 4689 (source slots)
+  animation source assets: 13 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 13 ready
+  native animation payloads: 13 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_zombie_blackholebomb_idle, raise viewmodel_zombie_blackholebomb_idle (names only, not activated)
+  leading effects: status 1, 0 source, 0 native; next dependency byte 4689 (not activated)
+  leading sound names: status 1, 10 populated; next dependency byte 4689 (not native aliases)
+  sound arrays: 31/0 populated names
+  leading model slot 0: viewmodel_hands_no_model
+  leading model slot 1: t5_bh_bomb_viewmodel
+  leading model slot 3: t5_bh_bomb_world
+  leading model slots: 3 source, 3 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 0, start duration/add 0/0; extra add/empty/empty-alt 0/0/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/0/1
+  native ADS fields: 1, enabled/rechamber 0/0, in/out rates 0.00333333341/0.00200000009 per ms
+  native firing mode: 1, type 0, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 0/0, player 0/0, falloff 999999/999999 (base definition only)
+  native melee fields: 1, damage 0, delay/time 250/699, charge delay/time 0/0 (base definition only)
+  ammo names: status 1; ammo '', clip '', shared cap 'ZOMBIE_BLACK_HOLE_BOMB'; next dependency byte 4689 (indices unregistered)
+  native ammo/clip keys: 'zombie_black_hole_bomb' / 'zombie_black_hole_bomb' (not registered)
+  native sprint in/out: 79/79 ms; retained dive in/out: 500/500 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS 0/0 hip 0/0
+  native starting ammo/first raise: 1 / 500 ms
+  native shared ammo cap/clip-only: 3 / 1 (indices unregistered)
+  native hit-location multipliers: head 0, upper torso 0, gun 0; retained shield 0
+  native weapon penetration/offhand: 0/2
+  native weapon type/inventory/class: 1/1/5
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 13 populated slots of 144
+  composed weapon muzzle flashes: view <null>, world <null>
+  composed weapon brass effects: <null> / <null>; last shot <null> / <null>
+  native spread fields: 1; standing 0/0, ADS 0 (not activated)
+  native ammo fields: 1; maximum 2, clip 2, shots 0, fire time 699 (indices unregistered)
+  native timing fields: 1; reload 1500/0, rechamber 0, drop/raise 0/250; variants 0/0/0 (not activated)
+^2SV packet 127.0.0.1:62489: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon revive_knife_zm
+Rcon from 127.0.0.1:62489: codol_checkweapon revive_knife_zm
+CoDOL weapon source: revive_knife_zm, status 1, 3292 bytes (not a native WeaponDef)
+  header string 0: revive_knife_zm
+  header string 1: 
+  header string 2: ZOMBIE_REVIVE_KNIFE
+  header string 3: 
+  source guidedMissileType (+0x8e0): 0
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 3 populated of 14, next byte 3292
+  native accuracy graphs: 1, active 0/0, original 0/0
+  weapon tail: 1, 53 fields, final offset 3292/3292
+  animation names: status 1, 10 populated, 131 empty, next dependency byte 3104 (source slots)
+  animation source assets: 10 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 10 ready
+  native animation payloads: 10 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_knifethrow_hold_rhand, raise viewmodel_knifethrow_hold_rhand (names only, not activated)
+  leading effects: status 1, 0 source, 0 native; next dependency byte 3104 (not activated)
+  leading sound names: status 1, 10 populated; next dependency byte 3104 (not native aliases)
+  sound arrays: 31/0 populated names
+  leading model slot 0: viewmodel_base_viewhands
+  leading model slot 1: viewmodel_metal_gear_gun
+  leading model slot 3: weapon_parabolic_knife
+  leading model slot 8: weapon_parabolic_knife
+  leading model slots: 4 source, 4 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 0, start duration/add 0/0; extra add/empty/empty-alt 0/0/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/0/1
+  native ADS fields: 1, enabled/rechamber 0/0, in/out rates 0.00333333341/0.00200000009 per ms
+  native firing mode: 1, type 0, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 0/0, player 0/0, falloff 999999/999999 (base definition only)
+  native melee fields: 1, damage 0, delay/time 100/660, charge delay/time 0/0 (base definition only)
+  ammo names: status 1; ammo '', clip '', shared cap ''; next dependency byte 3292 (indices unregistered)
+  native ammo/clip keys: 'revive_knife_zm' / 'revive_knife_zm' (not registered)
+  native sprint in/out: 500/500 ms; retained dive in/out: 500/500 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS 0/0 hip 0/0
+  native starting ammo/first raise: 1 / 500 ms
+  native shared ammo cap/clip-only: 4 / 1 (indices unregistered)
+  native hit-location multipliers: head 0, upper torso 0, gun 0; retained shield 0
+  native weapon penetration/offhand: 0/4
+  native weapon type/inventory/class: 1/1/5
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 10 populated slots of 144
+  composed weapon muzzle flashes: view <null>, world <null>
+  composed weapon brass effects: <null> / <null>; last shot <null> / <null>
+  native spread fields: 1; standing 0/0, ADS 0 (not activated)
+  native ammo fields: 1; maximum 2, clip 2, shots 0, fire time 550 (indices unregistered)
+  native timing fields: 1; reload 2000/0, rechamber 0, drop/raise 0/0; variants 0/0/0 (not activated)
+^2SV packet 127.0.0.1:62490: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon trap_shock_zm
+Rcon from 127.0.0.1:62490: codol_checkweapon trap_shock_zm
+CoDOL weapon source: trap_shock_zm, status 1, 4891 bytes (not a native WeaponDef)
+  header string 0: trap_shock_zm
+  header string 1: 
+  header string 2: ZOMBIE_PLACEABLE_TRAP_SHOCK
+  header string 3: 
+  source guidedMissileType (+0x8e0): 0
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 1 populated of 14, next byte 4891
+  native accuracy graphs: 1, active 0/0, original 0/0
+  weapon tail: 1, 53 fields, final offset 4891/4891
+  animation names: status 1, 13 populated, 128 empty, next dependency byte 4708 (source slots)
+  animation source assets: 13 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 13 ready
+  native animation payloads: 13 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_zombie_blackholebomb_idle, raise viewmodel_zombie_blackholebomb_idle (names only, not activated)
+  leading effects: status 1, 0 source, 0 native; next dependency byte 4708 (not activated)
+  leading sound names: status 1, 10 populated; next dependency byte 4708 (not native aliases)
+  sound arrays: 31/0 populated names
+  leading model slot 0: viewmodel_hands_no_model
+  leading model slot 1: t5_ts_bomb_viewmodel
+  leading model slot 3: t5_ts_bomb_world
+  leading model slots: 3 source, 3 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 0, start duration/add 0/0; extra add/empty/empty-alt 0/0/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/0/1
+  native ADS fields: 1, enabled/rechamber 0/0, in/out rates 0.00333333341/0.00200000009 per ms
+  native firing mode: 1, type 0, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 0/0, player 0/0, falloff 999999/999999 (base definition only)
+  native melee fields: 1, damage 0, delay/time 250/699, charge delay/time 0/0 (base definition only)
+  ammo names: status 1; ammo '', clip '', shared cap 'ZOMBIE_BLACK_HOLE_BOMB'; next dependency byte 4891 (indices unregistered)
+  native ammo/clip keys: 'trap_shock_zm' / 'trap_shock_zm' (not registered)
+  native sprint in/out: 79/79 ms; retained dive in/out: 500/500 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS 0/0 hip 0/0
+  native starting ammo/first raise: 1 / 500 ms
+  native shared ammo cap/clip-only: 3 / 1 (indices unregistered)
+  native hit-location multipliers: head 0, upper torso 0, gun 0; retained shield 0
+  native weapon penetration/offhand: 0/2
+  native weapon type/inventory/class: 1/1/5
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 13 populated slots of 144
+  composed weapon muzzle flashes: view <null>, world <null>
+  composed weapon brass effects: <null> / <null>; last shot <null> / <null>
+  native spread fields: 1; standing 0/0, ADS 0 (not activated)
+  native ammo fields: 1; maximum 2, clip 2, shots 0, fire time 699 (indices unregistered)
+  native timing fields: 1; reload 1500/0, rechamber 0, drop/raise 0/250; variants 0/0/0 (not activated)
+^2SV packet 127.0.0.1:62492: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon trap_freeze_zm
+Rcon from 127.0.0.1:62492: codol_checkweapon trap_freeze_zm
+CoDOL weapon source: trap_freeze_zm, status 1, 4894 bytes (not a native WeaponDef)
+  header string 0: trap_freeze_zm
+  header string 1: 
+  header string 2: ZOMBIE_PLACEABLE_TRAP_FREEZE
+  header string 3: 
+  source guidedMissileType (+0x8e0): 0
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 1 populated of 14, next byte 4894
+  native accuracy graphs: 1, active 0/0, original 0/0
+  weapon tail: 1, 53 fields, final offset 4894/4894
+  animation names: status 1, 13 populated, 128 empty, next dependency byte 4710 (source slots)
+  animation source assets: 13 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 13 ready
+  native animation payloads: 13 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_zombie_blackholebomb_idle, raise viewmodel_zombie_blackholebomb_idle (names only, not activated)
+  leading effects: status 1, 0 source, 0 native; next dependency byte 4710 (not activated)
+  leading sound names: status 1, 10 populated; next dependency byte 4710 (not native aliases)
+  sound arrays: 31/0 populated names
+  leading model slot 0: viewmodel_hands_no_model
+  leading model slot 1: t5_tz_bomb_viewmodel
+  leading model slot 3: t5_tz_bomb_world
+  leading model slots: 3 source, 3 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 0, start duration/add 0/0; extra add/empty/empty-alt 0/0/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/0/1
+  native ADS fields: 1, enabled/rechamber 0/0, in/out rates 0.00333333341/0.00200000009 per ms
+  native firing mode: 1, type 0, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 0/0, player 0/0, falloff 999999/999999 (base definition only)
+  native melee fields: 1, damage 0, delay/time 250/699, charge delay/time 0/0 (base definition only)
+  ammo names: status 1; ammo '', clip '', shared cap 'ZOMBIE_BLACK_HOLE_BOMB'; next dependency byte 4894 (indices unregistered)
+  native ammo/clip keys: 'trap_freeze_zm' / 'trap_freeze_zm' (not registered)
+  native sprint in/out: 79/79 ms; retained dive in/out: 500/500 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS 0/0 hip 0/0
+  native starting ammo/first raise: 1 / 500 ms
+  native shared ammo cap/clip-only: 3 / 1 (indices unregistered)
+  native hit-location multipliers: head 0, upper torso 0, gun 0; retained shield 0
+  native weapon penetration/offhand: 0/2
+  native weapon type/inventory/class: 1/1/5
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 13 populated slots of 144
+  composed weapon muzzle flashes: view <null>, world <null>
+  composed weapon brass effects: <null> / <null>; last shot <null> / <null>
+  native spread fields: 1; standing 0/0, ADS 0 (not activated)
+  native ammo fields: 1; maximum 2, clip 2, shots 0, fire time 699 (indices unregistered)
+  native timing fields: 1; reload 1500/0, rechamber 0, drop/raise 0/250; variants 0/0/0 (not activated)
+^2SV packet 127.0.0.1:62493: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon trap_fire_zm
+Rcon from 127.0.0.1:62493: codol_checkweapon trap_fire_zm
+CoDOL weapon source: trap_fire_zm, status 1, 4888 bytes (not a native WeaponDef)
+  header string 0: trap_fire_zm
+  header string 1: 
+  header string 2: ZOMBIE_PLACEABLE_TRAP_FIRE
+  header string 3: 
+  source guidedMissileType (+0x8e0): 0
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 1 populated of 14, next byte 4888
+  native accuracy graphs: 1, active 0/0, original 0/0
+  weapon tail: 1, 53 fields, final offset 4888/4888
+  animation names: status 1, 13 populated, 128 empty, next dependency byte 4706 (source slots)
+  animation source assets: 13 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 13 ready
+  native animation payloads: 13 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_zombie_blackholebomb_idle, raise viewmodel_zombie_blackholebomb_idle (names only, not activated)
+  leading effects: status 1, 0 source, 0 native; next dependency byte 4706 (not activated)
+  leading sound names: status 1, 10 populated; next dependency byte 4706 (not native aliases)
+  sound arrays: 31/0 populated names
+  leading model slot 0: viewmodel_hands_no_model
+  leading model slot 1: t5_tf_bomb_viewmodel
+  leading model slot 3: t5_tf_bomb_world
+  leading model slots: 3 source, 3 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 0, start duration/add 0/0; extra add/empty/empty-alt 0/0/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/0/1
+  native ADS fields: 1, enabled/rechamber 0/0, in/out rates 0.00333333341/0.00200000009 per ms
+  native firing mode: 1, type 0, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 0/0, player 0/0, falloff 999999/999999 (base definition only)
+  native melee fields: 1, damage 0, delay/time 250/699, charge delay/time 0/0 (base definition only)
+  ammo names: status 1; ammo '', clip '', shared cap 'ZOMBIE_BLACK_HOLE_BOMB'; next dependency byte 4888 (indices unregistered)
+  native ammo/clip keys: 'trap_fire_zm' / 'trap_fire_zm' (not registered)
+  native sprint in/out: 79/79 ms; retained dive in/out: 500/500 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS 0/0 hip 0/0
+  native starting ammo/first raise: 1 / 500 ms
+  native shared ammo cap/clip-only: 3 / 1 (indices unregistered)
+  native hit-location multipliers: head 0, upper torso 0, gun 0; retained shield 0
+  native weapon penetration/offhand: 0/2
+  native weapon type/inventory/class: 1/1/5
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 13 populated slots of 144
+  composed weapon muzzle flashes: view <null>, world <null>
+  composed weapon brass effects: <null> / <null>; last shot <null> / <null>
+  native spread fields: 1; standing 0/0, ADS 0 (not activated)
+  native ammo fields: 1; maximum 2, clip 2, shots 0, fire time 699 (indices unregistered)
+  native timing fields: 1; reload 1500/0, rechamber 0, drop/raise 0/250; variants 0/0/0 (not activated)
+^2SV packet 127.0.0.1:62494: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon trap_shrink_zm
+Rcon from 127.0.0.1:62494: codol_checkweapon trap_shrink_zm
+CoDOL weapon source: trap_shrink_zm, status 1, 4894 bytes (not a native WeaponDef)
+  header string 0: trap_shrink_zm
+  header string 1: 
+  header string 2: ZOMBIE_PLACEABLE_TRAP_SHRINK
+  header string 3: 
+  source guidedMissileType (+0x8e0): 0
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 1 populated of 14, next byte 4894
+  native accuracy graphs: 1, active 0/0, original 0/0
+  weapon tail: 1, 53 fields, final offset 4894/4894
+  animation names: status 1, 13 populated, 128 empty, next dependency byte 4710 (source slots)
+  animation source assets: 13 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 13 ready
+  native animation payloads: 13 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_zombie_blackholebomb_idle, raise viewmodel_zombie_blackholebomb_idle (names only, not activated)
+  leading effects: status 1, 0 source, 0 native; next dependency byte 4710 (not activated)
+  leading sound names: status 1, 10 populated; next dependency byte 4710 (not native aliases)
+  sound arrays: 31/0 populated names
+  leading model slot 0: viewmodel_hands_no_model
+  leading model slot 1: t5_tk_bomb_viewmodel
+  leading model slot 3: t5_tk_bomb_world
+  leading model slots: 3 source, 3 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 0, start duration/add 0/0; extra add/empty/empty-alt 0/0/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/0/1
+  native ADS fields: 1, enabled/rechamber 0/0, in/out rates 0.00333333341/0.00200000009 per ms
+  native firing mode: 1, type 0, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 0/0, player 0/0, falloff 999999/999999 (base definition only)
+  native melee fields: 1, damage 0, delay/time 250/699, charge delay/time 0/0 (base definition only)
+  ammo names: status 1; ammo '', clip '', shared cap 'ZOMBIE_BLACK_HOLE_BOMB'; next dependency byte 4894 (indices unregistered)
+  native ammo/clip keys: 'trap_shrink_zm' / 'trap_shrink_zm' (not registered)
+  native sprint in/out: 79/79 ms; retained dive in/out: 500/500 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS 0/0 hip 0/0
+  native starting ammo/first raise: 1 / 500 ms
+  native shared ammo cap/clip-only: 3 / 1 (indices unregistered)
+  native hit-location multipliers: head 0, upper torso 0, gun 0; retained shield 0
+  native weapon penetration/offhand: 0/2
+  native weapon type/inventory/class: 1/1/5
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 13 populated slots of 144
+  composed weapon muzzle flashes: view <null>, world <null>
+  composed weapon brass effects: <null> / <null>; last shot <null> / <null>
+  native spread fields: 1; standing 0/0, ADS 0 (not activated)
+  native ammo fields: 1; maximum 2, clip 2, shots 0, fire time 699 (indices unregistered)
+  native timing fields: 1; reload 1500/0, rechamber 0, drop/raise 0/250; variants 0/0/0 (not activated)
+^2SV packet 127.0.0.1:62495: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon perkpop_deadshot_zm
+Rcon from 127.0.0.1:62495: codol_checkweapon perkpop_deadshot_zm
+CoDOL weapon source: perkpop_deadshot_zm, status 1, 11126 bytes (not a native WeaponDef)
+  header string 0: perkpop_deadshot_zm
+  header string 1: 
+  header string 2: ZOMBIE_PERKPOP_DEADSHOT
+  header string 3: 
+  source guidedMissileType (+0x8e0): 0
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 1 populated of 14, next byte 11126
+  native accuracy graphs: 1, active 0/0, original 0/0
+  weapon tail: 1, 53 fields, final offset 11126/11126
+  animation names: status 1, 15 populated, 126 empty, next dependency byte 11126 (source slots)
+  animation source assets: 15 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 15 ready
+  native animation payloads: 15 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_zombie_perksacola_lower, raise viewmodel_zombie_perksacola_idle (names only, not activated)
+  leading effects: status 1, 0 source, 0 native; next dependency byte 11126 (not activated)
+  leading sound names: status 1, 11 populated; next dependency byte 11126 (not native aliases)
+  sound arrays: 0/0 populated names
+  leading model slot 0: viewmodel_hands_cloth
+  leading model slot 1: codo_perk_can_ads
+  leading model slot 3: zombie_3rd_perk_bottle_revive
+  leading model slots: 3 source, 3 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 0, start duration/add 0/0; extra add/empty/empty-alt 0/0/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/0/1
+  native ADS fields: 1, enabled/rechamber 0/0, in/out rates 0.00333333341/0.00200000009 per ms
+  native firing mode: 1, type 0, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 0/0, player 0/0, falloff 999999/999999 (base definition only)
+  native melee fields: 1, damage 0, delay/time 250/699, charge delay/time 0/0 (base definition only)
+  ammo names: status 1; ammo '', clip '', shared cap ''; next dependency byte 11126 (indices unregistered)
+  native ammo/clip keys: 'perkpop_deadshot_zm' / 'perkpop_deadshot_zm' (not registered)
+  native sprint in/out: 79/79 ms; retained dive in/out: 500/500 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS 0/0 hip 0/0
+  native starting ammo/first raise: 1 / 2799 ms
+  native shared ammo cap/clip-only: 0 / 1 (indices unregistered)
+  native hit-location multipliers: head 0, upper torso 0, gun 0; retained shield 0
+  native weapon penetration/offhand: 0/0
+  native weapon type/inventory/class: 1/2/5
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 15 populated slots of 144
+  composed weapon muzzle flashes: view <null>, world <null>
+  composed weapon brass effects: <null> / <null>; last shot <null> / <null>
+  native spread fields: 1; standing 0/0, ADS 0 (not activated)
+  native ammo fields: 1; maximum 1, clip 1, shots 0, fire time 2000 (indices unregistered)
+  native timing fields: 1; reload 2000/0, rechamber 0, drop/raise 899/2099; variants 0/0/0 (not activated)
+^2SV packet 127.0.0.1:62496: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon perkpop_discount_zm
+Rcon from 127.0.0.1:62496: codol_checkweapon perkpop_discount_zm
+CoDOL weapon source: perkpop_discount_zm, status 1, 3283 bytes (not a native WeaponDef)
+  header string 0: perkpop_discount_zm
+  header string 1: 
+  header string 2: 
+  header string 3: 
+  source guidedMissileType (+0x8e0): 0
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 1 populated of 14, next byte 3283
+  native accuracy graphs: 1, active 0/0, original 0/0
+  weapon tail: 1, 53 fields, final offset 3283/3283
+  animation names: status 1, 15 populated, 126 empty, next dependency byte 3088 (source slots)
+  animation source assets: 15 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 15 ready
+  native animation payloads: 15 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_zombie_perksacola_lower, raise viewmodel_zombie_perksacola_idle (names only, not activated)
+  leading effects: status 1, 0 source, 0 native; next dependency byte 3088 (not activated)
+  leading sound names: status 1, 11 populated; next dependency byte 3088 (not native aliases)
+  sound arrays: 0/0 populated names
+  leading model slot 0: viewmodel_hands_cloth
+  leading model slot 1: codo_perk_can_ads
+  leading model slot 3: zombie_3rd_perk_bottle_revive
+  leading model slots: 3 source, 3 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 0, start duration/add 0/0; extra add/empty/empty-alt 0/0/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/0/1
+  native ADS fields: 1, enabled/rechamber 0/0, in/out rates 0.00333333341/0.00200000009 per ms
+  native firing mode: 1, type 0, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 0/0, player 0/0, falloff 999999/999999 (base definition only)
+  native melee fields: 1, damage 0, delay/time 250/699, charge delay/time 0/0 (base definition only)
+  ammo names: status 1; ammo '', clip '', shared cap ''; next dependency byte 3283 (indices unregistered)
+  native ammo/clip keys: 'perkpop_discount_zm' / 'perkpop_discount_zm' (not registered)
+  native sprint in/out: 79/79 ms; retained dive in/out: 500/500 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS 0/0 hip 0/0
+  native starting ammo/first raise: 1 / 2799 ms
+  native shared ammo cap/clip-only: 0 / 1 (indices unregistered)
+  native hit-location multipliers: head 0, upper torso 0, gun 0; retained shield 0
+  native weapon penetration/offhand: 0/0
+  native weapon type/inventory/class: 1/2/5
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 15 populated slots of 144
+  composed weapon muzzle flashes: view <null>, world <null>
+  composed weapon brass effects: <null> / <null>; last shot <null> / <null>
+  native spread fields: 1; standing 0/0, ADS 0 (not activated)
+  native ammo fields: 1; maximum 1, clip 1, shots 0, fire time 2000 (indices unregistered)
+  native timing fields: 1; reload 2000/0, rechamber 0, drop/raise 899/2099; variants 0/0/0 (not activated)
+^2SV packet 127.0.0.1:62497: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon kis_minigun_zm
+Rcon from 127.0.0.1:62497: codol_checkweapon kis_minigun_zm
+CoDOL weapon source: kis_minigun_zm, status 1, 3285 bytes (not a native WeaponDef)
+  header string 0: kis_minigun_zm
+  header string 1: 
+  header string 2: 
+  header string 3: 
+  source guidedMissileType (+0x8e0): 4
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 2 populated of 14, next byte 3285
+  native accuracy graphs: 1, active 0/0, original 0/0
+  weapon tail: 1, 53 fields, final offset 3285/3285
+  animation names: status 1, 10 populated, 131 empty, next dependency byte 3083 (source slots)
+  animation source assets: 10 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 10 ready
+  native animation payloads: 10 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_uav_cu_putaway, raise viewmodel_uav_cu_pullout (names only, not activated)
+  leading effects: status 1, 0 source, 0 native; next dependency byte 3083 (not activated)
+  leading sound names: status 1, 7 populated; next dependency byte 3083 (not native aliases)
+  sound arrays: 0/0 populated names
+  leading model slot 0: viewmodel_base_viewhands
+  leading model slot 1: viewmodel_uav_control_unit
+  leading model slot 3: weapon_uav_control_unit
+  leading model slots: 3 source, 3 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 0, start duration/add 0/0; extra add/empty/empty-alt 0/0/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/1/1
+  native ADS fields: 1, enabled/rechamber 0/1, in/out rates 0.00333333341/0.00166666671 per ms
+  native firing mode: 1, type 0, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 0/0, player 0/0, falloff 999999/999999 (base definition only)
+  native melee fields: 1, damage 0, delay/time 250/699, charge delay/time 0/0 (base definition only)
+  ammo names: status 1; ammo '', clip '', shared cap ''; next dependency byte 3285 (indices unregistered)
+  native ammo/clip keys: 'kis_minigun_zm' / 'kis_minigun_zm' (not registered)
+  native sprint in/out: 500/500 ms; retained dive in/out: 500/500 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS -30/-20 hip -5/-3
+  native starting ammo/first raise: 1 / 1200 ms
+  native shared ammo cap/clip-only: 0 / 1 (indices unregistered)
+  native hit-location multipliers: head 0, upper torso 0, gun 0; retained shield 0
+  native weapon penetration/offhand: 0/0
+  native weapon type/inventory/class: 1/2/5
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 10 populated slots of 144
+  composed weapon muzzle flashes: view <null>, world <null>
+  composed weapon brass effects: <null> / <null>; last shot <null> / <null>
+  native spread fields: 1; standing 4/10, ADS 0 (not activated)
+  native ammo fields: 1; maximum 1, clip 1, shots 0, fire time 100 (indices unregistered)
+  native timing fields: 1; reload 2000/0, rechamber 100, drop/raise 829/1200; variants 100/0/0 (not activated)
+^2SV packet 127.0.0.1:62498: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon kis_tesla_zm
+Rcon from 127.0.0.1:62498: codol_checkweapon kis_tesla_zm
+CoDOL weapon source: kis_tesla_zm, status 1, 3268 bytes (not a native WeaponDef)
+  header string 0: kis_tesla_zm
+  header string 1: 
+  header string 2: 
+  header string 3: 
+  source guidedMissileType (+0x8e0): 4
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 2 populated of 14, next byte 3268
+  native accuracy graphs: 1, active 0/0, original 0/0
+  weapon tail: 1, 53 fields, final offset 3268/3268
+  animation names: status 1, 10 populated, 131 empty, next dependency byte 3081 (source slots)
+  animation source assets: 10 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 10 ready
+  native animation payloads: 10 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_uav_cu_putaway, raise viewmodel_uav_cu_pullout (names only, not activated)
+  leading effects: status 1, 0 source, 0 native; next dependency byte 3081 (not activated)
+  leading sound names: status 1, 7 populated; next dependency byte 3081 (not native aliases)
+  sound arrays: 0/0 populated names
+  leading model slot 0: viewmodel_base_viewhands
+  leading model slot 1: viewmodel_uav_control_unit
+  leading model slot 3: weapon_uav_control_unit
+  leading model slots: 3 source, 3 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 0, start duration/add 0/0; extra add/empty/empty-alt 0/0/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/1/1
+  native ADS fields: 1, enabled/rechamber 0/1, in/out rates 0.00333333341/0.00166666671 per ms
+  native firing mode: 1, type 0, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 0/0, player 0/0, falloff 999999/999999 (base definition only)
+  native melee fields: 1, damage 0, delay/time 250/699, charge delay/time 0/0 (base definition only)
+  ammo names: status 1; ammo '', clip '', shared cap ''; next dependency byte 3268 (indices unregistered)
+  native ammo/clip keys: 'kis_tesla_zm' / 'kis_tesla_zm' (not registered)
+  native sprint in/out: 500/500 ms; retained dive in/out: 500/500 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS -30/-20 hip -5/-3
+  native starting ammo/first raise: 1 / 1200 ms
+  native shared ammo cap/clip-only: 0 / 1 (indices unregistered)
+  native hit-location multipliers: head 0, upper torso 0, gun 0; retained shield 0
+  native weapon penetration/offhand: 0/0
+  native weapon type/inventory/class: 1/2/5
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 10 populated slots of 144
+  composed weapon muzzle flashes: view <null>, world <null>
+  composed weapon brass effects: <null> / <null>; last shot <null> / <null>
+  native spread fields: 1; standing 4/10, ADS 0 (not activated)
+  native ammo fields: 1; maximum 1, clip 1, shots 0, fire time 100 (indices unregistered)
+  native timing fields: 1; reload 2000/0, rechamber 100, drop/raise 829/1200; variants 100/0/0 (not activated)
+^2SV packet 127.0.0.1:62499: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon kis_pandora_zm
+Rcon from 127.0.0.1:62499: codol_checkweapon kis_pandora_zm
+CoDOL weapon source: kis_pandora_zm, status 1, 3496 bytes (not a native WeaponDef)
+  header string 0: kis_pandora_zm
+  header string 1: 
+  header string 2: 
+  header string 3: 
+  source guidedMissileType (+0x8e0): 4
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 2 populated of 14, next byte 3311
+  native accuracy graphs: 1, active 0/0, original 0/0
+  weapon tail: 1, 53 fields, final offset 3496/3496
+  animation names: status 1, 10 populated, 131 empty, next dependency byte 3083 (source slots)
+  animation source assets: 10 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 10 ready
+  native animation payloads: 10 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_uav_cu_putaway, raise viewmodel_uav_cu_pullout (names only, not activated)
+  leading effects: status 1, 0 source, 0 native; next dependency byte 3083 (not activated)
+  leading sound names: status 1, 7 populated; next dependency byte 3083 (not native aliases)
+  sound arrays: 0/0 populated names
+  leading model slot 0: viewmodel_base_viewhands
+  leading model slot 1: viewmodel_uav_control_unit
+  leading model slot 3: weapon_uav_control_unit
+  leading model slots: 3 source, 3 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 0, start duration/add 0/0; extra add/empty/empty-alt 0/0/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/1/1
+  native ADS fields: 1, enabled/rechamber 0/1, in/out rates 0.00333333341/0.00166666671 per ms
+  native firing mode: 1, type 0, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 0/0, player 0/0, falloff 999999/999999 (base definition only)
+  native melee fields: 1, damage 0, delay/time 250/699, charge delay/time 0/0 (base definition only)
+  ammo names: status 1; ammo '', clip '', shared cap ''; next dependency byte 3311 (indices unregistered)
+  native ammo/clip keys: 'kis_pandora_zm' / 'kis_pandora_zm' (not registered)
+  native sprint in/out: 500/500 ms; retained dive in/out: 500/500 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS -30/-20 hip -5/-3
+  native starting ammo/first raise: 1 / 1200 ms
+  native shared ammo cap/clip-only: 0 / 1 (indices unregistered)
+  native hit-location multipliers: head 0, upper torso 0, gun 0; retained shield 0
+  native weapon penetration/offhand: 0/0
+  native weapon type/inventory/class: 1/2/5
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 10 populated slots of 144
+  composed weapon muzzle flashes: view <null>, world <null>
+  composed weapon brass effects: <null> / <null>; last shot <null> / <null>
+  native spread fields: 1; standing 4/10, ADS 0 (not activated)
+  native ammo fields: 1; maximum 1, clip 1, shots 0, fire time 100 (indices unregistered)
+  native timing fields: 1; reload 2000/0, rechamber 100, drop/raise 829/1200; variants 100/0/0 (not activated)
+^2SV packet 127.0.0.1:62500: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon kis_sentry_zm
+Rcon from 127.0.0.1:62500: codol_checkweapon kis_sentry_zm
+CoDOL weapon source: kis_sentry_zm, status 1, 3295 bytes (not a native WeaponDef)
+  header string 0: kis_sentry_zm
+  header string 1: 
+  header string 2: 
+  header string 3: 
+  source guidedMissileType (+0x8e0): 4
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 2 populated of 14, next byte 3295
+  native accuracy graphs: 1, active 0/0, original 0/0
+  weapon tail: 1, 53 fields, final offset 3295/3295
+  animation names: status 1, 10 populated, 131 empty, next dependency byte 3082 (source slots)
+  animation source assets: 10 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 10 ready
+  native animation payloads: 10 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_uav_cu_putaway, raise viewmodel_uav_cu_pullout (names only, not activated)
+  leading effects: status 1, 0 source, 0 native; next dependency byte 3082 (not activated)
+  leading sound names: status 1, 7 populated; next dependency byte 3082 (not native aliases)
+  sound arrays: 0/0 populated names
+  leading model slot 0: viewmodel_base_viewhands
+  leading model slot 1: viewmodel_uav_control_unit
+  leading model slot 3: weapon_uav_control_unit
+  leading model slots: 3 source, 3 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 0, start duration/add 0/0; extra add/empty/empty-alt 0/0/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/1/1
+  native ADS fields: 1, enabled/rechamber 0/1, in/out rates 0.00333333341/0.00166666671 per ms
+  native firing mode: 1, type 0, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 0/0, player 0/0, falloff 999999/999999 (base definition only)
+  native melee fields: 1, damage 0, delay/time 250/699, charge delay/time 0/0 (base definition only)
+  ammo names: status 1; ammo '', clip '', shared cap ''; next dependency byte 3295 (indices unregistered)
+  native ammo/clip keys: 'kis_sentry_zm' / 'kis_sentry_zm' (not registered)
+  native sprint in/out: 500/500 ms; retained dive in/out: 500/500 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS -30/-20 hip -5/-3
+  native starting ammo/first raise: 1 / 1200 ms
+  native shared ammo cap/clip-only: 0 / 1 (indices unregistered)
+  native hit-location multipliers: head 0, upper torso 0, gun 0; retained shield 0
+  native weapon penetration/offhand: 0/0
+  native weapon type/inventory/class: 1/2/5
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 10 populated slots of 144
+  composed weapon muzzle flashes: view <null>, world <null>
+  composed weapon brass effects: <null> / <null>; last shot <null> / <null>
+  native spread fields: 1; standing 4/10, ADS 0 (not activated)
+  native ammo fields: 1; maximum 1, clip 1, shots 0, fire time 100 (indices unregistered)
+  native timing fields: 1; reload 2000/0, rechamber 100, drop/raise 829/1200; variants 100/0/0 (not activated)
+^2SV packet 127.0.0.1:62501: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon kis_rcbomb_zm
+Rcon from 127.0.0.1:62501: codol_checkweapon kis_rcbomb_zm
+CoDOL weapon source: kis_rcbomb_zm, status 1, 3082 bytes (not a native WeaponDef)
+  header string 0: kis_rcbomb_zm
+  header string 1: 
+  header string 2: 
+  header string 3: 
+  source guidedMissileType (+0x8e0): 4
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 2 populated of 14, next byte 3082
+  native accuracy graphs: 1, active 0/0, original 0/0
+  weapon tail: 1, 53 fields, final offset 3082/3082
+  animation names: status 1, 10 populated, 131 empty, next dependency byte 3082 (source slots)
+  animation source assets: 10 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 10 ready
+  native animation payloads: 10 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_uav_cu_putaway, raise viewmodel_uav_cu_pullout (names only, not activated)
+  leading effects: status 1, 0 source, 0 native; next dependency byte 3082 (not activated)
+  leading sound names: status 1, 7 populated; next dependency byte 3082 (not native aliases)
+  sound arrays: 0/0 populated names
+  leading model slot 0: viewmodel_base_viewhands
+  leading model slot 1: viewmodel_uav_control_unit
+  leading model slot 3: weapon_uav_control_unit
+  leading model slots: 3 source, 3 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 0, start duration/add 0/0; extra add/empty/empty-alt 0/0/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/1/1
+  native ADS fields: 1, enabled/rechamber 0/1, in/out rates 0.00333333341/0.00166666671 per ms
+  native firing mode: 1, type 0, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 0/0, player 0/0, falloff 999999/999999 (base definition only)
+  native melee fields: 1, damage 0, delay/time 250/699, charge delay/time 0/0 (base definition only)
+  ammo names: status 1; ammo '', clip '', shared cap ''; next dependency byte 3082 (indices unregistered)
+  native ammo/clip keys: 'kis_rcbomb_zm' / 'kis_rcbomb_zm' (not registered)
+  native sprint in/out: 500/500 ms; retained dive in/out: 500/500 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS -30/-20 hip -5/-3
+  native starting ammo/first raise: 1 / 1200 ms
+  native shared ammo cap/clip-only: 0 / 1 (indices unregistered)
+  native hit-location multipliers: head 0, upper torso 0, gun 0; retained shield 0
+  native weapon penetration/offhand: 0/0
+  native weapon type/inventory/class: 1/2/5
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 10 populated slots of 144
+  composed weapon muzzle flashes: view <null>, world <null>
+  composed weapon brass effects: <null> / <null>; last shot <null> / <null>
+  native spread fields: 1; standing 4/10, ADS 0 (not activated)
+  native ammo fields: 1; maximum 1, clip 1, shots 0, fire time 100 (indices unregistered)
+  native timing fields: 1; reload 2000/0, rechamber 100, drop/raise 829/1200; variants 100/0/0 (not activated)
+^2SV packet 127.0.0.1:62502: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon tesla_gun_zm
+Rcon from 127.0.0.1:62502: codol_checkweapon tesla_gun_zm
+CoDOL weapon source: tesla_gun_zm, status 1, 249151 bytes (not a native WeaponDef)
+  header string 0: tesla_gun_zm
+  header string 1: 
+  header string 2: ZOMBIE_TESLA_GUN
+  header string 3: 
+  source guidedMissileType (+0x8e0): 0
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 2 populated of 14, next byte 249017
+  native accuracy graphs: 1, active 9/5, original 9/5
+  weapon tail: 1, 53 fields, final offset 249151/249151
+  animation names: status 1, 24 populated, 117 empty, next dependency byte 248724 (source slots)
+  animation source assets: 24 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 24 ready
+  native animation payloads: 24 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_tesla_zm_putaway, raise viewmodel_tesla_zm_pullout (names only, not activated)
+  leading effect slot 0: weapon/muzzleflashes/fx_tesla_view, native status 1
+  leading effect slot 1: weapon/muzzleflashes/fx_tesla_world, native status 1
+  leading effects: status 1, 2 source, 2 native; next dependency byte 248724 (not activated)
+  leading sound names: status 1, 17 populated; next dependency byte 248824 (not native aliases)
+  sound arrays: 0/0 populated names
+  leading model slot 0: viewmodel_hands_no_model
+  leading model slot 1: viewmodel_usa_tesla_gun
+  leading model slot 3: weapon_usa_tesla
+  leading model slot 7: viewmodel_knife
+  leading model slot 8: weapon_parabolic_knife
+  leading model slots: 5 source, 5 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 2650, start duration/add 0/0; extra add/empty/empty-alt 0/0/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/1/1
+  native ADS fields: 1, enabled/rechamber 1/1, in/out rates 0.00222717156/0.00249999994 per ms
+  native firing mode: 1, type 0, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 1/0, player 0/0, falloff 999999/999999 (base definition only)
+  native melee fields: 1, damage 25, delay/time 250/699, charge delay/time 0/0 (base definition only)
+  ammo names: status 1; ammo '', clip '', shared cap ''; next dependency byte 249017 (indices unregistered)
+  native ammo/clip keys: 'tesla_gun_zm' / 'tesla_gun_zm' (not registered)
+^3Warning: CoDOL weapon tesla_gun_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+  native sprint in/out: 300/300 ms; retained dive in/out: 200/250 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS -35/-40 hip -30/-35
+  native starting ammo/first raise: 18 / 2500 ms
+  native shared ammo cap/clip-only: 0 / 0 (indices unregistered)
+  native hit-location multipliers: head 0, upper torso 0, gun 0; retained shield 0
+  native weapon penetration/offhand: 0/0
+  native weapon type/inventory/class: 2/0/6
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 24 populated slots of 144
+  composed weapon muzzle flashes: view weapon/muzzleflashes/fx_tesla_view, world weapon/muzzleflashes/fx_tesla_world
+  composed weapon brass effects: <null> / <null>; last shot <null> / <null>
+  native spread fields: 1; standing 2/4, ADS 0 (not activated)
+  native ammo fields: 1; maximum 18, clip 3, shots 0, fire time 1000 (indices unregistered)
+  native timing fields: 1; reload 6000/0, rechamber 100, drop/raise 829/899; variants 100/0/0 (not activated)
+^2SV packet 127.0.0.1:62503: rcon ef818b56e3dd4c2c8082d8c2699d45cb codol_checkweapon minigun_zm
+Rcon from 127.0.0.1:62503: codol_checkweapon minigun_zm
+CoDOL weapon source: minigun_zm, status 1, 8436 bytes (not a native WeaponDef)
+  header string 0: minigun_zm
+  header string 1: 
+  header string 2: ZOMBIE_MINIGUN
+  header string 3: 
+  source guidedMissileType (+0x8e0): 0
+  source hide tags: 1, 0 populated of 32 (archive strings)
+  weapon middle visuals: 1, 7 populated of 14, next byte 8305
+  native accuracy graphs: 1, active 6/4, original 6/4
+  weapon tail: 1, 53 fields, final offset 8436/8436
+  animation names: status 1, 19 populated, 122 empty, next dependency byte 7871 (source slots)
+  animation source assets: 19 resolved, 0 missing, 0 invalid (not native XAnimParts)
+  animation script-string bindings: 19 ready
+  native animation payloads: 19 constructed (not published or evaluated)
+  shared animation roles mapped: 19; drop viewmodel_minigun_zm_putaway, raise viewmodel_minigun_zm_pullout (names only, not activated)
+  leading effect slot 0: weapon/muzzleflashes/fx_mini_cannon_flash_base1st, native status 1
+  leading effect slot 1: weapon/muzzleflashes/fx_heavy_flash_base, native status -1
+    effect weapon/muzzleflashes/fx_heavy_flash_base element 0: type 0, visuals 1, extension 0 bytes
+    effect weapon/muzzleflashes/fx_heavy_flash_base element 1: type 4, visuals 1, extension 0 bytes
+    effect weapon/muzzleflashes/fx_heavy_flash_base element 2: type 4, visuals 1, extension 0 bytes
+    effect weapon/muzzleflashes/fx_heavy_flash_base element 3: type 4, visuals 1, extension 0 bytes
+    effect weapon/muzzleflashes/fx_heavy_flash_base element 4: type 10, visuals 1, extension 0 bytes
+    effect weapon/muzzleflashes/fx_heavy_flash_base element 5: type 0, visuals 2, extension 0 bytes
+    effect weapon/muzzleflashes/fx_heavy_flash_base element 6: type 0, visuals 1, extension 0 bytes
+    effect weapon/muzzleflashes/fx_heavy_flash_base element 7: type 0, visuals 1, extension 0 bytes
+    effect weapon/muzzleflashes/fx_heavy_flash_base element 8: type 0, visuals 1, extension 0 bytes
+    effect weapon/muzzleflashes/fx_heavy_flash_base element 9: type 2, visuals 1, extension 0 bytes
+    effect weapon/muzzleflashes/fx_heavy_flash_base element 10: type 2, visuals 1, extension 0 bytes
+    effect weapon/muzzleflashes/fx_heavy_flash_base element 11: type 2, visuals 1, extension 0 bytes
+    effect weapon/muzzleflashes/fx_heavy_flash_base element 12: type 0, visuals 1, extension 0 bytes
+  leading effects: status 1, 2 source, 1 native; next dependency byte 7871 (not activated)
+  leading sound names: status 1, 15 populated; next dependency byte 7911 (not native aliases)
+  sound arrays: 0/0 populated names
+  leading model slot 0: viewhands_usmc
+  leading model slot 1: t5_weapon_carry_minigun_viewmodel
+  leading model slot 3: t5_weapon_carry_minigun_world
+  leading model slot 7: viewmodel_knife
+  leading model slot 8: weapon_parabolic_knife
+  leading model slots: 5 source, 5 native, 0 failed; native role binding 1 (not activated)
+  native reload schedule: 1, segmented 0, add 7130, start duration/add 0/0; extra add/empty/empty-alt 0/7130/0
+  native reload transfer caps: 1, ordinary/start 0/0
+  native movement scales: 1, hip/ADS/sprint 1/1/0
+  native ADS fields: 1, enabled/rechamber 0/0, in/out rates 0.00286532962/0.00286532962 per ms
+  native firing mode: 1, type 6, rechamber 0 (base definition only)
+  native damage fields: 1, base/min 500/300, player 45/30, falloff 1500/2500 (base definition only)
+  native melee fields: 1, damage 25, delay/time 250/699, charge delay/time 0/0 (base definition only)
+  ammo names: status 1; ammo '', clip '', shared cap ''; next dependency byte 8305 (indices unregistered)
+  native ammo/clip keys: 'minigun_zm' / 'minigun_zm' (not registered)
+^3Warning: CoDOL weapon minigun_zm: melee damage 25 but animation slot 7 is empty; C1 plays no melee animation for it (shipped definition gap)
+^3Warning: CoDOL weapon minigun_zm: world muzzle flash 'weapon/muzzleflashes/fx_heavy_flash_base' did not resolve in any mounted zone; loading the weapon without it
+  native sprint in/out: 300/300 ms; retained dive in/out: 449/449 ms
+  native recoil: reduced bullets ADS/hip 0/0, gun pitch ADS 0/0 hip -5/5
+  native starting ammo/first raise: 400 / 1549 ms
+  native shared ammo cap/clip-only: 0 / 0 (indices unregistered)
+  native hit-location multipliers: head 2, upper torso 1, gun 0; retained shield 0
+  native weapon penetration/offhand: 3/0
+  native weapon type/inventory/class: 0/0/1
+  composed native weapon core: 1 (registration and remaining fields pending)
+  composed weapon native animations: 19 populated slots of 144
+  composed weapon muzzle flashes: view weapon/muzzleflashes/fx_mini_cannon_flash_base1st, world <null>
+  composed weapon brass effects: weapon/shellejects/fx_minigun / weapon/shellejects/fx_minigun; last shot weapon/shellejects/fx_minigun / weapon/shellejects/fx_minigun
+  native spread fields: 1; standing 0/3, ADS 0 (not activated)
+  native ammo fields: 1; maximum 500, clip 500, shots 3, fire time 50 (indices unregistered)
+  native timing fields: 1; reload 9699/9699, rechamber 100, drop/raise 750/1549; variants 100/2000/2000 (not activated)

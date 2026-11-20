@@ -1,0 +1,61 @@
+From 2cdc49c08a516cb186737bd031dc0c94b229d3d2 Mon Sep 17 00:00:00 2001
+From: michael desktop <michaelpmaurerii@gmail.com>
+Date: Tue, 27 Oct 2026 00:03:43 -0400
+Subject: [PATCH] security: only the host may end the round from the menu;
+ clamp the elevator floor
+
+sh1x security audit 2026-10-26. The "endround" menu response called
+forceEnd() for any client, spectators included (the mr server id is
+public), so one player could end every match. Gate it on isHost() as IW4x
+does; on the dedicated server that is the locally connected client. The
+elevator floor selector now accepts only a real floor index from the
+client's response text.
+
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01QfubzRGZdDkQJQenPJrXst
+---
+ common_scripts/_elevator.gsc | 8 +++++++-
+ maps/mp/gametypes/_menus.gsc | 7 +++++++
+ 2 files changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/common_scripts/_elevator.gsc b/common_scripts/_elevator.gsc
+index adeb780..7f284c1 100644
+--- a/common_scripts/_elevator.gsc
++++ b/common_scripts/_elevator.gsc
+@@ -343,8 +343,14 @@ get_floor( player )
+ 
+ 		if ( menu == "elevator_floor_selector" )
+ 		{
++			// sh1x security audit 2026-10-26: the response is client text;
++			// only a real floor index may become the destination.
+ 			if ( response != "none" )
+-				self.moveto_floor = int( response );
++			{
++				floor = int( response );
++				if ( floor >= 0 && floor < self get_outer_doorsets().size )
++					self.moveto_floor = floor;
++			}
+ 
+ 			break;
+ 		}
+diff --git a/maps/mp/gametypes/_menus.gsc b/maps/mp/gametypes/_menus.gsc
+index 093a459..7d1a270 100644
+--- a/maps/mp/gametypes/_menus.gsc
++++ b/maps/mp/gametypes/_menus.gsc
+@@ -180,6 +180,13 @@ onMenuResponse()
+ 
+ 		if ( response == "endround" )
+ 		{
++			// sh1x security audit 2026-10-26: any client could send this menu
++			// response (the mr server id is public) and end the match for
++			// everyone. Only the host may, as in IW4x's _menus.gsc; on this
++			// dedicated server isHost() is the locally connected client.
++			if ( !self isHost() )
++				continue;
++
+ 			if ( !level.gameEnded )
+ 			{
+ 				level thread maps\mp\gametypes\_gamelogic::forceEnd();
+-- 
+2.44.0.windows.1
+

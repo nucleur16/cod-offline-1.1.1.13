@@ -1,0 +1,32 @@
+font	fonts/consoleFont
+fx	misc/missing_fx
+image	$white
+impactfx	viewProjectionMatrix	~
+leaderboarddef	DEFAULT_LB
+lightdef	light_dynamic
+material	$default
+menufile	ui/default.menu
+phys_collmap	void
+physpreset	default
+pixelshader	<inline-name, unknown header>	!
+rawfile	code_post_gfx_default_mp
+sndcurve	viewProjectionMatrix	~
+snddriverglobals	<empty>	!
+sound	nil
+sound	null
+stringtable	mp/defaultstringtable.csv
+structureddatadef	mp/defaultstructureddata.def
+techset	2d
+techset	effect_blend_nofog
+techset	effect_screen_nofog
+techset	mc_effect_blend_nofog
+techset	viewProjectionMatrix	~
+tracer	defaulttracer
+vehicle	defaultvehicle
+vertexdecl	<inline-name, unknown header>	!
+vertexshader	<inline-name, unknown header>	!
+weapon	none
+weaponattach	null	~
+xanim	vs_3_0	~
+xmodel	vs_3_0	~
+xmodelsurfs	fx10

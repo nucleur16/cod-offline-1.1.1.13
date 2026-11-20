@@ -1,0 +1,100 @@
+{
+  "schema": "codol-zombies-canonical-closure-source-v1",
+  "date": "2026-10-29",
+  "parent_base": "9d1708c5",
+  "source_donor": "native_profiles/zombies.patch (immutable historical profile)",
+  "historical_profiles_modified": false,
+  "canonical_qualification": "unqualified union; no historical binary qualification inherited",
+  "source_files": [
+    "src/codol/assets/codol_asset_commands.c",
+    "src/codol/assets/codol_sv_assets.c",
+    "src/codol/assets/codol_sv_assets.h",
+    "src/codol/net/codol_connect.c",
+    "src/codol/net/codol_persistent_build.h",
+    "src/codol/player/codol_actor_lifecycle.cpp",
+    "src/codol/player/codol_actor_targeting.c",
+    "src/codol/player/codol_actor_targeting.h",
+    "src/codol/player/codol_bot_nav.c",
+    "src/codol/player/codol_bot_nav.h",
+    "src/codol/player/codol_revive_token.c",
+    "src/codol/player/codol_revive_token.h",
+    "src/codol/script/codol_coop_progress.c",
+    "src/codol/script/codol_coop_progress.h",
+    "src/codol/script/codol_localtest.c",
+    "src/codol/script/codol_localtest.h",
+    "src/codol/script/codol_script_client_status_colour.c",
+    "src/codol/script/codol_script_client_status_colour.h",
+    "src/codol/script/codol_script_entity_fx.c",
+    "src/codol/script/codol_script_entity_fx.h",
+    "src/codol/script/codol_zombies_mode.h",
+    "src/codol/snapshot/codol_clientstate_ext.c",
+    "src/codol/snapshot/codol_clientstate_ext.h",
+    "src/codol/snapshot/codol_configstrings.c",
+    "src/codol/snapshot/codol_configstrings.h",
+    "src/codol/stats/codol_match_report.c",
+    "src/codol/stats/codol_match_report.h",
+    "src/scr_vm_main.c",
+    "tests/test_codol_client_appearance.c",
+    "tests/test_codol_zombies_tokens.c",
+    "tests/test_codol_zombies_fx_reservation.c",
+    "tests/test_codol_zombies_targeting.c",
+    "tests/test_codol_zombies_checkpoint.c",
+    "tests/test_codol_zombies_viewmodel_ready.c",
+    "tests/test_codol_zombies_localtest.c",
+    "tools/test_codol_zombies_closure.sh"
+  ],
+  "restored_builtins": [
+    "codol_checkpointzombiesround",
+    "codol_enableclientstatuscolour",
+    "codollocaltestallowed",
+    "canreachplayer",
+    "codolarmrevivetoken",
+    "codolclearrevivetoken",
+    "codolgetrevivetokencount",
+    "codolrequestrevivetokenspend",
+    "codol_reserveentityfx",
+    "codol_viewmodelfxready"
+  ],
+  "source_resolver": {
+    "registered": 1068,
+    "zm": {
+      "maps": [
+        "zm_prototype_sh",
+        "zm_theater_sh",
+        "zm_asylum_sh",
+        "zm_factory_sh",
+        "zm_sumpf_sh",
+        "zm_zombie_training"
+      ],
+      "scripts": 102,
+      "pass": true
+    },
+    "mp_war_killhouse": {
+      "scripts": 128,
+      "pass": true
+    },
+    "survival_favela": {
+      "scripts": 194,
+      "pass": true
+    },
+    "coop_favela": {
+      "scripts": 175,
+      "pass": true
+    }
+  },
+  "tests": {
+    "command": "SANITIZE=1 bash tools/test_codol_zombies_closure.sh",
+    "production_body_groups": 8,
+    "asan_ubsan": true,
+    "pass": true,
+    "windows_i686_syntax_translation_units": 16
+  },
+  "limits": [
+    "Engine/VM/account/transport and brush-trace boundaries are explicit test doubles; no original C1 gameplay acceptance.",
+    "Token duplicate cache retains the last eight receipts, not unbounded global idempotence; GSC limits each player to three paid revives per match.",
+    "Path fixture executes actual flood/cache/barrier cut/restore with a native three-node graph; full actor hull/world reachability requires map runtime acceptance.",
+    "Frozen materializer rejects canonical source drift; normal profile pre-integration already differed in89of1747 recorded code files. Do not regenerate historical profiles to label union qualified."
+  ],
+  "runtime_or_deployment_performed": false,
+  "full_binary_build_performed_by_worker": false
+}

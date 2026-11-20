@@ -1,0 +1,420 @@
+{
+  "scope": "One historical alpha0022 netchan_ack._REAL_INBOUND fixture versus current local IWD central directories",
+  "warning": "An aggregate identity does not establish the client checksum algorithm or authenticate assets.",
+  "captured_signed_integers": [
+    -764066595,
+    -465712135,
+    -569159956,
+    929423196,
+    301071388,
+    1624708878,
+    226840255,
+    1233725980,
+    -7520972,
+    -1464890380,
+    -1096643229,
+    486786835,
+    726436259,
+    -1050269825,
+    -973594036,
+    -545578791,
+    1052466547,
+    -796549954
+  ],
+  "candidate_checksum_count": 17,
+  "inferred_feed_if_xor_count_aggregate": 0,
+  "archive_count": 39,
+  "match_count": 0,
+  "archives": [
+    {
+      "archive": "iw_config_00.iwd",
+      "nonempty_entries": 1,
+      "candidate_checksums": {
+        "crc32_feed0": 1612381017,
+        "md4": 2344466812,
+        "md4_prefix_feed0": 2819009341
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_image_00.iwd",
+      "nonempty_entries": 2529,
+      "candidate_checksums": {
+        "crc32_feed0": 2230038592,
+        "md4": 3254939023,
+        "md4_prefix_feed0": 1187641030
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_image_01.iwd",
+      "nonempty_entries": 2938,
+      "candidate_checksums": {
+        "crc32_feed0": 1855073462,
+        "md4": 2291783026,
+        "md4_prefix_feed0": 2853307175
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_image_02.iwd",
+      "nonempty_entries": 2667,
+      "candidate_checksums": {
+        "crc32_feed0": 2621607470,
+        "md4": 2383314848,
+        "md4_prefix_feed0": 1443586517
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_image_03.iwd",
+      "nonempty_entries": 2072,
+      "candidate_checksums": {
+        "crc32_feed0": 1428427292,
+        "md4": 2665006183,
+        "md4_prefix_feed0": 3214065877
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_image_04.iwd",
+      "nonempty_entries": 1224,
+      "candidate_checksums": {
+        "crc32_feed0": 2433980876,
+        "md4": 3674097197,
+        "md4_prefix_feed0": 347629863
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_image_05.iwd",
+      "nonempty_entries": 1489,
+      "candidate_checksums": {
+        "crc32_feed0": 2251378876,
+        "md4": 2910186674,
+        "md4_prefix_feed0": 1783002257
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_image_06.iwd",
+      "nonempty_entries": 1159,
+      "candidate_checksums": {
+        "crc32_feed0": 1857435867,
+        "md4": 2173052423,
+        "md4_prefix_feed0": 1386091652
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_image_07.iwd",
+      "nonempty_entries": 266,
+      "candidate_checksums": {
+        "crc32_feed0": 1207940592,
+        "md4": 2760840930,
+        "md4_prefix_feed0": 3757343157
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_image_08.iwd",
+      "nonempty_entries": 32,
+      "candidate_checksums": {
+        "crc32_feed0": 826274801,
+        "md4": 3098065284,
+        "md4_prefix_feed0": 343171872
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_image_09.iwd",
+      "nonempty_entries": 58,
+      "candidate_checksums": {
+        "crc32_feed0": 977288664,
+        "md4": 2351356121,
+        "md4_prefix_feed0": 1176319703
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_image_10.iwd",
+      "nonempty_entries": 124,
+      "candidate_checksums": {
+        "crc32_feed0": 1879463592,
+        "md4": 702807339,
+        "md4_prefix_feed0": 1615638302
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_image_11.iwd",
+      "nonempty_entries": 279,
+      "candidate_checksums": {
+        "crc32_feed0": 282663371,
+        "md4": 2028779470,
+        "md4_prefix_feed0": 1682876034
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_image_12.iwd",
+      "nonempty_entries": 144,
+      "candidate_checksums": {
+        "crc32_feed0": 1226309805,
+        "md4": 457667950,
+        "md4_prefix_feed0": 2196980120
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_imagestripped_00.iwd",
+      "nonempty_entries": 8128,
+      "candidate_checksums": {
+        "crc32_feed0": 3880677353,
+        "md4": 4210758468,
+        "md4_prefix_feed0": 123280974
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_imagestripped_01.iwd",
+      "nonempty_entries": 5492,
+      "candidate_checksums": {
+        "crc32_feed0": 3032768146,
+        "md4": 1556777606,
+        "md4_prefix_feed0": 2114668608
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_imagestripped_02.iwd",
+      "nonempty_entries": 724,
+      "candidate_checksums": {
+        "crc32_feed0": 622046604,
+        "md4": 2667128718,
+        "md4_prefix_feed0": 2719070313
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_imagestripped_03.iwd",
+      "nonempty_entries": 32,
+      "candidate_checksums": {
+        "crc32_feed0": 2888226656,
+        "md4": 1064788942,
+        "md4_prefix_feed0": 1354325870
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_imagestripped_04.iwd",
+      "nonempty_entries": 58,
+      "candidate_checksums": {
+        "crc32_feed0": 174547100,
+        "md4": 838221770,
+        "md4_prefix_feed0": 1331791966
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_imagestripped_05.iwd",
+      "nonempty_entries": 124,
+      "candidate_checksums": {
+        "crc32_feed0": 1179455865,
+        "md4": 2118788646,
+        "md4_prefix_feed0": 2907656980
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_imagestripped_06.iwd",
+      "nonempty_entries": 279,
+      "candidate_checksums": {
+        "crc32_feed0": 358734537,
+        "md4": 3700927371,
+        "md4_prefix_feed0": 2212151827
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_imagestripped_07.iwd",
+      "nonempty_entries": 144,
+      "candidate_checksums": {
+        "crc32_feed0": 1119132955,
+        "md4": 3288592201,
+        "md4_prefix_feed0": 1187573589
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_model_00.iwd",
+      "nonempty_entries": 3246,
+      "candidate_checksums": {
+        "crc32_feed0": 1669166657,
+        "md4": 654731858,
+        "md4_prefix_feed0": 282648085
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_model_01.iwd",
+      "nonempty_entries": 4,
+      "candidate_checksums": {
+        "crc32_feed0": 3701362400,
+        "md4": 3765913302,
+        "md4_prefix_feed0": 3370702863
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_model_02.iwd",
+      "nonempty_entries": 25,
+      "candidate_checksums": {
+        "crc32_feed0": 2675195116,
+        "md4": 3561112537,
+        "md4_prefix_feed0": 943756489
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_model_03.iwd",
+      "nonempty_entries": 12,
+      "candidate_checksums": {
+        "crc32_feed0": 2990909963,
+        "md4": 3705812536,
+        "md4_prefix_feed0": 292259467
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_model_04.iwd",
+      "nonempty_entries": 121,
+      "candidate_checksums": {
+        "crc32_feed0": 575368294,
+        "md4": 4082909672,
+        "md4_prefix_feed0": 1138679897
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_model_05.iwd",
+      "nonempty_entries": 30,
+      "candidate_checksums": {
+        "crc32_feed0": 4225104615,
+        "md4": 1223991679,
+        "md4_prefix_feed0": 1841407503
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_sound_00.iwd",
+      "nonempty_entries": 221,
+      "candidate_checksums": {
+        "crc32_feed0": 1850674927,
+        "md4": 4253823944,
+        "md4_prefix_feed0": 743023008
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_sound_01.iwd",
+      "nonempty_entries": 820,
+      "candidate_checksums": {
+        "crc32_feed0": 1907581066,
+        "md4": 2381139870,
+        "md4_prefix_feed0": 2953382910
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_sound_02.iwd",
+      "nonempty_entries": 1,
+      "candidate_checksums": {
+        "crc32_feed0": 3083707446,
+        "md4": 3028548556,
+        "md4_prefix_feed0": 1457409691
+      },
+      "matches": []
+    },
+    {
+      "archive": "iw_sound_03.iwd",
+      "nonempty_entries": 4,
+      "candidate_checksums": {
+        "crc32_feed0": 1914781963,
+        "md4": 1552049225,
+        "md4_prefix_feed0": 2746915281
+      },
+      "matches": []
+    },
+    {
+      "archive": "localized_chinese_iw_image_00.iwd",
+      "nonempty_entries": 45,
+      "candidate_checksums": {
+        "crc32_feed0": 540423834,
+        "md4": 3044626495,
+        "md4_prefix_feed0": 3725022225
+      },
+      "matches": []
+    },
+    {
+      "archive": "localized_chinese_iw_image_01.iwd",
+      "nonempty_entries": 3,
+      "candidate_checksums": {
+        "crc32_feed0": 1008939784,
+        "md4": 4075312520,
+        "md4_prefix_feed0": 1601476241
+      },
+      "matches": []
+    },
+    {
+      "archive": "localized_chinese_iw_imagestripped_00.iwd",
+      "nonempty_entries": 45,
+      "candidate_checksums": {
+        "crc32_feed0": 540423834,
+        "md4": 3044626495,
+        "md4_prefix_feed0": 3725022225
+      },
+      "matches": []
+    },
+    {
+      "archive": "localized_chinese_iw_imagestripped_01.iwd",
+      "nonempty_entries": 3,
+      "candidate_checksums": {
+        "crc32_feed0": 1008939784,
+        "md4": 4075312520,
+        "md4_prefix_feed0": 1601476241
+      },
+      "matches": []
+    },
+    {
+      "archive": "localized_chinese_iw_sound_00.iwd",
+      "nonempty_entries": 7632,
+      "candidate_checksums": {
+        "crc32_feed0": 3639004961,
+        "md4": 2150869918,
+        "md4_prefix_feed0": 2206680768
+      },
+      "matches": []
+    },
+    {
+      "archive": "localized_chinese_iw_sound_01.iwd",
+      "nonempty_entries": 40,
+      "candidate_checksums": {
+        "crc32_feed0": 1240628324,
+        "md4": 2441544518,
+        "md4_prefix_feed0": 2077883736
+      },
+      "matches": []
+    },
+    {
+      "archive": "localized_chinese_iw_sound_02.iwd",
+      "nonempty_entries": 31,
+      "candidate_checksums": {
+        "crc32_feed0": 1357006970,
+        "md4": 1104877769,
+        "md4_prefix_feed0": 2673779747
+      },
+      "matches": []
+    }
+  ]
+}

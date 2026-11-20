@@ -1,0 +1,5 @@
+material	$defeatbackdrop
+material	$levelbriefing
+material	compass_map_mp_cross_fire
+rawfile	mp_cross_fire_load
+techset	2d

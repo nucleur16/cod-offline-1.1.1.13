@@ -1,0 +1,105 @@
+{
+  "no_runtime_changes": true,
+  "positive_routes": [
+    {
+      "category": "mp",
+      "compiled_input_bytes_match_build": true,
+      "compiled_input_files": 1717,
+      "profile": "normal",
+      "receipt": {
+        "category": "mp",
+        "native_libraries": {
+          "libmbedcrypto.a": "2190ed68323aeca5beff2b9a64f9fe490c13aee1fc9723798f809c8265777e27",
+          "libmbedtls.a": "d3ff152a926f25fa9a4502d347f4ca7bc1686e1bcfc5eb081640608994d6b0f8",
+          "libmbedx509.a": "98a3ecaea3fae6f337024d7a55713d8aa93c50b5b909ad7e2baa1f17c98ed040",
+          "libtomcrypt.a": "7a19b80724876ff3ce8d95b5ce83a355b3a81c194c49518cbbb95d7ecfd8d3f0"
+        },
+        "prior_tested_binary_sha256": "89bdb64b7a8ad7a8e4a88cae4893f5ecb978c6a5c60143e39a24eaa0ebc792e6",
+        "profile": "normal",
+        "qualification_state": "built-and-focused-function-tested-parent-review-and-real-C1-required",
+        "required_make_variables": {
+          "BUILD_BRANCH": "unified-native-review",
+          "BUILD_NUMBER": "1",
+          "BUILD_REVISION": "8458-plus-preserved-private",
+          "EXTERNAL": "",
+          "GAME": "codol",
+          "LIB_DIR": "lib-native",
+          "LOCAL_TEST": "0"
+        },
+        "runtime_or_publication": false,
+        "schema": "codol-native-source-materialization-v1",
+        "source_files": 1713,
+        "source_manifest_sha256": "e6d49174cd5da2e3acf237a8ede88b5af0460dd72c868fb708a01710182c2ec6",
+        "source_profile_manifest_sha256": "cb7e7b300d26f95dd319919ee7ea26c7e905fcede54cd0308979b2f3bc5227c6",
+        "tested_binary_sha256": "4d4dd3205bd5c252857f9d20f4cc64da1162e2a6bb384bf69134dc7e7a319909"
+      }
+    },
+    {
+      "category": "coop",
+      "compiled_input_bytes_match_build": true,
+      "compiled_input_files": 1717,
+      "profile": "normal",
+      "receipt": {
+        "category": "coop",
+        "native_libraries": {
+          "libmbedcrypto.a": "2190ed68323aeca5beff2b9a64f9fe490c13aee1fc9723798f809c8265777e27",
+          "libmbedtls.a": "d3ff152a926f25fa9a4502d347f4ca7bc1686e1bcfc5eb081640608994d6b0f8",
+          "libmbedx509.a": "98a3ecaea3fae6f337024d7a55713d8aa93c50b5b909ad7e2baa1f17c98ed040",
+          "libtomcrypt.a": "7a19b80724876ff3ce8d95b5ce83a355b3a81c194c49518cbbb95d7ecfd8d3f0"
+        },
+        "prior_tested_binary_sha256": "89bdb64b7a8ad7a8e4a88cae4893f5ecb978c6a5c60143e39a24eaa0ebc792e6",
+        "profile": "normal",
+        "qualification_state": "built-and-focused-function-tested-parent-review-and-real-C1-required",
+        "required_make_variables": {
+          "BUILD_BRANCH": "unified-native-review",
+          "BUILD_NUMBER": "1",
+          "BUILD_REVISION": "8458-plus-preserved-private",
+          "EXTERNAL": "",
+          "GAME": "codol",
+          "LIB_DIR": "lib-native",
+          "LOCAL_TEST": "0"
+        },
+        "runtime_or_publication": false,
+        "schema": "codol-native-source-materialization-v1",
+        "source_files": 1713,
+        "source_manifest_sha256": "e6d49174cd5da2e3acf237a8ede88b5af0460dd72c868fb708a01710182c2ec6",
+        "source_profile_manifest_sha256": "cb7e7b300d26f95dd319919ee7ea26c7e905fcede54cd0308979b2f3bc5227c6",
+        "tested_binary_sha256": "4d4dd3205bd5c252857f9d20f4cc64da1162e2a6bb384bf69134dc7e7a319909"
+      }
+    },
+    {
+      "category": "zm",
+      "compiled_input_bytes_match_build": true,
+      "compiled_input_files": 1729,
+      "profile": "zombies",
+      "receipt": {
+        "category": "zm",
+        "native_libraries": {
+          "libmbedcrypto.a": "2190ed68323aeca5beff2b9a64f9fe490c13aee1fc9723798f809c8265777e27",
+          "libmbedtls.a": "d3ff152a926f25fa9a4502d347f4ca7bc1686e1bcfc5eb081640608994d6b0f8",
+          "libmbedx509.a": "98a3ecaea3fae6f337024d7a55713d8aa93c50b5b909ad7e2baa1f17c98ed040",
+          "libtomcrypt.a": "7a19b80724876ff3ce8d95b5ce83a355b3a81c194c49518cbbb95d7ecfd8d3f0"
+        },
+        "prior_tested_binary_sha256": "a7a07b9b9f3e59ae9f6e581d4f97887a1dca9ecc81c2ae48d5b577d117fd54f3",
+        "profile": "zombies",
+        "qualification_state": "built-and-focused-function-tested-parent-review-and-real-C1-required",
+        "required_make_variables": {
+          "BUILD_BRANCH": "unified-native-review",
+          "BUILD_NUMBER": "1",
+          "BUILD_REVISION": "8458-plus-preserved-private",
+          "EXTERNAL": "",
+          "GAME": "codol",
+          "LIB_DIR": "lib-native",
+          "LOCAL_TEST": "0"
+        },
+        "runtime_or_publication": false,
+        "schema": "codol-native-source-materialization-v1",
+        "source_files": 1725,
+        "source_manifest_sha256": "6ff97148a9956be92b55f7ec47756f99e7a13da0799f770cd50b5500d6b204f2",
+        "source_profile_manifest_sha256": "cb7e7b300d26f95dd319919ee7ea26c7e905fcede54cd0308979b2f3bc5227c6",
+        "tested_binary_sha256": "e43bcfa4dffc6b7e6c43e1160ca78ecd76666ea9f297b5dbe85d3f72018a2bf1"
+      }
+    }
+  ],
+  "unsupported_coop_to_zombies_rejected_before_any_write": true
+}

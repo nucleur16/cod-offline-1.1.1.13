@@ -1,0 +1,240 @@
+{
+  "source": "Read-only C1 PID 59512 archive table, 2026-09-08; FS_Path_f references fs_searchpaths 0x6c3d8c4; checksum at pack+0x304, pure checksum at +0x308; both equal at feed zero",
+  "executable_sha256": "d990610732258b1d00dd6fe63d6691f294312a2e0562955a01ce16216115390d",
+  "archives": [
+    {
+      "archive": "iw_sound_03.iwd",
+      "entry_count": 4,
+      "hash_size": 8,
+      "client_checksum": 1380951878
+    },
+    {
+      "archive": "iw_sound_02.iwd",
+      "entry_count": 1,
+      "hash_size": 2,
+      "client_checksum": 4021204064
+    },
+    {
+      "archive": "iw_sound_01.iwd",
+      "entry_count": 820,
+      "hash_size": 1024,
+      "client_checksum": 1411441690
+    },
+    {
+      "archive": "iw_sound_00.iwd",
+      "entry_count": 221,
+      "hash_size": 256,
+      "client_checksum": 3530900701
+    },
+    {
+      "archive": "iw_model_05.iwd",
+      "entry_count": 30,
+      "hash_size": 32,
+      "client_checksum": 3829255161
+    },
+    {
+      "archive": "iw_model_04.iwd",
+      "entry_count": 121,
+      "hash_size": 128,
+      "client_checksum": 3725807340
+    },
+    {
+      "archive": "iw_model_03.iwd",
+      "entry_count": 12,
+      "hash_size": 16,
+      "client_checksum": 1789779200
+    },
+    {
+      "archive": "iw_model_02.iwd",
+      "entry_count": 25,
+      "hash_size": 32,
+      "client_checksum": 14240130
+    },
+    {
+      "archive": "iw_model_01.iwd",
+      "entry_count": 4,
+      "hash_size": 8,
+      "client_checksum": 2389975914
+    },
+    {
+      "archive": "iw_model_00.iwd",
+      "entry_count": 3246,
+      "hash_size": 2048,
+      "client_checksum": 929423196
+    },
+    {
+      "archive": "iw_image_12.iwd",
+      "entry_count": 144,
+      "hash_size": 256,
+      "client_checksum": 301071388
+    },
+    {
+      "archive": "iw_image_11.iwd",
+      "entry_count": 279,
+      "hash_size": 512,
+      "client_checksum": 1624708878
+    },
+    {
+      "archive": "iw_image_10.iwd",
+      "entry_count": 124,
+      "hash_size": 128,
+      "client_checksum": 226840255
+    },
+    {
+      "archive": "iw_image_09.iwd",
+      "entry_count": 58,
+      "hash_size": 64,
+      "client_checksum": 1233725980
+    },
+    {
+      "archive": "iw_image_08.iwd",
+      "entry_count": 32,
+      "hash_size": 64,
+      "client_checksum": 4287446324
+    },
+    {
+      "archive": "iw_image_07.iwd",
+      "entry_count": 266,
+      "hash_size": 512,
+      "client_checksum": 2830076916
+    },
+    {
+      "archive": "iw_image_06.iwd",
+      "entry_count": 1159,
+      "hash_size": 2048,
+      "client_checksum": 3198324067
+    },
+    {
+      "archive": "iw_image_05.iwd",
+      "entry_count": 1489,
+      "hash_size": 2048,
+      "client_checksum": 486786835
+    },
+    {
+      "archive": "iw_image_04.iwd",
+      "entry_count": 1224,
+      "hash_size": 2048,
+      "client_checksum": 726436259
+    },
+    {
+      "archive": "iw_image_03.iwd",
+      "entry_count": 2072,
+      "hash_size": 2048,
+      "client_checksum": 3244697471
+    },
+    {
+      "archive": "iw_image_02.iwd",
+      "entry_count": 2667,
+      "hash_size": 2048,
+      "client_checksum": 3321373260
+    },
+    {
+      "archive": "iw_image_01.iwd",
+      "entry_count": 2938,
+      "hash_size": 2048,
+      "client_checksum": 3749388505
+    },
+    {
+      "archive": "iw_image_00.iwd",
+      "entry_count": 2529,
+      "hash_size": 2048,
+      "client_checksum": 1052466547
+    },
+    {
+      "archive": "iw_imagestripped_07.iwd",
+      "entry_count": 144,
+      "hash_size": 256,
+      "client_checksum": 2818669681
+    },
+    {
+      "archive": "iw_imagestripped_06.iwd",
+      "entry_count": 279,
+      "hash_size": 512,
+      "client_checksum": 178428584
+    },
+    {
+      "archive": "iw_imagestripped_05.iwd",
+      "entry_count": 124,
+      "hash_size": 128,
+      "client_checksum": 1720763475
+    },
+    {
+      "archive": "iw_imagestripped_04.iwd",
+      "entry_count": 58,
+      "hash_size": 64,
+      "client_checksum": 147975879
+    },
+    {
+      "archive": "iw_imagestripped_03.iwd",
+      "entry_count": 32,
+      "hash_size": 64,
+      "client_checksum": 4274146048
+    },
+    {
+      "archive": "iw_imagestripped_02.iwd",
+      "entry_count": 724,
+      "hash_size": 1024,
+      "client_checksum": 3969941786
+    },
+    {
+      "archive": "iw_imagestripped_01.iwd",
+      "entry_count": 5492,
+      "hash_size": 2048,
+      "client_checksum": 1827636718
+    },
+    {
+      "archive": "iw_imagestripped_00.iwd",
+      "entry_count": 8128,
+      "hash_size": 2048,
+      "client_checksum": 1118625959
+    },
+    {
+      "archive": "iw_config_00.iwd",
+      "entry_count": 1,
+      "hash_size": 2,
+      "client_checksum": 4258120672
+    },
+    {
+      "archive": "localized_chinese_iw_sound_02.iwd",
+      "entry_count": 31,
+      "hash_size": 32,
+      "client_checksum": 1591629186
+    },
+    {
+      "archive": "localized_chinese_iw_sound_01.iwd",
+      "entry_count": 40,
+      "hash_size": 64,
+      "client_checksum": 3016167141
+    },
+    {
+      "archive": "localized_chinese_iw_sound_00.iwd",
+      "entry_count": 7632,
+      "hash_size": 2048,
+      "client_checksum": 1569355201
+    },
+    {
+      "archive": "localized_chinese_iw_image_01.iwd",
+      "entry_count": 3,
+      "hash_size": 4,
+      "client_checksum": 221245010
+    },
+    {
+      "archive": "localized_chinese_iw_image_00.iwd",
+      "entry_count": 45,
+      "hash_size": 64,
+      "client_checksum": 1224680605
+    },
+    {
+      "archive": "localized_chinese_iw_imagestripped_01.iwd",
+      "entry_count": 3,
+      "hash_size": 4,
+      "client_checksum": 221245010
+    },
+    {
+      "archive": "localized_chinese_iw_imagestripped_00.iwd",
+      "entry_count": 45,
+      "hash_size": 64,
+      "client_checksum": 1224680605
+    }
+  ]
+}

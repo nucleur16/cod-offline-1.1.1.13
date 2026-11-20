@@ -1,0 +1,10 @@
+{
+  "current_native_rawfiles_pin": "e37a77d2ed0aa99d4310da5a7cc7c7f8e74bdc6f",
+  "incoming_native_main_rawfiles_pin": "3f91e86c49b3a892cf7657351ee72cc7490518b2",
+  "raw_pr1_head": "c67753856df1011fb7caada14101bacfdcfacc60",
+  "main_commits_missing_from_raw_pr1": [
+    "3f91e86c49b3a892cf7657351ee72cc7490518b2 top players: a ranked player who never spawned no longer breaks the spawn logic"
+  ],
+  "worktrees_modified": false,
+  "pin_resolution": "parent authorized explicit preservation of e37; parent will integrate the upstream raw commit separately"
+}

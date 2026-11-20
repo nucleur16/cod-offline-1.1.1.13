@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<B3Status Time="Tue Sep 15 11:19:45 2026" TimeStamp="1789485585">
+     <Game CapatureLimit="" FragLimit="" Map="mp_killhouse_sh" MapTime="" Name="cod4" RoundTime="" Rounds="" TimeLimit="" Type="war">
+           <Data Name="g_compassShowEnemies" Value="0"></Data>
+           <Data Name="sv_mapname" Value=""></Data>
+           <Data Name="gamename" Value="Call of Duty Online Closed Alpha Server"></Data>
+           <Data Name="sv_floodprotect" Value="4"></Data>
+           <Data Name="sv_maxRate" Value="100000"></Data>
+           <Data Name="sv_maxclients" Value="16"></Data>
+           <Data Name="mapname" Value="mp_killhouse_sh"></Data>
+           <Data Name="uptime" Value="8 hours"></Data>
+           <Data Name="g_mapStartTime" Value="Tue Sep 15 11:14:31 2026"></Data>
+           <Data Name="sv_voice" Value="0"></Data>
+           <Data Name="sv_disableClientConsole" Value="0"></Data>
+           <Data Name="sv_maxPing" Value="0"></Data>
+           <Data Name="sv_minPing" Value="0"></Data>
+           <Data Name="sv_hostname" Value="sh1x server"></Data>
+           <Data Name="sv_privateClients" Value="0"></Data>
+           <Data Name="protocol" Value="187"></Data>
+           <Data Name="_sh1x" Value="Call of Duty Online Closed Alpha Server"></Data>
+           <Data Name="sv_pure" Value="0"></Data>
+           <Data Name="fs_game" Value=""></Data>
+           <Data Name="revision" Value="11e5f6f6a4782f8ed43f5e052b128433cd2421ae"></Data>
+           <Data Name="branch" Value="main"></Data>
+           <Data Name="build" Value="1228"></Data>
+           <Data Name="shortversion" Value="-"></Data>
+           <Data Name="version" Value="sh1x server - Call of Duty Online Closed Alpha Server - win_mingw-x86-custom build 1228 Sep 15 2026"></Data>
+           <Data Name="g_gametype" Value="war"></Data>
+           <Data Name="pswrd" Value="0"></Data>
+           <Data Name="sv_type" Value="1"></Data>
+     </Game>
+     <Clients Total="4">
+           <Client CID="0" ColorName="Training 1" DBID="0" IP="bot" ID="0" Score="" Kills="" Deaths="" Assists="" Ping="" Team="" TeamName="Connecting..." Updated="Tue Sep 15 11:19:45 2026" power="" rank=""></Client>
+           <Client CID="1" ColorName="Training 2" DBID="0" IP="bot" ID="0" Score="540" Kills="5" Deaths="6" Assists="2" Ping="0" Team="2" TeamName="MP_TASKFORCE_SHORT_NAME" Updated="Tue Sep 15 11:19:45 2026" power="0" rank="1"></Client>
+           <Client CID="2" ColorName="Training 3" DBID="0" IP="bot" ID="0" Score="200" Kills="2" Deaths="4" Assists="0" Ping="0" Team="2" TeamName="MP_TASKFORCE_SHORT_NAME" Updated="Tue Sep 15 11:19:45 2026" power="0" rank="1"></Client>
+           <Client CID="3" ColorName="Training 4" DBID="0" IP="bot" ID="0" Score="1000" Kills="10" Deaths="7" Assists="0" Ping="0" Team="1" TeamName="MP_OPFORCE_COMPOSITE_SHORT_NAME" Updated="Tue Sep 15 11:19:45 2026" power="0" rank="1"></Client>
+     </Clients>
+</B3Status>

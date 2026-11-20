@@ -1,0 +1,141 @@
+{
+  "animation_reference": {
+    "actual_compiled_C_functions": [
+      "CODOL_Scr_GetAnimTime",
+      "anim_param",
+      "anim_receiver",
+      "anim_receiver_at",
+      "anim_has_time",
+      "CODOL_ServerAnimTreeCount"
+    ],
+    "boundary_doubles": [
+      "entity/DObj ownership",
+      "script-model eligibility",
+      "VM exception transfer and result emission",
+      "asset-default diagnostic query"
+    ],
+    "corrected_native_cases_each_profile": 24,
+    "donor_expected_SIGSEGV_cases": [
+      12,
+      13
+    ],
+    "donor_leaf_sha256": "f583cac7483e9831ff4bc9536627c30e719f18d1cdfe093412ada7aa926ad100",
+    "donor_native_sha256": "c8a953ad966c7f80e9aea38a44499fc1de8d71f2460b511e74e010507629961a",
+    "donor_valid_phase_passed": true,
+    "fixture_source_sha256": "b93651ad03d6d4835176f6cfccabf947825bbd0641f78e2bf5c66730baa60a19",
+    "original_regression_receipt_sha256": "e73f2e4b0f90989d50cdf2a6d1ed766cb08d4449ab6583c3632d3eba95d0b918",
+    "original_runner_sha256": "34b6a5b958a6c195f45a7f8ce5fd843929bc43b4c00440a60324ff9ff0f8dadb",
+    "real_GSC_VM_execution": false,
+    "retained_function_body_sha256": {
+      "Scr_GetAnim": "69efb7bd38ae9fc01df998c20dacb7ea0232a06a920ec87987fb2c05e3018a75",
+      "Scr_GetAnims": "bbbc0448d58abc442c6bae4cde38bf2e041a42f7a8be54c4fc55b973e3cbf278",
+      "XAnimGetAnimDebugName": "cdaf2e64a179f5e65160c9546b7e07d5089ddc6ba1b4d9d64f15781615a013fb",
+      "XAnimGetAnimTreeDebugName": "e2d21ad6a5d96caa19cca8a97cd769f6b7fd879d69c56c41d3f6876d3d0cf68c",
+      "XAnimGetAnims": "684d57c45fc6b49b6f6edb6e382a03fa67ff7623a7ee0a6a783681565cecb370",
+      "XAnimGetInfoIndex_r": "9fabebb7ff9ac4aa962e1383b5b42f2b26b9498858656554a332e5765e94bc2d",
+      "XAnimGetTime": "80dc08584bd02d8cf1594aa9b0540098c79348125a9b3052cbdc26519d733c4d"
+    }
+  },
+  "builder_image": "sha256:bb151123b61a808c03cd82d011aedeba1a54c7c6b55c521a5540daef0c76b6d7",
+  "documentation_preparation_changed_source_profile_code_or_runtime": false,
+  "external_script_package": {
+    "changed_member": "scripts/animscripts/zombie_move.gsc",
+    "iwd_sha256": "76d3f4dde7a4a6b4af54752f03cc072fa4331772e864fe406a1b85ade90d4a60",
+    "native_safety_alone_is_gameplay_acceptance": false,
+    "preserved_rawfiles_gitlink": "e37a77d2ed0aa99d4310da5a7cc7c7f8e74bdc6f",
+    "role": "separately reviewed Zombies caller package; not equivalent to rawfiles gitlink"
+  },
+  "feature_parent": "ab21a3699496eb2af6df622c85cada6174b4460d",
+  "historical_qualification": {
+    "applies_to": "4d4dd320/e43bcfa4 before unsigned and animation safety corrections",
+    "path": "docs/releases/native-upstream-8458-20261023/qualification.json",
+    "sha256": "94ba7e91508cad04c32dec51c2153a3e060c6ac376e1fbfc23a4d78d264796fc"
+  },
+  "narrow_C1_receipt_sha256": "177c9929cd1bfdd44d3ee60e887e7c0e90f8d93452c0a8703c666c8efbe77b58",
+  "native_libraries": {
+    "libmbedcrypto.a": "2190ed68323aeca5beff2b9a64f9fe490c13aee1fc9723798f809c8265777e27",
+    "libmbedtls.a": "d3ff152a926f25fa9a4502d347f4ca7bc1686e1bcfc5eb081640608994d6b0f8",
+    "libmbedx509.a": "98a3ecaea3fae6f337024d7a55713d8aa93c50b5b909ad7e2baa1f17c98ed040",
+    "libtomcrypt.a": "7a19b80724876ff3ce8d95b5ce83a355b3a81c194c49518cbbb95d7ecfd8d3f0"
+  },
+  "new_portable_wrapper_executed": false,
+  "production_release_acceptance": false,
+  "profile_manifest_sha256": "25e7f9bb05e7dd2e3dd34fe171c8537efcf071fb1650eede73eb50a28716885f",
+  "profiles": {
+    "normal": {
+      "animation_leaf_sha256": "af05922c9c708896762d24d6adaed4628822a351ce9cc6552e955d4f98320f2e",
+      "build_exit_code": 0,
+      "code_manifest_sha256": "b6f881ea22d40775857852ca9b8ffe46f396321eb1e316ddf839e0660846fcd3",
+      "compiled_input_archive_sha256": "5cdc75c33ea9d8415a2c34e8a91dae5c5595c8e3a15c1bf676600822e35e3296",
+      "compiled_input_manifest_sha256": "f30c1ce5ebf8977c54532d08d1bc72a495f3c23c410f63646c462025e177fe0a",
+      "compiler_input_files": 1717,
+      "compiler_sha256": "70a154df1d1d0498e098ef6fbdac57f6525b780b1ac6360b954a0c15017788fa",
+      "full_build_log_sha256": "57959e1ccaa79e3323e442dcd0e1731d615740a16d014a3f8f4e95ba2def9d42",
+      "native_sha256": "92eb66e3730ced32cf921e2856df44b04a4caabd0e402020a24257819c0e0fda",
+      "real_C1_acceptance": "PENDING"
+    },
+    "zombies": {
+      "animation_leaf_sha256": "e2ff252cc68f6fcf2998f3b8e03d03a667ef10a57e93435f0eb985d117cb06be",
+      "build_exit_code": 0,
+      "code_manifest_sha256": "3cdf563ecc544c0f60ad995f9be9b91c8ef0211deb3780d60be14ac1f5f70fb3",
+      "compiled_input_archive_sha256": "5e806c8b2e1312a483a000f767bd835d1c7adad9074e894354026518e6c0983b",
+      "compiled_input_manifest_sha256": "75beb171ae43cc787ee64f315c26428b336205a1b3e33f45459075b5f7b6d440",
+      "compiler_input_files": 1729,
+      "compiler_sha256": "70a154df1d1d0498e098ef6fbdac57f6525b780b1ac6360b954a0c15017788fa",
+      "full_build_log_sha256": "7c8b0dc04de6e677be0a6eefaea494a3fc041416620b4b02d34afe8c4a5c17dd",
+      "narrow_C1_receipt": "docs/releases/native-parity-safety-20261023/zombies-narrow-C1.json",
+      "native_sha256": "4a226c41e6b734a2dce24210bcb51749f152adc41499a66db01c7f68d6bc4d50",
+      "real_C1_acceptance": "NARROW_LOCAL_START_RESULTS_RETURN_PASS; full stability/release pending"
+    }
+  },
+  "real_C1_acceptance_on_current_pair": "Zombies narrow local pass; normal and full release qualification pending",
+  "required_make_variables": {
+    "BUILD_BRANCH": "unified-native-review",
+    "BUILD_NUMBER": "1",
+    "BUILD_REVISION": "8458-plus-preserved-private",
+    "EXTERNAL": "",
+    "GAME": "codol",
+    "LIB_DIR": "lib-native",
+    "LOCAL_TEST": "0"
+  },
+  "routing": {
+    "coop": "normal",
+    "mp": "normal",
+    "zm": "zombies"
+  },
+  "schema": "codol-native-parity-safety-20261023-v1",
+  "source_binding": {
+    "external_completion_sha256": "a4172adfbfe0ebd27f36b0b301c33704af6c5ae9f906949a45f73da267207dc3",
+    "normal_all_1717_compiler_inputs_verified": true,
+    "normal_code_manifest_sha256": "b6f881ea22d40775857852ca9b8ffe46f396321eb1e316ddf839e0660846fcd3",
+    "zombies_all_1729_compiler_inputs_verified": true,
+    "zombies_code_manifest_sha256": "3cdf563ecc544c0f60ad995f9be9b91c8ef0211deb3780d60be14ac1f5f70fb3",
+    "zombies_delta_sha256": "0a6eb65e0a5945042b1ecebda811b564ce8d6eb2312729743d9e235dd8f2954c"
+  },
+  "unsigned_archive": {
+    "archive_bytes": 7265557,
+    "archive_sha256": "d6782be634d3f6357d02c4783b1175b7fb7b740580bc00d6deabefeb89ff23fc",
+    "corrected_exit_code": 0,
+    "corrected_loader_sha256": "7d94ac2428fef4021b491b3e726e17ffc4ce42c0844b603a876d7b5c23ed6db8",
+    "corrected_result": {
+      "accepted": true,
+      "assets": 1341,
+      "rawfiles_validated": 2,
+      "strings": 701,
+      "zone_bytes": 11521174,
+      "zone_sha256": "52d2cc8cfbef8cae5a2b014001910bb28e4eb68d081c13a225816393b15f1254"
+    },
+    "donor_exit_code": 1,
+    "donor_loader_sha256": "92b97d643a70bf72de2b4ff29c171e6b1c16f39a9634499b5fdd57db736adc7c",
+    "donor_native_sha256": "e43bcfa4dffc6b7e6c43e1160ca78ecd76666ea9f297b5dbe85d3f72018a2bf1",
+    "encrypted_body_bytes": 261867,
+    "key_input_sha256": "d8211b2bb030a055cac9cd641bf518968bff3fd58ab51c6e950465124734ba60",
+    "key_material_logged": false,
+    "original_completion_sha256": "bdf744ff915af298df650e1835a42611f4223b3d3b66cf7480a40a77fae17843",
+    "original_runner_sha256": "542e9e0440aedcabac6b206d12d50e3d6280dafe876fc800ff2caaf0f44dc636",
+    "plaintext_remainder_bytes": 7003413,
+    "same_loader_bytes_in_both_current_profiles": true,
+    "standalone_probe_sha256": "a5ea159ed42ac5b95ace626166000205d52beb9c417da89df5db49dde5ae2008"
+  },
+  "upstream_main": "8458d68306f3d2c3b768f6d50836b55625c2a6fd"
+}

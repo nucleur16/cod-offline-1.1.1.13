@@ -1,0 +1,162 @@
+{
+  "native_base": "789e5779",
+  "raw_base": "f05ed0c",
+  "binary_before_sha256": "583EB8484C5B73620C2E0650CBEF663E0EDB33C108AEEDFEA16EB7CA04571275",
+  "binary_after_sha256": "448ba91deba7623110973ecc54abb48d2492fdd7ea54ed471eb3115e40e1a98c",
+  "host_after_sha256": "6bf65c76117b0dd1e881057c538e4a4c53cf60cab19ec82ffbb350d570084c3e",
+  "records": [
+    {
+      "phase": "before",
+      "map": "zm_factory_sh",
+      "pid": 58476,
+      "port": 17761,
+      "ready": true,
+      "errors": [],
+      "owned_shutdown_exit_code": 0,
+      "purchases": [
+        "CoDOL blockertest: buy client 0 on ent 518 (zombie_debris (1050, -1007, 194)) score before 2000 cost 1000",
+        "CoDOL blockertest: after buy client 0 score 2000 (charged 0)",
+        "CoDOL blockertest: buy client 0 on ent 520 (zombie_debris (-422, -1043, 242)) score before 2000 cost 1000",
+        "CoDOL blockertest: after buy client 0 score 2000 (charged 0)",
+        "CoDOL blockertest: buy client 0 on ent 498 (zombie_door (265, -1970, 143)) score before 2000 cost 1000",
+        "CoDOL blockertest: after buy client 0 score 2000 (charged 0)"
+      ],
+      "gates": []
+    },
+    {
+      "phase": "before",
+      "map": "zm_sumpf_sh",
+      "pid": 82912,
+      "port": 17761,
+      "ready": true,
+      "errors": [],
+      "owned_shutdown_exit_code": 0,
+      "purchases": [
+        "CoDOL blockertest: buy client 0 on ent 115 (zombie_debris (10100, 372, -498)) score before 2000 cost 1000",
+        "CoDOL blockertest: after buy client 0 score 2000 (charged 0)",
+        "CoDOL blockertest: buy client 0 on ent 122 (zombie_debris (9952, 372, -601)) score before 2000 cost 1000",
+        "CoDOL blockertest: after buy client 0 score 2000 (charged 0)",
+        "CoDOL blockertest: buy client 0 on ent 116 (zombie_door (9531, 259, -606)) score before 2000 cost 1000",
+        "CoDOL blockertest: after buy client 0 score 2000 (charged 0)"
+      ],
+      "gates": []
+    },
+    {
+      "phase": "before",
+      "map": "zm_theater_sh",
+      "pid": 119144,
+      "port": 17761,
+      "ready": true,
+      "errors": [],
+      "owned_shutdown_exit_code": 0,
+      "purchases": [
+        "CoDOL blockertest: buy client 0 on ent 74 (zombie_door (-830, 1274, 35)) score before 2000 cost 1250",
+        "CoDOL blockertest: after buy client 0 score 2000 (charged 0)",
+        "CoDOL blockertest: buy client 0 on ent 75 (zombie_door (-1155, 1430, 222)) score before 2000 cost 1250",
+        "CoDOL blockertest: after buy client 0 score 2000 (charged 0)",
+        "CoDOL blockertest: buy client 0 on ent 76 (zombie_door (582, -641, 374)) score before 2000 cost 750",
+        "CoDOL blockertest: after buy client 0 score 2000 (charged 0)"
+      ],
+      "gates": []
+    },
+    {
+      "phase": "after",
+      "map": "zm_factory_sh",
+      "pid": 121852,
+      "port": 17761,
+      "ready": true,
+      "errors": [],
+      "owned_shutdown_exit_code": 0,
+      "purchases": [
+        "CoDOL blockertest: buy client 0 on ent 518 (zombie_debris (1050, -1007, 194)) score before 2000 cost 1000",
+        "CoDOL blockertest: after buy client 0 score 1000 (charged 1000)",
+        "CoDOL blockertest: buy client 0 on ent 520 (zombie_debris (-422, -1043, 242)) score before 1000 cost 1000",
+        "CoDOL blockertest: after buy client 0 score 0 (charged 1000)",
+        "CoDOL blockertest: buy client 0 on ent 498 (zombie_door (265, -1970, 143)) score before 1500 cost 1000",
+        "CoDOL blockertest: after buy client 0 score 500 (charged 1000)"
+      ],
+      "gates": [
+        "CoDOL blockertest: gates use 1 alive 1 valid 1 revive 0 state playing",
+        "CoDOL blockertest: gates use 1 alive 1 valid 1 revive 0 state playing",
+        "CoDOL blockertest: gates use 1 alive 1 valid 1 revive 0 state playing"
+      ]
+    },
+    {
+      "phase": "after",
+      "map": "zm_sumpf_sh",
+      "pid": 118416,
+      "port": 17761,
+      "ready": true,
+      "errors": [],
+      "owned_shutdown_exit_code": 0,
+      "purchases": [
+        "CoDOL blockertest: buy client 0 on ent 115 (zombie_debris (10100, 372, -498)) score before 2000 cost 1000",
+        "CoDOL blockertest: after buy client 0 score 1000 (charged 1000)",
+        "CoDOL blockertest: buy client 0 on ent 116 (zombie_door (9531, 259, -606)) score before 1000 cost 1000",
+        "CoDOL blockertest: after buy client 0 score 0 (charged 1000)"
+      ],
+      "gates": [
+        "CoDOL blockertest: gates use 1 alive 1 valid 1 revive 0 state playing",
+        "CoDOL blockertest: gates use 1 alive 1 valid 1 revive 0 state playing"
+      ]
+    },
+    {
+      "phase": "after",
+      "map": "zm_theater_sh",
+      "pid": 122472,
+      "port": 17761,
+      "ready": true,
+      "errors": [],
+      "owned_shutdown_exit_code": 0,
+      "purchases": [
+        "CoDOL blockertest: buy client 0 on ent 74 (zombie_door (-830, 1274, 35)) score before 2000 cost 1250",
+        "CoDOL blockertest: after buy client 0 score 750 (charged 1250)",
+        "CoDOL blockertest: buy client 0 on ent 76 (zombie_door (582, -641, 374)) score before 750 cost 750",
+        "CoDOL blockertest: after buy client 0 score 0 (charged 750)"
+      ],
+      "gates": [
+        "CoDOL blockertest: gates use 1 alive 1 valid 1 revive 0 state playing",
+        "CoDOL blockertest: gates use 1 alive 1 valid 1 revive 0 state playing"
+      ]
+    }
+  ],
+  "repeat_tool_results": [
+    {
+      "map": "zm_factory_sh",
+      "pid": 8176,
+      "binary_sha256": "448ba91deba7623110973ecc54abb48d2492fdd7ea54ed471eb3115e40e1a98c",
+      "ready": true,
+      "errors": [],
+      "owned_shutdown_exit_code": 0,
+      "purchases": [
+        "CoDOL blockertest: after buy client 0 score 1000 (charged 1000)",
+        "CoDOL blockertest: after buy client 0 score 0 (charged 1000)",
+        "CoDOL blockertest: after buy client 0 score 500 (charged 1000)"
+      ]
+    },
+    {
+      "map": "zm_sumpf_sh",
+      "pid": 122360,
+      "binary_sha256": "448ba91deba7623110973ecc54abb48d2492fdd7ea54ed471eb3115e40e1a98c",
+      "ready": true,
+      "errors": [],
+      "owned_shutdown_exit_code": 0,
+      "purchases": [
+        "CoDOL blockertest: after buy client 0 score 1000 (charged 1000)",
+        "CoDOL blockertest: after buy client 0 score 0 (charged 1000)"
+      ]
+    },
+    {
+      "map": "zm_theater_sh",
+      "pid": 5416,
+      "binary_sha256": "448ba91deba7623110973ecc54abb48d2492fdd7ea54ed471eb3115e40e1a98c",
+      "ready": true,
+      "errors": [],
+      "owned_shutdown_exit_code": 0,
+      "purchases": [
+        "CoDOL blockertest: after buy client 0 score 750 (charged 1250)",
+        "CoDOL blockertest: after buy client 0 score 0 (charged 750)"
+      ]
+    }
+  ]
+}

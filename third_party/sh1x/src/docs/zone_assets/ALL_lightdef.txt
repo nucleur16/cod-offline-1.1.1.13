@@ -1,0 +1,29 @@
+fogConsts	mp_storm_spring	~
+fogSunColorLinear	mp_underpass
+fogSunColorLinear	zm_asylum_sh
+fogSunConsts	mp_underpass
+fogSunConsts	zm_asylum_sh
+light_dynamic	code_post_gfx_default_mp
+light_no_falloff	mp_cross_fire
+light_point_linear	code_post_gfx_mp
+light_point_linear	mp_afghan	~
+light_point_linear	mp_bloc_sh	~
+light_point_linear	mp_cargoship_sh	~
+light_point_linear	mp_crash_intro
+light_point_linear	mp_crash_tropical	~
+light_point_linear	mp_cross_fire
+light_point_linear	mp_estate_tropical
+light_point_linear	mp_killhouse_sh	~
+light_point_linear	ui_viewer_mp	~
+light_point_linear	zm_zombie_training	~
+light_point_quadratic	mp_crash_intro
+light_point_quadratic	mp_crash_tropical	~
+light_point_quadratic	mp_estate_tropical
+lightingLookupScale	mp_fav_tropical
+maps/mp/mp_rust.d3dbsp	mp_rust
+PLATFORM_HOLD_TO_USE	mp_overgrown	~
+tungsten_lamp	mp_afghan	~
+vs_3_0	mp_nuked
+weap_ammo_pickup	zm_prototype_sh
+weap_pickup	zm_prototype_sh
+worldMatrix	mp_nuked

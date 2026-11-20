@@ -1,0 +1,21 @@
+* text=lf
+
+# Preserve exact native profile compiler-input bytes, including inherited CRLF.
+/src/** -text
+/plugins/** -text
+/assets/** -text
+/dis/** -text
+/lib/** -text
+/makefile -text
+/version_make_progress.sh -text
+/Copyright.md -text
+/License.md -text
+/copying.md -text
+/native_profiles/** -text
+
+# Unified-diff context markers preserve exact profile source bytes.
+/native_profiles/zombies.patch -whitespace
+
+# Preserve frozen CRLF tail-owner bytes while keeping ordinary whitespace checks.
+/src/online/net/persistent_tail.c whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/src/online/net/persistent_tail.h whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

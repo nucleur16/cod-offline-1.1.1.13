@@ -1,0 +1,1351 @@
+{
+  "name": "mp/clientmatchdata.def",
+  "bytes": 2654,
+  "exact_end": true,
+  "definitions": [
+    {
+      "version": 16,
+      "format_checksum": 1071102893,
+      "root_type_words": [
+        5,
+        0
+      ],
+      "size": 858,
+      "enums": [
+        {
+          "words": [
+            113,
+            113,
+            4294967295
+          ],
+          "members": [
+            {
+              "name": null,
+              "name_reference": 806711877,
+              "words": [
+                46
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806711886,
+              "words": [
+                92
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806711890,
+              "words": [
+                14
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806711901,
+              "words": [
+                34
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806711913,
+              "words": [
+                27
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806711921,
+              "words": [
+                6
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806711929,
+              "words": [
+                42
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806711941,
+              "words": [
+                100
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806711958,
+              "words": [
+                102
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806711971,
+              "words": [
+                98
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806711984,
+              "words": [
+                97
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806711997,
+              "words": [
+                40
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712012,
+              "words": [
+                22
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712020,
+              "words": [
+                24
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712034,
+              "words": [
+                81
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712050,
+              "words": [
+                66
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712060,
+              "words": [
+                64
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712071,
+              "words": [
+                3
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712082,
+              "words": [
+                4
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 805332508,
+              "words": [
+                11
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712094,
+              "words": [
+                58
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712106,
+              "words": [
+                62
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712123,
+              "words": [
+                39
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712138,
+              "words": [
+                84
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712157,
+              "words": [
+                86
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712164,
+              "words": [
+                10
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712174,
+              "words": [
+                109
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712191,
+              "words": [
+                106
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712205,
+              "words": [
+                108
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712218,
+              "words": [
+                107
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712232,
+              "words": [
+                20
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712244,
+              "words": [
+                19
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712255,
+              "words": [
+                21
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712265,
+              "words": [
+                75
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712280,
+              "words": [
+                8
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712293,
+              "words": [
+                2
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712303,
+              "words": [
+                15
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712315,
+              "words": [
+                45
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712331,
+              "words": [
+                54
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712342,
+              "words": [
+                47
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712355,
+              "words": [
+                104
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712367,
+              "words": [
+                105
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712380,
+              "words": [
+                91
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712388,
+              "words": [
+                55
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712398,
+              "words": [
+                69
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712413,
+              "words": [
+                68
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712432,
+              "words": [
+                60
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712448,
+              "words": [
+                61
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712471,
+              "words": [
+                79
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 805332495,
+              "words": [
+                12
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712488,
+              "words": [
+                101
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712507,
+              "words": [
+                110
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712526,
+              "words": [
+                111
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712541,
+              "words": [
+                112
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712553,
+              "words": [
+                77
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712564,
+              "words": [
+                1
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712575,
+              "words": [
+                5
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712586,
+              "words": [
+                49
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712603,
+              "words": [
+                48
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712618,
+              "words": [
+                76
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712630,
+              "words": [
+                36
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712643,
+              "words": [
+                30
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712652,
+              "words": [
+                67
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712664,
+              "words": [
+                44
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712674,
+              "words": [
+                50
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712689,
+              "words": [
+                74
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712705,
+              "words": [
+                82
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712724,
+              "words": [
+                78
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712731,
+              "words": [
+                59
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712746,
+              "words": [
+                70
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712758,
+              "words": [
+                72
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712773,
+              "words": [
+                71
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712783,
+              "words": [
+                83
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712800,
+              "words": [
+                80
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712816,
+              "words": [
+                9
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712826,
+              "words": [
+                16
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712830,
+              "words": [
+                56
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712839,
+              "words": [
+                57
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 805323894,
+              "words": [
+                0
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712853,
+              "words": [
+                51
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712870,
+              "words": [
+                17
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712879,
+              "words": [
+                93
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712891,
+              "words": [
+                32
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712907,
+              "words": [
+                7
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712919,
+              "words": [
+                103
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712934,
+              "words": [
+                65
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712944,
+              "words": [
+                38
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712953,
+              "words": [
+                43
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712961,
+              "words": [
+                41
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712974,
+              "words": [
+                28
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712986,
+              "words": [
+                88
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806712998,
+              "words": [
+                23
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713010,
+              "words": [
+                85
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713023,
+              "words": [
+                95
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713036,
+              "words": [
+                94
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713048,
+              "words": [
+                53
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713061,
+              "words": [
+                52
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713075,
+              "words": [
+                35
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713092,
+              "words": [
+                29
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713105,
+              "words": [
+                33
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713118,
+              "words": [
+                26
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713127,
+              "words": [
+                37
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713143,
+              "words": [
+                31
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713155,
+              "words": [
+                63
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713166,
+              "words": [
+                87
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713175,
+              "words": [
+                18
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713184,
+              "words": [
+                99
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713201,
+              "words": [
+                89
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713214,
+              "words": [
+                96
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713225,
+              "words": [
+                25
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713244,
+              "words": [
+                90
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713257,
+              "words": [
+                73
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713268,
+              "words": [
+                13
+              ]
+            }
+          ]
+        },
+        {
+          "words": [
+            3,
+            3,
+            4294967295
+          ],
+          "members": [
+            {
+              "name": null,
+              "name_reference": 805323894,
+              "words": [
+                0
+              ]
+            },
+            {
+              "name": "shadow_company",
+              "name_reference": 4294967295,
+              "words": [
+                2
+              ]
+            },
+            {
+              "name": "taskforce_141",
+              "name_reference": 4294967295,
+              "words": [
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "words": [
+            4,
+            4,
+            4294967295
+          ],
+          "members": [
+            {
+              "name": null,
+              "name_reference": 806713305,
+              "words": [
+                2
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713312,
+              "words": [
+                3
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806713317,
+              "words": [
+                1
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 805323894,
+              "words": [
+                0
+              ]
+            }
+          ]
+        }
+      ],
+      "structs": [
+        {
+          "words": [
+            5,
+            4294967295,
+            858,
+            0,
+            246
+          ],
+          "members": [
+            {
+              "name": "highlightCount",
+              "name_reference": 4294967295,
+              "words": [
+                1,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "name": "highlights",
+              "name_reference": 4294967295,
+              "words": [
+                6,
+                1,
+                1,
+                0,
+                0
+              ]
+            },
+            {
+              "name": "players",
+              "name_reference": 4294967295,
+              "words": [
+                6,
+                0,
+                55,
+                0,
+                0
+              ]
+            },
+            {
+              "name": "scoreboardPlayerCount",
+              "name_reference": 4294967295,
+              "words": [
+                1,
+                0,
+                169,
+                0,
+                0
+              ]
+            },
+            {
+              "name": "scoreboards",
+              "name_reference": 4294967295,
+              "words": [
+                7,
+                0,
+                170,
+                0,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "words": [
+            3,
+            4294967295,
+            7,
+            0,
+            3
+          ],
+          "members": [
+            {
+              "name": null,
+              "name_reference": 806714833,
+              "words": [
+                4,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "name": "clientId",
+              "name_reference": 4294967295,
+              "words": [
+                1,
+                0,
+                1,
+                0,
+                0
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 806714839,
+              "words": [
+                0,
+                0,
+                2,
+                0,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "words": [
+            6,
+            4294967295,
+            34,
+            0,
+            6
+          ],
+          "members": [
+            {
+              "name": null,
+              "name_reference": 806711921,
+              "words": [
+                9,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 805332508,
+              "words": [
+                9,
+                0,
+                1,
+                0,
+                0
+              ]
+            },
+            {
+              "name": "faction",
+              "name_reference": 4294967295,
+              "words": [
+                4,
+                1,
+                2,
+                0,
+                0
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 805332495,
+              "words": [
+                9,
+                0,
+                3,
+                0,
+                0
+              ]
+            },
+            {
+              "name": null,
+              "name_reference": 805333111,
+              "words": [
+                0,
+                0,
+                4,
+                0,
+                0
+              ]
+            },
+            {
+              "name": "xuid",
+              "name_reference": 4294967295,
+              "words": [
+                3,
+                22,
+                5,
+                0,
+                0
+              ]
+            }
+          ]
+        }
+      ],
+      "indexed_arrays": [
+        [
+          19,
+          5,
+          2,
+          34
+        ],
+        [
+          18,
+          5,
+          1,
+          7
+        ],
+        [
+          19,
+          1,
+          0,
+          1
+        ]
+      ],
+      "enum_arrays": [
+        [
+          2,
+          6,
+          2,
+          19
+        ]
+      ],
+      "trailing_words": [
+        654,
+        655,
+        657,
+        658,
+        662,
+        664,
+        665,
+        669,
+        671,
+        672,
+        676,
+        678,
+        679,
+        683,
+        685,
+        686,
+        690,
+        692,
+        693,
+        697,
+        699,
+        700,
+        704,
+        706,
+        707,
+        711,
+        713,
+        714,
+        718,
+        720,
+        721,
+        725,
+        727,
+        728,
+        732,
+        734,
+        735,
+        739,
+        741,
+        742,
+        746,
+        748,
+        749,
+        753,
+        755,
+        756,
+        760,
+        762,
+        763,
+        767,
+        769,
+        770,
+        774,
+        776,
+        777,
+        36,
+        38,
+        40,
+        34,
+        30,
+        8,
+        70,
+        72,
+        74,
+        68,
+        64,
+        42,
+        104,
+        106,
+        108,
+        102,
+        98,
+        76,
+        138,
+        140,
+        142,
+        136,
+        132,
+        110,
+        172,
+        174,
+        176,
+        170,
+        166,
+        144,
+        206,
+        208,
+        210,
+        204,
+        200,
+        178,
+        240,
+        242,
+        244,
+        238,
+        234,
+        212,
+        274,
+        276,
+        278,
+        272,
+        268,
+        246,
+        308,
+        310,
+        312,
+        306,
+        302,
+        280,
+        342,
+        344,
+        346,
+        340,
+        336,
+        314,
+        376,
+        378,
+        380,
+        374,
+        370,
+        348,
+        410,
+        412,
+        414,
+        408,
+        404,
+        382,
+        444,
+        446,
+        448,
+        442,
+        438,
+        416,
+        478,
+        480,
+        482,
+        476,
+        472,
+        450,
+        512,
+        514,
+        516,
+        510,
+        506,
+        484,
+        546,
+        548,
+        550,
+        544,
+        540,
+        518,
+        580,
+        582,
+        584,
+        578,
+        574,
+        552,
+        614,
+        616,
+        618,
+        612,
+        608,
+        586,
+        648,
+        650,
+        652,
+        646,
+        642,
+        620,
+        781,
+        820,
+        821,
+        822,
+        823,
+        824,
+        825,
+        826,
+        827,
+        828,
+        829,
+        830,
+        831,
+        832,
+        833,
+        834,
+        835,
+        836,
+        837,
+        838,
+        839,
+        840,
+        841,
+        842,
+        843,
+        844,
+        845,
+        846,
+        847,
+        848,
+        849,
+        850,
+        851,
+        852,
+        853,
+        854,
+        855,
+        856,
+        857,
+        801,
+        802,
+        803,
+        804,
+        805,
+        806,
+        807,
+        808,
+        809,
+        810,
+        811,
+        812,
+        813,
+        814,
+        815,
+        816,
+        817,
+        818,
+        819,
+        782,
+        783,
+        784,
+        785,
+        786,
+        787,
+        788,
+        789,
+        790,
+        791,
+        792,
+        793,
+        794,
+        795,
+        796,
+        797,
+        798,
+        799,
+        800
+      ]
+    }
+  ],
+  "zone": "code_post_gfx_mp"
+}

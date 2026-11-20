@@ -1,0 +1,2 @@
+void	code_post_gfx_default_mp
+weapon_m82	patch_common_gametype_zm

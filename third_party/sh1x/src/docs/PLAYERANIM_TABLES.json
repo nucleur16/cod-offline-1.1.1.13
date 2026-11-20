@@ -1,0 +1,697 @@
+{
+  "sha256": "d990610732258b1d00dd6fe63d6691f294312a2e0562955a01ce16216115390d",
+  "tables": {
+    "states": {
+      "address": "0xcd8668",
+      "count": 1,
+      "entries": [
+        {
+          "index": 0,
+          "name": "combat",
+          "iw3_index": 0
+        }
+      ]
+    },
+    "movements": {
+      "address": "0xcd8678",
+      "count": 55,
+      "entries": [
+        {
+          "index": 0,
+          "name": "** unused **",
+          "iw3_index": 0
+        },
+        {
+          "index": 1,
+          "name": "idle",
+          "iw3_index": 1
+        },
+        {
+          "index": 2,
+          "name": "idlecr",
+          "iw3_index": 2
+        },
+        {
+          "index": 3,
+          "name": "idleprone",
+          "iw3_index": 3
+        },
+        {
+          "index": 4,
+          "name": "walk",
+          "iw3_index": 4
+        },
+        {
+          "index": 5,
+          "name": "walkbk",
+          "iw3_index": 5
+        },
+        {
+          "index": 6,
+          "name": "walkcr",
+          "iw3_index": 6
+        },
+        {
+          "index": 7,
+          "name": "walkcrbk",
+          "iw3_index": 7
+        },
+        {
+          "index": 8,
+          "name": "walkprone",
+          "iw3_index": 8
+        },
+        {
+          "index": 9,
+          "name": "walkpronebk",
+          "iw3_index": 9
+        },
+        {
+          "index": 10,
+          "name": "run",
+          "iw3_index": 10
+        },
+        {
+          "index": 11,
+          "name": "runbk",
+          "iw3_index": 11
+        },
+        {
+          "index": 12,
+          "name": "runcr",
+          "iw3_index": 12
+        },
+        {
+          "index": 13,
+          "name": "runcrbk",
+          "iw3_index": 13
+        },
+        {
+          "index": 14,
+          "name": "turnright",
+          "iw3_index": 14
+        },
+        {
+          "index": 15,
+          "name": "turnleft",
+          "iw3_index": 15
+        },
+        {
+          "index": 16,
+          "name": "turnrightcr",
+          "iw3_index": 16
+        },
+        {
+          "index": 17,
+          "name": "turnleftcr",
+          "iw3_index": 17
+        },
+        {
+          "index": 18,
+          "name": "climbup",
+          "iw3_index": 18
+        },
+        {
+          "index": 19,
+          "name": "climbdown",
+          "iw3_index": 19
+        },
+        {
+          "index": 20,
+          "name": "sprint",
+          "iw3_index": 20
+        },
+        {
+          "index": 21,
+          "name": "mantle_root",
+          "iw3_index": 21
+        },
+        {
+          "index": 22,
+          "name": "mantle_up_57",
+          "iw3_index": 22
+        },
+        {
+          "index": 23,
+          "name": "mantle_up_51",
+          "iw3_index": 23
+        },
+        {
+          "index": 24,
+          "name": "mantle_up_45",
+          "iw3_index": 24
+        },
+        {
+          "index": 25,
+          "name": "mantle_up_39",
+          "iw3_index": 25
+        },
+        {
+          "index": 26,
+          "name": "mantle_up_33",
+          "iw3_index": 26
+        },
+        {
+          "index": 27,
+          "name": "mantle_up_27",
+          "iw3_index": 27
+        },
+        {
+          "index": 28,
+          "name": "mantle_up_21",
+          "iw3_index": 28
+        },
+        {
+          "index": 29,
+          "name": "mantle_over_high",
+          "iw3_index": 29
+        },
+        {
+          "index": 30,
+          "name": "mantle_over_mid",
+          "iw3_index": 30
+        },
+        {
+          "index": 31,
+          "name": "mantle_over_low",
+          "iw3_index": 31
+        },
+        {
+          "index": 32,
+          "name": "flinch_forward",
+          "iw3_index": 32
+        },
+        {
+          "index": 33,
+          "name": "flinch_backward",
+          "iw3_index": 33
+        },
+        {
+          "index": 34,
+          "name": "flinch_left",
+          "iw3_index": 34
+        },
+        {
+          "index": 35,
+          "name": "flinch_right",
+          "iw3_index": 35
+        },
+        {
+          "index": 36,
+          "name": "stumble_forward",
+          "iw3_index": 36
+        },
+        {
+          "index": 37,
+          "name": "stumble_backward",
+          "iw3_index": 37
+        },
+        {
+          "index": 38,
+          "name": "stumble_walk_forward",
+          "iw3_index": 38
+        },
+        {
+          "index": 39,
+          "name": "stumble_walk_backward",
+          "iw3_index": 39
+        },
+        {
+          "index": 40,
+          "name": "stumble_crouch_forward",
+          "iw3_index": 40
+        },
+        {
+          "index": 41,
+          "name": "stumble_crouch_backward",
+          "iw3_index": 41
+        },
+        {
+          "index": 42,
+          "name": "stumble_sprint_forward",
+          "iw3_index": 42
+        },
+        {
+          "index": 43,
+          "name": "jumpdive_forward",
+          "iw3_index": null
+        },
+        {
+          "index": 44,
+          "name": "jumpdive_forwardleft",
+          "iw3_index": null
+        },
+        {
+          "index": 45,
+          "name": "jumpdive_left",
+          "iw3_index": null
+        },
+        {
+          "index": 46,
+          "name": "jumpdive_backleft",
+          "iw3_index": null
+        },
+        {
+          "index": 47,
+          "name": "jumpdive_back",
+          "iw3_index": null
+        },
+        {
+          "index": 48,
+          "name": "jumpdive_backright",
+          "iw3_index": null
+        },
+        {
+          "index": 49,
+          "name": "jumpdive_right",
+          "iw3_index": null
+        },
+        {
+          "index": 50,
+          "name": "jumpdive_forwardright",
+          "iw3_index": null
+        },
+        {
+          "index": 51,
+          "name": "idlelaststand",
+          "iw3_index": null
+        },
+        {
+          "index": 52,
+          "name": "crawllaststand",
+          "iw3_index": null
+        },
+        {
+          "index": 53,
+          "name": "crawllaststandbk",
+          "iw3_index": null
+        },
+        {
+          "index": 54,
+          "name": "dtp_move",
+          "iw3_index": null
+        }
+      ]
+    },
+    "events": {
+      "address": "0xcd8838",
+      "count": 24,
+      "entries": [
+        {
+          "index": 0,
+          "name": "pain",
+          "iw3_index": 0
+        },
+        {
+          "index": 1,
+          "name": "death",
+          "iw3_index": 1
+        },
+        {
+          "index": 2,
+          "name": "fireweapon",
+          "iw3_index": 2
+        },
+        {
+          "index": 3,
+          "name": "jump",
+          "iw3_index": 3
+        },
+        {
+          "index": 4,
+          "name": "jumpbk",
+          "iw3_index": 4
+        },
+        {
+          "index": 5,
+          "name": "land",
+          "iw3_index": 5
+        },
+        {
+          "index": 6,
+          "name": "dropweapon",
+          "iw3_index": 6
+        },
+        {
+          "index": 7,
+          "name": "raiseweapon",
+          "iw3_index": 7
+        },
+        {
+          "index": 8,
+          "name": "climbmount",
+          "iw3_index": 8
+        },
+        {
+          "index": 9,
+          "name": "climbdismount",
+          "iw3_index": 9
+        },
+        {
+          "index": 10,
+          "name": "reload",
+          "iw3_index": 10
+        },
+        {
+          "index": 11,
+          "name": "crouch_to_prone",
+          "iw3_index": 11
+        },
+        {
+          "index": 12,
+          "name": "prone_to_crouch",
+          "iw3_index": 12
+        },
+        {
+          "index": 13,
+          "name": "stand_to_crouch",
+          "iw3_index": 13
+        },
+        {
+          "index": 14,
+          "name": "crouch_to_stand",
+          "iw3_index": 14
+        },
+        {
+          "index": 15,
+          "name": "stand_to_prone",
+          "iw3_index": 15
+        },
+        {
+          "index": 16,
+          "name": "prone_to_stand",
+          "iw3_index": 16
+        },
+        {
+          "index": 17,
+          "name": "meleeattack",
+          "iw3_index": 17
+        },
+        {
+          "index": 18,
+          "name": "knife_melee",
+          "iw3_index": 18
+        },
+        {
+          "index": 19,
+          "name": "knife_melee_charge",
+          "iw3_index": 19
+        },
+        {
+          "index": 20,
+          "name": "shellshock",
+          "iw3_index": 20
+        },
+        {
+          "index": 21,
+          "name": "stunned",
+          "iw3_index": null
+        },
+        {
+          "index": 22,
+          "name": "dtp_takeoff",
+          "iw3_index": null
+        },
+        {
+          "index": 23,
+          "name": "dtp_land",
+          "iw3_index": null
+        }
+      ]
+    },
+    "conditions": {
+      "address": "0xcd8b28",
+      "count": 18,
+      "entries": [
+        {
+          "index": 0,
+          "name": "playeranimtype",
+          "iw3_index": 0,
+          "storage_kind": 0,
+          "values_address": "0x1504b80",
+          "runtime_values": true,
+          "native_index": 0
+        },
+        {
+          "index": 1,
+          "name": "weaponclass",
+          "iw3_index": 1,
+          "storage_kind": 0,
+          "values_address": "0xcd8940",
+          "values": [
+            "rifle",
+            "sniper",
+            "mg",
+            "smg",
+            "spread",
+            "pistol",
+            "grenade",
+            "rocketlauncher",
+            "turret",
+            "throwingknife",
+            "non-player",
+            "item"
+          ],
+          "native_index": 1
+        },
+        {
+          "index": 2,
+          "name": "mounted",
+          "iw3_index": 2,
+          "storage_kind": 1,
+          "values_address": "0xcd8928",
+          "values": [
+            "** unused **",
+            "mg42"
+          ],
+          "native_index": 2
+        },
+        {
+          "index": 3,
+          "name": "movetype",
+          "iw3_index": 3,
+          "storage_kind": 0,
+          "values_address": "0xcd8678",
+          "values": [
+            "** unused **",
+            "idle",
+            "idlecr",
+            "idleprone",
+            "walk",
+            "walkbk",
+            "walkcr",
+            "walkcrbk",
+            "walkprone",
+            "walkpronebk",
+            "run",
+            "runbk",
+            "runcr",
+            "runcrbk",
+            "turnright",
+            "turnleft",
+            "turnrightcr",
+            "turnleftcr",
+            "climbup",
+            "climbdown",
+            "sprint",
+            "mantle_root",
+            "mantle_up_57",
+            "mantle_up_51",
+            "mantle_up_45",
+            "mantle_up_39",
+            "mantle_up_33",
+            "mantle_up_27",
+            "mantle_up_21",
+            "mantle_over_high",
+            "mantle_over_mid",
+            "mantle_over_low",
+            "flinch_forward",
+            "flinch_backward",
+            "flinch_left",
+            "flinch_right",
+            "stumble_forward",
+            "stumble_backward",
+            "stumble_walk_forward",
+            "stumble_walk_backward",
+            "stumble_crouch_forward",
+            "stumble_crouch_backward",
+            "stumble_sprint_forward",
+            "jumpdive_forward",
+            "jumpdive_forwardleft",
+            "jumpdive_left",
+            "jumpdive_backleft",
+            "jumpdive_back",
+            "jumpdive_backright",
+            "jumpdive_right",
+            "jumpdive_forwardright",
+            "idlelaststand",
+            "crawllaststand",
+            "crawllaststandbk",
+            "dtp_move"
+          ],
+          "native_index": 3
+        },
+        {
+          "index": 4,
+          "name": "crouching",
+          "iw3_index": 5,
+          "storage_kind": 1,
+          "values_address": "0x0",
+          "native_index": 5
+        },
+        {
+          "index": 5,
+          "name": "firing",
+          "iw3_index": 6,
+          "storage_kind": 1,
+          "values_address": "0x0",
+          "native_index": 6
+        },
+        {
+          "index": 6,
+          "name": "weapon_position",
+          "iw3_index": 7,
+          "storage_kind": 1,
+          "values_address": "0xcd89a8",
+          "values": [
+            "hip",
+            "ads"
+          ],
+          "native_index": 7
+        },
+        {
+          "index": 7,
+          "name": "strafing",
+          "iw3_index": 8,
+          "storage_kind": 1,
+          "values_address": "0xcd89c0",
+          "values": [
+            "not",
+            "left",
+            "right"
+          ],
+          "native_index": 8
+        },
+        {
+          "index": 8,
+          "name": "perk",
+          "iw3_index": 9,
+          "storage_kind": 1,
+          "values_address": "0xcd89e0",
+          "values": [
+            "** unused **",
+            "grenadedeath",
+            "meleehalberd"
+          ],
+          "native_index": 9
+        },
+        {
+          "index": 9,
+          "name": "damagetype",
+          "iw3_index": null,
+          "storage_kind": 1,
+          "values_address": "0xcd8a00",
+          "values": [
+            "damage_bullet",
+            "damage_explosion_light",
+            "damage_explosion"
+          ],
+          "native_index": 10
+        },
+        {
+          "index": 10,
+          "name": "hitlocation",
+          "iw3_index": null,
+          "storage_kind": 1,
+          "values_address": "0xcd8a20",
+          "values": [
+            "hit_torso",
+            "hit_head",
+            "hit_neck",
+            "hit_legs"
+          ],
+          "native_index": 11
+        },
+        {
+          "index": 11,
+          "name": "hitdirection",
+          "iw3_index": null,
+          "storage_kind": 1,
+          "values_address": "0xcd8a48",
+          "values": [
+            "hit_front",
+            "hit_left",
+            "hit_right",
+            "hit_back"
+          ],
+          "native_index": 12
+        },
+        {
+          "index": 12,
+          "name": "akimbo",
+          "iw3_index": null,
+          "storage_kind": 1,
+          "values_address": "0x0",
+          "native_index": 13
+        },
+        {
+          "index": 13,
+          "name": "divedirection",
+          "iw3_index": null,
+          "storage_kind": 1,
+          "values_address": "0xcd8a70",
+          "values": [
+            "none",
+            "forward",
+            "forwardleft",
+            "left",
+            "backleft",
+            "back",
+            "backright",
+            "right",
+            "forwardright"
+          ],
+          "native_index": 14
+        },
+        {
+          "index": 14,
+          "name": "riotshieldnext",
+          "iw3_index": null,
+          "storage_kind": 1,
+          "values_address": "0x0",
+          "native_index": 15
+        },
+        {
+          "index": 15,
+          "name": "playeranimtypeprimary",
+          "iw3_index": null,
+          "storage_kind": 0,
+          "values_address": "0x1504b80",
+          "runtime_values": true,
+          "native_index": 16
+        },
+        {
+          "index": 16,
+          "name": "fastmantle",
+          "iw3_index": null,
+          "storage_kind": 1,
+          "values_address": "0x0",
+          "native_index": 17
+        },
+        {
+          "index": 17,
+          "name": "scripted",
+          "iw3_index": null,
+          "storage_kind": 1,
+          "values_address": "0xcd8b08",
+          "values": [
+            "none",
+            "slowmo_breach_active",
+            "slowmo_breach_passive"
+          ],
+          "native_index": 18
+        }
+      ]
+    }
+  }
+}

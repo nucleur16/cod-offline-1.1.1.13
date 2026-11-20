@@ -1,0 +1,898 @@
+{
+  "scope": "Isolated owned UDP17761 Survival/Favela native diagnostics; no user input, deployment, restart or commits. No live C1 rendered frame claimed.",
+  "native_base_commit": "70ac4780",
+  "rawfiles_commit": "f05ed0c",
+  "before": {
+    "pid": 77300,
+    "binary_sha256": "35e4910ff4bb677e82771134afe01f34b21c25d75368e35a1347da3ec40d5a11",
+    "ready": true,
+    "elapsed_seconds": 29.19,
+    "runtime_error": false,
+    "missing_table_fatal": false,
+    "exited": true,
+    "legal_rows": 50,
+    "override_entries": 147,
+    "recipes": [
+      {
+        "command": "checkpmovedef \"*a 21 4 97 1 11 2 16 0 31 0 32 0 33 0 41 0\"",
+        "evidence": [
+          "checkpmovedef: '*a 21 4 97 1 11 2 16 0 31 0 32 0 33 0 41 0' did not resolve (-1) *a 21 4 97 1 11 2 16 0 31 0 32 0 33 0 41 0: m14ebr_mp camo 4 has no complete base-model recipe"
+        ]
+      },
+      {
+        "command": "checkpmovedef \"*a 21 0\"",
+        "evidence": [
+          "checkpmovedef: '*a 21 0' did not resolve (-1) *a 21 0: m14ebr_mp camo 0 has no complete base-model recipe"
+        ]
+      }
+    ],
+    "stock_base_models": [
+      "leading model slot 0: viewmodel_base_viewhands",
+      "leading model slot 1: viewmodel_m14_ebr",
+      "leading model slot 3: weapon_m14ebr_tan",
+      "leading model slot 7: viewmodel_knife",
+      "leading model slot 8: weapon_parabolic_knife"
+    ],
+    "models_complete": 0,
+    "models": [
+      {
+        "name": "wea_m14ebr_m14ebr_blk",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_blk_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_01",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_01_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_02",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_02_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_03",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_03_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_04",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_04_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_05",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_05_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_06",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_06_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_07",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_07_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_08",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_08_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_09",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_09_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_10",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_10_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_11",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_11_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_12",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_12_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_13",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_13_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_14",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_14_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_15",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_15_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_16",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_16_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_17",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_17_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_18",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_18_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_19",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_19_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_20",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_20_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_21",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_21_vmgun",
+        "skeleton": 0,
+        "geometry": 0,
+        "materials": 0,
+        "mesh": 0,
+        "core": 0,
+        "complete": 0
+      }
+    ],
+    "weapon_patch_mounts": [],
+    "log": "obj\\survival_m14_before_full\\mp_fav_tropical\\home\\main\\qconsole.log"
+  },
+  "after": {
+    "pid": 115192,
+    "binary_sha256": "583eb8484c5b73620c2e0650cbef663e0edb33c108aeedfea16eb7ca04571275",
+    "ready": true,
+    "elapsed_seconds": 31.22,
+    "runtime_error": false,
+    "missing_table_fatal": false,
+    "exited": true,
+    "legal_rows": 58,
+    "override_entries": 226,
+    "recipes": [
+      {
+        "command": "checkpmovedef \"*a 21 4 97 1 11 2 16 0 31 0 32 0 33 0 41 0\"",
+        "evidence": [
+          "composed '*a 21 4 97 1 11 2 16 0 31 0 32 0 33 0 41 0' over base 'm14ebr_mp', attachment overrides applied: yes",
+          "  dual wield (+0xbd5) 0  recipe world model wea_m14ebr_m14ebr_04  view model wea_m14ebr_m14ebr_04_vmgun"
+        ]
+      },
+      {
+        "command": "checkpmovedef \"*a 21 0\"",
+        "evidence": [
+          "composed '*a 21 0' over base 'm14ebr_mp', attachment overrides applied: yes",
+          "  dual wield (+0xbd5) 0  recipe world model wea_m14ebr_m14ebr_blk  view model wea_m14ebr_m14ebr_blk_vmgun"
+        ]
+      }
+    ],
+    "stock_base_models": [
+      "leading model slot 0: viewmodel_base_viewhands",
+      "leading model slot 1: viewmodel_m14_ebr",
+      "leading model slot 3: weapon_m14ebr_tan",
+      "leading model slot 7: viewmodel_knife",
+      "leading model slot 8: weapon_parabolic_knife"
+    ],
+    "models_complete": 44,
+    "models": [
+      {
+        "name": "wea_m14ebr_m14ebr_blk",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_blk_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_01",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_01_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_02",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_02_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_03",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_03_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_04",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_04_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_05",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_05_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_06",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_06_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_07",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_07_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_08",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_08_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_09",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_09_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_10",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_10_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_11",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_11_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_12",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_12_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_13",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_13_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_14",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_14_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_15",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_15_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_16",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_16_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_17",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_17_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_18",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_18_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_19",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_19_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_20",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_20_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_21",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      },
+      {
+        "name": "wea_m14ebr_m14ebr_21_vmgun",
+        "skeleton": 1,
+        "geometry": 1,
+        "materials": 1,
+        "mesh": 1,
+        "core": 1,
+        "complete": 1
+      }
+    ],
+    "weapon_patch_mounts": [
+      "CoDOL patch folder: mp_codol_weapons.ff mounted with the survival map archives",
+      "CoDOL patch folder: mp_codol_weapons_postgfx_mp.ff mounted with the survival map archives",
+      "CoDOL native map archive 8: mp_codol_weapons.ff (rank 206)",
+      "CoDOL native map archive 9: mp_codol_weapons_postgfx_mp.ff (rank 207)"
+    ],
+    "log": "obj\\survival_m14_after\\mp_fav_tropical\\home\\main\\qconsole.log"
+  },
+  "candidate_host_dll_sha256": "60091beb7e4c764675a364c94f3a728d6ad4da6e54744fa36a2d594c9efe9244",
+  "installed_weapon_zones": {
+    "mp_codol_weapons.ff": {
+      "bytes": 108677,
+      "md5": "22e724382b185632b699b54cd583a04d",
+      "sha256": "86fbafde7992bfbff298a249a9378cf2c9e86e45805af5c77cdf6ab2fb013128"
+    },
+    "mp_codol_weapons_postgfx_mp.ff": {
+      "bytes": 14043,
+      "md5": "c0111bc74c91dfaa0a79b5970307cf7b",
+      "sha256": "1447079984d4c9af49db5f7f52dbcc8f6f7046c1f4e1e9a34d70e72f46bc4864"
+    }
+  },
+  "tested_source_sha256": {
+    "src/online/assets/category_patch.c": "a84eb28ed8f7280365f9def6eb5c722afa0092527312c4858a8ce03be291a393",
+    "src/online/assets/category_patch.h": "14d353d0c771b58428c87b7186abf827856c192526e541ec37ffc39941a8b5fc",
+    "src/online/assets/asset_commands.c": "9d35c0a4e513be1a55adea48065436a070764c2a87bc33ebb4b3cf9698258c98",
+    "tests/test_category_patch.c": "10e28fc633a4a560bc96990278e0bcd48255ecb87519299bba02d145c4f5dad0",
+    "tools/test_category_patch.sh": "24846443295de5144d4572acc3f72942d6fba14930945f3a613b8503001323e9"
+  }
+}

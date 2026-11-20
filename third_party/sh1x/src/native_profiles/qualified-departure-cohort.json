@@ -1,0 +1,53 @@
+{
+  "actual_human_gameplay": false,
+  "note": "Compile variables intentionally match the retained builds. Older in-source last-human comment is retained byte-for-byte; the condition publishes each authenticated human departure.",
+  "production_changed": false,
+  "profiles": {
+    "normal": {
+      "Linux_sha256": "d2aeef3ca90abcd960e8cba9f15e6a828da97f930fef6ac0262847ac8032ec17",
+      "Windows_sha256": "410c50870be539d34be7fb1c1a90f67dd08930c95837c0d8aaf705b79ea35e25",
+      "code_manifest_sha256": "a042e5b22ed3df9c15253a8e1723226815a163dbce54505b1670117d282659ee",
+      "raw_commit": "045da5f9f0a0b6ae1c6931692753658a656b1852",
+      "script_supplement": {
+        "actual_human_gameplay": false,
+        "kind": "prematch_balance_guard",
+        "native_VM_cases": 6,
+        "prior_script_cohort": {
+          "raw_commit": "c1b41d240833c6a0cfad754911d411eedcde555d",
+          "scripts_sha256": "77fc1914141689fde806463e62c3ce18118ebd6fab2e8a2342dc36d2b6bdf793"
+        },
+        "prior_warm_lifecycle_proof": "runtime_proofs retain exact earlier scripts; this supplement supplies native VM startup/roster/control proof only",
+        "qualification_sha256": "465fcb624fe951119faf74e3203d24d1dccf66065a70dbd28c7c68433a36f937",
+        "raw_commit": "045da5f9f0a0b6ae1c6931692753658a656b1852",
+        "scripts_sha256": "76e157416c3eab10e8b371d42d826274476dfdfe44a7b2814370502016425461"
+      },
+      "scripts_sha256": "76e157416c3eab10e8b371d42d826274476dfdfe44a7b2814370502016425461"
+    },
+    "zombies": {
+      "Linux_sha256": "fab325a0848b48d97301eb9ff01a60cd2e2e1f83db44f1700a6c7decb01b0460",
+      "Windows_sha256": "f9698f1d6a1980d0733fcbd1c739b0c6aea98c1fc11ad72792be45d4033eb7fe",
+      "code_manifest_sha256": "4fe8096af5b810b8d5aefb5bcbe66eac54cffd7fd955112be1d0da1985806e09",
+      "raw_commit": "9d1aedb45f4c061e66b1aacdb9ec7f103c1387f4",
+      "scripts_sha256": "0d266a1fccb9098aa2b9a8d1d217e22ee7fe5bb57b7bf01a461ba8aafcb89df2"
+    }
+  },
+  "runtime_proofs": {
+    "Linux_core": {
+      "cases": 5,
+      "evidence_name": "linux-native-runtime-r3-1793013154858496861.json",
+      "sha256": "e919e9fa123b051faae704f2bfb739d8fa3dc7ec91d77aa090936a58ed5f46ea"
+    },
+    "Linux_extended": {
+      "cases": 15,
+      "evidence_name": "linux-native-runtime-r3-1793012416336620161.json",
+      "sha256": "0bf79c939bd673467dcda20d25de4a7f3e9ef49f026969d5df0dc52295fa5030"
+    },
+    "Windows_core": {
+      "cases": 5,
+      "evidence_name": "native-runtime-1793010308573435000.json",
+      "sha256": "7594d608894cf5a6e8636bb479601fd55056feae4d6c5176a15d1af3e9181bfb"
+    }
+  },
+  "schema": 1,
+  "source_scope": "Exact already-qualified inputs; no unfinished performance changes"
+}

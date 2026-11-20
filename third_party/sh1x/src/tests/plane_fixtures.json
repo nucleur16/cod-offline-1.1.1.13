@@ -1,0 +1,173 @@
+[
+  {
+    "zone": "mp_afghan.zone",
+    "asset": 203,
+    "offset": 723,
+    "count": 47528,
+    "asset_sha256": "c4efbcbc627b9eff9a941d1f1e6a0bf1171131d0d0fde4a4af8ef546f37d888d",
+    "planes_sha256": "5c9ba5f1c683979cf7e29bb0b4ab1e8feafbd67e3fc3ddb68fc61709c93ad730",
+    "map_name": "mp_afghan"
+  },
+  {
+    "zone": "mp_bloc_sh.zone",
+    "asset": 111,
+    "offset": 762,
+    "count": 11960,
+    "asset_sha256": "714a9840b30c0759d26173ba323e69380964a6528197d697f9df93f86fe3ee43",
+    "planes_sha256": "43dc325957dbed29558c32790a8d89d8e08828f04d1495cedcedf02121e77eca",
+    "map_name": "mp_bloc_sh"
+  },
+  {
+    "zone": "mp_bog_sh.zone",
+    "asset": 151,
+    "offset": 721,
+    "count": 10056,
+    "asset_sha256": "be618478242ea0463af411f7d12208b60bc23ef01ed23fed30ec878ba91f3041",
+    "planes_sha256": "f70298ce6da3fae0cdfac4e97a9ebd214d2b0ecb58f497815131328dc462f687",
+    "map_name": "mp_bog_sh"
+  },
+  {
+    "zone": "mp_cargoship_sh.zone",
+    "asset": 238,
+    "offset": 739,
+    "count": 10438,
+    "asset_sha256": "07408980419413bec343e0f884b179c43dbb1059c37ebd847469fcce14ab0cd7",
+    "planes_sha256": "65cfbde778d22bd3f582c20e2b701e37f72d50c561197a4b7e48feff9192b4f3",
+    "map_name": "mp_cargoship_sh"
+  },
+  {
+    "zone": "mp_crash_intro.zone",
+    "asset": 200,
+    "offset": 736,
+    "count": 10984,
+    "asset_sha256": "176211114c212e250389ae307dcabec3f012df06ca53aabb054caa75bba4b6a3",
+    "planes_sha256": "9dceb292217314c60af0e898571e6ebbd6f43f8d39d70ee4a6f75c6b8bdb2a46",
+    "map_name": "mp_crash_intro"
+  },
+  {
+    "zone": "mp_crash_tropical.zone",
+    "asset": 229,
+    "offset": 739,
+    "count": 14597,
+    "asset_sha256": "6fd3b3643712f71ef2b1099bb3f8d90f98a1e75a1df9ac740d28fb367628251e",
+    "planes_sha256": "556a7a1b6e31b8fe1343a9f916cb9860548e9a29cdb2b962c4397ed9dbf29dea",
+    "map_name": "mp_crash_tropical"
+  },
+  {
+    "zone": "mp_cross_fire.zone",
+    "asset": 150,
+    "offset": 724,
+    "count": 30305,
+    "asset_sha256": "0bc92582fe5b794c6f41545b2216128df077e5c74bd1463ad0dc812eb2c4c054",
+    "planes_sha256": "47e16b828ad710c3e1ec613a519a608b2091e05374b9984b7fa17736d3d8ba75",
+    "map_name": "mp_cross_fire"
+  },
+  {
+    "zone": "mp_estate_tropical.zone",
+    "asset": 253,
+    "offset": 849,
+    "count": 37735,
+    "asset_sha256": "f2ba5e0e5dc8a7888ab0ec4b1039b64c5f9e751dc3c0dda74945fc4f83e26f7f",
+    "planes_sha256": "2635cdc2b969226364a73d20aa58cbf9b768a03cac85c8a66e463bad6bc02846",
+    "map_name": "mp_estate_tropical"
+  },
+  {
+    "zone": "mp_fav_tropical.zone",
+    "asset": 269,
+    "offset": 735,
+    "count": 18733,
+    "asset_sha256": "be37b15b3a505b941f1a2dd3e082f199cdbc5b63eb837e39bb4413a7c6b97016",
+    "planes_sha256": "8aa899fa67cc12b87d53c3f51745fd80f46d42d288b377366d2fc0073ad81ebd",
+    "map_name": "mp_fav_tropical"
+  },
+  {
+    "zone": "mp_killhouse_sh.zone",
+    "asset": 200,
+    "offset": 736,
+    "count": 14833,
+    "asset_sha256": "541d1c5e2159ba7cd93e188bb5e0785a7c7591bc8a9661f0524a0e600e82755d",
+    "planes_sha256": "7715e349b32b1daeca691418c7c7a0c0a3d69d72673bfc6947408802e483fca9",
+    "map_name": "mp_killhouse_sh"
+  },
+  {
+    "zone": "mp_nuked.zone",
+    "asset": 238,
+    "offset": 733,
+    "count": 9734,
+    "asset_sha256": "7246cff71ec598ebfd609f742738da188b43a36aab787a89656ed0b477beb26b",
+    "planes_sha256": "9f19449b8b7e6339d389871e16a32125e280470daa6aba7be327463b0b066afe",
+    "map_name": "mp_nuked"
+  },
+  {
+    "zone": "mp_overgrown.zone",
+    "asset": 122,
+    "offset": 729,
+    "count": 14883,
+    "asset_sha256": "a9df5c593730c4d84aed5ece0165b03e8e3185ae14a1c8b8a4dc497fdfa3313d",
+    "planes_sha256": "e313864fab10e414be9fd8b06385a6e750579e37fa965ddc2f65d591d4dc5e63",
+    "map_name": "mp_overgrown"
+  },
+  {
+    "zone": "mp_rust.zone",
+    "asset": 118,
+    "offset": 727,
+    "count": 3207,
+    "asset_sha256": "6efbd5ad213614f393a1c150ef5b5804c9bfbb646cfdb1b94f988536b46d6625",
+    "planes_sha256": "c40eaea496a57517ac1fb5db849669a11d61621d940580d8e06fff75e134df79",
+    "map_name": "mp_rust"
+  },
+  {
+    "zone": "mp_storm_spring.zone",
+    "asset": 304,
+    "offset": 944,
+    "count": 7957,
+    "asset_sha256": "27558c387e5f91fab5429cf32eafd6bc29abf11f3c759fb41bb1e4bf53bcfeed",
+    "planes_sha256": "b9d02eccacea553cfbc60a19764cd62d3f2cdda14c645fe37dc8c5e91e995d43",
+    "map_name": "mp_storm_spring"
+  },
+  {
+    "zone": "mp_underpass.zone",
+    "asset": 268,
+    "offset": 729,
+    "count": 10372,
+    "asset_sha256": "b368d46816aff58fdd9b67a13ef12641e1f2d9a9a6a035141e03f7b9fd10aa24",
+    "planes_sha256": "e619efd809414cf57c2c757f6e8fab64104a9d44f35ecfb9a17e87753124d8f6",
+    "map_name": "mp_underpass"
+  },
+  {
+    "zone": "ui_viewer_mp.zone",
+    "asset": 6564,
+    "offset": 734,
+    "count": 5977,
+    "asset_sha256": "3aa403b55c494e6fc0662333b6aa423d3c990de1fa9d560f7151aca0d1d4ef59",
+    "planes_sha256": "3f1e91a3fcd23c22278100cacb1679983c5ed88ffd0db79e203b9f3b07c1051f",
+    "map_name": "mp_ui_viewer"
+  },
+  {
+    "zone": "zm_asylum_sh.zone",
+    "asset": 315,
+    "offset": 729,
+    "count": 22161,
+    "asset_sha256": "984ed69686d62da99b57375497ef8adfffacdfb737d7bd26407996f4d551c76c",
+    "planes_sha256": "9f5297d70ee9892a444e098711061f7cc9587ffb7dfab0d59a0f998a1c796baa",
+    "map_name": "zm_asylum_sh"
+  },
+  {
+    "zone": "zm_prototype_sh.zone",
+    "asset": 286,
+    "offset": 738,
+    "count": 15118,
+    "asset_sha256": "70822aabc524b95f320326be64ca61ce6fdb3b91d3133a767ea1cc11cf14c19a",
+    "planes_sha256": "57cc9117fcf7fd3621c5f35783cec96052c36624a3cccf4c7d9a0fc023294db0",
+    "map_name": "zm_prototype_sh"
+  },
+  {
+    "zone": "zm_zombie_training.zone",
+    "asset": 312,
+    "offset": 944,
+    "count": 29661,
+    "asset_sha256": "b947b052b9d096171271a0dadf97ab1ad46d35529be93bc3f0fc9a93051a8372",
+    "planes_sha256": "d9830d5ebd2d0cd5a8c47af5adabd36af9d264301a155db10ce49989e9c0af02",
+    "map_name": "zm_zombie_training"
+  }
+]

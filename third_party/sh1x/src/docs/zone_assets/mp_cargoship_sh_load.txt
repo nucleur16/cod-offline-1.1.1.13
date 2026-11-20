@@ -1,0 +1,5 @@
+material	$defeatbackdrop
+material	$levelbriefing
+material	compass_map_mp_cargoship_sh
+rawfile	mp_cargoship_sh_load
+techset	2d
