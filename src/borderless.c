@@ -50,6 +50,10 @@ static BOOL g_bdHaveMonitor;
 static BOOL g_bdInstalled;
 static const BYTE *g_bdDvar;                  /* r_noborder once registered */
 
+/* window_title.c (included after locale_switch.c): the window's GBK title in Unicode, and its language tick. */
+static void WtCreatedWindow(HWND window, LPCSTR title, DWORD style);
+static void WindowTitleTick(void);
+
 typedef HWND(WINAPI *BdCreateWindowExFn)(DWORD, LPCSTR, LPCSTR, DWORD, int, int, int, int, HWND, HMENU, HINSTANCE, LPVOID);
 
 /* A dvar's value as an int, whatever its type (bool 0, int 5, string 7 from a "seta" before registration). */
@@ -145,6 +149,7 @@ static HWND WINAPI BorderlessCreateWindowExA(DWORD ex, LPCSTR cls, LPCSTR title,
     QbgPrepareWindow(&ex, &x, &y);
     HWND window = real(ex, cls, title, style, x, y, w, h, parent, menu, inst, param);
     QbgCreatedWindow(window);
+    WtCreatedWindow(window, title, style);
     return window;
 }
 
@@ -185,6 +190,7 @@ static void BorderlessTick(void)
 {
     static DWORD lastRestart;
     static int coverRestarts;   /* restarts for "no longer covers its monitor" in a row: at most 2 */
+    WindowTitleTick();
     if (!g_bdInstalled) return;
     if (!g_bdDvar && C1DvarsReady()) {
         int fallback=0;
